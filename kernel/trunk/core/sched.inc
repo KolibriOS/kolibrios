@@ -93,7 +93,7 @@ irq0:
         mov   edx,[0x3000]
         lea   edx,[tss0sys+8*edx]
         ;mov   [8*0x40+idts+8+0], word 0
-        mov   [8*0x40+idts+8+2],dx
+        ;mov   [8*0x40+idts+8+2],dx
         ;mov   [8*0x40+idts+8+4],word 11100101b*256
         ;mov   [8*0x40+idts+8+6], word 0
 

@@ -455,7 +455,9 @@ new_start_application_fl:
     mov    [l.io],word 128
     mov    [l.eflags],dword 0x11202
     mov    [l.ss0],os_data
-    mov    [l.esp0],0x55000
+    shl    ebx,9
+    add    ebx,sysint_stack_data
+    mov    [l.esp0],ebx
 ;    mov    [l.esp1],0x56000
 ;    mov    [l.esp2],0x57000
 

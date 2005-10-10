@@ -288,10 +288,10 @@ build_syscall_interrupt_table:
 
         ;mov    dx,tss0sys
         mov    edi,8*0x40+idts+8
-        mov    [edi + 0], word 0
-        mov    [edi + 2], word tss0sys ;dx
-        mov    [edi + 4], word 11100101b*256
-        mov    [edi + 6], word 0
+        mov    [edi + 0], word (i40 and ((1 shl 16)-1))
+        mov    [edi + 2], word os_code
+        mov    [edi + 4], word 11101110b*256
+        mov    [edi + 6], word (i40 shr 16)
 
         mov    edi,8*0x38+idts+8
         mov    eax, i38

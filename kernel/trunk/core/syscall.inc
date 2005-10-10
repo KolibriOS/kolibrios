@@ -3,9 +3,19 @@
 ;;                   SYSTEM CALL ENTRY                        ;;
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+uglobal
+  task_tss rd 1
+endg
 align 32
 i40:
+      pushad
+
+      push  ds
+      mov   ax,word os_data
+      mov   ds,ax
+      mov   es,ax
+      mov   [task_tss],esp
+      add   dword [task_tss],4
       cli
 
       mov    edi,[0x3000]
@@ -15,15 +25,15 @@ i40:
       mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
       
 ;save GDT TSS entry
-      mov    edx,[edi+tss0_l]
-      mov    [reg1+eax*4],edx
-      mov    edx,[edi+tss0_l+4]
-      mov    [reg2+eax*4],edx
+;      mov    edx,[edi+tss0_l]
+;      mov    [reg1+eax*4],edx
+;      mov    edx,[edi+tss0_l+4]
+;      mov    [reg2+eax*4],edx
 ;and then write there i40's descriptor
-      mov    edx,[tss0sys_l+edi]
-      mov    [edi+tss0_l],edx
-      mov    edx,[tss0sys_l+edi+4]
-      mov    [edi+tss0_l+4],edx            
+;      mov    edx,[tss0sys_l+edi]
+;      mov    [edi+tss0_l],edx
+;      mov    edx,[tss0sys_l+edi+4]
+;      mov    [edi+tss0_l+4],edx            
 
 
       shl    edi,5
@@ -32,26 +42,28 @@ i40:
       ; for syscall trace function
       call  save_registers
 
-      mov   esi, [0x3000]
-      imul  esi, tss_step
-      add   esi, tss_data
+;      mov   esi, [0x3000]
+;      imul  esi, tss_step
+;      add   esi, tss_data
+      mov   esi,[task_tss]
+;      sub   esi,0x28
       ; esi holds address of TSS of interupted program
       ; load first 3 registers
-      mov   eax,[esi+l.eax-tss_sceleton]
-      mov   ebx,[esi+l.ebx-tss_sceleton]
-      mov   ecx,[esi+l.ecx-tss_sceleton]
+      mov   eax,[esi+28];+l.eax-tss_sceleton]
+      mov   ebx,[esi+16];l.ebx-tss_sceleton]
+      mov   ecx,[esi+24];l.ecx-tss_sceleton]
 
       ; save current registers
       ; stack may be modified by a system function to return some value to caller!
       pushad
 
       ; load all registers from TSS of the application, in crossed order (why?)
-      mov   edi,[esi+l.eax-tss_sceleton]
-      mov   eax,[esi+l.ebx-tss_sceleton]
-      mov   ebx,[esi+l.ecx-tss_sceleton]
-      mov   ecx,[esi+l.edx-tss_sceleton]
-      mov   edx,[esi+l.esi-tss_sceleton]
-      mov   esi,[esi+l.edi-tss_sceleton]
+      mov   edi,[esi+28];l.eax-tss_sceleton]
+      mov   eax,[esi+16];l.ebx-tss_sceleton]
+      mov   ebx,[esi+24];l.ecx-tss_sceleton]
+      mov   ecx,[esi+20];l.edx-tss_sceleton]
+      mov   edx,[esi+4];l.esi-tss_sceleton]
+      mov   esi,[esi+0];l.edi-tss_sceleton]
 
       ; enable interupts  -  a task switch or an IRQ _CAN_ interrupt i40 handler
       sti
@@ -72,22 +84,22 @@ i40:
  ; </Ivan 05.03.2005>
 
       ; modify 3 program's registers (in its TSS)
-      mov   [esi+l.eax-tss_sceleton], eax    
-      mov   [esi+l.ebx-tss_sceleton], ebx
-      mov   [esi+l.ecx-tss_sceleton], ecx
+      mov   [esi+28],eax;[esi+l.eax-tss_sceleton], eax    
+      mov   [esi+16],ebx;[esi+l.ebx-tss_sceleton], ebx
+      mov   [esi+24],ecx;[esi+l.ecx-tss_sceleton], ecx
 
       ; calculate app's TSS address
-      mov   ebx, [0x3000]
-      shl   ebx, 3
-      add   ebx, tss0_l
+;      mov   ebx, [0x3000]
+;      shl   ebx, 3
+;      add   ebx, tss0_l
 
-      mov   ecx, [0x3000]
+;      mov   ecx, [0x3000]
 
       ; restore saved TSS descriptor
-      mov   eax,     [reg1+ecx*4]
-      mov   [ebx],   eax
-      mov   eax,     [reg2+ecx*4]
-      mov   [ebx+4], eax
+;      mov   eax,     [reg1+ecx*4]
+;      mov   [ebx],   eax
+;      mov   eax,     [reg2+ecx*4]
+;      mov   [ebx+4], eax
 
       xor    eax, eax
       mov    edi, [0x3000]          ; no syscall interrupt in use anymore
@@ -95,14 +107,20 @@ i40:
       mov    [edi+0x80000+0xB0],eax
 
       ; clear busy flag in TSS of this handler
-      mov    edi, [0x3000]
-      shl    edi, 3
-      mov    [edi+tss0sys_l +5], word 01010000b *256 +11101001b
+;      mov    edi, [0x3000]
+;      shl    edi, 3
+;      mov    [edi+tss0sys_l +5], word 01010000b *256 +11101001b
 
-      add   edi,tss0
-      mov   [0xB004], di
+;      add   edi,tss0
+;      mov   [0xB004], di
 
-      jmp   pword [0xB000]
+;      jmp   pword [0xB000]
+      pop     eax
+      mov     ds,ax
+      mov     es,ax
+      
+      popad
+      iretd
 
       jmp    i40
 

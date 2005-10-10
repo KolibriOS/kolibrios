@@ -112,8 +112,8 @@ include "KERNEL16.INC"
 ;;                                                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-os_data        equ  os_data_l-gdts    ; GDTs
-os_code        equ  os_code_l-gdts
+os_data        =  os_data_l-gdts    ; GDTs
+os_code        =  os_code_l-gdts
 int_code       equ  int_code_l-gdts
 int_data       equ  int_data_l-gdts
 tss0sys        equ  tss0sys_l-gdts
