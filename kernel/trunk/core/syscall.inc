@@ -23,17 +23,6 @@ i40:
       shl    edi, 3
 ;clear busy flag in application's TSS      
       mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-      
-;save GDT TSS entry
-;      mov    edx,[edi+tss0_l]
-;      mov    [reg1+eax*4],edx
-;      mov    edx,[edi+tss0_l+4]
-;      mov    [reg2+eax*4],edx
-;and then write there i40's descriptor
-;      mov    edx,[tss0sys_l+edi]
-;      mov    [edi+tss0_l],edx
-;      mov    edx,[tss0sys_l+edi+4]
-;      mov    [edi+tss0_l+4],edx            
 
 
       shl    edi,5
@@ -88,33 +77,11 @@ i40:
       mov   [esi+16],ebx;[esi+l.ebx-tss_sceleton], ebx
       mov   [esi+24],ecx;[esi+l.ecx-tss_sceleton], ecx
 
-      ; calculate app's TSS address
-;      mov   ebx, [0x3000]
-;      shl   ebx, 3
-;      add   ebx, tss0_l
-
-;      mov   ecx, [0x3000]
-
-      ; restore saved TSS descriptor
-;      mov   eax,     [reg1+ecx*4]
-;      mov   [ebx],   eax
-;      mov   eax,     [reg2+ecx*4]
-;      mov   [ebx+4], eax
-
       xor    eax, eax
       mov    edi, [0x3000]          ; no syscall interrupt in use anymore
       shl    edi, 8
       mov    [edi+0x80000+0xB0],eax
 
-      ; clear busy flag in TSS of this handler
-;      mov    edi, [0x3000]
-;      shl    edi, 3
-;      mov    [edi+tss0sys_l +5], word 01010000b *256 +11101001b
-
-;      add   edi,tss0
-;      mov   [0xB004], di
-
-;      jmp   pword [0xB000]
       pop     eax
       mov     ds,ax
       mov     es,ax

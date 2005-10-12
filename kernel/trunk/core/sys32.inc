@@ -50,13 +50,19 @@ tss0i_l:
       times 0x41 dq 0 ;(256+10) dd 0,0
 
 app_code_l:
-      times (max_processes+10) dd 0,0
+      dw ((0x80000000-std_application_base_address) shr 12) and 0xffff
+      dw 0
+      db 0
+      dw 11010000b*256+11111010b+256*((0x80000000-std_application_base_address) shr 28)
+      db std_application_base_address shr 24
 
 app_data_l:
-      times (max_processes+10) dd 0,0
+      dw (0x80000000-std_application_base_address) shr 12 and 0xffff
+      dw 0
+      db 0
+      dw 11010000b*256+11110010b+256*((0x80000000-std_application_base_address) shr 28)
+      db std_application_base_address shr 24
 
-tss0sys_l:
-      times (max_processes+10) dd 0,0
 
 gdte:
 
@@ -103,22 +109,6 @@ build_process_gdt_tss_pointer:
 
         ret
 
-;build_process_gdt_gate_pointer:
-
-;        mov    edi,0
-;        mov    dx,tss0
-;      setidtl1:
-;        mov    ecx,[esi]
-;        mov    [edi+gdts+ tss0t +0], word 0
-;        mov    [edi+gdts+ tss0t +2], dx
-;        mov    [edi+gdts+ tss0t +4], word 11100101b*256
-;        mov    [edi+gdts+ tss0t +6], word 0
-;        add    dx,8
-;        add    edi,8
-;        cmp    edi,8*(max_processes+5)
-;        jb     setidtl1
-
-;        ret
 
 build_interrupt_table:
 
@@ -230,76 +220,12 @@ build_interrupt_table:
 
 build_syscall_interrupt_table:
 
-        mov  [l.eflags],dword 0x11002
-        mov  [l.ss0], int_data   ;code
-        ;mov  [l.ss1], ring1_data ;code
-        ;mov  [l.ss2], ring2_data ;code
-        mov  [l.esp0], 0x52000
-        mov  [l.esp1], 0x53000
-        mov  [l.esp2], 0x54000
-
-        mov  eax,cr3
-        mov  [l.cr3],eax
-        mov  [l.cs],int_code
-        mov  [l.ss],int_data
-        mov  [l.ds],int_data
-        mov  [l.es],int_data
-        mov  [l.fs],int_data
-        mov  [l.gs],int_data
-
-        mov  [l.esp],sysint_stack_data
-        mov  edi,0x298000
-
-     newint2:
-        push edi
-        mov  ebx,i40
-        mov  [l.eip],ebx
-        mov  esi,tss_sceleton
-        mov  ecx,120/4
-        cld
-        rep  movsd
-        pop  edi
-
-        add  [l.esp],4096
-        add  edi,128
-        ;add  eax,4
-
-        cmp  edi,0x298000+128*(max_processes+5)
-        jb   newint2
-
-;;
-
-        mov    ecx,0x298000
-        mov    edi,0
-      setgdtl2i2:
-        mov    [edi+gdts+ tss0sys +0], word 128
-        mov    [edi+gdts+ tss0sys +2], cx
-        mov    eax,ecx
-        shr    eax,16
-        mov    [edi+gdts+ tss0sys +4], al
-        mov    [edi+gdts+ tss0sys +7], ah
-        mov    [edi+gdts+ tss0sys +5], word 01010000b *256 +11101001b
-        add    ecx,128
-        add    edi,8
-        cmp    edi,8*(max_processes+5)
-        jbe    setgdtl2i2
-
-;;
-
         ;mov    dx,tss0sys
         mov    edi,8*0x40+idts+8
         mov    [edi + 0], word (i40 and ((1 shl 16)-1))
         mov    [edi + 2], word os_code
         mov    [edi + 4], word 11101110b*256
         mov    [edi + 6], word (i40 shr 16)
-
-        mov    edi,8*0x38+idts+8
-        mov    eax, i38
-        mov    [edi],   ax           ; lower part of offset
-        mov    [edi+2], word os_code ; segment selector
-        shr    eax, 16
-        mov    [edi+4], word 11101110b shl 8 ; 32-bit interrupt gate, DPL 3
-        mov    [edi+6], ax
 
         ret
 
@@ -1059,137 +985,6 @@ unknown_interrupt:
 
 
 
-compare_to_thread:
-
-         push ebx
-
-         mov  eax,edx
-         shl  eax, 3
-         add  eax,gdts+ app_code-3
-         mov  ebx,[eax]
-         cmp  ebx,[old_code_0]
-         jne  ctt0
-         mov  ebx,[eax+4]
-         cmp  ebx,[old_code_1]
-         jne  ctt0
-
-         pop  ebx
-         mov  eax,1
-         ret
-
-       ctt0:
-
-         pop  ebx
-         mov  eax,0
-         ret
-
-
-
-check_for_thread_mem:
-
-         pusha
-
-         mov  ecx,[0x3004]
-       cftm0:
-         mov  eax,ecx
-         shl  eax, 8
-         add  eax,gdts+ app_code-3
-         mov  ebx,[eax]
-         cmp  ebx,[old_code_0]
-         jne  cftm1
-         mov  ebx,[eax+4]
-         cmp  ebx,[old_code_1]
-         jne  cftm1
-
-         mov  eax,ecx  ; new code segments
-         shl  eax, 3 ;imul eax,8
-         add  eax,gdts+ app_code-3
-
-         mov  ebx,[new_code_0]
-         mov  [eax],ebx
-         mov  ebx,[new_code_1]
-         mov  [eax+4],ebx
-
-         mov  eax,ecx  ; new data segments
-         shl  eax, 3
-
-         add  eax,gdts+ app_data-3
-
-         mov  ebx,[new_data_0]
-         mov  [eax],ebx
-         mov  ebx,[new_data_1]
-         mov  [eax+4],ebx
-
-         cmp  [new_pos],0   ; new memory position segments
-         je   no_new_postition_for_thread
-         mov  eax,ecx
-         shl  eax, 5
-         add  eax,0x3000
-         mov  ebx,[new_pos]
-         mov  [eax+0x10],ebx
-       no_new_postition_for_thread:
-
-         mov  eax,ecx       ; new amount of memory
-         shl  eax, 8
-         add  eax,0x80000
-         mov  ebx,[new_amount]
-         mov  [eax+0x8C],ebx
-
-       cftm1:
-
-         dec  ecx
-         jnz  cftm0
-
-         popa
-
-         ret
-
-
-save_for_thread_check:
-
-        ; save for thread check
-
-        pusha
-        mov    esi,[0x3000]
-        ;imul   esi,8
-        shl    esi, 3
-        add    esi,gdts+ app_code-3 +0
-        mov    edi,old_code_0
-        mov    ecx,8
-        cld
-        rep    movsb
-        popa
-
-        ret
-
-
-save_new_position_for_threads:
-
-        ; new code segment for thread check
-        pusha
-        mov    esi,[0x3000]
-        ;imul   esi,8
-        shl    esi, 3
-        add    esi,gdts+ app_code-3 +0
-        mov    edi,new_code_0
-        mov    ecx,8
-        cld
-        rep    movsb
-        popa
-
-        ; new data segment for thread check
-        pusha
-        mov    esi,[0x3000]
-        ;imul   esi,8
-        shl    esi, 3
-        add    esi,gdts+ app_data-3 +0
-        mov    edi,new_data_0
-        mov    ecx,8
-        cld
-        rep    movsb
-        popa
-
-        ret
 
 set_application_table_status:
         push eax
@@ -1247,325 +1042,15 @@ sys_resize_app_memory:
         ;     ebx = new amount of memory
 
         cmp    eax,1
-        jne    no_application_mem_resize
+        jne    .no_application_mem_resize
         
-        mov    eax,[0x3010]
-        cmp    dword [eax+0x10],std_application_base_address
-        jz     new_mem_resize ;resize for new type of processes
+        jmp    new_mem_resize ;resize for new type of processes
 
-        add    ebx,4095
-        shr    ebx,12
-        shl    ebx,12
-        mov    ebp,ebx
 
-        ; wait for process table to be free
-
-      rsm0:
-
-        cli
-        cmp   [application_table_status],0
-        je    rsm1
-        sti
-        call  change_task
-        jmp   rsm0
-
-      rsm1:
-
-        call  set_application_table_status
-        sti
-
-        cmp    ebx,0 ; other than zero
-        je     mem_resize_unsuccess
-
-        call   save_for_thread_check
-
-        ; find a free place
-
-        mov    esi,[0xfe84]  ; application memory start
-        mov    edi,ebp
-        add    edi,esi
-        dec    edi
-
-      rfgdt:
-
-        mov    edx,2
-
-      rfindgdtl1:
-
-        call   compare_to_thread
-        cmp    eax,1
-        je     rfindfl3
-
-        mov    ecx,edx
-        shl    ecx,3
-
-        ; eax run base -> ebx limit
-
-        mov    al,[ecx+gdts+ app_code-3 +4]
-        mov    ah,[ecx+gdts+ app_code-3 +7]
-        shl    eax,16
-        mov    ax,[ecx+gdts+ app_code-3 +2]
-        
-;!!mem
-        cmp    eax,std_application_base_address
-        jz     rfindfl3
-;!!mem
-
-        movzx  ebx,word [ecx+gdts+ app_code-3 +0]
-        shl    ebx,12
-        add    ebx,eax
-
-        cmp    eax,edi
-        jg     rfindfl3
-        cmp    ebx,esi
-        jb     rfindfl3
-
-        add    esi,4096
-        add    edi,4096
-
-        cmp    edi,[0xfe8c]        ; < c_memory
-        jbe    rfgdt
-
-        jmp    rfind_free_ret_2   ;; not enough memory
-
-      rfindfl3:
-
-        inc    edx
-        cmp    edx,[0x3004]
-        jbe    rfindgdtl1
-
-     rfindfl1:
-     rthread_c:
-
-        mov    ecx,[0x3000]
-        shl    ecx,3
-
-        inc    edi
-        sub    edi,esi
-        add    edi,4095
-        shr    edi,12
-        dec    edi
-
-        ; code
-
-        mov    eax,esi
-        mov    ebx,edi
-
-        mov    [ecx+gdts+ app_code-3 +2], ax              ;  base  0:15
-        shr    eax,16
-        mov    [ecx+gdts+ app_code-3 +4], al              ;  base  23:16
-        mov    [ecx+gdts+ app_code-3 +7], ah              ;  base  31:24
-        mov    [ecx+gdts+ app_code-3 +0], bx              ;  limit
-
-        ; data
-
-        mov    eax,esi
-        mov    [ecx+gdts+ app_data-3 +2], ax              ;  base  0:15
-        shr    eax,16
-        mov    [ecx+gdts+ app_data-3 +4], al              ;  base  23:16
-        mov    [ecx+gdts+ app_data-3 +7], ah              ;  base  31:24
-
-        movzx  edx,word [ecx+gdts+ app_code-3 +0]         ;  save limit
-
-        mov    [ecx+gdts+ app_data-3 +0], bx              ;  limit
-
-        and    ebx,0xffff
-
-        cmp    ebx,edx  ; copy smaller from memory sizes
-        jge    noedxebxxchg
-        mov    edx,ebx
-      noedxebxxchg:
-
-        movzx  ecx,dx
-        shl    ecx,12
-        add    ecx,4096
-
-        mov    edi,esi
-
-        mov    eax,[0x3010]
-        mov    esi,[eax+0x10]
-
-        mov    [eax+0x10],edi  ; new memory position
-
-        mov    eax,[0x3000]    ; new memory size
-        shl    eax,8
-        add    eax,0x80000
-        mov    [eax+0x8c],ebp
-
-        mov    [new_pos],edi    ; new position for threads
-        mov    [new_amount],ebp ; new amount of mem for threads
-
-        cmp    esi,edi
-        je     no_app_move
-
-        cld
-        rep    movsb           ; move the app image to the new position
-
-      no_app_move:
-
-        call   save_new_position_for_threads
-        call   check_for_thread_mem
-
-        mov    [application_table_status],0
-
-        mov    [esp+36],dword 0 ; eax <- 0 ; successfull
+     .no_application_mem_resize:
 
         ret
 
-     rfind_free_ret_2:
-
-     mem_resize_unsuccess:
-
-        mov    [application_table_status],0
-
-        mov    [esp+36],dword 1 ; eax <- 1 ; unsuccessfull
-
-        ret
-
-     no_application_mem_resize:
-
-
-        ret
-
-
-align 4
-find_free_mem:
-
-        push   eax
-        push   ebx
-        push   ecx
-        push   edx
-        push   edi
-
-        call   find_free_process_slot
-        mov    eax,[new_process_place]
-
-        cmp    eax,max_processes
-        jg     find_free_ret_2
-
-        cmp    [thread_create],1
-        je     thread_c
-
-        mov    esi,[0xfe84]
-        add    edi,esi
-        dec    edi
-
-        mov    eax,2
-        cmp    dword [0x3004],1
-        je     findf4
-
-     fgdt:
-
-        mov    edx,2
-
-      findgdtl1:
-
-        mov    ecx,edx
-        shl    ecx,3
-
-        ; eax run base -> ebx limit
-
-        mov    al,[ecx+gdts+ app_code-3 +4]
-        mov    ah,[ecx+gdts+ app_code-3 +7]
-        shl    eax,16
-        mov    ax,[ecx+gdts+ app_code-3 +2]
-;!!mem
-        cmp    eax,std_application_base_address
-        jz     findfl3
-;!!mem
-
-        movzx  ebx,word [ecx+gdts+ app_code-3 +0]
-        shl    ebx,12
-        add    ebx,eax
-
-        cmp    eax,edi
-        jg     findfl3
-        cmp    ebx,esi
-        jb     findfl3
-
-        add    esi,4096
-        add    edi,4096
-
-        cmp    edi,[0xfe8c]        ; < c_memory
-        jbe    fgdt
-
-        jmp    find_free_ret_2
-
-      findfl3:
-
-        inc    edx
-        cmp    edx,[check_processes]
-        jbe    findgdtl1
-
-     findfl1:
-     thread_c:
-
-         mov    eax,[new_process_place]
-
-     findf4:
-
-        mov    [first_gdt_search],eax
-        mov    [gdt_place],eax
-
-        mov    ecx,eax
-        shl    ecx,3
-
-        inc    edi
-        sub    edi,esi
-        add    edi,4095
-        shr    edi,12
-        dec    edi
-
-        ; code
-
-        mov    eax,esi
-        mov    ebx,edi
-
-        mov    [ecx+gdts+ app_code-3 +2], ax                   ;  base  0:15
-        shr    eax,16
-        mov    [ecx+gdts+ app_code-3 +4], al                   ;  base  23:16
-        mov    [ecx+gdts+ app_code-3 +7], ah                   ;  base  31:24
-        mov    [ecx+gdts+ app_code-3 +0], bx                   ;  limit
-        mov    [ecx+gdts+ app_code-3 +5], word 11010000b *256 +11111010b
-
-        ; data
-
-        mov    eax,esi
-        mov    [ecx+gdts+ app_data-3 +2], ax                   ;  base  0:15
-        shr    eax,16
-        mov    [ecx+gdts+ app_data-3 +4], al                   ;  base  23:16
-        mov    [ecx+gdts+ app_data-3 +7], ah                   ;  base  31:24
-        mov    [ecx+gdts+ app_data-3 +0], bx                   ;  limit
-        mov    [ecx+gdts+ app_data-3 +5], word 11010000b *256 +11110010b
-
-        push   esi
-        mov    esi,process_loading
-        call   sys_msg_board_str
-        pop    esi
-
-      find_free_ret:
-
-        pop    edi
-        pop    edx
-        pop    ecx
-        pop    ebx
-        pop    eax
-        ret
-
-      find_free_ret_2:
-
-        cmp    [dec3004],0
-        je     no3004inc
-        dec    dword [0x3004]
-      no3004inc:
-
-        pop    edi
-        pop    edx
-        pop    ecx
-        pop    ebx
-        pop    eax
-        mov    esi,0
-        ret
 
 
 get_app_params:
@@ -1636,10 +1121,10 @@ start_application_hd:
     jmp   new_start_application_hd
 
 uglobal
-  threadstring       dd  0x0
+  ;threadstring       dd  0x0
   new_process_place  dd  0x0
-  check_processes    dd  0x0
-  dec3004            db  0x0
+  ;check_processes    dd  0x0
+  ;dec3004            db  0x0
   app_start    dd  0x0
   app_i_end    dd  0x0
   app_mem      dd  0x0
@@ -1647,8 +1132,8 @@ uglobal
   app_i_param  dd  0x0
   app_i_icon   dd  0x0
   app_mem_pos  dd  0x0
-  thread_create    dd 0x0
-  gdt_place        dd 0x0
+  ;thread_create    dd 0x0
+  ;gdt_place        dd 0x0
 endg
 
 iglobal
@@ -1668,289 +1153,8 @@ sys_threads:
 ;
 ; on return : eax = pid
 jmp new_sys_threads
-    cli
-    cmp   [application_table_status],0
-    je    stth9
-    sti
-    call  change_task
-    jmp   sys_threads
-  stth9:
-
-    call  set_application_table_status
-
-    sti
-
-    cmp  eax,1
-    jne  no_sys_thread_create
-    cli
-
-    mov  eax,[0x3010]
-    mov  eax,[eax+0x10]
-    mov  [app_mem_pos],eax
-
-    mov  [app_i_param],0
-    mov  [app_i_icon],0
-
-    mov  [app_start],ebx
-    mov  [app_esp],ecx
-
-    mov  ebx,[0x3000]
-    shl  ebx,8
-    add  ebx,0x80000
-    mov  [threadstring],ebx
-    mov  ebx,[ebx+0x8c]
-    mov  [app_mem],ebx
-
-    mov  esi,[app_mem_pos]
-    mov  edi,[app_mem]
-    add  edi,esi
-    dec  edi
-    mov  [thread_create],1
-    call find_free_mem
-    cmp  esi,0
-    jne  th_cr1
-    mov  [application_table_status],0
-    mov  eax,1   ; no free memory
-    sti
-    ret
-  th_cr1:
-    push dword 0
-    push dword [threadstring]
-    jmp  add_app_parameters
-  no_sys_thread_create:
-
-    mov  eax,-1
-    mov  [application_table_status],0
-    ret
 
 
-find_free_process_slot:
-
-    pusha
-
-    mov   ebx,[0x3004]
-    mov   [check_processes],ebx
-    inc   ebx
-    mov   [new_process_place],ebx
-
-    mov   ebx,2
-
-  newfps:
-
-    mov   eax,ebx
-    ;imul  eax,0x20
-    shl   eax, 5
-    add   eax,0x3000+0xa
-    cmp   [eax],byte 9
-    je    ffpl
-
-    inc   ebx
-    cmp   ebx,[0x3004]
-    jbe   newfps
-
-    ;mov   [dec3004],0
-    mov   [dec3004],1
-    shl   ebx,5
-    mov   [0x3000+0xa+ebx],byte 9
-    inc   dword [0x3004]
-
-    popa
-    ret
-
-  ffpl:
-
-    ;mov   [dec3004],1
-    ;dec   dword [0x3004]
-    mov   [dec3004],0
-    mov   [new_process_place],ebx
-
-    popa
-    ret
-
-
-add_app_parameters:
-; returns:  eax = pid or -1 if unsuccesfull
-    cmp   [app_i_param],dword 0     ; parameter
-    jz    no_app_params
-    xor   eax, eax
-    mov   edi,[app_i_param]
-    add   edi,[app_mem_pos]
-    mov   ecx,256/4
-    cld
-    rep   stosd
-    mov   esi,[esp+4]
-    test  esi, esi
-    jz    no_app_params
-    mov   eax,[app_i_param]
-    add   eax,[app_mem_pos]
-    mov   edi,eax
-    mov   ecx,256
-    cld
-  app_new_param:
-    cmp   [esi],byte 0
-    jz    no_app_params
-    movsb
-    loop  app_new_param
-  no_app_params:
-
-    ;inc   dword [0x3004]            ; increase number of processes
-    mov   ebx,[new_process_place]
-
-    mov   edi,ebx                   ; clear 0x80000 (256 bytes)
-    shl   edi,8
-    add   edi,0x80000
-    mov   ecx,256 / 4
-    mov   eax,0
-    cld
-    rep   stosd
-
-    shl   ebx,5                     ; * 32 +0x3000
-    add   ebx,0x3000
-
-    mov   al,byte [new_process_place] ; screen id ?
-    mov   [ebx+0xe],al
-
-    mov   [ebx],dword 1+2+4         ; report events: windowdraw, key, button
-
-    inc   dword [process_number]    ; process id number
-    mov   eax,[process_number]
-    mov   [ebx+4],eax
-
-    mov   ecx,ebx                   ; set draw limits
-    add   ecx,draw_data-0x3000
-    mov   [ecx+0],dword 0
-    mov   [ecx+4],dword 0
-    mov   eax,[0xfe00]
-    mov   [ecx+8],eax
-    mov   eax,[0xfe04]
-    mov   [ecx+12],eax
-
-    mov   eax,[app_mem_pos]        ; position in memory
-    mov   [ebx+0x10],eax
-
-    ; TSS
-    xor   ebx,ebx
-    cmp   [thread_create],ebx
-    jnz   clone_cr3_table
-    mov   eax,[new_process_place]
-    call  create_app_cr3_table
-    jmp   set_cr3
-clone_cr3_table:
-;    mov   eax,[new_process_place]
-;    mov   ebx,[0x3000]
-;    call  addreference_app_cr3_table
-    mov   eax,[0x3000]
-    call  get_cr3_table
-set_cr3:
-    add   eax,8+16
-    mov   [l.cr3],eax
-    
-    mov   eax,[app_start]
-    mov   [l.eip],eax
-    mov   eax,[app_esp]
-    mov   [l.esp],eax
-
-    mov   ebx,[new_process_place]              ; gdt's
-    shl   ebx,3
-
-    mov   ax,app_code
-    add   ax,bx
-    mov   [l.cs],ax
-    mov   ax,app_data
-    add   ax,bx
-    mov   [l.ss],ax
-    mov   [l.ds],ax
-    mov   [l.es],ax
-    mov   [l.fs],ax
-    mov   ax,graph_data
-    mov   [l.gs],ax
-    mov   [l.io],word 128
-    mov   [l.eflags],dword 0x11202
-    mov   [l.ss0], os_data
-    ;mov   [l.ss1], ring1_data
-    ;mov   [l.ss2], ring2_data
-    ; [Ivan 07.03.2005]
-    mov   [l.esp0], 0x8000 ;0x55000 ; used by i38 handler
-    ; [/Ivan 07.03.2005]
-    mov   [l.esp1], 0x56000
-    mov   [l.esp2], 0x57000
-
-    mov   eax,tss_sceleton          ; move tss to tss_data+
-    mov   ebx,[new_process_place]
-    imul  ebx,tss_step
-    add   ebx,tss_data
-    mov   ecx,120
-    call  memmove
-
-
-    ; Add IO access table
-
-    or   eax, -1
-    mov  edi, [new_process_place]
-    imul edi, tss_step
-    add  edi, tss_data + 128
-    mov  ecx, 2048 ; for 2048 * 4 * 8 bits = 65536 ports
-    cld
-    rep  stosd
-
-    ; make sure gdt is pointing to the process
-    ; and not to i40 handler
-
-    mov   ecx,ebx
-    mov   edi,[new_process_place]
-;    imul  edi,8
-    shl   edi, 3
-
-    mov   [edi+gdts+ tss0 +0], word tss_step     ; limit 0:15
-    mov   [edi+gdts+ tss0 +2], cx                ; base  0:15
-    mov   eax,ecx
-    shr   eax,16
-    mov   [edi+gdts+ tss0 +4], al                ; base  23:16
-    mov   [edi+gdts+ tss0 +7], ah                ; base  31:24
-    mov   [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-
-    pop   eax
-    pop   ebx
-
-    mov   ebx,[new_process_place]              ; save name of the process
-    shl   ebx,8
-    add   ebx,0x80000
-    mov   ecx,11
-    call  memmove
-
-    mov   ebx,[new_process_place]              ; save image size
-    shl   ebx,8
-    add   ebx,0x80000+0x8C
-    mov   eax,[app_mem]
-    mov   [ebx],eax
-
-    mov   [0xf400],byte 0           ; empty keyboard buffer
-    mov   [0xf500],byte 0           ; empty button buffer
-
-    mov   [application_table_status],0
-    mov   eax,[process_number]
-
-    mov   ebx,[new_process_place]
-    shl   ebx, 5 ;imul  ebx,0x20
-    mov   [0x3000+ebx+0xa],byte 0
-
-    mov   edi,[new_process_place]
-    shl   edi,5
-    add   edi,window_data
-
-    mov   ebx,[new_process_place]
-    movzx  esi, word [0xC000 + ebx*2]
-    lea    esi, [0xC400 + esi*2]
-    call   windowactivate
-
-    sti
-
-    push   esi
-    mov    esi,process_running
-    call   sys_msg_board_str
-    pop    esi
-
-    ret
 
 iglobal
   process_terminating   db 'K : Process - terminating',13,10,0
@@ -1992,47 +1196,18 @@ terminate: ; terminate application
     mov   [0xf400],byte 0           ; empty keyboard buffer
     mov   [0xf500],byte 0           ; empty button buffer
 
-    mov   ecx,esi                               ; clear memory reserv.
-    shl   ecx,3
-    mov   [ecx+gdts+ app_code-3 +0],dword 0
-    mov   [ecx+gdts+ app_code-3 +4],dword 0
-    mov   [ecx+gdts+ app_data-3 +0],dword 0
-    mov   [ecx+gdts+ app_data-3 +4],dword 0
+;    mov   ecx,esi                               ; clear memory reserv.
+;    shl   ecx,3
+;    mov   [ecx+gdts+ app_code-3 +0],dword 0
+;    mov   [ecx+gdts+ app_code-3 +4],dword 0
+;    mov   [ecx+gdts+ app_data-3 +0],dword 0
+;    mov   [ecx+gdts+ app_data-3 +4],dword 0
 
     mov   edi, esi
-;    shl   edi, 5
-;    add   edi, 0x3000
-;    cmp   [edi+0xa],byte 3  ; if normal terminate then clear int40 handler
-;    jne   nocl40
 
-;    mov   edi,esi   ; free the used interrupt 0x40 handler
-;    shl   edi, 8 ;imul  edi,256
-;    mov   eax,[edi+0x80000+0xb0]
-
-;    cmp   eax,0     ; is application using a systemcall interrupt  ?
-;    je    nocl40
 
     mov   [usedi40+eax],byte 0
 
-;    mov   edi,8
-;    imul  edi,eax
-    mov   edi, eax
-    shl   edi, 3
-    mov   [edi+tss0sys_l +5], word 01010000b *256 +11101001b
-
-;    mov   edi,128
-;    imul  edi,eax
-    mov   edi, eax
-    shl   edi, 7
-    mov   [edi+0x298000+l.eip-tss_sceleton],dword i40
-    mov   [edi+0x298000+l.eflags-tss_sceleton],dword 0x11002
-
-    mov   ebx,eax
-    shl   ebx, 12 ;imul  ebx,4096
-    add   ebx,sysint_stack_data
-    mov   [edi+0x298000+l.esp-tss_sceleton],ebx
-
-  nocl40:
 
     mov   ecx,esi                 ; remove buttons
   bnewba2:
@@ -2146,12 +1321,6 @@ terminate: ; terminate application
     mov   [0xC400 + ecx*2], si
     jmp   nlc40
   nlc41:
- ; ivan 08.12.2004 begin
-    ;mov   ebx, [0x3004]
-    ;dec   ebx
-    ;lea   esi, [0xC400 + ebx*2]
-    ;call  windowactivate
- ; ivan 08.12.2004 end
     popa
 
     pusha ; remove hd1 reservation

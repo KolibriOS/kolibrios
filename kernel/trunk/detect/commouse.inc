@@ -9,12 +9,6 @@
 
 MSMouseSearch:
         pusha
-; Запретить прерывание COM1 и COM2
-        cli
-        in      AL,21h  ;прочитать маску прерываний
-        or      AL,18h  ;запретить IRQ3 и IRQ4
-        out     21h,AL  ;заменить маску
-        sti
 ; ПОИСК МЫШИ ЧЕРЕЗ COM-ПОРТЫ
 MouseSearch:
         ; Устанавливаем скорость

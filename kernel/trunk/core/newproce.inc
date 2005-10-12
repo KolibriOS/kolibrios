@@ -50,7 +50,12 @@ find_new_process_place:
     pop    ebx
     ret
 ;-----------------------------------------------------------------------------
-
+safe_sti:
+    cmp    byte [0xe000], 1
+    jne    @f
+    sti
+ @@:ret
+ 
 new_start_application_floppy:
 ;input:
 ;  eax - pointer to filename
@@ -230,7 +235,7 @@ new_start_application_fl:
     push   ebx
     push   eax
     call   find_new_process_place ;find empty process slot 
-    sti
+    call   safe_sti
     test   eax,eax
     jz     .failed
 
@@ -257,7 +262,7 @@ new_start_application_fl:
     mov    esi,12                ;file name length
     cli
     call   fileread              ;read file from RD
-    sti
+    call   safe_sti
     cmp    eax,0
     jne    .cleanfailed
 ;check MENUET signature    
@@ -308,7 +313,7 @@ new_start_application_fl:
     cli
     call   fileread
 ;ebx=file size    
-    sti
+    call   safe_sti
     pop    ecx
     shr    ebx,9
     cmp    ecx,ebx
@@ -343,7 +348,7 @@ new_start_application_fl:
     add    esp,8
     mov    [application_table_status],0
     popad
-    sti
+    call   safe_sti
     mov    eax,-1
     ret
         
@@ -439,13 +444,13 @@ new_start_application_fl:
     mov    [l.esp],eax           ;set stack in TSS
     
 ;gdt
-    mov    ebx,[new_process_place]
-    shl    ebx,3
+    ;mov    ebx,[new_process_place]
+    ;shl    ebx,3
     mov    ax,app_code           ;ax - selector of code segment
-    add    ax,bx
+    ;add    ax,bx
     mov    [l.cs],ax
     mov    ax,app_data
-    add    ax,bx                 ;ax - selector of data segment
+    ;add    ax,bx                 ;ax - selector of data segment
     mov    [l.ss],ax
     mov    [l.ds],ax
     mov    [l.es],ax
@@ -455,11 +460,10 @@ new_start_application_fl:
     mov    [l.io],word 128
     mov    [l.eflags],dword 0x11202
     mov    [l.ss0],os_data
-    shl    ebx,9
+    mov    ebx,[new_process_place]
+    shl    ebx,12
     add    ebx,sysint_stack_data
     mov    [l.esp0],ebx
-;    mov    [l.esp1],0x56000
-;    mov    [l.esp2],0x57000
 
 ;copy tss to it place
     mov    eax,tss_sceleton
@@ -489,28 +493,6 @@ new_start_application_fl:
     mov    [edi+gdts+tss0+4],al  ;part of offset
     mov    [edi+gdts+tss0+7],ah  ;part of offset
     mov    [edi+gdts+tss0+5],word 01010000b*256+11101001b ;system flags
-    
-;set code and data segments
-    mov    eax,[new_process_place]
-    shl    eax,3
-;set base address of code segment
-    mov    word [eax+gdts+app_code-3+2],0
-    mov    byte [eax+gdts+app_code-3+4],0
-    mov    byte [eax+gdts+app_code-3+7],std_application_base_address shr 24
-;set limit of code segment
-;    mov    ebx,[app_mem]
-;    add    ebx,4095
-;    shr    ebx,12
-    mov    ebx,(0x80000000-std_application_base_address) shr 12
-    mov    [eax+gdts+app_code-3+0],bx 
-    mov    [eax+gdts+app_code-3+5],word 11010000b*256+11111010b+256*((0x80000000-std_application_base_address) shr 28) 
-;set base address of data segment
-    mov    word [eax+gdts+app_data-3+2],0
-    mov    byte [eax+gdts+app_data-3+4],0
-    mov    byte [eax+gdts+app_data-3+7],std_application_base_address shr 24
-;set limit of data segment
-    mov    [eax+gdts+app_data-3+0],bx
-    mov    [eax+gdts+app_data-3+5],word 11010000b*256+11110010b+256*((0x80000000-std_application_base_address) shr 28)
      
 
 ;flush keyboard and buttons queue
@@ -536,7 +518,7 @@ new_start_application_fl:
 ;    popad
     mov    eax,[process_number]  ;set result
     mov    [application_table_status],0 ;unlock application_table_status mutex
-    sti
+    call   safe_sti
     ret    4
 ;-----------------------------------------------------------------------------    
 new_sys_threads:

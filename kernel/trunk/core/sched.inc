@@ -62,7 +62,6 @@ irq0:
 
       .waiting_for_termination:
       .waiting_for_reuse:
-      .waiting_on_queue:
         add   edi,0x20
         inc   ebx
 
@@ -73,10 +72,6 @@ irq0:
         je    .waiting_for_termination
         cmp   al, 9
         je    .waiting_for_reuse
-        cmp   al, 16
-        je    .waiting_on_queue
-        cmp   al, 17
-        je    .waiting_on_queue
 
         cmp   ebx,[0x3004]
         jbe   nsched0
@@ -90,8 +85,8 @@ irq0:
 
       do_not_change_task:
 
-        mov   edx,[0x3000]
-        lea   edx,[tss0sys+8*edx]
+        ;mov   edx,[0x3000]
+        ;lea   edx,[tss0sys+8*edx]
         ;mov   [8*0x40+idts+8+0], word 0
         ;mov   [8*0x40+idts+8+2],dx
         ;mov   [8*0x40+idts+8+4],word 11100101b*256
@@ -155,132 +150,3 @@ updatecputimes:
         jnz  .newupdate
 
         ret
-
-
-
-;
-; Wait queue is 16 bytes
-; dd return code                +12
-; dd pointer to process         +8
-; dd prev                       +4
-; dd next                       +0
-;
-; eax - pointer to pointer to the wait queue
-; return:
-; ecx - return code
-sleep_on_queue:
-    sub esp,16          ; reserve space for wait node
-    mov ecx,esp         ; ecx=this_node, [eax]=queue
-
-    pusha
-
-    mov ebx,[0x3010]    ; get pointer to the current process
-    mov [ecx+8],ebx
-
-    pushf
-    cli                 ; adding element to the wait queue must be atomic
-
-    mov edi,[eax]       ; edi=queue
-    and edi,edi         ; check if queue is empty
-    jz .is_empty
-
-    ; add element at the end of wait queue
-
-    mov edx,[edi+4]     ; get pointer to prev edx=queue->prev
-    mov [ecx+4],edx     ; this_node->prev=queue->prev
-    mov [ecx+0],edi     ; this_node->next=queue
-    mov [edx+0],ecx     ; this_node->prev->next=this_node
-    mov [edi+4],ecx     ; queue->prev=this_node
-    jmp .added_ok
-.is_empty:
-    ; set this element as first in the queue
-    mov [ecx+0],ecx     ; this_node->next=this_node
-    mov [ecx+4],ecx     ; this_node->prev=this_node
-    mov [eax],ecx       ; [queue]=this_node
-.added_ok:
-
-    popf                ; we can safely restore interrupts
-
-    mov [ebx+0xa],byte 17 ; set current task state as sleeping
-    call change_task    ; schedule new thread
-
-    ; someone has called wake_up_queue
-
-    pushf               ; disable interrupts
-    cli
-
-    mov edx,[ecx+0]     ; edx=this_node->next
-    mov esi,[ecx+4]     ; esi=this_node->prev
-
-    ; check if we need to remove this node from head
-    cmp [eax],ecx
-    jne .no_head
-
-    cmp [ecx+0],ecx ; check if queue is empty
-    jne .not_empty
-
-    mov [eax],dword 0
-    jmp .no_head
-
-.not_empty:
-    mov [eax],edx
-
-    ; remove our node from the queue (this must be atomic)
-.no_head:
-    mov [edx+4],esi     ; this_node->next->prev=this_node->prev
-    mov [esi+0],edx     ; this_node->prev->next=this_node->next
-
-    popf
-    popa
-    add esp,12
-    pop ecx
-    ret
-
-; eax - pointer to the wait queue
-; ebx - wake up all (1=yes, 0=no)
-; ecx - return code
-; return:
-; ebx - number of processes woken
-wake_up_queue:
-    and eax,eax
-    jnz .nz
-    ret
-.nz:
-    push eax
-    push ebx
-    push ecx
-    push edx
-    push esi
-
-    pushf
-    cli
-
-    xor ebx,ebx
-    mov edx,eax
-.wake_loop:
-
-    mov [edx+12],ecx
-    mov esi,[edx+8]
-    mov byte [esi+0xa],0
-    inc ebx
-
-    mov edx,[edx+0]
-    cmp edx,eax
-    jne .wake_loop
-
-    and ebx,ebx
-    jz .wake_up_1
-
-.return_it:
-    popf
-    pop esi
-    pop edx
-    pop ecx
-    add esp,4
-    pop eax
-    ret
-.wake_up_1:
-    mov [eax+12],ecx
-    mov ecx,[eax+8]
-    mov byte [ecx+0xa],0
-    jmp .return_it
