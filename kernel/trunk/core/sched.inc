@@ -5,22 +5,12 @@ label  timer_ticks         dword   at  0xFDF0
 ;; IRQ0 HANDLER (TIMER INTERRUPT) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+
 align 32
 irq0:
-
         cmp   [error_interrupt],-1
         je    no_error_in_previous_process
-
-        mov   edi,[error_interrupt]
-        shl   edi, 3
-        mov   [edi+tss0i_l +5], word 01010000b *256 +11101001b
-
-        mov   edi,[error_interrupt]
-        shl   edi,7
-        add   edi,0x290000
-        mov   esi,[error_interrupt_entry]
-        mov   [edi+l.eip-tss_sceleton],esi
-        mov   [edi+l.eflags-tss_sceleton],dword 0x11002
 
         mov   [0xffff],byte 0
 
@@ -85,13 +75,6 @@ irq0:
 
       do_not_change_task:
 
-        ;mov   edx,[0x3000]
-        ;lea   edx,[tss0sys+8*edx]
-        ;mov   [8*0x40+idts+8+0], word 0
-        ;mov   [8*0x40+idts+8+2],dx
-        ;mov   [8*0x40+idts+8+4],word 11100101b*256
-        ;mov   [8*0x40+idts+8+6], word 0
-
         call  _rdtsc
         mov   [edi+0x18],eax
 
@@ -113,6 +96,7 @@ irq0:
 .switch:
         jmp   pword [0xB000]
         inc [context_counter] ;noname & halyavin
+        
         jmp   irq0
 
 iglobal

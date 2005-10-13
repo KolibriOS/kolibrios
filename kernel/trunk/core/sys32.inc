@@ -68,7 +68,6 @@ gdte:
 
 
 
-; <IP 05.02.2005>
 idtreg:
      dw   8*0x41-1
      dd   idts+8
@@ -76,19 +75,7 @@ idtreg:
 label idts at 0xB100-8
 ;idte = idts + 8 + 0x60
 
-; </IP> ; old code below:
 
-
-;align 32
-
-;idts:
-;      dw  idte-$-1
-;      dd  idts+8
-;      dw  0
-
-;      times 0x62 dd 0,0
-
-;idte:
 
 build_process_gdt_tss_pointer:
 
@@ -177,44 +164,32 @@ build_interrupt_table:
 
         mov    edi,0
         mov    edx,tss0i
-      setidtl2:
+     @@:
         mov    [edi+idts+ 8 +0], word 0
         mov    [edi+idts+ 8 +2], dx
         mov    [edi+idts+ 8 +4], word 10000101b*256 ; task gate DPL=0
-;        cmp    edi,0x40*8
-;        jne    no_sw_int
-;        mov    [edi+idts+ 8 +4], word 11100101b*256 ; task gate DPL=3
-;      no_sw_int:
         mov    [edi+idts+ 8 +6], word 0
         add    edx,8
         add    edi,8
 
-        cmp    edi,8*0x40 ;0x60
-        jbe    setidtl2 ;jb
-
-; <Ivan Poddubny 06.02.2005>
-; THIS CODE WON'T WORK ;-(
-; because each process's 0-level stack points to the same area
-; and if task switch occurs and another process is being interrupted
-; a stack overflow happens
-; The only way to solve that problem is to disable interrupts
-; while 0x40-handler is working
-; Then we have to make all entries in the IDT INTERRUPT gates, not TASK
-;        mov    edi, idts+8
-;        mov    esi, sys_int
-;        mov    ecx, 32
-;     @@:
-;        mov    eax, [esi]
-;        mov    [edi],   ax           ; lower part of offset
-;        mov    [edi+2], word os_code ; segment selector
-;        shr    eax, 16
-;        mov    [edi+4], word 10001110b shl 8 ; interrupt descriptor
-;        mov    [edi+6], ax
-;        add    esi, 4
-;        add    edi, 8
-;        dec    ecx
-;        jnz    @b
-; </Ivan Poddubny>
+        cmp    edi,8*0x40
+        jb     @b
+        
+    ; Exceptions
+        mov    edi, idts+8
+        mov    esi, sys_int
+        mov    ecx, 32
+     @@:
+        mov    eax, [esi]
+        mov    [edi],   ax           ; lower part of offset
+        mov    [edi+2], word os_code ; segment selector
+        shr    eax, 16
+        mov    [edi+4], word 10001110b shl 8 ; interrupt descriptor
+        mov    [edi+6], ax
+        add    esi, 4
+        add    edi, 8
+        dec    ecx
+        jnz    @b
 
         ret
 
@@ -229,32 +204,6 @@ build_syscall_interrupt_table:
 
         ret
 
-
-align 4
-i38:
-        ; load data selectors
-        pushfd
-        push    ds es
-        push    eax
-        mov     ax, os_data
-        mov     ds, ax
-        mov     es, ax
-        pop     eax
-
-        pushad
-        push    edi
-        mov     edi, eax
-        mov     eax, ebx
-        mov     ebx, ecx
-        mov     ecx, edx
-        mov     esi, [esp]
-        and     edi, 0xFF
-        call    dword [servetable+edi*4]
-        add     esp, 4
-        popad
-        pop     es ds
-        popfd
-iret
 
 
 iglobal
@@ -311,7 +260,9 @@ uglobal
 endg
 
 s0:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x0
         mov   [error_interrupt_entry],dword s0
@@ -325,7 +276,9 @@ s0:
 
 
 s1:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x1
         mov   [error_interrupt_entry],dword s1
@@ -338,7 +291,9 @@ s1:
         jmp   change_task
 
 s2:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x2
         mov   [error_interrupt_entry],dword s2
@@ -351,7 +306,9 @@ s2:
         jmp   change_task
 
 s3:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x3
         mov   [error_interrupt_entry],dword s3
@@ -364,7 +321,9 @@ s3:
         jmp   change_task
 
 s4:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x4
         mov   [error_interrupt_entry],dword s4
@@ -377,7 +336,9 @@ s4:
         jmp   change_task
 
 s5:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x5
         mov   [error_interrupt_entry],dword s5
@@ -390,7 +351,9 @@ s5:
         jmp   change_task
 
 s6:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x6
         mov   [error_interrupt_entry],dword s6
@@ -409,54 +372,45 @@ s6:
 
 align 4
 s7:
-        ; <IP 05.02.2004>
-        cli
-        ; </IP>
-        mov    edi, 7*8
-        mov    [edi+gdts+ tss0i +5], word 01010000b *256 +11101001b
+        clts
+          
+        push  eax
+        push  ds es
+        
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
+        
+        mov   eax, [prev_user_of_fpu]
+        shl   eax, 8
+        add   eax, 0x80000 + 0x10
+        fsave [eax]
+        
+        mov   eax, [0x3000]
+        mov   [prev_user_of_fpu], eax
+        shl   eax, 8
+        add   eax, 0x80000
+        cmp   [eax + 0x7f], byte 0
+        je    @f
+        frstor [eax+0x10]
+     @@:
+        mov   [eax + 0x7f], byte 1
+        
+        pop   es ds
+        pop   eax
+        
+        iret
+        
+iglobal
+  prev_user_of_fpu dd 1
+endg
 
-        mov    edi,[0x3000]
-        shl    edi, 3
-        mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-
-
-        ; save a copy of current task's TSS to fpu_tss
-        mov    esi,[0x3000]
-        imul   esi,tss_step
-        add    esi,tss_data
-        mov    edi,fpu_tss
-        mov    ecx,120/4
-        cld
-        rep    movsd
-
-        ; get base address of our TSS and...
-        mov    esi,[0x3000]
-        imul   esi,tss_step
-        add    esi,tss_data
-
-        ; ...init segments, stack, eip, flags
-        mov    word [esi+l.cs-tss_sceleton],int_code
-        mov    word [esi+l.ss-tss_sceleton],int_data
-        mov    word [esi+l.ds-tss_sceleton],int_data
-        mov    word [esi+l.es-tss_sceleton],int_data
-        mov    word [esi+l.fs-tss_sceleton],int_data
-        mov    word [esi+l.gs-tss_sceleton],int_data
-        mov    dword [esi+l.esp-tss_sceleton],fpu_stack+4*8
-        mov    dword [esi+l.eip-tss_sceleton],fpu_handler
-        mov    dword [esi+l.eflags-tss_sceleton],0x11002
-
-        ; then execute this task
-        mov    ebx, [0x3000]
-        shl    ebx,3
-        add    ebx, tss0 ;t
-        mov    [0xB004], bx
-
-        jmp    pword [0xB000]
-
-        jmp    s7
 
 s8:
-        cli
+        add   esp, 4 ; zero on the stack!
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x8
         mov   [error_interrupt_entry],dword s8
@@ -469,7 +423,9 @@ s8:
         jmp   change_task
 
 s9:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x9
         mov   [error_interrupt_entry],dword s9
@@ -481,8 +437,12 @@ s9:
 
         jmp   change_task
 
+; Invalid TSS
 sa:
-        cli
+        add   esp, 4 ; error code
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0xa
         mov   [error_interrupt_entry],dword sa
@@ -494,8 +454,12 @@ sa:
 
         jmp   change_task
 
+; Segment not present
 sb:
-        cli
+	add   esp, 4
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0xb
         mov   [error_interrupt_entry],dword sb
@@ -507,8 +471,12 @@ sb:
 
         jmp   change_task
 
+; Stack fault exception
 sc:
-        cli
+	add   esp, 4
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0xc
         mov   [error_interrupt_entry],dword sc
@@ -520,8 +488,12 @@ sc:
 
         jmp   change_task
 
+; General Protection Fault
 sd:
-        cli
+	add   esp, 4
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0xd
         mov   [error_interrupt_entry],dword sd
@@ -533,8 +505,12 @@ sd:
 
         jmp   change_task
 
+; Page-Fault Exception
 se:
-        cli
+	add   esp, 4
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0xe
         mov   [error_interrupt_entry],dword se
@@ -546,8 +522,11 @@ se:
 
         jmp   change_task
 
+; ??
 sf:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0xf
         mov   [error_interrupt_entry],dword sf
@@ -559,8 +538,11 @@ sf:
 
         jmp   change_task
 
+; x87 FPU Floating-Point Error
 s10:
-        cli
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x10
         mov   [error_interrupt_entry],dword s10
@@ -572,8 +554,12 @@ s10:
 
         jmp   change_task
 
+; Alignment Check Exception
 s11:
-        cli
+	add   esp, 4
+        mov   ax, os_data
+        mov   ds, ax
+        mov   es, ax
 
         mov   [error_interrupt],0x11
         mov   [error_interrupt_entry],dword s11
@@ -584,6 +570,9 @@ s11:
         mov   [edx+0xa],byte 4
 
         jmp   change_task
+
+
+
 
 writehex:
 
@@ -679,46 +668,9 @@ show_error_parameters:
         jmp    .out_eip        
 
 
-irq5:
 
-     call   restore_caller
 
-     mov    dx,word [sb16]
-     add    dx,0xe
-     in     al,dx
-
-;     mov    byte [SB16_Status],0
-
-     mov    [check_idle_semaphore],5
-
-     mov    al,0x20
-     out    0x20,al
-
-     call  return_to_caller
-
-     jmp   irq5
-
-irqD:
-
-     call   restore_caller
-
-     mov   dx,0xf0
-     mov   al,0
-     out   dx,al
-
-     mov   dx,0xa0
-     mov   al,0x20
-     out   dx,al
-     mov   dx,0x20
-     out   dx,al
-
-     mov   ds,cx
-     mov   es,cx
-     mov   fs,cx
-
-     call  return_to_caller
-
-     jmp   irqD
+; irq1  ->  hid/keyboard.inc
 
 p_irq2:
 
@@ -843,16 +795,23 @@ p_irq12:
 
       jmp   p_irq12
 
-p_irq13:
+irqD:
+     call   restore_caller
 
-     call  restore_caller
+     mov   dx,0xf0
+     mov   al,0
+     out   dx,al
 
-     mov   edi,13
-     call  irqhandler
+     mov   dx,0xa0
+     mov   al,0x20
+     out   dx,al
+     mov   dx,0x20
+     out   dx,al
 
      call  return_to_caller
 
-     jmp   p_irq13
+     jmp   irqD
+     
 
 p_irq14:
 
@@ -977,11 +936,9 @@ irqhandler:
      ret
 
 
-; this code should never get control!
-; applications can use only 0x40 interrupt
+; simply return control to interrupted process
 unknown_interrupt:
- @@: call   change_task
-     jmp    @b
+     iret
 
 
 
@@ -1020,21 +977,6 @@ clear_application_table_status:
 
         ret
 
-uglobal
-  old_code_0 dd 0x0
-  old_code_1 dd 0x0
-
-  ;
-
-  new_code_0 dd 0x0
-  new_code_1 dd 0x0
-
-  new_data_0 dd 0x0
-  new_data_1 dd 0x0
-
-  new_pos    dd 0x0
-  new_amount dd 0x0
-endg
 
 
 sys_resize_app_memory:
@@ -1121,10 +1063,7 @@ start_application_hd:
     jmp   new_start_application_hd
 
 uglobal
-  ;threadstring       dd  0x0
   new_process_place  dd  0x0
-  ;check_processes    dd  0x0
-  ;dec3004            db  0x0
   app_start    dd  0x0
   app_i_end    dd  0x0
   app_mem      dd  0x0
@@ -1132,8 +1071,6 @@ uglobal
   app_i_param  dd  0x0
   app_i_icon   dd  0x0
   app_mem_pos  dd  0x0
-  ;thread_create    dd 0x0
-  ;gdt_place        dd 0x0
   appl_path        dd 0x0
   appl_path_size   dd 0x0         
 endg
@@ -1186,8 +1123,6 @@ terminate: ; terminate application
     mov    eax,esi
     call   dispose_app_cr3_table
 
-    mov   [first_gdt_search],0x2   ; start gdt search from beginning
-
     cmp   [prev_user_of_fpu],esi   ; if user fpu last -> fpu user = 1
     jne   fpu_ok_1
     mov   [prev_user_of_fpu],1
@@ -1195,18 +1130,6 @@ terminate: ; terminate application
 
     mov   [0xf400],byte 0           ; empty keyboard buffer
     mov   [0xf500],byte 0           ; empty button buffer
-
-;    mov   ecx,esi                               ; clear memory reserv.
-;    shl   ecx,3
-;    mov   [ecx+gdts+ app_code-3 +0],dword 0
-;    mov   [ecx+gdts+ app_code-3 +4],dword 0
-;    mov   [ecx+gdts+ app_data-3 +0],dword 0
-;    mov   [ecx+gdts+ app_data-3 +4],dword 0
-
-    mov   edi, esi
-
-
-    mov   [usedi40+eax],byte 0
 
 
     mov   ecx,esi                 ; remove buttons
@@ -1398,8 +1321,7 @@ terminate: ; terminate application
 
     popa
     mov  edi,esi         ; do not run this process slot
-    shl  edi, 5 ;imul edi,0x20
-;    add  edi,0x3000
+    shl  edi, 5
     mov  [edi+0x300A],byte 9
 ;    call  systest
     sti  ; .. and life goes on
@@ -1443,12 +1365,6 @@ endg
 
 
 build_scheduler:
-      ; { Ivan 06.03.2005
-        mov    edi, usedi40
-        mov    ecx, 256/4
-        xor    eax, eax
-        rep    stosd
-      ; } Ivan 06.03.2005
 
         mov    esi,boot_sched_1
         call   boot_log

@@ -4,8 +4,9 @@
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 uglobal
-  task_tss rd 1
+  pushed_regs rd 1
 endg
+
 align 32
 i40:
       pushad
@@ -14,45 +15,36 @@ i40:
       mov   ax,word os_data
       mov   ds,ax
       mov   es,ax
-      mov   [task_tss],esp
-      add   dword [task_tss],4
+      mov   [pushed_regs],esp
+      add   dword [pushed_regs],4
       cli
 
-      mov    edi,[0x3000]
-      mov    eax,edi
-      shl    edi, 3
-;clear busy flag in application's TSS      
-      mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-
-
-      shl    edi,5
+      mov    eax, [0x3000]
+      mov    edi, eax
+      shl    edi, 8
       mov    [edi+0x80000+0xB0],eax  ; used i40 handler
 
       ; for syscall trace function
       call  save_registers
 
-;      mov   esi, [0x3000]
-;      imul  esi, tss_step
-;      add   esi, tss_data
-      mov   esi,[task_tss]
-;      sub   esi,0x28
-      ; esi holds address of TSS of interupted program
+      mov   esi,[pushed_regs]
+
       ; load first 3 registers
-      mov   eax,[esi+28];+l.eax-tss_sceleton]
-      mov   ebx,[esi+16];l.ebx-tss_sceleton]
-      mov   ecx,[esi+24];l.ecx-tss_sceleton]
+      mov   eax,[esi+28]
+      mov   ebx,[esi+16]
+      mov   ecx,[esi+24]
 
       ; save current registers
       ; stack may be modified by a system function to return some value to caller!
       pushad
 
       ; load all registers from TSS of the application, in crossed order (why?)
-      mov   edi,[esi+28];l.eax-tss_sceleton]
-      mov   eax,[esi+16];l.ebx-tss_sceleton]
-      mov   ebx,[esi+24];l.ecx-tss_sceleton]
-      mov   ecx,[esi+20];l.edx-tss_sceleton]
-      mov   edx,[esi+4];l.esi-tss_sceleton]
-      mov   esi,[esi+0];l.edi-tss_sceleton]
+      mov   edi,[esi+28]
+      mov   eax,[esi+16]
+      mov   ebx,[esi+24]
+      mov   ecx,[esi+20]
+      mov   edx,[esi+4]
+      mov   esi,[esi+0]
 
       ; enable interupts  -  a task switch or an IRQ _CAN_ interrupt i40 handler
       sti
@@ -66,16 +58,10 @@ i40:
       ; return saved and probably even changed regs
       popad
 
- ; <Ivan 05.03.2005> esi already loaded  -  look above "pusha"
-      ;mov   esi,[0x3000]
-      ;imul  esi,tss_step
-      ;add   esi,tss_data
- ; </Ivan 05.03.2005>
-
       ; modify 3 program's registers (in its TSS)
-      mov   [esi+28],eax;[esi+l.eax-tss_sceleton], eax    
-      mov   [esi+16],ebx;[esi+l.ebx-tss_sceleton], ebx
-      mov   [esi+24],ecx;[esi+l.ecx-tss_sceleton], ecx
+      mov   [esi+28],eax   
+      mov   [esi+16],ebx
+      mov   [esi+24],ecx
 
       xor    eax, eax
       mov    edi, [0x3000]          ; no syscall interrupt in use anymore
@@ -89,36 +75,11 @@ i40:
       popad
       iretd
 
-      jmp    i40
-
-label reg1    dword at 0x6000
-label reg2    dword at 0x6400
-label usedi40 byte  at 0x6800
-
-uglobal
-  schd dd 0x0
-endg
-
 align 4
 save_registers:
-
-      mov   esi,[0x3000]
-      imul  esi,tss_step
-      add   esi,tss_data
-
-      mov   eax,[esi+l.eax-tss_sceleton]
-      mov   ebx,[esi+l.ebx-tss_sceleton]
-      mov   ecx,[esi+l.ecx-tss_sceleton]
-      mov   edx,[esi+l.edx-tss_sceleton]
-      mov   edi,[esi+l.edi-tss_sceleton]
-      mov   ebp,[esi+l.ebp-tss_sceleton]
-
-      mov   esi,[esi+l.esi-tss_sceleton]
-
-      push  eax ecx esi edi
-      mov   esi,[0x3010]
-      mov   eax,[esi+0x4]
-      mov   esi,esp
+      mov   esi, [0x3010]
+      mov   eax, [esi+0x4] ; load PID
+      mov   esi, [pushed_regs]
       inc   [save_syscall_count]
       mov   edi,[save_syscall_count]
       and   edi,0xF
@@ -128,7 +89,6 @@ save_registers:
       mov   ecx,32 / 4
       cld
       rep   movsd
-      pop   edi esi ecx eax
       ret
 
 uglobal

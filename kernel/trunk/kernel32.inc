@@ -34,7 +34,6 @@ ends fix } struct_helper name@struct
 include "core/sync.inc"
 include "core/sys32.inc"    ; process management
 include "core/sched.inc"    ; process scheduling
-include "core/fpu.inc"      ; FPU handler
 include "core/syscall.inc"  ; system call
 include "core/mem.inc"      ; high-level memory management
 include "core/newproce.inc" ;new process management

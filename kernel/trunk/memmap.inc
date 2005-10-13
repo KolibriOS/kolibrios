@@ -51,12 +51,10 @@
 ;
 ;!!!
 ;   5000  ->   5FFF   save_syscall_data - syscall trace
-;   6000  ->   63FF   reg1 array - for i40 (first parts of saved TSS descriptor)
-;   6400  ->   67FF   reg2 array - same thing, second part
-;   6800  ->   68FF   used i40 (1 if used, 0 if free), first element not used
+;   6000  ->   68FF   free
 ;   6900  ->   6EFF   saved picture under mouse pointer
 ;
-;   6F00  ->   7FFF   i38 stack (4,25Kb)
+;   6F00  ->   7FFF   free
 ;
 ;   8000  ->   A3FF   used FLOPPY driver
 ;
@@ -65,11 +63,10 @@
 ;   B000  ->   B005   jump address for irq0 (task switch)
 ;   B008  ->   B00B   count of ticks remaining to updating CPU usage info
 ;
-;   B060  ->   B07F   fpu error handler's stack
-;   B080  ->   B0FF   fpu_tss -> temporary TSS for FPU context switching
+;   B060  ->   B0FF   free
+
 ;   B100  ->   B2FF   IDT
-;   B300  ->   BAFF   tasknum array - for i40 handler
-;   BB00  ->   BEFF   free
+;   B300  ->   BEFF   free
 ;!!!
 
 ;   BF00  ->   BFFF   bytes, 1 if process running/memory in use
@@ -137,9 +134,9 @@
 ;  30000  ->  36FFF   basic text font II
 ;  37000  ->  3BFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
-;  50000  ->  500FF   TSS of scheduler
+;  50000  ->  500FF   free
 ;  51000  ->  54000   esp0,esp1,esp2
-;  5F000  ->  5FFFF   schedulers stack
+;  5F000  ->  5FFFF   free
 ;  60000  ->  7FFFF   paging tables
 ;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
@@ -171,7 +168,7 @@
 ; 284000  -> 28FFFF   free
 ;
 ; 290000  -> 297FFF   TSS's of interrupts
-; 298000  -> 29FFFF   TSS's of SYSTEM interrupts - 256 entries
+; 298000  -> 29FFFF   free
 ; 2A0000  -> 2B00ff   wav device data
 ; 2C0000  -> 2C3fff   button info
 ;
@@ -213,7 +210,6 @@
 ;
 ; 800000  -> BFFFFF   mapped to LFB
 ;
-; C00000  -> DFFFFF * Application information
 ;
 ; C00000  -> C01FFF   draw_data   - 256 entries
 ;
@@ -227,8 +223,8 @@
 ;                     - system interrupt stacks
 ;                     - 256 entries * 4096 step
 ;
-; D20000  -> DA8000   TSS and IO map for (2048*8)=16384 ports
-;                     (128+2048)*256 = 557956 = 0x88000
+; D20000  -> F28000   TSS and IO map for (8192*8)=65536 ports
+;                     (128+8192)*256 = 557956 = 0x88000
 ;
 ; 1000000 -> 3FFFFFF  for applications
 ;
