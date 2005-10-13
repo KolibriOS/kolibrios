@@ -27,9 +27,26 @@
 ; Modifying the set_bank -function is mostly enough
 ; for different Vesa 1.2 setups.
 
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!{
+;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+; set_bank for Trident videocards, work on Trident 9440
+; modified by Mario79
+;set_bank:
+;cli
+;cmp al,[0xfff2]
+;je retsb
+;mov [0xfff2],al
+;push dx
+;mov dx,3D8h
+;out  dx,al
+;pop dx
+;retsb:
+;sti
+;ret
 
-; set_bank modified by kmeaw 
+
+;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+; set_bank for S3 videocards, work on S3 ViRGE PCI (325)
+; modified by kmeaw 
 set_bank: 
 cli 
 cmp al,[0xfff2] 

@@ -46,9 +46,11 @@ d80x25:   line_full_top
           line_space
           line_space
           line_space
-          line_space
-          db       186,' Kolibri OS не предоставляет никаких гарa'
-          db       'нтий; Подробнее - см. GNU.TXT        ',186
+;          line_space
+          db       186,' Kolibri OS основана на Menuet OS и не предоставляет '
+          db       'никаких гарaнтий.        ',186
+          db       186,' Подробнее смотрите файл GNU.TXT                     '
+          db       '                         ',186
           line_full_bottom
 
 novesa    db      "Видеокарта: EGA/CGA",13,10,0

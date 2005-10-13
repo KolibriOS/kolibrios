@@ -5,6 +5,82 @@
 ;; Addings by M.Lisovin                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; calculate fat chain
+
+calculatefatchain:
+
+   pushad
+
+   mov  esi,0x100000+512
+   mov  edi,0x280000
+
+ fcnew:
+   mov  eax,dword [esi]
+   mov  ebx,dword [esi+4]
+   mov  ecx,dword [esi+8]
+   mov  edx,ecx
+   shr  edx,4   ;8 ok
+   shr  dx,4    ;7 ok
+   xor  ch,ch
+   shld ecx,ebx,20 ;6 ok
+   shr  cx,4     ;5 ok
+   shld ebx,eax,12
+   and  ebx,0x0fffffff  ;4 ok
+   shr  bx,4    ;3 ok
+   shl  eax,4
+   and  eax,0x0fffffff  ;2 ok
+   shr  ax,4  ;1 ok
+   mov dword [edi],eax
+   add  edi,4
+   mov dword [edi],ebx
+   add  edi,4
+   mov dword [edi],ecx
+   add  edi,4
+   mov dword [edi],edx
+   add  edi,4   
+   add  esi,12
+
+   cmp  edi,0x280000+2856*2   ;2849 clusters
+   jnz  fcnew
+
+   popad
+   ret
+
+
+restorefatchain:   ; restore fat chain
+
+   pushad
+
+   mov  esi,0x280000
+   mov  edi,0x100000+512
+
+  fcnew2:
+   mov  eax,dword [esi]
+   mov  ebx,dword [esi+4]
+   shl  ax,4
+   shl  eax,4
+   shl  bx,4
+   shr  ebx,4
+   shrd eax,ebx,8
+   shr  ebx,8
+   mov dword [edi],eax
+   add  edi,4
+   mov word [edi],bx
+   add  edi,2
+   add  esi,8
+
+   cmp  edi,0x100000+512+4278     ;4274 bytes - all used FAT
+   jb   fcnew2
+
+   mov  esi,0x100000+512           ; duplicate fat chain
+   mov  edi,0x100000+512+0x1200
+   mov  ecx,1069        ;4274/4
+   cld
+   rep  movsd
+
+   popad
+   ret
+
 
 ramdisk_free_space:
 ;---------------------------------------------
@@ -18,7 +94,7 @@ ramdisk_free_space:
         mov  edi,0x280000 ;start of FAT
         xor  ax,ax    ;Free cluster=0x0000 in FAT
         xor  ebx,ebx  ;counter
-        mov  ecx,2847  ;2849 ;2849 clusters
+        mov  ecx,2849 ;2849 clusters
         cld
     rdfs1:
         repne scasw
@@ -122,7 +198,7 @@ fileread:
         push   edx
         mov    edx,ecx     
         add    edx,ebx
-        cmp    edx,14     ;ebx+ecx=14
+        cmp    edx,15     ;ebx+ecx=14+1
         pushf
         jbe    fr_do1
         sub    edx,14
@@ -136,7 +212,7 @@ fileread:
         rep    movsd
         popf
         pop    edx
-;        jae    fr_do2
+        jae    fr_do2
         xor    eax,eax ; ok read
         xor    ebx,ebx
         ret

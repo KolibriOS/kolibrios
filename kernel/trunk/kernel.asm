@@ -86,7 +86,7 @@ drawbar         dd __sys_drawbar
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.5.0.0      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.5.1.0      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -2269,7 +2269,7 @@ keyboard_mode_sys db 0
 
 iglobal 
 version_inf: 
-  db 0,5,0,0  ; version 0.5.0.0 
+  db 0,5,1,0  ; version 0.5.1.0 
   db UID_KOLIBRI 
   db 'Kolibri',0 
 version_end: 
@@ -4129,101 +4129,6 @@ memmove:       ; memory move in bytes
     pop  ecx edi esi
   .ret:
     ret
-
-
-
-; calculate fat chain
-
-calculatefatchain:
-
-   pushad
-
-   mov  esi,0x100000+512
-   mov  edi,0x280000
-
-  fcnew:
-   xor  eax,eax
-   xor  ebx,ebx
-   xor  ecx,ecx
-   xor  edx,edx
-   mov  al,[esi+0]  ; 1
-   mov  bl,[esi+1]
-   and  ebx,15
-   shl  ebx,8
-   add  eax,ebx
-   mov  [edi],ax
-   add  edi,2
-
-   xor  eax,eax
-   xor  ebx,ebx
-   xor  ecx,ecx
-   xor  edx,edx
-   mov  bl,[esi+1]  ; 2
-   mov  cl,[esi+2]
-   shr  ebx,4
-   shl  ecx,4
-   add  ecx,ebx
-   mov  [edi],cx
-   add  edi,2
-
-   add  esi,3
-
-   cmp  edi,0x280000+4100*4
-   jnz  fcnew
-
-   popad
-   ret
-
-
-restorefatchain:   ; restore fat chain
-
-   pushad
-
-   mov  esi,0x280000
-   mov  edi,0x100000+512
-
-  fcnew2:
-   cld
-   xor  eax,eax
-   xor  ebx,ebx
-   xor  ecx,ecx                    ;   esi  XXXXxxxxxxxx  yyyyyyyyYYYY
-   xor  edx,edx
-   mov  ax,[esi]                   ;   edi  xxxxxxxx YYYYXXXX yyyyyyyy
-   mov  bx,ax
-   shr  bx,8
-   and  ebx,15
-   mov  [edi+0],al  ; 1 -> 1 & 2
-   mov  [edi+1],bl
-   add  esi,2
-
-   xor  eax,eax
-   xor  ebx,ebx
-   xor  ecx,ecx
-   xor  edx,edx
-   mov  bx,[esi]
-   mov  cx,bx
-   shr  ecx,4
-   mov  [edi+2],cl
-   and  ebx,15
-   shl  ebx,4
-   mov  edx,[edi+1]
-   add  edx,ebx
-   mov  [edi+1],dl  ; 2 -> 2 & 3
-   add  esi,2
-
-   add  edi,3
-
-   cmp  edi,0x100000+512+0x1200
-   jb   fcnew2
-
-   mov  esi,0x100000+512           ; duplicate fat chain
-   mov  edi,0x100000+512+0x1200
-   mov  ecx,0x1200/4
-   cld
-   rep  movsd
-
-   popad
-   ret
 
 
 align 4

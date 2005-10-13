@@ -1134,6 +1134,8 @@ uglobal
   app_mem_pos  dd  0x0
   ;thread_create    dd 0x0
   ;gdt_place        dd 0x0
+  appl_path        dd 0x0
+  appl_path_size   dd 0x0         
 endg
 
 iglobal
@@ -1153,8 +1155,6 @@ sys_threads:
 ;
 ; on return : eax = pid
 jmp new_sys_threads
-
-
 
 iglobal
   process_terminating   db 'K : Process - terminating',13,10,0

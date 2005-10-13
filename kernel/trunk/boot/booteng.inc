@@ -46,9 +46,11 @@ d80x25:   line_full_top
           line_space
           line_space
           line_space
-          line_space
-          db       186,' Kolibri OS comes with ABSOLUTELY NO WARR'
-          db       'ANTY; See file COPYING for details   ',186
+;          line_space
+          db       186,' KolibriOS based on MenuetOS and comes with ABSOLUTELY '
+          db       'NO WARRANTY            ',186
+          db       186,' See file COPYING for details                          '
+          db       '                       ',186
           line_full_bottom
 
 novesa    db      "Display: EGA/CGA",13,10,0
@@ -78,7 +80,7 @@ gr_direct db      186," Use direct LFB writing? "
 ;mem_model db      13,10,186," Motherboard memory [1-16 Mb / 2-32 Mb / "
 ;          db      "3-64Mb / 4-128 Mb / 5-256 Mb] ? ",0
 bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
-bdev      db      13,10,186
+bdev      db      186
           db      " Load ramdisk from [1-floppy; 2-C:\menuet.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-use preloaded ram-image from kernel restart]: ",0

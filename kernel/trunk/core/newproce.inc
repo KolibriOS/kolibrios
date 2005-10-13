@@ -63,6 +63,7 @@ new_start_application_floppy:
 ;result:
 ;  eax - pid of new process
 ;        or 0 if call fails.
+    mov    [appl_path],edi
     pushad
     mov    esi,new_process_loading
     call   sys_msg_board_str     ;write to debug board
@@ -95,13 +96,17 @@ new_start_application_floppy:
     rep    stosd                 ;clean extended information about process
     
 ;set new process name
-    mov    eax,[esp+8]
+    xor    eax,eax
+    mov    [appl_path_size],eax
+    mov    eax,[esp]  ;+8]
 .find_last_byte:
     cmp    byte [eax],0    
     jz     .find_last_byte_end
     inc    eax
+    inc    [appl_path_size]
     jmp    .find_last_byte
-.find_last_byte_end:    
+.find_last_byte_end:
+    add    [appl_path_size],24    
     sub    eax,11                ;last 11 bytes = application name
 ;    mov    eax,[esp]             ;eax - pointer to file name
     mov    ebx,[new_process_place]
@@ -217,6 +222,8 @@ new_start_application_fl:
 ;result:
 ;  eax - pid of new process
 ;        or 0 if call fails.
+    mov    [appl_path],edi
+    mov    [appl_path_size],36
     pushad
     mov    esi,new_process_loading
     call   sys_msg_board_str     ;write to debug board
@@ -406,6 +413,16 @@ new_start_application_fl:
     call   write_process_memory  ;copy parameters to new process address space
     
 .no_command_line:
+;******************************************************************
+    mov    edx,[app_i_icon]
+    test   edx,edx
+    jz     .no_command_line_1      ;application don't need path of file
+    mov    ebx,[appl_path]
+    mov    ecx,[appl_path_size]
+    mov    eax,[new_process_place]
+    call   write_process_memory  ;copy path of file to new process address space
+.no_command_line_1:
+;******************************************************************
     mov    ebx,[new_process_place]
     mov    eax,ebx
     shl    ebx,5
@@ -1130,6 +1147,7 @@ new_start_application_hd:
 ;ebx - file name length
 ;ecx - work area (kernel address)
 ;ebp - parameters
+    mov    [appl_path],edi
     pushad
     
     mov    esi,new_process_loading
@@ -1155,14 +1173,18 @@ new_start_application_hd:
     test   eax,eax
     jz     .failed
     
-;write application name    
+;write application name
+    xor    eax,eax
+    mov    [appl_path_size],eax    
     mov    eax,[esp+4]
 .find_last_byte:
     cmp    byte [eax],0    
     jz     .find_last_byte_end
     inc    eax
+    inc    [appl_path_size]
     jmp    .find_last_byte
-.find_last_byte_end:    
+.find_last_byte_end:
+    add    [appl_path_size],24    
     lea    esi,[eax-11]          ;last 11 bytes = application name
     mov    edi,[new_process_place]
     shl    edi,8

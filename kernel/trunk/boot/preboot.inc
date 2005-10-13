@@ -17,7 +17,7 @@ preboot_device    db    0 ; boot device
 ;;preboot_memory    db    0  ; amount of memory
                            ; (1-16Mb;2-32Mb;3-64Mb;4-128Mb;5-256Mb)
                            ;       !!!! 0 - autodetect !!!!
-preboot_blogesc   db    0  ; start immediately after bootlog
+preboot_blogesc   db    1  ; start immediately after bootlog
 
 hdsysimage        db    'MENUET  IMG' ; load from
 image_save        db    'MENUET  IMG' ; save to

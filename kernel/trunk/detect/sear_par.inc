@@ -82,12 +82,14 @@ partition_data_transfer:
      ret
 transfer_adress dd 0
 partition_data_transfer_1:
-     cli 
+     cli
+     push edi
      mov edi,PARTITION_START
      mov esi,[transfer_adress]
      xor ecx,ecx
      mov cx,69  ;100
      rep movsb
+     pop  edi
      sti
      ret
 
