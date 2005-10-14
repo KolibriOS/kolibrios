@@ -13,7 +13,7 @@
 
 
 
-include "SKINDATA.INC"
+include "skindata.inc"
 
 virtual at 0
   bmp_header:
