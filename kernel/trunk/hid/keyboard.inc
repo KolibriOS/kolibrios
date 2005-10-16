@@ -30,8 +30,11 @@ endg
 
 align 4
 irq1:
-
-       call  restore_caller
+       pushad
+       push  ds es
+       mov   ax, os_data
+       mov   ds, ax
+       mov   es, ax
 
        movzx eax,word[0x3004] ; top window process
        movzx eax,word[0xC400+eax*2]
@@ -209,9 +212,9 @@ irq1:
        mov   al,0x20                  ; ready for next irq
        out   0x20,al
 
-       call  return_to_caller
-
-       jmp   irq1
+       pop   es ds
+       popad
+       iret
 
 set_lights:
        mov   al,0xED

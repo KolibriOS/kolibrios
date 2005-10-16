@@ -119,7 +119,6 @@ int_data       equ  int_data_l-gdts
 tss0sys        equ  tss0sys_l-gdts
 graph_data     equ  3+graph_data_l-gdts
 tss0           equ  tss0_l-gdts
-tss0i          equ  tss0i_l-gdts
 app_code       equ  3+app_code_l-gdts
 app_data       equ  3+app_data_l-gdts
 
@@ -653,16 +652,14 @@ include 'vmodeld.inc'
         mov  [l.ss0], os_data
         ;mov  [l.ss1], ring1_data
         ;mov  [l.ss2], ring2_data
-        mov  [l.esp0], 0x52000
-        mov  [l.esp1], 0x53000
-        mov  [l.esp2], 0x54000
+        ;mov  [l.esp0], 0x52000
+        ;mov  [l.esp1], 0x53000
+        ;mov  [l.esp2], 0x54000
         ; osloop - TSS
         mov  eax,cr3
         mov  [l.cr3],eax
         mov  [l.eip],osloop
-; <Ivan Poddubny 14/03/2004>
-        mov  [l.esp],0x30000 ;0x2ffff
-; </Ivan Poddubny 14/03/2004>
+        mov  [l.esp],0x30000
         mov  [l.cs],os_code
         mov  [l.ss],os_data
         mov  [l.ds],os_data

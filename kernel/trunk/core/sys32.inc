@@ -35,20 +35,6 @@ os_data_l:
         dw     11011111b *256 +10010010b
         db     0x00
 
-graph_data_l:
-
-        dw     0x3ff
-        dw     0x0000
-        db     0x00
-        dw     11010000b *256 +11110010b
-        db     0x00
-
-tss0_l:
-      times (max_processes+10) dd 0,0
-
-tss0i_l:
-      times 0x41 dq 0 ;(256+10) dd 0,0
-
 app_code_l:
       dw ((0x80000000-std_application_base_address) shr 12) and 0xffff
       dw 0
@@ -63,6 +49,16 @@ app_data_l:
       dw 11010000b*256+11110010b+256*((0x80000000-std_application_base_address) shr 28)
       db std_application_base_address shr 24
 
+graph_data_l:
+
+        dw     0x3ff
+        dw     0x0000
+        db     0x00
+        dw     11010000b *256 +11110010b
+        db     0x00
+
+tss0_l:
+      times (max_processes+10) dd 0,0
 
 gdte:
 
@@ -71,162 +67,9 @@ gdte:
 idtreg:
      dw   8*0x41-1
      dd   idts+8
-
 label idts at 0xB100-8
-;idte = idts + 8 + 0x60
 
 
-
-build_process_gdt_tss_pointer:
-
-        mov    ecx,tss_data
-        mov    edi,0
-      setgdtl2:
-        mov    [edi+gdts+ tss0 +0], word tss_step
-        mov    [edi+gdts+ tss0 +2], cx
-        mov    eax,ecx
-        shr    eax,16
-        mov    [edi+gdts+ tss0 +4], al
-        mov    [edi+gdts+ tss0 +7], ah
-        mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-        add    ecx,tss_step
-        add    edi,8
-        cmp    edi,8*(max_processes+5)
-        jbe    setgdtl2
-
-        ret
-
-
-build_interrupt_table:
-
-        mov  [l.eflags],dword 0x11002
-        mov  [l.ss0], int_data
-        ;mov  [l.ss1], ring1_data
-        ;mov  [l.ss2], ring2_data
-        mov  [l.esp0], 0x52000
-        mov  [l.esp1], 0x53000
-        mov  [l.esp2], 0x54000
-
-        mov  eax,cr3
-        mov  [l.cr3],eax
-        mov  [l.cs],int_code
-        mov  [l.ss],int_data
-        mov  [l.ds],int_data
-        mov  [l.es],int_data
-        mov  [l.fs],int_data
-        mov  [l.gs],int_data
-
-        mov  eax,sys_int
-        mov  [l.esp],0x720000
-        mov  edi,0x290000
-
-     newint:
-        push edi
-        mov  ebx,[eax]
-        mov  [l.eip],ebx
-        mov  esi,tss_sceleton
-        mov  ecx,120/4
-        cld
-        rep  movsd
-        pop  edi
-
-        add  edi,128
-        add  [l.esp],1024
-        add  eax,4
-
-        cmp  eax,sys_int+4*0x40 ;0x60
-        jbe  newint  ;jb
-
-;;
-
-        mov    esi,boot_sched_3_2
-        call   boot_log
-
-        mov    ecx,0x290000
-        mov    edi,0
-      setgdtl2i:
-        mov    [edi+gdts+ tss0i +0], word 128
-        mov    [edi+gdts+ tss0i +2], cx
-        mov    eax,ecx
-        shr    eax,16
-        mov    [edi+gdts+ tss0i +4], al
-        mov    [edi+gdts+ tss0i +7], ah
-        mov    [edi+gdts+ tss0i +5], word 01010000b *256 +11101001b
-        add    ecx,128
-        add    edi,8
-        cmp    edi,8*0x40 ;0x60
-        jbe    setgdtl2i
-
-;;
-
-        mov    esi,boot_sched_3_3
-        call   boot_log
-
-        mov    edi,0
-        mov    edx,tss0i
-     @@:
-        mov    [edi+idts+ 8 +0], word 0
-        mov    [edi+idts+ 8 +2], dx
-        mov    [edi+idts+ 8 +4], word 10000101b*256 ; task gate DPL=0
-        mov    [edi+idts+ 8 +6], word 0
-        add    edx,8
-        add    edi,8
-
-        cmp    edi,8*0x40
-        jb     @b
-        
-    ; Exceptions
-        mov    edi, idts+8
-        mov    esi, sys_int
-        mov    ecx, 32
-     @@:
-        mov    eax, [esi]
-        mov    [edi],   ax           ; lower part of offset
-        mov    [edi+2], word os_code ; segment selector
-        shr    eax, 16
-        mov    [edi+4], word 10001110b shl 8 ; interrupt descriptor
-        mov    [edi+6], ax
-        add    esi, 4
-        add    edi, 8
-        dec    ecx
-        jnz    @b
-
-        ret
-
-build_syscall_interrupt_table:
-
-        ;mov    dx,tss0sys
-        mov    edi,8*0x40+idts+8
-        mov    [edi + 0], word (i40 and ((1 shl 16)-1))
-        mov    [edi + 2], word os_code
-        mov    [edi + 4], word 11101110b*256
-        mov    [edi + 6], word (i40 shr 16)
-
-        ret
-
-
-
-iglobal
-  sys_int:
-    dd   s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,sa,sb,sc,sd,se,sf
-
-    dd   s10        ,s11      ;  ,i_unknown12,i_unknown13
-;    dd   i_unknown14,i_unknown15,i_unknown16,i_unknown17
-;    dd   i_unknown18,i_unknown19,i_unknown1a,i_unknown1b
-;    dd   i_unknown1c,i_unknown1d,i_unknown1e,i_unknown1f
-    times 14 dd unknown_interrupt
-
-    dd   irq0  ,irq1  ,p_irq2 ,p_irq3 ,p_irq4 ,p_irq5,p_irq6 ,p_irq7
-    dd   p_irq8,p_irq9,p_irq10,p_irq11,p_irq12,irqD  ,p_irq14,p_irq15
-
-    ;dd   i_unknown30,i_unknown31,i_unknown32,i_unknown33
-    ;dd   i_unknown34,i_unknown35,i_unknown36,i_unknown37
-    ;dd   i_unknown38,i_unknown39,i_unknown3a,i_unknown3b
-    ;dd   i_unknown3c,i_unknown3d,i_unknown3e,i_unknown3f
-    times 16 dd unknown_interrupt
-
-    dd   i40
-endg
 
 uglobal
  tss_sceleton:
@@ -259,110 +102,93 @@ uglobal
   l.io     dw 0
 endg
 
-s0:
+
+build_process_gdt_tss_pointer:
+
+        mov    ecx,tss_data
+        mov    edi,0
+      setgdtl2:
+        mov    [edi+gdts+ tss0 +0], word tss_step
+        mov    [edi+gdts+ tss0 +2], cx
+        mov    eax,ecx
+        shr    eax,16
+        mov    [edi+gdts+ tss0 +4], al
+        mov    [edi+gdts+ tss0 +7], ah
+        mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
+        add    ecx,tss_step
+        add    edi,8
+        cmp    edi,8*(max_processes+5)
+        jbe    setgdtl2
+
+        ret
+
+
+build_interrupt_table:
+
+        mov    edi, idts+8
+        mov    esi, sys_int
+        mov    ecx, 0x40
+     @@:
+        mov    eax, [esi]
+        mov    [edi],   ax           ; lower part of offset
+        mov    [edi+2], word os_code ; segment selector
+        shr    eax, 16
+        mov    [edi+4], word 10001110b shl 8 ; interrupt descriptor
+        mov    [edi+6], ax
+        add    esi, 4
+        add    edi, 8
+        dec    ecx
+        jnz    @b
+        
+        ;mov    edi,8*0x40+idts+8
+        mov    [edi + 0], word (i40 and ((1 shl 16)-1))
+        mov    [edi + 2], word os_code
+        mov    [edi + 4], word 11101110b*256
+        mov    [edi + 6], word (i40 shr 16)        
+
+        ret
+
+
+
+iglobal
+  sys_int:
+    dd   e0,e1,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15
+    dd   e16,e17
+    times 14 dd unknown_interrupt
+
+    dd   irq0  ,irq1  ,p_irq2 ,p_irq3 ,p_irq4 ,p_irq5,p_irq6 ,p_irq7
+    dd   p_irq8,p_irq9,p_irq10,p_irq11,p_irq12,irqD  ,p_irq14,p_irq15
+
+    times 16 dd unknown_interrupt
+
+    dd   i40
+endg
+
+; simply return control to interrupted process
+unknown_interrupt:
+     iret
+
+macro exceptions [num]
+{
+  forward
+  e#num :
+  	mov bl, num
+  	jmp exc_c
+}
+
+exceptions 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+exc_c:
         mov   ax, os_data
         mov   ds, ax
         mov   es, ax
 
-        mov   [error_interrupt],0x0
-        mov   [error_interrupt_entry],dword s0
-
+        movzx eax, bl        
+        mov   [error_interrupt], eax
         call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-
-s1:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x1
-        mov   [error_interrupt_entry],dword s1
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-s2:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x2
-        mov   [error_interrupt_entry],dword s2
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-s3:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x3
-        mov   [error_interrupt_entry],dword s3
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-s4:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x4
-        mov   [error_interrupt_entry],dword s4
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-s5:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x5
-        mov   [error_interrupt_entry],dword s5
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-s6:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x6
-        mov   [error_interrupt_entry],dword s6
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
+        
+        mov   edx, [0x3010]
+        mov   [edx + 0xA], byte 4
+        
         jmp   change_task
 
 
@@ -371,7 +197,7 @@ s6:
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
-s7:
+e7:
         clts
           
         push  eax
@@ -406,202 +232,25 @@ iglobal
 endg
 
 
-s8:
-        add   esp, 4 ; zero on the stack!
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x8
-        mov   [error_interrupt_entry],dword s8
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-s9:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x9
-        mov   [error_interrupt_entry],dword s9
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; Invalid TSS
-sa:
-        add   esp, 4 ; error code
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0xa
-        mov   [error_interrupt_entry],dword sa
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; Segment not present
-sb:
-	add   esp, 4
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0xb
-        mov   [error_interrupt_entry],dword sb
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; Stack fault exception
-sc:
-	add   esp, 4
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0xc
-        mov   [error_interrupt_entry],dword sc
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; General Protection Fault
-sd:
-	add   esp, 4
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0xd
-        mov   [error_interrupt_entry],dword sd
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; Page-Fault Exception
-se:
-	add   esp, 4
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0xe
-        mov   [error_interrupt_entry],dword se
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; ??
-sf:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0xf
-        mov   [error_interrupt_entry],dword sf
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; x87 FPU Floating-Point Error
-s10:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x10
-        mov   [error_interrupt_entry],dword s10
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
-; Alignment Check Exception
-s11:
-	add   esp, 4
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-
-        mov   [error_interrupt],0x11
-        mov   [error_interrupt_entry],dword s11
-
-        call  show_error_parameters
-
-        mov   edx,[0x3010]
-        mov   [edx+0xa],byte 4
-
-        jmp   change_task
-
 
 
 
 writehex:
-
       pusha
+      
+      mov  edi, [write_error_to]
+      mov  esi, 8
+    @@:
+      mov  ecx, eax
+      and  ecx, 0xf
 
-      mov  ecx,eax
-      mov  ax,word [printerrorat]
-      shl  eax,16
-      mov  ax,[esp+32+4]
-      sub  ax,60
-      mov  edx,1
-      mov  esi,8
-      mov  ebx,0xffffff
-    whl1:
-      push ecx
-      and  ecx,0xf
-      add  ecx,hexletters
-      mov  edi,1
-
-      mov  cl,[ecx]
-      mov  edi,[write_error_to]
+      mov  cl,[ecx+hexletters]
       mov  [edi],cl
-      dec  [write_error_to]
+      dec  edi
 
-      pop  ecx
-      shr  ecx,4
-      sub  eax,6*65536
+      shr  eax,4
       dec  esi
-      jnz  whl1
+      jnz  @b
 
       popa
       ret
@@ -610,9 +259,6 @@ iglobal
   hexletters  db '0123456789ABCDEF'
 
   error_interrupt         dd  -1
-  error_interrupt_entry   dd  -1
-
-  printerrorat            dd 300
 
   process_error  db 'K : Process - forced terminate INT: 00000000',13,10,0
   process_pid    db 'K : Process - forced terminate PID: 00000000',13,10,0
@@ -638,7 +284,7 @@ show_error_parameters:
         
         mov    eax,[0x3000]
         shl    eax,8
-        cmp    [0x80000+eax+0xB0],dword 0
+        cmp    [0x80000+eax+0xB0],byte 0
         jnz    .system_error
 
         mov    eax,[0x3000]
@@ -672,132 +318,35 @@ show_error_parameters:
 
 ; irq1  ->  hid/keyboard.inc
 
-p_irq2:
 
-     call  restore_caller
+macro irqhh [num]
+{
+  forward
+  p_irq#num :
+     pushad
+     mov   edi, num
+     jmp   irq_c
+}
 
-     mov   edi,2               ; 1
-     call  irqhandler          ; 2/5
+irqhh 2,3,4,5,6,7,8,9,10,11,12,14,15
 
-     call  return_to_caller
-
-     jmp   p_irq2
-
-p_irq3:
-
-     call  restore_caller
-
-     mov   edi,3
+ irq_c:
+     push  ds es
+     mov   ax, os_data
+     mov   ds, ax
+     mov   es, ax
      call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq3
-
-p_irq4:
-
-     call  restore_caller
-
-     mov   edi,4
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq4
-
-p_irq5:
-
-     call  restore_caller
-
-     mov   edi,5
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq5
-
-p_irq6:
-
-     call  restore_caller
-
-     call  fdc_irq
-
-     mov   edi,6
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq6
-
-p_irq7:
-
-     call  restore_caller
-
-     mov   edi,7
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq7
-
-p_irq8:
-
-     call  restore_caller
-
-     mov   edi,8
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq8
-
-p_irq9:
-
-     call  restore_caller
-
-     mov   edi,9
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq9
-
-p_irq10:
-
-     call  restore_caller
-
-     mov   edi,10
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq10
-
-p_irq11:
-
-     call  restore_caller
-
-     mov   edi,11
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq11
-
-p_irq12:
-
-      call  restore_caller
-
-      mov   edi,12
-      call  irqhandler
-
-      call  return_to_caller
-
-      jmp   p_irq12
-
+     pop   es ds
+     popad
+     iret
+  	
 irqD:
-     call   restore_caller
-
+     pushad
+     push  ds es
+     mov   ax, os_data
+     mov   ds, ax
+     mov   es, ax
+     
      mov   dx,0xf0
      mov   al,0
      out   dx,al
@@ -806,59 +355,13 @@ irqD:
      mov   al,0x20
      out   dx,al
      mov   dx,0x20
-     out   dx,al
-
-     call  return_to_caller
-
-     jmp   irqD
+     out   dx,al     
      
-
-p_irq14:
-
-     call  restore_caller
-     
-     mov   edi,14
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq14
-
-p_irq15:
-
-     call  restore_caller
-
-     mov   edi,15
-     call  irqhandler
-
-     call  return_to_caller
-
-     jmp   p_irq15
+     pop   es ds
+     popad
+     iret
 
 
-
-align 4
-restore_caller:
-
-      mov    edi,[0x3000]
-      shl    edi, 3
-      mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-
-      ret
-
-align 4
-return_to_caller:
-
-      mov   ebx,[0x3000]
-      shl   bx,3
-      add   bx,tss0;t
-      mov   [tss_irq12],bx
-
-           db    0xea
-           dd    0
-tss_irq12  dw    tss0;t
-
-           ret
 
 uglobal
   irqh dd 0x0
@@ -936,18 +439,11 @@ irqhandler:
      ret
 
 
-; simply return control to interrupted process
-unknown_interrupt:
-     iret
-
-
-
 
 set_application_table_status:
         push eax
 
         mov  eax,[0x3000]
-        ;imul eax,32
         shl  eax, 5
         add  eax,0x3000+4
         mov  eax,[eax]
@@ -963,7 +459,6 @@ clear_application_table_status:
         push eax
 
         mov  eax,[0x3000]
-        ;imul eax,32
         shl  eax, 5
         add  eax,0x3000+4
         mov  eax,[eax]
@@ -1356,11 +851,7 @@ terminate: ; terminate application
 
 iglobal
   boot_sched_1    db   'Building gdt tss pointer',0
-  ;boot_sched_2    db   'Building gdt gate pointer',0
-  boot_sched_3    db   'Building interrupt table - TSS',0
-  boot_sched_3_2  db   'Building interrupt table - GDT',0
-  boot_sched_3_3  db   'Building interrupt table - IDT',0
-  boot_sched_4    db   'Building syscall interrupt table',0
+  boot_sched_2    db   'Building IDT table',0
 endg
 
 
@@ -1370,17 +861,9 @@ build_scheduler:
         call   boot_log
         call   build_process_gdt_tss_pointer
 
-;        mov    esi,boot_sched_2
-;        call   boot_log
-;        call   build_process_gdt_gate_pointer
-
-        mov    esi,boot_sched_3
+        mov    esi,boot_sched_2
         call   boot_log
         call   build_interrupt_table
-
-        mov    esi,boot_sched_4
-        call   boot_log
-        call   build_syscall_interrupt_table
 
         ret
 

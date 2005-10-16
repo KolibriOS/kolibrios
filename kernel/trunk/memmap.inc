@@ -47,9 +47,7 @@
 ;         38   dword  time stamp counter add
 ;         3c   dword  cpu usage in cpu timer tics
 ;
-; -> delete ->   5000  ->   AFFF   free
 ;
-;!!!
 ;   5000  ->   5FFF   save_syscall_data - syscall trace
 ;   6000  ->   68FF   free
 ;   6900  ->   6EFF   saved picture under mouse pointer
@@ -62,14 +60,13 @@
 ;
 ;   B000  ->   B005   jump address for irq0 (task switch)
 ;   B008  ->   B00B   count of ticks remaining to updating CPU usage info
-;
+
 ;   B060  ->   B0FF   free
 
 ;   B100  ->   B2FF   IDT
-;   B300  ->   BEFF   free
-;!!!
 
-;   BF00  ->   BFFF   bytes, 1 if process running/memory in use
+;   B300  ->   BFFF   free
+
 ;   C000  ->   C3FF   window stack C000 no of windows - all in words
 ;   C402  ->   C7FF   window position in stack
 ;   D000  ->   D1FF   FDC controller
@@ -134,9 +131,7 @@
 ;  30000  ->  36FFF   basic text font II
 ;  37000  ->  3BFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
-;  50000  ->  500FF   free
-;  51000  ->  54000   esp0,esp1,esp2
-;  5F000  ->  5FFFF   free
+;  50000  ->  5FFFF   free
 ;  60000  ->  7FFFF   paging tables
 ;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
@@ -165,10 +160,8 @@
 ; 280000  -> 281FFF   ramdisk fat
 ; 282000  -> 283FFF   floppy  fat
 ;
-; 284000  -> 28FFFF   free
+; 284000  -> 29FFFF   free
 ;
-; 290000  -> 297FFF   TSS's of interrupts
-; 298000  -> 29FFFF   free
 ; 2A0000  -> 2B00ff   wav device data
 ; 2C0000  -> 2C3fff   button info
 ;
@@ -220,7 +213,7 @@
 ;         1C   dword  app int vector
 ;
 ; C03000  -> D11fff   sysint_stack_data
-;                     - system interrupt stacks
+;                     - interrupt stacks
 ;                     - 256 entries * 4096 step
 ;
 ; D20000  -> F28000   TSS and IO map for (8192*8)=65536 ports

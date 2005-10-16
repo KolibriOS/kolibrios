@@ -5,18 +5,13 @@ label  timer_ticks         dword   at  0xFDF0
 ;; IRQ0 HANDLER (TIMER INTERRUPT) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
 align 32
 irq0:
-        cmp   [error_interrupt],-1
-        je    no_error_in_previous_process
-
-        mov   [0xffff],byte 0
-
-        mov   [error_interrupt],-1
-
-     no_error_in_previous_process:
+	pushad
+	push  ds es
+	mov   ax, os_data
+	mov   ds, ax
+	mov   es, ax
 
         mov   edi,[0x3000]
         shl   edi, 3
@@ -26,16 +21,14 @@ irq0:
         inc   dword [timer_ticks]
 
         mov   eax, [timer_ticks]
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        call  playNote           ; <<<--- INSERT THIS LINE !!!!!!!!!!
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
         cmp   eax,[next_usage_update]
         jb    .nocounter
         add   eax,100
         mov   [next_usage_update],eax
         call  updatecputimes
      .nocounter:
+
+        call  playNote           ; <<<--- Speaker driver
 
         mov   edi, [0x3010]
 
@@ -47,8 +40,8 @@ irq0:
 
         mov   ebx,[0x3000]
 
-        cmp   [0xffff], byte 1   ;1
-        je   do_not_change_task ;je
+        cmp   [0xffff], byte 1
+        je    .do_not_change_task
 
       .waiting_for_termination:
       .waiting_for_reuse:
@@ -64,43 +57,55 @@ irq0:
         je    .waiting_for_reuse
 
         cmp   ebx,[0x3004]
-        jbe   nsched0
+        jbe   @f
         mov   ebx,1
         mov   edi,0x3020
-
-      nsched0:
+       @@:
 
         mov   [0x3000],ebx
         mov   [0x3010],edi
 
-      do_not_change_task:
+        jmp   @f
+     .do_not_change_task:
+        mov   [noct], 1
+       @@:
 
         call  _rdtsc
         mov   [edi+0x18],eax
 
         cmp   [0xffff],byte 0
-        je    nodecffff
+        je    @f
         dec   byte [0xffff]
-      nodecffff:
+       @@:
 
 
         shl   ebx, 3
         xor   eax, eax
         add   ebx, tss0
-        mov   word  [0xB004], bx   ; selector    ;mov   [tss_s],bx
+        mov   word  [0xB004], bx   ; selector
         mov   dword [0xB000], eax  ; offset
 
         mov   al,0x20   ; send End Of Interrupt signal
         mov   dx,0x20
         out   dx,al
+
+        cmp   [noct], 1
+        je    @f
 .switch:
         jmp   pword [0xB000]
         inc [context_counter] ;noname & halyavin
+       @@:
+        mov   [noct], 0
         
-        jmp   irq0
+        pop   es ds
+        popad
+        iret
 
-iglobal
+
+
+uglobal
 context_counter dd 0 ;noname & halyavin
+noct db 0
 endg
 
 
