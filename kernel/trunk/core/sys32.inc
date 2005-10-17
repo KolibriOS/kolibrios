@@ -144,7 +144,7 @@ build_interrupt_table:
         mov    [edi + 0], word (i40 and ((1 shl 16)-1))
         mov    [edi + 2], word os_code
         mov    [edi + 4], word 11101110b*256
-        mov    [edi + 6], word (i40 shr 16)        
+        mov    [edi + 6], word (i40 shr 16)
 
         ret
 
@@ -230,9 +230,6 @@ e7:
 iglobal
   prev_user_of_fpu dd 1
 endg
-
-
-
 
 
 writehex:
@@ -362,10 +359,6 @@ irqD:
      iret
 
 
-
-uglobal
-  irqh dd 0x0
-endg
 
 irqhandler:
 
@@ -599,11 +592,6 @@ terminate: ; terminate application
     mov    esi,process_terminating
     call   sys_msg_board_str
     pop    esi
-;start memory manager code    
-;    mov    eax,esi
-;    call   MEM_Heap_Clean
-;end memory manager code
-    
 
     cli
     cmp   [application_table_status],0

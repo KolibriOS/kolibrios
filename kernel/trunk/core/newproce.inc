@@ -151,7 +151,7 @@ new_start_application_floppy:
     mov    edx,eax
     call   mem_alloc_specified_region ;allocate memory for application
     test   eax,eax
-    jz     .cleanfailed_mem
+    jz     .cleanfailed_mem1
     
     mov    eax,[edx+(std_application_base_address shr 20)]
     and    eax,not (4096-1)      ;eax - physical address of first (for application memory) page table
@@ -195,10 +195,21 @@ new_start_application_floppy:
     mov    [esp+28],eax
     popad
     ret
+    
+.cleanfailed_mem1:
+;there is mem for directory entry, but there is no mem for pages
+;so free directory entry
+    mov    eax,[new_process_place]    
+    shl    eax,8
+    mov    eax,[0x80000+eax+0xB8]
+    call   MEM_Free_Page    
 .cleanfailed_mem:
+;there is no mem for directory entry, display message.
     mov    esi,start_not_enough_memory
     call   sys_msg_board_str
 .cleanfailed:                    ;clean process name
+;can't read file, clean process name. 
+;this avoid problems with panel application.
     mov    edi,[new_process_place]
     shl    edi,8
     add    edi,0x80000
@@ -207,6 +218,7 @@ new_start_application_floppy:
     cld
     rep    stosb
 .failed:
+;no more slots
     add    esp,8+4
     mov    [application_table_status],0
     popad
@@ -296,7 +308,7 @@ new_start_application_fl:
     mov    edx,eax
     call   mem_alloc_specified_region ;allocate memory for application
     test   eax,eax
-    jz     .cleanfailed_mem
+    jz     .cleanfailed_mem1
     
     mov    eax,[edx+(std_application_base_address shr 20)]
     and    eax,not (4096-1)      ;eax - physical address of first (for application memory) page table
@@ -340,10 +352,20 @@ new_start_application_fl:
     popad
     ret
     
+.cleanfailed_mem1:
+;there is mem for directory entry, but there is no mem for pages
+;so free directory entry
+    mov    eax,[new_process_place]    
+    shl    eax,8
+    mov    eax,[0x80000+eax+0xB8]
+    call   MEM_Free_Page
 .cleanfailed_mem:
+;there is no mem for directory entry, display message.
     mov    esi,start_not_enough_memory
     call   sys_msg_board_str
 .cleanfailed:                    ;clean process name
+;can't read file, clean process name. 
+;this avoid problems with panel application.
     mov    edi,[new_process_place]
     shl    edi,8
     add    edi,0x80000
@@ -352,6 +374,7 @@ new_start_application_fl:
     cld
     rep    stosb
 .failed:
+;no more slots
     add    esp,8
     mov    [application_table_status],0
     popad
@@ -450,10 +473,6 @@ new_start_application_fl:
     mov    eax,[0x800B8+ecx]
     add    eax,8+16              ;add flags
     mov    [l.cr3],eax
-;write cr3 in TSS of System Call Handler    
-    mov    ecx,[new_process_place]
-    shl    ecx,7
-    mov    [0x298000+ecx+l.cr3-tss_sceleton],eax   ;write directy to TSS
     
     mov    eax,[app_start]
     mov    [l.eip],eax           ;set eip in TSS
@@ -1231,7 +1250,7 @@ new_start_application_hd:
     mov    edx,eax               ;edx - linear address of page directory
     call   mem_alloc_specified_region ;allocate memory for application
     test   eax,eax
-    jz     .cleanfailed_mem
+    jz     .cleanfailed_mem1
     
     add    edx,(std_application_base_address shr 20)
     mov    eax,[edx]
@@ -1306,10 +1325,20 @@ new_start_application_hd:
     popad
     ret
     
+.cleanfailed_mem1:
+;there is mem for directory entry, but there is no mem for pages
+;so free directory entry
+    mov    eax,[new_process_place]
+    shl    eax,8
+    mov    eax,[0x80000+eax+0xB8]
+    call   MEM_Free_Page
 .cleanfailed_mem:
+;there is no mem for directory entry, display message.
     mov    esi,start_not_enough_memory
     call   sys_msg_board_str    
 .cleanfailed:                    ;clean process name
+;can't read file, clean process name. 
+;this avoid problems with panel application.
     mov    edi,[new_process_place]
     shl    edi,8
     add    edi,0x80000
@@ -1318,6 +1347,7 @@ new_start_application_hd:
     cld
     rep    stosb    
 .failed:
+;no more slots
     add    esp,16
     popad   
     mov    eax,-1

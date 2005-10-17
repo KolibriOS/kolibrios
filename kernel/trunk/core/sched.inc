@@ -40,6 +40,7 @@ irq0:
 
         mov   ebx,[0x3000]
 
+        xor   esi,esi           ;esi - should we change task?
         cmp   [0xffff], byte 1
         je    .do_not_change_task
 
@@ -67,7 +68,7 @@ irq0:
 
         jmp   @f
      .do_not_change_task:
-        mov   [noct], 1
+        inc   esi          ;set don't change task flag
        @@:
 
         call  _rdtsc
@@ -89,14 +90,14 @@ irq0:
         mov   dx,0x20
         out   dx,al
 
-        cmp   [noct], 1
-        je    @f
-.switch:
-        jmp   pword [0xB000]
-        inc [context_counter] ;noname & halyavin
-       @@:
-        mov   [noct], 0
+        test  esi,esi   ; skip jmp to TSS if we aren't going to switch tasks
+        jnz    @f
         
+.switch:
+        inc   [context_counter] ;noname & halyavin
+        jmp   pword [0xB000]
+
+       @@:
         pop   es ds
         popad
         iret
@@ -105,7 +106,6 @@ irq0:
 
 uglobal
 context_counter dd 0 ;noname & halyavin
-noct db 0
 endg
 
 
