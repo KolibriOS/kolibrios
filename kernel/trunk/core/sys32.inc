@@ -282,12 +282,15 @@ show_error_parameters:
         mov    eax,[0x3000]
         shl    eax,8
         cmp    [0x80000+eax+0xB0],byte 0
-        jnz    .system_error
-
+        jz     @f
+        mov    esi,system_error
+        call   sys_msg_board_str
+      @@:
+        
         mov    eax,[0x3000]
         imul   eax,tss_step
         mov    eax,[eax+tss_data+l.eip-tss_sceleton]
-.out_eip:        
+
         mov    [write_error_to],process_eip+43
         call   writehex
 
@@ -301,22 +304,13 @@ show_error_parameters:
         call   sys_msg_board_str
 
         ret
-        
-.system_error:
-        mov    esi,system_error
-        call   sys_msg_board_str
-        mov    eax,[0x3000]
-        shl    eax,7
-        mov    eax,[eax+0x298000+l.eip-tss_sceleton]
-        jmp    .out_eip        
-
 
 
 
 ; irq1  ->  hid/keyboard.inc
 
 
-macro irqhh [num]
+macro irqh [num]
 {
   forward
   p_irq#num :
@@ -325,7 +319,7 @@ macro irqhh [num]
      jmp   irq_c
 }
 
-irqhh 2,3,4,5,6,7,8,9,10,11,12,14,15
+irqh 2,3,4,5,6,7,8,9,10,11,12,14,15
 
  irq_c:
      push  ds es
@@ -357,7 +351,6 @@ irqD:
      pop   es ds
      popad
      iret
-
 
 
 irqhandler:

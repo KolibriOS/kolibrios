@@ -193,7 +193,7 @@
 ; 600000  -> 6FFFFF   hd cache
 ;
 ; 700000  -> 71ffff   tcp memory       (128 kb)
-; 720000  -> 75ffff   interrupt stacks (256 kpl * 1024)
+; 720000  -> 75ffff   free (256 kb)
 ;
 ; 760000  -> 76ffff   !vrr driver
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
