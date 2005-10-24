@@ -83,7 +83,7 @@ irq0:
         cmp   [0xffff],byte 0
         je    .switch
         dec   byte [0xffff]
-        jmp   @f
+        jz    @f
      .switch:
         jmp   pword [0xB000]
         inc   [context_counter] ;noname & halyavin

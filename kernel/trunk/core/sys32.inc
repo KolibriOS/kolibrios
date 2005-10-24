@@ -319,7 +319,7 @@ macro irqh [num]
      jmp   irq_c
 }
 
-irqh 2,3,4,5,6,7,8,9,10,11,12,14,15
+irqh 2,3,4,5,7,8,9,10,11,12,14,15
 
  irq_c:
      push  ds es
@@ -330,7 +330,18 @@ irqh 2,3,4,5,6,7,8,9,10,11,12,14,15
      pop   es ds
      popad
      iret
-  	
+
+p_irq6:
+     pushad
+     push  ds es
+     mov   ax, os_data
+     mov   ds, ax
+     mov   es, ax
+     call  fdc_irq
+     pop   es ds
+     popad
+     iret
+
 irqD:
      pushad
      push  ds es
