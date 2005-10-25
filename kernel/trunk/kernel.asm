@@ -527,9 +527,7 @@ include 'vmodeld.inc'
         call   build_scheduler ; sys32.inc
 
 ; LOAD IDT
-        ; <IP 05.02.2005>
-        lidt   [cs:idtreg] ;[cs:idts]
-        ; </IP>
+        lidt   [cs:idtreg]
 
 ; READ CPUID RESULT
 
@@ -650,16 +648,11 @@ include 'vmodeld.inc'
         ; set default flags & stacks
         mov  [l.eflags],dword 0x11202 ; sti and resume
         mov  [l.ss0], os_data
-        ;mov  [l.ss1], ring1_data
-        ;mov  [l.ss2], ring2_data
-        ;mov  [l.esp0], 0x52000
-        ;mov  [l.esp1], 0x53000
-        ;mov  [l.esp2], 0x54000
         ; osloop - TSS
         mov  eax,cr3
         mov  [l.cr3],eax
         mov  [l.eip],osloop
-        mov  [l.esp],0x30000
+        mov  [l.esp],sysint_stack_data + 4096*2 ; uses slot 1 stack
         mov  [l.cs],os_code
         mov  [l.ss],os_data
         mov  [l.ds],os_data

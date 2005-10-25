@@ -126,8 +126,8 @@
 ;   FFF5  byte        1 do not draw pointer
 ;   FFFF  byte        do not change task for 1/100 sec.
 ;
-;  10000  ->  1FFFF   32 bit os
-;  20000  ->  3EBFF   32 bit stack
+;  10000  ->  3DBFF   kernel, 32-bit run-time code (up to 183 Kb)
+;  3DC00  ->  3EBFF   stack at boot time (4Kb)
 ;  3EC00  ->  3F5FF   basic text font II
 ;  3F600  ->  3FFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
@@ -161,7 +161,7 @@
 ; 280000  -> 281FFF   ramdisk fat
 ; 282000  -> 283FFF   floppy  fat
 ;
-; 284000  -> 29FFFF   free
+; 284000  -> 29FFFF   free (112 Kb)
 ;
 ; 2A0000  -> 2B00ff   wav device data
 ; 2C0000  -> 2C3fff   button info
@@ -200,7 +200,7 @@
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
 ;
 ; 778000  -> 77ffff   window skinning  ( 32 kb)
-; 780000  -> 7fffff   free
+; 780000  -> 7fffff   free (512 Kb)
 ;
 ; 800000  -> BFFFFF   mapped to LFB
 ;
@@ -213,9 +213,12 @@
 ;         0C   dword  draw limit - y end
 ;         1C   dword  app int vector
 ;
-; C03000  -> D11fff   sysint_stack_data
-;                     - interrupt stacks
+; C03000  -> D02fff   sysint_stack_data
+;                     - ring0 stacks for ring3 processes
+;                     - used for interrupt handling
 ;                     - 256 entries * 4096 step
+;
+; D03000  -> D1ffff   free (116 Kb)
 ;
 ; D20000  -> F28000   TSS and IO map for (8192*8)=65536 ports
 ;                     (128+8192)*256 = 557956 = 0x88000
