@@ -40,57 +40,36 @@ dtext:
 
 align 4
 drawletter:
-
-; eax  x
-; ebx  y
-; ecx  color
-; edx  letter
-; esi  shl size
-; edi  force
-
-        pushad
-        call  [disable_mouse]
-        xor   eax, eax
-        xor   ebx, ebx  ; 0x37000+eax+ebx*8
-        inc   esi
-        align 4
-      chc:
-
-        push  eax
-        push  ebx
-
-        mov   edx,ebx
-        shl   edx,3
-        add   edx,eax
-        add   edx,0x37000+8
-        mov   ecx,[esp+32-12+8]
-        imul  ecx,8*10
-        add   edx,ecx
-        cmp   [edx],byte 'o'
-        jnz   .nopix
-        mov   eax,[esp+4]
-        mov   ebx,[esp+0]
-        add   eax,[esp+32+2*4-4]
-        add   ebx,[esp+32+2*4-16]
-        mov   ecx,[esp+32+2*4-8]
-        ;;;call  [disable_mouse]
-        call  [putpixel]
-      .nopix:
-        pop   ebx
-        pop   eax
-
-        inc   eax
-        cmp   eax,5 ; ebp
-        jne   chc
-
-        xor   eax, eax
-
-        inc   ebx
-        cmp   ebx,9 ; ebp
-        jne   chc
-
-        popad
-        ret
+;eax - x
+;ebx - y
+;ecx - color
+;edx - ascii code
+    pushad
+    call  [disable_mouse]
+    mov   esi,9
+    lea   ebp,[0x3F600+8*edx+edx]
+.symloop:
+    push  esi
+    mov   dl,byte [ebp]
+    mov   esi,8
+.pixloop:
+    test  dl,1
+    jz    .nopix
+    call  [putpixel]
+.nopix:
+    shr   dl,1    
+    inc   eax
+    dec   esi
+    jnz   .pixloop
+    sub   eax,8
+    inc   ebx
+    inc   ebp
+    pop   esi
+    dec   esi
+    jnz   .symloop
+    popad
+    ret  
+        
 
 
 dtext2:
@@ -114,33 +93,17 @@ dtext2:
       align 4
       letnew2:
 
-        push   eax
         push   ecx
         push   edx
         movzx  ebx,ax
         shr    eax,16
         movzx  edx,byte [ecx]
-        mov    ecx,[esp+3*4+32-16]
+        mov    ecx,[esp+2*4+32-16]
         call   drawletter2
+        shl    eax,16
+        add    eax,ebx
         pop    edx
         pop    ecx
-        pop    eax
-
-        push   edx
-        movzx  edx,byte [ecx]
-        imul   edx,10*10
-        add    edx,0x30000
-        cmp    [edx+6],byte ' '
-        jne    nocharadd8
-        add    eax,8*65536
-        jmp    charaddok
-      nocharadd8:
-        movzx  edx,byte [edx+6]
-        sub    edx,47
-        shl    edx,16
-        add    eax,edx
-      charaddok:
-        pop    edx
 
         inc    ecx
         dec    edx
@@ -151,75 +114,47 @@ dtext2:
 
 align 4
 drawletter2:
-
-; eax  x
-; ebx  y
-; ecx  color
-; edx  letter
-; esi  shl size
-; edi  force
-
-        pushad
-        call  [disable_mouse]
-        xor   eax, eax
-        xor   ebx, ebx  ; +eax+ebx*8
-        inc   esi
-
-        align 4
-      chc2:
-
-        push  eax
-        push  ebx
-
-;        cmp   esi,1
-;        je    noldiv
-;        xor   edx,edx
-;        div   esi
-;        push  eax
-;        xor   edx,edx
-;        mov   eax,ebx
-;        div   esi
-;        mov   ebx,eax
-;        pop   eax
-;      noldiv:
-
-        mov   edx,ebx
-        ;shl   edx,3
-        imul  edx,10
-        add   edx,eax
-        add   edx,0x30000+8+2
-        mov   ecx,[esp+32-12+8]
-        ;shl   ecx,6
-        imul  ecx,10*10
-        add   edx,ecx
-        cmp   [edx],byte 'o'
-        jnz   nopix2
-        mov   eax,[esp+4]
-        mov   ebx,[esp+0]
-        add   eax,[esp+32+2*4-4]
-        add   ebx,[esp+32+2*4-16]
-        mov   ecx,[esp+32+2*4-8]
-        ;;;call  [disable_mouse]
-        call  [putpixel]
-      nopix2:
-        pop   ebx
-        pop   eax
-
-        ;mov   ebp,7
-        ;imul  ebp,esi
-
-        inc   eax
-        cmp   eax,7 ;ebp
-        jnz   chc2
-
-        xor   eax, eax
-
-        ;mov   ebp,9
-        ;imul  ebp,esi
-
-        inc   ebx
-        cmp   ebx,9 ; ebp
-        jnz   chc2
-
-        popad
-        ret
+;eax - x
+;ebx - y
+;ecx - color
+;edx - symbol
+;edi - force?
+;result - eax=eax+sym_size
+    pushad
+    call  [disable_mouse]
+    mov   esi,9
+    lea   ebp,[0x3EC00+8*edx+edx]
+    push  dword -1 ;size
+.symloop:
+    push  esi
+    mov   dl,byte [ebp]
+    xor   esi,esi
+.pixloop:
+    test  dl,1
+    jz    .nopix
+    cmp   [esp+4],esi
+    jge   .no_inc
+    mov   [esp+4],esi
+.no_inc:
+    call  [putpixel]
+.nopix:
+    shr   dl,1
+    inc   esi
+    inc   eax
+    cmp   esi,8
+    jl    .pixloop
+    sub   eax,8
+    inc   ebx
+    pop   esi
+    inc   ebp
+    dec   esi
+    jnz   .symloop
+    pop   edx
+    test  edx,edx
+    jge   .nospace
+    mov   edx,4
+.nospace:
+    add   edx,2
+    add   [esp+32-4],edx
+    popad
+    ret

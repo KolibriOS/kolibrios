@@ -127,9 +127,9 @@ start_of_code:
         mov  es,ax
         mov  ds,ax
 
-        mov  ax,0x2000
+        mov  ax,0x3000
         mov  ss,ax
-        mov  sp,0xffff
+        mov  sp,0xec00
 
         xor  ax,ax
         xor  bx,bx
@@ -224,9 +224,9 @@ start_of_code:
         mov  es,ax
         mov  ds,ax
 
-        mov  ax,0x2000
+        mov  ax,0x3000
         mov  ss,ax
-        mov  esp,0xffff
+        mov  esp,0xec00
 
         xor  eax,eax
         xor  ebx,ebx

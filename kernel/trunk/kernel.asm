@@ -169,7 +169,7 @@ app_data       equ  3+app_data_l-gdts
         mov     fs,ax
         mov     gs,ax
         mov     ss,ax
-        mov     esp,0x30000             ; Set stack
+        mov     esp,0x3ec00             ; Set stack
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
 
 use32
@@ -449,15 +449,15 @@ include 'vmodeld.inc'
         mov   eax,char
         mov   esi,12
         xor   ebx,ebx
-        mov   ecx,26000
-        mov   edx,0x37000
+        mov   ecx,2560;26000
+        mov   edx,0x3F600;0x37000
         call  fileread
 
         mov   eax,char2
         mov   esi,12
         xor   ebx,ebx
-        mov   ecx,26000
-        mov   edx,0x30000
+        mov   ecx,2560;26000
+        mov   edx,0x3EC00;0x30000
         call  fileread
 
         mov   esi,boot_fonts

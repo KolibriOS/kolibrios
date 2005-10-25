@@ -127,9 +127,9 @@
 ;   FFFF  byte        do not change task for 1/100 sec.
 ;
 ;  10000  ->  1FFFF   32 bit os
-;  20000  ->  2FFFF   32 bit stack
-;  30000  ->  36FFF   basic text font II
-;  37000  ->  3BFFF   basic text font I
+;  20000  ->  3EBFF   32 bit stack
+;  3EC00  ->  3F5FF   basic text font II
+;  3F600  ->  3FFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
 ;  50000  ->  5FFFF   free
 ;  60000  ->  7FFFF   paging tables
@@ -152,6 +152,7 @@
 ;
 ;           B0 dword  int40 handler in use ; 0 if not in use
 ;           B4  byte  keyboard mode: 0 = keymap, 1 = scancodes
+;           B8 dword  physical address of directory table
 ;
 ;  90000  ->  9FFFF   tmp
 ;  A0000  ->  AFFFF   screen access area
