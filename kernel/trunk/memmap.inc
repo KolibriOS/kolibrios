@@ -21,7 +21,7 @@
 ;
 ;   Runtime:
 ;
-;   0000  ->   2FFF   window_data   - 256 entries
+;   0000  ->   1FFF   window_data   - 256 entries
 ;
 ;         0000 dword  x start
 ;         0004 dword  y start
@@ -31,6 +31,8 @@
 ;         0014 dword  color of grab bar
 ;         0018 dword  color of frames
 ;         001C dword  window flags, +30 = window drawn, +31 redraw flag
+;
+;   2000  ->   2FFF   free
 ;
 ;   3000  ->   4FFF   task list      - 256 entries
 ;
@@ -56,12 +58,7 @@
 ;
 ;   8000  ->   A3FF   used FLOPPY driver
 ;
-;   A400  ->   AFFF   free
-;
-;   B000  ->   B005   jump address for irq0 (task switch)
-;   B008  ->   B00B   count of ticks remaining to updating CPU usage info
-
-;   B060  ->   B0FF   free
+;   A400  ->   B0FF   free
 
 ;   B100  ->   B2FF   IDT
 
@@ -73,16 +70,9 @@
 ;   D200  ->   D3FF   FDC controller for Fat12
 ;   D400  ->   DFFF   free
 ;   E000  byte        multitasking started
-;   E004  dword       save for boot mem 0x24
-;   E010  dword       pm bank switch address
-;   E014  dword       window multiplier
 ;   E020  dword       putpixel address
 ;   E024  dword       getpixel address
 ;   E030  dword       Vesa 1.2 pm bank switch address
-;   F000  dword       hd partition 1 start
-;   F004  dword       root start at partition 1
-;   F008  dword       root start at hd
-;   F100  byte        1=only os draw on screen
 ;   F200  dword       mousepicture -pointer
 ;   F204  dword       mouse appearance counter
 ;   F300  dword       x & y temp for windowmove
@@ -103,11 +93,9 @@
 ;   FB40  byte        buttons down
 ;   FB44  byte        0 mouse down -> do not draw
 ;   FB4A  ->   FB4D   FB4A-B x-under - FB4C-D y-under
-;   FBF0  byte        multiplied window
 ;   FBF1  byte        bits per pixel
 ;   FC00  ->   FCFE   com1/ps2 buffer
 ;   FCFF              com1/ps2 buffer count starting from FC00
-;   FDF0  ->   FDF3   timer tick inc every 1/100 sec 4 bytes
 ;   FE00  dword       screen x size
 ;   FE04  dword       screen y size
 ;   FE08  dword       screen y multiplier
@@ -211,7 +199,8 @@
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
-;         1C   dword  app int vector
+;
+; C02000  -> C02fff   free (4 Kb)
 ;
 ; C03000  -> D02fff   sysint_stack_data
 ;                     - ring0 stacks for ring3 processes

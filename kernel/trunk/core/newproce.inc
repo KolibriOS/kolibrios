@@ -498,7 +498,7 @@ new_start_application_fl:
     mov    [l.ss0],os_data
     mov    ebx,[new_process_place]
     shl    ebx,12
-    add    ebx,sysint_stack_data
+    add    ebx,sysint_stack_data+4096
     mov    [l.esp0],ebx
 
 ;copy tss to it place

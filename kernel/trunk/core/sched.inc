@@ -1,6 +1,3 @@
-label  next_usage_update   dword   at  0xB008
-label  timer_ticks         dword   at  0xFDF0
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; IRQ0 HANDLER (TIMER INTERRUPT) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -73,8 +70,8 @@ irq0:
         shl   ebx, 3
         xor   eax, eax
         add   ebx, tss0
-        mov   word  [0xB004], bx   ; selector
-        mov   dword [0xB000], eax  ; offset
+        mov   word  [far_jump.sel],  bx   ; selector
+        mov   dword [far_jump.offs], eax  ; offset
 
         mov   al,0x20   ; send End Of Interrupt signal
         mov   dx,0x20
@@ -85,7 +82,7 @@ irq0:
         dec   byte [0xffff]
         jz    @f
      .switch:
-        jmp   pword [0xB000]
+        jmp   pword [far_jump]
         inc   [context_counter] ;noname & halyavin
        @@:
         
@@ -94,9 +91,13 @@ irq0:
         iret
 
 
-
 uglobal
-context_counter dd 0 ;noname & halyavin
+   far_jump:
+    .offs dd ?
+    .sel  dw ?
+   context_counter     dd ? ;noname & halyavin
+   next_usage_update   dd ?
+   timer_ticks         dd ?
 endg
 
 

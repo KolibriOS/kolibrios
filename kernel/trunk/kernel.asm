@@ -3277,10 +3277,6 @@ redrawscreen:
 
          cmp   ecx,[0x3004]
          jle   newdw2
-;         jg    newdw3
-;         jmp   newdw2
-
-;       newdw3:
 
          pop  eax
          popad
@@ -3455,11 +3451,6 @@ no_com1_mouse:
 
         cmp    bl,3             ; full packet of three bytes ?
         jnz    decm
-;        jz     ps2mouse
-;        jmp    decm
-
-
-;      ps2mouse:
 
         mov    [0xfb00],byte 0  ; zero mouse block count
 
@@ -5372,17 +5363,10 @@ syscall_reserveportarea:                ; ReservePortArea and FreePortArea
      mov   [esp+36],eax
      ret
 
-align 4
+;align 4
 
 syscall_appints:                        ; AppInts
-
-     test  eax,eax
-     jnz   unknown_app_int_fn
-     mov   edi,[0x3010]
-     mov   [edi+draw_data-0x3000+0x1c],ebx
-     ret
-   unknown_app_int_fn:
-     mov   [esp+36],dword -1
+;    mov   [esp+36],dword -1
      ret
 
 align 4
