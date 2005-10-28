@@ -3,83 +3,44 @@
 ;;                   SYSTEM CALL ENTRY                        ;;
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-uglobal
-  pushed_regs rd 1
-endg
 
 align 32
 i40:
+      push  ds es
       pushad
 
-      push  ds
       mov   ax,word os_data
       mov   ds,ax
       mov   es,ax
-      mov   [pushed_regs],esp
-      add   dword [pushed_regs],4
-      cli
-
-      mov    eax, [0x3000]
-      mov    edi, eax
-      shl    edi, 8
-      mov    [edi+0x80000+0xB0],eax  ; used i40 handler
 
       ; for syscall trace function
       call  save_registers
 
-      mov   esi,[pushed_regs]
-
-      ; load first 3 registers
-      mov   eax,[esi+28]
-      mov   ebx,[esi+16]
-      mov   ecx,[esi+24]
-
-      ; save current registers
-      ; stack may be modified by a system function to return some value to caller!
-      pushad
-
-      ; load all registers from TSS of the application, in crossed order (why?)
-      mov   edi,[esi+28]
-      mov   eax,[esi+16]
-      mov   ebx,[esi+24]
-      mov   ecx,[esi+20]
-      mov   edx,[esi+4]
-      mov   esi,[esi+0]
+      ; load all registers in crossed order
+      mov   edi,[esp+28] ; eax
+      mov   eax,[esp+16] ; ebx
+      mov   ebx,[esp+24] ; ecx
+      mov   ecx,[esp+20] ; edx
+      mov   edx,[esp+4]  ; esi
+      mov   esi,[esp+0]  ; edi
 
       ; enable interupts  -  a task switch or an IRQ _CAN_ interrupt i40 handler
       sti
-      ; eax doesn't need to be saved, but...
-      push   eax
-      and    edi,0xff
-      call   dword [servetable+edi*4]
-      pop    eax
+      push  eax
+      and   edi,0xff
+      call  dword [servetable+edi*4]
+      pop   eax
       cli
-       
-      ; return saved and probably even changed regs
-      popad
-
-      ; modify 3 program's registers (in its TSS)
-      mov   [esi+28],eax   
-      mov   [esi+16],ebx
-      mov   [esi+24],ecx
-
-      xor    eax, eax
-      mov    edi, [0x3000]          ; no syscall interrupt in use anymore
-      shl    edi, 8
-      mov    [edi+0x80000+0xB0],eax
-
-      pop     eax
-      mov     ds,ax
-      mov     es,ax
       
       popad
+      pop   es ds
       iretd
 
 align 4
 save_registers:
       mov   esi, [0x3010]
       mov   eax, [esi+0x4] ; load PID
-      mov   esi, [pushed_regs]
+      lea   esi, [esp+4]
       inc   [save_syscall_count]
       mov   edi,[save_syscall_count]
       and   edi,0xF

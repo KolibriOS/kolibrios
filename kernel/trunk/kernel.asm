@@ -832,9 +832,7 @@ osloop:
         call   checkidle
         call   check_fdd_motor_status
         jmp    osloop
-;temp_pointers:
-; rd 32
-; seed dd 0x12345678
+
 
 checkidle:
 

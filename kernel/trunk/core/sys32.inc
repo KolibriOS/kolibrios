@@ -280,15 +280,12 @@ show_error_parameters:
         call   writehex
         
         mov    eax,[0x3000]
-        shl    eax,8
-        cmp    [0x80000+eax+0xB0],byte 0
+        imul   eax,tss_step
+        cmp    [eax+tss_data+l.cs-tss_sceleton], os_code
         jz     @f
         mov    esi,system_error
         call   sys_msg_board_str
       @@:
-        
-        mov    eax,[0x3000]
-        imul   eax,tss_step
         mov    eax,[eax+tss_data+l.eip-tss_sceleton]
 
         mov    [write_error_to],process_eip+43
@@ -338,6 +335,10 @@ p_irq6:
      mov   ds, ax
      mov   es, ax
      call  fdc_irq
+
+     mov   al,0x20            ; ready for next irq
+     out   0x20,al
+
      pop   es ds
      popad
      iret
