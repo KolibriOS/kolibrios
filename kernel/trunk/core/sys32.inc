@@ -278,15 +278,13 @@ show_error_parameters:
         mov    [write_error_to],process_error+43
         mov    eax,[error_interrupt]
         call   writehex
-        
-        mov    eax,[0x3000]
-        imul   eax,tss_step
-        cmp    [eax+tss_data+l.cs-tss_sceleton], os_code
-        jz     @f
+
+        cmp    dword [esp+4+4], os_code ; CS
+        jnz    @f
         mov    esi,system_error
         call   sys_msg_board_str
       @@:
-        mov    eax,[eax+tss_data+l.eip-tss_sceleton]
+        mov    eax, [esp+4] ; EIP
 
         mov    [write_error_to],process_eip+43
         call   writehex
