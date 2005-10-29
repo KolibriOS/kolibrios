@@ -3002,7 +3002,7 @@ modify_pce:
 ;       mov ebx,0
 ;       or  bx,100000000b ;pce
 ;       xor eax,ebx ;invert pce
-       btr eax,8 ;pce=cr4[8]
+       bts eax,8 ;pce=cr4[8]
        mov cr4,eax
        mov [esp+36],eax
 ret
