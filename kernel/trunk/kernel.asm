@@ -86,7 +86,7 @@ drawbar         dd __sys_drawbar
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.5.1.0      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.5.1.5      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -2257,7 +2257,7 @@ keyboard_mode_sys db 0
 
 iglobal 
 version_inf: 
-  db 0,5,1,0  ; version 0.5.1.0 
+  db 0,5,1,5  ; version 0.5.1.5 
   db UID_KOLIBRI 
   db 'Kolibri',0 
 version_end: 
@@ -2277,34 +2277,50 @@ main_loop_sys_getkey:
     ret
 
 sys_cachetodiskette:
-    pushad
-    cmp  eax,1
-    jne  no_write_all_of_ramdisk
-
-    call fdc_writeramdisk
-    popad
-    ret
-  no_write_all_of_ramdisk:
+;    pushad
+;    cmp  eax,1
+;    jne  no_write_all_of_ramdisk
+;    call fdc_writeramdisk
+;    popad
+;    ret
+;  no_write_all_of_ramdisk:
+;    cmp eax,2
+;    jne no_write_part_of_ramdisk
+;    call fdc_commitflush
+;    popad
+;    ret
+;  no_write_part_of_ramdisk:
+;    cmp  eax,3
+;    jne  no_set_fdc
+;    call fdc_set
+;    popad
+;    ret
+;  no_set_fdc:
+;    cmp  eax,4
+;    jne  no_get_fdc
+;    popad
+;    call fdc_get
+;    mov    [esp+36],ecx
+;    ret
+;  no_get_fdc:
+;    popad
+;    ret
+    cmp eax,1
+    jne no_floppy_a_save
+    mov   [flp_number],1
+    jmp save_image_on_floppy
+  no_floppy_a_save:
     cmp eax,2
-    jne no_write_part_of_ramdisk
-    call fdc_commitflush
-    popad
-    ret
-  no_write_part_of_ramdisk:
-    cmp  eax,3
-    jne  no_set_fdc
-    call fdc_set
-    popad
-    ret
-  no_set_fdc:
-    cmp  eax,4
-    jne  no_get_fdc
-    popad
-    call fdc_get
-    mov    [esp+36],ecx
-    ret
-  no_get_fdc:
-    popad
+    jne no_floppy_b_save
+    mov   [flp_number],2
+  save_image_on_floppy:
+    call save_image
+    mov  [esp+36],dword 0
+    cmp  [FDC_Status],0
+    je   yes_floppy_save             
+  no_floppy_b_save:
+    mov [esp+36],dword 1
+  yes_floppy_save:
     ret
 
 uglobal

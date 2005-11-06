@@ -456,11 +456,11 @@ mov [edi+22],ax          ; time
         pop    edi esi edx ecx ebx eax
         add    esp,32
 
-        pusha
-        cli
-        call   fdc_commitfile
-        sti
-        popa
+;        pusha
+;        cli
+;        call   fdc_commitfile
+;        sti
+;        popa
 
         xor    eax,eax ;ok write
         ret
