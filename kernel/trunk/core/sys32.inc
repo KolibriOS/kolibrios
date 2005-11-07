@@ -172,8 +172,8 @@ macro exceptions [num]
 {
   forward
   e#num :
-  	mov bl, num
-  	jmp exc_c
+      mov bl, num
+      jmp exc_c
 }
 
 exceptions 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
@@ -334,8 +334,8 @@ p_irq6:
      mov   es, ax
      call  fdc_irq
 
-     mov   al,0x20            ; ready for next irq
-     out   0x20,al
+     mov   edi,6
+     call  irqhandler
 
      pop   es ds
      popad
