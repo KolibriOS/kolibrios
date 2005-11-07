@@ -238,8 +238,8 @@ dispose_app_cr3_table:
 ;eax = current slot of process  
     mov   ecx,eax
     shl   ecx,5
-    cmp   byte [second_base_address+0x3000+ecx+0xa],0 ;if process running?
-    jnz   .next                  ;slot empty or process is terminating - go to next slot
+    cmp   byte [second_base_address+0x3000+ecx+0xa],9 ;if process running?
+    jz    .next                  ;skip empty slots
     shl   ecx,3
     cmp   [second_base_address+0x80000+ecx+0xB8],ebx  ;compare page directory addresses
     jnz   .next

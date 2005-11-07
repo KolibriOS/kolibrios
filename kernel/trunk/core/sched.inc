@@ -36,12 +36,21 @@ irq0:
         mov   [edi+0x14], eax
 
         mov   ebx,[0x3000]
+        mov   [prev_slot], ebx
 
         cmp   [0xffff], byte 1
         je    .do_not_change_task
 
+
       .waiting_for_termination:
       .waiting_for_reuse:
+      .waiting_for_event:
+        cmp   ebx, [0x3004]
+        jb    @f
+        mov   edi, 0x3000
+        xor   ebx, ebx
+      @@:
+
         add   edi,0x20
         inc   ebx
 
@@ -53,14 +62,20 @@ irq0:
         cmp   al, 9
         je    .waiting_for_reuse
 
-        cmp   ebx,[0x3004]
-        jbe   @f
-        mov   ebx,1
-        mov   edi,0x3020
-       @@:
-
         mov   [0x3000],ebx
         mov   [0x3010],edi
+
+        cmp   al, 5
+        jne   .noevents
+        call  get_event_for_app
+        test  eax, eax
+        jz    .waiting_for_event
+        mov   [event_sched], eax
+        mov   [edi+0xA], byte 0
+        cmp   ebx, [prev_slot]
+        sete  [0xffff]
+      .noevents:
+
 
      .do_not_change_task:
 
@@ -92,12 +107,15 @@ irq0:
 
 
 uglobal
+   align 4
    far_jump:
     .offs dd ?
     .sel  dw ?
    context_counter     dd ? ;noname & halyavin
    next_usage_update   dd ?
    timer_ticks         dd ?
+   prev_slot dd ?
+   event_sched dd ?
 endg
 
 

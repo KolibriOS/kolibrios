@@ -292,7 +292,7 @@ new_start_application_fl:
     
     call   get_app_params        ;parse header fields
     cmp    esi,0
-    jz     .failed
+    jz     .cleanfailed
     
     mov    eax,[new_process_place]
     call   create_app_cr3_table   ;create page directory for new process

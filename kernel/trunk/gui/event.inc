@@ -9,16 +9,16 @@ align 4
 
 sys_wait_event_timeout:
 
-     mov   ebx,[timer_ticks];[0xfdf0]
+     mov   ebx,[timer_ticks]
      add   ebx,eax
-     cmp   ebx,[timer_ticks];[0xfdf0]
+     cmp   ebx,[timer_ticks]
      jna   .swfet2
    .swfet1:
      call  get_event_for_app
      test  eax,eax
      jne   .eventoccur_time
      call  change_task
-     cmp   ebx,[timer_ticks];[0xfdf0]
+     cmp   ebx,[timer_ticks]
      jg    .swfet1
    .swfet2:
      xor   eax,eax
@@ -36,10 +36,11 @@ sys_waitforevent:
      jne   eventoccur
    newwait:
 
+     mov   eax, [0x3010]
+     mov   [eax+0xA], byte 5
      call  change_task
-     call  get_event_for_app
-     test  eax,eax
-     je    newwait
+
+     mov eax, [event_sched]
 
    eventoccur:
      mov   [esp+36],eax
@@ -53,7 +54,7 @@ get_event_for_app:
      mov   edi,[0x3010]              ; WINDOW REDRAW
      test  [edi],dword 1
      jz    no_eventoccur1
-     mov   edi,[0x3010]
+     ;mov   edi,[0x3010]
      cmp   [edi-twdw+31],byte 0
      je    no_eventoccur1
      popad
@@ -61,7 +62,7 @@ get_event_for_app:
      ret
    no_eventoccur1:
 
-     mov   edi,[0x3010]              ; KEY IN BUFFER
+     ;mov   edi,[0x3010]              ; KEY IN BUFFER
      test  [edi],dword 2
      jz    no_eventoccur2
      mov   ecx, [0x3000]
@@ -76,16 +77,16 @@ get_event_for_app:
      ret
    no_eventoccur2:
 
-     mov   edi,[0x3010]              ; BUTTON IN BUFFER
+     ;mov   edi,[0x3010]              ; BUTTON IN BUFFER
      test  [edi],dword 4
      jz    no_eventoccur3
+     cmp   [0xf500],byte 0
+     je    no_eventoccur3
      mov   ecx, [0x3000]
      movzx edx, word [0xC000+ecx*2]
      mov   eax, [0x3004]
      cmp   eax,edx
      jnz   no_eventoccur3
-     cmp   [0xf500],byte 0
-     je    no_eventoccur3
      popad
      mov   eax,[0xf501]
      cmp   eax,65535
@@ -100,8 +101,23 @@ get_event_for_app:
      ret
 
    no_eventoccur3:
+   
+   
+     ;mov   edi,[0x3010]              ; mouse event
+     test  [edi],dword 00100000b
+     jz    no_mouse_event
+     mov   eax,[0x3000]
+     shl   eax,8
+     test  [eax+0x80000+0xA8],dword 00100000b
+     jz    no_mouse_event
+     and   [eax+0x80000+0xA8],dword 0xffffffff-00100000b
+     popad
+     mov   eax,6
+     ret
+   no_mouse_event:
+   
 
-     mov   edi,[0x3010]              ; DESKTOP BACKGROUND REDRAW
+     ;mov   edi,[0x3010]              ; DESKTOP BACKGROUND REDRAW
      test  [edi],dword 16
      jz    no_eventoccur5
      cmp   [0xfff0],byte 2
@@ -111,46 +127,35 @@ get_event_for_app:
      ret
    no_eventoccur5:
 
-     mov   edi,[0x3010]              ; mouse event
-     test  [edi],dword 00100000b
-     jz    no_mouse_event
-     mov   edi,[0x3000]
-     shl   edi,8
-     test  [edi+0x80000+0xA8],dword 00100000b
-     jz    no_mouse_event
-     and   [edi+0x80000+0xA8],dword 0xffffffff-00100000b
-     popad
-     mov   eax,6
-     ret
-   no_mouse_event:
-
-     mov   edi,[0x3010]              ; IPC
+     ;mov   edi,[0x3010]              ; IPC
      test  [edi],dword 01000000b
      jz    no_ipc
-     mov   edi,[0x3000]
-     shl   edi,8
-     test  [edi+0x80000+0xA8],dword 01000000b
+     mov   eax,[0x3000]
+     shl   eax,8
+     test  [eax+0x80000+0xA8],dword 01000000b
      jz    no_ipc
-     and   [edi+0x80000+0xA8],dword 0xffffffff-01000000b
+     and   [eax+0x80000+0xA8],dword 0xffffffff-01000000b
      popad
      mov   eax,7
      ret
    no_ipc:
 
 
-     mov   edi,[0x3010]              ; STACK
+     ;mov   edi,[0x3010]              ; STACK
      test  [edi],dword 10000000b
      jz    no_stack_event
-     mov   edi,[0x3000]
-     shl   edi,8
-     test  [edi+0x80000+0xA8],dword 10000000b
+     mov   eax,[0x3000]
+     shl   eax,8
+     test  [eax+0x80000+0xA8],dword 10000000b
      jz    no_stack_event
-     and   [edi+0x80000+0xA8],dword 0xffffffff-10000000b
+     and   [eax+0x80000+0xA8],dword 0xffffffff-10000000b
      popad
-     mov   eax,7
+     mov   eax,8
      ret
    no_stack_event:
 
+     cmp   dword [edi], 0xFFFF
+     jbe   no_events
 
      mov   esi,0x2e0000              ; IRQ'S AND DATA
      mov   ebx,0x00010000
@@ -181,6 +186,7 @@ get_event_for_app:
      cmp   ecx,16
      jb    irq_event_test
 
+   no_events:
      popad
      xor   eax, eax
      ret

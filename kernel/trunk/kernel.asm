@@ -640,10 +640,9 @@ include 'vmodeld.inc'
         mov  [0x80000+256+0],dword 'OS/I'
         mov  [0x80000+256+4],dword 'DLE '
         ; task list
-        mov  [0x3004],dword 2         ; number of processes
-        mov  [0x3000],dword 0         ; process count - start with os task
         mov  [0x3020+0xE],byte  1     ; on screen number
         mov  [0x3020+0x4],dword 1     ; process id number
+        mov  [0x3020+0x10], dword 0   ; process base address
 
         ; set default flags & stacks
         mov  [l.eflags],dword 0x11202 ; sti and resume
@@ -718,51 +717,43 @@ include 'vmodeld.inc'
 
 
 ; LOAD FIRST APPLICATION
-        mov   [0x3000],dword 1 ;1
-        mov   [0x3004],dword 1 ;1
+        mov   [0x3000],dword 1
+        mov   [0x3004],dword 1
         cli
         mov   al,[0x2f0000+0x9030]
         cmp   al,1
         jne   no_load_vrr_m
         mov   eax,vrr_m
         call  start_application_fl
-        cmp   eax,2                  ; if no vrr_m app found
+        cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
         
-    no_load_vrr_m:     
+    no_load_vrr_m:
         mov   eax,firstapp
         call  start_application_fl
 
-        cmp   eax,2                  ; if no first app found - halt
+        cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
-        mov   eax, 0xDEADBEEF
-        hlt    ;jmp   $
+        mov   eax, 0xDEADBEEF        ; otherwise halt
+        hlt
       first_app_found:
         cli
 
-        mov   [0x3004],dword 2
-        mov   [0x3000],dword 1
+        ;mov   [0x3004],dword 2
+        mov   [0x3000],dword 1       ; set OS task fisrt
 
-
-; START MULTITASKING
-
-        mov   esi,boot_tasking
-        call  boot_log
-
-        mov   [0xe000],byte 1        ; multitasking enabled
-
-    mov   al, 0xf6         ; —брос клавиатуры, разрешить сканирование
-        call  kb_write
-
-        mov     ecx,0
-wait_loop_1:       ; variant 2
-; читаем порт состо€ни€ процессора 8042
-        in      al,64h 
-    and     al,00000010b  ; флаг готовности
-; ожидаем готовность процессора 8042
-    loopnz  wait_loop_1
 
 ; SET KEYBOARD PARAMETERS
+        mov   al, 0xf6         ; reset keyboard, scan enabled
+        call  kb_write
+
+        ; wait until 8042 is ready
+        mov    ecx,0
+      @@:
+        in     al,64h 
+        and    al,00000010b
+        loopnz @b
+
        ; mov   al, 0xED       ; svetodiody - only for testing!
        ; call  kb_write
        ; call  kb_read
@@ -780,6 +771,12 @@ wait_loop_1:       ; variant 2
         call  set_lights
      ;// mike.dld ]
 
+; START MULTITASKING
+
+        mov   esi,boot_tasking
+        call  boot_log
+
+        mov   [0xe000],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
 
@@ -835,7 +832,6 @@ osloop:
 
 
 checkidle:
-
         pushad
 
         cmp  [check_idle_semaphore],0
@@ -3024,72 +3020,24 @@ modify_pce:
 ret
 ;---------------------------------------------------------------------------------------------
 
-; check pixel limits
-
-;cplimit:
-;        push    edi
-
-;        cmp     byte [0xe000], 1      ; Multitasking enabled?
-;        jnz     .ret0
-;        mov     edi,[0x3010]
-;        add     edi, draw_data-0x3000
-;        mov     ecx, 1
-;        cmp     [edi+0], eax  ; xs
-;        ja      .ret1
-;        cmp     [edi+4], ebx  ; ys
-;        ja      .ret1
-;        cmp     eax, [edi+8]   ; xe
-;        ja      .ret1
-;        cmp     ebx, [edi+12] ; ye
-;        ja      .ret1
-
-;.ret0:
-;        xor     ecx, ecx
-;.ret1:
-;        pop     edi
-;        ret
-
 
 ; check if pixel is allowed to be drawn
 
 checkpixel:
-
-        push eax
-        push ebx
-        push edx
-
-;        mov   ecx,[0x3000]  ; process count
-;        shl   ecx, 6        ; *64
-;        add   ecx,0xc000    ; +window_stack
-;        mov   dx,word [ecx] ; window_stack_value
-
-;        cmp   dx, word [0x3004] ; is this window active right now?!
-;        jz    .ret0
-
-;        call  cplimit
-;        test  ecx, ecx
-;        jnz   .ret1
+        push eax edx
 
         mov  edx,[0xfe00]     ; screen x size
         inc  edx
-        imul  edx, ebx
+        imul edx, ebx
         mov  dl, [eax+edx+display_data] ; lea eax, [...]
-;;;        mov  dl,[eax]
 
-        mov  eax,[0x3000]
-        shl  eax,5
-        add  eax,0x3000+0xe
+        mov  eax, [0x3010]
 
-        mov  ecx, 1
-        cmp  byte [eax], dl
-        jnz  .ret1
-
-.ret0:
         xor  ecx, ecx
-.ret1:
-        pop  edx
-        pop  ebx
-        pop  eax
+        cmp  byte [eax+0xe], dl
+        setne cl
+
+        pop  edx eax
         ret
 
 uglobal
