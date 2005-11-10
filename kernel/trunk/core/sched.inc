@@ -18,14 +18,14 @@ irq0:
         inc   dword [timer_ticks]
 
         mov   eax, [timer_ticks]
+        call  playNote           ; <<<--- Speaker driver
+
         cmp   eax,[next_usage_update]
         jb    .nocounter
         add   eax,100
         mov   [next_usage_update],eax
         call  updatecputimes
      .nocounter:
-
-        call  playNote           ; <<<--- Speaker driver
 
         mov   edi, [0x3010]
 

@@ -168,7 +168,7 @@ endg
 unknown_interrupt:
      iret
 
-macro exceptions [num]
+macro exc_wo_code [num]
 {
   forward
   e#num :
@@ -176,7 +176,18 @@ macro exceptions [num]
       jmp exc_c
 }
 
-exceptions 0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17
+macro exc_w_code [num]
+{
+  forward
+  e#num :
+      add esp, 4
+      mov bl, num
+      jmp exc_c
+}
+
+exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 16 ; 18, 19
+exc_w_code 8, 10, 11, 12, 13, 14, 17
+
 exc_c:
         mov   ax, os_data
         mov   ds, ax
@@ -334,8 +345,10 @@ p_irq6:
      mov   es, ax
      call  fdc_irq
 
-     mov   edi,6
-     call  irqhandler
+     ;mov   edi,6
+     ;call  irqhandler
+     mov   al, 0x20
+     out   0x20, al
 
      pop   es ds
      popad

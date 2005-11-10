@@ -119,7 +119,9 @@
 ;  3EC00  ->  3F5FF   basic text font II
 ;  3F600  ->  3FFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
-;  50000  ->  5FFFF   free
+
+;  50000  ->  5FFFF   free (64 Kb)
+
 ;  60000  ->  7FFFF   paging tables
 ;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
@@ -164,6 +166,8 @@
 ;        +000A word   y size
 ;        +000C word   button id number : bits 16-31
 ;
+; 2C4000  -> 2CFFFF   free (48Kb)
+;
 ; 2D0000  -> 2DFFFF   reserved port area
 ;
 ;     0000   dword    no of port areas reserved
@@ -175,7 +179,7 @@
 ; 2E0000  -> 2EFFFF   irq data area
 ; 2F0000  -> 2FFFFF   low memory save
 ;
-; 300000  -> 45FFFF   background image, max 1 M
+; 300000  -> 45FFFF   background image, max 1,375 M
 ;
 ; 460000  -> 5FFFFF   display info
 ;
