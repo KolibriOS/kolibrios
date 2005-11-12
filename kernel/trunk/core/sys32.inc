@@ -345,8 +345,7 @@ p_irq6:
      mov   es, ax
      call  fdc_irq
 
-     ;mov   edi,6
-     ;call  irqhandler
+     mov    [check_idle_semaphore],5
      mov   al, 0x20
      out   0x20, al
 
