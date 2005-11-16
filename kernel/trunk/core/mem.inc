@@ -251,8 +251,8 @@ dispose_app_cr3_table:
             
 ;edx = number of threads
 ;our process is zombi so it isn't counted
-    test  edx,edx
-    jnz   .threadsexists
+    cmp   edx,1
+    jg    .threadsexists
 ;if there isn't threads then clear memory.
     add   edi,std_application_base_address shr 20
     
