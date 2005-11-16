@@ -122,9 +122,9 @@ drawletter2:
 ;result - eax=eax+sym_size
     pushad
     call  [disable_mouse]
+    shl   edx,1
     mov   esi,9
-    lea   ebp,[0x3EC00+8*edx+edx]
-    push  dword -1 ;size
+    lea   ebp,[0x3EC00+4*edx+edx+1]
 .symloop:
     push  esi
     mov   dl,byte [ebp]
@@ -132,10 +132,6 @@ drawletter2:
 .pixloop:
     test  dl,1
     jz    .nopix
-    cmp   [esp+4],esi
-    jge   .no_inc
-    mov   [esp+4],esi
-.no_inc:
     call  [putpixel]
 .nopix:
     shr   dl,1
@@ -149,12 +145,7 @@ drawletter2:
     inc   ebp
     dec   esi
     jnz   .symloop
-    pop   edx
-    test  edx,edx
-    jge   .nospace
-    mov   edx,4
-.nospace:
-    add   edx,2
+    movzx edx,byte [ebp-10]
     add   [esp+32-4],edx
     popad
     ret
