@@ -195,11 +195,6 @@ pr_mode_exit:
     mov gs,ax
     mov ss,ax
 ;    mov bl,[shutdown_parameter]
-    mov al,2
-    out 0x21,al
-    mov al,0
-    out 0xA1,al
-
 ;    mov [es:shutdown_parameter-0x10000],bl
 
     jmp real_mode-0x10000       
@@ -209,11 +204,43 @@ old_ints_h:
         dd      0
         dw      0
 
+rdelay:
+    ret
 real_mode:
 
     lidt [cs:old_ints_h-0x10000]
     mov  sp,0xfff0
-
+;remap IRQs
+    mov  al,0x11
+    out  0x20,al
+    call rdelay
+    out  0xA0,al
+    call rdelay
+    
+    mov  al,0x08
+    out  0x21,al
+    call rdelay
+    mov  al,0x70
+    out  0xA1,al
+    call rdelay
+    
+    mov  al,0x04
+    out  0x21,al
+    call rdelay
+    mov  al,0x02
+    out  0xA1,al
+    call rdelay
+    
+    mov  al,0x01
+    out  0x21,al
+    call rdelay
+    out  0xA1,al
+    call rdelay
+    
+    mov  al,2
+    out  0x21,al
+    mov  al,0
+    out  0xA1,al
     sti
 
     jmp  temp_3456
