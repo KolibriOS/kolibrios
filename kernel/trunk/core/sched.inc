@@ -72,9 +72,9 @@ irq0:
         jz    .waiting_for_event
         mov   [event_sched], eax
         mov   [edi+0xA], byte 0
+      .noevents:
         cmp   ebx, [prev_slot]
         sete  [0xffff]
-      .noevents:
 
 
      .do_not_change_task:
