@@ -86,7 +86,7 @@ drawbar         dd __sys_drawbar
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.5.1.5      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.5.2.1      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -2253,7 +2253,7 @@ keyboard_mode_sys db 0
 
 iglobal 
 version_inf: 
-  db 0,5,1,5  ; version 0.5.1.5 
+  db 0,5,2,1  ; version 0.5.2.1
   db UID_KOLIBRI 
   db 'Kolibri',0 
 version_end: 
