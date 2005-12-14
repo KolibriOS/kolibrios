@@ -24,33 +24,34 @@ macro line_space {
           times   78 db 32
           db      186
 }
-d80x25_top:
-		line_full_top
-space_msg:	line_space
-verstr:
-;		line_space
-; version string
-	db 186,32
-	repeat 78
-		load a byte from version+%-1
-		if a = 13
-			break
-		end if
-		db a
-	end repeat
-	repeat 78 - ($-verstr)
-		db	' '
-	end repeat
-	db 32,186
-		line_half
-d80x25_top_num = 4
-d80x25_bottom:
+d80x25:   line_full_top
+          line_space
+          line_space
+          line_half
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+          line_space
+;          line_space
           db       186,' KolibriOS based on MenuetOS and comes with ABSOLUTELY '
           db       'NO WARRANTY            ',186
           db       186,' See file COPYING for details                          '
           db       '                       ',186
           line_full_bottom
-d80x25_bottom_num = 3
 
 novesa    db      "Display: EGA/CGA",13,10,0
 vervesa   db      "Version of Vesa: Vesa x.x ",13,10,0
@@ -90,6 +91,7 @@ probetext db      13,10,13,10,186," Use standart graphics mode? [1-yes, "
 ;memokz64  db      13,10,186," RAM 64 Mb",0
 ;memokz32  db      13,10,186," RAM 32 Mb",0
 ;memokz16  db      13,10,186," RAM 16 Mb",0
+prid      db      " pr.",0
 prnotfnd  db      " pr. - not found.",0
 modena    db      "Fatal - VBE 0x112+ required.",0
 not386    db      "Fatal - CPU 386+ required.",0
@@ -97,38 +99,13 @@ btns      db      13,10,186,"Fatal - Can't determine color depth.",0
 fatalsel  db      13,10,"Fatal - Graphics mode not supported by hardware.",0
 badsect   db      13,10,186," Fatal - Bad sector. Replace floppy. ",0
 memmovefailed db  "Fatal - Int 0x15 move failed.",0
-okt       db      " ... OK"
+linef2    db      13,10
 linef     db      13,10,0
+okt       db      " ... OK",0
+keyin     db      "x",0
+keyinbs   db      "x",8,0
 diskload  db      13,10,186," Loading diskette: 00 %",8,8,8,8,0
 backspace db      8,0
 pros      db      "00",8,8,0
+leftpr    db      186," ",0
 boot_dev  db      0  ; 0=floppy, 1=hd
-start_msg db      "Press [abcd] to change settings, press [Enter] to continue booting",13,10,0
-time_msg  db      " or wait "
-time_str  db      " 5 seconds"
-          db      " before automatical continuation",13,10,0
-current_cfg_msg db "Current settings:",13,10,0
-curvideo_msg db   " [a] Videomode: ",0
-mode1     db      "640x480",0
-mode2     db      "800x600",0
-mode3     db      "1024x768",0
-mode4     db      "1280x1024",0
-modes_msg dw mode4-0x10000,mode1-0x10000,mode2-0x10000,mode3-0x10000
-modevesa20 db     " with LFB",0
-modevesa12 db     ", VESA 1.2 Bnk",0
-mode9     db      "320x200, EGA/CGA 256 colors",0
-mode10    db      "640x480, VGA 16 colors",0
-probeno_msg db    " (standard mode)",0
-probeok_msg db    " (check nonstandard modes)",0
-mtrr_msg  db      " [b] Use MTRR for graphics acceleration:",0
-on_msg    db      " on",13,10,0
-off_msg   db      " off",13,10,0
-vrrm_msg  db      " [c] Use VRR:",0
-preboot_device_msg db " [d] Floppy image: ",0
-preboot_device_msgs dw 0,pdm1-0x10000,pdm2-0x10000,pdm3-0x10000
-pdm1      db      "real floppy",13,10,0
-pdm2      db      "C:\menuet.img (FAT32)",13,10,0
-pdm3      db      "use already loaded image",13,10,0
-loading_msg db    "Loading KolibriOS...",0
-save_quest db     "Remember current settings? [y/n]: ",0
-loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0

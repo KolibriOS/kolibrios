@@ -1,0 +1,111 @@
+if ~defined sync_inc
+sync_inc_fix:
+sync_inc fix sync_inc_fix
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;Synhronization for MenuetOS.                       ;;
+;;Author: Halyavin Andrey, halyavin@land.ru          ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;simplest mutex.
+macro SimpleMutex name
+{
+;  iglobal
+    name dd 0
+    name#.type = 1
+;  endg
+}
+macro WaitSimpleMutex name
+{
+  local start_wait,ok
+start_wait=$  
+  cli
+  cmp  [name],dword 0
+  jz   ok
+  sti
+  call change_task
+  jmp  start_wait
+ok=$
+  push eax
+  mov  eax,dword [0x3010+second_base_address]
+  mov  eax,[eax+0x4]
+  mov  [name],eax
+  pop  eax
+  sti
+}
+macro ReleaseSimpleMutex name
+{
+  mov  [name],dword 0
+}
+macro TryWaitSimpleMutex name  ;result in eax and in flags
+{
+  local ok,try_end
+  cmp  [name],dword 0
+  jz   ok
+  xor  eax,eax
+  jmp  try_end
+ok=$
+  xor  eax,eax
+  inc  eax
+try_end=$
+}
+macro SimpleCriticalSection name
+{
+;  iglobal
+    name  dd 0
+          dd 0
+    name#.type=2
+;  endg
+}
+macro WaitSimpleCriticalSection name
+{
+  local start_wait,first_wait,inc_counter,end_wait
+  push  eax
+  mov   eax,[0x3010+second_base_address]
+  mov   eax,[eax+0x4]
+start_wait=$
+  cli
+  cmp   [name],dword 0
+  jz    first_wait
+  cmp   [name],eax
+  jz    inc_counter
+  sti
+  call  change_task
+  jmp   start_wait
+first_wait=$
+  mov   [name],eax
+  mov   [name+4],dword 1
+  jmp   end_wait  
+inc_counter=$
+  inc   dword [name+4]
+end_wait=$
+  sti
+  pop   eax
+}
+macro ReleaseSimpleCriticalSection name
+{
+  local release_end
+  dec   dword [name+4]
+  jnz   release_end
+  mov   [name],dword 0
+release_end=$
+}
+macro TryWaitSimpleCriticalSection name ;result in eax and in flags
+{
+  local ok,try_end
+  mov   eax,[0x3000+second_base_address]
+  mov   eax,[eax+0x4]
+  cmp   [name],eax
+  jz    ok
+  cmp   [name],0
+  jz    ok
+  xor   eax,eax
+  jmp   try_end
+ok=$
+  xor   eax,eax
+  inc   eax
+try_end=$
+}
+_cli equ call MEM_HeapLock
+_sti equ call MEM_HeapUnLock
+end if
+
