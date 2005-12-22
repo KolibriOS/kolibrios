@@ -323,6 +323,7 @@ restart_kernel:
 
 
 restart_kernel_4000:
+        cli
 
         mov     di,0x1000      ; load kernel image from 0x8000:0 -> 0x1000:0
 
@@ -351,9 +352,10 @@ restart_kernel_4000:
 
         mov     ax,0x1000
         mov     es,ax
-        mov     ax,0x2000
+        mov     ax,0x3000
         mov     ss,ax
-        mov     sp,0xff00
+        mov     sp,0xec00
+        sti
 
         jmp     0x1000:0000
 
