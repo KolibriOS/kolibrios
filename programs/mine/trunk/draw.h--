@@ -1,0 +1,184 @@
+/*******************************************************************************
+
+    MenuetOS MineSweeper
+    Copyright (C) 2003  Ivan Poddubny
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+*******************************************************************************/
+
+void draw_window()
+// Процедура отрисовки окна
+{
+  mouse_disable();
+
+  sys_window_redraw(1);
+  sys_get_colors(#colors, 40);
+
+  // WINDOW
+  EBX = xpos << 16 + xsize;
+  ECX = ypos << 16 + ysize;
+  sys_draw_window(EBX, ECX, 0x02CCCCCC, colors.w_grab | 0x80000000, colors.w_frames);
+
+  // LABEL
+  sys_write_text(8<<16+8, colors.w_grab_text | 0x10000000, "MeOS MineSweeper", 16);
+
+  // <CLOSE> BUTTON (1)
+  EBX = xsize - 19; EBX = EBX<<16 + 12;
+  sys_draw_button(EBX, 5<<16+12, 1, colors.w_grab_button);
+
+  // <NEW GAME> BUTTON (911)
+  EBX = xsize / 2 - 10;
+  EBX = EBX << 16 + 20;
+  sys_draw_button(EBX, 25<<16+20, 911, clLightGray);
+
+  // <CHANGE MODE> BUTTON (1001)
+  sys_draw_button(10<<16+7, 23<<16+7, 1001, 0x118811);
+
+  // <USER FIELD> BUTTON (1002)
+  //sys_draw_button(20<<16+7, ECX, EDX+1, 0xddbb44);
+
+  // <OPTIONS> BUTTON (1003)
+  // sys_draw_button();
+
+  // <SCORES> BUTTON (1004)
+  // sys_draw_button();
+
+  // <ABOUT> BUTTON (1005)
+  // sys_draw_button();
+
+  sys_window_redraw(2);
+
+  draw_time();     // draw timer
+  draw_minesi();   // draw mines
+  draw_squares();  // draw field
+
+  mouse_enable();
+}
+
+dword num_colors[8]=
+{
+  0x4444d0,  // 1
+  0x118811,  // 2
+  0xd04444,  // 3
+  0x111199,  // 4
+  0x991111,  // 5
+  0x117089,  // 6
+  0x000000,  // 7
+  0x808080   // 8
+};
+
+void draw_square(int x, y)
+// Отрисовка одной клетки
+{
+   int xl, xr, yt, yb;
+   dword tcolor = clBlack;
+   byte tchar,tval;
+
+   xl = XPX * x + XST;
+   xr = xl + XPX - 1;
+   yt = YPX * y + YST;
+   yb = yt + YPX - 1;
+
+   EBX = xl << 16 + xr - xl;
+   ECX = yt << 16 + yb - yt;
+   $inc ebx
+   $inc ecx
+   sys_draw_bar(EBX, ECX, clLightGray);
+
+   if (!get_open(x, y))
+   {
+      ECX = yt << 16 + yb - 1;
+      sys_draw_line(xl<<16+xl, ECX, clWhite);
+      EBX = xl << 16 + xr - 1;
+      sys_draw_line(EBX, yt << 16 + yt, EDX);
+      sys_draw_line(xr << 16 + xl, yb << 16 + yb, clDarkGray);
+      sys_draw_line(xr << 16 + xr, yb << 16 + yt, EDX);
+
+      SWITCH (get_mark(x, y))
+      {
+        CASE 2: tcolor = 0x121288; tchar = '?'; BREAK;
+        CASE 1: tcolor = 0xd04444; tchar = 'P';
+      }
+
+      IF (get_mark(x,y))
+      {
+        EBX = xl + 5; EBX <<= 16; EBX += yt + 4;
+        sys_write_text(EBX, tcolor, #tchar, 1);
+        EBX += 0x00010000;
+        /*  Второй раз - регистры сохраняются  */
+        sys_write_text(EBX, ECX, EDX, ESI);
+      }
+   }
+   else          // get_open(x,y)==TRUE
+   {
+      tval = get_value(x, y);
+      IF (tval == 0)
+      {
+        //tcolor=clLightGray;
+        //tchar=' ';
+        GOTO NOCHAR;
+      }
+      ELSE IF (tval == MINE)
+      {
+        tcolor = 0xee1111;
+        tchar = '*';
+      }
+      ELSE
+      {
+        tchar = tval + '0';
+        tcolor = num_colors[tval-1];
+      }
+
+      EBX = xl + 5; EBX <<= 16; EBX += yt + 5;
+      sys_write_text(EBX, tcolor, #tchar, 1);
+      EBX += 0x00010000;
+      sys_write_text(EBX, ECX, EDX, ESI);
+NOCHAR:
+      sys_draw_line(xl << 16 + xl, yt << 16 + yb, clDarkGray);
+      sys_draw_line(xl << 16 + xr, yt << 16 + yt, EDX);
+   }
+}
+
+void draw_time()
+// Таймер
+{
+  sys_draw_bar(XST<<16+25, 31<<16+10, 0xCCCCCC);
+  EBX = 0x00030000;
+  sys_write_number(EBX, time, XST<<16+32, 0x10ff0000);
+}
+
+void draw_minesi()
+// Индикатор количества нерасставленных мин
+{
+  EBX = xsize - XST - 25;
+  $PUSH EBX
+  EBX = EBX << 16 + 25;
+  sys_draw_bar(EBX, 31<<16+12, 0xCCCCCC);
+  $POP EDX
+  EDX <<= 16; EDX += 30;
+  EBX = 0x00030000;
+  sys_write_number(EBX, cmines, EDX, 0x10ff0000);
+}
+
+void draw_squares()
+// Отрисовка минного поля
+{
+  int x,y;
+
+  FOR (x=0; x < ncx; x++)
+    FOR (y=0; y < ncy; y++)
+      draw_square(x, y);
+}

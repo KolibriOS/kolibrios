@@ -1,0 +1,25 @@
+Vertical Refresh Rate v.2.0
+Information Card.
+
+
+Monitor (Screen size, Vendor, trademark):
+
+VideoCard (Vendor, trademark, Memory Size):
+
+
+Mode 1280x1024 (Enable/Disable):
+Enable refresh rate: 
+Notes:
+
+Mode 1024x768 (Enable/Disable):
+Enable refresh rate: 
+Notes:
+
+Mode 800x600 (Enable/Disable):
+Enable refresh rate: 
+Notes:
+
+Mode 640x480 (Enable/Disable):
+Enable refresh rate: 
+Notes:
+

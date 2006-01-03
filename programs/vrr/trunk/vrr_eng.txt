@@ -1,0 +1,104 @@
+Vertical Refresh Rater 
+
+Version 2.0
+
+Copyright (C) 2003, Trans
+
+
+Text Version 1.1 (02.08.03)
+
+Win text (cp1251).  (DOS codepage text - see down.)
+-------------------------------------------------------------------------------
+
+Contents:
+1. Why it need?
+2. Installation.
+3. Using.
+4. FAQ.
+5. Support.
+
+1. Why it need?
+---------------------
+The problem of "60 Hz" is falling stand before of users of MeOS in modern condisions.
+As a rule, most modern computers consist of 17" monitor (all written later is not actual
+for owners of LCD monitors). If on 14" or 15" monitors the problem of "60 Hz" not a
+main, but with 17" monitor it's a most pantfull. And with more size monitors I have no 
+words for discusion: it's a slade-show. Of couse, all of the upper correlated with 
+standart interface of VESA. As for VESA 3.0 - yes, interface have more rich features, 
+but it have no possiblity of change videomode in protect mode (the Virtual86 not realized
+in MeOS !!!!!).
+
+The MeOS not known as a detected devices on boot, it setting of standard VESA videomode
+with 60 Hz vertical refrash rate !
+
+This programm  is a FreeWare. And distribute "AS IS ...". Author not 
+carreing responsibility for probable damage  :) .
+
+!!!!!_Warning_!!!!!:
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+! On this time programm have a EXPERIMENTAL status (!). And this reason you have a   !
+! chance destroy own device (monitor). Espesialy this taking attantionall users with !
+! monitor without of rate protection.                                                !
+! If you decide using this util I have a suggestion: fill of information form and    !
+! send me.                                                                           !
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+2. Installation.
+-----------------
+Extract file VRR (it's ordinary executed MeOS file) from archive and situated it on
+C:\ root or MeOS floppy. In main, VRR may situated on any directory (you must have
+possibility run this file under MeOS).
+
+
+3. Using.
+----------
+The VRR is a standard executed file of Menuet Operation System. You may send on 
+execute this file by SYSTREE or MASH.
+
+After redraw of programm window will be present of current vertical refrash rate
+and table with possibiling videoregimes. It's sorrably, table have VERY small 
+videomode (the programm is experimental).
+
+   Change of videomode
+  ~~~~~~~~~~~~~~~~~~~~~
+You may select interesting videomode using _ONLY_ numerical keys: 1,2,3,4 and 5. 
+In a first step you must select resolution of videoregime. In a second step - need 
+select of vertical refresh rate. All changes are indicated on screen in a the 
+programm window. After select videomode, to set mode you must press "Enter" or 
+button "Ok". Notification: in this time all executing MeOS programs will be
+killing. It this needed for minimize artefacts of the screen. After change videomode
+you have a two way. First way: you can not any doing and after 13 seconds waiting 
+return last videomode. Second way: press two-three time any key or some time mouse 
+click on artefacts of VRR (or this plase) and fixing selected mode. Also you have 
+possibility modification of horizontal screen size by button "Left"\"Right" or keys 
+"+\-". For correcting your select you may use button "Cancel".
+
+Also in programm realized return at initial videomode with 60 Hz vertical refresh 
+by button "Default". And you may return in last videomode by button "Return" or 
+key "r"
+
+Note:
+~~~~~~
+In this time programm may change vertical refresh rate _ONLY_ by lowing screen 
+resolution, because this method will be using at most part videocard 
+(VGA, SVGA or modern)
+
+Example:
+If you have videomode 1024x768x60Hz and if you want select 800x600x95Hz, you must
+press key "3" and key "1". After that key "Enter" or button "Ok". And after redraw
+screen two time click on last program window position. If need using button 
+"Left\Right" for correcting horizontal size.
+
+4. FAQ.
+----------
+
+5. Supports.
+----------------
+All questions, notes and wishs you may send to author by following e-mail:
+
+               transafe@rambler.ru
+               transafe@chat.ru
+               trans397@yahoo.com
+
+Using with enjoy!
+Trans.

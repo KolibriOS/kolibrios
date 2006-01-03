@@ -1,0 +1,4 @@
+@erase lang.inc
+@echo lang fix ru >lang.inc
+@fasm scancode.asm scancode
+@pause

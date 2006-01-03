@@ -1,0 +1,75 @@
+CALENDAR FOR MENUET v1.0        January 13, 2005
+ Written in pure assembler by Ivushkin Andrey aka Willow
+
+I salute users and programmers of Menuet operation system!
+Also, I tender thanks to everyone who spends his time in feasible efforts
+for that little OS evolution. My special thanks to Ivan Poddubny whose distro
+(re8pre2) runs on VMware Workstation incomparably and bugless. That, as well
+as MACROS.INC and DEBUG.INC files, simplify the developing greatly.
+
+Today I let you to judge a desktop calendar, similar to the Windows one.
+Application abilities are:
+
+1. Interface is translated into Russian,English, German, French, and Finnish
+    (not completely - there was no help). Day sequence difference is taken
+    into account as well. You may change localization through 'lang' constant
+    while compiling.
+2. Calendar is equipped with additional buttons 'Today' and 'New style' that
+    are self-explaining.
+3. I tied to follow world GUI standards: use TAB to move along fields; while
+    editing the year, use Backspace and Del, as well as left and right arrows
+    of 'spinner' when in its focus. Arrow keys navigate along day matrix.
+    Pressing Ctrl-F1...Ctrl-F12 selects appropriate month.
+
+To-Do list:
+
+1. Program internal routines allow calculating amount of days between two dates.
+    It is possible to add a feature of calculating biorhythms and draw their
+    graphs.
+2. Add comments to source.
+3. Correct bugs to be found ;-)
+
+I dedicate my application to the Ukrainian Orange Revolution.
+
+Razom nas bahato, nas ne podolaty!
+
+
+****************************************
+****************************************
+
+КАЛЕНДАРЬ ДЛЯ MENUET v1.0       13 января 2005 г.
+ Написана на чистом ассемблере Ивушкиным Андреем (Willow)
+
+Честь и хвала юзерам и программистам операционной системы Menuet!
+Выражаю искреннюю благодарность всем тем, кто не жалея своего времени,
+делает посильный вклад в развитие этой маленькой ОС. Особое спасибо хочу сказать
+Ивану Поддубному, дистрибутив которого (re8pre2) бесподобно и без глюков
+работает в VMware Workstation. Это, а также файлы MACROS.INC и DEBUG.INC сильно
+упрощают разработку.
+
+Сегодня я представляю на ваш суд настольный календарик, наподобие того, что
+имеется в Windows. Возможности программы:
+
+1. Интерфейс переведен на русский, английский, немецкий, французский и финский
+    (не полностью - кто бы помог?) языки. Учтены отличия в порядке следования
+    дней недели. Язык можно поменять при компиляции стандартной константой
+    "lang".
+2. Календарик оборудован дополнительными кнопками "Сегодня" и "Новый стиль",
+    названия которых говорят сами за себя.
+3. Я пытался следовать мировым стандартам GUI: для перемещения между полями
+    ввода используется TAB, в поле года действуют клавиши Backspace и Del,
+    число года можно изменять стрелками влево и вправо в фокусе "спиннера", в
+    поле календаря работают стрелки. Нажатием Ctrl-F1...Ctrl-F12 можно быстро
+    перейти к нужному месяцу.
+
+Что еще можно сделать:
+
+1. Внутренние функции программы позволяют определить количество дней от одной
+    даты до другой. В календарь можно будет добавить возможность расчета такого
+    популярного показателя, как биоритмы (с графиками).
+2. Откомментировать код.
+3. Исправить баги, которые, возможно, найдутся ;-)
+
+Эту программу я посвящаю украинской помаранчевой революции.
+
+Разом нас багато, нас не подолати!

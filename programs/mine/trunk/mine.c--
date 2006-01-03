@@ -1,0 +1,468 @@
+/*******************************************************************************
+
+    MenuetOS MineSweeper
+    Copyright (C) 2003  Ivan Poddubny
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+*******************************************************************************/
+
+//? pragma option LST    // generate ASM listing file - создать ассемблерный листинг
+//? warning    TRUE      // включить режим вывода предупреждений
+? pragma option meos
+? jumptomain NONE
+? include "msys.h--"   // MenuetOS system functions - системные функции MenuetOS
+
+? print "\nЏƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒњ"
+? print "\n≥          MeOS MineSweeper v0.3          ≥"
+? print "\n≥ (C) Ivan Poddubny (ivan-yar@bk.ru) 2003 ≥"
+? print "\nјƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒƒў\n\n"
+
+/************************************** DATA **************************************/
+
+? define XPX 16      // X pixels by square - размер клетки в пиксел€х
+? define YPX 16      // Y pixels by square
+? define MINE 255    // значение дл€ мины в поле value
+
+struct
+{
+  byte value;        // number of mines   - количество мин в окружающих клетках
+  byte open;         // square is open    - клетка открыта
+  byte press;        // reserved          - зарезервировано
+  byte mark;         // square is marked  - клетка помечена
+} massiv[30*30];
+
+struct
+{
+  byte a_inc;
+  byte b_inc;
+} matrix[8] = {-1,-1,1,0,1,0,0,1,-2,0,0,1,1,0,1,0};
+
+struct
+{
+  byte   x_size;
+  byte   y_size;
+  byte   nmines;
+} stdmodes[3] = {9,9,10, 16,16,40, 30,16,99}; // {x,y,m}
+
+int XST,             // offset of first pixel X - смещение пол€ от границы окна
+    YST,
+    ncx,             // number of squares in X  - размер пол
+    ncy,
+    cmines,          // mines discovered        - количество неоткрытых мин
+    initmines,       // number of initial mines - изначальное количество мин
+    sqclosed;        // squares still closed    - количество закрытых клеток
+
+dword xpos = 100,    // window coordinates      - координаты окна
+      ypos = 100,
+      xsize,         // window size
+      ysize;
+
+byte stop_game = FALSE,   // game stopped - признак конца игры
+     mouse_en = TRUE,     // mouse enabled   - мышь
+     mode = 3,            // режим игры 1-новичок 2-любитель 3-эксперт (0 особый)
+     mouse_status,
+     firstmine;
+
+ProcessInfo  procinfo;
+SystemColors colors;
+
+/************************************** CODE **************************************/
+
+inline void fastcall mouse_enable()
+{
+  $mov eax,40
+  $mov ebx,100111b
+  $int 0x40
+}
+
+inline void fastcall mouse_disable()
+{
+  $mov eax,40
+  $mov ebx,000111b
+  $int 0x40
+}
+
+? include "timer.h--"  // timer functions
+? include "draw.h--"   // drawing functions
+? include "access.h--" // get & set functions
+? include "random.h--" // random number generator
+//? include "uf.h--"     // user field window
+
+void init()
+// »нициализаци
+{
+  XST = 10; YST = 52;      // FIELD POSITION IN WINDOW
+
+  ECX = mode;
+  IF (ECX != 0)
+  {
+    //ncx = stdmodes[ECX-1].x_size;
+    //ncy = stdmodes[ECX-1].y_size;
+    //cmines = initmines = stdmodes[ECX-1].nmines;
+
+    EBX = #stdmodes;
+    ECX--; ECX *= 3;
+    EBX += ECX;
+
+    ncx = DSBYTE[EBX]; EBX++;
+    ncy = DSBYTE[EBX]; EBX++;
+    cmines = initmines = DSBYTE[EBX];
+  }
+
+  xsize = ncx * XPX + XST + XST;
+  ysize = ncy * YPX + YST + XST;
+} // init
+
+void clear_all()
+// ќчистить поле
+{
+  EAX = 0;
+  EDI = #massiv;
+  ECX = ncx * ncy;
+  $REP $STOSD
+} // clear_all
+
+void new_game()
+// Ќова€ игра
+{
+  init();            // инициализаци
+  randomize();       // генератор случайных чисел
+  clear_all();       // очистить поле
+
+  firstmine = TRUE;  // игра не начата
+  mouse_en = TRUE;   // мышь разрешена
+  stop_game = FALSE; // игра не закончена
+  stop_timer();
+  time = 0;          // врем€ = 0
+} // new_game
+
+void set_mines(int nminas, no_x, no_y)
+// –асставить мины
+{
+  int i, x, y, a, b;
+
+  sqclosed = ncx * ncy - nminas;  // количество Ќ≈открытых клеток = площадь пол€ - кол-во мин
+
+  FOR (i = nminas; i > 0; i--)    // расставить мины
+  {
+    x = random(ncx); y = random(ncy);
+    WHILE ((get_value(x, y) == MINE) || ((x == no_x) && (y == no_y)))
+    {
+      x = random(ncx);
+      y = random(ncy);
+    }
+    set_value(x, y, MINE);
+  }
+
+  for (x = ncx-1; x >= 0; x--)    // расставить цифры
+  {
+    for (y = ncy-1; y >= 0; y--)
+    {
+      IF (get_value(x, y) == MINE)
+        continue;
+      EDX = x * ncy + y*4 + #massiv;
+      a = x; b = y;
+      FOR (i = 0; i < 8; i++)
+      {
+         AL = matrix[i].a_inc;
+         $movsx eax,al
+         a += EAX;
+         AL = matrix[i].b_inc;
+         $movsx eax,al
+         b += EAX;
+         IF ((a >= 0) && (b >= 0) && (a < ncx) && (b < ncy) && (get_value(a, b) == MINE))
+           DSBYTE[EDX]++;
+      }
+    }
+  }
+}  // set_mines
+
+inline void do_mouse(void)
+// ќбработчик мыши
+{
+  int x,y;
+
+  EAX = sys_read_mouse(2);            // мышь не нажата -> выход
+  IF (EAX == 0) return;
+
+  mouse_status = AL;
+
+  EAX = sys_read_mouse(1);            // мышь вне пол€  -> выход
+  EBX = EAX; EAX >>= 16; EBX &= 0xffff;
+  ECX = ncx * XPX + XST - 1;
+  EDX = ncy * YPX + YST - 1;
+  IF ((EAX < XST) || (EBX < YST) || (EAX > ECX) || (EBX > EDX)) return;
+
+  EAX -= XST; EAX /= XPX; x = EAX;    // вычислить x и y
+  EBX -= YST; EBX /= YPX; y = EBX;
+
+  IF ((mouse_status == 1) && (!get_open(x, y)) && (get_mark(x, y) != 1))
+  {
+    // на неоткрытой клетке без флажка нажата лева€ кнопка мыши
+    // left mouse button is pressed
+    IF (firstmine == TRUE)
+    {
+      firstmine = FALSE;
+      set_mines(cmines, x, y);
+      start_timer();
+    }
+    IF (get_value(x, y) == MINE)
+    {
+      end_game();
+      return;
+    }
+    open_square(x, y);
+  }
+  else IF ((mouse_status == 2) && (!get_open(x, y)))
+  {
+    // на неоткрытой клетке нажата права€ кнопка мыши
+    // right mouse button is pressed
+    EBX = get_mark(x, y); EBX++;
+    EBX = EBX%3;
+    SWITCH (EBX)
+    {
+      CASE 2: cmines++; BREAK;
+      CASE 1: cmines--;
+    }
+
+    set_mark(x, y, EBX);
+
+    draw_minesi();
+    draw_square(x, y);
+    return;
+  }
+  ELSE IF ((mouse_status == 3) && (get_open(x, y)))
+  {
+    // на открытой клетке нажаты обе кнопки мыши
+    // both mouse buttons are pressed
+    IF (open_near_squares(x, y) == TRUE)
+      end_game();
+  }
+
+  if (sqclosed == 0)
+  // открыты все клетки
+  // all squares are opened
+  {
+    mouse_en   = FALSE;  // запретить мышь
+    stop_timer();
+    stop_game  = TRUE;   // игра завершена
+
+    // поставить нерасставленные мины
+    FOR (x = 0; x < ncx; x++)
+      FOR (y = 0; y < ncy; y++)
+        IF ((get_value(x, y) == MINE) && (get_mark(x, y) != 1))
+        {
+          set_mark(x, y, 1);
+          cmines--;
+          draw_square(x, y);
+        }
+    draw_minesi();
+  }
+}  // do_mouse
+
+void open_square(int x, y)
+// ќткрыть клетку
+{
+  int a, b, i;
+
+  set_open(x, y, TRUE);
+  sqclosed--;
+
+  IF (get_value(x, y) != 0)
+  {
+    draw_square(x, y);
+  }
+  else
+  {
+    draw_square(x, y);
+    a = x; b = y;
+    FOR (i = 0; i < 8; i++)
+    {
+      //a += matrix[i].a_inc;
+      //b += matrix[i].b_inc;
+      AL = matrix[i].a_inc;
+      $movsx eax,al
+      a += EAX;
+      AL = matrix[i].b_inc;
+      $movsx eax,al
+      b += EAX;
+      IF ((a >= 0) && (b >= 0) && (a < ncx) && (b < ncy) && (!get_open(a, b)) && (get_mark(a, b) != 1))
+        open_square(a, b);
+    }
+  }
+}  // open_square
+
+int open_near_squares(int x, y)
+// ќткрыть близлежащие клетки (обе кнопки мыши вместе)
+{
+  int a, b, i;
+  dword suma = 0;
+
+  a = x;
+  b = y;
+  FOR (i = 0; i < 8; i++)
+  {
+    //a+=matrix[i].a_inc;
+    //b+=matrix[i].b_inc;
+    AL = matrix[i].a_inc;
+    $movsx eax,al
+    a += EAX;
+    AL = matrix[i].b_inc;
+    $movsx eax,al
+    b += EAX;
+    IF ((a >= 0) && (b >= 0) && (a < ncx) && (b < ncy) && (get_mark(a, b) == 1))
+      suma++;
+  }
+
+  if (suma == get_value(x, y))
+  {
+    suma = 0;
+    a = x;
+    b = y;
+    for (i = 0; i < 8; i++)
+    {
+      //a+=matrix[i].a_inc;
+      //b+=matrix[i].b_inc;
+      AL = matrix[i].a_inc;
+      $movsx eax,al
+      a += EAX;
+      AL = matrix[i].b_inc;
+      $movsx eax,al
+      b += EAX;
+      IF ((a >= 0) && (b >= 0) && (a < ncx) && (b < ncy) && (!get_open(a, b)) && (get_mark(a, b) != 1))
+      {
+        IF (get_value(a, b) == MINE)
+          suma = 1;
+        open_square(a, b);
+      }
+    }
+    RETURN suma;
+  }
+  ELSE
+    RETURN 0;
+}  // open_near_squares
+
+void end_game()
+{
+  int x,y;
+
+  stop_game = TRUE;
+  stop_timer();
+  for (x=0; x<ncx; x++)
+  {
+    for (y=0; y<ncy; y++)
+    {
+      IF (get_value(x, y) == MINE)
+      {
+        set_mark(x, y, FALSE); // сн€ть флаг
+        open_square(x, y);
+      }
+      ELSE IF (get_mark(x, y) == 1)      // если мины нет, а флажок есть
+      {
+        EBX = XPX * x + XST;      // x left
+        ECX = EBX + XPX - 1;      // x right
+        EBX <<= 16; EBX += ECX;
+        $PUSH EBX
+
+        ECX = YPX * y + YST;      // y top
+        $PUSH ECX
+        EDX = ECX + YPX - 1;      // y bottom
+        ECX <<= 16; ECX += EDX;
+        sys_draw_line(EBX, ECX, clBlack);
+
+        $POP EDX
+        ECX = EDX + YPX - 1;
+        ECX <<= 16; ECX += EDX;
+        $POP EBX
+        sys_draw_line(EBX, ECX, clBlack);
+        CONTINUE;
+      }
+    }
+  }
+}  // end_game
+
+
+void main()
+{
+  sys_delay(5);   // for old kernel only!
+  new_game();
+  draw_window();
+
+  mouse_enable();
+  while()
+  {
+    switch (sys_wait_event_timeout(100))  // wait for 1 second
+    {
+      CASE evReDraw:
+        draw_window();
+        continue;
+
+      CASE evKey:
+        IF (sys_get_key() == 27)
+          sys_exit_process();
+        continue;
+
+      CASE evButton:
+        EAX = sys_get_button_id();
+        IF (EAX == 911)              // new game
+        {
+          new_game();
+          draw_squares();
+          draw_time();
+          draw_minesi();
+        }
+        ELSE IF (EAX == 1001)        // change mode
+        {
+          // mode++; mode%=3; mode++;
+          EAX = mode; EAX++; EAX = EAX%3; EAX++; mode = AL;
+
+          // get window position - получить координаты окна
+          sys_process_info(#procinfo, -1);
+          xpos = procinfo.xstart;
+          ypos = procinfo.ystart;
+
+          // start a new process and terminate this one
+          sys_create_thread(#main, ESP);
+          sys_exit_process();
+        }
+        //ELSE IF (EAX == 1002)
+        //{
+        //  start_uf();
+        //}
+        ELSE IF (EAX == 1)           // close window
+          sys_exit_process();
+        CONTINUE;
+
+      case evMouse:
+        IF (!mouse_en) // is mouse enabled ?
+          CONTINUE;
+        do_mouse();
+        // wait for mouse release - ждать отпускани€ кнопки
+        WHILE (sys_read_mouse(2) == mouse_status)
+        {
+          check_timer();
+          sys_delay(6);
+          CONTINUE;
+        }
+        check_timer();
+        IF (stop_game)      // disable mouse if game is stopped
+          mouse_en = FALSE;
+        CONTINUE;
+    }
+    check_timer();
+    sys_delay(2);
+  }
+}  // main

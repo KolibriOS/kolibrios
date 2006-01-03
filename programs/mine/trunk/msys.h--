@@ -1,0 +1,806 @@
+/*
+    Sphinx C-- header file for MenuetOS applications.
+    Based on msys.h-- written by Alexey Sugonyaev and modified by Barry Kauler.
+    This extended version is written by Ivan Poddubny.
+
+    e-mail: ivan-yar@bk.ru
+*/
+
+// KeyCode constant
+#define UP_KEY		130+48
+#define DOWN_KEY	129+48
+#define LEFT_KEY	128+48
+#define RIGHT_KEY	131+48
+#define RETURN_KEY	13
+#define BACKSPACE_KEY	8
+
+// Color constant
+#define clWhite		0x00ffffff
+#define clGray		0x00808080
+#define clLightGray	0x00c0c0c0
+#define clDarkGray	0x00707070
+#define clBlack		0x00000000
+#define clRed		0x00ff0000
+#define clGreen		0x0000ff00
+#define clBlue		0x000000ff
+
+#define evReDraw	1
+#define evKey		2
+#define evButton	3
+#define evMouse		6
+#define evIPC		7
+
+struct FileInfo
+{
+  dword	read,
+	firstBlock,
+	qnBlockRead,
+	retPtr,
+	Work;
+  byte	filedir;
+};
+
+struct ProcessInfo
+{
+  dword cpu_usage;
+  word  winstackpos;
+  word  winstackval;
+  word  not_used1;
+  byte  name[12];
+  dword memstart,
+        memory_used,
+        PID,
+        xstart,
+        ystart,
+        xsize,
+        ysize;
+  byte  not_used2[974];
+};
+
+#define SystemColors SystemColours // usa/british
+
+struct SystemColours
+{
+  dword w_frames,
+        w_grab,
+        w_grab_button,
+        w_grab_button_text,
+        w_grab_text,
+        w_work,
+        w_work_button,
+        w_work_button_text,
+        w_work_text,
+        w_work_graph;
+};
+
+/*
+  0 = DEFINE WINDOW
+  {x_start|y_start}, {x_size|y_size}, color_back, color_title, color_frames
+             EBX = [x_start][x_size]
+             ECX = [y_start][y_size]
+             EDX, ESI, EDI = [00RRGGBB]
+*/
+inline fastcall void sys_draw_window(dword EBX, ECX, EDX, ESI, EDI)
+{
+ EAX = 0;               // function 0 : define and draw window
+ $int 0x40
+}
+
+/*
+01 = PUTPIXEL
+     ebx [x]
+     ecx [y]
+     edx pixel color 0x0XRRGGBB
+                        ^ 0 normal put, 1 negative
+     ret: nothing changed
+*/
+inline fastcall void sys_put_pixel(dword EBX,ECX,EDX)
+{
+  EAX=1;
+  $int 0x40
+}
+
+/*
+02 = GET KEY
+     ret: al 0 successful -> ah = key
+          al 1 no key in buffer
+     MODIFIED, see below...
+*/
+inline fastcall dword sys_get_key()
+{
+  EAX = 2;              // just read it key from buffer
+  $int  0x40
+  $shr eax,8
+}            //return eax=key code.
+
+/*
+03 = GET SYSTEM CLOCK
+        ret: eax 0x00SSMMHH sec,min,hour
+*/
+inline fastcall dword sys_get_clock()
+{
+  EAX=3;
+  $int 0x40
+}
+
+/*
+04 = WRITE TEXT TO WINDOW
+     ebx [x start]*65536 + [y start]
+     ecx text color 0x00RRGGBB
+     edx pointer to text beginning
+     esi text length
+     ret: nothing changed
+*/
+inline fastcall void sys_write_text(dword EBX, ECX, EDX, ESI)
+{
+  EAX = 4;
+  $int 0x40;
+}
+
+/*
+05 = DELAY X/100 SECS
+     ebx delay in 1/100 secs
+     ret: nothing changed
+*/
+inline fastcall void sys_delay(dword EBX)
+{
+  EAX = 5;
+  $int 0x40
+}
+
+/*
+06 = OPEN FILE FROM FLOPPY
+     ebx pointer to filename -> 11 capital letters
+     ecx set 0x00000000 - reserved
+     edx set 0xffffffff - reserved
+     esi read to mem position
+     ret: nothing changed
+*/
+inline fastcall void sys_open_file_floppy(dword EBX, ESI)
+{
+  $xor ecx,ecx
+  EDX = -1;
+  EAX = 6;
+  $int 0x40
+}
+
+/*
+07 = PUTIMAGE
+     ebx pointer to image in memory - RRGGBBRRGGBB..
+     ecx image size [x]*65536+[y]
+     edx image position in window [x]*65536+[y]
+     ret: eax 0 succesful, 1 overlapped
+*/
+inline fastcall dword sys_put_image(dword EBX, ECX, EDX)
+{
+  EAX = 7;
+  $int 0x40
+}
+
+/*
+08 = DEFINE BUTTON
+     ebx [x start]*65536 + [x size]
+     ecx [y start]*65536 + [y size]
+     edx button id number
+     esi button color 0x 00 RR GG BB
+     ret: nothing changed
+*/
+inline fastcall void sys_draw_button(dword EBX, ECX, EDX, ESI)
+{
+  EAX = 8;
+  $int 0x40
+}
+
+/*
+09 = PROCESS INFO
+     ebx pointer to 1024 bytes table
+     ecx process number or -1 = who am I
+     ret: eax number of processes
+          table :  +00  dword   cpu usage
+                   +04   word   processes position in windowing stack
+                   +06   word   window stack value at ecx
+                   +10  12 db   name of the process
+                   +22  dword   start of processes memory
+                   +26  dword   memory used by process
+                   +30  dword   PID of the process
+                   +34  dword   window x start
+                   +38  dword   window y start
+                   +42  dword   window x size
+                   +46  dword   window y size
+*/
+inline fastcall dword sys_process_info(dword EBX, ECX)
+{
+  EAX = 9;
+  $int 0x40
+}
+
+/*
+10 = WAIT FOR EVENT
+     ret: eax event type, 1 window redraw, 2 key in buffer, 3 button pressed
+*/
+inline fastcall dword sys_wait_event()
+{
+  EAX = 10;              // wait here for event
+  $int 0x40
+}
+
+/*
+11 = CHECK FOR EVENT, NO WAIT
+     ret: eax 0 no event, 1 window redraw, 2 key in buffer, 3 button pressed
+*/
+inline fastcall dword sys_nowait_event()
+{
+  EAX = 11;
+  $int 0x40
+}
+
+/* 12 = WINDOW REDRAW
+  EBX=1 start of draw, =2 end of draw.
+*/
+inline fastcall void sys_window_redraw(dword EBX)
+{
+  EAX = 12;              // function 12:tell os about windowdraw
+  $int 0x40
+}
+
+/*
+13 = DRAW BAR
+DrawBar(EBX=[xstart][xsize],ECX=[ystart][ysize],EDX=[0x00RRGGBB])
+     ebx [x start]*65536 + [x size]
+     ecx [y start]*65536 + [y size]
+     edx color 0x00RRGGBB
+     ret: nothing changed
+*/
+inline fastcall void sys_draw_bar(dword EBX, ECX, EDX)
+{
+  EAX = 13;
+  $int 0x40
+}
+
+/*
+14 = GET SCREEN MAX
+     ret: eax [screen x max]*65536 + [screen y max]
+*/
+inline fastcall dword sys_get_screen_size()
+{
+  EAX = 14;
+  $int 0x40
+}
+
+/*
+15 = BACKGROUND
+     ebx 1 : set background size
+             ecx x size
+             edx y size
+     ebx 2 : write to background memory - max (0x100000-16)
+             ecx position in memory in bytes
+             edx color 0x00RRGGBB
+     ebx 3 : draw background
+     ebx 4 : type of background draw
+             ecx 1 - tile
+             ecx 2 - stretch
+     ebx 5 : blockmove image to os bgr memory
+             ecx - from
+             edx - to where in os bgr memory
+             esi - count of bytes to move
+*/
+inline fastcall void sys_set_background(dword EBX, ECX, EDX, ESI)
+{
+  EAX = 15;
+  $int 0x40
+}
+
+
+/*
+17 = GET PRESSED BUTTON ID
+  ret: al 0 successful -> ah = id number al 1 no key in buffer.
+  MODIFIED, see below.
+*/
+inline fastcall dword sys_get_button_id()
+{
+  EAX = 17;            // Get ID
+  $int  0x40
+  $shr eax,8
+}      //eax=id, eax=0 no id.
+
+/*
+18 = SYSTEM SERVICE
+     ebx 1 - system boot
+     ebx 2 - force terminate , ecx process no
+     ebx 4 - idle clock cycles / second
+     ebx 5 - time stamp counter / second - cpu speed
+HD-> ebx 6 - save ramdisk to /hd/1/menuet.img
+*/
+inline fastcall dword sys_service(dword EBX, ECX)
+{
+  EAX = 18;
+  $int 0x40
+}
+
+/*
+19 = START PROGRAM from RAMDISK
+     ebx point to 11 char filename
+     ecx 0, or point to ASCIIZ start parameters - max 256 bytes
+     ret: eax 0      successful
+          eax other  error code
+*/
+inline fastcall dword sys_exec_app_ramdisk(dword EBX, ECX)
+{
+  EAX = 19;
+  $int 0x40
+}
+
+/*
+20 = MIDI INTERFACE - MPU401
+     ebx  1 - reset device
+     ebx  2 - cl midi data to output
+*/
+inline fastcall void sys_midi(dword EBX)
+{
+  EAX = 20;
+  $int 0x40
+}
+
+/*
+21 = SETUP FOR DEVICES
+     ebx 1=roland mpu midi base , base io address
+     ebx 2=keyboard 1 base keymap  2 shift keymap (ecx pointer to keymap)
+                    9 country 1eng 2fi 3ger 4rus
+     ebx 3=cd base  1 pri.master  2 pri slave,
+                    3 sec master  4 sec slave
+     ebx 4=sb16 base, base io address
+     ebx 5=system language, 1eng 2fi 3ger 4rus
+     ebx 6=wss base, base io address
+     ebx 7=hd base, 1 pri.master  2 pri slave
+                    3 sec master  4 sec slave
+     ebx 8=fat32 partition in hd
+*/
+inline fastcall void sys_setup_devices(dword EBX, ECX)
+{
+  EAX = 21;
+  $int 0x40
+}
+
+/*
+23 = WAIT FOR EVENT WITH TIMEOUT
+     ebx time to delay in hs
+     ret: eax event type: 0 no event, 1 window redraw,
+                          2 key in buffer, 3 button
+*/                          
+inline fastcall dword sys_wait_event_timeout(dword EBX)
+{
+  EAX = 23;
+  $int 0x40
+}
+
+/*
+24 = CD AUDIO
+     ebx 1 - play from ecx 00 FR SS MM
+     ebx 2 - get playlist size of ecx to [edx]
+     ebx 3 - stop/pause play
+*/
+inline fastcall void sys_cd_audio(dword EBX, ECX, EDX)
+{
+  EAX = 24;
+  $int 0x40
+}
+
+/*
+25 = SB16 - mixer I
+     ebx 1 - set main volume cl [L]*16+[R]
+     ebx 2 - set cd   volume cl [L]*16+[R]
+*/
+inline fastcall void sys_sb16_mixer_1(dword EBX, ECX)
+{
+  EAX = 25;
+  $int 0x40
+}
+
+/*
+26 = GET SETUP FOR DEVICES
+     ebx 1=roland mpu midi base , base io address
+     ebx 2=keyboard 1 base keymap  2 shift keymap
+                    9 country 1eng 2fi 3ger 4rus
+     ebx 3=cd base  1 pri.master  2 pri slave,
+                    3 sec master  4 sec slave
+     ebx 4=sb16 base, base io address
+     ebx 5=system language, 1eng 2fi 3ger 4rus
+     ebx 6=wss base, base io address
+     ebx 7=hd base, 1 pri.master  2 pri slave
+                    3 sec master  4 sec slave
+     ebx 8=fat32 partition in hd
+     ebx 9=1/100 timer tics from stard -> eax
+     return value in eax
+*/
+inline fastcall dword sys_get_setup_devices(dword EBX)
+{
+  EAX = 26;
+  $int 0x40
+}
+
+/*
+27 = WINDOWS SOUND SYSTEM
+     ebx 1 - set main volume to cl 0-255
+     ebx 2 - set cd   volume to cl 0-255
+*/
+inline fastcall void sys_windows_sound_system(dword EBX, ECX)
+{
+  EAX = 27;
+  $int 0x40
+}
+
+/*
+28 = SB16 - mixer II
+     ebx 1 - set main volume to cl 0-255
+     ebx 2 - set cd   volume to cl 0-255
+*/
+inline fastcall void sys_sb16_mixer_2(dword EBX, ECX)
+{
+  EAX = 28;
+  $int 0x40
+}
+
+/*
+29 = GET DATE
+     ret: eax 0x00YYDDMM year date month
+*/
+inline fastcall dword sys_get_date()
+{
+  EAX = 29;
+  $int 0x40
+}
+
+/*
+30 = READ HD
+     ebx  pointer to file
+     ecx  file lenght
+     edx  block to read, starts from 1, blocksize = 512 bytes
+     esi  reserved, set as 1
+     edi  pointer to return/work area (atleast 20 000 bytes)
+     return: work_area+1024 <- requested block of 512 bytes
+*/
+inline fastcall dword sys_read_hd(dword EBX, ECX, EDX, ESI, EDI)
+{
+  EAX = 30;
+  $int 0x40
+}
+
+/*
+31 = START APP FROM HD
+     ebx  pointer to file
+     ecx  file lenght
+     edx  pointer to return/work area (atleast 20 000 bytes)
+     ret  eax=0 successful, eax<>0 errorcode
+*/
+inline fastcall dword sys_exec_app_hd()
+{
+  EAX = 31;
+  $int 0x40
+}
+
+/*
+32 = DELETE FILE FROM FLOPPY IMAGE IN MEMORY
+     ebx  pointer to filename
+*/
+
+inline fastcall dword sys_floppy_delete(EBX)
+{
+  EAX = 32;
+  $int 0x40
+}
+
+/*
+33 = SAVE FILE TO FLOPPY IMAGE IN MEMORY
+     ebx  pointer to file name
+     ecx  pointer to data
+     edx  count to write in bytes
+     esi  0 create new , ( 1 append - not implemented yet )
+*/
+inline fastcall dword sys_floppy_save(EBX,ECX,EDX)
+{
+  EAX = 33;
+  ESI = 0;
+  $int 0x40
+}
+
+/*
+34 = READ DIRECTORY FROM FLOPPY
+     ebx  reserved : set as zero
+     ecx  reserved : set as zero
+     edx  start 512 block to read
+     esi  reserved : set as 1
+     edi  pointer to return area
+
+
+35 = READ SCREEN PIXEL
+     ebx = pixel count from top left of the screen
+     return : eax = 0x00RRGGBB
+*/
+
+/*
+37 = READ MOUSE POSITION
+     ebx=0 screen relative
+     ebx=1 window relative
+     ebx=2 buttons pressed
+     return in eax
+*/
+inline fastcall dword sys_read_mouse(dword EBX)
+{
+  EAX = 37;
+  $int 0x40
+}
+
+/*
+38 = DRAW LINE
+     ebx  [x start] shl 16 + [x end]
+     ecx  [y start] shl 16 + [y end]
+     edx  colour 0x00RRGGBB
+     return : nothing changed
+*/
+inline fastcall void sys_draw_line(dword EBX, ECX, EDX)
+{
+  EAX = 38;
+  $int 0x40
+}
+
+/*
+39 = GET BACKGROUND
+     ebx=1 -> eax=[bgr x size] shl 16 + [bgr y size]
+     ebx=2
+       ecx= postition of backgrounds memorymap to return in eax
+     ebx=4 -> eax=1 tiled, eax=2 stretched
+*/
+inline fastcall dword sys_get_background(dword EBX, ECX)
+{
+  EAX = 39;
+  $int 0x40
+}
+
+/*
+40 = SET BITFIELD FOR WANTED EVENTS
+     as default:
+     ebx = 00000000 00000000 00000000 00000111b  events:
+                                             I   window draw
+                                            I    key in buffer
+                                           I     button in buffer
+                                          I      (end request)
+                                         I       desktop background draw
+                                        I        (mouse change)
+           I---------------I                     get irqs data
+
+
+41 = GET IRQ OWNER
+     ebx = irq
+     return : PID of the process
+
+
+42 = GET DATA READ BY IRQ
+     ebx  IRQ number
+     return :  eax  number of bytes in buffer
+                bl  data
+               ecx  0 = successful data read
+                    1 = no data in buffer
+                    2 = incorrect IRQ owner
+
+
+43 = SEND DATA TO DEVICE
+     bx  : port
+     cl  : data
+     return : eax = if 0 successful, other = error
+
+
+44 = PROGRAM IRQ's
+     ebx  pointer to table
+     ecx  irq number
+
+
+45 = RESERVE/FREE IRQ
+     ebx  0 reserve  1 free
+     ecx  IRQ number
+     ret  eax 0 successful,  1 error
+
+
+46 = RESERVE/FREE PORT AREA
+     ebx  0 reserve  1 free
+     ecx  port area start
+     edx  port area end
+     ret  eax 0 successful,  1 error
+*/
+
+/*
+47 = DISPLAY NUMBER TO WINDOW
+     ebx = print type, bl=0 -> ecx is number
+                       bl=1 -> ecx is pointer
+                       bh=0 -> display decimal
+                       bh=1 -> display hexadecimal
+                       bh=2 -> display binary
+           bits 16-21 = number of digits to display (0-32)
+           bits 22-31 = reserved
+     ecx = number or pointer
+     edx = x shl 16 + y
+     esi = color
+*/
+inline fastcall void sys_write_number(dword EBX, ECX, EDX, ESI)
+{
+  EAX = 47;
+  $int 0x40
+}
+
+/*
+48 = DEFINE GENERAL WINDOW PROPERTIES
+     ebx = 0      apply/redraw
+        ecx = 0 , apply/redraw desktop
+     ebx = 1      define button style
+        ecx = 0 , set flat buttons
+        ecx = 1 , set 3d buttons
+     ebx = 2      define window colors
+        ecx = pointer to table
+        edx = number of bytes defined
+     ebx = 3      get define window colors
+        ecx = pointer to table
+        edx = number of bytes to get
+*/
+
+inline fastcall void sys_redraw_desktop()
+{
+  EAX = 48;
+  EBX = ECX = 0;
+  $int 0x40
+}
+
+inline fastcall void sys_set_button_style(dword ECX)
+{
+  EAX = 48;
+  EBX = 1;
+  $int 0x40
+}
+
+inline fastcall void sys_set_colors(dword ECX,EDX)
+{
+  EAX = 48;
+  EBX = 2;
+  $int 0x40
+}
+
+inline fastcall void sys_get_colors(dword ECX,EDX)
+{
+  EAX = 48;
+  EBX = 3;
+  $int 0x40
+}
+
+/*
+49 = DEFINE APPLICATIONS INTERNAL INTERRUPTS
+     ebx = 0
+      ecx  point to dword x 256 table of interrupt entries
+           inside the application
+     return : nothing changed
+
+
+50 = FREE FORM WINDOW SHAPE AND SCALE
+     ebx = 0 ; shape reference area
+       ecx = pointer to reference area
+             byte per pixel, 0 not used, 1=used, other = reserved
+     ebx = 1 ; scale of reference area (default 1:1)
+       ecx : scale is set to 2^ecx
+     return: nothing changed
+
+
+51 = CREATE THREAD
+     ebx = 1  ; create
+       ecx    ; = thread entry point
+       edx    ; = thread stack position
+     return : eax = pid or 0xfffffff0+ for error
+*/
+
+inline fastcall dword sys_create_thread(dword ECX,EDX)
+{
+  EAX = 51;
+  EBX = 1;
+  $int 0x40
+}
+
+/*
+
+52 = STACK DRIVER STATUS
+     - see stack.txt
+
+
+53 = SOCKET INTERFACE
+     - see stack.txt
+
+
+54 = USER EVENTS
+     - not ready yet
+
+
+55 = SOUND INTERFACE
+     ebx = 0     ; load 44 khz 8 bit mono sound block
+       ecx       ; = pointer to 65536 byte soundblock
+     ebx = 1     ; play 44 khz 8 bit mono sound block
+
+
+56 = WRITE FILE TO HD
+     ebx  pointer to 12 char filename
+     ecx  bytes to write
+     edx  pointer to data to write
+     esi  pointer to path
+          path db 0
+
+
+57 = DELETE FILE FROM HD
+     ebx   pointer to filename : 11 capital letters
+     edx   pointer to path : path db 0
+*/
+
+
+/*
+58 = SYSTEM TREE ACCESS
+     ebx    pointer to fileinfo block
+     fileinfo:
+     dd   0x0                  ; 0=read (/write/delete/append)
+     dd   0x0                  ; 512 block to read 0+
+     dd   0x1                  ; blocks to read (/bytes to write/append)
+     dd   0x20000              ; return data pointer
+     dd   0x10000              ; work area for os - 16384 bytes
+     db   '/RAMDISK/FIRST/KERNEL.ASM',0  ; ASCIIZ dir & filename
+*/
+inline fastcall void sys_tree_access(dword EBX)
+{
+  EAX = 58;
+  $int 0x40
+}
+
+/*
+59 = TRACE FOR SYSTEM CALLS FROM PROCESSES
+     ebx = 0   ; get system events
+       ecx     ; pointer to table  -> ; 64 bytes/system call descriptor
+                                      ; +00 PID
+                                      ; +32 EDI
+                                      ; +36 ESI
+                                      ; +40 EBP
+                                      ; +44 ESP
+                                      ; +48 EBX
+                                      ; +52 EDX
+                                      ; +56 ECX
+                                      ; +60 EAX
+       edx     ; number of bytes to return to table (currently max 16*64)
+     return:  eax = number of system calls from start
+                     latest call is saved to (eax mod 16)*64 in table
+               ebx = 0 : above format
+*/
+
+/*
+60 = IPC
+	ebx = 1 ; define receive area
+		ecx = pointer to start
+		edx = size of area
+
+	ebx = 2 ; send message
+		ecx = PID
+		edx = pointer to message
+		esi = length
+*/
+
+inline fastcall void sys_ipc_init(dword ECX, EDX)
+{
+  EAX = 60;
+  EBX = 1;
+  $int 0x40
+}
+
+inline fastcall void sys_ipc_send(dword ECX, EDX, ESI)
+{
+  EAX = 60;
+  EBX = 2;
+  $int 0x40
+}
+
+/* -1 = EXIT PROCESS */
+
+inline fastcall void sys_exit_process()
+{
+ $xor eax,eax
+ $dec eax
+ $int 0x40
+}

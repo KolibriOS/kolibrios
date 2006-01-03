@@ -1,0 +1,135 @@
+/*******************************************************************************
+
+    MenuetOS MineSweeper
+    Copyright (C) 2003  Ivan Poddubny
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation; either version 2 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program; if not, write to the Free Software
+    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+
+*******************************************************************************/
+
+// USER FIELD WINDOW
+
+byte px,py,pm;
+
+byte uf_open = FALSE;
+byte uf_stack[2048];
+
+byte str1[5];
+byte str2[5];
+byte str3[5];
+
+dword uf_x,
+      uf_y;
+
+void draw_uf_window()
+{
+  sys_get_colors(#colors, 40);
+  sys_window_redraw(1);
+
+  EDX = colors.w_work;
+  $bts edx,25
+  sys_draw_window(uf_x, uf_y, EDX, colors.w_grab | 0x80000000, colors.w_frames);
+  ECX = colors.w_grab_text | 0x10000000;
+  sys_write_text(8<<16+8, colors.w_grab_text | 0x10000000, "USER FIELD", 10);
+  sys_draw_button(81<<16+12, 5<<16+12, 1, colors.w_grab_button);
+
+  ECX = colors.w_work_text | 0x10000000;
+  sys_write_text(8<<16+31, ECX, "WIDTH",  5);
+  sys_write_text(8<<16+49, ECX, "HEIGHT", 6);
+  sys_write_text(8<<16+67, ECX, "MINES",  5);
+
+  // three buttons:
+  //  1) WIDTH  10
+  //  2) HEIGHT 11
+  //  3) MINES  12
+  // and also:
+  //  OK, Cancel - 20,21
+
+  sys_draw_button(54<<16+38,  30<<16+10, 10,  0xe0e0e0); // WIDTH
+  EDX++; sys_draw_button(EBX, 48<<16+10, EDX, ESI);      // HEIGHT
+  EDX++; sys_draw_button(EBX, 66<<16+10, EDX, ESI);      // MINES
+
+  ESI = colors.w_work_button;
+  ECX = 84<<16+10;
+  sys_draw_button( 8<<16+38, ECX, 20,  ESI); EDX++;
+  sys_draw_button(54<<16+38, ECX, EDX, ESI);
+
+  sys_write_text(21<<16+85, colors.w_work_button_text, "OK    Cancel", 12);
+
+  sys_window_redraw(2);
+}
+
+void uf_main()
+{
+  uf_x <<= 16; uf_x += 100;
+  uf_y <<= 16; uf_y += 104;
+  draw_uf_window();
+
+  WHILE()
+  {
+    SWITCH (sys_wait_event())
+    {
+      case 1: draw_uf_window();
+              break;
+
+      case 2: IF (sys_get_key() == 27)
+              {
+                uf_open = FALSE;
+                sys_exit_process();
+              }
+              break;
+
+      case 3: uf_button();
+    }
+  }
+}
+
+uf_button()
+{
+  switch (sys_get_button_id())
+  {
+    //case 10:
+    //case 11:
+    //case 12:
+
+    case 20:
+    case 21:
+
+    case 1:
+    uf_open = FALSE;
+    sys_exit_process();
+  }
+}
+
+void start_uf()
+{
+  sys_process_info(#procinfo, -1);
+  uf_x = procinfo.xstart + XST;
+  uf_y = procinfo.ystart + YST;
+
+  sys_create_thread(#uf_main, #uf_stack + 2048);
+  uf_open = TRUE;
+  mouse_disable();
+  WHILE (uf_open == TRUE)
+  {
+    SWITCH (sys_wait_event_timeout(5))
+    {
+      CASE 1: draw_window();       CONTINUE;
+      CASE 2: sys_get_key();       CONTINUE;
+      CASE 3: sys_get_button_id(); CONTINUE;
+    }
+  }
+  mouse_enable();
+}

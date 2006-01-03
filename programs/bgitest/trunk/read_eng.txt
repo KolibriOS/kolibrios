@@ -1,0 +1,140 @@
+ BGIFONT.INC v1.0 beta
+
+ Written in pure assembler by Ivushkin Andrey aka Willow
+
+  At present Menuet operation system has poor means to draw charaters. Its
+distro contains 2 raster fonts (CHAR.MT & CHAR2.MT files). The kernel supports
+them internally. That is Jarek Pelczar who makes certain efforts to develop
+scalable TTF-like fonts but huge Menuet C Library does not become widespread
+inside our assembly-written OS. Bulgarian MenuetOS team also tries to include
+third scalable font into the kernel, though, as far as I know, its characters
+are still under design and are incomplete. Therefore Bulgarian developing is
+not valuable for ordinary users. It is obvious that scalable fonts will help
+to develop such products as browsers and word processors where character
+formatting is of great importance.
+  Let me introduce for public domain an include file BGIFONT.INC to process
+vector fonts (*.CHR) worked out by famous Borland Corporation to use in Turbo
+Pascal, Turbo C and Borland C++ compilers under MS-DOS. Sorry, I still fail to
+add BGI font support into kernel - deeper knowledge on memory allocation and
+system calls needed. I hope that Menuet system programmers will be glad to help
+me. Module compiling within kernel is supposed using constant BGI_LEVEL equ
+KERNEL. By means of conditional compiling it will be possible to use the module
+at both kernel and application levels. Following is concerned using the include
+file while programming an application.
+
+  BGI fonts may reside in any folder on HD or RD. They are searched using value
+of constant BGI_PATH. If constant BGI_WINDOW_CLIP is equal to 1, module routines
+perform window bounds check to avoid artifacts while drawing. Use this if you
+aren't sure that strings are fit in window. All BGIFONT.INC routines are
+declared as macros, that is they are used without "call". To load 11 fonts into
+application's memory a contiguous free space up to 120 kb is needed. When
+loading, font data relocation is performed to save memory. Let us see a chart:
+
+|  Font   |  |  BGIrec  |  | Font |   |  BGIrec  |  | Font |  |  BGIrec  |
+| counter |  | structure|  | data |   | structure|  | data |  | structure|   ...
+| (1 byte)|          |                  |    |                  |    |
+     |               ------------->------    -------------->-----    ----------
+     - referenced by [BGIfont_Ptr]
+
+  BGIrec structure fields have following meaning:
+
+ +00 dword .FontName     font name (4 characters)
+ +04 byte  .CharsCount   amount of font characters
+ +05 byte  .FirstChar    code of the first character present
+ +06 byte  .UpperMargin  high bound of characters
+ +07 byte  .LowerMargin  low bound of characters
+ +08 dword .Widths       offset to width array
+ +12 dword .FirstData    offset to vector table
+ +16 dword .EOF	         pointer to the following BGIrec
+ +20 dword .font_data    here font data begin
+
+  Font loading and verification are carried out by BGIfont_Prepare procedure.
+
+  BGIfont_Prepare
+     in:  EDX - font name (4 characters) to be loaded. It must to be the same as
+            the font filename (without extension)
+          EDI - address to where font have to be loaded. Used only for the
+            first time. Then you may find this value in [BGIfont_Ptr]
+     out: EAX=0, if an error occured, otherwise EAX is identifier (ID) of the
+            loaded font. Later it is possible to get font ID with BGIfont_GetID
+            function.
+
+  For the simultaneous loading of few fonts you may use BGIfont_Init routine.
+
+  BGIfont_Init
+     in:  ESI - pointer to array of font names (for example db 'TRIPSIMPEURO')
+          ECX is amount of fonts to load
+          EDI - see BGIfont_Prepare
+     out: nothing.
+
+  To load 10 standard fonts the module defines an array BGIfont_names (see in
+BGITEST for usage demonstration).
+
+  For compatibility and subsequent kernel introduction, the module offers 2
+routines for drawing vector characters. One of them uses registers (like sysfunc
+4), another uses a structure.
+
+  BGIfont_Outtext
+     in:  EAX - "pivot point" of a string [x] shl 16+[y]
+          ECX - text color and font size 0xXYRRGGBB,
+              where X - vector font ID(4..F),
+                    Y - size of caracters divided by 4, e.g. 0x1 - 1/4 of
+                      ordinary size, 0xC - triple size.
+            EDX - pointer to the string
+            ESI - string length + formatting flags (see below). BGI_ITALIC and
+              BGI_NODRAW flags are ignored.
+     out: EAX - coords at the end of the string drawn [x] shl 16+[y].
+
+  As you can see, BGIfont_Outtext is similar to the 4th system function,
+but provides an extended management of drawing symbols.
+
+  The most complete use of vector fonts is provided by BGIfont_Freetext routine.
+Parameters are passed in a BGIfree structure.
+
+  BGIfree structure fields have following meaning:
+
+ +00 dword   font name (4 characters)
+ +04 dword   "pivot point" of a string [x] shl 16+[y]
+ +08 dword   turn angle (clockwise, 0 is horizontal)
+ +12 dword   X scale (floating point value!)
+ +16 dword   Y scale (floating point value!)
+ +20 dword   pointer to the string
+ +24 dword   string length WITHOUT formatting flags
+ +28 dword   text color 0x00RRGGBB
+ +32 dword   formatting flags
+
+  The module defines following formatting flags:
+BGI_NODRAW     - do not draw
+BGI_ITALIC     - italic
+BGI_BOLD       - bold
+BGI_HALEFT     - left alignment
+BGI_HARIGHT    - right alignment
+BGI_HACENTER   - center alignment
+BGI_VABOTTOM   - bottom alignment
+BGI_VATOP      - top alignment
+BGI_VACENTER   - middle vertical alignment
+
+  Combination of flags can be performed by addition or the OR operation.
+
+  BGIfont_Freetext
+     in:  EBX - pointer to BGIfree structure
+     out: EAX coords at the end of the string drawn [x] shl 16+[y].
+
+  BGIfont_GetID routine returns font ID by its name.
+
+  BGIfont_GetID
+     in:  EDX - font name (4 characters)
+     out: EAX - ID of the font
+          EDI - pointer on font's BGIrec structure.
+
+  Using functions of BGIFONT.INC module is demonstrated by BGITEST app.
+
+  Todo list:
+1. An insidious bug sometimes shows up while loading multiple fonts (as in
+   BGITEST), that corrupts some characters. It disappears when font loading
+   order is changed... :-(
+2. To correct a hardly reproduceable bug when moving along the font list.
+3. To perfect drawing of bold fonts.
+4. To add number drawing routines.
+
+
