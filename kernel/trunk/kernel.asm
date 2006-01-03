@@ -2245,6 +2245,19 @@ nosys_wait_retrace:
      ret
 no_mouse_centered:
 ;* end  code - get active process (2) - Mario79
+     cmp  eax,16
+     jnz  no_get_free_space
+     mov  eax,[MEM_FreeSpace]
+     shl  eax,2
+     ret
+no_get_free_space:    
+     cmp  eax,17
+     jnz  no_get_all_space
+     mov  eax,[MEM_AllSpace]
+     shl  eax,2
+     ret
+no_get_all_space:  
+
      ret
 window_minimize db 0
 sound_flag      db 0

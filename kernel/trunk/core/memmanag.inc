@@ -2,11 +2,6 @@ if ~defined memmanager_inc
 memmanager_inc_fix:
 memmanager_inc fix memmanager_inc_fix
 ;for testing in applications
-if defined B32
-  iskernel=1
-else
-  iskernel=0
-end if
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Memory allocator for MenuetOS kernel
 ;; Andrey Halyavin, halyavin@land.ru 2005
@@ -27,21 +22,14 @@ max_heaps equ 8
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; memory manager data
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-MEM_heap_block_    rd .heap_block_info*max_heaps/4
-MEM_heap_block=MEM_heap_block_+second_base_address
-MEM_heap_count_    rd 1
-MEM_heap_count=MEM_heap_count_+second_base_address
-if iskernel = 0
-MEM_general_mutex rd 1
-MEM_call_count    rd 1
-MEM_mutex_pid     rd 1
-MEM_mutex_count   rd 1
-else
-MEM_cli_count_    rd 1
-MEM_cli_count=MEM_cli_count_+second_base_address
-MEM_cli_prev_     rd 1
-MEM_cli_prev=MEM_cli_prev_+second_base_address
-end if
+uglobal
+  MEM_heap_block    rd .heap_block_info*max_heaps/4
+  MEM_heap_count    rd 1
+  MEM_cli_count     rd 1
+  MEM_cli_prev      rd 1
+  MEM_FreeSpace     rd 1
+  MEM_AllSpace      rd 1
+endg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;MEM_Init
 ;;Initialize memory manager structures.
@@ -50,62 +38,11 @@ end if
 MEM_Init:
     push  eax
     xor   eax,eax
-if iskernel = 0
-    mov   [MEM_heap_count],eax
-    mov   [MEM_general_mutex],eax
-    mov   [MEM_call_count],eax
-    mov   [MEM_mutex_pid],eax
-    mov   [MEM_mutex_count],eax
-else
     mov   [MEM_cli_prev],eax     ;init value = 0
     dec   eax
     mov   [MEM_cli_count],eax    ;init value = -1
-end if
     pop   eax
     ret
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;change_task
-;;procedure for changing tasks.
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;    
-if iskernel = 0
-change_task:
-    push  eax
-    push  ebx
-    mov   eax,5
-    xor   ebx,ebx
-    inc   ebx
-    int   0x40
-    pop   ebx
-    pop   eax
-    ret
-end if
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;MEM_get_pid
-;;determine current pid
-;;result:
-;; eax - pid
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-if iskernel = 0
-MEM_get_pid:
-    push  ebx
-    push  ecx
-    sub   esp,1024
-    mov   eax,9
-    mov   ebx,esp
-    mov   ecx,-1
-    int   0x40
-    mov   eax,[esp+30]
-    add   esp,1024
-    pop   ecx
-    pop   ebx
-    ret
-else
-;    pid_address dd 0x3000
-;MEM_get_pid:
-;    mov   eax,[pid_address]
-;    mov   eax,[eax]
-;    ret
-end if
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;MEM_Heap_Lock
 ;;Wait until all operations with heap will be finished.
@@ -113,30 +50,6 @@ end if
 ;;with heap are forbidden.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 MEM_Heap_Lock:
-if iskernel = 0
-    push  eax
-    inc   dword [MEM_call_count]
-MEM_Heap_Lock_wait:
-    mov   eax,1
-    xchg  [MEM_general_mutex],eax
-    test  eax,eax
-    jz    MEM_Heap_Lock_end
-    call  MEM_get_pid
-    cmp   [MEM_mutex_pid],eax
-    jz    MEM_Heap_Lock_end1
-    call  change_task        
-    jmp   MEM_Heap_Lock_wait
-MEM_Heap_Lock_end1:
-    inc   dword [MEM_mutex_count]
-    pop   eax
-    ret
-MEM_Heap_Lock_end:
-    call  MEM_get_pid
-    mov   [MEM_mutex_pid],eax
-    mov   dword [MEM_mutex_count],1
-    pop   eax
-    ret
-else
     pushfd
     cli
     inc   dword [MEM_cli_count]  
@@ -148,33 +61,11 @@ MEM_Heap_First_Lock:             ;save interrupt flag
     and  dword [esp],1
     pop  dword [MEM_cli_prev]
     ret
-end if
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;MEM_Heap_UnLock
 ;;After this routine operations with heap are allowed.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 MEM_Heap_UnLock:
-if iskernel = 0
-    push  eax
-    xor   eax,eax
-    dec   dword [MEM_mutex_count]
-    jnz   MEM_Heap_UnLock_No_Wait1
-    dec   dword [MEM_call_count]
-    mov   [MEM_mutex_pid],eax
-    mov   [MEM_general_mutex],eax;release mutex BEFORE task switching
-    jz    MEM_Heap_UnLock_No_Wait
-    call  change_task            ;someone want to use heap - switch tasks            
-MEM_Heap_UnLock_No_Wait:
-    pop   eax
-    ret
-MEM_Heap_UnLock_No_Wait1:
-    dec   dword [MEM_call_count]
-    jz    MEM_Heap_UnLock_No_Wait2
-    call  change_task
-MEM_Heap_UnLock_No_Wait2:
-    pop   eax
-    ret
-else
     dec   dword [MEM_cli_count]
     js    MEM_Heap_UnLock_last
     ret
@@ -184,7 +75,6 @@ MEM_Heap_UnLock_last:
     sti
 MEM_Heap_UnLock_No_sti:
     ret
-end if
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;MEM_Add_Heap
 ;;Add new range to memory manager.
@@ -209,10 +99,17 @@ MEM_Add_Heap:
     mov   [MEM_heap_block+edx+.heap_physical_address],ecx
     lea   edx,[4*ebx+.range_info+4095]   ;calculate space for page info table
     and   edx,0xFFFFF000
+
+    push  edi   
+    mov   edi,edx
+    shr   edi,12
+    sub   edi,ebx                ;edi=-free space
+    sub   [MEM_FreeSpace],edi
+    sub   [MEM_AllSpace],edi
+
     mov   [eax],eax
     add   [eax],edx              ;first 4 bytes - pointer to first free page
 ;clean page info area    
-    push  edi
     lea   edi,[eax+4]
     mov   ecx,edx
     shr   ecx,2
@@ -332,6 +229,7 @@ MEM_Alloc_Page_loop:
     pop    eax
     pop    ecx
     add    eax,[MEM_heap_block+ecx+.heap_physical_address]
+    dec    [MEM_FreeSpace]
     jmp    MEM_Alloc_Page_ret
 MEM_Alloc_Page_loopend:
     pop    ecx
@@ -371,6 +269,7 @@ MEM_Alloc_Page_Linear_loop:
     mov   word [ecx+.range_info+eax],1
     pop   eax
     pop   ecx
+    dec   [MEM_FreeSpace]
     jmp   MEM_Alloc_Page_Linear_ret
 MEM_Alloc_Page_Linear_loopend:
     pop   ecx
@@ -434,6 +333,7 @@ MEM_Free_Page_Bucket:
     mov   [ecx],eax
     pop   dword [eax]
     mov   dword [ecx+.range_info+ebx],0
+    inc   [MEM_FreeSpace]
 MEM_Free_Page_OK:
     mov   eax,1
 MEM_Free_Page_ret:    
@@ -511,6 +411,7 @@ MEM_Free_Page_Linear_Bucket:
     mov   [edx+4],eax
 MEM_Free_Page_No_Next:
     mov   dword [ecx+.range_info+ebx],0
+    inc   [MEM_FreeSpace]
 MEM_Free_Page_Linear_OK:
     xor   eax, eax
     inc   eax
