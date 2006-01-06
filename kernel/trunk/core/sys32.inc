@@ -325,7 +325,7 @@ macro irqh [num]
      jmp   irq_c
 }
 
-irqh 2,3,4,5,7,8,9,10,11,12,14,15
+irqh 2,5,7,8,9,10,11,14,15
 
  irq_c:
      push  ds es
@@ -344,14 +344,56 @@ p_irq6:
      mov   ds, ax
      mov   es, ax
      call  fdc_irq
-
-     mov    [check_idle_semaphore],5
-     mov   al, 0x20
-     out   0x20, al
-
+     call  ready_for_next_irq
      pop   es ds
      popad
      iret
+
+p_irq3:
+     pushad
+     push  ds es
+     mov   ax, os_data
+     mov   ds, ax
+     mov   es, ax
+     call  check_mouse_data_com2
+     pop   es ds
+     popad
+     iret
+
+p_irq4:
+     pushad
+     push  ds es
+     mov   ax, os_data
+     mov   ds, ax
+     mov   es, ax
+     call  check_mouse_data_com1
+     pop   es ds
+     popad
+     iret
+
+p_irq12:
+     pushad
+     push  ds es
+     mov   ax, os_data
+     mov   ds, ax
+     mov   es, ax
+     call  check_mouse_data_ps2
+     pop   es ds
+     popad
+     iret
+
+ready_for_next_irq:
+     mov    [check_idle_semaphore],5
+     mov   al, 0x20
+     out   0x20, al
+     ret
+
+ready_for_next_irq_1:
+     mov    [check_idle_semaphore],5
+     mov   al, 0x20
+     out    0xa0,al
+     out   0x20, al
+     ret
 
 irqD:
      pushad
@@ -773,7 +815,7 @@ terminate: ; terminate application
 
 
     pusha                     ; remove all port reservations
-
+    mov   [deleted_process],esi
     mov   edx,esi
     shl   edx, 5 ;imul  edx,0x20
     add   edx,0x3000
@@ -829,7 +871,13 @@ terminate: ; terminate application
 ;    movzx ecx,word [dlxe]
 ;    movzx edx,word [dlye]
     call  calculatescreen
-
+    cli
+    mov  eax,[deleted_process]
+    cmp  eax,[active_process]
+    jne  no_activate_process
+    call read_active_process_stack
+  no_activate_process:
+    sti
     xor   eax, eax
     xor   esi, esi
     call  redrawscreen
@@ -838,19 +886,44 @@ terminate: ; terminate application
     mov   [0xfff5],byte 0  ; draw mouse
 
     mov   [application_table_status],0
-
     mov   esi,process_terminated
     call  sys_msg_board_str
-
-;* start code - fix error redraw for terminate (2) - Mario79
-;     cmp  [draw_present],1
-;     je  no_draw_background_temp
-;     mov   [0xfff0],byte 1
-;no_draw_background_temp:
-;    mov   [draw_present],0
     ret
-;draw_present db 0
-;* end code - fix error redraw for terminate (2) - Mario79
+
+save_active_process_stack:
+    cmp   [active_proc_stack_coun],0xa400+0x400-4
+    jne   @f
+    mov   [active_proc_stack_coun],0xa400-4
+  @@:
+    push  eax
+    push  ebx
+    mov   eax,[active_process]
+    shl   eax,5
+    add   eax,0x3000
+    mov   [eax-twdw+31],byte 1
+    add   [active_proc_stack_coun],4
+    mov   eax,[active_process]
+    mov   ebx,[active_proc_stack_coun]
+    mov   [ebx],eax
+    pop   ebx
+    pop   eax
+    ret
+
+read_active_process_stack:
+    cmp   [active_proc_stack_coun],0xa400-4
+    jne   @f
+    mov   [active_proc_stack_coun],0xa400+0x400-4
+  @@:
+    push  eax
+    push  ebx
+    mov   ebx,[active_proc_stack_coun]
+    mov   eax,[ebx]
+    mov   [0xff01],eax     ; activate
+    sub   [active_proc_stack_coun],4
+    mov   [active_process_flag],1
+    pop   ebx
+    pop   eax
+    ret
 
 iglobal
   boot_sched_1    db   'Building gdt tss pointer',0

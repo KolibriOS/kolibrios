@@ -325,6 +325,7 @@ __sys_putpixel:
         call  dword [0xe020]        ; call the real put_pixel function
       .exit:
         popad
+
         ret
 
 align 4
@@ -376,7 +377,7 @@ ret
 
 align 4
 __sys_draw_line:
-
+     inc   [mouse_pause]
         call    [disable_mouse]
 
 ; draw a line
@@ -512,6 +513,7 @@ align 4
 .exit:
         add     esp, 6*4
         popa
+     dec   [mouse_pause]
 ret
 
 
@@ -587,6 +589,7 @@ align 4
 ; edx   ye
 ; edi   color
 vesa20_drawbar:
+        
         pushad
         call    [disable_mouse]
 
@@ -616,6 +619,7 @@ vesa20_drawbar:
         popad
         xor     eax, eax
         inc     eax
+        
         ret
       @@:
         cmp     ebx, [drbar.bar_sx]
@@ -632,6 +636,7 @@ vesa20_drawbar:
         popad
         xor     eax, eax
         inc     eax
+        
         ret
       @@:
         cmp     ebx, [drbar.bar_sy]
@@ -775,6 +780,7 @@ draw_bar_end_32:
         add     esp, drbar.stack_data
         popad
         xor     eax, eax
+
 ret
 
 

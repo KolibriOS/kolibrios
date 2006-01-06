@@ -86,7 +86,7 @@ drawbar         dd __sys_drawbar
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.5.2.1      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.5.2.9      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -582,6 +582,12 @@ include 'vmodeld.inc'
 ;        mov     cr4,eax
 ;     fail_fpu:
 
+;The CPU to this moment should be already in PM, 
+;and bit MP of the register cr0 should be installed in 1. 
+finit ;reset of the FPU (finit, instead of fninit) 
+fsetpm ;enable PM of the FPU 
+finit ;reset the registers, contents which are still equal RM 
+;Now FPU too in PM 
 ; DETECT DEVICES
 
         mov    esi,boot_devices
@@ -599,9 +605,6 @@ include 'vmodeld.inc'
         mov   al,0x2e              ; msb
         out   0x40,al
 
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-;include 'detect/commouse.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ; SET MOUSE
 
         mov   esi,boot_setmouse
@@ -710,6 +713,7 @@ include 'vmodeld.inc'
 ; LOAD DEFAULT SKIN
 
         call  load_default_skin
+        call  load_default_skin_1
 
 ; MTRR'S
 
@@ -748,11 +752,12 @@ include 'vmodeld.inc'
         call  kb_write
 
         ; wait until 8042 is ready
-        mov    ecx,0
-      @@:
-        in     al,64h 
-        and    al,00000010b
-        loopnz @b
+;        xor ecx,ecx
+;      @@:
+;        in     al,64h 
+;        and    al,00000010b
+;        loopnz @b
+        call  Wait8042BufferEmpty
 
        ; mov   al, 0xED       ; svetodiody - only for testing!
        ; call  kb_write
@@ -807,29 +812,28 @@ include 'vmodeld.inc'
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
-;                         MAIN OS LOOP                               ;
+;                    MAIN OS LOOP START                              ;
 ;                                                                    ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 osloop:
 
-        call   check_mouse_data
         call   [draw_pointer]
-
         call   checkbuttons
         call   main_loop_sys_getkey
         call   checkwindows
         call   check_window_move_request
-
         call   checkmisc
         call   checkEgaCga
-
         call   stack_handler
-
         call   checkidle
         call   check_fdd_motor_status
         jmp    osloop
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;                                                                    ;
+;                      MAIN OS LOOP END                              ;
+;                                                                    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 checkidle:
         pushad
@@ -1039,14 +1043,14 @@ checkEgaCga:
       cnvl:
 
         pushad
-        mov    ecx,[0xfb0a]
-        cmp    ecx,[novesachecksum]
-        jne    novesal
-        popad
-        ret
+;        mov    ecx,[0xfb0a]
+;        cmp    ecx,[novesachecksum]
+;        jne    novesal
+;        popad
+;        ret
 
       novesal:
-        mov    [novesachecksum],ecx
+;        mov    [novesachecksum],ecx
         mov    ecx,0
         movzx  eax,word [0xfb0c]
         cmp    eax,100
@@ -2043,6 +2047,7 @@ sys_midi:
 detect_devices:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/commouse.inc'
+include 'detect/ps2mouse.inc'
 ;include 'detect/dev_fd.inc'
 ;include 'detect/dev_hdcd.inc'
 ;include 'detect/sear_par.inc'
@@ -2120,8 +2125,10 @@ sys_system:
                            ;     i.e. if window is not already active
 
 ;* start code - get active process (1) - Mario79
+     cli
      mov  [window_minimize],2
-     mov  [active_process],edi
+;     mov  [active_process],edi
+     sti
 ;* end code - get active process (1) - Mario79
 
      mov  [0xff01],edi     ; activate
@@ -2146,7 +2153,6 @@ sys_system:
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!
-;* start code - get active process (2) - Mario79
      cmp  eax,7
      jnz  nogetactiveprocess
      mov  eax,[active_process]
@@ -2244,7 +2250,6 @@ nosys_wait_retrace:
      mov [esp+36],dword 0
      ret
 no_mouse_centered:
-;* end  code - get active process (2) - Mario79
      cmp  eax,16
      jnz  no_get_free_space
      mov  eax,[MEM_FreeSpace]
@@ -2266,7 +2271,7 @@ keyboard_mode_sys db 0
 
 iglobal 
 version_inf: 
-  db 0,5,2,1  ; version 0.5.2.1
+  db 0,5,2,9  ; version 0.5.2.9
   db UID_KOLIBRI 
   db 'Kolibri',0 
 version_end: 
@@ -2789,29 +2794,52 @@ sys_drawwindow:
 
     cmp   edi,0   ; type I    - original style
     jne   nosyswI
+    inc   [mouse_pause]
     call  sys_set_window
     call  drawwindow_I
+    dec   [mouse_pause]
     ret
   nosyswI:
 
     cmp   edi,1   ; type II   - only reserve area, no draw
     jne   nosyswII
+    inc   [mouse_pause]
     call  sys_set_window
     call  sys_window_mouse
+    dec   [mouse_pause]
     ret
   nosyswII:
 
     cmp   edi,2   ; type III  - new style
     jne   nosyswIII
+    inc   [mouse_pause]
     call  sys_set_window
     call  drawwindow_III
+    dec   [mouse_pause]
     ret
   nosyswIII:
 
     cmp   edi,3   ; type IV - skinned window
     jne   nosyswIV
+
+    cli
+    mov   edi,[0x3010]
+    sub   edi,0x3000
+    shr   edi,5
+    cmp   edi,[active_process]
+    jne   @f
+    mov   [aw_yes],1 
+    jmp   aw_yes_end
+  @@:
+    mov   [aw_yes],0 
+  aw_yes_end:
+    sti
+
+    inc   [mouse_pause]
     call  sys_set_window
-    call  drawwindow_IV
+    call  drawwindow_IV 
+    dec   [mouse_pause]
+    mov   [aw_yes],0     
     ret
   nosyswIV:
 
@@ -3257,708 +3285,6 @@ redrawscreen:
          popad
 
          ret
-
-;   check mouse
-;
-;
-;   FB00  ->   FB0F   mouse memory 00 chunk count - FB0A-B x - FB0C-D y
-;   FB10  ->   FB17   mouse color mem
-;   FB21              x move
-;   FB22              y move
-;   FB30              color temp
-;   FB28              high bits temp
-;   FB4A  ->   FB4D   FB4A-B x-under - FB4C-D y-under
-;   FC00  ->   FCFE   com1/ps2 buffer
-;   FCFF              com1/ps2 buffer count starting from FC00
-
-uglobal
-  mousecount  dd  0x0
-  mousedata   dd  0x0
-endg
-
-
-check_mouse_data:
-
-        pushad
-
-        cmp    [0xF604],byte 1
-        jne    no_ps2_mouse
-        mov    [mousecount],dword 0x2e0000+12*4096
-        mov    [mousedata],dword 0x2e0000+12*4096+0x10
-        jmp    uusicheckmouse
-no_ps2_mouse:        
-        cmp    [0xF604],byte 2
-        jne    no_com1_mouse
-        mov    [mousecount],dword 0x2e0000+4*4096
-        mov    [mousedata],dword 0x2e0000+4*4096+0x10
-        jmp    uusicheckmouse
-no_com1_mouse:
-        mov    [mousecount],dword 0x2e0000+3*4096
-        mov    [mousedata],dword 0x2e0000+3*4096+0x10
-
-      uusicheckmouse:
-
-        mov    ebx,[mousecount]       ; anything at buffer for mouse
-        cmp    dword [ebx], 0         ; !!!
-        jz     checkmouseret
-
-        ; first byte of comX or ps2 ?
-
-        cmp    [0xF604],byte 1
-        je     ps2mousefirst
-
-        ; ******************************************        
-        ; *********** COMX mouse driver ************
-        ; ******************************************
-
-       com1mousefirst:
-
-        mov    edi,[mousedata]
-        mov    dl,byte [edi] ; first com1 ?
-        test   dl,64
-        jz     @f
-        mov    [0xfb00],byte 0  ; zero mouse block count
-       @@:
-        xor    ebx,ebx
-
-        mov    bl,[0xfb00]
-        inc    bl
-        mov    [0xfb00],bl
-        mov    eax,0xfb00
-        add    eax,ebx
-        mov    edi,[mousedata]
-        mov    dl,byte [edi]
-        mov    [eax],byte dl
-        cmp    bl,3             ; three ?
-        jnz    decm
-
-        ; buttons
-
-;* change right and left button by places - start code - Mario79
-        mov al,[0xfb01]
-        mov ah,al
-        shr al,3
-        and al,2
-        shr ah,5
-        and ah,1
-        add al,ah
-;* change right and left button by places - end code - Mario79
-
-        mov    [0xfb40],al
-
-        ; com1 mouse
-        ; x
-
-        mov    dl,[0xfb01]        ; x high bits
-        movzx  eax,dl
-        and    al,3
-        shl    al,6
-        mov    dl,byte[0xfb02]    ; x low bits
-        add    al,dl
-        mov    [0xfb21],byte al
-        movzx  ebx,word[0xfb0a]
-
-        mov    al,byte [0xfb01]   ; + or - ?
-        test   al,2
-        jz     x_add
-
-       x_sub:                      ; x-
-        sub    bx,255
-        sub    bx,255
-       x_add:                      ; x+
-        movzx  eax,byte [0xfb21]
-        add    bx,ax
-        add    bx,ax
-        push   ebx
-        mov    [0xfb00],byte 0
-
-        ; y
-
-
-      my_event:
-
-        mov    dl,[0xfb01]       ; y high bits
-        movzx  eax,dl
-        and    al,12
-        shl    al,4
-        mov    dl,byte[0xfb03]   ; y low bits
-        add    al,dl
-        mov    [0xfb22],byte al
-        movzx  ebx,word[0xfb0c]
-
-        mov    al,byte [0xfb01]  ; + or - ?
-        test   al,8
-        je     y_add
-
-      y_sub:                      ; y-
-        sub    bx,255
-        sub    bx,255
-      y_add:                      ; y+
-        movzx  eax,byte [0xfb22]
-        add    bx,ax
-        add    bx,ax
-        push   ebx
-        mov    [0xfb00],byte 0
-        jmp    mdraw
-
-        ; end of com1 mouse
-
-
-        ; ******************************************
-        ; ********  PS2 MOUSE DRIVER  **************
-        ; ******************************************
-
-      ps2mousefirst:
-      
-        movzx  edx,byte [0x2E0000+4096*12+0x10]   ; first ps2 ?
-        cmp    edx,40
-        jne    @f
-        mov    [0xfb00],byte 0  ; zero mouse block count
-      @@:
-
-        movzx  ebx,byte [0xfb00]
-        add    ebx,1
-        mov    [0xfb00],bl
-        mov    eax,0xfb00
-        add    eax,ebx
-        mov    dl,byte [0x2E0000+4096*12+0x10]
-        mov    [eax],byte dl
-
-        cmp    bl,3             ; full packet of three bytes ?
-        jnz    decm
-
-        mov    [0xfb00],byte 0  ; zero mouse block count
-
-        ; buttons
-
-        movzx  eax,byte [0xfb01]
-        and    eax,3
-        mov    [0xfb40],al
-
-        ; x
-
-        movzx  eax,word [0xfb0a]
-        movzx  edx,byte [0xfb02]
-        cmp    edx,128
-        jb     ps2xp
-        shl    edx,1
-        add    eax,edx
-        cmp    eax,512
-        jge    ps2xsok
-        xor    eax, eax
-        jmp    ps2xready
-       ps2xsok:
-        sub    eax,512
-        jmp    ps2xready
-       ps2xp:
-        shl    edx,1
-        add    eax,edx
-        jmp    ps2xready
-       ps2xready:
-        push   eax
-
-        ; y
-
-        movzx  eax,word [0xfb0c]
-        movzx  edx,byte [0xfb03]
-        cmp    edx,128
-        jb     ps2yp
-        add    eax,512
-        shl    edx,1
-        sub    eax,edx
-        jmp    ps2yready
-       ps2yp:
-        shl    edx,1
-        cmp    edx,eax
-        jb     ps201
-        mov    edx,eax
-       ps201:
-        sub    eax,edx
-        jmp    ps2yready
-       ps2yready:
-        push   eax
-
-        ;jmp    mdraw
-
-        ; end of ps2 mouse
-
-
-        ; ****************************
-        ; ***** CHECK FOR LIMITS *****
-        ; ****************************
-
-      mdraw:
-
-        cmp    [0xfb44],byte 0
-        jne    mousedraw4
-        cmp    [0xfb40],byte 0
-        je     mousedraw4
-        mov    [0xfff5],byte 1
-
-      mousedraw4:
-
-        pop    ebx
-        pop    eax
-
-        mov    [mouse_active],1
-
-;        mov    dx,0                   ; smaller than zero
-        xor    dx,dx
-        cmp    bx,dx
-        jge    mnb11
-;        mov    bx,0
-        xor    bx,bx
-      mnb11:
-        mov    [0xfb0c],word bx
-
-;        mov    dx,0
-        xor    dx,dx
-        cmp    ax,dx
-        jge    mnb22
-;        mov    ax,0
-        xor    ax,ax
-      mnb22:
-        mov    [0xfb0a],word ax
-
-        mov    edx,[0xfe04]           ; bigger than maximum
-        cmp    ebx,edx
-        jb     mnb1
-        mov    bx,[0xfe04]
-      mnb1:
-        mov    [0xfb0c],word bx
-
-        mov    edx,[0xfe00]
-        cmp    eax,edx
-        jb     mnb2
-        mov    ax,[0xfe00]
-      mnb2:
-        mov    [0xfb0a],word ax
-
-
-        ; ****   NEXT DATA BYTE FROM MOUSE BUFFER   ****
-
-      decm:
-
-        mov    edi,[mousecount]         ; decrease counter
-        dec    dword [edi]
-
-        mov    esi,[mousedata]
-        mov    edi,esi
-        inc    esi
-;        mov    ecx,250
-        mov    ecx,[mousecount]
-        mov    ecx,[ecx]
-        cld
-        rep    movsb
-
-        jmp    uusicheckmouse
-
-      checkmouseret:
-
-        cmp    [0xfb44],byte 0
-        jne    cmret
-        
-        cmp    [0xfb40],byte 0
-        je     cmret
-        
-        mov    [0xfff4],byte 0
-        mov    [0xfff5],byte 0
-        
-      cmret:
-
-        popad
-
-        ret
-
-
-draw_mouse_under:
-
-        ; return old picture
-;        cli
-
-        pushad
-
-        xor    ecx,ecx
-        xor    edx,edx
-
-        ;cli    ; !!!****
-        align  4
-      mres:
-
-        movzx  eax,word [0xfb4a]
-        movzx  ebx,word [0xfb4c]
-
-        add    eax,ecx
-        add    ebx,edx
-
-        push   ecx
-        push   edx
-        push   eax
-        push   ebx
-
-        mov    eax,edx
-        shl    eax,6
-        shl    ecx,2
-        add    eax,ecx
-        add    eax,mouseunder
-        mov    ecx,[eax]
-
-        pop    ebx
-        pop    eax
-
-        ;;;push   edi
-        mov    edi,1 ;force
-        call   [putpixel]
-        ;;;pop    edi
-
-        pop    edx
-        pop    ecx
-
-        inc    ecx
-        cmp    ecx, 16
-        jnz    mres
-        xor    ecx, ecx
-        inc    edx
-        cmp    edx, 24
-        jnz    mres
-        ;sti    ; !!!****
-
-        popad
-        
-;        sti
-        
-        ret
-
-
-save_draw_mouse:
-
-        ; save & draw
-;        cli
-
-        mov    [0xfb4a],ax
-        mov    [0xfb4c],bx
-        push   eax
-        push   ebx
-        mov    ecx,0
-        mov    edx,0
-
-        ;cli ; !!!****
-
-      drm:
-
-        push   eax
-        push   ebx
-        push   ecx
-        push   edx
-
-        ; helloworld
-        push   eax ebx ecx
-        add    eax,ecx  ; save picture under mouse
-        add    ebx,edx
-        push   ecx
-        call   getpixel
-        mov    [0xfb30],ecx
-        pop    ecx
-        mov    eax,edx
-        shl    eax,6
-        shl    ecx,2
-        add    eax,ecx
-        add    eax,mouseunder
-        mov    ebx,[0xfb30]
-        mov    [eax],ebx
-        pop    ecx ebx eax
-
-        mov    edi,edx       ; y cycle
-        shl    edi,4       ; *16 bytes per row
-        add    edi,ecx       ; x cycle
-        mov    esi, edi
-        add    edi, esi
-        add    edi, esi       ; *3
-        add    edi,[0xf200]      ; we have our str address
-        mov    esi, edi
-        add    esi, 16*24*3
-        push   ecx
-        mov    ecx, [0xfb30]
-        call   combine_colors
-        mov    [0xfb10], ecx
-        pop    ecx
-
-
-        pop    edx
-        pop    ecx
-        pop    ebx
-        pop    eax
-
-        add    eax,ecx       ; we have x coord+cycle
-        add    ebx,edx       ; and y coord+cycle
-
-        push   ecx edi
-        mov    ecx, [0xfb10]
-        mov    edi, 1
-        call   [putpixel]
-        pop    edi ecx
-
-      mnext:
-
-        mov    ebx,[esp+0]      ; pure y coord again
-        mov    eax,[esp+4]      ; and x
-
-        inc    ecx          ; +1 cycle
-        cmp    ecx,16       ; if more than 16
-        jnz    drm
-        xor    ecx, ecx
-        inc    edx
-        cmp    edx,24
-        jnz    drm
-
-        pop    ebx
-        pop    eax
-
-;        sti ; !!!****
-
-        ret
-
-
-combine_colors:
-
-      ; in
-      ; ecx - color ( 00 RR GG BB )
-      ; edi - ref to new color byte
-      ; esi - ref to alpha byte
-      ;
-      ; out
-      ; ecx - new color ( roughly (ecx*[esi]>>8)+([edi]*[esi]>>8) )
-
-      push eax
-      push ebx
-      push edx
-      push ecx
-      xor ecx, ecx
-         ; byte 2
-      mov eax, 0xff
-      sub al, [esi+0]
-      mov ebx, [esp]
-      shr ebx, 16
-      and ebx, 0xff
-      mul ebx
-      shr eax, 8
-      add ecx, eax
-;      xor eax, eax
-;      xor ebx, ebx
-;      mov al, [edi+0]
-;      mov bl, [esi+0]
-    movzx eax, byte [edi+0]
-    movzx ebx, byte [esi+0]
-      mul ebx
-      shr eax, 8
-      add ecx, eax
-      shl ecx, 8
-         ; byte 1
-      mov eax, 0xff
-      sub al, [esi+1]
-      mov ebx, [esp]
-      shr ebx, 8
-      and ebx, 0xff
-      mul ebx
-      shr eax, 8
-      add ecx, eax
-;      xor eax, eax
-;      xor ebx, ebx
-;      mov al, [edi+1]
-;      mov bl, [esi+1]
-    movzx eax, byte [edi+1]
-    movzx ebx, byte [esi+1]
-      mul ebx
-      shr eax, 8
-      add ecx, eax
-      shl ecx, 8
-         ; byte 2
-      mov eax, 0xff
-      sub al, [esi+2]
-      mov ebx, [esp]
-      and ebx, 0xff
-      mul ebx
-      shr eax, 8
-      add ecx, eax
-;      xor eax, eax
-;      xor ebx, ebx
-;      mov al, [edi+2]
-;      mov bl, [esi+2]
-    movzx eax, byte [edi+2]
-    movzx ebx, byte [esi+2]
-      mul ebx
-      shr eax, 8
-      add ecx, eax
-
-      pop eax
-      pop edx
-      pop ebx
-      pop eax
-      ret
-
-
-__sys_disable_mouse:
-
-      pushad
-
-      cmp  [0x3000],dword 1
-      je   disable_m
-
-      mov  edx,[0x3000]
-      shl  edx,5
-      add  edx,window_data
-
-      movzx  eax, word [0xfb0a]
-      movzx  ebx, word [0xfb0c]
-
-      mov  ecx,[0xfe00]
-      inc  ecx
-      imul  ecx,ebx
-      add  ecx,eax
-      add  ecx, display_data
-
-      movzx eax, byte [edx+twdw+0xe]
-
-      movzx ebx, byte [ecx]
-      cmp   eax,ebx
-      je    yes_mouse_disable
-      movzx ebx, byte [ecx+16]
-      cmp   eax,ebx
-      je    yes_mouse_disable
-
-      mov   ebx,[0xfe00]
-      inc   ebx
-      imul  ebx,10
-      add   ecx,ebx
-
-      movzx ebx, byte [ecx]
-      cmp   eax,ebx
-      je    yes_mouse_disable
-
-      mov   ebx,[0xfe00]
-      inc   ebx
-      imul  ebx,10
-      add   ecx,ebx
-
-      movzx ebx, byte [ecx]
-      cmp   eax,ebx
-      je    yes_mouse_disable
-      movzx ebx, byte [ecx+16]
-      cmp   eax,ebx
-      je    yes_mouse_disable
-
-      jmp   no_mouse_disable
-
-    yes_mouse_disable:
-
-      mov  edx,[0x3000]
-      shl  edx,5
-      add  edx,window_data
-
-      movzx  eax, word [0xfb0a]
-      movzx  ebx, word [0xfb0c]
-
-      mov  ecx,[edx+0]   ; mouse inside the area ?
-      add  eax,14
-      cmp  eax,ecx
-      jb   no_mouse_disable
-      sub  eax,14
-
-      add  ecx,[edx+8]
-      cmp  eax,ecx
-      jg   no_mouse_disable
-
-      mov  ecx,[edx+4]
-      add  ebx,20
-      cmp  ebx,ecx
-      jb   no_mouse_disable
-      sub  ebx,20
-
-      add  ecx,[edx+12]
-      cmp  ebx,ecx
-      jg   no_mouse_disable
-
-    disable_m:
-
-      cmp  dword [0xf204],dword 0
-      jne  @f
-      call draw_mouse_under
-    @@:
-
-      mov  [0xf204],dword 1
-
-    no_mouse_disable:
-
-      popad
-
-      ret
-
-
-
-__sys_draw_pointer:
-        cli
-
-        pushad
-
-        cmp    dword [0xf204],dword 0  ; mouse visible ?
-        je     chms00
-
-        dec    dword [0xf204]
-
-        cmp    [0xf204],dword 0
-        jnz    nodmu2
-
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
-        call   save_draw_mouse
-
-        popad
-        sti
-        ret
-
-      nodmu2:
-
-        popad
-        sti
-        ret
-
-      chms00:
-
-;        popad
-
-;        pushad
-
-;        cmp   [0xf204],dword 0
-;        jne   nodmp
-
-        movzx  ecx,word [0xfb4a]
-        movzx  edx,word [0xfb4c]
-
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
-
-        cmp    eax,ecx
-        jne    redrawmouse
-
-        cmp    ebx,edx
-        jne    redrawmouse
-
-        jmp    nodmp
-
-      redrawmouse:
-
-        
-        call   draw_mouse_under
-redrawmouse_1:
-        call   save_draw_mouse
-
-     nodmp:
-
-        popad
-        sti
-        ret
-
-
 
 calculatebackground:   ; background
 
@@ -4451,15 +3777,17 @@ reserve_free_irq:
 
 
 drawbackground:
-
+       inc   [mouse_pause]
        cmp   [0xfe0c],word 0x12
        jne   dbrv12
        cmp   [display_data-12],dword 1
        jne   bgrstr12
        call  vga_drawbackground_tiled
+       dec   [mouse_pause]
        ret
      bgrstr12:
        call  vga_drawbackground_stretch
+       dec   [mouse_pause]
        ret
      dbrv12:
 
@@ -4468,25 +3796,27 @@ drawbackground:
        cmp  [0xfe0c],word 0x13
        je   dbrv20
        call  vesa12_drawbackground
+       dec   [mouse_pause]
        ret
      dbrv20:
        cmp   [display_data-12],dword 1
        jne   bgrstr
        call  vesa20_drawbackground_tiled
+       dec   [mouse_pause]
        ret
      bgrstr:
        call  vesa20_drawbackground_stretch
+       dec   [mouse_pause]
        ret
 
 
-sys_putimage:
 
+sys_putimage:
      cmp   [0xfe0c],word 0x12
      jne   spiv20
      call  vga_putimage
      ret
    spiv20:
-
      cmp   [0xfe0c],word 0100000000000000b
      jge   piv20
      cmp   [0xfe0c],word 0x13
@@ -4506,23 +3836,23 @@ sys_putimage:
 ; edi color
 
 __sys_drawbar:
-
-     cmp   [0xfe0c],word 0x12
-     jne   sdbv20
-     call  vga_drawbar
-     ret
+    inc   [mouse_pause]
+    cmp   [0xfe0c],word 0x12
+    jne   sdbv20
+    call  vga_drawbar
+    dec   [mouse_pause]
+    ret
    sdbv20:
-
     cmp  [0xfe0c],word 0100000000000000b
     jge  dbv20
     cmp  [0xfe0c],word 0x13
     je   dbv20
     call vesa12_drawbar
+    dec   [mouse_pause]
     ret
-
   dbv20:
-
     call vesa20_drawbar
+    dec   [mouse_pause]
     ret
 
 
@@ -4641,25 +3971,23 @@ setmouse:  ; set mousepicture -pointer
      mov     [0xf200],dword mousepointer
 
      cli
-     mov     bl,0xa8                 ; enable mouse cmd
-     call    kb_cmd
-     call    kb_read                 ; read status
-
-     mov     bl,0x20                 ; get command byte
-     call    kb_cmd
-     call    kb_read
-     or      al,3                    ; enable interrupt
-     mov     bl,0x60                 ; write command
-     push    eax
-     call    kb_cmd
-     pop     eax
-     call    kb_write
-
-     mov     bl,0xd4                 ; for mouse
-     call    kb_cmd
-     mov     al,0xf4                 ; enable mouse device
-     call    kb_write
-     call    kb_read           ; read status return
+;     mov     bl,0xa8                 ; enable mouse cmd
+;     call    kb_cmd
+;     call    kb_read                 ; read status
+;     mov     bl,0x20                 ; get command byte
+;     call    kb_cmd
+;     call    kb_read
+;     or      al,3                    ; enable interrupt
+;     mov     bl,0x60                 ; write command
+;     push    eax
+;     call    kb_cmd
+;     pop     eax
+;     call    kb_write
+;     mov     bl,0xd4                 ; for mouse
+;     call    kb_cmd
+;     mov     al,0xf4                 ; enable mouse device
+;     call    kb_write
+;     call    kb_read           ; read status return
 
      ; com1 mouse enable
 
@@ -5121,8 +4449,9 @@ syscall_setpixel:                       ; SetPixel
      mov   edx,[0x3010]
      add   eax,[edx-twdw]
      add   ebx,[edx-twdw+4]
-     xor   edi,edi ; no force
-     call  [disable_mouse]
+;     xor   edi,edi ; no force
+     mov   edi,1
+;     call  [disable_mouse]
      jmp   [putpixel]
 
 align 4
@@ -5557,6 +4886,13 @@ uglobal
 
 ;* start code - get  process (3) - Mario79
 active_process      dd   0
+active_process_flag db   0
+aw_yes              db   0
+deleted_process     dd   0
+mouse_pause         dd   0
+ps2_mouse_detected  db   0
+com1_mouse_detected db   0
+com2_mouse_detected db   0
 ;* end code - get active process (3) - Mario79
 
 wraw_bacground_select db 0
@@ -5574,6 +4910,7 @@ iglobal
   keyboard   dd 0x1
   sound_dma  dd 0x1
   syslang    dd 0x1
+  active_proc_stack_coun dd 0xa400-4
 endg
 
 IncludeIGlobals

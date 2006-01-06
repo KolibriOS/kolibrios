@@ -7,9 +7,28 @@
 ; Автор исходного текста Кулаков Владимир Геннадьевич.
 ; Адаптация и доработка Mario79
 
-MSMouseSearch:
+Detect_COM_Mouse:
         pusha
-; ПОИСК МЫШИ ЧЕРЕЗ COM-ПОРТЫ
+        call   MSMouseSearch
+        cmp    AL,'M'
+        jne    @f
+        mov    [com1_mouse_detected],1
+        mov    esi,boot_setmouse_type+22
+        call  boot_log
+     @@:
+        sub    [COMPortBaseAddr],100h
+        call   MSMouseSearch
+        cmp    AL,'M'
+        jne    @f        
+        mov    [com2_mouse_detected],1
+        mov    esi,boot_setmouse_type+44
+        call  boot_log
+     @@:
+        popa
+        jmp     end_detecting_mouse
+
+MSMouseSearch:
+        ; ПОИСК МЫШИ ЧЕРЕЗ COM-ПОРТЫ
 MouseSearch:
         ; Устанавливаем скорость
         ; приема/передачи 1200 бод
@@ -48,7 +67,7 @@ dT_1:
         dec  ecx
         cmp ecx,0
         jne dT_1
-       mov  ecx,0xffff 
+        mov  ecx,0xffff 
         ; Включить питание мыши
         mov     AL,11b  ;установить DTR и RTS
         out     DX,AL
@@ -70,46 +89,19 @@ WaitData:
         ; Ввести данные
         mov     DX,[COMPortBaseAddr]
         in      AL,DX
-        ; Устройство является мышью?
-        cmp     AL,'M'
-        je EndDetect
 NoMouse:
-        inc     [COMPortNum]
-        cmp     [COMPortNum],1
-        ja      EndDetect
-        sub     [COMPortBaseAddr],100h
-        jmp     MouseSearch
+        ret
 
 iglobal
 COMPortBaseAddr dw 3F8h
-COMPortNum dw 0
+;COMPortNum dw 0
 endg
 
 iglobal
-boot_setmouse_type  db   'No COM mouse, set PS2',0
+boot_setmouse_type  db   'Detected - PS2  mouse',0
                     db   'Detected - COM1 mouse',0
                     db   'Detected - COM2 mouse',0
- 
 endg
 
-EndDetect:
-        cmp     [COMPortNum],0  ;номер порта меньше 0?
-        jl      ComMouseNotFound ;мышь не найдена
-        cmp     [COMPortNum],1  ;номер порта больше 1?
-        ja      ComMouseNotFound ;мышь не найдена
-        mov     ax,[COMPortNum]
-        add     al,2
-        jmp     set_detecting_mouse
- ComMouseNotFound:
-        mov al,1
- set_detecting_mouse:
-        mov   [0xF604],al
-        dec   al
-        movzx eax,al
-        imul  eax,22
-        mov   esi,boot_setmouse_type
-        add   esi,eax
-        call  boot_log
-        popa
-
+end_detecting_mouse:
 

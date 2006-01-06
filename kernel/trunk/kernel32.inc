@@ -96,6 +96,7 @@ include "blkdev/cdrom.inc"
 ; Character devices
 
 include "hid/keyboard.inc"
+include "hid/mousedrv.inc"
 
 ; setting date,time,clock and alarm-clock
 

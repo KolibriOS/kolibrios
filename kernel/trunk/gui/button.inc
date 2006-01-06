@@ -532,7 +532,6 @@ checkbuttons:
 
     call  checkidle
 
-    call  check_mouse_data
     call  [draw_pointer]
 
     pushad
@@ -552,53 +551,52 @@ checkbuttons:
     buttonid dd 0x0 ;here a will backup the eax value
     afterbuttonid:
 
-    pusha
-    mov   eax,[buttonid]
-                ; mouse x >= button x ?
-    movzx ebx,word [eax+0]
-    shl   ebx,5
-    add   ebx,window_data
-    movzx ecx,word [ebx+0]     ; window x start
-    movzx edx,word [eax+4]     ; button x start
-    add   edx,ecx
-    mov   cx,[0xfb0a]
-    cmp   edx,ecx
-    jg      no_on_button        ;if we release the pointer out of the button area
+   pusha
+  ; mouse x >= button x ?
+   movzx ebx,word [eax+0]
+   shl   ebx,5
+   add   ebx,window_data
+   movzx ecx,word [ebx+0]    ; window x start
+   movzx edx,word [eax+4]    ; button x start
+   add   edx,ecx
+   mov   cx,[0xfb0a]
+   cmp   edx,ecx
+   jg   no_on_button ;if we release the pointer out of the button area
 
-    movzx ebx,word [eax+6]     ; button x size
-    add   edx,ebx
-    cmp   ecx,edx
-    jg      no_on_button
+   movzx ebx,word [eax+6]    ; button x size
+   add   edx,ebx
+   cmp   ecx,edx
+   jg   no_on_button
 
-                   ; mouse y >= button y ?
-    movzx ebx,word [eax+0]
-    shl   ebx,5
-    add   ebx,window_data
-    movzx ecx,word [ebx+4]     ; window y start
-    movzx edx,word [eax+8]     ; button y start
-    add   edx,ecx
-    mov   cx,[0xfb0c]
-    cmp   edx,ecx
-    jg      no_on_button
+        ; mouse y >= button y ?
+   movzx ebx,word [eax+0]
+   shl   ebx,5
+   add   ebx,window_data
+   movzx ecx,word [ebx+4]    ; window y start
+   movzx edx,word [eax+8]    ; button y start
+   add   edx,ecx
+   mov   cx,[0xfb0c]
+   cmp   edx,ecx
+   jg   no_on_button
 
-    movzx ebx,word [eax+10]    ; button y size
-    add   edx,ebx
-    cmp   ecx,edx
-    jg      no_on_button
-    popa
-    mov   [0xf500],byte 1  ; no of buttons in buffer
-    pop   ebx
-    mov   [0xf501],ebx       ; lets put the button id in buffer
-    push  ebx
-    pusha
-    jmp yes_on_button
+   movzx ebx,word [eax+10]   ; button y size
+   add   edx,ebx
+   cmp   ecx,edx
+   jg   no_on_button
+   popa
+   mov   [0xf500],byte 1 ; no of buttons in buffer
+   pop   ebx
+   mov   [0xf501],ebx   ; lets put the button id in buffer
+   push  ebx
+   pusha
+   jmp yes_on_button
 no_on_button:
-    mov   [0xf500],byte 0  ; no of buttons in buffer
+   mov   [0xf500],byte 0 ; no of buttons in buffer
 yes_on_button:
-    mov   [0xfb44],byte 0  ; mouse down -> do not draw
-    popa
-    pop ebx
-    popa
-    ret
-;..................................... end 2/2 : modified by vhanla ................................
+   mov   [0xfb44],byte 0 ; mouse down -> do not draw
+   popa
+   pop ebx
+   popa
+   ret
 
+;..................................... end 2/2 : modified by vhanla ................................

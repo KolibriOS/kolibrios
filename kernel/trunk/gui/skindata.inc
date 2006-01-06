@@ -32,6 +32,9 @@ iglobal
   _fileleft       db      'LEFT.BMP     '
   _filebase       db      'BASE.BMP     '
   _fileoper       db      'OPER.BMP     '
+  _fileleft_1     db      'LEFT_1.BMP   '
+  _filebase_1     db      'BASE_1.BMP   '
+  _fileoper_1     db      'OPER_1.BMP   '
 endg
 
 uglobal
@@ -39,6 +42,10 @@ uglobal
   _refbase        dd      0
   _refleft        dd      0
   _skinleft       dd      0
-  _skinwinw       dd      0
+;  _skinwinw       dd      0
+  _refoper_1        dd      0
+  _refbase_1        dd      0
+  _refleft_1        dd      0
+  _skinleft_1       dd      0
 endg
 

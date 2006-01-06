@@ -401,7 +401,6 @@ check_window_move_request:
 
         mov   ecx,10          ; wait 1/10 second
       wmrl3:
-        call  check_mouse_data
         call  [draw_pointer]
         mov   eax,1
         call  delay_hs
@@ -722,8 +721,7 @@ windowactivate:
         ; esi = abs mem position in stack 0xC400+
 
         pushad
-
-       push   esi
+        push   esi
       movzx   eax, word [esi] ; ax <- process no
       movzx   eax, word [0xC000+eax*2] ; ax <- position in window stack
 
@@ -749,7 +747,22 @@ windowactivate:
         mov   [0xC000+eax*2], bx     ; this is the last (and the upper)
 
 ;* start code - get active process (4) - Mario79
-         mov  [active_process],eax
+        cli
+        cmp  [active_process_flag],1
+        jne  @f
+        mov   [active_process_flag],0
+        jmp   end_save_active_process
+    @@:
+        call save_active_process_stack
+    end_save_active_process:
+        mov  [active_process],eax
+        push  eax
+        mov   eax,[active_process]
+        shl   eax,5
+        add   eax,0x3000
+        mov   [eax-twdw+31],byte 1
+        pop   eax
+        sti
 ;* end code - get active process (4) - Mario79
 
         ; update on screen -window stack
@@ -763,10 +776,8 @@ windowactivate:
         mov   [ebx*2 + 0xC400], si
         jmp   waloop2
       wacont2:
-
         mov   [0xf400], byte 0           ; empty keyboard buffer
         mov   [0xf500], byte 0           ; empty button buffer
-
         popad
         ret
 
@@ -902,8 +913,8 @@ waredraw:     ; if redraw necessary at activate
      .waitflagdown:
         dec   ecx
         jz    .nowait
-        mov   eax, 2
-        call  delay_hs
+;        mov   eax, 2
+;        call  delay_hs
         cmp   [edi+31], byte 0 ; wait flag to drop
         jnz   .waitflagdown
       .nowait:
@@ -950,8 +961,8 @@ checkwindows:
         call waredraw
 
 ;* start code - get active process (2) - Mario79
-        mov  eax,[0xff01]
-        mov  [active_process],eax
+;        mov  eax,[0xff01]
+;        mov  [active_process],eax
 ;* end code - get active process  (2) - Mario79
 
         mov  [0xff01],dword 0  ; activated
@@ -1163,7 +1174,6 @@ checkwindows:
 
         mov   [0xfff4],byte 0
 
-        call  check_mouse_data
         call  [draw_pointer]
 
         pushad
@@ -1460,7 +1470,6 @@ checkwindows:
 
         mov   ecx,100         ; wait to avoid mouse residuals
       waitre2:
-        call  check_mouse_data
         mov   [0xfff5],byte 1
         call  checkidle
         cmp   [edi+31],byte 0

@@ -54,11 +54,15 @@
 ;   6000  ->   68FF   free
 ;   6900  ->   6EFF   saved picture under mouse pointer
 ;
-;   6F00  ->   7FFF   free
+;   6F00  ->   6FFF   free
+;
+;   7000  ->   7FFF   used CD driver
 ;
 ;   8000  ->   A3FF   used FLOPPY driver
 ;
-;   A400  ->   B0FF   free
+;   A400  ->   A7FF   used active process stack
+;
+;   A800  ->   B0FF   free
 
 ;   B100  ->   B2FF   IDT
 

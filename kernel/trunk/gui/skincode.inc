@@ -170,27 +170,75 @@ load_default_skin:
     mov   edi, eax
     mov   esi, 0x90000
     call  bmp2raw
+    mov   eax, [0x90000+bmp_header.height]
+    mov   [_skinh], eax
+    popad
 
+    ret
 
-;    mov   eax, [0x90000+bmp_header.height]
-;    imul  eax, [0x90000+bmp_header.width]
-;    imul  eax, 3
-;    add   eax, raw_data  ; now eax points to the last line of image
+load_default_skin_1:          
+    pushad
+    mov   eax, _fileleft_1
+    call  load_bmp_file
+    mov   eax, [0x90000+bmp_header.width]
+    mov   [_skinleftw], eax
+    mov   [_skinleft_1], 0
+    mov   edi, raw_data+1000h
+    mov   [_refleft_1], edi
+    mov   esi, 0x90000
+    call  bmp2raw
+    mov   eax, [_bmp_bpl]
+    imul  eax, [0x90000+bmp_header.height]
+    push  eax
 
-;    mov   ecx, [eax]
-;    mov   [_coloroutborder], ecx
-;    mov   [_colorborder], ecx
-;    sub   eax, 2*3
-;    mov   ecx, [eax]
-;    mov   [_colorframe], ecx
+    mov   eax, _filebase_1
+    call  load_bmp_file
+    mov   eax, [0x90000+bmp_header.width]
+    mov   [_skinbasew], eax
+    mov   eax, [_skinleftw]
+    mov   [_skinbase], eax
+    pop   eax
+    add   eax, [_refleft_1]
+    ; align to 32-byte boundary
+    test  eax, 11111b
+    jz    @f
+    shr   eax, 5
+    inc   eax
+    shl   eax, 5
+  @@:
+    ; save base address
+    mov   [_refbase_1], eax
+    ; convert
+    mov   edi, eax
+    mov   esi, 0x90000
+    call  bmp2raw
+    mov   eax, [_bmp_bpl]
+    imul  eax, [0x90000+bmp_header.height]
+    push  eax
 
-
+    mov   eax, _fileoper_1
+    call  load_bmp_file
+    mov   eax, [0x90000+bmp_header.width]
+    mov   [_skinoperw], eax
+    neg   eax
+    mov   [_skinoper], eax
+    pop   eax
+    add   eax, [_refbase_1]
+    ; align to 32-byte boundary
+    test  eax, 11111b
+    jz    @f
+    shr   eax, 5
+    inc   eax
+    shl   eax, 5
+  @@:
+    mov   [_refoper_1], eax
+    mov   edi, eax
+    mov   esi, 0x90000
+    call  bmp2raw
     mov   eax, [0x90000+bmp_header.height]
     mov   [_skinh], eax
     popad
     ret
-
-
 
 drawwindow_IV:
 
@@ -241,7 +289,15 @@ drawwindow_IV:
         mov   ecx,[_skinleftw]
         shl   ecx,16
         add   ecx,[_skinh]
+
+        cmp   [aw_yes],1
+;        cmp   [esp+32+4+2], word 1
+        jne   @f
         mov   ebx,[_refleft]
+        jmp   no_aw_3
+     @@:
+        mov   ebx,[_refleft_1]
+      no_aw_3:
         call  sys_putimage
 
         mov   esi,[esp]
@@ -256,7 +312,14 @@ drawwindow_IV:
 
         inc   eax
 
+        cmp   [aw_yes],1
+;        cmp   [esp+32+4+2], word 1
+        jne   @f
         mov   ebx,[_refbase]
+        jmp   no_aw_2
+     @@:
+        mov   ebx,[_refbase_1]
+      no_aw_2:
         mov   ecx,[_skinbasew]
         shl   ecx,16
         add   ecx,[_skinh]
@@ -281,7 +344,14 @@ drawwindow_IV:
         sub   edx,[_skinoperw]
         inc   edx
         shl   edx,16
+        cmp   [aw_yes],1
+;        cmp   [esp+32+4+2], word 1
+        jne   @f
         mov   ebx,[_refoper]
+        jmp   no_aw_1
+     @@:
+        mov   ebx,[_refoper_1]
+      no_aw_1:
         mov   ecx,[_skinoperw]
         shl   ecx,16
         add   ecx,[_skinh]
@@ -383,6 +453,7 @@ drawwindow_IV:
 
         add   esp,4
         popa
+
         ret
 
 

@@ -57,7 +57,8 @@ paletteVGA:
 
 
 vga_putimage:
-
+; pushad
+ call    [disable_mouse]
  push ebp ;
  push esi ;
  push edi ;
@@ -225,7 +226,10 @@ pimvga:
       pop edi
       pop esi
       pop ebp
-
+      
+;      call  [draw_pointer]
+;      call    [disable_mouse]
+;      popad
       ret
 
 
@@ -251,7 +255,7 @@ VGA_putpixel:
  and     ecx,0x07          ; bit no. (modulo 8)
 
 setvgapixel:
-
+ cli
  ; edi = address, eax = 24bit colour, ecx = bit no. (modulo 8)
 
  push   eax
@@ -300,11 +304,13 @@ p13cont:
  mov    al,[edi]           ; dummy read
  mov    [edi],dl
 
+ sti
  ret
 
 
 vga_drawbar:
-
+;     pushad
+ call    [disable_mouse]
      sub edx,ebx ; edx:=Yend-Ystart=H
      sub ecx,eax ; ecx:=Xend-Xstat=B
 
@@ -492,12 +498,12 @@ vga_drawbar:
 
      ;pop edx
      ;pop ecx
-
+;     popad
      ret
 
 
 vga_drawbackground_tiled:
-
+ call    [disable_mouse]
      push ebp
      push eax
      push ebx
@@ -639,7 +645,7 @@ vga_drawbackground_tiled:
 
 
 vga_drawbackground_stretch:
-
+ call    [disable_mouse]
 
      push ebp
      push eax
