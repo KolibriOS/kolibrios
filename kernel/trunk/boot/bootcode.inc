@@ -416,14 +416,8 @@ cfgmanager:
 ; get start time
 	call	.gettime
 	mov	[.starttime-0x10000], eax
-; set timer interrupt handler
-	cli
-	push	0
-	pop	es
-	mov	eax, [es:8*4]
-	mov	[.oldtimer-0x10000], eax
-	mov	word [es:8*4], .newtimer-0x10000
-	mov	[es:8*4+2], cs
+	mov	word [.timer-0x10000], .newtimer-0x10000
+	mov	word [.timer-0x10000+2], cs
 .printcfg:
 	_setcursor 9,0
 	mov	si, current_cfg_msg-0x10000
@@ -487,6 +481,15 @@ cfgmanager:
 .wait:
 ; empty BIOS keyboard buffer
 	_setcursor 25,0		; out of screen
+; set timer interrupt handler
+	cli
+	push	0
+	pop	es
+	mov	eax, [es:8*4]
+	mov	[.oldtimer-0x10000], eax
+	mov	eax, [.timer-0x10000]
+	mov	[es:8*4], eax
+	sti
 ; wait for keypressed
 	mov	ah, 0
 	int	16h
@@ -496,6 +499,7 @@ cfgmanager:
 	pop	es
 	mov	ecx, [.oldtimer-0x10000]
 	mov	[es:8*4], ecx
+	mov	[.timer-0x10000], ecx
 	_setcursor 7,0
 	mov	si, space_msg-0x10000
 	call	printplain
@@ -567,6 +571,7 @@ cfgmanager:
 .oldtimer dd ?
 .starttime dd ?
 .bSettingsChanged db ?
+.timer dd ?
 .loader_block dd 0
 .gettime:
 	mov	ah, 0
@@ -656,6 +661,7 @@ end if
 	cmp	al, 'y'
 	jnz	.waityn
 	call	putchar
+	mov	byte [space_msg-0x10000+80], 186
 	pop	eax
 	push	cs
 	push	.cont-0x10000
@@ -666,6 +672,7 @@ end if
 .cont:
 	push	cs
 	pop	ds
+	mov	byte [space_msg-0x10000+80], 0
 	_setcursor 15,0
 	mov	si, space_msg-0x10000
 	call	printplain
