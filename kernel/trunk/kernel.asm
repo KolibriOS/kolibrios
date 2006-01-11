@@ -2827,19 +2827,16 @@ sys_drawwindow:
     sub   edi,0x3000
     shr   edi,5
     cmp   edi,[active_process]
+    push  0
     jne   @f
-    mov   [aw_yes],1 
-    jmp   aw_yes_end
-  @@:
-    mov   [aw_yes],0 
-  aw_yes_end:
+    mov   byte [esp],1
+  @@:             ; parameter for drawwindow_IV
     sti
 
     inc   [mouse_pause]
     call  sys_set_window
     call  drawwindow_IV 
     dec   [mouse_pause]
-    mov   [aw_yes],0     
     ret
   nosyswIV:
 
@@ -4887,7 +4884,6 @@ uglobal
 ;* start code - get  process (3) - Mario79
 active_process      dd   0
 active_process_flag db   0
-aw_yes              db   0
 deleted_process     dd   0
 mouse_pause         dd   0
 ps2_mouse_detected  db   0

@@ -241,6 +241,7 @@ load_default_skin_1:
     ret
 
 drawwindow_IV:
+;param1 - aw_yes
 
         pusha
 
@@ -290,14 +291,11 @@ drawwindow_IV:
         shl   ecx,16
         add   ecx,[_skinh]
 
-        cmp   [aw_yes],1
-;        cmp   [esp+32+4+2], word 1
+        cmp   byte [esp+32+4+4],1
+        mov   ebx, [_refleft_1]
         jne   @f
         mov   ebx,[_refleft]
-        jmp   no_aw_3
      @@:
-        mov   ebx,[_refleft_1]
-      no_aw_3:
         call  sys_putimage
 
         mov   esi,[esp]
@@ -312,14 +310,12 @@ drawwindow_IV:
 
         inc   eax
 
-        cmp   [aw_yes],1
-;        cmp   [esp+32+4+2], word 1
+        cmp   byte [esp+32+4+4], 1
+        mov   ebx,[_refbase_1]
         jne   @f
         mov   ebx,[_refbase]
-        jmp   no_aw_2
      @@:
-        mov   ebx,[_refbase_1]
-      no_aw_2:
+
         mov   ecx,[_skinbasew]
         shl   ecx,16
         add   ecx,[_skinh]
@@ -344,14 +340,12 @@ drawwindow_IV:
         sub   edx,[_skinoperw]
         inc   edx
         shl   edx,16
-        cmp   [aw_yes],1
-;        cmp   [esp+32+4+2], word 1
+        cmp   byte [esp+32+4+4], 1
+        mov   ebx,[_refoper_1]
         jne   @f
         mov   ebx,[_refoper]
-        jmp   no_aw_1
      @@:
-        mov   ebx,[_refoper_1]
-      no_aw_1:
+
         mov   ecx,[_skinoperw]
         shl   ecx,16
         add   ecx,[_skinh]
@@ -454,6 +448,6 @@ drawwindow_IV:
         add   esp,4
         popa
 
-        ret
+        ret  4
 
 
