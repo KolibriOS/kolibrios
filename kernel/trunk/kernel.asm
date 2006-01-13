@@ -2795,27 +2795,36 @@ sys_drawwindow:
     cmp   edi,0   ; type I    - original style
     jne   nosyswI
     inc   [mouse_pause]
+    call  [disable_mouse]
     call  sys_set_window
+    call  [disable_mouse]
     call  drawwindow_I
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
   nosyswI:
 
     cmp   edi,1   ; type II   - only reserve area, no draw
     jne   nosyswII
     inc   [mouse_pause]
+    call  [disable_mouse]
     call  sys_set_window
+    call  [disable_mouse]
     call  sys_window_mouse
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
   nosyswII:
 
     cmp   edi,2   ; type III  - new style
     jne   nosyswIII
     inc   [mouse_pause]
+    call  [disable_mouse]
     call  sys_set_window
+    call  [disable_mouse]
     call  drawwindow_III
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
   nosyswIII:
 
@@ -2834,9 +2843,12 @@ sys_drawwindow:
     sti
 
     inc   [mouse_pause]
+    call  [disable_mouse]
     call  sys_set_window
-    call  drawwindow_IV 
+    call  [disable_mouse]
+    call  drawwindow_IV
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
   nosyswIV:
 
@@ -3781,10 +3793,12 @@ drawbackground:
        jne   bgrstr12
        call  vga_drawbackground_tiled
        dec   [mouse_pause]
+       call   [draw_pointer]
        ret
      bgrstr12:
        call  vga_drawbackground_stretch
        dec   [mouse_pause]
+       call   [draw_pointer]
        ret
      dbrv12:
 
@@ -3794,24 +3808,30 @@ drawbackground:
        je   dbrv20
        call  vesa12_drawbackground
        dec   [mouse_pause]
+       call   [draw_pointer]
        ret
      dbrv20:
        cmp   [display_data-12],dword 1
        jne   bgrstr
        call  vesa20_drawbackground_tiled
        dec   [mouse_pause]
+       call   [draw_pointer]
        ret
      bgrstr:
        call  vesa20_drawbackground_stretch
        dec   [mouse_pause]
+       call   [draw_pointer]
        ret
 
 
 
 sys_putimage:
+;     inc   [mouse_pause]
      cmp   [0xfe0c],word 0x12
      jne   spiv20
      call  vga_putimage
+;     dec   [mouse_pause]
+     call   [draw_pointer]
      ret
    spiv20:
      cmp   [0xfe0c],word 0100000000000000b
@@ -3819,9 +3839,13 @@ sys_putimage:
      cmp   [0xfe0c],word 0x13
      je    piv20
      call  vesa12_putimage
+;     dec   [mouse_pause]
+     call   [draw_pointer]
      ret
    piv20:
      call  vesa20_putimage
+;     dec   [mouse_pause]
+     call   [draw_pointer]
      ret
 
 
@@ -3838,6 +3862,7 @@ __sys_drawbar:
     jne   sdbv20
     call  vga_drawbar
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
    sdbv20:
     cmp  [0xfe0c],word 0100000000000000b
@@ -3846,10 +3871,12 @@ __sys_drawbar:
     je   dbv20
     call vesa12_drawbar
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
   dbv20:
     call vesa20_drawbar
     dec   [mouse_pause]
+    call   [draw_pointer]
     ret
 
 
@@ -4886,6 +4913,7 @@ active_process      dd   0
 active_process_flag db   0
 deleted_process     dd   0
 mouse_pause         dd   0
+MouseTickCounter    dd   0
 ps2_mouse_detected  db   0
 com1_mouse_detected db   0
 com2_mouse_detected db   0

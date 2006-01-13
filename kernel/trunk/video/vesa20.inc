@@ -377,7 +377,7 @@ ret
 
 align 4
 __sys_draw_line:
-     inc   [mouse_pause]
+;     inc   [mouse_pause]
         call    [disable_mouse]
 
 ; draw a line
@@ -513,7 +513,8 @@ align 4
 .exit:
         add     esp, 6*4
         popa
-     dec   [mouse_pause]
+;     dec   [mouse_pause]
+     call   [draw_pointer]
 ret
 
 

@@ -37,7 +37,7 @@ include 'm_com2.inc'
 draw_mouse_under:
         
         ; return old picture
-
+        
         pushad
       
         xor    ecx,ecx
@@ -260,11 +260,14 @@ combine_colors:
 
 
 __sys_disable_mouse:
+      
 
-      cli
-      pushad
       cmp  dword [0xf204],dword 0
-      jne  no_mouse_disable
+      je    @f
+      ret
+    @@:  
+;      cli
+      pushad
 
       cmp  [0x3000],dword 1
       je   disable_m
@@ -345,39 +348,52 @@ __sys_disable_mouse:
     disable_m:
       cmp  dword [0xf204],dword 0
       jne  @f
+      cli
        call draw_mouse_under
+      sti
 ;    @@:
       mov  [0xf204],dword 1
 ;       inc  dword [0xf204]
     @@:
     
     no_mouse_disable:
+
       popad
-      sti
+;      sti
       ret
 
 __sys_draw_pointer:
-        cli
-        pushad
-     m_pause_1:
+
         cmp   [mouse_pause],0
         je    @f
-;        call    change_task
-;        jmp  m_pause_1
-        jmp   nodmp
+        ret
      @@:
+        push   eax
+        mov     eax,[timer_ticks]
+        sub     eax,[MouseTickCounter]
+        cmp     eax,1
+        ja      @f
+        pop    eax
+        ret
+     @@:
+        mov     eax,[timer_ticks]
+        mov     [MouseTickCounter],eax
+        pop     eax
 ;        cli
+
+        pushad
         cmp    dword [0xf204],dword 0  ; mouse visible ?
         je     chms00
 
         mov     [0xf204], dword 0
         movzx  ebx,word [0xfb0c]
         movzx  eax,word [0xfb0a]
+        cli
         call   save_draw_mouse
-
+        sti
       nodmu2:
         popad
-        sti
+        
         ret
 
       chms00:
@@ -397,12 +413,11 @@ __sys_draw_pointer:
         jmp    nodmp
 
       redrawmouse:
-       
+        cli
         call   draw_mouse_under
         call   save_draw_mouse
-
-    nodmp:
- 
-        popad
         sti
+    nodmp:
+        popad
+;        sti
         ret
