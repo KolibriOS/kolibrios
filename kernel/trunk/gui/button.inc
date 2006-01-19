@@ -1,29 +1,61 @@
 max_buttons=4095
 dececx:
-
-    push eax
     push edx
     push ecx
 
-    mov  edx,1
-  dececl:
+    mov  edx,2
+  .loop:
 
-    movzx eax,byte [esp+edx]
-    cmp   eax,0x20
-    jge   @f
+    cmp   byte [esp+edx],0x20
+    jae   @f
     mov   [esp+edx],byte 0x20
    @@:
     sub   [esp+edx],byte 0x20
 
-    add  edx,1
-    cmp  edx,4
-    jbe  dececl
+    dec  edx
+    jns  .loop
 
     pop  ecx
     pop  edx
-    pop  eax
     ret
-
+    
+incecx:
+    push edx
+    push ecx
+    
+    mov  edx,2
+  .loop:
+    
+    cmp  byte [esp+edx],0xdf
+    jbe  @f
+    mov  [esp+edx],byte 0xdf
+   @@:
+    add  [esp+edx],byte 0x20
+    
+    dec  edx
+    jns  .loop
+    pop  ecx
+    pop  edx
+    ret
+    
+incecx2:
+    push edx
+    push ecx
+    
+    mov  edx,2
+  .loop:
+    
+    cmp  byte [esp+edx],0xeb
+    jbe  @f
+    mov  [esp+edx],byte 0xeb
+   @@:
+    add  [esp+edx],byte 0x14
+    
+    dec  edx
+    jns  .loop
+    pop  ecx
+    pop  edx
+    ret
 
 drawbuttonframes:
 
@@ -50,7 +82,7 @@ drawbuttonframes:
         mov   esi,ebx
         mov   edi,0
         mov   ecx,[esp+0]
-        add   ecx,0x202020
+        call  incecx
         call  [draw_line]
 
         movzx edx,word [esp+8]
@@ -74,7 +106,7 @@ drawbuttonframes:
         pop   edx
         mov   edi,0
         mov   ecx,[esp+0]
-        add   ecx,0x202020
+        call  incecx
         call  [draw_line]
 
         mov   esi,edx
@@ -164,7 +196,7 @@ sys_button:
         mov   ecx,[4+32+esp+0]
         cmp   [buttontype],dword 0
         je    @f
-        add   ecx,0x141414
+        call  incecx2
        @@:
         movzx edi,word [esp]
 
