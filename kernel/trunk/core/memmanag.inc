@@ -28,7 +28,7 @@ uglobal
   MEM_cli_count     rd 1
   MEM_cli_prev      rd 1
   MEM_FreeSpace     rd 1
-  MEM_AllSpace      rd 1
+;  MEM_AllSpace      rd 1
 endg
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;MEM_Init
@@ -105,7 +105,7 @@ MEM_Add_Heap:
     shr   edi,12
     sub   edi,ebx                ;edi=-free space
     sub   [MEM_FreeSpace],edi
-    sub   [MEM_AllSpace],edi
+;    sub   [MEM_AllSpace],edi
 
     mov   [eax],eax
     add   [eax],edx              ;first 4 bytes - pointer to first free page
@@ -291,7 +291,7 @@ end if
 ;;  eax - 1 success
 ;;  eax - 0 failed
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-if used MEM_Free_Page
+if (used MEM_Free_Page) | (used MEM_Free_Page_Linear)
 MEM_Free_Page:
     test  eax,eax
     jz    MEM_Free_Page_Zero
@@ -365,9 +365,9 @@ end if
 if used MEM_Free_Page_Linear
 MEM_Free_Page_Linear:
     test  eax,eax
-    jz    MEM_Free_Page_Linear_Zero
+    jz    MEM_Free_Page_Zero
     test  eax,0xFFF
-    jnz   MEM_Free_Page_Linear_Not_Aligned
+    jnz   MEM_Free_Page_Not_Aligned
     push  ebx
     push  ecx
     push  edx
@@ -380,59 +380,14 @@ MEM_Free_Page_Linear_Heap_loop:
     sub   eax,[MEM_heap_block+ecx+.heap_linear_address]
     js    MEM_Free_Page_Linear_Heap_loopnext
     cmp   eax,[MEM_heap_block+ecx+.heap_block_size]
-    jl    MEM_Free_Page_Linear_Heap_loopend
+    jl    MEM_Free_Page_Heap_loopend
 MEM_Free_Page_Linear_Heap_loopnext:
     add   eax,[MEM_heap_block+ecx+.heap_linear_address]
     sub   ecx,16
     jns   MEM_Free_Page_Linear_Heap_loop
     xor   eax,eax
     inc   eax
-    jmp   MEM_Free_Page_Linear_ret
-    
-MEM_Free_Page_Linear_Heap_loopend:
-    mov   ecx,[MEM_heap_block+ecx+.heap_linear_address]
-    mov   ebx,eax
-    add   eax,ecx   
-    shr   ebx,10
-    mov   edx,[ecx+.range_info+ebx]
-    test  edx,0x80000000
-    jnz   MEM_Free_Page_Linear_Bucket
-    test  dx,dx
-    jz    MEM_Free_Page_Linear_Error
-    dec   word [ecx+.range_info+ebx]
-    jnz   MEM_Free_Page_Linear_OK
-MEM_Free_Page_Linear_Bucket:
-    mov   edx,[ecx]
-    mov   [eax],edx
-    mov   dword [eax+4],0
-    mov   [ecx],eax
-    test  edx,edx
-    jz    MEM_Free_Page_No_Next
-    mov   [edx+4],eax
-MEM_Free_Page_No_Next:
-    mov   dword [ecx+.range_info+ebx],0
-    inc   [MEM_FreeSpace]
-MEM_Free_Page_Linear_OK:
-    xor   eax, eax
-    inc   eax
-MEM_Free_Page_Linear_ret:    
-    call  MEM_Heap_UnLock
-    pop   edx
-    pop   ecx
-    pop   ebx
-    ret
-    
-MEM_Free_Page_Linear_Error:
-    xor   eax,eax
-    jmp   MEM_Free_Page_Linear_ret
-    
-MEM_Free_Page_Linear_Zero:
-    inc   eax
-    ret
-    
-MEM_Free_Page_Linear_Not_Aligned:
-    xor   eax,eax
-    ret
+    jmp   MEM_Free_Page_ret
 end if
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;MEM_Alloc_Pages

@@ -2258,8 +2258,10 @@ no_mouse_centered:
 no_get_free_space:    
      cmp  eax,17
      jnz  no_get_all_space
-     mov  eax,[MEM_AllSpace]
-     shl  eax,2
+     mov  eax,[0xFE8C]
+     shr  eax,10
+;     mov  eax,[MEM_AllSpace]
+;     shl  eax,2
      ret
 no_get_all_space:  
 
