@@ -4,8 +4,7 @@
 
 align 32
 irq0:
-	pushad
-	push  ds es
+        save_ring3_context
 	mov   ax, os_data
 	mov   ds, ax
 	mov   es, ax
@@ -45,6 +44,7 @@ irq0:
       .waiting_for_termination:
       .waiting_for_reuse:
       .waiting_for_event:
+      .suspended:
         cmp   ebx, [0x3004]
         jb    @f
         mov   edi, 0x3000
@@ -55,6 +55,10 @@ irq0:
         inc   ebx
 
         mov   al, byte [edi+0xA]
+	cmp   al, 1
+	jz    .suspended
+	cmp   al, 2
+	jz    .suspended
         cmp   al, 3
         je    .waiting_for_termination
         cmp   al, 4
@@ -101,8 +105,7 @@ irq0:
         inc   [context_counter] ;noname & halyavin
        @@:
         
-        pop   es ds
-        popad
+        restore_ring3_context
         iret
 
 

@@ -30,8 +30,7 @@ endg
 
 align 4
 irq1:
-       pushad
-       push  ds es
+       save_ring3_context
        mov   ax, os_data
        mov   ds, ax
        mov   es, ax
@@ -212,8 +211,7 @@ irq1:
        mov   al,0x20                  ; ready for next irq
        out   0x20,al
 
-       pop   es ds
-       popad
+       restore_ring3_context
        iret
 
 set_lights:

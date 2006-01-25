@@ -8,6 +8,7 @@ align 32
 i40:
       push  ds es
       pushad
+      cld
 
       mov   ax,word os_data
       mov   ds,ax
@@ -136,9 +137,9 @@ iglobal
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
       dd sys_internal_services   ; 68-Some internal services
+      dd sys_debug_services      ; 69-Debug
 
   times 255 - ( ($-servetable) /4 )  dd undefined_syscall
 
       dd sys_end                 ; -1-end application
 endg
-

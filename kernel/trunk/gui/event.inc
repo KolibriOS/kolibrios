@@ -154,6 +154,18 @@ get_event_for_app:
      ret
    no_stack_event:
 
+     test  byte [edi+1], 1		; DEBUG
+     jz    no_debug_event
+     mov   eax, [0x3000]
+     shl   eax, 8
+     test  [eax+0x80000+0xA8+1], byte 1
+     jz    no_debug_event
+     and   byte [eax+0x80000+0xA8+1], not 1
+     popad
+     mov   eax, 9
+     ret
+   no_debug_event:
+
      cmp   dword [edi], 0xFFFF
      jbe   no_events
 

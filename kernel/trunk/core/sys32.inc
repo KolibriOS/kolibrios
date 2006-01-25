@@ -164,6 +164,17 @@ iglobal
     dd   i40
 endg
 
+macro save_ring3_context
+{
+	push	ds es
+	pushad
+}
+macro restore_ring3_context
+{
+	popad
+	pop	es ds
+}
+
 ; simply return control to interrupted process
 unknown_interrupt:
      iret
@@ -172,6 +183,7 @@ macro exc_wo_code [num]
 {
   forward
   e#num :
+      save_ring3_context
       mov bl, num
       jmp exc_c
 }
@@ -181,6 +193,7 @@ macro exc_w_code [num]
   forward
   e#num :
       add esp, 4
+      save_ring3_context
       mov bl, num
       jmp exc_c
 }
@@ -193,6 +206,16 @@ exc_c:
         mov   ds, ax
         mov   es, ax
 
+; test if debugging
+        cli
+        mov   eax, [0x3000]
+        shl   eax, 8
+        mov   eax, [0x80000+eax+0xAC]
+        test  eax, eax
+        jnz   .debug
+        sti
+; not debuggee => say error and terminate
+        add   esp, 28h
         movzx eax, bl        
         mov   [error_interrupt], eax
         call  show_error_parameters
@@ -202,6 +225,25 @@ exc_c:
         
         jmp   change_task
 
+.debug:
+; we are debugged process, notify debugger and suspend ourself
+; eax=debugger PID
+        movzx ecx, bl
+        push  ecx
+        mov   ecx, [0x3010]
+        push  dword [ecx+4]	; PID of current process
+        push  12
+        pop   ecx
+        push  1		; 1=exception
+        call  debugger_notify
+        pop   ecx
+        pop   ecx
+        pop   ecx
+        mov   edx, [0x3010]
+        mov   byte [edx+0xA], 1		; suspended
+        call  change_task
+        restore_ring3_context
+        iretd
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; FPU ERROR HANDLER ;;
@@ -209,11 +251,8 @@ exc_c:
 
 align 4
 e7:
+        save_ring3_context
         clts
-          
-        push  eax
-        push  ds es
-        
         mov   ax, os_data
         mov   ds, ax
         mov   es, ax
@@ -232,10 +271,7 @@ e7:
         frstor [eax+0x10]
      @@:
         mov   [eax + 0x7f], byte 1
-        
-        pop   es ds
-        pop   eax
-        
+        restore_ring3_context
         iret
         
 iglobal
@@ -320,7 +356,7 @@ macro irqh [num]
 {
   forward
   p_irq#num :
-     pushad
+     save_ring3_context
      mov   edi, num
      jmp   irq_c
 }
@@ -328,58 +364,48 @@ macro irqh [num]
 irqh 2,5,7,8,9,10,11,14,15
 
  irq_c:
-     push  ds es
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
      call  irqhandler
-     pop   es ds
-     popad
+     restore_ring3_context
      iret
 
 p_irq6:
-     pushad
-     push  ds es
+     save_ring3_context
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
      call  fdc_irq
      call  ready_for_next_irq
-     pop   es ds
-     popad
+     restore_ring3_context
      iret
 
 p_irq3:
-     pushad
-     push  ds es
+     save_ring3_context
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
      call  check_mouse_data_com2
-     pop   es ds
-     popad
+     restore_ring3_context
      iret
 
 p_irq4:
-     pushad
-     push  ds es
+     save_ring3_context
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
      call  check_mouse_data_com1
-     pop   es ds
-     popad
+     restore_ring3_context
      iret
 
 p_irq12:
-     pushad
-     push  ds es
+     save_ring3_context
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
      call  check_mouse_data_ps2
-     pop   es ds
-     popad
+     restore_ring3_context
      iret
 
 ready_for_next_irq:
@@ -396,8 +422,7 @@ ready_for_next_irq_1:
      ret
 
 irqD:
-     pushad
-     push  ds es
+     save_ring3_context
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
@@ -410,10 +435,10 @@ irqD:
      mov   al,0x20
      out   dx,al
      mov   dx,0x20
-     out   dx,al     
+     out   dx,al
+
+     restore_ring3_context
      
-     pop   es ds
-     popad
      iret
 
 
@@ -650,12 +675,13 @@ terminate: ; terminate application
     call   sys_msg_board_str
     pop    esi
 
+@@:
     cli
     cmp   [application_table_status],0
     je    term9
     sti
     call  change_task
-    jmp   terminate
+    jmp   @b
   term9:
 
     call  set_application_table_status
@@ -751,6 +777,23 @@ terminate: ; terminate application
   ;  cld
     rep   stosd
     popa
+
+; debuggee test
+    pushad
+    mov  edi, esi
+    shl  edi, 5
+    mov  eax, [0x80000+edi*8+0xAC]
+    test eax, eax
+    jz   .nodebug
+    push 8
+    pop  ecx
+    push dword [0x3000+edi+0x4]   ; PID
+    push 2
+    call debugger_notify
+    pop  ecx
+    pop  ecx
+.nodebug:
+    popad
 
     pusha         ; at 0x80000+
     mov   edi,esi
@@ -863,6 +906,25 @@ terminate: ; terminate application
     mov  edi,esi         ; do not run this process slot
     shl  edi, 5
     mov  [edi+0x300A],byte 9
+; debugger test - terminate all debuggees
+    mov  eax, 2
+    mov  ecx, 0x80000+2*0x100+0xAC
+.xd0:
+    cmp  eax, [0x3004]
+    ja   .xd1
+    cmp  dword [ecx], esi
+    jnz  @f
+    and  dword [ecx], 0
+    pushad
+    xchg eax, ebx
+    mov  eax, 2
+    call sys_system
+    popad
+@@:
+    inc  eax
+    add  ecx, 0x100
+    jmp  .xd0
+.xd1:
 ;    call  systest
     sti  ; .. and life goes on
 

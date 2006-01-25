@@ -728,12 +728,16 @@ finit ;reset the registers, contents which are still equal RM
         cmp   al,1
         jne   no_load_vrr_m
         mov   eax,vrr_m
+        xor   ebx,ebx			; no parameters
+        xor   edx,edx                   ; no flags
         call  start_application_fl
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
         
     no_load_vrr_m:
         mov   eax,firstapp
+        xor   ebx,ebx                   ; no parameters
+        xor   edx,edx                   ; no flags
         call  start_application_fl
 
         cmp   eax,2                  ; continue if a process has been loaded
@@ -3108,6 +3112,8 @@ checkmisc:
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
     mov   eax, cpustring
+    xor   ebx,ebx		; no parameters
+    xor   edx,edx               ; no flags
     call  start_application_fl
     mov   [ctrl_alt_del], 0
   nocpustart:
@@ -4570,6 +4576,7 @@ syscall_startapp:                       ; StartApp
      add   ebx,[edi]
    noapppar:
 ;     call  start_application_fl
+     xor   edx,edx	; compatibility - flags=0 
      call   new_start_application_fl
      mov   [esp+36],eax
      ret
@@ -4604,7 +4611,8 @@ syscall_starthdapp:                     ; StartHdApp
      add   edi,0x10
      add   eax,[edi]
      add   ecx,[edi]
-     mov   ebp,0
+     xor   ebp,ebp
+     xor   edx,edx	; compatibility - flags=0 
      call  start_application_hd
      mov   [esp+36],eax
      ret

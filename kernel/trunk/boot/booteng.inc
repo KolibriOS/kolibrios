@@ -53,7 +53,7 @@ d80x25_bottom:
 d80x25_bottom_num = 3
 
 novesa    db      "Display: EGA/CGA",13,10,0
-vervesa   db      "Version of Vesa: Vesa x.x ",13,10,0
+vervesa   db      "Version of Vesa: Vesa x.x",13,10,0
 vervesa_off=22
 gr_mode   db      186," Vesa 2.0+ 16 M LFB:  [1] 640x480, [2] 800x600, "
           db      "[3] 1024x768, [4] 1280x1024",13,10
@@ -62,25 +62,24 @@ gr_mode   db      186," Vesa 2.0+ 16 M LFB:  [1] 640x480, [2] 800x600, "
           db      186," EGA/CGA   256 Colors:  [9] 320x200, "
           db      "VGA 16 Colors: [0]  640x480",13,10
           db      186," Select mode: ",0
-bt24      db      13,10,186," Bits Per Pixel: 24",13,10,0
-bt32      db      13,10,186," Bits Per Pixel: 32",13,10,0
-vrrmprint db      13,10,186," Apply VRR? (picture frequency greater than 60Hz"
+bt24      db      "Bits Per Pixel: 24",13,10,0
+bt32      db      "Bits Per Pixel: 32",13,10,0
+vrrmprint db      "Apply VRR? (picture frequency greater than 60Hz"
           db      " only for transfers:",13,10
           db      186," 1024*768->800*600 and 800*600->640*480) [1-yes,2-no]:",0
-askmouse  db      " Mouse at:"
-          db      " [1] PS/2 (USB), [2] Com1, [3] Com2."
-          db      " Select port [1-3]: ",0
-no_com1   db      13,10,186, " No COM1 mouse",0
-no_com2   db      13,10,186, " No COM2 mouse",0         
-gr_acc    db      13,10,186," Vesa 2.0+ : MTRR graphics acceleration "
+;askmouse  db      " Mouse at:"
+;          db      " [1] PS/2 (USB), [2] Com1, [3] Com2."
+;          db      " Select port [1-3]: ",0
+;no_com1   db      13,10,186, " No COM1 mouse",0
+;no_com2   db      13,10,186, " No COM2 mouse",0         
+gr_acc    db      "Vesa 2.0+ : MTRR graphics acceleration "
           db      "[1-yes/2-no] ? ",0
-gr_direct db      186," Use direct LFB writing? "
-          db      "[1-yes/2-no] ? ",0
+;gr_direct db      186," Use direct LFB writing? "
+;          db      "[1-yes/2-no] ? ",0
 ;mem_model db      13,10,186," Motherboard memory [1-16 Mb / 2-32 Mb / "
 ;          db      "3-64Mb / 4-128 Mb / 5-256 Mb] ? ",0
-bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
-bdev      db      186
-          db      " Load ramdisk from [1-floppy; 2-C:\menuet.img (FAT32);"
+;bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
+bdev      db      "Load ramdisk from [1-floppy; 2-C:\menuet.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-use preloaded ram-image from kernel restart]: ",0
 probetext db      13,10,13,10,186," Use standart graphics mode? [1-yes, "
@@ -90,18 +89,18 @@ probetext db      13,10,13,10,186," Use standart graphics mode? [1-yes, "
 ;memokz64  db      13,10,186," RAM 64 Mb",0
 ;memokz32  db      13,10,186," RAM 32 Mb",0
 ;memokz16  db      13,10,186," RAM 16 Mb",0
-prnotfnd  db      " pr. - not found.",0
-modena    db      "Fatal - VBE 0x112+ required.",0
+prnotfnd  db      "Fatal - Videomode not found.",0
+;modena    db      "Fatal - VBE 0x112+ required.",0
 not386    db      "Fatal - CPU 386+ required.",0
-btns      db      13,10,186,"Fatal - Can't determine color depth.",0
-fatalsel  db      13,10,"Fatal - Graphics mode not supported by hardware.",0
-badsect   db      13,10,186," Fatal - Bad sector. Replace floppy. ",0
-memmovefailed db  "Fatal - Int 0x15 move failed.",0
+btns      db      "Fatal - Can't determine color depth.",0
+fatalsel  db      "Fatal - Graphics mode not supported by hardware.",0
+badsect   db      13,10,186," Fatal - Bad sector. Replace floppy.",0
+memmovefailed db  13,10,186," Fatal - Int 0x15 move failed.",0
 okt       db      " ... OK"
 linef     db      13,10,0
-diskload  db      13,10,186," Loading diskette: 00 %",8,8,8,8,0
-backspace db      8,0
-pros      db      "00",8,8,0
+diskload  db      "Loading diskette: 00 %",8,8,8,8,0
+pros      db      "00"
+backspace2 db     8,8,0
 boot_dev  db      0  ; 0=floppy, 1=hd
 start_msg db      "Press [abcd] to change settings, press [Enter] to continue booting",13,10,0
 time_msg  db      " or wait "

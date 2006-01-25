@@ -139,6 +139,14 @@ macro _setcursor row,column
 	call	setcursor
 }
 
+pagetable_set:
+	or	al, 7
+@@:
+	stosd
+	add	eax, 1000h
+	loop	@b
+	ret
+
 ; 16-bit data
 ; videomodes table
 gr_table:
@@ -275,6 +283,7 @@ dfl1:
         cmp     ax,dx
         jnz     cpugood
         mov     si,not386-0x10000
+sayerr:
         call    print
         jmp     $
      cpugood:
@@ -347,9 +356,9 @@ wait_loop:       ; variant 2
         jnz	@f
         mov     ax,[es:di+4]
         add     ax,'0'*256+'0'
-        mov     [vervesa+vervesa_off-0x10000], ah
-        mov     [vervesa+vervesa_off+2-0x10000], al
-        mov     si,vervesa-0x10000
+        mov	si,vervesa-0x10000
+        mov     [si+vervesa_off], ah
+        mov     [si+vervesa_off+2], al
 @@:     call    print
 
 ; \begin{diamond}[30.11.2005]
@@ -360,36 +369,33 @@ cfgmanager:
 ; b) preboot_mtrr = use hardware acceleration?
 ; c) preboot_vrrm = use VRR?
 ; d) preboot_device = from what boot?
-	mov	si, preboot_graph-0x10000
+	mov	di, preboot_graph-0x10000
 ; check bootloader block
 	cmp	[.loader_block-0x10000], 0
 	jz	.noloaderblock
 	les	bx, [.loader_block-0x10000]
 	cmp	byte [es:bx], 1
-	jz	@f
 	mov	si, loader_block_error-0x10000
-	call	print
-	jmp	$
-@@:
+	jnz	sayerr
 	test	byte [es:bx+1], 1
 	jz	@f
 ; image in memory present
-	cmp	[si+preboot_device-preboot_graph], 0
+	cmp	[di+preboot_device-preboot_graph], 0
 	jnz	@f
-	mov	[si+preboot_device-preboot_graph], 3
+	mov	[di+preboot_device-preboot_graph], 3
 @@:
 .noloaderblock:
 ; determine default settings
 	mov	[.bSettingsChanged-0x10000], 0
-	cmp	byte [si], 0
+	cmp	byte [di], 0
 	jnz	.preboot_gr_end
-	mov	[si+preboot_gprobe-preboot_graph], 0
+	mov	[di+preboot_gprobe-preboot_graph], 0
 	mov	al, [vervesa+vervesa_off-0x10000]
 	cmp	al, 'x'
 	jz	.novesa
 	cmp	al, '1'
 	jz	.vesa12
-	mov	[si+preboot_gprobe-preboot_graph], 2
+	mov	[di+preboot_gprobe-preboot_graph], 2
 	mov	al, 3
 	jmp	@f
 .vesa12:
@@ -398,14 +404,14 @@ cfgmanager:
 .novesa:
 	mov	al, 10
 @@:
-	mov	[si], al
+	mov	[di], al
 .preboot_gr_end:
-	cmp	[si+preboot_mtrr-preboot_graph], 1
-	adc	[si+preboot_mtrr-preboot_graph], 0
-	cmp	[si+preboot_vrrm-preboot_graph], 1
-	adc	[si+preboot_vrrm-preboot_graph], 0
-	cmp	[si+preboot_device-preboot_graph], 1
-	adc	[si+preboot_device-preboot_graph], 0
+	cmp	[di+preboot_mtrr-preboot_graph], 1
+	adc	[di+preboot_mtrr-preboot_graph], 0
+	cmp	[di+preboot_vrrm-preboot_graph], 1
+	adc	[di+preboot_vrrm-preboot_graph], 0
+	cmp	[di+preboot_device-preboot_graph], 1
+	adc	[di+preboot_device-preboot_graph], 0
 ; notify user
 	mov	si, linef-0x10000
 	call	print
@@ -457,21 +463,11 @@ cfgmanager:
 	mov	si, linef-0x10000
 	call	printplain
 	mov	si, mtrr_msg-0x10000
-	call	print
-	mov	si, on_msg-0x10000
 	cmp	[preboot_mtrr-0x10000], 1
-	jz	@f
-	mov	si, off_msg-0x10000
-@@:
-	call	printplain
+	call	.say_on_off
 	mov	si, vrrm_msg-0x10000
-	call	print
-	mov	si, on_msg-0x10000
 	cmp	[preboot_vrrm-0x10000], 1
-	jz	@f
-	mov	si, off_msg-0x10000
-@@:
-	call	printplain
+	call	.say_on_off
 	mov	si, preboot_device_msg-0x10000
 	call	print
 	mov	al, [preboot_device-0x10000]
@@ -479,7 +475,6 @@ cfgmanager:
 	mov	si, [preboot_device_msgs-0x10000+eax*2]
 	call	printplain
 .wait:
-; empty BIOS keyboard buffer
 	_setcursor 25,0		; out of screen
 ; set timer interrupt handler
 	cli
@@ -497,9 +492,9 @@ cfgmanager:
 ; restore timer interrupt
 	push	0
 	pop	es
-	mov	ecx, [.oldtimer-0x10000]
-	mov	[es:8*4], ecx
-	mov	[.timer-0x10000], ecx
+	mov	eax, [.oldtimer-0x10000]
+	mov	[es:8*4], eax
+	mov	[.timer-0x10000], eax
 	_setcursor 7,0
 	mov	si, space_msg-0x10000
 	call	printplain
@@ -518,13 +513,13 @@ cfgmanager:
 	jnz	.wait
 	_setcursor 15,0
 	mov     si,bdev-0x10000
-	call    printplain
+	call    print
 	mov     bx,'13'
 	call    getkey
 	mov	[preboot_device-0x10000], al
 	_setcursor 13,0
 .d:
-	mov	[.bSettingsChanged-0x10000], al
+	mov	[.bSettingsChanged-0x10000], 1
 	mov	si, space_msg-0x10000
 	call	printplain
 	_setcursor 15,0
@@ -553,7 +548,7 @@ cfgmanager:
 .change_b:
 	_setcursor 15,0
 	mov	si, gr_acc-0x10000
-	call	printplain
+	call	print
 	mov	bx, '12'
 	call	getkey
 	mov	[preboot_mtrr-0x10000], al
@@ -562,16 +557,28 @@ cfgmanager:
 .change_c:
 	_setcursor 15,0
 	mov	si, vrrmprint-0x10000
-	call	printplain
+	call	print
 	mov	bx, '12'
 	call	getkey
 	mov	[preboot_vrrm-0x10000], al
 	_setcursor 12,0
 	jmp	.d
+.say_on_off:
+	pushf
+	call	print
+	mov	si, on_msg-0x10000
+	popf
+	jz	@f
+	mov	si, off_msg-0x10000
+@@:	call	printplain
+	ret
+; novesa and vervesa strings are not used at the moment of executing this code
+virtual at novesa
 .oldtimer dd ?
 .starttime dd ?
 .bSettingsChanged db ?
 .timer dd ?
+end virtual
 .loader_block dd 0
 .gettime:
 	mov	ah, 0
@@ -672,9 +679,9 @@ end if
 .cont:
 	push	cs
 	pop	ds
-	mov	byte [space_msg-0x10000+80], 0
-	_setcursor 15,0
 	mov	si, space_msg-0x10000
+	mov	byte [si+80], 0
+	_setcursor 15,0
 	call	printplain
 	_setcursor 15,0
 .load:
@@ -683,13 +690,6 @@ end if
 ; ASK GRAPHICS MODE
 
 	movzx	ax, [preboot_graph-0x10000]
-	test	ax, ax
-        jne     pre_graph
-        mov     si,gr_mode-0x10000
-        call    printplain
-        mov     bx,'09'
-        call    getkey
-       pre_graph:
 	push	0
 	pop	es
 ; address is gr_table+6*(ax-1)-0x10000
@@ -699,77 +699,51 @@ end if
         mov     cx,[si+2]
         mov     dx,[si+4]
         cmp	al, 9*2
+        mov	al, 32	; BPP
         jb	@f
-        mov	byte [es:0x9000], 32
+        mov	[es:0x9000], al
         mov	dword [es:0x9018], 0x800000
        @@:
         mov     [es:0x9008],bx
         mov     [es:0x900A],cx
         mov     [es:0x900C],dx
-        mov     ax,32
         test	bh, bh
         jz	nov
 
 ; USE DEFAULTS OR PROBE
 
 ; bx - mode : cx - x size : dx - y size
-
-     ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-        movzx   ax,[preboot_gprobe-0x10000]
-        test    ax,ax
-        jne     pre_probe
-     ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-        test    bx,0100000000000000b
-        jz      noprobe
-
-        mov     si,probetext-0x10000
-        call    printplain
-        push    bx
-        mov	bx, '12'
-        call    getkey
-        pop     bx
-
-     pre_probe:
-	dec	ax
-        je      noprobe
-
-        push    cx dx
+	cmp	[preboot_gprobe-0x10000], 1
+	jz	noprobe
 
         mov     bx,0x100
-
      newprobe:
-
         inc     bx
         cmp     bx,0x17f
-        jne     probemore
-
-        mov     si,prnotfnd-0x10000
-        call    printplain
-
-        jmp     $
+        mov	si,prnotfnd-0x10000
+        jz	sayerr
 
      probemore:
-
+     	push	cx
         mov     ax,0x4f01
         mov     cx,bx
         and     cx,0xfff
         mov     di,0xa000
         int     0x10
+        pop	cx
 
 	test	byte [es:di], 80h	; lfb?
 	jz	newprobe
-	mov	ax, [es:di+0x12]	; x size?
-	cmp	ax, [esp+2]
+	cmp	[es:di+0x12], cx	; x size?
 	jnz	newprobe
 	cmp	[es:di+0x14], dx	; y size?
 	jnz	newprobe
 	cmp	byte [es:di+0x19], 32 ;24
 	jb	newprobe
 
-        add     bx,0100000000000000b
+;       add     bx,0100000000000000b
+	or	bh, 40h
         mov     [es:0x9008],bx
-        pop	dx cx
 
      noprobe:
 
@@ -782,27 +756,26 @@ end if
         mov     di,0xa000
         int     0x10
         ; LFB
-        mov     ecx,[es:di+0x28]
-        mov     [es:0x9018],ecx
+        mov     eax,[es:di+0x28]
+        mov     [es:0x9018],eax
         ; ---- vbe voodoo
         BytesPerScanLine equ 0x10
         mov ax, [es:di+BytesPerScanLine]
         mov [es:0x9001],ax
         ; BPP
-        movzx   ax,byte [es:di+0x19]
+        mov     al,byte [es:di+0x19]
         mov     [es:0x9000],al
        nov:
-        cmp     ax,24
+        cmp     al,24
         mov	si,bt24-0x10000
         jz	bppl
-        cmp     ax,32
+        cmp     al,32
         mov     si,bt32-0x10000
         jz     bppl
         mov     si,btns-0x10000
-        call    print
-        jmp     $
+        jmp	sayerr
        bppl:
-        call    printplain
+        call    print
 
 
 ; FIND VESA 1.2 PM BANK SWITCH ADDRESS
@@ -825,33 +798,12 @@ end if
 ; GRAPHICS ACCELERATION
 
         mov     al, [preboot_mtrr-0x10000]
-        test    al,al
-        jne     pre_mtrr
-        mov     si,gr_acc-0x10000
-        call    printplain
-        mov     bx,'12'
-        call    getkey
-      pre_mtrr:
         mov     [es:0x901C],al
-; commented by diamond - newlines are not used now
-;        mov     si,linef-0x10000
-;        call    printplain
-
 
 ; VRR_M USE
 
         mov     al,[preboot_vrrm-0x10000]
-        test    al,al
-        jne     pre_vrrm
-        mov     si,vrrmprint-0x10000
-        call    print
-        mov     bx,'13'
-        call    getkey
-      pre_vrrm:
         mov     [es:0x9030],al
-; commented by diamond - newlines are not used now
-;        mov     si,linef2-0x10000
-;        call    printplain
 
 
 ; MEMORY MODEL
@@ -939,24 +891,12 @@ end if
 ; BOOT DEVICE
 
 	mov	al, [preboot_device-0x10000]
-	test	al, al
-	jnz	pre_device
-        mov     si,bdev-0x10000
-        call    printplain
-        mov     bx,'13'
-        call    getkey
-      pre_device:
-        dec     ax
+        dec     al
         mov     [boot_dev-0x10000],al
-; commented by diamond - newlines are not used now
-;        mov     si,linef-0x10000
-;        call    printplain
-
-
 
 ; READ DISKETTE TO MEMORY
 
-        cmp     [boot_dev-0x10000],0
+;        cmp     [boot_dev-0x10000],0
         jne     no_sys_on_floppy
         mov     si,diskload-0x10000
         call    print
@@ -979,6 +919,7 @@ end if
         cmp     si,10
         jnz     newread
         mov     si,badsect-0x10000
+sayerr_plain:
         call    printplain
         jmp     $
        goodread:
@@ -998,8 +939,7 @@ end if
         mov     al,0
         out     dx,al
         mov     si,memmovefailed-0x10000
-        call    print
-        jmp     $
+        jmp	sayerr_plain
       goodmove:
 
 	add	dword [movedesc-0x10000+0x18+2], 512*18
@@ -1030,8 +970,7 @@ end if
         jnz     reads
        readdone:
         pop     ax
-        mov     si,backspace-0x10000
-        call    printplain
+        mov     si,backspace2-0x10000
         call    printplain
         mov     si,okt-0x10000
         call    printplain
@@ -1054,30 +993,36 @@ end if
         pop	es                    ; es:di = 6000:0
         xor     di,di
         mov     cx,256*map_mem         ; Map (mapmem) M
-        mov     eax,7
-       pt2:
-        cmp     cx,256*(map_mem-8)     ; 8 M map to LFB
-        jnz     pt3
-        pop     eax
-        add     eax,7
-       pt3:
-        cmp     cx,256*(map_mem-12)    ; 12 M back to linear = physical
-        jnz     pt4
-        mov     eax,12*0x100000 + 7
-       pt4:
-        stosd
-        add     eax,4096
-        loop    pt2
-        
+;        mov     eax,7
+;       pt2:
+;        cmp     cx,256*(map_mem-8)     ; 8 M map to LFB
+;        jnz     pt3
+;        pop     eax
+;        add     eax,7
+;       pt3:
+;        cmp     cx,256*(map_mem-12)    ; 12 M back to linear = physical
+;        jnz     pt4
+;        mov     eax,12*0x100000 + 7
+;       pt4:
+;        stosd
+;        add     eax,4096
+;        loop    pt2
+; initialize as identity mapping
+	xor	eax, eax
+	call	pagetable_set
+; 8M..12M map to LFB
+	pop	eax
+;	mov	cx, 256*4
+	mov	ch, 4
+	mov	di, 2000h
+	call	pagetable_set
+
 	push	0x7100
 	pop	es
         xor     di,di
-        mov     eax,8*0x100000+7
+        mov     eax,8*0x100000
         mov     cx,256*4
-      pt5:
-        stosd
-        add     eax,0x1000
-        loop    pt5
+        call	pagetable_set
         
 ; 4 KB PAGE DIRECTORY
 
@@ -1086,15 +1031,12 @@ end if
         xor     di, di
         mov     cx, 64 / 4
         mov     eax, 0x60007            ; for 0 M
-      pd4k:
-        stosd
-        add     eax, 0x1000
-        loop    pd4k
+        call	pagetable_set
         mov     dword [es:0x800],0x71007   ;map region 0x80000000-0x803FFFFF to 0x800000-0xCFFFFF
         xor     si,si
         mov     di,second_base_address shr 20
-        mov     cx,64/4
-        rep     movs dword [es:di], [es:si]
+        mov     cx,64/2
+        rep     movs word [es:di], [es:si]
        
         mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
         mov     cr3, eax
@@ -1102,9 +1044,8 @@ end if
 ; SET GRAPHICS
 
 	pop	es
-        mov     bx,[es:0x9008]		; vga & 320x200
-        mov	ax, bx
-	push	ax
+        mov     ax,[es:0x9008]		; vga & 320x200
+        mov	bx, ax
         cmp     ax,0x13
         je      setgr
         cmp     ax,0x12
@@ -1113,18 +1054,15 @@ end if
        setgr:
         int     0x10
         test	ah,ah
-        jz      gmok
-        mov     si,fatalsel-0x10000
-        call    print
-        jmp     $
-        
-       gmok:
+        mov	si, fatalsel-0x10000
+        jnz	sayerr
 ; set mode 0x12 graphics registers:
         cmp     bx,0x12
         jne     gmok2
 
         mov     al,0x05
         mov     dx,0x03ce
+        push    dx
         out     dx,al      ; select GDC mode register
         mov     al,0x02
         inc	dx
@@ -1138,7 +1076,7 @@ end if
         out     dx,al      ; set mask for all planes 0-3
 
         mov     al,0x08
-        mov     dx,0x03ce
+        pop	dx
         out     dx,al      ; select GDC bit mask register
                            ; for writes to 0x03cf
 

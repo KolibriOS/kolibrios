@@ -318,6 +318,7 @@ endg
     mov   ebx,[ebx+0x10]
     add   ebx,[esp+12]
   no_fl_start_param:
+    mov   edx,[esp+16]		; flags
 
     call  start_application_fl
 
@@ -440,6 +441,7 @@ endg
     add   ebx,[esp+12]
 
   no_flp_start_param:
+    mov   edx,[esp+16]		; flags
 
     call  start_application_floppy
 
@@ -778,6 +780,7 @@ choice_necessity_partition_1:
     mov   ebp,[ebp+0x10]
     add   ebp,[esp+12]
   no_hd_start_param:
+    mov   edx,[esp+16]		; flags
 
     call  start_application_hd
 

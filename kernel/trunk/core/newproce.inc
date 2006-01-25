@@ -60,6 +60,7 @@ new_start_application_floppy:
 ;input:
 ;  eax - pointer to filename
 ;  ebx - parameters to pass
+;  edx - flags
 ;result:
 ;  eax - pid of new process
 ;        or 0 if call fails.
@@ -231,6 +232,7 @@ new_start_application_fl:
 ;input:
 ;  eax - pointer to filename
 ;  ebx - parameters to pass
+;  edx - flags
 ;result:
 ;  eax - pid of new process
 ;        or 0 if call fails.
@@ -546,6 +548,13 @@ new_start_application_fl:
     mov    ebx,[new_process_place]
     shl    ebx,5
     mov    [0x3000+ebx+0xa],byte 0 ;set process state - running
+; set if debuggee
+    test   byte [esp+28], 1
+    jz     .no_debug
+    mov    [0x3000+ebx+0xa],byte 1 ;set process state - suspended
+    mov    eax,[0x3000]
+    mov    [0x80000+ebx*8+0xac],eax ;set debugger PID - current
+.no_debug:
     
     mov    esi,new_process_running
     call   sys_msg_board_str     ;output information about succefull startup
@@ -563,6 +572,7 @@ new_sys_threads:
 ;   ecx=thread stack value
 ;result:
 ;   eax=pid
+    xor    edx,edx	; flags=0
     pushad
    
     cmp    eax,1
@@ -1165,6 +1175,7 @@ new_start_application_hd:
 ;eax - file name (kernel address)
 ;ebx - file name length
 ;ecx - work area (kernel address)
+;edx - flags
 ;ebp - parameters
     mov    [appl_path],edi
     pushad
@@ -1355,3 +1366,5 @@ new_start_application_hd:
     sti
     ret
 end if
+
+	include 'debug.inc'
