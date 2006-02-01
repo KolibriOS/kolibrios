@@ -32,6 +32,7 @@ icons		dd    1  ;  0 defaults   ; 1 activate
 
 dat  db  'PANEL   DAT'
 
+PANEL_HEIGHT = 18
 
 ;mainalive db 1
 
@@ -238,6 +239,10 @@ START:
     cmp  [esi],byte 'x'
     jne  new_number
 
+	mcall	48,5
+	mov	ecx,eax
+	lea	edx,[ebx-PANEL_HEIGHT-1]
+	mcall	48,6
 
     call set_variables
 
@@ -1016,7 +1021,7 @@ draw_window:
     add  ecx,0*65536+38
     cmp  [graph_text],1
     jne  no_text_1
-    mov  cx,18
+    mov  cx,PANEL_HEIGHT
     add  ecx,20*65536
   no_text_1:
     mov  eax, 0 		    ; DEFINE AND DRAW WINDOW
