@@ -501,6 +501,10 @@ checkbuttons:
 
     movzx ebx,word [eax+0]
     shl   ebx,5
+
+        test    [ebx+window_data+WDATA.fl_wstate],WSTATE_MINIMIZED
+        jnz     buttonnewcheck
+
 ;    add   ebx,window_data
 ;    mov   ecx,[window_data+ebx+8]          ; window end X
     movzx edx,word [eax+4]     ; button start X

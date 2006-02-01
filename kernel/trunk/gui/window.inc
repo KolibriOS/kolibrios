@@ -1,3 +1,29 @@
+get_titlebar_height: ; edi = window draw_data pointer
+        mov     al,[edi+WDATA.fl_wstyle]
+        and     al,0x0F
+        cmp     al,0x03
+        jne     @f
+        mov     eax,[_skinh]
+        ret
+    @@: mov     eax,21
+        ret
+
+get_rolledup_height: ; edi = window draw_data pointer
+        mov     al,[edi+WDATA.fl_wstyle]
+        and     al,0x0F
+        cmp     al,0x03
+        jne     @f
+        mov     eax,[_skinh]
+        add     eax,3
+        ret
+    @@: or      al,al
+        jnz     @f
+        mov     eax,21
+        ret
+    @@: mov     eax,21+2
+        ret
+
+
 setwindowdefaults:
         pushad
 
@@ -42,14 +68,14 @@ calculatescreen:
         movzx edi, word [0xC400 + esi * 2]
         shl   edi, 5
         add   edi, window_data
-        mov   eax, [edi+0]
-        mov   ebx, [edi+4]
-        mov   ecx, [edi+8]
-        test  ecx, ecx
-        jz    .not_wnd
-        add   ecx, eax
-        mov   edx, [edi+12]
-        add   edx, ebx
+        test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
+        jnz     .not_wnd
+        mov     eax,[edi+WDATA.left]
+        mov     ebx,[edi+WDATA.top]
+        mov     ecx,[edi+WDATA.width]
+        add     ecx,eax
+        mov     edx,[edi+WDATA.height]
+        add     edx,ebx
         push  esi
         movzx esi, word [0xC400 + esi * 2]
         call  setscreen
@@ -234,6 +260,14 @@ display_settings:
 ;    eax = 4         ; get skin height
 ;          input  : nothing
 ;          output : eax = skin height in pixel
+;    eax = 5         ; get screen workarea
+;          input  : nothing
+;          output : eax = [left]*65536+[right]
+;                   ebx = [top]*65536+[bottom]
+;    eax = 6         ; set screen workarea
+;          input  : ecx = [left]*65536+[right]
+;                   edx = [top]*65536+[bottom]
+;          output : nothing
 
 
      pushad
@@ -245,6 +279,7 @@ display_settings:
      cmp  [windowtypechanged],dword 1
      jne  dspl00
      mov  [windowtypechanged],dword 0
+  redraw_screen_direct:
      mov  [dlx],dword 0
      mov  [dly],dword 0
      mov  eax,[0xfe00]
@@ -307,6 +342,67 @@ display_settings:
      ret
    no_skin_height:
 
+        cmp     eax,5       ; get screen workarea
+        jne     no_get_workarea
+        popad
+        mov     eax,[screen_workarea.left-2]
+        mov     ax,word[screen_workarea.right]
+        mov     [esp+36],eax
+        mov     eax,[screen_workarea.top-2]
+        mov     ax,word[screen_workarea.bottom]
+        mov     [esp+24],eax
+        ret
+   no_get_workarea:
+
+        cmp     eax,6       ; set screen workarea
+        jne     no_set_workarea
+        movzx   eax,word[esp+16+2]
+        movzx   ebx,word[esp+16]
+        cmp     eax,[0xFE00]
+        jae     .exit
+        cmp     ebx,[0xFE00]
+        ja      .exit
+        cmp     eax,ebx
+        jae     .exit
+        mov     [screen_workarea.left],eax
+        mov     [screen_workarea.right],ebx
+        movzx   eax,word[esp+24+2]
+        movzx   ebx,word[esp+24]
+        cmp     eax,[0xFE04]
+        jae     .exit
+        cmp     ebx,[0xFE04]
+        ja      .exit
+        cmp     eax,ebx
+        jae     .exit
+        mov     [screen_workarea.top],eax
+        mov     [screen_workarea.bottom],ebx
+
+        mov     ecx,[0x3004]
+        mov     esi,0x20*2
+        dec     ecx
+    @@: test    [esi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jz      .lp1
+        mov     eax,[screen_workarea.left]
+        mov     [esi+WDATA.left],eax
+        sub     eax,[screen_workarea.right]
+        neg     eax
+        mov     [esi+WDATA.width],eax
+        mov     eax,[screen_workarea.top]
+        mov     [esi+WDATA.top],eax
+        test    [esi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jnz     .lp1
+        sub     eax,[screen_workarea.bottom]
+        neg     eax
+        mov     [esi+WDATA.height],eax
+  .lp1: add     esi,0x20
+        loop    @b
+        call    calculatescreen
+        jmp     redraw_screen_direct
+    .exit:
+        popad
+        ret
+   no_set_workarea:
+
      popad
      ret
 
@@ -327,6 +423,9 @@ check_window_move_request:
         shl   edi,5
         add   edi,window_data
 
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     window_move_return
+
         push  dword [edi+0]           ; save old coordinates
         push  dword [edi+4]
         push  dword [edi+8]
@@ -345,6 +444,10 @@ check_window_move_request:
         je    no_y_reposition
         mov   [edi+4],ebx
       no_y_reposition:
+
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jnz     no_y_resizing
+
         cmp   ecx,-1
         je    no_x_resizing
         mov   [edi+8],ecx
@@ -984,8 +1087,8 @@ checkwindows:
         movzx edi, word [0xC400 + esi * 2]
         shl   edi, 5
         add   edi, window_data
-        cmp   [edi+12],dword 0
-        je    .mouse_buttons_pressed
+        test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
+        jnz     .mouse_buttons_pressed
 ;        jne   .no_activate_request_2
 ;    .no_activate_request_1:
 ;        cmp   [window_minimize],1
@@ -1017,6 +1120,8 @@ checkwindows:
         mov   ebx,edx
        cmp   [window_minimize],1
        jge   .window_minimize_no_check_mouse
+        test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
+        jnz     cwloop
 
        movzx  eax, word [0xfb0a]
        movzx  ebx, word [0xfb0c]
@@ -1063,6 +1168,9 @@ checkwindows:
         ret
       .window_move_enabled_for_user:
 
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jnz     .no_resize_2
+
         mov   [do_resize_from_corner],byte 0   ; resize for skinned window
         mov   edx, [edi+0x10]
         and   edx, 0x0f000000
@@ -1078,23 +1186,12 @@ checkwindows:
         jmp   .continue
       .no_resize_2:
 
-;// mike.dld [
-        mov   dl,[edi+0x10+3]
-        and   dl,0x0F
-        cmp   dl,0x03
-        jne   @f
-        mov   edx, [edi+4] ; check if touch on bar
-        add   edx, [_skinh]
-        cmp   ebx, edx
-        jae   .exit
-        jmp   .continue
-    @@:
-;// mike.dld ]
-
-        mov   edx, [edi+4] ; check if touch on bar
-        add   edx, 21
-        cmp   ebx, edx
-        jae   .exit
+        push    eax
+        call    get_titlebar_height
+        add     eax,[edi+4]
+        cmp     ebx,eax
+        pop     eax
+        jae     .exit
 
      .continue:
 
@@ -1111,9 +1208,6 @@ checkwindows:
 
         mov   cl, [0xfb40]     ; save for shade check
         mov   [do_resize], cl
-        cmp  [window_minimize],0
-        je    no_emulation_righ_button
-        mov   [do_resize], byte 2
      no_emulation_righ_button:
         mov   ecx, [edi+0]
         mov   edx, [edi+4]
@@ -1157,7 +1251,10 @@ checkwindows:
         mov   word [npye],ax
         pop eax
 
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     @f
         call  drawwindowframes
+    @@:
 
         mov   [reposition],0
         mov   [0xfb44],byte 1   ; no reaction to mouse up/down
@@ -1192,7 +1289,10 @@ checkwindows:
         push  ax
         push  bx
 
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     @f
         call  drawwindowframes
+    @@:
 
         mov   ax,[0xfe00]
         mov   bx,[0xfe04]
@@ -1245,13 +1345,15 @@ checkwindows:
         mov   [npxe],eax
       nnepx:
 
+        call    get_titlebar_height
+        mov     ebx,eax
         movzx eax,word [0xfb0c]
         cmp   eax,[edi+4]
         jb    nnepy
         sub   eax,[edi+4]
-        cmp   eax,23 ; [edx+0x90+12]
-        jge   nnepy2
-        mov   eax,23 ; [edx+0x90+12]
+        cmp     eax,ebx ; [edx+0x90+12]
+        jge     nnepy2
+        mov     eax,ebx ; [edx+0x90+12]
       nnepy2:
         mov   [npye],eax
       nnepy:
@@ -1263,7 +1365,10 @@ checkwindows:
 
         pop   bx
         pop   ax
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     @f
         call  drawwindowframes
+    @@:
 
         mov   esi,[0xfb0a]
         mov   [0xf300],esi
@@ -1272,8 +1377,12 @@ checkwindows:
         cmp   [0xfb40],byte 0
         jne   newchm 
                                      ; new position done
-        call  drawwindowframes
-        mov   [0xfff5],byte 1
+        mov     [0xfff5],byte 1
+        mov     cl,0
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     @f
+        mov     cl,[reposition]
+        call    drawwindowframes
 
         mov   eax,[npx]
         mov   [edi+0],eax
@@ -1283,6 +1392,8 @@ checkwindows:
         mov   [edi+8],eax
         mov   eax,[npye]
         mov   [edi+12],eax
+
+    @@: mov     [reposition],cl
 
         cmp   [reposition],1         ; save new X and Y start
         jne   no_xy_save
@@ -1310,67 +1421,40 @@ checkwindows:
         shl   edx,8
         add   edx,0x80000                 ; process base at 0x80000+
 
+        cmp     [window_minimize],0
+        je      no_wnd_minimize_restore
+        mov     [reposition],1
+  wnd_minimize:
+        cmp     [window_minimize],1
+        jne     wnd_restore
+        or      [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
+        jmp     no_wnd_minimize_restore
+  wnd_restore:
+        cmp     [window_minimize],2
+        jne     no_wnd_minimize_restore
+        and     [edi+WDATA.fl_wstate],not WSTATE_MINIMIZED
+  no_wnd_minimize_restore:
+
+
         cmp   [do_resize],2               ; window shade ?
-        jb    no_window_shade
+        jne   no_window_shade
         mov   [reposition],1
 
-        cmp   [window_minimize],1
-        jge    for_window_minimize
-        cmp   [edi+12],dword 23 
-        jle    window_shade_up
-        jmp   for_window_shade
-    for_window_minimize:
-        cmp   [edi+12],dword 0 
-        je    window_shade_up
-    for_window_shade:
-        cmp   [window_minimize],0
-        je   no_window_minimize
-        cmp   [window_minimize],2
-        je   window_minimize_no_shade_full ;window_shade_up
-        mov   [edi+8],dword 0 ;66
-        mov   [edi+12],dword 0 ;279           ; on
-        jmp   no_window_shade
-  no_window_minimize:  
-        mov   [edi+12],dword 23           ; on
-        jmp   no_window_shade
-      window_shade_up:
-        cmp   [window_minimize],1
-        jge   window_minimize_no_shade_full
-        mov   eax,[edi+0]
-        add   eax,[edi+4]
-        test  eax, eax
-        je    shade_full
-        push  edi 
-        lea   esi, [edx + 0x90]
-        mov   ecx,4
-        cld
-        rep   movsd
-        pop   edi
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jnz     wnd_rolldown
+  wnd_rollup:
+        or      [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        call    get_rolledup_height
+        jmp     @f
+  wnd_rolldown:
+        and     [edi+WDATA.fl_wstate],not WSTATE_ROLLEDUP
+        mov     eax,[edx+0x90+BOX.height]
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jz      @f
+        mov     eax,[screen_workarea.bottom]
+        sub     eax,[screen_workarea.top]
+    @@: mov     [edi+WDATA.height],eax
 
-    window_minimize_no_shade_full:
-;        mov   eax,[edx+0x90]              ; off
-;        mov   [edi+0],eax
-;        mov   eax,[edx+0x94]              ; off
-;        mov   [edi+4],eax
-;        mov   eax,[edx+0x98]              ; off
-;        mov   [edi+8],eax
-;        mov   eax,[edx+0x9C]              ; off
-;        mov   [edi+12],eax
-
-        push  edi 
-        lea   esi, [edx + 0x90]
-        mov   ecx,4
-        cld
-        rep   movsd
-        pop   edi
-        jmp   no_window_shade
-
-      shade_full:
-;        mov   eax,[0xfe00]
-;        mov   [edi+8],eax
-        mov   eax,[0xfe04]
-        sub   eax,19
-        mov   [edi+12],eax
       no_window_shade:
 
         cmp   [do_resize],1               ; fullscreen/restore ?
@@ -1378,27 +1462,37 @@ checkwindows:
         cmp   [latest_window_touch_delta],dword 50
         jg    no_fullscreen_restore
         mov   [reposition],1
-        mov   eax,[edi+12]
-        add   eax,19
-        cmp   eax,[0xfe04]
-        je    restore_from_fullscreen
-        mov   [edi+0],dword 0             ; set fullscreen
-        mov   [edi+4],dword 0
-        mov   eax,[0xfe00]
-        mov   [edi+8],eax
-        mov   eax,[0xfe04]
-        sub   eax,19
-        mov   [edi+12],eax
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     restore_from_fullscreen
+        or      [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        mov     eax,[screen_workarea.left]
+        mov     [edi+WDATA.left],eax
+        sub     eax,[screen_workarea.right]
+        neg     eax
+        mov     [edi+WDATA.width],eax
+        mov     eax,[screen_workarea.top]
+        mov     [edi+WDATA.top],eax
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jnz     @f
+        sub     eax,[screen_workarea.bottom]
+        neg     eax
+        mov     [edi+WDATA.height],eax
+    @@:
         jmp   no_fullscreen_restore
       restore_from_fullscreen:
+        and     [edi+WDATA.fl_wstate],not WSTATE_MAXIMIZED
+        push    [edi+WDATA.height]
         push  edi                         ; restore
-;        mov   esi,edx
-;        add   esi,0x90
         lea   esi, [edx + 0x90]
         mov   ecx,4
         cld
         rep   movsd
         pop   edi
+        pop     eax
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jz      @f
+        mov     [edi+WDATA.height],eax
+    @@:
 
       no_fullscreen_restore:
 
@@ -1452,7 +1546,7 @@ checkwindows:
 
         popad
 
-        mov   [edi+31],byte 1 ; mark first as redraw
+        mov     [edi+WDATA.fl_redraw],1
         mov   [0xfff5],byte 1 ; no mouse
 
         push  eax ebx ecx edx
@@ -1472,7 +1566,7 @@ checkwindows:
       waitre2:
         mov   [0xfff5],byte 1
         call  checkidle
-        cmp   [edi+31],byte 0
+        cmp     [edi+WDATA.fl_redraw],0
         jz    retwm
         loop  waitre2
 

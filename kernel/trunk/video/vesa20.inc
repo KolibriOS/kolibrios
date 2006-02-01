@@ -599,7 +599,9 @@ vesa20_drawbar:
         mov     [drbar.color], edi
 
         sub     edx, ebx
+        jle     .exit          ;// mike.dld, 2005-01-29
         sub     ecx, eax
+        jle     .exit          ;// mike.dld, 2005-01-29
         mov     [drbar.bar_sy], edx
         mov     [drbar.bar_sx], ecx
 
@@ -616,6 +618,7 @@ vesa20_drawbar:
         mov     ebx, [edi-twdw + 8] ; ebx = wnd_sx
         sub     ebx, [drbar.bar_cx]
         ja      @f
+  .exit:                       ;// mike.dld, 2005-01-29
         add     esp, drbar.stack_data
         popad
         xor     eax, eax

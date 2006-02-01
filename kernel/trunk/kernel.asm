@@ -60,20 +60,6 @@ twdw               equ   (0x3000-window_data)
 
 use16
                   org   0x10000
-macro diff16 title,l2
- {
-  local s,d,l1
-  s = l2
-  display title,': 0x'
-  repeat 8
-   d = 48 + s shr ((8-%) shl 2) and $0F
-   if d > 57
-    d = d + 65-57-1
-   end if
-   display d
-  end repeat
-  display 13,10
- }      
                   jmp   start_of_code
 
 ; mike.dld {
@@ -227,7 +213,7 @@ boot_log:
          ; begin ealex 04.08.05
 ;         in    al,0x61
 ;         and   al,01111111b
-;         out   0x61,al 
+;         out   0x61,al
          ; end ealex 04.08.05
 .bll1:   in    al,0x60    ; wait for ESC key press
          cmp   al,129
@@ -275,7 +261,7 @@ B32:
 ;       xor   eax,eax
         mov   edi,0x80000
         mov   ecx,(0x90000-0x80000)/4
-;       cld        
+;       cld
         rep   stosd
 
 ; CLEAR KERNEL UNDEFINED GLOBALS
@@ -304,9 +290,11 @@ B32:
         movzx eax,word [0x2f0000+0x900A]  ; X max
         dec   eax
         mov   [0xfe00],eax
+        mov   [screen_workarea.right],eax
         movzx eax,word [0x2f0000+0x900C]  ; Y max
         dec   eax
         mov   [0xfe04],eax
+        mov   [screen_workarea.bottom],eax
         movzx eax,word [0x2f0000+0x9008]  ; screen mode
         mov   [0xFE0C],eax
         mov   eax,[0x2f0000+0x9014]       ; Vesa 1.2 bnk sw add
@@ -404,25 +392,25 @@ B32:
         mov     dword [0xFE84], 0xD80000 ; =0x100000*13.5
       @@:
         mov     dword [0xFE8C], edi
-        
+
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
-        
+
 ; CHECK EXTRA REGION
 ; ENABLE PAGING
         mov     eax,cr0
         or      eax,0x80000000
         mov     cr0,eax
         jmp     $+2
-        mov     dword [0xfe80],0x800000 
-        
-;Set base of graphic segment to linear address of LFB        
+        mov     dword [0xfe80],0x800000
+
+;Set base of graphic segment to linear address of LFB
         mov     eax,[0xfe80]                      ; set for gs
         mov     [graph_data_l+2],ax
         shr     eax,16
         mov     [graph_data_l+4],al
-        mov     [graph_data_l+7],ah             
+        mov     [graph_data_l+7],ah
 
 ; READ RAMDISK IMAGE FROM HD
 
@@ -476,7 +464,7 @@ include 'vmodeld.inc'
         mov     edi, 1
         mov     eax, 0x00040000
         call    display_number
-        
+
 ; CHECK EXTENDED REGION
 ;        mov     dword [0x80000000],0x12345678
 ;        cmp     dword [0x80000000],0x12345678
@@ -485,9 +473,9 @@ include 'vmodeld.inc'
 ;        call    boot_log
 ;        jmp     $
 ;extended_region_found:
-        
+
         call    MEM_Init
-;add 0x800000-0xc00000 area        
+;add 0x800000-0xc00000 area
         cmp     word [0xfe0c],0x13
         jle     .less_memory
         mov     eax,0x80000000      ;linear address
@@ -498,7 +486,7 @@ include 'vmodeld.inc'
         mov     eax,0x80180000      ;linear address
         mov     ebx,0x280000 shr 12 ;size in pages (2.5Mb)
         mov     ecx,0x980000        ;physical address
-.end_first_block:                
+.end_first_block:
         call    MEM_Add_Heap        ;nobody can lock mutex yet
 
         call    create_general_page_table
@@ -512,7 +500,7 @@ include 'vmodeld.inc'
         call    MEM_Add_Heap
 ;init physical memory manager.
         call    Init_Physical_Memory_Manager
-       
+
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
         mov   esi,boot_irqs
@@ -582,12 +570,12 @@ include 'vmodeld.inc'
 ;        mov     cr4,eax
 ;     fail_fpu:
 
-;The CPU to this moment should be already in PM, 
-;and bit MP of the register cr0 should be installed in 1. 
-finit ;reset of the FPU (finit, instead of fninit) 
-fsetpm ;enable PM of the FPU 
-finit ;reset the registers, contents which are still equal RM 
-;Now FPU too in PM 
+;The CPU to this moment should be already in PM,
+;and bit MP of the register cr0 should be installed in 1.
+finit ;reset of the FPU (finit, instead of fninit)
+fsetpm ;enable PM of the FPU
+finit ;reset the registers, contents which are still equal RM
+;Now FPU too in PM
 ; DETECT DEVICES
 
         mov    esi,boot_devices
@@ -728,12 +716,12 @@ finit ;reset the registers, contents which are still equal RM
         cmp   al,1
         jne   no_load_vrr_m
         mov   eax,vrr_m
-        xor   ebx,ebx			; no parameters
+        xor   ebx,ebx                   ; no parameters
         xor   edx,edx                   ; no flags
         call  start_application_fl
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
-        
+
     no_load_vrr_m:
         mov   eax,firstapp
         xor   ebx,ebx                   ; no parameters
@@ -758,7 +746,7 @@ finit ;reset the registers, contents which are still equal RM
         ; wait until 8042 is ready
 ;        xor ecx,ecx
 ;      @@:
-;        in     al,64h 
+;        in     al,64h
 ;        and    al,00000010b
 ;        loopnz @b
         call  Wait8042BufferEmpty
@@ -769,7 +757,7 @@ finit ;reset the registers, contents which are still equal RM
        ; mov   al, 111b
        ; call  kb_write
        ; call  kb_read
-       
+
         mov   al, 0xF3       ; set repeat rate & delay
         call  kb_write
         call  kb_read
@@ -791,7 +779,7 @@ finit ;reset the registers, contents which are still equal RM
 
         mov   esi,boot_allirqs
         call  boot_log
-        
+
         cli                          ;guarantee forbidance of interrupts.
         mov   al,0                   ; unmask all irq's
         out   0xA1,al
@@ -1181,7 +1169,7 @@ set_variables:
         shr   ax,1
         mov   [0xfb0a],eax
         pop   eax
-        
+
         mov   byte [SB16_Status],0            ; Minazzi Paolo
         mov   [display_data-12],dword 1       ; tiled background
         mov   [0xfe88],dword 0x2C0000         ; address of button list
@@ -2064,7 +2052,7 @@ sys_end:
      mov   eax,[0x3010]
      add   eax,0xa
      mov   [eax],byte 3  ; terminate this program
-     
+
     waitterm:            ; wait here for termination
      mov   eax,5
      call  delay_hs
@@ -2075,7 +2063,7 @@ sys_system:
      cmp  eax,1                              ; BOOT
      jnz  nosystemboot
      mov  [0x2f0000+0x9030],byte 0
-  for_shutdown_parameter:     
+  for_shutdown_parameter:
      mov  eax,[0x3004]
      add  eax,2
      mov  [shutdown_processes],eax
@@ -2098,7 +2086,7 @@ sys_system:
      shl  ebx,5
      mov  edx,[ebx+0x3000+4]
      add  ebx,0x3000+0xa
-     
+
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
      mov  [ebx],byte 3       ; clear possible i40's
      ;call MEM_Heap_UnLock
@@ -2138,7 +2126,7 @@ sys_system:
      mov  [0xff01],edi     ; activate
      xor  eax, eax
      ret
-     
+
    nowindowactivate:
 
      cmp  eax,4                              ; GET IDLETIME
@@ -2161,7 +2149,7 @@ sys_system:
      jnz  nogetactiveprocess
      mov  eax,[active_process]
      ret
- nogetactiveprocess:  
+ nogetactiveprocess:
      cmp  eax,8
      jnz  nosoundflag
      cmp  ebx,1
@@ -2173,7 +2161,7 @@ sys_system:
      jnz  nosoundflag
      inc  byte [sound_flag]       ; set sound_flag
      and byte [sound_flag],1      ;
-     ret     
+     ret
 nosoundflag:
      cmp  eax,9                   ; system shutdown with param
      jnz  noshutdownsystem
@@ -2238,14 +2226,14 @@ nogetkey:
 nogetkernel_id:
      cmp  eax,14      ; sys wait retrace
      jnz  nosys_wait_retrace
-     ;wait retrace functions 
- sys_wait_retrace: 
-     mov edx,0x3da 
- WaitRetrace_loop: 
-     in al,dx 
-     test al,1000b 
-     jz WaitRetrace_loop 
-     mov [esp+36],dword 0 
+     ;wait retrace functions
+ sys_wait_retrace:
+     mov edx,0x3da
+ WaitRetrace_loop:
+     in al,dx
+     test al,1000b
+     jz WaitRetrace_loop
+     mov [esp+36],dword 0
      ret
 nosys_wait_retrace:
      cmp  eax,15      ; mouse centered
@@ -2259,7 +2247,7 @@ no_mouse_centered:
      mov  eax,[MEM_FreeSpace]
      shl  eax,2
      ret
-no_get_free_space:    
+no_get_free_space:
      cmp  eax,17
      jnz  no_get_all_space
      mov  eax,[0xFE8C]
@@ -2267,23 +2255,28 @@ no_get_free_space:
 ;     mov  eax,[MEM_AllSpace]
 ;     shl  eax,2
      ret
-no_get_all_space:  
+no_get_all_space:
 
      ret
+uglobal
+;// mike.dld, 2006-29-01 [
+screen_workarea RECT
+;// mike.dld, 2006-29-01 ]
 window_minimize db 0
 sound_flag      db 0
 last_key_press  dd 0
 keyboard_mode_sys db 0
+endg
 
-iglobal 
-version_inf: 
+iglobal
+version_inf:
   db 0,5,2,9  ; version 0.5.2.9
-  db UID_KOLIBRI 
-  db 'Kolibri',0 
-version_end: 
-endg 
+  db UID_KOLIBRI
+  db 'Kolibri',0
+version_end:
+endg
 
-UID_NONE=0 
+UID_NONE=0
 UID_MENUETOS=1   ;official
 UID_KOLIBRI=2    ;russian
 
@@ -2337,7 +2330,7 @@ sys_cachetodiskette:
     call save_image
     mov  [esp+36],dword 0
     cmp  [FDC_Status],0
-    je   yes_floppy_save             
+    je   yes_floppy_save
   no_floppy_b_save:
     mov [esp+36],dword 1
   yes_floppy_save:
@@ -2965,7 +2958,7 @@ type_background_1:
     mov   [0xfff4],byte 0
 temp_nobackgr:
     ret
-    
+
 uglobal
   window_move_pr   dd  0x0
   window_move_eax  dd  0x0
@@ -3112,7 +3105,7 @@ checkmisc:
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
     mov   eax, cpustring
-    xor   ebx,ebx		; no parameters
+    xor   ebx,ebx               ; no parameters
     xor   edx,edx               ; no flags
     call  start_application_fl
     mov   [ctrl_alt_del], 0
@@ -4576,11 +4569,11 @@ syscall_startapp:                       ; StartApp
      add   ebx,[edi]
    noapppar:
 ;     call  start_application_fl
-     xor   edx,edx	; compatibility - flags=0 
+     xor   edx,edx      ; compatibility - flags=0
      call   new_start_application_fl
      mov   [esp+36],eax
      ret
-     
+
 
 align 4
 
@@ -4612,7 +4605,7 @@ syscall_starthdapp:                     ; StartHdApp
      add   eax,[edi]
      add   ecx,[edi]
      xor   ebp,ebp
-     xor   edx,edx	; compatibility - flags=0 
+     xor   edx,edx      ; compatibility - flags=0
      call  start_application_hd
      mov   [esp+36],eax
      ret
@@ -4951,5 +4944,5 @@ IncludeIGlobals
 endofcode:
 IncludeUGlobals
 uglobals_size = $ - endofcode
-diff16 "end of kernel code",$
+diff16 "end of kernel code",0,$
 

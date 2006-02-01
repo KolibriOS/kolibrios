@@ -469,6 +469,8 @@ new_start_application_fl:
     mov    [ecx+8],eax
     mov    eax,[0xfe04]
     mov    [ecx+12],eax
+;set window state to 'normal' (non-minimized/maximized/rolled-up) state
+    mov    [ecx+WDATA.fl_wstate],WSTATE_NORMAL
 ;set cr3 register in TSS of application    
     mov    ecx,[new_process_place]     
     shl    ecx,8
