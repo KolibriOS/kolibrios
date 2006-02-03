@@ -14,17 +14,20 @@
 macro struct name, [arg]
  {
   common
-   name@struct fix name
+   name@struct equ name
    struc name arg {
  }
 
 macro struct_helper name
  {
+  match xname,name
+  \{
    virtual at 0
-   name name
-   sizeof.#name = $ - name
-   name equ sizeof.#name
+   xname xname
+   sizeof.#xname = $ - xname
+   name equ sizeof.#xname
    end virtual
+  \}
  }
 
 ends fix } struct_helper name@struct
