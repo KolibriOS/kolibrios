@@ -236,7 +236,7 @@ debug_read_process_memory:
 ; ecx=length
 ; esi->buffer in debugger
 ; edx=address in debuggee
-; out: [esp+36]=eax=sizeof(read)
+; out: [esp+36]=sizeof(read)
 ; destroys all
 	add	esi, std_application_base_address
 	push	ebx
@@ -244,14 +244,17 @@ debug_read_process_memory:
 	call	check_region
 	pop	ebx
 	dec	eax
-	jnz	.ret
+	jnz	.err
 	call	get_debuggee_slot
-	jc	.stiret
+	jc	.err
+	shr	eax, 5
 	mov	ebx, esi
 	call	read_process_memory
-.stiret:
 	sti
-.ret:
+	mov	dword [esp+36], eax
+	ret
+.err:
+	or	dword [esp+36], -1
 	ret
 
 debug_write_process_memory:
@@ -260,7 +263,7 @@ debug_write_process_memory:
 ; ecx=length
 ; esi->buffer in debugger
 ; edx=address in debuggee
-; out: [esp+36]=eax=sizeof(write)
+; out: [esp+36]=sizeof(write)
 ; destroys all
 	add	esi, std_application_base_address
 	push	ebx
@@ -268,14 +271,14 @@ debug_write_process_memory:
 	call	check_region
 	pop	ebx
 	dec	eax
-	jnz	.ret
+	jnz	debug_read_process_memory.err
 	call	get_debuggee_slot
-	jc	.stiret
+	jc	debug_read_process_memory.err
+	shr	eax, 5
 	mov	ebx, esi
 	call	write_process_memory
-.stiret:
 	sti
-.ret:
+	mov	[esp+36], eax
 	ret
 
 debugger_notify:
