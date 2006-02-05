@@ -345,6 +345,12 @@ display_settings:
         cmp     eax,5       ; get screen workarea
         jne     no_get_workarea
         popad
+
+        mov   eax,[0xfe00]
+        mov   [screen_workarea.right],eax
+        mov   eax,[0xfe04]
+        mov   [screen_workarea.bottom],eax
+
         mov     eax,[screen_workarea.left-2]
         mov     ax,word[screen_workarea.right]
         mov     [esp+36],eax
