@@ -188,12 +188,19 @@ use16
 
 pr_mode_exit:
 
-    mov ax,1000
-    mov ds,ax
-    mov es,ax
-    mov fs,ax
-    mov gs,ax
-    mov ss,ax
+; setup stack
+	mov	ax, 3000h
+	mov	ss, ax
+	mov	esp, 0EC00h
+; setup ds
+	push	cs
+	pop	ds
+;    mov ax,1000
+;    mov ds,ax
+;    mov es,ax
+;    mov fs,ax
+;    mov gs,ax
+;    mov ss,ax
 ;    mov bl,[shutdown_parameter]
 ;    mov [es:shutdown_parameter-0x10000],bl
 
@@ -208,8 +215,7 @@ rdelay:
     ret
 real_mode:
 
-    lidt [cs:old_ints_h-0x10000]
-    mov  sp,0xfff0
+    lidt [old_ints_h-0x10000]
 ;remap IRQs
     mov  al,0x11
     out  0x20,al
@@ -237,9 +243,9 @@ real_mode:
     out  0xA1,al
     call rdelay
     
-    mov  al,2
-    out  0x21,al
     mov  al,0
+    out  0x21,al
+    call rdelay
     out  0xA1,al
     sti
 
@@ -325,40 +331,72 @@ restart_kernel:
 restart_kernel_4000:
         cli
 
-        mov     di,0x1000      ; load kernel image from 0x8000:0 -> 0x1000:0
-
-      new_kernel_block_move:
-
-        mov     ebx,0
-
-      new_kernel_byte_move:
-
-        mov     ax,di
-        add     ax,0x7000
-        mov     es,ax
-        mov     dl,[es:bx]
-        mov     es,di
-        mov     [es:bx],dl
-
-        inc     ebx
-        cmp     ebx,65536
-        jbe     new_kernel_byte_move
-
-        add     di,0x1000
-        cmp     di,0x2000
-        jbe     new_kernel_block_move
+;        mov     di,0x1000      ; load kernel image from 0x8000:0 -> 0x1000:0
+;
+;      new_kernel_block_move:
+;
+;        mov     ebx,0
+;
+;      new_kernel_byte_move:
+;
+;        mov     ax,di
+;        add     ax,0x7000
+;        mov     es,ax
+;        mov     dl,[es:bx]
+;        mov     es,di
+;        mov     [es:bx],dl
+;
+;        inc     ebx
+;        cmp     ebx,65536
+;        jbe     new_kernel_byte_move
+;
+;        add     di,0x1000
+;        cmp     di,0x2000
+;        jbe     new_kernel_block_move
+	push	ds
+	pop	es
+	mov	cx, 0x8000
+	push	cx
+	mov	ds, cx
+	xor	si, si
+	xor	di, di
+	rep	movsw
+	mov	ax, 0x9000
+	mov	ds, ax
+	mov	ax, 0x2000
+	mov	es, ax
+	pop	cx
+	rep	movsw
 
         wbinvd  ; write and invalidate cache
 
-        mov     ax,0x1000
-        mov     es,ax
-        mov     ax,0x3000
-        mov     ss,ax
-        mov     sp,0xec00
+;        mov     ax,0x1000
+;        mov     es,ax
+;        mov     ax,0x3000
+;        mov     ss,ax
+;        mov     sp,0xec00
+; restore timer
+	mov	al, 00110100b
+	out	43h, al
+	jcxz	$+2
+	mov	al, 0xFF
+	out	40h, al
+	jcxz	$+2
+	out	40h, al
+	jcxz	$+2
         sti
 
+; bootloader interface
+	push	0x1000
+	pop	ds
+	mov	si, .bootloader_block-0x10000
+	mov	ax, 'KL'
         jmp     0x1000:0000
 
+.bootloader_block:
+	db	1	; version
+	dw	1	; floppy image is in memory
+	dd	0	; cannot save parameters
 
 APM_PowerOff:
 ;!!!!!!!!!!!!!!!!!!!!!!!!
