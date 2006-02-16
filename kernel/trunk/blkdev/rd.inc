@@ -438,7 +438,7 @@ mov [edi+22],ax          ; time
 
         mov    eax,[esp+12]
         cmp    eax,512
-        jb     flnsa
+        jbe    flnsa
         sub    eax,512
         mov    [esp+12],eax
         mov    eax,[esp+16]
