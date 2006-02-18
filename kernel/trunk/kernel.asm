@@ -700,8 +700,12 @@ finit ;reset the registers, contents which are still equal RM
 
 ; LOAD DEFAULT SKIN
 
-        call  load_default_skin
-        call  load_default_skin_1
+        mov     esi,_skin_file_default
+        mov     edi,_skin_file
+        movsd
+        movsd
+        movsd
+        call    load_skin
 
 ; MTRR'S
 
@@ -814,7 +818,7 @@ osloop:
         call   checkbuttons
         call   main_loop_sys_getkey
         call   checkwindows
-        call   check_window_move_request
+;       call   check_window_move_request
         call   checkmisc
         call   checkEgaCga
         call   stack_handler
@@ -2921,24 +2925,94 @@ sys_set_window:
 
 sys_window_move:
 
-        cmp  [window_move_pr],0
-        je   mwrl1
+        mov     edi,[0x00003000]
+        shl     edi,5
+        add     edi,window_data
 
-        mov  [esp+36],dword 1         ; return queue error
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     .window_move_return
 
-        ret
+        push  dword [edi+0]           ; save old coordinates
+        push  dword [edi+4]
+        push  dword [edi+8]
+        push  dword [edi+12]
 
-     mwrl1:
+        cmp   eax,-1                  ; set new position and size
+        je    .no_x_reposition
+        mov   [edi+0],eax
+      .no_x_reposition:
+        cmp   ebx,-1
+        je    .no_y_reposition
+        mov   [edi+4],ebx
+      .no_y_reposition:
 
-        mov   edi,[0x3000]            ; requestor process base
-        mov   [window_move_pr],edi
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        jnz     .no_y_resizing
 
-        mov   [window_move_eax],eax
-        mov   [window_move_ebx],ebx
-        mov   [window_move_ecx],ecx
-        mov   [window_move_edx],edx
+        cmp   ecx,-1
+        je    .no_x_resizing
+        mov   [edi+8],ecx
+      .no_x_resizing:
+        cmp   edx,-1
+        je    .no_y_resizing
+        mov   [edi+12],edx
+      .no_y_resizing:
 
-        mov   [esp+36],dword 0        ; return success
+        call  check_window_position
+
+        pushad                       ; save for window fullscreen/resize
+        mov   esi,edi
+        sub   edi,window_data
+        shr   edi,5
+        shl   edi,8
+        add   edi,0x80000+0x90
+        mov   ecx,4
+        cld
+        rep   movsd
+        popad
+
+        pushad                       ; calculcate screen at new position
+        mov   eax,[edi+00]
+        mov   ebx,[edi+04]
+        mov   ecx,[edi+8]
+        mov   edx,[edi+12]
+        add   ecx,eax
+        add   edx,ebx
+        call  calculatescreen
+        popad
+
+        pop   edx                   ; calculcate screen at old position
+        pop   ecx
+        pop   ebx
+        pop   eax
+        add   ecx,eax
+        add   edx,ebx
+        mov   [dlx],eax             ; save for drawlimits
+        mov   [dly],ebx
+        mov   [dlxe],ecx
+        mov   [dlye],edx
+        call  calculatescreen
+
+        mov   [edi+31],byte 1       ; flag the process as redraw
+
+        mov   eax,edi               ; redraw screen at old position
+        xor   esi,esi
+        call  redrawscreen
+
+        mov   [0xfff5],byte 0 ; mouse pointer
+        mov   [0xfff4],byte 0 ; no mouse under
+        mov   [0xfb44],byte 0 ; react to mouse up/down
+
+        mov   ecx,10          ; wait 1/10 second
+      .wmrl3:
+        call  [draw_pointer]
+        mov   eax,1
+        call  delay_hs
+        loop  .wmrl3
+
+        mov   [window_move_pr],0
+
+      .window_move_return:
 
         ret
 

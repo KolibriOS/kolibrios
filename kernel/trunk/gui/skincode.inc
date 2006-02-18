@@ -1,244 +1,180 @@
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                          ;;
-;;   WINDOW SKIN for MenuetOS               ;;
-;;                                          ;;
-;;   entryway@bkg.lt                        ;;
-;;                                          ;;
-;;   Bugfixes & upgrades by                 ;;
-;;             Samuel Rodriguez Perez       ;;
-;;             Xeoda@ciberirmandade.org     ;;
-;;                                          ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-
 include "skindata.inc"
 
-virtual at 0
-  bmp_header:
-    .type       rw  1  ; "BM" signature
-    .filesize   rd  1  ; size of the file
-    .reserved   rd  1  ; zero
-    .offbits    rd  1  ; pointer to image data
-    ;----------------
-    .headsize   rd  1  ; usually 40 bytes for image header
-    .width      rd  1
-    .height     rd  1
-    .planes     rw  1  ; usually 1
-    .bitcount   rw  1  ; currently 24 bits/pixel (0x18)
-    .compress   rd  1  ; zero
-    .sizeimage  rd  1  ; x*y*(bitcount/8)
-    .unused     rd  4  ; these bits aren't used by MeOS
-  bmp_data:
-end virtual
+skin_data = 0x00778000
 
-virtual at 0x778000
-  _bmp_bpl dd ?        ; bytes per line
-  _bmp_dpl dd ?        ; dwords per line
-  _bmp_zb  dd ?        ; bytes filled by zeroes at the end of a scanline
- align 32
-  raw_data:
-end virtual
-
-bmp2raw:
-; esi = to bmp data (source)
-; edi = to raw data (destination)
-    cmp   [esi+bmp_header.type],'BM'     ; check if bmp file is really loaded
-    jne   .finish
-    mov   edx,esi
-
-    mov   eax,[edx+bmp_header.width]
-    imul  eax,3
-    push  eax
-    test  eax,11b
-    jz    @f
-    add   eax,4
-  @@:
-    shr   eax,2
-    mov   [_bmp_dpl],eax
-    shl   eax,2
-    mov   [_bmp_bpl],eax
-    pop   ebx
-    sub   eax,ebx
-    mov   [_bmp_zb],eax
-
-    add   esi,bmp_data
-    mov   eax,[_bmp_bpl]
-    imul  eax,[edx+bmp_header.height]
-    add   esi,eax
-    mov   ebx,[edx+bmp_header.height]    ; ebx = y
-    cld
-    .y_begin:
-       sub   esi,[_bmp_bpl]
-       push  esi
-       mov   ecx,[_bmp_dpl]
-       rep   movsd
-       pop   esi
-       sub   edi,[_bmp_zb]
-    dec   ebx
-    jne   .y_begin
-
-.finish:
-    ret
-
-
-; BMP support by Ivan Poddubny
-; 1) load LEFT.BMP
-;   a) _skinleftw = bmp_width
-;   b) _skinleft = 0
-;   c) _refleft = 0x778000
-;   d) convert
-; 2) load BASE.BMP
-;   a) _skinbasew = bmp_width
-;   b) _skinbase = _skinleftw
-;   c) _refbase = _refleft+sizeof(left_raw_converted)
-;   d) convert
-; 3) load OPER.BMP
-;   a) _skinoper = minus width from bmp file
-;   b) _skinoperw = width from bmp file
-;   c) _refoper = _refbase+sizeof(oper_raw_converted)
-;   d) convert
-; 4) set height
-
-load_bmp_file:
-; eax = pointer to filename
-    mov   ebx, 1
-    or    ecx, -1
-    mov   edx, 0x90000
-    mov   esi, 12
+load_skin_file:
+; eax = filename
+; edx = destination
+    mov   ebx,1
+    or    ecx,-1
+    mov   esi,12
     call  fileread
     ret
 
+struct SKIN_HEADER
+  .ident   dd ?
+  .version dd ?
+  .params  dd ?
+  .buttons dd ?
+  .bitmaps dd ?
+ends
 
-load_default_skin:
-    pushad
-    mov   eax, _fileleft
-    call  load_bmp_file
-    mov   eax, [0x90000+bmp_header.width]
-    mov   [_skinleftw], eax
-    mov   [_skinleft], 0
-    mov   edi, raw_data
-    mov   [_refleft], edi
-    mov   esi, 0x90000
-    call  bmp2raw
-    mov   eax, [_bmp_bpl]
-    imul  eax, [0x90000+bmp_header.height]
-    push  eax
+struct SKIN_PARAMS
+  .skin_height    dd ?
+  .margin.right   dw ?
+  .margin.left    dw ?
+  .margin.bottom  dw ?
+  .margin.top     dw ?
+  .colors.inner   dd ?
+  .colors.outer   dd ?
+  .colors.frame   dd ?
+  .colors_1.inner dd ?
+  .colors_1.outer dd ?
+  .colors_1.frame dd ?
+  .dtp.size       dd ?
+  .dtp.data       db 40 dup (?)
+ends
 
-    mov   eax, _filebase
-    call  load_bmp_file
-    mov   eax, [0x90000+bmp_header.width]
-    mov   [_skinbasew], eax
-    mov   eax, [_skinleftw]
-    mov   [_skinbase], eax
-    pop   eax
-    add   eax, [_refleft]
-    ; align to 32-byte boundary
-    test  eax, 11111b
-    jz    @f
-    shr   eax, 5
-    inc   eax
-    shl   eax, 5
-  @@:
-    ; save base address
-    mov   [_refbase], eax
-    ; convert
-    mov   edi, eax
-    mov   esi, 0x90000
-    call  bmp2raw
-    mov   eax, [_bmp_bpl]
-    imul  eax, [0x90000+bmp_header.height]
-    push  eax
+struct SKIN_BUTTONS
+  .type     dd ?
+  .pos:
+    .left   dw ?
+    .top    dw ?
+  .size:
+    .width  dw ?
+    .height dw ?
+ends
 
-    mov   eax, _fileoper
-    call  load_bmp_file
-    mov   eax, [0x90000+bmp_header.width]
-    mov   [_skinoperw], eax
-    neg   eax
-    mov   [_skinoper], eax
-    pop   eax
-    add   eax, [_refbase]
-    ; align to 32-byte boundary
-    test  eax, 11111b
-    jz    @f
-    shr   eax, 5
-    inc   eax
-    shl   eax, 5
-  @@:
-    mov   [_refoper], eax
-    mov   edi, eax
-    mov   esi, 0x90000
-    call  bmp2raw
-    mov   eax, [0x90000+bmp_header.height]
-    mov   [_skinh], eax
-    popad
+struct SKIN_BITMAPS
+  .kind  dw ?
+  .type  dw ?
+  .data  dd ?
+ends
 
-    ret
+load_skin:
+        pushad
+        mov     eax,_skin_file
+        mov     edx,skin_data
+        call    load_skin_file
+        call    parse_skin_data
+        popad
+        ret
 
-load_default_skin_1:          
-    pushad
-    mov   eax, _fileleft_1
-    call  load_bmp_file
-    mov   eax, [0x90000+bmp_header.width]
-    mov   [_skinleftw], eax
-    mov   [_skinleft_1], 0
-    mov   edi, raw_data+1000h
-    mov   [_refleft_1], edi
-    mov   esi, 0x90000
-    call  bmp2raw
-    mov   eax, [_bmp_bpl]
-    imul  eax, [0x90000+bmp_header.height]
-    push  eax
+parse_skin_data:
+        mov     ebp,skin_data
+        cmp     [ebp+SKIN_HEADER.ident],'SKIN'
+        jne     .exit
 
-    mov   eax, _filebase_1
-    call  load_bmp_file
-    mov   eax, [0x90000+bmp_header.width]
-    mov   [_skinbasew], eax
-    mov   eax, [_skinleftw]
-    mov   [_skinbase], eax
-    pop   eax
-    add   eax, [_refleft_1]
-    ; align to 32-byte boundary
-    test  eax, 11111b
-    jz    @f
-    shr   eax, 5
-    inc   eax
-    shl   eax, 5
-  @@:
-    ; save base address
-    mov   [_refbase_1], eax
-    ; convert
-    mov   edi, eax
-    mov   esi, 0x90000
-    call  bmp2raw
-    mov   eax, [_bmp_bpl]
-    imul  eax, [0x90000+bmp_header.height]
-    push  eax
+        mov     ebx,[ebp+SKIN_HEADER.params]
+        add     ebx,skin_data
+        mov     eax,[ebx+SKIN_PARAMS.skin_height]
+        mov     [_skinh],eax
+        mov     eax,[ebx+SKIN_PARAMS.colors.inner]
+        mov     [skin_active.colors.inner],eax
+        mov     eax,[ebx+SKIN_PARAMS.colors.outer]
+        mov     [skin_active.colors.outer],eax
+        mov     eax,[ebx+SKIN_PARAMS.colors.frame]
+        mov     [skin_active.colors.frame],eax
+        mov     eax,[ebx+SKIN_PARAMS.colors_1.inner]
+        mov     [skin_inactive.colors.inner],eax
+        mov     eax,[ebx+SKIN_PARAMS.colors_1.outer]
+        mov     [skin_inactive.colors.outer],eax
+        mov     eax,[ebx+SKIN_PARAMS.colors_1.frame]
+        mov     [skin_inactive.colors.frame],eax
+        lea     esi,[ebx+SKIN_PARAMS.dtp.data]
+        mov     edi,common_colours
+        mov     ecx,[ebx+SKIN_PARAMS.dtp.size]
+        and     ecx,127
+        cld
+        rep     movsb
+        mov     eax,dword[ebx+SKIN_PARAMS.margin.left]
+        mov     dword[_skinmargins+0],eax
+        mov     eax,dword[ebx+SKIN_PARAMS.margin.top]
+        mov     dword[_skinmargins+4],eax
 
-    mov   eax, _fileoper_1
-    call  load_bmp_file
-    mov   eax, [0x90000+bmp_header.width]
-    mov   [_skinoperw], eax
-    neg   eax
-    mov   [_skinoper], eax
-    pop   eax
-    add   eax, [_refbase_1]
-    ; align to 32-byte boundary
-    test  eax, 11111b
-    jz    @f
-    shr   eax, 5
-    inc   eax
-    shl   eax, 5
-  @@:
-    mov   [_refoper_1], eax
-    mov   edi, eax
-    mov   esi, 0x90000
-    call  bmp2raw
-    mov   eax, [0x90000+bmp_header.height]
-    mov   [_skinh], eax
-    popad
-    ret
+        mov     ebx,[ebp+SKIN_HEADER.bitmaps]
+        add     ebx,skin_data
+  .lp1: cmp     dword[ebx],0
+        je      .end_bitmaps
+        movzx   eax,[ebx+SKIN_BITMAPS.kind]
+        movzx   ecx,[ebx+SKIN_BITMAPS.type]
+        dec     eax
+        jnz     .not_left
+        xor     eax,eax
+        mov     edx,skin_active.left.data
+        or      ecx,ecx
+        jnz     @f
+        mov     edx,skin_inactive.left.data
+    @@: jmp     .next_bitmap
+  .not_left:
+        dec     eax
+        jnz     .not_oper
+        mov     esi,[ebx+SKIN_BITMAPS.data]
+        add     esi,skin_data
+        mov     eax,[esi+0]
+        neg     eax
+        mov     edx,skin_active.oper.data
+        or      ecx,ecx
+        jnz     @f
+        mov     edx,skin_inactive.oper.data
+    @@: jmp     .next_bitmap
+  .not_oper:
+        dec     eax
+        jnz     .not_base
+        mov     eax,[skin_active.left.width]
+        mov     edx,skin_active.base.data
+        or      ecx,ecx
+        jnz     @f
+        mov     eax,[skin_inactive.left.width]
+        mov     edx,skin_inactive.base.data
+    @@: jmp     .next_bitmap
+  .not_base:
+        add     ebx,8
+        jmp     .lp1
+  .next_bitmap:
+        mov     ecx,[ebx+SKIN_BITMAPS.data]
+        add     ecx,skin_data
+        mov     [edx+4],eax
+        mov     eax,[ecx+0]
+        mov     [edx+8],eax
+        add     ecx,8
+        mov     [edx+0],ecx
+        add     ebx,8
+        jmp     .lp1
+  .end_bitmaps:
+
+        mov     ebx,[ebp+SKIN_HEADER.buttons]
+        add     ebx,skin_data
+  .lp2: cmp     dword[ebx],0
+        je      .end_buttons
+        mov     eax,[ebx+SKIN_BUTTONS.type]
+        dec     eax
+        jnz     .not_close
+        mov     edx,skin_btn_close
+        jmp     .next_button
+  .not_close:
+        dec     eax
+        jnz     .not_minimize
+        mov     edx,skin_btn_minimize
+        jmp     .next_button
+  .not_minimize:
+        add     ebx,12
+        jmp     .lp2
+  .next_button:
+        movsx   eax,[ebx+SKIN_BUTTONS.left]
+        mov     [edx+SKIN_BUTTON.left],eax
+        movsx   eax,[ebx+SKIN_BUTTONS.top]
+        mov     [edx+SKIN_BUTTON.top],eax
+        movsx   eax,[ebx+SKIN_BUTTONS.width]
+        mov     [edx+SKIN_BUTTON.width],eax
+        movsx   eax,[ebx+SKIN_BUTTONS.height]
+        mov     [edx+SKIN_BUTTON.height],eax
+        add     ebx,12
+        jmp     .lp2
+  .end_buttons:
+
+  .exit:
+        ret
 
 drawwindow_IV:
 ;param1 - aw_yes
@@ -248,6 +184,12 @@ drawwindow_IV:
         push  edx
 
         mov   edi,[esp]                              ; RECTANGLE
+
+        mov     ebp,skin_active
+        cmp     byte [esp+32+4+4],0
+        jne     @f
+        mov     ebp,skin_inactive
+     @@:
 
         mov   eax,[edi+0]
         shl   eax,16
@@ -260,7 +202,7 @@ drawwindow_IV:
 ;        mov   esi,[edi+24]
 ;        shr   esi,1
 ;        and   esi,0x007f7f7f
-        mov   esi,[_coloroutborder]
+        mov   esi,[ebp+SKIN_DATA.colors.outer]
         call  draw_rectangle
         mov   ecx,3
       _dw3l:
@@ -270,11 +212,11 @@ drawwindow_IV:
         js    no_skin_add_button
         test  bx,bx
         js    no_skin_add_button
-        mov   esi,[_colorframe] ;[edi+24]
+        mov   esi,[ebp+SKIN_DATA.colors.frame] ;[edi+24]
         call  draw_rectangle
         dec   ecx
         jnz   _dw3l
-        mov   esi,[_colorborder]
+        mov   esi,[ebp+SKIN_DATA.colors.inner]
         add   eax,1*65536-1
         add   ebx,1*65536-1
         test  ax,ax
@@ -285,46 +227,37 @@ drawwindow_IV:
 
         mov   esi,[esp]
         mov   eax,[esi+8]    ; window width
-        mov   edx,[_skinleft]
+        mov   edx,[ebp+SKIN_DATA.left.left]
         shl   edx,16
-        mov   ecx,[_skinleftw]
+        mov   ecx,[ebp+SKIN_DATA.left.width]
         shl   ecx,16
         add   ecx,[_skinh]
 
-        cmp   byte [esp+32+4+4],1
-        mov   ebx, [_refleft_1]
-        jne   @f
-        mov   ebx,[_refleft]
-     @@:
+        mov   ebx, [ebp+SKIN_DATA.left.data]
         call  sys_putimage
 
         mov   esi,[esp]
         mov   eax,[esi+8]
-        sub   eax,[_skinleftw]
-        sub   eax,[_skinoperw]
-        cmp   eax,[_skinbase]
+        sub   eax,[ebp+SKIN_DATA.left.width]
+        sub   eax,[ebp+SKIN_DATA.oper.width]
+        cmp   eax,[ebp+SKIN_DATA.base.left]
         jng   non_base
         xor   edx,edx
-        mov   ebx,[_skinbasew]
+        mov   ebx,[ebp+SKIN_DATA.base.width]
         div   ebx
 
         inc   eax
 
-        cmp   byte [esp+32+4+4], 1
-        mov   ebx,[_refbase_1]
-        jne   @f
-        mov   ebx,[_refbase]
-     @@:
-
-        mov   ecx,[_skinbasew]
+        mov   ebx,[ebp+SKIN_DATA.base.data]
+        mov   ecx,[ebp+SKIN_DATA.base.width]
         shl   ecx,16
         add   ecx,[_skinh]
-        mov   edx,[_skinbase]
-        sub   edx,[_skinbasew]
+        mov   edx,[ebp+SKIN_DATA.base.left]
+        sub   edx,[ebp+SKIN_DATA.base.width]
         shl   edx,16
       baseskinloop:
         shr   edx,16
-        add   edx,[_skinbasew]
+        add   edx,[ebp+SKIN_DATA.base.width]
         shl   edx,16
 
         push  eax ebx ecx edx
@@ -337,16 +270,12 @@ drawwindow_IV:
 
         mov   esi,[esp]
         mov   edx,[esi+8]
-        sub   edx,[_skinoperw]
+        sub   edx,[ebp+SKIN_DATA.oper.width]
         inc   edx
         shl   edx,16
-        cmp   byte [esp+32+4+4], 1
-        mov   ebx,[_refoper_1]
-        jne   @f
-        mov   ebx,[_refoper]
-     @@:
+        mov   ebx,[ebp+SKIN_DATA.oper.data]
 
-        mov   ecx,[_skinoperw]
+        mov   ecx,[ebp+SKIN_DATA.oper.width]
         shl   ecx,16
         add   ecx,[_skinh]
         call  sys_putimage
@@ -369,6 +298,7 @@ drawwindow_IV:
         call  [drawbar]
       _noinside2:
 
+;* close button
         mov   edi,[0xfe88]
         movzx eax,word [edi]
         cmp   eax,1000
@@ -386,23 +316,25 @@ drawwindow_IV:
         mov   bx,1
         mov   [eax],bx
         add   eax,2         ; x start
+        xor   ebx,ebx
+        cmp   [skin_btn_close.left],0
+        jge   _bCx_at_right
         mov   ebx,[esp]
         mov   ebx,[ebx+8]
-        cmp   [_buttonCx],0
-        jg    _bCx_at_right
-        mov   ebx,[_buttonCw]    ; ebx will be 0 in next instruction
+        inc   ebx
       _bCx_at_right:
-        sub   ebx,[_buttonCw]
-        sub   ebx,[_buttonCx]
+        add   ebx,[skin_btn_close.left]
         mov   [eax],bx
         add   eax,2         ; x size
-        mov   ebx,[_buttonCw]
+        mov   ebx,[skin_btn_close.width]
+        dec   ebx
         mov   [eax],bx
         add   eax,2         ; y start
-        mov   ebx,[_buttonCy]
+        mov   ebx,[skin_btn_close.top]
         mov   [eax],bx
         add   eax,2         ; y size
-        mov   ebx,[_buttonCh]
+        mov   ebx,[skin_btn_close.height]
+        dec   ebx
         mov   [eax],bx
 
 ;* minimize button
@@ -423,25 +355,26 @@ drawwindow_IV:
         mov   bx,65535 ;999
         mov   [eax],bx
         add   eax,2         ; x start
+        xor   ebx,ebx
+        cmp   [skin_btn_minimize.left],0
+        jge   _bMx_at_right
         mov   ebx,[esp]
         mov   ebx,[ebx+8]
-        cmp   [_buttonMx],0
-        jg    _bMx_at_right
-        mov   ebx,[_buttonMw]    ; ebx will be 0 in next instruction
+        inc   ebx
       _bMx_at_right:
-        sub   ebx,[_buttonMw]
-        sub   ebx,[_buttonMx]
+        add   ebx,[skin_btn_minimize.left]
         mov   [eax],bx
         add   eax,2         ; x size
-        mov   ebx,[_buttonMw]
+        mov   ebx,[skin_btn_minimize.width]
+        dec   ebx
         mov   [eax],bx
         add   eax,2         ; y start
-        mov   ebx,[_buttonMy]
+        mov   ebx,[skin_btn_minimize.top]
         mov   [eax],bx
         add   eax,2         ; y size
-        mov   ebx,[_buttonMh]
+        mov   ebx,[skin_btn_minimize.height]
+        dec   ebx
         mov   [eax],bx
-;* minimize button
 
       no_skin_add_button:
 
@@ -449,5 +382,4 @@ drawwindow_IV:
         popa
 
         ret  4
-
 

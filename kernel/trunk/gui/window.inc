@@ -345,12 +345,6 @@ display_settings:
         cmp     eax,5       ; get screen workarea
         jne     no_get_workarea
         popad
-
-        mov   eax,[0xfe00]
-        mov   [screen_workarea.right],eax
-        mov   eax,[0xfe04]
-        mov   [screen_workarea.bottom],eax
-
         mov     eax,[screen_workarea.left-2]
         mov     ax,word[screen_workarea.right]
         mov     [esp+36],eax
@@ -362,32 +356,48 @@ display_settings:
 
         cmp     eax,6       ; set screen workarea
         jne     no_set_workarea
-        movzx   eax,word[esp+16+2]
-        movzx   ebx,word[esp+16]
-        cmp     eax,[0xFE00]
-        jae     .exit
-        cmp     ebx,[0xFE00]
-        ja      .exit
+        movsx   eax,word[esp+16+2]
+        movsx   ebx,word[esp+16]
         cmp     eax,ebx
-        jae     .exit
+        jge     .lp1
+        or      eax,eax;[0xFE00]
+        jl      @f
         mov     [screen_workarea.left],eax
+    @@: cmp     ebx,[0xFE00]
+        jg      .lp1
         mov     [screen_workarea.right],ebx
-        movzx   eax,word[esp+24+2]
-        movzx   ebx,word[esp+24]
-        cmp     eax,[0xFE04]
-        jae     .exit
-        cmp     ebx,[0xFE04]
-        ja      .exit
+  .lp1: movsx   eax,word[esp+24+2]
+        movsx   ebx,word[esp+24]
         cmp     eax,ebx
-        jae     .exit
+        jge     .lp2
+        or      eax,eax;[0xFE04]
+        jl      @f
         mov     [screen_workarea.top],eax
+    @@: cmp     ebx,[0xFE04]
+        jg      .lp2
         mov     [screen_workarea.bottom],ebx
+  .lp2: call	repos_windows
+	call	calculatescreen
+;	jmp	redraw_screen_direct
+    .exit:
+        popad
+        ret
+   no_set_workarea:
 
+     popad
+     ret
+
+
+repos_windows:
         mov     ecx,[0x3004]
         mov     esi,0x20*2
+	mov	byte[0x0000fff0],1
         dec     ecx
-    @@: test    [esi+WDATA.fl_wstate],WSTATE_MAXIMIZED
-        jz      .lp1
+        jge	@f
+        ret
+    @@: mov	[esi+WDATA.fl_redraw],1
+	test    [esi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jz      .lp2
         mov     eax,[screen_workarea.left]
         mov     [esi+WDATA.left],eax
         sub     eax,[screen_workarea.right]
@@ -402,126 +412,39 @@ display_settings:
         mov     [esi+WDATA.height],eax
   .lp1: add     esi,0x20
         loop    @b
-        call    calculatescreen
-        jmp     redraw_screen_direct
-    .exit:
-        popad
         ret
-   no_set_workarea:
-
-     popad
-     ret
+  .lp2: mov	eax,[esi+WDATA.left]
+	add	eax,[esi+WDATA.width]
+	mov	ebx,[0x0000fe00]
+;	inc	ebx
+	cmp	eax,ebx
+	jle	.lp4
+	mov	eax,[esi+WDATA.width]
+	sub	eax,ebx
+	jle	.lp3
+	mov	[esi+WDATA.width],ebx
+  .lp3: sub	ebx,[esi+WDATA.width]
+	mov	[esi+WDATA.left],ebx
+  .lp4: mov	eax,[esi+WDATA.top]
+	add	eax,[esi+WDATA.height]
+	mov	ebx,[0x0000fe04]
+;	inc	ebx
+	cmp	eax,ebx
+	jle	.lp6
+	mov	eax,[esi+WDATA.height]
+	sub	eax,ebx
+	jle	.lp5
+	mov	[esi+WDATA.height],ebx
+  .lp5: sub	ebx,[esi+WDATA.height]
+	mov	[esi+WDATA.top],ebx
+  .lp6: add     esi,0x20
+        loop    @b
+	ret
 
 uglobal
   common_colours:
      times 128 db 0x0
 endg
-
-check_window_move_request:
-
-        pushad
-
-        mov   edi,[window_move_pr]    ; requestor process base
-
-        cmp   edi,0
-        je    window_move_return
-
-        shl   edi,5
-        add   edi,window_data
-
-        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
-        jnz     window_move_return
-
-        push  dword [edi+0]           ; save old coordinates
-        push  dword [edi+4]
-        push  dword [edi+8]
-        push  dword [edi+12]
-
-        mov   eax,[window_move_eax]
-        mov   ebx,[window_move_ebx]
-        mov   ecx,[window_move_ecx]
-        mov   edx,[window_move_edx]
-
-        cmp   eax,-1                  ; set new position and size
-        je    no_x_reposition
-        mov   [edi+0],eax
-      no_x_reposition:
-        cmp   ebx,-1
-        je    no_y_reposition
-        mov   [edi+4],ebx
-      no_y_reposition:
-
-        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
-        jnz     no_y_resizing
-
-        cmp   ecx,-1
-        je    no_x_resizing
-        mov   [edi+8],ecx
-      no_x_resizing:
-        cmp   edx,-1
-        je    no_y_resizing
-        mov   [edi+12],edx
-      no_y_resizing:
-
-        call  check_window_position
-
-        pushad                       ; save for window fullscreen/resize
-        mov   esi,edi
-        sub   edi,window_data
-        shr   edi,5
-        shl   edi,8
-        add   edi,0x80000+0x90
-        mov   ecx,4
-        cld
-        rep   movsd
-        popad
-
-        pushad                       ; calculcate screen at new position
-        mov   eax,[edi+00]
-        mov   ebx,[edi+04]
-        mov   ecx,[edi+8]
-        mov   edx,[edi+12]
-        add   ecx,eax
-        add   edx,ebx
-        call  calculatescreen
-        popad
-
-        pop   edx                   ; calculcate screen at old position
-        pop   ecx
-        pop   ebx
-        pop   eax
-        add   ecx,eax
-        add   edx,ebx
-        mov   [dlx],eax             ; save for drawlimits
-        mov   [dly],ebx
-        mov   [dlxe],ecx
-        mov   [dlye],edx
-        call  calculatescreen
-
-        mov   [edi+31],byte 1       ; flag the process as redraw
-
-        mov   eax,edi               ; redraw screen at old position
-        xor   esi,esi
-        call  redrawscreen
-
-        mov   [0xfff5],byte 0 ; mouse pointer
-        mov   [0xfff4],byte 0 ; no mouse under
-        mov   [0xfb44],byte 0 ; react to mouse up/down
-
-        mov   ecx,10          ; wait 1/10 second
-      wmrl3:
-        call  [draw_pointer]
-        mov   eax,1
-        call  delay_hs
-        loop  wmrl3
-
-        mov   [window_move_pr],0
-
-      window_move_return:
-
-        popad
-
-        ret
 
 
 
