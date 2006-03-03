@@ -847,7 +847,7 @@ left_button:
     int   0x40
     mov   edx, eax
     shr   edx, 16
-    mov   ebx, -1
+    xor   ebx, ebx
     mov   ecx, -1
     mov   esi, -1
     mcall 67 ; x0 y0 xs ys
