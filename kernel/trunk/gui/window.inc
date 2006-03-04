@@ -316,7 +316,9 @@ display_settings:
      jne  no_com_colours
      mov  [windowtypechanged],dword 1
      mov  esi,[0x3010]
-     add  esi,[esi+0x10]
+     add  esi,0x10
+     add  ebx,[esi]
+     mov  esi,ebx
      mov  edi,common_colours
      and  ecx,127
      cld

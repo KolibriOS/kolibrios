@@ -173,6 +173,11 @@ sys_button:
         push  ecx
         push  edx
 
+        or    ax,ax
+        jle   noaddbutt
+        or    bx,bx
+        jle   noaddbutt
+
         test  ecx,0x40000000
         jnz   button_no_draw
 

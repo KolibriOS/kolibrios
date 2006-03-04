@@ -56,9 +56,14 @@ load_skin:
         mov     [_skinh],22
         mov     eax,_skin_file
         mov     edx,skin_data
-        mov     [ebp+SKIN_HEADER.ident],'????'
+        mov     [edx+SKIN_HEADER.ident],'????'
         call    load_skin_file
-        call    parse_skin_data
+        cmp     eax,ERROR_SUCCESS
+        je      @f
+        cmp     eax,ERROR_END_OF_FILE
+        jne     .exit
+    @@: call    parse_skin_data
+  .exit:
         popad
         ret
 
@@ -66,6 +71,12 @@ parse_skin_data:
         mov     ebp,skin_data
         cmp     [ebp+SKIN_HEADER.ident],'SKIN'
         jne     .exit
+
+        mov     edi,skin_udata
+        mov     ecx,(skin_udata.end-skin_udata)/4
+        xor     eax,eax
+        cld
+        rep	stosd
 
         mov     ebx,[ebp+SKIN_HEADER.params]
         add     ebx,skin_data
@@ -87,7 +98,6 @@ parse_skin_data:
         mov     edi,common_colours
         mov     ecx,[ebx+SKIN_PARAMS.dtp.size]
         and     ecx,127
-        cld
         rep     movsb
         mov     eax,dword[ebx+SKIN_PARAMS.margin.right]
         mov     dword[_skinmargins+0],eax
@@ -233,6 +243,19 @@ drawwindow_IV:
         js    no_skin_add_button
         call  draw_rectangle
 
+        cmp   dword[skin_data],'SKIN'
+        je    @f
+        xor   eax,eax
+        xor   ebx,ebx
+        mov   esi,[esp]
+        mov   ecx,[esi+8]
+        inc   ecx
+        mov   edx,[_skinh]
+        mov   edi,[common_colours+4] ; standard grab color
+        call  [drawbar]
+        jmp   draw_clientbar
+    @@:
+
         mov   esi,[esp]
         mov   eax,[esi+8]    ; window width
         mov   edx,[ebp+SKIN_DATA.left.left]
@@ -289,6 +312,8 @@ drawwindow_IV:
         add   ecx,[_skinh]
         call  sys_putimage_with_check
 
+    draw_clientbar:
+
         mov   esi,[esp]
 
         mov   edx,[esi+04]                       ; WORK AREA
@@ -306,6 +331,9 @@ drawwindow_IV:
         mov   edi,[esi+16]
         call  [drawbar]
       _noinside2:
+
+        cmp   dword[skin_data],'SKIN'
+        jne   no_skin_add_button
 
 ;* close button
         mov   edi,[0xfe88]

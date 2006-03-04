@@ -32,6 +32,7 @@ uglobal
 
 align 4
 
+skin_udata:
   _skinh            dd ?
 
   _skinmargins      rw 4
@@ -43,5 +44,9 @@ align 4
   skin_inactive     SKIN_DATA
 
   _skin_file        rb 256
+
+align 4
+
+skin_udata.end:
 
 endg
