@@ -3901,6 +3901,15 @@ drawbackground:
 
 
 sys_putimage:
+     test  ecx,0x80008000
+     jnz   .exit
+     test  ecx,0x0000FFFF
+     jz    .exit
+     test  ecx,0xFFFF0000
+     jnz   @f
+  .exit:
+     ret
+ @@:
 ;     inc   [mouse_pause]
      cmp   [0xfe0c],word 0x12
      jne   spiv20

@@ -53,8 +53,10 @@ ends
 
 load_skin:
         pushad
+        mov     [_skinh],22
         mov     eax,_skin_file
         mov     edx,skin_data
+        mov     [ebp+SKIN_HEADER.ident],'????'
         call    load_skin_file
         call    parse_skin_data
         popad
@@ -176,6 +178,12 @@ parse_skin_data:
   .exit:
         ret
 
+sys_putimage_with_check:
+	or	ebx,ebx
+	jz	@f
+	call	sys_putimage
+    @@: ret
+
 drawwindow_IV:
 ;param1 - aw_yes
 
@@ -234,7 +242,7 @@ drawwindow_IV:
         add   ecx,[_skinh]
 
         mov   ebx, [ebp+SKIN_DATA.left.data]
-        call  sys_putimage
+        call  sys_putimage_with_check
 
         mov   esi,[esp]
         mov   eax,[esi+8]
@@ -243,8 +251,9 @@ drawwindow_IV:
         cmp   eax,[ebp+SKIN_DATA.base.left]
         jng   non_base
         xor   edx,edx
-        mov   ebx,[ebp+SKIN_DATA.base.width]
-        div   ebx
+        mov   ecx,[ebp+SKIN_DATA.base.width]
+        jecxz non_base
+        div   ecx
 
         inc   eax
 
@@ -261,7 +270,7 @@ drawwindow_IV:
         shl   edx,16
 
         push  eax ebx ecx edx
-        call  sys_putimage
+        call  sys_putimage_with_check
         pop   edx ecx ebx eax
 
         dec   eax
@@ -278,7 +287,7 @@ drawwindow_IV:
         mov   ecx,[ebp+SKIN_DATA.oper.width]
         shl   ecx,16
         add   ecx,[_skinh]
-        call  sys_putimage
+        call  sys_putimage_with_check
 
         mov   esi,[esp]
 
