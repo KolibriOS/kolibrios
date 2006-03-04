@@ -268,6 +268,13 @@ display_settings:
 ;          input  : ecx = [left]*65536+[right]
 ;                   edx = [top]*65536+[bottom]
 ;          output : nothing
+;    eax = 7         ; get skin margins
+;          input  : nothing
+;          output : eax = [left]*65536+[right]
+;                   ebx = [top]*65536+[bottom]
+;    eax = 8         ; set window skin
+;          input  : ecx = pointer to file info block
+;          output : eax = FS error code
 
 
      pushad
@@ -309,9 +316,7 @@ display_settings:
      jne  no_com_colours
      mov  [windowtypechanged],dword 1
      mov  esi,[0x3010]
-     add  esi,0x10
-     add  ebx,[esi]
-     mov  esi,ebx
+     add  esi,[esi+0x10]
      mov  edi,common_colours
      and  ecx,127
      cld
@@ -383,6 +388,55 @@ display_settings:
         popad
         ret
    no_set_workarea:
+
+        cmp     eax,7       ; get skin margins
+        jne     no_get_skinmargins
+        popad
+        mov     eax,dword[_skinmargins+0]
+        mov     [esp+36],eax
+        mov     eax,dword[_skinmargins+4]
+        mov     [esp+24],eax
+        ret
+   no_get_skinmargins:
+
+        cmp     eax,8       ; set window skin
+        jne     no_set_skin
+        mov     eax,ebx
+        mov     edi,[0x3010]
+        add     ebx,[edi+0x10]        ; abs start of info block
+        pushd   [ebx+0] [ebx+4] [ebx+8] [ebx+12]
+        mov     dword[ebx+0],0        ; read
+        mov     dword[ebx+4],0        ; from the beginning
+        mov     dword[ebx+8],64       ; 32 KBytes maximum
+        mov     ecx,skin_data+64*512
+        sub     ecx,[edi+0x10]
+        mov     dword[ebx+12],ecx     ; destination
+        push	eax
+        pushad
+        call    file_system
+        popad
+        pop	eax
+        popd    [ebx+12] [ebx+8] [ebx+4] [ebx+0]
+        cmp     eax,ERROR_SUCCESS
+        je      @f
+        cmp     eax,ERROR_END_OF_FILE
+        jne     .exit
+    @@: cmp     [skin_data+64*512+SKIN_HEADER.ident],'SKIN'
+        mov     eax,ERROR_UNKNOWN_FS
+        jne     .exit
+        mov     esi,skin_data+64*512
+        mov     edi,skin_data
+        mov     ecx,(64*512)/4
+        rep     movsd
+        call    parse_skin_data
+        call    calculatescreen
+        mov     dword[esp+32+36],0
+        jmp     redraw_screen_direct
+  .exit:
+        mov     [esp+32+36],eax
+        popad
+        ret
+   no_set_skin:
 
      popad
      ret
@@ -1324,8 +1378,8 @@ checkwindows:
 
     @@: mov     [reposition],cl
 
-        cmp   [reposition],1         ; save new X and Y start
-        jne   no_xy_save
+        cmp   [reposition],1         ; save new position and size
+        jne   no_bounds_save
         ; <IP 28.08.2004>
         push  esi edi ecx
         mov   esi,edi
@@ -1333,12 +1387,12 @@ checkwindows:
         shr   edi,5
         shl   edi,8
         add   edi,0x80000+0x90
-        mov   ecx,2
+        mov   ecx,4
         cld
         rep   movsd
         pop   ecx edi esi
         ; </IP 28.08.2004>
-      no_xy_save:
+      no_bounds_save:
 
         pushad                             ; WINDOW SHADE/FULLSCREEN
 

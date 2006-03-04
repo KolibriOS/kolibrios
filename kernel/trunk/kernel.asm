@@ -4600,6 +4600,7 @@ align 4
 syscall_drawrect:                       ; DrawRect
 
      mov   edi,ecx
+     and   edi,0x80FFFFFF
      test  ax,ax
      je    drectr
      test  bx,bx

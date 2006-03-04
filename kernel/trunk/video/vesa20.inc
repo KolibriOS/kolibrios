@@ -305,8 +305,10 @@ __sys_putpixel:
         test  edi,1                 ; force ?
         jnz   .forced
       ; not forced:
+        push  ecx               ; save 24th bit in case negative pixel wanted
         call  checkpixel
         test  ecx,ecx
+        pop   ecx
         jnz   .exit
       .forced:
         cmp   [ScreenWidth], eax

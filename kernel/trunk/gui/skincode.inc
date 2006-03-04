@@ -87,9 +87,9 @@ parse_skin_data:
         and     ecx,127
         cld
         rep     movsb
-        mov     eax,dword[ebx+SKIN_PARAMS.margin.left]
+        mov     eax,dword[ebx+SKIN_PARAMS.margin.right]
         mov     dword[_skinmargins+0],eax
-        mov     eax,dword[ebx+SKIN_PARAMS.margin.top]
+        mov     eax,dword[ebx+SKIN_PARAMS.margin.bottom]
         mov     dword[_skinmargins+4],eax
 
         mov     ebx,[ebp+SKIN_HEADER.bitmaps]
