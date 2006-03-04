@@ -197,17 +197,30 @@ macro mov arg1,arg2
  }
 
 
-macro struct name
+; structure definition helper
+macro struct name, [arg]
  {
-  virtual at 0
-   name name
-   sizeof.#name = $ - name
-  end virtual
+  common
+   name@struct equ name
+   struc name arg {
  }
 
-; structures used in MeOS
-struc process_information
+macro struct_helper name
  {
+  match xname,name
+  \{
+   virtual at 0
+   xname xname
+   sizeof.#xname = $ - xname
+   name equ sizeof.#xname
+   end virtual
+  \}
+ }
+
+ends fix } struct_helper name@struct
+
+; structures used in MeOS
+struct process_information
   .cpu_usage               dd ?  ; +0
   .window_stack_position   dw ?  ; +4
   .window_stack_value      dw ?  ; +6
@@ -222,11 +235,9 @@ struc process_information
   .y_size                  dd ?  ; +46
   .slot_state              dw ?  ; +50
   rb (1024-52)
- }
-struct process_information
+ends
 
-struc system_colors
- {
+struct system_colors
   .frame            dd ?
   .grab             dd ?
   .grab_button      dd ?
@@ -237,8 +248,7 @@ struc system_colors
   .work_button_text dd ?
   .work_text        dd ?
   .work_graph       dd ?
- }
-struct system_colors
+ends
 
 
 ; constants

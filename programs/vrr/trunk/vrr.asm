@@ -258,12 +258,10 @@ restore_mode:
     push eax
     push ebx
     push edx
-    call kill_all
     mov eax,21
     mov ebx,13
     mov ecx,4
     int 40h
-    call ref_screen
     pop edx
     pop ecx
     pop eax
@@ -279,7 +277,6 @@ set_my_mode:
     mov eax,[currvm]
     mov [oldvm],eax
     mov [currvm],edx
-    call kill_all
     pop edx
     push edx
     mov eax,21
@@ -289,7 +286,6 @@ set_my_mode:
     pop edx
     pop ebx
     pop ecx
-    call ref_screen
     retn
    
 ; IN: eax = 0/1  -  -/+ 1Hz
@@ -305,23 +301,6 @@ inc_dec_rate:
     pop edx
     pop ecx
     pop ebx
-    retn
-   
-   
-ref_screen:
-    push eax
-    push ebx
-    push ecx
-    mov eax,5
-    mov ebx,100
-    int 40h
-    mov eax,19
-    mov ebx,strt
-    xor ecx,ecx
-    int 40h
-    pop ecx
-    pop ebx
-    pop eax
     retn
    
 get_pid:
@@ -352,28 +331,6 @@ get_vert_rate:
     rol ecx,16
     mov [currvm],ecx
     retn
-   
-kill_all:
-    call get_pid
-    mov ecx,[totp]
-ka_loc_00:
-    push ecx
-    push ecx
-    mov eax,9
-    mov ebx,buffer
-    int 40h
-    pop ecx
-    mov eax,[mypid]
-    cmp eax,[ebx+30]
-    je ka_loc_02
-    mov eax,18
-    mov ebx,2
-    int 40h
-ka_loc_02:
-    pop ecx
-    loop ka_loc_00
-    retn
-   
    
 get_initial_videomode:
     retn

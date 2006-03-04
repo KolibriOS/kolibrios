@@ -30,12 +30,6 @@ include    "macros.inc"
 db "MenuetOS RE #8",13,10
 
 START:
-   ; load system colors
-   mcall 58, read_info
-
-   ; set system colors
-   mcall 48, 2, sc, sizeof.system_colors
-
    ; set stretch backgound
    mcall 15, 4, 2
 
@@ -96,14 +90,6 @@ START:
 
 ;------------------------------------------------------------------------------
 
-read_info:
-  .mode        dd 0
-  .start_block dd 0
-  .blocks      dd 1
-  .address     dd sc
-  .workarea    dd work_area
-  .path        db "/rd/1/myblue.dtp",0
-
 start_info:
   .mode        dd 16
                dd 0
@@ -121,9 +107,6 @@ boot           db 'BOOT',0
 
 I_END:
 ;rd 256
-
-sc  system_colors
- rb 512-40
 
 align 32
 work_area:

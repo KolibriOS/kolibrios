@@ -7,28 +7,28 @@
 use32
   org  0x0
   db   'MENUET01'   ; 8 byte id
-  dd   0x01	    ; required OS version
-  dd   START	    ; program start
-  dd   I_END	    ; program image size
-  dd   0xB000	    ; reguired amount of memory - 64 Kb
-  dd   0xA000	    ; esp
-  dd   0x0,0x0	    ; param, icon
+  dd   0x01         ; required OS version
+  dd   START        ; program start
+  dd   I_END        ; program image size
+  dd   0xB000       ; reguired amount of memory - 64 Kb
+  dd   0xA000       ; esp
+  dd   0x0,0x0      ; param, icon
 
 include 'lang.inc'
 include 'macros.inc'
 
-width		dd  305
-buttons 	dd    1  ;  0 no frames  ; 1 frames
-soften_up	dd    1  ;  0 no         ; 1 yes
-soften_down	dd    0  ;  0 no         ; 1 yes
-minimize_left	dd    1
-minimize_right	dd    1
-icons_position	dd   95
-menu_enable	dd    1
-setup_enable	dd    0
-graph_text	dd    1
-soften_middle	dd    1  ;  0 no         ; 1 yes
-icons		dd    1  ;  0 defaults   ; 1 activate
+width           dd  305
+buttons         dd    1  ;  0 no frames  ; 1 frames
+soften_up       dd    1  ;  0 no         ; 1 yes
+soften_down     dd    0  ;  0 no         ; 1 yes
+minimize_left   dd    1
+minimize_right  dd    1
+icons_position  dd   95
+menu_enable     dd    1
+setup_enable    dd    0
+graph_text      dd    1
+soften_middle   dd    1  ;  0 no         ; 1 yes
+icons           dd    1  ;  0 defaults   ; 1 activate
 
 dat  db  'PANEL   DAT'
 
@@ -61,19 +61,19 @@ begin:
     mov  ah,al
     and al,100000b
     cmp al,100000b
-    je	 change_start_end
+    je   change_start_end
     mov  al,ah
     and al,10000b
     cmp al,10000b
-    je	 change_start_end
+    je   change_start_end
     mov  al,ah
     and  al,1000b
     cmp  al,1000b
-    je	change_key_lang_1
+    je  change_key_lang_1
     mov  al,ah
     and  al,100b
     cmp  al,100b
-    je	change_key_lang_1
+    je  change_key_lang_1
     mov  al,ah
     and  al,1111b
     cmp  al,11b
@@ -90,7 +90,7 @@ change_key_lang_1:
     mov  al,ah
     and  al,11b
     cmp  al,01b
-    je	change_key_lang
+    je  change_key_lang
     cmp  al,10b
     jne  begin
 change_key_lang:
@@ -124,6 +124,7 @@ start_end:
 start_menu:
      mcall  18,12
      mov    [button_presssed_alt],eax
+    mov  [draw_window_1],1
 ;     mov    ecx,eax
 ;     mcall  47,0x40100, ,10 shl 16+5,0
 ;     mov    eax,ecx
@@ -159,11 +160,32 @@ start_menu:
      je     start_menu_application
      cmp   ah,83  ;62
      je  kill_active_application
+     cmp   ah,71 ;179
+     jne   no_test_179
+    cmp  [page_list],15
+    je     @f
+    inc  [page_list]
+    mov  [draw_window_1],1
+  @@:
+    jmp  begin
+
+  no_test_179:
+     cmp   ah,72 ;180
+     jne   no_test_180
+    cmp  [page_list],0
+    je     @f
+    dec  [page_list]
+    mov  [draw_window_1],1
+  @@:
+    jmp  begin
+
+  no_test_180:
+
      jmp    begin
 
 button_presssed_alt dd 0
 
-active_process	dd 0
+active_process  dd 0
 my_process  dd 0
 
 calendar_music:
@@ -188,21 +210,21 @@ menu_music:
     mcall 55,eax, , ,menumusic
     ret
 
-chlangmusic:	db 0x82,0x60,0x83,0x65,0x82,0x60,0
+chlangmusic:    db 0x82,0x60,0x83,0x65,0x82,0x60,0
 
-syslangmusic:	db 0x82,0x65,0x83,0x70,0x82,0x65,0
+syslangmusic:   db 0x82,0x65,0x83,0x70,0x82,0x65,0
 
-menumusic:	db 0x82,0x50,0x84,0x48,0x82,0x50,0x84,0x53,0x82,0x51,0
+menumusic:      db 0x82,0x50,0x84,0x48,0x82,0x50,0x84,0x53,0x82,0x51,0
 
-activatemusic:	db 0x83,0x30,0x85,0x60,0
+activatemusic:  db 0x83,0x30,0x85,0x60,0
 
-buttonmusic:	db 0x85,0x25,0x85,0x40,0
+buttonmusic:    db 0x85,0x25,0x85,0x40,0
 
-sysmetermusic:	db 0x85,0x35,0x85,0x45,0
+sysmetermusic:  db 0x85,0x35,0x85,0x45,0
 
-setupmusic:	db 0x85,0x40,0x85,0x50,0
+setupmusic:     db 0x85,0x40,0x85,0x50,0
 
-calendarmusic:	db 0x85,0x37,0x85,0x48,0
+calendarmusic:  db 0x85,0x37,0x85,0x48,0
 
 ;  .exit: mcall -1
 
@@ -224,7 +246,7 @@ START:
     mov  eax,0
   new_number:
     cmp  [esi],byte ';'
-    je	 number_ready
+    je   number_ready
     imul eax,10
     movzx ebx,byte [esi]
     sub  ebx,'0'
@@ -239,10 +261,13 @@ START:
     cmp  [esi],byte 'x'
     jne  new_number
 
-	mcall	48,5
-	mov	ecx,eax
-	lea	edx,[ebx-PANEL_HEIGHT-1]
-	mcall	48,6
+        mcall   14
+        mov     [screen_size],eax
+
+        mcall   48,5
+        mov     ecx,eax
+        lea     edx,[ebx-PANEL_HEIGHT-1]
+        mcall   48,6
 
     call set_variables
 
@@ -272,26 +297,42 @@ still:
     mov  ebx, 20
     int  0x40
 
-    cmp  eax,1		; redraw ?
-    jz	 red
-    cmp  eax,3		; button ?
-    jz	 button
+    cmp  eax,1          ; redraw ?
+    jz   red
+    cmp  eax,3          ; button ?
+    jz   button
 
     jmp  still
 
-  red:			 ; redraw window
+  red:                   ; redraw window
+
+        mcall   14
+        movzx   ecx,ax
+        mov     edx,eax
+        shr     edx,16
+        cmp     [screen_size.height],ax
+        jne     @f
+        rol     eax,16
+        cmp     [screen_size.width],ax
+        je      .lp1
+        rol     eax,16
+    @@: mov     [screen_size],eax
+        sub     ecx,PANEL_HEIGHT
+        mcall   67,0,,,PANEL_HEIGHT
+
+  .lp1:
     call draw_window
     call draw_info
     jmp  still
 
-  button:		 ; button
+  button:                ; button
     mov  eax,17
     int  0x40
 
     cmp  ah,50
-    jb	 no_activate
+    jb   no_activate
     cmp  ah,70
-    jg	 no_activate
+    jg   no_activate
 
     movzx ecx,byte ah
     sub  ecx,52
@@ -308,13 +349,13 @@ still:
   no_activate:
 
 
-    cmp  ah,101 	  ; minimize to left
-    je	 left_button
+    cmp  ah,101           ; minimize to left
+    je   left_button
 
-    cmp  ah,102 	  ; minimize to right
-    je	 right_button
+    cmp  ah,102           ; minimize to right
+    je   right_button
 
-    cmp  ah,byte 1	  ; start/terminate menu
+    cmp  ah,byte 1        ; start/terminate menu
     jnz  noselect
     call menu_handler
 ;    cmp  [music_type],0
@@ -323,7 +364,7 @@ still:
     jmp  still
   noselect:
 
-    cmp  ah,byte 2	       ; start calendar
+    cmp  ah,byte 2             ; start calendar
     jnz  noid15  ;noclock
     mov  eax, 19
     mov  ebx, file6
@@ -410,7 +451,7 @@ still:
     jmp  red
 
   noid19:
-    cmp  ah,20		   ; start system setup
+    cmp  ah,20             ; start system setup
     jnz  noid20
     mov  eax, 19
     mov  ebx, file_sys
@@ -419,6 +460,26 @@ still:
     call setup_music
 
  noid20:
+    cmp  ah,21
+    jnz  noid21
+    cmp  [page_list],15
+    je     @f
+    inc  [page_list]
+    jmp  red
+  @@:
+    jmp still
+
+ noid21:
+    cmp  ah,22
+    jnz  noid22
+    cmp  [page_list],0
+    je     @f
+    dec  [page_list]
+    jmp  red
+  @@:
+    jmp  still
+
+ noid22:
 
     jmp  still
 
@@ -449,6 +510,16 @@ draw_running_applications:
     mov  edi,0
     mov  ecx,2
     mov  [contrast],0
+    mov  eax,[max_applications]
+    mov  ebx,[page_list]
+    xor  edx,edx
+    mul  ebx
+    cmp  eax,0
+    je    @f
+    inc  eax
+  @@:
+    mov  [draw_start_position],eax
+
 
   newpr:
 
@@ -460,19 +531,26 @@ draw_running_applications:
     push ecx
 
     cmp  eax,ecx
-    jb	 norpl2
+    jb   norpl2
 
     cmp  byte [0x8000+10], '@'
-    je	 norpl
-    cmp  [0x8000+11],dword 'CON '
-    je	 norpl
+    je   norpl
+    cmp  [0x8000+10],dword 'ICON'
+    jne  .noicon
+    cmp  dword[0x8000+42],51
+    jne  .noicon
+    cmp  dword[0x8000+46],51
+    je   norpl
+  .noicon:
     cmp  [0x8000+11],dword 'ENU '
-    je	 norpl
+    je   norpl
 ;    cmp  [0x8000+12],dword 'NEL '
 ;    je   norpl
     cmp  [0x8000+10],dword '    '
-    je	 norpl
-
+    je   norpl
+    dec  [draw_start_position]
+    cmp  [draw_start_position],0
+    jg    norpl
     mov  eax,13
     mov  ebx,edi
     inc  ebx
@@ -504,7 +582,7 @@ draw_running_applications:
     inc  [contrast]
     and  [contrast],1
     cmp  [contrast],1
-    je	 contrast1
+    je   contrast1
     mov  edx,0x88ff
     jmp  contrast2
 contrast1:
@@ -549,7 +627,7 @@ contrast2:
     inc  ecx
 
     cmp  edi,[max_applications]
-    jb	 newpr
+    jb   newpr
 
   nompr:
 
@@ -561,6 +639,16 @@ contrast2:
 
 
 calculate_applications:
+
+    mov  eax,[max_applications]
+    mov  ebx,[page_list]
+    xor  edx,edx
+    mul  ebx
+    cmp  eax,0
+    je    @f
+    inc  eax
+  @@:
+    mov  [draw_start_position],eax
 
     mov  edi,app_list
     mov  ecx,20
@@ -578,15 +666,25 @@ calculate_applications:
     int  0x40
 
     cmp  byte [0x8000+10], '@'
-    je	 cnorpl
+    je   cnorpl
+    cmp  [0x8000+10],dword 'ICON'
+    jne  .noicon
+    cmp  dword[0x8000+42],51
+    jne  .noicon
+    cmp  dword[0x8000+46],51
+    je   cnorpl
+  .noicon:
     cmp  [0x8000+11],dword 'CON '
-    je	 cnorpl
+    je   cnorpl
     cmp  [0x8000+11],dword 'ENU '
-    je	 cnorpl
+    je   cnorpl
 ;    cmp  [0x8000+12],dword 'NEL '
 ;    je   cnorpl
     cmp  [0x8000+10],dword '    '
-    je	 cnorpl
+    je   cnorpl
+    dec  [draw_start_position]
+    cmp  [draw_start_position],0
+    jg     cnorpl
 
     mov  [app_list+edi*4],ecx
 
@@ -615,19 +713,19 @@ draw_application_buttons:
 
     cmp  eax,639
     jne  now1
-    mov  [max_applications],7	;6
+    mov  [max_applications],7   ;6
   now1:
     cmp  eax,799
     jne  now2
-    mov  [max_applications],10	;8
+    mov  [max_applications],9 ;10    ;8
   now2:
     cmp  eax,1023
     jne  now3
-    mov  [max_applications],13	;8
+    mov  [max_applications],12 ;13   ;8
   now3:
     cmp  eax,1279
     jne  now4
-    mov  [max_applications],18	;8
+    mov  [max_applications],17 ;18    ;8
   now4:
     mov  edi,1
 
@@ -636,14 +734,14 @@ draw_application_buttons:
     mov  eax,8
     mov  ebx,edi
     shl  ebx,16
-    imul ebx,6*10	     ;13
+    imul ebx,6*10            ;13
     add  ebx,15*65536+10*6-1  ;13
     mov  ecx,1*65536+17
     mov  edx,edi
     add  edx,51
     cmp  [buttons],1
-    je	 bufr
-    or	 edx,0x60000000
+    je   bufr
+    or   edx,0x60000000
   bufr:
     mov  esi,[wcolor]
     sub  ebx,11 shl 16
@@ -679,7 +777,7 @@ draw_small_right:
     mov  edx,[wcolor]
     mov  esi,edx
     mov  edi,edx
-    or	 edx, 0x01000000
+    or   edx, 0x01000000
     int  0x40
 
     mov  eax,8
@@ -724,11 +822,11 @@ draw_small_left:
     mov  edx,[wcolor]
     mov  esi,edx
     mov  edi,edx
-    or	 edx, 0x01000000
+    or   edx, 0x01000000
     int  0x40
 
     cmp  [graph_text],1
-    je	 nos4
+    je   nos4
 
     mov  eax,8
     mov  ebx,0*65536+9
@@ -843,7 +941,7 @@ left_button:
     cmp  ah,1
     jne  no_full
 
-    mov   eax, 14		    ; get screen max x & max y
+    mov   eax, 14                   ; get screen max x & max y
     int   0x40
     mov   edx, eax
     shr   edx, 16
@@ -882,7 +980,7 @@ set_variables:
    no_frames:
 
 
-     mov  eax,48	   ; 3d button look
+     mov  eax,48           ; 3d button look
      mov  ebx,1
      mov  ecx,1
      int  0x40
@@ -930,7 +1028,7 @@ draw_flag:
     sub  ebx,2
     mov  ecx, 5 shl 16+11
     cmp  [type_lang],1
-    je	label_1
+    je  label_1
     mov  edx,0xff ;[wcolor]
     jmp  label_2
 label_1:
@@ -941,7 +1039,7 @@ label_2:
     popad
 
     shl  ebx,16
-    add  ebx,7	;24
+    add  ebx,7  ;24
 
     mov  ecx,[bte] ; color
 
@@ -988,7 +1086,7 @@ draw_window:
     mov  [running_applications],-1
     mov  [checks],-1
 
-    mov  eax, 12		   ; tell os about redraw
+    mov  eax, 12                   ; tell os about redraw
     mov  ebx, 1
     int  0x40
 
@@ -1001,11 +1099,11 @@ draw_window:
     mov  eax, [system_colours+4*6]
     mov  [wcolor], eax
 
-    mov  eax,14 		   ; get screen max x & max y
+    mov  eax,14                    ; get screen max x & max y
     int  0x40
 
     cmp  [width],0
-    je	 no_def_width
+    je   no_def_width
     and  eax,0xffff
     mov  ebx,[width]
     shl  ebx,16
@@ -1024,11 +1122,11 @@ draw_window:
     mov  cx,PANEL_HEIGHT
     add  ecx,20*65536
   no_text_1:
-    mov  eax, 0 		    ; DEFINE AND DRAW WINDOW
+    mov  eax, 0                     ; DEFINE AND DRAW WINDOW
     mov  edx, [wcolor]
-    or	 edx, 0x01000000 ; do not draw the window
+    or   edx, 0x01000000 ; do not draw the window
     mov  esi, [wcolor]
-    or	 esi, 0x01000000 ; unmovable window
+    or   esi, 0x01000000 ; unmovable window
     mov  edi, [wcolor]
     int  0x40
 
@@ -1041,6 +1139,7 @@ draw_window:
     mov  eax,38
     cmp  [soften_up],1
     jne  no_su
+    and  edx,0x00FFFFFF
     int  0x40
   no_su:
 
@@ -1053,13 +1152,14 @@ draw_window:
     add  edi,[b_size_y]
     add  ecx,edi
     sub  ecx,3*65536+3
+    and  edx,0x00FFFFFF
     int  0x40
   no_sd:
     popa
 
     add  ecx,1*65536+1
     cmp  cx,5
-    jb	 newline
+    jb   newline
 
     cmp   [soften_middle],1
     jne   no_sm
@@ -1073,16 +1173,17 @@ draw_window:
     add  esi,4
 
     mov  eax,38
+    and  edx,0x00FFFFFF
     int  0x40
     add  ecx,1*65536+1
     cmp  cx,15
-    jb	 newline3
+    jb   newline3
 
   no_sm:
 
     cmp  [minimize_left],1
     jne  no_mleft
-    mov  eax,8				     ; ABS LEFT
+    mov  eax,8                               ; ABS LEFT
     mov  ebx,0 *65536+9
     mov  ecx,1 *65536
     add  ecx,[b_size_y]
@@ -1091,7 +1192,7 @@ draw_window:
     add  edx,[button_frames]
     mov  esi,[wcolor]
     int  0x40
-    mov  eax,4				     ; HIDE TEXT
+    mov  eax,4                               ; HIDE TEXT
     mov  ebx,2*65536+17
     cmp  [graph_text],1
     jne  no_y1
@@ -1114,7 +1215,7 @@ draw_window:
     shl  eax,16
     mov  ebx,eax
     add  ebx,67
-    mov  eax,8				     ; ABS RIGHT
+    mov  eax,8                               ; ABS RIGHT
     mov  ecx,1 *65536
     add  ecx,[b_size_y]
     dec  ecx
@@ -1169,7 +1270,7 @@ draw_menuet_icon:
     jne  no_menu
 
 
-    mov  eax, 8 			      ; M BUTTON
+    mov  eax, 8                               ; M BUTTON
     mov  ebx, 10*65536 + 47
     cmp  [minimize_left], 0
     jne  @f
@@ -1200,7 +1301,7 @@ draw_menuet_icon:
     mov  ecx,4 shl 16+11
     int  0x40
     mov  ebx,58 shl 16+1
-    mov  ecx,6	shl 16+7
+    mov  ecx,6  shl 16+7
     int  0x40
 ;    mov  ebx,66  shl 16+1
 ;    mov  ecx,9 shl 16+1
@@ -1238,7 +1339,7 @@ draw_menuet_icon:
     mov  eax,[wcolor]
     mov  [m_icon+4],eax
 
-    mov  eax,6				     ; load file
+    mov  eax,6                               ; load file
     mov  ebx,m_bmp
     mov  ecx,0
     mov  edx,200000
@@ -1257,13 +1358,13 @@ draw_menuet_icon:
 
     mov    cl,[edi]
     cmp    cl,10
-    jb	   nopix
+    jb     nopix
     mov    cl,[edi+1]
     cmp    cl,10
-    jb	   nopix
+    jb     nopix
     mov    cl,[edi+2]
     cmp    cl,10
-    jb	   nopix
+    jb     nopix
 
     pusha
     cmp  [minimize_left],0
@@ -1325,7 +1426,7 @@ draw_program_icons:
     mov  bx,39
     pop  edx
     add  edx,[button_frames]
-    or	 edx, 0x20000000
+    or   edx, 0x20000000
     mov  eax,8
     int  0x40
     popa
@@ -1334,7 +1435,7 @@ draw_program_icons:
     add  ecx,48
     mov  [iconf+6],cl
 
-    mov  eax,6			    ; load file
+    mov  eax,6                      ; load file
     mov  ebx,iconf
     mov  ecx,0
     mov  edx,200000
@@ -1345,22 +1446,22 @@ draw_program_icons:
     mov  ebx,32
     mov  edi,image+51+32*33*3
 
-   np2: 			    ; new pixel of file
+   np2:                             ; new pixel of file
 
     mov  edx,[edi]
     and  edx,0xffffff
 
-    cmp  eax,3			    ; Y draw limits
-    jb	 nopix2
+    cmp  eax,3                      ; Y draw limits
+    jb   nopix2
     cmp  eax,36
-    jg	 nopix2
-    cmp  ebx,38 		    ; X draw limits
-    jg	 nopix2
+    jg   nopix2
+    cmp  ebx,38                     ; X draw limits
+    jg   nopix2
     cmp  ebx,2
-    jb	 nopix2
+    jb   nopix2
 
     cmp  edx,0
-    jz	 nopix2
+    jz   nopix2
 
     cmp  [graph_text],1
     jne  no_icon_text
@@ -1458,7 +1559,7 @@ draw_info:    ; draw cpu usage, time, date
     mov  eax,3
     int  0x40
     cmp  eax,[ptime]
-    jz	 _ret
+    jz   _ret
     mov  [ptime],eax
 
     call draw_cpu_usage
@@ -1487,7 +1588,7 @@ draw_info:    ; draw cpu usage, time, date
     int  0x40
 
 
-    mov  eax,26 	 ; check for change in time or country
+    mov  eax,26          ; check for change in time or country
     mov  ebx,5
     int  0x40
     mov  edx,eax
@@ -1501,7 +1602,7 @@ draw_info:    ; draw cpu usage, time, date
     and  eax,0xffff
     add  edx,eax
     cmp  edx,[checks]
-    je	 _ret
+    je   _ret
     mov  [checks],edx
 
     mov  ebx,[maxx]
@@ -1509,7 +1610,7 @@ draw_info:    ; draw cpu usage, time, date
     shl  ebx,16
     add  ebx,33 ;;84 ;;64
 
-    mov  eax,8		     ; time/date button
+    mov  eax,8               ; time/date button
     mov  ecx,3 *65536
     add  ecx,[b_size_y]
 ;    dec  ecx
@@ -1538,19 +1639,28 @@ draw_info:    ; draw cpu usage, time, date
     mov  esi,[wcolor]
     int  0x40
     sub  ebx,17 shl 16
-    inc  edx		    ;button 17
+    inc  edx                ;button 17
     int  0x40
     add  ebx,33 shl 16
     mov  bx,8
-    inc  edx		    ;button 18
+    inc  edx                ;button 18
     int  0x40
     sub  ebx,47 shl 16
     mov  bx,10
-    inc  edx		    ;button 19
+    inc  edx                ;button 19
     int  0x40
     sub  ebx,14 shl 16
-    inc  edx		    ;button 20
+    inc  edx                ;button 20
     int  0x40
+    sub  ebx,12 shl 16
+    mov  bx,8
+    mov  ecx,6 shl 16+10
+    inc  edx        ;button 21
+    int  0x40
+    sub  ebx,18 shl 16
+    inc  edx        ;button 22
+    int  0x40
+
     ; flags
 
     mov  eax,26
@@ -1607,7 +1717,7 @@ draw_info:    ; draw cpu usage, time, date
 ;    cmp  [music_type],0
 ;    jne   dalshe
     cmp  [sound_flag],0
-    je	 dalshe
+    je   dalshe
 
     sub  ebx,8 shl 16
     ror  ebx,16
@@ -1655,6 +1765,45 @@ dalshe:
     add  ebx,1 shl 16
     int  0x40
 
+    mov  edx,0
+    mov  eax,13
+    mov  ebx,[maxx]
+    sub  ebx,134
+    shl  ebx,16
+    mov  bx,9
+    mov  ecx,6 shl 16+11
+    int  0x40
+    sub  ebx,18 shl 16
+    int  0x40
+    add  ebx,19 shl 16
+    sub  bx,2
+    mov  ecx,7 shl 16+9
+    mov  edx,0xffffff
+    int  0x40
+    sub  ebx,18 shl 16
+    int  0x40
+
+    mov  eax,4
+    mov  edx,page_a1
+    mov  ebx,[maxx]
+    sub  ebx,150
+    shl  ebx,16
+    mov  bx,8
+    mov  esi,4
+    int  0x40
+    add  ebx,1 shl 16
+    int  0x40
+
+    mov  eax,47
+    mov  ebx,0x10100
+    mov  ecx,[page_list]
+    mov  edx,[maxx]
+    sub  edx,141
+    shl  edx,16
+    mov  dx,7
+    mov  esi,0xffffff
+    int  0x40
+
 ;    sub  ebx,14 shl 16
 ;    mov  bx,7
 ;    mov  edx,turn_text
@@ -1699,7 +1848,7 @@ dalshe:
 ;    mov  edx,[wcolor]
 ;    int  0x40
 
-    mov  eax,3			; get time
+    mov  eax,3                  ; get time
     int  0x40
 
     movzx ebx,al
@@ -1728,7 +1877,7 @@ dalshe:
   no_y3:
 
 
-    mov  edx,[esp]	       ; __:_X
+    mov  edx,[esp]             ; __:_X
     and  edx,15
     mov  eax,4
     add  ebx,10*65536
@@ -1736,7 +1885,7 @@ dalshe:
     mov  esi,1
     int  0x40
 
-    pop  edx			; __:X_
+    pop  edx                    ; __:X_
     shr  edx,4
     and  edx,15
     mov  eax,4
@@ -1745,7 +1894,7 @@ dalshe:
     mov  esi,1
     int  0x40
 
-    mov  edx,[esp]	       ; _X:__
+    mov  edx,[esp]             ; _X:__
     and  edx,15
     mov  eax,4
     sub  ebx,11*65536
@@ -1753,7 +1902,7 @@ dalshe:
     mov  esi,1
     int  0x40
 
-    pop  edx			; X_:__
+    pop  edx                    ; X_:__
     shr  edx,4
     and  edx,15
     mov  eax,4
@@ -1857,30 +2006,27 @@ draw_cpu_usage:
 
     ret
 
-
-
-
 ; DATA
 
 stripe:
-    dd	-0x010101
-    dd	-0x010101
-    dd	-0x020202
-    dd	-0x010101
-    dd	-0x000000
+    dd  -0x010101
+    dd  -0x010101
+    dd  -0x020202
+    dd  -0x010101
+    dd  -0x000000
 
-    dd	 0x000000
-    dd	 0x010101
-    dd	 0x020202
-    dd	 0x010101
-    dd	 0x010101
+    dd   0x000000
+    dd   0x010101
+    dd   0x020202
+    dd   0x010101
+    dd   0x010101
 
 m_icon:
-    dd	0x0
-    dd	0x808080
-    dd	0x000000
-    dd	0x000000
-    dd	0xffffff
+    dd  0x0
+    dd  0x808080
+    dd  0x000000
+    dd  0x000000
+    dd  0xffffff
 
 
 lsz m_text,\
@@ -1896,10 +2042,10 @@ type_lang db 0
 sound_flag db 0
 button_frames  dd  0x0
 
-checks	  dd -1
+checks    dd -1
 hidetext  db 0x11,0x10,0x1e
-iconf	  db  'MBAR_IX BMP'
-m_bmp	  db  'MENUET  BMP'
+iconf     db  'MBAR_IX BMP'
+m_bmp     db  'MENUET  BMP'
 
 sysmeter  db  'SYSMETER   '
 file_end  db  'END        '
@@ -1912,8 +2058,8 @@ turn_text db  '><'
 ;file4     db  'TINYPAD    '
 ;file4_par db  'COPYING.TXT',0
 ;file5     db  'MFASM      '
-file6	  db  'CALENDAR   '
-gpl	  db  'GPL'
+file6     db  'CALENDAR   '
+gpl       db  'GPL'
 
 chlang db 'LANG',0
 syslang db 'SLAN',0
@@ -1923,25 +2069,35 @@ contrast  db 0
 running_applications  dd  0x100
 max_applications      dd  11
 
+page_list  dd 0
+draw_start_position dd 0
+draw_window_1 db 0
+
 b_size_y:  dd  0x0
 ysi  dd  0
 small_draw dd 0x0
 
-ptime	dd 0x0
-maxx	dd 0x0
-text	db '0123456789'
-bte	dd 0xccddee
+ptime   dd 0x0
+maxx    dd 0x0
+text    db '0123456789'
+page_a1 db '<  >'
+bte     dd 0xccddee
 
-wcolor	dd 0x506070
+wcolor  dd 0x506070
 
-sec	db ': '
-pros	db '                                                  '
-	db '                                                  '
+sec     db ': '
+pros    db '                                                  '
+        db '                                                  '
 
-screenxy    dd	0x0
-stcount     dd	0x0
+screenxy    dd  0x0
+stcount     dd  0x0
 
 I_END:
+
+screen_size:
+  .height dw ?
+  .width  dw ?
+
 area9 rb 100
 system_colours rd 10
 app_list rd 50
