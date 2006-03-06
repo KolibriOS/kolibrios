@@ -110,10 +110,6 @@ still_end:
 
   pgup:
     mov  eax,[list_add]  ;maximal displayed process slot
-    cmp  eax,255
-    jge  .noinc
-    inc  eax
-  .noinc:  
     mov  [list_start],eax
     jmp  still_end  
     
@@ -506,7 +502,6 @@ draw_window:
 .show_process_info:
     mov  edi,[list_start]
     mov  [list_add],edi
-    dec  dword [list_add]
     mov  dword [index],0
     mov  dword [curposy],54
 .loop_draw:
