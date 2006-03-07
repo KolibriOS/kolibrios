@@ -1,6 +1,8 @@
 MouseSearch_PS2:
 
      pusha
+     	mov	bl, 0xAD
+     	call	kb_cmd
      
      mov     bl,0xa8                 ; enable mouse cmd
      call    kb_cmd
@@ -18,7 +20,7 @@ MouseSearch_PS2:
      call    kb_read                 ; Acknowledge
      call    kb_read
      mov     [ps2_mouse_detected],0
-     test    al,8
+     test    al,18h
      jz      @f
      mov     [ps2_mouse_detected],1
   @@:   
@@ -61,5 +63,7 @@ MouseSearch_PS2:
      mov     esi,boot_setmouse_type
      call    boot_log
   @@:
+  	mov	bl, 0xAE
+  	call	kb_cmd
      popa
 
