@@ -166,13 +166,13 @@ endg
 
 macro save_ring3_context
 {
-	push	ds es
-	pushad
+    push    ds es
+    pushad
 }
 macro restore_ring3_context
 {
-	popad
-	pop	es ds
+    popad
+    pop    es ds
 }
 
 ; simply return control to interrupted process
@@ -231,16 +231,16 @@ exc_c:
         movzx ecx, bl
         push  ecx
         mov   ecx, [0x3010]
-        push  dword [ecx+4]	; PID of current process
+        push  dword [ecx+4]    ; PID of current process
         push  12
         pop   ecx
-        push  1		; 1=exception
+        push  1        ; 1=exception
         call  debugger_notify
         pop   ecx
         pop   ecx
         pop   ecx
         mov   edx, [0x3010]
-        mov   byte [edx+0xA], 1		; suspended
+        mov   byte [edx+0xA], 1        ; suspended
         call  change_task
         restore_ring3_context
         iretd
@@ -386,7 +386,14 @@ p_irq3:
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
+     cmp   [com2_mouse_detected],0
+     je    old_irq3_handler
      call  check_mouse_data_com2
+     jmp   p_irq3_1
+ old_irq3_handler:
+     mov   edi,3
+     call  irqhandler
+  p_irq3_1: 
      restore_ring3_context
      iret
 
@@ -395,7 +402,14 @@ p_irq4:
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
+     cmp   [com1_mouse_detected],0
+     je    old_irq4_handler
      call  check_mouse_data_com1
+     jmp   p_irq4_1
+ old_irq4_handler:
+     mov   edi,4
+     call  irqhandler
+  p_irq4_1:   
      restore_ring3_context
      iret
 

@@ -9,8 +9,8 @@ ThirdByte       DB 0
 ;* НОВЫЙ ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ МЫШИ *
 ;***************************************
 check_mouse_data_com1:
-        cmp     [com1_mouse_detected],0
-        je      @@EndMouseInterrupt
+;        cmp     [com1_mouse_detected],0
+;        je      @@EndMouseInterrupt
 ; Проверить наличие данных
         mov     DX,3F8h  ;[COMPortBaseAddr]
         add     DX,5         ;xFDh

@@ -969,12 +969,12 @@ reserve_irqs_ports:
         mov  [irq_owner+4*13],byte 1   ; math co-pros
         mov  [irq_owner+4*14],byte 1   ; ide I
         mov  [irq_owner+4*15],byte 1   ; ide II
-        movzx eax,byte [0xf604]        ; mouse irq
-        dec   eax
-        add   eax,mouseirqtable
-        movzx eax,byte [eax]
-        shl   eax,2
-        mov   [irq_owner+eax],byte 1
+;        movzx eax,byte [0xf604]        ; mouse irq
+;        dec   eax
+;        add   eax,mouseirqtable
+;        movzx eax,byte [eax]
+;        shl   eax,2
+;        mov   [irq_owner+eax],byte 1
 
 
                                        ; RESERVE PORTS
@@ -984,24 +984,24 @@ reserve_irqs_ports:
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0x0
         mov   [0x2d0000+edi+8],dword 0xff
-        cmp   [0xf604],byte 2          ; com1 mouse -> 0x3f0-0x3ff
-        jne   ripl1
-        inc   dword [0x2d0000]
-        mov   edi,[0x2d0000]
-        shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x3f0
-        mov   [0x2d0000+edi+8],dword 0x3ff
-      ripl1:
-        cmp   [0xf604],byte 3          ; com2 mouse -> 0x2f0-0x2ff
-        jne   ripl2
-        inc   dword [0x2d0000]
-        mov   edi,[0x2d0000]
-        shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x2f0
-        mov   [0x2d0000+edi+8],dword 0x2ff
-      ripl2:
+;        cmp   [0xf604],byte 2          ; com1 mouse -> 0x3f0-0x3ff
+;        jne   ripl1
+;        inc   dword [0x2d0000]
+;        mov   edi,[0x2d0000]
+;        shl   edi,4
+;        mov   [0x2d0000+edi+0],dword 1
+;        mov   [0x2d0000+edi+4],dword 0x3f0
+;        mov   [0x2d0000+edi+8],dword 0x3ff
+;      ripl1:
+;        cmp   [0xf604],byte 3          ; com2 mouse -> 0x2f0-0x2ff
+;        jne   ripl2
+;        inc   dword [0x2d0000]
+;        mov   edi,[0x2d0000]
+;        shl   edi,4
+;        mov   [0x2d0000+edi+0],dword 1
+;        mov   [0x2d0000+edi+4],dword 0x2f0
+;        mov   [0x2d0000+edi+8],dword 0x2ff
+;      ripl2:
 
         popad
         ret

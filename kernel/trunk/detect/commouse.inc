@@ -13,6 +13,20 @@ Detect_COM_Mouse:
         cmp    AL,'M'
         jne    @f
         mov    [com1_mouse_detected],1
+        pusha
+
+        mov   eax,4
+        shl   eax,2
+        mov   [irq_owner+eax],byte 1
+
+        inc   dword [0x2d0000]
+        mov   edi,[0x2d0000]
+        shl   edi,4
+        mov   [0x2d0000+edi+0],dword 1
+        mov   [0x2d0000+edi+4],dword 0x3f0
+        mov   [0x2d0000+edi+8],dword 0x3ff
+
+        popa
         mov    esi,boot_setmouse_type+22
         call  boot_log
      @@:
@@ -21,6 +35,20 @@ Detect_COM_Mouse:
         cmp    AL,'M'
         jne    @f        
         mov    [com2_mouse_detected],1
+        pusha
+
+        mov   eax,3
+        shl   eax,2
+        mov   [irq_owner+eax],byte 1
+        
+        inc   dword [0x2d0000]
+        mov   edi,[0x2d0000]
+        shl   edi,4
+        mov   [0x2d0000+edi+0],dword 1
+        mov   [0x2d0000+edi+4],dword 0x2f0
+        mov   [0x2d0000+edi+8],dword 0x2ff        
+
+        popa
         mov    esi,boot_setmouse_type+44
         call  boot_log
      @@:
