@@ -1323,14 +1323,14 @@ checkwindows:
         cmp   eax,[edi+0]
         jb    nnepx
         sub   eax,[edi+0]
-        cmp   eax,[edx+0x90+8]
+        cmp   eax,32 ; [edx+0x90+8]
         jge   nnepx2
-        mov   eax,[edx+0x90+8]
+        mov   eax,32 ; [edx+0x90+8]
       nnepx2:
         mov   [npxe],eax
       nnepx:
 
-        call    get_titlebar_height
+        call    get_rolledup_height
         mov     ebx,eax
         movzx eax,word [0xfb0c]
         cmp   eax,[edi+4]
@@ -1385,11 +1385,14 @@ checkwindows:
         ; <IP 28.08.2004>
         push  esi edi ecx
         mov   esi,edi
-        sub   edi,window_data
+        mov   ecx,2
+        test  [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP or WSTATE_MAXIMIZED
+        jnz   @f
+        add   ecx,2
+    @@: sub   edi,window_data
         shr   edi,5
         shl   edi,8
         add   edi,0x80000+0x90
-        mov   ecx,4
         cld
         rep   movsd
         pop   ecx edi esi
