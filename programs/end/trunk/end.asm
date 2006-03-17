@@ -5,6 +5,7 @@
 ;           and if we know that high 24 bits of eax are zero, we can use 1st form
 ;           the same about ebx,ecx,edx
 
+include "lang.inc"
 include "macros.inc"
 
 meos_app_start
