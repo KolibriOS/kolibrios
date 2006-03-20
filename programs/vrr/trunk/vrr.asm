@@ -20,6 +20,7 @@ use32
         dd     0x0 , 0x0        ; I_Param , I_Icon
    
 include 'lang.inc'   
+include 'macros.inc'
 START:    ; start of execution
    
     mov eax,14
@@ -283,6 +284,8 @@ set_my_mode:
     mov ebx,13
     mov ecx,3
     int 40h
+    mcall 5,50
+    mcall 15,3
     pop edx
     pop ebx
     pop ecx
