@@ -86,6 +86,7 @@ new_start_application_floppy:
     call   find_new_process_place ;find empty process slot 
     sti
     test   eax,eax
+	mov	ecx, -0x20	; too many processes
     jz     .failed
 
     mov    edi,eax
@@ -97,9 +98,9 @@ new_start_application_floppy:
     rep    stosd                 ;clean extended information about process
     
 ;set new process name
-    xor    eax,eax
     mov    [appl_path_size],eax
-    mov    eax,[esp]  ;+8]
+    pop    eax
+    push   eax
 .find_last_byte:
     cmp    byte [eax],0    
     jz     .find_last_byte_end
@@ -126,19 +127,22 @@ new_start_application_floppy:
 ;    cli
     call   floppy_fileread       ;read file from FD
 ;    sti
-    cmp    eax,0
-    jne    .cleanfailed
-;check MENUET signature    
+	mov	ecx, eax
+	neg	ecx
+	jnz	.cleanfailed
+;check MENUET signature
+	mov	ecx, -0x1F	; not Menuet/Kolibri executable
     cmp    [0x90000],dword 'MENU'
     jnz    .cleanfailed
     cmp    [0x90004],word 'ET'
     jnz    .cleanfailed
     
     call   get_app_params        ;parse header fields
-    cmp    esi,0
+    test   esi, esi
     jz     .cleanfailed
     
     mov    eax,[new_process_place]
+    	inc	ecx		; -0x1E = no memory
     call   create_app_cr3_table   ;create page directory for new process
     test   eax,eax
     jz     .cleanfailed_mem
@@ -152,6 +156,7 @@ new_start_application_floppy:
     mov    edx,eax
     call   mem_alloc_specified_region ;allocate memory for application
     test   eax,eax
+	mov	ecx, -0x1E
     jz     .cleanfailed_mem1
     
     mov    eax,[edx+(std_application_base_address shr 20)]
@@ -209,6 +214,7 @@ new_start_application_floppy:
     mov    esi,start_not_enough_memory
     call   sys_msg_board_str
 .cleanfailed:                    ;clean process name
+	push	ecx	; save error code
 ;can't read file, clean process name. 
 ;this avoid problems with panel application.
     mov    edi,[new_process_place]
@@ -218,13 +224,14 @@ new_start_application_floppy:
     mov    eax,' '
     cld
     rep    stosb
+	pop	eax
 .failed:
 ;no more slots
     add    esp,8+4
     mov    [application_table_status],0
+    mov    [esp+1Ch], eax
     popad
     sti
-    mov    eax,-1
     ret  
 
 ;-----------------------------------------------------------------------------    
@@ -258,6 +265,7 @@ new_start_application_fl:
     call   find_new_process_place ;find empty process slot 
     call   safe_sti
     test   eax,eax
+	mov	ecx, -0x20	; too many processes
     jz     .failed
 
     mov    edi,eax
@@ -284,20 +292,23 @@ new_start_application_fl:
     cli
     call   fileread              ;read file from RD
     call   safe_sti
-    cmp    eax,0
-    jne    .cleanfailed
-;check MENUET signature    
+	mov	ecx, eax
+	neg	ecx
+	jnz	.cleanfailed
+;check MENUET signature
+	mov	ecx, -0x1F	; not Menuet/Kolibri executable
     cmp    [0x90000],dword 'MENU'
     jnz    .cleanfailed
     cmp    [0x90004],word 'ET'
     jnz    .cleanfailed
     
     call   get_app_params        ;parse header fields
-    cmp    esi,0
+    test   esi,esi
     jz     .cleanfailed
     
     mov    eax,[new_process_place]
     call   create_app_cr3_table   ;create page directory for new process
+    inc    ecx		; -0x1E = no memory
     test   eax,eax
     jz     .cleanfailed_mem
     
@@ -310,6 +321,7 @@ new_start_application_fl:
     mov    edx,eax
     call   mem_alloc_specified_region ;allocate memory for application
     test   eax,eax
+	mov	ecx, -0x1E
     jz     .cleanfailed_mem1
     
     mov    eax,[edx+(std_application_base_address shr 20)]
@@ -366,6 +378,7 @@ new_start_application_fl:
     mov    esi,start_not_enough_memory
     call   sys_msg_board_str
 .cleanfailed:                    ;clean process name
+	push	ecx	; save error code
 ;can't read file, clean process name. 
 ;this avoid problems with panel application.
     mov    edi,[new_process_place]
@@ -375,13 +388,14 @@ new_start_application_fl:
     mov    eax,' '
     cld
     rep    stosb
+	pop	eax
 .failed:
 ;no more slots
     add    esp,8
     mov    [application_table_status],0
+    mov    [esp+1Ch], eax
     popad
     call   safe_sti
-    mov    eax,-1
     ret
         
 .add_app_parameters:
@@ -1203,6 +1217,7 @@ new_start_application_hd:
     call   find_new_process_place ;find new process slot
     sti
     test   eax,eax
+	mov	ecx, -0x20	; too many processes
     jz     .failed
     
 ;write application name
@@ -1231,11 +1246,14 @@ new_start_application_hd:
     mov    ecx,1                 ;read from first block
     mov    edx,1                 ;read 1 block
     call   read_hd_file
-    test   eax,eax
-    jnz    .cleanfailed
+	mov	ecx, eax
+	neg	ecx
+	jnz	.cleanfailed
 
-    mov    esi,[esp]
-;check menuet signature    
+    pop    esi
+    push   esi
+;check menuet signature
+	mov	ecx, -0x1F	; not Menuet/Kolibri executable
     cmp    [esi+1024+0],dword 'MENU'  ;read_hd_file function write file to +1024 offset
     jnz    .cleanfailed
     cmp    [esi+1024+4],word 'ET'
@@ -1246,12 +1264,14 @@ new_start_application_hd:
     cld
     rep    movsd                 ;copy first block to 0x90000 address for get_app_params function
     call   get_app_params
+	mov	ecx, -0x1F	; not Menuet/Kolibri executable
     test   esi,esi
     jz     .cleanfailed
     
     mov    eax,[new_process_place]
     call   create_app_cr3_table  ;create page directory
     test   eax,eax
+	inc	ecx		; -0x1E = no memory
     jz     .cleanfailed_mem
     
     call   MEM_Get_Linear_Address
@@ -1262,6 +1282,7 @@ new_start_application_hd:
     shr    ecx,12
     mov    edx,eax               ;edx - linear address of page directory
     call   mem_alloc_specified_region ;allocate memory for application
+	mov	ecx, -0x1E	; no memory
     test   eax,eax
     jz     .cleanfailed_mem1
     
@@ -1350,6 +1371,7 @@ new_start_application_hd:
     mov    esi,start_not_enough_memory
     call   sys_msg_board_str    
 .cleanfailed:                    ;clean process name
+	push	ecx
 ;can't read file, clean process name. 
 ;this avoid problems with panel application.
     mov    edi,[new_process_place]
@@ -1358,12 +1380,13 @@ new_start_application_hd:
     mov    ecx,11
     mov    eax,' '
     cld
-    rep    stosb    
+    rep    stosb
+	pop	eax
 .failed:
 ;no more slots
     add    esp,16
-    popad   
-    mov    eax,-1
+    mov    [esp+1Ch], eax
+    popad
     mov    [application_table_status],0
     sti
     ret

@@ -48,7 +48,7 @@ file_system:
 ; OUT:
 ;
 ; eax = 0  : read ok
-; eax = 1  : no fd base and/or partition defined
+; eax = 1  : no hd base and/or partition defined
 ; eax = 2  : yet unsupported FS
 ; eax = 3  : unknown FS
 ; eax = 4  : partition not defined at hd
@@ -61,10 +61,31 @@ file_system:
 ;
 ; ebx = size
 
-    ; Extract parameters
+; \begin{diamond}[18.03.2006]
+; for subfunction 16 (start application) error codes must be negative
+;	because positive values are valid PIDs
+; so possible return values are:
+; eax > 0 : process created, eax=PID
 
-    mov   edi,[0x3010]
-    add   eax,[edi+0x10]        ; abs start of info block
+; -0x10 <= eax < 0 : -eax is filesystem error code:
+; eax = -1  = 0xFFFFFFFF : no hd base and/or partition defined
+; eax = -3  = 0xFFFFFFFD : unknown FS
+; eax = -5  = 0xFFFFFFFB : file not found
+; eax = -6  = 0xFFFFFFFA : unexpected end of file (probably not executable file)
+; eax = -9  = 0xFFFFFFF7 : fat table corrupted
+; eax = -10 = 0xFFFFFFF6 : access denied
+
+; -0x20 <= eax < -0x10: eax is process creation error code:
+; eax = -0x20 = 0xFFFFFFE0 : too many processes
+; eax = -0x1F = 0xFFFFFFE1 : not Menuet/Kolibri executable
+; eax = -0x1E = 0xFFFFFFE2 : no memory
+
+; ebx is not changed
+
+; \end{diamond}[18.03.2006]
+
+    ; Extract parameters
+	add	eax, std_application_base_address	; abs start of info block
 
     cmp   dword [eax+0],12      ; Get file size
     je    fs_read
@@ -85,9 +106,6 @@ file_system:
 
     cmp   dword [0x3000],1      ; no memory checks for kernel requests
     jz    no_checks_for_kernel
-;iglobal
-;  buffer_failed db 'Buffer check failed',13,10,0
-;endg
     mov   edx,eax
     cmp   dword [eax+0],1
     jz    .check_for_write_op
@@ -104,11 +122,11 @@ file_system:
 .error_output:
     mov   esi,buffer_failed
     call  sys_msg_board_str
-    mov   eax,7
+;    mov   eax,7
     mov   dword [esp+36],7
     ret
 iglobal
-  buffer_failed db 'Buffer check failed',13,10,0
+  buffer_failed db 'K : Buffer check failed',13,10,0
 endg 
 .usual_check:
     cmp   dword [eax+0],0
@@ -122,22 +140,6 @@ endg
     call  check_region
     test  eax,eax
     jz    .error_output
-    jmp   area_in_app_mem           
-;    mov   ebx,[0x3000]          ; pointer in application memory ?
-;    shl   ebx,8
-;    mov   ebx,[ebx+0x80000+0x8c]
-
-;    mov   ebp,ebx               ; save for checking at stack save
-;    sub   ebp,[eax+12]
-;    shr   ebp,9
-
-;    sub   ebx,512               ; need atleast one block
-
-;    cmp   ebx,[eax+12]
-;    ja    area_in_app_mem
-;    mov   eax,7
-;    mov   dword [esp+36],7
-;    ret
   area_in_app_mem:
     mov   eax,edx
   no_checks_for_kernel:
@@ -147,7 +149,7 @@ endg
     je    fs_read
     cmp   dword [eax+8],0       ; read or write 0 blocks/bytes ?
     jne   fs_read
-    mov   dword [esp+36],0
+    and   dword [esp+36],0
     ret
   fs_read:
 
@@ -157,26 +159,39 @@ endg
     test  bh,bh
     jne   fs_noroot
   fs_getroot:
-    mov   edx,[edi+0x10]
+; \begin{diamond}[18.03.2006]
+; root - only read is allowed
+; other operations return "access denied", eax=10
+; (execute operation returns eax=-10)
+	cmp	dword [eax], 0
+	jz	.read_root
+	mov	ecx, 10
+	cmp	dword [eax], 16
+	jnz	@f
+	neg	ecx
+@@:	mov	[esp+36], ecx
+	ret
+.read_root:
+; \end{diamond}[18.03.2006]
     mov   esi,dir0
     mov   edi,[eax+12]
-    add   edi,edx
+    add   edi,std_application_base_address
     mov   ecx,11
-    cld
+    push  ecx
+;    cld	; already is
     rep   movsb
-    mov   eax,0x10
+    mov   al,0x10
     stosb
     add   edi,32-11-1
-    mov   ecx,11
+    pop   ecx
     rep   movsb
     stosb
-    mov   dword [esp+36],0      ; ok read
+    and   dword [esp+36],0      ; ok read
     mov   dword [esp+24],32*2   ; size of root
     ret
 
   fs_info:                      ;start of code - Mihasik
-    mov   edi,eax
-    push  edi
+    push  eax
     cmp   [eax+21],byte 'h'
     je    fs_info_h
     cmp   [eax+21],byte 'H'
@@ -210,38 +225,26 @@ endg
 
   fs_noroot:
 
-    mov   ebx,[eax+0]
-    push  ebx                   ; read/write/delete/.../makedir/rename/lba/run
-    mov   ebx,[eax+4]
-    push  ebx                   ; 512 block number to read
-    mov   ebx,[eax+8]
-
-;    cmp   dword [eax+0],0       ; if read, check that the data stays at
-;    jne   ret_size_fine         ; application memory
-;    cmp   ebx,ebp
-;    jbe   ret_size_fine
-;    mov   ebx,ebp
-;  ret_size_fine:
-
-    push  ebx                   ; bytes to write/append or 512 blocks to read
+    push  dword [eax+0]         ; read/write/delete/.../makedir/rename/lba/run
+    push  dword [eax+4]         ; 512 block number to read
+    push  dword [eax+8]         ; bytes to write/append or 512 blocks to read
     mov   ebx,[eax+12]
-    add   ebx,[edi+0x10]
+    add   ebx,std_application_base_address
     push  ebx                   ; abs start of return/save area
 
     lea   esi,[eax+20]          ; abs start of dir + filename
-    mov   edi,[edi+0x10]        ; abs start of work area
-    add   edi,[eax+16]
+    mov   edi,[eax+16]
+    add   edi,std_application_base_address	; abs start of work area
 
     call  expand_pathz
 
     push  edi                   ; dir start
     push  ebx                   ; name of file start
 
-    mov   ebx,[dir0+11]         ; /RAMDISK
     mov   eax,[edi+1]
     cmp   eax,'RD  '
     je    fs_yesramdisk
-    cmp   eax,ebx
+    cmp   eax,'RAMD'
     jne   fs_noramdisk
 
   fs_yesramdisk:
@@ -249,11 +252,10 @@ endg
     cmp   byte [edi+1+11],0
     je    fs_give_dir1
 
-    mov   ebx,[dir1]            ; /FIRST
     mov   eax,[edi+1+12]
     cmp   eax,'1   '
     je    fs_yesramdisk_first
-    cmp   eax,ebx
+    cmp   eax,'FIRS'
     jne   fs_noramdisk
 
   fs_yesramdisk_first:
@@ -312,17 +314,16 @@ endg
     add   eax,2*12+1
 
     xor   ebx,ebx               ; parameters to pass
-    cmp   dword [esp+12],0
+    cmp   dword [esp+12],ebx;0
     je    no_fl_start_param
-    mov   ebx,[0x3010]
-    mov   ebx,[ebx+0x10]
-    add   ebx,[esp+12]
+    mov   ebx, [esp+12]
+    add   ebx, std_application_base_address
   no_fl_start_param:
     mov   edx,[esp+16]		; flags
 
     call  start_application_fl
 
-    jmp   file_system_return
+    jmp   file_system_startapp_return
 
   fs_noramdisk_start_application:     ;there's new code - Mihasik
     cmp   dword [esp+20],2      ;DELETE
@@ -350,11 +351,10 @@ endg
   fs_noramdisk:
   
   ;********************************************************************
-    mov   ebx,[dir0+22]         ; /FLOPPYDISK
     mov   eax,[edi+1]
     cmp   eax,'FD  '
     je    fs_yesflpdisk
-    cmp   eax,ebx
+    cmp   eax,'FLOP'
     jne   fs_noflpdisk
 
   fs_yesflpdisk:
@@ -363,16 +363,14 @@ endg
     cmp   byte [edi+1+11],0
     je    fs_give_dir1
 
-    mov   ebx,[dir1]            ; /FIRST
     mov   eax,[edi+1+12]
     cmp   eax,'1   '            
     je    fs_yesflpdisk_first
-    cmp   eax,ebx
+    cmp   eax,'FIRS'
     je    fs_yesflpdisk_first
-    mov   ebx,[dir1+11]         ; /SECOND
     cmp   eax,'2   '
     je    fs_yesflpdisk_second
-    cmp   eax,ebx
+    cmp   eax,'SECO'
     jne   fs_noflpdisk
     jmp   fs_yesflpdisk_second
 
@@ -434,7 +432,7 @@ endg
     add   eax,2*12+1
 
     xor   ebx,ebx               ; parameters to pass
-    cmp   dword [esp+12],0
+    cmp   dword [esp+12],ebx;0
     je    no_flp_start_param
     mov   ebx,[0x3010]
     mov   ebx,[ebx+0x10]
@@ -445,6 +443,8 @@ endg
 
     call  start_application_floppy
 
+file_system_startapp_return:
+	mov	ebx, [esp+24+24]	; do not modify ebx in application
     jmp   file_system_return
 
   fs_noflpdisk_start_application:
@@ -495,9 +495,9 @@ choice_necessity_partition:
     call  StringToNumber
         mov   [fat32part],eax
 choice_necessity_partition_1:
-    mov   [0xfe10],dword 0    ; entries in hd cache
     mov   ecx,[hdpos]
     xor   eax,eax
+    mov   [0xfe10], eax    ; entries in hd cache
     mov   edx,0x40002
  search_partition_array:
     mov   bl,[edx]
@@ -516,11 +516,10 @@ choice_necessity_partition_1:
     ret
 
  old_path_harddisk:
-    mov   ebx,[dir0]            ; /HARDDISK
     mov   eax,[edi+1]
     cmp   eax,'HD  '
     je    fs_yesharddisk
-    cmp   eax,ebx
+    cmp   eax,'HARD'
     jne   fs_noharddisk
 
   fs_yesharddisk:
@@ -543,6 +542,10 @@ choice_necessity_partition_1:
 
   fs_yesharddisk_all:
     mov   eax,1
+	cmp	dword [esp+20], 16
+	jnz	@f
+	neg	eax
+@@:	mov	ebx, [esp+24+24]
     cmp   [hdpos],0             ; is hd base set?
     jz    file_system_return    ; no
     cmp   [fat32part],0         ; is partition set?
@@ -661,19 +664,17 @@ choice_necessity_partition_1:
     add   edi,12+1              ; continue after name
     call  expand_pathz          ; convert destination name
 
-    mov   edx,[dir0]            ; /HARDDISK
     mov   eax,[edi+1]
     cmp   eax,'HD  '
     je    fs_rename_test1
-    cmp   eax,edx
+    cmp   eax,'HARD'
     jne   fs_rename_error
 
   fs_rename_test1:
-    mov   edx,[dir1]            ; /FIRST
     mov   eax,[edi+1+12]
     cmp   eax,'1   '
     je    fs_rename_start
-    cmp   eax,edx
+    cmp   eax,'FIRS'
     jne   fs_rename_error
 
   fs_rename_start:
@@ -774,21 +775,28 @@ choice_necessity_partition_1:
     add   ecx,512
 
     xor   ebp,ebp               ; parameters to pass
-    cmp   dword [esp+12],0
+    cmp   dword [esp+12],ebp;0
     je    no_hd_start_param
-    mov   ebp,[0x3010]
-    mov   ebp,[ebp+0x10]
-    add   ebp,[esp+12]
+    mov   ebp, [esp+12]
+    add   ebp, std_application_base_address
   no_hd_start_param:
     mov   edx,[esp+16]		; flags
 
     call  start_application_hd
 
-    jmp   file_system_return
+    jmp   file_system_startapp_return
 
   fs_noharddisk_start_application:
 
   fs_noharddisk:
+; \begin{diamond}[18.03.2006]
+	mov	eax, 5		; file not found
+; а может быть, возвращать другой код ошибки?
+	cmp	dword [esp+20], 16
+	jnz	@f
+	neg	eax
+@@:	mov	ebx, [esp+24+24]	; do not change ebx in application
+; \end{diamond}[18.03.2006]
 
   file_system_return:
 
@@ -801,13 +809,29 @@ choice_necessity_partition_1:
 
   fs_give_dir1:
 
-    mov   eax,0x10
+; \begin{diamond}[18.03.2006]
+; /RD,/FD,/HD - only read is allowed
+; other operations return "access denied", eax=10
+; (execute operation returns eax=-10)
+	cmp	dword [esp+20], 0
+	jz	.read
+	add	esp, 20
+	pop	ecx
+	mov	eax, 10
+	cmp	ecx, 16
+	jnz	@f
+	neg	eax
+@@:	mov	[esp+36], eax
+	ret
+.read:
+; \end{diamond}[18.03.2006]
+    mov   al,0x10
     mov   ebx,1
     mov   edi,[esp+8]
     mov   esi,dir1
   fs_d1_new:
     mov   ecx,11
-    cld
+;    cld
     rep   movsb
     stosb
     add   edi,32-11-1
@@ -816,7 +840,7 @@ choice_necessity_partition_1:
 
     add   esp,24
 
-    mov   dword [esp+36],0      ; ok read
+    and   dword [esp+36],0      ; ok read
     mov   dword [esp+24],32*1   ; dir/data size
     ret
 
@@ -851,7 +875,7 @@ LBA_read_ramdisk:
     shl   esi,9
     add   esi,0x100000
     mov   ecx,512/4
-    cld
+;    cld
     rep   movsd
 
     popad
