@@ -290,6 +290,8 @@ debugger_notify:
 ; interrupts remain disabled
 	mov	ebp, eax
 	shl	eax, 8
+	mov	edi, [timer_ticks]
+	add	edi, 500	; 5 sec timeout
 .1:
 	mov	edx, [0x80000+eax+0xBC]
 	test	edx, edx
@@ -313,6 +315,8 @@ debugger_notify:
 	pop	ecx
 	pop	ecx
 	pop	ecx
+	cmp	[timer_ticks], edi
+	jae	.ret
 	sti
 	call	change_task
 	cli

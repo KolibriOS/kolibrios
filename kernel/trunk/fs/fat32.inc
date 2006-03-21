@@ -1671,6 +1671,7 @@ file_read:
     jnz   fat_ok_for_reading
     xor   ebx,ebx
     mov   eax,ERROR_UNKNOWN_FS
+    mov   [hd1_status], ebx
     ret
 
   fat_ok_for_reading:

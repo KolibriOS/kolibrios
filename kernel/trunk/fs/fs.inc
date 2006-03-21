@@ -523,8 +523,6 @@ choice_necessity_partition_1:
     jne   fs_noharddisk
 
   fs_yesharddisk:
-    call  reserve_hd1
-
     cmp   dword [esp+20],8      ; LBA read
     jne   fs_no_LBA_read
     mov   eax,[esp+16]          ; LBA block to read
@@ -537,6 +535,7 @@ choice_necessity_partition_1:
 
     cmp   byte [edi+1+11],0     ; directory read
     je    fs_give_dir1
+    call  reserve_hd1
  fs_for_new_semantic:
     call  choice_necessity_partition 
 
@@ -547,9 +546,13 @@ choice_necessity_partition_1:
 	neg	eax
 @@:	mov	ebx, [esp+24+24]
     cmp   [hdpos],0             ; is hd base set?
-    jz    file_system_return    ; no
+    jz    hd_err_return
     cmp   [fat32part],0         ; is partition set?
-    jz    file_system_return    ; no
+    jnz   @f
+hd_err_return:
+    and   [hd1_status], 0
+    jmp   file_system_return
+@@:
 
     cmp   dword [esp+20],0      ; READ
     jne   fs_noharddisk_read
@@ -899,7 +902,7 @@ LBA_read:
 
   lbarl1:
 
-;    call  reserve_hd1
+    call  reserve_hd1
 
     push  eax
     push  ecx
