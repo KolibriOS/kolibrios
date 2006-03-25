@@ -63,7 +63,7 @@ file_system:
 
 ; \begin{diamond}[18.03.2006]
 ; for subfunction 16 (start application) error codes must be negative
-;	because positive values are valid PIDs
+;    because positive values are valid PIDs
 ; so possible return values are:
 ; eax > 0 : process created, eax=PID
 
@@ -85,7 +85,7 @@ file_system:
 ; \end{diamond}[18.03.2006]
 
     ; Extract parameters
-	add	eax, std_application_base_address	; abs start of info block
+    add    eax, std_application_base_address    ; abs start of info block
 
     cmp   dword [eax+0],12      ; Get file size
     je    fs_read
@@ -163,14 +163,14 @@ endg
 ; root - only read is allowed
 ; other operations return "access denied", eax=10
 ; (execute operation returns eax=-10)
-	cmp	dword [eax], 0
-	jz	.read_root
-	mov	ecx, 10
-	cmp	dword [eax], 16
-	jnz	@f
-	neg	ecx
-@@:	mov	[esp+36], ecx
-	ret
+    cmp    dword [eax], 0
+    jz    .read_root
+    mov    ecx, 10
+    cmp    dword [eax], 16
+    jnz    @f
+    neg    ecx
+@@:    mov    [esp+36], ecx
+    ret
 .read_root:
 ; \end{diamond}[18.03.2006]
     mov   esi,dir0
@@ -178,7 +178,7 @@ endg
     add   edi,std_application_base_address
     mov   ecx,11
     push  ecx
-;    cld	; already is
+;    cld    ; already is
     rep   movsb
     mov   al,0x10
     stosb
@@ -234,7 +234,7 @@ endg
 
     lea   esi,[eax+20]          ; abs start of dir + filename
     mov   edi,[eax+16]
-    add   edi,std_application_base_address	; abs start of work area
+    add   edi,std_application_base_address    ; abs start of work area
 
     call  expand_pathz
 
@@ -319,7 +319,7 @@ endg
     mov   ebx, [esp+12]
     add   ebx, std_application_base_address
   no_fl_start_param:
-    mov   edx,[esp+16]		; flags
+    mov   edx,[esp+16]        ; flags
 
     call  start_application_fl
 
@@ -439,12 +439,12 @@ endg
     add   ebx,[esp+12]
 
   no_flp_start_param:
-    mov   edx,[esp+16]		; flags
+    mov   edx,[esp+16]        ; flags
 
     call  start_application_floppy
 
 file_system_startapp_return:
-	mov	ebx, [esp+24+24]	; do not modify ebx in application
+    mov    ebx, [esp+24+24]    ; do not modify ebx in application
     jmp   file_system_return
 
   fs_noflpdisk_start_application:
@@ -541,10 +541,10 @@ choice_necessity_partition_1:
 
   fs_yesharddisk_all:
     mov   eax,1
-	cmp	dword [esp+20], 16
-	jnz	@f
-	neg	eax
-@@:	mov	ebx, [esp+24+24]
+    cmp    dword [esp+20], 16
+    jnz    @f
+    neg    eax
+@@:    mov    ebx, [esp+24+24]
     cmp   [hdpos],0             ; is hd base set?
     jz    hd_err_return
     cmp   [fat32part],0         ; is partition set?
@@ -783,7 +783,7 @@ hd_err_return:
     mov   ebp, [esp+12]
     add   ebp, std_application_base_address
   no_hd_start_param:
-    mov   edx,[esp+16]		; flags
+    mov   edx,[esp+16]        ; flags
 
     call  start_application_hd
 
@@ -793,12 +793,12 @@ hd_err_return:
 
   fs_noharddisk:
 ; \begin{diamond}[18.03.2006]
-	mov	eax, 5		; file not found
+    mov    eax, 5        ; file not found
 ; а может быть, возвращать другой код ошибки?
-	cmp	dword [esp+20], 16
-	jnz	@f
-	neg	eax
-@@:	mov	ebx, [esp+24+24]	; do not change ebx in application
+    cmp    dword [esp+20], 16
+    jnz    @f
+    neg    eax
+@@:    mov    ebx, [esp+24+24]    ; do not change ebx in application
 ; \end{diamond}[18.03.2006]
 
   file_system_return:
@@ -816,16 +816,16 @@ hd_err_return:
 ; /RD,/FD,/HD - only read is allowed
 ; other operations return "access denied", eax=10
 ; (execute operation returns eax=-10)
-	cmp	dword [esp+20], 0
-	jz	.read
-	add	esp, 20
-	pop	ecx
-	mov	eax, 10
-	cmp	ecx, 16
-	jnz	@f
-	neg	eax
-@@:	mov	[esp+36], eax
-	ret
+    cmp    dword [esp+20], 0
+    jz    .read
+    add    esp, 20
+    pop    ecx
+    mov    eax, 10
+    cmp    ecx, 16
+    jnz    @f
+    neg    eax
+@@:    mov    [esp+36], eax
+    ret
 .read:
 ; \end{diamond}[18.03.2006]
     mov   al,0x10
@@ -930,6 +930,9 @@ LBA_read:
   blar2:
     mov   eax,[edi+0]
     mov   ebx,[edi+4]
+
+    mov  [hdbase],eax
+    mov  [hdid],ebx
 
     call  wait_for_hd_idle
 
