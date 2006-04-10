@@ -42,7 +42,7 @@
 ;
 ;         20   dword  application event mask
 ;         24   dword  PID - process identification number
-;         2a   word   0, state 3=zombie, 4=terminate
+;         2a   word   0, state 1,2=suspended 3=zombie, 4=terminate
 ;         2e   byte   window number on screen
 ;         30   dword  exact position in memory
 ;         34   dword  counter sum
@@ -143,10 +143,12 @@
 ;           A0 dword  IPC memory start
 ;           A4 dword  IPC memory size
 ;           A8 dword  event bits: mouse, stack,..
-;
+;           AC dword  0 or debugger slot
 ;           B0 dword  int40 handler in use ; 0 if not in use
 ;           B4  byte  keyboard mode: 0 = keymap, 1 = scancodes
 ;           B8 dword  physical address of directory table
+;           BC dword  address of debug event memory
+;           C0  5 dd  thread debug registers: DR0,DR1,DR2,DR3,DR7
 ;
 ;  90000  ->  9FFFF   tmp
 ;  A0000  ->  AFFFF   screen access area

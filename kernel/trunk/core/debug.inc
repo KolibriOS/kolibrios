@@ -1,14 +1,6 @@
-; this code uses following additions to system structures:
-; in additional app info at 80000..8FFFF:
-; AC (dword)	0 or debugger slot
-; BC (dword)	address of debug event memory
-; new process slot state:
-; 1 = suspended
-; 2 = suspended waiting for event
-; new event: 8 (and new possible bitflag for A8 in additional app info)
 ; diamond, 2006
 sys_debug_services:
-	cmp	eax, 8
+	cmp	eax, 9
 	ja	@f
 	jmp	dword [sys_debug_services_table+eax*4]
 @@:	ret
@@ -22,6 +14,7 @@ sys_debug_services_table:
 	dd	debug_read_process_memory
 	dd	debug_write_process_memory
 	dd	debug_terminate
+	dd	debug_set_drx
 
 debug_set_event_data:
 ; in: ebx = pointer
@@ -230,6 +223,77 @@ debug_setcontext:
 .ret:
 	ret
 
+debug_set_drx:
+	call	get_debuggee_slot
+	jc	.errret
+	mov	ebp, eax
+	lea	eax, [eax*8+0x80000+0xC0]
+; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
+; [eax+10]=dr7
+	add	edx, std_application_base_address
+	jc	.errret
+	cmp	cl, 3
+	ja	.errret
+	mov	ebx, dr7
+	shr	ebx, cl
+	shr	ebx, cl
+	test	ebx, 2		; bit 1+2*index = G0..G3, global break enable
+	jnz	.errret2
+	test	ch, ch
+	jns	.new
+; clear breakpoint
+	movzx	ecx, cl
+	add	ecx, ecx
+	and	dword [eax+ecx*2], 0	; clear DR<i>
+	btr	dword [eax+10h], ecx	; clear L<i> bit
+	test	byte [eax+10h], 55h
+	jnz	.okret
+	imul	eax, ebp, tss_step/32
+	and	byte [eax + tss_data + l.trap - tss_sceleton], not 1
+.okret:
+	and	dword [esp+36], 0
+	sti
+	ret
+.errret:
+	sti
+	mov	dword [esp+36], 1
+	ret
+.errret2:
+	sti
+	mov	dword [esp+36], 2
+	ret
+.new:
+; add new breakpoint
+; cl=index; ch=flags; edx=address
+	test	ch, 0xF0
+	jnz	.errret
+	mov	bl, ch
+	and	bl, 3
+	cmp	bl, 2
+	jz	.errret
+	mov	bl, ch
+	shr	bl, 2
+	cmp	bl, 2
+	jz	.errret
+	test	dl, bl
+	jnz	.errret
+	or	byte [eax+10h+1], 3	; set GE and LE flags
+	movzx	ebx, ch
+	movzx	ecx, cl
+	add	ecx, ecx
+	bts	dword [eax+10h], ecx	; set L<i> flag
+	add	ecx, ecx
+	mov	[eax+ecx], edx		; set DR<i>
+	shl	ebx, cl
+	mov	edx, 0xF
+	shl	edx, cl
+	not	edx
+	and	[eax+10h+2], dx
+	or	[eax+10h+2], bx		; set R/W and LEN fields
+	imul	eax, ebp, tss_step/32
+	or	byte [eax + tss_data + l.trap - tss_sceleton], 1
+	jmp	.okret
+
 debug_read_process_memory:
 ; in:
 ; ebx=pid
@@ -288,11 +352,12 @@ debugger_notify:
 ; interrupts must be disabled!
 ; destroys all general registers
 ; interrupts remain disabled
-	mov	ebp, eax
-	shl	eax, 8
+	xchg	ebp, eax
 	mov	edi, [timer_ticks]
 	add	edi, 500	; 5 sec timeout
 .1:
+	mov	eax, ebp
+	shl	eax, 8
 	mov	edx, [0x80000+eax+0xBC]
 	test	edx, edx
 	jz	.ret
@@ -315,8 +380,11 @@ debugger_notify:
 	pop	ecx
 	pop	ecx
 	pop	ecx
+	cmp	dword [0x3000], 1
+	jnz	.notos
 	cmp	[timer_ticks], edi
 	jae	.ret
+.notos:
 	sti
 	call	change_task
 	cli
@@ -349,3 +417,82 @@ debugger_notify:
 	or	byte [0x80000+eax+0xA8+1], 1	; set flag 100h
 .ret:
 	ret
+
+debug_exc:
+; int 1 = #DB
+	save_ring3_context
+	mov	ax, os_data
+	mov	ds, ax
+	mov	es, ax
+	mov	eax, dr6
+	test	ax, ax
+	jns	@f
+; this is exception from task switch
+; set DRx registers for task and continue
+	mov	eax, [0x3000]
+	shl	eax, 8
+	add	eax, 0x80000+0xC0
+	mov	ecx, [eax+0]
+	mov	dr0, ecx
+	mov	ecx, [eax+4]
+	mov	dr1, ecx
+	mov	ecx, [eax+8]
+	mov	dr2, ecx
+	mov	ecx, [eax+0Ch]
+	mov	dr3, ecx
+	xor	ecx, ecx
+	mov	dr6, ecx
+	mov	ecx, [eax+10h]
+	mov	dr7, ecx
+	restore_ring3_context
+	iretd
+@@:
+	push	eax
+	xor	eax, eax
+	mov	dr6, eax
+; test if debugging
+	cli
+	mov	eax, [0x3000]
+	shl	eax, 8
+	mov	eax, [0x80000+eax+0xAC]
+	test	eax, eax
+	jnz	.debug
+	sti
+; not debuggee => say error and terminate
+	add	esp, 28h+4
+	mov	[error_interrupt], 1
+	call	show_error_parameters
+	mov	edx, [0x3010]
+	mov	byte [edx+0xA], 4
+	jmp	change_task
+.debug:
+; we are debugged process, notify debugger and suspend ourself
+; eax=debugger PID
+	pop	edx
+	mov	ebx, dr7
+	mov	cl, not 1
+.l1:
+	test	bl, 1
+	jnz	@f
+	and	dl, cl
+@@:
+	shr	ebx, 2
+	add	cl, cl
+	inc	ecx
+	cmp	cl, not 10h
+	jnz	.l1
+	push	edx	; DR6 image
+	mov	ecx, [0x3010]
+	push	dword [ecx+4]	; PID
+	push	12
+	pop	ecx
+	push	3	; 3 = debug exception
+	call	debugger_notify
+	pop	ecx
+	pop	ecx
+	pop	ecx
+	mov	edx, [0x3010]
+	mov	byte [edx+0xA], 1	; suspended
+	call	change_task
+	restore_ring3_context
+	iretd

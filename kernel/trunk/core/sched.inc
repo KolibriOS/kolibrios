@@ -12,7 +12,7 @@ irq0:
         mov   edi,[0x3000]
         shl   edi, 3
                          ; fields of TSS descriptor:
-        mov   [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
+;        mov   [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
 
         inc   dword [timer_ticks]
 
