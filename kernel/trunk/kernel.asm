@@ -2381,6 +2381,7 @@ draw_background_temp:
 ;draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
     mov   [0xfff0],byte 1
+	mov	[background_defined], 1
    nosb31:
     ret
   nosb3:
@@ -3016,22 +3017,22 @@ sys_window_move:
 
         ret
 
-type_background_1:
-    cmp   [0xfff0],byte 0               ; background update ?
-    jz    temp_nobackgr
-    mov   [0xfff0],byte 2
-    call  change_task
-    mov   [draw_data+32+0],dword 0
-    mov   [draw_data+32+4],dword 0
-    mov   eax,[0xfe00]
-    mov   ebx,[0xfe04]
-    mov   [draw_data+32+8],eax
-    mov   [draw_data+32+12],ebx
-    call  drawbackground
-    mov   [0xfff0],byte 0
-    mov   [0xfff4],byte 0
-temp_nobackgr:
-    ret
+;type_background_1:
+;    cmp   [0xfff0],byte 0               ; background update ?
+;    jz    temp_nobackgr
+;    mov   [0xfff0],byte 2
+;    call  change_task
+;    mov   [draw_data+32+0],dword 0
+;    mov   [draw_data+32+4],dword 0
+;    mov   eax,[0xfe00]
+;    mov   ebx,[0xfe04]
+;    mov   [draw_data+32+8],eax
+;    mov   [draw_data+32+12],ebx
+;    call  drawbackground
+;    mov   [0xfff0],byte 0
+;    mov   [0xfff4],byte 0
+;temp_nobackgr:
+;    ret
 
 uglobal
   window_move_pr   dd  0x0
@@ -3170,6 +3171,9 @@ iglobal
   cpustring db 'CPU        '
 endg
 
+uglobal
+background_defined	db	0	; diamond, 11.04.2006
+endg
 
 align 4
 ; check misc
@@ -3198,6 +3202,8 @@ checkmisc:
 
     cmp   [0xfff0],byte 0               ; background update ?
     jz    nobackgr
+	cmp	[background_defined], 0
+	jz	nobackgr
     mov   [0xfff0],byte 2
     call  change_task
     mov   [draw_data+32+0],dword 0
