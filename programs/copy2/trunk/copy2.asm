@@ -185,8 +185,8 @@ copy_file:
   .ok_memory:
 
     ; save number of blocks to source_info
-    shr  ebx,9       ; divide by 512
-    inc  ebx         ; blocks++
+    add  ebx,511
+    shr  ebx,9       ; round up to 512 boundary
     mov  [source_info.blocks],ebx
     ; read the source file
     mov  eax,58
