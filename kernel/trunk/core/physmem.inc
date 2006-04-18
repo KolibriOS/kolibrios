@@ -190,6 +190,7 @@ isys_set_buffer:                 ;for using in kernel
   lea  edi,[ebx+second_base_address]
   mov  esi,ecx
   mov  ecx,edx
+  cld
   rep  movsb
   ret
 sys_get_buffer:
@@ -202,6 +203,7 @@ isys_get_buffer:                 ;for using in kernel
   mov  edi,ecx
   lea  esi,[ebx+second_base_address]
   mov  ecx,edx
+  cld
   rep  movsb
   ret
 sys_internal_services:

@@ -126,7 +126,7 @@
 
 ;  50000  ->  5FFFF   free (64 Kb)
 
-;  60000  ->  7FFFF   paging tables
+;  60000  ->  7FFFF   reserved to physical memory manager
 ;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
 ;           00  11db  name of app running
@@ -198,7 +198,7 @@
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
 ;
 ; 778000  -> 77ffff   window skinning  ( 32 kb)
-; 780000  -> 7fffff   free (512 Kb)
+; 780000  -> 7fffff   reserved to physical memory manager
 ;
 ; 800000  -> BFFFFF   mapped to LFB
 ;
