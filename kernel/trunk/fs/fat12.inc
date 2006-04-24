@@ -1082,3 +1082,183 @@ check_new_flp:
 
    pop ebx
    ret
+
+; \begin{diamond}
+fd_find_lfn:
+; in: esi->name
+; out: CF=1 - file not found
+;      else CF=0 and edi->direntry
+	pusha
+	sub	esp, 262*2	; reserve place for LFN
+	mov	ebp, esp
+	call	read_flp_fat
+	cmp	[FDC_Status], 0
+	jnz	.error
+	mov	eax, 19
+	mov	dh, 14
+.main_loop:
+.20_1:
+	pusha
+	call	read_chs_sector
+	popa
+	cmp	[FDC_Status], 0
+	jnz	.error
+	mov	edi, 0xD000
+	inc	[FDD_Sector]
+	push	eax
+.21_1:
+	call	fat_get_name
+	jc	@f
+	call	fat_compare_name
+	jz	.found
+@@:
+	add	edi, 0x20
+	cmp	edi, 0xD200
+	jb	.21_1
+	pop	eax
+	inc	eax
+	dec	dh
+	js	@f
+	jnz	.20_1
+.error:
+	add	esp, 262*2
+	popa
+	stc
+	ret
+@@:
+; read next sector from FAT
+	mov	eax, [(eax-31)*2+0x282000]
+	and	eax, 0xFFF
+	cmp	eax, 0xFF8
+	jae	.error
+	add	eax, 31
+	jmp	.main_loop
+.found:
+	pop	eax
+; if LFN entry, advance to corresponding short entry
+	cmp	byte [edi+11], 0xF
+	jnz	.entryfound
+	add	edi, 0x20
+	cmp	edi, 0xD200
+	jb	.entryfound
+	dec	dh
+	jz	.error
+	inc	eax
+	call	read_chs_sector
+	cmp	[FDC_Status], 0
+	jnz	.error
+	mov	edi, 0xD000
+.entryfound:
+	cmp	byte [esi], 0
+	jz	.done
+	test	byte [edi+11], 10h	; is a directory?
+	jz	.error
+	movzx	eax, word [edi+26]
+	add	eax, 31
+	mov	dh, 0
+	jmp	.main_loop
+.done:
+	add	esp, 262*2+4
+	push	edi
+	popad
+	ret
+
+;----------------------------------------------------------------
+;
+;  fs_FloppyRead - LFN variant for reading floppy
+;
+;  esi  points to filename
+;  ebx  pointer to 64-bit number = first wanted byte, 0+
+;       may be ebx=0 - start from first byte
+;  ecx  number of bytes to read, 0+
+;  edx  mem location to return data
+;
+;  ret ebx = size or 0xffffffff file not found
+;      eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+fs_FloppyRead:
+	mov	[save_flag], 0
+	cmp	byte [esi], 0
+	jnz	@f
+	or	ebx, -1
+	mov	eax, 10		; access denied
+	ret
+@@:
+	push	edi
+	call	fd_find_lfn
+	jnc	.found
+	pop	edi
+	or	ebx, -1
+	mov	eax, 5		; file not found
+	ret
+.found:
+	test	ebx, ebx
+	jz	.l1
+	cmp	dword [ebx+4], 0
+	jz	@f
+	mov	ebx, [edi+28]
+.reteof:
+	mov	eax, 6		; EOF
+	pop	edi
+	ret
+@@:
+	mov	ebx, [ebx]
+.l1:
+	push	dword [edi+28]
+	push	dword [edi+28]
+	movzx	edi, word [edi+26]
+	push	ecx edx
+.new:
+	jecxz	.done
+	test	edi, edi
+	jz	.eof
+	cmp	edi, 0xFF8
+	jae	.eof
+	mov	eax, edi
+	add	eax, 31
+	pusha
+	call	read_chs_sector
+	popa
+	cmp	[FDC_Status], 0
+	jnz	.err
+	sub	ebx, 512
+	jae	.skip
+	lea	eax, [eax+ebx+512]
+	neg	ebx
+	push	ecx
+	cmp	ecx, ebx
+	jbe	@f
+	mov	ecx, ebx
+@@:
+	cmp	ecx, [esp+12]
+	jbe	@f
+	mov	ecx, [esp+12]
+@@:
+	mov	ebx, edx
+	mov	eax, 0xD000
+	call	memmove
+	add	edx, ecx
+	sub	[esp], ecx
+	sub	[esp+12], ecx
+	pop	ecx
+	xor	ebx, ebx
+	cmp	[esp+8], ebx
+	jnz	.skip
+	jecxz	.done
+	jmp	.eof
+.skip:
+	movzx	edi, word [edi*2+0x282000]
+	jmp	.new
+.done:
+	pop	edx ecx ebx ebx edi
+	xor	eax, eax
+	ret
+.eof:
+	pop	edx ecx ebx ebx
+	jmp	.reteof
+.err:
+	mov	eax, 5	; may be other error code?
+	pop	edx ecx ebx ebx edi
+	ret
+; \end{diamond}

@@ -258,15 +258,12 @@ fileread:
         call   memmove
         add    [esp+8],dword 512
         dec    dword [esp+12]           ; last wanted cluster ?
-        cmp    [esp+12],dword 0
         je     frnoread
         jmp    frfl8
       frfl7:
         dec    dword [esp+16]
       frfl8:
-        shl    edi,1                    ;find next cluster from FAT
-        add    edi,0x280000
-        movzx  eax,word [edi]
+        movzx  eax,word [edi*2+0x280000]	; find next cluster from FAT
         mov    edi,eax
         cmp    edi,4095                 ;eof  - cluster
         jz     frnoread2
@@ -519,4 +516,339 @@ mov [edi+22],ax          ; time
      rd_getfileinfo_end:
         xor    eax,eax
         add    esp,32
-        ret   
+        ret
+
+; \begin{diamond}
+
+uni2ansi_str:
+; convert UNICODE zero-terminated string to ASCII-string (codepage 866)
+; in: esi->source, edi->buffer (may be esi=edi)
+; destroys: eax,esi,edi
+	lodsw
+	test	ax, ax
+	jz	.done
+	cmp	ax, 0x80
+	jb	.ascii
+	cmp	ax, 0x401
+	jz	.yo1
+	cmp	ax, 0x451
+	jz	.yo2
+	cmp	ax, 0x410
+	jb	.unk
+	cmp	ax, 0x440
+	jb	.rus1
+	cmp	ax, 0x450
+	jb	.rus2
+.unk:
+	mov	al, '_'
+	jmp	.doit
+.yo1:
+	mov	al, 'ð'
+	jmp	.doit
+.yo2:
+	mov	al, 'ñ'
+	jmp	.doit
+.rus1:
+; 0x410-0x43F -> 0x80-0xAF
+	add	al, 0x70
+	jmp	.doit
+.rus2:
+; 0x440-0x450 -> 0xE0-0xEF
+	add	al, 0xA0
+.ascii:
+.doit:
+	stosb
+	jmp	uni2ansi_str
+.done:
+	mov	byte [edi], 0
+	ret
+
+char_toupper:
+; convert character to uppercase, using cp866 encoding
+; in: al=symbol
+; out: al=converted symbol
+	cmp	al, 'a'
+	jb	.ret
+	cmp	al, 'z'
+	jbe	.az
+	cmp	al, ' '
+	jb	.ret
+	cmp	al, 'à'
+	jb	.rus1
+	cmp	al, 'ï'
+	ja	.ret
+; 0xE0-0xEF -> 0x90-0x9F
+	sub	al, 'à'-''
+.ret:
+	ret
+.rus1:
+; 0xA0-0xAF -> 0x80-0x8F
+.az:
+	and	al, not 0x20
+	ret
+
+fat_get_name:
+; in: edi->FAT entry
+; out: CF=1 - no valid entry
+; else CF=0 and ebp->ASCIIZ-name
+; (maximum length of filename is 255 (wide) symbols without trailing 0,
+;  but implementation requires buffer 261 words)
+; destroys eax
+	cmp	byte [edi], 0
+	jz	.no
+	cmp	byte [edi], 0xE5
+	jnz	@f
+.no:
+	stc
+	ret
+@@:
+	cmp	byte [edi+11], 0xF
+	jz	.longname
+	push	ecx
+	mov	ecx, 8
+	push	edi ebp ecx
+@@:
+	mov	al, [edi]
+	inc	edi
+	mov	[ebp], al
+	inc	ebp
+	loop	@b
+	pop	ecx
+@@:
+	cmp	byte [ebp-1], ' '
+	jnz	@f
+	dec	ebp
+	loop	@b
+@@:
+	mov	byte [ebp], '.'
+	inc	ebp
+	mov	ecx, 3
+	push	ecx
+@@:
+	mov	al, [edi]
+	inc	edi
+	mov	[ebp], al
+	inc	ebp
+	loop	@b
+	pop	ecx
+@@:
+	cmp	byte [ebp-1], ' '
+	jnz	@f
+	dec	ebp
+	loop	@b
+	dec	ebp
+@@:
+	and	byte [ebp], 0	; CF=0
+	pop	ebp edi ecx
+	ret
+.longname:
+; LFN
+	mov	al, byte [edi]
+	and	eax, 0x3F
+	dec	eax
+	cmp	al, 20
+	jae	.no	; ignore invalid entries
+	mov	word [ebp+260*2], 0	; force null-terminating for orphans
+	imul	eax, 13*2
+	add	ebp, eax
+	test	byte [edi], 0x40
+	jz	@f
+	mov	word [ebp+13*2], 0
+@@:
+	push	eax
+; now copy name from edi to ebp ...
+	mov	eax, [edi+1]
+	mov	[ebp], eax	; symbols 1,2
+	mov	eax, [edi+5]
+	mov	[ebp+4], eax	; 3,4
+	mov	eax, [edi+9]
+	mov	[ebp+8], ax	; 5
+	mov	eax, [edi+14]
+	mov	[ebp+10], eax	; 6,7
+	mov	eax, [edi+18]
+	mov	[ebp+14], eax	; 8,9
+	mov	eax, [edi+22]
+	mov	[ebp+18], eax	; 10,11
+	mov	eax, [edi+28]
+	mov	[ebp+22], eax	; 12,13
+; ... done
+	pop	eax
+	sub	ebp, eax
+	test	eax, eax
+	jz	@f
+; if this is not first entry, more processing required
+	stc
+	ret
+@@:
+; if this is first entry:
+; buffer at ebp contains UNICODE name, convert it to ANSI
+	push	esi edi
+	mov	esi, ebp
+	mov	edi, ebp
+	call	uni2ansi_str
+	pop	edi esi
+	clc
+	ret
+
+fat_compare_name:
+; compares ASCIIZ-names, case-insensitive (cp866 encoding)
+; in: esi->name, ebp->name
+; out: if names match: ZF=1 and esi->next component of name
+;      else: ZF=0, esi is not changed
+; destroys eax
+	push	ebp esi
+.loop:
+	mov	al, [ebp]
+	inc	ebp
+	call	char_toupper
+	push	eax
+	lodsb
+	call	char_toupper
+	cmp	al, [esp]
+	jnz	.done
+	pop	eax
+	test	al, al
+	jnz	.loop
+	dec	esi
+	pop	eax
+	pop	ebp
+	xor	eax, eax	; set ZF flag
+	ret
+.done:
+	cmp	al, '/'
+	jnz	@f
+	cmp	byte [esp], 0
+	jnz	@f
+	mov	[esp+4], esi
+@@:
+	pop	eax
+	pop	esi ebp
+	ret
+
+rd_find_lfn:
+; in: esi->name
+; out: CF=1 - file not found
+;      else CF=0 and edi->direntry
+	push	esi ebp edi
+	sub	esp, 262*2	; allocate space for LFN
+	mov	ebp, esp	; ebp points to buffer
+	mov	edi, 0x100000+512*19	; to root dir
+.l1:
+	call	fat_get_name
+	jc	.l2
+	call	fat_compare_name
+	jz	.found
+.l2:
+	add	edi, 0x20
+	cmp	edi, 0x100000+512*33
+	jb	.l1
+.notfound:
+	add	esp, 262*2
+	pop	edi ebp esi
+	stc
+	ret
+.found:
+; found
+; if this is LFN entry, advance to true entry
+	cmp	byte [edi+11], 0xF
+	jnz	@f
+	add	edi, 0x20
+@@:
+; folders are not supported
+	cmp	byte [esi], 0
+	jnz	.notfound
+	add	esp, 262*2+4	; CF=0
+	pop	ebp esi
+	ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskRead - LFN variant for reading sys floppy
+;
+;  esi  points to filename
+;  ebx  pointer to 64-bit number = first wanted byte, 0+
+;       may be ebx=0 - start from first byte
+;  ecx  number of bytes to read, 0+
+;  edx  mem location to return data
+;
+;  ret ebx = size or 0xffffffff file not found
+;      eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+fs_RamdiskRead:
+	cmp	byte [esi], 0
+	jnz	@f
+	or	ebx, -1
+	mov	eax, 10		; access denied
+	ret
+@@:
+	push	edi
+	call	rd_find_lfn
+	jnc	.found
+	pop	edi
+	or	ebx, -1
+	mov	eax, 5		; file not found
+	ret
+.found:
+	test	ebx, ebx
+	jz	.l1
+	cmp	dword [ebx+4], 0
+	jz	@f
+	mov	ebx, [edi+28]
+.reteof:
+	mov	eax, 6		; EOF
+	pop	edi
+	ret
+@@:
+	mov	ebx, [ebx]
+.l1:
+	push	dword [edi+28]		; file size
+	push	dword [edi+28]
+	movzx	edi, word [edi+26]	; cluster
+	push	ecx edx
+.new:
+	jecxz	.done
+	test	edi, edi
+	jz	.eof
+	cmp	edi, 0xFF8
+	jae	.eof
+	lea	eax, [edi+31]		; bootsector+2*fat+filenames
+	shl	eax, 9			; *512
+	add	eax, 0x100000		; image base
+; now eax points to data of cluster
+	sub	ebx, 512
+	jae	.skip
+	lea	eax, [eax+ebx+512]
+	neg	ebx
+	push	ecx
+	cmp	ecx, ebx
+	jbe	@f
+	mov	ecx, ebx
+@@:
+	cmp	ecx, [esp+12]
+	jbe	@f
+	mov	ecx, [esp+12]
+@@:
+	mov	ebx, edx
+	call	memmove
+	add	edx, ecx
+	sub	[esp], ecx
+	sub	[esp+12], ecx
+	pop	ecx
+	xor	ebx, ebx
+	cmp	[esp+8], ebx
+	jnz	.skip
+	jecxz	.done
+	jmp	.eof
+.skip:
+	movzx	edi, word [edi*2+0x280000]	; find next cluster from FAT
+	jmp	.new
+.eof:
+	pop	edx ecx ebx ebx
+	jmp	.reteof
+.done:
+	pop	edx ecx ebx ebx edi
+	xor	eax, eax
+	ret
+
+; \end{diamond}

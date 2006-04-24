@@ -8,6 +8,7 @@
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
 ;;                                                                 ;;
+;;  23.04.2006 LFN read - diamond                                  ;;
 ;;  28.01.2006 find all Fat16/32 partition in all input point      ;;
 ;;             to MBR, see file part_set.inc - Mario79             ;;
 ;;  15.01.2005 get file size/attr/date, file_append - ATV          ;;
@@ -2577,3 +2578,239 @@ read_hd_file:
 
     ret
 
+; \begin{diamond}
+hd_find_lfn:
+; in: esi->name
+; out: CF=1 - file not found
+;      else CF=0 and edi->direntry
+	pusha
+	sub	esp, 262*2	; allocate space for LFN
+	mov	ebp, esp
+	mov	eax, [ROOT_CLUSTER]	; start from root
+.mainloop:
+.new_cluster:
+	mov	[cluster_tmp], eax
+	mov	[fat16_root], 0
+	cmp	eax, [LAST_CLUSTER]
+	ja	.notfound
+	cmp	eax, 2
+	jae	.data_cluster
+	cmp	[fat_type], 16
+	jnz	.notfound
+	mov	eax, [ROOT_START]
+	mov	ecx, [ROOT_SECTORS]
+	mov	[fat16_root], 1
+	jmp	.new_sector
+.data_cluster:
+	dec	eax
+	dec	eax
+	mov	ecx, [SECTORS_PER_CLUSTER]
+	mul	ecx
+	add	eax, [DATA_START]
+.new_sector:
+	mov	ebx, buffer
+	call	hd_read
+	mov	edi, ebx
+	add	ebx, 512
+	push	eax
+.l1:
+	call	fat_get_name
+	jc	.l2
+	call	fat_compare_name
+	jz	.found
+.l2:
+	add	edi, 0x20
+	cmp	edi, ebx
+	jb	.l1
+	pop	eax
+	inc	eax
+	loop	.new_sector
+	cmp	[fat16_root], 0
+	jnz	.notfound
+	mov	eax, [cluster_tmp]
+	call	get_FAT
+	cmp	eax, 2
+	jb	.notfound
+	cmp	eax, [fatRESERVED]
+	jb	.new_cluster
+.notfound:
+	add	esp, 262*2
+	popa
+	stc
+	ret
+.found:
+	pop	eax
+; if this is LFN entry, advance to true entry
+	cmp	byte [edi+11], 0xF
+	jnz	.entryfound
+	add	edi, 0x20
+	cmp	edi, ebx
+	jb	.entryfound
+	inc	eax
+	dec	ecx
+	jnz	.read_entry
+	cmp	[fat16_root], 0
+	jnz	.notfound
+	mov	eax, [cluster_tmp]
+	call	get_FAT
+	cmp	eax, 2
+	jb	.notfound
+	cmp	eax, [fatRESERVED]
+	jae	.notfound
+	dec	eax
+	dec	eax
+	mul	[SECTORS_PER_CLUSTER]
+	add	eax, [DATA_START]
+.read_entry:
+	mov	ebx, [buffer]
+	call	hd_read
+	mov	edi, ebx
+.entryfound:
+	cmp	byte [esi], 0
+	jz	.done
+	test	byte [edi+11], 10h	; is a directory?
+	jz	.notfound
+	mov	eax, [edi+20-2]
+	mov	ax, [edi+26]
+	jmp	.mainloop
+.done:
+	add	esp, 262*2+4	; CF=0
+	push	edi
+	popad
+	ret
+
+;----------------------------------------------------------------
+;
+;  fs_HdRead - LFN variant for reading hard disk
+;
+;  esi  points to filename
+;  ebx  pointer to 64-bit number = first wanted byte, 0+
+;       may be ebx=0 - start from first byte
+;  ecx  number of bytes to read, 0+
+;  edx  mem location to return data
+;
+;  ret ebx = size or 0xffffffff file not found
+;      eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+fs_HdRead:
+	cmp	[fat_type], 0
+	jnz	@f
+	or	ebx, -1
+	mov	eax, ERROR_UNKNOWN_FS
+	ret
+@@:
+	push	edi
+	cmp	byte [esi], 0
+	jnz	@f
+.noaccess:
+	pop	edi
+	or	ebx, -1
+	mov	eax, ERROR_ACCESS_DENIED
+	ret
+@@:
+	call	hd_find_lfn
+	jnc	.found
+	pop	edi
+	or	ebx, -1
+	mov	eax, ERROR_FILE_NOT_FOUND
+	ret
+.found:
+	test	byte [edi+11], 0x10	; do not allow read directories
+	jnz	.noaccess
+	test	ebx, ebx
+	jz	.l1
+	cmp	dword [ebx+4], 0
+	jz	@f
+	mov	ebx, [edi+28]
+.reteof:
+	mov	eax, 6
+	pop	edi
+	ret
+@@:
+	mov	ebx, [ebx]
+.l1:
+	push	dword [edi+28]		; file size
+	mov	eax, [edi+20-2]
+	mov	ax, [edi+26]
+	push	ecx edx
+	push	dword [edi+28]
+; now eax=cluster, ebx=position, ecx=count, edx=buffer for data
+.new_cluster:
+	jecxz	.new_sector
+	test	eax, eax
+	jz	.eof
+	cmp	eax, [fatRESERVED]
+	jae	.eof
+	mov	[cluster_tmp], eax
+	dec	eax
+	dec	eax
+	mov	edi, [SECTORS_PER_CLUSTER]
+	imul	eax, edi
+	add	eax, [DATA_START]
+.new_sector:
+	test	ecx, ecx
+	jz	.done
+	sub	ebx, 512
+	jae	.skip
+	add	ebx, 512
+	jnz	.force_buf
+	cmp	ecx, 512
+	jb	.force_buf
+	cmp	dword [esp], 512
+	jb	.force_buf
+; we may read directly to given buffer
+	push	ebx
+	mov	ebx, edx
+	call	hd_read
+	pop	ebx
+	add	edx, 512
+	sub	ecx, 512
+	sub	dword [esp], 512
+	jmp	.skip
+.force_buf:
+; we must read sector to temporary buffer and then copy it to destination
+	push	eax ebx
+	mov	ebx, buffer
+	call	hd_read
+	mov	eax, ebx
+	pop	ebx
+	add	eax, ebx
+	push	ecx
+	add	ecx, ebx
+	cmp	ecx, 512
+	jbe	@f
+	mov	ecx, 512
+@@:
+	sub	ecx, ebx
+	cmp	ecx, [esp+8]
+	jbe	@f
+	mov	ecx, [esp+8]
+@@:
+	mov	ebx, edx
+	call	memmove
+	add	edx, ecx
+	sub	[esp], ecx
+	sub	[esp+8], ecx
+	pop	ecx
+	pop	eax
+	xor	ebx, ebx
+	cmp	[esp], ebx
+	jnz	.skip
+	jecxz	.done
+	jmp	.eof
+.skip:
+	inc	eax
+	dec	edi
+	jnz	.new_sector
+	mov	eax, [cluster_tmp]
+	call	get_FAT
+	jmp	.new_cluster
+.done:
+	pop	ebx edx ecx ebx edi
+	xor	eax, eax
+	ret
+.eof:
+	pop	ebx edx ecx ebx
+	jmp	.reteof
+; \end{diamond}

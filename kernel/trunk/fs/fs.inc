@@ -3,6 +3,7 @@
 ;; System service for filesystem call                                   ;;
 ;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
 ;;                                                                      ;;
+;; xx.04.2006 LFN support - diamond                                     ;;
 ;; 15.01.2005 get file size/attr/date, file_append (only for hd) - ATV  ;;
 ;; 23.11.2004 test if hd/partition is set - ATV                         ;;
 ;; 18.11.2004 get_disk_info and more error codes - ATV                  ;;
@@ -49,7 +50,7 @@ file_system:
 ;
 ; eax = 0  : read ok
 ; eax = 1  : no hd base and/or partition defined
-; eax = 2  : yet unsupported FS
+; eax = 2  : function is unsupported for this FS
 ; eax = 3  : unknown FS
 ; eax = 4  : partition not defined at hd
 ; eax = 5  : file not found
@@ -86,6 +87,10 @@ file_system:
 
     ; Extract parameters
     add    eax, std_application_base_address    ; abs start of info block
+; \begin{diamond}
+	cmp	byte [eax+1], 1
+	jz	file_system_lfn
+; \end{diamond}
 
     cmp   dword [eax+0],12      ; Get file size
     je    fs_read
@@ -1126,3 +1131,5 @@ err:
 
 partition_string: dd 0
                   db 32
+
+	include 'fs_lfn.inc'
