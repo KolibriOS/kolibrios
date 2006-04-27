@@ -1,4 +1,4 @@
-; System function 58, subfunctions 1xx
+; System function 70 - files with long names (LFN)
 ; diamond, 2006
 
 iglobal
@@ -26,15 +26,15 @@ endg
 file_system_lfn:
 ; in: eax->fileinfo block
 ; operation codes:
-; 0x100 : read file
-; 0x101 : rewrite file - not implemented yet
-; 0x102 : delete file - not implemented yet
-; 0x103 : write/append to file - not implemented yet
-; 0x104 : create directory - not implemented yet
-; 0x105 : rename file/directory - not implemented yet
-; 0x106 : get file attributes structure - not implemented yet
-; 0x107 : start application - not implemented yet
-; 0x108 : find file with mask - not implemented yet
+; 0 : read file
+; 1 : rewrite file - not implemented yet
+; 2 : delete file - not implemented yet
+; 3 : write/append to file - not implemented yet
+; 4 : create directory - not implemented yet
+; 5 : rename file/directory - not implemented yet
+; 6 : get file attributes structure - not implemented yet
+; 7 : start application - not implemented yet
+; 8 : find file with mask - not implemented yet
 
 ; parse file name
 	xchg	ebx, eax

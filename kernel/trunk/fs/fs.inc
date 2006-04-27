@@ -87,10 +87,6 @@ file_system:
 
     ; Extract parameters
     add    eax, std_application_base_address    ; abs start of info block
-; \begin{diamond}
-	cmp	byte [eax+1], 1
-	jz	file_system_lfn
-; \end{diamond}
 
     cmp   dword [eax+0],12      ; Get file size
     je    fs_read

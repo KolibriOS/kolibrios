@@ -138,7 +138,7 @@ iglobal
       dd sys_window_move         ; 67-Window move or resize
       dd sys_internal_services   ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
-      dd file_system_v2          ; 70-Common file system interface, version 2
+      dd file_system_lfn         ; 70-Common file system interface, version 2
 
   times 255 - ( ($-servetable) /4 )  dd undefined_syscall
 
