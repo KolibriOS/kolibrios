@@ -1,4 +1,6 @@
 ;*************************************************************
+;* 29.04.2006 Elimination of hangup after the                *
+;*             expiration hd_wait_timeout -  Mario79         *
 ;* 28.01.2006 find all Fat16/32 partition in all input point *
 ;*            to MBR - Mario79                               *
 ;*************************************************************
@@ -100,6 +102,8 @@ extended_already_set:
     add   eax,ebp               ; mbr=mbr+0, ext_part=ext_start+relat_start
     mov   ebx,buffer
     call  hd_read
+    cmp  [hd_error],0
+    jne  problem_hd
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   end_partition_chain
@@ -249,6 +253,9 @@ hd_and_partition_ok:
     mov   [hd_setup],1
     mov   ebx,buffer
     call  hd_read               ; read boot sector of partition
+    cmp  [hd_error],0
+    jne  problem_fat_dec_count
+
     mov   [hd_setup],0
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?

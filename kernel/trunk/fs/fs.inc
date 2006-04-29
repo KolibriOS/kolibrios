@@ -2,7 +2,8 @@
 ;;                                                                      ;;
 ;; System service for filesystem call                                   ;;
 ;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
-;;                                                                      ;;
+;; 29.04.2006 Elimination of hangup after the                           ;;
+;;            expiration hd_wait_timeout (for LBA) -  Mario79           ;;
 ;; xx.04.2006 LFN support - diamond                                     ;;
 ;; 15.01.2005 get file size/attr/date, file_append (only for hd) - ATV  ;;
 ;; 23.11.2004 test if hd/partition is set - ATV                         ;;
@@ -30,7 +31,8 @@ hd_address_table:  dd  0x1f0,0x00,0x1f0,0x10
                    dd  0x170,0x00,0x170,0x10
 endg
 
-file_system: 
+file_system:
+
 ; IN:
 ;
 ; eax = 0  ; read file          /RamDisk/First  6   /HardDisk/First 30
@@ -936,6 +938,8 @@ LBA_read:
     mov  [hdid],ebx
 
     call  wait_for_hd_idle
+    cmp   [hd_error],0
+    jne   hd_lba_error
 
     ; eax = hd port
     ; ebx = set for primary (0x00) or slave (0x10)
@@ -972,6 +976,8 @@ LBA_read:
     sti
 
     call  wait_for_sector_buffer
+    cmp   [hd_error],0
+    jne   hd_lba_error
 
     cli
 
@@ -987,7 +993,7 @@ LBA_read:
     xor   ebx,ebx
 
   LBA_read_ret:
-
+    mov [hd_error],0
     mov   [hd1_status],0
     add   esp,2*4
 
