@@ -1,5 +1,4 @@
-     cmp  eax,6         ; SAVE FLOPPY IMAGE (HD version only)
-     jnz  nosaveimage
+sysfn_saveramdisk:	; 18.6 = SAVE FLOPPY IMAGE (HD version only)
      cmp  ebx,1
      jnz  img_save_hd_1
      mov  edx,bootpath             ; path = '/KOLIBRI    '
@@ -21,6 +20,5 @@
      mov  ebx,1440*1024        ; size 1440 Kb
      mov  ecx,0x100000         ; address of image
      call file_write
+     mov  [esp+36],eax
      ret
-
-   nosaveimage:

@@ -553,7 +553,7 @@ uni2ansi_str:
 	add	al, 0x70
 	jmp	.doit
 .rus2:
-; 0x440-0x450 -> 0xE0-0xEF
+; 0x440-0x44F -> 0xE0-0xEF
 	add	al, 0xA0
 .ascii:
 .doit:
@@ -562,6 +562,43 @@ uni2ansi_str:
 .done:
 	mov	byte [edi], 0
 	ret
+
+ansi2uni_char:
+; convert ANSI character in al to UNICODE character in ax, using cp866 encoding
+        mov     ah, 0
+; 0x00-0x7F - trivial map
+        cmp     al, 0x80
+        jb      .ret
+; 0x80-0xAF -> 0x410-0x43F
+        cmp     al, 0xB0
+        jae     @f
+        add     ax, 0x410-0x80
+.ret:
+        ret
+@@:
+; 0xE0-0xEF -> 0x440-0x44F
+        cmp     al, 0xE0
+        jb      .unk
+        cmp     al, 0xF0
+        jae     @f
+        add     ax, 0x440-0xE0
+        ret
+; 0xF0 -> 0x401
+; 0xF1 -> 0x451
+@@:
+        cmp     al, 'ð'
+        jz      .yo1
+        cmp     al, 'ñ'
+        jz      .yo2
+.unk:
+        mov     al, '_'         ; ah=0
+        ret
+.yo1:
+        mov     ax, 0x401
+        ret
+.yo2:
+        mov     ax, 0x451
+        ret
 
 char_toupper:
 ; convert character to uppercase, using cp866 encoding
@@ -606,7 +643,9 @@ fat_get_name:
 	jz	.longname
 	push	ecx
 	mov	ecx, 8
-	push	edi ebp ecx
+        push	edi ebp ecx
+        cmp     byte [ebp-4], 0
+        jnz     .unicode_short
 @@:
 	mov	al, [edi]
 	inc	edi
@@ -639,6 +678,49 @@ fat_get_name:
 	dec	ebp
 @@:
 	and	byte [ebp], 0	; CF=0
+	pop	ebp edi ecx
+	ret
+.unicode_short:
+@@:
+        mov     al, [edi]
+        inc     edi
+        call    ansi2uni_char
+        mov     [ebp], ax
+        inc     ebp
+        inc     ebp
+        loop    @b
+        pop     ecx
+@@:
+	cmp	word [ebp-2], ' '
+	jnz	@f
+	dec	ebp
+	dec     ebp
+	loop	@b
+@@:
+	mov	word [ebp], '.'
+	inc	ebp
+	inc     ebp
+	mov	ecx, 3
+	push	ecx
+@@:
+	mov	al, [edi]
+	inc	edi
+	call    ansi2uni_char
+	mov	[ebp], ax
+        inc     ebp
+        inc     ebp
+        loop    @b
+        pop     ecx
+@@:
+	cmp	word [ebp-2], ' '
+	jnz	@f
+	dec	ebp
+	dec     ebp
+	loop	@b
+	dec	ebp
+	dec     ebp
+@@:
+	and	word [ebp], 0	; CF=0
 	pop	ebp edi ecx
 	ret
 .longname:
@@ -681,12 +763,15 @@ fat_get_name:
 	ret
 @@:
 ; if this is first entry:
+        cmp     byte [ebp-4], 0
+        jnz     .ret
 ; buffer at ebp contains UNICODE name, convert it to ANSI
 	push	esi edi
 	mov	esi, ebp
 	mov	edi, ebp
 	call	uni2ansi_str
 	pop	edi esi
+.ret:
 	clc
 	ret
 
@@ -725,6 +810,76 @@ fat_compare_name:
 	pop	esi ebp
 	ret
 
+fat_time_to_bdfe:
+; in: eax=FAT time
+; out: eax=BDFE time
+	push	ecx edx
+	mov	ecx, eax
+	mov	edx, eax
+	shr	eax, 11
+	shl	eax, 16	; hours
+	and	edx, 0x1F
+	add	edx, edx
+	mov	al, dl	; seconds
+	shr	ecx, 5
+	and	ecx, 0x3F
+	mov	ah, cl	; minutes
+	pop	edx ecx
+	ret
+
+fat_date_to_bdfe:
+	push	ecx edx
+	mov	ecx, eax
+	mov	edx, eax
+	shr	eax, 9
+	add	ax, 1980
+	shl	eax, 16	; year
+	and	edx, 0x1F
+	mov	al, dl	; day
+	shr	ecx, 5
+	and	ecx, 0xF
+	mov	ah, cl	; month
+	pop	edx ecx
+	ret
+
+fat_entry_to_bdfe:
+; convert FAT entry at edi to BDFE (block of data of folder entry) at esi, advance esi
+; destroys eax
+        movzx   eax, byte [edi+11]
+        mov     [esi], eax	; attributes
+        mov     eax, [ebp-4]
+        mov     [esi+4], eax	; ASCII/UNICODE name
+        movzx   eax, word [edi+14]
+        call    fat_time_to_bdfe
+        mov     [esi+8], eax	; creation time
+        movzx   eax, word [edi+16]
+        call    fat_date_to_bdfe
+        mov     [esi+12], eax	; creation date
+        and     dword [esi+16], 0	; last access time is not supported on FAT
+        movzx   eax, word [edi+18]
+        call    fat_date_to_bdfe
+        mov     [esi+20], eax	; last access date
+        movzx   eax, word [edi+22]
+        call    fat_time_to_bdfe
+        mov     [esi+24], eax	; last write time
+        movzx   eax, word [edi+24]
+        call    fat_date_to_bdfe
+        mov     [esi+28], eax	; last write date
+        mov     eax, [edi+28]
+        mov     [esi+32], eax	; file size (low dword)
+        xor     eax, eax
+        mov     [esi+36], eax	; file size (high dword)
+        push    ecx edi
+        lea     edi, [esi+40]
+        mov     esi, ebp
+        mov     ecx, 259/2
+        rep     movsd
+        movsw
+        stosw
+        mov     esi, edi
+        pop     edi ecx
+        ret
+
 rd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
@@ -732,6 +887,7 @@ rd_find_lfn:
 	push	esi ebp edi
 	sub	esp, 262*2	; allocate space for LFN
 	mov	ebp, esp	; ebp points to buffer
+	push	0		; for fat_get_name: read ASCII name
 	mov	edi, 0x100000+512*19	; to root dir
 .l1:
 	call	fat_get_name
@@ -743,7 +899,7 @@ rd_find_lfn:
 	cmp	edi, 0x100000+512*33
 	jb	.l1
 .notfound:
-	add	esp, 262*2
+	add	esp, 262*2+4
 	pop	edi ebp esi
 	stc
 	ret
@@ -757,7 +913,7 @@ rd_find_lfn:
 ; folders are not supported
 	cmp	byte [esi], 0
 	jnz	.notfound
-	add	esp, 262*2+4	; CF=0
+	add	esp, 262*2+4+4	; CF=0
 	pop	ebp esi
 	ret
 
@@ -776,79 +932,146 @@ rd_find_lfn:
 ;
 ;--------------------------------------------------------------
 fs_RamdiskRead:
-	cmp	byte [esi], 0
-	jnz	@f
-	or	ebx, -1
-	mov	eax, 10		; access denied
-	ret
+        cmp     byte [esi], 0
+        jnz     @f
+        or      ebx, -1
+        mov     eax, 10         ; access denied
+        ret
 @@:
-	push	edi
-	call	rd_find_lfn
-	jnc	.found
-	pop	edi
-	or	ebx, -1
-	mov	eax, 5		; file not found
-	ret
+        push    edi
+        call    rd_find_lfn
+        jnc     .found
+        pop     edi
+        or      ebx, -1
+        mov     eax, 5          ; file not found
+        ret
 .found:
-	test	ebx, ebx
-	jz	.l1
-	cmp	dword [ebx+4], 0
-	jz	@f
-	mov	ebx, [edi+28]
+        test    ebx, ebx
+        jz      .l1
+        cmp     dword [ebx+4], 0
+        jz      @f
+        mov     ebx, [edi+28]
 .reteof:
-	mov	eax, 6		; EOF
-	pop	edi
-	ret
+        mov     eax, 6          ; EOF
+        pop     edi
+        ret
 @@:
-	mov	ebx, [ebx]
+        mov     ebx, [ebx]
 .l1:
-	push	dword [edi+28]		; file size
-	push	dword [edi+28]
-	movzx	edi, word [edi+26]	; cluster
-	push	ecx edx
+        push    dword [edi+28]		; file size
+        push    dword [edi+28]
+        movzx   edi, word [edi+26]	; cluster
+        push    ecx edx
 .new:
-	jecxz	.done
-	test	edi, edi
-	jz	.eof
-	cmp	edi, 0xFF8
-	jae	.eof
-	lea	eax, [edi+31]		; bootsector+2*fat+filenames
-	shl	eax, 9			; *512
-	add	eax, 0x100000		; image base
+        jecxz   .done
+        test    edi, edi
+        jz      .eof
+        cmp     edi, 0xFF8
+        jae     .eof
+        lea     eax, [edi+31]           ; bootsector+2*fat+filenames
+        shl     eax, 9                  ; *512
+        add     eax, 0x100000           ; image base
 ; now eax points to data of cluster
-	sub	ebx, 512
-	jae	.skip
-	lea	eax, [eax+ebx+512]
-	neg	ebx
-	push	ecx
-	cmp	ecx, ebx
-	jbe	@f
-	mov	ecx, ebx
+        sub     ebx, 512
+        jae     .skip
+        lea     eax, [eax+ebx+512]
+        neg     ebx
+        push    ecx
+        cmp     ecx, ebx
+        jbe     @f
+        mov     ecx, ebx
 @@:
-	cmp	ecx, [esp+12]
-	jbe	@f
-	mov	ecx, [esp+12]
+        cmp     ecx, [esp+12]
+        jbe     @f
+        mov     ecx, [esp+12]
 @@:
-	mov	ebx, edx
-	call	memmove
-	add	edx, ecx
-	sub	[esp], ecx
-	sub	[esp+12], ecx
-	pop	ecx
-	xor	ebx, ebx
-	cmp	[esp+8], ebx
-	jnz	.skip
-	jecxz	.done
-	jmp	.eof
+        mov     ebx, edx
+        call    memmove
+        add     edx, ecx
+        sub     [esp], ecx
+        sub     [esp+12], ecx
+        pop     ecx
+        xor     ebx, ebx
+        cmp     [esp+8], ebx
+        jnz     .skip
+        jecxz   .done
+        jmp     .eof
 .skip:
-	movzx	edi, word [edi*2+0x280000]	; find next cluster from FAT
-	jmp	.new
+        movzx   edi, word [edi*2+0x280000]      ; find next cluster from FAT
+        jmp     .new
 .eof:
-	pop	edx ecx ebx ebx
-	jmp	.reteof
+        pop     edx ecx ebx ebx
+        jmp     .reteof
 .done:
-	pop	edx ecx ebx ebx edi
-	xor	eax, eax
-	ret
+        pop     edx ecx ebx ebx edi
+        xor     eax, eax
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskReadFolder - LFN variant for reading sys floppy folder
+;
+;  esi  points to filename; only root is folder on ramdisk
+;  ebx  pointer to 32-bit number = first wanted block
+;  ecx  number of blocks to read, 0+
+;  edx  mem location to return data
+;
+;  ret ebx = size or 0xffffffff file not found
+;      eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+fs_RamdiskReadFolder:
+        mov     ebx, [ebx]
+        cmp     byte [esi], 0
+        jz      @f
+; ramdisk doesn't support folders
+        mov     eax, ERROR_ACCESS_DENIED
+        or      ebx, -1
+        ret
+@@:
+        push    esi edi ecx
+; init header
+        push    ecx
+        mov     edi, edx
+        mov     ecx, 32/4
+        xor     eax, eax
+        rep     stosd
+        mov     byte [edx], 1   ; version
+        pop     ecx
+        push    ebp
+        sub     esp, 262*2      ; allocate space for LFN
+        mov     ebp, esp
+        push    1               ; for fat_get_name: read UNICODE name
+; read root
+        mov     esi, edi        ; esi points to block of data of folder entry (BDFE)
+        mov     edi, 0x100000+512*19
+.l1:
+        call    fat_get_name
+        jc      .l2
+        cmp     byte [edi+11], 0xF
+        jnz     @f
+        add     edi, 0x20
+@@:
+        inc     dword [edx+8]   ; new file found
+        dec     ebx
+        jns     .l2
+        dec     ecx
+        js      .l2
+        inc     dword [edx+4]  ; new file block copied
+        call    fat_entry_to_bdfe
+.l2:
+        add     edi, 0x20
+        cmp     edi, 0x100000+512*33
+        jb      .l1
+        add     esp, 262*2+4
+        pop     ebp
+        mov     ebx, [edx+8]
+        xor     eax, eax
+        dec     ecx
+        js      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
+        pop     ecx edi esi
+        ret
 
 ; \end{diamond}

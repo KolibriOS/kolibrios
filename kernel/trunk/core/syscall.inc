@@ -86,7 +86,7 @@ iglobal
       dd sys_background          ; 15-bgr
       dd sys_cachetodiskette     ; 16-FlushFloppyCache
       dd sys_getbutton           ; 17-GetButton
-      dd syscall_system          ; 18-Shutdown,KillApp,WindowActivate
+      dd sys_system              ; 18-System Services
       dd syscall_startapp        ; 19-StartApp
       dd sys_midi                ; 20-ResetMidi and OutputMidi
       dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
@@ -98,11 +98,14 @@ iglobal
       dd sys_wss                 ; 27-SetWssMainVol and SetWssCdVol
       dd sys_sb16II              ; 28-SetSb16
       dd sys_date                ; 29-GetDate
-      dd syscall_readhd          ; 30-ReadHd
-      dd syscall_starthdapp      ; 31-StartHdApp
+;      dd syscall_readhd          ; 30-ReadHd - obsolete <diamond>
+      dd undefined_syscall       ; 30-reserved
+;      dd syscall_starthdapp      ; 31-StartHdApp - obsolete <diamond>
+      dd undefined_syscall       ; 31-reserved
       dd syscall_delramdiskfile  ; 32-DelRamdiskFile
       dd syscall_writeramdiskfile; 33-WriteRamdiskFile
-      dd read_floppy_file        ; 34-ReadFloppyDrive
+;      dd read_floppy_file        ; 34-ReadFloppyDrive - obsolete <diamond>
+      dd undefined_syscall       ; 34-reserved
       dd syscall_getpixel        ; 35-GetPixel
       dd syscall_readstring      ; 36-ReadString (not yet ready)
       dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.
@@ -125,7 +128,8 @@ iglobal
       dd user_events             ; 54-User events
       dd sound_interface         ; 55-Sound interface
       dd write_to_hd             ; 56-Write a file to hd
-      dd delete_from_hd          ; 57-Delete a file from hd
+;      dd delete_from_hd          ; 57-Delete a file from hd - obsolete <diamond>
+      dd undefined_syscall       ; 57-reserved
       dd file_system             ; 58-Common file system interface
       dd sys_trace               ; 59-System call trace
       dd new_sys_ipc             ; 60-Inter Process Communication

@@ -131,8 +131,6 @@ vesa20_putimage:
         ja      @f
         add     esp, putimg.stack_data
         popad
-        xor     eax, eax
-        inc     eax
         ret
       @@:
         cmp     ebx, [putimg.image_sx]
@@ -149,8 +147,6 @@ vesa20_putimage:
         ja      @f
         add     esp, putimg.stack_data
         popad
-        xor     eax, eax
-        inc     eax
         ret
       @@:
         cmp     ebx, [putimg.image_sy]
@@ -248,7 +244,6 @@ vesa20_putimage:
    .finish:
         add     esp, putimg.stack_data
         popad
-        xor     eax, eax
         ;sti ; !!!!!!!!!!!!!!!!!!!!!
 ret
 
@@ -286,7 +281,6 @@ put_image_end_32:
    .finish:
         add     esp, putimg.stack_data
         popad
-        xor     eax, eax
 ret
 
 

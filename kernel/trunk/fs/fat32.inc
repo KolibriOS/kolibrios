@@ -7,9 +7,10 @@
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  04.05.2006 LFN read folder - diamond                           ;;
 ;;  29.04.2006 Elimination of hangup after the                     ;;
 ;;             expiration hd_wait_timeout -  Mario79               ;;           
-;;  23.04.2006 LFN read - diamond                                  ;;
+;;  23.04.2006 LFN read file - diamond                             ;;
 ;;  28.01.2006 find all Fat16/32 partition in all input point      ;;
 ;;             to MBR, see file part_set.inc - Mario79             ;;
 ;;  15.01.2005 get file size/attr/date, file_append - ATV          ;;
@@ -2933,9 +2934,10 @@ hd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry
-    pusha
-    sub    esp, 262*2    ; allocate space for LFN
-    mov    ebp, esp
+        pusha
+        sub     esp, 262*2      ; allocate space for LFN
+        mov     ebp, esp
+        push    0               ; for fat_get_name: read ASCII name
     mov    eax, [ROOT_CLUSTER]    ; start from root
 .mainloop:
 .new_cluster:
@@ -2990,7 +2992,7 @@ hd_find_lfn:
     cmp    eax, [fatRESERVED]
     jb    .new_cluster
 .notfound:
-    add    esp, 262*2
+    add    esp, 262*2+4
     popa
     stc
     ret
@@ -3036,7 +3038,7 @@ hd_find_lfn:
     mov    ax, [edi+26]
     jmp    .mainloop
 .done:
-    add    esp, 262*2+4    ; CF=0
+    add    esp, 262*2+4+4    ; CF=0
     push    edi
     popad
     ret
@@ -3197,4 +3199,172 @@ fs_HdRead:
 .eof:
     pop    ebx edx ecx ebx
     jmp    .reteof
+
+;----------------------------------------------------------------
+;
+;  fs_HdReadFolder - LFN variant for reading hard disk folder
+;
+;  esi  points to filename
+;  ebx  pointer to 32-bit number = first wanted block, 0+
+;  ecx  number of blocks to read, 0+
+;  edx  mem location to return data
+;
+;  ret ebx = size or 0xffffffff folder not found
+;      eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+fs_HdReadFolder:
+        mov     ebx, [ebx]
+        mov     eax, [ROOT_CLUSTER]
+        push    edi
+        cmp     byte [esi], 0
+        jz      .doit
+        call    hd_find_lfn
+        jnc     .found
+        pop     edi
+        or      ebx, -1
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+.found:
+        test    byte [edi+11], 0x10     ; do not allow read files
+        jnz     .found_dir
+        pop     edi
+        or      ebx, -1
+        mov     eax, ERROR_ACCESS_DENIED
+        ret
+.found_dir:
+        mov     eax, [edi+20-2]
+        mov     ax, [edi+26]    ; eax=cluster
+.doit:
+        push    esi ecx
+        push    ebp
+        sub     esp, 262*2      ; reserve space for LFN
+        mov     ebp, esp
+        push    1               ; for fat_get_name: read UNICODE name
+; init header
+        push    eax ecx
+        mov     edi, edx
+        mov     ecx, 32/4
+        xor     eax, eax
+        rep     stosd
+        pop     ecx eax
+        mov     byte [edx], 1   ; version
+        mov     esi, edi        ; esi points to BDFE
+.new_cluster:
+        mov     [cluster_tmp], eax
+        test    eax, eax
+        jnz     @f
+        cmp     [fat_type], 32
+        jz      .notfound
+        mov     eax, [ROOT_START]
+        push    [ROOT_SECTORS]
+        push    ebx
+        jmp     .new_sector
+@@:
+        dec     eax
+        dec     eax
+        imul    eax, [SECTORS_PER_CLUSTER]
+        push    [SECTORS_PER_CLUSTER]
+        add     eax, [DATA_START]
+        push    ebx
+.new_sector:
+        mov     ebx, buffer
+        mov     edi, ebx
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     .notfound2
+        add     ebx, 512
+        push    eax
+.l1:
+        call    fat_get_name
+        jc      .l2
+        cmp     byte [edi+11], 0xF
+        jnz     .do_bdfe
+        add     edi, 0x20
+        cmp     edi, ebx
+        jb      .do_bdfe
+        pop     eax
+        inc     eax
+        dec     dword [esp+4]
+        jnz     @f
+        mov     eax, [cluster_tmp]
+        test    eax, eax
+        jz      .done
+        call    get_FAT
+        cmp     [hd_error], 0
+        jnz     .notfound2
+        cmp     eax, 2
+        jb      .done
+        cmp     eax, [fatRESERVED]
+        jae     .done
+        push    eax
+        mov     eax, [SECTORS_PER_CLUSTER]
+        mov     [esp+8], eax
+        pop     eax
+        mov     [cluster_tmp], eax
+        dec     eax
+        dec     eax
+        imul    eax, [SECTORS_PER_CLUSTER]
+        add     eax, [DATA_START]
+@@:
+        mov     ebx, buffer
+        mov     edi, ebx
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     .notfound2
+        add     ebx, 512
+        push    eax
+.do_bdfe:
+        inc     dword [edx+8]   ; new file found
+        dec     dword [esp+4]
+        jns     .l2
+        dec     ecx
+        js      .l2
+        inc     dword [edx+4]   ; new file block copied
+        call    fat_entry_to_bdfe
+.l2:
+        add     edi, 0x20
+        cmp     edi, ebx
+        jb      .l1
+        pop     eax
+        inc     eax
+        dec     dword [esp+4]
+        jnz     .new_sector
+        mov     eax, [cluster_tmp]
+        test    eax, eax
+        jz      .done
+        call    get_FAT
+        cmp     [hd_error], 0
+        jnz     .notfound2
+        cmp     eax, 2
+        jb      .done
+        cmp     eax, [fatRESERVED]
+        jae     .done
+        push    eax
+        mov     eax, [SECTORS_PER_CLUSTER]
+        mov     [esp+8], eax
+        pop     eax
+        pop     ebx
+        add     esp, 4
+        jmp     .new_cluster
+.notfound2:
+        add     esp, 8
+.notfound:
+        add     esp, 262*2+4
+        pop     ebp ecx esi edi
+        mov     eax, ERROR_FILE_NOT_FOUND
+        or      ebx, -1
+        ret
+.done:
+        add     esp, 262*2+4+8
+        pop     ebp
+        mov     ebx, [edx+8]
+        xor     eax, eax
+        dec     ecx
+        js      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
+        pop     ecx esi edi
+        ret
+
 ; \end{diamond}

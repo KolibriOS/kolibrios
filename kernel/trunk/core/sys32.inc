@@ -465,10 +465,13 @@ irqhandler:
      add    esi,irq00read    ; 1
      shl    edi,12           ; 1
      add    edi,0x2E0000
+     mov    ecx,16
 
      mov    [check_idle_semaphore],5
 
    irqnewread:
+     dec    ecx
+     js     irqover
 
      mov    dx,[esi]         ; 2+
 

@@ -1417,8 +1417,8 @@ display_number:
      ret
    cont_displ:
 
-     cmp   eax,60*0x10000        ; length <= 60 ?
-     jbe   cont_displ2
+     cmp   eax,61*0x10000        ; length <= 60 ?
+     jb    cont_displ2
      ret
    cont_displ2:
 
@@ -1435,7 +1435,7 @@ display_number:
      cmp   ah,0                  ; DECIMAL
      jne   no_display_desnum
      shr   eax,16
-     and   eax,0x2f
+     and   eax,0x3f
      push  eax
      ;mov   edi,[0x3010]
      ;mov   edi,[edi+0x10]
@@ -1461,7 +1461,7 @@ display_number:
      cmp   ah,0x01               ; HEXADECIMAL
      jne   no_display_hexnum
      shr   eax,16
-     and   eax,0x2f
+     and   eax,0x3f
      push  eax
      ;mov   edi,[0x3010]
      ;mov   edi,[edi+0x10]
@@ -1488,7 +1488,7 @@ display_number:
      cmp   ah,0x02               ; BINARY
      jne   no_display_binnum
      shr   eax,16
-     and   eax,0x2f
+     and   eax,0x3f
      push  eax
      ;mov   edi,[0x3010]
      ;mov   edi,[edi+0x10]
@@ -1637,6 +1637,10 @@ midi_base dw 0
    nsyse2:
      cmp  eax,3                      ; CD
      jnz  nsyse3
+     test ebx,ebx
+     jz   nosesl
+     cmp  ebx, 4
+     ja   nosesl
      mov  [cd_base],bl
      cmp  ebx,1
      jnz  noprma
@@ -1694,6 +1698,10 @@ wss_temp dd 0
 
      cmp  eax,7                      ; HD BASE
      jne  nsyse7
+     test ebx,ebx
+     jz   nosethd
+     cmp  ebx,4
+     ja   nosethd
      mov  [hd_base],bl
      cmp  ebx,1
      jnz  noprmahd
@@ -1727,6 +1735,7 @@ wss_temp dd 0
     call  reserve_hd1
     call  clear_hd_cache
     mov   [hd1_status],0        ; free
+   nosethd:
      ret
 
 hd_base db 0
@@ -1748,6 +1757,8 @@ hd_base db 0
 
      cmp  eax,10                     ; SOUND DMA CHANNEL
      jne  no_set_sound_dma
+     cmp  ebx,3
+     ja   sys_setup_err
      mov  [sound_dma],ebx
      ret
    no_set_sound_dma:
@@ -1770,6 +1781,7 @@ hd_base db 0
 include 'vmodeint.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+sys_setup_err:
      mov  [esp+36],dword -1
      ret
 
@@ -2062,34 +2074,61 @@ sys_end:
      call  delay_hs
      jmp   waitterm
 
-sys_system:
+iglobal
+sys_system_table:
+        dd      sysfn_shutdown          ; 1 = system shutdown
+        dd      sysfn_terminate         ; 2 = terminate thread
+        dd      sysfn_activate          ; 3 = activate window
+        dd      sysfn_getidletime       ; 4 = get idle time
+        dd      sysfn_getcpuclock       ; 5 = get cpu clock
+        dd      sysfn_saveramdisk       ; 6 = save ramdisk
+        dd      sysfn_getactive         ; 7 = get active window
+        dd      sysfn_sound_flag        ; 8 = get/set sound_flag
+        dd      sysfn_shutdown_param    ; 9 = shutdown with parameter
+        dd      sysfn_minimize          ; 10 = minimize window
+        dd      sysfn_getdiskinfo       ; 11 = get disk subsystem info
+        dd      sysfn_lastkey           ; 12 = get last pressed key
+        dd      sysfn_getversion        ; 13 = get kernel version
+        dd      sysfn_waitretrace       ; 14 = wait retrace
+        dd      sysfn_centermouse       ; 15 = center mouse cursor
+        dd      sysfn_getfreemem        ; 16 = get free memory size
+        dd      sysfn_getallmem         ; 17 = get total memory size
+sysfn_num = ($ - sys_system_table)/4
+endg
 
-     cmp  eax,1                              ; BOOT
-     jnz  nosystemboot
+sys_system:
+        dec     eax
+        cmp     eax, sysfn_num
+        jae     @f
+        jmp     dword [sys_system_table + eax*4]
+@@:
+        ret
+
+sysfn_shutdown:         ; 18.1 = BOOT
      mov  [0x2f0000+0x9030],byte 0
   for_shutdown_parameter:
      mov  eax,[0x3004]
      add  eax,2
      mov  [shutdown_processes],eax
      mov  [0xFF00],al
-     xor  eax, eax
+     and  dword [esp+36], 0
      ret
   uglobal
    shutdown_processes: dd 0x0
   endg
-   nosystemboot:
 
-     cmp  eax,2                              ; TERMINATE
-     jnz  noprocessterminate
+sysfn_terminate:        ; 18.2 = TERMINATE
      cmp  ebx,2
      jb   noprocessterminate
      mov  edx,[0x3004]
      cmp  ebx,edx
-     jg   noprocessterminate
+     ja   noprocessterminate
      mov  eax,[0x3004]
      shl  ebx,5
      mov  edx,[ebx+0x3000+4]
      add  ebx,0x3000+0xa
+     cmp  byte [ebx], 9
+     jz   noprocessterminate
 
      ;call MEM_Heap_Lock      ;guarantee that process isn't working with heap
      mov  [ebx],byte 3       ; clear possible i40's
@@ -2099,11 +2138,10 @@ sys_system:
      jne  noatsc
      mov  [application_table_status],0
    noatsc:
-     ret
    noprocessterminate:
+     ret
 
-     cmp  eax,3                              ; ACTIVATE WINDOW
-     jnz  nowindowactivate
+sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      cmp  ebx,2
      jb   nowindowactivate
      cmp  ebx,[0x3004]
@@ -2115,80 +2153,73 @@ sys_system:
      ;mov  esi, [ebx]        ; esi = window stack value
      ;and  esi, 0xffff       ;       word
     movzx esi, word [0xC000 + ebx*2]
-     mov  edx, [0x3004] ; edx = number of processes
-     cmp  esi, edx
+     cmp  esi, [0x3004] ; number of processes
      jz   nowindowactivate ; continue if window_stack_value != number_of_processes
                            ;     i.e. if window is not already active
 
 ;* start code - get active process (1) - Mario79
-     cli
+;     cli
      mov  [window_minimize],2
 ;     mov  [active_process],edi
-     sti
+;     sti
 ;* end code - get active process (1) - Mario79
 
      mov  [0xff01],edi     ; activate
-     xor  eax, eax
+nowindowactivate:
      ret
 
-   nowindowactivate:
-
-     cmp  eax,4                              ; GET IDLETIME
-     jnz  nogetidletime
+sysfn_getidletime:              ; 18.4 = GET IDLETIME
      mov  eax,[idleusesec]
+     mov  [esp+36], eax
      ret
-   nogetidletime:
 
-     cmp  eax,5                              ; GET TSC/SEC
-     jnz  nogettscsec
+sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
      mov  eax,[0xf600]
+     mov  [esp+36], eax
      ret
-   nogettscsec:
 
 ;  SAVE ramdisk to /hd/1/menuet.img
 ;!!!!!!!!!!!!!!!!!!!!!!!!
    include 'blkdev/rdsave.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!
-     cmp  eax,7
-     jnz  nogetactiveprocess
+
+sysfn_getactive:        ; 18.7 = get active window
      mov  eax,[active_process]
+     mov  [esp+36],eax
      ret
- nogetactiveprocess:
-     cmp  eax,8
-     jnz  nosoundflag
+
+sysfn_sound_flag:       ; 18.8 = get/set sound_flag
      cmp  ebx,1
      jne  nogetsoundflag
      movzx  eax,byte [sound_flag] ; get sound_flag
+     mov  [esp+36],eax
      ret
  nogetsoundflag:
      cmp  ebx,2
      jnz  nosoundflag
-     inc  byte [sound_flag]       ; set sound_flag
-     and byte [sound_flag],1      ;
+     xor  byte [sound_flag], 1
+ nosoundflag:
      ret
-nosoundflag:
-     cmp  eax,9                   ; system shutdown with param
-     jnz  noshutdownsystem
+
+sysfn_shutdown_param:   ; 18.9 = system shutdown with param
      cmp  ebx,1
-     jl  exit_for_anyone
+     jl   exit_for_anyone
      cmp  ebx,4
      jg   exit_for_anyone
      mov  [0x2f0000+0x9030],bl
      jmp  for_shutdown_parameter
-noshutdownsystem:
-     cmp  eax,10                   ; minimize window
-     jnz  nominimizewindow
+
+sysfn_minimize:         ; 18.10 = minimize window
      mov   [window_minimize],1
  exit_for_anyone:
      ret
-nominimizewindow:
-     cmp  eax,11           ; get disk info table
-     jnz  nogetdiskinfo
+
+sysfn_getdiskinfo:      ; 18.11 = get disk info table
      cmp  ebx,1
      jnz  full_table
   small_table:
      call for_all_tables
-     mov cx,10
+     mov ecx,10
      cld
      rep movsb
      ret
@@ -2197,28 +2228,24 @@ nominimizewindow:
      mov edi,[edi+10h]
      add edi,ecx
      mov esi,0x40000
-     xor ecx,ecx
      ret
   full_table:
      cmp  ebx,2
      jnz  exit_for_anyone
      call for_all_tables
-     mov cx,16384
+     mov ecx,16384
      cld
      rep movsd
      ret
-nogetdiskinfo:
-     cmp  eax,12      ; get all key pressed with ALT
-     jnz  nogetkey
+
+sysfn_lastkey:          ; 18.12 = get all key pressed with ALT
      mov   eax,[last_key_press]
      mov   al,[keyboard_mode_sys]
      mov   [esp+36],eax
      mov   [last_key_press],0
- .finish:
      ret
-nogetkey:
-     cmp  eax,13      ; get kernel ID and version
-     jnz  nogetkernel_id
+
+sysfn_getversion:       ; 18.13 = get kernel ID and version
      mov edi,[3010h]
      mov edi,[edi+10h]
      add edi,ebx
@@ -2227,9 +2254,8 @@ nogetkey:
      cld
      rep movsb
      ret
-nogetkernel_id:
-     cmp  eax,14      ; sys wait retrace
-     jnz  nosys_wait_retrace
+
+sysfn_waitretrace:     ; 18.14 = sys wait retrace
      ;wait retrace functions
  sys_wait_retrace:
      mov edx,0x3da
@@ -2239,29 +2265,26 @@ nogetkernel_id:
      jz WaitRetrace_loop
      mov [esp+36],dword 0
      ret
-nosys_wait_retrace:
-     cmp  eax,15      ; mouse centered
-     jnz  no_mouse_centered
+
+sysfn_centermouse:      ; 18.15 = mouse centered
      call  mouse_centered
      mov [esp+36],dword 0
      ret
-no_mouse_centered:
-     cmp  eax,16
-     jnz  no_get_free_space
+
+sysfn_getfreemem:
      mov  eax,[MEM_FreeSpace]
      shl  eax,2
+     mov  [esp+36],eax
      ret
-no_get_free_space:
-     cmp  eax,17
-     jnz  no_get_all_space
+
+sysfn_getallmem:
      mov  eax,[0xFE8C]
      shr  eax,10
 ;     mov  eax,[MEM_AllSpace]
 ;     shl  eax,2
+     mov  [esp+36],eax
      ret
-no_get_all_space:
 
-     ret
 uglobal
 ;// mike.dld, 2006-29-01 [
 screen_workarea RECT
@@ -2694,10 +2717,18 @@ align 4
 sys_date:
 
         cli
-        mov     al,6            ; day of week
-        out     0x70,al
-        in      al,0x71
-        mov     ch,al
+
+  @@:   mov   al, 10
+        out   0x70, al
+        in    al, 0x71
+        test  al, al
+        jns   @f
+        mov   esi, 1
+        call  delay_ms
+        jmp   @b
+  @@:
+
+        mov     ch,0
         mov     al,7            ; date
         out     0x70,al
         in      al,0x71
@@ -3503,50 +3534,51 @@ memmove:       ; memory move in bytes
     ret
 
 
-align 4
-
-read_floppy_file:
-
-; as input
+; <diamond> Sysfunction 34, read_floppy_file, is obsolete. Use 58 or 70 function instead.
+;align 4
 ;
-; eax pointer to file
-; ebx file lenght
-; ecx start 512 byte block number
-; edx number of blocks to read
-; esi pointer to return/work area (atleast 20 000 bytes)
+;read_floppy_file:
 ;
+;; as input
+;;
+;; eax pointer to file
+;; ebx file lenght
+;; ecx start 512 byte block number
+;; edx number of blocks to read
+;; esi pointer to return/work area (atleast 20 000 bytes)
+;;
+;;
+;; on return
+;;
+;; eax = 0 command succesful
+;;       1 no fd base and/or partition defined
+;;       2 yet unsupported FS
+;;       3 unknown FS
+;;       4 partition not defined at hd
+;;       5 file not found
+;; ebx = size of file
 ;
-; on return
+;     mov   edi,[0x3010]
+;     add   edi,0x10
+;     add   esi,[edi]
+;     add   eax,[edi]
 ;
-; eax = 0 command succesful
-;       1 no fd base and/or partition defined
-;       2 yet unsupported FS
-;       3 unknown FS
-;       4 partition not defined at hd
-;       5 file not found
-; ebx = size of file
-
-     mov   edi,[0x3010]
-     add   edi,0x10
-     add   esi,[edi]
-     add   eax,[edi]
-
-     pushad
-     mov  edi,esi
-     add  edi,1024
-     mov  esi,0x100000+19*512
-     sub  ecx,1
-     shl  ecx,9
-     add  esi,ecx
-     shl  edx,9
-     mov  ecx,edx
-     cld
-     rep  movsb
-     popad
-
-     mov   [esp+36],eax
-     mov   [esp+24],ebx
-     ret
+;     pushad
+;     mov  edi,esi
+;     add  edi,1024
+;     mov  esi,0x100000+19*512
+;     sub  ecx,1
+;     shl  ecx,9
+;     add  esi,ecx
+;     shl  edx,9
+;     mov  ecx,edx
+;     cld
+;     rep  movsb
+;     popad
+;
+;     mov   [esp+36],eax
+;     mov   [esp+24],ebx
+;     ret
 
 
 
@@ -3558,14 +3590,13 @@ sys_programirq:
     add   edi,0x10
     add   eax,[edi]
 
-    mov   edx,ebx
-    shl   edx,2
-    add   edx,irq_owner
-    mov   edx,[edx]
+    cmp   ebx,16
+    jae   .not_owner
     mov   edi,[0x3010]
     mov   edi,[edi+0x4]
-    cmp   edx,edi
+    cmp   edi,[irq_owner+ebx*4]
     je    spril1
+.not_owner:
     mov   [esp+36],dword 1
     ret
   spril1:
@@ -3584,7 +3615,8 @@ sys_programirq:
 align 4
 
 get_irq_data:
-
+     cmp   eax,16
+     jae   .not_owner
      mov   edx,eax           ; check for correct owner
      shl   edx,2
      add   edx,irq_owner
@@ -3593,9 +3625,8 @@ get_irq_data:
      mov   edi,[edi+0x4]
      cmp   edx,edi
      je    gidril1
-     mov   [esp+36],eax
-     mov   [esp+32],dword 2
-     mov   [esp+24],ebx
+.not_owner:
+     mov   [esp+32],dword 2     ; ecx=2
      ret
 
   gidril1:
@@ -3618,7 +3649,7 @@ get_irq_data:
      mov   ecx,4000 / 4
      cld
      rep   movsd
-     xor   ecx,ecx
+;     xor   ecx,ecx     ; as result of 'rep' ecx=0
    gid1:
      mov   [esp+36],eax
      mov   [esp+32],ecx
@@ -3678,18 +3709,20 @@ r_f_port_area:
      pushad
 
      cmp   ebx,ecx            ; beginning > end ?
-     jg    rpal1
+     ja    rpal1
+     cmp   ecx,65536
+     jae   rpal1
      mov   esi,[0x2d0000]
-     cmp   esi,0              ; no reserved areas ?
+     test  esi,esi            ; no reserved areas ?
      je    rpal2
      cmp   esi,255            ; max reserved
-     jge   rpal1
+     jae   rpal1
    rpal3:
      mov   edi,esi
      shl   edi,4
      add   edi,0x2d0000
      cmp   ebx,[edi+8]
-     jg    rpal4
+     ja    rpal4
      cmp   ecx,[edi+4]
      jae   rpal1
 ;     jb    rpal4
@@ -3721,7 +3754,7 @@ r_f_port_area:
 
      pushad
 
-     mov   ebp,0                  ; enable - eax = port
+     xor   ebp,ebp                ; enable - eax = port
      call  set_io_access_rights
 
      popad
@@ -3757,7 +3790,7 @@ free_port_area:
      pushad
 
      mov   esi,[0x2d0000]     ; no reserved areas ?
-     cmp   esi,0
+     test  esi,esi
      je    frpal2
      mov   edx,[0x3010]
      mov   edx,[edx+4]
@@ -3825,43 +3858,35 @@ free_port_area:
 
 reserve_free_irq:
 
-     cmp   eax,0
+     mov   ecx, 1
+     cmp   ebx, 16
+     jae   fril1
+     test  eax,eax
      jz    reserve_irq
 
-     mov   edi,ebx
-     shl   edi,2
-     add   edi,irq_owner
+     lea   edi,[irq_owner+ebx*4]
      mov   edx,[edi]
      mov   eax,[0x3010]
-     mov   eax,[eax+0x4]
-     mov   ecx,1
-     cmp   edx,eax
+     cmp   edx,[eax+0x4]
      jne   fril1
-     mov   [edi],dword 0
-     mov   ecx,0
+     dec   ecx
+     mov   [edi],ecx
    fril1:
      mov   [esp+36],ecx ; return in eax
      ret
 
   reserve_irq:
 
-     mov   edi,ebx
-     shl   edi,2
-     add   edi,irq_owner
-     mov   edx,[edi]
-     mov   ecx,1
-     cmp   edx,0
-     jne   ril1
+     lea   edi,[irq_owner+ebx*4]
+     cmp   dword [edi], 0
+     jnz   ril1
 
      mov   edx,[0x3010]
      mov   edx,[edx+0x4]
      mov   [edi],edx
-     mov   ecx,0
-
+     dec   ecx
    ril1:
-
      mov   [esp+36],ecx ; return in eax
-
      ret
 
 
@@ -3904,7 +3929,13 @@ drawbackground:
        call   [draw_pointer]
        ret
 
+align 4
 
+syscall_putimage:                       ; PutImage
+
+     mov   edx,ecx
+     mov   ecx,ebx
+        lea     ebx, [eax+std_application_base_address]
 
 sys_putimage:
      test  ecx,0x80008000
@@ -3916,29 +3947,21 @@ sys_putimage:
   .exit:
      ret
  @@:
-;     inc   [mouse_pause]
-     cmp   [0xfe0c],word 0x12
-     jne   spiv20
-     call  vga_putimage
-;     dec   [mouse_pause]
-     call   [draw_pointer]
-     ret
-   spiv20:
-     cmp   [0xfe0c],word 0100000000000000b
-     jge   piv20
-     cmp   [0xfe0c],word 0x13
-     je    piv20
-     call  vesa12_putimage
-;     dec   [mouse_pause]
-     call   [draw_pointer]
-     ret
-   piv20:
-     call  vesa20_putimage
-;     dec   [mouse_pause]
-     call   [draw_pointer]
-     ret
-
-
+        mov     eax, vga_putimage
+        cmp     [0xfe0c], word 0x12
+        jz      .doit
+        mov     eax, vesa12_putimage
+        cmp     [0xfe0c], word 0100000000000000b
+        jae     @f
+        cmp     [0xfe0c], word 0x13
+        jnz     .doit
+@@:
+        mov     eax, vesa20_putimage
+.doit:
+;       inc     [mouse_pause]
+        call    eax
+;       dec     [mouse_pause]
+        jmp     [draw_pointer]
 
 ; eax x beginning
 ; ebx y beginning
@@ -4458,7 +4481,7 @@ sys_ipc:
      mov  eax,edi
      add  eax,ecx
      cmp  eax,ebx
-     jge  ipc_err3                 ; not enough room ?
+     jg   ipc_err3                 ; not enough room ?
 
      push ecx
 
@@ -4598,20 +4621,6 @@ syscall_openramdiskfile:                ; OpenRamdiskFile
 
 align 4
 
-syscall_putimage:                       ; PutImage
-
-     mov   edi,[0x3010]
-     add   edi,0x10
-     add   eax,[edi]
-     mov   edx,ecx
-     mov   ecx,ebx
-     mov   ebx,eax
-     call  sys_putimage
-     mov   [esp+36],eax
-     ret
-
-align 4
-
 syscall_drawrect:                       ; DrawRect
 
      mov   edi,ecx
@@ -4642,14 +4651,6 @@ syscall_getscreensize:                  ; GetScreenSize
 
 align 4
 
-syscall_system:                         ; System
-
-     call  sys_system
-     mov   [esp+36],eax
-     ret
-
-align 4
-
 syscall_startapp:                       ; StartApp
      mov   edi,[0x3010]
      add   edi,0x10
@@ -4673,32 +4674,33 @@ syscall_cdaudio:                        ; CD
      mov   [esp+36],eax
      ret
 
-align 4
+; <diamond> ReadHd and StartHdApp functions are obsolete. Use 58 or 70 functions instead.
+;align 4
+;
+;syscall_readhd:                         ; ReadHd
+;
+;     mov   edi,[0x3010]
+;     add   edi,0x10
+;     add   esi,[edi]
+;     add   eax,[edi]
+;     call  read_hd_file
+;     mov   [esp+36],eax
+;     mov   [esp+24],ebx
+;     ret
 
-syscall_readhd:                         ; ReadHd
-
-     mov   edi,[0x3010]
-     add   edi,0x10
-     add   esi,[edi]
-     add   eax,[edi]
-     call  read_hd_file
-     mov   [esp+36],eax
-     mov   [esp+24],ebx
-     ret
-
-align 4
-
-syscall_starthdapp:                     ; StartHdApp
-
-     mov   edi,[0x3010]
-     add   edi,0x10
-     add   eax,[edi]
-     add   ecx,[edi]
-     xor   ebp,ebp
-     xor   edx,edx      ; compatibility - flags=0
-     call  start_application_hd
-     mov   [esp+36],eax
-     ret
+;align 4
+;
+;syscall_starthdapp:                     ; StartHdApp
+;
+;     mov   edi,[0x3010]
+;     add   edi,0x10
+;     add   eax,[edi]
+;     add   ecx,[edi]
+;     xor   ebp,ebp
+;     xor   edx,edx      ; compatibility - flags=0
+;     call  start_application_hd
+;     mov   [esp+36],eax
+;     ret
 
 align 4
 
@@ -4769,11 +4771,15 @@ syscall_drawline:                       ; DrawLine
 align 4
 
 syscall_getirqowner:                    ; GetIrqOwner
-
+     cmp   eax,16
+     jae   .err
      shl   eax,2
      add   eax,irq_owner
      mov   eax,[eax]
      mov   [esp+36],eax
+     ret
+.err:
+     or    dword [esp+36], -1
      ret
 
 align 4
@@ -4860,17 +4866,18 @@ write_to_hd:                            ; Write a file to hd
      call  file_write
      ret
 
-align 4
-
-delete_from_hd:                         ; Delete a file from hd
-
-     mov   edi,[0x3010]
-     add   edi,0x10
-     add   eax,[edi]
-     add   ecx,[edi]
-     call  file_delete
-     ret
-
+; <diamond> Sysfunction 57, delete_from_hd, is obsolete. Use 58 or 70 functions instead.
+;align 4
+;
+;delete_from_hd:                         ; Delete a file from hd
+;
+;     mov   edi,[0x3010]
+;     add   edi,0x10
+;     add   eax,[edi]
+;     add   ecx,[edi]
+;     call  file_delete
+;     ret
+;
 
 align 4
 

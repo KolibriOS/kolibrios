@@ -42,6 +42,7 @@ MAX_Track   equ 79
 MAX_Head    equ  1
 MAX_Sector  equ 18
 
+uglobal
 ; Счетчик тиков таймера
 TickCounter dd ?
 ; Код завершения операции с контроллером НГМД
@@ -69,6 +70,7 @@ FDC_N   DB ?
 ReadRepCounter  DB ?
 ; Счетчик повторения операции рекалибровки
 RecalRepCounter DB ?
+endg
 ; Область памяти для хранения прочитанного сектора
 ;FDD_DataBuffer:  times 512 db 0   ;DB 512 DUP (?)
 fdd_motor_status db 0
@@ -111,13 +113,13 @@ Init_FDC_DMA:
 ;***********************************
 FDCDataOutput:
 ;        pusha
-        push ax cx dx
+        push eax ecx edx
         mov     AH,AL     ;запомнить байт в AH
 ; Сбросить переменную состояния контроллера
         mov     [FDC_Status],FDC_Normal
 ; Проверить готовность контроллера к приему данных
         mov     DX,3F4h   ;(порт состояния FDC)
-        xor     CX,CX     ;установить счетчик тайм-аута
+        mov     ecx, 0x10000 ;установить счетчик тайм-аута
 @@TestRS:
         in      AL,DX     ;прочитать регистр RS
         and     AL,0C0h   ;выделить разряды 6 и 7
@@ -134,7 +136,7 @@ FDCDataOutput:
         out     DX,AL
 @@End_5:
 ;        popa
-        pop dx cx ax 
+        pop edx ecx eax 
         ret
 
 ;******************************************
