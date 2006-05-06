@@ -120,7 +120,7 @@ iglobal
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
       dd display_number          ; 47-WriteNum
       dd display_settings        ; 48-SetRedrawType and SetButtonType
-      dd syscall_appints         ; 49-AppInts
+      dd sys_apm                 ; 49-Advanced Power Management (APM)
       dd random_shaped_window    ; 50-Window shape & scale
       dd syscall_threads         ; 51-Threads
       dd stack_driver_stat       ; 52-Stack driver status

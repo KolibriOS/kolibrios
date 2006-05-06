@@ -283,6 +283,14 @@ B32:
         rep   stosd
 
 ; SAVE REAL MODE VARIABLES
+; --------------- APM ---------------------
+    mov    eax, [0x2f0000 + 0x9040]    ; entry point
+    mov    dword[apm_entry], eax
+    mov    word [apm_entry + 4], apm_code_32 - gdts
+
+    mov    eax, [0x2f0000 + 0x9044]    ; version & flags
+    mov    [apm_vf], eax
+; -----------------------------------------
 ;        movzx eax,byte [0x2f0000+0x9010]  ; mouse port
 ;        mov   [0xF604],byte 1  ;al
         mov   al,[0x2f0000+0x9000]        ; bpp
@@ -2404,7 +2412,7 @@ draw_background_temp:
 ;draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
     mov   [0xfff0],byte 1
-	mov	[background_defined], 1
+    mov    [background_defined], 1
    nosb31:
     ret
   nosb3:
@@ -3203,7 +3211,7 @@ iglobal
 endg
 
 uglobal
-background_defined	db	0	; diamond, 11.04.2006
+background_defined    db    0    ; diamond, 11.04.2006
 endg
 
 align 4
@@ -3233,8 +3241,8 @@ checkmisc:
 
     cmp   [0xfff0],byte 0               ; background update ?
     jz    nobackgr
-	cmp	[background_defined], 0
-	jz	nobackgr
+    cmp    [background_defined], 0
+    jz    nobackgr
     mov   [0xfff0],byte 2
     call  change_task
     mov   [draw_data+32+0],dword 0
@@ -4790,12 +4798,6 @@ syscall_reserveportarea:                ; ReservePortArea and FreePortArea
      mov   [esp+36],eax
      ret
 
-;align 4
-
-syscall_appints:                        ; AppInts
-;    mov   [esp+36],dword -1
-     ret
-
 align 4
 
 syscall_threads:                        ; CreateThreads
@@ -4878,6 +4880,42 @@ write_to_hd:                            ; Write a file to hd
 ;     call  file_delete
 ;     ret
 ;
+
+; --------------- APM ---------------------
+apm_entry    dp    0
+apm_vf        dd    0
+align 4
+sys_apm:
+    cmp    word [apm_vf], 0    ; Check APM BIOS enable
+    jne    @f
+    or    [esp + 40], byte 1    ; error
+    mov    [esp + 36], dword 8    ; 32-bit protected-mode interface not supported
+    ret
+    
+@@:    xchg    eax, ecx
+    xchg    ebx, ecx
+    
+    cmp    al, 3
+    ja    @f
+    and    [esp + 40], byte 0xfe    ; emulate func 0..3 as func 0
+    mov    eax, [apm_vf]
+    mov    [esp + 36], eax
+    shr    eax, 16
+    mov    [esp + 32], eax
+    ret
+    
+@@:    call    pword [apm_entry]    ; call APM BIOS
+    mov    [esp + 8 ], edi
+    mov    [esp + 12], esi
+    mov    [esp + 24], ebx
+    mov    [esp + 28], edx
+    mov    [esp + 32], ecx
+    mov    [esp + 36], eax
+    setc    al
+    and    [esp + 40], byte 0xfe
+    or    [esp + 40], al
+    ret
+; -----------------------------------------
 
 align 4
 

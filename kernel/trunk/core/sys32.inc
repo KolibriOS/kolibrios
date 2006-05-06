@@ -35,6 +35,24 @@ os_data_l:
         dw     11011111b *256 +10010010b
         db     0x00
 
+; --------------- APM ---------------------
+apm_code_32:
+        dw     0x10        ; limit 64kb
+        db     0, 0, 0
+        dw     11011111b *256 +10011010b
+        db     0x00
+apm_code_16:
+        dw     0x10
+        db     0, 0, 0
+        dw     10011111b *256 +10011010b
+        db     0x00
+apm_data_16:
+        dw     0x10
+        db     0, 0, 0
+        dw     10011111b *256 +10010010b
+        db     0x00
+; -----------------------------------------
+
 app_code_l:
       dw ((0x80000000-std_application_base_address) shr 12) and 0xffff
       dw 0
