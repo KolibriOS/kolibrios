@@ -1174,7 +1174,7 @@ fd_find_lfn:
 ;  ecx  number of bytes to read, 0+
 ;  edx  mem location to return data
 ;
-;  ret ebx = size or 0xffffffff file not found
+;  ret ebx = bytes read or 0xffffffff file not found
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
@@ -1198,7 +1198,7 @@ fs_FloppyRead:
         jz      .l1
         cmp     dword [ebx+4], 0
         jz      @f
-        mov     ebx, [edi+28]
+        xor     ebx, ebx
 .reteof:
         mov     eax, 6          ; EOF
         pop     edi
@@ -1206,18 +1206,24 @@ fs_FloppyRead:
 @@:
         mov     ebx, [ebx]
 .l1:
-        push    dword [edi+28]
-        push    dword [edi+28]
-        movzx   edi, word [edi+26]
         push    ecx edx
+        push    0
+        mov     eax, [edi+28]
+        sub     eax, ebx
+        jb      .eof
+        cmp     eax, ecx
+        jae     @f
+        mov     ecx, eax
+        mov     byte [esp], 6           ; EOF
+@@:
+        movzx   edi, word [edi+26]
 .new:
         jecxz   .done
         test    edi, edi
         jz      .eof
         cmp     edi, 0xFF8
         jae     .eof
-        mov     eax, edi
-        add     eax, 31
+        lea     eax, [edi+31]
         pusha
         call    read_chs_sector
         popa
@@ -1225,42 +1231,36 @@ fs_FloppyRead:
         jnz     .err
         sub     ebx, 512
         jae     .skip
-        lea     eax, [eax+ebx+512]
+        lea     eax, [0xD000+ebx+512]
         neg     ebx
         push    ecx
         cmp     ecx, ebx
         jbe     @f
         mov     ecx, ebx
 @@:
-        cmp     ecx, [esp+12]
-        jbe     @f
-        mov     ecx, [esp+12]
-@@:
         mov     ebx, edx
-        mov     eax, 0xD000
         call    memmove
         add     edx, ecx
         sub     [esp], ecx
-        sub     [esp+12], ecx
         pop     ecx
         xor     ebx, ebx
-        cmp     [esp+8], ebx
-        jnz     .skip
-        jecxz   .done
-        jmp     .eof
 .skip:
         movzx   edi, word [edi*2+0x282000]
         jmp     .new
 .done:
-        pop     edx ecx ebx ebx edi
-        xor     eax, eax
+        mov     ebx, edx
+        pop     eax edx ecx edi
+        sub     ebx, edx
         ret
 .eof:
-        pop     edx ecx ebx ebx
+        mov     ebx, edx
+        pop     eax edx ecx
         jmp     .reteof
 .err:
-        mov     eax, 5  ; may be other error code?
-        pop     edx ecx ebx ebx edi
+        mov     ebx, edx
+        pop     eax edx ecx edi
+        sub     ebx, edx
+        mov     al, 5  ; may be other error code?
         ret
 
 ;----------------------------------------------------------------
@@ -1272,7 +1272,7 @@ fs_FloppyRead:
 ;  ecx  number of blocks to read, 0+
 ;  edx  mem location to return data
 ;
-;  ret ebx = size or 0xffffffff folder not found
+;  ret ebx = blocks read or 0xffffffff folder not found
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
@@ -1388,7 +1388,7 @@ fs_FloppyReadFolder:
 .done:
         add     esp, 262*2+4
         pop     ebp
-        mov     ebx, [edx+8]
+        mov     ebx, [edx+4]
         xor     eax, eax
         dec     ecx
         js      @f

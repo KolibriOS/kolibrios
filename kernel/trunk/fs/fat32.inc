@@ -3053,7 +3053,7 @@ hd_find_lfn:
 ;  ecx  number of bytes to read, 0+
 ;  edx  mem location to return data
 ;
-;  ret ebx = size or 0xffffffff file not found
+;  ret ebx = bytes read or 0xffffffff file not found
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
@@ -3099,7 +3099,7 @@ fs_HdRead:
     jz    .l1
     cmp    dword [ebx+4], 0
     jz    @f
-    mov    ebx, [edi+28]
+        xor     ebx, ebx
 .reteof:
     mov    eax, 6
     pop    edi
@@ -3107,11 +3107,18 @@ fs_HdRead:
 @@:
     mov    ebx, [ebx]
 .l1:
-    push    dword [edi+28]        ; file size
+        push    ecx edx
+        push    0
+        mov     eax, [edi+28]
+        sub     eax, ebx
+        jb      .eof
+        cmp     eax, ecx
+        jae     @f
+        mov     ecx, eax
+        mov     byte [esp], 6
+@@:
     mov    eax, [edi+20-2]
     mov    ax, [edi+26]
-    push    ecx edx
-    push    dword [edi+28]
 ; now eax=cluster, ebx=position, ecx=count, edx=buffer for data
 .new_cluster:
     jecxz    .new_sector
@@ -3134,19 +3141,15 @@ fs_HdRead:
     jnz    .force_buf
     cmp    ecx, 512
     jb    .force_buf
-    cmp    dword [esp], 512
-    jb    .force_buf
 ; we may read directly to given buffer
     push    ebx
     mov    ebx, edx
     call    hd_read
     cmp  [hd_error],0
     jne  .noaccess_1    
-
     pop    ebx
     add    edx, 512
     sub    ecx, 512
-    sub    dword [esp], 512
     jmp    .skip
 .force_buf:
 ; we must read sector to temporary buffer and then copy it to destination
@@ -3166,22 +3169,13 @@ fs_HdRead:
     mov    ecx, 512
 @@:
     sub    ecx, ebx
-    cmp    ecx, [esp+8]
-    jbe    @f
-    mov    ecx, [esp+8]
-@@:
     mov    ebx, edx
     call    memmove
     add    edx, ecx
     sub    [esp], ecx
-    sub    [esp+8], ecx
     pop    ecx
     pop    eax
     xor    ebx, ebx
-    cmp    [esp], ebx
-    jnz    .skip
-    jecxz    .done
-    jmp    .eof
 .skip:
     inc    eax
     dec    edi
@@ -3193,12 +3187,15 @@ fs_HdRead:
 
     jmp    .new_cluster
 .done:
-    pop    ebx edx ecx ebx edi
-    xor    eax, eax
-    ret
+        mov     ebx, edx
+        pop     eax edx ecx edi
+        sub     ebx, edx
+        ret
 .eof:
-    pop    ebx edx ecx ebx
-    jmp    .reteof
+        mov     ebx, edx
+        pop     eax edx ecx
+        sub     ebx, edx
+        jmp     .reteof
 
 ;----------------------------------------------------------------
 ;
@@ -3209,7 +3206,7 @@ fs_HdRead:
 ;  ecx  number of blocks to read, 0+
 ;  edx  mem location to return data
 ;
-;  ret ebx = size or 0xffffffff folder not found
+;  ret ebx = blocks read or 0xffffffff folder not found
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
@@ -3358,7 +3355,7 @@ fs_HdReadFolder:
 .done:
         add     esp, 262*2+4+8
         pop     ebp
-        mov     ebx, [edx+8]
+        mov     ebx, [edx+4]
         xor     eax, eax
         dec     ecx
         js      @f

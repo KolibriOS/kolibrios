@@ -927,7 +927,7 @@ rd_find_lfn:
 ;  ecx  number of bytes to read, 0+
 ;  edx  mem location to return data
 ;
-;  ret ebx = size or 0xffffffff file not found
+;  ret ebx = bytes read or 0xffffffff file not found
 ;      eax = 0 ok read or other = errormsg
 ;
 ;--------------------------------------------------------------
@@ -950,7 +950,7 @@ fs_RamdiskRead:
         jz      .l1
         cmp     dword [ebx+4], 0
         jz      @f
-        mov     ebx, [edi+28]
+        xor     ebx, ebx
 .reteof:
         mov     eax, 6          ; EOF
         pop     edi
@@ -958,10 +958,17 @@ fs_RamdiskRead:
 @@:
         mov     ebx, [ebx]
 .l1:
-        push    dword [edi+28]		; file size
-        push    dword [edi+28]
-        movzx   edi, word [edi+26]	; cluster
         push    ecx edx
+        push    0
+        mov     eax, [edi+28]
+        sub     eax, ebx
+        jb      .eof
+        cmp     eax, ecx
+        jae     @f
+        mov     ecx, eax
+        mov     byte [esp], 6           ; EOF
+@@:
+        movzx   edi, word [edi+26]	; cluster
 .new:
         jecxz   .done
         test    edi, edi
@@ -981,30 +988,24 @@ fs_RamdiskRead:
         jbe     @f
         mov     ecx, ebx
 @@:
-        cmp     ecx, [esp+12]
-        jbe     @f
-        mov     ecx, [esp+12]
-@@:
         mov     ebx, edx
         call    memmove
         add     edx, ecx
         sub     [esp], ecx
-        sub     [esp+12], ecx
         pop     ecx
         xor     ebx, ebx
-        cmp     [esp+8], ebx
-        jnz     .skip
-        jecxz   .done
-        jmp     .eof
 .skip:
         movzx   edi, word [edi*2+0x280000]      ; find next cluster from FAT
         jmp     .new
 .eof:
-        pop     edx ecx ebx ebx
+        mov     ebx, edx
+        pop     eax edx ecx
+        sub     ebx, edx
         jmp     .reteof
 .done:
-        pop     edx ecx ebx ebx edi
-        xor     eax, eax
+        mov     ebx, edx
+        pop     eax edx ecx edi
+        sub     ebx, edx
         ret
 
 ;----------------------------------------------------------------
@@ -1065,7 +1066,7 @@ fs_RamdiskReadFolder:
         jb      .l1
         add     esp, 262*2+4
         pop     ebp
-        mov     ebx, [edx+8]
+        mov     ebx, [edx+4]
         xor     eax, eax
         dec     ecx
         js      @f

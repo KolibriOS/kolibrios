@@ -72,7 +72,7 @@ drawbar         dd __sys_drawbar
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.5.3.0      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.5.3.1      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -148,7 +148,7 @@ app_data       equ  3+app_data_l-gdts
         or      eax, ecx
         and     eax, 10011111b *65536*256 + 0xffffff ; caching enabled
         mov     cr0, eax
-        jmp     byte $+2
+        jmp     $+2
         mov     ax,os_data              ; Selector for os
         mov     ds,ax
         mov     es,ax
@@ -2305,7 +2305,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,5,3,0  ; version 0.5.3.0
+  db 0,5,3,1  ; version 0.5.3.1
   db UID_KOLIBRI
   db 'Kolibri',0
 version_end:
