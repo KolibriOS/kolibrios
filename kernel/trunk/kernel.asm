@@ -4888,7 +4888,7 @@ align 4
 sys_apm:
     cmp    word [apm_vf], 0    ; Check APM BIOS enable
     jne    @f
-    or    [esp + 40], byte 1    ; error
+    or    [esp + 56], byte 1    ; error
     mov    [esp + 36], dword 8    ; 32-bit protected-mode interface not supported
     ret
     
@@ -4897,13 +4897,13 @@ sys_apm:
     
     cmp    al, 3
     ja    @f
-    and    [esp + 40], byte 0xfe    ; emulate func 0..3 as func 0
+    and    [esp + 56], byte 0xfe    ; emulate func 0..3 as func 0
     mov    eax, [apm_vf]
     mov    [esp + 36], eax
     shr    eax, 16
     mov    [esp + 32], eax
     ret
-    
+
 @@:    call    pword [apm_entry]    ; call APM BIOS
     mov    [esp + 8 ], edi
     mov    [esp + 12], esi
@@ -4912,8 +4912,8 @@ sys_apm:
     mov    [esp + 32], ecx
     mov    [esp + 36], eax
     setc    al
-    and    [esp + 40], byte 0xfe
-    or    [esp + 40], al
+    and    [esp + 56], byte 0xfe
+    or    [esp + 56], al
     ret
 ; -----------------------------------------
 

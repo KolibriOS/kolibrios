@@ -55,7 +55,6 @@ floppy_free_space:
 rdfs1_1:
     mov    ebx,[eax]
     and    ebx,4095
-    cmp    ebx,0
     jne    rdfs2_1
     add    edi,512
 rdfs2_1:
@@ -1268,7 +1267,9 @@ fs_FloppyRead:
 ;  fs_FloppyReadFolder - LFN variant for reading floppy folders
 ;
 ;  esi  points to filename
-;  ebx  pointer to 32-bit number = first wanted block, 0+
+;  ebx  pointer to structure: 32-bit number = first wanted block, 0+
+;                           & flags (bitfields)
+; flags: bit 0: 0=ANSI names, 1=UNICODE names
 ;  ecx  number of blocks to read, 0+
 ;  edx  mem location to return data
 ;
@@ -1278,7 +1279,6 @@ fs_FloppyRead:
 ;--------------------------------------------------------------
 fs_FloppyReadFolder:
         call    read_flp_fat
-        mov     ebx, [ebx]
         push    edi
         cmp     byte [esi], 0
         jz      .root
@@ -1307,7 +1307,8 @@ fs_FloppyReadFolder:
         push    ecx ebp
         sub     esp, 262*2      ; reserve space for LFN
         mov     ebp, esp
-        push    1               ; for fat_get_name: read UNICODE names
+        push    dword [ebx+4]   ; for fat_get_name: read ANSI/UNICODE names
+        mov     ebx, [ebx]
 ; init header
         push    eax ecx
         mov     edi, edx

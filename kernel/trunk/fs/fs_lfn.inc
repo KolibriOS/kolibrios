@@ -32,17 +32,17 @@ rootdirs:
 
 virtual_root_query:
         dd      fs_HasRamdisk
-        du      'rd',0
+        db      'rd',0
         dd      fs_HasFloppy
-        du      'fd',0
+        db      'fd',0
         dd      fs_HasHd0
-        du      'hd0',0
+        db      'hd0',0
         dd      fs_HasHd1
-        du      'hd1',0
+        db      'hd1',0
         dd      fs_HasHd2
-        du      'hd2',0
+        db      'hd2',0
         dd      fs_HasHd3
-        du      'hd3',0
+        db      'hd3',0
         dd      0
 endg
 
@@ -104,9 +104,10 @@ file_system_lfn:
         mov     ebp, [ebx+12]
         mov     edx, [ebx+16]
         add     edx, std_application_base_address
-        mov     ebx, [ebx+4]
+        push    dword [ebx+4]   ; first block
+        mov     ebx, [ebx+8]    ; flags
         mov     esi, [edi+4]
-; ebx=first block, ebp=number of blocks, edx=return area, esi='Next' handler
+; ebx=flags, [esp]=first block, ebp=number of blocks, edx=return area, esi='Next' handler
         mov     edi, edx
         mov     ecx, 32/4
         rep     stosd
@@ -115,7 +116,7 @@ file_system_lfn:
         call    esi
         jc      .maindir_done
         inc     dword [edx+8]
-        dec     ebx
+        dec     dword [esp]
         jns     .maindir_loop
         dec     ebp
         js      .maindir_loop
@@ -142,15 +143,27 @@ file_system_lfn:
 @@:
         pop     eax
         add     al, '0'
-        stosw
+        stosb
+        test    bl, 1           ; UNICODE name?
+        jz      .ansi2
+        mov     byte [edi], 0
+        inc     edi
+.ansi2:
+        test    al, al
         jnz     @b
         mov     byte [edi-1], 0
         pop     edi
+; UNICODE name length is 520 bytes, ANSI - 264
         add     edi, 520
+        test    bl, 1
+        jnz     @f
+        sub     edi, 520-264
+@@:
         pop     edx eax
         jmp     .maindir_loop
 .maindir_done:
-        mov     ebx, [edx+8]
+        pop     eax
+        mov     ebx, [edx+4]
         xor     eax, eax
         dec     ebp
         js      @f
@@ -173,9 +186,10 @@ file_system_lfn:
         mov     ebp, [ebx+12]
         mov     edx, [ebx+16]
         add     edx, std_application_base_address
-        mov     ebx, [ebx+4]
+        push    dword [ebx+4]   ; first block
+        mov     ebx, [ebx+8]    ; flags
         xor     eax, eax
-; eax=0, ebx=first block, ebp=number of blocks, edx=return area
+; eax=0, [esp]=first block, ebx=flags, ebp=number of blocks, edx=return area
         mov     edi, edx
         mov     ecx, 32/4
         rep     stosd
@@ -190,13 +204,13 @@ file_system_lfn:
 .readroot_next:
         or      ecx, -1
         xchg    esi, edi
-        repnz   scasw
+        repnz   scasb
         xchg    esi, edi
         jmp     .readroot_loop
 @@:
         xor     eax, eax
         inc     dword [edx+8]
-        dec     ebx
+        dec     dword [esp]
         jns     .readroot_next
         dec     ebp
         js      .readroot_next
@@ -208,15 +222,24 @@ file_system_lfn:
         rep     stosd
         push    edi
 @@:
-        lodsw
-        stosw
+        lodsb
+        stosb
+        test    bl, 1
+        jz      .ansi
+        mov     byte [edi], 0
+        inc     edi
+.ansi:
         test    eax, eax
         jnz     @b
         pop     edi
         add     edi, 520
+        test    bl, 1
+        jnz     .readroot_loop
+        sub     edi, 520-264
         jmp     .readroot_loop
 .readroot_done:
-        mov     ebx, [edx+8]
+        pop     eax
+        mov     ebx, [edx+4]
         xor     eax, eax
         dec     ebp
         js      @f

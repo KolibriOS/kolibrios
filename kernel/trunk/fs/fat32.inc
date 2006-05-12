@@ -3202,7 +3202,9 @@ fs_HdRead:
 ;  fs_HdReadFolder - LFN variant for reading hard disk folder
 ;
 ;  esi  points to filename
-;  ebx  pointer to 32-bit number = first wanted block, 0+
+;  ebx  pointer to structure 32-bit number = first wanted block, 0+
+;                          & flags (bitfields)
+; flags: bit 0: 0=ANSI names, 1=UNICODE names
 ;  ecx  number of blocks to read, 0+
 ;  edx  mem location to return data
 ;
@@ -3211,7 +3213,6 @@ fs_HdRead:
 ;
 ;--------------------------------------------------------------
 fs_HdReadFolder:
-        mov     ebx, [ebx]
         mov     eax, [ROOT_CLUSTER]
         push    edi
         cmp     byte [esi], 0
@@ -3237,7 +3238,8 @@ fs_HdReadFolder:
         push    ebp
         sub     esp, 262*2      ; reserve space for LFN
         mov     ebp, esp
-        push    1               ; for fat_get_name: read UNICODE name
+        push    dword [ebx+4]   ; for fat_get_name: read ANSI/UNICODE name
+        mov     ebx, [ebx]
 ; init header
         push    eax ecx
         mov     edi, edx

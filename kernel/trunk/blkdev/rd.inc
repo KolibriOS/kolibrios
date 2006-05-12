@@ -30,14 +30,11 @@ calculatefatchain:
    shl  eax,4
    and  eax,0x0fffffff  ;2 ok
    shr  ax,4  ;1 ok
-   mov dword [edi],eax
-   add  edi,4
-   mov dword [edi],ebx
-   add  edi,4
-   mov dword [edi],ecx
-   add  edi,4
-   mov dword [edi],edx
-   add  edi,4   
+   mov  dword [edi],eax
+   mov  dword [edi+4],ebx
+   mov  dword [edi+8],ecx
+   mov  dword [edi+12],edx
+   add  edi,16
    add  esi,12
 
    cmp  edi,0x280000+2856*2   ;2849 clusters
@@ -63,10 +60,9 @@ restorefatchain:   ; restore fat chain
    shr  ebx,4
    shrd eax,ebx,8
    shr  ebx,8
-   mov dword [edi],eax
-   add  edi,4
-   mov word [edi],bx
-   add  edi,2
+   mov  dword [edi],eax
+   mov  word [edi+4],bx
+   add  edi,6
    add  esi,8
 
    cmp  edi,0x100000+512+4278     ;4274 bytes - all used FAT
@@ -100,8 +96,8 @@ ramdisk_free_space:
         repne scasw
         jnz  rdfs2    ;if last cluster not 0
         inc  ebx
-        jcxz rdfs2    ;if last cluster=0
-        jmp  rdfs1    ;if not last
+        test    ecx, ecx
+        jnz     rdfs1
     rdfs2:
         shl  ebx,9    ;free clusters*512
         mov  edi,ebx
@@ -438,15 +434,11 @@ mov [edi+22],ax          ; time
         jbe    flnsa
         sub    eax,512
         mov    [esp+12],eax
-        mov    eax,[esp+16]
-        add    eax,512
-        mov    [esp+16],eax
+        add     dword [esp+16], 512
         jmp    frnewds
 
      flnsa:
-        dec    edi
-        dec    edi
-        mov    [edi],word 4095          ; mark end of file - last cluster
+        mov    [edi-2],word 4095          ; mark end of file - last cluster
 
       frnoreadds:
 
@@ -644,7 +636,7 @@ fat_get_name:
 	push	ecx
 	mov	ecx, 8
         push	edi ebp ecx
-        cmp     byte [ebp-4], 0
+        test    byte [ebp-4], 1
         jnz     .unicode_short
 @@:
 	mov	al, [edi]
@@ -763,7 +755,7 @@ fat_get_name:
 	ret
 @@:
 ; if this is first entry:
-        cmp     byte [ebp-4], 0
+        test    byte [ebp-4], 1
         jnz     .ret
 ; buffer at ebp contains UNICODE name, convert it to ANSI
 	push	esi edi
@@ -872,50 +864,57 @@ fat_entry_to_bdfe:
         push    ecx edi
         lea     edi, [esi+40]
         mov     esi, ebp
-        mov     ecx, 259/2
+        test    byte [esi-4], 1
+        jz      .ansi
+        mov     ecx, 260/2
         rep     movsd
-        movsw
-        stosw
+        mov     [edi-2], ax
+@@:
         mov     esi, edi
         pop     edi ecx
         ret
+.ansi:
+        mov     ecx, 264/4
+        rep     movsd
+        mov     [edi-1], al
+        jmp     @b
 
 rd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry
-	push	esi ebp edi
-	sub	esp, 262*2	; allocate space for LFN
-	mov	ebp, esp	; ebp points to buffer
-	push	0		; for fat_get_name: read ASCII name
-	mov	edi, 0x100000+512*19	; to root dir
+        push    esi ebp edi
+        sub     esp, 262*2      ; allocate space for LFN
+        mov     ebp, esp        ; ebp points to buffer
+        push    0               ; for fat_get_name: read ASCII name
+        mov     edi, 0x100000+512*19    ; to root dir
 .l1:
-	call	fat_get_name
-	jc	.l2
-	call	fat_compare_name
-	jz	.found
+        call    fat_get_name
+        jc      .l2
+        call    fat_compare_name
+        jz      .found
 .l2:
-	add	edi, 0x20
-	cmp	edi, 0x100000+512*33
-	jb	.l1
+        add     edi, 0x20
+        cmp     edi, 0x100000+512*33
+        jb      .l1
 .notfound:
-	add	esp, 262*2+4
-	pop	edi ebp esi
-	stc
-	ret
+        add     esp, 262*2+4
+        pop     edi ebp esi
+        stc
+        ret
 .found:
 ; found
 ; if this is LFN entry, advance to true entry
-	cmp	byte [edi+11], 0xF
-	jnz	@f
-	add	edi, 0x20
+        cmp     byte [edi+11], 0xF
+        jnz     @f
+        add     edi, 0x20
 @@:
 ; folders are not supported
-	cmp	byte [esi], 0
-	jnz	.notfound
-	add	esp, 262*2+4+4	; CF=0
-	pop	ebp esi
-	ret
+        cmp     byte [esi], 0
+        jnz     .notfound
+        add     esp, 262*2+4+4  ; CF=0
+        pop     ebp esi
+        ret
 
 ;----------------------------------------------------------------
 ;
@@ -1013,7 +1012,9 @@ fs_RamdiskRead:
 ;  fs_RamdiskReadFolder - LFN variant for reading sys floppy folder
 ;
 ;  esi  points to filename; only root is folder on ramdisk
-;  ebx  pointer to 32-bit number = first wanted block
+;  ebx  pointer to structure 32-bit number = first wanted block
+;                          & flags (bitfields)
+; flags: bit 0: 0=ANSI names, 1=UNICODE names
 ;  ecx  number of blocks to read, 0+
 ;  edx  mem location to return data
 ;
@@ -1022,7 +1023,6 @@ fs_RamdiskRead:
 ;
 ;--------------------------------------------------------------
 fs_RamdiskReadFolder:
-        mov     ebx, [ebx]
         cmp     byte [esi], 0
         jz      @f
 ; ramdisk doesn't support folders
@@ -1042,7 +1042,8 @@ fs_RamdiskReadFolder:
         push    ebp
         sub     esp, 262*2      ; allocate space for LFN
         mov     ebp, esp
-        push    1               ; for fat_get_name: read UNICODE name
+        push    dword [ebx+4]   ; for fat_get_name: read ANSI/UNICODE name
+        mov     ebx, [ebx]
 ; read root
         mov     esi, edi        ; esi points to block of data of folder entry (BDFE)
         mov     edi, 0x100000+512*19
