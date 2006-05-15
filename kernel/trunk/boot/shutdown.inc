@@ -376,6 +376,9 @@ restart_kernel_4000:
 	dd	0	; cannot save parameters
 
 APM_PowerOff:
+        mov     ax, 5304h
+        xor     bx, bx
+        int     15h
 ;!!!!!!!!!!!!!!!!!!!!!!!!
 mov ax,0x5300
 xor bx,bx

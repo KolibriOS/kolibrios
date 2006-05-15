@@ -5,144 +5,170 @@
 use32
 
            org     0x0
-           db      'MENUET00'           ; 8 byte id
-           dd      38                   ; required os
+           db      'MENUET01'           ; 8 byte id
+           dd      1                    ; header version
            dd      START                ; program start
            dd      I_END                ; image size
-           dd      0x80000               ; reguired amount of memory
-           dd      0x80000
-           dd      0x00000000           ; reserved=no extended header
+           dd      mem_end              ; reguired amount of memory
+           dd      mem_end
+           dd      0,0                  ; no parameters, no path
 
-include 'lang.inc'
+;include 'lang.inc'
 include 'macros.inc'
 
 START:
 
-    call draw_window
+red:
 
-    mov  edi,0x40000
-    mov  ecx,320*600+100
-    mov  eax,0
-    cld
-    rep  stosb
+; ************************************************
+; ********* WINDOW DEFINITIONS AND DRAW **********
+; ************************************************
+
+draw_window:
+
+    mov  eax,12                    ; tell os about redraw
+    mov  ebx,1
+    int  0x40
+
+    xor  eax,eax                   ; define and draw window
+    mov  ebx,100*65536+321
+    mov  ecx,70*65536+222
+    mov  edx,0x00000000
+    mov  esi,0x00000000
+    mov  edi,0x00000000
+    int  0x40
+
+    mov  al,4      ; 'FIRE FOR MENUET'
+    mov  ebx,110*65536+8
+    mov  ecx,dword 0x00FFFFFF
+    mov  edx,text
+    mov  esi,textlen-text
+    int  0x40
+
+    mov  al,8
+    mov  ebx,(321-19)*65536+12     ; button start x & size
+    mov  ecx,5*65536+12            ; button start y & size
+    mov  edx,1                     ; button number
+    mov  esi,0x009a0000
+    int  0x40
+
+    mov  ebx,ecx ;5*65536+12
+    inc  edx
+    int  0x40
+
+    mov  ebx,18*65536+12
+    inc  edx
+    int  0x40
+
+    mov  ebx,31*65536+12
+    inc  edx
+    int  0x40
+
+    mov  al,12                    ; tell os about redraw end
+    mov  ebx,2
+    int  0x40
 
 sta:                                         ; calculate fire image
 
-    mov  esi, FireScreen
-    add  esi, 0x2300
-    sub  esi, 80
+    mov  esi, FireScreen+0x2300-80
     mov  ecx, 80
-    xor  edx, edx
+    mov  eax, [FireSeed]
 
   NEWLINE:
 
-    mov  eax,dword [FireSeed]                ; New number
-    mov  edx, 0x8405
-    mul  edx
+    mul  [RandSeedConst]
     inc  eax
-    mov  dword [FireSeed], eax               ; Store seed
-
     mov  [esi], dl
     inc  esi
-    dec  ecx
-    jnz  NEWLINE
+    loop NEWLINE
 
-    mov  ecx, 0x2300
-    sub  ecx, 80
-    mov  esi, FireScreen
-    add  esi, 80
+    mov  [FireSeed], eax
+
+    mov  ecx, 0x2300-80
+    sub  esi, ecx
+    xor  edx, edx
+    xor  eax, eax
 
   FIRELOOP:
+    lodsb
 
-    xor  eax,eax
-
-    cmp  [type],0
+    cmp  [type], ah
     jnz  notype1
-    mov  al, [esi]
-    add  al, [esi + 2]
-    adc  ah, 0
-    add  al, [esi + 1]
-    adc  ah, 0
-    add  al, [esi + 81]
-    adc  ah, 0
+    mov  dl, [esi + 1]
+    add  eax, edx
+    mov  dl, [esi]
+    add  eax, edx
+    mov  dl, [esi + 80]
+    jmp  typedone
   notype1:
 
-    cmp  [type],1
-    jnz  notype2
-    mov  al, [esi]
-    add  al, [esi - 1]
-    adc  ah, 0
-    add  al, [esi - 1]
-    adc  ah, 0
-    add  al, [esi + 79]
-    adc  ah,0
-  notype2:
+;    cmp  [type],1
+;    jnz  notype2
+    mov  dl, [esi - 2]
+;    add  eax, edx
+;    mov  dl, [esi - 2]
+;    add  eax, edx
+    lea  eax, [eax + edx*2]
+    mov  dl, [esi + 78]
+;  notype2:
 
-    cmp  [type],2
-    jnz  notype3
-    mov  al, [esi]
-    add  al, [esi - 1]
-    adc  ah,0
-    add  al, [esi + 1]
-    adc  ah, 0
-    add  al, [esi + 81]
-    adc  ah,0
-  notype3:
+; type 2 is never used
+;    cmp  [type],2
+;    jnz  notype3
+;    mov  dl, [esi - 2]
+;    add  eax, edx
+;    mov  dl, [esi]
+;    add  eax, edx
+;    mov  dl, [esi + 80]
+;  notype3:
 
+typedone:
+    add  eax, edx
     shr  eax, 2
     jz   ZERO
     dec  eax
 
   ZERO:
 
-    mov  [esi - 80], al
-    inc  esi
-    dec  ecx
-    jnz  FIRELOOP
+    mov  [esi - 81], al
+    loop FIRELOOP
 
-    pusha
-
-    mov  eax,5
+    mov  al, 5              ; in this moment always high 24 bits of eax are zero!
     mov  ebx,[delay]
     int  0x40
 
-    mov  al,byte [calc]
-    inc  al
-    mov  byte [calc],al
-    cmp  al,byte 2
-    jz   pdraw
-
-    jmp  nodrw
+    inc  [calc]
+    cmp  [calc], byte 2
+    jnz  nodrw
 
   pdraw:
 
-    mov  byte [calc],byte 0
+    mov  byte [calc],ah ;byte 0
 
-    mov  edi,0x40000
+    mov  edi,ImageData
+    push edi     ; pointer for sysfunction 7, draw image
     add  edi,[fcolor]
     mov  esi,FireScreen
     xor  edx,edx
 
   newc:
+    xor   eax, eax
+    lodsb
 
-    movzx eax,byte [esi]
-    mov   ebx,eax
     mov   ecx,eax
-    shl   ax,8
-    shr   bx,1
-    mov   al,bl
-    add   ecx,eax
-    shl   ax,8
-    mov   ch,ah
+    shr   eax,1
+    add   cl,al
+    mov   ch,al
 
-    mov  [edi+0],cx
-    mov  [edi+3],cx
-    mov  [edi+6],cx
+    mov  [edi+0],ecx
+    mov  [edi+3],ecx
+    mov  [edi+6],ecx
     mov  [edi+9],cx
-    mov  [edi+0+320*3],cx
-    mov  [edi+3+320*3],cx
-    mov  [edi+6+320*3],cx
-    mov  [edi+9+320*3],cx
+    lea  ebx, [edi+320*3]
+    mov  [ebx+0],ecx
+    mov  [ebx+3],ecx
+    mov  [ebx+6],ecx
+    mov  [ebx+9],ecx
 
     add  edi,12
     inc  edx
@@ -151,156 +177,83 @@ sta:                                         ; calculate fire image
     xor  edx,edx
     add  edi,320*3
   nnl:
-    inc  esi
-    cmp  esi,FireScreen+0x2000
+    cmp  esi,FireScreen+8000; 0x2000
     jnz  newc
 
-    mov  eax,dword 0x00000007           ; display image
-    mov  ebx,0x40000
+    mov  al,7           ; display image
+                        ; high 24 bits of eax are zero!
+    pop  ebx
     mov  ecx,4*80*65536+200
     mov  edx,1*65536+22
     int  0x40
 
   nodrw:
 
-    popa
-
     mov  eax,11                  ; check if os wants to talk to us
     int  0x40
-    cmp  eax,1
+    dec  eax
     jz   red
-    cmp  eax,3
-    jz   button
-
-    jmp  sta
-
-  red:                           ; draw window
-    call draw_window
-    jmp  sta
+    cmp  al, 3-1
+    jnz  nob4
 
   button:                        ; get button id
-    mov  eax,17
+    mov  al,17
     int  0x40
+    shr  eax, 8
 
-    cmp  ah,1
+    dec  eax
     jnz  noclose
-    mov  eax,-1                  ; close this program
+    or   eax,-1                  ; close this program
     int  0x40
   noclose:
 
-    cmp  ah,2                    ; change fire type
+    dec  eax                     ; change fire type
     jnz  nob2
-    mov  eax,[type]
-    add  eax,1
-    and  eax,1
-    mov  [type],eax
+    xor  [type], 1
    nob2:
 
-    cmp  ah,3                    ; change delay
+    dec  eax                     ; change delay
     jnz  nob3
-    mov  eax,[delay]
-    sub  eax,1
-    and  eax,1
-    mov  [delay],eax
+    xor  [delay], 1
   nob3:
 
-    cmp  ah,4                    ; change color
+    dec  eax                     ; change color
     jnz  nob4
     mov  eax,[fcolor]
-    add  eax,1
-    cmp  eax,2
-    jbe  fcok
-    mov  eax,0
+    inc  eax
+;    cmp  al,2
+;    jbe  fcok
+    jnp  fcok
+    xor  eax,eax
   fcok:
     mov  [fcolor],eax
-    mov  eax,0
-    mov  ecx,0x10000
-    mov  edi,0x40000
-    cld
+    mov  edi,ImageData
+    mov  ecx,(320*600)/4
+    xor  eax,eax
     rep  stosd
 
   nob4:
-
     jmp  sta
 
-
-
-; ************************************************
-; ********* WINDOW DEFINITIONS AND DRAW **********
-; ************************************************
-
-
-draw_window:
-
-    pusha
-
-    mov  eax,12                    ; tell os about redraw
-    mov  ebx,1
-    int  0x40
-
-    mov  eax,0                     ; define and draw window
-    mov  ebx,100*65536+321
-    mov  ecx,70*65536+222
-    mov  edx,0x00000000
-    mov  esi,0x00000000
-    mov  edi,0x00000000
-    int  0x40
-
-    mov  eax,dword 0x00000004      ; 'FIRE FOR MENUET'
-    mov  ebx,110*65536+8
-    mov  ecx,dword 0x00FFFFFF
-    mov  edx,text
-    mov  esi,textlen-text
-    int  0x40
-
-    mov  eax,8
-    mov  ebx,(321-19)*65536+12     ; button start x & size
-    mov  ecx,5*65536+12            ; button start y & size
-    mov  edx,1                     ; button number
-    mov  esi,0x009a0000
-    int  0x40
-
-    mov  eax,8
-    mov  ebx,5*65536+12
-    mov  ecx,5*65536+12
-    mov  edx,2
-    int  0x40
-
-    mov  eax,8
-    mov  ebx,18*65536+12
-    mov  ecx,5*65536+12
-    mov  edx,3
-    int  0x40
-
-    mov  eax,8
-    mov  ebx,31*65536+12
-    mov  ecx,5*65536+12
-    mov  edx,4
-    int  0x40
-
-    mov  eax,12                    ; tell os about redraw end
-    mov  ebx,2
-    int  0x40
-
-    popa
-
-    ret
-
-
 ; DATA SECTION
-
-calc      dd  0
+RandSeedConst dd 0x8405
 fcolor    dd  2
 xx        db  'x'
-type      dd  0
+type      db  0
+calc      db  0
 delay     dd  0
 FireSeed  dd  0x1234
 text:     db 'FIRE FOR MENUET'
 textlen:
 
-FireScreen:
-
 I_END:
 
+FireScreen:
+          rb 0x2300
+ImageData:
+          rb 320*200*3
 
-
+; stack
+          align 512
+          rb 512
+mem_end:
