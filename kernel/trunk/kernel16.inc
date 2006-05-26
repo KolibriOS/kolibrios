@@ -23,6 +23,7 @@ include "boot/bootru.inc"      ; russian system boot messages
 ;!!!
 end if
 include "boot/ru.inc"          ; Russian font
+org $-0x10000
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
 

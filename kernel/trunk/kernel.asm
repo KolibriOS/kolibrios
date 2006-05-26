@@ -59,10 +59,11 @@ twdw               equ   (0x3000-window_data)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 use16
-                  org   0x10000
+                  org   0x0
                   jmp   start_of_code
 
 ; mike.dld {
+		org $+0x10000
 db 0
 dd servetable-0x10000
 draw_line       dd __sys_draw_line
@@ -149,6 +150,7 @@ app_data       equ  3+app_data_l-gdts
         and     eax, 10011111b *65536*256 + 0xffffff ; caching enabled
         mov     cr0, eax
         jmp     $+2
+org $+0x10000        
         mov     ax,os_data              ; Selector for os
         mov     ds,ax
         mov     es,ax

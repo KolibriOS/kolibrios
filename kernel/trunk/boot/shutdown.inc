@@ -182,6 +182,7 @@ system_shutdown:          ; shut down the system
 use16
 
 pr_mode_exit:
+org $-0x10000
 
 ; setup stack
 	mov	ax, 3000h
@@ -283,11 +284,12 @@ pr_mode_exit:
     pause_key_1:
       loop  pause_key_1
       ret
-
+org $+0x10000
 old_ints_h:
         dw      0x400
         dd      0
         dw      0
+org $-0x10000
 
 rdelay:
     ret
@@ -366,7 +368,7 @@ restart_kernel_4000:
 ; bootloader interface
 	push	0x1000
 	pop	ds
-	mov	si, .bootloader_block-0x10000
+	mov	si, .bootloader_block;-0x10000
 	mov	ax, 'KL'
         jmp     0x1000:0000
 
@@ -416,8 +418,9 @@ int 0x15
 ;!!!!!!!!!!!!!!!!!!!!!!!!
 fwwritedone:
         ret
-
+org $+0x10000
 flm db 0
+org $-0x10000
 
 floppy_write:   ; write diskette image to physical floppy
 
@@ -478,7 +481,7 @@ floppy_write:   ; write diskette image to physical floppy
         dec     ax
         jnz     fwwrites
         ret
-
+org $+0x10000
       fwmovedesc:
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
@@ -488,9 +491,9 @@ floppy_write:   ; write diskette image to physical floppy
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-
+org $-0x10000
 use32
-
+org $+0x10000
 uglobal
   shutdownpos dd 0x0
 endg

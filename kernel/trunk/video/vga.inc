@@ -216,7 +216,7 @@ pimvga:
       pop ecx
 
       dec ebx ; H--
-      jnz near pimvga
+      jnz pimvga
 
       add esp,4  ; jump saved limit byte
       pop edx

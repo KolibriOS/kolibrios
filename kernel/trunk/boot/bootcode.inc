@@ -149,6 +149,7 @@ pagetable_set:
 
 ; 16-bit data
 ; videomodes table
+		org $+0x10000
 gr_table:
     dw      0x112+0100000000000000b ,  640 ,  480        ; 1
     dw      0x115+0100000000000000b ,  800 ,  600        ; 2
@@ -173,6 +174,7 @@ gr_table:
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
         db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        	org $-0x10000
 
 ;=========================================================================
 ;
@@ -358,14 +360,12 @@ wait_loop:       ; variant 2
     mov    [es : 0x9046], cx        ; Save APM flags
     
     ; Write APM ver ----
-    jmp    @f
-msg_apm:db    ' APM x.x ', 0
-@@:    and    ax, 0xf0f
+    and    ax, 0xf0f
     add    ax, '00'
-    mov    [msg_apm - 0x10000 + 5], ah
-    mov    [msg_apm - 0x10000 + 7], al
-    _setcursor 0, 3
     mov    si, msg_apm - 0x10000
+    mov    [si + 5], ah
+    mov    [si + 7], al
+    _setcursor 0, 3
     call    printplain
     _setcursor d80x25_top_num,0
     ; ------------------
@@ -474,7 +474,7 @@ cfgmanager:
 ; get start time
     call    .gettime
     mov    [.starttime-0x10000], eax
-    mov    word [.timer-0x10000], .newtimer-0x10000
+    mov    word [.timer-0x10000], .newtimer
     mov    word [.timer-0x10000+2], cs
 .printcfg:
     _setcursor 9,0
@@ -631,7 +631,9 @@ virtual at novesa
 .bSettingsChanged db ?
 .timer dd ?
 end virtual
+	org $+0x10000
 .loader_block dd 0
+	org $-0x10000
 .gettime:
     mov    ah, 0
     int    1Ah
@@ -723,7 +725,7 @@ end if
     mov    byte [space_msg-0x10000+80], 186
     pop    eax
     push    cs
-    push    .cont-0x10000
+    push    .cont
     push    eax
     retf
 .loadc:
