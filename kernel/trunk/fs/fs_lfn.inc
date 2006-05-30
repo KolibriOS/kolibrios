@@ -51,13 +51,13 @@ file_system_lfn:
 ; operation codes:
 ; 0 : read file
 ; 1 : read folder
-; 2 : rewrite file - not implemented yet
+; 2 : create/rewrite file
 ; 3 : write/append to file - not implemented yet
-; 4 : start application - not implemented yet
-; 5 : delete file - not implemented yet
-; 6 : create directory - not implemented yet
-; 7 : rename file/directory - not implemented yet
-; 8 : get file attributes structure - not implemented yet
+; 4 : delete file - not implemented yet
+; 5 : create directory - not implemented yet
+; 6 : rename file/directory - not implemented yet
+; 7 : get file attributes structure - not implemented yet
+; 8 : start application - not implemented yet
 
         add     eax, std_application_base_address
 ; parse file name
@@ -290,8 +290,8 @@ fs_OnRamdisk:
         cmp     ecx, 1
         jnz     file_system_lfn.notfound
         mov     eax, [ebx]
-        cmp     eax, 1
-        ja      .not_impl
+        cmp     eax, fs_NumRamdiskServices
+        jae     .not_impl
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
         add     edx, std_application_base_address
@@ -307,13 +307,15 @@ fs_OnRamdisk:
 fs_RamdiskServices:
         dd      fs_RamdiskRead
         dd      fs_RamdiskReadFolder
+        dd      fs_RamdiskRewrite
+fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
 
 fs_OnFloppy:
         cmp     ecx, 2
         ja      file_system_lfn.notfound
         mov     eax, [ebx]
-        cmp     eax, 1
-        ja      fs_OnRamdisk.not_impl
+        cmp     eax, fs_NumFloppyServices
+        jae     fs_OnRamdisk.not_impl
         call    reserve_flp
         mov     [flp_number], cl
         mov     ecx, [ebx+12]
@@ -329,6 +331,8 @@ fs_OnFloppy:
 fs_FloppyServices:
         dd      fs_FloppyRead
         dd      fs_FloppyReadFolder
+        dd      fs_FloppyRewrite
+fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
         call    reserve_hd1
@@ -373,8 +377,8 @@ fs_OnHd:
         mov     edx, [ebx+16]
         add     edx, std_application_base_address
         mov     eax, [ebx]
-        cmp     eax, 1
-        ja      .not_impl
+        cmp     eax, fs_NumHdServices
+        jae     .not_impl
         add     ebx, 4
         call    dword [fs_HdServices + eax*4]
         and     [hd1_status], 0
@@ -389,6 +393,8 @@ fs_OnHd:
 fs_HdServices:
         dd      fs_HdRead
         dd      fs_HdReadFolder
+        dd      fs_HdRewrite
+fs_NumHdServices = ($ - fs_HdServices)/4
 
 fs_HasRamdisk:
         mov     al, 1   ; we always have ramdisk

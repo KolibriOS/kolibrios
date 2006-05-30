@@ -545,10 +545,8 @@ l.21_2:
     add    ecx,21
     add    edi, ecx         ;Advance to next entry
     dec    dl
-    cmp    dl,0
     jne    l.21_2
     dec    dh
-    cmp    dh,0
     jne    l.20_2
     jmp    frnoreadd_1
 
@@ -561,9 +559,7 @@ fifoundd_1:
     mov    eax,[path_pointer_flp]
     cmp    [eax+36],byte 0
     je    fifoundd_2
-    add    edi,0xf
-    mov    eax,[edi]
-    and    eax,65535
+    movzx  eax, word [edi+0xf]
     mov    ebx,[path_pointer_flp]
     add    ebx,36
     call   get_cluster_of_a_path_flp
@@ -575,10 +571,7 @@ fifoundd_2:
     dec    [FDD_Sector]
 fifoundd_2_1:
     mov    [edi-11],byte 0xE5    ;mark filename deleted
-    add    edi,0xf
-    mov    eax,[edi]
-    and    eax,65535
-    mov    edi,eax            ;edi = cluster
+        movzx   edi, word [edi+0xf] ;edi = cluster
 frnewd_1:
     shl    edi,1            ;find next cluster from FAT
     add    edi,0x282000
@@ -674,9 +667,7 @@ rd_do_save_1:
     ; find an empty spot for filename in the root dir
 l20ds_1:
     sub    edx,1
-    cmp    edx,0
-    jnz    l21ds_1
-    jmp    frnoreadds_1
+    jz     frnoreadds_1
 l21ds_1:
     cmp    [edi],byte 0xE5
     jz     fifoundds_1
@@ -709,10 +700,8 @@ l.21_3:
     add    ecx,21
     add    edi, ecx         ;Advance to next entry
     dec    dl
-    cmp    dl,0
     jne    l.21_3
     dec    dh
-    cmp    dh,0
     jne    l.20_3
 fdc_status_error_8:
     pop     edi esi edx ecx ebx eax
@@ -797,7 +786,6 @@ frnewds_2:
     add    edi,0x282000
     mov    eax,[edi]
     and    eax,4095
-    cmp    eax,0x0
     jnz    frnewds_2
     mov    [edx],bx         ; save next cluster pos. to prev cl.
     mov    edx,edi            ; next save pos abs mem add
@@ -1083,84 +1071,201 @@ check_new_flp:
    ret
 
 ; \begin{diamond}
+fat_find_lfn:
+; in: esi->name
+;     [esp+4] = next
+;     [esp+8] = first
+;     [esp+C]... - possibly parameters for first and next
+; out: CF=1 - file not found
+;      else CF=0, esi->next name component, edi->direntry
+        pusha
+        lea     eax, [esp+0Ch+20h]
+        call    dword [eax-4]
+        jc      .reterr
+        sub     esp, 262*2      ; reserve place for LFN
+        mov     ebp, esp
+        push    0               ; for fat_get_name: read ASCII name
+.l1:
+        call    fat_get_name
+        jc      .l2
+        call    fat_compare_name
+        jz      .found
+.l2:
+        lea     eax, [esp+0Ch+20h+262*2+4]
+        call    dword [eax-8]
+        jnc     .l1
+        add     esp, 262*2+4
+.reterr:
+        stc
+        popa
+        ret
+.found:
+        add     esp, 262*2+4
+; if this is LFN entry, advance to true entry
+        cmp     byte [edi+11], 0xF
+        jnz     @f
+        lea     eax, [esp+0Ch+20h]
+        call    dword [eax-8]
+        jc      .reterr
+@@:
+        add     esp, 8          ; CF=0
+        push    esi
+        push    edi
+        popa
+        ret
+
+flp_root_next:
+        cmp     edi, 0xD200-0x20
+        jae     @f
+        add     edi, 0x20
+        ret     ; CF=0
+@@:
+; read next sector
+        inc     dword [eax]
+        cmp     dword [eax], 14
+        jae     flp_root_first.readerr
+flp_root_first:
+        mov     eax, [eax]
+        pusha
+        add     eax, 19
+        call    read_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jnz     .readerr
+        mov     edi, 0xD000
+        ret     ; CF=0
+.readerr:
+        stc
+        ret
+
+flp_rootmem_first:
+        mov     edi, 0x8000
+        clc
+        ret
+flp_rootmem_next:
+        add     edi, 0x20
+        cmp     edi, 0x8000+14*0x200
+        cmc
+flp_rootmem_next_write:
+flp_rootmem_begin_write:
+flp_rootmem_end_write:
+        ret
+flp_rootmem_extend_dir:
+        stc
+        ret
+
+flp_notroot_next:
+        cmp     edi, 0xD200-0x20
+        jae     flp_notroot_next_sector
+        add     edi, 0x20
+        ret     ; CF=0
+flp_notroot_next_sector:
+        push    ecx
+        mov     ecx, [eax]
+        mov     ecx, [ecx*2+0x282000]
+        and     ecx, 0xFFF
+        cmp     ecx, 2849
+        jae     flp_notroot_first.err2
+        mov     [eax], ecx
+        pop     ecx
+flp_notroot_first:
+        mov     eax, [eax]
+        cmp     eax, 2
+        jb      .err
+        cmp     eax, 2849
+        jae     .err
+        pusha
+        add     eax, 31
+        call    read_chs_sector
+        popa
+        mov     edi, 0xD000
+        cmp     [FDC_Status], 0
+        jnz     .err
+        ret     ; CF=0
+.err2:
+        pop     ecx
+.err:
+        stc
+        ret
+flp_notroot_begin_write:
+        pusha
+        mov     eax, [eax]
+        add     eax, 31
+        call    read_chs_sector
+        popa
+        ret
+flp_notroot_end_write:
+        pusha
+        mov     eax, [eax]
+        add     eax, 31
+        call    save_chs_sector
+        popa
+        ret
+flp_notroot_next_write:
+        cmp     edi, 0xD200
+        jae     @f
+        ret
+@@:
+        call    flp_notroot_end_write
+        jmp     flp_notroot_next_sector
+flp_notroot_extend_dir:
+; find free cluster in FAT
+        pusha
+        xor     eax, eax
+        mov     edi, 0x282000
+        mov     ecx, 2849
+        repnz   scasw
+        jnz     .notfound
+        mov     word [edi-2], 0xFFF     ; mark as last cluster
+        sub     edi, 0x282000
+        shr     edi, 1
+        dec     edi
+        mov     eax, [esp+28]
+        mov     ecx, [eax]
+        mov     [0x282000+ecx*2], di
+        mov     [eax], edi
+        xor     eax, eax
+        mov     edi, 0xD000
+        mov     ecx, 128
+        rep     stosd
+        popa
+        call    flp_notroot_end_write
+        mov     edi, 0xD000
+        clc
+        ret
+.notfound:
+        popa
+        stc
+        ret
+
 fd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry
-        pusha
-        sub     esp, 262*2      ; reserve place for LFN
-        mov     ebp, esp
-        push    0               ; for fat_get_name: read ASCII name
-        call    read_flp_fat
-        cmp     [FDC_Status], 0
-        jnz     .error
-        mov     eax, 19
-        mov     dh, 14
-.main_loop:
-.20_1:
-        pusha
-        call    read_chs_sector
-        popa
-        cmp     [FDC_Status], 0
-        jnz     .error
-        mov     edi, 0xD000
-        inc     [FDD_Sector]
-        push    eax
-.21_1:
-        call    fat_get_name
-        jc      @f
-        call    fat_compare_name
+        push    esi edi
+        push    0
+        push    flp_root_first
+        push    flp_root_next
+.loop:
+        call    fat_find_lfn
+        jc      .notfound
+        cmp     byte [esi], 0
         jz      .found
-@@:
-        add     edi, 0x20
-        cmp     edi, 0xD200
-        jb      .21_1
-        pop     eax
-        inc     eax
-        dec     dh
-        js      @f
-        jnz     .20_1
-.error:
-        add     esp, 262*2+4
-        popa
+        test    byte [edi+11], 10h
+        jz      .notfound
+        movzx   eax, word [edi+26]      ; cluster
+        mov     [esp+8], eax
+        mov     dword [esp+4], flp_notroot_first
+        mov     dword [esp], flp_notroot_next
+        jmp     .loop
+.notfound:
+        add     esp, 12
+        pop     edi esi
         stc
         ret
-@@:
-; read next sector from FAT
-        mov     eax, [(eax-31-1)*2+0x282000]
-        and     eax, 0xFFF
-        cmp     eax, 0xFF8
-        jae     .error
-        add     eax, 31
-        jmp     .main_loop
 .found:
-        pop     eax
-; if LFN entry, advance to corresponding short entry
-        cmp     byte [edi+11], 0xF
-        jnz     .entryfound
-        add     edi, 0x20
-        cmp     edi, 0xD200
-        jb      .entryfound
-        dec     dh
-        jz      .error
-        inc     eax
-        call    read_chs_sector
-        cmp     [FDC_Status], 0
-        jnz     .error
-        mov     edi, 0xD000
-.entryfound:
-        cmp     byte [esi], 0
-        jz      .done
-        test    byte [edi+11], 10h	; is a directory?
-        jz      .error
-        movzx   eax, word [edi+26]
-        add     eax, 31
-        mov     dh, 0
-        jmp     .main_loop
-.done:
-        add     esp, 262*2+4+4
-        push    edi
-        popad
+        add     esp, 16         ; CF=0
+        pop     esi
         ret
 
 ;----------------------------------------------------------------
@@ -1259,7 +1364,7 @@ fs_FloppyRead:
         mov     ebx, edx
         pop     eax edx ecx edi
         sub     ebx, edx
-        mov     al, 5  ; may be other error code?
+        mov     al, 11
         ret
 
 ;----------------------------------------------------------------
@@ -1397,5 +1502,407 @@ fs_FloppyReadFolder:
 @@:
         pop     ecx edi edi
         ret
+
+;----------------------------------------------------------------
+;
+;  fs_FloppyRewrite - LFN variant for writing sys floppy
+;
+;  esi  points to filename
+;  ebx  ignored (reserved)
+;  ecx  number of bytes to write, 0+
+;  edx  mem location to data
+;
+;  ret ebx = number of written bytes
+;      eax = 0 ok read or other = errormsg
+;
+;--------------------------------------------------------------
+@@:
+        mov     eax, ERROR_ACCESS_DENIED
+        xor     ebx, ebx
+        ret
+fsfrfe2:
+        popad
+fsfrfe:
+        mov     eax, 11
+        xor     ebx, ebx
+        ret
+
+fs_FloppyRewrite:
+        cmp     byte [esi], 0
+        jz      @b
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     fsfrfe
+        pushad
+        xor     ebp, ebp
+        push    esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, '/'
+        jnz     @b
+        lea     ebp, [esi-1]
+        jmp     @b
+@@:
+        pop     esi
+        test    ebp, ebp
+        jnz     .noroot
+        call    read_flp_root
+        cmp     [FDC_Status], 0
+        jnz     fsfrfe2
+        push    flp_rootmem_extend_dir
+        push    flp_rootmem_end_write
+        push    flp_rootmem_next_write
+        push    flp_rootmem_begin_write
+        xor     ebp, ebp
+        push    ebp
+        push    flp_rootmem_first
+        push    flp_rootmem_next
+        jmp     .common1
+.noroot:
+; check existence
+        mov     byte [ebp], 0
+        call    fd_find_lfn
+        mov     byte [ebp], '/'
+        lea     esi, [ebp+1]
+        jnc     @f
+        mov     eax, ERROR_FILE_NOT_FOUND
+.ret1:
+        mov     [esp+28], eax
+        popad
+        xor     ebx, ebx
+        ret
+@@:
+        test    byte [edi+11], 0x10     ; must be directory
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      .ret1
+        movzx   ebp, word [edi+26]      ; ebp=cluster
+        mov     eax, ERROR_FAT_TABLE
+        cmp     ebp, 2
+        jb      .ret1
+        cmp     ebp, 2849
+        jae     .ret1
+        push    flp_notroot_extend_dir
+        push    flp_notroot_end_write
+        push    flp_notroot_next_write
+        push    flp_notroot_begin_write
+        push    ebp
+        push    flp_notroot_first
+        push    flp_notroot_next
+.common1:
+        call    fat_find_lfn
+        jc      .notfound
+; found, delete FAT chain
+        push    edi
+        xor     eax, eax
+        mov     dword [edi+28], eax     ; zero size
+        xchg    ax, word [edi+26]       ; start cluster
+        test    eax, eax
+        jz      .done1
+@@:
+        cmp     eax, 0xFF8
+        jae     .done1
+        lea     edi, [0x282000 + eax*2] ; position in FAT
+        xor     eax, eax
+        xchg    ax, [edi]
+        jmp     @b
+.done1:
+        pop     edi
+        call    get_time_for_file
+        mov     [edi+22], ax
+        call    get_date_for_file
+        mov     [edi+24], ax
+        mov     [edi+18], ax
+        or      byte [edi+11], 20h      ; set 'archive' attribute
+        jmp     .doit
+.notfound:
+; file is not found; generate short name
+        call    fat_name_is_legal
+        jc      @f
+        add     esp, 28
+        popad
+        mov     eax, ERROR_FILE_NOT_FOUND
+        xor     ebx, ebx
+        ret
+@@:
+        sub     esp, 12
+        mov     edi, esp
+        call    fat_gen_short_name
+.test_short_name_loop:
+        push    esi edi ecx
+        mov     esi, edi
+        lea     eax, [esp+12+12+8]
+        mov     [eax], ebp
+        call    dword [eax-4]
+        jc      .found
+.test_short_name_entry:
+        cmp     byte [edi+11], 0xF
+        jz      .test_short_name_cont
+        mov     ecx, 11
+        push    esi edi
+        repz    cmpsb
+        pop     edi esi
+        jz      .short_name_found
+.test_short_name_cont:
+        lea     eax, [esp+12+12+8]
+        call    dword [eax-8]
+        jnc     .test_short_name_entry
+        jmp     .found
+.short_name_found:
+        pop     ecx edi esi
+        call    fat_next_short_name
+        jnc     .test_short_name_loop
+.disk_full:
+        add     esp, 12+28
+        popa
+        mov     eax, ERROR_DISK_FULL
+        xor     ebx, ebx
+        ret
+.found:
+        pop     ecx edi esi
+; now find space in directory
+; we need to save LFN <=> LFN is not equal to short name <=> generated name contains '~'
+        mov     al, '~'
+        push    ecx edi
+        mov     ecx, 8
+        repnz   scasb
+        push    1
+        pop     eax     ; 1 entry
+        jnz     .notilde
+; we need ceil(strlen(esi)/13) additional entries = floor((strlen(esi)+12+13)/13) total
+        xor     eax, eax
+@@:
+        cmp     byte [esi], 0
+        jz      @f
+        inc     esi
+        inc     eax
+        jmp     @b
+@@:
+        sub     esi, eax
+        add     eax, 12+13
+        mov     ecx, 13
+        push    edx
+        cdq
+        div     ecx
+        pop     edx
+.notilde:
+        push    -1
+        push    -1
+; find <eax> successive entries in directory
+        xor     ecx, ecx
+        push    eax
+        lea     eax, [esp+12+8+12+8]
+        mov     [eax], ebp
+        call    dword [eax-4]
+        pop     eax
+        jnc     .scan_dir
+.fsfrfe3:
+        add     esp, 8+8+12+28
+        popad
+        mov     eax, 11
+        xor     ebx, ebx
+        ret
+.scan_dir:
+        cmp     byte [edi], 0
+        jz      .free
+        cmp     byte [edi], 0xE5
+        jz      .free
+        xor     ecx, ecx
+.scan_cont:
+        push    eax
+        lea     eax, [esp+12+8+12+8]
+        call    dword [eax-8]
+        pop     eax
+        jnc     .scan_dir
+        cmp     [FDC_Status], 0
+        jnz     .fsfrfe3
+        push    eax
+        lea     eax, [esp+12+8+12+8]
+        call    dword [eax+16]          ; extend directory
+        pop     eax
+        jnc     .scan_dir
+        add     esp, 8+8+12+28
+        popad
+        mov     eax, ERROR_DISK_FULL
+        xor     ebx, ebx
+        ret
+.free:
+        test    ecx, ecx
+        jnz     @f
+        mov     [esp], edi
+        mov     ecx, [esp+8+8+12+8]
+        mov     [esp+4], ecx
+        xor     ecx, ecx
+@@:
+        inc     ecx
+        cmp     ecx, eax
+        jb      .scan_cont
+; found!
+; calculate name checksum
+        push    esi ecx
+        mov     esi, [esp+8+8]
+        mov     ecx, 11
+        xor     eax, eax
+@@:
+        ror     al, 1
+        add     al, [esi]
+        inc     esi
+        loop    @b
+        pop     ecx esi
+        pop     edi
+        pop     dword [esp+8+12+8]
+; edi points to first entry in free chunk
+        dec     ecx
+        jz      .nolfn
+        push    esi
+        push    eax
+        lea     eax, [esp+8+8+12+8]
+        call    dword [eax+4]         ; begin write
+        mov     al, 40h
+.writelfn:
+        or      al, cl
+        mov     esi, [esp+4]
+        push    ecx
+        dec     ecx
+        imul    ecx, 13
+        add     esi, ecx
+        stosb
+        mov     cl, 5
+        call    fs_RamdiskRewrite.read_symbols
+        mov     ax, 0xF
+        stosw
+        mov     al, [esp+4]
+        stosb
+        mov     cl, 6
+        call    fs_RamdiskRewrite.read_symbols
+        xor     eax, eax
+        stosw
+        mov     cl, 2
+        call    fs_RamdiskRewrite.read_symbols
+        pop     ecx
+        lea     eax, [esp+8+8+12+8]
+        call    dword [eax+8]         ; next write
+        xor     eax, eax
+        loop    .writelfn
+        pop     eax
+        pop     esi
+;        lea     eax, [esp+8+12+8]
+;        call    dword [eax+12]          ; end write
+.nolfn:
+        xchg    esi, [esp]
+        mov     ecx, 11
+        rep     movsb
+        mov     word [edi], 20h         ; attributes
+        sub     edi, 11
+        pop     esi ecx
+        add     esp, 12
+        mov     byte [edi+13], 0        ; tenths of a second at file creation time
+        call    get_time_for_file
+        mov     [edi+14], ax            ; creation time
+        mov     [edi+22], ax            ; last write time
+        call    get_date_for_file
+        mov     [edi+16], ax            ; creation date
+        mov     [edi+24], ax            ; last write date
+        mov     [edi+18], ax            ; last access date
+        and     word [edi+20], 0        ; high word of cluster
+        and     word [edi+26], 0        ; low word of cluster - to be filled
+        and     dword [edi+28], 0       ; file size - to be filled
+.doit:
+        lea     eax, [esp+8]
+        call    dword [eax+12]  ; flush directory
+        push    ecx
+        push    edi
+        add     edi, 26         ; edi points to low word of cluster
+        push    edi
+        mov     esi, edx
+        jecxz   .done
+        mov     ecx, 2849
+        mov     edi, 0x282000
+        push    0       ; first cluster
+.write_loop:
+; allocate new cluster
+        xor     eax, eax
+        repnz   scasw
+        mov     al, ERROR_DISK_FULL
+        jnz     .ret
+        dec     edi
+        dec     edi
+        lea     eax, [edi-0x282000]
+        shr     eax, 1                  ; eax = cluster
+        mov     word [edi], 0xFFF       ; mark as last cluster
+        cmp     dword [esp], 0
+        jz      .first
+        xchg    edi, [esp+4]
+        stosw
+        mov     edi, [esp+4]
+        jmp     @f
+.first:
+        mov     [esp], eax
+@@:
+        inc     ecx
+; write data
+        push    ecx edi
+        mov     ecx, 512
+        cmp     dword [esp+20], ecx
+        jae     @f
+        mov     ecx, [esp+20]
+@@:
+        push    ecx
+        mov     edi, 0xD000
+        rep     movsb
+        pop     ecx
+        push    ecx
+        sub     ecx, 512
+        neg     ecx
+        push    eax
+        xor     eax, eax
+        rep     stosb
+        pop     eax
+        add     eax, 31
+        pusha
+        call    save_chs_sector
+        popa
+        pop     ecx
+        cmp     [FDC_Status], 0
+        jnz     .diskerr
+        sub     [esp+20], ecx
+        pop     edi ecx
+        jnz     .write_loop
+.done:
+        xor     eax, eax
+.ret:
+        pop     ebx edi edi ecx
+        mov     [esp+28+28], eax
+        lea     eax, [esp+8]
+        call    dword [eax+4]
+        mov     [edi+26], bx
+        mov     ebx, esi
+        sub     ebx, edx
+        mov     [edi+28], ebx
+        call    dword [eax+12]
+        mov     [esp+28+16], ebx
+        test    ebp, ebp
+        jnz     @f
+        call    save_flp_root
+@@:
+        add     esp, 28
+        cmp     [FDC_Status], 0
+        jnz     .err3
+        call    save_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     .err3
+        popa
+        ret
+.err3:
+        popa
+        mov     al, 11
+        xor     ebx, ebx
+        ret
+.diskerr:
+        sub     esi, ecx
+        mov     eax, 11
+        pop     edi ecx
+        jmp     .ret
 
 ; \end{diamond}

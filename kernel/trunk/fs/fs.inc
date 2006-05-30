@@ -61,6 +61,7 @@ file_system:
 ; eax = 8  : disk full
 ; eax = 9  : fat table corrupted
 ; eax = 10 : access denied
+; eax = 11 : disk error
 ;
 ; ebx = size
 
