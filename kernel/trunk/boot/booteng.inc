@@ -55,6 +55,7 @@ d80x25_bottom_num = 3
 novesa    db      "Display: EGA/CGA",13,10,0
 vervesa   db      "Version of Vesa: Vesa x.x",13,10,0
 vervesa_off=22
+msg_apm	  db      " APM x.x ", 0
 gr_mode   db      186," Vesa 2.0+ 16 M LFB:  [1] 640x480, [2] 800x600, "
           db      "[3] 1024x768, [4] 1280x1024",13,10
           db      186," Vesa 1.2  16 M Bnk:  [5] 640x480, [6] 800x600, "

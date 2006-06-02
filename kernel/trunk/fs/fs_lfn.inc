@@ -53,17 +53,24 @@ file_system_lfn:
 ; 1 : read folder
 ; 2 : create/rewrite file
 ; 3 : write/append to file - not implemented yet
-; 4 : delete file - not implemented yet
-; 5 : create directory - not implemented yet
-; 6 : rename file/directory - not implemented yet
-; 7 : get file attributes structure - not implemented yet
-; 8 : start application - not implemented yet
+; 4 : set end of file - not implemented yet
+; 5 : get file attributes structure - not implemented yet
+; 6 : start application - not implemented yet
+; 7 : delete file - not implemented yet
+; 8 : create directory - not implemented yet
+; 9 : rename file/directory - not implemented yet
 
         add     eax, std_application_base_address
 ; parse file name
         xchg    ebx, eax
         lea     esi, [ebx+20]
         lodsb
+        test    al, al
+        jnz     @f
+        mov     esi, [esi]
+        add     esi, std_application_base_address
+        lodsb
+@@:
         cmp     al, '/'
         jz      @f
 .notfound:
