@@ -2103,6 +2103,7 @@ sys_system_table:
         dd      sysfn_centermouse       ; 15 = center mouse cursor
         dd      sysfn_getfreemem        ; 16 = get free memory size
         dd      sysfn_getallmem         ; 17 = get total memory size
+        dd      sysfn_terminate2        ; 18 = terminate thread using PID instead of slot
 sysfn_num = ($ - sys_system_table)/4
 endg
 
@@ -2150,6 +2151,33 @@ sysfn_terminate:        ; 18.2 = TERMINATE
    noatsc:
    noprocessterminate:
      ret
+
+sysfn_terminate2:
+;lock application_table_status mutex
+.table_status:    
+    cli
+    cmp    [application_table_status],0
+    je     .stf
+    sti
+    call   change_task
+    jmp    .table_status
+.stf:
+    call   set_application_table_status
+    mov    eax,ebx
+    call   pid_to_slot
+    test   eax,eax
+    jz     .not_found
+    mov    ebx,eax
+    cli
+    call   sysfn_terminate
+    mov    [application_table_status],0
+    sti
+    and    dword [esp+36],0
+    ret
+.not_found:
+    mov    [application_table_status],0
+    or     dword [esp+36],-1
+    ret
 
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      cmp  ebx,2
