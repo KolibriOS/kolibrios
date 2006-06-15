@@ -7,6 +7,7 @@
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  15.06.2006 LFN get/set file/folder info - diamond              ;;
 ;;  27.05.2006 LFN create/rewrite file - diamond                   ;;
 ;;  04.05.2006 LFN read folder - diamond                           ;;
 ;;  29.04.2006 Elimination of hangup after the                     ;;
@@ -2512,28 +2513,28 @@ hd_read:
     xor   eax,eax
     mov   edx,[hdbase]
     inc   edx
-    out   dx,al   ; ATAFeatures аегЁбва "обобеннобвей"
+    out   dx,al   ; ATAFeatures регистр "особенностей"
     inc   edx
     inc   eax
-    out   dx,al   ; ATASectorCount бзевзЁк беквоаов
+    out   dx,al   ; ATASectorCount счетчик секторов
     inc   edx
     mov   eax,[esp+4]
-    out   dx,al   ; ATASectorNumber аегЁбва номеаа беквоаа
+    out   dx,al   ; ATASectorNumber регистр номера сектора
     shr   eax,8
     inc   edx
-    out   dx,al   ; ATACylinder номеа жЁлЁндаа (младиЁй байв)
+    out   dx,al   ; ATACylinder номер цилиндра (младший байт)
     shr   eax,8
     inc   edx
-    out   dx,al   ; номеа жЁлЁндаа (бвааиЁй байв)
+    out   dx,al   ; номер цилиндра (старший байт)
     shr   eax,8
     inc   edx
     and   al,1+2+4+8
     add   al,byte [hdid]
     add   al,128+64+32
-    out   dx,al   ; номеа головкЁ/номеа дЁбка
+    out   dx,al   ; номер головки/номер диска
     inc   edx
     mov   al,20h
-    out   dx,al   ; ATACommand аегЁбва команд
+    out   dx,al   ; ATACommand регистр команд
     sti
 
     call  wait_for_sector_buffer
@@ -2934,7 +2935,7 @@ read_hd_file:
 hd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
-;      else CF=0 and edi->direntry
+;      else CF=0 and edi->direntry, eax=sector
 ; destroys eax
         push    esi edi
         push    0
@@ -2964,6 +2965,15 @@ hd_find_lfn:
         stc
         ret
 .found:
+        lea     eax, [esp+8]
+        cmp     dword [eax], 0
+        jz      .root
+        call    fat_get_sector
+        jmp     .cmn
+.root:
+        mov     eax, [eax+4]
+        add     eax, [ROOT_START]
+.cmn:
         add     esp, 20         ; CF=0
         pop     esi
         ret
@@ -3905,6 +3915,67 @@ fs_HdRewrite:
         add     esp, 32
         call    update_disk
         popad
+        ret
+
+fs_HdGetFileInfo:
+        cmp     [fat_type], 0
+        jnz     @f
+        mov     eax, ERROR_UNKNOWN_FS
+        ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2
+        ret
+@@:
+        push    edi
+        call    hd_find_lfn
+        pushfd
+        cmp     [hd_error], 0
+        jz      @f
+        popfd
+        pop     edi
+        mov     eax, 11
+        ret
+@@:
+        popfd
+        jmp     fs_GetFileInfo_finish
+
+fs_HdSetFileInfo:
+        cmp     [fat_type], 0
+        jnz     @f
+        mov     eax, ERROR_UNKNOWN_FS
+        ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2
+        ret
+@@:
+        push    edi
+        call    hd_find_lfn
+        pushfd
+        cmp     [hd_error], 0
+        jz      @f
+        popfd
+        pop     edi
+        mov     eax, 11
+        ret
+@@:
+        popfd
+        jnc     @f
+        pop     edi
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+@@:
+        push    eax
+        call    bdfe_to_fat_entry
+        pop     eax
+        mov     ebx, buffer
+        call    hd_write
+        call    update_disk
+        pop     edi
+        xor     eax, eax
         ret
 
 ; \end{diamond}

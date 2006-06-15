@@ -54,11 +54,12 @@ file_system_lfn:
 ; 2 : create/rewrite file
 ; 3 : write/append to file - not implemented yet
 ; 4 : set end of file - not implemented yet
-; 5 : get file attributes structure - not implemented yet
-; 6 : start application - not implemented yet
-; 7 : delete file - not implemented yet
-; 8 : create directory - not implemented yet
-; 9 : rename file/directory - not implemented yet
+; 5 : get file/directory attributes structure
+; 6 : set file/directory attributes structure
+; 7 : start application - not implemented yet
+; 8 : delete file - not implemented yet
+; 9 : create directory - not implemented yet
+; 10: rename file/directory - not implemented yet
 
         add     eax, std_application_base_address
 ; parse file name
@@ -311,10 +312,18 @@ fs_OnRamdisk:
         mov     dword [esp+36], 2       ; not implemented
         ret
 
+fs_NotImplemented:
+        mov     eax, 2
+        ret
+
 fs_RamdiskServices:
         dd      fs_RamdiskRead
         dd      fs_RamdiskReadFolder
         dd      fs_RamdiskRewrite
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_RamdiskGetFileInfo
+        dd      fs_RamdiskSetFileInfo
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
 
 fs_OnFloppy:
@@ -339,6 +348,10 @@ fs_FloppyServices:
         dd      fs_FloppyRead
         dd      fs_FloppyReadFolder
         dd      fs_FloppyRewrite
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_FloppyGetFileInfo
+        dd      fs_FloppySetFileInfo
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
@@ -401,6 +414,10 @@ fs_HdServices:
         dd      fs_HdRead
         dd      fs_HdReadFolder
         dd      fs_HdRewrite
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_HdGetFileInfo
+        dd      fs_HdSetFileInfo
 fs_NumHdServices = ($ - fs_HdServices)/4
 
 fs_HasRamdisk:

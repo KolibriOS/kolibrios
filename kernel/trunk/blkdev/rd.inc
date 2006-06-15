@@ -834,13 +834,42 @@ fat_date_to_bdfe:
         pop     edx ecx
         ret
 
+bdfe_to_fat_time:
+        push    edx
+        mov     edx, eax
+        shr     eax, 16
+        and     dh, 0x3F
+        shl     eax, 6
+        or      al, dh
+        shr     dl, 1
+        and     dl, 0x1F
+        shl     eax, 5
+        or      al, dl
+        pop     edx
+        ret
+
+bdfe_to_fat_date:
+        push    edx
+        mov     edx, eax
+        shr     eax, 16
+        sub     ax, 1980
+        and     dh, 0xF
+        shl     eax, 4
+        or      al, dh
+        and     dl, 0x1F
+        shl     eax, 5
+        or      al, dl
+        pop     edx
+        ret
+
 fat_entry_to_bdfe:
 ; convert FAT entry at edi to BDFE (block of data of folder entry) at esi, advance esi
 ; destroys eax
-        movzx   eax, byte [edi+11]
-        mov     [esi], eax	; attributes
         mov     eax, [ebp-4]
         mov     [esi+4], eax	; ASCII/UNICODE name
+fat_entry_to_bdfe2:
+        movzx   eax, byte [edi+11]
+        mov     [esi], eax	; attributes
         movzx   eax, word [edi+14]
         call    fat_time_to_bdfe
         mov     [esi+8], eax	; creation time
@@ -861,6 +890,8 @@ fat_entry_to_bdfe:
         mov     [esi+32], eax	; file size (low dword)
         xor     eax, eax
         mov     [esi+36], eax	; file size (high dword)
+        test    ebp, ebp
+        jz      .ret
         push    ecx edi
         lea     edi, [esi+40]
         mov     esi, ebp
@@ -872,6 +903,7 @@ fat_entry_to_bdfe:
 @@:
         mov     esi, edi
         pop     edi ecx
+.ret:
         ret
 .ansi:
         mov     ecx, 264/4
@@ -879,41 +911,62 @@ fat_entry_to_bdfe:
         mov     [edi-1], al
         jmp     @b
 
+bdfe_to_fat_entry:
+; convert BDFE at edx to FAT entry at edi
+; destroys eax
+; attributes byte
+        test    byte [edi+11], 8        ; volume label?
+        jnz     @f
+        mov     al, [edx]
+        and     al, 0x27
+        and     byte [edi+11], 0x10
+        or      byte [edi+11], al
+@@:
+        mov     eax, [edx+8]
+        call    bdfe_to_fat_time
+        mov     [edi+14], ax            ; creation time
+        mov     eax, [edx+12]
+        call    bdfe_to_fat_date
+        mov     [edi+16], ax            ; creation date
+        mov     eax, [edx+20]
+        call    bdfe_to_fat_date
+        mov     [edi+18], ax            ; last access date
+        mov     eax, [edx+24]
+        call    bdfe_to_fat_time
+        mov     [edi+22], ax            ; last write time
+        mov     eax, [edx+28]
+        call    bdfe_to_fat_date
+        mov     [edi+24], ax            ; last write date
+        ret
+
+ramdisk_root_first:
+        mov     edi, 0x100000+512*19
+        clc
+        ret
+ramdisk_root_next:
+        add     edi, 0x20
+        cmp     edi, 0x100000+512*33
+        cmc
+        ret
+
 rd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry
-        push    esi ebp edi
-        sub     esp, 262*2      ; allocate space for LFN
-        mov     ebp, esp        ; ebp points to buffer
-        push    0               ; for fat_get_name: read ASCII name
-        mov     edi, 0x100000+512*19    ; to root dir
-.l1:
-        call    fat_get_name
-        jc      .l2
-        call    fat_compare_name
-        jz      .found
-.l2:
-        add     edi, 0x20
-        cmp     edi, 0x100000+512*33
-        jb      .l1
-.notfound:
-        add     esp, 262*2+4
-        pop     edi ebp esi
-        stc
-        ret
-.found:
-; found
-; if this is LFN entry, advance to true entry
-        cmp     byte [edi+11], 0xF
-        jnz     @f
-        add     edi, 0x20
-@@:
-; folders are not supported
+        push    esi edi
+        push    ramdisk_root_first
+        push    ramdisk_root_next
+        call    fat_find_lfn
+        jc      .notfound
         cmp     byte [esi], 0
         jnz     .notfound
-        add     esp, 262*2+4+4  ; CF=0
-        pop     ebp esi
+        add     esp, 12
+        pop     esi
+        ret     ; CF=0
+.notfound:
+        add     esp, 8
+        pop     edi esi
+        stc
         ret
 
 ;----------------------------------------------------------------
@@ -1592,6 +1645,48 @@ fs_RamdiskRewrite:
         call    .read_symbol
         stosw
         loop    .read_symbols
+        ret
+
+fs_RamdiskGetFileInfo:
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2  ; unsupported
+        ret
+@@:
+        push    edi
+        call    rd_find_lfn
+fs_GetFileInfo_finish:
+        jnc     @f
+        pop     edi
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+@@:
+        push    esi ebp
+        xor     ebp, ebp
+        mov     esi, edx
+        and     dword [esi+4], 0
+        call    fat_entry_to_bdfe2
+        pop     ebp esi
+        pop     edi
+        xor     eax, eax
+        ret
+
+fs_RamdiskSetFileInfo:
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2  ; unsupported
+        ret
+@@:
+        push    edi
+        call    rd_find_lfn
+        jnc     @f
+        pop     edi
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+@@:
+        call    bdfe_to_fat_entry
+        pop     edi
+        xor     eax, eax
         ret
 
 ; \end{diamond}

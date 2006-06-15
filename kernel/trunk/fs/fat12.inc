@@ -1241,7 +1241,7 @@ flp_notroot_extend_dir:
 fd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
-;      else CF=0 and edi->direntry
+;      else CF=0 and edi->direntry, eax=directory cluster (0 for root)
         push    esi edi
         push    0
         push    flp_root_first
@@ -1264,6 +1264,7 @@ fd_find_lfn:
         stc
         ret
 .found:
+        mov     eax, [esp+8]
         add     esp, 16         ; CF=0
         pop     esi
         ret
@@ -1904,5 +1905,59 @@ fs_FloppyRewrite:
         mov     eax, 11
         pop     edi ecx
         jmp     .ret
+
+fs_FloppyGetFileInfo:
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     ret11
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2  ; unsupported
+        ret
+@@:
+        push    edi
+        call    fd_find_lfn
+        jmp     fs_GetFileInfo_finish
+
+ret11:
+        mov     eax, 11
+        ret
+
+fs_FloppySetFileInfo:
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     ret11
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2  ; unsupported
+        ret
+@@:
+        push    edi
+        call    fd_find_lfn
+        jnc     @f
+        pop     edi
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+@@:
+        push    eax
+        call    bdfe_to_fat_entry
+        pop     eax
+        test    eax, eax
+        jz      .root
+        add     eax, 31
+        pusha
+        call    save_chs_sector
+        popa
+        jmp     .cmn
+.root:
+        call    save_flp_root
+.cmn:
+        pop     edi
+        xor     eax, eax
+        cmp     [FDC_Status], 0
+        jz      @f
+        mov     al, 11
+@@:
+        ret
 
 ; \end{diamond}
