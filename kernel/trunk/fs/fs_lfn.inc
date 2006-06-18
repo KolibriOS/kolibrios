@@ -28,7 +28,22 @@ rootdirs:
         db      3,'hd3'
         dd      fs_OnHd3
         dd      fs_NextHd3
+;**********************************************
+        db      3,'cd0'
+        dd      fs_OnCd0
+        dd      fs_NextCd
+        db      3,'cd1'
+        dd      fs_OnCd1
+        dd      fs_NextCd
+        db      3,'cd2'
+        dd      fs_OnCd2
+        dd      fs_NextCd
+        db      3,'cd3'
+        dd      fs_OnCd3
+        dd      fs_NextCd
+;***********************************************        
         db      0
+
 
 virtual_root_query:
         dd      fs_HasRamdisk
@@ -43,6 +58,16 @@ virtual_root_query:
         db      'hd2',0
         dd      fs_HasHd3
         db      'hd3',0
+;**********************************************
+        dd      fs_HasCd0
+        db      'cd0',0
+        dd      fs_HasCd1
+        db      'cd1',0
+        dd      fs_HasCd2
+        db      'cd2',0
+        dd      fs_HasCd3
+        db      'cd3',0
+;**********************************************
         dd      0
 endg
 
@@ -420,6 +445,71 @@ fs_HdServices:
         dd      fs_HdSetFileInfo
 fs_NumHdServices = ($ - fs_HdServices)/4
 
+;*******************************************************
+fs_OnCd0:
+        call    reserve_cd
+        mov  [ChannelNumber],1
+        mov  [DiskNumber],0
+        push    6
+        jmp     fs_OnCd
+fs_OnCd1:
+        call    reserve_cd
+        mov  [ChannelNumber],1
+        mov  [DiskNumber],1
+        push    4
+        jmp     fs_OnCd
+fs_OnCd2:
+        call    reserve_cd
+        mov  [ChannelNumber],2
+        mov  [DiskNumber],0
+        push    2
+        jmp     fs_OnCd
+fs_OnCd3:
+        call    reserve_cd
+        mov  [ChannelNumber],2
+        mov  [DiskNumber],1
+        push    0
+fs_OnCd:
+
+        pop     eax
+        mov     [hdpos], eax
+        cmp     ecx, 0x100
+        jae     .nf
+        push    cx bx
+        mov     cl,al
+        mov     bl,[0x40001]
+        shr     bl,cl
+        test    bl,2
+        pop     bx cx
+
+        jnz     @f
+.nf:
+        and    [cd_status], 0
+        mov     dword [esp+36], 5       ; not found
+        ret
+@@:
+        mov     ecx, [ebx+12]
+        mov     edx, [ebx+16]
+        add     edx, std_application_base_address
+        mov     eax, [ebx]
+        cmp     eax, 1
+        ja      .not_impl
+        add     ebx, 4
+        call    dword [fs_CdServices + eax*4]
+        and     [cd_status], 0
+        mov     [esp+36], eax
+        mov     [esp+24], ebx
+        ret
+.not_impl:
+        and     [hd1_status], 0
+        mov     dword [esp+36], 2       ; not implemented
+        ret
+
+fs_CdServices:
+        dd      fs_CdRead
+        dd      fs_CdReadFolder
+;*******************************************************
+
 fs_HasRamdisk:
         mov     al, 1   ; we always have ramdisk
         ret
@@ -453,6 +543,33 @@ fs_HasHd3:
         cmp     al, 00000001b
         setz    al
         ret
+
+;*******************************************************
+fs_HasCd0:
+        mov     al, [0x40001]
+        and     al, 11000000b
+        cmp     al, 10000000b
+        setz    al
+        ret
+fs_HasCd1:
+        mov     al, [0x40001]
+        and     al, 00110000b
+        cmp     al, 00100000b
+        setz    al
+        ret
+fs_HasCd2:
+        mov     al, [0x40001]
+        and     al, 00001100b
+        cmp     al, 00001000b
+        setz    al
+        ret
+fs_HasCd3:
+        mov     al, [0x40001]
+        and     al, 00000011b
+        cmp     al, 00000010b
+        setz    al
+        ret
+;*******************************************************        
 
 ; fs_NextXXX functions:
 ; in: eax = partition number, from which start to scan
@@ -509,3 +626,16 @@ fs_NextHd:
         inc     eax
         clc
         ret
+        
+;*******************************************************
+fs_NextCd:
+; we always have /cdX/1
+        test    eax, eax
+        stc
+        jnz     @f
+        mov     al, 1
+        clc
+@@:
+        ret
+;*******************************************************
+

@@ -150,6 +150,7 @@ include "fs/fat32.inc"    ; read / write for fat32 filesystem
 include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
+include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
 
 ; sound
 
@@ -186,6 +187,7 @@ include "blkdev/flp_drv.inc"
 ; CD drive controller
 
 include "blkdev/cdrom.inc"
+include "blkdev/cd_drv.inc"
 
 ; Character devices
 
