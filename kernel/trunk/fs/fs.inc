@@ -42,9 +42,6 @@ file_system:
 ; eax = 4  ; makedir
 ; eax = 5  ; rename file/directory
 ; eax = 8  ; lba read
-; eax = 12 ; get_filesize
-; eax = 13 ; get_fileattr
-; eax = 14 ; get_filedate
 ; eax = 15 ; get_disk_info
 ; eax = 16 ; start application
 ;
@@ -91,12 +88,6 @@ file_system:
     ; Extract parameters
     add    eax, std_application_base_address    ; abs start of info block
 
-    cmp   dword [eax+0],12      ; Get file size
-    je    fs_read
-    cmp   dword [eax+0],13      ; Get file attribute
-    je    fs_read
-    cmp   dword [eax+0],14      ; Get file date/time
-    je    fs_read
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
     cmp   dword [eax+0],16      ; RUN - dont care about read&write blocks
@@ -338,20 +329,6 @@ endg
     jmp   file_system_return
 
   fs_noramdisk_delete:
-    cmp   dword [esp+20],12     ;GET TIME,DATE,SIZE AND ATTRS
-    jb    fs_noramdisk_getinfo
-    cmp   dword [esp+20],14
-    ja    fs_noramdisk_getinfo
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    mov   ebx,[esp+20]
-    mov   ecx,[esp+0]
-    sub   ecx,eax
-    add   ecx,12+1              ; file name length
-    call  rd_getfileinfo
-    jmp   file_system_return
-  fs_noramdisk_getinfo:             ;End of code - Mihasik
-
   fs_noramdisk:
   
   ;********************************************************************
@@ -711,62 +688,6 @@ hd_err_return:
     jmp   file_system_return
 
   fs_noharddisk_rename:
-
-    cmp   dword [esp+20],12     ; get FILESIZE
-    jne   fs_noharddisk_get_filesize
-
-    mov   eax,[esp+0]           ; /fname
-    lea   edi,[eax+12]
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-    sub   edi,edx               ; path length
-
-    call  get_filesize
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_get_filesize:
-
-    cmp   dword [esp+20],13     ; get FILEATTR
-    jne   fs_noharddisk_get_fileattr
-
-    mov   eax,[esp+0]           ; /dirname
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  get_fileattr
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_get_fileattr:
-
-    cmp   dword [esp+20],14     ; get FILEDATE
-    jne   fs_noharddisk_get_filedate
-
-    mov   eax,[esp+0]           ; /dirname
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  get_filedate
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_get_filedate:
 
     cmp   dword [esp+20],16     ; START APPLICATION
     jne   fs_noharddisk_start_application

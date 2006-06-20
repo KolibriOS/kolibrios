@@ -475,41 +475,6 @@ mov [edi+22],ax          ; time
      rd_ff:
         ret            
 
-  rd_getfileinfo:
-     ;get date, time, size or attributes of file
-     ;IN: eax - pointer to file, ebx - type of function: 12-get filesize, 13-get fileattr, 14-get filedate
-     ;ecx - filelengh 0=root
-     ;OUT: eax=0 - Ok or 5 - file not found ebx - date/time, size or attributes 
-        test   ecx,ecx
-        jnz    no_getfinfo_root
-        mov    eax,5      ;if root - fnf
-        xor    ebx,ebx
-        dec    ebx
-        ret
-    no_getfinfo_root:     ;if not root
-        sub    esp,32
-        call   expand_filename
-        call   rd_findfile
-        je     fifoundi
-        add    esp,32      ;if file not found
-        ret
-    fifoundi:    
-        cmp    ebx,13
-        jne    no_rd_attr
-        movzx ebx,byte [edi]    ;get attributes
-        jmp    rd_getfileinfo_end 
-     no_rd_attr:
-        cmp    ebx,14
-        jne    no_rd_date
-        mov    ebx,dword [edi+11] ;get date/time
-        jmp    rd_getfileinfo_end
-     no_rd_date:
-        mov    ebx,dword [edi+17] ;get size
-     rd_getfileinfo_end:
-        xor    eax,eax
-        add    esp,32
-        ret
-
 ; \begin{diamond}
 
 uni2ansi_str:
