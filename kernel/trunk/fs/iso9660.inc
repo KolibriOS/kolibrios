@@ -225,7 +225,7 @@ fs_CdReadFolder:
         mov   edi,[ebx] 
         sub   [edx+4],edi
         pop     ecx edi
-        xor     ebx,ebx
+        mov     ebx, [edx+4]
         mov     eax,ERROR_SUCCESS
         ret    
     

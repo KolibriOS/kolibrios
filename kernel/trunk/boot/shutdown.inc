@@ -155,7 +155,7 @@ system_shutdown:          ; shut down the system
     mov  edx,0x80000
     call fileread
 
-    mov  esi,restart_kernel_4000  ; move kernel re-starter to 0x4000:0
+    mov  esi,restart_kernel_4000+0x10000  ; move kernel re-starter to 0x4000:0
     mov  edi,0x40000
     mov  ecx,1000
     rep  movsb

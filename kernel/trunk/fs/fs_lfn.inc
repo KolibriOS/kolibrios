@@ -501,7 +501,7 @@ fs_OnCd:
         mov     [esp+24], ebx
         ret
 .not_impl:
-        and     [hd1_status], 0
+        and     [cd_status], 0
         mov     dword [esp+36], 2       ; not implemented
         ret
 

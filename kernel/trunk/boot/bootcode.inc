@@ -159,7 +159,7 @@ gr_table:
     dw      0x115 ,  800 , 600                ; 6
     dw      0x118 , 1024 , 768                ; 7
     dw      0x11B , 1280 ,1024                ; 8
-    dw    0x13, 320, 200                    ; 9
+    dw    0x13, 640, 480                    ; 9
     dw    0x12, 640, 480                    ; 0
 
 ; table for move to extended memory (int 15h, ah=87h)
