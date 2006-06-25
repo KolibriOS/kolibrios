@@ -492,8 +492,8 @@ fs_OnCd:
         mov     edx, [ebx+16]
         add     edx, std_application_base_address
         mov     eax, [ebx]
-        cmp     eax, 1
-        ja      .not_impl
+        cmp     eax,fs_NumCdServices
+        jae      .not_impl
         add     ebx, 4
         call    dword [fs_CdServices + eax*4]
         and     [cd_status], 0
@@ -508,6 +508,13 @@ fs_OnCd:
 fs_CdServices:
         dd      fs_CdRead
         dd      fs_CdReadFolder
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_NotImplemented
+        dd      fs_CdGetFileInfo
+        dd      fs_NotImplemented
+fs_NumCdServices = ($ - fs_CdServices)/4
+
 ;*******************************************************
 
 fs_HasRamdisk:

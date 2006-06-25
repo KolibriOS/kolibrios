@@ -63,7 +63,7 @@ use16
                   jmp   start_of_code
 
 ; mike.dld {
-		org $+0x10000
+        org $+0x10000
 db 0
 dd servetable-0x10000
 draw_line       dd __sys_draw_line
@@ -2180,6 +2180,9 @@ sysfn_terminate2:
     ret
 
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
+;* start code - get active process (1) - Mario79
+     mov  [window_minimize],2
+;* end code - get active process (1) - Mario79
      cmp  ebx,2
      jb   nowindowactivate
      cmp  ebx,[0x3004]
@@ -2194,14 +2197,6 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      cmp  esi, [0x3004] ; number of processes
      jz   nowindowactivate ; continue if window_stack_value != number_of_processes
                            ;     i.e. if window is not already active
-
-;* start code - get active process (1) - Mario79
-;     cli
-     mov  [window_minimize],2
-;     mov  [active_process],edi
-;     sti
-;* end code - get active process (1) - Mario79
-
      mov  [0xff01],edi     ; activate
 nowindowactivate:
      ret

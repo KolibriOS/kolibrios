@@ -276,7 +276,7 @@ fs_CdReadFolder:
     jb   .ansi
 .cd_get_parameters_of_file_1:
     mov   [edi],byte 0
-    call  .cd_get_parameters_of_file
+    call  cd_get_parameters_of_file
     add   [cd_mem_location],304
     jmp   .get_names_from_buffer_1
 
@@ -313,7 +313,7 @@ fs_CdReadFolder:
     jb   .unicode
 .cd_get_parameters_of_file_2:
     mov   [edi],word 0
-    call  .cd_get_parameters_of_file
+    call  cd_get_parameters_of_file
     add   [cd_mem_location],560
     jmp   .get_names_from_buffer_1
 
@@ -328,8 +328,13 @@ fs_CdReadFolder:
     add   edi,4
     jmp   .cd_get_parameters_of_file_2
 
-.cd_get_parameters_of_file:
+.end_buffer:
+    pop   edx edi esi eax
+    ret
+
+cd_get_parameters_of_file:
     mov   edi,[cd_mem_location]
+cd_get_parameters_of_file_1:
 ; получаем атрибуты файла
     xor   eax,eax
 ; файл не архивировался
@@ -400,10 +405,43 @@ fs_CdReadFolder:
     mov   [edi+32],eax
     ret
 
-.end_buffer:
-    pop   edx edi esi eax
-    ret
-        
+;----------------------------------------------------------------
+;
+;  fs_CdGetFileInfo - LFN variant for CD
+;                     get file/directory attributes structure
+;        
+;----------------------------------------------------------------
+fs_CdGetFileInfo:
+        cmp     byte [esi], 0
+        jnz     @f
+        mov     eax, 2
+        ret
+@@:
+        push    edi ebp
+        call    cd_find_lfn
+        pushfd
+        cmp     [DevErrorCode], 0
+        jz      @f
+        popfd
+        pop     ebp edi
+        mov     eax, 11
+        ret
+@@:
+        popfd
+        jnc     @f
+        pop     ebp edi
+        mov     eax, ERROR_FILE_NOT_FOUND
+        ret
+@@:
+
+        mov     edi, edx
+        call    cd_get_parameters_of_file_1
+        and     dword [edi+4], 0
+        pop     ebp
+        pop     ebp edi
+        xor     eax, eax
+        ret
+
 cd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
