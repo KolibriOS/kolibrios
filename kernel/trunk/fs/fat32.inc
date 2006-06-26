@@ -7,6 +7,7 @@
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  23.06.2006 LFN start application - diamond                     ;;
 ;;  15.06.2006 LFN get/set file/folder info - diamond              ;;
 ;;  27.05.2006 LFN create/rewrite file - diamond                   ;;
 ;;  04.05.2006 LFN read folder - diamond                           ;;
@@ -3396,7 +3397,16 @@ fs_HdRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found, delete FAT chain
+; found; must not be directory
+        test    byte [edi+11], 10h
+        jz      @f
+        add     esp, 32
+        popad
+        mov     eax, ERROR_ACCESS_DENIED
+        xor     ebx, ebx
+        ret
+@@:
+; delete FAT chain
         push    edi
         xor     eax, eax
         mov     dword [edi+28], eax     ; zero size
@@ -3799,6 +3809,126 @@ fs_HdSetFileInfo:
         call    update_disk
         pop     edi
         xor     eax, eax
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_HdExecute - LFN variant for executing from harddisk
+;
+;  esi  points to hd filename (e.g. 'dir1/name')
+;  ebp  points to full filename (e.g. '/hd0/1/dir1/name')
+;  dword [ebx] = flags
+;  dword [ebx+4] = cmdline
+;
+;  ret ebx,edx destroyed
+;      eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+fs_HdExecute:
+        mov     edx, [ebx]
+        mov     ebx, [ebx+4]
+        test    ebx, ebx
+        jz      @f
+        add     ebx, std_application_base_address
+@@:
+
+;----------------------------------------------------------------
+;
+; fs_HdExecute.flags - second entry
+;
+;  esi  points to floppy filename (kernel address)
+;  ebp  points to full filename
+;  edx  flags
+;  ebx  cmdline (kernel address)
+;
+;  ret  eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+
+.flags:
+        cmp     [fat_type], 0
+        jnz     @f
+        mov     eax, ERROR_UNKNOWN_FS
+        ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot execute root!
+        mov     eax, -ERROR_ACCESS_DENIED
+        ret
+@@:
+        push    edi
+        call    hd_find_lfn
+        jnc     .found
+        pop     edi
+        mov     eax, -ERROR_FILE_NOT_FOUND
+        cmp     [hd_error], 0
+        jz      @f
+        mov     al, -11
+@@:
+        ret
+.found:
+        mov     eax, [edi+20-2]
+        mov     ax, [edi+26]
+        push    0
+        push    eax
+        push    dword [edi+28]          ; size
+        push    .DoRead
+        call    fs_execute
+        add     esp, 16
+        pop     edi
+        ret
+
+.DoRead:
+; read next block
+; in: eax->parameters, edi->buffer
+; out: eax = error code
+        pushad
+        cmp     dword [eax], 0  ; file size
+        jz      .eof
+        add     eax, 4
+        call    fat_get_sector
+        mov     ebx, edi
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     .err
+        mov     eax, [esp+28]
+        mov     ecx, [eax]
+        sub     ecx, 512
+        jae     @f
+        lea     edi, [edi+ecx+512]
+        neg     ecx
+        push    eax
+        xor     eax, eax
+        rep     stosb
+        pop     eax
+@@:
+        mov     [eax], ecx
+        mov     edx, [eax+8]
+        inc     edx
+        cmp     edx, [SECTORS_PER_CLUSTER]
+        jb      @f
+        push    eax
+        mov     eax, [eax+4]
+        call    get_FAT
+        cmp     [hd_error], 0
+        jnz     .err
+        mov     ecx, eax
+        pop     eax
+        mov     [eax+4], ecx
+        xor     edx, edx
+@@:
+        mov     [eax+8], edx
+        popad
+        xor     eax, eax
+        ret
+.eof:
+        popad
+        mov     eax, 6
+        ret
+.err:
+        popad
+        mov     eax, 11
         ret
 
 ; \end{diamond}

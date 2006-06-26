@@ -914,24 +914,103 @@ ramdisk_root_next:
         cmc
         ret
 
+ramdisk_root_extend_dir:
+        stc
+        ret
+
+ramdisk_notroot_next:
+        add     edi, 0x20
+        test    edi, 0x1FF
+        jz      ramdisk_notroot_next_sector
+        ret     ; CF=0
+ramdisk_notroot_next_sector:
+        push    ecx
+        mov     ecx, [eax]
+        mov     ecx, [ecx*2+0x280000]
+        and     ecx, 0xFFF
+        cmp     ecx, 2849
+        jae     ramdisk_notroot_first.err2
+        mov     [eax], ecx
+        pop     ecx
+ramdisk_notroot_first:
+        mov     eax, [eax]
+        cmp     eax, 2
+        jb      .err
+        cmp     eax, 2849
+        jae     .err
+        shl     eax, 9
+        lea     edi, [eax+(31 shl 9)+0x100000]
+        clc
+        ret
+.err2:
+        pop     ecx
+.err:
+        stc
+        ret
+ramdisk_notroot_next_write:
+        test    edi, 0x1FF
+        jz      ramdisk_notroot_next_sector
+ramdisk_root_next_write:
+        ret
+
+ramdisk_notroot_extend_dir:
+        pusha
+        xor     eax, eax
+        mov     edi, 0x280000
+        mov     ecx, 2849
+        repnz   scasw
+        jnz     .notfound
+        mov     word [edi-2], 0xFFF
+        sub     edi, 0x280000
+        shr     edi, 1
+        dec     edi
+        mov     eax, [esp+28]
+        mov     ecx, [eax]
+        mov     [0x280000+ecx*2], di
+        mov     [eax], edi
+        shl     edi, 9
+        add     edi, (31 shl 9)+0x100000
+        mov     [esp], edi
+        xor     eax, eax
+        mov     ecx, 128
+        rep     stosd
+        popa
+        clc
+        ret
+.notfound:
+        popa
+        stc
+        ret
+
 rd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry
         push    esi edi
+        push    0
         push    ramdisk_root_first
         push    ramdisk_root_next
+.loop:
         call    fat_find_lfn
         jc      .notfound
         cmp     byte [esi], 0
-        jnz     .notfound
-        add     esp, 12
-        pop     esi
-        ret     ; CF=0
+        jz      .found
+        test    byte [edi+11], 10h
+        jz      .notfound
+        movzx   eax, word [edi+26]
+        mov     [esp+8], eax
+        mov     dword [esp+4], ramdisk_notroot_first
+        mov     dword [esp], ramdisk_notroot_next
+        jmp     .loop
 .notfound:
-        add     esp, 8
+        add     esp, 12
         pop     edi esi
         stc
+        ret
+.found:
+        mov     eax, [esp+8]
+        add     esp, 16         ; CF=0
+        pop     esi
         ret
 
 ;----------------------------------------------------------------
@@ -1041,37 +1120,76 @@ fs_RamdiskRead:
 ;
 ;--------------------------------------------------------------
 fs_RamdiskReadFolder:
+        push    edi
         cmp     byte [esi], 0
-        jz      @f
-; ramdisk doesn't support folders
-        mov     eax, ERROR_ACCESS_DENIED
+        jz      .root
+        call    rd_find_lfn
+        jnc     .found
+        pop     edi
         or      ebx, -1
+        mov     eax, ERROR_FILE_NOT_FOUND
         ret
-@@:
-        push    esi edi ecx
+.found:
+        test    byte [edi+11], 0x10
+        jnz     .found_dir
+        pop     edi
+        or      ebx, -1
+        mov     eax, ERROR_ACCESS_DENIED
+        ret
+.found_dir:
+        movzx   eax, word [edi+26]
+        add     eax, 31
+        push    0
+        jmp     .doit
+.root:
+        mov     eax, 19
+        push    14
+.doit:
+        push    esi ecx ebp
+        sub     esp, 262*2      ; reserve space for LFN
+        mov     ebp, esp
+        push    dword [ebx+4]   ; for fat_get_name: read ANSI/UNICODE names
+        mov     ebx, [ebx]
 ; init header
-        push    ecx
+        push    eax ecx
         mov     edi, edx
         mov     ecx, 32/4
         xor     eax, eax
         rep     stosd
         mov     byte [edx], 1   ; version
-        pop     ecx
-        push    ebp
-        sub     esp, 262*2      ; allocate space for LFN
-        mov     ebp, esp
-        push    dword [ebx+4]   ; for fat_get_name: read ANSI/UNICODE name
-        mov     ebx, [ebx]
-; read root
+        pop     ecx eax
         mov     esi, edi        ; esi points to block of data of folder entry (BDFE)
-        mov     edi, 0x100000+512*19
+.main_loop:
+        mov     edi, eax
+        shl     edi, 9
+        add     edi, 0x100000
+        push    eax
 .l1:
         call    fat_get_name
         jc      .l2
         cmp     byte [edi+11], 0xF
-        jnz     @f
+        jnz     .do_bdfe
         add     edi, 0x20
+        test    edi, 0x1FF
+        jnz     .do_bdfe
+        pop     eax
+        inc     eax
+        dec     byte [esp+262*2+16]
+        jz      .done
+        jns     @f
+; read next sector from FAT
+        mov     eax, [(eax-31-1)*2+0x280000]
+        and     eax, 0xFFF
+        cmp     eax, 0xFF8
+        jae     .done
+        add     eax, 31
+        mov     byte [esp+262*2+16], 0
 @@:
+        mov     edi, eax
+        shl     edi, 9
+        add     edi, 0x100000
+        push    eax
+.do_bdfe:
         inc     dword [edx+8]   ; new file found
         dec     ebx
         jns     .l2
@@ -1081,8 +1199,23 @@ fs_RamdiskReadFolder:
         call    fat_entry_to_bdfe
 .l2:
         add     edi, 0x20
-        cmp     edi, 0x100000+512*33
-        jb      .l1
+        test    edi, 0x1FF
+        jnz     .l1
+        pop     eax
+        inc     eax
+        dec     byte [esp+262*2+16]
+        jz      .done
+        jns     @f
+; read next sector from FAT
+        mov     eax, [(eax-31-1)*2+0x280000]
+        and     eax, 0xFFF
+        cmp     eax, 0xFF8
+        jae     .done
+        add     eax, 31
+        mov     byte [esp+262*2+16], 0
+@@:
+        jmp     .main_loop
+.done:
         add     esp, 262*2+4
         pop     ebp
         mov     ebx, [edx+4]
@@ -1091,7 +1224,7 @@ fs_RamdiskReadFolder:
         js      @f
         mov     al, ERROR_END_OF_FILE
 @@:
-        pop     ecx edi esi
+        pop     ecx esi edi edi
         ret
 
 iglobal
@@ -1346,7 +1479,8 @@ fat_gen_short_name:
 fs_RamdiskRewrite:
         cmp     byte [esi], 0
         jz      @b
-; ramdisk doesn't support folders
+        pushad
+        xor     ebp, ebp
         push    esi
 @@:
         lodsb
@@ -1354,18 +1488,59 @@ fs_RamdiskRewrite:
         jz      @f
         cmp     al, '/'
         jnz     @b
+        lea     ebp, [esi-1]
+        jmp     @b
+@@:
         pop     esi
-.err5:
-        mov     eax, 5  ; file not found
+        test    ebp, ebp
+        jnz     .noroot
+        push    ramdisk_root_extend_dir
+        push    ramdisk_root_next_write
+        push    ebp
+        push    ramdisk_root_first
+        push    ramdisk_root_next
+        jmp     .common1
+.noroot:
+; check existence
+        mov     byte [ebp], 0
+        call    rd_find_lfn
+        mov     byte [ebp], '/'
+        lea     esi, [ebp+1]
+        jnc     @f
+        mov     eax, ERROR_FILE_NOT_FOUND
+.ret1:
+        mov     [esp+28], eax
+        popad
         xor     ebx, ebx
         ret
 @@:
-        pop     esi
-; check existence
-        push    edi
-        call    rd_find_lfn
+        test    byte [edi+11], 0x10     ; must be directory
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      .ret1
+        movzx   ebp, word [edi+26]      ; ebp=cluster
+        mov     eax, ERROR_FAT_TABLE
+        cmp     ebp, 2
+        jb      .ret1
+        cmp     ebp, 2849
+        jae     .ret1
+        push    ramdisk_notroot_extend_dir
+        push    ramdisk_notroot_next_write
+        push    ebp
+        push    ramdisk_notroot_first
+        push    ramdisk_notroot_next
+.common1:
+        call    fat_find_lfn
         jc      .notfound
-; found, delete FAT chain
+; found; must not be directory
+        test    byte [edi+11], 10h
+        jz      @f
+        add     esp, 20
+        popad
+        mov     eax, ERROR_ACCESS_DENIED
+        xor     ebx, ebx
+        ret
+@@:
+; delete FAT chain
         push    edi
         xor     eax, eax
         mov     dword [edi+28], eax     ; zero size
@@ -1392,17 +1567,24 @@ fs_RamdiskRewrite:
 ; file is not found; generate short name
         call    fat_name_is_legal
         jc      @f
-        pop     edi
-        jmp     .err5
+        add     esp, 20
+        popad
+        mov     eax, ERROR_FILE_NOT_FOUND
+        xor     ebx, ebx
+        ret
 @@:
         sub     esp, 12
         mov     edi, esp
         call    fat_gen_short_name
 .test_short_name_loop:
-        push    esi ecx
-        mov     esi, 0x100000+512*19
+        push    esi edi ecx
+        mov     esi, edi
+        lea     eax, [esp+12+12+8]
+        mov     [eax], ebp
+        call    dword [eax-4]
+        jc      .found
 .test_short_name_entry:
-        cmp     byte [esi+11], 0xF
+        cmp     byte [edi+11], 0xF
         jz      .test_short_name_cont
         mov     ecx, 11
         push    esi edi
@@ -1410,22 +1592,22 @@ fs_RamdiskRewrite:
         pop     edi esi
         jz      .short_name_found
 .test_short_name_cont:
-        add     esi, 20h
-        cmp     esi, 0x100000+512*33
-        jb      .test_short_name_entry
-        pop     ecx esi
+        lea     eax, [esp+12+12+8]
+        call    dword [eax-8]
+        jnc     .test_short_name_entry
         jmp     .found
 .short_name_found:
+        pop     ecx edi esi
         call    fat_next_short_name
-        pop     ecx esi
         jnc     .test_short_name_loop
 .disk_full:
-        add     esp, 12
-        pop     edi
+        add     esp, 12+20
+        popad
         mov     eax, ERROR_DISK_FULL
         xor     ebx, ebx
         ret
 .found:
+        pop     ecx edi esi
 ; now find space in directory
 ; we need to save LFN <=> LFN is not equal to short name <=> generated name contains '~'
         mov     al, '~'
@@ -1452,9 +1634,15 @@ fs_RamdiskRewrite:
         div     ecx
         pop     edx
 .notilde:
+        push    -1
+        push    -1
 ; find <eax> successive entries in directory
         xor     ecx, ecx
-        mov     edi, 0x100000+512*19
+        push    eax
+        lea     eax, [esp+12+8+12+8]
+        mov     [eax], ebp
+        call    dword [eax-4]
+        pop     eax
 .scan_dir:
         cmp     byte [edi], 0
         jz      .free
@@ -1462,19 +1650,36 @@ fs_RamdiskRewrite:
         jz      .free
         xor     ecx, ecx
 .scan_cont:
-        add     edi, 0x20
-        cmp     edi, 0x100000+512*33
-        jb      .scan_dir
-        pop     edi ecx
-        jmp     .disk_full
+        push    eax
+        lea     eax, [esp+12+8+12+8]
+        call    dword [eax-8]
+        pop     eax
+        jnc     .scan_dir
+        push    eax
+        lea     eax, [esp+12+8+12+8]
+        call    dword [eax+8]           ; extend directory
+        pop     eax
+        jnc     .scan_dir
+        add     esp, 8+8+12+20
+        popad
+        mov     eax, ERROR_DISK_FULL
+        xor     ebx, ebx
+        ret
 .free:
+        test    ecx, ecx
+        jnz     @f
+        mov     [esp], edi
+        mov     ecx, [esp+8+8+12+8]
+        mov     [esp+4], ecx
+        xor     ecx, ecx
+@@:
         inc     ecx
         cmp     ecx, eax
         jb      .scan_cont
 ; found!
 ; calculate name checksum
         push    esi ecx
-        mov     esi, [esp+8]
+        mov     esi, [esp+8+8]
         mov     ecx, 11
         xor     eax, eax
 @@:
@@ -1483,39 +1688,40 @@ fs_RamdiskRewrite:
         inc     esi
         loop    @b
         pop     ecx esi
+        pop     edi
+        pop     dword [esp+8+12+8]
 ; edi points to last entry in free chunk
         dec     ecx
         jz      .nolfn
         push    esi
-        push    edi
+        push    eax
+        mov     al, 40h
 .writelfn:
-        sub     edi, 20h
-        push    ecx eax
-        mov     eax, [esp+8]
-        sub     eax, edi
-        shr     eax, 5
-        cmp     ecx, 1
-        jnz     @f
-        or      al, 40h
-@@:
+        or      al, cl
+        mov     esi, [esp+4]
+        push    ecx
+        dec     ecx
+        imul    ecx, 13
+        add     esi, ecx
         stosb
         mov     cl, 5
         call    .read_symbols
         mov     ax, 0xF
         stosw
-        pop     eax
+        mov     al, [esp+4]
         stosb
-        push    eax
         mov     cl, 6
         call    .read_symbols
         xor     eax, eax
         stosw
         mov     cl, 2
         call    .read_symbols
-        pop     eax ecx
-        sub     edi, 0x20
+        pop     ecx
+        lea     eax, [esp+8+8+12+8]
+        call    dword [eax+4]   ; next write
+        xor     eax, eax
         loop    .writelfn
-        pop     edi
+        pop     eax
         pop     esi
 .nolfn:
         xchg    esi, [esp]
@@ -1537,7 +1743,7 @@ fs_RamdiskRewrite:
         and     word [edi+26], 0        ; low word of cluster - to be filled
         and     dword [edi+28], 0       ; file size - to be filled
 .doit:
-        push    ecx edx
+        push    edx
         push    ecx
         push    edi
         add     edi, 26         ; edi points to low word of cluster
@@ -1578,18 +1784,20 @@ fs_RamdiskRewrite:
         jnz     .write_loop
 .done:
         mov     ebx, edx
-        pop     edi edi ecx edx ecx
+        pop     edi edi ecx edx
         sub     ebx, edx
         mov     [edi+28], ebx
-        pop     edi
+        add     esp, 20
+        popad
         xor     eax, eax
         ret
 .disk_full2:
         mov     ebx, edx
-        pop     edi edi ecx edx ecx
+        pop     edi edi ecx edx
         sub     ebx, edx
         mov     [edi+28], ebx
-        pop     edi
+        add     esp, 20
+        popad
         push    ERROR_DISK_FULL
         pop     eax
         ret
@@ -1652,6 +1860,97 @@ fs_RamdiskSetFileInfo:
         call    bdfe_to_fat_entry
         pop     edi
         xor     eax, eax
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskExecute - LFN variant for executing on sys floppy
+;
+;  esi  points to ramdisk filename (e.g. 'launcher')
+;  ebp  points to full filename (e.g. '/rd/1/launcher')
+;  dword [ebx] = flags
+;  dword [ebx+4] = cmdline
+;
+;  ret ebx,edx destroyed
+;      eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+fs_RamdiskExecute:
+        mov     edx, [ebx]
+        mov     ebx, [ebx+4]
+        test    ebx, ebx
+        jz      @f
+        add     ebx, std_application_base_address
+@@:
+
+;----------------------------------------------------------------
+;
+; fs_RamdiskExecute.flags - second entry
+;
+;  esi  points to ramdisk filename (kernel address)
+;  ebp  points to full filename
+;  edx  flags
+;  ebx  cmdline (kernel address)
+;
+;  ret  eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+
+.flags:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot execute root!
+        mov     eax, -ERROR_ACCESS_DENIED
+        ret
+@@:
+        push    edi
+        call    rd_find_lfn
+        jnc     .found
+        pop     edi
+        mov     eax, -ERROR_FILE_NOT_FOUND
+        ret
+.found:
+        movzx   eax, word [edi+26]      ; cluster
+        push    eax
+        push    dword [edi+28]          ; size
+        push    .DoRead
+        call    fs_execute
+        add     esp, 12
+        pop     edi
+        ret
+
+.DoRead:
+; read next block
+; in: eax->parameters, edi->buffer
+; out: eax = error code
+        pushad
+        cmp     dword [eax], 0  ; file size
+        jz      .eof
+        mov     edx, [eax+4]    ; cluster
+        lea     esi, [edx+31]
+        shl     esi, 9
+        add     esi, 0x100000
+        mov     ecx, 512/4
+        rep     movsd
+        mov     ecx, [eax]
+        sub     ecx, 512
+        jae     @f
+        add     edi, ecx
+        neg     ecx
+        push    eax
+        xor     eax, eax
+        rep     stosb
+        pop     eax
+@@:
+        mov     [eax], ecx
+        mov     dx, [edx*2+0x280000]
+        mov     [eax+4], dx     ; high word is already zero
+        popad
+        xor     eax, eax
+        ret
+.eof:
+        popad
+        mov     eax, 6
         ret
 
 ; \end{diamond}

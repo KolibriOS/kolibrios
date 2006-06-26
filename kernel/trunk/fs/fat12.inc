@@ -1594,7 +1594,16 @@ fs_FloppyRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found, delete FAT chain
+; found; must not be directory
+        test    byte [edi+11], 10h
+        jz      @f
+        add     esp, 28
+        popad
+        mov     eax, ERROR_ACCESS_DENIED
+        xor     ebx, ebx
+        ret
+@@:
+; delete FAT chain
         push    edi
         xor     eax, eax
         mov     dword [edi+28], eax     ; zero size
@@ -1958,6 +1967,108 @@ fs_FloppySetFileInfo:
         jz      @f
         mov     al, 11
 @@:
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_FloppyExecute - LFN variant for executing from floppy
+;
+;  esi  points to floppy filename (e.g. 'dir1/name')
+;  ebp  points to full filename (e.g. '/fd/1/dir1/name')
+;  dword [ebx] = flags
+;  dword [ebx+4] = cmdline
+;
+;  ret ebx,edx destroyed
+;      eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+fs_FloppyExecute:
+        mov     edx, [ebx]
+        mov     ebx, [ebx+4]
+        test    ebx, ebx
+        jz      @f
+        add     ebx, std_application_base_address
+@@:
+
+;----------------------------------------------------------------
+;
+; fs_FloppyExecute.flags - second entry
+;
+;  esi  points to floppy filename (kernel address)
+;  ebp  points to full filename
+;  edx  flags
+;  ebx  cmdline (kernel address)
+;
+;  ret  eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+
+.flags:
+        call    read_flp_fat
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot execute root!
+        mov     eax, -ERROR_ACCESS_DENIED
+        ret
+@@:
+        push    edi
+        call    fd_find_lfn
+        jnc     .found
+        pop     edi
+        mov     eax, -ERROR_FILE_NOT_FOUND
+        ret
+.found:
+        movzx   eax, word [edi+26]      ; cluster
+        push    eax
+        push    dword [edi+28]          ; size
+        push    .DoRead
+        call    fs_execute
+        add     esp, 12
+        pop     edi
+        ret
+
+.DoRead:
+; read next block
+; in: eax->parameters, edi->buffer
+; out: eax = error code
+        pushad
+        cmp     dword [eax], 0  ; file size
+        jz      .eof
+        mov     eax, [eax+4]    ; cluster
+        add     eax, 31
+        call    read_chs_sector
+        cmp     [FDC_Status], 0
+        jnz     .err
+        pop     edi
+        mov     esi, 0xD000
+        push    edi
+        mov     ecx, 512/4
+        rep     movsd
+        mov     eax, [esp+28]
+        mov     ecx, [eax]
+        sub     ecx, 512
+        jae     @f
+        add     edi, ecx
+        neg     ecx
+        push    eax
+        xor     eax, eax
+        rep     stosb
+        pop     eax
+@@:
+        mov     [eax], ecx
+        mov     edx, [eax+4]
+        mov     dx, [edx*2+0x282000]
+        mov     [eax+4], dx     ; high word is already zero
+        popad
+        xor     eax, eax
+        ret
+.eof:
+        popad
+        mov     eax, 6
+        ret
+.err:
+        popad
+        mov     eax, 11
         ret
 
 ; \end{diamond}

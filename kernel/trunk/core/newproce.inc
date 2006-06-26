@@ -307,8 +307,8 @@ new_start_application_fl:
     jz     .cleanfailed
     
     mov    eax,[new_process_place]
-    call   create_app_cr3_table   ;create page directory for new process
     inc    ecx		; -0x1E = no memory
+    call   create_app_cr3_table   ;create page directory for new process
     test   eax,eax
     jz     .cleanfailed_mem
     
@@ -563,14 +563,16 @@ new_start_application_fl:
 
     mov    ebx,[new_process_place]
     shl    ebx,5
-    mov    [0x3000+ebx+0xa],byte 0 ;set process state - running
 ; set if debuggee
-    test   byte [esp+28], 1
-    jz     .no_debug
-    mov    [0x3000+ebx+0xa],byte 1 ;set process state - suspended
-    mov    eax,[0x3000]
-    mov    [0x80000+ebx*8+0xac],eax ;set debugger PID - current
+        test    byte [esp+28], 1
+        jz      .no_debug
+        mov     [0x3000+ebx+0xa], byte 1        ; set process state - suspended
+        mov     eax, [0x3000]
+        mov     [0x80000+ebx*8+0xac], eax ;set debugger PID - current
+        jmp     .debug
 .no_debug:
+        mov     [0x3000+ebx+0xa], byte 0        ; set process state - running
+.debug:
     
     mov    esi,new_process_running
     call   sys_msg_board_str     ;output information about succefull startup
@@ -1269,9 +1271,9 @@ new_start_application_hd:
     jz     .cleanfailed
     
     mov    eax,[new_process_place]
+	inc	ecx		; -0x1E = no memory
     call   create_app_cr3_table  ;create page directory
     test   eax,eax
-	inc	ecx		; -0x1E = no memory
     jz     .cleanfailed_mem
     
     call   MEM_Get_Linear_Address
@@ -1392,4 +1394,222 @@ new_start_application_hd:
     ret
 end if
 
-	include 'debug.inc'
+; \begin{diamond}
+        include 'debug.inc'
+
+fs_execute:
+; ebx - cmdline
+; edx - flags
+; ebp - full filename
+; [esp+4] = procedure DoRead, [esp+8] = filesize & [esp+12]... - arguments for it
+        pushad
+; check filename length - with terminating NULL must be no more than 1024 symbols
+        mov     edi, ebp
+        mov     ecx, 1024
+        xor     eax, eax
+        repnz   scasb
+        jz      @f
+        popad
+        mov     eax, -ERROR_FILE_NOT_FOUND
+        ret
+@@:
+
+        mov     esi, new_process_loading
+        call    sys_msg_board_str       ; write message to message board
+
+; lock application_table_status mutex
+.table_status:
+        cli
+        cmp     [application_table_status], 0
+        jz      .stf
+        sti
+        call    change_task
+        jmp     .table_status
+.stf:
+        call    set_application_table_status
+        push    ebx     ; save command line pointer for add_app_parameters
+
+        call    find_new_process_place  ; find new process slot
+        call    safe_sti
+        test    eax, eax
+        mov     ecx, -0x20      ; too many processes
+        jz      .failed
+
+; write application name
+        push    edi
+        mov     ecx, edi
+        sub     ecx, ebp
+        mov     [appl_path], ebp
+        mov     [appl_path_size], ecx
+        dec     edi
+        std
+        mov     al, '/'
+        repnz   scasb
+        cld
+        jnz     @f
+        inc     edi
+@@:
+        inc     edi
+; now edi points to name without path
+        mov     esi, edi
+        mov     ecx, 8  ; 8 chars for name
+        mov     edi, [new_process_place]
+        shl     edi, cl
+        add     edi, 0x80000
+.copy_process_name_loop:
+        lodsb
+        cmp     al, '.'
+        jz      .copy_process_name_done
+        test    al, al
+        jz      .copy_process_name_done
+        stosb
+        loop    .copy_process_name_loop
+.copy_process_name_done:
+        mov     al, ' '
+        rep     stosb
+        pop     eax
+        mov     cl, 3   ; 3 chars for extension
+        dec     esi
+@@:
+        dec     eax
+        cmp     eax, esi
+        jbe     .copy_process_ext_done
+        cmp     byte [eax], '.'
+        jnz     @b
+        lea     esi, [eax+1]
+.copy_process_ext_loop:
+        lodsb
+        test    al, al
+        jz      .copy_process_ext_done
+        stosb
+        loop    .copy_process_ext_loop
+.copy_process_ext_done:
+        mov     al, ' '
+        rep     stosb
+
+; read header
+        lea     eax, [esp+8+36]
+        mov     edi, 0x90000
+        call    dword [eax-4]
+        mov     ecx, eax
+        neg     ecx
+        jnz     .cleanfailed
+; check menuet signature
+        mov     ecx, -0x1F
+        cmp     dword [0x90000], 'MENU'
+        jnz     .cleanfailed
+        cmp     word [0x90004], 'ET'
+        jnz     .cleanfailed
+        call    get_app_params
+        mov     ecx, -0x1F
+        test    esi, esi
+        jz      .cleanfailed
+
+        mov     eax, [new_process_place]
+        inc     ecx     ; -0x1E = no memory
+        call    create_app_cr3_table
+        test    eax, eax
+        jz      .cleanfailed_mem
+
+        call    MEM_Get_Linear_Address
+
+        mov     ebx, std_application_base_address
+        mov     ecx, [app_mem]
+        add     ecx, 4095
+        shr     ecx, 12
+        mov     edx, eax        ; edx - linear address of page directory
+        call    mem_alloc_specified_region
+        mov     ecx, -0x1E      ; no memory
+        test    eax, eax
+        jz      .cleanfailed_mem1
+
+        add     edx, std_application_base_address shr 20
+        mov     eax, [edx]
+        and     eax, not 4095
+        call    MEM_Get_Linear_Address
+        push    edx             ; save pointer to first page table
+        mov     edx, eax
+; read file
+; first block is already read to 0x90000
+        mov     eax, [edx]
+        and     eax, not 0xFFF
+        call    MEM_Get_Linear_Address
+        mov     esi, 0x90000
+        mov     edi, eax
+        mov     ecx, 512/4
+        rep     movsd
+        sub     edi, eax
+.loop1:
+; [esp] = pointer to current page directory entry
+; edx = pointer to current page table
+; edi = offset in page
+        mov     eax, [edx]
+        and     eax, not 0xFFF
+        call    MEM_Get_Linear_Address
+        push    edi
+        add     edi, eax
+        lea     eax, [esp+8+36+8]
+        call    dword [eax-4]
+        pop     edi
+        test    eax, eax
+        jnz     .endloop1
+        add     edi, 512        ; new offset
+        cmp     edi, 4096
+        jb      .loop1
+        xor     edi, edi
+        add     edx, 4          ; go to next page
+        test    edx, 4096-1
+        jnz     .loop1
+        pop     eax
+        add     eax, 4          ; go to next directory entry
+        push    eax
+        mov     eax, [eax]
+        and     eax, not 0xFFF
+        call    MEM_Get_Linear_Address
+        mov     edx, eax
+        jmp     .loop1
+.endloop1:
+        pop     edx
+        cmp     eax, 6
+        jnz     .cleanfailed_mem2
+        call    new_start_application_fl.add_app_parameters
+        mov     [esp+28], eax
+        popad
+        ret
+
+.cleanfailed_mem2:
+; file read error; free all allocated mem
+        mov     ecx, eax
+        neg     ecx
+        mov     eax, [new_process_place]
+        call    dispose_app_cr3_table
+        jmp     .cleanfailed
+.cleanfailed_mem1:
+; there is mem for directory entry, but there is no mem for pages
+; so free directory entry
+        mov     eax, [new_process_place]
+        shl     eax, 8
+        mov     eax, [0x80000+eax+0xB8]
+        call    MEM_Free_Page
+.cleanfailed_mem:
+; there is no mem for directory entry, display message
+        mov     esi, start_not_enough_memory
+        call    sys_msg_board_str
+.cleanfailed:
+        push    ecx
+; clean process name, this avoid problems with @panel
+        mov     edi, [new_process_place]
+        shl     edi, 8
+        add     edi, 0x80000
+        mov     ecx, 11
+        mov     al, ' '
+        rep     stosb
+        pop     eax
+.failed:
+        pop     ebx
+        mov     [esp+28], eax
+        popad
+        mov     [application_table_status], 0
+        call    safe_sti
+        ret
+; \end{diamond}

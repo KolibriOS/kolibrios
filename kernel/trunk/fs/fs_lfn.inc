@@ -81,7 +81,7 @@ file_system_lfn:
 ; 4 : set end of file - not implemented yet
 ; 5 : get file/directory attributes structure
 ; 6 : set file/directory attributes structure
-; 7 : start application - not implemented yet
+; 7 : start application
 ; 8 : delete file - not implemented yet
 ; 9 : create directory - not implemented yet
 ; 10: rename file/directory - not implemented yet
@@ -90,11 +90,13 @@ file_system_lfn:
 ; parse file name
         xchg    ebx, eax
         lea     esi, [ebx+20]
+        mov     ebp, esi        ; for 'start app' function full path must be known
         lodsb
         test    al, al
         jnz     @f
         mov     esi, [esi]
         add     esi, std_application_base_address
+        mov     ebp, esi
         lodsb
 @@:
         cmp     al, '/'
@@ -349,6 +351,7 @@ fs_RamdiskServices:
         dd      fs_NotImplemented
         dd      fs_RamdiskGetFileInfo
         dd      fs_RamdiskSetFileInfo
+        dd      fs_RamdiskExecute
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
 
 fs_OnFloppy:
@@ -377,6 +380,7 @@ fs_FloppyServices:
         dd      fs_NotImplemented
         dd      fs_FloppyGetFileInfo
         dd      fs_FloppySetFileInfo
+        dd      fs_FloppyExecute
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
@@ -443,6 +447,7 @@ fs_HdServices:
         dd      fs_NotImplemented
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo
+        dd      fs_HdExecute
 fs_NumHdServices = ($ - fs_HdServices)/4
 
 ;*******************************************************
