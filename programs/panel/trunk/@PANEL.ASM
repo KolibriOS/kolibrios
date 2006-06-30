@@ -1,16 +1,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                   ;
-;    MENUBAR for MenuetOS  - Compile with fasm      ;
+;    MENUBAR for KolibriOS  - Compile with fasm     ;
 ;                                                   ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 use32
   org  0x0
   db   'MENUET01'   ; 8 byte id
-  dd   0x01         ; required OS version
+  dd   0x01         ; header version
   dd   START        ; program start
   dd   I_END        ; program image size
-  dd   0xB000       ; reguired amount of memory - 64 Kb
+  dd   0xA000       ; reguired amount of memory - 10 Kb
   dd   0xA000       ; esp
   dd   0x0,0x0      ; param, icon
 
@@ -30,115 +30,57 @@ graph_text      dd    1
 soften_middle   dd    1  ;  0 no         ; 1 yes
 icons           dd    1  ;  0 defaults   ; 1 activate
 
-dat  db  'PANEL   DAT'
-
 PANEL_HEIGHT = 18
 
-;mainalive db 1
+handle_key:
 
-;correct_display:
-;    mov  eax,15
-;    mov  ebx,3
-;    int  0x40
-;    mcall 5, 300
-;    jmp correct_display
-
-chlangproc:
-;    mcall 18, 7
-;    mov  [my_process],eax
- begin_2:
-    mcall 40,0b  ; 0
-begin:
-  .begin:
-    mcall 5, eax
-  begin_3:
     mcall 18, 7
     mov  [active_process],eax
-;    cmp  [mainalive], 0
-;    je   .exit
 
-    mcall 66, 3
-    mov  ah,al
-    and al,100000b
-    cmp al,100000b
-    je   change_start_end
-    mov  al,ah
-    and al,10000b
-    cmp al,10000b
-    je   change_start_end
-    mov  al,ah
-    and  al,1000b
-    cmp  al,1000b
-    je  change_key_lang_1
-    mov  al,ah
-    and  al,100b
-    cmp  al,100b
-    je  change_key_lang_1
-    mov  al,ah
-    and  al,1111b
-    cmp  al,11b
-    jne  begin
-    mcall 19, file_sys, syslang
-    call syslang_music
-;    mcall 5, 25
+        mcall 2
+        cmp     al, 2
+        jnz     begin_1.ret
+        mov     ebx, exec_fileinfo
+        shr     eax, 8
+        cmp     al, 88
+        jz      start_end_application
+        cmp     al, 91
+        jz      start_menu_application
+        cmp     al, 92
+        jz      start_menu_application
+        cmp     al, 62
+        jz      kill_active_application
+        cmp     al, 71
+        jz      page_list_next
+        cmp     al, 72
+        jz      page_list_prev
+; this is hotkey Ctrl+Shift or LShift+RShift
+        mov     ebx, setup_exec
+        test    ah, 001100b
+        jnz     change_key_lang
+        mov     dword [ebx+8], syslang
+        mcall   70
+        call    syslang_music
+;       mcall   5, 25
 begin_1:
     mov  ecx,[active_process]
     mcall 18, 3
     mcall 5, 25
-    jmp  begin
-change_key_lang_1:
-    mov  al,ah
-    and  al,11b
-    cmp  al,01b
-    je  change_key_lang
-    cmp  al,10b
-    jne  begin
+.ret:
+        ret
+
 change_key_lang:
-    mcall 19, file_sys, chlang
-    call chlang_music
-;    mcall 5, 25
-    jmp  begin_1
-change_start_end:
-     mov  al,ah
-     and  al,1100b
-     cmp  al,1000b
-     je   start_end
-     cmp  al,100b
-     jne  start_menu
-start_end:
-;    mov  ecx,[my_process]
-;    mcall 18, 3
-     mcall 18,12
-     cmp   al,1
-     je    scan_codes
-     cmp   ah,255
-     jne    begin
+        mov     dword [ebx+8], chlang
+        mcall   70
+        call    chlang_music
+;       mcall   5, 25
+        jmp     begin_1
+
   start_end_application:
-     mcall 19,file_end,0
+        mov     dword [ebx+21], end_name
+        mcall   70
      mcall 5 ,50
-     jmp   begin
-   scan_codes:
-     cmp   ah,88
-     je    start_end_application
-     jmp   begin
-start_menu:
-     mcall  18,12
-     mov    [button_presssed_alt],eax
-    mov  [draw_window_1],1
-;     mov    ecx,eax
-;     mcall  47,0x40100, ,10 shl 16+5,0
-;     mov    eax,ecx
-     cmp    al,1
-     je     scan_codes2
-     cmp    ah,72  ;232
-     je     start_menu_application
-     cmp    ah,73   ;233
-     je     start_menu_application
-     cmp    ah,0x35  ;b6  ;53
-     je     kill_active_application
-     cmp    ah,0x9
-     jne    begin
-     jmp    begin
+     jmp   begin_1.ret
 
    kill_active_application:
      mcall  18, 7
@@ -147,46 +89,33 @@ start_menu:
 ;     mov    eax,area9
 ;     mov    ecx,[eax+4]
      mcall  18, 2
-     jmp    begin
+     jmp    begin_1.ret
+
    start_menu_application:
-     mcall 19,filename,0
-     call  menu_music
+        mov     [draw_window_1], 1
+        mov     dword [ebx+21], menu_name
+        mcall   70
+        call    menu_music
      mcall 5,50
-     jmp   begin
-   scan_codes2:
-     cmp   ah,91
-     je     start_menu_application
-     cmp   ah,92
-     je     start_menu_application
-     cmp   ah,83  ;62
-     je  kill_active_application
-     cmp   ah,71 ;179
-     jne   no_test_179
+     jmp   begin_1.ret
+
+page_list_next:
     cmp  [page_list],15
     je     @f
     inc  [page_list]
     mov  [draw_window_1],1
   @@:
-    jmp  begin
+    jmp  begin_1.ret
 
-  no_test_179:
-     cmp   ah,72 ;180
-     jne   no_test_180
+page_list_prev:
     cmp  [page_list],0
     je     @f
     dec  [page_list]
     mov  [draw_window_1],1
   @@:
-    jmp  begin
-
-  no_test_180:
-
-     jmp    begin
-
-button_presssed_alt dd 0
+    jmp  begin_1.ret
 
 active_process  dd 0
-my_process  dd 0
 
 calendar_music:
     mcall 55, eax, , , calendarmusic
@@ -230,20 +159,26 @@ calendarmusic:  db 0x85,0x37,0x85,0x48,0
 
 
 START:
-    mov  eax, 6
-    mov  ebx, dat
-    mov  ecx, 0
-    mov  edx, -1
-    mov  esi, I_END
-    int  0x40
-
-    mov  eax,40
-    mov  ebx,0101b
-    int  0x40
+        mcall 66,4,0,2          ; LShift+RShift
+        mcall 66, , ,11h        ; Ctrl+Shift
+        mcall 66,,88,110h       ; Alt+Ctrl+F12
+        mcall 66,,91,100h       ; Alt+LWin
+        mcall 66,,92            ; Alt+RWin
+        mcall 66,,62            ; Alt+F4
+        mcall 66,,71            ; Alt+Home
+        mcall 66,,72            ; Alt+Up
+    mcall 18, 8, 1
+    test eax, eax
+    jne  @f
+    mcall 18, 8, 2
+  @@:
+        mov     eax, 70
+        mov     ebx, dat_fileinfo
+        int     0x40
 
     mov  edi,width
     mov  esi,I_END
-    mov  eax,0
+    xor  eax,eax
   new_number:
     cmp  [esi],byte ';'
     je   number_ready
@@ -254,9 +189,8 @@ START:
     inc  esi
     jmp  new_number
   number_ready:
-    mov  [edi],eax
-    mov  eax,0
-    add  edi,4
+    stosd
+    xor  eax,eax
     inc  esi
     cmp  [esi],byte 'x'
     jne  new_number
@@ -270,10 +204,6 @@ START:
         mcall   48,6
 
     call set_variables
-
-    mcall 51, 1, chlangproc, 0xB000
-;    mcall 5, 5
-;    mcall 51, 1, correct_display, 0xA800
 
 start_after_minimize:
 
@@ -301,8 +231,8 @@ still:
     jz   red
     cmp  eax,3          ; button ?
     jz   button
-
-    jmp  still
+        call    handle_key
+        jmp     still
 
   red:                   ; redraw window
 
@@ -364,60 +294,22 @@ still:
     jmp  still
   noselect:
 
+        mov     ebx, exec_fileinfo
     cmp  ah,byte 2             ; start calendar
     jnz  noid15  ;noclock
-    mov  eax, 19
-    mov  ebx, file6
-    xor  ecx, ecx
-    int  0x40
+        mov     dword [ebx+21], calendar_name
+        mov     eax, 70
+        int     0x40
     call calendar_music
     jmp  still
-;  noclock:
-
-;    cmp  ah,byte 11            ; start file 1
-;    jnz  nob1
-;    mov  eax,19
-;    mov  ebx,file1
-;    int  0x40
-;    jmp  still
-;  nob1:
-
-;    cmp  ah,byte 12            ; start file 2
-;    jnz  nob2
-;    mov  eax,19
-;    mov  ebx,file2
-;    int  0x40
-;    jmp  still
-;  nob2:
-
-;    cmp  ah,byte 13            ; start file 3
-;    jnz  nob3
-;    mov  eax,19
-;    mov  ebx,file3
-;    int  0x40
-;    jmp  still
-;  nob3:
-
-;    cmp  ah,14                 ; start file 4
-;    jne  noid14
-;    mov  eax,19
-;    mov  ebx,file4
-;    mov  ecx,file4_par
-;    int  0x40
-;    jmp  still
-;  noid14:
-
-;    cmp  ah,15                 ; start file 5
-;    jne  noid15
-;    mov  eax,19
-;    mov  ebx,file5
-;    int  0x40
-;    jmp  still
 
   noid15:
     cmp  ah,16
     jne  noid16
-    mcall 19, file_sys, chlang
+        mov     ebx, setup_exec
+        mov     dword [ebx+8], chlang
+        mov     eax, 70
+        int     0x40
     call chlang_music
     mcall 5, 25
     jmp  still
@@ -425,7 +317,10 @@ still:
   noid16:
     cmp  ah,17
     jne  noid17
-    mcall 19, file_sys, syslang
+        mov     ebx, setup_exec
+        mov     dword [ebx+8], syslang
+        mov     eax, 70
+        int     0x40
     call syslang_music
     mcall 5, 25
     jmp  still
@@ -433,7 +328,9 @@ still:
   noid17:
     cmp  ah,18
     jne  noid18
-    mcall 19, sysmeter, 0
+        mov     dword [ebx+21], sysmeter_name
+        mov     eax, 70
+        int     0x40
     call sysmeter_music
     jmp  still
 
@@ -453,11 +350,12 @@ still:
   noid19:
     cmp  ah,20             ; start system setup
     jnz  noid20
-    mov  eax, 19
-    mov  ebx, file_sys
-    xor  ecx, ecx
-    int  0x40
+        mov     ebx, setup_exec
+        and     dword [ebx+8], 0
+        mov     eax, 70
+        int     0x40
     call setup_music
+    jmp still
 
  noid20:
     cmp  ah,21
@@ -511,10 +409,8 @@ draw_running_applications:
     mov  ecx,2
     mov  [contrast],0
     mov  eax,[max_applications]
-    mov  ebx,[page_list]
-    xor  edx,edx
-    mul  ebx
-    cmp  eax,0
+    mul  [page_list]
+    test eax,eax
     je    @f
     inc  eax
   @@:
@@ -641,10 +537,8 @@ contrast2:
 calculate_applications:
 
     mov  eax,[max_applications]
-    mov  ebx,[page_list]
-    xor  edx,edx
-    mul  ebx
-    cmp  eax,0
+    mul  [page_list]
+    test eax,eax
     je    @f
     inc  eax
   @@:
@@ -759,11 +653,11 @@ draw_application_buttons:
 
 
 menu_handler:
-    mov  eax, 19
-    mov  ebx, filename
-    xor  ecx, ecx
-    int  0x40
-ret
+        mov     eax, 70
+        mov     ebx, exec_fileinfo
+        mov     dword [ebx+21], menu_name
+        int     0x40
+        ret
 
 draw_small_right:
 
@@ -896,10 +790,6 @@ right_button:
 
     call draw_small_right
 
-    mov  eax, 23
-    mov  ebx, 30
-    int  0x40
-
     jmp  small_wait
 
 ;-------------------------------------------------
@@ -918,10 +808,6 @@ left_button:
 
     call draw_small_left
 
-    mov  eax, 23
-    mov  ebx, 30
-    int  0x40
-
 ;-------------------------------------------------
 
   small_wait:
@@ -934,6 +820,11 @@ left_button:
     call [small_draw]
     jmp  small_wait
   no_win:
+    cmp  eax,2
+    jne  no_key
+    call handle_key
+    jmp  small_wait
+no_key:
 
     mov  eax,17
     int  0x40
@@ -1339,13 +1230,10 @@ draw_menuet_icon:
     mov  eax,[wcolor]
     mov  [m_icon+4],eax
 
-    mov  eax,6                               ; load file
-    mov  ebx,m_bmp
-    mov  ecx,0
-    mov  edx,200000
-    mov  esi,image
-    mov  edi,0
-    int  0x40
+; load & display menuet.bmp
+        mov     eax, 70
+        mov     ebx, m_bmp_fileinfo
+        int     0x40
 
     mov  eax,40
     mov  ebx,0
@@ -1356,14 +1244,11 @@ draw_menuet_icon:
 ;    movzx ecx,byte [edi]
 ;    shr  ecx,5
 
-    mov    cl,[edi]
-    cmp    cl,10
+    cmp    byte [edi], 10
     jb     nopix
-    mov    cl,[edi+1]
-    cmp    cl,10
+    cmp    byte [edi+1], 10
     jb     nopix
-    mov    cl,[edi+2]
-    cmp    cl,10
+    cmp    byte [edi+2], 10
     jb     nopix
 
     pusha
@@ -1435,12 +1320,9 @@ draw_program_icons:
     add  ecx,48
     mov  [iconf+6],cl
 
-    mov  eax,6                      ; load file
-    mov  ebx,iconf
-    mov  ecx,0
-    mov  edx,200000
-    mov  esi,image
-    int  0x40
+        mov     eax, 70
+        mov     ebx, iconf_fileinfo
+        int     0x40
 
     mov  eax,0
     mov  ebx,32
@@ -2044,21 +1926,8 @@ button_frames  dd  0x0
 
 checks    dd -1
 hidetext  db 0x11,0x10,0x1e
-iconf     db  'MBAR_IX BMP'
-m_bmp     db  'MENUET  BMP'
 
-sysmeter  db  'SYSMETER   '
-file_end  db  'END        '
-file_sys  db  'SETUP      '
-filename  db  'MENU       '
 turn_text db  '><'
-;file1     db  'SB         '
-;file2     db  'TETRIS     '
-;file3     db  'PIC4       '
-;file4     db  'TINYPAD    '
-;file4_par db  'COPYING.TXT',0
-;file5     db  'MFASM      '
-file6     db  'CALENDAR   '
 gpl       db  'GPL'
 
 chlang db 'LANG',0
@@ -2091,6 +1960,54 @@ pros    db '                                                  '
 
 screenxy    dd  0x0
 stcount     dd  0x0
+
+setup_exec:
+        dd      7
+        dd      0
+.cmdline dd     ?
+        dd      0
+        dd      0
+        db      '/RD/1/'
+file_sys db     'SETUP',0
+
+exec_fileinfo:
+        dd      7
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        db      0
+.name   dd      ?
+
+end_name        db      '/RD/1/END',0
+menu_name       db      '/RD/1/MENU',0
+calendar_name   db      '/RD/1/CALENDAR',0
+sysmeter_name   db      '/RD/1/SYSMETER',0
+
+dat_fileinfo:
+        dd      0
+        dd      0
+        dd      0
+        dd      1024
+        dd      I_END
+        db      '/RD/1/PANEL.DAT',0
+
+m_bmp_fileinfo:
+        dd      0
+        dd      0
+        dd      0
+        dd      8192
+        dd      image
+        db      '/RD/1/MENUET.BMP',0
+
+iconf_fileinfo:
+        dd      0
+        dd      0
+        dd      0
+        dd      8192
+        dd      image
+        db      '/RD/1/'
+iconf   db      'MBAR_IX.BMP',0
 
 I_END:
 
