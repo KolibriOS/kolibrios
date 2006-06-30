@@ -775,7 +775,7 @@ finit ;reset the registers, contents which are still equal RM
         mov   al, 0xF3       ; set repeat rate & delay
         call  kb_write
         call  kb_read
-        mov   al, 00100010b ; 24 500  ;00100100b  ; 20 500
+        mov   al, 0 ; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
         call  kb_write
         call  kb_read
      ;// mike.dld [
@@ -826,7 +826,6 @@ osloop:
 
         call   [draw_pointer]
         call   checkbuttons
-        call   main_loop_sys_getkey
         call   checkwindows
 ;       call   check_window_move_request
         call   checkmisc
@@ -2271,12 +2270,9 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
      rep movsd
      ret
 
-sysfn_lastkey:          ; 18.12 = get all key pressed with ALT
-     mov   eax,[last_key_press]
-     mov   al,[keyboard_mode_sys]
-     mov   [esp+36],eax
-     mov   [last_key_press],0
-     ret
+sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
+        and     dword [esp+36], 0
+        ret
 
 sysfn_getversion:       ; 18.13 = get kernel ID and version
      mov edi,[3010h]
@@ -2324,8 +2320,6 @@ screen_workarea RECT
 ;// mike.dld, 2006-29-01 ]
 window_minimize db 0
 sound_flag      db 0
-last_key_press  dd 0
-keyboard_mode_sys db 0
 endg
 
 iglobal
@@ -2339,15 +2333,6 @@ endg
 UID_NONE=0
 UID_MENUETOS=1   ;official
 UID_KOLIBRI=2    ;russian
-
-main_loop_sys_getkey:
-    cmp   [0xf400],byte 0
-    je    .finish
-    movzx eax,byte [0xf401]
-    shl   eax,8
-    mov   [last_key_press],eax
- .finish:
-    ret
 
 sys_cachetodiskette:
 ;    pushad
@@ -2516,6 +2501,7 @@ align 4
 
 sys_getkey:
     mov   [esp+36],dword 1
+; test main buffer
     mov   ebx, [0x3000]                          ; TOP OF WINDOW STACK
     movzx ecx,word [0xC000 + ebx * 2]
     mov   edx,[0x3004]
@@ -2538,27 +2524,27 @@ sys_getkey:
     mov   ebx, 0xF401
     call  memmove
     pop   eax
-    mov   [last_key_press],eax
-
-    mov   eax,[kb_state]
-    and   al,110000b
-    cmp   al,100000b
-    je    .yes_win_key
-    cmp   al,10000b
-    je    .yes_win_key
-    mov   eax,[last_key_press]
-    jmp   .no_win_key
-;    cmp   ah,232
-;    je    .yes_win_key
-;    cmp   ah,233
-;    jne   .no_win_key
- .yes_win_key:
-    mov   eax,1
- .no_win_key:
+.ret_eax:
     mov   [esp+36],eax
- .finish:
     ret
-
+ .finish:
+; test hotkeys buffer
+        mov     ecx, hotkey_buffer
+@@:
+        cmp     [ecx], ebx
+        jz      .found
+        add     ecx, 8
+        cmp     ecx, hotkey_buffer+120*8
+        jb      @b
+        ret
+.found:
+        mov     ax, [ecx+6]
+        shl     eax, 16
+        mov     ah, [ecx+4]
+        mov     al, 2
+        and     dword [ecx+4], 0
+        and     dword [ecx], 0
+        jmp     .ret_eax
 
 align 4
 
@@ -4395,26 +4381,23 @@ sys_trace:
 
 
 sys_process_def:
+        mov     edi, [0x3000]
 
-     cmp   eax,1                   ; set keyboard mode
+        dec     eax             ; 1 = set keyboard mode
      jne   no_set_keyboard_setup
 
-     mov   edi,[0x3000]
      shl   edi,8
-     add   edi,0x80000+0xB4
-     mov   [edi],bl
+     mov   [edi+0x800B4],bl
 
      ret
 
    no_set_keyboard_setup:
 
-     cmp   eax,2                   ; get keyboard mode
+        dec     eax             ; 2 = get keyboard mode
      jne   no_get_keyboard_setup
 
-     mov   edi,[0x3000]
      shl   edi,8
-     add   edi,0x80000+0xB4
-     movzx eax, byte [edi]
+     movzx eax, byte [0x800B4+edi]
 
      mov   [esp+36],eax
 
@@ -4422,7 +4405,7 @@ sys_process_def:
 
    no_get_keyboard_setup:
 
-     cmp   eax,3                   ; get keyboard ctrl, alt, shift
+        dec     eax             ; 3 = get keyboard ctrl, alt, shift
      jne   no_get_keyboard_cas
 
 ;     xor   eax,eax
@@ -4444,7 +4427,72 @@ sys_process_def:
 
    no_get_keyboard_cas:
 
+        dec     eax
+        jnz     no_add_keyboard_hotkey
 
+        mov     eax, hotkey_list
+@@:
+        cmp     dword [eax+8], 0
+        jz      .found_free
+        add     eax, 16
+        cmp     eax, hotkey_list+16*256
+        jb      @b
+        mov     dword [esp+36], 1
+        ret
+.found_free:
+        mov     [eax+8], edi
+        mov     [eax+4], ecx
+        movzx   ebx, bl
+        lea     ebx, [hotkey_scancodes+ebx*4]
+        mov     ecx, [ebx]
+        mov     [eax], ecx
+        mov     [ebx], eax
+        mov     [eax+12], ebx
+        jecxz   @f
+        mov     [ecx+12], eax
+@@:
+        and     dword [esp+36], 0
+        ret
+
+no_add_keyboard_hotkey:
+
+        dec     eax
+        jnz     no_del_keyboard_hotkey
+
+        movzx   ebx, bl
+        lea     ebx, [hotkey_scancodes+ebx*4]
+        mov     eax, [ebx]
+.scan:
+        test    eax, eax
+        jz      .notfound
+        cmp     [eax+8], edi
+        jnz     .next
+        cmp     [eax+4], ecx
+        jz      .found
+.next:
+        mov     eax, [eax]
+        jmp     .scan
+.notfound:
+        mov     dword [esp+36], 1
+        ret
+.found:
+        mov     ecx, [eax]
+        jecxz   @f
+        mov     edx, [eax+12]
+        mov     [ecx+12], edx
+@@:
+        mov     ecx, [eax+12]
+        mov     edx, [eax]
+        mov     [ecx], edx
+        xor     edx, edx
+        mov     [eax+4], edx
+        mov     [eax+8], edx
+        mov     [eax+12], edx
+        mov     [eax], edx
+        mov     [esp+36], edx
+        ret
+
+no_del_keyboard_hotkey:
      ret
 
 

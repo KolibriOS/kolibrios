@@ -26,7 +26,63 @@ uglobal
   ctrl_alt_del  db 0
 
   kb_lights     db 0
+
+align 4
+        hotkey_scancodes        rd      256     ; we have 256 scancodes
+        hotkey_list             rd      256*4   ; max 256 defined hotkeys
+        hotkey_buffer           rd      120*2   ; buffer for 120 hotkeys
 endg
+
+iglobal
+hotkey_tests    dd      hotkey_test0
+                dd      hotkey_test1
+                dd      hotkey_test2
+                dd      hotkey_test3
+                dd      hotkey_test4
+hotkey_tests_num = 5
+endg
+
+hotkey_test0:
+        test    al, al
+        setz    al
+        ret
+hotkey_test1:
+        test    al, al
+        setnp   al
+        ret
+hotkey_test2:
+        cmp     al, 3
+        setz    al
+        ret
+hotkey_test3:
+        cmp     al, 1
+        setz    al
+        ret
+hotkey_test4:
+        cmp     al, 2
+        setz    al
+        ret
+
+hotkey_do_test:
+        push    eax
+        mov     edx, [kb_state]
+        shr     edx, cl
+        add     cl, cl
+        mov     eax, [eax+4]
+        shr     eax, cl
+        and     eax, 15
+        cmp     al, hotkey_tests_num
+        jae     .fail
+        xchg    eax, edx
+        and     al, 3
+        call    [hotkey_tests + edx*4]
+        cmp     al, 1
+        pop     eax
+        ret
+.fail:
+        stc
+        pop     eax
+        ret
 
 align 4
 irq1:
@@ -44,52 +100,55 @@ irq1:
        in    al,0x60
        mov   [keyboard_data],al
 
+; ch = scancode
+; cl = ext_code
+; bh = 0 - normal key
+; bh = 1 - modifier (Shift/Ctrl/Alt)
+; bh = 2 - extended code
+
        mov   ch,al
        cmp   al,0xE0
        je    @f
        cmp   al,0xE1
        jne   .normal_code
-   @@: mov   [ext_code],al
-       jmp   .no_key.end
+   @@:
+        mov     bh, 2
+        mov     [ext_code], al
+        jmp     .writekey
    .normal_code:
-       mov   cl,[ext_code]
-       mov   [ext_code],0
+        mov     cl, 0
+        xchg    cl, [ext_code]
        and   al,0x7F
+        mov     bh, 1
    @@: cmp   al,0x2A
        jne   @f
        cmp   cl,0xE0
-       je    .no_key.end
+       je    .writekey
        mov   eax,VKEY_LSHIFT
-       jmp   .no_key
+       jmp   .modifier
    @@: cmp   al,0x36
        jne   @f
        cmp   cl,0xE0
-       je    .no_key.end
+       je    .writekey
        mov   eax,VKEY_RSHIFT
-       jmp   .no_key
+       jmp   .modifier
    @@: cmp   al,0x38
        jne   @f
-       cmp   cl,0xE0
-       je    .alt.r
-       mov   eax,VKEY_LALT
-       jmp   .no_key
-   .alt.r:
-       mov   eax,VKEY_RALT
-       jmp   .no_key
+        mov     eax, VKEY_LALT
+        test    cl, cl
+        jz      .modifier
+        mov     al, VKEY_RALT
+        jmp     .modifier
    @@: cmp   al,0x1D
        jne   @f
-       cmp   cl,0
-       jne   .ctrl.r
-       mov   eax,VKEY_LCONTROL
-       jmp   .no_key
-   .ctrl.r:
-       cmp   cl,0xE1
-       jne   .ctrl.r.2
-       mov   [ext_code],cl
-       jmp   .no_key.end
-   .ctrl.r.2:
-       mov   eax,VKEY_RCONTROL
-       jmp   .no_key
+        mov     eax, VKEY_LCONTROL
+        test    cl, cl
+        jz      .modifier
+        mov     al, VKEY_RCONTROL
+        cmp     cl, 0xE0
+        jz      .modifier
+        mov     [ext_code], cl
+        jmp     .writekey
    @@: cmp   al,0x3A
        jne   @f
        mov   bl,4
@@ -97,8 +156,8 @@ irq1:
        jmp   .no_key.xor
    @@: cmp   al,0x45
        jne   @f
-       cmp   cl,0
-       jne   .no_key.end
+        test    cl, cl
+        jnz     .writekey
        mov   bl,2
        mov   eax,VKEY_NUMLOCK
        jmp   .no_key.xor
@@ -108,8 +167,8 @@ irq1:
        mov   eax,VKEY_SCRLOCK
        jmp   .no_key.xor
    @@:
-       test  ch,0x80
-       jnz   .no_key.end
+       test  ch,ch
+       js    .writekey
        movzx eax,ch              ; plain key
        mov   bl,[keymap+eax]
        mov   edx,[kb_state]
@@ -117,10 +176,9 @@ irq1:
        jz    .noctrlaltdel
        test  dl,VKEY_ALT
        jz    .noctrlaltdel
-       cmp   bl,134+48
+       cmp   ch,53h
        jne   .noctrlaltdel
        mov   [ctrl_alt_del],1
-       jmp   .no_key.end
    .noctrlaltdel:
        test  dl,VKEY_CONTROL     ; ctrl on ?
        jz    @f
@@ -164,46 +222,89 @@ irq1:
        mov   [0x2E0000+4096*12+0x10],edx
        mov   bl,0
    @@:
+        mov     bh, 0
+        jmp     .writekey
+.modifier:
+        test    ch, ch
+        js      .modifier.up
+        or      [kb_state], eax
+        jmp     .writekey
+.modifier.up:
+        not     eax
+        and     [kb_state], eax
+        jmp     .writekey
+.no_key.xor:
+        mov     bh, 0
+        test    ch, ch
+        js      .writekey
+        xor     [kb_state], eax
+        xor     [kb_lights], bl
+        call    set_lights
+
+.writekey:
+; test for system hotkeys
+        movzx   eax, ch
+        cmp     bh, 1
+        ja      .nohotkey
+        jb      @f
+        xor     eax, eax
+@@:
+        mov     eax, [hotkey_scancodes + eax*4]
+.hotkey_loop:
+        test    eax, eax
+        jz      .nohotkey
+        mov     cl, 0
+        call    hotkey_do_test
+        jc      .hotkey_cont
+        mov     cl, 2
+        call    hotkey_do_test
+        jc      .hotkey_cont
+        mov     cl, 4
+        call    hotkey_do_test
+        jnc     .hotkey_found
+.hotkey_cont:
+        mov     eax, [eax]
+        jmp     .hotkey_loop
+.hotkey_found:
+        mov     eax, [eax+8]
+; put key in buffer for process in slot eax
+        mov     edi, hotkey_buffer
+@@:
+        cmp     dword [edi], 0
+        jz      .found_free
+        add     edi, 8
+        cmp     edi, hotkey_buffer+120*8
+        jb      @b
+; no free space - replace first entry
+        mov     edi, hotkey_buffer
+.found_free:
+        mov     [edi], eax
+        movzx   eax, ch
+        cmp     bh, 1
+        jnz     @f
+        xor     eax, eax
+@@:
+        mov     [edi+4], ax
+        mov     eax, [kb_state]
+        mov     [edi+6], ax
+        jmp     .exit.irq1
+.nohotkey:
        cmp   [keyboard_mode],0 ; return from keymap
-       jne   .no_key.end
-       mov   [keyboard_mode_sys],0
-       cmp   bl,0
-       je    .no_key.end
+       jne   .scancode
+        test    bh, bh
+        jnz     .exit.irq1
+        test    bl, bl
+        jz      .exit.irq1
+        jmp     .dowrite
+.scancode:
+        mov     bl, ch
+.dowrite:
        movzx eax,byte[0xF400]
        cmp   al,120
-       jae   .no_key.end
-       inc   al
+       jae   .exit.irq1
+       inc   eax
        mov   [0xF400],al
        mov   [0xF400+eax],bl
-
-       jmp   .no_key.end
-
-   .no_key:
-       test  ch,0x80
-       jz    .no_key.down
-       not   eax
-       and   [kb_state],eax
-       jmp   .no_key.end
-   .no_key.xor:
-       test  ch,0x80
-       jnz   .no_key.end
-       xor   [kb_state],eax
-       xor   [kb_lights],bl
-       call  set_lights
-       jmp   .no_key.end
-   .no_key.down:
-       or    [kb_state],eax
-   .no_key.end:
-       cmp   [keyboard_mode],1 ; return scancode
-       jne   .no_scancode
-       mov   [keyboard_mode_sys],1
-       movzx eax,byte[0xF400]
-       cmp   al,120
-       jae   .no_scancode
-       inc   al
-       mov   [0xF400],al
-       mov   [0xF400+eax],ch
-   .no_scancode:
 
    .exit.irq1:
        mov   [check_idle_semaphore],5

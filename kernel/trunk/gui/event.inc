@@ -69,12 +69,21 @@ get_event_for_app:
      movzx edx,word [0xC000+ecx*2]
      mov   eax, [0x3004]
      cmp   eax,edx
-     jne   no_eventoccur2
+     jne   no_eventoccur2x
      cmp   [0xf400],byte 0
-     je    no_eventoccur2
+     je    no_eventoccur2x
+   eventoccur2:
      popad
      mov   eax,2
      ret
+   no_eventoccur2x:
+        mov     eax, hotkey_buffer
+@@:
+        cmp     [eax], ecx
+        jz      eventoccur2
+        add     eax, 8
+        cmp     eax, hotkey_buffer+120*8
+        jb      @b
    no_eventoccur2:
 
      ;mov   edi,[0x3010]              ; BUTTON IN BUFFER

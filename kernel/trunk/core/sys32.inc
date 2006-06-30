@@ -733,6 +733,40 @@ terminate: ; terminate application
     mov   [0xf500],byte 0           ; empty button buffer
 
 
+; remove defined hotkeys
+        mov     eax, hotkey_list
+.loop:
+        cmp     [eax+8], esi
+        jnz     .cont
+        mov     ecx, [eax]
+        jecxz   @f
+        push    dword [eax+12]
+        pop     dword [ecx+12]
+@@:
+        mov     ecx, [eax+12]
+        push    dword [eax]
+        pop     dword [ecx]
+        xor     ecx, ecx
+        mov     [eax], ecx
+        mov     [eax+4], ecx
+        mov     [eax+8], ecx
+        mov     [eax+12], ecx
+.cont:
+        add     eax, 16
+        cmp     eax, hotkey_list+256*16
+        jb      .loop
+; remove hotkeys in buffer
+        mov     eax, hotkey_buffer
+.loop2:
+        cmp     [eax], esi
+        jnz     .cont2
+        and     dword [eax+4], 0
+        and     dword [eax], 0
+.cont2:
+        add     eax, 8
+        cmp     eax, hotkey_buffer+120*8
+        jb      .loop2
+
     mov   ecx,esi                 ; remove buttons
   bnewba2:
     mov   edi,[0xfe88]
@@ -764,13 +798,11 @@ terminate: ; terminate application
     add   esi,window_data
     mov   ax,[esi+0]
     mov   word [dlx],ax
-    mov   bx,[esi+8]
-    add   ax,bx
+    add   ax,[esi+8]
     mov   word [dlxe],ax
     mov   ax,[esi+4]
     mov   word [dly],ax
-    mov   bx,[esi+12]
-    add   ax,bx
+    add   ax,[esi+12]
     mov   word [dlye],ax
     mov   [esi+0],word 0
     mov   [esi+8],word 5
@@ -798,18 +830,11 @@ terminate: ; terminate application
 
     mov   edi,esi
     shl   edi,5
-    add   edi,window_data
-    mov   [edi+4],eax
+    mov   [edi+4+window_data],eax
 
-    popa
-
-    pusha
-    mov   edi,esi
-    shl   edi,5
     add   edi,draw_data
     mov   ecx,32/4
     xor   eax, eax
-  ;  cld
     rep   stosd
     popa
 
@@ -864,30 +889,34 @@ terminate: ; terminate application
   nlc41:
     popa
 
-    pusha ; remove hd1 reservation
-    mov   edx,esi
-    shl   edx, 5 ;imul  edx,0x20
-    add   edx,0x3000
-    mov   edx,[edx+4]
-    cmp   [hd1_status],edx
-    jne   no_hd1_s_remove
-    mov   [hd1_status],0
-  no_hd1_s_remove:
-    popa
+        push    esi     ; remove hd1 & cd & flp reservation
+        shl     esi, 5
+        mov     esi, [esi+0x3004]
+        cmp     [hd1_status], esi
+        jnz     @f
+        mov     [hd1_status], 0
+@@:
+        cmp     [cd_status], esi
+        jnz     @f
+        mov     [cd_status], 0
+@@:
+        cmp     [flp_status], esi
+        jnz     @f
+        mov     [flp_status], 0
+@@:
+        pop     esi
 
     pusha ; remove all irq reservations
-    mov   edx,esi
-    shl   edx, 5 ;imul  edx,0x20
-    add   edx,0x3000
-    mov   edx,[edx+4]
+    mov   eax,esi
+    shl   eax, 5 ;imul  edx,0x20
+    mov   eax,[edx+0x3000+4]
     mov   edi,irq_owner
     mov   ecx,16
   newirqfree:
-    cmp   [edi],edx
+    scasd
     jne   nofreeirq
-    mov   [edi],dword 0
+    mov   [edi-4],dword 0
   nofreeirq:
-    add    edi,4
     loop   newirqfree
     popa
 
