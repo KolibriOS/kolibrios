@@ -518,6 +518,7 @@ fs_CdServices:
         dd      fs_NotImplemented
         dd      fs_CdGetFileInfo
         dd      fs_NotImplemented
+        dd      fs_CdExecute
 fs_NumCdServices = ($ - fs_CdServices)/4
 
 ;*******************************************************

@@ -1,4 +1,4 @@
-sysfn_saveramdisk:	; 18.6 = SAVE FLOPPY IMAGE (HD version only)
+sysfn_saveramdisk:    ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
      cmp  ebx,1
      jnz  img_save_hd_1
      mov  edx,bootpath             ; path = '/KOLIBRI    '
@@ -15,6 +15,7 @@ sysfn_saveramdisk:	; 18.6 = SAVE FLOPPY IMAGE (HD version only)
      mov edx,[edx+10h]
      add edx,ecx
  img_save_hd_3:
+     call    reserve_hd1
      call restorefatchain      ; restore FAT !!!
      mov  eax,image_save
      mov  ebx,1440*1024        ; size 1440 Kb

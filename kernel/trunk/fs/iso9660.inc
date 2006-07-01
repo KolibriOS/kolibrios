@@ -1,3 +1,4 @@
+
 uglobal
 cd_current_pointer_of_input    dd  0
 cd_current_pointer_of_input_2  dd  0
@@ -442,6 +443,126 @@ fs_CdGetFileInfo:
         xor     eax, eax
         ret
 
+;----------------------------------------------------------------
+;
+;  fs_CdExecute - LFN variant for executing from CD
+;
+;  esi  points to hd filename (e.g. 'dir1/name')
+;  ebp  points to full filename (e.g. '/hd0/1/dir1/name')
+;  dword [ebx] = flags
+;  dword [ebx+4] = cmdline
+;
+;  ret ebx,edx destroyed
+;      eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+fs_CdExecute:
+        mov     edx, [ebx]
+        mov     ebx, [ebx+4]
+        test    ebx, ebx
+        jz      @f
+        add     ebx, std_application_base_address
+@@:
+
+;----------------------------------------------------------------
+;
+; fs_CdExecute.flags - second entry
+;
+;  esi  points to floppy filename (kernel address)
+;  ebp  points to full filename
+;  edx  flags
+;  ebx  cmdline (kernel address)
+;
+;  ret  eax > 0 - PID, < 0 - error
+;
+;--------------------------------------------------------------
+
+.flags:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot execute root!
+        mov     eax, -ERROR_ACCESS_DENIED
+        ret
+@@:
+        push    edi
+        call    cd_find_lfn
+        jnc     .found
+        pop     edi
+        mov     eax, -ERROR_FILE_NOT_FOUND
+        cmp     [DevErrorCode], 0
+        jz      @f
+        mov     al, -11
+@@:
+        ret
+.found:
+        mov     edi,[cd_current_pointer_of_input]
+        mov    eax,[edi+2]
+        push    0
+        push    eax
+        push    dword [edi+10]          ; size
+        push    .DoRead
+        call    fs_execute
+        add     esp, 16
+        pop     edi
+        ret
+
+.DoRead:
+; read next block
+; in: eax->parameters, edi->buffer
+; out: eax = error code
+        pushad
+        cmp     dword [eax], 0  ; file size
+        jz      .eof
+        cmp     [eax+8],dword 0
+        jne     @f
+        mov     ecx,[eax+4]
+        inc     dword [eax+4] 
+        mov     [CDSectorAddress],ecx
+        mov     [CDDataBuf_pointer],CDDataBuf  ;edi
+        call    ReadCDWRetr
+        cmp     [DevErrorCode], 0
+        jnz     .err
+@@:
+        push    esi edi ecx
+        mov     esi,512
+        imul    esi,[eax+8]
+        add     esi,CDDataBuf  
+        mov     ecx,512/4
+        cld
+        rep     movsd
+        pop     ecx edi esi
+
+        mov     eax, [esp+28]
+        mov     ecx, [eax]
+        sub     ecx, 512
+        jae     @f
+        lea     edi, [edi+ecx+512]
+        neg     ecx
+        push    eax
+        xor     eax, eax
+        rep     stosb
+        pop     eax
+@@:
+        mov     [eax], ecx
+        mov     edx, [eax+8]
+        inc     edx
+        cmp     edx, 4  ; 2048/512=4
+        jb      @f
+        xor     edx, edx
+@@:
+        mov     [eax+8], edx
+        popad
+        xor     eax, eax
+        ret
+.eof:
+        popad
+        mov     eax, 6
+        ret
+.err:
+        popad
+        mov     eax, 11
+        ret        
+
 cd_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
@@ -501,7 +622,7 @@ cd_find_lfn:
 ; искомый элемент цепочки найден
   .found:
 ; конец пути файла
-        cmp    byte [esi], 0
+        cmp    byte [esi-1], 0
         jz    .done
         mov    eax,[cd_current_pointer_of_input]
         add    eax,2
