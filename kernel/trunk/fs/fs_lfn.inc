@@ -407,6 +407,7 @@ fs_OnHd3:
         mov     [hdid], 0x10
         push    4
 fs_OnHd:
+        call    reserve_hd_channel
         pop     eax
         mov     [hdpos], eax
         cmp     ecx, 0x100
@@ -414,6 +415,7 @@ fs_OnHd:
         cmp     cl, [0x40001+eax]
         jbe     @f
 .nf:
+        call    free_hd_channel
         and     [hd1_status], 0
         mov     dword [esp+36], 5       ; not found
         ret
@@ -430,11 +432,13 @@ fs_OnHd:
         jae     .not_impl
         add     ebx, 4
         call    dword [fs_HdServices + eax*4]
+        call    free_hd_channel
         and     [hd1_status], 0
         mov     [esp+36], eax
         mov     [esp+24], ebx
         ret
 .not_impl:
+        call    free_hd_channel
         and     [hd1_status], 0
         mov     dword [esp+36], 2       ; not implemented
         ret
@@ -475,7 +479,7 @@ fs_OnCd3:
         mov  [DiskNumber],1
         push    0
 fs_OnCd:
-
+        call    reserve_cd_channel
         pop     eax
         mov     [hdpos], eax
         cmp     ecx, 0x100
@@ -489,6 +493,7 @@ fs_OnCd:
 
         jnz     @f
 .nf:
+        call    free_cd_channel
         and    [cd_status], 0
         mov     dword [esp+36], 5       ; not found
         ret
@@ -501,11 +506,13 @@ fs_OnCd:
         jae      .not_impl
         add     ebx, 4
         call    dword [fs_CdServices + eax*4]
+        call    free_cd_channel
         and     [cd_status], 0
         mov     [esp+36], eax
         mov     [esp+24], ebx
         ret
 .not_impl:
+        call    free_cd_channel
         and     [cd_status], 0
         mov     dword [esp+36], 2       ; not implemented
         ret

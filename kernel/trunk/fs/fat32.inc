@@ -129,8 +129,41 @@ reserve_hd1:
     pop   eax
     sti
     ret
-
-
+;********************************************
+reserve_hd_channel:
+    cmp   [hdbase], 0x1F0
+    jne   .IDE_Channel_2
+.IDE_Channel_1:
+    cli
+    cmp   [IDE_Channel_1],0
+    je    .reserve_ok_1
+    sti
+    call  change_task
+    jmp   .IDE_Channel_1
+.IDE_Channel_2:
+    cli
+    cmp   [IDE_Channel_2],0
+    je    .reserve_ok_2
+    sti
+    call  change_task
+    jmp   .IDE_Channel_1
+.reserve_ok_1:
+    mov [IDE_Channel_1],1
+    ret
+.reserve_ok_2:
+    mov [IDE_Channel_2],1
+    ret
+    
+free_hd_channel:
+    cmp   [hdbase], 0x1F0
+    jne   .IDE_Channel_2
+.IDE_Channel_1:
+    mov [IDE_Channel_1],0
+    ret
+.IDE_Channel_2:
+    mov [IDE_Channel_2],0
+    ret
+;********************************************
 clear_hd_cache:
 
     push  eax ecx edi

@@ -4,6 +4,8 @@ cd_current_pointer_of_input    dd  0
 cd_current_pointer_of_input_2  dd  0
 cd_mem_location                dd  0
 cd_counter_block               dd  0
+IDE_Channel_1                  db  0
+IDE_Channel_2                  db  0
 endg
 
 CDDataBuf equ 0x7000
@@ -16,7 +18,7 @@ reserve_cd:
 
     sti
     call  change_task
-    jmp   reserve_hd1
+    jmp   reserve_cd
 
   reserve_ok2:
 
@@ -27,6 +29,40 @@ reserve_cd:
     mov   [cd_status],eax
     pop   eax
     sti
+    ret
+
+reserve_cd_channel:
+    cmp   [ChannelNumber],1
+    jne   .IDE_Channel_2
+.IDE_Channel_1:
+    cli
+    cmp   [IDE_Channel_1],0
+    je    .reserve_ok_1
+    sti
+    call  change_task
+    jmp   .IDE_Channel_1
+.IDE_Channel_2:
+    cli
+    cmp   [IDE_Channel_2],0
+    je    .reserve_ok_2
+    sti
+    call  change_task
+    jmp   .IDE_Channel_1
+.reserve_ok_1:
+    mov [IDE_Channel_1],1
+    ret
+.reserve_ok_2:
+    mov [IDE_Channel_2],1
+    ret
+
+free_cd_channel:
+    cmp   [ChannelNumber],1
+    jne   .IDE_Channel_2
+.IDE_Channel_1:
+    mov [IDE_Channel_1],0  
+    ret
+.IDE_Channel_2:
+    mov [IDE_Channel_2],0
     ret
     
 cd_status dd 0
