@@ -297,8 +297,8 @@ fs_CdReadFolder:
     cld
     stosb
 ; проверка конца файла
-    mov   al,[esi+1]
-    cmp   al,byte 3Bh ; сепаратор конца файла ';'
+    mov   ax,[esi]
+    cmp   ax,word 3B00h ; сепаратор конца файла ';'
     je   .cd_get_parameters_of_file_1
 ; проверка для файлов не заканчивающихся сепаратором
     movzx   eax,byte [ebp-33]
