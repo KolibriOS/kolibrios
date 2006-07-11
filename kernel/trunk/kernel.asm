@@ -4017,7 +4017,7 @@ kb_read:
 
         push    ecx edx
 
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's 
       kr_loop:
         in      al,0x64
         test    al,1
@@ -4045,7 +4045,7 @@ kb_write:
         push    ecx edx
 
         mov     dl,al
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kw_loop1:
         in      al,0x64
         test    al,0x20
@@ -4055,7 +4055,7 @@ kb_write:
         jmp     kw_exit
       kw_ok1:
         in      al,0x60
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kw_loop:
         in      al,0x64
         test    al,2
@@ -4066,7 +4066,7 @@ kb_write:
       kw_ok:
         mov     al,dl
         out     0x60,al
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kw_loop3:
         in      al,0x64
         test    al,2
@@ -4077,7 +4077,7 @@ kb_write:
       kw_ok3:
         mov     ah,8
       kw_loop4:
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kw_loop5:
         in      al,0x64
         test    al,1
@@ -4096,7 +4096,7 @@ kb_write:
 
 kb_cmd:
 
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       c_wait:
         in      al,0x64
         test    al,2
@@ -4106,7 +4106,7 @@ kb_cmd:
       c_send:
         mov     al,bl
         out     0x64,al
-        mov     ecx,0xffff
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       c_accept:
         in      al,0x64
         test    al,2
