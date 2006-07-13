@@ -256,7 +256,7 @@ fs_CdReadFolder:
         sub  eax,2048
 ; директория закончилась?
         cmp  eax,0
-        jg   .read_to_buffer
+        ja   .read_to_buffer
         mov   edi,[cd_counter_block]
         mov   [edx+8],edi
         mov   edi,[ebx] 
@@ -649,7 +649,7 @@ cd_find_lfn:
         sub  eax,2048
 ; директория закончилась?
         cmp  eax,0
-        jg   .read_to_buffer
+        ja   .read_to_buffer
 ; нет искомого элемента цепочки
 .access_denied:
         pop  esi eax
@@ -719,14 +719,14 @@ cd_compare_name:
     cld
     lodsb
     push ax
-    call char_toupper
+    call char_todown
     call ansi2uni_char
     xchg ah,al
     cld
     scasw
     pop  ax
     je    .coincides
-    call char_todown
+    call char_toupper
     call ansi2uni_char
     xchg ah,al
     cld  
