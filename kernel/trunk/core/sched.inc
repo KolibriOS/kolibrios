@@ -91,10 +91,15 @@ irq0:
         add   ebx, tss0
         mov   word  [far_jump.sel],  bx   ; selector
         mov   dword [far_jump.offs], eax  ; offset
+        
+        cmp   [irq0needeoi],byte 0
+        mov   [irq0needeoi],byte 1          
+        jz    .noeoi
 
         mov   al,0x20   ; send End Of Interrupt signal
         mov   dx,0x20
         out   dx,al
+.noeoi:   
 
         cmp   [0xffff],byte 0
         je    .switch
@@ -120,16 +125,23 @@ uglobal
    prev_slot dd ?
    event_sched dd ?
 endg
+iglobal
+   irq0needeoi         db 1   
+endg
 
 
 align 4
 change_task:
 
+        pushfd
+        cli
         mov   [0xffff],byte 2
 
+        mov   [irq0needeoi],byte 0
         dec   dword [timer_ticks]  ; because irq0 will increase it
 
         int   0x20   ; irq0 handler
+        popfd
 
         ret
 
