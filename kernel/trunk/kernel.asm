@@ -2188,10 +2188,6 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      ja   nowindowactivate
      ; edi = position at window_data+
      mov  edi, ebx          ; edi = process number
-     ;shl  ebx, 1
-     ;add  ebx, 0xc000
-     ;mov  esi, [ebx]        ; esi = window stack value
-     ;and  esi, 0xffff       ;       word
     movzx esi, word [0xC000 + ebx*2]
      cmp  esi, [0x3004] ; number of processes
      jz   nowindowactivate ; continue if window_stack_value != number_of_processes
@@ -2216,7 +2212,8 @@ sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
 ;!!!!!!!!!!!!!!!!!!!!!!!!
 
 sysfn_getactive:        ; 18.7 = get active window
-     mov  eax,[active_process]
+     mov  eax, [0x3004]
+   movzx  eax, word [0xC400 + eax*2]
      mov  [esp+36],eax
      ret
 
@@ -2885,16 +2882,14 @@ sys_drawwindow:
     cmp   edi,3   ; type IV - skinned window
     jne   nosyswIV
 
-    cli
-    mov   edi,[0x3010]
-    sub   edi,0x3000
-    shr   edi,5
-    cmp   edi,[active_process]
+    ; parameter for drawwindow_IV
     push  0
+    mov   edi, [0x3004]
+    movzx edi, word [0xC400 + edi*2]
+    cmp   edi, [0x3000]
     jne   @f
-    mov   byte [esp],1
-  @@:             ; parameter for drawwindow_IV
-    sti
+    inc   dword [esp]
+ @@:
 
     inc   [mouse_pause]
     call  [disable_mouse]
@@ -5119,16 +5114,13 @@ uglobal
 
   ;part2_ld            dd   0x0
 
-;* start code - get  process (3) - Mario79
-active_process      dd   0
-active_process_flag db   0
-deleted_process     dd   0
+;* start code - Mario79
 mouse_pause         dd   0
 MouseTickCounter    dd   0
 ps2_mouse_detected  db   0
 com1_mouse_detected db   0
 com2_mouse_detected db   0
-;* end code - get active process (3) - Mario79
+;* end code - Mario79
 
 wraw_bacground_select db 0
   lba_read_enabled    dd   0x0  ; 0 = disabled , 1 = enabled
@@ -5145,7 +5137,6 @@ iglobal
   keyboard   dd 0x1
   sound_dma  dd 0x1
   syslang    dd 0x1
-  active_proc_stack_coun dd 0xa400-4
 endg
 
 IncludeIGlobals

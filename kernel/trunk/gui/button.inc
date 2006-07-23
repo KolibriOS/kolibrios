@@ -205,10 +205,9 @@ sys_button:
        @@:
         movzx edi,word [esp]
 
-; <Ivan Poddubny 15.08.2004>
         pop   edx
         and   edx, 0xFFFF
-   ;;cli
+
      .newline:
         call  button_dececx
         push  edi
@@ -218,9 +217,6 @@ sys_button:
         add   ebx,1*65536+1   ; [ y start | y end ]
         dec   edx
         jnz   .newline
-   ;;sti
-;;        pop   ebx
-; </Ivan Poddubny 15.08.2004>
         popad
 
         call  drawbuttonframes

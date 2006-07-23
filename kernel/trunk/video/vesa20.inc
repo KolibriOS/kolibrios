@@ -201,14 +201,12 @@ vesa20_putimage:
         xchg    eax, ebp
 
         ; get process number
-        mov     eax, [0x3010]
-        mov     bl, [eax+0xE]
+        mov     ebx, [0x3000]
 
         cmp     byte [ScreenBPP], 32
         je      put_image_end_32
 
 ;put_image_end_24:
-        ;cli ; !!!!!!!!!!!!!!!!!!!!!!
         mov     edi, [putimg.real_sy]
         align   4
       .new_line:
@@ -244,7 +242,6 @@ vesa20_putimage:
    .finish:
         add     esp, putimg.stack_data
         popad
-        ;sti ; !!!!!!!!!!!!!!!!!!!!!
 ret
 
 put_image_end_32:
@@ -679,13 +676,11 @@ vesa20_drawbar:
         xchg    eax, ebp
 
         ; get process number
-        mov     eax, [0x3010]
-        mov     bl, [eax+0xE]
+        mov     ebx, [0x3000]
 
         cmp     byte [ScreenBPP], 24
         jne     draw_bar_end_32
 draw_bar_end_24:
-        ;cli ; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         mov     eax, [drbar.color]    ;; BBGGRR00
         mov     bh, al                ;; bh  = BB
         shr     eax, 8                ;; eax = RRGG
@@ -736,7 +731,6 @@ draw_bar_end_24:
         add     esp, drbar.stack_data
         popad
         xor     eax, eax
-        ;sti ; !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ret
 
 draw_bar_end_32:

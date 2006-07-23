@@ -796,45 +796,27 @@ terminate: ; terminate application
     cld
     shl   esi,5
     add   esi,window_data
-    mov   ax,[esi+0]
-    mov   word [dlx],ax
-    add   ax,[esi+8]
-    mov   word [dlxe],ax
-    mov   ax,[esi+4]
-    mov   word [dly],ax
-    add   ax,[esi+12]
-    mov   word [dlye],ax
-    mov   [esi+0],word 0
-    mov   [esi+8],word 5
-    mov   ax,[0xFE04]
-    mov   [esi+4],ax
-    mov   [esi+12],word 5
-    xor   eax, eax
-    mov   [esi+16],eax;dword 0
-    mov   [esi+20],eax;dword 0
-    mov   [esi+24],eax;dword 0
-    mov   [esi+28],eax;dword 0
-    popa
+    mov   eax,[esi+WDATA.left]
+    mov   [dlx],eax
+    add   eax,[esi+WDATA.width]
+    mov   [dlxe],eax
+    mov   eax,[esi+WDATA.top]
+    mov   [dly],eax
+    add   eax,[esi+WDATA.height]
+    mov   [dlye],eax
 
-    pusha
-    mov   edi,esi
-    shl   edi,5
-    add   edi,window_data
+    mov   [esi+WDATA.left], 0
+    mov   [esi+WDATA.width], 5
+    mov   eax,[0xFE04]
+    mov   [esi+WDATA.top],eax
+    mov   [esi+WDATA.height], 5
+    xor   eax, eax
+    mov   [esi+16],eax
+    mov   [esi+20],eax
+    mov   [esi+24],eax
+    mov   [esi+28],eax
+    lea   edi, [esi-window_data+draw_data]
     mov   ecx,32/4
-    xor   eax, eax
-  ;  cld
-    rep   stosd
-
-    mov   eax,[0xFE04]      ; set window to start from maxy+1
-    add   eax,2
-
-    mov   edi,esi
-    shl   edi,5
-    mov   [edi+4+window_data],eax
-
-    add   edi,draw_data
-    mov   ecx,32/4
-    xor   eax, eax
     rep   stosd
     popa
 
@@ -861,7 +843,6 @@ terminate: ; terminate application
     add   edi,0x80000
     mov   ecx,256/4
     xor   eax, eax
-  ;  cld
     rep   stosd
     popa
 
@@ -871,23 +852,31 @@ terminate: ; terminate application
     add   edi,0x80000
     mov   ecx,11
     mov   eax,' '
-  ;  cld
     rep   stosb
     popa
 
-    pusha                ; C000 --> C400
-    mov   eax, 0xc000
-    mov   esi, 0
-  nlc40:
-    add   eax, 2
-    inc   esi
-    cmp   esi, [0x3004]
-    jae   nlc41
-    movzx ecx, word [eax]
-    mov   [0xC400 + ecx*2], si
-    jmp   nlc40
-  nlc41:
-    popa
+
+  ; activate window
+        movzx  eax, word [0xC000 + esi*2]
+        cmp    eax, [0x3004]
+        jne    .dont_activate
+        pushad
+ .check_next_window:
+        dec    eax
+        cmp    eax, 1
+        jbe    .nothing_to_activate
+        lea    esi, [0xc400+eax*2]
+        movzx  edi, word [esi]               ; edi = process
+        shl    edi, 5
+        cmp    [0x3000 + edi + 0xa], byte 9  ; skip dead slots
+        je     .check_next_window
+        add    edi, window_data
+        call   waredraw
+        mov    [0xf400], byte 0
+        mov    [0xf500], byte 0
+ .nothing_to_activate:
+        popad
+ .dont_activate:
 
         push    esi     ; remove hd1 & cd & flp reservation
         shl     esi, 5
@@ -922,7 +911,6 @@ terminate: ; terminate application
 
 
     pusha                     ; remove all port reservations
-    mov   [deleted_process],esi
     mov   edx,esi
     shl   edx, 5 ;imul  edx,0x20
     add   edx,0x3000
@@ -997,13 +985,6 @@ terminate: ; terminate application
 ;    movzx ecx,word [dlxe]
 ;    movzx edx,word [dlye]
     call  calculatescreen
-    cli
-    mov  eax,[deleted_process]
-    cmp  eax,[active_process]
-    jne  no_activate_process
-    call read_active_process_stack
-  no_activate_process:
-    sti
     xor   eax, eax
     xor   esi, esi
     call  redrawscreen
@@ -1014,41 +995,7 @@ terminate: ; terminate application
     mov   [application_table_status],0
     mov   esi,process_terminated
     call  sys_msg_board_str
-    ret
 
-save_active_process_stack:
-    cmp   [active_proc_stack_coun],0xa400+0x400-4
-    jne   @f
-    mov   [active_proc_stack_coun],0xa400-4
-  @@:
-    push  eax
-    push  ebx
-    mov   eax,[active_process]
-    shl   eax,5
-    add   eax,0x3000
-    mov   [eax-twdw+31],byte 1
-    add   [active_proc_stack_coun],4
-    mov   eax,[active_process]
-    mov   ebx,[active_proc_stack_coun]
-    mov   [ebx],eax
-    pop   ebx
-    pop   eax
-    ret
-
-read_active_process_stack:
-    cmp   [active_proc_stack_coun],0xa400-4
-    jne   @f
-    mov   [active_proc_stack_coun],0xa400+0x400-4
-  @@:
-    push  eax
-    push  ebx
-    mov   ebx,[active_proc_stack_coun]
-    mov   eax,[ebx]
-    mov   [0xff01],eax     ; activate
-    sub   [active_proc_stack_coun],4
-    mov   [active_process_flag],1
-    pop   ebx
-    pop   eax
     ret
 
 iglobal

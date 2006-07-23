@@ -142,8 +142,7 @@ pimvga:
  push ebx  ; H
  push edx  ; x+Xwin
 
- mov ebx,[0x3010]
- mov bl,[ebx+0xe]
+ mov ebx,[0x3000]
  mov bh,[esp+6*4]
 
  cld
@@ -255,6 +254,7 @@ VGA_putpixel:
  and     ecx,0x07          ; bit no. (modulo 8)
 
 setvgapixel:
+ pushfd
  cli
  ; edi = address, eax = 24bit colour, ecx = bit no. (modulo 8)
 
@@ -304,7 +304,7 @@ p13cont:
  mov    al,[edi]           ; dummy read
  mov    [edi],dl
 
- sti
+ popfd
  ret
 
 
@@ -415,8 +415,7 @@ vga_drawbar:
      push esi
      push ecx ; x+Xwin
 
-     mov   ebx,[0x3010]
-     movzx ebx,byte[ebx+0xe]
+     mov   ebx,[0x3000]
 
      cld
 

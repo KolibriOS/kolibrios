@@ -51,6 +51,7 @@ setwindowdefaults:
 align 4
 calculatescreen:
         pushad
+        pushfd
         cli
 
         mov   esi, 1
@@ -65,9 +66,13 @@ calculatescreen:
         jbe   .finish
         align 4
       .new_wnd:
-        movzx edi, word [0xC400 + esi * 2]
-        shl   edi, 5
-        add   edi, window_data
+        movzx   edi, word [0xC400 + esi * 2]
+        shl     edi, 5
+
+        cmp     [0x3000+edi+0xa], byte 9
+        je      .not_wnd
+
+        add     edi, window_data
         test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
         jnz     .not_wnd
         mov     eax,[edi+WDATA.left]
@@ -85,7 +90,7 @@ calculatescreen:
         dec   ebp
         jnz   .new_wnd
       .finish:
-        sti
+        popfd
         popad
 ret
 
@@ -669,13 +674,8 @@ r_bx  equ [esp+18]   ; y end
         pushad
 
         mov   ecx,esi          ; yb,xb -> yb,xe
-     ;<<< 14.11.2004 Ivan Poddubny  <faster and smaller>
-;        mov   eax,r_eax
-;        shl   eax,16
-;        mov   ax,r_ax
         mov   eax, r_eax
         rol   eax, 16
-     ;>>> 14.11.2004 Ivan Poddubny  <faster and smaller>
         mov   ebx,r_ebx
         shl   ebx,16
         mov   bx,r_ebx
@@ -809,6 +809,20 @@ windowactivate:
         ; esi = abs mem position in stack 0xC400+
 
         pushad
+
+     ; if type of current active window is 3,
+     ; it must be redrawn
+        mov   eax, [0x3004]
+        movzx eax, word [0xC400 + eax*2]
+        shl   eax, 5
+        add   eax, window_data
+        mov   ebx, [eax + WDATA.cl_workarea]
+        and   ebx, 0x0f000000
+        cmp   ebx, 0x03000000
+        jne   @f
+        mov   [eax + WDATA.fl_redraw], byte 1
+     @@:
+
         push   esi
       movzx   eax, word [esi] ; ax <- process no
       movzx   eax, word [0xC000+eax*2] ; ax <- position in window stack
@@ -834,25 +848,6 @@ windowactivate:
         mov   bx, [0x3004]  ; number of processes
         mov   [0xC000+eax*2], bx     ; this is the last (and the upper)
 
-;* start code - get active process (4) - Mario79
-        cli
-        cmp  [active_process_flag],1
-        jne  @f
-        mov   [active_process_flag],0
-        jmp   end_save_active_process
-    @@:
-        call save_active_process_stack
-    end_save_active_process:
-        mov  [active_process],eax
-        push  eax
-        mov   eax,[active_process]
-        shl   eax,5
-        add   eax,0x3000
-        mov   [eax-twdw+31],byte 1
-        pop   eax
-        sti
-;* end code - get active process (4) - Mario79
-
         ; update on screen -window stack
         xor   esi, esi
       waloop2:
@@ -876,16 +871,19 @@ checkwindowdraw:
 
         ; edi = position in window_data+
 
+        mov   eax, [edi + WDATA.cl_workarea]
+        and   eax, 0x0f000000
+        cmp   eax, 0x03000000
+        je    .return_yes      ; window type 3
+
         mov   esi, edi
         sub   esi, window_data
         shr   esi, 5
 
         ; esi = process number
 
-; <IP 15.08.2004>
         movzx eax, word [0xC000 + esi * 2] ; get value of the curr process
         lea   esi, [0xC400 + eax * 2]      ; get address of this process at 0xC400
-; </IP 15.08.2004>
 
         push  esi
 
@@ -903,34 +901,37 @@ checkwindowdraw:
 
         movzx eax, word [esi]
         shl   eax, 5
-        add   eax, window_data
-        mov   esi, eax
+        cmp   [0x3000 + eax + 0xa], byte 9
+        je    .new_check                    ; skip dead windows
 
-        mov   ebx, [edi+4]
+        lea   esi, [eax+window_data]
+
+        mov   ebx, [edi+4]  ; y0
         mov   edx, [edi+12]
-        add   edx, ebx
+        add   edx, ebx      ; y0e
 
-        mov   ecx, [esi+4]    ; y check
-        cmp   ecx, edx
-        jae   .new_check
+        mov   ecx, [esi+4]  ; y  ; y check
+        cmp   ecx, edx      
+        jae   .new_check     ; y < y0e
         mov   eax, [esi+12]
-        add   ecx, eax
-        cmp   ebx, ecx
+        add   ecx, eax       ; ye
+        cmp   ebx, ecx       ; y0 >= ye
         ja    .new_check
 
-        mov   eax, [edi+0]
+        mov   eax, [edi+0]   ; x0
         mov   ecx, [edi+8]
-        add   ecx, eax
+        add   ecx, eax       ; x0e
 
-        mov   edx, [esi+0]    ; x check
+        mov   edx, [esi+0]   ; x ; x check
         cmp   edx, ecx
-        jae   .new_check
+        jae   .new_check     ; x < x0e
         mov   ecx, [esi+8]
         add   edx, ecx
         cmp   eax, edx
         ja    .new_check
 
         pop   esi
+  .return_yes:
         mov   ecx,1   ; overlap some window
         ret
 
@@ -974,9 +975,7 @@ waredraw:     ; if redraw necessary at activate
 
         mov   edi, [0x3004]
         movzx esi, word [0xC400 + edi * 2]
-        shl   esi, 5
-        movzx esi, byte [esi + 0x3000 + 0xE]
-        call  setscreen ;;;calculatescreen ; setscreen
+        call  setscreen
         popad
 
         cmp   [0xff01], dword 1 ; if > 1 then activate process
@@ -1048,11 +1047,6 @@ checkwindows:
         lea  esi, [0xC400 + esi * 2]
         call waredraw
 
-;* start code - get active process (2) - Mario79
-;        mov  eax,[0xff01]
-;        mov  [active_process],eax
-;* end code - get active process  (2) - Mario79
-
         mov  [0xff01],dword 0  ; activated
 
         popad
@@ -1062,8 +1056,6 @@ checkwindows:
     
         cmp   [0xfb40],byte 0    ; mouse buttons pressed ?
         jne   .mouse_buttons_pressed
-;        cmp   [window_minimize],2
-;        jne   .no_activate_request_1
         cmp   [window_minimize],0
         je   .no_activate_request_2
         cmp   [window_minimize],1
@@ -1074,11 +1066,6 @@ checkwindows:
         add   edi, window_data
         test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
         jnz     .mouse_buttons_pressed
-;        jne   .no_activate_request_2
-;    .no_activate_request_1:
-;        cmp   [window_minimize],1
-;        jge   .mouse_buttons_pressed
-;        jmp   .mouse_buttons_pressed
     .no_activate_request_2:
         mov   [window_minimize],0
         popad
@@ -1505,35 +1492,6 @@ checkwindows:
         cmp   [reposition],0
         je    retwm
 
-        pushad
-        mov   eax,[edi+00]
-        mov   ebx,[edi+04]
-        mov   ecx,[edi+8]
-        mov   edx,[edi+12]
-        add   ecx,eax
-        add   edx,ebx
-        mov   edi,[0x3004]
-        shl   edi,1
-        add   edi,0xc400
-        movzx esi,byte [edi]
-        shl   esi,5
-        add   esi,0x3000+0xe
-        movzx esi,byte [esi]
-
-        sub   edi,draw_data
-        shr   edi,5
-        shl   edi,8
-        add   edi,0x80000+0x80
-        ;cmp   [edi],dword 0
-        ;jne   no_rect_shaped_move
-        call  setscreen
-        jmp   move_calculated
-      no_rect_shaped_move:
-        call  calculatescreen
-      move_calculated:
-
-        popad
-
         mov     [edi+WDATA.fl_redraw],1
         mov   [0xfff5],byte 1 ; no mouse
 
@@ -1570,11 +1528,9 @@ checkwindows:
         popad
 
        mov   [window_minimize],0
-;        sti
+
         ret
 
-;temp_mouse_1 dw 0
-;temp_mouse_2 dw 0
 
 uglobal
   add_window_data            dd  0

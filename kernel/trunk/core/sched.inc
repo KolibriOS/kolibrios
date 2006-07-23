@@ -101,9 +101,13 @@ ret
 
 ; Find next task to execute
 ; result: ebx = number of the selected task
-;         [0xffff] = 1  if the task is the same
+;         eax = 1  if the task is the same
+;         edi = address of the data for the task in ebx
+;         [0x3000] = ebx and [0x3010] = edi
+;         corrupts other regs
 find_next_task:
-        mov   ebx,[0x3000]
+        mov   ebx, [0x3000]
+        mov   edi, [0x3010]
         mov   [prev_slot], ebx
 
       .waiting_for_termination:

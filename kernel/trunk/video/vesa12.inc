@@ -48,6 +48,7 @@
 ; set_bank for S3 videocards, work on S3 ViRGE PCI (325)
 ; modified by kmeaw 
 set_bank: 
+pushfd
 cli 
 cmp al,[0xfff2] 
 je retsb 
@@ -121,7 +122,7 @@ pop cx
 pop dx 
 pop ax 
 retsb: 
-sti 
+popfd
 ret
 
 ;Set bank function for Intel 810/815 chipsets
@@ -461,8 +462,7 @@ dbpi24bit12:
       mov  ebx,3
       div  ebx
       add  eax,WinMapAddress
-      mov   ebx,[0x3010]
-      movzx ebx,byte[ebx+0xe]
+      mov   ebx,[0x3000]
       cld
 
       dbnp2412:
@@ -553,8 +553,7 @@ dbpi24bit12:
       sub  eax,[0xfe80]
       shr  eax,2
       add  eax,WinMapAddress
-      mov   ebx,[0x3010]
-      movzx ebx,byte[ebx+0xe]
+      mov   ebx,[0x3000]
       cld
 
       dbnp3212:
@@ -823,8 +822,7 @@ vesa12_putimage:
       mov  ebx,3
       div  ebx
       add  eax,WinMapAddress
-      mov  ebx,[0x3010]
-      mov  bl,[ebx+0xe]
+      mov  ebx,[0x3000]
       mov  bh,[esp+4*4]
 
       np2412:
@@ -901,8 +899,7 @@ vesa12_putimage:
       sub  eax,[0xfe80]
       shr  eax,2
       add  eax,WinMapAddress
-      mov   ebx,[0x3010]
-      mov   bl,[ebx+0xe]
+      mov   ebx,[0x3000]
       mov   bh,[esp+4*4]
 
       np3212:

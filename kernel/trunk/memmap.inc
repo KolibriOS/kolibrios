@@ -62,9 +62,7 @@
 ;
 ;   8000  ->   A3FF   used FLOPPY driver
 ;
-;   A400  ->   A7FF   used active process stack
-;
-;   A800  ->   B0FF   free
+;   A400  ->   B0FF   free
 
 ;   B100  ->   B2FF   IDT
 

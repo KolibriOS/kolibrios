@@ -285,7 +285,7 @@ __sys_disable_mouse:
       add  ecx,eax
       add  ecx, display_data
 
-      movzx eax, byte [edx+twdw+0xe]
+      mov   eax, [0x3000]
 
       movzx ebx, byte [ecx]
       cmp   eax,ebx
