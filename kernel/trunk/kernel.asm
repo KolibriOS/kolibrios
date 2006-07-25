@@ -413,7 +413,35 @@ include 'detect/disks.inc'
         or      eax,0x80000000
         mov     cr0,eax
         jmp     $+2
-        mov     dword [0xfe80],0x800000
+        
+        call    MEM_Init
+;add 0x800000-0xc00000 area
+        cmp     word [0xfe0c],0x13
+        jle     .less_memory
+        mov     eax,0x800000      ;linear address
+        mov     ebx,0x400000 shr 12 ;size in pages (4Mb)
+        mov     ecx,0x800000        ;physical address
+        jmp     .end_first_block
+.less_memory:
+        mov     eax,0x980000      ;linear address
+        mov     ebx,0x280000 shr 12 ;size in pages (2.5Mb)
+        mov     ecx,0x980000        ;physical address
+.end_first_block:
+        call    MEM_Add_Heap        ;nobody can lock mutex yet
+
+        call    create_general_page_table
+;add 0x1000000(0xd80000)-end_of_memory area
+        mov     eax,second_base_address
+        mov     ebx,[0xfe8c]
+        mov     ecx,[0xfe84]
+        sub     ebx,ecx
+        shr     ebx,12
+        add     eax,ecx
+        call    MEM_Add_Heap
+;init physical memory manager.
+        call    Init_Physical_Memory_Manager        
+        
+        mov     dword [0xfe80],0x80000000 ;0x800000
 
 ;Set base of graphic segment to linear address of LFB
         mov     eax,[0xfe80]                      ; set for gs
@@ -484,32 +512,7 @@ include 'vmodeld.inc'
 ;        jmp     $
 ;extended_region_found:
 
-        call    MEM_Init
-;add 0x800000-0xc00000 area
-        cmp     word [0xfe0c],0x13
-        jle     .less_memory
-        mov     eax,0x80000000      ;linear address
-        mov     ebx,0x400000 shr 12 ;size in pages (4Mb)
-        mov     ecx,0x800000        ;physical address
-        jmp     .end_first_block
-.less_memory:
-        mov     eax,0x80180000      ;linear address
-        mov     ebx,0x280000 shr 12 ;size in pages (2.5Mb)
-        mov     ecx,0x980000        ;physical address
-.end_first_block:
-        call    MEM_Add_Heap        ;nobody can lock mutex yet
 
-        call    create_general_page_table
-;add 0x1000000(0xd80000)-end_of_memory area
-        mov     eax,second_base_address
-        mov     ebx,[0xfe8c]
-        mov     ecx,[0xfe84]
-        sub     ebx,ecx
-        shr     ebx,12
-        add     eax,ecx
-        call    MEM_Add_Heap
-;init physical memory manager.
-        call    Init_Physical_Memory_Manager
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 

@@ -25,7 +25,7 @@ create_general_page_table:
     mov   eax,[general_page_table]
     call  MEM_Get_Linear_Address ;eax - linear address of page directory
     mov   edi,eax
-    mov   ebx,eax
+    mov   ebx,eax                ;copy address of page directory to safe place
     xor   eax,eax
     mov   ecx,4096/4
     cld
@@ -52,19 +52,6 @@ create_general_page_table:
     mov   ecx,4096/4
 ;ecx (counter) - number of pages in page table
 ;current address=4Mb*esi     
-    cmp   esi,2
-    jz    .start_lfb_map         ;lfb map begin at 0x800000
-    cmp   esi,3
-    jz    .end_lfb_map           ;lfb map end at 0xC00000
-    jmp   .loop1
-.start_lfb_map:
-;current address=lfb address
-    mov   ebp,[0x2f0000+0x9018]
-    add   ebp,7                  ;add flags
-    jmp   .loop1
-.end_lfb_map:
-;current address=linear address
-    mov   ebp,12*0x100000+7
     
 .loop1:
     mov   [eax],ebp              ;write page address (with flags) in page table 
@@ -76,24 +63,33 @@ create_general_page_table:
     cmp   esi,edx
     jnz   .loop
     
-;map region 0x80000000-0x803fffff to 0x800000-0xcfffff
-    mov   eax,1                  ;size of the region is 4Mb so only 1 page table needed
+;map region 0x80000000-0x807fffff to LFB
+    mov   eax,2                  ;size of the region is 4Mb so only 1 page table needed
     mov   edx,ebx                ;ebx still contains linear address of the page directory
     add   ebx,0x800
     call  MEM_Alloc_Pages        ;alloc page table for the region
     mov   eax,[ebx]
     add   dword [ebx],7          ;add flags
     call  MEM_Get_Linear_Address ;get linear address of the page table
-    mov   ebx,eax
     mov   ecx,4096/4             ;number of pages in page table
-    mov   eax,8*0x100000+7
+    mov   edi,[0xfe80]
+    add   edi,7
 .loop3:
-;ebx - linear address of page table
-;eax - current linear address with flags
-    mov   [ebx],eax
-    add   ebx,4
-    add   eax,4096
+;eax - linear address of page table
+;edi - current linear address with flags
+    mov   [eax],edi
+    add   eax,4
+    add   edi,4096
     loop  .loop3
+    mov   eax,[ebx+4]
+    call  MEM_Get_Linear_Address
+    add   dword [ebx+4],7
+    mov   ecx,4096/4
+.loop31:
+    mov   [eax],edi
+    add   eax,4
+    add   edi,4096
+    loop  .loop31
     
 ;map region 0xC0000000-* to 0x0-*
     mov   esi,edx                ;esi=linear address of the page directory 

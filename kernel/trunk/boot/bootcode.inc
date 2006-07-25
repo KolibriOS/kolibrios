@@ -140,6 +140,9 @@ macro _setcursor row,column
 }
 
 pagetable_set:
+;eax - physical address
+;es:di - page table
+;ecx - number of pages to map
     or    al, 7
 @@:
     stosd
@@ -1047,36 +1050,10 @@ sayerr_plain:
         pop    es                    ; es:di = 6000:0
         xor     di,di
         mov     cx,256*map_mem         ; Map (mapmem) M
-;        mov     eax,7
-;       pt2:
-;        cmp     cx,256*(map_mem-8)     ; 8 M map to LFB
-;        jnz     pt3
-;        pop     eax
-;        add     eax,7
-;       pt3:
-;        cmp     cx,256*(map_mem-12)    ; 12 M back to linear = physical
-;        jnz     pt4
-;        mov     eax,12*0x100000 + 7
-;       pt4:
-;        stosd
-;        add     eax,4096
-;        loop    pt2
 ; initialize as identity mapping
     xor    eax, eax
     call    pagetable_set
-; 8M..12M map to LFB
-    pop    eax
-;    mov    cx, 256*4
-    mov    ch, 4
-    mov    di, 2000h
-    call    pagetable_set
 
-    push    0x7100
-    pop    es
-        xor     di,di
-        mov     eax,8*0x100000
-        mov     cx,256*4
-        call    pagetable_set
         
 ; 4 KB PAGE DIRECTORY
 
@@ -1086,7 +1063,6 @@ sayerr_plain:
         mov     cx, 64 / 4
         mov     eax, 0x60007            ; for 0 M
         call    pagetable_set
-        mov     dword [es:0x800],0x71007   ;map region 0x80000000-0x803FFFFF to 0x800000-0xCFFFFF
         xor     si,si
         mov     di,second_base_address shr 20
         mov     cx,64/2
