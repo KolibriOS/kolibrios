@@ -978,41 +978,8 @@ waredraw:     ; if redraw necessary at activate
         call  setscreen
         popad
 
-        cmp   [0xff01], dword 1 ; if > 1 then activate process
-        jbe   .not_activate
-
-;;;        mov   eax, 10            ; wait for putimages to finish
-;;;        call  delay_hs
-
         mov   [edi+31],byte 1  ; redraw flag for app
         mov   [0xfb44],byte 0  ; mouse down checks
-
-        ret
-
-     .not_activate:
-
-;        mov   eax,5            ; wait for putimages to finish
-;        call  delay_hs
-
-        mov   [edi+31],byte 1  ; redraw flag for app
-
-        mov   ecx, 25 ;100
-     .waitflagdown:
-        dec   ecx
-        jz    .nowait
-;        mov   eax, 2
-;        call  delay_hs
-        cmp   [edi+31], byte 0 ; wait flag to drop
-        jnz   .waitflagdown
-      .nowait:
-
-;        mov   ecx,10
-;      .wait:
-;        mov   eax,1           ; wait for draw to finish
-;        call  delay_hs
-;        loop  .wait
-
-        mov   [0xfb44],byte 0
 
         ret
 
@@ -1027,6 +994,66 @@ waredraw:     ; if redraw necessary at activate
         ret
 
 
+; eax = window number on screen
+; corrupts registers and [dl*]
+minimize_window:
+        movzx eax, word [0xC400+eax*2]
+        shl   eax, 5
+        add   eax, window_data
+        test  [eax+WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz   .skip_redrawings
+        pushfd
+        cli
+        or    [eax+WDATA.fl_wstate], WSTATE_MINIMIZED
+        mov   edi, eax
+        call  calculatescreen
+        mov   eax, [edi+WDATA.left]
+        mov   [dlx], eax
+        add   eax, [edi+WDATA.width]
+        mov   [dlxe], eax
+        mov   eax, [edi+WDATA.top]
+        mov   [dly], eax
+        add   eax, [edi+WDATA.height]
+        mov   [dlye], eax
+        xor   esi, esi
+        xor   eax, eax
+        call  redrawscreen
+        popfd
+.skip_redrawings:
+        ret
+
+; eax = window number on screen
+; corrupts registers and [dl*]
+restore_minimized_window:
+        pushfd
+        cli
+        movzx esi, word [0xC400+eax*2]
+        mov   edi, esi
+        shl   edi, 5
+        add   edi, window_data
+        test  [edi+WDATA.fl_wstate], WSTATE_MINIMIZED
+        jz    .skip_redrawings
+        mov   [edi+WDATA.fl_redraw], 1
+        and   [edi+WDATA.fl_wstate], not WSTATE_MINIMIZED
+        cmp   eax, [0x3004] ; the uppermost window
+        jnz   .no_uppermost
+        mov   eax, [edi+WDATA.left]
+        mov   ebx, [edi+WDATA.top]
+        mov   ecx, eax
+        mov   edx, ebx
+        add   ecx, [edi+WDATA.width]
+        add   edx, [edi+WDATA.height]
+        call  setscreen
+        jmp   .done
+.no_uppermost:
+        call  calculatescreen
+.done:
+        mov   [0xfff4],byte 0 ; no mouse under
+.skip_redrawings:
+        popfd
+        ret
+
+
 iglobal
   window_moving   db 'K : Window - move/resize',13,10,0
   window_moved    db 'K : Window - done',13,10,0
@@ -1037,40 +1064,24 @@ align 4
 checkwindows:
         pushad
 
-        cmp  [0xff01],dword 1  ; activate request from app ?
-        jbe  .no_activate_request
-        mov  edi,[0xff01]     ; process number
-        shl  edi,5
-        add  edi,window_data
-        mov  ebx,[0xff01]
-        movzx esi, word [0xC000 + ebx * 2]
-        lea  esi, [0xC400 + esi * 2]
-        call waredraw
+        cmp   [window_minimize], 0
+        je    .no_minimizing
+        mov   eax, [0x3004]       ; the uppermost window
+        mov   bl, 0
+        xchg  [window_minimize], bl
+        cmp   bl, 1
+        jne   .restore
+        call  minimize_window
+        jmp   .continue
+  .restore:
+        call  restore_minimized_window
+  .continue:
+  .no_minimizing:
 
-        mov  [0xff01],dword 0  ; activated
-
-        popad
-        ret
-
-    .no_activate_request:
-    
         cmp   [0xfb40],byte 0    ; mouse buttons pressed ?
         jne   .mouse_buttons_pressed
-        cmp   [window_minimize],0
-        je   .no_activate_request_2
-        cmp   [window_minimize],1
-        je    .mouse_buttons_pressed
-        mov   esi,[0x3004]
-        movzx edi, word [0xC400 + esi * 2]
-        shl   edi, 5
-        add   edi, window_data
-        test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
-        jnz     .mouse_buttons_pressed
-    .no_activate_request_2:
-        mov   [window_minimize],0
         popad
         ret
-
     .mouse_buttons_pressed:
 
         mov   esi,[0x3004]
@@ -1079,7 +1090,7 @@ checkwindows:
       cwloop:
         cmp   esi,2
         jb   .exit
-        .temp_window_minimize_1:
+
         dec   esi
         movzx edi, word [0xC400 + esi * 2] ; ebx
         shl   edi, 5
@@ -1090,8 +1101,6 @@ checkwindows:
 
         mov   eax,ecx
         mov   ebx,edx
-       cmp   [window_minimize],1
-       jge   .window_minimize_no_check_mouse
         test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
         jnz     cwloop
 
@@ -1108,8 +1117,6 @@ checkwindows:
         jae   cwloop
         cmp   ebx, edx
         jae   cwloop
-
-      .window_minimize_no_check_mouse:
 
         pushad
         mov   eax, esi
@@ -1172,7 +1179,7 @@ checkwindows:
         call  sys_msg_board_str
         pop   esi
 
-        mov   ecx, [timer_ticks] ;[0xfdf0]    ; double-click ?
+        mov   ecx, [timer_ticks]     ; double-click ?
         mov   edx, ecx
         sub   edx, [latest_window_touch]
         mov   [latest_window_touch], ecx
@@ -1369,7 +1376,6 @@ checkwindows:
 
         cmp   [reposition],1         ; save new position and size
         jne   no_bounds_save
-        ; <IP 28.08.2004>
         push  esi edi ecx
         mov   esi,edi
         mov   ecx,2
@@ -1383,7 +1389,6 @@ checkwindows:
         cld
         rep   movsd
         pop   ecx edi esi
-        ; </IP 28.08.2004>
       no_bounds_save:
 
         pushad                             ; WINDOW SHADE/FULLSCREEN
@@ -1395,21 +1400,6 @@ checkwindows:
         shr   edx,5
         shl   edx,8
         add   edx,0x80000                 ; process base at 0x80000+
-
-        cmp     [window_minimize],0
-        je      no_wnd_minimize_restore
-        mov     [reposition],1
-  wnd_minimize:
-        cmp     [window_minimize],1
-        jne     wnd_restore
-        or      [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
-        jmp     no_wnd_minimize_restore
-  wnd_restore:
-        cmp     [window_minimize],2
-        jne     no_wnd_minimize_restore
-        and     [edi+WDATA.fl_wstate],not WSTATE_MINIMIZED
-  no_wnd_minimize_restore:
-
 
         cmp   [do_resize],2               ; window shade ?
         jne   no_window_shade
@@ -1526,8 +1516,6 @@ checkwindows:
         call   sys_msg_board_str
 
         popad
-
-       mov   [window_minimize],0
 
         ret
 

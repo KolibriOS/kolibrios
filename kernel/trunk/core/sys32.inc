@@ -872,8 +872,6 @@ terminate: ; terminate application
         je     .check_next_window
         add    edi, window_data
         call   waredraw
-        mov    [0xf400], byte 0
-        mov    [0xf500], byte 0
  .nothing_to_activate:
         popad
  .dont_activate:

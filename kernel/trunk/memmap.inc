@@ -110,7 +110,7 @@
 ;   FE88  dword       address of button list
 ;   FE8C  dword       memory to use
 ;   FF00  byte        1 = system shutdown request
-;   FF01  dword       if >1 then activate process
+;   FF01  dword       free
 ;   FFF0  byte        1 = redraw background request from app
 ;   FFF1  byte        1 = diskette int occur
 ;   FFF2              write and read bank in screen

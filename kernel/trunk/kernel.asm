@@ -2182,21 +2182,24 @@ sysfn_terminate2:
     ret
 
 sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
-;* start code - get active process (1) - Mario79
-     mov  [window_minimize],2
-;* end code - get active process (1) - Mario79
      cmp  ebx,2
-     jb   nowindowactivate
+     jb   .nowindowactivate
      cmp  ebx,[0x3004]
-     ja   nowindowactivate
-     ; edi = position at window_data+
-     mov  edi, ebx          ; edi = process number
-    movzx esi, word [0xC000 + ebx*2]
-     cmp  esi, [0x3004] ; number of processes
-     jz   nowindowactivate ; continue if window_stack_value != number_of_processes
-                           ;     i.e. if window is not already active
-     mov  [0xff01],edi     ; activate
-nowindowactivate:
+     ja   .nowindowactivate
+
+     mov   [window_minimize], 2   ; restore window if minimized
+
+     movzx esi, word [0xC000 + ebx*2]
+     cmp   esi, [0x3004] 
+     je    .nowindowactivate ; already active
+
+     mov   edi, ebx
+     shl   edi, 5
+     add   edi, window_data
+     movzx esi, word [0xC000 + ebx * 2]
+     lea   esi, [0xC400 + esi * 2]
+     call  waredraw
+.nowindowactivate:
      ret
 
 sysfn_getidletime:              ; 18.4 = GET IDLETIME
@@ -3203,10 +3206,9 @@ checkpixel:
         imul edx, ebx
         mov  dl, [eax+edx+display_data] ; lea eax, [...]
 
-        mov  eax, [0x3010]
-
         xor  ecx, ecx
-        cmp  byte [eax+0xe], dl
+        mov  eax, [0x3000]
+        cmp  al, dl
         setne cl
 
         pop  edx eax
