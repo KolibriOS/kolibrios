@@ -1,45 +1,36 @@
 align 4
-dtext:
+dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; eax x & y
         ; ebx font ( 0xX0000000 ) & color ( 0x00RRGGBB )
         ; ecx start of text
         ; edx length
         ; edi 1 force
 
-        test   ebx,0x10000000
-        jnz    dtext2
-
         pushad
 
-        mov    esi, edx
-        and    esi, 0xff
+        mov    esi,edx    ;esi=length
+        mov    ebp,ecx    ;ebp=ptr to text
+        mov    ecx,ebx    ;ecx=color
+        movzx  ebx,ax     ;ebx=y
+        shr    eax,16     ;eax=x
+        and    esi, 0xFF  ;limit of text = 255 symbols
+
+dtext.lnew:
         test   esi, esi    ; zero length ?
         jnz    @f
-        popad
-        ret
+        jmp    dtext.output_end
       @@:
+
+        movzx  edx,byte [ebp] ;edx=ascii code
+        test   edx,edx
+        jz     dtext.output_end
+        test   ecx,0x10000000
+        jnz    dtext.letnew2
+
         align 4
       .letnew:
 
-        push   eax ecx edx
-        movzx  ebx,ax
-        shr    eax,16
-        movzx  edx,byte [ecx]
-        mov    ecx,[esp+3*4+32-16]
-        call   drawletter
-        pop    edx ecx eax
-
-        add    eax,6*65536
-
-        inc    ecx
-        dec    edx
-        jnz    .letnew
-
-        popad
-        ret
-
-align 4
-drawletter:
+drawletter:  ;output char of type 1(monotype)
 ;eax - x
 ;ebx - y
 ;ecx - color
@@ -68,52 +59,20 @@ drawletter:
     dec   esi
     jnz   .symloop
     popad
-    ret  
-        
+
+        add    eax,6
+
+        inc    ebp  ;ptr to text
+        dec    esi  ;length
+        jnz    dtext.lnew
+
+        jmp dtext.output_end
 
 
-dtext2:
-
-        ; eax x & y
-        ; ebx color
-        ; ecx start of text
-        ; edx length
-        ; edi 1 force
-
-        pushad
-
-        mov    esi,edx
-        and    esi,0xff
-        test   esi,esi    ; zero length ?
-        jnz    @f
-        popad
-        ret
-      @@:
-
-      align 4
-      letnew2:
-
-        push   ecx
-        push   edx
-        movzx  ebx,ax
-        shr    eax,16
-        movzx  edx,byte [ecx]
-        mov    ecx,[esp+2*4+32-16]
-        call   drawletter2
-        shl    eax,16
-        add    eax,ebx
-        pop    edx
-        pop    ecx
-
-        inc    ecx
-        dec    edx
-        jnz    letnew2
-
-        popad
-        ret
+      dtext.letnew2:
 
 align 4
-drawletter2:
+drawletter2:       ;output char of type 2(proportional)
 ;eax - x
 ;ebx - y
 ;ecx - color
@@ -148,4 +107,13 @@ drawletter2:
     movzx edx,byte [ebp-10]
     add   [esp+32-4],edx
     popad
-    ret
+
+
+        inc    ebp   ;ptr to text
+        dec    esi   ;length
+        jnz    dtext.lnew
+
+
+dtext.output_end:
+        popad
+        ret
