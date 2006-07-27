@@ -10,8 +10,8 @@ use32
          dd   0x01                 ; header version
          dd   start                ; start of code
          dd   finis                ; size of image
-         dd   0x100000             ; memory for app
-         dd   0x7fff0              ; esp
+         dd   0x1000               ; memory for app
+         dd   0x1000               ; esp
          dd   0x0,0x0              ; I_Param , I_Icon
 
 include 'lang.inc'
@@ -148,7 +148,7 @@ draw_window:
     mov  eax,0                     ; DRAW WINDOW
     mov  ebx,1*65536+200           ; [x start] *65536 + [x size]
     mov  ecx,200*65536+240         ; [y start] *65536 + [y size]
-    mov  edx,0x02000000            ; work area color (type II)
+    mov  edx,0x03000000            ; work area color (type II)
     mov  esi,0x82a0a0a0            ; grab bar color (w/glide)
     mov  edi,0x82bbbbbb            ; frame color
     int  0x40
@@ -158,13 +158,7 @@ draw_window:
     mov  edx,prog_name             ; pointer to header
     mov  esi,namelen-prog_name     ; text length
     int  0x40
-    mov  eax,8                     ; CLOSE BUTTON
-    mov  ebx,(200-19)*65536+12     ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,0xaaaaaa              ; button color (light grey)
-    int  0x40
-
+   
     call palette                   ; display color palette
 
     mov  eax,12                    ; tell os about windowdraw

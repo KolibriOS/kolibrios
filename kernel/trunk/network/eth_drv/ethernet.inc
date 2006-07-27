@@ -112,6 +112,26 @@ dd  0x24498086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit
 dd  0x802910ec, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit
 dd  0x12111113, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit
 dd  0x813910ec, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+; /+/ Новые вендоры сетевых карт на базе rtl8139
+dd  0x813810ec, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x12111113, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x13601500, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x13604033, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x13001186, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x13401186, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0xab0613d1, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0xa1171259, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0xa11e1259, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0xab0614ea, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0xab0714ea, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x123411db, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x91301432, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x101202ac, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x0106018a, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x1211126c, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x81391743, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+dd  0x8139021b, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
+; /-/
 dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
 dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
 dd  0x597010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit

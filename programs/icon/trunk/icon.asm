@@ -27,6 +27,7 @@ ICON_STRIP equ '/RD/1/ICONSTRP.GIF'
   dd     icon_data+0x30000        ; esp
   dd     I_Param , 0x0  ; I_Param , I_Icon
 include  'macros.inc'
+include  'lang.inc'
 COLOR_ORDER equ MENUETOS
 include  'gif_lite.inc'
 ;include  'debug.inc'
