@@ -1,6 +1,6 @@
 
 ; flat assembler core variables
-; Copyright (c) 1999-2005, Tomasz Grysztar.
+; Copyright (c) 1999-2006, Tomasz Grysztar.
 ; All rights reserved.
 
 ; Variables which have to be set up by interface:
@@ -70,6 +70,7 @@ symbol_identifier dd ?
 address_symbol dd ?
 address_high dd ?
 format_flags dd ?
+resolver_flags dd ?
 symbols_stream dd ?
 number_of_relocations dd ?
 number_of_sections dd ?
@@ -83,10 +84,11 @@ image_base dd ?
 image_base_high dd ?
 resource_data dd ?
 resource_size dd ?
+parenthesis_stack dd ?
+blocks_stack dd ?
 
 next_pass_needed db ?
 macro_status db ?
-parenthesis_stack db ?
 output_format db ?
 code_type db ?
 labels_type db ?
@@ -108,6 +110,7 @@ postbyte_register db ?
 segment_register db ?
 mmx_size db ?
 jump_type db ?
+push_size db ?
 operand_prefix db ?
 rex_prefix db ?
 immediate_size db ?

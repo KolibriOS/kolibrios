@@ -1,7 +1,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                 ;;
 ;;  flat assembler source                          ;;
-;;  Copyright (c) 1999-2004, Tomasz Grysztar       ;;
+;;  Copyright (c) 1999-2006, Tomasz Grysztar       ;;
 ;;  All rights reserved.                           ;;
 ;;                                                 ;;
 ;;  Menuet port by VT                              ;;
@@ -11,10 +11,10 @@
 NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
 
-MAGIC1     = 6*(text.line_size-1)+6*2+2
-MAGIC2     = 14
-MAGIC3     = 1
-MAGIC4     = 7
+MAGIC1	   = 6*(text.line_size-1)+6*2+2
+MAGIC2	   = 14
+MAGIC3	   = 1
+MAGIC4	   = 7
 OUTPUTXY = (5+MAGIC4) shl 16 + MAGIC2*3+MAGIC3+MAGIC4+1+2
 MAX_PATH = 100
 
@@ -30,57 +30,56 @@ use32
   dd START     ; program start
   dd program_end ; program image size
   dd APP_MEMORY  ; required amount of memory
-  dd 0xDFFF0     ; stack
+  dd 0xDFFF0	 ; stack
   dd params,0x0  ; parameters,icon
 
 include 'lang.inc'
 include 'fasm.inc'
-;include 'debug2.inc'
 
 center fix true
 
-START:      ; Start of execution
+START:	    ; Start of execution
 
-   cmp       [params],0
-   jz       noparams
+   cmp	     [params],0
+   jz	    noparams
 
-   mov       ecx,10
-   mov       al,' '
-   mov       edi,infile
+   mov	     ecx,10
+   mov	     al,' '
+   mov	     edi,infile
    push    ecx
    cld
-   rep       stosd
-   mov       ecx,[esp]
-   mov       edi,outfile
-   rep       stosd
-   pop       ecx
-   mov       edi,path
-   rep       stosd
+   rep	     stosd
+   mov	     ecx,[esp]
+   mov	     edi,outfile
+   rep	     stosd
+   pop	     ecx
+   mov	     edi,path
+   rep	     stosd
 
-   mov       esi,params
+   mov	     esi,params
 ;  DEBUGF  "params: %s\n",esi
-   mov       edi,infile
+   mov	     edi,infile
    call    mov_param_str
 ;  mov     edi,infile
 ;  DEBUGF  " input: %s\n",edi
-   inc       esi
-   mov       edi,outfile
+   inc	     esi
+   mov	     edi,outfile
    call    mov_param_str
 ;  mov     edi,outfile
 ;  DEBUGF  "output: %s\n",edi
-   inc       esi
-   mov       edi,path
+   inc	     esi
+   mov	     edi,path
    call    mov_param_str
 ;  mov     edi,path
 ;  DEBUGF  "  path: %s\n",edi
 
-   cmp       [esi], dword ',run'
-   jne       @f
-   mov       [_run_outfile],1
+   cmp	     [esi], dword ',run'
+   jne	     @f
+   mov	     [_run_outfile],1
   @@:
 
-   mov       [_mode],CONSOLE_MODE
-   jmp       start
+   mov	     [_mode],CONSOLE_MODE
+   jmp	     start
 
   noparams:
 
@@ -88,32 +87,32 @@ START:      ; Start of execution
 
 still:
 
-    mcall  10     ; Wait here for event
+    mcall  10	  ; Wait here for event
 
-    dec    eax     ; Redraw request
-    jz       red
-    dec    eax     ; Key in buffer
-    jz       key
-    dec    eax     ; Button in buffer
-    jz       button
+    dec    eax	   ; Redraw request
+    jz	     red
+    dec    eax	   ; Key in buffer
+    jz	     key
+    dec    eax	   ; Button in buffer
+    jz	     button
 
     jmp  still
 
-red:    ; Redraw
+red:	; Redraw
     call draw_window
     jmp  still
 
-key:    ; Key
-    mcall  2     ; Read it and ignore
+key:	; Key
+    mcall  2	 ; Read it and ignore
     jmp  still
 
 button:    ; Button in Window
 
     mcall  17
 
-    cmp  ah,2    ; Start compiling
-    je     start
-    cmp  ah,3    ; Start compiled file
+    cmp  ah,2	 ; Start compiling
+    je	   start
+    cmp  ah,3	 ; Start compiled file
     jnz  norunout
 
     mov  edx,outfile
@@ -127,12 +126,12 @@ button:    ; Button in Window
     add  ecx,MAGIC3+MAGIC2/2-3
     mov  [ya],ecx
 
-    cmp  ah,11     ; Infile
-    je    f1
-    cmp  ah,12     ; Outfile
-    je    f2
-    cmp  ah,13     ; Path
-    je    f3
+    cmp  ah,11	   ; Infile
+    je	  f1
+    cmp  ah,12	   ; Outfile
+    je	  f2
+    cmp  ah,13	   ; Path
+    je	  f3
 
     dec  ah   ; Close application
     jnz  still
@@ -151,7 +150,7 @@ draw_window:
 
     mcall 0,<50,280>,<50,250>,[sc.work]      ; Draw Window
 
-    draw_caption header,header.size         ; Draw Window Label Text
+    draw_caption header,header.size	    ; Draw Window Label Text
 
     mov   ecx,[skinh-2]
     mov   cx,word[skinh]
@@ -325,11 +324,11 @@ f11:mcall  10
     mcall; 2
     shr    eax,8
     cmp    al,13
-    je    read_done
+    je	  read_done
     cmp    al,8
     jne nobs
     cmp    edi,[addr]
-    je    f11
+    je	  f11
     sub    edi,1
     mov    byte[edi],$1C ; '_'
     call   print_text
@@ -396,13 +395,13 @@ text:
   db 'x'
 
 s_compile db 'COMPILE'
-s_run      db '  RUN  '
+s_run	   db '  RUN  '
 
-infile    db 'EXAMPLE.ASM'
+infile	  db 'EXAMPLE.ASM'
   times MAX_PATH+$-infile  db 0
 outfile db 'EXAMPLE'
   times MAX_PATH+$-outfile db 0
-path    db '/RD/1/'
+path	db '/RD/1/'
   times MAX_PATH+$-path    db 0
 
 lf db 13,10,0
@@ -415,9 +414,9 @@ mov_param_str:
   @@:
     mov    al,[esi]
     cmp    al,','
-    je       @f
+    je	     @f
     cmp    al,0
-    je       @f
+    je	     @f
     mov    [edi],al
     inc    esi
     inc    edi
@@ -466,8 +465,8 @@ start:
     xor    edx,edx
     mov    ebx,100
     div    ebx
-    or       eax,eax
-    jz       display_bytes_count
+    or	     eax,eax
+    jz	     display_bytes_count
     xor    edx,edx
     mov    ebx,10
     div    ebx
@@ -487,7 +486,7 @@ start:
     xor    al,al
 
     cmp    [_run_outfile],0
-    je       @f
+    je	     @f
     mov    edx,outfile
     call   make_fullpaths
     mov    eax,58
@@ -508,6 +507,7 @@ include 'parser.inc'
 include 'assemble.inc'
 include 'formats.inc'
 include 'x86_64.inc'
+include 'tables.inc'
 
 _logo db 'flat assembler  version ',VERSION_STRING,13,10,0
 
@@ -519,7 +519,7 @@ _include db 'INCLUDE',0
 
 _counter db 4,'0000'
 
-_mode          dd NORMAL_MODE
+_mode	       dd NORMAL_MODE
 _run_outfile  dd 0
 
 sub_table:
