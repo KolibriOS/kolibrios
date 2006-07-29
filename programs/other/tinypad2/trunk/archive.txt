@@ -1,0 +1,8 @@
+Для начинающих работать с MeOS - описание файлов в этом архиве:
+
+tinypad - скомпилированный исполняемый файл MeOS
+tinypad.asm - исходный код
+ascl.inc - assembler small code library от Павлюшина Евгения
+                (функция label заменена на putlabel)
+dialogs1.inc - диалоговые окна, messagebox'ы и не очень хорошее меню.
+macros.inc - тоже замечательный набор макросов.
