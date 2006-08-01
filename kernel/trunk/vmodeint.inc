@@ -36,6 +36,10 @@ endg
 	sub	[screen_workarea.bottom],ebx
 
 	call	repos_windows
+        mov     eax, 0
+        mov     ebx, 0
+        mov     ecx, [0xfe00]
+        mov     edx, [0xfe04]
 	call	calculatescreen
 
   .resolution_wasnt_changed:

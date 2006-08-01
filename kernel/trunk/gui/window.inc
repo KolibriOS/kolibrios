@@ -47,23 +47,22 @@ setwindowdefaults:
 ; ecx = ex
 ; edx = ey
 ; идея: перебрать все окна, начиная с самого нижнего,
-;       и для каждого вызвать setscreen
+;       и для попавших в заданную область
+;       частей окон вызвать setscreen
 align 4
 calculatescreen:
         pushad
         pushfd
         cli
 
-        mov   esi, 1
-        xor   eax, eax
-        xor   ebx, ebx
-        mov   ecx, [0xFE00]
-        mov   edx, [0xFE04]
-        call  setscreen
+        push    edx ecx ebx eax
 
-        mov   ebp, [0x3004]        ; number of processes
-        cmp   ebp, 1
-        jbe   .finish
+        mov     esi, 1
+        call    setscreen
+
+        mov     ebp, [0x3004]        ; number of processes
+        cmp     ebp, 1
+        jbe     .finish
         align 4
       .new_wnd:
         movzx   edi, word [0xC400 + esi * 2]
@@ -73,23 +72,55 @@ calculatescreen:
         je      .not_wnd
 
         add     edi, window_data
-        test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
+        test    [edi+WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz     .not_wnd
-        mov     eax,[edi+WDATA.left]
-        mov     ebx,[edi+WDATA.top]
-        mov     ecx,[edi+WDATA.width]
-        add     ecx,eax
-        mov     edx,[edi+WDATA.height]
-        add     edx,ebx
-        push  esi
-        movzx esi, word [0xC400 + esi * 2]
-        call  setscreen
-        pop   esi
+
+        mov     eax, [edi+WDATA.left]
+        cmp     eax, [esp+RECT.right]
+        ja      .out_of_bounds
+        mov     ebx, [edi+WDATA.top]
+        cmp     ebx, [esp+RECT.bottom]
+        ja      .out_of_bounds
+        mov     ecx, [edi+WDATA.width]
+        add     ecx, eax
+        cmp     ecx, [esp+RECT.left]
+        jb      .out_of_bounds
+        mov     edx, [edi+WDATA.height]
+        add     edx, ebx
+        cmp     edx, [esp+RECT.top]
+        jb      .out_of_bounds
+
+	cmp     eax, [esp+RECT.left]
+        jae     @f
+        mov     eax, [esp+RECT.left]
+     @@:
+	cmp     ebx, [esp+RECT.top]
+        jae     @f
+        mov     ebx, [esp+RECT.top]
+     @@:
+	cmp     ecx, [esp+RECT.right]
+        jbe     @f
+        mov     ecx, [esp+RECT.right]
+     @@:
+	cmp     edx, [esp+RECT.bottom]
+        jbe     @f
+        mov     edx, [esp+RECT.bottom]
+     @@:
+
+        push    esi
+        movzx   esi, word [0xC400 + esi * 2]
+        call    setscreen
+        pop     esi
+
       .not_wnd:
-        inc   esi
-        dec   ebp
-        jnz   .new_wnd
+      .out_of_bounds:
+        inc     esi
+        dec     ebp
+        jnz     .new_wnd
       .finish:
+
+	pop     eax ebx ecx edx
+
         popfd
         popad
 ret
@@ -97,6 +128,9 @@ ret
 
 
 virtual at esp
+  ff_x     dd ?
+  ff_y     dd ?
+  ff_width dd ?
   ff_xsz   dd ?
   ff_ysz   dd ?
   ff_scale dd ?
@@ -186,15 +220,12 @@ pushad
         push  eax
         mov   eax, [0xFE00] ; screen_sx
         inc   eax
-        imul  eax, ebx   ;ebx
-        add   eax, [esp] ;eax
+        imul  eax, ebx
+        add   eax, [esp]
         add   eax, WinMapAddress
         mov   ebp, eax
 
         mov   edi, [edi]
-;        mov   eax, esi
-;        shl   eax, 5
-;        add   edi, [eax+0x3000+0x10]
         pop   eax
 
         ; eax = x_start
@@ -204,16 +235,30 @@ pushad
         ; esi = process_number
         ; edi = &shape
         ;       [scale]
-        push edx ecx ;ebx eax
-        xor  ebx, ebx
-        align 4
+        push edx ecx ; for loop - x,y size
+
+        mov  ecx, esi
+        shl  ecx, 5
+        mov  edx, [window_data+ecx+WDATA.top]
+        push [window_data+ecx+WDATA.width]      ; for loop - width
+        mov  ecx, [window_data+ecx+WDATA.left]
+        sub  ebx, edx
+        sub  eax, ecx
+        push ebx eax ; for loop - x,y
+
+        add  [ff_xsz], eax
+        add  [ff_ysz], ebx
+
+        mov  ebx, [ff_y]
+
       .ff_new_y:
-        xor  edx, edx
-        align 4
+        mov  edx, [ff_x]
+
       .ff_new_x:
         ; -- body --
         mov  ecx, [ff_scale]
-        mov  eax, [ff_xsz]
+        mov  eax, [ff_width]
+        inc  eax
         shr  eax, cl
         push ebx edx
         shr  ebx, cl
@@ -221,13 +266,11 @@ pushad
         imul eax, ebx
         add  eax, edx
         pop  edx ebx
-        add  eax, edi ;[ff_shape]
+        add  eax, edi
         call .read_byte
-;        cmp  byte [eax], 1
-;        jne  @f
         test al,al
         jz   @f
-        mov  eax, esi  ; [ff_proc]
+        mov  eax, esi
         mov  [ebp], al
        @@:
         ; -- end body --
@@ -236,14 +279,14 @@ pushad
         cmp  edx, [ff_xsz]
         jb   .ff_new_x
         sub  ebp, [ff_xsz]
+        add  ebp, [ff_x]
         add  ebp, [0xFE00]  ; screen.x
         inc  ebp
         inc  ebx
         cmp  ebx, [ff_ysz]
         jb   .ff_new_y
 
-        pop  ecx edx   ; eax ebx first
-        add  esp, 4
+        add  esp, 24
 popad
 ret
 
@@ -389,6 +432,10 @@ display_settings:
         jg      .lp2
         mov     [screen_workarea.bottom],ebx
   .lp2: call	repos_windows
+        mov     eax, 0
+        mov     ebx, 0
+        mov     ecx, [0xfe00]
+        mov     edx, [0xfe04]
 	call	calculatescreen
 ;	jmp	redraw_screen_direct
     .exit:
@@ -436,7 +483,13 @@ display_settings:
         mov     ecx,(64*512)/4
         rep     movsd
         call    parse_skin_data
+	pushad
+        mov     eax, 0
+        mov     ebx, 0
+        mov     ecx, [0xfe00]
+        mov     edx, [0xfe04]
         call    calculatescreen
+	popad
         mov     dword[esp+32+36],0
         jmp     redraw_screen_direct
   .exit:
@@ -1006,15 +1059,18 @@ minimize_window:
         cli
         or    [eax+WDATA.fl_wstate], WSTATE_MINIMIZED
         mov   edi, eax
-        call  calculatescreen
+        ;call  calculatescreen
         mov   eax, [edi+WDATA.left]
         mov   [dlx], eax
-        add   eax, [edi+WDATA.width]
-        mov   [dlxe], eax
-        mov   eax, [edi+WDATA.top]
-        mov   [dly], eax
-        add   eax, [edi+WDATA.height]
-        mov   [dlye], eax
+        mov   ecx, eax
+        add   ecx, [edi+WDATA.width]
+        mov   [dlxe], ecx
+        mov   ebx, [edi+WDATA.top]
+        mov   [dly], ebx
+        mov   edx, ebx
+        add   edx, [edi+WDATA.height]
+        mov   [dlye], edx
+        call  calculatescreen
         xor   esi, esi
         xor   eax, eax
         call  redrawscreen
@@ -1046,6 +1102,12 @@ restore_minimized_window:
         call  setscreen
         jmp   .done
 .no_uppermost:
+        mov   eax, [edi+WDATA.left]
+        mov   ebx, [edi+WDATA.top]
+        mov   ecx, eax
+        mov   edx, ebx
+        add   ecx, [edi+WDATA.width]
+        add   edx, [edi+WDATA.height]
         call  calculatescreen
 .done:
         mov   [0xfff4],byte 0 ; no mouse under
@@ -1482,10 +1544,18 @@ checkwindows:
         cmp   [reposition],0
         je    retwm
 
-        mov     [edi+WDATA.fl_redraw],1
         mov   [0xfff5],byte 1 ; no mouse
 
+
         push  eax ebx ecx edx
+        mov   eax,[edi+00]
+        mov   ebx,[edi+04]
+        mov   ecx,[edi+8]
+        mov   edx,[edi+12]
+        add   ecx,eax
+        add   edx,ebx
+        call  calculatescreen
+
         mov   eax,[oldc+00]
         mov   ebx,[oldc+04]
         mov   ecx,[oldc+8]
@@ -1497,6 +1567,9 @@ checkwindows:
 
         mov   eax,edi
         call  redrawscreen
+
+
+        mov     [edi+WDATA.fl_redraw],1
 
         mov   ecx,100         ; wait to avoid mouse residuals
       waitre2:

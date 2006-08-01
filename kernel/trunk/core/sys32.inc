@@ -978,10 +978,10 @@ terminate: ; terminate application
 ;    call  systest
     sti  ; .. and life goes on
 
-;    movzx eax,word [dlx]
-;    movzx ebx,word [dly]
-;    movzx ecx,word [dlxe]
-;    movzx edx,word [dlye]
+    mov   eax, [dlx]
+    mov   ebx, [dly]
+    mov   ecx, [dlxe]
+    mov   edx, [dlye]
     call  calculatescreen
     xor   eax, eax
     xor   esi, esi

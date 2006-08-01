@@ -4667,9 +4667,9 @@ syscall_setpixel:                       ; SetPixel
      mov   edx,[0x3010]
      add   eax,[edx-twdw]
      add   ebx,[edx-twdw+4]
-;     xor   edi,edi ; no force
-     mov   edi,1
-;     call  [disable_mouse]
+     xor   edi,edi ; no force
+     ;mov   edi,1
+     call  [disable_mouse]
      jmp   [putpixel]
 
 align 4
