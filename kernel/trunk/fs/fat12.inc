@@ -1328,14 +1328,14 @@ fs_FloppyRead:
         jz      .eof
         cmp     edi, 0xFF8
         jae     .eof
+        sub     ebx, 512
+        jae     .skip
         lea     eax, [edi+31]
         pusha
         call    read_chs_sector
         popa
         cmp     [FDC_Status], 0
         jnz     .err
-        sub     ebx, 512
-        jae     .skip
         lea     eax, [0xD000+ebx+512]
         neg     ebx
         push    ecx

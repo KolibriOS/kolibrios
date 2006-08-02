@@ -246,6 +246,7 @@ exc_c:
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
 ; eax=debugger PID
+        cld
         movzx ecx, bl
         push  ecx
         mov   ecx, [0x3010]

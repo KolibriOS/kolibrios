@@ -421,6 +421,7 @@ debugger_notify:
 debug_exc:
 ; int 1 = #DB
 	save_ring3_context
+	cld
 	mov	ax, os_data
 	mov	ds, ax
 	mov	es, ax
