@@ -143,6 +143,7 @@ iglobal
       dd sys_internal_services   ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
       dd file_system_lfn         ; 70-Common file system interface, version 2
+      dd syscall_windowsettings  ; 71-Window settings
 
   times 255 - ( ($-servetable) /4 )  dd undefined_syscall
 

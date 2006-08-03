@@ -69,7 +69,10 @@ dd servetable-0x10000
 draw_line       dd __sys_draw_line
 disable_mouse   dd __sys_disable_mouse
 draw_pointer    dd __sys_draw_pointer
-drawbar         dd __sys_drawbar
+;//mike.dld, 2006-08-02 [
+;drawbar         dd __sys_drawbar
+drawbar         dd __sys_drawbar.forced
+;//mike.dld, 2006-08-02 ]
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
@@ -2856,9 +2859,10 @@ sys_drawwindow:
     call  sys_set_window
     call  [disable_mouse]
     call  drawwindow_I
-    dec   [mouse_pause]
-    call   [draw_pointer]
-    ret
+    ;dec   [mouse_pause]
+    ;call   [draw_pointer]
+    ;ret
+    jmp   draw_window_caption.2
   nosyswI:
 
     cmp   edi,1   ; type II   - only reserve area, no draw
@@ -2880,9 +2884,10 @@ sys_drawwindow:
     call  sys_set_window
     call  [disable_mouse]
     call  drawwindow_III
-    dec   [mouse_pause]
-    call   [draw_pointer]
-    ret
+    ;dec   [mouse_pause]
+    ;call   [draw_pointer]
+    ;ret
+    jmp   draw_window_caption.2
   nosyswIII:
 
     cmp   edi,3   ; type IV - skinned window
@@ -2902,13 +2907,175 @@ sys_drawwindow:
     call  sys_set_window
     call  [disable_mouse]
     call  drawwindow_IV
-    dec   [mouse_pause]
-    call   [draw_pointer]
-    ret
+    ;dec   [mouse_pause]
+    ;call   [draw_pointer]
+    ;ret
+    jmp   draw_window_caption.2
   nosyswIV:
 
     ret
 
+
+draw_window_caption:
+        inc     [mouse_pause]
+        call    [disable_mouse]
+
+        xor     eax,eax
+        mov     edx,[0x3004]
+        movzx   edx,word[0xC400+edx*2]
+        cmp     edx,[0x3000]
+        jne     @f
+        inc     eax
+    @@: mov     edx,[0x3000]
+        shl     edx,5
+        add     edx,window_data
+        movzx   ebx,[edx+WDATA.fl_wstyle]
+        and     bl,0x0F
+        cmp     bl,3
+        jne     .not_style_3
+
+        push    edx
+        call    drawwindow_IV_caption
+        add     esp,4
+        jmp     .2
+
+  .not_style_3:
+        cmp     bl,2
+        jne     .not_style_2
+
+        call    drawwindow_III_caption
+        jmp     .2
+
+  .not_style_2:
+        cmp     bl,0
+        jne     .2
+
+        call    drawwindow_I_caption
+
+;--------------------------------------------------------------
+  .2:   ;jmp     @f
+        mov     edi,[0x3000]
+        shl     edi,5
+        test    [edi+window_data+WDATA.fl_wstyle],WSTYLE_HASCAPTION
+        jz      @f
+        mov     ecx,[edi*8+0x80000+APPDATA.wnd_caption]
+        or      ecx,ecx
+        jz      @f
+        add     ecx,[edi+twdw+0x10]
+
+        movzx   eax,[edi+window_data+WDATA.fl_wstyle]
+        and     al,0x0F
+        cmp     al,3
+        jne     .not_skinned
+
+        mov     ebp,[edi+window_data+WDATA.box.left-2]
+        mov     bp,word[edi+window_data+WDATA.box.top]
+        movzx   eax,word[edi+window_data+WDATA.box.width]
+        sub     ax,[_skinmargins.left]
+        sub     ax,[_skinmargins.right]
+        cwde
+        cdq
+        mov     ebx,6
+        idiv    ebx
+        or      eax,eax
+        js      @f
+        mov     edx,eax
+        mov     eax,dword[_skinmargins.left-2]
+        mov     ax,word[_skinh]
+        sub     ax,[_skinmargins.bottom]
+        sub     ax,[_skinmargins.top]
+        sar     ax,1
+        adc     ax,0
+        add     ax,[_skinmargins.top]
+        add     ax,-3
+        add     eax,ebp
+        mov     ebx,[common_colours+16];0x00FFFFFF
+        xor     edi,edi
+        call    dtext
+        jmp     @f
+
+  .not_skinned:
+        cmp     al,1
+        je      @f
+
+        mov     ebp,[edi+window_data+WDATA.box.left-2]
+        mov     bp,word[edi+window_data+WDATA.box.top]
+        movzx   eax,word[edi+window_data+WDATA.box.width]
+        sub     eax,16
+        cwde
+        cdq
+        mov     ebx,6
+        idiv    ebx
+        or      eax,eax
+        js      @f
+        mov     edx,eax
+        mov     eax,0x00080007
+        add     eax,ebp
+        mov     ebx,[common_colours+16];0x00FFFFFF
+        xor     edi,edi
+        call    dtext
+        jmp     @f
+
+    @@:
+;--------------------------------------------------------------
+        dec     [mouse_pause]
+        call    [draw_pointer]
+        ret
+
+iglobal
+align 4
+window_topleft dd \
+  1, 21,\
+  0,  0,\
+  5, 20,\
+  5,  ?
+endg
+
+set_window_clientbox:
+        push    eax ecx edi
+
+        mov     eax,[_skinh]
+        mov     [window_topleft+4*7],eax
+
+        mov     ecx,edi
+        sub     edi,window_data
+        shl     edi,3
+        test    [ecx+WDATA.fl_wstyle],WSTYLE_CLIENTRELATIVE
+        jz      @f
+
+        movzx   eax,[ecx+WDATA.fl_wstyle]
+        and     eax,0x0F
+        mov     eax,[eax*8+window_topleft+0]
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.left],eax
+        shl     eax,1
+        neg     eax
+        add     eax,[ecx+WDATA.box.width]
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.width],eax
+
+        movzx   eax,[ecx+WDATA.fl_wstyle]
+        and     eax,0x0F
+        push    [eax*8+window_topleft+0]
+        mov     eax,[eax*8+window_topleft+4]
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.top],eax
+        neg     eax
+        sub     eax,[esp]
+        add     eax,[ecx+WDATA.box.height]
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.height],eax
+        add     esp,4
+
+        pop     edi ecx eax
+        ret
+    @@:
+        xor     eax,eax
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.left],eax
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.top],eax
+        mov     eax,[ecx+WDATA.box.width]
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.width],eax
+        mov     eax,[ecx+WDATA.box.height]
+        mov     [edi+0x80000+APPDATA.wnd_clientbox.height],eax
+
+        pop     edi ecx eax
+        ret
 
 sys_set_window:
 
@@ -2917,12 +3084,14 @@ sys_set_window:
     add   edi,window_data
 
     ; colors
-    mov   [edi+16],ecx
-    mov   [edi+20],edx
-    mov   [edi+24],esi
+    mov   [edi+WDATA.cl_workarea],ecx
+    mov   [edi+WDATA.cl_titlebar],edx
+    mov   [edi+WDATA.cl_frames],esi
+
+        call    set_window_clientbox
 
     ; check flag (?)
-    cmp   [edi+30],byte 1
+    cmp   [edi+WDATA.fl_wdrawn],1
     jz    newd
 
     push  eax
@@ -2931,23 +3100,33 @@ sys_set_window:
     mov   [new_window_starting],eax
     pop   eax
 
-    mov   [edi+8],ax
-    mov   [edi+12],bx
-    shr   eax,16
-    shr   ebx,16
-    mov   [edi+00],ax
-    mov   [edi+04],bx
+    mov   word[edi+WDATA.box.width],ax
+    mov   word[edi+WDATA.box.height],bx
+    sar   eax,16
+    sar   ebx,16
+    mov   word[edi+WDATA.box.left],ax
+    mov   word[edi+WDATA.box.top],bx
 
 
     call  check_window_position
 
 
     push  ecx esi edi               ; save for window fullscreen/resize
-    mov   esi,edi
+    ;mov   esi,edi
+
+        mov     cl,[edi+WDATA.fl_wstyle]
+
     sub   edi,window_data
-    shr   edi,5
-    shl   edi,8
+    shl   edi,3
     add   edi,0x80000+0x90
+
+        and     cl,0x0F
+        mov     [edi-0x90+APPDATA.wnd_caption],0
+        cmp     cl,3
+        jne     @f
+        mov     [edi-0x90+APPDATA.wnd_caption],esi
+    @@: mov     esi,[esp+0]
+
     mov   ecx,4
     cld
     rep   movsd
@@ -2973,6 +3152,45 @@ sys_set_window:
     mov   edx,edi
 
     ret
+
+syscall_windowsettings:
+
+  .set_window_caption:
+        dec     eax     ; subfunction #1 - set window caption
+        jnz     .get_window_caption
+
+        ; NOTE: only window owner thread can set its caption,
+        ;       so there's no parameter for PID/TID
+
+        mov     edi,[0x3000]
+        shl     edi,5
+
+        ; have to check if caption is within application memory limit
+        ; check is trivial, and if application resizes its memory,
+        ;   caption still can become over bounds
+        mov     ecx,[edi*8+0x80000+APPDATA.mem_size]
+        add     ecx,255 ; max caption length
+        cmp     ebx,ecx
+        ja      .exit_fail
+
+        mov     [edi*8+0x80000+APPDATA.wnd_caption],ebx
+        or      [edi+window_data+WDATA.fl_wstyle],WSTYLE_HASCAPTION
+
+        call    draw_window_caption
+
+        xor     eax,eax ; eax = 0 (success)
+        ret
+
+  .get_window_caption:
+        dec     eax     ; subfunction #2 - get window caption
+        jnz     .exit_fail
+
+        ; not implemented yet
+
+  .exit_fail:
+        xor     eax,eax
+        inc     eax     ; eax = 1 (fail)
+        ret
 
 
 sys_window_move:
@@ -3966,6 +4184,13 @@ sys_putimage:
   .exit:
      ret
  @@:
+        mov     edi,[0x3000]
+        shl     edi,8
+        add     dx,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        rol     edx,16
+        add     dx,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        rol     edx,16
+  .forced:
         mov     eax, vga_putimage
         cmp     [0xfe0c], word 0x12
         jz      .doit
@@ -3989,6 +4214,13 @@ sys_putimage:
 ; edi color
 
 __sys_drawbar:
+        mov     esi,[0x3000]
+        shl     esi,8
+        add     eax,[esi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ecx,[esi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+0x80000+APPDATA.wnd_clientbox.top]
+        add     edx,[esi+0x80000+APPDATA.wnd_clientbox.top]
+  .forced:
     inc   [mouse_pause]
     cmp   [0xfe0c],word 0x12
     jne   sdbv20
@@ -4667,8 +4899,12 @@ syscall_setpixel:                       ; SetPixel
      mov   edx,[0x3010]
      add   eax,[edx-twdw]
      add   ebx,[edx-twdw+4]
+        mov     edi,[0x3000]
+        shl     edi,8
+        add     eax,[edi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ebx,[edi+0x80000+APPDATA.wnd_clientbox.top]
      xor   edi,edi ; no force
-     ;mov   edi,1
+;     mov   edi,1
      call  [disable_mouse]
      jmp   [putpixel]
 
@@ -4678,8 +4914,12 @@ syscall_writetext:                      ; WriteText
 
      mov   edi,[0x3010]
      mov   ebp,[edi-twdw]
+        mov     esi,[0x3000]
+        shl     esi,8
+        add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.left]
      shl   ebp,16
      add   ebp,[edi-twdw+4]
+        add     bp,word[esi+0x80000+APPDATA.wnd_clientbox.top]
      add   edi,0x10
      add   ecx,[edi]
      add   eax,ebp
@@ -4714,6 +4954,10 @@ syscall_drawrect:                       ; DrawRect
      shr   eax,16
      movzx edx,bx
      shr   ebx,16
+        mov     esi,[0x3000]
+        shl     esi,8
+        add     eax,[esi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+0x80000+APPDATA.wnd_clientbox.top]
      add   ecx,eax
      add   edx,ebx
      jmp   [drawbar]
@@ -4838,11 +5082,17 @@ syscall_drawline:                       ; DrawLine
      mov   edi,[0x3010]
      movzx edx,word[edi-twdw]
      mov   ebp,edx
+        mov     esi,[0x3000]
+        shl     esi,8
+        add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.left]
+        add     dx,word[esi+0x80000+APPDATA.wnd_clientbox.left]
      shl   edx,16
      add   ebp,edx
      movzx edx,word[edi-twdw+4]
      add   eax,ebp
      mov   ebp,edx
+        add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.top]
+        add     dx,word[esi+0x80000+APPDATA.wnd_clientbox.top]
      shl   edx,16
      xor   edi,edi
      add   edx,ebp

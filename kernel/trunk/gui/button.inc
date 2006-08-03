@@ -163,14 +163,26 @@ button_dececx:
 
 sys_button:
 
+        push    edi
+        mov     edi,[0x3000]
+        shl     edi,8
+        rol     eax,16
+        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        rol     eax,16
+        rol     ebx,16
+        add     bx,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        rol     ebx,16
+        pop     edi
+  .forced:
+
         test  ecx,0x80000000
         jnz   remove_button
 
         push  esi
         push  edi
-        push  eax
-        push  ebx
-        push  ecx
+        push  eax ; <x,xs>
+        push  ebx ; <y,ys>
+        push  ecx ; <id>
         push  edx
 
         or    ax,ax

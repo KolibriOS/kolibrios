@@ -191,8 +191,77 @@ parse_skin_data:
 sys_putimage_with_check:
 	or	ebx,ebx
 	jz	@f
-	call	sys_putimage
+        call    sys_putimage.forced
     @@: ret
+
+drawwindow_IV_caption:
+
+        mov     ebp,skin_active
+        or      al,al
+        jnz     @f
+        mov     ebp,skin_inactive
+    @@:
+
+        mov     esi,[esp+4]
+        mov     eax,[esi+8]    ; window width
+        mov     edx,[ebp+SKIN_DATA.left.left]
+        shl     edx,16
+        mov     ecx,[ebp+SKIN_DATA.left.width]
+        shl     ecx,16
+        add     ecx,[_skinh]
+
+        mov     ebx, [ebp+SKIN_DATA.left.data]
+        call    sys_putimage_with_check
+
+        mov     esi,[esp+4]
+        mov     eax,[esi+8]
+        sub     eax,[ebp+SKIN_DATA.left.width]
+        sub     eax,[ebp+SKIN_DATA.oper.width]
+        cmp     eax,[ebp+SKIN_DATA.base.left]
+        jng     .non_base
+        xor     edx,edx
+        mov     ecx,[ebp+SKIN_DATA.base.width]
+        jecxz   .non_base
+        div     ecx
+
+        inc     eax
+
+        mov     ebx,[ebp+SKIN_DATA.base.data]
+        mov     ecx,[ebp+SKIN_DATA.base.width]
+        shl     ecx,16
+        add     ecx,[_skinh]
+        mov     edx,[ebp+SKIN_DATA.base.left]
+        sub     edx,[ebp+SKIN_DATA.base.width]
+        shl     edx,16
+  .baseskinloop:
+        shr     edx,16
+        add     edx,[ebp+SKIN_DATA.base.width]
+        shl     edx,16
+
+        push    eax ebx ecx edx
+        call    sys_putimage_with_check
+        pop     edx ecx ebx eax
+
+        dec     eax
+        jnz     .baseskinloop
+  .non_base:
+
+        mov     esi,[esp+4]
+        mov     edx,[esi+8]
+        sub     edx,[ebp+SKIN_DATA.oper.width]
+        inc     edx
+        shl     edx,16
+        mov     ebx,[ebp+SKIN_DATA.oper.data]
+
+        mov     ecx,[ebp+SKIN_DATA.oper.width]
+        shl     ecx,16
+        add     ecx,[_skinh]
+        call    sys_putimage_with_check
+
+        ret
+
+;//mike.dld, 2006-08-02 ]
+
 
 drawwindow_IV:
 ;param1 - aw_yes
@@ -256,61 +325,8 @@ drawwindow_IV:
         jmp   draw_clientbar
     @@:
 
-        mov   esi,[esp]
-        mov   eax,[esi+8]    ; window width
-        mov   edx,[ebp+SKIN_DATA.left.left]
-        shl   edx,16
-        mov   ecx,[ebp+SKIN_DATA.left.width]
-        shl   ecx,16
-        add   ecx,[_skinh]
-
-        mov   ebx, [ebp+SKIN_DATA.left.data]
-        call  sys_putimage_with_check
-
-        mov   esi,[esp]
-        mov   eax,[esi+8]
-        sub   eax,[ebp+SKIN_DATA.left.width]
-        sub   eax,[ebp+SKIN_DATA.oper.width]
-        cmp   eax,[ebp+SKIN_DATA.base.left]
-        jng   non_base
-        xor   edx,edx
-        mov   ecx,[ebp+SKIN_DATA.base.width]
-        jecxz non_base
-        div   ecx
-
-        inc   eax
-
-        mov   ebx,[ebp+SKIN_DATA.base.data]
-        mov   ecx,[ebp+SKIN_DATA.base.width]
-        shl   ecx,16
-        add   ecx,[_skinh]
-        mov   edx,[ebp+SKIN_DATA.base.left]
-        sub   edx,[ebp+SKIN_DATA.base.width]
-        shl   edx,16
-      baseskinloop:
-        shr   edx,16
-        add   edx,[ebp+SKIN_DATA.base.width]
-        shl   edx,16
-
-        push  eax ebx ecx edx
-        call  sys_putimage_with_check
-        pop   edx ecx ebx eax
-
-        dec   eax
-        jnz   baseskinloop
-      non_base:
-
-        mov   esi,[esp]
-        mov   edx,[esi+8]
-        sub   edx,[ebp+SKIN_DATA.oper.width]
-        inc   edx
-        shl   edx,16
-        mov   ebx,[ebp+SKIN_DATA.oper.data]
-
-        mov   ecx,[ebp+SKIN_DATA.oper.width]
-        shl   ecx,16
-        add   ecx,[_skinh]
-        call  sys_putimage_with_check
+        mov     al,[esp+32+4+4]
+        call    drawwindow_IV_caption
 
     draw_clientbar:
 

@@ -75,17 +75,17 @@ calculatescreen:
         test    [edi+WDATA.fl_wstate], WSTATE_MINIMIZED
         jnz     .not_wnd
 
-        mov     eax, [edi+WDATA.left]
+        mov     eax,[edi+WDATA.box.left]
         cmp     eax, [esp+RECT.right]
         ja      .out_of_bounds
-        mov     ebx, [edi+WDATA.top]
+        mov     ebx,[edi+WDATA.box.top]
         cmp     ebx, [esp+RECT.bottom]
         ja      .out_of_bounds
-        mov     ecx, [edi+WDATA.width]
+        mov     ecx,[edi+WDATA.box.width]
         add     ecx, eax
         cmp     ecx, [esp+RECT.left]
         jb      .out_of_bounds
-        mov     edx, [edi+WDATA.height]
+        mov     edx,[edi+WDATA.box.height]
         add     edx, ebx
         cmp     edx, [esp+RECT.top]
         jb      .out_of_bounds
@@ -239,9 +239,9 @@ pushad
 
         mov  ecx, esi
         shl  ecx, 5
-        mov  edx, [window_data+ecx+WDATA.top]
-        push [window_data+ecx+WDATA.width]      ; for loop - width
-        mov  ecx, [window_data+ecx+WDATA.left]
+        mov  edx, [window_data+ecx+WDATA.box.top]
+        push [window_data+ecx+WDATA.box.width]      ; for loop - width
+        mov  ecx, [window_data+ecx+WDATA.box.left]
         sub  ebx, edx
         sub  eax, ecx
         push ebx eax ; for loop - x,y
@@ -513,44 +513,44 @@ repos_windows:
 	test    [esi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jz      .lp2
         mov     eax,[screen_workarea.left]
-        mov     [esi+WDATA.left],eax
+        mov     [esi+WDATA.box.left],eax
         sub     eax,[screen_workarea.right]
         neg     eax
-        mov     [esi+WDATA.width],eax
+        mov     [esi+WDATA.box.width],eax
         mov     eax,[screen_workarea.top]
-        mov     [esi+WDATA.top],eax
+        mov     [esi+WDATA.box.top],eax
         test    [esi+WDATA.fl_wstate],WSTATE_ROLLEDUP
         jnz     .lp1
         sub     eax,[screen_workarea.bottom]
         neg     eax
-        mov     [esi+WDATA.height],eax
+        mov     [esi+WDATA.box.height],eax
   .lp1: add     esi,0x20
         loop    @b
         ret
-  .lp2: mov	eax,[esi+WDATA.left]
-	add	eax,[esi+WDATA.width]
+  .lp2: mov     eax,[esi+WDATA.box.left]
+        add     eax,[esi+WDATA.box.width]
 	mov	ebx,[0x0000fe00]
 ;	inc	ebx
 	cmp	eax,ebx
 	jle	.lp4
-	mov	eax,[esi+WDATA.width]
+        mov     eax,[esi+WDATA.box.width]
 	sub	eax,ebx
 	jle	.lp3
-	mov	[esi+WDATA.width],ebx
-  .lp3: sub	ebx,[esi+WDATA.width]
-	mov	[esi+WDATA.left],ebx
-  .lp4: mov	eax,[esi+WDATA.top]
-	add	eax,[esi+WDATA.height]
+        mov     [esi+WDATA.box.width],ebx
+  .lp3: sub     ebx,[esi+WDATA.box.width]
+        mov     [esi+WDATA.box.left],ebx
+  .lp4: mov     eax,[esi+WDATA.box.top]
+        add     eax,[esi+WDATA.box.height]
 	mov	ebx,[0x0000fe04]
 ;	inc	ebx
 	cmp	eax,ebx
 	jle	.lp6
-	mov	eax,[esi+WDATA.height]
+        mov     eax,[esi+WDATA.box.height]
 	sub	eax,ebx
 	jle	.lp5
-	mov	[esi+WDATA.height],ebx
-  .lp5: sub	ebx,[esi+WDATA.height]
-	mov	[esi+WDATA.top],ebx
+        mov     [esi+WDATA.box.height],ebx
+  .lp5: sub     ebx,[esi+WDATA.box.height]
+        mov     [esi+WDATA.box.top],ebx
   .lp6: add     esi,0x20
         loop    @b
 	ret
@@ -633,6 +633,63 @@ sys_window_mouse:
 
     ret
 
+
+
+
+drawwindow_I_caption:
+
+        mov   ecx,[edx+20]   ; grab bar
+        push  ecx
+        mov   esi,edx
+        mov   edx,[esi+04]
+        add   edx,1
+        mov   ebx,[esi+04]
+        add   ebx,21
+        mov   eax,[esi+04]
+        add   eax,[esi+12]
+        cmp   ebx,eax
+        jb    .wdsizeok
+        mov   ebx,eax
+  .wdsizeok:
+        push  ebx
+  .drwi:
+        mov   ebx,edx
+        shl   ebx,16
+        add   ebx,edx
+        mov   eax,[esi+00]
+        inc   eax
+        shl   eax,16
+        add   eax,[esi+00]
+        add   eax,[esi+8]
+        sub   eax,1
+        push  edx
+        mov   edx,0x80000000
+        mov   ecx,[esi+20]
+        and   ecx,edx
+        cmp   ecx,edx
+        jnz   .nofa
+        mov   ecx,[esi+20]
+        sub   ecx,0x00040404
+        mov   [esi+20],ecx
+        and   ecx,0x00ffffff
+        jmp   .faj
+  .nofa:
+        mov   ecx,[esi+20]
+        and   ecx,0x00ffffff
+  .faj:
+        pop   edx
+        mov   edi,0
+        call  [draw_line]
+        inc   edx
+        cmp   edx,[esp]
+        jb    .drwi
+        add   esp,4
+        pop   ecx
+        mov   [esi+20],ecx
+
+        ret
+
+
 drawwindow_I:
 
         pushad
@@ -648,54 +705,7 @@ drawwindow_I:
         add   ebx,[edx+12]
         call  draw_rectangle
 
-        mov   ecx,[edx+20]   ; grab bar
-        push  ecx
-        mov   esi,edx
-        mov   edx,[esi+04]
-        add   edx,1
-        mov   ebx,[esi+04]
-        add   ebx,25
-        mov   eax,[esi+04]
-        add   eax,[esi+12]
-        cmp   ebx,eax
-        jb    wdsizeok
-        mov   ebx,eax
-      wdsizeok:
-        push  ebx
-      drwi:
-        mov   ebx,edx
-        shl   ebx,16
-        add   ebx,edx
-        mov   eax,[esi+00]
-        inc   eax
-        shl   eax,16
-        add   eax,[esi+00]
-        add   eax,[esi+8]
-        sub   eax,1
-        push  edx
-        mov   edx,0x80000000
-        mov   ecx,[esi+20]
-        and   ecx,edx
-        cmp   ecx,edx
-        jnz   nofa
-        mov   ecx,[esi+20]
-        sub   ecx,0x00040404
-        mov   [esi+20],ecx
-        and   ecx,0x00ffffff
-        jmp   faj
-      nofa:
-        mov   ecx,[esi+20]
-        and   ecx,0x00ffffff
-      faj:
-        pop   edx
-        mov   edi,0
-        call  [draw_line]
-        inc   edx
-        cmp   edx,[esp]
-        jb    drwi
-        add   esp,4
-        pop   ecx
-        mov   [esi+20],ecx
+        call    drawwindow_I_caption
 
         mov   edx,[esi+04]      ; inside work area
         add   edx,21+5
@@ -759,6 +769,54 @@ r_bx  equ [esp+18]   ; y end
         ret
 
 
+drawwindow_III_caption:
+
+        mov   ecx,[edx+20]                       ; GRAB BAR
+        push  ecx
+        mov   esi,edx
+        mov   edx,[esi+04]
+        add   edx,4
+        mov   ebx,[esi+04]
+        add   ebx,20
+        mov   eax,[esi+04]
+        add   eax,[esi+12]
+        cmp   ebx,eax
+        jb    .wdsizeok
+        mov   ebx,eax
+  .wdsizeok:
+        push  ebx
+  .drwi:
+        mov   ebx,edx
+        shl   ebx,16
+        add   ebx,edx
+        mov   eax,[esi+00]
+        shl   eax,16
+        add   eax,[esi+00]
+        add   eax,[esi+8]
+        add   eax,4*65536-4
+        mov   ecx,[esi+20]
+        test  ecx,0x40000000
+        jz    .nofa
+        add   ecx,0x040404
+  .nofa:
+        test  ecx,0x80000000
+        jz    .nofa2
+        sub   ecx,0x040404
+  .nofa2:
+        mov   [esi+20],ecx
+        and   ecx,0xffffff
+        xor   edi, edi
+        call  [draw_line]
+        inc   edx
+        cmp   edx,[esp]
+        jb    .drwi
+        add   esp,4
+        pop   ecx
+        mov   [esi+20],ecx
+
+        ret
+
+
 drawwindow_III:
 
         pushad
@@ -790,48 +848,7 @@ drawwindow_III:
         add   ebx,1*65536-1
         call  draw_rectangle
 
-        mov   ecx,[edx+20]                       ; GRAB BAR
-        push  ecx
-        mov   esi,edx
-        mov   edx,[esi+04]
-        add   edx,4
-        mov   ebx,[esi+04]
-        add   ebx,20
-        mov   eax,[esi+04]
-        add   eax,[esi+12]
-        cmp   ebx,eax
-        jb    wdsizeok2
-        mov   ebx,eax
-      wdsizeok2:
-        push  ebx
-      drwi2:
-        mov   ebx,edx
-        shl   ebx,16
-        add   ebx,edx
-        mov   eax,[esi+00]
-        shl   eax,16
-        add   eax,[esi+00]
-        add   eax,[esi+8]
-        add   eax,4*65536-4
-        mov   ecx,[esi+20]
-        test  ecx,0x40000000
-        jz    nofa3
-        add   ecx,0x040404
-      nofa3:
-        test  ecx,0x80000000
-        jz    nofa2
-        sub   ecx,0x040404
-      nofa2:
-        mov   [esi+20],ecx
-        and   ecx,0xffffff
-        xor   edi, edi
-        call  [draw_line]
-        inc   edx
-        cmp   edx,[esp]
-        jb    drwi2
-        add   esp,4
-        pop   ecx
-        mov   [esi+20],ecx
+        call    drawwindow_III_caption
 
         mov   edx,[esi+04]                       ; WORK AREA
         add   edx,21+5
@@ -1060,15 +1077,15 @@ minimize_window:
         or    [eax+WDATA.fl_wstate], WSTATE_MINIMIZED
         mov   edi, eax
         ;call  calculatescreen
-        mov   eax, [edi+WDATA.left]
+        mov   eax, [edi+WDATA.box.left]
         mov   [dlx], eax
         mov   ecx, eax
-        add   ecx, [edi+WDATA.width]
+        add   ecx, [edi+WDATA.box.width]
         mov   [dlxe], ecx
-        mov   ebx, [edi+WDATA.top]
+        mov   ebx, [edi+WDATA.box.top]
         mov   [dly], ebx
         mov   edx, ebx
-        add   edx, [edi+WDATA.height]
+        add   edx, [edi+WDATA.box.height]
         mov   [dlye], edx
         call  calculatescreen
         xor   esi, esi
@@ -1093,21 +1110,21 @@ restore_minimized_window:
         and   [edi+WDATA.fl_wstate], not WSTATE_MINIMIZED
         cmp   eax, [0x3004] ; the uppermost window
         jnz   .no_uppermost
-        mov   eax, [edi+WDATA.left]
-        mov   ebx, [edi+WDATA.top]
+        mov   eax, [edi+WDATA.box.left]
+        mov   ebx, [edi+WDATA.box.top]
         mov   ecx, eax
         mov   edx, ebx
-        add   ecx, [edi+WDATA.width]
-        add   edx, [edi+WDATA.height]
+        add   ecx, [edi+WDATA.box.width]
+        add   edx, [edi+WDATA.box.height]
         call  setscreen
         jmp   .done
 .no_uppermost:
-        mov   eax, [edi+WDATA.left]
-        mov   ebx, [edi+WDATA.top]
+        mov   eax, [edi+WDATA.box.left]
+        mov   ebx, [edi+WDATA.box.top]
         mov   ecx, eax
         mov   edx, ebx
-        add   ecx, [edi+WDATA.width]
-        add   edx, [edi+WDATA.height]
+        add   ecx, [edi+WDATA.box.width]
+        add   edx, [edi+WDATA.box.height]
         call  calculatescreen
 .done:
         mov   [0xfff4],byte 0 ; no mouse under
@@ -1480,7 +1497,7 @@ checkwindows:
         jz      @f
         mov     eax,[screen_workarea.bottom]
         sub     eax,[screen_workarea.top]
-    @@: mov     [edi+WDATA.height],eax
+    @@: mov     [edi+WDATA.box.height],eax
 
       no_window_shade:
 
@@ -1493,22 +1510,22 @@ checkwindows:
         jnz     restore_from_fullscreen
         or      [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         mov     eax,[screen_workarea.left]
-        mov     [edi+WDATA.left],eax
+        mov     [edi+WDATA.box.left],eax
         sub     eax,[screen_workarea.right]
         neg     eax
-        mov     [edi+WDATA.width],eax
+        mov     [edi+WDATA.box.width],eax
         mov     eax,[screen_workarea.top]
-        mov     [edi+WDATA.top],eax
+        mov     [edi+WDATA.box.top],eax
         test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
         jnz     @f
         sub     eax,[screen_workarea.bottom]
         neg     eax
-        mov     [edi+WDATA.height],eax
+        mov     [edi+WDATA.box.height],eax
     @@:
         jmp   no_fullscreen_restore
       restore_from_fullscreen:
         and     [edi+WDATA.fl_wstate],not WSTATE_MAXIMIZED
-        push    [edi+WDATA.height]
+        push    [edi+WDATA.box.height]
         push  edi                         ; restore
         lea   esi, [edx + 0x90]
         mov   ecx,4
@@ -1518,7 +1535,7 @@ checkwindows:
         pop     eax
         test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
         jz      @f
-        mov     [edi+WDATA.height],eax
+        mov     [edi+WDATA.box.height],eax
     @@:
 
       no_fullscreen_restore:

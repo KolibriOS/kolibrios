@@ -75,31 +75,6 @@ struc dt [a] { common . dt a
     display 'not used dt: ',`.,13,10
   end if }
 
-; constants definition
-WSTATE_NORMAL    = 00000000b
-WSTATE_MAXIMIZED = 00000001b
-WSTATE_MINIMIZED = 00000010b
-WSTATE_ROLLEDUP  = 00000100b
-
-; structures definition
-struc WDATA {
-  .left        dd ?
-  .top         dd ?
-  .width       dd ?
-  .height      dd ?
-  .cl_workarea dd ?
-  .cl_titlebar dd ?
-  .cl_frames   dd ?
-  .reserved    db ?
-  .fl_wstate   db ?
-  .fl_wdrawn   db ?
-  .fl_redraw   db ?
-}
-virtual at 0
- WDATA WDATA
-end virtual
-label WDATA.fl_wstyle byte at 0x13 ; WDATA.cl_workarea+3
-
 struc RECT {
   .left   dd ?
   .top    dd ?
@@ -120,18 +95,97 @@ virtual at 0
  BOX BOX
 end virtual
 
+; constants definition
+WSTATE_NORMAL	 = 00000000b
+WSTATE_MAXIMIZED = 00000001b
+WSTATE_MINIMIZED = 00000010b
+WSTATE_ROLLEDUP  = 00000100b
+
+WSTATE_REDRAW	 = 00000001b
+WSTATE_WNDDRAWN  = 00000010b
+
+WSTYLE_HASCAPTION     = 00010000b
+WSTYLE_CLIENTRELATIVE = 00100000b
+
+struc TASKLIST
+{
+  .event_mask  dd ?
+  .pid	       dd ?
+	       dw ?
+  .state       dw ?
+	       dw ?
+  .wnd_number  db ?
+	       db ?
+  .mem_start   dd ?
+  .counter_sum dd ?
+  .counter_add dd ?
+  .cpu_usage   dd ?
+}
+virtual at 0
+ TASKLIST TASKLIST
+end virtual
+
+; structures definition
+struc WDATA {
+  .box		   BOX
+  .cl_workarea	   dd ?
+  .cl_titlebar	   dd ?
+  .cl_frames	   dd ?
+  .reserved	   db ?
+  .fl_wstate	   db ?
+  .fl_wdrawn	   db ?
+  .fl_redraw	   db ?
+}
+virtual at 0
+ WDATA WDATA
+end virtual
+label WDATA.fl_wstyle byte at 0x13
+
+struc APPDATA
+{
+  .app_name	   db 11  dup(?)
+		   db 5   dup(?)
+  .fpu_save_area   db 108 dup(?)
+		   db 3   dup(?)
+  .is_fpu_saved    db ?
+  .wnd_shape	   dd ?
+  .wnd_shape_scale dd ?
+  .gdt		   dd ?
+  .mem_size	   dd ?
+  .saved_box	   BOX
+  .ipc_start	   dd ?
+  .ipc_size	   dd ?
+  .event_mask	   dd ?
+  .debugger_slot   dd ?
+  .int40_handler   dd ?
+  .keyboard_mode   db ?
+		   db 3   dup(?)
+  .dir_table	   dd ?
+  .dbg_event_mem   dd ?
+  .dbg_regs:
+  .dbg_regs.dr0    dd ?
+  .dbg_regs.dr1    dd ?
+  .dbg_regs.dr2    dd ?
+  .dbg_regs.dr3    dd ?
+  .dbg_regs.dr7    dd ?
+  .wnd_caption	   dd ?
+  .wnd_clientbox   BOX
+}
+virtual at 0
+ APPDATA APPDATA
+end virtual
+
 ;// mike.dld, 2006-29-01 ]
 
 
 ; Core functions
-include "core/sync.inc"
+include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
 include "core/sched.inc"    ; process scheduling
 include "core/syscall.inc"  ; system call
 include "core/mem.inc"      ; high-level memory management
 include "core/newproce.inc" ;new process management
 include "core/physmem.inc"  ; access to physical memory for applications
-include "core/sync.inc"     ; macros for synhronization objects
 
 ; GUI stuff
 include "gui/window.inc"

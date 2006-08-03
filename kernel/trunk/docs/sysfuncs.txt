@@ -1,0 +1,4285 @@
+SYSTEM FUNCTIONS of OS Kolibri 0.5.8.1
+
+Number of the function is located in the register eax.
+The call of the system function is carried out by the command "int 0x40".
+All registers, except for obviously indicated in returned value,
+including the register of flags eflags, are saved.
+
+
+======================================================================
+============== Function 0 - define and draw the window. ==============
+======================================================================
+Defines an application window. Draws a frame of the window, header and
+working area. For windows with скином defines standard buttons of closing
+and minimization.
+Parameters:
+  * eax = 0 - number of the function
+  * ebx = [coordinate on axis x]*65536 + [size on axis x]
+  * ecx = [coordinate on axis y]*65536 + [size on axis y]
+  * edx = 0xXYRRGGBB, where:
+    * Y = style of the window:
+      * Y=0 - type I - window of the fixed sizes
+      * Y=1 - only to define window area, nothing to draw
+      * Y=2 - type II - window with changed sizes
+      * Y=3 - window with skinned
+      * other possible values (from 4 up to 15) reserved,
+        function call with such Y is ignored
+    * RR, GG, BB = accordingly red, green, blue
+      colours of a working area of the window
+      (is ignored for style Y=2)
+    * X = DCBA (bits)
+      * A = 1 - window has caption; if Y=3, caption string address could be passed in edi,
+                otherwise use function 71 subfunction 1
+      * B = 1 - draw all graphics primitives relative to window client area
+      * C - reserved
+      * D = 8 - fill client area with gradient
+      other values are reserved
+    The following parameters are intended for windows of a type I and II,
+    and ignored for styles Y=1,3:
+  * esi = 0xXYRRGGBB - colour of header
+    * RR, GG, BB define colour
+    * Y=0 - usual window, Y=1 - unmovable window
+    * X defines a gradient of header: X=0 - no gradient, 
+      X=8 - usual gradient,
+      for windows of a type II X=4 - negative gradient
+    * other values X and Y reserved
+  * edi = 0x00RRGGBB - colour of a frame
+Returned value:
+  * function does not return value
+Remarks:
+  * Location and the sizes of the window are installed by the first call of
+    this function and are ignored at subsequent; for change of location
+    and/or of sizes already of created window use function 67.
+  * If to use windows of appropriate styles, location and - or the sizes of
+    the window can vary by the user.
+    Current location and the sizes can be obtained by function 9.
+  * The window should be located on the screen. If the transferred coordinates
+    nd the sizes do not satisfy to this condition, appropriate coordinate
+    (or, probably, is considered both) as zero, and if also it does not help,
+    the appropriate size (or, probably, both) is installed in a size of the
+    screen.
+    
+    Further we shall designate xpos, ypos, xsize, ysize - values transmitted
+    in ebx, ecx. The coordinates are resulted concerning the left upper corner
+    of the window, which, thus, is set as (0,0), coordinate of the right lower
+    corner essence (xsize, ysize).
+  * The sizes of the window are understood in sense of coordinates of the
+    right lower corner. This concerns and to all other functions. It means,
+    that the real sizes on 1 pixel are more.
+  * Look of the window of a type I:
+    * draw external frame of colour indicated in edi,
+      in width 1 pixel
+    * draw header - rectangle with the left upper corner (1,1) and right lower
+      (xsize-1, min (25, ysize)) colour indicated in esi
+      (in view of a gradient)
+    * If ysize > =26, the working area of the window - rectangle with the left
+      upper corner (1,21) and right lower
+      (xsize-1, ysize-1) (sizes (xsize-1) * (ysize-21)) - colour
+       indicated in edx (in view of a gradient) is painted over
+  * Look of the window of a type Y=1:
+    * completely defined by the application
+  * Look of the window of a type II:
+    * draw external frame of width 1 pixel of the "shaded" colour
+      edi (all making colours decrease twice)
+    * drawn intermediate frame of width 3 pixels of colour edi
+    * draw internal frame of width 1 pixel
+      "shaded" colour edi
+    * draw header - rectangle with the left upper corner (4,4)
+      and right lower (xsize-4,min(20,ysize)) colour, indicated в esi
+      (in view of a gradient)
+    * If ysize > =26, the working area of the window is painted over -
+      rectangle with the left upper corner (5,20) and right lower
+      (xsize-5,ysize-5) - colour indicated in edx (in view of a gradient)
+  * Look of the window with skinned:
+    * draw external frame of width 1 pixel
+      colour 'outer' from skin
+    * draw intermediate framework of width 3 pixels
+      colour 'frame' from skin
+    * draw internal framework of width 1 pixel
+      colour 'inner' from skin
+    * draw header (on pictures from skin) in a rectangle
+      (0,0) - (xsize,_skinh-1)
+    * If ysize > =26, the working area of the window is painted over -
+      rectangle with the left upper corner (5, _skinh) and right lower
+      (xsize-5,ysize-5) - colour indicated in edx (in view of a gradient)
+    * two standard buttons are defined: closings and minimizations
+      (see function 8)
+    * value _skinh is accessible as result of call
+      subfunction 4 functions 48
+
+======================================================================
+================= Function 1 - put a point in the window. ============
+======================================================================
+Parameters:
+  * eax = 1 - number of the function
+  * ebx = x-coordinate (concerning the window)
+  * ecx = y-coordinate (concerning the window)
+  * edx = 0x00RRGGBB - colour of a point
+    edx = 0x01xxxxxx - to invert colour of a point
+          (low 24 bits ignored)
+Returned value:
+  * function does not return value
+
+======================================================================
+======== Function 2 - receive the code of the pressed key. ===========
+======================================================================
+Takes away the code of the pressed key from the buffer.
+Parameters:
+  * eax = 2 - number of the function
+Returned value:
+  * if the buffer is empty, comes back eax=1
+  * If the buffer is nonblank, that comes back al=0, ah=code of the pressed key,
+    high word of the register eax is set zero
+  * If there is "hotkey", comes back
+    al=2, ah=scancode of the pressed key (0 for direction keys),
+    high word of the register eax contains a status of direction keys
+    at the moment of pressing a hotkey
+Remarks:
+  * There is a common system buffer of the pressed keys by a size of 120 bytes,
+    organized as queue.
+  * There is one more common system buffer on 120 "hotkey".
+  * By call of this function the application with the inactive window
+    considers, that the buffer of the pressed keys is empty.
+  * By default this function returns ASCII-codes; to switch to the mode
+    scancode (and back) it is possible with usage of the function 66.
+    However, the hotkey always come back as scancodes.
+  * Ffind out, what keys correspond to what codes, is possible, having started
+    the applications keyascii and scancode.
+  * Scancodes come back directly by keyboard and are fixed; ASCII-codes turn
+    out with usage of the conversion tables, which can be installed
+    subfunction 2 functions 21 and to read subfunction 2 functions 26.
+  * As a consequence, ASCII-codes take into account current keyboard layout
+    (rus/en) as against scancodes.
+  * The information only about those hotkeys acts which were defined by this
+    stream subfunction 4 functions 66.
+
+======================================================================
+================ Function 3 - get system time. =======================
+======================================================================
+Parameters:
+  * eax = 3 - number of the function
+Returned value:
+  * eax = 0x00SSMMHH, where HH:MM:SS = Hours:Minutes:Seconds
+  * each unit comes back as BCD-number, for example,
+    for time 23:59:59 result will be 0x00595923
+Remarks:
+  * Look also subfunction 9 functions 26 - obtaining of time from the moment
+    of start of the system; it in many cases is more convenient, as returns
+    simply DWORD-value of the counter of time.
+  * System time can be installed by the function 22.
+
+======================================================================
+================ Function 4 - draw text in the window. ===============
+======================================================================
+Can output both strings with given length and NULL-terminated strings
+(0x0) - ASCIIZ(string  db  'text',0). To draw ASCIIZ string, pass -1
+in esi (mov esi,-1).
+Parameters:
+  * eax = 4 - number of the function
+  * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
+  * ecx = 0xX0RRGGBB, where
+    * RR, GG, BB set colour of the text
+    * X sets the used font: 0=system monowide,
+      1=system font of variable width
+  * edx = pointer by the beginning of string
+  * esi = length of string, should be no more 255
+Returned value:
+  * function does not return value
+Remarks:
+  * The first system font is read out at loading from the file char.mt,
+    second system font - from char2.mt.
+  * Both fonts have height 9 pixels, width of the monowide font
+    is equal 6 pixels.
+
+======================================================================
+========================= Function 5 - pause. =========================
+======================================================================
+Delays execution of the program on the given time.
+Parameters:
+  * eax = 5 - number of the function
+  * ebx = time in the 1/100 of second
+Returned value:
+  * function does not return value
+Remarks:
+  * The transmission ebx=0 does not transfer handle the following process
+    and at all does not make any operations. If really it is required to
+    transfer handle to the following process (to complete a current time
+    slice), use subfunction of 1 function 68.
+  * At current realization there will be an immediate return from the function,
+    if the addition ebx with current value of the counter of time will call
+    32-bit overflow.
+
+======================================================================
+============== Function 6 - read the file with ramdisk. ==============
+======================================================================
+Parameters:
+  * eax = 6 - number of the function
+  * ebx = pointer on a filename
+  * ecx = number of the start block, beginning from 1;
+    ecx=0 - read from a beginning of the file (same, as ecx=1);
+  * edx = number of blocks for reading;
+    edx=0 - read one block (same, as edx=1)
+  * esi = pointer on area of memory, where the data will be written
+Returned value:
+  * eax = file size in bytes, if the file is successfully read
+  * eax = -1, if the file is not retrieved
+Remarks:
+  * The given function is out-of-date; the function 70 allows to fulfil
+    the same operations with the extended possibilities.
+  * Block = 512 bytes.
+  * For reading all file it is possible to specify the certainly large value
+    in edx, for example, edx = -1; but in this case be ready that the program
+    "will fall", if the file will appear too large and "will not be placed" in
+    memory of the program.
+  * The filename should be or in the format 8+3 characters (first 8 characters
+    - purely name, last 3 - extension, the short names and extensions are
+    supplemented by blanks), or in the format 8.3 characters
+    "FILE.EXT" / "FILE.EX " (name no more than 8 characters, point,
+    extension 3 characters supplemented if necessary by blanks).
+    The filename should be written by capital letters. The completing
+    character with the code 0 is not necessary (ASCIIZ-string).
+  * Current implementation ramdisk does not support the directory.
+
+======================================================================
+=============== Function 7 - draw image in the window. ===============
+======================================================================
+Parameters:
+  * eax = 7 - number of the function
+  * ebx = pointer on the image in the format BBGGRRBBGGRR...
+  * ecx = [size on axis x]*65536 + [size on axis y]
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates of the image are coordinates of the upper left corner of the
+    image concerning the window.
+  * Size of the image in bytes is 3*xsize*ysize.
+
+======================================================================
+=============== Function 8 - define/delete the button. ===============
+======================================================================
+Parameters for определения кнопки:
+  * eax = 8 - number of the function
+  * ebx = [coordinate on axis x]*65536 + [size on axis x]
+  * ecx = [coordinate on axis y]*65536 + [size on axis y]
+  * edx = 0xXYnnnnnn, where:
+    * nnnnnn = identifier of the button
+    * high (31-st) bit edx is reset
+    * if 30-th bit edx is installed - to not draw the button
+    * If 29-th bit edx is installed - to not draw a frame
+      at pressing the button
+  * esi = 0x00RRGGBB - colour of the button
+Parameters for deleting the button:
+  * eax = 8 - number of the function
+  * edx = 0x80nnnnnn, where nnnnnn - identifier of the button
+Returned value:
+  * function does not return value
+Remarks:
+  * Sizes of the button should be more than 0 and less than 0x8000.
+  * For windows with skin at definition of the window (call of 0-th function)
+    there are two standard buttons - closing of the window with the
+    identifier 1 and minimization of the window with the identifier 0xffff.
+  * The creation of two buttons with identical identifiers is admitted.
+  * The button with the identifier 0xffff at pressing is interpreted by the
+     system as the button of minimization, the system handles such pressing
+     independently, not accessing to the application. In rest it is
+     the usual button.
+  * Total of buttons for all applications is limited to number 4095.
+
+======================================================================
+========== Function 9 - information on thread of execution. ==========
+======================================================================
+Parameters:
+  * eax = 9 - number of the function
+  * ebx = pointer on the buffer of a size 1 Kb
+  * ecx = number of the slot of thread
+    ecx = -1 - get information on current thread
+Returned value:
+  * eax = maximum number of the slot of thread
+  * buffer, which specifies ebx, contains the following information:
+    * +0: dword: usage of the processor (how many clock ticks per one second
+      leaves on fulfilment of this thread)
+    * +4: word: position of the window of thread in the window stack
+    * +6: word: (there is no ratio to the requested thread)
+      number of the slot thread, which window is in the window stack
+      in a position ecx
+    * +8: word: reserved
+    * +10 = +0xA: 11 bytes: name of the process
+      (name of an appropriate executable file in the format 8+3)
+    * +21 = +0x15: byte: alignment, this byte does not vary
+    * +22 = +0x16: dword: address of the process in memory
+    * +26 = +0x1A: dword: size of used memory - 1
+    * +30 = +0x1E: dword: identifier (PID/TID)
+    * +34 = +0x22: dword: coordinate of the window thread on axis x
+    * +38 = +0x26: dword: coordinate of the window thread on axis y
+    * +42 = +0x2A: dword: size of the window thread on axis x
+    * +46 = +0x2E: dword: size of the window thread on axis y
+    * +50 = +0x32: word: status of the slot thread:
+      * 0 = thread worked
+      * 1 = thread paused
+      * 2 = thread paused at the moment of waiting event
+      * 3 = thread completed as a result of function call -1 or
+        under duress as a consequence of call subfunction 2 functions 18
+        or termination of the system
+      * 4 = thread is completed as a result of exception
+      * 5 = thread wait event
+      * 9 = requested slot is free,
+        all other information on the slot is not meaningful
+Remarks:
+  * Slots are numbered with 1.
+  * Returned value not is a total number of streams, as there are free slots.
+  * При создании процесса автоматически создается thread выполнения.
+  * Function produces the information on thread. Each process has even one
+    thread. One process can create some thread, in this case everyone thread
+    receives the slot, and the fields +10, +22, +26 in these slots coincide.
+    For the applications there is no common way to define, whether two thread 
+    belong to one process.
+  * Active window - window which is taking place on top of the window stack,
+    it receives the messages on a keyboard input. For it the position in the
+    window stack coincides with returned value.
+  * Slot 1 corresponds to special thread of an operating system, for which:
+    * window is in the bottom of the window stack, the fields +4 and +6
+      contain value 1
+    * Nname of the process - "OS/IDLE" (supplemented by blanks)
+    * address of the process is equal memory 0, size of used memory
+      16 Mb (0x1000000)
+    * PID=1
+    * coordinates and sizes of the window conditionally rely equal 0
+    * status of the slot - always 0 (worked)
+    * The execution time adds of time leaving on purely operation, and down
+      time in waiting interruption (which can be received by call
+      subfunction 4 functions 18).
+  * Since the slot 2, the usual applications are placed.
+  * Usual applications are placed in memory to the address 0x10000000
+    (constant of a kernel std_application_base_address).
+    Intersection does not occur, as for each process the own page table.
+  * At creation thread to it are assigned the slot in the system table and
+    identifier (Process/Thread IDentifier = PID/TID), which for given thread
+    do not vary in the subsequent time.
+    After completion thread its slot can be anew used for another thread.
+    The identifier thread can not be assigned to other stream even after
+    completion first.
+    Identifiers, assigned to new thread, monotonously grow.
+  * If thread yet has not defined the window by function call 0,
+    a location and the sizes of this window rely in zero.
+  * In the given moment the part of the buffer by a size 52 = 0x34 of byte
+    is used only. Nevertheless it is recommended to use the buffer
+    by a size 1 KB for the future compatibility, in the future some fields
+    can be added.
+
+======================================================================
+====================== Function 10 - wait event. =====================
+======================================================================
+If the message queue is empty, waits for appearance of the message in queue.
+In such status thread does not receive CPU time.
+Then reads out the message from queue.
+
+Parameters:
+  * eax = 10 - number of the function
+Returned value:
+  * eax = event (look the list of events)
+Remarks:
+  * Those events are taken into account only which enter into a mask installed
+    by the function 40. By default it is events redraw, pressing keys
+    and buttons.
+  * For check, whether there is a message in queue, use the function 11.
+    To wait for the no more defined time, use the function 23.
+
+=======================================================================
+= Function 11 - check up, whether there is an event, without waiting. =
+=======================================================================
+If in a message queue there is any event, reads out and returns it.
+If queue is empty, returns zero.
+Parameters:
+  * eax = 11 - number of the function
+Returned value:
+  * eax = 0 - message queue is empty
+  * иначе eax = event (look the list of events)
+Remarks:
+  * Those events are taken into account only which enter into a mask installed
+    by the function 40. By default it is events redraw, pressing keys
+    and buttons.
+  * For waiting appearance of event in queue, use the function 10.
+    To wait for the no more defined time, use the function 23.
+
+======================================================================
+========= Function 12 - begin/complete redraw of the window. =========
+======================================================================
+
+---------- Subfunction 1 - begin redraw of the window. ---------------
+Parameters:
+  * eax = 12 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * function does not return value
+
+--------- Subfunction 2 - complete redraw of the window. -------------
+Parameters:
+  * eax = 12 - number of the function
+  * ebx = 2 - number subfunction
+Returned value:
+  * function does not return value
+Remarks:
+  * Function of a beginning redraw all deletes defined by the
+    function 8 buttons, they should be defined again.
+
+======================================================================
+============ Function 13 - draw a rectangle in the window. ===========
+======================================================================
+Parameters:
+  * eax = 13 - number of the function
+  * ebx = [coordinate on axis x]*65536 + [size on axis x]
+  * ecx = [coordinate on axis y]*65536 + [size on axis y]
+  * edx = colour 0xRRGGBB или 0x80RRGGBB for a gradient of filling
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates are understood as coordinates of the left upper corner
+    of a rectangle concerning the window.
+
+======================================================================
+================ Function 14 - get sizes of the screen. ==============
+======================================================================
+Parameters:
+  * eax = 14 - number of the function
+Returned value:
+  * eax = [xsize]*65536 + [ysize], where
+  * xsize = x-coordinate of the right lower corner of the screen =
+            size on a horizontal - 1
+  * ysize = y-coordinate of the right lower corner of the screen =
+            size on a vertical - 1
+Remarks:
+  * Look also subfunction 5 functions 48 - to receive sizes of
+    a working area of the screen.
+
+========================================================================
+= Function 15, subfunction 1 - install a size of the background image. =
+========================================================================
+Parameters:
+  * eax = 15 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = width of the image
+  * edx = height of the image
+Returned value:
+  * function does not return value
+Remarks:
+  * Checks on a correctness is not done. The installation of the too large
+    values will result that the background will be entered with the data abroad
+    of buffer of the background map. The size of the buffer = 0x160000-0x10,
+    that corresponds to maximum sizes 800*600. (800*600*3=0x15F900)
+  * For upgrade of the screen (after completion of a series of commands
+    working with a background) call subfunction 3 redraw of a background.
+  * There is a pair function of get of sizes of the background image - 
+    subfunction 1 function 39.
+
+======================================================================
+= Function 15, subfunction 2 - put a point on the background image. ==
+======================================================================
+Parameters:
+  * eax = 15 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = offset
+  * edx = colour of a point 0xRRGGBB
+Returned value:
+  * function does not return value
+Remarks:
+  * Offset for a point with coordinates (x, y) is calculated as
+    (x+y*xsize)*3.
+  * If the indicated offset exceeds 0x160000-16 =
+    1.375 Mb - 16 bytes, call is ignored.
+  * For upgrade of the screen (after completion of a series of commands
+    working with a background) call subfunction 3 redraw of a background.
+  * There is a pair function of obtaining of a point from the background
+    image - subfunction 2 functions 39.
+
+======================================================================
+=========== Function 15, subfunction 3 - redraw background. ==========
+======================================================================
+Parameters:
+  * eax = 15 - number of the function
+  * ebx = 3 - number subfunction
+Returned value:
+  * function does not return value
+
+=========================================================================
+= Function 15, subfunction 4 - set the mode of drawing of a background. =
+=========================================================================
+Parameters:
+  * eax = 15 - number of the function
+  * ebx = 4 - number subfunction
+  * ecx = mode of drawing:
+    * 1 = tile
+    * 2 = stretch
+Returned value:
+  * function does not return value
+Remarks:
+  * For upgrade of the screen (after completion of a series of commands
+    working with a background) call subfunction 3 redraw of a background.
+  * There is a pair command of obtaining of the mode redraw of a background
+    - subfunction 4 functions 39.
+
+===========================================================================
+= Function 15, subfunction 5 - place the block of pixels on a background. =
+===========================================================================
+Parameters:
+  * eax = 15 - number of the function
+  * ebx = 5 - number subfunction
+  * ecx = pointer on the data in the format BBGGRRBBGGRR...
+  * edx = offset in data of the background image
+  * esi = size given in bytes = 3 * number of pixels
+Returned value:
+  * function does not return value
+Remarks:
+  * If the block gets out abroad 0x160000-16 = 1.375 Mb - 16 bytes,
+    the call is ignored.
+  * Colour of each pixel is stored as 3 bytes the value BBGGRR.
+  * Pixels of the background image are written sequentially from left to right,
+    from above downwards.
+  * Offset of a pixel with coordinates (x,y) it (x+y*xsize)*3.
+  * For upgrade of the screen (after completion of a series of commands
+    working with a background) call subfunction 3 redraw of a background.
+
+======================================================================
+============= Function 16 - save ramdisk on a diskette. ==============
+======================================================================
+Parameters:
+  * eax = 16 - number of the function
+  * ebx = 1 или ebx = 2 - on what floppy to save
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - error
+
+======================================================================
+============== Function 17 - get code of pressed button. =============
+======================================================================
+Takes away the code of the pressed button from the buffer.
+Parameters:
+  * eax = 17 - number of the function
+Returned value:
+  * If the buffer is empty, comes back eax=1
+  * If the buffer is nonblank, comes back al=0, the high 24 bits eax contain
+    the identifier of the button (in particular, in ah there is a low byte of
+    the identifier; if all buttons have the identifier, smaller 256, for
+    distinguishing there is enough ah)
+Remarks:
+  * "Buffer" keeps only one button, at pressing the new button the information
+    about old is lost. 
+  * By call of this function by the application with the inactive window the
+    answer " the buffer comes back is empty ".
+
+======================================================================
+============ Function 18, subfunction 1 - shutdown system. ===========
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * Always comes back eax = 0 as tag of success
+Remarks:
+  * On last step there is a menu of quit waiting responses of the user.
+  * Look also subfunction 9, termination of the system with the parameter
+    to speed up choice in the menu of an exit.
+
+======================================================================
+= Function 18, subfunction 2 - complete process/thread on the slot. ==
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = number of the slot of process/thread
+Returned value:
+  * function does not return value
+Remarks:
+  * It is impossible to complete thread of an operating system OS/IDLE
+    (number of the slot 1), it is possible to complete
+    any usual thread/process.
+  * See also subfunction 18 - completion of process/thread
+    with the given identifier.
+
+=========================================================================
+= Function 18, subfunction 3 - do to the active window selected thread. =
+=========================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx = number of the slot thread
+Returned value:
+  * function does not return value
+Remarks:
+  * At the instruction correct, but nonexistent slot any window is made active.
+  * Find out, what window is active, is possible by call subfunction 7.
+
+==============================================================================
+ Function 18, subfunction 4 - get counter of empty clock ticks per one second. 
+==============================================================================
+Empty clock ticks are understood as time, in which the processor stands idle
+in waiting interruption (in the instruction hlt).
+
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 4 - number subfunction
+Returned value:
+  * eax = value of the counter of empty clock ticks per one second
+
+======================================================================
+=========== Function 18, subfunction 5 - get cpu frequency. ==========
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 5 - number subfunction
+Returned value:
+  * eax = cpu frequency (modulo 2^32 clock ticks = 4GHz)
+
+=====================================================================
+== Function 18, subfunction 6 - save ramdisk in file on hard disk. ==
+=====================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 6 - number subfunction
+  * ecx defines path to the file:
+    * 1 = in the directory "/KOLIBRI"
+    * 2 = in the root
+    * 3 = edx specifies path (names of folders in the format 8+3, divided '/')
+Returned value:
+  * eax = 0 - successfully
+  * differently eax = an error code of a file system
+Remarks:
+  * Filename is fixed, "menuet.img" (global variable of
+    a kernel image_save from preboot.inc)
+  * On what partition what disk the file will be saved, is defined
+    subfunction 7 and subfunction 8 functions 21.
+  * All directories in the indicated path should exist, differently will
+    return value 5, " the file is not retrieved ".
+
+======================================================================
+====== Function 18, subfunction 7 - get number of active window. =====
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 7 - number subfunction
+Returned value:
+  * eax = number of active window (number of the slot thread, which window
+    is active)
+Remarks:
+  * Active window is at the top of the window stack and receives the messages
+    on all keyboard input.
+  * Make the window active it is possible by call subfunction 3.
+
+=======================================================================
+==== Function 18, subfunction 8 - disable/enable a speaker sound . ====
+=======================================================================
+At the disconnected sound the calls subfunction 55 functions 55 are ignored.
+At included - are routed on built - in speaker.
+
+--------------- Subsubfunction 1 - get a status. ----------------
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = 1 - number subsubfunction
+Returned value:
+  * eax = 0 - sound speaker is enabled; 1 - is disabled
+
+-------------- Subsubfunction 2 - switch a status. --------------
+Switches statuses of disable/enable.
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = 2 - number subsubfunction
+Returned value:
+  * function does not return value
+
+===========================================================================
+= Function 18, subfunction 9 - shutdown of the system with the parameter. =
+===========================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 9 - number subfunction
+  * ecx = parameter:
+    * 1 = On last step of shutdown to save ramdisk on a diskette then to
+      output the menu of an exit and to request of the user further operations
+    * 2 = switch off the computer
+    * 3 = reboot the computer
+    * 4 = restart a kernel from the file kernel.mnt on ramdisk
+Returned value:
+  * At incorrect ecx the registers do not vary (i.e. eax=18)
+  * By correct call tag of success eax=0 always comes back
+Remarks:
+  * It is not necessary to rely on returned value by incorrect call,
+    it can vary in the subsequent versions of a kernel.
+  * It is possible to use subfunction 1, that on last step of termination
+    the user himself has selected, that it is necessary.
+  * It is not recommended to use value ecx=1 (to not irritate the user with
+    excessive questions); to save ramdisk on a diskette it is possible by the
+    function 16 (which admits specification, on which diskette to write), and
+    to complete operation from the menu of an output(exit) it is possible
+    already mentioned subfunction 1.
+
+=======================================================================
+====== Function 18, subfunction 10 - minimize application window. =====
+=======================================================================
+Turns off the own window.
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 10 - number subfunction
+Returned value:
+  * function does not return value
+Remarks:
+  * The minimized window from the point of view of the function 9 saves
+    a location and sizes.
+  * Restoring of an application window occurs at activation subfunction 3.
+  * Usually there is no necessity obviously to turn off/restore the window:
+    turn off of the window is carried out by the system at pressing the button
+    of minimization (which for windows with SKIN is defined automatically by
+    function 0, for windows without SKIN it is possible to define by the
+    function 8), restoring - application @panel.
+
+======================================================================
+==================== Function 18, subfunction 11 =====================
+================ Get information on a disk subsystem. ================
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 11 - number subfunction
+  * ecx = type of the table:
+    * 1 = short version, 10 bytes
+    * 2 = full version, 65536 bytes
+  * edx = pointer on the buffer (in the application) for table
+Returned value:
+  * function does not return value
+Format of the table: the short version:
+  * +0: byte: information about FDD's (drives for diskettes), AAAABBBB,
+    where AAAA sets type of the first drive, BBBB - second disk agrees
+    to the following list:
+    * 0 = there is no drive
+    * 1 = 360Kb, 5.25''
+    * 2 = 1.2Mb, 5.25''
+    * 3 = 720Kb, 3.5''
+    * 4 = 1.44Mb, 3.5''
+    * 5 = 2.88Mb, 3.5'' (such diskettes already are not used)
+    For example, for the standard configuration from one 1.44-drive here will
+    be 40h, and for a case 1.2Mb on A: and 1.44Mb on B: the value appears 24h.
+  * +1: byte: information about hard disks and CD - drives, AABBCCDD,
+    where AA corresponds to the controller IDE0, ..., DD - IDE3:
+    * 0 = device is absent
+    * 1 = hard disk
+    * 2 = CD - drive
+    For example, in a case HD on IDE0 and CD on IDE2 here will be 48h.
+  * +2: 4 db: Number of the retrieved sections on hard disks with
+    accordingly IDE0..., IDE3.
+    At absence of the hard disk on IDEx appropriate byte zero, at presence
+    shows number of the recognized partitions, which can and to not be (if the
+    drive is not formatted or if the file system is not supported). In the
+    current version of a kernel for hard disks are supported only FAT16
+    and FAT32.
+  * +6: 4 db: reserved
+Format of the table: the complete version:
+  * +0: 10 db: same, as well as in the short version
+  * +10: 100 db: data for the first partition
+  * +110: 100 db: data for the second partition
+  * ...
+  * +10+100*(n-1): 100 db: data for the last partition
+The sections are located in the following order: at first sequentially all
+recognized partitions on HD on IDE0 (if are), then on HD on IDE1 (if is)
+etc. up to IDE3.
+Format of the information about partition (while is supported only FAT):
+  * +0: dword: first physical sector of the partition
+  * +4: dword: last physical sector of the partition
+    (belongs to partition)
+  * +8: dword: sectors in one copy FAT
+  * +12 = +0xC: dword: number of copies FAT
+  * +16 = +0x10: dword: number of sectors in a cluster
+  * +20 = +0x14: dword: byte in sector; the current implementation expects,
+    that here 0x200 = 512
+  * +24 = +0x18: dword: first cluster of the root in FAT32, 0 for FAT16
+  * +28 = +0x1C: dword: first physical sector FAT
+  * +32 = +0x20: dword: first physical sector of the root for FAT16,
+    is ignored for FAT32
+  * +36 = +0x24: dword: number of sectors in the root for FAT16, 0 for FAT32
+  * +40 = +0x28: dword: physical sector of a beginning of area of the data
+  * +44 = +0x2C: dword: maximum number of a cluster
+  * +48 = +0x30: dword: physical sector of the information about a file system
+    for FAT32, is ignored for FAT16
+  * +52 = +0x34: dword: value used as boundary of special values in FAT
+  * +56 = +0x38: dword: value used for bad clusters in FAT
+  * +60 = +0x3C: dword: Value used as the end mark at recording of a chain
+    in FAT
+  * +64 = +0x40: dword: mask superimposed on a unit FAT
+  * +68 = +0x44: byte: type of a file system: 16 or 32
+  * +69 = +0x45: 31 db: reserved
+Remarks:
+  * Short table can be used for obtaining the information about available
+    devices.
+  * First two information fields about partition in the complete version of
+    the table inform parameters of the unit which has stayed - parameters of
+    a file system FAT. For other file systems (when they will be supported)
+    information, specific to a file system, naturally, there will be another,
+    but first two fields will be saved constant.
+
+======================================================================
+======== Function 18, subfunction 13 - get version of a kernel. ======
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 13 - number subfunction
+  * ecx = pointer on the buffer (not less than 16 bytes), where the
+    information will be placed
+Returned value:
+  * function does not return value
+Structure of the buffer:
+db a,b,c,d for version a.b.c.d
+db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
+db 'name',0 - ASCIIZ-string with a name
+For kernel Kolibri 0.5.8.1:
+db 0,5,8,1
+db 2
+db 'Kolibri',0
+
+=========================================================================
+====================== Function 18, subfunction 14 ======================
+= Expect a beginning of retrace of a ray of scanning of screen monitor. =
+=========================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 14 - number subfunction
+Returned value:
+  * eax = 0 as tag of success
+Remarks:
+  * Function is intended only for the active high-efficiency graphics
+    applications; is used for smooth output of a graphics.
+
+============================================================================
+= Function 18, subfunction 15 - place a mouse pointer in centre of screen. =
+============================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 15 - number subfunction
+Returned value:
+  * eax = 0 as tag of success
+
+======================================================================
+====================== Function 18, subfunction 16 ===================
+====================== Get a size of the free RAM. ===================
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 16 - number subfunction
+Returned value:
+  * eax = size of free memory in kilobytes
+
+======================================================================
+====================== Function 18, subfunction 17 ===================
+====================== Get a size of the amount RAM. =================
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 17 - number subfunction
+Returned value:
+  * eax = common size of amount memory in kilobytes
+
+======================================================================
+====================== Function 18, subfunction 18 ===================
+============= complete process/thread on the identifier. =============
+======================================================================
+Parameters:
+  * eax = 18 - number of the function
+  * ebx = 18 - number subfunction
+  * ecx = identifier of process/thread (PID/TID)
+Returned value:
+  * eax = 0 - successfully
+  * eax = -1 - error (the process is not retrieved or is system)
+Remarks:
+  * It is impossible to complete thread of an operating system OS/IDLE
+   (number of the slot 1), it is possible to complete any usual thread/process.
+  * See also subfunction 2 - completion of process / thread on the given slot.
+
+======================================================================
+============ Function 19 - start application with ramdisk. ===========
+======================================================================
+Parameters:
+  * eax = 19 - number of the function
+  * ebx = pointer on an application name in format similar to function 6
+  * ecx = 0 or ecx = the pointer on parameters of the command line
+Returned value:
+  * If eax > 0, eax contains PID of the created process
+  * If eax < 0, -eax - error code of a file system
+Remarks:
+  * This function is obsolete; use subfunction 7 functions 70.
+  * Command line should be ended by the character with the code 0
+    (ASCIIZ-strings); it are taken into account or all characters up to
+    completing zero inclusively, or the first 256 characters, that are less.
+
+======================================================================
+==================== Function 20 - interface MIDI. ===================
+======================================================================
+
+------------------------ Subfunction 1 - reset ------------------------
+Parameters:
+  * eax = 20 - number of the function
+  * ebx = 1 - number subfunction
+
+-------------------- Subfunction 2 - output byte ---------------------
+Parameters:
+  * eax = 20 - number of the function
+  * ebx = 2 - number subfunction
+  * cl = byte for output
+Returned value (is identical to both subfunctions):
+  * eax = 0 - successfully
+  * eax = 1 - base port is not defined
+Remarks:
+  * Base port previously should be defined by call
+    subfunction of 1 function 21.
+
+======================================================================
+==== Function 21, subfunction 1 - install a base port MPU MIDI. ======
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = number of a base port
+Returned value:
+  * eax = 0 - successfully
+  * eax = -1 - erratic number of a port
+Remarks:
+  * Number of a port should satisfy to conditions 0x100<=ecx<=0xFFFF.
+  * Installation of base is necessary for operation of the function 20.
+  * Get installed base port it is possible by call
+    subfunction of 1 function 26.
+
+======================================================================
+======== Function 21, subfunction 2 - install keyboard layout. =======
+======================================================================
+Keyboard layout is used for conversion scancodes, acting from the keyboard,
+in ASCII-codes which were read - out by the function 2.
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = what layout to install:
+    * 1 = normal layout
+    * 2 = layout at pressed Shift
+    * 3 = layout at pressed Alt
+  * edx = pointer on layout - table of length 128 bytes
+Or:
+  * ecx = 9
+  * dx = identifier of the country (1=eng, 2=fi, 3=ger, 4=rus)
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - parameter is given incorrectly
+Remarks:
+  * If is pressed Alt, the layout with Alt is used; if not is pressed Alt,
+    but is pressed Shift, the layout with Shift is used; if not are
+    pressed Alt and Shift, but is pressed Ctrl, the normal layout is used,
+    then from the code is subtracted 0x60; if not any of direction keys
+    is pressed, the normal layout is used.
+  * get layouts and identifier of the country it is possible with the help
+    subfunction 2 functions 26.
+  * The identifier of the country - global environment variable, which by
+    kernel is not used; however application @panel displays an icon,
+    appropriate to the current country.
+  * Application @panel switches layouts on search of the user.
+
+======================================================================
+=========== Function 21, subfunction 3 - install base CD. ============
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx = base CD: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
+Returned value:
+  * eax = 0
+Remarks:
+  * Base CD is used by the function 24.
+  * Receive the installed base CD it is possible by call
+    subfunction 3 functions 26.
+
+======================================================================
+=== Function 21, subfunction 4 - install base port Sound Blaster. ====
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 4 - number subfunction
+  * ecx = number base port
+Returned value:
+  * eax = 0 - successfully
+  * eax = -1 - erratic number of a port
+Remarks:
+  * Number of a port should satisfy to conditions 0x100<=ecx<=0xFFFF.
+  * Installation of base is necessary for operation of functions 25, 28, 55.
+  * Get installed base port it is possible by call subfunction 4 functions 26.
+
+======================================================================
+==== Function 21, subfunction 5 - install the language of system. ====
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 5 - number subfunction
+  * ecx = language of system (1=eng, 2=fi, 3=ger, 4=rus)
+Returned value:
+  * eax = 0
+Remarks:
+  * Language of the system - global environment variable in any way which
+    is not used by kernel, however application @panel draws
+    an appropriate icon.
+  * Checks on a correctness is not done, as the kernel this variable
+    does not use.
+  * Get language of the system it is possible by call
+    subfunction 5 functions 26.
+
+======================================================================
+========= Function 21, subfunction 6 - install base port WSS. ========
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 6 - number subfunction
+  * ecx = base port
+Returned value:
+  * eax = 0 - successfully
+  * eax = -1 - erratic number of a port
+Remarks:
+  * Number of a port should satisfy to conditions 0x100<=ecx.
+  * Base WSS is used by the function 27.
+  * Get installed base port WSS it is possible by call
+    subfunction 6 functions 26.
+
+======================================================================
+=========== Function 21, subfunction 7 - install base HD. ============
+======================================================================
+The base HD is necessary for definition, on what hard disk to write, at usage
+of out-of-date functions of operation with a file system and functions
+implicitly using the hard disk (such as subfunction of 6 functions 18);
+At usage of functions 58 and 70 and modern syntax /HD0, /HD1, /HD2, /HD3
+these functions install base.
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 7 - number subfunction
+  * ecx = base HD: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
+Returned value:
+  * eax = 0
+Remarks:
+  * Any application at any moment of time can change base.
+  * It is not necessary to change base, when any application works
+    with the hard disk. If not want errors of the system.
+  * Get installed base it is possible by call subfunction 7 functions 26.
+  * It is necessary also to define used partition of
+    the hard disk subfunction 8.
+
+======================================================================
+========= Function 21, subfunction 8 - install partition HD. =========
+======================================================================
+The section HD is necessary for definition, on what partition of the hard disk
+to write, at usage of out-of-date functions of operation with a file system and
+functions implicitly using the hard disk (such as subfunction of 6 functions
+18); at usage of functions 58 and 70 and modern syntax /HD0, /HD1, /HD2, /HD3
+these functions install base and partition.
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = partition HD (beginning from 1)
+Returned value:
+  * eax = 0
+Remarks:
+  * Any application at any moment of time can change partition.
+  * It is not necessary to change partition, when any application works
+    with the hard disk. If not want errors of the system.
+  * Get installed partition it is possible by call subfunction 8 functions 26.
+  * Checks on a correctness is not done.
+  * Find out number of partitions on the hard disk it is possible by call
+    subfunction 11 functions 18.
+  * It is necessary also to define used base of the hard disk subfunction 7
+
+======================================================================
+=== Function 21, subfunction 10 - install channel DMA for a sound. ===
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 10 - number subfunction
+  * ecx = number of channel (from 0 up to 3 inclusively)
+Returned value:
+  * eax = 0 - successfully
+  * eax = -1 - incorrect number of the channel
+Remarks:
+  * Number of the channel DMA is used in subfunction of 1 function 55.
+  * Get channel DMA for a sound it is possible by call
+    subfunction 10 functions 26.
+
+======================================================================
+====================== Function 21, subfunction 11 ===================
+=============== Permit/prohibit low level access to HD. ==============
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 11 - number subfunction
+  * ecx = 0/1 - prohibit/permit
+Returned value:
+  * eax = 0
+Remarks:
+  * Is used at LBA-reading (subfunction 8 functions 58).
+  * Current realization uses only low bit ecx.
+  * Get a current status it is possible by call subfunction 11 functions 26.
+
+======================================================================
+====================== Function 21, subfunction 12 ===================
+============= Permit/prohibit low level access to PCI. ===============
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 12 - number subfunction
+  * ecx = 0/1 - prohibit/permit
+Returned value:
+  * eax = 0
+Remarks:
+  * Is used by operation with the bus PCI (function 62).
+  * Current realization uses only low bit ecx.
+  * Get a current status it is possible by call subfunction 12 functions 26.
+
+======================================================================
+============= Function 21, subfunction 13, subsubfunction 1 ==========
+======= Initialize + get information on the driver vmode.mdr. ========
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 13 - number subfunction
+  * ecx = 1 - number of the function драйвера
+  * edx = pointer on the buffer of a size of 512 bytes
+Returned value:
+  * If the driver is not loaded (never it happens in current implementation):
+    * eax = -1
+    * ebx, ecx fail
+  * If the driver is loaded:
+    * eax = 'MDAZ' (in style fasm, i.e. 'M' - low byte,
+    'Z' - high) - signature
+    * ebx = current frequency of the scanning (in a Hz)
+    * ecx fail
+    * buffer, which specifies edx, is filled
+Format of the buffer:
+  * +0: 32*byte: name of the driver, " Trans VideoDriver " (without quotes,
+    is supplemented by blanks)
+  * +32 = +0x20: dword: version of the driver (version x.y is encoded
+    as y*65536+x), for current implementation 1 (1.0)
+  * +36 = +0x24: 7*dword: reserved (0 in current implementation)
+  * +64 = +0x40: 32*word: list of supported videomodes (each word - number
+    of videomode, after the purely list there are zero)
+  * +128 = +0x80: 32*(5*word): list of supported frequencies of the scannings
+    for videomodes: for each videomode indicated in the previous field,
+    up to 5 supported frequencies (in unused positions are indicated the zero)
+    are written.
+Remarks:
+  * Function initializes the driver (if it is not initialized yet) and should
+    be called by first, before others (differently they will return -1,
+    nothing doing).
+  * In current implementation one frequency of the scanning on videomode
+    is supported only.
+
+======================================================================
+============= Function 21, subfunction 13, subsubfunction 2 ==========
+================= Get information on current videomode. ==============
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 13 - number subfunction
+  * ecx = 2 - number of the function of the driver
+Returned value:
+  * eax = -1 - driver is not loaded or is not initialized;
+    ebx,ecx fail
+  * eax = [width]*65536 + [height]
+  * ebx = frequency of the vertical scanning (in a Hz)
+  * ecx = number of current videomode
+Remarks:
+  * Driver previously should be initialized by function call of the driver 1.
+  * If the sizes of the screen are necessary only, it is more expedient
+    to use the function 14 that it returns sizes on 1 less.
+
+======================================================================
+= Function 21, subfunction 13, subsubfunction 3 - install videomode. 
+======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 13 - number subfunction
+  * ecx = 3 - number of the function of the driver
+  * edx = [frequency of the scanning] *65536 + [number of videomode]
+Returned value:
+  * eax = -1 - driver is not loaded, not initialized or has taken place error
+  * eax = 0 - successfully
+  * ebx, ecx fail
+Remarks:
+  * Driver previously should be initialized by function call of the driver 1.
+  * Number of videomode and frequency should be in the table returned
+    function 1 of the driver.
+
+======================================================================
+============= Function 21, subfunction 13, subsubfunction 4 ==========
+===================== Return to former videomode. ====================
+======================================================================
+Возвращает экран в videomode, установленном при загрузке системы.
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 13 - number subfunction
+  * ecx = 4 - number of the function of the driver
+Returned value:
+  * eax = -1 - driver is not loaded or is not initialized
+  * eax = 0 - successfully
+  * ebx, ecx fail
+Remarks:
+  * Driver previously should be initialized by function call of the driver 1.
+
+=======================================================================
+============= Function 21, subfunction 13, subsubfunction 5 ===========
+====== Increase/reduce a size of visible area of screen monitor. ======
+=======================================================================
+Parameters:
+  * eax = 21 - number of the function
+  * ebx = 13 - number subfunction
+  * ecx = 5 - number of the function of the driver
+  * edx = 0/1 - reduce/increase a size on a horizontal by one position
+  * edx = 2/3 - in current realization is not supported; is planned as
+    decrease/increase of a size on a vertical for one position
+Returned value:
+  * eax = -1 - driver is not loaded or is not initialized
+  * eax = 0 - successfully
+  * ebx, ecx fail
+Remarks:
+  * Driver previously should be initialized by function call of the driver 1.
+  * Function influences only a physical size of the map on the screen monitor;
+    the logical size (number of pixels) does not vary.
+
+======================================================================
+=============== Function 22 - install system date/time. ==============
+======================================================================
+Parameters:
+  * eax = 22 - number of the function
+  * ebx = 0 - install time
+    * ecx = 0x00SSMMHH - time in a binary-decimal code (BCD):
+    * HH=hour 00..23
+    * MM=minute 00..59
+    * SS=second 00..59
+  * ebx = 1 - установить дату
+    * ecx = 0x00DDMMYY - date in a binary-decimal code (BCD):
+    * DD=day 01..31
+    * MM=month 01..12
+    * YY=year 00..99
+  * ebx = 2 - install day of week
+    * ecx = 1 for Sunday, ..., 7 for Saturday
+  * ebx = 3 - install an alarm clock
+    * ecx = 0x00SSMMHH
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - parameter is given incorrectly
+  * eax = 2 - CMOS-battery was unloaded
+Remarks:
+  * value of installation of day of week is represented doubtful, as it a
+    little where is used (day of week it is possible to calculate by date of).
+  * Alarm clock can be installed on operation in the given time each day.
+    Thus to disable by its existing system functions it is impossible.
+  * Operation of an alarm clock consists in generation IRQ8.
+  * Generally CMOS supports for an alarm clock installation of value 0xFF
+    as one of parameters and means it, that the appropriate parameter
+    is ignored. But in current implementation it will not pass
+    (will return value 1).
+  * Alarm clock - global system resource; the installation of an alarm clock
+    automatically cancels the previous installation. However, at present any
+    program it does not use.
+
+======================================================================
+============== Function 23 - expect event with timeout. =============
+======================================================================
+If message queue is empty, waits for appearance of the message in queue, but no more indicated time. Then reads out the message from queue.
+
+Parameters:
+  * eax = 23 - number of the function
+  * ebx = timeout (in 1/100 of second)
+Returned value:
+  * eax = 0 - message queue is empty
+  * differently eax = event (look the list of events)
+Remarks:
+  * Those events are taken into account only which enter into a mask installed
+    by the function 40. By default it is events redraw, pressing keys
+    and buttons.
+  * For check, whether there is a message in queue, use the function 11.
+    To wait as much as long, use the function 10.
+  * Transmission ebx=0 results in instant returning eax=0.
+  * At current realization there will be an immediate return from the function
+    with eax=0, if the addition ebx with current value of the counter of time
+    will call 32-bit overflow.
+
+======================================================================
+======= Function 24, subfunction 1 - begin to play a CD - audio. =====
+======================================================================
+Parameters:
+  * eax = 24 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = 0x00FRSSMM, where
+     * MM = initial minute
+     * SS = initial second
+     * FR = initial frame
+Returned value:
+   * eax = 0 - successfully
+   * eax = 1 - base CD is not defined
+Remarks:
+  * Previously it is necessary to define a base port CD by call
+    subfunction 3 functions 21.
+  * In one second 75 frames, in one minute 60 seconds.
+  * Function is asynchronous (returns handle, when the playing) began.
+
+======================================================================
+====== Function 24, subfunction 2 - get information on tracks. =======
+======================================================================
+Parameters:
+  * eax = 24 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = pointer on the buffer for the table
+    (maximal 8*64h+4 byte =100 tracks)
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - base CD is not defined
+Remarks:
+  * The format of the table with the information on tracks same, as well
+    as for a ATAPI-CD of the command 43h (READ TOC), usual table
+    (subcommand 00h). The addresses come back in the format MSF.
+  * Previously it is necessary to define a base port CD by call
+    subfunction 3 functions 21.
+  * Function returns the information only about no more than 100 first tracks.
+    In most cases it is enough of it.
+
+======================================================================
+========= Function 24, subfunction 3 - stop play CD - audio. =========
+======================================================================
+Parameters:
+  * eax = 24 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - base CD is not defined
+Remarks:
+  * Previously it is necessary to define a base port CD by call
+    subfunction 3 functions 21.
+
+======================================================================
+================= Function 25 - install volume SBPro. ================
+======================================================================
+Parameters:
+  * eax = 25 - number of the function
+  * ebx = what to install:
+    * 1 - install common volume
+    * 2 - install volume of CD - audio
+  * cl = Level of volume: high 4 bits for the left column, low 4 - for right
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - base SB is not defined
+  * eax = 2 - incorrect subfunction
+Remarks:
+  * Previously it is necessary to define a base port SB by call
+    subfunction 4 functions 21.
+  * See also function 28 installations of a sound for later standard SB16.
+
+======================================================================
+======== Function 26, subfunction 1 - get base port MPU MIDI. ========
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * eax = number of a port
+Remarks:
+  * Install a base port it is possible by call subfunction of 1 function 21.
+
+======================================================================
+========== Function 26, subfunction 2 - get keyboard layout. =========
+======================================================================
+The keyboard layout is used for conversion scancodes, acting from the keyboard,
+in ASCII-codes which were read - out by the function 2.
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = what layout to get:
+    * 1 = normal layout
+    * 2 = layout at pressed Shift
+    * 3 = layout at pressed Alt
+  * edx = pointer on the buffer of length 128 bytes, where the layout
+    will be copied
+Returned value:
+  * function does not return value
+Или:
+  * eax = 26 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = 9
+Returned value:
+  * eax = identifier of the country (1=eng, 2=fi, 3=ger, 4=rus)
+Remarks:
+  * If is pressed Alt, the layout with Alt is used; if not is pressed Alt,
+    but is pressed Shift, the layout with Shift is used; if not are
+    pressed Alt and Shift, but is pressed Ctrl, the normal layout is used,
+    then from the code is subtracted 0x60; if not any of direction keys
+    is pressed, the normal layout is used.
+  * Install layouts and identifier of the country it is possible with the help
+    subfunction 2 functions 21.
+  * The identifier of the country - global environment variable, which by
+    kernel is not used; however application @panel displays an icon,
+    appropriate to the current country (using the described function).
+  * Application @panel switches layouts on search of the user.
+
+======================================================================
+============= Function 26, subfunction 3 - get base CD. ==============
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 3 - number subfunction
+Returned value:
+  * eax = base CD: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
+Remarks:
+  * Base CD is used by the function 24.
+  * Install base CD it is possible by call subfunction 3 functions 21.
+
+======================================================================
+====== Function 26, subfunction 4 - get base port Sound Blaster. =====
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 4 - number subfunction
+Returned value:
+  * eax = number of a base port
+Remarks:
+  * Installation of base is necessary for operation of functions 25, 55.
+  * Install a base port it is possible by call subfunction 4 functions 21.
+
+======================================================================
+======== Function 26, subfunction 5 - get language of system. ========
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 5 - number subfunction
+Returned value:
+  * eax = language of system (1=eng, 2=fi, 3=ger, 4=rus)
+Remarks:
+  * Language of the system - global environment variable in any way which
+    is not used by kernel, however application @panel draws
+    an appropriate icon (using described function).
+  * Install the language of the system it is possible by call
+    subfunction 5 functions 21.
+
+======================================================================
+=========== Function 26, subfunction 6 - get base port WSS. ==========
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 6 - number subfunction
+Returned value:
+  * eax = base port
+Remarks:
+  * Base WSS is used by the function 27.
+  * Install a base port WSS it is possible by call subfunction 6 functions 21.
+
+======================================================================
+============== Function 26, subfunction 7 - get base HD. =============
+======================================================================
+The base HD is necessary for definition, on what hard disk to write, at usage
+of out-of-date functions of operation with a file system and functions
+implicitly using the hard disk (such as subfunction of 6 functions 18);
+At usage of functions 58 and 70 and modern syntax /HD0, /HD1, /HD2, /HD3
+these functions install base.
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 7 - number subfunction
+Returned value:
+  * eax = base HD: 1=IDE0, 2=IDE1, 3=IDE2, 4=IDE3
+Remarks:
+  * Any application at any moment of time can change базу.
+  * Install base it is possible by call subfunction 7 functions 21.
+  * Get used partition of the hard disk it is possible subfunction 8.
+
+======================================================================
+=========== Function 26, subfunction 8 - get partition HD. ===========
+======================================================================
+The partition HD is necessary for definition, on what partition of the hard disk
+to write, at usage of out-of-date functions of operation with a file system and
+functions implicitly using the hard disk (such as subfunction of 6 functions
+18); at usage of functions 58 and 70 and modern syntax /HD0, /HD1, /HD2, /HD3
+these functions install base and partition.
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 8 - number subfunction
+Returned value:
+  * eax = partition HD (beginning from 1)
+Remarks:
+  * Any application at any moment of time can change partition.
+  * Install partition it is possible by call subfunction 8 functions 21.
+  * Find out number of partitions on the hard disk it is possible by call
+    subfunction 11 functions 18.
+  * Get used base of the hard disk it is possible subfunction 7.
+
+======================================================================
+=== Function 26, subfunction 9 - get value of the counter of time. ===
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 9 - number subfunction
+Returned value:
+  * eax = number of 1/100 second, past from the moment of start of the system
+Remarks:
+  * counter takes modulo 2^32, that there corresponds by little more+
+    than 497 day.
+  * System time can be get by the function 3.
+
+======================================================================
+====== Function 26, subfunction 10 - get channel DMA for a sound. ====
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 10 - number subfunction
+Returned value:
+  * eax = number of the channel (from 0 up to 3 inclusively)
+Remarks:
+  * Number of the channel DMA is used in subfunction 1 function 55.
+  * Install the channel DMA for a sound it is possible by call
+    subfunction 10 functions 21.
+
+======================================================================
+====================== Function 26, subfunction 11 ===================
+========= Find out, whether low level access to HD is allowed. =======
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 11 - number subfunction
+Returned value:
+  * eax = 0/1 - prohibit/permit
+Remarks:
+  * Is used at LBA-reading (subfunction 8 functions 58).
+  * Install a current status it is possible by call
+    subfunction 11 functions 21.
+
+======================================================================
+====================== Function 26, subfunction 12 ===================
+======= Find out, whether low level access to PCI is allowed. ========
+======================================================================
+Parameters:
+  * eax = 26 - number of the function
+  * ebx = 12 - number subfunction
+Returned value:
+  * eax = 0/1 - prohibit/permit
+Remarks:
+  * Is used by operation with the bus PCI (function 62).
+  * Current realization uses only low bit ecx.
+  * install a current status it is possible by call
+    subfunction 12 functions 21.
+
+======================================================================
+==== Function 27 - install volume Windows Sound System (WSS). ===
+======================================================================
+Parameters:
+  * eax = 27 - number of the function
+   * ebx = what to install:
+     * 1 - install common volume
+     * 2 - install volume Line In
+  * cl = Level of volume (0x0 = highest, 0x1F = lowest,
+    installed bit 0x80 = to disable)
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - the base WSS is not defined
+  * eax = 2 - incorrect subfunction
+Remarks:
+  * Previously it is necessary to define a base port WSS by call
+    subfunction 6 functions 21.
+  * Installation of common volume is actually ignored (comes back eax=0).
+  * In old documentation and in source code of a kernel subfunction 2
+    is erraticly called as volume of a CD - audio.
+
+======================================================================
+================= Function 28 - install volume SB16. =================
+======================================================================
+Parameters:
+  * eax = 28 - number of the function
+  * ebx = what to install:
+    * 1 - install common volume
+    * 2 - install volume of a CD - audio
+  * cl = level of volume (0=off, 0xFF=max)
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - the base SB is not defined
+  * eax = 2 - incorrect subfunction
+Remarks:
+  * Previously it is necessary to define a base port SB by call
+    subfunction 4 functions 21.
+  * This function gives more variants for volume, than function 25.
+
+======================================================================
+==================== Function 29 - get system date. ==================
+======================================================================
+Parameters:
+  * eax = 29 - number of the function
+Returned value:
+  * eax = 0x00DDMMYY, where
+    (binary-decimal coding is used, BCD)
+   * YY = two low digits of year (00.. 99)
+   * MM = month (01.. 12)
+   * DD = day (01.. 31)
+Remarks:
+   * The system date can be installed by the function 22.
+
+======================================================================
+=============== Function 32 - delete file with ramdisk. ==============
+======================================================================
+Parameters:
+  * eax = 32 - number of the function
+  * ebx = pointer on a filename
+Returned value:
+  * eax = 0 - successfully; differently error code of a file system
+Remarks:
+  * This function is obsolete; the function 58 allows to fulfil the same
+    operations with the extended possibilities.
+  * Current realization returns only values 0 (successes)
+    and 5 (the file is not retrieved).
+  * The filename should be or in the format 8+3 characters (first 8 characters
+    - purely name, last 3 - extension, the short names and extensions are
+    supplemented by blanks), or in the format 8.3 characters
+    "FILE.EXT" / "FILE.EX" (name no more than 8 characters, point,
+    extension 3 characters supplemented if necessary by blanks).
+    Filename should be written by capital letters. The completing character
+    with the code 0 is not necessary (ASCIIZ-string).
+
+======================================================================
+=============== Function 33 - save file on ramdisk. ==================
+======================================================================
+Parameters:
+  * eax = 33 - number of the function
+  * ebx = pointer on a filename
+  * ecx = pointer on data for save
+  * edx = number byte for save
+  * it is necessary to install esi=0
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+Remarks:
+  * This function is obsolete; the function 58 allows to fulfil the same
+    operations with the extended possibilities.
+  * If to specify non-zero value in esi and on ramdisk already there is an
+    indicated file, one more file with the same name will be created.
+  * Otherwise file is resave.
+  * The filename should be or in the format 8+3 characters (first 8 characters
+    - purely name, last 3 - extension, the short names and extensions are
+    supplemented by blanks), or in the format 8.3 characters
+    "FILE.EXT" / "FILE.EX" (name no more than 8 characters, point,
+    extension 3 characters supplemented if necessary by blanks).
+    Filename should be written by capital letters. The completing character
+    with the code 0 is not necessary (ASCIIZ-string).
+
+======================================================================
+======== Function 35 - read colour of a point on the screen. =========
+======================================================================
+Parameters:
+  * eax = 35
+  * ebx = y*xsize+x, where
+  * (x,y) = coordinates of a point (considering from 0)
+  * xsize = size of the screen on a horizontal
+Returned value:
+  * eax = colour 0x00RRGGBB
+Remarks:
+  * Find out sizes of the screen it is possible by function call 14.
+    Pay attention, that it subtracts 1 of both sizes.
+  * To a video memory there is also direct access (without calls of system
+    functions) through the selector gs. Parameters of current videomode
+    it is possible to receive by the function 61.
+
+======================================================================
+=========== Function 37 - get coordinate/status of mouse. ============
+======================================================================
+
+------------ Subfunction 0 - screen coordinates of mouse -------------
+Parameters:
+  * eax = 37 - number of the function
+  * ebx = 0 - number subfunction
+Returned value:
+  * eax = x*65536 + y, (x,y)=coordinates of mouse pointer (considering from 0)
+
+------ Subfunction 1 - coordinates of mouse concerning  window -------
+Parameters:
+  * eax = 37 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * eax = x*65536 + y, (x,y)=coordinates of mouse pointer concerning
+    an application window (considering from 0)
+Remarks:
+  * Value is calculated under the formula (x-xwnd) *65536 + (y-ywnd).
+    If y > =ywnd, the low word nonnegatively also contains relative
+    y-coordinate, and high - relative x-coordinate (correct sign).
+    Otherwise low word negatively and all the same contains relative
+    y-coordinate, and to a high word it is necessary to add 1.
+
+---------------- Subfunction 2 - pressed mouse buttons ----------------
+Parameters:
+  * eax = 37 - number of the function
+  * ebx = 2 - number subfunction
+Returned value:
+  * eax contains  information on the pressed mouse buttons:
+  * Bit 0 installed = left button pressed
+  * Bit 1 installed = right button pressed
+  * Other bits are reset
+
+======================================================================
+====================== Function 38 - draw line. ======================
+======================================================================
+Parameters:
+  * eax = 38 - number of the function
+  * ebx = [coordinate began on axis x] *65536 +
+              [coordinate of the end on axis x]
+  * ecx = [coordinate began on axis y]*65536 +
+              [coordinate of the end on axis y]
+  * edx = 0x00RRGGBB - colour
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates take concerning window.
+  * Finite point also is drawn.
+
+======================================================================
+===== Function 39, subfunction 1 - get size of background image. =====
+======================================================================
+Parameters:
+  * eax = 39 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * eax = [width]*65536 + [height]
+Remarks:
+  * There is a pair command of installation of sizes of background image -
+    subfunction of 1 function 15. After which, certainly, it is necessary
+    anew to define image.
+
+======================================================================
+== Function 39, subfunction 2 - read a point from background image. ==
+======================================================================
+Parameters:
+  * eax = 39 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = offset
+Returned value:
+  * eax = 0x00RRGGBB - colour of a point, if offset is valid (less 0x160000-16)
+  * eax = 2 - differently
+Remarks:
+  * It is not necessary to rely on returned value in case of incorrect offset,
+    it can vary in the following versions of a kernel.
+  * Offset of a point with coordinates (x, y) is calculated as (x+y*xsize) *3.
+  * There is a pair function of installation of a point on background image -
+    subfunction 2 functions 15.
+
+======================================================================
+==== Function 39, subfunction 4 - get mode redraw of background. =====
+======================================================================
+Parameters:
+  * eax = 39 - number of the function
+  * ebx = 4 - number subfunction
+Returned value:
+  * eax = 1 - tiled
+  * eax = 2 - stretched
+Remarks:
+  * There is a pair function of installation of mode redraw of a background -
+    subfunction 4 functions 15.
+
+======================================================================
+========== Function 40 - install a mask for expected events. =========
+======================================================================
+Mask for expected events influences function of operation with events 10,
+11, 23 - they inform only events allowed by this mask.
+Parameters:
+  * eax = 40 - number of the function
+  * ebx = mask: bit i corresponds to event i+1 (see list of events)
+    (installed bit permits notice on event)
+Returned value:
+  * function does not return value
+Remarks:
+  * Mask by default (7=111b) permits notices about redraw,
+    pressings keys and buttons.
+    It is enough of it for the majority of the applications.
+  * The events prohibited in a mask, are all same saved, if come;
+    with events simply do not inform on them functions of operation.
+  * Functions of operation with events take into account a mask on moment
+    of function call, instead of on moment of arrival of message.
+
+======================================================================
+=============== Function 41 - find out the owner IRQ. ================
+======================================================================
+Parameters:
+  * eax = 41 - number of the function
+  * ebx = number IRQ, 0..15
+Returned value:
+  * eax = PID of owner
+  * eax = 0, if owner is not present
+  * eax = -1 for incorrect ebx
+
+======================================================================
+=============== Function 42 - read data obtained on IRQ. =============
+======================================================================
+At occurrence IRQ system can read out data from indicated earlier by
+function 44 ports and to write these data in buffer.
+Described function reads out on byte the data from this buffer.
+Parameters:
+  * eax = 42 - number of the function
+  * ebx = number IRQ, 0..15
+Returned value: (situation can be distinguished on value ecx)
+  * if thread is not owner IRQ
+    (or number IRQ is given incorrectly):
+    * ecx = 2
+  * if data is not present:
+    * eax = 0
+    * ecx = 1
+    * ebx fail
+  * if all in the order and data were:
+    * eax = size given, yet not read from the buffer (in bytes)
+    * ecx = 0
+    * ebx = current byte
+Remarks:
+  * Previously thread should reserve for itself indicated IRQ
+    by the function 45.
+  * Size of the buffer for the data - 4000 bytes, at overflow
+    the "fresh" data cease to be written in the buffer.
+
+======================================================================
+================ Function 43 - input/output in port. =================
+======================================================================
+
+------------------------ Data output in port -------------------------
+Parameters:
+  * eax = 43 - number of the function
+  * bl = byte for output
+  * ecx = number of port 0xnnnn (from 0 up to 0xFFFF)          
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - thread the indicated port has not reserved
+
+------------------------ Data input from a port ------------------------
+Parameters:
+  * eax = 43 - number of the function              
+  * ebx ignored
+  * ecx = 0x8000nnnn, where nnnn = number of port (from 0 up to 0xFFFF)
+Returned value:
+  * eax = 0 - successfully, thus ebx = entered byte
+  * eax = 1 - thread the given port has not reserved
+Remarks:
+  * Previously thread should reserve behind itself the indicated port
+    by the function 46.
+  * For the reserved ports instead of call of these functions it is better
+    to use commands of the processor in/out is much faster both a little bit
+    more shortly and easier. From the non-reserved ports to read all the same
+    it is impossible.
+
+======================================================================
+=========== Function 44 - define operations at arrival IRQ. ==========
+======================================================================
+At occurrence IRQ the system can read out the data from the ports, indicated
+by this function, and to write these data in the buffer, whence they can be
+read by the function 42.
+Parameters:
+  * eax = 44 - number of the function
+  * ebx = pointer on the array of structures describing on one port:
+    * +0: word: 0 means the end of the array, differently number of a port
+    * +2: byte: reserved (ignored)
+    * +3: byte: 1 = read out byte from this port, 2 = read out a word
+  * ecx = number IRQ, 0..15
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - thread is not owner indicated IRQ
+Remarks:
+  * Previously thread should reserve behind itself indicated IRQ
+    by the function 45.
+  * First 16 ports are considered only.
+  * Current implementation considers incorrect value of a field +3
+    as a signal of termination of processing IRQ.
+
+======================================================================
+============ Function 45 - reserve/free IRQ. ============
+======================================================================
+Parameters:
+  * eax = 45 - number of the function
+  * ebx = 0 - reserve, 1 = free
+  * ecx = number IRQ, 0..15
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - error (incorrect number IRQ or attempt reserve not free IRQ
+    or to free IRQ, not reserved by current stream)
+Remarks:
+  * Reserved IRQ is necessary for operation of functions 42 and 44.
+  * Only one thread can reserve selected IRQ.
+  * IRQ, processed by the system is independent, are reserved by
+    the system (stream 1) at loading.
+  * At completion thread are automatically released all reserved by it IRQ.
+
+======================================================================
+==== Function 46 - reserve/free group of ports of input/output. ====== 
+======================================================================
+It is possible to access to the reserved ports directly from the application by
+commands in/out (recommended way) and function call 43 (not recommended way).
+Parameters:
+  * eax = 46 - number of the function
+  * ebx = 0 - reserve, 1 - free
+  * ecx = number of a beginning of a range of ports
+  * edx = number of the end of a range of ports (inclusively)
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - error
+Remarks:
+  * In case of backup of ports the error considers execution of one
+    of conditions:
+    * beginning address more than end address;
+    * indicated range contains incorrect number of a port
+      (correct - from 0 up to 0xFFFF);
+    * limitation on a total number of the reserved areas -
+      is exceeded the maximal 255 is admitted;
+    * indicated range is intersected with one of earlier reserved
+  * In case of release of ports the error considers attempt of release of
+    a range, which was not wholly reserved by same function (with the same
+    values ecx, edx) earlier.
+  * At detection of an error (in both cases) any operations is not does.
+  * At loading the system reserved behind itself ports 0.. 0xff, and at
+    detection of COM-mouse - in addition range of COM-ports 0x3f0.. 0x3ff
+    and/or 0x2f0.. 0x2ff.
+  * At completion thread all ports, reserved by it are automatically free.
+
+======================================================================
+============== Function 47 - draw number in window. ==================
+======================================================================
+Parameters:
+  * eax = 47 - number of the function
+  * ebx = parameters of conversion of number in the text:
+    * bl = 0 - ecx contains number
+    * bl = 1 - ecx contains the pointer on dword-number
+    * bh = 0 - to display in a decimal number system
+    * bh = 1 - to display in the hexadecimal system
+    * bh = 2 - to display in the binary system
+    * Bits 16-21 = how many digits to display
+    * The bits 22-31 are reserved and should be installed in 0
+  * ecx = number (at bl=0) or pointer (at bl=1)
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+  * esi = 0xN0RRGGBB, RRGGBB=colour, N=font (0/1)
+Returned value:
+  * function does not return value
+Remarks:
+  * Indicated length should not exceed 60.
+  * The equally indicated amount of digits is output. If the number a little
+    also can be written by smaller amount of digits, it is supplemented by
+    leading zeroes; if the number is great and can not be written by such
+    amount of digits, the "superfluous" carrying on digits are not draw.
+  * Parameters of fonts are indicated in the description of the function 4
+    (output of the text).
+
+======================================================================
+===== Function 48, subfunction 0 - apply adjustments of screen. ======
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 0 - number subfunction
+  * ecx = 0 - reserved
+Returned value:
+  * function does not return value
+Remarks:
+  * Function redraw the screen after change of parameters
+    subfunctions 1 and 2.
+  * Function call without prior calls indicated subfunctions is ignored.
+  * Function call with non-zero ecx is ignored.
+
+======================================================================
+======= Function 48, subfunction 1 - install style of buttons. =======
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = type of buttons:
+    * 0 = flat buttons
+    * 1 = 3d buttons
+Returned value:
+  * function does not return value
+Remarks:
+  * After call of the described function follows redraw
+    the screen subfunction 0.
+  * Type of buttons influences only their plotting by the function 8.
+
+========================================================================
+== Function 48, subfunction 2 - install standard colours of windows. ===
+========================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = pointer on the color table
+  * edx = size of the color table
+    (should be 40 bytes for the future compatibility)
+Format of the color table is indicated in the description subfunction 3.
+Returned value:
+  * function does not return value
+Remarks:
+  * After call of the described function follows redraw
+    the screen subfunction 0.
+  * Table of standard colours influences only the applications, which receive
+    this table by an obvious way (subfunction 3) and use (specifying colours
+    from it by calls of functions of drawing).
+  * Table of standard colours enters in skin and is installed anew
+    at installation skin (subfunction 8).
+  * Color table can be viewed/changed online with the help of
+    the application desktop.
+
+======================================================================
+=== Function 48, subfunction 3 - get standard colours of windows. ====
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx = pointer on the buffer the size edx byte, where will write the table
+  * edx = size of the color table
+    (should be 40 bytes for the future compatibility)
+Returned value:
+  * function does not return value
+Format of the color table: each unit -
+dword-value of colour 0x00RRGGBB
+  * +0: dword: frames - colour of frame
+  * +4: dword: grab - colour of header
+  * +8: dword: grab_button - colour of the button on a bar of header
+  * +12 = +0xC: dword: grab_button_text - colour of the text on the button
+    on a bar of header
+  * +16 = +0x10: dword: grab_text - colour of the text on header
+  * +20 = +0x14: dword: work - colour of a working area
+  * +24 = +0x18: dword: work_button - colour of the button in a working area
+  * +28 = +0x1C: dword: work_button_text - colour of the text on the button
+    in a working area
+  * +32 = +0x20: dword: work_text - colour of the text in a working area
+  * +36 = +0x24: dword: work_graph - colour of a graphics in a working area
+Remarks:
+  * structure of the color table is described in the standard included file
+    macros.inc under the name system_colors; for example, it is possible
+    to write:
+        sc    system_colors        ; declaration of a variable
+        ...                ; where it is necessary to call
+                        ; described function with ecx=sc
+        mov    ecx, [sc.work_button_text]    ; read colour of the text
+                        ; on the button in a working area
+  * Usage/non-use of these colours - business is exclusively of the  program.
+    For usage it is necessary simply at call of functions of drawing to
+    specify colour, taken from this table.
+  * At change of the table of standard colours (subfunction 2 with the
+    subsequent application of changes subfunction 0 or at installation skin
+    subfunction 8) all windows the message on necessity redraw (event with
+    the code 1) is dispatched.
+  * Color table can be viewed/changed online with the help of
+    the application desktop.
+
+======================================================================
+========== Function 48, subfunction 4 - get height of skin. ==========
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 4 - number subfunction
+Returned value:
+  * eax = height of skin
+Remarks:
+  * Height skin on definition considers height of header
+    of windows using skin.
+  * See also common structure of the window in the description
+    of the function 0.
+
+======================================================================
+==== Function 48, subfunction 5 - get working area of the screen. ====
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 5 - number subfunction
+Returned value:
+  * eax = [left]*65536 + [right]
+  * ebx = [top]*65536 + [bottom]
+Remarks:
+  * Working area of the screen defines a location and coordinates
+    of the maximized window.
+  * Working area of the screen by normal operation is all screen
+    minus the panel (@panel).
+  * (left,top) - coordinates of the left upper corner,
+    (right,bottom) - coordinates of the right lower corner.
+    Thus, the size of a working area on an axis x is defined by
+    the formula right-left+1, on an axis y - formula bottom-right+1.
+  * See also function 14, permitting to define sizes of all screen.
+  * There is a pair function of installation of a working area - 
+    subfunction 6.
+
+======================================================================
+=== Function 48, subfunction 6 - install a working area of screen. ===
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 6 - number subfunction
+  * ecx = [left]*65536 + [right]
+  * edx = [top]*65536 + [bottom]
+Returned value:
+  * function does not return value
+Remarks:
+  * Working area of the screen defines a location and coordinates
+    of the maximized window.
+  * This function is used only by application @panel, installing by
+    a working area all screen minus the panel.
+  * (left,top) - coordinates of the left upper corner,
+    (right,bottom) - coordinates of the right lower corner.
+    Thus, the size of a working area on an axis x is defined by
+    the formula right-left+1, on an axis y - formula bottom-right+1.
+  * If left > =right, the x-coordinates of a working area do not vary.
+    If left < 0, left is not installed. If right it is more or equally
+    width of the screen, right is not installed. Similarly on an axis y.
+  * See also function 14, permitting to define sizes of all screen.
+  * There is a pair function of get of a working area - subfunction 5.
+  * This function automatically redraw the screen, on a course of business
+    updates coordinates and rule(situation) of the maximized windows.
+    All windows are informed on necessity redraw (event 1).
+
+======================================================================
+====================== Function 48, subfunction 7 ====================
+================= Get skin area for the text of header. ==============
+======================================================================
+Returns title bar of the window with skin, intended for output of the
+text of header.
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 7 - number subfunction
+Returned value:
+  * eax = [left]*65536 + [right]
+  * ebx = [top]*65536 + [bottom]
+Remarks:
+  * Usage/non-use of this function - personal business of the application.
+  * It is recommended to take into account values returned by this function,
+    at choice of a place for drawing the text of header (function 4) or any
+    of a substitute of the text of header (at the discretion of the
+    application).
+
+======================================================================
+===== Function 48, subfunction 8 - install used skin of windows. =====
+======================================================================
+Parameters:
+  * eax = 48 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = pointer on the block for the function 58, in which the field of
+    the intermediate buffer is placed(installed) and the filename is indicated
+Returned value:
+  * eax = 0 - successfully
+  * differently eax = an error code of a file system; if the file does
+    not set skin, comes back error 3 (unknown file system).
+Remarks:
+  * At successful loading skin all windows are informed on necessity
+    redraw (event 1).
+  * At loading the system reads out skin from the file default.skn on ramdisk.
+  * User can change skin statically, having created default.skn,
+    or dynamically with the help of the application desktop.
+
+======================================================================
+============ Function 49 - Advanced Power Management (APM). ===========
+======================================================================
+Parameters:
+  * eax = 49 - number of the function
+  * dx = number of the function APM (clone ax in the specification)
+  * bx, cx = parameters of the function APM
+Returned value:
+  * 16-bit registers ax, bx, cx, dx, si, di and flag CF are installed
+    according to the specification APM
+  * high halves of 32-bit registers eax, ebx, ecx, edx, esi, edi fail
+Remarks:
+  * Specification APM 1.2 is described in document 
+    "Advanced Power Management (APM) BIOS Specification "
+    (Revision 1.2), accessible on
+    http://www.microsoft.com/whdc/archive/amp_12.mspx;
+    besides it is included in known Interrupt List by Ralf Brown
+    (http://www.pobox.com/~ralf/files.html,
+    ftp://ftp.cs.cmu.edu/afs/cs/user/ralf/pub/).
+
+======================================================================
+=========== Function 50 - installation of form of window. ============
+======================================================================
+The usual windows represent rectangles. With the help of this function the
+window can add the arbitrary form. The form sets by a set of points inside
+a framing rectangle concerning to the window. Location and the sizes of
+a framing rectangle are set by the function 0 and vary with the function 67.
+
+----------- Installation of data with information on form ------------
+Parameters:
+  * eax = 50 - number of the function
+  * ebx = 0 - number subfunction
+  * ecx = pointer on the given forms (array byte 0/1)
+Returned value:
+  * function does not return value
+
+---------------- Installation of a scale of given form ---------------
+Parameters:
+  * eax = 50 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx sets a scale: each byte of the data defines
+    (2^scale) * (2^scale) of pixels
+Returned value:
+  * function does not return value
+Remarks:
+  * Scale is by default equal 0 (scaling factor 1). If in the given form
+    of one byte corresponds to one pixel, the scale is possible to not install.
+  * Let's designate xsize = width of the window (in pixels), ysize = height;
+    pay attention, that they on unit are more, than installed by
+    functions 0, 67.
+  * On definition of a scale xsize and ysize should be divided on 2^scale.
+  * Byte of the data on offset a should be 0/1 and defines an accessory to
+    the window of a square with the side 2^scale (at scale=0 we receive
+    a pixel) and coordinates of the left upper corner
+    (a mod (xsize shr scale), a div (xsize shr scale))
+  * Size of the data: (xsize shr scale)*(ysize shr scale).
+  * Data should be present at memory and not vary after installation
+    of the form.
+  * System views the data on the form at everyone redraw of the window
+    by the function 0.
+  * Call subfunction 0 with the zero pointer results in return to the
+    rectangular form.
+
+======================================================================
+==================== Function 51 - create thread. ====================
+======================================================================
+Parameters:
+  * eax = 51 - number of the function
+  * ebx = 1 - sole subfunction
+  * ecx = address of an entry point thread (begin eip)
+  * edx = pointer of the stack thread (begin esp)
+Returned value:
+  * eax = -1 - error (In the system it is too much threads)
+  * differently eax = TID - identifier thread
+
+======================================================================
+== Function 52, subfunction 0 - get configuration of network driver. = 
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 0 - number subfunction
+Returned value:
+  * eax = double word of the configuration
+Remarks:
+  * Word of the configuration can be installed subfunction 2.
+  * Kernel does not use an appropriate variable. The value of this variable
+    and working with it(her) subfunctions 0 and 2 is represented doubtful.
+
+======================================================================
+========= Function 52, subfunction 1 - get local IP address. =========
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * eax = IP-address (4 bytes)
+Remarks:
+  * Local IP-address is installed subfunction 3.
+
+======================================================================
+ Function 52, subfunction 2 - install configuration of network driver. 
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = Double word of the configuration; if the low 7 bits will derivate
+    number 3, it is perceived as call about reinitialization
+    of a Ethernet-map, otherwise Ethernet is switched off
+Returned value:
+  * if not the Ethernet-interface is requested, comes back eax=2,
+    but it can vary in the future versions of a kernel
+  * if the Ethernet-interface is requested, eax=0 means an error
+    (absence of a Ethernet-map), and non-zero value - success
+Remarks:
+  * Word of the configuration can be read subfunction 0.
+  * Kernel does not use an appropriate variable. The value of this variable,
+    subfunction 0 and part subfunction 2, installing this variable,
+    is represented doubtful.
+
+======================================================================
+========= Function 52, subfunction 3 - set local IP-address. =========
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx = IP-address (4 bytes)
+Returned value:
+  * Current realization returns eax=3, but it can be changed
+    in the future versions
+Remarks:
+  * Local IP-address can be received subfunction 1.
+
+======================================================================
+= Function 52, subfunction 6 - add data in stack of an input queue. ==
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 6 - number subfunction
+  * edx = size of the data
+  * esi = pointer on the data
+Returned value:
+  * eax = -1 - error
+  * eax = 0 - successfully
+Remarks:
+  * This function is intended only for slow network drivers (PPP, SLIP).
+  * Size of the data should not exceed 1500 bytes, though checks
+    of a correctness is not done(made).
+
+======================================================================
+====================== Function 52, subfunction 8 ====================
+============== Read given from a network output queue. ===============
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 8 - number subfunction
+  * esi = pointer on the buffer by a size of 1500 bytes
+Returned value:
+  * eax = Number read byte (in current implementation or
+    0 = there are no data, or 1500)
+  * data are copied in the buffer
+Remarks:
+  * This function is intended only for slow network drivers (PPP, SLIP).
+
+======================================================================
+=========== Function 52, subfunction 9 - get gateway IP. ==========
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 9 - number subfunction
+Returned value:
+  * eax = gateway IP (4 bytes)
+
+======================================================================
+========= Function 52, subfunction 10 - get mask of a subnet. ========
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 10 - number subfunction
+Returned value:
+  * eax = mask of a subnet
+
+======================================================================
+========= Function 52, subfunction 11 - install gateway IP. =========
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 11 - number subfunction
+  * ecx = gateway IP (4 bytes)
+Returned value:
+  * current realization returns eax=11, but it can be changed in the
+    future realizations
+
+======================================================================
+====== Function 52, subfunction 12 - install mask of a subnet. =======
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 12 - number subfunction
+  * ecx = mask of a subnet
+Returned value:
+  * Current realization returns eax=12, but it can be changed
+    in the future versions
+
+======================================================================
+============ Function 52, subfunction 13 - get DNS IP. ============
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 13 - number subfunction
+Returned value:
+  * eax = DNS IP (4 bytes)
+
+======================================================================
+=========== Function 52, subfunction 14 - install DNS IP. ============
+======================================================================
+Parameters:
+  * eax = 52 - number of the function
+  * ebx = 14 - number subfunction
+  * ecx = DNS IP (4 bytes)
+Returned value:
+  * Current realization returns eax=14, but it can be changed
+    in the future versions
+
+======================================================================
+============ Function 53, subfunction 0 - open UDP-socket. ============
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 0 - number subfunction
+  * ecx = local port (is taken into account only low word)
+  * edx = remote port (is taken into account only low word)
+  * esi = remote IP
+Returned value:
+  * eax = -1 = 0xFFFFFFFF - error; ebx fail
+  * eax = socket number (some number unambiguously identifying socket and
+    having sense only for the system) - successfully
+    ebx fail
+
+======================================================================
+============ Function 53, subfunction 1 - close UDP-socket. ===========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = socket number
+Returned value:
+  * eax = -1 - incorrect number
+  * eax = 0 - successfully
+  * ebx fail
+Remarks:
+  * The current realization does not close automatically all sockets thread
+    at its completion. In particular, it is not necessary to kill thread
+    with a heap open sockets - there will be an outflow of resources.
+  * The current realization does not do checks on a correctness
+    (sole, to what the attempt comes back error, - to close not open socket
+    with correct number).
+
+======================================================================
+============== Function 53, subfunction 2 - poll socket. =============
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = socket number
+Returned value:
+  * eax = number getting bytes
+  * ebx fail
+Remarks:
+  * Checks of a correctness is not done.
+
+======================================================================
+======== Function 53, subfunction 3 - read byte from socket. =========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx = number socket
+Returned value:
+  * if there are no accepted data: eax=0, bl=0, the other bits ebx fail
+  * If there were accepted data: eax = number stayed byte (is possible, 0),
+    bl = read byte, the other bits ebx fail
+Remarks:
+  * Checks of a correctness is not done.
+
+======================================================================
+======== Function 53, subfunction 4 - write in UDP-socket. ===========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 4 - number subfunction
+  * ecx = number socket
+  * edx = number bytes for writing
+  * esi = pointer on data for writing
+Returned value:
+  * eax = 0xffffffff - incorrect number
+  * eax = 0xffff - lack of memory
+  * eax = 0 - successfully
+  * ebx fail
+Remarks:
+  * Check on valid number is minimum - are eliminated only not so incorrect
+    not open numbers.
+  * Number bytes for writing can not exceed 1500-28, though appropriate
+    check is not done.
+
+======================================================================
+============ Function 53, subfunction 5 - open TCP-socket. ===========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 5 - number subfunction
+  * ecx = local port (is taken into account only low word)
+  * edx = remote port (is taken into account only low word)
+  * esi = remote IP
+  * edi = mode of opening: SOCKET_PASSIVE=0 or SOCKET_ACTIVE=1
+Returned value:
+  * eax = -1 = 0xFFFFFFFF - error; ebx fail
+  * eax = number socket (some number unambiguously identifying socket
+    and having sense only for the system) - successfully; ebx fails
+
+======================================================================
+======== Function 53, subfunction 6 - get status TCP-socket. =========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 6 - number subfunction
+  * ecx = number socket
+Returned value:
+  * eax = status socket: one of
+  * TCB_LISTEN = 1
+  * TCB_SYN_SENT = 2
+  * TCB_SYN_RECEIVED = 3
+  * TCB_ESTABLISHED = 4
+  * TCB_FIN_WAIT_1 = 5
+  * TCB_FIN_WAIT_2 = 6
+  * TCB_CLOSE_WAIT = 7
+  * TCB_CLOSING = 8
+  * TCB_LAST_ASK = 9
+  * TCB_TIME_WAIT = 10
+  * TCB_CLOSED = 11
+  * ebx fail
+Remarks:
+  * Checks of a correctness is not made.
+
+======================================================================
+========== Function 53, subfunction 7 - write in TCP-socket. =========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 7 - number subfunction
+  * ecx = number socket
+  * edx = number bytes for writing
+  * esi = pointer on data for writing
+Returned value:
+  * eax = 0xffffffff - error
+  * eax = 0xffff - lack of memory
+  * eax = 0 - successfully
+  * ebx fail
+Remarks:
+  * Check on valid number is minimum - are eliminated only not so incorrect
+    not open numbers.
+  * Number bytes for writing can not exceed 1500-40, though appropriate
+    check is not done.
+
+======================================================================
+============ Function 53, subfunction 8 - close TCP-socket. ===========
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = number socket
+Returned value:
+  * eax = -1 - incorrect number
+  * eax = 0xffff - lack of memory for the package of closing socket
+  * eax = 0 - successfully
+  * in many cases eax fails (comes back the result of the function queue) -
+    probably , is an error, which will be corrected
+  * ebx fail
+Remarks:
+  * The current realization does not close automatically all sockets thread
+    at its completion. In particular, it is not necessary to kill thread
+    with a heap open sockets - there will be an outflow of resources.
+  * The current realization does not do checks on a correctness
+    (sole, to what the attempt comes back error, - to close not open socket
+    with correct number).
+
+======================================================================
+======== Function 53, subfunction 9 - check - local port is free =====
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 9 - number subfunction
+  * ecx = number of a local port (the low 16 bits are used only)
+Returned value:
+  * eax = 0 - port is used
+  * eax = 1 - port is free
+  * ebx fail
+
+======================================================================
+ Function 53, subfunction 255 - debug information of network driver. =
+======================================================================
+Parameters:
+  * eax = 53 - number of the function
+  * ebx = 255 - number subfunction
+  * ecx = type of requested information (see below)
+Returned value:
+  * eax = requested information
+  * ebx fail
+Possible values ecx:
+  * 100: length of queue 0 (empty queue)
+  * 101: length of queue 1 (ip-out queue)
+  * 102: length of queue 2 (ip-in queue)
+  * 103: length of queue 3 (net1out queue)
+  * 200: number of units in the table ARP
+  * 201: a size of the table ARP (in units) (20 in the current version)
+  * 202: read a unit edx of the table ARP in the temporary buffer,
+    whence take the information 5 subsequent types;
+    in this case eax is not defined
+  * 203: IP-address saved by the type 202
+  * 204: high dword of MAC-address saved by the type 202
+  * 205: low word of MAC-address saved by the type 202
+  * 206: a word of the status saved by the type 202
+  * 207: a word ttl, saved by the type 202
+  * 2: a total number of the obtained IP-packages
+  * 3: a total number of the transferred(handed) IP-packages
+  * 4: a total number dumps of the obtained packages
+  * 5: a total number of the obtained ARP-packages
+  * 6: the status of the driver of packages, 0 = is inactive,
+       non-zero value = is active
+
+
+======================================================================
+========== Function 55, subfunction 0 - load data for SB16. ==========
+======================================================================
+Parameters:
+  * eax = 55 - number of the function
+  * ebx = 0 - number subfunction
+  * ecx = pointer on the data (is copied 64 kilobytes, is used so much,
+    how many is installed subfunction 2)
+Returned value:
+  * function does not return value
+Remarks:
+  * Format and size of data are installed subfunction 2.
+
+======================================================================
+===== Function 55, subfunction 1 - begin to play data on SB16. =======
+======================================================================
+Parameters:
+  * eax = 55 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * function does not return value
+Remarks:
+  * Previously data should be loaded subfunction 0 and their format
+    subfunction 2 is defined.
+  * Function returns handle, when playing the data began; after that the
+    playing goes irrespective of the application (and at all does not
+    require loading the processor).
+  * Previously should be defined a base port SB16 (subfunction 4 functions 21)
+    and channel DMA (subfunction 10 functions 21).
+
+======================================================================
+====== Function 55, subfunction 2 - install a data format SB16. ======
+======================================================================
+Parameters:
+  * eax = 55 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = 0 - install a digit capacity
+    * edx = 1 - 8 bits mono
+    * edx = 2 - 8 bits stereo
+  * ecx = 1 - install a size of data
+    * edx = size in bytes
+  * ecx = 2 - install frequency of playing
+    * edx = frequency
+Returned value:
+  * function does not return value
+Remarks:
+  * At loading the system the following default settings are installed:
+    a digit capacity - 8 bits mono, size - 64 KB, frequency 44100 Hz.
+    Nevertheless it is recommended obviously to install necessary values,
+    as they could be reinstalled by any program.
+
+======================================================================
+====================== Function 55, subfunction 55 ===================
+=============== Begin to play data on built speaker. =================
+======================================================================
+Parameters:
+  * eax = 55 - number of the function
+  * ebx = 55 - number subfunction
+  * esi = pointer on the data
+Returned value:
+  * eax = 0 - successfully
+  * eax = 55 - error (speaker is disconnected or occupied)
+Data is an array of units of a variable length.
+Format of each unit is defined in first byte:
+  * 0 = end of data
+  * 1..0x80 = sets duration of sounding in 1/100 of second of note
+    defined by direct value of frequency
+    * following word (2 bytes) is contained by a divider of frequency;
+      the frequency is defined as 1193180/divider
+  * 0x81 = invalid
+  * 0x82..0xFF = note defined by octave and number:
+    * duration in 1/100 of second = (first byte) - 0x81
+    * there is one more byte;
+    * (second byte) = 0xFF - pause
+    * differently it looks like a*0x10+b, where b=number of the note
+      in an octave from 1 up to 12, a=number of an octave (beginning from 0)
+Remarks:
+  * Speaker play can be disable /enable subfunction 8 functions 18.
+  * Function returns handle, having informed where follows the information
+    on play. Playing goes irrespective of the program.
+  * Data should be saved in memory at least up to the end of playing.
+
+======================================================================
+================ Function 56 - write file to hard disk. ==============
+======================================================================
+Parameters:
+  * eax = 56 - number of the function
+  * ebx = pointer on a filename
+  * ecx = size data for writing (in bytes)
+  * edx = pointer on data for writing
+  * esi = pointer on path (ASCIIZ-string)
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+Remarks:
+  * This function is obsolete; the function 70 allows to fulfil the same
+    operations with the extended possibilities.
+  * Given function assumes, that during its call one application any other
+    application does not work with the hard disk.
+  * Path to the file - ASCIIZ-string, which can be empty (if the file creates
+    in the root) or to have the format /d1/d2/ .../dn, where all names of
+    directories should have the format 8+3, i.e. 8 characters of a name
+    and 3 characters of the extension without a separator if necessary
+    supplemented by blanks; all characters should be capital.
+  * Name to the file also should have the format 8+3.
+
+======================================================================
+============== Function 58 - работа с файловой системой. ==============
+======================================================================
+Parameters:
+  * eax = 58
+  * ebx = pointer on information structure
+Returned value:
+  * eax = 0 - successfully; differently error code of a file system
+  * depending on subfunction the value and in other registers can come back
+Common format of information structure:
+  * +0: dword: number subfunction
+  * +4: dword: number of block
+  * +8: dword: size
+  * +12 = +0xC: dword: pointer on data
+  * +16 = +0x10: dword: pointer on memory for system operation
+    (4096 bytes)
+  * +20 = +0x14: n db: ASCIIZ-string with a filename
+Specifications - in documentation on appropriate subfunction.
+Filename is insensitive to the register of latin characters,
+russian characters should be capital.
+Format of a filename:
+/base/number/dir1/dir2/.../dirn/file,
+where /base/number identifies the device, on which the file is searched:
+one of
+  * /RD/1 = /RAMDISK/1 for access to ramdisk
+  * /FD/1 = /FLOPPYDISK/1 for access to first floppy - drive,
+    /FD/2 = /FLOPPYDISK/2 for second floppy - drive
+  * /HD/x = /HARDDISK/x - out-of-date variant of access to the hard disk
+   (in this case base is defined subfunction 7 functions 21),
+    x - number of partition (beginning from 1)
+  * /HD0/x, /HD1/x, /HD2/x, /HD3/x for access accordingly
+    to devices IDE0 (Primary Master), IDE1 (Primary Slave),
+    IDE2 (Secondary Master), IDE3 (Secondary Slave);
+    x - number of partition on selected hard disk, varies from 1 up to 255
+    (on each of hard disks the indexing starts with 1)
+Remarks:
+  * In first two cases usage FIRST instead of 1, SECOND instead of 2 is
+    admitted, but to use this possibility it is not recommended for
+    convenience of transition on the future extensions.
+  * Imposed limitation n<=39.
+  * Names of folders and file dir1..., dirn, file should be in the format 8.3:
+    a name no more than 8 characters, point, extension no more than 3
+    characters. The tail blanks are ignored. Other blanks be does not owe.
+    If the name occupies equally 8 characters, the point can be omitted
+    (though to use it it is not recommended for convenience of transition
+    on the future extensions).
+Examples:
+  * '/RAMDISK/FIRST/KERNEL.ASM',0
+    '/rd/1/kernel.asm',0
+  * '/HD0/1/kernel.asm',0
+  * '/hd0/1/menuet/pics/tanzania.bmp',0
+Accessible subfunction:
+  * subfunction 0 - reading of a file/folder
+  * subfunction 1 - overwriting of the file
+  * subfunction 2 - deleting of a file/folder
+  * subfunction 3 - writing data in the existing file
+  * subfunction 4 - creation of a folder
+  * subfunction 5 - renaming/moving of a file/folder
+  * subfunction 8 - LBA-reading from the device
+  * subfunction 12 - definition of a file size
+  * subfunction 13 - definition of attributes of a file/folder
+  * subfunction 14 - definition of date/time of a file/folder
+  * subfunction 15 - obtaining of the information about a file system
+  * subfunction 16 - start of the application
+
+
+======================================================================
+======= Function 58, subfunction 0 - reading of a file/folder. =======
+======================================================================
+Parameters:
+  * eax = 58
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 0 = number subfunction
+  * +4: dword: number of block for reading (beginning from 0)
+  * +8: dword: йuantity blocks for reading
+  * +12 = +0xC: dword: pointer on the buffer, where the data will be written
+  * +16 = +0x10: dword: pointer on the buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx = file size (in bytes) or
+    -1=0xffffffff, if the file is not retrieved
+Remarks:
+  * Size of block - 512 bytes.
+  * This function is obsolete, for reading files use subfunction 0
+    functions 70, for reading folders - subfunction of 1 function 70.
+  * Function allows to read contents of a folder. From file systems is
+    supported only FAT. The format of a FAT-folder is described in any
+    documentation on FAT.
+  * Size of a folder is defined on a size of a chain of clusters in FAT.
+  * If the file was terminated earlier, than last requested block was read,
+    the function will read, how many can, then will return eax=6 (EOF).
+  * Function allows to read root folders /rd/1, /fd/x, /hd [n] /x, but
+    in first two cases the current implementation does not follow the
+    installed rules:
+    for /rd/1:
+    * if 0 blocks for reading are indicated, it is considered,
+      that is requested 1;
+    * if is requested more than 14 blocks or the initial block is not
+      less 14, comes back eax=5 (not found) and ebx =-1;
+    * size of the root ramdisk = 14 blocks, 0x1C00=7168 bytes; but comes
+      back ebx=0 (except for a case of the previous item);
+    * strangely enough, it is possible to read 14 block (there, generally
+      speaking, garbage - I remind, the score carries on with 0);
+    * if one block with number, not smaller 14 was requested even,
+      comes back eax=6 (EOF); differently eax=0.
+    for /fd/x:
+    * if the initial block is not less 14, comes back eax=5 (not found)
+      and ebx=0;
+    * by the way speaking, the format FAT12 admits diskettes with a size
+      of the root less or more than 14 blocks;
+    * checks of length is not done;
+    * if it was possible to read given with a diskette, comes back eax=0,
+      ebx=0; otherwise eax=10 (access denied), ebx =-1.
+  * Function handles reading special folders /, /rd, /fd, /hd [n]; but the
+    result does not correspond expected (on operation with usual
+    files/folders), does not follow the installed rules, can vary in the
+    following versions of a kernel and consequently is not described.
+    For obtaining the information about the equipment use subfunction 11
+    functions 18 or read appropriate folders subfunction of 1 function 70.
+
+======================================================================
+======== Function 58, subfunction 1 - overwriting of the file. =======
+======================================================================
+If the file does not exist, it creates.
+If the file exists, it is rewritten.
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 1 = number subfunction
+  * +4: dword: ignored (install in 0)
+  * +8: dword: number bytes for writing
+  * +12 = +0xC: dword: pointer on data for записи
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of creation of names
+    are indicated in the common description
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+Remarks:
+  * This function is obsolete, use subfunction 2 functions 70.
+
+======================================================================
+====== Function 58, subfunction 2 - deleting of a file/folder. =======
+======================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 2 = number subfunction
+  * +4: dword: ignored
+  * +8: dword: ignored
+  * +12 = +0xC: dword: ignored
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of creation of names
+    are indicated in the common description
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+Remarks:
+  * By operation with a diskette it is not necessary to delete a nonblank
+    folder. The code of operation with the hard disk nonblank folders
+    deletes correctly (i.e. recursively with all files and nested folders).
+    Ramdisk of folders does not support.
+
+======================================================================
+=== Function 58, subfunction 3 - writing data in the existing file ===
+======================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 3 = number subfunction
+  * +4: dword: initial position in the file; -1 = to add in the end
+  * +8: dword: number bytes for writing
+  * +12 = +0xC: dword: pointer on data for writing
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of creation of names
+    are indicated in the common description
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+Remarks:
+  * Ramdisk and the diskettes do not support this function,
+    it only for hard disks.
+  * File should already exist (differently comes back 5, not found).
+    For creation of files use subfunction 1.
+  * If the initial position is more than a file size, comes back eax=6 (EOF).
+    If the finite position is more than a file size, the file extends.
+  * Code of processing of data writing for the hard disk interpretes zero
+    value of a field +8 as the instruction of a truncation of the file
+    up to a size indicated in a field +4. However code of processing of
+    58-th function locks this possibility for the applications, at once
+    returning handle (with eax=0) in case of a zero size.
+
+======================================================================
+======== Function 58, subfunction 4 - creation of a folder. ==========
+======================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 4 = number subfunction
+  * +4: dword: ignored
+  * +8: dword: ignored
+  * +12 = +0xC: dword: ignored
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of creation of names
+    are indicated in the common description
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+Remarks:
+  * Ramdisk and the diskettes do not support this function,
+    it only for hard disks.
+
+======================================================================
+=== Function 58, subfunction 5 - renaming/moving of a file/folder. ===
+======================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 5 = number subfunction
+  * +4: dword: ignored
+  * +8: dword: ignored
+  * +12 = +0xC: dword: ignored
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of creation of names
+    are indicated in the common description
+  * +20+n: (at once after a completing null character) new ASCIIZ-name,
+    should start with /hd/1, that is interpreted as the hard disk
+    indicated in the first name
+    (moving from one disk on another is not supported)
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+Remarks:
+  * Ramdisk and the diskettes do not support this function,
+    it only for hard disks.
+  * If new ASCIIZ-name strongly incorrect, i.e. does not start with /hd/1,
+    /hd/first, /harddisk/1, /harddisk/first or after that beginnings there
+    is a blank or character with the code 0, the function returns, strangely
+    enough, error code 4. Is the sole function, which in general returns
+    this code.
+
+======================================================================
+====== Function 58, subfunction 8 - LBA-reading from the device. =====
+======================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 8 = number subfunction
+  * +4: dword: number of the block for reading (beginning from 0)
+  * +8: dword: ignored (install in 1)
+  * +12 = +0xC: dword: pointer on buffer, where data will be written
+    (512 bytes)
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of the device: is not sensitive to the register,
+    one of /rd/1 = /RamDisk/1, /hd/n = /HardDisk/n,
+    1<=n<=4 - number of device: 1=IDE0, ..., 4=IDE3.
+    Instead of digits is admitted, though usage 'first', 'second', 'third',
+    'fourth' is not recommended for convenience of transition on the future
+    extensions.
+Returned value:
+  * if device name /hd/xxx is indicated, where xxx is not in list above:
+    * eax = ebx = 1
+  * if the incorrect device name is indicated
+    (except for the previous case):
+    * eax = 5
+    * ebx does not vary
+  * if the LBA-access is prohibited subfunction 11 functions 21:
+    * eax = 2
+    * ebx fail
+  * for ramdisk attempt of reading of the block outside ramdisk
+    (18*2*80 blocks) results to
+    * eax = 3
+    * ebx = 0
+  * at successful reading:
+    * eax = ebx = 0
+Remarks:
+  * Size of the block - 512 bytes; one block is read.
+  * It is not necessary to rely on returned value, it can vary in
+    the following versions.
+  * It is required, that the LBA-access to devices subfunction 11 functions 21
+    should be allowed. Find out it it is possible by call
+    subfunction 11 functions 26.
+  * LBA-reading of a diskette is not supported.
+  * Function reads out the data of the physical hard disk; if for any reasons
+    the data of the concrete unit are necessary, will come to define initial
+    sector of this unit (or directly through MBR, or from the extended
+    structure returned same subfunction 11 functions 18).
+  * Function the error code of the hard disk does not check, so search of
+    nonexistent sector all the same something will read (more probably
+    everything, zero, but it is defined by the device) and it will be
+    considered as success (eax=0).
+
+=============================================================================
+= Function 58, subfunction 15 - obtaining of information about a file system. 
+=============================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 15 = number of the function
+  * +4: dword: ignored
+  * +8: dword: ignored
+  * +12 = +0xC: dword: ignored
+  * +16 = +0x10: dword: ignored
+  * +20 = +0x14: (second character is checked only, at once after /)
+    /rd=/RAMDISK or /hd=/HARDDISK
+Returned value:
+  * If second character does not belong to set {'r','R','h','H'}:
+    * eax = 3
+    * ebx = ecx = dword [fileinfo] = 0
+  * for ramdisk:
+    * eax = 0 (success)
+    * ebx = total number of clusters = 2847
+    * ecx = number of free clusters
+    * dword [fileinfo] = cluster size = 512
+  * for the hard disk: base and partition are defined
+    subfunctions 7 and 8 functions 21:
+    * eax = 0 (success)
+    * ebx = total number of clusters
+    * ecx = number of free clusters
+    * dword [fileinfo] = cluster size (in bytes)
+Remarks:
+  * Be not surprised to strange layout of 4-th returned parameter - when this
+    code was written, at system calls to the application the registers eax,
+    ebx, ecx (from pushad-structure transmitted as argument to the system
+    function) came back only. Now it is corrected, so, probably, it is
+    meaningful to return a cluster size in edx, while this function have
+    not begun to use
+  * Generally still exists subfunction 11 functions 18, returning the
+    information on a file system. Under the extended table of a disk
+    subsystem it is possible to define a cluster size (there it is stored
+    in sectors) and total number of clusters for hard disks.
+
+======================================================================
+======== Function 58, subfunction 16 - start of application. =========
+======================================================================
+Parameters:
+  * eax = 58 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 16 = number subfunction
+  * +4: dword: Field of flags:
+    * bit 0: to start the process as debugged
+    * other bits are reserved and should be installed in 0
+  * +8: dword: 0 or pointer on ASCIIZ-string with parameters
+  * +12 = +0xC: dword: ignored
+  * +16 = +0x10: dword: pointer on buffer for system operation
+    (4096 bytes)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of creation of names
+    are indicated in the common description
+Returned value:
+  * eax > 0 - program is loaded, eax contains PID
+  * eax < 0 - has taken place error, -eax contains an error code
+    of a file system
+Remarks:
+  * This function is obsolete, use subfunction 7 functions 70.
+  * Command line should be ended by the character with the code 0
+    (ASCIIZ-strings); it are taken into account or all characters up to
+    completing zero inclusively, or the first 256 characters, that are less.
+  * If the process is started as debugged, it creates in the frozen status;
+    for start use subfunction 5 functions 69.
+
+======================================================================
+======== Function 59 - get information on last system calls. =========
+======================================================================
+Get data on all system calls of all processes.
+Parameters:
+  * eax = 59 - number of the function
+  * ebx = 0 - sole subfunction
+  * ecx = pointer on buffer
+  * edx = size of buffer
+Returned value:
+  * eax = total number of system calls made from moment
+    of loading system (modulo 2^32)
+  * ebx = 0
+Format of information about one call: (size = 0x40 = 64 bytes)
+  * +0: dword: PID process/thread
+  * +4: 7*dword: garbage
+  * +32 = +0x20: dword: value edi by call
+  * +36 = +0x24: dword: esi
+  * +40 = +0x28: dword: ebp
+  * +44 = +0x2C: dword: pointer of stack of kernel handler
+  * +48 = +0x30: dword: ebx
+  * +52 = +0x34: dword: edx
+  * +56 = +0x38: dword: ecx
+  * +60 = +0x3C: dword: eax (=number system function)
+Remarks:
+  * Function is used only in the application systrace. It is rather difficult
+    to present a situation, in which this application or this function are
+    really useful, and all system calls for support of this function are a
+    little decelerated (though and not strongly)...
+  * In this connection there is a sentence support of this function from
+    a kernel to remove absolutely, together with the application systrace.
+  * Information on system calls is saved in system ring buffer
+    on 0x10 of inputs.
+    This function simply copies the indicated size given from the mentioned
+    buffer to the indicated address.
+  * To what from inputs in the buffer corresponds to last call, it is possible
+    to define on value eax, namely,
+    input (eax and 0xF) (on offset (eax and 0xF) *0x40).
+  * In current implementation the seldom meeting problems of
+    unsynchronization are possible, when about some calls the
+    information becomes outdated.
+  * Under the system buffer the page, 4 KB is allocated.
+    Size of an input = 64 bytes.
+    Why 16 inputs - not clearly are used only.
+  * Value esp at moment of system call by this function cannot be found out.
+  * Checks of a correctness edx in current implementation is not done.
+
+======================================================================
+=========== Function 60 - Inter Process Communication (IPC). ==========
+======================================================================
+IPC is applied to sendings the messages from one process / thread to another.
+Thus it is necessary previously to agree how to interpreted
+the concrete message.
+
+-------- Subfunction 1 - install area for obtaining IPC ---------
+Is called by the process - receiver.
+Parameters:
+  * eax = 60 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = pointer on buffer
+  * edx = size of buffer
+Returned value:
+  * eax = 0 - always successfully
+Формат IPC-буфера:
+  * +0: dword: if here not 0, the buffer is considered disabled; lock/unblock
+    the buffer, when you with it actively work also to you it is necessary,
+    that the data of the buffer from the outside varied
+    (the new messages) not acted
+  * +4: dword: occupied place in the buffer (in bytes)
+  * +8: first message
+  * +8+n: second message
+  * ...
+Format of message:
+  * +0: dword: PID of process / thread which has transmitted the message
+  * +4: dword: length of the message (not including this header)
+  * +8: n*byte: data messages
+
+--------------- Subfunction 2 - transmit message IPC. ----------------
+Is called by the process - initiator.
+Parameters:
+  * eax = 60 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = PID of receiver
+  * edx = pointer on message data
+  * esi = length of message (in bytes)
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - receiver has not defined buffer for IPC-messages
+   (can be, was not in time yet, and there can be, it not that thread,
+   which is necessary)
+  * eax = 2 - receiver has blocked the IPC-buffer; try slightly to wait
+  * eax = 3 - overflow of IPC-buffer of receiver
+  * eax = 4 - process/thread with such PID does not exist
+Remarks:
+  * System at once after writing the IPC-message in the buffer dispatches
+    to stream - receiver event with the code 7 (see codes of events).
+
+======================================================================
+==== Function 61 - get parameters for direct access to a graphics. ===
+======================================================================
+Data of graphics screen are accessible to program (area of memory, which purely
+also displays contents of  screen) directly without calls of system functions
+through the selector gs:
+    mov    eax, [gs:0]
+will place in eax first dword of buffer containing information on colour
+of left upper point (and, probably, colour of several following).
+    mov    [gs:0], eax
+by operation in modes VESA c LFB will install colour of left upper point
+(and, probably, colour of several following).
+Interpretations given of the graphics screen need knowledge of some parameters,
+which come back by this function.
+Remarks:
+  * Parameters of a graphics very seldom vary at system operation, namely,
+    only in cases, when the user works with the program VRR.
+  * At change of videomode the system redraw all windows
+    (event with the code 1) and redraw a background (event 5).
+    Same events occur and in other cases, which meet much more often,
+    than change of videomode.
+  * By operation in videomodes with LFB the selector gs specifies on purely
+    LFB, so reading /  writing on gs result directly in change of contents of
+    the screen. By operation in videomodes without LFB gs specifies some area
+    of the given kernel, and all functions of output on the screen honesty
+    fulfil double operation on writing directly on the screen and on
+    writing in this buffer. In result at reading contents of this buffer the
+    results correspond to contents of the screen (with, generally speaking,
+    large colour permission), and writing ignored.
+    Exception is the mode 320*200, for which in main loop system thread the
+    upgrade of the screen is fulfilled according to movements 
+    of a mouse pointer.
+
+------------------------- Screen resolution --------------------------
+Parameters:
+  * eax = 61 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * eax = [permission on axis x] *65536 + [permission on axis y]
+Remarks:
+  * It is possible to use the function 14 that it returns sizes on 1 less.
+    It completely equivalent way.
+
+------------------------ Number bits on pixel ------------------------
+Parameters:
+  * eax = 61 - number of the function
+  * ebx = 2 - number subfunction
+Returned value:
+  * eax = number bits on pixel (24 or 32)
+
+------------------------ Number bytes on string ------------------------
+Parameters:
+  * eax = 61 - number of the function
+  * ebx = 3 - number subfunction
+Returned value:
+  * eax = number bytes, which is occupied by one string of the scanning
+    (horizontal line on the screen)
+
+======================================================================
+==== Function 62, subfunction 0 - get  version of PCI-interface. =====
+======================================================================
+Parameters:
+  * eax = 62 - number of the function
+  * bl = 0 - number subfunction
+Returned value:
+  * eax = -1 - access to PCI is prohibited; differently
+  * ah.al = version of  PCI-interface (ah=version, al=subversion)
+  * high word eax contains a zero
+Remarks:
+  * Low level access to PCI for applications subfunction 12
+    functions 21 previously should be allowed.
+  * If PCI BIOS is not supported, the value ax is not defined.
+
+======================================================================
+==== Function 62, subfunction 1 - get number of last PCI-bus. ===
+======================================================================
+Parameters:
+  * eax = 62 - number of the function
+  * bl = 1 - number subfunction
+Returned value:
+  * eax = -1 - access to PCI is prohibited; differently
+  * al = number of last PCI-bus; the stayed bits eax fail
+Remarks:
+  * Low level access to PCI for applications subfunction 12
+    functions 21 previously should be allowed.
+  * If PCI BIOS is not supported, the value al is not defined.
+
+======================================================================
+====================== Function 62, subfunction 2 ====================
+=========== Get mechanism of call to configuration space PCI. ========
+======================================================================
+Parameters:
+  * eax = 62 - number of the function
+  * bl = 2 - number subfunction
+Returned value:
+  * eax = -1 - access to PCI is prohibited; differently
+  * al = mechanism (1 or 2); the other bits eax fail
+Remarks:
+  * Low level access to PCI for applications subfunction 12
+    functions 21 previously should be allowed.
+  * Mechanism of call is selected according to characteristics of equipment.
+  * Subfunctions of reading and writing automatically work with
+    selected mechanism.
+
+======================================================================
+========= Function 62, subfunction 4,5,6 - read PCI-register. ========
+======================================================================
+Parameters:
+  * eax = 62 - number of the function
+  * bl = 4 - read bytes
+  * bl = 5 - read a word
+  * bl = 6 - tread a double word
+  * bh = number of PCI-bus
+  * ch = dddddfff, where ddddd = number of device on bus,
+    fff = number of function of device
+  * cl = number of the register (should be even for bl=5,
+    be divided on 4 for bl=6)
+Returned value:
+  * eax = -1 - error (prohibited access to PCI
+    or unsupported parameters); differently
+  * al/ax/eax (depending on the requested size) contains the data;
+    the rest of the register eax fail
+Remarks:
+  * Low level access to PCI for applications subfunction 12
+    functions 21 previously should be allowed.
+  * Access mechanism 2 supports only 16 devices on the bus and ignores number
+    of the function. To receive an access mechanism it is possible by call
+    subfunction 2.
+  * Some registers are standard and exist for all devices, some are defined
+    by the concrete device. The list first enters, for example, in known
+    Interrupt List by Ralf Brown
+    (http://www.pobox.com/~ralf/files.html,
+    ftp://ftp.cs.cmu.edu/afs/cs/user/ralf/pub/);
+    list second should be indicated in documentation on the device.
+
+======================================================================
+====== Function 62, subfunction 8,9,10 - write in PCI-register. ======
+======================================================================
+Parameters:
+  * eax = 62 - number of the function
+  * bl = 8 - write bytes
+  * bl = 9 - write a word
+  * bl = 10 - write a double word
+  * bh = number of PCI-bus
+  * ch = dddddfff, where ddddd = number of the device on bus,
+    fff = number of  function of device
+  * cl = number of register (should be even for bl=9,
+    be divided on 4 for bl=10)
+  * dl/dx/edx (depending on requested size) contains given for writing
+Returned value:
+  * eax = -1 - error (prohibited access to PCI or unsupported parameters)
+  * eax = 0 - successfully
+Remarks:
+  * Low level access to PCI for applications subfunction 12
+    functions 21 previously should be allowed.
+  * Access mechanism 2 supports only 16 devices on the bus and ignores number
+    of the function. To receive an access mechanism it is possible by call
+    subfunction 2.
+  * Some registers are standard and exist for all devices, some are defined
+    by the concrete device. The list first enters, for example, in known
+    Interrupt List by Ralf Brown;
+    list second should be indicated in documentation on the device.
+
+======================================================================
+============== Function 63 - work with debugging board. ==============
+======================================================================
+Debugging board represents the system buffer (on 512 bytes), in which any
+program can write (generally speaking, arbitrary) data and from which other
+program can these data read.
+There is an agreement, according to which written given - text strings
+interpreted as of the debug message on a course of execution of the program.
+The kernel in the defined situations also writes to board of debugging of the
+item of information about execution of some functions; under the agreement of
+the message of a kernel start with the prefix " K: ".
+For review of board of debugging the application board is created which reads
+out the data from the buffer and displays them in the window. board understands
+a sequence of codes 13,10 as transition on new string
+Character with the zero code at the end of string is not mandatory,
+but also does not prevent.
+As has appeared of the debugger necessity of board of debugging a little has
+decreased, as the debugger allows completely to inspect a course of execution
+of the program, and for this purpose it is not required of any efforts on the
+part of the  program. Nevertheless in many cases the board of debugging
+continues to remain useful.
+
+---------------------------- Writing of byte ----------------------------
+Parameters:
+  * eax = 63 - number of the function
+  * ebx = 1 - number subfunction
+  * cl = bytes of data
+Returned value:
+  * function does not return value
+Remarks:
+  * Byte is written in buffer. Length of buffer - 512 bytes.
+    At overflow of the buffer all obtained data are lost also filling
+    starts again with zero.
+  * For output to board of debugging of more complex objects (strings, numbers)
+    this function called in cycle suffices. It is possible to not write
+    manually appropriate code, and to take advantage of the file debug.inc,
+    included in the distribution kit.
+
+---------------------------- Reading of byte ----------------------------
+Takes away bytes from the buffer.
+Parameters:
+  * eax = 63 - number of the function
+  * ebx = 2 - number subfunction
+Returned value:
+  * eax = ebx = 0 - buffer is empty
+  * eax = bytes, ebx = 1 - bytes successfully is read
+
+======================================================================
+========== Function 64 - reallocate memory of application. ==========
+======================================================================
+Parameters:
+  * eax = 64 - number of the function
+  * ebx = 1 - sole subfunction
+  * ecx = new size of memory
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - not enough of memory
+Remarks:
+  * At present this function is a sole resource for dynamic
+    allocation/free of memory for application.
+
+======================================================================
+================= Function 66 - work with keyboard. =================
+======================================================================
+Mode of input influences results of reading of keys by function 2.
+At program loading for it ASCII-mode of input is installed.
+
+-------- Subfunction 1 - install a keyboard mode. ---------
+Parameters:
+  * eax = 66 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = mode:
+    * 0 = normal (ASCII-characters)
+    * 1 = scancodes
+Returned value:
+  * function does not return value
+
+--------- Subfunction 2 - get a keyboard mode. ----------
+Parameters:
+  * eax = 66 - number of the function
+  * ebx = 2 - number subfunction
+Returned value:
+  * eax = current mode
+
+------- Subfunction 3 - get a status of direction keys. --------
+Parameters:
+  * eax = 66 - number of the function
+  * ebx = 3 - number subfunction
+Returned value:
+  * eax = bit mask:
+  * Bit 0 (mask 1): left Shift is pressed
+  * Bit 1 (mask 2): right Shift is pressed
+  * Bit 2 (mask 4): left Ctrl is pressed
+  * Bit 3 (mask 8): right Ctrl is pressed
+  * Bit 4 (mask 0x10): left Alt is pressed
+  * Bit 5 (mask 0x20): right Alt is pressed
+  * Bit 6 (mask 0x40): CapsLock is included
+  * Bit 7 (mask 0x80): NumLock is included
+  * Bit 8 (mask 0x100): ScrollLock is included
+  * The other bits are reset
+
+----- Subfunction 4 - install common system "hotkey". -----
+Applications which have installed it are informed only on pressing "hotkey";
+the active application (to which acts all normal input) such keys does not get.
+Notice consists in sending event with the code 2.
+To read "hotkey" it is possible the same as also usual, - function 2.
+Parameters:
+  * eax = 66 - number of the function
+  * ebx = 4 - number subfunction
+  * cl sets scancode of the key;
+    гse cl=0 for definition of combinations of a type Ctrl+Shift
+  * edx = 0xXYZ ыets possible statuses of direction keys:
+    * Z (low 4 bits) are set by a status of keys LShift and RShift:
+      * 0 = any of keys should not be pressed;
+      * 1 = only one of keys is should be pressed;
+      * 2 = both keys should be pressed;
+      * 3 = should be pressed LShift, but not RShift;
+      * 4 = should be pressed RShift, but not LShift
+    * Y - is similar for LCtrl and RCtrl;
+    * X - is similar for LAlt and RAlt
+Returned value:
+  * eax=0 - successfully
+  * eax=1 - too much "hotkey" is admitted (maximal 256)
+Remarks:
+  * Hotkey can work either at pressing, or at release. Scancode of release
+    of the key on 128 it is more, than scancode of pressing
+    (i.e. high bit is installed).
+  * Some applications can install the same combination; all such applications
+    will be informed on pressing such combination.
+
+------ Subfunction 5 - delete installed "hotkey". -------
+Parameters:
+  * eax = 66 - number of the function
+  * ebx = 5 - number subfunction
+  * cl = scancode of key and edx = 0xXYZ same, as well as in subfunction 4
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - there is no such hotkey
+Remarks:
+  * At completion of process / thread all hotkey, installed by it are deleted.
+  * Function call does not influence other applications. If other application
+    has defined same combination, it will receive still notices.
+
+======================================================================
+============ Function 67 - change location/sizes of window. ===========
+======================================================================
+Parameters:
+  * eax = 67 - number of the function
+  * ebx = new x-coordinate of the window
+  * ecx = new y-coordinate of the window
+  * edx = new x-size of the window
+  * esi = new y-size of the window
+Returned value:
+  * function does not return value
+Remarks:
+  * Value -1 for the parameter means "to not change"; for example, for moving
+    the window without resizing it is possible to specify edx=esi =-1.
+  * Previously window should be defined by the function 0.
+    It sets initial coordinates and sizes of the window.
+  * Sizes of the window are understood in sense of the function 0,
+    i.e. on one pixel it is less, than real sizes.
+  * Function call for the maximized windows is simple ignored.
+  * For windows of appropriate styles a location and/or the sizes can be
+    changed by the user; current a location and the sizes can be obtained
+    by function call 9.
+  * Function dispatches to window event redraw (with the code 1).
+
+======================================================================
+== Function 68, subfunction 0 - get the counter of task switchings. ==
+======================================================================
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 0 - number subfunction
+Returned value:
+  * eax = number of task switchings from the moment of loading the system
+   (modulo 2^32)
+
+======================================================================
+====================== Function 68, subfunction 1 ====================
+=========== To switch to the following thread of execution. ==========
+======================================================================
+Function completes a current time slice allocated to stream,
+and switches to the following.(What thread what process will be by the
+following, to predict it is impossible).
+Later, when up to current thread queue will reach,
+the execution will be restored.
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 1 - number subfunction
+Returned value:
+  * function does not return value
+
+======================================================================
+============ Function 68, subfunction 2 - cache + rdpmc. =============
+======================================================================
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = required operation:
+    * ecx = 0 - to permit execution of the instruction rdpmc
+      (ReaD Performance-Monitoring Counters)
+    * ecx = 1 - find out, enabled/disabled cache
+    * ecx = 2 - enabled cache
+    * ecx = 3 - disabled cache
+Returned value:
+  * for ecx=0:
+    * eax = value cr4
+  * for ecx=1:
+    * eax = (cr0 and 0x60000000):
+    * eax = 0 - cache enabled
+    * eax <> 0 - cache disabled
+  * for ecx=2 and ecx=3:
+    * function does not return value
+
+======================================================================
+=========== Function 68, subfunction 3 - read MSR-register. ==========
+======================================================================
+MSR = Model Specific Register; the complete list of the MSR-registers of the
+processor contains in documentation on the processor (for example, IA-32 Intel
+Architecture Software Developer's Manual, Volume 3, Appendix B); each set of
+processors has the subset of the MSR-registers.
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx ignored
+  * edx = address MSR
+Returned value:
+  * ebx:eax = high:low dword of result
+Remarks:
+  * Instruction in ecx nonexistent or non-realized for of the given processor
+    MSR will entail exception in a kernel, which will kill thread.
+  * Previously it is necessary to define, whether are supported MSR as a whole,
+    command cpuid. Differently there will be already other exception in a
+    kernel, which all the same will kill thread.
+
+======================================================================
+========= Function 68, subfunction 4 - записать в MSR-регистр. =========
+======================================================================
+MSR = Model Specific Register; the complete list of the MSR-registers of the
+processor contains in documentation on the processor (for example, IA-32 Intel
+Architecture Software Developer's Manual, Volume 3, Appendix B); each set of
+processors has the subset of the MSR-registers.
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 4 - number subfunction
+  * ecx ignored
+  * edx = address MSR
+  * esi:edi = high:low dword of result
+Returned value:
+  * ebx:eax = copy esi:edi
+Remarks:
+  * Instruction in ecx nonexistent or non-realized for of the given processor
+    MSR will entail exception in a kernel, which will kill thread.
+  * Previously it is necessary to define, whether are supported MSR as a whole,
+    command cpuid. Differently there will be already other exception in a
+    kernel, which all the same will kill thread.
+
+======================================================================
+======= Function 68, subfunction 5 - allocate physical memory. =======
+======================================================================
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 5 - number subfunction
+  * ecx = size (in bytes)
+Returned value:
+  * eax = physical address of allocated memory
+Remarks:
+  * Usual applications should not use this function, it is intended for of a
+    case, when by operation with any device it is required to place the data
+    to the known physical address. (In effect, this function was developed for
+    AC97WAV.)
+  * Number of blocks of the actual storage is limited (constant 24, and this
+    constant includes and some memories for of needs of a kernel).
+  * Free allocated memory it is possible subfunction 6, in copying data
+    there/back are engaged subfunction 7 and 8.
+
+======================================================================
+========= Function 68, subfunction 6 - free physical memory. =========
+======================================================================
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 6 - number subfunction
+  * ecx = physical address of memory
+Returned value:
+  * function does not return value
+Remarks:
+  * Usual applications should not use this function, it is intended for of a
+    case, when by operation with any device it is required to place the data
+    to the known physical address. (In effect, this function was developed for
+    AC97WAV.)
+  * Memory should be earlier allocated subfunction 5.
+
+======================================================================
+==== Function 68, subfunction 7 - write data in physical memory. =====
+======================================================================
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 7 - number subfunction
+  * ecx = physical address
+  * edx = pointer on data (in application)
+  * esi = data size (in bytes)
+Returned value:
+  * function does not return value
+Remarks:
+  * Usual applications should not use this function, it is intended for of a
+    case, when by operation with any device it is required to place the data
+    to the known physical address. (In effect, this function was developed for
+    AC97WAV.)
+  * Range of physical addresses should lay inside allocated subfunction 5
+    blocks of physical memory.
+  * Checks of a correctness is not made.
+
+======================================================================
+==== Function 68, subfunction 8 - read data from physical memory. ====
+======================================================================
+Parameters:
+  * eax = 68 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = physical address
+  * edx = pointer on buffer for data (in application)
+  * esi = data size (in bytes)
+Returned value:
+  * function does not return value
+Remarks:
+  * Usual applications should not use this function, it is intended for of a
+    case, when by operation with any device it is required to place the data
+    to the known physical address. (In effect, this function was developed for
+    AC97WAV.)
+  * Range of physical addresses should lay inside allocated subfunction 5
+    blocks of physical memory.
+  * Checks of a correctness is not made.
+
+======================================================================
+====================== Function 69 - debugging. ======================
+======================================================================
+Process can load other process as debugged by installation of appropriate bit
+by call subfunction 16 functions 58. Process can have only one debugger;
+one process can debug some processes. System notifies the debugger on events
+occurring to the debugged process. Messages are written in the buffer defined
+subfunction 0.
+Формат сообщения:
+  +0: dword: the code of the message
+  +4: dword: PID of the debugged process
+  +8: there can be additional data defined by the code of the message
+Codes of messages:
+  * 1 = exception
+    * in addition transfers dword-number of exception
+    * process is paused
+  * 2 = process was completed
+    * comes at any completion: both through the system function -1,
+      and at "murder" by any other process (including debugger)
+  * 3 = debug exception int 1 = #DB
+    * in addition transfers a dword-image of the register DR6:
+      * Bits 0-3: the condition of appropriate breakpoint
+        (installed subfunction 9) is fulfilled
+      * Bit 14: the exception has taken place because of the mode of step
+        tracing (the flag TF is installed)
+    * process is paused
+At completion of the debugger all debugged processes are killed.
+If the debugger it does not want, it should previously be disabled
+subfunction 3.
+
+All subfunction are applicable only to the processes/threads started from
+current function 58 with a installed  debugging flag.
+Debugging of multithread programs is not supported yet.
+Full list subfunctions:
+  * subfunction 0 - define area given for of debug messages
+  * subfunction 1 - get a status of the registers debugged thread
+  * subfunction 2 - install a status of the registers debugged thread
+  * subfunction 3 - disabled from the debugged process
+  * subfunction 4 - paused debugged thread
+  * subfunction 5 - restored execution debugged thread
+  * subfunction 6 - read from memory of the debugged process
+  * subfunction 7 - write in memory of the debugged process
+  * subfunction 8 - complete debugged thread
+  * subfunction 9 - place/remove the hardware point break
+
+======================================================================
+====================== Function 69, subfunction 0 ====================
+============= Define area given for of debug messages. ===============
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 0 - number subfunction
+  * ecx = pointer
+Format of data area:
+  * +0: dword: N = size of buffer (not including this header)
+  * +4: dword: occupied in buffer
+  * +8: N*byte: buffer
+Returned value:
+  * function does not return value
+Remarks:
+  * If a field of a size negatively, the buffer is considered disabled and
+    at arrival of the new message the system will wait.
+    For synchronization frame all operation with the buffer by operations
+    of the locking/unlocking
+        neg    [bufsize]
+  * Data in the buffer are treated as the array of units of a variable
+    length - messages. The format of the message is indicated in
+    the common description.
+
+======================================================================
+====================== Function 69, subfunction 1 ====================
+=========== Get a status of the registers debugged thread. ===========
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 1 - number subfunction
+  * ecx = thread identifier
+  * edx = length of structure of a context, should be 0x28=40 bytes
+Returned value:
+  * function does not return value
+Format of structure of a context: (FPU is not supported yet)
+  * +0: dword: eip
+  * +4: dword: eflags
+  * +8: dword: eax
+  * +12 = +0xC: dword: ecx
+  * +16 = +0x10: dword: edx
+  * +20 = +0x14: dword: ebx
+  * +24 = +0x18: dword: esp
+  * +28 = +0x1C: dword: ebp
+  * +32 = +0x20: dword: esi
+  * +36 = +0x24: dword: edi
+Remarks:
+  * If thread fulfils the code of a ring-0, the status of the registers
+    of a ring-3 comes back.
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+
+======================================================================
+====================== Function 69, subfunction 2 ======================
+======== Install a status of the registers debugged thread. ========
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 2 - number subfunction
+  * ecx = thread identifier
+  * edx = length of structure of a context, should be 0x28=40 bytes
+Returned value:
+  * function does not return value
+Format of structure of a context is indicated in the description subfunction 1.
+Remarks:
+  * If thread fulfils the code of a 0-ring, the status of the registers
+    of a 3-ring is installed.
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+
+======================================================================
+== Function 69, subfunction 3 - disabled from the debugged process. ==
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 3 - number subfunction
+  * ecx = identifier
+Returned value:
+  * function does not return value
+Remarks:
+  * If the process was paused, it restores execution.
+
+======================================================================
+======== Function 69, subfunction 4 - paused debugged thread. ========
+======================================================================
+Parameters:
+  * eax = 69 - number процесса
+  * ebx = 4 - number subfunction
+  * ecx = identifier
+Returned value:
+  * function does not return value
+Remarks:
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+
+======================================================================
+====================== Function 69, subfunction 5 ====================
+================ Restored execution debugged thread. =================
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 5 - number subfunction
+  * ecx = identifier
+Returned value:
+  * function does not return value
+Remarks:
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+
+======================================================================
+====================== Function 69, subfunction 6 ====================
+============= Read from memory of the debugged process. ==============
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 6 - number subfunction
+  * ecx = identifier
+  * edx = how many bytes to read
+  * esi = memory address of the debugged process
+  * edi = pointer on buffer for data
+Returned value:
+  * eax = -1 error (incorrect PID or buffer)
+  * differently eax = the number read bytes 
+    (is possible, 0, if in esi the too large value)
+Remarks:
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+
+======================================================================
+ Function 69, subfunction 7 - write in memory of the debugged process. 
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 7 - number subfunction
+  * ecx = identifier
+  * edx = how many bytes to write
+  * esi = memory address of the debugged process
+  * edi = pointer on data
+Returned value:
+  * eax = -1 error (incorrect PID or buffer)
+  * differently eax = the number written bytes
+    (is possible, 0, if in esi the too large value)
+Remarks:
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+
+======================================================================
+======= Function 69, subfunction 8 - complete debugged thread. =======
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 8 - number subfunction
+  * ecx = identifier
+Returned value:
+  * function does not return value
+Remarks:
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+  * Function is similar subfunction 2 functions 18 with two differences:
+    the execution of the first remark is required and is accepted PID,
+    instead of number of the slot.
+
+======================================================================
+====================== Function 69, subfunction 9 ====================
+=============== Place/remove the hardware point break. ===============
+======================================================================
+Parameters:
+  * eax = 69 - number of the function
+  * ebx = 9 - number subfunction
+  * ecx = thread identifier
+  * dl = index of breakpoint, from 0 up to 3 inclusively
+  * dh = flags:
+    * if high bit is reset - install breakpoint:
+      * bits 0-1 - condition:
+        * 00 = breakpoint on execution
+        * 01 = breakpoint on writing
+        * 11 = breakpoint on reading/writing
+      * bits 2-3 - length; for breakpoints on fulfilment should be 00,
+        otherwise one of
+        * 00 = bytes
+        * 01 = word
+        * 11 = double word
+      * esi = address of breakpoint; should be aligned according to length
+        (i.e. should be even for of breakpoints on a word, is multiple 4 for
+        of a double word)
+    * if high bit is installed - reset breakpoint
+Returned value:
+  * eax = 0 - successfully
+  * eax = 1 - error in the input data
+  * eax = 2 - (reserved, never comes back in current realization)
+    with this index global breakpoint already is installed
+Remarks:
+  * Process should be loaded for of debugging (as is indicated in
+    the common description).
+  * Hardware breakpoints are realized through the DRx-register of the
+    processor, from here all limitations.
+  * Function can reinstall the breakpoint, earlier installed to it
+    (in any way not informing about it).
+    Carry on the list of the installed breakpoints in the debugger.
+  * Operation of breakpoint consists in generation of debug exception #DB,
+    which the system informs to the debugger.
+  * Breakpoint on writing and reading/writing works after execution of
+    the instruction, which has called it.
+
+======================================================================
+== Function 70 - work with a file system with support of long names. =
+======================================================================
+Parameters:
+  * eax = 70
+  * ebx = pointer on information structure
+Returned value:
+  * eax = 0 - successfully; differently error code of a file system
+  * depending on subfunction the value and in other registers can come back
+Common format of information structure:
+  * +0: dword: number subfunction
+  * +4: dword: offset in the file
+  * +8: dword: high dword of offset (should be 0) or field of flags
+  * +12 = +0xC: dword: size
+  * +16 = +0x10: dword: pointer on data
+  * +20 = +0x14: n db: ASCIIZ-string with a filename
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Specifications - in documentation on appropriate subfunction.
+Filename is insensitive to the register of characters. Russian characters should be written in the coding cp866 (DOS).
+Формат имени файла:
+/base/number/dir1/dir2/.../dirn/file,
+where /base/number Identifies the device, on which the file is searched:
+one of
+  * /RD/1 = /RAMDISK/1 for access to ramdisk
+  * /FD/1 = /FLOPPYDISK/1 for access to the first floppy-drive,
+    /FD/2 = /FLOPPYDISK/2 for access to the second floppy-drive
+  * /HD0/x, /HD1/x, /HD2/x, /HD3/x for access accordingly
+    to hard disks on IDE0 (Primary Master), IDE1 (Primary Slave),
+    IDE2 (Secondary Master), IDE3 (Secondary Slave);
+    x - number of partition on selected hard disk, varies from 1 up to 255
+    (on each of hard disks partitions starts with 1)
+  * /CD0/1, /CD1/1, /CD2/1, /CD3/1 for access accordingly
+    to CD on IDE0 (Primary Master), IDE1 (Primary Slave),
+    IDE2 (Secondary Master), IDE3 (Secondary Slace)
+Examples:
+  * '/rd/1/kernel.asm',0
+  * '/HD0/1/kernel.asm',0
+  * '/hd0/2/menuet/pics/tanzania.bmp',0
+  * '/hd0/1/Program files/NameOfProgram/SomeFile.SomeExtension',0
+Accessible subfunctions:
+  * subfunction 0 - read file
+  * subfunction 1 - read folder
+  * subfunction 2 - create/rewrite file
+  * subfunction 5 - get file/directory attributes structure
+  * subfunction 6 - set file/directory attributes structure
+  * subfunction 7 - start application
+
+======================================================================
+= Function 70, subfunction 0 - read file with support of long names. =
+======================================================================
+Parameters:
+  * eax = 70 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 0 = number subfunction
+  * +4: dword: position in the file (in bytes)
+  * +8: dword: 0 (reserved for high dword of a position)
+  * +12 = +0xC: dword: how many bytes to read
+  * +16 = +0x10: dword: pointer on buffer, where the data will be written
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx = number read bytes or
+    -1=0xffffffff, if the file is not retrieved
+Remarks:
+  * If the file was terminated earlier, than last requested block was read,
+    the function will read, how many can, then will return eax=6 (EOF).
+  * Function does not allow to read folders
+    (will return eax=10, access denied).
+
+========================================================================
+= Function 70, subfunction 1 - read folder with support of long names. =
+========================================================================
+Parameters:
+  * eax = 70 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 1 = number subfunction
+  * +4: dword: index of the initial block (beginning from 0)
+  * +8: dword: field of flags:
+    * bit 0 (mask 1): in what format to return names,
+      0=ANSI, 1=UNICODE
+    * Other bits are reserved and should be installed in 0
+      for of the future compatibility
+  * +12 = +0xC: dword: how many blocks to read
+  * +16 = +0x10: dword: pointer on buffer, where the data will be written,
+    size of buffer should be not less than 32 + [+12] *560 bytes
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx = number of files, the information about which was written 
+    in the buffer,
+    or -1=0xffffffff, if the folder is not retrieved
+Structure of the buffer:
+  * +0: 32*byte: header
+  * +32 = +0x20: n1*byte: block with information on file 1
+  * +32+n1: n2*byte: block with information on file 2 2
+  * ...
+Structure of header:
+  * +0: dword: version of structure (current version = 1)
+  * +4: dword: amount of the placed blocks; it is no more,
+    than +12 information structures are requested in a field;
+    can be less, if in a folder the files (same, as in ebx) were terminated
+  * +8: dword: total number of files in a folder
+  * +12 = +0xC: 20*byte: reserved (zero)
+Structure of data block of input of directory (DBID):
+  * +0: dword: file attributes:
+    * бит 0 (маска 1): file only for reading
+    * бит 1 (маска 2): file is hidden
+    * бит 2 (маска 4): file is system
+    * бит 3 (маска 8): it not file, it is volume label
+      (on given partition meets no more once and only in a root folder)
+    * бит 4 (маска 0x10): It is a folder
+    * бит 5 (маска 0x20): file was not archived - many programs of archiving
+      have an option, on which the files with installed this bit are archived
+      only, then this bit is dumped(reset) is it can be useful for of automatic
+      creation of backup-archives, for at recording bit is usually installed
+  * +4: byte: type of data of a name:
+    (coincides with bit 0 flags of information structure)
+    * 0 = ASCII = 1- byte performance of each character
+    * 1 = UNICODE = 2-byte performance of each character
+  * +5: 3*byte: reserved (zero)
+  * +8: 4*byte: time of creation of file
+  * +12 = +0xC: 4*byte: date of creation of file
+  * +16 = +0x10: 4*byte: time of last access (reading or writing)
+  * +20 = +0x14: 4*byte: date of last access
+  * +24 = +0x18: 4*byte: time of a last modification
+  * +28 = +0x1C: 4*byte: date of a last modification
+  * +32 = +0x20: qword: file size in bytes (up to 16777216 Tbytes)
+  * +40 = +0x28: name
+    * for of the format ASCII: maximum length of a name 263 characters
+      (263 bytes), bytes after a name matters 0
+    * for of the format UNICODE: maximum length of a name 259 characters
+      (518 bytes), two bytes after a name matter 0
+Format of time:
+  * +0: byte: seconds
+  * +1: byte: minutes
+  * +2: byte: hours
+  * +3: byte: reserved (0)
+  * For example, 23.59.59 is written as (in hex) 3B 3B 17 00
+Format of date:
+   * +0: byte: day
+   * +1: byte: month
+   * +2: word: year
+   * For example, 25.11.1979 is written as (in hex) 19 0B BB 07
+Remarks:
+  * If in DBID there is a name in ASCII, length makes 304 bytes,
+    if in UNICODE - 560 bytes. Value of length aligned on whole
+    multiple 16 bytes (for of acceleration of processing in cache-memory CPU).
+  * First character after a name zero (ASCIIZ-string).
+    The further data contain garbage.
+  * If the files in a folder were terminated earlier, than the requested
+    amount was read, the function will read, how many can,
+    then will return eax=6 (EOF).
+  * Any folder on the disk, except for root, contains two special
+    inputs(entrances) "." And "..", identifying accordingly folder
+    and parent folder.
+  * Function allows also to read virtual folders "/", "/rd", "/fd",
+    "/hd [n] ", thus the attributes subfolders rely equal 0x10, and the times
+    and dates are unset. An alternate way of obtaining of the information
+    about the equipment - subfunction 11 functions 18
+
+======================================================================
+====================== Function 70, subfunction 2 ====================
+========== Create/rewrite file with support of long names. ===========
+======================================================================
+Parameters:
+  * eax = 70 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 2 = number subfunction
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: how many bytes to write
+  * +16 = +0x10: dword: pointer on data
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx = number written bytes (is possible, 0)
+Remarks:
+  * If the file with such name did not exist, it creates; if existed,
+    is rewritten.
+  * If it is not enough of free space on of the disk, the function will write,
+    how many can, then will return an error code 8.
+
+======================================================================
+= Function 70, subfunction 5 - get file/directory attributes structure. 
+======================================================================
+Parameters:
+  * eax = 70 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 5 = number subfunction
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: pointer on buffer, where data will be written (40 bytes)
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+Information on the file comes back in the format DBID
+(data block of input of directory), indicated in the description subfunction 1,
+but without a filename (only first 40 = 0x28 bytes).
+Remarks:
+  * Function does not support virtual folders such as /, /rd
+    and root folders such as /rd/1.
+
+======================================================================
+= Function 70, subfunction 6 - set file/directory attributes structure. 
+======================================================================
+Parameters:
+  * eax = 70 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 6 = number subfunction
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: pointer on buffer with attributes (32 bytes)
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Returned value:
+  * eax = 0 - successfully, differently error code of a file system
+  * ebx fail
+File attributes - first 32 bytes in DBID (data block of input of directory),
+which format is indicated in the description subfunction 1
+(that is without a name and file size). Attribute the file/folder/volume label
+(bits 3,4 in dword +0) does not vary.
+Byte +4 (format of a name) ignored.
+Remarks:
+  * Function does not support virtual folders such as /, /rd
+    and root folders such as /rd/1.
+
+======================================================================
+============ Function 70, subfunction 7 - start application. ============
+======================================================================
+Parameters:
+  * eax = 70 - number of the function
+  * ebx = pointer on information structure
+Format of information structure:
+  * +0: dword: 7 = number subfunction
+  * +4: dword: field of flags:
+    * бит 0: to start the process as debugged
+    * other bits are reserved and should be installed in 0
+  * +8: dword: 0 or pointer on ASCIIZ-string with parameters
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: 0 (reserved)
+  * +20 = +0x14: ASCIIZ-name of the file, the rules of creation of names
+    are indicated in the common description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer on ASCIIZ-string with a filename
+Returned value:
+  * eax > 0 - program is loaded, eax contains PID
+  * eax < 0 - has taken place error,
+    -eax contains an error code of a file system
+  * ebx fail
+Remarks:
+  * Command line should be ended by the character with the code 0
+    (ASCIIZ-strings); it are taken into account or all characters up to
+    completing zero inclusively, or the first 256 characters, that are less.
+  * If the process is started as debugged, it creates in the frozen status;
+    for of start use subfunction 5 functions 69.
+
+======================================================================
+=========== Function 71, subfunction 1 - set window caption ==========
+======================================================================
+Parameters:
+  * eax = 71 - function number
+  * ebx = 1 - subfunction number
+  * eбx = caption string address
+Returned value:
+  * eax = 0 - caption changed successfully
+  * eax = 1 - error occured
+Remarks:
+  * String should be in ASCIIZ format. Disregarding real string length,
+    no more than 255 chars will be wrawn.
+  * Pass NULL in ecx to remove caption
+
+======================================================================
+========== Function -1 - complete execution of thread/proces =========
+======================================================================
+Parameters:
+  * eax = -1 - number of the function
+Returned value:
+  * function does not return neither value, nor handle
+Remarks:
+  * If the process obviously did not create streams, it has only one thread,
+    which completion results in completion of the process.
+  * If current thread - last in process, its completion also results
+    in completion of the process.
+  * This function completes current thread. Another thread
+    is possible kill by call subfunction 2 functions 18.
+
+======================================================================
+=========================== List of events ===========================
+======================================================================
+Next event is possible get by call of one from functions 10 (to expect event),
+11 (to check up without waiting), 23 (to expect during the given time).
+These functions return only those events, which enter into a mask installed by
+the function 40. By default it is first three, that there is enough for of many
+applications of.
+Codes of events:
+  * 1 = message about redraw (is reset at function call 0)
+  * 2 = key on keyboard is pressed (acts, only when the window is active)
+    or "hotkey" is pressed; is reset, when all keys from the buffer are read
+    out by the function 2
+  * 3 = button is pressed, defined earlier by function 8(or buttons of closing,
+    created implicitly by function 0 is pressed; the button of minimization is
+    handled by the system and about it of the message does not come; acts, only
+    when the window is active; is reset, when all buttons from the buffer are
+    read out by the function 17)
+  * 4 = reserved (in current implementation never comes even at unmasking 
+    by the function 40)
+  * 5 = redraw the background of a desktop (is reset automatically after
+    redraw, so if in time redraw of a background the program does not wait
+    and does not check event, this event it will not remark)
+  * 6 = event from the mouse (something happened - pressing a mouse button
+    or moving; is reset at reading)
+  * 7 = there was an event IPC (look the function 60 - Inter Process
+    Communication; is reset at reading)
+  * 8 = there was a network event (is reset at reading; look operation
+    with the network)
+  * 9 = there was a debug event (is reset at reading; look a debug subsystem)
+  * 16..31 = there was an event with appropriate IRQ
+    (16=IRQ0, 31=IRQ15) (is reset at reading all data IRQ)
+
+======================================================================
+==================== Error codes of a file system ====================
+======================================================================
+  * 0 = successfully
+  * 1 = base and/or partition of the hard disk is not defined
+    (subfunctions 7, 8 functions 21) 
+  * 2 = function is not supported for of the given file system
+    (comes back in case of attempt of LBA-reading at prohibited LBA)
+  * 3 = Unknown file system
+  * 4 = comes back only by function rename by transmission of the strongly
+    incorrect parameter and in any way does not correspond to the description
+    in sources of a kernel " partition not defined at hd "
+  * 5 = file is not retrieved
+  * 6 = file was completed
+  * 7 = pointer outside of memory of the application
+  * 8 = disk is filled
+  * 9 = table FAT is destroyed
+  * 10 = access denied
+  * 11 = error of the device
+At start of the program the following error codes are possible also:
+  * 30 = 0x1E = not enough of memory
+  * 31 = 0x1F = file is not application
+  * 32 = 0x20 = too much processes
+

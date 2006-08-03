@@ -35,7 +35,11 @@ align 4
 skin_udata:
   _skinh            dd ?
 
-  _skinmargins      rw 4
+  _skinmargins: ;   rw 4
+    .right          dw ?
+    .left           dw ?
+    .bottom         dw ?
+    .top            dw ?
 
   skin_btn_close    SKIN_BUTTON
   skin_btn_minimize SKIN_BUTTON

@@ -797,20 +797,20 @@ terminate: ; terminate application
     cld
     shl   esi,5
     add   esi,window_data
-    mov   eax,[esi+WDATA.left]
+    mov   eax,[esi+WDATA.box.left]
     mov   [dlx],eax
-    add   eax,[esi+WDATA.width]
+    add   eax,[esi+WDATA.box.width]
     mov   [dlxe],eax
-    mov   eax,[esi+WDATA.top]
+    mov   eax,[esi+WDATA.box.top]
     mov   [dly],eax
-    add   eax,[esi+WDATA.height]
+    add   eax,[esi+WDATA.box.height]
     mov   [dlye],eax
 
-    mov   [esi+WDATA.left], 0
-    mov   [esi+WDATA.width], 5
+    mov   [esi+WDATA.box.left], 0
+    mov   [esi+WDATA.box.width], 5
     mov   eax,[0xFE04]
-    mov   [esi+WDATA.top],eax
-    mov   [esi+WDATA.height], 5
+    mov   [esi+WDATA.box.top],eax
+    mov   [esi+WDATA.box.height], 5
     xor   eax, eax
     mov   [esi+16],eax
     mov   [esi+20],eax
