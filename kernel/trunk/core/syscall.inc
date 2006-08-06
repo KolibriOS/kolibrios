@@ -40,7 +40,7 @@ i40:
 align 4
 save_registers:
       mov   esi, [0x3010]
-      mov   eax, [esi+0x4] ; load PID
+      mov   eax, [esi+TASKDATA.pid] ; load PID
       lea   esi, [esp+4]
       inc   [save_syscall_count]
       mov   edi,[save_syscall_count]

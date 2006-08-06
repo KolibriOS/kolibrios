@@ -228,7 +228,7 @@ exc_c:
         cli
         mov   eax, [0x3000]
         shl   eax, 8
-        mov   eax, [0x80000+eax+0xAC]
+        mov   eax, [0x80000+eax+APPDATA.debugger_slot]
         test  eax, eax
         jnz   .debug
         sti
@@ -239,7 +239,7 @@ exc_c:
         call  show_error_parameters
         
         mov   edx, [0x3010]
-        mov   [edx + 0xA], byte 4
+        mov   [edx + TASKDATA.state], byte 4
         
         jmp   change_task
 
@@ -250,7 +250,7 @@ exc_c:
         movzx ecx, bl
         push  ecx
         mov   ecx, [0x3010]
-        push  dword [ecx+4]    ; PID of current process
+        push  dword [ecx+TASKDATA.pid]    ; PID of current process
         push  12
         pop   ecx
         push  1        ; 1=exception
@@ -259,7 +259,7 @@ exc_c:
         pop   ecx
         pop   ecx
         mov   edx, [0x3010]
-        mov   byte [edx+0xA], 1        ; suspended
+        mov   byte [edx+TASKDATA.state], 1        ; suspended
         call  change_task
         restore_ring3_context
         iretd
@@ -278,18 +278,18 @@ e7:
         
         mov   eax, [prev_user_of_fpu]
         shl   eax, 8
-        add   eax, 0x80000 + 0x10
+        add   eax, 0x80000 + APPDATA.fpu_save_area
         fsave [eax]
         
         mov   eax, [0x3000]
         mov   [prev_user_of_fpu], eax
         shl   eax, 8
         add   eax, 0x80000
-        cmp   [eax + 0x7f], byte 0
+        cmp   [eax + APPDATA.is_fpu_saved], 0
         je    @f
-        frstor [eax+0x10]
+        frstor [eax+APPDATA.fpu_save_area]
      @@:
-        mov   [eax + 0x7f], byte 1
+        mov   [eax + APPDATA.is_fpu_saved], 1
         restore_ring3_context
         iret
         
@@ -338,7 +338,7 @@ show_error_parameters:
         mov    [write_error_to],process_pid+43
         mov    eax,[0x3000]
         shl    eax, 5
-        mov    eax,[0x3000+4+eax]
+        mov    eax,[0x3000+TASKDATA.pid+eax]
         call   writehex
         
         mov    [write_error_to],process_error+43
@@ -556,7 +556,7 @@ set_application_table_status:
 
         mov  eax,[0x3000]
         shl  eax, 5
-        add  eax,0x3000+4
+        add  eax,0x3000+TASKDATA.pid
         mov  eax,[eax]
 
         mov  [application_table_status],eax
@@ -571,7 +571,7 @@ clear_application_table_status:
 
         mov  eax,[0x3000]
         shl  eax, 5
-        add  eax,0x3000+4
+        add  eax,0x3000+TASKDATA.pid
         mov  eax,[eax]
 
         cmp  eax,[application_table_status]
@@ -676,17 +676,17 @@ uglobal
   app_esp      dd  0x0
   app_i_param  dd  0x0
   app_i_icon   dd  0x0
-  app_mem_pos  dd  0x0
+  ;app_mem_pos  dd  0x0
   appl_path        dd 0x0
   appl_path_size   dd 0x0         
 endg
 
-iglobal
-  hd_app_string      db  'HDAPP       '
-  process_loading    db 'K : Process - loading ',13,10,0
-  process_running    db 'K : Process - done',13,10,0
-  first_gdt_search   dd 0x2
-endg
+;iglobal
+  ;hd_app_string      db  'HDAPP       '
+  ;process_loading    db 'K : Process - loading ',13,10,0
+  ;process_running    db 'K : Process - done',13,10,0
+  ;first_gdt_search   dd 0x2
+;endg
 
 
 sys_threads:
@@ -812,10 +812,10 @@ terminate: ; terminate application
     mov   [esi+WDATA.box.top],eax
     mov   [esi+WDATA.box.height], 5
     xor   eax, eax
-    mov   [esi+16],eax
-    mov   [esi+20],eax
-    mov   [esi+24],eax
-    mov   [esi+28],eax
+    mov   [esi+WDATA.cl_workarea],eax
+    mov   [esi+WDATA.cl_titlebar],eax
+    mov   [esi+WDATA.cl_frames],eax
+    mov   dword [esi+WDATA.reserved],eax ; clear all flags: wstate, redraw, wdrawn
     lea   edi, [esi-window_data+draw_data]
     mov   ecx,32/4
     rep   stosd
@@ -825,12 +825,12 @@ terminate: ; terminate application
     pushad
     mov  edi, esi
     shl  edi, 5
-    mov  eax, [0x80000+edi*8+0xAC]
+    mov  eax, [0x80000+edi*8+APPDATA.debugger_slot]
     test eax, eax
     jz   .nodebug
     push 8
     pop  ecx
-    push dword [0x3000+edi+0x4]   ; PID
+    push dword [0x3000+edi+TASKDATA.pid]   ; PID
     push 2
     call debugger_notify
     pop  ecx
@@ -850,7 +850,7 @@ terminate: ; terminate application
     pusha          ; name to spaces
     mov   edi,esi
     shl   edi,8
-    add   edi,0x80000
+    add   edi,0x80000+APPDATA.app_name
     mov   ecx,11
     mov   eax,' '
     rep   stosb
@@ -869,7 +869,7 @@ terminate: ; terminate application
         lea    esi, [0xc400+eax*2]
         movzx  edi, word [esi]               ; edi = process
         shl    edi, 5
-        cmp    [0x3000 + edi + 0xa], byte 9  ; skip dead slots
+        cmp    [0x3000 + edi + TASKDATA.state], byte 9  ; skip dead slots
         je     .check_next_window
         add    edi, window_data
         call   waredraw
@@ -896,8 +896,8 @@ terminate: ; terminate application
 
     pusha ; remove all irq reservations
     mov   eax,esi
-    shl   eax, 5 ;imul  edx,0x20
-    mov   eax,[edx+0x3000+4]
+    shl   eax, 5
+    mov   eax,[edx+0x3000+TASKDATA.pid]
     mov   edi,irq_owner
     mov   ecx,16
   newirqfree:
@@ -911,9 +911,9 @@ terminate: ; terminate application
 
     pusha                     ; remove all port reservations
     mov   edx,esi
-    shl   edx, 5 ;imul  edx,0x20
+    shl   edx, 5
     add   edx,0x3000
-    mov   edx,[edx+4]
+    mov   edx,[edx+TASKDATA.pid]
 
   rmpr0:
 
@@ -956,10 +956,10 @@ terminate: ; terminate application
     popa
     mov  edi,esi         ; do not run this process slot
     shl  edi, 5
-    mov  [edi+0x300A],byte 9
+    mov  [edi+0x3000 + TASKDATA.state],byte 9
 ; debugger test - terminate all debuggees
     mov  eax, 2
-    mov  ecx, 0x80000+2*0x100+0xAC
+    mov  ecx, 0x80000+2*0x100+APPDATA.debugger_slot
 .xd0:
     cmp  eax, [0x3004]
     ja   .xd1

@@ -107,12 +107,13 @@ WSTATE_WNDDRAWN  = 00000010b
 WSTYLE_HASCAPTION     = 00010000b
 WSTYLE_CLIENTRELATIVE = 00100000b
 
-struc TASKLIST
+struc TASKDATA
 {
   .event_mask  dd ?
   .pid	       dd ?
 	       dw ?
-  .state       dw ?
+  .state       db ?
+               db ?
 	       dw ?
   .wnd_number  db ?
 	       db ?
@@ -122,7 +123,7 @@ struc TASKLIST
   .cpu_usage   dd ?
 }
 virtual at 0
- TASKLIST TASKLIST
+ TASKDATA TASKDATA
 end virtual
 
 ; structures definition
@@ -145,19 +146,19 @@ struc APPDATA
 {
   .app_name	   db 11  dup(?)
 		   db 5   dup(?)
-  .fpu_save_area   db 108 dup(?)
+  .fpu_save_area:  db 108 dup(?)
 		   db 3   dup(?)
   .is_fpu_saved    db ?
   .wnd_shape	   dd ?
   .wnd_shape_scale dd ?
-  .gdt		   dd ?
+		   dd ?
   .mem_size	   dd ?
   .saved_box	   BOX
   .ipc_start	   dd ?
   .ipc_size	   dd ?
   .event_mask	   dd ?
   .debugger_slot   dd ?
-  .int40_handler   dd ?
+		   dd ?
   .keyboard_mode   db ?
 		   db 3   dup(?)
   .dir_table	   dd ?

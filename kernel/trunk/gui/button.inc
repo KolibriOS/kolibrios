@@ -70,8 +70,8 @@ drawbuttonframes:
         shr   ebx,16
         mov   edx,[0x3010]
 
-        add   eax,[edx-twdw]
-        add   ebx,[edx-twdw+4]
+		add   eax,[edx-twdw + WDATA.box.left]
+		add   ebx,[edx-twdw + WDATA.box.top]
         mov   cx,ax
         mov   dx,bx
         shl   eax,16
@@ -198,8 +198,8 @@ sys_button:
         shr   eax,16
         shr   ebx,16
         mov   edx,[0x3010]
-        mov   esi,[edx-twdw]
-        mov   edi,[edx-twdw+4]
+		mov   esi,[edx-twdw + WDATA.box.left]
+		mov   edi,[edx-twdw + WDATA.box.top]
         add   eax,esi
         add   ebx,edi
         mov   cx,ax
@@ -236,9 +236,6 @@ sys_button:
       button_no_draw:
 
         and   ecx,0xffff
-
-        mov   edi,[0x3010]
-        sub   edi,twdw
 
         mov   edi,[0xfe88]
         movzx eax,word [edi]
@@ -331,20 +328,20 @@ find_pressed_button_frames:
         movzx ebx,word [eax+0]
         shl   ebx,5
         add   ebx,window_data
-        movzx ecx,word [ebx+0]     ; window x start
+		mov   ecx, [ebx+ WDATA.box.left]     ; window x start
         movzx edx,word [eax+4]     ; button x start
         add   ecx,edx
         push  ecx
 
-        mov   dx,[eax+6]     ; button x size
+		mov   dx,[eax+6]                 ; button x size
         add   cx,dx
         mov   esi,ecx
         inc   esi
-        mov   cx,[ebx+4]     ; window y start
-        mov   dx,[eax+8]     ; button y start
+		mov   ecx, [ebx+WDATA.box.top]   ; window y start
+		mov   dx,[eax+8]                 ; button y start
         add   ecx,edx
         mov   ebx,ecx
-        mov   dx,[eax+10]    ; button y size
+		mov   dx,[eax+10]                ; button y size
         add   dx,cx
         inc   dx
 
@@ -521,12 +518,12 @@ checkbuttons:
 ;    add   ebx,window_data
 ;    mov   ecx,[window_data+ebx+8]          ; window end X
     movzx edx,word [eax+4]     ; button start X
-    cmp   edx, [window_data+ebx+8] ;ecx
+    cmp   edx, [window_data+ebx+WDATA.box.width] ;ecx
     jge   buttonnewcheck
 
 ;    mov   ecx,[window_data+ebx+12]         ; window end Y
     movzx edx, word [eax+8]    ; button start Y
-    cmp   edx, [window_data+ebx+12] ;ecx
+    cmp   edx, [window_data+ebx+WDATA.box.height] ;ecx
     jge   buttonnewcheck
 
     ; check coordinates
@@ -534,7 +531,7 @@ checkbuttons:
     movzx ebx,word [eax+0]
     shl   ebx,5
     add   ebx,window_data
-    movzx ecx,word [ebx+0]     ; window x start
+	mov   ecx, [ebx+WDATA.box.left]     ; window x start
     movzx edx,word [eax+4]     ; button x start
     add   edx,ecx
     mov   cx,[0xfb0a]
@@ -550,7 +547,7 @@ checkbuttons:
     movzx ebx,word [eax+0]
     shl   ebx,5
     add   ebx,window_data
-    movzx ecx,word [ebx+4]     ; window y start
+	mov   ecx, [ebx+WDATA.box.top]     ; window y start
     movzx edx,word [eax+8]     ; button y start
     add   edx,ecx
     mov   cx,[0xfb0c]
@@ -605,7 +602,7 @@ checkbuttons:
    movzx ebx,word [eax+0]
    shl   ebx,5
    add   ebx,window_data
-   movzx ecx,word [ebx+0]    ; window x start
+   mov   ecx, [ebx+WDATA.box.left]    ; window x start
    movzx edx,word [eax+4]    ; button x start
    add   edx,ecx
    mov   cx,[0xfb0a]
@@ -621,7 +618,7 @@ checkbuttons:
    movzx ebx,word [eax+0]
    shl   ebx,5
    add   ebx,window_data
-   movzx ecx,word [ebx+4]    ; window y start
+   mov   ecx, [ebx+WDATA.box.top]    ; window y start
    movzx edx,word [eax+8]    ; button y start
    add   edx,ecx
    mov   cx,[0xfb0c]

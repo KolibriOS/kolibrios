@@ -1004,7 +1004,7 @@ ste_data:
     ; flag an event to the application
     pop     eax
     mov     ecx,1
-    mov     esi,0x3020+0x4
+    mov     esi,0x3020+TASKDATA.pid
 
 news:
     cmp     [esi],eax
@@ -1016,7 +1016,7 @@ news:
 
 foundPID1:
     shl     ecx,8
-    or      dword [ecx+0x80000+0xA8],dword 10000000b ; stack event
+    or      dword [ecx+0x80000+APPDATA.event_mask],dword 10000000b ; stack event
 
     pop     ecx
 

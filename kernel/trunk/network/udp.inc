@@ -114,7 +114,7 @@ udprx_002:
     ; flag an event to the application
     pop     eax
     mov     ecx,1
-    mov     esi,0x3020+0x4
+    mov     esi,0x3020+TASKDATA.pid
    
 newsearch:
     cmp     [esi],eax
@@ -126,7 +126,7 @@ newsearch:
               
 foundPID: 
     shl     ecx,8
-    or      dword [ecx+0x80000+0xA8],dword 10000000b ; stack event
+    or      dword [ecx+0x80000+APPDATA.event_mask],dword 10000000b ; stack event
 
     mov     [check_idle_semaphore],200   
 

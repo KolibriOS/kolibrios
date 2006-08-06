@@ -644,12 +644,12 @@ finit ;reset the registers, contents which are still equal RM
         mov  esi,boot_setostask
         call boot_log
         ; name for OS/IDLE process
-        mov  [0x80000+256+0],dword 'OS/I'
-        mov  [0x80000+256+4],dword 'DLE '
+		mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
+		mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
         ; task list
-        mov  [0x3020+0xE],byte  1     ; on screen number
-        mov  [0x3020+0x4],dword 1     ; process id number
-        mov  [0x3020+0x10], dword 0   ; process base address
+        mov  [0x3020+TASKDATA.wnd_number], 1 ; on screen number
+        mov  [0x3020+TASKDATA.pid], 1        ; process id number
+        mov  [0x3020+TASKDATA.mem_start], 0  ; process base address
 
         ; set default flags & stacks
         mov  [l.eflags],dword 0x11202 ; sti and resume
@@ -1442,7 +1442,7 @@ display_number:
      cmp   al,1                  ; ecx is a pointer ?
      jne   displnl1
      mov   edi,[0x3010]
-     mov   edi,[edi+0x10]
+     mov   edi,[edi+TASKDATA.mem_start]
      mov   ebx,[edi+ebx]
    displnl1:
      sub   esp,64
@@ -1452,8 +1452,6 @@ display_number:
      shr   eax,16
      and   eax,0x3f
      push  eax
-     ;mov   edi,[0x3010]
-     ;mov   edi,[edi+0x10]
      mov   edi,esp
      add   edi,4+64
      mov   ecx,eax
@@ -1478,8 +1476,6 @@ display_number:
      shr   eax,16
      and   eax,0x3f
      push  eax
-     ;mov   edi,[0x3010]
-     ;mov   edi,[edi+0x10]
      mov   edi,esp
      add   edi,4+64
      mov   ecx,eax
@@ -1505,8 +1501,6 @@ display_number:
      shr   eax,16
      and   eax,0x3f
      push  eax
-     ;mov   edi,[0x3010]
-     ;mov   edi,[edi+0x10]
      mov   edi,esp
      add   edi,4+64
      mov   ecx,eax
@@ -1551,9 +1545,9 @@ draw_num_text:
      push  edx                       ; add window start x & y
      push  ebx
      mov   edx,[0x3010]
-     mov   ebx,[edx-twdw]
+     mov   ebx,[edx-twdw+WDATA.box.left]
      shl   ebx,16
-     add   ebx,[edx-twdw+4]
+     add   ebx,[edx-twdw+WDATA.box.top]
      add   eax,ebx
      pop   ebx
      pop   edx
@@ -1615,7 +1609,7 @@ midi_base dw 0
      cmp  ebx,1
      jnz  kbnobase
      mov  edi,[0x3010]
-     add  ecx,[edi+0x10]
+     add  ecx,[edi+TASKDATA.mem_start]
      mov  eax,ecx
      mov  ebx,keymap
      mov  ecx,128
@@ -1625,7 +1619,7 @@ midi_base dw 0
      cmp  ebx,2
      jnz  kbnoshift
      mov  edi,[0x3010]
-     add  ecx,[edi+0x10]
+     add  ecx,[edi+TASKDATA.mem_start]
      mov  eax,ecx
      mov  ebx,keymap_shift
      mov  ecx,128
@@ -1635,7 +1629,7 @@ midi_base dw 0
      cmp  ebx,3
      jne  kbnoalt
      mov  edi,[0x3010]
-     add  ecx,[edi+0x10]
+     add  ecx,[edi+TASKDATA.mem_start]
      mov  eax,ecx
      mov  ebx,keymap_alt
      mov  ecx,128
@@ -1827,7 +1821,7 @@ sys_getsetup:
      cmp  ebx,1
      jnz  kbnobaseret
      mov  edi,[0x3010]
-     add  ecx,[edi+0x10]
+     add  ecx,[edi+TASKDATA.mem_start]
      mov  ebx,ecx
      mov  eax,keymap
      mov  ecx,128
@@ -1837,7 +1831,7 @@ sys_getsetup:
      cmp  ebx,2
      jnz  kbnoshiftret
      mov  edi,[0x3010]
-     add  ecx,[edi+0x10]
+     add  ecx,[edi+TASKDATA.mem_start]
      mov  ebx,ecx
      mov  eax,keymap_shift
      mov  ecx,128
@@ -1847,7 +1841,7 @@ sys_getsetup:
      cmp  ebx,3
      jne  kbnoaltret
      mov  edi,[0x3010]
-     add  ecx,[edi+0x10]
+     add  ecx,[edi+TASKDATA.mem_start]
      mov  ebx,ecx
      mov  eax,keymap_alt
      mov  ecx,128
@@ -1950,10 +1944,9 @@ readmousepos:
     shl  eax,16
     mov  ax,[0xfb0c]
     mov  esi,[0x3010]
-    sub  esi,twdw
-    mov  bx,[esi]
+    mov  bx, word [esi-twdw+WDATA.box.left]
     shl  ebx,16
-    mov  bx,[esi+4]
+    mov  bx, word [esi-twdw+WDATA.box.top]
     sub  eax,ebx
     mov  [esp+36],eax
     ret
@@ -2081,8 +2074,7 @@ include 'detect/ps2mouse.inc'
 sys_end:
 
      mov   eax,[0x3010]
-     add   eax,0xa
-     mov   [eax],byte 3  ; terminate this program
+     mov   [eax+TASKDATA.state], 3  ; terminate this program
 
     waitterm:            ; wait here for termination
      mov   eax,5
@@ -2141,8 +2133,8 @@ sysfn_terminate:        ; 18.2 = TERMINATE
      ja   noprocessterminate
      mov  eax,[0x3004]
      shl  ebx,5
-     mov  edx,[ebx+0x3000+4]
-     add  ebx,0x3000+0xa
+     mov  edx,[ebx+0x3000+TASKDATA.pid]
+     add  ebx,0x3000+TASKDATA.state
      cmp  byte [ebx], 9
      jz   noprocessterminate
 
@@ -2262,8 +2254,8 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
      rep movsb
      ret
    for_all_tables:
-     mov edi,[3010h]
-     mov edi,[edi+10h]
+     mov edi,[0x3010]
+     mov edi,[edi+TASKDATA.mem_start]
      add edi,ecx
      mov esi,0x40000
      ret
@@ -2281,8 +2273,8 @@ sysfn_lastkey:          ; 18.12 = return 0 (backward compatibility)
         ret
 
 sysfn_getversion:       ; 18.13 = get kernel ID and version
-     mov edi,[3010h]
-     mov edi,[edi+10h]
+     mov edi,[0x3010]
+     mov edi,[edi+TASKDATA.mem_start]
      add edi,ebx
      mov esi,version_inf
      mov ecx,version_end-version_inf
@@ -2447,7 +2439,7 @@ draw_background_temp:
     jnz   nosb5
   ; bughere
     mov   edi, [0x3010]
-    add   ebx, [edi+0x10]
+    add   ebx, [edi+TASKDATA.mem_start]
  ;   mov   esi, ebx
  ;   mov   edi, ecx
     mov   eax, ebx
@@ -2589,8 +2581,7 @@ sys_cpuusage:
 ;
 
     mov  edi,[0x3010]   ; eax = return area
-    add  edi,0x10
-    add  eax,[edi]
+    add  eax,[edi + TASKDATA.mem_start]
 
     cmp  ebx,-1         ; who am I ?
     jne  no_who_am_i
@@ -2609,27 +2600,20 @@ sys_cpuusage:
     xor  edx,edx
     mov  eax,0x20
     mul  ebx
-    add  eax,0x3000+0x1c
+    add  eax,0x3000+TASKDATA.cpu_usage
     mov  ebx,eax
     pop  eax
     mov  ecx,[ebx]
     mov  [eax],ecx
     pop  ebx
-;    mov  ebx,[esp]
-;    shl  ebx,1
-;    add  ebx,0xc000
     mov  cx, [0xC000 + ebx * 2]
     mov  [eax+4],cx
-;    mov  ebx,[esp]
-;    shl  ebx,1
-;    add  ebx,0xc400
     mov  cx, [0xC400 + ebx * 2]
     mov  [eax+6],cx
-;    pop  ebx
     push eax
     mov  eax,ebx
     shl  eax,8
-    add  eax,0x80000
+    add  eax,0x80000+APPDATA.app_name
     pop  ebx
     add  ebx,10
     mov  ecx,11
@@ -2643,19 +2627,9 @@ sys_cpuusage:
     cmp    ecx,1
     je     os_mem
     shl    ecx,8
-    mov    edx,[0x80000+ecx+0x8c]
+    mov    edx,[0x80000+ecx+APPDATA.mem_size] ;0x8c
     mov    eax,std_application_base_address
-    ;add    ecx,0x80000+0x88
-    ;mov    ecx,[ecx]
-;    shl    ecx,3
     ; eax run base -> edx used memory
-;    mov    al,[ecx+gdts+ app_code-3 +4]        ;  base  23:16
-;    mov    ah,[ecx+gdts+ app_code-3 +7]        ;  base  31:24
-;    shl    eax,16
-;    mov    ax,[ecx+gdts+ app_code-3 +2]        ;  base  0:15
-;    movzx  edx,word [ecx+gdts+ app_code-3 +0]
-;    shl    edx,12
-
   os_mem:
     dec    edx
     mov    [ebx+12],eax
@@ -2665,7 +2639,7 @@ sys_cpuusage:
 
     mov    eax,[esp]
     shl    eax,5
-    add    eax,0x3000+0x4
+    add    eax,0x3000+TASKDATA.pid
     mov    eax,[eax]
     mov    [ebx+20],eax
 
@@ -2673,18 +2647,18 @@ sys_cpuusage:
 
     mov    esi,[esp]
     shl    esi,5
-    add    esi,window_data
+    add    esi,window_data + WDATA.box
     mov    edi,[esp+4]
     add    edi,34
-    mov    ecx,4*4
+    mov    ecx,4
     cld
-    rep    movsb
+    rep    movsd
 
     ; Process state (+50)
 
     mov    eax,[esp]
     shl    eax,5
-    add    eax,0x3000+0xa
+    add    eax,0x3000+TASKDATA.state
     mov    eax,[eax]
     mov    [ebx+40],ax
 
@@ -2826,16 +2800,15 @@ sys_redrawstat:
 
     mov   edx,[0x3010]      ; return whole screen draw area for this app
     add   edx,draw_data-0x3000
-    mov   [edx+0],dword 0
-    mov   [edx+4],dword 0
+    mov   [edx+RECT.left], 0
+    mov   [edx+RECT.top], 0
     mov   eax,[0xfe00]
-    mov   [edx+8],eax
+    mov   [edx+RECT.right],eax
     mov   eax,[0xfe04]
-    mov   [edx+12],eax
+    mov   [edx+RECT.bottom],eax
 
     mov   edi,[0x3010]
-    sub   edi,twdw
-    mov   [edi+30],byte 1   ; no new position & buttons from app
+    mov   [edi-twdw+WDATA.fl_wdrawn], 1   ; no new position & buttons from app
 
     call  sys_window_mouse
 
@@ -2961,7 +2934,7 @@ draw_window_caption:
         mov     ecx,[edi*8+0x80000+APPDATA.wnd_caption]
         or      ecx,ecx
         jz      @f
-        add     ecx,[edi+twdw+0x10]
+        add     ecx,[edi+twdw+TASKDATA.mem_start]
 
         movzx   eax,[edi+window_data+WDATA.fl_wstyle]
         and     al,0x0F
@@ -3118,15 +3091,16 @@ sys_set_window:
 
     sub   edi,window_data
     shl   edi,3
-    add   edi,0x80000+0x90
+    add   edi,0x80000
 
         and     cl,0x0F
-        mov     [edi-0x90+APPDATA.wnd_caption],0
+        mov     [edi+APPDATA.wnd_caption],0
         cmp     cl,3
         jne     @f
-        mov     [edi-0x90+APPDATA.wnd_caption],esi
+        mov     [edi+APPDATA.wnd_caption],esi
     @@: mov     esi,[esp+0]
 
+    add   edi, APPDATA.saved_box
     mov   ecx,4
     cld
     rep   movsd
@@ -3135,10 +3109,10 @@ sys_set_window:
     push  eax ebx ecx edx
 ;;;    mov   eax, 1
 ;;;    call  delay_hs
-    movzx eax, word [edi+00]
-    movzx ebx, word [edi+04]
-    movzx ecx, word [edi+8]
-    movzx edx, word [edi+12]
+    mov   eax, [edi+WDATA.box.left]
+    mov   ebx, [edi+WDATA.box.top]
+    mov   ecx, [edi+WDATA.box.width]
+    mov   edx, [edi+WDATA.box.height]
     add   ecx, eax
     add   edx, ebx
     call  calculatescreen
@@ -3148,7 +3122,7 @@ sys_set_window:
     mov   [0xf500],byte 0           ; empty button buffer
 
   newd:
-    mov   [edi+31],byte 0   ; no redraw
+    mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
     mov   edx,edi
 
     ret
@@ -3195,25 +3169,25 @@ syscall_windowsettings:
 
 sys_window_move:
 
-        mov     edi,[0x00003000]
+        mov     edi,[0x3000]
         shl     edi,5
         add     edi,window_data
 
         test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jnz     .window_move_return
 
-        push  dword [edi+0]           ; save old coordinates
-        push  dword [edi+4]
-        push  dword [edi+8]
-        push  dword [edi+12]
+        push    dword [edi + WDATA.box.left]  ; save old coordinates
+        push    dword [edi + WDATA.box.top]
+        push    dword [edi + WDATA.box.width]
+        push    dword [edi + WDATA.box.height]
 
         cmp   eax,-1                  ; set new position and size
         je    .no_x_reposition
-        mov   [edi+0],eax
+        mov     [edi + WDATA.box.left], eax
       .no_x_reposition:
         cmp   ebx,-1
         je    .no_y_reposition
-        mov   [edi+4],ebx
+        mov     [edi + WDATA.box.top], ebx
       .no_y_reposition:
 
         test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
@@ -3221,11 +3195,11 @@ sys_window_move:
 
         cmp   ecx,-1
         je    .no_x_resizing
-        mov   [edi+8],ecx
+        mov     [edi + WDATA.box.width], ecx
       .no_x_resizing:
         cmp   edx,-1
         je    .no_y_resizing
-        mov   [edi+12],edx
+        mov     [edi + WDATA.box.height], edx
       .no_y_resizing:
 
         call  check_window_position
@@ -3235,19 +3209,19 @@ sys_window_move:
         sub   edi,window_data
         shr   edi,5
         shl   edi,8
-        add   edi,0x80000+0x90
+        add   edi, 0x80000 + APPDATA.saved_box
         mov   ecx,4
         cld
         rep   movsd
         popad
 
         pushad                       ; calculcate screen at new position
-        mov   eax,[edi+00]
-        mov   ebx,[edi+04]
-        mov   ecx,[edi+8]
-        mov   edx,[edi+12]
-        add   ecx,eax
-        add   edx,ebx
+        mov   eax, [edi + WDATA.box.left]
+        mov   ebx, [edi + WDATA.box.top]
+        mov   ecx, [edi + WDATA.box.width]
+        mov   edx, [edi + WDATA.box.height]
+        add   ecx, eax
+        add   edx, ebx
         call  calculatescreen
         popad
 
@@ -3263,7 +3237,7 @@ sys_window_move:
         mov   [dlye],edx
         call  calculatescreen
 
-        mov   [edi+31],byte 1       ; flag the process as redraw
+        mov   [edi + WDATA.fl_redraw], 1 ; flag the process as redraw
 
         mov   eax,edi               ; redraw screen at old position
         xor   esi,esi
@@ -3463,7 +3437,7 @@ checkmisc:
     mov   ecx, [0x3004]
    set_mouse_event:
     add   edi, 256
-    or    [edi+0x80000+0xA8], dword 00100000b
+    or    [edi+0x80000+APPDATA.event_mask], dword 00100000b
     loop  set_mouse_event
   mouse_not_active:
 
@@ -3474,12 +3448,12 @@ checkmisc:
     jz    nobackgr
     mov   [0xfff0],byte 2
     call  change_task
-    mov   [draw_data+32+0],dword 0
-    mov   [draw_data+32+4],dword 0
+	mov   [draw_data+32 + RECT.left],dword 0
+	mov   [draw_data+32 + RECT.top],dword 0
     mov   eax,[0xfe00]
     mov   ebx,[0xfe04]
-    mov   [draw_data+32+8],eax
-    mov   [draw_data+32+12],ebx
+	mov   [draw_data+32 + RECT.right],eax
+	mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
     mov   [0xfff0],byte 0
     mov   [0xfff4],byte 0
@@ -3502,7 +3476,7 @@ checkmisc:
     movzx ecx,byte [0xff00]
     add   ecx,5
   markz:
-    mov   [edx+0xa],byte 3
+    mov   [edx+TASKDATA.state],byte 3
     add   edx,0x20
     loop  markz
 
@@ -3519,7 +3493,7 @@ checkmisc:
 
 
     mov   eax,[0x3004]                  ; termination
-    mov   ebx,0x3020+0xa
+    mov   ebx,0x3020+TASKDATA.state
     mov   esi,1
 
   newct:
@@ -3570,12 +3544,12 @@ redrawscreen:
          cmp   ecx,1               ; limit for background
          jz    bgli
 
-         mov   eax,[edi+0]
-         mov   ebx,[edi+4]
-         mov   ecx,[edi+8]
-         mov   edx,[edi+12]
-         add   ecx,eax
-         add   edx,ebx
+         mov   eax, [edi + WDATA.box.left]
+         mov   ebx, [edi + WDATA.box.top]
+         mov   ecx, [edi + WDATA.box.width]
+         mov   edx, [edi + WDATA.box.height]
+         add   ecx, eax
+         add   edx, ebx
 
          mov   ecx,[dlye]   ; ecx = area y end     ebx = window y start
          cmp   ecx,ebx
@@ -3585,13 +3559,13 @@ redrawscreen:
          cmp   ecx,eax
          jb    ricino
 
-         mov   eax,[edi+0]
-         mov   ebx,[edi+4]
-         mov   ecx,[edi+8]
-         mov   edx,[edi+12]
-         add   ecx,eax
-         add   edx,ebx
-
+         mov   eax, [edi + WDATA.box.left]
+         mov   ebx, [edi + WDATA.box.top]
+         mov   ecx, [edi + WDATA.box.width]
+         mov   edx, [edi + WDATA.box.height]
+         add   ecx, eax
+         add   edx, ebx
+		 
          mov   eax,[dly]    ; eax = area y start     edx = window y end
          cmp   edx,eax
          jb    ricino
@@ -3609,13 +3583,13 @@ redrawscreen:
          add   eax,draw_data-window_data
 
          mov   ebx,[dlx]          ; set limits
-         mov   [eax+0],ebx
+         mov   [eax + RECT.left], ebx
          mov   ebx,[dly]
-         mov   [eax+4],ebx
+         mov   [eax + RECT.top], ebx
          mov   ebx,[dlxe]
-         mov   [eax+8],ebx
+         mov   [eax + RECT.right], ebx
          mov   ebx,[dlye]
-         mov   [eax+12],ebx
+         mov   [eax + RECT.bottom], ebx
 
          sub   eax,draw_data-window_data
 
@@ -3628,7 +3602,7 @@ redrawscreen:
        newdw8:
        nobgrd:
 
-         mov   [eax+31],byte 1    ; mark as redraw
+         mov   [eax + WDATA.fl_redraw],byte 1    ; mark as redraw
 
        ricino:
 
@@ -3707,7 +3681,7 @@ set_app_param:
         push edi
 
         mov  edi,[0x3010]
-        mov  [edi],eax
+        mov  [edi+TASKDATA.event_mask],eax
 
         pop  edi
         ret
@@ -3719,11 +3693,11 @@ delay_hs:     ; delay in 1/100 secs
         push  ecx
         push  edx
 
-        mov   edx,[timer_ticks];[0xfdf0]
+        mov   edx,[timer_ticks]
         add   edx,eax
 
       newtic:
-        mov   ecx,[timer_ticks];[0xfdf0]
+        mov   ecx,[timer_ticks]
         cmp   edx,ecx
         jbe   zerodelay
 
@@ -3824,13 +3798,12 @@ align 4
 sys_programirq:
 
     mov   edi,[0x3010]
-    add   edi,0x10
-    add   eax,[edi]
+    add   eax,[edi+TASKDATA.mem_start]
 
     cmp   ebx,16
     jae   .not_owner
     mov   edi,[0x3010]
-    mov   edi,[edi+0x4]
+    mov   edi,[edi+TASKDATA.pid]
     cmp   edi,[irq_owner+ebx*4]
     je    spril1
 .not_owner:
@@ -3859,7 +3832,7 @@ get_irq_data:
      add   edx,irq_owner
      mov   edx,[edx]
      mov   edi,[0x3010]
-     mov   edi,[edi+0x4]
+     mov   edi,[edi+TASKDATA.pid]
      cmp   edx,edi
      je    gidril1
 .not_owner:
@@ -4011,7 +3984,7 @@ r_f_port_area:
      shl   edi,4
      add   edi,0x2d0000
      mov   esi,[0x3010]
-     mov   esi,[esi+0x4]
+     mov   esi,[esi+TASKDATA.pid]
      mov   [edi],esi
      mov   [edi+4],ebx
      mov   [edi+8],ecx
@@ -4030,7 +4003,7 @@ free_port_area:
      test  esi,esi
      je    frpal2
      mov   edx,[0x3010]
-     mov   edx,[edx+4]
+     mov   edx,[edx+TASKDATA.pid]
    frpal3:
      mov   edi,esi
      shl   edi,4
@@ -4104,7 +4077,7 @@ reserve_free_irq:
      lea   edi,[irq_owner+ebx*4]
      mov   edx,[edi]
      mov   eax,[0x3010]
-     cmp   edx,[eax+0x4]
+     cmp   edx,[eax+TASKDATA.pid]
      jne   fril1
      dec   ecx
      mov   [edi],ecx
@@ -4119,7 +4092,7 @@ reserve_free_irq:
      jnz   ril1
 
      mov   edx,[0x3010]
-     mov   edx,[edx+0x4]
+     mov   edx,[edx+TASKDATA.pid]
      mov   [edi],edx
      dec   ecx
    ril1:
@@ -4597,7 +4570,7 @@ sys_trace:
 
      mov  esi,save_syscall_data     ; data
      mov  edi,[0x3010]
-     mov  edi,[edi+0x10]
+     mov  edi,[edi+TASKDATA.mem_start]
      add  edi,ebx
      cld
      rep  movsb
@@ -4619,7 +4592,7 @@ sys_process_def:
      jne   no_set_keyboard_setup
 
      shl   edi,8
-     mov   [edi+0x800B4],bl
+     mov   [edi+0x80000 + APPDATA.keyboard_mode],bl
 
      ret
 
@@ -4629,7 +4602,7 @@ sys_process_def:
      jne   no_get_keyboard_setup
 
      shl   edi,8
-     movzx eax, byte [0x800B4+edi]
+     movzx eax, byte [0x80000+edi + APPDATA.keyboard_mode]
 
      mov   [esp+36],eax
 
@@ -4734,8 +4707,8 @@ sys_ipc:
      mov  edi,[0x3000]
      shl  edi,8
      add  edi,0x80000
-     mov  [edi+0xA0],ebx
-     mov  [edi+0xA4],ecx
+     mov  [edi + APPDATA.ipc_start], ebx
+     mov  [edi + APPDATA.ipc_size], ecx
      mov  [esp+36],dword 0
      ret
    no_ipc_def:
@@ -4745,7 +4718,7 @@ sys_ipc:
      mov  esi,1
      mov  edi,0x3020
     ipcs1:
-     cmp  [edi+4],ebx
+     cmp  [edi+TASKDATA.pid], ebx
      je   ipcs2
      add  edi,0x20
      inc  esi
@@ -4760,22 +4733,22 @@ sys_ipc:
      push esi
      mov  eax,esi
      shl  eax,8
-     mov  ebx,[eax+0x80000+0xa0]
+     mov  ebx,[eax+0x80000 + APPDATA.ipc_start]
      test ebx,ebx                  ; ipc area not defined ?
      je   ipc_err1
 
-     add  ebx,[eax+0x80000+0xa4]
+     add  ebx,[eax+0x80000 + APPDATA.ipc_size]
      mov  eax,esi
      shl  eax,5
-     add  ebx,[eax+0x3000+0x10]    ; ebx <- max data position
+     add  ebx,[eax+0x3000 + TASKDATA.mem_start]    ; ebx <- max data position
 
      mov  eax,esi                  ; to
      shl  esi,8
      add  esi,0x80000
-     mov  edi,[esi+0xa0]
+     mov  edi,[esi+APPDATA.ipc_start]
      shl  eax,5
      add  eax,0x3000
-     add  edi,[eax+0x10]
+     add  edi,[eax+TASKDATA.mem_start]
 
      cmp  [edi],byte 0             ; overrun ?
      jne  ipc_err2
@@ -4786,7 +4759,7 @@ sys_ipc:
 
      mov  esi,ecx                  ; from
      mov  eax,[0x3010]
-     mov  eax,[eax+0x10]
+     mov  eax,[eax+TASKDATA.mem_start]
      add  esi,eax
 
      mov  ecx,edx                  ; size
@@ -4799,7 +4772,7 @@ sys_ipc:
      push ecx
 
      mov  eax,[0x3010]
-     mov  eax,[eax+4]
+     mov  eax,[eax+TASKDATA.pid]
      mov  [edi-8],eax
      mov  [edi-4],ecx
      cld
@@ -4813,7 +4786,7 @@ sys_ipc:
 
      mov  edi,[esp]
      shl  edi,8
-     or   dword [edi+0x80000+0xA8],dword 01000000b ; ipc message
+     or   dword [edi+0x80000+APPDATA.event_mask],dword 01000000b ; ipc message
 
      cmp  [check_idle_semaphore],dword 20
      jge  ipc_no_cis
@@ -4897,8 +4870,8 @@ syscall_setpixel:                       ; SetPixel
 
 
      mov   edx,[0x3010]
-     add   eax,[edx-twdw]
-     add   ebx,[edx-twdw+4]
+     add   eax,[edx-twdw+WDATA.box.left]
+     add   ebx,[edx-twdw+WDATA.box.top]
         mov     edi,[0x3000]
         shl     edi,8
         add     eax,[edi+0x80000+APPDATA.wnd_clientbox.left]
@@ -4913,15 +4886,14 @@ align 4
 syscall_writetext:                      ; WriteText
 
      mov   edi,[0x3010]
-     mov   ebp,[edi-twdw]
+     mov   ebp,[edi-twdw+WDATA.box.left]
         mov     esi,[0x3000]
         shl     esi,8
         add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.left]
      shl   ebp,16
-     add   ebp,[edi-twdw+4]
+     add   ebp,[edi-twdw+WDATA.box.top]
         add     bp,word[esi+0x80000+APPDATA.wnd_clientbox.top]
-     add   edi,0x10
-     add   ecx,[edi]
+	 add   ecx,[edi+TASKDATA.mem_start]
      add   eax,ebp
      xor   edi,edi
      jmp   dtext
@@ -4932,7 +4904,7 @@ syscall_openramdiskfile:                ; OpenRamdiskFile
 
 
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi, TASKDATA.mem_start
      add   eax,[edi]
      add   edx,[edi]
      mov   esi,12
@@ -4978,7 +4950,7 @@ align 4
 
 syscall_startapp:                       ; StartApp
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi, TASKDATA.mem_start
      add   eax,[edi]
      test  ebx,ebx
      jz    noapppar
@@ -5032,7 +5004,7 @@ align 4
 syscall_delramdiskfile:                 ; DelRamdiskFile
 
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi, TASKDATA.mem_start
      add   eax,[edi]
      call  filedelete
      mov   [esp+36],eax
@@ -5043,7 +5015,7 @@ align 4
 syscall_writeramdiskfile:               ; WriteRamdiskFile
 
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi, TASKDATA.mem_start
      add   eax,[edi]
      add   ebx,[edi]
      call  filesave
@@ -5069,7 +5041,7 @@ align 4
 syscall_readstring:                     ; ReadString
 
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi, TASKDATA.mem_start
      add   eax,[edi]
      call  read_string
      mov   [esp+36],eax
@@ -5080,7 +5052,7 @@ align 4
 syscall_drawline:                       ; DrawLine
 
      mov   edi,[0x3010]
-     movzx edx,word[edi-twdw]
+     movzx edx,word[edi-twdw+WDATA.box.left]
      mov   ebp,edx
         mov     esi,[0x3000]
         shl     esi,8
@@ -5088,7 +5060,7 @@ syscall_drawline:                       ; DrawLine
         add     dx,word[esi+0x80000+APPDATA.wnd_clientbox.left]
      shl   edx,16
      add   ebp,edx
-     movzx edx,word[edi-twdw+4]
+     movzx edx,word[edi-twdw+WDATA.box.top]
      add   eax,ebp
      mov   ebp,edx
         add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.top]
@@ -5167,7 +5139,7 @@ align 4
 read_from_hd:                           ; Read from hd - fn not in use
 
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi,TASKDATA.mem_start
      add   eax,[edi]
      add   ecx,[edi]
      add   edx,[edi]
@@ -5184,7 +5156,7 @@ align 4
 write_to_hd:                            ; Write a file to hd
 
      mov   edi,[0x3010]
-     add   edi,0x10
+     add   edi,TASKDATA.mem_start
      add   eax,[edi]
      add   ecx,[edi]
      add   edx,[edi]

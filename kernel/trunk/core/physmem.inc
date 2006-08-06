@@ -95,7 +95,7 @@ Allocate_Physical_Block:
   mov  eax,[esi+physical_mem_block.start]
   mov  [esp+28],eax
   mov  eax,[0x3010]
-  mov  eax,[eax+0x4]
+  mov  eax,[eax+TASKDATA.pid]
   mov  [esi+physical_mem_block.flags],eax
   popad
   ret
@@ -105,7 +105,7 @@ Allocate_Physical_Block:
   mov  eax,[esi+physical_mem_block.start]
   mov  [esp+28],eax
   mov  ecx,[0x3010]
-  mov  ecx,[ecx+0x4]
+  mov  ecx,[ecx+TASKDATA.pid]
   mov  [esi+physical_mem_block.flags],ecx
   mov  ecx,[esi+physical_mem_block.size]
   mov  [esi+physical_mem_block.size],ebx

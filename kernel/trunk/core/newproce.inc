@@ -33,7 +33,7 @@ find_new_process_place:
     cmp    eax,ebx
     jz     .endnewprocessplace   ;empty slot after high boundary
     add    eax,0x20
-    cmp    word [eax+0xa],9      ;check process state, 9 means that process slot is empty
+    cmp    word [eax+TASKDATA.state],9      ;check process state, 9 means that process slot is empty
     jnz    .newprocessplace
 .endnewprocessplace:
     mov    ebx,eax
@@ -41,7 +41,7 @@ find_new_process_place:
     shr    eax,5                 ;calculate slot index
     cmp    eax,256
     jge    .failed               ;it should be <256
-    mov    word [ebx+0xa],9      ;set process state to 9 (for slot after hight boundary)
+    mov    word [ebx+TASKDATA.state],9      ;set process state to 9 (for slot after hight boundary)
     mov    [new_process_place],eax ;save process slot
     pop    ebx
     ret    
@@ -113,7 +113,7 @@ new_start_application_floppy:
 ;    mov    eax,[esp]             ;eax - pointer to file name
     mov    ebx,[new_process_place]
     shl    ebx,8
-    add    ebx,0x80000
+    add    ebx,0x80000 + APPDATA.app_name
     mov    ecx,11
     call   memmove
       
@@ -207,7 +207,7 @@ new_start_application_floppy:
 ;so free directory entry
     mov    eax,[new_process_place]    
     shl    eax,8
-    mov    eax,[0x80000+eax+0xB8]
+    mov    eax,[0x80000+eax+APPDATA.dir_table]
     call   MEM_Free_Page    
 .cleanfailed_mem:
 ;there is no mem for directory entry, display message.
@@ -219,7 +219,7 @@ new_start_application_floppy:
 ;this avoid problems with panel application.
     mov    edi,[new_process_place]
     shl    edi,8
-    add    edi,0x80000
+    add    edi,0x80000 + APPDATA.app_name
     mov    ecx,11
     mov    eax,' '
     cld
@@ -280,7 +280,7 @@ new_start_application_fl:
     mov    eax,[esp]             ;eax - pointer to file name
     mov    ebx,[new_process_place]
     shl    ebx,8
-    add    ebx,0x80000
+    add    ebx,0x80000 + APPDATA.app_name
     mov    ecx,11
     call   memmove
       
@@ -371,7 +371,7 @@ new_start_application_fl:
 ;so free directory entry
     mov    eax,[new_process_place]    
     shl    eax,8
-    mov    eax,[0x80000+eax+0xB8]
+    mov    eax,[0x80000+eax+APPDATA.dir_table]
     call   MEM_Free_Page
 .cleanfailed_mem:
 ;there is no mem for directory entry, display message.
@@ -383,7 +383,7 @@ new_start_application_fl:
 ;this avoid problems with panel application.
     mov    edi,[new_process_place]
     shl    edi,8
-    add    edi,0x80000
+    add    edi,0x80000+APPDATA.app_name
     mov    ecx,11
     mov    eax,' '
     cld
@@ -417,13 +417,13 @@ new_start_application_fl:
 ;(size of application memory)
     shl    ebx,8
     mov    eax,[app_mem]
-    mov    [second_base_address+0x80000+0x8c+ebx],eax             
+    mov    [second_base_address+0x80000+APPDATA.mem_size+ebx],eax             
 ;set 0x10 field of information about process
 ;(application base address)     
 ;    mov    ebx,[new_process_place]
 ;    shl    ebx,5
     shr    ebx,3
-    mov    dword [second_base_address+0x3000+ebx+0x10],std_application_base_address
+    mov    dword [second_base_address+0x3000+ebx+TASKDATA.mem_start],std_application_base_address
 
 ;add command line parameters
 .add_command_line:
@@ -466,29 +466,29 @@ new_start_application_fl:
     mov    eax,ebx
     shl    ebx,5
     add    ebx,0x3000            ;ebx - pointer to information about process
-    mov    [ebx+0xe],al          ;set window number on screen = process slot
+    mov    [ebx+TASKDATA.wnd_number],al  ;set window number on screen = process slot
     
-    mov    [ebx],dword 1+2+4     ;set default event flags (see 40 function)
+    mov    [ebx+TASKDATA.event_mask],dword 1+2+4     ;set default event flags (see 40 function)
     
     inc    dword [process_number]
     mov    eax,[process_number]
-    mov    [ebx+4],eax           ;set PID
+    mov    [ebx+TASKDATA.pid],eax           ;set PID
     
     mov    ecx,ebx
     add    ecx,draw_data-0x3000  ;ecx - pointer to draw data
 ;set draw data to full screen    
-    mov    [ecx+0],dword 0       
-    mov    [ecx+4],dword 0
+    mov    [ecx+RECT.left],dword 0       
+    mov    [ecx+RECT.top],dword 0
     mov    eax,[0xfe00]
-    mov    [ecx+8],eax
+    mov    [ecx+RECT.right],eax
     mov    eax,[0xfe04]
-    mov    [ecx+12],eax
+    mov    [ecx+RECT.bottom],eax
 ;set window state to 'normal' (non-minimized/maximized/rolled-up) state
     mov    [ecx+WDATA.fl_wstate],WSTATE_NORMAL
 ;set cr3 register in TSS of application    
     mov    ecx,[new_process_place]     
     shl    ecx,8
-    mov    eax,[0x800B8+ecx]
+    mov    eax,[0x80000+APPDATA.dir_table+ecx]
     add    eax,8+16              ;add flags
     mov    [l.cr3],eax
     
@@ -566,12 +566,12 @@ new_start_application_fl:
 ; set if debuggee
         test    byte [esp+28], 1
         jz      .no_debug
-        mov     [0x3000+ebx+0xa], byte 1        ; set process state - suspended
+        mov     [0x3000+ebx+TASKDATA.state], 1        ; set process state - suspended
         mov     eax, [0x3000]
-        mov     [0x80000+ebx*8+0xac], eax ;set debugger PID - current
+        mov     [0x80000+ebx*8+APPDATA.debugger_slot], eax ;set debugger PID - current
         jmp     .debug
 .no_debug:
-        mov     [0x3000+ebx+0xa], byte 0        ; set process state - running
+        mov     [0x3000+ebx+TASKDATA.state], 0        ; set process state - running
 .debug:
     
     mov    esi,new_process_running
@@ -622,22 +622,22 @@ new_sys_threads:
 
     mov    esi,[0x3000]
     shl    esi,8
-    add    esi,0x80000
+    add    esi,0x80000+APPDATA.app_name
     mov    ebx,esi               ;ebx=esi - pointer to extended information about current thread
     
     mov    edi,[new_process_place]
     shl    edi,8
     add    edi,0x80000
-    mov    edx,edi               ;edx=edi - pointer to extended infomation about new thread
+    lea    edx, [edi+APPDATA.app_name] ;edx=edi - pointer to extended infomation about new thread
     mov    ecx,256/4
     rep    stosd                 ;clean extended information about new thread
     mov    edi,edx
     mov    ecx,11
     rep    movsb                 ;copy process name
-    mov    eax,[ebx+0x8c]
+    mov    eax,[ebx+APPDATA.mem_size]
     mov    [app_mem],eax         ;set memory size
-    mov    eax,[ebx+0xb8]
-    mov    [edx+0xb8],eax        ;copy page directory
+    mov    eax,[ebx+APPDATA.dir_table]
+    mov    dword [edx-APPDATA.app_name+APPDATA.dir_table],eax        ;copy page directory
 ;    mov    eax,[new_process_place]
 ;    mov    ebx,[0x3000]
 ;    call   addreference_app_cr3_table
@@ -669,10 +669,10 @@ new_mem_resize:
     and    ebx,not (4096-1)      ;round up size
     mov    ecx,[0x3000]
     shl    ecx,8
-    mov    edx,[0x8008C+ecx]     
+    mov    edx,[0x80000 + APPDATA.mem_size +ecx]     
     add    edx,4095
     and    edx,not (4096-1)      ;old size
-    mov    eax,[0x800B8+ecx]
+    mov    eax,[0x80000 + APPDATA.dir_table+ecx]
     call   MEM_Get_Linear_Address
 ;eax - linear address of page directory    
     call   MEM_Heap_Lock         ;guarantee that two threads willn't 
@@ -704,10 +704,10 @@ new_mem_resize:
     mov    ebx,esi
     mov    eax,[0x3000]
     shl    eax,8
-    mov    [eax+0x8008c],ebx     ;write new memory size
+    mov    [eax+0x80000 + APPDATA.mem_size],ebx     ;write new memory size
 ;search threads and update 
 ;application memory size infomation    
-    mov    ecx,[eax+0x800b8] 
+    mov    ecx,[eax+0x80000 + APPDATA.dir_table] 
     mov    eax,2
     
 .search_threads:
@@ -718,12 +718,12 @@ new_mem_resize:
     jg     .search_threads_end
     mov    edx,eax
     shl    edx,5
-    cmp    word [0x3000+edx+0xa],9 ;if slot empty?
+    cmp    word [0x3000+edx+TASKDATA.state],9 ;if slot empty?
     jz     .search_threads_next
     shl    edx,3
-    cmp    [edx+0x800b8],ecx     ;if it is our thread?
+    cmp    [edx+0x80000+APPDATA.dir_table],ecx     ;if it is our thread?
     jnz    .search_threads_next
-    mov    [edx+0x8008c],ebx     ;update memory size
+    mov    [edx+0x80000+APPDATA.mem_size],ebx     ;update memory size
 .search_threads_next:
     inc    eax
     jmp    .search_threads
@@ -753,9 +753,9 @@ pid_to_slot:
 .loop:
 ;ecx=offset of current process info entry
 ;ebx=maximum permitted offset
-    cmp    byte [second_base_address+0x3000+ecx+0xa],9
+    cmp    byte [second_base_address+0x3000+ecx+TASKDATA.state],9
     jz     .endloop              ;skip empty slots
-    cmp    [second_base_address+0x3000+ecx+0x4],eax ;check PID
+    cmp    [second_base_address+0x3000+ecx+TASKDATA.pid],eax ;check PID
     jz     .pid_found
 .endloop:
     add    ecx,32
@@ -801,7 +801,7 @@ write_process_memory:
 ;  eax - number of bytes written
     pushad
     shl  eax,8
-    mov  eax,[0x80000+eax+0xB8]
+    mov  eax,[0x80000+eax+APPDATA.dir_table]
     call MEM_Get_Linear_Address
     mov  ebp,eax
 ;ebp=linear address of page directory of other process.    
@@ -906,7 +906,7 @@ read_process_memory:
 ;  eax - number of bytes read.
     pushad
     shl  eax,8
-    mov  eax,[0x80000+eax+0xB8]
+    mov  eax,[0x80000+eax+APPDATA.dir_table]
     call MEM_Get_Linear_Address
     mov  ebp,eax
     add  edx,std_application_base_address
@@ -1009,10 +1009,10 @@ check_process_region:
     test ecx,ecx
     jle  .ok
     shl  eax,5
-    cmp  word [0x3000+eax+0xa],0
+    cmp  word [0x3000+eax+TASKDATA.state],0
     jnz  .failed
     shl  eax,3
-    mov  eax,[0x80000+eax+0xb8]
+    mov  eax,[0x80000+eax+APPDATA.dir_table]
     test eax,eax
     jz   .failed
     call MEM_Get_Linear_Address
@@ -1081,8 +1081,8 @@ new_sys_ipc:
     shl  edi,8
     add  edi,0x80000 
     cli
-    mov  [edi+0xA0],ebx          ;set fields in extended information area
-    mov  [edi+0xA4],ecx
+    mov  [edi+APPDATA.ipc_start],ebx          ;set fields in extended information area
+    mov  [edi+APPDATA.ipc_size],ecx
     sti
     mov  [esp+36],dword 0        ;success
     ret
@@ -1100,10 +1100,10 @@ new_sys_ipc:
     mov  ebp,eax
 ;ebp = slot of other process    
     shl  eax,8
-    mov  edi,[eax+0x80000+0xa0]  ;is ipc area defined?
+    mov  edi,[eax+0x80000+APPDATA.ipc_start]  ;is ipc area defined?
     test edi,edi
     jz   .no_ipc_area
-    mov  esi,[eax+0x80000+0xa4]  ;esi - size of buffer
+    mov  esi,[eax+0x80000+APPDATA.ipc_size]  ;esi - size of buffer
     push dword -1                ;temp variable for read_process_memory
     mov  ebx,esp
     push ecx
@@ -1131,7 +1131,7 @@ new_sys_ipc:
     add  edx,esi                 
     sub  edx,4                   ;move to beginning of place for our message
     mov  eax,[second_base_address+0x3010]
-    mov  eax,[eax+0x4]           ;eax - our PID
+    mov  eax,[eax+TASKDATA.pid]           ;eax - our PID
     mov  [esp+8],eax
     mov  eax,ebp
     call write_process_memory    ;write PID
@@ -1151,7 +1151,7 @@ new_sys_ipc:
 ;awake other process    
     shl  ebp,8
     mov  eax,ebp
-    or   [eax+0x800A8],dword 0x40
+    or   [eax+0x80000+APPDATA.event_mask],dword 0x40
     
     cmp  dword [check_idle_semaphore],20
     jge  .ipc_no_cis
@@ -1237,7 +1237,7 @@ new_start_application_hd:
     lea    esi,[eax-11]          ;last 11 bytes = application name
     mov    edi,[new_process_place]
     shl    edi,8
-    add    edi,0x80000
+    add    edi,0x80000+APPDATA.app_name
     mov    ecx,11
     cld
     rep    movsb                 ;copy name to extended information about process
@@ -1366,7 +1366,7 @@ new_start_application_hd:
 ;so free directory entry
     mov    eax,[new_process_place]
     shl    eax,8
-    mov    eax,[0x80000+eax+0xB8]
+    mov    eax,[0x80000+eax+APPDATA.dir_table]
     call   MEM_Free_Page
 .cleanfailed_mem:
 ;there is no mem for directory entry, display message.
@@ -1378,7 +1378,7 @@ new_start_application_hd:
 ;this avoid problems with panel application.
     mov    edi,[new_process_place]
     shl    edi,8
-    add    edi,0x80000
+    add    edi,0x80000+APPDATA.app_name
     mov    ecx,11
     mov    eax,' '
     cld
@@ -1455,7 +1455,7 @@ fs_execute:
         mov     ecx, 8  ; 8 chars for name
         mov     edi, [new_process_place]
         shl     edi, cl
-        add     edi, 0x80000
+        add     edi, 0x80000+APPDATA.app_name
 .copy_process_name_loop:
         lodsb
         cmp     al, '.'
@@ -1600,7 +1600,7 @@ fs_execute:
 ; clean process name, this avoid problems with @panel
         mov     edi, [new_process_place]
         shl     edi, 8
-        add     edi, 0x80000
+        add     edi, 0x80000+APPDATA.app_name
         mov     ecx, 11
         mov     al, ' '
         rep     stosb

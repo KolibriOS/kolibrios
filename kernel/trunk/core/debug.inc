@@ -21,7 +21,7 @@ debug_set_event_data:
 ; destroys eax
 	mov	eax, [0x3000]
 	shl	eax, 8
-	mov	[eax+0x80000+0xBC], ebx
+	mov	[eax+0x80000+APPDATA.dbg_event_mem], ebx
 	ret
 
 get_debuggee_slot:
@@ -37,7 +37,7 @@ get_debuggee_slot:
 	shl	eax, 5
 	push	ebx
 	mov	ebx, [0x3000]
-	cmp	[0x80000+eax*8+0xAC], ebx
+	cmp	[0x80000+eax*8+APPDATA.debugger_slot], ebx
 	pop	ebx
 	jnz	.ret_bad
 ;	clc	; automatically
@@ -51,7 +51,7 @@ debug_detach:
 ; destroys eax,ebx
 	call	get_debuggee_slot
 	jc	.ret
-	and	dword [eax*8+0x80000+0xAC], 0
+	and	dword [eax*8+0x80000+APPDATA.debugger_slot], 0
 	call	do_resume
 .ret:
 	sti
@@ -72,13 +72,13 @@ debug_suspend:
 ; destroys eax,ebx
 	call	get_debuggee_slot
 	jc	.ret
-	mov	bl, [0x3000+eax+0xA]	; process state
+	mov	bl, [0x3000+eax+TASKDATA.state]	; process state
 	test	bl, bl
 	jz	.1
 	cmp	bl, 5
 	jnz	.ret
 	mov	bl, 2
-.2:	mov	[0x3000+eax+0xA], bl
+.2:	mov	[0x3000+eax+TASKDATA.state], bl
 .ret:
 	sti
 	ret
@@ -87,13 +87,13 @@ debug_suspend:
 	jmp	.2
 
 do_resume:
-	mov	bl, [0x3000+eax+0xA]
+	mov	bl, [0x3000+eax+TASKDATA.state]
 	cmp	bl, 1
 	jz	.1
 	cmp	bl, 2
 	jnz	.ret
 	mov	bl, 5
-.2:	mov	[0x3000+eax+0xA], bl
+.2:	mov	[0x3000+eax+TASKDATA.state], bl
 .ret:	ret
 .1:	dec	ebx
 	jmp	.2
@@ -227,7 +227,7 @@ debug_set_drx:
 	call	get_debuggee_slot
 	jc	.errret
 	mov	ebp, eax
-	lea	eax, [eax*8+0x80000+0xC0]
+	lea	eax, [eax*8+0x80000+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
 	add	edx, std_application_base_address
@@ -358,7 +358,7 @@ debugger_notify:
 .1:
 	mov	eax, ebp
 	shl	eax, 8
-	mov	edx, [0x80000+eax+0xBC]
+	mov	edx, [0x80000+eax+APPDATA.dbg_event_mem]
 	test	edx, edx
 	jz	.ret
 ; read buffer header
@@ -414,7 +414,7 @@ debugger_notify:
 ; new debug event
 	mov	eax, ebp
 	shl	eax, 8
-	or	byte [0x80000+eax+0xA8+1], 1	; set flag 100h
+	or	byte [0x80000+eax+APPDATA.event_mask+1], 1	; set flag 100h
 .ret:
 	ret
 
@@ -432,7 +432,7 @@ debug_exc:
 ; set DRx registers for task and continue
 	mov	eax, [0x3000]
 	shl	eax, 8
-	add	eax, 0x80000+0xC0
+	add	eax, 0x80000+APPDATA.dbg_regs
 	mov	ecx, [eax+0]
 	mov	dr0, ecx
 	mov	ecx, [eax+4]
@@ -455,7 +455,7 @@ debug_exc:
 	cli
 	mov	eax, [0x3000]
 	shl	eax, 8
-	mov	eax, [0x80000+eax+0xAC]
+	mov	eax, [0x80000+eax+APPDATA.debugger_slot]
 	test	eax, eax
 	jnz	.debug
 	sti
@@ -464,7 +464,7 @@ debug_exc:
 	mov	[error_interrupt], 1
 	call	show_error_parameters
 	mov	edx, [0x3010]
-	mov	byte [edx+0xA], 4
+	mov	byte [edx+TASKDATA.state], 4
 	jmp	change_task
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
@@ -484,7 +484,7 @@ debug_exc:
 	jnz	.l1
 	push	edx	; DR6 image
 	mov	ecx, [0x3010]
-	push	dword [ecx+4]	; PID
+	push	dword [ecx+TASKDATA.pid]	; PID
 	push	12
 	pop	ecx
 	push	3	; 3 = debug exception
@@ -493,7 +493,7 @@ debug_exc:
 	pop	ecx
 	pop	ecx
 	mov	edx, [0x3010]
-	mov	byte [edx+0xA], 1	; suspended
+	mov	byte [edx+TASKDATA.state], 1	; suspended
 	call	change_task
 	restore_ring3_context
 	iretd

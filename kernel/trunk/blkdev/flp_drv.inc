@@ -5,8 +5,8 @@
 ; Адаптация и доработка Mario79
 
 give_back_application_data:  ; переслать приложению   
-     mov edi,[3010h]
-     mov edi,[edi+10h]
+     mov edi,[0x3010]
+     mov edi,[edi+TASKDATA.mem_start]
      add edi,ecx
 give_back_application_data_1:
      mov esi,0xD000   ;FDD_DataBuffer  ;0x40000
@@ -17,8 +17,8 @@ give_back_application_data_1:
      ret
 
 take_data_from_application:   ; взять из приложения
-     mov esi,[3010h]
-     mov esi,[esi+10h]
+     mov esi,[0x3010]
+     mov esi,[esi+TASKDATA.mem_start]
      add esi,ecx
 take_data_from_application_1:
      mov edi,0xD000   ;FDD_DataBuffer  ;0x40000

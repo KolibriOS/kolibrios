@@ -91,10 +91,10 @@ irq1:
        mov   ds, ax
        mov   es, ax
 
-       movzx eax,word[0x3004] ; top window process
+       mov   eax, [0x3004] ; top window process
        movzx eax,word[0xC400+eax*2]
        shl   eax,8
-       mov   al,[0x800B4+eax]
+       mov   al,[0x80000+eax+APPDATA.keyboard_mode]
        mov   [keyboard_mode],al
 
        in    al,0x60

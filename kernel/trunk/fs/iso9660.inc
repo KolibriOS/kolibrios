@@ -25,7 +25,7 @@ reserve_cd:
     push  eax
     mov   eax,[0x3000]
     shl   eax,5
-    mov   eax,[eax+0x3000+4]
+    mov   eax,[eax+0x3000+TASKDATA.pid]
     mov   [cd_status],eax
     pop   eax
     sti

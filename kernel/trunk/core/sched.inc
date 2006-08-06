@@ -91,11 +91,11 @@ endg
 
 update_counters:
         mov   edi, [0x3010]
-        mov   ebx, [edi+0x18] ; time stamp counter add
+        mov   ebx, [edi+TASKDATA.counter_add] ; time stamp counter add
         call  _rdtsc
         sub   eax, ebx
-        add   eax, [edi+0x14] ; counter sum
-        mov   [edi+0x14], eax
+        add   eax, [edi+TASKDATA.counter_sum] ; counter sum
+        mov   [edi+TASKDATA.counter_sum], eax
 ret
 
 
@@ -123,7 +123,7 @@ find_next_task:
         add   edi,0x20
         inc   ebx
 
-        mov   al, byte [edi+0xA]
+        mov   al, byte [edi+TASKDATA.state]
         test  al, al
         jz    .found
 	cmp   al, 1
@@ -146,13 +146,13 @@ find_next_task:
         test  eax, eax
         jz    .waiting_for_event
         mov   [event_sched], eax
-        mov   [edi+0xA], byte 0
+        mov   [edi+TASKDATA.state], byte 0
       .noevents:
       .found:
         mov   [0x3000],ebx
         mov   [0x3010],edi
         call  _rdtsc
-        mov   [edi+0x18],eax
+        mov   [edi+TASKDATA.counter_add],eax
 
 	xor   eax, eax
         cmp   ebx, [prev_slot]
@@ -181,9 +181,9 @@ updatecputimes:
         mov  ecx, [0x3004]
         mov  edi, 0x3020
       .newupdate:
-        mov  ebx,[edi+0x14]
-        mov  [edi+0x1c],ebx
-        mov  [edi+0x14],dword 0
+        mov  ebx,[edi+TASKDATA.counter_sum]
+        mov  [edi+TASKDATA.cpu_usage],ebx
+        mov  [edi+TASKDATA.counter_sum],dword 0
         add  edi,0x20
         dec  ecx
         jnz  .newupdate

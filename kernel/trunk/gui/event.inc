@@ -37,7 +37,7 @@ sys_waitforevent:
    newwait:
 
      mov   eax, [0x3010]
-     mov   [eax+0xA], byte 5
+     mov   [eax+TASKDATA.state], byte 5
      call  change_task
 
      mov eax, [event_sched]
@@ -52,10 +52,10 @@ get_event_for_app:
      pushad
 
      mov   edi,[0x3010]              ; WINDOW REDRAW
-     test  [edi],dword 1
+     test  [edi+TASKDATA.event_mask],dword 1
      jz    no_eventoccur1
      ;mov   edi,[0x3010]
-     cmp   [edi-twdw+31],byte 0
+     cmp   [edi-twdw+WDATA.fl_redraw],byte 0
      je    no_eventoccur1
      popad
      mov   eax,1
@@ -63,7 +63,7 @@ get_event_for_app:
    no_eventoccur1:
 
      ;mov   edi,[0x3010]              ; KEY IN BUFFER
-     test  [edi],dword 2
+     test  [edi+TASKDATA.event_mask],dword 2
      jz    no_eventoccur2
      mov   ecx, [0x3000]
      movzx edx,word [0xC000+ecx*2]
@@ -87,7 +87,7 @@ get_event_for_app:
    no_eventoccur2:
 
      ;mov   edi,[0x3010]              ; BUTTON IN BUFFER
-     test  [edi],dword 4
+     test  [edi+TASKDATA.event_mask],dword 4
      jz    no_eventoccur3
      cmp   [0xf500],byte 0
      je    no_eventoccur3
@@ -113,13 +113,13 @@ get_event_for_app:
    
    
      ;mov   edi,[0x3010]              ; mouse event
-     test  [edi],dword 00100000b
+     test  [edi+TASKDATA.event_mask],dword 00100000b
      jz    no_mouse_event
      mov   eax,[0x3000]
      shl   eax,8
-     test  [eax+0x80000+0xA8],dword 00100000b
+     test  [eax+0x80000+APPDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     and   [eax+0x80000+0xA8],dword 0xffffffff-00100000b
+     and   [eax+0x80000+APPDATA.event_mask],dword 0xffffffff-00100000b
      popad
      mov   eax,6
      ret
@@ -127,7 +127,7 @@ get_event_for_app:
    
 
      ;mov   edi,[0x3010]              ; DESKTOP BACKGROUND REDRAW
-     test  [edi],dword 16
+     test  [edi+TASKDATA.event_mask],dword 16
      jz    no_eventoccur5
      cmp   [0xfff0],byte 2
      jnz   no_eventoccur5
@@ -137,13 +137,13 @@ get_event_for_app:
    no_eventoccur5:
 
      ;mov   edi,[0x3010]              ; IPC
-     test  [edi],dword 01000000b
+     test  [edi+TASKDATA.event_mask],dword 01000000b
      jz    no_ipc
      mov   eax,[0x3000]
      shl   eax,8
-     test  [eax+0x80000+0xA8],dword 01000000b
+     test  [eax+0x80000+APPDATA.event_mask],dword 01000000b
      jz    no_ipc
-     and   [eax+0x80000+0xA8],dword 0xffffffff-01000000b
+     and   [eax+0x80000+APPDATA.event_mask],dword 0xffffffff-01000000b
      popad
      mov   eax,7
      ret
@@ -151,31 +151,31 @@ get_event_for_app:
 
 
      ;mov   edi,[0x3010]              ; STACK
-     test  [edi],dword 10000000b
+     test  [edi+TASKDATA.event_mask],dword 10000000b
      jz    no_stack_event
      mov   eax,[0x3000]
      shl   eax,8
-     test  [eax+0x80000+0xA8],dword 10000000b
+     test  [eax+0x80000+APPDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     and   [eax+0x80000+0xA8],dword 0xffffffff-10000000b
+     and   [eax+0x80000+APPDATA.event_mask],dword 0xffffffff-10000000b
      popad
      mov   eax,8
      ret
    no_stack_event:
 
-     test  byte [edi+1], 1		; DEBUG
+     test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
      jz    no_debug_event
      mov   eax, [0x3000]
      shl   eax, 8
-     test  [eax+0x80000+0xA8+1], byte 1
+     test  byte [eax+0x80000+APPDATA.event_mask+1], byte 1
      jz    no_debug_event
-     and   byte [eax+0x80000+0xA8+1], not 1
+     and   byte [eax+0x80000+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret
    no_debug_event:
 
-     cmp   dword [edi], 0xFFFF
+     cmp   dword [edi+TASKDATA.event_mask], 0xFFFF
      jbe   no_events
 
      mov   esi,0x2e0000              ; IRQ'S AND DATA
@@ -183,14 +183,14 @@ get_event_for_app:
      xor   ecx, ecx
    irq_event_test:
      mov   edi,[0x3010]
-     test  [edi],ebx
+     test  [edi+TASKDATA.event_mask],ebx
      jz    no_irq_event
      mov   edi,ecx
      shl   edi,2
      add   edi,irq_owner
      mov   edx,[edi]
      mov   eax,[0x3010]
-     mov   eax,[eax+0x4]
+     mov   eax,[eax+TASKDATA.pid]
      cmp   edx,eax
      jne   no_irq_event
      cmp   [esi],dword 0

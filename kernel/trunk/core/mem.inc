@@ -188,7 +188,7 @@ create_app_cr3_table:
     mov   eax,[general_page_table]
     call  simple_clone_cr3_table ;clone general page table
     shl   ebx,8
-    mov   [second_base_address+0x80000+ebx+0xB8],eax ;save address of page directory
+    mov   [second_base_address+0x80000+ebx+APPDATA.dir_table],eax ;save address of page directory
     
     pop   ebx
     ret
@@ -199,7 +199,7 @@ get_cr3_table:
 ;result:
 ;  eax - physical address of page directory
    shl    eax,8                  ;size of process extended information=256 bytes
-   mov    eax,[second_base_address+0x80000+eax+0xB8]
+   mov    eax,[second_base_address+0x80000+eax+APPDATA.dir_table]
    ret
 ;-----------------------------------------------------------------------------    
 dispose_app_cr3_table:
@@ -213,7 +213,7 @@ dispose_app_cr3_table:
     mov   ebp,eax
 ;ebp = process slot in the procedure.
     shl   eax,8
-    mov   eax,[second_base_address+0x80000+eax+0xB8]
+    mov   eax,[second_base_address+0x80000+eax+APPDATA.dir_table]
     mov   ebx,eax
 ;ebx = physical address of page directory    
     call  MEM_Get_Linear_Address
@@ -234,10 +234,10 @@ dispose_app_cr3_table:
 ;eax = current slot of process  
     mov   ecx,eax
     shl   ecx,5
-    cmp   byte [second_base_address+0x3000+ecx+0xa],9 ;if process running?
+    cmp   byte [second_base_address+0x3000+ecx+TASKDATA.state],9 ;if process running?
     jz    .next                  ;skip empty slots
     shl   ecx,3
-    cmp   [second_base_address+0x80000+ecx+0xB8],ebx  ;compare page directory addresses
+    cmp   [second_base_address+0x80000+ecx+APPDATA.dir_table],ebx  ;compare page directory addresses
     jnz   .next
     inc   edx                    ;thread found
 .next:

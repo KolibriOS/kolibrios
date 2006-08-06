@@ -44,7 +44,9 @@
 ;
 ;         20   dword  application event mask
 ;         24   dword  PID - process identification number
-;         2a   word   0, state 1,2=suspended 3=zombie, 4=terminate
+;         2a   byte   slot state: 0=running, 1,2=suspended
+;                        3=zombie, 4=terminate,
+;                        5=waiting for event, 9 = not used
 ;         2e   byte   window number on screen
 ;         30   dword  exact position in memory
 ;         34   dword  counter sum
@@ -134,7 +136,7 @@
 ;           7f byte   0= no fpu saved ,  1= fpu saved to 0x10 -> restore
 ;           80 dword  address of random shaped window area
 ;           84 byte   shape area scale
-;           88 dword  used GDT of TSS
+;           88 dword  free
 ;           8C dword  application memory size
 ;           90 dword  window X position save
 ;           94 dword  window Y position save
@@ -144,7 +146,7 @@
 ;           A4 dword  IPC memory size
 ;           A8 dword  event bits: mouse, stack,..
 ;           AC dword  0 or debugger slot
-;           B0 dword  int40 handler in use ; 0 if not in use
+;           B0 dword  free
 ;           B4  byte  keyboard mode: 0 = keymap, 1 = scancodes
 ;           B8 dword  physical address of directory table
 ;           BC dword  address of debug event memory

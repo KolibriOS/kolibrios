@@ -208,8 +208,8 @@ vesa12_drawbackground:
         mov   ebx,3
         mul   ebx
         mov   [imax],eax
-        mov   eax,[draw_data+32+0]
-        mov   ebx,[draw_data+32+4]
+        mov   eax,[draw_data+32+RECT.left]
+        mov   ebx,[draw_data+32+RECT.top]
         mov   edi,0 ;no force
 
       v12dp3:
@@ -330,15 +330,15 @@ vesa12_drawbackground:
         popa
         add   esi,3
         inc   eax
-        cmp   eax,[draw_data+32+8]
+        cmp   eax,[draw_data+32+RECT.right]
         jg    v12nodp31
         jmp   v12dp3
 
       v12nodp31:
 
-        mov   eax,[draw_data+32+0]
+        mov   eax,[draw_data+32+RECT.left]
         inc   ebx
-        cmp   ebx,[draw_data+32+12]
+        cmp   ebx,[draw_data+32+RECT.bottom]
         jg    v12dp4
         jmp   v12dp3
 
@@ -365,8 +365,8 @@ vesa12_drawbar:
     push ecx
     push edx
     mov  ecx,[0x3010]
-    add  eax,[ecx-twdw]
-    add  ebx,[ecx-twdw+4]
+    add  eax,[ecx-twdw+WDATA.box.left]
+    add  ebx,[ecx-twdw+WDATA.box.top]
     push eax
     mov  eax,ebx         ; y
     mov  ebx,[0xfe08]
@@ -403,16 +403,16 @@ vesa12_drawbar:
     push eax
     push ecx
     mov  eax,[0x3010]
-    mov  ecx,[eax+draw_data-0x3000+0]
+    mov  ecx,[eax+draw_data-0x3000+RECT.left]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+4]
+    mov  ecx,[eax+draw_data-0x3000+RECT.top]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+8]
+    mov  ecx,[eax+draw_data-0x3000+RECT.right]
     cmp  ecx,[0xfe00]
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+12]
+    mov  ecx,[eax+draw_data-0x3000+RECT.bottom]
     cmp  ecx,[0xfe04]
     jnz  dbcblimitlset12
     pop  ecx
@@ -726,8 +726,8 @@ vesa12_putimage:
     movzx eax,word [esp+2]
     movzx ebx,word [esp+0]
     mov   ecx,[0x3010]
-    add   eax,[ecx-twdw]
-    add   ebx,[ecx-twdw+4]
+    add   eax,[ecx-twdw+WDATA.box.left]
+    add   ebx,[ecx-twdw+WDATA.box.top]
     push  eax
     mov   eax,ebx         ; y
     mov   ebx,[0xfe08]
@@ -765,16 +765,16 @@ vesa12_putimage:
     push  eax
     push  ecx
     mov  eax,[0x3010]
-    mov  ecx,[eax+draw_data-0x3000+0]
+    mov  ecx,[eax+draw_data-0x3000+RECT.left]
     cmp  ecx,0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+4]
+    mov  ecx,[eax+draw_data-0x3000+RECT.top]
     cmp  ecx,0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+8]
+    mov  ecx,[eax+draw_data-0x3000+RECT.right]
     cmp  ecx,[0xfe00]
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+12]
+    mov  ecx,[eax+draw_data-0x3000+RECT.bottom]
     cmp  ecx,[0xfe04]
     jnz  dbcblimitlset212
     pop  ecx

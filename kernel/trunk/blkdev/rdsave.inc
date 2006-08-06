@@ -11,8 +11,8 @@ sysfn_saveramdisk:    ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
  img_save_hd_2:
      cmp  ebx,3
      jnz  exit_for_anyone
-     mov edx,[3010h]
-     mov edx,[edx+10h]
+     mov edx,[0x3010]
+     mov edx,[edx+TASKDATA.mem_start]
      add edx,ecx
  img_save_hd_3:
      call    reserve_hd1

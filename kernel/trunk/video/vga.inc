@@ -71,8 +71,8 @@ vga_putimage:
  movzx eax,word [esp+2]   ; eax:=x
  movzx ebx,word [esp+0]   ; ebx:=y
  mov ecx,[0x3010]         ;
- add eax,[ecx-twdw]     ; eax+=Xwin
- add ebx,[ecx-twdw+4]   ; ebx+=Ywin
+ add eax,[ecx-twdw+WDATA.box.left]     ; eax+=Xwin
+ add ebx,[ecx-twdw+WDATA.box.top]   ; ebx+=Ywin
  mov ecx,ebx              ; ecx = y+Ywin
  mov edx,eax              ; edx = x+Xwin
 
@@ -104,19 +104,19 @@ vga_putimage:
  push eax ; LFB address
 
  mov eax,[0x3010]
- mov ecx,[eax+draw_data-0x3000+0]
+ mov ecx,[eax+draw_data-0x3000+RECT.left]
  cmp ecx,0
  jnz dbcblimitlset_vga
 
- mov ecx,[eax+draw_data-0x3000+4]
+ mov ecx,[eax+draw_data-0x3000+RECT.top]
  cmp ecx,0
  jnz dbcblimitlset_vga
 
- mov ecx,[eax+draw_data-0x3000+8]
+ mov ecx,[eax+draw_data-0x3000+RECT.right]
  cmp ecx,[0xfe00] ; ecx <> Screen X size
  jnz dbcblimitlset_vga
 
- mov ecx,[eax+draw_data-0x3000+12]
+ mov ecx,[eax+draw_data-0x3000+RECT.bottom]
  cmp ecx,[0xfe04] ; ecx <> Screen Y size
  jnz dbcblimitlset_vga
 
@@ -323,8 +323,8 @@ vga_drawbar:
      push edx ; +0
 
      mov ecx,[0x3010] ;
-     add eax,[ecx-twdw] ; eax:=Xwin+x
-     add ebx,[ecx-twdw+4] ; ebx:=Ywin+y
+     add eax,[ecx-twdw+WDATA.box.left] ; eax:=Xwin+x
+     add ebx,[ecx-twdw+WDATA.box.top] ; ebx:=Ywin+y
      mov ecx, eax ; ecx:=(x+Xwin)
      mov edx, ebx ; edx:=(y+Ywin)
 
@@ -377,19 +377,19 @@ vga_drawbar:
 
      mov eax,[0x3010]
 
-     mov ecx,[eax+draw_data-0x3000+0]
+     mov ecx,[eax+draw_data-0x3000+RECT.left]
      cmp ecx,0
      jnz dbcblimitlset_vga2
 
-     mov ecx,[eax+draw_data-0x3000+4]
+     mov ecx,[eax+draw_data-0x3000+RECT.top]
      cmp ecx,0
      jnz dbcblimitlset_vga2
 
-     mov ecx,[eax+draw_data-0x3000+8]
+     mov ecx,[eax+draw_data-0x3000+RECT.right]
      cmp ecx,[0xfe00]
      jnz dbcblimitlset_vga2
 
-     mov ecx,[eax+draw_data-0x3000+12]
+     mov ecx,[eax+draw_data-0x3000+RECT.bottom]
      cmp ecx,[0xfe04]
      jnz dbcblimitlset_vga2
 
@@ -514,8 +514,8 @@ vga_drawbackground_tiled:
      add edx,dword [WinMapAddress-8] ; +B
      push edx
 
-     mov eax,[draw_data+32+0] ; x start:=(x+Xwin)
-     mov ebx,[draw_data+32+4] ; y start:=(y+Ywin)
+     mov eax,[draw_data+32+RECT.left] ; x start:=(x+Xwin)
+     mov ebx,[draw_data+32+RECT.top] ; y start:=(y+Ywin)
      mov ecx,eax
      mov edx,ebx
 
@@ -587,7 +587,7 @@ vga_drawbackground_tiled:
    nbgpvga:
 
      inc eax                       ; x++
-     cmp eax,[draw_data+32+8]         ; X > xend?
+     cmp eax,[draw_data+32+RECT.right]         ; X > xend?
      jg  nodp3vga
 
      test eax,0x07                 ; x test modulo 8
@@ -602,7 +602,7 @@ vga_drawbackground_tiled:
 
    nodp3vga:
 
-     mov eax,[draw_data+32+0]         ; x+Xwin
+     mov eax,[draw_data+32+RECT.left]         ; x+Xwin
      inc ebx                       ; y position
      mov ecx,eax
      mov edx,ebx
@@ -622,7 +622,7 @@ vga_drawbackground_tiled:
 
      call calculate_edi
 
-     cmp ebx,[draw_data+32+12]         ; Y > yend
+     cmp ebx,[draw_data+32+RECT.bottom]         ; Y > yend
      jg  dp4vga
 
      jmp dp3vga
@@ -657,8 +657,8 @@ vga_drawbackground_stretch:
      add edx,dword [WinMapAddress-8] ; +B
      push edx
 
-     mov eax,[draw_data+32+0] ; x start:=(x+Xwin)
-     mov ebx,[draw_data+32+4] ; y start:=(y+Ywin)
+     mov eax,[draw_data+32+RECT.left] ; x start:=(x+Xwin)
+     mov ebx,[draw_data+32+RECT.top] ; y start:=(y+Ywin)
      mov ecx,eax
      mov edx,ebx
 
@@ -731,7 +731,7 @@ vga_drawbackground_stretch:
    snbgpvga:
 
      inc eax                       ; x++
-     cmp eax,[draw_data+32+8]         ; X > xend?
+     cmp eax,[draw_data+32+RECT.right]         ; X > xend?
      jg  snodp3vga
 
      test eax,0x07                 ; x test modulo 8
@@ -746,7 +746,7 @@ vga_drawbackground_stretch:
 
    snodp3vga:
 
-     mov eax,[draw_data+32+0]         ; x+Xwin
+     mov eax,[draw_data+32+RECT.left]         ; x+Xwin
      inc ebx                       ; y position
      mov ecx,eax
      mov edx,ebx
@@ -766,7 +766,7 @@ vga_drawbackground_stretch:
 
      call calculate_edi
 
-     cmp ebx,[draw_data+32+12]        ; Y > yend
+     cmp ebx,[draw_data+32+RECT.bottom]        ; Y > yend
      jg  sdp4vga
 
      jmp sdp3vga

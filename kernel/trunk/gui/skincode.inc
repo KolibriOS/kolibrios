@@ -203,7 +203,7 @@ drawwindow_IV_caption:
     @@:
 
         mov     esi,[esp+4]
-        mov     eax,[esi+8]    ; window width
+        mov     eax,[esi+WDATA.box.width]    ; window width
         mov     edx,[ebp+SKIN_DATA.left.left]
         shl     edx,16
         mov     ecx,[ebp+SKIN_DATA.left.width]
@@ -214,7 +214,7 @@ drawwindow_IV_caption:
         call    sys_putimage_with_check
 
         mov     esi,[esp+4]
-        mov     eax,[esi+8]
+        mov     eax,[esi+WDATA.box.width]
         sub     eax,[ebp+SKIN_DATA.left.width]
         sub     eax,[ebp+SKIN_DATA.oper.width]
         cmp     eax,[ebp+SKIN_DATA.base.left]
@@ -247,7 +247,7 @@ drawwindow_IV_caption:
   .non_base:
 
         mov     esi,[esp+4]
-        mov     edx,[esi+8]
+        mov     edx,[esi+WDATA.box.width]
         sub     edx,[ebp+SKIN_DATA.oper.width]
         inc     edx
         shl     edx,16
@@ -278,14 +278,14 @@ drawwindow_IV:
         mov     ebp,skin_inactive
      @@:
 
-        mov   eax,[edi+0]
+        mov   eax,[edi+WDATA.box.left]
         shl   eax,16
-        mov   ax,[edi+0]
-        add   ax,[edi+8]
-        mov   ebx,[edi+4]
+		mov   ax,word [edi+WDATA.box.left]
+		add   ax,word [edi+WDATA.box.width]
+        mov   ebx,[edi+WDATA.box.top]
         shl   ebx,16
-        mov   bx,[edi+4]
-        add   bx,[edi+12]
+		mov   bx,word [edi+WDATA.box.top]
+		add   bx,word [edi+WDATA.box.height]
 ;        mov   esi,[edi+24]
 ;        shr   esi,1
 ;        and   esi,0x007f7f7f
@@ -317,7 +317,7 @@ drawwindow_IV:
         xor   eax,eax
         xor   ebx,ebx
         mov   esi,[esp]
-        mov   ecx,[esi+8]
+        mov   ecx,[esi+WDATA.box.width]
         inc   ecx
         mov   edx,[_skinh]
         mov   edi,[common_colours+4] ; standard grab color
@@ -332,19 +332,19 @@ drawwindow_IV:
 
         mov   esi,[esp]
 
-        mov   edx,[esi+04]                       ; WORK AREA
+        mov   edx,[esi+WDATA.box.top]                       ; WORK AREA
         add   edx,21+5
-        mov   ebx,[esi+04]
-        add   ebx,[esi+12]
+        mov   ebx,[esi+WDATA.box.top]
+        add   ebx,[esi+WDATA.box.height]
         cmp   edx,ebx
         jg    _noinside2
         mov   eax,5
         mov   ebx,[_skinh]
-        mov   ecx,[esi+8]
-        mov   edx,[esi+12]
+        mov   ecx,[esi+WDATA.box.width]
+        mov   edx,[esi+WDATA.box.height]
         sub   ecx,4
         sub   edx,4
-        mov   edi,[esi+16]
+        mov   edi,[esi+WDATA.cl_workarea]
         call  [drawbar]
       _noinside2:
 
@@ -373,7 +373,7 @@ drawwindow_IV:
         cmp   [skin_btn_close.left],0
         jge   _bCx_at_right
         mov   ebx,[esp]
-        mov   ebx,[ebx+8]
+        mov   ebx,[ebx+WDATA.box.width]
         inc   ebx
       _bCx_at_right:
         add   ebx,[skin_btn_close.left]
@@ -412,7 +412,7 @@ drawwindow_IV:
         cmp   [skin_btn_minimize.left],0
         jge   _bMx_at_right
         mov   ebx,[esp]
-        mov   ebx,[ebx+8]
+        mov   ebx,[ebx+WDATA.box.width]
         inc   ebx
       _bMx_at_right:
         add   ebx,[skin_btn_minimize.left]

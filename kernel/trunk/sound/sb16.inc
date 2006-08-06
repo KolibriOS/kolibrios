@@ -31,7 +31,7 @@ sound_interface:
    cmp  eax,0                     ; Load data
    jne  no_SB16_load_music
    mov  edi,[0x3010]
-   add  edi,0x10
+   add  edi,TASKDATA.mem_start
    add  ebx,[edi]
    call code_SB16_load_music
    ret
@@ -78,7 +78,7 @@ sound_interface:
 ;   mov   [memAdrNote], eax
    mov   [memAdrNote],edx
    mov   eax,[0x3010]
-   mov   eax,[eax+4]
+   mov   eax,[eax+TASKDATA.pid]
    mov   [pidProcessNote],eax
    xor   eax, eax                      ; Ok!  EAX = 0
  retFunc55:

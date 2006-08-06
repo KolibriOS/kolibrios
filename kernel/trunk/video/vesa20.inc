@@ -118,15 +118,15 @@ vesa20_putimage:
 
         ; calculate absolute (i.e. screen) coordinates
         mov     eax, [0x3010]
-        mov     ebx, [eax-twdw + 0]
+        mov     ebx, [eax-twdw + WDATA.box.left]
         add     ebx, [putimg.image_cx]
         mov     [putimg.abs_cx], ebx
-        mov     ebx, [eax-twdw + 4]
+        mov     ebx, [eax-twdw + WDATA.box.top]
         add     ebx, [putimg.image_cy]
         mov     [putimg.abs_cy], ebx
 
         ; real_sx = MIN(wnd_sx-image_cx, image_sx);
-        mov     ebx, [eax-twdw + 8] ; ebx = wnd_sx
+        mov     ebx, [eax-twdw + WDATA.box.width] ; ebx = wnd_sx
         sub     ebx, [putimg.image_cx]
         ja      @f
         add     esp, putimg.stack_data
@@ -142,7 +142,7 @@ vesa20_putimage:
         mov     [putimg.real_sx], ebx
 
         ; init real_sy
-        mov     ebx, [eax-twdw + 12] ; ebx = wnd_sy
+        mov     ebx, [eax-twdw + WDATA.box.height] ; ebx = wnd_sy
         sub     ebx, [putimg.image_cy]
         ja      @f
         add     esp, putimg.stack_data
@@ -602,13 +602,13 @@ vesa20_drawbar:
         mov     [drbar.bar_cy], ebx
 
         mov     edi, [0x3010]
-        add     eax, [edi-twdw + 0] ; win_cx
-        add     ebx, [edi-twdw + 4] ; win_cy
+        add     eax, [edi-twdw + WDATA.box.left] ; win_cx
+        add     ebx, [edi-twdw + WDATA.box.top] ; win_cy
         mov     [drbar.abs_cx], eax
         mov     [drbar.abs_cy], ebx
 
         ; real_sx = MIN(wnd_sx-bar_cx, bar_sx);
-        mov     ebx, [edi-twdw + 8] ; ebx = wnd_sx
+        mov     ebx, [edi-twdw + WDATA.box.width] ; ebx = wnd_sx
         sub     ebx, [drbar.bar_cx]
         ja      @f
   .exit:                       ;// mike.dld, 2005-01-29
@@ -626,7 +626,7 @@ vesa20_drawbar:
         mov     [drbar.real_sx], ebx
 
         ; real_sy = MIN(wnd_sy-bar_cy, bar_sy);
-        mov     ebx, [edi-twdw + 12] ; ebx = wnd_sy
+        mov     ebx, [edi-twdw + WDATA.box.height] ; ebx = wnd_sy
         sub     ebx, [drbar.bar_cy]
         ja      @f
         add     esp, drbar.stack_data
@@ -852,8 +852,8 @@ vesa20_drawbackground_tiled:
      add edx,dword [WinMapAddress-8] ; +B
      push edx
 
-     mov ebp,[draw_data+32+0] ; x start:=(x+Xwin)
-     mov ebx,[draw_data+32+4] ; y start:=(y+Ywin)
+     mov ebp,[draw_data+32+RECT.left] ; x start:=(x+Xwin)
+     mov ebx,[draw_data+32+RECT.top] ; y start:=(y+Ywin)
 
      mov eax,[BytesPerScanLine]
      mul ebx
@@ -934,14 +934,14 @@ vesa20_drawbackground_tiled:
      inc edi                       ; ptrBuffer++
      add esi,3                     ; ptrImage+=3
      inc eax
-     cmp eax,[draw_data+32+8]         ; X > xend?
+     cmp eax,[draw_data+32+RECT.right]         ; X > xend?
 ;     jg nodp3
 ;     jmp dp3
 ;
 ;   nodp3:
      jle dp3
 
-     mov ebp,[draw_data+32+0]
+     mov ebp,[draw_data+32+RECT.left]
 
      inc ebx
 
@@ -961,7 +961,7 @@ vesa20_drawbackground_tiled:
 
      call calculate_edi
 
-     cmp ebx,[draw_data+32+12]
+     cmp ebx,[draw_data+32+RECT.bottom]
 ;     jg  dp4
 ;
 ;     jmp dp3
@@ -997,8 +997,8 @@ vesa20_drawbackground_stretch:
      add edx,dword [WinMapAddress-8] ; +B
      push edx
 
-     mov ebp,[draw_data+32+0] ; x start:=(x+Xwin)
-     mov ebx,[draw_data+32+4] ; y start:=(y+Ywin)
+     mov ebp,[draw_data+32+RECT.left] ; x start:=(x+Xwin)
+     mov ebx,[draw_data+32+RECT.top] ; y start:=(y+Ywin)
 
      mov eax,[BytesPerScanLine]
      mul ebx
@@ -1070,10 +1070,10 @@ vesa20_drawbackground_stretch:
      inc edi                       ; ptrBuffer++
      add esi,3                     ; ptrImage+=3
      inc eax
-     cmp eax,[draw_data+32+8]         ; X > xend?
+     cmp eax,[draw_data+32+RECT.right]         ; X > xend?
      jle sdp3
 
-     mov ebp,[draw_data+32+0]
+     mov ebp,[draw_data+32+RECT.left]
 
      inc ebx
 
@@ -1093,7 +1093,7 @@ vesa20_drawbackground_stretch:
 
      call calculate_edi
 
-     cmp ebx,[draw_data+32+12]
+     cmp ebx,[draw_data+32+RECT.bottom]
      jle sdp3
 
      add esp,4

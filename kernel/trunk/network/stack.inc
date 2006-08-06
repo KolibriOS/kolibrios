@@ -995,7 +995,7 @@ stack_get_packet:
 
     ; Get the address of the callers data
     mov     edi,[0x3010]
-    add     edi,0x10
+    add     edi,TASKDATA.mem_start
     add     edx,[edi]
     mov     edi, edx
 
@@ -1058,7 +1058,7 @@ stack_insert_packet:
 
     ; Get the address of the callers data
     mov     edi,[0x3010]
-    add     edi,0x10
+    add     edi,TASKDATA.mem_start
     add     eax,[edi]
     mov     esi, eax
 
@@ -1117,7 +1117,7 @@ socket_open:
     mov     [eax + 24], dword 0      ; recieved data count
 
     mov     esi, [0x3010]
-    mov     ebx, [esi+0x4]
+    mov     ebx, [esi+TASKDATA.pid]
     mov     [eax + 4], ebx         ; save the process ID
     pop     eax      ; Get the socket number back, so we can return it
 
@@ -1176,7 +1176,7 @@ sot_001:
     mov     [eax + 28], ebx            ; Indicate the state of the TCB
 
     mov     esi, [0x3010]
-    mov     ecx, [esi+0x4]
+    mov     ecx, [esi+TASKDATA.pid]
     mov     [eax + 4], ecx         ; save the process ID
 
     cmp     ebx, TCB_LISTEN
@@ -1548,7 +1548,7 @@ socket_write:
 
     ; Get the address of the callers data
     mov     edi,[0x3010]
-    add     edi,0x10
+    add     edi,TASKDATA.mem_start
     add     eax,[edi]
     mov     esi, eax
 
@@ -1671,7 +1671,7 @@ socket_write_tcp:
 
     ; Get the address of the callers data
     mov     edi,[0x3010]
-    add     edi,0x10
+    add     edi,TASKDATA.mem_start
     add     edx,[edi]
     mov     esi, edx
 
