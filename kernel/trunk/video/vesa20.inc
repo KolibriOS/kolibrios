@@ -278,6 +278,8 @@ put_image_end_32:
    .finish:
         add     esp, putimg.stack_data
         popad
+        call   VGA__putimage 
+        mov     [EGA_counter],1
 ret
 
 
@@ -773,8 +775,9 @@ draw_bar_end_32:
 
         add     esp, drbar.stack_data
         popad
+        call    VGA_draw_bar
         xor     eax, eax
-
+        mov     [EGA_counter],1
 ret
 
 
@@ -976,7 +979,8 @@ vesa20_drawbackground_tiled:
      pop ebx
      pop eax
      pop ebp
-
+     mov     [EGA_counter],1
+     call  VGA_drawbackground
      ret
 
 ; ----------
@@ -1103,5 +1107,6 @@ vesa20_drawbackground_stretch:
      pop ebx
      pop eax
      pop ebp
-
+     mov     [EGA_counter],1
+     call  VGA_drawbackground
      ret

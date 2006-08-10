@@ -10,7 +10,7 @@
 
 system_shutdown:          ; shut down the system
 
-    push 3		; stop playing cd
+    push 3        ; stop playing cd
     pop  eax
     call sys_cd_audio
     cld
@@ -48,22 +48,22 @@ system_shutdown:          ; shut down the system
 
     mov  eax,[0xfe00]
     shr  eax,1
-    lea  esi,[eax+220]		; x end
-    sub  eax,220		; x start
+    lea  esi,[eax+220]        ; x end
+    sub  eax,220        ; x start
 
     mov  ebx,[0xfe04]
     shr  ebx,1
     mov  [shutdownpos],ebx
-    lea  ebp,[ebx+105]		; y end
-    sub  ebx,120		; y start
+    lea  ebp,[ebx+105]        ; y end
+    sub  ebx,120        ; y start
 
     xor  edi,edi
-    inc  edi		; force putpixel & dtext
+    inc  edi        ; force putpixel & dtext
     mov  ecx,0x0000ff
 
 ; vertical loop begin
   sdnewpix1:
-    push eax	; save x start
+    push eax    ; save x start
 
 ; horizontal loop begin
   sdnewpix2:
@@ -75,10 +75,10 @@ system_shutdown:          ; shut down the system
     jnz  sdnewpix2
 ; horizontal loop end
 
-    dec  ecx	; color
-    pop  eax	; restore x start
+    dec  ecx    ; color
+    pop  eax    ; restore x start
 
-    inc  ebx	; advance y pos
+    inc  ebx    ; advance y pos
     cmp  ebx,ebp
     jnz  sdnewpix1
 ; vertical loop end
@@ -121,12 +121,12 @@ system_shutdown:          ; shut down the system
     push edx
     push 12
     pop  esi
-    push edi	; may be destroyed
+    push edi    ; may be destroyed
     call fileread
     pop  edi
 
     pop  ecx
-    inc  ecx	; do not display stars from rose.txt
+    inc  ecx    ; do not display stars from rose.txt
     pop  eax
     add  eax,20*10000h - 110
 
@@ -142,7 +142,7 @@ system_shutdown:          ; shut down the system
     cmp  cx,word 0x0001+25*31
     jnz  nrl
 
-    call checkEgaCga
+    call checkVga_N13
 
  yes_shutdown_param:
     cli
@@ -185,12 +185,12 @@ pr_mode_exit:
 org $-0x10000
 
 ; setup stack
-	mov	ax, 3000h
-	mov	ss, ax
-	mov	esp, 0EC00h
+    mov    ax, 3000h
+    mov    ss, ax
+    mov    esp, 0EC00h
 ; setup ds
-	push	cs
-	pop	ds
+    push    cs
+    pop    ds
 
     lidt [old_ints_h-0x10000]
 ;remap IRQs
@@ -259,21 +259,21 @@ org $-0x10000
 
   nbw32:
 
-    dec  ax	; 1 = write floppy
+    dec  ax    ; 1 = write floppy
     js   nbw
     jnz  no_floppy_write
     call floppy_write
     jmp  temp_3456 ;nbw
   no_floppy_write:
 
-    dec  ax	; 2 = power off
+    dec  ax    ; 2 = power off
     jnz  no_apm_off
     call APM_PowerOff
     jmp  $
   no_apm_off:
 
-    dec  ax	; 3 = reboot
-    jnz  restart_kernel		; 4 = restart kernel
+    dec  ax    ; 3 = reboot
+    jnz  restart_kernel        ; 4 = restart kernel
     push 0x40
     pop  ds
     mov  word[0x0072],0x1234 
@@ -332,20 +332,20 @@ restart_kernel_4000:
 ;        add     di,0x1000
 ;        cmp     di,0x2000
 ;        jbe     new_kernel_block_move
-	push	ds
-	pop	es
-	mov	cx, 0x8000
-	push	cx
-	mov	ds, cx
-	xor	si, si
-	xor	di, di
-	rep	movsw
-	push	0x9000
-	pop	ds
-	push	0x2000
-	pop	es
-	pop	cx
-	rep	movsw
+    push    ds
+    pop    es
+    mov    cx, 0x8000
+    push    cx
+    mov    ds, cx
+    xor    si, si
+    xor    di, di
+    rep    movsw
+    push    0x9000
+    pop    ds
+    push    0x2000
+    pop    es
+    pop    cx
+    rep    movsw
 
         wbinvd  ; write and invalidate cache
 
@@ -355,27 +355,27 @@ restart_kernel_4000:
 ;        mov     ss,ax
 ;        mov     sp,0xec00
 ; restore timer
-	mov	al, 00110100b
-	out	43h, al
-	jcxz	$+2
-	mov	al, 0xFF
-	out	40h, al
-	jcxz	$+2
-	out	40h, al
-	jcxz	$+2
+    mov    al, 00110100b
+    out    43h, al
+    jcxz    $+2
+    mov    al, 0xFF
+    out    40h, al
+    jcxz    $+2
+    out    40h, al
+    jcxz    $+2
         sti
 
 ; bootloader interface
-	push	0x1000
-	pop	ds
-	mov	si, .bootloader_block;-0x10000
-	mov	ax, 'KL'
+    push    0x1000
+    pop    ds
+    mov    si, .bootloader_block;-0x10000
+    mov    ax, 'KL'
         jmp     0x1000:0000
 
 .bootloader_block:
-	db	1	; version
-	dw	1	; floppy image is in memory
-	dd	0	; cannot save parameters
+    db    1    ; version
+    dw    1    ; floppy image is in memory
+    dd    0    ; cannot save parameters
 
 APM_PowerOff:
         mov     ax, 5304h
@@ -428,46 +428,46 @@ floppy_write:   ; write diskette image to physical floppy
         je   fwwritedone
         mov  [flm-0x10000],byte 1
 
-	xor	ax, ax		; reset drive
-	xor	dx, dx
+    xor    ax, ax        ; reset drive
+    xor    dx, dx
         int     0x13
 
         mov     cx,0x0001               ; startcyl,startsector
 ;        mov     dx,0x0000               ; starthead,drive
-	xor	dx, dx
-        mov	ax, 80*2               ; read no of sect
+    xor    dx, dx
+        mov    ax, 80*2               ; read no of sect
 
       fwwrites:
-	push	ax
+    push    ax
 
         ; move 1mb+ -> 0:a000
 
-	pusha
+    pusha
         mov     si,fwmovedesc -0x10000
         mov     cx,256*18
         mov     ah,0x87
-        push	ds
-        pop	es
+        push    ds
+        pop    es
         int     0x15
-        add	dword [fwmovedesc-0x10000+0x12], 512*18
+        add    dword [fwmovedesc-0x10000+0x12], 512*18
         popa
 
         xor     si,si
-        mov	es,si
+        mov    es,si
       fwnewwrite:
         mov     bx,0xa000               ; es:bx -> data area
         mov     ax,0x0300+18            ; read, no of sectors to read
         int     0x13
 
-	test	ah, ah
+    test    ah, ah
         jz      fwgoodwrite
 
-	inc	si
+    inc    si
         cmp     si,10
         jnz     fwnewwrite
 
 ; can't access diskette - return
-	pop	ax
+    pop    ax
         ret
 
       fwgoodwrite:
