@@ -879,7 +879,7 @@ terminate: ; terminate application
 
         push    esi     ; remove hd1 & cd & flp reservation
         shl     esi, 5
-        mov     esi, [esi+0x3004]
+        mov     esi, [esi+0x3000+TASKDATA.pid]
         cmp     [hd1_status], esi
         jnz     @f
         mov     [hd1_status], 0
@@ -897,7 +897,7 @@ terminate: ; terminate application
     pusha ; remove all irq reservations
     mov   eax,esi
     shl   eax, 5
-    mov   eax,[edx+0x3000+TASKDATA.pid]
+    mov   eax,[eax+0x3000+TASKDATA.pid]
     mov   edi,irq_owner
     mov   ecx,16
   newirqfree:

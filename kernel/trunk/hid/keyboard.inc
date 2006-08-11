@@ -189,38 +189,6 @@ irq1:
    @@: test  dl,VKEY_ALT         ; alt on ?
        jz    @f
        mov   bl,[keymap_alt+eax]
-; alt mouse ?
-       xor   edx,edx
-       cmp   bl,178
-       jnz   .no_alt.up
-       mov   edx,5*65536
-       jmp   .mouse.change
-   .no_alt.up:
-       cmp   bl,177
-       jnz   .no_alt.down
-       mov   edx,251*65536
-       jmp   .mouse.change
-   .no_alt.down:
-       cmp   bl,176
-       jnz   .no_alt.left
-       mov   edx,251*256
-       jmp   .mouse.change
-   .no_alt.left:
-       cmp   bl,179
-       jnz   .no_alt.right
-       mov   edx,5*256
-       jmp   .mouse.change
-   .no_alt.right:
-       cmp   bl,' '
-       jne   @f
-       xor   [altmouseb],1
-   .mouse.change:
-       mov   byte[0xF604],1; ps2 data
-       mov   byte[0xFB00],0; ps2 chunk count
-       mov   word[0x2E0000+4096*12],3; mouse data count
-       mov   dl,[altmouseb]
-       mov   [0x2E0000+4096*12+0x10],edx
-       mov   bl,0
    @@:
         mov     bh, 0
         jmp     .writekey
