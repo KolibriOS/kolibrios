@@ -4035,9 +4035,9 @@ sys_putimage:
 @@:
         mov     eax, vesa20_putimage
 .doit:
-;       inc     [mouse_pause]
+        inc     [mouse_pause]
         call    eax
-;       dec     [mouse_pause]
+        dec     [mouse_pause]
         jmp     [draw_pointer]
 
 ; eax x beginning
@@ -4881,7 +4881,6 @@ syscall_writeramdiskfile:               ; WriteRamdiskFile
 align 4
 
 syscall_getpixel:                       ; GetPixel
-
      mov   ecx,[0xfe00]
      inc   ecx
      xor   edx,edx

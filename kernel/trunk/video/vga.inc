@@ -172,10 +172,7 @@ checkVga_N13:
      m13pix:
         lodsd
         cmp    eax,0
-        jne    @f
-        xor    eax,eax
-        jmp    .save_pixel
-    @@:
+        je    .save_pixel
         push   eax
         mov    ebx,eax
         and    eax,(128+64+32)      ; blue
@@ -198,7 +195,10 @@ checkVga_N13:
         popad
         ret
 
-    novesal_1:
+VGA_drawbackground:
+; draw all  
+        cmp    [0xfe0c],dword 0x12
+        jne     .end
         pushad
         mov    esi,[0xfe80]
         mov    edi,0xa0000
@@ -217,6 +217,7 @@ checkVga_N13:
         jnz    @r
         call   VGA_draw_long_line_1
         popad
+    .end:
         ret
 
 VGA_draw_long_line:
@@ -263,25 +264,25 @@ VGA_draw_32_pixels:
         dec    cl
         shl    ch,cl
         cmp    al,85
-        jb     .p13green
+        jbe     .p13green
         or     [ebp],ch
         cmp    al,170
-        jb     .p13green
+        jbe     .p13green
         or     [ebp+12],ch
     .p13green:
         cmp    ah,85
-        jb     .p13red
+        jbe     .p13red
         or     [ebp+4],ch
         cmp    ah,170
-        jb     .p13red
+        jbe     .p13red
         or     [ebp+12],ch
     .p13red:
         shr    eax,8
         cmp    ah,85
-        jb     .p13cont
+        jbe     .p13cont
         or     [ebp+8],ch
         cmp    ah,170
-        jb     .p13cont
+        jbe     .p13cont
         or     [ebp+12],ch
     .p13cont:
         ror    eax,8
@@ -333,25 +334,25 @@ VGA_putpixel:
         cmp    eax,0
         je     .p13cont
         cmp    al,85
-        jb    .p13green
+        jbe    .p13green
         or     dl,0x01
         cmp    al,170
-        jb    .p13green
+        jbe    .p13green
         or     dl,0x08
 .p13green:
         cmp    ah,85
-        jb    .p13red
+        jbe    .p13red
         or     dl,0x02
         cmp    ah,170
-        jb    .p13red
+        jbe    .p13red
         or     dl,0x08
 .p13red: 
         shr    eax,8
         cmp    ah,85
-        jb    .p13cont
+        jbe    .p13cont
         or     dl,0x04
         cmp    ah,170
-        jb    .p13cont
+        jbe    .p13cont
         or     dl,0x08
 .p13cont:
         ror    edx,8
@@ -375,7 +376,6 @@ VGA__putimage:
         cmp    [0xfe0c],dword 0x12
         jne     @f
          pushad
-        ; calculate absolute (i.e. screen) coordinates
          rol  edx,16
          movzx eax,dx
          rol  edx,16
@@ -443,10 +443,4 @@ VGA_draw_long_line_1:
         pop    edi esi edx ebx
         ret
 
-VGA_drawbackground:
-; draw all  
-        cmp    [0xfe0c],dword 0x12
-        jne     @f
-        call   novesal_1
-@@:
-        ret 
+
