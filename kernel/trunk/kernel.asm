@@ -1972,7 +1972,9 @@ sys_system_table:
         dd      sysfn_centermouse       ; 15 = center mouse cursor
         dd      sysfn_getfreemem        ; 16 = get free memory size
         dd      sysfn_getallmem         ; 17 = get total memory size
-        dd      sysfn_terminate2        ; 18 = terminate thread using PID instead of slot
+        dd      sysfn_terminate2        ; 18 = terminate thread using PID 
+                                        ;                 instead of slot
+        dd      sysfn_mouse_acceleration; 19 = set/get mouse acceleration
 sysfn_num = ($ - sys_system_table)/4
 endg
 
@@ -2168,6 +2170,39 @@ sysfn_waitretrace:     ; 18.14 = sys wait retrace
 sysfn_centermouse:      ; 18.15 = mouse centered
      call  mouse_centered
      mov [esp+36],dword 0
+     ret
+
+sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
+     cmp  ebx,0  ; get mouse speed factor
+     jnz  .set_mouse_acceleration
+     xor  eax,eax 
+     mov  ax,[mouse_speed_factor]
+     mov  [esp+36],eax
+     ret
+ .set_mouse_acceleration:
+     cmp  ebx,1  ; set mouse speed factor
+     jnz  .get_mouse_delay
+     mov  [mouse_speed_factor],cx
+     ret
+ .get_mouse_delay:
+     cmp  ebx,2  ; get mouse delay
+     jnz  .set_mouse_delay
+     mov  eax,[mouse_delay]
+     mov  [esp+36],eax
+     ret
+ .set_mouse_delay:
+     cmp  ebx,3  ; set mouse delay
+     jnz  .set_pointer_position
+     mov  [mouse_delay],ecx
+     ret
+ .set_pointer_position:
+     cmp  ebx,4  ; set mouse pointer position
+     jnz  .end
+     mov   [0xFB0C],cx    ;y
+     ror   ecx,16
+     mov   [0xFB0A],cx    ;x
+     rol   ecx,16
+ .end:
      ret
 
 sysfn_getfreemem:

@@ -4,7 +4,7 @@ MouseByteNumber_1 DB 0
 FirstByte_1       DB 0
 SecondByte_1      DB 0
 ThirdByte_1       DB 0
-
+timer_ticks_com_1 dd 0
 ;***************************************
 ;* НОВЫЙ ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ МЫШИ *
 ;***************************************
@@ -68,7 +68,7 @@ check_mouse_data_com2:
         shl     AL,6
         or      AL,[SecondByte_1]
         cbw
-         shl  ax,1
+        call    mouse_acceleration_com2
         add     AX,[0xFB0A]    ;[XCoordinate]
         ; Курсор не должен выходить за левую или
         ; правую границу экрана
@@ -90,7 +90,7 @@ check_mouse_data_com2:
         shl     AL,4
         or      AL,[ThirdByte_1]
         cbw
-         shl  ax,1
+        call    mouse_acceleration_com2
         add     AX,[0xFB0C]   ;[YCoordinate]
         ; Курсор не должен выходить за верхнюю или
         ; нижнюю границу экрана
@@ -106,6 +106,8 @@ check_mouse_data_com2:
         xor     AX,AX
 @@Y2_1:
         mov     [0xFB0C],AX     ;[YCoordinate]
+        mov   eax,[timer_ticks]
+        mov   [timer_ticks_com_1],eax
         jmp     @@EndMouseInterrupt_1
 
 @@Error_1:
@@ -116,3 +118,13 @@ check_mouse_data_com2:
         call  ready_for_next_irq
         ret
 
+mouse_acceleration_com2:
+        push    eax
+        mov   eax,[timer_ticks]
+        sub   eax,[timer_ticks_com_1]
+        cmp   eax,[mouse_delay]
+        pop    eax
+        ja     @f
+        shl   ax,1
+@@:
+        ret

@@ -4,6 +4,7 @@ MouseByteNumber_2 DB 0
 FirstByte_2       DB 0
 SecondByte_2      DB 0
 ThirdByte_2       DB 0
+timer_ticks_ps2   dd 0
 
 ;**************************************
 ;* ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ МЫШИ PS/2 *
@@ -53,7 +54,7 @@ check_mouse_data_ps2:
         ; Занести в AL младший байт
 @@M0:
          mov     AL,[SecondByte_2]
-         shl  ax,1
+        call     mouse_acceleration_ps2
         ; Вычислить новое значение координаты
         ; курсора по X
         add     AX,[0xFB0A]    ;[XCoordinate]
@@ -79,7 +80,7 @@ check_mouse_data_ps2:
         ; Занести в AL младший байт
 @@M3:
         mov     AL,[ThirdByte_2]
-         shl  ax,1
+        call     mouse_acceleration_ps2
         ; Вычислить новое значение координаты курсора
         ; по Y (Y-координата мыши PS/2 направлена
         ; противоположно экранной)
@@ -98,6 +99,8 @@ check_mouse_data_ps2:
         mov     [0xFB0C],AX     ;[YCoordinate]
 
 ; Показать курсор в новой позиции
+        mov   eax,[timer_ticks]
+        mov   [timer_ticks_ps2],eax
         jmp     @@EndMouseInterrupt_2
 
 ; Обнаружен сбой в порядке передачи информации от мыши
@@ -107,7 +110,17 @@ check_mouse_data_ps2:
 @@EndMouseInterrupt_2:
         call  ready_for_next_irq_1
         ret
-                        
+
+mouse_acceleration_ps2:
+        push    eax
+        mov   eax,[timer_ticks]
+        sub   eax,[timer_ticks_ps2]
+        cmp   eax,[mouse_delay]
+        pop    eax
+        ja     @f
+        imul  ax,[mouse_speed_factor]
+@@:
+        ret
 ;***********************************************
 ;*   ОЖИДАНИЕ ОЧИСТКИ ВХОДНОГО БУФЕРА I8042    *
 ;* При выходе из процедуры:                    *

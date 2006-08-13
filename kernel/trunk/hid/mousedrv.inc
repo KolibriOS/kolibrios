@@ -16,6 +16,9 @@ uglobal
   mousedata   dd  0x0
 endg
 
+mouse_delay     dd  10
+mouse_speed_factor dw 3
+
 include 'm_ps2.inc'
 include 'm_com1.inc'
 include 'm_com2.inc'

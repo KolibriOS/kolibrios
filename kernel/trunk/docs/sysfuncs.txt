@@ -926,6 +926,54 @@ Remarks:
     process/thread by given slot.
 
 ======================================================================
+====================== Function 18, subfunction 19 =====================
+======================= Get/set mouse features. ======================
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = subsubfunction number
+
+    ecx = 0 - get mouse speed
+    Returned value:
+    * eax = current mouse speed
+
+    ecx = 1 - set mouse speed
+    edx = selected value of speed 
+    Returned value:
+    * function does not return value
+
+    ecx = 2 - get mouse delay
+    Returned value:
+    * eax = current mouse delay
+
+    ecx = 3 - set mouse delay
+    edx = selected value of delay
+    Returned value:
+    * function does not return value
+
+    ecx = 4 - set mouse pointer position
+    edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+    Returned value:
+    * function does not return value
+
+Remarks:
+  * Recommended speed of the mouse (in subfunction 1) from 1 up to 9.
+    The installed value is not inspected by the code of a kernel, on this use
+    cautiously, at incorrect value the cursor can "freeze".
+    Speed of mouse can be regulated through the application SETUP.
+  * Recommended delay of the mouse (in subfunction 3) = 10. Lower value
+    is not handled COM by mice. At the very large values the movement of
+    the mouse on 1 pixel is impossible and the cursor will jump
+    on the value of the installed speed (subfunction 1).
+    The installed value is not inspected by the code of a kernel.
+  * In subfunction 4 the installed value is not inspected by
+    the code of a kernel. Before usage it is necessary to find out current
+    screen resolution and at installation of a position to watch,
+    that the value of a position should do not fall outside
+    the limits the screen.
+
+======================================================================
 ============ Function 19 - start application from ramdisk. ===========
 ======================================================================
 Parameters:
@@ -2086,11 +2134,11 @@ Remarks:
   * Structure of the color table is described in the standard
     include file 'macros.inc' as 'system_colors'; for example,
     it is possible to write:
-    	sc	system_colors		; variable declaration
-    	...				; somewhere one must call
-    					; this function with ecx=sc
-    	mov	ecx, [sc.work_button_text]	; read text color on
-    					; buttin in working area
+        sc    system_colors        ; variable declaration
+        ...                ; somewhere one must call
+                        ; this function with ecx=sc
+        mov    ecx, [sc.work_button_text]    ; read text color on
+                        ; buttin in working area
   * A program itself desides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
@@ -3240,11 +3288,11 @@ Remarks:
 The data of the graphics screen (the memory area which displays
 screen contents) are accessible to a program directly, without
 any system calls, through the selector gs:
-	mov	eax, [gs:0]
+    mov    eax, [gs:0]
 places in eax the first dword of the buffer, which contains
 information on color of the left upper point (and, possibly, colors
 of several following).
-	mov	[gs:0], eax
+    mov    [gs:0], eax
 by work in VESA modes with LFB sets color of the left upper point
 (and, possibly, colors of several following).
 To interpret the data of graphics screen program needs to know
@@ -3806,7 +3854,7 @@ Remarks:
     and at arrival of new message the system will wait.
     For synchronization frame all work with the buffer by operations
     lock/unlock
-    	neg	[bufsize]
+        neg    [bufsize]
   * Data in the buffer are considered as array of items with variable
     length - messages. Format of a message is explained in
     general description.
@@ -4372,3 +4420,4 @@ Application start functions can return also following errors:
   * 30 = 0x1E = not enough memory
   * 31 = 0x1F = file is not executable
   * 32 = 0x20 = too many processes
+
