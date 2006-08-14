@@ -1,7 +1,7 @@
 /*******************************************************************************
 
     MenuetOS MineSweeper
-    Copyright (C) 2003  Ivan Poddubny
+    Copyright (C) 2003, 2004  Ivan Poddubny
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,29 +26,69 @@ byte px,py,pm;
 byte uf_open = FALSE;
 byte uf_stack[2048];
 
-byte str1[5];
-byte str2[5];
-byte str3[5];
+dword active_textbox = #str1;
 
-dword uf_x,
-      uf_y;
+byte str1[4] = {'1','1','1',0};
+byte str2[4] = {'2','2','2',0};
+byte str3[4] = {'3','2','1',0};
+
+dword uf_x=0,
+      uf_y=0;
+
+:fastcall dword str2dword(dword EAX)
+// str2byte переводит строку из 3ёх цифр в байт
+// IN:  EAX = адрес сторки
+// OUT: EAX = байт
+{
+  EDX = 0;
+  ECX = 0;
+  WHILE(ECX<3)
+  {
+    EDX *= 10;
+    EBX = DSBYTE[EAX+ECX];
+    EBX -= '0';
+    EDX += EBX;
+    ECX++;
+  }
+  EAX = EDX;
+}
+
+:fastcall void dword2str(dword EAX,ESI)
+{
+  $PUSHA
+  DSDWORD[ESI]=0;
+//  EAX &= 255;
+  EDI = 10;
+  ECX = 2;
+  WHILE(ECX>=0)
+  {
+    IF(!EAX) BREAK;
+    $XOR EDX,EDX
+    $DIV EDI              // al = div; dl = mod
+    DL += '0';
+    DSBYTE[ESI+ECX] = DL;
+    ECX--;
+  }
+  $POPA
+}
 
 void draw_uf_window()
 {
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: отрисовка UF\n"w);
+  #endif
+
   sys_get_colors(#colors, 40);
   sys_window_redraw(1);
 
   EDX = colors.w_work;
   $bts edx,25
-  sys_draw_window(uf_x, uf_y, EDX, colors.w_grab | 0x80000000, colors.w_frames);
+  EBX = uf_x;
+  ECX = uf_y;
+  sys_draw_window(EBX, ECX, EDX, colors.w_grab | 0x80000000, colors.w_frames);
   ECX = colors.w_grab_text | 0x10000000;
-  sys_write_text(8<<16+8, colors.w_grab_text | 0x10000000, "USER FIELD", 10);
-  sys_draw_button(81<<16+12, 5<<16+12, 1, colors.w_grab_button);
-
-  ECX = colors.w_work_text | 0x10000000;
-  sys_write_text(8<<16+31, ECX, "WIDTH",  5);
-  sys_write_text(8<<16+49, ECX, "HEIGHT", 6);
-  sys_write_text(8<<16+67, ECX, "MINES",  5);
+  sys_write_text(7<<16+8, colors.w_grab_text | 0x10000000, "USER FIELD"n, 10);
+  sys_draw_button(83<<16+12, 5<<16+12, 1, colors.w_grab_button);
 
   // three buttons:
   //  1) WIDTH  10
@@ -66,16 +106,38 @@ void draw_uf_window()
   sys_draw_button( 8<<16+38, ECX, 20,  ESI); EDX++;
   sys_draw_button(54<<16+38, ECX, EDX, ESI);
 
-  sys_write_text(21<<16+85, colors.w_work_button_text, "OK    Cancel", 12);
+  ECX = colors.w_work_text | 0x10000000;
+  sys_write_text(8<<16+32, ECX, "WIDTH"n,  5);
+  sys_write_text(8<<16+50, ECX, "HEIGHT"n, 6);
+  sys_write_text(8<<16+68, ECX, "MINES"n,  5);
+
+  sys_write_text(72<<16+32, 0, #str1, 3);
+  sys_write_text(72<<16+50, 0, #str2, 3);
+  sys_write_text(72<<16+68, 0, #str3, 3);
+
+  sys_write_text(21<<16+86, colors.w_work_button_text, "OK    Cancel", 12);
 
   sys_window_redraw(2);
 }
 
+
 void uf_main()
 {
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: поток создан\n"w);
+  #endif
+
+//  dword2str(13, #str1);
+//  EAX = str2dword(#str3);
+//  dword2str(EAX, #str2);
+
   uf_x <<= 16; uf_x += 100;
   uf_y <<= 16; uf_y += 104;
   draw_uf_window();
+
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: жду событий\n"w);
+  #endif
 
   WHILE()
   {
@@ -84,10 +146,21 @@ void uf_main()
       case 1: draw_uf_window();
               break;
 
-      case 2: IF (sys_get_key() == 27)
+      case 2: //IF (sys_get_key() == 27)
+              //{
+              //  uf_open = FALSE;
+              //  sys_exit_process();
+              //}
+              //EAX = key now!
+              EAX = sys_get_key();
+              if (active_textbox != 0)
               {
-                uf_open = FALSE;
-                sys_exit_process();
+                EBX = #str1; //active_textbox;
+                DSBYTE[EBX] = 'A';
+                DSBYTE[EBX]   = DSBYTE[EBX+1];
+                DSBYTE[EBX+1] = DSBYTE[EBX+2];
+                DSBYTE[EBX+2] = AL;
+                draw_uf_window();
               }
               break;
 
@@ -100,26 +173,50 @@ uf_button()
 {
   switch (sys_get_button_id())
   {
-    //case 10:
-    //case 11:
-    //case 12:
+    case 10:
+      // set [width] INPUT active
+      active_textbox = #str1; break;
+    case 11:
+      // set [height] INPUT active
+      active_textbox = #str2; break;
+    case 12:
+      // set [mines] INPUT active
+      active_textbox = #str3; break;
 
     case 20:
+      // [string -> byte] three times and save them
+      px = str2dword(#str1);
+      py = str2dword(#str2);
+      pm = str2dword(#str3);
+      mode = 4;
     case 21:
+      // close UF window, forget all changes
 
     case 1:
-    uf_open = FALSE;
-    sys_exit_process();
+      uf_open = FALSE;
+      sys_exit_process();
   }
 }
 
 void start_uf()
 {
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: вызвана start_uf\n"w);
+  #endif
+
   sys_process_info(#procinfo, -1);
   uf_x = procinfo.xstart + XST;
   uf_y = procinfo.ystart + YST;
 
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: создаю поток...\n"w);
+  #endif
+
   sys_create_thread(#uf_main, #uf_stack + 2048);
+
+  IF(EAX > 0x80000000)
+    return;
+
   uf_open = TRUE;
   mouse_disable();
   WHILE (uf_open == TRUE)

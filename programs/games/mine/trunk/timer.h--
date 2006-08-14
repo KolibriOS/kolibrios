@@ -1,7 +1,7 @@
 /*******************************************************************************
 
     MenuetOS MineSweeper
-    Copyright (C) 2003  Ivan Poddubny
+    Copyright (C) 2003, 2004  Ivan Poddubny
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,12 +26,20 @@ byte  timer_life;
 
 start_timer()
 {
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: timer started\n");
+  #endif
+
   timer_life = TRUE;
-  ttime = sys_get_clock();
+  ttime = sys_get_setup_devices(9);  //sys_get_clock();
 }
 
 stop_timer()
 {
+  #ifdef DEBUG
+  sys_debug_write_string("MINE: timer stopped\n");
+  #endif
+
   timer_life = FALSE;
 }
 
@@ -39,12 +47,11 @@ check_timer()
 {
   IF (!timer_life) return;
 
-  EAX = sys_get_clock();
-  IF (EAX == 0xffffff) return;
+  ECX = sys_get_setup_devices(9);  //sys_get_clock();
   
-  IF (ttime != EAX)
+  IF (ttime+100 < ECX)
   {
-    ttime = EAX;
+    ttime += 100;
     IF (time < 999)
       time++;
     draw_time();
