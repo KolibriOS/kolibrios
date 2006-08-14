@@ -88,7 +88,6 @@ macro define@struct name,[field,type,def]
      name#field type def
      sizeof.#name#field = $ - name#field
     else
-     label name#.#type
      rb sizeof.#type
     end if
     local value
@@ -128,24 +127,21 @@ enable@substruct
 
 macro define@union parent,name,[field,type,def]
  { common
-    virtual at parent#.#name
+    virtual at 0
    forward
     if ~ field eq .
-     virtual at parent#.#name
+     virtual at 0
       parent#field type def
       sizeof.#parent#field = $ - parent#field
      end virtual
-     if sizeof.#parent#field > $ - parent#.#name
-      rb sizeof.#parent#field - ($ - parent#.#name)
+     if sizeof.#parent#field > $
+      rb sizeof.#parent#field - $
      end if
-    else
-     label name#.#type at parent#.#name
-     if sizeof.#type > $ - parent#.#name
-      rb sizeof.#type - ($ - parent#.#name)
-     end if
+    else if sizeof.#type > $
+     rb sizeof.#type - $
     end if
    common
-    sizeof.#name = $ - parent#.#name
+    sizeof.#name = $
     end virtual
     struc name [value] \{ \common
     label .\#name
@@ -161,17 +157,17 @@ macro define@union parent,name,[field,type,def]
 
 macro define@substruct parent,name,[field,type,def]
  { common
-    virtual at parent#.#name
+    virtual at 0
    forward
     if ~ field eq .
      parent#field type def
      sizeof.#parent#field = $ - parent#field
     else
-     label name#.#type
      rb sizeof.#type
     end if
+    local value
    common
-    sizeof.#name = $ - parent#.#name
+    sizeof.#name = $
     end virtual
     struc name value \{
     label .\#name

@@ -132,8 +132,8 @@ draw_window:
 
     cmp  [flscr],0
     jnz  m2
-      mov  ebx,1*65536+640	     ; [x start] *65536 + [x size]
-      mov  ecx,1*65536+480	     ; [y start] *65536 + [y size]
+      mov  ebx,1*65536+638	     ; [x start] *65536 + [x size]
+      mov  ecx,1*65536+478	     ; [y start] *65536 + [y size]
       mov  edx,0x02000000	     ; color of work area RRGGBB,8->color gl
       mov  esi,0x805080d0	     ; color of grab bar  RRGGBB,8->color gl
       mov  edi,0x005080d0	     ; color of frames    RRGGBB

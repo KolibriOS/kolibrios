@@ -1,8 +1,14 @@
 ; language for programs
+lang fix en ; ru en fr ge fi
 
 @^ fix macro comment {
 ^@ fix }
 
+
+macro m2m dest,src {
+ push src
+ pop  dest
+}
 
 ; new application structure
 macro meos_app_start
@@ -83,8 +89,7 @@ struc mstr [sstring]
 macro sz name,[data] {	     ; from MFAR [mike.dld]
  common
   if used name
-   name:
-    db data
+   name db data
    .size = $-name
   end if
 }
@@ -124,8 +129,9 @@ macro szc name,elsz,[data] {	     ; from MFAR [mike.dld]
 
 macro lszc name,elsz,[lng,data] {  ; from MFAR [mike.dld]
  common
-  local s,m
+  local s,m,c
   m = 0
+  c = 0
   if used name
    label name
  forward
@@ -139,10 +145,12 @@ macro lszc name,elsz,[lng,data] {  ; from MFAR [mike.dld]
     m = s
    end if
    db data
+   c = c+1
   end if
  common
-   .size = $-name
-   .maxl = m
+   .size  = $-name
+   .maxl  = m
+   .count = c
   end if
 }
 
@@ -209,6 +217,7 @@ macro func name {
  else
   align 4
   name:
+  ;diff16 `name,0,name
 ;pushad
 ;pushfd
 ;dps `name
@@ -306,61 +315,53 @@ macro mov arg1,arg2
  }
 
 
+macro RGB [a] {
+ common
+  match (r=,g=,b),a \{
+   \dd ((r) shl 16) or ((g) shl 8) or (b)
+  \}
+}
+
+
 struc POINT _t,_dx,_dy {
  .x _t _dx
  .y _t _dy
 }
 
 ; structure definition helper
-;include 'struct.inc'
-
-macro union [def]
- {
-   common size@union = 0
-	  origin@union = $
-   forward virtual
-	    def
-	    if $-origin@union > size@union
-	     size@union = $-origin@union
-	    end if
-	   end virtual
-   common rb size@union
- }
+include 'struct.inc'
 
 ; structures used in MeOS
-struc process_information
-{
-  .cpu_usage		   dd ?  ; +0
-  .window_stack_position   dw ?  ; +4
-  .window_stack_value	   dw ?  ; +6
-  .not_used1		   dw ?  ; +8
-  .process_name 	   rb 12 ; +10
-  .memory_start 	   dd ?  ; +22
-  .used_memory		   dd ?  ; +26
-  .PID			   dd ?  ; +30
-  .x_start		   dd ?  ; +34
-  .y_start		   dd ?  ; +38
-  .x_size		   dd ?  ; +42
-  .y_size		   dd ?  ; +46
-  .slot_state		   dw ?  ; +50
+struct process_information
+  cpu_usage		  dd ?	; +0
+  window_stack_position   dw ?	; +4
+  window_stack_value	  dw ?	; +6
+  not_used1		  dw ?	; +8
+  process_name		  rb 12 ; +10
+  memory_start		  dd ?	; +22
+  used_memory		  dd ?	; +26
+  PID			  dd ?	; +30
+  x_start		  dd ?	; +34
+  y_start		  dd ?	; +38
+  x_size		  dd ?	; +42
+  y_size		  dd ?	; +46
+  slot_state		  dw ?	; +50
   rb (1024-52)
-}
-sizeof.process_information=1024
+ends
 
-struc system_colors
-{
-  .frame	    dd ?
-  .grab 	    dd ?
-  .grab_button	    dd ?
-  .grab_button_text dd ?
-  .grab_text	    dd ?
-  .work 	    dd ?
-  .work_button	    dd ?
-  .work_button_text dd ?
-  .work_text	    dd ?
-  .work_graph	    dd ?
-}
-sizeof.system_colors=40
+struct system_colors
+  frame 	   dd ?
+  grab		   dd ?
+  grab_button	   dd ?
+  grab_button_text dd ?
+  grab_text	   dd ?
+  work		   dd ?
+  work_button	   dd ?
+  work_button_text dd ?
+  work_text	   dd ?
+  work_graph	   dd ?
+ends
+
 
 ; constants
 

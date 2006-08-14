@@ -136,7 +136,7 @@ call drawclock
     mov  ebx,8*65536+8
     mov  ecx,0x10ddeeff
     mov  edx,title
-    mov  esi,title-titlend
+    mov  esi,titlend-title
     int  0x40
 
 

@@ -1,4 +1,4 @@
-; SYSTEM HAEDER:
+; SYSTEM HEADER:
    use32
    org 0x0
    db  'MENUET01'  ; identifier
@@ -9,12 +9,12 @@
    dd  0xeff0 ;0x4fffff ;0x3ff000;0xeff0      ; esp
    dd  I_PARAM     ; parameters
    dd  0           ; reserved
-include 'lang.inc'
 include 'ascl.inc'
+include 'lang.inc'
 include 'macros.inc' ; useful stuff
 include 'dialogs1.inc'
 include 'scroll.inc'
-;include 'debug.inc'
+include 'debug.inc'
 purge mov            ;  SPEED
 ;******************************************************************************
 ; INITIALIZING
@@ -25,6 +25,38 @@ call mask_events
     cmp    [I_PARAM],byte 0
     jz     noparams
 
+;//Willow
+    cmp    byte[I_PARAM],'*'
+    jne    .noipc
+; convert size from decimal representation to dword
+        mov     esi, I_PARAM+1
+        xor     edx, edx
+        xor     eax, eax
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        lea     edx, [edx*4+edx]
+        lea     edx, [edx*2+eax]
+        jmp     @b
+@@:
+    add    edx,20
+    mcall  60,1,0x10000-16
+    mov    dword[0x10000+-16+4],8
+    mcall  40,1000000b
+    mcall  23,200
+;    dpd    eax
+    cmp    eax,7
+    jne    exit_now
+    mov    esi,0x10000-16
+    mov    byte[esi],1
+    call   mask_events
+    mov    eax,[esi+12]
+    inc    eax
+    call   file_found
+    jmp    do_load_file.restorecursor
+  .noipc:
+;//Willow
     ; parameters are at I_PARAM
     mov    esi,I_PARAM
     mov    edi,filename
@@ -413,12 +445,19 @@ mov edx,cl_White
 int 0x40
 
 
-
+if lang eq ru
  putlabel 190,120,'Сохранить документ?',cl_White
 
  drawlbut 170,140,30,15,'Да',49,[sc.work_button],cl_White
  drawlbut 230,140,30,15,'Нет',48,[sc.work_button],cl_White
  drawlbut 290,140,45,15,'Отмена',47,[sc.work_button],cl_White
+else
+ putlabel 190,120,'Save the document?',cl_White
+
+ drawlbut 170,140,30,15,'Yes',49,[sc.work_button],cl_White
+ drawlbut 230,140,30,15,'No',48,[sc.work_button],cl_White
+ drawlbut 290,140,45,15,'Cancel',47,[sc.work_button],cl_White
+end if
 
  mov [exit_wnd_on],1
 ;----------------
@@ -2537,7 +2576,11 @@ writepos:
 
     cmp [modified],1
     jne no_mod
+if lang eq ru
      putlabel 270,386,'ИЗМЕНЕН',[sc.work_button_text]
+else
+     putlabel 270,386,'MODIFIED',[sc.work_button_text]
+end if
     no_mod:
     popa
 
@@ -2575,9 +2618,13 @@ mov ecx,160*65536+160
 mov edx,cl_White
 int 0x40
 
-
+if lang eq ru
 drawlbut 375,110,50,15,'Поиск',50,[sc.work_button],[sc.work_button_text]
 drawlbut 375,130,50,15,'Отмена',94,[sc.work_button],[sc.work_button_text]
+else
+drawlbut 375,110,50,15,'Search',50,[sc.work_button],[sc.work_button_text]
+drawlbut 375,130,50,15,'Cancel',94,[sc.work_button],[sc.work_button_text]
+end if
 
 call read_string
 
@@ -2618,8 +2665,11 @@ mov ecx,100*65536+170
 mov edx,cl_White
 int 0x40
 
-
- putlabel 195,120,'Строка не найденна!',cl_White
+if lang eq ru
+ putlabel 195,120,'Строка не найдена!',cl_White
+else
+ putlabel 195,120,'String not found!',cl_White
+end if
 
  drawlbut 235,140,30,15,'Ок',94,[sc.work_button],cl_White
 
@@ -3501,12 +3551,19 @@ mov ecx,100*65536+170
 mov edx,cl_White
 int 0x40
 
-
+if lang eq ru
  putlabel 190,120,'Сохранить документ?',cl_White
 
  drawlbut 170,140,30,15,'Да',46,[sc.work_button],cl_White
  drawlbut 230,140,30,15,'Нет',45,[sc.work_button],cl_White
  drawlbut 290,140,45,15,'Отмена',47,[sc.work_button],cl_White
+else
+ putlabel 190,120,'Save document?',cl_White
+
+ drawlbut 170,140,30,15,'Yes',46,[sc.work_button],cl_White
+ drawlbut 230,140,30,15,'No',45,[sc.work_button],cl_White
+ drawlbut 290,140,45,15,'Cancel',47,[sc.work_button],cl_White
+end if
 
  mov [exit_wnd_on],1
  jmp still
@@ -3666,10 +3723,17 @@ mov ecx,39*65536+5
 mov edx,0x00aaaaaa
 int 0x40
 
+if lang eq ru
 drawlbut 5,22,70,15,'Файл',97,[sc.work_button],[sc.work_button_text]
 drawlbut 75,22,70,15,'Код',98,[sc.work_button],[sc.work_button_text]
 drawlbut 145,22,70,15,'Текст',96,[sc.work_button],[sc.work_button_text]
 drawlbut 431,22,70,15,'Справка',99,[sc.work_button],[sc.work_button_text]
+else
+drawlbut 5,22,70,15,'File',97,[sc.work_button],[sc.work_button_text]
+drawlbut 75,22,70,15,'Code',98,[sc.work_button],[sc.work_button_text]
+drawlbut 145,22,70,15,'Text',96,[sc.work_button],[sc.work_button_text]
+drawlbut 431,22,70,15,'Help',99,[sc.work_button],[sc.work_button_text]
+end if
 
 ret
 
@@ -3688,30 +3752,52 @@ call drawwindow
 ;int 0x40
 mov [menu_is_on],1
 
+if lang eq ru
 drawlbut 5,38,70,15,'Новое окно',100,[sc.grab_button],[sc.grab_button_text]
 drawlbut 5,53,70,15,'Новый',101,[sc.grab_button],[sc.grab_button_text]
 drawlbut 5,68,70,15,'Сохранить',2,[sc.grab_button],[sc.grab_button_text]
 drawlbut 5,83,70,15,'Сохр. как',102,[sc.grab_button],[sc.grab_button_text]
 drawlbut 5,98,70,15,'Открыть',103,[sc.grab_button],[sc.grab_button_text]
 drawlbut 5,113,70,15,'Выход',104,[sc.grab_button],[sc.grab_button_text]
+else
+drawlbut 5,38,70,15,'New window',100,[sc.grab_button],[sc.grab_button_text]
+drawlbut 5,53,70,15,'New',101,[sc.grab_button],[sc.grab_button_text]
+drawlbut 5,68,70,15,'Save',2,[sc.grab_button],[sc.grab_button_text]
+drawlbut 5,83,70,15,'Save as',102,[sc.grab_button],[sc.grab_button_text]
+drawlbut 5,98,70,15,'Open',103,[sc.grab_button],[sc.grab_button_text]
+drawlbut 5,113,70,15,'Exit',104,[sc.grab_button],[sc.grab_button_text]
+end if
 jmp still
 
 draw_win_menu_code:
 call clear_screen
 call drawwindow
+if lang eq ru
 drawlbut 75,38,70,15,'Компил.',10000,[sc.grab_button],[sc.grab_button_text]
 drawlbut 75,53,70,15,'Запустить',10001,[sc.grab_button],[sc.grab_button_text]
 drawlbut 75,68,70,15,'Доска отл.',10002,[sc.grab_button],[sc.grab_button_text]
 drawlbut 75,83,70,15,'SysFunc',10003,[sc.grab_button],[sc.grab_button_text]
+else
+drawlbut 75,38,70,15,'Compile',10000,[sc.grab_button],[sc.grab_button_text]
+drawlbut 75,53,70,15,'Run',10001,[sc.grab_button],[sc.grab_button_text]
+drawlbut 75,68,70,15,'Debug board',10002,[sc.grab_button],[sc.grab_button_text]
+drawlbut 75,83,70,15,'SysFunc',10003,[sc.grab_button],[sc.grab_button_text]
+end if
 mov [menu_is_on],1
 jmp still
 
 draw_win_menu_text:
 call clear_screen
 call drawwindow
+if lang eq ru
 drawlbut 145,38,70,15,'GoTo Line#',95,[sc.grab_button],[sc.grab_button_text]
 drawlbut 145,53,70,15,'Найти',92,[sc.grab_button],[sc.grab_button_text]
 drawlbut 145,68,70,15,'Найти далее',50,[sc.grab_button],[sc.grab_button_text]
+else
+drawlbut 145,38,70,15,'GoTo Line#',95,[sc.grab_button],[sc.grab_button_text]
+drawlbut 145,53,70,15,'Find',92,[sc.grab_button],[sc.grab_button_text]
+drawlbut 145,68,70,15,'Find next',50,[sc.grab_button],[sc.grab_button_text]
+end if
 mov [menu_is_on],1
 jmp still
 
@@ -3724,9 +3810,15 @@ jmp still
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+if lang eq ru
 openerrtext db 'Ошибка открытия файла или открытие отменено!',0
 saveerrtext db 'Ошибка сохранения файла или сохранение отменено!',0
-newfileerror db 'Невозможно сохдать новый файл',0
+newfileerror db 'Невозможно создать новый файл',0
+else
+openerrtext db 'Error while opening file or opening canceled!',0
+saveerrtext db 'Error while saving file or saving canceled!',0
+newfileerror db 'Cannot create new file',0
+end if
 ; ********************
 ; ******  DATA  ******
 ; ********************
