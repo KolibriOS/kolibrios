@@ -125,6 +125,6 @@ mouse_acceleration_com2:
         cmp   eax,[mouse_delay]
         pop    eax
         ja     @f
-        shl   ax,1
+        imul  ax,[mouse_speed_factor]
 @@:
         ret

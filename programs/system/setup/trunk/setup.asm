@@ -8,12 +8,13 @@
 ;          A. Ivushkin - autostart (w launcher)
 ;          M. Lisovin  - added many feauters (apply all, save all, set time...)
 ;          I. Poddubny - fixed russian keymap
+;14/08/06  Mario79 - added regulation of mouse features
 
 ;******************************************************************************
   use32
-  org       0x0
+  org        0x0
   db      'MENUET01'   ; 8 byte identifier
-  dd      0x01         ; header version
+  dd      0x01           ; header version
   dd      START        ; pointer to program start
   dd      I_END        ; size of image
   dd      0x4000      ; reguired amount of memory
@@ -32,11 +33,12 @@ apply_all:
     call _midibase    ;1
     call _sound_dma    ;10
     call _pci_acc    ;12
-    call _sb16          ;4
-    call _wssp          ;6
+    call _sb16        ;4
+    call _wssp        ;6
     call _syslang    ;5
     call _keyboard    ;2
-    call _mouse
+    call _mouse_speed
+    call _mouse_delay
     call get_disk_info
     cmp  [cd],0
     jne  no_cd
@@ -46,7 +48,7 @@ apply_all:
     jne  no_hd
     call _lba_read    ;11
     call _hdbase    ;7
-    call _f32p          ;8
+    call _f32p        ;8
   no_hd:
 ret
 ;-------------------------------------------------------------------------------
@@ -61,7 +63,7 @@ get_disk_info:
     mov  al,[table_area+1]
     shr  al,6
     cmp  al,0
-    je      ide_1
+    je        ide_1
     cmp  al,01b
     jnz  ide_0_cd
     mov  [hdbase],1
@@ -74,74 +76,74 @@ get_disk_info:
     mov  [cdbase],1
     mov  [cd],0
     cmp  [hd],0
-    je       all_device
+    je         all_device
 
   ide_1:
     mov  al,[table_area+1]
     shl  al,2
     shr  al,6
     cmp  al,0
-    je      ide_2
+    je        ide_2
     cmp  al,01b
     jnz  ide_1_cd
     cmp  [hd],0
-    je       ide_11
+    je         ide_11
     mov  [hdbase],2
     mov  [hd],0
   ide_11:
     cmp  [cd],0
-    je       all_device
+    je         all_device
     jmp  ide_2
 
   ide_1_cd:
     cmp  al,10b
     jnz  ide_2
     cmp  [cd],0
-    je       ide_11_cd
+    je         ide_11_cd
     mov  [cdbase],2
     mov  [cd],0
   ide_11_cd:
     cmp  [hd],0
-    je       all_device
+    je         all_device
 
  ide_2:
     mov  al,[table_area+1]
     shl  al,4
     shr  al,6
     cmp  al,0
-    je      ide_3
+    je        ide_3
     cmp  al,01b
     jnz  ide_2_cd
     cmp  [hd],0
-    je       ide_21
+    je         ide_21
     mov  [hdbase],3
     mov  [hd],0
   ide_21:
     cmp  [cd],0
-    je       all_device
+    je         all_device
     jmp  ide_3
 
   ide_2_cd:
     cmp  al,10b
     jnz  ide_3
     cmp  [cd],0
-    je       ide_21_cd
+    je         ide_21_cd
     mov  [cdbase],3
     mov  [cd],0
   ide_21_cd:
     cmp  [hd],0
-    je       all_device
+    je         all_device
 
   ide_3:
     mov  al,[table_area+1]
     shl  al,6
     shr  al,6
     cmp  al,0
-    je      not_device
+    je        not_device
     cmp  al,01b
     jnz  ide_3_cd
     cmp  [hd],0
-    je       ide_31
+    je         ide_31
     mov  [hdbase],4
     mov  [hd],0
   ide_31:
@@ -152,7 +154,7 @@ get_disk_info:
     cmp  al,10b
     jnz  not_device
     cmp  [cd],0
-    je       all_device
+    je         all_device
     mov  [cdbase],4
     mov  [cd],0
 
@@ -179,7 +181,7 @@ set_language_and_exit:
 ;    xor  eax,eax
 ;@@: mov  [keyboard],eax
     cmp  eax,1
-    je      russian
+    je        russian
     xor  eax,eax
 set_lang_now:
     mov  [keyboard],eax
@@ -195,7 +197,7 @@ set_syslanguage_and_exit:
 ;    mov  ecx,9
     int  0x40
     cmp  eax,4
-    jne  temp     ;@f
+    jne  temp      ;@f
     xor  eax,eax
 ;@@: inc  eax
 temp: inc  eax
@@ -246,19 +248,21 @@ get_other:
     mov [pci_acc],eax
     mcall 18,19,0
     mov [mouse_speed],eax
+    mcall 18,19,2
+    mov [mouse_delay],eax
     ret
 
 ;******************************************************************************
 
 START:
     cmp  [I_PARAM], 'SLAN'
-    je       set_syslanguage_and_exit
+    je         set_syslanguage_and_exit
 
     cmp  [I_PARAM], 'LANG'
-    je       set_language_and_exit
+    je         set_language_and_exit
 
     cmp  [I_PARAM], 'BOOT'
-    je       apply_all_and_exit
+    je         apply_all_and_exit
 
     call get_setup_values
     call loadtxt
@@ -272,33 +276,33 @@ still:
     mov  eax,29     ;get system date
     int  0x40
     cmp  eax,[date]
-    je       gettime
+    je         gettime
     mov  [date],eax
  gettime:
-    mov  eax,3          ;get system time
+    mov  eax,3        ;get system time
     int  0x40
     cmp  ax,[time]
-    je       sysevent
+    je         sysevent
     mov  [time],ax
     call drawtime
 
  sysevent:
     mov  eax,23
-    mov  ebx,8          ; wait here for event with timeout
+    mov  ebx,8        ; wait here for event with timeout
     int  0x40
 
     cmp  eax,1
-    jz       red
+    jz         red
     cmp  eax,2
-    jz       key
+    jz         key
     cmp  eax,3
-    jz       button
+    jz         button
 
     jmp  still
 
  blinker:
     cmp  byte [count],6
-    jb       noblink
+    jb         noblink
     btc  dword [blinkpar],16
     mov  byte [count],0
     call drawtime
@@ -308,19 +312,19 @@ still:
 
 incdectime:
     cmp byte [blinkpar],0
-    je      still
+    je        still
     mov esi,time
     mov bl,0x23  ;border
     cmp byte [blinkpar],1
-    je      hours
+    je        hours
     mov bl,0x59       ;minutes
     inc esi
   hours:
     mov al,byte [esi]
     cmp ah,112
-    je      dectime
+    je        dectime
     cmp al,bl
-    je      noinctime
+    je        noinctime
      inc al
      daa
     jmp incdectime1
@@ -331,7 +335,7 @@ incdectime:
     jmp still
   dectime:
     cmp al,0
-    je      nodectime
+    je        nodectime
     dec al
     das
     jmp incdectime1
@@ -341,7 +345,7 @@ incdectime:
 
 incdecdate:
     cmp byte [blinkpar+1],0
-    je      still
+    je        still
     mov esi,date
     mov bl,0      ;border of years
     cmp byte [blinkpar+1],1
@@ -356,9 +360,9 @@ incdecdate:
   nodays:
     mov al,byte [esi]
     cmp ah,122
-    je      decdate
+    je        decdate
     cmp al,bl
-    je      noincdate
+    je        noincdate
     inc al ;add al,1
     daa
     jmp incdecdate1
@@ -369,7 +373,7 @@ incdecdate:
     jmp still
   decdate:
     cmp al,1
-    je      nodecdate
+    je        nodecdate
     dec al
     das
     jmp incdecdate1
@@ -393,13 +397,13 @@ incdecdate:
     int  0x40
 
     cmp  ah,112
-    je       incdectime
+    je         incdectime
     cmp  ah,113
-    je       incdectime
+    je         incdectime
     cmp  ah,122
-    je       incdecdate
+    je         incdecdate
     cmp  ah,123
-    je       incdecdate
+    je         incdecdate
     cmp  ah,111
     jne  noseltime
     mov  al, [blinkpar]
@@ -442,14 +446,14 @@ nosaveall:
     jmp  still
 no_apply_all:
 
-    cmp  ah,1          ; CLOSE APPLICATION
+    cmp  ah,1           ; CLOSE APPLICATION
     jne  no_close
 close:
-    or       eax,-1
+    or         eax,-1
     int  0x40
   no_close:
 
-    cmp  ah,11           ; SET MIDI BASE
+    cmp  ah,11         ; SET MIDI BASE
     jnz  nosetbase1
     call _midibase
    nosetbase1:
@@ -465,11 +469,11 @@ close:
   nomp:
 
 
-    cmp  ah,4          ; SET KEYBOARD
+    cmp  ah,4           ; SET KEYBOARD
     jnz  nokm
     mov  eax,[keyboard]
     test eax,eax
-    je       downuplbl
+    je         downuplbl
     dec  eax
     jmp  nodownup
    downuplbl:
@@ -482,7 +486,7 @@ close:
     jnz  nokp
     mov  eax,[keyboard]
     cmp  eax,4
-    je       updownlbl
+    je         updownlbl
     inc  eax
     jmp  noupdown
    updownlbl:
@@ -493,7 +497,7 @@ close:
   nokp:
 
 
-    cmp  ah,22            ; SET CD BASE
+    cmp  ah,22          ; SET CD BASE
     jnz  nocm
     mov  eax,[cdbase]
     sub  eax,2
@@ -515,7 +519,7 @@ close:
     call _cdbase
   nocs:
 
-    cmp  ah,62          ; SET HD BASE
+    cmp  ah,62        ; SET HD BASE
     jnz  hnocm
     mov  eax,[hdbase]
     sub  eax,2
@@ -537,7 +541,7 @@ close:
     call _hdbase
   hnocs:
 
-    cmp  ah,82          ; SET SOUND DMA
+    cmp  ah,82        ; SET SOUND DMA
     jne  no_sdma_d
     mov  eax,[sound_dma]
     dec  eax
@@ -559,7 +563,7 @@ close:
     jmp  still
   no_set_sound_dma:
 
-    cmp  ah,92           ; SET LBA READ
+    cmp  ah,92         ; SET LBA READ
     jne  no_lba_d
   slbal:
     btc  [lba_read],0
@@ -596,13 +600,13 @@ close:
 
 
   set_partition:
-    cmp  ah,72          ; SET FAT32 PARTITION
+    cmp  ah,72        ; SET FAT32 PARTITION
     jnz  .nominus
     mov  eax,[f32p]
     sub  eax,2
 ;   and  eax,15          ; 3 - four partitions, 7 - eight p., 15 - sixteen, etc.
     cmp  eax,15
-    jb      @f
+    jb        @f
     mov  eax,14
 @@:
     inc  eax
@@ -614,7 +618,7 @@ close:
     mov  eax,[f32p]
 ;   and  eax,15          ; 3 - four partitions, 7 - eight p., 15 - sixteen, etc.
     cmp  eax,15
-    jb      @f
+    jb        @f
     mov  eax,0
 @@:
     inc  eax
@@ -626,7 +630,7 @@ close:
     call _f32p
   .noapply:
 
-    cmp  ah,32          ; SET SOUND BLASTER 16 BASE
+    cmp  ah,32        ; SET SOUND BLASTER 16 BASE
     jnz  nosbm
     sub  [sb16],2
     call draw_infotext
@@ -641,7 +645,7 @@ close:
     call _sb16
   nosbs:
 
-    cmp  ah,52          ; SET WINDOWS SOUND SYSTEM BASE
+    cmp  ah,52        ; SET WINDOWS SOUND SYSTEM BASE
     jnz  nowssm
     mov  eax,[wss]
     sub  eax,2
@@ -663,11 +667,11 @@ close:
     call _wssp
   nowsss:
 
-    cmp  ah,42            ; SET SYSTEM LANGUAGE BASE
+    cmp  ah,42          ; SET SYSTEM LANGUAGE BASE
     jnz  nosysm
     mov  eax,[syslang]
     dec  eax
-    jz       still
+    jz         still
     mov  [syslang],eax
     call draw_infotext
   nosysm:
@@ -675,7 +679,7 @@ close:
     jnz  nosysp
     mov  eax,[syslang]
     cmp  eax,4
-    je       nosysp
+    je         nosysp
     inc  eax
     mov  [syslang],eax
     call draw_infotext
@@ -693,7 +697,7 @@ close:
     mov  eax,[mouse_speed]
     sub  eax,2
     cmp  eax,9
-    jb      @f
+    jb        @f
     mov  eax,8
 @@:
     inc  eax
@@ -704,7 +708,7 @@ close:
     jnz  .noplus
     mov  eax,[mouse_speed]
     cmp  eax,9
-    jb      @f
+    jb        @f
     mov  eax,0
 @@:
     inc  eax
@@ -713,9 +717,38 @@ close:
   .noplus:
     cmp  ah,131
     jnz  .noapply
-    call _mouse
+    call _mouse_speed
   .noapply:
-    cmp  ah,3            ; SET KEYMAP
+ mousedelay:
+    cmp  ah,142        ; SET MOUSE DELAY
+    jnz  .nominus
+    mov  eax,[mouse_delay]
+    sub  eax,2
+    cmp  eax,0xfff
+    jb        @f
+    mov  eax,0xffe
+@@:
+    inc  eax
+    mov  [mouse_delay],eax
+    call draw_infotext
+  .nominus:
+    cmp  ah,143
+    jnz  .noplus
+    mov  eax,[mouse_delay]
+    cmp  eax,0xfff
+    jb        @f
+    mov  eax,0
+@@:
+    inc  eax
+    mov  [mouse_delay],eax
+    call draw_infotext
+  .noplus:
+    cmp  ah,141
+    jnz  .noapply
+    call _mouse_delay
+  .noapply:
+
+    cmp  ah,3         ; SET KEYMAP
     jne  still
     call _keyboard
     jmp  still
@@ -789,7 +822,7 @@ close:
     mov  edx,4
     int  0x40
   nosetkeylru:
-    cmp  [keyboard],4           ;french
+    cmp  [keyboard],4        ;french
     jnz  nosetkeylfr
     mov  eax,21
     mov  ebx,2
@@ -859,7 +892,7 @@ draw_window:
 
     xor  eax,eax       ; DRAW WINDOW
     mov  ebx,40*65536+355+BBB
-    mov  ecx,40*65536+310
+    mov  ecx,40*65536+320
     mov  edx,0x83111199
 ;    mov  esi,0x805588dd
 ;    mov  edi,0x005588dd
@@ -870,7 +903,7 @@ draw_window:
     mov  ecx,0x10ffffff
     mov  edx,labelt
     cmp  [syslang],4
-    je       ruslabel
+    je         ruslabel
     add  edx,20
   ruslabel:
     mov  esi,19 ;26
@@ -883,13 +916,13 @@ draw_window:
 ;    mov  esi,0x005588dd
 ;    int  0x40
 
-    mov  eax,8               ; APPLY ALL
+    mov  eax,8             ; APPLY ALL
     mov  ebx,(350-79)*65536+100
-    mov  ecx,266*65536+12
+    mov  ecx,282*65536+12
     mov  edx,100
     mov  esi,0x005588dd
     int  0x40
-    add  ecx,16*65536        ; SAVE ALL
+    add  ecx,16*65536         ; SAVE ALL
     dec  edx
     int  0x40
 
@@ -951,6 +984,10 @@ draw_window:
     mov  ecx,43+26*8 ; 26
     call draw_buttons
 
+    mov  edx,141
+    mov  ecx,43+28*8 ; 26
+    call draw_buttons
+
     call draw_infotext
 
     mov  eax,12
@@ -966,7 +1003,7 @@ draw_infotext:
 
     pusha
 
-    mov  eax,[keyboard]           ; KEYBOARD
+    mov  eax,[keyboard]       ; KEYBOARD
     test eax,eax
     jnz  noen
     mov  [text00+LLL*10+28],dword 'ENGL'
@@ -994,7 +1031,7 @@ draw_infotext:
   nofr:
 
 
-    mov  eax,[syslang]              ; SYSTEM LANGUAGE
+    mov  eax,[syslang]            ; SYSTEM LANGUAGE
     dec  eax
     test eax,eax
     jnz  noen5
@@ -1025,15 +1062,15 @@ draw_infotext:
 
     mov  eax,[midibase]
     mov  esi,text00+LLL*0+32
-    call hexconvert            ; MIDI BASE
+    call hexconvert           ; MIDI BASE
 
 
-    mov  eax,[sb16]            ; SB16 BASE
+    mov  eax,[sb16]           ; SB16 BASE
     mov  esi,text00+LLL*2+32
     call hexconvert
 
 
-    mov  eax,[wss]           ; WSS BASE
+    mov  eax,[wss]         ; WSS BASE
     cmp  eax,1
     jnz  nowss1
     mov  [wssp],dword 0x530
@@ -1055,7 +1092,7 @@ draw_infotext:
     mov  esi,text00+LLL*12+32
     call hexconvert
 
-    mov  eax,[cdbase]             ; CD BASE
+    mov  eax,[cdbase]          ; CD BASE
     cmp  eax,1
     jnz  noe1
     mov  [text00+LLL*4+28],dword 'PRI.'
@@ -1082,7 +1119,7 @@ draw_infotext:
   nog2:
 
 
-    mov  eax,[hdbase]               ; HD BASE
+    mov  eax,[hdbase]            ; HD BASE
     cmp  eax,1
     jnz  hnoe1
     mov  [text00+LLL*6+28],dword 'PRI.'
@@ -1109,7 +1146,7 @@ draw_infotext:
   hnog2:
 
 
-    mov  eax,[f32p]         ; FAT32 PARTITION
+    mov  eax,[f32p]        ; FAT32 PARTITION
     add  al,48
     mov  [text00+LLL*14+28],al
 
@@ -1118,20 +1155,24 @@ draw_infotext:
     mov  [text00+LLL*16+28],al
 
     mov  eax,[lba_read]
-    call onoff            ; LBA READ
+    call onoff          ; LBA READ
     mov  [text00+LLL*18+28],ebx
 
     mov  eax,[pci_acc]
-    call onoff            ; PCI ACCESS
+    call onoff          ; PCI ACCESS
     mov  [text00+LLL*20+28],ebx
 
-    mov  eax,[mouse_speed]        ; MOUSE ACSELERATION
+    mov  eax,[mouse_speed]      ; MOUSE SPEED
     add  al,48
     mov  [text00+LLL*26+28],al
 
+    mov  eax,[mouse_delay]
+    mov  esi,text00+LLL*28+32
+    call hexconvert           ; MOUSE DELAY
+
     mov  eax,13
     mov  ebx,175*65536+85
-    mov  ecx,40*65536+225
+    mov  ecx,40*65536+245
     mov  edx,0x80111199-19
     int  0x40
 
@@ -1151,31 +1192,31 @@ draw_infotext:
     ret
 
   drawtime:
-    mov  ax,[time]        ;hours 22
+    mov  ax,[time]      ;hours 22
     mov  cl,1
     call unpacktime
     mov  [text00+LLL*22+28],word bx
-    mov  al,ah            ;minutes
+    mov  al,ah          ;minutes
     inc  cl
     call unpacktime
     mov  [text00+LLL*22+31],word bx
     mov  eax,[date]
     mov  ch,3
     call unpackdate
-    mov  [text00+LLL*24+34],word bx     ;year   24
+    mov  [text00+LLL*24+34],word bx    ;year   24
     mov  al,ah
     mov  ch,1
     call unpackdate
-    mov  [text00+LLL*24+28],word bx     ;month
+    mov  [text00+LLL*24+28],word bx    ;month
     bswap eax
     mov  al,ah
     inc  ch
     call unpackdate
-    mov  [text00+LLL*24+31],word bx     ;day
+    mov  [text00+LLL*24+31],word bx    ;day
 
     mov  eax,13
     mov  ebx,175*65536+85
-    mov  ecx,40*65536+225
+    mov  ecx,40*65536+245
     mov  edx,0x80111199-19
     int  0x40
 
@@ -1193,7 +1234,7 @@ draw_infotext:
     ret
 
   unpacktime:
-    cmp  byte [blinkpar],cl     ;translate packed number to ascii
+    cmp  byte [blinkpar],cl    ;translate packed number to ascii
     jne  unpack1
   chkblink:
     bt dword [blinkpar],16
@@ -1202,7 +1243,7 @@ draw_infotext:
     ret
   unpackdate:
     cmp  byte [blinkpar+1],ch
-    je       chkblink
+    je         chkblink
   unpack1:
     xor  bx,bx
     mov  bh,al
@@ -1212,7 +1253,7 @@ draw_infotext:
     add  bx,0x3030
     ret
 
-  hexconvert:           ;converting dec to hex in ascii
+  hexconvert:        ;converting dec to hex in ascii
     xor  ebx,ebx
     mov  bl,al
     and  bl,15
@@ -1242,13 +1283,13 @@ onoff:
     jne norus1
     mov ebx,'ÑÄ  '
     cmp eax,1
-    je      exitsub
+    je        exitsub
     mov ebx,'çÖí '
     ret
  norus1:
     mov ebx,'ON  '
     cmp eax,1
-    je      exitsub
+    je        exitsub
     mov ebx,'OFF '
  exitsub:
     ret
@@ -1323,7 +1364,7 @@ _syslang:
     int  0x40
  ret
 
-_mouse:
+_mouse_speed:
     mov  eax,18
     mov  ebx,19
     mov  ecx,1
@@ -1331,10 +1372,18 @@ _mouse:
     int  0x40
  ret
 
+_mouse_delay:
+    mov  eax,18
+    mov  ebx,19
+    mov  ecx,3
+    mov  edx,[mouse_delay]
+    int  0x40
+ ret
+
 loadtxt:
     cld
     mov  edi,text00
-    mov  ecx,458 ;28
+    mov  ecx,488 ;28
     cmp  [syslang],4
     jne  norus
     mov  esi,textrus
@@ -1358,31 +1407,31 @@ settime:
     mov  dx,0x70
     call startstopclk
     dec  dx
-    mov  al,2          ;set minutes
+    mov  al,2           ;set minutes
     out  dx,al
     inc  dx
     mov  al,byte [time+1]
     out  dx,al
     dec  dx
-    mov  al,4          ;set hours
+    mov  al,4           ;set hours
     out  dx,al
     inc  dx
     mov  al,byte [time]
     out  dx,al
     dec  dx
-    mov  al,7          ;set day
+    mov  al,7           ;set day
     out  dx,al
     inc  dx
     mov  al,byte [date+2]
     out  dx,al
     dec  dx
-    mov  al,8          ;set month
+    mov  al,8           ;set month
     out  dx,al
     inc  dx
     mov  al,byte [date+1]
     out  dx,al
     dec  dx
-    mov  al,9          ;set year
+    mov  al,9           ;set year
     out  dx,al
     inc  dx
     mov  al,byte [date]
@@ -1395,16 +1444,16 @@ startstopclk:
     mov  al,0x0b
     out  dx,al
     inc  dx
-    in       al,dx
+    in         al,dx
     btc  ax,7
     out  dx,al
     ret
 
 ; DATA AREA
-count:        db 0x0
+count:          db 0x0
 blinkpar: dd 0x0
-time:       dw 0x0
-date:       dd 0x0
+time:        dw 0x0
+date:        dd 0x0
 
 textrus:
 
@@ -1435,6 +1484,8 @@ textrus:
     db 'ë®·‚•¨≠†Ô §†‚† (¨,§,£)    : 00/00/00        - +     ÇÎ°Æ‡  '
     db '                                                           '
     db 'ë™Æ‡Æ·‚Ï ™„‡·Æ‡† ¨ÎË®     : 1               - +   è‡®¨•≠®‚Ï'
+    db '                                                           '
+    db 'á†§•‡¶™† „·™Æ‡•≠®Ô ¨ÎË®   : 0x00a           - +   è‡®¨•≠®‚Ï'
     db '                                                           '
     db 'ÇçàåÄçàÖ:                                    è‡®¨•≠®‚Ï ¢·• '
     db 'àëèéãúáìâíÖ Ñéëíìè ä FAT ë éëíéêéÜçéëíúû!                  '
@@ -1471,15 +1522,17 @@ texteng:
     db '                                                           '
     db 'Mouse pointer speed       : 1               - +     APPLY  '
     db '                                                           '
+    db 'Mouse pointer delay       : 0x00a           - +     APPLY  '
+    db '                                                           '
     db 'NOTE:                                           APPLY ALL  '
     db 'TEST FAT FUNCTIONS WITH EXTREME CARE                       '
     db 'SAVE YOUR SETTINGS BEFORE QUIT MENUET           SAVE ALL   '
     db 'x'
 
 labelt:
-    db       'çÄëíêéâäÄ ìëíêéâëíÇ DEVICE SETUP       '
+    db         'çÄëíêéâäÄ ìëíêéâëíÇ DEVICE SETUP       '
 
-hex db       '0123456789ABCDEF'
+hex db         '0123456789ABCDEF'
 
 alt_general:
 
@@ -1662,7 +1715,7 @@ read_fileinfo:
        dd 0
        dd 0
        dd 0
-       dd 52
+       dd 56
        dd keyboard
        db 0
        dd file_name
@@ -1671,7 +1724,7 @@ save_fileinfo:
        dd 2
        dd 0
        dd 0
-       dd 52
+       dd 56
        dd keyboard
 file_name:   db '/rd/1/setup.dat',0
 
@@ -1679,17 +1732,18 @@ I_PARAM   dd 0
 
 keyboard     dd 0x0
 midibase     dd 0x320
-cdbase       dd 0x2
+cdbase         dd 0x2
 sb16         dd 0x220
 syslang      dd 0x1
-wss          dd 0x1
+wss         dd 0x1
 wssp         dd 0x0
-hdbase       dd 0x1
+hdbase         dd 0x1
 f32p         dd 0x1
 sound_dma    dd 0x1
 lba_read     dd 0x1
 pci_acc      dd 0x1
 mouse_speed  dd 0x3
+mouse_delay  dd 0x10
 text00:
 
 I_END:

@@ -966,6 +966,7 @@ Remarks:
     is not handled COM by mice. At the very large values the movement of
     the mouse on 1 pixel is impossible and the cursor will jump
     on the value of the installed speed (subfunction 1).
+    Delay of mouse can be regulated through the application SETUP.
     The installed value is not inspected by the code of a kernel.
   * In subfunction 4 the installed value is not inspected by
     the code of a kernel. Before usage it is necessary to find out current
