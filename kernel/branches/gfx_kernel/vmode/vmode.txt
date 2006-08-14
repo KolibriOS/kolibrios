@@ -1,0 +1,53 @@
+Video Mode Driver ver.1.0 for MenuetOS
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+This driver provide of hardware operation of all VGA-compatible videocard
+
+
+P.S.
+It may be added to SYSFUNCS.TXT
+
+21 = SETUP FOR DEVICES
+
+     ebx = 13 - videodriver enable
+            ecx = 1 - Get DriverInfo and Driver Initial Set
+                  edx = offset to 512-bytes area for DriverInfo
+                           RETURN: eax = -1  - errors or driver not installed in system
+                                            eax = 'MDAZ' - driver ID => set information in info area
+                                                        Info Structure: 
+                                                                              +0   - Full driver name (ASCII string )
+                                                                              +32  - Driver version (dword)
+                                                                              +36 - Reserved
+                                                                              +64  - List of support videomodes
+                                                                                         (max 32 positions) (word)
+                                                                              +128 - List of Support vertical rate 
+                                                                                          to each present mode (word):
+                                                                                           +0 - 1st ver.rate for mode0
+                                                                                           +2 - 2st ver.rate for mode0
+                                                                                           +4 - 3st ver.rate for mode0
+                                                                                           +8 - 4st ver.rate for mode0
+                                                                                           +10 - 5st ver.rate for mode0
+
+                                                                                           +12 - 1st ver.rate for mode1
+                                                                                           +14 - 2st ver.rate for mode1
+                                                                                           +16 - 3st ver.rate for mode1
+                                                                                           +18 - 4st ver.rate for mode1
+                                                                                           +20 - 5st ver.rate for mode1
+      
+            ecx = 2 - Get Current Video Mode With Vertical Refresh Rate
+                           RETURN: eax = -1  - errors
+                                            eax = X_screen*65536+Y_screen
+                                                ebx = current vertical rate
+                                                ecx = current video mode (number) [see infostruct]
+            ecx = 3 - Change Video Mode
+                  edx = VertRate*65536+VideoMode [see infostruct]
+                           RETURN: eax = -1  - errors
+                                            eax = 0 - set new videomode
+            ecx = 4 - Return at Start System Video Mode
+                           RETURN: eax = -1  - errors
+                                            eax = 0 - set initial videomode
+            ecx = 5 - Change vertical and horizontal size of visible screen area
+                  edx = 0/1 - -/+ horizontal size on 1 position
+                        = 2/3 - -/+ vertical size on 1 position (8 pixels)  (not complete yet)
+                           RETURN: eax = -1  - errors
+                                            eax = 0 - succesfull
+ 
