@@ -1,128 +1,131 @@
-; for information on PS2 mouse/keyboard programming
-; refer to http://www.computer-engineering.org/ps2mouse/
-; and http://www.computer-engineering.org/ps2keyboard/
-; respectively
-
 MouseSearch_PS2:
-        jmp .begin
+	jmp	MouseSearch_PS2_begin
 
-.kb_cmd_c:
-        call    kb_cmd
-.check:
-        cmp     ah, 1
-        je      @f
-        ret
-@@:
-        add     esp, 4  ; return address
-        jmp     .DataInputError
+mouse_error equ MouseSearch_PS2_begin.error
 
-.kb_write_c:
-        call    kb_write
-        jmp     .check
+ kb_cmd_c:
+	call	kb_cmd
+	jmp	check_kbd
 
-.kb_read_c:
-        call    kb_read
-        jmp     .check
+ kb_write_c:
+	call	kb_write
+	jmp	check_kbd
 
-;--------------------------------------------
-.begin:
-        pushad
+ kb_read_c:
+	call	kb_read
+	;jmp	check_kbd
 
-        mov     bl, 0xAD        ; disable keyboard interface
-        call    .kb_cmd_c
+ check_kbd:
+	cmp	ah, 1
+	je	mouse_error
+	ret
 
-        mov     bl, 0xa8        ; enable mouse interface
-        call    .kb_cmd_c
+uglobal
+  mouse_cmd_byte   db 0
+  mouse_nr_tries   db 0
+  mouse_nr_resends db 0
 
-        mov     bl, 0xd4        ; to mouse
-        call    .kb_cmd_c
-        mov     al, 0xFF        ; reset
-        call    .kb_write_c
-        call    .kb_read_c
-        cmp     al, 0xFA        ; ack
-        jne     .no_ack
-
-        ; now the mouse is in Reset Mode
-        ; get the Basic Assurance Test completion code
-        call    .kb_read_c
-        cmp     al, 0xAA
-        jne     .dead_mouse
-        ; get device ID
-        call    .kb_read_c
-        cmp     al, 0x00
-        jne     .unknown_device
-
-        ; reset completed successfully
-
-        ; enable mouse interrupt - IRQ12
-        mov     bl, 0x20        ; read command byte
-        call    .kb_cmd_c
-        call    .kb_read_c
-        or      al, 10b         ; set mouse IRQ bit
-        push    eax
-        mov     bl, 0x60        ; write command byte
-        call    .kb_cmd_c
-        pop     eax
-        call    .kb_write_c
-
-        mov     bl, 0xd4        ; to mouse
-        call    .kb_cmd_c
-        mov     al, 0xf4        ; enable data reporting
-        call    .kb_write_c
-        call    .kb_read_c
-        cmp     al, 0xFA
-        jne     .no_ack
-
-;       jmp     @f
-;.set_sample_rate:
-;       push    eax
-;       mov     bl, 0xd4        ; to mouse
-;       call    .kb_cmd_c
-;       mov     al, 0xF3        ; set sample rate
-;       call    .kb_write_c
-;       call    .kb_read_c      ; ack
-;       pop     eax
-;       call    .kb_write_c
-;       call    .kb_read_c      ; ack
-; @@:
-;       mov     eax, 200
-;       call    .set_sample_rate
-;       mov     eax, 100
-;       call    .set_sample_rate
-;       mov     eax, 80
-;       call    .set_sample_rate
-;       mov     bl, 0xd4
-;       call    .kb_cmd_c
-;       mov     al, 0xF2        ; read device type
-;       call    .kb_write_c
-;       call    .kb_read_c      ; ack
-;       call    .kb_read_c      ; mouse ID
-;       cmp     al, 0x03
-;       jne     .no_scroll
-;       mov     [ps2_mouse_scroll], 1
-;       ; it'll send 4-byte packets instead of 3-byte ones
-;       ; the last byte of a packet represents z-axis movement
-; .no_scroll:
-
-        mov     [ps2_mouse_detected], 1
-        mov     bl, 0xAE        ; enable keyboard interface
-        call    .kb_cmd_c
-
-        mov     esi, boot_setmouse_type
-        call    boot_log
-
-        jmp     .finish
+  mouse_error_esp  dd 0
+endg
 
 
-.DataInputError:
-.no_ack:
-.dead_mouse:
-.unknown_device:
-        mov     [ps2_mouse_detected],0
-        mov     bl, 0xA7 ; disable mouse interface
-        call    kb_cmd
-        mov     bl, 0xAE ; enable keyboard interface
-        call    kb_cmd
+ mouse_cmd:
+	mov	[mouse_cmd_byte], al
+	mov	[mouse_nr_resends], 5
+   .resend:
+	mov	bl, 0xd4
+	call	kb_cmd_c
+	mov	al, [mouse_cmd_byte]
+	call	kb_write_c
+
+	call	mouse_read
+
+	cmp	al, 0xFA	; ack
+	jne	.noack
+	ret
+   .noack:
+	cmp	al, 0xFE	; resend
+	jne	.noresend
+	dec	[mouse_nr_resends]
+	jnz	.resend
+   .noresend:
+	jmp	mouse_error
+
+
+ mouse_read:
+	mov	[mouse_nr_tries], 100
+   .repeat:
+	call	kb_read
+	cmp	ah, 1
+	jne	.fin
+	mov	esi, 10
+	call	delay_ms
+	dec	[mouse_nr_tries]
+	jnz	.repeat
+	jmp	mouse_error
+   .fin:
+	ret
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+MouseSearch_PS2_begin:
+	pushad
+
+	mov	[mouse_error_esp], esp
+
+        mov     bl, 0xAD	; disable keyboard interface
+        call    kb_cmd_c
+     
+        mov     bl, 0xA8	; enable mouse interface
+        call    kb_cmd_c
+
+	mov	al, 0xFF	; reset
+	call	mouse_cmd
+
+	; now the mouse is in Reset Mode
+	; get the Basic Assurance Test completion code
+	call	mouse_read
+	cmp	al, 0xAA
+	jne	.error		; dead mouse
+
+	; get device ID
+	call	mouse_read
+	cmp	al, 0x00
+	jne	.error		; unknown device
+
+	; reset completed successfully
+
+	; enable mouse interrupt - IRQ12
+	mov	bl, 0x20	; read command byte
+	call	kb_cmd_c
+	call	kb_read_c
+	or	al, 10b
+	push	eax
+	mov	bl, 0x60	; write command byte
+	call	kb_cmd_c
+	pop	eax
+	call	kb_write_c
+
+	mov	al, 0xF4	; enable data reporting
+	call	mouse_cmd
+
+	mov	[ps2_mouse_detected], 1
+	mov     bl, 0xAE	; enable keyboard interface
+	call	kb_cmd
+
+	mov	esi, boot_setmouse_type
+	call	boot_log
+
+	jmp	.finish
+
+
+.error:
+	mov	esp, [mouse_error_esp]    ; clear stack frame
+	mov	[ps2_mouse_detected], 0
+	mov	bl, 0xA7 ; disable mouse interface
+	call	kb_cmd
+  	mov	bl, 0xAE ; enable keyboard interface
+  	call	kb_cmd
 
 .finish:
-        popad
+	popad
