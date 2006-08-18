@@ -6,8 +6,7 @@
 ;
 ;   Компилируйте с помощью FASM 1.52 и выше
 ;
-include "lang.inc"
-include "macros.inc"
+include "MACROS.INC"
 
   use32
   org    0x0
@@ -23,9 +22,11 @@ include "macros.inc"
 
 START:                           ; start of execution
 
-   mov  eax, 5
-   mov  ebx, 10
-   int  0x40
+;   mov  eax, 5
+;   mov  ebx, 10
+;   int  0x40
+
+   mcall 18,15
 
    mov  eax, 58               ; load AUTORUN.DAT
    mov  ebx, autorun_dat_info

@@ -12,11 +12,10 @@
     dd     0x300000                ; memory for app
     dd     0x300000                ; esp
     dd     temp_area , 0x0         ; I_Param , I_Icon
+
 include    'lang.inc'
 include    'macros.inc'
 ;******************************************************************************
-
-tmp_param dd 0
 
 START:                          ; start of execution
 
@@ -35,6 +34,7 @@ START:                          ; start of execution
    mov   edi,string      ; clear string
    mov   ecx,43*3        ;   length of a string
    xor   eax,eax         ;   symbol <0>
+   add   al,14h
    cld
    rep   stosb
 
@@ -49,8 +49,9 @@ START:                          ; start of execution
    mov   edi,string
    rep   movsb           ; copy string from temp_area to "string" (filename)
 
-   call  draw_window
-   mov   [tmp_param],0xdeadbeef
+   call  load_image
+   call  convert
+
  .no_param:
 
 
@@ -70,11 +71,6 @@ START:                          ; start of execution
 
 ; теперь в ecx номер процесса
     mov  [process],ecx
-
-    cmp  [tmp_param],0xdeadbeef
-    jne  @f
-    jmp  kopen
-  @@:
 
     call draw_window
 
@@ -195,7 +191,7 @@ still:
 
  getappinfo:
     mov  eax,9
-    mov  ebx,I_END
+    mov  ebx,process_info
     int  0x40
     ret
 
@@ -206,7 +202,7 @@ load_image:
     mov  ebx,fileinfo
     int  0x40
     cmp  [I_END+2],dword 512  ; размер файла (file size)
-    jbe  open1
+    jbe  @f
     mov  eax,[I_END+2]
     shr  eax,9 ; поделим на 512 и прибавим 1 - получим число блоков
     inc  eax
@@ -215,7 +211,31 @@ load_image:
     mov  eax,58
     mov  ebx,fileinfo
     int  0x40
-ret
+@@:
+    mov  eax,[I_END+18]
+    mov  ebx,[I_END+22]
+    add  eax,20
+    cmp  eax,210
+    jae  @f
+    mov  eax,210
+@@:
+    add  ebx,58
+    cmp  ebx,56
+    jae  @f
+    mov  ebx,56
+@@:
+    mov  [wnd_width],eax
+    mov  [wnd_height],ebx
+    test [bWasDraw],1
+    jz   @f
+    mov  esi,ebx
+    mov  edx,eax
+    mov  ecx,-1
+    mov  ebx,-1
+    mov  eax,67
+    int  40h
+@@:
+    ret
 
 
   drawimage:
@@ -384,7 +404,7 @@ ret
 
 
 draw_window:
-
+    or   [bWasDraw],1
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
@@ -392,8 +412,12 @@ draw_window:
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
-    mov  ebx,350                   ; [x start] *65536 + [x size]
-    mov  ecx,400                   ; [y start] *65536 + [y size]
+;    mov  ebx,350                   ; [x start] *65536 + [x size]
+;    mov  ecx,400                   ; [y start] *65536 + [y size]
+    mov  ebx,100*65536
+    mov  ecx,100*65536
+    add  ebx,[wnd_width]
+    add  ecx,[wnd_height]
     mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
     int  0x40
 
@@ -448,6 +472,8 @@ sop      dd 0
 eop      dd 0
 eos      dd 0
 process  dd 0
+
+bWasDraw db 0
 
 thread1:                        ; start of thread1
 
@@ -624,7 +650,7 @@ draw_window1:
     mov  eax,8             ;invisible button
     mov  ebx,21*65536+258
     mov  ecx,40*65536+15
-    mov  edx,0x40000002
+    mov  edx,0x60000002
     int  0x40
 
     mov  eax,13             ;bar
@@ -664,7 +690,8 @@ fileinfo:
      dd temp_area
 string:
 ; db '/HARDDISK/FIRST/1/DICK.BMP                  '
-  db '/hd/1/menuet/pics/new.bmp                   '
+; db '/hd/1/menuet/pics/new.bmp                   '
+  db '/rd/1/bgr.bmp                               '
   db '                                            '
   db '                                            '
 
@@ -967,6 +994,9 @@ draw_window3:
 vflag: db 'x'
 bgrmode: dd 1
 
+wnd_width dd 210
+wnd_height dd 53
+
 lsz labelt3,\
     en,   'Background set',\
     ru,   "Установка фона"
@@ -990,7 +1020,7 @@ lsz ok_btn,\
 
 
 IM_END:
+process_info:
 temp_area:
 rb 0x10000
 I_END:
-process_info:

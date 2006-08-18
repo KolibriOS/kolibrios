@@ -26,8 +26,8 @@ ICON_STRIP equ '/RD/1/ICONSTRP.GIF'
   dd     icon_data+0x30000        ; memory for app
   dd     icon_data+0x30000        ; esp
   dd     I_Param , 0x0  ; I_Param , I_Icon
-include  'macros.inc'
 include  'lang.inc'
+include  'macros.inc'
 COLOR_ORDER equ MENUETOS
 include  'gif_lite.inc'
 ;include  'debug.inc'
@@ -801,7 +801,7 @@ else
       db 255,255,255,0,   ' PARAMETERS                                    '
       db 255,255,255,0,   '                APPLY CHANGES                  '
       db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
-      db 0,0,0,0,         'çÄÜåàíÖ çÄ èéáàñàû àäéçäà Ñãü êÖÑÄäíàêéÇÄçàü   '
+      db 0,0,0,0,         '      PRESS ON POSITION OF ICON TO EDIT        '
       db                  'x' ; <- END MARKER, DONT DELETE
 
   labelt:
@@ -811,11 +811,19 @@ end if
 
 ;ya    dd 0
 
+if lang eq ru
 add_text db 'çÄÜåàíÖ çÄ èéáàñàû çÖàëèéãúáìÖåéâ àäéçäà'
 add_text_len:
 
 rem_text db 'çÄÜåàíÖ çÄ èéáàñàû àëèéãúáìÖåéâ àäéçäà'
 rem_text_len:
+else
+add_text db 'PRESS ON POSITION OF UNUSED ICON'
+add_text_len:
+
+rem_text db 'PRESS ON POSITION OF USED ICON'
+rem_text_len:
+end if
 arrows db '</>'
 iconname:
       db ICON_APP,0

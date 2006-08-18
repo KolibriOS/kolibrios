@@ -117,7 +117,7 @@ data_arrived:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_con
-    mov  esi,29
+    mov  esi,inp_con.len
     int  0x40
     add  [y],10
 
@@ -131,7 +131,7 @@ no_con:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_shut
-    mov  esi,26
+    mov  esi,inp_shut.len
     int  0x40
     add  [y],10
 
@@ -150,7 +150,7 @@ no_shut:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_reb
-    mov  esi,20
+    mov  esi,inp_reb.len
     int  0x40
     add  [y],10
 
@@ -168,7 +168,7 @@ no_reb:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_savefi
-    mov  esi,29
+    mov  esi,inp_savefi.len
     int  0x40
     add  [y],10
 
@@ -186,7 +186,7 @@ no_savefi:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_savehi
-    mov  esi,29
+    mov  esi,inp_savehi.len
     int  0x40
     add  [y],10
 
@@ -205,7 +205,7 @@ no_savehi:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_hotreb
-    mov  esi,28
+    mov  esi,inp_hotreb.len
     int  0x40
     add  [y],10
 
@@ -223,7 +223,7 @@ no_hotreb:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_exit
-    mov  esi,28
+    mov  esi,inp_exit.len
     int  0x40
     add  [y],10
     
@@ -236,7 +236,7 @@ no_com:
     add  ebx,[y]
     mov  ecx,0x000000
     mov  edx,inp_com
-    mov  esi,22
+    mov  esi,inp_com.len
     int  0x40
     add  [y],10
 
@@ -303,11 +303,17 @@ draw_window:
    
    
 text:
+if lang eq ru
     db 'Данный адрес        : 192.168.0.2       '
     db 'Прослушиваемый порт : 0x6100            '
     db 'Состояние:                              '
-    db 'x <- END MARKER, DONT DELETE            '
-   
+    db 'x' ; <- END MARKER, DONT DELETE
+else
+    db 'This address        : 192.168.0.2       '
+    db 'Used port           : 0x6100            '
+    db 'Status:                                 '
+    db 'x' ; <- END MARKER, DONT DELETE
+end if
    
 labeltext:  db  'Remote Control Center(Server)'
 lte:
@@ -316,19 +322,39 @@ socket   dd  0x0
 y   dd   0x10
 sysclock dd 0x0
 
+if lang eq ru
 inp_con db 'Внимание, подключился клиент!'
+.len = $-inp_con
 inp_shut db 'Идёт отключение системы...'
+.len = $-inp_shut
 inp_reb db 'Идёт перезагрузка...'
+.len = $-inp_reb
 inp_savefi db 'Сохраняем имедж на дискету...'
+.len = $-inp_savefi
 inp_savehi db 'Сохраняем имедж на Ж. диск...'
+.len = $-inp_savehi
 inp_hotreb db 'Идёт горячий рестарт ядра...'
+.len = $-inp_hotreb
 inp_exit db 'Выход из программы...'
+.len = $-inp_exit
 inp_com db 'Неопознанная комманда!'
+.len = $-inp_com
+else
+inp_con db 'Note, client has been connected!'
+.len = $-inp_con
+inp_shut db 'Turn off in progress...'
+.len = $-inp_shut
+inp_reb db 'Reboot in progress...'
+.len = $-inp_reb
+inp_savefi db 'Saving image to floppy...'
+.len = $-inp_savefi
+inp_savehi db 'Saving image to hard disk...'
+.len = $-inp_savehi
+inp_hotreb db 'Kernel restart in progress...'
+.len = $-inp_hotreb
+inp_exit db 'Exiting from program...'
+.len = $-inp_exit
+inp_com db 'Unknown command!'
+.len = $-inp_com
+end if
 I_END:
-   
-   
-   
-   
-   
-   
-   

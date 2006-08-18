@@ -3,31 +3,32 @@
 ;
 ;    This program displays Conways game of life
 ;
-;    Compile with FASM v1.49 for DOS;
+;    Compile with FASM for Menuet;
 ;
-;    Version 0.1a   20th May   2004
-;                   Ivan Poddubny
 ;
 ;    Version 0.1    30th March 2004
 ;                   Mike Hibbett
 ;
+;    Version 0.2    23th May 2004
+;                   Random generation dots with start
+;
+;    Convert to ASCL Libary by Pavlushin Evgeni
+;
 ;    This is an experiment to see how small a usefull application can get
+;
 
-include "lang.inc"
-include "macros.inc"
+use32
+               org     0x0
 
-  use32
-  org     0x0
+               db     'MENUET01'              ; 8 byte id
+               dd     0x01                    ; header version
+               dd     START                   ; start of code
+               dd     I_END                   ; size of image
+               dd     0x100000                 ; memory for app
+               dd     0x100000                ; esp
+               dd     0x0 , 0x0               ; I_Param , I_Icon
+include 'ascl.inc'
 
-  db     'MENUET01'              ; 8 byte id
-  dd     0x01                    ; header version
-  dd     START                   ; start of code
-  dd     I_END                   ; size of image
-  dd     0xc1000                  ; memory for app
-  dd     0xc1000                  ; esp
-  dd     0x0 , 0x0               ; I_Param , I_Icon
-
-;include "DEBUG.INC"
 macro setcell x,y  { mov     [esi + 512*(y)*3 + (x)*3], al }
 
 START:
@@ -42,88 +43,54 @@ START:
     ; setcell take the arguments setcell x,y
     ; 0,0 is the top left corner.
 
-;    setcell 200,120
-;    setcell 201,120
-;    setcell 200,121
-;    setcell 199,121
-;    setcell 200,122
+    setcell 200,120
+    setcell 201,120
+    setcell 200,121
+    setcell 199,121
+    setcell 200,122
 
-;    setcell 70,120
-;    setcell 71,120
-;    setcell 70,121
-;    setcell 69,121
-;    setcell 70,122
-
-    mov     eax, 40
-    mov     ebx, 100101b
-    int     0x40
+    setcell 70,120
+    setcell 71,120
+    setcell 70,121
+    setcell 69,121
+    setcell 70,122
 
     call    draw_window
 
+    ;Random generation dots
+
+    mov ecx,20000
+xxx:
+    push ecx
+    random 30000,edi     ;up pice of screen
+    mov al,0xff
+    shl edi,3
+;    mov [I_END+edi],al
+;    random 50000,edi     ;down pice of screen
+;    mov al,0xff
+;    shl edi,3
+    add edi,512*460 ;760
+    mov [I_END+edi],al
+    pop ecx
+    dec ecx
+    jnz xxx
+
 still:
 
-;    mov  eax, 23                 ; wait here for event
-;    mov  ebx, 5
-;    int  0x40
-    mov  eax, 11
-    int  0x40
+    timeevent 5,nokey,red,key,button    ;Wait EVENT with 5 fps
+    jmp still
 
-    test eax, eax
-    je   nokey
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,3                  ; button in buffer ?
-    je   button
-    cmp  eax,6
-    je   mouse
-
-    jmp  still
-
-
-  mouse:
-    mov  eax, 37
-    mov  ebx, 2
-    int  0x40
-    test eax, eax
-    jz   still
-
-    mov  eax, 37
-    mov  ebx, 1
-    int  0x40
-    sub  eax, 5*65536+20
-    mov  ebx, eax
-    shr  eax, 16
-    and  ebx, 0xffff
-
-; WRITE COORDINATES
-;   dpd  eax
-;   dps  "  "
-;   dpd  ebx
-;   dps  <10,13>
-
-    cmp  ax, 0
-    js   still
-    cmp  bx, 0
-    js   still
-
-    shl  ebx, 9
-    add  ebx, eax
-    imul ebx, 3
-    add  ebx, I_END
-    mov  [ebx], dword 0xFFFFFFFF
-    jmp  draw
-
-  red:                          ; REDRAW WINDOW
+red:                          ; REDRAW WINDOW
     call draw_window
     jmp  still
 
+key:                          ; KEY
+    mov  eax,2                  ; get it, but ignore
+    int  0x40
 
 nokey:
-    ; cycle life state
 
-mov eax,5
-mov ebx,5
-int 0x40
+    ; cycle life state
 
     mov  esi, I_END + 512*3
 
@@ -187,7 +154,6 @@ nextcell:
 
     ; copy new generation across
 
-
     mov     ecx, 512*512*3
     mov     esi, I_END+1
     mov     edi, I_END
@@ -199,56 +165,26 @@ nc1:
     mov     [esi+2], byte 0
     add     esi, 3
     loop    nc1
-draw:
+
     mov     ebx, I_END
     mov     ecx, 512*65536+512
-    mov     edx, 5*65536+22
+    mov     edx, 5*65536+20
     mov     eax,7
     int     0x40
 
     jmp  still
 
 button:                       ; BUTTON - only close supported
-    or   eax,-1
-    int  0x40
-
-
-
+    close
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
-
-
 draw_window:
-    mov  eax,12
-    mov  ebx,1
-    int  0x40
-
-    mov  eax,0                     ; open window
-    mov  ebx,50*65536+512+9
-    mov  ecx,50*65536+512+22+4
-    mov  edx,0x03000000
-    int  0x40
-
-    mov  eax,4                     ; WINDOW LABEL
-    mov  ebx,8*65536+8
-    mov  ecx,0x10ffffff
-    mov  edx,header
-    mov  esi,header.size
-    int  0x40
-
-    mov     eax,12                    ; function 12:tell os about windowdraw
-    mov     ebx,2                     ; 2, end of draw
-    int     0x40
-
+    startwd
+    window 50,50,512+9,512+23,window_Skinned
+    label  8,8,'Life Screen',cl_White+font_Big
+    endwd
     ret
-
-
-
-; DATA AREA
-
-header          db  'Life'
-   .size = $ - header
 
 I_END:

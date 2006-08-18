@@ -36,6 +36,7 @@ use32
 include 'lang.inc'
 stack_size=4096 + 1024
 
+include 'macros.inc'
 
 START:                          ; start of execution
 
@@ -141,31 +142,8 @@ check_parameters:
 ;******************************************************************************
 
 
-set_default_colours:
-
-     pusha
-
-     mov  eax,6            ; load default color map
-     mov  ebx,defcol
-     mov  ecx,0
-     mov  edx,-1
-     mov  esi,0x10000
-     int  0x40
-
-     mov  eax,48           ; set default color map
-     mov  ebx,2
-     mov  ecx,0x10000
-     mov  edx,10*4
-     int  0x40
-
-     popa
-     ret
-
-defcol db 'DEFAULT.DTP'
-
 
 boot_set_background:
-    call    set_default_colours
 
     mov     ecx,memsize-fin-stack_size  ; size
     mov     edi,fin                     ; pointer

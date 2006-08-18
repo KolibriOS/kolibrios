@@ -268,6 +268,7 @@ draw_window:
 
 
 text:
+if lang eq ru
     db ' Время сервера:                         '
     db '                                        '
     db '  Меню управления сервером:             '
@@ -282,8 +283,25 @@ text:
     db ' Локальный адрес : 192.168.0.1          '
     db ' Удалённый адрес : 192.168.0.2          '
     db 'Адрес сервера - в конце исходника       '
-    db 'x <- END MARKER, DONT DELETE            '
+    db 'x' ; <- END MARKER, DONT DELETE
 
+else
+    db ' On server:                             '
+    db '                                        '
+    db ' Server control menu:                   '
+    db '                                        '
+    db '   - Shutdown                           '
+    db '   - Reboot                             '
+    db '   - Save ramdisk image to floppy       '
+    db '   - Save ramdisk image to hard disk    '
+    db '   - Kernel restart                     '
+    db '   - Close server part                  '
+    db '                                        '
+    db ' Local  address : 192.168.0.1           '
+    db ' Remote address : 192.168.0.2           '
+    db 'Address of server is in end of source   '
+    db 'x' ; <- END MARKER, DONT DELETE
+end if
 
 labeltext:  db	'Remote Control Center(Client)'  ;
 lte:
@@ -301,9 +319,3 @@ sen_exit db 'E'
 connect db 'C'
 
 I_END:
-
-
-
-
-
-
