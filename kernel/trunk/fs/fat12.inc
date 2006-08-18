@@ -63,9 +63,9 @@ rdfs2_1:
 fdc_status_error_2:
     pop    ecx ebx eax
     ret
-    
 
-   
+
+
 
 floppy_fileread:
 ;----------------------------------------------------------------
@@ -115,7 +115,7 @@ fr_do_1:
     ret
 fdc_status_error_1:
     mov   [flp_status],0
-    mov    eax,10 
+    mov    eax,10
     mov    ebx,-1
     ret
 
@@ -231,7 +231,7 @@ frfl8_1:
     sub    [esp+24],dword 512
     jmp    frnew_1
 
-read_chs_sector:    
+read_chs_sector:
     call    calculate_chs
     call    ReadSectWithRetr
     ret
@@ -273,7 +273,7 @@ read_flp_root:
     je    unnecessary_root_read
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],1      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор    
+    mov    [FDD_Sector],2      ; Сектор
     mov    edi,0x8000
     call   SeekTrack
 read_flp_root_1:
@@ -302,7 +302,7 @@ read_flp_fat:
     je    unnecessary_flp_fat
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор    
+    mov    [FDD_Sector],2      ; Сектор
     mov    edi,0x8000
     call   SeekTrack
 read_flp_fat_1:
@@ -358,7 +358,7 @@ calculatefatchain_flp:
    mov dword [edi],ecx
    add  edi,4
    mov dword [edi],edx
-   add  edi,4   
+   add  edi,4
    add  esi,12
 
    cmp  edi,0x282000+2856*2   ;2849 clusters
@@ -366,12 +366,12 @@ calculatefatchain_flp:
 
    popad
    ret
-  
+
 check_label:
     pushad
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],1      ; Сектор   
+    mov    [FDD_Sector],1      ; Сектор
     call   SetUserInterrupts
     call   FDDMotorON
     call   RecalibrateFDD
@@ -382,12 +382,12 @@ check_label:
     jne    fdc_status_error
     call   ReadSectWithRetr
     cmp    [FDC_Status],0
-    jne    fdc_status_error    
+    jne    fdc_status_error
     mov    esi,flp_label
     mov    edi,0xD000+39
     mov    ecx,15
     cld
-    rep    cmpsb    
+    rep    cmpsb
     je     same_label
     mov    [root_read],0
     mov    [flp_fat],0
@@ -412,7 +412,7 @@ save_flp_root:
     je    unnecessary_root_save
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],1      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор    
+    mov    [FDD_Sector],2      ; Сектор
     mov    esi,0x8000
     call   SeekTrack
 save_flp_root_1:
@@ -430,7 +430,7 @@ unnecessary_root_save:
     mov    [fdc_irq_func],fdc_null
     popa
     ret
-    
+
 save_flp_fat:
     pusha
     call  check_label
@@ -441,7 +441,7 @@ save_flp_fat:
     call   restorefatchain_flp
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],2      ; Сектор    
+    mov    [FDD_Sector],2      ; Сектор
     mov    esi,0x8000
     call   SeekTrack
 save_flp_fat_1:
@@ -467,7 +467,7 @@ unnecessary_flp_fat_save:
     popa
     ret
 
-    
+
 restorefatchain_flp:   ; restore fat chain
    pushad
 
@@ -563,7 +563,7 @@ fifoundd_1:
     mov    ebx,[path_pointer_flp]
     add    ebx,36
     call   get_cluster_of_a_path_flp
-    jc     frnoreadd_1_1    
+    jc     frnoreadd_1_1
     mov    edi,ebx
     add    edi,11
     jmp    fifoundd_2_1
@@ -617,7 +617,7 @@ floppy_filesave:
 ; edi  pointer to path   /fd/1/......  - for all files in nested directories
 ;
 ; output : eax = 0 - ok
-;                5 - file not found / directory not found 
+;                5 - file not found / directory not found
 ;                8 - disk full
 ;               10 - access denied
 ;-----------------------------------------------------------
@@ -644,10 +644,10 @@ fsdel_1:
     ret
 
 fdc_status_error_6:
-    popa 
+    popa
     add    esp,32
     jmp    fdc_status_error_1
-    
+
 rd_do_save_1:
     push   eax ebx ecx edx esi edi
     call   read_flp_fat
@@ -749,7 +749,7 @@ fifoundds_4:
     mov    ebx,1            ; first cluster
     cmp    [save_root_flag],0
     jne    frnewds_1
-    call   frnewds_2 
+    call   frnewds_2
     pusha
     call   WriteSectWithRetr
     popa
@@ -811,7 +811,7 @@ frnoreadds_1:
 
 fdc_status_error_7_1:
     cmp    [FDC_Status],0
-    je    fdc_status_error_8    
+    je    fdc_status_error_8
 fdc_status_error_7:
     pop    edi esi edx ecx ebx eax
     add    esp,32
@@ -821,10 +821,10 @@ save_chs_sector:
     call    calculate_chs
     call    WriteSectWithRetr
     ret
-    
+
 calculate_chs:
     mov    bl,[FDD_Track]
-    mov    [old_track],bl    
+    mov    [old_track],bl
     mov    ebx,18
     xor    edx,edx
     div    ebx
@@ -846,7 +846,7 @@ no_head_2:
 no_seek_track_1:
     ret
 
-    
+
 get_cluster_of_a_path_flp:
 ;---------------------------------------------------------
 ; input  : EBX = pointer to a path string
@@ -892,7 +892,7 @@ directory_not_found_flp:
     pop   edx
     stc                         ; errors occour
     ret
-    
+
 analyze_directory_flp:
 ;--------------------------------
 ; input  : EAX = first cluster of the directory
@@ -908,8 +908,8 @@ analyze_directory_flp:
    push edx
    push esi
    push edi
-   
-   
+
+
 adr56_flp:
    mov [clust_tmp_flp],eax
    add    eax,31
@@ -921,7 +921,7 @@ adr56_flp:
 
    mov ecx,512/32
    mov ebx,0xD000
-   
+
 adr1_analyze_flp:
    mov esi,edx   ;[esp+16]
    mov edi,ebx
@@ -931,10 +931,10 @@ adr1_analyze_flp:
    rep cmpsb
    pop ecx
    je found_file_analyze_flp
-   
+
    add ebx,32
    loop adr1_analyze_flp
-   
+
     mov eax,[clust_tmp_flp]
     shl    eax,1            ;find next cluster from FAT
     add    eax,0x282000
@@ -942,7 +942,7 @@ adr1_analyze_flp:
     and    eax,4095
     cmp eax,0x0ff8
     jb  adr56_flp
-not_found_file_analyze_flp:   
+not_found_file_analyze_flp:
    pop edi
    pop esi
    pop edx
@@ -950,7 +950,7 @@ not_found_file_analyze_flp:
    add esp,4
    stc        ;file not found
    ret
-   
+
 found_file_analyze_flp:
    pop edi
    pop esi
@@ -959,8 +959,8 @@ found_file_analyze_flp:
    add esp,4
    clc        ;file found
    ret
-    
-    
+
+
 analyze_directory_to_write_flp:
 ;--------------------------------
 ; input  : EAX = first cluster of the directory
@@ -970,33 +970,33 @@ analyze_directory_to_write_flp:
 ;                     ECX,EDX,EDI,EDI not changed
 ;          IF CARRY=1
 ;--------------------------------
-   
+
    push ecx
    push edx
    push esi
-   
+
 adr561:
    mov [clust_tmp_flp],eax
    add    eax,31
    pusha
-   call   read_chs_sector   
+   call   read_chs_sector
    popa
    cmp    [FDC_Status],0
    jne    error_found_file_analyze1
 
    mov ecx,512/32
    mov ebx,0xD000
-   
+
 adr1_analyze1:
    cmp byte [ebx],0x00
    je  found_file_analyze1
    cmp byte [ebx],0xe5
    je  found_file_analyze1
-   
+
 avanti:
    add ebx,32
    loop adr1_analyze1
-   
+
    mov eax,[clust_tmp_flp]
    shl    eax,1            ;find next cluster from FAT
    add    eax,0x282000
@@ -1004,13 +1004,13 @@ avanti:
    and    eax,4095
    cmp eax,0x0ff8
    jb  adr561
-   
+
    call get_free_FAT               ;this block of code add a new cluster
                                    ;for the directory because the directory
                                    ;is full
 
    mov [edi],word 0x0fff
-   
+
    mov eax,[clust_tmp_flp]
    shl    eax,1            ;find next cluster from FAT
    add    eax,0x282000
@@ -1028,14 +1028,14 @@ avanti:
    mov    eax,edi
    add    eax,31
    pusha
-   call   save_chs_sector   
+   call   save_chs_sector
    popa
    cmp    [FDC_Status],0
    jne    error_found_file_analyze1
    mov    ebx,0xD000
 
 found_file_analyze1:
-   
+
    pop esi
    pop edx
    pop ecx
@@ -1047,15 +1047,15 @@ error_found_file_analyze1:
    pop edx
    pop ecx
    stc
-   ret   
-   
+   ret
+
 get_free_FAT_flp:
 ;------------------------------------------
 ; input  :  EAX = # cluster for start the searching
 ; output :  EAX = # first cluster found free
 ;-------------------------------------------
    push ebx
-  
+
     mov    ebx,1
 check_new_flp:
     add    ebx,1
@@ -1265,6 +1265,11 @@ fd_find_lfn:
         ret
 .found:
         mov     eax, [esp+8]
+        add     eax, 31
+        cmp     dword [esp], flp_root_next
+        jnz     @f
+        add     eax, -31+19
+@@:
         add     esp, 16         ; CF=0
         pop     esi
         ret
@@ -1915,6 +1920,304 @@ fs_FloppyRewrite:
         pop     edi ecx
         jmp     .ret
 
+;----------------------------------------------------------------
+;
+;  fs_FloppyWrite - LFN variant for writing to floppy
+;
+;  esi  points to filename
+;  ebx  pointer to 64-bit number = first wanted byte, 0+
+;       may be ebx=0 - start from first byte
+;  ecx  number of bytes to write, 0+
+;  edx  mem location to data
+;
+;  ret ebx = bytes written (maybe 0)
+;      eax = 0 ok write or other = errormsg
+;
+;--------------------------------------------------------------
+
+@@:
+        push    ERROR_ACCESS_DENIED
+fs_FloppyWrite.ret0:
+        pop     eax
+        xor     ebx, ebx
+        ret
+
+fs_FloppyWrite.ret11:
+        push    11
+        jmp     fs_FloppyWrite.ret0
+
+fs_FloppyWrite:
+        cmp     byte [esi], 0
+        jz      @b
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     .ret11
+        pushad
+        call    fd_find_lfn
+        jnc     .found
+        popad
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .ret0
+.found:
+; FAT does not support files larger than 4GB
+        test    ebx, ebx
+        jz      .l1
+        cmp     dword [ebx+4], 0
+        jz      @f
+.eof:
+        popad
+        push    ERROR_END_OF_FILE
+        jmp     .ret0
+@@:
+        mov     ebx, [ebx]
+.l1:
+; now edi points to direntry, ebx=start byte to write,
+; ecx=number of bytes to write, edx=data pointer
+
+; extend file if needed
+        add     ecx, ebx
+        jc      .eof    ; FAT does not support files larger than 4GB
+        push    eax     ; save directory cluster
+        push    0       ; return value=0
+
+        call    get_time_for_file
+        mov     [edi+22], ax            ; last write time
+        call    get_date_for_file
+        mov     [edi+24], ax            ; last write date
+        mov     [edi+18], ax            ; last access date
+
+        push    dword [edi+28]          ; save current file size
+        cmp     ecx, [edi+28]
+        jbe     .length_ok
+        cmp     ecx, ebx
+        jz      .length_ok
+        call    floppy_extend_file
+        jnc     .length_ok
+        mov     [esp+4], eax
+; floppy_extend_file can return two error codes: FAT table error or disk full.
+; First case is fatal error, in second case we may write some data
+        cmp     al, ERROR_DISK_FULL
+        jz      .disk_full
+        pop     eax
+        pop     eax
+        mov     [esp+4+28], eax
+        pop     eax
+        popad
+        xor     ebx, ebx
+        ret
+.disk_full:
+; correct number of bytes to write
+        mov     ecx, [edi+28]
+        cmp     ecx, ebx
+        ja      .length_ok
+.ret:
+        pop     eax
+        pop     eax
+        mov     [esp+4+28], eax ; eax=return value
+        pop     eax
+        sub     edx, [esp+20]
+        mov     [esp+16], edx   ; ebx=number of written bytes
+        popad
+        ret
+.length_ok:
+; save FAT & directory
+; note that directory must be saved first because save_flp_fat uses buffer at 0xD000
+        mov     esi, [edi+28]
+        movzx   edi, word [edi+26]      ; starting cluster
+        mov     eax, [esp+8]
+        pusha
+        call    save_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jnz     .device_err
+        call    save_flp_fat
+        cmp     [FDC_Status], 0
+        jz      @f
+.device_err:
+        mov     byte [esp+4], 11
+        jmp     .ret
+@@:
+
+; now ebx=start pos, ecx=end pos, both lie inside file
+        sub     ecx, ebx
+        jz      .ret
+        call    SetUserInterrupts
+.write_loop:
+        lea     eax, [edi+31]   ; current sector
+; get length of data in current sector
+        push    ecx
+        sub     ebx, 0x200
+        jb      .hasdata
+        neg     ebx
+        xor     ecx, ecx
+        jmp     @f
+.hasdata:
+        neg     ebx
+        cmp     ecx, ebx
+        jbe     @f
+        mov     ecx, ebx
+@@:
+; load sector if needed
+        cmp     dword [esp+4], 0        ; we don't need to read uninitialized data
+        jz      .noread
+        cmp     ecx, 0x200      ; we don't need to read sector if it is fully rewritten
+        jz      .noread
+        cmp     ecx, esi        ; (same for the last sector)
+        jz      .noread
+        pusha
+        call    read_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jz      @f
+.device_err2:
+        pop     ecx
+        jmp     .device_err
+@@:
+.noread:
+; zero uninitialized data if file was extended (because floppy_extend_file does not this)
+        push    eax ecx edi
+        xor     eax, eax
+        mov     ecx, 0x200
+        sub     ecx, [esp+4+12]
+        jbe     @f
+        mov     edi, 0xD000
+        add     edi, [esp+4+12]
+        rep     stosb
+@@:
+; zero uninitialized data in the last sector
+        mov     ecx, 0x200
+        sub     ecx, esi
+        jbe     @f
+        mov     edi, 0xD000
+        add     edi, esi
+        rep     stosb
+@@:
+        pop     edi ecx eax
+; copy new data
+        push    eax
+        mov     eax, edx
+        neg     ebx
+        jecxz   @f
+        add     ebx, 0xD000+0x200
+        call    memmove
+        xor     ebx, ebx
+@@:
+        pop     eax
+; save sector
+        pusha
+        call    save_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jnz     .device_err2
+        add     edx, ecx
+        sub     [esp], ecx
+        pop     ecx
+        jz      .done
+.next_cluster:
+        movzx   edi, word [edi*2+0x282000]
+        sub     esi, 0x200
+        jae     @f
+        xor     esi, esi
+@@:
+        sub     dword [esp], 0x200
+        jae     .write_loop
+        and     dword [esp], 0
+        jmp     .write_loop
+.done:
+        mov     [fdc_irq_func], fdc_null
+        jmp     .ret
+
+floppy_extend_file.zero_size:
+        xor     eax, eax
+        jmp     floppy_extend_file.start_extend
+
+; extends file on floppy to given size (new data area is undefined)
+; in: edi->direntry, ecx=new size
+; out: CF=0 => OK, eax destroyed
+;      CF=1 => error, eax=code (ERROR_FAT_TABLE or ERROR_DISK_FULL)
+floppy_extend_file:
+        push    ecx
+; find the last cluster of file
+        movzx   eax, word [edi+26]      ; first cluster
+        mov     ecx, [edi+28]
+        jecxz   .zero_size
+@@:
+        sub     ecx, 0x200
+        jbe     @f
+        mov     eax, [eax*2+0x282000]
+        and     eax, 0xFFF
+        jz      .fat_err
+        cmp     eax, 0xFF8
+        jb      @b
+.fat_err:
+        pop     ecx
+        push    ERROR_FAT_TABLE
+        pop     eax
+        stc
+        ret
+@@:
+        push    eax
+        mov     eax, [eax*2+0x282000]
+        and     eax, 0xFFF
+        cmp     eax, 0xFF8
+        pop     eax
+        jb      .fat_err
+; set length to full number of sectors
+        sub     [edi+28], ecx
+.start_extend:
+        pop     ecx
+; now do extend
+        push    edx esi
+        mov     esi, 0x282000+2*2       ; start scan from cluster 2
+        mov     edx, 2847               ; number of clusters to scan
+.extend_loop:
+        cmp     [edi+28], ecx
+        jae     .extend_done
+; add new sector
+        push    ecx
+        push    edi
+.scan:
+        mov     ecx, edx
+        mov     edi, esi
+        jecxz   .disk_full
+        push    eax
+        xor     eax, eax
+        repnz   scasw
+        pop     eax
+        jnz     .disk_full
+        mov     word [edi-2], 0xFFF
+        mov     esi, edi
+        mov     edx, ecx
+        sub     edi, 0x282000
+        shr     edi, 1
+        dec     edi     ; now edi=new cluster
+        test    eax, eax
+        jz      .first_cluster
+        mov     [0x282000+eax*2], di
+        jmp     @f
+.first_cluster:
+        pop     eax             ; eax->direntry
+        push    eax
+        mov     [eax+26], di
+@@:
+        mov     eax, edi        ; eax=new cluster
+        pop     edi             ; edi->direntry
+        pop     ecx             ; ecx=required size
+        add     dword [edi+28], 0x200
+        jmp     .extend_loop
+.extend_done:
+        mov     [edi+28], ecx
+        pop     esi edx
+        clc
+        ret
+.disk_full:
+        pop     edi ecx
+        pop     esi edx
+        stc
+        push    ERROR_DISK_FULL
+        pop     eax
+        ret
+
 fs_FloppyGetFileInfo:
         call    read_flp_fat
         cmp     [FDC_Status], 0
@@ -1951,16 +2254,9 @@ fs_FloppySetFileInfo:
         push    eax
         call    bdfe_to_fat_entry
         pop     eax
-        test    eax, eax
-        jz      .root
-        add     eax, 31
         pusha
         call    save_chs_sector
         popa
-        jmp     .cmn
-.root:
-        call    save_flp_root
-.cmn:
         pop     edi
         xor     eax, eax
         cmp     [FDC_Status], 0

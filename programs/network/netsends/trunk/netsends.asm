@@ -183,13 +183,19 @@ draw_window:
    
 ; DATA AREA
    
-   
+if lang eq ru   
 text:
     db 'Данный адрес        : 192.168.0.2       '
     db 'Прослушиваемый порт : 0x5000            '
     db 'Присланные сообщения:                   '
-    db 'x <- END MARKER, DONT DELETE            '
-   
+    db 'x' ; <- END MARKER, DONT DELETE
+else
+text:
+    db 'This address     : 192.168.0.2          '
+    db 'Used port        : 0x5000               '
+    db 'Received messages:                      '
+    db 'x' ; <- END MARKER, DONT DELETE
+end if
    
 labeltext:  db  'NetSend(Server)'
 lte:
@@ -198,10 +204,3 @@ socketNum   dd  0x0
   
 
 I_END:
-   
-   
-   
-   
-   
-   
-   

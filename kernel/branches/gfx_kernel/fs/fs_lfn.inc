@@ -347,7 +347,7 @@ fs_RamdiskServices:
         dd      fs_RamdiskRead
         dd      fs_RamdiskReadFolder
         dd      fs_RamdiskRewrite
-        dd      fs_NotImplemented
+        dd      fs_RamdiskWrite
         dd      fs_NotImplemented
         dd      fs_RamdiskGetFileInfo
         dd      fs_RamdiskSetFileInfo
@@ -376,7 +376,7 @@ fs_FloppyServices:
         dd      fs_FloppyRead
         dd      fs_FloppyReadFolder
         dd      fs_FloppyRewrite
-        dd      fs_NotImplemented
+        dd      fs_FloppyWrite
         dd      fs_NotImplemented
         dd      fs_FloppyGetFileInfo
         dd      fs_FloppySetFileInfo
@@ -447,7 +447,7 @@ fs_HdServices:
         dd      fs_HdRead
         dd      fs_HdReadFolder
         dd      fs_HdRewrite
-        dd      fs_NotImplemented
+        dd      fs_HdWrite
         dd      fs_NotImplemented
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo

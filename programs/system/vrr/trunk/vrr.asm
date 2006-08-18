@@ -11,15 +11,14 @@ use32
    
         org    0x0
    
-        db     'MENUET01'   ; 8 byte id
-        dd     0x01         ; header version
+        db     'MENUET01'       ; 8 byte id
+        dd     0x01        ; header version
         dd     START        ; start of code
         dd     I_END        ; size of image
-        dd     0x5000       ; memory for app
+        dd     0x5000      ; memory for app
         dd     0x4ff0       ; esp
-        dd     0x0 , 0x0    ; I_Param , I_Icon
+        dd     0x0 , 0x0        ; I_Param , I_Icon
    
-include 'lang.inc'   
 include 'macros.inc'
 START:    ; start of execution
    
@@ -204,7 +203,7 @@ dw_continue:
     mov  eax,0      ; function 0 : define and draw window
     mov  ebx,100*65536+400    ; [x start] *65536 + [x size]
     mov  ecx,100*65536+200    ; [y start] *65536 + [y size]
-    mov  edx,0x030020C0;0x00000040 ; color of work area RRGGBB,8->color glide
+    mov  edx,0x020020C0;0x00000040 ; color of work area RRGGBB,8->color glide
     mov  esi,0x805080d0     ; color of grab bar RRGGBB,8->color glide
     mov  edi,0x00ffffff     ; color of frames RRGGBB
     int  0x40
@@ -212,7 +211,14 @@ dw_continue:
        ; WINDOW LABEL
      call print_my_title
    
-          
+       ; CLOSE BUTTON
+    mov  eax,8      ; function 8 : define and draw button
+    mov  ebx,(400-19)*65536+12    ; [x start] *65536 + [x size]
+    mov  ecx,5*65536+12     ; [y start] *65536 + [y size]
+    mov  edx,1      ; button id
+    mov  esi,0x5599cc     ; button color RRGGBB
+    int  0x40
+   
        ; BUTTONS
     xor eax,eax
     mov edx,eax
@@ -1016,7 +1022,7 @@ warning_window:
    
 warning_loop:
         mov  eax,5
-        mov ebx,10
+        mov ebx,13
         int  0x40
         mov eax,11
         int 40h

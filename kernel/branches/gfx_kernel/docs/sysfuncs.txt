@@ -10,7 +10,7 @@ All registers except explicitly declared in the returned value,
 ============== Function 0 - define and draw the window. ==============
 ======================================================================
 Defines an application window. Draws a frame of the window, header and
-working area. For windows with skin defines standard buttons for close
+working area. For skinned windows defines standard buttons for close
 and minimize.
 Parameters:
   * eax = 0 - function number
@@ -18,10 +18,10 @@ Parameters:
   * ecx = [coordinate on axis y]*65536 + [size on axis y]
   * edx = 0xXYRRGGBB, where:
     * Y = style of the window:
-      * Y=0 - type I - window of the fixed size
+      * Y=0 - type I - fixed-size window
       * Y=1 - only define window area, draw nothing
-      * Y=2 - type II - window of the variable size
-      * Y=3 - window with skin
+      * Y=2 - type II - variable-size window
+      * Y=3 - skinned window
       * other possible values (from 4 up to 15) are reserved,
         function call with such Y is ignored
     * RR, GG, BB = accordingly red, green, blue components of a color
@@ -61,11 +61,11 @@ Remarks:
   * The window must fit on the screen. If the transferred
     coordinates and sizes do not satisfy to this condition,
     appropriate coordinate (or, probably, both) is considered as zero,
-    and if also it does not help, the appropriate size
+    and if it does not help too, the appropriate size
     (or, probably, both) is installed in a size of the screen.
     
-    Further we shall designate xpos,ypos,xsize,ysize - values
-    transmitted in ebx,ecx. The coordinates are resulted concerning
+    Further let us designate xpos,ypos,xsize,ysize - values passed
+    in ebx,ecx. The coordinates are resulted concerning
     the left upper corner of the window, which, thus, is set as (0,0),
     coordinates of the right lower corner essence (xsize,ysize).
   * The sizes of the window are understood in sence of coordinates
@@ -289,7 +289,7 @@ Returned value:
   * function does not return value
 Remarks:
   * Sizes of the button must be more than 0 and less than 0x8000.
-  * For windows with skin definition of the window
+  * For skinned windows definition of the window
     (call of 0th function) creates two standard buttons -
     for close of the window with identifier 1 and
     for minimize of the window with identifier 0xffff.
@@ -926,52 +926,66 @@ Remarks:
     process/thread by given slot.
 
 ======================================================================
-====================== Function 18, subfunction 19 =====================
-======================= Get/set mouse features. ======================
+======== Function 18, subfunction 19 - get/set mouse features. =======
 ======================================================================
+
+---------------- Subsubfunction 0 - get mouse speed. -----------------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
-  * ecx = subsubfunction number
+  * ecx = 0 - subsubfunction number
+Returned value:
+  * eax = current mouse speed
 
-    ecx = 0 - get mouse speed
-    Returned value:
-    * eax = current mouse speed
+---------------- Subsubfunction 1 - set mouse speed. -----------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 1 - subsubfunction number
+  * edx = new value for speed
+Returned value:
+  * function does not return value
 
-    ecx = 1 - set mouse speed
-    edx = selected value of speed 
-    Returned value:
-    * function does not return value
+---------------- Subsubfunction 2 - get mouse delay. -----------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 2 - subsubfunction number
+Returned value:
+  * eax = current mouse delay
 
-    ecx = 2 - get mouse delay
-    Returned value:
-    * eax = current mouse delay
+---------------- Subsubfunction 3 - set mouse delay. -----------------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 3 - subsubfunction number
+  * edx = new value for mouse delay
+Returned value:
+  * function does not return value
 
-    ecx = 3 - set mouse delay
-    edx = selected value of delay
-    Returned value:
-    * function does not return value
-
-    ecx = 4 - set mouse pointer position
-    edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-    Returned value:
-    * function does not return value
-
+----------- Subsubfunction 4 - set mouse pointer position. -----------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 4 - subsubfunction number
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+Returned value:
+  * function does not return value
 Remarks:
-  * Recommended speed of the mouse (in subfunction 1) from 1 up to 9.
-    The installed value is not inspected by the code of a kernel, on this use
-    cautiously, at incorrect value the cursor can "freeze".
-    Speed of mouse can be regulated through the application SETUP.
-  * Recommended delay of the mouse (in subfunction 3) = 10. Lower value
-    is not handled COM by mice. At the very large values the movement of
-    the mouse on 1 pixel is impossible and the cursor will jump
-    on the value of the installed speed (subfunction 1).
-    The installed value is not inspected by the code of a kernel.
-  * In subfunction 4 the installed value is not inspected by
-    the code of a kernel. Before usage it is necessary to find out current
-    screen resolution and at installation of a position to watch,
-    that the value of a position should do not fall outside
-    the limits the screen.
+  * It is recommended to set speed of the mouse (in subsubfunction 1)
+    from 1 up to 9. The installed value is not inspected by the kernel
+    code, so set it carefully, at incorrect value the cursor
+    can "freeze". Speed of the mouse can be regulated through the
+    application SETUP.
+  * Recommended delay of the mouse (in subsubfunction 3) = 10. Lower
+    value is not handled by COM mice. At the very large values the
+    movement of the mouse on 1 pixel is impossible and the cursor will
+    jump on the value of installed speed (subsubfunction 1). The
+    installed value is not inspected by the kernel code.
+  * The subsubfunction 4 does not check the passed value. Before
+    its call find out current screen resolution (with function 14)
+    and check that the value of position is inside the limits of the
+    screen.
 
 ======================================================================
 ============ Function 19 - start application from ramdisk. ===========
@@ -2134,11 +2148,11 @@ Remarks:
   * Structure of the color table is described in the standard
     include file 'macros.inc' as 'system_colors'; for example,
     it is possible to write:
-        sc    system_colors        ; variable declaration
-        ...                ; somewhere one must call
-                        ; this function with ecx=sc
-        mov    ecx, [sc.work_button_text]    ; read text color on
-                        ; buttin in working area
+    	sc	system_colors		; variable declaration
+    	...				; somewhere one must call
+    					; this function with ecx=sc
+    	mov	ecx, [sc.work_button_text]	; read text color on
+    					; buttin in working area
   * A program itself desides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
@@ -2994,6 +3008,7 @@ Returned value:
   * eax = 0 - success, otherwise file system error code
   * ebx destroyed
 Remarks:
+  * This function is obsolete, use subfunction 3 of function 70.
   * Ramdisk and floppies do not support this function, it is only
     for hard disks.
   * File must already exist (otherwise function returns 5, not found).
@@ -3288,11 +3303,11 @@ Remarks:
 The data of the graphics screen (the memory area which displays
 screen contents) are accessible to a program directly, without
 any system calls, through the selector gs:
-    mov    eax, [gs:0]
+	mov	eax, [gs:0]
 places in eax the first dword of the buffer, which contains
 information on color of the left upper point (and, possibly, colors
 of several following).
-    mov    [gs:0], eax
+	mov	[gs:0], eax
 by work in VESA modes with LFB sets color of the left upper point
 (and, possibly, colors of several following).
 To interpret the data of graphics screen program needs to know
@@ -3854,7 +3869,7 @@ Remarks:
     and at arrival of new message the system will wait.
     For synchronization frame all work with the buffer by operations
     lock/unlock
-        neg    [bufsize]
+    	neg	[bufsize]
   * Data in the buffer are considered as array of items with variable
     length - messages. Format of a message is explained in
     general description.
@@ -4084,6 +4099,7 @@ Available subfunctions:
   * subfunction 0 - read file
   * subfunction 1 - read folder
   * subfunction 2 - create/rewrite file
+  * subfunction 3 - write to existing file
   * subfunction 5 - get attributes of file/folder
   * subfunction 6 - set attributes of file/folder
   * subfunction 7 - start application
@@ -4242,6 +4258,35 @@ Remarks:
   * If there is not enough free space on disk, the function will
     write as many as can and then return error code 8.
   * The function is not supported for CD (returns error code 2).
+
+======================================================================
+===================== Function 70, subfunction 3 =====================
+=========== Write to existing file with long names support. ==========
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 3 = subfunction number
+  * +4: dword: file offset (in bytes)
+  * +8: dword: high dword of offset (must be 0 for FAT)
+  * +12 = +0xC: dword: number of bytes to write
+  * +16 = +0x10: dword: pointer to data
+  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
+    given in the general description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx = number of written bytes (possibly 0)
+Remarks:
+  * The file must already exist, otherwise function returns eax=5.
+  * The only result of write 0 bytes is update in the file attributes
+    date/time of modification and access to the current date/time.
+  * If beginning and/or ending position is greater than file size
+    (except for the previous case), the file is expanded to needed
+    size with zero characters.
 
 ======================================================================
 ==== Function 70, subfunction 5 - get information on file/folder. ====
@@ -4420,4 +4465,3 @@ Application start functions can return also following errors:
   * 30 = 0x1E = not enough memory
   * 31 = 0x1F = file is not executable
   * 32 = 0x20 = too many processes
-

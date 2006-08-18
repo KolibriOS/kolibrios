@@ -1982,7 +1982,7 @@ exec_fileinfo:
 end_name        db      '/RD/1/END',0
 menu_name       db      '/RD/1/MENU',0
 calendar_name   db      '/RD/1/CALENDAR',0
-sysmeter_name   db      '/RD/1/SYSMETER',0
+sysmeter_name   db      '/RD/1/GMON',0
 
 dat_fileinfo:
         dd      0

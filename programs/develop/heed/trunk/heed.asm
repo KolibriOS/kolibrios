@@ -1159,7 +1159,7 @@ help_window:
   add  edx,14 ;help_text addr.
   add  esi,37 ; = 51 - length 1 line
   mov  ecx,0x00ffffff
-  mov  edi,15
+  mov  edi,(help_end-help_text)/51
  @@:
   add  ebx,0x10
   int  0x40
@@ -1329,6 +1329,7 @@ db 0xEC,0xED,0xEE,0xEF
 ;text for help_window
 help_label: db 'Help for HeEd.'
 help_text:
+if lang eq ru
  db '1.HeEd в состоянии открыть файл только один раз и  '
  db '  нужное число раз сохранить его.                  '
  db '2.При открытии файла без расширения надо это расши-'
@@ -1344,12 +1345,27 @@ help_text:
  db '  дится память с адреса 0х80000, но размер файла   '
  db '  равен 0xFFFFFFFF.                                '
  db '               (см. инфо "About")                  '
+else
+ db '1.HeEd can once open file and many times save it.  '
+ db '2.To open file without extension it is required to '
+ db '  specify anyway as three spaces after a dot.      '
+ db '3.File is opened when the button "Go" is pressed.  '
+ db '4.Creation of new files in the menu is not provided'
+ db '  but you can edit...                              '
+ db '5.Only number of bytes which was file size when    '
+ db '  opening is written to file.                      '
+ db '6.If you press "Go" with empty filename field,     '
+ db '  memory starting from address 0x80000 is output,  '
+ db '  but file size equals to 0xFFFFFFFF.              '
+ db '               (see info "About")                  '
+end if
 help_end:
 ;text for about_window
 about_label: db 'About this funny.'
 about_text:
+if lang eq ru
  db 'Некоторая информация для тех, кто захочет дописать '
- db 'сюда что-то свое: код практичкски не оптимизирован,'
+ db 'сюда что-то свое: код практически не оптимизирован,'
  db 'так что разобраться будет не так уж сложно. Строки '
  db 'для кнопок меню должны идти прямо друг за другом,  '
  db 'т. к. я при выводе использую не mov esi,размер и   '
@@ -1363,6 +1379,23 @@ about_text:
  db 'рок с GUI MeOS и поэтому не претендует на что-то   '
  db 'большее, чем пример. Просто надоела эта тема, а вы-'
  db 'кинуть жалко.            mailto:babalbes@yandex.ru '
+else
+ db 'Some information for those who want add to this    '
+ db 'something their own: the code is practically not   '
+ db 'optimized, so investigation is not complicated.    '
+ db 'Strings for menu buttons must rank after each other'
+ db 'as I use not mov esi,size and mov edx,address when '
+ db 'output but simply add offsets. For encodins and    '
+ db 'file sizes for save, it remains only add buttons   '
+ db 'with text in menu (at addition one should take into'
+ db 'account that buttons ID are recognized as dec ah   '
+ db 'rather than cmp ah,ID). Nevertheless if study is   '
+ db 'unpleasant, you can write and ask. This program has'
+ db 'been written in course of study GUI MeOS and does  '
+ db 'not therefore pretend on some more than example.   '
+ db 'Just this theme bothers, but I regret to delete.   '
+ db '                         mailto:babalbes@yandex.ru '
+end if
 about_end:
 
 I_END:

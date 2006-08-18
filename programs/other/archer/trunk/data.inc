@@ -61,7 +61,7 @@ db 'png\absolut0.png',0
 else
   if ~ FNAME eq
      db FNAME
-  end if   
+  end if
 ;    db '/hd/1/zip/png.zip',0
 ;    db '/hd/1/zip/files/opossum.png'
 ;    db '/rd/1/www.zip',0
@@ -84,6 +84,11 @@ DKeys rd 3
 Dheader rb 12
 Dpassword rb PASSW_LEN
 
+png_     dd ?
+fat_     dd ?
+fat_fnum dd ?
+lpath    dd ?
+lpath_len dd ?
 png_bpp  dd ?
 sline_len dd ?
 IDATcount  dd ?
@@ -120,6 +125,15 @@ tblLen dw ?
 hclen db ?
 max_len dw ?
 
+fat:
+  rb 4096;512
+child_stack:
+  rb 1024
+main_stack:
+area:
+ rb INBUF
+os_work rb 4*1024
+
 bl_count rb BITS
 
 next_code rw BITS
@@ -143,16 +157,10 @@ hdist db ?
 Distance rw 32
 Dist_c rw 32
 
-
-area:
- rb INBUF
-
-os_work rb 4*1024
-
 output:
-rb OUTBUF
+;rb OUTBUF
 
-png_image:
+;png_image:
 if SYS eq win
   rb OUTBUF
 end if

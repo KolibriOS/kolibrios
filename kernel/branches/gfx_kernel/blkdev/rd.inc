@@ -1788,6 +1788,7 @@ fs_RamdiskRewrite:
         sub     ebx, edx
         mov     [edi+28], ebx
         add     esp, 20
+        mov     [esp+16], ebx
         popad
         xor     eax, eax
         ret
@@ -1797,6 +1798,7 @@ fs_RamdiskRewrite:
         sub     ebx, edx
         mov     [edi+28], ebx
         add     esp, 20
+        mov     [esp+16], ebx
         popad
         push    ERROR_DISK_FULL
         pop     eax
@@ -1818,6 +1820,230 @@ fs_RamdiskRewrite:
         call    .read_symbol
         stosw
         loop    .read_symbols
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskWrite - LFN variant for writing to sys floppy
+;
+;  esi  points to filename
+;  ebx  pointer to 64-bit number = first wanted byte, 0+
+;       may be ebx=0 - start from first byte
+;  ecx  number of bytes to write, 0+
+;  edx  mem location to data
+;
+;  ret ebx = bytes written (maybe 0)
+;      eax = 0 ok write or other = errormsg
+;
+;--------------------------------------------------------------
+@@:
+        push    ERROR_ACCESS_DENIED
+fs_RamdiskWrite.ret0:
+        pop     eax
+        xor     ebx, ebx
+        ret
+
+fs_RamdiskWrite:
+        cmp     byte [esi], 0
+        jz      @b
+        pushad
+        call    rd_find_lfn
+        jnc     .found
+        popad
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .ret0
+.found:
+; must not be directory
+        test    byte [edi+11], 10h
+        jz      @f
+        popad
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret0
+@@:
+; FAT does not support files larger than 4GB
+        test    ebx, ebx
+        jz      .l1
+        cmp     dword [ebx+4], 0
+        jz      @f
+.eof:
+        popad
+        push    ERROR_END_OF_FILE
+        jmp     .ret0
+@@:
+        mov     ebx, [ebx]
+.l1:
+; now edi points to direntry, ebx=start byte to write,
+; ecx=number of bytes to write, edx=data pointer
+        call    get_time_for_file
+        mov     [edi+22], ax            ; last write time
+        call    get_date_for_file
+        mov     [edi+24], ax            ; last write date
+        mov     [edi+18], ax            ; last access date
+
+; extend file if needed
+        add     ecx, ebx
+        jc      .eof    ; FAT does not support files larger than 4GB
+        push    0       ; return value=0
+        cmp     ecx, [edi+28]
+        jbe     .length_ok
+        cmp     ecx, ebx
+        jz      .length_ok
+        call    ramdisk_extend_file
+        jnc     .length_ok
+; ramdisk_extend_file can return two error codes: FAT table error or disk full.
+; First case is fatal error, in second case we may write some data
+        mov     [esp], eax
+        cmp     al, ERROR_DISK_FULL
+        jz      .disk_full
+        pop     eax
+        mov     [esp+28], eax
+        popad
+        xor     ebx, ebx
+        ret
+.disk_full:
+; correct number of bytes to write
+        mov     ecx, [edi+28]
+        cmp     ecx, ebx
+        ja      .length_ok
+.ret:
+        pop     eax
+        mov     [esp+28], eax   ; eax=return value
+        sub     edx, [esp+20]
+        mov     [esp+16], edx   ; ebx=number of written bytes
+        popad
+        ret
+.length_ok:
+; now ebx=start pos, ecx=end pos, both lie inside file
+        sub     ecx, ebx
+        jz      .ret
+        movzx   edi, word [edi+26]      ; starting cluster
+.write_loop:
+        sub     ebx, 0x200
+        jae     .next_cluster
+        push    ecx
+        neg     ebx
+        cmp     ecx, ebx
+        jbe     @f
+        mov     ecx, ebx
+@@:
+        mov     eax, edi
+        shl     eax, 9
+        add     eax, 0x100000+31*512+0x200
+        sub     eax, ebx
+        mov     ebx, eax
+        mov     eax, edx
+        call    memmove
+        xor     ebx, ebx
+        add     edx, ecx
+        sub     [esp], ecx
+        pop     ecx
+        jz      .ret
+.next_cluster:
+        movzx   edi, word [edi*2+0x280000]
+        jmp     .write_loop
+
+ramdisk_extend_file.zero_size:
+        xor     eax, eax
+        jmp     ramdisk_extend_file.start_extend
+
+; extends file on ramdisk to given size, new data area is filled by 0
+; in: edi->direntry, ecx=new size
+; out: CF=0 => OK, eax destroyed
+;      CF=1 => error, eax=code (ERROR_FAT_TABLE or ERROR_DISK_FULL)
+ramdisk_extend_file:
+        push    ecx
+; find the last cluster of file
+        movzx   eax, word [edi+26]      ; first cluster
+        mov     ecx, [edi+28]
+        jecxz   .zero_size
+@@:
+        sub     ecx, 0x200
+        jbe     @f
+        mov     eax, [eax*2+0x280000]
+        and     eax, 0xFFF
+        jz      .fat_err
+        cmp     eax, 0xFF8
+        jb      @b
+.fat_err:
+        pop     ecx
+        push    ERROR_FAT_TABLE
+        pop     eax
+        stc
+        ret
+@@:
+        push    eax
+        mov     eax, [eax*2+0x280000]
+        and     eax, 0xFFF
+        cmp     eax, 0xFF8
+        pop     eax
+        jb      .fat_err
+; set length to full number of sectors and make sure that last sector is zero-padded
+        sub     [edi+28], ecx
+        push    eax edi
+        mov     edi, eax
+        shl     edi, 9
+        lea     edi, [edi+0x100000+31*512+0x200+ecx]
+        neg     ecx
+        xor     eax, eax
+        rep     stosb
+        pop     edi eax
+.start_extend:
+        pop     ecx
+; now do extend
+        push    edx esi
+        mov     esi, 0x280000+2*2       ; start scan from cluster 2
+        mov     edx, 2847               ; number of clusters to scan
+.extend_loop:
+        cmp     [edi+28], ecx
+        jae     .extend_done
+; add new sector
+        push    ecx
+        mov     ecx, edx
+        push    edi
+        mov     edi, esi
+        jecxz   .disk_full
+        push    eax
+        xor     eax, eax
+        repnz   scasw
+        pop     eax
+        jnz     .disk_full
+        mov     word [edi-2], 0xFFF
+        mov     esi, edi
+        mov     edx, ecx
+        sub     edi, 0x280000
+        shr     edi, 1
+        dec     edi     ; now edi=new cluster
+        test    eax, eax
+        jz      .first_cluster
+        mov     [0x280000+eax*2], di
+        jmp     @f
+.first_cluster:
+        pop     eax     ; eax->direntry
+        push    eax
+        mov     [eax+26], di
+@@:
+        push    edi
+        shl     edi, 9
+        add     edi, 0x100000+31*512
+        xor     eax, eax
+        mov     ecx, 512/4
+        rep     stosd
+        pop     eax     ; eax=new cluster
+        pop     edi     ; edi->direntry
+        pop     ecx     ; ecx=required size
+        add     dword [edi+28], 0x200
+        jmp     .extend_loop
+.extend_done:
+        mov     [edi+28], ecx
+        pop     esi edx
+        clc
+        ret
+.disk_full:
+        pop     edi ecx
+        pop     esi edx
+        stc
+        push    ERROR_DISK_FULL
+        pop     eax
         ret
 
 fs_RamdiskGetFileInfo:

@@ -22,11 +22,85 @@ PrintFilename:
     rep  movsb
     mov  dword[edi],0x00a0d
     call DebugPrint
-;    mcall 10
-;    mcall 2
+    popa
+    call Add2Fat
+    ret
+
+Add2Fat:
+; edx - ptr, ecx - len
+
+    pusha
+    test [Flags],LIST_MODE
+    jz   .ex
+    mov  ebp,8
+    mov  edi,edx
+    lea  ebx,[edx+ecx]
+    mov  ecx,[lpath_len]
+    cmp  ecx,1
+    je   .lbl
+    mov  esi,[lpath]
+    repe cmpsb
+    jne  .full
+    mov  eax,[lpath_len]
+    sub  dword[esp+24],eax;path_len-path
+    cmp  edi,ebx
+    je   .full
+    mov  edx,edi
+  .lbl:
+    mov  ecx,[esp+24]
+    mov  al,'/'
+    repne scasb
+    mov  eax,[fat_]
+    mov  ecx,[esp+24]
+    jne  .nofol
+    cmp  edi,ebx
+    jne  .full
+    lea  ecx,[edi-1]
+    sub  ecx,edx
+    or   byte[eax+11],0x10
+;    sub  edx,ecx
+  .nofol:
+
+    push [fat_fnum]
+    pop  dword[eax+12]
+    mov  edi,eax
+    mov  esi,edx
+  .lp1:
+
+    mov  bl,[esi]
+    lea  edx,[eax+ebp]
+    inc  esi
+    cmp  bl,'.'
+    jne  .nodot
+    lea  edi,[eax+ebp]
+    mov  ebp,11
+    jmp  .ll
+  .nodot:
+    cmp  edi,edx
+    jae  .ll
+    mov  [edi],bl
+    inc  edi
+  .ll:
+    loop .lp1
+    mov  ecx,11
+    dec  eax
+  .lp2:
+    cmp  byte[eax+ecx],0
+    jne  .no0
+    mov  byte[eax+ecx],' '
+  .no0:
+    loop .lp2
+    cmp  eax,child_stack-1
+    jae  .full
+    add  [fat_],32
+  .full:
+    inc  [fat_fnum]
+  .ex:
     popa
     ret
 
+;path db '/';'fasm/examples/elfexe/'
+;path_len:
 
 ; Parse routines:
 ;   out: edx= 0 if all ok, 1 - central dir, 2-EOD
@@ -78,16 +152,19 @@ end if
    	popa
  end if
     Newline
+;    Dump fat,160,os_work
     ret
 
 ZipFindN:
 ; ecx - file #
     Msg 33
+    or   [Flags],FIND_MODE
     cmp  ecx,[file_count]
     jae  .err
     push ecx
     call ResetFile
   .nxt:
+
     call ZipCrawl
     cmp  edx,51
     je   .ok2
@@ -111,6 +188,7 @@ ZipFindN:
     add  esi,eax
     mov  edx,5
   .ex:
+    and   [Flags],-1-FIND_MODE
     push edx
     Msg  edx
     pop  edx
@@ -159,6 +237,8 @@ if  IGNORE_DIRS eq 1
     cmp  byte[edx+ecx-1],'/'
     je   .skipdp
 end if
+    test [Flags],FIND_MODE
+    jnz  .skipdp
     call PrintFilename
   .skipdp:
     movzx ecx,word[esi+28]
@@ -252,7 +332,19 @@ PngParse:
     mov  [PNG_info.Width],eax
     mov  eax,[PNG_info.Height]
     bswap eax
+    mov  ebx,eax
     mov  [PNG_info.Height],eax
+    call scanline_calc
+;    dps  'All='
+    cmp  [PNG_info.Color_type],3
+    jne  .nopal
+    shl  eax,3
+    inc  eax
+  .nopal:
+    inc  eax
+    imul eax,ebx
+    mov  [unp_size],eax
+;    dpd  eax
     add  esi,25
     cmp  byte[esi-5],0
     rep_err e,52,29
@@ -423,7 +515,8 @@ setcurb:
     ret
 
 TarParse:
-    call ResetFile
+    mov  esi,output
+;    call ResetFile
   .nxt:
     call TarCrawl
 ;    wait
@@ -436,8 +529,9 @@ end if
     inc  [file_count]
   .skipinc:
     add  eax,ecx
-    mov  ebx,1
-    call FileSeek
+;    mov  ebx,1
+    add  esi,eax
+;    call FileSeek
     jmp  .nxt
 
 TarFindN:
@@ -447,7 +541,8 @@ TarFindN:
     cmp  ecx,[file_count]
     jae  .err
     push ecx
-    call ResetFile
+    mov  esi,output
+;    call ResetFile
   .nxt:
     call TarCrawl
 if  IGNORE_DIRS eq 1
@@ -461,8 +556,9 @@ end if
     dec  dword[esp]
   .seek:
     add  eax,ecx
-    mov  ebx,1
-    call FileSeek
+;    mov  ebx,1
+    add  esi,eax
+;    call FileSeek
     jmp  .nxt
   .err:
     mov  edx,4
@@ -559,13 +655,8 @@ SfxParse:
   .err:
     ret
 
-; Created:  May 31, 2005
-FiltCall:
-dd PngFilter.nofilt,Filt_sub,Filt_up,Filt_av,Filt_paeth,PngFilter.nofilt
-PngFilter:
-; esi - filtered uncompressed image data
-; edi - destination
-    mov  cl,[PNG_info.Color_type]
+scanline_calc:
+    movzx ecx,byte[PNG_info.Color_type]
     mov  eax,1
     cmp  cl,3
     je   .palette
@@ -594,6 +685,15 @@ PngFilter:
     jnz  .noz2
     inc  eax
   .noz2:
+    ret
+
+; Created:  May 31, 2005
+FiltCall:
+dd PngFilter.nofilt,Filt_sub,Filt_up,Filt_av,Filt_paeth,PngFilter.nofilt
+PngFilter:
+; esi - filtered uncompressed image data
+; edi - destination
+    call scanline_calc
     mov  [sline_len],eax   ; scanline length
     push edi
     and  [Flags],not 1

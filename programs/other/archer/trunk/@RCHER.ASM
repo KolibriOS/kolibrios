@@ -1,4 +1,4 @@
-; @RCHER - DEflate unpacker v1.0
+; @RCHER - Deflate unpacker v2.0 beta
 ;
 ; Written in pure assembler by Ivushkin Andrey aka Willow
 ;
@@ -8,15 +8,17 @@
 ;
 ; Compile with FASM
 
-
 SYS equ meos
-PARAM_PTR equ png_image
+OUTBUF equ 4*1024*1024
+png_imag = output+OUTBUF
+PARAM_PTR = os_work;png_image
+MEMINIT=next_code;output
 DUMPFILE equ '/hd/1/out.txt'
 
 SHOW_RBLOCK equ 0;1
 SHOW_PNG_SEC equ 0;1
 SHOW_METH equ 0;1
-FILE_NUM equ 0
+FILE_NUM equ 15;8
 MEMORY equ 0x800000
 
 BITS equ 16
@@ -28,7 +30,6 @@ NO_STOPS equ 1
 SHOW_CHARS equ 0
 BSIZE equ 512
 INBUF equ BUFSIZE*BSIZE*2
-OUTBUF equ 4*1024*1024
 IGNORE_DIRS equ 0
 
 MOVE_SLINE_LEV equ 8
@@ -40,6 +41,9 @@ STAY_MODE equ 10000b
 IPC_MODE equ 100000b
 RAW_MODE equ 1000000b
 THREAD_YES equ 10000000b
+LIST_MODE equ 100000000b
+MEM_MODE equ 1000000000b
+FIND_MODE equ 10000000000b
 
 if SYS eq win
 format PE console
@@ -57,34 +61,36 @@ use32
   dd     0x01
   dd     start
   dd     I_END
-  dd     MEMORY
-  dd     MEMORY-2048
+  dd     MEMINIT
+  dd     main_stack;MEMORY-2048
 if  PARAM_PTR eq param
   dd     0
 else
   dd     PARAM_PTR
 end if
   dd     0x0
-include "lang.inc"
 
 if  PARAM_PTR eq param
-  param db 'RQ'
-  db '000037'
-  db '/hd/1/zip/png.zip',0
+  param db 'N'
+  db '000015'
+  db '/hd/1/zip/gz/fasm-1~1.tgz',0
 end if
 ;match =meos,SYS
 ;{
     include "macros.inc"
 ;    purge mov
     include "debug.inc"
+    include 'dump.inc'
 ;}
 end if
 
-language equ en
+include 'lang.inc'
+language equ lang
 
 if SYS eq win
 section '.text' code readable executable writeable
 end if
+
 include "arcmacro.inc"
 include "parser.inc"
 include "deflate.inc"
@@ -107,6 +113,12 @@ else
     mcall 40,10000101b
 ;    jmp again
     CmdLine
+  cmdl:
+    test [Flags],LIST_MODE
+    jz   red
+
+;    Dump [lpath],[lpath_len],os_work
+;    ud2
  red:
     call draw_window
     mcall 12,2
@@ -134,12 +146,15 @@ else
     mcall -1
   .noquit:
     mcall 17
+    mcall 64,1,MEMINIT
     QueryFile
-    and  [FileNum],0
+    mov  [FileNum],FILE_NUM
     test eax,eax
     jnz  still
 end if
 again:
+;    Dump Flags,4,os_work
+    mov  [fat_],fat
     Newline
     xor  eax,eax
 ;    and  [Flags],STAY_MODE
@@ -153,6 +168,11 @@ again:
     Msg  14
     jmp  quit
   .sizeok2:
+    call KillViewer
+    xor  eax,eax
+    mov  ecx,(child_stack-fat)/4
+    mov  edi,fat
+    rep  stosd
     mov  [filesize],ebx
     test [Flags],RAW_MODE
     jz   .norawm
@@ -213,13 +233,37 @@ again:
     jmp  exit
   .sizeok1:
   if ~ SYS eq win
-    call KillViewer
   end if
-    Msg  39
+    Msg  39          ; unpacking PNG
+    mov  ecx,[unp_size]
+    add  ecx,output
+    mov  [png_],ecx
+    mov  eax,[PNG_info.Width]
+    imul eax,[PNG_info.Height]
+    lea  eax,[eax+eax*2]
+    add  ecx,eax
+;    dps  'Mem='
+;    dpd  ecx
+    mcall 64,1
+    test eax,eax
+    jz   .ok
+    Msg  41
+    jmp  exit
+  .ok:
     mov  edi,[outp]
     call Deflate.blkbegin
     jmp  .defl_end
   .sizeok:
+    mov  ecx,[unp_size]
+    dpd  ecx
+    add  ecx,output
+;    mov  [png_],ecx
+    mcall 64,1
+    test eax,eax
+    jz   .ok2
+    Msg  41
+    jmp  exit
+  .ok2:
     call Deflate                ; <===========
   .defl_end:
     test [bits],7
@@ -252,6 +296,8 @@ again:
     pop  ecx esi
     jmp  .skipAdler
   .skipCRC:
+;    dps  'Out='
+;    dpd  ecx
     call UAdler
     Msg  10
     mov  eax,[Adler32]
@@ -283,15 +329,20 @@ if SYS eq win
 else
     test [Flags],PNG_MODE
     jnz  .nosave
+    test [Flags],LIST_MODE
+    jnz  quit
+
     test [Flags],TAR_MODE
     jnz  .nomsg
     Msg 37
   .nomsg:
     mov  [outfile.out],ebx
     mcall 58,outfile
+;       dps  'Before Quit1'
+;    ud2
     test [Flags],TAR_MODE
-    jnz  .nosave
-    call StartPad
+    jz   exit.pad
+;    call StartPad
   .nosave:
 end if
     test  [Flags],PNG_MODE
@@ -300,7 +351,7 @@ end if
       mov  edi,filters
       mov  ecx,6
       rep  stosd
-      mov  edi,png_image
+      mov  edi,[png_]
       mov  esi,output
 ;//
       mov  [outp],edi
@@ -310,34 +361,37 @@ end if
       mov  [outfile.size],edi
       mov  ebx,[outp];png_image
 if  SYS eq win
-exit:
+  exit:
     Msg  12
     invoke CreateFile,outfile,GENERIC_WRITE, FILE_SHARE_WRITE, NULL, \
     CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,NULL
     mov  [hnd],eax
     invoke WriteFile, eax,ebx,[outfile.size],cparam1,NULL
     invoke CloseHandle, [hnd]
-	call  RunViewer
-   	and  [arc_base],0
+       call  RunViewer
+       and  [arc_base],0
     and  [Flags],STAY_MODE
-	
-quit:	
+;       dps  'Before Quit2'
+  quit:    
     QueryFile
     test eax,eax
     jnz  again
     invoke ExitProcess,0
 else
-exit:
+  exit:
     mov  [outfile.out],ebx
     test [Flags],TAR_MODE
     jz   .notar
     Msg  37
+    test [Flags],LIST_MODE
+    jne  quit
     mcall 58,outfile
+  .pad:
     call StartPad
- .notar:
+  .notar:
     Msg  12
-   	call  RunViewer
-   	and  [arc_base],0
+       call  RunViewer
+       and  [arc_base],0
     and  [Flags],STAY_MODE
 quit:
     test [Flags],STAY_MODE
@@ -352,16 +406,19 @@ NoPng:
   else
     jz    still
   end if
-    mov   ecx,dumpf_len
-    mov   esi,dumpfile
-    mov   edi,filename
-    rep   movsb
-    call  OpenFile
-    test  ebx,ebx
-    jz    again.sizebadq
+;    Dump output,255,os_work
+;    ud2
+;    mov   ecx,dumpf_len
+;    mov   esi,dumpfile
+;    mov   edi,filename
+;    rep   movsb
+;    call  OpenFile
+;    test  ebx,ebx
+;    jz    again.sizebadq
     call  TarParse
     mov   ecx,[FileNum]
     call  TarFindN
+;    dpd   [outfile.size]
     cmp   [outfile.size],0
     jz    again.sizebadq
     mov   ebx,esi
@@ -397,22 +454,22 @@ section '.idata' import data readable writeable
      WriteFile,'WriteFile',\
      SetFilePointer,'SetFilePointer',\
      CloseHandle,'CloseHandle',\
-   	 GetStdHandle,'GetStdHandle',\
-   	 WriteConsole,'WriteConsoleA',\
-   	 ReadConsole,'ReadConsoleA',\
-   	 CreateProcess,'CreateProcessA',\
-   	 WritePrivateProfileString,'WritePrivateProfileStringA',\	
-   	 ExitProcess,'ExitProcess'
+        GetStdHandle,'GetStdHandle',\
+        WriteConsole,'WriteConsoleA',\
+        ReadConsole,'ReadConsoleA',\
+        CreateProcess,'CreateProcessA',\
+        WritePrivateProfileString,'WritePrivateProfileStringA',\    
+        ExitProcess,'ExitProcess'
 
   import comdlg,\
      GetOpenFileName,'GetOpenFileNameA'
 
   import user,\
-   	 wsprintf,'wsprintfA',\
-   	 SendMessage,'SendMessageA',\
-   	 FindWindowEx,'FindWindowExA',\
-  	  WaitForInputIdle,'WaitForInputIdle'
-	
+        wsprintf,'wsprintfA',\
+        SendMessage,'SendMessageA',\
+        FindWindowEx,'FindWindowExA',\
+        WaitForInputIdle,'WaitForInputIdle'
+    
 
 section '.reloc' fixups data readable discardable
 end if

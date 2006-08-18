@@ -27,10 +27,12 @@ lang equ ru ; ru en fr ge fi
 ;0.12 open/save dialog ~13.09.2004
 ;0.13 dialogs bugs deleted
 ;0.14 drawlbut ~03.10.2004
+;0.15 extendet label!
 
 ; LOADFILE
 ; (SYNTAX)  LOADFILE 'full_path_to_file',file_load_area,file_temp_area
 ; (SAMPLE)  LOADFILE '/rd/1/clock.bmp',load_area,temp_area
+
 
 macro loadfile file_name,file_load_area,file_temp_area
 {
@@ -59,23 +61,73 @@ open:
 }
 
 
-macro wordstoreg reg,hiword,loword
+;macro wordstoreg reg,hiword,loword
+;{
+;if  hiword eqtype 0 & loword eqtype 0
+;    mov  reg,dword hiword*65536+loword
+;else if hiword eqtype 12 & loword eqtype eax
+;    mov  reg,dword hiword*65536
+;    add  reg,dword loword
+;else if hiword eqtype 12 & loword eqtype [123]
+;    mov  reg,dword hiword*65536
+;    add  reg,dword loword
+;else
+;    mov  reg,dword hiword
+;    shl  reg,16
+;    add  reg,dword loword
+;end if
+;}
+
+macro dword2reg reg,doubleword
 {
-if  hiword eqtype 0 & loword eqtype 0
-    mov  reg,(hiword)*65536+(loword)
-else if hiword eqtype 12 & loword eqtype eax
-    mov  reg,(hiword)*65536
-    add  reg,loword
-else if hiword eqtype 0 & loword eqtype [123]
-    mov  reg,(hiword)*65536
-    add  reg,loword
-else if (hiword eq ) & (loword eq )
+if doubleword eq
+   ; not changes
 else
-    mov  reg,hiword
-    shl  reg,16
-    add  reg,loword
+   mov reg,dword doubleword
 end if
 }
+
+macro words2reg reg,hiword,lowword
+{
+if hiword eq
+   if lowword eq
+      ; not changes
+   else
+      if lowword eqtype 12
+         and reg,dword 0xffff0000
+         add reg,dword lowword
+      else
+         and reg,dword 0xffff0000
+         add reg,dword lowword
+      end if
+   end if
+else
+   if lowword eq
+      if hiword eqtype 12
+         and reg,dword 0x0000ffff
+         add reg,dword hiword*65536
+      else
+         shl reg,16
+         add reg,dword hiword
+         ror reg,16
+      end if
+   else
+      if lowword eqtype 12 & hiword eqtype 12
+         if lowword eq 0 & hiword eq 0
+               xor reg,reg
+            else
+               mov reg,dword hiword*65536+lowword
+         end if
+      else
+         mov reg,dword hiword
+         shl reg,16
+         add reg,dword lowword
+      end if
+   end if
+end if
+}
+
+
 
 
 ; DRAW BUTTON with label
@@ -86,8 +138,8 @@ local asd,lab
     jmp asd
 lab db  text                 ;arg label
 asd:
-    wordstoreg ebx,x,xs
-    wordstoreg ecx,y,ys
+    words2reg ebx,x,xs
+    words2reg ecx,y,ys
     mov edx,id
     mov esi,bcolor
     mov eax,8
@@ -328,7 +380,7 @@ run_fileinfo:
  db '/RD/1/SYSXTREE',0
 
 procinfo:
-times 256 db 0
+times 1024 db 0
 }
 
 
@@ -390,7 +442,7 @@ new_d:
     mov eax,60
     mov ebx,1        ; define IPC
     mov ecx,path ; offset of area
-    mov edx,120      ; size 150 bytes
+    mov edx,150      ; size 150 bytes
     int 0x40
 
 ; change wanted events list 7-bit IPC event
@@ -458,6 +510,7 @@ mred:
     call redproc
     jmp  getmesloop
 mkey:
+    mov  eax,2
     int  0x40                   ; read (eax=2)
     jmp  getmesloop
 mbutton:
@@ -526,8 +579,8 @@ dlg_pid_get dd 0
 DLGPID      dd 0
 
 param:
-   rb 4  ; My dec PID
-   rb 6  ; Type of dialog
+   dd 0  ; My dec PID
+   dd 0,0  ; Type of dialog
 
 run_fileinfo:
  dd 16
@@ -535,11 +588,11 @@ run_fileinfo:
  dd param
  dd 0
  dd procinfo
-run_filepath:
+;run_filepath:
  db '/RD/1/SYSXTREE',0
 
 procinfo:
-times 256 db 0
+times 1024 db 0
 }
 
 
@@ -635,10 +688,15 @@ macro puttxt x,y,offs,size,color
 ;    mov ebx,x
 ;    shl ebx,16
 ;    add ebx,y
-    wordstoreg ebx,x,y
-    mov ecx,color
-    mov edx,offs
-    mov esi,size
+    words2reg ebx,x,y
+
+    dword2reg ecx,color
+    dword2reg edx,offs
+    dword2reg esi,size
+
+;    mov ecx,color
+;    mov edx,offs
+;    mov esi,size
     mov eax,4
     int 0x40
 }
@@ -649,7 +707,7 @@ macro outcount data, x, y, color, numtype
     mov ebx,numtype
     mov bl,0
 ;    mov edx,x*65536+y
-    wordstoreg edx,x,y
+    words2reg edx,x,y
     mov esi,color
     mov eax,47
     int 0x40
@@ -728,8 +786,8 @@ macro window arg1,arg2,arg3,arg4,arg5
 {
 ;    mov ebx,arg1*65536+arg3
 ;    mov ecx,arg2*65536+arg4
-    wordstoreg ebx,arg1,arg3
-    wordstoreg ecx,arg2,arg4
+    words2reg ebx,arg1,arg3
+    words2reg ecx,arg2,arg4
     mov edx,arg5
     mov eax,0
     int 0x40
@@ -769,7 +827,7 @@ macro endwd
 ; (SYNTAX)  LABEL Xstart,Ystart,'Text',Color
 ; (SAMPLE)  LABEL 10,12,'Hello World!',cl_Green+font_Big
 
-macro label arg1,arg2,arg3,arg4
+macro glabel arg1,arg2,arg3,arg4
 {
 local asd,lab
     jmp asd
@@ -778,10 +836,11 @@ asd:
 ;    mov ebx,arg1             ;arg1=y arg2=x
 ;    shl ebx,16
 ;    add ebx,arg2
-    wordstoreg ebx,arg1,arg2
-if ~(arg4 eq )
-    mov ecx,arg4             ;arg4 color
-end if
+
+   words2reg ebx,arg1,arg2
+
+   dword2reg ecx,arg4
+
     mov edx,lab
     mov esi,asd-lab          ;calc size
     mov eax,4

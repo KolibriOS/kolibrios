@@ -16,14 +16,15 @@ use32
    
                 org     0x0
    
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
+                db      'MENUET01'              ; 8 byte id
+                dd      1                       ; header version
                 dd      START                   ; program start
                 dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
-                
-include 'lang.inc'   
+                dd      mem                     ; required amount of memory
+                dd      mem                     ; stack pointer
+                dd      0, 0                    ; param, icon
+   
+include 'lang.inc'
 include 'macros.inc'
    
 START:                                  ; start of execution
@@ -36,38 +37,30 @@ START:                                  ; start of execution
     int  0x40
    
     mov  [socketNum], eax
-   
+
+red: 
     call draw_window            ; at first, draw the window
    
 still:
    
-    mov  eax,23                 ; wait here for event
-    mov  ebx,1
+    mov  eax,10                 ; wait here for event
     int  0x40
-   
-    cmp  eax,1                  ; redraw request ?
+
+    dec  eax
     jz   red
-    cmp  eax,2                  ; key in buffer ?
-    jz   key
-    cmp  eax,3                  ; button in buffer ?
-    jz   button
-   
-    jmp  still
-   
-red:
-    call draw_window
-    jmp  still
-   
+    dec  eax
+    jnz  button
+
 key:
-    mov  eax,2
+    mov  al,2
     int  0x40
     jmp  still
    
 button:
-    mov  eax,17
+    mov  al,17
     int  0x40
    
-    cmp  ah,1                  ; button id=1 ?
+    dec  ah                    ; button id=1 ?
     jnz  noclose
     mov  eax, 53
     mov  ebx, 1
@@ -76,14 +69,8 @@ button:
     mov  eax,-1
     int  0x40
   noclose:
-   
-    cmp  ah,2                  ; SEND CODE ?
-    je   send_xcode
-   
+; it was not close button, so it must be send code button
 
-    jmp  still
-   
-   
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                              ;;
 ;;           SEND CODE TO REMOTE                ;;
@@ -92,19 +79,13 @@ button:
    
 send_xcode:
 
-  mov  esi,send_data              ; header
-  mov  edi,I_END
-  mov  ecx,end_message-send_data
-  cld
-  rep  movsb
-   
   mov  eax,53                     ; SEND CODE TO REMOTE
   mov  ebx,4
   mov  ecx,[socketNum]
   mov  edx,end_message-send_data
-  mov  esi,I_END
+  mov  esi,send_data
   int  0x40
-   
+
   jmp  still
    
    
@@ -124,8 +105,6 @@ draw_window:
     mov  ebx,100*65536+250         ; [x start] *65536 + [x size]
     mov  ecx,60*65536+150          ; [y start] *65536 + [y size]
     mov  edx,0x03ffffff            ; color of work area RRGGBB
-    mov  esi,0x80aabbcc            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00aabbcc            ; color of frames    RRGGBB
     int  0x40
    
                                    ; WINDOW LABEL
@@ -143,7 +122,6 @@ draw_window:
     mov  esi,0x667788
     int  0x40
    
-    cld
     mov  ebx,25*65536+50           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
@@ -152,7 +130,7 @@ draw_window:
     mov  eax,4
     int  0x40
     add  ebx,16
-    add  edx,40
+    add  edx,esi
     cmp  [edx],byte 'x'
     jnz  newline
    
@@ -165,34 +143,38 @@ draw_window:
    
 ; DATA AREA
    
-   
+if lang eq ru   
 text:
     db '        Послать сообщение               '
     db '                                        '
     db ' Локальный адрес : 192.168.0.1          '
     db ' Удалённый адрес : 192.168.0.2          '
     db 'Текст и адрес в конце исходника         '
-    db 'x <- END MARKER, DONT DELETE            '
-   
+    db 'x' ; <- END MARKER, DONT DELETE
+else
+text:
+    db '          Send message                  '
+    db '                                        '
+    db ' Local  address : 192.168.0.1           '
+    db ' Remote address : 192.168.0.2           '
+    db 'Text and address in end of source       '
+    db 'x' ; <- END MARKER, DONT DELETE
+end if   
    
 labeltext:  db  'NetSend(Client)'  ;
 lte:
    
-socketNum   dd  0x0
-   
 remote_ip  db  192,168,1,2
-   
-picture_position dd 0x0
    
 send_data   db  'Привет,это тест!Hello,this is a test!'
 end_message:
 
    
 I_END:
-   
-   
-   
-   
-   
-   
-   
+align 4
+socketNum dd ?
+
+rb 32 ; this is for stack
+
+mem:
+

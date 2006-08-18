@@ -107,29 +107,6 @@ still:
     jmp  bg2
 
 
-set_default_colours:
-
-     pusha
-
-     mov  eax,6            ; load default color map
-     mov  ebx,defcol
-     mov  ecx,0
-     mov  edx,-1
-     mov  esi,0x8000
-     int  0x40
-
-     mov  eax,48           ; set default color map
-     mov  ebx,2
-     mov  ecx,0x8000
-     mov  edx,10*4
-     int  0x40
-
-     popa
-     ret
-
-defcol db 'DEFAULT.DTP'
-
-
 check_parameters:
 
     cmp  [I_Param],dword 'BOOT'
@@ -137,7 +114,6 @@ check_parameters:
     ret
   @@:
 
-    call set_default_colours
     call load_texture
 
     mov  eax,15
@@ -148,7 +124,8 @@ check_parameters:
 
     mov  eax,15
     mov  ebx,5
-    mov  ecx,0x40000+1
+    mov  ecx,0x40000 ; <<< 0x40000 for blue, 0x40000+1 for red,
+                       ; <<< 0x40000+2 for green background at boot
     mov  edx,0
     mov  esi,256*3*256
     int  0x40
@@ -308,7 +285,7 @@ gentexture:
  ylup:
     mov ebx,0
 
- call precalcbar
+; call precalcbar
 
  xlup:
   push edi
@@ -342,10 +319,10 @@ gentexture:
 
    mov eax,esi                 ; now evaluate color...
 
-   cmp eax,255*24
-   jbe ok2
+;   cmp eax,255*24
+;   jbe ok2
 ;   imul eax,12
- ok2:
+; ok2:
 
    mov edi,24            ; 50 = max shaded distance
    idiv edi
@@ -376,21 +353,21 @@ wrappit:
   nowrap:
   ret
 
-precalcbar:
-  pusha
-  mov eax,1
-  mov ebx,ecx
-  add ebx,18
-  mov ecx,44
-  mov edx,0x00000060
-     bar:
-     add ecx,2
-     add edx,0x00020100
+;precalcbar:
+;  pusha
+;  mov eax,1
+;  mov ebx,ecx
+;  add ebx,18
+;  mov ecx,44
+;  mov edx,0x00000060
+;     bar:
+;     add ecx,2
+;     add edx,0x00020100
 ;     int 0x40
-     cmp ecx,298
-     jb bar
-  popa
-  ret
+;     cmp ecx,298
+;     jb bar
+;  popa
+;  ret
 
 ; *********************************************
 ; ******* WINDOW DEFINITIONS AND DRAW *********
@@ -517,12 +494,7 @@ draw_window:
     mov  ecx,(y_add2+40)*65536+14          ; button start y & size
 
   newcb:
-    push edx
-    sub  edx,14
-    shl  edx,2
-    add  edx,colors
-    mov  esi,[edx]
-    pop  edx
+    mov  esi,[(edx-14)*4+colors]
 
     mov  eax,8
     int  0x40

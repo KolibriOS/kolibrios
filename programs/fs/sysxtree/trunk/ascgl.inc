@@ -20,8 +20,8 @@ lang equ ru
 ;0.07 convbmp ~13.05.2004
 ;0.08 fps ~14.05.2004
 ;0.09 drawfbox ~03.06.2004
-;0.10 all macros optimized by halyavin, add at ~07.06.2004
-;0.11 many macros optimized by halyavin, add at ~30.08.2004
+;0.10 all macros optimized by Halyavin A., add at ~07.06.2004
+;0.11 many macros optimized by Halyavin A., add at ~30.08.2004
 ;0.12 bmptoimg ~07.09.2004
 ;0.13 imgtoimg ~08.09.2004
 ;0.14 imgtoimg modify not brake bmp pict! ~09.09.2004
@@ -369,8 +369,8 @@ end if
 ;DrawBox
 macro drawfbox x,y,xs,ys,color
 {
-    wordstoreg ebx,x,xs ;x*65536+xs
-    wordstoreg ecx,y,ys ;y*65536+ys
+    words2reg ebx,x,xs ;x*65536+xs
+    words2reg ecx,y,ys ;y*65536+ys
     mov  edx,color
     mov  eax,13
     int  0x40
@@ -385,8 +385,8 @@ local no_out_fps
     jmp spdat
 savetime dd 0
 fps_cntr dd 0
-fps      dd 0
-ttt      dd 0
+fps	 dd 0
+ttt	 dd 0
 spdat:
 get_time:
     mov eax,3
@@ -395,7 +395,7 @@ get_time:
     jne new_time
     inc [fps_cntr]
     cmp dword [ttt],0
-    je  out_fps
+    je	out_fps
     dec dword [ttt]
     jmp no_out_fps
 new_time:
@@ -405,7 +405,7 @@ new_time:
     mov [fps_cntr],0
 out_fps:
 if ~(delcolor eq )
-    mov ebx,x*65536+30
+    mov ebx,x*65536+36
     mov ecx,y*65536+7
     mov edx,delcolor
     mov eax,13
@@ -413,7 +413,7 @@ if ~(delcolor eq )
 end if
     mov dword [ttt],fps_show_frequency
     mov eax,47
-    mov ebx,5*65536
+    mov ebx,6*65536
 ;   mov bl,0
     mov edx,x*65536+y
     mov esi,color
@@ -427,44 +427,44 @@ _1dbounce_count=0;
 macro collimg img1_off,x1,y1,img2_off,x2,y2,otv
 {
 local bounce,exit,anot,bc,nbc
-	mov esi,[img1_off] ;xs1
-	mov edi,[img2_off] ;ys2
-	mov eax,x1 ;
-	mov ebx,x2 ;
-	call _1dbounce
-	mov edx,ecx
-	mov esi,[img1_off+4] ;ys1
-	mov edi,[img2_off+4] ;ys2
-	mov eax,y1 ;
-	mov ebx,y2 ;
-	call _1dbounce
-	add edx,ecx
-	cmp edx,2
-	je bounce
-	mov otv,0
-	jmp exit
+    mov esi,[img1_off] ;xs1
+    mov edi,[img2_off] ;ys2
+    mov eax,x1 ;
+    mov ebx,x2 ;
+    call _1dbounce
+    mov edx,ecx
+    mov esi,[img1_off+4] ;ys1
+    mov edi,[img2_off+4] ;ys2
+    mov eax,y1 ;
+    mov ebx,y2 ;
+    call _1dbounce
+    add edx,ecx
+    cmp edx,2
+    je bounce
+    mov otv,0
+    jmp exit
 _1dbounce_count=_1dbounce_count+1
 if _1dbounce_count = 1
 _1dbounce:
-	cmp ebx,eax
-	jb  anot
-	add eax,esi
-	cmp eax,ebx
-	jbe nbc
+    cmp ebx,eax
+    jb	anot
+    add eax,esi
+    cmp eax,ebx
+    jbe nbc
 bc:
-	mov ecx,1
-	ret
+    mov ecx,1
+    ret
 anot:
     add ebx,edi
-	cmp ebx,eax
-	ja  bc
+    cmp ebx,eax
+    ja	bc
 nbc:
-	xor ecx,ecx
-	ret
+    xor ecx,ecx
+    ret
 end if
-bounce:	
-	mov otv,1
-exit:	
+bounce:
+    mov otv,1
+exit:
 }
 
 macro rgbtobgr image
@@ -495,7 +495,7 @@ macro setimg x , y ,arg3
     shl  ecx,16
     add  cx,[arg3+4]
 ;    wordstoreg ecx,[arg3],[arg3+4]
-    wordstoreg edx, x , y  ;arg1*65536+arg2
+    words2reg edx, x , y  ;arg1*65536+arg2
     int  0x40
 }
 
@@ -504,7 +504,7 @@ macro setframe x , y ,arg3
     mov  eax,7
     mov  ebx,arg3
     add  ebx,8
-    wordstoreg edx, x , y  ;arg1*65536+arg2
+    words2reg edx, x , y  ;arg1*65536+arg2
     add  edx,dword [arg3]
     mov  ecx,dword [arg3+4]
     int  0x40
@@ -697,7 +697,7 @@ local nextelem,convertno32,nomorestring,convert1,nextstring,yespicsize
     sub  esi,dword [bmptoimg_data_area_bps]
     sub  esi,dword [bmptoimg_data_area_bps]
     cmp  esi,dword [bmptoimg_data_area_sop]
-    jb   end_bmp
+    jb	 end_bmp
     add  edi,eax
     add  ebp,eax
     jmp  nextstring
@@ -705,7 +705,7 @@ local nextelem,convertno32,nomorestring,convert1,nextstring,yespicsize
   convertno32:
     mov  ebx,bmp_load_area
     add  ebx, [bmp_load_area+14]
-    add  ebx,14          ;start of color table
+    add  ebx,14 	 ;start of color table
     push esi
     add  esi,dword [bmptoimg_data_area_bps]
     mov  dword [bmptoimg_data_area_eos],esi
@@ -714,9 +714,9 @@ local nextelem,convertno32,nomorestring,convert1,nextstring,yespicsize
     push eax
     movzx eax,byte [esi]
     cmp  word [bmp_load_area+28],4
-    je   convert4bpp
+    je	 convert4bpp
     cmp  word [bmp_load_area+28],1
-    je   convert1bpp
+    je	 convert1bpp
     call converttable
 
   convert2:
@@ -750,7 +750,7 @@ local nextelem,convertno32,nomorestring,convert1,nextstring,yespicsize
     mov  edx,7
   nextbit:
     xor  eax,eax
-    bt   ecx,edx
+    bt	 ecx,edx
     jnc  noaddelem
     inc  eax
   noaddelem:
@@ -758,7 +758,7 @@ local nextelem,convertno32,nomorestring,convert1,nextstring,yespicsize
     call converttable
     pop  edx
     dec  edx
-    js   convert2
+    js	 convert2
     add  edi,3
 
     add  ebp,3
@@ -776,12 +776,12 @@ local nextelem,convertno32,nomorestring,convert1,nextstring,yespicsize
 bmptoimg_data_area_count=bmptoimg_data_area_count+1
 if bmptoimg_data_area_count = 1
 ; DATA AREA
-bmptoimg_soi                dd 0
-bmptoimg_data_area_bps      dd 0
+bmptoimg_soi		    dd 0
+bmptoimg_data_area_bps	    dd 0
 bmptoimg_data_area_dwps     dd 0
-bmptoimg_data_area_sop      dd 0
-bmptoimg_data_area_eop      dd 0
-bmptoimg_data_area_eos      dd 0
+bmptoimg_data_area_sop	    dd 0
+bmptoimg_data_area_eop	    dd 0
+bmptoimg_data_area_eos	    dd 0
 end if
 
 end_bmp:
@@ -806,7 +806,7 @@ local notintable, er, zend, nxt, continue, ex, Gif_skipmap
 local Gif_get_sym, shift, nextbl, noblock, loop1, exx
 local Gif_output, next, loop2
 
-_null equ 0x1000 ; 0x1000
+_null = 0x1000 ; 0x1000
 
 ;    jmp sss
 ;    if defined gif_hash_offset
@@ -816,13 +816,13 @@ _null equ 0x1000 ; 0x1000
 ;    end if
 ;sss:
 
-    mov  esi,gifsrc           ;Указатель на ГИФ фаил в памяти
-    mov  edi,imgsrc           ;Указатель на список картинок
+    mov  esi,gifsrc	      ;Указатель на ГИФ фаил в памяти
+    mov  edi,imgsrc	      ;Указатель на список картинок
 
     if defined gif_hash_offset
-    mov  eax,gif_hash_offset    ;Рабочая область минимум 4096*4 байт
+    mov  eax,gif_hash_offset	;Рабочая область минимум 4096*4 байт
     else
-    mov  eax,hasharea         ;Рабочая область минимум 4096*4 байт
+    mov  eax,hasharea	      ;Рабочая область минимум 4096*4 байт
     end if
 
     call ReadGIF
@@ -845,12 +845,12 @@ ReadGIF:
     mov  [img_count],eax
     inc  eax
     cmp  dword[esi],'GIF8'
-    jne  er            ; signature
+    jne  er	       ; signature
     mov  ecx,[esi+0xa]
     inc  eax
     add  esi,0xd
     mov  edi,esi
-    bt   ecx,7
+    bt	 ecx,7
     jnc  nextblock
     mov  [globalColor],esi
     call Gif_skipmap
@@ -891,8 +891,8 @@ noextblock:
     push edi
     movzx ecx,word[esi]
     inc  esi
-    bt   ecx,7
-    jc   uselocal
+    bt	 ecx,7
+    jc	 uselocal
     push [globalColor]
     mov  edi,esi
     jmp  setPal
@@ -909,7 +909,7 @@ setPal:
     mov  edi,[table_ptr]
     xor  eax,eax
     cld
-    lodsb               ; eax - block_count
+    lodsb		; eax - block_count
     add  eax,esi
     mov  [block_ofs],eax
     mov  [bit_count],8
@@ -933,7 +933,7 @@ reinit:
     pop  [compsize]
     call Gif_get_sym
     cmp  eax,[CC]
-    je   reinit
+    je	 reinit
     call Gif_output
 cycle:
     movzx ebx,ax
@@ -941,9 +941,9 @@ cycle:
     cmp  eax,edx
     jae  notintable
     cmp  eax,[CC]
-    je   reinit
+    je	 reinit
     cmp  eax,[EOI]
-    je   zend
+    je	 zend
     call Gif_output
 zadd:
     push eax
@@ -997,7 +997,7 @@ Gif_skipmap:
 ; out: edi - pointer to area after colormap
 
     and  ecx,111b
-    inc  ecx            ; color map size
+    inc  ecx		; color map size
     mov  ebx,1
     shl  ebx,cl
     lea  ebx,[ebx*2+ebx]
@@ -1015,7 +1015,7 @@ shift:
     jnz  loop1
     inc  esi
     cmp  esi,[block_ofs]
-    jb   noblock
+    jb	 noblock
     push eax
     xor  eax,eax
     lodsb
@@ -1057,14 +1057,14 @@ loop2:
     add  esi,[Palette]
 
     if COLOR_ORDER eq MENUETOS
-        mov  esi,[esi]
-        bswap esi
-        shr  esi,8
-        mov  [edi],esi
-        add  edi,3
+	mov  esi,[esi]
+	bswap esi
+	shr  esi,8
+	mov  [edi],esi
+	add  edi,3
     else
-        movsw
-        movsb
+	movsw
+	movsb
     end if
 
     loop loop2
@@ -1073,7 +1073,7 @@ loop2:
 
     globalColor dd 1
     img_count dd 1
-    cur_info dd 1        ; image table pointer
+    cur_info dd 1	 ; image table pointer
     img_start dd 1
     codesize dd 1
     compsize dd 1
@@ -1101,15 +1101,15 @@ local notintable, er, zend, nxt, continue, ex, Gif_skipmap
 local Gif_get_sym, shift, nextbl, noblock, loop1, exx
 local Gif_output, next, loop2
 
-_null fix 0x1000 ; 0x1000
+_null = 0x1000 ; 0x1000
 
-    mov  esi,gifsrc           ;Указатель на ГИФ фаил в памяти
-    mov  edi,imgsrc           ;Указатель на список картинок
+    mov  esi,gifsrc	      ;Указатель на ГИФ фаил в памяти
+    mov  edi,imgsrc	      ;Указатель на список картинок
 
     if defined gif_hash_offset
-    mov  eax,gif_hash_offset    ;Рабочая область минимум 4096*4 байт
+    mov  eax,gif_hash_offset	;Рабочая область минимум 4096*4 байт
     else
-    mov  eax,hasharea         ;Рабочая область минимум 4096*4 байт
+    mov  eax,hasharea	      ;Рабочая область минимум 4096*4 байт
     end if
 
     call ReadGIF
@@ -1130,12 +1130,12 @@ ReadGIF:
     mov  [img_count],eax
     inc  eax
     cmp  dword[esi],'GIF8'
-    jne  er            ; signature
+    jne  er	       ; signature
     mov  ecx,[esi+0xa]
     inc  eax
     add  esi,0xd
     mov  edi,esi
-    bt   ecx,7
+    bt	 ecx,7
     jnc  nextblock
     mov  [globalColor],esi
     call Gif_skipmap
@@ -1187,8 +1187,8 @@ noextblock:
     push edi
     movzx ecx,word[esi]
     inc  esi
-    bt   ecx,7
-    jc   uselocal
+    bt	 ecx,7
+    jc	 uselocal
     push [globalColor]
     mov  edi,esi
     jmp  setPal
@@ -1205,7 +1205,7 @@ setPal:
     mov  edi,[table_ptr]
     xor  eax,eax
     cld
-    lodsb               ; eax - block_count
+    lodsb		; eax - block_count
     add  eax,esi
     mov  [block_ofs],eax
     mov  [bit_count],8
@@ -1229,7 +1229,7 @@ reinit:
     pop  [compsize]
     call Gif_get_sym
     cmp  eax,[CC]
-    je   reinit
+    je	 reinit
     call Gif_output
 cycle:
     movzx ebx,ax
@@ -1237,9 +1237,9 @@ cycle:
     cmp  eax,edx
     jae  notintable
     cmp  eax,[CC]
-    je   reinit
+    je	 reinit
     cmp  eax,[EOI]
-    je   zend
+    je	 zend
     call Gif_output
 zadd:
     push eax
@@ -1291,9 +1291,8 @@ ex:
 Gif_skipmap:
 ; in: ecx - image descriptor, esi - pointer to colormap
 ; out: edi - pointer to area after colormap
-
     and  ecx,111b
-    inc  ecx            ; color map size
+    inc  ecx		; color map size
     mov  ebx,1
     shl  ebx,cl
     lea  ebx,[ebx*2+ebx]
@@ -1311,7 +1310,7 @@ shift:
     jnz  loop1
     inc  esi
     cmp  esi,[block_ofs]
-    jb   noblock
+    jb	 noblock
     push eax
     xor  eax,eax
     lodsb
@@ -1353,14 +1352,14 @@ loop2:
     add  esi,[Palette]
 
     if COLOR_ORDER eq MENUETOS
-        mov  esi,[esi]
-        bswap esi
-        shr  esi,8
-        mov  [edi],esi
-        add  edi,3
+	mov  esi,[esi]
+	bswap esi
+	shr  esi,8
+	mov  [edi],esi
+	add  edi,3
     else
-        movsw
-        movsb
+	movsw
+	movsb
     end if
 
     loop loop2
@@ -1369,7 +1368,7 @@ loop2:
 
     globalColor dd 1
     img_count dd 1
-    cur_info dd 1        ; image table pointer
+    cur_info dd 1	 ; image table pointer
     img_start dd 1
     codesize dd 1
     compsize dd 1

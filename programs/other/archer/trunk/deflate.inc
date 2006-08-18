@@ -113,7 +113,7 @@ end if
     jb   .no81
     add  eax,0x58
     jmp  .noend
-  .no81:   
+  .no81:
     sub  eax,0x30
     stosb
     jmp .next
@@ -128,7 +128,7 @@ if SHOW_METH eq 1
 end if
     pusha
     xor  eax,eax
-    mov  ecx,(area-bl_count) / 4
+    mov  ecx,(output-bl_count) / 4
     mov  edi,bl_count
     rep  stosd
     popa

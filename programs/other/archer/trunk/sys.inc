@@ -105,7 +105,7 @@ RunViewer:
  else
     test [Flags],THREAD_YES
     jnz  .ex
-    mcall 51,1,thread,MEMORY
+    mcall 51,1,thread,child_stack;MEMORY
     mov  [child],eax
  end if
   .ex:	
@@ -191,7 +191,7 @@ thread:
     mov  ecx,[PNG_info.Width]
     shl  ecx,16
     add  ecx,[PNG_info.Height]
-    mcall 7,png_image,,10 shl 16+25
+    mcall 7,[png_],,10 shl 16+25
     mcall 12,2
   .still:
     mcall 10
@@ -208,6 +208,7 @@ thread:
     jne  .still
   .close:
     and  [child],0
+    mcall 64,1,MEMINIT
     mcall -1
 
 KillViewer:
@@ -256,7 +257,68 @@ macro CmdLine
     mov  ecx,255
     mov  edi,filename
     rep  movsb
-    jmp  again
+;    test [Flags],LIST_MODE
+;    jz   again
+    xor  eax,eax
+    mov  edi,filename
+    mov  ecx,255
+    repne scasb
+    cmp  byte[edi-2],'/'
+    je   .slash
+    mov  byte[edi-1],'/'
+    inc  edi
+  .slash:
+;    Dump filename,255,os_work
+;    ud2
+    mov  ecx,edi
+;    dec  ecx
+    mov  edx,ecx
+    mov  dword[Finfo],13
+;    mov  dword[Finfo.count],1
+    mov  edi,filename+5
+    sub  ecx,edi
+  .lp:
+    mov  al,'/'
+    repne scasb
+;    jne  .ex
+;    dpd  ecx
+    and  byte[edi-1],0
+    mcall 58,Finfo
+    mov  byte[edi-1],'/'
+    test ebx,32
+    jz   .lp
+    test [Flags],LIST_MODE
+    jne  .listm
+    and  byte[edi-1],0
+;    Dump filename,255,os_work
+    jmp  .agg
+;    ud2
+  .listm:
+    lea  esi,[edi-1+ecx]
+    lea  edi,[esi+1]
+    std
+    rep  movsb
+    and  byte[edi],0
+    cld
+;    dpd  filename
+
+    inc  edi
+    dpd  edi
+    cmp  edx,edi
+    jne  .slash2
+;    cmp  byte[edi],'/'
+;    je   .slash2
+    mov  byte[edi],'/'
+    inc  edx
+  .slash2:
+    sub  edx,edi
+    mov  [lpath],edi
+    mov  [lpath_len],edx
+    dpd  edx
+  .agg:
+    mov  dword[Finfo],0
+;    ud2
+    jmp  again;cmdl
   .yespar:
     cmp  al,'N'
     jne  .nonum
@@ -291,7 +353,7 @@ macro CmdLine
     cmp  al,'q'
     jne  .noofs
     lodsd
-  .fofs:  
+  .fofs:
     mov  [arc_base],eax
     jmp  .parse
   .noofs:
@@ -299,7 +361,11 @@ macro CmdLine
     jne  .noofs2
     call get_6ASCII_num
     jmp  .fofs
-  .noofs2:  
+  .noofs2:
+    cmp  al,'L'
+    jne  .nolist
+    or   [Flags],LIST_MODE
+  .nolist:
     jmp  .parse
 
 get_6ASCII_num:
@@ -319,8 +385,20 @@ get_6ASCII_num:
 }
 
 StartPad:
-    mcall 19,editorcmd,dumpfile
+;    mcall 19,editorcmd,dumpfile
+    pusha
+    mov   esi,[outfile.size]
+;    dpd  esi
+    mov   [par_fsize],esi
+    mcall 19,editorcmd,editor_par
+    mov  ecx,eax
+    mcall 5,20
+    mcall 60,2,,[outfile.out];output
+    mcall 64,1,MEMINIT
+    popa
     ret
 
 editorcmd db 'TINYPAD    '
+editor_par db '*'
+par_fsize  dd ?
 end if

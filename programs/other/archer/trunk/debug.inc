@@ -73,10 +73,16 @@ debug_outstr:
  @@:
    ret
 
+_debug_crlf db 13, 10, 0
 
 macro newline
 {
-  dps <13,10>
+  pushf
+  pushad
+  mov edx, _debug_crlf
+  call debug_outstr
+  popad
+  popf
 }
 
 macro print message

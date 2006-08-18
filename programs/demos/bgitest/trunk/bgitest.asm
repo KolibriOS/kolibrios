@@ -68,11 +68,10 @@ use32
   dd	 0x0
 not1strun  dd	 0x0
 
-include  'lang.inc'
+include 'lang.inc'
 include  'macros.inc'
 ;include   'debug.inc'
 include  'bgifont.inc'
-lang equ en;ru;en
 
 START:
     mov  [help],0

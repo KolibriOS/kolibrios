@@ -31,41 +31,67 @@
 
 ;******************************************************************************
   use32
-  org    0x0
-  db     'MENUET01'   ; 8 byte id
-  dd     0x01         ; header version
-  dd     START        ; program start
-  dd     I_END        ; program image size
-  dd     RAM_END      ; memory
-  dd     RAM_END      ; stack
-  dd     param_area ,0x0   ; param,icon
+  org	   0x0
+  db	 'MENUET01'   ; 8 byte id
+  dd	 0x01		; header version
+  dd	 START	      ; program start
+  dd	 I_END	      ; program image size
+  dd	 RAM_END      ; memory
+  dd	 RAM_END      ; stack
+  dd	 param_area ,0x0   ; param,icon
 ;  dd 0,0
 
 ;******************************************************************************
-include 'lang.inc'
 include 'macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
+
     gif_hash_offset = gif_hash
 
-START:                          ; start of execution
+START:		    ; start of execution
 ; //// Willow
-    mov eax,58
-    mov ebx,MRUfile
-    int 0x40
+;    mov eax,58
+;    mov ebx,MRUfile
+;    int 0x40
 ; //// Willow
+    mcall 18,11,1,table_area
+    mov edi,hdimg+62*2
+    cmp [table_area+2],byte 0
+    je	  no_hdpartition_on_hd0
+    mov esi,hdimg1
+    mov ecx,62
+    rep movsb
+ no_hdpartition_on_hd0:
+    cmp [table_area+3],byte 0
+    je	  no_hdpartition_on_hd1
+    mov esi,hdimg2
+    mov ecx,62
+    rep movsb
+ no_hdpartition_on_hd1:
+    cmp [table_area+4],byte 0
+    je	  no_hdpartition_on_hd2
+    mov esi,hdimg3
+    mov ecx,62
+    rep movsb
+ no_hdpartition_on_hd2:
+    cmp [table_area+5],byte 0
+    je	  no_hdpartition_on_hd3
+    mov esi,hdimg4
+    mov ecx,62
+    rep movsb
+ no_hdpartition_on_hd3:
 
     mov eax,40
     mov ebx,0100111b
     int 0x40
 
     cmp byte [param_area],0 ;test parameters line
-    jne no_brow             ;it's dialog
+    jne no_brow     ;it's dialog
     mov [browser],dword 1   ;it's browser
 no_brow:
 
     cmp [browser],dword 1
-    je  no_dlg
+    je	    no_dlg
 
     mov al,byte [param_area+5]
     mov [dlg_type],al
@@ -119,9 +145,9 @@ no_dlg:
 ;************************
 
     mov eax,0  ;x
-    mov ebx,0     ;y
+    mov ebx,0	    ;y
     mov esi,286     ;xs
-    mov edi,16      ;ys
+    mov edi,16		;ys
     mov ecx,tempimg ;src
     mov edx,butimg   ;dest
     call getimgproc
@@ -130,14 +156,14 @@ no_dlg:
     mov edx,logoimg  ;dest
     call getimgproc
     mov eax,0  ;x
-    mov ebx,16     ;y
-    mov esi,51     ;xs
+    mov ebx,16	       ;y
+    mov esi,51	       ;xs
     mov edi,esi      ;ys
-    mov edx,logoinfimg   ;dest
+    mov edx,logoinfimg	     ;dest
     call getimgproc
-    mov eax,51  ;x
-    mov esi,8     ;xs
-    mov edi,9      ;ys
+    mov eax,51	    ;x
+    mov esi,8	    ;xs
+    mov edi,9	     ;ys
     mov edx,upsb   ;dest
     call getimgproc
     mov eax,51+8  ;x
@@ -145,9 +171,9 @@ no_dlg:
     call getimgproc
 
     mov eax,51+16  ;x
-    mov ebx,16     ;y
-    mov esi,12     ;xs
-    mov edi,9      ;ys
+    mov ebx,16	       ;y
+    mov esi,12	       ;xs
+    mov edi,9	     ;ys
 
     mov ecx,tempimg ;src
     mov edx,hdico   ;dest
@@ -209,7 +235,7 @@ endgip:
     call read_directory
 ;    call convertation
 red:
-    call draw_window            ; at first, draw the window
+    call draw_window	    ; at first, draw the window
 
 still:
     mov eax,9
@@ -231,7 +257,7 @@ scrl:
     mov ebx,1
     int 0x40
     mov ebx,eax
-    shr eax,16       ;x
+    shr eax,16		 ;x
     and ebx,0xffff   ;y
 
     mov ebp,eax
@@ -245,7 +271,7 @@ scrl:
     sub ebp,[listy] ;76    ;up scroll
     sub ebp,[scrollbutsize]
     cmp ebp,0
-    jl  menu_test
+    jl	    menu_test
     mov [mousey],ebp
 
     push eax ebx edx
@@ -258,7 +284,7 @@ scrl:
     mov  [filelistsize],eax
     mov  ebx,eax
     cmp  ebx,[listsize]  ;filelistsize in ebx
-    ja   notusescrl
+    ja	     notusescrl
 
     mov edx,0
     mov eax,[listysize]
@@ -287,7 +313,7 @@ scrl:
     sub ebx,[filelistsize]
     cmp eax,ebx
     jnae no_cor
-    mov eax,[listsize]      ;correction for full dirs (1000 files)
+    mov eax,[listsize]		;correction for full dirs (1000 files)
     sub eax,[filelistsize]
 no_cor:
     mov [filecursor],eax
@@ -309,7 +335,7 @@ usescrl:
     sub esi,ebp
     inc esi ;correction
     cmp ebx,esi
-    ja  menu_test ;still
+    ja	    menu_test ;still
 oks:
 
     mov [flick],1
@@ -319,7 +345,7 @@ menu_test:
     cmp [pmenu_draw],1 ;if menu is show, update all
     jne still
     mov [pmenu_draw],0
-    jmp red            ;update all window
+    jmp red	     ;update all window
 
 ;this function not use in dialog when poup menu's is not used
 ;in dialog's
@@ -327,7 +353,7 @@ menu_test:
 ;===================
 ; Test keyboard
 ;===================
-key:                          ; key
+key:		  ; key
     mov  eax,2
     int  0x40
     cmp dword [focus],0
@@ -357,19 +383,19 @@ no_pgdown:
     jmp  kfad
 no_k_ent:
     cmp  ah,key_Bspace
-    je   back
+    je	     back
     cmp  ah,key_F2
-    je   viewset
+    je	     viewset
     cmp  ah,key_F3
-    je   textopen
+    je	     textopen
     cmp  ah,key_F5
-    je   copy_to_clip
+    je	     copy_to_clip
     cmp  ah,key_F6
-    je   paste_from_clip
+    je	     paste_from_clip
     cmp  ah,key_F11
-    je   edit_prompt
+    je	     edit_prompt
     cmp  ah,key_F12
-    je   update
+    je	     update
     jmp  still
 
 ; test input string
@@ -397,7 +423,7 @@ no_con_right:
 
     mov ecx,[cursor]
     cmp ecx,0
-    je  still
+    je	    still
     dec ecx
     mov  ebp,[cursor]
 lobsp:
@@ -423,7 +449,7 @@ losx:
 
     mov  ebp, [cursor]
     cmp  ebp,100
-    ja   still
+    ja	     still
 
     mov  byte [path+ebp],ah
     inc  dword [cursor]
@@ -436,12 +462,12 @@ losx:
 ;Test on mouse button
 ;-----------------------------
 
-  button:                       ; button
+  button:	  ; button
     mov eax,17
     int 0x40
 
-    cmp ah,2           ;Edit prompt line?
-    je  edit_prompt
+    cmp ah,2	       ;Edit prompt line?
+    je	    edit_prompt
 
     cmp ah,4
     jne no_filelist
@@ -451,7 +477,7 @@ mousetest:
     mov ebx,1
     int 0x40
     mov ebx,eax
-    shr eax,16       ;x
+    shr eax,16		 ;x
     and ebx,0xffff   ;y
 
     sub ebx,[listy] ;80
@@ -459,10 +485,10 @@ mousetest:
 
     mov ecx,[listx]
     cmp eax,ecx
-    jl  still
+    jl	    still
     add ecx,[listxsize]
     cmp eax,ecx
-    jg  still
+    jg	    still
 
 filexadd:
 
@@ -492,9 +518,9 @@ no_kfad:
 lll2:
     mov al,byte [path+esi]
     cmp al,byte 0 ;' '; '/'
-    je  fis2
+    je	    fis2
     cmp al,byte ' '; '/'
-    je  fis2
+    je	    fis2
     inc esi
     cmp esi,100
     jna lll2
@@ -508,10 +534,10 @@ fis2:
     inc esi
     mov ebp,8
 
-los:                              ;directory extension bug fix
+los:		  ;directory extension bug fix
     mov al,[convinfo+edi]
     cmp al,' '
-    jz  skip_name_space
+    jz	    skip_name_space
     mov [path+esi],al
     inc esi
   skip_name_space:
@@ -522,12 +548,12 @@ los:                              ;directory extension bug fix
     cmp byte [convinfo+edi],'.'
     jnz dir_name_end
     cmp byte [convinfo+edi+1],' '
-    jz  dir_name_end
+    jz	    dir_name_end
     mov ebp,4
   dir_ext_char:
     mov al,[convinfo+edi]
     cmp al,' '
-    jz  dir_name_end
+    jz	    dir_name_end
     mov [path+esi],al
     inc esi
     inc edi
@@ -556,17 +582,17 @@ los:                              ;directory extension bug fix
 ;Savetest
 savetest:
     cmp byte [dlg_type],'S'
-    je  savetest_yes
+    je	    savetest_yes
     jmp still
 savetest_yes:
     mov ecx,100
 savetestloop:
     cmp [path+ecx],byte 0
-    je  next_byte
+    je	    next_byte
     cmp [path+ecx],byte 32
-    je  next_byte
+    je	    next_byte
     cmp [path+ecx],byte '.'
-    je  openf  ;it's file
+    je	    openf  ;it's file
 ;    cmp [path+ecx],byte '/'
 ;    je  no_save  ;it's dir
 next_byte:
@@ -653,7 +679,7 @@ jpg_jpe:
     jmp run
 nojv:
     cmp eax,'.JPE'
-    je  jpg_jpe
+    je	    jpg_jpe
     cmp eax,'.GIF'
     jne nojv1
     mov ebx,gifview
@@ -664,6 +690,11 @@ nojv1:
     mov ebx,ac97wav
     jmp run
 nojv12:
+    cmp eax,'.MID'
+    jne nojv13
+    mov ebx,midamp
+    jmp run
+nojv13:
     cmp eax,'.BMP'
     jne nobv
     mov ebx,bmpview
@@ -676,13 +707,16 @@ nobv:
     jmp run
 nopngv:
 ; //// Willow
+    cmp eax,'.RTF'
+    jne nortf
+    mov ebx,rtfread
+    jmp run
+nortf:
     cmp eax,'.ASM'
     je edit
     cmp eax,'.TXT'
     je edit
     cmp eax,'.INC'
-    je edit
-    cmp eax,'.DAT'
     je edit
     jmp still
 edit:
@@ -729,16 +763,16 @@ run:
 
 no_filelist:
 
-    cmp ah,5    ;OPEN/SAVE button
-    je  kfad
+    cmp ah,5	;OPEN/SAVE button
+    je	    kfad
 
-    cmp ah,6    ;Scroll up
+    cmp ah,6	;Scroll up
     jne no_scrlup
     mov ebx,1
     jmp up
 no_scrlup:
 
-    cmp ah,7    ;Scroll down
+    cmp ah,7	;Scroll down
     jne no_scrldown
     mov ebx,1
     jmp down
@@ -768,7 +802,7 @@ xlll2:
 xfis2:
     mov al,byte [path+esi]
     cmp al,byte ' '
-    je  xaa2
+    je	    xaa2
     inc esi
     cmp esi,12*20
     jnae xfis2
@@ -779,7 +813,7 @@ xaa2:
     mul ebx
     mov edi,eax
     cmp [convinfo+edi+26],dword 'FOL '
-    je  still
+    je	    still
     mov ecx,12*20
 xlopt:
     mov al,[path+ecx]
@@ -822,7 +856,7 @@ not_cm:
     jmp still
 no_view:
 
-    cmp  ah,12        ;move back
+    cmp  ah,12	      ;move back
     jne  no_back
 back:
     mov  esi,12*20
@@ -838,7 +872,7 @@ findsl:
 fis:
     mov al,byte [path+esi]
     cmp al,byte '/'
-    je  aa
+    je	    aa
     mov [path+esi],byte 0 ;' '
     dec esi
     jnz fis
@@ -852,9 +886,9 @@ aa:
     jmp still
 
 no_back:
-    cmp  ah,13        ;string up?
+    cmp  ah,13	      ;string up?
     jne  no_up
-    mov  ebx,1        ;step
+    mov  ebx,1	      ;step
 up:
     mov  [downstop],0
     sub  [filecursor],ebx
@@ -864,18 +898,18 @@ up:
 cr_ok:
     jmp  draw_wd
 no_up:
-    cmp  ah,14       ;string down?
+    cmp  ah,14		 ;string down?
     jne  no_dn
-    mov  ebx,1       ;step
+    mov  ebx,1		 ;step
 down:
     cmp  [downstop],1
-    je   no_dn
+    je	     no_dn
     add  [filecursor],ebx
     jmp  draw_wd
 no_dn:
 
     cmp  ah,15
-    jne  no_copyclip    ;copy to clipboard
+    jne  no_copyclip	;copy to clipboard
 copy_to_clip:
     mov  ebx,param_area ;clipfilp
     mov  eax,32
@@ -892,7 +926,7 @@ wlll2:
 wfis2:
     mov al,byte [path+esi]
     cmp al,byte ' '
-    je  waa2
+    je	    waa2
     inc esi
     cmp esi,12*20
     jnae wfis2
@@ -903,7 +937,7 @@ waa2:
     mul ebx
     mov edi,eax
     cmp [convinfo+edi+26],dword 'FOL '
-    je  still
+    je	    still
     mov ecx,12*20
 wlopt:
     mov al,[path+ecx]
@@ -960,7 +994,7 @@ zlll2:
 zfis2:
     mov al,byte [destpath+esi]
     cmp al,byte ' '
-    je  zaa2
+    je	    zaa2
     inc esi
     cmp esi,100
     jnae zfis2
@@ -973,7 +1007,7 @@ zaa2:
 qlll2:
     mov al,byte [sourcepath+edi]
     cmp al,byte '.'
-    je  qfis2
+    je	    qfis2
     inc edi
     cmp edi,100
     jnae qlll2
@@ -985,7 +1019,7 @@ qfis2:
 cfname:
     mov al,[sourcepath+edi]
     cmp al,byte ' '
-    je  dar
+    je	    dar
     mov [destpath+esi],al
     inc esi
 dar:
@@ -1008,15 +1042,15 @@ nor:
 
     cmp [browser],dword 1
     jne no_outpath
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,10*65536+67             ; [x start] *65536 + [y start]
+    mov  eax,4		   ; function 4 : write text to window
+    mov  ebx,10*65536+67     ; [x start] *65536 + [y start]
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
-    mov  edx,sourcepath                  ; pointer to text beginning
+    mov  edx,sourcepath      ; pointer to text beginning
     mov  esi,100 ;12*20             ; text length
     int  0x40
-    mov  ebx,250*65536+67             ; [x start] *65536 + [y start]
+    mov  ebx,250*65536+67	; [x start] *65536 + [y start]
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
-    mov  edx,destpath                  ; pointer to text beginning
+    mov  edx,destpath		 ; pointer to text beginning
     mov  esi,100 ;12*20             ; text length
     int  0x40
 no_outpath:
@@ -1029,7 +1063,7 @@ no_outpath:
     jmp update ;still
 no_clippaste:
 
-    cmp ah,19         ;Delete from floppy
+    cmp ah,19		;Delete from floppy
 delete_file:
     jne no_delt
     cmp dword [path],'/RD/'
@@ -1056,8 +1090,8 @@ delete_file:
     jmp update
 no_delt:
 
-    cmp ah,20         ;I - Help
-    je  help_scr
+    cmp ah,20		;I - Help
+    je	    help_scr
 
     cmp ah,22
     jne no_headfile
@@ -1091,71 +1125,71 @@ no_headinfo:
     je kfad
 
     cmp ah,31
-    je  copy_to_clip    ;Copy
+    je	    copy_to_clip      ;Copy
 
     cmp ah,32
-    je  paste_from_clip ;Paste
+    je	    paste_from_clip ;Paste
 
     cmp ah,33
-    je  delete_file     ;Delte
+    je	    delete_file     ;Delte
 
     cmp ah,34
-    je  textopen        ;Edit in Tinypad
+    je	    textopen	;Edit in Tinypad
 
     cmp ah,37
-    je  exit
+    je	    exit
 
 ;VIEW MENU
-    cmp ah,40         ;Sort by name show del
+    cmp ah,40		;Sort by name show del
     jne no_sn
 ;    mov dword [viewmode],0
     and dword [viewmode],100b
     jmp update
 no_sn:
 
-    cmp ah,41         ;Sort by extension show del
+    cmp ah,41		;Sort by extension show del
     jne no_se
     and dword [viewmode],1101b
-    or  dword [viewmode],0001b
+    or	    dword [viewmode],0001b
     jmp update
 no_se:
 
-    cmp ah,42         ;Sort by size show del
+    cmp ah,42		;Sort by size show del
     jne no_ss
     and dword [viewmode],1110b
-    or  dword [viewmode],0010b
+    or	    dword [viewmode],0010b
     jmp update
 no_ss:
 
-    cmp ah,43         ;Sort by date show del
+    cmp ah,43		;Sort by date show del
     jne no_sd
-    or  dword [viewmode],0011b
+    or	    dword [viewmode],0011b
     jmp update
 no_sd:
 
-    cmp ah,44         ;Show del files
+    cmp ah,44		;Show del files
     jne no_ds
-    or  dword [viewmode],0100b
+    or	    dword [viewmode],0100b
     jmp update
 no_ds:
 
-    cmp ah,45         ;Fade del files
+    cmp ah,45		;Fade del files
     jne no_df
     and dword [viewmode],11111011b
     jmp update
 no_df:
 
 ;HELP MENU
-    cmp ah,50         ;Help?
-    je  help_scr
+    cmp ah,50		;Help?
+    je	    help_scr
 
-    cmp ah,51         ;Info?
-    je  info_scr
+    cmp ah,51		;Info?
+    je	    info_scr
 
     cmp ah,83
-    ja  no_hd_part
+    ja	    no_hd_part
     cmp ah,80
-    jb  no_hd_part
+    jb	    no_hd_part
     mov ecx,0
     sub ah,80
     inc ah
@@ -1166,18 +1200,18 @@ no_df:
 
 no_hd_part:
 
-    cmp ah,1                   ; test on exit button
-    je  exit
+    cmp ah,1	       ; test on exit button
+    je	    exit
 
     jmp still
 
 exit:
 ; //// Willow
-    mov eax,58
-    mov ebx,MRUfile
-    mov dword[ebx+8],255
-    inc dword[ebx]
-    int 0x40
+;    mov eax,58
+;    mov ebx,MRUfile
+;    mov dword[ebx+8],255
+;    inc dword[ebx]
+;    int 0x40
 ; //// Willow
     mov eax,-1
     int 0x40
@@ -1230,7 +1264,7 @@ dialogscr:
     mov ecx,cl_Black
     mov edx,ebp ;help_text
 
-outlab:         ;out labels
+outlab:     ;out labels
     mov eax,4
     mov esi,40
 helploo:
@@ -1299,25 +1333,25 @@ draw_window:
     mov  eax,[sc.work_button]
     mov  [b_color],eax
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12        ; function 12:tell os about windowdraw
+    mov  ebx,1		   ; 1, start of draw
     int  0x40
 
 ;Window
 
-    xor  eax,eax                   ; function 0 : define and draw window
+    xor  eax,eax       ; function 0 : define and draw window
 
     cmp  [browser],dword 1 ;it's browser
     jne  nob1
-    mov  ebx,140*65536+400         ; [x start] *65536 + [x size]
-    mov  ecx,160*65536+280         ; [y start] *65536 + [y size]
+    mov  ebx,140*65536+400     ; [x start] *65536 + [x size]
+    mov  ecx,160*65536+280     ; [y start] *65536 + [y size]
     jmp  isb1
 nob1:
-    mov  ebx,140*65536+320         ; [x start] *65536 + [x size]
-    mov  ecx,260*65536+240         ; [y start] *65536 + [y size]
+    mov  ebx,140*65536+320     ; [x start] *65536 + [x size]
+    mov  ecx,260*65536+240     ; [y start] *65536 + [y size]
 isb1:
 ;    mov  edx,[sc.work]             ; color of work area RRGGBB
-    or   edx,0x03ffffff;000000
+    or	     edx,0x03ffffff;000000
     int  0x40
 
 ;Get proc info
@@ -1328,7 +1362,7 @@ isb1:
 
     mov  eax,[procinfo.x_size]
     cmp  eax,66
-    jg  temp12345
+    jg	    temp12345
     ret
  temp12345:
 
@@ -1363,16 +1397,16 @@ isb9:
     cmp  [browser],dword 1 ;it's browser
     jne  nob2
 
-    mov  eax,[sc.grab_text]        ; color of text RRGGBB
-    or   eax,0x10000000
-    label 8,8,'SYSTEM X-TREE FILE BROWSER',eax
+    mov  eax,[sc.grab_text]	 ; color of text RRGGBB
+    or	     eax,0x10000000
+    glabel 8,8,'SYSTEM X-TREE FILE BROWSER',eax
 
 ;Draw buttons headers
     mov  eax,8
     mov  ebx,8*65536+(6*8-1) ;start pos x
     mov  ecx,23*65536+10      ;start pos y
     mov  edx,22;+1000000000000000000000000000000b  ;spoke butt
-    mov  edi,3                ;draw 13 button's
+    mov  edi,3		  ;draw 13 button's
     mov  esi,0x00339933
     int  0x40
     dec edi
@@ -1388,7 +1422,7 @@ nexthbut:
     mov  ebx,340*65536+5 ;start pos x
     mov  ecx,24*65536+8      ;start pos y
     mov  edx,80;+1000000000000000000000000000000b  ;spoke butt
-    mov  edi,4                ;draw 13 button's
+    mov  edi,4		  ;draw 13 button's
     mov  esi,0x00339933
     int  0x40
     dec edi
@@ -1400,10 +1434,10 @@ nextpbut:
     jnz  nextpbut
 
 ;DRAW PARTITON TEXT
-    label 341,25,'1234',cl_White;Black
+    glabel 341,25,'1234',cl_White;Black
 
 ;File STRING
-    label 8,25,'  FILE    VIEW    INFO  ',  ;cl_White ;Black
+    glabel 8,25,'  FILE    VIEW    INFO  ',  ;cl_White ;Black
 
 ;BlackLine
     mov eax,[procinfo.x_size]
@@ -1422,20 +1456,20 @@ nextpbut:
 
 ;Set logo img
     setimg 34,88,logoinfimg
-    label 20,165,'SYSTEM X-TREE',cl_Black
+    glabel 20,165,'SYSTEM X-TREE',cl_Black
     add  ebx,10
-    label ,,'FOR  MENUETOS',
+    glabel ,,'FOR  MENUETOS',
 
     add  ebx,9*65536+20
-    label ,,'welcome to',cl_Green
+    glabel ,,'welcome to',cl_Green
     add  ebx,-15*65536+10
-    label ,,'www.menuetos.org',cl_Green
+    glabel ,,'www.menuetos.org',cl_Green
 
-;    label ,,'Create by',cl_Green
+;    glabel ,,'Create by',cl_Green
 ;    add  ebx,10
-;    label ,,'   Pavlushin',
+;    glabel ,,'   Pavlushin',
 ;    add  ebx,10
-;    label ,,'       Evgeni',
+;    glabel ,,'       Evgeni',
 
 
 ;Draw head->file buttons
@@ -1444,7 +1478,7 @@ nextpbut:
     mov  ebx,8*65536+6*12 ;start pos x
     mov  ecx,35*65536+10      ;start pos y
     mov  edx,30  ;spoke butt
-    mov  edi,8                ;draw 4 button's
+    mov  edi,8		  ;draw 4 button's
     mov  esi,cl_Grey
     call menubutton
 no_drawhf:
@@ -1455,7 +1489,7 @@ no_drawhf:
     mov  ebx,(8+6*8)*65536+6*12 ;start pos x
     mov  ecx,35*65536+10      ;start pos y
     mov  edx,40  ;spoke butt
-    mov  edi,6                ;draw 4 button's
+    mov  edi,6		  ;draw 4 button's
     mov  esi,cl_Grey
     call menubutton
 no_drawhv:
@@ -1466,7 +1500,7 @@ no_drawhv:
     mov  ebx,(8+12*8)*65536+6*12 ;start pos x
     mov  ecx,35*65536+10      ;start pos y
     mov  edx,50  ;spoke butt
-    mov  edi,2                ;draw 2 button's
+    mov  edi,2		  ;draw 2 button's
     mov  esi,cl_Grey
     call menubutton
 no_drawhi:
@@ -1485,7 +1519,7 @@ nob3:
     mov  ecx,29*65536+15      ;start pos y
 isb3:
     mov  edx,8;+1000000000000000000000000000000b  ;spoke butt
-    mov  edi,13                ;draw 13 button's
+    mov  edi,13        ;draw 13 button's
     mov  esi,cl_Grey
     int  0x40
     dec edi
@@ -1522,7 +1556,7 @@ isb4:
     mov [urlxsize],eax
     mov [urlysize],12
 
-    label 20,57,"URL:",cl_Black
+    glabel 20,57,"URL:",cl_Black
 
 ;Out view mode info
     mov eax,[viewmode]
@@ -1541,9 +1575,9 @@ isb4:
     jmp isb5
 
 head_dlg: db 'OPEN FILE'
-          db 'SAVE FILE'
+      db 'SAVE FILE'
 but_dlg:  db 'OPEN'
-          db 'SAVE'
+      db 'SAVE'
 
 nob5:
 
@@ -1556,18 +1590,18 @@ nob5:
     mov [urlxsize],eax
     mov [urlysize],12
 
-    cmp byte [dlg_type],'O'     ;if byte O - is Open dialog
+    cmp byte [dlg_type],'O'    ;if byte O - is Open dialog
     jne no_openh
-    mov edx,head_dlg          ;draw in head OPEN FILE
+    mov edx,head_dlg	      ;draw in head OPEN FILE
     jmp out_laby
 no_openh:
-    cmp byte [dlg_type],'S'     ;if byte S - is Save dialog
+    cmp byte [dlg_type],'S'    ;if byte S - is Save dialog
     jne no_saveh
-    mov edx,head_dlg+9        ;draw in head SAVE FILE
+    mov edx,head_dlg+9	      ;draw in head SAVE FILE
 out_laby:
     mov ebx,8*65536+8
-    mov ecx,[sc.grab_text]        ; color of text RRGGBB
-    or  ecx,0x10000000
+    mov ecx,[sc.grab_text]    ; color of text RRGGBB
+    or	    ecx,0x10000000
     mov esi,9
     mov eax,4
     int 0x40
@@ -1598,14 +1632,14 @@ no_saveh:
     shl ebx,16
     add ebx,eax
 
-    cmp byte [dlg_type],'O'     ;if byte O - is Open dialog
+    cmp byte [dlg_type],'O'    ;if byte O - is Open dialog
     jne no_openb
-    mov edx,but_dlg          ;draw in head OPEN FILE
+    mov edx,but_dlg	   ;draw in head OPEN FILE
     jmp out_labx
 no_openb:
-    cmp byte [dlg_type],'S'     ;if byte S - is Save dialog
+    cmp byte [dlg_type],'S'    ;if byte S - is Save dialog
     jne no_saveb
-    mov edx,but_dlg+4        ;draw in head SAVE FILE
+    mov edx,but_dlg+4	       ;draw in head SAVE FILE
 out_labx:
     mov ecx,cl_White
     mov esi,4
@@ -1666,7 +1700,7 @@ draw_url:
     int 0x40
 
 ; OUT TEXT
-    mov eax,[urlxsize]  ;calculating text leight
+    mov eax,[urlxsize]	    ;calculating text leight
     sub eax,8
     mov ebx,6
     div ebx
@@ -1676,9 +1710,9 @@ draw_url:
     shl  ebx,16
     add  ebx,[urly]
     add  ebx,3*65536+2
-    mov  eax,4                     ; function 4 : write text to window
+    mov  eax,4		   ; function 4 : write text to window
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
-    mov  edx,path                  ; pointer to text beginning
+    mov  edx,path	 ; pointer to text beginning
     int  0x40
 
     cmp  [flick],2
@@ -1718,8 +1752,8 @@ no_flick_url:
 
     mov edx,0
     mov ebx,eax
-    cmp ebx,[listsize]  ;filelistsize in ebx
-    ja  notusescroll
+    cmp ebx,[listsize]	    ;filelistsize in ebx
+    ja	    notusescroll
 ;usescroll
     mov eax,[listysize]
     sub eax,[scrollbutsize]
@@ -1751,7 +1785,7 @@ notusescroll:
     mov  ebx,[listx]
     shl  ebx,16
     add  ebx,[listxsize]
-    sub  ebx,15              ;right free zone
+    sub  ebx,15      ;right free zone
     sub  ebx,[scrollsize]
     mov  ecx,[listy]
     shl  ecx,16
@@ -1775,7 +1809,7 @@ notusescroll:
     mov  ecx,[listy]
     shl  ecx,16
     add  ecx,[scrollbutsize]
-    dec  ecx     ;correction
+    dec  ecx	 ;correction
     mov  eax,8
     mov  edx,6+1000000000000000000000000000000b  ;spoke butt
     int  0x40
@@ -1799,7 +1833,7 @@ notusescroll:
     popad
 
 
-    dec  ecx     ;correction
+    dec  ecx	 ;correction
     mov  edx,7+1000000000000000000000000000000b  ;spoke butt
     mov  eax,[listysize]
     sub  eax,[scrollbutsize]
@@ -1848,7 +1882,7 @@ notusescroll:
     mov  [filelistsize],eax  ;dword 40
 
 ; OUT FILE DATA
-    mov  eax,[filecursor]           ;calc cursor position
+    mov  eax,[filecursor]     ;calc cursor position
     mov  ebx,62
     mul  ebx
 
@@ -1868,30 +1902,34 @@ nb:
     mov eax,[edx+8]
 ;Color set
     cmp  eax,dword '.TXT'  ;text's blue
-    je  itx
+    je	    itx
     cmp  eax,dword '.INC'
-    je  itx
+    je	    itx
     cmp  eax,dword '.ASM'
-    je  itx
+    je	    itx
+    cmp  eax,dword '.RTF'
+    je	    itx
     jmp nt
 itx:
     mov  ecx,0x00446666
     jmp cset
 nt:
     cmp  eax,dword '.BMP'  ;picture's pure
-    je  ipic
+    je	    ipic
     cmp  eax,dword '.JPG'
-    je  ipic
+    je	    ipic
     cmp  eax,dword '.JPE'
-    je  ipic
+    je	    ipic
     cmp  eax,dword '.GIF'
-    je  ipic
+    je	    ipic
 ; //// Willow
     cmp  eax,dword '.PNG'
-    je  ipic
+    je	ipic
 ; //// Willow
     cmp  eax,dword '.WAV'
-    je  ipic
+    je	    ipic
+    cmp  eax,dword '.MID'
+    je	    ipic
     jmp np
 ipic:
     mov  ecx,0x00226688
@@ -1929,39 +1967,49 @@ no_hdico:
     push rdico+8
     jmp out_ico
 no_rdico:
+    cmp  [edx+9],dword 'FLOP'
+    jne  no_fdico
+    push rdico+8
+    jmp out_ico
+no_fdico:
     push folico+8
     jmp out_ico
 no_folico:
     cmp  [edx+8],dword '.BMP'
-    je   is_imgico
+    je	     is_imgico
     cmp  [edx+8],dword '.JPG'
-    je   is_imgico
+    je	     is_imgico
     cmp  [edx+8],dword '.JPE'
-    je   is_imgico
+    je	     is_imgico
     cmp  [edx+8],dword '.GIF'
-    je   is_imgico
+    je	     is_imgico
 ; //// Willow
     cmp  [edx+8],dword '.PNG'
-    je   is_imgico
+    je	 is_imgico
 ; //// Willow
     cmp  [edx+8],dword '.WAV'
-    je   is_imgico
+    je	     is_imgico
+    cmp  [edx+8],dword '.MID'
+    je	     is_imgico
     jmp  no_imgico
 is_imgico:
     push imgico+8
     jmp out_ico
 no_imgico:
     cmp  [edx+8],dword '.ASM'
-    je   is_asmincico
+    je	     is_asmincico
     cmp  [edx+8],dword '.INC'
-    je   is_asmincico
+    je	     is_asmincico
     jmp  no_asmincico
 is_asmincico:
     push asmincico+8
     jmp out_ico
 no_asmincico:
+    cmp  [edx+8],dword '.RTF'
+    je	 @f
     cmp  [edx+8],dword '.TXT'
     jne  no_txtico
+ @@:
     push txtico+8
     jmp out_ico
 no_txtico:
@@ -1998,7 +2046,7 @@ noout:
 
     dec  [filelistsize]
     cmp  [filelistsize],dword 0
-    je   extloo
+    je	     extloo
 
     dec  ebp
     jnz  loo
@@ -2024,14 +2072,14 @@ extloo:
     jmp no_drawhftext
 
 file_text_label:
-    db   '    Open    '
-    db   '    Copy    '
-    db   '    Paste   '
-    db   '   Delete   '
-    db   '   Tinypad  '
-    db   '    Edit    '
-    db   '            '
-    db   '    Exit    '
+    db	     '    Open    '
+    db	     '    Copy    '
+    db	     '    Paste   '
+    db	     '   Delete   '
+    db	     '   Tinypad  '
+    db	     '    Edit    '
+    db	     '            '
+    db	     '    Exit    '
 
 no_drawhftext:
 
@@ -2049,12 +2097,12 @@ no_drawhftext:
     jmp no_drawhvtext
 
 view_text_label:
-    db   '  Name sort '
-    db   '  Ext. sort '
-    db   '  Size sort '
-    db   '  Date sort '
-    db   '  Show DEL  '
-    db   '  Fade DEL  '
+    db	     '  Name sort '
+    db	     '  Ext. sort '
+    db	     '  Size sort '
+    db	     '  Date sort '
+    db	     '  Show DEL  '
+    db	     '  Fade DEL  '
 
 no_drawhvtext:
 
@@ -2073,8 +2121,8 @@ no_drawhvtext:
     jmp no_drawhitext
 
 info_text_label:
-    db   '   Help     '
-    db   '   About    '
+    db	     '   Help     '
+    db	     '   About    '
 
 no_drawhitext:
 
@@ -2085,16 +2133,16 @@ nob8:
     jmp  still
 no_flick:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12        ; function 12:tell os about windowdraw
+    mov  ebx,2		   ; 2, end of draw
     int  0x40
 
     ret
 
 ;FILE LIST PARAMETRS
 
-listx     dd 15
-listy     dd 72
+listx	    dd 15
+listy	    dd 72
 listxsize dd 350
 listysize dd 41
 
@@ -2110,8 +2158,8 @@ usescroll     dd 1
 
 ;URL LINE PARAMETRS
 
-urlx     dd 10
-urly     dd 20
+urlx	 dd 10
+urly	 dd 20
 urlxsize dd 350
 urlysize dd 12
 
@@ -2205,7 +2253,7 @@ sortset:
 ;STEP 2 TEST ON HD OR PARTITION
     cmp [path],byte '/'
     je nstep
-    mov ecx,61+62
+    mov ecx,61+62*5
 loxhd:
     mov al,[hdimg+ecx]
     mov [convinfo+ecx],al
@@ -2216,7 +2264,53 @@ loxhd:
 nstep:
     cmp [path+3],byte '/'
     je nstep2
+    cmp [path+4],byte '/'
+    je nstep2
+    cmp [path+1],word 'RD'
+    jne nostep_RD
+    mov ecx,61
+    jmp loxpt
+nostep_RD:
+    cmp [path+1],word 'FD'
+    jne nostep_FD
     mov ecx,61+62
+    jmp loxpt
+nostep_FD:
+    cmp [path+1],dword 'HD0'
+    jne nostep_HD0
+    mov cl,[table_area+2]
+    movzx ecx,cl
+    imul ecx,62
+    dec  ecx
+    jmp loxpt
+nostep_HD0:
+    cmp [path+1],dword 'HD1'
+    jne nostep_HD1
+    mov cl,[table_area+3]
+    movzx ecx,cl
+    imul ecx,62
+    dec  ecx
+    jmp loxpt
+nostep_HD1:
+    cmp [path+1],dword 'HD2'
+    jne nostep_HD2
+    mov cl,[table_area+4]
+    movzx ecx,cl
+    imul ecx,62
+    dec  ecx
+    jmp loxpt
+nostep_HD2:
+    cmp [path+1],dword 'HD3'
+    jne nostep_HD3
+    mov cl,[table_area+5]
+    movzx ecx,cl
+    imul ecx,62
+    dec  ecx
+    jmp loxpt
+nostep_HD3:
+
+    mov ecx,61+62   ;+496
+
 loxpt:
     mov al,[ptimg+ecx]
     mov [convinfo+ecx],al
@@ -2256,18 +2350,18 @@ hd_err:
     mov dword [blocksread],ebx ; for quick resorting
 
     cmp eax,5
-    je  end_of_dir
+    je	    end_of_dir
 
 ;  It's erorr's test is poor code
 
     cmp eax,1
     jne no_inv_part
-    label 10,10,'Invalid partition or hd base',cl_Red+font_Big
+    glabel 10,10,'Invalid partition or hd base',cl_Red+font_Big
     jmp end_of_dir
 no_inv_part:
     cmp eax,3
     jne no_unk_fs
-    label 10,10,'Unknow file system',cl_Red+font_Big
+    glabel 10,10,'Unknow file system',cl_Red+font_Big
     jmp end_of_dir
 no_unk_fs:
 
@@ -2284,7 +2378,7 @@ end_of_dir:
 
     mov  edi,fileinfo+11
 
-    pushad               ; clear
+    pushad	 ; clear
     mov  al,32
     mov  ecx,58
     sub  edi,11
@@ -2292,7 +2386,7 @@ end_of_dir:
     rep  stosb
     popad
 
-    mov  cl,[esi]       ; end of entries ?
+    mov  cl,[esi]    ; end of entries ?
     cmp  cl,6
     jnz  noib0
 
@@ -2305,9 +2399,9 @@ end_of_dir:
 
     mov  cl,[esi+0]
     cmp  cl,0xe5
-    je   yesdelfil
+    je	     yesdelfil
 
-    mov  cl,[esi+11]    ; long fat32 name ?
+    mov  cl,[esi+11]	; long fat32 name ?
     cmp  cl,0xf
     jnz  noib1
 
@@ -2318,13 +2412,13 @@ end_of_dir:
 
   noib1:
 
-    mov  eax,'DAT '     ; data or .. ?
+    mov  eax,'DAT '    ; data or .. ?
 
-    mov  cl,[esi+0]     ; deleted file
+    mov  cl,[esi+0]    ; deleted file
     cmp  cl,0xe5
-    je   yesdelfil
+    je	     yesdelfil
     cmp  cl,0x0
-    je   yesdelfil
+    je	     yesdelfil
     jmp  nodelfil
    yesdelfil:
     mov  eax,'DEL '
@@ -2332,21 +2426,21 @@ end_of_dir:
 
   nodelfil:
 
-    mov  cl,[esi+11]    ; folder
+    mov  cl,[esi+11]	; folder
     and  cl,0x10
-    jz   ffile
+    jz	     ffile
     mov  eax,'FOL '
     mov  [edi+26],eax
     jmp  nosize
   ffile:
 
 ; Asko patch for v79
-    mov  cl,[esi+11]    ; fold
+    mov  cl,[esi+11]	; fold
     and  cl,0xf
-    cmp  cl,0xf         ; skip long filename
-    jz   novol
-    test cl,0x8         ; is it fold label?
-    jz   novol         ; no
+    cmp  cl,0xf     ; skip long filename
+    jz	     novol
+    test cl,0x8     ; is it fold label?
+    jz	     novol	 ; no
     mov  eax,'Fvol'
     mov  [edi+26],eax
     jmp  nosize
@@ -2354,7 +2448,7 @@ end_of_dir:
 
     mov  [edi+26],eax
 
-    pusha               ; size
+    pusha     ; size
     mov  eax,[esi+28]
     mov  esi,edi
     add  esi,37
@@ -2366,18 +2460,18 @@ end_of_dir:
     add  dl,48
     mov  [esi],dl
     test eax,eax
-    jz   zernum
+    jz	     zernum
     dec  esi
     loop newnum
   zernum:
     popa
   nosize:
 
-    pusha                    ; date
+    pusha	   ; date
     mov  [edi+17],dword '.  .'
 
     movzx eax,word [esi+24]
-    shr  eax,9         ; year
+    shr  eax,9	       ; year
     add  eax,1980
     mov  ecx,4
   newdel1:
@@ -2391,7 +2485,7 @@ end_of_dir:
     jnz  newdel1
 
     movzx eax,word [esi+24]
-    shr  eax,5    ; month
+    shr  eax,5	      ; month
     and  eax,0x0f
     mov  ecx,2
   newdel2:
@@ -2420,7 +2514,7 @@ end_of_dir:
     popa
 
 
-    pusha                    ; number
+    pusha	   ; number
     mov  eax,edx
     sub  eax,4096
     neg  eax
@@ -2429,25 +2523,25 @@ end_of_dir:
     mov  ebx,10
     div  ebx
     add  dl,48
-    mov  [edi+43],dl          ;0001
+    mov  [edi+43],dl	      ;0001
     xor  edx,edx
     div  ebx
     add  dl,48
-    mov  [edi+42],dl          ;0010
+    mov  [edi+42],dl	      ;0010
     xor  edx,edx
     div  ebx
     add  al,48
     add  dl,48
-    mov  [edi+41],dl          ;0100
+    mov  [edi+41],dl	      ;0100
     mov  [edi+40],byte 0      ;1000
     popa
 
-    mov  ecx,8          ; first 8
+    mov  ecx,8		; first 8
     cld
     rep  movsb
     mov  [edi],byte '.'
     inc  edi
-    mov  ecx,3          ; last 3
+    mov  ecx,3		; last 3
     cld
     rep  movsb
 
@@ -2464,25 +2558,25 @@ looo:
 
 ;   Delete del, eoe, f32 and another head-names
     cmp  [viewmode],3  ;0-3 no outdel
-    ja   del_out
+    ja	     del_out
     cmp  [edx+26],dword 'DEL '
-    je   nextfl
+    je	     nextfl
 del_out:
     cmp  [edx+26],dword 'DEL '
     jne  no_del
     cmp  [edx],dword 0 ;431 ;435 ;484 +10% speed
-    je   nextfl
+    je	     nextfl
 no_del:
     cmp  [edx+26],dword 'EOE '
-    je   nextfl
-    cmp  [edx+26],dword 'F32 '  ;F32 not useles
-    je   nextfl
+    je	     nextfl
+    cmp  [edx+26],dword 'F32 '	    ;F32 not useles
+    je	     nextfl
     cmp  [edx],dword '.   '
-    je   nextfl
+    je	     nextfl
     cmp  [edx],dword '..  '
-    je   nextfl
+    je	     nextfl
     cmp  [edx],dword 'FIRS'
-    je   nextfl
+    je	     nextfl
 
 ; ---------_______-------_______ --------_________-----------
 ; SORT by name and del deletet files or f32 headers from list
@@ -2498,14 +2592,14 @@ xxx:
 
 ftestname:
     cmp byte [fileinfo+11+26],'F'
-    je  F
+    je	    F
     cmp byte [fileinfo+11+26],'D'
-    je  D
+    je	    D
     jmp add_element
 D:  cmp byte [convinfo+esi+26],'D'
-    je  add_element
+    je	    add_element
     cmp byte [convinfo+esi+26],'F'
-    je  skipfile
+    je	    skipfile
     jmp add_element
 F:  cmp byte [convinfo+esi+26],'D'
     je writenow
@@ -2516,8 +2610,8 @@ F:  cmp byte [convinfo+esi+26],'D'
 add_element:
     mov al,[fileinfo+ebx+11]
     cmp al,[convinfo+esi+ebx]
-    je  equal
-    jb  writenow
+    je	    equal
+    jb	    writenow
 skipfile:
     add esi,62
     mov ebx,[start]  ;0
@@ -2526,11 +2620,11 @@ skipfile:
 equal:
     inc ebx
     cmp ebx,[x0]
-    je  writefile
+    je	    writefile
     cmp ebx,[x1]
-    je  x1p
+    je	    x1p
     cmp ebx,[x2]
-    je  x2p
+    je	    x2p
     cmp ebx,[x3]
     jae x3p
     jmp add_element
@@ -2607,30 +2701,57 @@ endgs:
 
 ; DATA AREA
 pmenu_draw dd 0  ;if poup menu is draw,update all window
-flick      dd 0  ;anti flick on ?
-drawhf     dd 0  ;draw file menu?
-drawhv     dd 0  ;draw view menu?
-drawhi     dd 0  ;draw info menu?
+flick	     dd 0  ;anti flick on ?
+drawhf	       dd 0  ;draw file menu?
+drawhv	       dd 0  ;draw view menu?
+drawhi	       dd 0  ;draw info menu?
 browser    dd 0  ;0-dialog, 1-browser
-cursor     dd 0  ;cursor in prompt line
-focus      dd 0  ;prompt edit or window?
+cursor	       dd 0  ;cursor in prompt line
+focus	     dd 0  ;prompt edit or window?
 viewmode   dd 0  ;folder sort & not del
 downstop   dd 0
 filecursor dd 0
-mousex     dd 0
-mousey     dd 0
+mousex	       dd 0
+mousey	       dd 0
 blocksread dd 0
 listsize   dd 0  ;num of files in directory
-temp       dd 0
+temp	   dd 0
 readblock  dd 1
 dlg_type   db 0 ;S-save O-open
 
-          ;01234567890123456789012345678901234567890123456789012345678912
-hdimg  db 'HD       HARDDISK         FOL                                 '
-       db 'RD       RAMDISK          FOL                                 '
+hdimg1 db 'HD0      HARDDISK         FOL                                 '
+hdimg2 db 'HD1      HARDDISK         FOL                                 '
+hdimg3 db 'HD2      HARDDISK         FOL                                 '
+hdimg4 db 'HD3      HARDDISK         FOL                                 '
+
+      ;01234567890123456789012345678901234567890123456789012345678912
+hdimg  db 'RD       RAMDISK          FOL                                 '
+       db 'FD       FLOPPYDISK       FOL                                 '
+       db '                                                              '
+       db '                                                              '
+       db '                                                              '
+       db '                                                              '
 
 ptimg  db '1        FIRST  PARTITION FOL                                 '
        db '2        SECOND PARTITION FOL                                 '
+       db '3        NEXT   PARTITION FOL                                 '
+       db '4        NEXT   PARTITION FOL                                 '
+       db '5        NEXT   PARTITION FOL                                 '
+       db '6        NEXT   PARTITION FOL                                 '
+       db '7        NEXT   PARTITION FOL                                 '
+       db '8        NEXT   PARTITION FOL                                 '
+       db '9        NEXT   PARTITION FOL                                 '
+       db '10       NEXT   PARTITION FOL                                 '
+       db '11       NEXT   PARTITION FOL                                 '
+       db '12       NEXT   PARTITION FOL                                 '
+       db '13       NEXT   PARTITION FOL                                 '
+       db '14       NEXT   PARTITION FOL                                 '
+       db '15       NEXT   PARTITION FOL                                 '
+       db '16       NEXT   PARTITION FOL                                 '
+       db '17       NEXT   PARTITION FOL                                 '
+       db '18       NEXT   PARTITION FOL                                 '
+       db '19       NEXT   PARTITION FOL                                 '
+       db '20       NEXT   PARTITION FOL                                 '
 
 modetext:
       ;0123456789012345
@@ -2643,29 +2764,31 @@ modetext:
    db 'DEL SORT SIZE  6' ;type sort
    db 'DEL SORT DATE  7'
 
-dirlen    dd   0x1
+dirlen	      dd     0x1
 b_color   dd   0x6677cc
 
 ; //// Willow
-MRUfile:
-   dd 0x0
-   dd 0x0
-   dd 0x1
-   dd path
-   dd tempzone
-   db '/RD/1/MRU.LST',0
+;MRUfile:
+;   dd 0x0
+;   dd 0x0
+;   dd 0x1
+;   dd path
+;   dd tempzone
+;   db '/RD/1/MRU.LST',0
 ; //// Willow
 
 ;Name of programs
-editor    db 'TINYPAD    '
+editor	      db 'TINYPAD    '
 bmpview   db 'MV         '
 jpgview   db 'JPEGVIEW   '
 gifview   db 'GIFVIEW    '
 ac97wav   db 'AC97WAV    '
 copyrfile db 'COPYR      '
+rtfread   db 'RTFREAD    '
 ; //// Willow
 pngview   db '@RCHER     '
 ; //// Willow
+midamp	  db 'MIDAMP     '
 
 fileinfo_start:
 dd 16
@@ -2674,30 +2797,34 @@ dd 0 ;tempzone+1000;
 dd 0
 dd tempzone ;0x10000
 open_path:
-times 256 db 0  ;run app path
+times 256 db 0	    ;run app path
 
 fileinfoblock:
-   dd 0x0       ; read
-   dd 0x0       ; first block
-   dd 0x1       ; number of blocks to read
+   dd 0x0    ; read
+   dd 0x0    ; first block
+   dd 0x1    ; number of blocks to read
 farea:
-   dd outinfo   ; ret offset
-   dd tempzone    ; work size of sytemram
+   dd outinfo	  ; ret offset
+   dd tempzone	      ; work size of sytemram
 path:
-times 256 db 0  ;path
+times 256 db 0	    ;path
+
+table_area:
+rb 10
+
 ;rb 256
 but_file:
 file 'systr12.GIF'
 butimg:
-rb 400*16*3+8   ;buttons (left pice of picture)
+rb 400*16*3+8	  ;buttons (left pice of picture)
 logoimg:
-rb 70*16*3+8    ;logo (right pice of picture)
+rb 70*16*3+8	;logo (right pice of picture)
 logoinfimg:
-rb 60*60*3+8    ;logoinfo (right pice of picture)
+rb 60*60*3+8	;logoinfo (right pice of picture)
 upsb:
-rb 8*9*3+8      ;up scroll button
+rb 8*9*3+8    ;up scroll button
 dnsb:
-rb 8*9*3+8      ;down scroll button
+rb 8*9*3+8    ;down scroll button
 
 ;ICONS RESERVE AREA
 hdico:
@@ -2719,8 +2846,8 @@ rb 12*9*3+8
 execico:
 rb 12*9*3+8
 
-tempimg:        ;reserve ram for images
-rb 400*100*3+8   ;for picture
+tempimg:    ;reserve ram for images
+rb 400*100*3+8	     ;for picture
 rb 8000
 
 gif_hash:
