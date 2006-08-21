@@ -127,6 +127,10 @@ vesa20_putimage:
 
         ; real_sx = MIN(wnd_sx-image_cx, image_sx);
         mov     ebx, [eax-twdw + WDATA.box.width] ; ebx = wnd_sx
+; \begin{diamond}[20.08.2006]
+; note that WDATA.box.width is one pixel less than real window x-size
+        inc     ebx
+; \end{diamond}[20.08.2006]
         sub     ebx, [putimg.image_cx]
         ja      @f
         add     esp, putimg.stack_data
@@ -136,13 +140,14 @@ vesa20_putimage:
         cmp     ebx, [putimg.image_sx]
         jbe     .end_x
         mov     ebx, [putimg.image_sx]
-        dec     ebx
       .end_x:
-        inc     ebx
         mov     [putimg.real_sx], ebx
 
         ; init real_sy
         mov     ebx, [eax-twdw + WDATA.box.height] ; ebx = wnd_sy
+; \begin{diamond}[20.08.2006]
+        inc     ebx
+; \end{diamond}[20.08.2006]
         sub     ebx, [putimg.image_cy]
         ja      @f
         add     esp, putimg.stack_data
@@ -152,9 +157,7 @@ vesa20_putimage:
         cmp     ebx, [putimg.image_sy]
         jbe     .end_y
         mov     ebx, [putimg.image_sy]
-        dec     ebx
       .end_y:
-        inc     ebx
         mov     [putimg.real_sy], ebx
 
         ; line increment
@@ -611,6 +614,10 @@ vesa20_drawbar:
 
         ; real_sx = MIN(wnd_sx-bar_cx, bar_sx);
         mov     ebx, [edi-twdw + WDATA.box.width] ; ebx = wnd_sx
+; \begin{diamond}[20.08.2006]
+; note that WDATA.box.width is one pixel less than real window x-size
+        inc     ebx
+; \end{diamond}[20.08.2006]
         sub     ebx, [drbar.bar_cx]
         ja      @f
   .exit:                       ;// mike.dld, 2005-01-29
@@ -629,6 +636,9 @@ vesa20_drawbar:
 
         ; real_sy = MIN(wnd_sy-bar_cy, bar_sy);
         mov     ebx, [edi-twdw + WDATA.box.height] ; ebx = wnd_sy
+; \begin{diamond}[20.08.2006]
+        inc     ebx
+; \end{diamond}
         sub     ebx, [drbar.bar_cy]
         ja      @f
         add     esp, drbar.stack_data

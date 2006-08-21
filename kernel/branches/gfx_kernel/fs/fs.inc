@@ -35,10 +35,9 @@ file_system:
 
 ; IN:
 ;
-; eax = 0  ; read file          /RamDisk/First  6   /HardDisk/First 30
+; eax = 0  ; read file          /RamDisk/First  6
 ; eax = 1  ; write file         /RamDisk/First 33   /HardDisk/First 56
-; eax = 2  ; delete file        /RamDisk/First 32   /HardDisk/First 57
-; eax = 3  ; append to a file   /RamDisk/First ??   /HardDisk/First ??
+; eax = 2  ; delete file        /RamDisk/First 32
 ; eax = 4  ; makedir
 ; eax = 5  ; rename file/directory
 ; eax = 8  ; lba read
@@ -103,10 +102,7 @@ file_system:
     jz    no_checks_for_kernel
     mov   edx,eax
     cmp   dword [eax+0],1
-    jz    .check_for_write_op
-    cmp   dword [eax+0],3
     jnz   .usual_check
-.check_for_write_op:    
     mov   ebx,[eax+12]
     add   ebx,std_application_base_address
     mov   ecx,[eax+8]
@@ -139,13 +135,6 @@ endg
     mov   eax,edx
   no_checks_for_kernel:
 
-
-    cmp   dword [eax+0],3       ; APPEND - allow write 0 bytes (truncate)
-    je    fs_read
-    cmp   dword [eax+8],0       ; read or write 0 blocks/bytes ?
-    jne   fs_read
-    and   dword [esp+36],0
-    ret
   fs_read:
 
     mov   ebx,[eax+20]          ; program wants root directory ?
@@ -601,27 +590,6 @@ hd_err_return:
     jmp   file_system_return
 
   fs_noharddisk_delete:
-
-    cmp   dword [esp+20],3      ; APPEND
-    jne   fs_noharddisk_append
-
-    mov   eax,[esp+0]           ; /dirname or /filename
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-    mov   ecx,[esp+8]           ; buffer
-    mov   ebx,[esp+12]          ; count to write
-    mov   esi,[esp+16]          ; bytes to skip over
-
-    call  file_append
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_append:
 
     cmp   dword [esp+20],4      ; MAKEDIR
     jne   fs_noharddisk_makedir

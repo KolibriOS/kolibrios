@@ -77,8 +77,8 @@ file_system_lfn:
 ; 0 : read file
 ; 1 : read folder
 ; 2 : create/rewrite file
-; 3 : write/append to file - not implemented yet
-; 4 : set end of file - not implemented yet
+; 3 : write/append to file
+; 4 : set end of file
 ; 5 : get file/directory attributes structure
 ; 6 : set file/directory attributes structure
 ; 7 : start application
@@ -348,7 +348,7 @@ fs_RamdiskServices:
         dd      fs_RamdiskReadFolder
         dd      fs_RamdiskRewrite
         dd      fs_RamdiskWrite
-        dd      fs_NotImplemented
+        dd      fs_RamdiskSetFileEnd
         dd      fs_RamdiskGetFileInfo
         dd      fs_RamdiskSetFileInfo
         dd      fs_RamdiskExecute
@@ -377,7 +377,7 @@ fs_FloppyServices:
         dd      fs_FloppyReadFolder
         dd      fs_FloppyRewrite
         dd      fs_FloppyWrite
-        dd      fs_NotImplemented
+        dd      fs_FloppySetFileEnd
         dd      fs_FloppyGetFileInfo
         dd      fs_FloppySetFileInfo
         dd      fs_FloppyExecute
@@ -448,7 +448,7 @@ fs_HdServices:
         dd      fs_HdReadFolder
         dd      fs_HdRewrite
         dd      fs_HdWrite
-        dd      fs_NotImplemented
+        dd      fs_HdSetFileEnd
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo
         dd      fs_HdExecute
@@ -484,12 +484,12 @@ fs_OnCd:
         mov     [hdpos], eax
         cmp     ecx, 0x100
         jae     .nf
-        push    cx bx
+        push    ecx ebx
         mov     cl,al
         mov     bl,[0x40001]
         shr     bl,cl
         test    bl,2
-        pop     bx cx
+        pop     ebx ecx
 
         jnz     @f
 .nf:

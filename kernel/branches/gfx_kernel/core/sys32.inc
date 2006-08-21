@@ -614,6 +614,12 @@ get_app_params:
     mov  [app_i_end],eax
     mov  eax,[0x90000+20]
     mov  [app_mem],eax
+; \begin{diamond}[20.08.2006]
+; sanity check (functions 19,58 load app_i_end bytes and that must
+; fit in allocated memory to prevent kernel faults)
+    cmp  eax,[app_i_end]
+    jb   no_01_header
+; \end{diamond}[20.08.2006]
     shr  eax,1
     sub  eax,0x10
     mov  [app_esp],eax
@@ -622,7 +628,7 @@ get_app_params:
     mov  [app_i_icon],dword 0
 
     pop  eax
-    mov  esi,1
+    clc
     ret
 
   no_00_header:
@@ -637,6 +643,10 @@ get_app_params:
     mov  [app_i_end],eax
     mov  eax,[0x90000+20]
     mov  [app_mem],eax
+; \begin{diamond}[20.08.2006]
+    cmp  eax,[app_i_end]
+    jb   no_01_header
+; \end{diamond}[20.08.2006]
     mov  eax,[0x90000+24]
     mov  [app_esp],eax
     mov  eax,[0x90000+28]
@@ -645,13 +655,13 @@ get_app_params:
     mov  [app_i_icon],eax
 
     pop  eax
-    mov  esi,1
+    clc
     ret
 
    no_01_header:
 
     pop  eax
-    mov  esi,0
+    stc
     ret
 
 

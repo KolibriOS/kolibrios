@@ -1874,11 +1874,7 @@ fs_RamdiskWrite:
 .l1:
 ; now edi points to direntry, ebx=start byte to write,
 ; ecx=number of bytes to write, edx=data pointer
-        call    get_time_for_file
-        mov     [edi+22], ax            ; last write time
-        call    get_date_for_file
-        mov     [edi+24], ax            ; last write date
-        mov     [edi+18], ax            ; last access date
+        call    fat_update_datetime
 
 ; extend file if needed
         add     ecx, ebx
@@ -1948,7 +1944,7 @@ ramdisk_extend_file.zero_size:
 
 ; extends file on ramdisk to given size, new data area is filled by 0
 ; in: edi->direntry, ecx=new size
-; out: CF=0 => OK, eax destroyed
+; out: CF=0 => OK, eax=0
 ;      CF=1 => error, eax=code (ERROR_FAT_TABLE or ERROR_DISK_FULL)
 ramdisk_extend_file:
         push    ecx
@@ -2036,7 +2032,7 @@ ramdisk_extend_file:
 .extend_done:
         mov     [edi+28], ecx
         pop     esi edx
-        clc
+        xor     eax, eax        ; CF=0
         ret
 .disk_full:
         pop     edi ecx
@@ -2044,6 +2040,120 @@ ramdisk_extend_file:
         stc
         push    ERROR_DISK_FULL
         pop     eax
+        ret
+
+fat_update_datetime:
+        call    get_time_for_file
+        mov     [edi+22], ax            ; last write time
+        call    get_date_for_file
+        mov     [edi+24], ax            ; last write date
+        mov     [edi+18], ax            ; last access date
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskSetFileEnd - set end of file on ramdisk
+;
+;  esi  points to filename
+;  ebx  points to 64-bit number = new file size
+;  ecx  ignored (reserved)
+;  edx  ignored (reserved)
+;
+;  ret eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_RamdiskSetFileEnd:
+        cmp     byte [esi], 0
+        jnz     @f
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret
+@@:
+        push    edi
+        call    rd_find_lfn
+        jnc     @f
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+.ret:
+        pop     eax
+        ret
+@@:
+; must not be directory
+        test    byte [edi+11], 10h
+        jz      @f
+        pop     edi
+        jmp     .access_denied
+@@:
+; file size must not exceed 4Gb
+        cmp     dword [ebx+4], 0
+        jz      @f
+        pop     edi
+        push    ERROR_END_OF_FILE
+        jmp     .ret
+@@:
+; set file modification date/time to current
+        call    fat_update_datetime
+        mov     eax, [ebx]
+        cmp     eax, [edi+28]
+        jb      .truncate
+        ja      .expand
+        pop     edi
+        xor     eax, eax
+        ret
+.expand:
+        push    ecx
+        mov     ecx, eax
+        call    ramdisk_extend_file
+        pop     ecx
+        pop     edi
+        ret
+.truncate:
+        mov     [edi+28], eax
+        push    ecx
+        movzx   ecx, word [edi+26]
+        test    eax, eax
+        jz      .zero_size
+; find new last sector
+@@:
+        sub     eax, 0x200
+        jbe     @f
+        movzx   ecx, word [0x280000+ecx*2]
+        jmp     @b
+@@:
+; zero data at the end of last sector
+        push    ecx
+        mov     edi, ecx
+        shl     edi, 9
+        lea     edi, [edi+0x100000+31*512+eax+0x200]
+        mov     ecx, eax
+        neg     ecx
+        xor     eax, eax
+        rep     stosb
+        pop     ecx
+; terminate FAT chain
+        lea     ecx, [0x280000+ecx+ecx]
+        push    dword [ecx]
+        mov     word [ecx], 0xFFF
+        pop     ecx
+        and     ecx, 0xFFF
+        jmp     .delete
+.zero_size:
+        and     word [edi+26], 0
+.delete:
+; delete FAT chain starting with ecx
+; mark all clusters as free
+        cmp     ecx, 0xFF8
+        jae     .deleted
+        lea     ecx, [0x280000+ecx+ecx]
+        push    dword [ecx]
+        and     word [ecx], 0
+        pop     ecx
+        and     ecx, 0xFFF
+        jmp     .delete
+.deleted:
+        pop     ecx
+        pop     edi
+        xor     eax, eax
         ret
 
 fs_RamdiskGetFileInfo:

@@ -138,8 +138,7 @@ new_start_application_floppy:
     jnz    .cleanfailed
     
     call   get_app_params        ;parse header fields
-    test   esi, esi
-    jz     .cleanfailed
+    jc     .cleanfailed
     
     mov    eax,[new_process_place]
     	inc	ecx		; -0x1E = no memory
@@ -320,8 +319,7 @@ new_start_application_fl:
     jnz    .cleanfailed
     
     call   get_app_params        ;parse header fields
-    test   esi,esi
-    jz     .cleanfailed
+    jc     .cleanfailed
     
     mov    eax,[new_process_place]
     inc    ecx		; -0x1E = no memory
@@ -1301,8 +1299,7 @@ new_start_application_hd:
     rep    movsd                 ;copy first block to 0x90000 address for get_app_params function
     call   get_app_params
 	mov	ecx, -0x1F	; not Menuet/Kolibri executable
-    test   esi,esi
-    jz     .cleanfailed
+    jc     .cleanfailed
     
     mov    eax,[new_process_place]
 	inc	ecx		; -0x1E = no memory
@@ -1536,8 +1533,12 @@ fs_execute:
         jnz     .cleanfailed
         call    get_app_params
         mov     ecx, -0x1F
-        test    esi, esi
-        jz      .cleanfailed
+        jc      .cleanfailed
+; sanity check - because we will load all file,
+; file size must be not greater than memory size
+        mov     eax, [esp+8+36]
+        cmp     [app_mem], eax
+        jb      .cleanfailed
 
         mov     eax, [new_process_place]
         inc     ecx     ; -0x1E = no memory

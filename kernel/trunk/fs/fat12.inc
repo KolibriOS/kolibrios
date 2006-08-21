@@ -49,7 +49,7 @@ floppy_free_space:
     call   read_flp_fat
     cmp    [FDC_Status],0
     jne    fdc_status_error_2
-    mov    eax,0x282000
+    mov    eax,0x282004
     xor    edi,edi
     mov    ecx,2847   ;1448000/512
 rdfs1_1:
@@ -1828,8 +1828,7 @@ fs_FloppyRewrite:
         call    dword [eax+12]  ; flush directory
         push    ecx
         push    edi
-        add     edi, 26         ; edi points to low word of cluster
-        push    edi
+        push    0
         mov     esi, edx
         jecxz   .done
         mov     ecx, 2849
@@ -1846,15 +1845,15 @@ fs_FloppyRewrite:
         lea     eax, [edi-0x282000]
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
+        xchg    edi, [esp+4]
         cmp     dword [esp], 0
         jz      .first
-        xchg    edi, [esp+4]
         stosw
-        mov     edi, [esp+4]
         jmp     @f
 .first:
         mov     [esp], eax
 @@:
+        mov     edi, [esp+4]
         inc     ecx
 ; write data
         push    ecx edi
@@ -2133,7 +2132,7 @@ floppy_extend_file.zero_size:
 
 ; extends file on floppy to given size (new data area is undefined)
 ; in: edi->direntry, ecx=new size
-; out: CF=0 => OK, eax destroyed
+; out: CF=0 => OK, eax=0
 ;      CF=1 => error, eax=code (ERROR_FAT_TABLE or ERROR_DISK_FULL)
 floppy_extend_file:
         push    ecx
@@ -2208,7 +2207,7 @@ floppy_extend_file:
 .extend_done:
         mov     [edi+28], ecx
         pop     esi edx
-        clc
+        xor     eax, eax        ; CF=0
         ret
 .disk_full:
         pop     edi ecx
@@ -2217,6 +2216,213 @@ floppy_extend_file:
         push    ERROR_DISK_FULL
         pop     eax
         ret
+
+;----------------------------------------------------------------
+;
+;  fs_FloppySetFileEnd - set end of file on floppy
+;
+;  esi  points to filename
+;  ebx  points to 64-bit number = new file size
+;  ecx  ignored (reserved)
+;  edx  ignored (reserved)
+;
+;  ret eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_FloppySetFileEnd:
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     ret11
+        cmp     byte [esi], 0
+        jnz     @f
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+        jmp     .ret
+@@:
+        push    edi
+        call    fd_find_lfn
+        jnc     @f
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+.ret:
+        pop     eax
+        jmp     .doret
+@@:
+; must not be directory
+        test    byte [edi+11], 10h
+        jz      @f
+        pop     edi
+        jmp     .access_denied
+@@:
+; file size must not exceed 4 Gb
+        cmp     dword [ebx+4], 0
+        jz      @f
+        pop     edi
+        push    ERROR_END_OF_FILE
+        jmp     .ret
+@@:
+        push    eax
+; set file modification date/time to current
+        call    fat_update_datetime
+        mov     eax, [ebx]
+        cmp     eax, [edi+28]
+        jb      .truncate
+        ja      .expand
+        pop     eax
+        pushad
+        call    save_chs_sector
+        popad
+        pop     edi
+        xor     eax, eax
+        cmp     [FDC_Status], 0
+        jz      @f
+        mov     al, 11
+@@:
+.doret:
+        mov     [fdc_irq_func], fdc_null
+        ret
+.expand:
+        push    ecx
+        push    dword [edi+28]  ; save old size
+        mov     ecx, eax
+        call    floppy_extend_file
+        push    eax     ; return code
+        jnc     .expand_ok
+        cmp     al, ERROR_DISK_FULL
+        jz      .disk_full
+        pop     eax ecx ecx edi edi
+        jmp     .doret
+.device_err:
+        pop     eax
+.device_err2:
+        pop     ecx ecx eax edi
+        push    11
+        jmp     .ret
+.disk_full:
+.expand_ok:
+; save directory & FAT
+        mov     eax, [edi+28]
+        xchg    eax, [esp+12]
+        movzx   edi, word [edi+26]
+        pusha
+        call    save_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jnz     .device_err
+        call    save_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     .device_err
+        call    SetUserInterrupts
+; now zero new data
+; edi = current cluster, [esp+12]=new size, [esp+4]=old size, [esp]=return code
+.zero_loop:
+        sub     dword [esp+4], 0x200
+        jae     .next_cluster
+        cmp     dword [esp+4], -0x200
+        jz      .noread
+        lea     eax, [edi+31]
+        pusha
+        call    read_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jnz     .err_next
+.noread:
+        mov     ecx, [esp+4]
+        neg     ecx
+        push    edi
+        mov     edi, 0xD000+0x200
+        add     edi, [esp+8]
+        xor     eax, eax
+        mov     [esp+8], eax
+        rep     stosb
+        pop     edi
+        lea     eax, [edi+31]
+        pusha
+        call    save_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jz      .next_cluster
+.err_next:
+        mov     byte [esp], 11
+.next_cluster:
+        sub     dword [esp+12], 0x200
+        jbe     .expand_done
+        movzx   edi, word [0x282000+edi*2]
+        jmp     .zero_loop
+.expand_done:
+        pop     eax ecx ecx edi edi
+        jmp     .doret
+.truncate:
+        mov     [edi+28], eax
+        push    ecx
+        movzx   ecx, word [edi+26]
+        test    eax, eax
+        jz      .zero_size
+; find new last sector
+@@:
+        sub     eax, 0x200
+        jbe     @f
+        movzx   ecx, word [0x282000+ecx*2]
+        jmp     @b
+@@:
+; we will zero data at the end of last sector - remember it
+        push    ecx
+; terminate FAT chain
+        lea     ecx, [0x282000+ecx+ecx]
+        push    dword [ecx]
+        mov     word [ecx], 0xFFF
+        pop     ecx
+        and     ecx, 0xFFF
+        jmp     .delete
+.zero_size:
+        and     word [edi+26], 0
+        push    0
+.delete:
+; delete FAT chain starting with ecx
+; mark all clusters as free
+        cmp     ecx, 0xFF8
+        jae     .deleted
+        lea     ecx, [0x282000+ecx+ecx]
+        push    dword [ecx]
+        and     word [ecx], 0
+        pop     ecx
+        and     ecx, 0xFFF
+        jmp     .delete
+.deleted:
+        mov     edi, [edi+28]
+; save directory & FAT
+        mov     eax, [esp+8]
+        pusha
+        call    save_chs_sector
+        popa
+        cmp     [FDC_Status], 0
+        jnz     .device_err2
+        call    save_flp_fat
+        cmp     [FDC_Status], 0
+        jnz     .device_err2
+; zero last sector, ignore errors
+        pop     eax
+        add     eax, 31
+        and     edi, 0x1FF
+        jz      .truncate_done
+        call    SetUserInterrupts
+        pusha
+        call    read_chs_sector
+        popa
+        add     edi, 0xD000
+        mov     ecx, 0xD000+0x200
+        sub     ecx, edi
+        push    eax
+        xor     eax, eax
+        rep     stosb
+        pop     eax
+        pusha
+        call    save_chs_sector
+        popa
+.truncate_done:
+        pop     ecx eax edi
+        xor     eax, eax
+        jmp     .doret
 
 fs_FloppyGetFileInfo:
         call    read_flp_fat

@@ -138,8 +138,7 @@ new_start_application_floppy:
     jnz    .cleanfailed
     
     call   get_app_params        ;parse header fields
-    test   esi, esi
-    jz     .cleanfailed
+    jc     .cleanfailed
     
     mov    eax,[new_process_place]
     	inc	ecx		; -0x1E = no memory
@@ -177,6 +176,7 @@ new_start_application_floppy:
     mov    edx,eax               ;read file block to current page
     mov    eax,[esp+4]           ;restore pointer to file name
     mov    ecx,8                 ;number of blocks read
+    mov    ebp,edx               ;save buffer address for .endofimage
     push   ebx
     mov    edi,[esp+16]    
 ;    cli
@@ -184,17 +184,33 @@ new_start_application_floppy:
 ;ebx=file size    
 ;    sti
     pop    ecx
+    add    ecx,8
+    test   eax,eax
+    jnz    .endloop1             ;check io errors
+    mov    eax,[app_i_end]
+    add    eax,511
+    shr    eax,9
+    cmp    ecx,eax
+    jg     .endofimage           ;we have loaded whole program
+    add    ebx,511
     shr    ebx,9
     cmp    ecx,ebx
     jg     .endloop1             ;if end of file?
     mov    ebx,ecx
-    test   eax,eax               
-    jnz    .endloop1             ;check io errors
     pop    edx
-    add    ebx,8                 ;go to next page
     add    edx,4
     jmp    .loop1
     
+.endofimage:                     ;set to zero memory at end of page
+    mov    ecx,[app_i_end]
+    and    ecx,4096-1
+    jz     .endloop1
+    lea    edi,[ebp+ecx]
+    neg    ecx
+    add    ecx,4096
+    xor    eax,eax
+    cld
+    rep    stosb
 .endloop1:
     add    esp,8+4                 ;pop linear address of page table entry and pointer to file name
     call   new_start_application_fl.add_app_parameters
@@ -303,8 +319,7 @@ new_start_application_fl:
     jnz    .cleanfailed
     
     call   get_app_params        ;parse header fields
-    test   esi,esi
-    jz     .cleanfailed
+    jc     .cleanfailed
     
     mov    eax,[new_process_place]
     inc    ecx		; -0x1E = no memory
@@ -342,23 +357,40 @@ new_start_application_fl:
     mov    edx,eax               ;read file block to current page
     mov    eax,[esp+4]           ;restore pointer to file name
     mov    ecx,8                 ;number of blocks read
+    mov    ebp,edx               ;save buffer address for .endofimage
     push   ebx
     cli
     call   fileread
 ;ebx=file size    
     call   safe_sti
     pop    ecx
+    add    ecx,8
+    test   eax,eax
+    jnz    .endloop1             ;check io errors
+    mov    eax,[app_i_end]
+    add    eax,511
+    shr    eax,9
+    cmp    ecx,eax
+    jg     .endofimage           ;we have loaded whole program
+    add    ebx,511
     shr    ebx,9
     cmp    ecx,ebx
     jg     .endloop1             ;if end of file?
     mov    ebx,ecx
-    test   eax,eax               
-    jnz    .endloop1             ;check io errors
     pop    edx
-    add    ebx,8                 ;go to next page
     add    edx,4
     jmp    .loop1
     
+.endofimage:                     ;set to zero memory at end of page
+    mov    ecx,[app_i_end]
+    and    ecx,4096-1
+    jz     .endloop1
+    lea    edi,[ebp+ecx]
+    neg    ecx
+    add    ecx,4096
+    xor    eax,eax
+    cld
+    rep    stosb
 .endloop1:
     add    esp,8                 ;pop linear address of page table entry and pointer to file name
     call   .add_app_parameters
@@ -1267,8 +1299,7 @@ new_start_application_hd:
     rep    movsd                 ;copy first block to 0x90000 address for get_app_params function
     call   get_app_params
 	mov	ecx, -0x1F	; not Menuet/Kolibri executable
-    test   esi,esi
-    jz     .cleanfailed
+    jc     .cleanfailed
     
     mov    eax,[new_process_place]
 	inc	ecx		; -0x1E = no memory
@@ -1502,8 +1533,12 @@ fs_execute:
         jnz     .cleanfailed
         call    get_app_params
         mov     ecx, -0x1F
-        test    esi, esi
-        jz      .cleanfailed
+        jc      .cleanfailed
+; sanity check - because we will load all file,
+; file size must be not greater than memory size
+        mov     eax, [esp+8+36]
+        cmp     [app_mem], eax
+        jb      .cleanfailed
 
         mov     eax, [new_process_place]
         inc     ecx     ; -0x1E = no memory

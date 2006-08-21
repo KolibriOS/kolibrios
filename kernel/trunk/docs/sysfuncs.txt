@@ -10,8 +10,8 @@ All registers except explicitly declared in the returned value,
 ============== Function 0 - define and draw the window. ==============
 ======================================================================
 Defines an application window. Draws a frame of the window, header and
-working area. For skinned windows defines standard buttons for close
-and minimize.
+working area. For skinned windows defines standard close and minimize
+buttons.
 Parameters:
   * eax = 0 - function number
   * ebx = [coordinate on axis x]*65536 + [size on axis x]
@@ -111,7 +111,7 @@ Remarks:
       rectangle with the left upper corner (5,_skinh) and right lower
       (xsize-5,ysize-5) with color indicated in edx
       (taking a gradient into account)
-    * define two standard buttons: for close and minimize
+    * define two standard buttons: close and minimize
       (see function 8)
     * if A=1 and edi contains (nonzero) pointer to caption string,
       it is drawn in place in header defined in the skin
@@ -982,6 +982,7 @@ Remarks:
     movement of the mouse on 1 pixel is impossible and the cursor will
     jump on the value of installed speed (subsubfunction 1). The
     installed value is not inspected by the kernel code.
+    Mouse delay can be regulated through the application SETUP.
   * The subsubfunction 4 does not check the passed value. Before
     its call find out current screen resolution (with function 14)
     and check that the value of position is inside the limits of the
@@ -1824,6 +1825,8 @@ Parameters:
   * ecx = [start coordinate on axis y]*65536 +
               [end coordinate on axis y]
   * edx = 0x00RRGGBB - color
+    edx = 0x01xxxxxx - draw inversed line
+          (low 24 bits are ignored)
 Returned value:
   * function does not return value
 Remarks:
@@ -2873,7 +2876,6 @@ Existing subfunctions:
   * subfunction 0 - read file/folder
   * subfunction 1 - rewrite file
   * subfunction 2 - delete file/folder
-  * subfunction 3 - write to existing file
   * subfunction 4 - make folder
   * subfunction 5 - rename/move file/folder
   * subfunction 8 - LBA-read from device
@@ -2988,39 +2990,6 @@ Remarks:
     folder. The code working with hard disk deletes not empty folders
     correctly (i.e. recursively with all files and nested folders).
     Function 58 does not support folders on ramdisk.
-
-======================================================================
-==== Function 58, subfunction 3 - write data to the existing file. ===
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 3 = subfunction number
-  * +4: dword: starting position in the file; -1 = append to the end
-  * +8: dword: number of bytes to write
-  * +12 = +0xC: dword: pointer to data to write
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-  * ebx destroyed
-Remarks:
-  * This function is obsolete, use subfunction 3 of function 70.
-  * Ramdisk and floppies do not support this function, it is only
-    for hard disks.
-  * File must already exist (otherwise function returns 5, not found).
-    To create files use subfunction 1.
-  * If the starting position is greater than file size, the function
-    returns eax=6(EOF). If the end position is greater than file size,
-    file is extended.
-  * The code of write processing for hard disk interpretes zero
-    value of the field +8 as the instruction to truncate the file to
-    the size, given in the field +4. However the code of processing
-    58th function blocks this possibility for applications by
-    immediate return (with eax=0) in the case of zero size.
 
 ======================================================================
 ============== Function 58, subfunction 4 - make folder. =============
@@ -4100,6 +4069,7 @@ Available subfunctions:
   * subfunction 1 - read folder
   * subfunction 2 - create/rewrite file
   * subfunction 3 - write to existing file
+  * subfunction 4 - set file size
   * subfunction 5 - get attributes of file/folder
   * subfunction 6 - set attributes of file/folder
   * subfunction 7 - start application
@@ -4287,6 +4257,38 @@ Remarks:
   * If beginning and/or ending position is greater than file size
     (except for the previous case), the file is expanded to needed
     size with zero characters.
+  * The function is not supported for CD (returns error code 2).
+
+======================================================================
+============ Function 70, subfunction 4 - set end of file. ===========
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 4 = subfunction number
+  * +4: dword: low dword of new file size
+  * +8: dword: high dword of new file size (must be 0 for FAT)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: 0 (reserved)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
+    given in the general description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx destroyed
+Remarks:
+  * If the new file size is less than old one, file is truncated.
+    If the new size is greater than old one, file is expanded with
+    characters with code 0. If the new size is equal to old one,
+    the only result of call is set date/time of modification and
+    access to the current date/time.
+  * If there is not enough free space on disk for expansion, the
+    function will expand to maximum possible size and then return
+    error code 8.
+  * The function is not supported for CD (returns error code 2).
 
 ======================================================================
 ==== Function 70, subfunction 5 - get information on file/folder. ====
