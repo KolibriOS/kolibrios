@@ -571,6 +571,12 @@ if ~ BGI_LEVEL eq KERNEL
     jg   .nobold
   end if
     mov  edx,[.color]
+; \begin{diamond}[18.08.2006]
+; starting from K0530 kernel interprets flag 0x1000000 as
+; negate existing pixels colors, disregarding passed color
+; we do not want this
+    and  edx, 0xFFFFFF
+; \end{diamond}[18.08.2006]
     mov  eax,38
     int  0x40
     test ebp,BGI_BOLD

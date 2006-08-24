@@ -68,8 +68,8 @@ else
 ;    db '/hd/1/zip/test2.zip',0
 end if
  db 0
-rb 256-($-filename)
 I_END:
+rb 1024+16-($-filename)
 
 if SYS eq win
     cr_lf db 0xa,0xd

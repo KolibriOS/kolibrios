@@ -27,7 +27,8 @@
 ;79Ver Asko Vuori volume label add and "put in command line" bug fix
 ;80Ver prompt edit fatal bug deleted, antiflick when move list up/down
 ;81Ver Save Dialog bug deleted
-;600000 bytes memory!
+;82Ver Rewritten to function 70. Corrected work with scrollbar.
+;1560000 bytes memory!
 
 ;******************************************************************************
   use32
@@ -55,30 +56,21 @@ START:		    ; start of execution
 ;    int 0x40
 ; //// Willow
     mcall 18,11,1,table_area
-    mov edi,hdimg+62*2
-    cmp [table_area+2],byte 0
+    cmp [edx+2],byte 0
     je	  no_hdpartition_on_hd0
-    mov esi,hdimg1
-    mov ecx,62
-    rep movsb
+    mov [hdimg1], aHD0
  no_hdpartition_on_hd0:
-    cmp [table_area+3],byte 0
+    cmp [edx+3],byte 0
     je	  no_hdpartition_on_hd1
-    mov esi,hdimg2
-    mov ecx,62
-    rep movsb
+    mov [hdimg2], aHD1
  no_hdpartition_on_hd1:
-    cmp [table_area+4],byte 0
+    cmp [edx+4],byte 0
     je	  no_hdpartition_on_hd2
-    mov esi,hdimg3
-    mov ecx,62
-    rep movsb
+    mov [hdimg3], aHD2
  no_hdpartition_on_hd2:
-    cmp [table_area+5],byte 0
+    cmp [edx+5],byte 0
     je	  no_hdpartition_on_hd3
-    mov esi,hdimg4
-    mov ecx,62
-    rep movsb
+    mov [hdimg4], aHD3
  no_hdpartition_on_hd3:
 
     mov eax,40
@@ -87,11 +79,9 @@ START:		    ; start of execution
 
     cmp byte [param_area],0 ;test parameters line
     jne no_brow     ;it's dialog
-    mov [browser],dword 1   ;it's browser
+    mov [browser], 1   ;it's browser
+    jmp no_dlg
 no_brow:
-
-    cmp [browser],dword 1
-    je	    no_dlg
 
     mov al,byte [param_area+5]
     mov [dlg_type],al
@@ -184,53 +174,6 @@ loogetimg:
     add eax,12
     dec ebp
     jnz loogetimg
-    jmp endgip
-
-getimgproc:
-    pushad
-    mov dword [edx],esi ;xs
-    mov dword [edx+4],edi ;ys
-
-    mov ebp,eax
-    mov eax,dword [ecx] ;getx size
-    push edx
-    push ecx
-    lea ecx,[eax+2*eax]
-
-    mul ebx
-    add eax,ebp ;x
-    mov edx,ecx
-    lea eax,[eax+2*eax]  ;eax=offset on imsrc
-
-    mov ecx,esi ;xs
-    mov ebx,edi ;ys
-
-    mov ebp,esi
-
-    pop edi
-    lea esi,[eax+8+edi]
-
-    pop edi
-    add edi,8
-
-    cld
-cyc:
-    movsw
-    movsb
-    dec ecx
-    jne cyc
-    add esi,edx
-    mov ecx,ebp ;xs
-    sub esi,ecx
-    sub esi,ecx
-    sub esi,ecx
-    dec ebx
-    jne cyc
-
-    popad
-    ret
-
-endgip:
 
     call read_directory
 ;    call convertation
@@ -249,94 +192,61 @@ scrolltest:
     mov eax,37
     mov ebx,2
     int 0x40
-    cmp eax,1
+    dec eax
     jne still
 
 scrl:
     mov eax,37
     mov ebx,1
     int 0x40
-    mov ebx,eax
-    shr eax,16		 ;x
-    and ebx,0xffff   ;y
-
+        movzx   ebx, ax         ; y
+        shr     eax, 16         ; x
     mov ebp,eax
     sub ebp,[listx] ;[procinfo.x_size]
     sub ebp,[listxsize]
     add ebp,[scrollsize]
     cmp ebp,dword [scrollsize] ;8
-    ja menu_test ; still
+    jae menu_test ; still
 
-    mov ebp,ebx
-    sub ebp,[listy] ;76    ;up scroll
-    sub ebp,[scrollbutsize]
-    cmp ebp,0
-    jl	    menu_test
-    mov [mousey],ebp
-
-    push eax ebx edx
-    mov  edx,0
-    mov  eax,[listysize]
-    sub  eax,2
-    mov  ebx,dword 10
-    div  ebx
-
-    mov  [filelistsize],eax
-    mov  ebx,eax
-    cmp  ebx,[listsize]  ;filelistsize in ebx
-    ja	     notusescrl
-
-    mov edx,0
-    mov eax,[listysize]
-    sub eax,[scrollbutsize]
-    sub eax,[scrollbutsize]
-
-    shl eax,16+6
-    div dword [listsize]
-    mul ebx
-    shr eax,16+6
-
-    mov ebp,eax    ; in ebp ysize of scroll
-
-    mov edx,0
-    mov eax,[listsize]
-
-    mov ebx,[listysize]
-    sub ebx,[scrollbutsize]
-    sub ebx,[scrollbutsize]
-    shl eax,16
-    div ebx ;dword [listsize]
-    mul [mousey]
-    shr eax,16
-
-    mov ebx,[listsize]
-    sub ebx,[filelistsize]
-    cmp eax,ebx
-    jnae no_cor
-    mov eax,[listsize]		;correction for full dirs (1000 files)
-    sub eax,[filelistsize]
-no_cor:
-    mov [filecursor],eax
-
-    jmp  usescrl
+        lea     ebp, [ebx-scrollbutsize]
+        sub     ebp, [listy]    ; up scroll
+        jl      menu_test
+        mov     ecx, [listysize]
+        sub     ecx, 2*scrollbutsize
+        mov     eax, [scroll_height]
+        cmp     ebp, ecx
+        jge     menu_test
+        sub     ecx, eax
+        shr     eax, 1
+        sub     ebp, eax
+        jge     @f
+        xor     ebp, ebp
+@@:
+        cmp     ebp, ecx
+        jl      @f
+        mov     ebp, ecx
+@@:
+        xor     edx, edx
+        mov     eax, [listysize]
+        sub     eax, 2
+        mov     ebx, 10
+        div     ebx
+        mov     ebx, eax
+        cmp     ebx, [listsize]
+        jae     notusescrl
+        mov     eax, [listsize]
+        sub     eax, ebx
+        mul     ebp
+        div     ecx
+        cmp     eax, [filecursor]
+        jz      still
+        mov     [filecursor], eax
+        jmp     usescrl
 notusescrl:
+        cmp     [filecursor], 0
+        jz      still
     mov [filecursor],0 ;ebp
 usescrl:
-
-    pop  edx ebx eax
-
-    mov esi,[listy];[procinfo.y_size]
-    add esi,[listysize]
-    sub esi,[scrollbutsize]
-
-    cmp ebx,esi
-    jna oks ;menu_test ;still
-
-    sub esi,ebp
-    inc esi ;correction
-    cmp ebx,esi
-    ja	    menu_test ;still
-oks:
 
     mov [flick],1
     jmp anti_flick ;red
@@ -379,9 +289,7 @@ no_pgup:
     jmp  down
 no_pgdown:
     cmp  ah,key_Enter
-    jne  no_k_ent
-    jmp  kfad
-no_k_ent:
+    je   kfad
     cmp  ah,key_Bspace
     je	     back
     cmp  ah,key_F2
@@ -404,7 +312,7 @@ con_edit:
     jne  no_con_ent
     not  [focus]
     jmp  savetest
-    jmp  update
+;    jmp  update
 no_con_ent:
     cmp  ah,key_Left
     jne  no_con_left
@@ -421,16 +329,14 @@ no_con_right:
     cmp  ah,key_Bspace
     jne  no_con_bspace
 
-    mov ecx,[cursor]
-    cmp ecx,0
-    je	    still
-    dec ecx
-    mov  ebp,[cursor]
+        mov     ebp, [cursor]
+        test    ebp, ebp
+        jz      still
 lobsp:
     mov  bl,byte [path+ebp]
     mov  byte [path+ebp-1],bl
     inc  ebp
-    cmp  ebp,100
+    cmp  ebp,1024
     jne  lobsp
     dec  [cursor]
     mov  [flick],2
@@ -439,17 +345,17 @@ no_con_bspace:
 
     mov  ecx,[cursor]
     dec  ecx
-    mov  ebp,100 ;[cursor]
+    mov  ebp,1022
+        cmp     byte [path+ebp], 0
+        jnz     still
 losx:
+        cmp     ebp, ecx
+        jbe     @f
     mov  bl,byte [path+ebp]
     mov  byte [path+ebp+1],bl
     dec  ebp
-    cmp  ebp,ecx ;100
-    jne  losx
-
-    mov  ebp, [cursor]
-    cmp  ebp,100
-    ja	     still
+    jmp  losx
+@@:
 
     mov  byte [path+ebp],ah
     inc  dword [cursor]
@@ -504,133 +410,104 @@ file_add:
 kfad:
     mov eax,[filecursor]
 no_kfad:
-    mov ebx,62
+    mov ebx,27
     mul ebx
-    mov ebp,eax
+    lea ebp,[convinfo+eax]
+    mov esi,[ebp]
+    cmp esi,-1
+    jz  still
 
     mov edi,paramtest ;clear param string
-    mov ecx,256
-    mov al,0
-    rep stosb
+    mov ecx,1024/4
+    xor eax,eax
+    rep stosd
 
-
-    mov  esi,0
-lll2:
-    mov al,byte [path+esi]
-    cmp al,byte 0 ;' '; '/'
-    je	    fis2
-    cmp al,byte ' '; '/'
-    je	    fis2
-    inc esi
-    cmp esi,100
-    jna lll2
-    jmp fis2
-
-fis2:
-    mov edi,ebp
-    cmp [convinfo+edi+26],dword 'FOL '
-    jne openf
-    mov [path+esi],byte '/'
-    inc esi
-    mov ebp,8
-
-los:		  ;directory extension bug fix
-    mov al,[convinfo+edi]
-    cmp al,' '
-    jz	    skip_name_space
-    mov [path+esi],al
-    inc esi
-  skip_name_space:
-    inc edi
-    dec ebp
-    jnz los
-
-    cmp byte [convinfo+edi],'.'
-    jnz dir_name_end
-    cmp byte [convinfo+edi+1],' '
-    jz	    dir_name_end
-    mov ebp,4
-  dir_ext_char:
-    mov al,[convinfo+edi]
-    cmp al,' '
-    jz	    dir_name_end
-    mov [path+esi],al
-    inc esi
-    inc edi
-    dec ebp
-    jnz dir_ext_char
-  dir_name_end:
+        mov     edi, path
+        mov     ecx, 1024
+        repnz   scasb
+        dec     edi
+        cmp     [ebp+15], dword 'FOL '
+        jnz     openf
+; open directory - append its name to path
+        cmp     ecx, 2
+        jb      still
+        push    edi
+        mov     al, '/'
+        stosb
+        dec     ecx
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jz      @f
+        dec     ecx
+        jnz     @b
+; name is too long - do not do anything
+        pop     edi
+        xor     eax, eax
+        mov     ecx, path+1024
+        sub     ecx, edi
+        rep     stosb
+        jmp     still
+@@:
+        pop     edi
+; name appended, now read new directory
     mov [filecursor],0
-
-;los:
-;    mov al,[convinfo+edi]
-;    mov [path+esi],al
-;    inc esi
-;    inc edi
-;    dec ebp
-;    jnz los
-;    mov [filecursor],0
-;    cmp byte [dlg_type],'S'
-;    je  savetest
-;no_save:
 
     call read_directory
 ;;    call convertation
     call draw_window
-;    jmp still
+    jmp still
 
 ;Savetest
 savetest:
     cmp byte [dlg_type],'S'
-    je	    savetest_yes
-    jmp still
-savetest_yes:
-    mov ecx,100
-savetestloop:
-    cmp [path+ecx],byte 0
-    je	    next_byte
-    cmp [path+ecx],byte 32
-    je	    next_byte
-    cmp [path+ecx],byte '.'
-    je	    openf  ;it's file
-;    cmp [path+ecx],byte '/'
-;    je  no_save  ;it's dir
-next_byte:
-    dec ecx
-    jnz savetestloop
-    jmp still
+    jne still
+; always force open file - this is better
+; because there exists files without extension and folders with extension
+        jmp     openf
+;    mov ecx,100
+;savetestloop:
+;    cmp [path+ecx],byte 0
+;    je	    next_byte
+;    cmp [path+ecx],byte 32
+;    je	    next_byte
+;    cmp [path+ecx],byte '.'
+;    je	    openf  ;it's file
+;;    cmp [path+ecx],byte '/'
+;;    je  no_save  ;it's dir
+;next_byte:
+;    dec ecx
+;    jnz savetestloop
+;    jmp still
 
 ;Open/Run file
 
 openf:
-    mov ecx,100
-lopt:
-    mov al,[path+ecx]
-    mov [paramtest+ecx],al
-    dec ecx
-    jns lopt
-
-;    mov ebp,100
-;loow:
-;    cmp [paramtest+ebp],byte '.'
-;    je  file_set
-;    dec ebp
-;    jnz loow   ;is file set not file add
+        push    esi edi
+        mov     esi, path
+        mov     edi, paramtest
+        mov     ecx, 1024/4
+        rep     movsd
+        pop     edi esi
+        add     edi, paramtest-path
 
     cmp dword [focus],0 ;if prompt line with focus no add file name from frame
     jne file_set
 
-    mov [paramtest+esi],byte '/'
-    inc esi
-    mov ebp,8+4
-    mov edx,edi
-losf:
-    mov al,[convinfo+edi]
-    mov [paramtest+esi],al
-    inc esi
-    inc edi
-    dec ebp
-    jnz losf
+        cmp     edi, paramtest+1022
+        jae     still
+        mov     al, '/'
+        stosb
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jz      file_set
+        cmp     edi, paramtest+1024
+        jb      @b
+        jmp     still
+
 file_set:
 
     cmp [browser],0
@@ -655,7 +532,7 @@ file_set:
     mov eax,60
     mov ebx,2
     mov edx,paramtest
-    mov esi,100
+    mov esi,1024
     int 0x40
 
     jmp exit
@@ -665,101 +542,79 @@ is_brow:
 ;    cmp [convinfo+edi+26],dword 'Fvol'
 ;    je  edit
 
-    mov eax,dword [convinfo+edx+8]
-    cmp eax,'.   '
-    jne noexecute
-    mov ebx,0
-    jmp execute
-noexecute:
-
-    cmp eax,'.JPG'
-    jne nojv
-jpg_jpe:
-    mov ebx,jpgview
-    jmp run
-nojv:
-    cmp eax,'.JPE'
-    je	    jpg_jpe
-    cmp eax,'.GIF'
-    jne nojv1
-    mov ebx,gifview
-    jmp run
-nojv1:
-    cmp eax,'.WAV'
-    jne nojv12
-    mov ebx,ac97wav
-    jmp run
-nojv12:
-    cmp eax,'.MID'
-    jne nojv13
-    mov ebx,midamp
-    jmp run
-nojv13:
-    cmp eax,'.BMP'
-    jne nobv
-    mov ebx,bmpview
-    jmp run
-nobv:
+; find extension
+        mov     eax, paramtest+1023
+@@:
+        dec     eax
+        cmp     byte [eax+1], 0
+        jz      @b
+@@:
+        cmp     byte [eax], '/'
+        jz      .noext
+        cmp     byte [eax], '.'
+        jz      .ext
+        dec     eax
+        cmp     eax, paramtest
+        jae     @b
+.noext:
+; file has no extension
+;        xor     ebx, ebx
+        jmp     execute
+.ext:
+        inc     eax
+; eax points to extension
+        cmp     byte [eax], 0
+        jz      .noext
+        mov     ecx, dword [eax]
+        and     ecx, not 0x20202020
+        mov     ebx, jpgview
+        cmp     ecx, 'JPG'
+        jz      run
+        cmp     ecx, 'JPEG'     ; note that it will select also *.JPEG*
+        jz      run
+        mov     ebx, gifview
+        cmp     ecx, 'GIF'
+        jz      run
+        mov     ebx, ac97wav
+        cmp     ecx, 'WAV'
+        jz      run
+        mov     ebx, midamp
+        cmp     ecx, 'MID'
+        jz      run
+        mov     ebx, bmpview
+        cmp     ecx, 'BMP'
+        jz      run
 ; //// Willow
-    cmp eax,'.PNG'
-    jne nopngv
-    mov ebx,pngview
-    jmp run
-nopngv:
+        mov     ebx, pngview
+        cmp     ecx, 'PNG'
+        jz      run
 ; //// Willow
-    cmp eax,'.RTF'
-    jne nortf
-    mov ebx,rtfread
-    jmp run
-nortf:
-    cmp eax,'.ASM'
-    je edit
-    cmp eax,'.TXT'
-    je edit
-    cmp eax,'.INC'
-    je edit
-    jmp still
-edit:
-    mov ebx,editor
-    jmp run
+        mov     ebx, rtfread
+        cmp     ecx, 'RTF'
+        jz      run
+        mov     ebx, editor
+        cmp     ecx, 'ASM'
+        jz      run
+        cmp     ecx, 'TXT'
+        jz      run
+        cmp     ecx, 'INC'
+        jz      run
+        jmp     still
 
 execute:
-    mov ecx,0 ;200
-loexe:
-    mov al,[paramtest+ecx]
-;    cmp al,0
-;    je setzr
-;    cmp al,' '
-;    je setzr
-;    je  badl
-    cmp al,'.'
-    je setzr
-;    je  badl
-;    jmp okl
-;badl:
-;    mov al,0
-okl:
-    mov [open_path+ecx],al
-    inc ecx
-    cmp ecx,200
-    jnae loexe
-
-setzr:
-;    add ecx,3
-;    mov al,0
-    mov [open_path+ecx],byte 0 ;al
-
-    mov eax,58
-    mov ebx,fileinfo_start
-    int 0x40
-
-    jmp still
+        mov     ebx, fileinfo_start
+        and     dword [ebx+8], 0                ; no parameters
+        mov     dword [ebx+21], paramtest       ; program name
+.do:
+        mov     eax, 70
+        int     0x40
+        jmp     still
 
 run:
-    mov ecx,paramtest
-    mov eax,19
-    int 0x40
-    jmp still
+        mov     [fileinfo_name], ebx            ; program name
+        mov     ebx, fileinfo_start
+        mov     dword [ebx+8], paramtest        ; parameters
+        jmp     execute.do
 
 no_filelist:
 
@@ -790,65 +645,48 @@ no_update:
     cmp ah,9
     jne no_textopen
 textopen:
-    mov  esi,0
-xlll2:
-    mov al,byte [path+esi]
-    cmp al,byte '/'
-    jne  xfis2
-    inc esi
-    cmp esi,12*20
-    jnae xlll2
-    jmp still
-xfis2:
-    mov al,byte [path+esi]
-    cmp al,byte ' '
-    je	    xaa2
-    inc esi
-    cmp esi,12*20
-    jnae xfis2
-    jmp still
-xaa2:
-    mov eax,[filecursor]
-    mov ebx,62
-    mul ebx
-    mov edi,eax
-    cmp [convinfo+edi+26],dword 'FOL '
-    je	    still
-    mov ecx,12*20
-xlopt:
-    mov al,[path+ecx]
-    mov [paramtest+ecx],al
-    dec ecx
-    jns xlopt
-    mov [paramtest+esi],byte '/'
-    inc esi
-    mov ebp,8+4
-    mov edx,edi
-xlosf:
-    mov al,[convinfo+edi]
-    mov [paramtest+esi],al
-    inc esi
-    inc edi
-    dec ebp
-    jnz xlosf
-    mov [paramtest+esi],byte 0
-    mov ebx,editor
-    mov ecx,paramtest
-    mov eax,19
-    int 0x40
-    jmp red ;still
+        mov     eax, 27
+        mul     [filecursor]
+        cmp     dword [eax+convinfo+15], 'FOL '
+        jz      still
+        push    eax
+        mov     esi, path
+        mov     edi, paramtest
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+        mov     al, '/'
+        stosb
+        pop     eax
+        mov     esi, [eax+convinfo]
+        cmp     esi, -1
+        jz      still
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jz      @f
+        cmp     edi, paramtest+1024
+        jb      @b
+        jmp     still
+@@:
+        mov     ebx, editor
+        jmp     run
 
 no_textopen:
 
     cmp  ah,11
     jne  no_view
 viewset:
-;    not  dword [delflag]
-    inc dword [viewmode]
-    cmp dword [viewmode],8
-    jnae not_cm
-    mov [viewmode],0
-not_cm:
+        inc     [viewmode]
+        cmp     [viewmode], 4
+        jb      @f
+        mov     [viewmode], 0
+@@:
     call read_directory
 ;    call convertation
     mov [filecursor],0
@@ -859,26 +697,19 @@ no_view:
     cmp  ah,12	      ;move back
     jne  no_back
 back:
-    mov  esi,12*20
-lll:
-    mov al,byte [path+esi]
-    cmp al,byte ' '
-    jne  findsl
-    dec esi
-    jnz lll
-    jmp still
-findsl:
-    dec esi
-fis:
-    mov al,byte [path+esi]
-    cmp al,byte '/'
-    je	    aa
-    mov [path+esi],byte 0 ;' '
-    dec esi
-    jnz fis
-aa:
-    mov [path+esi],byte 0 ;' '
-
+        mov     edi, path+1024
+        mov     ecx, edi
+@@:
+        dec     edi
+        cmp     byte [edi], '/'
+        jz      @f
+        cmp     edi, path
+        ja      @b
+        jmp     still
+@@:
+        sub     ecx, edi
+        xor     eax, eax
+        rep     stosb
     mov [filecursor],0
     call read_directory
 ;    call convertation
@@ -911,183 +742,127 @@ no_dn:
     cmp  ah,15
     jne  no_copyclip	;copy to clipboard
 copy_to_clip:
-    mov  ebx,param_area ;clipfilp
-    mov  eax,32
-    int  0x40
-    mov  esi,0
-wlll2:
-    mov al,byte [path+esi]
-    cmp al,byte '/'
-    jne wfis2
-    inc esi
-    cmp esi,12*20
-    jnae wlll2
-    jmp still
-wfis2:
-    mov al,byte [path+esi]
-    cmp al,byte ' '
-    je	    waa2
-    inc esi
-    cmp esi,12*20
-    jnae wfis2
-    jmp still
-waa2:
-    mov eax,[filecursor]
-    mov ebx,62
-    mul ebx
-    mov edi,eax
-    cmp [convinfo+edi+26],dword 'FOL '
-    je	    still
-    mov ecx,12*20
-wlopt:
-    mov al,[path+ecx]
-    mov [paramtest+ecx],al
-    dec ecx
-    jns wlopt
-    mov [paramtest+esi],byte '/'
-    inc esi
-    mov ebp,8+4
-    mov edx,edi
-wlosf:
-    mov al,[convinfo+edi]
-    mov [paramtest+esi],al
-    inc esi
-    inc edi
-    dec ebp
-    jnz wlosf
-    mov [paramtest+esi],byte 0
-    mov ebx,param_area ;clipfile
-    mov ecx,paramtest
-    mov edx,100
-    mov esi,0
-    mov eax,33
-    int 0x40
-    jmp still
+        mov     eax, 27
+        mul     [filecursor]
+        cmp     dword [convinfo+eax+15], 'FOL '
+        jz      still
+        push    eax
+        mov     esi, path
+        mov     edi, paramtest
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+        pop     eax
+        mov     esi, [convinfo+eax]
+        cmp     esi, -1
+        jz      still
+        mov     al, '/'
+        stosb
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jz      @f
+        cmp     edi, paramtest+1024
+        jb      @b
+        jmp     still
+@@:
+        sub     edi, paramtest+1
+        mov     ebx, clipfile_info
+        mov     byte [ebx], 2
+        mov     [ebx+12], edi
+        mov     eax, 70
+        int     0x40
+        jmp     still
 no_copyclip:
 
     cmp ah,16
     jne no_clippaste
 paste_from_clip:
-    mov ebx,param_area ;clipfile
-    mov ecx,0
-    mov edx,-1
-    mov esi,sourcepath
-    mov eax,6
-    int 0x40
-
-    mov ecx,99
-cdestp:
-    mov al,[path+ecx]
-    mov [destpath+ecx],al
-    dec ecx
-    jns cdestp
-
-    mov esi,0
-zlll2:
-    mov al,byte [destpath+esi]
-    cmp al,byte '/'
-    jne zfis2
-    inc esi
-    cmp esi,100
-    jnae zlll2
-    jmp still
-zfis2:
-    mov al,byte [destpath+esi]
-    cmp al,byte ' '
-    je	    zaa2
-    inc esi
-    cmp esi,100
-    jnae zfis2
-    jmp still
-zaa2:
-    mov byte [destpath+esi],'/'
-    inc esi
-
-    mov edi,0
-qlll2:
-    mov al,byte [sourcepath+edi]
-    cmp al,byte '.'
-    je	    qfis2
-    inc edi
-    cmp edi,100
-    jnae qlll2
-    jmp still
-qfis2:
-    sub edi,8  ;.-8=start of file name
-
-    mov ecx,11 ;11 sybols
-cfname:
-    mov al,[sourcepath+edi]
-    cmp al,byte ' '
-    je	    dar
-    mov [destpath+esi],al
-    inc esi
-dar:
-    inc edi
-    dec ecx
-    jns cfname
-
-;    mov [destpath+esi],byte 0
-
-    mov ecx,199
-cdestjp:
-    mov al,[sourcepath+ecx]
-    cmp al,byte 0
-    jne nor
-    mov al,byte 32
-nor:
-    mov [sourcepath+ecx],al
-    dec ecx
-    jns cdestjp
-
-    cmp [browser],dword 1
+        mov     ebx, clipfile_info
+        mov     byte [ebx], 0
+        mov     dword [ebx+12], 1023
+        mov     eax, 70
+        int     0x40
+        cmp     ebx, 0
+        jle     still
+        mov     byte [paramtest+ebx], 0
+; OS allows only 256 symbols in command line
+        cmp     ebx, 250
+        jae     still
+; we use Pascal-style strings for /RD/1/COPYR
+; source file
+        mov     edi, copyr_param
+        mov     al, bl
+        stosb
+        mov     ecx, ebx
+        mov     esi, paramtest
+        rep     movsb
+; destination path
+        inc     edi
+        mov     ebp, edi
+        mov     esi, path
+@@:
+        cmp     edi, copyr_param+255
+        jae     still
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+; destination file name
+@@:
+        dec     ebx
+        jz      still
+        cmp     byte [paramtest+ebx], '/'
+        jnz     @b
+        lea     esi, [paramtest+ebx]
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        cmp     edi, copyr_param+255
+        jae     still
+        jmp     @b
+@@:
+        mov     byte [edi], 0
+        sub     edi, ebp
+        mov     eax, edi
+        mov     [ebp-1], al
+; display
+    cmp [browser], 1
     jne no_outpath
     mov  eax,4		   ; function 4 : write text to window
     mov  ebx,10*65536+67     ; [x start] *65536 + [y start]
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
-    mov  edx,sourcepath      ; pointer to text beginning
-    mov  esi,100 ;12*20             ; text length
+        mov     edx, copyr_param+1
+        movzx   esi, byte [edx-1]
     int  0x40
     mov  ebx,250*65536+67	; [x start] *65536 + [y start]
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
-    mov  edx,destpath		 ; pointer to text beginning
-    mov  esi,100 ;12*20             ; text length
+        mov     edx, ebp
+        mov     esi, edi
     int  0x40
 no_outpath:
 
-    mov ebx,copyrfile
-    mov ecx,sourcepath
-    mov eax,19
-    int 0x40
+; run COPYR
+        mov     eax, 70
+        mov     ebx, copyr_run
+        int     0x40
     delay 50   ;wait recoed file
     jmp update ;still
 no_clippaste:
 
     cmp ah,19		;Delete from floppy
+    jne no_delt
 delete_file:
-    jne no_delt
-    cmp dword [path],'/RD/'
-    jne no_delt
-    cmp byte [path+4],'1'
-    jne no_delt
-
-    mov eax,[filecursor]
-    mov ebx,62
-    mul ebx
-    mov edi,eax
-    add edi,convinfo
-    mov ebp,edi
-    mov eax,dword [edi]
-    mov dword [paramtest],eax
-    mov eax,dword [edi+4]
-    mov dword [paramtest+4],eax
-    mov eax,dword [edi+4+4+1]
-    mov dword [paramtest+4+4],eax
-
-    mov ebx,paramtest
-    mov eax,32
-    int 0x40
-    jmp update
+; OS now do not support file delete
+        jmp     still
 no_delt:
 
     cmp ah,20		;I - Help
@@ -1140,44 +915,29 @@ no_headinfo:
     je	    exit
 
 ;VIEW MENU
-    cmp ah,40		;Sort by name show del
+    cmp ah,40		;Sort by name
     jne no_sn
-;    mov dword [viewmode],0
-    and dword [viewmode],100b
+        mov     [viewmode], 0
     jmp update
 no_sn:
 
-    cmp ah,41		;Sort by extension show del
+    cmp ah,41		;Sort by extension
     jne no_se
-    and dword [viewmode],1101b
-    or	    dword [viewmode],0001b
+        mov     [viewmode], 1
     jmp update
 no_se:
 
-    cmp ah,42		;Sort by size show del
+    cmp ah,42		;Sort by size
     jne no_ss
-    and dword [viewmode],1110b
-    or	    dword [viewmode],0010b
+        mov     [viewmode], 2
     jmp update
 no_ss:
 
-    cmp ah,43		;Sort by date show del
+    cmp ah,43		;Sort by date
     jne no_sd
-    or	    dword [viewmode],0011b
+        mov     [viewmode], 3
     jmp update
 no_sd:
-
-    cmp ah,44		;Show del files
-    jne no_ds
-    or	    dword [viewmode],0100b
-    jmp update
-no_ds:
-
-    cmp ah,45		;Fade del files
-    jne no_df
-    and dword [viewmode],11111011b
-    jmp update
-no_df:
 
 ;HELP MENU
     cmp ah,50		;Help?
@@ -1185,20 +945,6 @@ no_df:
 
     cmp ah,51		;Info?
     je	    info_scr
-
-    cmp ah,83
-    ja	    no_hd_part
-    cmp ah,80
-    jb	    no_hd_part
-    mov ecx,0
-    sub ah,80
-    inc ah
-    mov cl,ah
-    mov eax,21
-    mov ebx,8 ;7
-    int 0x40
-
-no_hd_part:
 
     cmp ah,1	       ; test on exit button
     je	    exit
@@ -1237,7 +983,7 @@ info_scr:
     jmp screen
 
 screen:
-    cmp [browser],dword 1 ;it's browser?
+    cmp [browser], 1 ;it's browser?
     jne dialogscr
 
     mov eax,[procinfo.y_size]
@@ -1278,6 +1024,44 @@ helploo:
 
     jmp still
 
+getimgproc:
+    pushad
+    mov dword [edx],esi ;xs
+    mov dword [edx+4],edi ;ys
+
+    mov ebp,eax
+    mov eax,dword [ecx] ;getx size
+    push edx
+    push ecx
+    lea ecx,[eax+2*eax]
+
+    mul ebx
+    add eax,ebp ;x
+    mov edx,ecx
+    lea eax,[eax+2*eax]  ;eax=offset on imsrc
+
+    mov ebp,esi ;xs
+    mov ebx,edi ;ys
+
+    pop edi
+    lea esi,[eax+8+edi]
+
+    pop edi
+    add edi,8
+
+    cld
+cyc:
+        push    esi
+        lea     ecx, [ebp+ebp*2]
+        rep     movsb
+        pop     esi
+    add esi,edx
+    dec ebx
+    jne cyc
+
+    popad
+    ret
+
 ;HELP TEXT
 help_text:
        ;0123456789012345678901234567890123456789
@@ -1300,10 +1084,10 @@ help_text:
 
 info_text:
     db '        ~~~~~ SYSTEM X-TREE ~~~~~       '
-    db '               INFO 81 Ver              '
+    db '               INFO 82 Ver              '
     db '                                        '
     db '        Create by Pavlushin Evgeni      '
-    db ' with ASCL libary special for Menuet OS '
+    db 'with ASCL library special for Kolibri OS'
     db ' www.deck4.narod.ru      waptap@mail.ru '
 
 
@@ -1341,7 +1125,7 @@ draw_window:
 
     xor  eax,eax       ; function 0 : define and draw window
 
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob1
     mov  ebx,140*65536+400     ; [x start] *65536 + [x size]
     mov  ecx,160*65536+280     ; [y start] *65536 + [y size]
@@ -1362,39 +1146,40 @@ isb1:
 
     mov  eax,[procinfo.x_size]
     cmp  eax,66
-    jg	    temp12345
+    jg	 @f
+.ret:
     ret
- temp12345:
+ @@:
+    cmp  [procinfo.y_size], 0x70
+    jl  .ret
 
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob9
     mov  [listx],120
-    mov  eax,[procinfo.x_size]
-    sub  eax,[listx]
-    sub  eax,7
+;    mov  eax,[procinfo.x_size]
+    sub  eax,127;[listx]+7
+    cmp  eax,10
+    jl   .ret
     mov  [listxsize],eax
     mov  [listy],73
     mov  eax,[procinfo.y_size]
-    sub  eax,[listy]
-    sub  eax,7
+    sub  eax,73+7;[listy]+7
     mov  [listysize],eax
     jmp isb9
 nob9:
     mov  [listx],10
-    mov  eax,[procinfo.x_size]
-    sub  eax,[listx]
-    sub  eax,7
+;    mov  eax,[procinfo.x_size]
+    sub  eax,17 ;[listx]+7
     mov  [listxsize],eax
     mov  [listy],54
     mov  eax,[procinfo.y_size]
-    sub  eax,[listy]
-    sub  eax,34
+    sub  eax,54+34;[listy]+34
     mov  [listysize],eax
 isb9:
 
 
 ;Draw only browser components
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob2
 
     mov  eax,[sc.grab_text]	 ; color of text RRGGBB
@@ -1417,27 +1202,8 @@ nexthbut:
     dec  edi
     jnz  nexthbut
 
-;DRAW PARTITION BUTTONS
-    mov  eax,8
-    mov  ebx,340*65536+5 ;start pos x
-    mov  ecx,24*65536+8      ;start pos y
-    mov  edx,80;+1000000000000000000000000000000b  ;spoke butt
-    mov  edi,4		  ;draw 13 button's
-    mov  esi,0x00339933
-    int  0x40
-    dec edi
-nextpbut:
-    add  ebx,6*65536
-    inc  edx
-    int  0x40
-    dec  edi
-    jnz  nextpbut
-
-;DRAW PARTITON TEXT
-    glabel 341,25,'1234',cl_White;Black
-
 ;File STRING
-    glabel 8,25,'  FILE    VIEW    INFO  ',  ;cl_White ;Black
+    glabel 8,25,'  FILE    VIEW    INFO  ',  cl_White ;Black
 
 ;BlackLine
     mov eax,[procinfo.x_size]
@@ -1458,12 +1224,12 @@ nextpbut:
     setimg 34,88,logoinfimg
     glabel 20,165,'SYSTEM X-TREE',cl_Black
     add  ebx,10
-    glabel ,,'FOR  MENUETOS',
+    glabel ,,'FOR KolibriOS',
 
     add  ebx,9*65536+20
     glabel ,,'welcome to',cl_Green
     add  ebx,-15*65536+10
-    glabel ,,'www.menuetos.org',cl_Green
+    glabel ,,'www.kolibrios.org',cl_Green
 
 ;    glabel ,,'Create by',cl_Green
 ;    add  ebx,10
@@ -1489,7 +1255,7 @@ no_drawhf:
     mov  ebx,(8+6*8)*65536+6*12 ;start pos x
     mov  ecx,35*65536+10      ;start pos y
     mov  edx,40  ;spoke butt
-    mov  edi,6		  ;draw 4 button's
+    mov  edi,4		  ;draw 4 button's
     mov  esi,cl_Grey
     call menubutton
 no_drawhv:
@@ -1509,7 +1275,7 @@ nob2:
 
 ;Draw buttons instruments
     mov  eax,8
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob3
     mov  ebx,10*65536+16+5 ;start pos x
     mov  ecx,37*65536+15      ;start pos y
@@ -1531,7 +1297,7 @@ nextbut:
     jnz  nextbut
 
 
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob4
 ;But img browser
     setimg 10,37,butimg
@@ -1546,7 +1312,7 @@ nob4:
     setimg 16,29,butimg
 isb4:
 
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob5
 
     mov [urlx],48
@@ -1559,10 +1325,8 @@ isb4:
     glabel 20,57,"URL:",cl_Black
 
 ;Out view mode info
-    mov eax,[viewmode]
-    mov ebx,16
-    mul ebx
-    mov edx,eax
+        movzx   edx, [viewmode]
+        shl     edx, 4
     mov eax,4
     mov ebx,180*65536+25
     mov ecx,cl_Black
@@ -1735,11 +1499,10 @@ no_flick_url:
     shl ebx,16
     add ebx,dword [scrollsize]
     mov ecx,[listy]
-    add ecx,[scrollbutsize]
+    add ecx,scrollbutsize
     shl ecx,16
     add ecx,[listysize]
-    sub ecx,[scrollbutsize]
-    sub ecx,[scrollbutsize]
+    sub ecx,scrollbutsize*2
     mov edx,[scrollcolor] ;0x00006600
     int 0x40
 
@@ -1750,34 +1513,47 @@ no_flick_url:
     mov  ebx,dword 10
     div  ebx
 
-    mov edx,0
     mov ebx,eax
     cmp ebx,[listsize]	    ;filelistsize in ebx
-    ja	    notusescroll
+    jae    notusescroll
 ;usescroll
-    mov eax,[listysize]
-    sub eax,[scrollbutsize]
-    sub eax,[scrollbutsize]
-    shl eax,16
-    div dword [listsize]
-    mul ebx
-    shr eax,16
-    mov esi,[mousey]
-    shl esi,16
-    add esi,eax
-
-    mov eax,13
-    mov ebx,[listx]
-    add ebx,[listxsize]
-    sub ebx,[scrollsize]
-    shl ebx,16
-    add ebx,dword [scrollsize]
-    mov ecx,[listy]
-    add ecx,[scrollbutsize]
-    shl ecx,16
-    add ecx,esi
-    mov edx,[scrollboxcol]
-    int 0x40
+; calculate scroll size
+        mov     eax, [listysize]
+        sub     eax, 2*scrollbutsize
+        push    eax
+        mul     ebx
+        div     [listsize]
+        cmp     eax, 5
+        jae     @f
+        mov     al, 5
+@@:
+        mov     [scroll_height], eax
+; calculate scroll pos
+        sub     [esp], eax
+        mov     eax, [listsize]
+        sub     eax, ebx
+        mov     ecx, eax
+        cmp     eax, [filecursor]
+        jb      @f
+        mov     eax, [filecursor]
+@@:
+        mul     dword [esp]
+        div     ecx
+        mov     [scroll_pos], eax
+        pop     ecx
+; draw
+        lea     ecx, [eax+scrollbutsize]
+        add     ecx, [listy]
+        shl     ecx, 16
+        mov     cx, word [scroll_height]
+        mov     eax, 13
+        mov     ebx, [listx]
+        add     ebx, [listxsize]
+        sub     ebx, [scrollsize]
+        shl     ebx, 16
+        mov     bx, word [scrollsize]
+        mov     edx, [scrollboxcol]
+        int     0x40
 notusescroll:
 
 
@@ -1808,8 +1584,7 @@ notusescroll:
     add  ebx,[scrollsize]
     mov  ecx,[listy]
     shl  ecx,16
-    add  ecx,[scrollbutsize]
-    dec  ecx	 ;correction
+    add  ecx,scrollbutsize-1
     mov  eax,8
     mov  edx,6+1000000000000000000000000000000b  ;spoke butt
     int  0x40
@@ -1836,7 +1611,7 @@ notusescroll:
     dec  ecx	 ;correction
     mov  edx,7+1000000000000000000000000000000b  ;spoke butt
     mov  eax,[listysize]
-    sub  eax,[scrollbutsize]
+    sub  eax,scrollbutsize
     shl  eax,16
     add  ecx,eax
 
@@ -1864,10 +1639,12 @@ notusescroll:
 
 ; Draw text in file list
 
-    mov  eax,[listxsize]
-    sub  eax,40*6  ;leight of string
-    shr  eax,1
-    add  eax,[listx]
+;    mov  eax,[listxsize]
+;    sub  eax,40*6  ;leight of string
+;    shr  eax,1
+;    add  eax,[listx]
+        mov     eax, [listx]
+        add     eax, 12+4 ; for icons
     shl  eax,16
     add  eax,[listy]
     add  eax,2
@@ -1883,7 +1660,7 @@ notusescroll:
 
 ; OUT FILE DATA
     mov  eax,[filecursor]     ;calc cursor position
-    mov  ebx,62
+    mov  ebx,27
     mul  ebx
 
 ;OUT TEXT
@@ -1893,81 +1670,133 @@ notusescroll:
     add  edx,eax
     mov  ebx,dword [filelistxy]
 loo:
+        cmp     dword [edx], -1
+        jz      noout
     mov  ecx,0x00888888        ;for another file's color white
-    cmp  [edx+26],dword 'FOL ' ;folder yellow
+    cmp  [edx+15],dword 'FOL ' ;folder yellow
     jne  nb
     mov  ecx,0x00006666
     jmp cset1
 nb:
-    mov eax,[edx+8]
+        mov     eax, [edx]
+        xor     edi, edi
+; find extension and set color
+@@:
+        inc     eax
+        cmp     byte [eax-1], 0
+        jz      @f
+        cmp     byte [eax-1], '.'
+        jnz     @b
+        mov     edi, eax
+        jmp     @b
+@@:
+        test    edi, edi
+        jz      @f
+        mov     edi, [edi]
+        and     edi, not 0x20202020     ; toupper
+@@:
 ;Color set
-    cmp  eax,dword '.TXT'  ;text's blue
-    je	    itx
-    cmp  eax,dword '.INC'
-    je	    itx
-    cmp  eax,dword '.ASM'
-    je	    itx
-    cmp  eax,dword '.RTF'
-    je	    itx
-    jmp nt
-itx:
-    mov  ecx,0x00446666
-    jmp cset
-nt:
-    cmp  eax,dword '.BMP'  ;picture's pure
-    je	    ipic
-    cmp  eax,dword '.JPG'
-    je	    ipic
-    cmp  eax,dword '.JPE'
-    je	    ipic
-    cmp  eax,dword '.GIF'
-    je	    ipic
-; //// Willow
-    cmp  eax,dword '.PNG'
-    je	ipic
-; //// Willow
-    cmp  eax,dword '.WAV'
-    je	    ipic
-    cmp  eax,dword '.MID'
-    je	    ipic
-    jmp np
-ipic:
-    mov  ecx,0x00226688
-    jmp cset
-np:
-    cmp  eax,dword '.   '  ;execute's green
-    jne  nexec
-    mov  ecx,0x00008866
-    jmp cset
-nexec:
+; text's blue
+        mov     ecx, 0x00446666
+        cmp     edi, 'TXT'
+        jz      cset
+        cmp     edi, 'INC'
+        jz      cset
+        cmp     edi, 'ASM'
+        jz      cset
+        cmp     edi, 'RTF'
+        jz      cset
+; picture's pure
+        mov     ecx, 0x00226688
+        cmp     edi, 'BMP'
+        jz      cset
+        cmp     edi, 'JPG'
+        jz      cset
+        cmp     edi, 'JPEG'
+        jz      cset
+        cmp     edi, 'GIF'
+        jz      cset
+        cmp     edi, 'PNG'
+        jz      cset
+        cmp     edi, 'WAV'
+        jz      cset
+        cmp     edi, 'MID'
+        jz      cset
+; execute's green
+        mov     ecx, 0x00008866
+        test    edi, edi
+        jz      cset
+; for another file's color white
+        mov     ecx, 0x00888888
 cset:
 
 cset1:
-    mov  esi,40 ;symbols out 62 ;32
+    push edx
+    mov  edx,[edx]
+        push    ebx edx
+        mov     eax, [listxsize]
+        sub     eax, [scrollsize]
+        sub     eax, 12+4
+        xor     edx, edx
+        mov     ebx, 6
+        div     ebx
+        pop     edx ebx
+        sub     eax, 25
+        xor     esi, esi
+@@:
+        cmp     byte [edx+esi], 0
+        jz      @f
+        inc     esi
+        cmp     esi, eax
+        jbe     @b
+        dec     esi
+@@:
+        push    eax
     mov  eax,4
-    pushad
     int  0x40
-;    popad
+        cmp     byte [edx+esi], 0
+        jz      @f
+        pushad
+        mov     edx, more_char
+        mov     eax, esi
+        imul    eax, 6*65536
+        add     ebx, eax
+        mov     esi, 1
+        mov     eax, 4
+        int     0x40
+        popad
+@@:
+        pop     eax
+    pop  edx
+    push ebx edx
+        inc     eax
+        imul    eax, 6*65536
+        add     ebx, eax
+    add  edx,4
+    mov  esi,23
+    mov  eax,4
+    int  0x40
+    pop  edx ebx
 
-;    pushad
-    cmp  [edx+26],dword 'Fvol' ;volume label
+    pushad
+    cmp  [edx+15],dword 'Fvol' ;volume label
     jne  no_volico
     push hdico+8
     jmp out_ico
 no_volico:
-    cmp  [edx+26],dword 'FOL '
+    cmp  [edx+15],dword 'FOL '
     jne  no_folico
-    cmp  [edx+9],dword 'HARD'
+    cmp  [edx+4],dword 'HARD'
     jne  no_hdico
     push hdico+8
     jmp out_ico
 no_hdico:
-    cmp  [edx+9],dword 'RAMD'
+    cmp  [edx+4],dword 'RAMD'
     jne  no_rdico
     push rdico+8
     jmp out_ico
 no_rdico:
-    cmp  [edx+9],dword 'FLOP'
+    cmp  [edx+4],dword 'FLOP'
     jne  no_fdico
     push rdico+8
     jmp out_ico
@@ -1975,55 +1804,55 @@ no_fdico:
     push folico+8
     jmp out_ico
 no_folico:
-    cmp  [edx+8],dword '.BMP'
+    cmp  edi,dword 'BMP'
     je	     is_imgico
-    cmp  [edx+8],dword '.JPG'
+    cmp  edi,dword 'JPG'
     je	     is_imgico
-    cmp  [edx+8],dword '.JPE'
+    cmp  edi,dword 'JPEG'
     je	     is_imgico
-    cmp  [edx+8],dword '.GIF'
+    cmp  edi,dword 'GIF'
     je	     is_imgico
 ; //// Willow
-    cmp  [edx+8],dword '.PNG'
+    cmp  edi,dword 'PNG'
     je	 is_imgico
 ; //// Willow
-    cmp  [edx+8],dword '.WAV'
+    cmp  edi,dword 'WAV'
     je	     is_imgico
-    cmp  [edx+8],dword '.MID'
+    cmp  edi,dword 'MID'
     je	     is_imgico
     jmp  no_imgico
 is_imgico:
     push imgico+8
     jmp out_ico
 no_imgico:
-    cmp  [edx+8],dword '.ASM'
+    cmp  edi,dword 'ASM'
     je	     is_asmincico
-    cmp  [edx+8],dword '.INC'
+    cmp  edi,dword 'INC'
     je	     is_asmincico
     jmp  no_asmincico
 is_asmincico:
     push asmincico+8
     jmp out_ico
 no_asmincico:
-    cmp  [edx+8],dword '.RTF'
+    cmp  edi,dword 'RTF'
     je	 @f
-    cmp  [edx+8],dword '.TXT'
+    cmp  edi,dword 'TXT'
     jne  no_txtico
  @@:
     push txtico+8
     jmp out_ico
 no_txtico:
-    cmp  [edx+8],dword '.   '
+    test edi,edi
     jne  no_execico
     push execico+8
     jmp out_ico
 no_execico:
-    cmp  [edx+26],dword 'DAT '
+    cmp  [edx+15],dword 'DAT '
     jne  no_datico
     push datico+8
     jmp out_ico
 no_datico:
-    cmp  [edx+26],dword 'DEL '
+    cmp  [edx+15],dword 'DEL '
     jne  no_out_ico
     push delico+8
     jmp out_ico
@@ -2042,11 +1871,10 @@ no_out_ico:
 
     add  ebx,10
 noout:
-    add  edx,62
+    add  edx,27
 
     dec  [filelistsize]
-    cmp  [filelistsize],dword 0
-    je	     extloo
+    jz	     extloo
 
     dec  ebp
     jnz  loo
@@ -2055,7 +1883,7 @@ dext:
 
 extloo:
 
-    cmp  [browser],dword 1 ;it's browser
+    cmp  [browser], 1 ;it's browser
     jne  nob8
 
 ;Draw text for head->file buttons
@@ -2086,10 +1914,10 @@ no_drawhftext:
 ;Draw text for head->view buttons
     cmp [drawhv],1
     jne  no_drawhvtext
-    drawfbox (8+6*8),35,(6*12)+1,(11*6),0x00000000
-    drawfbox (9+6*8),36,(6*12)-1,(11*6)-2,0x00ffffff
+    drawfbox (8+6*8),35,(6*12)+1,(11*4),0x00000000
+    drawfbox (9+6*8),36,(6*12)-1,(11*4)-2,0x00ffffff
 
-    mov edi,6 ;4
+    mov edi,4
     mov ebx,(9+6*8)*65536+37
     mov ecx,cl_Black
     mov edx,view_text_label
@@ -2101,8 +1929,6 @@ view_text_label:
     db	     '  Ext. sort '
     db	     '  Size sort '
     db	     '  Date sort '
-    db	     '  Show DEL  '
-    db	     '  Fade DEL  '
 
 no_drawhvtext:
 
@@ -2153,8 +1979,7 @@ listcolor     dd 0xffffff ;0xeeeeee
 scrollcolor   dd 0x778877
 scrollboxcol  dd 0x335533
 scrollbutcol  dd 0x224422
-scrollbutsize dd 9
-usescroll     dd 1
+scrollbutsize = 9
 
 ;URL LINE PARAMETRS
 
@@ -2191,76 +2016,37 @@ nextmenubut:
 
 read_directory:
 
-; STEP 0 SEt TYPE OF SORT
-
-    mov eax,[viewmode]
-;with no show del files
-    and eax,0FFFFFFFBh
-    cmp eax,0
-    jnz no_sort_by_name
-    mov [start],0
-    mov [x0],12
-    mov [x1],99
-    mov [x2],99
-    mov [x3],99
-    jmp sortset
-
-no_sort_by_name:
-    dec eax
-    jnz  no_sort_by_ext
-    mov [start],9
-    mov [x0],9
-    mov [x1],99
-    mov [x2],99
-    mov [x3],12
-    jmp sortset
-
-no_sort_by_ext:
-    dec eax
-    jnz  no_sort_by_size
-    mov [start],30
-    mov [x0],12
-    mov [x1],99
-    mov [x2],99
-    mov [x3],38
-    jmp sortset
-
-no_sort_by_size:
-    dec eax
-    mov [start],21
-    mov [x0],12
-    mov [x1],17
-    mov [x2],20
-    mov [x3],26
-    jmp sortset  ;sort by date
-
-;SORT VARILE
-start dd 0
-x0 dd 0
-x1 dd 0
-x2 dd 0
-x3 dd 0
-
-sortset:
-
 ;STEP 1 CLEAR CONVINFO
     mov  edi,convinfo
     mov  al,255
-    mov  ecx,4096*62  ;512
+    mov  ecx,4096*27
     cld
+    push edi
     rep  stosb
+    pop  edi
 
 ;STEP 2 TEST ON HD OR PARTITION
     cmp [path],byte '/'
     je nstep
-    mov ecx,61+62*5
-loxhd:
-    mov al,[hdimg+ecx]
-    mov [convinfo+ecx],al
-    dec ecx
-    jns loxhd
-    mov [listsize],0
-    ret
+; copy info on RD and FD
+        mov     esi, hdimg
+        mov     ecx, 2*27
+        rep     movsb
+; hard disks
+        mov     eax, 4
+.1:
+        mov     ecx, 27
+        cmp     dword [esi], 0
+        jz      .2
+        rep     movsb
+        jmp     .3
+.2:
+        add     esi, ecx
+.3:
+        dec     eax
+        jnz     .1
+        mov     [listsize], 0
+        ret
 nstep:
     cmp [path+3],byte '/'
     je nstep2
@@ -2268,88 +2054,66 @@ nstep:
     je nstep2
     cmp [path+1],word 'RD'
     jne nostep_RD
-    mov ecx,61
+    mov ecx,1
     jmp loxpt
 nostep_RD:
     cmp [path+1],word 'FD'
     jne nostep_FD
-    mov ecx,61+62
+    mov ecx,2
     jmp loxpt
 nostep_FD:
     cmp [path+1],dword 'HD0'
     jne nostep_HD0
-    mov cl,[table_area+2]
-    movzx ecx,cl
-    imul ecx,62
-    dec  ecx
+    movzx ecx,byte [table_area+2]
     jmp loxpt
 nostep_HD0:
     cmp [path+1],dword 'HD1'
     jne nostep_HD1
-    mov cl,[table_area+3]
-    movzx ecx,cl
-    imul ecx,62
-    dec  ecx
+    movzx ecx,byte [table_area+3]
     jmp loxpt
 nostep_HD1:
     cmp [path+1],dword 'HD2'
     jne nostep_HD2
-    mov cl,[table_area+4]
-    movzx ecx,cl
-    imul ecx,62
-    dec  ecx
+    movzx ecx,byte [table_area+4]
     jmp loxpt
 nostep_HD2:
     cmp [path+1],dword 'HD3'
     jne nostep_HD3
-    mov cl,[table_area+5]
-    movzx ecx,cl
-    imul ecx,62
-    dec  ecx
+    movzx ecx,byte [table_area+5]
     jmp loxpt
 nostep_HD3:
 
-    mov ecx,61+62   ;+496
+    mov ecx,2
 
 loxpt:
-    mov al,[ptimg+ecx]
-    mov [convinfo+ecx],al
-    dec ecx
-    jns loxpt
+        cmp     ecx, 20
+        jbe     @f
+        mov     ecx, 20
+@@:
+        mov     eax, a1
+        mov     esi, ptimg
+@@:
+        stosd
+        add     eax, 3
+        push    ecx esi
+        mov     ecx, 23
+        rep     movsb
+        pop     esi ecx
+        loop    @b
     mov [listsize],0
     ret
 nstep2:
 
-;STEP 3 CLEAR OUTINFO
-    mov  edi,outinfo ;0x14000 ;0x20000
-    xor  eax,eax
-    mov  ecx,4096*32  ;512
-    cld
-    rep  stosb
+;STEP 3 was deleted
 
 ;STEP 4 READ DATA FROM HD
-    mov  dword [farea],outinfo
-    mov  dword [readblock],0
 
 loorhd:
-    mov  eax,[readblock]
-    mov  [fileinfoblock+4],eax
-    mov  eax,58
+    mov  eax,70
     mov  ebx,fileinfoblock
     int  0x40
-    cmp  eax,0
-    jne  hd_err
-    add  dword [farea],512
-    inc  dword [readblock]
-    cmp  dword [readblock],4096/16
-    jna  loorhd
 
-hd_err:
-    mov ebx,dword [readblock]
-    shl ebx,4
-    mov dword [blocksread],ebx ; for quick resorting
-
-    cmp eax,5
+    cmp eax,6
     je	    end_of_dir
 
 ;  It's erorr's test is poor code
@@ -2361,341 +2125,281 @@ hd_err:
 no_inv_part:
     cmp eax,3
     jne no_unk_fs
-    glabel 10,10,'Unknow file system',cl_Red+font_Big
+    glabel 10,10,'Unknown file system',cl_Red+font_Big
     jmp end_of_dir
 no_unk_fs:
 
 end_of_dir:
+; -1 -> 0
+        cmp     ebx, -1
+        sbb     ebx, -1
     mov  [dirlen],ebx
 
-    ; command succesful
+    ; command successful
 
-    mov  esi,outinfo ;data_area+1024
-;    mov  edi,fileinfo+11
-    mov  edx,0 ;4096  ;16
+        mov     esi, outinfo+32
+        and     [listsize], 0
+        test    ebx, ebx
+        jz      nofiles
 
   newlineb:
+        push    ebx
 
-    mov  edi,fileinfo+11
+        mov     edi, fileinfo
+        push    edi
+        mov     al, ' '
+        mov     ecx, 27
+        rep     stosb
+        pop     edi
+        push    esi
+        add     esi, 40
+        mov     [edi], esi
+        pop     esi
 
-    pushad	 ; clear
-    mov  al,32
-    mov  ecx,58
-    sub  edi,11
-    cld
-    rep  stosb
-    popad
+        mov     eax, 'DAT '     ; data or ... ?
+        mov     cl, [esi]
+        test    cl, 0x10
+        jz      @f
+        mov     eax, 'FOL '
+        mov     [edi+15], eax
+        jmp     nosize
+@@:
+        test    cl, 8
+        jz      novol
+        mov     eax, 'Fvol'
+        mov     [edi+15], eax
+        jmp     nosize
+novol:
+        mov     [edi+15], eax
 
-    mov  cl,[esi]    ; end of entries ?
-    cmp  cl,6
-    jnz  noib0
+; size
+        mov     eax, [esi+32]
+        push    esi
+        lea     esi, [edi+26]
+        mov     ebx, 10
+        mov     ecx, 8
+newnum:
+        xor     edx, edx
+        div     ebx
+        add     dl, '0'
+        mov     [esi], dl
+        test    eax, eax
+        jz      zernum
+        dec     esi
+        loop    newnum
+zernum:
+        pop     esi
+nosize:
 
-    mov  [edi+26],dword 'EOE '
-    add  esi,32
-;    add  edi,62
-    jmp  inf
-
-  noib0:
-
-    mov  cl,[esi+0]
-    cmp  cl,0xe5
-    je	     yesdelfil
-
-    mov  cl,[esi+11]	; long fat32 name ?
-    cmp  cl,0xf
-    jnz  noib1
-
-    mov  [edi+26],dword 'F32 '
-    add  esi,32
-;    add  edi,62
-    jmp  inf
-
-  noib1:
-
-    mov  eax,'DAT '    ; data or .. ?
-
-    mov  cl,[esi+0]    ; deleted file
-    cmp  cl,0xe5
-    je	     yesdelfil
-    cmp  cl,0x0
-    je	     yesdelfil
-    jmp  nodelfil
-   yesdelfil:
-    mov  eax,'DEL '
-    jmp  ffile
-
-  nodelfil:
-
-    mov  cl,[esi+11]	; folder
-    and  cl,0x10
-    jz	     ffile
-    mov  eax,'FOL '
-    mov  [edi+26],eax
-    jmp  nosize
-  ffile:
-
-; Asko patch for v79
-    mov  cl,[esi+11]	; fold
-    and  cl,0xf
-    cmp  cl,0xf     ; skip long filename
-    jz	     novol
-    test cl,0x8     ; is it fold label?
-    jz	     novol	 ; no
-    mov  eax,'Fvol'
-    mov  [edi+26],eax
-    jmp  nosize
-  novol:
-
-    mov  [edi+26],eax
-
-    pusha     ; size
-    mov  eax,[esi+28]
-    mov  esi,edi
-    add  esi,37
-    mov  ebx,10
-    mov  ecx,8
-  newnum:
-    xor  edx,edx
-    div  ebx
-    add  dl,48
-    mov  [esi],dl
-    test eax,eax
-    jz	     zernum
-    dec  esi
-    loop newnum
-  zernum:
-    popa
-  nosize:
-
-    pusha	   ; date
-    mov  [edi+17],dword '.  .'
-
-    movzx eax,word [esi+24]
-    shr  eax,9	       ; year
-    add  eax,1980
-    mov  ecx,4
-  newdel1:
-    dec  ecx
-    xor  edx,edx
-    mov  ebx,10
-    div  ebx
-    add  edx,48
-    mov  [edi+ecx+21],dl
-    test ecx,ecx
-    jnz  newdel1
-
-    movzx eax,word [esi+24]
-    shr  eax,5	      ; month
-    and  eax,0x0f
-    mov  ecx,2
-  newdel2:
-    dec  ecx
-    xor  edx,edx
-    mov  ebx,10
-    div  ebx
-    add  edx,48
-    mov  [edi+ecx+18],dl
-    test ecx,ecx
-    jnz  newdel2
-
-    movzx eax,word [esi+24]
-    and  eax,0x1f ; day
-    mov  ecx,2
-  newdel3:
-    dec  ecx
-    xor  edx,edx
-    mov  ebx,10
-    div  ebx
-    add  edx,48
-    mov  [edi+ecx+15],dl
-    test ecx,ecx
-    jnz  newdel3
-
-    popa
-
-
-    pusha	   ; number
-    mov  eax,edx
-    sub  eax,4096
-    neg  eax
-
-    xor  edx,edx
-    mov  ebx,10
-    div  ebx
-    add  dl,48
-    mov  [edi+43],dl	      ;0001
-    xor  edx,edx
-    div  ebx
-    add  dl,48
-    mov  [edi+42],dl	      ;0010
-    xor  edx,edx
-    div  ebx
-    add  al,48
-    add  dl,48
-    mov  [edi+41],dl	      ;0100
-    mov  [edi+40],byte 0      ;1000
-    popa
-
-    mov  ecx,8		; first 8
-    cld
-    rep  movsb
-    mov  [edi],byte '.'
-    inc  edi
-    mov  ecx,3		; last 3
-    cld
-    rep  movsb
-
-    add  esi,(32-11)
-;    add  edi,(60-12+2)
-
-  inf:
-
-    pushad
+; date
+        mov     dword [edi+6], '.  .'
+; year
+        movzx   eax, word [esi+28+2]
+        mov     ecx, 4
+newdel1:
+        xor     edx, edx
+        mov     ebx, 10
+        div     ebx
+        add     edx, '0'
+        mov     [edi+ecx+9], dl
+        loop    newdel1
+; month
+        movzx   eax, byte [esi+28+1]
+        xor     edx, edx
+        div     ebx
+        add     al, '0'
+        add     dl, '0'
+        mov     [edi+7], al
+        mov     [edi+8], dl
+; day
+        movzx   eax, byte [esi+28]
+        xor     edx, edx
+        div     ebx
+        add     al, '0'
+        add     dl, '0'
+        mov     [edi+4], al
+        mov     [edi+5], dl
 
 ;STEP 5 Test on WRITE OR NOTWRITE
-    mov  edx,fileinfo+11
-looo:
+        cmp     word [esi+40], '.'
+        jz      nextfl
+        cmp     word [esi+40], '..'
+        jnz     @f
+        cmp     byte [esi+42], 0
+        jz      nextfl
+@@:
 
-;   Delete del, eoe, f32 and another head-names
-    cmp  [viewmode],3  ;0-3 no outdel
-    ja	     del_out
-    cmp  [edx+26],dword 'DEL '
-    je	     nextfl
-del_out:
-    cmp  [edx+26],dword 'DEL '
-    jne  no_del
-    cmp  [edx],dword 0 ;431 ;435 ;484 +10% speed
-    je	     nextfl
-no_del:
-    cmp  [edx+26],dword 'EOE '
-    je	     nextfl
-    cmp  [edx+26],dword 'F32 '	    ;F32 not useles
-    je	     nextfl
-    cmp  [edx],dword '.   '
-    je	     nextfl
-    cmp  [edx],dword '..  '
-    je	     nextfl
-    cmp  [edx],dword 'FIRS'
-    je	     nextfl
+; STEP 6 SORT ALGORYTHM
 
-; ---------_______-------_______ --------_________-----------
-; SORT by name and del deletet files or f32 headers from list
-; _________-------_______ --------_______---------___________
+        push    esi
+        xor     esi, esi
 
-; STEP 6 UNIVERSAL SORT ALGORYTHM
-
-xxx:
-    mov esi,0 ;[tekfilename] ;0
-    mov ebx,[start] ; 0
-
-; At first Fold after Dat and Del
+; At first Fold after Dat
 
 ftestname:
-    cmp byte [fileinfo+11+26],'F'
+        cmp     dword [convinfo+esi], -1
+        jz      writefile
+    cmp byte [fileinfo+15],'F'
     je	    F
-    cmp byte [fileinfo+11+26],'D'
-    je	    D
-    jmp add_element
-D:  cmp byte [convinfo+esi+26],'D'
+    cmp byte [fileinfo+15],'D'
+    jne add_element
+D:  cmp byte [convinfo+esi+15],'D'
     je	    add_element
-    cmp byte [convinfo+esi+26],'F'
+    cmp byte [convinfo+esi+15],'F'
     je	    skipfile
     jmp add_element
-F:  cmp byte [convinfo+esi+26],'D'
+F:  cmp byte [convinfo+esi+15],'D'
     je writenow
-;    cmp byte [convinfo+esi+26],'F'
+;    cmp byte [convinfo+esi+15],'F'
 ;    je  add_element
 ;    jmp add_element
 
 add_element:
-    mov al,[fileinfo+ebx+11]
-    cmp al,[convinfo+esi+ebx]
-    je	    equal
-    jb	    writenow
+; compare items
+        movzx   eax, [viewmode]
+        call    [compare+eax*4]
+        jb      writenow
 skipfile:
-    add esi,62
-    mov ebx,[start]  ;0
+    add esi,27
     jmp ftestname
 
-equal:
-    inc ebx
-    cmp ebx,[x0]
-    je	    writefile
-    cmp ebx,[x1]
-    je	    x1p
-    cmp ebx,[x2]
-    je	    x2p
-    cmp ebx,[x3]
-    jae x3p
-    jmp add_element
-
-x1p:
-    mov ebx,18
-    jmp add_element
-x2p:
-    mov ebx,15
-    jmp add_element
-x3p:
-    mov ebx,0
-    jmp add_element
-
 writenow:
-    mov ecx,4096*62
+    mov ecx,4096*27-1
     sub ecx,esi
 ldloop:
     mov al,[convinfo+ecx+esi]
-    mov [convinfo+ecx+esi+62],al
+    mov [convinfo+ecx+esi+27],al
     dec ecx
     jns ldloop
 
-
 writefile:
-    mov ecx,61
+    mov ecx,26
 wfloop:
-    mov al,[fileinfo+ecx+11]
+    mov al,[fileinfo+ecx]
     mov [convinfo+ecx+esi],al
     dec ecx
     jns wfloop
-
-nextfile:
+        inc     [listsize]
+        pop     esi
 
 nextfl:
-;    popad
-;    pushad
-    mov eax,edx
-    shl eax,26
-    cmp eax,0
-    jne no_outcnt
-    push edx
-    drawfbox 294,25,(4*6),10,cl_White
-    pop  ebp
-    outcount ebp,294,25,cl_Black,4*65536
-no_outcnt:
-    popad
+        add     esi, 304
+        pop     ebx
+        dec     ebx
+        jnz     newlineb
 
-    inc edx
-    cmp edx,4096
-    jnae newlineb
+nofiles:
+        ret
 
+toupper:
+        cmp     al, 'a'
+        jb      .ret
+        cmp     al, 'z'
+        ja      @f
+.sub20:
+        sub     al, 0x20
+.ret:
+        ret
+@@:
+        cmp     al, 0xA0
+        jb      .ret
+        cmp     al, 0xB0
+        jb      .sub20
+        cmp     al, 0xE0
+        jb      .ret
+        cmp     al, 0xF0
+        jae     @f
+        sub     al, 0xE0-0x90
+        ret
+@@:
+        cmp     al, 0xF1
+        jnz     .ret
+        dec     eax
+        ret
 
-;STEP 8 GET SIZE OF RESORTING LIST
-    mov ecx,0
-    mov edi,0
-    mov eax,[blocksread]
-    mov ebx,62
-    mul ebx
-    mov edx,eax
-loogs:
-    mov eax,dword [convinfo+edi+26]
-    cmp eax,dword 0xffffffff
-    je endgs
-    add edi,62
-    inc ecx
-    cmp edi,edx ;4096*62
-    jnae loogs
-endgs:
-    mov [listsize],ecx
-    ret
+compare_date:
+        pushad
+        mov     al, [fileinfo+10]
+        cmp     al, [convinfo+esi+10]
+        jnz     .ret
+        mov     al, [fileinfo+11]
+        cmp     al, [convinfo+esi+11]
+        jnz     .ret
+        mov     al, [fileinfo+12]
+        cmp     al, [convinfo+esi+12]
+        jnz     .ret
+        mov     al, [fileinfo+13]
+        cmp     al, [convinfo+esi+13]
+        jnz     .ret
+        mov     al, [fileinfo+7]
+        cmp     al, [convinfo+esi+7]
+        jnz     .ret
+        mov     al, [fileinfo+8]
+        cmp     al, [convinfo+esi+8]
+        jnz     .ret
+        mov     al, [fileinfo+4]
+        cmp     al, [convinfo+esi+4]
+        jnz     .ret
+        mov     al, [fileinfo+5]
+        cmp     al, [convinfo+esi+5]
+        jz      compare_name.1
+.ret:
+        popad
+        ret
+compare_name:
+        pushad
+.1:
+        mov     edi, dword [convinfo+esi]
+        mov     esi, dword [fileinfo]
+        call    strcmpi
+        popad
+        ret
+compare_ext:
+        pushad
+        mov     esi, dword [convinfo+esi]
+        mov     edi, dword [fileinfo]
+        call    find_ext
+        xchg    esi, edi
+        call    find_ext
+        call    strcmpi
+        popad
+        jz      compare_name
+        ret
+compare_size:
+        pushad
+        lea     edi, [convinfo+esi+19]
+        lea     esi, [fileinfo+19]
+        mov     ecx, 8
+        repz    cmpsb
+        popad
+        jz      compare_name
+        ret
+
+strcmpi:
+        lodsb
+        call    toupper
+        push    eax
+        mov     al, [edi]
+        inc     edi
+        call    toupper
+        cmp     [esp], al
+        pop     eax
+        jnz     @f
+        test    al, al
+        jnz     strcmpi
+@@:
+        ret
+
+find_ext:
+        lodsb
+        test    al, al
+        jz      .noext
+        cmp     al, '.'
+        jnz     find_ext
+        ret
+.noext:
+        dec     esi
+        ret
 
 ;******************************************************************************
 
@@ -2705,10 +2409,8 @@ flick	     dd 0  ;anti flick on ?
 drawhf	       dd 0  ;draw file menu?
 drawhv	       dd 0  ;draw view menu?
 drawhi	       dd 0  ;draw info menu?
-browser    dd 0  ;0-dialog, 1-browser
 cursor	       dd 0  ;cursor in prompt line
 focus	     dd 0  ;prompt edit or window?
-viewmode   dd 0  ;folder sort & not del
 downstop   dd 0
 filecursor dd 0
 mousex	       dd 0
@@ -2718,40 +2420,55 @@ listsize   dd 0  ;num of files in directory
 temp	   dd 0
 readblock  dd 1
 dlg_type   db 0 ;S-save O-open
+browser    db 0  ;0-dialog, 1-browser
+viewmode   db 0  ;folder sort
 
-hdimg1 db 'HD0      HARDDISK         FOL                                 '
-hdimg2 db 'HD1      HARDDISK         FOL                                 '
-hdimg3 db 'HD2      HARDDISK         FOL                                 '
-hdimg4 db 'HD3      HARDDISK         FOL                                 '
+compare dd      compare_name
+        dd      compare_ext
+        dd      compare_size
+        dd      compare_date
 
-      ;01234567890123456789012345678901234567890123456789012345678912
-hdimg  db 'RD       RAMDISK          FOL                                 '
-       db 'FD       FLOPPYDISK       FOL                                 '
-       db '                                                              '
-       db '                                                              '
-       db '                                                              '
-       db '                                                              '
+aRD     db      'RD',0
+aFD     db      'FD',0
+aHD0    db      'HD0',0
+aHD1    db      'HD1',0
+aHD2    db      'HD2',0
+aHD3    db      'HD3',0
+a1      db      '1',0,0
+a2      db      '2',0,0
+a3      db      '3',0,0
+a4      db      '4',0,0
+a5      db      '5',0,0
+a6      db      '6',0,0
+a7      db      '7',0,0
+a8      db      '8',0,0
+a9      db      '9',0,0
+a10     db      '10',0
+a11     db      '11',0
+a12     db      '12',0
+a13     db      '13',0
+a14     db      '14',0
+a15     db      '15',0
+a16     db      '16',0
+a17     db      '17',0
+a18     db      '18',0
+a19     db      '19',0
+a20     db      '20',0
 
-ptimg  db '1        FIRST  PARTITION FOL                                 '
-       db '2        SECOND PARTITION FOL                                 '
-       db '3        NEXT   PARTITION FOL                                 '
-       db '4        NEXT   PARTITION FOL                                 '
-       db '5        NEXT   PARTITION FOL                                 '
-       db '6        NEXT   PARTITION FOL                                 '
-       db '7        NEXT   PARTITION FOL                                 '
-       db '8        NEXT   PARTITION FOL                                 '
-       db '9        NEXT   PARTITION FOL                                 '
-       db '10       NEXT   PARTITION FOL                                 '
-       db '11       NEXT   PARTITION FOL                                 '
-       db '12       NEXT   PARTITION FOL                                 '
-       db '13       NEXT   PARTITION FOL                                 '
-       db '14       NEXT   PARTITION FOL                                 '
-       db '15       NEXT   PARTITION FOL                                 '
-       db '16       NEXT   PARTITION FOL                                 '
-       db '17       NEXT   PARTITION FOL                                 '
-       db '18       NEXT   PARTITION FOL                                 '
-       db '19       NEXT   PARTITION FOL                                 '
-       db '20       NEXT   PARTITION FOL                                 '
+hdimg:
+        dd      aRD
+        db      'RAMDISK    FOL         '
+        dd      aFD
+        db      'FLOPPYDISK FOL         '
+hdimg1  dd      0
+        db      'HARDDISK   FOL         '
+hdimg2  dd      0
+        db      'HARDDISK   FOL         '
+hdimg3  dd      0
+        db      'HARDDISK   FOL         '
+hdimg4  dd      0
+        db      'HARDDISK   FOL         '
+ptimg   db      'PARTITION  FOL         '
 
 modetext:
       ;0123456789012345
@@ -2778,36 +2495,53 @@ b_color   dd   0x6677cc
 ; //// Willow
 
 ;Name of programs
-editor	      db 'TINYPAD    '
-bmpview   db 'MV         '
-jpgview   db 'JPEGVIEW   '
-gifview   db 'GIFVIEW    '
-ac97wav   db 'AC97WAV    '
-copyrfile db 'COPYR      '
-rtfread   db 'RTFREAD    '
+editor	      db '/RD/1/TINYPAD',0
+bmpview   db '/RD/1/MV',0
+jpgview   db '/RD/1/JPEGVIEW',0
+gifview   db '/RD/1/GIFVIEW',0
+ac97wav   db '/RD/1/AC97WAV',0
+rtfread   db '/RD/1/RTFREAD',0
 ; //// Willow
-pngview   db '@RCHER     '
+pngview   db '/RD/1/@RCHER',0
 ; //// Willow
-midamp	  db 'MIDAMP     '
+midamp	  db '/RD/1/MIDAMP',0
+
+more_char db 10h
 
 fileinfo_start:
-dd 16
-dd 0
-dd 0 ;tempzone+1000;
-dd 0
-dd tempzone ;0x10000
-open_path:
-times 256 db 0	    ;run app path
+        dd      7
+        dd      0
+fileinfo_params:
+        dd      0
+        dd      0
+        dd      0
+        db      0
+fileinfo_name:
+        dd      0
+
+clipfile_info:
+        dd      ?
+        dd      0
+        dd      0
+        dd      ?
+        dd      paramtest
+        db      '/RD/1/CLIPFILE.TXT',0
+copyr_run:
+        dd      7
+        dd      0
+        dd      copyr_param
+        dd      0
+        dd      0
+        db      '/RD/1/COPYR',0
 
 fileinfoblock:
-   dd 0x0    ; read
+   dd 0x1    ; read folder
    dd 0x0    ; first block
-   dd 0x1    ; number of blocks to read
-farea:
+   dd 0x0    ; flags (ANSI names)
+   dd 4095   ; number of blocks to read
    dd outinfo	  ; ret offset
-   dd tempzone	      ; work size of sytemram
 path:
-times 256 db 0	    ;path
+times 1024 db 0	    ;path
 
 table_area:
 rb 10
@@ -2815,6 +2549,12 @@ rb 10
 ;rb 256
 but_file:
 file 'systr12.GIF'
+
+I_END:
+
+scroll_height dd ?
+scroll_pos dd ?
+
 butimg:
 rb 400*16*3+8	  ;buttons (left pice of picture)
 logoimg:
@@ -2852,23 +2592,16 @@ rb 8000
 
 gif_hash:
 rd 4096
-tempzone:   ;temp zone for 58 function
-rb 4000
-
-sourcepath rb 100
-destpath   rb 100
 
 MYPID:
 rd 8
 
-I_END:
-
 param_area:
 rb 256
 paramtest:
-rb 256
+rb 1024
 filedir:
-rb 256
+rb 1024
 
 procinfo process_information
 sc system_colors
@@ -2876,10 +2609,14 @@ sc system_colors
 fileinfo:
 rb 200 ;4096*62+1024
 
+copyr_param     rb      256
+
 outinfo:
-rb 4096*34+1024
+rb 32+4096*304
 
 convinfo:
-rb 4096*62+1024
-
+rb 4096*27
+; stack
+        align 4
+        rb      1024
 RAM_END:

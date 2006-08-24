@@ -62,7 +62,8 @@ s_vesa    db      "VESA version: "
   .mem    db      "??? Mbytes)",13,10,0
 gr_mode   db      "Select mode: ",13,10,0
 s_bpp     db      13,10,186," Bits per pixel: "
-  .bpp    dw      "??",13,10,13,10,0
+  .bpp    dw      "??"
+          db      13,10,0
 vrrmprint db      "Apply VRR? (picture frequency greater than 60Hz"
           db      " only for transfers:",13,10
           db      186," 1024*768->800*600 and 800*600->640*480) [1-yes,2-no]:",0

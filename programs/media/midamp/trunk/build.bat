@@ -1,0 +1,1 @@
+fasm MIDAMP.ASM MIDAMP

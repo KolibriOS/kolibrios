@@ -1,0 +1,293 @@
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+*                                                                           *
+*                         Copyright 2003  VaStaNi                           *
+*                             vastani@ukr.net                               *
+*                   >>>- SIMPLY - QUICKLY - SHORTLY -<<<                    *
+*                                                                           *
+*                    About Player Notes for Speaker PC.                     *
+*                  ( PLAYNOTE.INC v.1.1  for  MENUET OS )                   *
+*                                                                           *
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+                              --- ATTACH ---
+
+>>> Insert string: include "PLAYNOTE.INC"  in list file KERNEL32.INC
+.........
+......... .........      .............................
+......... .........      .............................
+......... .........      .............................
+
+; sound
+
+include "SB16.INC"     ; playback for Sound Blaster 16
+include "PLAYNOTE.INC" ; player Note for Speaker PC
+
+.........
+......... .........      .............................
+......... .........      .............................
+
+
+
+>>> Insert line --->>>   call  playNote   --->>>  in procedure irq0
+
+    ( listing file SYS32.INC for KERNEL.ASM )
+
+        ....  ....
+        ....  ....
+        ....  ....
+
+     no_error_in_previous_process:
+
+        mov    edi,[0x3000]
+        imul   edi,8
+        mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
+
+        inc   dword [0xfdf0]
+
+        mov   eax,[0xfdf0]
+
+        call  playNote           ; <<<--- INSERT THIS LINE !!!!!!!!!!
+
+        cmp   eax,[next_usage_update]
+        jb    nocounter
+        add   eax,100
+        mov   [next_usage_update],eax
+        call  updatecputimes
+
+      nocounter:
+        ....  ....
+        ....  ....
+        ....  ....
+
+
+
+>>> file SB16.INC have this label...
+   ....  ....
+   ....  ....
+   ....  ....
+
+ no_SB16_data_format:
+
+   ret
+
+>>> I suggest add this code for subfunction #55 function #55 OS (player notes)
+   ....  ....
+   ....  ....
+   ....  ....
+
+ no_SB16_data_format:
+   cmp   eax, edi                      ; this is subfunction #55 ?
+    jne  retFunc55                     ; if no then return.
+   movzx eax, byte [countDelayNote]
+   or    al, al                        ; player is busy ?
+    jnz  retFunc55                     ; return counter delay Note
+   mov   eax, [0x3010]
+   mov   eax, [eax+0x10]               ; address application im memory
+   add   eax, edx                      ; add offset Delay-Note string
+   mov   [memAdrNote], eax
+   xor   eax, eax                      ; Ok!  EAX = 0
+ retFunc55:
+   mov   [esp+36], eax                 ; return value EAX for application
+   ret
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+                               --- USE ---
+
+>>> Example use in your programs:
+        ....  ....
+        ....  ....
+        ....  ....
+        mov   eax, 55            ; OS function #55
+        mov   ebx, eax           ; EBX = 55 for subfunction Play Note
+        mov   esi, MyMusic_1     ; ESI = head string Delay-Note code
+        int   0x40               ; start play
+        ....  ....
+        ....  ....
+        ....  ....
+
+
+>>> Very simply OS use. Only put dword adress head string in [memAdrNote]
+
+        ....  ....
+        mov   [memAdrNote], dword MyMusic_1  ; IRQ0 -> start play!!!
+        ....  ....
+
+!!! Example OS use for send: error tone, ring signal, disconnect hardware...
+!!! Saund Card may be OFF, but Speaker PC always IS ON !!!
+
+
+.....          ..  ..
+.....          ..  ..
+MyMusic_1      db  .., .., .., .., .., 0   ; string Delay-Note code for MUSIC
+...            ..  ..
+......         ..  ..
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+                     --- CODE DELAY & NOTEs ---
+
+>>> Format Delay-Note string:
+
+    1. Free style play Tone
+
+               db  1..0x80       ; !!! only (1..0x80) byte for Delay Tone
+               db  1..0xFF       ; lower byte (counter for period oscillate)
+               db  1..0xFF       ; upper byte (counter for period oscillate)
+               ..  ..        \
+               ..  ..          > 3 bytes for 1 TONE !!!
+               ..  ..        /
+               db  0             ; THE END Play!
+
+    2. Musical style play Note
+
+               db  0x81..0xFE    ; !!! 0x80 + byte (1..0x7E) for Delay Note
+               db  1..0xFF       ; PACK CODE (number Note & number Octave)
+               ..  ..         \
+               ..  ..         /  2 bytes for 1 Note in 1 Octave !!!
+               db  0             ; THE END Play!
+
+
+
+                             -=  DELAY CODE  =-
+
+           зддддддддддддбддддддддддддбдддддддимм  1  м╩имм  2  м╩
+           Ё╓╚╗Б╔╚Л╜╝АБ╗Ё DELAY NOTE Ё DELAY ╨  DELAY ╨╨  DELAY ╨
+           Ё    █▌▓     Ё    mSec    Ё IRQ 0 ╨  CODE  ╨╨  CODE  ╨
+           цддддддддддддеддддддддддддедддддддлмммммммм╧лмммммммм╧
+           Ё   Ф╔╚═О    Ё    2000    Ё       ╨  0xC8  ╨╨ absent ╨
+           цддддддддддддедддддддддддд╢       гдддддддд╤гдддддддд╤
+           Ё    1/2     Ё    1000    Ё       ╨  0x64  ╨╨  0xE4  ╨
+           цддддддддддддедддддддддддд╢       гдддддддд╤гдддддддд╤
+           Ё    1/4     Ё    500     Ё       ╨  0x32  ╨╨  0xB2  ╨
+           цддддддддддддедддддддддддд╢  10   ╨дддддддд╤╨дддддддд╤
+           Ё    1/8     Ё    250     Ё  mSec ╨  0x19  ╨╨  0x99  ╨
+           цддддддддддддедддддддддддд╢       гдддддддд╤гдддддддд╤
+           Ё    1/16    Ё    125     Ё       ╨  0xC   ╨╨  0x8C  ╨
+           цддддддддддддедддддддддддд╢       ╨дддддддд╤╨дддддддд╤
+           Ё    1/32    Ё    62.5    Ё       ╨  6     ╨╨  0x86  ╨
+           цддддддддддддедддддддддддд╢       гдддддддд╤гдддддддд╤
+           Ё    1/64    Ё    31.25   Ё       ╨  3     ╨╨  0x83  ╨
+           юддддддддддддаддддддддддддадддддддхмммммммм╪хмммммммм╪
+
+
+                              -=  PACK  CODE  =-
+
+  !!!!!  IF  PACK CODE = 0xFF  THEN  PAUSE = DELAY CODE  !!!!!
+
+ здддддддддддбддддддбддддддимммммммммм╩  здддддддддддбддддбддддддимммммммммм╩
+ Ё   ▓┬▐⌡    ЁnumberЁ code ╨upper CODE╨  Ё █▌▓⌡      ЁtypeЁnumber╨lower CODE╨
+ Ё   ▌┼▓─┌   ЁOCTAVEЁnumber╨Bit7..Bit4╨  Ё ▌┼▓─┌⌡    ЁNOTEЁ NOTE ╨Bit3..Bit0╨
+ цдддддддддддеддддддеддддддлмммммммммм╧  цдддддддддддеддддеддддддлмммммммммм╧
+ Ё╙╝╜БЮ╝╙Б═╒═Ё  -3  Ё  0   ╨   0000   ╨  Ё └▌        Ё C  Ё  1   ╨   0001   ╨
+ цдддддддддддеддддддеддддддлдддддддддд╤  цдддддддддддеддддеддддддвдддддддддд╤
+ Ё ║╝╚ЛХ═О   Ё  -2  Ё  1   ╨   0001   ╨  Ё └▌ ║╔╛╝╚Л Ё C# Ё  2   ╨   0010   ╨
+ цдддддддддддеддддддеддддддгдддддддддд╤  цдддддддддддеддддеддддддвдддддддддд╤
+ Ё ╛═╚═О     Ё  -1  Ё  2   ╨   0010   ╨  Ё ░┘        Ё D  Ё  3   ╨   0011   ╨
+ цдддддддддддеддддддедддддд╨дддддддддд╤  цдддддддддддеддддеддддддвдддддддддд╤
+ Ё ╞╔Ю╒═О    Ё  1   Ё  3   ╨   0011   ╨  Ё ░┘ ║╔╛╝╚Л Ё D# Ё  4   ╨   0100   ╨
+ цдддддддддддеддддддеддддддгдддддддддд╤  цдддддддддддеддддеддддддвдддддддддд╤
+ Ё ╒Б╝Ю═О    Ё  2   Ё  4   ╨   0100   ╨  Ё ▄┬        Ё E  Ё  5   ╨   0101   ╨
+ цдддддддддддеддддддедддддд╨дддддддддд╤  цдддддддддддеддддеддддддвдддддддддд╤
+ Ё БЮ╔БЛО    Ё  3   Ё  5   ╨   0101   ╨  Ё ■─        Ё F  Ё  6   ╨   0110   ╨
+ цдддддддддддеддддддеддддддгдддддддддд╤  цдддддддддддеддддеддддддвдддддддддд╤
+ Ё Г╔Б╒╔ЮБ═О Ё  4   Ё  6   ╨   0110   ╨  Ё ■─ ║╔╛╝╚Л Ё F# Ё  7   ╨   0111   ╨
+ юдддддддддддаддддддаддддддхмммммммммм╪  цдддддддддддеддддеддддддвдддддддддд╤
+                                         Ё ▒▌▀°      Ё G  Ё  8   ╨   1000   ╨
+                                         цдддддддддддеддддеддддддвдддддддддд╤
+                                         Ё▒▌▀° ║╔╛╝╚ЛЁ G# Ё  9   ╨   1001   ╨
+                                         цдддддддддддеддддеддддддвдддддддддд╤
+                                         Ё ▀÷        Ё A  Ё  10  ╨   1010   ╨
+                                         цдддддддддддеддддеддддддвдддддддддд╤
+                                         Ё ▀÷ ║╔╛╝╚Л Ё A# Ё  11  ╨   1011   ╨
+                                         цдддддддддддеддддеддддддвдддддддддд╤
+                                         Ё ▒┬        Ё B  Ё  12  ╨   1100   ╨
+                                         юдддддддддддаддддаддддддхмммммммммм╪
+
+       PACK CODE = (number Note)  AND  ((code number Octave) SHL 4)
+    or
+       PACK CODE = (number Note)  AND  ((code number Octave) * 16)
+
+
+                           -=  PERIOD OSCILLATE  =-
+
+                        counter = 1193180 / FREQUENCY;
+                         (WORD)             (sound Hz)
+
+здддддддддддбддддддбддддддбдддддддддддбддддбддддддиммммммммм          мммммм╩
+Ё   ▓┬▐     ЁnumberЁ code Ё █▌▓⌡      ЁtypeЁnumber╨frequency           PACK ╨
+Ё   ▌┼▓─┌⌡  ЁOCTAVEЁnumberЁ 1╘ ▌▒▓─┌⌡ ЁNOTEЁ NOTE ╨sound Hz            CODE ╨
+цдддддддддддеддддддеддддддедддддддддддеддддеддддддлммммммммм          мммммм╧
+Ё           Ё      Ё      Ё └▌        Ё C  Ё  1   ╨ 523,251   --       0x31 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |     дддддд╤
+Ё           Ё      Ё      Ё └▌ ║╔╛╝╚Л Ё C# Ё  2   ╨ 554,365   --|--    0x32 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ░┘        Ё D  Ё  3   ╨ 587,33      |  |   0x33 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ░┘ ║╔╛╝╚Л Ё D# Ё  4   ╨ 622,254     |  |   0x34 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ▄┬        Ё E  Ё  5   ╨ 659,255     |  |   0x35 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ■─        Ё F  Ё  6   ╨ 698,456     |  |   0x36 ╨
+Ё   ╞╔Ю╒═О  Ё  1   Ё  3   цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё ( first   Ё      Ё      Ё ■─ ║╔╛╝╚Л Ё F# Ё  7   ╨ 739,989     |  |   0x37 ╨
+Ё  octave ) Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ▒▌▀°      Ё G  Ё  8   ╨ 783,991            0x38 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    x 2   дддддд╤
+Ё           Ё      Ё      Ё▒▌▀° ║╔╛╝╚ЛЁ G# Ё  9   ╨ 830,609            0x39 ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ▀÷        Ё A  Ё  10  ╨ 880         |  |   0x3A ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ▀÷ ║╔╛╝╚Л Ё A# Ё  11  ╨ 932,328     |  |   0x3B ╨
+Ё           Ё      Ё      цдддддддддддеддддеддддддвддддддддд    |  |  дддддд╤
+Ё           Ё      Ё      Ё ▒┬        Ё B  Ё  12  ╨ 987,767     |  |   0x3C ╨
+цдддддддддддеддддддеддддддедддддддддддеддддеддддддлммммммммм    |  |  мммммм╧
+Ё   ╒Б╝Ю═О  Ё  2   Ё  4   Ё └▌        Ё ▒  Ё  1   ╨1046,502   <-   |   0x41 ╨
+    ......     ..     ..    ...         ..    ..   .... ...   <----
+
+* * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * *
+
+                          --- EXAMPLE MUSIC ---
+
+▐Ю╗╛╔Ю ╛Ц╖╗Ф╗Ю╝╒═╜╗О ╞╝ ╜╝Б═╛ ╛╔╚╝╓╗╗ ┬.┼═Ю╜╔╚Н╙═ "┐╝Ю╗Б ╝Г═ё..."
+                                              ╙ Д╗╚Л╛Ц "│═╜╓╗БА╙╗╘ ▐╔Б╔Ю║ЦЮё"
+MyMusic_1:
+db 0xe4,0x35, 0x99,0x33, 0x99,0x31, 0x99,0x33, 0xe4,0x35, 0x99,0x35, 0x99,0x36
+db 0x99,0x38, 0x99,0x3a, 0xe4,0x36, 0xe4,0x36, 0xb2,0xff, 0xe4,0x33, 0x99,0x31
+db 0x99,0x2c, 0x99,0x31, 0xe4,0x33, 0xb2,0x33, 0x99,0x35, 0x99,0x36, 0xe4,0x35
+db 0xe4,0x35, 0xb2,0xff, 0x99,0x35, 0x99,0x36, 0xe4,0x33, 0x99,0x35, 0x99,0x36
+db 0xb2,0x33, 0x99,0x35, 0x99,0x36, 0xb2,0x33, 0x99,0x35, 0x99,0x36, 0xe4,0x39
+db 0xe4,0x39, 0xb2,0xff, 0x99,0x35, 0x99,0x36, 0xe4,0x33, 0x99,0x35, 0x99,0x36
+db 0xb2,0x33, 0x99,0x35, 0x99,0x36, 0xb2,0x33, 0x99,0x35, 0x99,0x36, 0xe4,0x35
+db 0xe4,0x35, 0
+
+
+MyMusic_2:
+db 0x90,0x31, 0x90,0x33, 0x90,0x35, 0x90,0x36, 0xA0,0xFF, 0xA0,0x06, 0x90,0xFF
+db 0xA0,0x06, 0x90,0xFF, 0x90,0x33, 0x90,0x35, 0x90,0x37, 0x90,0x38, 0xA0,0xFF
+db 0xA0,0x18, 0x90,0xFF, 0xA0,0x18, 0x90,0xFF, 0x90,0x33, 0x90,0x35, 0x90,0x37
+db 0x90,0x38, 0xA0,0xFF, 0x90,0x33, 0x90,0x35, 0x90,0x37, 0x90,0x38, 0xA0,0xFF
+db 0x90,0x31, 0x90,0x33, 0x90,0x35, 0x90,0x36, 0xA0,0xFF, 0xA0,0x16, 0x90,0xFF
+db 0xA0,0x16, 0
+
+
+MyMusic_3:
+db 0x99,0x31, 0xB2,0x36, 0x99,0x3A, 0xB2,0x36, 0x99,0x33, 0xB2,0x28, 0xBC,0x38
+db 0
+
+                               <<<<<<< >>>>>>>
+|>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>  !GOOD LUCK!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<|
+                               <<<<<<< >>>>>>>
+
+
+
+
+
+
+
+
+
+
+
+
+

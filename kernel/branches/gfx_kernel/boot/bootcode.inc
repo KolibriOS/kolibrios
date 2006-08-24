@@ -152,6 +152,26 @@ pagetable_set:
     loop    @b
     ret
 
+boot_read_floppy:
+        push    si
+        xor     si, si
+        mov     ah, 2   ; read
+@@:
+        push    ax
+        int     0x13
+        pop     ax
+        jnc     @f
+        inc     si
+        cmp     si, 10
+        jb      @b
+        mov     si, badsect-0x10000
+sayerr_plain:
+        call    printplain
+        jmp     $
+@@:
+        pop     si
+        ret
+
 		org $+0x10000
 
 ; table for move to extended memory (int 15h, ah=87h)
@@ -824,73 +844,195 @@ end if
         xor    ax, ax            ; reset drive
         xor    dx, dx
         int     0x13
-        mov     cx,0x0001               ; startcyl,startsector
-        xor    dx, dx            ; starthead,drive
-        push    word 80*2               ; read no of sect
-       reads:
-        pusha
-        xor     si,si
-       newread:
-        mov     bx,0xa000               ; es:bx -> data area
-        mov     ax,0x0200+18            ; read, no of sectors to read
-        int     0x13
-        test    ah, ah
-        jz      goodread
-        inc    si
-        cmp     si,10
-        jnz     newread
-        mov     si,badsect-0x10000
-sayerr_plain:
-        call    printplain
-        jmp     $
-       goodread:
-        ; move -> 1mb
-        mov     si,movedesc-0x10000
+; now load floppy image to memory
+; at first load boot sector and first FAT table
+        mov     cx, 0x0001      ; startcyl,startsector
+        xor     dx, dx          ; starthead,drive
+        mov     al, 1+9         ; no of sectors to read
+        mov     bx, 0xB000      ; es:bx -> data area
+        call    boot_read_floppy
+; and copy them to extended memory
+        mov     si, movedesc-0x10000
+        mov     [si+8*2+3], bh
         push    es
         push    ds
         pop     es
-        mov     cx,256*18
-        mov     ah,0x87
+        mov     cx, 256*10
+        mov     ah, 0x87
         int     0x15
-        pop    es
-
-        test    ah,ah                  ; was the move successfull ?
-        je      goodmove
-        mov     dx,0x3f2              ; floppy motor off
-        mov     al,0
-        out     dx,al
-        mov     si,memmovefailed-0x10000
-        jmp    sayerr_plain
-      goodmove:
-
-    add    dword [movedesc-0x10000+0x18+2], 512*18
-        popa
-        inc     dh
-        cmp     dh,2
-        jnz     bb2
-        mov     dh,0
-        inc     ch
-        pusha                        ; print prosentage
-        mov     si,pros-0x10000
-    shr    ch, 2
-    mov    al, '5'
-    test    ch, 1
-    jnz    @f
-    mov    al, '0'
+        test    ah, ah
+        jz      @f
+sayerr_floppy:
+        mov     dx, 0x3f2
+        mov     al, 0
+        out     dx, al
+        mov     si, memmovefailed-0x10000
+        jmp     sayerr_plain
 @@:
-    mov    [si+1], al
-    shr    ch, 1
-    add    ch, '0'
-    mov    [si], ch
-        call    printplain
-        popa
-       bb2:
-        pop     ax
-        dec     ax
+        add     dword [si+8*3+2], 512*10
+; copy FAT to second copy
+        mov     byte [si+8*2+3], 0xB2
+        mov     cx, 256*9
+        mov     ah, 0x87
+        int     0x15
+        pop     es
+        test    ah, ah
+        jnz     sayerr_floppy
+        add     dword [si+8*3+2], 512*9
+; calculate total number of sectors to read
+        mov     ax, 1+9+14      ; boot+FAT+root
+        mov     di, 0xB203
+.calc_loop:
+        test    word [es:di], 0xFFF
+        jz      @f
+        inc     ax
+@@:
+        test    word [es:di+1], 0xFFF0
+        jz      @f
+        inc     ax
+@@:
+        add     di, 3
+        cmp     di, 0xB200+1440*3
+        jb      .calc_loop
         push    ax
-        jnz     reads
-       readdone:
+        mov     bp, 1+9         ; already read sectors
+; now read rest
+        mov     byte [si+8*2+3], 0xA0
+        mov     di, 2-14        ; absolute sector-31
+        mov     cx, 0x0002      ; cylinder=0, sector=2
+        mov     dx, 0x0100      ; head=1, disk=0
+.read_loop:
+; determine whether sector must be read
+        cmp     di, 2
+        jl      .read
+        mov     bx, di
+        shr     bx, 1
+        jnc     .even
+        test    word [es:bx+di+0xB200], 0xFFF0
+        jmp     @f
+.even:
+        test    word [es:bx+di+0xB200], 0xFFF
+@@:
+        jz      .skip
+.read:
+        mov     bx, 0xA000
+        mov     al, 1           ; 1 sector
+        call    boot_read_floppy
+        inc     bp
+        push    es
+        push    ds
+        pop     es
+        pusha
+        mov     cx, 256
+        mov     ah, 0x87
+        int     0x15
+        test    ah, ah
+        popa
+        pop     es
+        jnz     sayerr_floppy
+.skip:
+        add     dword [si+8*3+2], 512
+        inc     cx
+        cmp     cl, 19
+        jnz     @f
+        mov     cl, 1
+        inc     dh
+        cmp     dh, 2
+        jnz     @f
+        mov     dh, 0
+        inc     ch
+@@:
         pop     ax
+        push    ax
+        pusha
+; draw percentage
+; total sectors: ax
+; read sectors: bp
+        xchg    ax, bp
+        mov     cx, 100
+        mul     cx
+        div     bp
+        aam
+        xchg    al, ah
+        add     ax, '00'
+        mov     si, pros-0x10000
+        cmp     [si], ax
+        jz      @f
+        mov     [si], ax
+        call    printplain
+@@:
+        popa
+        inc     di
+        cmp     di, 2880-31
+        jnz     .read_loop
+
+;        mov     cx,0x0001               ; startcyl,startsector
+;        xor    dx, dx            ; starthead,drive
+;        push    word 80*2               ; read no of sect
+;       reads:
+;        pusha
+;        xor     si,si
+;       newread:
+;        mov     bx,0xa000               ; es:bx -> data area
+;        mov     ax,0x0200+18            ; read, no of sectors to read
+;        int     0x13
+;        test    ah, ah
+;        jz      goodread
+;        inc    si
+;        cmp     si,10
+;        jnz     newread
+;        mov     si,badsect-0x10000
+;sayerr_plain:
+;        call    printplain
+;        jmp     $
+;       goodread:
+;        ; move -> 1mb
+;        mov     si,movedesc-0x10000
+;        push    es
+;        push    ds
+;        pop     es
+;        mov     cx,256*18
+;        mov     ah,0x87
+;        int     0x15
+;        pop    es
+;
+;        test    ah,ah                  ; was the move successfull ?
+;        je      goodmove
+;        mov     dx,0x3f2              ; floppy motor off
+;        mov     al,0
+;        out     dx,al
+;        mov     si,memmovefailed-0x10000
+;        jmp    sayerr_plain
+;      goodmove:
+;
+;    add    dword [movedesc-0x10000+0x18+2], 512*18
+;        popa
+;        inc     dh
+;        cmp     dh,2
+;        jnz     bb2
+;        mov     dh,0
+;        inc     ch
+;        pusha                        ; print prosentage
+;        mov     si,pros-0x10000
+;    shr    ch, 2
+;    mov    al, '5'
+;    test    ch, 1
+;    jnz    @f
+;    mov    al, '0'
+;@@:
+;    mov    [si+1], al
+;    shr    ch, 1
+;    add    ch, '0'
+;    mov    [si], ch
+;        call    printplain
+;        popa
+;       bb2:
+;        pop     ax
+;        dec     ax
+;        push    ax
+;        jnz     reads
+;       readdone:
+;        pop     ax
         mov     si,backspace2-0x10000
         call    printplain
         mov     si,okt-0x10000

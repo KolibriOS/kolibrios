@@ -1,0 +1,247 @@
+MIDAMP for Menuet v1.0       July 29, 2005
+ Written in pure assembler by Ivushkin Andrey aka Willow
+
+Monophonic MIDI player
+
+Vivat assembler et MENUETOS!
+MenuetOS still has a poor sound capabilities. Drivers are written for a few
+soundcard models. Till recently I considered MEOS to be as voiceless as an
+oyster. But then an alternative appeared; dear VaStaNi wrote kernel support of 
+PC speaker. Old good times of Pascal and MS-DOS came to me again. About 5 years
+ago I wrote a Pascal application that parsed and played a note string in QBasic
+syntax.
+
+Now MeOS gets the simplest, speaker-driven sound scheme in Mario79's distro,
+but the first melody in Menuet I heard was from the my program MIDAMP in
+December, 2004. On technical reasons its release takes place only now.
+
+So, MIDAMP is the simplest single-voiced MIDI player. It cannot do much though
+it resembles the famous WinAmp. All it can do is to beep MIDI files.
+There are no equalizer, balance and fader, and they won't appear. Moreover,
+I may guarantee the correct sound only for files having a single track, one
+instrument channel and within technological range of notes :-(
+
+#########
+System requirements:
+1. Kernel having following function implemented:
+       55/55 - PC speaker interface (critical!)
+       67    - window shading;
+       66/3  - for extended mouse selection in playlist.
+2. SYSXTREE version not below 52 - opening files and directories (critical!)
+3. RAM amount for application - about 150 Kbytes.       
+#########
+
+MIDAMP still uses a single playlist - /HD/1/PLAYLIST.TXT by default. Persons
+interested can change the PLAYLIST_PATH constant value in MIDAMP.ASM. Playlist 
+is a simple text file having filenames to be played in each line. It is NOT 
+RECOMMENDED to edit the playlist by hand - bugs may appear while loading MIDAMP.
+
+When started, MIDAMP creates a new thread whose job is actually playing. Early
+versions had main thread that processed everything, therefore unpleasant sound
+delays appeared when managing the playlist. Threads communicate intensively
+through IPC, although I think it's an excess in such a case. But it works not
+bad.
+
+MIDAMP is able to shade to window header by pressing the proper button. I tried
+to perform complete minimization through mcall 18,10 (new feature of Kolibri4),
+but ran into the problem while restoring of window when PANEL button pressed.
+That function possibly does not support windows type II ?
+
+Hotkeys - almost like in WinAmp:
+
+Del - delete the selected tracks;
+z   - previous track;
+x, Enter, double click - play selected file;
+c, Space - pause;
+v   - stop;
+b   - next track;
+
+Esc - close the program;
+m   - sound on/off;
+PgUp, PgDn - swap 2 tracks (not completed!);
+BackSpace  - rewind track;
+Home/End - increase/decrease melody notes offset and play track from beginning 
+    (it is shown near 'tone>' text).
+   
+In the case of polyphonic MIDI, if an intelligent melody isn't heard, you may
+try to choose another track 'trk' or instrument channel 'chnl', pressing '[' or
+']' accordingly and then a number key from '0' to '9'. The file will be played
+from the beginning. To reset track and channel to the default value, press '\' .
+
+Explaining some interface buttons:
+Shuffle toggles random playback on/off. Repeat - current track will loop again
+and again. An icon in the top left corner outputs a brief info about the 
+program to the Debug Board. Clicking the time toggles its view - from beginning
+or from the end of file.
+
+Mouse click on playlist when holding Shift or Ctrl button works like in WinAmp.
+
+Remarks to bottom buttons:
+'Add URL' not implemented, on clear reasons;
+'Add Dir' - specify any file in the directory desired. *.MID and *.KAR files of 
+     that directory will be added to the list;
+'Misc' submenu is not implemented;
+'New List' does nothing. MIDAMP still uses a fixed playlist.
+
+One of the following flags may precede a filename in the commandline:
+
+W - to load a file and wait (default);
+P - to play a file;
+H - to start shaded and close after playback.
+
+To-Do list:
+
+1.  Increase playlist size (40 items for now).
+2.  Add dialog to select tracks of polyphonic melodies including analysis on 
+    notes.
+3.  Reading text in Karaoke files.
+4.  Playlist select.
+5.  Note editor, as in Ringtone Editor.
+6.  Add comments to source.
+7.  Correct bugs to be found.
+
+Special thanks to:
+
+   VaStaNi - there would be no need of MIDAMP w/o his code
+   Standard MIDI Files 0.06        March 1, 1988
+   MIDI 1.0 Specification
+   General MIDI Level Spec
+   MIDI SAMPLE DUMP STANDARD
+   Standard MIDI File Format by Dustin Caldwell
+   Files format of MIDI
+   The USENET MIDI Primer by Bob McQueer
+   Pavlushin Evgeny for his splendid SYSXTREE (DLGS.INC is the opendialog macro
+       of ASCL library edited to meet MIDAMP specific needs)
+
+Send the wishes and bug reports to wil_low@hotbox.ru or to the meos.sysbin.com
+forum.
+
+See you later!
+
+
+****************************************
+****************************************
+
+MIDAMP для Menuet v1.0       29 июля 2005 г.
+ Написана на чистом ассемблере Ивушкиным Андреем (Willow)
+
+Монофонический MIDI-плеер
+
+Vivat assembler et MENUETOS!
+Со звуком в MenuetOS туго до сих пор. Драйвера написаны для ограниченного круга
+звуковых карт. До недавнего времени MeOS была для меня нема, как рыба. Но потом
+появилась альтернатива - уважаемый VaStaNi написал поддержку PC спикера. Мне 
+сразу вспомнились старые добрые времена Паскаля и MS-DOS. Лет 5 назад написал
+на Паскале программку, которая парсила, а потом воспроизводила строку нот в
+синтаксисе QBasic.
+
+Сейчас MeOS в дистрибутиве Mario79 обретает простейшую звуковую схему с помощью
+спикера, но первую мелодию в Menuet я услышал все-таки от своей программы -
+MIDAMP в декабре 2004 года. По техническим причинам ее релиз происходит только 
+сейчас.
+
+Итак, MIDAMP - простейший одноголосый MIDI-проигрыватель. Он не претендует на 
+многое, хоть и похож на WinAmp. Все, что он умеет, это пиликать MIDI-файлы.
+Эквалайзера, баланса и регулятора громкости нет и не предвидится. Более того,
+корректное звучание могу гарантировать лишь для файлов с 1 треком, 1 каналом
+инструмента и в пределах технологического диапазона нот :-(
+
+#########
+Системные требования:
+1. Ядро с реализацией следующих системных функций:
+       55/55 - интерфейс PC спикера (необходимо!);
+       67    - сворачивание окна в заголовок;
+       66/3  - для режимов выделения треков мышью.
+2. SYSXTREE версии не ниже 52 - открытие файлов и каталогов (необходимо!)
+3. Объем памяти для программы - около 150 Кб.      
+#########
+
+Пока что MIDAMP использует единственный плейлист - по умолчанию
+/HD/1/PLAYLIST.TXT. Желающие могут изменить значение константы PLAYLIST_PATH в 
+файле MIDAMP.ASM. Плейлист - обычный текстовый файл, в каждой строке которого
+находится имя файла для воспроизведения. Его НЕ РЕКОМЕНДУЕТСЯ править вручную -
+возможны баги при последующей загрузке его приложением.
+
+При запуске MIDAMP создает новый поток, задачей которого является собственно
+озвучка. В ранних версиях все делал главный поток, поэтому возникали неприятные
+задержки в звучании во время управления плейлистом. Потоки интенсивно общаются
+между собой через IPC, хотя я склоняюсь к тому, что в данном случае это
+излишество. Но работает неплохо.
+
+MIDAMP умеет сворачиваться в строку заголовка нажатием соответствующей кнопки.
+Я пытался сделать полное сворачивание через mcall 18,10 (новая фича Kolibri4),
+но столкнулся с проблемой восстановления окна нажатием кнопки PANEL. Возможно,
+функция не поддерживает окна типа II ?
+
+Горячие клавиши - почти как в WinAmp:
+
+Del - удалить выделенные треки;
+z   - предыдущий трек;
+x, Enter, двойной щелчок на файле - воспроизведение;
+c, Space - пауза;
+v   - стоп;
+b   - следующий трек;
+
+Esc - закрыть программу;
+m   - включить/выключить звук;
+PgUp, PgDn - поменять местами 2 соседних трека (не закончено!);
+BackSpace - перемотка трека в начало;
+Home/End - увеличить/уменьшить тональность мелодии и проиграть ее с начала
+    (отображается рядом с надписью 'tone>').
+    
+В случае полифонических MIDI, если осмысленной мелодии не получается, можно
+попробовать выбрать другой трек 'trk' или канал инструмента 'chnl', нажав
+соответственно '[' или ']' и затем клавишу с номером от 0 до 9. Файл будет
+воспроизведен с самого начала. Сброс дорожки и канала в значение по умолчанию -
+нажатием '\' .
+
+Назначение некоторых кнопок интерфейса:
+Shuffle - случайный порядок проигрывания треков. Repeat  - текущий трек будет
+проигрываться снова и снова. Значок в левом верхнем углу выводит краткую
+информацию о программе на доску отладки. Щелчок на временной метке меняет
+способ ее отображения - с начала или с конца файла.
+
+Щелчок мышью на плейлисте с нажатым Shift или Ctrl работает аналогично WinAmp.
+
+Замечания относительно кнопок внизу:
+'Add URL' не реализовано по понятным причинам;
+'Add Dir' - укажите любой файл в желаемом каталоге. Файлы *.MID и *.KAR этого 
+     каталога будут добавлены в список;
+'Misc' подменю не реализовано;
+'New List' ничего не делает. Пока используется фиксированный плейлист.
+
+В командной строке перед именем файла для воспроизведения может стоять один из
+флагов:
+
+W - просто загрузить файл (по умолчанию);
+P - воспроизвести файл;
+H - стартовать свернутым в заголовок, закрыться после воспроизведения.
+
+Что еще нужно сделать:
+
+1.  Увеличить размеры плейлиста (сейчас 40 позиций).
+2.  Добавить диалог выбора треков полифонических мелодий с их анализом по 
+    наличию нот.
+3.  Чтение текста в караоке-файлах.
+4.  Выбор плейлиста.
+5.  Нотный редактор, как в Ringtone Editor.
+6.  Откомментировать код (как всегда, лень).
+7.  Исправить баги, которые, несомненно, найдутся ;-)
+
+Особые благодарности:
+
+   VaStaNi - без его кода написание MIDAMP не имело бы смысла
+   Standard MIDI Files 0.06        March 1, 1988
+   MIDI 1.0 Specification
+   General MIDI Level Spec
+   MIDI SAMPLE DUMP STANDARD
+   Standard MIDI File Format by Dustin Caldwell
+   Формат файлов MIDI
+   The USENET MIDI Primer by Bob McQueer
+   Павлюшину Евгению за непревзойденный SYSXTREE (DLGS.INC - переработанный с
+      учетом специфики MIDAMP'a макрос opendialog библиотеки ASCL)
+
+Пожелания и сообщения об ошибках направляйте на wil_low@hotbox.ru или на форум
+meos.sysbin.com.
+
+До новых встреч!

@@ -110,7 +110,7 @@ if SYS eq win
 else
     Msg  0
     Msg  1
-    mcall 40,10000101b
+    mcall 40,1000101b
 ;    jmp again
     CmdLine
   cmdl:

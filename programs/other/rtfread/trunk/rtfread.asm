@@ -40,20 +40,19 @@ GUTTER equ 10
 BENCH  equ 0;1
 syms equ 12
 
-  use32 	     ; включить 32-битный режим ассемблера
-  org	 0x0	     ; адресация с нуля
+  use32              ; включить 32-битный режим ассемблера
+  org    0x0         ; адресация с нуля
 
-  db	 'MENUET01'  ; 8-байтный идентификатор MenuetOS
-  dd	 0x01	     ; версия заголовка (всегда 1)
-  dd	 START	     ; адрес первой команды
-  dd	 I_END0      ; размер программы
-  dd	 esp_end     ; количество памяти
-  dd	 sys_mem     ; адрес вершины стэка
-  dd	 fname_buf   ; адрес буфера для параметров (не используется)
-  dd	 0x0	     ; зарезервировано
+  db     'MENUET01'  ; 8-байтный идентификатор MenuetOS
+  dd     0x01        ; версия заголовка (всегда 1)
+  dd     START       ; адрес первой команды
+  dd     I_END0      ; размер программы
+  dd     esp_end     ; количество памяти
+  dd     sys_mem     ; адрес вершины стэка
+  dd     fname_buf   ; адрес буфера для параметров (не используется)
+  dd     0x0         ; зарезервировано
 
-include 'lang.inc'
-include 'macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+include 'MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
 include 'debug.inc'
 if ~ RENDER eq PIX
   TOP=TOP+4
@@ -77,7 +76,7 @@ START:
   end if
  start2:
     cmp  byte[fname_buf],0
-    je	 load_file;top_red
+    je   load_file;top_red
     jmp  noactivate
  prep_load:
 ;    mcall 18,3,dword[prcinfo+30]
@@ -103,9 +102,9 @@ START:
     mov  [HClick],-100
  load_help:
     test eax,eax
-    jz	 .sizok
+    jz   .sizok
     cmp  eax,5
-    je	 .sizok
+    je   .sizok
   .nosizok:
     mov  dword[fileinfo.name],N_A
   .sizok:
@@ -124,38 +123,38 @@ START:
     mov  [fname_size],edi
 top_red:
     mov  [top],TOP
-red:			; перерисовать окно
+red:                    ; перерисовать окно
 
-    call draw_window	; вызываем процедуру отрисовки окна
+    call draw_window    ; вызываем процедуру отрисовки окна
 
 ;---------------------------------------------------------------------
 ;---  ЦИКЛ ОБРАБОТКИ СОБЫТИЙ  ----------------------------------------
 ;---------------------------------------------------------------------
 
 still:
-    mcall 10		; функция 10 - ждать события
+    mcall 10            ; функция 10 - ждать события
 
-    cmp  eax,1		; перерисовать окно ?
-    je	 red		; если да - на метку red
-    cmp  eax,3		; нажата кнопка ?
-    je	 button 	; если да - на button
-    cmp  eax,2		; нажата клавиша ?
-    je	 key		; если да - на key
+    cmp  eax,1          ; перерисовать окно ?
+    je   red            ; если да - на метку red
+    cmp  eax,3          ; нажата кнопка ?
+    je   button         ; если да - на button
+    cmp  eax,2          ; нажата клавиша ?
+    je   key            ; если да - на key
 
-    jmp  still		; если другое событие - в начало цикла
+    jmp  still          ; если другое событие - в начало цикла
 
 
 ;---------------------------------------------------------------------
 
 
-  key:			; нажата клавиша на клавиатуре
-    mcall 2		; функция 2 - считать код символа (в ah)
-    cmp  ah,104 	; HELP
+  key:                  ; нажата клавиша на клавиатуре
+    mcall 2             ; функция 2 - считать код символа (в ah)
+    cmp  ah,104         ; HELP
     jne  .nohelp
   .help:
     xor  [mode],RTF_HELP
     test [mode],RTF_HELP
-    jz	 load_file
+    jz   load_file
     mov  ecx,help_end-help_file
     mov  [block_end],ecx
     add  [block_end],I_END
@@ -176,34 +175,34 @@ still:
 ;    je   still
 ;    jmp  prep_load
   .nohelp2:
-    cmp  ah,114 	; R - redraw
-    je	 red
-    cmp  ah,99		; C - color
+    cmp  ah,114         ; R - redraw
+    je   red
+    cmp  ah,99          ; C - color
     jne  .nocolor
   .color:
     xor  [mode],RTF_COLORLESS
     jmp  red
   .nocolor:
-    cmp  ah,97		; A - alignment
+    cmp  ah,97          ; A - alignment
     jne  .noalign
   .alignment:
     xor  [mode],RTF_ALIGNLESS
     jmp  red
   .noalign:
-    cmp  ah,44		; < - pitch dec
+    cmp  ah,44          ; < - pitch dec
     jne  .nopd
   .decp:
     dec  [pitch]
     jmp  red
   .nopd:
-    cmp  ah,46		; < - pitch inc
+    cmp  ah,46          ; < - pitch inc
     jne  .nopi
   .incp:
     inc  [pitch]
     jmp  red
   .nopi:
-    cmp  ah,180 	; Home
-    je	 top_red
+    cmp  ah,180         ; Home
+    je   top_red
     mov  ebx,dword[prcinfo+46]
     sub  ebx,TOP+15
     cmp  ah,183 ;PgDn
@@ -221,20 +220,20 @@ still:
     jne  .nopgup
     add  [top],bx
     cmp  [top],TOP
-    jl	 red
+    jl   red
     mov  [top],TOP
     cmp  cx,[top]
-    je	 still
+    je   still
     jmp  red
   .nopgup:
     cmp  ah,178 ;arrUp
     jne  .noarup
     add  [top],CHARH
     cmp  [top],TOP
-    jl	 red
+    jl   red
     mov  [top],TOP
     cmp  cx,[top]
-    je	 still
+    je   still
     jmp  red
   .noarup:
   if  RENDER eq FREE
@@ -255,10 +254,10 @@ still:
     jmp  .zoom
   .nominus:
   end if
-    cmp  ah,108 	; L - load
+    cmp  ah,108         ; L - load
     jne  stilld
   .file_open:
-    or	 [mode],RTF_OPENING
+    or   [mode],RTF_OPENING
     opendialog draw_window, prep_load, st_1, fname_buf
   st_1:
     and  [mode],not RTF_OPENING
@@ -269,37 +268,37 @@ still:
 ;---------------------------------------------------------------------
 
   button:
-    mcall 17		; 17 - получить идентификатор нажатой кнопки
+    mcall 17            ; 17 - получить идентификатор нажатой кнопки
     cmp   ah,2
-    je	  key.help
+    je    key.help
     cmp   ah,3
-    je	  key.color
+    je    key.color
     cmp   ah,4
-    je	  key.alignment
+    je    key.alignment
     cmp   ah,5
-    je	  key.file_open
+    je    key.file_open
     cmp   ah,6
-    je	  key.incp
+    je    key.incp
     cmp   ah,7
-    je	  key.decp
+    je    key.decp
   if RENDER eq FREE
     cmp   ah,8
-    je	  key.zminus
+    je    key.zminus
     cmp   ah,9
-    je	  key.zplus
+    je    key.zplus
   end if
-    cmp   ah, 1 	; если НЕ нажата кнопка с номером 1,
-    jne   .noexit	;  вернуться
+    cmp   ah, 1         ; если НЕ нажата кнопка с номером 1,
+    jne   .noexit       ;  вернуться
 
   .exit:
-    mcall -1		; иначе конец программы
+    mcall -1            ; иначе конец программы
   .noexit:
     cmp   ah,20
     jne   still
     mcall 37,1
     and   eax,0xffff
     cmp   eax,[HClick]
-    je	  still
+    je    still
     mov   [HClick],eax
     sub   eax,25
     mul   [HDoc]
@@ -317,13 +316,14 @@ still:
 
 draw_window:
 
-    mcall 12, 1 		   ; функция 12: сообщить ОС об отрисовке окна
-				   ; 1 - начинаем рисовать
+    mcall 12, 1                    ; функция 12: сообщить ОС об отрисовке окна
+                                   ; 1 - начинаем рисовать
+
     mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
     mcall 9,procinfo,-1
     mov   eax,[procinfo.x_size]
     cmp   eax,1
-    ja	  .temp12345
+    ja      .temp12345
     ret
   .temp12345:
 
@@ -344,10 +344,10 @@ draw_window:
     and  [mode],not RTF_TOEOF
     mov  ebx,[edi+42]
     cmp  ebx,[wSave]
-    je	 .nochg
+    je   .nochg
   .chg:
     mov  [wSave],ebx
-    or	 [mode],RTF_TOEOF
+    or   [mode],RTF_TOEOF
     and  [HDoc],0
     and  [line_count],0
     mov  [HClick],-100
@@ -359,29 +359,29 @@ draw_window:
     mov  esi,0xb810e7
     mov  edx,2
  BTN_SPACE equ 14 shl 16
-    mcall 8		;2
+    mcall 8             ;2
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall 8,,,,0x459a	 ;3
+    mcall 8,,,,0x459a    ;3
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall ,,,,0x107a30	;4
+    mcall ,,,,0x107a30  ;4
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall ,,,,0xcc0000	;5
+    mcall ,,,,0xcc0000  ;5
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall ,,,,0x575f8c	;6
+    mcall ,,,,0x575f8c  ;6
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall ,,,,0x575f8c	;7
+    mcall ,,,,0x575f8c  ;7
   if RENDER eq FREE
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall ,,,,0x6a73d0	;8
+    mcall ,,,,0x6a73d0  ;8
     sub  ebx,BTN_SPACE
     inc  edx
-    mcall ,,,,0xd048c8	;9
+    mcall ,,,,0xd048c8  ;9
   end if
     shr  ecx,16
     mov  bx,cx
@@ -476,9 +476,9 @@ end if
     loop .l0
  end if
  .ex:
-    mcall 12, 2 		   ; функция 12: сообщить ОС об отрисовке окна
-				   ; 2, закончили рисовать
-    ret 			   ; выходим из процедуры
+    mcall 12, 2                    ; функция 12: сообщить ОС об отрисовке окна
+                                   ; 2, закончили рисовать
+    ret                            ; выходим из процедуры
 
 if GUTTER eq 1
    arrow db 0x19
@@ -547,6 +547,8 @@ end if
   Free BGIfree FONT_NAME,0,0,1.0,1.0,char,1,0x44000000,0
 end if
 I_END0:
+fname_buf:
+        rb      1024+16
 if BENCH eq 1
   bench dd ?
 end if
@@ -594,13 +596,12 @@ save_stack:
 rb RTFSTACKSIZE
 save_limit:
 rb BGIFONTSIZE
-fname_buf rd 16
 
 listptr dd ?
 szKeyword rb 31
 szParameter rb 21
 block_end dd ?
-I_END:				   ; метка конца программы
+I_END:                             ; метка конца программы
 rb RTFSIZE
 esp1:
 rb ESPSIZE

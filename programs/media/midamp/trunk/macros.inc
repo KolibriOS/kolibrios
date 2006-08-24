@@ -143,8 +143,7 @@ macro mcall a,b,c,d,e,f {   ; mike.dld
 
 
 
-; language for programs
-lang fix ru ; ru en fr ge fi
+
 
 
 

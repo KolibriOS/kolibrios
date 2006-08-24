@@ -19,7 +19,7 @@
     dd      0x01           ; header version
     dd      START          ; start of code
     dd      I_END          ; size of image
-    dd      0x20000        ; memory for app
+    dd      0x10000        ; memory for app
     dd      0x10000        ; esp
     dd      param_area , 0x0      ; I_Param , I_Icon
 
@@ -27,49 +27,30 @@ include 'lang.inc'
 include 'macros.inc'       ; very useful stuff for MeOS
 include 'ascl.inc'
 
-STRLEN = 48                ; maximal length of filename
-
-
 START:                     ; start of execution
 
 ; Параметры:
-; от 0 до 100 путь к источнику
-; от 100 до 200 путь к приемнику
-;
+; db n1 = длина пути к источнику
+; times n1 db ? = путь к источнику
+; db n2 = длина пути к приёмнику
+; times n2 db ? = путь к приёмнику
+; db 0
+
 ;get param
-    mov eax,15
-    cmp byte [param_area],0
-    je  err_exit   ;source not found
-    mov eax,16
-    cmp byte [param_area+100],0
-    je  err_exit   ;dest not found
-
-    mov ecx,199
-cdf:
-    mov al,[param_area+ecx]
-    cmp al,byte 32
-    jne nor
-    mov al,byte 0
-nor:
-    mov al,[param_area+ecx]
-    dec ecx
-    jns cdf
-
-    mov ecx,STRLEN - 4
-copysp:
-    mov al,[param_area+ecx]
-    mov [source+ecx],al
-    dec ecx
-    jns copysp
-    mov [source+42],byte 0
-
-    mov ecx,STRLEN - 4
-copydp:
-    mov al,[param_area+ecx+100]
-    mov [destination+ecx],al
-    dec ecx
-    jns copydp
-    mov [destination+42],byte 0
+        mov     eax, 15
+        lea     esi, [param_area+1]
+        movzx   ecx, byte [esi-1]
+        jecxz   err_exit
+        mov     edi, source
+        rep     movsb
+        mov     byte [edi], 0
+        inc     eax
+        movzx   ecx, byte [esi]
+        inc     esi
+        jecxz   err_exit
+        mov     edi, destination
+        rep     movsb
+        mov     byte [edi], 0
 
     call draw_window
     call copy_file
@@ -90,19 +71,16 @@ err_exit:
     push eax
     call draw_window
     pop  eax
-    jmp copy_error
+;    jmp copy_error
 
 ; print message now
 copy_error:
-    mov  ebp,43
-    mul  ebp
-    mov  ebp,eax
+        imul    ebp, eax, 43
 
     mov  eax,4
     mov  ebx,20*65536+70
     mov  ecx,0x10ff0000
-    mov  edx,errors ;*8]
-    add  edx,ebp
+    lea  edx,[errors+ebp]
     mov  esi,43  ;[errors+edi*8+4]
     int  0x40
     jmp dexit
@@ -122,10 +100,10 @@ copy_error:
 ;====================================================
 copy_file:
     ; at first we must get the size of the source file
-    mov  [source_info.blocks],1 ; load only 512 bytes
-    mov  eax,58
-    mov  ebx,source_info
-    int  0x40
+        mov     dword [source_attr+32], 0
+        mov     eax, 70
+        mov     ebx, source_attr_info
+        int     0x40
 
     ; now eax contains error code
     ; and ebx contains file size in bytes
@@ -141,9 +119,9 @@ copy_file:
   .ok_getsize:
 
     ; allocate memory
+    mov  ebx,[source_attr+32]
     push ebx         ; save file size
-    mov  ecx,ebx
-    add  ecx,0x20000 ; size of memory needed = 0x20000+filesize
+    lea  ecx,[ebx+0x10000] ; size of memory needed = 0x10000+filesize
     mov  eax,64      ; func 64
     mov  ebx,1       ; resize application memory
     int  0x40
@@ -157,18 +135,16 @@ copy_file:
   .ok_memory:
 
     ; save number of blocks to source_info
-    shr  ebx,9       ; divide by 512
-    inc  ebx         ; blocks++
-    mov  [source_info.blocks],ebx
+        mov     [source_info.bytes], ebx
     ; read the source file
-    mov  eax,58
+    mov  eax,70
     mov  ebx,source_info
     int  0x40
 
-    ; ebx = file size
+    ; ebx = number of read bytes = file size
     ; save loaded file
-    mov  [dest_info.bytes2write],ebx ; file size in bytes
-    mov  eax,58
+    mov  [dest_info.bytes],ebx ; file size in bytes
+    mov  eax,70
     mov  ebx,dest_info
     int  0x40
 
@@ -185,30 +161,11 @@ copy_file:
     ; return to the initial amount of memory
     mov  eax,64
     mov  ebx,1
-    mov  ecx,0x20000
+    mov  ecx,0x10000
     int  0x40
 
     xor  eax,eax      ; eax = message number (0-OK)
-
-; print strings (source & destination)
-print_text:
-    mov  eax,13
-    mov  ebx,107*65536+STRLEN*6
-    mov  ecx,[ya]
-    shl  ecx,16
-    add  ecx,9
-    mov  edx,0xf2f2f2
-    int  0x40
-
-    mov  eax,4
-    mov  ebx,109*65536
-    add  ebx,[ya]
-    xor  ecx,ecx
-    mov  edx,[addr]
-    mov  esi,STRLEN
-    int  0x40
-
-    ret
+    jmp  copy_error
 
 
 ;   *********************************************
@@ -251,23 +208,23 @@ draw_window:
 
     mov  esi,source
     mov  edi,text+14
-    mov  ecx,STRLEN
+    mov  ecx,47
     rep  movsb
 
     mov  esi,destination
-    mov  edi,text+STRLEN+59-45+14
-    mov  ecx,STRLEN
+    mov  edi,text+62+14
+    mov  ecx,47
     rep  movsb
 
     mov  ebx,25*65536+36   ; print filenames
     xor  ecx,ecx
     mov  edx,text
-    mov  esi,STRLEN+59-45
+    mov  esi,62
   newline:
     mov  eax,4
     int  0x40
     add  ebx,16
-    add  edx,STRLEN+59-45
+    add  edx,62
     cmp  [edx],byte 'x'
     jnz  newline
 
@@ -279,43 +236,20 @@ draw_window:
 
 
 ; DATA AREA
-align 4
-
-param_area:
-times 256 db 0
-
-source_info:                 ; SOURCE FILEINFO
-  .mode            dd 0      ; read file
-  .start_block     dd 0x0    ; block to read
-  .blocks          dd 0x700  ; num of blocks
-  .address         dd 0x20000
-  .workarea        dd 0x10000
-  source:
-  times (STRLEN) db 32
-  db 0
-
-dest_info:                   ; DESTINATION FILEINFO
-  .mode            dd 1      ; write
-  .notused         dd 0x0    ; not used
-  .bytes2write     dd 0      ; bytes to write
-  .address         dd 0x20000
-  .workarea        dd 0x10000
-  destination:
-  times (STRLEN) db 32
-  db 0
 
   align 4
   addr  dd  0x0
   ya    dd  0x0
   temp  dd  0
 
+if lang eq ru
 text:
       db '   ОТКУДА:    |Россия, Селятино, МПК Москва  , 1 Курс         '
       db '    КУДА:     |        Павлюшин Евгений, waptap@mail.ru       '
       db '                                                              '
       db 'x' ; <- END MARKER, DONT DELETE
 labelt:
-      db   'КОПИРОВАИЕ ФАЙЛА'
+      db   'КОПИРОВАНИЕ ФАЙЛА'
 labellen:
 
 errors:
@@ -336,6 +270,70 @@ errors:
   db     "(запись) неизвестная ошибка                "
   db     "Путь к источнику и приемнику не указаны!!! "
   db     "Путь к приемнику не указан!!!              "
+else
+text:
+      db 'SOURCE:       |                                               '
+      db 'DESTINATION:  |                                               '
+      db '                                                              '
+      db 'x' ; <- END MARKER, DONT DELETE
+labelt:
+      db   'SYSTREE FILE COPIER'
+labellen:
+
+errors:
+  db     "Success!                                   "
+  db     "(read) no hd base or partition defined     "
+  db     "(read) unsupported file system             "
+  db     "(read) unknown file system                 "
+  db     "(read) hd partition not defined            "
+  db     "out of memory                              "
+  db     "(read) end of file                         "
+  db     "(read) unknown error                       "
+  db     "(write) no hd base or partition defined    "
+  db     "(write) unsupported file system            "
+  db     "(write) unknown file system                "
+  db     "(write) hd partition not defined           "
+  db     "oh shit!                                   "
+  db     "(write) file not found                     "
+  db     "(write) unknown error                      "
+  db     "Path to source is not given!!!             "
+  db     "Path to destination is not given!!!        "
+end if
 
          ;0123456789012345678901234567890123456789012
+
+source_attr_info:
+        dd      5
+        dd      0
+        dd      0
+        dd      0
+        dd      source_attr
+        db      0
+        dd      source
+
+source_info:
+        dd      0
+        dd      0       ; start from 1st byte
+        dd      0
+.bytes  dd      ?
+        dd      0x10000
+        db      0
+        dd      source
+
+dest_info:                   ; DESTINATION FILEINFO
+        dd      2
+        dd      0
+        dd      0
+.bytes  dd      ?
+        dd      0x10000
+
 I_END:
+
+destination:
+        rb      256
+source:
+        rb      256
+source_attr:
+        rb      40
+
+param_area      rb      256

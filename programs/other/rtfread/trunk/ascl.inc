@@ -133,9 +133,9 @@ local dlg_is_work, ready, procinfo
     cld
 ;;    mov esi,path
     mov edi,path
-    mov eax,0
-    mov ecx,200
-    rep stosb
+    xor eax,eax
+    mov ecx,(1024+16)/4
+    rep stosd
 
 ;mov [get_loops],0
 mov [dlg_pid_get],0
@@ -177,7 +177,7 @@ new_d:
     mov eax,60
     mov ebx,1        ; define IPC
     mov ecx,path     ; offset of area
-    mov edx,150      ; size 150 bytes
+    mov edx,1024+16  ; size
     int 0x40
 
 ; change wanted events list 7-bit IPC event
@@ -189,7 +189,7 @@ new_d:
 ; STEP 3 run SYSTEM XTREE with parameters
 ;
 
-    mov eax,58
+    mov eax,70
     mov ebx,run_fileinfo
     int 0x40
 
@@ -200,15 +200,14 @@ getmesloop:
     mov eax,23
     mov ebx,50     ;0.5 sec
     int 0x40
-
-    cmp eax,1
-    je  mred
-    cmp eax,2
-    je  mkey
-    cmp eax,3
-    je  mbutton
-    cmp eax,7
-    je  mgetmes
+        dec     eax
+        jz      mred
+        dec     eax
+        jz      mkey
+        dec     eax
+        jz      mbutton
+        cmp     al, 7-3
+        jz      mgetmes
 
 ; Get number of procces
     mov ebx,procinfo
@@ -295,14 +294,14 @@ mgetmes:
 ready:
 ;
 ; The second message get
-; Second message is 100 bytes path to SAVE/OPEN file
+; Second message is 1024 bytes path to SAVE/OPEN file
 ; shl path string on 16 bytes
 ;
     cld
     mov esi,path+16
     mov edi,path
-    mov ecx,200
-    rep movsb
+    mov ecx,1024/4
+    rep movsd
     mov [edi],byte 0
 
     jmp openoff
@@ -318,16 +317,16 @@ param:
    dd 0,0  ; Type of dialog
 
 run_fileinfo:
- dd 16
+ dd 7
  dd 0
  dd param
  dd 0
- dd procinfo ; 0x10000
+ dd 0
 ;run_filepath
  db '/RD/1/SYSXTREE',0
 
 procinfo:
-times 256 db 0
+times 1024 db 0
 }
 
 
@@ -345,9 +344,9 @@ local dlg_is_work, ready, procinfo
     cld
 ;;    mov esi,path
     mov edi,path
-    mov eax,0
-    mov ecx,200
-    rep stosb
+    xor eax,eax
+    mov ecx,(1024+16)/4
+    rep stosd
 
 ;mov [get_loops],0
 mov [dlg_pid_get],0
@@ -389,7 +388,7 @@ new_d:
     mov eax,60
     mov ebx,1        ; define IPC
     mov ecx,path ; offset of area
-    mov edx,120      ; size 150 bytes
+    mov edx,1024+16      ; size
     int 0x40
 
 ; change wanted events list 7-bit IPC event
@@ -401,7 +400,7 @@ new_d:
 ; STEP 3 run SYSTEM XTREE with parameters
 ;
 
-    mov eax,58
+    mov eax,70
     mov ebx,run_fileinfo
     int 0x40
 
@@ -412,15 +411,14 @@ getmesloop:
     mov eax,23
     mov ebx,50     ;0.5 sec
     int 0x40
-
-    cmp eax,1
-    je  mred
-    cmp eax,2
-    je  mkey
-    cmp eax,3
-    je  mbutton
-    cmp eax,7
-    je  mgetmes
+        dec     eax
+        jz      mred
+        dec     eax
+        jz      mkey
+        dec     eax
+        jz      mbutton
+        cmp     al, 7-3
+        jz      mgetmes
 
 ; Get number of procces
     mov ebx,procinfo
@@ -457,6 +455,7 @@ mred:
     call redproc
     jmp  getmesloop
 mkey:
+    mov  eax,2
     int  0x40                   ; read (eax=2)
     jmp  getmesloop
 mbutton:
@@ -506,14 +505,14 @@ mgetmes:
 ready:
 ;
 ; The second message get
-; Second message is 100 bytes path to SAVE/OPEN file
+; Second message is 1024 bytes path to SAVE/OPEN file
 ; shl path string on 16 bytes
 ;
     cld
     mov esi,path+16
     mov edi,path
-    mov ecx,200
-    rep movsb
+    mov ecx,1024/4
+    rep movsd
     mov [edi],byte 0
 
     jmp openoff
@@ -525,21 +524,22 @@ dlg_pid_get dd 0
 DLGPID      dd 0
 
 param:
-   rb 4  ; My dec PID
-   rb 6  ; Type of dialog
+   dd 0  ; My dec PID
+   dd 0,0  ; Type of dialog
 
 run_fileinfo:
- dd 16
+ dd 7
  dd 0
  dd param
  dd 0
- dd procinfo
-run_filepath:
+ dd 0
+;run_filepath:
  db '/RD/1/SYSXTREE',0
 
 procinfo:
-times 256 db 0
+times 1024 db 0
 }
+
 
 
 

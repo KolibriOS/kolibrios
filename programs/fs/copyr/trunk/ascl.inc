@@ -1,5 +1,3 @@
-lang equ ru ; ru en fr ge fi
-
 ;
 ;   Assembler
 ;     SMALL

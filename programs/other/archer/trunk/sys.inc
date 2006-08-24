@@ -385,12 +385,26 @@ get_6ASCII_num:
 }
 
 StartPad:
-;    mcall 19,editorcmd,dumpfile
     pusha
     mov   esi,[outfile.size]
 ;    dpd  esi
-    mov   [par_fsize],esi
-    mcall 19,editorcmd,editor_par
+; convert number in esi to decimal representation
+        mov     ecx, 10
+        push    -'0'
+        mov     eax, esi
+@@:
+        xor	edx, edx
+        div     ecx
+        push    edx
+        test    eax, eax
+        jnz     @b
+        mov     edi, par_fsize
+@@:
+        pop     eax
+        add     al, '0'
+        stosb
+        jnz     @b
+    mcall 70,fileinfo
     mov  ecx,eax
     mcall 5,20
     mcall 60,2,,[outfile.out];output
@@ -398,7 +412,13 @@ StartPad:
     popa
     ret
 
-editorcmd db 'TINYPAD    '
+fileinfo:
+        dd      7
+        dd      0
+        dd      editor_par
+        dd      0
+        dd      0
+        db      '/RD/1/TINYPAD',0
 editor_par db '*'
-par_fsize  dd ?
+par_fsize rb 11
 end if
