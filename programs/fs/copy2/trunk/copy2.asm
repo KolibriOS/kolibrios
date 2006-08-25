@@ -363,6 +363,11 @@ lsz  text,\
   en, '                   COPY SOURCE -> DESTINATION                 ',\
   en, 'x',\ ; <- END MARKER, DONT DELETE
 \
+  de, 'QUELLE:       |   Russia, Yaroslavl                           ',\
+  de, 'ZIEL:         |        Poddubny Ivan, ivan-yar@bk.ru          ',\
+  de, '                   KOPIERE QUELLE -> ZIEL                     ',\
+  de, 'x',\ ; <- END MARKER, DONT DELETE
+\
   fr, 'SOURCE:       |                                               ',\
   fr, 'DESTINATION:  |                                               ',\
   fr, '                           COPIER                             ',\
@@ -372,6 +377,7 @@ lsz  text,\
 lsz  header,\
   ru, 'ŠŽˆŽ‚€’œ ”€‰‹',\
   en, 'SYSTREE FILE COPIER',\
+  de, 'SYSTREE DATEIKOPIERER',\
   fr, 'COPIER LE FICHIER'
 
 
@@ -405,7 +411,7 @@ strtbl errors,\
        "?",\
        "(§ ¯¨áì) ä ©« ­¥ ­ ©¤¥­",\
        "(§ ¯¨áì) ­¥¨§¢¥áâ­ ï ®è¨¡ª "
-else
+else if lang eq en
 strtbl errors,\
        "Success!",\
        "(read) no hd base or partition defined",\
@@ -422,6 +428,23 @@ strtbl errors,\
        "?",\
        "(write) end of file",\
        "(write) unknown error"
+else
+strtbl errors,\
+       "Erfolgreich!",\
+       "(lesen) Keine Festplatte oder Partition definiert",\
+       "(lesen) Dateisystem nicht unterstuetzt",\
+       "(lesen) Unbekanntes Dateisystem",\
+       "(lesen) Keine Partition definiert",\
+       "Zu wenig Speicher",\
+       "(lesen) Dateiende erreicht",\
+       "(lesen) Unbekanner Fehler",\
+       "(schreiben) Keine Festplatte oder Partition definiert",\
+       "(schreiben) Dateisystem nicht unterstuetzt",\
+       "(schreiben) Unbekanntes Dateisystem",\
+       "(schreiben) Keine Partition definiert",\
+       "?",\
+       "(schreiben) Dateiende erreicht",\
+       "(schreiben) Unbekanner Fehler"
 end if
 
 I_END:

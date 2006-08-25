@@ -589,6 +589,7 @@ file_start: dd 16
 start_application: db '/RD/1/LAUNCHER',0
                    times 60 db 32
 
+if lang eq en
 text:
   db ' NAME/TERMINATE     PID     CPU-USAGE  %   '
   db 'MEMORY START/USAGE  W-STACK   W-SIZE'  
@@ -602,6 +603,21 @@ tbte_2:
 labelt:
      db   'Processes - Ctrl/Alt/Del'
 labellen:
+else
+text:
+  db ' NAME/BEENDEN       PID     CPU-LAST   %   '
+  db 'SPEICHER START/NUTZUNG  W-STACK   W-SIZE'  
+
+tbts:   db  'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
+tbte:
+tbts_2  db  '>'
+tbts_3  db  'START'
+tbte_2:
+
+labelt:
+     db   'Prozesse  - Ctrl/Alt/Del'
+labellen:
+end if
 
 I_END:
 

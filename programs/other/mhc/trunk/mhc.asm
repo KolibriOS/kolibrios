@@ -207,7 +207,7 @@ ENTRANCE:
  xor eax,eax           ; Define window
  mov ebx,100*65536+240
  mov ecx,100*65536+130
- mov edx,0x02AAAAAA
+ mov edx,0x03AAAAAA
  mov esi,0x80777777
  mov edi,0x00777777
  int 0x40
@@ -232,16 +232,17 @@ ENTRANCE:
 
  pusha
 
- mov eax,8            ; Buttons
- mov ebx,222*65536+10
- mov ecx,6*65536+10
- mov edx,1
- mov esi,0x555555
- int 0x40
+; mov eax,8            ; Buttons
+; mov ebx,222*65536+10
+; mov ecx,6*65536+10
+; mov edx,1
+; mov esi,0x555555
+; int 0x40
 
+ mov eax,8
  mov ebx,15*65536+100
  mov ecx,70*65536+13
- inc edx
+ mov edx,2
  int 0x40
 
  inc edx
@@ -346,6 +347,25 @@ ENTRANCE:
 
  ; interface data
 
+ if lang eq de
+ keylab db "    PACKEN           ENTPACKEN"
+ dellab db "   LOESCHE I/O      LOESCHE *.MHC"
+ title  db "MHC 0.09"
+ arclab db "GEOACJTE DATEI:"
+ unplab db "EIN/AUSGABE DATEI:"
+ fin_text:
+
+ cmfile db "FILENAME.MHC"
+ iofile db "FILENAME.XYZ"
+
+ msgtable:
+ db "PACKE...        "
+ db "ENTPACKE...     "
+ db "KEIN I/O!       "
+ db "KEINE *.MHC!    "
+ db "FALSCHE METHODe!"
+
+ else
  keylab db "    COMPRESS         DECOMPRESS"
  dellab db "   DELETE I/O       DELETE *.MHC"
  title  db "MHC 0.09"
@@ -356,16 +376,20 @@ ENTRANCE:
  cmfile db "FILENAME.MHC"
  iofile db "FILENAME.XYZ"
 
- editstate db 0
- editpos db 0
- msgid db 0
-
  msgtable:
  db "COMPRESSING...  "
  db "DECOMPRESSING..."
  db "I/O NOT FOUND!  "
  db "*.MHC NOT FOUND!"
  db "INVALID METHOD! "
+
+ end if
+
+
+ editstate db 0
+ editpos db 0
+ msgid db 0
+
 
 ; ======== compression/decompression engine ========
 

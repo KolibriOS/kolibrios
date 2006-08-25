@@ -4066,7 +4066,7 @@ end virtual
 pos00 dd 0
 newdoc db ?
 mypath:
-times 258 db 0
+times 1024+16 db 0
 real_posy dd 0
 vscroll_size dd 0
 vscroll_pos dd 0

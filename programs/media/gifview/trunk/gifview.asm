@@ -4,7 +4,7 @@
 ; Uses GIF_LITE 2.0
 ;
 ; Created:      August 31, 2004
-; Last changed: September 9, 2004
+; Last changed: August 25, 2006
 ;
 ; COMPILE WITH FASM
 
@@ -50,9 +50,9 @@ openfile:
     mov  edi,filename
     mov  ecx,[inp_pos]
     rep  movsb
-    mov  byte[edi],al
+    stosb
 openfile2:
-    mov  eax,58
+    mov  eax,70
     mov  ebx,file_info
     int  0x40
     cmp  eax,6
@@ -60,19 +60,19 @@ openfile2:
     test eax,eax
     jnz  ok2
 temp:
-    cmp  ebx,64
-    jbe  ok2
+;    cmp  ebx,64
+;    jbe  ok2
 
     and  [entered],0
     xor  eax,eax
     mov  [imgcount],eax
     mov  esi,filename
     mov  edi,fn_input
-    mov  ecx,256  ;[filename_len]
-    rep  movsb
+    mov  ecx,256/4  ;[filename_len]
+    rep  movsd
 
     mov  edi,fn_input
-    mov  ecx,50
+    mov  ecx,256
     xor  eax,eax
     repne scasb
     sub  edi,fn_input
@@ -101,16 +101,22 @@ red:
     call draw_window
 
 still:
+        cmp     [imgcount], 1
+        jnz     .delay
+        mov     eax, 10
+        int     0x40
+        jmp     @f
+.delay:
     mov  ebx,DELAY
     mov  eax,23
     int  0x40
-
-    cmp  eax,1
-    je   red
-    cmp  eax,2
-    je   key
-    cmp  eax,3
-    je   button
+@@:
+        dec     eax
+        jz      red
+        dec     eax
+        jz      key
+        dec     eax
+        jz      button
     mov  eax,[imgcount]
     cmp  eax,1
     je   still
@@ -167,7 +173,7 @@ still:
     jz   wait_input
     dec  [inp_pos]
     jmp  wait_input
-    jmp  still
+;    jmp  still
 
 ;****************************************
 ;******* DRAW CONTENTS OF INPUT LINE ****
@@ -290,9 +296,9 @@ inp_end:
 file_info:
    dd 0
    dd 0
-   dd 0x100000/512;0x200000
-   dd workarea
-   dd Image;0x100000
+   dd 0
+   dd 0x100000;0x200000
+   dd workarea;0x100000
 I_END:  ; конец программы
 filename:
 ;   db '/hd/1/gif/smileys/sm112000.gif',0
@@ -300,7 +306,7 @@ filename:
 ;   db '/hd/1/gif/explode1.gif',0
 ;   db '/hd/1/gif/tapeta.gif',0
 ;   db '/hd/1/gif/meos.gif',0
-   rb 256
+   rb 257
 ;filename_len dd 0
 entered    rd 1
 

@@ -19,7 +19,7 @@ use32
  dd 0x0
 
 include "macros.inc"
-
+include "lang.inc"
 START:
 
  call cmdexist
@@ -300,7 +300,7 @@ draw:
  mov eax,0
  mov ebx,100*65536+492
  mov ecx,100*65536+280
- mov edx,0
+ mov edx,0x3000000
  mov esi,0x805080d0
  mov edi,0x005080d0
  int 0x40
@@ -312,12 +312,12 @@ draw:
  mov esi,title_end-title
  int 0x40
 
- mov eax,8
- mov ebx,(492-19)*65536+12
- mov ecx,5*65536+12
- mov edx,1
- mov esi,0x6688dd
- int 0x40
+; mov eax,8
+; mov ebx,(492-19)*65536+12
+; mov ecx,5*65536+12
+; mov edx,1
+; mov esi,0x6688dd
+; int 0x40
 
  mov eax,12
  mov ebx,2
@@ -977,7 +977,7 @@ err:
  shl ebx,16
  add ebx,[xpos]
  mov ecx,0x00ddeeff
- mov esi,27
+ mov esi,33
  int 0x40
 
  cld
@@ -2836,7 +2836,50 @@ title_end:
 smb_cursor db '|'
 
 prompt db 'CMD>>'
+if lang eq de
+h1  db '  CMD - Command line interpreter version 0.26 '
+h2  db '        copyleft Chemist - dmitry_gt@tut.by   '
+h3  db '  Verfuegbare Kommandos:                      '
+h4  db '  HELP - Zeoigt diesen Text LS - Zeigt Dateien'
+h5  db '  EXIT - Programmende       CP - Kopiert Datei'
+h6  db '  CLS  - Loescht Bildschirm PS - Processinfo  '
+h7  db '  KILL - Process beenden    RN - File umnennen'
+h8  db '        VER  - Zeigt Programmversion          '
+h9  db '        DEL  - Loescht Datei von Ramdisk      '
+h10 db '        SHUTDOWN - KolibriOS beenden          '
+h11 db '        PAUSE    - Auf Taste warten           '
+h12 db '        ECHO     - Schreibt Text auf Ausgabe  '
+h13 db '        ENDS     - Scriptende                 '
+h14 db '        /[filename] - Script starten          '
+h15 db '        Parameter mit "&" angeben:            '
+h16 db '        tinypad&cmd.asm - oeffnet cmd.asm     '
 
+about db 'Command Line Interpreter version 0.26         '
+
+err1 db 'Kommando oder Dateiname unbekannt'
+
+proc_head db  ' PID Name      Start     Laenge   Proc_NUMB  '
+proc_hd11 db  '-------------------------------------------- '
+
+mess1 db 'Taste druecken fuer weiter (ESC - abbrechen)..'
+mess2 db 'Bitte 4 Byte Prozessnummer angeben (nicht PID)'
+mess3 db 'Prozess mit angegebenere Nummer erfolgreich   '
+mess4 db 'beendet.                                      '
+mess5 db 'Verwendung: del [Dateiname]                   '
+mess6 db 'Angegebene Datei erfolgreich geloescht.       '
+mess7 db 'Datei nicht gefunden!                         '
+mess8 db 'Prozess nicht gefunden!                       '
+mess9 db 'Verwendung: cp [Quelle+Ziel]                  '
+mess0 db 'Verwendung: rn [Quelle+Ziel]                  '
+
+mess11 db 'Datei erfolgreich kopiert                     '
+mess12 db 'ERROR: Kann Datei nicht kopieren!             '
+mess13 db 'ERROR: Datei existiert bereits!               '
+mess14 db 'Datei erfolgreich umbenannt                   '
+mess15 db 'ERROR: Kann Datei nicht umbenennen!           '
+mess16 db 'Scriptname erwartet!                          '
+mess17 db 'Dieses Kommando ist nur in Scripts zulaessig! '
+else
 h1  db '  CMD - Command line interpreter version 0.26 '
 h2  db '        copyleft Chemist - dmitry_gt@tut.by   '
 h3  db '  Available commands:                         '
@@ -2856,7 +2899,7 @@ h16 db '        tinypad&cmd.asm - open cmd.asm        '
 
 about db 'Command Line Interpreter version 0.26         '
 
-err1 db 'Unknown command or filename'
+err1 db 'Unknown command or filename      '
 
 proc_head db  ' PID Name      Start     Length   Proc_NUMB  '
 proc_hd11 db  '-------------------------------------------- '
@@ -2879,7 +2922,7 @@ mess14 db 'File successfully renamed                     '
 mess15 db 'ERROR: Can not rename file!                   '
 mess16 db 'You must specify a command script filename!   '
 mess17 db 'This command is available only in scripts!    '
-
+end if
 
 linen dd 2000
 lpress dd 1

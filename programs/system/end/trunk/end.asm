@@ -172,15 +172,7 @@ if lang eq ru
       db   'èÖêÖáÄèìëä       éíåÖçÄ'
   label3_len = $ - label3
 
-  label4:
-      db   '(End)            (Home)'
-  label4_len = $ - label4
-
-  label5:
-      db   '(Enter)           (Esc)'
-  label5_len = $ - label5
-
-else
+else if lang eq en
 
   label1:
       db   ' SELECT:'
@@ -194,6 +186,22 @@ else
       db   '  RESTART         CANCEL'
   label3_len = $ - label3
 
+else 
+
+  label1:
+      db   'WAEHLEN:'
+  label1_len = $ - label1
+
+  label2:
+      db   ' BEENDEN      KERNEL'
+  label2_len = $ - label2
+
+  label3:
+      db   '  NEUSTART     ABBRECHEN'
+  label3_len = $ - label3
+
+end if
+
   label4:
       db   '(End)            (Home)'
   label4_len = $ - label4
@@ -201,8 +209,6 @@ else
   label5:
       db   '(Enter)           (Esc)'
   label5_len = $ - label5  
-
-end if
 
 
 udata

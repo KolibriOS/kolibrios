@@ -10,25 +10,25 @@
 WIN_X equ (150 shl 16+270)
 WIN_Y equ (100 shl 16+300)
 
-LINE1     equ 27 shl 16+16
+LINE1	  equ 27 shl 16+16
 B_MONTH_X equ 10 shl 16+158
-B_Y       equ LINE1
+B_Y	  equ LINE1
 B_MONTH   equ 63 shl 16+32
 
 B_WBAR_X  equ 10 shl 16+250
 B_WBAR_Y  equ 64 shl 16+20
-B_WEEK    equ 30 shl 16+70
+B_WEEK	  equ 30 shl 16+70
 B_WX_SHIFT equ 32 shl 16
 
 B_DBAR_X  equ B_WBAR_X
 B_DBAR_Y  equ 85 shl 16+190
 
-B_DROP    equ B_MONTH+16
+B_DROP	  equ B_MONTH+16
 B_DAYS_Y  equ 100
 B_DAYS_SHIFT equ 30
 
 B_YEAR_X  equ 173 shl 16+58
-B_YEAR    equ 188 shl 16+32
+B_YEAR	  equ 188 shl 16+32
 
 B_TODAY_X equ 25 shl 16
 B_TODAY_Y equ 48 shl 16+10
@@ -36,33 +36,33 @@ B_TODAY   equ 30 shl 16+50
 
 B_SPIN_WIDTH equ 13
 B_SPIN_X  equ 234 shl 16+B_SPIN_WIDTH
-B_SPIN    equ 238 shl 16+32
+B_SPIN	  equ 238 shl 16+32
 
 B_DATE_X  equ 26 shl 16+60
 B_DATE_Y  equ 275 shl 16+16
 B_DATE_BSHIFT equ 80 shl 16
-B_DATE    equ 32 shl 16+280
+B_DATE	  equ 32 shl 16+280
 B_DATE_SHIFT equ 80 shl 16
 
-B_NS_X    equ 185 shl 16+75
-B_NS_Y    equ 48 shl 16+10
-B_NS      equ 190 shl 16+50
+B_NS_X	  equ 185 shl 16+75
+B_NS_Y	  equ 48 shl 16+10
+B_NS	  equ 190 shl 16+50
 
 FOCUSABLE equ 5
-SKIP      equ 1
+SKIP	  equ 1
 
-use32                ; включить 32-битный режим ассемблера
+use32		     ; включить 32-битный режим ассемблера
 
-  org    0x0         ; адресация с нуля
+  org	 0x0	     ; адресация с нуля
 
-  db     'MENUET01'  ; 8-байтный идентификатор MenuetOS
-  dd     0x01        ; версия заголовка (всегда 1)
-  dd     start       ; адрес метки, с которой начинается выполнение программ
-  dd     I_END       ; размер программы
-  dd     0x1000      ; количество памяти
-  dd     0x1000      ; адрес вершины стэка
-  dd     0x0         ; адрес буфера для строки параметров (не используется)
-  dd     0x0         ; зарезервировано
+  db	 'MENUET01'  ; 8-байтный идентификатор MenuetOS
+  dd	 0x01	     ; версия заголовка (всегда 1)
+  dd	 start	     ; адрес метки, с которой начинается выполнение программ
+  dd	 I_END	     ; размер программы
+  dd	 0x1000      ; количество памяти
+  dd	 0x1000      ; адрес вершины стэка
+  dd	 0x0	     ; адрес буфера для строки параметров (не используется)
+  dd	 0x0	     ; зарезервировано
 include 'lang.inc'
 include 'macros.inc' ; уменьшает размер программы
 ;include 'debug.inc'
@@ -103,7 +103,7 @@ if lang eq ru
      db   'Октябрь '
      db   'Ноябрь  '
      db   'Декабрь '
-else if lang eq ge
+else if lang eq de
      db   9
      db   'Januar   '
      db   'Februar  '
@@ -172,7 +172,7 @@ if lang eq ru
      db   'Пт'
      db   'Сб'
      db   'Вс'
-else if lang eq ge
+else if lang eq de
      db   2
      db   7
      db   'So'
@@ -240,34 +240,34 @@ start:
     jnz  .no2000
     add  [Year],100
   .no2000:
-    jmp  upd            ; здесь начинается выполнение программы
-red:                    ; перерисовать окно
+    jmp  upd		; здесь начинается выполнение программы
+red:			; перерисовать окно
 
-    call draw_window    ; вызываем процедуру отрисовки окна
+    call draw_window	; вызываем процедуру отрисовки окна
 
-still:                  ; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
+still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
-    mov  eax,10         ; функция 10 - ждать события
-    int  0x40           ; вызываем систему
+    mov  eax,10 	; функция 10 - ждать события
+    int  0x40		; вызываем систему
   .evt:
     mov  ebp,[focus]
-    cmp  eax,1          ; перерисовать окно ?
-    je   red            ; если да - на метку red
-    cmp  eax,2          ; нажата клавиша ?
-    je   key            ; если да - на key
-    cmp  eax,3          ; нажата кнопка ?
-    je   button         ; если да - на button
+    cmp  eax,1		; перерисовать окно ?
+    je	 red		; если да - на метку red
+    cmp  eax,2		; нажата клавиша ?
+    je	 key		; если да - на key
+    cmp  eax,3		; нажата кнопка ?
+    je	 button 	; если да - на button
 
-    jmp  still          ; если другое событие - в начало цикла
+    jmp  still		; если другое событие - в начало цикла
 
-  key:                  ; нажата клавиша на клавиатуре
-    mov  eax,2          ; функция 2 - считать код символа
-    int  0x40           ; вызов системы
+  key:			; нажата клавиша на клавиатуре
+    mov  eax,2		; функция 2 - считать код символа
+    int  0x40		; вызов системы
     cmp  ah,9
     jne  no_tab
   .tab:
     cmp  ebp,FOCUSABLE
-    je   foc_cycle
+    je	 foc_cycle
     inc  [focus]
   upd:
     call calculate
@@ -290,38 +290,38 @@ still:                  ; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
     cmp  ebp,4
     jne  no_spinner
     cmp  ah,176
-    je   year_dec
+    je	 year_dec
     cmp  ah,179
-    je   year_inc
+    je	 year_inc
   no_spinner:
     cmp  ebp,2
     jne  .nomonth
     cmp  ah,177
-    je   noclose.drop
+    je	 noclose.drop
     jmp  still
   .nomonth:
     cmp  ebp,3
-    je   noy_up.year_evt
+    je	 noy_up.year_evt
     cmp  ebp,5
     jne  still
     mov  ebx,[day_sel]
-    cmp  ah,176         ; left arrow
-    jb   still
+    cmp  ah,176 	; left arrow
+    jb	 still
     cmp  ah,179
-    ja   still
+    ja	 still
     shr  eax,8
     sub  eax,176
     movsx ecx,byte[day_bounds+eax*2]
     movzx eax,byte[day_bounds+eax*2+1]
     add  ecx,ebx
     test eax,eax
-    jz   .chk0
+    jz	 .chk0
     cmp  ecx,eax
-    ja   still
+    ja	 still
   .ok:
     mov  [day_sel],ecx
     call draw_days
-    jmp  still          ; вернуться к началу цикла
+    jmp  still		; вернуться к началу цикла
   .chk0:
     cmp  ecx,eax
     jle  still
@@ -329,9 +329,9 @@ still:                  ; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
 day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
 
-  button:               ; нажата кнопка в окне программы
-    mov  eax,17         ; 17 - получить идентификатор нажатой кнопки
-    int  0x40           ; вызов системы
+  button:		; нажата кнопка в окне программы
+    mov  eax,17 	; 17 - получить идентификатор нажатой кнопки
+    int  0x40		; вызов системы
     movzx ebx,ah
     cmp  ah,200
     jbe  nodayselect
@@ -346,24 +346,24 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jmp  red
   nodayselect:
     cmp  ah,100
-    jb   no_list
+    jb	 no_list
     sub  ah,100
     mov  byte[Month],ah
     mov  [focus],2
     jmp  upd
   no_list:
-    cmp  ah,1           ; идентификатор == 1 ?
-    jne  noclose        ; если нет - иди вперёд на noclose
+    cmp  ah,1		; идентификатор == 1 ?
+    jne  noclose	; если нет - иди вперёд на noclose
   close:
-    or   eax,-1         ; выход из программы
-    int  0x40           ; вызов системы
+    or	 eax,-1 	; выход из программы
+    int  0x40		; вызов системы
 
   noclose:
-    cmp  ah,2           ; drop down list
+    cmp  ah,2		; drop down list
     jne  no_dropdn
   .drop:
     mov  [focus],2
-    cmp  [dropped],al   ; ==0
+    cmp  [dropped],al	; ==0
     jne  red
     call draw_window
     mov  edx,1 shl 31+231
@@ -376,14 +376,14 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     call draw_dropdown
     jmp  still
   no_dropdn:
-    cmp  ah,3           ; year -1
+    cmp  ah,3		; year -1
     jne  noy_dn
   year_dec:
     dec  [Year]
     mov  [focus],4
     jmp  upd
   noy_dn:
-    cmp  ah,4           ; year+1
+    cmp  ah,4		; year+1
     jne  noy_up
   year_inc:
     inc  [Year]
@@ -402,8 +402,8 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
   .year_evt:
     mov  ebx,10
     cmp  ah,9
-    je   key.tab
-    cmp  ah,8           ; backspace
+    je	 key.tab
+    cmp  ah,8		; backspace
     jne  .nobsp
     mov  eax,[Year]
     xor  edx,edx
@@ -413,17 +413,17 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     call draw_year
     jmp  .still
   .nobsp:
-    cmp  ah,13          ; enter
-    je   upd
+    cmp  ah,13		; enter
+    je	 upd
     cmp  ah,182
-    jne  .noclear       ; del
+    jne  .noclear	; del
     xor  eax,eax
     jmp  .ch_year
   .noclear:
     cmp  ah,48
-    jb   .still
+    jb	 .still
     cmp  ah,57
-    ja   .still
+    ja	 .still
     cmp  [Year],1000
     jae  .still
     shr  eax,8
@@ -445,20 +445,20 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
 
 draw_window:
 
-    mov  eax,12                    ; функция 12: сообщить ОС об отрисовке окна
-    mov  ebx,1                     ; 1 - начинаем рисовать
+    mov  eax,12 		   ; функция 12: сообщить ОС об отрисовке окна
+    mov  ebx,1			   ; 1 - начинаем рисовать
     int  0x40
-                                   ; СОЗДАЁМ ОКНО
-    xor  eax,eax                   ; функция 0 : определить и отрисовать окно
+				   ; СОЗДАЁМ ОКНО
+    xor  eax,eax		   ; функция 0 : определить и отрисовать окно
     mov  ebx,WIN_X
   if SKIP eq 0
     mov  ecx,WIN_Y
   else
     mov  ecx,WIN_Y-15
   end if
-    mov  edx,0x03aabbcc            ; цвет рабочей области  RRGGBB,8->color gl
-    mov  esi,0x805080d0            ; цвет полосы заголовка RRGGBB,8->color gl
-    mov  edi,0x005080d0            ; цвет рамки            RRGGBB
+    mov  edx,0x03aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
+    mov  esi,0x805080d0 	   ; цвет полосы заголовка RRGGBB,8->color gl
+    mov  edi,0x005080d0 	   ; цвет рамки            RRGGBB
     int  0x40
     call draw_week
 
@@ -476,7 +476,7 @@ draw_window:
   else
     mov  edx,10
   end if
-    or   edx,1 shl 29+1 shl 30
+    or	 edx,1 shl 29+1 shl 30
     mov  ebx,B_NS_X
     mov  ecx,B_NS_Y
     int  0x40
@@ -496,11 +496,11 @@ draw_window:
     int  0x40
     call draw_days
 
-                                   ; ЗАГОЛОВОК ОКНА
-    mov  eax,4                     ; функция 4 : написать в окне текст
-    mov  ebx,8*65536+8             ; [x] *65536 + [y]
-    mov  ecx,0x10ddeeff            ; шрифт 1 и цвет ( 0xF0RRGGBB )
-    mov  edx,zagolovok             ; адрес строки
+				   ; ЗАГОЛОВОК ОКНА
+    mov  eax,4			   ; функция 4 : написать в окне текст
+    mov  ebx,8*65536+8		   ; [x] *65536 + [y]
+    mov  ecx,0x10ddeeff 	   ; шрифт 1 и цвет ( 0xF0RRGGBB )
+    mov  edx,zagolovok		   ; адрес строки
     mov  esi,zag_konets-zagolovok  ; и её длина
     int  0x40
 
@@ -518,7 +518,7 @@ draw_window:
     mov  esi,ns_end-n_style
     mov  ebx,B_NS
     cmp  [new_style],1
-    je   .high
+    je	 .high
     mov  ecx,0xa0a0a0
     jmp  .int
   .high:
@@ -548,10 +548,10 @@ draw_window:
 
     call draw_year
     mov  [dropped],0
-    mov  eax,12                    ; функция 12: сообщить ОС об отрисовке окна
-    mov  ebx,2                     ; 2, закончили рисовать
+    mov  eax,12 		   ; функция 12: сообщить ОС об отрисовке окна
+    mov  ebx,2			   ; 2, закончили рисовать
     int  0x40
-    ret                            ; выходим из процедуры
+    ret 			   ; выходим из процедуры
 
 draw_year:
     mcall 8,B_YEAR_X,B_Y,5,0x05080d0
@@ -608,7 +608,7 @@ draw_week:
   .week:
     push ecx
     cmp  ecx,edi
-    je   .holiday
+    je	 .holiday
     mov  ecx,0x10000000
     jmp  .noholiday
   .holiday:
@@ -646,7 +646,7 @@ draw_days:
     mov  ecx,edi
     add  cl,[week_days+1]
     cmp  ecx,7
-    je   .holiday
+    je	 .holiday
     mov  esi,0x10000000
     jmp  .noholiday
   .holiday:
@@ -663,7 +663,7 @@ draw_days:
     sub  ecx,7 shl 16
     mov  edx,[number]
     cmp  edx,[day_sel]
-    je   .draw_sel
+    je	 .draw_sel
     mov  esi,0xe0e0e0
     jmp  .draw_but
   .draw_sel:
@@ -711,10 +711,10 @@ is_leap_year:
     mov  [leap_year],0
     mov  eax,[Year]
     mov  bl,100
-    div  bl          ; ah=Year mod 100, al=Year%100
+    div  bl	     ; ah=Year mod 100, al=Year%100
     test ah,ah
-    jz  .century
-    shr  ax,8        ; ax - last 2 digits
+    jz	.century
+    shr  ax,8	     ; ax - last 2 digits
   .century:
     test al,11b
     jnz  .noleap
@@ -745,7 +745,7 @@ calculate:
     add  eax,ecx
     dec  eax
     cmp  [new_style],0
-    je   .nonew
+    je	 .nonew
     add  eax,2
     xchg eax,ebx
     mov  ecx,100
@@ -770,9 +770,9 @@ calculate:
 
 ; интерфейс программы двуязычный - задайте язык в macros.inc
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
-Fkeys     db 210,211,212,213,214,215,216,217,208,209,228,159
+Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
-zagolovok:               ; строка заголовка
+zagolovok:		 ; строка заголовка
 if lang eq ru
      db   'КАЛЕНДАРЬ'
 else if lang eq ge
@@ -782,7 +782,7 @@ else if lang eq fr
 else
      db   'CALENDAR'
 end if
-zag_konets:              ; и её конец
+zag_konets:		 ; и её конец
 if SKIP eq 0
 datebut:
 if lang eq ru
@@ -802,8 +802,8 @@ end if
 n_style:
 if lang eq ru
      db   'Новый стиль'
-else if lang eq ge
-     db   'Neustil'
+else if lang eq de
+     db   'Neuer Stil'
 else if lang eq fr
      db   'Nouveau'
 else
@@ -825,7 +825,7 @@ focus dd  3
 new_style dd 1
 dropped db 0
 
-I_END:  ; конец программы
+I_END:	; конец программы
 firstday  dd ?
 Year dd   ?
 Month dd  ?
@@ -834,5 +834,5 @@ all_days  dd ?
 
 datestr   dd  ?
 leap_year dd ?
-number    dd ?
+number	  dd ?
 year_input dd ?

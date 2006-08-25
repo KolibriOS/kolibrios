@@ -117,7 +117,8 @@ use32
 
 
 include 'macros.inc'
-include 'VENDORS.INC'
+include 'vendors.inc'
+include 'lang.inc'
 
 START:	  ; start of execution
      call draw_window
@@ -473,6 +474,26 @@ labelt:
 db 'PCI Device Enumeration v 1.31 by J. Delozier, S. Kuzmin and V. Hanla'
  labellen:
 
+if lang eq de
+PCIWin:
+db 'Im Einstellungsmenue muss der PCI Zugriff eingeschaltet sein.      '
+db '                                       '
+db '                                                                   '
+db '                                       '
+db 'PCI Version  =                                                     '
+db '                                       '
+db 'Letzter PCI Bus =                                                  '
+db '                                       '
+db 'Anzahl von Geraeten =                                              '
+db '                                       '
+db '                                                                   '
+db '                                       '
+db 'VenID DevID Bus# Dev# Fnc Rev  Class  Subclass               Herste'
+db 'ller                    Beschreibung   '
+db '----- ----- ---- ---- --- ---  -----  -------- --------------------'
+db '---------------------- ----------------'
+db 'x'
+else
 PCIWin:
 db 'Please remember to enable PCI Access to Applications in Setup Menu.'
 db '                                       '
@@ -482,7 +503,7 @@ db 'PCI Version  =                                                     '
 db '                                       '
 db 'Last PCI Bus =                                                     '
 db '                                       '
-db 'Quantity of devices =                                              '
+db 'Number of devices =                                                '
 db '                                       '
 db '                                                                   '
 db '                                       '
@@ -491,6 +512,8 @@ db 'any                      Description   '
 db '----- ----- ---- ---- --- ---  -----  -------- --------------------'
 db '---------------------- ----------------'
 db 'x'
+end if
+
 
 total	     db 0
 V_Bus	     db 0

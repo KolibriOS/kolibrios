@@ -18,8 +18,10 @@
 ;!!!
 if lang eq en
 include "boot/booteng.inc"     ; english system boot messages
-else
+else if lang eq ru
 include "boot/bootru.inc"      ; russian system boot messages
+else
+include "boot/bootge.inc"      ; german system boot messages
 ;!!!
 end if
 include "boot/ru.inc"          ; Russian font

@@ -525,9 +525,13 @@ if lang eq ru
    header:
         db   '„‘Š€ ’‹€„Šˆ ˆ ‘™…ˆ‰'
     .len = $ - header
-else
+else if lang eq en
    header:
         db   'GENERAL DEBUG & MESSAGE BOARD'
+    .len = $ - header
+else
+   header:
+        db   'ALLGEMEINES DEBUG- & NACHRICHTENBOARD'
     .len = $ - header
 end if
 		 krnl_cnt dd 0

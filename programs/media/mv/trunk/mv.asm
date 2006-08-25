@@ -32,20 +32,16 @@ START:                          ; start of execution
    cmp   byte [temp_area],0
    jz    .no_param
    mov   edi,string      ; clear string
-   mov   ecx,43*3        ;   length of a string
+   mov   ecx,256/4       ;   length of a string
    xor   eax,eax         ;   symbol <0>
-   add   al,14h
-   cld
-   rep   stosb
+   rep   stosd
 
    mov   edi,temp_area   ; look for <0> in temp_area
-   mov   ecx,43*3+1      ;   strlen
+   mov   esi,edi
+   mov   ecx,257         ;   strlen
    repne scasb
-   add   edi,-temp_area  ;   get length of the string
-   dec   edi
+        lea     ecx, [edi-temp_area]
 
-   mov   ecx,edi
-   mov   esi,temp_area
    mov   edi,string
    rep   movsb           ; copy string from temp_area to "string" (filename)
 
@@ -72,6 +68,7 @@ START:                          ; start of execution
 ; теперь в ecx номер процесса
     mov  [process],ecx
 
+draw_still:
     call draw_window
 
 still:
@@ -79,39 +76,34 @@ still:
     mov  eax,10                 ; wait here for event
     int  0x40
 
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+        dec     eax
+        jz      red
+        dec     eax
+        jnz     button
 
+  key:                          ; key
+    mov  al,2
+    int  0x40
+    mov  al,ah
+    cmp  al,6
+    je   kfile
+    cmp  al,15
+    je   kopen
+    cmp  al,9
+    je   kinfo
+    cmp  al,2
+    je   kbgrd
     jmp  still
 
   red:
-    bt   [status],2
-    jnc  @f
-    mov eax,18
-    mov ebx,3
-    mov ecx,[process]
-    int 0x40
-    btr [status],2
-    jmp still
-   @@:
-    call draw_window
-    jmp still
-
-  key:                          ; key
-    int  0x40
-    cmp  ah,6
-    je   kfile
-    cmp  ah,15
-    je   kopen
-    cmp  ah,9
-    je   kinfo
-    cmp  ah,2
-    je   kbgrd
-    jmp  still
+        test    byte [status], 4
+        jz      draw_still
+        mov     al, 18
+        mov     ebx, 3
+        mov     ecx, [process]
+        int     0x40
+        and     byte [status], not 4
+        jmp     still
 
   button:                       ; button
     mov  eax,17                 ; get id
@@ -126,9 +118,9 @@ still:
     cmp  ah,2
     jne  nofile
   kfile:
-    bt   dword [status],0
-    jc   still
-    bts  dword [status],0
+        test    byte [status], 1
+        jnz     still
+        or      byte [status], 1
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread1
@@ -163,9 +155,9 @@ still:
     cmp  ah,4
     jne  noinfo
   kinfo:
-    bt   dword [status],1
-    jc   still
-    bts  dword [status],1
+        test    byte [status], 2
+        jnz     still
+        or      byte [status], 2
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread2
@@ -178,9 +170,9 @@ still:
     cmp  ah,5
     jne  still
   kbgrd:
-    bt dword [status],3
-    jc   still
-    bts dword [status],3
+        test    byte [status], 8
+        jnz     still
+        or      byte [status], 8
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread3
@@ -197,21 +189,9 @@ still:
 
 
 load_image:
-    mov  dword [fileinfo+8],1 ; how many blocks to read (1)
-    mov  eax,58
-    mov  ebx,fileinfo
-    int  0x40
-    cmp  [I_END+2],dword 512  ; размер файла (file size)
-    jbe  @f
-    mov  eax,[I_END+2]
-    shr  eax,9 ; поделим на 512 и прибавим 1 - получим число блоков
-    inc  eax
-
-    mov  dword [fileinfo+8],eax
-    mov  eax,58
-    mov  ebx,fileinfo
-    int  0x40
-@@:
+        mov     eax, 70
+        mov     ebx, fileinfo
+        int     0x40
     mov  eax,[I_END+18]
     mov  ebx,[I_END+22]
     add  eax,20
@@ -263,7 +243,7 @@ load_image:
 
     mov  esi, ecx
     imul esi, edx
-    imul esi, 3
+        lea     esi, [esi+esi*2]
     mov  ebx,5
     mov  ecx,[soi]
     xor  edx,edx
@@ -282,12 +262,14 @@ load_image:
   convert:
     movzx eax,word [I_END+28]
     mul dword [I_END+18]
-    mov  ebx,32
-    div  ebx
-    test edx,edx
-    je   noaddword
-    inc  eax
-  noaddword:
+;    mov  ebx,32
+;    div  ebx
+;    test edx,edx
+;    je   noaddword
+;    inc  eax
+;  noaddword:
+        add     eax, 31
+        shr     eax, 5
     mov  [dwps],eax  ;dwps-doublewords per string
     shl  eax,2
     mov  [bps],eax   ;bps-bytes per string
@@ -462,7 +444,8 @@ labelt:
 
 lsz buttext,\
     en,   ' FILE   OPEN   INFO   BGRD',\
-    ru,   ' ФАЙЛ  ОТКР   ИНФО   ФОН  '
+    ru,   ' ФАЙЛ  ОТКР   ИНФО   ФОН  ',\
+    de,   'DATEI OEFNEN  INFO   HGRD'
 
 status   dd 0  ;bit0=1 if file thread is created
 bps      dd 0
@@ -634,7 +617,7 @@ draw_window1:
     mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt1               ; pointer to text beginning
-    mov  esi,4                     ; text length
+    mov  esi,labelt1.size          ; text length
     int  0x40
 
     call drawstring
@@ -679,21 +662,8 @@ draw_window1:
 
 lsz labelt1,\
    en,  'File',\
-   ru,  'Файл'
-
-pos: dd 6
-fileinfo:
-     dd 0
-     dd 0
-     dd 1          ;number of blocks  of 512 bytes
-     dd I_END
-     dd temp_area
-string:
-; db '/HARDDISK/FIRST/1/DICK.BMP                  '
-; db '/hd/1/menuet/pics/new.bmp                   '
-  db '/rd/1/bgr.bmp                               '
-  db '                                            '
-  db '                                            '
+   ru,  'Файл',\
+   de,  'Datei'
 
 thread2:                          ; start of info thread
 
@@ -823,7 +793,8 @@ draw_window2:
 
 lsz labelt2,\
     en,   'File info',\
-    ru,   'Информация о файле'
+    ru,   'Информация о файле',\
+    de,   'Dateiinfo'
 
 lsz fitext,\
      en, 'FILE SIZE     ',\
@@ -834,7 +805,12 @@ lsz fitext,\
      ru, 'Размер файла  ',\
      ru, 'Ширина        ',\
      ru, 'Высота        ',\
-     ru, 'Бит на пиксел '
+     ru, 'Бит на пиксел ',\
+                          \
+     de, 'FATEIGROESSE  ',\
+     de, 'X GROESSE     ',\
+     de, 'Y GROESSE     ',\
+     de, 'BITS PER PIXEL'
 
 thread3:                          ; start of bgrd thread
 
@@ -939,7 +915,7 @@ draw_window3:
     mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt3               ; pointer to text beginning
-    mov  esi,14                    ; text length
+    mov  esi,labelt3.size          ; text length
     int  0x40
     add  ebx,38*65536+20
     mov  ecx,0xddeeff
@@ -999,27 +975,42 @@ wnd_height dd 53
 
 lsz labelt3,\
     en,   'Background set',\
-    ru,   "Установка фона"
+    ru,   "Установка фона",\
+    de,   'Hintergrund gesetzt'
 
 lsz bgrdtext,\
     en, 'SET AS BACKGROUND:',\
-    ru, 'Тип обоев:'
+    ru, 'Тип обоев:',\
+    de, 'ALS HINTERGRUND'
 
 lsz tiled,\
     en, 'TILED',\
-    ru, 'замостить'
+    ru, 'замостить',\
+    de, 'GEKACHELT'
 
 lsz stretch,\
     en, 'STRETCH',\
-    ru, 'растянуть'
+    ru, 'растянуть',\
+    de, 'GESTRECKT'
 
 lsz ok_btn,\
     en, 'Ok',\
-    ru, 'Ok'
+    ru, 'Ok',\
+    de, 'Ok'
 
-
+pos: dd 6
+fileinfo:
+     dd 0
+     dd 0
+     dd 0
+     dd 0x290000-I_END
+     dd I_END
+string:
+        db      '/rd/1/bgr.bmp',0
 
 IM_END:
+        rb      string+257-$
+
 process_info:
 temp_area:
 rb 0x10000

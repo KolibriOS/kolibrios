@@ -26,8 +26,8 @@ ICON_STRIP equ '/RD/1/ICONSTRP.GIF'
   dd     icon_data+0x30000        ; memory for app
   dd     icon_data+0x30000        ; esp
   dd     I_Param , 0x0  ; I_Param , I_Icon
-include  'lang.inc'
 include  'macros.inc'
+include  'lang.inc'
 COLOR_ORDER equ MENUETOS
 include  'gif_lite.inc'
 ;include  'debug.inc'
@@ -790,40 +790,53 @@ if lang eq ru
       db 255,255,255,0,   '      „€‚’              “„€‹’            '
       db 0,0,0,0,         '€†’… € ‡–  „‹ …„€’‚€   '
       db                  'x' ; <- END MARKER, DONT DELETE
+add_text db '€†’… € ‡– …‘‹‡“…‰ '
+add_text_len:
 
+rem_text db '€†’… € ‡– ‘‹‡“…‰ '
+rem_text_len:
   labelt:
        db ' αβΰ®©ª  ΰ ΅®η¥£® αβ®« '
   labellen:
-else
+else if lang eq en
   text:
       db 255,255,255,0,   '   TITLE                                       '
       db 255,255,255,0,   '  APP NAME                                     '
       db 255,255,255,0,   ' PARAMETERS                                    '
       db 255,255,255,0,   '                APPLY CHANGES                  '
       db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
-      db 0,0,0,0,         '      PRESS ON POSITION OF ICON TO EDIT        '
+      db 0,0,0,0,         'CLICK BUTTON ON ICON POSITION FOR EDIT         '
       db                  'x' ; <- END MARKER, DONT DELETE
+add_text db 'CLICK ON A NOT USED POSITION'
+add_text_len:
 
+rem_text db 'CLICK ICON POSITION; YOU WANT TO DELETE'
+rem_text_len:
   labelt:
        db 'Icon Manager'
   labellen:
+else
+  text:
+      db 255,255,255,0,   '   TITLE                                       '
+      db 255,255,255,0,   '  APP NAME                                     '
+      db 255,255,255,0,   ' PARAMETER                                     '
+      db 255,255,255,0,   '                ANWENDEN                       '
+      db 255,255,255,0,   '     HINZUFUEGEN              ENTFERNEN        '
+      db 0,0,0,0,         'AUF BUTTON KLICKEN, UM ICON ZU EDITIEREN       '
+      db                  'x' ; <- END MARKER, DONT DELETE
+add_text db 'AUF UNBENUTZTE ICONPOSITION KLICKEN'
+add_text_len:
+
+rem_text db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL'
+rem_text_len:
+  labelt:
+       db 'Icon Manager'
+  labellen:
+
 end if
 
 ;ya    dd 0
 
-if lang eq ru
-add_text db '€†’… € ‡– …‘‹‡“…‰ '
-add_text_len:
-
-rem_text db '€†’… € ‡– ‘‹‡“…‰ '
-rem_text_len:
-else
-add_text db 'PRESS ON POSITION OF UNUSED ICON'
-add_text_len:
-
-rem_text db 'PRESS ON POSITION OF USED ICON'
-rem_text_len:
-end if
 arrows db '</>'
 iconname:
       db ICON_APP,0

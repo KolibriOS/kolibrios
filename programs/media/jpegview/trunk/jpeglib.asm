@@ -99,6 +99,8 @@ jpeg_info:  ;fichero en eax
 
 eoi:
       mov esp,[ebp]
+; do not close file - this will be done by caller
+        and       dword [ebp+fichero], 0
       call jpeg_close
       popad
       xor ebp,ebp

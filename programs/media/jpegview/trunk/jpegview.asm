@@ -18,7 +18,10 @@
 ;                   unos retoques
 ;    version 0.14   10th August 2004
 ;                   Mike Hibbett Added setting default colours
+;    version 0.15   24th August 2006
+;                   diamond (rewritten to function 70)
 ;
+
                memsize=20000h
                org 0
  PARAMS     =    memsize - 1024
@@ -33,7 +36,6 @@ use32
                dd     memsize - 1024           ; esp
                dd     PARAMS , 0x0               ; I_Param , I_Icon
 
-include 'lang.inc'
 stack_size=4096 + 1024
 
 include 'macros.inc'
@@ -50,10 +52,6 @@ START:                          ; start of execution
     mov     edi,fin
     call    add_mem
 
-    ; Get some memory
-    mov     ecx,16384
-    call    malloc
-    mov     [work_area],edi
     call    colorprecalc ;inicializa tablas usadas para pasar de ybr a bgr
     call    draw_window
     call    read_string.rs_done
@@ -148,10 +146,6 @@ boot_set_background:
     mov     ecx,memsize-fin-stack_size  ; size
     mov     edi,fin                     ; pointer
     call    add_mem             ; mark memory from fin to 0x100000-1024 as free
-    ; Get some memory
-    mov     ecx,16384           ; get 16 Kb of memory
-    call    malloc              ; returns pointer in edi
-    mov     [work_area],edi     ; save it
     call    colorprecalc        ; calculate colors
     mov     esi,name_string
     call    open
@@ -244,15 +238,12 @@ draw_window:
 
     ; Draw the window to the appropriate size - it may have
     ; been resized by the user
-    mov     eax, 0
-    cmp     [winxs], ax
+    cmp     [winxs], 0
     jne     dw_001
 
     ; Give the screen some inital defaults
-    mov     ax, 400
-    mov     [winxs], ax
-    mov     ax, 300
-    mov     [winys], ax
+    mov     [winxs], 400
+    mov     [winys], 300
     mov     ax, 100
     mov     [winxo], ax
     mov     [winyo], ax
@@ -273,16 +264,12 @@ dw_001:
     mov     [winys], ax
 
 dw_002:
-    mov     bx, [winxo]
-    shl     ebx, 16
-    mov     bx, [winxs]
+        mov     ebx, dword [winxo-2]
+        mov     bx, [winxs]
+        mov     ecx, dword [winyo-2]
+        mov     cx, [winys]
 
-    mov     cx, [winyo]
-    shl     ecx, 16
-    mov     cx, [winys]
-
-
-    mov  eax,0                     ; DRAW WINDOW
+    xor  eax,eax                   ; DRAW WINDOW
     mov  edx,[wcolor]
     add  edx,0x02000000
     mov  esi,0x80557799
@@ -461,84 +448,59 @@ print_strings:
     ret
 
 slideshow:
-    test dword[file_dir],-1
-    jnz .exit
-    test dword[jpeg_st],-1
-    jz .exit
-    mov esi,name_string
-    movzx ecx,byte[name_string.cursor]
-   .l1:
-    cmp byte[esi+ecx],'/'
-    je .l2
-    loop .l1
-  .exit:
-    ret
-  .l2:
-    mov byte[esi+ecx],0
-    call open
-    mov byte[esi+ecx],'/'
-    test eax,eax
-    jz .exit
-
-    mov dword[eax+file_handler.size],-1 ;directory size is always 0
-    mov [file_dir],eax
-    inc cl
-    mov [name_string.cursor],cl
-
+        cmp     [file_dir], 0
+        jnz     .exit
+        cmp     [jpeg_st], 0
+        jz      .exit
+        mov     esi, name_string
+        movzx   ecx, byte [name_string.cursor]
+.l1:
+        cmp     byte [esi+ecx], '/'
+        jz      .l2
+        loop    .l1
+.exit:
+        ret
+.l2:
+        mov     byte [esi+ecx], 0
+        call    open
+        mov     byte [esi+ecx], '/'
+        test    eax, eax
+        jz      .exit
+        test    byte [fileattr], 0x10
+        jz      .exit
+        mov     [file_dir], eax
+        inc     ecx
+        mov     [name_string.cursor], cl
 display_next:
-    mov eax,[file_dir]
-    test eax,eax
-    jnz .l1
-    ret
-   .l1:
-    mov ecx,32
-    sub esp,ecx
-    mov edi,esp
-    call read
-    cmp ecx,32
-    jnc .l11
-   .l10:
-    add esp,32
-    mov eax,dword[file_dir]
-    mov dword[file_dir],0
-    jmp close
-   .l11:
-    mov esi,esp
-    movzx edi,byte[name_string.cursor]
-    add edi,name_string
-    lodsb
-    cmp al,0
-    je .l10
-    cmp al,229
-    jne .l0
-    add esp,32
-    jmp display_next
-   .l0:
-    stosb
-    mov cl,7
-   .l2:
-    lodsb
-    cmp al,32
-    jna .l3
-    stosb
-    loop .l2
-   .l3:
-    lea esi,[esp+8]
-    mov al,'.'
-    stosb
-    mov cl,3
-   .l4:
-    lodsb
-    cmp al,32
-    jna .l5
-    stosb
-    loop .l4
-   .l5:
-    mov al,0
-    stosb
-    cmp edi,name_string.end
-    jc .l5
-    add esp,32
+        mov     ebx, [file_dir]
+        test    ebx, ebx
+        jnz     @f
+        ret
+@@:
+        mov     byte [ebx], 1
+        mov     byte [ebx+12], 1
+        mov     dword [ebx+16], dirinfo
+        mov     eax, 70
+        int     0x40
+        mov     eax, [file_dir]
+        inc     dword [eax+4]
+        cmp     ebx, 1
+        jz      @f
+        mov     eax, [file_dir]
+        and     [file_dir], 0
+        jmp     close
+@@:
+        movzx   edi, byte [name_string.cursor]
+        add     edi, name_string
+        lea     esi, [dirinfo+32+40]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        mov     ecx, name_string.end
+        sub     ecx, edi
+        rep     stosb
     call   print_strings
     mov     esi,name_string
     call    open
@@ -558,7 +520,6 @@ display_next:
     jmp jpeg_display
 
 
-
 include 'filelib.asm'
 include 'memlib.asm'
 include 'jpeglib.asm'
@@ -567,7 +528,7 @@ include 'jpeglib.asm'
 ; DATA AREA
 
 wcolor          dd  0x000000
-labelt          db  'Jpegview v0.14'
+labelt          db  'Jpegview v0.15'
 labellen:
 setname          db  'SLIDESHOW'
 setnamelen:
@@ -580,18 +541,16 @@ x_offset        dd  0
 x_numofbytes    dd  0
 x_numofb2       dd  0
 x_counter       dd  0
-winxo:          dw  0
-winyo:          dw  0
-winxs:          dw  0
-winys:          dw  0
-jpeg_st:        dd  0
-file_dir:       dd  0
-work_area:      dd  0
+winxo           dw  0
+winyo           dw  0
+winxs           dw  0
+winys           dw  0
+jpeg_st         dd  0
+file_dir        dd  0
 tcolor          dd  0x000000
 btcolor         dd  0x224466+0x808080
 name_string:    db '/rd/1/jpegview.jpg',0
-
-rb 100
+rb 256
     .end:
     .cursor: db 19
     .cursor2: db 0
@@ -612,5 +571,5 @@ iniciomemoria:
 fin:
 I_END:
 
-
-
+fileattr: rb 40
+dirinfo: rb 32+304
