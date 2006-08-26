@@ -1407,6 +1407,13 @@ draw_num_text:
      ; edx length
      ; edi 1 force
 
+        mov     edi,[0x3000]
+        shl     edi,8
+        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        rol     eax,16
+        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        rol     eax,16
+
      mov   edx,eax
      mov   ecx,65
      sub   ecx,eax
@@ -1820,6 +1827,14 @@ readmousepos:
     shl  ebx,16
     mov  bx, word [esi-twdw+WDATA.box.top]
     sub  eax,ebx
+
+        mov     edi,[0x3000]
+        shl     edi,8
+        sub     ax,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        rol     eax,16
+        sub     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        rol     eax,16
+
     mov  [esp+36],eax
     ret
   nowr:

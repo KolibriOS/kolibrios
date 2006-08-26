@@ -1,4 +1,4 @@
-FASM=./fasm
+FASM=fasm
 KSRC=kernel.asm
 KOUT=kernel.mnt
 
