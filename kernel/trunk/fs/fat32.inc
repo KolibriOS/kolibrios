@@ -1973,11 +1973,13 @@ hd_read:
 
     push  eax edx
 
+    call  disable_ide_int
+
     call  wait_for_hd_idle
     cmp   [hd_error],0
     jne   hd_read_error    
 
-    cli
+;    cli
     xor   eax,eax
     mov   edx,[hdbase]
     inc   edx
@@ -2003,14 +2005,14 @@ hd_read:
     inc   edx
     mov   al,20h
     out   dx,al   ; ATACommand регистр команд
-    sti
+;    sti
 
     call  wait_for_sector_buffer
 
     cmp   [hd_error],0
     jne   hd_read_error
 
-    cli
+;    cli
     push  edi
     shl   edi,9
     add   edi,0x600000+65536
@@ -2019,7 +2021,9 @@ hd_read:
     cld
     rep   insw
     pop   edi
-    sti
+;    sti
+
+    call  enable_ide_int
 
     pop   edx eax
  blok_read_2:
@@ -2039,7 +2043,20 @@ hd_read:
  return_01:
     pop   edi esi ecx
     ret
-    
+
+disable_ide_int:    
+        mov edx,[hdbase]
+        add edx,0x206
+        mov al,2
+        out dx,al
+        ret
+
+enable_ide_int:
+        mov edx,[hdbase]
+        add edx,0x206
+        mov al,0
+        out dx,al
+        ret
 
 hd_write:
 ;-----------------------------------------------------------
@@ -2119,11 +2136,13 @@ write_cache:
     cmp   eax,[PARTITION_END]
     ja    danger
 
+    call  disable_ide_int
+
     call  wait_for_hd_idle
     cmp   [hd_error],0
     jne   hd_write_error
 
-    cli
+;    cli
     xor   eax,eax
     mov   edx,[hdbase]
     inc   edx
@@ -2149,7 +2168,7 @@ write_cache:
     inc   edx
     mov   al,30h
     out   dx,al
-    sti
+;    sti
 
     call  wait_for_sector_buffer
 
@@ -2158,7 +2177,7 @@ write_cache:
 
     push  ecx esi
 
-    cli
+;    cli
     mov   esi,edi
     shl   esi,9
     add   esi,0x600000+65536    ; esi = from memory position
@@ -2166,9 +2185,11 @@ write_cache:
     mov   edx,[hdbase]
     cld
     rep   outsw
-    sti
+;    sti
 
     pop   esi ecx
+
+    call  enable_ide_int
 
   danger:
   does_not_need_writing:
