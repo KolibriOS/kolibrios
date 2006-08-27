@@ -2584,6 +2584,22 @@ sys_cpuusage:
     mov    eax,[eax]
     mov    [ebx+40],ax
 
+    ; Window client area box
+
+    mov    esi,[esp]
+    shl    esi,8
+    add    esi,0x80000+APPDATA.wnd_clientbox
+    lea    edi,[ebx+44]
+    mov    ecx,4
+    rep    movsd
+    
+    ; Window state
+
+    mov    esi,[esp]
+    shl    esi,5
+    add    esi,window_data + WDATA.box
+    mov    al,[esi+window_data+WDATA.fl_wstate]
+    mov    [edi],al
 
     pop    ebx
     pop    eax
