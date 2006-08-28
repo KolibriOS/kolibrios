@@ -10,22 +10,30 @@ outfile:
 if SYS eq win
             db 'D:\Ivushkin\projects\zip\output.raw',0
 end if
-            dd 1
+            dd 2
+            dd 0
             dd 0
   .size     dd 0
   .out      dd output
-            dd os_work
 if ~SYS eq win
   dumpfile:
             db DUMPFILE,0
   dumpf_len=$-dumpfile
 end if
+attrinfo:
+        dd      5
+        dd      0
+        dd      0
+        dd      0
+        dd      fileattr
+        db      0
+        dd      filename
 Finfo:
             dd 0
     .block  dd 0
-    .count  dd BUFSIZE*2
+            dd 0
+    .count  dd BUFSIZE*1024
     .ptr    dd BUFPTR
-            dd os_work
 
 filename:
 if SYS eq win
@@ -84,6 +92,10 @@ DKeys rd 3
 Dheader rb 12
 Dpassword rb PASSW_LEN
 
+if ~SYS eq win
+fileattr rd 40/4
+end if
+
 png_     dd ?
 fat_     dd ?
 fat_fnum dd ?
@@ -125,11 +137,15 @@ tblLen dw ?
 hclen db ?
 max_len dw ?
 
+align 4
 fat:
   rb 4096;512
 child_stack:
   rb 1024
+child_stack_top:
 main_stack:
+  rb 1024
+main_stack_top:
 area:
  rb INBUF
 os_work rb 4*1024

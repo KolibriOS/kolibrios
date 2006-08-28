@@ -1,4 +1,11 @@
 thread:
+        mov     edi, textbox_string
+        or      ecx, -1
+        xor     eax, eax
+        repnz   scasb
+        not     ecx
+        dec     ecx
+        mov     [textbox_position], cl
         call    draw_window
         call    main_loop
         mov     [status], ST_EXIT
@@ -36,7 +43,7 @@ main_loop:
         cmp     ah, 8
         je      .backspace
         movzx   ecx, [textbox_position]
-        cmp     ecx, 47
+        cmp     ecx, 255
         jae     .enter
         mov     [textbox_string + ecx], ah
         inc     [textbox_position]
@@ -50,8 +57,8 @@ main_loop:
         movzx   ecx, [textbox_position]
         test    ecx, ecx
         jz      main_loop
-        mov     [textbox_string + ecx], byte 0
         dec     [textbox_position]
+        mov     [textbox_string + ecx - 1], byte 0
         call    textbox_draw
         jmp     main_loop
 
@@ -173,17 +180,15 @@ main_loop:
         mcall   MF_GETMOUSE, MS_COORDS_WINDOW
         shr     eax, 16 ; get mouse.x
         sub     eax, 7
-        test    eax, eax
         jz      @f
-        imul    eax, [file_size]
+        imul    [file_size]
         mov     ebx, 286
-        cdq
         div     ebx
      @@:
         ;dps "block: "
         ;dpd eax
         ;newline
-        mov     [fileinfo.first_block], eax
+        mov     [fileinfo.first_byte], eax
         call    draw_progress_bar
         jmp     main_loop
 ret
@@ -244,8 +249,8 @@ ret
 draw_progress_bar:
         pushad
 
-        imul    eax, [fileinfo.first_block], PBAR_WIDTH
-        cdq
+        mov     eax, PBAR_WIDTH
+        mul     [fileinfo.first_byte]
         div     [file_size]
 
         push    eax
@@ -266,5 +271,5 @@ sz header,       "AC'97 WAV player -  all PCM audio"
 sz buttons_text, " Play    Stop     <<      >>     Vol-    Vol+"
 
 textbox_active    db 0
-textbox_position  db textbox_string.size-1
+textbox_position  db 0;textbox_string.size-1
 file_size dd 100

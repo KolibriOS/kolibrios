@@ -4,7 +4,7 @@
 ;
 ; Created: May 6, 2005
 ;
-; Last changed: July 14, 2005
+; Last changed: August 26, 2006
 ;
 ; Compile with FASM
 
@@ -13,7 +13,7 @@ OUTBUF equ 4*1024*1024
 png_imag = output+OUTBUF
 PARAM_PTR = os_work;png_image
 MEMINIT=next_code;output
-DUMPFILE equ '/hd/1/out.txt'
+DUMPFILE equ '/hd0/1/out.txt'
 
 SHOW_RBLOCK equ 0;1
 SHOW_PNG_SEC equ 0;1
@@ -62,7 +62,7 @@ use32
   dd     start
   dd     I_END
   dd     MEMINIT
-  dd     main_stack;MEMORY-2048
+  dd     main_stack_top;MEMORY-2048
 if  PARAM_PTR eq param
   dd     0
 else
@@ -337,7 +337,7 @@ else
     Msg 37
   .nomsg:
     mov  [outfile.out],ebx
-    mcall 58,outfile
+    mcall 70,outfile
 ;       dps  'Before Quit1'
 ;    ud2
     test [Flags],TAR_MODE
@@ -385,7 +385,7 @@ else
     Msg  37
     test [Flags],LIST_MODE
     jne  quit
-    mcall 58,outfile
+    mcall 70,outfile
   .pad:
     call StartPad
   .notar:

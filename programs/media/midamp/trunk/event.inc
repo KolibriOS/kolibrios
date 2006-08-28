@@ -341,51 +341,37 @@ OCT_CH equ 3
     and  byte[edi],0
     mov  esi,filename
     mov  edi,fnbuf
-    mov  ecx,64
-    rep  movsb
-    mov  dword[file_info+12],dir_table
-    mov  dword[file_info+8],DIR_SIZE/512
+    mov  ecx,1024/4
+    rep  movsd
+        and     dword [dir_info+4], 0
   .nxt2:
-    mcall 58,file_info
-    mov  ecx,DIR_SIZE/32
-    mov  esi,dir_table
-  .nxt:
-    mov  al,[esi]
-    cmp  al,0xe5
-    je   .no
-    test al,al
-    jz   .end
-    test byte[esi+12],11000b
-    jnz  .no
-    mov  eax,[esi+7]
-    mov  al,'.'
-    cmp  eax,'.MID'
-    je   .ok
-    cmp  eax,'.KAR'
-    jne  .no
-  .ok:
-    mov  [esi+8],eax
-    pusha
-    mov  edi,edx
-    mov  ecx,12
-    rep  movsb
-    and  byte[edi],0
-    mov  ecx,edi
-    sub  ecx,fnbuf
-    mov  esi,fnbuf
-    call PL_add
-    popa
-  .no:
-    add  esi,32
-    loop .nxt
-    add  dword[file_info+4],DIR_SIZE/512
-    jmp  .nxt2
-  .end:
-    mov  ebx,file_info
-    and  dword[ebx+4],0
-    mov  [fsize],1
-    mov  dword[ebx+12],workarea
-    jmp  red;still
+        mcall   70, dir_info
+        cmp     ebx, 1
+        jnz     red ;still
+        test    byte [dir_table+32], 11000b     ; exclude directories & vol label
+        jnz     .no
+        mov     edi, dir_table+32+40
+        mov     esi, edi
+        xor     eax, eax
+        or      ecx, -1
+        repnz   scasb
+        mov     eax, [edi-5]
+        or      eax, 0x20202000
+        cmp     eax, '.mid'
+        jz      .ok
+        cmp     eax, '.kar'
+        jnz     .no
+.ok:
+        lea     ecx, [edi-dir_table-32-40-1]
+        mov     edi, edx
+        rep     movsb
+        mov     ecx, edi
+        mov     esi, fnbuf
+        sub     ecx, esi
+        call    PL_add
+.no:
+        inc     dword [dir_info+4]
+        jmp     .nxt2
   bSelZero:
     call PL_clearsel
     jmp  red

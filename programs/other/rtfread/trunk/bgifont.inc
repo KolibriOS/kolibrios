@@ -4,7 +4,7 @@
 ;
 ; Created: December 16, 2004
 ;
-; Last changed: February 2, 2005
+; Last changed: August 27, 2006
 ;
 ; Compile with FASM
 
@@ -237,18 +237,16 @@ _BGIfont_Prepare:
     mov  esi,edi     ; esi->FontName
     mov  [.dest],edi ; ptr to load font
 if ~ BGI_LEVEL eq KERNEL
-    mov  [.fsize],1
-    mov  eax,58
+        mov     eax, 70
+        mov     ebx, .fontattr
+        int     0x40
+        test    eax, eax
+        jnz     .fail
+        dps2    '1'
+        mov     eax, [.fileattr+32]
+        mov     [.fsize], eax
     mov  ebx,.fontinfo
-    int  0x40
-    test eax,eax
-    jnz   .fail
-    dps2  '1'
-    shr  ebx,9
-    inc  ebx
-    mov  [.fsize],ebx
-    mov  ebx,.fontinfo
-    mov  eax,58
+    mov  eax,70
     int  0x40	     ; ebx - file size
 else
     push edi esi edx
@@ -340,11 +338,22 @@ if ~ BGI_LEVEL eq KERNEL
 .fontinfo:
 	dd 0
 	dd 0
+	dd 0
 .fsize	dd 0
 .dest	dd 0
-	dd 0x10000
+.fontfullname:
 	db BGIFONT_PATH
 .font	db 'FONT.CHR',0
+
+.fontattr:
+        dd      5
+        dd      0
+        dd      0
+        dd      0
+        dd      .fileattr
+        db      0
+        dd      .fontfullname
+.fileattr rd 40/4
 else
   .dest   dd 0
   .font   db 'FONT    CHR'

@@ -11,8 +11,9 @@
 ;                             stops playing before closing a window
 ;    0.08  Nov      24, 2004  added support for 8bit and mono modes
 ;                             +variable rate for some chipsets
+;    0.09  August   26, 2006  modified to use function 70
 ;
-;   Use [flat assembler 1.56] to compile.
+;   Use [flat assembler 1.64] to compile.
 ;
 ;---------------------------------------------------------------------
 
@@ -31,7 +32,6 @@
 
 ;---------------------------------------------------------------------
 
-include "lang.inc"
 include "macros.inc"	 ; standart macros & constants
 include "meosfunc.inc"	   ; MenuetOS API functions names
 include "debug.inc"	; printing to debug board
@@ -449,19 +449,24 @@ ret
 ;; in:  nothing
 ;; out: nothing (but sound :)   !corrupts registers!
 play:
-    ; at first, reset file
-    mov    [fileinfo.first_block], 0
+    ; at first, reset file and get file size
+        mcall   MF_SYSTREE, attrinfo
+        test    eax, eax
+        jnz     .notfound
+        mov     eax, [fileattr+32]
+        mov     [file_size], eax
+    mov    [fileinfo.first_byte], 0
     mcall    MF_SYSTREE, fileinfo ; load a block, returns error code in eax
 		     ;   and size of the file in ebx
     test    eax, eax	     ; 0 - successful
     jz	  @f
+        cmp     eax, 6          ; 6 = eof - successful too
+        jz      @f
+.notfound:
     print    "AC97: File not found!"
     mov    [status], ST_STOP
     jmp    .exit
      @@:
-    shr    ebx, 9	      ; size_of_file / 512 = number_of_blocks
-    mov    [file_size], ebx
-
 
     mov    al, [LOAD_BUFFER+32] ; bytes per sample
     dec    al
@@ -608,7 +613,7 @@ update_next_buffer:
 
     movzx  edx, byte [wav_mode]
     mov    ecx, [blocks + edx * 4]
-    mov    [fileinfo.blocks], ecx
+    mov    [fileinfo.bytes], ecx
 
     mov    esi, LOAD_BUFFER
     mov    edi, [buffers+eax*4]
@@ -617,14 +622,16 @@ update_next_buffer:
     mcall  MF_SYSTREE, fileinfo
     test eax, eax
     jz @f
+        cmp     eax, 6
+        jz      @f
     cmp   [attempts],100
     je	 @f
     inc   [attempts]
     jmp   start_attempts
-    dpd eax
-    newline
-    dpd [fileinfo.first_block]
-    newline
+;    dpd eax
+;    newline
+;    dpd [fileinfo.first_block]
+;    newline
        @@:
 ;        print  " loaded!"
 
@@ -652,7 +659,7 @@ update_next_buffer:
 
     pop    edx ebx 
     mov    eax,[esp+4]            ;restore buffer index
-    add    [fileinfo.first_block], ecx ; +60Kb
+    add    [fileinfo.first_byte], ecx ; +60Kb
     call   [convert + edx * 4]
 ;start fix for MM (4)    
     mov    eax,[esp+4]            ;restore buffer index
@@ -881,7 +888,7 @@ znak db 0
 type_of_conversion db 0
 
 convert dd c8mono, c8stereo, c16mono, c16stereo
-blocks	  dd 30, 60, 60, 120
+blocks	  dd 30*512, 60*512, 60*512, 120*512
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -993,20 +1000,29 @@ ret
 ;---------------------------------------------------------------------
 volume		 dd  15
 
+attrinfo:
+        dd      5
+        dd      0
+        dd      0
+        dd      0
+        dd      fileattr
+        db      0
+        dd      textbox_string
+
 fileinfo:
- .mode		 dd  0		 ; READ
- .first_block  dd  0
- .blocks       dd  120		 ; 120 Kb
+ .mode          dd      0		 ; READ
+ .first_byte    dd      0
+                dd      0
+ .bytes         dd      60*1024		 ; 60 Kb
  .dest		 dd  LOAD_BUFFER ;file_data
- .work		 dd  work_area
 	 ;  db  "/HD/1/WINDOWS/MEDIA/WICEB7~1.WAV",0
 ;sz textbox_string, "/hd/1/testmuz/menuet11.wav",0
-sz textbox_string, "                                                        ",0
-;   rb 256
+textbox_string:
 ;---------------------------------------------------------------------
 
 IMAGE_END:		 ; end of program's image
-   rb 100-textbox_string.size
+   rb 257
+;   rb 257-textbox_string.size
 ;     textbox_string.size
 
 ;---------------------------------------------------------------------
@@ -1034,6 +1050,8 @@ ST_EXIT = 0x2
 ST_STOP = 0x4
 
 status	    db ?
+
+fileattr: rb 40
 
 ;---------------------------------------------------------------------
 phys_bdl_buffer rd 1

@@ -7,6 +7,7 @@
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  20.08.2006 LFN set file size (truncate/extend) - diamond       ;;
 ;;  17.08.2006 LFN write/append to file - diamond                  ;;
 ;;  23.06.2006 LFN start application - diamond                     ;;
 ;;  15.06.2006 LFN get/set file/folder info - diamond              ;;

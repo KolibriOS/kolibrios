@@ -236,8 +236,10 @@ PL_load:
    and  [list_count],0
    mov  [pl_ptr],playlist
    mov  ebx,PL_info
-   mov  dword[ebx+12],playlist
-   mov  eax,58
+   mov  dword[ebx+16],playlist
+   and  dword[ebx],0
+   mov  dword[ebx+12],20*512
+   mov  eax,70
    int  0x40
    test eax,eax
    jz   .ok1     ; ebx- filesize
@@ -295,7 +297,7 @@ PL_save:
    mov  eax,0x0a0d
    mov  edi,[pl_ptr]
    lea  edx,[edi+2]
-   mov  [PL_info+12],edx
+   mov  [PL_info+16],edx
  .savl:
    movzx ebx,word[edi]
    and  bx,not FL_MULSEL
@@ -305,9 +307,9 @@ PL_save:
    stosw
    sub  edi,[pl_ptr]
    mov  ebx,PL_info
-   mov  [ebx+8],edi
-   mov  dword[ebx],1
-   mov  eax,58
+   mov  [ebx+12],edi
+   mov  byte[ebx],2
+   mov  eax,70
    int  0x40
  .ex:
    ret
@@ -343,7 +345,7 @@ PL_swap:  ; swap [ebx] with [ebx+1]
 PL_info:
  .mode  dd 0
         dd 0
- .bytes dd 20
         dd 0
-        dd hash_table
+ .bytes dd 20*512
+        dd 0
         db PLAYLIST_PATH,0

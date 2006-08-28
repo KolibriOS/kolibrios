@@ -196,15 +196,10 @@ endg
 boot_log:
          pushad
 
-         mov   edx,esi
-.bll3:   inc   edx
-         cmp   [edx],byte 0
-         jne   .bll3
-         sub   edx,esi
          mov   eax,10*65536
          mov   ax,word [boot_y]
          add   [boot_y],dword 10
-         mov   ebx,0xffffff
+         mov   ebx,0x80ffffff   ; ASCIIZ string with white color
          mov   ecx,esi
          mov   edi,1
          call  dtext
@@ -1358,9 +1353,7 @@ display_number:
 
      cmp   al,1                  ; ecx is a pointer ?
      jne   displnl1
-     mov   edi,[0x3010]
-     mov   edi,[edi+TASKDATA.mem_start]
-     mov   ebx,[edi+ebx]
+     mov   ebx,[ebx+std_application_base_address]
    displnl1:
      sub   esp,64
 
@@ -1458,21 +1451,18 @@ draw_num_text:
      add   ecx,esp
      add   ecx,4
      mov   eax,[esp+64+32-8+4]
-     mov   ebx,[esp+64+32-12+4]
      push  edx                       ; add window start x & y
-     push  ebx
      mov   edx,[0x3010]
      mov   ebx,[edx-twdw+WDATA.box.left]
      shl   ebx,16
      add   ebx,[edx-twdw+WDATA.box.top]
      add   eax,ebx
-     pop   ebx
      pop   edx
-     mov   edi,0
-     call  dtext
-
-     ret
-
+     mov   ebx,[esp+64+32-12+4]
+        and     ebx, not 0x80000000     ; force counted string
+        mov     esi, [esp+64+4+4]
+     xor   edi,edi
+     jmp   dtext
 
 read_string:
 
@@ -2914,10 +2904,7 @@ draw_window_caption:
         add     ax,[_skinmargins.top]
         add     ax,-3
         add     eax,ebp
-        mov     ebx,[common_colours+16];0x00FFFFFF
-        xor     edi,edi
-        call    dtext
-        jmp     @f
+        jmp     .dodraw
 
   .not_skinned:
         cmp     al,1
@@ -2936,10 +2923,11 @@ draw_window_caption:
         mov     edx,eax
         mov     eax,0x00080007
         add     eax,ebp
+.dodraw:
         mov     ebx,[common_colours+16];0x00FFFFFF
+        or      ebx, 0x80000000
         xor     edi,edi
         call    dtext
-        jmp     @f
 
     @@:
 ;--------------------------------------------------------------
@@ -4825,12 +4813,14 @@ syscall_writetext:                      ; WriteText
 
      mov   edi,[0x3010]
      mov   ebp,[edi-twdw+WDATA.box.left]
+        push    esi
         mov     esi,[0x3000]
         shl     esi,8
         add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.left]
      shl   ebp,16
      add   ebp,[edi-twdw+WDATA.box.top]
         add     bp,word[esi+0x80000+APPDATA.wnd_clientbox.top]
+        pop     esi
      add   ecx,[edi+TASKDATA.mem_start]
      add   eax,ebp
      xor   edi,edi

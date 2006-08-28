@@ -14,10 +14,10 @@ read_block:
   mov  ecx,[cur_block]
   mov  ebx,fileinfo
   mov  eax,ecx
-  shl  eax,7
+  shl  eax,16
   mov  [ebx+4],eax
 ;  mov  [ebx+12],esi
-  mcall 58
+  mcall 70
 if DEBUG_BLOCK eq 1
 ;  dps  'B='
 ;  dpd  ecx
@@ -72,7 +72,7 @@ RtfParse:
     pop  [RetroGroup]
     and  [mode],not RTF_BLIND
     mov  [listptr],save_stack
-    mov  [fileinfo.size],128
+    mov  [fileinfo.size],128*512
 ;    test ebp,RTF_HELP
     test [mode],RTF_HELP
     jne  .noread

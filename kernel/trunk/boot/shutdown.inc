@@ -507,7 +507,7 @@ shutdowntext:
     db   '2) APM - POWEROFF                       '
     db   '3) REBOOT                               '
     db   '4) RESTART KERNEL                       ' 
-else
+else if lang eq ru
 shutdowntext:
     db   "Безопасное выключение компьютера или    "
     db   '                                        '
@@ -515,6 +515,14 @@ shutdowntext:
     db   '2) APM - выключение питания             '
     db   '3) Перезагрузка системы                 '
     db   '4) Рестарт ядра из ОЗУ                  '
+else
+shutdowntext:
+    db   "SIE KOENNEN DEN COMPUTER NUN AUSSCHALTEN"
+    db   '                                        '
+    db   '1) RAMDISK AUF DISK SPEICHERN           '
+    db   '2) APM - AUSSCHALTEN                    '
+    db   '3) NEUSTARTEN                           '
+    db   '4) KERNEL NEU STARTEN                   ' 
 end if
 rosef:
     db 'ROSE    TXT'

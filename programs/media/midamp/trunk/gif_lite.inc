@@ -88,7 +88,7 @@ ReadGIF:
     mov  [.img_count],eax
     inc  eax
     cmp  dword[esi],'GIF8'
-    jne  .er            ; signature
+    jne  .ex            ; signature
     mov  ecx,[esi+0xa]
     inc  eax
     add  esi,0xd
@@ -123,7 +123,7 @@ ReadGIF:
     jmp  .block_skip
   .noextblock:
     cmp  byte[edi],0x2c    ; image beginning
-    jne  .er
+    jne  .ex
     inc  [.img_count]
     inc  edi
     mov  esi,[.cur_info]
@@ -211,9 +211,6 @@ ReadGIF:
     call .Gif_output
     pop  ebx eax
     jmp  .add
-  .er:
-    pop  edi
-    jmp  .ex
   .end:
     mov  eax,[.cur_info]
     mov  [eax],edi
@@ -229,7 +226,6 @@ ReadGIF:
     cmp  byte[edi],0x3b
     jne  .nextblock
     xor  eax,eax
-    stosd
     mov  ecx,[.img_count]
   .ex:
     pop  edi esi

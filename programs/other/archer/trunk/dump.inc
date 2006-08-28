@@ -18,7 +18,7 @@ macro Dump ptr, len, workarea,run_new
 if ~ run_new eq
   test edx,edx
   jne .exist
-  mcall 19,Board_seek.board_fn,0
+  mcall 70,Board_seek.board_fn,0
   mov  edx,eax
   mcall 5,20
 end if
@@ -51,5 +51,11 @@ Board_seek:
 .ok:
   mov  edx,[ebx+30]
   ret
-.board_fn db 'BOARD      '
+.board_fn:
+        dd      7
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        db      '/RD/1/BOARD',0
 end if

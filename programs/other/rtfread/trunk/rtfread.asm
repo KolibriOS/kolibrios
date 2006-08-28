@@ -91,23 +91,17 @@ START:
     mov  esi,fname_buf
     rep  movsd
  load_file:
-    xor  eax,eax
-    mov  ebx,fileinfo
-    mov  [ebx+4],eax
-    inc  eax
-    mov  [fileinfo.size],eax
-    mcall 58
-    dpd  ebx
+        mov     eax, 70
+        and     [fileattr+32], 0
+        mov     ebx, attrinfo
+        int     0x40
+        mov     ebx, [fileattr+32]
+        test    eax, eax
+        jz      .sizok
+        mov     dword [fileinfo.name], N_A
+.sizok:
     and  [wSave],0
     mov  [HClick],-100
- load_help:
-    test eax,eax
-    jz   .sizok
-    cmp  eax,5
-    je   .sizok
-  .nosizok:
-    mov  dword[fileinfo.name],N_A
-  .sizok:
     mov  eax,ebx
     and  eax,RTFSIZE-1
     add  eax,I_END
@@ -500,13 +494,22 @@ btn_text:
     db '< > L A C H'
 btn_end:
 
+attrinfo:
+        dd      5
+        dd      0
+        dd      0
+        dd      0
+        dd      fileattr
+        db      0
+        dd      fileinfo.name
+
 fileinfo:
   dd 0
 .block:
   dd 0
+  dd 0
 .size  dd 1
   dd I_END
-  dd sys_mem
 .name:
 ;   db '//'
 ;  db ' /HD/1/RTF/texts/FASM.TXT',0
@@ -549,6 +552,7 @@ end if
 I_END0:
 fname_buf:
         rb      1024+16
+fileattr rd 40/4
 if BENCH eq 1
   bench dd ?
 end if

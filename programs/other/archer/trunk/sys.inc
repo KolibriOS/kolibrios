@@ -18,8 +18,11 @@ if SYS eq win
     mov  ebx,eax
     mov  [filesize],eax
 else
-    mcall 58,Finfo
+    and  dword [attrinfo+32], 0
+    mcall 70,attrinfo
+    mov  eax,[attrinfo+32]
     mov  [filesize],ebx
+    mcall 70,Finfo
 end if
     ret
 
@@ -37,10 +40,8 @@ FileSeek:
 ; esi - current pointer (in memory!)
 ; ebx - translation method: 0 - beginning, 1 - current, 2 - end
     push eax ecx edx
-    mov  edx,[Finfo.block]
-    imul edx,BSIZE
     sub  esi,BUFPTR
-    add  esi,edx
+    add  esi,[Finfo.block]
     cmp  ebx,1
     je   .cur
     jb   .begin
@@ -49,21 +50,17 @@ FileSeek:
   .cur:
     add  eax,esi
   .begin:
-    mov  ecx,BSIZE
-    xor  edx,edx
-    div  ecx
-    lea  esi,[BUFPTR+edx]
+    mov  esi,BUFPTR
     mov  [Finfo.block],eax
 if SYS eq win
-    mul  ecx
     invoke SetFilePointer,[hnd],eax,NULL,FILE_BEGIN
     invoke ReadFile,[hnd],area,INBUF, os_work, NULL
 ;    add  [byte_count],area
 else
 ;    pregs
 ;    wait
-    mov  [Finfo.count],BUFSIZE*2
-    mcall 58,Finfo
+    mov  [Finfo.count],BUFSIZE*1024
+    mcall 70,Finfo
 ;    mov  [byte_count],area+INBUF
 end if
     pop  edx ecx eax
@@ -105,7 +102,7 @@ RunViewer:
  else
     test [Flags],THREAD_YES
     jnz  .ex
-    mcall 51,1,thread,child_stack;MEMORY
+    mcall 51,1,thread,child_stack_top;MEMORY
     mov  [child],eax
  end if
   .ex:	
@@ -249,75 +246,10 @@ macro CmdLine
     je   .stay
     cmp  al,'/'
     jne  .yespar
-    mov  ecx,255
     dec  esi
-    mov  edi,filename
-    xor  al,al
-    rep  stosb
     mov  ecx,255
     mov  edi,filename
     rep  movsb
-;    test [Flags],LIST_MODE
-;    jz   again
-    xor  eax,eax
-    mov  edi,filename
-    mov  ecx,255
-    repne scasb
-    cmp  byte[edi-2],'/'
-    je   .slash
-    mov  byte[edi-1],'/'
-    inc  edi
-  .slash:
-;    Dump filename,255,os_work
-;    ud2
-    mov  ecx,edi
-;    dec  ecx
-    mov  edx,ecx
-    mov  dword[Finfo],13
-;    mov  dword[Finfo.count],1
-    mov  edi,filename+5
-    sub  ecx,edi
-  .lp:
-    mov  al,'/'
-    repne scasb
-;    jne  .ex
-;    dpd  ecx
-    and  byte[edi-1],0
-    mcall 58,Finfo
-    mov  byte[edi-1],'/'
-    test ebx,32
-    jz   .lp
-    test [Flags],LIST_MODE
-    jne  .listm
-    and  byte[edi-1],0
-;    Dump filename,255,os_work
-    jmp  .agg
-;    ud2
-  .listm:
-    lea  esi,[edi-1+ecx]
-    lea  edi,[esi+1]
-    std
-    rep  movsb
-    and  byte[edi],0
-    cld
-;    dpd  filename
-
-    inc  edi
-    dpd  edi
-    cmp  edx,edi
-    jne  .slash2
-;    cmp  byte[edi],'/'
-;    je   .slash2
-    mov  byte[edi],'/'
-    inc  edx
-  .slash2:
-    sub  edx,edi
-    mov  [lpath],edi
-    mov  [lpath_len],edx
-    dpd  edx
-  .agg:
-    mov  dword[Finfo],0
-;    ud2
     jmp  again;cmdl
   .yespar:
     cmp  al,'N'

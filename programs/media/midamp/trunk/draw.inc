@@ -8,8 +8,7 @@ draw_bar:
     test eax,eax
     jz   .ex
     mov  ebp,[coo]
-    mov  ebx,[ebp-20]
-    mul  ebx
+    mul  dword [ebp-20]
     mov  ebx,[tick_count]
     test ebx,ebx
     jz   .ex
@@ -353,4 +352,4 @@ bot_btn:
     dw 10,40,70,100,240
 
 about1:
-  db 13,10,'* MIDAMP for MenuetOS v1.0 by Willow, July 2005 *',13,10,0
+  db 13,10,'* MIDAMP for KolibriOS v1.1 by Willow, July 2005 *',13,10,0

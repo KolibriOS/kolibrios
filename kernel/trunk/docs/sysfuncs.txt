@@ -188,16 +188,17 @@ Parameters:
   * ebx = [coordinate on axis x]*65536 + [coordinate on axis y]
   * ecx = 0xX0RRGGBB, where
     * RR, GG, BB specify text color
-    * X specifies the used font: 0=system monospaced,
+    * X=ABnn (bits):
+    * nn specifies the used font: 0=system monospaced,
       1=system font of variable width
+    * A=0 - output esi characters, A=1 - output ASCIIZ-string
+    * B=1 - fill background with the color edi
   * edx = pointer to the beginning of the string
-  * esi = length of the string, must not exceed 255
+  * esi = for A=0 length of the string, must not exceed 255;
+          for A=1 is ignored
 Returned value:
   * function does not return value
 Remarks:
-  * Function outputs either first (esi and 0xFF) characters or
-    all characters before (but not including) terminating zero
-    (for ASCIIZ-strings) depending on what occurs first.
   * First system font is read out at loading from the file char.mt,
     second - from char2.mt.
   * Both fonts have height 9 pixels, width of the monospaced font
@@ -424,14 +425,14 @@ Remarks:
 =============== Function 12 - begin/end window redraw. ===============
 ======================================================================
 
------------- Subfunction 1 - begin redraw of the window. -------------
+---------------- Subfunction 1 - begin window redraw. ----------------
 Parameters:
   * eax = 12 - function number
   * ebx = 1 - subfunction number
 Returned value:
   * function does not return value
 
-------------- Subfunction 2 - end redraw of the window. --------------
+----------------- Subfunction 2 - end window redraw. -----------------
 Parameters:
   * eax = 12 - function number
   * ebx = 2 - subfunction number
@@ -2054,7 +2055,12 @@ Parameters:
     * биты 22-31 reserved and must be set to 0
   * ecx = number (if bl=0) or pointer (if bl=1)
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * esi = 0xN0RRGGBB, RRGGBB=color, N=font (0/1)
+  * esi = 0xX0RRGGBB:
+    * RR, GG, BB specify the color
+    * X = ABnn (bits)
+    * nn = font (0/1)
+    * A is ignored
+    * B=1 - fill background with the color edi
 Returned value:
   * function does not return value
 Remarks:

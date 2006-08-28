@@ -468,6 +468,7 @@ new_start_application_fl:
 ;calculate parameter length    
     mov    esi,eax
     xor    ecx,ecx
+    inc    ecx          ; include terminating null
 .command_line_len:
     cmp    byte [esi],0
     jz     .command_line_len_end
