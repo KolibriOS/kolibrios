@@ -7,9 +7,8 @@
 ;
 ; COMPILE WITH FASM
 
-PLAYLIST_PATH equ '/HD/1/MIDI/PLAYLIST.TXT'
+PLAYLIST_PATH equ '/HD0/1/PLAYLIST.TXT'
 APP_MEM   equ 150*1024
-DIR_SIZE  equ 1024
 
 IPC_PLAY  equ 0xa1
 IPC_PAUS  equ 0xa2
@@ -59,7 +58,7 @@ use32
   dd	 START
   dd	 I_END
   dd	 APP_MEM
-  dd	 APP_MEM-1024
+  dd	 APP_MEM ;stack size=1024
   dd	 I_PARAM
 listsel    dd 0
 channel dd 0
@@ -147,20 +146,14 @@ clearpath:
     mov  [play_area],ax
     mov  [tick_count],eax
     mov  [delta],eax
-    inc  eax
-    mov  [fsize],eax
     mov  [curnote],0x80
     mov  ecx,64
     mov  esi,filename
     mov  edi,I_PARAM
     rep  movsd
-    mov  eax,58
+    mov  eax,70
     mov  ebx,file_info
     int  0x40
-    mov  eax,ebx
-    shr  eax,9
-    inc  eax
-    mov  [fsize],eax
     add  ebx,workarea
     mov  [midi_limit],ebx
     mov  edi,I_PARAM
@@ -169,9 +162,6 @@ clearpath:
     mov  edi,filename
     call str_len
     mov  [fname_len],eax
-    mov  eax,58
-    mov  ebx,file_info
-    int  0x40
 midi_kill:
     call kill
 include 'midilite.inc'
@@ -354,13 +344,21 @@ pl_ptr	   dd playlist
 param	   db 'W'
 curnote    db 0x80
 tick_count dd 0
+dir_info:
+        dd      1
+        dd      0
+        dd      0
+        dd      1
+        dd      dir_table
+        db      0
+        dd      filename
 play_area  dw ?
 file_info:
 	   dd 0
 	   dd 0
-fsize	   dd 1
+	   dd 0
+fsize	   dd APP_MEM-1024-workarea     ; max size
 	   dd workarea
-	   dd hash_table
 I_END:	; конец программы
 filename:
 	   rb 1024+16
@@ -386,7 +384,7 @@ cur_track  db ?
 sel_track  db ?
 ipcmsg	   db ?
 fnbuf:
-	   rb 256
+	   rb 1024
 btn_raw    rb 222*17*3+12
 hdr_raw    rb 275*29*3+12
 bottom_raw rb 25*378*3+12
@@ -394,5 +392,5 @@ bottom_raw rb 25*378*3+12
 playlist   rb 256*LISTITEMS
 hash_table:
 	   rd 4096
-dir_table  rb DIR_SIZE
+dir_table  rb 32+304
 workarea:
