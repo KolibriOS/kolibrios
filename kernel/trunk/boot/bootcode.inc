@@ -448,8 +448,8 @@ cfgmanager:
 ; d) preboot_device = from what boot?
     mov    di, preboot_graph-0x10000
 ; check bootloader block
-    cmp    [.loader_block-0x10000], 0
-    jz    .noloaderblock
+    cmp    [.loader_block-0x10000], 1
+    jnz    .noloaderblock
     les    bx, [.loader_block-0x10000]
     cmp    byte [es:bx], 1
     mov    si, loader_block_error-0x10000
