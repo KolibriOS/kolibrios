@@ -28,7 +28,7 @@ START:                           ; start of execution
 
    mcall 18,15
 
-   mov  eax, 58               ; load AUTORUN.DAT
+   mov  eax, 70               ; load AUTORUN.DAT
    mov  ebx, autorun_dat_info
    int  0x40
 
@@ -59,7 +59,7 @@ START:                           ; start of execution
 
  run_program:     ; time to delay in eax
    push eax
-   mcall 58, start_info
+   mcall 70, start_info
    pop  ebx
 
    mov  eax, 5
@@ -77,7 +77,6 @@ START:                           ; start of execution
 
    mov  ecx, 60
    mov  edi, parameters
-   xor  al, al
    rep  stosb
 
    popad
@@ -112,13 +111,11 @@ START:                           ; start of execution
    xor  ebx, ebx
   .start:
    lodsb
-   cmp  al, '0'
-   jb   .finish
-   cmp  al, '9'
-   ja   .finish
    sub  al, '0'
-   imul ebx, 10
-   add  ebx, eax
+   cmp  al, 9
+   ja   .finish
+   lea  ebx,[ebx*4+ebx]
+   lea  ebx,[ebx*2+eax]
    inc  [position]
    jmp  .start
   .finish:
@@ -180,17 +177,17 @@ START:                           ; start of execution
  autorun_dat_info:                 ; AUTORUN.DAT
    .mode           dd 0            ; read file
    .start_block    dd 0            ; block to read
-   .blocks         dd 0x10         ; 16*512 bytes max
+                   dd 0
+   .blocks         dd 16*512       ; 16*512 bytes max
    .address        dd file_data
-   .workarea       dd work_area
    db "/RD/1/AUTORUN.DAT",0
 
  start_info:
-   .mode           dd 16
+   .mode           dd 7
                    dd 0
    .params         dd parameters
                    dd 0
-   .workarea       dd work_area
+                   dd 0
    .path: ;      
 
 I_END:
@@ -200,5 +197,4 @@ I_END:
 
  number_of_files   dd ?
 
- work_area         rb 0x4000
  file_data         rb 16*512

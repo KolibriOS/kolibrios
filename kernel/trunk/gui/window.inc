@@ -145,6 +145,17 @@ setscreen:
 ;  edx  y end
 ;  esi  process number
 pushad
+; \begin{diamond}[29.08.2006]
+        cmp     esi, 1
+        jz      @f
+        mov     edi, esi
+        shl     edi, 5
+        cmp     [edi+window_data+WDATA.box.width], 0
+        jnz     @f
+        cmp     [edi+window_data+WDATA.box.height], 0
+        jz      .ret
+@@:
+; \end{diamond}[29.08.2006]
         mov edi, esi ;;;word [esi*2+0xc400]
         shl   edi, 8
         add   edi, 0x80000  ; address of random shaped window area
@@ -183,6 +194,7 @@ pushad
         sub   edi, ecx
         dec   edx
         jnz   .new_y
+.ret:
  popad
  ret
   .read_byte:

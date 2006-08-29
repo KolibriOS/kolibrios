@@ -321,7 +321,7 @@ Returned value:
     * +8: word: reserved
     * +10 = +0xA: 11 bytes: name of the process
       (name of corresponding executable file in the format 8+3)
-    * +21 = +0x15: byte: alignment, this byte preserves
+    * +21 = +0x15: byte: reserved, this byte is not changed
     * +22 = +0x16: dword: address of the process in memory
     * +26 = +0x1A: dword: size of used memory - 1
     * +30 = +0x1E: dword: identifier (PID/TID)
@@ -340,6 +340,15 @@ Returned value:
       * 5 = thread waits for event
       * 9 = requested slot is free, all other information on the slot
         is not meaningful
+    * +52 = +0x34: word: reserved, this word is not changed
+    * +54 = +0x36: dword: coordinate of the client area on axis x
+    * +58 = +0x3A: dword: coordinate of the client area on axis y
+    * +62 = +0x3E: dword: width of the client area
+    * +66 = +0x42: dword: height of the client area
+    * +70 = +0x46: byte: state of the window - bitfield
+      * bit 0 (mask 1): window is maximized
+      * bit 1 (mask 2): window is minimized to panel
+      * bit 2 (mask 4): window is rolled up
 Remarks:
   * Slots are numbered starting from 1.
   * Returned value is not a total number of threads, because there
@@ -362,7 +371,8 @@ Remarks:
     * address of the process in memory is 0, size of used memory is
       16 Mb (0x1000000)
     * PID=1
-    * coordinates and sizes of the window are by convention set to 0
+    * coordinates and sizes of the window and the client area are by
+      convention set to 0
     * status of the slot is always 0 (running)
     * the execution time adds of time leaving on operations itself
       and idle time in waiting for interrupt (which can be got by call
@@ -381,8 +391,9 @@ Remarks:
   * If the thread has not yet defined the window by call to
     function 0, the position and the sizes
     of its window are considered to be zero.
+  * Coordinates of the client area are relative to the window.
   * At the moment only the part of the buffer by a size
-    52 = 0x34 bytes is used. Nevertheless it is recommended to use
+    71 = 0x37 bytes is used. Nevertheless it is recommended to use
     1-Kb buffer for the future compatibility, in the future
     some fields can be added.
 

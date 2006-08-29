@@ -816,12 +816,11 @@ terminate: ; terminate application
     add   eax,[esi+WDATA.box.height]
     mov   [dlye],eax
 
-    mov   [esi+WDATA.box.left], 0
-    mov   [esi+WDATA.box.width], 5
-    mov   eax,[0xFE04]
-    mov   [esi+WDATA.box.top],eax
-    mov   [esi+WDATA.box.height], 5
     xor   eax, eax
+    mov   [esi+WDATA.box.left],eax
+    mov   [esi+WDATA.box.width],eax
+    mov   [esi+WDATA.box.top],eax
+    mov   [esi+WDATA.box.height],eax
     mov   [esi+WDATA.cl_workarea],eax
     mov   [esi+WDATA.cl_titlebar],eax
     mov   [esi+WDATA.cl_frames],eax

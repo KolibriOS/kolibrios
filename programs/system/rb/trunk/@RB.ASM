@@ -13,10 +13,6 @@ include 'macros.inc'
 meos_app_start
 code
 
-  mov   [start_info.mode], 16
-  mov   [start_info.params], 0
-  mov   [start_info.workarea], work_area
-
   mov   eax,40       ; установим маску событий
   mov   ebx,100000b  ; нас интересует только мышь
   int   0x40
@@ -25,9 +21,6 @@ still:               ; главный цикл основного процесса
 
   mov   eax,10       ; ждём события
   int   0x40
-
-  cmp   eax,6        ; мышь?
-  jne   still
 
   mov   eax,37       ; какие нажаты кпопки?
   mov   ebx,2
@@ -141,11 +134,12 @@ exit:                 ; сюда мы идём, когда выходим из основного процесса
 ; здесь стартует процесс меню
 start_wnd:
   mov   [menu_opened],1
-  call  draw_window
-
   mov   eax,40      ; установим маску желаемых событий для этого процесса
   mov   ebx,100101b ; меню + кнопки + перерисовка
   int   0x40
+
+red:
+  call  draw_window
 
 still2:             ; главный цикл процесса меню
 
@@ -172,32 +166,24 @@ mouse:            ; когда пользователь нажмёт кнопку мыши, закроемся
   jmp   exit_menu ; а если всё-таки нажаты - закроем окно
 
 
-; ПЕРЕРИСОВАТЬ ОКНО
-red:
-  call  draw_window
-  jmp   still2
-
-
 ; НАЖАТА КНОПКА
 button:
   mov   eax,17        ; получить идентификатор нажатой кнопки
   int   0x40
 
-  cmp   ah,10         ; сравниваем с 10
+  sub   ah,10         ; сравниваем с 10
   jl    nofuncbtns    ; если меньше - закрываем меню
 
-  add   ah,-10        ; вычтем из идентификатора кнопки 10
   movzx ebx,ah        ; получили номер программы в списке в ebx
-  lea   esi, [startapps + ebx*4]
-  lea   edi, [start_info.path]
-  mov   esi, [esi]
+  mov   esi, [startapps + ebx*4]
+  mov   edi, start_info.path
   cld
  @@:
   lodsb
   stosb
   test  al, al
   jnz   @b
-  mcall 58, start_info
+  mcall 70, start_info
 
 ;  mov   eax,5         ; подождём, пока программа запуститься
 ;  mov   ebx,1         ; а то её окно не будет отрисовано (баг в ядре???)
@@ -279,12 +265,23 @@ draw_window:
   mov   eax, 4             ; заголовок
   mov   ebx, header_pos    ;  [x] shl 16 + [y]
   mov   ecx, [sc.grab_text];  шрифт и цвет (серый)
-  add   ecx, -0x333333
   or    ecx, 0x10000000
+;  add   ecx, -0x333333
+  push  ecx
+  push  ecx
+  xor   edx,edx
+.dec_color:
+  sub   byte [esp+edx], 0x33
+  jae   @f
+  mov   byte [esp+edx], 0
+@@:
+  inc   edx
+  jnp   .dec_color
+  pop   ecx
   mov   edx, header        ;  адрес заголовка
   mov   esi, header.size   ;  длина заголовка ("M E N U")
   int   0x40
-  add   ecx, 0x333333      ;  цвет белый
+  pop   ecx
   add   ebx, 1 shl 16      ;  сдвинем вправо на 1
   int   0x40
 
@@ -348,7 +345,7 @@ DATA
     <"/RD/1/JPEGVIEW",0> ,\
     <"/RD/1/CPU",0>      ,\
     <"/RD/1/SPANEL",0>   ,\
-    <"/RD/1/ICONMNGR",0> ,\
+    <"/RD/1/ICON2",0> ,\
     <"/RD/1/VRR",0>
 
 ;  header:            ; заголовок
@@ -363,7 +360,7 @@ DATA
 ;    db 'Panel setup '
 ;    db 'Icon manager'
 
-  sz header, "MenuetOS"
+  sz header, "KolibriOS"
 
   lsz text,\
     en, 'Background  ',\
@@ -384,7 +381,14 @@ DATA
     ru, 'Управление иконками ',\
     ru, 'Настройка монитора  '
 
-
+start_info:
+        .mode   dd      7
+                dd      0
+        .params dd      0
+                dd      0
+                dd      0
+                db      0
+                dd      start_info.path
 
 ; НЕИНИЦИАЛИЗИРОВАННЫЕ ДАННЫЕ
 UDATA
@@ -396,22 +400,11 @@ UDATA
 
   menu_opened db ?              ; открыто меню или нет? (1-да, 0-нет)
 
-  align 32
-  start_info:
-    .mode        dd ?
-                 dd ?
-    .params      dd ?
-                 dd ?
-    .workarea    dd ?
-    .path:
-      rb 256
-
+align 4
+start_info.path rb 256
 
   sc       system_colors        ; системные цвета
   procinfo process_information  ; информация о процессе
-
-  work_area:
-    rb 0x1000
 
   rb 1024                       ; стэк для окна меню - хватит и 1 Кб
   align 32
