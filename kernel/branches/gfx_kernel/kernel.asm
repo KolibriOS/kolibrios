@@ -233,14 +233,14 @@ uglobal
 endg
 
 iglobal
-  firstapp   db  'LAUNCHER   '
+  firstapp   db  '/rd/1/LAUNCHER',0
   char       db  'CHAR    MT '
   char2      db  'CHAR2   MT '
   bootpath   db  '/KOLIBRI    '
   bootpath2  db  0
   vmode      db  'VMODE   MDR'
   cur_file   db  'ARROW   CUR'
-  vrr_m      db  'VRR_M      '
+  vrr_m      db  '/rd/1/VRR_M',0
 endg
 
 
@@ -772,21 +772,22 @@ mov [256+12],ebx
         mov   [0x3000],dword 1
         mov   [0x3004],dword 1
         cli
-        mov   al,[0x2f0000+0x9030]
-        cmp   al,1
+        cmp   byte [0x2f0000+0x9030],1
         jne   no_load_vrr_m
-        mov   eax,vrr_m
+        mov   ebp,vrr_m
+        lea   esi,[ebp+6]       ; skip '/RD/1/'
         xor   ebx,ebx                   ; no parameters
         xor   edx,edx                   ; no flags
-        call  start_application_fl
+        call  fs_RamdiskExecute.flags
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
     no_load_vrr_m:
-        mov   eax,firstapp
+        mov   ebp,firstapp
+        lea   esi,[ebp+6]
         xor   ebx,ebx                   ; no parameters
         xor   edx,edx                   ; no flags
-        call  start_application_fl
+        call  fs_RamdiskExecute.flags
 
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
@@ -3350,7 +3351,7 @@ uglobal
   mouse_active  db  0
 endg
 iglobal
-  cpustring db 'CPU        '
+  cpustring db '/RD/1/CPU',0
 endg
 
 uglobal
@@ -3364,10 +3365,11 @@ checkmisc:
 
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
-    mov   eax, cpustring
+    mov   ebp, cpustring
+    lea   esi,[ebp+6]
     xor   ebx,ebx               ; no parameters
     xor   edx,edx               ; no flags
-    call  start_application_fl
+    call  fs_RamdiskExecute.flags
     mov   [ctrl_alt_del], 0
   nocpustart:
     cmp   [mouse_active], 1

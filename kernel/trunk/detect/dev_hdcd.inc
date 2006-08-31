@@ -329,7 +329,7 @@ DeviceReset:
         mov     AL,08h
         inc     DX      ;регистр команд
         out     DX,AL
-        mov     ecx,0xffff
+        mov     ecx,0x80000
 @@WaitHDReady_1:
         ; ѕроверить врем€ ожидани€
         dec     ecx

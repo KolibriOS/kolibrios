@@ -23,8 +23,7 @@
   dd     0x0         ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
-include 'lang.inc'
-include 'macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+include 'MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -32,11 +31,21 @@ include 'macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 
 START:
 ;       mcall 5,10
-       mcall 21,13,1,drvinfo
+        mov     ecx, 1
+        mov     edx, drvinfo
+        push    @f
+        jmp     call_driver
+@@:
 ;       jmp run_launcher
 
-       mcall 21,13,2
-       cmp eax,-1
+        mov     ecx, 2
+        push    @f
+call_driver:
+        mcall 21,13
+        ret
+@@:
+;       cmp eax,-1
+        inc     eax
        je   run_launcher
 ;       cmp  ecx,280
 ;       je  change_vrr
@@ -64,34 +73,34 @@ change_vrr:
 ;       mov dx,[_m1+ebx]
 ;       rol edx,16
         ;mov eax,ecx
-        xor eax,eax
-        sub ecx,3
-        mov dx,cx
-        cmp cx,274
-        je yes_274
-        cmp cx,277
-        je yes_277
-        jmp yes_280
+        mov     eax, 10
+        cmp cx,277+3
+        je  yes_277
+        cmp cx,274+3
+        jne yes_280
      yes_274:
         add al,10
      yes_277:
         add al,10
      yes_280:
-        add al,10
-        ror edx,16
-        mov dx,[_m1+eax]
-        rol edx,16
-;       mov dx,bx
-;       shl edx,16
-;       mov  dx,cx
-       mcall 21,13,3
-;       mcall 5,300
+        mov     edx, [_m1+eax-2]
+        lea     dx, [ecx-3]
+        push    run_launcher
+        mov     ecx, 3
+        jmp     call_driver
 run_launcher:
-       mcall 19,launcher,0
-;       mcall 33,text,drvinfo,512,0
+       mcall 70,launcher
        mcall -1
-launcher db  'LAUNCHER   '
-;text      db  'TEXT       '
+launcher:
+        dd      7
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        db      '/RD/1/LAUNCHER'
+I_END:                             ; метка конца программы
+        db      ?       ; system loader will zero all memory after program end
+                        ; this byte will be terminating zero for launcher string
 drvinfo:   ; 512 bytes driver info area
 ; +0   - Full driver name
 ; +32  - Driver version
@@ -104,5 +113,3 @@ vidmode:
       org $+64
 _m1:
       org drvinfo+200h
-
-I_END:                             ; метка конца программы

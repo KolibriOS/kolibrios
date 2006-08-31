@@ -448,8 +448,8 @@ cfgmanager:
 ; d) preboot_device = from what boot?
     mov    di, preboot_graph-0x10000
 ; check bootloader block
-    cmp    [.loader_block-0x10000], 1
-    jnz    .noloaderblock
+    cmp    [.loader_block-0x10000], -1
+    jz     .noloaderblock
     les    bx, [.loader_block-0x10000]
     cmp    byte [es:bx], 1
     mov    si, loader_block_error-0x10000
@@ -657,7 +657,7 @@ virtual at novesa
 .timer dd ?
 end virtual
 	org $+0x10000
-.loader_block dd 0
+.loader_block dd -1
 	org $-0x10000
 .gettime:
     mov    ah, 0
@@ -727,7 +727,7 @@ end if
     _setcursor 15,0
     cmp    [.bSettingsChanged-0x10000], 0
     jz    .load
-    cmp    [.loader_block-0x10000], 0
+    cmp    [.loader_block-0x10000], -1
     jz    .load
     les    bx, [.loader_block-0x10000]
     mov    eax, [es:bx+3]

@@ -136,7 +136,10 @@ system_shutdown:          ; shut down the system
 
    nrl:
     call dtext
-    sub  ebx,0x050000
+;    sub  ebx,0x050000
+        ror     ebx, 16
+        sub     bl, 0x05
+        ror     ebx, 16
     add  eax,8
     add  ecx,31
     cmp  cx,word 0x0001+25*31
