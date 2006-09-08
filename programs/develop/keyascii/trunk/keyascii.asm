@@ -89,7 +89,7 @@ draw_window:
     mov  edx,labelt                ; pointer to text beginning
     mov  esi,labellen-labelt       ; text length
     int  0x40
-    not  ecx
+    xor  ecx,0xFFFFFF
     mov  esi,4
     add  ebx,23
     mov  edx,tdec

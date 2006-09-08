@@ -87,7 +87,7 @@ iglobal
       dd sys_cachetodiskette     ; 16-FlushFloppyCache
       dd sys_getbutton           ; 17-GetButton
       dd sys_system              ; 18-System Services
-      dd syscall_startapp        ; 19-StartApp
+      dd undefined_syscall       ; 19-reserved
       dd sys_midi                ; 20-ResetMidi and OutputMidi
       dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
       dd sys_settime             ; 22-setting date,time,clock and alarm-clock

@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.5.8.1
+SYSTEM FUNCTIONS of OS Kolibri 0.6.0.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -874,8 +874,8 @@ Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
 db 'name',0 - ASCIIZ-string with the name
-For Kolibri 0.5.8.1 kernel:
-db 0,5,8,1
+For Kolibri 0.6.0.0 kernel:
+db 0,6,0,0
 db 2
 db 'Kolibri',0
 
@@ -999,24 +999,6 @@ Remarks:
     its call find out current screen resolution (with function 14)
     and check that the value of position is inside the limits of the
     screen.
-
-======================================================================
-============ Function 19 - start application from ramdisk. ===========
-======================================================================
-Parameters:
-  * eax = 19 - function number
-  * ebx = pointer to the application name in format similar
-    to function 6
-  * ecx = 0 or ecx = pointer to command line parameters
-Returned value:
-  * If eax > 0, then eax contains PID of the created process
-  * If eax < 0, then -eax - file system error code
-Remarks:
-  * This function is obsolete; use subfunction 7 of function 70.
-  * Command line must be terminated by the character with the code 0
-    (ASCIIZ-string); function takes into account either all characters
-    up to terminating zero inclusively or first 256 character
-    regarding what is less.
 
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================
@@ -2897,7 +2879,6 @@ Existing subfunctions:
   * subfunction 5 - rename/move file/folder
   * subfunction 8 - LBA-read from device
   * subfunction 15 - get file system information
-  * subfunction 16 - start application
 
 ======================================================================
 =========== Function 58, subfunction 0 - read file/folder. ===========
@@ -3154,36 +3135,6 @@ Remarks:
     of disk subsystem it is possible to deduce cluster size (there
     it is stored in sectors) and total number of clusters
     for hard disks.
-
-======================================================================
-========== Function 58, subfunction 16 - start application. ==========
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 16 = subfunction number
-  * +4: dword: flags:
-    * bit 0: start the process as debugged
-    * other bits are reserved and must be cleared
-  * +8: dword: 0 or pointer to ASCIIZ-string with parameters
-  * +12 = +0xC: dword: ignored
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-Returned value:
-  * eax > 0 - the program is loaded, eax contains PID
-  * eax < 0 - an error has occured, -eax contains
-    file system error code
-Remarks:
-  * This function is obsolete, use subfunction 7 of function 70.
-  * Command line must be terminated by character with code 0
-    (ASCIIZ-string); function takes into account either all characters
-    up to terminating null inclusively or the first 256 charachters
-    depending on what is less.
-  * If the process is started as debugged, it is created in
-    the suspended state; to run use subfunction 5 of function 69.
 
 ======================================================================
 =============== Function 59 - trace last system calls. ===============

@@ -665,19 +665,6 @@ get_app_params:
     ret
 
 
-start_application_fl:
-    jmp new_start_application_fl
-
-;************************************************************************
-
-start_application_floppy:
-    jmp  new_start_application_floppy
-
-;********************************************************************
-
-start_application_hd:
-    jmp   new_start_application_hd
-
 uglobal
   new_process_place  dd  0x0
   app_start    dd  0x0
@@ -690,13 +677,6 @@ uglobal
   appl_path        dd 0x0
   appl_path_size   dd 0x0         
 endg
-
-;iglobal
-  ;hd_app_string      db  'HDAPP       '
-  ;process_loading    db 'K : Process - loading ',13,10,0
-  ;process_running    db 'K : Process - done',13,10,0
-  ;first_gdt_search   dd 0x2
-;endg
 
 
 sys_threads:

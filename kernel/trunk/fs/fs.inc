@@ -42,7 +42,6 @@ file_system:
 ; eax = 5  ; rename file/directory
 ; eax = 8  ; lba read
 ; eax = 15 ; get_disk_info
-; eax = 16 ; start application
 ;
 ; OUT:
 ;
@@ -89,8 +88,6 @@ file_system:
 
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
-    cmp   dword [eax+0],16      ; RUN - dont care about read&write blocks
-    je    fs_read
     cmp   dword [eax+0],5       ; RENAME - dont care about read&write blocks
     je    fs_read
     cmp   dword [eax+0],4       ; MAKEDIR - dont care about read&write blocks
@@ -149,11 +146,7 @@ endg
 ; (execute operation returns eax=-10)
     cmp    dword [eax], 0
     jz    .read_root
-    mov    ecx, 10
-    cmp    dword [eax], 16
-    jnz    @f
-    neg    ecx
-@@:    mov    [esp+36], ecx
+    mov    dword [esp+36], 10
     ret
 .read_root:
 ; \end{diamond}[18.03.2006]
@@ -291,25 +284,6 @@ endg
 
   fs_noramdisk_write:
 
-    cmp   dword [esp+20],16     ; START APPLICATION
-    jne   fs_noramdisk_start_application
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-
-    xor   ebx,ebx               ; parameters to pass
-    cmp   dword [esp+12],ebx;0
-    je    no_fl_start_param
-    mov   ebx, [esp+12]
-    add   ebx, std_application_base_address
-  no_fl_start_param:
-    mov   edx,[esp+16]        ; flags
-
-    call  start_application_fl
-
-    jmp   file_system_startapp_return
-
-  fs_noramdisk_start_application:     ;there's new code - Mihasik
     cmp   dword [esp+20],2      ;DELETE
     jne   fs_noramdisk_delete
     mov   eax,[esp+4]           ; fname
@@ -395,29 +369,6 @@ endg
     jmp   file_system_return
 
   fs_noflpdisk_delete:
-    cmp   dword [esp+20],16     ; START APPLICATION
-    jne   fs_noflpdisk_start_application
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-
-    xor   ebx,ebx               ; parameters to pass
-    cmp   dword [esp+12],ebx;0
-    je    no_flp_start_param
-    mov   ebx,[0x3010]
-    mov   ebx,[ebx+0x10]
-    add   ebx,[esp+12]
-
-  no_flp_start_param:
-    mov   edx,[esp+16]        ; flags
-
-    call  start_application_floppy
-
-file_system_startapp_return:
-    mov    ebx, [esp+24+24]    ; do not modify ebx in application
-    jmp   file_system_return
-
-  fs_noflpdisk_start_application:
 
   fs_noflpdisk:
   ;*****************************************************************
@@ -511,10 +462,7 @@ choice_necessity_partition_1:
 
   fs_yesharddisk_all:
     mov   eax,1
-    cmp    dword [esp+20], 16
-    jnz    @f
-    neg    eax
-@@:    mov    ebx, [esp+24+24]
+    mov    ebx, [esp+24+24]
     cmp   [hdpos],0             ; is hd base set?
     jz    hd_err_return
     cmp   [fat32part],0         ; is partition set?
@@ -657,41 +605,11 @@ hd_err_return:
 
   fs_noharddisk_rename:
 
-    cmp   dword [esp+20],16     ; START APPLICATION
-    jne   fs_noharddisk_start_application
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,12*2
-
-    mov   ebx,[esp+0]           ; length
-    sub   ebx,eax
-    add   ebx,12
-
-    mov   ecx,[esp+4]           ; work area
-    add   ecx,512
-
-    xor   ebp,ebp               ; parameters to pass
-    cmp   dword [esp+12],ebp;0
-    je    no_hd_start_param
-    mov   ebp, [esp+12]
-    add   ebp, std_application_base_address
-  no_hd_start_param:
-    mov   edx,[esp+16]        ; flags
-
-    call  start_application_hd
-
-    jmp   file_system_startapp_return
-
-  fs_noharddisk_start_application:
-
   fs_noharddisk:
 ; \begin{diamond}[18.03.2006]
     mov    eax, 5        ; file not found
 ; а может быть, возвращать другой код ошибки?
-    cmp    dword [esp+20], 16
-    jnz    @f
-    neg    eax
-@@:    mov    ebx, [esp+24+24]    ; do not change ebx in application
+    mov    ebx, [esp+24+24]    ; do not change ebx in application
 ; \end{diamond}[18.03.2006]
 
   file_system_return:
@@ -713,11 +631,7 @@ hd_err_return:
     jz    .read
     add    esp, 20
     pop    ecx
-    mov    eax, 10
-    cmp    ecx, 16
-    jnz    @f
-    neg    eax
-@@:    mov    [esp+36], eax
+    mov    dword [esp+36], 10
     ret
 .read:
 ; \end{diamond}[18.03.2006]

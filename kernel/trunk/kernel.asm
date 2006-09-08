@@ -76,7 +76,7 @@ drawbar         dd __sys_drawbar.forced
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.5.8.1      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.6.0.0      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -2235,7 +2235,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,5,8,1  ; version 0.5.8.1
+  db 0,6,0,0  ; version 0.6.0.0
   db UID_KOLIBRI
   db 'Kolibri',0
 version_end:
@@ -2988,8 +2988,6 @@ sys_set_window:
     mov   [edi+WDATA.cl_titlebar],edx
     mov   [edi+WDATA.cl_frames],esi
 
-        call    set_window_clientbox
-
     ; check flag (?)
     cmp   [edi+WDATA.fl_wdrawn],1
     jz    newd
@@ -3007,6 +3005,7 @@ sys_set_window:
     mov   word[edi+WDATA.box.left],ax
     mov   word[edi+WDATA.box.top],bx
 
+        call    set_window_clientbox
 
     call  check_window_position
 
@@ -4862,56 +4861,11 @@ syscall_getscreensize:                  ; GetScreenSize
 
 align 4
 
-syscall_startapp:                       ; StartApp
-     mov   edi,[0x3010]
-     add   edi, TASKDATA.mem_start
-     add   eax,[edi]
-     test  ebx,ebx
-     jz    noapppar
-     add   ebx,[edi]
-   noapppar:
-;     call  start_application_fl
-     xor   edx,edx      ; compatibility - flags=0
-     call   new_start_application_fl
-     mov   [esp+36],eax
-     ret
-
-
-align 4
-
 syscall_cdaudio:                        ; CD
 
      call  sys_cd_audio
      mov   [esp+36],eax
      ret
-
-; <diamond> ReadHd and StartHdApp functions are obsolete. Use 58 or 70 functions instead.
-;align 4
-;
-;syscall_readhd:                         ; ReadHd
-;
-;     mov   edi,[0x3010]
-;     add   edi,0x10
-;     add   esi,[edi]
-;     add   eax,[edi]
-;     call  read_hd_file
-;     mov   [esp+36],eax
-;     mov   [esp+24],ebx
-;     ret
-
-;align 4
-;
-;syscall_starthdapp:                     ; StartHdApp
-;
-;     mov   edi,[0x3010]
-;     add   edi,0x10
-;     add   eax,[edi]
-;     add   ecx,[edi]
-;     xor   ebp,ebp
-;     xor   edx,edx      ; compatibility - flags=0
-;     call  start_application_hd
-;     mov   [esp+36],eax
-;     ret
 
 align 4
 

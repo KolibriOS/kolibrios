@@ -4,8 +4,8 @@
 ;                                                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-include "lang.inc"
 include "macros.inc"
+include "lang.inc"
 
 FALSE  equ 0
 TRUE   equ 1
@@ -758,7 +758,7 @@ draw_window:
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
     mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0xf000ffff            ; color of text RRGGBB
+    mov  ecx,0x1000ffff            ; color of text RRGGBB
     mov  edx,labelt                ; pointer to text beginning
     mov  esi,labellen-labelt       ; text length
     int  0x40
@@ -805,7 +805,7 @@ draw_window:
    ; text
     mov  eax,4
     mov  ebx,19*65536+142
-    mov  ecx,0xf00f73f5;ffff0f
+    mov  ecx,0x100f73f5;ffff0f
     mov  edx,but_mode_lab
     mov  esi,1
     int  0x40
@@ -995,7 +995,7 @@ draw_window:
     jne flag3
     mov eax,4
     mov ebx, 20 shl 16 +67
-    mov ecx,0xf0ffff00
+    mov ecx,0x10ffff00
     mov edx,define_cdrom
     mov esi,define_cdrom_len-define_cdrom
     int 0x40
@@ -1004,7 +1004,7 @@ draw_window:
     jne flag4
     mov eax,4
     mov ebx, 47 shl 16 +67
-    mov ecx,0xf0ffff00
+    mov ecx,0x10ffff00
     mov edx,no_cda
     mov esi,no_cda_len-no_cda
     int 0x40
