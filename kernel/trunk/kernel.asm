@@ -147,6 +147,11 @@ app_data       equ  3+app_data_l-gdts
         jnz     l.6
         mov     al, 0xDF
         out     0x60, al
+   l.7: in      al, 0x64
+        test    al, 2
+        jnz     l.7
+        mov     al, 0xFF
+        out     0x64, al
         lgdt    [cs:gdts-0x10000]       ; Load GDT
         mov     eax, cr0                ; Turn on paging // protected mode
         or      eax, ecx
