@@ -3010,10 +3010,9 @@ sys_set_window:
     mov   word[edi+WDATA.box.left],ax
     mov   word[edi+WDATA.box.top],bx
 
-        call    set_window_clientbox
-
     call  check_window_position
 
+        call    set_window_clientbox
 
     push  ecx esi edi               ; save for window fullscreen/resize
     ;mov   esi,edi
@@ -3134,6 +3133,7 @@ sys_window_move:
       .no_y_resizing:
 
         call  check_window_position
+        call  set_window_clientbox
 
         pushad                       ; save for window fullscreen/resize
         mov   esi,edi

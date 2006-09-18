@@ -474,7 +474,6 @@ fs_CdGetFileInfo:
         mov     edi, edx
         call    cd_get_parameters_of_file_1
         and     dword [edi+4], 0
-        pop     ebp
         pop     ebp edi
         xor     eax, eax
         ret

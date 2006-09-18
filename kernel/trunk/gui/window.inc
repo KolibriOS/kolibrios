@@ -516,56 +516,56 @@ display_settings:
 
 repos_windows:
         mov     ecx,[0x3004]
-        mov     esi,0x20*2
+        mov     edi,0x20*2
     mov    byte[0x0000fff0],1
         dec     ecx
         jge    @f
         ret
-    @@: mov    [esi+WDATA.fl_redraw],1
-    test    [esi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+    @@: mov     [edi+WDATA.fl_redraw],1
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jz      .lp2
         mov     eax,[screen_workarea.left]
-        mov     [esi+WDATA.box.left],eax
+        mov     [edi+WDATA.box.left],eax
         sub     eax,[screen_workarea.right]
         neg     eax
-        mov     [esi+WDATA.box.width],eax
+        mov     [edi+WDATA.box.width],eax
         mov     eax,[screen_workarea.top]
-        mov     [esi+WDATA.box.top],eax
-        test    [esi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        mov     [edi+WDATA.box.top],eax
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
         jnz     .lp1
         sub     eax,[screen_workarea.bottom]
         neg     eax
-        mov     [esi+WDATA.box.height],eax
-  .lp1: add     esi,0x20
+        mov     [edi+WDATA.box.height],eax
+  .lp1:
+        call    set_window_clientbox
+        add     edi,0x20
         loop    @b
         ret
-  .lp2: mov     eax,[esi+WDATA.box.left]
-        add     eax,[esi+WDATA.box.width]
+  .lp2: mov     eax,[edi+WDATA.box.left]
+        add     eax,[edi+WDATA.box.width]
     mov    ebx,[0x0000fe00]
 ;    inc    ebx
     cmp    eax,ebx
     jle    .lp4
-        mov     eax,[esi+WDATA.box.width]
+        mov     eax,[edi+WDATA.box.width]
     sub    eax,ebx
     jle    .lp3
-        mov     [esi+WDATA.box.width],ebx
-  .lp3: sub     ebx,[esi+WDATA.box.width]
+        mov     [edi+WDATA.box.width],ebx
+  .lp3: sub     ebx,[edi+WDATA.box.width]
         mov     [esi+WDATA.box.left],ebx
-  .lp4: mov     eax,[esi+WDATA.box.top]
-        add     eax,[esi+WDATA.box.height]
+  .lp4: mov     eax,[edi+WDATA.box.top]
+        add     eax,[edi+WDATA.box.height]
     mov    ebx,[0x0000fe04]
 ;    inc    ebx
     cmp    eax,ebx
     jle    .lp6
-        mov     eax,[esi+WDATA.box.height]
+        mov     eax,[edi+WDATA.box.height]
     sub    eax,ebx
     jle    .lp5
-        mov     [esi+WDATA.box.height],ebx
-  .lp5: sub     ebx,[esi+WDATA.box.height]
-        mov     [esi+WDATA.box.top],ebx
-  .lp6: add     esi,0x20
-        loop    @b
-    ret
+        mov     [edi+WDATA.box.height],ebx
+  .lp5: sub     ebx,[edi+WDATA.box.height]
+        mov     [edi+WDATA.box.top],ebx
+  .lp6: jmp     .lp1
 
 uglobal
   common_colours:
@@ -1463,6 +1463,7 @@ checkwindows:
     mov   [edi + WDATA.box.width],eax
         mov   eax,[npye]
     mov   [edi + WDATA.box.height],eax
+        call    set_window_clientbox
 
     @@: mov     [reposition],cl
 
@@ -1511,6 +1512,7 @@ checkwindows:
         mov     eax,[screen_workarea.bottom]
         sub     eax,[screen_workarea.top]
     @@: mov     [edi+WDATA.box.height],eax
+        call    set_window_clientbox
 
       no_window_shade:
 
@@ -1535,7 +1537,7 @@ checkwindows:
         neg     eax
         mov     [edi+WDATA.box.height],eax
     @@:
-        jmp   no_fullscreen_restore
+        jmp     restore_from_fullscreen.clientbox
       restore_from_fullscreen:
         and     [edi+WDATA.fl_wstate],not WSTATE_MAXIMIZED
         push    [edi+WDATA.box.height]
@@ -1550,6 +1552,8 @@ checkwindows:
         jz      @f
         mov     [edi+WDATA.box.height],eax
     @@:
+    .clientbox:
+        call    set_window_clientbox
 
       no_fullscreen_restore:
 
@@ -1567,6 +1571,7 @@ checkwindows:
         mov   eax,[0xfe04]
         sub   eax,[edi+WDATA.box.height]
         mov   [edi+WDATA.box.top],eax
+        call  set_window_clientbox
       no_window_sizing:
 
         popad
