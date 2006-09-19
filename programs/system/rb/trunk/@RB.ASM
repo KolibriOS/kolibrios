@@ -60,6 +60,11 @@ still:               ; главный цикл основного процесса
   and   ebx,0xffff
   mov   [curx1],eax              ; curx1 = cursor_x
   mov   [cury1],ebx              ; cury1 = cursor_y
+; \begin{diamond}[18.09.2006]
+; ignore minimized windows
+        test    [procinfo.wnd_state], 2
+        jnz     ne_goden
+; \end{diamond}[18.09.2006]
   mov   eax,[procinfo.x_start]   ; eax = wnd_x_start
   mov   ebx,[procinfo.y_start]   ; ebx = wnd_y_start
 

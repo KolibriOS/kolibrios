@@ -222,7 +222,13 @@ struc process_information
   .x_size                  dd ?  ; +42
   .y_size                  dd ?  ; +46
   .slot_state              dw ?  ; +50
-  rb (1024-52)
+                           dw ?  ; +52 - reserved
+  .client_left             dd ?  ; +54
+  .client_top              dd ?  ; +58
+  .client_width            dd ?  ; +62
+  .client_height           dd ?  ; +66
+  .wnd_state               db ?  ; +70
+  rb (1024-71)
  }
 struct process_information
 

@@ -861,6 +861,11 @@ terminate: ; terminate application
         cmp    [0x3000 + edi + TASKDATA.state], byte 9  ; skip dead slots
         je     .check_next_window
         add    edi, window_data
+; \begin{diamond}[19.09.2006]
+; skip minimized windows
+        test   [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz    .check_next_window
+; \end{diamond}
         call   waredraw
  .nothing_to_activate:
         popad

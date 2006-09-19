@@ -139,7 +139,7 @@ fs_CdRead:
     test    ecx, ecx
     jz    .done
     sub    ebx, 2048
-    jae    .new_sector
+    jae    .next
     add    ebx, 2048
     jnz    .incomplete_sector
     cmp    ecx, 2048
@@ -149,9 +149,10 @@ fs_CdRead:
     call ReadCDWRetr      ; читаем сектор файла
     cmp   [DevErrorCode],0
     jne   .noaccess_3
-    inc  dword [CDSectorAddress]
     add    edx, 2048
     sub    ecx, 2048
+.next:
+    inc  dword [CDSectorAddress]
     jmp    .new_sector
 .incomplete_sector:
 ; we must read and memmove incomplete sector
@@ -159,9 +160,6 @@ fs_CdRead:
     call ReadCDWRetr      ; читаем сектор файла
     cmp   [DevErrorCode],0
     jne   .noaccess_3 
-    inc  dword [CDSectorAddress]
-    mov    eax,CDDataBuf
-    add    eax, ebx
     push    ecx
     add    ecx, ebx
     cmp    ecx, 2048
@@ -171,7 +169,7 @@ fs_CdRead:
     sub    ecx, ebx
      push edi esi ecx
      mov edi,edx
-     mov esi,eax ;0x7000   ; CD data buffer
+        lea     esi, [CDDataBuf + ebx]
      cld
      rep movsb
      pop ecx esi edi
@@ -179,7 +177,7 @@ fs_CdRead:
     sub    [esp], ecx
     pop    ecx
     xor    ebx, ebx
-    jmp    .new_sector
+    jmp    .next
      
 .done:
         mov     ebx, edx

@@ -300,24 +300,9 @@ draw:
  mov eax,0
  mov ebx,100*65536+492
  mov ecx,100*65536+280
- mov edx,0x3000000
- mov esi,0x805080d0
- mov edi,0x005080d0
+ mov edx,0x13000000
+ mov edi,title
  int 0x40
-
- mov eax,4
- mov ebx,8*65536+8
- mov ecx,0x10ddeeff
- mov edx,title
- mov esi,title_end-title
- int 0x40
-
-; mov eax,8
-; mov ebx,(492-19)*65536+12
-; mov ecx,5*65536+12
-; mov edx,1
-; mov esi,0x6688dd
-; int 0x40
 
  mov eax,12
  mov ebx,2
@@ -481,83 +466,27 @@ gonext1:
 ls:
  call oldcmd
  call cls2
-
+	and	dword [dirinfo+4], 0
 loopls:
- inc dword [blockcnt]
 
- mov eax,34
- mov ebx,0
- mov ecx,0
- mov edx,0
- add edx,dword [blockcnt]
- mov esi,1
- mov edi,tic_table+7000
- int 0x40
-
- mov ecx,16
-loop40:
- push ecx
-
- cld
- mov ecx,8
- mov edi,filename
- mov esi,tic_table
- add esi,dword [lscnt]
- rep movsb
-
- add dword [lscnt],8
-
- mov edi,filename+8
- mov esi,ddot
- movsb
-
- cld
- mov ecx,3
- mov edi,filename+9
- mov esi,tic_table
- add esi,dword [lscnt]
- rep movsb
-
- cmp byte [filename+10],0
- jne no_fn_space1
-
- mov edi,filename+10
- mov esi,dzero
- movsb
-
-no_fn_space1:
- cmp byte [filename],0xe5  ; deleted file
- je no_newline
- cmp byte [filename],0xf   ; long fat32 filename
- je no_newline
- cmp byte [filename],0x10  ; folder
- je no_newline
-
- cmp word [filename],'AK'
- jne filename_ok
- cmp byte [filename+3],'e'
- jne filename_ok
- cmp byte [filename+5],'y'
- jne filename_ok
- cmp byte [filename+7],'a'
- jne filename_ok
- cmp byte [filename+10],'s'
- jne filename_ok
-
- jmp no_newline
-
-filename_ok:
- mov eax,6
- mov ebx,filename
- mov ecx,0
- mov edx,-1
- mov esi,tic_table+25000
- int 0x40
-
- cmp eax,4294967295
- jne ls_print
-
- jmp no_newline
+	mov	eax, 70
+	mov	ebx, dirinfo
+	int	0x40
+	inc	dword [dirinfo+4]
+	cmp	ebx, 1
+	jnz	ls_end
+	mov	esi, direntry_buffer+32+40
+	mov	edi, filename
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jnz	@b
+@@:
+	cmp	edi, filename+12
+	jae	ls_print
+	stosb
+	jmp	@b
 
 ls_print_done:
  inc byte [lscntf]
@@ -578,15 +507,6 @@ ls_print_done:
 
 no_newline:
  add dword [lscnt],24
-
- pop ecx
- dec ecx
- cmp ecx,0
- jne loop40
-
- cmp dword [blockcnt],16
- je ls_end
-
  jmp no_pause2
 
 pause2n:
@@ -604,7 +524,6 @@ no_pause2:
  jmp loopls
 
 ls_end:
- mov dword [blockcnt],0
  mov dword [lscnt],8024
  mov byte [lscntf],0
  mov byte [lscntx],0
@@ -615,9 +534,6 @@ ls_end:
  jmp ecmd2
 
 ls_print:
- mov edi,filename+8
- mov esi,fill1
- movsb
 
  mov eax,4
  mov ebx,[ypos]
@@ -2128,10 +2044,9 @@ chparam:
  mov esi,qspace
  rep movsb
 
- mov eax,19
  mov ebx,tic_table+400
  mov ecx,tic_table+800
- int 0x40
+ call start_rd_app
 
  cmp eax,0xfffffff0
  jb cmd_ok
@@ -2160,7 +2075,7 @@ needret:
 
 cls1:
  mov eax,13
- mov ebx,6*65536+486
+ mov ebx,6*65536+483
  mov ecx,24*65536+250
  mov edx,0
  int 0x40
@@ -2521,10 +2436,9 @@ loop20:
  mov esi,qspace
  rep movsb
 
- mov eax,19
  mov ebx,tic_table+600
  mov ecx,0
- int 0x40
+ call start_rd_app
 
  cmp eax,0xfffffff0
  jb cmd_ok_1
@@ -2829,9 +2743,40 @@ no_cmd:
 
  ret
 
+start_rd_app:
+        push    edi
+        mov     edi, fileinfo_buffer
+        mov     eax, '/rd/'
+        stosd
+        mov     ax, '1/'
+        stosw
+        push    esi
+        mov     esi, ebx
+        movsd
+        movsd
+        pop     esi
+@@:
+        dec     edi
+        cmp     byte [edi], ' '
+        jz      @b
+        mov     byte [edi+1], 0
+        pop     edi
+        mov     eax, 70
+        mov     ebx, fileinfo_start
+        mov     [ebx+8], ecx
+        int     0x40
+        ret
+fileinfo_start:
+        dd      7
+        dd      0
+        dd      ?
+        dd      0
+        dd      0
+        db      0
+        dd      fileinfo_buffer
+
 title:
- db 'CMD - Command line interpreter'
-title_end:
+ db 'CMD - Command line interpreter',0
 
 smb_cursor db '|'
 
@@ -2977,7 +2922,6 @@ fill3 db '   ',0
 
 pname      db '            ',0
 autoexfile db 'AUTOEXEC.CMD',0
-filename   db '            ',0
 
 dzero db 0,0,0,0
 qspace db '           '
@@ -2993,6 +2937,14 @@ ipccount dd 0
 
 cmd_ex db 0
 
+dirinfo:
+	dd	1
+	dd	0
+	dd	0
+	dd	1
+	dd	direntry_buffer
+	db	'/RD/1',0
+
 ipcb:
  db 0
  db 0,0,0
@@ -3006,5 +2958,7 @@ ipcc:
 times 110 db 0
 
 I_END:
-
+fileinfo_buffer rb 64
+direntry_buffer rb 32+304
+filename rb 260
 tic_table:
