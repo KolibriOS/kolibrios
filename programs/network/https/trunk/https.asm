@@ -1,33 +1,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                      ;
-;    Tiny HTTP Server v 0.4 for MenuetOS               ;
+;    Tiny HTTP Server v 0.5 for KolibriOS              ;
 ;                                                      ;
 ;    License GPL / See file COPYING for details.       ;
 ;    Copyright 2003 Ville Turjanmaa                    ;
 ;                                                      ;
-;    Compile with FASM for Menuet                      ;
+;    Compile with FASM for Menuet/KolibriOS            ;
 ;                                                      ;
 ;    Request /TinyStat for server statistics           ;
 ;    Request /TinyBoard for server message board       ;
 ;                                                      ;
+;    Special version for KoOS by Hex && Heavyiron      ;
+;                                                      ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version  equ  '0.4'
+appname  equ  'Kolibri HTTP Server '
+version  equ  '0.6'
 
 use32
 
-                org     0x0
+		org	0x0
 
-                db      'MENUET01'              ; 8 byte id
-                dd      0x01                    ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x400000                ; required amount of memory
-                dd      0x20000
-                dd      0,0                     ; reserved=no extended header
+		db	'MENUET01'		; 8 byte id
+		dd	0x01			; required os
+		dd	START			; program start
+		dd	I_END			; program image size
+		dd	0x400000		; required amount of memory
+		dd	0x20000
+		dd	0,0			; reserved=no extended header
 
-include 'lang.inc'
-include "macros.inc"
+include "MACROS.INC"
 
 ; 0x0+       - program image
 ; 0x1ffff    - stack
@@ -35,18 +37,25 @@ include "macros.inc"
 ; 0x100000+  - requested file
 
 filel:
-   dd   0x0,0x0,50000/512,0x20000,0x70000
-   db   '/rd/1/board.htm',0
+   dd 0
+   dd 0
+   dd 0
+   dd 50000
+   dd 0x20000
+   db	'/rd/1/board.htm',0
 
 files:
-   dd   0x1,0x0,0x0,0x20000,0x70000
-   db   '/rd/1/board.htm',0
+    dd 2
+    dd 0
+    dd 0
+    dd 0
+    dd 0x20000
+    db '/rd/1/board.htm',0
 
 
+START:				; start of execution
 
-START:                          ; start of execution
-
-    mov  eax,58
+    mov  eax,70
     mov  ebx,filel
     int  0x40
     mov  [board_size],ebx
@@ -62,18 +71,17 @@ START:                          ; start of execution
 
    board_found:
 
-    mov  eax,58
+    mov  eax,70
     mov  ebx,files
     mov  ecx,[board_size]
-    mov  [files+8],ecx
+    mov  [files+12],ecx
     int  0x40
 
     mov  [status],-1
     mov  [last_status],-2
     call clear_input
-    call draw_window            ; at first, draw the window
-
-;    call ops
+red:
+    call draw_window		; at first, draw the window
 
 still:
 
@@ -98,44 +106,30 @@ still:
 
     jmp  still
 
-
- reb:  ; boot
-
-    mov  eax,18
-    mov  ebx,1
-    int  0x40
-
-    jmp  $
-
-
 last_status   dd   0x0
 
 check_events:
 
-    cmp  eax,1                  ; redraw request ?
+    cmp  eax,1			; redraw request ?
     jz   red
-    cmp  eax,2                  ; key in buffer ?
+    cmp  eax,2			; key in buffer ?
     jz   key
-    cmp  eax,3                  ; button in buffer ?
+    cmp  eax,3			; button in buffer ?
     jz   button
 
     ret
 
-red:                           ; redraw
-    call draw_window
-    ret
-
-key:                           ; Keys are not valid at this part of the
-    mov  eax,2                 ; loop. Just read it and ignore
+key:			       ; Keys are not valid at this part of the
+    mov  al,2		       ; loop. Just read it and ignore
     int  0x40
     ret
 
-button:                         ; button
+button: 			; button
 
-    mov  eax,17                 ; get id
+    mov  al,17 		; get id
     int  0x40
 
-    cmp  ah,1                   ; close
+    cmp  ah,1		; close
     jnz  tst2
     mov  eax,53
     mov  ebx,8
@@ -145,16 +139,16 @@ button:                         ; button
     int  0x40
   tst2:
 
-    cmp  ah,2                   ; button id=2 ?
+    cmp  ah,2            ; button id=2 ?
     jnz  tst3
     ; open socket
   ops:
     mov  eax,53
     mov  ebx,5
-    mov  ecx,80     ; local port # - http
-    mov  edx,0      ; no remote port specified
-    mov  esi,0      ; no remote ip specified
-    mov  edi,0      ; PASSIVE open
+    mov  ecx,80       ; local port # - http
+    mov  edx,0	    ; no remote port specified
+    mov  esi,0	    ; no remote ip specified
+    mov  edi,0	    ; PASSIVE open
     int  0x40
     mov  [socket], eax
     mov  [posy],1
@@ -164,12 +158,9 @@ button:                         ; button
     call draw_data
     mov  [server_active],1
     call check_status
-;    cmp  [status],0
-;    je   reb
     ret
   tst3:
-
-    cmp  ah,4                   ; button id=4 ?
+    cmp  ah,4			; button id=4 ?
     jnz  no4
     mov  [server_active],0
   close_socket:
@@ -190,9 +181,9 @@ button:                         ; button
     mov  eax,53
     mov  ebx,5
     mov  ecx,80     ; local port # - http
-    mov  edx,0      ; no remote port specified
-    mov  esi,0      ; no remote ip specified
-    mov  edi,0      ; PASSIVE open
+    mov  edx,0	    ; no remote port specified
+    mov  esi,0	    ; no remote ip specified
+    mov  edi,0	    ; PASSIVE open
     int  0x40
     mov  [socket], eax
   no_re_open:
@@ -220,8 +211,8 @@ button:                         ; button
     jmp  still
   no4:
 
-    cmp  ah,6                   ; read directory
-    je   read_string
+    cmp  ah,6			; read directory
+    je	 read_string
 
     ret
 
@@ -249,9 +240,9 @@ start_transmission:
   wait_for_data:
     call check_for_incoming_data
     cmp  [input_text+256+1],dword 'GET '
-    je   data_received
+    je	 data_received
     cmp  [input_text+256+1],dword 'POST'
-    je   data_received
+    je	 data_received
     mov  eax,5
     mov  ebx,1
     int  0x40
@@ -300,7 +291,7 @@ start_transmission:
     add  [filepos],edx
 
     cmp  [file_left],0
-    jg   newblock
+    jg	 newblock
 
   no_http_request:
 
@@ -318,14 +309,6 @@ wait_for_empty_slot:
     pusha
 
   wait_more:
-
-;    rdtsc
-;    mov  ecx,eax
-;    add  ecx,1000000
-;   wr:
-;    rdtsc
-;    cmp  eax,ecx
-;    jb   wr
 
     mov  eax,5
     mov  ebx,1
@@ -380,14 +363,14 @@ send_header:
 
     pusha
 
-    mov   eax,53                  ; send response and file length
+    mov   eax,53		  ; send response and file length
     mov   ebx,7
     mov   ecx,[socket]
     mov   edx,h_len-html_header
     mov   esi,html_header
     int   0x40
 
-    mov   eax,53                  ; send file type
+    mov   eax,53		  ; send file type
     mov   ebx,7
     mov   ecx,[socket]
     mov   edx,[type_len]
@@ -397,10 +380,13 @@ send_header:
     popa
     ret
 
-
-fileinfo     dd  0,0,1,0x100000,0xf0000
-getf         db  '/RD/1/'
-             times 50 db 0
+fileinfo	dd 0
+		dd 0
+		dd 0
+		dd 512
+		dd 0x100000
+getf		db '/rd/1/'
+	     times 50 db 0
 wanted_file: times 100 db 0
 
 getflen      dd  6
@@ -409,47 +395,47 @@ make_room:
 
    pusha
 
-   mov  edx,ecx
+   mov	edx,ecx
 
-   mov  esi,0x20000
-   add  esi,[board_size]
-   mov  edi,esi
-   add  edi,edx
-   mov  ecx,[board_size]
-   sub  ecx,board1-board
-   inc  ecx
+   mov	esi,0x20000
+   add	esi,[board_size]
+   mov	edi,esi
+   add	edi,edx
+   mov	ecx,[board_size]
+   sub	ecx,board1-board
+   inc	ecx
    std
-   rep  movsb
+   rep	movsb
    cld
 
    popa
    ret
 
 
-from_i  dd  0x0
+from_i	dd  0x0
 from_len dd 0x0
 
 message dd 0x0
 message_len dd 0x0
 
-read_file:                          ; start of execution
+read_file:			    ; start of execution
 
-    mov  [fileinfo+12],eax
-    mov  [fileinfo+8],ebx
-
+    mov  [fileinfo+16],eax
+    shl ebx, 9
+    mov  [fileinfo+12],ebx
     mov  [file_type],unk
     mov  [type_len],unkl-unk
     mov  [filename+40*2+6],dword 'UNK '
 
     cmp  [input_text+256+1],dword 'POST'
-    je   yes_new_message
+    je	 yes_new_message
 
     cmp  [input_text+256+11],dword 'oard'     ; server board message
     jne  no_server_message_2
 
   yes_new_message:
 
-    mov  eax,58
+    mov  eax,70
     mov  ebx,filel
     int  0x40
     mov  [board_size],ebx
@@ -468,7 +454,7 @@ read_file:                          ; start of execution
    newfroms:
     inc  esi
     cmp  esi,input_text+256*20
-    je   no_server_message_2
+    je	 no_server_message_2
     cmp  [esi],dword 'from'
     jne  newfroms
 
@@ -478,13 +464,14 @@ read_file:                          ; start of execution
     mov  edx,0
    name_new_len:
     cmp  [esi+edx],byte 13
-    je   name_found_len
+    je	 name_found_len
     cmp  [esi+edx],byte '&'
-    je   name_found_len
+    je	 name_found_len
     cmp  edx,1000
-    je   name_found_len
+    je	 name_found_len
     inc  edx
     jmp  name_new_len
+
    name_found_len:
 
     mov  [from_len],edx
@@ -493,7 +480,7 @@ read_file:                          ; start of execution
    newmessages:
     inc  esi
     cmp  esi,input_text+256*20
-    je   no_server_message_2
+    je	 no_server_message_2
     cmp  [esi],dword 'sage'
     jne  newmessages
 
@@ -504,11 +491,11 @@ read_file:                          ; start of execution
    new_len:
     inc  edx
     cmp  [esi+edx],byte ' '
-    je   found_len
+    je	 found_len
     cmp  [esi+edx],byte 13
     jbe  found_len
     cmp  edx,input_text+5000
-    je   found_len
+    je	 found_len
     jmp  new_len
    found_len:
     mov  [message_len],edx
@@ -546,7 +533,7 @@ read_file:                          ; start of execution
     imul ebx,16
     add  ebx,eax
     mov  [esi+edx],bl
-    mov  [esi+edx+1],word '  '
+    mov  [esi+edx+1],word ''
     add  edx,2
    no_ascii:
 
@@ -565,21 +552,22 @@ read_file:                          ; start of execution
     call make_room
 
 
-    mov  esi,board1          ; first part
+    mov  esi,board1	     ; first part
     mov  edi,0x20000
     add  edi,board1-board
     mov  ecx,edx
     cld
     rep  movsb
 
-    mov  esi,[from_i]          ; name
+    mov  esi,[from_i]	       ; name
     mov  edi,0x20000
-    add  edi,board1-board + board1e-board1
+    add  edi,board1-board
+    add  edi,board1e-board1
     mov  ecx,[from_len]
     cld
     rep  movsb
 
-    mov  esi,board2          ; middle part
+    mov  esi,board2	     ; middle part
     mov  edi,0x20000
     add  edi,board1-board + board1e-board1
     add  edi,[from_len]
@@ -587,9 +575,9 @@ read_file:                          ; start of execution
     cld
     rep  movsb
 
-    mov  esi,[message]       ; message
+    mov  esi,[message]	     ; message
     mov  edi,0x20000
-    add  edi,board1-board + board1e-board1 +board2e-board2
+    add  edi,board1-board + board1e-board1 + board2e-board2
     add  edi,[from_len]
     mov  ecx,[message_len]
     cld
@@ -597,7 +585,7 @@ read_file:                          ; start of execution
 
     mov  esi,board3    ; end part
     mov  edi,0x20000
-    add  edi,board1-board + board1e-board1 +board2e-board2
+    add  edi,board1-board + board1e-board1 + board2e-board2
     add  edi,[from_len]
     add  edi,[message_len]
     mov  ecx,board3e-board3
@@ -607,9 +595,9 @@ read_file:                          ; start of execution
     inc  [board_messages]
 
     mov  eax,[board_size]
-    mov  [files+8],eax
+    mov  [files+12],eax
 
-    mov  eax,58
+    mov  eax,70
     mov  ebx,files
     int  0x40
 
@@ -671,7 +659,7 @@ read_file:                          ; start of execution
     cld
   new_let:
     cmp  [esi],byte ' '
-    je   no_new_let
+    je	 no_new_let
     cmp  edi,wanted_file+30
     jge  no_new_let
     movsb
@@ -684,10 +672,10 @@ read_file:                          ; start of execution
     cmp  esi,input_text+256+6
     jne  no_index
     mov  edi,wanted_file
-    mov  [edi+0],dword  'inde'
-    mov  [edi+4],dword  'x.ht'
-    mov  [edi+8],byte   'm'
-    mov  [edi+9],byte   0
+    mov  [edi+0],dword	'inde'
+    mov  [edi+4],dword	'x.ht'
+    mov  [edi+8],byte	'm'
+    mov  [edi+9],byte	0
     add  edi,9
 
     mov  [file_type],htm
@@ -698,9 +686,9 @@ read_file:                          ; start of execution
   no_index:
 
     cmp  [edi-3],dword 'htm'+0
-    je   htm_header
+    je	 htm_header
     cmp  [edi-3],dword 'HTM'+0
-    je   htm_header
+    je	 htm_header
     jmp  no_htm_header
   htm_header:
     mov  [file_type],htm
@@ -710,9 +698,9 @@ read_file:                          ; start of execution
   no_htm_header:
 
     cmp  [edi-3],dword 'png'+0
-    je   png_header
+    je	 png_header
     cmp  [edi-3],dword 'PNG'+0
-    je   png_header
+    je	 png_header
     jmp  no_png_header
   png_header:
     mov  [file_type],png
@@ -722,9 +710,9 @@ read_file:                          ; start of execution
   no_png_header:
 
     cmp  [edi-3],dword 'gif'+0
-    je   gif_header
+    je	 gif_header
     cmp  [edi-3],dword 'GIF'+0
-    je   gif_header
+    je	 gif_header
     jmp  no_gif_header
   gif_header:
     mov  [file_type],gif
@@ -734,9 +722,9 @@ read_file:                          ; start of execution
   no_gif_header:
 
     cmp  [edi-3],dword 'jpg'+0
-    je   jpg_header
+    je	 jpg_header
     cmp  [edi-3],dword 'JPG'+0
-    je   jpg_header
+    je	 jpg_header
     jmp  no_jpg_header
   jpg_header:
     mov  [file_type],jpg
@@ -746,13 +734,13 @@ read_file:                          ; start of execution
   no_jpg_header:
 
     cmp  [edi-3],dword 'asm'+0
-    je   txt_header
+    je	 txt_header
     cmp  [edi-3],dword 'ASM'+0
-    je   txt_header
+    je	 txt_header
     cmp  [edi-3],dword 'txt'+0
-    je   txt_header
+    je	 txt_header
     cmp  [edi-3],dword 'TXT'+0
-    je   txt_header
+    je	 txt_header
     jmp  no_txt_header
   txt_header:
     mov  [file_type],txt
@@ -778,13 +766,13 @@ read_file:                          ; start of execution
     cld
     rep  movsb
 
-    mov  [fileinfo+8],dword 1   ; file exists ?
-    mov  eax,58
+    mov  [fileinfo+12],dword 1	 ; file exists ?
+    mov  eax,70
     mov  ebx,fileinfo
     int  0x40
 
-    cmp  eax,0         ; file not found - message
-    je   file_found
+    cmp  eax,0	       ; file not found - message
+    je	 file_found
     mov  edi,et
     call set_time
     mov  edi,ed
@@ -804,8 +792,8 @@ read_file:                          ; start of execution
 
    file_found:
 
-    mov  [fileinfo+8],dword 0x2f0000 / 512 ; read all of file
-    mov  eax,58
+    mov  [fileinfo+12],dword 0x2f0000 ; read all of file
+    mov  eax,70
     mov  ebx,fileinfo
     int  0x40
 
@@ -1000,7 +988,7 @@ check_status:
     int  0x40
 
     cmp  eax,[status]
-    je   c_ret
+    je	 c_ret
     mov  [status],eax
     add  al,48
     mov  [text+12],al
@@ -1011,8 +999,8 @@ check_status:
     ret
 
 
-addr       dd  0x0
-ya         dd  0x0
+addr	   dd  0x0
+ya	   dd  0x0
 
 filename2:  times 100 db 32
 
@@ -1040,11 +1028,11 @@ read_string:
     int  0x40
     shr  eax,8
     cmp  eax,13
-    je   read_done
+    je	 read_done
     cmp  eax,8
     jnz  nobsl
     cmp  edi,[addr]
-    jz   f11
+    jz	 f11
     sub  edi,1
     mov  [edi],byte 32
     call print_text
@@ -1088,28 +1076,17 @@ print_text:
 
     pusha
 
-    mov  eax,13
-    mov  ebx,97*65536+23*6
-    mov  ecx,[ya]
-    shl  ecx,16
-    mov  cx,9
-    mov  edx,0xffffff
-    int  0x40
-
     mov  eax,4
     mov  edx,[addr]
     mov  ebx,97*65536
     add  ebx,[ya]
-    mov  ecx,0x000000
+    mov  ecx,0x40000000
     mov  esi,23
+    mov  edi,0xffffff
     int  0x40
 
     popa
     ret
-
-
-
-
 
 
 ;   *********************************************
@@ -1119,42 +1096,33 @@ print_text:
 
 draw_window:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     int  0x40
 
-                                   ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+480         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+215         ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB
-    mov  esi,0x8050a0b0            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x0050a0b0            ; color of frames    RRGGBB
+				   ; DRAW WINDOW
+    mov  eax,0			   ; function 0 : define and draw window
+    mov  ebx,100*65536+480	   ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+215	   ; [y start] *65536 + [y size]
+    mov  edx,0x13ffffff 	   ; color of work area RRGGBB
+    mov  edi,header		   ; WINDOW LABEL
     int  0x40
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
+    mov  eax,8			   ; function 8 : define and draw button
+    mov  ebx,(40)*65536+20	   ; [x start] *65536 + [x size]
+    mov  ecx,59*65536+9 	   ; [y start] *65536 + [y size]
+    mov  edx,2			   ; button id
+    mov  esi,0x66aa66		   ; button color RRGGBB
     int  0x40
 
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(40)*65536+20         ; [x start] *65536 + [x size]
-    mov  ecx,59*65536+9           ; [y start] *65536 + [y size]
-    mov  edx,2                     ; button id
-    mov  esi,0x66aa66              ; button color RRGGBB
+			   ; function 8 : define and draw button
+    mov  ebx,(40)*65536+20	   ; [x start] *65536 + [x size]
+    mov  ecx,72*65536+9          ; [y start] *65536 + [y size]
+    mov  edx,4			   ; button id
+    mov  esi,0xaa6666		   ; button color RRGGBB
     int  0x40
 
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(40)*65536+20         ; [x start] *65536 + [x size]
-    mov  ecx,72*65536+9           ; [y start] *65536 + [y size]
-    mov  edx,4                     ; button id
-    mov  esi,0xaa6666              ; button color RRGGBB
-    int  0x40
-
-    mov  eax,8                     ; Enter directory
+			   ; Enter directory
     mov  ebx,(25)*65536+66
     mov  ecx,135*65536+15
     mov  edx,6
@@ -1167,7 +1135,7 @@ draw_window:
     mov  edx,0x6699cc ; 002288
     int  0x40
 
-    mov  eax,38
+
     mov  ebx,241*65536+241
     mov  ecx,22*65536+210
     mov  edx,0x336699 ; 002288
@@ -1175,8 +1143,8 @@ draw_window:
 
     call draw_data
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     int  0x40
 
     ret
@@ -1186,7 +1154,7 @@ draw_data:
 
     pusha
 
-    mov  ebx,25*65536+35           ; draw info text with function 4
+    mov  ebx,25*65536+35	   ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,35
@@ -1218,7 +1186,7 @@ draw_data:
     mov  [input_text+4],dword 'IVED'
     mov  [input_text+8],dword ':   '
 
-    mov  ebx,255*65536+35           ; draw info text with function 4
+    mov  ebx,255*65536+35	    ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,input_text
     mov  esi,35
@@ -1247,7 +1215,7 @@ draw_data:
 
 ; DATA AREA
 
-status  dd  0x0
+status	dd  0x0
 
 text:
     db 'TCB status: x                           '
@@ -1259,7 +1227,7 @@ text:
     db '          /TinyBoard -message board     '
     db '                                        '
 dirp:
-    db '   Files:   /RD/1/                      '
+    db '   Files:   /rd/1/                      '
     db '                                        '
 filename:
     db '                                        '
@@ -1271,7 +1239,7 @@ filename:
 html_header:
 
      db  'HTTP/1.0 200 OK',13,10
-     db  'Server: MenuetOS HTTP Server',13,10
+     db  'Server: KolibriOS HTTP Server',13,10
      db  'Content-Length: '
 c_l: db  '000000',13,10
 
@@ -1280,9 +1248,9 @@ h_len:
 fnf:
      db  '<body>'
      db  '<pre>'
-     db  "TinyServer v ",version," for MenuetOS",13,10,13,10
-     db  "Error 404 - File not found.",13,10,13,10
-     db  "For more info about server: request /TinyStat",13,10,13,10
+     db  "HTTP-Сервер v ",version," для KolibriOS",13,10,13,10
+     db  "<H1>Error <FONT color=red>404</FONT> - File not found</H1>",13,10,13,10
+     db  "Для получения статистики выполните запрос /TinyStat",13,10,13,10
 et:  db  "xx:xx:xx",13,10
 ed:  db  "xx.xx.xx",13,10
      db  "</pre></body>"
@@ -1292,15 +1260,15 @@ fnfe:
 sm:
      db  '<body>'
      db  '<pre>'
-     db  "TinyServer v ",version," for MenuetOS",13,10,13,10
-     db  "Statistics: (before current request)",13,10,13,10
-sms: db  "- Documents served  : xxxxxxxxx",13,10
-smb: db  "- Bytes transferred : xxxxxxxxx",13,10
-     db  "- Location          : <a href=/TinyStat>/TinyStat</a>",13,10,13,10
-     db  "TinyBoard:",13,10,13,10
-smm: db  "- Messages          : xxxxxxxxx",13,10
-smz: db  "- Size in bytes     : xxxxxxxxx",13,10
-     db  "- Location          : <a href=/TinyBoard>/TinyBoard</a>",13,10,13,10
+     db  "HTTP-Сервер v ",version," для KolibriOS",13,10,13,10
+     db  "Статистика: (после данного запроса)",13,10,13,10
+sms: db  "- Документов принято: xxxxxxxxx",13,10
+smb: db  "- Байт переданно    : xxxxxxxxx",13,10
+     db  "- Местонахождение   : <a href=/TinyStat>Статистика</a>",13,10,13,10
+     db  "Гостевая:",13,10,13,10
+smm: db  "- Сообщений         : xxxxxxxxx",13,10
+smz: db  "- Размер в байтах   : xxxxxxxxx",13,10
+     db  "- Местонахождение   : <a href=/TinyBoard>Гостевая</a>",13,10,13,10
 smt: db  "xx:xx:xx",13,10
 smd: db  "xx.xx.xx",13,10
      db  '</pre></body>'
@@ -1326,42 +1294,42 @@ unk:   db  'Content-Type: unknown/unknown',13,10,13,10
 unkl:
 
 
- labelt:  db   'Tiny http server ',version
- labellen:
+header db   appname,version,0
 
-socket          dd  0x0
-server_active   db  0x0
+socket		dd  0x0
+server_active	db  0x0
 
 board:
 
-db "<HTML><BODY BGCOLOR=#ffffff ALINK=black VLINK=black><br>",13,10
+db "<HTML><HEAD><TITLE>INTKolibriOS - /Гостевая/</TITLE></HEAD>",13,10
+db "<BODY background=bgnd.gif BGCOLOR=#ffffff ALINK=black VLINK=black><br>",13,10
 db "<center>",13,10
 db "<TABLE CELLPADDING=10 CELLSPACING=0 BORDER=0 bgcolor=#ffffff width=600>"
 db 13,10
-db "<TR VALIGN=top><TD ALIGN=center bgcolor=f0f0f8>",13,10
-db "<font size=3>Tinyserver Messageboard</TD></TR></TABLE><br>",13,10
+db "<TR VALIGN=top><TD ALIGN=center bgcolor=F4F4F4>",13,10
+db "<font size=4>Гостевая сервера INTKolibriOS</TD></TR></TABLE><br>",13,10
 db "<TABLE CELLPADDING=14 CELLSPACING=2 BORDER=0 bgcolor=#ffffff width=600>"
 db 13,10,13,10
 
 board1:
 
 db "<TR VALIGN=top>",13,10
-db "<TD ALIGN=left width=80 bgcolor=f0f0f8><P>",13,10
+db "<TD ALIGN=left width=80 bgcolor=F4F4F4><P>",13,10
 db "<font size=3>",13,10
 board1e:
-db "WebMaster",13,10
+db "Hex",13,10
 board2:
 db "</font>",13,10
 db "<br><br><br>",13,10
 db "<br><br><br><br>",13,10
 bsmt:
-db "12.23.45<br>",13,10
+db "15.23.45<br>",13,10
 bsmd:
-db "02.05.03",13,10
+db "22.03.06",13,10
 db "</P></TD>",13,10
-db "<TD bgcolor=f0f0f8><P>",13,10
+db "<TD bgcolor=F4F4F4><P>",13,10
 board2e:
-db "Assembly written messageboard from assembly written MenuetOS.<br>"
+db "Добро пожаловать в гостевую сервера INTKolibriOS! (-:<br>"
 db 13,10
 board3:
 db "</P></TD></TR>",13,10,13,10
@@ -1374,11 +1342,11 @@ db "<br>",13,10
 db "<TABLE CELLPADDING=14 CELLSPACING=3 BORDER=0 bgcolor=#ffffff width=600>"
 db 13,10
 db "<TR VALIGN=top>",13,10
-db "<TD ALIGN=left bgcolor=f0f0f8><P>",13,10
+db "<TD ALIGN=left bgcolor=F4F4F4><P>",13,10
 db "<form method=Post Action=/TinyBoard>",13,10
-db "Name: <br><input type=text name=from size=20 MAXLENGTH=20><br>",13,10
-db "Message: <br><textarea cols=60 rows=6 name=message></textarea><br>",13,10
-db "<input type=Submit Value='   Send Message   '></form>",13,10
+db "Имя: <br><input type=text name=from size=20 MAXLENGTH=20><br>",13,10
+db "Сообщение: <br><textarea cols=60 rows=6 name=message></textarea><br>",13,10
+db "<input type=Submit Value='   Отправить сообщение    '></form>",13,10
 db "</TD></TR>",13,10
 db "</TABLE>",13,10
 db "</BODY>",13,10
@@ -1386,8 +1354,8 @@ db "</HTML>",13,10
 
 board_end:
 
-board_size      dd  0x0
-board_messages  dd  0x0
+board_size	dd  0x0
+board_messages	dd  0x0
 
 input_text:
 

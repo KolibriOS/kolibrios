@@ -1,28 +1,32 @@
-;;   Calculator for MenuetOS
+;;   Calculator for MenuetOS (original version)
 ;;  (c)Ville Turjanmaa
 ;;   Compile with FASM for Menuet
-;;  
-;;   Калькулятор 1.1 alpha 
-;;  (c)Pavel Rymovski aka Heavyiron
-;;What's new:1)changed design
+;;   
+;;What's new:
+;;   Calc 1.1
+;;           1)changed design
 ;;           2)new procedure of draw window (10 decimal digits, 23 binary, "+" not displayed now)
 ;;           3)window with skin
 ;;           4)I had used macroses
-;;   Calc 1.2 alpha
+;;   Calc 1.2
 ;;           1)added some useful functions, such as arcsin, arccos, arctg, 1/x, x^2
-;;   Calc 1.3
+;;   Calc 1.31
 ;;           1)optimised program
+;;           2)new type of window (you need kernel 114 revision or higher)
+;;  Pavel Rymovski (Heavyiron)
+
+appname equ 'Calc '
+version equ '1.31'
 
 use32
-							 org    0x0
-
+               org    0x0
                db    'MENUET01'               ; 8 byte id
                dd     0x01                    ; header version
                dd     START                   ; start of code
                dd     I_END                   ; size of image
                dd     0x1000                  ; memory for app
                dd     0x1000                  ; esp
-               dd     0x0 , 0x0               ; I_Param , I_Icon
+               dd     0x0,0x0                 ; I_Param , I_Icon
 
 include 'macros.inc'
 
@@ -31,7 +35,7 @@ START:
 red:
     call draw_window
 
-still:		
+still:  
     push 10 
     pop eax 
     int 40h 
@@ -39,16 +43,18 @@ still:
     jz red
     dec eax 
     jz key 
-
+ 
 button:
-    mcall 17 	  ; получить идентификатор нажатой кнопки
+    mov  al,17      ; получить идентификатор нажатой кнопки
+    int  0x40
     shr  eax,8
     jmp  testbut
- 
- key:									
-    mcall 2         ; получить ASCII-код нажатой клавиши
+
+key:         
+    mov  al,2       ; получить ASCII-код нажатой клавиши
+    int  0x40
     shr  eax,8
-    mov  edi,asci	  ; перевод ASCII в идентификатор кнопки
+    mov  edi,asci   ; перевод ASCII в идентификатор кнопки
     mov  ecx,18
     cld
     repne scasb
@@ -60,9 +66,10 @@ button:
     lodsb
      
   testbut:
-  	cmp  eax,1	  ; кнопка 1 - закрытие программы
+    cmp  eax,1      ; кнопка 1 - закрытие программы
     jne  noclose
-    mcall -1 		
+    or   eax,-1
+    int  0x40 
  
   noclose:
     cmp  eax,2
@@ -72,14 +79,14 @@ button:
   
   no_reset:
     finit
-    mov    ebx,muuta1	 ; Перевод в формат FPU
-    mov    esi,18
-    call   atof
-    fstp   [trans1]
-    mov    ebx,muuta2
-    mov    esi,18
-    call   atof
-    fst    [trans2]
+    mov  ebx,muuta1  ; Перевод в формат FPU
+    mov  esi,18
+    call atof
+    fstp [trans1]
+    mov  ebx,muuta2
+    mov  esi,18
+    call atof
+    fst  [trans2]
     cmp  eax,33
     jne  no_sign
     cmp  [dsign],byte '-'
@@ -107,40 +114,40 @@ button:
     mov  [entry_multiplier],eax
     call print_display
     jmp  still
-  multipl:  dd	10,16,2
+  multipl:  dd 10,16,2
 
   no_display_change:
     cmp  eax,6
-    jb	 no_a_f
+    jb   no_a_f
     cmp  eax,11
-    jg	 no_a_f
+    jg   no_a_f
     add  eax,4
     call number_entry
     jmp  still
    
    no_a_f:
     cmp  eax,12
-    jb	 no_13
+    jb   no_13
     cmp  eax,14
-    jg	 no_13
+    jg   no_13
     sub  eax,11
     call number_entry
     jmp  still
    
    no_13:
     cmp  eax,19
-    jb	 no_46
+    jb   no_46
     cmp  eax,21
-    jg	 no_46
+    jg   no_46
     sub  eax,15
     call number_entry
     jmp  still
    
    no_46:
     cmp  eax,26
-    jb	 no_79
+    jb   no_79
     cmp  eax,28
-    jg	 no_79
+    jg   no_79
     sub  eax,19
     call number_entry
     jmp  still
@@ -148,7 +155,7 @@ button:
    no_79:
     cmp  eax,34
     jne  no_0
-    mov  eax,0
+    xor  eax,eax
     call number_entry
     jmp  still
    
@@ -303,7 +310,7 @@ error:
 calculate:
     pusha
     cmp  [calc],' '
-    je	 no_calculation
+    je   no_calculation
     cmp  [calc],'/'
     jne  no_cdiv
     fdiv [trans1]
@@ -338,7 +345,7 @@ number_entry:
     cmp  eax,[entry_multiplier]
     jge  no_entry
     cmp  [id],1
-    je	 decimal_entry
+    je   decimal_entry
     mov  ebx,[integer]
     test ebx,0xc0000000
     jnz  no_entry
@@ -384,7 +391,7 @@ number_entry:
     cld
     rep  movsb
     mov  [muuta1],al
-    mov  edi,muuta1+10	    ; целое
+    mov  edi,muuta1+10     ; целое
     mov  eax,[integer]
   
   new_to_muuta1:
@@ -397,7 +404,7 @@ number_entry:
     dec  edi
     cmp  edi,muuta1+1
     jge  new_to_muuta1
-    mov  edi,muuta1+17	    ; дробное
+    mov  edi,muuta1+17     ; дробное
     mov  eax,[decimal]
   
   new_to_muuta2:
@@ -434,17 +441,17 @@ new_entry:
     popa
     ret
 
-ten	   dd	 10.0,0
-tmp	   dw	    1,0
-sign	   db	    1,0
-tmp2	   dq	  0x0,0
-exp	   dd	  0x0,0
-new_dec    dd  100000,0
-id	   db	  0x0,0
-res	dd   0
-trans1	dq   0
-trans2	dq   0
-controlWord dw 1
+ten          dd  10.0,0
+tmp          dw  1,0
+sign         db  1,0
+tmp2         dq  0x0,0
+exp          dd  0x0,0
+new_dec      dd  100000,0
+id           db  0x0,0
+res          dd  0
+trans1       dq  0
+trans2       dq  0
+controlWord  dw  1
 
 ftoa:                         ; fpu st0 -> [integer],[decimal]
     pusha
@@ -452,7 +459,7 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     fstcw  [controlWord]      ; set truncate integer mode
     mov    ax,[controlWord]
     mov    [tmp], ax
-    or	   [tmp], word 0x0c00
+    or     [tmp], word 0x0c00
     fldcw  [tmp]
     ftst                      ; test if st0 is negative
     fstsw  ax
@@ -467,12 +474,12 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     fld    [tmp2]
     fisub  [integer]
     fldcw  [controlWord]
-    cmp  byte [sign], 0     ; change fraction to positive
-    je	 no_neg2
+    cmp    byte [sign], 0     ; change fraction to positive
+    je     no_neg2
     fchs
  
   no_neg2:
-    mov    [res],0	    ; convert 6 decimal numbers
+    mov    [res],0     ; convert 6 decimal numbers
     mov    edi,6
 
    newd:
@@ -488,7 +495,7 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     fstsw  ax
     
     dec    edi
-    jz	   real_done
+    jz     real_done
     jmp    newd
 
   real_done:
@@ -501,8 +508,8 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
   
   no_error:
     mov    [dsign],byte '+'
-    cmp    [sign],byte 0	     ; convert negative result
-    je	   no_negative
+    cmp    [sign],byte 0      ; convert negative result
+    je     no_negative
     mov    eax,[integer]
     not    eax
     inc    eax
@@ -521,9 +528,9 @@ atof:
     fldz
     mov di, 0
     cmp si, 0
-    je .error				; Jump if string has 0 length.
+    je .error            ; Jump if string has 0 length.
     mov byte [sign], 0
-    cmp byte [bx], '+'	 		; Take care of leading '+' or '-'.
+    cmp byte [bx], '+'   ; Take care of leading '+' or '-'.
     jne .noPlus
     inc di
     jmp .noMinus
@@ -531,7 +538,7 @@ atof:
   .noPlus:
     cmp byte [bx], '-'
     jne .noMinus
-    mov byte [sign], 1	            ; Number is negative.
+    mov byte [sign], 1   ; Number is negative.
     inc di
   
   .noMinus:
@@ -542,16 +549,16 @@ atof:
     call atof_convertFractionalPart
     jc .error
     cmp byte [sign], 0
-    je	.dontNegate
-    fchs	   ; Negate value
+    je .dontNegate
+    fchs    ; Negate value
  
   .dontNegate:
-    mov bh, 0	   ; Set bh to indicate the string is a valid number.
+    mov bh, 0    ; Set bh to indicate the string is a valid number.
     jmp .exit
 
   .error:
-    mov bh, 1	   ; Set error code.
-    fstp st0	   ; Pop top of fpu stack.
+    mov bh, 1    ; Set error code.
+    fstp st0    ; Pop top of fpu stack.
 
   .exit:
     pop di
@@ -568,7 +575,7 @@ atof_convertWholePart:
     mov al, [bx + di]
     cmp al, '.'
     je .exit
-    cmp al, '0'    ; Make sure character is a digit.
+    cmp al, '0'       ; Make sure character is a digit.
     jb .error
     cmp al, '9'
     ja .error
@@ -585,34 +592,34 @@ atof_convertWholePart:
     fmul dword [ten]
     fiadd word [tmp]
     inc di
-    cmp si, di	   ; Jump if end of string has been reached.
+    cmp si, di         ; Jump if end of string has been reached.
     je .exit
     jmp .mainLoop
 
   .error:
-    stc 	   ; Set error (carry) flag.
+    stc                ; Set error (carry) flag.
     ret
 
   .exit:
-    clc 	   ; Clear error (carry) flag.
+    clc                ; Clear error (carry) flag.
     ret
 
 
 atof_convertFractionalPart:
-    fld1           ; Load 1 to TOS.  This will be the value of the decimal place.
+    fld1               ; Load 1 to TOS.  This will be the value of the decimal place.
 
   .mainLoop:
-    cmp si, di	   ; Jump if end of string has been reached.
+    cmp si, di         ; Jump if end of string has been reached.
     je .exit
-    inc di	       ; Move past the decimal point.
-    cmp si, di	   ; Jump if end of string has been reached.
+    inc di             ; Move past the decimal point.
+    cmp si, di         ; Jump if end of string has been reached.
     je .exit
     mov al, [bx + di]
-    cmp al, '0'    ; Make sure character is a digit.
+    cmp al, '0'        ; Make sure character is a digit.
     jb .error
     cmp al, '9'
     ja .error
-    fdiv dword [ten]	 ; Next decimal place
+    fdiv dword [ten]   ; Next decimal place
     sub al, '0'
     mov ah, 0
     mov [tmp], ax
@@ -626,123 +633,196 @@ atof_convertFractionalPart:
     jmp .mainLoop
 
   .error:
-    stc 	       ; Set error (carry) flag.
-    fstp st0	   ; Pop top of fpu stack.
+    stc           ; Set error (carry) flag.
+    fstp st0    ; Pop top of fpu stack.
     ret
 
   .exit:
-    clc 	   		 ; Clear error (carry) flag.
-    fstp st0	   ; Pop top of fpu stack.
+    clc              ; Clear error (carry) flag.
+    fstp st0    ; Pop top of fpu stack.
     ret
 
 ;   *********************************************
-;   ******* ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА ********
+;   ******* WINDOW DEFINITIONS AND DRAW *********
 ;   *********************************************
 
 draw_window:
+    
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    int  0x40
 
-    mcall 12,1
-    mcall 0,200*65536+255,200*65536+180,0x03ddeeff   ; функция 0: определить и отрисовать окно
-    mcall 4,8*65536+8,0x10000000,labelt,label_len    ; ЗАГОЛОВОК ОКНА
+    mov  eax,12
+    mov  ebx,1
+    int  0x40
+                                   
+    mov  eax,0                     
+    mov  ebx,200*65536+255        
+    mov  ecx,200*65536+180
+    mov  edx,[sc.work]
+    or   edx,0x33000000
+    mov  edi,header
+    int  0x40
 
-    mov  ebx,24*65536+28
-    mov  ecx,70*65536+18
+    mov  eax,8
+    mov  ebx,19*65536+28
+    mov  ecx,49*65536+18
     mov  edx,6
-    mov  esi,0x0066ee
+    mov  esi,[sc.work_button]
     mov  edi,7
   newbutton:
     dec  edi
     jnz  no_new_row
     mov  edi,7
-    mov  ebx,24*65536+25+3
+    mov  ebx,19*65536+28
     add  ecx,20*65536
   no_new_row:
-    mcall 8
+    int  0x40
     add  ebx,30*65536
     inc  edx
     cmp  edx,39
     jbe  newbutton
-		
-    mcall 8,225*65536+8,28*65536+8,3                    ; 'dec-bin-hex'
-    mcall 8,204*65536+28,70*65536+18,2,0xcc0000         ; 'C'
-	
-    mov  ebx,25*65536+75                                ; Прорисовка подписей кнопок
-    mov  ecx,0xffffff
-    mov  edx,text
-    mov  esi,34
   
+    mcall  ,199*65536+28,49*65536+18,2                  ; 'C'
+    mcall  ,220*65536+8,7*65536+8,3                     ; 'dec-bin-hex'
+
+    mov  eax,4
+    mov  ebx,27*65536+54
+    mov  ecx,[sc.work_button_text]
+    mov  edx,text
+    mov  esi,33
   newline:
-    mcall 4
+    int  0x40
     add  ebx,20
-    add  edx,34
+    add  edx,33
     cmp  [edx],byte 'x'
     jne  newline
+    
     call print_display
-    mcall 12,2
+    
+    mov  eax,12
+    mov  ebx,2
+    int  0x40
+
     ret
 
 print_display:
     pusha
-    mcall 13,100*65536+120,25*65536+13,0x00ddeeff
-    mcall 13,23*65536+210,40*65536+13,0xffffff
-    mcall 4,140*65536+28,0,calc,1
+    mcall 13,18*65536+210,19*65536+13,0xffffff
+
     mov  eax,4
-    mov  ebx,203*65536+29
-    mov  ecx,0
+    mov  ebx,135*65536+7
+    mov  ecx,[sc.work_text]
+    or   ecx,0x40000000
+    mov  edx,calc
+    mov  esi,1
+    mov  edi,[sc.work]
+    int  0x40
+
+    mov  ebx,198*65536+8
     mov  edx,[display_type]
     shl  edx,2
     add  edx,display_type_text
     mov  esi,3
+    mov  edi,[sc.work]
     int  0x40
- 		
+   
     cmp  [dsign],byte '+'
-    je  positive
-    mcall 4,28*65536+43,0x0,dsign,1		
-	
-positive:		
-    cmp  [display_type],0                            ; десятичная система счисления
+    je   positive
+    mov  ebx,23*65536+22
+    mov  ecx,0x0
+    mov  edx,dsign
+    mov  esi,1
+    int  0x40  
+ 
+positive:  
+    cmp  [display_type],0
     jne  no_display_decimal
     cmp  [decimal],0
     je   whole
-    mcall 47,10*65536,[integer],125*65536+43,0x0     ; отображать 10 цифр
-    mcall 4,185*65536+43,0x0,dot,1
-    mcall 47,6*65536,[decimal],192*65536+43,0x0      ; отображать 6 цифр после запятой
+
+    mov  ebx,180*65536+22
+    mov  ecx,0x0
+    mov  edx,dot
+    mov  esi,1
+    int  0x40
+    
+    mov  eax,47
+    mov  ebx,10*65536
+    mov  ecx,[integer]
+    mov  edx,120*65536+22
+    mov  esi,0x0
+    int  0x40     
+    
+    mov  ebx,6*65536
+    mov  ecx,[decimal]
+    mov  edx,187*65536+22     
+    mov  esi,0x0
+    int  0x40 
+
     popa
     ret
     
 whole:
+    mov  ebx,220*65536+22
+    mov  ecx,0x0
+    mov  edx,dot
+    mov  esi,1
+    int  0x40
+
     cmp  [integer],0
     je  null
-    mcall 47,10*65536,[integer],165*65536+43,0x0
-    mcall 4,225*65536+43,0x0,dot,1
+
+    mov  eax,47
+    mov  ebx,10*65536
+    mov  ecx,[integer]
+    mov  edx,160*65536+22
+    mov  esi,0x0
+    int  0x40
+
     popa
     ret
-	             
+              
   no_display_decimal:
-    cmp  [integer],0
-    je  null
     cmp  [display_type],1
     jne  no_display_hexadecimal
-    mcall 47,1*256+8*65536,[integer],178*65536+43,0x0    ; отображать 8 шестнадцатиричных цифр
+    cmp  [integer],0
+    je  null
+    
+    mov  eax,47
+    mov  ebx,256+8*65536
+    mov  ecx,[integer]
+    mov  edx,173*65536+22
+    mov  esi,0x0
+    int  0x40
+
     popa
     ret
  
   no_display_hexadecimal:
     cmp  [integer],0
     je  null
-    cmp  [display_type],2
-    jne  null
-    mcall 47,2*256+32*65536,[integer],37*65536+43,0x0    ; отображать 32 двоичные цифры
+
+    mov  eax,47
+    mov  ebx,2*256+32*65536
+    mov  ecx,[integer]
+    mov  edx,32*65536+22
+    mov  esi,0x0
+    int  0x40
+
     popa
     ret
   
   null:
-    mcall 47,1*65536,0,219*65536+43,0x0
-    cmp  [display_type],0
-    jne  end_pr
-    mcall 4,225*65536+43,0x0,dot,1
-		
-end_pr:	
+    mov  eax,47
+    mov  ebx,1*65536
+    mov  ecx,0
+    mov  edx,214*65536+22
+    mov  esi,0x0
+    int  0x40
+
     popa
     ret
 
@@ -768,36 +848,36 @@ clear_all:
     ret
 
 
-;Область данных
+;data
+
+header db appname,version,0
 
 display_type       dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier   dd  10
-
-display_start_y    dd  0x0
 display_type_text  db  'dec hex bin'
 
-dot	db  '.'
-calc	db  ' '
+dot     db  '.'
+calc    db  ' '
 integer dd    0
 decimal dd    0
 kymppi  dd   10
 
 dsign:
-muuta1	db   '+0000000000.000000'
-muuta2	db   '+0000000000.000000'
-muuta0	db   '+0000000000.000000'
+muuta1  db   '+0000000000.000000'
+muuta2  db   '+0000000000.000000'
+muuta0  db   '+0000000000.000000'
 
 text:
-    db '  A    B    C    D    E    F    C '
-    db '  1    2    3    +   Int  Sin Asin'
-    db '  4    5    6    -   1/x  Cos Acos'
-    db '  7    8    9    /   x^2  Tan Atan'
-    db ' +/-   0    .    *   Sqr  Pi    = '
+    db ' A    B    C    D    E    F    C '
+    db ' 1    2    3    +   Int  Sin Asin'
+    db ' 4    5    6    -   1/x  Cos Acos'
+    db ' 7    8    9    /   x^2  Tan Atan'
+    db '+/-   0    .    *   Sqr  Pi    = '
     db 'x'
 
 asci:  db 49,50,51,52,53,54,55,56,57,48,43,61,45,42,47,44,46,27
 butid: db 12,13,14,19,20,21,26,27,28,34,15,39,22,36,29,35,35,1
-labelt:
-      db   'Calc 1.3'
-label_len = $ - labelt
+
 I_END:
+
+sc     system_colors
