@@ -1406,12 +1406,12 @@ draw_num_text:
      ; edx length
      ; edi 1 force
 
-        mov     edi,[0x3000]
-        shl     edi,8
-        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.top]
-        rol     eax,16
-        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
-        rol     eax,16
+;        mov     edi,[0x3000]
+;        shl     edi,8
+;        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+;        rol     eax,16
+;        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+;        rol     eax,16
 
      mov   edx,eax
      mov   ecx,65
@@ -1422,8 +1422,10 @@ draw_num_text:
      push  edx                       ; add window start x & y
      mov   edx,[0x3010]
      mov   ebx,[edx-twdw+WDATA.box.left]
+        add     ebx, [(edx-0x3000)*8+0x80000+APPDATA.wnd_clientbox.left]
      shl   ebx,16
      add   ebx,[edx-twdw+WDATA.box.top]
+        add     ebx, [(edx-0x3000)*8+0x80000+APPDATA.wnd_clientbox.top]
      add   eax,ebx
      pop   edx
      mov   ebx,[esp+64+32-12+4]
