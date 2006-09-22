@@ -226,6 +226,7 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	me.s1=s1;
 	relocate_common_syms();
 	assign_addresses(&me);
+	me.header.version=1;
 	me.header.entry_point=tcc_find_symbol_me(&me,"start");
 	me.header.params= tcc_find_symbol_me(&me,"__argv"); // <--
 	me.header.argv= tcc_find_symbol_me(&me,"__path"); // <--

@@ -14,9 +14,9 @@ _msys_read_file:
   mov	eax,[ebp+12]
   mov	[file_struct.offset],eax
   mov	eax,[ebp+16]
-  mov	[file_struct.offset],eax
+  mov	[file_struct.size],eax
   mov	eax,[ebp+20]
-  mov	[file_struct.offset],eax
+  mov	[file_struct.data],eax
   mov	[file_struct.temp_buffer],temp_buffer
   mov	edx,[ebp+8]
   call	copy_file_name
