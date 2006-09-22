@@ -32,14 +32,14 @@
 
 ;---------------------------------------------------------------------
 
-include "macros.inc"	 ; standart macros & constants
-include "meosfunc.inc"	   ; MenuetOS API functions names
-include "debug.inc"	; printing to debug board
-include "constant.inc"	   ; BIT?? constants
-include "ac97.inc"     ; AC'97 constants
-include "pci.inc"     ; PCI interface
-include "codec.inc"	; functions for configuring codec
-include "frontend.inc"	   ; main window
+include "MACROS.INC"	 ; standart macros & constants
+include "MEOSFUNC.INC"	   ; MenuetOS API functions names
+include "DEBUG.INC"	; printing to debug board
+include "CONSTANT.INC"	   ; BIT?? constants
+include "AC97.INC"     ; AC'97 constants
+include "PCI.INC"     ; PCI interface
+include "CODEC.INC"	; functions for configuring codec
+include "FRONTEND.INC"	   ; main window
 
 ;---------------------------------------------------------------------
 
@@ -652,13 +652,14 @@ update_next_buffer:
 ;    jb   temp_12_7
 ;    inc   ecx
 ;  temp_12_7:
-   cmp	 edx,0
-    je	 temp_12_7
-    inc   ecx
-  temp_12_7:
+;   cmp	 edx,0
+;    je	 temp_12_7
+;    inc   ecx
+;  temp_12_7:
 
     pop    edx ebx 
     mov    eax,[esp+4]            ;restore buffer index
+    and    ecx, not 511
     add    [fileinfo.first_byte], ecx ; +60Kb
     call   [convert + edx * 4]
 ;start fix for MM (4)    

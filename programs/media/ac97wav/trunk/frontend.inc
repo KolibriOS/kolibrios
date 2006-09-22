@@ -188,6 +188,7 @@ main_loop:
         ;dps "block: "
         ;dpd eax
         ;newline
+        and     eax, not 511
         mov     [fileinfo.first_byte], eax
         call    draw_progress_bar
         jmp     main_loop

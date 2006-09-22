@@ -28,6 +28,8 @@
 ;80Ver prompt edit fatal bug deleted, antiflick when move list up/down
 ;81Ver Save Dialog bug deleted
 ;82Ver Rewritten to function 70. Corrected work with scrollbar.
+;83Ver CD-ROM support
+;84Ver URL line editor corrected
 ;1560000 bytes memory!
 
 ;******************************************************************************
@@ -72,6 +74,30 @@ START:		    ; start of execution
     je	  no_hdpartition_on_hd3
     mov [hdimg4], aHD3
  no_hdpartition_on_hd3:
+        test    byte [edx+1], 80h
+        jz      @f
+        mov     [hdimg1], aCD0
+        mov     [hdimg1+4], 'CD-R'
+        mov     [hdimg1+8], 'OM  '
+@@:
+        test    byte [edx+1], 20h
+        jz      @f
+        mov     [hdimg2], aCD1
+        mov     [hdimg2+4], 'CD-R'
+        mov     [hdimg2+8], 'OM  '
+@@:
+        test    byte [edx+1], 8
+        jz      @f
+        mov     [hdimg3], aCD2
+        mov     [hdimg3+4], 'CD-R'
+        mov     [hdimg3+8], 'OM  '
+@@:
+        test    byte [edx+1], 2
+        jz      @f
+        mov     [hdimg4], aCD3
+        mov     [hdimg4+4], 'CD-R'
+        mov     [hdimg4+8], 'OM  '
+@@:
 
     mov eax,40
     mov ebx,0100111b
@@ -167,7 +193,7 @@ no_dlg:
 
     mov ecx,tempimg ;src
     mov edx,hdico   ;dest
-    mov ebp,9
+    mov ebp,10
 loogetimg:
     call getimgproc
     add edx,9*12*3+8
@@ -316,12 +342,17 @@ con_edit:
 no_con_ent:
     cmp  ah,key_Left
     jne  no_con_left
+        cmp     [cursor], 0
+        jz      still
     dec  [cursor]
     mov  [flick],2
     jmp  anti_flick ;red
 no_con_left:
     cmp  ah,key_Right
     jne  no_con_right
+        mov     eax, [cursor]
+        cmp     byte [path+eax], 0
+        jz      still
     inc  [cursor]
     mov  [flick],2
     jmp  anti_flick ;red
@@ -344,7 +375,6 @@ lobsp:
 no_con_bspace:
 
     mov  ecx,[cursor]
-    dec  ecx
     mov  ebp,1022
         cmp     byte [path+ebp], 0
         jnz     still
@@ -450,6 +480,8 @@ no_kfad:
         rep     stosb
         jmp     still
 @@:
+        sub     edi, path+1
+        mov     [cursor], edi
         pop     edi
 ; name appended, now read new directory
     mov [filecursor],0
@@ -708,6 +740,8 @@ back:
         jmp     still
 @@:
         sub     ecx, edi
+        lea     eax, [edi-path]
+        mov     [cursor], eax
         xor     eax, eax
         rep     stosb
     mov [filecursor],0
@@ -1084,7 +1118,7 @@ help_text:
 
 info_text:
     db '        ~~~~~ SYSTEM X-TREE ~~~~~       '
-    db '               INFO 82 Ver              '
+    db '               INFO 84 Ver              '
     db '                                        '
     db '        Create by Pavlushin Evgeni      '
     db 'with ASCL library special for Kolibri OS'
@@ -1801,6 +1835,11 @@ no_rdico:
     push rdico+8
     jmp out_ico
 no_fdico:
+    cmp  [edx+4],dword 'CD-R'
+    jne  no_cdico
+    push cdico+8
+    jmp out_ico
+no_cdico:
     push folico+8
     jmp out_ico
 no_folico:
@@ -2052,16 +2091,14 @@ nstep:
     je nstep2
     cmp [path+4],byte '/'
     je nstep2
-    cmp [path+1],word 'RD'
-    jne nostep_RD
     mov ecx,1
-    jmp loxpt
-nostep_RD:
-    cmp [path+1],word 'FD'
-    jne nostep_FD
+    cmp [path+1],word 'RD'
+    jz  loxpt
+    cmp [path+1],word 'CD'
+    jz  loxpt
     mov ecx,2
-    jmp loxpt
-nostep_FD:
+    cmp [path+1],word 'FD'
+    jz  loxpt
     cmp [path+1],dword 'HD0'
     jne nostep_HD0
     movzx ecx,byte [table_area+2]
@@ -2434,6 +2471,10 @@ aHD0    db      'HD0',0
 aHD1    db      'HD1',0
 aHD2    db      'HD2',0
 aHD3    db      'HD3',0
+aCD0    db      'CD0',0
+aCD1    db      'CD1',0
+aCD2    db      'CD2',0
+aCD3    db      'CD3',0
 a1      db      '1',0,0
 a2      db      '2',0,0
 a3      db      '3',0,0
@@ -2584,6 +2625,8 @@ rb 12*9*3+8
 asmincico:
 rb 12*9*3+8
 execico:
+rb 12*9*3+8
+cdico:
 rb 12*9*3+8
 
 tempimg:    ;reserve ram for images
