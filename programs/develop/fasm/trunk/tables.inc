@@ -1392,6 +1392,8 @@ instructions_6:
  dw simple_instruction_only64-assembler
  db 'pushfw',9Ch
  dw simple_instruction_16bit-assembler
+ db 'rdmsrq',32h
+ dw simple_extended_instruction_64bit-assembler
  db 'rdtscp',1
  dw swapgs_instruction-assembler
  db 'repeat',0
@@ -1438,6 +1440,8 @@ instructions_6:
  dw simple_vmx_instruction-assembler
  db 'wbinvd',9
  dw simple_extended_instruction-assembler
+ db 'wrmsrq',30h
+ dw simple_extended_instruction_64bit-assembler
 instructions_7:
  db 'clflush',111b
  dw fxsave_instruction-assembler
@@ -1597,6 +1601,8 @@ instructions_7:
  dw simple_extended_instruction-assembler
  db 'sysexit',35h
  dw simple_extended_instruction-assembler
+ db 'sysretq',07h
+ dw simple_extended_instruction_64bit-assembler
  db 'ucomisd',2Eh
  dw comisd_instruction-assembler
  db 'ucomiss',2Eh
@@ -1712,6 +1718,8 @@ instructions_8:
  dw amd_prefetch_instruction-assembler
  db 'sysenter',34h
  dw simple_extended_instruction-assembler
+ db 'sysexitq',35h
+ dw simple_extended_instruction_64bit-assembler
  db 'unpckhpd',15h
  dw sse_pd_instruction-assembler
  db 'unpckhps',15h
