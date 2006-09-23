@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_sound_load_block
-_msys_sound_load_block:
+public_stdcall _msys_sound_load_block,4
 ;arg1 - blockptr
   mov   edx,ebx
   mov   eax,55
@@ -11,8 +11,7 @@ _msys_sound_load_block:
   mov   ebx,edx
   ret   4
   
-public _msys_sound_play_block
-_msys_sound_play_block:
+public_stdcall _msys_sound_play_block,0
   mov   edx,ebx
   mov   eax,55 
   xor   ebx,ebx
@@ -21,8 +20,7 @@ _msys_sound_play_block:
   mov   ebx,edx
   ret 
   
-public _msys_sound_set_channels
-_msys_sound_set_channels:
+public_stdcall _msys_sound_set_channels,4
 ;arg1 - channels
   push  ebx
   mov   eax,55
@@ -33,8 +31,7 @@ _msys_sound_set_channels:
   pop   ebx
   ret   4
   
-public _msys_sound_set_data_size
-_msys_sound_set_data_size:
+public_stdcall _msys_sound_set_data_size,4
 ;arg1 - data size
   push  ebx
   mov   eax,55
@@ -46,8 +43,7 @@ _msys_sound_set_data_size:
   pop   ebx
   ret   4
   
-public _msys_sound_set_frequency
-_msys_sound_set_frequency:
+public_stdcall _msys_sound_set_frequency,4
 ;arg1 - frequency
   push  ebx
   mov   eax,55
@@ -58,8 +54,7 @@ _msys_sound_set_frequency:
   pop   ebx
   ret   4
   
-public _msys_sound_speaker_play
-_msys_sound_speaker_play:
+public_stdcall _msys_sound_speaker_play,4
 ;arg1 - data
   mov   edx,ebx
   mov   eax,55

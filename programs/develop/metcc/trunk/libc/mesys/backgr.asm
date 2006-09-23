@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_set_background_size
-_msys_set_background_size:
+public_stdcall _msys_set_background_size,8
 ;arg1 - xsize
 ;arg2 - ysize
   push  ebx
@@ -12,8 +12,7 @@ _msys_set_background_size:
   int   0x40
   pop   ebx
   ret   8
-public _msys_write_background_mem
-_msys_write_background_mem:
+public_stdcall _msys_write_background_mem,8
 ;arg1 - pos
 ;arg2 - color
   push  ebx
@@ -24,16 +23,14 @@ _msys_write_background_mem:
   int   0x40
   pop   ebx
   ret   8
-public _msys_draw_background
-_msys_draw_background:
+public_stdcall _msys_draw_background,0
   mov   edx,ebx
   mov   eax,15
   mov   ebx,3
   int   0x40
   mov   ebx,edx
   ret    
-public _msys_set_background_draw_type
-_msys_set_background_draw_type:
+public_stdcall _msys_set_background_draw_type,4
 ;arg1 - type
   mov   edx,ebx
   mov   eax,15
@@ -42,8 +39,7 @@ _msys_set_background_draw_type:
   int   0x40
   mov   ebx,edx
   ret   4
-public _msys_background_blockmove
-_msys_background_blockmove:
+public_stdcall _msys_background_blockmove,12
 ;arg1 - source
 ;arg2 - position in dest
 ;arg3 - size

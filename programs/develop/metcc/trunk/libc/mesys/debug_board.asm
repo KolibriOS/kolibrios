@@ -1,8 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-
-public _msys_debug_out
-_msys_debug_out:
+public_stdcall _msys_debug_out,4
 ;arg1 - char to out
   push	ebx
   mov	ecx,[esp+8]

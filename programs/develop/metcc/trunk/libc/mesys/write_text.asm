@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_write_text
-_msys_write_text:
+public_stdcall _msys_write_text,20
 ;arg1 - x
 ;arg2 - y
 ;arg3 - color

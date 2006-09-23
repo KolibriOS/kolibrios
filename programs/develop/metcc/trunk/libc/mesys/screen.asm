@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_get_screen_size
-_msys_get_screen_size:
+public_stdcall _msys_get_screen_size,8
 ;arg1 - x
 ;arg2 - y
   mov   eax,14

@@ -1,8 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-
-public _msys_draw_window
-_msys_draw_window:
+public_stdcall _msys_draw_window,36
 ;arg1 - xcoord
 ;arg2 - ycoord
 ;arg3 - xsize

@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_send_message
-_msys_send_message:
+public_stdcall _msys_send_message,12
 ;arg1 - pid
 ;arg2 - msg
 ;arg3 - size
@@ -15,8 +15,7 @@ _msys_send_message:
   pop   esi ebx
   ret   12
   
-public _msys_define_receive_area
-_msys_define_receive_area:
+public_stdcall _msys_define_receive_area,8
 ;arg1 - area
 ;arg2 - size
   push  ebx

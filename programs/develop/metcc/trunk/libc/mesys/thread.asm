@@ -1,8 +1,8 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
 extrn malloc
-public _msys_start_thread
-_msys_start_thread:
+public_stdcall _msys_start_thread,12
 ;arg1 - proc
 ;arg2 - stacksize
 ;arg3 - pid

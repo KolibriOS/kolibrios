@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_midi_reset
-_msys_midi_reset:
+public_stdcall _msys_midi_reset,0
   mov  edx,ebx
   mov  eax,20
   xor  ebx,ebx
@@ -10,8 +10,7 @@ _msys_midi_reset:
   mov  ebx,edx
   ret
   
-public _msys_midi_send
-_msys_midi_send:
+public_stdcall _msys_midi_send,4
 ;arg1 - data
   mov  edx,ebx
   mov  eax,20

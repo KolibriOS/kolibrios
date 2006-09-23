@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_putpixel
-_msys_putpixel:
+public_stdcall _msys_putpixel,12
 ;arg1 - x
 ;arg2 - y
 ;arg3 - color

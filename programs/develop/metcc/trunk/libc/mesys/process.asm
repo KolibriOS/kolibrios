@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_get_process_table
-_msys_get_process_table:
+public_stdcall _msys_get_process_table,8
 ;arg1 - pointer to information
 ;arg2 - pid
   mov   edx,ebx

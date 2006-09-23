@@ -96,11 +96,12 @@ void build_reloc(me_info* me)
 			Elf32_Sym* esym = ((Elf32_Sym *)symtab_section->data)+sym;
 			int sect=esym->st_shndx;
 			ss=findsection(me,sect);
-			if (ss==0) continue;
+			if (ss==0)
+				ss=me->bss_sections;
 			if (rel->r_offset>s->data_size)
 				continue;
 			if (type==R_386_PC32)
-				*(int*)(rel->r_offset+s->data)+=ss->sh_addr+esym->st_value-rel->r_offset-s->sh_addr;
+				*(int*)(rel->r_offset+s->data)=ss->sh_addr+esym->st_value-rel->r_offset-s->sh_addr-4;
 			else if (type==R_386_32)
 				*(int*)(rel->r_offset+s->data)+=ss->sh_addr+esym->st_value;
 		}

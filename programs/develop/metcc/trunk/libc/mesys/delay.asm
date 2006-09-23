@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_delay
-_msys_delay:
+public_stdcall _msys_delay,4
 ;arg1 - time
   mov   edx,ebx
   mov   eax,5

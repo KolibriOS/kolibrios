@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_putimage
-_msys_putimage:
+public_stdcall _msys_putimage,20
 ;arg1 - x
 ;arg2 - y
 ;arg3 - xsize

@@ -82,7 +82,7 @@ extern void stdcall _msys_sound_speaker_play(void* data);
 extern void stdcall _msys_write_text(int x,int y,int color,char* text,int len);
 extern void* stdcall  _msys_start_thread(void (* func_ptr)(void),int stack_size,int* pid);
 extern void stdcall _msys_window_redraw(int status);
-extern void* stdcall malloc(int);
-extern void  stdcall free(void*);
-extern void* stdcall realloc(void*,int);
+extern void* malloc(int);
+extern void  free(void*);
+extern void* realloc(void*,int);
 #endif

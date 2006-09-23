@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_get_irq_owner
-_msys_get_irq_owner:
+public_stdcall _msys_get_irq_owner,4
 ;arg1 - irq
   mov   edx,ebx
   mov   eax,41
@@ -10,8 +10,7 @@ _msys_get_irq_owner:
   mov   ebx,edx
   ret   4
   
-public _msys_get_data_read_by_irq
-_msys_get_data_read_by_irq:
+public_stdcall _msys_get_data_read_by_irq,12
 ;arg1 - irq
 ;arg2 - *size
 ;arg3 - data
@@ -37,8 +36,7 @@ _msys_get_data_read_by_irq:
   mov   ebx,edx
   ret
   
-public _msys_send_data_to_device
-_msys_send_data_to_device:
+public_stdcall _msys_send_data_to_device,8
 ;arg1 - port
 ;arg2 - data
   mov   edx,ebx
@@ -49,8 +47,7 @@ _msys_send_data_to_device:
   mov   ebx,edx
   ret   8 
   
-public _msys_receive_data_from_device
-_msys_receive_data_from_device:  
+public_stdcall _msys_receive_data_from_device,8
 ;arg1 - port
 ;arg2 - data
   mov   edx,ebx
@@ -63,8 +60,7 @@ _msys_receive_data_from_device:
   mov   ebx,edx
   ret   8
   
-public _msys_program_irq
-_msys_program_irq:
+public_stdcall _msys_program_irq,8
 ;arg1 - intrtable
 ;arg2 - irq
   mov   edx,ebx
@@ -75,8 +71,7 @@ _msys_program_irq:
   mov   ebx,edx
   ret   8
   
-public _msys_reserve_irq
-_msys_reserve_irq:
+public_stdcall _msys_reserve_irq,4
 ;arg1 - irq
   mov   edx,ebx
   mov   eax,45
@@ -86,8 +81,7 @@ _msys_reserve_irq:
   mov   ebx,edx
   ret   4
   
-public _msys_free_irq
-_msys_free_irq:
+public_stdcall _msys_free_irq,4
 ;arg1 - irq
   mov   edx,ebx
   mov   eax,45
@@ -98,8 +92,7 @@ _msys_free_irq:
   mov   ebx,edx
   ret   4
   
-public _msys_reserve_port_area
-_msys_reserve_port_area:
+public_stdcall _msys_reserve_port_area,8
 ;arg1 - start
 ;arg2 - end
   push  ebx
@@ -111,8 +104,7 @@ _msys_reserve_port_area:
   pop   ebx
   ret   8
   
-public _msys_free_port_area
-_msys_free_port_area:
+public_stdcall _msys_free_port_area,8
 ;arg1 - start
 ;arg2 - end
   push  ebx

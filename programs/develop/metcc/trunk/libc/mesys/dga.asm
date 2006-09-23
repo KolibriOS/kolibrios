@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_dga_get_resolution
-_msys_dga_get_resolution:
+public_stdcall _msys_dga_get_resolution,16
 ;arg1 - *xres
 ;arg2 - *yres
 ;arg3 - *bpp

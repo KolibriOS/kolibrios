@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_get_pci_version
-_msys_get_pci_version:
+public_stdcall _msys_get_pci_version,0
   mov   edx,ebx
   mov   eax,62
   xor   ebx,ebx
@@ -10,8 +10,7 @@ _msys_get_pci_version:
   mov   ebx,edx
   ret
   
-public _msys_get_last_pci_bus
-_msys_get_last_pci_bus:
+public_stdcall _msys_get_last_pci_bus,0
   mov   edx,ebx
   mov   eax,62
   xor   ebx,ebx
@@ -21,8 +20,7 @@ _msys_get_last_pci_bus:
   mov   ebx,edx
   ret  
   
-public _msys_get_pci_access_mechanism
-_msys_get_pci_access_mechanism:
+public_stdcall _msys_get_pci_access_mechanism,0
   mov   edx,ebx
   mov   eax,62
   mov   ebx,2
@@ -31,8 +29,7 @@ _msys_get_pci_access_mechanism:
   mov   ebx,edx
   ret
   
-public _msys_pci_read_config_byte
-_msys_pci_read_config_byte:
+public_stdcall _msys_pci_read_config_byte,16
 ;arg1 - bus
 ;arg2 - dev
 ;arg3 - fn
@@ -49,8 +46,7 @@ _msys_pci_read_config_byte:
   mov   ebx,edx
   ret   16
   
-public _msys_pci_read_config_word
-_msys_pci_read_config_word:
+public_stdcall _msys_pci_read_config_word,16
 ;arg1 - bus
 ;arg2 - dev
 ;arg3 - fn
@@ -67,8 +63,7 @@ _msys_pci_read_config_word:
   mov   ebx,edx
   ret   16
   
-public _msys_pci_read_config_dword
-_msys_pci_read_config_dword:
+public_stdcall _msys_pci_read_config_dword,16
 ;arg1 - bus
 ;arg2 - dev
 ;arg3 - fn
@@ -85,8 +80,7 @@ _msys_pci_read_config_dword:
   mov   ebx,edx
   ret   16
   
-public _msys_pci_write_config_byte
-_msys_pci_write_config_byte:
+public_stdcall _msys_pci_write_config_byte,20
 ;arg1 - bus
 ;arg2 - dev
 ;arg3 - fn
@@ -105,8 +99,7 @@ _msys_pci_write_config_byte:
   pop   ebx
   ret   20
   
-public _msys_pci_write_config_word
-_msys_pci_write_config_word:
+public_stdcall _msys_pci_write_config_word,20
 ;arg1 - bus
 ;arg2 - dev
 ;arg3 - fn
@@ -125,8 +118,7 @@ _msys_pci_write_config_word:
   pop   ebx
   ret   20
   
-public _msys_pci_write_config_dword
-_msys_pci_write_config_dword:
+public_stdcall _msys_pci_write_config_dword,20
 ;arg1 - bus
 ;arg2 - dev
 ;arg3 - fn

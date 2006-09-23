@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_read_file
-_msys_read_file:
+public_stdcall _msys_read_file,20
 ;arg1 - file name
 ;arg2 - file offset
 ;arg3 - size to read
@@ -48,8 +48,7 @@ copy_file_name:
   pop	edi esi
   ret
 
-public _msys_write_file
-_msys_write_file:
+public_stdcall _msys_write_file,12
 ;arg1 - file name
 ;arg2 - size
 ;arg3 - data
@@ -74,8 +73,7 @@ _msys_write_file:
   pop	ebp
   ret   12
 
-public _msys_run_program
-_msys_run_program:
+public_stdcall _msys_run_program,8
 ;arg1 - program name
 ;arg2 - parameters
   push	ebp

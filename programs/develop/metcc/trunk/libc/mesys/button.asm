@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_make_button
-_msys_make_button:
+public_stdcall _msys_make_button,24
 ;arg1 - x
 ;arg2 - y
 ;arg3 - xsize
@@ -22,8 +22,7 @@ _msys_make_button:
   pop   esi ebx
   ret   24
   
-public _msys_get_button_id  
-_msys_get_button_id:
+public_stdcall _msys_get_button_id,0
   mov   eax,17
   int   0x40
   test  al,al

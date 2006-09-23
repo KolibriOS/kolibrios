@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_line
-_msys_line:
+public_stdcall _msys_line,20
 ;arg1 - x1
 ;arg2 - y1
 ;arg3 - x2

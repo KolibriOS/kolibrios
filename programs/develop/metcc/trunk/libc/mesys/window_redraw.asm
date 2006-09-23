@@ -1,7 +1,7 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_window_redraw
-_msys_window_redraw:
+public_stdcall _msys_window_redraw,4
 ;arg1 - status
   mov   edx,ebx
   mov   eax,12

@@ -1,19 +1,17 @@
 format ELF
+include "public_stdcall.inc"
 section '.text' executable
-public _msys_wait_for_event_infinite
-_msys_wait_for_event_infinite:
+public_stdcall _msys_wait_for_event_infinite,0
   mov  eax,10
   int  0x40
   ret
   
-public _msys_check_for_event
-_msys_check_for_event:
+public_stdcall _msys_check_for_event,0
   mov  eax,11
   int  0x40
   ret
   
-public _msys_wait_for_event
-_msys_wait_for_event:
+public_stdcall _msys_wait_for_event,4
 ;arg1 - time
   mov  edx,ebx
   mov  eax,23
@@ -22,8 +20,7 @@ _msys_wait_for_event:
   mov  ebx,edx
   ret  4
   
-public _msys_set_wanted_events
-_msys_set_wanted_events:
+public_stdcall _msys_set_wanted_events,4
 ;arg1 - flags
   mov  edx,ebx
   mov  eax,40
