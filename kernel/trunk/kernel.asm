@@ -288,6 +288,8 @@ B32:
         rep   stosd
 
 ; SAVE REAL MODE VARIABLES
+        mov     ax, [0x2f0000 + 0x9031]
+        mov     [IDEContrRegsBaseAddr], ax
 ; --------------- APM ---------------------
     mov    eax, [0x2f0000 + 0x9040]    ; entry point
     mov    dword[apm_entry], eax
@@ -817,6 +819,8 @@ finit ;reset the registers, contents which are still equal RM
         loop  ready_for_irqs         ; flush the queue
 
 ;        mov    [dma_hdd],1
+        cmp     [IDEContrRegsBaseAddr], 0
+        setnz   [dma_hdd]
 
         sti
         jmp   $                      ; wait here for timer to take control

@@ -239,6 +239,9 @@ include "bus/pci/pci32.inc"
 include "blkdev/fdc.inc"
 include "blkdev/flp_drv.inc"
 
+; HD drive controller
+include "blkdev/hd_drv.inc"
+
 ; CD drive controller
 
 include "blkdev/cdrom.inc"

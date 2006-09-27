@@ -380,7 +380,7 @@ macro irqh [num]
      jmp   irq_c
 }
 
-irqh 2,5,7,8,9,10,11,14,15
+irqh 2,5,7,8,9,10,11
 
  irq_c:
      mov   ax, os_data
@@ -440,6 +440,25 @@ p_irq12:
      call  check_mouse_data_ps2
      restore_ring3_context
      iret
+
+p_irq14:
+        save_ring3_context
+        mov     ax, os_data
+        mov     ds, ax
+        mov     es, ax
+        call    [irq14_func]
+        call    ready_for_next_irq_1
+        restore_ring3_context
+        iret
+p_irq15:
+        save_ring3_context
+        mov     ax, os_data
+        mov     ds, ax
+        mov     es, ax
+        call    [irq15_func]
+        call    ready_for_next_irq_1
+        restore_ring3_context
+        iret
 
 ready_for_next_irq:
      mov    [check_idle_semaphore],5
@@ -863,8 +882,8 @@ terminate: ; terminate application
         add    edi, window_data
 ; \begin{diamond}[19.09.2006]
 ; skip minimized windows
-        test   [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
-        jnz    .check_next_window
+        test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz     .check_next_window
 ; \end{diamond}
         call   waredraw
  .nothing_to_activate:

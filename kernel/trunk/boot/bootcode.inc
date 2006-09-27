@@ -361,6 +361,46 @@ sayerr:
 ;       test     al,2      ;проверка бита готовности
 ;       loopnz   test_kbd
 
+        push    0
+        pop     es
+        and     word [es:0x9031], 0
+; check for PCI BIOS
+        mov     ax, 0xB101
+        int     0x1A
+        jc      .nopci
+        cmp     edx, 'PCI '
+        jnz     .nopci
+; find PCI class code
+; class 1 = mass storage
+; subclass 1 = IDE controller
+; a) class 1, subclass 1, programming interface 0x80
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x80
+        mov     si, 0   ; device index = 0
+        int     0x1A
+        jnc     .found
+; b) class 1, subclass 1, programming interface 0x85
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x85
+        mov     si, 0   ; device index = 0
+        int     0x1A
+        jnc     .found
+; c) class 1, subclass 1, programming interface 0x8A
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x8A
+        mov     si, 0
+        int     0x1A
+        jc      .nopci
+.found:
+; get memory base
+        mov     ax, 0xB10A
+        mov     di, 0x20        ; memory base is config register at 0x20
+        int     0x1A
+        jc      .nopci
+        and     cx, 0xFFF0      ; clear address decode type
+        mov     [es:0x9031], cx
+.nopci:
+
     mov   al,0xf6         ; Сброс клавиатуры, разрешить сканирование
     out   0x60,al
     xor   cx,cx
