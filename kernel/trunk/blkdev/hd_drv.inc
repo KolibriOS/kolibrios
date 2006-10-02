@@ -1,3 +1,5 @@
+; Low-level driver for HDD access
+; DMA support by Mario79
 
 ;**************************************************************************
 ;
@@ -431,8 +433,7 @@ hd_read_error:
     mov   esi,hd_read_str
     call  sys_msg_board_str
     pop   edx eax
-    jmp    return_01
-;    jmp   $
+    ret
 
 hd_write_error:
 
@@ -440,8 +441,7 @@ hd_write_error:
     call  clear_application_table_status
     mov   esi,hd_write_str
     call  sys_msg_board_str
-    jmp    return_02
-;    jmp   $
+    ret
 
 hd_write_error_dma:
         call    clear_hd_cache
@@ -449,7 +449,7 @@ hd_write_error_dma:
         mov     esi, hd_write_str
         call    sys_msg_board_str
         pop     esi
-        jmp     return_02
+        ret
 
 hd_lba_error:
     call  clear_hd_cache
@@ -520,6 +520,7 @@ wait_for_sector_buffer:
     pop   edx eax
     ret
 
+; \begin{Mario79}
 align 4
 wait_for_sector_dma_ide0:
         push    eax
@@ -852,3 +853,4 @@ do_write_dma:
 uglobal
 IDEContrRegsBaseAddr    dw      ?
 endg
+; \end{Mario79}

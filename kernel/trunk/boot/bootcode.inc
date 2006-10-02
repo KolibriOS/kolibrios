@@ -364,6 +364,8 @@ sayerr:
         push    0
         pop     es
         and     word [es:0x9031], 0
+; \begin{Mario79}
+; find HDD IDE DMA PCI device
 ; check for PCI BIOS
         mov     ax, 0xB101
         int     0x1A
@@ -400,6 +402,7 @@ sayerr:
         and     cx, 0xFFF0      ; clear address decode type
         mov     [es:0x9031], cx
 .nopci:
+; \end{Mario79}
 
     mov   al,0xf6         ; —брос клавиатуры, разрешить сканирование
     out   0x60,al
