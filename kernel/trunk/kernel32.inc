@@ -50,6 +50,31 @@ macro diff16 title,l1,l2
   display 13,10
 }
 
+; \begin{diamond}[29.09.2006]
+; may be useful for kernel debugging
+; example 1:
+;       dbgstr 'Hello, World!'
+; example 2:
+;       dbgstr 'Hello, World!', save_flags
+macro dbgstr string*, f
+{
+local a
+iglobal_nested
+a db 'K : ',string,13,10,0
+endg_nested
+if ~ f eq
+        pushfd
+end if
+        push    esi
+        mov     esi, a
+        call    sys_msg_board_str
+        pop     esi
+if ~ f eq
+        popfd
+end if
+}
+; \end{diamond}[29.09.2006]
+
 struc db [a] { common . db a
   if ~used .
     display 'not used db: ',`.,13,10

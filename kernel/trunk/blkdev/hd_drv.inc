@@ -130,17 +130,19 @@ hd_read_pio:
     ret
 
 disable_ide_int:    
-        mov edx,[hdbase]
-        add edx,0x206
-        mov al,2
-        out dx,al
+;        mov edx,[hdbase]
+;        add edx,0x206
+;        mov al,2
+;        out dx,al
+        cli
         ret
 
 enable_ide_int:
-        mov edx,[hdbase]
-        add edx,0x206
-        mov al,0
-        out dx,al
+;        mov edx,[hdbase]
+;        add edx,0x206
+;        mov al,0
+;        out dx,al
+        sti
         ret
 
 align 4

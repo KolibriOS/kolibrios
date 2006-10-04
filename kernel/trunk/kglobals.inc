@@ -5,6 +5,10 @@ macro iglobal {
   IGlobals equ IGlobals,
   macro __IGlobalBlock { }
 
+macro iglobal_nested {
+  IGlobals equ IGlobals,
+  macro __IGlobalBlock \{ }
+
 ;-------------------------------------------------------------
 ; use 'uglobal' for inserting uninitialized global definitions.
 ; even when you define some data values, these variables
@@ -14,7 +18,12 @@ macro uglobal {
   UGlobals equ UGlobals,
   macro __UGlobalBlock { }
 
+macro uglobal_nested {
+  UGlobals equ UGlobals,
+  macro __UGlobalBlock \{ }
+
 endg fix }      ; Use endg for ending iglobal and uglobal blocks.
+endg_nested fix \}
 
 macro IncludeIGlobals{
   macro IGlobals dummy,[n] \{ __IGlobalBlock
