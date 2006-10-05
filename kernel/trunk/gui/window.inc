@@ -1226,7 +1226,6 @@ checkwindows:
         ret
 
    .move_resize_window:    ; MOVE OR RESIZE WINDOW
-
         popad
 
         ; Check for user enabled fixed window
@@ -1321,10 +1320,7 @@ checkwindows:
         mov   word [npye],ax
         pop eax
 
-        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
-        jnz     @f
         call  drawwindowframes
-    @@:
 
         mov   [reposition],0
         mov   [0xfb44],byte 1   ; no reaction to mouse up/down
@@ -1359,10 +1355,7 @@ checkwindows:
         push  ax
         push  bx
 
-        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
-        jnz     @f
         call  drawwindowframes
-    @@:
 
         mov   ax,[0xfe00]
         mov   bx,[0xfe04]
@@ -1436,10 +1429,7 @@ checkwindows:
 
         pop   bx
         pop   ax
-        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
-        jnz     @f
         call  drawwindowframes
-    @@:
 
         mov   esi,[0xfb0a]
         mov   [0xf300],esi
@@ -1658,6 +1648,11 @@ endg
 
 drawwindowframes:
 
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+        jnz     .ret
+        cmp     [edi+WDATA.fl_redraw], 0
+        jnz     .ret
+
         pushad
 
         mov   eax,[npx]
@@ -1723,7 +1718,7 @@ drawwindowframes:
         pop   edi
 
         popad
-
+.ret:
         ret
 
 

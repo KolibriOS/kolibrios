@@ -2749,6 +2749,7 @@ sys_redrawstat:
 
     mov   edi,[0x3010]
     mov   [edi-twdw+WDATA.fl_wdrawn], 1   ; no new position & buttons from app
+    mov   [edi-twdw+WDATA.fl_redraw], 0
 
     call  sys_window_mouse
 
@@ -3058,7 +3059,7 @@ sys_set_window:
     mov   [0xf500],byte 0           ; empty button buffer
 
   newd:
-    mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
+;    mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
     mov   edx,edi
 
     ret
