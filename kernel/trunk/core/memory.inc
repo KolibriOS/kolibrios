@@ -1183,10 +1183,10 @@ endp
 align 4
 proc test_cpu
            locals
-              cpu_type   dd 0
-              cpu_id     dd 0
-              cpu_Intel  dd 0
-              cpu_AMD    dd 0
+              cpu_type   dd ?
+              cpu_id     dd ?
+              cpu_Intel  dd ?
+              cpu_AMD    dd ?
            endl
 
            mov [cpu_type], 0
