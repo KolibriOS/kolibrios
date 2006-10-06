@@ -10,23 +10,27 @@
 ;;   Compile with last version FASM
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+include "proc32.inc"
 include "kglobals.inc"
 include "lang.inc"
 
-WinMapAddress           equ     0x460000
-display_data       = 0x460000
+include "const.inc"
+
+NEW    equ 0
+
+;WinMapAddress      equ     0x460000
+;display_data       = 0x460000
 
 max_processes      equ   255
 
-window_data        equ   0x0000
-tss_data           equ   0xD20000
+;window_data        equ   0x0000
+;tss_data           equ   0xD20000
 ;tss_step           equ   (128+2048) ; tss & i/o - 16384 ports, * 256=557056
 tss_step           equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
-draw_data          equ   0xC00000
-sysint_stack_data  equ   0xC03000
+;draw_data          equ   0xC00000
+;sysint_stack_data  equ   0xC03000
 
-
-twdw               equ   (0x3000-window_data)
+;twdw               equ   (0x3000-window_data)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -116,17 +120,7 @@ app_data       equ  3+app_data_l-gdts
 
 ; CR0 Flags - Protected mode and Paging
 
-        mov     ecx,0x00000001
-        ;and     ebx,65535
-        ;cmp     ebx,00100000000000000b ; lfb -> paging
-        ;jb      no_paging
-        ;mov     ax,0x0000
-        ;mov     es,ax
-        ;mov     al,[es:0x901E]
-        ;cmp     al,1
-        ;je      no_paging
-        ;or      ecx, 0x80000000
-       ;no_paging:
+        mov ecx, 0x00000021
 
 ; Enabling 32 bit protected mode
 
@@ -158,7 +152,7 @@ app_data       equ  3+app_data_l-gdts
         and     eax, 10011111b *65536*256 + 0xffffff ; caching enabled
         mov     cr0, eax
         jmp     $+2
-org $+0x10000        
+org $+0x10000
         mov     ax,os_data              ; Selector for os
         mov     ds,ax
         mov     es,ax
@@ -227,13 +221,6 @@ boot_log:
 .bll2:   popad
 
          ret
-
-uglobal
-  cpuid_0    dd  0,0,0,0
-  cpuid_1    dd  0,0,0,0
-  cpuid_2    dd  0,0,0,0
-  cpuid_3    dd  0,0,0,0
-endg
 
 iglobal
   firstapp   db  '/rd/1/LAUNCHER',0
@@ -335,7 +322,7 @@ B32:
         mov     byte [0x2f0000+0x901e],0x0
         mov     eax,[0x2f0000+0x9018]
       ;no_d_lfb:
-        mov     [0xfe80],eax
+        mov     [LFBAddress],eax
 
         cmp     [0xfe0c],word 0100000000000000b
         jge     setvesa20
@@ -366,47 +353,27 @@ B32:
 
 ; MEMORY MODEL
 
-;        mov     [0xfe84],dword 0x100000*16        ; apps mem base address
-;        movzx   ecx,byte [0x2f0000+0x9030]
-;        dec     ecx
-;        mov     eax,16*0x100000 ; memory-16
-;        shl     eax,cl
-;        mov     [0xfe8c],eax      ; memory for use
-;        cmp     eax,16*0x100000
-;        jne     no16mb
-;        mov     [0xfe84],dword 0xD80000 ; !!! 10 !!!
-;      no16mb:
+           call mem_test
+           mov [MEM_AMOUNT], eax
 
-; init:
-;  1) 0xFE84 - applications base
-;  2) 0xFE8C - total amount of memory
+           mov [pg_data.mem_amount], eax
+           mov [pg_data.kernel_max], eax
 
-        xor     edi, edi
-  m_GMS_loop:
-        add     edi, 0x400000
-        mov     eax, dword [edi]
-        mov     dword [edi], 'TEST'
-        wbinvd
-        cmp     dword [edi], 'TEST'
-        jne     m_GMS_exit
-        cmp     dword [0], 'TEST'
-        je      m_GMS_exit
-        mov     dword [es:edi], eax
-        jmp     m_GMS_loop
-  m_GMS_exit:
-        mov     [edi], eax
-        ; now edi contains the EXACT amount of memory
+           shr eax, 12
+           mov edx, eax
+           mov [pg_data.pages_count], eax
+           mov [pg_data.kernel_pages], eax
 
-        mov     eax, 0x100000*16
-        cmp     edi, eax ;0x100000*16
-        jb      $                 ; less than 16 Mb
+           shr eax, 3
+           mov [pg_data.pagemap_size], eax
 
-        mov     dword [0xFE84], eax ;0x100000*16
-        cmp     edi, eax ;0x100000*16
-        jne     @f
-        mov     dword [0xFE84], 0xD80000 ; =0x100000*13.5
-      @@:
-        mov     dword [0xFE8C], edi
+           shr edx, 10
+           cmp edx, 4
+           ja @f
+           inc edx       ;at least 4Mb for kernel heap
+@@:
+           mov [pg_data.kernel_tables], edx
+
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -414,42 +381,98 @@ include 'detect/disks.inc'
 
 ; CHECK EXTRA REGION
 ; ENABLE PAGING
-        mov     eax,cr0
-        or      eax,0x80000000
-        mov     cr0,eax
-        jmp     $+2
-        
-        call    MEM_Init
-;add 0x800000-0xc00000 area
-        cmp     word [0xfe0c],0x13
-        jle     .less_memory
-        mov     eax,0x800000      ;linear address
-        mov     ebx,0x400000 shr 12 ;size in pages (4Mb)
-        mov     ecx,0x800000        ;physical address
-        jmp     .end_first_block
-.less_memory:
-        mov     eax,0x980000      ;linear address
-        mov     ebx,0x280000 shr 12 ;size in pages (2.5Mb)
-        mov     ecx,0x980000        ;physical address
-.end_first_block:
-        call    MEM_Add_Heap        ;nobody can lock mutex yet
 
-        call    create_general_page_table
-;add 0x1000000(0xd80000)-end_of_memory area
-        mov     eax,second_base_address
-        mov     ebx,[0xfe8c]
-        mov     ecx,[0xfe84]
-        sub     ebx,ecx
-        shr     ebx,12
-        add     eax,ecx
-        call    MEM_Add_Heap
-;init physical memory manager.
-        call    Init_Physical_Memory_Manager        
-        
-        mov     dword [0xfe80],0x80000000 ;0x800000
+           call test_cpu
+;           btr [cpu_caps], CAPS_SSE    ;test: dont't use sse code
+;           btr [cpu_caps], CAPS_SSE2   ;test: don't use sse2
+
+;           btr [cpu_caps], CAPS_FXSR   ;test: disable sse support
+                                        ;all sse commands rise #UD exption
+;           btr [cpu_caps], CAPS_PSE    ;test: don't use large pages
+;           btr [cpu_caps], CAPS_PGE    ;test: don't use global pages
+;           btr [cpu_caps], CAPS_MTRR   ;test: don't use MTRR
+;           btr [cpu_caps], CAPS_TSC    ;test: don't use TSC
+
+           call init_memEx
+           call init_page_map
+
+           mov eax, sys_pgdir     ;+PG_NOCACHE
+           mov cr3, eax
+
+           mov     eax,cr0
+           or      eax,0x80000000
+           mov     cr0,eax
+
+           call init_kernel_heap
+           call init_LFB
+           call init_mtrr
+
+           stdcall alloc_kernel_space, 0x50000
+           mov [ipc_tmp], eax
+           mov ebx, 0x1000
+
+           add eax, 0x40000
+           mov [proc_mem_map], eax
+
+           add eax, 0x8000
+           mov [proc_mem_pdir], eax
+
+           add eax, ebx
+           mov [proc_mem_tab], eax
+
+           add eax, ebx
+           mov [current_pdir], eax
+
+           add eax, ebx
+           mov [tmp_task_pdir], eax
+
+           add eax, ebx
+           mov [tmp_task_ptab], eax
+
+           add eax, ebx
+           mov [ipc_pdir], eax
+
+           add eax, ebx
+           mov [ipc_ptab], eax
+
+           stdcall kernel_alloc, 0x1000
+           mov [tmp_task_data], eax
+
+           mov [dll_map], 0xFFFFFFFF
+           mov [srv_map], 0xFFFFFFFF
+
+           call alloc_dll
+           mov edi, eax
+           mov esi, szKernel
+           mov ecx, 16
+           rep movsb
+
+           bt [cpu_caps], CAPS_FXSR
+           jnc .no_FXSR
+
+           stdcall kernel_alloc, 512*256
+           mov [fpu_data], eax
+           mov ebx, cr4
+           or ebx, CR4_OSFXSR
+           mov cr4, ebx
+           jmp .clts
+.no_FXSR:
+           stdcall kernel_alloc, 112*256
+           mov [fpu_data], eax
+           mov ebx, cr4
+           and ebx, not (CR4_OSFXSR+CR4_OSXMMEXPT)
+           mov cr4, ebx
+.clts:
+           clts
+           fninit
+
+           mov edi, irq_tab
+           xor eax, eax
+           mov ecx, 16
+           rep stosd
 
 ;Set base of graphic segment to linear address of LFB
-        mov     eax,[0xfe80]                      ; set for gs
+        mov     eax,[LFBAddress]          ; set for gs
         mov     [graph_data_l+2],ax
         shr     eax,16
         mov     [graph_data_l+4],al
@@ -502,22 +525,11 @@ include 'vmodeld.inc'
         or      ecx, (10+29*6) shl 16 ; "Determining amount of memory"
         sub     ecx, 10
         mov     edx, 0xFFFFFF
-        mov     ebx, [0xFE8C]
+        mov     ebx, [MEM_AMOUNT]
         shr     ebx, 20
         mov     edi, 1
         mov     eax, 0x00040000
         call    display_number
-
-; CHECK EXTENDED REGION
-;        mov     dword [0x80000000],0x12345678
-;        cmp     dword [0x80000000],0x12345678
-;        jz      extended_region_found
-;        mov     esi,boot_ext_region
-;        call    boot_log
-;        jmp     $
-;extended_region_found:
-
-
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
@@ -535,64 +547,11 @@ include 'vmodeld.inc'
 ; LOAD IDT
         lidt   [cs:idtreg]
 
-; READ CPUID RESULT
-
-        mov     esi,boot_cpuid
-        call    boot_log
-        pushfd                  ; get current flags
-        pop     eax
-        mov     ecx,eax
-        xor     eax,0x00200000  ; attempt to toggle ID bit
-        push    eax
-        popfd
-        pushfd                  ; get new EFLAGS
-        pop     eax
-        push    ecx             ; restore original flags
-        popfd
-        and     eax,0x00200000  ; if we couldn't toggle ID,
-        and     ecx,0x00200000  ; then this is i486
-        cmp     eax,ecx
-        jz      nopentium
-        ; It's Pentium or later. Use CPUID
-        mov     edi,cpuid_0
-        mov     esi,0
-      cpuid_new_read:
-        mov     eax,esi
-        cpuid
-        call    cpuid_save
-        add     edi,4*4
-        cmp     esi,3
-        jge     cpuid_done
-        cmp     esi,[cpuid_0]
-        jge     cpuid_done
-        inc     esi
-        jmp     cpuid_new_read
-      cpuid_save:
-        mov     [edi+00],eax
-        mov     [edi+04],ebx
-        mov     [edi+8],ecx
-        mov     [edi+12],edx
-        ret
-      cpuid_done:
-      nopentium:
-
-; CR4 flags - enable fxsave / fxrstore
-;
-;        finit
-;        mov     eax,1
-;        cpuid
-;        test    edx,1000000h
-;        jz      fail_fpu
-;        mov     eax,cr4
-;        or      eax,200h        ; Enable fxsave/fxstor
-;        mov     cr4,eax
-;     fail_fpu:
-
 ;The CPU to this moment should be already in PM,
 ;and bit MP of the register cr0 should be installed in 1.
-finit ;reset of the FPU (finit, instead of fninit)
-fsetpm ;enable PM of the FPU
-finit ;reset the registers, contents which are still equal RM
+;finit ;reset of the FPU (finit, instead of fninit)
+;fsetpm ;enable PM of the FPU
+;finit ;reset the registers, contents which are still equal RM
 ;Now FPU too in PM
 ; DETECT DEVICES
 
@@ -648,6 +607,19 @@ finit ;reset the registers, contents which are still equal RM
         ; name for OS/IDLE process
         mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
         mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
+        mov eax, [fpu_data]
+        mov  dword [0x80000+APPDATA.fpu_state], eax
+        mov  dword [0x80000+APPDATA.fpu_handler], 0
+        mov  dword [0x80000+APPDATA.sse_handler], 0
+
+        add eax, 112
+        bt [cpu_caps], CAPS_FXSR
+        jnc .no_sse
+        add eax, 512-112
+.no_sse:
+        mov  dword [0x80000+256+APPDATA.fpu_state], eax
+        mov  dword [0x80000+256+APPDATA.fpu_handler], 0
+        mov  dword [0x80000+256+APPDATA.sse_handler], 0
         ; task list
         mov  [0x3020+TASKDATA.wnd_number], 1 ; on screen number
         mov  [0x3020+TASKDATA.pid], 1        ; process id number
@@ -724,11 +696,6 @@ finit ;reset the registers, contents which are still equal RM
         movsd
         movsd
         call    load_skin
-
-; MTRR'S
-
-        call  enable_mtrr
-
 
 ; LOAD FIRST APPLICATION
         mov   [0x3000],dword 1
@@ -817,6 +784,8 @@ finit ;reset the registers, contents which are still equal RM
         out   0xa0,al
 
         loop  ready_for_irqs         ; flush the queue
+
+        stdcall attach_int_handler, dword 1, irq1
 
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
@@ -926,57 +895,6 @@ include "kernel32.inc"
 ;                       KERNEL FUNCTIONS                               ;
 ;                                                                      ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-enable_mtrr:
-
-        pushad
-
-        cmp    [0x2f0000+0x901c],byte 2
-        je     no_mtrr
-        mov    eax,[0xFE0C]                ; if no LFB then no MTRR
-        test   eax,0100000000000000b
-        jz     no_mtrr
-        mov    edx,[cpuid_1+3*4]           ; edx - MTRR's supported ?
-        test   edx,1000000000000b
-        jz     no_mtrr
-        call   find_empty_mtrr
-        cmp    ecx,0
-        jz     no_mtrr
-        mov    esi,boot_mtrr               ; 'setting mtrr'
-        call   boot_log
-        mov    edx,0x0                     ; LFB , +8 M , write combine
-        mov    eax,[0x2f9018]
-        or     eax,1
-        wrmsr
-        inc    ecx
-        mov    edx,0xf
-        mov    eax,0xff800800
-        wrmsr
-        mov    ecx,0x2ff                   ; enable mtrr's
-        rdmsr
-        or     eax,100000000000b           ; set
-        wrmsr
-     no_mtrr:
-
-        popad
-        ret
-
-
-find_empty_mtrr:  ; 8 pairs checked
-
-        mov    ecx,0x201-2
-      mtrr_find:
-        add    ecx,2
-        cmp    ecx,0x200+8*2
-        jge    no_free_mtrr
-        rdmsr
-        test   eax,0x0800
-        jnz    mtrr_find
-        dec    ecx
-        ret
-      no_free_mtrr:
-        mov    ecx,0
-        ret
 
 reserve_irqs_ports:
 
@@ -1989,7 +1907,7 @@ sys_system_table:
         dd      sysfn_centermouse       ; 15 = center mouse cursor
         dd      sysfn_getfreemem        ; 16 = get free memory size
         dd      sysfn_getallmem         ; 17 = get total memory size
-        dd      sysfn_terminate2        ; 18 = terminate thread using PID 
+        dd      sysfn_terminate2        ; 18 = terminate thread using PID
                                         ;                 instead of slot
         dd      sysfn_mouse_acceleration; 19 = set/get mouse acceleration
 sysfn_num = ($ - sys_system_table)/4
@@ -2042,7 +1960,7 @@ sysfn_terminate:        ; 18.2 = TERMINATE
 
 sysfn_terminate2:
 ;lock application_table_status mutex
-.table_status:    
+.table_status:
     cli
     cmp    [application_table_status],0
     je     .stf
@@ -2076,7 +1994,7 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
      mov   [window_minimize], 2   ; restore window if minimized
 
      movzx esi, word [0xC000 + ebx*2]
-     cmp   esi, [0x3004] 
+     cmp   esi, [0x3004]
      je    .nowindowactivate ; already active
 
      mov   edi, ebx
@@ -2192,7 +2110,7 @@ sysfn_centermouse:      ; 18.15 = mouse centered
 sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      cmp  ebx,0  ; get mouse speed factor
      jnz  .set_mouse_acceleration
-     xor  eax,eax 
+     xor  eax,eax
      mov  ax,[mouse_speed_factor]
      mov  [esp+36],eax
      ret
@@ -2594,7 +2512,7 @@ sys_cpuusage:
     lea    edi,[ebx+44]
     mov    ecx,4
     rep    movsd
-    
+
     ; Window state
 
     mov    esi,[esp]
@@ -3019,7 +2937,7 @@ sys_set_window:
 
     call  check_window_position
 
-        call    set_window_clientbox
+    call  set_window_clientbox
 
     push  ecx esi edi               ; save for window fullscreen/resize
     ;mov   esi,edi
@@ -3158,8 +3076,8 @@ sys_window_move:
         mov   ebx, [edi + WDATA.box.top]
         mov   ecx, [edi + WDATA.box.width]
         mov   edx, [edi + WDATA.box.height]
-        add   ecx, eax
-        add   edx, ebx
+        add   ecx,eax
+        add   edx,ebx
         call  calculatescreen
         popad
 
@@ -3387,12 +3305,12 @@ checkmisc:
     jz    nobackgr
     mov   [0xfff0],byte 2
     call  change_task
-    mov   [draw_data+32 + RECT.left],dword 0
-    mov   [draw_data+32 + RECT.top],dword 0
+	mov   [draw_data+32 + RECT.left],dword 0
+	mov   [draw_data+32 + RECT.top],dword 0
     mov   eax,[0xfe00]
     mov   ebx,[0xfe04]
-    mov   [draw_data+32 + RECT.right],eax
-    mov   [draw_data+32 + RECT.bottom],ebx
+	mov   [draw_data+32 + RECT.right],eax
+	mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
     mov   [0xfff0],byte 0
     mov   [0xfff4],byte 0
@@ -3487,8 +3405,8 @@ redrawscreen:
          mov   ebx, [edi + WDATA.box.top]
          mov   ecx, [edi + WDATA.box.width]
          mov   edx, [edi + WDATA.box.height]
-         add   ecx, eax
-         add   edx, ebx
+         add   ecx,eax
+         add   edx,ebx
 
          mov   ecx,[dlye]   ; ecx = area y end     ebx = window y start
          cmp   ecx,ebx
@@ -3504,7 +3422,7 @@ redrawscreen:
          mov   edx, [edi + WDATA.box.height]
          add   ecx, eax
          add   edx, ebx
-         
+
          mov   eax,[dly]    ; eax = area y start     edx = window y end
          cmp   edx,eax
          jb    ricino
@@ -4145,7 +4063,7 @@ kb_read:
 
         push    ecx edx
 
-        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's 
+        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kr_loop:
         in      al,0x64
         test    al,1
@@ -4346,10 +4264,8 @@ setmouse:  ; set mousepicture -pointer
 
 
 _rdtsc:
-
-     mov   edx,[cpuid_1+3*4]
-     test  edx,00010000b
-     jz    ret_rdtsc
+     bt [cpu_caps], CAPS_TSC
+     jnc ret_rdtsc
      rdtsc
      ret
    ret_rdtsc:
@@ -4624,128 +4540,6 @@ no_del_keyboard_hotkey:
      ret
 
 
-sys_ipc:
-     cmp  eax,1                      ; DEFINE IPC MEMORY
-     jne  no_ipc_def
-     mov  edi,[0x3000]
-     shl  edi,8
-     add  edi,0x80000
-     mov  [edi + APPDATA.ipc_start], ebx
-     mov  [edi + APPDATA.ipc_size], ecx
-     mov  [esp+36],dword 0
-     ret
-   no_ipc_def:
-
-     cmp  eax,2                      ; SEND IPC MESSAGE
-     jne  no_ipc_send
-     mov  esi,1
-     mov  edi,0x3020
-    ipcs1:
-     cmp  [edi+TASKDATA.pid], ebx
-     je   ipcs2
-     add  edi,0x20
-     inc  esi
-     cmp  esi,[0x3004]
-     jbe  ipcs1
-     mov  [esp+36],dword 4
-     ret
-    ipcs2:
-
-     cli
-
-     push esi
-     mov  eax,esi
-     shl  eax,8
-     mov  ebx,[eax+0x80000 + APPDATA.ipc_start]
-     test ebx,ebx                  ; ipc area not defined ?
-     je   ipc_err1
-
-     add  ebx,[eax+0x80000 + APPDATA.ipc_size]
-     mov  eax,esi
-     shl  eax,5
-     add  ebx,[eax+0x3000 + TASKDATA.mem_start]    ; ebx <- max data position
-
-     mov  eax,esi                  ; to
-     shl  esi,8
-     add  esi,0x80000
-     mov  edi,[esi+APPDATA.ipc_start]
-     shl  eax,5
-     add  eax,0x3000
-     add  edi,[eax+TASKDATA.mem_start]
-
-     cmp  [edi],byte 0             ; overrun ?
-     jne  ipc_err2
-
-     mov  ebp,edi
-     add  edi,[edi+4]
-     add  edi,8
-
-     mov  esi,ecx                  ; from
-     mov  eax,[0x3010]
-     mov  eax,[eax+TASKDATA.mem_start]
-     add  esi,eax
-
-     mov  ecx,edx                  ; size
-
-     mov  eax,edi
-     add  eax,ecx
-     cmp  eax,ebx
-     jg   ipc_err3                 ; not enough room ?
-
-     push ecx
-
-     mov  eax,[0x3010]
-     mov  eax,[eax+TASKDATA.pid]
-     mov  [edi-8],eax
-     mov  [edi-4],ecx
-     cld
-     rep  movsb
-
-     pop  ecx
-     add  ecx,8
-
-     mov  edi,ebp                  ; increase memory position
-     add  dword [edi+4],ecx
-
-     mov  edi,[esp]
-     shl  edi,8
-     or   dword [edi+0x80000+APPDATA.event_mask],dword 01000000b ; ipc message
-
-     cmp  [check_idle_semaphore],dword 20
-     jge  ipc_no_cis
-     mov  [check_idle_semaphore],5
-   ipc_no_cis:
-
-     xor  eax, eax
-
-    ipc_err:
-     add  esp,4
-     mov  [esp+36],eax
-     sti
-     ret
-
-    ipc_err1:
-     add  esp,4
-     mov  [esp+36],dword 1
-     sti
-     ret
-    ipc_err2:
-     add  esp,4
-     mov  [esp+36],dword 2
-     sti
-     ret
-    ipc_err3:
-     add  esp,4
-     mov  [esp+36],dword 3
-     sti
-     ret
-
-   no_ipc_send:
-
-     mov  [esp+36],dword -1
-     ret
-
-
 align 4
 
 sys_gs:                         ; direct screen access
@@ -4829,7 +4623,7 @@ syscall_openramdiskfile:                ; OpenRamdiskFile
 
 
      mov   edi,[0x3010]
-     add   edi, TASKDATA.mem_start
+     add   edi,TASKDATA.mem_start
      add   eax,[edi]
      add   edx,[edi]
      mov   esi,12
@@ -4884,7 +4678,7 @@ align 4
 syscall_delramdiskfile:                 ; DelRamdiskFile
 
      mov   edi,[0x3010]
-     add   edi, TASKDATA.mem_start
+     add   edi,TASKDATA.mem_start
      add   eax,[edi]
      call  filedelete
      mov   [esp+36],eax
@@ -4895,7 +4689,7 @@ align 4
 syscall_writeramdiskfile:               ; WriteRamdiskFile
 
      mov   edi,[0x3010]
-     add   edi, TASKDATA.mem_start
+     add   edi,TASKDATA.mem_start
      add   eax,[edi]
      add   ebx,[edi]
      call  filesave
@@ -4920,7 +4714,7 @@ align 4
 syscall_readstring:                     ; ReadString
 
      mov   edi,[0x3010]
-     add   edi, TASKDATA.mem_start
+     add   edi,TASKDATA.mem_start
      add   eax,[edi]
      call  read_string
      mov   [esp+36],eax
@@ -5065,10 +4859,10 @@ sys_apm:
     or    [esp + 56], byte 1    ; error
     mov    [esp + 36], dword 8    ; 32-bit protected-mode interface not supported
     ret
-    
+
 @@:    xchg    eax, ecx
     xchg    ebx, ecx
-    
+
     cmp    al, 3
     ja    @f
     and    [esp + 56], byte 0xfe    ; emulate func 0..3 as func 0
@@ -5237,6 +5031,11 @@ wraw_bacground_select db 0
 
   buttontype         dd 0x0
   windowtypechanged  dd 0x0
+
+align 4
+  pg_data  PG_DATA
+  heap_test   dd ?
+  cpu_caps    dd 4 dup(0)
 endg
 
 iglobal

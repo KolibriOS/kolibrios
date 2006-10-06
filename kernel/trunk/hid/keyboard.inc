@@ -86,12 +86,12 @@ hotkey_do_test:
 
 align 4
 irq1:
-       save_ring3_context
-       mov   ax, os_data
-       mov   ds, ax
-       mov   es, ax
+;       save_ring3_context
+;       mov   ax, os_data
+;       mov   ds, ax
+;       mov   es, ax
 
-       mov   eax, [0x3004] ; top window process
+       movzx eax,word[0x3004] ; top window process
        movzx eax,word[0xC400+eax*2]
        shl   eax,8
        mov   al,[0x80000+eax+APPDATA.keyboard_mode]
@@ -277,11 +277,12 @@ irq1:
    .exit.irq1:
        mov   [check_idle_semaphore],5
 
-       mov   al,0x20                  ; ready for next irq
-       out   0x20,al
+;       mov   al,0x20                  ; ready for next irq
+;       out   0x20,al
 
-       restore_ring3_context
-       iret
+;       restore_ring3_context
+;       iret
+        ret
 
 set_lights:
        mov   al,0xED

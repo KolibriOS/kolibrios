@@ -409,9 +409,9 @@ sayerr:
     xor   cx,cx
 wait_loop:       ; variant 2
 ; reading state of port of 8042 controller
-        in      al,64h 
+        in      al,64h
         and     al,00000010b  ; ready flag
-; wait until 8042 controller is ready 
+; wait until 8042 controller is ready
         loopnz  wait_loop
 
 ; --------------- APM ---------------------
@@ -426,7 +426,7 @@ wait_loop:       ; variant 2
     jz    apm_end                ; APM 32-bit protected-mode interface not supported
     mov    [es : 0x9044], ax        ; Save APM Version
     mov    [es : 0x9046], cx        ; Save APM flags
-    
+
     ; Write APM ver ----
     and    ax, 0xf0f
     add    ax, '00'
@@ -437,7 +437,7 @@ wait_loop:       ; variant 2
     call    printplain
     _setcursor d80x25_top_num,0
     ; ------------------
-    
+
     mov    ax, 0x5304            ; Disconnect interface
     xor    bx, bx
     int    0x15
@@ -462,7 +462,7 @@ wait_loop:       ; variant 2
     mov    [apm_data_16 - 0x10000 + 4], dl
     mov    [es : 0x9040], ebx              ; offset of APM entry point
 apm_end:
-; -----------------------------------------        
+; -----------------------------------------
 
 ; DISPLAY VESA INFORMATION
 
@@ -474,6 +474,9 @@ apm_end:
         cmp     ax,0x004f
         mov    si, novesa-0x10000
         jnz    @f
+        mov bx, word [es:di+0x12]
+        shl ebx,16
+        mov [es:0x9050], ebx
         mov     ax,[es:di+4]
         add     ax,'0'*256+'0'
         mov    si,vervesa-0x10000
@@ -492,7 +495,7 @@ cfgmanager:
     mov    di, preboot_graph-0x10000
 ; check bootloader block
     cmp    [.loader_block-0x10000], -1
-    jz     .noloaderblock
+    jz    .noloaderblock
     les    bx, [.loader_block-0x10000]
     cmp    byte [es:bx], 1
     mov    si, loader_block_error-0x10000
@@ -824,7 +827,7 @@ end if
         mov    al, 32    ; BPP
         jb    @f
         mov    [es:0x9000], al
-        mov    dword [es:0x9018], 0x800000
+        mov    dword [es:0x9018], 0xFFFFFFFF; 0x800000
        @@:
         mov     [es:0x9008],bx
         mov     [es:0x900A],cx
@@ -1230,38 +1233,42 @@ sayerr_floppy:
 ; PAGE TABLE
 
     push    dword [es:0x9018]
-
-        map_mem equ 64                ; amount of memory to map
-
+;
+;        mmap_mem equ 64                ; amount of memory to map
+;
         push    0x6000
         pop    es                    ; es:di = 6000:0
-        xor     di,di
-        mov     cx,256*map_mem         ; Map (mapmem) M
-; initialize as identity mapping
-    xor    eax, eax
-    call    pagetable_set
-
-        
+;        xor     di,di
+;        mov     cx,256*mmap_mem         ; Map (mapmem) M
+;; initialize as identity mapping
+;        xor    eax, eax
+;        call    pagetable_set
+;
+;
 ; 4 KB PAGE DIRECTORY
+;
+       push    0x7F00
+       pop    es                ; es:di = 7F00:0
+;        xor     di, di
+;        mov     cx, 64 / 4
+;        mov     eax, 0x60007            ; for 0 M
+;        call    pagetable_set
+;        xor     si,si
+;        mov     di,second_base_address shr 20
+;        mov     cx,64/2
+;        rep     movs word [es:di], [es:si]
 
-    push    0x7F00
-    pop    es                ; es:di = 7F00:0
-        xor     di, di
-        mov     cx, 64 / 4
-        mov     eax, 0x60007            ; for 0 M
-        call    pagetable_set
-        xor     si,si
-        mov     di,second_base_address shr 20
-        mov     cx,64/2
-        rep     movs word [es:di], [es:si]
-       
-        mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
-        mov     cr3, eax
+;        mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
+;        mov     cr3, eax
 
 ; SET GRAPHICS
 
     pop    es
-        mov     ax,[es:0x9008]        ; vga & 320x200
+
+        xor ax, ax
+        mov es, ax
+
+        mov   ax,[es:0x9008]        ; vga & 320x200
         mov    bx, ax
         cmp     ax,0x13
         je      setgr

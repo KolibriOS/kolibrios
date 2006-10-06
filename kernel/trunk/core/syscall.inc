@@ -32,7 +32,7 @@ i40:
       call  dword [servetable+edi*4]
       pop   eax
       cli
-      
+
       popad
       pop   es ds
       iretd
@@ -57,7 +57,7 @@ uglobal
   save_syscall_count  dd 0x0
 endg
 
-label save_syscall_data dword at 0x5000
+;label save_syscall_data dword at 0x5000
 
 
 iglobal
@@ -132,7 +132,7 @@ iglobal
       dd undefined_syscall       ; 57-reserved
       dd file_system             ; 58-Common file system interface
       dd sys_trace               ; 59-System call trace
-      dd new_sys_ipc             ; 60-Inter Process Communication
+      dd sys_IPC                 ; 60-Inter Process Communication
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
@@ -140,7 +140,7 @@ iglobal
       dd undefined_syscall       ; 65-UTF
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
-      dd sys_internal_services   ; 68-Some internal services
+      dd new_services            ; 68-Some internal services
       dd sys_debug_services      ; 69-Debug
       dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_windowsettings  ; 71-Window settings

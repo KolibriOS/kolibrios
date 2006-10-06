@@ -54,18 +54,18 @@ apm_data_16:
 ; -----------------------------------------
 
 app_code_l:
-      dw ((0x80000000-std_application_base_address) shr 12) and 0xffff
+      dw 0xFFFF;((0x80000000-std_application_base_address) shr 12) and 0xffff
       dw 0
-      db 0
-      dw 11010000b*256+11111010b+256*((0x80000000-std_application_base_address) shr 28)
-      db std_application_base_address shr 24
+      db 0x40
+      db cpl3
+      dw G32+D32+0x6000+0x7;
 
 app_data_l:
-      dw (0x80000000-std_application_base_address) shr 12 and 0xffff
+      dw 0xFFFF;(0x80000000-std_application_base_address) shr 12 and 0xffff
       dw 0
-      db 0
-      dw 11010000b*256+11110010b+256*((0x80000000-std_application_base_address) shr 28)
-      db std_application_base_address shr 24
+      db 0x40
+      db drw3
+      dw G32+D32+0x6000+0x7;
 
 graph_data_l:
 
@@ -81,11 +81,10 @@ tss0_l:
 gdte:
 
 
-
 idtreg:
      dw   8*0x41-1
      dd   idts+8
-label idts at 0xB100-8
+;label idts at 0xB100-8
 
 
 
@@ -157,7 +156,7 @@ build_interrupt_table:
         add    edi, 8
         dec    ecx
         jnz    @b
-        
+
         ;mov    edi,8*0x40+idts+8
         mov    [edi + 0], word (i40 and ((1 shl 16)-1))
         mov    [edi + 2], word os_code
@@ -166,16 +165,20 @@ build_interrupt_table:
 
         ret
 
-
-
 iglobal
   sys_int:
-    dd   e0,debug_exc,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15
-    dd   e16,e17
+    dd e0,debug_exc,e2,e3
+    dd e4,e5,e6,e7
+    dd e8,e9,e10,e11
+    dd e12,e13,page_fault_handler,e15
+
+    dd except_16, e17
     times 14 dd unknown_interrupt
 
-    dd   irq0  ,irq1  ,p_irq2 ,p_irq3 ,p_irq4 ,p_irq5,p_irq6 ,p_irq7
-    dd   p_irq8,p_irq9,p_irq10,p_irq11,p_irq12,irqD  ,p_irq14,p_irq15
+    dd   irq0  , irq_serv.irq_1, p_irq2 ,irq_serv.irq_3
+    dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
+    dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
+    dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
 
     times 16 dd unknown_interrupt
 
@@ -216,7 +219,7 @@ macro exc_w_code [num]
       jmp exc_c
 }
 
-exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 16 ; 18, 19
+exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15 ; 18, 19
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
 exc_c:
@@ -234,13 +237,13 @@ exc_c:
         sti
 ; not debuggee => say error and terminate
         add   esp, 28h
-        movzx eax, bl        
+        movzx eax, bl
         mov   [error_interrupt], eax
         call  show_error_parameters
-        
+
         mov   edx, [0x3010]
         mov   [edx + TASKDATA.state], byte 4
-        
+
         jmp   change_task
 
 .debug:
@@ -272,35 +275,56 @@ align 4
 e7:
         save_ring3_context
         clts
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-        
-        mov   eax, [prev_user_of_fpu]
-        shl   eax, 8
-        add   eax, 0x80000 + APPDATA.fpu_save_area
-        fsave [eax]
-        
-        mov   eax, [0x3000]
-        mov   [prev_user_of_fpu], eax
-        shl   eax, 8
-        add   eax, 0x80000
-        cmp   [eax + APPDATA.is_fpu_saved], 0
-        je    @f
-        frstor [eax+APPDATA.fpu_save_area]
-     @@:
-        mov   [eax + APPDATA.is_fpu_saved], 1
+        mov ax, os_data
+        mov ds, ax
+        mov es, ax
+
+        mov ebx, [fpu_owner]
+        cmp ebx, [CURRENT_TASK]
+        je .exit
+
+        shl ebx, 8
+        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
+        bt [cpu_caps], CAPS_FXSR
+        jnc .no_SSE
+
+        fxsave [eax]
+        mov ebx, [CURRENT_TASK]
+        mov [fpu_owner], ebx
+        shl ebx, 8
+        cmp dword [ebx+PROC_BASE+APPDATA.fpu_init], 0
+        je .init
+        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
+        fxrstor [eax]
         restore_ring3_context
         iret
-        
+.init:
+        fninit                      ;нам не нужны немаскированные исключения
+        mov dword [ebx+PROC_BASE+APPDATA.fpu_init], 1
+.exit:
+        restore_ring3_context
+        iret
+.no_SSE:
+        fnsave [eax]
+        mov ebx, [CURRENT_TASK]
+        mov [fpu_owner], ebx
+        shl ebx, 8
+        cmp dword [ebx+PROC_BASE+APPDATA.fpu_init], 0
+        je .init
+
+        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
+        frstor [eax]
+        restore_ring3_context
+        iret
+
 iglobal
-  prev_user_of_fpu dd 1
-endg
+  fpu_owner dd 1
+ endg
 
 
 writehex:
       pusha
-      
+
       mov  edi, [write_error_to]
       mov  esi, 8
     @@:
@@ -334,13 +358,13 @@ uglobal
 endg
 
 show_error_parameters:
-        
+
         mov    [write_error_to],process_pid+43
         mov    eax,[0x3000]
         shl    eax, 5
         mov    eax,[0x3000+TASKDATA.pid+eax]
         call   writehex
-        
+
         mov    [write_error_to],process_error+43
         mov    eax,[error_interrupt]
         call   writehex
@@ -412,7 +436,7 @@ p_irq3:
  old_irq3_handler:
      mov   edi,3
      call  irqhandler
-  p_irq3_1: 
+  p_irq3_1:
      restore_ring3_context
      iret
 
@@ -428,7 +452,7 @@ p_irq4:
  old_irq4_handler:
      mov   edi,4
      call  irqhandler
-  p_irq4_1:   
+  p_irq4_1:
      restore_ring3_context
      iret
 
@@ -478,7 +502,7 @@ irqD:
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
-     
+
      mov   dx,0xf0
      mov   al,0
      out   dx,al
@@ -490,7 +514,7 @@ irqD:
      out   dx,al
 
      restore_ring3_context
-     
+
      iret
 
 
@@ -610,12 +634,12 @@ sys_resize_app_memory:
 
         cmp    eax,1
         jne    .no_application_mem_resize
-        
-        jmp    new_mem_resize ;resize for new type of processes
 
+        stdcall new_mem_resize, ebx
+        mov [esp+36], eax
+        ret
 
-     .no_application_mem_resize:
-
+.no_application_mem_resize:
         ret
 
 
@@ -692,9 +716,9 @@ uglobal
   app_esp      dd  0x0
   app_i_param  dd  0x0
   app_i_icon   dd  0x0
-  ;app_mem_pos  dd  0x0
+;  app_mem_pos  dd  0x0
   appl_path        dd 0x0
-  appl_path_size   dd 0x0         
+  appl_path_size   dd 0x0
 endg
 
 
@@ -730,13 +754,18 @@ terminate: ; terminate application
   term9:
 
     call  set_application_table_status
-    
-    mov    eax,esi
-    call   dispose_app_cr3_table
 
-    cmp   [prev_user_of_fpu],esi   ; if user fpu last -> fpu user = 1
+    mov    eax,esi
+
+    pushad
+    shl   eax,8
+    mov   eax,[PROC_BASE+eax+0xB8]
+    stdcall destroy_app_space, eax
+    popad
+
+    cmp   [fpu_owner],esi   ; if user fpu last -> fpu user = 1
     jne   fpu_ok_1
-    mov   [prev_user_of_fpu],1
+    mov   [fpu_owner],1
   fpu_ok_1:
 
     mov   [0xf400],byte 0           ; empty keyboard buffer
@@ -882,8 +911,8 @@ terminate: ; terminate application
         add    edi, window_data
 ; \begin{diamond}[19.09.2006]
 ; skip minimized windows
-        test    [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
-        jnz     .check_next_window
+        test   [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz    .check_next_window
 ; \end{diamond}
         call   waredraw
  .nothing_to_activate:

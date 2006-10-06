@@ -121,7 +121,7 @@ virtual at 0
 end virtual
 
 ; constants definition
-WSTATE_NORMAL	 = 00000000b
+WSTATE_NORMAL    = 00000000b
 WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
 WSTATE_ROLLEDUP  = 00000100b
@@ -171,10 +171,16 @@ struc APPDATA
 {
   .app_name	   db 11  dup(?)
 		   db 5   dup(?)
-  .fpu_save_area:  db 108 dup(?)
-		   db 3   dup(?)
-  .is_fpu_saved    db ?
-  .wnd_shape	   dd ?
+
+  .fpu_state       dd ?            ;+16
+  .fpu_init        dd ?            ;+20
+  .fpu_handler     dd ?            ;+24
+  .sse_handler     dd ?            ;+28
+  .event           dd ?            ;+32
+
+                   db 92  dup(?)
+
+  .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?
 		   dd ?
   .mem_size	   dd ?
@@ -209,9 +215,13 @@ include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
 include "core/sched.inc"    ; process scheduling
 include "core/syscall.inc"  ; system call
-include "core/mem.inc"      ; high-level memory management
-include "core/newproce.inc" ;new process management
-include "core/physmem.inc"  ; access to physical memory for applications
+include "core/memory.inc"
+include "core/heap.inc"
+include "core/taskman.inc"
+include "core/dll.inc"
+include "core/exports.inc"
+include "core/except.inc"
+
 
 ; GUI stuff
 include "gui/window.inc"
