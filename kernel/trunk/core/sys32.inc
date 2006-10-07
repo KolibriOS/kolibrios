@@ -172,8 +172,8 @@ iglobal
     dd e8,e9,e10,e11
     dd e12,e13,page_fault_handler,e15
 
-    dd except_16, e17
-    times 14 dd unknown_interrupt
+    dd except_16, e17,e18, except_19
+    times 12 dd unknown_interrupt
 
     dd   irq0  , irq_serv.irq_1, p_irq2 ,irq_serv.irq_3
     dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
@@ -219,7 +219,7 @@ macro exc_w_code [num]
       jmp exc_c
 }
 
-exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15 ; 18, 19
+exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 18
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
 exc_c:

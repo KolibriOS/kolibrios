@@ -4,9 +4,9 @@ tmp_page_tab      equ 0x01000000
 align 4
 proc mem_test
            mov eax, cr0
-           or eax, 0x60000000   ;disable caching
+           or eax, (CR0_CD+CR0_NW);disable caching
            mov cr0, eax
-           wbinvd               ;invalidate cache
+           wbinvd                 ;invalidate cache
 
            xor     edi, edi
            mov ebx, 'TEST'
@@ -17,7 +17,7 @@ proc mem_test
            xchg ebx, dword [edi]
            je @b
 
-           and eax, 0x21
+           and eax, not (CR0_CD+CR0_NW)
            mov cr0, eax
            mov eax, edi
            ret
@@ -40,7 +40,10 @@ proc init_memEx
            jnc @F
            or eax, PG_GLOBAL
            or ebx, CR4_PGE
+
 @@:
+           mov cr4, ebx
+
            mov dword [sys_pgdir], eax
            add eax, 0x00400000
            mov dword [sys_pgdir+4], eax
@@ -51,8 +54,6 @@ proc init_memEx
 
            mov dword [sys_pgdir+0x600], sys_master_tab+PG_SW
            mov dword [sys_master_tab+0x600], sys_master_tab+PG_SW
-
-           mov cr4, ebx
 
            mov ecx, [pg_data.kernel_tables]
            sub ecx, 4
@@ -1100,6 +1101,15 @@ new_services:
            cmp eax, 17
            ja @f
            stdcall srv_handlerEx, ebx
+           mov [esp+36], eax
+           ret
+@@:
+           cmp eax, 18
+           ja @f
+           mov ecx, [CURRENT_TASK]
+           shl ecx, 8
+           mov eax, [ecx+PROC_BASE+APPDATA.sse_handler]
+           mov [ecx+PROC_BASE+APPDATA.sse_handler], ebx
            mov [esp+36], eax
            ret
 

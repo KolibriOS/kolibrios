@@ -120,7 +120,7 @@ app_data       equ  3+app_data_l-gdts
 
 ; CR0 Flags - Protected mode and Paging
 
-        mov ecx, 0x00000021
+        mov ecx, CR0_PE
 
 ; Enabling 32 bit protected mode
 
@@ -399,9 +399,9 @@ include 'detect/disks.inc'
            mov eax, sys_pgdir     ;+PG_NOCACHE
            mov cr3, eax
 
-           mov     eax,cr0
-           or      eax,0x80000000
-           mov     cr0,eax
+           mov eax,cr0
+           or eax,CR0_PG
+           mov cr0,eax
 
            call init_kernel_heap
            call init_LFB
@@ -447,25 +447,48 @@ include 'detect/disks.inc'
            mov ecx, 16
            rep movsb
 
+           clts
+           fninit
+
            bt [cpu_caps], CAPS_FXSR
            jnc .no_FXSR
 
            stdcall kernel_alloc, 512*256
            mov [fpu_data], eax
+
            mov ebx, cr4
-           or ebx, CR4_OSFXSR
+           mov ecx, cr0
+           or ebx, CR4_OSFXSR+CR4_OSXMMEXPT
            mov cr4, ebx
-           jmp .clts
+
+           and ecx, not (CR0_MP+CR0_EM)
+           or ecx, CR0_NE
+           mov cr0, ecx
+
+           mov dword [esp-4], SSE_INIT
+           ldmxcsr [esp-4]
+
+           xorps xmm0, xmm0
+           xorps xmm1, xmm1
+           xorps xmm2, xmm2
+           xorps xmm3, xmm3
+           xorps xmm4, xmm4
+           xorps xmm5, xmm5
+           xorps xmm6, xmm6
+           xorps xmm7, xmm7
+
+           jmp .set_cr
 .no_FXSR:
            stdcall kernel_alloc, 112*256
            mov [fpu_data], eax
            mov ebx, cr4
+           mov ecx, cr0
            and ebx, not (CR4_OSFXSR+CR4_OSXMMEXPT)
+           and ecx, not CR0_EM
+           or ecx, CR0_MP+CR0_NE
+           mov cr0, ecx
            mov cr4, ebx
-.clts:
-           clts
-           fninit
-
+.set_cr:
            mov edi, irq_tab
            xor eax, eax
            mov ecx, 16

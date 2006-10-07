@@ -86,6 +86,19 @@ CAPS_SVM       equ    73 ;secure virual machine
 CAPS_ALTMOVCR8 equ    74 ;
 
 
+CR0_PE         equ    0x00000001   ;protected mode
+CR0_MP         equ    0x00000002   ;monitor fpu
+CR0_EM         equ    0x00000004   ;fpu emulation
+CR0_TS         equ    0x00000008   ;task switch
+CR0_ET         equ    0x00000010   ;extension type hardcoded to 1
+CR0_NE         equ    0x00000020   ;numeric error
+CR0_WP         equ    0x00010000   ;write protect
+CR0_AM         equ    0x00040000   ;alignment check
+CR0_NW         equ    0x20000000   ;not write-through
+CR0_CD         equ    0x40000000   ;cache disable
+CR0_PG         equ    0x80000000   ;paging
+
+
 CR4_VME        equ    0x0001
 CR4_PVI        equ    0x0002
 CR4_TSD        equ    0x0004
@@ -98,7 +111,22 @@ CR4_PCE        equ    0x0100
 CR4_OSFXSR     equ    0x0200
 CR4_OSXMMEXPT  equ    0x0400
 
+SSE_IE         equ    0x0001
+SSE_DE         equ    0x0002
+SSE_ZE         equ    0x0004
+SSE_OE         equ    0x0008
+SSE_UE         equ    0x0010
+SSE_PE         equ    0x0020
+SSE_DAZ        equ    0x0040
+SSE_IM         equ    0x0080
+SSE_DM         equ    0x0100
+SSE_ZM         equ    0x0200
+SSE_OM         equ    0x0400
+SSE_UM         equ    0x0800
+SSE_PM         equ    0x1000
+SSE_FZ         equ    0x8000
 
+SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
 OS_BASE             equ 0;  0x80400000
 
