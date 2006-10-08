@@ -127,7 +127,9 @@ proc init_kernel_heap
            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
 
            mov ecx, [MEM_AMOUNT]
-           sub ecx, 0x00C00000 + 4096*MEM_BLOCK_SIZE
+           sub ecx, 0x01000000 + 4096*MEM_BLOCK_SIZE
+           mov [heap_size], ecx
+           mov [heap_free], ecx
            mov [ebx+block_size], ecx
            mov [ebx+block_flags], FREE_BLOCK
 
@@ -137,6 +139,8 @@ proc init_kernel_heap
            mov [mem_used_list], eax
            mov [mem_block_list+63*4], ebx
            mov byte [mem_block_map], 0xFC
+           mov [heap_blocks], 4095
+           mov [free_blocks], 4095
            ret
 endp
 
@@ -190,7 +194,6 @@ proc get_block stdcall, index:dword
            ret
 endp
 
-
 align 4
 proc alloc_mem_block
 
@@ -216,6 +219,7 @@ found:
            add eax,ebx
            shl eax, 5
            add eax, [mem_block_arr]
+           dec [free_blocks]
            popfd
            ret
 endp
@@ -228,6 +232,7 @@ proc free_mem_block
 
            mov ebx, mem_block_map
            bts [ebx], eax
+           inc [free_blocks]
            shr eax, 3
            and eax, not 3
            add eax, ebx
@@ -256,6 +261,8 @@ proc alloc_kernel_space stdcall, size:dword
            add eax, 0xFFF
            and eax, 0xFFFFF000;
            mov [size], eax
+           cmp eax, [heap_free]
+           ja .error
 
            shr eax, 12
            sub eax, 1
@@ -341,6 +348,8 @@ proc alloc_kernel_space stdcall, size:dword
            mov [esi+block_flags], USED_BLOCK
            mov [mem_used_list], esi
            mov eax, [esi+block_base]
+           mov ebx, [size]
+           sub [heap_free], ebx
            popfd
            ret
 
@@ -361,6 +370,8 @@ proc alloc_kernel_space stdcall, size:dword
            mov [mem_used_list], edi
            mov [edi+block_flags], USED_BLOCK
            mov eax, [edi+block_base]
+           mov ebx, [size]
+           sub [heap_free], ebx
            popfd
            ret
 .error:
@@ -385,6 +396,9 @@ proc free_kernel_space stdcall, base:dword
 .found:
            cmp [esi+block_flags], USED_BLOCK
            jne .fail
+
+           mov eax, [esi+block_size]
+           add [heap_free], eax
 
            mov edi, [esi+block_next]
            test edi, edi

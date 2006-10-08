@@ -298,22 +298,25 @@ e7:
         fxrstor [eax]
         restore_ring3_context
         iret
-.init:
-        fninit                      ;нам не нужны немаскированные исключения
-        mov dword [ebx+PROC_BASE+APPDATA.fpu_init], 1
-.exit:
-        restore_ring3_context
-        iret
+
 .no_SSE:
         fnsave [eax]
         mov ebx, [CURRENT_TASK]
         mov [fpu_owner], ebx
         shl ebx, 8
         cmp dword [ebx+PROC_BASE+APPDATA.fpu_init], 0
-        je .init
+        je .ready
 
         mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
         frstor [eax]
+        restore_ring3_context
+        iret
+
+.init:
+        fninit                      ;нам не нужны немаскированные исключения
+.ready:
+        mov dword [ebx+PROC_BASE+APPDATA.fpu_init], 1
+.exit:
         restore_ring3_context
         iret
 

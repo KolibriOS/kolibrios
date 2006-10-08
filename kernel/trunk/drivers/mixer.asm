@@ -113,7 +113,7 @@ endp
 align 4
 proc update_stream
 	   locals
-	     stream_index  dd 0
+             stream_index  dd ?
 	   endl
 
 	   mov [stream_index], 0

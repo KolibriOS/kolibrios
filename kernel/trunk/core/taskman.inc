@@ -1,3 +1,5 @@
+GREEDY_KERNEL  equ 0; 1
+
 
 struc APP_HEADER_00
 { .banner      dq ?
@@ -134,18 +136,27 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            mov ebx, eax
            shr eax, 12
            mov [app_pages], eax
+
            add ebx, 0x3FFFFF
            and ebx, NOT(0x3FFFFF)
            shr ebx, 22
            mov [app_tabs], ebx
 
-           mov eax, [img_size]
-           add eax, 4095
-           and eax, NOT(4095)
+           mov ecx, [img_size]
+           add ecx, 4095
+           and ecx, NOT(4095)
 
-           mov [img_size], eax
-           shr eax, 12
-           mov [img_pages], eax
+           mov [img_size], ecx
+           shr ecx, 12
+           mov [img_pages], ecx
+
+     if GREEDY_KERNEL
+           lea eax, [ecx+ebx+2]    ;only image size
+     else
+           lea eax, [eax+ebx+2]    ;all requested memory
+     end if
+           cmp eax, [pg_data.pages_free]
+           ja .fail
 
            call alloc_page
            test eax, eax
@@ -539,10 +550,12 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword,\
            rep stosb
 
 ; read header
-
            lea  eax, [file_size]
+           mov ebx, [eax]
+           mov [img_size], ebx
            mov  edi, TMP_BUFF
            call [fn_read]
+
            test eax, eax
            jnz .err
 
@@ -561,7 +574,11 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword,\
 
            mov eax, cr3
            mov [save_cr3], eax
-           stdcall create_app_space,[app_mem], [app_mem];[file_size]
+     if GREEDY_KERNEL
+           stdcall create_app_space,[app_mem],[img_size]
+     else
+           stdcall create_app_space,[app_mem],[app_mem]
+     end if
            test eax, eax
            jz .failed
 

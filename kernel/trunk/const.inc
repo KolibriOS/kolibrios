@@ -315,7 +315,6 @@ struc SYS_VARS
                   dd ?
 }
 
-
 struc BOOT_DATA
 { .bpp            dd ?
   .scanline       dd ?

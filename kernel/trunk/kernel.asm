@@ -672,7 +672,6 @@ include 'vmodeld.inc'
         mov  ax,tss0
         ltr  ax
 
-
 ; READ TSC / SECOND
 
         mov   esi,boot_tsc
@@ -1912,6 +1911,7 @@ sys_end:
      jmp   waitterm
 
 iglobal
+align 4
 sys_system_table:
         dd      sysfn_shutdown          ; 1 = system shutdown
         dd      sysfn_terminate         ; 2 = terminate thread
@@ -1933,6 +1933,7 @@ sys_system_table:
         dd      sysfn_terminate2        ; 18 = terminate thread using PID
                                         ;                 instead of slot
         dd      sysfn_mouse_acceleration; 19 = set/get mouse acceleration
+        dd      sysfn_meminfo           ; 20 = get extended memory info
 sysfn_num = ($ - sys_system_table)/4
 endg
 
@@ -2164,16 +2165,14 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      ret
 
 sysfn_getfreemem:
-     mov  eax,[MEM_FreeSpace]
-     shl  eax,2
-     mov  [esp+36],eax
+     mov eax, [pg_data.pages_free]
+     shl eax, 2
+     mov [esp+36],eax
      ret
 
 sysfn_getallmem:
-     mov  eax,[0xFE8C]
-     shr  eax,10
-;     mov  eax,[MEM_AllSpace]
-;     shl  eax,2
+     mov  eax,[MEM_AMOUNT]
+     shr eax, 10
      mov  [esp+36],eax
      ret
 

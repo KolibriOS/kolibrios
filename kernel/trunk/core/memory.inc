@@ -111,75 +111,6 @@ proc init_memEx
            ret
 endp
 
-;align 4
-;proc init_mem
-;
-;           xor eax, eax
-;           mov edi, sys_pgdir
-;           mov ecx, 2048
-;           rep stosd
-;
-;           bt [cpu_caps], CAPS_PSE
-;           jc .use_PSE
-;
-;           mov eax, PG_SW
-;           mov esi, tmp_page_tab
-;           mov ecx, 4096/4      ;0x0 - 0x00FFFFFF
-;
-;.map_low:
-;           mov [esi], eax
-;           add eax, 0x1000
-;           mov [esi+4], eax
-;           add eax, 0x1000
-;           mov [esi+8], eax
-;           add eax, 0x1000
-;           mov [esi+12], eax
-;           add eax, 0x1000
-;           add esi, 16
-;           dec ecx
-;           jnz .map_low            ;ядро
-
-;           mov eax, tmp_page_tab+PG_SW
-;           mov ecx, 4
-;           xor ebx, ebx
-
-;.map_page_tables:
-;           mov [sys_pgdir+ebx], eax
-;           mov [sys_master_tab+ebx], eax
-;           add eax, 0x1000
-;           add ebx, 4
-;           dec ecx
-;           jnz .map_page_tables
-
-;           mov dword [sys_pgdir+0x600], sys_master_tab+PG_SW
-;           mov dword [sys_master_tab+0x600], sys_master_tab+PG_SW
-
-;           ret
-
-;.use_PSE:
-;           mov ebx, cr4
-;           or ebx, CR4_PSE
-;           mov eax, PG_LARGE+PG_SW
-;           bt [cpu_caps], CAPS_PGE
-;           jnc @F
-;           or eax, PG_GLOBAL
-;           or ebx, CR4_PGE
-;@@:
-;           mov dword [sys_pgdir], eax
-;           add eax, 0x00400000
-;           mov dword [sys_pgdir+4], eax
-;           add eax, 0x00400000
-;           mov dword [sys_pgdir+8], eax
-;           add eax, 0x00400000
-;           mov dword [sys_pgdir+12], eax
-;
-;           mov dword [sys_pgdir+0x600], sys_master_tab+PG_SW
-;           mov dword [sys_master_tab+0x600], sys_master_tab+PG_SW
-
-;           mov cr4, ebx
-;           ret
-;endp
-
 align 4
 proc init_page_map
            mov edi, sys_pgmap
@@ -225,63 +156,6 @@ proc init_page_map
 
            ret
 endp
-
-;align 4
-;proc init_pg_mem
-;
-;           mov edi, sys_pgmap
-;           mov ecx, 512/4
-;           xor eax,eax
-;           cld
-;           rep stosd
-;
-;           not eax
-;           mov ecx, [pg_data.pagemap_size]
-;           sub ecx, 512
-;           shr ecx, 2
-;           rep stosd
-;
-;           shl eax, PAGES_USED
-;           mov [sys_pgmap+512], eax
-;
-;           mov [page_start], sys_pgmap+512
-;           mov ebx, sys_pgmap
-;           add ebx, [pg_data.pagemap_size]
-;           mov [page_end], ebx
-;           mov eax, [pg_data.pages_count]
-;           sub eax, 4096+PAGES_USED
-;           mov [pg_data.pages_free], eax
-;
-;           mov [pg_data.pages_faults], 0
-;
-;           mov edi, OS_BASE+0x01000000
-;           mov esi, [pg_data.kernel_tables]
-;           sub esi, 4
-;           ja @f
-;           mov esi, 1
-;@@:
-;           call alloc_page
-;           stdcall map_page_table, sys_pgdir, edi, eax
-;           add edi, 0x00400000
-;           dec esi
-;           jnz @B
-;
-;           mov ecx, [pg_data.kernel_tables]
-;           sub ecx, 4
-;           shl ecx, 10
-;           mov edi, OS_BASE+0x01000000
-;           shr edi, 10
-;           add edi, pages_tab
-;           xor eax, eax
-;           cld
-;           rep stosd
-;
-;           mov eax, cr3
-;           mov cr3, eax
-;
-;           mov [pg_data.pg_mutex], 0
-;           ret
-;endp
 
 align 4
 proc alloc_page
@@ -1025,19 +899,25 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 endp
 
 align 4
-proc get_mem_info stdcall, val:dword
+sysfn_meminfo:
 
-           mov esi, [val]
-
+           add ebx, new_app_base
            mov eax, [pg_data.pages_count]
-           mov [esi], eax
-           mov ebx, [pg_data.pages_free]
-           mov [esi+4], ebx
-           mov ecx, [pg_data.pages_faults]
-           mov [esi+8], ecx
+           mov [ebx], eax
+           mov ecx, [pg_data.pages_free]
+           mov [ebx+4], ecx
+           mov edx, [pg_data.pages_faults]
+           mov [ebx+8], edx
+           mov esi, [heap_size]
+           mov [ebx+12], esi
+           mov edi, [heap_free]
+           mov [ebx+16], edi
+           mov eax, [heap_blocks]
+           mov [ebx+20], eax
+           mov ecx, [free_blocks]
+           mov [ebx+24], ecx
 
            ret
-endp
 
 align 4
 new_services:
@@ -1045,17 +925,17 @@ new_services:
            cmp  eax,4
            jle  sys_sheduler
 
-           cmp eax, 10
+           cmp eax, 11
            jb .fail
            ja @f
 
-           add ebx, new_app_base
-           stdcall get_mem_info, ebx
-           mov [esp+36], eax
-           ret
-@@:
-           cmp eax, 11
-           ja @f
+;           add ebx, new_app_base
+;           stdcall get_mem_info, ebx
+;           mov [esp+36], eax
+;           ret
+;@@:
+;           cmp eax, 11
+;           ja @f
 
            stdcall init_heap, ebx
            mov [esp+36], eax
@@ -1355,7 +1235,6 @@ proc set_mtrr stdcall, reg:dword,base:dword,size:dword,mem_type:dword
            ret
 endp
 
-
 iglobal
 align 4
   intel_str    db "GenuineIntel",0
@@ -1408,11 +1287,15 @@ align 16
    mem_block_start rd 1
    mem_block_end   rd 1
    mem_block_mask  rd 2
+   heap_size       rd 1
+   heap_free       rd 1
+   heap_blocks     rd 1
+   free_blocks     rd 1
 
    page_start      rd 1
    page_end        rd 1
    sys_page_map    rd 1
-   app_load        rd 1
+;   app_load        rd 1
 endg
 
 
@@ -1421,7 +1304,6 @@ endg
 ;     mov edx, 0x400   ;bocsh
 ;     mov al,0xff      ;bocsh
 ;     out dx, al       ;bocsh
-;     nop              ;bocsh fix
 ;     pop edx
 ;     pop eax
 
