@@ -58,19 +58,29 @@ extern int  stdcall _msys_pci_write_config_byte(int bus,int dev,int fn,int reg,i
 extern int  stdcall _msys_pci_write_config_word(int bus,int dev,int fn,int reg,int value);
 extern int  stdcall _msys_pci_write_config_value(int bus,int dev,int fn,int reg,int value);
 extern int  stdcall _msys_putpixel(int x,int y,int color);
+#pragma pack(push,1)
 typedef struct {
-  int cpu_usage;
-  int window_pos_info;
-  char name[12];
-  int memstart;
-  int memused;
-  int pid;
-  int winx_start;
-  int winy_start;
-  int winx_size;
-  int winy_size;
-  int slot_info;
+  int cpu_usage;             //+0
+  int window_pos_info;       //+4
+  short int reserved1;       //+8
+  char name[12];             //+10
+  int memstart;              //+22
+  int memused;               //+26
+  int pid;                   //+30
+  int winx_start;            //+34
+  int winy_start;            //+38
+  int winx_size;             //+42
+  int winy_size;             //+46
+  short int slot_info;       //+50
+  short int reserved2;       //+52
+  int clientx;               //+54
+  int clienty;               //+58
+  int clientwidth;           //+62
+  int clientheight;          //+66
+  unsigned char window_state;//+70
+  char reserved3[1024-71];   //+71
 } process_table_entry;
+#pragma pack(pop)
 extern int  stdcall _msys_get_process_table(process_table_entry* proctab,int pid);
 extern int  stdcall _msys_get_screen_size(int* x,int* y);
 extern void stdcall _msys_sound_load_block(void* blockptr);
