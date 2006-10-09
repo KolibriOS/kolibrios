@@ -7,6 +7,7 @@
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  08.10.2006 LFN delete file/folder - diamond                    ;;
 ;;  20.08.2006 LFN set file size (truncate/extend) - diamond       ;;
 ;;  17.08.2006 LFN write/append to file - diamond                  ;;
 ;;  23.06.2006 LFN start application - diamond                     ;;
@@ -61,6 +62,8 @@ PUSHAD_EBP equ [esp+8]
 PUSHAD_ESI equ [esp+4]
 PUSHAD_EDI equ [esp+0]
 
+uglobal
+align 4
 cluster              dd 0       ; used by file_write,makedir,append
 partition_count      dd 0       ; partitions found by set_FAT32_variables
 longname_sec1        dd 0       ; used by analyze_directory to save 2 previous
@@ -83,11 +86,15 @@ new_filepos          dd 0       ; used by append
 bytes2write          dd 0       ; used by append
 
 cache_search_start   dd 0       ; used by find_empty_slot
+endg
 
+iglobal
 fat_in_cache         dd -1
-fat_cache:           times 512 db 0
+endg
 
 uglobal
+align 4
+fat_cache:           times 512 db 0
  Sector512:                      ; label for dev_hdcd.inc
   buffer:              times 512 db 0
   deltree_buffer:      times 512 db 0
@@ -979,38 +986,6 @@ makedir:
     mov   [hd1_status],0
     xor   eax,eax
     ret
-
-
-removedir:
-;-----------------------------------------------------
-; input  : eax = file/directory name
-;          edx = path
-; output : eax = 0 - ok
-;                3 - unknown FS
-;                5 - file not found
-;               10 - access denied
-;-----------------------------------------------------
-    cmp   [fat_type],0
-    jnz   remove_dir_fat_ok
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
-
-  remove_dir_fat_ok:
-;    call  reserve_hd1
-
-    push  edi
-    mov   edi,1                 ; allow directory remove
-    call  file_delete
-    cmp   [hd_error],0
-    jne   @f
-
-    pop   edi
-
-    call  update_disk           ; write all of cache and fat to hd
-  @@:
-    mov   [hd1_status],0
-    ret
-   
 
 add_disk_free_space:
 ;-----------------------------------------------------
@@ -2340,8 +2315,14 @@ fat16_root_next:
         ret     ; CF=0
 fat16_root_next_sector:
 ; read next sector
+        push    [longname_sec2]
+        pop     [longname_sec1]
         push    ecx
         mov     ecx, [eax+4]
+        push    ecx
+        add     ecx, [ROOT_START]
+        mov     [longname_sec2], ecx
+        pop     ecx
         inc     ecx
         mov     [eax+4], ecx
         cmp     ecx, [ROOT_SECTORS]
@@ -2391,6 +2372,12 @@ fat_notroot_next:
         add     edi, 0x20
         ret     ; CF=0
 fat_notroot_next_sector:
+        push    [longname_sec2]
+        pop     [longname_sec1]
+        push    eax
+        call    fat_get_sector
+        mov     [longname_sec2], eax
+        pop     eax
         push    ecx
         mov     ecx, [eax+4]
         inc     ecx
@@ -3639,7 +3626,7 @@ fs_HdExecute:
 .flags:
         cmp     [fat_type], 0
         jnz     @f
-        mov     eax, ERROR_UNKNOWN_FS
+        mov     eax, -ERROR_UNKNOWN_FS
         ret
 @@:
         cmp     byte [esi], 0
@@ -3720,6 +3707,156 @@ fs_HdExecute:
 .err:
         popad
         mov     eax, 11
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_HdDelete - delete file or empty folder from hard disk
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_HdDelete:
+        cmp     [fat_type], 0
+        jnz     @f
+        push    ERROR_UNKNOWN_FS
+.pop_ret:
+        pop     eax
+        ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot delete root!
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+        jmp     .pop_ret
+@@:
+        and     [longname_sec1], 0
+        and     [longname_sec2], 0
+        push    edi
+        call    hd_find_lfn
+        jnc     .found
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .pop_ret
+.found:
+        cmp     dword [edi], '.   '
+        jz      .access_denied2
+        cmp     dword [edi], '..  '
+        jz      .access_denied2
+        test    byte [edi+11], 10h
+        jz      .dodel
+; we can delete only empty folders!
+        pushad
+        mov     ebp, [edi+20-2]
+        mov     bp, [edi+26]
+        xor     ecx, ecx
+        lea     eax, [ebp-2]
+        imul    eax, [SECTORS_PER_CLUSTER]
+        add     eax, [DATA_START]
+        mov     ebx, buffer
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     .err1
+        add     ebx, 2*0x20
+.checkempty:
+        cmp     byte [ebx], 0
+        jz      .empty
+        cmp     byte [ebx], 0xE5
+        jnz     .notempty
+        add     ebx, 0x20
+        cmp     ebx, buffer+0x200
+        jb      .checkempty
+        inc     ecx
+        cmp     ecx, [SECTORS_PER_CLUSTER]
+        jb      @f
+        mov     eax, ebp
+        call    get_FAT
+        cmp     [hd_error], 0
+        jnz     .err1
+        mov     ebp, eax
+        xor     ecx, ecx
+@@:
+        lea     eax, [ebp-2]
+        imul    eax, [SECTORS_PER_CLUSTER]
+        add     eax, [DATA_START]
+        add     eax, ecx
+        mov     ebx, buffer
+        call    hd_read
+        cmp     [hd_error], 0
+        jz      .checkempty
+.err1:
+        popad
+.err2:
+        pop     edi
+        push    11
+        pop     eax
+        ret
+.notempty:
+        popad
+.access_denied2:
+        pop     edi
+        push    ERROR_ACCESS_DENIED
+        pop     eax
+        ret
+.empty:
+        popad
+        push    ebx
+        mov     ebx, buffer
+        call    hd_read
+        pop     ebx
+        cmp     [hd_error], 0
+        jnz     .err2
+.dodel:
+        push    eax
+        mov     eax, [edi+20-2]
+        mov     ax, [edi+26]
+        xchg    eax, [esp]
+; delete folder entry
+        mov     byte [edi], 0xE5
+; delete LFN (if present)
+.lfndel:
+        cmp     edi, buffer
+        ja      @f
+        cmp     [longname_sec2], 0
+        jz      .lfndone
+        push    [longname_sec2]
+        push    [longname_sec1]
+        pop     [longname_sec2]
+        and     [longname_sec1], 0
+        push    ebx
+        mov     ebx, buffer
+        call    hd_write
+        mov     eax, [esp+4]
+        call    hd_read
+        pop     ebx
+        pop     eax
+        mov     edi, buffer+0x200
+@@:
+        sub     edi, 0x20
+        cmp     byte [edi], 0xE5
+        jz      .lfndone
+        cmp     byte [edi+11], 0xF
+        jnz     .lfndone
+        mov     byte [edi], 0xE5
+        jmp     .lfndel
+.lfndone:
+        push    ebx
+        mov     ebx, buffer
+        call    hd_write
+        pop     ebx
+; delete FAT chain
+        pop     eax
+        call    clear_cluster_chain
+        call    update_disk
+        pop     edi
+        xor     eax, eax
+        cmp     [hd_error], 0
+        jz      @f
+        mov     al, 11
+@@:
         ret
 
 ; \end{diamond}

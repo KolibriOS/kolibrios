@@ -37,7 +37,6 @@ file_system:
 ;
 ; eax = 0  ; read file          /RamDisk/First  6
 ; eax = 1  ; write file         /RamDisk/First 33   /HardDisk/First 56
-; eax = 2  ; delete file        /RamDisk/First 32
 ; eax = 4  ; makedir
 ; eax = 5  ; rename file/directory
 ; eax = 8  ; lba read
@@ -91,8 +90,6 @@ file_system:
     cmp   dword [eax+0],5       ; RENAME - dont care about read&write blocks
     je    fs_read
     cmp   dword [eax+0],4       ; MAKEDIR - dont care about read&write blocks
-    je    fs_read
-    cmp   dword [eax+0],2       ; DELETE - dont care about read&write blocks
     je    fs_read
 
     cmp   dword [0x3000],1      ; no memory checks for kernel requests
@@ -283,15 +280,6 @@ endg
     jmp   file_system_return
 
   fs_noramdisk_write:
-
-    cmp   dword [esp+20],2      ;DELETE
-    jne   fs_noramdisk_delete
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    call  filedelete
-    jmp   file_system_return
-
-  fs_noramdisk_delete:
   fs_noramdisk:
   
   ;********************************************************************
@@ -358,17 +346,6 @@ endg
     jmp   file_system_return
 
   fs_noflpdisk_write:
-
-    cmp   dword [esp+20],2      ; DELETE
-    jne   fs_noflpdisk_delete
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    call  floppy_filedelete
-    mov   [flp_status],0
-    jmp   file_system_return
-
-  fs_noflpdisk_delete:
 
   fs_noflpdisk:
   ;*****************************************************************
@@ -520,24 +497,6 @@ hd_err_return:
 
 
   fs_noharddisk_write:
-
-    cmp   dword [esp+20],2      ; DELETE
-    jne   fs_noharddisk_delete
-
-    mov   eax,[esp+0]           ; /dirname or /filename
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  removedir
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_delete:
 
     cmp   dword [esp+20],4      ; MAKEDIR
     jne   fs_noharddisk_makedir

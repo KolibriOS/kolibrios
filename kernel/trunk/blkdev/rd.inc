@@ -918,6 +918,12 @@ ramdisk_root_extend_dir:
         stc
         ret
 
+uglobal
+; this is for delete support
+rd_prev_sector          dd      ?
+rd_prev_prev_sector     dd      ?
+endg
+
 ramdisk_notroot_next:
         add     edi, 0x20
         test    edi, 0x1FF
@@ -926,6 +932,9 @@ ramdisk_notroot_next:
 ramdisk_notroot_next_sector:
         push    ecx
         mov     ecx, [eax]
+        push    [rd_prev_sector]
+        pop     [rd_prev_prev_sector]
+        mov     [rd_prev_sector], ecx
         mov     ecx, [ecx*2+0x280000]
         and     ecx, 0xFFF
         cmp     ecx, 2849
@@ -2287,6 +2296,109 @@ fs_RamdiskExecute:
 .eof:
         popad
         mov     eax, 6
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskDelete - delete file or empty folder from ramdisk
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_RamdiskDelete:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot delete root!
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+.pop_ret:
+        pop     eax
+        ret
+@@:
+        and     [rd_prev_sector], 0
+        and     [rd_prev_prev_sector], 0
+        push    edi
+        call    rd_find_lfn
+        jnc     .found
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .pop_ret
+.found:
+        cmp     dword [edi], '.   '
+        jz      .access_denied2
+        cmp     dword [edi], '..  '
+        jz      .access_denied2
+        test    byte [edi+11], 10h
+        jz      .dodel
+; we can delete only empty folders!
+        movzx   eax, word [edi+26]
+        push    ebx
+        mov     ebx, eax
+        shl     ebx, 9
+        add     ebx, RAMDISK + 31*0x200 + 2*0x20
+.checkempty:
+        cmp     byte [ebx], 0
+        jz      .empty
+        cmp     byte [ebx], 0xE5
+        jnz     .notempty
+        add     ebx, 0x20
+        test    ebx, 0x1FF
+        jnz     .checkempty
+        movzx   eax, word [RAMDISK_FAT + eax*2]
+        test    eax, eax
+        jz      .empty
+        mov     ebx, eax
+        shl     ebx, 9
+        add     ebx, RAMDISK + 31*0x200
+        jmp     .checkempty
+.notempty:
+        pop     ebx
+.access_denied2:
+        pop     edi
+        jmp     .access_denied
+.empty:
+        pop     ebx
+.dodel:
+        movzx   eax, word [edi+26]
+; delete folder entry
+        mov     byte [edi], 0xE5
+; delete LFN (if present)
+.lfndel:
+        test    edi, 0x1FF
+        jnz     @f
+        cmp     [rd_prev_sector], 0
+        jz      @f
+        cmp     [rd_prev_sector], -1
+        jz      .lfndone
+        mov     edi, [rd_prev_sector]
+        push    [rd_prev_prev_sector]
+        pop     [rd_prev_sector]
+        or      [rd_prev_prev_sector], -1
+        shl     edi, 9
+        add     edi, RAMDISK + 31*0x200 + 0x200
+@@:
+        sub     edi, 0x20
+        cmp     byte [edi], 0xE5
+        jz      .lfndone
+        cmp     byte [edi+11], 0xF
+        jnz     .lfndone
+        mov     byte [edi], 0xE5
+        jmp     .lfndel
+.lfndone:
+; delete FAT chain
+        test    eax, eax
+        jz      .done
+        lea     eax, [RAMDISK_FAT + eax*2]
+        push    dword [eax]
+        and     word [eax], 0
+        pop     eax
+        and     eax, 0xFFF
+        jmp     .lfndone
+.done:
+        pop     edi
+        xor     eax, eax
         ret
 
 ; \end{diamond}

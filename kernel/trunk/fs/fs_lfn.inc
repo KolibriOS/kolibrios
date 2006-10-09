@@ -82,9 +82,8 @@ file_system_lfn:
 ; 5 : get file/directory attributes structure
 ; 6 : set file/directory attributes structure
 ; 7 : start application
-; 8 : delete file - not implemented yet
+; 8 : delete file
 ; 9 : create directory - not implemented yet
-; 10: rename file/directory - not implemented yet
 
         add     eax, std_application_base_address
 ; parse file name
@@ -352,6 +351,7 @@ fs_RamdiskServices:
         dd      fs_RamdiskGetFileInfo
         dd      fs_RamdiskSetFileInfo
         dd      fs_RamdiskExecute
+        dd      fs_RamdiskDelete
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
 
 fs_OnFloppy:
@@ -381,6 +381,7 @@ fs_FloppyServices:
         dd      fs_FloppyGetFileInfo
         dd      fs_FloppySetFileInfo
         dd      fs_FloppyExecute
+        dd      fs_FloppyDelete
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
@@ -452,6 +453,7 @@ fs_HdServices:
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo
         dd      fs_HdExecute
+        dd      fs_HdDelete
 fs_NumHdServices = ($ - fs_HdServices)/4
 
 ;*******************************************************

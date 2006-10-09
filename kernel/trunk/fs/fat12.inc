@@ -1114,6 +1114,12 @@ fat_find_lfn:
         popa
         ret
 
+uglobal
+; this is for delete support
+fd_prev_sector          dd      ?
+fd_prev_prev_sector     dd      ?
+endg
+
 flp_root_next:
         cmp     edi, 0xD200-0x20
         jae     @f
@@ -1124,6 +1130,13 @@ flp_root_next:
         inc     dword [eax]
         cmp     dword [eax], 14
         jae     flp_root_first.readerr
+        push    [fd_prev_sector]
+        pop     [fd_prev_prev_sector]
+        push    eax
+        mov     eax, [eax]
+        add     eax, 19-1
+        mov     [fd_prev_sector], eax
+        pop     eax
 flp_root_first:
         mov     eax, [eax]
         pusha
@@ -1162,7 +1175,11 @@ flp_notroot_next:
 flp_notroot_next_sector:
         push    ecx
         mov     ecx, [eax]
-        mov     ecx, [ecx*2+0x282000]
+        push    [fd_prev_sector]
+        pop     [fd_prev_prev_sector]
+        add     ecx, 31
+        mov     [fd_prev_sector], ecx
+        mov     ecx, [(ecx-31)*2+0x282000]
         and     ecx, 0xFFF
         cmp     ecx, 2849
         jae     flp_notroot_first.err2
@@ -2571,6 +2588,135 @@ fs_FloppyExecute:
 .err:
         popad
         mov     eax, 11
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_FloppyDelete - delete file or empty folder from floppy
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_FloppyDelete:
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jz      @f
+        push    11
+        jmp     .pop_ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot delete root!
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+.pop_ret:
+        pop     eax
+        ret
+@@:
+        and     [fd_prev_sector], 0
+        and     [fd_prev_prev_sector], 0
+        push    edi
+        call    fd_find_lfn
+        jnc     .found
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .pop_ret
+.found:
+        cmp     dword [edi], '.   '
+        jz      .access_denied2
+        cmp     dword [edi], '..  '
+        jz      .access_denied2
+        test    byte [edi+11], 10h
+        jz      .dodel
+; we can delete only empty folders!
+        push    eax
+        movzx   eax, word [edi+26]
+        push    ebx
+        pusha
+        add     eax, 31
+        call    read_chs_sector
+        popa
+        mov     ebx, FDD_DATA + 2*0x20
+.checkempty:
+        cmp     byte [ebx], 0
+        jz      .empty
+        cmp     byte [ebx], 0xE5
+        jnz     .notempty
+        add     ebx, 0x20
+        cmp     ebx, FDD_DATA + 0x200
+        jb      .checkempty
+        movzx   eax, word [FLOPPY_FAT + eax*2]
+        pusha
+        add     eax, 31
+        call    read_chs_sector
+        popa
+        mov     ebx, FDD_DATA
+        jmp     .checkempty
+.notempty:
+        pop     ebx
+        pop     eax
+.access_denied2:
+        pop     edi
+        jmp     .access_denied
+.empty:
+        pop     ebx
+        pop     eax
+        pusha
+        call    read_chs_sector
+        popa
+.dodel:
+        push    eax
+        movzx   eax, word [edi+26]
+        xchg    eax, [esp]
+; delete folder entry
+        mov     byte [edi], 0xE5
+; delete LFN (if present)
+.lfndel:
+        cmp     edi, FDD_DATA
+        ja      @f
+        cmp     [fd_prev_sector], 0
+        jz      .lfndone
+        push    [fd_prev_sector]
+        push    [fd_prev_prev_sector]
+        pop     [fd_prev_sector]
+        and     [fd_prev_prev_sector], 0
+        pusha
+        call    save_chs_sector
+        popa
+        pop     eax
+        pusha
+        call    read_chs_sector
+        popa
+        mov     edi, FDD_DATA+0x200
+@@:
+        sub     edi, 0x20
+        cmp     byte [edi], 0xE5
+        jz      .lfndone
+        cmp     byte [edi+11], 0xF
+        jnz     .lfndone
+        mov     byte [edi], 0xE5
+        jmp     .lfndel
+.lfndone:
+        pusha
+        call    save_chs_sector
+        popa
+; delete FAT chain
+        pop     eax
+        test    eax, eax
+        jz      .done
+@@:
+        lea     eax, [FLOPPY_FAT + eax*2]
+        push    dword [eax]
+        and     word [eax], 0
+        pop     eax
+        and     eax, 0xFFF
+        jnz     @b
+.done:
+        call    save_flp_fat
+        pop     edi
+        xor     eax, eax
         ret
 
 ; \end{diamond}
