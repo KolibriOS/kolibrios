@@ -196,9 +196,8 @@ key:
   no_int:
     cmp  eax,23
     jne  no_1x
-    fld  [trans1]
     fld1
-    fdiv st,st1
+    fdiv [trans1]
     jmp  show_result
     
   no_1x:  
@@ -347,7 +346,7 @@ number_entry:
     cmp  [id],1
     je   decimal_entry
     mov  ebx,[integer]
-    test ebx,0xc0000000
+    test ebx,0xF0000000
     jnz  no_entry
     mov  ebx,eax
     mov  eax,[integer]
@@ -470,6 +469,7 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     mov    [sign],1
   
   no_neg:
+    fld    [tmp2]
     fistp  [integer]
     fld    [tmp2]
     fisub  [integer]
@@ -491,11 +491,14 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     mov    eax,[decimal]
     add    [res],eax
     fisub  [decimal]
+    fst    [tmp2]
     ftst
     fstsw  ax
-    
+    test   ax,1
+    jnz    real_done
+    fld    [tmp2]
     dec    edi
-    jz     real_done
+    jz	   real_done
     jmp    newd
 
   real_done:
@@ -658,7 +661,7 @@ draw_window:
     mov  ebx,1
     int  0x40
                                    
-    mov  eax,0                     
+    xor  eax,eax                     
     mov  ebx,200*65536+255        
     mov  ecx,200*65536+180
     mov  edx,[sc.work]
