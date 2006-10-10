@@ -106,6 +106,7 @@ value_type db ?
 compare_type db ?
 base_code db ?
 extended_code db ?
+supplemental_code db ?
 postbyte_register db ?
 segment_register db ?
 mmx_size db ?

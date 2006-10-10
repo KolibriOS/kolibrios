@@ -11,26 +11,29 @@
 NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
 
-MAGIC1	   = 6*(text.line_size-1)+6*2+2
-MAGIC2	   = 14
-MAGIC3	   = 1
-MAGIC4	   = 7
-OUTPUTXY = (5+MAGIC4) shl 16 + MAGIC2*3+MAGIC3+MAGIC4+1+2
-MAX_PATH = 100
+MAGIC1         = 6*(text.line_size-1)+14
+MAGIC2         = 14
+MAGIC3         = 1
+MAGIC4         = 7
+OUTPUTXY       = 7 shl 16 + 53
+MAX_PATH       = 100
 
-APP_MEMORY = 0x00800000
+APP_MEMORY     = 0x00800000
 
 ;; Menuet header
+
+appname equ "FASM "
+version equ "1.67.11"
 
 use32
 
   org 0x0
   db 'MENUET01'  ; 8 byte id
-  dd 0x01     ; header version
-  dd START     ; program start
+  dd 0x01        ; header version
+  dd START       ; program start
   dd program_end ; program image size
   dd APP_MEMORY  ; required amount of memory
-  dd 0xDFFF0	 ; stack
+  dd 0xDFFF0     ; stack
   dd params,0x0  ; parameters,icon
 
 include 'lang.inc'
@@ -40,105 +43,100 @@ center fix true
 
 START:	    ; Start of execution
 
-   cmp	     [params],0
-   jz	    noparams
+   cmp    [params],0
+   jz	    red
 
-   mov	     ecx,10
-   mov	     al,' '
-   mov	     edi,infile
-   push    ecx
+   mov    ecx,10
+   mov    al,' '
+   mov    edi,infile
+   push   ecx
    cld
-   rep	     stosd
-   mov	     ecx,[esp]
-   mov	     edi,outfile
-   rep	     stosd
-   pop	     ecx
-   mov	     edi,path
-   rep	     stosd
+   rep    stosd
+   mov    ecx,[esp]
+   mov    edi,outfile
+   rep    stosd
+   pop    ecx
+   mov    edi,path
+   rep    stosd
 
-   mov	     esi,params
+   mov     esi,params
 ;  DEBUGF  "params: %s\n",esi
-   mov	     edi,infile
+   mov     edi,infile
    call    mov_param_str
 ;  mov     edi,infile
 ;  DEBUGF  " input: %s\n",edi
-   inc	     esi
-   mov	     edi,outfile
+   inc     esi
+   mov     edi,outfile
    call    mov_param_str
 ;  mov     edi,outfile
 ;  DEBUGF  "output: %s\n",edi
-   inc	     esi
-   mov	     edi,path
+   inc     esi
+   mov     edi,path
    call    mov_param_str
 ;  mov     edi,path
 ;  DEBUGF  "  path: %s\n",edi
 
-   cmp	     [esi], dword ',run'
-   jne	     @f
-   mov	     [_run_outfile],1
+   cmp     [esi], dword ',run'
+   jne     @f
+   mov     [_run_outfile],1
   @@:
 
-   mov	     [_mode],CONSOLE_MODE
-   jmp	     start
+   mov     [_mode],CONSOLE_MODE
+   jmp     start
 
-  noparams:
-
-    call draw_window
-
-still:
-
-    mcall  10	  ; Wait here for event
-
-    dec    eax	   ; Redraw request
-    jz	     red
-    dec    eax	   ; Key in buffer
-    jz	     key
-    dec    eax	   ; Button in buffer
-    jz	     button
-
-    jmp  still
 
 red:	; Redraw
     call draw_window
-    jmp  still
 
-key:	; Key
-    mcall  2	 ; Read it and ignore
+still:  
+    push 10          ; Wait here for event
+    pop eax 
+    int 40h 
+    dec eax 
+    je  red          ; Redraw request
+    dec eax 
+    jne button       ; Button in buffer
+
+key:                 ; Key
+    mov  al,2        ; Read it and ignore
+    int  0x40
     jmp  still
 
 button:    ; Button in Window
 
-    mcall  17
+    mov  al,17
+    int  0x40
 
-    cmp  ah,2	 ; Start compiling
-    je	   start
-    cmp  ah,3	 ; Start compiled file
+    cmp     ah,1
+    jne     noclose
+    or      eax,-1
+    int     0x40
+
+noclose:    
+    cmp  ah,2         ; Start compiling
+    je   start
+    cmp  ah,3         ; Start compiled file
     jnz  norunout
 
     mov  edx,outfile
     call make_fullpaths
-    mcall  58,file_info_start
+    mcall  70,file_info_start
 ;   xor   ecx,ecx
     jmp  still
    norunout:
 
-    mov  ecx,[skinh]
-    add  ecx,MAGIC3+MAGIC2/2-3
+    mov  ecx,5
     mov  [ya],ecx
 
     cmp  ah,11	   ; Infile
-    je	  f1
+    je   f1
     cmp  ah,12	   ; Outfile
-    je	  f2
+    je   f2
     cmp  ah,13	   ; Path
-    je	  f3
+    je   f3
 
-    dec  ah   ; Close application
-    jnz  still
+    jmp  still
 
-    mcall -1
-
-skinh dd ?
 
 draw_window:
 
@@ -148,15 +146,19 @@ draw_window:
 
     get_sys_colors 1,0
 
-    mcall 0,<50,280>,<50,250>,[sc.work]      ; Draw Window
+    mov  eax,0                     
+    mov  ebx,50*65536+280        
+    mov  ecx,50*65536+250
+    mov  edx,[sc.work]
+    or   edx,0x33000000
+    mov  edi,header             ; Draw Window Label Text
+    int  0x40
 
-    draw_caption header,header.size	    ; Draw Window Label Text
+    mcall 9,PROCESSINFO,-1	    
 
-    mov   ecx,[skinh-2]
-    mov   cx,word[skinh]
-    madd  ecx,MAGIC3,MAGIC3
+    mpack ecx,1,1
     mov   ebx,[pinfo.x_size]
-    madd  ebx,5,-5
+    sub   ebx,10
 
     push  ecx
     madd  ecx,MAGIC2*3+2,MAGIC2*3+2
@@ -164,7 +166,6 @@ draw_window:
     pop   ecx
 
     sub   ebx,MAGIC1+3
-
     mcall
     madd  ecx,MAGIC2,MAGIC2
     mcall
@@ -173,17 +174,16 @@ draw_window:
     madd  ecx,MAGIC2,MAGIC2
     mcall
     push  ebx
-    mpack ebx,MAGIC1+5,MAGIC1+5
-    sub   cx,MAGIC2*3
+    mpack ebx,MAGIC1,MAGIC1
+    sub   ecx,MAGIC2*3
     mcall
     mov   ebx,[esp-2]
     pop   bx
     mcall
     add   esp,2
 
-    mpack ebx,5,MAGIC1-1
-    mpack ecx,[skinh],MAGIC2-2
-    madd  ecx,MAGIC3+1,0
+    mpack ebx,0,MAGIC1-1
+    mpack ecx,MAGIC3+1,MAGIC2-2
     mcall 8,,,0x4000000B       ; Button: Enter Infile
     madd  ecx,MAGIC2,0
     mcall  ,,,0x4000000C       ; Button: Enter Outfile
@@ -191,36 +191,35 @@ draw_window:
     mcall  ,,,0x4000000D       ; Button: Enter Path
 
     mpack ebx,[pinfo.x_size],MAGIC1
-    msub  ebx,MAGIC1+5+1,0
-    mpack ecx,[skinh],MAGIC2*3/2-1
+    msub  ebx,MAGIC1+10+1,0
+    mpack ecx,0,MAGIC2*3/2-1
     madd  ecx,MAGIC3,0
     mcall  ,,,0x00000002,[sc.work_button]
     madd  ecx,MAGIC2*3/2+1,0
     mcall  ,,,0x00000003
 
-    mpack ebx,5+6,[skinh]    ; Draw Window Text
-    add   bx,MAGIC3+MAGIC2/2-3
+    mpack ebx,6,0    ; Draw Window Text
+    add  ebx,MAGIC3+MAGIC2/2-3
     mov  ecx,[sc.work_text]
     mov  edx,text
     mov  esi,text.line_size
     mov  eax,4
    newline:
-    mcall
+    int  0x40
     add  ebx,MAGIC2
     add  edx,text.line_size
     cmp  byte[edx],'x'
     jne  newline
 
     mov   ebx,[pinfo.x_size]
-    sub   ebx,MAGIC1+5+1-9
+    sub   ebx,MAGIC1+10+1-9
     shl   ebx,16
-    mov   bx,word[skinh]
-    add   bx,MAGIC3+(MAGIC2*3/2-1)/2-3
+    add   ebx,MAGIC3+(MAGIC2*3/2-1)/2-3
     mcall  ,,[sc.work_button_text],s_compile,7
     add   ebx,MAGIC2*3/2+1
     mcall ,,,s_run
 
-    mpack ebx,MAGIC1+5+6,[skinh]
+    mpack ebx,MAGIC1+6,0
     add   ebx,MAGIC3+MAGIC2/2-3+MAGIC2*0
     mov   esi,[pinfo.x_size]
     sub   esi,MAGIC1*2+5*2+6+3
@@ -248,15 +247,14 @@ bottom_right dd ?
 
 draw_messages:
     mov    eax,13      ; clear work area
-    mpack  ebx,5+MAGIC4-2,[pinfo.x_size]
+    mpack  ebx,MAGIC4-2,[pinfo.x_size]
     sub    ebx,5*2+MAGIC4*2-1-2*2
-    mpack  ecx,[skinh],[pinfo.y_size]
-    madd   ecx,MAGIC2*3+MAGIC3+MAGIC4+1,-(MAGIC2*3+MAGIC3+MAGIC4*2+5)+2
+    mpack  ecx,0,[pinfo.y_size]
+    madd   ecx,MAGIC2*3+MAGIC3+MAGIC4+1,-(MAGIC2*3+MAGIC3+MAGIC4*2+25)
     mov    word[bottom_right+2],bx
     mov    word[bottom_right],cx
     msub   [bottom_right],7,11
     add    [bottom_right],OUTPUTXY
-    sub    ecx,[skinh]
     mov    edx,[sc.work]
     int    0x40
 _cy = 0
@@ -264,7 +262,7 @@ _sy = 2
 _cx = 4
 _sx = 6
     push   ebx ecx
-    mpack  ebx,5+MAGIC4-3,5+MAGIC4-2
+    mpack  ebx,MAGIC4-3,MAGIC4-2
     add    bx,[esp+_cx]
     mov    ecx,[esp+_sy-2]
     mov    cx,[esp+_sy]
@@ -276,7 +274,7 @@ _sx = 6
     add    ecx,esi
     madd   ecx,1,1
     mcall
-    mpack  ebx,5+MAGIC4-3,5+MAGIC4-3
+    mpack  ebx,MAGIC4-3,MAGIC4-3
     mov    esi,[esp+_sy-2]
     mov    si,cx
     mov    ecx,esi
@@ -363,14 +361,14 @@ f11:mcall  10
 
 print_text:
 
-    mpack ebx,MAGIC1+5+6,[pinfo.x_size]
+    mpack ebx,MAGIC1+6,[pinfo.x_size]
     sub   ebx,MAGIC1*2+5*2+6+3
     movzx esi,bx
     mov   ecx,[ya-2]
     mov   cx,8
     mcall 13,,,[sc.work]
 
-    mpack ebx,MAGIC1+5+6,[ya]
+    mpack ebx,MAGIC1+6,[ya]
     mov   eax,esi
     mov   cl,6
     div   cl
@@ -385,7 +383,7 @@ print_text:
 
 ; DATA
 
-sz header,'FASM FOR MENUET'
+header db appname,version,0
 
 text:
   db ' INFILE:'
@@ -430,7 +428,7 @@ start:
     cmp    [_mode],NORMAL_MODE
     jne    @f
     call   draw_messages
-    push   [skinh]
+    push   0
     pop    [textxy]
     add    [textxy],OUTPUTXY
 @@:
@@ -489,7 +487,7 @@ start:
     je	     @f
     mov    edx,outfile
     call   make_fullpaths
-    mov    eax,58
+    mov    eax,70
     mov    ebx,file_info_start
     xor    ecx,ecx
     int    0x40

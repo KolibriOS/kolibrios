@@ -5,15 +5,21 @@
 ; MenuetOS system.inc by VT
 
 file_info_open:  dd 0,0,0xffffff,0x20000,0xf0000
-fullpath_open:;  db '/HD/1/EXAMPLE.ASM'
+fullpath_open:  ;  db '/RD/1/EXAMPLE.ASM'
 		    times MAX_PATH db 0
+
 
 file_info_write: dd 1,0,0,0,0xf0000
-fullpath_write:; db '/HD/1/EXAMPLE'
+fullpath_write:; db '/RD/1/EXAMPLE'
 		    times MAX_PATH db 0
 
-file_info_start: dd 16,0,0,0,0xf0000
-fullpath_start:; db '/HD/1/EXAMPLE'
+file_info_start: ;this part is already rewrited to 70th function
+    dd 7
+    dd 0
+    dd 0
+    dd 0
+    dd 0
+fullpath_start:  ; db '/RD/1/EXAMPLE'
 		    times MAX_PATH db 0
 
 _ramdisk	 db '/RD/1/'
@@ -69,10 +75,10 @@ open:
 	jz	@f
 	cmp	eax,6
 	jne	file_error
-    @@: mov	[filesize],ebx
+@@: mov	[filesize],ebx
 	clc
 	ret
-    file_error:
+file_error:
 	stc
 	ret
 
@@ -212,9 +218,11 @@ display_character:
 	jnz	dc1
 	and	[textxy],0x0000FFFF
 	add	[textxy],OUTPUTXY and 0xFFFF0000 + 10
-dc2:	popa
+dc2:	
+  popa
 	ret
-dc1:	mov	eax,[textxy]
+dc1:	
+  mov eax,[textxy]
 	cmp	ax,word[bottom_right]
 	ja	dc2
 	shr	eax,16
@@ -225,7 +233,8 @@ dc1:	mov	eax,[textxy]
 	add	[textxy],0x00060000
 	popa
 	ret
-@@:	mov	eax,63
+@@:
+  mov	eax,63
 	mov	ebx,1
 	mov	cl,dl
 	int	0x40
@@ -233,16 +242,17 @@ dc1:	mov	eax,[textxy]
 	ret
 
 
-
 display_string:
 	pusha
-    @@: cmp	byte[esi],0
+@@: 
+  cmp	byte[esi],0
 	je	@f
 	mov	dl,[esi]
 	call	display_character
 	add	esi,1
 	jmp	@b
-    @@: popa
+@@:
+  popa
 	ret
 
 display_number:
@@ -250,7 +260,7 @@ display_number:
 	mov	ecx,1000000000
 	xor	edx,edx
 	xor	bl,bl
-      display_loop:
+display_loop:
 	div	ecx
 	push	edx
 	cmp	ecx,1
@@ -260,13 +270,13 @@ display_number:
 	or	al,al
 	jz	digit_ok
 	not	bl
-      display_digit:
+display_digit:
 	mov	dl,al
 	add	dl,30h
 	push	ebx ecx
 	call	display_character
 	pop	ecx ebx
-      digit_ok:
+digit_ok:
 	mov	eax,ecx
 	xor	edx,edx
 	mov	ecx,10
@@ -292,15 +302,15 @@ display_user_messages:
 	je	line_break_ok
 	cmp	ax,0D0Ah
 	je	line_break_ok
-      make_line_break:
+make_line_break:
 	mov	esi,lf
 	call	display_string
-      line_break_ok:
+line_break_ok:
 	ret
 
 display_block:
 	pusha
-    @@: mov	dl,[esi]
+@@: mov dl,[esi]
 	call	display_character
 	inc	esi
 	loop	@b
@@ -323,19 +333,19 @@ assembler_error:
 	call	display_user_messages
 	push	dword 0
 	mov	ebx,[current_line]
-      get_error_lines:
+get_error_lines:
 	push	ebx
 	test	byte [ebx+7],80h
 	jz	display_error_line
 	mov	edx,ebx
-      find_definition_origin:
+find_definition_origin:
 	mov	edx,[edx+12]
 	test	byte [edx+7],80h
 	jnz	find_definition_origin
 	push	edx
 	mov	ebx,[ebx+8]
 	jmp	get_error_lines
-      display_error_line:
+display_error_line:
 	mov	esi,[ebx]
 	call	display_string
 	mov	esi,line_number_start
@@ -363,7 +373,7 @@ assembler_error:
 	call	display_number
 	mov	dl,']'
 	call	display_character
-      line_number_ok:
+line_number_ok:
 	mov	esi,line_data_start
 	call	display_string
 	mov	esi,ebx
@@ -386,7 +396,7 @@ assembler_error:
 	call	close
 	pop	ecx
 	mov	esi,[additional_memory]
-      get_line_data:
+get_line_data:
 	mov	al,[esi]
 	cmp	al,0Ah
 	je	display_line_data
@@ -398,7 +408,7 @@ assembler_error:
 	jz	display_line_data
 	inc	esi
 	loop	get_line_data
-      display_line_data:
+display_line_data:
 	mov	ecx,esi
 	mov	esi,[additional_memory]
 	sub	ecx,esi
@@ -416,32 +426,6 @@ assembler_error:
 	call	display_string
 	jmp	exit_program
 
-__draw_caption:
-;        mcall   48,4
-;        mov     [skinh],eax
-;        mov     ebx,eax
-;        shr     ebx,1
-;        adc     ebx,1+0x000A0000-4
-;        mcall   4,,[sc.grab_text],s_title,[s_title.size]
-
-    mcall 48,4
-    mov   [skinh],eax
-    shr   eax,1
-    adc   eax,0
-    add   eax,1-4
-    push  ax
-  if center eq true
-    mcall 9,PROCESSINFO,-1
-    mov   ebx,[PROCESSINFO+process_information.x_size]
-    shr   ebx,1
-    sub   ebx,header.size*6/2 + 8
-  else
-    mov   ebx,8
-  end if
-    shl   ebx,16
-    pop   bx
-    mcall 4,,[SYSTEMCOLORS+system_colors.grab_text]
-    ret
 
 character   db ?,0
 bytes_count dd ?

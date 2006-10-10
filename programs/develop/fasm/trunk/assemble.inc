@@ -618,14 +618,17 @@ load_directive:
       load_from_code:
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_relative_offset
-	neg	eax
+	call	get_qword_value
+	call	calculate_relative_offset
+	push	esi edi
 	cmp	[next_pass_needed],0
-	jne	load_address_ok
+	jne	load_address_type_ok
 	cmp	[value_type],0
 	jne	invalid_use_of_symbol
-      load_address_ok:
-	push	esi edi
+      load_address_type_ok:
+	cmp	edx,-1
+	jne	bad_load_address
+	neg	eax
 	mov	esi,edi
 	sub	esi,eax
 	jc	bad_load_address
@@ -673,14 +676,17 @@ store_directive:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_relative_offset
-	neg	eax
+	call	get_qword_value
+	call	calculate_relative_offset
+	push	esi edi
 	cmp	[next_pass_needed],0
-	jne	store_address_ok
+	jne	store_address_type_ok
 	cmp	[value_type],0
 	jne	invalid_use_of_symbol
-      store_address_ok:
-	push	esi edi
+      store_address_type_ok:
+	cmp	edx,-1
+	jne	bad_store_address
+	neg	eax
 	sub	edi,eax
 	jc	bad_store_address
 	cmp	edi,[org_start]

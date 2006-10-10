@@ -61,6 +61,7 @@ single_operand_operators:
  db 1,'+',0
  db 1,'-',083h
  db 3,'not',0D0h
+ db 3,'plt',0E1h
  db 3,'rva',0E0h
  db 0
 
@@ -513,8 +514,8 @@ instructions_3:
  dw single_operand_instruction-assembler
  db 'neg',3
  dw single_operand_instruction-assembler
- db 'nop',90h
- dw simple_instruction-assembler
+ ;db 'nop',90h
+ ;dw nop_instruction-assembler
  db 'not',2
  dw single_operand_instruction-assembler
  db 'org',0
@@ -524,7 +525,7 @@ instructions_3:
  db 'pop',0
  dw pop_instruction-assembler
  db 'por',0EBh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'rcl',2
  dw sh_instruction-assembler
  db 'rcr',3
@@ -687,7 +688,7 @@ instructions_4:
  db 'outs',6Eh
  dw outs_instruction-assembler
  db 'pand',0DBh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'popa',61h
  dw simple_instruction_except64-assembler
  db 'popd',4
@@ -701,7 +702,7 @@ instructions_4:
  db 'push',0
  dw push_instruction-assembler
  db 'pxor',0EFh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'repe',0F3h
  dw prefix_instruction-assembler
  db 'repz',0F3h
@@ -991,22 +992,28 @@ instructions_5:
  dw simple_instruction_32bit-assembler
  db 'outsw',6Fh
  dw simple_instruction_16bit-assembler
+ db 'pabsb',1Ch
+ dw ssse3_instruction-assembler
+ db 'pabsd',1Eh
+ dw ssse3_instruction-assembler
+ db 'pabsw',1Dh
+ dw ssse3_instruction-assembler
  db 'paddb',0FCh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'paddd',0FEh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'paddq',0D4h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'paddw',0FDh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pandn',0DFh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pause',0
  dw pause_instruction-assembler
  db 'pavgb',0E0h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pavgw',0E3h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pf2id',1Dh
  dw amd3dnow_instruction-assembler
  db 'pf2iw',1Ch
@@ -1056,13 +1063,13 @@ instructions_5:
  db 'psrlw',0D1h
  dw mmx_ps_instruction-assembler
  db 'psubb',0F8h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'psubd',0FAh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'psubq',0FBh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'psubw',0F9h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pusha',60h
  dw simple_instruction_except64-assembler
  db 'pushd',4
@@ -1341,43 +1348,59 @@ instructions_6:
  db 'movups',10h
  dw movps_instruction-assembler
  db 'paddsb',0ECh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'paddsw',0EDh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pextrw',0C5h
  dw pextrw_instruction-assembler
  db 'pfnacc',8Ah
  dw amd3dnow_instruction-assembler
  db 'pfsubr',0AAh
  dw amd3dnow_instruction-assembler
+ db 'phaddd',2
+ dw ssse3_instruction-assembler
+ db 'phaddw',1
+ dw ssse3_instruction-assembler
+ db 'phsubd',6
+ dw ssse3_instruction-assembler
+ db 'phsubw',5
+ dw ssse3_instruction-assembler
  db 'pinsrw',0C4h
  dw pinsrw_instruction-assembler
  db 'pmaxsw',0EEh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pmaxub',0DEh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pminsw',0EAh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pminub',0DAh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pmulhw',0E5h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pmullw',0D5h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'psadbw',0F6h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
+ db 'pshufb',0
+ dw ssse3_instruction-assembler
  db 'pshufd',66h
  dw pshufd_instruction-assembler
  db 'pshufw',0
  dw pshufw_instruction-assembler
+ db 'psignb',8
+ dw ssse3_instruction-assembler
+ db 'psignd',0Ah
+ dw ssse3_instruction-assembler
+ db 'psignw',9
+ dw ssse3_instruction-assembler
  db 'pslldq',111b
  dw ps_dq_instruction-assembler
  db 'psrldq',011b
  dw ps_dq_instruction-assembler
  db 'psubsb',0E8h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'psubsw',0E9h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pswapd',0BBh
  dw amd3dnow_instruction-assembler
  db 'public',0
@@ -1544,23 +1567,25 @@ instructions_7:
  db 'movq2dq',0
  dw movq2dq_instruction-assembler
  db 'paddusb',0DCh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'paddusw',0DDh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
+ db 'palignr',0
+ dw palignr_instruction-assembler
  db 'pavgusb',0BFh
  dw amd3dnow_instruction-assembler
  db 'pcmpeqb',74h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pcmpeqd',76h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pcmpeqw',75h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pcmpgtb',64h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pcmpgtd',66h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pcmpgtw',65h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pfcmpeq',0B0h
  dw amd3dnow_instruction-assembler
  db 'pfcmpge',90h
@@ -1571,22 +1596,26 @@ instructions_7:
  dw amd3dnow_instruction-assembler
  db 'pfrsqrt',97h
  dw amd3dnow_instruction-assembler
+ db 'phaddsw',3
+ dw ssse3_instruction-assembler
+ db 'phsubsw',7
+ dw ssse3_instruction-assembler
  db 'pmaddwd',0F5h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pmulhrw',0B7h
  dw amd3dnow_instruction-assembler
  db 'pmulhuw',0E4h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pmuludq',0F4h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pshufhw',0F3h
  dw pshufd_instruction-assembler
  db 'pshuflw',0F2h
  dw pshufd_instruction-assembler
  db 'psubusb',0D8h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'psubusw',0D9h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'rsqrtps',52h
  dw sse_ps_instruction-assembler
  db 'rsqrtss',52h
@@ -1701,11 +1730,11 @@ instructions_8:
  db 'movsldup',12h
  dw cvtdq2pd_instruction-assembler
  db 'packssdw',6Bh
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'packsswb',63h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'packuswb',67h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'pfrcpit1',0A6h
  dw amd3dnow_instruction-assembler
  db 'pfrcpit2',0B6h
@@ -1714,6 +1743,8 @@ instructions_8:
  dw amd3dnow_instruction-assembler
  db 'pmovmskb',0D7h
  dw pextrw_instruction-assembler
+ db 'pmulhrsw',0Bh
+ dw ssse3_instruction-assembler
  db 'prefetch',0
  dw amd_prefetch_instruction-assembler
  db 'sysenter',34h
@@ -1747,20 +1778,22 @@ instructions_9:
  dw cvtsd2si_instruction-assembler
  db 'cvttss2si',2Ch
  dw cvtss2si_instruction-assembler
+ db 'pmaddubsw',4
+ dw ssse3_instruction-assembler
  db 'prefetchw',1
  dw amd_prefetch_instruction-assembler
  db 'punpckhbw',68h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'punpckhdq',6Ah
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'punpckhwd',69h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'punpcklbw',60h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'punpckldq',62h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
  db 'punpcklwd',61h
- dw mmx_instruction-assembler
+ dw basic_mmx_instruction-assembler
 instructions_10:
  db 'cmpunordpd',3
  dw cmp_pd_instruction-assembler

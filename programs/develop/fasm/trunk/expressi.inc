@@ -841,6 +841,8 @@ calculate_expression:
 	sub	ebx,14h
 	cmp	al,0E0h
 	je	calculate_rva
+	cmp	al,0E1h
+	je	calculate_plt
 	cmp	al,0D0h
 	je	calculate_not
 	cmp	al,083h
@@ -1145,12 +1147,7 @@ calculate_expression:
 	xor	ah,ah
 	mov	ecx,[edi+16]
 	cmp	ecx,[ebx+16]
-	je	sub_values
-	cmp	ecx,[org_symbol]
 	jne	invalid_sub
-	test	byte [ebx+12],1
-	jnz	invalid_sub
-	mov	ah,3
       sub_values:
 	mov	[ebx+12],ah
 	mov	eax,[edi]
@@ -1556,17 +1553,41 @@ calculate_expression:
       calculate_gotoff:
 	test	[format_flags],8+1
 	jnz	invalid_expression
+	mov	dl,5
 	cmp	byte [edi+12],2
-	je	gotoff_ok
+	je	change_value_type
+      incorrect_change_of_value_type:
 	cmp	[error_line],0
-	jne	pe64_rva_ok
+	jne	change_value_type
 	mov	eax,[current_line]
 	mov	[error_line],eax
 	mov	[error],invalid_use_of_symbol
-      gotoff_ok:
-	mov	byte [edi+12],5
+      change_value_type:
+	mov	byte [edi+12],dl
 	add	edi,14h
 	jmp	calculation_loop
+      calculate_plt:
+	cmp	word [edi+8],0
+	jne	invalid_expression
+	cmp	[output_format],5
+	jne	invalid_expression
+	test	[format_flags],1
+	jnz	invalid_expression
+	mov	dl,6
+	mov	dh,2
+	test	[format_flags],8
+	jz	check_value_for_plt
+	mov	dh,4
+      check_value_for_plt:
+	mov	eax,[edi]
+	or	eax,[edi+4]
+	jnz	incorrect_change_of_value_type
+	cmp	byte [edi+12],dh
+	jne	incorrect_change_of_value_type
+	mov	eax,[edi+16]
+	cmp	byte [eax],81h
+	jne	incorrect_change_of_value_type
+	jmp	change_value_type
       div_64:
 	xor	ebx,ebx
 	cmp	dword [edi],0
@@ -1955,6 +1976,7 @@ get_address_value:
 	mov	[value_type],al
 	cmp	al,5
 	je	gotoff_address
+	ja	invalid_use_of_symbol
 	test	al,1
 	jnz	invalid_use_of_symbol
 	or	al,al
@@ -1984,8 +2006,10 @@ get_address_value:
 	mov	[error_line],ecx
 	mov	[error],value_out_of_range
       address_size_ok:
-	xor	bx,bx
-	xor	cl,cl
+	xor	ebx,ebx
+	xor	ecx,ecx
+	mov	cl,[value_type]
+	shl	ecx,16
 	mov	ch,[address_size]
 	cmp	word [edi+8],0
 	je	check_immediate_address
@@ -2071,42 +2095,31 @@ get_address_value:
 	cmp	[address_size],4
 	je	check_dword_value
 	jmp	check_qword_value
-get_relative_offset:
-	mov	[value_size],4
-	mov	[size_override],-1
-	call	calculate_expression
-      calculate_relative_offset:
-	push	esi
-	add	edi,14h
-	mov	esi,[display_buffer]
-	sub	esi,7
-	lea	eax,[esi-14h]
-	cmp	eax,edi
-	jb	out_of_memory
-	mov	byte [esi],11h
-	xor	eax,eax
-	mov	dword [esi+1],eax
-	mov	word [esi+5],')' shl 8 + 81h
-	call	calculation_loop
-	pop	esi
-	cmp	word [edi+8],0
-	jne	invalid_value
-	mov	al,[edi+12]
-	mov	[value_type],al
-	mov	eax,[edi+16]
-	mov	[symbol_identifier],eax
-	mov	eax,[edi]
-	mov	edx,[edi+4]
-	or	edx,edx
-	jz	offset_positive
-	cmp	edx,-1
-	jne	range_exceeded
-	bt	eax,31
-	jnc	range_exceeded
+calculate_relative_offset:
+	cmp	[value_undefined],0
+	jne	relative_offset_ok
+	add	eax,dword [org_origin]
+	adc	edx,dword [org_origin+4]
+	sub	eax,edi
+	sbb	edx,0
+	mov	bl,[value_type]
+	or	bl,bl
+	je	relative_offset_ok
+	test	bl,1
+	jnz	invalid_use_of_symbol
+	cmp	bl,6
+	je	plt_relative_offset
+	cmp	bl,[labels_type]
+	jne	invalid_use_of_symbol
+	mov	[value_type],0
+	mov	ecx,[symbol_identifier]
+	cmp	ecx,[org_symbol]
+	je	relative_offset_ok
+	mov	[value_type],3
+      relative_offset_ok:
 	ret
-      offset_positive:
-	bt	eax,31
-	jc	range_exceeded
+      plt_relative_offset:
+	mov	[value_type],7
 	ret
 
 preevaluate_logical_expression:

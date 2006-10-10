@@ -33,7 +33,7 @@
 ; cannot simply be copied and put under another distribution licence
 ; (including the GNU Public Licence).
 
-VERSION_STRING equ "1.67.9"
+VERSION_STRING equ "1.67.11"
 
 VERSION_MAJOR = 1
 VERSION_MINOR = 67

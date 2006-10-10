@@ -2887,18 +2887,23 @@ elf_section:
 mark_elf_relocation:
 	cmp	[value_type],3
 	je	elf_relocation_relative
+	cmp	[value_type],7
+	je	elf_relocation_relative
 	push	ebx eax
-	cmp	[value_type],3
+	cmp	[value_type],5
 	je	elf_gotoff_relocation
-	mov	al,1
+	ja	invalid_use_of_symbol
+	mov	al,1			; R_386_32 / R_AMD64_64
 	test	[format_flags],8
 	jz	coff_relocation
 	cmp	[value_type],4
 	je	coff_relocation
-	mov	al,11
+	mov	al,11			; R_AMD64_32S
 	jmp	coff_relocation
       elf_gotoff_relocation:
-	mov	al,9
+	test	[format_flags],8
+	jnz	invalid_use_of_symbol
+	mov	al,9			; R_386_GOTOFF
 	jmp	coff_relocation
       elf_relocation_relative:
 	cmp	[labels_type],0
@@ -2909,7 +2914,10 @@ mark_elf_relocation:
 	sub	ebx,edi
 	sub	eax,ebx
 	push	eax
-	mov	al,2
+	mov	al,2			; R_386_PC32 / R_AMD64_PC32
+	cmp	[value_type],3
+	je	coff_relocation
+	mov	al,4			; R_386_PLT32 / R_AMD64_PLT32
 	jmp	coff_relocation
 close_elf:
 	bt	[format_flags],0
