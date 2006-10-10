@@ -632,10 +632,19 @@ proc init_heap stdcall, heap_size:dword
              tab_count dd ?
            endl
 
+           mov ebx,[CURRENT_TASK]
+           shl ebx,8
+           mov eax, [PROC_BASE+APPDATA.heap_top+ebx]
+           test eax, eax
+           jz @F
+           sub eax,[PROC_BASE+APPDATA.heap_base+ebx]
+           sub eax, 4096
+           ret
+@@:
            mov edx, [heap_size]
            and edx, edx
            jz .exit
-           add edx, 4095
+           add edx, (4095+4096)
            and edx, not 4095
            mov [heap_size], edx
            add edx, 0x003FFFFF
@@ -643,15 +652,13 @@ proc init_heap stdcall, heap_size:dword
            shr edx, 22
            mov [tab_count], edx
 
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           mov esi, [PROC_BASE+0x8c+ebx]
+           mov esi, [PROC_BASE+APPDATA.mem_size+ebx]
            add esi, 0x003FFFFF
            and esi, not 0x003FFFFF
            mov edi, esi
-           mov [PROC_BASE+0x18+ebx], esi
+           mov [PROC_BASE+APPDATA.heap_base+ebx], esi
            add esi, [heap_size]
-           mov [PROC_BASE+0x1C+ebx], esi
+           mov [PROC_BASE+APPDATA.heap_top+ebx], esi
 
            mov eax, cr3
            and eax, not 0xFFF
@@ -672,7 +679,7 @@ proc init_heap stdcall, heap_size:dword
            shl ecx, 12-2
            mov ebx,[CURRENT_TASK]
            shl ebx,8
-           mov edi, [PROC_BASE+0x18+ebx]
+           mov edi, [PROC_BASE+APPDATA.heap_base+ebx]
            add edi, new_app_base
            shr edi, 10
            mov esi, edi
@@ -688,7 +695,6 @@ proc init_heap stdcall, heap_size:dword
            sub eax, 4096
            or ebx, FREE_BLOCK
            mov [pages_tab+esi], ebx
-
            ret
 .exit:
            xor eax, eax
@@ -704,8 +710,8 @@ proc user_alloc stdcall, alloc_size:dword
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
-           mov esi, dword [ebx+PROC_BASE+0x18]; heap_base
-           mov edi, dword [ebx+PROC_BASE+0x1C]; heap_top
+           mov esi, dword [ebx+PROC_BASE+APPDATA.heap_base]; heap_base
+           mov edi, dword [ebx+PROC_BASE+APPDATA.heap_top]; heap_top
            add esi, new_app_base
            add edi, new_app_base
 
@@ -788,8 +794,8 @@ proc user_free stdcall, base:dword
 @@:
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
-           mov esi, dword [ebx+PROC_BASE+0x18]; heap_base
-           mov edi, dword [ebx+PROC_BASE+0x1C]; heap_top
+           mov esi, dword [ebx+PROC_BASE+APPDATA.heap_base]; heap_base
+           mov edi, dword [ebx+PROC_BASE+APPDATA.heap_top]; heap_top
            shr esi, 12
            shr edi, 12
 @@:
@@ -834,103 +840,6 @@ proc user_free stdcall, base:dword
            ret
 endp
 
-
-;proc new_mem_resize stdcall, new_size:dword
-;
-;           stdcall wait_mutex, pg_data.pg_mutex
-;
-;           mov edi, [new_size]
-;           add edi,4095
-;           and edi,not 4095
-;           mov [new_size], edi
-
-;           mov    edx,[CURRENT_TASK]
-;           shl    edx,8
-;           mov    esi, [PROC_BASE+0x8c+edx]
-;           add esi, 4095
-;           and esi, not 4095
-
-;           cmp edi, esi
-;           jae .expand
-
-;           shr edi, 12
-;           shr esi, 12
-;
-;@@:        mov eax, [pages_tab+0x4000+edi*4]
-;           test eax, 1
-;           jz .next
-;           mov dword [pages_tab+0x4000+edi*4], 2
-;           mov ebx, edi
-;           shl ebx, 12
-;           invlpg [ebx+std_application_base_address]
-;           call free_page
-;
-;.next:     add edi, 1
-;           cmp edi, esi
-;           jb @B
-;
-;.update_size:
-
-;           mov ebx, [new_size]
-;           mov    [PROC_BASE+0x8c+edx],ebx
-;
-;;search threads and update
-;;application memory size infomation
-;           mov    ecx,[PROC_BASE+0xb8+edx]
-;           mov    eax,2
-
-;.search_threads:
-;;eax = current slot
-;;ebx = new memory size
-;;ecx = page directory
-;           cmp    eax,[TASK_COUNT]
-;           jg     .search_threads_end
-;           mov    edx,eax
-;           shl    edx,5
-;           cmp    word [CURRENT_TASK+edx+0xa],9 ;if slot empty?
-;           jz     .search_threads_next
-;           shl    edx,3
-;           cmp    [PROC_BASE+edx+0xb8],ecx     ;if it is our thread?
-;           jnz    .search_threads_next
-;           mov    [PROC_BASE+edx+0x8c],ebx     ;update memory size
-;.search_threads_next:
-;           inc    eax
-;           jmp    .search_threads
-;.search_threads_end:
-;           xor eax, eax
-;           dec [pg_data.pg_mutex]
-;           ret
-;
-;
-;.expand:
-;           add edi, new_app_base
-;           add esi, new_app_base
-;
-;.grow:     call alloc_page
-;           test eax, eax
-;           jz .exit
-;           stdcall map_page,esi,eax,dword PG_UW
-
-;           push edi
-;           mov edi, esi
-;           xor eax, eax
-;           mov ecx, 1024
-;           cld
-;           rep stosd
-;           pop edi
-
-;           add esi, 0x1000
-;           cmp esi, edi
-;           jna .grow
-;           jmp .update_size
-;.exit:
-;           xor eax, eax
-;           inc eax
-;           dec [pg_data.pg_mutex]
-;           ret
-;endp
-
-
 align 4
 proc alloc_dll
            pushf
@@ -964,168 +873,3 @@ proc alloc_service
            add eax, srv_tab
            ret
 endp
-
-if NEW
-
-align 16
-new_services:
-         cmp eax, 10
-         jb .fail
-         ja @f
-
-         push dword [ebp+8+new_app_base]
-         call get_mem_info
-         mov [esp+36], eax
-         ret
-@@:
-         cmp eax, 11
-         ja @f
-
-         push dword [ebp+8+new_app_base]
-         call init_heap
-         mov [esp+36], eax
-         ret
-@@:
-         cmp eax, 12
-         ja @f
-
-         push dword [ebp+8+new_app_base]
-         call user_alloc
-         mov [esp+36], eax
-         ret
-@@:
-         cmp eax, 13
-         ja @f
-
-         push dword [ebp+8+new_app_base]
-         call user_free
-         mov [esp+36], eax
-         ret
-
-@@:
-         cmp eax, 14
-         ja @f
-         mov eax, [ebp+8+new_app_base]
-         add eax,new_app_base
-         stdcall get_notify, eax
-         ret
-;@@:
-;         cmp eax, 15
-;         ja @f
-;         call set_notify
-;         ret
-@@:
-         cmp eax, 16
-         ja @f
-
-         mov eax, [ebp+8+new_app_base]
-         add eax, new_app_base
-         stdcall get_service, eax
-         mov [esp+36], eax
-         ret
-@@:
-         cmp eax, 17
-         ja @f
-         stdcall srv_handler,[ebp+8+new_app_base],\
-                          [ebp+12+new_app_base],\
-                          [ebp+16+new_app_base]
-         mov [esp+36], eax
-         ret
-;@@:
-;         cmp eax, 20
-;         ja @f
-;         call CreateSound
-;         mov [esp+36], eax
-;         ret
-
-@@:
-.fail:
-         xor eax, eax
-         mov [esp+36], eax
-         ret
-
-proc strncmp stdcall, str1:dword, str2:dword, count:dword
-
-        mov ecx,[count]
-        jecxz .end
-
-        mov ebx,ecx
-
-        mov edi,[str1]
-        mov esi,edi
-        xor eax,eax
-        repne scasb
-        neg ecx             ; cx = count - strlen
-        add ecx,ebx         ; strlen + count - strlen
-
-.okay:
-        mov edi,esi
-        mov esi,[str2]
-        repe cmpsb
-        mov al,[esi-1]
-        xor ecx,ecx
-
-        cmp al,[edi-1]
-        ja .str2_big
-        je .end
-
-.str1_big:
-        sub ecx,2
-
-.str2_big:
-        not ecx
-.end:
-        mov eax,ecx
-        ret
-endp
-
-
-proc get_proc stdcall, exp:dword, sz_name:dword
-
-           mov edx, [exp]
-.next:
-           mov eax, [edx]
-           test eax, eax
-           jz .end
-
-           push edx
-           stdcall strncmp, eax, [sz_name], 16
-           pop edx
-           test eax, eax
-           jz .ok
-
-           add edx,8
-           jmp .next
-.ok:
-           mov eax, [edx+4]
-.end:
-           ret
-endp
-
-proc link_dll stdcall, exp:dword, imp:dword
-         mov esi, [imp]
-
-.next:
-         mov eax, [esi]
-         test eax, eax
-         jz .end
-
-         push esi
-         stdcall get_proc, [exp], eax
-         pop esi
-
-         test eax, eax
-         jz @F
-
-         mov [esi], eax
-@@:
-         add esi, 4
-         jmp .next
-.end:
-         ret
-endp
-
-end if
-
-
-

@@ -374,7 +374,6 @@ B32:
 @@:
            mov [pg_data.kernel_tables], edx
 
-
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -684,6 +683,9 @@ include 'vmodeld.inc'
         sub   eax,ecx
         shl   eax,2
         mov   [0xf600],eax          ; save tsc / sec
+        mov ebx, 1000000
+        div ebx
+        mov [stall_mcs], eax
 
 ; SET VARIABLES
 

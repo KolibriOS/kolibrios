@@ -177,8 +177,10 @@ struc APPDATA
   .fpu_handler     dd ?            ;+24
   .sse_handler     dd ?            ;+28
   .event           dd ?            ;+32
+  .heap_base       dd ?            ;+36
+  .heap_top        dd ?            ;+40
 
-                   db 92  dup(?)
+                   db 84 dup(?)    ;+44
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?

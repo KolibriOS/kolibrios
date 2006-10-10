@@ -130,7 +130,7 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            mov [master_addr], eax
 
            mov eax, [app_size]
-           add eax, 4095+4096
+           add eax, 4095
            and eax, NOT(4095)
            mov [app_size], eax
            mov ebx, eax
@@ -757,7 +757,7 @@ proc add_app_parameters stdcall,slot:dword,img_base:dword,\
            mov    ax,graph_data         ;ax - selector of graphic segment
            mov    [l.gs],ax
            mov    [l.io],word 128
-           mov    [l.eflags],dword 0x3202
+           mov    [l.eflags],dword 0x1202
 
            mov    [l.ss0],os_data
            mov    ebx,[slot]

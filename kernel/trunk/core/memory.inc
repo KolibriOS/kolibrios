@@ -382,7 +382,10 @@ proc new_mem_resize stdcall, new_size:dword
 
            mov edx,[CURRENT_TASK]
            shl edx,8
-           mov esi, [PROC_BASE+0x8c+edx]
+           cmp [PROC_BASE+APPDATA.heap_base+edx],0
+           jne .exit
+
+           mov esi, [PROC_BASE+APPDATA.mem_size+edx]
            add esi, 4095
            and esi, not 4095
 
@@ -522,18 +525,11 @@ proc page_fault_handler
 
            mov ebp, esp
            mov eax, cr2
-           sub esp, 4
-           mov [esp], eax
+           push eax
            push ds
 
            mov ax, 0x10
            mov ds, ax
-
-;     mov edx, 0x400   ;bocsh
-;     mov al,0xff      ;bocsh
-;     out dx, al       ;bocsh
-;     nop              ;bocsh fix
-
 
            mov ebx, [ebp-4]
 
@@ -552,13 +548,15 @@ proc page_fault_handler
            inc [pg_data.pages_faults]
 
            shr ebx, 12
+           mov ecx, ebx
+           shr ecx, 10
+           mov edx, [master_tab+ecx*4]
+           test edx, 1
+           jz .fail
+
            mov eax, [pages_tab+ebx*4]
-
-           shr ebx, 10
-           mov edx, [master_tab+ebx*4]
-
            test eax, 2
-           jz .exit
+           jz .fail
 
            call alloc_page
            and eax, eax
@@ -580,6 +578,17 @@ proc page_fault_handler
            mov esp, ebp
            popad
            add esp, 4
+           iretd
+.fail:
+           pop ds
+           mov esp, ebp
+           popad
+           add esp, 4
+
+           save_ring3_context     ;debugger support
+
+           mov bl, 14
+           jmp exc_c
            iretd
 
 .kernel_space:
@@ -902,8 +911,13 @@ align 4
 sysfn_meminfo:
 
            add ebx, new_app_base
+           cmp ebx, new_app_base
+           jb .fail
+
            mov eax, [pg_data.pages_count]
            mov [ebx], eax
+           shl eax, 12
+           mov [esp+36], eax
            mov ecx, [pg_data.pages_free]
            mov [ebx+4], ecx
            mov edx, [pg_data.pages_faults]
@@ -916,7 +930,9 @@ sysfn_meminfo:
            mov [ebx+20], eax
            mov ecx, [free_blocks]
            mov [ebx+24], ecx
-
+           ret
+.fail:
+           mov dword [esp+36], -1
            ret
 
 align 4
@@ -928,14 +944,6 @@ new_services:
            cmp eax, 11
            jb .fail
            ja @f
-
-;           add ebx, new_app_base
-;           stdcall get_mem_info, ebx
-;           mov [esp+36], eax
-;           ret
-;@@:
-;           cmp eax, 11
-;           ja @f
 
            stdcall init_heap, ebx
            mov [esp+36], eax
@@ -958,6 +966,8 @@ new_services:
            cmp eax, 14
            ja @f
            add ebx,new_app_base
+           cmp ebx, new_app_base
+           jb .fail
            stdcall get_notify, ebx
            ret
 @@:
@@ -974,6 +984,8 @@ new_services:
            ja @f
 
            add ebx, new_app_base
+           cmp ebx, new_app_base
+           jb .fail
            stdcall get_service, ebx
            mov [esp+36], eax
            ret
@@ -1235,6 +1247,33 @@ proc set_mtrr stdcall, reg:dword,base:dword,size:dword,mem_type:dword
            ret
 endp
 
+align 4
+proc stall stdcall, delay:dword
+           push ecx
+           push edx
+           push ebx
+           push eax
+
+           mov eax, [delay]
+           mul [stall_mcs]
+           mov ebx, eax       ;low
+           mov ecx, edx       ;high
+           rdtsc
+           add ebx, eax
+           adc ecx,edx
+@@:
+           rdtsc
+           sub eax, ebx
+           sbb edx, ecx
+           jb @B
+
+           pop eax
+           pop ebx
+           pop edx
+           pop ecx
+           ret
+endp
+
 iglobal
 align 4
   intel_str    db "GenuineIntel",0
@@ -1265,6 +1304,7 @@ align 16
   fpu_data          rd 1
   fdd_buff          rd 1
 
+  stall_mcs         rd 1
 ;;CPUID information
 
   cpu_vendor        rd 3
