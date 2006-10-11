@@ -29,16 +29,9 @@ void draw_window()
   // WINDOW
   EBX = xpos << 16 + xsize;
   ECX = ypos << 16 + ysize;
-  sys_draw_window(EBX, ECX, 0x02CCCCCC, colors.w_grab | 0x80000000, colors.w_frames);
-
-  // LABEL
-  sys_write_text(8<<16+8, colors.w_grab_text | 0x10000000, "MineSweeper", 11);
-
-  // <CLOSE> BUTTON (1)
-  EBX = xsize - 19; EBX = EBX<<16 + 12;
-  sys_draw_button(EBX, 5<<16+12, 1, colors.w_grab_button);
-
-  // <NEW GAME> BUTTON (911)
+  sys_draw_window(EBX, ECX, 0x13CCCCCC, colors.w_grab | 0x80000000, "MineSweeper");
+ 
+   // <NEW GAME> BUTTON (911)
   EBX = xsize / 2 - 10;
   EBX = EBX << 16 + 20;
   sys_draw_button(EBX, 25<<16+20, 911, clLightGray);
