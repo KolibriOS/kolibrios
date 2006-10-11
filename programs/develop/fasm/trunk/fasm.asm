@@ -23,7 +23,7 @@ APP_MEMORY     = 0x00800000
 ;; Menuet header
 
 appname equ "FASM "
-version equ "1.67.11"
+version equ "1.67.12"
 
 use32
 

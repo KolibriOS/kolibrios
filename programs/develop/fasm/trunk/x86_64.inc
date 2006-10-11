@@ -6008,15 +6008,18 @@ get_address:
 	test	ch,0Fh
 	jnz	address_ok
       calculate_relative_address:
+	mov	edx,[address_high]
 	call	calculate_relative_offset
 	mov	[address_high],edx
+	cdq
+	cmp	edx,[address_high]
+	jne	value_out_of_range
 	mov	edx,[symbol_identifier]
 	mov	[address_symbol],edx
 	mov	edx,eax
 	mov	bx,0FF00h
       address_ok:
 	ret
-
 operand_16bit:
 	cmp	[code_type],16
 	je	size_prefix_ok
@@ -6146,8 +6149,10 @@ store_instruction:
 	call	store_segment_prefix_if_necessary
 	or	bx,bx
 	jz	address_immediate
-	cmp	bx,0F000h
+	cmp	bx,0F800h
 	je	address_rip_based
+	cmp	bx,0F400h
+	je	address_eip_based
 	cmp	bx,0FF00h
 	je	address_relative
 	mov	al,bl
@@ -6485,6 +6490,9 @@ store_instruction:
 	or	al,cl
 	stos	word [edi]
 	jmp	store_address_32bit_value
+      address_eip_based:
+	mov	al,67h
+	stos	byte [edi]
       address_rip_based:
 	cmp	[code_type],64
 	jne	invalid_address

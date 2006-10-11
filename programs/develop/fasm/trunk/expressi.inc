@@ -2034,17 +2034,36 @@ get_address_value:
 	and	ah,0Fh
 	jz	address_registers_sizes_ok
 	cmp	al,ah
-	jne	invalid_address
+	jne	address_sizes_do_not_match
       address_registers_sizes_ok:
 	cmp	al,4
 	je	sib_allowed
 	cmp	al,8
 	je	sib_allowed
+	cmp	al,0Fh
+	je	check_ip_relative_address
 	or	cl,cl
 	jz	check_word_value
 	cmp	cl,1
 	je	check_word_value
 	jmp	invalid_address
+      address_sizes_do_not_match:
+	cmp	al,0Fh
+	jne	invalid_address
+	mov	al,bh
+	and	al,0Fh
+	cmp	al,ah
+	jne	invalid_address
+      check_ip_relative_address:
+	cmp	bh,0F4h
+	je	check_dword_value
+	cmp	bh,0F8h
+	jne	invalid_address
+	mov	eax,[edi]
+	cdq
+	cmp	edx,[edi+4]
+	jne	range_exceeded
+	ret
       get_address_register:
 	or	al,al
 	jz	address_register_ok

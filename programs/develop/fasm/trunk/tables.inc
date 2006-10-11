@@ -89,6 +89,7 @@ address_registers:
  db 3,'ecx',41h
  db 3,'edi',47h
  db 3,'edx',42h
+ db 3,'eip',0F4h
  db 3,'esi',46h
  db 3,'esp',44h
  db 3,'r10',8Ah
@@ -113,7 +114,7 @@ address_registers:
  db 3,'rcx',81h
  db 3,'rdi',87h
  db 3,'rdx',82h
- db 3,'rip',0F0h
+ db 3,'rip',0F8h
  db 3,'rsi',86h
  db 3,'rsp',84h
  db 2,'si',26h
@@ -514,8 +515,8 @@ instructions_3:
  dw single_operand_instruction-assembler
  db 'neg',3
  dw single_operand_instruction-assembler
- ;db 'nop',90h
- ;dw nop_instruction-assembler
+ db 'nop',90h
+ dw nop_instruction-assembler
  db 'not',2
  dw single_operand_instruction-assembler
  db 'org',0
