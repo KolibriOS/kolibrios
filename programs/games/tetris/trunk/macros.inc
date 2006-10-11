@@ -123,8 +123,10 @@ macro mpack dest, hsrc, lsrc
   end if
 }
 
-macro __mov reg,a {         ; mike.dld
- if ~a eq
+macro __mov reg,a,b {         ; mike.dld
+ if (~a eq)&(~b eq)
+   mpack reg,a,b
+ else if (~a eq)&(b eq)
    mov reg,a
  end if
 }
@@ -138,7 +140,6 @@ macro mcall a,b,c,d,e,f {   ; mike.dld
  __mov edi,f
  int   0x40
 }
-
 
 
 

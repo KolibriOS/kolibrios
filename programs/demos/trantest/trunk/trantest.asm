@@ -12,8 +12,8 @@ use32
                dd     0x01                    ; header version
                dd     START                   ; start of code
                dd     I_END                   ; size of image
-               dd     0x2000000                 ; memory for app
-               dd     0x2000000                ; esp
+               dd     0x100000                ; memory for app
+               dd     0x100000                ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 SCREEN_X equ 320 ;800
@@ -24,11 +24,12 @@ include 'ascl.inc'
 include 'ascgl.inc'
 
 START:
+red:
     call draw_window
 
 still:
     scevent red,key,button
-    fps  280,8,cl_White,cl_Black
+    fps  290,8,cl_White,cl_Black
 
 main_loop:
      random SCREEN_X,eax
@@ -63,9 +64,6 @@ xxx:
 
 count dd 100
 
-red:
-     call draw_window
-     jmp still
 key:
      mov eax,2
      int 0x40
@@ -81,21 +79,16 @@ exit:
 
 ;Draw window
 draw_window:
+    
     mov eax,12  ;Start
     mov ebx,1
     int 0x40
 
-    mov eax,0   ;Draw window
-    mov ebx,100*65536+(SCREEN_X+9) ;x start*65536+x size
-    mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
-    mov edx,0x03000000         ;0x03 use skinned window
-    int 0x40
-
-    mov eax,4   ;Out Text
-    mov ebx,8*65536+8          ;x start*65536+y start
-    mov ecx,0x00ffffff         ;color White
-    mov edx,head_label
-    mov esi,hl_end-head_label
+    xor eax,eax   ;Draw window
+    mov ebx,100*65536+(SCREEN_X+19) ;x start*65536+x size
+    mov ecx,100*65536+(SCREEN_Y+51) ;y start*65536+y size
+    mov edx,0x33000000              ;0x33 use skinned window
+    mov edi,header
     int 0x40
 
     mov eax,12  ;End
@@ -103,8 +96,7 @@ draw_window:
     int 0x40
     ret
 
-head_label: db "3D TEST SAMPLE FOR MENUETOS"
-hl_end:
+header db '3D TEST SAMPLE',0
 
 outscr:
 

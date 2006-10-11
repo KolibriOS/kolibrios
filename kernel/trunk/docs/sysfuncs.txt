@@ -189,8 +189,8 @@ Parameters:
   * ecx = 0xX0RRGGBB, where
     * RR, GG, BB specify text color
     * X=ABnn (bits):
-    * nn specifies the used font: 0=system monospaced,
-      1=system font of variable width
+    * nn specifies the used font: 1=system monospaced,
+      0=system font of variable width
     * A=0 - output esi characters, A=1 - output ASCIIZ-string
     * B=1 - fill background with the color edi
   * edx = pointer to the beginning of the string

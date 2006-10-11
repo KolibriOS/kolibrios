@@ -26,6 +26,9 @@
                org 0
  PARAMS     =    memsize - 1024
 
+appname equ 'Jpegview '
+version equ '0.15'
+
 use32
 
                db     'MENUET01'              ; 8 byte id
@@ -271,30 +274,10 @@ dw_002:
 
     xor  eax,eax                   ; DRAW WINDOW
     mov  edx,[wcolor]
-    add  edx,0x02000000
-    mov  esi,0x80557799
-    mov  edi,0x00557799
+    add  edx,0x13000000
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
 
-    mov  eax,4                     ; WINDOW LABEL
-    mov  ebx,8*65536+8
-    mov  ecx,0x00ffffff
-    mov  edx,labelt
-    mov  esi,labellen-labelt
-    int  0x40
-
-
-    mov  eax,8                     ; CLOSE BUTTON
-
-    mov  bx, [winxs]
-    sub  bx, 19
-    shl  ebx, 16
-    add  ebx, 12
-
-    mov  ecx,5*65536+12
-    mov  edx,1
-    mov  esi,0x557799
-    int  0x40
 
     ; draw status bar
     mov     eax, 13
@@ -528,8 +511,7 @@ include 'jpeglib.asm'
 ; DATA AREA
 
 wcolor          dd  0x000000
-labelt          db  'Jpegview v0.15'
-labellen:
+header          db  appname,version,0
 setname          db  'SLIDESHOW'
 setnamelen:
 

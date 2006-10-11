@@ -1,0 +1,934 @@
+; int __stdcall DialogBox(DLGTEMPLATE* dlg, void* DlgProc);
+;       int __stdcall DlgProc(int msg, int param1, int param2);
+
+virtual at 0
+dlgtemplate:
+.flags          dd      ?
+.x              dd      ?
+.y              dd      ?
+.width          dd      ?
+.height         dd      ?
+.border_size_x  dd      ?
+.border_size_y  dd      ?
+.title          dd      ?
+.main_color     db      ?
+.border_color   db      ?
+.header_color   db      ?
+                db      ?       ; align
+end virtual
+
+DialogBox:
+        pushad
+; some checks
+        mov     ebx, [esp+20h+4]
+        mov     eax, [ebx+dlgtemplate.x]
+        cmp     eax, 1
+        jl      .sizeerr
+        add     eax, [ebx+dlgtemplate.width]
+        cmp     eax, [cur_width]
+        jge     .sizeerr
+        mov     eax, [ebx+dlgtemplate.y]
+        cmp     eax, 1
+        jl      .sizeerr
+        add     eax, [ebx+dlgtemplate.height]
+        cmp     eax, [cur_height]
+        jge     .sizeerr
+        cmp     [ebx+dlgtemplate.border_size_x], 1
+        jl      .sizeerr
+        cmp     [ebx+dlgtemplate.border_size_y], 1
+        jge     .sizeok
+.sizeerr:
+        popad
+        or      eax, -1
+        ret     8
+.sizeok:
+; allocate memory for data under dialog
+        mov     eax, [ebx+dlgtemplate.width]
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        inc     eax
+        inc     eax
+        mov     edx, [ebx+dlgtemplate.height]
+        add     edx, [ebx+dlgtemplate.border_size_y]
+        add     edx, [ebx+dlgtemplate.border_size_y]
+        inc     edx
+        mul     edx
+        add     eax, eax
+        call    mf_alloc
+        test    eax, eax
+        jnz     @f
+; TODO: add error message
+        popad
+        or      eax, -1
+        ret     8
+@@:
+        mov     ebp, eax
+; save data
+        mov     eax, [ebx+dlgtemplate.y]
+        add     eax, [ebx+dlgtemplate.height]
+        add     eax, [ebx+dlgtemplate.border_size_y]
+        inc     eax
+        push    eax
+        mov     eax, [ebx+dlgtemplate.x]
+        add     eax, [ebx+dlgtemplate.width]
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        inc     eax
+        inc     eax
+        push    eax
+        mov     eax, [ebx+dlgtemplate.y]
+        sub     eax, [ebx+dlgtemplate.border_size_y]
+        push    eax
+        mov     eax, [ebx+dlgtemplate.x]
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        push    eax
+        call    save_console_data
+; draw shadow
+        mov     eax, [ebx+dlgtemplate.x]
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        ja      @f
+        xor     eax, eax
+@@:
+        push    eax     ; save real window left
+        inc     eax
+        inc     eax
+        mov     edx, [ebx+dlgtemplate.y]
+        sub     edx, [ebx+dlgtemplate.border_size_y]
+        ja      @f
+        xor     edx, edx
+@@:
+        push    edx     ; save real window top
+        inc     edx
+        call    get_console_ptr
+        mov     ecx, [ebx+dlgtemplate.y]
+        add     ecx, [ebx+dlgtemplate.height]
+        add     ecx, [ebx+dlgtemplate.border_size_y]
+        inc     ecx
+        cmp     ecx, [cur_height]
+        jb      @f
+        mov     ecx, [cur_height]
+@@:
+        sub     ecx, edx
+        mov     edx, ecx
+        mov     ecx, [ebx+dlgtemplate.x]
+        add     ecx, [ebx+dlgtemplate.width]
+        add     ecx, [ebx+dlgtemplate.border_size_x]
+        inc     ecx
+        inc     ecx
+        cmp     ecx, [cur_width]
+        jb      @f
+        mov     ecx, [cur_width]
+@@:
+        sub     ecx, eax
+        mov     eax, ecx
+.shadow_loop:
+        mov     ecx, eax
+        push    edi
+.sl1:
+        inc     edi
+        test    byte [edi], 0x0F
+        jnz     @f
+        or      byte [edi], 8
+@@:
+        and     byte [edi], 0x0F
+        inc     edi
+        loop    .sl1
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        dec     edx
+        jnz     .shadow_loop
+; draw area background
+        pop     edx
+        pop     eax
+        call    get_console_ptr
+        mov     ecx, [ebx+dlgtemplate.x]
+        add     ecx, [ebx+dlgtemplate.width]
+        add     ecx, [ebx+dlgtemplate.border_size_x]
+        cmp     ecx, [cur_width]
+        jb      @f
+        mov     ecx, [cur_width]
+@@:
+        sub     ecx, eax
+        mov     esi, ecx
+        mov     ecx, [ebx+dlgtemplate.y]
+        add     ecx, [ebx+dlgtemplate.height]
+        add     ecx, [ebx+dlgtemplate.border_size_y]
+        cmp     ecx, [cur_height]
+        jb      @f
+        mov     ecx, [cur_height]
+@@:
+        sub     ecx, edx
+        mov     edx, ecx
+        mov     al, ' '
+        mov     ah, [ebx+dlgtemplate.border_color]
+.1:
+        mov     ecx, esi
+        push    edi
+        rep     stosw
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        dec     edx
+        jnz     .1
+; draw border
+        mov     eax, [ebx+dlgtemplate.x]
+        dec     eax
+        mov     edx, [ebx+dlgtemplate.y]
+        dec     edx
+        call    get_console_ptr
+        mov     edx, [ebx+dlgtemplate.height]
+        inc     edx
+        inc     edx
+        mov     ah, [ebx+dlgtemplate.border_color]
+        push    ebx
+        mov     ebx, [ebx+dlgtemplate.width]
+        inc     ebx
+        inc     ebx
+        call    draw_border
+        pop     ebx
+; draw header
+        mov     esi, [ebx+dlgtemplate.title]
+        test    esi, esi
+        jz      .noheader
+        cmp     byte [esi], 0
+        jz      .noheader
+        push    esi
+@@:     lodsb
+        test    al, al
+        jnz     @b
+        mov     eax, esi
+        pop     esi
+        sub     eax, esi
+        inc     eax     ; eax = фышэр чруюыютър + 2
+        mov     ecx, [ebx+dlgtemplate.width]
+        cmp     eax, ecx
+        jbe     .fullhea
+        sub     ecx, 5
+        jb      .noheader
+        xor     edx, edx
+        jmp     .drawhea
+.fullhea:
+        mov     edx, ecx
+        sub     edx, eax
+        shr     edx, 1
+.drawhea:
+        mov     eax, [ebx+dlgtemplate.x]
+        add     eax, edx
+        mov     edx, [ebx+dlgtemplate.y]
+        dec     edx
+        call    get_console_ptr
+        mov     ah, [ebx+dlgtemplate.header_color]
+        mov     al, ' '
+        stosw
+        dec     ecx
+.2:
+        jecxz   .3
+        lodsb
+        test    al, al
+        jz      .4
+        stosw
+        jmp     .2
+.3:
+        mov     al, '.'
+        stosw
+        stosw
+        stosw
+.4:
+        mov     al, ' '
+        stosw
+.noheader:
+; draw window background
+        mov     eax, [ebx+dlgtemplate.x]
+        mov     edx, [ebx+dlgtemplate.y]
+        call    get_console_ptr
+        mov     ah, [ebx+dlgtemplate.main_color]
+        mov     al, ' '
+        mov     edx, [ebx+dlgtemplate.height]
+@@:
+        mov     ecx, [ebx+dlgtemplate.width]
+        push    edi
+        rep     stosw
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        dec     edx
+        jnz     @b
+; send redraw message
+        mov     eax, [esp+20h+8]
+        push    ebx ebp
+        push    0
+        push    0
+        push    1
+        call    eax
+        call    draw_image
+        pop     ebp ebx
+; message loop
+.event:
+        push    10
+        pop     eax
+        int     40h
+        dec     eax
+        jz      .redraw
+        dec     eax
+        jz      .key
+        or      eax, -1
+        int     40h
+.redraw:
+        push    ebx ebp
+        call    draw_window
+        pop     ebp ebx
+        jmp     .event
+.key:
+        mov     al, 2
+        int     40h
+        shr     eax, 8
+        cmp     al, 0xE0
+        jnz     @f
+        mov     [bWasE0], 1
+        jmp     .event
+@@:
+        xchg    ah, [bWasE0]
+        cmp     al, 0x1D
+        jz      .ctrl_down
+        cmp     al, 0x9D
+        jz      .ctrl_up
+        cmp     al, 0x2A
+        jz      .lshift_down
+        cmp     al, 0xAA
+        jz      .lshift_up
+        cmp     al, 0x36
+        jz      .rshift_down
+        cmp     al, 0xB6
+        jz      .rshift_up
+        cmp     al, 0x38
+        jz      .alt_down
+        cmp     al, 0xB8
+        jz      .alt_up
+        mov     ecx, [esp+20h+8]
+        push    ebx ebp
+        push    0
+        push    eax
+        push    2
+        call    ecx
+        pop     ebp ebx
+        test    eax, eax
+        jz      .event
+        mov     [esp+28], eax
+        jmp     .exit
+.ctrl_down:
+        test    ah, ah
+        jnz     .rctrl_down
+        or      [ctrlstate], 4
+        jmp     .event
+.rctrl_down:
+        or      [ctrlstate], 8
+        jmp     .event
+.ctrl_up:
+        test    ah, ah
+        jnz     .rctrl_up
+        and     [ctrlstate], not 4
+        jmp     .event
+.rctrl_up:
+        and     [ctrlstate], not 8
+        jmp     .event
+.lshift_down:
+        test    ah, ah
+        jnz     @f
+        or      [ctrlstate], 1
+@@:     jmp     .event
+.lshift_up:
+        test    ah, ah
+        jnz     @b
+        and     [ctrlstate], not 1
+        jmp     @b
+.rshift_down:
+        or      [ctrlstate], 2
+        jmp     .event
+.rshift_up:
+        and     [ctrlstate], not 2
+        jmp     .event
+.alt_down:
+        test    ah, ah
+        jnz     .ralt_down
+        or      [ctrlstate], 0x10
+        jmp     .event
+.ralt_down:
+        or      [ctrlstate], 0x20
+        jmp     .event
+.alt_up:
+        test    ah, ah
+        jnz     .ralt_up
+        and     [ctrlstate], not 0x10
+        jmp     .event
+.ralt_up:
+        and     [ctrlstate], not 0x20
+        jmp     .event
+.exit:
+; restore data
+        mov     eax, [ebx+dlgtemplate.y]
+        add     eax, [ebx+dlgtemplate.height]
+        add     eax, [ebx+dlgtemplate.border_size_y]
+        inc     eax
+        push    eax
+        mov     eax, [ebx+dlgtemplate.x]
+        add     eax, [ebx+dlgtemplate.width]
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        inc     eax
+        inc     eax
+        push    eax
+        mov     eax, [ebx+dlgtemplate.y]
+        sub     eax, [ebx+dlgtemplate.border_size_y]
+        push    eax
+        mov     eax, [ebx+dlgtemplate.x]
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        push    eax
+        call    restore_console_data
+        call    draw_keybar
+        mov     eax, ebp
+        call    mf_free
+        call    draw_image
+        popad
+        ret     8
+
+save_console_data:
+        cmp     dword [esp+4], 0
+        jge     @f
+        and     dword [esp+4], 0
+@@:
+        cmp     dword [esp+8], 0
+        jge     @f
+        and     dword [esp+8], 0
+@@:
+        mov     eax, [esp+12]
+        cmp     eax, [cur_width]
+        jbe     @f
+        mov     eax, [cur_width]
+@@:
+        sub     eax, [esp+4]
+        ja      @f
+        ret     16
+@@:
+        mov     [esp+12], eax
+        mov     eax, [esp+16]
+        cmp     eax, [cur_height]
+        jbe     @f
+        mov     eax, [cur_height]
+@@:
+        sub     eax, [esp+8]
+        ja      @f
+        ret     16
+@@:
+        mov     [esp+16], eax
+        mov     eax, [esp+4]
+        mov     edx, [esp+8]
+        call    get_console_ptr
+        mov     esi, edi
+        mov     edi, ebp
+.l:
+        mov     ecx, [esp+12]
+        push    esi
+        shr     ecx, 1
+        rep     movsd
+        adc     ecx, ecx
+        rep     movsw
+        pop     esi
+        add     esi, [cur_width]
+        add     esi, [cur_width]
+        dec     dword [esp+16]
+        jnz     .l
+        ret     16
+
+restore_console_data:
+        cmp     dword [esp+4], 0
+        jge     @f
+        and     dword [esp+4], 0
+@@:
+        cmp     dword [esp+8], 0
+        jge     @f
+        and     dword [esp+8], 0
+@@:
+        mov     eax, [esp+12]
+        cmp     eax, [cur_width]
+        jbe     @f
+        mov     eax, [cur_width]
+@@:
+        sub     eax, [esp+4]
+        ja      @f
+        ret     16
+@@:
+        mov     [esp+12], eax
+        mov     eax, [esp+16]
+        cmp     eax, [cur_height]
+        jbe     @f
+        mov     eax, [cur_height]
+@@:
+        sub     eax, [esp+8]
+        ja      @f
+        ret     16
+@@:
+        mov     [esp+16], eax
+        mov     eax, [esp+4]
+        mov     edx, [esp+8]
+        call    get_console_ptr
+        mov     esi, ebp
+.l:
+        mov     ecx, [esp+12]
+        push    edi
+        shr     ecx, 1
+        rep     movsd
+        adc     ecx, ecx
+        rep     movsw
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        dec     dword [esp+16]
+        jnz     .l
+        ret     16
+
+; int __stdcall menu(void* variants, const char* title, unsigned flags);
+; variants указывает на текущий элемент в двусвязном линейном списке
+menu:
+        pop     eax
+        push    [cur_height]
+        push    [cur_width]
+        push    0
+        push    0
+        push    eax
+
+; int __stdcall menu_centered_in(unsigned left, unsigned top, unsigned width, unsigned height,
+;       void* variants, const char* title, unsigned flags);
+menu_centered_in:
+        pushad
+        mov     eax, 56
+; 36 bytes for dlgtemplate + additional:
+; +36: dd cur_variant
+; +40: dd num_variants
+; +44: dd begin_variant
+; +48: dd end_variant
+; +52: dd cur_variant_idx
+        call    mf_alloc
+        test    eax, eax
+        jnz     @f
+.ret_bad:
+        popad
+        or      eax, -1
+        ret     28
+@@:
+        mov     ebx, eax
+        mov     eax, 1
+        test    byte [esp+20h+28], 1
+        jz      @f
+        mov     al, 3
+@@:
+        mov     [ebx+dlgtemplate.border_size_x], eax
+        inc     eax
+        shr     eax, 1
+        mov     [ebx+dlgtemplate.border_size_y], eax
+; Находим ширину и высоту окна
+        xor     eax, eax
+        xor     ecx, ecx
+        mov     esi, [esp+20h+20]
+        mov     [ebx+36], esi
+        and     dword [ebx+52], 0
+@@:
+        cmp     dword [esi+4], 0
+        jz      .find_width
+        mov     esi, [esi+4]
+        inc     dword [ebx+52]
+        jmp     @b
+.find_width:
+        mov     [ebx+44], esi
+        add     esi, 8
+        push    esi
+        xor     edx, edx
+.fw1:
+        cmp     byte [esi], '&'
+        jnz     @f
+        mov     dl, 1
+@@:
+        inc     esi
+        cmp     byte [esi-1], 0
+        jnz     .fw1
+        sub     esi, [esp]
+        sub     esi, edx
+        dec     esi
+        cmp     eax, esi
+        ja      @f
+        mov     eax, esi
+@@:
+        inc     ecx
+        pop     esi
+        mov     esi, [esi-8]
+        test    esi, esi
+        jnz     .find_width
+        add     eax, 3
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        cmp     eax, [cur_width]
+        jb      @f
+        mov     eax, [cur_width]
+@@:
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        mov     [ebx+dlgtemplate.width], eax
+        mov     [ebx+dlgtemplate.height], ecx
+        mov     [ebx+40], ecx
+        sub     eax, [esp+20h+12]
+        neg     eax
+        sar     eax, 1
+        add     eax, [esp+20h+4]
+        cmp     eax, [ebx+dlgtemplate.border_size_x]
+        jge     @f
+        mov     eax, [ebx+dlgtemplate.border_size_x]
+@@:
+        push    eax
+        add     eax, [ebx+dlgtemplate.width]
+        add     eax, [ebx+dlgtemplate.border_size_x]
+        cmp     eax, [cur_width]
+        jbe     @f
+        pop     eax
+        mov     eax, [cur_width]
+        sub     eax, [ebx+dlgtemplate.width]
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        push    eax
+@@:
+        pop     [ebx+dlgtemplate.x]
+        sub     ecx, [esp+20h+16]
+        neg     ecx
+        sar     ecx, 1
+        add     ecx, [esp+20h+8]
+        cmp     ecx, [ebx+dlgtemplate.border_size_y]
+        jge     @f
+        mov     ecx, [ebx+dlgtemplate.border_size_y]
+@@:
+        push    ecx
+        add     ecx, [ebx+dlgtemplate.height]
+        add     ecx, [ebx+dlgtemplate.border_size_y]
+        cmp     ecx, [cur_height]
+        jbe     @f
+        pop     ecx
+        mov     ecx, [cur_height]
+        sub     ecx, [ebx+dlgtemplate.height]
+        sub     ecx, [ebx+dlgtemplate.border_size_y]
+        push    ecx
+@@:
+        pop     [ebx+dlgtemplate.y]
+        mov     eax, [cur_height]
+        sub     eax, 6
+        cmp     [ebx+dlgtemplate.height], eax
+        jbe     .small_height
+        mov     [ebx+dlgtemplate.height], eax
+        mov     [ebx+dlgtemplate.y], 3
+.small_height:
+        mov     ecx, [ebx+dlgtemplate.height]
+        mov     eax, [ebx+36]
+        mov     [ebx+44], eax
+        dec     ecx
+        jz      .skip
+        push    ecx
+@@:
+        cmp     dword [eax+4], 0
+        jz      @f
+        mov     eax, [eax+4]
+        loop    @b
+@@:
+        mov     [ebx+44], eax
+        pop     ecx
+.loop:
+        mov     eax, [eax]
+        loop    .loop
+.skip:
+        mov     [ebx+48], eax
+        mov     eax, [esp+20h+24]
+        mov     [ebx+dlgtemplate.title], eax
+        mov     al, [menu_normal_color]
+        mov     [ebx+dlgtemplate.main_color], al
+        mov     al, [menu_border_color]
+        mov     [ebx+dlgtemplate.border_color], al
+        mov     al, [menu_header_color]
+        mov     [ebx+dlgtemplate.header_color], al
+        push    MenuDlgProc
+        push    ebx
+        call    DialogBox
+        mov     [esp+28], eax
+        mov     eax, ebx
+        call    mf_free
+        popad
+        ret     28
+
+MenuDlgProc:
+        mov     eax, [esp+4]
+        cmp     al, 1
+        jz      .draw
+        cmp     al, 2
+        jz      .key
+        ret     12
+.draw:
+        call    .dodraw
+        ret     12
+.key:
+        mov     al, [esp+8]
+        cmp     al, 0x48
+        jz      .prev
+        cmp     al, 0x4B
+        jz      .prev
+        cmp     al, 0x4D
+        jz      .next
+        cmp     al, 0x50
+        jz      .next
+        cmp     al, 0x1C
+        jz      .enter
+        cmp     al, 1
+        jz      .esc
+        cmp     al, 0x47
+        jz      .home
+        cmp     al, 0x4F
+        jz      .end
+        cmp     al, 0x51
+        jz      .pgdn
+        cmp     al, 0x49
+        jz      .pgup
+        mov     edx, [ebx+36]
+@@:
+        cmp     dword [edx+4], 0
+        jz      @f
+        mov     edx, [edx+4]
+        jmp     @b
+@@:
+.l:
+        lea     esi, [edx+7]
+@@:
+        inc     esi
+        cmp     byte [esi], 0
+        jz      .n
+        cmp     byte [esi], '&'
+        jnz     @b
+        movzx   ecx, byte [esi+1]
+        cmp     [ascii2scan+ecx], al
+        jnz     .n
+        mov     eax, edx
+        ret     12
+.n:
+        mov     edx, [edx]
+        test    edx, edx
+        jnz     .l
+.ret:
+        xor     eax, eax
+        ret     12
+.pgup:
+        mov     eax, [ebx+36]
+        mov     ecx, [ebx+dlgtemplate.height]
+.pgupl:
+        cmp     dword [eax+4], 0
+        jz      .posret
+        call    .line_prev
+        loop    .pgupl
+        jmp     .posret
+.prev:
+        mov     eax, [ebx+36]
+        cmp     dword [eax+4], 0
+        jz      .end
+        call    .line_prev
+.posret:
+        mov     [ebx+36], eax
+.redraw:
+        call    .dodraw
+        call    draw_image
+        xor     eax, eax
+        ret     12
+.next:
+        mov     eax, [ebx+36]
+        cmp     dword [eax], 0
+        jz      .home
+        call    .line_next
+        jmp     .posret
+.pgdn:
+        mov     eax, [ebx+36]
+        mov     ecx, [ebx+dlgtemplate.height]
+.pgdnl:
+        cmp     dword [eax], 0
+        jz      .posret
+        call    .line_next
+        loop    .pgdnl
+        jmp     .posret
+.home:
+        mov     eax, [ebx+36]
+@@:
+        cmp     dword [eax+4], 0
+        jz      @f
+        mov     eax, [eax+4]
+        jmp     @b
+@@:
+        mov     [ebx+44], eax
+        push    eax
+        mov     ecx, [ebx+dlgtemplate.height]
+        dec     ecx
+        jz      .h1
+.h2:
+        mov     eax, [eax]
+        loop    .h2
+.h1:
+        mov     [ebx+48], eax
+        pop     eax
+        and     dword [ebx+52], 0
+        jmp     .posret
+.end:
+        mov     eax, [ebx+36]
+@@:
+        cmp     dword [eax], 0
+        jz      @f
+        mov     eax, [eax]
+        jmp     @b
+@@:
+        mov     [ebx+48], eax
+        push    eax
+        mov     ecx, [ebx+dlgtemplate.height]
+        dec     ecx
+        jz      .e1
+.e2:
+        mov     eax, [eax+4]
+        loop    .e2
+.e1:
+        mov     [ebx+44], eax
+        mov     eax, [ebx+40]
+        dec     eax
+        mov     [ebx+52], eax
+        pop     eax
+        jmp     .posret
+.esc:
+        or      eax, -1
+        ret     12
+.enter:
+        mov     eax, [ebx+36]
+        ret     12
+
+.line_prev:
+        cmp     eax, [ebx+44]
+        jnz     @f
+        mov     edx, [ebx+44]
+        mov     edx, [edx+4]
+        mov     [ebx+44], edx
+        mov     edx, [ebx+48]
+        mov     edx, [edx+4]
+        mov     [ebx+48], edx
+@@:
+        mov     eax, [eax+4]
+        dec     dword [ebx+52]
+        ret
+.line_next:
+        cmp     eax, [ebx+48]
+        jnz     @f
+        mov     edx, [ebx+44]
+        mov     edx, [edx]
+        mov     [ebx+44], edx
+        mov     edx, [ebx+48]
+        mov     edx, [edx]
+        mov     [ebx+48], edx
+@@:
+        mov     eax, [eax]
+        inc     dword [ebx+52]
+        ret
+
+.dodraw:
+        mov     eax, [ebx+dlgtemplate.x]
+        mov     edx, [ebx+dlgtemplate.y]
+        call    get_console_ptr
+        mov     esi, [ebx+44]
+.0:
+        xor     edx, edx
+        mov     ah, [menu_selected_color]
+        cmp     esi, [ebx+36]
+        jz      @f
+        mov     ah, [menu_normal_color]
+@@:
+        push    edi
+        mov     ecx, [ebx+dlgtemplate.width]
+        mov     al, ' '
+        stosw
+        dec     ecx
+        stosw
+        dec     ecx
+        dec     ecx
+        push    esi
+        add     esi, 8
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, '&'
+        jnz     .noamp
+        test    dl, dl
+        jnz     .noamp
+        mov     dl, 1
+        lodsb
+        push    eax
+        mov     ah, [menu_selected_highlight_color]
+        push    ecx
+        mov     ecx, [esp+8]
+        cmp     ecx, [ebx+36]
+        pop     ecx
+        jz      .amp1
+        mov     ah, [menu_highlight_color]
+.amp1:
+        stosw
+        pop     eax
+        jmp     .amp2
+.noamp:
+        stosw
+.amp2:
+        loop    @b
+        mov     al, ' '
+        cmp     byte [esi], 0
+        jnz     .1
+        lodsb
+        jmp     .1
+@@:
+        mov     al, ' '
+.1:
+        stosw
+        mov     al, ' '
+        rep     stosw
+        pop     esi edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        cmp     esi, [ebx+48]
+        jz      @f
+        mov     esi, [esi]
+        test    esi, esi
+        jnz     .0
+@@:
+; Линейка прокрутки
+        mov     ecx, [ebx+dlgtemplate.height]
+        cmp     ecx, [ebx+40]
+        jz      .noscrollbar
+        sub     ecx, 2
+        jbe     .noscrollbar
+        mov     eax, [ebx+52]
+        mul     ecx
+        div     dword [ebx+40]
+        push    eax
+        mov     eax, [ebx+dlgtemplate.x]
+        add     eax, [ebx+dlgtemplate.width]
+        mov     edx, [ebx+dlgtemplate.y]
+        call    get_console_ptr
+        pop     edx
+        inc     edx
+        mov     al, 0x1E
+        mov     ah, [menu_scrollbar_color]
+        mov     [edi], ax
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+.2:
+        mov     al, 0xB2
+        dec     edx
+        jz      @f
+        mov     al, 0xB0
+@@:
+        mov     [edi], ax
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        loop    .2
+        mov     al, 0x1F
+        stosw
+.noscrollbar:
+        ret

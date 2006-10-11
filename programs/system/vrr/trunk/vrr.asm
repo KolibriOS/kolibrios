@@ -11,13 +11,13 @@ use32
    
         org    0x0
    
-        db     'MENUET01'       ; 8 byte id
-        dd     0x01        ; header version
+        db     'MENUET01'   ; 8 byte id
+        dd     0x01         ; header version
         dd     START        ; start of code
         dd     I_END        ; size of image
-        dd     0x5000      ; memory for app
+        dd     0x5000       ; memory for app
         dd     0x4ff0       ; esp
-        dd     0x0 , 0x0        ; I_Param , I_Icon
+        dd     0x0 , 0x0    ; I_Param , I_Icon
    
 include 'macros.inc'
 START:    ; start of execution
@@ -48,6 +48,7 @@ vrr_00:
     mov eax,[currvm]
     mov [oldvm],eax
     call get_pid
+red:
     call draw_window  ; at first, draw the window
    
 still:
@@ -63,13 +64,9 @@ still:
     je  button
     call get_pid
     jmp  still
-   
-  red:    ; redraw
-    call draw_window
-    jmp  still
-   
+      
   key:    ; key
-    mov  eax,2   ; just read it
+    mov  al,2   ; just read it
     int  0x40
     cmp ah,'1'
     jne key_loc_00
@@ -143,7 +140,7 @@ key_loc_07:
     jmp red
    
 button:   ; button
-    mov  eax,17   ; get id
+    mov  al,17   ; get id
     int  0x40
    
     cmp  ah,1   ; button id=1 ?
@@ -203,29 +200,17 @@ dw_continue:
     mov  eax,0      ; function 0 : define and draw window
     mov  ebx,100*65536+400    ; [x start] *65536 + [x size]
     mov  ecx,100*65536+200    ; [y start] *65536 + [y size]
-    mov  edx,0x020020C0;0x00000040 ; color of work area RRGGBB,8->color glide
-    mov  esi,0x805080d0     ; color of grab bar RRGGBB,8->color glide
-    mov  edi,0x00ffffff     ; color of frames RRGGBB
-    int  0x40
-   
-       ; WINDOW LABEL
-     call print_my_title
-   
-       ; CLOSE BUTTON
-    mov  eax,8      ; function 8 : define and draw button
-    mov  ebx,(400-19)*65536+12    ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12     ; [y start] *65536 + [y size]
-    mov  edx,1      ; button id
-    mov  esi,0x5599cc     ; button color RRGGBB
+    mov  edx,0x130020C0;0x00000040 ; color of work area RRGGBB,8->color glide
+    mov  edi,header
     int  0x40
    
        ; BUTTONS
-    xor eax,eax
-    mov edx,eax
-    mov al,8
+    mov eax,8
+    mov edx,0
     mov ebx,330*65536+20
     mov ecx,84*65536+48
     mov dl,2
+    mov  esi,0x5599cc     ; button color RRGGBB
     int 40h               ; Button '+'Width
     add ebx,30*65536
     mov dl,3
@@ -849,31 +834,6 @@ rs_loc_01:
 rs_loc_00:
         retn
    
-print_my_title:
-        pusha
-        xor eax,eax
-        mov ecx,eax
-        mov cl,labellen-labelt
-        mov al,4
-        mov edx,labelt
-        mov ebx,8*65536+8
-        mov edi,00ff0000h
-        xor esi,esi
-        inc esi
-pmt_loc_00:
-        push ecx
-        mov ecx,edi
-        int 40h
-        inc edx
-        sub edi,4*65536
-        add edi,4*256
-        add ebx,6*65536
-        pop ecx
-        loop pmt_loc_00
-        popa
-        retn
-   
-   
 draw_face:
         call draw_table
 ;
@@ -968,8 +928,7 @@ warning_window:
         mov  ebx,1      ; 1, start of draw
         int  0x40
    ; DRAW WARNING WINDOW
-        mov  eax,0      ; function 0 : define and draw window
-;        mov  ebx,100*65536+400    ; [x start] *65536 + [x size]
+        xor  eax,eax      ; function 0 : define and draw window
         mov ebx,[oldX]
         shr ebx,1
         sub ebx,200
@@ -981,22 +940,13 @@ warning_window:
         sub ecx,100
         shl ecx,16
         mov cx,200
-        mov  edx,0x02808080     ; color of work area RRGGBB,8->color glide
-        mov  esi,0x40300010     ; color of grab bar RRGGBB,8->color glide
-        mov  edi,0x00ff0000     ; color of frames RRGGBB
+        mov  edx,0x13808080     ; color of work area RRGGBB,8->color glide
+        mov  edi,header
         int  0x40
-   ; WARNING WINDOW LABEL
-        call print_my_title
-   ; CLOSE BUTTON
-        mov  eax,8      ; function 8 : define and draw button
-        mov  ebx,(200-36)*65536+72    ; [x start] *65536 + [x size]
-        mov  ecx,(160-9)*65536+18     ; [y start] *65536 + [y size]
-        mov  edx,1      ; button id
-        mov  esi,0x00800010     ; button color RRGGBB
-        int  0x40
+
    ; WARNING TEXT
         mov  eax,4      ; function 4 : write text to window
-            mov  ebx,(200-(len_warn00/2)*6)*65536+60    ; [x start] *65536 + [y
+        mov  ebx,(200-(len_warn00/2)*6)*65536+60    ; [x start] *65536 + [y
    ;]
         mov  ecx,0xf0ff0000     ; color of text RRGGBB
         mov  edx,warn00        ; pointer to text beginning
@@ -1095,9 +1045,7 @@ blinkcol   dd 0ffh
 ;_m3        dw 0,0,0,0,0
 ;_m4        dw 0,0,0,0,0
    
-labelt:
-     db   'Vertical Refresh Rate, ver.2.0,  Copileft 2003 ;) TRANS'
-labellen:
+header     db   'Vertical Refresh Rate v2.0 (C) 2003 TRANS',0
    
 _m1280x1024 db '1280x1024'
 _m1024x768  db '1024x768 '

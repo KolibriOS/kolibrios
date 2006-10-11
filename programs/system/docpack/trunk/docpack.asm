@@ -21,7 +21,7 @@ macro embed_file fn
    label2:
    FILE_COUNT=FILE_COUNT+1
 }
-
+appname equ 'Doc Pack'
    use32
    org    0x0
    db     'MENUET01'              ; 8 byte id
@@ -85,13 +85,27 @@ start:
 
 red:
   mov   [my_param],'a'
+  
+  mov  eax,48
+  mov  ebx,3
+  mov  ecx,sc
+  mov  edx,sizeof.system_colors
+  int  0x40
+
   mcall 12,1
-  mcall 0,<220,120>,<30,FILECOUNT*16+35>,0x3b0b0b0
-  mcall 4,<8,8>,0x10ffffff,title,titlen-title
+  
+  xor  eax,eax                     
+  mov  ebx,220*65536+120        
+  mov  ecx,30*65536+FILECOUNT*16+35
+  mov  edx,[sc.work]
+  or   edx,0x33000000
+  mov  edi,header
+  int  0x40
+
   mov   ecx,FILECOUNT
-  mov   ebx,10 shl 16+100
-  mov   esi,0xb0b0b0
-  mov   edi,27 shl 16+14
+  mov   ebx,5 shl 16+100
+  mov   esi,[sc.work_button]
+  mov   edi,5 shl 16+14
   mov   edx,10
   mov   eax,8
  .btnlp:
@@ -104,18 +118,18 @@ red:
   mov   ecx,FILECOUNT
   mov   edx,embedded
   xor   edi,edi
-  mov   ebx,30 shl 16+30
+  mov   ebx,25 shl 16+8
   mov   eax,4
  .list: 
   lea   edx,[edx+edi+8]
   mov   edi,[edx-8]
   pusha
   sub   ebx,15 shl 16
-  mcall ,,0xff,my_param,1
+  mcall ,,0xff0000,my_param,1
   inc   [my_param]
   popa
   push  ecx
-  mcall ,,0xffffff,,[edx-4]
+  mcall ,,[sc.work_button_text],,[edx-4]
   pop   ecx
   add   edx,esi
   add   ebx,16
@@ -145,14 +159,13 @@ still:
   movzx  ecx,ah
   jmp   start.open
 
-title  db 'Doc Pack'
-titlen:
+header  db appname,0
 
 fileinfo:
         dd      7
         dd      0
         dd      param
-        dd      0, 0
+        dd      0 ,0
         db      '/RD/1/TINYPAD',0
 
 param  db '*'
@@ -174,7 +187,7 @@ embedded:
   embed_file 'SYSFUNCR.TXT'      ;g
   embed_file 'PPP_RUS.TXT'       ;h
   embed_file 'STACK_RU.TXT'      ;i
-  embed_file 'GROBFAR.TXT'      ;j
+  embed_file 'GROBFAR.TXT'       ;j
 ; -- End of embedding area  -------
 
   dd 0
@@ -187,3 +200,5 @@ FILECOUNT = FILE_COUNT
 my_param db 0
   rb 256
 I_END:
+
+sc     system_colors

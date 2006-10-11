@@ -799,37 +799,13 @@ draw_window:
     mov  eax,14
     int  0x40
 
-    sub  eax,60*65536
-    mov  ebx,eax
-    mov  bx,40
-
-                                   ; DRAW WINDOW
+                                      ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,110*65536+555         ; [x start] *65536 + [x size]
     mov  ecx,50*65536+255          ; [y start] *65536 + [y size]
     mov  edx,[w_work]              ; color of work area RRGGBB,8->color
-    or   edx,0x02000000
-    mov  esi,[w_grab]              ; color of grab bar  RRGGBB,8->color gl
-    or   esi,0x80000000
-    mov  edi,[w_frame]             ; color of frames    RRGGBB
-    int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+7 ;8          ; [x start] *65536 + [y start]
-    mov  ecx,[w_grab_text]         ; color of text RRGGBB
-if lang eq ru
-    or   ecx,0x10000000
-end if
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labelt.size           ; text length
-    int  0x40
-                                   ; CLOSE BUTTON
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(555-19)*65536+12     ; [x start] *65536 + [x size]
-    mov  ecx,4*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,[w_grab_button]       ; button color RRGGBB
+    or   edx,0x13000000
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
 
 if lang eq ru
@@ -844,10 +820,11 @@ else
   apply_w = (5*2+6*7)
 end if
 
-;   mov  eax,8                    ; FILENAME BUTTON
+    mov  eax,8                    ; FILENAME BUTTON
     mov  ebx,5*65536+545
     mov  ecx,212*65536+10
     mov  edx,0x4000000B
+    mov  esi,[w_grab_button]       ; button color RRGGBB
     int  0x40
 
 ;   mov  eax,8                    ; LOAD BUTTON
@@ -1034,11 +1011,14 @@ lsz button_text,\
     ru, '’¥ªαβ ­  ª­®―ª¥',\
     en, 'Button text'
 
-lsz labelt,\
-    ru, '€‘’‰€ –‚…’‚',\
-    en, 'DESKTOP COLOURS - DEFINE COLOR AND CLICK ON TARGET'
-
 sz  default_skn, '/RD/1/DEFAULT.SKN',0
+
+if lang eq ru
+  header db '€‘’‰€ ',0
+else
+  header db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
+end if
+
 
 color dd  0
 

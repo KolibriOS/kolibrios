@@ -42,7 +42,7 @@ UP_KEY equ 130+48
 DOWN_KEY equ 129+48
 LEFT_KEY equ 128+48
 RIGHT_KEY equ 131+48
-BACKGROUND equ 03000080h
+;BACKGROUND equ 03000080h
 
 _MAXBLOCKS_ = 7*4
 
@@ -220,7 +220,7 @@ button:                       ; button
     jmp still
 
 end_program:
-    mov  eax,0xffffffff         ; close this program
+    mov  eax,-1                ; close this program
     int  0x40
 
 go_new_game:
@@ -241,64 +241,51 @@ jmp still
 draw_window:
 
 
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    int  0x40
+
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
     int  0x40
 
                                  ; DRAW WINDOW
-  mov  eax,0                     ; function 0 : define and draw window
+  xor  eax,eax                   ; function 0 : define and draw window
   mov  ebx,320*65536+(LEN_X-BORDER_LEFT-BORDER_RIGHT)*ADOBE_SIZE+X_LOCATION*2
   mov  ecx,25*65536+ (LEN_Y-BORDER_TOP-BORDER_BOTTOM)*ADOBE_SIZE+Y_LOCATION+30
-  mov  edx,BACKGROUND            ; color of work area RRGGBB
-  mov  esi,0x006688ee;99bbff            ; color of grab bar  RRGGBB,8->col
-  mov  edi,0x007799ff;99bbee            ; color of frames    RRGGBB
+  mov  edx,[sc.work]             ; color of work area RRGGBB
+  or   edx,0x13000000
+  mov  edi,header                ; WINDOW LABEL
   int  0x40
 
-                                    ; WINDOW LABEL
-    mov  eax,4                      ; function 4 : write text to window
-    mov  ebx,8*65536+8              ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff             ; color of text RRGGBB
-    mov  edx,labelt                 ; pointer to text beginning
-    mov  esi,labellen-labelt        ; text length
-    int  0x40
-
-                                   ; CLOSE BUTTON
-;    mov  eax,8                     ; function 8 : define and draw button
-;    mov  ebx,243*65536+12          ; [x start] *65536 + [x size]
-;    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-;    mov  edx,1                     ; button id
-;    mov  esi,0x5580cc;22aacc              ; button color RRGGBB
-;    int  0x40
-
+                                    
     mov eax,8
-    mov ebx,30*65536+102
+    mov ebx,30*65536+100
     mov ecx,378*65536+18
     mov edx,2
-    mov esi,0xA24466;5580cc;22aacc
+    mov esi,[sc.work_button]
     int 0x40
 ;/////////////////////////////////////////////// Wildwest's  'Pause' button
-    mov eax,8
+    ;mov eax,8
     mov ebx,132*65536+102
     mov ecx,378*65536+18
     mov edx,3
-    mov esi,0x0FA0F0;
+    mov esi,[sc.work_button];
     int 0x40
 
     mov  eax,4                      ; function 4 : write text to window
-    mov  ebx,164*65536+384             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff             ; color of text RRGGBB
-    mov  edx,labe                ; pointer to text beginning
-    mov  esi,labelen-labe       ; text length
+    mov  ebx,164*65536+384          ; [x start] *65536 + [y start]
+    mov  ecx,[sc.work_button_text]  ; color of text RRGGBB
+    or   ecx,0x90000000
+    mov  edx,labe                   ; pointer to text
     int  0x40
 ;///////////////////////////////////////////////
-    mov eax,4
+    ;mov eax,4
     mov ebx,49*65536+384
-    xor ecx,ecx
-    mov ecx,0x10ffffff
     mov edx,game_finished
-    mov esi,size_of_game_finished-game_finished
     int 0x40
-
     call draw_table
 
     movzx edx,byte [current_block_color]
@@ -306,9 +293,9 @@ draw_window:
 
     cld
     mov  ebx,38*65536+35           ; draw info text with function 4
-    mov  ecx,0x10ffffff              ; color
+    mov  ecx,[sc.work_text]              ; color
+    or   ecx,0x90000000    
     mov  edx,text
-    mov  esi,7
     mov  eax,4
     int  0x40
 
@@ -454,7 +441,7 @@ x_draw:         push edi
               ;  mov ebx,10
               ;  int 0x40
               ;  popa
-                mov ax,13
+                mov eax,13
                 movzx edx,byte [esi]
                 mov edx,[color_table+edx*4]
                 int 0x40
@@ -655,16 +642,12 @@ write_score:
     mov  eax,[score]
     call number_to_str
 
-    mov  ebx,100*65536+100         ;clear box to write new score
-    mov  ecx,35*65536+15
-    mov  edx,BACKGROUND
-    mov  eax,13
-    int  40h
-
-    mov  ebx,100*65536+35          ; draw info text with function 4
-    mov  ecx,0xffff00              ; color
+    mov  ebx,90*65536+35          ; draw info text with function 4
+    mov  ecx,[sc.work_text]        ; color
+    or   ecx,0x50000000    
     mov  edx,number_str
     mov  esi,[size_of_number_str]
+    mov  edi,[sc.work]
     mov  eax,4
     int  0x40
     ret
@@ -842,27 +825,17 @@ block_table:
 
 if lang eq ru
 
-  labelt:
-         db 'íÖíêàë 1.6 - ëíêÖãäà à èêéÅÖã'
-  labellen:
-  labe:
-         db 'èÄìáÄ'
-  labelen:
-  text:                 db 'éÁ™®:  '
-  game_finished:        db ' çÄóÄíú'
-  size_of_game_finished:
+  header         db 'íÖíêàë 1.61 - ëíêÖãäà à èêéÅÖã',0
+  labe           db 'èÄìáÄ',0
+  text           db 'éÁ™®:',0
+  game_finished: db 'çéÇÄü',0
 
 else
 
-  labelt:
-         db 'TETRIS 1.6 - ARROWS & SPACE'
-  labellen:
-  labe:
-         db 'PAUSE'
-  labelen:
-  text:                 db 'Score: '
-  game_finished:        db 'NEW GAME'
-  size_of_game_finished:
+  header         db 'TETRIS 1.61 - ARROWS & SPACE',0
+  labe           db 'PAUSE',0
+  text           db 'Score:',0
+  game_finished: db 'NEW GAME',0
 
 end if
 
@@ -880,6 +853,8 @@ number_str:             db 0,0,0,0,0,0,0,0,0
 end_number_str:
 size_of_number_str      dd 9
 delay:                  db 40
+sc     system_colors
 table_tetris:
 
 I_END:
+
