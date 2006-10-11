@@ -1,22 +1,46 @@
 ;-----------------------------------------------------------------------------
 ; project name:      TINYPAD
-; compiler:          flat assembler 1.64
-; memory to compile: 3.0/11.5 MBytes (without/with size optimizations)
-; version:           4.0
-; last update:       2006-04-13 (Apr 13, 2006)
+; compiler:          flat assembler 1.67.1
+; memory to compile: 2.0/7.0 MBytes (without/with size optimizations)
+; version:           4.0.3
+; last update:       2006-08-28 (Aug 28, 2006)
+; minimal kernel:    revision #138 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Ivan Poddubny           >> ivan-yar@bk.ru
 ;                    Mike Semenyako          >> mike.dld@gmail.com
 ;-----------------------------------------------------------------------------
 ; TODO:
-;   optimize drawing (reduce flickering);
-;   optimize memory usage (allocate only needed amount, not static 3 Mbytes);
-;   add block selection ability, undo action;
-;   working with multiple files (add tabs);
-;   other bugfixes and speed/size optimizations
+;   - optimize drawing (reduce flickering)
+;   - optimize memory usage (allocate only needed amount, not static 3 Mbytes)
+;   - add block selection ability, undo action, goto position
+;   - working with multiple files (add tabs)
+;   - improve window drawing with small dimensions
+;   - other bugfixes and speed/size optimizations
 ;
 ; HISTORY:
+; 4.0.3 (mike.dld)
+;   bug-fixes:
+;     - 1-char selection if pressing <BS> out of real line length
+;     - fault in `writepos`, added call to function 9
+;     - main menu items weren't highlighted if popup opened and cursor
+;       isn't in menu item's area
+;     - statusbar and textboxes drawing fixes (wrong colors)
+;     - perform no redraw while pressing Shift, Ctrl, Alt keys
+;     - data length from DOCPAK in string representation (fix by diamond)
+;   changes:
+;     - function 70 instead of 58 for files loading/saving
+;     - clientarea-relative drawing (less code)
+;     - every line's dword is now splitted into 2 words;
+;       low word - line block length, so max line length is 65535 now
+;       high word - various flags. for now, only 2 of 16 bits are used:
+;         if bit #0 is set, line was modified since file open
+;         if bit #1 is set, line was saved after last modification
+;       high word could also be further used for code collapsing and different
+;         line marking features (breakpoints, errors, bookmarks, etc.)
+;   new features:
+;     - line markers for modified and saved lines
+;     - status messages for various actions
 ; 4.0.2 (mike.dld)
 ;   bug-fixes:
 ;     - program terminates if started with parameters (fine for DOCPAK)
@@ -68,7 +92,7 @@
 ; 3.77 (mike.dld)
 ;   changed save_string to collapse SPACEs into TABs;
 ;   rewrote drawfile from scratch (speed++)
-;     through some drawing improvements still needed
+;     through some drawing improvements  needed
 ;     (some checkups to reduce flickering);
 ;   writepos (size--);
 ;   fixed drawing window while height < 100px, and for non-asm files;
@@ -110,9 +134,11 @@
 ;   copy/paste area  0x2f0000 +
 ;-----------------------------------------------------------------------------
 
+include 'lang.inc'
 include 'macros.inc' ; useful stuff
+;include 'proc32.inc'
 include 'tinypad.inc'
-purge mov,add,sub            ;  SPEED
+;purge mov,add,sub            ;  SPEED
 
 header '01',1,@CODE,TINYPAD_END,AREA_ENDMEM,MAIN_STACK,@PARAMS,self_path
 
@@ -126,6 +152,7 @@ ATABW     = 8             ; tab width (chars)
 LINEH     = 10            ; line height (pixels)
 PATHL     = 255           ; maximum path length (chars) !!! don't change !!!
 AMINS     = 8             ; minimal scroll thumb size (pixels)
+LCHGW     = 2             ; changed/saved marker width
 
 STATH     = 14            ; status bar height
 
@@ -148,6 +175,8 @@ label color_tbl dword
   RGB(255,255,255) ; RGB(224,224,224) ; RGB(255,255,255) ; background
   RGB(255,255,255) ; RGB(255,255,255) ; RGB(255,255,255) ; selection text
   RGB( 10, 36,106) ; RGB(  0,  0,128) ; RGB(  0, 64,128) ; selection background
+  RGB(  0,255,  0) ; modified line marker
+  RGB(255,255,  0) ; saved line marker
 
 ins_mode db 1
 
@@ -165,22 +194,30 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 ;       fninit
 
+;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_left,50
+;        mov     [mainwnd_pos.x],eax
+;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_top,50
+;        mov     [mainwnd_pos.y],eax
+;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_right,350
+;        sub     eax,[mainwnd_pos.x]
+;        mov     [mainwnd_pos.w],eax
+;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_bottom,450
+;        sub     eax,[mainwnd_pos.y]
+;        mov     [mainwnd_pos.h],eax
+
         cld
         mov     edi,@UDATA
         mov     ecx,@PARAMS-@UDATA
         mov     al,0
         rep     stosb
 
+	inc	[do_not_draw]
+
         mov     [left_ofs],40+1
         mov     [f_info+4],0
         mov     [f_info+12],AREA_TEMP
         mov     [f_info+16],AREA_EDIT-AREA_TEMP
 
-;        mov     esi,s_example
-;        mov     edi,s_fname
-;        mov     ecx,s_example.size
-;        mov     [s_fname.size],ecx
-;        rep     movsb
         mov     esi,s_example
         mov     edi,tb_opensave.text
         mov     ecx,s_example.size
@@ -200,18 +237,21 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
         cmp     byte[@PARAMS],'*'
         jne     .noipc
-; convert size from decimal representation to dword
-        mov     esi, @PARAMS+1
-        xor     edx, edx
-        xor     eax, eax
-@@:
-        lodsb
-        test    al, al
+
+;// diamond [ (convert size from decimal representation to dword)
+;--     mov     edx,dword[@PARAMS+1]
+        mov     esi,@PARAMS+1
+        xor     edx,edx
+        xor     eax,eax
+    @@: lodsb
+        test    al,al
         jz      @f
-        lea     edx, [edx*4+edx]
-        lea     edx, [edx*2+eax]
+        lea     edx,[edx*4+edx]
+        lea     edx,[edx*2+eax-'0']
         jmp     @b
-@@:
+    @@:
+;// diamond ]
+
         add     edx,20
         mcall   60,1,AREA_TEMP-16 ; 0x10000-16
         mov     dword[AREA_TEMP-16+4],8 ; [0x10000-16+4],8
@@ -225,8 +265,6 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         inc     eax
         call    load_file.file_found
         jmp     @f
-;       call    file_found  ; чруЁєчър Їрщыр
-;       jmp     do_load_file.restorecursor ; юЄюсЁрцхэшх
   .noipc:
 
 ;// Willow's code to support DOCPAK ]
@@ -250,9 +288,12 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
         call    new_file
 
     @@:
-        call    drawwindow
+	dec	[do_not_draw]
         mcall   66,1,1
         mcall   40,00100111b
+red:
+	call    drawwindow
+	call	check_inv_all.skip_check
 
 ;-----------------------------------------------------------------------------
 
@@ -273,14 +314,6 @@ still:
         jz      mouse
 
         jmp     still.skip_write
-
-;-----------------------------------------------------------------------------
-func red ;///// window redraw ////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-        call    drawwindow
-        call    check_inv_all.skip_check
-        jmp     still
-endf
 
 ;-----------------------------------------------------------------------------
 func start_fasm ;/////////////////////////////////////////////////////////////
@@ -362,52 +395,59 @@ func start_fasm ;/////////////////////////////////////////////////////////////
         je      @f
         mov     dword[edi-1],',run'
         mov     byte[edi+3],0
-    @@: mcall   19,fasm_filename,fasm_parameters
+    @@:
+        mov     ebx, fasm_start
+start_ret:
+        mov     eax, 70
+        int     0x40
         ret
 endf
 
 ;-----------------------------------------------------------------------------
 func open_debug_board ;///////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-        mcall   19,debug_filename,0
-        ret
+        mov     ebx, board_start
+        jmp     start_ret
 endf
 
 ;-----------------------------------------------------------------------------
 func open_sysfuncs_txt ;//////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-        mcall   19,docpak_filename,sysfuncs_param
+        mov     ebx, docpak_start
+        call    start_ret
         cmp     eax,0xfffffff0
         jb      @f
-        mcall   19,tinypad_filename,sysfuncs_filename
+        mov     ebx, tinypad_start
+        mov     dword [ebx+8], sysfuncs_filename
+        call    start_ret
     @@: ret
 endf
 
 ;-----------------------------------------------------------------------------
-func layout  ;///// change keyboard layout ///////////////////////////////////
+;func layout  ;///// change keyboard layout ///////////////////////////////////
 ;-----------------------------------------------------------------------------
-        mcall   19,setup,param_setup
-        mcall   5,eax
-;       call    activate_me
-;       ret
+;        mcall   19,setup,param_setup
+;        mcall   5,eax
+;;       call    activate_me
+;;       ret
+;;endf
+
+;;func activate_me
+;        mcall   9,p_info,-1
+;        inc     eax
+;        inc     eax
+;        mov     ecx,eax
+;        mov     edi,[p_info.PID]
+;        mov     ebx,p_info
+;    @@: dec     ecx
+;        jz      @f    ; counter=0 => not found? => return
+;        mcall   9
+;        cmp     edi,[p_info.PID]
+;        jne     @b
+;        mcall   18,3
+;        mcall   5,eax
+;    @@: ret
 ;endf
-
-;func activate_me
-        mcall   9,p_info,-1
-        inc     eax
-        inc     eax
-        mov     ecx,eax
-        mov     edi,[p_info.PID]
-        mov     ebx,p_info
-    @@: dec     ecx
-        jz      @f    ; counter=0 => not found? => return
-        mcall   9
-        cmp     edi,[p_info.PID]
-        jne     @b
-        mcall   18,3
-        mcall   5,eax
-    @@: ret
-endf
 
 func set_opt
         test    [options],al
@@ -453,15 +493,15 @@ endf
 
 include 'tp-draw.asm'
 include 'tp-key.asm'
-;include 'tp-key2.asm'
 include 'tp-butto.asm'
 include 'tp-mouse.asm'
 include 'tp-files.asm'
 include 'tp-commo.asm'
 include 'tp-dialo.asm'
-;include 'tp-find.asm'
 include 'tp-popup.asm'
 include 'tp-tbox.asm'
+
+;include 'lib-ini.asm'
 
 ;-----------------------------------------------------------------------------
 section @DATA ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -593,15 +633,42 @@ add_table:
 
 ;error_beep      db 0xA0,0x30,0
 
+s_status dd 0
+
 sz s_example,'EXAMPLE.ASM'
 sz s_still  ,'still'
 
 ;sz param_setup,'LANG',0 ; parameter for SETUP
 
-sz fasm_filename   ,'FASM       '
-sz debug_filename  ,'BOARD      '
-sz tinypad_filename,'TINYPAD    '
-sz docpak_filename ,'DOCPAK     '
+fasm_start:
+        dd      7
+        dd      0
+        dd      fasm_parameters
+        dd      0
+        dd      0
+        db      '/RD/1/FASM',0
+board_start:
+        dd      7
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        db      '/RD/1/BOARD',0
+tinypad_start:
+        dd      7
+        dd      0
+        dd      ?
+        dd      0
+        dd      0
+        db      '/RD/1/TINYPAD',0
+docpak_start:
+        dd      7
+        dd      0
+        dd      sysfuncs_param
+        dd      0
+        dd      0
+        db      '/RD/1/DOCPAK',0
+
 ;sz setup           ,'SETUP      ' ; to change keyboard layout
 
 sz sysfuncs_param,'g',0
@@ -610,7 +677,7 @@ lsz sysfuncs_filename,\
   ru,<'SYSFUNCR.TXT',0>,\
   en,<'SYSFUNCS.TXT',0>
 
-sz htext,'TINYPAD'
+sz htext,'TINYPAD 4.0.3'
 
 lszc help_text,b,\
   ru,'КОМАНДЫ:',\
@@ -662,19 +729,19 @@ menubar_res main_menu,\
   en,'Options',popup_options,onshow.options
 
 popup_res popup_file,\
-  ru,'Новый'           ,'Ctrl+N',key.ctrl_n      ,\
-  ru,'Открыть...'      ,'Ctrl+O',key.ctrl_o      ,\
-  ru,'Сохранить'       ,'Ctrl+S',key.ctrl_s      ,\
-  ru,'Сохранить как...',''      ,key.shift_ctrl_s,\
-  ru,'-'               ,''      ,0               ,\
-  ru,'Выход'           ,'Alt+X' ,key.alt_x       ,\
+  ru,'Новый'           ,'Ctrl+N'      ,key.ctrl_n      ,\
+  ru,'Открыть...'      ,'Ctrl+O'      ,key.ctrl_o      ,\
+  ru,'Сохранить'       ,'Ctrl+S'      ,key.ctrl_s      ,\
+  ru,'Сохранить как...','Ctrl+Shift+S',key.shift_ctrl_s,\
+  ru,'-'               ,''            ,0               ,\
+  ru,'Выход'           ,'Alt+X'       ,key.alt_x       ,\
 \
-  en,'New'       ,'Ctrl+N',key.ctrl_n      ,\
-  en,'Open...'   ,'Ctrl+O',key.ctrl_o      ,\
-  en,'Save'      ,'Ctrl+S',key.ctrl_s      ,\
-  en,'Save as...',''      ,key.shift_ctrl_s,\
-  en,'-'         ,''      ,0               ,\
-  en,'Exit'      ,'Alt+X' ,key.alt_x
+  en,'New'       ,'Ctrl+N'      ,key.ctrl_n      ,\
+  en,'Open...'   ,'Ctrl+O'      ,key.ctrl_o      ,\
+  en,'Save'      ,'Ctrl+S'      ,key.ctrl_s      ,\
+  en,'Save as...','Ctrl+Shift+S',key.shift_ctrl_s,\
+  en,'-'         ,''            ,0               ,\
+  en,'Exit'      ,'Alt+X'       ,key.alt_x
 
 popup_res popup_edit,\
   ru,'Вырезать'    ,'Ctrl+X',key.ctrl_x,\
@@ -683,13 +750,17 @@ popup_res popup_edit,\
   ru,'Удалить'     ,''      ,key.del   ,\
   ru,'-'           ,''      ,0         ,\
   ru,'Выделить всё','Ctrl+A',key.ctrl_a,\
+\;  ru,'-'           ,''      ,0         ,\
+\;  ru,'Вертикальное выделение','Alt+Ins',0         ,\
 \
   en,'Cut'       ,'Ctrl+X',key.ctrl_x,\
   en,'Copy'      ,'Ctrl+C',key.ctrl_c,\
   en,'Paste'     ,'Ctrl+V',key.ctrl_v,\
   en,'Delete'    ,''      ,key.del   ,\
   en,'-'         ,''      ,0         ,\
-  en,'Select all','Ctrl+A',key.ctrl_a
+  en,'Select all','Ctrl+A',key.ctrl_a;,\
+;  en,'-'         ,''      ,0         ,\
+;  en,'Vertical selection','Alt+Ins',0
 
 popup_res popup_search,\
   ru,'Перейти...' ,'Ctrl+G',key.ctrl_g,\
@@ -763,8 +834,60 @@ lsz s_2cancel,\
   ru,'Отмена',\
   en,'Cancel'
 
+lsz s_enter_filename,\
+  ru,<'Введите имя файла',0>,\
+  en,<'Enter filename',0>
+
+lsz s_enter_text_to_find,\
+  ru,<'Введите текст для поиска',0>,\
+  en,<'Enter text to find',0>
+
+lsz s_enter_text_to_replace,\
+  ru,<'Введите текст для замены',0>,\
+  en,<'Enter text to replace',0>
+
+lsz s_text_not_found,\
+  ru,<'Достигнут конец файла, текст не найден',0>,\
+  en,<'Reached end of file, text not found',0>
+
+lszc s_fs_error,b,\
+  ru,<'Операция завершена успешно (0)',0>,\
+  ru,<'',0>,\
+  ru,<'Функция не поддерживается для данной файловой системы (2)',0>,\
+  ru,<'Неизвестная файловая система (3)',0>,\
+  ru,<'',0>,\
+  ru,<'Невозможно открыть файл (5)',0>,\
+  ru,<'Операция завершена успешно (6)',0>,\
+  ru,<'Адрес находится за границами памяти программы (7)',0>,\
+  ru,<'На диске нет свободного места (8)',0>,\
+  ru,<'Таблица FAT уничтожена (9)',0>,\
+  ru,<'Доступ запрещён (10)',0>,\
+  ru,<'Ошибка устройства (11)',0>,\
+\
+  en,<'Operation executed successfully (0)',0>,\
+  en,<'',0>,\
+  en,<'Function is not supported for the given filesystem (2)',0>,\
+  en,<'Unknown filesystem (3)',0>,\
+  en,<'',0>,\
+  en,<'Unable to open file (5)',0>,\
+  en,<'Operation executed successfully (6)',0>,\
+  en,<'Pointer lies outside of application memory (7)',0>,\
+  en,<'Disk is full (8)',0>,\
+  en,<'FAT table is destroyed (9)',0>,\
+  en,<'Access denied (10)',0>,\
+  en,<'Device error (11)',0>
+
 sz symbols_ex,';?.%"',"'"
 sz symbols   ,'#&*\:/<>|{}()[]=+-, '
+
+ini_sec_window    db 'Window',0
+ini_window_top    db 'Top',0
+ini_window_left   db 'Left',0
+ini_window_right  db 'Right',0
+ini_window_bottom db 'Bottom',0
+
+finfo_ini dd ?,?,?,AREA_TEMP,AREA_EDIT-AREA_TEMP
+          db '/rd/1/tinypad.ini',0
 
 TINYPAD_END:     ; end of file
 
@@ -773,6 +896,8 @@ self_path rb PATHL
 ;-----------------------------------------------------------------------------
 section @UDATA ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
+
+f_info70 rd 7
 
 f_info.length dd ?
 f_info dd ?,?,?,?,?;?,0,?,AREA_TEMP,AREA_EDIT-AREA_TEMP
@@ -798,7 +923,7 @@ vscrl_top     dd ?
 vscrl_size    dd ?
 hscrl_top     dd ?
 hscrl_size    dd ?
-skinh         dd ?    ; skin height
+;skinh         dd ?    ; skin height
 __rc          dd ?,?,?,?
 ;filelen       dd ?    ; file size (on save) ???
 filesize      dd ?    ; file size (on load) ???

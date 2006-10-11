@@ -1,6 +1,3 @@
-; language for programs
-lang fix en ; ru en fr ge fi
-
 @^ fix macro comment {
 ^@ fix }
 
@@ -331,21 +328,34 @@ struc POINT _t,_dx,_dy {
 ; structure definition helper
 include 'struct.inc'
 
+struct RECT
+  left	 dd ?
+  top	 dd ?
+  right  dd ?
+  bottom dd ?
+ends
+
+struct BOX
+  left	 dd ?
+  top	 dd ?
+  width  dd ?
+  height dd ?
+ends
+
 ; structures used in MeOS
 struct process_information
   cpu_usage		  dd ?	; +0
   window_stack_position   dw ?	; +4
   window_stack_value	  dw ?	; +6
-  not_used1		  dw ?	; +8
+			  dw ?	; +8
   process_name		  rb 12 ; +10
   memory_start		  dd ?	; +22
   used_memory		  dd ?	; +26
   PID			  dd ?	; +30
-  x_start		  dd ?	; +34
-  y_start		  dd ?	; +38
-  x_size		  dd ?	; +42
-  y_size		  dd ?	; +46
+  box			  BOX	; +34
   slot_state		  dw ?	; +50
+			  dw ?	; +52
+  client_box		  BOX	; +54
   rb (1024-52)
 ends
 

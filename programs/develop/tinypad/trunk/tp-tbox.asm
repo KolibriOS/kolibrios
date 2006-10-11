@@ -1,0 +1,390 @@
+struct TBOX
+  x	 dw ?
+  width  dw ?
+  y	 dw ?
+  height dw ?
+  sel.x  db ?
+  pos.x  db ?
+  ofs.x  db ?
+  length db ?
+  text	 rb 255
+ends
+
+virtual at ebp
+  tbox TBOX
+end virtual
+
+tb.pos.x	db ?
+tb.sel.x	db ?
+tb.sel.selected db ?
+
+func textbox.get_width
+	push	ebx edx
+	movzx	eax,[tbox.width-2]
+	add	eax,-6
+	xor	edx,edx
+	mov	ebx,6
+	div	ebx
+	movzx	ebx,[tbox.length]
+	cmp	eax,ebx
+	jle	@f
+	mov	eax,ebx
+    @@: pop	edx ebx
+	ret
+endf
+
+func textbox.delete_selection
+	cmp	[tb.sel.selected],0
+	je	.exit.2
+	pushad
+	movzx	ecx,[tbox.length]
+	sub	cl,[tb.sel.x]
+	lea	eax,[tbox.text]
+	movzx	esi,[tb.pos.x]
+	movzx	edi,[tb.sel.x]
+	add	esi,eax
+	add	edi,eax
+	mov	eax,esi
+	sub	eax,edi
+	sub	[tbox.length],al
+	cld
+	rep	movsb
+
+  .exit:
+	mov	al,[tb.sel.x]
+	mov	[tbox.pos.x],al
+	mov	[tbox.sel.x],al
+	popad
+	clc
+	ret
+
+  .exit.2:
+	stc
+	ret
+endf
+
+func textbox.draw ; TBOX* ebp
+	call	textbox.get_width
+	movzx	ebx,[tbox.pos.x]
+	sub	bl,[tbox.ofs.x]
+	sub	ebx,eax
+	jle	@f
+	mov	bl,[tbox.pos.x]
+	sub	bl,al
+	mov	[tbox.ofs.x],bl
+    @@:
+	mov	[tb.sel.selected],0
+	mov	al,[tbox.pos.x]
+	mov	ah,[tbox.sel.x]
+	cmp	al,ah
+	je	@f
+	inc	[tb.sel.selected]
+	ja	@f
+	xchg	al,ah
+    @@: mov	[tb.pos.x],al
+	mov	[tb.sel.x],ah
+
+	mcall	13,dword[tbox.x],dword[tbox.y],[color_tbl+4*5];[sc.work]
+	call	draw_framerect
+
+	call	textbox.get_width
+	mov	esi,eax
+	mov	edi,eax
+
+	cmp	ebp,[focused_tb]
+	je	@f
+	mov	ebx,dword[tbox.x]
+	mov	bx,[tbox.y+2]
+	movzx	eax,[tbox.height-2]
+	shr	eax,1
+	add	eax,4*65536-4
+	add	ebx,eax
+	lea	edx,[tbox.text]
+;       movzx   esi,[tbox.length]
+	mcall	4,,[color_tbl+4*0];[sc.work_text]
+	ret
+
+    @@: movzx	eax,[tb.pos.x]
+	cmp	al,[tb.sel.x]
+	je	@f
+	sub	al,[tbox.ofs.x]
+	jz	@f
+	movzx	ebx,[tb.sel.x]
+	sub	bl,[tbox.ofs.x]
+	jge	.lp1
+	xor	ebx,ebx
+  .lp1: push	eax ebx
+	sub	eax,ebx
+	mov	ecx,edi
+	sub	ecx,ebx
+	cmp	eax,ecx
+	jbe	.lp2
+	mov	eax,ecx
+  .lp2: imul	eax,6
+	imul	ebx,6
+	movzx	ecx,[tbox.x+2]
+	add	ecx,3
+;       sub     eax,ebx
+	add	ebx,ecx
+	shl	ebx,16
+	add	ebx,eax
+	movzx	ecx,[tbox.height-2]
+	shr	ecx,1
+	add	cx,[tbox.y+2]
+	shl	ecx,16
+	add	ecx,-5*65536+10
+	mcall	13,,,[color_tbl+4*7];0x0000007F
+
+	mov	esi,[esp]
+	lea	edx,[tbox.text]
+	movzx	eax,[tbox.ofs.x]
+	add	edx,eax
+	mov	ebx,dword[tbox.x]
+	mov	bx,[tbox.y+2]
+	movzx	eax,[tbox.height-2]
+	shr	eax,1
+	add	eax,4*65536-4
+	add	ebx,eax
+	mov	eax,4
+	or	esi,esi
+	jz	.lp3
+	mcall	,,[color_tbl+4*0];[sc.work_text]
+  .lp3: sub	edi,esi
+	jnz	.lp4
+	add	esp,8
+	jmp	.exit
+  .lp4:
+	add	edx,esi
+	imul	esi,6*65536
+	add	ebx,esi
+	pop	ecx esi
+	sub	esi,ecx
+	cmp	esi,edi
+	jbe	.lp5
+	mov	esi,edi
+  .lp5:
+	mcall	,,[color_tbl+4*6];0x00FFFFFF
+	sub	edi,esi
+	jz	.exit
+	add	edx,esi
+	imul	esi,6*65536
+	add	ebx,esi
+	lea	ecx,[tbox.text]
+;        sub     ecx,edx
+;        add     edi,ecx
+	mcall	,,[color_tbl+4*0],,edi;[sc.work_text],,edi
+	jmp	.exit
+
+    @@: lea	edx,[tbox.text]
+	movzx	eax,[tbox.ofs.x]
+	add	edx,eax
+	mov	ebx,dword[tbox.x]
+	mov	bx,[tbox.y+2]
+	movzx	eax,[tbox.height-2]
+	shr	eax,1
+	add	eax,4*65536-4
+	add	ebx,eax
+	movzx	eax,[tbox.ofs.x]
+	call	textbox.get_width
+	mov	esi,eax
+	mcall	4,,[color_tbl+4*0];[sc.work_text]
+
+  .exit:
+	movzx	ebx,[tbox.pos.x]
+	movzx	eax,[tbox.ofs.x]
+	sub	ebx,eax
+	imul	ebx,6
+	movzx	eax,[tbox.x+2]
+	add	eax,3
+	add	ebx,eax
+	push	bx
+	shl	ebx,16
+	pop	bx
+	movzx	ecx,[tbox.height-2]
+	shr	ecx,1
+	add	cx,[tbox.y+2]
+	push	cx
+	shl	ecx,16
+	pop	cx
+	add	ecx,-5*65536+4
+	mcall	38,,,0x01000000
+	add	ebx,0x00010001
+	mcall
+	ret
+endf
+
+func textbox.key
+	mov	ebp,[focused_tb]
+	mov	esi,accel_table_textbox
+  .acc: cmp	ebx,[esi]
+	jne	@f
+	call	dword[esi+4]
+	jmp	.exit.2
+    @@: add	esi,8
+	cmp	byte[esi],0
+	jne	.acc
+
+	test	byte[shi+2],0x06
+	jnz	.exit
+	cmp	[tbox.length],255
+	je	.exit
+
+	movzx	eax,[chr]
+	movzx	eax,[eax+key0]
+	or	al,al
+	jz	.exit
+	mov	al,[eax+key1]
+	cmp	[tb_casesen],0
+	je	@f
+	cmp	al,$60
+	jle	@f
+	add	al,[add_table-$60+eax]
+    @@:
+	call	textbox.delete_selection
+
+	mov	ecx,255
+	sub	cl,[tbox.pos.x]
+	lea	edi,[tbox.text]
+	add	edi,255
+	lea	esi,[edi-1]
+	std
+	rep	movsb
+	stosb
+	cld
+	inc	[tbox.length]
+	call	key.tb.right
+
+  .exit.2:
+	call	textbox.draw
+  .exit:
+	ret
+endf
+
+textbox.mouse:
+	ret
+
+func key.tb.bkspace
+	call	textbox.delete_selection
+	jnc	@f
+
+	cmp	[tbox.pos.x],0
+	je	@f
+	call	key.tb.left
+	jmp	key.tb.del.direct
+
+    @@: ret
+endf
+
+func key.tb.home
+	xor	al,al
+	mov	[tbox.pos.x],al
+	mov	[tbox.sel.x],al
+	mov	[tbox.ofs.x],al
+	ret
+endf
+
+func key.tb.left
+	mov	al,[tbox.pos.x]
+	mov	[tbox.sel.x],al
+	dec	al
+	js	@f
+	mov	[tbox.pos.x],al
+	mov	[tbox.sel.x],al
+	cmp	[tbox.ofs.x],al
+	jl	@f
+	sub	[tbox.ofs.x],8
+	jge	@f
+	mov	[tbox.ofs.x],0
+    @@: ret
+endf
+
+func key.tb.right
+	call	textbox.get_width
+	mov	bl,[tbox.pos.x]
+	mov	[tbox.sel.x],bl
+	inc	bl
+	cmp	bl,[tbox.length]
+	ja	@f
+	mov	[tbox.pos.x],bl
+	mov	[tbox.sel.x],bl
+	sub	bl,[tbox.ofs.x]
+	cmp	bl,al
+	jbe	@f
+	inc	[tbox.ofs.x]
+    @@: ret
+endf
+
+func key.tb.end
+	call	textbox.get_width
+	movzx	ebx,[tbox.length]
+	mov	[tbox.pos.x],bl
+	mov	[tbox.sel.x],bl
+	sub	ebx,eax
+	jge	@f
+	xor	bl,bl
+    @@: mov	[tbox.ofs.x],bl
+	ret
+endf
+
+func key.tb.del
+	call	textbox.delete_selection
+	jnc	@f
+  .direct:
+	movzx	ecx,[tbox.length]
+	sub	cl,[tbox.pos.x]
+	jz	@f
+	lea	eax,[tbox.text]
+	movzx	edi,[tbox.pos.x]
+	add	edi,eax
+	lea	esi,[edi+1]
+	dec	[tbox.length]
+	cld
+	rep	movsb
+
+    @@: ret
+endf
+
+func key.tb.shift_home
+	xor	al,al
+	mov	[tbox.pos.x],al
+	mov	[tbox.ofs.x],al
+	ret
+endf
+
+func key.tb.shift_left
+	mov	al,[tbox.pos.x]
+	dec	al
+	js	@f
+	mov	[tbox.pos.x],al
+	cmp	[tbox.ofs.x],al
+	jl	@f
+	sub	[tbox.ofs.x],8
+	jge	@f
+	mov	[tbox.ofs.x],0
+    @@: ret
+endf
+
+func key.tb.shift_right
+	call	textbox.get_width
+	mov	bl,[tbox.pos.x]
+	inc	bl
+	cmp	bl,[tbox.length]
+	ja	@f
+	mov	[tbox.pos.x],bl
+	sub	bl,[tbox.ofs.x]
+	cmp	bl,al
+	jbe	@f
+	inc	[tbox.ofs.x]
+    @@: ret
+endf
+
+func key.tb.shift_end
+	call	textbox.get_width
+	movzx	ebx,[tbox.length]
+	mov	[tbox.pos.x],bl
+	sub	ebx,eax
+	jge	@f
+	xor	bl,bl
+    @@: mov	[tbox.ofs.x],bl
+	ret
+endf
