@@ -1645,13 +1645,27 @@ endg
 
 
 ; draw negative window frames
+uglobal
+moving_wnd dd ?
+moving_wnd_redrawed db ?
+endg
 
 drawwindowframes:
+        mov     [moving_wnd], edi
 
         test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jnz     .ret
         cmp     [edi+WDATA.fl_redraw], 0
-        jnz     .ret
+        jz      @f
+        xor     [moving_wnd_redrawed], 1
+        jmp     .ret
+@@:
+        cmp     [moving_wnd_redrawed], 0
+        jz      @f
+        mov     [moving_wnd_redrawed], 0
+.ret:
+        ret
+@@:
 
         pushad
 
@@ -1718,7 +1732,6 @@ drawwindowframes:
         pop   edi
 
         popad
-.ret:
         ret
 
 
