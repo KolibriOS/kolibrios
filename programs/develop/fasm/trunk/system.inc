@@ -4,12 +4,36 @@
 ;
 ; MenuetOS system.inc by VT
 
-file_info_open:  dd 0,0,0xffffff,0x20000,0xf0000
+struc FILEIO
+{   .cmd            dd ?
+    .offset         dd ?
+                    dd ?
+    .count          dd ?
+    .buff           dd ?
+                    db ?
+    .name           dd ?
+};
+
+struc FILEINFO
+{   .attr           dd ?
+    .flags          dd ?
+    .cr_time        dd ?
+    .cr_date        dd ?
+    .acc_time       dd ?
+    .acc_date       dd ?
+    .mod_time       dd ?
+    .mod_date       dd ?
+    .size           dd ?
+}
+
+
+
+;file_info_open:  dd 0,0,0xffffff,0x20000,0xf0000
 fullpath_open:  ;  db '/RD/1/EXAMPLE.ASM'
 		    times MAX_PATH db 0
 
 
-file_info_write: dd 1,0,0,0,0xf0000
+;file_info_write: dd 1,0,0,0,0xf0000
 fullpath_write:; db '/RD/1/EXAMPLE'
 		    times MAX_PATH db 0
 
@@ -63,42 +87,112 @@ get_environment_variable:
 ;       stc
 	ret
 
-open:
-	call	make_fullpaths
-
-;       mov     eax,fullpath_open
-;       DEBUGF  '"%s"\n',eax
-
-	mov	dword[file_info_open+8],-1
-	mcall	58,file_info_open
-	or	eax,eax 		; found
-	jz	@f
-	cmp	eax,6
-	jne	file_error
-@@: mov	[filesize],ebx
-	clc
-	ret
-file_error:
-	stc
-	ret
 
 create:
 	call  make_fullpaths
 	ret
 
+
+open:
+;        call    make_fullpaths
+
+;;       mov     eax,fullpath_open
+;;       DEBUGF  '"%s"\n',eax
+
+;        mov     dword[file_info_open+8],-1
+;        mcall   58,file_info_open
+;        or      eax,eax                 ; found
+;        jz      @f
+;        cmp     eax,6
+;        jne     file_error
+;@@: mov [filesize],ebx
+;        clc
+;        ret
+;file_error:
+;        stc
+;        ret
+
+           call    make_fullpaths
+
+           xor eax, eax
+           mov [fileio.cmd], 5
+           mov [fileio.offset], eax
+           mov [fileio.offset+4], eax
+           mov [fileio.count], eax
+           mov [fileio.buff], fileinfo
+           mov byte [fileio.buff+4], al
+           mov [fileio.name], fullpath_open
+
+           mov eax, 70
+           mov ebx, fileio
+           int 0x40
+           test eax, eax
+           jnz .fail
+           mov ebx, [fileinfo.size]
+           mov [filesize],ebx
+           clc
+           ret
+.fail:
+           stc
+           ret
+
+read:
+;          pusha
+;          mov     edi,edx
+;          mov     esi,[filepos]
+;          add     esi,0x20000
+;          cld
+;          rep     movsb
+;          popa
+;;         ret
+
+           xor eax, eax
+           mov [fileio.cmd], eax
+           mov [fileio.offset], eax
+           mov [fileio.offset+4], eax
+           mov [fileio.count], ecx
+           mov [fileio.buff], edx
+           mov byte [fileio.buff+4], al
+           mov [fileio.name], fullpath_open
+           mov eax, 70
+           mov ebx, fileio
+           int 0x40
+close:
+           ret
+
+
 ; ebx file handle
 ; ecx count of bytes to write
 ; edx pointer to buffer
 write:
-	pusha
-	mov	[file_info_write+8],ecx
-	mov	[file_info_write+12],edx
-	mov	[filesize],edx
-	mov	eax,58
-	mov	ebx,file_info_write
-	int	0x40
-	popa
-	ret
+;        pusha
+;        mov     [file_info_write+8],ecx
+;        mov     [file_info_write+12],edx
+;        mov     [filesize],edx
+;        mov     eax,58
+;        mov     ebx,file_info_write
+;        int     0x40
+;        popa
+;        ret
+
+           xor eax, eax
+           mov [fileio.cmd], 2
+           mov [fileio.offset], eax
+           mov [fileio.offset+4], eax
+           mov [fileio.count], ecx
+           mov [fileio.buff], edx
+           mov byte [fileio.buff+4], al
+           mov [fileio.name], fullpath_write
+           mov eax, 70
+           mov ebx, fileio
+           int 0x40
+           test eax, eax
+           jnz .fail
+           clc
+           ret
+.fail:
+           stc
+           ret
 
 make_fullpaths:
 	pusha
@@ -179,17 +273,7 @@ make_fullpaths:
 	popa
 	ret
 
-read:
-	pusha
-	mov	edi,edx
-	mov	esi,[filepos]
-	add	esi,0x20000
-	cld
-	rep	movsb
-	popa
-;       ret
 
-close:	ret
 
 lseek:
 	cmp	al,0
@@ -206,8 +290,6 @@ lseek:
 	mov	[filepos],eax
 	ret
 
-
-
 display_character:
 	pusha
 	cmp	[_mode],NORMAL_MODE
@@ -218,10 +300,10 @@ display_character:
 	jnz	dc1
 	and	[textxy],0x0000FFFF
 	add	[textxy],OUTPUTXY and 0xFFFF0000 + 10
-dc2:	
+dc2:
   popa
 	ret
-dc1:	
+dc1:
   mov eax,[textxy]
 	cmp	ax,word[bottom_right]
 	ja	dc2
@@ -244,7 +326,7 @@ dc1:
 
 display_string:
 	pusha
-@@: 
+@@:
   cmp	byte[esi],0
 	je	@f
 	mov	dl,[esi]
@@ -426,6 +508,10 @@ display_line_data:
 	call	display_string
 	jmp	exit_program
 
+align 4
+fileio FILEIO
+align 4
+fileinfo FILEINFO
 
 character   db ?,0
 bytes_count dd ?
