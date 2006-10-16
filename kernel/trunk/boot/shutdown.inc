@@ -287,12 +287,6 @@ org $-0x10000
     pause_key_1:
       loop  pause_key_1
       ret
-org $+0x10000
-old_ints_h:
-        dw      0x400
-        dd      0
-        dw      0
-org $-0x10000
 
 rdelay:
     ret
@@ -371,14 +365,9 @@ restart_kernel_4000:
 ; bootloader interface
     push    0x1000
     pop    ds
-    mov    si, .bootloader_block;-0x10000
+    mov    si, kernel_restart_bootblock-0x10000
     mov    ax, 'KL'
         jmp     0x1000:0000
-
-.bootloader_block:
-    db    1    ; version
-    dw    1    ; floppy image is in memory
-    dd    0    ; cannot save parameters
 
 APM_PowerOff:
         mov     ax, 5304h

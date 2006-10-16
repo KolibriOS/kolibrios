@@ -162,7 +162,13 @@ org $+0x10000
         mov     esp,0x3ec00             ; Set stack
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
 
+if gdte >= $
+error 'GDT overlaps with used code!'
+end if
+
 use32
+
+include 'unpacker.inc'
 
 iglobal
   boot_memdetect    db   'Determining amount of memory',0

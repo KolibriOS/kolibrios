@@ -15,6 +15,119 @@
 ;
 ;==========================================================================
 
+; 16-bit data
+		org $+0x10000
+
+old_ints_h:
+        dw      0x400
+        dd      0
+        dw      0
+
+kernel_restart_bootblock:
+    db    1    ; version
+    dw    1    ; floppy image is in memory
+    dd    0    ; cannot save parameters
+
+
+align 32
+
+; GDT TABLE
+
+gdts:
+
+        dw     gdte-$-1
+        dd     gdts
+        dw     0
+
+int_code_l:
+os_code_l:
+
+        dw     0xffff
+        dw     0x0000
+        db     0x00
+        dw     11011111b *256 +10011010b
+        db     0x00
+
+int_data_l:
+os_data_l:
+
+        dw     0xffff
+        dw     0x0000
+        db     0x00
+        dw     11011111b *256 +10010010b
+        db     0x00
+
+; --------------- APM ---------------------
+apm_code_32:
+        dw     0x10        ; limit 64kb
+        db     0, 0, 0
+        dw     11011111b *256 +10011010b
+        db     0x00
+apm_code_16:
+        dw     0x10
+        db     0, 0, 0
+        dw     10011111b *256 +10011010b
+        db     0x00
+apm_data_16:
+        dw     0x10
+        db     0, 0, 0
+        dw     10011111b *256 +10010010b
+        db     0x00
+; -----------------------------------------
+
+app_code_l:
+      dw 0xFFFF;((0x80000000-std_application_base_address) shr 12) and 0xffff
+      dw 0
+      db 0x40
+      db cpl3
+      dw G32+D32+0x6000+0x7;
+
+app_data_l:
+      dw 0xFFFF;(0x80000000-std_application_base_address) shr 12 and 0xffff
+      dw 0
+      db 0x40
+      db drw3
+      dw G32+D32+0x6000+0x7;
+
+graph_data_l:
+
+        dw     0x3ff
+        dw     0x0000
+        db     0x00
+        dw     11010000b *256 +11110010b
+        db     0x00
+
+tss0_l:
+;      times (max_processes+10) dd 0,0
+gdte = $ + (max_processes+10)*8
+
+; videomodes table
+gr_table:
+    dw      0x112+0100000000000000b ,  640 ,  480        ; 1
+    dw      0x115+0100000000000000b ,  800 ,  600        ; 2
+    dw      0x118+0100000000000000b , 1024 ,  768        ; 3
+    dw      0x11B+0100000000000000b , 1280 , 1024        ; 4
+    dw      0x112 ,  640 , 480                ; 5
+    dw      0x115 ,  800 , 600                ; 6
+    dw      0x118 , 1024 , 768                ; 7
+    dw      0x11B , 1280 ,1024                ; 8
+    dw    0x13, 640, 480                    ; 9
+    dw    0x12, 640, 480                    ; 0
+
+; table for move to extended memory (int 15h, ah=87h)
+       movedesc:
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+
+        db      0xff,0xff,0x0,0xa0,0x00,0x93,0x0,0x0
+        db      0xff,0xff,0x0,0x00,0x10,0x93,0x0,0x0
+
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        	org $-0x10000
+
 putchar:
 ; in: al=character
     mov    ah, 0Eh
@@ -139,16 +252,16 @@ macro _setcursor row,column
     call    setcursor
 }
 
-pagetable_set:
+;pagetable_set:
 ;eax - physical address
 ;es:di - page table
 ;ecx - number of pages to map
-    or    al, 7
-@@:
-    stosd
-    add    eax, 1000h
-    loop    @b
-    ret
+;    or    al, 7
+;@@:
+;    stosd
+;    add    eax, 1000h
+;    loop    @b
+;    ret
 
 boot_read_floppy:
         push    si
@@ -169,35 +282,6 @@ sayerr_plain:
 @@:
         pop     si
         ret
-
-; 16-bit data
-; videomodes table
-		org $+0x10000
-gr_table:
-    dw      0x112+0100000000000000b ,  640 ,  480        ; 1
-    dw      0x115+0100000000000000b ,  800 ,  600        ; 2
-    dw      0x118+0100000000000000b , 1024 ,  768        ; 3
-    dw      0x11B+0100000000000000b , 1280 , 1024        ; 4
-    dw      0x112 ,  640 , 480                ; 5
-    dw      0x115 ,  800 , 600                ; 6
-    dw      0x118 , 1024 , 768                ; 7
-    dw      0x11B , 1280 ,1024                ; 8
-    dw    0x13, 640, 480                    ; 9
-    dw    0x12, 640, 480                    ; 0
-
-; table for move to extended memory (int 15h, ah=87h)
-       movedesc:
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-
-        db      0xff,0xff,0x0,0xa0,0x00,0x93,0x0,0x0
-        db      0xff,0xff,0x0,0x00,0x10,0x93,0x0,0x0
-
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        	org $-0x10000
 
 ;=========================================================================
 ;

@@ -578,11 +578,7 @@ panels_OnKey:
         mov     [ebp + panel1_start - panel1_data], eax
         jmp     .done_redraw
 .enter:
-        mov     eax, [ebp + panel1_files - panel1_data]
-        mov     ecx, [eax+ecx*4]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     ecx, [ecx+eax*4+32]
-        add     ecx, [ebp + panel1_files - panel1_data]
+        call    get_curfile_folder_entry
         test    byte [ecx], 10h
         jnz     .enter_folder
 ; find extension
@@ -889,11 +885,73 @@ panels_OnKey:
 .ret2:
         ret
 .f8:
-        mov     eax, [ebp + panel1_files - panel1_data]
-        mov     ecx, [eax+ecx*4]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     ecx, [ecx+eax*4+32]
-        add     ecx, [ebp + panel1_files - panel1_data]
+        call    get_curfile_folder_entry
+        cmp     [bConfirmDelete], 0
+        jz      .f8_allowed
+        mov     ebx, f8_confirm_dlgdata
+        mov     esi, aConfirmDeleteText
+        mov     edi, aConfirmDeleteTextBuf
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        dec     edi
+        mov     esi, aDeleteFolder
+        test    byte [ecx], 10h
+        jnz     @f
+        mov     esi, aDeleteFile
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        lea     esi, [ecx+40]
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.name], esi
+        or      eax, -1
+@@:
+        inc     eax
+        cmp     byte [eax+esi], 0
+        jnz     @b
+        sub     edi, aConfirmDeleteTextBuf+1
+        cmp     eax, edi
+        jae     @f
+        mov     eax, edi
+@@:
+        inc     eax
+        inc     eax
+        mov     edx, [cur_width]
+        sub     edx, 8
+        cmp     eax, edx
+        jbe     @f
+        mov     eax, edx
+@@:
+        mov     [ebx + dlgtemplate.width], eax
+        dec     eax
+        dec     eax
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.width2], eax
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.width3], eax
+        shr     eax, 1
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.del_x2], eax
+        sub     eax, aDeleteLength-1
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.del_x1], eax
+        add     eax, aDeleteLength
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.cnl_x1], eax
+        add     eax, aCancelLength - 1
+        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.cnl_x2], eax
+        mov     al, [dialog_border_color]
+        mov     [ebx + dlgtemplate.border_color], al
+        mov     al, [dialog_header_color]
+        mov     [ebx + dlgtemplate.header_color], al
+        mov     al, [dialog_main_color]
+        mov     [ebx + dlgtemplate.main_color], al
+        or      byte [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.flags1], 4
+        and     byte [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.flags2], not 4
+        push    ebx
+        call    DialogBox
+        cmp     eax, f8_confirm_dlgdata.del_btn
+        jnz     .ret2
+.f8_allowed:
         lea     esi, [ebp + panel1_dir - panel1_data]
         mov     edi, execdata
 @@:
@@ -921,11 +979,8 @@ panels_OnKey:
 ;       jmp     .done_redraw
         mov     eax, [ebp + panel1_index - panel1_data]
         push    eax
-        mov     ecx, [ebp + panel1_files - panel1_data]
-        mov     ecx, [ecx+eax*4]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     esi, [ecx+eax*4+32+40]
-        add     esi, [ebp + panel1_files - panel1_data]
+        call    get_curfile_name
+        mov     esi, eax
         mov     edi, saved_file_name
 @@:
         lodsb
@@ -1010,6 +1065,21 @@ init_console:
         dec     eax
         mov     [panel1_height], eax
         mov     [panel2_height], eax
+        ret
+
+get_curfile_folder_entry:
+        push    eax
+        mov     ecx, [ebp + panel1_index - panel1_data]
+        mov     eax, [ebp + panel1_files - panel1_data]
+        mov     ecx, [eax+ecx*4]
+        mov     eax, [ebp + panel1_nfa - panel1_data]
+        lea     ecx, [ecx+eax*4+32]
+        add     ecx, [ebp + panel1_files - panel1_data]
+        pop     eax
+        ret
+get_curfile_name:
+        call    get_curfile_folder_entry
+        add     ecx, 40
         ret
 
 panels_getname:
@@ -2811,7 +2881,7 @@ match_symbol:
         ret
 
 
-header  db      'Kolibri Far 0.13'
+header  db      'Kolibri Far 0.14'
 ;.length = $ - header
         db      0
 
@@ -3407,6 +3477,8 @@ else
 compare_names   db      'nNxXmMsSuUcCaA'
 end if
 
+; Здесь начинаются конфигурационные данные - в текущей реализации они зашиты в бинарник
+
 ; Панель
 panel_normal_color      db      1Bh
 panel_border_color      db      1Bh
@@ -3415,6 +3487,12 @@ panel_header_color      db      1Bh
 panel_active_header_color db    30h
 column_header_color     db      1Eh
 panel_nscreens_color    db      0Bh
+; Диалоги
+dialog_main_color       db      70h
+dialog_border_color     db      70h
+dialog_header_color     db      70h
+dialog_normal_btn_color db      70h
+dialog_selected_btn_color db    30h
 ; Меню
 menu_normal_color       db      3Fh
 menu_selected_color     db      0Fh
@@ -3511,10 +3589,6 @@ highlight_group9:
         db      10h
         db      '*',0
 
-bWasE0          db      0
-ctrlstate       db      0
-MemForImage     dd      0
-
 associations:
         dd      aAsm, tinypad
         dd      aInc, tinypad
@@ -3557,6 +3631,85 @@ archer db '/rd/1/@rcher',0
 
 aRtf db 'rtf',0
 rtfread db '/rd/1/RtfRead',0
+
+bConfirmDelete  db      1
+
+; Здесь заканчиваются конфигурационные данные
+
+bWasE0          db      0
+ctrlstate       db      0
+MemForImage     dd      0
+
+align   4
+f8_confirm_dlgdata:
+        dd      0
+.x      dd      -1
+.y      dd      -1
+.width  dd      ?
+.height dd      3
+        dd      4
+        dd      2
+        dd      aDeleteCaption
+.main_color db ?
+.border_color db ?
+.header_color db ?
+        db      0
+        dd      0
+        dd      0
+        dd      4
+; строка "Вы хотите удалить ..."
+        dd      1
+        dd      1,0
+.width2 dd      ?
+        dd      0
+        dd      aConfirmDeleteTextBuf
+        dd      1
+; строка с именем файла/папки
+        dd      1
+        dd      1,1
+.width3 dd      ?
+        dd      1
+.name   dd      ?
+        dd      1
+; кнопка "удалить"
+.del_btn:
+        dd      2
+.del_x1 dd      ?
+        dd      2
+.del_x2 dd      ?
+        dd      2
+        dd      aDelete
+.flags1 dd      4
+; кнопка "отменить"
+        dd      2
+.cnl_x1 dd      ?
+        dd      2
+.cnl_x2 dd      ?
+        dd      2
+        dd      aCancel
+.flags2 dd      0
+
+if lang eq ru
+aDeleteCaption          db      'Удаление',0
+aConfirmDeleteText      db      'Вы хотите удалить ',0
+aDeleteFolder           db      'папку',0
+aConfirmDeleteTextMax = $ - aConfirmDeleteText - 2
+aDeleteFile             db      'файл',0
+aDelete                 db      ' Удалить ',0
+aDeleteLength = $ - aDelete - 1
+aCancel                 db      ' Отменить ',0
+aCancelLength = $ - aCancel - 1
+else
+aDeleteCaption          db      'Delete',0
+aConfirmDeleteText      db      'Do you wish to delete ',0
+aDeleteFolder           db      'the folder',0
+aConfirmDeleteTextMax = $ - aConfirmDeleteText - 2
+aDeleteFile             db      'the file',0
+aDelete                 db      ' Delete ',0
+aDeleteLength = $ - aDelete - 1
+aCancel                 db      ' Cancel ',0
+aCancelLength = $ - aCancel - 1
+end if
 
 execinfo:
         dd      7
@@ -3637,8 +3790,10 @@ num_screens     dd      ?
 active_screen_vtable dd ?
 active_screen_data dd   ?
 
+aConfirmDeleteTextBuf   rb      aConfirmDeleteTextMax + 1
+
 ; stack
-        align   512
+        align   4
         rb      512
 stacktop:
 ; buffers for directory - may be resized dynamically

@@ -1,5 +1,5 @@
-; int __stdcall DialogBox(DLGTEMPLATE* dlg, void* DlgProc);
-;       int __stdcall DlgProc(int msg, int param1, int param2);
+; int __stdcall GenericBox(DLGTEMPLATE* dlg, void* DlgProc);
+;       int __stdcall DlgProc(DLGTEMPLATE* dlg, int msg, int param1, int param2);
 
 virtual at 0
 dlgtemplate:
@@ -15,12 +15,28 @@ dlgtemplate:
 .border_color   db      ?
 .header_color   db      ?
                 db      ?       ; align
+.size = $
 end virtual
 
-DialogBox:
+GenericBox:
         pushad
-; some checks
         mov     ebx, [esp+20h+4]
+; center window if required
+        cmp     [ebx+dlgtemplate.x], -1
+        jnz     @f
+        mov     eax, [cur_width]
+        sub     eax, [ebx+dlgtemplate.width]
+        shr     eax, 1
+        mov     [ebx+dlgtemplate.x], eax
+@@:
+        cmp     [ebx+dlgtemplate.y], -1
+        jnz     @f
+        mov     eax, [cur_height]
+        sub     eax, [ebx+dlgtemplate.height]
+        shr     eax, 1
+        mov     [ebx+dlgtemplate.y], eax
+@@:
+; some checks
         mov     eax, [ebx+dlgtemplate.x]
         cmp     eax, 1
         jl      .sizeerr
@@ -259,6 +275,7 @@ DialogBox:
         push    0
         push    0
         push    1
+        push    ebx
         call    eax
         call    draw_image
         pop     ebp ebx
@@ -309,6 +326,7 @@ DialogBox:
         push    0
         push    eax
         push    2
+        push    ebx
         call    ecx
         pop     ebp ebx
         test    eax, eax
@@ -649,7 +667,7 @@ menu_centered_in:
         mov     [ebx+dlgtemplate.header_color], al
         push    MenuDlgProc
         push    ebx
-        call    DialogBox
+        call    GenericBox
         mov     [esp+28], eax
         mov     eax, ebx
         call    mf_free
@@ -657,17 +675,17 @@ menu_centered_in:
         ret     28
 
 MenuDlgProc:
-        mov     eax, [esp+4]
+        mov     eax, [esp+8]
         cmp     al, 1
         jz      .draw
         cmp     al, 2
         jz      .key
-        ret     12
+        ret     16
 .draw:
         call    .dodraw
-        ret     12
+        ret     16
 .key:
-        mov     al, [esp+8]
+        mov     al, [esp+12]
         cmp     al, 0x48
         jz      .prev
         cmp     al, 0x4B
@@ -707,14 +725,14 @@ MenuDlgProc:
         cmp     [ascii2scan+ecx], al
         jnz     .n
         mov     eax, edx
-        ret     12
+        ret     16
 .n:
         mov     edx, [edx]
         test    edx, edx
         jnz     .l
 .ret:
         xor     eax, eax
-        ret     12
+        ret     16
 .pgup:
         mov     eax, [ebx+36]
         mov     ecx, [ebx+dlgtemplate.height]
@@ -735,7 +753,7 @@ MenuDlgProc:
         call    .dodraw
         call    draw_image
         xor     eax, eax
-        ret     12
+        ret     16
 .next:
         mov     eax, [ebx+36]
         cmp     dword [eax], 0
@@ -797,10 +815,10 @@ MenuDlgProc:
         jmp     .posret
 .esc:
         or      eax, -1
-        ret     12
+        ret     16
 .enter:
         mov     eax, [ebx+36]
-        ret     12
+        ret     16
 
 .line_prev:
         cmp     eax, [ebx+44]
@@ -932,3 +950,256 @@ MenuDlgProc:
         stosw
 .noscrollbar:
         ret
+
+virtual at 0
+dlgitemtemplate:
+; Элементы:
+;       1 = статический текст
+.type           dd      ?
+.x1             dd      ?
+.y1             dd      ?
+.x2             dd      ?
+.y2             dd      ?
+.data           dd      ?
+.flags          dd      ?
+; Флаги:
+;       0 = выравнивание влево
+;       1 = выравнивание по центру
+;       2 = выравнивание вправо
+;       4 = элемент имеет фокус ввода
+.size = $
+end virtual
+;       struct DLGDATA
+;       {
+;               DLGTEMPLATE dialog;     /* window description */
+;               void* DlgProc;          /* dialog procedure */
+; /* int __stdcall DlgProc(DLGDATA* dlg, int msg, int param1, int param2); */
+;               void* user_data;        /* arbitrary user data */
+;               unsigned num_items;     /* number of items in the following array */
+;               DLGITEMTEMPLATE items[]; /* array of dialog items */
+;       }
+; int __stdcall DialogBox(DLGDATA* dlg);
+DialogBox:
+        push    ManagerDlgProc
+        push    dword [esp+8]
+        call    GenericBox
+        ret     8
+
+ManagerDlgProc:
+        mov     eax, [esp+8]
+        dec     eax
+        jz      .draw
+        dec     eax
+        jz      .key
+        xor     eax, eax
+        ret     16
+.draw:
+        call    .dodraw
+        ret     16
+.key:
+; find item with focus
+        add     ebx, dlgtemplate.size+12
+        mov     ecx, [ebx-4]
+        jecxz   .nobtns
+@@:
+        test    [ebx+dlgitemtemplate.flags], 4
+        jnz     @f
+        add     ebx, dlgitemtemplate.size
+        loop    @b
+@@:
+.nobtns:
+        mov     al, [esp+12]
+        cmp     al, 1
+        jz      .esc
+        cmp     al, 0x1C
+        jz      .enter
+        cmp     al, 0xF
+        jz      .tab
+        cmp     al, 0x48
+        jz      .up
+        cmp     al, 0x4B
+        jz      .left
+        cmp     al, 0x4D
+        jz      .right
+        cmp     al, 0x50
+        jz      .down
+.ret0:
+        xor     eax, eax
+        ret     16
+.esc:
+        or      eax, -1
+        ret     16
+.enter:
+        mov     eax, ebx
+        ret     16
+.tab:
+        test    [ctrlstate], 3
+        jnz     .shift_tab
+.right:
+.down:
+        jecxz   .ret0
+        and     byte [ebx+dlgitemtemplate.flags], not 4
+        dec     ecx
+        jz      .find_first_btn
+@@:
+        add     ebx, dlgitemtemplate.size
+        cmp     [ebx+dlgitemtemplate.type], 2
+        jz      .btn_found
+        loop    @b
+.find_first_btn:
+        mov     ebx, [esp+4]
+        add     ebx, dlgtemplate.size+12
+@@:
+        cmp     [ebx+dlgitemtemplate.type], 2
+        jz      .btn_found
+        add     ebx, dlgitemtemplate.size
+        jmp     @b
+.btn_found:
+        or      byte [ebx+dlgitemtemplate.flags], 4
+        mov     ebx, [esp+4]
+        call    .dodraw
+        call    draw_image
+        xor     eax, eax
+        ret     16
+.shift_tab:
+.left:
+.up:
+        jecxz   .ret0
+        and     byte [ebx+dlgitemtemplate.flags], not 4
+        mov     eax, [esp+4]
+        sub     ecx, [eax+dlgtemplate.size+8]
+        neg     ecx
+        jz      .find_last_btn
+@@:
+        sub     ebx, dlgitemtemplate.size
+        cmp     [ebx+dlgitemtemplate.type], 2
+        loopnz  @b
+        jz      .btn_found
+.find_last_btn:
+        mov     ebx, [eax+dlgtemplate.size+8]
+        imul    ebx, dlgitemtemplate.size
+        lea     ebx, [ebx+eax+dlgtemplate.size+12]
+@@:
+        sub     ebx, dlgitemtemplate.size
+        cmp     [ebx+dlgitemtemplate.type], 2
+        jnz     @b
+        jmp     .btn_found
+
+.dodraw:
+        add     ebx, dlgtemplate.size+8
+        mov     ecx, [ebx]
+        add     ebx, 4
+        jecxz   .done_draw
+.draw_loop:
+        push    ecx
+        mov     eax, [ebx+dlgitemtemplate.type]
+        dec     eax
+        jz      .draw_text
+        dec     eax
+        jnz     .draw_loop_continue
+        call    draw_button
+        jmp     .draw_loop_continue
+.draw_text:
+        call    draw_static_text
+.draw_loop_continue:
+        pop     ecx
+        add     ebx, dlgitemtemplate.size
+        loop    .draw_loop
+.done_draw:
+        ret
+
+draw_static_text:
+; рисуем статический текст
+        mov     ah, [dialog_main_color]
+draw_text:
+; определяем длину строки
+        mov     esi, [ebx+dlgitemtemplate.data]
+        test    esi, esi
+        jz      .ret
+        or      ecx, -1
+@@:
+        inc     ecx
+        cmp     byte [ecx+esi], 0
+        jnz     @b
+; в ecx длина строки
+        push    eax
+        xor     eax, eax
+        mov     edx, [ebx+dlgitemtemplate.x2]
+        sub     edx, [ebx+dlgitemtemplate.x1]
+        inc     edx
+        cmp     ecx, edx
+        jae     .text_draw
+        mov     al, byte [ebx+dlgitemtemplate.flags]
+        and     al, 3
+        jz      .text_align_left
+        cmp     al, 1
+        jz      .text_align_center
+; текст выровнен вправо
+        mov     eax, edx
+        sub     eax, ecx
+        jmp     .text_draw
+.text_align_center:
+        mov     eax, edx
+        sub     eax, ecx
+        shr     eax, 1
+        jmp     .text_draw
+.text_align_left:
+        xor     eax, eax
+.text_draw:
+        push    ecx
+        mov     ecx, [esp+24]
+        push    eax
+        mov     eax, [ebx+dlgitemtemplate.x1]
+        add     eax, [ecx+dlgtemplate.x]
+        push    edx
+        mov     edx, [ebx+dlgitemtemplate.y1]
+        add     edx, [ecx+dlgtemplate.y]
+        call    get_console_ptr
+        pop     edx
+        pop     ecx
+        mov     ah, [esp+5]
+        mov     al, ' '
+        rep     stosw
+        pop     ecx
+        cmp     ecx, edx
+        jbe     .text_copy
+        cmp     edx, 3
+        jb      .ret
+        mov     al, '.'
+        stosw
+        stosw
+        stosw
+        add     esi, ecx
+        mov     ecx, edx
+        sub     ecx, 3
+        sub     esi, ecx
+.text_copy:
+        jecxz   .ret
+@@:
+        lodsb
+        stosw
+        loop    @b
+.ret:
+        mov     ecx, [esp+20]
+        mov     eax, [ecx+dlgtemplate.x]
+        mov     edx, [ecx+dlgtemplate.y]
+        add     eax, [ebx+dlgitemtemplate.x2]
+        inc     eax
+        add     edx, [ebx+dlgitemtemplate.y1]
+        mov     ecx, edi
+        call    get_console_ptr
+        xchg    ecx, edi
+        sub     ecx, edi
+        shr     ecx, 1
+        pop     eax
+        mov     al, ' '
+        rep     stosw
+        ret
+
+draw_button:
+        mov     ah, [dialog_normal_btn_color]
+        test    [ebx+dlgitemtemplate.flags], 4
+        jz      @f
+        mov     ah, [dialog_selected_btn_color]
+@@:
+        jmp     draw_text

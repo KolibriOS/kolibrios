@@ -7,85 +7,10 @@
 ;;                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 32
-
-; GDT TABLE
-
-gdts:
-
-        dw     gdte-$-1
-        dd     gdts
-        dw     0
-
-int_code_l:
-os_code_l:
-
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10011010b
-        db     0x00
-
-int_data_l:
-os_data_l:
-
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10010010b
-        db     0x00
-
-; --------------- APM ---------------------
-apm_code_32:
-        dw     0x10        ; limit 64kb
-        db     0, 0, 0
-        dw     11011111b *256 +10011010b
-        db     0x00
-apm_code_16:
-        dw     0x10
-        db     0, 0, 0
-        dw     10011111b *256 +10011010b
-        db     0x00
-apm_data_16:
-        dw     0x10
-        db     0, 0, 0
-        dw     10011111b *256 +10010010b
-        db     0x00
-; -----------------------------------------
-
-app_code_l:
-      dw 0xFFFF;((0x80000000-std_application_base_address) shr 12) and 0xffff
-      dw 0
-      db 0x40
-      db cpl3
-      dw G32+D32+0x6000+0x7;
-
-app_data_l:
-      dw 0xFFFF;(0x80000000-std_application_base_address) shr 12 and 0xffff
-      dw 0
-      db 0x40
-      db drw3
-      dw G32+D32+0x6000+0x7;
-
-graph_data_l:
-
-        dw     0x3ff
-        dw     0x0000
-        db     0x00
-        dw     11010000b *256 +11110010b
-        db     0x00
-
-tss0_l:
-      times (max_processes+10) dd 0,0
-
-gdte:
-
-
 idtreg:
      dw   8*0x41-1
      dd   idts+8
 ;label idts at 0xB100-8
-
 
 
 uglobal
