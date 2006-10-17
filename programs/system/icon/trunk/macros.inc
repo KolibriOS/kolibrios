@@ -143,10 +143,6 @@ macro mcall a,b,c,d,e,f {   ; mike.dld
 
 
 
-
-
-
-
 ; optimize the code for size
 __regs fix <eax,ebx,ecx,edx,esi,edi,ebp,esp>
 
@@ -178,7 +174,7 @@ macro sub arg1,arg2
 
 macro mov arg1,arg2
  {
-   if (arg1 in __regs) & (arg2 eqtype 0)
+   if (arg1 in __regs) & ((arg2 eqtype 0) | (arg2 eqtype '0'))
       if (arg2) = 0
          xor arg1,arg1
       else if (arg2) = 1

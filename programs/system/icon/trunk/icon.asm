@@ -184,6 +184,15 @@ still:
 
     jmp  newread2
 
+finfo_start:
+        dd      7
+        dd      0
+.params dd      0
+        dd      0
+        dd      0
+        db      0
+        dd      finfo.path
+
 finfo:
         dd 0
         dd 0
@@ -198,12 +207,12 @@ finfo:
 
    apply_changes:
 
-    mov  ebx,finfo
-    mov  dword[ebx],16
-    mov  dword[ebx+8],boot_str+6
-    mov  esi,iconname
-    call lst_path
-    mcall 58
+        mov     ebx, finfo_start
+        mov     dword [ebx+8], boot_str+6
+        mov     esi, iconname
+        call    lst_path
+        mov     eax, 70
+        int     0x40
     jmp   still
 
   no_apply:
@@ -916,9 +925,6 @@ calc_icon_pos:
 
 ;START2:
 load_icon_list2:
-        mov  eax,finfo
-        mov  dword[eax],16
-        mov  dword[eax+8],param_str
     call  get_bg_info
 
         mcall   48,5
@@ -1042,15 +1048,15 @@ still2:
           call fill_paths
           inc  ebx
        mov  edi,param_str
-    mov  dword[finfo+8],param_str
+    mov  dword[finfo_start+8],edi
           call fill_paths
           cmp  byte[edi],0
     jne  .no0
-    and  dword[finfo+8],0
+    and  dword[finfo_start+8],0
   .no0:
 ;    lea  ebx,[ebp+19]
-    mov  ebx,finfo
-    mov  eax,58
+    mov  ebx,finfo_start
+    mov  eax,70
     int  0x40
 ;    dph  eax
     cmp  eax,1024
