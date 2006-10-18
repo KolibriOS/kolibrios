@@ -270,7 +270,7 @@ drawwindow_IV:
 
         push  edx
 
-        mov   edi,[esp]                              ; RECTANGLE
+        mov   edi,edx
 
         mov     ebp,skin_active
         cmp     byte [esp+32+4+4],0
@@ -290,6 +290,7 @@ drawwindow_IV:
 ;        shr   esi,1
 ;        and   esi,0x007f7f7f
         mov   esi,[ebp+SKIN_DATA.colors.outer]
+        or      [edi+WDATA.fl_wdrawn], 4
         call  draw_rectangle
         mov   ecx,3
       _dw3l:
@@ -430,8 +431,13 @@ drawwindow_IV:
         mov   [eax],bx
 
       no_skin_add_button:
+        pop     edi
+        and     [edi+WDATA.fl_wdrawn], not 4
+        test    [edi+WDATA.fl_wdrawn], 2
+        jz      @f
+        call    drawwindowframes2
+@@:
 
-        add   esp,4
         popa
 
         ret  4

@@ -2696,8 +2696,7 @@ sys_redrawstat:
     mov   [edx+RECT.bottom],eax
 
     mov   edi,[0x3010]
-    mov   [edi-twdw+WDATA.fl_wdrawn], 1   ; no new position & buttons from app
-    mov   [edi-twdw+WDATA.fl_redraw], 0
+    or    [edi-twdw+WDATA.fl_wdrawn], 1   ; no new position & buttons from app
 
     call  sys_window_mouse
 
@@ -2949,8 +2948,8 @@ sys_set_window:
     mov   [edi+WDATA.cl_frames],esi
 
     ; check flag (?)
-    cmp   [edi+WDATA.fl_wdrawn],1
-    jz    newd
+    test  [edi+WDATA.fl_wdrawn],1
+    jnz   newd
 
     push  eax
     mov   eax,[timer_ticks] ;[0xfdf0]
@@ -2986,9 +2985,10 @@ sys_set_window:
     @@: mov     esi,[esp+0]
 
     add   edi, APPDATA.saved_box
-    mov   ecx,4
-    cld
-    rep   movsd
+        movsd
+        movsd
+        movsd
+        movsd
     pop   edi esi ecx
 
     push  eax ebx ecx edx
@@ -3007,7 +3007,7 @@ sys_set_window:
     mov   [0xf500],byte 0           ; empty button buffer
 
   newd:
-;    mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
+    mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
     mov   edx,edi
 
     ret

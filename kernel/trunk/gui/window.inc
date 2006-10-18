@@ -705,6 +705,7 @@ drawwindow_I_caption:
 drawwindow_I:
 
         pushad
+        or      [edx+WDATA.fl_wdrawn], 4
 
         mov   esi,[edx+WDATA.cl_frames]   ; rectangle
         mov   eax,[edx+WDATA.box.left]
@@ -716,6 +717,12 @@ drawwindow_I:
         add   ebx,[edx+WDATA.box.top]
         add   ebx,[edx+WDATA.box.height]
         call  draw_rectangle
+
+        and     [edx+WDATA.fl_wdrawn], not 4
+        test    [edx+WDATA.fl_wdrawn], 2
+        jz      @f
+        call    drawwindowframes2
+@@:
 
         call    drawwindow_I_caption
 
@@ -846,7 +853,13 @@ drawwindow_III:
         shr   esi,1
         and   esi,0x007f7f7f
         push  esi
+        or      [edi+WDATA.fl_wdrawn], 4
         call  draw_rectangle
+        and     [edi+WDATA.fl_wdrawn], not 4
+        test    [edi+WDATA.fl_wdrawn], 2
+        jz      @f
+        call    drawwindowframes2
+@@:
         mov   ecx,3
       dw3l:
         add   eax,1*65536-1
@@ -1645,92 +1658,80 @@ endg
 
 
 ; draw negative window frames
-uglobal
-moving_wnd dd ?
-moving_wnd_redrawed db ?
-endg
-
+drawwindowframes2:
+        pushad
+        cli
+        jmp     drawwindowframes.do
 drawwindowframes:
-        mov     [moving_wnd], edi
+        pushad
+        cli
 
         test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jnz     .ret
-        cmp     [edi+WDATA.fl_redraw], 0
-        jz      @f
-        xor     [moving_wnd_redrawed], 1
-        jmp     .ret
-@@:
-        cmp     [moving_wnd_redrawed], 0
-        jz      @f
-        mov     [moving_wnd_redrawed], 0
+        mov     eax, [npx]
+        cmp     eax, [edi+WDATA.box.left]
+        jnz     .nowndframe
+        mov     eax, [npxe]
+        cmp     eax, [edi+WDATA.box.width]
+        jnz     .nowndframe
+        mov     eax, [npy]
+        cmp     eax, [edi+WDATA.box.top]
+        jnz     .nowndframe
+        mov     eax, [npye]
+        cmp     eax, [edi+WDATA.box.height]
+        jnz     .nowndframe
+        xor     [edi+WDATA.fl_wdrawn], 2
+        test    [edi+WDATA.fl_wdrawn], 4
+        jnz     .ret
+
+.nowndframe:
+.do:
+        mov     edi, 1
+        mov     ecx, 0x01000000
+        mov   eax,[npx]
+        shl   eax,16
+        add   eax,[npx]
+        add   eax,[npxe]
+        add   eax,65536*1-1
+        mov   ebx,[npy]
+        shl   ebx,16
+        add   ebx,[npy]
+        call  [draw_line]
+
+        mov   eax,[npx]
+        shl   eax,16
+        add   eax,[npx]
+        add   eax,[npxe]
+        add   eax,65536*1-1
+        mov   ebx,[npy]
+        add   ebx,[npye]
+        shl   ebx,16
+        add   ebx,[npy]
+        add   ebx,[npye]
+        call  [draw_line]
+
+        mov   eax,[npx]
+        shl   eax,16
+        add   eax,[npx]
+        mov   ebx,[npy]
+        shl   ebx,16
+        add   ebx,[npy]
+        add   ebx,[npye]
+        call  [draw_line]
+
+        mov   eax,[npx]
+        add   eax,[npxe]
+        shl   eax,16
+        add   eax,[npx]
+        add   eax,[npxe]
+        mov   ebx,[npy]
+        shl   ebx,16
+        add   ebx,[npy]
+        add   ebx,[npye]
+        call  [draw_line]
+
 .ret:
-        ret
-@@:
-
-        pushad
-
-        mov   eax,[npx]
-        shl   eax,16
-        add   eax,[npx]
-        add   eax,[npxe]
-        add   eax,65536*1-1
-        mov   ebx,[npy]
-        shl   ebx,16
-        add   ebx,[npy]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
-        call  [draw_line]
-        pop   edi
-
-        mov   eax,[npx]
-        shl   eax,16
-        add   eax,[npx]
-        add   eax,[npxe]
-        add   eax,65536*1-1
-        mov   ebx,[npy]
-        add   ebx,[npye]
-        shl   ebx,16
-        add   ebx,[npy]
-        add   ebx,[npye]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
-        call  [draw_line]
-        pop   edi
-
-        mov   eax,[npx]
-        shl   eax,16
-        add   eax,[npx]
-        mov   ebx,[npy]
-        shl   ebx,16
-        add   ebx,[npy]
-        add   ebx,[npye]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
-        call  [draw_line]
-        pop   edi
-
-        mov   eax,[npx]
-        add   eax,[npxe]
-        shl   eax,16
-        add   eax,[npx]
-        add   eax,[npxe]
-        mov   ebx,[npy]
-        shl   ebx,16
-        add   ebx,[npy]
-        add   ebx,[npye]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
-        call  [draw_line]
-        mov   edi,[0x3000]
-        shl   edi,5
-        add   edi,window_data
-        mov   [edi+WDATA.fl_wdrawn],byte 1
-        pop   edi
-
+        sti
         popad
         ret
 
