@@ -62,10 +62,23 @@ change_task:
         pushad
 
         call  update_counters
+; \begin{Mario79}
+        cmp     [dma_task_switched], 1
+        jne     .find_next_task
+        mov     [dma_task_switched], 0
+        mov     ebx, [dma_process]
+        cmp     [0x3000], ebx
+        je      .return
+        mov     edi, [dma_slot_ptr]
+        mov     [0x3000], ebx
+        mov     [0x3010], edi
+        jmp     @f
+.find_next_task:
+; \end{Mario79}
         call  find_next_task
         test  eax, eax    ; the same task -> skip switch
         jnz    .return
-
+@@:
         mov   [0xffff],byte 1
         call  do_change_task
 

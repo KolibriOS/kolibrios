@@ -465,15 +465,15 @@ sayerr:
         mov     si, 0   ; device index = 0
         int     0x1A
         jnc     .found
-; b) class 1, subclass 1, programming interface 0x85
+; b) class 1, subclass 1, programming interface 0x8A
         mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x85
+        mov     ecx, 1*10000h + 1*100h + 0x8A
         mov     si, 0   ; device index = 0
         int     0x1A
         jnc     .found
-; c) class 1, subclass 1, programming interface 0x8A
+; c) class 1, subclass 1, programming interface 0x85
         mov     ax, 0xB103
-        mov     ecx, 1*10000h + 1*100h + 0x8A
+        mov     ecx, 1*10000h + 1*100h + 0x85
         mov     si, 0
         int     0x1A
         jc      .nopci
