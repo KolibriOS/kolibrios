@@ -95,125 +95,125 @@ DEV_GET_MASTERVOL     equ  7
 DEV_GET_INFO          equ  8
 
 struc AC_CNTRL		    ;AC controller base class
-{ .bus		      dd 0
-  .devfn	      dd 0
+{ .bus                dd ?
+  .devfn              dd ?
 
-  .vendor	      dd 0
-  .dev_id	      dd 0
-  .pci_cmd	      dd 0
-  .pci_stat	      dd 0
+  .vendor             dd ?
+  .dev_id             dd ?
+  .pci_cmd            dd ?
+  .pci_stat           dd ?
 
-  .codec_io_base      dd 0
-  .codec_mem_base     dd 0
+  .codec_io_base      dd ?
+  .codec_mem_base     dd ?
 
-  .ctrl_io_base       dd 0
-  .ctrl_mem_base      dd 0
-  .cfg_reg	      dd 0
-  .int_line	      dd 0
+  .ctrl_io_base       dd ?
+  .ctrl_mem_base      dd ?
+  .cfg_reg            dd ?
+  .int_line           dd ?
 
-  .vendor_ids	      dd 0    ;vendor id string
-  .ctrl_ids	      dd 0    ;hub id string
+  .vendor_ids         dd ?    ;vendor id string
+  .ctrl_ids           dd ?    ;hub id string
 
-  .buffer	      dd 0
+  .buffer             dd ?
 
-  .notify_pos	      dd 0
-  .notify_task	      dd 0
+  .notify_pos         dd ?
+  .notify_task        dd ?
 
-  .lvi_reg	      dd 0
-  .ctrl_setup	      dd 0
-  .user_callback      dd 0
-  .codec_read16       dd 0
-  .codec_write16      dd 0
+  .lvi_reg            dd ?
+  .ctrl_setup         dd ?
+  .user_callback      dd ?
+  .codec_read16       dd ?
+  .codec_write16      dd ?
 
-  .ctrl_read8	      dd 0
-  .ctrl_read16	      dd 0
-  .ctrl_read32	      dd 0
+  .ctrl_read8         dd ?
+  .ctrl_read16        dd ?
+  .ctrl_read32        dd ?
 
-  .ctrl_write8	      dd 0
-  .ctrl_write16       dd 0
-  .ctrl_write32       dd 0
+  .ctrl_write8        dd ?
+  .ctrl_write16       dd ?
+  .ctrl_write32       dd ?
 }
 
 struc CODEC		   ;Audio Chip base class
 {
-  .chip_id	      dd 0
-  .flags	      dd 0
-  .status	      dd 0
+  .chip_id            dd ?
+  .flags              dd ?
+  .status             dd ?
 
-  .ac_vendor_ids      dd 0    ;ac vendor id string
-  .chip_ids	      dd 0    ;chip model string
+  .ac_vendor_ids      dd ?    ;ac vendor id string
+  .chip_ids           dd ?    ;chip model string
 
-  .shadow_flag	      dd 0
-		      dd 0
+  .shadow_flag        dd ?
+                      dd ?
 
-  .regs 	      dw 0     ; codec registers
-  .reg_master_vol     dw 0     ;0x02
-  .reg_aux_out_vol    dw 0     ;0x04
-  .reg_mone_vol       dw 0     ;0x06
-  .reg_master_tone    dw 0     ;0x08
-  .reg_beep_vol       dw 0     ;0x0A
-  .reg_phone_vol      dw 0     ;0x0C
-  .reg_mic_vol	      dw 0     ;0x0E
-  .reg_line_in_vol    dw 0     ;0x10
-  .reg_cd_vol	      dw 0     ;0x12
-  .reg_video_vol      dw 0     ;0x14
-  .reg_aux_in_vol     dw 0     ;0x16
-  .reg_pcm_out_vol    dw 0     ;0x18
-  .reg_rec_select     dw 0     ;0x1A
-  .reg_rec_gain       dw 0     ;0x1C
-  .reg_rec_gain_mic   dw 0     ;0x1E
-  .reg_gen	      dw 0     ;0x20
-  .reg_3d_ctrl	      dw 0     ;0X22
-  .reg_page	      dw 0     ;0X24
-  .reg_powerdown      dw 0     ;0x26
-  .reg_ext_audio      dw 0     ;0x28
-  .reg_ext_st	      dw 0     ;0x2a
-  .reg_pcm_front_rate dw 0     ;0x2c
-  .reg_pcm_surr_rate  dw 0     ;0x2e
-  .reg_lfe_rate       dw 0     ;0x30
-  .reg_pcm_in_rate    dw 0     ;0x32
-		      dw 0     ;0x34
-  .reg_cent_lfe_vol   dw 0     ;0x36
-  .reg_surr_vol       dw 0     ;0x38
-  .reg_spdif_ctrl     dw 0     ;0x3A
-		      dw 0     ;0x3C
-		      dw 0     ;0x3E
-		      dw 0     ;0x40
-		      dw 0     ;0x42
-		      dw 0     ;0x44
-		      dw 0     ;0x46
-		      dw 0     ;0x48
-		      dw 0     ;0x4A
-		      dw 0     ;0x4C
-		      dw 0     ;0x4E
-		      dw 0     ;0x50
-		      dw 0     ;0x52
-		      dw 0     ;0x54
-		      dw 0     ;0x56
-		      dw 0     ;0x58
-		      dw 0     ;0x5A
-		      dw 0     ;0x5C
-		      dw 0     ;0x5E
-  .reg_page_0	      dw 0     ;0x60
-  .reg_page_1	      dw 0     ;0x62
-  .reg_page_2	      dw 0     ;0x64
-  .reg_page_3	      dw 0     ;0x66
-  .reg_page_4	      dw 0     ;0x68
-  .reg_page_5	      dw 0     ;0x6A
-  .reg_page_6	      dw 0     ;0x6C
-  .reg_page_7	      dw 0     ;0x6E
-		      dw 0     ;0x70
-		      dw 0     ;0x72
-		      dw 0     ;0x74
-		      dw 0     ;0x76
-		      dw 0     ;0x78
-		      dw 0     ;0x7A
-  .reg_vendor_id_1    dw 0     ;0x7C
-  .reg_vendor_id_2    dw 0     ;0x7E
+  .regs               dw ?     ; codec registers
+  .reg_master_vol     dw ?     ;0x02
+  .reg_aux_out_vol    dw ?     ;0x04
+  .reg_mone_vol       dw ?     ;0x06
+  .reg_master_tone    dw ?     ;0x08
+  .reg_beep_vol       dw ?     ;0x0A
+  .reg_phone_vol      dw ?     ;0x0C
+  .reg_mic_vol        dw ?     ;0x0E
+  .reg_line_in_vol    dw ?     ;0x10
+  .reg_cd_vol         dw ?     ;0x12
+  .reg_video_vol      dw ?     ;0x14
+  .reg_aux_in_vol     dw ?     ;0x16
+  .reg_pcm_out_vol    dw ?     ;0x18
+  .reg_rec_select     dw ?     ;0x1A
+  .reg_rec_gain       dw ?     ;0x1C
+  .reg_rec_gain_mic   dw ?     ;0x1E
+  .reg_gen            dw ?     ;0x20
+  .reg_3d_ctrl        dw ?     ;0X22
+  .reg_page           dw ?     ;0X24
+  .reg_powerdown      dw ?     ;0x26
+  .reg_ext_audio      dw ?     ;0x28
+  .reg_ext_st         dw ?     ;0x2a
+  .reg_pcm_front_rate dw ?     ;0x2c
+  .reg_pcm_surr_rate  dw ?     ;0x2e
+  .reg_lfe_rate       dw ?     ;0x30
+  .reg_pcm_in_rate    dw ?     ;0x32
+                      dw ?     ;0x34
+  .reg_cent_lfe_vol   dw ?     ;0x36
+  .reg_surr_vol       dw ?     ;0x38
+  .reg_spdif_ctrl     dw ?     ;0x3A
+                      dw ?     ;0x3C
+                      dw ?     ;0x3E
+                      dw ?     ;0x40
+                      dw ?     ;0x42
+                      dw ?     ;0x44
+                      dw ?     ;0x46
+                      dw ?     ;0x48
+                      dw ?     ;0x4A
+                      dw ?     ;0x4C
+                      dw ?     ;0x4E
+                      dw ?     ;0x50
+                      dw ?     ;0x52
+                      dw ?     ;0x54
+                      dw ?     ;0x56
+                      dw ?     ;0x58
+                      dw ?     ;0x5A
+                      dw ?     ;0x5C
+                      dw ?     ;0x5E
+  .reg_page_0         dw ?     ;0x60
+  .reg_page_1         dw ?     ;0x62
+  .reg_page_2         dw ?     ;0x64
+  .reg_page_3         dw ?     ;0x66
+  .reg_page_4         dw ?     ;0x68
+  .reg_page_5         dw ?     ;0x6A
+  .reg_page_6         dw ?     ;0x6C
+  .reg_page_7         dw ?     ;0x6E
+                      dw ?     ;0x70
+                      dw ?     ;0x72
+                      dw ?     ;0x74
+                      dw ?     ;0x76
+                      dw ?     ;0x78
+                      dw ?     ;0x7A
+  .reg_vendor_id_1    dw ?     ;0x7C
+  .reg_vendor_id_2    dw ?     ;0x7E
 
 
-  .reset	      dd 0    ;virual
-  .set_master_vol     dd 0
+  .reset              dd ?    ;virual
+  .set_master_vol     dd ?
 }
 
 struc CTRL_INFO
@@ -247,17 +247,29 @@ OS_BASE 	      equ 0;  0x80400000
 new_app_base	      equ 0x60400000;   0x01000000
 PROC_BASE	      equ OS_BASE+0x0080000
 
-
-public service_proc
 public START
-public IMPORTS
+public STOP
+public service_proc
 
-section '.flat' align 16
+extrn AttachIntHandler
+extrn SysMsgBoardStr
+extrn PciApi
+extrn PciRead32
+extrn PciRead8
+extrn PciWrite8
+extrn AllocKernelSpace
+extrn MapPage
+extrn RegService
+extrn KernelAlloc
+extrn GetPgAddr
+extrn GetCurrentTask
+
+section '.flat' code readable align 16
 
 START:
      if DEBUG
 	   mov esi, msgInit
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   call detect_controller
@@ -266,9 +278,9 @@ START:
 
      if DEBUG
            mov esi,[ctrl.vendor_ids]
-           call [SysMsgBoardStr]
+           call SysMsgBoardStr
            mov  esi, [ctrl.ctrl_ids]
-           call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   call init_controller
@@ -277,7 +289,7 @@ START:
 
      if DEBUG
            mov esi, msgInitCodec
-           call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   call init_codec
@@ -286,35 +298,35 @@ START:
 
      if DEBUG
 	   mov esi, [codec.ac_vendor_ids]
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
 
 	   mov esi, [codec.chip_ids]
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   call reset_controller
            call setup_codec
 
            mov esi, msgPrimBuff
-           call [SysMsgBoardStr]
+           call SysMsgBoardStr
 
 	   call create_primary_buff
 
-	   stdcall [AttachIntHandler], [ctrl.int_line], ac97_irq
+           stdcall AttachIntHandler, [ctrl.int_line], ac97_irq
 
-	   stdcall [RegService], sz_sound_srv, service_proc
+           stdcall RegService, sz_sound_srv, service_proc
 
            mov esi, msgOk
-	   call [SysMsgBoardStr]
+           call SysMsgBoardStr
 
 	   ret
 
 .fail:
    if DEBUG
 	   mov esi, msgFail
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
    end if
-
+STOP:
 	   xor eax, eax
 	   ret
 
@@ -334,7 +346,7 @@ proc service_proc stdcall, ioctl:dword
 	   jne @F
      if DEBUG
 	   mov esi, msgPlay
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 	   call play
 	   ret
@@ -343,7 +355,7 @@ proc service_proc stdcall, ioctl:dword
 	   jne @F
      if DEBUG
 	   mov esi, msgStop
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 	   call stop
 	   ret
@@ -392,7 +404,7 @@ proc ac97_irq
 
 ;     if DEBUG
 ;           mov esi, msgIRQ
-;           call   [SysMsgBoardStr]
+;           call SysMsgBoardStr
 ;     end if
 
 	   mov edx, PCM_OUT_CR_REG
@@ -444,7 +456,7 @@ endp
 align 4
 proc create_primary_buff
 
-	   stdcall [KernelAlloc], 0x10000
+           stdcall KernelAlloc, 0x10000
 	   mov [ctrl.buffer], eax
 
            mov edi, eax
@@ -452,7 +464,7 @@ proc create_primary_buff
            xor eax, eax
            rep stosd
 
-           stdcall [GetPgAddr], [ctrl.buffer]
+           stdcall GetPgAddr, [ctrl.buffer]
 
 	   mov ebx, 0xC0004000
 	   mov ecx, 4
@@ -504,7 +516,7 @@ proc create_primary_buff
 	   loop @B
 
 	   mov ecx, pcmout_bdl
-	   stdcall [GetPgAddr], ecx
+           stdcall GetPgAddr, ecx
 	   and ecx, 0xFFF
 	   add eax, ecx
 
@@ -537,7 +549,7 @@ proc detect_controller
 	   xor eax, eax
 	   mov [bus], eax
 	   inc eax
-	   call [PciApi]
+           call PciApi
 	   cmp eax, -1
 	   je .err
 
@@ -546,7 +558,7 @@ proc detect_controller
 .next_bus:
 	   and [devfn], 0
 .next_dev:
-	   stdcall [PciRead32], [bus], [devfn], dword 0
+           stdcall PciRead32, [bus], [devfn], dword 0
 	   test eax, eax
 	   jz .next
 	   cmp eax, -1
@@ -602,32 +614,32 @@ endp
 align 4
 proc init_controller
 
-	   stdcall [PciRead32], [ctrl.bus], [ctrl.devfn], dword 4
+           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 4
 	   mov ebx, eax
 	   and eax, 0xFFFF
 	   mov [ctrl.pci_cmd], eax
 	   shr ebx, 16
 	   mov [ctrl.pci_stat], ebx
 
-	   stdcall [PciRead32], [ctrl.bus], [ctrl.devfn], dword 0x10
+           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x10
 	   and eax,0xFFFE
 	   mov [ctrl.codec_io_base], eax
 
-	   stdcall [PciRead32], [ctrl.bus], [ctrl.devfn], dword 0x14
+           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x14
 	   and eax, 0xFFC0
 	   mov [ctrl.ctrl_io_base], eax
 
-	   stdcall [PciRead32], [ctrl.bus], [ctrl.devfn], dword 0x18
+           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x18
 	   mov [ctrl.codec_mem_base], eax
 
-	   stdcall [PciRead32], [ctrl.bus], [ctrl.devfn], dword 0x1C
+           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x1C
 	   mov [ctrl.ctrl_mem_base], eax
 
-	   stdcall [PciRead32], [ctrl.bus], [ctrl.devfn], dword 0x3C
+           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x3C
 	   and eax, 0xFF
 	   mov [ctrl.int_line], eax
 
-	   stdcall [PciRead8], [ctrl.bus], [ctrl.devfn], dword 0x41
+           stdcall PciRead8, [ctrl.bus], [ctrl.devfn], dword 0x41
 	   and eax, 0xFF
 	   mov [ctrl.cfg_reg], eax
 
@@ -735,7 +747,7 @@ proc reset_codec
 
      if DEBUG
 	   mov esi, msgCFail
-	   call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 	   xor eax, eax 	   ; timeout error
 	   ret
@@ -757,7 +769,7 @@ proc warm_reset
 
      if DEBUG
 	   mov esi, msgWarm
-	   call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   mov [counter], 10	   ; total 10*100 ms = 1s
@@ -774,7 +786,7 @@ proc warm_reset
 
      if DEBUG
 	   mov esi, msgWRFail
-	   call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   stc
@@ -803,7 +815,7 @@ proc cold_reset
 
      if DEBUG
 	   mov esi, msgCold
-	   call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 
 	   mov eax, 1000000	   ; wait 1 s
@@ -827,7 +839,7 @@ proc cold_reset
 
      if DEBUG
 	   mov esi, msgCRFail
-	   call [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 	   stc
 	   ret
@@ -1105,57 +1117,12 @@ endp
 
 include "codec.inc"
 
-
-align 16
-pcmout_bdl	 dq 32 dup(0)
-buff_list	 dd 32 dup(0)
-
-align 16
-ctrl AC_CNTRL
-
-align 16
-codec CODEC
-
-civ_val    dd 0
-
-align 16
+align 4
 devices dd (CTRL_SIS  shl 16)+VID_SIS,msg_AC, set_SIS
 	dd 0
 
-align 16
-imp_table:
-IMPORTS:
-
-AttachIntHandler   dd szAttachIntHandler
-SysMsgBoardStr	   dd szSysMsgBoardStr
-PciApi		   dd szPciApi
-PciRead32	   dd szPciRead32
-PciRead8	   dd szPciRead8
-PciWrite8	   dd szPciWrite8
-AllocKernelSpace   dd szAllocKernelSpace
-MapPage 	   dd szMapPage
-KernelAlloc	   dd szKernelAlloc
-GetPgAddr	   dd szGetPgAddr
-RegService	   dd szRegService
-GetCurrentTask	   dd szGetCurrentTask
-		   dd 0
-
 msg_AC	  db '7012 AC97 controller',13,10, 0
 msg_SIS   db 'Silicon Integrated Systems',13,10, 0
-
-szKernel	    db 'KERNEL', 0
-szAttachIntHandler  db 'AttachIntHandler',0
-szSysMsgBoardStr    db 'SysMsgBoardStr', 0
-szPciApi	    db 'PciApi', 0
-szPciRead32	    db 'PciRead32', 0
-szPciRead8	    db 'PciRead8', 0
-szPciWrite8	    db 'PciWrite8',0
-szAllocKernelSpace  db 'AllocKernelSpace',0
-szMapPage	    db 'MapPage',0
-szRegService	    db 'RegService',0
-szKernelAlloc	    db 'KernelAlloc',0
-szGetPgAddr	    db 'GetPgAddr',0
-szGetCurrentTask    db 'GetCurrentTask ',0
 
 sz_sound_srv	    db 'SOUND',0
 
@@ -1175,3 +1142,14 @@ msgWarm      db 'warm reset',13,10,0
 msgWRFail    db 'warm reset failed',13,10,0
 msgCRFail    db 'cold reset failed',13,10,0
 msgCFail     db 'codec not ready',13,10,0
+
+section '.data' data readable writable align 16
+
+pcmout_bdl       rq 32
+buff_list        rd 32
+
+codec CODEC
+ctrl AC_CNTRL
+
+lpc_bus  rd 1
+civ_val  rd 1

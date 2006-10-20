@@ -31,7 +31,7 @@ proc new_mix stdcall, output:dword
 	   je .exit
 ;           mov eax, fpu_state
 ;           fnsave [eax]
-           call [FpuSave]
+           call FpuSave
            emms
 	   mov [main_count], 32;
 
@@ -98,7 +98,7 @@ proc new_mix stdcall, output:dword
 	   jnz .l00
 
 	   call update_stream
-           call [FpuRestore]
+           call FpuRestore
 	   ret
 .exit:
 	   mov edi, [output]

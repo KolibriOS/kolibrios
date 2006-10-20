@@ -291,48 +291,34 @@ proc get_service stdcall, sz_name:dword
 	   locals
 	     srv_ptr  dd ?
 	     counter  dd ?
-	    endl
+           endl
 
-	    mov eax, [sz_name]
-	    test eax, eax
-	    jz .fail
-
-	    mov [srv_ptr], srv_tab
-	    mov [counter], 16
+           mov eax, [sz_name]
+           test eax, eax
+           jnz @F
+           ret
 @@:
-	    stdcall strncmp, [srv_ptr], [sz_name], 16
-	    test eax, eax
-	    je .ok
+           mov [srv_ptr], srv_tab
+           mov [counter], 16
+@@:
+           stdcall strncmp, [srv_ptr], [sz_name], 16
+           test eax, eax
+           je .ok
 
-	    add [srv_ptr], SRV_SIZE
-	    dec [counter]
-	    jnz @B
+           add [srv_ptr], SRV_SIZE
+           dec [counter]
+           jnz @B
 .not_load:
-
            stdcall find_service, [sz_name]
            test eax, eax
-           jz .fail
-
-           stdcall load_lib, eax
-           test eax, eax
-           jz .fail
-
-            mov [srv_ptr], srv_tab
-	    mov [counter], 16
+           jnz @F
+           ret
 @@:
-	    stdcall strncmp, [srv_ptr], [sz_name], 16
-	    test eax, eax
-	    je .ok
-
-	    add [srv_ptr], SRV_SIZE
-	    dec [counter]
-	    jnz @B
-.fail:
-	    xor eax, eax
-	    ret
+           stdcall load_driver, eax
+           ret
 .ok:
-	    mov eax, [srv_ptr]
-	    ret
+           mov eax, [srv_ptr]
+           ret
 endp
 
 align 4
@@ -423,29 +409,6 @@ proc get_proc stdcall, exp:dword, sz_name:dword
 endp
 
 align 4
-proc link_dll stdcall, exp:dword, imp:dword
-           mov esi, [imp]
-.next:
-           mov eax, [esi]
-           test eax, eax
-           jz .end
-
-           push esi
-           stdcall get_proc, [exp], eax
-           pop esi
-
-           test eax, eax
-           jz @F
-
-           mov [esi], eax
-@@:
-           add esi, 4
-           jmp .next
-.end:
-           ret
-endp
-
-align 4
 proc get_coff_sym stdcall, pSym:dword,count:dword, sz_sym:dword
 
 @@:
@@ -464,143 +427,387 @@ proc get_coff_sym stdcall, pSym:dword,count:dword, sz_sym:dword
 endp
 
 align 4
-proc load_lib stdcall, name:dword
-	   locals
-	     lib   dd ?
-	     base  dd ?
-	     pSym  dd ?
-	   endl
-
-	   mov eax, [name]
-	   mov	  ebx, 1		 ;index of first block
-           mov    ecx, 32                ;number of blocks
-	   mov	  edx, TMP_BUFF 	 ;temp area
-	   mov	  esi, 12		 ;file name length
-
-	   call   fileread		;read file from RD
-
-	   cmp	  eax,0
-	   jne	  .err
-
-;           mov eax, [TMP_BUFF+CFH.pSymTable]
-;           add eax, TMP_BUFF
-;           mov [pSym], eax
-
-;           mov [TMP_BUFF+20+CFS.VirtualAddress], eax
-
-	   stdcall kernel_alloc, [TMP_BUFF+20+CFS.SizeOfRawData]
-	   mov [base], eax
-
-           test eax, eax
-           jnz @f
-@@:
-	   mov [TMP_BUFF+20+CFS.VirtualAddress], eax
-	   mov ebx, [TMP_BUFF+CFH.pSymTable]
-	   add ebx, TMP_BUFF
-	   mov [pSym], ebx
-
-	   stdcall LinkSection, TMP_BUFF, TMP_BUFF+20, ebx
-
-	   mov edi, [base]
-           test edi, edi
-           jnz @f
-@@:
-	   mov esi, [TMP_BUFF+20+CFS.PtrRawData]
-	   add esi, TMP_BUFF
-	   mov ecx, [TMP_BUFF+20+CFS.SizeOfRawData]
-	   rep movsb
-
-	   call alloc_dll
-           test eax, eax
-           jnz @f
-@@:
-	   mov [lib], eax
-
-	   mov edi, eax
-	   mov esi, [name]
-	   mov ecx, 16
-	   rep movsb
-
-	   stdcall get_coff_sym,[pSym],[TMP_BUFF+CFH.nSymbols],szSTART
-	   mov edi, [lib]
-	   add eax, [base]
-	   mov [edi+LIB.lib_start], eax
-	   mov ebx, [base]
-	   mov [edi+LIB.lib_base], ebx
-
-	   stdcall get_coff_sym,[pSym],[TMP_BUFF+CFH.nSymbols], szEXPORTS
-	   mov edi, [lib]
-	   add eax, [base]
-	   mov [edi+LIB.export], eax
-
-	   stdcall get_coff_sym,[pSym],[TMP_BUFF+CFH.nSymbols], szIMPORTS
-	   mov edi, [lib]
-	   add eax, [base]
-	   mov [edi+LIB.import], eax
-
-	   stdcall link_dll, kernel_export, eax
-
-	   mov edi, [lib]
-           call [edi+LIB.lib_start]
-
-	   mov eax, [lib]
-	   ret
-.err:
-	   xor eax, eax
-	   ret
-
-endp
-
-align 4
-proc LinkSection stdcall, pCoff:dword, pSec:dword, pSym:dword
-	   locals
-	     pCode     dd ?
-	   endl
-
-	   mov esi, [pSec]
-	   mov eax, [esi+CFS.PtrRawData]
-	   add eax, [pCoff]
-	   mov [pCode], eax
-
-	   mov edi, [esi+CFS.PtrReloc]
-	   add edi, [pCoff]
-
-	   movzx edx, [esi+CFS.NumReloc]
-	   mov eax, edx
-	   lea edx, [edx+edx*8]
-	   add edx, eax
-	   add edx, edi
-.l_0:
-	   cmp edi, edx
-	   jae .exit
-
-	   mov ebx, [edi+CRELOC.SymIndex]
-	   add ebx,ebx
-	   lea ebx,[ebx+ebx*8]
-
-	   add ebx, [pSym]
-
-	   mov ecx, [ebx+CSYM.Value]
-	   add ecx, [esi+CFS.VirtualAddress]
-
-	   mov eax, [edi+CRELOC.VirtualAddress]
-	   add eax, [pCode]
-	   add [eax], ecx
-	   add edi, 10
-	   jmp .l_0
-
-.exit:
-	   ret
-endp
-
 proc get_curr_task
            mov eax,[CURRENT_TASK]
            shl eax, 8
            ret
 endp
 
-drv_sound      db 'UNISOUNDOBJ', 0
-drv_infinity   db 'INFINITYOBJ', 0
+align 4
+proc get_fileinfo stdcall, file_name:dword, info:dword
+           locals
+             cmd     dd ?
+             offset  dd ?
+                     dd ?
+             count   dd ?
+             buff    dd ?
+                     db ?
+             name    dd ?
+           endl
+
+           xor eax, eax
+           mov ebx, [file_name]
+           sub ebx, new_app_base
+           mov ecx, [info]
+           sub ecx, new_app_base
+
+           mov [cmd], 5
+           mov [offset], eax
+           mov [offset+4], eax
+           mov [count], eax
+           mov [buff], ecx
+           mov byte [buff+4], al
+           mov [name], ebx
+
+           mov eax, 70
+           lea ebx, [cmd]
+           sub ebx, new_app_base
+           int 0x40
+           ret
+endp
+
+align 4
+proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
+                                     bytes:dword
+           locals
+             cmd     dd ?
+             offset  dd ?
+                     dd ?
+             count   dd ?
+             buff    dd ?
+                     db ?
+             name    dd ?
+           endl
+
+           xor eax, eax
+           mov ebx, [file_name]
+           mov ecx, [off]
+           mov edx, [bytes]
+           mov esi, [buffer]
+           sub ebx, new_app_base
+           sub esi, new_app_base
+
+           mov [cmd], eax
+           mov [offset], ecx
+           mov [offset+4], eax
+           mov [count], edx
+           mov [buff], esi
+           mov byte [buff+4], al
+           mov [name], ebx
+
+           mov eax, 70
+           lea ebx, [cmd]
+           sub ebx, new_app_base
+           int 0x40
+           ret
+endp
+
+align 4
+proc load_file stdcall, file_name:dword
+           locals
+             attr       dd ?
+             flags      dd ?
+             cr_time    dd ?
+             cr_date    dd ?
+             acc_time   dd ?
+             acc_date   dd ?
+             mod_time   dd ?
+             mod_date   dd ?
+             file_size  dd ?
+
+             file       dd ?
+           endl
+
+           lea eax, [attr]
+           stdcall get_fileinfo, [file_name], eax
+           test eax, eax
+           jnz .fail
+
+           stdcall kernel_alloc, [file_size]
+           mov [file], eax
+
+           stdcall read_file, [file_name], eax, dword 0, [file_size]
+           cmp ebx, [file_size]
+           jne .cleanup
+           mov eax, [file]
+           ret
+.cleanup:
+           stdcall kernel_free, [file]
+.fail:
+           xor eax, eax
+           ret
+endp
+
+align 4
+proc get_proc_ex stdcall, proc_name:dword, imports:dword
+
+.look_up:
+           mov edx, [imports]
+           mov edx, [edx]
+           test edx, edx
+           jz .end
+.next:
+           mov eax, [edx]
+           test eax, eax
+           jz .next_table
+
+           push edx
+           stdcall strncmp, eax, [proc_name], 16
+           pop edx
+           test eax, eax
+           jz .ok
+
+           add edx,8
+           jmp .next
+.next_table:
+           add [imports], 4
+           jmp .look_up
+.ok:
+           mov eax, [edx+4]
+           ret
+.end:
+           xor eax, eax
+           ret
+endp
+
+align 4
+proc fix_coff_symbols stdcall, sec:dword, symbols:dword,\
+                      sym_count:dword, strings:dword, imports:dword
+           locals
+             retval dd ?
+           endl
+
+           mov edi, [symbols]
+           mov [retval], 1
+.fix:
+           movzx ebx, [edi+CSYM.SectionNumber]
+           test ebx, ebx
+           jnz .internal
+           mov eax, dword [edi+CSYM.Name]
+           test eax, eax
+           jnz @F
+
+           mov edi, [edi+4]
+           add edi, [strings]
+@@:
+           push edi
+           stdcall get_proc_ex, edi,[imports]
+           pop edi
+
+           xor ebx, ebx
+           test eax, eax
+           jnz @F
+
+           mov esi, msg_unresolved
+           call sys_msg_board_str
+           mov esi, edi
+           call sys_msg_board_str
+           mov esi, msg_CR
+           call sys_msg_board_str
+
+           mov [retval],0
+@@:
+           mov edi, [symbols]
+           mov [edi+CSYM.Value], eax
+           jmp .next
+.internal:
+           dec ebx
+           shl ebx, 3
+           lea ebx, [ebx+ebx*4]
+           add ebx, [sec]
+
+           mov eax, [ebx+CFS.VirtualAddress]
+           add [edi+CSYM.Value], eax
+.next:
+           add edi, CSYM_SIZE
+           mov [symbols], edi
+           dec [sym_count]
+           jnz .fix
+           mov eax, [retval]
+           ret
+endp
+
+align 4
+proc fix_coff_relocs stdcall, coff:dword, sec:dword, sym:dword
+	   locals
+             n_sec     dd ?
+	   endl
+
+           mov eax, [coff]
+           movzx ebx, [eax+CFH.nSections]
+           mov [n_sec], ebx
+.fix_sec:
+           mov esi, [sec]
+	   mov edi, [esi+CFS.PtrReloc]
+           add edi, [coff]
+
+           movzx ecx, [esi+CFS.NumReloc]
+           test ecx, ecx
+           jz .next
+.next_reloc:
+	   mov ebx, [edi+CRELOC.SymIndex]
+	   add ebx,ebx
+	   lea ebx,[ebx+ebx*8]
+           add ebx, [sym]
+
+           mov edx, [ebx+CSYM.Value]
+
+           cmp [edi+CRELOC.Type], 6
+           je .dir_32
+
+           cmp [edi+CRELOC.Type], 20
+           jne .next_reloc
+.rel_32:
+	   mov eax, [edi+CRELOC.VirtualAddress]
+           add eax, [esi+CFS.VirtualAddress]
+           sub edx, eax
+           sub edx, 4
+           jmp .fix
+.dir_32:
+	   mov eax, [edi+CRELOC.VirtualAddress]
+           add eax, [esi+CFS.VirtualAddress]
+.fix:
+           add [eax], edx
+           add edi, 10
+           dec ecx
+           jnz .next_reloc
+.next:
+           add [sec], 40
+           dec [n_sec]
+           jnz .fix_sec
+.exit:
+	   ret
+endp
+
+align 4
+proc load_driver stdcall, file_name:dword
+           locals
+             coff      dd ?
+             sym       dd ?
+             strings   dd ?
+             img_size  dd ?
+             img_base  dd ?
+             start     dd ?
+
+             exports   dd ?   ;fake exports table
+                       dd ?
+           endl
+
+           stdcall load_file, [file_name]
+           test eax, eax
+           jz .fail
+
+           mov [coff], eax
+
+           movzx ecx, [eax+CFH.nSections]
+           xor ebx, ebx
+
+           lea edx, [eax+20]
+@@:
+           add ebx, [edx+CFS.SizeOfRawData]
+           add ebx, 15
+           and ebx, not 15
+           add edx, 18
+           dec ecx
+           jnz @B
+           mov [img_size], ebx
+
+           stdcall kernel_alloc, ebx
+           test eax, eax
+           jz .fail
+           mov [img_base], eax
+
+           mov edi, eax
+           xor eax, eax
+           mov ecx, [img_size]
+           add ecx, 4095
+           and ecx, not 4095
+           shr ecx, 2
+           cld
+           rep stosd
+
+           mov edx, [coff]
+           movzx ebx, [edx+CFH.nSections]
+           mov edi, [img_base]
+           lea eax, [edx+20]
+@@:
+           mov [eax+CFS.VirtualAddress], edi
+           mov esi, [eax+CFS.PtrRawData]
+           test esi, esi
+           jnz .copy
+           add edi, [eax+CFS.SizeOfRawData]
+           jmp .next
+.copy:
+           add esi, edx
+           mov ecx, [eax+CFS.SizeOfRawData]
+           cld
+           rep movsb
+.next:
+           add edi, 15
+           and edi, not 15
+           add eax, 40
+           dec ebx
+           jnz @B
+
+           mov ebx, [edx+CFH.pSymTable]
+           add ebx, edx
+           mov [sym], ebx
+           mov ecx, [edx+CFH.nSymbols]
+           add ecx,ecx
+           lea ecx,[ecx+ecx*8] ;ecx*=18 = nSymbols*CSYM_SIZE
+           add ecx, [sym]
+           mov [strings], ecx
+
+           lea ebx, [exports]
+           mov dword [ebx], kernel_export
+           mov dword [ebx+4], 0
+           lea eax, [edx+20]
+
+           stdcall fix_coff_symbols, eax, [sym], [edx+CFH.nSymbols],\
+                                     [strings], ebx
+           test eax, eax
+           jnz @F
+
+           mov esi, msg_module
+           call sys_msg_board_str
+           mov esi, [file_name]
+           call sys_msg_board_str
+           mov esi, msg_CR
+           call sys_msg_board_str
+
+           stdcall kernel_free,[coff]
+           xor eax, eax
+           ret
+@@:
+           mov ebx, [coff]
+           add ebx, 20
+           stdcall fix_coff_relocs, [coff], ebx, [sym]
+
+           mov ebx, [coff]
+           stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szSTART
+           mov [start], eax
+
+           stdcall kernel_free, [coff]
+
+           mov ebx, [start]
+           call ebx
+           test eax, eax
+           jnz .ok
+
+           stdcall kernel_free, [img_base]
+           xor eax, eax
+           ret
+.ok:
+           mov ebx, [img_base]
+           mov [eax+SRV.base], ebx
+           ret
+.fail:
+           xor eax, eax
+           ret
+endp
+
+drv_sound      db '/rd/1/unisound.obj', 0
+drv_infinity   db '/rd/1/infinity.obj', 0
 
 szSound        db 'SOUND',0
 szInfinity     db 'INFINITY',0
@@ -608,6 +815,10 @@ szInfinity     db 'INFINITY',0
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
+
+msg_unresolved db 'unresolved ',0
+msg_module     db 'in module ',0
+msg_CR         db  13,10,0
 
 align 16
 services:

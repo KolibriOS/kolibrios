@@ -101,7 +101,6 @@ proc init_kernel_heap
            mov ecx, 32
            mov edx, eax
            mov edi, HEAP_BASE
-
 .l1:
            stdcall map_page,edi,edx,PG_SW
            add edi, 0x1000
@@ -626,11 +625,10 @@ restore block_flags
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 
+HEAP_TOP  equ 0x5FC00000
+
 align 4
-proc init_heap stdcall, heap_size:dword
-           locals
-             tab_count dd ?
-           endl
+proc init_heap
 
            mov ebx,[CURRENT_TASK]
            shl ebx,8
@@ -641,60 +639,20 @@ proc init_heap stdcall, heap_size:dword
            sub eax, 4096
            ret
 @@:
-           mov edx, [heap_size]
-           and edx, edx
-           jz .exit
-           add edx, (4095+4096)
-           and edx, not 4095
-           mov [heap_size], edx
-           add edx, 0x003FFFFF
-           and edx, not 0x003FFFFF
-           shr edx, 22
-           mov [tab_count], edx
-
            mov esi, [PROC_BASE+APPDATA.mem_size+ebx]
-           add esi, 0x003FFFFF
-           and esi, not 0x003FFFFF
-           mov edi, esi
+           add esi, 4095
+           and esi, not 4095
+           mov eax, HEAP_TOP
            mov [PROC_BASE+APPDATA.heap_base+ebx], esi
-           add esi, [heap_size]
-           mov [PROC_BASE+APPDATA.heap_top+ebx], esi
+           mov [PROC_BASE+APPDATA.heap_top+ebx], eax
 
-           mov eax, cr3
-           and eax, not 0xFFF
-           stdcall map_page,[current_pdir],eax,dword PG_SW
-
-           add edi, new_app_base
-@@:
-           call alloc_page
-           test eax, eax
-           jz .exit
-
-           stdcall map_page_table, [current_pdir], edi, eax
-           add edi, 0x00400000
-           dec edx
-           jnz @B
-
-           mov ecx, [tab_count]
-           shl ecx, 12-2
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           mov edi, [PROC_BASE+APPDATA.heap_base+ebx]
-           add edi, new_app_base
-           shr edi, 10
-           mov esi, edi
-           add edi, pages_tab
-           xor eax, eax
-           cld
-           rep stosd
-
-           stdcall map_page,[current_pdir],dword PG_UNMAP
-
-           mov ebx, [heap_size]
-           mov eax, ebx
+           sub eax, esi
+           add esi, new_app_base
+           shr esi, 10
+           mov ecx, eax
            sub eax, 4096
-           or ebx, FREE_BLOCK
-           mov [pages_tab+esi], ebx
+           or ecx, FREE_BLOCK
+           mov [pages_tab+esi], ecx
            ret
 .exit:
            xor eax, eax
@@ -776,7 +734,7 @@ proc user_free stdcall, base:dword
            shr esi, 12
            mov eax, [pages_tab+esi*4]
            test eax, USED_BLOCK
-           jz @f
+           jz .not_used
 
            and eax, not 4095
            mov ecx, eax
@@ -786,12 +744,16 @@ proc user_free stdcall, base:dword
            sub ecx, 4096
            shr ecx, 12
 .release:
-           mov eax, [pages_tab+esi*4]
+           xor eax, eax
+           xchg eax, [pages_tab+esi*4]
+           test eax, 1
+           jz @F
            call free_page
+@@:
            inc esi
            dec ecx
            jnz .release
-@@:
+.not_used:
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
            mov esi, dword [ebx+PROC_BASE+APPDATA.heap_base]; heap_base

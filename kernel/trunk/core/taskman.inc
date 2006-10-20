@@ -119,7 +119,6 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
              app_pages   dd ?
              img_pages   dd ?
              dir_addr    dd ?
-             master_addr dd ?
              app_tabs    dd ?
            endl
 
@@ -127,7 +126,6 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
 
            xor eax, eax
            mov [dir_addr], eax
-           mov [master_addr], eax
 
            mov eax, [app_size]
            add eax, 4095
@@ -179,32 +177,10 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            mov esi, sys_pgdir+0xc00
            rep movsd
 
-           call alloc_page
-           test eax, eax
-           jz .fail
-           mov [master_addr], eax
-           stdcall map_page,[tmp_task_ptab],eax,dword PG_SW
-
-           mov ecx, 384
-           mov edi, [tmp_task_ptab]
-           mov esi, master_tab
-           cld
-           rep movsd
-
-           mov ecx, 384
-           xor eax, eax
-           rep stosd
-
-           mov ecx, 256
-           mov esi, master_tab+0xc00
-           rep movsd
-
-           mov eax, [master_addr]
+           mov eax, [dir_addr]
            or eax, PG_SW
            mov ebx, [tmp_task_pdir]
            mov [ebx+0x600], eax
-           mov ecx, [tmp_task_ptab]
-           mov [ecx+0x600],eax
 
            mov eax, [dir_addr]
            call set_cr3
@@ -216,7 +192,7 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            test eax, eax
            jz .fail
 
-           stdcall map_page_table,[tmp_task_pdir], edi, eax
+           stdcall map_page_table, edi, eax
            add edi, 0x00400000
            dec edx
            jnz @B
@@ -230,7 +206,6 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            rep stosd
 
            mov edx, new_app_base
-
 .alloc:
            call alloc_page
            test eax, eax
@@ -262,7 +237,6 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            cld
            rep stosd
 
-           stdcall map_page,[tmp_task_ptab],dword 0,dword PG_UNMAP
            stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
 
            dec [pg_data.pg_mutex]
@@ -344,10 +318,7 @@ proc destroy_app_space stdcall, pg_dir:dword
            and eax, not 0xFFF
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
            mov esi, [tmp_task_pdir]
-           add esi, 0x600
-           mov eax, [esi]
-           call free_page   ;destroy master table
-           add esi, 4
+           add esi, 0x604
            mov edi, 383
 .destroy:
            mov eax, [esi]

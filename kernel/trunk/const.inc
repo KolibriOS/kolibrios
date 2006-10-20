@@ -162,7 +162,7 @@ KEY_BUFF            equ OS_BASE+0x000F401
 BTN_COUNT           equ OS_BASE+0x000F500
 BTN_BUFF            equ OS_BASE+0x000F501
 
-TSC                 equ OS_BASE+0x000F600
+CPU_FREQ            equ OS_BASE+0x000F600
 MOUSE_PORT          equ OS_BASE+0x000F604
 
 PS2_CHUNK           equ OS_BASE+0x000FB00
@@ -226,47 +226,44 @@ stack_data_end      equ OS_BASE+0x071ffff
 VMODE_BASE          equ OS_BASE+0x0760000
 resendQ             equ OS_BASE+0x0770000
 
-;skin_data           equ OS_BASE+0x0778000
+;skin_data          equ OS_BASE+0x0778000
 
 draw_data           equ OS_BASE+0x0800000
 sysint_stack_data   equ OS_BASE+0x0803000
 
 tss_data            equ OS_BASE+0x0920000
 
-;tmp_pg_dir          equ  OS_BASE+0x00050000
-;tmp_page_map        equ  0x00051000
-;master_tab          equ  0x80200000
+pages_tab           equ  0x60000000
+master_tab          equ  0x60180000
+current_pgdir       equ  0x60180000
 
-pages_tab            equ  0x60000000
-master_tab           equ  0x60180000
+sys_pgdir           equ  OS_BASE+0x00050000
+sys_master_tab      equ  OS_BASE+0x00051000
+sys_pgmap           equ  OS_BASE+0x00052000
 
-sys_pgdir            equ  OS_BASE+0x00050000
-sys_master_tab       equ  OS_BASE+0x00051000
-sys_pgmap            equ  OS_BASE+0x00052000
-
-;lfb_start            equ  0x00800000
+;lfb_start          equ  0x00800000
 
 ;new_app_pdir          equ OS_BASE+0x01000000
 ;new_app_master_table  equ OS_BASE+0x01001000
 ;new_app_ptable        equ OS_BASE+0x01002000
 
-new_app_base          equ  0x60400000
+new_app_base        equ  0x60400000
 
-twdw                  equ (CURRENT_TASK-window_data)
+twdw                equ (CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
 
-PAGES_USED           equ 4
+PAGES_USED          equ 4
 
-PG_UNMAP             equ 0x000
-PG_MAP               equ 0x001
-PG_WRITE             equ 0x002
-PG_SW                equ 0x003
-PG_USER              equ 0x005
-PG_UW                equ 0x007
-PG_NOCACHE           equ 0x018
-PG_LARGE             equ 0x080
-PG_GLOBAL            equ 0x100
+PG_UNMAP            equ 0x000
+PG_MAP              equ 0x001
+PG_WRITE            equ 0x002
+PG_SW               equ 0x003
+PG_USER             equ 0x005
+PG_UW               equ 0x007
+PG_NOCACHE          equ 0x018
+PG_LARGE            equ 0x080
+PG_GLOBAL           equ 0x100
 
 ;;;;;;;;;;;boot time variables
 
@@ -379,7 +376,7 @@ struc SRV
 { .srv_name          rb 16
   .magic             dd ?
   .size              dd ?
-  .lib               dd ?
+  .base              dd ?
   .srv_proc          dd ?
 }
 
@@ -421,6 +418,7 @@ struc COFF_SYM
    .StorageClass     db ?
    .NumAuxSymbols    db ?
 }
+CSYM_SIZE equ 18
 
 struc IOCTL
 {  .handle           dd ?
@@ -447,6 +445,10 @@ virtual at 0
 end virtual
 
 virtual at 0
+  CFH COFF_HEADER
+end virtual
+
+virtual at 0
   CFS COFF_SECTION
 end virtual
 
@@ -457,9 +459,4 @@ end virtual
 virtual at 0
   CSYM COFF_SYM
 end virtual
-
-virtual at 0
-  CFH COFF_HEADER
-end virtual
-
 

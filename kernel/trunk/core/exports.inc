@@ -35,7 +35,7 @@ kernel_export:
   szKernelAlloc       db 'KernelAlloc',0
   szKernelFree        db 'KernelFree',0
   szGetPgAddr         db 'GetPgAddr',0
-  szGetCurrentTask    db 'GetCurrentTask ',0
+  szGetCurrentTask    db 'GetCurrentTask',0
   szGetService        db 'GetService',0
   szServiceHandler    db 'ServiceHandler',0
   szFpuSave           db 'FpuSave',0

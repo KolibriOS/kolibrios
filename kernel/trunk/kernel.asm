@@ -16,8 +16,6 @@ include "lang.inc"
 
 include "const.inc"
 
-NEW    equ 0
-
 ;WinMapAddress      equ     0x460000
 ;display_data       = 0x460000
 
@@ -412,7 +410,7 @@ include 'detect/disks.inc'
            call init_LFB
            call init_mtrr
 
-           stdcall alloc_kernel_space, 0x50000
+           stdcall alloc_kernel_space, 0x4F000
            mov [ipc_tmp], eax
            mov ebx, 0x1000
 
@@ -424,9 +422,6 @@ include 'detect/disks.inc'
 
            add eax, ebx
            mov [proc_mem_tab], eax
-
-           add eax, ebx
-           mov [current_pdir], eax
 
            add eax, ebx
            mov [tmp_task_pdir], eax

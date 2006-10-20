@@ -26,9 +26,27 @@ OS_BASE               equ 0;  0x80400000
 new_app_base          equ 0x60400000;   0x01000000
 PROC_BASE             equ OS_BASE+0x0080000
 
-public service_proc
 public START
-public IMPORTS
+public STOP
+public service_proc
+
+extrn AttachIntHandler
+extrn SysMsgBoardStr
+extrn PciApi
+extrn PciRead32
+extrn PciRead8
+extrn PciWrite8
+extrn AllocKernelSpace
+extrn MapPage
+extrn RegService
+extrn KernelAlloc
+extrn KernelFree
+extrn GetPgAddr
+extrn GetCurrentTask
+extrn GetService
+extrn ServiceHandler
+extrn FpuSave
+extrn FpuRestore
 
 SND_CREATE_BUFF     equ 2
 SND_PLAY            equ 3
@@ -53,15 +71,15 @@ virtual at 0
   IOCTL IOCTL
 end virtual
 
-section '.flat' align 16
+section '.flat' code readable align 16
 
 START:
-           stdcall [GetService], szSound
+           stdcall GetService, szSound
            test eax, eax
            jz .fail
            mov [hSound], eax
 
-           stdcall [KernelAlloc], 16*512
+           stdcall KernelAlloc, 16*512
            test eax, eax
            jz .out_of_mem
            mov [mix_buff], eax
@@ -75,17 +93,15 @@ START:
            mov edi, stream
            mov ecx, 4*STREAM_SIZE
            rep stosd
-
-           stdcall set_handler, [hSound], new_mix
-
-	   stdcall [RegService], szInfinity, service_proc
            mov [stream_count],0
 
+           stdcall set_handler, [hSound], new_mix
+           stdcall RegService, szInfinity, service_proc
 	   ret
 .fail:
      if DEBUG
 	   mov esi, msgFail
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 	   xor eax, eax
 	   ret
@@ -93,10 +109,11 @@ START:
 .out_of_mem:
      if DEBUG
            mov esi, msgMem
-	   call   [SysMsgBoardStr]
+           call SysMsgBoardStr
      end if
 	   xor eax, eax
-	   ret
+STOP:
+           ret
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code
@@ -166,7 +183,6 @@ restore   out_size
 TASK_COUNT    equ 0x0003004
 CURRENT_TASK  equ 0x0003000
 
-
 align 8
 proc CreateBuffer stdcall, format:dword
 	   locals
@@ -186,7 +202,7 @@ proc CreateBuffer stdcall, format:dword
 	   mov [edi+STREAM.magic], 'WAVE'
 	   mov [edi+STREAM.size], STREAM_SIZE
 
-	   stdcall [KernelAlloc], 180*1024
+           stdcall KernelAlloc, 180*1024
 
 	   mov edi, [str]
 	   mov [edi+STREAM.base], eax
@@ -279,8 +295,6 @@ pid_to_slot:
     pop    ebx
     ret
 
-
-
 align 4
 proc DestroyBuffer stdcall, str:dword
 
@@ -292,7 +306,7 @@ proc DestroyBuffer stdcall, str:dword
            cmp [esi+STREAM.size], STREAM_SIZE
 	   jne .fail
 
-           stdcall [KernelFree], [esi+STREAM.base]
+           stdcall KernelFree, [esi+STREAM.base]
 
            mov eax, [str]
 	   call free_stream
@@ -625,7 +639,7 @@ proc set_handler stdcall, hsrv:dword, handler_proc:dword
            mov [out_size], 0
 
            lea eax, [handler]
-           stdcall [ServiceHandler], eax
+           stdcall ServiceHandler, eax
            ret
 endp
 
@@ -652,15 +666,11 @@ proc dev_play stdcall, hsrv:dword
            mov [out_size], ebx
 
            lea eax, [handle]
-           stdcall [ServiceHandler], eax
+           stdcall ServiceHandler, eax
            ret
 endp
 
 include 'mixer.asm'
-
-align 16
-play_list    dd 16 dup(0)
-stream_list  dd 17 dup(0)
 
 align 16
 resampler_params:
@@ -720,68 +730,11 @@ resampler_params:
      dd  2048, 0x02000000,  5462, resample_28    ;35  PCM_2_8_8
      dd  1024, 0x02000000,  5462, resample_18    ;36  PCM_1_8_8
 
-
-play_count   dd 0
-
-stream_count dd 0
-
-align 8
-hSound	     dd 0
-
 m7	     dw 0x8000,0x8000,0x8000,0x8000
 mm80	     dq 0x8080808080808080
 mm_mask      dq 0xFF00FF00FF00FF00
 
-mix_input    dd 16 dup(0)
-
-align 16
-;fpu_state    db 512 dup(0)
-
-align 16
-stream	     db STREAM_SIZE*16 dup(0)
 stream_map   dd 0xFFFF	      ; 16
-mix_buff     dd 0
-mix_buff_map dd 0
-
-align 16
-IMPORTS:
-
-AttachIntHandler   dd szAttachIntHandler
-SysMsgBoardStr	   dd szSysMsgBoardStr
-PciApi		   dd szPciApi
-PciRead32	   dd szPciRead32
-PciRead8	   dd szPciRead8
-AllocKernelSpace   dd szAllocKernelSpace
-MapPage 	   dd szMapPage
-KernelAlloc	   dd szKernelAlloc
-KernelFree         dd szKernelFree
-GetPgAddr	   dd szGetPgAddr
-RegService	   dd szRegService
-GetCurrentTask	   dd szGetCurrentTask
-GetService	   dd szGetService
-ServiceHandler	   dd szServiceHandler
-FpuSave            dd szFpuSave
-FpuRestore         dd szFpuRestore
-		   dd 0
-
-szKernel	    db 'KERNEL', 0
-szAttachIntHandler  db 'AttachIntHandler',0
-szSysMsgBoardStr    db 'SysMsgBoardStr', 0
-szPciApi	    db 'PciApi', 0
-szPciRead32	    db 'PciRead32', 0
-szPciRead8	    db 'PciRead8', 0
-szAllocKernelSpace  db 'AllocKernelSpace',0
-szMapPage	    db 'MapPage',0
-szRegService	    db 'RegService',0
-szKernelAlloc	    db 'KernelAlloc',0
-szGetPgAddr	    db 'GetPgAddr',0
-szGetCurrentTask    db 'GetCurrentTask ',0
-szGetService	    db 'GetService',0
-szServiceHandler    db 'ServiceHandler',0
-szKernelFree        db 'KernelFree',0
-szFpuSave           db 'FpuSave',0
-szFpuRestore        db 'FpuRestore',0
-
 
 szInfinity   db 'INFINITY',0
 szSound      db 'SOUND',0
@@ -793,3 +746,18 @@ msgStop      db 'Stop',13,10,0
 msgUser      db 'User callback',13,10,0
 msgMem       db 'Not enough memory',13,10,0
 end if
+
+section '.data' data readable writable align 16
+
+stream       rb STREAM_SIZE*16
+
+play_list    rd 16
+mix_input    rd 16
+
+stream_list  rd 17
+play_count   rd 1
+stream_count rd 1
+hSound       rd 1
+mix_buff     rd 1
+mix_buff_map rd 1
+

@@ -52,14 +52,12 @@ proc init_memEx
            add eax, 0x00400000
            mov dword [sys_pgdir+12], eax
 
-           mov dword [sys_pgdir+0x600], sys_master_tab+PG_SW
-           mov dword [sys_master_tab+0x600], sys_master_tab+PG_SW
+           mov dword [sys_pgdir+0x600], sys_pgdir+PG_SW
 
            mov ecx, [pg_data.kernel_tables]
            sub ecx, 4
            mov eax, tmp_page_tab+PG_SW
            mov edi, sys_pgdir+16
-           mov esi, sys_master_tab+16
 
            jmp .map_kernel_tabs
 .no_PSE:
@@ -82,15 +80,12 @@ proc init_memEx
            mov ecx, [pg_data.kernel_tables]
            mov eax, tmp_page_tab+PG_SW
            mov edi, sys_pgdir
-           mov esi, sys_master_tab
 
 .map_kernel_tabs:
 
            mov [edi], eax
-           mov [esi], eax
            add eax, 0x1000
            add edi, 4
-           add esi, 4
            dec ecx
            jnz .map_kernel_tabs
 
@@ -106,8 +101,8 @@ proc init_memEx
            cld
            rep stosd
 
-           mov dword [sys_pgdir+0x600], sys_master_tab+PG_SW
-           mov dword [sys_master_tab+0x600], sys_master_tab+PG_SW
+           mov dword [sys_pgdir+0x600], sys_pgdir+PG_SW
+
            ret
 endp
 
@@ -201,7 +196,6 @@ proc alloc_pages stdcall, count:dword
 .find:
            mov edx, [count]
            mov edi, ecx
-
 .match:
            cmp byte [ecx], 0xFF
            jne .next
@@ -272,15 +266,13 @@ proc free_page
 endp
 
 align 4
-proc map_page_table stdcall,page_dir:dword, lin_addr:dword, phis_addr:dword
+proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
            mov ebx, [lin_addr]
            shr ebx, 22
            mov eax, [phis_addr]
            and eax, not 0xFFF
            or eax, PG_UW          ;+PG_NOCACHE
-           mov ecx, [page_dir]
-           mov dword [ecx+ebx*4], eax
-           mov dword [master_tab+ebx*4], eax
+           mov dword [current_pgdir+ebx*4], eax
            mov eax, [lin_addr]
            shr eax, 10
            add eax, pages_tab
@@ -339,7 +331,7 @@ proc map_LFB
 
 @@:
            call alloc_page
-           stdcall map_page_table,sys_pgdir, esi, eax
+           stdcall map_page_table, esi, eax
            add esi, 0x00400000
            dec edi
            jnz @B
@@ -457,15 +449,12 @@ proc new_mem_resize stdcall, new_size:dword
 
            xchg esi, edi
 
-           mov eax, cr3
-           stdcall map_page,[tmp_task_pdir],eax,dword PG_SW+PG_NOCACHE
-
 @@:
            call alloc_page
            test eax, eax
            jz .exit
 
-           stdcall map_page_table,[tmp_task_pdir], edi, eax
+           stdcall map_page_table, edi, eax
 
            push edi
            shr edi, 10
@@ -479,8 +468,6 @@ proc new_mem_resize stdcall, new_size:dword
            add edi, 0x00400000
            cmp edi, esi
            jb @B
-
-           stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
 .grow:
            pop edi
            pop esi
@@ -519,7 +506,7 @@ proc get_pg_addr stdcall, lin_addr:dword
            ret
 endp
 
-align 16
+align 4
 proc page_fault_handler
            pushad
 
@@ -527,9 +514,13 @@ proc page_fault_handler
            mov eax, cr2
            push eax
            push ds
+           push es
 
            mov ax, 0x10
            mov ds, ax
+           mov es, ax
+
+           inc [pg_data.pages_faults]
 
            mov ebx, [ebp-4]
 
@@ -539,14 +530,15 @@ proc page_fault_handler
            cmp ebx, 0x60400000
            jae .user_space
 
+           cmp ebx, master_tab+0x1000
+           jae .alloc
+
            cmp ebx, 0x60000000
            jae .tab_space
 
            jmp .kernel_space
 
 .user_space:
-           inc [pg_data.pages_faults]
-
            shr ebx, 12
            mov ecx, ebx
            shr ecx, 10
@@ -557,29 +549,28 @@ proc page_fault_handler
            mov eax, [pages_tab+ebx*4]
            test eax, 2
            jz .fail
-
+.alloc:
            call alloc_page
            and eax, eax
            jz .exit
 
            stdcall map_page,[ebp-4],eax,dword PG_UW
 
-           mov esi, [ebp-4]
-           and esi, 0xFFFFF000
+           mov edi, [ebp-4]
+           and edi, 0xFFFFF000
            mov ecx, 1024
            xor eax, eax
-@@:
-           mov [esi], eax
-           add esi, 4
-           dec ecx
-           jnz @B
+           cld
+           rep stosd
 .exit:
+           pop es
            pop ds
            mov esp, ebp
            popad
            add esp, 4
            iretd
 .fail:
+           pop es
            pop ds
            mov esp, ebp
            popad
@@ -592,52 +583,29 @@ proc page_fault_handler
            iretd
 
 .kernel_space:
-           shr ebx, 12
-           mov eax, [pages_tab+ebx*4]
-           shr ebx, 10
-           mov eax, [master_tab+ebx*4]
-
-           pop ds
-           mov esp, ebp
-           popad
-           add esp, 4
-           iretd
-
+;           shr ebx, 12
+;           mov eax, [pages_tab+ebx*4]
+;           shr ebx, 10
+;           mov eax, [master_tab+ebx*4]
+           jmp .exit
 .old_addr:
-           shr ebx, 12
+;           shr ebx, 12
 ;           mov eax, [pages_tab+ebx*4]
-           shr ebx, 10
-           mov eax, [master_tab+ebx*4]
-
-           pop ds
-           mov esp, ebp
-           popad
-           add esp, 4
-           iretd
-
+;           shr ebx, 10
+;           mov eax, [master_tab+ebx*4]
+           jmp .exit
 .lfb_addr:
-           shr ebx, 22
-           ;mov ecx, [sys_page_dir]
-           mov eax, [master_tab+ebx*4]
-
-           pop ds
-           mov esp, ebp
-           popad
-           add esp, 4
-           iretd
-
+;           shr ebx, 22
+;           ;mov ecx, [sys_page_dir]
+;           mov eax, [master_tab+ebx*4]
+           jmp .exit
 .tab_space:
-           shr ebx, 12
+;           shr ebx, 12
 ;           mov eax, [pages_tab+ebx*4]
-           shr ebx, 10
-           ;mov ecx, [sys_page_dir]
-           mov eax, [master_tab+ebx*4]
-
-           pop ds
-           mov esp, ebp
-           popad
-           add esp, 4
-           iretd
+;           shr ebx, 10
+;           ;mov ecx, [sys_page_dir]
+;           mov eax, [master_tab+ebx*4]
+           jmp .exit
 endp
 
 align 4
@@ -758,14 +726,12 @@ sys_IPC:
            call set_ipc_buff
            mov [esp+36], eax
            ret
-
 @@:
            cmp eax, 2
            jne @f
            stdcall sys_ipc_send, ebx, ecx, edx
            mov [esp+36], eax
            ret
-
 @@:
            xor eax, eax
            not eax
@@ -945,7 +911,7 @@ new_services:
            jb .fail
            ja @f
 
-           stdcall init_heap, ebx
+           call init_heap
            mov [esp+36], eax
            ret
 @@:
@@ -958,7 +924,7 @@ new_services:
 @@:
            cmp eax, 13
            ja @f
-
+           add ebx, new_app_base
            stdcall user_free, ebx
            mov [esp+36], eax
            ret
@@ -983,6 +949,8 @@ new_services:
            cmp eax, 16
            ja @f
 
+           test ebx, ebx
+           jz .fail
            add ebx, new_app_base
            cmp ebx, new_app_base
            jb .fail
@@ -1299,7 +1267,7 @@ align 16
   tmp_task_ptab     rd 1
   tmp_task_data     rd 1
 
-  current_pdir      rd 1
+;  current_pdir      rd 1
 
   fpu_data          rd 1
   fdd_buff          rd 1
