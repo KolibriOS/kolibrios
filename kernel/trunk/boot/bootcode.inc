@@ -59,17 +59,17 @@ os_data_l:
 
 ; --------------- APM ---------------------
 apm_code_32:
-        dw     0x0f        ; limit 64kb
+        dw     0x10        ; limit 64kb
         db     0, 0, 0
         dw     11010000b *256 +10011010b
         db     0x00
 apm_code_16:
-        dw     0x0f
+        dw     0x10
         db     0, 0, 0
         dw     10010000b *256 +10011010b
         db     0x00
 apm_data_16:
-        dw     0x0f
+        dw     0x10
         db     0, 0, 0
         dw     10010000b *256 +10010010b
         db     0x00
