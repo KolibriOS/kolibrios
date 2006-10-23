@@ -316,16 +316,12 @@ proc alloc_kernel_space stdcall, size:dword
            cmp eax, [block_ind]
            je .m_eq_ind
 
-           mov ebx, [edi+list_next]
-           test ebx, ebx
-           jz @f
+           remove_from_list edi
 
-           mov [ebx+list_prev], edi
-@@:
            mov ecx, [block_ind]
            mov [mem_block_list+ecx*4], ebx
 
-           and ebx, ebx
+           test ebx, ebx
            jnz @f
            btr [mem_block_mask], ecx
 @@:
@@ -354,17 +350,16 @@ proc alloc_kernel_space stdcall, size:dword
 
 .m_eq_size:
            remove_from_list edi
-           mov [mem_block_list+ecx*4], edx
+           mov [mem_block_list+ebx*4], edx
            and edx, edx
            jnz @f
-           mov ecx, [block_ind]
-           btr [mem_block_mask], ecx
+           btr [mem_block_mask], ebx
 @@:
-           mov ebx, [mem_used_list]
-           mov [edi+list_next], ebx
-           test ebx, ebx
+           mov ecx, [mem_used_list]
+           mov [edi+list_next], ecx
+           test ecx, ecx
            jnz @f
-           mov [ebx+list_prev], edi
+           mov [ecx+list_prev], edi
 @@:
            mov [mem_used_list], edi
            mov [edi+block_flags], USED_BLOCK
