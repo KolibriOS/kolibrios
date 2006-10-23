@@ -1,5 +1,6 @@
 ;   Picture browser by lisovin@26.ru
 ;   Modified by Ivan Poddubny - v.0.3
+;   Modified by Diamond - v.0.4
 ;   Compile with FASM for Menuet
 
 ;******************************************************************************
@@ -194,6 +195,10 @@ load_image:
         int     0x40
     mov  eax,[I_END+18]
     mov  ebx,[I_END+22]
+        test    ebx, ebx
+        jns     @f
+        neg     ebx
+@@:
     add  eax,20
     cmp  eax,210
     jae  @f
@@ -223,9 +228,12 @@ load_image:
     jne  nodrawimage
     mov  eax,7
     mov  ebx,[soi]
-    mov  ecx,[I_END+18]
-    shl  ecx,16
-    add  ecx,[I_END+22]
+        mov     ecx, dword [I_END+18-2]
+        mov     cx, [I_END+22]
+        test    cx, cx
+        jns     @f
+        neg     cx
+@@:
     mov  edx,10*65536+50
     int  0x40
   nodrawimage:
@@ -259,126 +267,171 @@ load_image:
    @@:
     ret
 
-  convert:
-    movzx eax,word [I_END+28]
-    mul dword [I_END+18]
-;    mov  ebx,32
-;    div  ebx
-;    test edx,edx
-;    je   noaddword
-;    inc  eax
-;  noaddword:
-        add     eax, 31
-        shr     eax, 5
-    mov  [dwps],eax  ;dwps-doublewords per string
-    shl  eax,2
-    mov  [bps],eax   ;bps-bytes per string
+convert:
+        mov     ecx, I_END
+        add     ecx, [ecx+2]
+        mov     [soi], ecx
+        mov     ebp, [I_END+18]
+        lea     ebp, [ebp*3]    ; ebp = size of output scanline
+        mov     eax, [I_END+22]
+        dec     eax
+        mul     ebp
+        add     eax, ecx
+        mov     edi, eax        ; edi points to last scanline
+        mov     esi, I_END
+        add     esi, [esi+10]
+        mov     ebx, I_END+54
+        mov     edx, [I_END+22]
+        lea     eax, [ebp*2]
+        mov     [delta], eax
+        test    edx, edx
+        jz      .ret
+        jns     @f
+        neg     edx
+        and     [delta], 0
+        mov     edi, ecx
+@@:
+        movzx   eax, word [I_END+28]
+        cmp     eax, 24
+        jz      convert24
+        cmp     eax, 8
+        jz      convert8
+        cmp     eax, 4
+        jz      convert4
+        dec     eax
+        jz      convert1
+.ret:
+        ret
+convert24:
+        mov     ecx, ebp
+        rep     movsb
+        sub     edi, [delta]
+        mov     eax, ebp
+        neg     eax
+        and     eax, 3
+        add     esi, eax
+        dec     edx
+        jnz     convert24
+        ret
+convert8:
+        push    edi
+        add     [esp], ebp
+.loopi:
+        xor     eax, eax
+        lodsb
+        cmp     dword [I_END+30], 1
+        jnz     .nocompressed
+.compressed:
+        mov     ecx, eax
+        jecxz   .special
+        lodsb
+        mov     eax, [ebx+eax*4]
+@@:
+        call    putpixel
+        loop    @b
+        jmp     .loopi
+.nocompressed:
+        mov     eax, [ebx+eax*4]
+        call    putpixel
+.loopicont:
+        cmp     edi, [esp]
+        jnz     .loopi
+.next:
+        pop     edi
+        sub     edi, [delta]
+        mov     eax, ebp
+        and     eax, 3
+        add     esi, eax
+        dec     edx
+        jnz     convert8
+        ret
+.special:
+        lodsb
+        test    al, al
+        jz      .next
+        cmp     al, 2
+        jbe     .end
+        mov     ecx, eax
+        push    ecx
+@@:
+        xor     eax, eax
+        lodsb
+        mov     eax, [ebx+eax*4]
+        call    putpixel
+        loop    @b
+        pop     ecx
+        and     ecx, 1
+        add     esi, ecx
+        jmp     .loopi
+.end:
+        pop     edi
+        ret
+convert4:
+        push    edi
+        add     [esp], ebp
+.loopi:
+        xor     eax, eax
+        lodsb
+        shr     eax, 4
+        mov     eax, [ebx+eax*4]
+        call    putpixel
+        cmp     edi, [esp]
+        jz      .loopidone
+        mov     al, [esi-1]
+        and     eax, 0xF
+        mov     eax, [ebx+eax*4]
+        stosd
+        dec     edi
+        cmp     edi, [esp]
+        jnz     .loopi
+.loopidone:
+        pop     edi
+        sub     edi, [delta]
+        call    align_input
+        dec     edx
+        jnz     convert4
+        ret
+convert1:
+        push    edi
+        add     [esp], ebp
+.loopi:
+        lodsb
+        mov     ecx, 8
+.loopii:
+        add     al, al
+        push    eax
+        setc    al
+        movzx   eax, al
+        mov     eax, [ebx+eax*4]
+        call    putpixel
+        pop     eax
+        cmp     edi, [esp]
+        loopnz  .loopii
+        jnz     .loopi
+        pop     edi
+        sub     edi, [delta]
+        call    align_input
+        dec     edx
+        jnz     convert1
+        ret
 
-    cmp dword [I_END+34],0
-    jne  yespicsize  ;if picture size is defined
-    mul dword [I_END+22]
-    mov dword [I_END+34],eax
+align_input:
+        push    esi
+        sub     esi, I_END
+        sub     esi, [I_END+10]
+        neg     esi
+        and     esi, 3
+        add     [esp], esi
+        pop     esi
+        ret
 
-  yespicsize:
-    mov  eax,I_END
-    push eax
-    add  eax, [I_END+2];file size
-    inc  eax
-    mov  [soi],eax   ;soi-start of image area for drawing
-    pop  eax
-    add  eax, [I_END+10]
-    mov  [sop],eax   ;sop-start of picture in file
-    add  eax, [I_END+34]
-    mov  [eop],eax   ;eop-end of picture in file
-    mov  eax, [I_END+18]
-    mov  ebx,3
-    mul  ebx             ;3x pixels in eax
-
-    mov  edi,[soi]   ;initializing
-    mov  esi,[eop]
-    sub  esi,[bps]
-
-
-  nextstring:
-    push edi
-    cmp word [I_END+28],24
-    jne  convertno32
-
-    mov  ecx,[dwps]
-    cld
-    rep movsd
-  convert1:
-    pop  edi
-    sub  esi,[bps]
-    sub  esi,[bps]
-    cmp  esi,[sop]
-    jb   nomorestring
-    add  edi,eax
-    jmp  nextstring
-
-  nomorestring:
-    ret
-
-  convertno32:
-    mov  ebx,I_END
-    add  ebx, [I_END+14]
-    add  ebx,14          ;start of color table
-    push esi
-    add  esi,[bps]
-    mov  [eos],esi
-    pop  esi
-  nextelem:
-    push eax
-    movzx eax,byte [esi]
-    cmp word [I_END+28],4
-    je   convert4bpp
-    cmp word [I_END+28],1
-    je   convert1bpp
-    call converttable
-  convert2:
-    pop  eax
-    inc  esi
-    cmp  esi,[eos]
-    jae  convert1
-    add  edi,3
-    jmp  nextelem
-
-  convert4bpp:
-    shl  ax,4
-    shr  al,4
-    push ax
-    movzx eax,ah
-    call converttable
-    add  edi,3
-    pop  ax
-    movzx eax,al
-    call converttable
-    jmp  convert2
-
-  convert1bpp:
-    mov  ecx,eax
-    mov  edx,7
-  nextbit:
-    xor  eax,eax
-    bt   ecx,edx
-    jnc  noaddelem
-    inc  eax
-  noaddelem:
-    push edx
-    call converttable
-    pop  edx
-    dec  edx
-    cmp  edx,0xffffffff
-    je   convert2
-    add  edi,3
-    jmp  nextbit
-
-  converttable:
-    shl  eax,2
-    add  eax,ebx
-    mov  edx, [eax]
-    mov dword [edi],edx
-    ret
+putpixel:
+        push    eax
+        stosw
+        shr     eax, 16
+        stosb
+        pop     eax
+        ret
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -440,23 +493,12 @@ draw_window:
 ; DATA AREA
 
 labelt:
-         db 'MeView v.0.3'
+         db 'MeView v.0.4'
 
 lsz buttext,\
     en,   ' FILE   OPEN   INFO   BGRD',\
     ru,   ' îÄâã  éíäê   àçîé   îéç  ',\
     de,   'DATEI OEFNEN  INFO   HGRD'
-
-status   dd 0  ;bit0=1 if file thread is created
-bps      dd 0
-dwps     dd 0
-soi      dd 0
-sop      dd 0
-eop      dd 0
-eos      dd 0
-process  dd 0
-
-bWasDraw db 0
 
 thread1:                        ; start of thread1
 
@@ -967,6 +1009,12 @@ draw_window3:
 
 
 ; DATA AREA
+status   dd 0  ;bit0=1 if file thread is created
+soi      dd 0
+delta   dd      0
+process  dd 0
+
+bWasDraw db 0
 vflag: db 'x'
 bgrmode: dd 1
 
