@@ -1,4 +1,7 @@
 ; project name:   SYSTREE FILE COPIER
+; version:        1.2
+; Mario79 23/10/06
+;
 ; version:        1.1b
 ; last update:    18/07/2004
 ; compiler:       FASM 1.52
@@ -7,6 +10,7 @@
 ; copying-policy: GPL
 
 ; History:
+; 23/10/06 application use function 70
 ; 18/07/2004 strings using "lsz" macro + french language (not 100%!)
 ; 04/06/2004 Bugfix for memory - thanks to Ville
 ; ...
@@ -18,7 +22,7 @@
     dd      0x01           ; header version
     dd      START          ; start of code
     dd      I_END          ; size of image
-    dd      0x20201        ; memory for app
+    dd      0x10000        ; memory for app
     dd      0x10000        ; esp
     dd      0x0 , 0x0      ; I_Param , I_Icon
 
@@ -69,11 +73,11 @@ still:                     ; main cycle of application begins here
     jnz  still
 
   srcbtn:
-    mov  [addr],dword source
+    mov  [addr],dword source_info.name  ;source
     mov  [ya],dword 36
     jmp  rk
   dstbtn:
-    mov  [addr],dword destination
+    mov  [addr],dword dest_info.name  ;destination
     mov  [ya],dword 36+16
 
   rk:
@@ -150,32 +154,18 @@ still:                     ; main cycle of application begins here
 ;====================================================
 copy_file:
     ; at first we must get the size of the source file
-    mov  [source_info.blocks],1 ; load only 512 bytes
-    mov  eax,58
-    mov  ebx,source_info
-    int  0x40
+    mcall 70, get_param_info
 
     ; now eax contains error code
-    ; and ebx contains file size in bytes
     test eax,eax      ; check if eax is equal to zero (success)
-    je   .ok_getsize  ;   eax = 0 => continue
-    cmp  eax,6
-    jna  @f
-    mov  eax,7        ; if error code is above 6, it will be 7
-  @@:
-    cmp  eax,5        ; file might be copied successfully altrough
-                      ; the system reports an error 5
     jne  copy_error   ; print error code now
-  .ok_getsize:
 
     ; allocate memory
-    push ebx         ; save file size
-    mov  ecx,ebx
-    add  ecx,0x20000 ; size of memory needed = 0x20000+filesize
+    mov  ecx,[param_info+32]   ;ebx
+    add  ecx,0x10000 ; size of memory needed = 0x10000+filesize
     mov  eax,64      ; func 64
     mov  ebx,1       ; resize application memory
     int  0x40
-    pop  ebx         ; restore filesize
 
     ; check if alloc function failed
     test eax,eax     ; non-zero value means error
@@ -184,36 +174,29 @@ copy_file:
     jmp  copy_error  ; print error code now
   .ok_memory:
 
-    ; save number of blocks to source_info
-    add  ebx,511
-    shr  ebx,9       ; round up to 512 boundary
-    mov  [source_info.blocks],ebx
-    ; read the source file
-    mov  eax,58
-    mov  ebx,source_info
-    int  0x40
+    ; save size to source_info
+    mov  ebx,[param_info+32]
+    mov  [source_info.size],ebx    ; read the source file
+    mcall 70,source_info
 
-    ; ebx = file size
+    ; now eax contains error code
+    test eax,eax      ; check if eax is equal to zero (success)
+    jne  copy_error   ; print error code now
+
+    ; file size in bytes
+    mov   [dest_info.size],ebx
+
     ; save loaded file
-    mov  [dest_info.bytes2write],ebx ; file size in bytes
-    mov  eax,58
-    mov  ebx,dest_info
-    int  0x40
+    mcall 70,dest_info
 
-    ; check if 58 function failed
+    ; now eax contains error code
     test eax,eax
-    je   .ok_write
-    add  eax,7        ; error number += 7
-    cmp  eax,6+7
-    jna  copy_error
-    mov  eax,7+7
-    jmp  copy_error
-  .ok_write:
+    jne  copy_error
 
     ; return to the initial amount of memory
     mov  eax,64
     mov  ebx,1
-    mov  ecx,0x20201
+    mov  ecx,0x10000
     int  0x40
 
     xor  eax,eax      ; eax = message number (0-OK)
@@ -297,12 +280,12 @@ draw_window:
     mov  esi, 0xEBEBEB
     int  0x40
 
-    mov  esi, source
+    mov  esi, source_info.name  ;source
     mov  edi, text+14
     mov  ecx, STRLEN
     rep  movsb
 
-    mov  esi, destination
+    mov  esi, dest_info.name  ;destination
     mov  edi, text+STRLEN+59-45+14
     mov  ecx, STRLEN
     rep  movsb
@@ -327,24 +310,58 @@ draw_window:
 
 
 ; DATA AREA
-align 4
+get_param_info:
+ .subfunction	 dd   5 	      ; 5 - get parameters of file
+ .start        dd   0        ; rezerved
+ .size_high    dd   0 	      ; rezerved
+ .size         dd   0	      ; rezerved
+ .return	      dd   param_info
+ .name:
+     db  0
+     dd  source_info.name
+
 source_info:                 ; SOURCE FILEINFO
-  .mode            dd 0      ; read file
-  .start_block     dd 0x0    ; block to read
-  .blocks          dd 0x700  ; num of blocks
-  .address         dd 0x20000
-  .workarea        dd 0x10000
-  source           db '/HD/1/KERNEL/KERNEL.MNT',0
-    times (STRLEN-23) db 0
+ .subfunction	 dd   0 	      ; 0=READ
+ .start        dd   0        
+ .size_high    dd   0 	     
+ .size         dd   0	      
+ .return	      dd   0x10000
+ .name:
+     db   '/hd0/1/kernel/kernel.mnt',0   ; ASCIIZ dir & filename
+     times (STRLEN-24) db 0
 
 dest_info:                   ; DESTINATION FILEINFO
-  .mode            dd 1      ; write
-  .notused         dd 0x0    ; not used
-  .bytes2write     dd 0      ; bytes to write
-  .address         dd 0x20000
-  .workarea        dd 0x10000
-  destination      db '/RD/1/KERNEL.MNT',0
+ .subfunction	 dd   2 	      ; 0=WRITE
+ .start        dd   0        
+ .size_high    dd   0 	     
+ .size         dd   0	      
+ .return	      dd   0x10000
+ .name:
+     db   '/rd/1/kernel.mnt',0   ; ASCIIZ dir & filename
     times (STRLEN-16) db 0
+
+param_info:
+     rb 40
+
+
+;align 4
+;source_info:                 ; SOURCE FILEINFO
+;  .mode            dd 0      ; read file
+;  .start_block     dd 0x0    ; block to read
+;  .blocks          dd 0x700  ; num of blocks
+;  .address         dd 0x20000
+;  .workarea        dd 0x10000
+;  source           db '/HD/1/KERNEL/KERNEL.MNT',0
+;    times (STRLEN-23) db 0
+;
+;dest_info:                   ; DESTINATION FILEINFO
+;  .mode            dd 1      ; write
+;  .notused         dd 0x0    ; not used
+;  .bytes2write     dd 0      ; bytes to write
+;  .address         dd 0x20000
+;  .workarea        dd 0x10000
+;  destination      db '/RD/1/KERNEL.MNT',0
+;    times (STRLEN-16) db 0
 
   align 4
   addr  dd  0x0

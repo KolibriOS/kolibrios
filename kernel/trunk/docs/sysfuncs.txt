@@ -379,7 +379,7 @@ Remarks:
       to subfunction 4 of function 18).
   * Beginning from slot 2, the normal applications are placed.
   * The normal applications are placed in memory at the address
-    0x10000000 (kernel constand 'std_application_base_address').
+    0x60400000 (kernel constant 'std_application_base_address').
     There is no intersection, as each process has its own page table.
   * At creation of the thread it is assigned the slot
     in the system table and identifier (Process/Thread IDentifier =
@@ -874,8 +874,8 @@ Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
 db 'name',0 - ASCIIZ-string with the name
-For Kolibri 0.6.0.0 kernel:
-db 0,6,0,0
+For Kolibri 0.5.8.1 kernel:
+db 0,5,8,1
 db 2
 db 'Kolibri',0
 
@@ -999,6 +999,30 @@ Remarks:
     its call find out current screen resolution (with function 14)
     and check that the value of position is inside the limits of the
     screen.
+
+======================================================================
+======== Function 18, subfunction 20 - get information on RAM. =======
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 20 - subfunction number
+  * ecx = pointer to the buffer for information (36 bytes)
+Returned value:
+  * eax = total size of existing RAM in pages
+    or -1 if error has occured
+  * buffer pointed to by ecx contains the following information:
+    * +0:  dword: total size of existing RAM in pages
+    * +4:  dword: size of free RAM in pages
+    * +8:  dword: number of page faults (exceptions #PF)
+                 in applications
+    * +12: dword: size of kernel heap in bytes
+    * +16: dword: free in kernel heap in bytes
+    * +20: dword: total number of memory blocks in kernel heap
+    * +24: dword: number of free memory blocks in kernel heap
+    * +28: dword: size of maximum free block in kernel heap
+                 (reserved)
+    * +32: dword: size of maximum allocated block in kernel heap
+                 (reserved)
 
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================
@@ -2874,7 +2898,6 @@ Examples:
 Existing subfunctions:
   * subfunction 0 - read file/folder
   * subfunction 1 - rewrite file
-  * subfunction 2 - delete file/folder
   * subfunction 4 - make folder
   * subfunction 5 - rename/move file/folder
   * subfunction 8 - LBA-read from device
@@ -2964,30 +2987,6 @@ Returned value:
   * ebx destroyed
 Remarks:
   * This function is obsolete, use subfunction 2 of function 70.
-
-======================================================================
-========== Function 58, subfunction 2 - delete file/folder. ==========
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 2 = subfunction number
-  * +4: dword: ignored
-  * +8: dword: ignored
-  * +12 = +0xC: dword: ignored
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-  * ebx destroyed
-Remarks:
-  * By operations with a floppy one should not delete not empty
-    folder. The code working with hard disk deletes not empty folders
-    correctly (i.e. recursively with all files and nested folders).
-    Function 58 does not support folders on ramdisk.
 
 ======================================================================
 ============== Function 58, subfunction 4 - make folder. =============
@@ -3458,8 +3457,11 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - not enough memory
 Remarks:
-  * At the moment this function is a sole resource for dynamic
-    allocation/free of application memory.
+  * There is another way to dynamically allocate/free memory -
+    subfunctions 11, 12, 13 of function 68.
+  * The function cannot be used together with 68.11, 68.12, 68.13.
+    The function call will be ignored after creation of process heap
+    with function 68.11.
 
 ======================================================================
 ================== Function 66 - work with keyboard. =================
@@ -3666,87 +3668,133 @@ Returned value:
     kill the thread.
 
 ======================================================================
-======= Function 68, subfunction 5 - allocate physical memory. =======
+======= Function 68, subfunction 11 - initialize process heap. =======
 ======================================================================
 Parameters:
   * eax = 68 - function number
-  * ebx = 5 - subfunction number
-  * ecx = size (in bytes)
+  * ebx = 11 - subfunction number
 Returned value:
-  * eax = physical address of allocated memory
+  * eax = 0 - failed
+  * otherwise size of created heap
 Remarks:
-  * Normal applications must not use this function, it is intended
-    for the case, when for some device it is required to place
-    data to the known physical address. (In effect, this function
-    was developed for AC97WAV.)
-  * The number of blocks of physical memory is limited (by constant
-    24, and this constant includes some blocks for kernel).
-  * To free a memory allocated by such way use
-    subfunction 6, to copy data there and back
-    use subfunctions 7 and 8.
+  * The function call initializes heap, from which one can in future
+    allocate and free memory blocks with subfunctions 12 and 13.
+    Heap size is equal to total amount of free application memory.
+  * The second function call from the same process results in
+    returning the size of the existing heap.
+  * After creation of the heap calls to function 64 will be ignored.
 
 ======================================================================
-========= Function 68, subfunction 6 - free physical memory. =========
+======== Function 68, subfunction 12 - allocate memory block. ========
 ======================================================================
 Parameters:
   * eax = 68 - function number
-  * ebx = 6 - subfunction number
-  * ecx = physical address of memory
+  * ebx = 12 - subfunction number
+  * ecx = required size in bytes
 Returned value:
-  * function does not return value
+  * eax = pointer to the allocated block
 Remarks:
-  * Normal applications must not use this function, it is intended
-    for the case, when for some device it is required to place
-    data to the known physical address. (In effect, this function
-    was developed for AC97WAV.)
-  * The memory must be previously allocated by subfunction 5.
+  * Before this call one must initialize process heap by call to
+    subfunction 11.
+  * The function allocates an integer number of pages (4 Kb) in such
+    way that the real size of allocated block is more than or equal to
+    requested size.
 
 ======================================================================
-===== Function 68, subfunction 7 - write data to physical memory. ====
+========== Function 68, subfunction 13 - free memory block. ==========
 ======================================================================
 Parameters:
   * eax = 68 - function number
-  * ebx = 7 - subfunction number
-  * ecx = physical address
-  * edx = pointer to the data (in the application)
-  * esi = size of the data (in bytes)
+  * ebx = 13 - subfunction number
+  * ecx = pointer to the memory block
 Returned value:
-  * function does not return value
+  * eax = 1 - success
+  * eax = 0 - failed
 Remarks:
-  * Normal applications must not use this function, it is intended
-    for the case, when for some device it is required to place
-    data to the known physical address. (In effect, this function
-    was developed for AC97WAV.)
-  * The range of physical addresses should lie inside of previously
-    allocated by subfunction 5 block of physical memory.
-  * There is no check for correctness.
+  * The memory block must have been allocated by subfunction 12.
 
 ======================================================================
-==== Function 68, subfunction 8 - read data from physical memory. ====
+======== Function 68, subfunction 14 - wait for driver notify. =======
 ======================================================================
 Parameters:
   * eax = 68 - function number
-  * ebx = 8 - subfunction number
-  * ecx = physical address
-  * edx = pointer to buffer for data (in application)
-  * esi = size of data (in bytes)
+  * ebx = 14 - subfunction number
+  * ecx = pointer to the buffer for information (8 bytes)
 Returned value:
-  * function does not return value
+  * buffer pointed to by ecx contains the following information:
+    * +0: dword: constant EV_INTR = 1
+    * +4: dword: driver data
 Remarks:
-  * Normal applications must not use this function, it is intended
-    for the case, when for some device it is required to place
-    data to the known physical address. (In effect, this function
-    was developed for AC97WAV.)
-  * The range of physical addresses should lie inside of previously
-    allocated by subfunction 5 block of physical memory.
-  * There is no check for correctness.
+  * The current implementation at wait time uses "heavy" operations
+    of task switch.
+
+======================================================================
+====== Function 68, subfunction 15 - set FPU exception handler. ======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 15 - subfunction number
+  * ecx = address of the new exception handler
+Returned value:
+  * eax = address of the old exception handler (0, if it was not set)
+
+======================================================================
+============= Function 68, subfunction 16 - load driver. =============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 16 - subfunction number
+  * ecx = pointer to ASCIIZ-string with driver name
+Returned value:
+  * eax = 0 - failed
+  * otherwise eax = driver handle
+Remarks:
+  * If the driver was not loaded yet, it is loaded;
+    if the driver was loaded yet, nothing happens.
+  * Driver name is case-sensitive.
+    Maximum length of the name is 16 characters, including
+    terminating null character, the rest is ignored.
+  * The function can load only drivers which are registered in the
+    system; the current implementation contains
+    exactly 2 such drivers:
+    * name SOUND, file /rd/1/unisound.obj
+    * name INFINITY, file /rd/1/infinity.obj
+
+======================================================================
+============ Function 68, subfunction 17 - driver control. ===========
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 17 - subfunction number
+  * ecx = pointer to the control structure:
+    * +0: dword: handle of driver
+    * +4: dword: code of driver function
+    * +8: dword: pointer to input data
+    * +12 = +0xC: dword: size of input data
+    * +16 = +0x10: dword: pointer to output data
+    * +20 = +0x14: dword: size of output data
+Returned value:
+  * eax = determined by driver
+Remarks:
+  * Function codes and the structure of input/output data
+    are defined by driver.
+  * Previously one must obtain driver handle by subfunction 16.
+
+======================================================================
+====== Function 68, subfunction 18 - set SSE exception handler. ======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 15 - subfunction number
+  * ecx = address of the new exception handler
+Returned value:
+  * eax = address of the old exception handler (0, if it was not set)
 
 ======================================================================
 ====================== Fucntion 69 - debugging. ======================
 ======================================================================
 A process can load other process as debugged by set of corresponding
-bit by call to subfunction 16 of function 58
-or subfunction 7 of function 70.
+bit by call to subfunction 7 of function 70.
 A process can have only one debugger; one process can debug some
 others. The system notifies debugger on events occuring with
 debugged process. Messages are written to the buffer defined by
@@ -4041,6 +4089,7 @@ Available subfunctions:
   * subfunction 5 - get attributes of file/folder
   * subfunction 6 - set attributes of file/folder
   * subfunction 7 - start application
+  * subfunction 8 - delete file/folder
 For CD-drives due to hardware limitations only subfunctions
 0,1,5 and 7 are available, other subfunctions return error
 with code 2.
@@ -4347,6 +4396,31 @@ Remarks:
     regarding what is less.
   * If the process is started as debugged, it is created in
     the suspended state; to run use subfunction 5 of function 69.
+
+======================================================================
+========== Function 70, subfunction 8 - delete file/folder. ==========
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 8 = subfunction number
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: 0 (reserved)
+  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
+    given in the general description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer to ASCIIZ-string with file name
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx destroyed
+Remarks:
+  * The function is not supported for CD (returns error code 2).
+  * The function can delete only empty folders (attempt to delete
+    nonempty folder results in error with code 10, "access denied").
 
 ======================================================================
 ========== Function 71, subfunction 1 - set window caption. ==========
