@@ -1271,7 +1271,7 @@ display_number:
      and   eax,0x3f
      push  eax
      mov   edi,esp
-     add   edi,4+64
+     add   edi,4+64-1
      mov   ecx,eax
      mov   eax,ebx
      mov   ebx,10
@@ -1295,7 +1295,7 @@ display_number:
      and   eax,0x3f
      push  eax
      mov   edi,esp
-     add   edi,4+64
+     add   edi,4+64-1
      mov   ecx,eax
      mov   eax,ebx
      mov   ebx,16
@@ -1320,7 +1320,7 @@ display_number:
      and   eax,0x3f
      push  eax
      mov   edi,esp
-     add   edi,4+64
+     add   edi,4+64-1
      mov   ecx,eax
      mov   eax,ebx
      mov   ebx,2
@@ -1361,10 +1361,9 @@ draw_num_text:
 ;        rol     eax,16
 
      mov   edx,eax
-     mov   ecx,65
+     mov   ecx,64+4
      sub   ecx,eax
      add   ecx,esp
-     add   ecx,4
      mov   eax,[esp+64+32-8+4]
      push  edx                       ; add window start x & y
      mov   edx,[0x3010]
@@ -1378,7 +1377,7 @@ draw_num_text:
      mov   ebx,[esp+64+32-12+4]
         and     ebx, not 0x80000000     ; force counted string
         mov     esi, [esp+64+4+4]
-     xor   edi,edi
+        mov     edi, [esp+64+4]
      jmp   dtext
 
 read_string:
