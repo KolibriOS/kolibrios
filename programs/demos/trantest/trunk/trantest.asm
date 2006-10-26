@@ -29,7 +29,7 @@ red:
 
 still:
     scevent red,key,button
-    fps  290,8,cl_White,cl_Black
+    fps  250,8,cl_White,cl_Black
 
 main_loop:
      random SCREEN_X,eax
@@ -85,9 +85,9 @@ draw_window:
     int 0x40
 
     xor eax,eax   ;Draw window
-    mov ebx,100*65536+(SCREEN_X+19) ;x start*65536+x size
-    mov ecx,100*65536+(SCREEN_Y+51) ;y start*65536+y size
-    mov edx,0x33000000              ;0x33 use skinned window
+    mov ebx,100*65536+(SCREEN_X+9) ;x start*65536+x size
+    mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
+    mov edx,0x13000000              ;0x33 use skinned window
     mov edi,header
     int 0x40
 

@@ -9,32 +9,33 @@
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.3'
+version equ '0.4'
 
 use32
 
-                org     0x0
+		org	0x0
 
-                db      'MENUET01'              ; 8 byte id
-                dd      0x01                    ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x100000
-                dd      0,0
+		db	'MENUET01'		; 8 byte id
+		dd	0x01			; required os
+		dd	START			; program start
+		dd	I_END			; program image size
+		dd	0x100000		; required amount of memory
+		dd	0x100000
+		dd	0,0
+
 include "lang.inc"
-include "macros.inc"
+;include "macros.inc"
 
-irc_server_ip   db      192,168,1,1
+irc_server_ip	db	83,149,74,246		  ;server: kolibrios.org
 
-user_nick       dd      4                                 ; length
-                db      'airc                   '         ; string
+user_nick	dd	12				        ; length
+		db	'kolibri_user           '	  ; string
 
-user_real_name  dd      8                                 ; length
-                db      'Joe User               '         ; string
+user_real_name	dd	14				  ; length
+		db	'KolibriOS User         '	  ; string
 
 
-START:                          ; start of execution
+START:				; start of execution
 
     mov  eax,40
     mov  ebx,10000111b
@@ -52,7 +53,7 @@ START:                          ; start of execution
 
     mov  ebp,0
     mov  edx,I_END
-    call draw_window            ; at first, draw the window
+    call draw_window		; at first, draw the window
 
 still:
 
@@ -62,17 +63,17 @@ still:
     mov  ebx,1
     int  0x40
 
-    mov  eax,11                 ; wait here for event
+    mov  eax,11 		; wait here for event
     int  0x40
 
     call print_status
 
-    cmp  eax,1                  ; redraw
-    je   redraw
-    cmp  eax,2                  ; key
-    je   main_window_key
-    cmp  eax,3                  ; button
-    je   button
+    cmp  eax,1			; redraw
+    je	 redraw
+    cmp  eax,2			; key
+    je	 main_window_key
+    cmp  eax,3			; button
+    je	 button
 
     cmp  [I_END+120*60],byte 1
     jne  no_main_update
@@ -95,18 +96,18 @@ still:
     jmp  still
 
 
-redraw:                         ; redraw
+redraw: 			; redraw
 
     call draw_window
     jmp  still
 
 
-button:                         ; button
+button: 			; button
 
-    mov  eax,17                 ; get id
+    mov  eax,17 		; get id
     int  0x40
 
-    cmp  ah,1                   ; close program
+    cmp  ah,1			; close program
     jne  noclose
     mov  eax,-1
     int  0x40
@@ -129,7 +130,7 @@ print_status:
     mov  [status],eax
 
     cmp  [old_status],eax
-    je   nopr
+    je	 nopr
 
     mov  [old_status],eax
 
@@ -160,7 +161,7 @@ old_status dd 0
 
 socket_commands:
 
-    cmp  ah,22       ; open socket
+    cmp  ah,22	     ; open socket
     jnz  tst3
     mov  eax,3
     int  0x40
@@ -176,7 +177,7 @@ socket_commands:
   tst3:
 
 
-    cmp  ah,23        ; write userinfo
+    cmp  ah,23	      ; write userinfo
     jnz  tst4
 
     mov  eax,53  ; user
@@ -234,7 +235,7 @@ socket_commands:
   tst4:
 
 
-    cmp  ah,24     ; close socket
+    cmp  ah,24	   ; close socket
     jnz  no_24
     mov  eax,53
     mov  ebx,8
@@ -257,7 +258,7 @@ main_window_key:
     cmp  eax,8
     jne  no_bks2
     cmp  [xpos],0
-    je   still
+    je	 still
     dec  [xpos]
     call print_entry
     jmp  still
@@ -269,7 +270,7 @@ main_window_key:
     mov  [send_string+ebx],al
     inc  [xpos]
     cmp  [xpos],80
-    jb   noxposdec
+    jb	 noxposdec
     mov  [xpos],79
   noxposdec:
     call print_entry
@@ -279,7 +280,7 @@ main_window_key:
     cmp  eax,13
     jne  no_send
     cmp  [xpos],0
-    je   no_send2
+    je	 no_send2
     cmp  [send_string],byte '/'   ; server command
     jne  no_send2
     mov  [send_to_server],1
@@ -329,7 +330,7 @@ print_user_list:
     imul edx,120*80
     add  edx,120*60+8+I_END
     cmp  [edx],byte 1
-    je   nonp
+    je	 nonp
 
     mov  edx,ebp
     imul edx,120*80
@@ -345,14 +346,14 @@ print_user_list:
   newnss:
     inc  edx
     dec  eax
-    jz   startuu
+    jz	 startuu
   asdf:
     cmp  [edx],word '  '
     jne  nodouble
     inc  edx
   nodouble:
     cmp  [edx],byte ' '
-    je   newnss
+    je	 newnss
     inc  edx
     cmp  edx,ebx
     jbe  asdf
@@ -385,7 +386,7 @@ print_user_list:
     mov  esi,0
   newusers:
     cmp  [edx+esi],byte ' '
-    je   do_print
+    je	 do_print
     inc  esi
     cmp  esi,20
     jbe  newusers
@@ -401,7 +402,7 @@ print_user_list:
 
     inc  ebp
     cmp  ebp,10
-    je   nonp
+    je	 nonp
 
     add  ebx,12
 
@@ -423,6 +424,19 @@ print_user_list:
 start_user_list_at dd 0x0
 
 
+recode_to_cp1251:
+	push	esi edx
+  .loop:
+	lodsb
+	cmp	al,0x80
+	jb	@f
+	and	eax,0x7F
+	mov	al,[cp866_table+eax]
+    @@: mov	[esi-1],al
+	dec	edx
+	jnz	.loop
+	pop	edx esi
+	ret
 
 
 send_data_to_server:
@@ -445,7 +459,7 @@ send_data_to_server:
     mov  [text_start],eax
 
     cmp  [send_string],byte '/'   ; server command
-    je   server_command
+    je	 server_command
 
     mov  bl,13
     call print_character
@@ -500,6 +514,8 @@ send_data_to_server:
     mov  esi,send_string
     mov  edx,[xpos]
     inc  edx
+
+	call	recode_to_cp1251
 
     mov  eax, 53      ; write message
     mov  ebx, 7
@@ -594,9 +610,9 @@ send_data_to_server:
     add   edx,send_string-1
   newsip:
     cmp   [esi],byte '.'
-    je    sipn
+    je	  sipn
     cmp   esi,edx
-    jg    sipn
+    jg	  sipn
     movzx ebx,byte [esi]
     inc   esi
     imul  eax,10
@@ -608,7 +624,7 @@ send_data_to_server:
     xor   eax,eax
     inc   esi
     cmp   esi,send_string+30
-    jg    sipnn
+    jg	  sipnn
     inc   edi
     cmp   edi,irc_server_ip+3
     jbe   newsip
@@ -653,11 +669,11 @@ send_data_to_server:
     mov  ebx,eax
     shl  ebx,5
     cmp  dword [channel_list+ebx],dword '    '
-    je   free_found2
+    je	 free_found2
     add  edi,120*80
     inc  eax
     cmp  eax,[max_windows]
-    jb   newse2
+    jb	 newse2
 
   free_found2:
 
@@ -744,7 +760,7 @@ read_incoming_data:
 
     call read_incoming_byte
     cmp  ecx,-1
-    je   no_data_in_buffer
+    je	 no_data_in_buffer
 
     cmp  bl,10
     jne  no_start_command
@@ -799,9 +815,9 @@ create_channel_name:
   newcase:
     mov  al,[esi]
     cmp  eax,'a'
-    jb   nocdec
+    jb	 nocdec
     cmp  eax,'z'
-    jg   nocdec
+    jg	 nocdec
     sub  al,97-65
   nocdec:
     mov  [edi],al
@@ -926,11 +942,11 @@ set_channel:
   newcase2:
     mov  al,[esi]
     cmp  eax,'#'
-    jb   newcase_over2
+    jb	 newcase_over2
     cmp  eax,'a'
-    jb   nocdec2
+    jb	 nocdec2
     cmp  eax,'z'
-    jg   nocdec2
+    jg	 nocdec2
     sub  al,97-65
   nocdec2:
     mov  [edi],al
@@ -964,7 +980,7 @@ set_channel:
     jne  notfound2
     inc  ecx
     cmp  ecx,[channel_temp_length]
-    jb   stc4
+    jb	 stc4
     popa
 
     jmp  found
@@ -976,7 +992,7 @@ set_channel:
     add  [text_start],120*80
     add  ebx,32
     cmp  ebx,channel_list+19*32
-    jb   stcl1
+    jb	 stcl1
 
     mov  [text_start],I_END
 
@@ -987,7 +1003,7 @@ set_channel:
     ret
 
 
-channel_temp:         times   100   db   0
+channel_temp:	      times   100   db	 0
 channel_temp_length   dd      0x0
 
 
@@ -1091,7 +1107,7 @@ analyze_command:
     mov  ecx,100
    new_blank:
     cmp  [eax],byte ' '
-    je   bl_found
+    je	 bl_found
     inc  eax
     loop new_blank
     mov  eax,50
@@ -1125,7 +1141,7 @@ analyze_command:
     mov  eax,command+10
   acl3:
     cmp  [eax],byte ':'
-    je   acl4
+    je	 acl4
     inc  eax
     loop acl3
     mov  eax,10
@@ -1173,7 +1189,7 @@ analyze_command:
   no_privmsg:
 
 
-    cmp  [irc_command],'PART'    ; channel leave
+    cmp  [irc_command],'PART'	 ; channel leave
     jne  no_part
 
     ; compare nick
@@ -1220,7 +1236,7 @@ analyze_command:
   no_part:
 
 
-    cmp  [irc_command],'JOIN'    ; channel join
+    cmp  [irc_command],'JOIN'	 ; channel join
     jne  no_join
 
     ; compare nick
@@ -1236,11 +1252,11 @@ analyze_command:
     mov  ebx,eax
     shl  ebx,5
     cmp  dword [channel_list+ebx],dword '    '
-    je   free_found
+    je	 free_found
     add  edi,120*80
     inc  eax
     cmp  eax,[max_windows]
-    jb   newse
+    jb	 newse
 
   free_found:
 
@@ -1305,7 +1321,7 @@ analyze_command:
   no_join:
 
 
-    cmp  [irc_command],'NICK'      ; nick change
+    cmp  [irc_command],'NICK'	   ; nick change
     jne  no_nick_change
 
     mov  [text_start],I_END
@@ -1329,7 +1345,7 @@ analyze_command:
 
     add  [text_start],120*80
     cmp  [text_start],I_END+120*80*20
-    jb   new_all_channels3
+    jb	 new_all_channels3
 
     popa
     ret
@@ -1337,7 +1353,7 @@ analyze_command:
   no_nick_change:
 
 
-     cmp  [irc_command],'KICK'      ; kick
+     cmp  [irc_command],'KICK'	    ; kick
      jne  no_kick
 
     mov  [text_start],I_END
@@ -1375,7 +1391,7 @@ analyze_command:
 
 
 
-    cmp  [irc_command],'QUIT'    ; irc quit
+    cmp  [irc_command],'QUIT'	 ; irc quit
     jne  no_quit
 
     mov  [text_start],I_END
@@ -1395,7 +1411,7 @@ analyze_command:
 
     add  [text_start],120*80
     cmp  [text_start],I_END+120*80*20
-    jb   new_all_channels2
+    jb	 new_all_channels2
 
     popa
     ret
@@ -1550,7 +1566,7 @@ compare_to_nick:
     add  edi,1
 
     cmp  edi,[user_nick]
-    jb   new_nick_compare
+    jb	 new_nick_compare
 
     movzx eax,byte [esi]
     cmp  eax,40
@@ -1613,9 +1629,9 @@ print_text:
   ptr2:
     mov  bl,[eax]
     cmp  bl,dl
-    je   ptr_ret
+    je	 ptr_ret
     cmp  bl,0
-    je   ptr_ret
+    je	 ptr_ret
     call print_character
     inc  eax
     cmp  eax,ecx
@@ -1630,12 +1646,32 @@ print_text:
     ret
 
 
+cp1251_table:
+  db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; 8
+  db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; 9
+  db '?','?','?','?','?','?','?','?' , $F0,'?','?','?','?','?','?','?' ; A
+  db '?','?','?','?','?','?','?','?' , $F1,'?','?','?','?','?','?','?' ; B
+  db $80,$81,$82,$83,$84,$85,$86,$87 , $88,$89,$8A,$8B,$8C,$8D,$8E,$8F ; C
+  db $90,$91,$92,$93,$94,$95,$96,$97 , $98,$99,$9A,$9B,$9C,$9D,$9E,$9F ; D
+  db $A0,$A1,$A2,$A3,$A4,$A5,$A6,$A7 , $A8,$A9,$AA,$AB,$AC,$AD,$AE,$AF ; E
+  db $E0,$E1,$E2,$E3,$E4,$E5,$E6,$E7 , $E8,$E9,$EA,$EB,$EC,$ED,$EE,$EF ; F
+
+cp866_table:
+  db $C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7 , $C8,$C9,$CA,$CB,$CC,$CD,$CE,$CF ; 8
+  db $D0,$D1,$D2,$D3,$D4,$D5,$D6,$D7 , $D8,$D9,$DA,$DB,$DC,$DD,$DE,$DF ; 9
+  db $E0,$E1,$E2,$E3,$E4,$E5,$E6,$E7 , $E8,$E9,$EA,$EB,$EC,$ED,$EE,$EF ; A
+  db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; B
+  db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; C
+  db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; D
+  db $F0,$F1,$F2,$F3,$F4,$F5,$F6,$F7 , $F8,$F9,$FA,$FB,$FC,$FD,$FE,$FF ; E
+  db $A8,$B8,'?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; F
+
 
 print_character:
 
     pusha
 
-    cmp  bl,13     ; line beginning
+    cmp  bl,13	   ; line beginning
     jne  nobol
     mov  ecx,[pos]
     add  ecx,1
@@ -1651,7 +1687,7 @@ print_character:
     jmp  newdata
   nobol:
 
-    cmp  bl,10     ; line down
+    cmp  bl,10	   ; line down
     jne  nolf
    addx1:
     add  [pos],dword 1
@@ -1667,7 +1703,7 @@ print_character:
   no_lf_ret:
 
 
-    cmp  bl,15    ; character
+    cmp  bl,15	  ; character
     jbe  newdata
 
     mov  eax,[irc_data]
@@ -1684,7 +1720,7 @@ print_character:
     mov  ebx,[scroll+4]
     imul ebx,[rxs]
     cmp  eax,ebx
-    jb   noeaxz
+    jb	 noeaxz
 
     mov  esi,[text_start]
     add  esi,[rxs]
@@ -1749,7 +1785,6 @@ draw_data:
     ret
 
 
-
 read_incoming_byte:
 
     mov  eax, 53
@@ -1760,12 +1795,18 @@ read_incoming_byte:
     mov  ecx,-1
 
     cmp  eax,0
-    je   no_more_data
+    je	 no_more_data
 
     mov  eax, 53
     mov  ebx, 3
     mov  ecx, [socket]
     int  0x40
+
+	cmp	bl,0x80
+	jb	@f
+	and	ebx,0x7F
+	mov	bl,[cp1251_table+ebx]
+    @@:
 
     mov  ecx,0
 
@@ -1785,7 +1826,7 @@ draw_window:
 
     mov  [old_status],300
 
-    mov  eax,0                     ; draw window
+    mov  eax,0			   ; draw window
     mov  ebx,5*65536+499
     mov  ecx,5*65536+345
     mov  edx,[wcolor]
@@ -1794,33 +1835,33 @@ draw_window:
     mov  edi,0x00ffffff
     int  0x40
 
-    mov  eax,4                     ; label
+    mov  eax,4			   ; label
     mov  ebx,9*65536+8
     mov  ecx,0x10ffffff
     mov  edx,labelt
     mov  esi,labellen-labelt
     int  0x40
 
-    mov  eax,8                     ; button: open socket
+    mov  eax,8			   ; button: open socket
     mov  ebx,43*65536+22
     mov  ecx,229*65536+10
     mov  edx,22
     mov  esi,[main_button]
     int  0x40
 
-    mov  eax,8                     ; button: send userinfo
+    mov  eax,8			   ; button: send userinfo
     mov  ebx,180*65536+22
     mov  ecx,229*65536+10
     mov  edx,23
     int  0x40
 
-    mov  eax,8                     ; button: close socket
+    mov  eax,8			   ; button: close socket
     mov  ebx,317*65536+22
     mov  ecx,229*65536+10
     mov  edx,24
     int  0x40
 
-    mov  eax,38                    ; line
+    mov  eax,38 		   ; line
     mov  ebx,5*65536+494
     mov  ecx,148*65536+148
     mov  edx,[main_line]
@@ -1829,7 +1870,7 @@ draw_window:
 ;    mov  edx,0x5555cc
 ;    int  0x40
 
-    mov  eax,38                    ; line
+    mov  eax,38 		   ; line
     mov  ebx,5*65536+494
     mov  ecx,166*65536+166
     int  0x40
@@ -1837,7 +1878,7 @@ draw_window:
 ;    mov  edx,0x5555cc
 ;    int  0x40
 
-    mov  eax,38                    ; line
+    mov  eax,38 		   ; line
     mov  ebx,410*65536+410
     mov  ecx,22*65536+148
     int  0x40
@@ -1845,7 +1886,7 @@ draw_window:
 ;    mov  edx,0x5555cc
 ;    int  0x40
 
-    mov  ebx,25*65536+183          ; info text
+    mov  ebx,25*65536+183	   ; info text
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,70
@@ -1857,7 +1898,7 @@ draw_window:
     cmp  [edx],byte 'x'
     jne  newline
 
-    mov  edx,I_END                ; text from server
+    mov  edx,I_END		  ; text from server
     call draw_channel_text
 
     mov  eax,12
@@ -1874,20 +1915,20 @@ main_button  dd 0x6565cc
 
 text:
 
-db '   Real name : Joe User        - change with eg /areal Jill User      '
-db '   Nick      : AIRC            - change with eg /anick Jill           '
-db '   Server    : 192.168.1.1     - change with eg /aserv 192.168.1.24   '
+db '   Real name : KolibriOS User  - change with eg /areal Jill User      '
+db '   Nick      : kolibri_user    - change with eg /anick Jill           '
+db '   Server    : 83.149.74.246   - change with eg /aserv 192.168.1.24   '
 db '                                                                      '
 db '        1) Open socket         2) Send userinfo       Close socket    '
 db '                                                                      '
 db '   Commands after established connection:                             '
 db '                                                                      '
-db '   /join #ChannelName         - eg /join #menuet                      '
-db '   /part #ChannelName         - eg /part #linux                       '
+db '   /join #ChannelName         - eg /join #general                     '
+db '   /part #ChannelName         - eg /part #windows                     '
 db '   /query Nickname            - eg /query Mary                        '
 db '   /quit                      - Quit server and Close socket          '
 
-db 'x <- END MARKER, DONT DELETE            '
+db 'x' ; <- END MARKER, DONT DELETE
 
 
 
@@ -1908,7 +1949,7 @@ channel_thread:
     add   eax,0x80000
     mov   esp,eax
 
-    mov   edi,ebp        ; clear thread memory
+    mov   edi,ebp	 ; clear thread memory
     imul  edi,120*80
     add   edi,I_END
     mov   ecx,120*80
@@ -1950,7 +1991,7 @@ channel_thread:
   no_draw_window:
 
     cmp   eax,2
-    je    thread_key
+    je	  thread_key
 
     cmp   eax,3
     jne   no_end
@@ -1960,7 +2001,7 @@ channel_thread:
     imul  eax,120*80
     add   eax,I_END
     cmp   [eax+120*60+8],byte 0 ; channel window
-    je    not_close
+    je	  not_close
     mov   eax,ebp
     shl   eax,5
     add   eax,channel_list
@@ -2013,18 +2054,18 @@ check_mouse:
     and  ebx,0xffff
 
     cmp  eax,420
-    jb   no_mouse
+    jb	 no_mouse
     cmp  eax,494
-    jg   no_mouse
+    jg	 no_mouse
 
     cmp  ebx,145
-    jg   no_mouse
+    jg	 no_mouse
     cmp  ebx,23
-    jb   no_mouse
+    jb	 no_mouse
 
 
     cmp  ebx,100
-    jb   no_plus
+    jb	 no_plus
     mov  eax,ebp
     imul eax,120*80
     add  eax,120*70+I_END
@@ -2037,12 +2078,12 @@ check_mouse:
   no_plus:
 
     cmp  ebx,80
-    jg   no_mouse
+    jg	 no_mouse
     mov  eax,ebp
     imul eax,120*80
     add  eax,120*70+I_END
     cmp  dword [eax-8],dword 0
-    je   no_mouse
+    je	 no_mouse
     dec  dword [eax-8]
     call print_user_list
     mov  eax,5
@@ -2070,7 +2111,7 @@ thread_key:
     cmp  eax,8
     jne  no_bks
     cmp  [xpos],0
-    je   w_t
+    je	 w_t
     dec  [xpos]
     call print_entry
     jmp  w_t
@@ -2082,7 +2123,7 @@ thread_key:
     mov  [send_string+ebx],al
     inc  [xpos]
     cmp  [xpos],80
-    jb   xpok
+    jb	 xpok
     mov  [xpos],79
   xpok:
     call print_entry
@@ -2092,7 +2133,7 @@ thread_key:
     cmp  eax,13
     jne  no_send
     cmp  [xpos],0
-    je   no_send
+    je	 no_send
     mov  dword [send_to_channel],ebp
     mov  [send_to_server],1
   wait_for_sending:
@@ -2100,7 +2141,7 @@ thread_key:
     mov  ebx,1
     int  0x40
     cmp  [send_to_server],1
-    je   wait_for_sending
+    je	 wait_for_sending
     call draw_channel_text
     call print_entry
     jmp  w_t
@@ -2171,7 +2212,7 @@ thread_draw_window:
     mov  ebx,1
     int  0x40
 
-    mov  ebx,ebp                   ; draw window
+    mov  ebx,ebp		   ; draw window
     shl  ebx,16+4
     mov  eax,0
     mov  ecx,ebx
@@ -2192,7 +2233,7 @@ thread_draw_window:
 
     int  0x40
 
-    mov  eax,ebp                   ; label
+    mov  eax,ebp		   ; label
     add  eax,48
     mov  [labelc+14],al
     mov  eax,ebp
@@ -2204,7 +2245,7 @@ thread_draw_window:
     cld
     rep   movsb
 
-    mov  esi,17                    ; print label
+    mov  esi,17 		   ; print label
     movzx ebx,byte [eax+31]
     add  esi,ebx
     mov  eax,4
@@ -2213,7 +2254,7 @@ thread_draw_window:
     mov  edx,labelc
     int  0x40
 
-    mov  eax,38                    ; line
+    mov  eax,38 		   ; line
     mov  ebx,5*65536+494
     mov  ecx,148*65536+148
     mov  edx,[channel_line_sun]
@@ -2223,7 +2264,7 @@ thread_draw_window:
     int  0x40
 
 
-    mov  eax,38                    ; line
+    mov  eax,38 		   ; line
     mov  ebx,410*65536+410
     mov  ecx,22*65536+148
     mov  edx,[channel_line_sun]
@@ -2244,7 +2285,7 @@ thread_draw_window:
 
 ; DATA AREA
 
-socket  dd  0x0
+socket	dd  0x0
 
 bgc  dd  0x000000
      dd  0x000000
@@ -2275,67 +2316,67 @@ thread_stack   dd  0x9fff0
 thread_nro     dd 1
 thread_screen  dd I_END+120*80*1
 
-action_header_blue  db  10,'*** ',0
-action_header_red   db  10,'*** ',0
+action_header_blue  db	10,'*** ',0
+action_header_red   db	10,'*** ',0
 
-action_header_short db  10,'* ',0
+action_header_short db	10,'* ',0
 
-has_left_channel db  ' left channel ',0
-joins_channel    db  ' joined channel ',0
+has_left_channel db  ' has left ',0
+joins_channel	 db  ' has joined ',0
 is_now_known_as  db  ' is now known as ',0
-has_quit_irc     db  ' has quit irc',0
-sets_mode        db  ' sets mode ',0
-kicked           db  ' kicked from ',0
+has_quit_irc	 db  ' has quit IRC',0
+sets_mode	 db  ' sets mode ',0
+kicked		 db  ' kicked from ',0
 
-index_list_1     dd  0x0000bb
-index_list_2     dd  0x0000ff
+index_list_1	 dd  0x0000bb
+index_list_2	 dd  0x0000ff
 
-posx             dd  0x0
-incoming_pos     dd  0x0
+posx		 dd  0x0
+incoming_pos	 dd  0x0
 incoming_string: times 128 db 0
 
-pos          dd  0x0
+pos	     dd  0x0
 
 text_start   dd  I_END
 irc_data     dd  0x0
-print        db  0x0
-cmd          dd  0x0
-rxs          dd  66
+print	     db  0x0
+cmd	     dd  0x0
+rxs	     dd  66
 
-res:         db  0,0
+res:	     db  0,0
 command:     times  600  db 0x0
 
-nick         dd  0,0,0
+nick	     dd  0,0,0
 irc_command  dd  0,0
 
 command_position  dd 0x0
-counter           dd  0
-send_to_server    db 0
+counter 	  dd  0
+send_to_server	  db 0
 
-channel_list:     times 32*20 db 32
+channel_list:	  times 32*20 db 32
 send_to_channel   dd 0x0
 
 send_string_header:  db     'privmsg #eax :'
-                     times  100  db  0x0
+		     times  100  db  0x0
 
-send_string:         times  100  db  0x0
-xpos         dd  0
+send_string:	     times  100  db  0x0
+xpos	     dd  0
 
 string0:     db  'USER guest ser1 ser2 :'
 string0l:
 string1:     db  'nick '
 string1l:
 
-attribute   dd  0
-scroll      dd  1
-            dd  12
+attribute   dd	0
+scroll	    dd	1
+	    dd	12
 
-numtext     db  '                     '
+numtext     db	'                     '
 
-wcolor      dd  0x000000
+wcolor	    dd	0x000000
 
-labelc      db  'AIRC - WINDOW X: #xxx                 '
-labelt      db  'IRC client ',version
+labelc	    db	'AIRC - WINDOW X: #xxx                 '
+labelt	    db	'IRC client ',version
 labellen:
 
 ;;

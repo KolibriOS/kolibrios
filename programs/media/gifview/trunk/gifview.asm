@@ -8,11 +8,12 @@
 ;
 ; COMPILE WITH FASM
 
-WND_COLOR equ 0x02aabbcc
+appname equ 'GIF  VIEWER'
+
 ; input line dimensions
-INP_X equ 10 shl 16+680
-INP_Y equ 25 shl 16+16
-INP_XY equ 15 shl 16+30
+INP_X equ 5 shl 16+680
+INP_Y equ 5 shl 16+16
+INP_XY equ 10 shl 16+10
 
 use32
 
@@ -29,7 +30,6 @@ use32
 
 include 'lang.inc'
 include 'macros.inc' ; decrease code size (optional)
-;include '/hd/1/meos/debug.inc'
 include 'debug.inc'
 COLOR_ORDER equ MENUETOS
 
@@ -182,7 +182,7 @@ draw_input:
     push edi
     cmp  [entered],0
     jne  highlight
-    mov  esi,WND_COLOR
+    mov  esi,0x00aabbcc
     jmp  di_draw
   highlight:
     mov  esi,0xe0e0e0
@@ -193,7 +193,7 @@ draw_input:
     mov  edx,2
     int  0x40
     mov  eax,4
-    mov  ecx,0x00107a30            ; шрифт 1 и цвет ( 0xF0RRGGBB )
+    mov  ecx,0x00107a30
     mov  ebx,INP_XY
     mov  edx,fn_input
     mov  esi,[inp_pos]
@@ -207,6 +207,12 @@ draw_input:
 
 draw_window:
 
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    int  0x40
+
     mov  eax,12
     mov  ebx,1
     int  0x40
@@ -214,24 +220,9 @@ draw_window:
     mov  eax,0
     mov  ebx,50*65536+700
     mov  ecx,50*65536+500
-    mov  edx,WND_COLOR
-    mov  esi,0x805080d0
-    mov  edi,0x005080d0
-    int  0x40
-
-
-    mov  eax,4
-    mov  ebx,8*65536+8
-    mov  ecx,0x10ddeeff
-    mov  edx,zagolovok
-    mov  esi,zag_konets-zagolovok
-    int  0x40
-
-    mov  eax,8
-    mov  ebx,(700-19)*65536+12
-    mov  ecx,5*65536+12
-    mov  edx,1
-    mov  esi,0x6688dd
+    mov  edx,[sc.work]
+    or   edx,0x33000000
+    mov  edi,header
     int  0x40
 
     call draw_input
@@ -266,7 +257,7 @@ draw_subimage:
     movzx  edx,[gif_inf.Left]
     shl  edx,16
     add  edx,eax
-    add  edx,10 shl 16 +45
+    add  edx,5 shl 16 +25
     mov  eax,7
     int  0x40
   .enddraw:
@@ -274,15 +265,7 @@ draw_subimage:
 
 ; Здесь находятся данные программы:
 
-; интерфейс программы двуязычный - задайте язык в macros.inc
-
-zagolovok:               ; строка заголовка
-if lang eq ru
-     db   'ПРОСМОТР GIF'
-else
-     db   'GIF  VIEWER'
-end if
-zag_konets:              ; и её конец
+header db appname,0               ; строка заголовка
 
 inp_pos    dd inp_end-fn_input
 fn_input:
@@ -309,6 +292,7 @@ filename:
    rb 257
 ;filename_len dd 0
 entered    rd 1
+sc system_colors
 
 imgcount  rd 1
 img_index  rd 1

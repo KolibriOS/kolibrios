@@ -42,40 +42,42 @@ do_draw:
     sub  ecx,50*10000h - 100
 
     mov  eax,0			   ; define and draw window
-    mov  edx,[sc.work_button]
-    mov  esi,edx ;[sc.work_button]
-    xor edi,edi
+    mov  edx,[sc.work]
+    mov  esi,edx
+    mov  edi,edx
     int  0x40
 
-   xor edx,edx
+   mov edx,0x444444
    mov al,13
-   mcall ,14 shl 16+90,25 shl 16+27
+   mcall ,18 shl 16+90,29 shl 16+27
    push ebx
-   mcall ,117 shl 16+90,
+   mcall ,121 shl 16+90,
    xchg ebx,[esp]
-   mcall ,,59 shl 16+27
+   mcall ,,63 shl 16+27
    pop  ebx
    mcall
 
+   xor edx,edx
    mov al,8
    inc edx
-   mcall ,15 shl 16+87,26 shl 16+24,,0xdd7700
+   mcall ,15 shl 16+87,26 shl 16+24,,0xbb0055
    inc edx
-   mcall ,118 shl 16+87,,,0xbbbb   ;cccc
+   mcall ,118 shl 16+87,,,0xaaaa   ;cccc
    inc edx
-   mcall ,15 shl 16+87,60 shl 16+24,,0xbb00
+   mcall ,15 shl 16+87,60 shl 16+24,,0x9900
    inc edx
-   mcall ,118 shl 16+87,,,0xbbbbbb ;cccccc
+   mcall ,118 shl 16+87,,,0xaaaaaa ;cccccc
 
     mov  al,4			   ; 0x00000004 = write text
     mov  ebx,75*65536+10
-    mov  ecx,[sc.work_button_text] ; 8b window nro - RR GG BB color
-    or	 ecx,0x10000000
+    mov  ecx,[sc.work_text] ; 8b window nro - RR GG BB color
+    or   ecx,0x10000000
     mov  edx,label1		   ; pointer to text beginning
     mov  esi,label1_len 	   ; text length
     int  0x40
 
-    mov  ecx,0x10ffffff
+    mov  ecx,[sc.work_button_text] ; 8b window nro - RR GG BB color
+    or   ecx,0x10000000
     mov  ebx,25*65536+30
     mov  edx,label2		   ; pointer to text beginning
     mov  esi,label2_len 	   ; text length
@@ -193,7 +195,7 @@ else
   label1_len = $ - label1
 
   label2:
-      db   ' BEENDEN      KERNEL'
+      db   ' BEENDEN         KERNEL'
   label2_len = $ - label2
 
   label3:

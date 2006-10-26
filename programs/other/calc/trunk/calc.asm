@@ -662,16 +662,16 @@ draw_window:
     int  0x40
                                    
     xor  eax,eax                     
-    mov  ebx,200*65536+255        
-    mov  ecx,200*65536+180
+    mov  ebx,200 shl 16+255        
+    mov  ecx,200 shl 16+180
     mov  edx,[sc.work]
     or   edx,0x33000000
     mov  edi,header
     int  0x40
 
     mov  eax,8
-    mov  ebx,19*65536+28
-    mov  ecx,49*65536+18
+    mov  ebx,19 shl 16+28
+    mov  ecx,49 shl 16+18
     mov  edx,6
     mov  esi,[sc.work_button]
     mov  edi,7
@@ -679,20 +679,20 @@ draw_window:
     dec  edi
     jnz  no_new_row
     mov  edi,7
-    mov  ebx,19*65536+28
-    add  ecx,20*65536
+    mov  ebx,19 shl 16+28
+    add  ecx,20 shl 16
   no_new_row:
     int  0x40
-    add  ebx,30*65536
+    add  ebx,30 shl 16
     inc  edx
     cmp  edx,39
     jbe  newbutton
   
-    mcall  ,199*65536+28,49*65536+18,2                  ; 'C'
-    mcall  ,220*65536+8,7*65536+8,3                     ; 'dec-bin-hex'
+    mcall  ,199 shl 16+28,49 shl 16+18,2                  ; 'C'
+    mcall  ,220 shl 16+8,7 shl 16+8,3                     ; 'dec-bin-hex'
 
     mov  eax,4
-    mov  ebx,27*65536+54
+    mov  ebx,27 shl 16+54
     mov  ecx,[sc.work_button_text]
     mov  edx,text
     mov  esi,33
@@ -713,10 +713,10 @@ draw_window:
 
 print_display:
     pusha
-    mcall 13,18*65536+210,19*65536+13,0xffffff
+    mcall 13,18 shl 16+210,19 shl 16+13,0xffffff
 
     mov  eax,4
-    mov  ebx,135*65536+7
+    mov  ebx,135 shl 16+7
     mov  ecx,[sc.work_text]
     or   ecx,0x40000000
     mov  edx,calc
@@ -724,7 +724,7 @@ print_display:
     mov  edi,[sc.work]
     int  0x40
 
-    mov  ebx,198*65536+8
+    mov  ebx,198 shl 16+8
     mov  edx,[display_type]
     shl  edx,2
     add  edx,display_type_text
@@ -734,7 +734,7 @@ print_display:
    
     cmp  [dsign],byte '+'
     je   positive
-    mov  ebx,23*65536+22
+    mov  ebx,23 shl 16+22
     mov  ecx,0x0
     mov  edx,dsign
     mov  esi,1
@@ -746,22 +746,22 @@ positive:
     cmp  [decimal],0
     je   whole
 
-    mov  ebx,180*65536+22
+    mov  ebx,180 shl 16+22
     mov  ecx,0x0
     mov  edx,dot
     mov  esi,1
     int  0x40
     
     mov  eax,47
-    mov  ebx,10*65536
+    mov  ebx,10 shl 16
     mov  ecx,[integer]
-    mov  edx,120*65536+22
+    mov  edx,120 shl 16+22
     mov  esi,0x0
     int  0x40     
     
-    mov  ebx,6*65536
+    mov  ebx,6 shl 16
     mov  ecx,[decimal]
-    mov  edx,187*65536+22     
+    mov  edx,187 shl 16+22     
     mov  esi,0x0
     int  0x40 
 
@@ -769,7 +769,7 @@ positive:
     ret
     
 whole:
-    mov  ebx,220*65536+22
+    mov  ebx,220 shl 16+22
     mov  ecx,0x0
     mov  edx,dot
     mov  esi,1
@@ -779,9 +779,9 @@ whole:
     je  null
 
     mov  eax,47
-    mov  ebx,10*65536
+    mov  ebx,10 shl 16
     mov  ecx,[integer]
-    mov  edx,160*65536+22
+    mov  edx,160 shl 16+22
     mov  esi,0x0
     int  0x40
 
@@ -795,9 +795,9 @@ whole:
     je  null
     
     mov  eax,47
-    mov  ebx,256+8*65536
+    mov  ebx,256+8 shl 16
     mov  ecx,[integer]
-    mov  edx,173*65536+22
+    mov  edx,173 shl 16+22
     mov  esi,0x0
     int  0x40
 
@@ -809,9 +809,9 @@ whole:
     je  null
 
     mov  eax,47
-    mov  ebx,2*256+32*65536
+    mov  ebx,2*256+32 shl 16
     mov  ecx,[integer]
-    mov  edx,32*65536+22
+    mov  edx,32 shl 16+22
     mov  esi,0x0
     int  0x40
 
@@ -820,9 +820,9 @@ whole:
   
   null:
     mov  eax,47
-    mov  ebx,1*65536
+    mov  ebx,1 shl 16
     mov  ecx,0
-    mov  edx,214*65536+22
+    mov  edx,214 shl 16+22
     mov  esi,0x0
     int  0x40
 

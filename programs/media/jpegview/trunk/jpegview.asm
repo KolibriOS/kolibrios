@@ -98,8 +98,8 @@ put_image:
     cmp [winys],bp
     jc     .l1
 
-    add     eax,5  ; offset for boarder
-    add     ebx,20 ; offset for title bar
+    add     eax,2  ; offset for boarder
+    add     ebx,2 ; offset for title bar
     push    ax ; pox
     push    bx ; pos
     push    cx ; size
@@ -235,6 +235,12 @@ put_chunk_to_bgr:
 
 draw_window:
 
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    int  0x40
+
     mov  eax,12
     mov  ebx,1
     int  0x40
@@ -273,39 +279,26 @@ dw_002:
         mov     cx, [winys]
 
     xor  eax,eax                   ; DRAW WINDOW
-    mov  edx,[wcolor]
-    add  edx,0x13000000
+    mov  edx,[sc.work]
+    or   edx,0x33000000
     mov  edi,header                ; WINDOW LABEL
     int  0x40
 
 
-    ; draw status bar
-    mov     eax, 13
-    movzx     ebx, word [winxs]
-    sub     ebx, 5
-    add     ebx, 4*65536
-    mov     cx, [winys]
-    sub     ecx, 19
-    shl     ecx, 16
-    add     ecx, 3
-    mov     edx, 0x00557799
-    int     0x40
-
-    mov  eax,8                     ; BUTTON 2: filename
-    mov  ebx,4*65536+55
+    mov  eax,8                     ; BUTTON 2: slideshow
+    mov  ebx,57
     mov  cx, [winys]
-    sub  cx, 16
+    sub  cx, 39
     shl  ecx, 16
     add  ecx, 12
-    mov  esi, 0x00557799
+    mov  esi, [sc.work_button]
     mov  edx,2
     int  0x40
 
     mov  eax,4                     ; Button text
     movzx ebx, word [winys]
-    sub   ebx, 13
-    add   ebx, 6*65536
-    mov  ecx,0x00ffffff
+    add   ebx, 3 shl 16 - 36
+    mov  ecx,[sc.work_button_text]
     mov  edx,setname
     mov  esi,setnamelen-setname
     int  0x40
@@ -313,24 +306,24 @@ dw_002:
 
     mov  eax,8                     ; BUTTON 3: set as background
     mov  bx, [winxs]
-    sub  bx, 60
+    sub  bx, 65
     shl  ebx, 16
     mov  bx,55
     mov  cx, [winys]
-    sub  cx, 16
+    sub  cx, 39
     shl  ecx, 16
     add  ecx, 12
-    mov  esi, 0x00557799
+    mov  esi, [sc.work_button]
     mov  edx,3
     int  0x40
 
     mov  eax,4                     ; Button text
     movzx ebx, word [winxs]
-    sub   ebx, 60
+    sub   ebx, 63
     shl   ebx,16
     mov   bx, word [winys]
-    sub   bx,13
-    mov  ecx,0x00ffffff
+    sub   bx,36
+    mov  ecx,[sc.work_button_text]
     mov  edx,setbgr
     mov  esi,setbgrlen-setbgr
     int  0x40
@@ -391,13 +384,12 @@ load_image:
 
     mov     eax,13              ; clear picture area
     movzx    ebx, word [winxs]
-    sub     ebx, 7
-    add     ebx, 4 * 65536
+    add     ebx, 1  shl 16 -10
     movzx    ecx, word [winys]
-    sub     ecx, 39
-    add     ecx, 20 * 65536
+    sub     ecx, 40
+    add     ecx, 1  shl 16
 
-    mov     edx,0
+    mov     edx,[sc.work]
     int     0x40
     mov    ebp,[jpeg_st]
     test    ebp,ebp
@@ -410,10 +402,9 @@ print_strings:
     pusha
     mov     eax,13              ; clear text area
     movzx   ebx, word [winxs]
-    sub     ebx, 64+58
-    add     ebx, 60*65536
+    add     ebx, 59 shl 16 -125
     mov     cx, [winys]
-    sub     cx, 16
+    sub     cx, 39
     shl     ecx, 16
     add     ecx, 12
     mov     edx,0xffffff
@@ -421,8 +412,7 @@ print_strings:
 
     mov     eax,4               ;
     movzx   ebx, word [winys]
-    sub     ebx, 14
-    add     ebx, 60*65536
+    add     ebx, 61 shl 16 - 37
     mov     ecx,0x000000
     mov     edx,name_string
     mov     esi,60
@@ -529,8 +519,6 @@ winxs           dw  0
 winys           dw  0
 jpeg_st         dd  0
 file_dir        dd  0
-tcolor          dd  0x000000
-btcolor         dd  0x224466+0x808080
 name_string:    db '/rd/1/jpegview.jpg',0
 rb 256
     .end:
@@ -552,6 +540,6 @@ iniciomemoria:
 
 fin:
 I_END:
-
+sc     system_colors
 fileattr: rb 40
 dirinfo: rb 32+304

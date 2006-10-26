@@ -11,10 +11,8 @@ RAW_SIZE equ 350000
 ICON_SIZE equ 32*32*3
 GIF_SIZE equ 45000
 REC_SIZE equ 80
-ICON_LST equ '/RD/1/ICON2.LST'
-;ICON_APP equ '/hd/1/me/icon2';
-ICON_APP equ '/RD/1/ICON2'
-;ICON_STRIP equ '/HD/1/ME/ICONSTRP.GIF'
+ICONS_DAT equ '/RD/1/ICONS.DAT'
+ICON_APP equ '/RD/1/ICON'
 ICON_STRIP equ '/RD/1/ICONSTRP.GIF'
 
   use32
@@ -443,7 +441,7 @@ print_strings:
     popa
     ret
 
-iconlst db ICON_LST,0
+iconlst db ICONS_DAT,0
 
 load_icon_list:
 

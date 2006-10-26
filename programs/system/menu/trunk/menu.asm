@@ -468,11 +468,11 @@ draw_window:
     shl  ecx, 16
     add  ecx, BTN_HEIGHT-1
 ;   edx = button identifier
-    mov  esi, [sc.work_button]
+    mov  esi, [sc.work]
     inc  dl
     cmp  [edi + cur_sel], dl
     jne  .nohighlight
-    add  esi, 0x202020
+    add  esi, 0x101010
   .nohighlight:
     or	   edx, 0x20000000
     int  0x40
@@ -497,7 +497,7 @@ draw_window:
     dec  ecx
     jnz  .findline
 
-    mov  ecx, [sc.work_button_text]
+    mov  ecx, [sc.work_text]
     mov  eax, 4
     mov  esi, 21
     int  0x40

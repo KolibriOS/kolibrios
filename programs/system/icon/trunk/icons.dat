@@ -1,0 +1,14 @@
+AA-Sysxtree-004-/RD/1/SYSXTREE                -                              *
+AB-CMD     -023-/RD/1/CMD                     -                              *
+AC-RDsave  -001-/RD/1/RDSAVE                  -                              *
+BB-Fasm    -012-/RD/1/FASM                    -                              *
+CA-Copy    -008-/RD/1/copy2                   -                              *
+JA-VRR     -009-/RD/1/VRR                     -                              *
+IA-Board   -022-/RD/1/BOARD                   -                              *
+BA-KFAR    -016-/RD/1/kfar                    -                              *
+JB-Animage -018-/RD/1/ANIMAGE                 -                              *
+CB-Tinypad -011-/RD/1/TINYPAD                 -                              *
+IB-AC97    -002-/RD/1/AC97WAV                 -                              *
+JC-Docpack -010-/RD/1/DOCPACK                 -                              *
+BC-Calc    -006-/RD/1/CALC                    -                              *
+HA-MTDBG   -029-/RD/1/MTDBG                   -                              *
