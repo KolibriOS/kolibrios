@@ -65,6 +65,11 @@ CTRL_ICH7	  equ 0x27DE
 CTRL_NFORCE       equ 0x01B1
 CTRL_NFORCE2      equ 0x006A
 CTRL_NFORCE3      equ 0x00DA
+CTRL_MCP04        equ 0x003A
+CTRL_CK804        equ 0x0059
+CTRL_CK8          equ 0x008A
+CTRL_CK8S         equ 0x00EA
+CTRL_MCP51        equ 0x026B
 
 
 PCM_OUT_BDL	  equ  0x10	 ; PCM out buffer descriptors list
@@ -1312,6 +1317,11 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
         dd (CTRL_NFORCE  shl 16)+VID_NVIDIA,msg_NForce, set_ICH
         dd (CTRL_NFORCE2 shl 16)+VID_NVIDIA,msg_NForce2,set_ICH
         dd (CTRL_NFORCE3 shl 16)+VID_NVIDIA,msg_NForce3,set_ICH
+        dd (CTRL_MCP04   shl 16)+VID_NVIDIA,msg_MCP04,set_ICH
+        dd (CTRL_CK804   shl 16)+VID_NVIDIA,msg_CK804,set_ICH
+        dd (CTRL_CK8     shl 16)+VID_NVIDIA,msg_CK8,set_ICH
+        dd (CTRL_CK8S    shl 16)+VID_NVIDIA,msg_CK8S,set_ICH
+        dd (CTRL_MCP51   shl 16)+VID_NVIDIA,msg_MCP51,set_ICH
 
         dd 0    ;terminator
 
@@ -1325,10 +1335,16 @@ msg_ICH6     db 'Intel ICH6', 13,10, 0
 msg_ICH7     db 'Intel ICH7', 13,10, 0
 msg_Intel    db 'Intel Corp. ', 0
 
-msg_NForce   db 'NForce',   13,10, 0
-msg_NForce2  db 'NForce 2', 13,10, 0
-msg_NForce3  db 'NForce 3', 13,10, 0
-msg_NVidia   db 'NVidea', 0
+msg_NForce   db 'NForce',      13,10, 0
+msg_NForce2  db 'NForce 2',    13,10, 0
+msg_NForce3  db 'NForce 3',    13,10, 0
+msg_MCP04    db 'NForce MCP04',13,10, 0
+msg_CK804    db 'NForce CK804',13,10, 0
+msg_CK8      db 'NForce CK8',  13,10, 0
+msg_CK8S     db 'NForce CK8S', 13,10, 0
+msg_MCP51    db 'NForce MCP51',13,10, 0
+
+msg_NVidia   db 'NVidia', 0
 
 szKernel	    db 'KERNEL', 0
 sz_sound_srv	    db 'SOUND',0

@@ -972,13 +972,20 @@ new_services:
            mov [ecx+PROC_BASE+APPDATA.sse_handler], ebx
            mov [esp+36], eax
            ret
-
+@@:
+           cmp eax, 19
+           ja @f
+           add ebx, new_app_base
+           cmp ebx, new_app_base
+           jb .fail
+           stdcall load_library, ebx
+           mov [esp+36], eax
+           ret
 @@:
 .fail:
            xor eax, eax
            mov [esp+36], eax
            ret
-
 
 align 4
 proc strncmp stdcall, str1:dword, str2:dword, count:dword

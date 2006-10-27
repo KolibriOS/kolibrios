@@ -1111,7 +1111,11 @@ proc new_sys_threads
            mov    edi,edx
            mov    ecx,11
            rep    movsb                 ;copy process name
-           mov    eax,[ebx+0x8c]
+           mov    eax,[ebx+APPDATA.heap_base]
+           mov    [edx+APPDATA.heap_base], eax
+           mov    ecx,[ebx+APPDATA.heap_top]
+           mov    [edx+APPDATA.heap_top], ecx
+           mov    eax,[ebx+APPDATA.mem_size]
            mov    [app_mem],eax         ;set memory size
            mov    eax,[ebx+0xb8]
            mov    [edx+0xb8],eax        ;copy page directory

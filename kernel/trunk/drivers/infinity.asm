@@ -614,7 +614,6 @@ proc prepare_updatelist
 	   ret
 endp
 
-
 align 4
 proc set_handler stdcall, hsrv:dword, handler_proc:dword
            locals

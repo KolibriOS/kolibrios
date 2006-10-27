@@ -543,6 +543,8 @@ proc get_proc_ex stdcall, proc_name:dword, imports:dword
 
 .look_up:
            mov edx, [imports]
+           test edx, edx
+           jz .end
            mov edx, [edx]
            test edx, edx
            jz .end
@@ -805,6 +807,112 @@ proc load_driver stdcall, file_name:dword
            xor eax, eax
            ret
 endp
+
+align 4
+proc load_library stdcall, file_name:dword
+           locals
+             coff      dd ?
+             sym       dd ?
+             strings   dd ?
+             img_size  dd ?
+             img_base  dd ?
+             exports   dd ?
+           endl
+
+           cli
+
+           stdcall load_file, [file_name]
+
+           test eax, eax
+           jz .fail
+
+           mov [coff], eax
+           movzx ecx, [eax+CFH.nSections]
+           xor ebx, ebx
+
+           lea edx, [eax+20]
+@@:
+           add ebx, [edx+CFS.SizeOfRawData]
+           add ebx, 15
+           and ebx, not 15
+           add edx, 18
+           dec ecx
+           jnz @B
+           mov [img_size], ebx
+
+           call init_heap
+           stdcall user_alloc, [img_size]
+
+           test eax, eax
+           jz .fail
+           mov [img_base], eax
+
+           mov edx, [coff]
+           movzx ebx, [edx+CFH.nSections]
+           mov edi, [img_base]
+           lea eax, [edx+20]
+@@:
+           mov [eax+CFS.VirtualAddress], edi
+           mov esi, [eax+CFS.PtrRawData]
+           test esi, esi
+           jnz .copy
+           add edi, [eax+CFS.SizeOfRawData]
+           jmp .next
+.copy:
+           add esi, edx
+           add edi, new_app_base
+           mov ecx, [eax+CFS.SizeOfRawData]
+           cld
+           rep movsb
+.next:
+           add edi, 15-new_app_base
+           and edi, not 15
+           add eax, 40
+           dec ebx
+           jnz @B
+
+           mov ebx, [edx+CFH.pSymTable]
+           add ebx, edx
+           mov [sym], ebx
+           mov ecx, [edx+CFH.nSymbols]
+           add ecx,ecx
+           lea ecx,[ecx+ecx*8] ;ecx*=18 = nSymbols*CSYM_SIZE
+           add ecx, [sym]
+           mov [strings], ecx
+
+           lea eax, [edx+20]
+
+           stdcall fix_coff_symbols, eax, [sym], [edx+CFH.nSymbols],\
+                                     [strings], dword 0
+           test eax, eax
+           jnz @F
+
+@@:
+           mov edx, [coff]
+           movzx ebx, [edx+CFH.nSections]
+           mov edi, new_app_base
+           lea eax, [edx+20]
+@@:
+           add [eax+CFS.VirtualAddress], edi  ;patch user space offset
+           add eax, 40
+           dec ebx
+           jnz @B
+
+           add edx, 20
+           stdcall fix_coff_relocs, [coff], edx, [sym]
+
+           mov ebx, [coff]
+           stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szEXPORTS
+           mov [exports], eax
+
+           stdcall kernel_free, [coff]
+           mov eax, [exports]
+           ret
+.fail:
+           xor eax, eax
+           ret
+endp
+
 
 drv_sound      db '/rd/1/unisound.obj', 0
 drv_infinity   db '/rd/1/infinity.obj', 0
