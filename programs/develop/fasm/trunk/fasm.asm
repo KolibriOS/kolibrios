@@ -23,7 +23,6 @@ APP_MEMORY     = 0x00800000
 ;; Menuet header
 
 appname equ "FASM "
-version equ "1.67.12"
 
 use32
 
@@ -383,8 +382,6 @@ print_text:
 
 ; DATA
 
-header db appname,version,0
-
 text:
   db ' INFILE:'
 .line_size = $-text
@@ -506,6 +503,8 @@ include 'assemble.inc'
 include 'formats.inc'
 include 'x86_64.inc'
 include 'tables.inc'
+
+header db appname,VERSION_STRING,0
 
 _logo db 'flat assembler  version ',VERSION_STRING,13,10,0
 

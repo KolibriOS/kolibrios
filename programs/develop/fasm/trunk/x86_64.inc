@@ -6008,6 +6008,8 @@ get_address:
 	test	ch,0Fh
 	jnz	address_ok
       calculate_relative_address:
+	mov	edx,[address_symbol]
+	mov	[symbol_identifier],edx
 	mov	edx,[address_high]
 	call	calculate_relative_offset
 	mov	[address_high],edx

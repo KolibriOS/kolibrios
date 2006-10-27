@@ -2624,6 +2624,8 @@ get_logical_value:
 	je	defined_fp_value
 	cmp	al,')'
 	je	expression_checked
+	cmp	al,'!'
+	je	invalid_expression
 	cmp	al,0Fh
 	je	check_expression
 	cmp	al,10h
