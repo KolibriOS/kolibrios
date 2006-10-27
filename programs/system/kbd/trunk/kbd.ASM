@@ -7,7 +7,6 @@
 ;
 
 include 'macros.inc'
-include 'lang.inc'
 
 memsize = 1000h
                org 0
@@ -243,7 +242,7 @@ nb_viakle133	db	10, 'VIA KLE133'
 msk_viakt266	db	0x92, 0x80, 0x95, 0x02, 0x70, 0x08, 0
 nb_viakt266	db	18, 'VIA KT266(A)/KT333'
 nb_viakm266	db	21, 'VIA KM266/KL266/KM333'
-nb_vikn266	db	9, 'VIA KN266'
+nb_viakn266	db	9, 'VIA KN266'
 msk_viakt400	db	0xD2, 0x80, 0xD5, 0x02, 0x70, 0x08, 0
 nb_viakt400	db	18, 'VIA KT400(A)/KT600'
 nb_viakm400	db	9, 'VIA KM400'
@@ -284,7 +283,7 @@ bd_table:	dd	0x70061022		; AMD 751  ----
 		dd	msk_sis730
 		
 		dd	0x07331039		; SiS 733
-		dd	nb_sis730
+		dd	nb_sis733
 		dd	msk_sis730
 		
 		dd	0x07351039		; SiS 735
@@ -292,15 +291,15 @@ bd_table:	dd	0x70061022		; AMD 751  ----
 		dd	msk_sis735
 		
 		dd	0x07401039		; SiS 740
-		dd	nb_sis735
+		dd	nb_sis740
 		dd	msk_sis735
 		
 		dd	0x07411039		; SiS 741
-		dd	nb_sis735
+		dd	nb_sis741
 		dd	msk_sis735
 		
 		dd	0x07451039		; SiS 745
-		dd	nb_sis735
+		dd	nb_sis745
 		dd	msk_sis735
 		
 		dd	0x07461039		; SiS 746
@@ -308,7 +307,7 @@ bd_table:	dd	0x70061022		; AMD 751  ----
 		dd	msk_sis746
 		
 		dd	0x07481039		; SiS 748
-		dd	nb_sis746
+		dd	nb_sis748
 		dd	msk_sis746
 		
 		dd	0x03051106		; VIA KT133(A)/KM133/KL133/KN133 ----
@@ -316,11 +315,11 @@ bd_table:	dd	0x70061022		; AMD 751  ----
 		dd	msk_viakt133
 		
 		dd	0x03911106		; VIA KX133
-		dd	nb_viakt133
+		dd	nb_viakx133
 		dd	msk_viakt133
 		
 		dd	0x06911106		; VIA KLE133
-		dd	nb_viakt133
+		dd	nb_viakle133
 		dd	msk_viakt133
 		
 		dd	0x30991106		; VIA KT266(A)/KT333
@@ -328,11 +327,11 @@ bd_table:	dd	0x70061022		; AMD 751  ----
 		dd	msk_viakt266
 		
 		dd	0x31161106		; VIA KM266/KL266/KM333
-		dd	nb_viakt266
+		dd	nb_viakm266
 		dd	msk_viakt266
 		
 		dd	0x31561106		; VIA KN266
-		dd	nb_viakt266
+		dd	nb_viakn266
 		dd	msk_viakt266
 		
 		dd	0x31891106		; VIA KT400(A)/KT600
@@ -347,7 +346,6 @@ bd_table:	dd	0x70061022		; AMD 751  ----
 		dd	nb_viakt880
 		dd	msk_viakt880
 bd_table_end:
-
 
 
 find_north_bridg:
@@ -482,7 +480,7 @@ div_sgd:	db	0x12, 0x52, 0x92, 0xD2, 0x12, 0x52, 0x92 ; Stop Grand Divisor
 ; 32       0x122B                      |
 ; 64       0x122F                      |      0x522F
 ; 128      0x1263                      |
-; 256      0x1267   & bin 18 is clear  |  & bin 18 is set
+; 256      0x1267   & bit 18 is clear  |  & bit 18 is set
 ; 512      0x126B                      |
            ; ^^^^
            ; ||||_HDD
