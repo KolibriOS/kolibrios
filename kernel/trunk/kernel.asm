@@ -552,7 +552,7 @@ include 'vmodeld.inc'
         shr     ebx, 20
         mov     edi, 1
         mov     eax, 0x00040000
-        call    display_number
+        call    display_number_force
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
@@ -1246,6 +1246,8 @@ display_number:
 ; ebx = number or pointer
 ; ecx = x shl 16 + y
 ; edx = color
+        xor     edi, edi
+display_number_force:
 
      cmp   eax,0xffff            ; length > 0 ?
      jge   cont_displ
