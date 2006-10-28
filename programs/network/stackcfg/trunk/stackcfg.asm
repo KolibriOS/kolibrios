@@ -6,20 +6,28 @@
 ;                                          ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-use32
 
-               org    0x0
+memsize = 100000h
+               org 0
+PARAMS  = memsize - 1024
+
+use32
 
                db     'MENUET01'              ; 8 byte id
                dd     0x01                    ; header version
                dd     START                   ; start of code
                dd     I_END                   ; size of image
-               dd     0x100000                ; memory for app
-               dd     0x7fff0                 ; esp
-               dd     0x0 , 0x0               ; I_Param , I_Icon
+               dd     memsize                 ; memory for app
+               dd     memsize - 1024          ; esp
+               dd     PARAMS , 0x0            ; I_Param , I_Icon
 
 include 'lang.inc'
 START:                          ; start of execution
+
+    cmp     [PARAMS], byte 0
+    jne     check_parameters
+
+no_params:
 
     call draw_window            ; at first, draw the window
 
@@ -62,8 +70,11 @@ still:
     je   read_stack_setup
 
     cmp  eax,3
-    je   apply_stack_setup
+    jne  no_apply_stack_setup
+    call apply_stack_setup
+    jmp  still
 
+no_apply_stack_setup:
     cmp  eax,11
     jb   no_set_interface
     cmp  eax,14
@@ -356,6 +367,7 @@ apply_stack_setup:
     mov  ecx,[config]
     int  0x40
 
+    ret
     jmp  still
 
 
@@ -465,40 +477,25 @@ draw_window:
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+330         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+157         ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x806688cc
-    mov  edi,0x006688cc
+    mov  edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ddeeff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
-
-    mov  eax,8                     ; BUTTON : CLOSE WINDOW
-    mov  ebx,(330-19)*65536+12
-    mov  ecx,5*65536+12
-    mov  edx,1
-    mov  esi,[button_color]
-;    int  0x40
-
+                                   
     mov  eax,8                     ; BUTTON : READ SETUP
     mov  ebx,90*65536+65
     mov  ecx,127*65536+12
     mov  edx,2
+    mov  esi,[button_color]
     int  0x40
 
-    mov  eax,8                     ; BUTTON : APPLY SETUP
+    ;mov  eax,8                     ; BUTTON : APPLY SETUP
     mov  ebx,163*65536+65
     mov  ecx,127*65536+12
     mov  edx,3
     int  0x40
 
-    mov  eax,8                     ; BUTTONS 11-14 : SELECT INTERFACE
+    ;mov  eax,8                     ; BUTTONS 11-14 : SELECT INTERFACE
     mov  ebx,29*65536+8
     mov  ecx,39*65536+8
     mov  edx,11
@@ -524,7 +521,7 @@ draw_window:
     mov  edx,21
     mov  esi,[button_color]
     int  0x40
-    mov  eax,8
+    ;mov  eax,8
     mov  ebx,143*65536+8
     mov  ecx,79*65536+8
     mov  edx,22
@@ -547,7 +544,7 @@ draw_window:
     mov  esi,0x000000
     int  0x40
 
-    mov  eax,47                   ; COM IRQ
+    ;mov  eax,47                   ; COM IRQ
     mov  ebx,1*65536+1*256
     mov  ecx,[com_irq]
     mov  edx,(266+3*6)*65536+50
@@ -559,7 +556,7 @@ draw_window:
     mov  esi,0x000000
     mov  ebx,3*65536
   ipdisplay:
-    mov  eax,47
+    ;mov  eax,47
     movzx ecx,byte [edi]
     int  0x40
     add  edx,6*4*65536
@@ -572,7 +569,7 @@ draw_window:
     mov  esi,0x000000
     mov  ebx,3*65536
   gipdisplay:
-    mov  eax,47
+    ;mov  eax,47
     movzx ecx,byte [edi]
     int  0x40
     add  edx,6*4*65536
@@ -585,7 +582,7 @@ draw_window:
     mov  esi,0x000000
     mov  ebx,3*65536
   sipdisplay:
-    mov  eax,47
+    ;mov  eax,47
     movzx ecx,byte [edi]
     int  0x40
     add  edx,6*4*65536
@@ -598,7 +595,7 @@ draw_window:
     mov  esi,0x000000
     mov  ebx,3*65536
   dipdisplay:
-    mov  eax,47
+    ;mov  eax,47
     movzx ecx,byte [edi]
     int  0x40
     add  edx,6*4*65536
@@ -613,30 +610,30 @@ draw_window:
     mov  edx,5
     mov  esi,[button_color]
     int  0x40
-    mov  eax,8                     ; BUTTON 6 : SET IRQ
+    ;mov  eax,8                     ; BUTTON 6 : SET IRQ
     mov  ebx,299*65536+8
     mov  ecx,49*65536+8
     mov  edx,6
     int  0x40
-    mov  eax,8                     ; BUTTON 7 : SET IP
+    ;mov  eax,8                     ; BUTTON 7 : SET IP
     mov  ebx,299*65536+8
     mov  ecx,79*65536+8
     mov  edx,7
     int  0x40
 
-    mov  eax,8                     ; BUTTON 8 : SET gateway IP
+    ;mov  eax,8                     ; BUTTON 8 : SET gateway IP
     mov  ebx,299*65536+8
     mov  ecx,89*65536+8
     mov  edx,8
     int  0x40
 
-    mov  eax,8                     ; BUTTON 9 : SET subnet
+    ;mov  eax,8                     ; BUTTON 9 : SET subnet
     mov  ebx,299*65536+8
     mov  ecx,99*65536+8
     mov  edx,9
     int  0x40
 
-    mov  eax,8                     ; BUTTON 10 : SET dns ip
+    ;mov  eax,8                     ; BUTTON 10 : SET dns ip
     mov  ebx,299*65536+8
     mov  ecx,109*65536+8
     mov  edx,10
@@ -645,6 +642,7 @@ draw_window:
     mov  ebx,31*65536+40           ; draw info text with function 4
     mov  edx,text
     mov  esi,49
+    mov  eax,4
   newline:
     mov  ecx,0x224466
     cmp  [edx],byte 'w'
@@ -652,7 +650,6 @@ draw_window:
     mov  ecx,0xeeeeee
    nowhite:
     inc  edx
-    mov  eax,4
     int  0x40
     add  ebx,10
     add  edx,49
@@ -664,6 +661,38 @@ draw_window:
     int  0x40
 
     ret
+
+;******************************************************************************
+
+check_parameters:
+    cmp     [PARAMS], dword "BOOT" ; received BOOT parameter -> goto handler
+    je      boot_set_settings
+    jmp     no_params
+
+;******************************************************************************
+
+boot_set_settings:
+
+    mov  eax,52
+    mov  ebx,0
+    int  0x40
+    mov  [config],eax
+
+    shr  eax,8          ; unwrap com IRQ
+    and  eax,0xf
+    mov  [com_irq],eax
+
+    mov  eax,[config]   ; unwrap com PORT
+    shr  eax,16
+    and  eax,0xfff
+    mov  [com_add],eax
+
+    call apply_stack_setup
+   
+    mov  eax,-1                 ; close this program
+    int  0x40
+
+;******************************************************************************
 
 
 ; DATA AREA
@@ -680,22 +709,21 @@ text:
     db '                                                  '
     db 'w             READ        APPLY                   '
 
-xx: db 'x <- END MARKER, DONT DELETE            '
+xx: db 'x' ;<- END MARKER, DONT DELETE
 
 button_color dd  0x2254b9
 
-labelt:     db  'STACK CONFIGURATION'
-labellen:
+header      db  'STACK CONFIGURATION',0
 
-ip_address  db  000,000,000,000
-gateway_ip  db  000,000,000,000
-subnet_mask db  000,000,000,000
-dns_ip      db  000,000,000,000
+ip_address  db  010,005,004,175
+gateway_ip  db  010,005,000,001
+subnet_mask db  255,255,000,000
+dns_ip      db  213,184,238,006
 
 com_irq     dd      0   ; irq for slip/ppp
 com_add     dd      0   ; com port address for slip/ppp
-interface   dd      0   ; not active,slip,ppp,packet driver
-assigned    dd      1   ; get ip from server
+interface   dd      3   ; not active,slip,ppp,packet driver
+assigned    dd      0   ; get ip from server
 
 config      dd      0
 
