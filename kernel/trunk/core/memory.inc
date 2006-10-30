@@ -286,8 +286,10 @@ proc init_LFB
            cmp dword [LFBAddress], -1
            jne @f
 
+           mov [0x2f0000+0x901c],byte 2
            stdcall kernel_alloc, 0x280000
            mov [LFBAddress], eax
+
            ret
 @@:
            test [SCR_MODE],word 0100000000000000b
