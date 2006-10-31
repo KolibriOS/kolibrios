@@ -683,10 +683,13 @@ proc add_app_parameters stdcall,slot:dword,img_base:dword,\
            mov    ebx,[slot]
            mov    eax,ebx
            shl    ebx,5
+; set window state to 'normal' (non-minimized/maximized/rolled-up) state
+        mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
+        mov     [ebx+window_data+WDATA.fl_redraw], 1
            add    ebx,CURRENT_TASK            ;ebx - pointer to information about process
-           mov    [ebx+0xe],al          ;set window number on screen = process slot
+           mov    [ebx+TASKDATA.wnd_number],al;set window number on screen = process slot
 
-           mov    [ebx],dword 1+2+4     ;set default event flags (see 40 function)
+           mov    [ebx+TASKDATA.event_mask],dword 1+2+4 ;set default event flags (see 40 function)
 
            inc    dword [process_number]
            mov    eax,[process_number]
@@ -702,8 +705,6 @@ proc add_app_parameters stdcall,slot:dword,img_base:dword,\
            mov    [ecx+8],eax
            mov    eax,[SCR_Y_SIZE]
            mov    [ecx+12],eax
-;set window state to 'normal' (non-minimized/maximized/rolled-up) state
-           mov    [ecx+WDATA.fl_wstate],WSTATE_NORMAL
 ;set cr3 register in TSS of application
 
            mov    ecx,[slot]

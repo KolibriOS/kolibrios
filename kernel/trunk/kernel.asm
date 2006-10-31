@@ -78,7 +78,7 @@ drawbar         dd __sys_drawbar.forced
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.6.0.0      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.6.3.0      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -228,8 +228,8 @@ boot_log:
 
 iglobal
   firstapp   db  '/rd/1/LAUNCHER',0
-  char       db  'CHAR    MT '
-  char2      db  'CHAR2   MT '
+  char       db  'FONTS/CHAR.MT',0
+  char2      db  'FONTS/CHAR2.MT',0
   bootpath   db  '/KOLIBRI    '
   bootpath2  db  0
   vmode      db  'VMODE   MDR'
@@ -523,19 +523,17 @@ include 'vmodeld.inc'
         mov   [0x3004],dword 1
         mov   [0x3010],dword 0x3020
 
-        mov   eax,char
-        mov   esi,12
+        mov   esi,char
         xor   ebx,ebx
         mov   ecx,2560;26000
         mov   edx,0x3F600;0x37000
-        call  fileread
+        call  fs_RamdiskRead
 
-        mov   eax,char2
-        mov   esi,12
+        mov   esi,char2
         xor   ebx,ebx
         mov   ecx,2560;26000
         mov   edx,0x3EC00;0x30000
-        call  fileread
+        call  fs_RamdiskRead
 
         mov   esi,boot_fonts
         call  boot_log
@@ -2190,7 +2188,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,6,0,0  ; version 0.6.0.0
+  db 0,6,3,0  ; version 0.6.3.0
   db UID_KOLIBRI
   db 'Kolibri',0
 version_end:
@@ -3023,10 +3021,12 @@ syscall_windowsettings:
         ; have to check if caption is within application memory limit
         ; check is trivial, and if application resizes its memory,
         ;   caption still can become over bounds
-        mov     ecx,[edi*8+0x80000+APPDATA.mem_size]
-        add     ecx,255 ; max caption length
-        cmp     ebx,ecx
-        ja      .exit_fail
+; diamond, 31.10.2006: check removed because with new memory manager
+; there can be valid data after APPDATA.mem_size bound
+;        mov     ecx,[edi*8+0x80000+APPDATA.mem_size]
+;        add     ecx,255 ; max caption length
+;        cmp     ebx,ecx
+;        ja      .exit_fail
 
         mov     [edi*8+0x80000+APPDATA.wnd_caption],ebx
         or      [edi+window_data+WDATA.fl_wstyle],WSTYLE_HASCAPTION
@@ -4849,31 +4849,6 @@ read_from_hd:                           ; Read from hd - fn not in use
 
      ret
 
-
-align 4
-
-write_to_hd:                            ; Write a file to hd
-
-     mov   edi,[0x3010]
-     add   edi,TASKDATA.mem_start
-     add   eax,[edi]
-     add   ecx,[edi]
-     add   edx,[edi]
-     call  file_write
-     ret
-
-; <diamond> Sysfunction 57, delete_from_hd, is obsolete. Use 58 or 70 functions instead.
-;align 4
-;
-;delete_from_hd:                         ; Delete a file from hd
-;
-;     mov   edi,[0x3010]
-;     add   edi,0x10
-;     add   eax,[edi]
-;     add   ecx,[edi]
-;     call  file_delete
-;     ret
-;
 
 ; --------------- APM ---------------------
 apm_entry    dp    0

@@ -19,5 +19,5 @@ preboot_blogesc     db  1 ; start immediately after bootlog
       if $>10200h
 ERROR: prebooting parameters must fit in first sector!!!
       end if
-hdsysimage          db  'MENUET  IMG' ; load from
-image_save          db  'MENUET  IMG' ; save to
+hdsysimage          db  'KOLIBRI IMG' ; load from
+image_save          db  'KOLIBRI IMG' ; save to

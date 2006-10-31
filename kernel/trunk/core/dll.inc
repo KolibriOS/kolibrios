@@ -914,8 +914,8 @@ proc load_library stdcall, file_name:dword
 endp
 
 
-drv_sound      db '/rd/1/unisound.obj', 0
-drv_infinity   db '/rd/1/infinity.obj', 0
+drv_sound      db '/rd/1/drivers/unisound.obj', 0
+drv_infinity   db '/rd/1/drivers/infinity.obj', 0
 
 szSound        db 'SOUND',0
 szInfinity     db 'INFINITY',0

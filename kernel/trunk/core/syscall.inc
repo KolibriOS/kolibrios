@@ -98,13 +98,10 @@ iglobal
       dd sys_wss                 ; 27-SetWssMainVol and SetWssCdVol
       dd sys_sb16II              ; 28-SetSb16
       dd sys_date                ; 29-GetDate
-;      dd syscall_readhd          ; 30-ReadHd - obsolete <diamond>
       dd undefined_syscall       ; 30-reserved
-;      dd syscall_starthdapp      ; 31-StartHdApp - obsolete <diamond>
       dd undefined_syscall       ; 31-reserved
       dd syscall_delramdiskfile  ; 32-DelRamdiskFile
       dd syscall_writeramdiskfile; 33-WriteRamdiskFile
-;      dd read_floppy_file        ; 34-ReadFloppyDrive - obsolete <diamond>
       dd undefined_syscall       ; 34-reserved
       dd syscall_getpixel        ; 35-GetPixel
       dd syscall_readstring      ; 36-ReadString (not yet ready)
@@ -127,8 +124,7 @@ iglobal
       dd socket                  ; 53-Socket interface
       dd user_events             ; 54-User events
       dd sound_interface         ; 55-Sound interface
-      dd write_to_hd             ; 56-Write a file to hd
-;      dd delete_from_hd          ; 57-Delete a file from hd - obsolete <diamond>
+      dd undefined_syscall       ; 56-reserved
       dd undefined_syscall       ; 57-reserved
       dd file_system             ; 58-Common file system interface
       dd sys_trace               ; 59-System call trace
