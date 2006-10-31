@@ -1038,6 +1038,7 @@ proc fpu_save
            jnc .no_SSE
 
            fxsave [eax]
+           fninit            ;re-init fpu
            ret
 .no_SSE:
            fnsave [eax]
@@ -1055,6 +1056,7 @@ proc fpu_restore
            fxrstor [eax]
            ret
 .no_SSE:
+           fnclex               ;fix possible problems
            frstor [eax]
            ret
 endp

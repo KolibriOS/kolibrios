@@ -236,7 +236,6 @@ e7:
         frstor [eax]
         restore_ring3_context
         iret
-
 .init:
         fninit                      ;нам не нужны немаскированные исключения
 .ready:
@@ -693,8 +692,17 @@ terminate: ; terminate application
 
     cmp   [fpu_owner],esi   ; if user fpu last -> fpu user = 1
     jne   fpu_ok_1
-    mov   [fpu_owner],1
-  fpu_ok_1:
+
+    mov [fpu_owner],1
+    mov eax, [256+PROC_BASE+0x10]
+    bt [cpu_caps], CAPS_FXSR
+    jnc .no_SSE
+    fxrstor [eax]
+    jmp fpu_ok_1
+.no_SSE:
+    fnclex
+    frstor [eax]
+fpu_ok_1:
 
     mov   [0xf400],byte 0           ; empty keyboard buffer
     mov   [0xf500],byte 0           ; empty button buffer

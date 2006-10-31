@@ -29,12 +29,8 @@ proc new_mix stdcall, output:dword
 
 	   cmp [play_count], 0
 	   je .exit
-;           mov eax, fpu_state
-;           fnsave [eax]
            call FpuSave
-           emms
 	   mov [main_count], 32;
-
 .l00:
 	   mov [mix_buff_map], 0x0000FFFF;
 	   xor eax, eax
@@ -98,6 +94,7 @@ proc new_mix stdcall, output:dword
 	   jnz .l00
 
 	   call update_stream
+           emms
            call FpuRestore
 	   ret
 .exit:
