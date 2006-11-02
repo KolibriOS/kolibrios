@@ -87,6 +87,7 @@ key:
     mov  esi,18
     call atof
     fst  [trans2]
+    
     cmp  eax,33
     jne  no_sign
     cmp  [dsign],byte '-'

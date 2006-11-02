@@ -350,7 +350,7 @@ DATA
     <"/RD/1/JPEGVIEW",0> ,\
     <"/RD/1/CPU",0>      ,\
     <"/RD/1/SPANEL",0>   ,\
-    <"/RD/1/ICON2",0> ,\
+    <"/RD/1/ICON",0> ,\
     <"/RD/1/VRR",0>
 
 ;  header:            ; заголовок

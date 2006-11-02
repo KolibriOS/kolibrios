@@ -607,8 +607,10 @@ is_brow:
         mov     ebx, gifview
         cmp     ecx, 'GIF'
         jz      run
-        mov     ebx, ac97wav
+        mov     ebx, ac97
         cmp     ecx, 'WAV'
+        jz      run
+        cmp     ecx, 'MP3'
         jz      run
         mov     ebx, midamp
         cmp     ecx, 'MID'
@@ -630,6 +632,12 @@ is_brow:
         cmp     ecx, 'TXT'
         jz      run
         cmp     ecx, 'INC'
+        jz      run
+        mov     ebx, life2
+        cmp     ecx, 'LIF'
+        jz      run
+        mov     ebx, view3ds
+        cmp     ecx, '3DS' and not 0x20202020
         jz      run
         jmp     still
 
@@ -2540,12 +2548,14 @@ editor	      db '/RD/1/TINYPAD',0
 bmpview   db '/RD/1/MV',0
 jpgview   db '/RD/1/JPEGVIEW',0
 gifview   db '/RD/1/GIFVIEW',0
-ac97wav   db '/RD/1/AC97WAV',0
+ac97      db '/RD/1/AC97SND',0
 rtfread   db '/RD/1/RTFREAD',0
 ; //// Willow
 pngview   db '/RD/1/@RCHER',0
 ; //// Willow
 midamp	  db '/RD/1/MIDAMP',0
+view3ds   db '/RD/1/3D/VIEW3DS',0
+life2     db '/RD/1/DEMOS/LIFE2',0
 
 more_char db 10h
 

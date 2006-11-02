@@ -223,6 +223,10 @@ basic_instruction:
 	cdq
 	cmp	ecx,edx
 	jne	value_out_of_range
+	cmp	[value_type],4
+	jne	get_simm32_ok
+	mov	[value_type],2
+      get_simm32_ok:
 	ret
       basic_reg:
 	lods	byte [esi]
@@ -6019,6 +6023,9 @@ get_address:
 	mov	edx,[symbol_identifier]
 	mov	[address_symbol],edx
 	mov	edx,eax
+	ror	ecx,16
+	mov	cl,[value_type]
+	rol	ecx,16
 	mov	bx,0FF00h
       address_ok:
 	ret

@@ -7,7 +7,7 @@
 ; Last changed: February 2, 2005
 ;
 
-BGIFONT_PATH equ '/RD/1/'
+BGIFONT_PATH equ '/RD/1/FONTS/'
 _X equ 340
 _Y equ 240
 
@@ -35,8 +35,8 @@ macro ListFonts
    mcall 47,0x80100,,,0x10ffffff
    jecxz .nofont
    lea  ebx,[edx+80 shl 16+12]
-   mov  edx,_BGIfont_Prepare.dest+8
-   mov  esi,BGIfont_Coo-1
+   mov  edx,_BGIfont_Prepare.fontfullname
+   mov  esi,_BGIfont_Prepare.fontattr-1
    sub  esi,edx
    add  ecx,0x3b800b8
    BGIfont_Outtext

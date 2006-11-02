@@ -3596,12 +3596,14 @@ associations:
         dd      aJpg, jpegview
         dd      aJpeg, jpegview
         dd      aGif, gifview
-        dd      aWav, ac97wav
-        dd      aMp3, ac97wav
+        dd      aWav, ac97
+        dd      aMp3, ac97
         dd      aMid, midamp
         dd      aBmp, mv
         dd      aPng, archer
         dd      aRtf, rtfread
+        dd      a3ds, view3ds
+        dd      aLif, life2
 associations_end:
 
 aAsm db 'asm',0
@@ -3618,7 +3620,7 @@ gifview db '/rd/1/GIFVIEW',0
 
 aWav db 'wav',0
 aMp3 db 'mp3',0
-ac97wav db '/rd/1/AC97WAV',0
+ac97 db '/rd/1/AC97SND',0
 
 aMid db 'mid',0
 midamp db '/rd/1/MIDAMP',0
@@ -3631,6 +3633,12 @@ archer db '/rd/1/@rcher',0
 
 aRtf db 'rtf',0
 rtfread db '/rd/1/RtfRead',0
+
+a3ds db '3ds',0
+view3ds db '/rd/1/3d/view3ds',0
+
+aLif db 'lif',0
+life2 db '/rd/1/demos/life2',0
 
 bConfirmDelete  db      1
 

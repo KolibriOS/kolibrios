@@ -290,18 +290,10 @@ draw_window:
     mov  ebx,[xstart]
     mov  ecx,MAXSTRINGS*10+45      ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color gl
-    or   edx,0x03000000
+    or   edx,0x13000000
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,[sc.grab_text]        ; color of text RRGGBB
-    or   ecx,0x10000000
-    mov  edx,header                ; pointer to text beginning
-    mov  esi,header.len            ; text length
-    int  0x40
-
+    
     mov  ecx,4
     mov  esi,[sc.work]
     mov  ebx,316 shl 16+5*6
@@ -522,19 +514,13 @@ dump_cell_size dw HSPACE,VSPACE,6,VSPACE
 ; 11,11 > 0,-1
 ; 5,11  > 0,-1
 if lang eq ru
-   header:
-        db   '„‘Š€ ’‹€„Šˆ ˆ ‘™…ˆ‰'
-    .len = $ - header
+   header    db   '„‘Š€ ’‹€„Šˆ ˆ ‘™…ˆ‰',0
 else if lang eq en
-   header:
-        db   'GENERAL DEBUG & MESSAGE BOARD'
-    .len = $ - header
+   header    db   'GENERAL DEBUG & MESSAGE BOARD',0
 else
-   header:
-        db   'ALLGEMEINES DEBUG- & NACHRICHTENBOARD'
-    .len = $ - header
+   header    db   'ALLGEMEINES DEBUG- & NACHRICHTENBOARD',0
 end if
-		 krnl_cnt dd 0
+   krnl_cnt dd 0
    vmode dd 0
    targ  dd text2
 I_END:

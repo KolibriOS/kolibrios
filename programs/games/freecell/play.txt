@@ -1,0 +1,26 @@
+FreeCell. 
+
+You can find this games in Windows XP and Linux Mandrake 9.0 distributions.
+
+Rules to FreeCell can be found in help files for those games but I place here
+game rules from site www.freecell.org:
+
+4 cells (top left) - storage locations for cards. 
+Only 1 card allowed in each cell.  
+	
+8 tableau piles (below foundations and cells) - build down by alternate color.
+Move groups of cards if they are in sequence down by alternate color and if 
+there are enough free cells that the cards could be moved individually. 
+Spaces can be filled by any card or legal group of cards (see KingOnly for 
+option). At the start of the game 7 cards are dealt face up to the leftmost 4 
+piles, 6 cards are dealt face up to the remaining piles.
+
+Some features not implemented yet: moving groups of cards - you 
+can move only one card at one time, no automatic moving of 
+some cards in home.
+
+
+You only need to copy the file freecell to the floppy; The rest of the
+files are for assembling the code.
+
+Alexandr Gorbovets gorsash@mail.ru

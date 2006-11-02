@@ -1,266 +1,311 @@
-; new application structure
-macro meos_app_start
- {
-  use32
-  org 0x0
+;--- другие макросы ---
+include 'editbox.inc'
+include 'txtbut.inc'
+;include 'gp.inc'
+;include 'label.inc'
+;include 'checkbox.inc'
+;include 'file_sys.inc'
+;include 'textwork.inc'
+;include 'ini.inc'
 
-  db 'MENUET01'
-  dd 0x01
-  dd __start
-  dd __end
-  dd __memory
-  dd __stack
+include 'lang.inc'
 
-  if used __params & ~defined __params
-    dd __params
-  else
-    dd 0x0
-  end if
-
-  dd 0x0
- }
-MEOS_APP_START fix meos_app_start
-
-macro code
- {
-  __start:
- }
-CODE fix code
-
-macro data
- {
-  __data:
- }
-DATA fix data
-
-macro udata
- {
-  if used __params & ~defined __params
-    __params:
-      db 0
-    __end:
-      rb 255
-  else
-    __end:
-  end if
-  __udata:
- }
-UDATA fix udata
-
-macro meos_app_end
- {
-  align 32
-  rb 2048
-  __stack:
-  __memory:
- }
-MEOS_APP_END fix meos_app_end
-
-
-; macro for defining multiline text data
-struc mstr [sstring]
- {
-  forward
-    local ssize
-    virtual at 0
-      db sstring
-      ssize = $
-    end virtual
-    dd ssize
-    db sstring
-  common
-    dd -1
- }
-
-
-; strings
-macro sz name,[data] {       ; from MFAR [mike.dld]
-  common
-   if used name
-    label name
-   end if
-  forward
-   if used name
-    db data
-   end if
-  common
-   if used name
-    .size = $-name
-   end if
-}
-
-macro lsz name,[lng,data] {  ; from MFAR [mike.dld]
-  common
-   if used name
-    label name
-   end if
-  forward
-   if (used name)&(lang eq lng)
-    db data
-   end if
-  common
-   if used name
-    .size = $-name
-   end if
-}
-
-
-
-; easy system call macro
-macro mpack dest, hsrc, lsrc
+;--- заголовок ---
+macro meos_header par_buf,cur_dir_buf
 {
-  if (hsrc eqtype 0) & (lsrc eqtype 0)
-    mov dest, (hsrc) shl 16 + lsrc
-  else
-    if (hsrc eqtype 0) & (~lsrc eqtype 0)
-      mov dest, (hsrc) shl 16
-      add dest, lsrc
-    else
-      mov dest, hsrc
-      shl dest, 16
-      add dest, lsrc
-    end if
-  end if
+        use32
+        org     0x0
+
+        db      'MENUET01'
+        dd      0x01
+        dd      __app_start
+        dd      __app_end
+        dd      __app_end
+        dd      __app_end
+if <par_buf> eq <>
+        dd      0x0
+else
+        dd      par_buf
+end if
+if <cur_dir_buf> eq <>
+        dd      0x0
+else
+        dd      cur_dir_buf
+end if
 }
 
-macro __mov reg,a,b {         ; mike.dld
- if (~a eq)&(~b eq)
-   mpack reg,a,b
- else if (~a eq)&(b eq)
-   mov reg,a
- end if
+;--- определить точку входа ---
+macro app_start
+{
+__app_start:
 }
 
-macro mcall a,b,c,d,e,f {   ; mike.dld
- __mov eax,a
- __mov ebx,b
- __mov ecx,c
- __mov edx,d
- __mov esi,e
- __mov edi,f
- int   0x40
+;--- определить конец приложения и размер стека ---
+macro app_end stack_size
+{
+if <stack_size> eq <>
+        rb      1024
+else
+        rb      stack_size
+end if
+__app_end:
 }
 
+;--- завершить текущий поток ---
+macro app_close
+{
+        xor     eax,eax
+        dec     eax
+        int     0x40
+}
 
+;--- получить код нажатой клавиши ---
+macro get_key
+{
+        mov     eax,2
+        int     0x40
+}
 
+;--- получить код нажатой кнопки ---
+macro get_pressed_button
+{
+        mov     eax,17
+        int     0x40
+}
 
+;--- сообщить системе о начале перерисовки окна ---
+macro start_draw_window
+{
+        mov     eax,12
+        xor     ebx,ebx
+        inc     ebx
+        int     0x40
+}
 
+;--- сообщить системе о завершении перерисовки окна ---
+macro stop_draw_window
+{
+        mov     eax,12
+        mov     ebx,2
+        int     0x40
+}
 
-; optimize the code for size
-__regs fix <eax,ebx,ecx,edx,esi,edi,ebp,esp>
+;--- установить маску ожидаемых событий ---
+macro set_events_mask mask
+{
+        mov     eax,40
+        mov     ebx,mask
+        int     0x40
+}
 
-macro add arg1,arg2
- {
-   if (arg2 eqtype 0)
-      if (arg2) = 1
-         inc arg1
-      else
-         add arg1,arg2
-      end if
-   else
-      add arg1,arg2
-   end if
- }
+;--- получить информацию о процессе ---
+macro get_procinfo proc_inf_buf,slot_num
+{
+        mov     eax,9
+        mov     ebx,proc_inf_buf
+if <slot_num> eq <>
+        xor     ecx,ecx
+        dec     ecx
+else
+        mov     ecx,slot_num
+end if
+        int     0x40
+}
 
-macro sub arg1,arg2
- {
-   if (arg2 eqtype 0)
-      if (arg2) = 1
-         dec arg1
-      else
-         sub arg1,arg2
-      end if
-   else
-      sub arg1,arg2
-   end if
- }
+macro get_sys_colors col_buf
+{
+        mov     eax,48
+        mov     ebx,3
+        mov     ecx,col_buf
+        mov     edx,40
+        int     0x40
+}
 
-macro mov arg1,arg2
- {
-   if (arg1 in __regs) & (arg2 eqtype 0)
-      if (arg2) = 0
-         xor arg1,arg1
-      else if (arg2) = 1
-         xor arg1,arg1
-         inc arg1
-      else if (arg2) = -1
-         or  arg1,-1
-      else if (arg2) > -128 & (arg2) < 128
-         push arg2
-         pop  arg1
-      else
-         mov  arg1,arg2
-      end if
-   else
-      mov arg1,arg2
-   end if
- }
+macro get_grab_area
+{
+        mov     eax,48
+        mov     ebx,7
+        int     0x40
+}
 
+macro get_scin_height
+{
+        mov     eax,48
+        mov     ebx,4
+        int     0x40
+}
 
-macro struct name
- {
-  virtual at 0
-   name name
-   sizeof.#name = $ - name
-  end virtual
- }
+macro min_window
+{
+        mov     eax,18
+        mov     ebx,10
+        int     0x40
+}
 
-; structures used in MeOS
-struc process_information
- {
-  .cpu_usage               dd ?  ; +0
-  .window_stack_position   dw ?  ; +4
-  .window_stack_value      dw ?  ; +6
-  .not_used1               dw ?  ; +8
-  .process_name            rb 12 ; +10
-  .memory_start            dd ?  ; +22
-  .used_memory             dd ?  ; +26
-  .PID                     dd ?  ; +30
-  .x_start                 dd ?  ; +34
-  .y_start                 dd ?  ; +38
-  .x_size                  dd ?  ; +42
-  .y_size                  dd ?  ; +46
-  .slot_state              dw ?  ; +50
-  rb (1024-52)
- }
-struct process_information
+macro activ_window slot_n
+{
+        mov     eax,18
+        mov     ebx,3
+if <slot_n> eq <>
+else
+        mov     ecx,slot_n
+end if
+        int     0x40
+}
 
-struc system_colors
- {
-  .frame            dd ?
-  .grab             dd ?
-  .grab_button      dd ?
-  .grab_button_text dd ?
-  .grab_text        dd ?
-  .work             dd ?
-  .work_button      dd ?
-  .work_button_text dd ?
-  .work_text        dd ?
-  .work_graph       dd ?
- }
-struct system_colors
+macro get_active_window
+{
+        mov     eax,18
+        mov     ebx,7
+        int     0x40
+}
 
+macro delay time
+{
+        mov     eax,5
+if <time> eq <>
+else
+        mov     ebx,time
+end if
+        int     0x40
+}
 
-; constants
+;--- ожидать события ---
+macro wait_event redraw,key,button,mouse,ipc,other
+{
+        mov     eax,10
+        int     0x40
+        dec     ax
+if <redraw> eq <>
+else
+        jz      redraw
+end if
+        dec     ax
+if <key> eq <>
+else
+        jz      key
+end if
+        dec     ax
+if <button> eq <>
+else
+        jz      button
+end if
+        dec     ax
+        dec     ax
+        dec     ax
+if <mouse> eq <>
+else
+        jz      mouse
+end if
+if <ipc> eq <>
+else
+        dec     ax
+        jz      ipc
+end if
+if <other> eq <>
+        jmp     still
+else
+        jmp     other
+end if
+}
 
-; events
-EV_IDLE        = 0
-EV_TIMER       = 0
-EV_REDRAW      = 1
-EV_KEY         = 2
-EV_BUTTON      = 3
-EV_EXIT        = 4
-EV_BACKGROUND  = 5
-EV_MOUSE       = 6
-EV_IPC         = 7
-EV_STACK       = 8
+;--- получить размеры экрана ---
+macro get_screen_size
+{
+        mov     eax,14
+        int     0x40
+}
 
-; event mask bits for function 40
-EVM_REDRAW     =        1b
-EVM_KEY        =       10b
-EVM_BUTTON     =      100b
-EVM_EXIT       =     1000b
-EVM_BACKGROUND =    10000b
-EVM_MOUSE      =   100000b
-EVM_IPC        =  1000000b
-EVM_STACK      = 10000000b
+macro get_screen_prop  struc_ptr
+{
+        mov     eax,61
+        push    eax eax
+        xor     ebx,ebx
+        inc     ebx
+        int     0x40
+        mov     [struc_ptr],eax
+        pop     eax
+        inc     ebx
+        int     0x40
+        mov     [struc_ptr+4],ax
+        pop     eax
+        inc     ebx
+        int     0x40
+        mov     [struc_ptr+6],eax
+}
+
+macro resize_mem mem_size
+{
+        mov     eax,64
+        xor     ebx,ebx
+        inc     ebx
+if <mem_size> eq <>
+else
+        mov     ecx,mem_size
+end if
+        int     0x40
+}
+
+evm_redraw equ 1
+evm_key equ 10b
+evm_button equ 100b
+evm_mouse equ 100000b
+evm_ipc equ 1000000b
+
+struc procinfo
+{
+.takts_per_second: dd ?
+.window_stack_pos: dw ?
+.slot_number: dw ?
+dw ?
+.name: rb 11
+.align: db ?
+.addres: dd ?
+.use_mem: dd ?
+.pid: dd ?
+.left: dd ?
+.top: dd ?
+.width: dd ?
+.height: dd ?
+.slot_state: dw ?
+rb (1024-56)
+}
+
+struc sys_color_table
+{
+.frames: dd ?  ;+0
+.grab: dd ?    ;+4
+.grab_button: dd ? ;+8
+.grab_button_text: dd ?  ;+12
+.grab_text: dd ?  ;+16
+.work: dd ?       ;+20
+.work_button: dd ?;+24
+.work_button_text: dd ? ;+28
+.work_text: dd ?        ;+32
+.work_graph: dd ?       ;+36
+}
+
+struc screen_size
+{
+.height: dw ?
+.width: dw ?
+}
+
+struc screen_prop
+{
+.height: dw ? ;+0
+.width: dw ?  ;+2
+.bitspp: dw ? ;+4
+.bytesps: dd ?;+6
+}
+
+struc ipc_buffer size
+{
+.block: dd ?
+.in_use: dd ?
+.messages: rb size
+}
+
+;--- цвета ---
+cl_white=0xffffff
+cl_black=0x000000

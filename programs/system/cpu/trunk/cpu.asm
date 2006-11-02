@@ -103,7 +103,7 @@ still_end:
 ;buttons handlers    
   pgdn:
     sub  [list_start],display_processes
-    cmp  [list_start],0
+;    cmp  [list_start],0
     jge  still_end  
     mov  [list_start],0
     jmp  still_end  
@@ -114,7 +114,7 @@ still_end:
     jmp  still_end  
     
   program_start:    
-    mov  eax,58
+    mov  eax,70
     mov  ebx,file_start
     int  0x40
     jmp  still_end
@@ -495,7 +495,7 @@ draw_window:
     mov  ebx,22*65536+35           ; draw info text with function 4
     xor  ecx,ecx
     mov  edx,text
-    mov  esi,79
+    mov  esi,text_len
     mov  eax,4
     int  0x40
 
@@ -583,8 +583,8 @@ draw_window:
 ; DATA AREA
 list_start  dd 0
 
-file_start: dd 16
-            dd 0,0,0,run_process_buffer
+file_start: dd 7
+            dd 0,0,0,0
 
 start_application: db '/RD/1/LAUNCHER',0
                    times 60 db 32
@@ -592,7 +592,8 @@ start_application: db '/RD/1/LAUNCHER',0
 if lang eq en
 text:
   db ' NAME/TERMINATE     PID     CPU-USAGE  %   '
-  db 'MEMORY START/USAGE  W-STACK   W-SIZE'  
+  db 'MEMORY START/USAGE  W-STACK   W-SIZE'
+text_len = $-text
 
 tbts:   db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
 tbte:
@@ -605,8 +606,9 @@ labelt:
 labellen:
 else
 text:
-  db ' NAME/BEENDEN       PID     CPU-LAST   %   '
-  db 'SPEICHER START/NUTZUNG  W-STACK   W-SIZE'  
+  db ' NAME/BEENDEN       PID     CPU-LAST   % '
+  db 'SPEICHER START/NUTZUNG  W-STACK  W-SIZE'
+text_len = $-text
 
 tbts:   db  'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
 tbte:
@@ -630,7 +632,5 @@ list_add    rd 1
 curposy     rd 1
 index       rd 1
 tasklist    rd display_processes
-run_process_buffer:
 process_info_buffer process_information
-rb 4096-($-run_process_buffer) ;rest of run_process_buffer
 U_END:

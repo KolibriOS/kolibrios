@@ -715,10 +715,14 @@ button_color dd  0x2254b9
 
 header      db  'STACK CONFIGURATION',0
 
+
+;ENTER YOUR SETTINGS HERE:
+
 ip_address  db  010,005,004,175
 gateway_ip  db  010,005,000,001
 subnet_mask db  255,255,000,000
 dns_ip      db  213,184,238,006
+
 
 com_irq     dd      0   ; irq for slip/ppp
 com_add     dd      0   ; com port address for slip/ppp

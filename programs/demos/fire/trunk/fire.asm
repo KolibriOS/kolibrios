@@ -13,7 +13,6 @@ use32
            dd      mem_end
            dd      0,0                  ; no parameters, no path
 
-;include 'lang.inc'
 include 'macros.inc'
 
 START:

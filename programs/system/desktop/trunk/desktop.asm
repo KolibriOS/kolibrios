@@ -15,7 +15,7 @@
    dd      START       ; start address
    dd      I_END       ; file size
    dd      28000h      ; memory
-   dd      10000h      ; stack pointer (0x10000+ - work area for os)
+   dd      28000h      ; stack pointer (0x10000+ - work area for os)
    dd      0,0         ; parameters, reserved
 
    include 'lang.inc'
@@ -108,12 +108,12 @@ still:
 
 
   key:                          ; key
-    mov  eax,2                  ; just read it and ignore
+    mov  al,2                   ; just read it and ignore
     int  0x40
     jmp  still
 
   button:                       ; button
-    mov  eax,17                 ; get id
+    mov  al,17                  ; get id
     int  0x40
 
     cmp  ah,11                  ; read string
@@ -203,9 +203,9 @@ still:
     jmp  still
   no_new_colour:
 
-     cmp  ah,1                   ; terminate
-     jnz  noid1
-    mov  eax,-1
+    cmp  ah,1                   ; terminate
+    jnz  noid1
+    or   eax,-1
     int  0x40
   noid1:
 
@@ -547,7 +547,7 @@ virtual at edi+SKIN_PARAMS.dtp.data
 end virtual
 
 draw_skin:
-        mcall   13,<area.x,area.width>,<area.y,area.height>,0x00FFFFFF
+        mcall   13,<area.x,area.width>,<area.y+2,area.height-2>,0x00FFFFFF
 
         mov     ebp,0x18000
         mov     edi,[ebp+SKIN_HEADER.params]

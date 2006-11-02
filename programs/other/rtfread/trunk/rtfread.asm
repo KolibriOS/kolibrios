@@ -19,7 +19,7 @@ DEFCOLOR equ 0x303030
 ;RENDER equ BGI
 RENDER equ FREE
 
-BGIFONT_PATH equ '/rd/1/'
+BGIFONT_PATH equ '/rd/1/fonts/'
 FONT_NAME equ 'LITT'
 TOP =35
 MODE equ RTF

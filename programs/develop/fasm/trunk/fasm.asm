@@ -22,7 +22,7 @@ APP_MEMORY     = 0x00800000
 
 ;; Menuet header
 
-appname equ "FASM "
+appname equ "flat assembler "
 
 use32
 
@@ -392,11 +392,11 @@ text:
 s_compile db 'COMPILE'
 s_run	   db '  RUN  '
 
-infile	  db 'EXAMPLE.ASM'
+infile	  db 'example.asm'
   times MAX_PATH+$-infile  db 0
-outfile db 'EXAMPLE'
+outfile db 'example'
   times MAX_PATH+$-outfile db 0
-path	db '/RD/1/'
+path	db '/rd/1/'
   times MAX_PATH+$-path    db 0
 
 lf db 13,10,0

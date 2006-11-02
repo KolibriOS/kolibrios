@@ -58,7 +58,7 @@ use32
   dd	 START
   dd	 I_END
   dd	 APP_MEM
-  dd	 APP_MEM ;stack size=1024
+  dd	 APP_MEM - 1024
   dd	 I_PARAM
 listsel    dd 0
 channel dd 0
@@ -357,7 +357,7 @@ file_info:
 	   dd 0
 	   dd 0
 	   dd 0
-fsize	   dd APP_MEM-1024-workarea     ; max size
+fsize	   dd APP_MEM-2048-workarea     ; max size
 	   dd workarea
 I_END:	; конец программы
 filename:

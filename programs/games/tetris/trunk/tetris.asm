@@ -220,7 +220,7 @@ button:                       ; button
     jmp still
 
 end_program:
-    mov  eax,-1                ; close this program
+    or   eax,-1                ; close this program
     int  0x40
 
 go_new_game:

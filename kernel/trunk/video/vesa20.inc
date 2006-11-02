@@ -1032,45 +1032,110 @@ vesa20_drawbackground_stretch:
      call calculate_edi
 
 
-   sdp3:                            ; MAIN LOOP
+sdp3: ; MAIN LOOP 
+cmp [edi+WinMapAddress],byte 1 ; ptrBuffer^<>byte(1) 
+jne snbgp 
+push eax 
+push ebx 
+mov eax,dword [WinMapAddress-8] 
+imul eax, [esp+4] ;4 
+xor edx,edx 
+mov ebx,[ScreenWidth] 
+div ebx 
+mov cx,dx 
+lea esi,[eax+eax*2] 
+mov eax,dword [WinMapAddress-4] 
+imul eax, [esp+0] ;0 
+xor edx,edx 
+mov ebx,[ScreenHeight] 
+div ebx 
+shl ecx,16 
+mov cx,dx 
+imul eax, [esp+8] ;8 
+add esi,eax 
+mov eax,[esi+0x300000] 
+push eax 
+ror ecx,16 
+xor eax,eax 
+mov ax,cx 
+shl eax,1 ; умножение на 2 
+lea eax,[eax+eax*4] ; умножение на 5 
+xor edx,edx 
+mov ebx,[ScreenWidth] 
+div ebx 
+cmp eax,5 
+pop eax 
+jb @f 
+mov ebx,[esi+0x300000+3] 
+call overlapping_of_points 
+@@: 
+push eax 
+ror ecx,16 
+xor eax,eax 
+mov ax,cx 
+shl eax,1 ; умножение на 2 
+lea eax,[eax+eax*4] ; умножение на 
+xor edx,edx 
+mov ebx,[ScreenHeight] 
+div ebx 
+cmp eax,5 
+pop eax 
+jb @f 
+mov ebx,[display_data-8] 
+shl ebx,1 
+add ebx,[display_data-8] 
+add ebx,0x300000 
+add ebx,esi 
+mov ebx,[ebx] 
+call overlapping_of_points 
+@@: 
+and eax,0xffffff 
+xchg edi, ebp 
+stosw 
+shr eax,16 
+stosb 
+xchg ebp, edi ; ebp+=3 
+cmp [ScreenBPP],byte 24 ; 24 or 32 bpp ? - x size 
+jz @f 
+inc ebp ; +1 
+@@: 
+pop ebx 
+pop eax 
+jmp shook1 
 
-     cmp [edi+WinMapAddress],byte 1     ; ptrBuffer^<>byte(1)
-     jne snbgp
-
-     push eax
-     push ebx
-
-     mov   eax,dword [WinMapAddress-8]
-     imul  eax, [esp+4]      ;4
-     xor   edx,edx
-     mov   ebx,[ScreenWidth]
-     div   ebx
-     lea   esi,[eax+eax*2]
-     mov   eax,dword [WinMapAddress-4]
-     imul  eax, [esp+0]      ;0
-     xor   edx,edx
-     mov   ebx,[ScreenHeight]
-     div   ebx
-     imul  eax, [esp+8]      ;8
-     add   esi,eax
-
-     mov   eax,[esi+0x300000]
-     and   eax,0xffffff
-
-     xchg edi, ebp
-     stosw
-     shr eax,16
-     stosb
-     xchg ebp, edi                 ; ebp+=3
-     cmp [ScreenBPP],byte 24       ; 24 or 32 bpp ? - x size
-     jz  @f
-     inc ebp ; +1
-   @@:
-
-     pop ebx
-     pop eax
-
-     jmp shook1
+overlapping_of_points: 
+push ecx edi 
+mov ecx,eax 
+mov edx,ebx 
+xor eax,eax 
+mov al,cl 
+xor ebx,ebx 
+mov bl,dl 
+add eax,ebx 
+rcr eax,1 
+xor edi,edi 
+mov di,ax 
+xor eax,eax 
+mov al,ch 
+xor ebx,ebx 
+mov bl,dh 
+add eax,ebx 
+rcr eax,1 
+ror edi,8 
+add edi,eax 
+ror ecx,8 
+ror edx,8 
+xor eax,eax 
+mov al,ch 
+xor ebx,ebx 
+mov bl,dh 
+add eax,ebx 
+rcr eax,1 
+ror edi,8 
+add eax,edi 
+ror eax,16 
+pop edi ecx 
+ret
 
    snbgp:
      add  ebp,3                     ; +3

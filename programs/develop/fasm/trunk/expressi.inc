@@ -2,7 +2,7 @@
 ; flat assembler core
 ; Copyright (c) 1999-2006, Tomasz Grysztar.
 ; All rights reserved.
-
+ 
 convert_expression:
 	push	ebp
 	call	get_fp_value

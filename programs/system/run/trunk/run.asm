@@ -1,198 +1,261 @@
-; <--- description --->
-; compiler:     FASM 1.54
-; name:         MenuetOS RUN
-; version:      0.02
-; last update:  28/09/2004
-; written by:   Ivan Poddubny
-; e-mail:       ivan-yar@bk.ru
+window_y=88
+;window_x=320
+window_x=450
+include 'macros.inc'
+	meos_header par
+	use_edit_box
+	use_txt_button
+	app_start
+	cmp	[par],byte 0
+	jne	read_par
+	set_events_mask evm_mouse+evm_button+evm_key+evm_redraw
+red:
+	get_sys_colors sc
+	set_sys_colors_txt_button run_but,sc
+	push	dword [sc.work_graph]
+	pop	[input_fn.focus_border_color]
+	call	draw_window
+still:
+	wait_event red,key,button,mouse,,still
+key:
+	get_key
+	cmp	ah,13
+	je	run
+	key_edit_box input_fn
+	jmp	still
+button:
+	get_pressed_button
+	dec	ah
+	jz	close
+	dec	ah
+	jz	run
+	jmp	still
+mouse:
+	mouse_edit_box input_fn
+	jmp	still
 
+read_par:
+	mov	esi,par
+	mov	edi,fn
+	mov	ecx,256
+	rep	movsb
+run:
+	xor	eax,eax
+	mov	edi,file_info.name
+	mov	ecx,512
+	rep	stosb
+	mov	edi,run_par
+	mov	ecx,256
+	rep	stosb
 
-; <--- include all MeOS stuff --->
-include "lang.inc"
-include "macros.inc"
-;;;lang fix en
+	mov	esi,fn
+	mov	edi,file_info.name
+	cmp	[esi],byte '"'
+	je	copy_fn_with_spaces
+copy_fn:
+	cmp	[esi],byte ' '
+	je	.stop
+	cmp	[esi],byte 0
+	je	.stop
+	mov	al,[esi]
+	mov	[edi],al
+	inc	esi
+	inc	edi
+	jmp	copy_fn
+.stop:
 
+	jmp	copy_par
 
-; <--- start of MenuetOS application --->
-MEOS_APP_START
+copy_fn_with_spaces:
+	inc	esi
+@@:
+	cmp	[esi],byte '"'
+	je	.stop
+	cmp	[esi],byte 0
+	je	.stop
+	mov	al,[esi]
+	mov	[edi],al
+	inc	esi
+	inc	edi
+	jmp	@b
+.stop:
 
-;include "DEBUG.INC"
+copy_par:
+@@:
+	inc	esi
+	cmp	[esi],byte ' '
+	je	@b
+	mov	edi,run_par
+@@:
+	cmp	[esi],byte 0
+	je	.stop
+	mov	al,[esi]
+	mov	[edi],al
+	inc	esi
+	inc	edi
+	jmp	@b
+.stop:
 
-; <--- start of code --->
-CODE
-    call    draw_window            ; at first create and draw the window
+	mov	eax,70
+	mov	ebx,file_info
+	int	0x40
 
-  wait_event:                      ; main cycle
-    mcall   10
+	;cmp     eax,0
+	;jg      error
+	bt	eax,31
+	je	error
+	jmp     still
+close:
+	app_close
 
-    cmp     eax, 1                 ;   if event == 1
-    je      redraw                 ;     jump to redraw handler
-    cmp     eax, 2                 ;   else if event == 2
-    je      key                    ;     jump to key handler
-    cmp     eax, 3                 ;   else if event == 3
-    je      button                 ;     jump to button handler
+error:
 
-    jmp     wait_event             ;   else return to the start of main cycle
+macro cmp_err code,text_ptr
+{
+	cmp	al,code
+	jne	@f
+	mov	[status],text_ptr
+	;jmp     .draw_status
+@@:
+}
+	neg	eax
 
+	;test    al,al
+	;jz      close
 
-  redraw:                          ; redraw event handler
-    call    draw_window
-    jmp     wait_event
+	cmp_err 3,bad_file_sys
 
+	cmp_err 5,file_not_find
 
-  key:                             ; key event handler
-    mcall   2
+	cmp_err 9,bad_fat_table
 
-    cmp     ah, 13
-    je      _run
-    cmp     ah, 8
-    je      .backspace
+	cmp_err 10,acces_denyied
 
-    mov     bl, ah
-    mov     eax, [position]
-    mov     [filename + eax], bl
-    inc     [position]
-    call    draw_string
+	cmp_err 11,device_error
 
-    jmp     wait_event
+	cmp_err 30,out_of_memory
 
-   .backspace:
-    xor     eax, eax
-    cmp     [position], eax
-    je      wait_event
-    dec     [position]
-    call    draw_string
-    jmp     wait_event
+	cmp_err 31,file_not_executable
 
+	cmp_err 32,many_processes
 
-  button:                          ; button event handler
-    mcall   17
-
-    cmp     ah, 10
-    je      _run
-
-    dec     ah
-    jne     wait_event             ;   return if button id != 1
-
-  _exit:
-    or      eax, -1                ;   exit application
-    int     0x40
-
-
-_run:
-    mcall   58, fileinfo
-;   dps     "58th function returned "
-;   dpd     eax
-;   newline
-    jmp     _exit
-
+.draw_status:
+	call	draw_status
+	jmp	still
 
 draw_window:
-    mcall   12, 1
+	start_draw_window
+	get_screen_size
+	mov	cx,ax
+	sub	cx,window_y+20
+	shl	ecx,16
+	mov	cx,window_y
+	shr	eax,16
+	mov	bx,ax
+	sub	bx,window_x
+	shl	ebx,15
+	mov	bx,window_x
+	mov	edx,[sc.work]
+	or	edx,0x03000000
+	xor	eax,eax
+	xor	esi,esi
+	xor	edi,edi
+	int	0x40
 
-    mcall   14
-    and     eax, 0xFFFF
-    sub     eax, 100
-    shl     eax, 16
-    add     eax, 80
-    mov     ecx, eax
+	get_procinfo app
 
-    mov     ebx, 148*65536+400     ;   (window_cx)*65536+(window_sx)
-    mov     edx, 0x03DDDDDD        ;   work area color & window type 3
-    mcall   0
+	mov	ax,[app.width]
+	sub	ax,20
+	mov	[input_fn.width],ax
+	mov	[run_but.width],ax
 
-    mov     ebx, 8*65536+8         ;   coordinates
-    mov     ecx, 0x10ffffff        ;   color & font N1
-    mov     edx, header            ;   address of text
-    mov     esi, header.size       ;   length of text
-    mcall   4
+	mov	bx,5
+	shl	ebx,16
+	mov	bx,ax
+	add	bx,15
+	mov	cx,70
+	push	cx
+	shl	ecx,16
+	pop	cx
+	mov	edx,[sc.work_graph]
+	mov	eax,38
+	int	0x40
 
-    mpack   ebx, 10, 26
-    mov     ecx, 0
-    mov     edx, message
-    mov     esi, message.size
-    mcall
+	draw_edit_box input_fn
+	draw_txt_button run_but
 
-    mpack   ebx, 385-(runbtn.size*6), runbtn.size*6+4
-    mpack   ecx, 56, 14
-    mov     edx, 10
-    mov     esi, 0xa0a0a0
-    mcall   8
+	call	draw_status_text
 
-;   mpack   ebx, 385-runbtn.size*6-findbtn.size*6-8, findbtn.size*6+4
-;   inc     edx
-;   mcall   8
-
-;   mpack   ebx, 388-runbtn.size*6-findbtn.size*6-7, 59
-;   mov     ecx, 0
-;   mov     edx, findbtn
-;   mov     esi, findbtn.size
-;   mcall   4
-
-    mpack   ebx, 388-runbtn.size*6, 59
-    mov     ecx, 0
-    mov     edx, runbtn
-    mov     esi, runbtn.size
-    mcall   4
-
-    call    draw_string
-
-    mcall   12, 2
+	stop_draw_window
 ret
 
-
-draw_string:
-    mpack   ebx, 10, 380
-    mpack   ecx, 38, 14
-    mov     edx, 0xA0A0A0
-    mcall   13
-
-    mpack   ebx, 14, 41
-    mov     ecx, 0
-    mov     edx, filename
-    mov     esi, [position]
-    mcall   4
+draw_status:
+	mov	ebx,5*65536+(window_x-5-5)
+	mov	ecx,(window_y-16)*65536+12
+	mov	edx,[sc.work]
+	mov	eax,13
+	int	0x40
+draw_status_text:
+	mov	edx,[status]
+	xor	esi,esi
+@@:
+	cmp	[edx+esi],byte 0
+	je	@f
+	inc	esi
+	jmp	@b
+@@:
+	mov	eax,4
+	mov	ebx,10*65536+(window_y-14)
+	mov	ecx,[sc.work_text]
+	int	0x40
 ret
 
+run_but txt_button 0,10,15,50,2,0,0,run_but_text,
+if lang eq ru
+run_but_text db 'ЗАПУСТИТЬ',0
+else
+run_but_text db 'RUN',0
+end if
+input_fn edit_box 0,10,30,0xffffff,0,0xaaaaaa,0,511,fn,ed_focus+\
+ed_always_focus
 
+if lang eq ru
+hello db 'Введите полный путь к файлу и нажмите Enter',0
+bad_file_sys db 'Неизвестная файловая система',0 ; 3
+file_not_find db 'Файл не найден',0		 ; 5
+bad_fat_table db 'Таблица FAT разрушена',0	 ; 9
+acces_denyied db 'Доступ запрещен',0		 ; 10
+device_error db 'Ошибка устройства',0		 ; 11
+out_of_memory db 'Недостаточно памяти',0	 ; 30
+file_not_executable db 'Файл не является исполняемым',0 ; 31
+many_processes db 'Слишком много процессов',0	 ; 32
+else
+hello db 'Enter full path to file and press <Enter>',0
+bad_file_sys db 'Unknown file system',0                ; 3
+file_not_find db 'File not found',0                    ; 5
+bad_fat_table db 'FAT table corrupted',0               ; 9
+acces_denyied db 'Access denied',0                     ; 10
+device_error db 'Device error',0                       ; 11
+out_of_memory db 'Out of memory',0                     ; 30
+file_not_executable db 'File is not executable',0      ; 31
+many_processes db 'Too many processes',0               ; 32
+end if
 
-; <--- initialised data --->
-DATA
+status dd hello
 
-  position  dd filename.size
+file_info:
+.mode dd 7
+.flags dd 0
+.par dd run_par
+dd 0,0
+.name rb 512
 
-  lsz header,\
-    ru, "Запуск программы",\
-    en, "Start program"
+flags dw ?
 
-  lsz message,\
-    ru, "Введите путь к файлу:",\
-    en, "Enter path to file:"
+fn rb 512
 
-; lsz findbtn,\
-;   ru, "Найти...",\
-;   en, "Find..."
-
-  lsz runbtn,\
-    ru, "Запустить",\
-    en, "Run"
-
-
-  fileinfo:
-    .mode      dd  16
-               dd  0
-    .param     dd  0
-               dd  0
-    .workarea  dd  workarea
-
-  sz filename, "/rd/1/"
-    rb 122
-
-
-; <--- uninitialised data --->
-UDATA
-  workarea rb 4096
-
-
-MEOS_APP_END
-; <--- end of MenuetOS application --->
+sc sys_color_table
+app procinfo
+run_par rb 256
+par rb 256
+	app_end

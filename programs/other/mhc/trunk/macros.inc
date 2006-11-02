@@ -143,10 +143,6 @@ macro mcall a,b,c,d,e,f {   ; mike.dld
 
 
 
-
-
-
-
 ; optimize the code for size
 __regs fix <eax,ebx,ecx,edx,esi,edi,ebp,esp>
 
@@ -178,7 +174,7 @@ macro sub arg1,arg2
 
 macro mov arg1,arg2
  {
-   if (arg1 in __regs) & (arg2 eqtype 0)
+   if (arg1 in __regs) & ((arg2 eqtype 0) | (arg2 eqtype '0'))
       if (arg2) = 0
          xor arg1,arg1
       else if (arg2) = 1
@@ -222,7 +218,13 @@ struc process_information
   .x_size                  dd ?  ; +42
   .y_size                  dd ?  ; +46
   .slot_state              dw ?  ; +50
-  rb (1024-52)
+                           dw ?  ; +52 - reserved
+  .client_left             dd ?  ; +54
+  .client_top              dd ?  ; +58
+  .client_width            dd ?  ; +62
+  .client_height           dd ?  ; +66
+  .wnd_state               db ?  ; +70
+  rb (1024-71)
  }
 struct process_information
 

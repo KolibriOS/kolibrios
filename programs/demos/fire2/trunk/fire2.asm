@@ -9,7 +9,6 @@ use32
         dd      mem_end
         dd      0x0, 0x0
 
-;include 'lang.inc'
 START:
 
         mov     edi, my_img
