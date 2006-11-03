@@ -523,6 +523,8 @@ proc load_file stdcall, file_name:dword
            test eax, eax
            jnz .fail
 
+           mov eax, [file_size]
+
            stdcall kernel_alloc, [file_size]
            mov [file], eax
 
@@ -674,7 +676,7 @@ proc fix_coff_relocs stdcall, coff:dword, sec:dword, sym:dword
            dec ecx
            jnz .next_reloc
 .next:
-           add [sec], 40
+           add [sec], COFF_SECTION_SIZE
            dec [n_sec]
            jnz .fix_sec
 .exit:
@@ -709,7 +711,7 @@ proc load_driver stdcall, file_name:dword
            add ebx, [edx+CFS.SizeOfRawData]
            add ebx, 15
            and ebx, not 15
-           add edx, 18
+           add edx, COFF_SECTION_SIZE
            dec ecx
            jnz @B
            mov [img_size], ebx
@@ -747,7 +749,7 @@ proc load_driver stdcall, file_name:dword
 .next:
            add edi, 15
            and edi, not 15
-           add eax, 40
+           add eax, COFF_SECTION_SIZE
            dec ebx
            jnz @B
 
@@ -835,7 +837,7 @@ proc load_library stdcall, file_name:dword
            add ebx, [edx+CFS.SizeOfRawData]
            add ebx, 15
            and ebx, not 15
-           add edx, 18
+           add edx, COFF_SECTION_SIZE
            dec ecx
            jnz @B
            mov [img_size], ebx
@@ -867,7 +869,7 @@ proc load_library stdcall, file_name:dword
 .next:
            add edi, 15-new_app_base
            and edi, not 15
-           add eax, 40
+           add eax, COFF_SECTION_SIZE
            dec ebx
            jnz @B
 
@@ -894,7 +896,7 @@ proc load_library stdcall, file_name:dword
            lea eax, [edx+20]
 @@:
            add [eax+CFS.VirtualAddress], edi  ;patch user space offset
-           add eax, 40
+           add eax, COFF_SECTION_SIZE
            dec ebx
            jnz @B
 

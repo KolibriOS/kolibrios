@@ -403,6 +403,7 @@ struc COFF_SECTION
    .NumLinenum       dw ?
    .Characteristics  dd ?
 }
+COFF_SECTION_SIZE equ 40
 
 struc COFF_RELOC
 {  .VirtualAddress   dd ?

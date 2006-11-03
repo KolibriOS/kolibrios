@@ -257,8 +257,8 @@ proc alloc_kernel_space stdcall, size:dword
            cli
 
            mov eax, [size]
-           add eax, 0xFFF
-           and eax, 0xFFFFF000;
+           add eax, 4095
+           and eax, not 4095
            mov [size], eax
            cmp eax, [heap_free]
            ja .error
@@ -499,8 +499,8 @@ proc kernel_alloc stdcall, size:dword
            endl
 
            mov eax, [size]
-           add eax, 0xFFF
-           and eax, 0xFFFFF000;
+           add eax, 4095
+           and eax, not 4095;
            mov [size], eax
            and eax, eax
            jz .error
