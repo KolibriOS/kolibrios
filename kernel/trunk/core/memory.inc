@@ -40,7 +40,6 @@ proc init_memEx
            jnc @F
            or eax, PG_GLOBAL
            or ebx, CR4_PGE
-
 @@:
            mov cr4, ebx
 
@@ -324,7 +323,10 @@ proc map_LFB
            dec edi
            jnz @B
 
+           bt [cpu_caps], CAPS_PGE
+           jnc @F
            or dword [sys_pgdir+ecx], PG_GLOBAL
+@@:
            mov eax, cr3       ;flush TLB
            mov cr3, eax
            ret
