@@ -225,7 +225,7 @@ write_cache:
     ja    danger
     
         cmp     [dma_hdd], 1
-        jnz     .nodma
+        jmp     .nodma
 ; Объединяем запись цепочки последовательных секторов в одно обращение к диску
         cmp     ecx, 1
         jz      .nonext
