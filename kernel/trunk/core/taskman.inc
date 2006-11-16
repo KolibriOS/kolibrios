@@ -605,7 +605,7 @@ proc add_app_parameters stdcall,slot:dword,img_base:dword,\
                         cmd_line:dword, app_path:dword, flags:dword
 
            mov eax,[slot]
-           bt [cpu_caps], CAPS_SSE
+           bt [cpu_caps], CAPS_FXSR
            jnc .no_SSE
            shl eax, 8
            mov ebx, eax

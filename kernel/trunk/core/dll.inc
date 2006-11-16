@@ -516,6 +516,7 @@ proc load_file stdcall, file_name:dword
              file_size  dd ?
 
              file       dd ?
+             file2      dd ?
            endl
 
            lea eax, [attr]
@@ -531,7 +532,21 @@ proc load_file stdcall, file_name:dword
            stdcall read_file, [file_name], eax, dword 0, [file_size]
            cmp ebx, [file_size]
            jne .cleanup
+
            mov eax, [file]
+           cmp dword [eax], 0x4B43504B
+           jne .exit
+
+           stdcall kernel_alloc, [eax+4]
+
+           test eax, eax
+           jz .cleanup
+
+           mov [file2], eax
+           stdcall unpack, [file], eax
+           stdcall kernel_free, [file]
+           mov eax, [file2]
+.exit:
            ret
 .cleanup:
            stdcall kernel_free, [file]

@@ -281,20 +281,19 @@ endp
 
 align 4
 proc init_LFB
-
            cmp dword [LFBAddress], -1
            jne @f
-
            mov [0x2f0000+0x901c],byte 2
            stdcall kernel_alloc, 0x280000
            mov [LFBAddress], eax
-
            ret
 @@:
            test [SCR_MODE],word 0100000000000000b
-           jz @f
-           call map_LFB
+           jnz @f
+           mov [0x2f0000+0x901c],byte 2
+           ret
 @@:
+           call map_LFB
            ret
 endp
 
@@ -1073,6 +1072,9 @@ proc test_cpu
            endl
 
            mov [cpu_type], 0
+           xor eax, eax
+           mov [cpu_caps], eax
+           mov [cpu_caps+4], eax
 
            pushfd
            pop eax
@@ -1162,6 +1164,9 @@ proc init_mtrr
 
            cmp [0x2f0000+0x901c],byte 2
            je  .exit
+
+           bt [cpu_caps], CAPS_MTRR
+           jnc .exit
 
            mov eax, cr0
            or eax, 0x60000000   ;disable caching

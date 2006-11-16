@@ -319,9 +319,9 @@ proc alloc_kernel_space stdcall, size:dword
            remove_from_list edi
 
            mov ecx, [block_ind]
-           mov [mem_block_list+ecx*4], ebx
+           mov [mem_block_list+ecx*4], edx
 
-           test ebx, ebx
+           test edx, edx
            jnz @f
            btr [mem_block_mask], ecx
 @@:
