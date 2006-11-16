@@ -1,12 +1,13 @@
 
-tmp_page_tab      equ 0x01000000
+tmp_page_tab      equ 0x00C00000
 
 align 4
 proc mem_test
            mov eax, cr0
-           or eax, (CR0_CD+CR0_NW);disable caching
+           and eax, not (CR0_CD+CR0_NW)
+           or eax, CR0_CD       ;disable caching
            mov cr0, eax
-           wbinvd                 ;invalidate cache
+           wbinvd               ;invalidate cache
 
            xor     edi, edi
            mov ebx, 'TEST'
@@ -17,7 +18,7 @@ proc mem_test
            xchg ebx, dword [edi]
            je @b
 
-           and eax, not (CR0_CD+CR0_NW)
+           and eax, not (CR0_CD+CR0_NW)  ;enable caching
            mov cr0, eax
            mov eax, edi
            ret
@@ -48,21 +49,21 @@ proc init_memEx
            mov dword [sys_pgdir+4], eax
            add eax, 0x00400000
            mov dword [sys_pgdir+8], eax
-           add eax, 0x00400000
-           mov dword [sys_pgdir+12], eax
+;           add eax, 0x00400000
+;           mov dword [sys_pgdir+12], eax
 
            mov dword [sys_pgdir+0x600], sys_pgdir+PG_SW
 
            mov ecx, [pg_data.kernel_tables]
-           sub ecx, 4
+           sub ecx, 3 ;4
            mov eax, tmp_page_tab+PG_SW
-           mov edi, sys_pgdir+16
+           mov edi, sys_pgdir+12     ;16
 
            jmp .map_kernel_tabs
 .no_PSE:
            mov eax, PG_SW
            mov esi, tmp_page_tab
-           mov ecx, 4096/4      ;0x0 - 0x00FFFFFF
+           mov ecx, 3072/4;  4096/4      ;0x0 - 0x00FFFFFF
 .map_low:
            mov [esi], eax
            add eax, 0x1000
@@ -91,10 +92,10 @@ proc init_memEx
            mov edi, tmp_page_tab
            bt [cpu_caps], CAPS_PSE
            jc @F
-           add edi, 4096*4      ;skip low kernel memory
+           add edi, 3072*4    ;4096*4  ;skip low kernel memory
 @@:
            mov ecx, [pg_data.kernel_tables]
-           sub ecx, 4
+           sub ecx, 3
            shl ecx, 10
            xor eax, eax
            cld
@@ -108,25 +109,25 @@ endp
 align 4
 proc init_page_map
            mov edi, sys_pgmap
-           mov ecx, 512/4
+           mov ecx, 384/4
            xor eax,eax
            cld
            rep stosd
 
            not eax
            mov ecx, [pg_data.pagemap_size]
-           sub ecx, 512
+           sub ecx, 384
            shr ecx, 2
            rep stosd
 
-           mov edi, sys_pgmap+512
+           mov edi, sys_pgmap+384
            mov edx, [pg_data.pages_count]
            mov ecx, [pg_data.kernel_tables]
            bt [cpu_caps], CAPS_PSE
            jnc @f
-           sub ecx, 4
+           sub ecx, 3
 @@:
-           sub edx, 4096
+           sub edx, 3072
            sub edx, ecx
            mov [pg_data.pages_free], edx
 
@@ -141,7 +142,7 @@ proc init_page_map
            shl eax, cl
            stosd
 
-           mov [page_start], sys_pgmap+512
+           mov [page_start], sys_pgmap+384
            mov ebx, sys_pgmap
            add ebx, [pg_data.pagemap_size]
            mov [page_end], ebx

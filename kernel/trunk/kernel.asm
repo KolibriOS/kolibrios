@@ -372,7 +372,7 @@ B32:
            mov [pg_data.pagemap_size], eax
 
            shr edx, 10
-           cmp edx, 4
+           cmp edx, 3
            ja @f
            inc edx       ;at least 4Mb for kernel heap
 @@:

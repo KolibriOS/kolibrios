@@ -126,9 +126,10 @@
 ;  3F600  ->  3FFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
 
-;  50000  ->  5FFFF   free (64 Kb)
+;  50000  ->  50FFF   main page directory
+;  50200  ->  5FFFF   pages bitmap
 
-;  60000  ->  7FFFF   reserved to physical memory manager
+;  60000  ->  7FFFF   free (128 Kb)
 ;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
 ;           00  11db  name of app running
@@ -200,32 +201,28 @@
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
 ;
 ; 778000  -> 77ffff   window skinning  ( 32 kb)
-; 780000  -> 7fffff   reserved to physical memory manager
+; 780000  -> 7fffff   free (512 Kb)
 ;
-; 800000  -> BFFFFF   mapped to LFB
-;
-;
-; C00000  -> C01FFF   draw_data   - 256 entries
+; 800000  -> 801FFF   draw_data   - 256 entries
 ;
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
 ;
-; C02000  -> C02fff   free (4 Kb)
+; 802000  -> 802fff   free (4 Kb)
 ;
-; C03000  -> D02fff   sysint_stack_data
+; 803000  -> 902fff   sysint_stack_data
 ;                     - ring0 stacks for ring3 processes
 ;                     - used for interrupt handling
 ;                     - 256 entries * 4096 step
 ;
-; D03000  -> D1ffff   free (116 Kb)
+; 903000  -> 91ffff   free (116 Kb)
 ;
-; D20000  -> F28000   TSS and IO map for (8192*8)=65536 ports
-;                     (128+8192)*256 = 557956 = 0x88000
+; 920000  -> B28000   TSS and IO map for (8192*8)=65536 ports
+;                     (128+8192)*256 = 2129920 = 0x208000
 ;
-; 1000000 -> 3FFFFFF  for applications
-;
+; C00000 ->           kernel heap
 
 
 

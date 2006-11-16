@@ -1,5 +1,5 @@
 
-HEAP_BASE equ 0x01000000
+HEAP_BASE equ 0x00C00000
 ;HEAP_SIZE equ 0x01000000
 
 struc MEM_BLOCK
@@ -126,7 +126,7 @@ proc init_kernel_heap
            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
 
            mov ecx, [MEM_AMOUNT]
-           sub ecx, 0x01000000 + 4096*MEM_BLOCK_SIZE
+           sub ecx, HEAP_BASE + 4096*MEM_BLOCK_SIZE
            mov [heap_size], ecx
            mov [heap_free], ecx
            mov [ebx+block_size], ecx
