@@ -3,13 +3,14 @@ tmp_page_tab      equ 0x00C00000
 
 align 4
 proc mem_test
+
            mov eax, cr0
            and eax, not (CR0_CD+CR0_NW)
-           or eax, CR0_CD       ;disable caching
+           or eax, CR0_CD         ;disable caching
            mov cr0, eax
-           wbinvd               ;invalidate cache
+           wbinvd                 ;invalidate cache
 
-           xor     edi, edi
+           xor edi, edi
            mov ebx, 'TEST'
 @@:
            add edi, 0x400000
@@ -21,6 +22,7 @@ proc mem_test
            and eax, not (CR0_CD+CR0_NW)  ;enable caching
            mov cr0, eax
            mov eax, edi
+           mov [LFBSize], 0x00800000
            ret
 endp
 
@@ -49,8 +51,6 @@ proc init_memEx
            mov dword [sys_pgdir+4], eax
            add eax, 0x00400000
            mov dword [sys_pgdir+8], eax
-;           add eax, 0x00400000
-;           mov dword [sys_pgdir+12], eax
 
            mov dword [sys_pgdir+0x600], sys_pgdir+PG_SW
 
@@ -306,6 +306,8 @@ proc map_LFB
 
            mov edi, [LFBSize]
            mov esi, [LFBAddress]
+           mov dword [exp_lfb+4], esi
+
            shr edi, 12
            mov [pg_count], edi
            shr edi, 10
@@ -1028,42 +1030,6 @@ proc strncmp stdcall, str1:dword, str2:dword, count:dword
 endp
 
 align 4
-proc fpu_save
-           clts
-           mov ebx, [fpu_owner]
-           shl ebx, 8
-           mov eax, [ebx+PROC_BASE+0x10]
-           mov ebx, [CURRENT_TASK]
-           mov [fpu_owner], ebx
-
-           bt [cpu_caps], CAPS_FXSR
-           jnc .no_SSE
-
-           fxsave [eax]
-           fninit            ;re-init fpu
-           ret
-.no_SSE:
-           fnsave [eax]
-           ret
-endp
-
-align 4
-proc fpu_restore
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           mov eax, [ebx+PROC_BASE+0x10]
-           bt [cpu_caps], CAPS_FXSR
-           jnc .no_SSE
-
-           fxrstor [eax]
-           ret
-.no_SSE:
-           fnclex               ;fix possible problems
-           frstor [eax]
-           ret
-endp
-
-align 4
 proc test_cpu
            locals
               cpu_type   dd ?
@@ -1286,10 +1252,9 @@ align 16
   tmp_task_ptab     rd 1
   tmp_task_data     rd 1
 
-;  current_pdir      rd 1
-
   fpu_data          rd 1
   fdd_buff          rd 1
+  LFBSize           rd 1
 
   stall_mcs         rd 1
 ;;CPUID information
@@ -1303,7 +1268,7 @@ endg
 uglobal
 align 16
    dll_tab         rb 32*32
-   srv_tab         rb 32*32
+   srv_tab         rb 36*32
    dll_map         rd 1
    srv_map         rd 1
 

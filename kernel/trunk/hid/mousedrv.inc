@@ -39,6 +39,11 @@ include 'm_com2.inc'
 
 draw_mouse_under:
         ; return old picture
+
+        cmp [set_hw_cursor], 0
+        jz @F 
+        ret
+@@:
         pushad
         xor    ecx,ecx
         xor    edx,edx
@@ -75,6 +80,18 @@ mres:
         ret
 
 save_draw_mouse:
+
+        cmp [set_hw_cursor], 0
+        jz @F
+        mov    [0xfb4a],ax
+        mov    [0xfb4c],bx
+        movzx  ebx,word [0xfb0c]
+        movzx  eax,word [0xfb0a]
+        push ebx
+        push eax
+        call [set_hw_cursor]
+        ret
+@@:
         pushad
         ; save & draw
         mov    [0xfb4a],ax
@@ -217,7 +234,7 @@ __sys_disable_mouse:
       cmp  dword [0xf204],dword 0
       je    @f
       ret
-@@:  
+@@:
       pushad
       cmp  [0x3000],dword 1
       je   disable_m

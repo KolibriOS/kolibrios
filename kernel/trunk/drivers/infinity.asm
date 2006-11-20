@@ -27,7 +27,6 @@ new_app_base          equ 0x60400000;   0x01000000
 PROC_BASE             equ OS_BASE+0x0080000
 
 public START
-public STOP
 public service_proc
 
 extrn AttachIntHandler
@@ -73,7 +72,13 @@ end virtual
 
 section '.flat' code readable align 16
 
-START:
+proc START stdcall, state:dword
+
+           mov eax, [state]
+           cmp eax, 1
+           je .entry
+           jmp .exit
+.entry:
            stdcall GetService, szSound
            test eax, eax
            jz .fail
@@ -103,6 +108,7 @@ START:
 	   mov esi, msgFail
            call SysMsgBoardStr
      end if
+.exit:
 	   xor eax, eax
 	   ret
 
@@ -112,8 +118,8 @@ START:
            call SysMsgBoardStr
      end if
 	   xor eax, eax
-STOP:
            ret
+endp
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code
@@ -406,7 +412,6 @@ proc play_buffer stdcall, str:dword
 
 endp
 
-
 align 4
 proc stop_buffer stdcall, str:dword
 
@@ -583,7 +588,6 @@ proc prepare_playlist
 	   loop .l1
 .exit:
 	   ret
-
 .fail:
            stdcall DestroyBuffer, esi
            jmp .restart
@@ -739,7 +743,7 @@ szInfinity   db 'INFINITY',0
 szSound      db 'SOUND',0
 
 if DEBUG
-msgFail      db 'Sound service not found',13,10,0
+msgFail      db 'Sound service not loaded',13,10,0
 msgPlay      db 'Play buffer',13,10,0
 msgStop      db 'Stop',13,10,0
 msgUser      db 'User callback',13,10,0

@@ -201,7 +201,7 @@
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
 ;
 ; 778000  -> 77ffff   window skinning  ( 32 kb)
-; 780000  -> 7fffff   free (512 Kb)
+; 780000  -> 7fffff   reserved to physical memory manager
 ;
 ; 800000  -> 801FFF   draw_data   - 256 entries
 ;

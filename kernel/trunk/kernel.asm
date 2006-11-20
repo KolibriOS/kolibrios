@@ -394,12 +394,12 @@ include 'detect/disks.inc'
 ;           btr [cpu_caps], CAPS_PSE    ;test: don't use large pages
 ;           btr [cpu_caps], CAPS_PGE    ;test: don't use global pages
 ;           btr [cpu_caps], CAPS_MTRR   ;test: don't use MTRR
-;           btr [cpu_caps], CAPS_TSC    ;test: don't use TSC
+;           bts [cpu_caps], CAPS_TSC    ;test: don't use TSC
 
            call init_memEx
            call init_page_map
 
-           mov eax, sys_pgdir     ;+PG_NOCACHE
+           mov eax, sys_pgdir
            mov cr3, eax
 
            mov eax,cr0
@@ -409,6 +409,7 @@ include 'detect/disks.inc'
            call init_kernel_heap
            call init_LFB
            call init_mtrr
+           call init_fpu
 
            stdcall alloc_kernel_space, 0x4F000
            mov [ipc_tmp], eax
@@ -447,48 +448,6 @@ include 'detect/disks.inc'
            mov ecx, 16
            rep movsb
 
-           clts
-           fninit
-
-           bt [cpu_caps], CAPS_FXSR
-           jnc .no_FXSR
-
-           stdcall kernel_alloc, 512*256
-           mov [fpu_data], eax
-
-           mov ebx, cr4
-           mov ecx, cr0
-           or ebx, CR4_OSFXSR+CR4_OSXMMEXPT
-           mov cr4, ebx
-
-           and ecx, not (CR0_MP+CR0_EM)
-           or ecx, CR0_NE
-           mov cr0, ecx
-
-           mov dword [esp-4], SSE_INIT
-           ldmxcsr [esp-4]
-
-           xorps xmm0, xmm0
-           xorps xmm1, xmm1
-           xorps xmm2, xmm2
-           xorps xmm3, xmm3
-           xorps xmm4, xmm4
-           xorps xmm5, xmm5
-           xorps xmm6, xmm6
-           xorps xmm7, xmm7
-
-           jmp .set_cr
-.no_FXSR:
-           stdcall kernel_alloc, 112*256
-           mov [fpu_data], eax
-           mov ebx, cr4
-           mov ecx, cr0
-           and ebx, not (CR4_OSFXSR+CR4_OSXMMEXPT)
-           and ecx, not CR0_EM
-           or ecx, CR0_MP+CR0_NE
-           mov cr0, ecx
-           mov cr4, ebx
-.set_cr:
            mov edi, irq_tab
            xor eax, eax
            mov ecx, 16
@@ -567,14 +526,7 @@ include 'vmodeld.inc'
 
 ; LOAD IDT
         lidt   [cs:idtreg]
-
-;The CPU to this moment should be already in PM,
-;and bit MP of the register cr0 should be installed in 1.
-;finit ;reset of the FPU (finit, instead of fninit)
-;fsetpm ;enable PM of the FPU
-;finit ;reset the registers, contents which are still equal RM
-;Now FPU too in PM
-; DETECT DEVICES
+        cli
 
         mov    esi,boot_devices
         call   boot_log
@@ -596,6 +548,9 @@ include 'vmodeld.inc'
         mov   esi,boot_setmouse
         call  boot_log
         call  setmouse
+
+        mov  [pci_access_enabled],1
+        stdcall get_service, szHMouse
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -625,22 +580,34 @@ include 'vmodeld.inc'
 
         mov  esi,boot_setostask
         call boot_log
-        ; name for OS/IDLE process
-        mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
-        mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
+
         mov eax, [fpu_data]
         mov  dword [0x80000+APPDATA.fpu_state], eax
         mov  dword [0x80000+APPDATA.fpu_handler], 0
         mov  dword [0x80000+APPDATA.sse_handler], 0
 
-        add eax, 112
-        bt [cpu_caps], CAPS_FXSR
-        jnc .no_sse
-        add eax, 512-112
-.no_sse:
-        mov  dword [0x80000+256+APPDATA.fpu_state], eax
+        ; name for OS/IDLE process
+        mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
+        mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
         mov  dword [0x80000+256+APPDATA.fpu_handler], 0
         mov  dword [0x80000+256+APPDATA.sse_handler], 0
+
+;set fpu save area
+        mov esi, eax
+        bt [cpu_caps], CAPS_FXSR
+        jnc .no_sse
+
+        lea edi, [eax+512]
+        mov  dword [0x80000+256+APPDATA.fpu_state], edi
+        mov ecx, 512/4
+        jmp @F
+.no_sse:
+        lea edi, [eax+112]
+        mov  dword [0x80000+256+APPDATA.fpu_state], edi
+        mov ecx, 112/4
+@@:
+        rep movsd
+
         ; task list
         mov  [0x3020+TASKDATA.wnd_number], 1 ; on screen number
         mov  [0x3020+TASKDATA.pid], 1        ; process id number
@@ -1950,6 +1917,9 @@ sys_system:
 sysfn_shutdown:         ; 18.1 = BOOT
      mov  [0x2f0000+0x9030],byte 0
   for_shutdown_parameter:
+
+     call stop_all_services
+
      mov  eax,[0x3004]
      add  eax,2
      mov  [shutdown_processes],eax
@@ -3786,10 +3756,6 @@ set_io_access_rights:
 
      ret
 
-
-
-
-
 r_f_port_area:
 
      test  eax, eax
@@ -3874,9 +3840,6 @@ r_f_port_area:
 
      xor   eax, eax
      ret
-
-
-
 
 free_port_area:
 
@@ -3981,8 +3944,6 @@ reserve_free_irq:
    ril1:
      mov   [esp+36],ecx ; return in eax
      ret
-
-
 
 drawbackground:
        inc   [mouse_pause]
@@ -4298,8 +4259,6 @@ _rdtsc:
      mov   edx,0xffffffff
      mov   eax,0xffffffff
      ret
-
-
 
 rerouteirqs:
 
@@ -5034,9 +4993,9 @@ wraw_bacground_select db 0
   windowtypechanged  dd 0x0
 
 align 4
+  cpu_caps    dd 4 dup(0)
   pg_data  PG_DATA
   heap_test   dd ?
-  cpu_caps    dd 4 dup(0)
 endg
 
 iglobal

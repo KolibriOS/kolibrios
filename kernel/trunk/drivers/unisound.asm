@@ -274,7 +274,6 @@ new_app_base	      equ 0x60400000;   0x01000000
 PROC_BASE	      equ OS_BASE+0x0080000
 
 public START
-public STOP
 public service_proc
 
 extrn AttachIntHandler
@@ -292,7 +291,14 @@ extrn GetCurrentTask
 
 section '.flat' code readable align 16
 
-START:
+proc START stdcall, state:dword
+
+           mov eax, [state]
+           cmp eax, 1
+           je .entry
+           jmp .stop
+.entry:
+
      if DEBUG
 	   mov esi, msgInit
            call SysMsgBoardStr
@@ -368,8 +374,12 @@ START:
            call SysMsgBoardStr
      end if
 	   xor eax, eax
-STOP:
            ret
+.stop:
+           call stop
+           mov [ctrl.user_callback], 0
+           ret
+endp
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code

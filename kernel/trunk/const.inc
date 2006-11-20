@@ -180,7 +180,7 @@ MOUSE_BUFF_COUNT    equ OS_BASE+0x000FCFF
 HD_CACHE_ENT        equ OS_BASE+0x000FE10
 LFBAddress          equ OS_BASE+0x000FE80
 MEM_AMOUNT          equ OS_BASE+0x000FE8C
-LFBSize             equ OS_BASE+0x02f9050
+;LFBSize             equ OS_BASE+0x02f9050
 
 SCR_X_SIZE          equ OS_BASE+0x000FE00
 SCR_Y_SIZE          equ OS_BASE+0x000FE04
@@ -377,6 +377,7 @@ struc SRV
   .magic             dd ?
   .size              dd ?
   .base              dd ?
+  .entry             dd ?
   .srv_proc          dd ?
 }
 

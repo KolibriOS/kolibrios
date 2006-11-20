@@ -217,13 +217,12 @@ include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
 include "core/sched.inc"    ; process scheduling
 include "core/syscall.inc"  ; system call
+include "core/fpu.inc"      ; all fpu/sse support
 include "core/memory.inc"
-include "core/heap.inc"
+include "core/heap.inc"     ; kernel and app heap
 include "core/taskman.inc"
 include "core/dll.inc"
 include "core/exports.inc"
-include "core/except.inc"
-
 
 ; GUI stuff
 include "gui/window.inc"

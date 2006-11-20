@@ -20,6 +20,10 @@ kernel_export:
   dd szServiceHandler  , srv_handler
   dd szFpuSave         , fpu_save
   dd szFpuRestore      , fpu_restore
+  dd szSetHwCursor     , set_hw_cursor
+  dd szLoadFile        , load_file
+exp_lfb:
+  dd szLFBAddress      , 0
   dd 0
 
   szKernel            db 'KERNEL', 0
@@ -40,6 +44,9 @@ kernel_export:
   szServiceHandler    db 'ServiceHandler',0
   szFpuSave           db 'FpuSave',0
   szFpuRestore        db 'FpuRestore',0
+  szSetHwCursor       db 'SetHwCursor',0
+  szLFBAddress        db 'LFBAddress',0
+  szLoadFile          db 'LoadFile',0
 
 endg
 

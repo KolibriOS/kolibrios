@@ -192,63 +192,6 @@ exc_c:
         restore_ring3_context
         iretd
 
-;;;;;;;;;;;;;;;;;;;;;;;
-;; FPU ERROR HANDLER ;;
-;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
-e7:
-        save_ring3_context
-        clts
-        mov ax, os_data
-        mov ds, ax
-        mov es, ax
-
-        mov ebx, [fpu_owner]
-        cmp ebx, [CURRENT_TASK]
-        je .exit
-
-        shl ebx, 8
-        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
-        bt [cpu_caps], CAPS_FXSR
-        jnc .no_SSE
-
-        fxsave [eax]
-        mov ebx, [CURRENT_TASK]
-        mov [fpu_owner], ebx
-        shl ebx, 8
-        cmp dword [ebx+PROC_BASE+APPDATA.fpu_init], 0
-        je .init
-        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
-        fxrstor [eax]
-        restore_ring3_context
-        iret
-
-.no_SSE:
-        fnsave [eax]
-        mov ebx, [CURRENT_TASK]
-        mov [fpu_owner], ebx
-        shl ebx, 8
-        cmp dword [ebx+PROC_BASE+APPDATA.fpu_init], 0
-        je .ready
-
-        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
-        frstor [eax]
-        restore_ring3_context
-        iret
-.init:
-        fninit                      ;нам не нужны немаскированные исключения
-.ready:
-        mov dword [ebx+PROC_BASE+APPDATA.fpu_init], 1
-.exit:
-        restore_ring3_context
-        iret
-
-iglobal
-  fpu_owner dd 1
- endg
-
-
 writehex:
       pusha
 

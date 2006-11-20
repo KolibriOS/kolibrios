@@ -680,7 +680,6 @@ l_0:
            and eax, 0xFFFFF000
            cmp eax, ecx    ;alloc_size
            jb  m_next
-           jz  @f
 
            mov edx, esi
            add edx, ecx
@@ -688,7 +687,7 @@ l_0:
            or eax, FREE_BLOCK
            shr edx, 12
            mov [pages_tab+edx*4], eax
-@@:
+
            or ecx, USED_BLOCK
            mov [pages_tab+ebx*4], ecx
            shr ecx, 12
@@ -754,8 +753,6 @@ proc user_free stdcall, base:dword
            shl ebx, 8
            mov esi, dword [ebx+PROC_BASE+APPDATA.heap_base]; heap_base
            mov edi, dword [ebx+PROC_BASE+APPDATA.heap_top]; heap_top
-           add esi, new_app_base
-           add edi, new_app_base
            shr esi, 12
            shr edi, 12
 @@:
@@ -826,10 +823,10 @@ proc alloc_service
            popf
            xor eax, eax
            ret
-
-.find:     btr [srv_map], eax
+.find:
+           btr [srv_map], eax
            popf
-           shl eax,5
-           add eax, srv_tab
+           shl eax,0x02
+           lea eax,[srv_tab+eax+eax*8]   ;srv_tab+eax*36
            ret
 endp

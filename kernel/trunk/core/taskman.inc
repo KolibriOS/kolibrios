@@ -1,4 +1,4 @@
-GREEDY_KERNEL  equ 0; 1
+GREEDY_KERNEL  equ 0
 
 
 struc APP_HEADER_00
@@ -604,29 +604,34 @@ align 4
 proc add_app_parameters stdcall,slot:dword,img_base:dword,\
                         cmd_line:dword, app_path:dword, flags:dword
 
-           mov eax,[slot]
+           mov edi, [slot]
+           mov esi, [fpu_data]
            bt [cpu_caps], CAPS_FXSR
            jnc .no_SSE
-           shl eax, 8
-           mov ebx, eax
-           add eax, eax
-           add eax, [fpu_data]
-           mov [ebx+PROC_BASE+APPDATA.fpu_state], eax
-           mov [ebx+PROC_BASE+APPDATA.fpu_handler], 0
-           mov [ebx+PROC_BASE+APPDATA.sse_handler], 0
-           jmp .m1
+
+           shl edi, 8
+           mov eax, edi
+           lea edi, [esi+edi*2]
+           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
+           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
+           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
+           mov ecx, 512/4
+           jmp @F
 .no_SSE:
-           mov ecx, eax
-           mov ebx, eax
-           shl eax, 7
+           mov eax, edi
+           shl eax, 8
+           mov ebx, edi
+           shl edi, 7
            shl ebx, 4
-           sub eax, ebx       ;eax*=112
-           add eax, [fpu_data]
-           shl ecx, 8
-           mov [ecx+PROC_BASE+APPDATA.fpu_state], eax
-           mov [ecx+PROC_BASE+APPDATA.fpu_handler], 0
-           mov [ecx+PROC_BASE+APPDATA.sse_handler], 0
-.m1:
+           sub edi, ebx       ;edi*=112
+           add edi, esi
+           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
+           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
+           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
+           mov ecx, 112/4
+@@:
+           rep movsd
+
            mov    ebx,[slot]
            cmp    ebx,[TASK_COUNT]
            jle    .noinc

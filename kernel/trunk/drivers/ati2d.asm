@@ -1,0 +1,668 @@
+
+;alpha version
+
+format MS COFF
+
+
+include 'proc32.inc'
+
+DEBUG     equ 0
+
+VID_ATI     equ 0x1002
+
+R8500       equ 0x514C  ;R200
+R9000       equ 0x4966  ;RV250
+R9200       equ 0x5961  ;RV280
+R9500       equ 0x4144  ;R300
+R9500P      equ 0x4E45  ;R300
+R9550       equ 0x4153  ;RV350
+R9600       equ 0x4150  ;RV350
+R9600XT     equ 0x4152  ;RV360
+R9700P      equ 0x4E44  ;R300
+R9800       equ 0x4E49  ;R350
+R9800P      equ 0x4E48  ;R350
+R9800XT     equ 0x4E4A  ;R360
+
+OS_BASE         equ 0;  0x80400000
+new_app_base    equ 0x60400000;   0x01000000
+PROC_BASE       equ OS_BASE+0x0080000
+
+PG_SW        equ 0x003
+PG_NOCACHE   equ 0x018
+
+struc IOCTL
+{  .handle           dd ?
+   .io_code          dd ?
+   .input            dd ?
+   .inp_size         dd ?
+   .output           dd ?
+   .out_size         dd ?
+}
+
+virtual at 0
+  IOCTL IOCTL
+end virtual
+
+;MMIO                  equ 0F9000000h
+RD_RB3D_CNTL          equ 1c3ch
+
+RD_MEM_CNTL                equ 0140h
+RD_CRTC_GEN_CNTL           equ 0050h
+RD_CRTC_CUR_EN             equ 10000h
+RD_DISPLAY_BASE_ADDR       equ 023ch
+RD_DEFAULT_OFFSET          equ 16e0h
+CUR_HORZ_VERT_OFF          equ 0268h
+CUR_HORZ_VERT_POSN         equ 0264h
+CUR_OFFSET                 equ 0260h
+RD_RB3D_CNTL               equ 1c3ch
+RD_RBBM_STATUS             equ 0e40h
+RD_RBBM_FIFOCNT_MASK       equ 007fh
+RD_RBBM_ACTIVE             equ 80000000h
+RD_TIMEOUT                 equ 2000000
+
+RD_DP_GUI_MASTER_CNTL      equ 0146ch
+RD_DP_BRUSH_BKGD_CLR       equ 01478h
+RD_DP_BRUSH_FRGD_CLR       equ 0147ch
+RD_DP_SRC_BKGD_CLR         equ 015dch
+RD_DP_SRC_FRGD_CLR         equ 015d8h
+RD_DP_CNTL                 equ 016c0h
+RD_DP_DATATYPE             equ 016c4h
+RD_DP_WRITE_MASK           equ 016cch
+RD_DP_SRC_SOURCE_MEMORY    equ (2 shl 24)
+RD_DP_SRC_SOURCE_HOST_DATA equ (3 shl 24)
+RD_DEFAULT_SC_BOTTOM_RIGHT equ 16e8h
+RD_GMC_BRUSH_SOLID_COLOR   equ (13 shl 4)
+RD_DEFAULT_SC_RIGHT_MAX    equ 1fffh
+RD_DEFAULT_SC_BOTTOM_MAX   equ 1fff0000h
+RD_GMC_DST_DATATYPE_SHIFT  equ 8
+
+RD_ROP3_S                  equ 00cc0000h
+RD_ROP3_P                  equ 00f00000h
+
+RD_RB2D_DSTCACHE_MODE      equ 03428h
+RD_RB2D_DSTCACHE_CTLSTAT   equ 0342ch
+RD_RB2D_DC_FLUSH_ALL       equ 000fh
+RD_RB2D_DC_BUSY            equ 80000000h
+
+RD_GMC_BRUSH_SOLID_COLOR   equ 000000D0h
+RD_GMC_SRC_DATATYPE_COLOR  equ (3 shl 12)
+RD_GMC_CLR_CMP_CNTL_DIS    equ (1 shl 28)
+RD_GMC_WR_MSK_DIS          equ (1 shl 30)
+
+cmdSolidFill               equ 73f036d0h
+
+RD_DST_PITCH_OFFSET        equ 142ch
+RD_SRC_PITCH_OFFSET        equ 1428h
+
+RD_DST_X_LEFT_TO_RIGHT     equ 1
+RD_DST_Y_TOP_TO_BOTTOM     equ 2
+RD_DST_Y_X                 equ 1438h
+RD_DST_WIDTH_HEIGHT        equ 1598h
+RD_DST_LINE_START          equ 1600h
+RD_DST_LINE_END            equ 1604h
+R300_MEM_NUM_CHANNELS_MASK equ 0003h
+
+macro rdr op1, op2
+{
+     mov edi, [ati_io]
+     mov op1, [edi+op2]
+}
+
+macro wrr dest, src
+{
+     mov edi, [ati_io]
+     mov dword [edi+dest], src
+}
+
+
+public START
+public service_proc
+
+extrn SysMsgBoardStr
+extrn PciApi
+extrn PciRead32
+extrn AllocKernelSpace
+extrn MapPage
+extrn RegService
+extrn SetHwCursor
+extrn LFBAddress
+extrn LoadFile
+
+CURSOR_IMAGE_OFFSET  equ 0x00500000
+
+DRV_ENTRY equ 1
+DRV_EXIT  equ -1
+
+section '.flat' code readable align 16
+
+proc START stdcall, state:dword
+
+           mov eax, [state]
+           cmp eax, 1
+           je .entry
+           jmp .exit
+.entry:
+     if DEBUG
+           mov esi, msgInit
+           call SysMsgBoardStr
+     end if
+
+           call detect_ati
+	   test eax, eax
+           jz .fail
+
+           stdcall LoadFile, user_file
+           test eax, eax
+           jz @F
+           mov [user_arrow], eax
+@@:
+           stdcall ati_init_cursor, [user_arrow]
+
+           call init_ati
+           test eax, eax
+           jz .fail
+
+           stdcall RegService, sz_ati_srv, service_proc
+           test eax, eax
+           jz .fail
+           mov ebx, SetHwCursor
+           mov dword [ebx], drvCursorPos ;enable hardware cursor
+	   ret
+.fail:
+     if DEBUG
+	   mov esi, msgFail
+           call SysMsgBoardStr
+     end if
+
+.exit:
+           xor eax, eax
+           mov ebx, SetHwCursor
+           mov dword [ebx], eax    ;force disable hardware cursor
+           ret
+endp
+
+handle     equ  IOCTL.handle
+io_code    equ  IOCTL.io_code
+input      equ  IOCTL.input
+inp_size   equ  IOCTL.inp_size
+output     equ  IOCTL.output
+out_size   equ  IOCTL.out_size
+
+align 4
+proc service_proc stdcall, ioctl:dword
+
+;           mov edi, [ioctl]
+;           mov eax, [edi+io_code]
+
+	   xor eax, eax
+	   ret
+endp
+
+restore   handle
+restore   io_code
+restore   input
+restore   inp_size
+restore   output
+restore   out_size
+
+align 4
+proc detect_ati
+	   locals
+	     last_bus dd ?
+	   endl
+
+	   xor eax, eax
+	   mov [bus], eax
+	   inc eax
+           call PciApi
+	   cmp eax, -1
+           je .err
+
+	   mov [last_bus], eax
+
+.next_bus:
+	   and [devfn], 0
+.next_dev:
+           stdcall PciRead32, [bus], [devfn], dword 0
+	   test eax, eax
+	   jz .next
+	   cmp eax, -1
+	   je .next
+
+	   mov edi, devices
+@@:
+	   mov ebx, [edi]
+	   test ebx, ebx
+	   jz .next
+
+	   cmp eax, ebx
+	   je .found
+           add edi, 4
+	   jmp @B
+
+.next:	   inc [devfn]
+	   cmp [devfn], 256
+	   jb  .next_dev
+	   mov eax, [bus]
+	   inc eax
+	   mov [bus], eax
+	   cmp eax, [last_bus]
+	   jna .next_bus
+	   xor eax, eax
+	   ret
+.found:
+	   xor eax, eax
+           inc eax
+	   ret
+.err:
+           xor eax, eax
+           ret
+endp
+
+align 4
+proc init_ati
+
+           stdcall AllocKernelSpace, dword 0x10000
+           test eax, eax
+           jz .fail
+
+           mov [ati_io], eax
+
+           stdcall PciRead32, [bus], [devfn], dword 0x18
+           and eax, 0xFFFF0000
+           mov esi, eax
+
+           mov edi, [ati_io]
+           mov edx, 16
+@@:
+           stdcall MapPage,edi,esi,PG_SW+PG_NOCACHE
+	   add edi, 0x1000
+           add esi, 0x1000
+           dec edx
+           jnz @B
+
+           mov edi, [ati_io]
+           mov dword [edi+RD_RB3D_CNTL], 0
+           call engRestore
+
+           mov edi, [ati_io]
+           mov eax, [edi+0x50]
+           mov ebx,3
+           shl ebx,20
+           not ebx
+           and eax,ebx
+           mov ebx, 2
+           shl ebx,20
+           or eax, ebx
+           mov [edi+0x50], eax
+
+           pushd 0
+           pushd 0
+           call drvCursorPos
+           call drvShowCursor
+           xor eax, eax
+           inc eax
+.fail:
+           ret
+endp
+
+align 4
+drvShowCursor:
+           mov edi, [ati_io]
+
+           mov eax, [edi+RD_CRTC_GEN_CNTL]
+           bts eax,16
+           mov [edi+RD_CRTC_GEN_CNTL], eax
+           ret
+
+align 4
+drvCursorPos:
+           push ebp
+           mov ebp, esp
+           mov eax, 80000000h
+           wrr CUR_HORZ_VERT_OFF, eax
+
+           mov eax, [ebp+8]
+           shl eax, 16
+           or eax, [ebp+12]
+           or eax, 80000000h
+           wrr CUR_HORZ_VERT_POSN, eax
+
+           mov eax, CURSOR_IMAGE_OFFSET
+           wrr CUR_OFFSET, eax
+           leave
+           ret 8
+
+align 4
+proc ati_init_cursor stdcall, arrow:dword
+           locals
+             rBase    dd ?
+             pQuad    dd ?
+             pBits    dd ?
+             pAnd     dd ?
+             width    dd ?
+             height   dd ?
+             counter  dd ?
+           endl
+
+           cld
+
+           mov esi, [arrow]
+           add esi,[esi+18d]
+
+           mov eax,esi
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax,64
+           mov [pBits],eax
+           add eax, 0x200
+           mov [pAnd],eax
+           mov eax,[esi+4]
+           mov [width],eax
+           mov ebx,[esi+8]
+           shr ebx,1
+           mov [height],ebx
+
+           mov edi, pCursor
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pAnd]
+           mov ebx, [pBits]
+.l1:
+           mov eax, [esi]
+           bswap eax
+           mov [counter], 16
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           mov ecx, [ebx]
+           and ecx, 0xF0
+           shr ecx, 2
+           add ecx, [pQuad]
+           mov ecx, [ecx]
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           mov ecx, [ebx]
+           and ecx, 0x0F
+           shl ecx, 2
+           add ecx, [pQuad]
+           mov ecx, [ecx]
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi+4], edx
+
+           inc ebx
+           add edi, 8
+           dec [counter]
+           jnz @B
+
+           add esi, 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .l1
+
+           mov edi, LFBAddress
+           add edi, CURSOR_IMAGE_OFFSET
+           mov ecx, 64*64
+           xor eax,eax
+           rep stosd
+
+           mov esi, pCursor
+           mov edi, LFBAddress
+           add edi, CURSOR_IMAGE_OFFSET
+           mov ebx, 32
+lc:
+           mov ecx, 32
+lb:
+           mov eax, [esi]
+           mov [edi], eax
+           add esi, 4
+           add edi, 4
+           sub ecx, 1
+           jnz lb
+
+           add edi, 128
+           sub ebx, 1
+           jnz lc
+
+           ret
+endp
+
+align 4
+proc engFlush
+
+           mov edi, [ati_io]
+
+           mov eax, [edi+RD_RB2D_DSTCACHE_CTLSTAT]
+           or eax,RD_RB2D_DC_FLUSH_ALL
+           mov [edi+RD_RB2D_DSTCACHE_CTLSTAT],eax
+
+           mov ecx, RD_TIMEOUT
+@@:
+           mov eax,[edi+RD_RB2D_DSTCACHE_CTLSTAT]
+           and eax, RD_RB2D_DC_BUSY
+           jz .exit
+
+           sub ecx,1
+           jnz @B
+.exit:
+           ret
+endp
+
+align 4
+engWaitForFifo:
+cnt equ bp+8
+           push ebp
+           mov ebp, esp
+
+           mov edi, [ati_io]
+
+           mov ecx, RD_TIMEOUT
+@@:
+           mov eax, [edi+RD_RBBM_STATUS]
+           and eax, RD_RBBM_FIFOCNT_MASK
+           cmp eax, [ebp+8]
+           jae .exit
+
+           sub ecx,1
+           jmp @B
+
+.exit:
+           leave
+           ret 4
+
+align 4
+proc engWaitForIdle
+
+               push dword 64
+               call engWaitForFifo
+
+               mov edi, [ati_io]
+               mov ecx ,RD_TIMEOUT
+@@:
+               mov eax, [edi+RD_RBBM_STATUS]
+               and eax,RD_RBBM_ACTIVE
+               jz .exit
+
+               sub ecx,1
+               jnz @B
+.exit:
+               call engFlush
+               ret
+endp
+
+align 4
+proc engRestore
+
+;             push dword 1
+;             call engWaitForFifo
+
+;             mov dword  [MMIO+RD_RB2D_DSTCACHE_MODE], 0
+
+             push dword 3
+             call engWaitForFifo
+
+           mov edi, [ati_io]
+
+           mov eax, [edi+RD_DISPLAY_BASE_ADDR]
+           shr eax, 10d
+           or eax,(64d shl 22d)
+           mov [edi+RD_DEFAULT_OFFSET],eax
+           mov [edi+RD_SRC_PITCH_OFFSET],eax
+           mov [edi+RD_DST_PITCH_OFFSET],eax
+
+           push dword 1
+           call engWaitForFifo
+
+           mov edi, [ati_io]
+           mov eax, [edi+RD_DP_DATATYPE]
+           btr eax, 29d
+           mov [edi+RD_DP_DATATYPE],eax
+
+           push dword 1
+           call engWaitForFifo
+
+           mov edi, [ati_io]
+           mov dword [edi+RD_DEFAULT_SC_BOTTOM_RIGHT],\
+                     (RD_DEFAULT_SC_RIGHT_MAX or RD_DEFAULT_SC_BOTTOM_MAX)
+
+           push dword 1
+           call engWaitForFifo
+
+           mov edi, [ati_io]
+           mov dword [edi+RD_DP_GUI_MASTER_CNTL],\
+                     (RD_GMC_BRUSH_SOLID_COLOR or \
+                      RD_GMC_SRC_DATATYPE_COLOR or \
+                     (6 shl RD_GMC_DST_DATATYPE_SHIFT) or \
+                      RD_GMC_CLR_CMP_CNTL_DIS or \
+                      RD_ROP3_P or \
+                      RD_GMC_WR_MSK_DIS)
+
+
+           push dword 7
+           call engWaitForFifo
+
+           mov edi, [ati_io]
+
+           mov dword [edi+RD_DST_LINE_START],0
+           mov dword [edi+RD_DST_LINE_END], 0
+           mov dword [edi+RD_DP_BRUSH_FRGD_CLR], 808000ffh
+           mov dword [edi+RD_DP_BRUSH_BKGD_CLR], 002020ffh
+           mov dword [edi+RD_DP_SRC_FRGD_CLR],   808000ffh
+           mov dword [edi+RD_DP_SRC_BKGD_CLR],   004000ffh
+           mov dword [edi+RD_DP_WRITE_MASK],0ffffffffh
+
+           call engWaitForIdle
+
+           ret
+endp
+
+
+align 4
+engSetupSolidFill:
+           push ebp
+           mov ebp, esp
+
+           push dword 3
+           call engWaitForFifo
+
+           wrr RD_DP_GUI_MASTER_CNTL, cmdSolidFill
+
+           mov eax, [ebp+8]
+           wrr RD_DP_BRUSH_FRGD_CLR,eax
+
+           mov edi, [ati_io]
+           mov dword [edi+RD_DP_CNTL],(RD_DST_X_LEFT_TO_RIGHT or RD_DST_Y_TOP_TO_BOTTOM)
+           leave
+           ret 4
+
+
+align 4
+drvSolidFill:
+;x:word,y:word,w:word,h:word,color:dword
+            push ebp
+            mov ebp, esp
+x equ ebp+8
+y equ ebp+12
+w equ ebp+16
+h equ ebp+20
+color equ ebp+24
+
+            push dword [ebp+24]
+            call engSetupSolidFill
+
+            push dword 2
+            call engWaitForFifo
+
+            mov edi, [ati_io]
+
+            mov eax, [y]
+            mov ebx, [x]
+            shl eax,16
+            or eax, ebx
+
+            mov ecx,  [w]
+            mov edx,  [h]
+            shl ecx,16
+            or ecx, edx
+            mov [edi+RD_DST_Y_X], eax
+            mov [edi+RD_DST_WIDTH_HEIGHT], ecx
+	    call engFlush
+            leave
+            ret 20
+
+align 4
+devices dd (R8500   shl 16)+VID_ATI
+        dd (R9000   shl 16)+VID_ATI
+        dd (R9200   shl 16)+VID_ATI
+        dd (R9500   shl 16)+VID_ATI
+        dd (R9500P  shl 16)+VID_ATI
+        dd (R9550   shl 16)+VID_ATI
+        dd (R9600   shl 16)+VID_ATI
+        dd (R9600XT shl 16)+VID_ATI
+        dd (R9700P  shl 16)+VID_ATI
+        dd (R9800   shl 16)+VID_ATI
+        dd (R9800P  shl 16)+VID_ATI
+        dd (R9800XT shl 16)+VID_ATI
+        dd 0    ;terminator
+
+;szKernel     db 'KERNEL', 0
+sz_ati_srv   db 'ATI2D',0
+user_file    db '/rd/1/user.cur',0
+
+
+msgInit      db 'detect hardware...',13,10,0
+msgPCI       db 'PCI accsess not supported',13,10,0
+msgFail      db 'device not found',13,10,0
+
+user_arrow   dd pArrow
+
+align 16
+pArrow:
+  file 'arrow.cur'
+
+section '.data' data readable writable align 16
+
+pCursor  db 4096 dup(?)
+
+bus        dd ?
+devfn      dd ?
+ati_io     dd ?
+
+
+

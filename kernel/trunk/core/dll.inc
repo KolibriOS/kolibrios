@@ -1,17 +1,6 @@
-;
-;   This file is part of the Infinity sound AC97 driver.
-;   (C) copyright Serge 2006
-;   email: infinity_sound@mail.ru
-;
-;   This program is free software; you can redistribute it and/or modify
-;   it under the terms of the GNU General Public License as published by
-;   the Free Software Foundation; either version 2 of the License, or
-;   (at your option) any later version.
-;
-;   This program is distributed in the hope that it will be useful,
-;   but WITHOUT ANY WARRANTY; without even the implied warranty of
-;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;   GNU General Public License for more details.
+
+DRV_ENTRY equ 1
+DRV_EXIT  equ -1
 
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword
@@ -713,6 +702,7 @@ proc load_driver stdcall, file_name:dword
            endl
 
            stdcall load_file, [file_name]
+
            test eax, eax
            jz .fail
 
@@ -809,7 +799,7 @@ proc load_driver stdcall, file_name:dword
            stdcall kernel_free, [coff]
 
            mov ebx, [start]
-           call ebx
+           stdcall ebx, DRV_ENTRY
            test eax, eax
            jnz .ok
 
@@ -819,6 +809,8 @@ proc load_driver stdcall, file_name:dword
 .ok:
            mov ebx, [img_base]
            mov [eax+SRV.base], ebx
+           mov ecx, [start]
+           mov [eax+SRV.entry], ecx
            ret
 .fail:
            xor eax, eax
@@ -930,12 +922,35 @@ proc load_library stdcall, file_name:dword
            ret
 endp
 
+align 4
+proc stop_all_services
+           pushf
+           cli
+           mov eax, [srv_map]
+           not eax
+           mov [srv_map], eax
+.next:
+           bsf eax, [srv_map]
+           jnz .find
+           popf
+           ret
+.find:
+           btr [srv_map], eax
+           shl eax,0x02
+           lea eax,[srv_tab+eax+eax*8]   ;srv_tab+eax*36
+           mov ebx, [eax+SRV.entry]
+           stdcall ebx, dword -1
+           jmp .next
+endp
+
 
 drv_sound      db '/rd/1/drivers/unisound.obj', 0
 drv_infinity   db '/rd/1/drivers/infinity.obj', 0
+drv_ati2d      db '/rd/1/drivers/ati2d.obj', 0
 
 szSound        db 'SOUND',0
 szInfinity     db 'INFINITY',0
+szHMouse       db 'ATI2D',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
@@ -945,8 +960,12 @@ msg_unresolved db 'unresolved ',0
 msg_module     db 'in module ',0
 msg_CR         db  13,10,0
 
+align 4
+set_hw_cursor    dd 0
+
 align 16
 services:
            dd szSound,    drv_sound
            dd szInfinity, drv_infinity
+           dd szHMouse,   drv_ati2d
            dd 0
