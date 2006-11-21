@@ -2,13 +2,12 @@ char* strncat(char* strDest,const char* strSource,int count)
 {
 	char* res;
 	res=strDest;
-	while (*strDest!='\0') strDest++;
-	while (count>0 && *strSource!='\0')
+	while (*strDest++) ;
+	while(count-->0)
 	{
-		*strDest=*strSource;
-		count--;
-		strDest++;
-		strSource++;
+	    if(*strDest++ = *strSource++) continue;
+		return(res);
 	}
+	*strDest = 0;
 	return res;
 }

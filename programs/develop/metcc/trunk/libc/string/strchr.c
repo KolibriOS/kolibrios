@@ -1,6 +1,6 @@
 char* strchr(const char* string, int c)
 {
-	while (*string!='\0')
+	while (*string)
 	{
 		if (*string==c)
 			return (char*)string;

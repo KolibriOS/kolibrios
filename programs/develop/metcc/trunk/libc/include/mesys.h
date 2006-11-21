@@ -2,17 +2,24 @@
 #define mesys_h
 #ifdef GNUC
 #define stdcall __stdcall
+#define cdecl __cdecl
 #else
 #define stdcall __attribute__ ((__stdcall))
+#define cdecl  __attribute__ ((__cdecl))
 #endif
-extern void stdcall _msys_draw_window(int xcoord,int ycoord, int xsize, 
+
+typedef unsigned long dword;
+typedef unsigned char byte;
+typedef unsigned short word;
+
+extern void stdcall _msys_draw_window(int xcoord,int ycoord, int xsize,
 			       int ysize,int workcolor,int type,
 			       int captioncolor,int windowtype,int bordercolor);
 extern int  stdcall _msys_read_file(char* filename,int fileoffset,int size,void* data,
                      int* filesize);
-extern int  stdcall _msys_write_file(char* filename,int size,void* data);                 
-extern void stdcall _msys_run_program(char* filename,char* parameters);                   
-extern void stdcall _msys_debug_out(int c);      
+extern int  stdcall _msys_write_file(char* filename,int size,void* data);
+extern void stdcall _msys_run_program(char* filename,char* parameters);
+extern void stdcall _msys_debug_out(int c);
 extern void debug_out_str(char* str);
 extern void stdcall _msys_set_background_size(int xsize,int ysize);
 extern void stdcall _msys_write_background_mem(int pos,int color);
@@ -95,4 +102,8 @@ extern void stdcall _msys_window_redraw(int status);
 extern void* malloc(int);
 extern void  free(void*);
 extern void* realloc(void*,int);
+
+extern dword* stdcall _msys_cofflib_load(char* name);
+extern char* stdcall _msys_cofflib_getproc(void* exp,char* sz_name);
+
 #endif
