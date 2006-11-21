@@ -1,1 +1,2 @@
-compile.js clean
+cscript cscript compile.js clean
+pause

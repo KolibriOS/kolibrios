@@ -3,7 +3,18 @@ ForWriting = 2
 ForAppending = 8 
 var fso = new ActiveXObject("Scripting.FileSystemObject");
 var wsh = new ActiveXObject("WScript.Shell");
+_DEBUG = true;
+function _debug(mes)
+{
+	if(_DEBUG != true) return mes;
+	try{var file = fso.OpenTextFile("debug_info.txt", ForAppending);}
+	catch(e){var file = fso.CreateTextFile("debug_info.txt", true);}
+	file.Write(mes);
+	file.close();
+	return mes;
+}
 function alert(mes){WScript.Echo(mes);return mes}
+
 function debug(obj){for(key in obj)alert('['+key+']="'+obj[key]+'"')}
 function getFileContent(filename){
 	var file = fso.OpenTextFile(filename, ForReading);
@@ -61,7 +72,7 @@ function Project(filename){
 		var objname = filename.replace(/.\w{1,3}$/,".o");
  		objList.push(objname);
 		if(fso.FileExists(objname)) return;
-		wsh.Run(this.fasm+' "'+filename+'" "'+objname+'"',0,true);
+		wsh.Run(_debug('"'+this.fasm+'" "'+filename+'" "'+objname+'"\n'),0,true);
 	}
 	this.compile_c = function(filename){
 		var objname = filename.replace(/.\w{1,3}$/,".o");
@@ -70,15 +81,15 @@ function Project(filename){
 		var asmname = filename.replace(/.\w{1,3}$/,".s");
 		var command = "";
 		if(!fso.FileExists(asmname)){
-			command = this.gccpath +"\\"+ this.gccexe + " -nostdinc";
+			command = '"'+this.gccpath +"\\"+ this.gccexe + "\" -nostdinc";
 			if(this.include) command += " -I .\\include";
-			command +=" -DGNUC" +' "'+filename + '" -o "' + asmname + '"';
-			wsh.Run("cmd.exe /c "+command, 0, true);
+			command +=" -DGNUC" +' "'+filename + '" -o "' + asmname + '"\n';
+			wsh.Run(_debug("cmd.exe /c "+command), 0, true);
 		}
-		command = this.gccpath +"\\"+ this.asexe +' "'+ asmname +'" -o "'+ objname +'"';
-		wsh.Run("cmd.exe /c "+command, 0, true);
-		command = this.gccpath +"\\"+ this.objcopyexe +' -O elf32-i386 --remove-leading-char "'+ objname +'"';
-		wsh.Run("cmd.exe /c "+command, 0, true);
+		command = '"'+this.gccpath +"\\"+ this.asexe +'" "'+ asmname +'" -o "'+ objname +'"\n';
+		wsh.Run(_debug("cmd.exe /c "+command), 0, true);
+		command = '"'+this.gccpath +"\\"+ this.objcopyexe +'" -O elf32-i386 --remove-leading-char "'+ objname +'"\n';
+		wsh.Run(_debug("cmd.exe /c "+command), 0, true);
 	}
 	this.build = function(){
 		var fl = new Enumerator(this.files);
@@ -100,10 +111,10 @@ function Project(filename){
 		file.Close();
 		wsh.Run(this.gccpath+"\\ar.exe -M < OBJLIST.TXT", 0, true);*/
 		
-		var ar = wsh.Exec(this.gccpath+"\\ar.exe -M")
-		ar.StdIn.Write("CREATE "+this.dstpath+'\\'+this.name+".a\r\n");
-		for (; !fl.atEnd(); fl.moveNext()){ar.StdIn.Write("ADDMOD "+fl.item()+"\r\n");}
-		ar.StdIn.Write("SAVE\r\t");
+		var ar = wsh.Exec(_debug(this.gccpath+"\\ar.exe -M\n"))
+		ar.StdIn.Write(_debug("CREATE "+this.dstpath+'\\'+this.name+".a\r\n"));
+		for (; !fl.atEnd(); fl.moveNext()){ar.StdIn.Write(_debug("ADDMOD "+fl.item()+"\r\n"));}
+		ar.StdIn.Write(_debug("SAVE\r\n"));
 	}
 	this.rebuild = function(){
 		this.clean();
