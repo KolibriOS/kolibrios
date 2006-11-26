@@ -2,7 +2,7 @@
 ; flat assembler core
 ; Copyright (c) 1999-2006, Tomasz Grysztar.
 ; All rights reserved.
- 
+
 convert_expression:
 	push	ebp
 	call	get_fp_value
@@ -1828,10 +1828,10 @@ get_word_value:
 	mov	[value_size],2
 	mov	[size_override],-1
 	call	calculate_expression
-	mov	eax,[edi+16]
-	mov	[symbol_identifier],eax
 	cmp	word [edi+8],0
 	jne	invalid_value
+	mov	eax,[edi+16]
+	mov	[symbol_identifier],eax
 	mov	al,[edi+12]
 	mov	[value_type],al
 	cmp	al,2
@@ -1859,10 +1859,10 @@ get_dword_value:
 	mov	[value_size],4
 	mov	[size_override],-1
 	call	calculate_expression
-	mov	eax,[edi+16]
-	mov	[symbol_identifier],eax
 	cmp	word [edi+8],0
 	jne	invalid_value
+	mov	eax,[edi+16]
+	mov	[symbol_identifier],eax
 	mov	al,[edi+12]
 	mov	[value_type],al
 	cmp	al,4
@@ -1913,10 +1913,10 @@ get_qword_value:
 	mov	[value_size],8
 	mov	[size_override],-1
 	call	calculate_expression
-	mov	eax,[edi+16]
-	mov	[symbol_identifier],eax
 	cmp	word [edi+8],0
 	jne	invalid_value
+	mov	eax,[edi+16]
+	mov	[symbol_identifier],eax
 	mov	al,[edi+12]
 	mov	[value_type],al
       check_qword_value:
@@ -1963,6 +1963,18 @@ get_value:
 	xor	edx,edx
 	movzx	eax,al
 	ret
+get_address_word_value:
+	mov	[address_size],2
+	mov	[value_size],2
+	jmp	calculate_address
+get_address_dword_value:
+	mov	[address_size],4
+	mov	[value_size],4
+	jmp	calculate_address
+get_address_qword_value:
+	mov	[address_size],8
+	mov	[value_size],8
+	jmp	calculate_address
 get_address_value:
 	mov	[address_size],0
 	mov	[value_size],8
@@ -2093,26 +2105,32 @@ get_address_value:
 	je	special_index_scale
       check_index_scale:
 	or	cl,cl
-	jz	address_registers_ok
+	jz	check_immediate_address
 	cmp	cl,1
-	je	address_registers_ok
+	je	check_immediate_address
 	cmp	cl,2
-	je	address_registers_ok
+	je	check_immediate_address
 	cmp	cl,4
-	je	address_registers_ok
+	je	check_immediate_address
 	cmp	cl,8
-	je	address_registers_ok
+	je	check_immediate_address
 	jmp	invalid_address
       special_index_scale:
 	mov	bh,bl
 	dec	cl
-      address_registers_ok:
-	jmp	check_dword_value
       check_immediate_address:
+	mov	al,[address_size]
+	and	al,0Fh
+	cmp	al,2
+	je	check_word_value
+	cmp	al,4
+	je	check_dword_value
+	cmp	al,8
+	je	check_qword_value
+	or	al,al
+	jnz	invalid_value
 	cmp	[code_type],64
 	jne	check_dword_value
-	cmp	[address_size],4
-	je	check_dword_value
 	jmp	check_qword_value
 calculate_relative_offset:
 	cmp	[value_undefined],0
@@ -2131,7 +2149,8 @@ calculate_relative_offset:
 	cmp	bl,[labels_type]
 	jne	invalid_use_of_symbol
 	mov	[value_type],0
-	mov	ecx,[symbol_identifier]
+	mov	ecx,[address_symbol]
+	mov	[symbol_identifier],ecx
 	cmp	ecx,[org_symbol]
 	je	relative_offset_ok
 	mov	[value_type],3

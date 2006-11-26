@@ -1,5 +1,5 @@
-; flat assembler  version 1.60
-; Copyright (c) 1999-2005, Tomasz Grysztar
+; flat assembler
+; Copyright (c) 1999-2006, Tomasz Grysztar
 ; All rights reserved.
 ;
 ; MenuetOS system.inc by VT

@@ -618,7 +618,7 @@ load_directive:
       load_from_code:
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_qword_value
+	call	get_address_value
 	call	calculate_relative_offset
 	push	esi edi
 	cmp	[next_pass_needed],0
@@ -676,7 +676,7 @@ store_directive:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
-	call	get_qword_value
+	call	get_address_value
 	call	calculate_relative_offset
 	push	esi edi
 	cmp	[next_pass_needed],0

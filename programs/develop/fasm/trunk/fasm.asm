@@ -145,7 +145,7 @@ draw_window:
 
     get_sys_colors 1,0
 
-    mov  eax,0                     
+    xor  eax,eax                     
     mov  ebx,50*65536+280        
     mov  ecx,50*65536+250
     mov  edx,[sc.work]

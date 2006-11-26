@@ -3115,7 +3115,7 @@ jmp_instruction:
       jmp_imm_32bit:
 	cmp	[code_type],64
 	je	invalid_operand_size
-	call	get_dword_value
+	call	get_address_dword_value
 	cmp	[code_type],16
 	jne	jmp_imm_32bit_prefix_ok
 	mov	byte [edi],66h
@@ -3137,7 +3137,7 @@ jmp_instruction:
       jmp_imm_64bit:
 	cmp	[code_type],64
 	jne	invalid_operand_size
-	call	get_qword_value
+	call	get_address_qword_value
 	call	calculate_jump_offset
 	mov	ecx,edx
 	cdq
@@ -3151,7 +3151,7 @@ jmp_instruction:
 	stos	word [edi]
 	jmp	instruction_assembled
       jmp_imm_16bit:
-	call	get_word_value
+	call	get_address_word_value
 	cmp	[code_type],16
 	je	jmp_imm_16bit_prefix_ok
 	mov	byte [edi],66h
@@ -3290,7 +3290,7 @@ conditional_jump:
       conditional_jump_32bit:
 	cmp	[code_type],64
 	je	invalid_operand_size
-	call	get_dword_value
+	call	get_address_dword_value
 	cmp	[code_type],16
 	jne	conditional_jump_32bit_prefix_ok
 	mov	byte [edi],66h
@@ -3314,7 +3314,7 @@ conditional_jump:
       conditional_jump_64bit:
 	cmp	[code_type],64
 	jne	invalid_operand_size
-	call	get_qword_value
+	call	get_address_qword_value
 	call	calculate_jump_offset
 	mov	ecx,edx
 	cdq
@@ -3328,7 +3328,7 @@ conditional_jump:
 	stos	word [edi]
 	jmp	instruction_assembled
       conditional_jump_16bit:
-	call	get_word_value
+	call	get_address_word_value
 	cmp	[code_type],16
 	je	conditional_jump_16bit_prefix_ok
 	mov	byte [edi],66h
@@ -3392,7 +3392,7 @@ loop_instruction:
       loop_jump_32bit:
 	cmp	[code_type],64
 	je	invalid_operand_size
-	call	get_dword_value
+	call	get_address_dword_value
 	cmp	[code_type],16
 	jne	loop_jump_32bit_prefix_ok
 	mov	byte [edi],66h
@@ -3407,7 +3407,7 @@ loop_instruction:
       loop_jump_64bit:
 	cmp	[code_type],64
 	jne	invalid_operand_size
-	call	get_qword_value
+	call	get_address_qword_value
 	call	calculate_jump_offset
 	mov	ecx,edx
 	cdq
@@ -3415,7 +3415,7 @@ loop_instruction:
 	jne	value_out_of_range
 	jmp	make_loop_jump
       loop_jump_16bit:
-	call	get_word_value
+	call	get_address_word_value
 	cmp	[code_type],16
 	je	loop_jump_16bit_prefix_ok
 	mov	byte [edi],66h
@@ -6020,8 +6020,6 @@ get_address:
 	cdq
 	cmp	edx,[address_high]
 	jne	value_out_of_range
-	mov	edx,[symbol_identifier]
-	mov	[address_symbol],edx
 	mov	edx,eax
 	ror	ecx,16
 	mov	cl,[value_type]
