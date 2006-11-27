@@ -1053,7 +1053,7 @@ proc test_cpu
            pop eax
            xor eax, ecx
            mov [cpu_type], CPU_386
-           jz .end_cpu
+           jz .end_cpuid
            push ecx
            popfd
 
@@ -1065,7 +1065,7 @@ proc test_cpu
            pushfd
            pop eax
            xor eax, ecx
-           je .end_cpu
+           je .end_cpuid
            mov [cpu_id], 1
 
            xor eax, eax
@@ -1091,23 +1091,21 @@ proc test_cpu
 
            shr eax, 8
            and eax, 0x0f
-           mov [cpu_type], eax
            ret
-
 .end_cpuid:
            mov eax, [cpu_type]
            ret
 
 .check_AMD:
            cmp ebx, dword [AMD_str]
-           jne .end_cpu
+           jne .unknown
            cmp edx, dword [AMD_str+4]
-           jne .end_cpu
+           jne .unknown
            cmp ecx, dword [AMD_str+8]
-           jne .end_cpu
+           jne .unknown
            mov [cpu_AMD], 1
            cmp eax, 1
-           jl .end_cpuid
+           jl .unknown
            mov eax, 1
            cpuid
            mov [cpu_sign], eax
@@ -1116,9 +1114,16 @@ proc test_cpu
            mov [cpu_caps+4],ecx
            shr eax, 8
            and eax, 0x0f
-           mov [cpu_type], eax
-.end_cpu:
-           mov eax, [cpu_type]
+           ret
+.unknown:
+           mov eax, 1
+           cpuid
+           mov [cpu_sign], eax
+           mov [cpu_info],  ebx
+           mov [cpu_caps],  edx
+           mov [cpu_caps+4],ecx
+           shr eax, 8
+           and eax, 0x0f
            ret
 endp
 
@@ -1262,6 +1267,27 @@ align 16
   cpu_vendor        rd 3
   cpu_sign          rd 1
   cpu_info          rd 1
+
+;;;;;   cursors data
+
+align 16
+cur_saved_data   rb 4096
+
+cursors          rb CURSOR_SIZE*64
+cursor_map       rd 2
+cursor_start     rd 1
+cursor_end       rd 1
+
+def_cursor       rd 1
+
+scr_width        rd 1
+scr_height       rd 1
+
+cur_def_interl   rd 1
+cur_saved_base   rd 1
+cur_saved_interl rd 1
+cur_saved_w      rd 1
+cur_saved_h      rd 1
 
 endg
 

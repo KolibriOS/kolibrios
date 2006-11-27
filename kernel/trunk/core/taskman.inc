@@ -606,7 +606,7 @@ proc add_app_parameters stdcall,slot:dword,img_base:dword,\
 
            mov edi, [slot]
            mov esi, [fpu_data]
-           bt [cpu_caps], CAPS_FXSR
+           bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
            shl edi, 8
@@ -639,7 +639,10 @@ proc add_app_parameters stdcall,slot:dword,img_base:dword,\
 .noinc:
            shl    ebx,8
            mov    eax,[app_mem]
-           mov    [PROC_BASE+0x8c+ebx],eax
+           mov    [PROC_BASE+APPDATA.mem_size+ebx],eax
+
+           mov    ecx, [def_cursor]
+           mov    [PROC_BASE+APPDATA.cursor+ebx],ecx
 
            shr    ebx,3
            mov eax, new_app_base

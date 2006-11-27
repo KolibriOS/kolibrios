@@ -100,7 +100,7 @@ iglobal
     dd except_16, e17,e18, except_19
     times 12 dd unknown_interrupt
 
-    dd   irq0  , irq_serv.irq_1, p_irq2 ,irq_serv.irq_3
+    dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
     dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
     dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
     dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
@@ -638,7 +638,7 @@ terminate: ; terminate application
 
     mov [fpu_owner],1
     mov eax, [256+PROC_BASE+0x10]
-    bt [cpu_caps], CAPS_FXSR
+    bt [cpu_caps], CAPS_SSE
     jnc .no_SSE
     fxrstor [eax]
     jmp fpu_ok_1

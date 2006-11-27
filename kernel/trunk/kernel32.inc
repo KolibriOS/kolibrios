@@ -173,14 +173,15 @@ struc APPDATA
 		   db 5   dup(?)
 
   .fpu_state       dd ?            ;+16
-  .fpu_init        dd ?            ;+20
+                   dd ?            ;+20 unused
   .fpu_handler     dd ?            ;+24
   .sse_handler     dd ?            ;+28
   .event           dd ?            ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
+  .cursor          dd ?            ;+44
 
-                   db 84 dup(?)    ;+44
+                   db 80 dup(?)    ;+48
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?
@@ -253,6 +254,7 @@ include "sound/playnote.inc" ; player Note for Speaker PC
 include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
 include "video/vga.inc"      ; VGA 16 color functions
+include "video/cursors.inc"  ; cursors functions
 
 ; Network Interface & TCPIP Stack
 

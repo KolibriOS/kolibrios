@@ -946,11 +946,13 @@ endp
 
 drv_sound      db '/rd/1/drivers/unisound.obj', 0
 drv_infinity   db '/rd/1/drivers/infinity.obj', 0
-drv_ati2d      db '/rd/1/drivers/ati2d.obj', 0
+;drv_ati2d      db '/rd/1/drivers/vesa.obj', 0
+;drv_cursor     db '/rd/1/drivers/vesa.obj',0
 
 szSound        db 'SOUND',0
 szInfinity     db 'INFINITY',0
-szHMouse       db 'ATI2D',0
+;szHMouse       db 'ATI2D',0
+;szCURSOR       db 'VESACURSOR',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
@@ -962,10 +964,12 @@ msg_CR         db  13,10,0
 
 align 4
 set_hw_cursor    dd 0
+hw_restore       dd 0
 
 align 16
 services:
            dd szSound,    drv_sound
            dd szInfinity, drv_infinity
-           dd szHMouse,   drv_ati2d
+;           dd szHMouse,   drv_ati2d
+;           dd szCURSOR,   drv_cursor
            dd 0

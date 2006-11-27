@@ -175,7 +175,7 @@ BTN_DOWN            equ OS_BASE+0x000FB40
 MOUSE_DOWN          equ OS_BASE+0x000FB44
 X_UNDER             equ OS_BASE+0x000FB4A
 Y_UNDER             equ OS_BASE+0x000FB4C
-;ScreenBPP           equ OS_BASE+0x000FBF1
+ScreenBPP           equ OS_BASE+0x000FBF1
 MOUSE_BUFF_COUNT    equ OS_BASE+0x000FCFF
 HD_CACHE_ENT        equ OS_BASE+0x000FE10
 LFBAddress          equ OS_BASE+0x000FE80
@@ -312,6 +312,20 @@ struc SYS_VARS
                   dd ?
 }
 
+struc CURSOR
+{  .magic       dd ?
+   .size        dd ?
+   .pid         dd ?
+   .base        dd ?
+   .hot_x       dd ?
+   .hot_y       dd ?
+}
+virtual at 0
+  CURSOR CURSOR
+end virtual
+
+CURSOR_SIZE     equ 24
+
 struc BOOT_DATA
 { .bpp            dd ?
   .scanline       dd ?
@@ -436,7 +450,7 @@ virtual at 0
 end virtual
 
 
-SRV_SIZE equ 32
+SRV_SIZE equ 36
 
 virtual at 0
   LIB LIB

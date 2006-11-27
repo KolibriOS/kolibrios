@@ -1,5 +1,28 @@
 
 iglobal
+  szKernel            db 'KERNEL', 0
+  szAttachIntHandler  db 'AttachIntHandler',0
+  szSysMsgBoardStr    db 'SysMsgBoardStr', 0
+  szPciApi            db 'PciApi', 0
+  szPciRead32         db 'PciRead32', 0
+  szPciRead8          db 'PciRead8', 0
+  szPciWrite8         db 'PciWrite8',0
+  szAllocKernelSpace  db 'AllocKernelSpace',0
+  szMapPage           db 'MapPage',0
+  szRegService        db 'RegService',0
+  szKernelAlloc       db 'KernelAlloc',0
+  szKernelFree        db 'KernelFree',0
+  szGetPgAddr         db 'GetPgAddr',0
+  szGetCurrentTask    db 'GetCurrentTask',0
+  szGetService        db 'GetService',0
+  szServiceHandler    db 'ServiceHandler',0
+  szFpuSave           db 'FpuSave',0
+  szFpuRestore        db 'FpuRestore',0
+  szLoadCursor        db 'LoadCursor',0
+  szSetHwCursor       db 'SetHwCursor',0
+  szHWRestore         db 'HWRestore', 0
+  szLFBAddress        db 'LFBAddress',0
+  szLoadFile          db 'LoadFile',0
 
 align 16
 kernel_export:
@@ -20,33 +43,14 @@ kernel_export:
   dd szServiceHandler  , srv_handler
   dd szFpuSave         , fpu_save
   dd szFpuRestore      , fpu_restore
+  dd szLoadCursor      , load_cursor
   dd szSetHwCursor     , set_hw_cursor
+  dd szHWRestore       , hw_restore
   dd szLoadFile        , load_file
 exp_lfb:
   dd szLFBAddress      , 0
   dd 0
 
-  szKernel            db 'KERNEL', 0
-  szAttachIntHandler  db 'AttachIntHandler',0
-  szSysMsgBoardStr    db 'SysMsgBoardStr', 0
-  szPciApi            db 'PciApi', 0
-  szPciRead32         db 'PciRead32', 0
-  szPciRead8          db 'PciRead8', 0
-  szPciWrite8         db 'PciWrite8',0
-  szAllocKernelSpace  db 'AllocKernelSpace',0
-  szMapPage           db 'MapPage',0
-  szRegService        db 'RegService',0
-  szKernelAlloc       db 'KernelAlloc',0
-  szKernelFree        db 'KernelFree',0
-  szGetPgAddr         db 'GetPgAddr',0
-  szGetCurrentTask    db 'GetCurrentTask',0
-  szGetService        db 'GetService',0
-  szServiceHandler    db 'ServiceHandler',0
-  szFpuSave           db 'FpuSave',0
-  szFpuRestore        db 'FpuRestore',0
-  szSetHwCursor       db 'SetHwCursor',0
-  szLFBAddress        db 'LFBAddress',0
-  szLoadFile          db 'LoadFile',0
 
 endg
 

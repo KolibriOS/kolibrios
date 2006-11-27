@@ -358,6 +358,7 @@ B32:
 ; MEMORY MODEL
 
            call mem_test
+
            mov [MEM_AMOUNT], eax
 
            mov [pg_data.mem_amount], eax
@@ -394,7 +395,7 @@ include 'detect/disks.inc'
 ;           btr [cpu_caps], CAPS_PSE    ;test: don't use large pages
 ;           btr [cpu_caps], CAPS_PGE    ;test: don't use global pages
 ;           btr [cpu_caps], CAPS_MTRR   ;test: don't use MTRR
-;           bts [cpu_caps], CAPS_TSC    ;test: don't use TSC
+           bts [cpu_caps], CAPS_TSC     ;force use rdtsc
 
            call init_memEx
            call init_page_map
@@ -549,8 +550,10 @@ include 'vmodeld.inc'
         call  boot_log
         call  setmouse
 
-        mov  [pci_access_enabled],1
-        stdcall get_service, szHMouse
+        call init_cursors
+
+;        mov  [pci_access_enabled],1
+;        stdcall get_service, szCURSOR
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -589,21 +592,24 @@ include 'vmodeld.inc'
         ; name for OS/IDLE process
         mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
         mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
+        mov ebx, [def_cursor]
+        mov dword [0x80000+256+APPDATA.cursor], ebx
+
         mov  dword [0x80000+256+APPDATA.fpu_handler], 0
         mov  dword [0x80000+256+APPDATA.sse_handler], 0
 
 ;set fpu save area
         mov esi, eax
-        bt [cpu_caps], CAPS_FXSR
+        bt [cpu_caps], CAPS_SSE
         jnc .no_sse
 
         lea edi, [eax+512]
-        mov  dword [0x80000+256+APPDATA.fpu_state], edi
+        mov  dword [PROC_BASE+256+APPDATA.fpu_state], edi
         mov ecx, 512/4
         jmp @F
 .no_sse:
         lea edi, [eax+112]
-        mov  dword [0x80000+256+APPDATA.fpu_state], edi
+        mov  dword [PROC_BASE+256+APPDATA.fpu_state], edi
         mov ecx, 112/4
 @@:
         rep movsd
@@ -1712,51 +1718,68 @@ sys_getsetup:
 
 
 align 4
+mousefn dd msscreen, mswin, msbutton, msset
+        dd app_load_cursor
+        dd app_set_cursor
+        dd msset    ;app_delete_cursor
 
 readmousepos:
 
 ; eax=0 screen relative
 ; eax=1 window relative
 ; eax=2 buttons pressed
+; eax=3 set mouse pos   ; reserved
+; eax=4 load cursor
+; eax=5 set cursor
+; eax=6 delete cursor   ; reserved
 
-    test eax,eax
-    jnz  nosr
-    mov  eax,[0xfb0a]
-    shl  eax,16
-    mov  ax,[0xfb0c]
-    mov  [esp+36],eax
-    ret
-  nosr:
+           cmp eax, 6
+           ja msset
+           jmp [mousefn+eax*4]
+msscreen:
+           mov  eax,[0xfb0a]
+           shl  eax,16
+           mov  ax,[0xfb0c]
+           mov  [esp+36],eax
+           ret
+mswin:
+           mov  eax,[0xfb0a]
+           shl  eax,16
+           mov  ax,[0xfb0c]
+           mov  esi,[0x3010]
+           mov  bx, word [esi-twdw+WDATA.box.left]
+           shl  ebx,16
+           mov  bx, word [esi-twdw+WDATA.box.top]
+           sub  eax,ebx
 
-    cmp  eax,1
-    jnz  nowr
-    mov  eax,[0xfb0a]
-    shl  eax,16
-    mov  ax,[0xfb0c]
-    mov  esi,[0x3010]
-    mov  bx, word [esi-twdw+WDATA.box.left]
-    shl  ebx,16
-    mov  bx, word [esi-twdw+WDATA.box.top]
-    sub  eax,ebx
+           mov  edi,[CURRENT_TASK]
+           shl  edi,8
+           sub  ax,word[edi+PROC_BASE+APPDATA.wnd_clientbox.top]
+           rol  eax,16
+           sub  ax,word[edi+PROC_BASE+APPDATA.wnd_clientbox.left]
+           rol  eax,16
+           mov  [esp+36],eax
+           ret
+msbutton:
+           movzx eax,byte [0xfb40]
+           mov  [esp+36],eax
+           ret
+msset:
+           ret
 
-        mov     edi,[0x3000]
-        shl     edi,8
-        sub     ax,word[edi+0x80000+APPDATA.wnd_clientbox.top]
-        rol     eax,16
-        sub     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
-        rol     eax,16
+app_load_cursor:
+           add ebx, new_app_base
+           cmp ebx, new_app_base
+           jb msset
+           stdcall load_cursor, ebx, ecx
+           mov [esp+36], eax
+           ret
 
-    mov  [esp+36],eax
-    ret
-  nowr:
+app_set_cursor:
+           stdcall set_cursor, ebx
+           mov [esp+36], eax
+           ret
 
-    cmp   eax,2
-    jnz   nomb
-    movzx eax,byte [0xfb40]
-  nomb:
-    mov   [esp+36],eax
-
-    ret
 
 is_input:
 
@@ -3074,6 +3097,7 @@ sys_window_move:
         mov   edx, [edi + WDATA.box.height]
         add   ecx,eax
         add   edx,ebx
+
         call  calculatescreen
         popad
 
@@ -3251,7 +3275,7 @@ checkpixel:
         mov  dl, [eax+edx+display_data] ; lea eax, [...]
 
         xor  ecx, ecx
-        mov  eax, [0x3000]
+        mov  eax, [CURRENT_TASK]
         cmp  al, dl
         setne cl
 
@@ -4864,8 +4888,6 @@ undefined_syscall:                      ; Undefined system call
 ;      pop   edi
 
 ;      ret
-
-
 
 
 keymap:

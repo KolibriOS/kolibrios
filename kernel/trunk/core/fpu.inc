@@ -3,8 +3,8 @@ init_fpu:
            clts
            fninit
 
-           bt [cpu_caps], CAPS_FXSR
-           jnc .no_FXSR
+           bt [cpu_caps], CAPS_SSE
+           jnc .no_SSE
 
            stdcall kernel_alloc, 512*256
            mov [fpu_data], eax
@@ -31,7 +31,7 @@ init_fpu:
            xorps xmm7, xmm7
            fxsave [eax]
            ret
-.no_FXSR:
+.no_SSE:
            stdcall kernel_alloc, 112*256
            mov [fpu_data], eax
            mov ecx, cr0
@@ -50,7 +50,7 @@ proc fpu_save
            mov ebx, [CURRENT_TASK]
            mov [fpu_owner], ebx
 
-           bt [cpu_caps], CAPS_FXSR
+           bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
            fxsave [eax]
@@ -66,7 +66,7 @@ proc fpu_restore
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
            mov eax, [ebx+PROC_BASE+0x10]
-           bt [cpu_caps], CAPS_FXSR
+           bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
            fxrstor [eax]
@@ -91,7 +91,7 @@ e7:                        ;#NM exception handler
 
         shl ebx, 8
         mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
-        bt [cpu_caps], CAPS_FXSR
+        bt [cpu_caps], CAPS_SSE
         jnc .no_SSE
 
         fxsave [eax]

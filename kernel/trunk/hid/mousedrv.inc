@@ -41,7 +41,12 @@ draw_mouse_under:
         ; return old picture
 
         cmp [set_hw_cursor], 0
-        jz @F 
+        jz @F
+        pushad
+        movzx  eax,word [0xfb4a]
+        movzx  ebx,word [0xfb4c]
+        stdcall [hw_restore], eax, ebx
+        popad
         ret
 @@:
         pushad
@@ -83,13 +88,23 @@ save_draw_mouse:
 
         cmp [set_hw_cursor], 0
         jz @F
+        pushad
+
         mov    [0xfb4a],ax
         mov    [0xfb4c],bx
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
-        push ebx
+        movzx  eax,word [0xfb0c]
+        movzx  ebx,word [0xfb0a]
         push eax
+        push ebx
+
+        mov ecx, [0xfe00]
+        inc ecx
+        mul ecx
+        movzx edx, byte [display_data+ebx+eax]
+        shl edx, 8
+        push [edx+PROC_BASE+APPDATA.cursor]
         call [set_hw_cursor]
+        popad
         ret
 @@:
         pushad
