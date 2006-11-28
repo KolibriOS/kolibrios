@@ -1,2 +1,2 @@
-cscript cscript compile.js clean
+mingw32-make clean
 pause
