@@ -161,7 +161,7 @@ multiplier:
 ; out : CL = коэфф.умножения * 10, или 0
 	xor	ecx, ecx
 if (OS_version >= 0x0510)
-	display nl, 'Multiplier : yes'
+	display nl, 'Multiplier (RDMSR) : yes'
 	cmp	dword [Vendor + 8], 'cAMD'	; Check for Advanced Micro Devices CPU
 	jne	noAMD
 	cmp	byte [CPU_fam], 5
@@ -369,3 +369,26 @@ uglobal
 	Data_String:	times 20 db 0	; ASCIIZ сторка с преобразованным числом
 endg
 ;--------------------------------------------------------------------
+ReservePorts:
+	; In  : ecx - first port, edx - last port
+	; Out : CF = 1 if error
+	pusha
+	mov	eax, 46
+	xor	ebx, ebx
+	int	0x40
+	clc
+	test	eax, eax
+	jz	@f
+	stc
+@@:	popa
+	ret
+	
+FreePorts:
+	; In  : ecx - first port, edx - last port
+	pusha
+	mov	eax, 46		; освобождаем 0x295 и 0x296 порты
+	xor	ebx, ebx
+	inc	ebx
+	int	0x40
+	popa
+	ret

@@ -912,12 +912,21 @@ reserve_irqs_ports:
 
 
                                        ; RESERVE PORTS
-        mov   edi,1                    ; 0x00-0xff
+        mov   edi,1                    ; 0x00-0xdf
         mov   [0x2d0000],edi
         shl   edi,4
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0x0
+        mov   [0x2d0000+edi+8],dword 0xdf
+        
+        inc   dword [0x2d0000]          ; 0xe5-0xff
+        mov   edi,[0x2d0000]
+        shl   edi,4
+        mov   [0x2d0000+edi+0],dword 1
+        mov   [0x2d0000+edi+4],dword 0xe5
         mov   [0x2d0000+edi+8],dword 0xff
+        
+        
 ;        cmp   [0xf604],byte 2          ; com1 mouse -> 0x3f0-0x3ff
 ;        jne   ripl1
 ;        inc   dword [0x2d0000]

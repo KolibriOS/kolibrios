@@ -4,6 +4,7 @@ lang fix en ; ru en fr ge fi
 @^ fix macro comment {
 ^@ fix }
 
+nl		equ	0x0d, 0x0a
 ;~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 macro uglobal {
   UGlobals equ UGlobals,

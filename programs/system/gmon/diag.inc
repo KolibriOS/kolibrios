@@ -21,11 +21,11 @@ d_show:
 	mov	ebx, 12 * 65536 + 13
 	xor	eax, eax
 	lodsb
-	mov	cx, 220
+	mov	cx, 240
 	sub	ecx, eax
 
 @@:	shl	ecx, 16
-	mov	cx, 220
+	mov	cx, 240
 	lodsb
 	sub	ecx, eax	
 	mov	eax, 38

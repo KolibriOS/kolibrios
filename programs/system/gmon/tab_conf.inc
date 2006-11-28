@@ -6,7 +6,7 @@
 	; Время обновления
 	mov	eax, 8
 	mov	ebx, 200 * 65536 + 15
-	mov	ecx, 260 * 65536 + 15
+	mov	ecx, 280 * 65536 + 15
 	mov	edx, 11
 	mov	esi, tcol
 	int	0x40
@@ -16,13 +16,13 @@
 	int	0x40
 	
 	mov	eax, 4
-	mov	ebx, 17 * 65536 + 265
+	mov	ebx, 17 * 65536 + 285
 	mov	edx, msg_cf_utime
 	mov	ecx, 0x10000000
 	mov	esi, 11
 	int	0x40
 	
-	mov	ebx, 205 * 65536 + 265
+	mov	ebx, 205 * 65536 + 285
 	mov	edx, msg_cf_pm
 	xor	ecx, ecx
 	mov	esi, 4
@@ -30,14 +30,14 @@
 	
 	mov	ecx, [update_time]
 	call	digit_len
-	mov	edx, 160 * 65536 + 265
+	mov	edx, 160 * 65536 + 285
 	xor	esi, esi
 	mov	eax, 47
 	int	0x40
 	
 	; Расставляем двоеточия
 	mov	eax, 4
-	mov	ebx, 152 * 65536 + 265
+	mov	ebx, 152 * 65536 + 285
 	mov	edx, dub_p
 	mov	esi, 1
 	mov	ecx, 0x10000000

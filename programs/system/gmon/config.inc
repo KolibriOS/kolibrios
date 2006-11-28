@@ -1,4 +1,3 @@
-nl		equ	0x0d, 0x0a
 
 ; 0x00xx - Menuet 0.xx
 ; 0x0400 - Kolibi 4 (новое завершение процесса)
@@ -6,3 +5,5 @@ nl		equ	0x0d, 0x0a
 ; 0x0530 - всего/свободно памяти
 ; 0x0580 - новое завершение процесса
 OS_version	equ	0x0580
+SMBus		fix	no ; yes
+

@@ -21,7 +21,7 @@
 	; Pentium (P5) button
 	mov	eax, 8
 	mov	ebx, 17 * 65536 + 145
-	mov	ecx, 277 * 65536 + 25
+	mov	ecx, 297 * 65536 + 25
 	mov	edx, 6
 	mov	esi, tcol
 	cmp	byte[Vendor + 11], 'l'
@@ -70,7 +70,7 @@ k7n:	int	0x40
 ; mmxn:	int	0x40
 	; Пишем названия кнопок
 	mov	eax, 4
-	mov	ebx, 30 * 65536 + 287
+	mov	ebx, 30 * 65536 + 307
 	mov	esi, 7
 	mov	edx, tmsg_p	; P5
 	mov	ecx, 0x10000000
@@ -78,14 +78,14 @@ k7n:	int	0x40
 	jne	nr1
 	mov	ecx, 0x10FF0000
 nr1:	int	0x40
-	mov	ebx, 30 * 65536 + 287 + 27
+	mov	ebx, 30 * 65536 + 307 + 27
 	mov	esi, 20		; P6
 	mov	ecx, 0x10000000
 	cmp	byte[test_id], 7
 	jne	nr2
 	mov	ecx, 0x10FF0000
 nr2:	int	0x40
-	mov	ebx, 30 * 65536 + 287 + 27 + 27
+	mov	ebx, 30 * 65536 + 307 + 27 + 27
 	mov	edx, tmsg_k6	; K6
 	mov	esi, 13
 	mov	ecx, 0x10000000
@@ -93,7 +93,7 @@ nr2:	int	0x40
 	jne	nr3
 	mov	ecx, 0x10FF0000
 nr3:	int	0x40
-	mov	ebx, 30 * 65536 + 287 + 27 + 27 + 27
+	mov	ebx, 30 * 65536 + 307 + 27 + 27 + 27
 	mov	edx, tmsg_k7	; K7
 	mov	esi, 15
 	mov	ecx, 0x10000000
@@ -101,7 +101,7 @@ nr3:	int	0x40
 	jne	nr4
 	mov	ecx, 0x10FF0000
 nr4:	int	0x40
-	; mov	ebx, 30 * 65536 + 287 + 27 + 27 + 27 + 27
+	; mov	ebx, 30 * 65536 + 307 + 27 + 27 + 27 + 27
 	; mov	edx, tmsg_mmx	; MMX
 	; mov	esi, 12
 	; mov	ecx, 0x10000000
@@ -111,12 +111,12 @@ nr4:	int	0x40
 ; nr5:	int	0x40
 	; recommendate
 	mov	ecx, 0x10000000
-	mov	ebx, 190 * 65536 + 400
+	mov	ebx, 190 * 65536 + 420
 	mov	edx, tmsg_rec
 	mov	esi, 14
 	int	0x40
 	; read about
-	mov	ebx, 30 * 65536 + 262
+	mov	ebx, 30 * 65536 + 282
 	mov	edx, tmsg_war
 	mov	esi, 34
 	mov	ecx, 0x10FF0000
@@ -124,7 +124,7 @@ nr4:	int	0x40
 	; recommendate color
 	mov	eax, 13
 	mov	ebx, 170 * 65536 + 10
-	mov	ecx, 398 * 65536 + 10
+	mov	ecx, 418 * 65536 + 10
 	mov	edx, atcol
 	int	0x40
 	

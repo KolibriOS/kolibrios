@@ -38,6 +38,11 @@
 ;      18/07/2006 - Уличшил вывод множителя, исправленны множители для P6 Tualatin, config.inc
 ;      22/07/2006 - P6 multiplier bugfix
 ;      30/07/2006 - P6 multiplier bugfix
+;               --- v 0.4 ---
+;      10/08/2006 - начата работа по поддержке SMBus, переписаны функции для чипов мониторинга
+;      24/08/2006 - добавленна частота процессора
+;      10/09/2006 - bugfix
+;      25/11/2006 - добавлен ABIT uGuru
 ;
 ;    Эй! У меня нет много времени.
 
@@ -46,7 +51,7 @@
 ;	system.inc	- вычисление загрузки процессора, завершение теста, etc...
 ;	tests.inc	- тесты ;-)
 ;	diag.inc	- поддержка диаграм
-;	*_tab.inc	- процедуры отрисовки соответствуюших вкладок
+;	tab_*.inc	- процедуры отрисовки соответствуюших вкладок
 
 
 ; Идентификаторы кнопок :
@@ -202,22 +207,15 @@ no_ut_dec:
 	movzx	ecx, ah
 	mov	esi, [d_colors + ecx * 4]
 	mov	eax, [esi]
-	call	next_color
-	mov	[esi], ebx
-	jmp	draw_window
-no_change_color:
-
-	jmp	wait_for_event
-;---------------------------------------------------------------------
-; Цвета графиков
-colors:	dd	0xff0000, 0xff00, 0xff, 0xffffff, tcol, 0xFF7E23, 0x8BA169, 0xff0000	; первый и последний равны
-next_color:
-	mov	ecx, (next_color - colors) / 4	; количество цветов
+	mov	ecx, (colors_end - colors) / 4	; количество цветов
 @@:	dec	ecx
 	cmp	eax, [colors + ecx * 4]
 	jne	@b
 	mov	ebx, [colors + ecx * 4 - 4]
-	ret
+	mov	[esi], ebx
+	jmp	draw_window
+no_change_color:
+	jmp	wait_for_event
 ;---------------------------------------------------------------------
 draw_window:
 	mov	eax,12
@@ -226,7 +224,7 @@ draw_window:
 	; Создаём окно
 	xor	eax, eax
 	mov	ebx, 300 * 65536 + 309
-	mov	ecx, 150 * 65536 + 430
+	mov	ecx, 150 * 65536 + 450
 	mov	edx, tcol + 0x3000000	; color of work area RRGGBB,8->color
 	mov	esi, 0x805080d0		; color of grab bar  RRGGBB,8->color
 	mov	edi, 0x005080d0		; color of frames    RRGGBB
@@ -234,20 +232,20 @@ draw_window:
 	; Создаём рамку графика
 	mov	eax, 13
 	mov	ebx, 10 * 65536 + 290
-	mov	ecx, 118 * 65536 + 105
+	mov	ecx, 138 * 65536 + 105
 	mov	edx, atcol
 	int	0x40
 	mov	ebx, 12 * 65536 + 286
-	mov	ecx, 120 * 65536 + 101
+	mov	ecx, 140 * 65536 + 101
 	mov	edx, tcol
 	int	0x40
 	mov	eax, 38
 	mov	edx, atcol
 	mov	ebx, 12 * 65536 + 286 + 12
-	mov	ecx, 120 * 65536 + 120
+	mov	ecx, 140 * 65536 + 140
 @@:	add	ecx, 10 * 65536 + 10
 	int	0x40
-	cmp	cx, 210			; привязано к координатам окна
+	cmp	cx, 230			; привязано к координатам окна
 	jl	@b
 	; Пишим заголовок
 	mov	eax, 4
@@ -310,7 +308,7 @@ draw_window:
 	cmp	byte[hwm_enable], 0
 	jne	show_mon
 	; Нет датчиков - пишем NO
-	mov	ecx, 6	;<- количество параметров
+	mov	ecx, 8	;<- количество параметров
 	mov	eax, 4
 	mov	ebx, 121 * 65536 + 50
 	mov	edx, msg_no
@@ -332,7 +330,7 @@ show_mon:
 	;---------------------------
 	; Температуру
 	mov	ecx, 3
-	mov	esi, temps
+	mov	esi, hwm_temps
 	mov	edx, 121 * 65536 + 50
 	xor	eax, eax
 sh_temp:push	ecx
@@ -360,25 +358,25 @@ sh_temp:push	ecx
 	pop	ecx
 	loop	sh_temp
 	;;--- добавляем на график temp1 ---
-	movzx	eax, word[temps]
+	movzx	eax, word[hwm_temps]
 	mov	esi, d_temp1
 	call	d_add
 	call	d_show
 	;;--- добавляем на график temp2 ---
-	movzx	eax, word[temps + 2]
+	movzx	eax, word[hwm_temps + 2]
 	mov	esi, d_temp2
 	call	d_add
 	call	d_show
 	;;--- добавляем на график temp3 ---
-	movzx	eax, word[temps + 4]
+	movzx	eax, word[hwm_temps + 4]
 	mov	esi, d_temp3
 	call	d_add
 	call	d_show
 
 	;---------------------------
 	; Скорости врашения вентилей
-	mov	ecx, 3
-	mov	esi, rpms
+	mov	ecx, 5
+	mov	esi, hwm_rpms
 	mov	edx, 121 * 65536 + 80
 sh_fan:	push	ecx
 	lodsd
@@ -400,7 +398,7 @@ sh_fan:	push	ecx
 	
 	;---------------------------
 	; Напруги
-	mov	esi, Vcore
+	mov	esi, hwm_voltages
 	mov	edi, old_volts
 	mov	ecx, 7
 	mov	ebx, 260 * 65536 + 30
@@ -441,7 +439,7 @@ volt_nxt:
 no_monitor:
 	;---------------------------
 	; Создаём кнопки вкладок
-	mov	edi, 230 * 65536 + 25
+	mov	edi, 250 * 65536 + 25
 	mov	ecx, 4
 	mov	eax, 8
 	mov	ebx, 10 * 65536 + 70
@@ -459,7 +457,7 @@ na1:	int	0x40
 	loop	n_bt
 	; Пишим названия вкладок
 	mov	eax, 4
-	mov	ebx, 35 * 65536 + 240
+	mov	ebx, 35 * 65536 + 260
 	mov	edx, tab_lab
 	mov	ecx, 0x10000000
 	mov	esi, 39
@@ -467,11 +465,11 @@ na1:	int	0x40
 	; создаём рамку внизу экрана
 	mov	eax, 13
 	mov	ebx, 10 * 65536 + 290
-	mov	ecx, 255 * 65536 + 160
+	mov	ecx, 275 * 65536 + 160
 	mov	edx, atcol
 	int	0x40
 	mov	ebx, 12 * 65536 + 286
-	mov	ecx, 257 * 65536 + 156
+	mov	ecx, 277 * 65536 + 156
 	mov	edx, tcol
 	int	0x40
 	; рисуем выбранную вкладку
@@ -490,16 +488,16 @@ end_drow_tab:
 	jmp	wait_for_event
 ;--- Drow Info tab ---------------
 info_tab:
-	include	"info_tab.inc"
+	include	"tab_info.inc"
 ;--- Drow test tab ---------------
 test_tab:
-	include "test_tab.inc"
+	include "tab_test.inc"
 ;--- Drow Config tab -------------
 config_tab:
-	include "conf_tab.inc"
+	include "tab_conf.inc"
 ;--- Drow About tab --------------
 about_tab:
-	include "abou_tab.inc"
+	include "tab_about.inc"
 ;---------------------------------------------------------------------
 	include	"system.inc"
 	include "hwm.inc"
@@ -509,7 +507,7 @@ about_tab:
 DATA
 act_tab		db	2 			; Номер активной вкладки
 tab_lab		db	'Info       Tests      Configs     About'
-title		db	'Ghost Monitor v0.3 [30/07/06]'
+title		db	'Ghost Monitor v0.4 [25/11/06]'
 
 msgs_mon mls \
 	'CPU Load (%)',\
@@ -519,7 +517,9 @@ msgs_mon mls \
 	'Temp3',\
 	'Fan1',\
 	'Fan2',\
-	'Fan3'
+	'Fan3',\
+	'Fan4',\
+	'Fan5'
 	
 msgs_mon2 mls \
 	'Vcore',\
@@ -536,6 +536,10 @@ msg_no		db	'N/A'
 update_time	dd	300			; период обновления в сотых долях секунды
 d_colors	dd	d_cpu_load, d_mem_usage, d_temp1, d_temp2, d_temp3
 c_eps		dd	0.01
+
+; Цвета графиков
+colors:		dd	0xff0000, 0xff00, 0xff, 0xffffff, tcol, 0xFF7E23, 0x8BA169, 0xff0000	; первый и последний равны
+colors_end:
 ;---------------------------------------------------------------------
 UDATA
 
