@@ -9,6 +9,7 @@
 
 
 system_shutdown:          ; shut down the system
+    call stop_all_services
 
     push 3        ; stop playing cd
     pop  eax

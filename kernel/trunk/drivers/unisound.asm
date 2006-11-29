@@ -295,8 +295,7 @@ proc START stdcall, state:dword
 
            mov eax, [state]
            cmp eax, 1
-           je .entry
-           jmp .stop
+           jne .stop
 .entry:
 
      if DEBUG
@@ -377,7 +376,6 @@ proc START stdcall, state:dword
            ret
 .stop:
            call stop
-           mov [ctrl.user_callback], 0
            ret
 endp
 
@@ -1021,6 +1019,9 @@ proc stop
 	   mov edx, PCM_OUT_LVI_REG
 	   call [ctrl.ctrl_write8]
 
+           mov ax, 0x1c
+	   mov edx, PCM_OUT_SR_REG
+	   call [ctrl.ctrl_write16]
 	   ret
 endp
 

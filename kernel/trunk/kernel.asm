@@ -1950,8 +1950,6 @@ sysfn_shutdown:         ; 18.1 = BOOT
      mov  [0x2f0000+0x9030],byte 0
   for_shutdown_parameter:
 
-     call stop_all_services
-
      mov  eax,[0x3004]
      add  eax,2
      mov  [shutdown_processes],eax

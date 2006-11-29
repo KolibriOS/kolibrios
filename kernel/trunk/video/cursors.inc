@@ -4,6 +4,24 @@ LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
 
+struc BITMAPINFOHEADER {
+  .biSize          dd ? ; DWORD
+  .biWidth         dd ? ; LONG
+  .biHeight        dd ? ; LONG
+  .biPlanes        dw ? ; WORD
+  .biBitCount      dw ? ; WORD
+  .biCompression   dd ? ; DWORD
+  .biSizeImage     dd ? ; DWORD
+  .biXPelsPerMeter dd ? ; LONG
+  .biYPelsPerMeter dd ? ; LONG
+  .biClrUsed       dd ? ; DWORD
+  .biClrImportant  dd ? ; DWORD
+}
+
+virtual at 0
+  BI BITMAPINFOHEADER
+end virtual
+
 align 4
 proc vesa_init_cursor stdcall, dst:dword, src:dword
            locals
@@ -17,9 +35,12 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            endl
 
            mov esi, [src]
-           add esi,[esi+18d]
-
+           add esi,[esi+18]
            mov eax,esi
+
+           cmp [esi+BI.biBitCount], 24
+           je .img_24
+.img_4:
            add eax, [esi]
            mov [pQuad],eax
            add eax,64
@@ -85,6 +106,52 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            sub [height],1
            jnz .l1
            ret
+.img_24:
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax, 0xC00
+           mov [pAnd],eax
+           mov eax,[esi+BI.biWidth]
+           mov [width],eax
+           mov ebx,[esi+BI.biHeight]
+           shr ebx,1
+           mov [height],ebx
+
+           mov edi, [dst]
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pAnd]
+           mov ebx, [pQuad]
+.row_24:
+           mov eax, [esi]
+           bswap eax
+           mov [counter], 32
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           mov ecx, [ebx]
+           and ecx, 0x00FFFFFF
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+           add ebx, 3
+           add edi, 4
+           dec [counter]
+           jnz @B
+
+           add esi, 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .row_24
+           ret
+
 endp
 
 align 4
@@ -379,12 +446,18 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
 
            sub edi, ecx
            cmp edi, eax
-           cmovg edi, eax
+           ;cmovg edi, eax
+           jng @F
+           mov edi, eax
+@@:
            sub edi, [_dx]
 
            sub edx, [y]
            cmp edx, eax
-           cmovg edx, eax
+           ;cmovg edx, eax
+           jng @F
+           mov edx, eax
+@@:
            sub edx, [_dy]
 
            mov [w], edi
@@ -393,7 +466,7 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            mov [cur_saved_h], edx
 
            sub eax, edi
-           lea eax, [eax+eax*2]
+           shl eax, 2       ;lea eax, [eax+eax*2]
            lea edi, [edi+edi*2]
            sub ebx, edi
            mov [cur_saved_interl], ebx
@@ -486,12 +559,18 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
 
            sub edi, ecx
            cmp edi, eax
-           cmovg edi, eax
+;           cmovg edi, eax
+           jng @F
+           mov edi, eax
+@@:
            sub edi, [_dx]
 
            sub edx, [y]
            cmp edx, eax
-           cmovg edx, eax
+;           cmovg edx, eax
+           jng @F
+           mov edx, eax
+@@:
            sub edx, [_dy]
 
            mov [w], edi
