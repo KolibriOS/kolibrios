@@ -180,7 +180,7 @@ get_number:
 	cmp	byte [ebx],'$'
 	je	pascal_hex_number
 	cmp	word [ebx],'0x'
-	je	get_hex_number
+	je	c_hex_number
 	mov	al,[esi]
 	dec	esi
 	cmp	al,'h'
@@ -279,6 +279,9 @@ get_number:
 	jz	get_bin_digit
 	or	ebp,-1
 	jmp	get_bin_digit
+      c_hex_number:
+	cmp	cl,2
+	je	bad_number
       pascal_hex_number:
 	cmp	cl,1
 	je	bad_number
@@ -2135,6 +2138,17 @@ get_address_value:
 calculate_relative_offset:
 	cmp	[value_undefined],0
 	jne	relative_offset_ok
+	test	bh,bh
+	setne	ch
+	cmp	bx,word [org_registers]
+	je	origin_registers_ok
+	xchg	bh,bl
+	xchg	ch,cl
+	cmp	bx,word [org_registers]
+	jne	invalid_value
+      origin_registers_ok:
+	cmp	cx,word [org_registers+2]
+	jne	invalid_value
 	add	eax,dword [org_origin]
 	adc	edx,dword [org_origin+4]
 	sub	eax,edi
