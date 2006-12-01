@@ -11,6 +11,12 @@ cfiles := $(foreach dir,$(DIRS),$(patsubst %.c, %.o, $(wildcard $(dir)/*.c)))
 
 .PHONY: clean all
 
+ifdef windir
+doClean = del /F /Q $(subst /,\,$(cfiles)) $(subst /,\,$(asmfiles))
+else
+doClean = rm $(cfiles) $(asmfiles)
+endif
+
 all: $(cfiles) $(asmfiles)
 	ar -ru $(LIBNAME) $^
 
@@ -20,4 +26,4 @@ $(asmfiles):
 	fasm $*.asm $*.o
 
 clean:
-	del /F /Q $(subst /,\,$(cfiles)) $(subst /,\,$(asmfiles))
+	$(doClean)
