@@ -1,19 +1,3 @@
-;
-;   This file is part of the AC97 mp3 player.
-;   (C) copyright Serge 2006
-;   email: infinity_sound@mail.ru
-;
-;   This program is free software; you can redistribute it and/or modify
-;   it under the terms of the GNU General Public License as published by
-;   the Free Software Foundation; either version 2 of the License, or
-;   (at your option) any later version.
-;
-;   This program is distributed in the hope that it will be useful,
-;   but WITHOUT ANY WARRANTY; without even the implied warranty of
-;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;   GNU General Public License for more details.
-
-
 format MS COFF
 
 include "proc32.inc"
@@ -63,27 +47,27 @@ struc CTRL_INFO
     .irq            dd  ?
     .glob_cntrl     dd  ?
     .glob_sta       dd  ?
-    .codec_io_base  dd	?
-    .ctrl_io_base   dd	?
-    .codec_mem_base dd	?
-    .ctrl_mem_base  dd	?
+    .codec_io_base  dd  ?
+    .ctrl_io_base   dd  ?
+    .codec_mem_base dd  ?
+    .ctrl_mem_base  dd  ?
     .codec_id       dd  ?
 }
 CTRL_INFO_SIZE      equ 9*4
 
 
-SND_CREATE_DEV	   equ	1
-SND_CREATE_BUFF    equ	2
-SND_PLAY	   equ	3
-SND_STOP	   equ	4
-SND_SETBUFF	   equ	5
+SND_CREATE_DEV     equ  1
+SND_CREATE_BUFF    equ  2
+SND_PLAY           equ  3
+SND_STOP           equ  4
+SND_SETBUFF        equ  5
 SND_DESTROY_BUFF   equ  6
 
-DEV_SET_BUFF	   equ	4
-DEV_NOTIFY	   equ	5
-DEV_SET_MASTERVOL  equ	6
-DEV_GET_MASTERVOL  equ	7
-DEV_GET_INFO	   equ	8
+DEV_SET_BUFF       equ  4
+DEV_NOTIFY         equ  5
+DEV_SET_MASTERVOL  equ  6
+DEV_GET_MASTERVOL  equ  7
+DEV_GET_INFO       equ  8
 
 
 align 4
@@ -170,35 +154,46 @@ endp
 
 align 4
 proc _InitHeap@4 stdcall, heap_size:dword
-	          push ebx
-	          mov eax, 68
-	          mov ebx, 11
+                  push ebx
+                  mov eax, 68
+                  mov ebx, 11
               mov ecx, [heap_size]
-	          int 0x40
-	          pop ebx
-	          ret
+                  int 0x40
+                  pop ebx
+                  ret
 endp
 
 align 4
 proc _UserAlloc@4 stdcall, alloc_size:dword
-	          push ebx
-	          mov eax, 68
-	          mov ebx, 12
+                  push ebx
+                  mov eax, 68
+                  mov ebx, 12
               mov ecx, [alloc_size]
-	          int 0x40
-	          pop ebx
-	          ret
+                  int 0x40
+                  pop ebx
+                  ret
 endp
+
+;align 4
+;proc _GetNotify@4 stdcall, p_ev:dword
+;                  push ebx
+;                  mov eax, 68
+;                  mov ebx, 14
+;              mov ecx, [p_ev]
+;                  int 0x40
+;                  pop ebx
+;                  ret
+;endp
 
 align 4
 proc _GetNotify@4 stdcall, p_ev:dword
-	          push ebx
-	          mov eax, 68
-	          mov ebx, 14
-              mov ecx, [p_ev]
-	          int 0x40
-	          pop ebx
-	          ret
+                  push ebx
+                  mov eax, 68
+                  mov ebx, 14
+                  mov ecx, [p_ev]
+                  int 0x40
+                  pop ebx
+                  ret
 endp
 
 align 4
@@ -208,9 +203,9 @@ proc _CreateThread@8 stdcall, fn:dword, p_stack:dword
               mov ebx, 1
               mov ecx, [fn]
               mov edx,[p_stack]
-	          int 0x40
-	          pop ebx
-	          ret
+                  int 0x40
+                  pop ebx
+                  ret
 endp
 
 align 4
@@ -218,31 +213,31 @@ proc _GetMousePos@4 stdcall,rel_type:dword
            push ebx  
            mov eax, 37
            mov ebx, [rel_type]
-	       int 0x40
-	       pop ebx
-	       ret
+               int 0x40
+               pop ebx
+               ret
 endp
 
 align 4
 proc CallServiceEx stdcall, ioctl:dword
-	      push ebx
-	      mov eax, 68
-	      mov ebx, 17
+              push ebx
+              mov eax, 68
+              mov ebx, 17
           mov ecx, [ioctl]
-	      int 0x40
-	      pop ebx
-	      ret
+              int 0x40
+              pop ebx
+              ret
 endp
 
 align 4
 proc _GetService@4 stdcall, name:dword
            push ebx
            mov eax, 68
-	       mov ebx, 16
+               mov ebx, 16
            mov ecx, [name]
-	       int 0x40
-	       pop ebx
-	       ret
+               int 0x40
+               pop ebx
+               ret
 endp
 
 align 4
@@ -271,7 +266,7 @@ proc _GetDevInfo@8 stdcall, hSrv:dword, p_info:dword
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -299,7 +294,7 @@ proc _GetMasterVol@8 stdcall, hSrv:dword,pvol:dword
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -328,7 +323,7 @@ proc _SetMasterVol@8 stdcall,hSrv:dword,vol:dword
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -357,7 +352,7 @@ proc _CreateBuffer@8 stdcall, hSound:dword,format:dword
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -386,7 +381,7 @@ proc _DestroyBuffer@8 stdcall, hSound:dword, str:dword
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -415,7 +410,7 @@ proc _SetBuffer@20 stdcall,hSound:dword, str:dword, src:dword, offs:dword, size:
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -444,7 +439,7 @@ proc _PlayBuffer@8 stdcall, hSound:dword, str:dword
            lea eax, [handle]
            stdcall CallServiceEx, eax
            pop ebx
-	       ret
+               ret
 endp
 
 align 4
@@ -564,10 +559,10 @@ _write_text@20:
 align 4
 proc _debug_out@4 stdcall, val:dword
            push ebx
-           mov	ecx,[val]
-           mov	ebx,1
-           mov	eax,63
-           int	0x40
+           mov  ecx,[val]
+           mov  ebx,1
+           mov  eax,63
+           int  0x40
            pop ebx
            ret
 endp           
@@ -633,7 +628,7 @@ dwords:
         shr     ecx,2           
         jz      tail        
 
-		cld	
+                cld     
         rep     stosd
 main_loop_tail:
         test    edx,edx    
@@ -656,6 +651,51 @@ finish:
 toend:
         mov     eax,[esp + 4] 
 
+        ret
+
+public _allmul
+
+_allmul: 
+        mov eax, [esp+8]
+        mov ecx, [esp+16]
+        or ecx,eax         
+        mov ecx, [esp+12]
+        jnz .hard     
+        mov eax, [esp+4]
+        mul ecx
+        ret 16   
+.hard:
+        push ebx
+        mul ecx       
+        mov ebx,eax
+        mov eax, [esp+8]
+        mul dword [esp+20]
+        add ebx,eax         
+        mov eax,[esp+8]
+        mul ecx             
+        add edx,ebx      
+        pop ebx
+        ret 16    
+
+align 4
+_allshr:
+        cmp cl,64
+        jae .sign
+
+        cmp cl, 32
+        jae .MORE32
+        shrd eax,edx,cl
+        sar edx,cl
+        ret
+.MORE32:
+        mov     eax,edx
+        sar     edx,31
+        and     cl,31
+        sar     eax,cl
+        ret
+.sign:
+        sar     edx,31
+        mov     eax,edx
         ret
 
 public __ftol2_sse

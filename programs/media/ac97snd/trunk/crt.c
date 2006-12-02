@@ -4,10 +4,12 @@
 
 char pureCallMessage[] = "PURE function call!";
 
-char *__argv = 0;
+char *__argv[2];
+int __argc;
 
 void (__cdecl *atExitList[atexitBufferSize])();
 int atExitFnNum = 0;
+int main(int argc, char *argv[]);
 
 void exit()
 {	int i;
@@ -62,8 +64,10 @@ void crtStartUp()
 		if ( *pbegin != 0 )
 			(**pbegin)();
 	}
-	__argv = *((char **)0x1C);
-	main();
+	__argc = 2;
+	__argv[0] = *((char **)0x20);
+	__argv[1] = *((char **)0x1C);
+	main(__argc, __argv);
 	exit();
 }
 

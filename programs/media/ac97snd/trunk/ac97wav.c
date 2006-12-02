@@ -14,15 +14,20 @@
 //   GNU General Public License for more details.
 
 #include "kolibri.h"
-#include "stdio.h"
+//#include "stdio.h"
 #include "string.h"
 #include "ac97wav.h"
-#include "mp3dec/mp3dec.h"
+#include "mpg/mpg123.h"
+
+#define MP3_ERROR_OUT_OF_BUFFER                 5
+int m_last_error;
 
 void thread_proc();
 void touch(char *buf, int size);
+int mp3FindSync(byte* buf, int size, int* sync);
+int stream_read_raw(struct reader *rd,unsigned char *buf, int size);
 
-extern char *__argv;
+char *fname;
 
 //extern char __path;
 
@@ -40,6 +45,10 @@ char formats[37][12] =
   "PCM_2_8_11","PCM_1_8_11","PCM_2_8_8","PCM_1_8_8"
 };
 *******/
+//int freqs[9] = {44100,48000,32000,22050,24000,16000 ,11025 ,12000 ,8000};
+ 
+struct reader rd;
+struct frame fr;
 
 DWORD hDrv;
 DWORD hSound;
@@ -55,19 +64,21 @@ DWORD status;
 DWORD offset;
 DWORD first_sync;
 
-char *testbuff;
-char *outbuf;
-char *inpbuf;
+unsigned char *testbuff;
+unsigned char *outbuf;
+unsigned char *inpbuf;
+unsigned char *outPtr;
+
 int inpsize;
 int outsize;
+int outremain;
+int totalout;
+int done;
 
 char srv_name[] = "INFINITY";
 char srv_intel[] = "SOUND";
 char header[] = "AC97 MP3 player";
 char buttons_text[]=" Play    Stop     <<      >>     Vol-    Vol+";
-
-MPEG_DECODE_INFO mpginfo;
-MPEG_DECODE_PARAM param;
 
 void (*snd_play)();
 
@@ -88,8 +99,8 @@ void draw_window()
    draw_bar(7,41,286,11,0x404040);
 
    draw_bar(7,55,286,11,0x404040);
-   write_text(12,58,0x004000|FONT0, __argv, strlen(__argv));
-   write_text(11,57,0x00FF20|FONT0, __argv, strlen(__argv));
+   write_text(12,58,0x004000|FONT0, fname, strlen(fname));
+   write_text(11,57,0x00FF20|FONT0, fname, strlen(fname));
 
    write_text(8,8,0xFFFFFF|FONT0, header, strlen(header));
    write_text(12,28,0x404040|FONT0,buttons_text,strlen(buttons_text));
@@ -100,7 +111,7 @@ void draw_window()
 
 void draw_progress_bar()
 {  DWORD x;
-   x = 286.0f * (float)offset/(float)fileinfo.size;
+   x = 286.0f * (float)(rd.filepos-rd.strremain)/(float)fileinfo.size;
    if(x==0) return;
    draw_bar(7,41,x,11,0xA0A0A0);
    draw_bar(x+7,41,286-x,11,0x404040);
@@ -115,18 +126,21 @@ void debug_out_str(char* str)
   }
 }
 
-int main()      //int argc, char *argv[])
+int main(int argc, char *argv[])      //int argc, char *argv[])
 { DWORD fmt;
    char *thread_stack;
    DWORD r_bytes;
    int retval;
 
+   fname = argv[1];
+   //debug_out_str(fname); 
+    
    InitHeap(1024*1024);
-   if(get_fileinfo(__argv, &fileinfo)==FILE_NOT_FOUND)
+   if(get_fileinfo(fname, &fileinfo)==FILE_NOT_FOUND)
       return 0;
 
    if((hDrv=GetService(srv_intel))==0)
-     return 0;
+      return 0;
 
    if ((hSound=GetService(srv_name))==0)
      return 0;
@@ -139,35 +153,38 @@ int main()      //int argc, char *argv[])
       SetMasterVol(hDrv,m_vol);
    };
 
-   _asm {fninit};
-   mp3DecodeInit();
-      
    testbuff = UserAlloc(4096); 
-   get_fileinfo(__argv, &fileinfo);
+   get_fileinfo(fname, &fileinfo);
    offset = 0;
-   retval=read_file (__argv,testbuff,0,2048,&r_bytes);
+   retval=read_file (fname,testbuff,0,2048,&r_bytes);
    if (retval) return 0; 
+
+   inpbuf = UserAlloc(0x10000);
+   touch(inpbuf, 0x10000);
    
+   create_reader(&rd, inpbuf, 0x10000);
+   init_reader(&rd,fname);
+
    fmt = test_wav((WAVEHEADER*)testbuff);
    if (fmt != 0)
    {
      snd_play = &play_wave;
+     set_reader(&rd, 44);
      outbuf = UserAlloc(32*1024);
      touch(outbuf, 32768);
-     offset = 44;
    }   
    else  
-   {  fmt = test_mp3(testbuff);
-       if(fmt ==0) return 0;
-       snd_play = &play_mp3;
+   {   fmt = test_mp3(testbuff);
+        if(fmt ==0) return 0;
+        snd_play = &play_mp3;
        
-       inpsize = mpginfo.maxInputSize*30;
-       inpbuf =  UserAlloc(inpsize);
-       touch(inpbuf, inpsize);
-       outsize = mpginfo.outputSize*30+0x10000;
-       outbuf = UserAlloc(outsize);
-       touch(outbuf, outsize);
-       first_sync = offset;
+        outremain = 0x40000 ;
+        outbuf = UserAlloc(outremain);
+        touch(outbuf, outremain);
+        make_decode_tables(32767);
+              init_layer2();
+              init_layer3(SBLIMIT);
+              fr.single = -1;
    };
 
    status = ST_PLAY;
@@ -202,134 +219,129 @@ int main()      //int argc, char *argv[])
 
 void touch(char *buf, int size)
 { int i;
+   char a;
     for ( i = 0;i < size; i+=4096)
-      buf[i] = 0; 
+      a = buf[i]; 
 };
 
 DWORD test_mp3(char *buf)
-{  int retval;
-    int sync;
+{  unsigned long hdr; 
     WAVEHEADER whdr; 
-    DWORD r_bytes=2048; 
      
-    for (;;)
-    {
-    	  if (!mp3FindSync(buf, 2048, &sync))
-     	    offset+= 2048;
-        else break;
-        
-        if (offset >= fileinfo.size || offset >= 102400)
-            return 0;
-
-        retval = read_file (__argv,buf,offset,2048,&r_bytes);
-    	  if(retval != 0)  return 0;
-	  };
-    offset+=sync;
-    retval = read_file (__argv,buf,offset,2048,&r_bytes);
- 	  if(retval != 0) return 0;
- 	  
-  	mp3GetDecodeInfo(buf, r_bytes, &mpginfo, 1);
+    while (1)
+    {  if(rd.filepos > 102400)
+          return 0; 
+        if(!rd.head_read(&rd,&hdr))
+                        return 0;
+        if(!decode_header(&fr,hdr))
+        {  rd.strpos-=3;
+            rd.stream-=3;
+            rd.strremain+=3;
+            continue;
+        };
+        break;
+          };
+          
+    first_sync = rd.filepos-rd.strremain-4;
+          
     whdr.riff_id = 0x46464952;
     whdr.riff_format = 0x45564157;
     whdr.wFormatTag = 0x01;
-    whdr.nSamplesPerSec = mpginfo.frequency;
-    whdr.nChannels = mpginfo.channels;
-    whdr.wBitsPerSample = mpginfo.bitsPerSample;
+    whdr.nSamplesPerSec = freqs[fr.sampling_frequency];
+    whdr.nChannels = 2; //mpginfo.channels;
+    whdr.wBitsPerSample = 16;
     
     return test_wav(&whdr);
 };
+
 void wave_out(char* buff)
-{ DWORD ev[2];
+{ DWORD ev[6];
 
    GetNotify(&ev[0]);
    SetBuffer(hSound,hBuff,buff,ev[1],0x8000);
 }
 
 void play_mp3()
-{  int retval; 
-    DWORD r_bytes;
-    char *inpPtr;
-    char *outPtr;
-    int inpBytes;
+{  char *outPtr;
     int totalout;
-    
-    offset = first_sync;
-    
-    retval = read_file (__argv,inpbuf,offset,inpsize,&r_bytes);
- 	  if(retval != 0)
- 	  {  status =  ST_STOP;
- 	      return ;
-    }; 
-    offset+=inpsize;
+    int outcount;
 
-    mp3DecodeStart(inpbuf, inpsize);
-  
-    inpPtr = inpbuf+mpginfo.skipSize;
-    inpBytes = inpsize-mpginfo.skipSize;
+    set_reader(&rd, first_sync);
+
     outPtr = outbuf;
     totalout=0;
-    
+    done = 0;
+
     memset(outbuf,0,0x10000); 
     SetBuffer(hSound,hBuff,outbuf,0,0x10000);
     PlayBuffer(hSound, hBuff);
 
-    _asm { fninit }
-    
     while(1)
     { if(status!=ST_PLAY)
              break;
   
-      for(;;)
-      { param.inputBuf	= inpPtr;
-	       param.inputSize	= inpBytes;
-     	   param.outputBuf	= outPtr;
-
-    	   if(!mp3DecodeFrame(&param))
-            if( mp3GetLastError()== MP3_ERROR_OUT_OF_BUFFER)
-              break;            
-
-         inpPtr += param.inputSize;
-		     inpBytes -= param.inputSize;
-         outPtr+=param.outputSize;
-         totalout+=param.outputSize;
-      };
-		  memmove(inpbuf, inpPtr, inpBytes);
-  	  retval = read_file(__argv, &inpbuf[inpBytes],offset, inpsize-inpBytes, &r_bytes);
-      offset+=r_bytes;	
- 
-	    if (r_bytes== 0)  break;	
-	    
-		  inpPtr = inpbuf;
-		  inpBytes += r_bytes;
-	    if(totalout < 32768) continue;
-	  
-	    outPtr = outbuf;    	
-	    while (totalout > 32768)
-     { wave_out(outPtr); 
-	      totalout-=0x8000; 
-	      outPtr+=0x8000;	
-      };
-      memmove(outbuf,outPtr, totalout);
-      outPtr = outbuf+totalout; 
+     for(;;)
+     {   outcount = 0;                          
+          if( !read_frame(&rd, &fr))
+          {  done = 1;
+              break; 
+          }; 
+          fr.do_layer(&fr, outPtr,&outcount);
+          outPtr+= outcount;
+          totalout+=outcount;
+          outremain-=outcount; 
+          if(outremain < outcount*2)
+            break;   
     };
+  
+    if(done)
+    { if(totalout < 32768)
+            {  memset(outPtr,0,32768-totalout); 
+                totalout = 32768;
+      };
+    };
+    if(totalout < 32768)
+      continue;
+/*       
+     _asm
+  {  push edx
+      push eax 
+      mov eax, 0xFF
+      mov edx, 0x400
+      out dx, al
+      pop eax
+      pop edx  
+  };  
+*/      
+    outPtr = outbuf;      
+    while (totalout > 32768)
+    { wave_out(outPtr);
+             totalout-=0x8000; 
+             outPtr+=0x8000;
+             outremain+=0x8000; 
+    };
+    if(done) break;  
+    memmove(outbuf,outPtr, totalout);
+    outPtr = outbuf+totalout;
+   } 
+  
     if(status != ST_EXIT)
     status =  ST_STOP;
 };
 
 void play_wave()
-{
+{ DWORD ev[6];
    int retval;
    int remain;
    int i;
 
-   offset = 44;
+//   offset = 44;
 
-   read_file (__argv,outbuf,offset,32*1024,0);
-   offset+=32*1024;
+//   read_file (fname,outbuf,offset,32*1024,0);
+//   offset+=32*1024;
+   stream_read_raw(&rd,outbuf,32768);
    SetBuffer(hSound,hBuff,outbuf,0,0x8000);
-
-   read_file (__argv,outbuf,offset,32*1024,0);
-   offset+=32*1024;
+   stream_read_raw(&rd,outbuf,32768);
    SetBuffer(hSound,hBuff,outbuf,0x8000,0x8000);
 
    PlayBuffer(hSound, hBuff);
@@ -337,28 +349,14 @@ void play_wave()
    retval = 0;
    while(1)
    {
-     if(status!=ST_PLAY)
-       break;
+      if(status!=ST_PLAY)
+        break;
 
-     GetNotify(&event[0]);
-     if(retval == FILE_EOF)
-       break;
-     remain = fileinfo.size-offset;
-     if(remain >=32768)
-     { retval = read_file (__argv,outbuf,offset,32*1024,0);
-       offset+=32*1024;
-       SetBuffer(hSound,hBuff,outbuf,event[1],0x8000);
-       continue;
-     };
-     if(remain == 0)
-     { retval = FILE_EOF;
-       continue;
-     };
-     read_file (__argv,outbuf,offset,remain,0);
-     for(i=remain;i<32768;i++)
-       outbuf[i] = 0;
-     SetBuffer(hSound,hBuff,outbuf,event[1],0x8000);
-     retval= FILE_EOF;
+      if( !stream_read_raw(&rd,outbuf,32768))
+      {  done = 1;
+          break; 
+      }; 
+      wave_out(outbuf);
    };
 
    if(status != ST_EXIT)
@@ -371,7 +369,7 @@ void snd_stop()
 };
 
 void thread_proc()
-{ int evnt;
+{  int evnt;
    int pos;
    int key;
 
@@ -449,10 +447,11 @@ void thread_proc()
            case 0x30:
             if(status==ST_DONE)
               break;
-            if(snd_play == play_mp3)
-              continue;   
+//            if(snd_play == play_mp3)
+//              continue;   
             pos = (GetMousePos(REL_WINDOW)>>16)-7;
             offset = ((fileinfo.size-44)/286*pos+44)&0xFFFFFFFC;
+            set_reader(&rd, offset); 
             draw_progress_bar();
             break;
         };
@@ -632,7 +631,8 @@ int wait_for_event(int time)
 }; 
  
 int wait_for_event_infinite()
-{ int retval;
+{   void *a;
+     int retval;
   _asm
   {  mov  eax,10
       int  0x40
@@ -657,8 +657,10 @@ void EndDraw()
   };  
 };
 
-void * __cdecl memmove ( void * dst, const void * src, size_t count)
-{ void * ret = dst;
+///*********
+void *memmove ( void * dst, void * src, int count)
+{ void *ret;
+  ret = dst;
 
   if (dst <= src || (char *)dst >= ((char *)src + count))
   {
@@ -678,11 +680,19 @@ void * __cdecl memmove ( void * dst, const void * src, size_t count)
               src = (char *)src - 1;
           }
     }
-    return(ret);
+    return ret;
 };
+//**********/
 
-
-
+void * __cdecl mem_cpy(void * dst,const void * src,size_t count)
+{    void * ret = dst;
+      while (count--)
+      {  *(char *)dst = *(char *)src;
+          dst = (char *)dst + 1;
+          src = (char *)src + 1;
+      };
+      return(ret);
+}
 
 //   debug_out_str(formats[fmt]);
 //   debug_out_str("\x0D\x0A\x00");

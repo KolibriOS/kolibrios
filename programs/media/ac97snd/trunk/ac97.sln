@@ -9,6 +9,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pow_test", "pow_test\pow_te
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ac97", "ac97\ac97.vcproj", "{1C94A897-DA4F-45B2-B8A6-B97AD837828E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mpg", "mpg\mpg.vcproj", "{CF807B93-2860-41DF-A4D2-5B92B52DFD96}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -31,6 +33,10 @@ Global
 		{1C94A897-DA4F-45B2-B8A6-B97AD837828E}.Debug|Win32.Build.0 = Debug|Win32
 		{1C94A897-DA4F-45B2-B8A6-B97AD837828E}.Release|Win32.ActiveCfg = Release|Win32
 		{1C94A897-DA4F-45B2-B8A6-B97AD837828E}.Release|Win32.Build.0 = Release|Win32
+		{CF807B93-2860-41DF-A4D2-5B92B52DFD96}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CF807B93-2860-41DF-A4D2-5B92B52DFD96}.Debug|Win32.Build.0 = Debug|Win32
+		{CF807B93-2860-41DF-A4D2-5B92B52DFD96}.Release|Win32.ActiveCfg = Release|Win32
+		{CF807B93-2860-41DF-A4D2-5B92B52DFD96}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

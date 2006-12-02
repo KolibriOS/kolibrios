@@ -67,6 +67,7 @@ typedef struct
     DWORD    mod_time;
     DWORD    mod_date;
     DWORD    size;
+    DWORD    size_high; 
 } FILEINFO;
 
 void  _stdcall InitHeap(int heap_size);
@@ -93,15 +94,15 @@ int _stdcall get_fileinfo(char *name,FILEINFO* pinfo);
 int _stdcall read_file (char *name,char*buff,int offset,int count,int *reads);
 
 void exit();
-int get_key(void);
-int get_button_id();
+int _cdecl get_key(void);
+int _cdecl get_button_id();
 void delay(int val);
 int wait_for_event(int time);
 int wait_for_event_infinite();
 void BeginDraw(void);
 void EndDraw(void);
 void _stdcall DrawWindow(int x,int y, int sx, int sy,int workcolor,int style,
-			       int captioncolor,int windowtype,int bordercolor);
+                               int captioncolor,int windowtype,int bordercolor);
 void _stdcall debug_out(int ch);
 void _stdcall make_button(int x, int y, int xsize, int ysize, int id, int color);
 void _stdcall draw_bar(int x, int y, int xsize, int ysize, int color);
