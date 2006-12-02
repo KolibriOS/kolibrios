@@ -28,6 +28,7 @@ PROC_BASE             equ OS_BASE+0x0080000
 
 public START
 public service_proc
+public version
 
 extrn AttachIntHandler
 extrn SysMsgBoardStr
@@ -46,6 +47,7 @@ extrn GetService
 extrn ServiceHandler
 extrn FpuSave
 extrn FpuRestore
+extrn SendEvent
 
 SND_CREATE_BUFF     equ 2
 SND_PLAY            equ 3
@@ -74,11 +76,9 @@ section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
-           mov eax, [state]
-           cmp eax, 1
-           je .entry
-           jmp .exit
-.entry:
+           cmp [state], 1
+           jne .exit
+
            stdcall GetService, szSound
            test eax, eax
            jz .fail
@@ -102,22 +102,22 @@ proc START stdcall, state:dword
 
            stdcall set_handler, [hSound], new_mix
            stdcall RegService, szInfinity, service_proc
-	   ret
+           ret
 .fail:
      if DEBUG
-	   mov esi, msgFail
+           mov esi, msgFail
            call SysMsgBoardStr
      end if
 .exit:
-	   xor eax, eax
-	   ret
+           xor eax, eax
+           ret
 
 .out_of_mem:
      if DEBUG
            mov esi, msgMem
            call SysMsgBoardStr
      end if
-	   xor eax, eax
+           xor eax, eax
            ret
 endp
 
@@ -134,21 +134,21 @@ proc service_proc stdcall, ioctl:dword
            mov edi, [ioctl]
            mov eax, [edi+io_code]
 
-	   cmp eax, SND_CREATE_BUFF
-	   jne @F
+           cmp eax, SND_CREATE_BUFF
+           jne @F
            mov ebx, [edi+input]
            stdcall CreateBuffer,[ebx]
-	   ret
+           ret
 @@:
-	   cmp eax, SND_PLAY
-	   jne @F
+           cmp eax, SND_PLAY
+           jne @F
 
            mov ebx, [edi+input]
-	   stdcall play_buffer, [ebx]
-	   ret
+           stdcall play_buffer, [ebx]
+           ret
 @@:
-	   cmp eax, SND_STOP
-	   jne @F
+           cmp eax, SND_STOP
+           jne @F
 
 ;       if DEBUG
 ;	   mov esi, msgStop
@@ -156,27 +156,27 @@ proc service_proc stdcall, ioctl:dword
 ;       end if
 
            mov ebx, [edi+input]
-	   stdcall stop_buffer, [ebx]
-	   ret
+           stdcall stop_buffer, [ebx]
+           ret
 @@:
-	   cmp eax, SND_SETBUFF
-	   jne @F
+           cmp eax, SND_SETBUFF
+           jne @F
 
            mov ebx, [edi+input]
-	   mov eax, [ebx+4]
-	   add eax, new_app_base
-	   stdcall set_buffer, [ebx],eax,[ebx+8],[ebx+12]
-	   ret
+           mov eax, [ebx+4]
+           add eax, new_app_base
+           stdcall set_buffer, [ebx],eax,[ebx+8],[ebx+12]
+           ret
 @@:
            cmp eax, SND_DESTROY_BUFF
-	   jne @F
+           jne @F
 
            mov ebx, [edi+input]
            stdcall DestroyBuffer, [ebx]
-	   ret
+           ret
 @@:
-	   xor eax, eax
-	   ret
+           xor eax, eax
+           ret
 endp
 
 restore   handle
@@ -191,54 +191,54 @@ CURRENT_TASK  equ 0x0003000
 
 align 8
 proc CreateBuffer stdcall, format:dword
-	   locals
-	      str dd ?
-	   endl
+           locals
+             str dd ?
+           endl
 
-	   call alloc_stream
-	   and eax, eax
-	   jz .fail
-	   mov [str], eax
+           call alloc_stream
+           and eax, eax
+           jz .fail
+           mov [str], eax
            mov edi, eax
 
-	   mov edx, [stream_count]
-	   mov [stream_list+edx*4], eax
-	   inc [stream_count]
+           mov edx, [stream_count]
+           mov [stream_list+edx*4], eax
+           inc [stream_count]
 
-	   mov [edi+STREAM.magic], 'WAVE'
-	   mov [edi+STREAM.size], STREAM_SIZE
+           mov [edi+STREAM.magic], 'WAVE'
+           mov [edi+STREAM.size], STREAM_SIZE
 
            stdcall KernelAlloc, 180*1024
 
-	   mov edi, [str]
-	   mov [edi+STREAM.base], eax
-	   mov [edi+STREAM.curr_seg], eax
-	   mov [edi+STREAM.notify_off1], eax
-	   add eax, 0x8000
-	   mov [edi+STREAM.notify_off2], eax
-	   add eax, 0x7FFF
-	   mov [edi+STREAM.limit], eax
+           mov edi, [str]
+           mov [edi+STREAM.base], eax
+           mov [edi+STREAM.curr_seg], eax
+           mov [edi+STREAM.notify_off1], eax
+           add eax, 0x8000
+           mov [edi+STREAM.notify_off2], eax
+           add eax, 0x7FFF
+           mov [edi+STREAM.limit], eax
 
-	   inc eax
+           inc eax
 
-	   mov [edi+STREAM.work_buff], eax
-	   mov [edi+STREAM.work_read], eax
-	   mov [edi+STREAM.work_write], eax
-	   mov [edi+STREAM.work_count], 0
-	   add eax, 0x10000
-	   mov [edi+STREAM.work_top], eax
-	   add eax, 1024*32
-	   mov [edi+STREAM.r_buff], eax
+           mov [edi+STREAM.work_buff], eax
+           mov [edi+STREAM.work_read], eax
+           mov [edi+STREAM.work_write], eax
+           mov [edi+STREAM.work_count], 0
+           add eax, 0x10000
+           mov [edi+STREAM.work_top], eax
+           add eax, 1024*32
+           mov [edi+STREAM.r_buff], eax
 
-	   mov ebx, [CURRENT_TASK]
+           mov ebx, [CURRENT_TASK]
            shl ebx, 5
            mov eax, [0x3000+ebx+4]
 
-	   mov [edi+STREAM.notify_task], eax
+           mov [edi+STREAM.notify_task], eax
 
-	   mov eax, [format]
-	   mov [edi+STREAM.format], eax
-	   mov [edi+STREAM.flags], SND_STOP
+           mov eax, [format]
+           mov [edi+STREAM.format], eax
+           mov [edi+STREAM.flags], SND_STOP
 
            xor ebx, ebx
            cmp eax, 19
@@ -247,7 +247,7 @@ proc CreateBuffer stdcall, format:dword
 @@:
            mov [edi+STREAM.r_silence], ebx
 
-	   shl eax, 4
+           shl eax, 4
            mov ebx, [resampler_params+eax]
            mov ecx, [resampler_params+eax+4]
            mov edx, [resampler_params+eax+8]
@@ -256,50 +256,50 @@ proc CreateBuffer stdcall, format:dword
            mov [edi+STREAM.r_end], ecx
            mov [edi+STREAM.r_dt],  edx
 
-	   mov ebx, [resampler_params+eax+12]
-	   mov [edi+STREAM.resample], ebx
+           mov ebx, [resampler_params+eax+12]
+           mov [edi+STREAM.resample], ebx
 
-	   mov edi, [edi+STREAM.base]
-	   mov ecx, 180*1024/4
-	   xor eax, eax
-	   rep stosd
+           mov edi, [edi+STREAM.base]
+           mov ecx, 180*1024/4
+           xor eax, eax
+           rep stosd
 
-	   mov eax, [str]
-	   ret
+           mov eax, [str]
+           ret
 
 .fail:
-	   xor eax, eax
-	   ret
+           xor eax, eax
+           ret
 endp
 
 align 4
 pid_to_slot:
 
-    push   ebx
-    push   ecx
-    mov    ebx,[TASK_COUNT]
-    shl    ebx,5
-    mov    ecx,2*32
+           push   ebx
+           push   ecx
+           mov    ebx,[TASK_COUNT]
+           shl    ebx,5
+           mov    ecx,2*32
 .loop:
-    cmp    byte [CURRENT_TASK+ecx+0xa],9
-    jz     .endloop              ;skip empty slots
-    cmp    [CURRENT_TASK+ecx+0x4],eax ;check PID
-    jz     .pid_found
+           cmp    byte [CURRENT_TASK+ecx+0xa],9
+           jz     .endloop              ;skip empty slots
+           cmp    [CURRENT_TASK+ecx+0x4],eax ;check PID
+           jz     .pid_found
 .endloop:
-    add    ecx,32
-    cmp    ecx,ebx
-    jle    .loop
-    pop    ecx
-    pop    ebx
-    xor    eax,eax
-    ret
+           add    ecx,32
+           cmp    ecx,ebx
+           jle    .loop
+           pop    ecx
+           pop    ebx
+           xor    eax,eax
+           ret
 
 .pid_found:
-    shr    ecx,5
-    mov    eax,ecx
-    pop    ecx
-    pop    ebx
-    ret
+           shr    ecx,5
+           mov    eax,ecx
+           pop    ecx
+           pop    ebx
+           ret
 
 align 4
 proc DestroyBuffer stdcall, str:dword
@@ -307,15 +307,15 @@ proc DestroyBuffer stdcall, str:dword
            mov esi, [str]
 
            cmp [esi+STREAM.magic], 'WAVE'
-	   jne .fail
+           jne .fail
 
            cmp [esi+STREAM.size], STREAM_SIZE
-	   jne .fail
+           jne .fail
 
            stdcall KernelFree, [esi+STREAM.base]
 
            mov eax, [str]
-	   call free_stream
+           call free_stream
 
            mov edi, [str]
            mov ecx, STREAM_SIZE/4
@@ -333,8 +333,8 @@ proc DestroyBuffer stdcall, str:dword
            dec ecx
            jnz @B
            xor eax, eax
-	   inc eax
-	   ret
+           inc eax
+           ret
 .remove:
            mov edi, esi
            add esi, 4
@@ -342,208 +342,203 @@ proc DestroyBuffer stdcall, str:dword
            rep movsd
            dec [stream_count]
            xor eax, eax
-	   inc eax
-	   ret
+           inc eax
+           ret
 .fail:
-	   xor eax, eax
-	   ret
+           xor eax, eax
+           ret
 endp
 
 align 4
 proc play_buffer stdcall, str:dword
 
-	   mov ebx, [str]
+           mov ebx, [str]
 
-	   cmp [ebx+STREAM.magic], 'WAVE'
-	   jne .fail
+           cmp [ebx+STREAM.magic], 'WAVE'
+           jne .fail
 
-	   cmp [ebx+STREAM.size], STREAM_SIZE
-	   jne .fail
+           cmp [ebx+STREAM.size], STREAM_SIZE
+           jne .fail
 
-	   mov [ebx+STREAM.flags], SND_PLAY
+           mov [ebx+STREAM.flags], SND_PLAY
 
-	   mov eax,[ebx+STREAM.work_buff]
-	   mov [ebx+STREAM.work_read], eax
-	   mov [ebx+STREAM.work_write], eax
-	   mov [ebx+STREAM.work_count], 0
+           mov eax,[ebx+STREAM.work_buff]
+           mov [ebx+STREAM.work_read], eax
+           mov [ebx+STREAM.work_write], eax
+           mov [ebx+STREAM.work_count], 0
 
-	   mov eax, [ebx+STREAM.base]
-	   mov [ebx+STREAM.curr_seg], eax
+           mov eax, [ebx+STREAM.base]
+           mov [ebx+STREAM.curr_seg], eax
 
-	   mov esi, [ebx+STREAM.curr_seg]
-	   mov edi, [ebx+STREAM.work_write]
-	   mov edx, [ebx+STREAM.r_buff]
+           mov esi, [ebx+STREAM.curr_seg]
+           mov edi, [ebx+STREAM.work_write]
+           mov edx, [ebx+STREAM.r_buff]
 
-	   mov ecx, 32
+           mov ecx, 32
            mov eax, [ebx+STREAM.r_silence]
 @@:
-	   mov [edx], eax
-	   add edx, 4
-	   dec ecx
-	   jnz @B
+           mov [edx], eax
+           add edx, 4
+           dec ecx
+           jnz @B
 
-	   mov edx, [ebx+STREAM.r_buff]
+           mov edx, [ebx+STREAM.r_buff]
 
-	   stdcall [ebx+STREAM.resample], edi, esi, edx,\
-	      [ebx+STREAM.r_dt],[ebx+STREAM.r_size],[ebx+STREAM.r_end]
+           stdcall [ebx+STREAM.resample], edi, esi, edx,\
+           [ebx+STREAM.r_dt],[ebx+STREAM.r_size],[ebx+STREAM.r_end]
 
-	   mov ebx, [str]
+           mov ebx, [str]
 
-	   add [ebx+STREAM.work_count], eax;
-	   add [ebx+STREAM.work_write], eax;
+           add [ebx+STREAM.work_count], eax;
+           add [ebx+STREAM.work_write], eax;
 
-	   mov eax, [ebx+STREAM.r_size]
-	   add [ebx+STREAM.curr_seg], eax
+           mov eax, [ebx+STREAM.r_size]
+           add [ebx+STREAM.curr_seg], eax
 
 ;       if DEBUG
 ;	   mov esi, msgPlay
 ;	   call   [SysMsgBoardStr]
 ;       end if
 
-	   stdcall  dev_play, [hSound]
-
-	   xor eax, eax
-	   inc eax
-	   ret
-
+           stdcall  dev_play, [hSound]
+           xor eax, eax
+           inc eax
+           ret
 .fail:
-	   xor eax, eax
-	   ret
-
+           xor eax, eax
+           ret
 endp
 
 align 4
 proc stop_buffer stdcall, str:dword
 
-	   mov edi, [str]
+           mov edi, [str]
 
-	   cmp [edi+STREAM.magic], 'WAVE'
-	   jne .fail
+           cmp [edi+STREAM.magic], 'WAVE'
+           jne .fail
 
-	   cmp [edi+STREAM.size], STREAM_SIZE
-	   jne .fail
+           cmp [edi+STREAM.size], STREAM_SIZE
+           jne .fail
 
-	   mov [edi+STREAM.flags], SND_STOP
+           mov [edi+STREAM.flags], SND_STOP
 
 ;           stdcall [ServiceHandler], [hSound], dword DEV_STOP, 0
 
-	   xor eax, eax
-	   inc eax
-	   ret
-
+           xor eax, eax
+           inc eax
+           ret
 .fail:
-	   xor eax, eax
-	   ret
-
+           xor eax, eax
+           ret
 endp
 
 align 4
 proc set_buffer stdcall, str:dword,src:dword,offs:dword,size:dword
 
-	   mov edx, [str]
-	   test edx, edx
-	   jz .fail
+           mov edx, [str]
+           test edx, edx
+           jz .fail
 
-	   cmp [edx+STREAM.magic], 'WAVE'
-	   jne .fail
+           cmp [edx+STREAM.magic], 'WAVE'
+           jne .fail
 
-	   cmp [edx+STREAM.size], STREAM_SIZE
-	   jne .fail
+           cmp [edx+STREAM.size], STREAM_SIZE
+           jne .fail
 
-	   mov esi,[src]
-	   test esi, esi
-	   jz .fail
+           mov esi,[src]
+           test esi, esi
+           jz .fail
 
            cmp esi, new_app_base
            jb .fail
 
-	   mov ecx, [size]
-	   test ecx, ecx
-	   jz .fail
+           mov ecx, [size]
+           test ecx, ecx
+           jz .fail
 
-	   mov eax, [edx+STREAM.base]
-	   add eax, [offs]
+           mov eax, [edx+STREAM.base]
+           add eax, [offs]
 
            cmp eax, [edx+STREAM.base]
            jb .fail
 
-	   mov edi, eax
-	   add eax, ecx
-	   sub eax, 1
+           mov edi, eax
+           add eax, ecx
+           sub eax, 1
 
-	   cmp eax, [edx+STREAM.limit]
+           cmp eax, [edx+STREAM.limit]
            ja .fail
 
-	   shr ecx, 2
+           shr ecx, 2
            cld
-	   rep movsd
+           rep movsd
 
-	   xor eax, eax
-	   inc eax
-	   ret
+           xor eax, eax
+           inc eax
+           ret
 .fail:
-	   xor eax, eax
-	   ret
+           xor eax, eax
+           ret
 endp
 
 align 4
 proc alloc_stream
 
-	   mov esi, stream_map
+           mov esi, stream_map
 
-	   pushf
-	   cli
+           pushf
+           cli
 
-	   bsf eax, [esi]
-	   jnz .find
-	   popf
-	   xor eax, eax
-	   ret
-
-.find:	   btr [esi], eax
-	   popf
-	   mov ebx, STREAM_SIZE
-	   mul ebx
-	   add eax, stream
-	   ret
+           bsf eax, [esi]
+           jnz .find
+           popf
+           xor eax, eax
+           ret
+.find:
+           btr [esi], eax
+           popf
+           mov ebx, STREAM_SIZE
+           mul ebx
+           add eax, stream
+           ret
 endp
 
 align 4
 proc free_stream
-	   sub eax, stream
+           sub eax, stream
            mov ebx, STREAM_SIZE
-	   xor edx, edx
-	   div ebx
+           xor edx, edx
+           div ebx
 
-	   and edx, edx
+           and edx, edx
            jnz .err
 
-	   bts [stream_map], eax
-
-	   ret
+           bts [stream_map], eax
+           ret
 .err:
            xor eax, eax
-	   ret
+           ret
 endp
 
 align 4
 proc check_stream
 
-	   xor edx, edx
-	   mov ecx, [play_count]
+           xor edx, edx
+           mov ecx, [play_count]
 .l1:
-	   mov esi, [play_list+edx]
+           mov esi, [play_list+edx]
 
-	   mov eax, [esi+STR.curr_seg]
-	   cmp eax, [esi+STR.limit]
-	   jb .next
+           mov eax, [esi+STR.curr_seg]
+           cmp eax, [esi+STR.limit]
+           jb .next
 
-.m1:	   mov eax,[esi+STR.base]
-	   mov [esi+STR.curr_seg], eax
+.m1:
+           mov eax,[esi+STR.base]
+           mov [esi+STR.curr_seg], eax
 .next:
-	   add edx, 4
-	   loop .l1
-	   ret
+           add edx, 4
+           loop .l1
+           ret
 endp
 
 
@@ -552,9 +547,9 @@ proc prepare_playlist
 
 .restart:
            xor ebx, ebx
-	   xor edx, edx
-	   mov [play_count], 0
-	   mov ecx, [stream_count]
+           xor edx, edx
+           mov [play_count], 0
+           mov ecx, [stream_count]
            jcxz .exit
 .l1:
            mov esi, [stream_list+ebx]
@@ -576,18 +571,18 @@ proc prepare_playlist
            jz .fail
 
            cmp [esi+STREAM.flags], SND_PLAY;
-	   jne .next
+           jne .next
            cmp [esi+STREAM.work_count], 16384
            jb .next
 
            mov [play_list+edx], esi
-	   inc [play_count]
-	   add edx, 4
+           inc [play_count]
+           add edx, 4
 .next:
-	   add ebx, 4
-	   loop .l1
+           add ebx, 4
+           loop .l1
 .exit:
-	   ret
+           ret
 .fail:
            stdcall DestroyBuffer, esi
            jmp .restart
@@ -596,26 +591,26 @@ endp
 align 4
 proc prepare_updatelist
 
-	   xor ebx, ebx
-	   xor edx, edx
-	   mov [play_count], 0
-	   mov ecx, [stream_count]
+           xor ebx, ebx
+           xor edx, edx
+           mov [play_count], 0
+           mov ecx, [stream_count]
            jcxz .exit
 .l1:
-	   mov eax, [stream_list+ebx]
+           mov eax, [stream_list+ebx]
            test eax, eax
            jz .next
-	   cmp [eax+STREAM.flags], SND_PLAY
-	   jne .next
+           cmp [eax+STREAM.flags], SND_PLAY
+           jne .next
 
-	   mov [play_list+edx], eax
-	   inc [play_count]
-	   add edx, 4
+           mov [play_list+edx], eax
+           inc [play_count]
+           add edx, 4
 .next:
-	   add ebx, 4
-	   loop .l1
+           add ebx, 4
+           loop .l1
 .exit:
-	   ret
+           ret
 endp
 
 align 4
@@ -738,6 +733,7 @@ mm80	     dq 0x8080808080808080
 mm_mask      dq 0xFF00FF00FF00FF00
 
 stream_map   dd 0xFFFF	      ; 16
+version      dd 0x00010001
 
 szInfinity   db 'INFINITY',0
 szSound      db 'SOUND',0

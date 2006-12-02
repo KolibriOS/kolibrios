@@ -1,6 +1,10 @@
 
-DRV_ENTRY equ 1
-DRV_EXIT  equ -1
+DRV_ENTRY    equ  1
+DRV_EXIT     equ -1
+DRV_COMPAT   equ  1  ;minimal required drivers version
+DRV_CURRENT  equ  1  ;current drivers model version
+
+DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword
@@ -704,7 +708,7 @@ proc load_driver stdcall, file_name:dword
            stdcall load_file, [file_name]
 
            test eax, eax
-           jz .fail
+           jz .exit
 
            mov [coff], eax
 
@@ -775,22 +779,24 @@ proc load_driver stdcall, file_name:dword
            stdcall fix_coff_symbols, eax, [sym], [edx+CFH.nSymbols],\
                                      [strings], ebx
            test eax, eax
-           jnz @F
+           jz .link_fail
 
-           mov esi, msg_module
-           call sys_msg_board_str
-           mov esi, [file_name]
-           call sys_msg_board_str
-           mov esi, msg_CR
-           call sys_msg_board_str
-
-           stdcall kernel_free,[coff]
-           xor eax, eax
-           ret
-@@:
            mov ebx, [coff]
            add ebx, 20
            stdcall fix_coff_relocs, [coff], ebx, [sym]
+
+           mov ebx, [coff]
+           stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szVersion
+           test eax, eax
+           jz .link_fail
+
+           mov eax, [eax]
+           shr eax, 16
+           cmp eax, DRV_COMPAT
+           jb .ver_fail
+
+           cmp eax, DRV_CURRENT
+           ja .ver_fail
 
            mov ebx, [coff]
            stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szSTART
@@ -812,7 +818,32 @@ proc load_driver stdcall, file_name:dword
            mov ecx, [start]
            mov [eax+SRV.entry], ecx
            ret
+
+.ver_fail:
+           mov esi, msg_CR
+           call sys_msg_board_str
+           mov esi, [file_name]
+           call sys_msg_board_str
+           mov esi, msg_CR
+           call sys_msg_board_str
+           mov esi, msg_version
+           call sys_msg_board_str
+           mov esi, msg_www
+           call sys_msg_board_str
+           jmp .cleanup
+
+.link_fail:
+           mov esi, msg_module
+           call sys_msg_board_str
+           mov esi, [file_name]
+           call sys_msg_board_str
+           mov esi, msg_CR
+           call sys_msg_board_str
+.cleanup:
+           stdcall kernel_free,[img_base]
 .fail:
+           stdcall kernel_free, [coff]
+.exit:
            xor eax, eax
            ret
 endp
@@ -924,20 +955,19 @@ endp
 
 align 4
 proc stop_all_services
-           pushf
-           cli
-           mov eax, [srv_map]
-           not eax
-           mov [srv_map], eax
+           not [srv_map]
 .next:
            bsf eax, [srv_map]
            jnz .find
-           popf
            ret
 .find:
            btr [srv_map], eax
            shl eax,0x02
            lea eax,[srv_tab+eax+eax*8]   ;srv_tab+eax*36
+           cmp [eax+SRV.magic], ' SRV'
+           jne .next
+           cmp [eax+SRV.size], SRV_SIZE
+           jne .next
            mov ebx, [eax+SRV.entry]
            stdcall ebx, dword -1
            jmp .next
@@ -946,13 +976,11 @@ endp
 
 drv_sound      db '/rd/1/drivers/unisound.obj', 0
 drv_infinity   db '/rd/1/drivers/infinity.obj', 0
-;drv_ati2d      db '/rd/1/drivers/vesa.obj', 0
-;drv_cursor     db '/rd/1/drivers/vesa.obj',0
+drv_hw_mouse   db '/rd/1/drivers/ati2d.obj',0
 
 szSound        db 'SOUND',0
 szInfinity     db 'INFINITY',0
-;szHMouse       db 'ATI2D',0
-;szCURSOR       db 'VESACURSOR',0
+szHwMouse      db 'HWCURSOR',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
@@ -960,9 +988,12 @@ szIMPORTS      db 'IMPORTS',0
 
 msg_unresolved db 'unresolved ',0
 msg_module     db 'in module ',0
+msg_version    db 'incompatible driver version',13,10,0
+msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR         db  13,10,0
 
 align 4
+create_cursor    dd 0
 set_hw_cursor    dd 0
 hw_restore       dd 0
 
@@ -970,6 +1001,5 @@ align 16
 services:
            dd szSound,    drv_sound
            dd szInfinity, drv_infinity
-;           dd szHMouse,   drv_ati2d
-;           dd szCURSOR,   drv_cursor
+           dd szHwMouse,  drv_hw_mouse
            dd 0

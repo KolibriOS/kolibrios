@@ -1,6 +1,7 @@
 
 iglobal
   szKernel            db 'KERNEL', 0
+  szVersion           db 'version',0
   szAttachIntHandler  db 'AttachIntHandler',0
   szSysMsgBoardStr    db 'SysMsgBoardStr', 0
   szPciApi            db 'PciApi', 0
@@ -20,9 +21,11 @@ iglobal
   szFpuRestore        db 'FpuRestore',0
   szLoadCursor        db 'LoadCursor',0
   szSetHwCursor       db 'SetHwCursor',0
-  szHWRestore         db 'HWRestore', 0
+  szHwCursorRestore   db 'HwCursorRestore', 0
+  szHwCursorCreate    db 'HwCursorCreate', 0
   szLFBAddress        db 'LFBAddress',0
   szLoadFile          db 'LoadFile',0
+  szSendEvent         db 'SendEvent',0
 
 align 16
 kernel_export:
@@ -45,12 +48,13 @@ kernel_export:
   dd szFpuRestore      , fpu_restore
   dd szLoadCursor      , load_cursor
   dd szSetHwCursor     , set_hw_cursor
-  dd szHWRestore       , hw_restore
+  dd szHwCursorRestore , hw_restore
+  dd szHwCursorCreate  , create_cursor
   dd szLoadFile        , load_file
+  dd szSendEvent       , send_event
 exp_lfb:
   dd szLFBAddress      , 0
   dd 0
-
 
 endg
 

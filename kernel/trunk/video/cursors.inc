@@ -151,7 +151,6 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            sub [height],1
            jnz .row_24
            ret
-
 endp
 
 align 4
@@ -172,46 +171,21 @@ proc alloc_cursor
            ret
 .found:
            btr [ebx], eax
+           popfd
+
            mov [cursor_start],ebx
            sub ebx, cursor_map
            shl ebx, 3
            add eax,ebx
            shl eax,3
            lea eax,[cursors+eax+eax*2]
-           popfd
-           ret
-endp
-
-align 4
-proc create_cursor
-           locals
-             h_cur  dd ?
-           endl
-
-           call alloc_cursor
-           test eax, eax
-           jz .fail
-
-           mov [h_cur], eax
-           mov edi, eax
 
            xor ebx, ebx
-
-           mov [edi+CURSOR.magic], 'CURS'
-           mov [edi+CURSOR.size],  CURSOR_SIZE
-           mov [edi+CURSOR.pid], ebx
-           mov [edi+CURSOR.hot_x], ebx
-           mov [edi+CURSOR.hot_y], ebx
-
-           stdcall kernel_alloc, dword 0x2000
-           test eax, eax
-           jz .fail
-
-           mov ebx, eax
-           mov eax, [h_cur]
-           mov [eax+CURSOR.base], ebx
-           ret
-.fail:
+           mov [eax+CURSOR.magic], 'CURS'
+           mov [eax+CURSOR.size],  CURSOR_SIZE
+           mov [eax+CURSOR.pid], ebx
+           mov [eax+CURSOR.hot_x], ebx
+           mov [eax+CURSOR.hot_y], ebx
            ret
 endp
 
@@ -224,80 +198,71 @@ proc set_cursor stdcall, hcursor:dword
            ret
 endp
 
+proc vesa_cursor stdcall, hcursor:dword, src:dword, flags:dword
+
+           stdcall kernel_alloc, 0x1000
+           test eax, eax
+           jz .fail
+
+           mov edi, [hcursor]
+           mov [edi+CURSOR.base], eax
+
+           mov esi, [src]
+           mov ebx, [flags]
+           cmp bx, LOAD_INDIRECT
+           je .indirect
+
+           movzx ecx, word [esi+10]
+           movzx edx, word [esi+12]
+           mov [edi+CURSOR.hot_x], ecx
+           mov [edi+CURSOR.hot_y], edx
+
+           stdcall vesa_init_cursor, eax, esi
+           mov eax, [hcursor]
+.fail:
+           ret
+.indirect:
+           shr ebx, 16
+           movzx ecx, bh
+           movzx edx, bl
+           mov [eax+CURSOR.hot_x], ecx
+           mov [eax+CURSOR.hot_y], edx
+
+           xchg edi, eax
+           mov ecx, 1024
+           cld
+           rep movsd
+           ret
+endp
+
 align 4
 proc load_cursor stdcall, src:dword, flags:dword
            locals
              handle  dd ?
            endl
 
-           movzx eax, word [flags]
-           cmp eax, LOAD_FROM_FILE
-           jne .from_mem
+           xor eax, eax
+           mov [handle], eax
+           cmp word [flags], LOAD_FROM_FILE
+           jne @F
 
            stdcall load_file, [src]
            test eax, eax
            jz .exit
            mov [src], eax
-
-           call create_cursor
+@@:
+           call alloc_cursor
            test eax, eax
            jz .fail
 
+           stdcall [create_cursor], eax, [src], [flags]
            mov [handle], eax
-           mov esi, [src]
-           movzx ebx, word [esi+10]
-           movzx ecx, word [esi+12]
-           mov [eax+CURSOR.hot_x], ebx
-           mov [eax+CURSOR.hot_y], ecx
-
-           stdcall vesa_init_cursor, [eax+CURSOR.base], esi
-           stdcall kernel_free, [src]
-           mov eax, [handle]
-           ret
-
-.from_mem:
-           cmp eax, LOAD_FROM_MEM
-           jne .indirect
-
-           call create_cursor
-           test eax, eax
-           jz .exit
-
-           mov [handle], eax
-           mov esi, [src]
-           movzx ebx, word [esi+10]
-           movzx ecx, word [esi+12]
-           mov [eax+CURSOR.hot_x], ebx
-           mov [eax+CURSOR.hot_y], ecx
-
-           stdcall vesa_init_cursor, [eax+CURSOR.base], [src]
-           mov eax, [handle]
-           ret
-
-.indirect:
-           cmp eax, LOAD_INDIRECT
-           jne .fail
-
-           call create_cursor
-           test eax, eax
-           jz .exit
-
-           movzx edx, byte [flags+2]
-           movzx ebx, byte [flags+3]
-           mov [eax+CURSOR.hot_x], ebx
-           mov [eax+CURSOR.hot_y], edx
-
-           mov edi, [eax+CURSOR.base]
-           mov esi, [src]
-           mov ecx, 1024
-           cld
-           rep movsd
-           ret
 .fail:
-           mov ebx, [src]
-           stdcall kernel_free, ebx
+           cmp word [flags], LOAD_FROM_FILE
+           jne .exit
+           stdcall kernel_free, [src]
 .exit:
-           xor eax, eax
+           mov eax, [handle]
            ret
 endp
 
@@ -329,6 +294,16 @@ proc init_cursors
            mov [cursor_start], edx
            add edx, 4
            mov [cursor_end], edx
+
+           stdcall load_driver, drv_hw_mouse
+           test eax, eax
+           jz .sw_mouse
+
+           stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
+           mov [def_cursor], eax
+           ret
+.sw_mouse:
+           mov [create_cursor], vesa_cursor
 
            stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
            mov [def_cursor], eax
@@ -446,7 +421,6 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
 
            sub edi, ecx
            cmp edi, eax
-           ;cmovg edi, eax
            jng @F
            mov edi, eax
 @@:
@@ -454,7 +428,6 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
 
            sub edx, [y]
            cmp edx, eax
-           ;cmovg edx, eax
            jng @F
            mov edx, eax
 @@:
@@ -559,7 +532,6 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
 
            sub edi, ecx
            cmp edi, eax
-;           cmovg edi, eax
            jng @F
            mov edi, eax
 @@:
@@ -567,7 +539,6 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
 
            sub edx, [y]
            cmp edx, eax
-;           cmovg edx, eax
            jng @F
            mov edx, eax
 @@:

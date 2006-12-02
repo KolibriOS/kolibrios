@@ -6,9 +6,46 @@ format MS COFF
 
 include 'proc32.inc'
 
-DEBUG     equ 0
+DEBUG     equ 1
 
 VID_ATI     equ 0x1002
+
+LOAD_FROM_FILE  equ 0
+LOAD_FROM_MEM   equ 1
+LOAD_INDIRECT   equ 2
+LOAD_SYSTEM     equ 3
+
+struc BITMAPINFOHEADER {
+  .biSize          dd ? ; DWORD
+  .biWidth         dd ? ; LONG
+  .biHeight        dd ? ; LONG
+  .biPlanes        dw ? ; WORD
+  .biBitCount      dw ? ; WORD
+  .biCompression   dd ? ; DWORD
+  .biSizeImage     dd ? ; DWORD
+  .biXPelsPerMeter dd ? ; LONG
+  .biYPelsPerMeter dd ? ; LONG
+  .biClrUsed       dd ? ; DWORD
+  .biClrImportant  dd ? ; DWORD
+}
+
+virtual at 0
+  BI BITMAPINFOHEADER
+end virtual
+
+struc CURSOR
+{  .magic       dd ?
+   .size        dd ?
+   .pid         dd ?
+   .base        dd ?
+   .hot_x       dd ?
+   .hot_y       dd ?
+}
+virtual at 0
+  CURSOR CURSOR
+end virtual
+
+CURSOR_SIZE     equ 24
 
 R8500       equ 0x514C  ;R200
 R9000       equ 0x4966  ;RV250
@@ -117,6 +154,7 @@ macro wrr dest, src
 
 public START
 public service_proc
+public version
 
 extrn SysMsgBoardStr
 extrn PciApi
@@ -125,6 +163,8 @@ extrn AllocKernelSpace
 extrn MapPage
 extrn RegService
 extrn SetHwCursor
+extrn HwCursorRestore
+extrn HwCursorCreate
 extrn LFBAddress
 extrn LoadFile
 
@@ -137,47 +177,53 @@ section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
-           mov eax, [state]
-           cmp eax, 1
-           je .entry
-           jmp .exit
-.entry:
+           cmp [state], 1
+           jne .exit
+
      if DEBUG
            mov esi, msgInit
            call SysMsgBoardStr
      end if
 
            call detect_ati
-	   test eax, eax
-           jz .fail
-
-           stdcall LoadFile, user_file
            test eax, eax
-           jz @F
-           mov [user_arrow], eax
-@@:
-           stdcall ati_init_cursor, [user_arrow]
+           jz .fail
 
            call init_ati
            test eax, eax
            jz .fail
 
+           xor eax, eax
+           mov edi, cursors
+           mov ecx, CURSOR_SIZE*16
+           cld
+           rep stosd
+
+           not eax
+           mov [cursor_map], eax
+           mov [cursor_map+4], eax
+           mov edx, cursor_map
+           mov [cursor_start], edx
+           add edx, 4
+           mov [cursor_end], edx
+
            stdcall RegService, sz_ati_srv, service_proc
            test eax, eax
            jz .fail
-           mov ebx, SetHwCursor
-           mov dword [ebx], drvCursorPos ;enable hardware cursor
-	   ret
+           mov dword [SetHwCursor], drvCursorPos ;enable hardware cursor
+           mov dword [HwCursorRestore], drv_restore
+           mov dword [HwCursorCreate], ati_cursor
+           ret
 .fail:
      if DEBUG
-	   mov esi, msgFail
+           mov esi, msgFail
            call SysMsgBoardStr
      end if
 
 .exit:
            xor eax, eax
-           mov ebx, SetHwCursor
-           mov dword [ebx], eax    ;force disable hardware cursor
+;           mov ebx, SetHwCursor
+;           mov dword [ebx], eax    ;force disable hardware cursor
            ret
 endp
 
@@ -194,8 +240,8 @@ proc service_proc stdcall, ioctl:dword
 ;           mov edi, [ioctl]
 ;           mov eax, [edi+io_code]
 
-	   xor eax, eax
-	   ret
+            xor eax, eax
+            ret
 endp
 
 restore   handle
@@ -207,53 +253,54 @@ restore   out_size
 
 align 4
 proc detect_ati
-	   locals
-	     last_bus dd ?
-	   endl
+           locals
+             last_bus dd ?
+           endl
 
-	   xor eax, eax
-	   mov [bus], eax
-	   inc eax
+           xor eax, eax
+           mov [bus], eax
+           inc eax
            call PciApi
-	   cmp eax, -1
+           cmp eax, -1
            je .err
 
-	   mov [last_bus], eax
+           mov [last_bus], eax
 
 .next_bus:
-	   and [devfn], 0
+           and [devfn], 0
 .next_dev:
            stdcall PciRead32, [bus], [devfn], dword 0
-	   test eax, eax
-	   jz .next
-	   cmp eax, -1
-	   je .next
+           test eax, eax
+           jz .next
+           cmp eax, -1
+           je .next
 
-	   mov edi, devices
+           mov edi, devices
 @@:
-	   mov ebx, [edi]
-	   test ebx, ebx
-	   jz .next
+           mov ebx, [edi]
+           test ebx, ebx
+           jz .next
 
-	   cmp eax, ebx
-	   je .found
+           cmp eax, ebx
+           je .found
            add edi, 4
-	   jmp @B
+           jmp @B
 
-.next:	   inc [devfn]
-	   cmp [devfn], 256
-	   jb  .next_dev
-	   mov eax, [bus]
-	   inc eax
-	   mov [bus], eax
-	   cmp eax, [last_bus]
-	   jna .next_bus
-	   xor eax, eax
-	   ret
-.found:
-	   xor eax, eax
+.next:
+           inc [devfn]
+           cmp [devfn], 256
+           jb  .next_dev
+           mov eax, [bus]
            inc eax
-	   ret
+           mov [bus], eax
+           cmp eax, [last_bus]
+           jna .next_bus
+           xor eax, eax
+           ret
+.found:
+           xor eax, eax
+           inc eax
+           ret
 .err:
            xor eax, eax
            ret
@@ -276,7 +323,7 @@ proc init_ati
            mov edx, 16
 @@:
            stdcall MapPage,edi,esi,PG_SW+PG_NOCACHE
-	   add edi, 0x1000
+           add edi, 0x1000
            add esi, 0x1000
            dec edx
            jnz @B
@@ -296,15 +343,16 @@ proc init_ati
            or eax, ebx
            mov [edi+0x50], eax
 
-           pushd 0
-           pushd 0
-           call drvCursorPos
            call drvShowCursor
            xor eax, eax
            inc eax
 .fail:
            ret
 endp
+
+align 4
+drv_restore:
+           ret 8
 
 align 4
 drvShowCursor:
@@ -316,25 +364,105 @@ drvShowCursor:
            ret
 
 align 4
-drvCursorPos:
-           push ebp
-           mov ebp, esp
+proc drvCursorPos stdcall, hcursor:dword, x:dword, y:dword
+
            mov eax, 80000000h
            wrr CUR_HORZ_VERT_OFF, eax
 
-           mov eax, [ebp+8]
+           mov eax, [x]
            shl eax, 16
-           or eax, [ebp+12]
+           or eax, [y]
            or eax, 80000000h
            wrr CUR_HORZ_VERT_POSN, eax
 
-           mov eax, CURSOR_IMAGE_OFFSET
+           mov esi, [hcursor]
+           mov eax, [esi+CURSOR.base]
+           sub eax, LFBAddress 
            wrr CUR_OFFSET, eax
-           leave
-           ret 8
+           ret
+endp
 
 align 4
-proc ati_init_cursor stdcall, arrow:dword
+proc video_alloc
+
+           pushfd
+           cli
+           mov ebx, [cursor_start]
+           mov ecx, [cursor_end]
+.l1:
+           bsf eax,[ebx];
+           jnz .found
+           add ebx,4
+           cmp ebx, ecx
+           jb .l1
+           popfd
+           xor eax,eax
+           ret
+.found:
+           btr [ebx], eax
+           popfd
+
+           mov [cursor_start],ebx
+           sub ebx, cursor_map
+           shl ebx, 3
+           add eax,ebx
+
+           shl eax,14
+           add eax, LFBAddress+CURSOR_IMAGE_OFFSET
+           ret
+endp
+
+align 4
+proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
+
+           stdcall video_alloc
+
+           mov edi, [hcursor]
+           mov [edi+CURSOR.base], eax
+
+           mov esi, [src]
+           mov ebx, [flags]
+           cmp bx, LOAD_INDIRECT
+           je .indirect
+
+           movzx ecx, word [esi+10]
+           movzx edx, word [esi+12]
+           mov [edi+CURSOR.hot_x], ecx
+           mov [edi+CURSOR.hot_y], edx
+
+           stdcall ati_init_cursor, eax, esi
+           mov eax, [hcursor]
+.fail:
+           ret
+.indirect:
+           shr ebx, 16
+           movzx ecx, bh
+           movzx edx, bl
+           mov [eax+CURSOR.hot_x], ecx
+           mov [eax+CURSOR.hot_y], edx
+
+           xchg edi, eax
+           push edi
+           mov ecx, 64*64
+           xor eax,eax
+           rep stosd
+
+           mov esi, [src]
+           pop edi
+           mov ebx, 32
+           cld
+@@:
+           mov ecx, 32
+           rep movsd
+           add edi, 128
+           dec ebx
+           jnz @B
+           mov eax, [hcursor]
+           ret
+endp
+
+align 4
+proc ati_init_cursor stdcall, dst:dword, src:dword
            locals
              rBase    dd ?
              pQuad    dd ?
@@ -345,12 +473,13 @@ proc ati_init_cursor stdcall, arrow:dword
              counter  dd ?
            endl
 
-           cld
-
-           mov esi, [arrow]
-           add esi,[esi+18d]
-
+           mov esi, [src]
+           add esi,[esi+18]
            mov eax,esi
+
+           cmp [esi+BI.biBitCount], 24
+           je .img_24
+.img_4:
            add eax, [esi]
            mov [pQuad],eax
            add eax,64
@@ -415,30 +544,68 @@ proc ati_init_cursor stdcall, arrow:dword
            mov [rBase],edi
            sub [height],1
            jnz .l1
+           jmp .copy
 
-           mov edi, LFBAddress
-           add edi, CURSOR_IMAGE_OFFSET
+.img_24:
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax, 0xC00
+           mov [pAnd],eax
+           mov eax,[esi+BI.biWidth]
+           mov [width],eax
+           mov ebx,[esi+BI.biHeight]
+           shr ebx,1
+           mov [height],ebx
+
+           mov edi, pCursor
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pAnd]
+           mov ebx, [pQuad]
+.row_24:
+           mov eax, [esi]
+           bswap eax
+           mov [counter], 32
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           mov ecx, [ebx]
+           and ecx, 0x00FFFFFF
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+           add ebx, 3
+           add edi, 4
+           dec [counter]
+           jnz @B
+
+           add esi, 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .row_24
+.copy:
+           mov edi, [dst]
            mov ecx, 64*64
            xor eax,eax
            rep stosd
 
            mov esi, pCursor
-           mov edi, LFBAddress
-           add edi, CURSOR_IMAGE_OFFSET
+           mov edi, [dst]
            mov ebx, 32
-lc:
+           cld
+@@:
            mov ecx, 32
-lb:
-           mov eax, [esi]
-           mov [edi], eax
-           add esi, 4
-           add edi, 4
-           sub ecx, 1
-           jnz lb
-
+           rep movsd
            add edi, 128
-           sub ebx, 1
-           jnz lc
+           dec ebx
+           jnz @B
 
            ret
 endp
@@ -489,21 +656,21 @@ cnt equ bp+8
 align 4
 proc engWaitForIdle
 
-               push dword 64
-               call engWaitForFifo
+           push dword 64
+           call engWaitForFifo
 
-               mov edi, [ati_io]
-               mov ecx ,RD_TIMEOUT
+           mov edi, [ati_io]
+           mov ecx ,RD_TIMEOUT
 @@:
-               mov eax, [edi+RD_RBBM_STATUS]
-               and eax,RD_RBBM_ACTIVE
-               jz .exit
+           mov eax, [edi+RD_RBBM_STATUS]
+           and eax,RD_RBBM_ACTIVE
+           jz .exit
 
-               sub ecx,1
-               jnz @B
+           sub ecx,1
+           jnz @B
 .exit:
-               call engFlush
-               ret
+           call engFlush
+           ret
 endp
 
 align 4
@@ -514,8 +681,8 @@ proc engRestore
 
 ;             mov dword  [MMIO+RD_RB2D_DSTCACHE_MODE], 0
 
-             push dword 3
-             call engWaitForFifo
+           push dword 3
+           call engWaitForFifo
 
            mov edi, [ati_io]
 
@@ -572,7 +739,6 @@ proc engRestore
            ret
 endp
 
-
 align 4
 engSetupSolidFill:
            push ebp
@@ -603,28 +769,28 @@ w equ ebp+16
 h equ ebp+20
 color equ ebp+24
 
-            push dword [ebp+24]
-            call engSetupSolidFill
+           push dword [ebp+24]
+           call engSetupSolidFill
 
-            push dword 2
-            call engWaitForFifo
+           push dword 2
+           call engWaitForFifo
 
-            mov edi, [ati_io]
+           mov edi, [ati_io]
 
-            mov eax, [y]
-            mov ebx, [x]
-            shl eax,16
-            or eax, ebx
+           mov eax, [y]
+           mov ebx, [x]
+           shl eax,16
+           or eax, ebx
 
-            mov ecx,  [w]
-            mov edx,  [h]
-            shl ecx,16
-            or ecx, edx
-            mov [edi+RD_DST_Y_X], eax
-            mov [edi+RD_DST_WIDTH_HEIGHT], ecx
-	    call engFlush
-            leave
-            ret 20
+           mov ecx,  [w]
+           mov edx,  [h]
+           shl ecx,16
+           or ecx, edx
+           mov [edi+RD_DST_Y_X], eax
+           mov [edi+RD_DST_WIDTH_HEIGHT], ecx
+           call engFlush
+           leave
+           ret 20
 
 align 4
 devices dd (R8500   shl 16)+VID_ATI
@@ -641,28 +807,27 @@ devices dd (R8500   shl 16)+VID_ATI
         dd (R9800XT shl 16)+VID_ATI
         dd 0    ;terminator
 
-;szKernel     db 'KERNEL', 0
-sz_ati_srv   db 'ATI2D',0
-user_file    db '/rd/1/user.cur',0
+version dd 0x00010001
 
+sz_ati_srv   db 'HWCURSOR',0
 
 msgInit      db 'detect hardware...',13,10,0
 msgPCI       db 'PCI accsess not supported',13,10,0
 msgFail      db 'device not found',13,10,0
 
-user_arrow   dd pArrow
-
-align 16
-pArrow:
-  file 'arrow.cur'
 
 section '.data' data readable writable align 16
 
 pCursor  db 4096 dup(?)
 
-bus        dd ?
-devfn      dd ?
-ati_io     dd ?
+cursors        rb CURSOR_SIZE*64
+cursor_map     rd 2
+cursor_start   rd 1
+cursor_end     rd 1
+
+bus            dd ?
+devfn          dd ?
+ati_io         dd ?
 
 
 

@@ -440,6 +440,8 @@ include 'detect/disks.inc'
            stdcall kernel_alloc, 0x1000
            mov [tmp_task_data], eax
 
+           call init_events
+
            mov [dll_map], 0xFFFFFFFF
            mov [srv_map], 0xFFFFFFFF
 
@@ -550,10 +552,8 @@ include 'vmodeld.inc'
         call  boot_log
         call  setmouse
 
+        mov  [pci_access_enabled],1
         call init_cursors
-
-;        mov  [pci_access_enabled],1
-;        stdcall get_service, szCURSOR
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 

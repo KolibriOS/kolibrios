@@ -1,3 +1,169 @@
+struc EVENT
+{  .code    rd 1
+            rd 5
+   .next    rd 1   ;+24
+   .prev    rd 1   ;+28
+}
+EVENT_SIZE  equ 32
+
+virtual at 0
+  EVENT EVENT
+end virtual
+
+align 4
+init_events:
+           stdcall kernel_alloc, 1024*EVENT_SIZE
+           mov [events], eax
+           xor eax, eax
+           not eax
+           mov edi, event_map
+           mov [event_start], edi
+           mov ecx, 128/4
+           cld
+           rep stosd
+           mov [event_end], edi
+           ret
+
+align 4
+proc alloc_event
+
+           pushfd
+           cli
+           mov ebx, [event_start]
+           mov ecx, [event_end]
+.l1:
+           bsf eax,[ebx]
+           jnz .found
+           add ebx,4
+           cmp ebx, ecx
+           jb .l1
+           popfd
+           xor eax,eax
+           ret
+.found:
+           btr [ebx], eax
+           mov [event_start],ebx
+           sub ebx, event_map
+           shl ebx, 3
+           add eax,ebx
+           shl eax,5
+           add eax, [events]
+           popfd
+           xor ebx, ebx
+           mov [eax+EVENT.next], ebx
+           mov [eax+EVENT.prev], ebx
+           ret
+endp
+
+align 4
+free_event:
+           pushfd
+           cli
+           sub eax, [events]
+           shr eax, 5
+           mov ebx, event_map
+           bts [ebx], eax
+           shr eax, 3
+           and eax, not 3
+           add eax, ebx
+           cmp [event_start], eax
+           ja @f
+           popfd
+           ret
+@@:
+           mov [event_start], eax
+           popfd
+           ret
+
+align 4
+proc send_event stdcall pid:dword, event:dword
+           locals
+             slot     dd ?
+           endl
+
+           mov eax, [pid]
+           call pid_to_slot
+           test eax, eax
+           jz .fail
+
+           shl eax, 8
+           cmp [PROC_BASE+eax+APPDATA.ev_count], 32
+           ja .fail
+
+           mov [slot], eax
+           call alloc_event
+           test eax, eax
+           jz .fail
+
+           mov edi, eax
+           mov ecx, 6
+           mov esi, [event]
+           cld
+           rep movsd
+
+           mov esi, eax
+           mov eax, [slot]
+           mov edi, [PROC_BASE+eax+APPDATA.ev_last]
+           mov [esi+EVENT.prev], edi
+           test edi, edi
+           jz .set_last
+           mov [edi+EVENT.next], esi
+.set_last:
+           mov edx, [PROC_BASE+eax+APPDATA.ev_first]
+           test edx, edx
+           jnz @F
+           mov [PROC_BASE+eax+APPDATA.ev_first], esi
+@@:
+           mov [PROC_BASE+eax+APPDATA.ev_last], esi
+           inc [PROC_BASE+eax+APPDATA.ev_count]
+           or  [PROC_BASE+eax+APPDATA.event_mask], EVENT_EXTENDED
+.fail:
+           ret
+endp
+
+align 4
+proc get_event_ex stdcall, p_ev:dword, timeout:dword
+
+;     push eax
+;     push edx
+;     mov edx, 0x400   ;bocsh
+;     mov al,0xff      ;bocsh
+;     out dx, al       ;bocsh
+;     pop edx
+;     pop eax
+
+.wait:
+           mov ebx,[CURRENT_TASK]
+           shl ebx,8
+           cmp [PROC_BASE+ebx+APPDATA.ev_count], 0
+           je .switch
+
+           mov esi, [PROC_BASE+ebx+APPDATA.ev_first]
+           mov edx, [esi+EVENT.next]
+           mov [PROC_BASE+ebx+APPDATA.ev_first], edx
+           test edx, edx
+           jnz @F
+           mov [PROC_BASE+ebx+APPDATA.ev_last], edx
+           and dword [PROC_BASE+ebx+APPDATA.event_mask], not EVENT_EXTENDED
+@@:
+           mov [edx+EVENT.prev], 0
+           dec [PROC_BASE+ebx+APPDATA.ev_count]
+
+           mov eax, esi
+           and dword [esi], 0xFF00FFFF
+           mov edi, [p_ev]
+           mov ecx, 6
+           cld
+           rep movsd
+           call free_event
+           ret
+.switch:
+           mov eax, [0x3010]
+           mov [eax+TASKDATA.state], byte 5
+	   call change_task
+	   jmp .wait
+endp
+
 sys_getevent:
 
      call   get_event_for_app
@@ -6,23 +172,22 @@ sys_getevent:
 
 
 align 4
-
 sys_wait_event_timeout:
 
      mov   ebx,[timer_ticks]
      add   ebx,eax
      cmp   ebx,[timer_ticks]
      jna   .swfet2
-   .swfet1:
+.swfet1:
      call  get_event_for_app
      test  eax,eax
      jne   .eventoccur_time
      call  change_task
      cmp   ebx,[timer_ticks]
      jg    .swfet1
-   .swfet2:
+.swfet2:
      xor   eax,eax
-   .eventoccur_time:
+.eventoccur_time:
      mov   [esp+36],eax
      ret
 
@@ -45,7 +210,6 @@ sys_waitforevent:
    eventoccur:
      mov   [esp+36],eax
      ret
-
 
 get_event_for_app:
 
@@ -110,8 +274,8 @@ get_event_for_app:
      ret
 
    no_eventoccur3:
-   
-   
+
+
      ;mov   edi,[0x3010]              ; mouse event
      test  [edi+TASKDATA.event_mask],dword 00100000b
      jz    no_mouse_event
@@ -124,7 +288,7 @@ get_event_for_app:
      mov   eax,6
      ret
    no_mouse_event:
-   
+
 
      ;mov   edi,[0x3010]              ; DESKTOP BACKGROUND REDRAW
      test  [edi+TASKDATA.event_mask],dword 16
@@ -164,16 +328,26 @@ get_event_for_app:
    no_stack_event:
 
      test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
-     jz    no_debug_event
+     jz    .test_ext
      mov   eax, [0x3000]
      shl   eax, 8
      test  byte [eax+0x80000+APPDATA.event_mask+1], byte 1
-     jz    no_debug_event
+     jz    .test_ext
      and   byte [eax+0x80000+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret
-   no_debug_event:
+
+.test_ext:
+     mov   eax, [0x3000]
+     shl   eax, 8
+     test  dword [eax+0x80000+APPDATA.event_mask], EVENT_EXTENDED
+     jz .test_IRQ
+     mov eax, 10
+     ret
+
+.test_IRQ:
+
 
      cmp   dword [edi+TASKDATA.event_mask], 0xFFFF
      jbe   no_events
@@ -211,5 +385,6 @@ get_event_for_app:
      popad
      xor   eax, eax
      ret
+
 
 

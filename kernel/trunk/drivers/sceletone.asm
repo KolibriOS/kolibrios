@@ -25,6 +25,7 @@ end virtual
 
 public START
 public service_proc
+public version
 
 extrn AttachIntHandler
 extrn SysMsgBoardStr
@@ -54,11 +55,10 @@ section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
-           mov eax, [state]
-           cmp eax, 1
-           je .entry
-           jmp .exit
+           cmp [state], 1
+           jne .exit
 .entry:
+
      if DEBUG
            mov esi, msgInit
            call SysMsgBoardStr
@@ -160,6 +160,8 @@ endp
 align 4
 devices dd (DEVICE_ID shl 16)+VENDOR_ID
         dd 0    ;terminator
+
+version      dd 0x00010001
 
 my_service   db 'MY_SERVICE',0  ;max 16 chars include zero
 

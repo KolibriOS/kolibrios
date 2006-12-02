@@ -173,20 +173,22 @@ struc APPDATA
 		   db 5   dup(?)
 
   .fpu_state       dd ?            ;+16
-                   dd ?            ;+20 unused
+  .ev_count        dd ?            ;+20
   .fpu_handler     dd ?            ;+24
   .sse_handler     dd ?            ;+28
   .event           dd ?            ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
   .cursor          dd ?            ;+44
+  .ev_first        dd ?            ;+48
+  .ev_last         dd ?            ;+52
 
-                   db 80 dup(?)    ;+48
+                   db 72 dup(?)    ;+56
 
   .wnd_shape       dd ?            ;+128
-  .wnd_shape_scale dd ?
-		   dd ?
-  .mem_size	   dd ?
+  .wnd_shape_scale dd ?            ;+132
+                   dd ?            ;+136
+  .mem_size        dd ?            ;+140
   .saved_box	   BOX
   .ipc_start	   dd ?
   .ipc_size	   dd ?

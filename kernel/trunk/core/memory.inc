@@ -806,12 +806,14 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            add edi, [ipc_tmp]
            cmp dword [edi], 0
            jnz  .ipc_blocked          ;if dword [buffer]<>0 - ipc blocked now
+
            mov ebx, dword [edi+4]
            mov edx, ebx
            add ebx, 8
            add ebx, [msg_size]
            cmp ebx, [buf_size]
            ja .buffer_overflow         ;esi<0 - not enough memory in buffer
+
            mov dword [edi+4], ebx
            mov eax,[TASK_BASE]
            mov eax, [eax+0x04]         ;eax - our PID
@@ -937,10 +939,11 @@ new_services:
 @@:
            cmp eax, 14
            ja @f
-           add ebx,new_app_base
+           add ebx, new_app_base
            cmp ebx, new_app_base
            jb .fail
-           stdcall get_notify, ebx
+           stdcall get_event_ex, ebx, ecx
+           mov [esp+36], eax
            ret
 @@:
            cmp eax, 15
@@ -980,14 +983,14 @@ new_services:
            ret
 @@:
            cmp eax, 19
-           ja @f
+           ja .fail
            add ebx, new_app_base
            cmp ebx, new_app_base
            jb .fail
            stdcall load_library, ebx
            mov [esp+36], eax
            ret
-@@:
+
 .fail:
            xor eax, eax
            mov [esp+36], eax
@@ -1293,18 +1296,21 @@ endg
 
 uglobal
 align 16
+
    dll_tab         rb 32*32
    srv_tab         rb 36*32
+   mem_block_map   rb 512
+   event_map       rb 128
+   mem_block_list  rd 64
+   mem_block_mask  rd 2
+
    dll_map         rd 1
    srv_map         rd 1
 
    mem_used_list   rd 1
-   mem_block_list  rd 64
-   mem_block_map   rb 512
    mem_block_arr   rd 1
    mem_block_start rd 1
    mem_block_end   rd 1
-   mem_block_mask  rd 2
    heap_size       rd 1
    heap_free       rd 1
    heap_blocks     rd 1
@@ -1312,8 +1318,11 @@ align 16
 
    page_start      rd 1
    page_end        rd 1
+   events          rd 1
+   event_start     rd 1
+   event_end       rd 1
+
    sys_page_map    rd 1
-;   app_load        rd 1
 endg
 
 

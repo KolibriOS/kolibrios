@@ -171,6 +171,10 @@ system_shutdown:          ; shut down the system
 
     call restorefatchain
 
+    mov al, 0xFF
+    out 0x21, al
+    out 0xA1, al
+
     mov  word [0x467+0],pr_mode_exit-0x10000
     mov  word [0x467+2],0x1000
 
@@ -203,30 +207,31 @@ org $-0x10000
     call rdelay
     out  0xA0,al
     call rdelay
-    
+
     mov  al,0x08
     out  0x21,al
     call rdelay
     mov  al,0x70
     out  0xA1,al
     call rdelay
-    
+
     mov  al,0x04
     out  0x21,al
     call rdelay
     mov  al,0x02
     out  0xA1,al
     call rdelay
-    
+
     mov  al,0x01
     out  0x21,al
     call rdelay
     out  0xA1,al
     call rdelay
-    
-    mov  al,0
+
+    mov  al,0xB8
     out  0x21,al
     call rdelay
+    mov  al,0xBD
     out  0xA1,al
     sti
 
@@ -238,7 +243,7 @@ org $-0x10000
     jl   nbw
     cmp  al,4
     jle  nbw32
-  
+
   nbw:
     in   al,0x60
     call pause_key
@@ -280,7 +285,7 @@ org $-0x10000
     jnz  restart_kernel        ; 4 = restart kernel
     push 0x40
     pop  ds
-    mov  word[0x0072],0x1234 
+    mov  word[0x0072],0x1234
     jmp  0xF000:0xFFF0
 
     pause_key:
@@ -499,7 +504,7 @@ shutdowntext:
     db   '1) SAVE RAMDISK TO FLOPPY               '
     db   '2) APM - POWEROFF                       '
     db   '3) REBOOT                               '
-    db   '4) RESTART KERNEL                       ' 
+    db   '4) RESTART KERNEL                       '
 else if lang eq ru
 shutdowntext:
     db   "Безопасное выключение компьютера или    "
@@ -515,7 +520,7 @@ shutdowntext:
     db   '1) RAMDISK AUF DISK SPEICHERN           '
     db   '2) APM - AUSSCHALTEN                    '
     db   '3) NEUSTARTEN                           '
-    db   '4) KERNEL NEU STARTEN                   ' 
+    db   '4) KERNEL NEU STARTEN                   '
 end if
 rosef:
     db 'ROSE    TXT'

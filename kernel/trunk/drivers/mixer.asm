@@ -111,6 +111,9 @@ align 4
 proc update_stream
 	   locals
              stream_index  dd ?
+             ev_code       dd ?  ;EVENT
+             ev_offs       dd ?
+                           rd 4
 	   endl
 
 	   mov [stream_index], 0
@@ -176,17 +179,19 @@ proc update_stream
 
 	   ret
 @@:
+           mov [ev_code], 0xFF000001
+           mov [ev_offs], ecx
            mov eax, [ebx+STREAM.notify_task]
-           call pid_to_slot
+
+           lea edx, [ev_code]
+           push ebx
+           stdcall SendEvent, eax, edx
+           pop ebx
            test eax, eax
-           jnz @f
+           jnz .l_end
+
            not eax
            mov [ebx+STREAM.notify_task], eax      ;-1
-           jmp .l_end
-@@:
-           shl eax, 8
-           mov [eax+PROC_BASE+32],ecx
-           or dword [eax+PROC_BASE+0xA8],EVENT_NOTIFY
 .l_end:
 	   inc [stream_index]
 	   dec [play_count]
@@ -196,14 +201,13 @@ endp
 
 align 4
 proc refill stdcall, str:dword
-
-;    if DEBUG
-;           mov    esi, msgUser
-;           call   [SysMsgBoardStr]
-;     end if
+	   locals
+             ev_code       dd ?  ;EVENT
+             ev_offs       dd ?
+                           rd 4
+	   endl
 
 	   mov ebx, [str]
-
 	   mov ecx, [ebx+STREAM.work_write]
 	   cmp ecx, [ebx+STREAM.work_top]
 	   jbe .m2
@@ -245,17 +249,19 @@ proc refill stdcall, str:dword
 
 	   ret
 @@:
+           mov [ev_code], 0xFF000001
+           mov [ev_offs], ecx
            mov eax, [ebx+STREAM.notify_task]
-           call pid_to_slot
+
+           lea edx, [ev_code]
+           push ebx
+           stdcall SendEvent, eax, edx
+           pop ebx
            test eax, eax
-           jnz @f
+           jnz @F
            not eax
            mov [ebx+STREAM.notify_task], eax      ;-1
-           ret
 @@:
-           shl eax, 8
-           mov [eax+PROC_BASE+32],ecx
-           or dword [eax+PROC_BASE+0xA8],EVENT_NOTIFY
 	   ret
 endp
 

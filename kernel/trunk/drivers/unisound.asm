@@ -275,6 +275,7 @@ PROC_BASE	      equ OS_BASE+0x0080000
 
 public START
 public service_proc
+public version
 
 extrn AttachIntHandler
 extrn SysMsgBoardStr
@@ -293,10 +294,8 @@ section '.flat' code readable align 16
 
 proc START stdcall, state:dword
 
-           mov eax, [state]
-           cmp eax, 1
+           cmp [state], 1
            jne .stop
-.entry:
 
      if DEBUG
 	   mov esi, msgInit
@@ -376,6 +375,7 @@ proc START stdcall, state:dword
            ret
 .stop:
            call stop
+           xor eax, eax
            ret
 endp
 
@@ -1010,13 +1010,8 @@ endp
 
 align 4
 proc stop
-	   mov edx, PCM_OUT_CR_REG
-	   mov ax, 0x14
-	   call [ctrl.ctrl_write8]
-
-	   mov eax, 16
-	   mov [ctrl.lvi_reg], eax
-	   mov edx, PCM_OUT_LVI_REG
+           mov edx, PCM_OUT_CR_REG
+	   mov ax, 0x0
 	   call [ctrl.ctrl_write8]
 
            mov ax, 0x1c
@@ -1335,6 +1330,8 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
         dd (CTRL_MCP51   shl 16)+VID_NVIDIA,msg_MCP51,set_ICH
 
         dd 0    ;terminator
+
+version      dd 0x00010001
 
 msg_ICH      db 'Intel ICH',  13,10, 0
 msg_ICH0     db 'Intel ICH0', 13,10, 0
