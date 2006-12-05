@@ -192,6 +192,16 @@ endp
 align 4
 proc set_cursor stdcall, hcursor:dword
            mov eax, [hcursor]
+           cmp [eax+CURSOR.magic], 'CURS'
+           jne .fail
+           cmp [eax+CURSOR.size], CURSOR_SIZE
+           jne .fail
+           mov ebx, [CURRENT_TASK]
+           shl ebx, 8
+           xchg eax, [ebx+PROC_BASE+APPDATA.cursor]
+           ret
+.fail:
+           mov eax, [def_cursor]
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
            xchg eax, [ebx+PROC_BASE+APPDATA.cursor]
@@ -255,6 +265,11 @@ proc load_cursor stdcall, src:dword, flags:dword
            test eax, eax
            jz .fail
 
+           mov ebx, [CURRENT_TASK]
+           shl ebx, 5
+           mov ebx, [0x3000+ebx+4]
+           mov [eax+CURSOR.pid], ebx
+
            stdcall [create_cursor], eax, [src], [flags]
            mov [handle], eax
 .fail:
@@ -292,7 +307,7 @@ proc init_cursors
            mov [cursor_map+4], eax
            mov edx, cursor_map
            mov [cursor_start], edx
-           add edx, 4
+           add edx, 8
            mov [cursor_end], edx
 
            stdcall load_driver, drv_hw_mouse

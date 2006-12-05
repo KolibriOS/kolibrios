@@ -124,14 +124,6 @@ endp
 align 4
 proc get_event_ex stdcall, p_ev:dword, timeout:dword
 
-;     push eax
-;     push edx
-;     mov edx, 0x400   ;bocsh
-;     mov al,0xff      ;bocsh
-;     out dx, al       ;bocsh
-;     pop edx
-;     pop eax
-
 .wait:
            mov ebx,[CURRENT_TASK]
            shl ebx,8
@@ -142,11 +134,13 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
            mov edx, [esi+EVENT.next]
            mov [PROC_BASE+ebx+APPDATA.ev_first], edx
            test edx, edx
+           jz @F
+           mov [edx+EVENT.prev], 0
+@@:
            jnz @F
            mov [PROC_BASE+ebx+APPDATA.ev_last], edx
            and dword [PROC_BASE+ebx+APPDATA.event_mask], not EVENT_EXTENDED
 @@:
-           mov [edx+EVENT.prev], 0
            dec [PROC_BASE+ebx+APPDATA.ev_count]
 
            mov eax, esi
