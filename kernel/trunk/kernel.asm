@@ -918,15 +918,15 @@ reserve_irqs_ports:
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0x0
         mov   [0x2d0000+edi+8],dword 0xdf
-        
+
         inc   dword [0x2d0000]          ; 0xe5-0xff
         mov   edi,[0x2d0000]
         shl   edi,4
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0xe5
         mov   [0x2d0000+edi+8],dword 0xff
-        
-        
+
+
 ;        cmp   [0xf604],byte 2          ; com1 mouse -> 0x3f0-0x3ff
 ;        jne   ripl1
 ;        inc   dword [0x2d0000]
@@ -1730,7 +1730,7 @@ align 4
 mousefn dd msscreen, mswin, msbutton, msset
         dd app_load_cursor
         dd app_set_cursor
-        dd msset    ;app_delete_cursor
+        dd app_delete_cursor
 
 readmousepos:
 
@@ -1789,6 +1789,10 @@ app_set_cursor:
            mov [esp+36], eax
            ret
 
+app_delete_cursor:
+           stdcall delete_cursor, ebx
+           mov [esp+36], eax
+           ret
 
 is_input:
 
@@ -1798,7 +1802,6 @@ is_input:
    and  al,0x80
    pop  edx
    ret
-
 
 is_output:
 

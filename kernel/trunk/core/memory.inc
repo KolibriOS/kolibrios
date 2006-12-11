@@ -1282,6 +1282,7 @@ cursor_start     rd 1
 cursor_end       rd 1
 
 def_cursor       rd 1
+hw_cursor        rd 1
 
 scr_width        rd 1
 scr_height       rd 1

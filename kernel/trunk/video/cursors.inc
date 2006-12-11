@@ -3,6 +3,7 @@ LOAD_FROM_FILE  equ 0
 LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
+VIDEO_FREE      equ 2
 
 struc BITMAPINFOHEADER {
   .biSize          dd ? ; DWORD
@@ -40,6 +41,65 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
 
            cmp [esi+BI.biBitCount], 24
            je .img_24
+           cmp [esi+BI.biBitCount], 8
+           je .img_8
+           cmp [esi+BI.biBitCount], 4
+           je .img_4
+
+.img_2:
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax,8
+           mov [pBits],eax
+           add eax, 128
+           mov [pAnd],eax
+           mov eax,[esi+4]
+           mov [width],eax
+           mov ebx,[esi+8]
+           shr ebx,1
+           mov [height],ebx
+
+           mov edi, [dst]
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pQuad]
+.l21:
+           mov ebx, [pBits]
+           mov ebx, [ebx]
+           bswap ebx
+           mov eax, [pAnd]
+           mov eax, [eax]
+           bswap eax
+           mov [counter], 32
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           xor ecx, ecx
+           shl ebx,1
+           setc cl
+           mov ecx, [esi+ecx*4]
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+
+           add edi, 4
+           dec [counter]
+           jnz @B
+
+           add [pBits], 4
+           add [pAnd], 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .l21
+           ret
+
 .img_4:
            add eax, [esi]
            mov [pQuad],eax
@@ -57,10 +117,11 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            add edi, 32*31*4
            mov [rBase],edi
 
-           mov esi,[pAnd]
+           mov esi,[pQuad]
            mov ebx, [pBits]
-.l1:
-           mov eax, [esi]
+.l4:
+           mov eax, [pAnd]
+           mov eax, [eax]
            bswap eax
            mov [counter], 16
 @@:
@@ -69,11 +130,10 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            setc dl
            dec edx
 
-           mov ecx, [ebx]
-           and ecx, 0xF0
+           movzx ecx, byte [ebx]
+           and cl, 0xF0
            shr ecx, 2
-           add ecx, [pQuad]
-           mov ecx, [ecx]
+           mov ecx, [esi+ecx]
            and ecx, edx
            and edx, 0xFF000000
            or edx, ecx
@@ -84,11 +144,9 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            setc dl
            dec edx
 
-           mov ecx, [ebx]
-           and ecx, 0x0F
-           shl ecx, 2
-           add ecx, [pQuad]
-           mov ecx, [ecx]
+           movzx ecx, byte [ebx]
+           and cl, 0x0F
+           mov ecx, [esi+ecx*4]
            and ecx, edx
            and edx, 0xFF000000
            or edx, ecx
@@ -99,12 +157,61 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
            dec [counter]
            jnz @B
 
-           add esi, 4
+           add [pAnd], 4
            mov edi,[rBase]
            sub edi,128
            mov [rBase],edi
            sub [height],1
-           jnz .l1
+           jnz .l4
+           ret
+.img_8:
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax,1024
+           mov [pBits],eax
+           add eax, 1024
+           mov [pAnd],eax
+           mov eax,[esi+4]
+           mov [width],eax
+           mov ebx,[esi+8]
+           shr ebx,1
+           mov [height],ebx
+
+           mov edi, [dst]
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pQuad]
+           mov ebx, [pBits]
+.l81:
+           mov eax, [pAnd]
+           mov eax, [eax]
+           bswap eax
+           mov [counter], 32
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           movzx ecx,  byte [ebx]
+           mov ecx, [esi+ecx*4]
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+
+           inc ebx
+           add edi, 4
+           dec [counter]
+           jnz @B
+
+           add [pAnd], 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .l81
            ret
 .img_24:
            add eax, [esi]
@@ -188,6 +295,34 @@ proc alloc_cursor
            mov [eax+CURSOR.hot_y], ebx
            ret
 endp
+
+align 4
+proc free_cursor
+           pushfd
+           cli
+           xor edx, edx
+           mov ecx, CURSOR_SIZE
+           sub eax, cursors
+           div ecx
+           test edx, edx
+           jnz .exit
+
+           mov ebx, cursor_map
+           bts [ebx], eax
+           shr eax, 3
+           and eax, not 3
+           add eax, ebx
+           cmp [cursor_start], eax
+           ja @f
+.exit:
+           popfd
+           ret
+@@:
+           mov [cursor_start], eax
+           popfd
+           ret
+endp
+
 
 align 4
 proc set_cursor stdcall, hcursor:dword
@@ -282,7 +417,66 @@ proc load_cursor stdcall, src:dword, flags:dword
 endp
 
 align 4
+proc delete_cursor stdcall, hcursor:dword
+           locals
+             hsrv       dd ?
+             io_code    dd ?
+             input      dd ?
+             inp_size   dd ?
+             output     dd ?
+             out_size   dd ?
+           endl
+
+           mov esi, [hcursor]
+           cmp [esi+CURSOR.magic], 'CURS'
+           jne .fail
+           cmp [esi+CURSOR.size], CURSOR_SIZE
+           jne .fail
+
+           mov ebx, [CURRENT_TASK]
+           shl ebx, 5
+           mov ebx, [0x3000+ebx+4]
+           cmp ebx, [esi+CURSOR.pid]
+           jne .fail
+
+           mov ebx, [CURRENT_TASK]
+           shl ebx, 8
+           cmp esi, [ebx+PROC_BASE+APPDATA.cursor]
+           jne @F
+           mov eax, [def_cursor]
+           mov [ebx+PROC_BASE+APPDATA.cursor], eax
+@@:
+           mov eax, [hw_cursor]
+           test eax, eax
+           jz @F
+
+           xor ebx, ebx
+           mov ecx, [esi+CURSOR.base]
+           mov [hsrv], eax
+           mov [io_code], VIDEO_FREE
+           mov [input], ecx
+           mov [inp_size], 4
+           mov [output], ebx
+           mov [out_size], ebx
+
+           lea eax, [hsrv]
+           stdcall srv_handler, eax
+           jmp .exit
+@@:
+           stdcall kernel_free, [esi+CURSOR.base]
+.exit:
+           mov eax, [hcursor]
+           call free_cursor
+           ret
+.fail:
+           ret
+endp
+
+align 4
 proc init_cursors
+           cmp [0xfe0c],word 0x13
+           jbe .fail
+
            movzx eax, byte [ScreenBPP]
            mov ebx, [SCR_BYTES_PER_LINE]
            cmp eax, 32
@@ -311,6 +505,7 @@ proc init_cursors
            mov [cursor_end], edx
 
            stdcall load_driver, drv_hw_mouse
+           mov [hw_cursor], eax
            test eax, eax
            jz .sw_mouse
 

@@ -1,8 +1,5 @@
 
-;alpha version
-
 format MS COFF
-
 
 include 'proc32.inc'
 
@@ -14,6 +11,8 @@ LOAD_FROM_FILE  equ 0
 LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
+
+VIDEO_FREE      equ 2
 
 struc BITMAPINFOHEADER {
   .biSize          dd ? ; DWORD
@@ -237,11 +236,16 @@ out_size   equ  IOCTL.out_size
 align 4
 proc service_proc stdcall, ioctl:dword
 
-;           mov edi, [ioctl]
-;           mov eax, [edi+io_code]
+           mov edi, [ioctl]
+           mov ebx, [edi+io_code]
+           cmp ebx, VIDEO_FREE
+           jne .fail
 
-            xor eax, eax
-            ret
+           mov eax, [edi+input]
+           call video_free
+.fail:
+           xor eax, eax
+           ret
 endp
 
 restore   handle
@@ -365,20 +369,42 @@ drvShowCursor:
 
 align 4
 proc drvCursorPos stdcall, hcursor:dword, x:dword, y:dword
+           pushfd
+           cli
 
-           mov eax, 80000000h
+           xor eax, eax
+           xor edx, edx
+           mov esi, [hcursor]
+           mov ebx, [x]
+           mov ecx, [y]
+
+           sub ebx, [esi+CURSOR.hot_x]
+           jnc @F
+           neg ebx
+           mov eax, ebx
+           shl eax, 16
+           xor ebx, ebx
+@@:
+           sub ecx, [esi+CURSOR.hot_y]
+           jnc @F
+           neg ecx
+           mov ax, cx
+           mov edx, ecx
+           xor ecx, ecx
+@@:
+           or eax, 0x80000000
            wrr CUR_HORZ_VERT_OFF, eax
 
-           mov eax, [x]
-           shl eax, 16
-           or eax, [y]
-           or eax, 80000000h
-           wrr CUR_HORZ_VERT_POSN, eax
+           shl ebx, 16
+           mov bx, cx
+           or ebx, 0x80000000
+           wrr CUR_HORZ_VERT_POSN, ebx
 
-           mov esi, [hcursor]
-           mov eax, [esi+CURSOR.base]
-           sub eax, LFBAddress 
-           wrr CUR_OFFSET, eax
+           shl edx, 8
+           add edx, [esi+CURSOR.base]
+           sub edx, LFBAddress
+           wrr CUR_OFFSET, edx
+           popfd
            ret
 endp
 
@@ -413,6 +439,26 @@ proc video_alloc
 endp
 
 align 4
+video_free:
+           pushfd
+           cli
+           sub eax, LFBAddress+CURSOR_IMAGE_OFFSET
+           shr eax, 14
+           mov ebx, cursor_map
+           bts [ebx], eax
+           shr eax, 3
+           and eax, not 3
+           add eax, ebx
+           cmp [cursor_start], eax
+           ja @f
+           popfd
+           ret
+@@:
+           mov [cursor_start], eax
+           popfd
+           ret
+
+align 4
 proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
 
            stdcall video_alloc
@@ -438,8 +484,8 @@ proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
            shr ebx, 16
            movzx ecx, bh
            movzx edx, bl
-           mov [eax+CURSOR.hot_x], ecx
-           mov [eax+CURSOR.hot_y], edx
+           mov [edi+CURSOR.hot_x], ecx
+           mov [edi+CURSOR.hot_y], edx
 
            xchg edi, eax
            push edi
@@ -479,6 +525,64 @@ proc ati_init_cursor stdcall, dst:dword, src:dword
 
            cmp [esi+BI.biBitCount], 24
            je .img_24
+           cmp [esi+BI.biBitCount], 8
+           je .img_8
+           cmp [esi+BI.biBitCount], 4
+           je .img_4
+
+.img_2:
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax,8
+           mov [pBits],eax
+           add eax, 128
+           mov [pAnd],eax
+           mov eax,[esi+4]
+           mov [width],eax
+           mov ebx,[esi+8]
+           shr ebx,1
+           mov [height],ebx
+
+           mov edi, pCursor
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pQuad]
+.l21:
+           mov ebx, [pBits]
+           mov ebx, [ebx]
+           bswap ebx
+           mov eax, [pAnd]
+           mov eax, [eax]
+           bswap eax
+           mov [counter], 32
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           xor ecx, ecx
+           shl ebx,1
+           setc cl
+           mov ecx, [esi+ecx*4]
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+
+           add edi, 4
+           dec [counter]
+           jnz @B
+
+           add [pBits], 4
+           add [pAnd], 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .l21
+           jmp .copy
 .img_4:
            add eax, [esi]
            mov [pQuad],eax
@@ -496,10 +600,11 @@ proc ati_init_cursor stdcall, dst:dword, src:dword
            add edi, 32*31*4
            mov [rBase],edi
 
-           mov esi,[pAnd]
+           mov esi,[pQuad]
            mov ebx, [pBits]
-.l1:
-           mov eax, [esi]
+.l4:
+           mov eax, [pAnd]
+           mov eax, [eax]
            bswap eax
            mov [counter], 16
 @@:
@@ -508,11 +613,10 @@ proc ati_init_cursor stdcall, dst:dword, src:dword
            setc dl
            dec edx
 
-           mov ecx, [ebx]
-           and ecx, 0xF0
+           movzx ecx, byte [ebx]
+           and cl, 0xF0
            shr ecx, 2
-           add ecx, [pQuad]
-           mov ecx, [ecx]
+           mov ecx, [esi+ecx]
            and ecx, edx
            and edx, 0xFF000000
            or edx, ecx
@@ -523,11 +627,9 @@ proc ati_init_cursor stdcall, dst:dword, src:dword
            setc dl
            dec edx
 
-           mov ecx, [ebx]
-           and ecx, 0x0F
-           shl ecx, 2
-           add ecx, [pQuad]
-           mov ecx, [ecx]
+           movzx ecx, byte [ebx]
+           and cl, 0x0F
+           mov ecx, [esi+ecx*4]
            and ecx, edx
            and edx, 0xFF000000
            or edx, ecx
@@ -538,14 +640,62 @@ proc ati_init_cursor stdcall, dst:dword, src:dword
            dec [counter]
            jnz @B
 
-           add esi, 4
+           add [pAnd], 4
            mov edi,[rBase]
            sub edi,128
            mov [rBase],edi
            sub [height],1
-           jnz .l1
+           jnz .l4
            jmp .copy
+.img_8:
+           add eax, [esi]
+           mov [pQuad],eax
+           add eax,1024
+           mov [pBits],eax
+           add eax, 1024
+           mov [pAnd],eax
+           mov eax,[esi+4]
+           mov [width],eax
+           mov ebx,[esi+8]
+           shr ebx,1
+           mov [height],ebx
 
+           mov edi, pCursor
+           add edi, 32*31*4
+           mov [rBase],edi
+
+           mov esi,[pQuad]
+           mov ebx, [pBits]
+.l81:
+           mov eax, [pAnd]
+           mov eax, [eax]
+           bswap eax
+           mov [counter], 32
+@@:
+           xor edx, edx
+           shl eax,1
+           setc dl
+           dec edx
+
+           movzx ecx,  byte [ebx]
+           mov ecx, [esi+ecx*4]
+           and ecx, edx
+           and edx, 0xFF000000
+           or edx, ecx
+           mov [edi], edx
+
+           inc ebx
+           add edi, 4
+           dec [counter]
+           jnz @B
+
+           add [pAnd], 4
+           mov edi,[rBase]
+           sub edi,128
+           mov [rBase],edi
+           sub [height],1
+           jnz .l81
+           jmp .copy
 .img_24:
            add eax, [esi]
            mov [pQuad],eax
@@ -606,7 +756,6 @@ proc ati_init_cursor stdcall, dst:dword, src:dword
            add edi, 128
            dec ebx
            jnz @B
-
            ret
 endp
 
@@ -814,7 +963,9 @@ sz_ati_srv   db 'HWCURSOR',0
 msgInit      db 'detect hardware...',13,10,0
 msgPCI       db 'PCI accsess not supported',13,10,0
 msgFail      db 'device not found',13,10,0
-
+msg_neg      db 'neg ecx',13,10,0
+buff         db 8 dup(0)
+             db 13,10, 0
 
 section '.data' data readable writable align 16
 

@@ -689,42 +689,47 @@ endp
 
 align 4
 proc init_codec
-          locals
-            counter dd ?
-          endl
+           locals
+             counter dd ?
+           endl
 
-          call reset_codec
-          and eax, eax
-          jz .err
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_read32]
+           test eax, CTRL_ST_CREADY
+           jnz .ready
 
-          xor edx, edx     ;ac_reg_0
-          call [ctrl.codec_write16]
+           call reset_codec
+           and eax, eax
+           jz .err
 
-          xor eax, eax
-          mov edx, CODEC_REG_POWERDOWN
-          call [ctrl.codec_write16]
+           xor edx, edx     ;ac_reg_0
+           call [ctrl.codec_write16]
 
-          mov [counter], 200     ; total 200*5 ms = 1s
+           xor eax, eax
+           mov edx, CODEC_REG_POWERDOWN
+           call [ctrl.codec_write16]
+
+           mov [counter], 200     ; total 200*5 ms = 1s
 .wait:
-          mov edx, CODEC_REG_POWERDOWN
-          call [ctrl.codec_read16]
-          and eax, 0x0F
-          cmp eax, 0x0F
-          jz .ready
+           mov edx, CODEC_REG_POWERDOWN
+           call [ctrl.codec_read16]
+           and eax, 0x0F
+           cmp eax, 0x0F
+           je .ready
 
-          mov eax, 5000          ; wait 5 ms
-          call StallExec
-          sub [counter] , 1
-          jnz .wait
+           mov eax, 5000          ; wait 5 ms
+           call StallExec
+           sub [counter] , 1
+           jnz .wait
 .err:
-          xor eax, eax        ; timeout error
-          ret
+           xor eax, eax        ; timeout error
+           ret
 .ready:
-          call detect_codec
+           call detect_codec
 
-          xor eax, eax
-          inc eax
-          ret
+           xor eax, eax
+           inc eax
+           ret
 endp
 
 align 4
@@ -804,7 +809,10 @@ proc cold_reset
              counter dd ?
             endl
 
-           xor eax, eax
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
+           and eax, not 0x08
+           or eax, 0x02
            mov edx, GLOB_CTRL
            call [ctrl.ctrl_write32]
 
@@ -812,13 +820,6 @@ proc cold_reset
            mov esi, msgCold
            call SysMsgBoardStr
      end if
-
-           mov eax, 1000000    ; wait 1 s
-           call StallExec
-
-           mov eax, 2
-           mov edx, GLOB_CTRL
-           call [ctrl.ctrl_write32]
 
            mov [counter], 10    ; total 10*100 ms = 1s
 .wait:
@@ -836,6 +837,7 @@ proc cold_reset
            mov esi, msgCRFail
            call SysMsgBoardStr
      end if
+.fail:
            stc
            ret
 .ok:
@@ -844,9 +846,6 @@ proc cold_reset
            and eax, CTRL_ST_CREADY
            jz .fail
            clc
-           ret
-.fail:
-           stc
            ret
 endp
 
@@ -1034,12 +1033,12 @@ proc StallExec
            mov ecx, edx       ;high
            rdtsc
            add ebx, eax
-           adc ecx,edx
+           adc ecx, edx
 @@:
            rdtsc
            sub eax, ebx
            sbb edx, ecx
-           jb @B
+           js @B
 
            pop eax
            pop ebx

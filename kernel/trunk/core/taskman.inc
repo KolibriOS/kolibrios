@@ -986,7 +986,6 @@ proc read_process_memory
            popad
            mov eax, [r_count]
            ret
-
 endp
 
 align 4
