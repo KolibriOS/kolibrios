@@ -1,0 +1,700 @@
+; <Lrz> 12.12.2006 реализовал поддержку кнопки insert и сегодя компонент почти работает!!!!
+; <Lrz> 07.12.2006 продолжается работа над переработкой компонента,изменениям подверглись многие функции, переработан вывод текста, а така же алгоритм внесения символов.
+; <Lrz> 03.09.2006 по возможности отказался от 16 битной арифметики, добавил новые баги
+; <Lrz> 09.08.2006 произведена оптимизация работы конпок DEL и Backspace, уменьшен размер выполняемого кода.
+; <Lrz> 21.07.2006 добавлена функция кнопки Del, теперь можно удалять символы при помощи данной клавиши
+; Автор: Евтихов Максим (Maxxxx32) email: maxxxxm@mail.ru
+; Дата последних изменений: 13.06.06 10:40
+;  Напишите в исходном коде своей программы use_edit_box,
+; это вставит необходимые процедуры в код вашей программы.
+;  Процедуры:
+;   edit_box.draw - полная перерисовка;
+;   edit_box.key - обработка клавиатуры;
+;   edit_box.mouse - обработка мыши;
+;   edit_box.focus - установка фокуса;
+;   edit_box.blur - его размывание;
+;   edit_box.get_n - получить количество прорисовываемых символов.
+;  При вызове любых из этих процедур в регистре edi следует
+; оставить указатель на структуру.
+;  Пример структуры:
+; some_edit edit_box 100,10,30,0x00ffffff,0,0x00aaaaaa,0,255,some_edit_text
+; длина, высота, верх, цвет фона, цвет рамки, если выбран,
+; цвет рамки, если не выбран, максимальное количество символов,
+; указатель на буфер, где будут хранится символы. Буфер должен
+; оканчиваться нулем, например если максимальное количество 255:
+;  some_edit_text:
+;       rb      256 ;255+1
+
+;  Пример вызова процедуры:
+;       mov     edi,some_edit
+;       call    edit_box.draw
+
+;  При вызове процедуры edit_box.key код клавиши должен
+; находится в ah, то есть перед вызовом этой процедуры надо вызвать
+; 2-ую сисемную функцию, например:
+;       mov     eax,2
+;       int     0x40
+;       mov     edi,some_edit1
+;       call    edit_box.key
+;       mov     edi,some_edit2
+;       call    edit_box.key
+;  Перед вызовом обработчика мыши следует проверить, является ли окно
+; активным.
+;  Если щелчок мыши был пройзведен за пределами edit box
+; фокус теряется.
+macro use_edit_box
+{
+edit_box:
+ed_width	equ [edi]		;ширина компонента
+ed_left 	equ [edi+4]             ;положение по оси х
+ed_top		equ [edi+8]             ;положение по оси у
+ed_color	equ [edi+12]		;цвет фона компонента
+ed_focus_border_color	equ [edi+16]	;цвет рамки компонента
+ed_blur_border_color	equ [edi+20]    ;цвет не активного компонента
+ed_text_color	equ [edi+24]            ;цвет текста
+ed_flags	equ [edi+28]            ;флаги
+ed_max	equ [edi+32]                    ;кол-во символов которые можно максимально ввести
+ed_size equ [edi+36]                    ;кол-во символов
+ed_pos	equ [edi+40]                    ;позиция курсора
+ed_offset	equ [edi+44]            ;смещение
+ed_text equ [edi+48]                    ;указатель на буфер
+cl_curs_x	equ [edi+52]		;предыдущее координата курсора по х
+cl_curs_y	equ [edi+56]		;предыдущее координата курсора по у
+ed_insert	equ [edi+60]		;word 
+ed_height=14 ; высота
+;==========================================================
+;=== процедура прорисовки =================================
+;==========================================================
+.draw:
+pusha
+;--- рисуем рамку ---
+	call	.draw_border		; Функция стабильна
+.draw_bg_cursor_text:
+;--- изменяем смещение, если надо ---
+	call	.check_offset		;вычисление позиции курсора стабильна
+;--- рисуем внутреннюю область ---
+	call	.draw_bg                ;нарисовать прямоугольник рабочей области
+.draw_cursor_text:
+;--- рисуем курсор ---
+	;--- может его не надо рисовать ----
+	test	dword ed_flags,1
+	je	@f
+	call	.draw_cursor
+@@:
+	call	.draw_text
+popa
+ret
+
+;----------------------------------------------------------
+;--- процедура прорисовки текста --------------------------
+;----------------------------------------------------------
+.draw_text:
+;--- вычисляем, сколько помещается символов ---
+;--- чтобы мусор не рисовать ---
+	call 	.get_n
+	mov	esi,ed_size
+        mov	ebx,ed_offset
+	sub	esi,ebx
+	cmp	eax,esi
+	jae	@F
+	mov	esi,eax		;чтобы не выходить за пределы экрана
+;--- рисуем текст ---
+@@: 	mov	eax,4
+	mov	ebx,ed_left
+	add	ebx,2
+	shl	ebx,16
+	mov	bx,ed_top
+	add	ebx,4
+	mov	ecx,ed_text_color
+	mov	edx,ed_offset
+	add	edx,ed_text
+	int	0x40
+ret
+;----------------------------------------------------------
+;--- процедура прорисовки фона ----------------------------
+;входные данные
+;eax
+;----------------------------------------------------------
+.draw_bg_eax:
+pusha
+	mov	ecx,ed_top
+	add	ecx,1
+	shl	ecx,16
+	mov	cx,13
+;	sub	ecx,1
+
+	mov	edx,ed_color
+	mov	eax,13
+	int	0x40
+popa
+ret
+
+	jmp	@f
+.draw_bg:
+pusha
+	mov	ebx,ed_left
+	add	ebx,1
+	shl	ebx,16
+	mov	bx,ed_width
+	sub	ebx,1
+
+@@:
+	mov	ecx,ed_top
+	add	ecx,1
+	shl	ecx,16
+	mov	cx,ed_height
+	sub	ecx,1
+
+	mov	edx,ed_color
+	mov	eax,13
+	int	0x40
+popa
+ret
+
+;----------------------------------------------------------
+;--- процедура получения количества символов в текущей щирине компонента --------------
+;----------------------------------------------------------
+.get_n:
+	xor	edx,edx   ;результат распологается в паре edx:eax в eax - остаток
+	mov	eax,ed_width	;получем ширину компонента
+	sub	eax,4		;вычтим 4
+	mov	ebx,6		;загрузми делитель
+	div	ebx		;размделим на 6
+ret
+
+;----------------------------------------------------------
+;--- процедура рисования курсора --------------------------
+;----------------------------------------------------------
+.clear_cursor:
+	mov	edx,ed_color
+	mov	ebx,cl_curs_x
+	mov	ecx,cl_curs_y
+	jmp	.draw_curs
+.draw_cursor:
+	mov	edx,ed_text_color
+@@:
+	mov	ebx,ed_pos
+	mov	ecx,ed_offset
+	sub	ebx,ecx
+
+	lea     ebx,[ebx*2+ebx]
+	shl     ebx,1
+	;imul	ebx,6
+	add	bx,ed_left
+	inc	ebx
+	mov	ebp,ebx
+	;push	bx
+	shl	ebx,16
+	mov	bx,bp
+	;pop	bx
+	mov	ecx,ed_top
+	add	ecx,2
+	mov	ebp,ecx
+	
+	shl	ecx,16
+	mov	cx,bp
+	add	cx,ed_height-4
+	
+	mov	cl_curs_x,ebx
+	mov	cl_curs_y,ecx
+.draw_curs:	         
+	mov	eax,38
+	int	0x40
+ret
+
+;----------------------------------------------------------
+;--- процедура рисования рамки ----------------------------
+;----------------------------------------------------------
+.draw_border:
+;--- цвет рамки ---
+	test	dword ed_flags,1
+	mov	edx,ed_focus_border_color
+	jne     @f
+	mov	edx,ed_blur_border_color
+@@:
+;--- сверху ---
+	mov	eax,38
+	mov	ebx,ed_left
+	mov 	ecx,ebx
+	shl	ebx,16
+	mov	bx,cx
+	add	bx,ed_width
+	mov	ecx, ed_top
+	mov	esi,ecx
+	shl	ecx,16
+	mov	cx,si
+	int	0x40
+
+;--- снизу ---
+	mov	esi,ecx
+	add	ecx,ed_height
+	mov	ebp,ecx
+	shl	ecx,16
+	mov	cx,bp
+	int	0x40
+ 
+;--- слева ---
+	mov	cx,si
+	mov	ebp,ebx
+	sub	bx,ed_width
+	int	0x40
+
+;--- справа ---
+	mov	ebx,ebp
+	shl	ebx,16
+	mov	bx,bp
+	int	0x40
+ret
+;----------------------------------------------------------
+;--- проверка, зашел ли курсор за границы и, если надо, ---
+;--- изменяем смещение ------------------------------------
+;--- eax = 1, если не изменилось или eax = 0, если
+; изменилось
+;----------------------------------------------------------
+.check_offset:
+	pushad
+	push	dword ed_offset          ;сохраним смещение
+	call	.get_n			;получим кол-во символов в паре регистров edx:eax 
+	mov	ebx,eax
+	mov	eax,ed_pos
+	xor 	edx,edx
+	idiv	ebx
+	xor 	edx,edx
+	imul    eax,ebx
+	mov	ed_offset,eax
+	pop	ebx
+	cmp	ax,bx
+	je	@f
+;;;;;;;; данные для закрашивания всей полосы прямоугольника
+	mov	ebx,ed_left
+	inc	ebx
+	shl	ebx,16
+	mov	bx,ed_width
+	dec 	ebx
+	call    .draw_bg_eax
+	mov	dword [esp+28],0
+@@:	popad
+	ret
+;==========================================================
+;=== обработка клавиатуры =================================
+;==========================================================
+.key:
+pusha
+	test	dword ed_flags,1 ; если не в фокусе, выходим
+	je     .no_figure ;@f
+;----------------------------------------------------------
+;--- проверяем, что нажато --------------------------------
+;----------------------------------------------------------
+	cmp	ah,8
+	jz	.backspace
+	cmp	ah,0xb6
+	jz	.delete
+	cmp	ah,176
+	jz	.left
+	cmp	ah,179
+	jz	.right
+	cmp	ah,180
+	jz	.home
+	cmp	ah,181
+	jz	.end
+	cmp	ah,185	;insert
+	jz	.insert
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Заглушка на обработку клавиш вверх и вниз
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
+	cmp	ah,177
+        jz	.no_figure
+	cmp	ah,178
+	jz	.no_figure
+	cmp	ah,27   ;ESC - клавиша ))
+	jz	.no_figure
+;--- нажата другая клавиша ---
+	test	word ed_flags,ed_figure_only  ; только цифры ?
+	jz	@f
+	cmp	ah,'0'
+	jb	.no_figure
+	cmp	ah,'9'
+	ja	.no_figure
+@@:        ; проверяем, находится ли курсор в конце
+	mov	edx, ed_max
+	mov	ebx, ed_pos
+	cmp	ebx,edx
+	jl	@f ; если меньше или равно
+.no_figure:
+	popa
+	ret
+.insert: not 	word ed_insert
+        jmp	.no_figure
+.ins_v: 
+	pop	eax edi
+	dec	dword ed_size    ;processing is insert
+	push	edi eax
+	sub	esi,ecx
+	add	esi,ebx
+        mov	edi,esi
+	jmp	.In_k
+@@:     ; сдвигаем символы после курсора вправо
+	mov	ecx,ed_size
+	push	edi eax
+	mov	esi,ed_text     ; Указатель на буфер
+	
+	movzx	eax,word ed_insert
+				;Будем работать со строкой
+	add	esi,ecx		;add ed_size добавим max size
+	mov	edi,esi
+
+       	cmp 	ecx,ebx         ;Если у нас позиция курсора = текущему размеру напечатанных символов т.е. курсор стоит в конце
+	je	.In_k
+	cmp	ax,-1 ;IF insert is enable
+	je	.ins_v
+
+	sub	ecx,ebx         ;Найдем кол-во символов для передвижения.
+	inc	edi		;Сместим наши символы в право
+	std
+	inc 	ecx
+   @@:	
+	;--------
+	lodsb
+	stosb
+	;--------
+	loop	@b
+.In_k:	cld
+	pop eax
+	mov al,ah
+	stosb
+	pop edi
+; вставляем код клавиши туда, где курсор
+	; увеличиваем значение размера и позиции
+	inc	 dword ed_size
+	call	.draw_all2
+	inc	 dword ed_pos
+	jmp    .draw_cursor_text
+.delete:	
+	mov	edx,ed_size
+	mov	ecx,ed_pos
+
+	cmp	edx,ecx
+	jg	@f
+	popa
+	ret
+	
+@@:	call 	.del_char
+	jmp 	.draw_all
+        
+;--- нажата клавиша backspace ---
+.backspace:
+	; проверяем, курсор у левого края ?
+	mov	edx,ed_size
+	mov	ecx,ed_pos
+	test	ecx,ecx
+	jnz	@f
+	popa
+	ret
+
+@@:	cmp	edx,ecx	;if ed_pos=ed_size
+	je	@f
+	dec	ecx
+	call 	.del_char
+@@:
+	dec	 dword ed_pos
+
+.draw_all:
+;	mov	eax,.draw_cursor_text
+	push	.draw_cursor_text;eax
+	dec	 dword ed_size
+.draw_all2:
+	call	.clear_cursor
+	call	.check_offset
+	call	.get_n
+	push	eax
+	mov	ebx,ed_offset
+	add	eax,ebx	;eax = w_off= ed_offset+width
+	mov	ebx,ed_size
+	
+	cmp	eax,ebx
+	jb	@f
+	mov	eax,ed_pos
+	sub	ebx,eax
+	mov	ecx,ed_offset
+	sub	eax,ecx
+	jmp	.nxt
+@@:	mov	ebx,ed_pos
+	push	ebx
+	sub	eax,ebx
+	mov	ebx,eax	;don't optimal
+	
+	pop	eax	;ed_pos
+       	mov	ecx,ed_offset
+	sub	eax,ecx
+
+.nxt:
+	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
+	add	ebp,ebx
+	pop	edx
+	cmp	ebp,edx
+	je	@f
+	inc	ebx
+
+@@:     mov	edx,ebx
+	lea	ebx,[eax*2+eax]
+	shl	ebx,1
+	add	ebx,ed_left
+	inc	ebx
+	shl	ebx,16
+	lea	ecx,[edx*2+edx]
+	shl	ecx,1	
+	mov	bx,cx
+	call	.draw_bg_eax
+	ret
+;--- нажата клавиша left ---
+.left:
+	mov	ebx,ed_pos
+	test	ebx,ebx
+	jz	.nd_k
+	call	.clear_cursor
+	dec	 dword ed_pos
+	jmp	.nd_k
+;--- нажата клавиша right ---
+.right:
+	mov	ebx,ed_pos
+	cmp	ebx,ed_size
+	je	.nd_k
+	call	.clear_cursor
+	inc	dword  ed_pos
+	jmp	.nd_k
+.home:
+	mov	ebx,ed_pos
+	test	ebx,ebx
+	jz	.nd_k
+	call	.clear_cursor
+	xor	eax,eax
+	mov	ed_pos,eax
+	jmp	.nd_k
+
+.end:
+	mov	ebx,ed_pos
+	cmp	ebx,dword ed_size
+	je	@f
+	call	.clear_cursor
+	mov	eax,ed_size
+	mov	ed_pos,eax
+.nd_k:	call	.check_offset
+	test	eax,eax
+	jz	.draw_bg_cursor_text
+	call	.draw_cursor
+@@:
+popa
+ret
+        ;- удаление символа
+.del_char:
+	mov     esi,ed_text
+	add	esi,ecx
+
+	mov	ebx,esi
+	inc 	esi
+	cld
+
+	sub	edx,ecx
+	mov	ecx,edx
+	push 	edi
+	mov 	edi,ebx
+@@:
+	lodsb
+	stosb
+	dec ecx
+	jns @b
+	
+	pop edi
+	ret
+;==========================================================
+;=== обработка мыши =======================================
+;==========================================================
+.mouse:
+pusha
+;----------------------------------------------------------
+;--- получаем состояние кнопок мыши -----------------------
+;----------------------------------------------------------
+	mov	eax,37
+	mov	ebx,2
+	int	0x40
+;----------------------------------------------------------
+;--- проверяем состояние ----------------------------------
+;----------------------------------------------------------
+	test	eax,1
+	jnz	.mouse_left_button
+;	or	eax,1
+;	jc	@f
+;	btr	dword ed_flags,2
+@@:     popa
+	ret
+
+.mouse_left_button:
+;----------------------------------------------------------
+;--- получаем координаты мыши -----------------------------
+;----------------------------------------------------------
+	mov	eax,37
+	xor	ebx,ebx
+	inc	ebx
+	int	0x40
+;----------------------------------------------------------
+;--- проверяем, попадает ли курсор в edit box -------------
+;----------------------------------------------------------
+	mov	ebx,ed_top
+	cmp	ax,bx
+	jl	._blur;.mouse_end_no_focus
+
+	add	bx,ed_height
+	cmp	ax,bx
+	jg	._blur;.mouse_end_no_focus
+
+	shr	eax,16
+
+	mov	bx,ed_left
+	cmp	ax,bx
+	jl	._blur;.mouse_end_no_focus
+
+	add	bx,ed_width
+	cmp	ax,bx
+	jg	._blur;.mouse_end_no_focus
+;--- изменяем позицию курсора ---
+	push	eax
+	call	.clear_cursor
+	pop	eax
+	xor	dx,dx
+	sub	ax,ed_left
+	add	ax,2
+	mov	bx,6
+	div	bx
+	add	ax,ed_offset
+	cmp	ax,ed_size
+	jna	 @f
+	mov	ax,ed_size
+@@:
+	mov	ed_pos,ax
+	call	.check_offset
+;	test	eax,eax
+;	jz	.draw_bg_cursor_text
+	call	.draw_cursor
+
+	call	.focus
+
+.mouse_pressed:
+popa
+ret
+;.mouse_end_no_focus:
+;        call    .blur
+;popa
+;ret
+;----------------------------------------------------------
+;--- процедура установки фокуса ---------------------------
+;----------------------------------------------------------
+.blur:
+pusha
+._blur:
+	btr	dword ed_flags,0
+	jnc	@f
+	call	.clear_cursor
+	jmp	.blur_end
+.focus:
+pusha
+	bts	dword ed_flags,0
+	jc	@f
+	call	.draw_cursor
+.blur_end:
+	call	.draw_border
+@@:
+popa
+ret
+
+;----------------------------------------------------------
+;--- процедура размывания фокуса --------------------------
+;----------------------------------------------------------
+;.blur:
+;pusha
+;._blur:
+	;btr     ed_flags,1
+	;jnc     @f
+	;call    .draw_border
+	;call    .clear_cursor
+;@@:
+;popa
+;ret
+}
+ed_figure_only=1000000000000000b
+ed_focus=10b
+macro draw_edit_boxes start,end
+{
+	mov	edi,start
+	mov	ecx,((end-start)/ed_struc_size)
+@@:
+	call	edit_box.draw
+	add	edi,ed_struc_size
+	loop	@b
+}
+
+macro mouse_edit_boxes start,end
+{
+	mov	edi,start
+	mov	ecx,((end-start)/ed_struc_size)
+@@:
+	call	edit_box.mouse
+	add	edi,ed_struc_size
+	loop	@b
+}
+
+macro key_edit_boxes start,end
+{
+	mov	edi,start
+	mov	ecx,((end-start)/ed_struc_size)
+@@:
+	call	edit_box.key
+	add	edi,ed_struc_size
+	loop	@b
+}
+ed_struc_size=62
+struc  edit_box width,left,top,color,focus_border_color,\
+       blur_border_color,text_color,max,text,flags,size
+{
+.width dd width
+.left dd left
+.top dd top
+.color dd color
+.focus_border_color dd focus_border_color
+.blur_border_color dd blur_border_color
+.text_color dd text_color
+.flags dd flags+0
+.max dd max
+.size dd size+0
+.pos dd 0
+.offset dd 0
+.text dd text
+.cl_curs_x dd 0
+.cl_curs_y dd 0
+.insert	   dw 0
+}
+
+macro edit_boxes_set_sys_color start,end,color_table
+{
+	mov	edi,start
+	mov	ecx,((end-start)/ed_struc_size)
+	mov	esi,color_table
+@@:
+	mov	eax,[esi+36]
+	mov	ebx,[esi+20]
+	mov	ed_focus_border_color,eax
+	shr	bh,1
+	shr	bl,1
+	shr	ah,1
+	shr	al,1
+	add	ah,bh
+	add	al,bl
+	ror	eax,16
+	ror	ebx,16
+	shr	bl,1
+	shr	al,1
+	add	al,bl
+	ror	eax,16
+	mov	ed_blur_border_color,eax
+	add	edi,ed_struc_size
+	loop	@b
+}
