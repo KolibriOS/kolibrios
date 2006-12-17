@@ -12,39 +12,6 @@ idtreg:
      dd   idts+8
 ;label idts at 0xB100-8
 
-
-uglobal
- tss_sceleton:
-  l.back   dw 0,0
-  l.esp0   dd 0
-  l.ss0    dw 0,0
-  l.esp1   dd 0
-  l.ss1    dw 0,0
-  l.esp2   dd 0
-  l.ss2    dw 0,0
-  l.cr3    dd 0
-  l.eip    dd 0
-  l.eflags dd 0
-  l.eax    dd 0
-  l.ecx    dd 0
-  l.edx    dd 0
-  l.ebx    dd 0
-  l.esp    dd 0
-  l.ebp    dd 0
-  l.esi    dd 0
-  l.edi    dd 0
-  l.es     dw 0,0
-  l.cs     dw 0,0
-  l.ss     dw 0,0
-  l.ds     dw 0,0
-  l.fs     dw 0,0
-  l.gs     dw 0,0
-  l.ldt    dw 0,0
-  l.trap   dw 0
-  l.io     dw 0
-endg
-
-
 build_process_gdt_tss_pointer:
 
         mov    ecx,tss_data
@@ -512,8 +479,7 @@ sys_resize_app_memory:
 .no_application_mem_resize:
         ret
 
-
-
+if 0
 get_app_params:
 
     push eax
@@ -577,20 +543,19 @@ get_app_params:
     stc
     ret
 
+end if
 
-uglobal
-  new_process_place  dd  0x0
-  app_start    dd  0x0
-  app_i_end    dd  0x0
-  app_mem      dd  0x0
-  app_esp      dd  0x0
-  app_i_param  dd  0x0
-  app_i_icon   dd  0x0
+
+;uglobal
+;  new_process_place  dd  0x0
+;  app_start    dd  0x0
+;  app_i_end    dd  0x0
+;  app_mem      dd  0x0
+;  app_esp      dd  0x0
+;  app_i_param  dd  0x0
+;  app_i_icon   dd  0x0
 ;  app_mem_pos  dd  0x0
-  appl_path        dd 0x0
-  appl_path_size   dd 0x0
-endg
-
+;endg
 
 sys_threads:
 

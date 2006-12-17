@@ -41,7 +41,7 @@ rootdirs:
         db      3,'cd3'
         dd      fs_OnCd3
         dd      fs_NextCd
-;***********************************************        
+;***********************************************
         db      0
 
 
@@ -97,6 +97,18 @@ file_system_lfn:
         add     esi, std_application_base_address
         mov     ebp, esi
         lodsb
+@@:
+        cmp dword [ebx], 7
+        jne @F
+        mov edx, [ebx+4]
+        mov ebx, [ebx+8]
+        test ebx, ebx
+        jz .l1
+        add ebx, new_app_base
+.l1:
+        call fs_execute  ; ebp, ebx, edx
+        mov [esp+36], eax
+        ret
 @@:
         cmp     al, '/'
         jz      @f
@@ -591,7 +603,7 @@ fs_HasCd3:
         cmp     al, 00000010b
         setz    al
         ret
-;*******************************************************        
+;*******************************************************
 
 ; fs_NextXXX functions:
 ; in: eax = partition number, from which start to scan
@@ -648,7 +660,7 @@ fs_NextHd:
         inc     eax
         clc
         ret
-        
+
 ;*******************************************************
 fs_NextCd:
 ; we always have /cdX/1

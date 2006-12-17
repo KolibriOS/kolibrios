@@ -1,4 +1,4 @@
-GREEDY_KERNEL  equ 0
+ GREEDY_KERNEL  equ 0
 
 
 struc APP_HEADER_00
@@ -21,61 +21,235 @@ struc APP_HEADER_01
   .i_icon      dd ?    ;+32
 }
 
+struc TSS
+{
+  ._back   rw 2
+  ._esp0   rd 1
+  ._ss0    rw 2
+  ._esp1   rd 1
+  ._ss1    rw 2
+  ._esp2   rd 1
+  ._ss2    rw 2
+  ._cr3    rd 1
+  ._eip    rd 1
+  ._eflags rd 1
+  ._eax    rd 1
+  ._ecx    rd 1
+  ._edx    rd 1
+  ._ebx    rd 1
+  ._esp    rd 1
+  ._ebp    rd 1
+  ._esi    rd 1
+  ._edi    rd 1
+  ._es     rw 2
+  ._cs     rw 2
+  ._ss     rw 2
+  ._ds     rw 2
+  ._fs     rw 2
+  ._gs     rw 2
+  ._ldt    rw 2
+  ._trap   rw 1
+  ._io     rw 1
+}
+
+virtual at 0
+  TSS  TSS
+end virtual
+
+struc APP_PARAMS
+{ .app_cmdline   ;0x00
+  .app_path      ;0x04
+  .app_eip       ;0x08
+  .app_esp       ;0x0C
+  .app_mem       ;0x10
+}
+
+macro _clear_ op
+{  mov ecx, op/4
+   xor eax, eax
+   cld
+   rep stosd
+}
+
 align 4
-proc test_app_header stdcall, header:dword
-           virtual at ebx
+proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
+           locals
+             save_cr3      dd ?
+             slot          dd ?
+             slot_base     dd ?
+             file_base     dd ?
+             file_size     dd ?
+
+             app_cmdline   dd ? ;0x00
+             app_path      dd ? ;0x04
+             app_eip       dd ? ;0x08
+             app_esp       dd ? ;0x0C
+             app_mem       dd ? ;0x10
+           endl
+
+           stdcall load_file,[file_name]
+           mov  ecx, -ERROR_FILE_NOT_FOUND
+
+           test eax, eax
+           jz .err   ;fail
+
+           mov [file_base], eax
+           mov [file_size], ebx
+
+           lea ebx, [app_cmdline]
+           call test_app_header
+           mov ecx, -0x1F
+           test eax, eax
+           jz .err   ;fail
+
+           mov esi, new_process_loading
+           call sys_msg_board_str       ; write message to message board
+
+           pushfd
+           cli
+
+.wait_lock:
+           cmp [application_table_status],0
+           je .get_lock
+           call   change_task
+           jmp .wait_lock
+
+.get_lock:
+           mov eax, 1
+           xchg eax, [application_table_status]
+           cmp eax, 0
+           jne .wait_lock
+
+           call set_application_table_status
+
+           call get_new_process_place
+           test eax, eax
+           mov ecx, -0x20      ; too many processes
+           jz .err
+
+           mov [slot], eax
+           shl eax, 8
+           add eax, PROC_BASE
+           mov [slot_base], eax
+           mov edi, eax
+           _clear_ 256     ;clean extended information about process
+
+; write application name
+           mov edi, [file_name]
+           mov al, '/'
+           call k_strrchr  ; now eax points to name without path
+
+           lea esi, [eax+1]
+           test eax, eax
+           jnz @F
+           mov esi, [file_name]
+@@:
+           mov ecx, 8  ; 8 chars for name
+           mov edi, [slot_base]
+.copy_process_name_loop:
+           lodsb
+           cmp al, '.'
+           jz .copy_process_name_done
+           test al, al
+           jz .copy_process_name_done
+           stosb
+           loop .copy_process_name_loop
+.copy_process_name_done:
+
+           mov ebx, cr3
+           mov [save_cr3], ebx
+     if GREEDY_KERNEL
+           stdcall create_app_space,[app_mem],[file_size]
+     else
+           stdcall create_app_space,[app_mem],[app_mem]
+     end if
+           test eax, eax
+           jz .failed
+
+           mov   ebx,[slot_base]
+           mov   [ebx+APPDATA.dir_table],eax
+           mov   eax,[app_mem]
+           mov   [ebx+APPDATA.mem_size],eax
+
+           mov ecx, [file_size]
+           add ecx, 3
+           shr ecx, 2
+           mov esi, [file_base]
+           mov edi, new_app_base
+           cld
+           rep movsd
+
+           stdcall kernel_free, [file_base]
+           lea eax, [app_cmdline]
+           stdcall set_app_params ,[slot],eax,[cmd_line],\
+                                         [file_name], dword 0 ;[flags]
+
+           mov eax, [save_cr3]
+           call set_cr3
+
+           xor eax, eax
+           mov    [application_table_status],eax ;unlock application_table_status mutex
+           popfd
+           mov    eax,[process_number]  ;set result
+           ret
+.failed:
+           mov eax, [save_cr3]
+           call set_cr3
+.err:
+           popfd
+           xor eax, eax
+           mov [application_table_status],eax
+           ret
+endp
+
+align 4
+test_app_header:
+           virtual at eax
              APP_HEADER_00 APP_HEADER_00
            end virtual
-
-           mov ebx, [header]
-           cmp [ebx+6], word '00'
-           jne  .check_01_header
-
-           mov  eax,[APP_HEADER_00.start]
-           mov  [app_start],eax
-           mov  eax,[APP_HEADER_00.i_end]
-           mov  [app_i_end],eax
-           mov  eax,[APP_HEADER_00.mem_size]
-           mov  [app_mem],eax
-           shr  eax,1
-           sub  eax,0x10
-           mov  [app_esp],eax
-           mov  eax,[APP_HEADER_00.i_param]
-           mov  [app_i_param],eax
-           mov  [app_i_icon],dword 0
-
-           mov  eax,1
-           ret
-
- .check_01_header:
-           virtual at ebx
+           virtual at eax
              APP_HEADER_01 APP_HEADER_01
            end virtual
 
-           cmp  [ebx+6],word '01'
-           jne  .no_01_header
+           cmp dword [eax], 'MENU'
+           jne .fail
+           cmp word [eax+4],'ET'
+           jne .fail
 
-           mov  eax,[APP_HEADER_01.start]
-           mov  [app_start],eax
-           mov  eax,[APP_HEADER_01.i_end]
-           mov  [app_i_end],eax
-           mov  eax,[APP_HEADER_01.mem_size]
-           mov  [app_mem],eax
-           mov  eax,[APP_HEADER_01.stack_top]
-           mov  [app_esp],eax
-           mov  eax,[APP_HEADER_01.i_param]
-           mov  [app_i_param],eax
-           mov  eax,[APP_HEADER_01.i_icon]
-           mov  [app_i_icon],eax
+           cmp [eax+6], word '00'
+           jne  .check_01_header
 
-           mov  eax,1
+           mov  ecx,[APP_HEADER_00.start]
+           mov  [ebx+0x08], ecx                ;app_eip
+           mov  edx,[APP_HEADER_00.mem_size]
+           mov  [ebx+0x10], edx                ;app_mem
+           shr  edx,1
+           sub  edx,0x10
+           mov  [ebx+0x0C], edx                ;app_esp
+           mov  ecx,[APP_HEADER_00.i_param]
+           mov  [ebx], ecx                     ;app_cmdline
+           mov  [ebx+4], dword 0               ;app_path
            ret
 
-.no_01_header:
+ .check_01_header:
 
+           cmp  [eax+6],word '01'
+           jne  .fail
+
+           mov  ecx,[APP_HEADER_01.start]
+           mov  [ebx+0x08], ecx                ;app_eip
+           mov  edx,[APP_HEADER_01.mem_size]
+           mov  [ebx+0x10], edx                ;app_mem
+           mov  ecx,[APP_HEADER_01.stack_top]
+           mov  [ebx+0x0C], ecx                ;app_esp
+           mov  edx,[APP_HEADER_01.i_param]
+           mov  [ebx], edx                     ;app_cmdline
+           mov  ecx,[APP_HEADER_01.i_icon]
+           mov  [ebx+4], ecx                   ;app_path
+           ret
+.fail:
            xor eax, eax
            ret
-endp
 
 align 4
 proc get_new_process_place
@@ -399,8 +573,10 @@ proc fs_execute
            mov ebx, [tmp_task_data]    ;cmd line
            add ebx, TMP_CMD_LINE
 
-           stdcall fs_exec, eax, ebx, [flags], [ebp+8],\
-                            [ebp+12], [ebp+16],[ebp+20]
+           stdcall fs_exec_EX, eax, ebx, [flags]
+
+;           stdcall fs_exec, eax, ebx, [flags], [ebp+8],\
+;                            [ebp+12], [ebp+16],[ebp+20]
            mov [retval], eax
            popad
            mov [pg_data.tmp_task_mutex], 0
@@ -409,400 +585,6 @@ proc fs_execute
 
 endp
 
-align 4
-proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword,\
-                       fn_read:dword, file_size:dword,\
-                       cluster:dword, some_data:dword
-
-           locals
-             slot          dd ?
-             app_path_size dd ?
-             save_cr3      dd ?
-             img_size      dd ?
-           endl
-
-; check filename length - with terminating NULL must be no more than 1024 symbols
-
-           mov edi, [file_name]
-           mov ecx, 1024
-           xor eax, eax
-           repnz scasb
-           jz @f
-           mov     eax, -ERROR_FILE_NOT_FOUND
-           ret
-@@:
-           sub edi, [file_name]
-           mov [app_path_size], edi
-
-           mov esi, new_process_loading
-           call sys_msg_board_str       ; write message to message board
-
-           pushfd
-           cli
-
-.wait_lock:
-           cmp [application_table_status],0
-           je .get_lock
-           call   change_task
-           jmp .wait_lock
-
-.get_lock:
-           mov eax, 1
-           xchg eax, [application_table_status]
-           cmp eax, 0
-           jne .wait_lock
-
-           call   set_application_table_status
-
-           call get_new_process_place
-           test eax, eax
-           mov ecx, -0x20      ; too many processes
-           jz .err
-           mov [slot], eax
-
-           mov    edi,eax
-           shl    edi,8
-           add    edi,PROC_BASE
-           mov    ecx,256/4
-           xor    eax,eax
-           cld
-           rep    stosd              ;clean extended information about process
-
-; write application name
-
-           mov edi, [file_name]
-           mov ecx, [app_path_size]
-           add edi, ecx
-           dec edi
-           std
-           mov al, '/'
-           repnz scasb
-           cld
-           jnz @f
-           inc edi
-@@:
-           inc edi
-; now edi points to name without path
-
-           mov esi, edi
-           mov ecx, 8  ; 8 chars for name
-           mov edi, [slot]
-           shl edi, cl
-           add edi, PROC_BASE
-.copy_process_name_loop:
-           lodsb
-           cmp al, '.'
-           jz .copy_process_name_done
-           test al, al
-           jz .copy_process_name_done
-           stosb
-           loop .copy_process_name_loop
-.copy_process_name_done:
-           mov al, ' '
-           rep stosb
-           pop eax
-           mov cl, 3   ; 3 chars for extension
-           dec esi
-@@:
-           dec eax
-           cmp eax, esi
-           jbe .copy_process_ext_done
-           cmp byte [eax], '.'
-           jnz @b
-           lea esi, [eax+1]
-.copy_process_ext_loop:
-           lodsb
-           test al, al
-           jz  .copy_process_ext_done
-           stosb
-           loop .copy_process_ext_loop
-.copy_process_ext_done:
-           mov al, ' '
-           rep stosb
-
-; read header
-           lea  eax, [file_size]
-           mov ebx, [eax]
-           mov [img_size], ebx
-           mov  edi, TMP_BUFF
-           call [fn_read]
-
-           test eax, eax
-           jnz .err
-
-; check menuet signature
-
-           mov ecx, -0x1F
-;check MENUET signature
-           cmp    [TMP_BUFF],dword 'MENU'
-           jnz    .err
-           cmp    [TMP_BUFF+4],word 'ET'
-           jnz    .err
-
-           stdcall test_app_header, TMP_BUFF
-           test eax, eax
-           jz .err
-
-           mov eax, cr3
-           mov [save_cr3], eax
-     if GREEDY_KERNEL
-           stdcall create_app_space,[app_mem],[img_size]
-     else
-           stdcall create_app_space,[app_mem],[app_mem]
-     end if
-           test eax, eax
-           jz .failed
-
-           mov    ebx,[slot]
-           shl   ebx,8
-           mov   [PROC_BASE+ebx+0xB8],eax
-
-           mov esi, TMP_BUFF
-           mov edi, new_app_base
-           mov ecx, 512/4
-           cld
-           rep movsd
-
-;read file
-@@:
-           lea  eax, [file_size]
-           cmp dword [eax], 0
-           jz .done
-           push edi
-           call [fn_read]
-           pop edi
-           add edi, 512
-           test eax, eax
-           jz  @b
-           cmp ebx, 6
-           jne .failed
-.done:
-           stdcall add_app_parameters, [slot], new_app_base,\
-                                       [cmd_line],[file_name],[flags]
-
-           mov eax, [save_cr3]
-           call set_cr3
-
-           xor eax, eax
-           mov    [application_table_status],eax ;unlock application_table_status mutex
-           popfd
-           mov    eax,[process_number]  ;set result
-           ret
-
-.failed:
-           mov eax, [save_cr3]
-           call set_cr3
-.err:
-
-           popfd
-           xor eax, eax
-           mov [application_table_status],eax
-           ret
-endp
-
-align 4
-proc add_app_parameters stdcall,slot:dword,img_base:dword,\
-                        cmd_line:dword, app_path:dword, flags:dword
-
-           mov edi, [slot]
-           mov esi, [fpu_data]
-           bt [cpu_caps], CAPS_SSE
-           jnc .no_SSE
-
-           shl edi, 8
-           mov eax, edi
-           lea edi, [esi+edi*2]
-           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
-           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
-           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
-           mov ecx, 512/4
-           jmp @F
-.no_SSE:
-           mov eax, edi
-           shl eax, 8
-           mov ebx, edi
-           shl edi, 7
-           shl ebx, 4
-           sub edi, ebx       ;edi*=112
-           add edi, esi
-           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
-           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
-           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
-           mov ecx, 112/4
-@@:
-           rep movsd
-
-           mov    ebx,[slot]
-           cmp    ebx,[TASK_COUNT]
-           jle    .noinc
-           inc    dword [TASK_COUNT]       ;update number of processes
-.noinc:
-           shl    ebx,8
-           mov    eax,[app_mem]
-           mov    [PROC_BASE+APPDATA.mem_size+ebx],eax
-
-           mov    ecx, [def_cursor]
-           mov    [PROC_BASE+APPDATA.cursor+ebx],ecx
-
-           shr    ebx,3
-           mov eax, new_app_base
-           mov    dword [CURRENT_TASK+ebx+0x10],eax
-
-.add_command_line:
-           mov    edx,[app_i_param]
-           test   edx,edx
-           jz     .no_command_line      ;application don't need parameters
-           mov    eax,[cmd_line]
-           test   eax,eax
-           jz     .no_command_line      ;no parameters specified
-;calculate parameter length
-           xor    ecx,ecx
-.command_line_len:
-           cmp    byte [eax],0
-           jz     .command_line_len_end
-           inc    eax
-           inc    ecx
-           cmp    ecx,255
-           jl     .command_line_len
-
-.command_line_len_end:
-;ecx - parameter length
-;edx - address of parameters in new process address space
-           inc ecx
-           mov edi, [img_base]
-           add edi, edx
-           mov esi, [cmd_line]
-           rep movsb
-
-.no_command_line:
-
-            mov    edx,[app_i_icon]
-            test   edx,edx
-            jz     .no_command_line_1      ;application don't need path of file
-            mov    esi,[app_path]
-            test esi, esi
-            jz     .no_command_line_1      ;application don't need path of file
-            mov    ecx, 64
-            mov    edi, [img_base]
-            add edi, edx
-            rep movsb
-
-.no_command_line_1:
-           mov    ebx,[slot]
-           mov    eax,ebx
-           shl    ebx,5
-; set window state to 'normal' (non-minimized/maximized/rolled-up) state
-        mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
-        mov     [ebx+window_data+WDATA.fl_redraw], 1
-           add    ebx,CURRENT_TASK            ;ebx - pointer to information about process
-           mov    [ebx+TASKDATA.wnd_number],al;set window number on screen = process slot
-
-           mov    [ebx+TASKDATA.event_mask],dword 1+2+4 ;set default event flags (see 40 function)
-
-           inc    dword [process_number]
-           mov    eax,[process_number]
-           mov    [ebx+4],eax           ;set PID
-
-           mov    ecx,ebx
-           add    ecx,(draw_data-CURRENT_TASK)  ;ecx - pointer to draw data
-;set draw data to full screen
-
-           mov    [ecx+0],dword 0
-           mov    [ecx+4],dword 0
-           mov    eax,[SCR_X_SIZE]
-           mov    [ecx+8],eax
-           mov    eax,[SCR_Y_SIZE]
-           mov    [ecx+12],eax
-;set cr3 register in TSS of application
-
-           mov    ecx,[slot]
-           shl    ecx,8
-           mov    eax,[PROC_BASE+0xB8+ecx]
-           ;or     eax,  PG_NOCACHE
-           mov    [l.cr3],eax
-
-           mov    eax,[app_start]
-           mov    [l.eip],eax           ;set eip in TSS
-           mov    eax,[app_esp]
-           mov    [l.esp],eax           ;set stack in TSS
-
-;gdt
-           mov    ax,app_code           ;ax - selector of code segment
-           mov    [l.cs],ax
-           mov    ax,app_data
-           mov    [l.ss],ax
-           mov    [l.ds],ax
-           mov    [l.es],ax
-           mov    [l.fs],ax
-           mov    ax,graph_data         ;ax - selector of graphic segment
-           mov    [l.gs],ax
-           mov    [l.io],word 128
-           mov    [l.eflags],dword 0x1202
-
-           mov    [l.ss0],os_data
-           mov    ebx,[slot]
-           shl    ebx,12
-           add    ebx,sysint_stack_data+4096
-           mov    [l.esp0],ebx
-
-;copy tss to it place
-           mov    eax,tss_sceleton
-           mov    ebx,[slot]
-           imul   ebx,tss_step
-           add    ebx,tss_data          ;ebx - address of application TSS
-           mov    ecx,120
-           call   memmove
-
-;Add IO access table - bit array of permitted ports
-           or     eax,-1
-           mov    edi,[slot]
-           imul   edi,tss_step
-           add    edi,tss_data+128
-           mov    ecx,2048
-           cld
-           rep    stosd                 ;full access to 2048*8=16384 ports
-
-           mov    ecx,ebx               ;ecx - address of application TSS
-           mov    edi,[slot]
-           shl    edi,3
-;set TSS descriptor
-           mov    [edi+gdts+tss0+0],word tss_step ;limit (size)
-           mov    [edi+gdts+tss0+2],cx  ;part of offset
-           mov    eax,ecx
-           shr    eax,16
-           mov    [edi+gdts+tss0+4],al  ;part of offset
-           mov    [edi+gdts+tss0+7],ah  ;part of offset
-           mov    [edi+gdts+tss0+5],word 01010000b*256+11101001b ;system flags
-
-;flush keyboard and buttons queue
-           mov    [KEY_COUNT],byte 0
-           mov    [BTN_COUNT],byte 0
-
-           mov    edi,[slot]
-           shl    edi,5
-           add    edi,window_data
-           mov    ebx,[slot]
-           movzx  esi,word [WIN_STACK+ebx*2]
-           lea    esi,[WIN_POS+esi*2]
-           call   windowactivate        ;gui initialization
-
-           mov    ebx,[slot]
-           shl    ebx,5
-           mov    [CURRENT_TASK+ebx+0xa],byte 0 ;set process state - running
-; set if debuggee
-           mov eax, [flags]
-           test   byte [flags], 1
-           jz     .no_debug
-           mov    [CURRENT_TASK+ebx+0xa],byte 1 ;set process state - suspended
-           mov    eax,[CURRENT_TASK]
-           mov    [PROC_BASE+ebx*8+0xac],eax ;set debugger PID - current
-.no_debug:
-
-           mov    esi,new_process_running
-           call   sys_msg_board_str     ;output information about succefull startup
-
-           ret
-endp
 
 pid_to_slot:
 ;Input:
@@ -1054,27 +836,28 @@ proc write_process_memory
            ret
 endp
 
-
 align 4
 proc new_sys_threads
            locals
-             thread_start  dd ?
-             thread_stack  dd ?
-             params        dd ?
              slot          dd ?
+             app_cmdline   dd ? ;0x00
+             app_path      dd ? ;0x04
+             app_eip       dd ? ;0x08
+             app_esp       dd ? ;0x0C
+             app_mem       dd ? ;0x10
            endl
 
-           mov [thread_start], ebx
-           mov [thread_stack], ecx
-           mov [params], 0
+           cmp eax,1
+           jne .failed                  ;other subfunctions
 
-           xor    edx,edx      ; flags=0
+           xor  eax,eax
+           mov [app_cmdline], eax
+           mov [app_path], eax
+           mov [app_eip], ebx
+           mov [app_esp], ecx
 
-           cmp    eax,1
-           jnz    .failed                  ;other subfunctions
            mov    esi,new_process_loading
            call   sys_msg_board_str
-
 .wait_lock:
            cmp [application_table_status],0
            je .get_lock
@@ -1095,41 +878,39 @@ proc new_sys_threads
 
            mov [slot], eax
 
-           xor    eax,eax
-           mov    [app_i_param],eax
-           mov    [app_i_icon],eax
-
-           mov ebx, [thread_start]
-           mov ecx, [thread_stack]
-
-           mov    [app_start],ebx
-           mov    [app_esp],ecx
-
            mov    esi,[CURRENT_TASK]
            shl    esi,8
            add    esi,PROC_BASE
-           mov    ebx,esi               ;ebx=esi - pointer to extended information about current thread
+           mov    ebx,esi             ;ebx=esi - pointer to extended information about current thread
 
-           mov    edi,[slot]
+           mov    edi, eax
            shl    edi,8
            add    edi,PROC_BASE
-           mov    edx,edi               ;edx=edi - pointer to extended infomation about new thread
+           mov    edx,edi             ;edx=edi - pointer to extended infomation about new thread
            mov    ecx,256/4
-           rep    stosd                 ;clean extended information about new thread
+           xor eax, eax
+           cld
+           rep    stosd               ;clean extended information about new thread
+           mov    esi,ebx
            mov    edi,edx
            mov    ecx,11
-           rep    movsb                 ;copy process name
-           mov    eax,[ebx+APPDATA.heap_base]
-           mov    [edx+APPDATA.heap_base], eax
-           mov    ecx,[ebx+APPDATA.heap_top]
-           mov    [edx+APPDATA.heap_top], ecx
-           mov    eax,[ebx+APPDATA.mem_size]
-           mov    [app_mem],eax         ;set memory size
-           mov    eax,[ebx+0xb8]
-           mov    [edx+0xb8],eax        ;copy page directory
+           rep    movsb               ;copy process name
 
-           stdcall add_app_parameters, [slot], new_app_base,\
-                                        [params], dword 0,dword 0
+           mov eax,[ebx+APPDATA.heap_base]
+           mov [edx+APPDATA.heap_base], eax
+
+           mov ecx,[ebx+APPDATA.heap_top]
+           mov [edx+APPDATA.heap_top], ecx
+
+           mov eax,[ebx+APPDATA.mem_size]
+           mov [edx+APPDATA.mem_size], eax
+
+           mov ecx,[ebx+APPDATA.dir_table]
+           mov [edx+APPDATA.dir_table],ecx      ;copy page directory
+
+           lea eax, [app_cmdline]
+           stdcall set_app_params ,[slot],eax,dword 0,\
+                                         dword 0,dword 0
 
            mov    esi,new_process_running
            call   sys_msg_board_str     ;output information about succefull startup
@@ -1161,6 +942,171 @@ proc wait_mutex stdcall, mutex:dword
            jnz .wait_lock
            ret
 endp
+
+align 4
+proc set_app_params stdcall,slot:dword, params:dword,\
+                        cmd_line:dword, app_path:dword, flags:dword
+
+           mov edi, [slot]
+           mov esi, [fpu_data]
+           bt [cpu_caps], CAPS_SSE
+           jnc .no_SSE
+
+           shl edi, 8
+           mov eax, edi
+           lea edi, [esi+edi*2]
+           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
+           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
+           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
+           mov ecx, 512/4
+           jmp @F
+.no_SSE:
+           mov eax, edi
+           shl eax, 8
+           mov ebx, edi
+           shl edi, 7
+           shl ebx, 4
+           sub edi, ebx       ;edi*=112
+           add edi, esi
+           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
+           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
+           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
+           mov ecx, 112/4
+@@:
+           rep movsd
+
+           mov    ebx,[slot]
+           cmp    ebx,[TASK_COUNT]
+           jle    .noinc
+           inc    dword [TASK_COUNT]       ;update number of processes
+.noinc:
+           shl    ebx,8
+           mov    ecx, [def_cursor]
+           mov    [PROC_BASE+APPDATA.cursor+ebx],ecx
+
+           shr    ebx,3
+           mov eax, new_app_base
+           mov dword [CURRENT_TASK+ebx+0x10],eax
+
+.add_command_line:
+           mov edx,[params]
+           mov edx,[edx]           ;app_cmdline
+           test edx,edx
+           jz @F                   ;application don't need parameters
+           add edx, new_app_base
+           stdcall k_strncpy, edx, [cmd_line], 255
+@@:
+           mov edx,[params]
+           mov edx, [edx+4]        ;app_path
+           test edx,edx
+           jz @F                   ;application don't need path of file
+           add edx, new_app_base
+           stdcall k_strncpy, edx, [app_path], 64
+@@:
+           mov    ebx,[slot]
+           mov    eax,ebx
+           shl    ebx,5
+; set window state to 'normal' (non-minimized/maximized/rolled-up) state
+           mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
+           mov     [ebx+window_data+WDATA.fl_redraw], 1
+           add    ebx,CURRENT_TASK            ;ebx - pointer to information about process
+           mov    [ebx+TASKDATA.wnd_number],al;set window number on screen = process slot
+
+           mov    [ebx+TASKDATA.event_mask],dword 1+2+4 ;set default event flags (see 40 function)
+
+           inc    dword [process_number]
+           mov    eax,[process_number]
+           mov    [ebx+4],eax           ;set PID
+
+           mov    ecx,ebx
+           add    ecx,(draw_data-CURRENT_TASK)  ;ecx - pointer to draw data
+;set draw data to full screen
+
+           mov    [ecx+0],dword 0
+           mov    [ecx+4],dword 0
+           mov    eax,[SCR_X_SIZE]
+           mov    [ecx+8],eax
+           mov    eax,[SCR_Y_SIZE]
+           mov    [ecx+12],eax
+
+           mov edi,[slot]
+           imul edi,tss_step
+           add edi,tss_data
+           mov ecx,128/4
+           xor eax, eax
+           cld
+           rep stosd
+;Add IO access table - bit array of permitted ports
+           not eax
+           mov ecx,2048
+           rep stosd                 ; access to 4096*8=65536 ports
+           sub edi, tss_step
+
+;set cr3 register in TSS of application
+           mov ecx, [slot]
+           shl ecx, 8
+           mov eax,[PROC_BASE+ecx+APPDATA.dir_table]
+           mov [edi+TSS._cr3],eax
+
+           mov esi,[params]
+           mov eax, [esi+0x08]       ;app_eip
+           mov [edi+TSS._eip],eax    ;set eip in TSS
+           mov eax, [esi+0x0C]       ;app_esp
+           mov [edi+TSS._esp],eax    ;set stack in TSS
+           mov [edi+TSS._eflags],dword 0x1202
+
+           mov [edi+TSS._cs],app_code  ;selector of code segment
+           mov [edi+TSS._ss],app_data
+           mov [edi+TSS._ds],app_data
+           mov [edi+TSS._es],app_data
+           mov [edi+TSS._fs],app_data
+           mov [edi+TSS._gs],graph_data ;selector of graphic segment
+           mov [edi+TSS._io],word 128
+           mov [edi+TSS._ss0], os_data
+           mov ebx,[slot]
+           shl ebx,12
+           add ebx,sysint_stack_data+4096
+           mov [edi+TSS._esp0],ebx
+
+           mov ecx, edi    ;ecx - address of application TSS
+           mov ebx,[slot]
+           shl ebx,3
+;set TSS descriptor
+           mov [ebx+gdts+tss0+0],word tss_step ;limit (size)
+           mov [ebx+gdts+tss0+2],cx  ;part of offset
+           shr ecx,16
+           mov [ebx+gdts+tss0+4],cl  ;part of offset
+           mov [ebx+gdts+tss0+7],ch  ;part of offset
+           mov [ebx+gdts+tss0+5],word 01010000b*256+11101001b ;system flags
+
+;flush keyboard and buttons queue
+           mov    [KEY_COUNT],byte 0
+           mov    [BTN_COUNT],byte 0
+
+           mov    edi,[slot]
+           shl    edi,5
+           add    edi,window_data
+           mov    ebx,[slot]
+           movzx  esi,word [WIN_STACK+ebx*2]
+           lea    esi,[WIN_POS+esi*2]
+           call   windowactivate        ;gui initialization
+
+           mov    ebx,[slot]
+           shl    ebx,5
+           mov    [CURRENT_TASK+ebx+0xa],byte 0 ;set process state - running
+; set if debuggee
+           mov eax, [flags]
+           test byte [flags], 1
+           jz   .no_debug
+           mov  [CURRENT_TASK+ebx+0xa],byte 1 ;set process state - suspended
+           mov  eax,[CURRENT_TASK]
+           mov  [PROC_BASE+ebx*8+0xac],eax ;set debugger PID - current
+.no_debug:
+           mov    esi,new_process_running
+           call   sys_msg_board_str     ;output information about succefull startup
+           ret
+endp
+
 
 
 include "debug.inc"

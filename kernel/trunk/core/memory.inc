@@ -1335,3 +1335,223 @@ endg
 ;     pop edx
 ;     pop eax
 
+
+align 4
+k_strrchr:
+        push eax
+        xor eax,eax
+        or  ecx,-1
+        repne scasb
+        add ecx,1
+        neg ecx
+        sub edi,1
+        pop eax
+        std
+        repne scasb
+        cld
+        add edi,1
+
+        cmp [edi],al
+        jne @F
+        mov eax,edi
+        ret
+@@:
+        xor eax,eax
+        ret
+
+align 4
+proc k_strncpy stdcall, dest:dword, src:dword, maxlen:dword
+        mov eax, [dest]
+        mov esi, [src]
+        mov ecx, [maxlen]
+        test eax, eax
+        jz .L9
+        test esi, esi
+        jz .L9
+        test ecx, ecx
+        jz .L9
+
+        sub  esi, eax
+        jmp .L1
+
+align 4
+.L2:
+        mov edx, [esi+eax]
+        mov [eax], dl
+        test dl, dl
+        jz .L7
+
+        mov [eax+1], dh
+        test dh, dh
+        jz .L6
+
+        shr edx, 16
+        mov [eax+2],dl
+        test dl, dl
+        jz .L5
+
+        mov [eax+3], dh
+        test dh, dh
+        jz .L4
+        add eax, 4
+.L1:
+        sub ecx, 4
+        jae .L2
+
+        add ecx, 4
+        jz .L9
+
+        mov dl, [eax+esi]
+        mov [eax], dl
+        test dl, dl
+        jz .L3
+
+        inc eax
+        dec ecx
+        jz .L9
+
+        mov dl, [eax+esi]
+        mov [eax], dl
+        test dl, dl
+        jz .L3
+
+        inc eax
+        dec ecx
+        jz .L9
+
+        mov dl, [eax+esi]
+        mov [eax], dl
+        test dl, dl
+        jz .L3
+
+        inc eax
+        jmp .L9
+
+.L4:    dec ecx
+        inc eax
+
+.L5:    dec ecx
+        inc eax
+
+.L6:    dec ecx
+        inc eax
+.L7:
+        add ecx,3
+        jz .L9
+.L8:
+        mov byte [ecx+eax], 0
+.L3:
+        dec ecx
+        jnz .L8
+.L9:
+	ret
+endp
+
+if 0
+
+magic equ 0xfefefeff
+
+k_strlen:
+        mov eax,[esp+4]
+        mov edx, 3
+
+        and edx, eax
+        jz .L1
+        jp .L0
+
+        cmp dh, byte [eax]
+        je .L2
+
+        inc eax
+        cmp dh, byte [eax]
+
+        je .L2
+
+        inc eax
+        xor edx, 2
+
+        jz .L1
+.L0:
+        cmp dh, [eax]
+        je .L2
+
+        inc eax
+        xor edx, edx
+
+.L1:
+        mov ecx, [eax]
+        add eax, 4
+
+        sub edx, ecx
+        add ecx, magic
+
+        dec edx
+        jnc .L3
+
+        xor edx, ecx
+        and edx, not magic
+        jne .L3
+
+        mov ecx, [eax]
+        add eax, 4
+
+        sub edx, ecx
+        add ecx, magic
+        dec edx
+        jnc .L3
+
+        xor edx, ecx
+        and edx, not magic
+        jne .L3
+
+        mov ecx, [eax]
+        add eax, 4
+
+        sub edx, ecx
+        add ecx, magic
+
+        dec edx
+        jnc .L3
+
+        xor edx, ecx
+
+        and edx, not magic
+        jne .L3
+
+        mov ecx, [eax]
+        add eax, 4
+
+        sub edx, ecx
+        add ecx, magic
+
+        dec edx
+        jnc .L3
+
+        xor edx, ecx
+
+        and edx, not magic
+        je .L1
+
+.L3:    sub eax ,4
+        sub ecx, magic
+
+        cmp cl, 0
+        jz .L2
+
+        inc eax
+        test ch, ch
+        jz .L2
+
+        shr ecx, 16
+        inc eax
+
+        cmp cl,0
+        jz .L2
+
+        inc eax
+
+.L2:
+        sub eax, [esp+4]
+	ret
+
+end if

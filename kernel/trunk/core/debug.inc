@@ -127,16 +127,16 @@ debug_getcontext:
 	imul	eax, tss_step/32
 	add	eax, tss_data
 	mov	edi, edx
-	cmp	[l.cs - tss_sceleton + eax], app_code
+        cmp     [eax+TSS._cs], app_code
 	jnz	.ring0
-	lea	esi, [l.eip - tss_sceleton + eax]
+        lea     esi, [eax+TSS._eip]
 	shr	ecx, 2
 	rep	movsd
 	jmp	.ret
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
 ; saves ring-3 context by push ds es, pushad in this order
-	mov	esi, [l.esp0 - tss_sceleton + eax]
+        mov     esi, [eax+TSS._esp0]
 ; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), ds, es, pushad
 	sub	esi, 8+12+8+20h
 	lodsd
@@ -186,14 +186,14 @@ debug_setcontext:
 	imul	eax, tss_step/32
 	add	eax, tss_data
 	mov	esi, edx
-	cmp	[l.cs - tss_sceleton + eax], app_code
+        cmp     [eax+TSS._cs], app_code
 	jnz	.ring0
-	lea	edi, [l.eip - tss_sceleton + eax]
+        lea     edi, [eax+TSS._eip]
 	shr	ecx, 2
 	rep	movsd
 	jmp	.stiret
 .ring0:
-	mov	edi, [l.esp0 - tss_sceleton + eax]
+        mov     edi, [eax+TSS._esp0]
 	sub	edi, 8+12+8+20h
 	mov	eax, [esi+24h]
 	stosd
@@ -249,7 +249,7 @@ debug_set_drx:
 	test	byte [eax+10h], 55h
 	jnz	.okret
 	imul	eax, ebp, tss_step/32
-	and	byte [eax + tss_data + l.trap - tss_sceleton], not 1
+        and     byte [eax + tss_data + TSS._trap], not 1
 .okret:
 	and	dword [esp+36], 0
 	sti
@@ -291,7 +291,7 @@ debug_set_drx:
 	and	[eax+10h+2], dx
 	or	[eax+10h+2], bx		; set R/W and LEN fields
 	imul	eax, ebp, tss_step/32
-	or	byte [eax + tss_data + l.trap - tss_sceleton], 1
+        or      byte [eax + tss_data + TSS._trap], 1
 	jmp	.okret
 
 debug_read_process_memory:

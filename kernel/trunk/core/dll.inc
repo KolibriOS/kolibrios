@@ -518,6 +518,8 @@ proc load_file stdcall, file_name:dword
            jnz .fail
 
            mov eax, [file_size]
+           cmp eax, 1024*1024*16
+           ja .fail
 
            stdcall kernel_alloc, [file_size]
            mov [file], eax
@@ -529,8 +531,9 @@ proc load_file stdcall, file_name:dword
            mov eax, [file]
            cmp dword [eax], 0x4B43504B
            jne .exit
-
-           stdcall kernel_alloc, [eax+4]
+           mov ebx, [eax+4]
+           mov [file_size], ebx
+           stdcall kernel_alloc, ebx
 
            test eax, eax
            jz .cleanup
@@ -539,12 +542,14 @@ proc load_file stdcall, file_name:dword
            stdcall unpack, [file], eax
            stdcall kernel_free, [file]
            mov eax, [file2]
+           mov ebx, [file_size]
 .exit:
            ret
 .cleanup:
            stdcall kernel_free, [file]
 .fail:
            xor eax, eax
+           xor ebx, ebx
            ret
 endp
 
@@ -862,7 +867,6 @@ proc load_library stdcall, file_name:dword
            cli
 
            stdcall load_file, [file_name]
-
            test eax, eax
            jz .fail
 

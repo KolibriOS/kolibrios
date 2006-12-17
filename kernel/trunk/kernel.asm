@@ -23,7 +23,6 @@ max_processes      equ   255
 
 ;window_data        equ   0x0000
 ;tss_data           equ   0xD20000
-;tss_step           equ   (128+2048) ; tss & i/o - 16384 ports, * 256=557056
 tss_step           equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
 ;draw_data          equ   0xC00000
 ;sysint_stack_data  equ   0xC03000
@@ -619,26 +618,25 @@ include 'vmodeld.inc'
         mov  [0x3020+TASKDATA.pid], 1        ; process id number
         mov  [0x3020+TASKDATA.mem_start], 0  ; process base address
 
-        ; set default flags & stacks
-        mov  [l.eflags],dword 0x11202 ; sti and resume
-        mov  [l.ss0], os_data
-        ; osloop - TSS
-        mov  eax,cr3
-        mov  [l.cr3],eax
-        mov  [l.eip],osloop
-        mov  [l.esp],sysint_stack_data + 4096*2 ; uses slot 1 stack
-        mov  [l.cs],os_code
-        mov  [l.ss],os_data
-        mov  [l.ds],os_data
-        mov  [l.es],os_data
-        mov  [l.fs],os_data
-        mov  [l.gs],os_data
-        ; move tss to tss_data+tss_step
-        mov  esi,tss_sceleton
         mov  edi,tss_data+tss_step
-        mov  ecx,120/4
+        mov ecx, (tss_step)/4
+        xor eax, eax
         cld
-        rep  movsd
+        rep stosd
+
+        mov  edi,tss_data+tss_step
+        mov  [edi+TSS._ss0], os_data
+        mov  eax,cr3
+        mov  [edi+TSS._cr3],eax
+        mov  [edi+TSS._eip],osloop
+        mov  [edi+TSS._eflags],dword 0x11202 ; sti and resume
+        mov  [edi+TSS._esp],sysint_stack_data + 4096*2 ; uses slot 1 stack
+        mov  [edi+TSS._cs],os_code
+        mov  [edi+TSS._ss],os_data
+        mov  [edi+TSS._ds],os_data
+        mov  [edi+TSS._es],os_data
+        mov  [edi+TSS._fs],os_data
+        mov  [edi+TSS._gs],os_data
 
         mov  ax,tss0
         ltr  ax
@@ -699,26 +697,18 @@ include 'vmodeld.inc'
         cli
         cmp   byte [0x2f0000+0x9030],1
         jne   no_load_vrr_m
-        mov   ebp,vrr_m
-        lea   esi,[ebp+6]       ; skip '/rd/1/'
-        xor   ebx,ebx                   ; no parameters
-        xor   edx,edx                   ; no flags
-        call  fs_RamdiskExecute.flags
+
+        stdcall fs_exec_EX, vrr_m, dword 0, dword 0
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
-    no_load_vrr_m:
-        mov   ebp,firstapp
-        lea   esi,[ebp+6]
-        xor   ebx,ebx                   ; no parameters
-        xor   edx,edx                   ; no flags
-        call  fs_RamdiskExecute.flags
-
+no_load_vrr_m:
+        stdcall fs_exec_EX, firstapp, dword 0, dword 0
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
         mov   eax, 0xDEADBEEF        ; otherwise halt
         hlt
-      first_app_found:
+first_app_found:
         cli
 
         ;mov   [0x3004],dword 2
@@ -799,7 +789,6 @@ include 'vmodeld.inc'
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 osloop:
-
         call   [draw_pointer]
         call   checkbuttons
         call   checkwindows
