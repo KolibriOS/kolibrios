@@ -172,28 +172,6 @@ macro sub arg1,arg2
    end if
  }
 
-macro mov arg1,arg2
- {
-   if (arg1 in __regs) & ((arg2 eqtype 0) | (arg2 eqtype '0'))
-      if (arg2) = 0
-         xor arg1,arg1
-      else if (arg2) = 1
-         xor arg1,arg1
-         inc arg1
-      else if (arg2) = -1
-         or  arg1,-1
-      else if (arg2) > -128 & (arg2) < 128
-         push arg2
-         pop  arg1
-      else
-         mov  arg1,arg2
-      end if
-   else
-      mov arg1,arg2
-   end if
- }
-
-
 macro struct name
  {
   virtual at 0
