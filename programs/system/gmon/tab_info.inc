@@ -36,22 +36,33 @@ mmx_en:	int	0x40
 	mov	eax, 18
 	mov	ebx, 5
 	int	0x40
-	push	eax
-	fild	dword[esp]
-	push	1000;000
-	fidiv	dword[esp]
-	fidiv	dword[esp]
-	fstp	dword[esp]
-	mov	esi, esp
-	call	ftoa
-	mov	ebx, 160 * 65536 + 295
-	mov	edx, Data_String
-	mov	eax, 4
-	mov	esi, 7
-	xor	ecx, ecx
+
+	xor	edx, edx
+	mov	ebx, 1000000
+	div	ebx
+	mov	ecx, eax
+	call	digit_len
+	mov	eax, 47
+	mov	edx, 160 * 65536 + 295
+	xor	esi, esi
 	int	0x40
-	pop	eax
-	pop	eax
+	
+	; push	eax			; Вернуть код после исправления ftoa
+	; fild	dword[esp]
+	; push	1000;000
+	; fidiv	dword[esp]
+	; fidiv	dword[esp]
+	; fstp	dword[esp]
+	; mov	esi, esp
+	; call	ftoa
+	; mov	ebx, 160 * 65536 + 295
+	; mov	edx, Data_String
+	; mov	eax, 4
+	; mov	esi, 7
+	; xor	ecx, ecx
+	; int	0x40
+	; pop	eax
+	; pop	eax
 	
 	; Семейство и модель процессора
 	mov	eax, 47
