@@ -43,6 +43,7 @@
 ;      24/08/2006 - добавленна частота процессора
 ;      10/09/2006 - bugfix
 ;      25/11/2006 - добавлен ABIT uGuru
+;      20/12/2006 - W83627DHG, W83627EHF, W83627EHG
 ;
 ;    Эй! У меня нет много времени.
 
@@ -507,7 +508,7 @@ about_tab:
 DATA
 act_tab		db	2 			; Номер активной вкладки
 tab_lab		db	'Info       Tests      Configs     About'
-title		db	'Ghost Monitor v0.4 [25/11/06]'
+title		db	'Ghost Monitor v0.4 [20/12/06]'
 
 msgs_mon mls \
 	'CPU Load (%)',\

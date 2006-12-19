@@ -3,22 +3,35 @@
 ;
 ;
 ;    Дописать получение инфы с других датчиков
+;    W83627DHG мониторинг аналогичен W83627EHF, дописать учёт DIV_B2
 ;  + 16.03.06 Исправлена ошибка в wb_get_cpu_temper с десятых градуса (было 30.5 30.0 31.5 ...)
 ;
+;
+;    О маркировке (?) : H - H/W Monitor, G - Pb-free package, T - ACPI, S - Smart Card Reader Interface
+;      D - SuperIO supporting Intel* PECI* & SST* interfaces, U - UART
 ;
 ;		      | Chip name	| ID		Vin	Fanin	PWM	Temp   ISA   SMBus
 msg_wb27HF:	db 8, 'W83627HF'	; 0x20|0x21	 9	  3	 2	 3      +      +
 msg_wb27THF:	db 9, 'W83627THF'	; 0x90|0x91	 7	  3	 3	 3      +      +
 msg_wb37THF:	db 9, 'W83637THF'	; 0x80		 7	  3	 3	 3      +      +
 msg_wb97HF:	db 8, 'W83697HF'	; 0x60|0x61	 8	  2	 2	 2      +      -
-msg_wb27EHF:	db 11,'W83627EHF-A'	; 0x88
 msg_wb27THFA:	db 11,'W83627THF-A'	; 0x1A
+
+msg_w83627DHG:	db 9, 'W83627DHG'	; 0xC1		 ?	  5	 ?	 3      +      +
+msg_w83627EHF:	db 9, 'W83627EHF'	; 0x88		 10	  5	 3	 3      +      +
+msg_w83627EHG:	db 9, 'W83627EHG'	; 0xA1		 10	  5	 3	 3      +      +
+
+
 ;		db 7, 'W83781D'		; 0x10|0x11	 7	  	 3	 3      +      +
 ;		db 7, 'W83782D'		; 0x30		 9	   	 3	 3      +      +
 ;		db 8, 'AS99127F'	; 0x31           7               3       3      -      +
 ;		db 7, 'W83783S'		; 0x40|0x41	 5-6	   	 3	 1-2    -      +
 ;		db 7, 'W83791D'		; 0x70|0x71	 10	   	 5	 3      -      +
 msg_wbunk:	db 15,'Unknown Winbond'	; other, non zero ;-)
+
+uglobal
+wb_fans_num	db	0
+endg
 
 ;-----------------------------------
 wb_init:
@@ -40,11 +53,12 @@ wb_init:
 	call	[IO_Read]
 	cmp	ax, 0xa35c
 	jne	wb_no		; это не Winbond !!!
-	
+
 	; --- узнаём идентификатор чипа --
 	mov	al, 0x58
 	call	[IO_Read]
 	and	al, 0xFE	; 0x20 = 0x21, 0x60 = 0x61, etc
+	mov	byte[wb_fans_num], 3
 	mov	edx, msg_wb27HF
 	cmp	al, 0x20
 	je	@f
@@ -57,12 +71,20 @@ wb_init:
 	mov	edx, msg_wb97HF
 	cmp	al, 0x60
 	je	@f
-	mov	edx, msg_wb27EHF
-	cmp	al, 0x88
-	je	@f
 	mov	edx, msg_wb27THFA
 	cmp	al, 0x1A
 	je	@f
+	mov	byte[wb_fans_num], 5
+	mov	edx, msg_w83627EHF
+	cmp	al, 0x88
+	je	@f
+	mov	edx, msg_w83627EHG
+	cmp	al, 0xA0
+	je	@f
+	mov	edx, msg_w83627DHG
+	cmp	al, 0xC0
+	je	@f
+	mov	byte[wb_fans_num], 3
 	mov	edx, msg_wbunk
 @@:	mov	[hwm_chip_name], edx
 	clc
@@ -153,6 +175,7 @@ wb_get_fan_speed:
 	xor	edx, edx
 	div	ebx
 	mov	[hwm_rpms], eax
+	
 	mov	al, 0x47
 	call	[IO_Read]
 	shr	al, 6
@@ -172,6 +195,75 @@ wb_get_fan_speed:
 	xor	edx, edx
 	div	ebx
 	mov	[hwm_rpms + 4], eax
+	
+	mov	al, 0x4B
+	call	[IO_Read]
+	shr	al, 6
+	mov	ebx, 1
+	mov	cl, al
+	shl	ebx, cl	; <- div3
+	xor	eax, eax
+	mov	al,  0x2A
+	call	[IO_Read]
+	cmp	al, 255
+	jne	@f
+	xor	eax, eax
+	ret
+@@:	mul	ebx
+	mov	ebx, eax
+	mov	eax, 1350000
+	xor	edx, edx
+	div	ebx
+	mov	[hwm_rpms + 8], eax
+
+	cmp	byte[wb_fans_num], 3
+	jna	.wb_f_e
+
+	mov	al, 0x59
+	call	[IO_Read]
+	and	al, 3
+	mov	ebx, 1
+	mov	cl, al
+	shl	ebx, cl	; <- div4, дописать учёт DIV_B2
+	xor	eax, eax
+	mov	al,  0x3F
+	call	[IO_Read]
+	cmp	al, 255
+	jne	@f
+	xor	eax, eax
+	ret
+@@:	mul	ebx
+	mov	ebx, eax
+	mov	eax, 1350000
+	xor	edx, edx
+	div	ebx
+	mov	[hwm_rpms + 12], eax
+	
+	mov	al, 0x59
+	call	[IO_Read]
+	shr	al, 2
+	and	al, 3
+	mov	ebx, 1
+	mov	cl, al
+	shl	ebx, cl	; <- div5, дописать учёт DIV_B2
+	xor	eax, eax
+	mov	al, 0x4e	; Выбираем bank 5
+	mov	bl, 5
+	call	[IO_Write]
+	mov	al,  0x53
+	call	[IO_Read]
+	cmp	al, 255
+	jne	@f
+	xor	eax, eax
+	ret
+@@:	mul	ebx
+	mov	ebx, eax
+	mov	eax, 1350000
+	xor	edx, edx
+	div	ebx
+	mov	[hwm_rpms + 16], eax
+
+.wb_f_e:
 	ret
 ;-----------------------------------
 wb_get_volt:

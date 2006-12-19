@@ -1,7 +1,7 @@
  Ghost Monitor
  
 Автор  : Михайлов Илья Андреевич aka Ghost
-Версия : 0.4 от 25/11/06
+Версия : 0.4
 ОС     : для полного функционирования скачайте последнне ядро, или последний дистрибутив.
 files  : svn://kolibrios.org/programs/system/gmon/
          http://iam.gorodok.net/Gmon.zip 
