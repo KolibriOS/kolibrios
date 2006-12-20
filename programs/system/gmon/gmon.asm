@@ -43,7 +43,8 @@
 ;      24/08/2006 - добавленна частота процессора
 ;      10/09/2006 - bugfix
 ;      25/11/2006 - добавлен ABIT uGuru
-;      20/12/2006 - W83627DHG, W83627EHF, W83627EHG
+;      20/12/2006 - W83627DHG, W83627EHF, W83627EHG, mutipliers for AthonXP-M, Athlon64, Athlon64-M,
+;            Intel Dothan, Yonah, Conroe, Merom
 ;
 ;    Эй! У меня нет много времени.
 

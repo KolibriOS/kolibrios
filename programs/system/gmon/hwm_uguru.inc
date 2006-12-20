@@ -48,7 +48,7 @@ msg_uguru:	db	10, 'ABIT uGuru'
 uGuru_init:
 ; Проверка наличия и инициализация
 ; OUT - CF = 1 - error
-	cmp	byte[acc_type], 3	; Special IO interface
+	cmp	byte[acc_type], 2	; Special IO interface
 	jne	.uGuru_no
 	pusha
 	mov	ecx, UGURU_CMD_PORT

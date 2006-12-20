@@ -178,10 +178,17 @@ if (OS_version >= 0x0510)
 	jae	@f
 	mov	cl, 20
 @@:	ret	
-	
+
 noAMDK6:cmp	byte [CPU_fam], 6
 	jne	noAMDK7
-	mov	eax, 68		; Athlon/AthlonXP
+	cmp	byte [CPU_mod], 5
+	jna	@f
+	mov	eax, 0x80000007
+	cpuid
+	and	edx, 6		;  voltage ID control & frequency ID control
+	cmp	edx, 6
+	je	AMDK7M
+@@:	mov	eax, 68		; Athlon/AthlonXP
 	mov	ebx, 3
 	mov	edx, 0x0C0010015
 	int	0x40
@@ -189,10 +196,49 @@ noAMDK6:cmp	byte [CPU_fam], 6
 	shr	ebx, 24
 	and	ebx, 0x0F
 	shr	eax, 20
-	jc	@f
-	mov	cl, [athloncoef + ebx]
+	jnc	@f
+	add	bl, 16
+@@:	mov	cl, [athloncoef + ebx]
 	ret
-@@:	mov	cl, [athloncoef2 + ebx]
+
+AMDK7M:	mov	eax, 68		; AthonXP-M
+	mov	ebx, 3
+	mov	edx, 0xC0010042
+	int	0x40
+	and	eax, 0x1F
+	mov	cl, [athlonmcoef + eax]
+	ret
+
+noAMDK7:cmp	byte [CPU_fam], 0xF
+	jne	noAMDK8
+	mov	eax, 0x80000007
+	cpuid
+	and	edx, 6		;  voltage ID control & frequency ID control
+	cmp	edx, 6
+	je	AMDK8M
+	mov	eax, 68		; Athon64
+	mov	ebx, 3
+	mov	edx, 0xC0010015
+	int	0x40
+	shr	eax, 24
+	and	al, 0x3F
+	shr	al, 1
+	add	al, 4
+	mov	dl, 10
+	mul	dl
+	mov	cl, al
+	ret
+
+AMDK8M:	mov	eax, 68		; Athon64-M
+	mov	ebx, 3
+	mov	edx, 0xC0010042
+	int	0x40
+	and	al, 0x3F
+	shr	al, 1
+	add	al, 4
+	mov	dl, 10
+	mul	dl
+	mov	cl, al
 	ret
 	
 noAMD:	cmp	dword [Vendor + 8], 'ntel'	; Check for International Electronics CPU
@@ -257,15 +303,24 @@ noIntelP4:
 	cmp	byte[CPU_mod], 0x0B
 	jb	@f
 	mov	cl, [tualatcoeff + eax]
+	
+	cmp	byte[CPU_mod], 0x0B
+	je	@f
+	mov	dl, 10		; model 0x0C - 0x0F - Dothan / Yonah  / Conroe / Merom
+	mul	dl
+	mov	cl, al
+	
 @@:	ret
 
 noIntel:
 noIntelP6:
-noAMDK7:
+noAMDK8:
 	ret
 
-athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105
-athloncoef2	db	120, 190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
+athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120
+		db	190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
+athlonmcoef:	db	110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
+		db	30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
 athloncoef3	db	45, 50, 40, 55, 25, 30, 60, 35
 p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4
 coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
