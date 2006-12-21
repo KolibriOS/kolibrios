@@ -180,7 +180,7 @@ get_number:
 	cmp	byte [ebx],'$'
 	je	pascal_hex_number
 	cmp	word [ebx],'0x'
-	je	c_hex_number
+	je	get_hex_number
 	mov	al,[esi]
 	dec	esi
 	cmp	al,'h'
@@ -279,9 +279,6 @@ get_number:
 	jz	get_bin_digit
 	or	ebp,-1
 	jmp	get_bin_digit
-      c_hex_number:
-	cmp	cl,2
-	je	bad_number
       pascal_hex_number:
 	cmp	cl,1
 	je	bad_number
@@ -1270,6 +1267,9 @@ calculate_expression:
 	cmp	ah,dl
 	jne	value_out_of_range
 	mov	[esi+10],al
+	or	al,al
+	jnz	mul_first_register_ok
+	mov	[esi+8],al
       mul_first_register_ok:
 	cmp	byte [esi+9],0
 	je	mul_calculated
@@ -1287,6 +1287,9 @@ calculate_expression:
 	cmp	ah,dl
 	jne	value_out_of_range
 	mov	[esi+11],al
+	or	al,al
+	jnz	mul_calculated
+	mov	[esi+9],al
       mul_calculated:
 	pop	esi
 	jmp	calculation_loop
@@ -2175,6 +2178,9 @@ calculate_relative_offset:
 	ret
 
 preevaluate_logical_expression:
+	xor	al,al
+  preevaluate_embedded_logical_expression:
+	mov	[logical_value_wrapping],al
 	push	edi
 	call	preevaluate_logical_value
       preevaluation_loop:
@@ -2254,7 +2260,7 @@ preevaluate_logical_expression:
 	mov	al,0FFh
 	stos	byte [edi]
 	ret
-skip_logical_value:
+  skip_logical_value:
 	cmp	byte [esi],'~'
 	jne	negation_skipped
 	inc	esi
@@ -2263,6 +2269,8 @@ skip_logical_value:
 	cmp	byte [esi],'{'
 	jne	skip_simple_logical_value
 	inc	esi
+	xchg	al,[logical_value_wrapping]
+	push	eax
       skip_logical_expression:
 	call	skip_logical_value
 	lods	byte [esi]
@@ -2275,29 +2283,42 @@ skip_logical_value:
 	cmp	al,'&'
 	je	skip_logical_expression
 	cmp	al,'}'
-	je	logical_value_skipped
+	jne	wrongly_structured_logical_expression
+	pop	eax
+	mov	[logical_value_wrapping],al
+      logical_value_skipped:
+	clc
+	ret
       wrongly_structured_logical_expression:
 	stc
 	ret
       skip_simple_logical_value:
+	mov	[logical_value_parentheses],0
+      find_simple_logical_value_end:
 	mov	al,[esi]
 	or	al,al
 	jz	logical_value_skipped
 	cmp	al,0Fh
 	je	logical_value_skipped
-	cmp	al,'}'
-	je	logical_value_skipped
 	cmp	al,'|'
 	je	logical_value_skipped
 	cmp	al,'&'
 	je	logical_value_skipped
+	cmp	al,'{'
+	je	skip_logical_value_internal_parenthesis
+	cmp	al,'}'
+	jne	skip_logical_value_symbol
+	sub	[logical_value_parentheses],1
+	jnc	skip_logical_value_symbol
+	cmp	[logical_value_wrapping],al
+	jne	skip_logical_value_symbol
+	jmp	logical_value_skipped
+      skip_logical_value_internal_parenthesis:
+	inc	[logical_value_parentheses]
+      skip_logical_value_symbol:
 	call	skip_symbol
-	jmp	skip_simple_logical_value
-      logical_value_skipped:
-	clc
-	ret
-
-preevaluate_logical_value:
+	jmp	find_simple_logical_value_end
+  preevaluate_logical_value:
 	mov	ebp,edi
       preevaluate_negation:
 	cmp	byte [esi],'~'
@@ -2306,12 +2327,16 @@ preevaluate_logical_value:
 	jmp	preevaluate_negation
       preevaluate_negation_ok:
 	mov	ebx,esi
-	xor	edx,edx
 	cmp	byte [esi],'{'
-	jne	find_logical_value_boundaries
-	movs	byte [edi],[esi]
+	jne	preevaluate_simple_logical_value
+	lods	byte [esi]
+	stos	byte [edi]
 	push	ebp
-	call	preevaluate_logical_expression
+	mov	dl,[logical_value_wrapping]
+	push	edx
+	call	preevaluate_embedded_logical_expression
+	pop	edx
+	mov	[logical_value_wrapping],dl
 	pop	ebp
 	cmp	al,0FFh
 	je	invalid_logical_value
@@ -2335,12 +2360,17 @@ preevaluate_logical_value:
 	mov	edi,ebp
 	mov	al,0FFh
 	ret
+      preevaluate_simple_logical_value:
+	xor	edx,edx
+	mov	[logical_value_parentheses],edx
       find_logical_value_boundaries:
 	mov	al,[esi]
 	or	al,al
 	jz	logical_value_boundaries_found
+	cmp	al,'{'
+	je	logical_value_internal_parentheses
 	cmp	al,'}'
-	je	logical_value_boundaries_found
+	je	logical_value_boundaries_parenthesis_close
 	cmp	al,'|'
 	je	logical_value_boundaries_found
 	cmp	al,'&'
@@ -2358,6 +2388,14 @@ preevaluate_logical_value:
       next_symbol_in_logical_value:
 	call	skip_symbol
 	jmp	find_logical_value_boundaries
+      logical_value_internal_parentheses:
+	inc	[logical_value_parentheses]
+	jmp	next_symbol_in_logical_value
+      logical_value_boundaries_parenthesis_close:
+	sub	[logical_value_parentheses],1
+	jnc	next_symbol_in_logical_value
+	cmp	[logical_value_wrapping],'{'
+	jne	next_symbol_in_logical_value
       logical_value_boundaries_found:
 	or	edx,edx
 	jz	non_preevaluable_logical_value
@@ -2506,6 +2544,9 @@ preevaluate_logical_value:
 	jmp	invalid_logical_value
 
 calculate_logical_expression:
+	xor	al,al
+  calculate_embedded_logical_expression:
+	mov	[logical_value_wrapping],al
 	call	get_logical_value
       logical_loop:
 	cmp	byte [esi],'|'
@@ -2537,7 +2578,7 @@ calculate_logical_expression:
 	jc	invalid_expression
 	pop	eax
 	jmp	logical_loop
-get_logical_value:
+  get_logical_value:
 	xor	al,al
       check_for_negation:
 	cmp	byte [esi],'~'
@@ -2748,8 +2789,12 @@ get_logical_value:
 	or	al,-1
 	jmp	logical_value_ok
       logical_expression:
-	inc	esi
-	call	calculate_logical_expression
+	lods	byte [esi]
+	mov	dl,[logical_value_wrapping]
+	push	edx
+	call	calculate_embedded_logical_expression
+	pop	edx
+	mov	[logical_value_wrapping],dl
 	push	eax
 	lods	byte [esi]
 	cmp	al,'}'

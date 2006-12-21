@@ -618,6 +618,7 @@ load_directive:
       load_from_code:
 	cmp	byte [esi],'.'
 	je	invalid_value
+	or	[size_override],-1
 	call	get_address_value
 	call	calculate_relative_offset
 	push	esi edi
@@ -676,6 +677,7 @@ store_directive:
 	jne	invalid_argument
 	cmp	byte [esi],'.'
 	je	invalid_value
+	or	[size_override],-1
 	call	get_address_value
 	call	calculate_relative_offset
 	push	esi edi

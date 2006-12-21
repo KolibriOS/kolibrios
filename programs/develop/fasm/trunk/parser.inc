@@ -14,6 +14,7 @@ parser:
 	mov	[anonymous_forward],eax
 	mov	[hash_tree],eax
 	mov	[blocks_stack],eax
+	mov	[parsed_lines],eax
 	mov	esi,[memory_start]
 	mov	edi,[source_start]
       parser_loop:
@@ -27,6 +28,7 @@ parser:
 	stos	byte [edi]
 	mov	eax,esi
 	stos	dword [edi]
+	inc	[parsed_lines]
 	add	esi,16
       parse_line:
 	cmp	byte [esi],1Ah
@@ -410,6 +412,7 @@ parser:
 	stos	byte [edi]
 	mov	eax,[current_line]
 	stos	dword [edi]
+	inc	[parsed_lines]
 	mov	eax,1 + (end_directive-assembler) shl 8
 	stos	dword [edi]
 	mov	eax,1 + (if_directive-assembler) shl 8
@@ -446,6 +449,7 @@ parser:
 	stos	byte [edi]
 	mov	eax,[current_line]
 	stos	dword [edi]
+	inc	[parsed_lines]
       parse_else_if:
 	mov	eax,1 + (if_directive-assembler) shl 8
 	stos	dword [edi]
@@ -898,7 +902,12 @@ parse_line_contents:
 	jmp	expression
       contents_parsed:
 	cmp	[parenthesis_stack],0
-	jne	invalid_expression
+;        jne     invalid_expression
+	je	contents_ok
+	dec	[parenthesis_stack]
+	add	esp,8
+	jmp	contents_parsed
+      contents_ok:
 	ret
 
 identify_label:

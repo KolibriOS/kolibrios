@@ -1198,6 +1198,12 @@ process_macro_operators:
 	lods	word [esi]
 	movzx	ecx,ah
 	lea	ebx,[edi+3]
+	jecxz	convert_to_quoted_string
+	cmp	byte [esi],'\'
+	jne	convert_to_quoted_string
+	inc	esi
+	dec	ecx
+	dec	ebx
 	jmp	convert_to_quoted_string
       symbol_character_conversion:
 	cmp	al,22h
@@ -1260,14 +1266,21 @@ process_macro_operators:
 	movzx	ecx,al
 	jecxz	do_symbol_concatenation
 	cmp	byte [esi],'\'
-	jne	do_symbol_concatenation
-	sub	esi,2
-	jmp	no_concatenation
+	je	concatenate_escaped_symbol
       do_symbol_concatenation:
-	add	[ebx],al
+	add	[ebx],cl
 	jc	name_too_long
 	rep	movs byte [edi],[esi]
 	jmp	after_macro_operators
+      concatenate_escaped_symbol:
+	inc	esi
+	dec	ecx
+	jz	do_symbol_concatenation
+	movzx	eax,byte [esi]
+	cmp	byte [characters+eax],0
+	jne	do_symbol_concatenation
+	sub	esi,3
+	jmp	no_concatenation
       string_concatenation:
 	cmp	byte [esi],22h
 	je	do_string_concatenation
@@ -1285,6 +1298,12 @@ process_macro_operators:
 	inc	esi
 	lods	byte [esi]
 	movzx	ecx,al
+	jecxz	finish_concatenating_converted_symbol
+	cmp	byte [esi],'\'
+	jne	finish_concatenating_converted_symbol
+	inc	esi
+	dec	ecx
+      finish_concatenating_converted_symbol:
 	add	[ebx],ecx
 	rep	movs byte [edi],[esi]
 	jmp	after_macro_operators

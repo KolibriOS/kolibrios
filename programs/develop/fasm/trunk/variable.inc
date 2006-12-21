@@ -86,6 +86,8 @@ resource_data dd ?
 resource_size dd ?
 parenthesis_stack dd ?
 blocks_stack dd ?
+parsed_lines dd ?
+logical_value_parentheses dd ?
 
 next_pass_needed db ?
 macro_status db ?
@@ -115,6 +117,7 @@ push_size db ?
 operand_prefix db ?
 rex_prefix db ?
 immediate_size db ?
+logical_value_wrapping db ?
 
 characters rb 100h
 converted rb 100h

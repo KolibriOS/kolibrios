@@ -646,7 +646,7 @@ fasm_start:
         dd      fasm_parameters
         dd      0
         dd      0
-        db      '/RD/1/FASM',0
+        db      '/RD/1/DEVELOP/FASM',0
 board_start:
         dd      7
         dd      0
