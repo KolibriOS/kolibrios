@@ -25,7 +25,7 @@ ABIT : uGuru
 Функции мониторинга можно проверить в Windows на эмуляторе KlbrInWin, для этого необходимо в
 файле настроек написать (пользуйтесь последней версией): 
 
-EnablePorts=e0-e8 295 296
+EnablePorts=2e 2f 4e 4f e0-e8 295 296
 AllowReadMSR=true
 
 Тесты :

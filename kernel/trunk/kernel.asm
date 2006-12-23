@@ -901,11 +901,25 @@ reserve_irqs_ports:
 
 
                                        ; RESERVE PORTS
-        mov   edi,1                    ; 0x00-0xdf
+        mov   edi,1                    ; 0x00-0x2d
         mov   [0x2d0000],edi
         shl   edi,4
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0x0
+        mov   [0x2d0000+edi+8],dword 0x2d
+        
+        inc   dword [0x2d0000]          ; 0x30-0x4d
+        mov   edi,[0x2d0000]
+        shl   edi,4
+        mov   [0x2d0000+edi+0],dword 1
+        mov   [0x2d0000+edi+4],dword 0x30
+        mov   [0x2d0000+edi+8],dword 0x4d
+        
+        inc   dword [0x2d0000]          ; 0x50-0xdf
+        mov   edi,[0x2d0000]
+        shl   edi,4
+        mov   [0x2d0000+edi+0],dword 1
+        mov   [0x2d0000+edi+4],dword 0x50
         mov   [0x2d0000+edi+8],dword 0xdf
 
         inc   dword [0x2d0000]          ; 0xe5-0xff
