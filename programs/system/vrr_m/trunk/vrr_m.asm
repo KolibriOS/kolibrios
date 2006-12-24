@@ -101,6 +101,10 @@ launcher:
 I_END:                             ; ђ•в™† ™Ѓ≠ж† ѓаЃ£а†ђђл
         db      ?       ; system loader will zero all memory after program end
                         ; this byte will be terminating zero for launcher string
+; \begin{Serge}
+                        ; A you really believe it?
+                        ; Ѕлажен, кто верует, тепло ему на свете!
+; \end{Serge}
 drvinfo:   ; 512 bytes driver info area
 ; +0   - Full driver name
 ; +32  - Driver version
