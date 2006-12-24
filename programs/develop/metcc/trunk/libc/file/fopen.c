@@ -40,7 +40,7 @@ FILE* fopen(const char* filename, const char *mode)
 	res->filename=0;
 	res->mode=imode;
 //check if file exists
-        res=_msys_read_file(filename,0,0,0,&res->filesize);
+        res=_msys_read_file(filename, 0, 0, 0, &res->filesize);
         if (res==5)
         {
           if ((imode & 3) == FILE_OPEN_READ)
@@ -48,7 +48,7 @@ FILE* fopen(const char* filename, const char *mode)
             free(res);
             return 0;
           }
-          res=_msys_write_file(filename,0,0);
+          res=_msys_create_file(filename);
           if (res!=0)
           {
             free(res);

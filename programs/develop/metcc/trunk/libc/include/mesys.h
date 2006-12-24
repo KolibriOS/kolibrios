@@ -17,7 +17,8 @@ extern void stdcall _msys_draw_window(int xcoord,int ycoord, int xsize,
 			       int captioncolor,int windowtype,int bordercolor);
 extern int  stdcall _msys_read_file(char* filename,int fileoffset,int size,void* data,
                      int* filesize);
-extern int  stdcall _msys_write_file(char* filename,int size,void* data);
+extern int  stdcall _msys_write_file(char* filename,int fileoffset, int size, void* data);
+extern int  stdcall _msys_create_file(char* filename);
 extern void stdcall _msys_run_program(char* filename,char* parameters);
 extern void stdcall _msys_debug_out(int c);
 extern void debug_out_str(char* str);
