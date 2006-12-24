@@ -3,6 +3,7 @@ section '.text' executable
 public start
 extrn mf_init
 extrn main
+public argc as '__ARGS'
 
 __DEBUG__ equ 1
 __DEBUG_LEVEL__ equ 1

@@ -1,4 +1,8 @@
 @echo off
+echo ####################################################
+echo #           Melibc builder                         #
+echo #  usage: build [clean]                            #
+echo ####################################################
 rem #### CONFIG SECTION ####
 set LIBNAME=melibc.a
 set INCLUDE=include
@@ -56,7 +60,9 @@ pause
 exit 1
 
 :Exit_OK
-echo all operations has been done...
-echo for cleaning run this script with param " clean"
+echo ####################################################
+echo # All operations has been done...                  #
+echo # For cleaning run this script with param " clean" #
+echo ####################################################
 pause
 exit 0
