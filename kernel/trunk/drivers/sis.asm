@@ -693,8 +693,23 @@ proc init_codec
              counter dd ?
            endl
 
+           mov esi, msgControl
+           call SysMsgBoardStr
+
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgStatus
+           call SysMsgBoardStr
+
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
+
+           call dword2str
+           call SysMsgBoardStr
+
            test eax, CTRL_ST_CREADY
            jnz .ready
 
@@ -1107,11 +1122,26 @@ proc ctrl_io_w32
            ret
 endp
 
+align 4
+dword2str:
+      mov  esi, hex_buff
+      mov ecx, -8
+@@:
+      rol eax, 4
+      mov ebx, eax
+      and ebx, 0x0F
+      mov bl, [ebx+hexletters]
+      mov [8+esi+ecx], bl
+      inc ecx
+      jnz @B
+      ret
+
+
 include "codec.inc"
 
 align 4
 devices dd (CTRL_SIS  shl 16)+VID_SIS,msg_AC, set_SIS
-	dd 0
+        dd 0
 
 version      dd 0x00010001
 
@@ -1136,6 +1166,12 @@ msgWarm      db 'warm reset',13,10,0
 msgWRFail    db 'warm reset failed',13,10,0
 msgCRFail    db 'cold reset failed',13,10,0
 msgCFail     db 'codec not ready',13,10,0
+msgStatus    db 'global status   ',0
+msgControl   db 'global control  ',0
+
+hexletters   db '0123456789ABCDEF'
+hex_buff     db 8 dup(0),13,10,0
+
 
 section '.data' data readable writable align 16
 

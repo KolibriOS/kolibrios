@@ -102,7 +102,7 @@ ramdisk_free_space:
     rdfs2:
         shl  ebx,9    ;free clusters*512
         mov  edi,ebx
-        
+
         pop    ecx ebx eax
         ret
 
@@ -193,7 +193,7 @@ fileread:
         mov    edi,edx
         dec    ebx
         push   edx
-        mov    edx,ecx     
+        mov    edx,ecx
         add    edx,ebx
         cmp    edx,15     ;ebx+ecx=14+1
         pushf
@@ -308,7 +308,7 @@ filedelete:
         call   expand_filename
 
         push   eax ebx ecx edx esi edi
-        
+
         call   rd_findfile
         je     fifoundd
         pop    edi esi edx ecx ebx eax ;file not found
@@ -338,7 +338,7 @@ filedelete:
         xor    eax,eax       ; file found
         ret
 
-      
+
 
 filesave:
 ;----------------------------------------------------------
@@ -471,9 +471,9 @@ mov [edi+22],ax          ; time
         jb     rd_newsearch
         mov    eax,5      ;if file not found - eax=5
         xor    ebx,ebx
-        dec    ebx    ;ebx=0xffffffff and zf=0    
+        dec    ebx    ;ebx=0xffffffff and zf=0
      rd_ff:
-        ret            
+        ret
 
 ; \begin{diamond}
 
@@ -599,45 +599,42 @@ fat_get_name:
         cmp     byte [edi+11], 0xF
         jz      .longname
         push    ecx
-        mov     ecx, 8
-        push    edi ebp ecx
+        push    edi ebp
         test    byte [ebp-4], 1
         jnz     .unicode_short
+
+        mov     eax, [edi]
+        mov     ecx, [edi+4]
+        mov     [ebp], eax
+        mov     [ebp+4], ecx
+
+        mov     ecx, 8
 @@:
-        mov     al, [edi]
-        inc     edi
-        mov     [ebp], al
-        inc     ebp
-        loop    @b
-        pop     ecx
-@@:
-        cmp     byte [ebp-1], ' '
-        jnz     @f
-        dec     ebp
-        loop    @b
-@@:
-        mov     byte [ebp], '.'
-        inc     ebp
+        cmp     byte [ebp+ecx-1], ' '
+        loope    @b
+
+        mov     eax, [edi+8]
+        cmp     al, ' '
+        je      .done
+        shl     eax, 8
+        mov     al, '.'
+
+        lea ebp, [ebp+ecx+1]
+        mov     [ebp], eax
         mov     ecx, 3
-        push    ecx
 @@:
-        mov     al, [edi]
-        inc     edi
-        mov     [ebp], al
-        inc     ebp
-        loop    @b
-        pop     ecx
-@@:
-        cmp     byte [ebp-1], ' '
-        jnz     @f
-        dec     ebp
-        loop    @b
-        dec     ebp
-@@:
-        and     byte [ebp], 0	; CF=0
+        rol eax, 8
+        cmp al, ' '
+        jne .done
+        loop   @b
+        dec ebp
+.done:
+        and     byte [ebp+ecx+1], 0   ; CF=0
         pop     ebp edi ecx
         ret
 .unicode_short:
+        mov     ecx, 8
+        push    ecx
 @@:
         mov     al, [edi]
         inc     edi

@@ -89,24 +89,23 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
 
            stdcall load_file,[file_name]
            mov  ecx, -ERROR_FILE_NOT_FOUND
-
            test eax, eax
-           jz .err   ;fail
+           jz .err_file
 
            mov [file_base], eax
            mov [file_size], ebx
+
+           pushfd
+           cli
 
            lea ebx, [app_cmdline]
            call test_app_header
            mov ecx, -0x1F
            test eax, eax
-           jz .err   ;fail
+           jz .err_hdr
 
            mov esi, new_process_loading
            call sys_msg_board_str       ; write message to message board
-
-           pushfd
-           cli
 
 .wait_lock:
            cmp [application_table_status],0
@@ -125,7 +124,7 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
            call get_new_process_place
            test eax, eax
            mov ecx, -0x20      ; too many processes
-           jz .err
+           jz .err_hdr
 
            mov [slot], eax
            shl eax, 8
@@ -172,13 +171,17 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
            mov   [ebx+APPDATA.mem_size],eax
 
            mov ecx, [file_size]
-           add ecx, 3
+           mov eax, ecx
            shr ecx, 2
            mov esi, [file_base]
            mov edi, new_app_base
            cld
            rep movsd
-
+           and eax, 3
+           jz @F
+           mov ecx, eax
+           rep movsb
+@@:
            stdcall kernel_free, [file_base]
            lea eax, [app_cmdline]
            stdcall set_app_params ,[slot],eax,[cmd_line],\
@@ -187,16 +190,18 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
            mov eax, [save_cr3]
            call set_cr3
 
-           xor eax, eax
-           mov    [application_table_status],eax ;unlock application_table_status mutex
            popfd
-           mov    eax,[process_number]  ;set result
+           xor ebx, ebx
+           mov [application_table_status],ebx ;unlock application_table_status mutex
+           mov eax,[process_number]  ;set result
            ret
 .failed:
            mov eax, [save_cr3]
            call set_cr3
-.err:
+.err_hdr:
+           stdcall kernel_free,[file_base]
            popfd
+.err_file:
            xor eax, eax
            mov [application_table_status],eax
            ret

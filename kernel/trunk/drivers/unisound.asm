@@ -109,16 +109,16 @@ CTRL_CNT_COLD	equ  0x00000002  ;   AC97 Cold Reset
 CTRL_CNT_GIE	equ  0x00000001  ;   GPI Interrupt Enable
 
 CODEC_REG_POWERDOWN   equ 0x26
-CODEC_REG_ST	      equ 0x26
+CODEC_REG_ST          equ 0x26
 
-DEV_PLAY	      equ  1
-DEV_STOP	      equ  2
-DEV_CALLBACK	      equ  3
-DEV_SET_BUFF	      equ  4
-DEV_NOTIFY	      equ  5
+DEV_PLAY              equ  1
+DEV_STOP              equ  2
+DEV_CALLBACK          equ  3
+DEV_SET_BUFF          equ  4
+DEV_NOTIFY            equ  5
 DEV_SET_MASTERVOL     equ  6
 DEV_GET_MASTERVOL     equ  7
-DEV_GET_INFO	      equ  8
+DEV_GET_INFO          equ  8
 
 struc AC_CNTRL		    ;AC controller base class
 { .bus                dd ?
@@ -243,15 +243,15 @@ struc CODEC		   ;Audio Chip base class
 }
 
 struc CTRL_INFO
-{   .pci_cmd	    dd	?
-    .irq	    dd	?
-    .glob_cntrl     dd	?
-    .glob_sta	    dd	?
-    .codec_io_base  dd	?
-    .ctrl_io_base   dd	?
-    .codec_mem_base dd	?
-    .ctrl_mem_base  dd	?
-    .codec_id       dd  ?
+{   .pci_cmd         dd ?
+    .irq             dd ?
+    .glob_cntrl      dd ?
+    .glob_sta        dd ?
+    .codec_io_base   dd ?
+    .ctrl_io_base    dd ?
+    .codec_mem_base  dd ?
+    .ctrl_mem_base   dd ?
+    .codec_id        dd ?
 }
 
 struc IOCTL
@@ -267,10 +267,10 @@ virtual at 0
   IOCTL IOCTL
 end virtual
 
-EVENT_NOTIFY	      equ 0x00000200
+EVENT_NOTIFY    equ 0x00000200
 
-OS_BASE 	      equ 0;  0x80400000
-new_app_base	      equ 0x60400000;   0x01000000
+OS_BASE         equ 0;
+new_app_base    equ 0x60400000
 PROC_BASE	      equ OS_BASE+0x0080000
 
 public START
@@ -830,8 +830,23 @@ proc init_codec
              counter dd ?
            endl
 
+           mov esi, msgControl
+           call SysMsgBoardStr
+
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgStatus
+           call SysMsgBoardStr
+
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
+
+           call dword2str
+           call SysMsgBoardStr
+
            test eax, CTRL_ST_CREADY
            jnz .ready
 
@@ -1307,6 +1322,23 @@ proc ctrl_mem_w32
            ret
 endp
 
+align 4
+dword2str:
+      mov  esi, hex_buff
+      mov ecx, -8
+@@:
+      rol eax, 4
+      mov ebx, eax
+      and ebx, 0x0F
+      mov bl, [ebx+hexletters]
+      mov [8+esi+ecx], bl
+      inc ecx
+      jnz @B
+      ret
+
+hexletters   db '0123456789ABCDEF'
+hex_buff     db 8 dup(0),13,10,0
+
 
 include "codec.inc"
 
@@ -1364,18 +1396,20 @@ msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
 msgNotify    db 'call notify',13,10,0
-msgIRQ	     db 'AC97 IRQ', 13,10,0
+msgIRQ       db 'AC97 IRQ', 13,10,0
 msgInitCtrl  db 'init controller',13,10,0
 msgInitCodec db 'init codec',13,10,0
 msgPrimBuff  db 'create primary buffer',13,10,0
-msgReg	     db 'set service handler',13,10,0
-msgOk	     db 'service installed',13,10,0
+msgReg       db 'set service handler',13,10,0
+msgOk        db 'service installed',13,10,0
 msgCold      db 'cold reset',13,10,0
 msgWarm      db 'warm reset',13,10,0
 msgWRFail    db 'warm reset failed',13,10,0
 msgCRFail    db 'cold reset failed',13,10,0
 msgCFail     db 'codec not ready',13,10,0
 msgResetOk   db 'reset complete',13,10,0
+msgStatus    db 'global status   ',0
+msgControl   db 'global control  ',0
 
 section '.data' data readable writable align 16
 
