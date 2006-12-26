@@ -54,8 +54,7 @@ uGuru_init:
 	mov	ecx, UGURU_CMD_PORT
 	mov	edx, UGURU_DATA_PORT
 	call	ReservePorts
-	test	eax, eax
-	jnz	.no_lpc
+	jc	.no_lpc
 	in	al, UGURU_CMD_PORT
 	test	al, al
 	jz	@f

@@ -46,7 +46,7 @@
 ;      20/12/2006 - W83627DHG, W83627EHF, W83627EHG, mutipliers for AthonXP-M, Athlon64, Athlon64-M,
 ;            Intel Dothan, Yonah, Conroe, Merom
 ;      24/12/2006 - ITE chips model id bugfix by Serge
-;      26/15/2006 - исправленна глупая ошибка в определении ITE
+;      26/15/2006 - исправленна глупая ошибка в определении ITE и uGuru
 ;
 ;    Эй! У меня нет много времени.
 
