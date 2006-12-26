@@ -32,8 +32,7 @@ it87_init:
 	mov	ecx, 0x2e
 	mov	edx, 0x2f
 	call	ReservePorts
-	test	eax, eax
-	jnz	.no_io
+	jc	.no_io
 
 	mov	eax, 0x55550187		; переход в MB PnP Mode
 	out	0x2e, al
