@@ -185,7 +185,7 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
            stdcall kernel_free, [file_base]
            lea eax, [app_cmdline]
            stdcall set_app_params ,[slot],eax,[cmd_line],\
-                                         [file_name], dword 0 ;[flags]
+                                         [file_name], [flags]
 
            mov eax, [save_cr3]
            call set_cr3
