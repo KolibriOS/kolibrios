@@ -2266,7 +2266,8 @@ preevaluate_logical_expression:
 	inc	esi
 	jmp	skip_logical_value
       negation_skipped:
-	cmp	byte [esi],'{'
+	mov	al,[esi]
+	cmp	al,'{'
 	jne	skip_simple_logical_value
 	inc	esi
 	xchg	al,[logical_value_wrapping]
@@ -2290,6 +2291,7 @@ preevaluate_logical_expression:
 	clc
 	ret
       wrongly_structured_logical_expression:
+	pop	eax
 	stc
 	ret
       skip_simple_logical_value:
@@ -2310,7 +2312,7 @@ preevaluate_logical_expression:
 	jne	skip_logical_value_symbol
 	sub	[logical_value_parentheses],1
 	jnc	skip_logical_value_symbol
-	cmp	[logical_value_wrapping],al
+	cmp	[logical_value_wrapping],'{'
 	jne	skip_logical_value_symbol
 	jmp	logical_value_skipped
       skip_logical_value_internal_parenthesis:

@@ -5,12 +5,11 @@
 
 preprocessor:
 	mov	edi,characters
-	mov	ecx,100h
 	xor	al,al
       make_characters_table:
 	stosb
 	inc	al
-	loop	make_characters_table
+	jnz	make_characters_table
 	mov	esi,characters+'a'
 	mov	edi,characters+'A'
 	mov	ecx,26
