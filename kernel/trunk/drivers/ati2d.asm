@@ -430,8 +430,7 @@ proc video_alloc
 
            mov [cursor_start],ebx
            sub ebx, cursor_map
-           shl ebx, 3
-           add eax,ebx
+           lea eax,[eax+ebx*8]
 
            shl eax,14
            add eax, LFBAddress+CURSOR_IMAGE_OFFSET

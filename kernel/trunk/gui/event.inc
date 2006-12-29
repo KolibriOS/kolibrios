@@ -44,8 +44,7 @@ proc alloc_event
            btr [ebx], eax
            mov [event_start],ebx
            sub ebx, event_map
-           shl ebx, 3
-           add eax,ebx
+           lea eax,[eax+ebx*8]
            shl eax,5
            add eax, [events]
            popfd

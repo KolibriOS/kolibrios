@@ -172,8 +172,7 @@ proc alloc_page
            btr [ebx], eax
            mov [page_start],ebx
            sub ebx, sys_pgmap
-           shl ebx, 3
-           add eax,ebx
+           lea eax, [eax+ebx*8]
            shl eax, 12
            dec [pg_data.pages_free]
            popfd
