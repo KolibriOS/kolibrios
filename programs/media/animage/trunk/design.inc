@@ -9,10 +9,10 @@ draw_volume_rectangle:
  cmp esi,1
  jne no_volume_light_rectangle
 
- mov [color_rectangle],9350878
- mov [color_line1],5669590
- mov [color_line2],12508927
- mov [color_line3],9350878
+ mov [color_rectangle],0xc7cbcf
+ mov [color_line1],0xaeabae
+ mov [color_line2],0xffffff
+ mov [color_line3],0xc7cbcf
  jmp exit_colors
 
  no_volume_light_rectangle:
@@ -20,10 +20,10 @@ draw_volume_rectangle:
  cmp esi,2
  jne no_pressed_rectangle
 
- mov [color_rectangle],9089258
- mov [color_line1],5669590
- mov [color_line2],9089258
- mov [color_line3],9089258
+ mov [color_rectangle],0x666666
+ mov [color_line1],0xaeabae
+ mov [color_line2],0x666666
+ mov [color_line3],0x666666
 
  jmp exit_colors
 
@@ -32,10 +32,10 @@ draw_volume_rectangle:
  cmp esi,3
  jne no_pressed_panel
 
- mov [color_rectangle],9350878
- mov [color_line1],5669590
+ mov [color_rectangle],0xc7cbcf
+ mov [color_line1],0xaeabae
  mov [color_line2],7000
- mov [color_line3],12508927
+ mov [color_line3],0xffffff
  jmp exit_colors
 
  no_pressed_panel:
@@ -44,9 +44,9 @@ draw_volume_rectangle:
  jne no_pressed_light_panel
 
  mov [color_rectangle],0xffffff
- mov [color_line1],5669590
+ mov [color_line1],0xaeabae
  mov [color_line2],7000
- mov [color_line3],12508927
+ mov [color_line3],0xffffff
  jmp exit_colors
 
  no_pressed_light_panel:
@@ -54,10 +54,10 @@ draw_volume_rectangle:
  cmp esi,5
  jne no_light_pressed_rectangle
 
- mov [color_rectangle],9089258
- mov [color_line1],5669590
- mov [color_line2],9089258
- mov [color_line3],9089258
+ mov [color_rectangle],0x666666
+ mov [color_line1],0xaeabae
+ mov [color_line2],0x666666
+ mov [color_line3],0x666666
 
  jmp exit_colors
 
@@ -66,10 +66,10 @@ draw_volume_rectangle:
  cmp esi,6
  jne no_work_rectangle
 
- mov [color_rectangle],9350878
- mov [color_line1],5669590
- mov [color_line2],9350878
- mov [color_line3],9350878
+ mov [color_rectangle],0xc7cbcf
+ mov [color_line1],0xaeabae
+ mov [color_line2],0xc7cbcf
+ mov [color_line3],0xc7cbcf
  jmp exit_colors
 
  no_work_rectangle:
@@ -77,10 +77,10 @@ draw_volume_rectangle:
  cmp esi,7
  jne no_work_rectangle_2
 
- mov [color_rectangle],9350878
- mov [color_line1],9350878
- mov [color_line2],9350878
- mov [color_line3],9350878
+ mov [color_rectangle],0xc7cbcf
+ mov [color_line1],0xc7cbcf
+ mov [color_line2],0xc7cbcf
+ mov [color_line3],0xc7cbcf
  jmp exit_colors
 
  no_work_rectangle_2:
@@ -227,7 +227,8 @@ draw_conture:
  mov [line_size_x],ecx
  mov [line_size_y],edx
 
- mov [color_line1],5669590
+ mov [color_line1],0xaeabae
+
 
  ;line 1
  mov edx,[color_line1]
@@ -317,7 +318,7 @@ draw_line:
 ;----------------------------------------------------------
 ;lightlin 12508927
 ;lines    5669590
-;workpan  9350878
+;workpan  9350879
 ;btnpress 9089258
 line_x		dd 0
 line_y		dd 0
