@@ -378,11 +378,6 @@ B32:
 @@:
            mov [pg_data.kernel_tables], edx
 
-;!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'detect/disks.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-; CHECK EXTRA REGION
 ; ENABLE PAGING
 
            call test_cpu
@@ -461,6 +456,10 @@ include 'detect/disks.inc'
         shr     eax,16
         mov     [graph_data_l+4],al
         mov     [graph_data_l+7],ah
+
+;!!!!!!!!!!!!!!!!!!!!!!!!!!
+include 'detect/disks.inc'
+;!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 ; READ RAMDISK IMAGE FROM HD
 

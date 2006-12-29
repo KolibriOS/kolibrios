@@ -21,6 +21,7 @@ hd_read:
 ; input  : eax = block to read
 ;          ebx = destination
 ;-----------------------------------------------------------
+        and     [hd_error], 0
     push  ecx esi edi           ; scan cache
 
     mov   ecx,cache_max         ; entries in cache

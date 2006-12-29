@@ -464,7 +464,7 @@ fs_HdServices:
         dd      fs_HdSetFileEnd
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo
-        dd      fs_HdExecute
+        dd      0 ;fs_HdExecute
         dd      fs_HdDelete
 fs_NumHdServices = ($ - fs_HdServices)/4
 

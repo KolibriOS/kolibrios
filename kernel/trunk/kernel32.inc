@@ -241,6 +241,7 @@ include "boot/shutdown.inc" ; shutdown or restart
 
 include "fs/fs.inc"       ; syscall
 include "fs/fat32.inc"    ; read / write for fat32 filesystem
+include "fs/ntfs.inc"     ; read / write for ntfs filesystem
 include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2

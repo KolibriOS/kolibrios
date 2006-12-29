@@ -189,7 +189,7 @@ set_FAT:
     jb    sfc_error
     cmp   eax,[LAST_CLUSTER]
     ja    sfc_error
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     je    sfc_1
     add   eax,eax
   sfc_1:
@@ -217,7 +217,7 @@ set_FAT:
     
 
   sfc_in_cache:
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   sfc_test32
 
   sfc_set16:
@@ -253,7 +253,7 @@ get_FAT:
 ;--------------------------------
     push  ebx esi
 
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     je    gfc_1
     add   eax,eax
   gfc_1:
@@ -381,7 +381,7 @@ analyze_directory:
     jnb   adr_data_cluster
 
     mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   adr_data_cluster
     mov   eax,[ROOT_START]
     mov   edx,[ROOT_SECTORS]
@@ -476,7 +476,7 @@ analyze_directory_to_write:
     jnb   adw_data_cluster
 
     mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   adw_data_cluster
     mov   eax,[ROOT_START]
     mov   edx,[ROOT_SECTORS]
@@ -599,7 +599,7 @@ get_data_cluster:
     jnb   gdc_cluster
 
     mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   gdc_cluster
     mov   eax,[ROOT_START]
     mov   ecx,[ROOT_SECTORS]    ; Note: not cluster size
@@ -817,10 +817,13 @@ makedir:
 ;               10 - access denied
 ; Note   : can only make one directory at time
 ;-----------------------------------------------------
-    cmp   [fat_type],0
-    jnz   make_dir_fat_ok
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      make_dir_fat_ok
+        cmp     [fs_type], 32
+        jz      make_dir_fat_ok
+        push    ERROR_UNKNOWN_FS
+        pop     eax
+        ret
 
   make_dir_fat_ok:
 ;    call  reserve_hd1
@@ -995,7 +998,7 @@ add_disk_free_space:
 ;-----------------------------------------------------
     test  ecx,ecx               ; no change
     je    add_dfs_no
-    cmp   [fat_type],32         ; free disk space only used by fat32
+    cmp   [fs_type],32         ; free disk space only used by fat32
     jne   add_dfs_no
 
     push  eax ebx
@@ -1036,10 +1039,13 @@ file_write:
 ;                8 - disk full
 ;               10 - access denied
 ;--------------------------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   fat_ok_for_writing
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      fat_ok_for_writing
+        cmp     [fs_type], 32
+        jz      fat_ok_for_writing
+        push    ERROR_UNKNOWN_FS
+        pop     eax
+        ret
 
   fat_ok_for_writing:
 ;    call  reserve_hd1
@@ -1222,8 +1228,10 @@ file_read:
 ;               10 - access denied
 ;          ebx = size of file/directory
 ;--------------------------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   fat_ok_for_reading
+        cmp     [fs_type], 16
+        jz      fat_ok_for_reading
+        cmp     [fs_type], 32
+        jz      fat_ok_for_reading
     xor   ebx,ebx
     mov   eax,ERROR_UNKNOWN_FS
     mov   [hd1_status], ebx
@@ -1344,7 +1352,7 @@ get_dir_size:
 
     mov   eax,[ROOT_SECTORS]
     shl   eax,9                 ; fat16 rootdir size in bytes
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     je    dir_size_ret
     mov   eax,[ROOT_CLUSTER]
 
@@ -1379,10 +1387,13 @@ file_delete:
 ;                5 - file not found
 ;               10 - access denied
 ;-----------------------------------------------------
-    cmp   [fat_type],0
-    jnz   file_del_fat_ok
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      file_del_fat_ok
+        cmp     [fs_type], 32
+        jz      file_del_fat_ok
+        push    ERROR_UNKNOWN_FS
+        pop     eax
+        ret
 
   file_del_fat_ok:
     pushad
@@ -1665,10 +1676,13 @@ rename:
 ;                8 - disk full
 ;               10 - access denied
 ;-----------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   fat_ok_for_rename
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      fat_ok_for_rename
+        cmp     [fs_type], 32
+        jz      fat_ok_for_rename
+        push    ERROR_UNKNOWN_FS
+        pop     eax
+        ret
 
   fat_ok_for_rename:
 ;    call  reserve_hd1
@@ -1825,8 +1839,10 @@ get_hd_info:
 ;          ebx = total clusters on disk
 ;          ecx = free clusters on disk
 ;-----------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   info_fat_ok
+        cmp     [fs_type], 16
+        jz      info_fat_ok
+        cmp     [fs_type], 32
+        jz      info_fat_ok
     xor   edx,edx
     xor   ebx,ebx
     xor   ecx,ecx
@@ -1949,7 +1965,7 @@ hd_find_lfn:
         push    fat16_root_first
         push    fat16_root_next
         mov     eax, [ROOT_CLUSTER]
-        cmp     [fat_type], 32
+        cmp     [fs_type], 32
         jz      .fat32
 .loop:
         call    fat_find_lfn
@@ -2000,11 +2016,15 @@ hd_find_lfn:
 ;
 ;--------------------------------------------------------------
 fs_HdRead:
-    cmp    [fat_type], 0
-    jnz    @f
-    or    ebx, -1
-    mov    eax, ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdRead
+        or      ebx, -1
+        mov     eax, ERROR_UNKNOWN_FS
+        ret
 @@:
     push    edi
     cmp    byte [esi], 0
@@ -2155,6 +2175,17 @@ fs_HdRead:
 ;
 ;--------------------------------------------------------------
 fs_HdReadFolder:
+        cmp     [fs_type], 1
+        jz      ntfs_HdReadFolder
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
+        push    ERROR_UNSUPPORTED_FS
+        pop     eax
+        or      ebx, -1
+        ret
+@@:
         mov     eax, [ROOT_CLUSTER]
         push    edi
         cmp     byte [esi], 0
@@ -2195,7 +2226,7 @@ fs_HdReadFolder:
         mov     [cluster_tmp], eax
         test    eax, eax
         jnz     @f
-        cmp     [fat_type], 32
+        cmp     [fs_type], 32
         jz      .notfound
         mov     eax, [ROOT_START]
         push    [ROOT_SECTORS]
@@ -2525,8 +2556,13 @@ fshrfs:
         ret
 
 fs_HdRewrite:
-        cmp     [fat_type], 0
-        jz      fshrfs
+        cmp     [fs_type], 1
+        jz      ntfs_HdRewrite
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jnz     fshrfs
+@@:
         cmp     byte [esi], 0
         jz      fshrad
         pushad
@@ -2545,7 +2581,7 @@ fs_HdRewrite:
         test    ebp, ebp
         jnz     .noroot
         mov     ebp, [ROOT_CLUSTER]
-        cmp     [fat_type], 32
+        cmp     [fs_type], 32
         jz      .pushnotroot
         push    fat16_root_extend_dir
         push    fat16_root_end_write
@@ -2944,7 +2980,7 @@ fs_HdRewrite:
 
 ;----------------------------------------------------------------
 ;
-;  fs_HdWrite - LFN variant for writing to floppy
+;  fs_HdWrite - LFN variant for writing to hard disk
 ;
 ;  esi  points to filename
 ;  ebx  pointer to 64-bit number = first wanted byte, 0+
@@ -2968,8 +3004,12 @@ fs_HdWrite.ret11:
         jmp     fs_HdWrite.ret0
 
 fs_HdWrite:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdWrite
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         push    ERROR_UNKNOWN_FS
         jmp     .ret0
 @@:
@@ -3301,8 +3341,12 @@ hd_extend_file:
 ;
 ;--------------------------------------------------------------
 fs_HdSetFileEnd:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdSetFileEnd
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         push    ERROR_UNKNOWN_FS
 .ret:
         pop     eax
@@ -3529,8 +3573,12 @@ fs_HdSetFileEnd:
         ret
 
 fs_HdGetFileInfo:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdGetFileInfo
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         mov     eax, ERROR_UNKNOWN_FS
         ret
 @@:
@@ -3553,8 +3601,12 @@ fs_HdGetFileInfo:
         jmp     fs_GetFileInfo_finish
 
 fs_HdSetFileInfo:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdSetFileInfo
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         mov     eax, ERROR_UNKNOWN_FS
         ret
 @@:
@@ -3589,6 +3641,8 @@ fs_HdSetFileInfo:
         xor     eax, eax
         ret
 
+if 0    ; starting from revision 237 execute is implemented in taskman.inc
+        ; through fs_XxxGetFileInfo and fs_XxxRead
 ;----------------------------------------------------------------
 ;
 ;  fs_HdExecute - LFN variant for executing from harddisk
@@ -3708,6 +3762,7 @@ fs_HdExecute:
         popad
         mov     eax, 11
         ret
+end if
 
 ;----------------------------------------------------------------
 ;
@@ -3719,8 +3774,12 @@ fs_HdExecute:
 ;
 ;--------------------------------------------------------------
 fs_HdDelete:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdDelete
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         push    ERROR_UNKNOWN_FS
 .pop_ret:
         pop     eax
