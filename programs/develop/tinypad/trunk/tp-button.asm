@@ -310,11 +310,20 @@ macro unused {
 	stosb
 	or	al,al
 	jnz	@b
-	mov	ebx,f_info
-	mov	dword[ebx+0],1
-	mov	dword[ebx+8],self_path
-	mov	dword[ebx+12],0
-	mcall	58
+;	mov	ebx,f_info
+;	mov	dword[ebx+0],1
+;	mov	dword[ebx+8],self_path
+;	mov	dword[ebx+12],0
+;	mcall	58
+
+	mov	[f_info70+0],2
+	mov	[f_info70+4],0
+	mov	[f_info70+8],0
+	mov	[f_info70+12],TINYPAD_END
+	mov	[f_info70+16],0
+	mov	byte[f_info70+20],0
+	mov	[f_info70+21],f_info.path
+	mcall	70,f_info70
 
 ;       test    eax,eax
 ;       je      .close

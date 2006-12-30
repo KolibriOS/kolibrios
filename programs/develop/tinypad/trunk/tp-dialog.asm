@@ -252,6 +252,7 @@ botdlg.button:
 	xor	eax,eax
 	mov	[bot_mode],al
 	mov	[bot_dlg_height],eax
+	mov	[s_status],eax
 	call	drawwindow
 	ret
 

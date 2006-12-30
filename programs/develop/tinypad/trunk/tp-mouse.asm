@@ -396,6 +396,8 @@ onshow:
 	ret
   .run:
 	ret
+  .recode:
+	ret
   .options:
 	mov	word[popup_options+0],0
 	mov	byte[popup_options+5],0
