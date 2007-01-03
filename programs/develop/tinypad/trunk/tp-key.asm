@@ -51,8 +51,8 @@ key:
 	jne	@f
 	test	[options],OPTS_SECURESEL
 	jz	.lp1
-	m2m	[sel.x],[pos.x]
-	m2m	[sel.y],[pos.y]
+	m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
   .lp1: mov	[s_status],0
 	call	dword[esi+4]
 	jmp	still
@@ -74,8 +74,8 @@ key:
 
 	test	[options],OPTS_SECURESEL
 	jz	.lp2
-	m2m	[sel.x],[pos.x]
-	m2m	[sel.y],[pos.y]
+	m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
 	jmp	.put
   .lp2: call	delete_selection
 
@@ -85,24 +85,24 @@ key:
 	jne	@f
 	mov	al,']'
 	call	.lp3
-	dec	[pos.x]
+	dec	[cur_tab.Editor.Caret.X] ;! [pos.x]
 	jmp	.put
     @@: cmp	al,'('
 	jne	@f
 	mov	al,')'
 	call	.lp3
-	dec	[pos.x]
+	dec	[cur_tab.Editor.Caret.X] ;! [pos.x]
 	jmp	.put
     @@: cmp	al,'{'
 	jne	.put
 	mov	al,'}'
 	call	.lp3
-	dec	[pos.x]
+	dec	[cur_tab.Editor.Caret.X] ;! [pos.x]
 
   .put: pop	eax
 	push	still
-	inc	[sel.x]
-  .lp3: push	[pos.x] eax
+	inc	[cur_tab.Editor.SelStart.X] ;! [sel.x]
+  .lp3: push	[cur_tab.Editor.Caret.X] eax ;! [pos.x] eax
 	inc	dword[esp+4]
 	mov	eax,1
 	jmp	key.tab.direct
@@ -111,14 +111,14 @@ key:
 func key.ctrl_a ;///// SELECT ALL DOCUMENT ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	xor	eax,eax
-	mov	[sel.x],eax
-	mov	[sel.y],eax
-	mov	ecx,[lines]
+	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
+	mov	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
 	dec	ecx
-	mov	[pos.y],ecx
+	mov	[cur_tab.Editor.Caret.Y],ecx ;! [pos.y],ecx
 	call	get_line_offset
 	call	get_real_length
-	mov	[pos.x],eax
+	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
 	call	draw_file
 	ret
 endf
@@ -155,7 +155,7 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
-	cmp	[modified],0
+	cmp	[cur_tab.Editor.Modified],0 ;! [modified],0
 	je	.exit
 	cmp	[f_info.length],0
 	je	key.shift_ctrl_s
@@ -172,7 +172,7 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_n ;///// ENTER SAVE FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
-	call	new_file
+	call	create_tab
 	ret
 endf
 
@@ -248,8 +248,8 @@ func key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_ctrl_left: ;///// GO TO PREVIOUS WORD, WITH SELECTION /////////
 ;-----------------------------------------------------------------------------
-	mov	ebx,[pos.y]
-	mov	edx,[pos.x]
+	mov	ebx,[cur_tab.Editor.Caret.Y] ;! ebx,[pos.y]
+	mov	edx,[cur_tab.Editor.Caret.X] ;! edx,[pos.x]
 	cld
 	mov	ecx,ebx
 	call	get_line_offset
@@ -307,26 +307,26 @@ func key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 	jmp	.lp2
     @@:
 	inc	edx
-	mov	[pos.y],ebx
-	mov	[pos.x],edx
+	mov	[cur_tab.Editor.Caret.Y],ebx ;! [pos.y],ebx
+	mov	[cur_tab.Editor.Caret.X],edx ;! [pos.x],edx
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],ebx
-	mov	[sel.x],edx
-    @@: sub	ebx,[top_line]
+	mov	[cur_tab.Editor.SelStart.Y],ebx ;! [sel.y],ebx
+	mov	[cur_tab.Editor.SelStart.X],edx ;! [sel.x],edx
+    @@: sub	ebx,[cur_tab.Editor.TopLeft.Y] ;! ebx,[top_line]
 	jge	@f
-	add	[top_line],ebx
+	add	[cur_tab.Editor.TopLeft.Y],ebx ;! [top_line],ebx
     @@: mov	eax,edx
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	cmp	eax,[columns.scr]
 	jl	@f
 	sub	eax,[columns.scr]
 	inc	eax
-	add	[left_col],eax
+	add	[cur_tab.Editor.TopLeft.X],eax ;! [left_col],eax
 	jmp	.exit
-    @@: cmp	edx,[left_col]
+    @@: cmp	edx,[cur_tab.Editor.TopLeft.X] ;! edx,[left_col]
 	jge	.exit
-	mov	[left_col],edx
+	mov	[cur_tab.Editor.TopLeft.X],edx ;! [left_col],edx
   .exit:
 	call	draw_file
   .exit.2:
@@ -341,8 +341,8 @@ func key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_ctrl_right: ;///// GO TO NEXT WORD, WITH SELECTION ////////////
 ;-----------------------------------------------------------------------------
-	mov	ebx,[pos.y]
-	mov	edx,[pos.x]
+	mov	ebx,[cur_tab.Editor.Caret.Y] ;! ebx,[pos.y]
+	mov	edx,[cur_tab.Editor.Caret.X] ;! edx,[pos.x]
 	cld
   .lp1: mov	ecx,ebx
 	call	get_line_offset
@@ -363,7 +363,7 @@ func key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 	dec	ecx
 	jnz	@b
   .nx1: inc	ebx
-	cmp	ebx,[lines]
+	cmp	ebx,[cur_tab.Editor.Lines] ;! ebx,[lines]
 	jge	.exit.2
 	xor	edx,edx
 	jmp	.lp1
@@ -388,34 +388,34 @@ func key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 	dec	ecx
 	jnz	@b
   .nx2: inc	ebx
-	cmp	ebx,[lines]
+	cmp	ebx,[cur_tab.Editor.Lines] ;! ebx,[lines]
 	jge	.exit.2
 	xor	edx,edx
 	jmp	.lp2
     @@:
-	mov	[pos.y],ebx
-	mov	[pos.x],edx
+	mov	[cur_tab.Editor.Caret.Y],ebx ;! [pos.y],ebx
+	mov	[cur_tab.Editor.Caret.X],edx ;! [pos.x],edx
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],ebx
-	mov	[sel.x],edx
-    @@: sub	ebx,[top_line]
+	mov	[cur_tab.Editor.SelStart.Y],ebx ;! [sel.y],ebx
+	mov	[cur_tab.Editor.SelStart.X],edx ;! [sel.x],edx
+    @@: sub	ebx,[cur_tab.Editor.TopLeft.Y] ;! ebx,[top_line]
 	cmp	ebx,[lines.scr]
 	jl	@f
 	sub	ebx,[lines.scr]
 	inc	ebx
-	add	[top_line],ebx
+	add	[cur_tab.Editor.TopLeft.Y],ebx ;! [top_line],ebx
     @@: mov	eax,edx
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	cmp	eax,[columns.scr]
 	jl	@f
 	sub	eax,[columns.scr]
 	inc	eax
-	add	[left_col],eax
+	add	[cur_tab.Editor.TopLeft.X],eax ;! [left_col],eax
 	jmp	.exit
-    @@: cmp	edx,[left_col]
+    @@: cmp	edx,[cur_tab.Editor.TopLeft.X] ;! edx,[left_col]
 	jge	.exit
-	mov	[left_col],edx
+	mov	[cur_tab.Editor.TopLeft.X],edx ;! [left_col],edx
   .exit:
 	call	draw_file
   .exit.2:
@@ -428,7 +428,7 @@ func key.ctrl_x
 	je	@f
 	call	key.ctrl_c
 	call	key.del
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
     @@: ret
 endf
 
@@ -437,6 +437,13 @@ func key.ctrl_c
 	mov	[copy_size],0
 	cmp	[sel.selected],0
 	je	.exit
+
+	call	get_selection_size
+	mov	ebx,eax
+	mov	eax,[copy_buf]
+	call	mem.ReAlloc
+	mov	[copy_buf],eax
+
 	cld
 	mov	eax,[sel.begin.y]
 	cmp	eax,[sel.end.y]
@@ -445,7 +452,7 @@ func key.ctrl_c
 	call	get_line_offset
 	inc	ecx
 	push	ecx
-	mov	edi,AREA_CBUF
+	mov	edi,[copy_buf] ;! AREA_CBUF
 	call	get_real_length
 	sub	eax,[sel.begin.x]
 	jge	@f
@@ -487,7 +494,7 @@ func key.ctrl_c
 	add	[ebx],eax
 	mov	al,' '
 	rep	stosb
-    @@: sub	edi,AREA_CBUF
+    @@: sub	edi,[copy_buf] ;! AREA_CBUF
 	mov	[copy_size],edi
 	mov	eax,[sel.end.y]
 	sub	eax,[sel.begin.y]
@@ -499,7 +506,7 @@ func key.ctrl_c
   .single_line:
 	mov	eax,[sel.end.x]
 	sub	eax,[sel.begin.x]
-	mov	edi,AREA_CBUF
+	mov	edi,[copy_buf] ;! AREA_CBUF
 	stosd
 	mov	ecx,[sel.begin.y]
 	call	get_line_offset
@@ -530,19 +537,21 @@ func key.ctrl_v
 
 	call	delete_selection
 
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	pushd	[esi] esi
-	mov	ecx,[pos.x]
+	mov	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
 	call	line_add_spaces
 	mov	ecx,[copy_size]
 	sub	ecx,4
-	mov	edi,AREA_TEMP2
+	mov	edi,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	add	edi,[edi-4]
+	dec	edi
 	mov	eax,esi
 	mov	esi,edi
 	sub	esi,ecx
 	lea	ecx,[eax+4]
-	add	ecx,[pos.x]
+	add	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
 	neg	ecx
 	lea	ecx,[esi+ecx+1]
 	std
@@ -555,10 +564,10 @@ func key.ctrl_v
 	cld
 	pop	edi
 	add	edi,4
-	mov	esi,AREA_CBUF
+	mov	esi,[copy_buf] ;! AREA_CBUF
 	lodsd
 
-	mov	ebx,[pos.x]
+	mov	ebx,[cur_tab.Editor.Caret.X] ;! ebx,[pos.x]
 	add	eax,ebx
 	mov	[edi-4],ax
 	sub	eax,ebx
@@ -581,38 +590,38 @@ func key.ctrl_v
 	mov	ecx,eax
 	rep	movsb
 
-	mov	[pos.x],eax
-	mov	[sel.x],eax
+	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
+	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
 	mov	eax,[copy_count]
 	dec	eax
-	add	[pos.y],eax
-	add	[sel.y],eax
-	add	[lines],eax
+	add	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
+	add	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
+	add	[cur_tab.Editor.Lines],eax ;! [lines],eax
 
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 	jmp	.exit
 
   .single_line:
 	cld
 	pop	edi
 	add	edi,4
-	mov	esi,AREA_CBUF
+	mov	esi,[copy_buf] ;! AREA_CBUF
 	lodsd
 	add	[edi-4],ax
 	and	dword[edi-4],not 0x00020000
 	or	dword[edi-4],0x00010000
 	call	.check_columns
-	add	edi,[pos.x]
+	add	edi,[cur_tab.Editor.Caret.X] ;! edi,[pos.x]
 	add	esp,4
 	mov	ecx,eax
 	rep	movsb
 
-	add	[pos.x],eax
-	add	[sel.x],eax
+	add	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
+	add	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
 
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 
   .exit:
 	ret
@@ -620,9 +629,9 @@ func key.ctrl_v
   .check_columns:
 	push	eax
 	movzx	eax,word[edi-4]
-	cmp	eax,[columns]
+	cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	jbe	@f
-	mov	[columns],eax
+	mov	[cur_tab.Editor.Columns],eax ;! [columns],eax
     @@: pop	eax
 	ret
 ;        push    eax ebx esi
@@ -647,11 +656,11 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	mov	ebx,esi
 
-	mov	ecx,[lines]
+	mov	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
 	call	get_line_offset
 	lea	edi,[esi+90+4]
 	lea	ecx,[esi+4]
@@ -670,12 +679,12 @@ func key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 	rep	stosb
 	mov	byte[ebx+4],';'
 
-	inc	[lines]
-	inc	[pos.y]
-	m2m	[sel.y],[pos.y]
+	inc	[cur_tab.Editor.Lines] ;! [lines]
+	inc	[cur_tab.Editor.Caret.Y] ;! [pos.y]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
 
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 
   .exit:
 	ret
@@ -684,25 +693,25 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[pos.y]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
 	inc	eax
-	cmp	eax,[lines]
+	cmp	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	jge	.exit
 
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	mov	edi,esi
 	lodsd
 	add	esi,eax
 
-	dec	[lines]
-	mov	ecx,AREA_TEMP2
+	dec	[cur_tab.Editor.Lines] ;! [lines]
+	mov	ecx,[temp_buf] ;! AREA_TEMP2
 	sub	ecx,esi
 	shr	ecx,2		       ;// fixed (was 4)
 	cld
 	rep	movsd
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 
   .exit:
 	ret
@@ -716,11 +725,11 @@ func key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_up: ;///// GO TO PREVIOUS LINE, WITH SELECTION ////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[pos.y]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
 	dec	eax
 	jns	@f
 	xor	eax,eax
-    @@: mov	ecx,[top_line]
+    @@: mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	cmp	eax,ecx
 	jae	@f
 	dec	ecx
@@ -728,7 +737,7 @@ func key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
 	xor	ecx,ecx
     @@: test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_init
 
   .exit:
@@ -744,12 +753,12 @@ func key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
      key.shift_down: ;///// GO TO NEXT LINE, WITH SELECTION //////////////////
 ;-----------------------------------------------------------------------------
 
-	mov	eax,[pos.y]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
 	inc	eax
-	cmp	eax,[lines]
+	cmp	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	jb	@f
 	dec	eax
-    @@: mov	ecx,[top_line]
+    @@: mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	mov	edx,eax
 	sub	edx,ecx
 	cmp	edx,[lines.scr]
@@ -757,7 +766,7 @@ func key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
 	inc	ecx
     @@: test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_init
 
   .exit:
@@ -772,14 +781,14 @@ func key.left ;///// GO TO PREVIOUS CHAR /////////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_left: ;///// GO TO PREVIOUS CHAR, WITH SELECTION //////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[pos.x]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	dec	eax
 	jns	@f
 	inc	eax
     @@: test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.x],eax
-    @@: mov	[pos.x],eax
+	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
+    @@: mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
 	call	 check_inv_all
 
   .exit:
@@ -794,15 +803,15 @@ func key.right ;///// GO TO NEXT CHAR ////////////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_right: ;///// GO TO NEXT CHAR, WITH SELECTION /////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[pos.x]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	inc	eax
-	cmp	eax,[columns]
+	cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	jbe	@f
 	dec	eax
     @@: test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.x],eax
-    @@: mov	[pos.x],eax
+	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
+    @@: mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
 	call	check_inv_all
 
   .exit:
@@ -819,8 +828,8 @@ func key.pgup ;///// GO TO PREVIOUS PAGE /////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	edx,[lines.scr]
 	dec	edx
-	mov	eax,[pos.y]
-	mov	ecx,[top_line]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	sub	eax,edx
 	jns	@f
 	xor	eax,eax
@@ -829,7 +838,7 @@ func key.pgup ;///// GO TO PREVIOUS PAGE /////////////////////////////////////
 	xor	ecx,ecx
     @@: test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_init
 
   .exit:
@@ -846,17 +855,17 @@ func key.pgdn ;///// GO TO NEXT PAGE /////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	edx,[lines.scr]
 	dec	edx
-	mov	eax,[pos.y]
-	mov	ecx,[top_line]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	add	eax,edx
 	add	ecx,edx
-	cmp	eax,[lines]
+	cmp	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	jb	@f
-	mov	eax,[lines]
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	dec	eax
     @@: test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_init
 
   .exit:
@@ -871,10 +880,10 @@ func key.home ;///// GO TO LINE START ////////////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_home: ;///// GO TO LINE START, WITH SELECTION /////////////////
 ;-----------------------------------------------------------------------------
-	mov	[pos.x],0
+	mov	[cur_tab.Editor.Caret.X],0 ;! [pos.x],0
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.x],0
+	mov	[cur_tab.Editor.SelStart.X],0 ;! [sel.x],0
     @@: call	check_inv_all
 
   .exit:
@@ -889,13 +898,13 @@ func key.end ;///// GO TO LINE END ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_end: ;///// GO TO LINE END, WITH SELECTION ////////////////////
 ;-----------------------------------------------------------------------------
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	call	get_real_length
-	mov	[pos.x],eax
+	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.x],eax
+	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
     @@: call	check_inv_all
 
   .exit:
@@ -910,11 +919,11 @@ func key.ctrl_home ;///// GO TO PAGE START ///////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_ctrl_home: ;///// GO TO PAGE START, WITH SELECTION ////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[top_line]
+	mov	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
 	mov	ecx,eax
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_init
 
   .exit:
@@ -929,16 +938,16 @@ func key.ctrl_end ;///// GO TO PAGE END //////////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_ctrl_end: ;///// GO TO PAGE END, WITH SELECTION ///////////////
 ;-----------------------------------------------------------------------------
-	mov	ecx,[top_line]
+	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	mov	eax,[lines.scr]
-	cmp	eax,[lines]
+	cmp	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	jle	@f
-	mov	eax,[lines]
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
     @@: add	eax,ecx
 	dec	eax
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_init
 
   .exit:
@@ -954,11 +963,11 @@ func key.ctrl_pgup ;///// GO TO DOCUMENT START ///////////////////////////////
      key.shift_ctrl_pgup: ;///// GO TO DOCUMENT START, WITH SELECTION ////////
 ;-----------------------------------------------------------------------------
 	xor	eax,eax
-	mov	[top_line],eax
-	mov	[pos.y],eax
+	mov	[cur_tab.Editor.TopLeft.Y],eax ;! [top_line],eax
+	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
 	test	byte[shi+2],0x01
 	jnz	@f
-	mov	[sel.y],eax
+	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
     @@: call	check_inv_all.skip_check
 
   .exit:
@@ -973,17 +982,18 @@ func key.ctrl_pgdn ;///// GO TO DOCUMENT END /////////////////////////////////
 ;-----------------------------------------------------------------------------
      key.shift_ctrl_pgdn: ;///// GO TO DOCUMENT END, WITH SELECTION //////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[lines]    ; eax = lines in the file
-	mov	[pos.y],eax
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]    ; eax = lines in the file
+	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
 	sub	eax,[lines.scr]   ; eax -= lines on the screen
 	jns	@f
 	xor	eax,eax
-    @@: mov	[top_line],eax
-	dec	[pos.y]
+    @@: mov	[cur_tab.Editor.TopLeft.Y],eax ;! [top_line],eax
+	dec	[cur_tab.Editor.Caret.Y] ;! [pos.y]
 	test	byte[shi+2],0x01
 	jnz	@f
-	push	[pos.y]
-	pop	[sel.y]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y]
+;!      push    [pos.y]
+;!      pop     [sel.y]
     @@: call	check_inv_all.skip_check
 
   .exit:
@@ -996,7 +1006,7 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	call	delete_selection
 	jnc	.exit.2
 
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	and	dword[esi],not 0x00020000
 	or	dword[esi],0x00010000
@@ -1007,7 +1017,7 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	or	eax,eax
 	je	.line_up
 
-	mov	ecx,[pos.x]
+	mov	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
 	cmp	ecx,eax
 	jae	.line_up
 	lea	edi,[ebx+ecx]
@@ -1018,7 +1028,7 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	je	.line_up
 
 	mov	edi,ebx
-	mov	ecx,[pos.x]
+	mov	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
 	add	edi,ecx
 	lea	esi,[edi+1]
 	neg	ecx
@@ -1028,23 +1038,25 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	rep	movsb
 	mov	byte[edi],' '
 
-	m2m	[sel.x],[pos.x]
-	m2m	[sel.y],[pos.y]
+	m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 	ret
 
   .line_up:
-	mov	eax,[lines]
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	dec	eax
-	cmp	eax,[pos.y]
+	cmp	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
 	je	.exit
-	mov	edi,AREA_TEMP+4
+	mov	edi,[temp_buf] ;! AREA_TEMP+4
+	add	edi,4
 	mov	esi,ebx
-	mov	ecx,[pos.x]
+	mov	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
 	rep	movsb
-	mov	ecx,[pos.x]
-	mov	[AREA_TEMP],ecx
+	mov	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
+	mov	eax,[temp_buf]
+	mov	[eax],ecx ;! [AREA_TEMP],ecx
 	cmp	cx,[ebp]
 	jbe	@f
 	movzx	eax,word[ebp]
@@ -1056,20 +1068,24 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	movzx	eax,word[ebp]
 	add	esi,eax;[ebp]
 	movzx	ecx,word[esi-4]
-	add	[AREA_TEMP],ecx
-	or	dword[AREA_TEMP],0x00010000
+	mov	eax,[temp_buf]
+	add	[eax],ecx ;! [AREA_TEMP],ecx
+	or	dword[eax],0x00010000 ;! dword[AREA_TEMP],0x00010000
 	rep	movsb
 
-	lea	ecx,[edi-AREA_TEMP]
+	mov	ecx,edi ;! [edi-AREA_TEMP]
+	sub	ecx,[temp_buf]
 
-	mov	esi,AREA_TEMP
+	mov	esi,[temp_buf] ;! AREA_TEMP
 	call	get_real_length
-	cmp	eax,[columns]
+	cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	jbe	@f
-	mov	[columns],eax
+	mov	[cur_tab.Editor.Columns],eax ;! [columns],eax
     @@:
 	push	ecx
-	mov	edi,AREA_TEMP2
+	mov	edi,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	add	edi,[edi-4]
+	dec	edi
 	lea	esi,[edi+8]
 	sub	esi,ecx
 	movzx	eax,word[ebp]
@@ -1092,27 +1108,28 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	add	esi,eax;[esi-8]
 	movzx	eax,word[esi-4]
 	add	esi,eax;[esi-4]
-	mov	ecx,AREA_TEMP2
+	mov	ecx,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	add	ecx,[ecx-4]
 	sub	ecx,esi
 	cld
     @@: rep	movsb
   .lp1: pop	ecx
-	mov	esi,AREA_TEMP
+	mov	esi,[temp_buf] ;! AREA_TEMP
 	mov	edi,ebp
 	cld
 	rep	movsb
 
   .ok.dec.lines:
-	dec	[lines]
-	mov	eax,[lines]
-	cmp	[pos.y],eax
+	dec	[cur_tab.Editor.Lines] ;! [lines]
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+	cmp	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
 	jb	@f
 	dec	eax
-	mov	[pos.y],eax
-    @@: m2m	[sel.x],[pos.x]
-	m2m	[sel.y],[pos.y]
+	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
+    @@: m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
 
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
   .exit.2:
 	call	check_inv_all
 
@@ -1135,23 +1152,23 @@ func key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 	call	delete_selection
 	jnc	key.del.exit.2
 
-	mov	eax,[pos.x]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	dec	eax
 	js	.line_up
 
-	dec	[pos.x]
-	mov	ecx,[pos.y]
+	dec	[cur_tab.Editor.Caret.X] ;! [pos.x]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	and	dword[esi],not 0x00020000
 	or	dword[esi],0x00010000
 
 	mov	ebx,eax
 	call	get_real_length
-	cmp	eax,[pos.x]
+	cmp	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	jae	@f
-	m2m	[sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 	ret
 
     @@: lea	edi,[esi+4+ebx]
@@ -1165,17 +1182,17 @@ func key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 	rep	movsb
 	mov	byte[edi],' '
 
-	m2m	[sel.x],[pos.x]
-	m2m	[sel.y],[pos.y]
+	m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
 	call	check_inv_str
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 	ret
 
   .line_up:
-	cmp	[pos.y],0
+	cmp	[cur_tab.Editor.Caret.Y],0 ;! [pos.y],0
 	jne	@f
 	ret
-    @@: mov	ecx,[pos.y]
+    @@: mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	dec	ecx
 	call	get_line_offset
 	and	dword[esi],not 0x00020000
@@ -1188,8 +1205,8 @@ func key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 	jne	@f
 	dec	ecx
 	jg	@b
-    @@: mov	[pos.x],ecx
-	dec	[pos.y]
+    @@: mov	[cur_tab.Editor.Caret.X],ecx ;! [pos.x],ecx
+	dec	[cur_tab.Editor.Caret.Y] ;! [pos.y]
 	cld
 	jmp	key.del.line_up
 endf
@@ -1198,7 +1215,7 @@ endf
 func key.tab ;///// TABULATE /////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
-	mov	eax,[pos.x]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 
 	mov	ecx,eax
 	add	eax,ATABW
@@ -1206,7 +1223,7 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 	push	eax ' '
 	sub	eax,ecx
   .direct:
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	and	dword[esi],not 0x00020000
 	or	dword[esi],0x00010000
@@ -1214,22 +1231,25 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 	xchg	eax,ecx
 
 	call	get_real_length
-	cmp	eax,[pos.x]
+	cmp	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	jae	@f
-	mov	eax,[pos.x]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
     @@: movzx	edx,word[esi]
 	sub	edx,eax
 	cmp	ecx,edx
 	jl	@f
 	pushad; esi ecx eax
-	mov	ecx,AREA_TEMP2-10+1
+	mov	ecx,[cur_tab.Editor.Data] ;! AREA_TEMP2-10+1
+	add	ecx,[ecx-4]
+	dec	ecx
+	mov	edi,ecx ;! AREA_TEMP2
+	add	ecx,-10+1
 ;       lea     eax,[esi+4]
 ;       add     eax,[esi]
 	movzx	eax,word[esi]
 	lea	eax,word[esi+eax+4]
 	sub	ecx,eax
-	mov	edi,AREA_TEMP2
-	mov	esi,AREA_TEMP2-10
+	lea	esi,[edi-10] ;! AREA_TEMP2-10
 	std
 	rep	movsb
 	mov	ecx,10
@@ -1248,26 +1268,26 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 	sub	esi,ecx
 	lea	ecx,[esi+1]
 	sub	ecx,ebx
-	sub	ecx,[pos.x]
+	sub	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
 	std
 	rep	movsb
   .ok:	pop	ecx		;*******
 	pop	eax
 	rep	stosb
 	cld
-	pop	[pos.x]
+	pop	[cur_tab.Editor.Caret.X] ;! [pos.x]
 	lea	esi,[ebx-4]
 	call	get_real_length
-	cmp	eax,[pos.x]
+	cmp	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	jae	@f
-	mov	eax,[pos.x]
-    @@: cmp	eax,[columns]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
+    @@: cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	jbe	@f
-	mov	[columns],eax
-    @@: m2m	[sel.x],[pos.x]
-	m2m	[sel.y],[pos.y]
+	mov	[cur_tab.Editor.Columns],eax ;! [columns],eax
+    @@: m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.Y],[cur_tab.Editor.Caret.Y] ;! [sel.y],[pos.y]
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 
   .exit:
 	ret
@@ -1278,10 +1298,10 @@ func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
 
-	mov	ecx,[pos.y]
+	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 
-	mov	ebx,[pos.x]
+	mov	ebx,[cur_tab.Editor.Caret.X] ;! ebx,[pos.x]
 	cmp	bx,[esi]
 	jb	@f
 	movzx	ebx,word[esi]
@@ -1291,10 +1311,9 @@ func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
     @@:
 	cld
 
-	mov	edi,AREA_TEMP
+	mov	edi,[temp_buf] ;! AREA_TEMP
 	mov	ebp,esi
-	mov	ecx,ebx
-	inc	ecx
+	lea	ecx,[ebx+1]
     @@: dec	ecx
 	jz	@f
 	cmp	byte[esi+ecx+4-1],' '
@@ -1343,7 +1362,7 @@ func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
   .lp2: xor	eax,eax
     @@: mov	edx,edi
 	add	edi,4
-	mov	[pos.x],eax
+	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
 	jecxz	@f
 	push	ecx
 	mov	ecx,eax
@@ -1361,10 +1380,13 @@ func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	or	eax,0x00010000
 	mov	[edx],eax
 
-	lea	ecx,[edi-AREA_TEMP]
+	mov	ecx,edi ;! [edi-AREA_TEMP]
+	sub	ecx,[temp_buf]
 
 	push	ecx
-	mov	edi,AREA_TEMP2
+	mov	edi,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	add	edi,[edi-4]
+	dec	edi
 	lea	esi,[edi+4]
 	sub	esi,ecx
 	movzx	ecx,word[ebp]
@@ -1380,25 +1402,77 @@ func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	lea	edi,[esi+eax-4]
 	movzx	ecx,word[ebp]
 	add	esi,ecx;[ebp]
-	mov	ecx,AREA_TEMP2
+	mov	ecx,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	add	ecx,[ecx-4]
 	sub	ecx,esi
 	cld
     @@: rep	movsb
   .lp3: pop	ecx
-	mov	esi,AREA_TEMP
+	mov	esi,[temp_buf] ;! AREA_TEMP
 	mov	edi,ebp
 	cld
 	rep	movsb
 
-	inc	[pos.y]
-	inc	[sel.y]
-	inc	[lines]
+	inc	[cur_tab.Editor.Caret.Y] ;! [pos.y]
+	inc	[cur_tab.Editor.SelStart.Y] ;! [sel.y]
+	inc	[cur_tab.Editor.Lines] ;! [lines]
 
-	m2m	[sel.x],[pos.x]
+	m2m	[cur_tab.Editor.SelStart.X],[cur_tab.Editor.Caret.X] ;! [sel.x],[pos.x]
 
 	call	check_inv_all
-	mov	[modified],1
+	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
 
+  .exit:
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func key.ctrl_tab ;///// SWITCH TO NEXT TAB //////////////////////////////////
+;-----------------------------------------------------------------------------
+	cmp	[tab_bar.Items.Count],1
+	je	.exit
+	xor	eax,eax
+	mov	ebp,[tab_bar.Items]
+    @@: cmp	ebp,[tab_bar.Current.Ptr]
+	je	@f
+	inc	eax
+	add	ebp,sizeof.TABITEM
+	jmp	@b
+    @@: add	ebp,sizeof.TABITEM
+	inc	eax
+	cmp	eax,[tab_bar.Items.Count]
+	jb	@f
+	mov	ebp,[tab_bar.Items]
+    @@: call	set_cur_tab
+	call	align_editor_in_tab
+	call	draw_editor
+	call	draw_tabctl
+  .exit:
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func key.shift_ctrl_tab ;///// SWITCH TO PREVIOUS TAB ////////////////////////
+;-----------------------------------------------------------------------------
+	cmp	[tab_bar.Items.Count],1
+	je	.exit
+	xor	eax,eax
+	mov	ebp,[tab_bar.Items]
+    @@: cmp	ebp,[tab_bar.Current.Ptr]
+	je	@f
+	inc	eax
+	add	ebp,sizeof.TABITEM
+	jmp	@b
+    @@: add	ebp,-sizeof.TABITEM
+	dec	eax
+	jge	@f
+	imul	eax,[tab_bar.Items.Count],sizeof.TABITEM
+	add	eax,[tab_bar.Items]
+	lea	ebp,[eax-sizeof.TABITEM]
+    @@: call	set_cur_tab
+	call	align_editor_in_tab
+	call	draw_editor
+	call	draw_tabctl
   .exit:
 	ret
 endf

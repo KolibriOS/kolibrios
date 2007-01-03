@@ -1,3 +1,56 @@
+
+struct POINT
+  X dd ?
+  Y dd ?
+ends
+
+struct RECT
+  Left	 dd ?
+  Top	 dd ?
+  Right  dd ?
+  Bottom dd ?
+ends
+
+struct SCROLLBAR
+  Top  dd ?
+  Size dd ?
+ends
+
+struct EDITOR
+  FilePath	 db PATHL dup(?)
+  FileName	 dd ?
+  Data		 dd ?
+  Bounds	 RECT
+  Caret 	 POINT
+  SelStart	 POINT
+  Lines 	 dd ?
+  Columns	 dd ?
+  TopLeft	 POINT
+  VScroll	 SCROLLBAR
+  HScroll	 SCROLLBAR
+  Gutter.Width	 dd ?
+  Gutter.Visible db ?
+  AsmMode	 db ?
+  Modified	 db ?
+		 db ?
+ends
+
+struct TABITEM
+  Editor EDITOR
+ends
+
+struct TABCTL
+  Bounds      RECT
+  Items       dd ?
+  Items.Count dd ?
+  Current     TABITEM
+  Current.Ptr dd ?
+  Style       db ?
+	      db 3 dup(?)
+ends
+
+
+
 virtual at -20
  POPUP:
   .actions dd ?
@@ -29,13 +82,13 @@ macro popup_res _name,[_lang,_title,_accel,_action]
       dw ?		; x
       _name:
   forward
-      if (lang eq _lang)
+      if (lang eq _lang) | (_lang eq @!)
 	db 1
       end if
   common
       .data:
   forward
-      if lang eq _lang
+      if (lang eq _lang) | (_lang eq @!)
 	if _title eq '-'
 	  db 1,'-'
 	  c2 = c2+1
@@ -63,8 +116,12 @@ macro popup_res _name,[_lang,_title,_accel,_action]
       align 4
       .actions:
   forward
-      if lang eq _lang
-	dd _action
+      if (lang eq _lang) | (_lang eq @!)
+	if (_action eq )
+	  dd 0
+	else
+	  dd _name#.#_action
+	end if
       end if
   common
       .size	 = $-_name+20

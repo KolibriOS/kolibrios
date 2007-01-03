@@ -123,7 +123,7 @@ mouse:
 	call	check_mouse_in_edit_area
 	jnc	still.skip_write
 	mcall	37,0
-	mov	[popup_edit+POPUP.pos],eax
+	mov	[mm.Edit+POPUP.pos],eax
     @@: mcall	37,2
 	cmp	eax,ebx
 	jnz	@f
@@ -131,7 +131,7 @@ mouse:
 	jmp	@b
     @@: and	[mst],0xFD
 	call	onshow.edit
-	mov	dword[POPUP_STACK],popup_edit
+	mov	dword[POPUP_STACK],mm.Edit
 	mcall	51,1,popup_thread_start,POPUP_STACK
 	mov	[h_popup],eax
 	jmp	still.skip_write
@@ -157,31 +157,31 @@ mouse:
 	cdq;xor     edx,edx
 	mov	ecx,LINEH
 	idiv	ecx
-    @@: add	eax,[top_line]
+    @@: add	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
 	mov	ebx,eax
 	pop	eax
 	cdq;xor     edx,edx
 	mov	ecx,6
 	idiv	ecx
-    @@: add	eax,[left_col]
+    @@: add	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 
-	cmp	eax,[columns]
+	cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	jl	@f
-	mov	eax,[columns]
-    @@: cmp	ebx,[lines]
+	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
+    @@: cmp	ebx,[cur_tab.Editor.Lines] ;! ebx,[lines]
 	jl	@f
-	mov	ebx,[lines]
+	mov	ebx,[cur_tab.Editor.Lines] ;! ebx,[lines]
 	dec	ebx
     @@:
-	cmp	[pos.x],eax
+	cmp	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
 	jne	.change_cur_pos
-	cmp	[pos.y],ebx
+	cmp	[cur_tab.Editor.Caret.Y],ebx ;! [pos.y],ebx
 	je	still.skip_write
 
   .change_cur_pos:
-	mov	[pos.x],eax
-	mov	eax,[pos.y]
-	mov	[pos.y],ebx
+	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	[cur_tab.Editor.Caret.Y],ebx ;! [pos.y],ebx
 	call	check_cur_vis_inv
 	jc	.check_ldown
 ;        cmp     eax,ebx
@@ -213,20 +213,20 @@ mouse:
 ;       sub     ebx,[__rc+0x4]
 	cmp	[vscrl_capt],0
 	jge	.vcaptured
-	mov	eax,[vscrl_top]
+	mov	eax,[cur_tab.Editor.VScroll.Top] ;! eax,[vscrl_top]
 	cmp	ebx,eax
 	jb	.center_vcapture
-	add	eax,[vscrl_size]
+	add	eax,[cur_tab.Editor.VScroll.Size] ;! eax,[vscrl_size]
 	cmp	ebx,eax
 	jae	.center_vcapture
 	mov	eax,ebx
-	sub	eax,[vscrl_top]
+	sub	eax,[cur_tab.Editor.VScroll.Top] ;! eax,[vscrl_top]
 	dec	eax
 	mov	[vscrl_capt],eax
 	dec	ebx
 	jmp	.vcaptured
   .center_vcapture:
-	mov	eax,[vscrl_size]
+	mov	eax,[cur_tab.Editor.VScroll.Size] ;! eax,[vscrl_size]
 	shr	eax,1
 	mov	[vscrl_capt],eax
   .vcaptured:
@@ -236,24 +236,24 @@ mouse:
     @@: mov	[mouse_captured],1
 	mov	eax,[bot_ofs]
 	sub	eax,[top_ofs]
-	sub	eax,[vscrl_size]
+	sub	eax,[cur_tab.Editor.VScroll.Size] ;! eax,[vscrl_size]
 	sub	eax,SCRLW*3-2
 	cmp	eax,ebx
 	jge	@f
 	mov	ebx,eax
     @@:
-	mov	[vscrl_top],ebx
-	mov	eax,[lines]
+	mov	[cur_tab.Editor.VScroll.Top],ebx ;! [vscrl_top],ebx
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	sub	eax,[lines.scr]
 	imul	ebx
 	mov	ebx,[bot_ofs]
 	sub	ebx,[top_ofs]
 	sub	ebx,SCRLW*3-2	      ;**
-	sub	ebx,[vscrl_size]
+	sub	ebx,[cur_tab.Editor.VScroll.Size] ;! ebx,[vscrl_size]
 	idiv	ebx
-	cmp	eax,[top_line]
+	cmp	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
 	je	still.skip_write
-	mov	[top_line],eax
+	mov	[cur_tab.Editor.TopLeft.Y],eax ;! [top_line],eax
 	call	check_bottom_right
 	call	draw_file
 	jmp	still.skip_write
@@ -274,20 +274,20 @@ mouse:
 ;       sub     ebx,[__rc+0x0]
 	cmp	[hscrl_capt],0
 	jge	.hcaptured
-	mov	eax,[hscrl_top]
+	mov	eax,[cur_tab.Editor.HScroll.Top] ;! eax,[hscrl_top]
 	cmp	ebx,eax
 	jl	.center_hcapture
-	add	eax,[hscrl_size]
+	add	eax,[cur_tab.Editor.HScroll.Size] ;! eax,[hscrl_size]
 	cmp	ebx,eax
 	jge	.center_hcapture
 	mov	eax,ebx
-	sub	eax,[hscrl_top]
+	sub	eax,[cur_tab.Editor.HScroll.Top] ;! eax,[hscrl_top]
 	dec	eax
 	mov	[hscrl_capt],eax
 	dec	ebx
 	jmp	.hcaptured
   .center_hcapture:
-	mov	eax,[hscrl_size]
+	mov	eax,[cur_tab.Editor.HScroll.Size] ;! eax,[hscrl_size]
 	shr	eax,1
 	mov	[hscrl_capt],eax
   .hcaptured:
@@ -296,23 +296,23 @@ mouse:
 	xor	ebx,ebx
     @@: mov	[mouse_captured],1
 	mov	eax,[p_info.box.width]
-	sub	eax,[hscrl_size]
+	sub	eax,[cur_tab.Editor.HScroll.Size] ;! eax,[hscrl_size]
 	sub	eax,SCRLW*3+10+1
 	cmp	eax,ebx
 	jge	@f
 	mov	ebx,eax
     @@:
-	mov	[hscrl_top],ebx
-	mov	eax,[columns]
+	mov	[cur_tab.Editor.HScroll.Top],ebx ;! [hscrl_top],ebx
+	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	sub	eax,[columns.scr]
 	imul	ebx
 	mov	ebx,[p_info.box.width]
 	sub	ebx,SCRLW*3+10+1	;**
-	sub	ebx,[hscrl_size]
+	sub	ebx,[cur_tab.Editor.HScroll.Size] ;! ebx,[hscrl_size]
 	idiv	ebx
-	cmp	eax,[left_col]
+	cmp	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	je	still.skip_write
-	mov	[left_col],eax
+	mov	[cur_tab.Editor.TopLeft.X],eax ;! [left_col],eax
 	call	check_bottom_right
 	call	draw_file
 	jmp	still.skip_write
@@ -373,52 +373,52 @@ endf
 onshow:
 
   .file:
-	or	byte[popup_file+3],0x01
+	or	byte[mm.File+3],0x01
 	cmp	[f_info.length],0
 	jne	@f
-	and	byte[popup_file+3],0xFE
+	and	byte[mm.File+3],0xFE
     @@: ret
 
   .edit:
-	or	byte[popup_edit+2],0x01
+	or	byte[mm.Edit+2],0x01
 	cmp	[copy_size],0
 	jne	@f
-	and	byte[popup_edit+2],0xFE
-    @@: or	dword[popup_edit+0],0x01000101
+	and	byte[mm.Edit+2],0xFE
+    @@: or	dword[mm.Edit+0],0x01000101
 	cmp	[sel.selected],0
 	jne	@f
-	and	dword[popup_edit+0],0xFEFFFEFE
+	and	dword[mm.Edit+0],0xFEFFFEFE
     @@: ret
 
   .search:
-	mov	byte[popup_search+0],0
-	;mov     byte[popup_search+4],0
+	mov	byte[mm.Search+0],0
+	;mov     byte[mm.Search+4],0
 	ret
   .run:
 	ret
   .recode:
 	ret
   .options:
-	mov	word[popup_options+0],0
-	mov	byte[popup_options+5],0
-	or	byte[popup_options+2],0x02
+	mov	word[mm.Options+0],0
+	mov	byte[mm.Options+5],0
+	or	byte[mm.Options+2],0x02
 	test	[options],OPTS_SECURESEL
 	jnz	@f
-	and	byte[popup_options+2],0xFD
-    @@: or	byte[popup_options+3],0x02
+	and	byte[mm.Options+2],0xFD
+    @@: or	byte[mm.Options+3],0x02
 	test	[options],OPTS_AUTOBRACES
 	jnz	@f
-	and	byte[popup_options+3],0xFD
-    @@: or	byte[popup_options+4],0x02
+	and	byte[mm.Options+3],0xFD
+    @@: or	byte[mm.Options+4],0x02
 	test	[options],OPTS_AUTOINDENT
 	jnz	@f
-	and	byte[popup_options+4],0xFD
-    @@: or	byte[popup_options+6],0x02
+	and	byte[mm.Options+4],0xFD
+    @@: or	byte[mm.Options+6],0x02
 	test	[options],OPTS_OPTIMSAVE
 	jnz	@f
-	and	byte[popup_options+6],0xFD
-    @@: or	byte[popup_options+8],0x02
+	and	byte[mm.Options+6],0xFD
+    @@: or	byte[mm.Options+8],0x02
 	test	[options],OPTS_LINENUMS
 	jnz	@f
-	and	byte[popup_options+8],0xFD
+	and	byte[mm.Options+8],0xFD
     @@: ret

@@ -1,31 +1,42 @@
 ;-----------------------------------------------------------------------------
 ; project name:      TINYPAD
-; compiler:          flat assembler 1.67.1
+; compiler:          flat assembler 1.67.15
 ; memory to compile: 2.0/7.0 MBytes (without/with size optimizations)
 ; version:           4.0.4 pre
-; last update:       2006-12-30 (Dec 30, 2006)
+; last update:       2007-01-03 (Jan 3, 2007)
 ; minimal kernel:    revision #138 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Mike Semenyako          >> mike.dld@gmail.com
 ;                    Ivan Poddubny           >> ivan-yar@bk.ru
 ;-----------------------------------------------------------------------------
-; TODO:
+; TODO (FOR 4.1.0):
 ;   - optimize drawing (reduce flickering)
-;   - optimize memory usage (allocate only needed amount, not static 3 Mbytes)
-;   - add block selection ability, undo action, goto position
-;   - working with multiple files (add tabs)
+;   - add vertical selection, undo, goto position, overwrite mode
 ;   - improve window drawing with small dimensions
-;   - other bugfixes and speed/size optimizations
+;   - other bug-fixes and speed/size optimizations
+;
+; TODO (FOR 4.0.4, PLANNED FOR 2007-01-21):
+;   - finish tabbed interface [critical]
+;   - add memory reallocation to keys handler [critical]
+;   - rework save_file (memory manager) [critical]
+;   - reduce flickering (changes checker) [average]
+;   - incorrect saved/modified lines flags on copy/paste [normal]
+;   - case-insensitive file extensions comparison (.asm/.inc) [normal]
+;   - prompt to save file before closing/opening [low]
 ;
 ; HISTORY:
 ; 4.0.4 pre (mike.dld)
 ;   bug-fixes:
-;     - clear statusbar text if dialog operation cancelled
+;     - statusbar contained hint after dialog operation cancelled
+;     - small drawing fix for gutter and line saved/modified markers
 ;   changes:
 ;     - modified/saved colors now match those in MSVS
+;     - function 70 for *all* file operations (including diamond's fixes)
+;     - use memory manager instead of statically allocated region
 ;   new features:
 ;     - recode tables between CP866, CP1251 and KOI8-R (suggested by Victor)
+;     - tabbed interface, ability to open several files in one app instance
 ; 4.0.3 (mike.dld)
 ;   bug-fixes:
 ;     - 1-char selection if pressing <BS> out of real line length
@@ -132,22 +143,14 @@
 ;   auto-indent
 ;   Ctrl+L - insert comment string
 ;-----------------------------------------------------------------------------
-; Memory 0x300000:
-;   stack for popup  0x00dff0 -
-;   stack for help   0x00eff0 -
-;   stack            0x00fff0 -
-;   load position    0x010000 +
-;   edit area        0x080000 +
-;   copy/paste area  0x2f0000 +
-;-----------------------------------------------------------------------------
 
 include 'lang.inc'
 include 'macros.inc' ; useful stuff
 ;include 'proc32.inc'
 include 'tinypad.inc'
-;purge mov,add,sub            ;  SPEED
+purge mov,add,sub	     ;  SPEED
 
-header '01',1,@CODE,TINYPAD_END,AREA_ENDMEM,MAIN_STACK,@PARAMS,self_path
+header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,self_path
 
 APP_VERSION equ '4.0.4 pre'
 
@@ -155,15 +158,15 @@ APP_VERSION equ '4.0.4 pre'
 
 ASEPC	  = '-' 	  ; separator character (char)
 ATOPH	  = POP_IHEIGHT+2 ; menu bar height (pixels)
-;OLEFT    = 50+1          ; left offset (pixels)        !!! don't change !!!
 SCRLW	  = 16		  ; scrollbar widht/height (pixels)
 ATABW	  = 8		  ; tab width (chars)
 LINEH	  = 10		  ; line height (pixels)
-PATHL	  = 255 	  ; maximum path length (chars) !!! don't change !!!
+PATHL	  = 256 	  ; maximum path length (chars) !!! don't change !!!
 AMINS	  = 8		  ; minimal scroll thumb size (pixels)
-LCHGW	  = 2		  ; changed/saved marker width
+LCHGW	  = 3		  ; changed/saved marker width
 
-STATH	  = 14		  ; status bar height
+STATH	  = 16		  ; status bar height
+TBARH	  = 18		  ; tab bar height
 
 MEV_LDOWN = 1
 MEV_LUP   = 2
@@ -184,8 +187,8 @@ label color_tbl dword
   RGB(255,255,255) ; RGB(224,224,224) ; RGB(255,255,255) ; background
   RGB(255,255,255) ; RGB(255,255,255) ; RGB(255,255,255) ; selection text
   RGB( 10, 36,106) ; RGB(  0,  0,128) ; RGB(  0, 64,128) ; selection background
-  RGB(255,255,	0) ; modified line marker
-  RGB(  0,255,	0) ; saved line marker
+  RGB(255,238, 98) ; modified line marker
+  RGB(108,226,108) ; saved line marker
 
 ins_mode db 1
 
@@ -220,12 +223,26 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	al,0
 	rep	stosb
 
+	mov	[tab_bar.Style],2
+
+	mcall	68,11
+	or	eax,eax
+	jz	key.alt_x.close
+
+	mov	eax,65536
+	call	mem.Alloc
+	mov	[temp_buf],eax
+
+	mov	eax,65536
+	call	mem.Alloc
+	mov	[cur_tab.Editor.Data],eax
+
 	inc	[do_not_draw]
 
 	mov	[left_ofs],40+1
-	mov	[f_info+4],0
-	mov	[f_info+12],AREA_TEMP
-	mov	[f_info+16],AREA_EDIT-AREA_TEMP
+;       mov     [f_info+4],0
+;       mov     [f_info+12],AREA_TEMP
+;       mov     [f_info+16],AREA_EDIT-AREA_TEMP
 
 	mov	esi,s_example
 	mov	edi,tb_opensave.text
@@ -262,17 +279,35 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;// diamond ]
 
 	add	edx,20
-	mcall	60,1,AREA_TEMP-16 ; 0x10000-16
-	mov	dword[AREA_TEMP-16+4],8 ; [0x10000-16+4],8
+
+	mov	eax,edx
+	call	mem.Alloc
+	mov	ebp,eax
+
+;!      mcall   60,1,AREA_TEMP-16 ; 0x10000-16
+;!      mov     dword[AREA_TEMP-16+4],8 ; [0x10000-16+4],8
+	mcall	60,1,ebp
+	mov	dword[ebp+4],8
 	mcall	40,1000000b
 	mcall	23,200
 	cmp	eax,7
-	jne	key.alt_x.close  ; ¤Єю эр mcall -1 ьхЄър
-	mov	esi,AREA_TEMP-16 ; 0x10000-16
-	mov	byte[esi],1
-	mov	eax,[esi+12]
-	inc	eax
-	call	load_file.file_found
+	jne	key.alt_x.close
+;!      mov     esi,AREA_TEMP-16 ; 0x10000-16
+;!      mov     byte[esi],1
+;!      mov     eax,[esi+12]
+	mov	byte[ebp],1
+;!      mov     eax,[ebp+12]
+;!      inc     eax
+;!      call    load_file.file_found
+
+	mov	ecx,[ebp+12]
+	mov	esi,ebp
+	call	create_tab
+	call	load_from_memory
+
+	mov	eax,ebp
+	call	mem.Free
+
 	jmp	@f
   .noipc:
 
@@ -292,9 +327,9 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	[tb_opensave.length],al
 
   no_params:
-	call	btn.load_file;do_load_file
-	jnc	@f
-	call	new_file
+	;call    btn.load_file;do_load_file
+	;jnc     @f
+	call	create_tab
 
     @@:
 	dec	[do_not_draw]
@@ -307,7 +342,7 @@ red:
 ;-----------------------------------------------------------------------------
 
 still:
-       call    writepos ; write current position & number of strings
+       call    draw_statusbar ; write current position & number of strings
 
   .skip_write:
 	mcall	10;23,50; wait here until event
@@ -329,7 +364,7 @@ func start_fasm ;/////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; BL = run after compile
 ;-----------------------------------------------------------------------------
-	cmp	[asm_mode],0
+	cmp	[cur_tab.Editor.AsmMode],0 ;! [asm_mode],0
 	jne	@f
 	ret
     @@: mov	esi,f_info.path ; s_fname
@@ -458,47 +493,36 @@ endf
 ;    @@: ret
 ;endf
 
-func set_opt
-	test	[options],al
-	je	@f
-	not	al
-	and	[options],al
-	ret
-    @@: or	[options],al
-	ret
-endf
+set_opt:
 
-func set_line_numbers
+  .line_numbers:
 	mov	al,OPTS_LINENUMS
-	call	set_opt
-	ret
-endf
-
-func set_optimal_fill
+	jmp	.main
+  .optimal_fill:
 	mov	al,OPTS_OPTIMSAVE
-	call	set_opt
-	ret
-endf
-
-func set_auto_indents
+	jmp	.main
+  .auto_indents:
 	mov	al,OPTS_AUTOINDENT
-	call	set_opt
-	ret
-endf
-
-func set_auto_braces
+	jmp	.main
+  .auto_braces:
 	mov	al,OPTS_AUTOBRACES
-	call	set_opt
-	ret
-endf
-
-func set_secure_sel
+	jmp	.main
+  .secure_sel:
 	mov	al,OPTS_SECURESEL
-	call	set_opt
+
+  .main:
+	xor	[options],al
+;       test    [options],al
+;       je      @f
+;       not     al
+;       and     [options],al
+;       ret
+;   @@: or      [options],al
 	ret
-endf
 
 ;-----------------------------------------------------------------------------
+
+include 'tp-defines.inc'
 
 include 'tp-draw.asm'
 include 'tp-key.asm'
@@ -509,6 +533,8 @@ include 'tp-common.asm'
 include 'tp-dialog.asm'
 include 'tp-popup.asm'
 include 'tp-tbox.asm'
+include 'tp-tabctl.asm'
+include 'tp-editor.asm'
 include 'tp-recode.asm'
 
 ;include 'lib-ini.asm'
@@ -559,6 +585,7 @@ accel_table dd			    \
   0x00010150,key.shift_down	   ,\ ; Shift+Down
   0x00010151,key.shift_pgdn	   ,\ ; Shift+PageDown
   0x00010153,key.del		   ,\ ; Shift+Delete
+  0x0002000F,key.ctrl_tab	   ,\ ; Ctrl+Tab
   0x00020015,key.ctrl_y 	   ,\ ; Ctrl+Y
   0x00020018,key.ctrl_o 	   ,\ ; Ctrl+O
   0x0002001E,key.ctrl_a 	   ,\ ; Ctrl+A
@@ -582,6 +609,7 @@ accel_table dd			    \
 \;0x00020150,key.ctrl_down         ,\ ; Ctrl+Down
   0x00020151,key.ctrl_pgdn	   ,\ ; Ctrl+PageDown
   0x00020153,key.del		   ,\ ; Ctrl+Del
+  0x0003000F,key.shift_ctrl_tab    ,\ ; Shift+Ctrl+Tab
   0x0003001F,key.shift_ctrl_s	   ,\ ; Shift+Ctrl+S
   0x00030147,key.shift_ctrl_home   ,\ ; Shift+Ctrl+Home
 \;0x00030148,key.shift_ctrl_up     ,\ ; Shift+Ctrl+Up
@@ -613,15 +641,10 @@ accel_table_textbox dd		    \
 
 accel_table2 dd 	   \
   1,btn.close_main_window ,\
-\;10000,btn.compile       ,\
-\;10001,btn.compile_run   ,\
-\;10002,btn.debug_board   ,\
-\;10003,btn.sysfuncs_txt  ,\
   'UP',btn.scroll_up	  ,\
   'DN',btn.scroll_down	  ,\
   'LT',btn.scroll_left	  ,\
   'RT',btn.scroll_right   ,\
-\;5,key.ctrl_o            ,\
   0
 
 accel_table2_botdlg dd	   \
@@ -632,7 +655,6 @@ accel_table2_botdlg dd	   \
   0
 
 add_table:
-; times $61 db -$00
   times $1A db -$20
   times $25 db -$00
   times $10 db -$20
@@ -641,14 +663,7 @@ add_table:
   times $04 db -$00,-$01
   times $08 db -$00
 
-;error_beep      db 0xA0,0x30,0
-
 s_status dd 0
-
-sz s_example,'EXAMPLE.ASM'
-sz s_still  ,'still'
-
-;sz param_setup,'LANG',0 ; parameter for SETUP
 
 fasm_start:
 	dd	7
@@ -679,246 +694,18 @@ docpak_start:
 	dd	0
 	db	'/RD/1/DOCPAK',0
 
-;sz setup           ,'SETUP      ' ; to change keyboard layout
-
 sz sysfuncs_param,'g',0
 
-lsz sysfuncs_filename,\
-  ru,<'SYSFUNCR.TXT',0>,\
-  en,<'SYSFUNCS.TXT',0>
-
-sz htext,'TINYPAD ',APP_VERSION
-
-lszc help_text,b,\
-  ru,'КОМАНДЫ:',\
-  ru,' ',\
-  ru,'  CTRL+F1 : Это окно',\
-  ru,'  CTRL+S  : Первая строка для копирования',\
-  ru,'  CTRL+E  : Последняя строка для копирования',\
-  ru,'  CTRL+P  : Вставить выбранное на текущую позицию',\
-  ru,'  CTRL+D  : Удалить строку',\
-  ru,'  CTRL+L  : Вставить строку-разделитель',\
-  ru,'  CTRL+[  : Перейти в начало файла',\
-  ru,'  CTRL+]  : Перейти в конец файла',\
-  ru,'  CTRL+F2 : Загрузить файл',\
-  ru,'  CTRL+F3 : Поиск',\
-  ru,'  CTRL+F4 : Сохранить файл',\
-  ru,'  CTRL+F5 : Ввести имя файла',\
-  ru,'  CTRL+F6 : Ввести строку для поиска',\
-  ru,'  CTRL+F8 : Сменить раскладку клавиатуры',\
-\
-  en,'COMMANDS:',\
-  en,' ',\
-  en,'  CTRL+F1 : SHOW THIS WINDOW',\
-  en,'  CTRL+S  : SELECT FIRST STRING TO COPY',\
-  en,'  CTRL+E  : SELECT LAST STRING TO COPY',\
-  en,'  CTRL+P  : PASTE SELECTED TO CURRENT POSITION',\
-  en,'  CTRL+D  : DELETE CURRENT LINE',\
-  en,'  CTRL+L  : INSERT SEPARATOR LINE',\
-  en,'  CTRL+[  : GO TO THE BEGINNING OF FILE',\
-  en,'  CTRL+]  : GO TO THE END OF FILE',\
-  en,'  CTRL+F2 : LOAD FILE',\
-  en,'  CTRL+F3 : SEARCH',\
-  en,'  CTRL+F4 : SAVE FILE',\
-  en,'  CTRL+F5 : ENTER FILENAME',\
-  en,'  CTRL+F6 : ENTER SEARCH STRING',\
-  en,'  CTRL+F8 : CHANGE KEYBOARD LAYOUT'
-db 0
-
-menubar_res main_menu,\
-  ru,'Файл'     ,popup_file   ,onshow.file   ,\
-  ru,'Правка'   ,popup_edit   ,onshow.edit   ,\
-  ru,'Поиск'    ,popup_search ,onshow.search ,\
-  ru,'Запуск'   ,popup_run    ,onshow.run    ,\
-  ru,'Кодировка',popup_recode ,onshow.recode ,\
-  ru,'Опции'    ,popup_options,onshow.options,\
-\
-  en,'File'    ,popup_file   ,onshow.file   ,\
-  en,'Edit'    ,popup_edit   ,onshow.edit   ,\
-  en,'Search'  ,popup_search ,onshow.search ,\
-  en,'Run'     ,popup_run    ,onshow.run    ,\
-  en,'Encoding',popup_recode ,onshow.recode ,\
-  en,'Options' ,popup_options,onshow.options
-
-popup_res popup_file,\
-  ru,'Новый'	       ,'Ctrl+N'      ,key.ctrl_n      ,\
-  ru,'Открыть...'      ,'Ctrl+O'      ,key.ctrl_o      ,\
-  ru,'Сохранить'       ,'Ctrl+S'      ,key.ctrl_s      ,\
-  ru,'Сохранить как...','Ctrl+Shift+S',key.shift_ctrl_s,\
-  ru,'-'	       ,''	      ,0	       ,\
-  ru,'Выход'	       ,'Alt+X'       ,key.alt_x       ,\
-\
-  en,'New'	 ,'Ctrl+N'	,key.ctrl_n	 ,\
-  en,'Open...'	 ,'Ctrl+O'	,key.ctrl_o	 ,\
-  en,'Save'	 ,'Ctrl+S'	,key.ctrl_s	 ,\
-  en,'Save as...','Ctrl+Shift+S',key.shift_ctrl_s,\
-  en,'-'	 ,''		,0		 ,\
-  en,'Exit'	 ,'Alt+X'	,key.alt_x
-
-popup_res popup_edit,\
-  ru,'Вырезать'    ,'Ctrl+X',key.ctrl_x,\
-  ru,'Копировать'  ,'Ctrl+C',key.ctrl_c,\
-  ru,'Вставить'    ,'Ctrl+V',key.ctrl_v,\
-  ru,'Удалить'	   ,''	    ,key.del   ,\
-  ru,'-'	   ,''	    ,0	       ,\
-  ru,'Выделить всё','Ctrl+A',key.ctrl_a,\
-\;  ru,'-'           ,''      ,0         ,\
-\;  ru,'Вертикальное выделение','Alt+Ins',0         ,\
-\
-  en,'Cut'	 ,'Ctrl+X',key.ctrl_x,\
-  en,'Copy'	 ,'Ctrl+C',key.ctrl_c,\
-  en,'Paste'	 ,'Ctrl+V',key.ctrl_v,\
-  en,'Delete'	 ,''	  ,key.del   ,\
-  en,'-'	 ,''	  ,0	     ,\
-  en,'Select all','Ctrl+A',key.ctrl_a;,\
-;  en,'-'         ,''      ,0         ,\
-;  en,'Vertical selection','Alt+Ins',0
-
-popup_res popup_search,\
-  ru,'Перейти...' ,'Ctrl+G',key.ctrl_g,\
-  ru,'-'	  ,''	   ,0	      ,\
-  ru,'Найти...'   ,'Ctrl+F',key.ctrl_f,\
-  ru,'Найти далее','F3'    ,key.f3    ,\
-  ru,'Заменить...','Ctrl+H',key.ctrl_h,\
-\
-  en,'Position...','Ctrl+G',key.ctrl_g,\
-  en,'-'	  ,''	   ,0	      ,\
-  en,'Find...'	  ,'Ctrl+F',key.ctrl_f,\
-  en,'Find next'  ,'F3'    ,key.f3    ,\
-  en,'Replace...' ,'Ctrl+H',key.ctrl_h
-
-popup_res popup_run,\
-  ru,'Запустить'	,'F9'	  ,key.f9	    ,\
-  ru,'Компилировать'	,'Ctrl+F9',key.ctrl_f9	    ,\
-  ru,'-'		,''	  ,0		    ,\
-  ru,'Доска отладки'	,''	  ,open_debug_board ,\
-  ru,'Системные функции',''	  ,open_sysfuncs_txt,\
-\
-  en,'Run'		,'F9'	  ,key.f9	    ,\
-  en,'Compile'		,'Ctrl+F9',key.ctrl_f9	    ,\
-  en,'-'		,''	  ,0		    ,\
-  en,'Debug board'	,''	  ,open_debug_board ,\
-  en,'System functions' ,''	  ,open_sysfuncs_txt
-
-popup_res popup_recode,\
-  ru,'CP866  -> CP1251' ,'',recode.866.1251,\
-  ru,'CP1251 -> CP866'	,'',recode.1251.866,\
-  ru,'-'		,'',0,\
-  ru,'CP866  -> KOI8-R' ,'',recode.866.koi,\
-  ru,'KOI8-R -> CP866'	,'',recode.koi.866,\
-  ru,'-'		,'',0,\
-  ru,'CP1251 -> KOI8-R' ,'',recode.1251.koi,\
-  ru,'KOI8-R -> CP1251' ,'',recode.koi.1251,\
-\
-  en,'CP866  -> CP1251' ,'',recode.866.1251,\
-  en,'CP1251 -> CP866'	,'',recode.1251.866,\
-  en,'-'		,'',0,\
-  en,'CP866  -> KOI8-R' ,'',recode.866.koi,\
-  en,'KOI8-R -> CP866'	,'',recode.koi.866,\
-  en,'-'		,'',0,\
-  en,'CP1251 -> KOI8-R' ,'',recode.1251.koi,\
-  en,'KOI8-R -> CP1251' ,'',recode.koi.1251
-
-popup_res popup_options,\
-  ru,'Внешний вид...'	     ,'',0,\
-  ru,'-'		     ,'',0,\
-  ru,'Безопасное выделение'  ,'',set_secure_sel,\
-  ru,'Автоматические скобки' ,'',set_auto_braces,\
-  ru,'Автоматический отступ' ,'',set_auto_indents,\
-  ru,'Умная табуляция'	     ,'',0,\
-  ru,'Оптимальное сохранение','',set_optimal_fill,\
-  ru,'-'		     ,'',0,\
-  ru,'Номера строк'	     ,'',set_line_numbers,\
-\
-  en,'Appearance...'	     ,'',0,\
-  en,'-'		     ,'',0,\
-  en,'Secure selection'      ,'',set_secure_sel,\
-  en,'Automatic brackets'    ,'',set_auto_braces,\
-  en,'Automatic indents'     ,'',set_auto_indents,\
-  en,'Smart tabulation'      ,'',0,\
-  en,'Optimal fill on saving','',set_optimal_fill,\
-  en,'-'		     ,'',0,\
-  en,'Line numbers'	     ,'',set_line_numbers
-
-lsz s_modified,\
-  ru,'Изменено',\
-  en,'Modified'
-
-lsz s_2filename,\
-  ru,'Имя файла:',\
-  en,'Filename:'
-lsz s_2open,\
-  ru,'Открыть',\
-  en,'Open'
-lsz s_2save,\
-  ru,'Сохранить',\
-  en,'Save'
-lsz s_2find,\
-  ru,'Найти',\
-  en,'Find'
-db ':'
-lsz s_2replace,\
-  ru,'Заменить',\
-  en,'Replace'
-db ':'
-lsz s_2cancel,\
-  ru,'Отмена',\
-  en,'Cancel'
-
-lsz s_enter_filename,\
-  ru,<'Введите имя файла',0>,\
-  en,<'Enter filename',0>
-
-lsz s_enter_text_to_find,\
-  ru,<'Введите текст для поиска',0>,\
-  en,<'Enter text to find',0>
-
-lsz s_enter_text_to_replace,\
-  ru,<'Введите текст для замены',0>,\
-  en,<'Enter text to replace',0>
-
-lsz s_text_not_found,\
-  ru,<'Достигнут конец файла, текст не найден',0>,\
-  en,<'Reached end of file, text not found',0>
-
-lszc s_fs_error,b,\
-  ru,<'Операция завершена успешно (0)',0>,\
-  ru,<'',0>,\
-  ru,<'Функция не поддерживается для данной файловой системы (2)',0>,\
-  ru,<'Неизвестная файловая система (3)',0>,\
-  ru,<'',0>,\
-  ru,<'Невозможно открыть файл (5)',0>,\
-  ru,<'Операция завершена успешно (6)',0>,\
-  ru,<'Адрес находится за границами памяти программы (7)',0>,\
-  ru,<'На диске нет свободного места (8)',0>,\
-  ru,<'Таблица FAT уничтожена (9)',0>,\
-  ru,<'Доступ запрещён (10)',0>,\
-  ru,<'Ошибка устройства (11)',0>,\
-\
-  en,<'Operation executed successfully (0)',0>,\
-  en,<'',0>,\
-  en,<'Function is not supported for the given filesystem (2)',0>,\
-  en,<'Unknown filesystem (3)',0>,\
-  en,<'',0>,\
-  en,<'Unable to open file (5)',0>,\
-  en,<'Operation executed successfully (6)',0>,\
-  en,<'Pointer lies outside of application memory (7)',0>,\
-  en,<'Disk is full (8)',0>,\
-  en,<'FAT table is destroyed (9)',0>,\
-  en,<'Access denied (10)',0>,\
-  en,<'Device error (11)',0>
+include 'tp-locale.inc'
 
 sz symbols_ex,';?.%"',"'"
 sz symbols   ,'#&*\:/<>|{}()[]=+-, '
 
-ini_sec_window	  db 'Window',0
-ini_window_top	  db 'Top',0
-ini_window_left   db 'Left',0
-ini_window_right  db 'Right',0
-ini_window_bottom db 'Bottom',0
-
-finfo_ini dd ?,?,?,AREA_TEMP,AREA_EDIT-AREA_TEMP
-	  db '/rd/1/tinypad.ini',0
+sz ini_sec_window   ,'Window',0
+sz ini_window_top   ,'Top',0
+sz ini_window_left  ,'Left',0
+sz ini_window_right ,'Right',0
+sz ini_window_bottom,'Bottom',0
 
 TINYPAD_END:	 ; end of file
 
@@ -928,38 +715,26 @@ self_path rb PATHL
 section @UDATA ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
 
-f_info70 rd 7
-
 f_info.length dd ?
-f_info dd ?,?,?,?,?;?,0,?,AREA_TEMP,AREA_EDIT-AREA_TEMP
-
 f_info.path:
     times PATHL+1 db ?
+f_info70 rd 7
 
-pos.x	      dd ?    ; global X position (cursor)
-pos.y	      dd ?    ; global Y position (cursor)
-sel.x	      dd ?    ; global X position (selection start)
-sel.y	      dd ?    ; global Y position (selection start)
-lines	      dd ?    ; number of lines in file
+file_info FILEINFO
+
+tab_bar      TABCTL
+virtual at tab_bar.Current
+  cur_tab      TABITEM
+  ;cur_tab_addr dd ?
+end virtual
+
 lines.scr     dd ?    ; number of lines on the screen
-columns       dd ?    ; number of columns in file
 columns.scr   dd ?    ; number of columns on the screen
 top_ofs       dd ?    ; height occupied by top buttons
 bot_ofs       dd ?    ; height occupied by bottom buttons
 	      dw ?
 left_ofs      dd ?    ;
-top_line      dd ?    ; topmost visible line on screen
-left_col      dd ?    ; leftmost visible char on line
-vscrl_top     dd ?
-vscrl_size    dd ?
-hscrl_top     dd ?
-hscrl_size    dd ?
-;skinh         dd ?    ; skin height
 __rc	      dd ?,?,?,?
-;filelen       dd ?    ; file size (on save) ???
-filesize      dd ?    ; file size (on load) ???
-ya	      dd ?    ; for read_string
-;copy_start    dd ?    ; first line for copying (Ctrl+S)
 copy_count    dd ?    ; number of lines for copying (Ctrl+E)
 copy_size     dd ?    ; size of data to copy
 s_title.size  dd ?    ; caption length
@@ -978,7 +753,6 @@ sel.selected  db ?
 
 in_sel	      db ?
 
-asm_mode      db ?    ; ASM highlight?
 do_not_draw   db ?    ; draw top and bottom buttons?
 main_closed   db ?    ; main window closed?
 tb_casesen    db ?    ; focused textbox is case-sensitive?
@@ -1021,12 +795,13 @@ just_from_popup db ?
 
 bot_mode db ?
 
-modified db ?
-
 align 4
 
 bot_dlg_height dd ?
 bot_dlg_mode2  db ?
+
+temp_buf dd ?
+copy_buf dd ?
 
 ;-----------------------------------------------------------------------------
 section @PARAMS ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -1038,22 +813,6 @@ p_info	process_information
 p_info2 process_information
 sc	system_colors
 
-diff16 'Main memory size',0,$
-
-MAIN_STACK  = 0x0000FFF0
-POPUP_STACK = 0x0000EFF0
-
-AREA_TEMP   = 0x00010000 ; 0x00010000
-AREA_EDIT   = 0x000C0000 ; 0x00080000
-AREA_TEMP2  = 0x00190000 ; 0x002E0000
-AREA_CBUF   = 0x001A0000 ; 0x002F0000
-AREA_ENDMEM = 0x001B0000 ; 0x00300000
-
-diff10 'Header+options size',0,@CODE
-diff10 'Load area size',AREA_TEMP,AREA_EDIT
-diff10 'Edit area size',AREA_EDIT,AREA_TEMP2
-diff10 'Total memory usage',0,AREA_ENDMEM
-
 ;store dword '/hd/' at tb_opensave.text+4*0
 ;store dword '1/tp' at tb_opensave.text+4*1
 ;store dword 'ad4/' at tb_opensave.text+4*2
@@ -1061,3 +820,13 @@ diff10 'Total memory usage',0,AREA_ENDMEM
 ;store dword 'pad.' at tb_opensave.text+4*4
 ;store dword 'asm'  at tb_opensave.text+4*5
 ;store byte  23     at tb_opensave.length
+
+;rb 1024*36
+rb 1024*4
+MAIN_STACK:
+rb 1024*4
+POPUP_STACK:
+
+STATIC_MEM_END:
+
+diff10 'Main memory size',0,$

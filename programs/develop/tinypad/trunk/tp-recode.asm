@@ -19,8 +19,8 @@ recode:
 	mov	edi,table.koi.1251
 
   .main:
-	mov	ecx,[lines]
-	mov	esi,AREA_EDIT
+	mov	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
+	mov	esi,[cur_tab.Editor.Data] ;! AREA_EDIT
 	jecxz	.exit
 	xor	eax,eax
   .lp0: dec	ecx
@@ -30,7 +30,7 @@ recode:
     @@: dec	edx
 	js	.lp0
 	lodsb
-        add	al,-$80
+	add	al,-$80
 	js	@b
 	mov	al,[edi+eax]
 	mov	[esi-1],al

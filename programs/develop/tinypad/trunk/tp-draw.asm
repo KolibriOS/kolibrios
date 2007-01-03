@@ -10,22 +10,6 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	mcall	48,3,sc,sizeof.system_colors
 	call	calc_3d_colors
 
-	test	[options],OPTS_LINENUMS
-	jnz	@f
-	mov	eax,2+LCHGW
-	jmp	.lp1
-    @@: mov	edi,p_info+100
-	mov	eax,[lines]
-	mov	ecx,10
-	call	uint2str
-	lea	eax,[edi-p_info-100]
-	cmp	eax,3
-	jae	@f
-	mov	eax,3
-    @@: imul	eax,6
-	add	eax,2+4+LCHGW
-  .lp1: mov	[left_ofs],eax
-
 	mcall	12,1
 
 	push	[color_tbl+4*5]
@@ -46,53 +30,75 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	cld
 	rep	movsd
 
-;	mcall	9,p_info,-1
+;       mcall   9,p_info,-1
 	cmp	[p_info.client_box.height],LINEH
 	jl	.exit.2
 
+;++ calculate editor bounds ++
+	mov	[tab_bar.Bounds.Left],0
+	mov	[tab_bar.Bounds.Top],ATOPH
+	mov	eax,[p_info.client_box.width]
+	mov	[tab_bar.Bounds.Right],eax
+	mov	eax,[p_info.client_box.height]
+	sub	eax,[bot_dlg_height]
+	add	eax,-STATH-1
+	mov	[tab_bar.Bounds.Bottom],eax
+
+	call	align_editor_in_tab
+
 	mov	[top_ofs],ATOPH;+1
 
-	mov	eax,[p_info.client_box.width]
-	sub	eax,SCRLW+1
-	sub	eax,[left_ofs]
+	mov	eax,[cur_tab.Editor.Bounds.Right]
+	sub	eax,[cur_tab.Editor.Bounds.Left]
+	sub	eax,[cur_tab.Editor.Gutter.Width]
+	sub	eax,SCRLW+LCHGW+4
 	cdq
 	mov	ebx,6
 	div	ebx
 	mov	[columns.scr],eax
 
-	mov	eax,[p_info.client_box.height] ; calculate buttons position
-	add	eax,-STATH;*3-2-2
-	sub	eax,[bot_dlg_height]
-	mov	[bot_ofs],eax
-
-	call	draw_bottom_dialog
-
-	mov	[do_not_draw],1 ; do_not_draw = true
-
-	mov	ebx,eax
-	sub	ebx,[top_ofs]
-	sub	ebx,SCRLW*3+AMINS+5
-	js	.no_draw
-
-	dec	[do_not_draw]	 ; do_not_draw = false
+	mov	eax,[cur_tab.Editor.Bounds.Bottom]
+	sub	eax,[cur_tab.Editor.Bounds.Top]
 	sub	eax,SCRLW+3
-	sub	eax,[top_ofs]
 	cdq
 	mov	ebx,LINEH
 	div	ebx
 	mov	[lines.scr],eax
 
-	mov	ebx,[p_info.client_box.width]
-	mov	ecx,[top_ofs-2]
-	mov	cx,word[top_ofs]
-	sub	ecx,1*65536+1
-	mcall	38,,,[cl_3d_inset];[sc.work_text]
-	mov	ecx,[p_info.client_box.height]
-	sub	ecx,STATH+1
-	push	cx
-	shl	ecx,16
-	pop	cx
-	mcall
+	mov	eax,[p_info.client_box.height]
+	add	eax,-STATH+1;*3-2-2
+	sub	eax,[bot_dlg_height]
+	mov	[bot_ofs],eax
+
+	call	draw_bottom_dialog
+
+;        mov     [do_not_draw],1 ; do_not_draw = true
+
+;        mov     ebx,eax
+;        sub     ebx,[top_ofs]
+;        sub     ebx,SCRLW*3+AMINS+5
+;        js      .no_draw
+
+;        dec     [do_not_draw]    ; do_not_draw = false
+;        sub     eax,SCRLW+3
+;        sub     eax,[top_ofs]
+;        cdq
+;        mov     ebx,LINEH
+;        div     ebx
+;        mov     [lines.scr],eax
+
+;-- horizontal lines for menubar and statusbar --
+	;mov     ebx,[p_info.client_box.width]
+	;mov     ecx,[top_ofs-2]
+	;mov     cx,word[top_ofs]
+	;sub     ecx,1*65536+1
+	;mcall   38,,,[cl_3d_inset];[sc.work_text]
+	;mov     ecx,[p_info.client_box.height]
+	;sub     ecx,STATH+1
+	;push    cx
+	;shl     ecx,16
+	;pop     cx
+	;mcall
 
 	inc	[top_ofs]
 
@@ -134,7 +140,11 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
     @@:
 
   .exit:
-	call	draw_file
+;-- draw file --
+	;call    draw_file
+;++ draw editor control ++
+	call	draw_editor
+	call	draw_tabctl
   .exit.2:
 	mcall	12,2
 	ret
@@ -176,6 +186,8 @@ func draw_main_menu ;/////////////////////////////////////////////////////////
 	mov	ebx,[p_info.client_box.width]
 	inc	ebx
 	mcall	13,,ATOPH-1,[cl_3d_normal]
+
+	mcall	38,[p_info.client_box.width],<ATOPH-1,ATOPH-1>,[sc.frame];[cl_3d_pushed]
 
 	mov	edx,main_menu
 	mov	ebx,9*65536+ATOPH/2-4
@@ -220,6 +232,9 @@ func draw_file.ex ;///////////////////////////////////////////////////////////
 ;  EAX = start line
 ;  EBX = end line
 ;-----------------------------------------------------------------------------
+	call	draw_editor;_text
+	ret
+macro unused {
 	cmp	[p_info.client_box.height],LINEH
 	jge	@f
 	ret
@@ -235,10 +250,10 @@ func draw_file.ex ;///////////////////////////////////////////////////////////
 	cmp	eax,ebx
 	jle	@f
 	xchg	eax,ebx
-    @@: cmp	eax,[top_line]
+    @@: cmp	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
 	jge	@f
-	mov	eax,[top_line]
-    @@: mov	ecx,[top_line]
+	mov	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
+    @@: mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	add	ecx,[lines.scr]
 	cmp	ebx,ecx
 	jl	@f
@@ -258,19 +273,23 @@ func draw_file.ex ;///////////////////////////////////////////////////////////
 
 	mov	ebx,[top_ofs]
 	add	ebx,[left_ofs-2]
-	sub	eax,[top_line]
+	sub	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
 	imul	eax,LINEH
 	add	ebx,eax
 
-	imul	ebp,[left_col],6*65536
+	imul	ebp,[cur_tab.Editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
 	or	[draw_blines],-1
 
 	jmp	draw_file.next_line
+}
 endf
 
 ;-----------------------------------------------------------------------------
 func draw_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
+	call	draw_editor;_text
+	ret
+macro unused {
 	cmp	[p_info.client_box.height],LINEH
 	jge	@f
 	ret
@@ -283,7 +302,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	mov	ebx,[top_ofs]
 	add	ebx,[left_ofs-2]
 
-	mov	ecx,[top_line]
+	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	push	ecx
 	call	get_line_offset
 
@@ -294,9 +313,9 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	jle	.exit
 	add	esp,-4
 
-	imul	ebp,[left_col],6*65536
+	imul	ebp,[cur_tab.Editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
 	mov	eax,[lines.scr]
-	sub	eax,[lines]
+	sub	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	mov	[draw_blines],eax
 
   .next_line:
@@ -327,7 +346,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	cmp	eax,[sel.end.y]
 	je	.lp5
   .lp2: mov	eax,[sel.begin.x]
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	jle	.lp6.2
 	cmp	eax,[columns.scr]
 	jge	.lp6
@@ -350,7 +369,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	cmp	eax,[sel.end.y]
 	je	.lp5
   .lp4: mov	eax,[sel.end.x]
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	jle	.lp6
 	cmp	eax,[columns.scr]
 	jg	.lp6.2
@@ -369,7 +388,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	mov	bx,ax
 	mov	[in_sel],3
 	jmp	.lp6
-  .lp5: mov	eax,[left_col]
+  .lp5: mov	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	cmp	eax,[sel.begin.x]
 	jge	.lp4
 	add	eax,[columns.scr]
@@ -378,7 +397,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	mov	eax,[sel.begin.x]
 	cmp	eax,[sel.end.x]
 	je	.lp6
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	imul	eax,6
 	pushad
 	mov	ebx,[sel.end.x]
@@ -452,13 +471,13 @@ func draw_file ;//////////////////////////////////////////////////////////////
 
 	push	esi ebx
 	mov	eax,ebx
-	sub	ebx,[left_col]
+	sub	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
 	cmp	ebx,[columns.scr]
 	jge	.skip_t
 	add	ebx,esi
 	jle	.skip_t
 	mov	ebx,[esp+8+4*2] ;// 4*2=esi+ebx
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	jge	.qqq
 	sub	edx,eax
 	add	esi,eax
@@ -475,7 +494,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 
 	mov	eax,[esp]   ; ebx
 	add	eax,[esp+4] ; esi
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	sub	eax,[columns.scr]
 	jle	.qweqwe
 	sub	esi,eax
@@ -499,7 +518,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	mov	esi,[sel.begin.x]
 	sub	esi,[esp]
 	pushad
-	mov	ecx,[left_col]
+	mov	ecx,[cur_tab.Editor.TopLeft.X] ;! ecx,[left_col]
 	sub	ecx,[esp+4*8]
 	jle	@f
 	sub	esi,ecx
@@ -529,7 +548,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	sub	eax,[esp]
 	push	ebx
 	mov	ebx,[esp+4]
-	sub	ebx,[left_col]
+	sub	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
 	jge	.ya2.1
 	add	eax,ebx
   .ya2.1:
@@ -561,7 +580,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	sub	esi,[esp]
 	push	eax
 	mov	eax,[esp+4]
-	sub	eax,[left_col]
+	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
 	jge	.nt3.1
 	add	esi,eax
   .nt3.1:
@@ -642,7 +661,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	shl	ebx,16
 	add	ebx,[top_ofs]
 	mov	edi,[sc.work_text]
-	mov	ecx,[top_line]
+	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	inc	ecx
 	mov	edx,p_info+100
     @@: pushad
@@ -660,10 +679,10 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	popad
 	add	ebx,LINEH
 	inc	ecx
-	cmp	ecx,[lines]
+	cmp	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
 	jg	@f
 	mov	esi,ecx
-	sub	esi,[top_line]
+	sub	esi,[cur_tab.Editor.TopLeft.Y] ;! esi,[top_line]
 	cmp	esi,[lines.scr]
 	jbe	@b
     @@: add	esp,4*8*2
@@ -688,8 +707,8 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	add	esp,4
 	cmp	[bot_mode],0
 	jne	@f
-	mov	ebx,[pos.x]
-	sub	ebx,[left_col]
+	mov	ebx,[cur_tab.Editor.Caret.X] ;! ebx,[pos.x]
+	sub	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
 	js	@f
 	cmp	ebx,[columns.scr]
 	ja	@f
@@ -699,8 +718,8 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	push	bx
 	shl	ebx,16
 	pop	bx
-	mov	eax,[pos.y]
-	sub	eax,[top_line]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	sub	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
 	js	@f
 	cmp	eax,[lines.scr]
 	jge	@f
@@ -786,15 +805,15 @@ func draw_file ;//////////////////////////////////////////////////////////////
 ;        sub     ebx,1*65536-2
 
 	push	ebx
-	mov	eax,[lines]
+	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
 	mov	ebx,[lines.scr]
-	mov	ecx,[top_line]
+	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
 	mov	edx,[bot_ofs]
 	sub	edx,[top_ofs]
 	add	edx,-SCRLW*3+1
 	call	get_scroll_vars
-	mov	[vscrl_top],eax
-	mov	[vscrl_size],ebx
+	mov	[cur_tab.Editor.VScroll.Top],eax ;! [vscrl_top],eax
+	mov	[cur_tab.Editor.VScroll.Size],ebx ;! [vscrl_size],ebx
 	pop	ebx
 
 	mov	ecx,eax
@@ -810,7 +829,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 ;        rol     ecx,16
 ;        movsx   eax,cx
 ;        sar     ecx,16
-	push	ebx ecx SCRLW [vscrl_size]
+	push	ebx ecx SCRLW [cur_tab.Editor.VScroll.Size] ;! ebx ecx SCRLW [vscrl_size]
 	dec	dword[esp]
 	call	draw_3d_panel
 	popad
@@ -819,7 +838,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	inc	ebx
 
 	mov	ecx,[top_ofs-2]
-	mov	cx,word[vscrl_top]
+	mov	cx,word[cur_tab.Editor.VScroll.Top] ;! cx,word[vscrl_top]
 	add	ecx,(SCRLW-1)*65536
 	mov	edx,[sc.work];[color_tbl+4*5]
 	or	cx,cx
@@ -827,8 +846,8 @@ func draw_file ;//////////////////////////////////////////////////////////////
 	mcall	13
     @@:
 	mov	ecx,[top_ofs]
-	add	ecx,[vscrl_top]
-	add	ecx,[vscrl_size]
+	add	ecx,[cur_tab.Editor.VScroll.Top] ;! ecx,[vscrl_top]
+	add	ecx,[cur_tab.Editor.VScroll.Size] ;! ecx,[vscrl_size]
 	add	ecx,SCRLW-1
 	mov	di,cx
 	shl	ecx,16
@@ -915,20 +934,20 @@ func draw_file ;//////////////////////////////////////////////////////////////
 ;       inc     ecx
 
 	push	ecx
-	mov	eax,[columns]
+	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
 	mov	ebx,[columns.scr]
-	mov	ecx,[left_col]
+	mov	ecx,[cur_tab.Editor.TopLeft.X] ;! ecx,[left_col]
 	mov	edx,[p_info.client_box.width]
 	add	edx,-(SCRLW*3)
 	call	get_scroll_vars
-	mov	[hscrl_top],eax
-	mov	[hscrl_size],ebx
+	mov	[cur_tab.Editor.HScroll.Top],eax ;! [hscrl_top],eax
+	mov	[cur_tab.Editor.HScroll.Size],ebx ;! [hscrl_size],ebx
 	pop	ecx
 
 	mov	ebx,eax
 	add	ebx,1+SCRLW
 	shl	ebx,16
-	mov	bx,word[hscrl_size]
+	mov	bx,word[cur_tab.Editor.HScroll.Size] ;! bx,word[hscrl_size]
 
 ;        mcall   13,,,[sc.work_button]
 ;!!!!!!!!!!!!!!!!!!
@@ -944,11 +963,11 @@ func draw_file ;//////////////////////////////////////////////////////////////
 ;!!!!!!!!!!!!!!!!!!
 
 	mov	ebx,(1+SCRLW)*65536
-	mov	bx,word[hscrl_top]
+	mov	bx,word[cur_tab.Editor.HScroll.Top] ;! bx,word[hscrl_top]
 	mcall	13,,,[sc.work];[color_tbl+4*5]
 	mov	ebx,1+SCRLW
-	add	ebx,[hscrl_top]
-	add	ebx,[hscrl_size]
+	add	ebx,[cur_tab.Editor.HScroll.Top] ;! ebx,[hscrl_top]
+	add	ebx,[cur_tab.Editor.HScroll.Size] ;! ebx,[hscrl_size]
 	mov	di,bx
 	shl	ebx,16
 	mov	bx,word[p_info.client_box.width]
@@ -978,6 +997,7 @@ func draw_file ;//////////////////////////////////////////////////////////////
   .exit:
 	popad
 	ret
+}
 endf
 
 ;-----------------------------------------------------------------------------
@@ -991,7 +1011,7 @@ func get_next_part ;//////////////////////////////////////////////////////////
 ;  EDX = string
 ;  ESI = length
 ;-----------------------------------------------------------------------------
-	cmp	[asm_mode],0
+	cmp	[cur_tab.Editor.AsmMode],0 ;! [asm_mode],0
 	je	.plain.text
 	xor	ebx,ebx
 	mov	edx,ecx
@@ -1099,11 +1119,16 @@ func get_next_part ;//////////////////////////////////////////////////////////
 endf
 
 ;-----------------------------------------------------------------------------
-func writepos ;///// WRITE POSITION //////////////////////////////////////////
+func draw_statusbar ;///// WRITE POSITION ////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[do_not_draw],1  ; return if drawing is not permitted
 	jae	.exit
 	pusha
+
+	mov	ecx,[p_info.client_box.height-2]
+	mov	cx,word[p_info.client_box.height]
+	sub	ecx,STATH*65536+STATH
+	mcall	38,[p_info.client_box.width],,[sc.frame];[cl_3d_pushed]
 
 ;       mcall   9,p_info,-1
 
@@ -1116,9 +1141,10 @@ func writepos ;///// WRITE POSITION //////////////////////////////////////////
 	mcall	38,<6*13,6*13>,,[cl_3d_inset]
 
 	pushad
+	add	ecx,1*65536
 ;       sub     ebx,(6*13+1)*65536-1
 ;       sub     ebx,[left_ofs]
-	mov	cx,STATH+1
+	mov	cx,STATH
 	mcall	13,<0,6*13>,,[cl_3d_normal]
 	mcall	,<6*13+1,6*(s_modified.size+2)-1>
 	mov	ebx,(6*(s_modified.size+15)+1)*65536
@@ -1133,7 +1159,7 @@ func writepos ;///// WRITE POSITION //////////////////////////////////////////
 	and	ecx,0x0000FFFF
 	push	ecx
 
-	mov	eax,[pos.y]
+	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
 	inc	eax
 	mov	ecx,10
 	mov	edi,p_info+0x100;htext2.pos1
@@ -1141,7 +1167,7 @@ func writepos ;///// WRITE POSITION //////////////////////////////////////////
 	call	uint2str
 	mov	al,','
 	stosb
-	mov	eax,[pos.x]
+	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
 	inc	eax
 	call	uint2str
 
@@ -1156,7 +1182,7 @@ func writepos ;///// WRITE POSITION //////////////////////////////////////////
 	sub	ebx,edi
 	mcall	4,,[sc.work_text],p_info+0x100
 
-	cmp	[modified],0
+	cmp	[cur_tab.Editor.Modified],0 ;! [modified],0
 	je	@f
 	and	ebx,0x0000FFFF
 ;       add     ebx,[left_ofs-2]
@@ -1176,58 +1202,17 @@ func writepos ;///// WRITE POSITION //////////////////////////////////////////
 	ret
 endf
 
-;-----------------------------------------------------------------------------
-func print_text ;/////////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	pusha
-;        mov     ebx,(LBTNW+5+2)*65536
-	mov	bx,word[p_info.box.width]
-;        sub     bx,LBTNW+RBTNW+10+3
-	mov	ecx,[ya-2]
-;        mov     cx,ABTNH+1
-	mcall	13,,,[sc.work]
-;        mov     ebx,(LBTNW+5+2+4)*65536+ABTNH/2-3
-	add	ebx,[ya]
-	mov	eax,[p_info.box.width]
-;        sub     eax,LBTNW+RBTNW+10+8
-	push	eax
-	cdq
-	mov	ecx,6
-	div	ecx
-	cmp	eax,PATHL
-	jbe	@f
-	mov	eax,PATHL
-    @@: mov	esi,eax
-	mcall	4,,[color_tbl+0],[addr]
-
-	mov	eax,[ya]
-	mov	ebx,eax
-;        add     eax,ABTNH/2-6
-	shl	eax,16
-	add	eax,ebx
-;        add     eax,ABTNH/2-6+11
-	mov	ecx,eax
-	imul	eax,[temp],6
-	pop	ebx
-	cmp	eax,ebx
-	jae	@f
-;        add     eax,LBTNW+5+2+4
-	mov	ebx,eax
-	shl	eax,16
-	add	ebx,eax
-	mcall	38,,,[color_tbl+0]
-
-    @@: popa
-	ret
-endf
-
-func draw_framerect ; ebx,ecx
+func draw_framerect ; ebx,ecx,edx
 	push	ebx ecx
+	; x1 = esp+6
+	; x2 = esp+4 (width)
+	; y1 = esp+2
+	; y2 = esp+0 (height)
 
 	add	bx,[esp+6]
 	mov	cx,[esp+2]
 	dec	ebx
-	mcall	38,,,[cl_3d_inset]
+	mcall	38
 	add	cx,[esp]
 	rol	ecx,16
 	add	cx,[esp]
@@ -1246,6 +1231,6 @@ func draw_framerect ; ebx,ecx
 	sub	ebx,0x00010001
 	mcall
 
-	add	esp,8
+	pop	ecx ebx
 	ret
 endf

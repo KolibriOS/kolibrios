@@ -85,6 +85,7 @@ func textbox.draw ; TBOX* ebp
 	mov	[tb.sel.x],ah
 
 	mcall	13,dword[tbox.x],dword[tbox.y],[color_tbl+4*5];[sc.work]
+	mov	edx,[cl_3d_inset]
 	call	draw_framerect
 
 	call	textbox.get_width

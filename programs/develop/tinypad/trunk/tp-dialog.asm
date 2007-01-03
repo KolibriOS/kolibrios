@@ -266,7 +266,7 @@ botdlg.button:
 	jnc	@f
   .lp2:
 	ret
-    @@: call	update_caption
+    @@: ;call    update_caption
 	xor	eax,eax
 	mov	[bot_mode],al
 	mov	[bot_dlg_height],eax
@@ -290,16 +290,21 @@ botdlg.button:
 
   .found:
 ;---------------------------------------
-	push	[copy_size] [copy_count]
+	push	[copy_size] [copy_count] [copy_buf]
 
-	mov	esi,AREA_CBUF
-	mov	edi,AREA_CBUF-304
-	mov	ecx,300/4
-	rep	movsd
+;       mov     esi,0 ;! AREA_CBUF
+;       mov     edi,0 ;! AREA_CBUF-304
+;       mov     ecx,300/4
+;       rep     movsd
+
+	movzx	eax,[tb_replace.length]
+	add	eax,10
+	call	mem.Alloc
+	mov	[copy_buf],eax
 
 	movzx	eax,[tb_replace.length]
 	mov	esi,tb_replace.text
-	mov	edi,AREA_CBUF
+	mov	edi,[copy_buf] ;! AREA_CBUF
 	stosd
 	mov	ecx,eax
 	jecxz	.lp1
@@ -308,17 +313,20 @@ botdlg.button:
 	mov	[copy_size],eax
 	mov	[copy_count],1
 
-	push	[sel.x]
+	push	[cur_tab.Editor.SelStart.X] ;! [sel.x]
 	call	init_sel_vars
 	call	key.ctrl_v
-	pop	[sel.x]
+	pop	[cur_tab.Editor.SelStart.X] ;! [sel.x]
 
-	mov	esi,AREA_CBUF-304
-	mov	edi,AREA_CBUF
-	mov	ecx,300/4
-	rep	movsd
+	mov	eax,[copy_buf]
+	call	mem.Free
 
-	pop	[copy_count] [copy_size]
+;       mov     esi,0 ;! AREA_CBUF-304
+;       mov     edi,0 ;! AREA_CBUF
+;       mov     ecx,300/4
+;       rep     movsd
+
+	pop	[copy_buf] [copy_count] [copy_size]
 ;---------------------------------------
 
 	call	check_inv_all

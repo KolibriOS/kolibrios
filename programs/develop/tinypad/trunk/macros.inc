@@ -210,7 +210,7 @@ macro section name { align 16
  label name }
 macro func name {
  if ~used name
-  display 'FUNC NOT USED: ',`name,13,10
+  ;display 'FUNC NOT USED: ',`name,13,10
  else
   align 4
   name:
@@ -372,6 +372,25 @@ struct system_colors
   work_graph	   dd ?
 ends
 
+struct FILEDATE
+  Second db ?
+  Minute db ?
+  Hour	 db ?
+	 db ?
+  Day	 db ?
+  Month  db ?
+  Year	 dw ?
+ends
+
+struct FILEINFO
+  Attributes dd ?
+  IsUnicode  db ?
+	     db 3 dup(?)
+  DateCreate FILEDATE
+  DateAccess FILEDATE
+  DateModify FILEDATE
+  Size	     dq ?
+ends
 
 ; constants
 

@@ -10,18 +10,18 @@ func save_file ;//////////////////////////////////////////////////////////////
 	rep	movsb
 	mov	byte[edi],0
 
-	mov	esi,AREA_EDIT	  ; 0x70000 = 448 Kbytes (maximum)
-	mov	edi,AREA_TEMP
+	mov	esi,[cur_tab.Editor.Data] ;! AREA_EDIT     ; 0x70000 = 448 Kbytes (maximum)
+	mov	edi,0 ;!!! AREA_TEMP
 
   .new_string:
 	call	save_string
 	cmp	dword[esi],0
 	jne	.new_string
-	sub	edi,AREA_TEMP+2   ; minus last CRLF
+	sub	edi,0 ;!!! AREA_TEMP+2   ; minus last CRLF
 ;!      mov     [filelen],edi
 	cmp	byte[f_info.path],'/'
 	je	.systree_save
-	mcall	33,f_info.path,AREA_TEMP,edi,0;[filelen],0
+	mcall	33,f_info.path,0,edi,0 ;!!! AREA_TEMP,edi,0;[filelen],0
 	or	eax,eax
 	jz	.exit
 ;       call    file_not_found
@@ -40,7 +40,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 
 	mov	[f_info70+0],2
 	mov	[f_info70+12],edi
-	mov	[f_info70+16],AREA_TEMP
+	mov	[f_info70+16],0 ;!!! AREA_TEMP
 	mov	byte[f_info70+20],0
 	mov	[f_info70+21],f_info.path
 	mcall	70,f_info70
@@ -51,7 +51,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 	jnz	.exit.2
 
   .exit:
-	mov	[modified],0
+	mov	[cur_tab.Editor.Modified],0 ;! [modified],0
 	clc
 	ret
 
@@ -145,48 +145,13 @@ func set_status_fs_error
     @@: inc	esi
 	mov	[s_status],esi
 	pop	eax
-	call	writepos
-	ret
-endf
-
-;-----------------------------------------------------------------------------
-func load_hd_file ;///////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-	mov	[f_info+0],0
-	mov	[f_info+8],300000/512
-;        mov     esi,s_fname
-;        mov     edi,f_info.path;pathfile_read
-;        mov     ecx,PATHL
-;        cld
-;        rep     movsb
-	;mcall   58,f_info ; fileinfo_read
-
-	mov	[f_info70+0],0
-	mov	[f_info70+4],0
-	mov	[f_info70+8],0
-	mov	[f_info70+12],300000;/512
-	mov	[f_info70+16],AREA_TEMP
-	mov	byte[f_info70+20],0
-	mov	[f_info70+21],f_info.path
-	mcall	70,f_info70
-
-	call	set_status_fs_error
-
-	xchg	eax,ebx
-	inc	eax
-	test	ebx,ebx
-	je	load_file.file_found
-	cmp	ebx,6		 ;// ATV driver fix (6 instead of 5)
-	je	load_file.file_found
-;       jmp     file_not_found
-	stc
+	call	draw_statusbar
 	ret
 endf
 
 ;-----------------------------------------------------------------------------
 func load_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-
 	mov	esi,tb_opensave.text
 	mov	edi,f_info.path
 	movzx	ecx,[tb_opensave.length]
@@ -195,24 +160,81 @@ func load_file ;//////////////////////////////////////////////////////////////
 	rep	movsb
 	mov	byte[edi],0
 
-	cmp	byte[f_info.path],'/'
-	je	load_hd_file
+	xor	eax,eax
+	mov	[f_info70+0],5
+	mov	[f_info70+4],eax
+	mov	[f_info70+8],eax
+	mov	[f_info70+12],eax
+	mov	[f_info70+16],file_info
+	mov	byte[f_info70+20],al
+	mov	[f_info70+21],f_info.path
+	mcall	70,f_info70
+	mov	[f_info70+0],0
+	mov	eax,dword[file_info.Size]
+	mov	[f_info70+12],eax
+	call	mem.Alloc
+	mov	[f_info70+16],eax
+	mcall	70,f_info70
 
-	mcall	6,f_info.path,0,16800,AREA_TEMP ; 6 = open file
-	inc	eax	     ; eax = -1 -> file not found
-	jnz	.file_found
-;       jmp     file_not_found
+	call	set_status_fs_error
+
+	mov	esi,[f_info70+16]
+
+	xchg	eax,ebx
+	test	ebx,ebx
+	je	.file_found
+	cmp	ebx,6		 ;// ATV driver fix (6 instead of 5)
+	je	.file_found
+
+	mov	eax,[f_info70+16]
+	call	mem.Free
 	stc
 	ret
 
   .file_found:
-	dec	eax
-	mov	[filesize],eax
-	mov	[lines],1
-	mov	[columns],0
-	mov	esi,AREA_TEMP
-	mov	edi,AREA_EDIT
-	mov	edx,eax
+	mov	ecx,eax
+	call	create_tab
+	push	ecx esi edi
+	mov	esi,tb_opensave.text
+	lea	edi,[ebp+TABITEM.Editor.FilePath]
+	;mov     ecx,[f_info.length]
+	movzx	ecx,[tb_opensave.length]
+	rep	movsb
+	mov	byte[edi],0
+	lea	edi,[ebp+TABITEM.Editor.FilePath]
+	movzx	ecx,[tb_opensave.length]
+    @@: cmp	byte[edi+ecx-1],'/'
+	je	@f
+	dec	ecx
+	jmp	@b
+    @@: mov	[ebp+TABITEM.Editor.FileName],ecx
+	call	flush_cur_tab
+	pop	edi esi ecx
+	call	load_from_memory
+	mov	eax,[f_info70+16]
+	call	mem.Free
+	clc
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func load_from_memory ;///////////////////////////////////////////////////////
+;-----------------------------------------------------------------------------
+; ECX = data length
+; ESI = data pointer
+; EBP = EDITOR*
+;-----------------------------------------------------------------------------
+	call	get_lines_in_file
+	mov	[ebp+EDITOR.Lines],eax
+	imul	ebx,eax,14
+	add	ebx,ecx
+	mov	eax,[ebp+EDITOR.Data]
+	call	mem.ReAlloc
+	mov	[ebp+EDITOR.Data],eax
+
+	mov	[ebp+EDITOR.Columns],0
+	mov	edi,eax
+	mov	edx,ecx
 
   .next_line:
 	mov	ebx,edi
@@ -244,11 +266,10 @@ func load_file ;//////////////////////////////////////////////////////////////
 	sub	eax,10
 	jnz	@f
 	inc	eax
-    @@: cmp	eax,[columns]
+    @@: cmp	eax,[ebp+EDITOR.Columns] ;! eax,[columns]
 	jbe	@f
-	mov	[columns],eax
-    @@: mov	[modified],0
-	clc
+	mov	[ebp+EDITOR.Columns],eax ;! [columns],eax
+    @@: mov	[ebp+EDITOR.Modified],0 ;! [modified],0
 	ret
 
   .CR:	cmp	byte[esi],10
@@ -261,11 +282,11 @@ func load_file ;//////////////////////////////////////////////////////////////
 	lea	eax,[edi-4]
 	sub	eax,ebx
 	mov	[ebx],eax
-	inc	[lines]
+	;inc     [cur_tab.Editor.Lines] ;! [lines]
 	add	eax,-10
-	cmp	eax,[columns]
+	cmp	eax,[ebp+EDITOR.Columns] ;! eax,[columns]
 	jbe	.next_line
-	mov	[columns],eax
+	mov	[ebp+EDITOR.Columns],eax ;! [columns],eax
 	jmp	.next_line
 
   .TB:	lea	eax,[edi-4]
@@ -277,31 +298,4 @@ func load_file ;//////////////////////////////////////////////////////////////
 	mov	al,' '
 	rep	stosb
 	jmp	.next_char
-endf
-
-;-----------------------------------------------------------------------------
-func new_file ;///////////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
-;       mcall   55,eax,error_beep   ; beep
-	mov	[lines],1	    ; open empty document
-	mov	[columns],1
-	xor	eax,eax
-	mov	[top_line],eax
-	mov	[pos.x],eax
-	mov	[pos.y],eax
-	mov	edi,AREA_EDIT+4
-	mov	ecx,10
-	mov	[edi-4],ecx
-	mov	[edi+10],eax
-	mov	al,' '
-	cld
-	rep	stosb
-
-	mov	[f_info.length],0
-	mov	[modified],0
-	mov	[asm_mode],0
-	call	update_caption
-	call	drawwindow
-
-	ret
 endf
