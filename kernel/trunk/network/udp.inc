@@ -19,18 +19,45 @@
 ;       udp_rx      Handles received IP packets with the UDP protocol
 ;                   
 ;*******************************************************************
-   
-   
-   
-   
+
+
+;
+;   UDP Payload ( Data field in IP datagram )
+;
+;    0                   1                   2                   3
+;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+;
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;   |       Source Port             |      Destination Port         |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;   | Length ( UDP Header + Data )  |           Checksum            |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;   |       UDP Data                                                |
+;   +-+-+-..........                                               -+
+;
+
+struc UDP_PACKET
+{  .SourcePort       dw  ?  ;+00
+   .DestinationPort  dw  ?  ;+02
+   .Length           dw  ?  ;+04 - Length of (UDP Header + Data)
+   .Checksum         dw  ?  ;+06
+   .Data             db  ?  ;+08
+}
+
+virtual at 0
+  UDP_PACKET UDP_PACKET
+end virtual
+
+
 ;***************************************************************************
 ;   Function
-;      udp_rx
+;      udp_rx  [by Johnny_B]
 ;
 ;   Description
 ;       UDP protocol handler
 ;       This is a kernel function, called by ip_rx
 ;       IP buffer address given in edx
+;          IP buffer number in eax
 ;          Free up (or re-use) IP buffer when finished
 ;
 ;***************************************************************************
@@ -134,4 +161,3 @@ udprx_001:
     pop     eax
     call    freeBuff    ; Discard the packet
     ret     
-       
