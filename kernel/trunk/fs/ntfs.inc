@@ -293,6 +293,7 @@ ntfs_attr_iBaseRecord   dd      ?
 ntfs_attr_offs          dd      ?
 ntfs_attr_list          dd      ?
 ntfs_attr_size          dq      ?
+ntfs_cur_tail           dd      ?
 endg
 
 ntfs_read_attr:
@@ -434,6 +435,9 @@ ntfs_read_attr:
 .scancont:
         add     eax, [eax+4]
         jmp     .scanattr
+.continue:
+        pushad
+        and     [ntfs_cur_read], 0
 .scandone:
 ; c) Check for required offset and length
         mov     ecx, [ntfs_attr_offs]
@@ -666,9 +670,13 @@ ntfs_read_attr:
         ret
 @@:
 ; reduce read length
+        and     [ntfs_cur_tail], 0
         cmp     [ntfs_cur_size], eax
         jb      @f
         mov     [ntfs_cur_size], eax
+        mov     eax, dword [ntfs_attr_size]
+        and     eax, 0x1FF
+        mov     [ntfs_cur_tail], eax
 @@:
         cmp     [ntfs_cur_size], 0
         jz      .okret
@@ -719,6 +727,11 @@ ntfs_read_attr:
         cmp     [ntfs_cur_size], 0
         jnz     .readloop
         add     esp, 10h
+        mov     eax, [ntfs_cur_tail]
+        test    eax, eax
+        jz      .okret
+        sub     eax, 0x200
+        add     [ntfs_cur_read], eax
         jmp     .okret
 .errread2:
         pop     ecx
@@ -864,7 +877,7 @@ ntfs_decode_mcb_entry:
 ntfs_find_lfn:
 ; in: esi->name
 ; out: CF=1 - file not found
-;      else CF=0 and eax=ntfs_cur_iRecord valid
+;      else CF=0, [ntfs_cur_iRecord] valid, eax->record in parent directory
         mov     [ntfs_cur_iRecord], 5   ; start parse from root cluster
 .doit2:
         mov     [ntfs_cur_attr], 0x90   ; $INDEX_ROOT
@@ -1008,7 +1021,7 @@ ntfs_find_lfn:
         pop     esi
         mov     eax, [esi]
         mov     [ntfs_cur_iRecord], eax
-        mov     [esp+1Ch], eax
+        mov     [esp+1Ch], esi
         mov     [esp+4], edi
         popad
         inc     esi
@@ -1031,8 +1044,132 @@ ntfs_find_lfn:
 ;
 ;--------------------------------------------------------------
 ntfs_HdRead:
+        cmp     byte [esi], 0
+        jnz     @f
         or      ebx, -1
-        mov     eax, ERROR_UNSUPPORTED_FS
+        push    ERROR_ACCESS_DENIED
+        pop     eax
+        ret
+@@:
+        call    ntfs_find_lfn
+        jnc     .found
+        or      ebx, -1
+        push    ERROR_FILE_NOT_FOUND
+        pop     eax
+        ret
+.found:
+        mov     [ntfs_cur_attr], 0x80   ; $DATA
+        and     [ntfs_cur_offs], 0
+        and     [ntfs_cur_size], 0
+        call    ntfs_read_attr
+        jnc     @f
+        or      ebx, -1
+        push    ERROR_ACCESS_DENIED
+        pop     eax
+        ret
+@@:
+        pushad
+        and     dword [esp+10h], 0
+        xor     eax, eax
+        test    ebx, ebx
+        jz      .zero1
+        cmp     dword [ebx+4], 0x200
+        jb      @f
+.eof0:
+        popad
+        xor     ebx, ebx
+.eof:
+        push    ERROR_END_OF_FILE
+        pop     eax
+        ret
+@@:
+        mov     eax, [ebx]
+        test    eax, 0x1FF
+        jz      .alignedstart
+        push    edx
+        mov     edx, [ebx+4]
+        shrd    eax, edx, 9
+        pop     edx
+        mov     [ntfs_cur_offs], eax
+        mov     [ntfs_cur_size], 1
+        mov     [ntfs_cur_buf], ntfs_bitmap_buf
+        call    ntfs_read_attr.continue
+        mov     eax, [ebx]
+        and     eax, 0x1FF
+        lea     esi, [ntfs_bitmap_buf+eax]
+        sub     eax, [ntfs_cur_read]
+        jae     .eof0
+        neg     eax
+        push    ecx
+        cmp     ecx, eax
+        jb      @f
+        mov     ecx, eax
+@@:
+        mov     [esp+10h+4], ecx
+        mov     edi, edx
+        rep     movsb
+        mov     edx, edi
+        pop     ecx
+        sub     ecx, [esp+10h]
+        jnz     @f
+.retok:
+        popad
+        xor     eax, eax
+        ret
+@@:
+        cmp     [ntfs_cur_read], 0x200
+        jz      .alignedstart
+.eof_ebx:
+        popad
+        jmp     .eof
+.alignedstart:
+        mov     eax, [ebx]
+        push    edx
+        mov     edx, [ebx+4]
+        add     eax, 511
+        adc     edx, 0
+        shrd    eax, edx, 9
+        pop     edx
+.zero1:
+        mov     [ntfs_cur_offs], eax
+        mov     [ntfs_cur_buf], edx
+        mov     eax, ecx
+        shr     eax, 9
+        mov     [ntfs_cur_size], eax
+        add     eax, [ntfs_cur_offs]
+        push    eax
+        call    ntfs_read_attr.continue
+        pop     [ntfs_cur_offs]
+        mov     eax, [ntfs_cur_read]
+        add     [esp+10h], eax
+        mov     eax, ecx
+        and     eax, not 0x1FF
+        cmp     [ntfs_cur_read], eax
+        jnz     .eof_ebx
+        and     ecx, 0x1FF
+        jz      .retok
+        add     edx, [ntfs_cur_read]
+        mov     [ntfs_cur_size], 1
+        mov     [ntfs_cur_buf], ntfs_bitmap_buf
+        call    ntfs_read_attr.continue
+        cmp     [ntfs_cur_read], ecx
+        jb      @f
+        mov     [ntfs_cur_read], ecx
+@@:
+        xchg    ecx, [ntfs_cur_read]
+        push    ecx
+        mov     edi, edx
+        mov     esi, ntfs_bitmap_buf
+        add     [esp+10h+4], ecx
+        rep     movsb
+        pop     ecx
+        xor     eax, eax
+        cmp     ecx, [ntfs_cur_read]
+        jz      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
+        mov     [esp+1Ch], eax
+        popad
         ret
 
 ;----------------------------------------------------------------
@@ -1344,32 +1481,7 @@ ntfs_HdReadFolder:
         js      .ret
         inc     dword [eax+4]   ; new file block copied
         mov     eax, [edx+4]    ; flags
-
-ntfs_direntry_to_bdfe:
-        mov     [edi+4], eax    ; ANSI/UNICODE name
-        mov     eax, [esi+48h]
-        test    eax, 0x10000000
-        jz      @f
-        and     eax, not 0x10000000
-        or      al, 0x10
-@@:
-        stosd
-        scasd
-        push    edx
-        mov     eax, [esi+0x18]
-        mov     edx, [esi+0x1C]
-        call    ntfs_datetime_to_bdfe
-        mov     eax, [esi+0x30]
-        mov     edx, [esi+0x34]
-        call    ntfs_datetime_to_bdfe
-        mov     eax, [esi+0x20]
-        mov     edx, [esi+0x24]
-        call    ntfs_datetime_to_bdfe
-        pop     edx
-        mov     eax, [esi+0x40]
-        stosd
-        mov     eax, [esi+0x44]
-        stosd
+        call    ntfs_direntry_to_bdfe
         push    ecx esi edi
         movzx   ecx, byte [esi+0x50]
         add     esi, 0x52
@@ -1397,6 +1509,33 @@ ntfs_direntry_to_bdfe:
         pop     edi
         add     edi, 264
         pop     esi ecx
+        ret
+
+ntfs_direntry_to_bdfe:
+        mov     [edi+4], eax    ; ANSI/UNICODE name
+        mov     eax, [esi+48h]
+        test    eax, 0x10000000
+        jz      @f
+        and     eax, not 0x10000000
+        or      al, 0x10
+@@:
+        stosd
+        scasd
+        push    edx
+        mov     eax, [esi+0x18]
+        mov     edx, [esi+0x1C]
+        call    ntfs_datetime_to_bdfe
+        mov     eax, [esi+0x30]
+        mov     edx, [esi+0x34]
+        call    ntfs_datetime_to_bdfe
+        mov     eax, [esi+0x20]
+        mov     edx, [esi+0x24]
+        call    ntfs_datetime_to_bdfe
+        pop     edx
+        mov     eax, [esi+0x40]
+        stosd
+        mov     eax, [esi+0x44]
+        stosd
         ret
 
 iglobal
@@ -1570,6 +1709,27 @@ ntfs_HdDelete:
         ret
 
 ntfs_HdGetFileInfo:
-        mov     eax, ERROR_UNSUPPORTED_FS
+        cmp     byte [esi], 0
+        jnz     @f
+        push    2
+        pop     eax
         ret
-
+@@:
+        call    ntfs_find_lfn
+        jnc     .doit
+        push    ERROR_FILE_NOT_FOUND
+        pop     eax
+        cmp     [hd_error], 0
+        jz      @f
+        mov     al, 11
+@@:
+        ret
+.doit:
+        push    esi edi
+        mov     esi, eax
+        mov     edi, edx
+        xor     eax, eax
+        call    ntfs_direntry_to_bdfe
+        pop     edi esi
+        xor     eax, eax
+        ret

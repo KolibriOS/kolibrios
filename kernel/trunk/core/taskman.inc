@@ -998,15 +998,25 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov edx,[edx]           ;app_cmdline
            test edx,edx
            jz @F                   ;application don't need parameters
+        mov     eax, edx
+        add     eax, 256
+        jc      @f
+        cmp     eax, [PROC_BASE+APPDATA.mem_size+ebx*8]
+        ja      @f
            add edx, new_app_base
-           stdcall k_strncpy, edx, [cmd_line], 255
+           stdcall k_strncpy, edx, [cmd_line], 256
 @@:
            mov edx,[params]
            mov edx, [edx+4]        ;app_path
            test edx,edx
            jz @F                   ;application don't need path of file
+        mov     eax, edx
+        add     eax, 1024
+        jc      @f
+        cmp     eax, [PROC_BASE+APPDATA.mem_size+ebx*8]
+        ja      @f
            add edx, new_app_base
-           stdcall k_strncpy, edx, [app_path], 64
+           stdcall k_strncpy, edx, [app_path], 1024
 @@:
            mov    ebx,[slot]
            mov    eax,ebx
