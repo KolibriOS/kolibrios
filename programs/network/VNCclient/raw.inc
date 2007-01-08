@@ -1,40 +1,33 @@
   encoding_raw:
-    DEBUGF 1,'FRAME: RAW\n'
+    DEBUGF 1,'RAW\n'
 
-    mov   ax,[screen.width]		      ;
-    mov   bx,[frame.y]			      ;
-    mul   bx				      ;
-    DEBUGF 1,'screen.width*frame.y=%u\n',ax
-    mov   bx,3				      ;
+    mov   ax,[frame.y]			      ;
+    mov   bx,[screen.width]		      ;
     mul   bx				      ;
     shl   edx,16			      ;
-    mov   dx,ax 			      ;
-    mov   ebx,edx			      ; mov ebx,[screen.width]*[frame.y]*3
-    push  ebx
-    DEBUGF 1,'screen.width*frame.y*3=%u\n',edx
-    mov   ax,[frame.x]			      ;
-    mov   bx,3				      ;
-    mul   bx				      ;
-    shl   edx,16			      ;
-    mov   dx,ax 			      ;
-    pop   ebx
-    add   ebx,edx			      ; add ebx,[frame.x]*3
-    add   ebx,framebuffer_data		      ; add ebx,framebuffer_data
-    push  ebx
-    DEBUGF 1,'frame.x*3=%u\n',edx
+    mov   dx,ax 			      ; [screen.width]*[frame.y]
+    movzx eax,[frame.x]
+    add   edx,eax			      ; [screen.width]*[frame.y]+[frame.x]
+
+    mov   eax,3 			      ;
+    mul   edx				      ; ([screen.width]*[frame.y]+[frame.x])*3
+
+    add   eax,framebuffer_data		      ;
+    push  eax				      ; framebuffer_data+([screen.width]*[frame.y]+[frame.x])*3
 
     mov   ax,[frame.width]		      ;
     mov   bx,3				      ;
     mul   bx				      ;
     shl   edx,16			      ;
-    mov   dx,ax 			      ;
-    DEBUGF 1,'frame.width*3=%u\n',edx
-    pop   ebx
-    add   edx,ebx			      ; mov edx,ebx+[frame.width]*3
+    mov   dx,ax 			      ; [frame.width]*3
 
-    push  ebx
+    pop   eax				      ;
+    add   edx,eax			      ; framebuffer_data+([screen.width]*[frame.y]+[frame.x])*3+[frame.width]*3
+    push  eax				      ;
     push  edx				      ;
+
     mov   ax,[frame.height]		      ;
+    dec   ax				      ;
     mov   bx,3				      ;
     mul   bx				      ;
     mov   bx,[screen.width]		      ;
@@ -43,70 +36,85 @@
     mov   dx,ax 			      ;
     mov   ecx,edx			      ;
     pop   edx				      ;
-    DEBUGF 1,'frame.height*screen.width*3=%u\n',ecx
-    add   ecx,edx			      ; mov ecx,edx+[frame.height]*[screen.width]*3
+    add   ecx,edx			      ; mov ecx,edx+([frame.height]-1)*[screen.width]*3
     pop   ebx
-
-    DEBUGF 1,'FRAME: framebuffer:%u ebx:%u ecx:%u edx:%u\n',framebuffer_data,ebx,ecx,edx
 
    .pixelloop32:
     cmp   ebx,ecx
     jge   next_rectangle
 
-    add   esi,2 	  ; 32 bit code RAW
-    mov   al,[esi]	  ;
-    mov   [ebx],al	  ;
-    inc   ebx		  ;
-    dec   esi		  ;
-			  ;
-    mov   al,[esi]	  ;
-    mov   [ebx],al	  ;
-    inc   ebx		  ;
-    dec   esi		  ;
-			  ;
-    mov   al,[esi]	  ;
-    mov   [ebx],al	  ;
-    inc   ebx		  ;
-    add   esi,4 	  ;
-
-;    mov   ax,[esi]        ; 16 bit code RAW
-;    and   ax,32
-;    mov   [ebx],al
-;    inc   ebx
-;
-;    mov   ax,[esi]
-;    shr   ax,5
-;    and   ax,32
-;    mov   [ebx],al
-;    inc   ebx
-;
-;    mov   ax,[esi]
-;    shr   ax,10
-;    and   ax,64
-;    mov   [ebx],al
-;    inc   ebx
-;    inc   esi
-;    inc   esi
-
-
-;    mov   al,[esi]        ; 8 bit code RAW
-;    and   al,7            ;
-;    mov   byte[ebx],0xff;al        ;
-;    inc   ebx             ;
-;                          ;
+;    add   esi,2           ; 32 bit code RAW - OK
 ;    mov   al,[esi]        ;
-;    shr   al,3            ;
-;    and   al,7            ;
 ;    mov   [ebx],al        ;
 ;    inc   ebx             ;
+;    dec   esi             ;
 ;                          ;
 ;    mov   al,[esi]        ;
-;    shr   al,6            ;
-;    and   al,3            ;
 ;    mov   [ebx],al        ;
 ;    inc   ebx             ;
+;    dec   esi             ;
 ;                          ;
+;    mov   al,[esi]        ;
+;    mov   [ebx],al        ;
+;    inc   ebx             ;
+;    add   esi,4           ;
+
+;    push  ecx             ; 16 bit code RAW
+;    mov   cl,51
+;
+;    mov   ax,[esi]        ;
+;        xchg  al,ah
+;    and   al,00011111b    ;
+;        xchg  al,ah
+;    mul   cl
+;    mov   [ebx],al        ;
+;    inc   ebx             ;
+;
+;    mov   ax,[esi]        ;
+;        xchg  al,ah
+;    shr   ax,5            ;
+;        xchg  al,ah
+;    and   al,00011111b    ;
+;    mul   cl
+;    mov   [ebx],al        ;
+;    inc   ebx             ;
+;
+;    mov   ax,[esi]        ;
+;    xchg  al,ah
+;    shr   ax,10           ;
+;    and   al,00011111b    ;
+;    mul   cl
+;    mov   [ebx],al        ;
+;    inc   ebx             ;
+;
 ;    inc   esi             ;
+;    inc   esi             ;
+;    pop   ecx
+
+    push  ecx		  ; 8 bit code RAW - OK
+    mov   cl,85 	  ;
+			  ;
+    mov   al,[esi]	  ;
+    shr   al,4		  ;
+    and   al,3		  ;
+    mul   cl		  ;
+    mov   [ebx],al	  ;
+    inc   ebx		  ;
+			  ;
+    mov   al,[esi]	  ;
+    shr   al,2		  ;
+    and   al,3		  ;
+    mul   cl		  ;
+    mov   [ebx],al	  ;
+    inc   ebx		  ;
+			  ;
+    mov   al,[esi]	  ;
+    and   al,3		  ;
+    mul   cl		  ;
+    mov   byte[ebx],al	  ;
+    inc   ebx		  ;
+    inc   esi		  ;
+    pop   ecx		  ;
 
 
     cmp   ebx,edx

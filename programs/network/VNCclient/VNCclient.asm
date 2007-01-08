@@ -12,36 +12,40 @@
 
 use32
 
-		org	0x0
+    org     0x0
 
-		db	'MENUET00'		; 8 byte id
-		dd	38			; required os
-		dd	START			; program start
-		dd	I_END			; program image size
-		dd	IM_END			; required amount of memory
-		dd	0			; reserved=no extended header
+    db	   'MENUET01'	     ; 8 byte id
+    dd	   0x01 	     ; header version
+    dd	   START	     ; start of code
+    dd	   I_END	     ; size of image
+    dd	   IM_END	     ; memory for app
+    dd	   IM_END	     ; esp
+    dd	   0x0 , 0x0	     ; I_Param , I_Icon
 
 __DEBUG__ equ 1
 __DEBUG_LEVEL__ equ 1
-STRLEN = 64
-xpos = 4
-ypos = 22
+
+STRLEN = 64	 ; password and server max length
+xpos = 4	 ; coordinates of image
+ypos = 22	 ;
 
 TIMEOUT = 60	 ; timeout in seconds
-BUFFER	= 512	 ; Buffer size for DNS
+BUFFER	= 1500	 ; Buffer size for DNS
 
 include 'fdo.inc'
 include 'ETH.INC'
 include 'logon.inc'
 include 'raw.inc'
 include 'copyrect.inc'
+include 'thread.inc'
 
 
 START:				       ; start of execution
+
     call    red_logon
 
     mov     eax,40		       ; Report events
-    mov     ebx,10000000b	       ; Only Stack
+    mov     ebx,00000000b	       ; Only Stack
     int     0x40
 
     mov     eax,67		       ; resize the window (hide it)
@@ -51,61 +55,24 @@ START:				       ; start of execution
     mov     esi,ebx
     int     0x40
 
-    resolve first,[server_ip]	       ; the input window putted the server @ 'first', resolve it into a real ip
-    mov     [server_port],5900	       ; no port input for now, only standard port 5900
+    mov     eax,51
+    mov     ebx,1
+    mov     ecx,thread_start
+    mov     edx,thread_stack
+    int     0x40
 
-    DEBUGF  1,'connecting to %u.%u.%u.%u:%u\n',1[server_ip],1[server_ip+1],1[server_ip+2],1[server_ip+3],4[server_port]
-    eth.search_port 1000,edx					  ; Find a free port starting from 1001 and store in edx
-    eth.open_tcp edx,[server_port],[server_ip],1,[socket]	  ; open socket
-    DEBUGF 1,'Socket opened: %u (port %u)\n',[socket],ecx
+    DEBUGF 1,'Thread created: %u\n',eax
 
-    call    read_data
-    cmp     dword[receive_buffer+1],'RFB '
-    jne     no_rfb
-    eth.write_tcp [socket],12,handshake
-    DEBUGF 1,'Sending handshake: protocol version\n'
+   @@:
+    mov     eax,5
+    mov     ebx,10
+    int     0x40
 
-    call    read_data
-    mov     eax,receive_buffer+1
-    mov     eax,[eax]
-    bswap   eax
-    cmp     eax,0
-    je	    invalid_security
-    cmp     eax,1
-    je	    no_security
-    cmp     eax,2
-    je	    vnc_security
-
-    jmp     close
-
-   vnc_security:
-    mov     byte[mode],1
-    call    red_logon
-
-   no_security:
-    eth.write_tcp [socket],1,shared
-    DEBUGF 1,'Sending handshake: shared session?\n'
-
-    eth.wait_for_data [socket],TIMEOUT*10,close
-    eth.read_data [socket],framebuffer,[datapointer],IM_END-receive_buffer ; now the server should send init message
-    DEBUGF 1,'Serverinit: bpp:%u depth:%u bigendian:%u truecolor:%u\n',1[pixelformat.bpp],1[pixelformat.depth],1[pixelformat.big_endian],1[pixelformat.true_color]
-    mov     eax,dword[framebuffer]
-    bswap   eax
-    mov     dword[screen],eax
-
-    eth.write_tcp [socket],20,pixel_format32
-    DEBUGF 1,'Sending pixel format\n'
-    call    read_data
-
-;    eth.write_tcp [socket],8,encodings
-;    DEBUGF 1,'Sending encoding info\n'
-;    call    read_data
-
-    mov     eax,dword[framebuffer.width]
-    mov     dword[fbur.width],eax
+    cmp     byte[thread_ready],0
+    je	    @r
 
     mov     eax,40		   ; report events
-    mov     ebx,10100111b	   ; stack, mouse, button, key, redraw
+    mov     ebx,100111b 	   ; mouse, button, key, redraw
     int     0x40
 
     mov     eax,67		   ; resize the window
@@ -119,9 +86,6 @@ START:				       ; start of execution
     add     esi,ypos+xpos
     int     0x40
 
-;    mov     byte[fbur.inc],0       ; request a framebufferupdate
-;    eth.write_tcp [socket],10,fbur
-
   mainloop:
     eth.socket_status [socket],eax
     cmp     al,TCB_CLOSE_WAIT
@@ -131,7 +95,7 @@ START:				       ; start of execution
     mov     ebx,50		   ; 0,5 s
     int     0x40
 
-    cmp     eax,1		   ; redraw
+    cmp     eax,1
     je	    redraw
     cmp     eax,2		   ; key
     je	    key
@@ -139,128 +103,10 @@ START:				       ; start of execution
     je	    button
     cmp     eax,6		   ; mouse
     je	    mouse
-    cmp     eax,8
-    je	    network
 
-    ; request an FRB update
-    jmp     mainloop
-
-
-   network:
-    call    read_data		   ; Read the data into the buffer
-
-    mov     eax,[datapointer]	   ; at least 2 bytes should be received
-    sub     eax,receive_buffer
-    cmp     eax,1
-    jle     mainloop
-
-    DEBUGF 1,'Data received, %u bytes\n',eax
-
-    cmp     byte[receive_buffer],0
-    je	    framebufferupdate
-
-    cmp     byte[receive_buffer],1
-    je	    setcolourmapentries
-
-    cmp     byte[receive_buffer],2
-    je	    bell
-
-    cmp     byte[receive_buffer],3
-    je	    servercuttext
-
-    jmp     mainloop
-
-
-   framebufferupdate:
-    DEBUGF 1,'Framebufferupdate!\n'
-    mov     di,word[receive_buffer+2]
-    bswap   edi
-    shr     edi,16
-    mov     esi,receive_buffer+4
-
-   rectangle_loop:
-    mov     edx,[esi]
-    bswap   edx
-    mov     ebx,edx
-    shr     edx,16
-    mov     [frame.x],dx
-    mov     [frame.y],bx
-    add     esi,4
-    mov     ecx,[esi]
-    bswap   ecx
-    mov     eax,ecx
-    shr     ecx,16
-    mov     [frame.width],cx
-    mov     [frame.height],ax
-    add     esi,4
-    mov     eax,[esi]
-    add     esi,4
-
-    DEBUGF 1,'screen: width=%u height=%u\nframe: width=%u height=%u x=%u y=%u\n',2[screen.width],2[screen.height],2[frame.width],2[frame.height],2[frame.x],2[frame.y]
-
-    cmp     eax,0
-    je	    encoding_raw
-
-    cmp     eax,1
-    je	    encoding_copyrect
-
-    cmp     eax,2
-    je	    encoding_RRE
-
-    cmp     eax,5
-    je	    encoding_hextile
-
-    cmp     eax,16
-    je	    encoding_ZRLE
-
-    DEBUGF 1,'FRAME: unknown encoding\n'
-    jmp     mainloop
-
-   next_rectangle:
-    dec     di
-    pusha
     call    drawbuffer
-    popa
-    cmp     di,0
-    jg	    rectangle_loop
-    jmp     mainloop
-
-  encoding_RRE:
-    DEBUGF 1,'FRAME: RRE\n'
-
-    jmp     next_rectangle
-
-  encoding_hextile:
-    DEBUGF 1,'FRAME: hextile\n'
-
-    jmp     next_rectangle
-
-  encoding_ZRLE:
-    DEBUGF 1,'FRAME: ZRLE\n'
-
-    jmp     next_rectangle
-
-
-  setcolourmapentries:
-
-    DEBUGF 1,'Server sended an SetColourMapEntries message\n'
 
     jmp     mainloop
-
-
-  bell:
-    mov     eax,55
-    mov     ebx,eax
-    mov     esi,beep
-    int     0x40
-
-    jmp     mainloop
-
-
-  servercuttext:
-
-    jmp mainloop
-
 
   key:
     DEBUGF 1,'Sending key event\n'
@@ -269,26 +115,7 @@ START:				       ; start of execution
     int     0x40
     mov     byte[keyevent.key+3],ah
 
-;   eth.write_tcp [socket],8,keyevent
-
-    cmp     ah,13
-    jne     @f
-
-    mov     byte[fbur.inc],1
-    eth.write_tcp [socket],10,fbur
-    jmp     mainloop
-  @@:
-
-    cmp     ah,30
-    jne     @f
-
-    mov     byte[fbur.inc],12
-    eth.write_tcp [socket],10,fbur
-    jmp     mainloop
-  @@:
-
-    mov     byte[fbur.inc],0
-    eth.write_tcp [socket],10,fbur
+    eth.write_tcp [socket],8,keyevent
 
     jmp     mainloop
 
@@ -309,9 +136,9 @@ START:				       ; start of execution
     mov     ebx,2
     int     0x40
 
-    cmp     al,2
-    jne     @f	      ; in kolibri right click is 2 (decimal), in RFB protocol it is bit 2 (counting from 0)
-    mov     al,100b
+    test    al,00000010b	    ; test if right button was pressed  (bit 1 in kolibri)
+    jz	    @f
+    add     al,00000010b	    ; in RFB protocol it is bit 2, so if we add bit 2 again, we'll get bit 3 and bit 1 will remain the same
    @@:
 
     mov     byte[pointerevent.mask],al
@@ -373,7 +200,7 @@ START:				       ; start of execution
 
   close:
     call    read_data
-;    eth.close_tcp [socket]             ; We're done, close the socket ;;; BUG WHEN CLOSING SCOKET !!
+;    eth.close_tcp [socket]             ; We're done, close the socket ;;; BUG WHEN CLOSING SOCKET !!
     DEBUGF 1,'Socket closed\n'
 
     mov     eax,-1
@@ -387,9 +214,6 @@ START:				       ; start of execution
     DEBUGF 1,'Security error: %s\n',receive_buffer+5
     jmp     close
 
-read_data:
-    eth.read_data [socket],receive_buffer,[datapointer],IM_END-receive_buffer
-ret
 
 ; DATA AREA
 
@@ -416,12 +240,12 @@ pixel_format32	   db 0       ; setPixelformat
 pixel_format16	   db 0       ; setPixelformat
 		   rb 3       ; padding
 .bpp		   db 16      ; bits per pixel
-.depth		   db 16      ; depth
+.depth		   db 15      ; depth
 .big_endian	   db 0       ; big-endian flag
 .true_color	   db 1       ; true-colour flag
-.red_max	   db 0,32    ; red-max
-.green_max	   db 0,32    ; green-max
-.blue_max	   db 0,64    ; blue-max
+.red_max	   db 0,31    ; red-max
+.green_max	   db 0,31    ; green-max
+.blue_max	   db 0,31    ; blue-max
 .red_shif	   db 0       ; red-shift
 .green_shift	   db 5       ; green-shift
 .blue_shift	   db 10      ; blue-shift
@@ -430,15 +254,15 @@ pixel_format16	   db 0       ; setPixelformat
 pixel_format8	   db 0       ; setPixelformat
 		   rb 3       ; padding
 .bpp		   db 8       ; bits per pixel
-.depth		   db 8       ; depth
+.depth		   db 6       ; depth
 .big_endian	   db 0       ; big-endian flag
 .true_color	   db 1       ; true-colour flag
-.red_max	   db 0,7     ; red-max
-.green_max	   db 0,7     ; green-max
+.red_max	   db 0,3     ; red-max
+.green_max	   db 0,3     ; green-max
 .blue_max	   db 0,3     ; blue-max
 .red_shif	   db 0       ; red-shift
-.green_shift	   db 3       ; green-shift
-.blue_shift	   db 6       ; blue-shift
+.green_shift	   db 2       ; green-shift
+.blue_shift	   db 4       ; blue-shift
 		   rb 3       ; padding
 
 encodings	   db 2       ; setEncodings
@@ -499,9 +323,13 @@ screen:
 .height 	   dw 0
 .width		   dw 0
 
+thread_ready	   db 0
+
 dnsMsg:
 receive_buffer	   rb 5*1024*1024 ; 5 mb buffer for received data (incoming frbupdate etc)
 framebuffer_data   rb 1024*768*3  ; framebuffer
+
+thread_stack	   rb 0x1000
 
 IM_END:
 
