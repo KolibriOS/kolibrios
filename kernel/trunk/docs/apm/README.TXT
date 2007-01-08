@@ -2,7 +2,7 @@ Advanced Power Management
 
 SYSTEM CALL
 
-eax = 70
+eax = 49
 dx = номер функции APM BIOS (аналогичен ax в реальном режиме)
 остальные (bx, cx) регистры по спецификации (см. apm.txt)
 результат : по спецификации (включая CF), старшая часть 32 битных регистров не определена
@@ -18,12 +18,13 @@ Boot:
 
 ИЗМЕНЕНИЯ
 
-sys32.inc
+bootcode.inc
 syscall.inc
 kernel.asm
 bootcode.inc
+shutdown.inc
 
-##############[core\sys32.inc]#####################
+##############[boot\bootcode.inc]##################
 
 Три новых дескриптора
 
@@ -57,19 +58,19 @@ os_data_l:
         db     0x00
 ; --------------- APM ---------------------
 apm_code_32:
-        dw     0x10		; limit 64kb
+        dw     0x0f        ; limit 64kb
         db     0, 0, 0
-        dw     11011111b *256 +10011010b
+        dw     11010000b *256 +10011010b
         db     0x00
 apm_code_16:
-        dw     0x10
+        dw     0x0f
         db     0, 0, 0
-        dw     10011111b *256 +10011010b
+        dw     10010000b *256 +10011010b
         db     0x00
 apm_data_16:
-        dw     0x10
+        dw     0x0f
         db     0, 0, 0
-        dw     10011111b *256 +10010010b
+        dw     10010000b *256 +10010010b
         db     0x00
 ; -----------------------------------------
 app_code_l:
@@ -95,7 +96,6 @@ graph_data_l:
         db     0x00
 
 tss0_l:
-      times (max_processes+10) dd 0,0
 
 .............
 .............
@@ -106,12 +106,11 @@ tss0_l:
 .............
 
 
-      dd undefined_syscall       ; 65-UTF
-      dd sys_process_def         ; 66-Process definitions - keyboard
-      dd sys_window_move         ; 67-Window move or resize
-      dd sys_internal_services   ; 68-Some internal services
-      dd sys_debug_services      ; 69-Debug
-      dd sys_apm                 ; 70-APM
+      dd display_number          ; 47-WriteNum
+      dd display_settings        ; 48-SetRedrawType and SetButtonType
+      dd sys_apm                 ; 49-Advanced Power Management (APM)
+      dd random_shaped_window    ; 50-Window shape & scale
+      dd syscall_threads         ; 51-Threads
 
 
 .............
@@ -152,7 +151,7 @@ align 4
 sys_apm:
 	cmp	word [apm_vf], 0	; Check APM BIOS enable
 	jne	@f
-	or	[esp + 40], byte 1	; error
+	or	[esp + 56], byte 1	; error
 	mov	[esp + 36], dword 8	; 32-bit protected-mode interface not supported
 	ret
 	
@@ -161,7 +160,7 @@ sys_apm:
 	
 	cmp	al, 3
 	ja	@f
-	and	[esp + 40], byte 0xfe	; emulate func 0..3 as func 0
+	and	[esp + 56], byte 0xfe	; emulate func 0..3 as func 0
 	mov	eax, [apm_vf]
 	mov	[esp + 36], eax
 	shr	eax, 16
@@ -176,8 +175,8 @@ sys_apm:
 	mov	[esp + 32], ecx
 	mov	[esp + 36], eax
 	setc	al
-	and	[esp + 40], byte 0xfe
-	or	[esp + 40], al
+	and	[esp + 56], byte 0xfe
+	or	[esp + 56], al
 	ret
 ; -----------------------------------------
 
@@ -213,10 +212,10 @@ undefined_syscall:                      ; Undefined system call
 msg_apm:db	' APM x.x ', 0
 @@:	and	ax, 0xf0f
 	add	ax, '00'
-	mov	[msg_apm - 0x10000 + 5], ah
-	mov	[msg_apm - 0x10000 + 7], al
-	_setcursor 0, 3
 	mov	si, msg_apm - 0x10000
+	mov	[si + 5], ah
+	mov	[si + 7], al
+	_setcursor 0, 3
 	call	printplain
 	_setcursor d80x25_top_num,0
 	; ------------------
@@ -253,3 +252,22 @@ apm_end:
 .............
 .............
 
+##############[boot\shutdown.inc]##################
+
+Решение проблемы APM poweroff
+
+.............
+.............
+
+APM_PowerOff:
+        mov     ax, 5304h
+        xor     bx, bx
+        int     15h
+;!!!!!!!!!!!!!!!!!!!!!!!!
+mov ax,0x5300
+xor bx,bx
+int 0x15
+push ax
+
+.............
+.............
