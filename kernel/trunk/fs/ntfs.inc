@@ -284,6 +284,8 @@ ntfs_cur_offs   dd      ?       ; in sectors
 ntfs_cur_size   dd      ?       ; in sectors
 ntfs_cur_buf    dd      ?
 ntfs_cur_read   dd      ?       ; [output]
+ntfs_bCanContinue db    ?
+                rb      3
 
 ntfs_attrlist_buf       rb      0x400
 ntfs_bitmap_buf         rb      0x400
@@ -295,6 +297,7 @@ ntfs_attr_list          dd      ?
 ntfs_attr_size          dq      ?
 ntfs_cur_tail           dd      ?
 endg
+
 
 ntfs_read_attr:
 ; in: global variables
@@ -442,9 +445,19 @@ ntfs_read_attr:
 ; c) Check for required offset and length
         mov     ecx, [ntfs_attr_offs]
         jecxz   .noattr
+        push    [ntfs_cur_size]
+        push    [ntfs_cur_read]
         call    .doreadattr
+        pop     edx
+        pop     eax
         jc      @f
-        cmp     [ntfs_cur_size], 0
+        cmp     [ntfs_bCanContinue], 0
+        jz      @f
+        sub     edx, [ntfs_cur_read]
+        neg     edx
+        shr     edx, 9
+        sub     eax, edx
+        mov     [ntfs_cur_size], eax
         jnz     .not_in_cur
 @@:
         popad
@@ -613,6 +626,7 @@ ntfs_read_attr:
         jmp     .scanliststart
 
 .doreadattr:
+        mov     [ntfs_bCanContinue], 0
         cmp     byte [ecx+8], 0
         jnz     .nonresident
         mov     eax, [ecx+10h]  ; length
@@ -724,6 +738,8 @@ ntfs_read_attr:
         inc     [ntfs_cur_offs]
         loop    @b
         pop     ecx
+        xor     eax, eax
+        xor     edx, edx
         cmp     [ntfs_cur_size], 0
         jnz     .readloop
         add     esp, 10h
@@ -739,6 +755,7 @@ ntfs_read_attr:
         jmp     .errret
 .break:
         add     esp, 10h        ; CF=0
+        mov     [ntfs_bCanContinue], 1
         ret
 
 ntfs_read_file_record:
@@ -752,12 +769,12 @@ ntfs_read_file_record:
         shrd    eax, edx, 9
         shr     edx, 9
         jnz     .err
-        push	[ntfs_attr_iRecord]
-        push	[ntfs_attr_iBaseRecord]
-        push	[ntfs_attr_offs]
-        push	[ntfs_attr_list]
-        push	dword [ntfs_attr_size+4]
-        push	dword [ntfs_attr_size]
+        push    [ntfs_attr_iRecord]
+        push    [ntfs_attr_iBaseRecord]
+        push    [ntfs_attr_offs]
+        push    [ntfs_attr_list]
+        push    dword [ntfs_attr_size+4]
+        push    dword [ntfs_attr_size]
         push    [ntfs_cur_iRecord]
         push    [ntfs_cur_attr]
         push    [ntfs_cur_offs]
@@ -779,12 +796,12 @@ ntfs_read_file_record:
         pop     [ntfs_cur_offs]
         pop     [ntfs_cur_attr]
         pop     [ntfs_cur_iRecord]
-        pop	dword [ntfs_attr_size]
-        pop	dword [ntfs_attr_size+4]
-        pop	[ntfs_attr_list]
-        pop	[ntfs_attr_offs]
-        pop	[ntfs_attr_iBaseRecord]
-        pop	[ntfs_attr_iRecord]
+        pop     dword [ntfs_attr_size]
+        pop     dword [ntfs_attr_size+4]
+        pop     [ntfs_attr_list]
+        pop     [ntfs_attr_offs]
+        pop     [ntfs_attr_iBaseRecord]
+        pop     [ntfs_attr_iRecord]
         pop     edx ecx
         jc      .errret
         cmp     eax, [ntfs_data.frs_size]

@@ -719,12 +719,11 @@ first_app_found:
         call  kb_write
 
         ; wait until 8042 is ready
-;        xor ecx,ecx
-;      @@:
-;        in     al,64h
-;        and    al,00000010b
-;        loopnz @b
-        call  Wait8042BufferEmpty
+        xor ecx,ecx
+      @@:
+        in     al,64h
+        and    al,00000010b
+        loopnz @b
 
        ; mov   al, 0xED       ; svetodiody - only for testing!
        ; call  kb_write
@@ -735,10 +734,10 @@ first_app_found:
 
         mov   al, 0xF3       ; set repeat rate & delay
         call  kb_write
-        call  kb_read
+;        call  kb_read
         mov   al, 0 ; 30 250 ;00100010b ; 24 500  ;00100100b  ; 20 500
         call  kb_write
-        call  kb_read
+;        call  kb_read
      ;// mike.dld [
         call  set_lights
      ;// mike.dld ]
@@ -4114,15 +4113,15 @@ kb_write:
         push    ecx edx
 
         mov     dl,al
-        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
-      kw_loop1:
-        in      al,0x64
-        test    al,0x20
-        jz      kw_ok1
-        loop    kw_loop1
-        mov     ah,1
-        jmp     kw_exit
-      kw_ok1:
+;        mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
+;      kw_loop1:
+;        in      al,0x64
+;        test    al,0x20
+;        jz      kw_ok1
+;        loop    kw_loop1
+;        mov     ah,1
+;        jmp     kw_exit
+;      kw_ok1:
         in      al,0x60
         mov     ecx,0x1ffff ; last 0xffff, new value in view of fast CPU's
       kw_loop:
