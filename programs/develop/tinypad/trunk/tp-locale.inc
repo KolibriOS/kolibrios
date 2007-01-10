@@ -2,17 +2,17 @@
 sz htext,'TINYPAD ',APP_VERSION
 
 menubar_res main_menu,\
-  ru,'Файл'     ,mm.File    ,onshow.file   ,\
-  ru,'Правка'   ,mm.Edit    ,onshow.edit   ,\
-  ru,'Поиск'    ,mm.Search  ,onshow.search ,\
-  ru,'Запуск'   ,mm.Run     ,onshow.run    ,\
+  ru,'Файл'	,mm.File    ,onshow.file   ,\
+  ru,'Правка'	,mm.Edit    ,onshow.edit   ,\
+  ru,'Поиск'	,mm.Search  ,onshow.search ,\
+  ru,'Запуск'	,mm.Run     ,onshow.run    ,\
   ru,'Кодировка',mm.Encoding,onshow.recode ,\
-  ru,'Опции'    ,mm.Options ,onshow.options,\
+  ru,'Опции'	,mm.Options ,onshow.options,\
 \
   en,'File'    ,mm.File    ,onshow.file   ,\
   en,'Edit'    ,mm.Edit    ,onshow.edit   ,\
   en,'Search'  ,mm.Search  ,onshow.search ,\
-  en,'Run'     ,mm.Run     ,onshow.run    ,\
+  en,'Run'     ,mm.Run	   ,onshow.run	  ,\
   en,'Encoding',mm.Encoding,onshow.recode ,\
   en,'Options' ,mm.Options ,onshow.options
 
@@ -22,12 +22,16 @@ popup_res mm.File,\
   ru,'Сохранить'       ,'Ctrl+S'      ,Save  ,\
   ru,'Сохранить как...','Ctrl+Shift+S',SaveAs,\
   ru,'-'	       ,''	      ,      ,\
+  ru,'Закрыть'	       ,'Ctrl+F4'     ,Close ,\
+  ru,'-'	       ,''	      ,      ,\
   ru,'Выход'	       ,'Alt+X'       ,Exit  ,\
 \
-  en,'New'	 ,'Ctrl+N'      ,New   ,\
+  en,'New'	 ,'Ctrl+N'	,New   ,\
   en,'Open...'	 ,'Ctrl+O'	,Open  ,\
   en,'Save'	 ,'Ctrl+S'	,Save  ,\
   en,'Save as...','Ctrl+Shift+S',SaveAs,\
+  en,'-'	 ,''		,      ,\
+  en,'Close'	 ,'Ctrl+F4'	,Close ,\
   en,'-'	 ,''		,      ,\
   en,'Exit'	 ,'Alt+X'	,Exit
 
@@ -36,71 +40,71 @@ popup_res mm.Edit,\
   ru,'Копировать'  ,'Ctrl+C',Copy  ,\
   ru,'Вставить'    ,'Ctrl+V',Insert,\
   ru,'Удалить'	   ,''	    ,Delete,\
-  ru,'-'	   ,''	    ,      ,\
+  ru,'-'	   ,''	    ,	   ,\
   ru,'Выделить всё','Ctrl+A',SelAll,\
 \
-  en,'Cut'	 ,'Ctrl+X',Cut   ,\
+  en,'Cut'	 ,'Ctrl+X',Cut	 ,\
   en,'Copy'	 ,'Ctrl+C',Copy  ,\
   en,'Paste'	 ,'Ctrl+V',Insert,\
   en,'Delete'	 ,''	  ,Delete,\
-  en,'-'	 ,''	  ,      ,\
+  en,'-'	 ,''	  ,	 ,\
   en,'Select all','Ctrl+A',SelAll
 
 popup_res mm.Search,\
   ru,'Перейти...' ,'Ctrl+G',Position,\
-  ru,'-'	  ,''	   ,        ,\
+  ru,'-'	  ,''	   ,	    ,\
   ru,'Найти...'   ,'Ctrl+F',Find    ,\
   ru,'Найти далее','F3'    ,FindNext,\
   ru,'Заменить...','Ctrl+H',Replace ,\
 \
   en,'Position...','Ctrl+G',Position,\
-  en,'-'	  ,''	   ,        ,\
+  en,'-'	  ,''	   ,	    ,\
   en,'Find...'	  ,'Ctrl+F',Find    ,\
   en,'Find next'  ,'F3'    ,FindNext,\
   en,'Replace...' ,'Ctrl+H',Replace
 
 popup_res mm.Run,\
-  ru,'Запустить'	,'F9'	  ,Run     ,\
+  ru,'Запустить'	,'F9'	  ,Run	   ,\
   ru,'Компилировать'	,'Ctrl+F9',Compile ,\
-  ru,'-'		,''	  ,        ,\
+  ru,'-'		,''	  ,	   ,\
   ru,'Доска отладки'	,''	  ,DbgBoard,\
   ru,'Системные функции',''	  ,SysFuncs,\
 \
-  en,'Run'		,'F9'	  ,Run     ,\
+  en,'Run'		,'F9'	  ,Run	   ,\
   en,'Compile'		,'Ctrl+F9',Compile ,\
-  en,'-'		,''	  ,        ,\
+  en,'-'		,''	  ,	   ,\
   en,'Debug board'	,''	  ,DbgBoard,\
   en,'System functions' ,''	  ,SysFuncs
 
 popup_res mm.Encoding,\
-  @!,'CP866  -> CP1251','',CP866.CP1251,\
-  @!,'CP1251 -> CP866' ,'',CP1251.CP866,\
-  @!,'-'	       ,'',            ,\
-  @!,'CP866  -> KOI8-R','',CP866.KOI8R ,\
-  @!,'KOI8-R -> CP866' ,'',KOI8R.CP866 ,\
-  @!,'-'	       ,'',            ,\
-  @!,'CP1251 -> KOI8-R','',CP1251.KOI8R,\
-  @!,'KOI8-R -> CP1251','',KOI8R.CP1251
+  @!,<'CP866  ',0x1A,' CP1251'>,'',CP866.CP1251,\
+  @!,<'CP1251 ',0x1A,' CP866' >,'',CP1251.CP866,\
+  @!,<'-'		      >,'',	       ,\
+  @!,<'CP866  ',0x1A,' KOI8-R'>,'',CP866.KOI8R ,\
+  @!,<'KOI8-R ',0x1A,' CP866' >,'',KOI8R.CP866 ,\
+  @!,<'-'		      >,'',	       ,\
+  @!,<'CP1251 ',0x1A,' KOI8-R'>,'',CP1251.KOI8R,\
+  @!,<'KOI8-R ',0x1A,' CP1251'>,'',KOI8R.CP1251
 
 popup_res mm.Options,\
   ru,'Внешний вид...'	     ,'',Appearance  ,\
-  ru,'-'		     ,'',            ,\
+  ru,'-'		     ,'',	     ,\
   ru,'Безопасное выделение'  ,'',SecureSel   ,\
   ru,'Автоматические скобки' ,'',AutoBrackets,\
   ru,'Автоматический отступ' ,'',AutoIndents ,\
   ru,'Умная табуляция'	     ,'',SmartTabs   ,\
   ru,'Оптимальное сохранение','',OptimalFill ,\
-  ru,'-'		     ,'',            ,\
+  ru,'-'		     ,'',	     ,\
   ru,'Номера строк'	     ,'',LineNumbers ,\
 \
   en,'Appearance...'	     ,'',Appearance  ,\
-  en,'-'		     ,'',            ,\
+  en,'-'		     ,'',	     ,\
   en,'Secure selection'      ,'',SecureSel   ,\
   en,'Automatic brackets'    ,'',AutoBrackets,\
   en,'Automatic indents'     ,'',AutoIndents ,\
   en,'Smart tabulation'      ,'',SmartTabs   ,\
   en,'Optimal fill on saving','',OptimalFill ,\
-  en,'-'		     ,'',            ,\
+  en,'-'		     ,'',	     ,\
   en,'Line numbers'	     ,'',LineNumbers
 
 lsz s_modified,\

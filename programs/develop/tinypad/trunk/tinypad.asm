@@ -3,7 +3,7 @@
 ; compiler:          flat assembler 1.67.15
 ; memory to compile: 2.0/7.0 MBytes (without/with size optimizations)
 ; version:           4.0.4 pre
-; last update:       2007-01-03 (Jan 3, 2007)
+; last update:       2007-01-07 (Jan 7, 2007)
 ; minimal kernel:    revision #138 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
@@ -15,15 +15,17 @@
 ;   - add vertical selection, undo, goto position, overwrite mode
 ;   - improve window drawing with small dimensions
 ;   - other bug-fixes and speed/size optimizations
+;   - save settings to ini file, not to executable
 ;
 ; TODO (FOR 4.0.4, PLANNED FOR 2007-01-21):
-;   - finish tabbed interface [critical]
+;   - finish tabbed interface (some bug with tab switching) [critical]
 ;   - add memory reallocation to keys handler [critical]
 ;   - rework save_file (memory manager) [critical]
-;   - reduce flickering (changes checker) [average]
-;   - incorrect saved/modified lines flags on copy/paste [normal]
-;   - case-insensitive file extensions comparison (.asm/.inc) [normal]
-;   - prompt to save file before closing/opening [low]
+;   - fix scrollbars dragging coordinates calculation [critical]
+;   - fix parameters parsing (incl. DOCPAK) [average]
+;   - reduce flickering (introduce changes checker) [normal]
+;   - fix incorrect saved/modified lines flags on copy/paste [normal]
+;   - add prompt to save file before closing/opening [low]
 ;
 ; HISTORY:
 ; 4.0.4 pre (mike.dld)
@@ -31,12 +33,17 @@
 ;     - statusbar contained hint after dialog operation cancelled
 ;     - small drawing fix for gutter and line saved/modified markers
 ;   changes:
+;     - editor and other modifications to ease parts placement changing
 ;     - modified/saved colors now match those in MSVS
 ;     - function 70 for *all* file operations (including diamond's fixes)
 ;     - use memory manager instead of statically allocated region
+;     - case-insensitive filenames input, to be able to open/save files with
+;       non-latin chars in name (russian etc.)
+;     - overall code cleanup
 ;   new features:
 ;     - recode tables between CP866, CP1251 and KOI8-R (suggested by Victor)
 ;     - tabbed interface, ability to open several files in one app instance
+;       (thanks IRC guys for ideas and testing)
 ; 4.0.3 (mike.dld)
 ;   bug-fixes:
 ;     - 1-char selection if pressing <BS> out of real line length
@@ -46,6 +53,7 @@
 ;     - statusbar and textboxes drawing fixes (wrong colors)
 ;     - perform no redraw while pressing Shift, Ctrl, Alt keys
 ;     - data length from DOCPAK in string representation (fixed by diamond)
+;     - compare file extension case-insensitively (fixed by diamond)
 ;   changes:
 ;     - function 70 instead of 58 for files loading/saving
 ;     - clientarea-relative drawing (less code)
@@ -156,23 +164,17 @@ APP_VERSION equ '4.0.4 pre'
 
 ;include 'debug.inc'
 
-ASEPC	  = '-' 	  ; separator character (char)
-ATOPH	  = POP_IHEIGHT+2 ; menu bar height (pixels)
-SCRLW	  = 16		  ; scrollbar widht/height (pixels)
-ATABW	  = 8		  ; tab width (chars)
-LINEH	  = 10		  ; line height (pixels)
-PATHL	  = 256 	  ; maximum path length (chars) !!! don't change !!!
-AMINS	  = 8		  ; minimal scroll thumb size (pixels)
-LCHGW	  = 3		  ; changed/saved marker width
+ASEPC = '-'	      ; separator character (char)
+ATOPH = POP_IHEIGHT+2 ; menu bar height (pixels)
+SCRLW = 16	      ; scrollbar widht/height (pixels)
+ATABW = 8	      ; tab width (chars)
+LINEH = 10	      ; line height (pixels)
+PATHL = 256	      ; maximum path length (chars) !!! don't change !!!
+AMINS = 8	      ; minimal scroll thumb size (pixels)
+LCHGW = 3	      ; changed/saved marker width
 
-STATH	  = 16		  ; status bar height
-TBARH	  = 18		  ; tab bar height
-
-MEV_LDOWN = 1
-MEV_LUP   = 2
-MEV_RDOWN = 3
-MEV_RUP   = 4
-MEV_MOVE  = 5
+STATH = 16	      ; status bar height
+TBARH = 18	      ; tab bar height
 
 ;-----------------------------------------------------------------------------
 section @OPTIONS ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -180,13 +182,13 @@ section @OPTIONS ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 label color_tbl dword
   RGB(	0,  0,	0) ; RGB(  0,  0,  0) ; RGB(  0,  0,  0) ; text
-  RGB(	0,144,	0) ; RGB(  0,144,  0) ; RGB(  0,160,  0) ; numbers
-  RGB(176,  0,	0) ; RGB(160,  0,  0) ; RGB(  0,128,255) ; strings
-  RGB(128,128,128) ; RGB(144,144,144) ; RGB(160,160,160) ; comments
-  RGB( 48, 48,240) ; RGB( 48, 48,240) ; RGB(255,  0,  0) ; symbols
-  RGB(255,255,255) ; RGB(224,224,224) ; RGB(255,255,255) ; background
+  RGB(	0,144,	0) ; RGB(  0,160,  0) ; RGB(  0,144,  0) ; numbers
+  RGB(176,  0,	0) ; RGB(  0,128,255) ; RGB(160,  0,  0) ; strings
+  RGB(128,128,128) ; RGB(160,160,160) ; RGB(144,144,144) ; comments
+  RGB( 48, 48,240) ; RGB(255,  0,  0) ; RGB( 48, 48,240) ; symbols
+  RGB(255,255,255) ; RGB(255,255,255) ; RGB(224,224,224) ; background
   RGB(255,255,255) ; RGB(255,255,255) ; RGB(255,255,255) ; selection text
-  RGB( 10, 36,106) ; RGB(  0,  0,128) ; RGB(  0, 64,128) ; selection background
+  RGB( 10, 36,106) ; RGB(  0, 64,128) ; RGB(  0,  0,128) ; selection background
   RGB(255,238, 98) ; modified line marker
   RGB(108,226,108) ; saved line marker
 
@@ -195,7 +197,7 @@ ins_mode db 1
 options  db OPTS_AUTOINDENT+OPTS_OPTIMSAVE+OPTS_SMARTTAB
 
 mainwnd_pos:
-  .x dd 100
+  .x dd 250
   .y dd 75
   .w dd 6*80+6+SCRLW+5
   .h dd 402
@@ -235,7 +237,7 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 	mov	eax,65536
 	call	mem.Alloc
-	mov	[cur_tab.Editor.Data],eax
+	mov	[cur_editor.Lines],eax
 
 	inc	[do_not_draw]
 
@@ -364,7 +366,7 @@ func start_fasm ;/////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; BL = run after compile
 ;-----------------------------------------------------------------------------
-	cmp	[cur_tab.Editor.AsmMode],0 ;! [asm_mode],0
+	cmp	[cur_editor.AsmMode],0 ;! [asm_mode],0
 	jne	@f
 	ret
     @@: mov	esi,f_info.path ; s_fname
@@ -560,7 +562,7 @@ key0 db \
   0x00,0x39,0x00,0x00,0x00,0x00,0x00,0x00
   times 12*16 db 0x00
 
-accel_table dd			    \
+accel_table_main dd		    \
   0x0000000E,key.bkspace	   ,\ ; BackSpace
   0x0000000F,key.tab		   ,\ ; Tab
   0x0000001C,key.return 	   ,\ ; Return
@@ -599,6 +601,7 @@ accel_table dd			    \
   0x0002002E,key.ctrl_c 	   ,\ ; Ctrl+C
   0x0002002F,key.ctrl_v 	   ,\ ; Ctrl+V
   0x00020031,key.ctrl_n 	   ,\ ; Ctrl+N
+  0x0002003E,key.ctrl_f4	   ,\ ; Ctrl+F4
   0x00020043,key.ctrl_f9	   ,\ ; Ctrl+F9
   0x00020147,key.ctrl_home	   ,\ ; Ctrl+Home
 \;0x00020148,key.ctrl_up           ,\ ; Ctrl+Up
@@ -641,10 +644,12 @@ accel_table_textbox dd		    \
 
 accel_table2 dd 	   \
   1,btn.close_main_window ,\
-  'UP',btn.scroll_up	  ,\
-  'DN',btn.scroll_down	  ,\
-  'LT',btn.scroll_left	  ,\
-  'RT',btn.scroll_right   ,\
+  'VSL',btn.vscroll_up	 ,\
+  'VSG',btn.vscroll_down ,\
+  'HSL',btn.hscroll_up	 ,\
+  'HSG',btn.hscroll_down ,\
+  'TBL',btn.tabctl_right ,\
+  'TBG',btn.tabctl_left  ,\
   0
 
 accel_table2_botdlg dd	   \
@@ -725,7 +730,9 @@ file_info FILEINFO
 tab_bar      TABCTL
 virtual at tab_bar.Current
   cur_tab      TABITEM
-  ;cur_tab_addr dd ?
+end virtual
+virtual at tab_bar.Current.Editor
+  cur_editor   EDITOR
 end virtual
 
 lines.scr     dd ?    ; number of lines on the screen

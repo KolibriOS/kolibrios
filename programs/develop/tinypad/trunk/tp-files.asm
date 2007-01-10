@@ -1,6 +1,7 @@
 ;-----------------------------------------------------------------------------
 func save_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
+	ret	; DISALLOW FOR NOW
 
 	mov	esi,tb_opensave.text
 	mov	edi,f_info.path
@@ -10,7 +11,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 	rep	movsb
 	mov	byte[edi],0
 
-	mov	esi,[cur_tab.Editor.Data] ;! AREA_EDIT     ; 0x70000 = 448 Kbytes (maximum)
+	mov	esi,[cur_editor.Lines] ;! AREA_EDIT     ; 0x70000 = 448 Kbytes (maximum)
 	mov	edi,0 ;!!! AREA_TEMP
 
   .new_string:
@@ -28,16 +29,6 @@ func save_file ;//////////////////////////////////////////////////////////////
 	jmp	.exit.2
 
   .systree_save:
-;!      mov     eax,[filelen]
-;       mov     [f_info+8],edi ;! eax
-;       mov     [f_info+0],1
-;        mov     esi,s_fname
-;        mov     edi,f_info.path
-;        mov     ecx,PATHL
-;        cld
-;        rep     movsb
-	;mcall   58,f_info
-
 	mov	[f_info70+0],2
 	mov	[f_info70+12],edi
 	mov	[f_info70+16],0 ;!!! AREA_TEMP
@@ -51,7 +42,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 	jnz	.exit.2
 
   .exit:
-	mov	[cur_tab.Editor.Modified],0 ;! [modified],0
+	mov	[cur_editor.Modified],0 ;! [modified],0
 	clc
 	ret
 
@@ -197,7 +188,6 @@ func load_file ;//////////////////////////////////////////////////////////////
 	push	ecx esi edi
 	mov	esi,tb_opensave.text
 	lea	edi,[ebp+TABITEM.Editor.FilePath]
-	;mov     ecx,[f_info.length]
 	movzx	ecx,[tb_opensave.length]
 	rep	movsb
 	mov	byte[edi],0
@@ -225,14 +215,15 @@ func load_from_memory ;///////////////////////////////////////////////////////
 ; EBP = EDITOR*
 ;-----------------------------------------------------------------------------
 	call	get_lines_in_file
-	mov	[ebp+EDITOR.Lines],eax
+	inc	eax
+	mov	[ebp+EDITOR.Lines.Count],eax
 	imul	ebx,eax,14
 	add	ebx,ecx
-	mov	eax,[ebp+EDITOR.Data]
+	mov	eax,[ebp+EDITOR.Lines]
 	call	mem.ReAlloc
-	mov	[ebp+EDITOR.Data],eax
+	mov	[ebp+EDITOR.Lines],eax
 
-	mov	[ebp+EDITOR.Columns],0
+	mov	[ebp+EDITOR.Columns.Count],0
 	mov	edi,eax
 	mov	edx,ecx
 
@@ -266,9 +257,9 @@ func load_from_memory ;///////////////////////////////////////////////////////
 	sub	eax,10
 	jnz	@f
 	inc	eax
-    @@: cmp	eax,[ebp+EDITOR.Columns] ;! eax,[columns]
+    @@: cmp	eax,[ebp+EDITOR.Columns.Count] ;! eax,[columns]
 	jbe	@f
-	mov	[ebp+EDITOR.Columns],eax ;! [columns],eax
+	mov	[ebp+EDITOR.Columns.Count],eax ;! [columns],eax
     @@: mov	[ebp+EDITOR.Modified],0 ;! [modified],0
 	ret
 
@@ -282,11 +273,11 @@ func load_from_memory ;///////////////////////////////////////////////////////
 	lea	eax,[edi-4]
 	sub	eax,ebx
 	mov	[ebx],eax
-	;inc     [cur_tab.Editor.Lines] ;! [lines]
+;       inc     [cur_editor.Lines] ;! [lines]
 	add	eax,-10
-	cmp	eax,[ebp+EDITOR.Columns] ;! eax,[columns]
+	cmp	eax,[ebp+EDITOR.Columns.Count] ;! eax,[columns]
 	jbe	.next_line
-	mov	[ebp+EDITOR.Columns],eax ;! [columns],eax
+	mov	[ebp+EDITOR.Columns.Count],eax ;! [columns],eax
 	jmp	.next_line
 
   .TB:	lea	eax,[edi-4]

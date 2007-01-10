@@ -48,17 +48,17 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 
 	mov	[top_ofs],ATOPH;+1
 
-	mov	eax,[cur_tab.Editor.Bounds.Right]
-	sub	eax,[cur_tab.Editor.Bounds.Left]
-	sub	eax,[cur_tab.Editor.Gutter.Width]
+	mov	eax,[cur_editor.Bounds.Right]
+	sub	eax,[cur_editor.Bounds.Left]
+	sub	eax,[cur_editor.Gutter.Width]
 	sub	eax,SCRLW+LCHGW+4
 	cdq
 	mov	ebx,6
 	div	ebx
 	mov	[columns.scr],eax
 
-	mov	eax,[cur_tab.Editor.Bounds.Bottom]
-	sub	eax,[cur_tab.Editor.Bounds.Top]
+	mov	eax,[cur_editor.Bounds.Bottom]
+	sub	eax,[cur_editor.Bounds.Top]
 	sub	eax,SCRLW+3
 	cdq
 	mov	ebx,LINEH
@@ -250,10 +250,10 @@ macro unused {
 	cmp	eax,ebx
 	jle	@f
 	xchg	eax,ebx
-    @@: cmp	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
+    @@: cmp	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
 	jge	@f
-	mov	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
-    @@: mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
+	mov	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
+    @@: mov	ecx,[cur_editor.TopLeft.Y] ;! ecx,[top_line]
 	add	ecx,[lines.scr]
 	cmp	ebx,ecx
 	jl	@f
@@ -273,11 +273,11 @@ macro unused {
 
 	mov	ebx,[top_ofs]
 	add	ebx,[left_ofs-2]
-	sub	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
+	sub	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
 	imul	eax,LINEH
 	add	ebx,eax
 
-	imul	ebp,[cur_tab.Editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
+	imul	ebp,[cur_editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
 	or	[draw_blines],-1
 
 	jmp	draw_file.next_line
@@ -302,7 +302,7 @@ macro unused {
 	mov	ebx,[top_ofs]
 	add	ebx,[left_ofs-2]
 
-	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
+	mov	ecx,[cur_editor.TopLeft.Y] ;! ecx,[top_line]
 	push	ecx
 	call	get_line_offset
 
@@ -313,9 +313,9 @@ macro unused {
 	jle	.exit
 	add	esp,-4
 
-	imul	ebp,[cur_tab.Editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
+	imul	ebp,[cur_editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
 	mov	eax,[lines.scr]
-	sub	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+	sub	eax,[cur_editor.Lines] ;! eax,[lines]
 	mov	[draw_blines],eax
 
   .next_line:
@@ -346,7 +346,7 @@ macro unused {
 	cmp	eax,[sel.end.y]
 	je	.lp5
   .lp2: mov	eax,[sel.begin.x]
-	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	sub	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	jle	.lp6.2
 	cmp	eax,[columns.scr]
 	jge	.lp6
@@ -369,7 +369,7 @@ macro unused {
 	cmp	eax,[sel.end.y]
 	je	.lp5
   .lp4: mov	eax,[sel.end.x]
-	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	sub	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	jle	.lp6
 	cmp	eax,[columns.scr]
 	jg	.lp6.2
@@ -388,7 +388,7 @@ macro unused {
 	mov	bx,ax
 	mov	[in_sel],3
 	jmp	.lp6
-  .lp5: mov	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+  .lp5: mov	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	cmp	eax,[sel.begin.x]
 	jge	.lp4
 	add	eax,[columns.scr]
@@ -397,7 +397,7 @@ macro unused {
 	mov	eax,[sel.begin.x]
 	cmp	eax,[sel.end.x]
 	je	.lp6
-	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	sub	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	imul	eax,6
 	pushad
 	mov	ebx,[sel.end.x]
@@ -471,13 +471,13 @@ macro unused {
 
 	push	esi ebx
 	mov	eax,ebx
-	sub	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
+	sub	ebx,[cur_editor.TopLeft.X] ;! ebx,[left_col]
 	cmp	ebx,[columns.scr]
 	jge	.skip_t
 	add	ebx,esi
 	jle	.skip_t
 	mov	ebx,[esp+8+4*2] ;// 4*2=esi+ebx
-	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	sub	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	jge	.qqq
 	sub	edx,eax
 	add	esi,eax
@@ -494,7 +494,7 @@ macro unused {
 
 	mov	eax,[esp]   ; ebx
 	add	eax,[esp+4] ; esi
-	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	sub	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	sub	eax,[columns.scr]
 	jle	.qweqwe
 	sub	esi,eax
@@ -518,7 +518,7 @@ macro unused {
 	mov	esi,[sel.begin.x]
 	sub	esi,[esp]
 	pushad
-	mov	ecx,[cur_tab.Editor.TopLeft.X] ;! ecx,[left_col]
+	mov	ecx,[cur_editor.TopLeft.X] ;! ecx,[left_col]
 	sub	ecx,[esp+4*8]
 	jle	@f
 	sub	esi,ecx
@@ -548,7 +548,7 @@ macro unused {
 	sub	eax,[esp]
 	push	ebx
 	mov	ebx,[esp+4]
-	sub	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
+	sub	ebx,[cur_editor.TopLeft.X] ;! ebx,[left_col]
 	jge	.ya2.1
 	add	eax,ebx
   .ya2.1:
@@ -580,7 +580,7 @@ macro unused {
 	sub	esi,[esp]
 	push	eax
 	mov	eax,[esp+4]
-	sub	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	sub	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	jge	.nt3.1
 	add	esi,eax
   .nt3.1:
@@ -661,7 +661,7 @@ macro unused {
 	shl	ebx,16
 	add	ebx,[top_ofs]
 	mov	edi,[sc.work_text]
-	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
+	mov	ecx,[cur_editor.TopLeft.Y] ;! ecx,[top_line]
 	inc	ecx
 	mov	edx,p_info+100
     @@: pushad
@@ -679,10 +679,10 @@ macro unused {
 	popad
 	add	ebx,LINEH
 	inc	ecx
-	cmp	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
+	cmp	ecx,[cur_editor.Lines] ;! ecx,[lines]
 	jg	@f
 	mov	esi,ecx
-	sub	esi,[cur_tab.Editor.TopLeft.Y] ;! esi,[top_line]
+	sub	esi,[cur_editor.TopLeft.Y] ;! esi,[top_line]
 	cmp	esi,[lines.scr]
 	jbe	@b
     @@: add	esp,4*8*2
@@ -707,8 +707,8 @@ macro unused {
 	add	esp,4
 	cmp	[bot_mode],0
 	jne	@f
-	mov	ebx,[cur_tab.Editor.Caret.X] ;! ebx,[pos.x]
-	sub	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
+	mov	ebx,[cur_editor.Caret.X] ;! ebx,[pos.x]
+	sub	ebx,[cur_editor.TopLeft.X] ;! ebx,[left_col]
 	js	@f
 	cmp	ebx,[columns.scr]
 	ja	@f
@@ -718,8 +718,8 @@ macro unused {
 	push	bx
 	shl	ebx,16
 	pop	bx
-	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
-	sub	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
+	mov	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
+	sub	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
 	js	@f
 	cmp	eax,[lines.scr]
 	jge	@f
@@ -805,15 +805,15 @@ macro unused {
 ;        sub     ebx,1*65536-2
 
 	push	ebx
-	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+	mov	eax,[cur_editor.Lines] ;! eax,[lines]
 	mov	ebx,[lines.scr]
-	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
+	mov	ecx,[cur_editor.TopLeft.Y] ;! ecx,[top_line]
 	mov	edx,[bot_ofs]
 	sub	edx,[top_ofs]
 	add	edx,-SCRLW*3+1
 	call	get_scroll_vars
-	mov	[cur_tab.Editor.VScroll.Top],eax ;! [vscrl_top],eax
-	mov	[cur_tab.Editor.VScroll.Size],ebx ;! [vscrl_size],ebx
+	mov	[cur_editor.VScroll.Top],eax ;! [vscrl_top],eax
+	mov	[cur_editor.VScroll.Size],ebx ;! [vscrl_size],ebx
 	pop	ebx
 
 	mov	ecx,eax
@@ -829,7 +829,7 @@ macro unused {
 ;        rol     ecx,16
 ;        movsx   eax,cx
 ;        sar     ecx,16
-	push	ebx ecx SCRLW [cur_tab.Editor.VScroll.Size] ;! ebx ecx SCRLW [vscrl_size]
+	push	ebx ecx SCRLW [cur_editor.VScroll.Size] ;! ebx ecx SCRLW [vscrl_size]
 	dec	dword[esp]
 	call	draw_3d_panel
 	popad
@@ -838,7 +838,7 @@ macro unused {
 	inc	ebx
 
 	mov	ecx,[top_ofs-2]
-	mov	cx,word[cur_tab.Editor.VScroll.Top] ;! cx,word[vscrl_top]
+	mov	cx,word[cur_editor.VScroll.Top] ;! cx,word[vscrl_top]
 	add	ecx,(SCRLW-1)*65536
 	mov	edx,[sc.work];[color_tbl+4*5]
 	or	cx,cx
@@ -846,8 +846,8 @@ macro unused {
 	mcall	13
     @@:
 	mov	ecx,[top_ofs]
-	add	ecx,[cur_tab.Editor.VScroll.Top] ;! ecx,[vscrl_top]
-	add	ecx,[cur_tab.Editor.VScroll.Size] ;! ecx,[vscrl_size]
+	add	ecx,[cur_editor.VScroll.Top] ;! ecx,[vscrl_top]
+	add	ecx,[cur_editor.VScroll.Size] ;! ecx,[vscrl_size]
 	add	ecx,SCRLW-1
 	mov	di,cx
 	shl	ecx,16
@@ -934,20 +934,20 @@ macro unused {
 ;       inc     ecx
 
 	push	ecx
-	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
+	mov	eax,[cur_editor.Columns] ;! eax,[columns]
 	mov	ebx,[columns.scr]
-	mov	ecx,[cur_tab.Editor.TopLeft.X] ;! ecx,[left_col]
+	mov	ecx,[cur_editor.TopLeft.X] ;! ecx,[left_col]
 	mov	edx,[p_info.client_box.width]
 	add	edx,-(SCRLW*3)
 	call	get_scroll_vars
-	mov	[cur_tab.Editor.HScroll.Top],eax ;! [hscrl_top],eax
-	mov	[cur_tab.Editor.HScroll.Size],ebx ;! [hscrl_size],ebx
+	mov	[cur_editor.HScroll.Top],eax ;! [hscrl_top],eax
+	mov	[cur_editor.HScroll.Size],ebx ;! [hscrl_size],ebx
 	pop	ecx
 
 	mov	ebx,eax
 	add	ebx,1+SCRLW
 	shl	ebx,16
-	mov	bx,word[cur_tab.Editor.HScroll.Size] ;! bx,word[hscrl_size]
+	mov	bx,word[cur_editor.HScroll.Size] ;! bx,word[hscrl_size]
 
 ;        mcall   13,,,[sc.work_button]
 ;!!!!!!!!!!!!!!!!!!
@@ -963,11 +963,11 @@ macro unused {
 ;!!!!!!!!!!!!!!!!!!
 
 	mov	ebx,(1+SCRLW)*65536
-	mov	bx,word[cur_tab.Editor.HScroll.Top] ;! bx,word[hscrl_top]
+	mov	bx,word[cur_editor.HScroll.Top] ;! bx,word[hscrl_top]
 	mcall	13,,,[sc.work];[color_tbl+4*5]
 	mov	ebx,1+SCRLW
-	add	ebx,[cur_tab.Editor.HScroll.Top] ;! ebx,[hscrl_top]
-	add	ebx,[cur_tab.Editor.HScroll.Size] ;! ebx,[hscrl_size]
+	add	ebx,[cur_editor.HScroll.Top] ;! ebx,[hscrl_top]
+	add	ebx,[cur_editor.HScroll.Size] ;! ebx,[hscrl_size]
 	mov	di,bx
 	shl	ebx,16
 	mov	bx,word[p_info.client_box.width]
@@ -1011,7 +1011,7 @@ func get_next_part ;//////////////////////////////////////////////////////////
 ;  EDX = string
 ;  ESI = length
 ;-----------------------------------------------------------------------------
-	cmp	[cur_tab.Editor.AsmMode],0 ;! [asm_mode],0
+	cmp	[cur_editor.AsmMode],0 ;! [asm_mode],0
 	je	.plain.text
 	xor	ebx,ebx
 	mov	edx,ecx
@@ -1159,7 +1159,7 @@ func draw_statusbar ;///// WRITE POSITION ////////////////////////////////////
 	and	ecx,0x0000FFFF
 	push	ecx
 
-	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
 	inc	eax
 	mov	ecx,10
 	mov	edi,p_info+0x100;htext2.pos1
@@ -1167,7 +1167,7 @@ func draw_statusbar ;///// WRITE POSITION ////////////////////////////////////
 	call	uint2str
 	mov	al,','
 	stosb
-	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
+	mov	eax,[cur_editor.Caret.X] ;! eax,[pos.x]
 	inc	eax
 	call	uint2str
 
@@ -1182,7 +1182,7 @@ func draw_statusbar ;///// WRITE POSITION ////////////////////////////////////
 	sub	ebx,edi
 	mcall	4,,[sc.work_text],p_info+0x100
 
-	cmp	[cur_tab.Editor.Modified],0 ;! [modified],0
+	cmp	[cur_editor.Modified],0 ;! [modified],0
 	je	@f
 	and	ebx,0x0000FFFF
 ;       add     ebx,[left_ofs-2]
@@ -1233,4 +1233,88 @@ func draw_framerect ; ebx,ecx,edx
 
 	pop	ecx ebx
 	ret
+endf
+
+func calc_middle
+	shr	eax,1
+	shr	ebx,1
+	and	eax,0x007F7F7F
+	and	ebx,0x007F7F7F
+	add	eax,ebx
+	ret
+endf
+
+func calc_3d_colors
+	pushad
+	m2m	[cl_3d_normal],[sc.work]
+	m2m	[cl_3d_inset],[sc.work_graph]
+	push	[cl_3d_normal]
+	add	byte[esp],48
+	jnc	@f
+	mov	byte[esp],255
+    @@: add	byte[esp+1],48
+	jnc	@f
+	mov	byte[esp+1],255
+    @@: add	byte[esp+2],48
+	jnc	@f
+	mov	byte[esp+2],255
+    @@: pop	[cl_3d_outset]
+	mov	eax,[cl_3d_inset]
+	mov	ebx,[cl_3d_outset]
+	call	calc_middle
+	mov	[cl_3d_pushed],eax
+	mov	eax,[cl_3d_normal]
+	mov	ebx,[sc.work_text]
+	call	calc_middle
+	mov	[cl_3d_grayed],eax
+	popad
+	ret
+endf
+
+func draw_3d_panel ; x,y,w,h
+	push	eax ebx ecx edx
+	cmp	dword[esp+16+8],4
+	jl	.exit
+	cmp	dword[esp+16+4],4
+	jl	.exit
+	mov	ebx,[esp+16+16-2]
+	mov	bx,[esp+16+8]
+	inc	ebx
+	mov	ecx,[esp+16+12-2]
+	mov	cx,[esp+16+4]
+	inc	ecx
+	mcall	13,,,[cl_3d_normal]
+	dec	ebx
+	add	bx,[esp+16+16]
+	mov	cx,[esp+16+12]
+	mcall	38,,,[cl_3d_inset]
+	add	ecx,[esp+16+4-2]
+	add	cx,[esp+16+4]
+	mcall
+	mov	bx,[esp+16+16]
+	mov	ecx,[esp+16+12-2]
+	mov	cx,[esp+16+4]
+	add	cx,[esp+16+12]
+	mcall
+	add	ebx,[esp+16+8-2]
+	add	bx,[esp+16+8]
+	mcall
+	mov	ebx,[esp+16+16-2]
+	mov	bx,[esp+16+8]
+	add	bx,[esp+16+16]
+	add	ebx,1*65536-1
+	mov	ecx,[esp+16+12-2]
+	mov	cx,[esp+16+12]
+	add	ecx,0x00010001
+	mcall	,,,[cl_3d_outset]
+	mov	bx,[esp+16+16]
+	inc	ebx
+	mov	ecx,[esp+16+12-2]
+	mov	cx,[esp+16+4]
+	add	cx,[esp+16+12]
+	add	ecx,2*65536-1
+	mcall
+  .exit:
+	pop	edx ecx ebx eax
+	ret	4*4
 endf

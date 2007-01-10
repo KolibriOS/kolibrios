@@ -2,88 +2,6 @@
 POP_IHEIGHT = 16
 ;POP_HEIGHT  = popup_text.cnt_item*POP_IHEIGHT+popup_text.cnt_sep*4+4
 
-func calc_middle
-	shr	eax,1
-	shr	ebx,1
-	and	eax,0x007F7F7F
-	and	ebx,0x007F7F7F
-	add	eax,ebx
-	ret
-endf
-
-func calc_3d_colors
-	pushad
-	m2m	[cl_3d_normal],[sc.work]
-	m2m	[cl_3d_inset],[sc.work_graph]
-	push	[cl_3d_normal]
-	add	byte[esp],48
-	jnc	@f
-	mov	byte[esp],255
-    @@: add	byte[esp+1],48
-	jnc	@f
-	mov	byte[esp+1],255
-    @@: add	byte[esp+2],48
-	jnc	@f
-	mov	byte[esp+2],255
-    @@: pop	[cl_3d_outset]
-	mov	eax,[cl_3d_inset]
-	mov	ebx,[cl_3d_outset]
-	call	calc_middle
-	mov	[cl_3d_pushed],eax
-	mov	eax,[cl_3d_normal]
-	mov	ebx,[sc.work_text]
-	call	calc_middle
-	mov	[cl_3d_grayed],eax
-	popad
-	ret
-endf
-
-func draw_3d_panel ; x,y,w,h
-	cmp	dword[esp+8],4
-	jl	.exit
-	cmp	dword[esp+4],4
-	jl	.exit
-	mov	ebx,[esp+16-2]
-	mov	bx,[esp+8]
-	inc	ebx
-	mov	ecx,[esp+12-2]
-	mov	cx,[esp+4]
-	inc	ecx
-	mcall	13,,,[cl_3d_normal];0x00EEEEEE;[sc.work]
-	dec	ebx
-	add	bx,[esp+16]
-	mov	cx,[esp+12]
-	mcall	38,,,[cl_3d_inset];0x006382BF;[sc.work_text]
-	add	ecx,[esp+4-2]
-	add	cx,[esp+4]
-	mcall
-	mov	bx,[esp+16]
-	mov	ecx,[esp+12-2]
-	mov	cx,[esp+4]
-	add	cx,[esp+12]
-	mcall
-	add	ebx,[esp+8-2]
-	add	bx,[esp+8]
-	mcall
-	mov	ebx,[esp+16-2]
-	mov	bx,[esp+8]
-	add	bx,[esp+16]
-	add	ebx,1*65536-1
-	mov	ecx,[esp+12-2]
-	mov	cx,[esp+12]
-	add	ecx,0x00010001
-	mcall	,,,[cl_3d_outset]
-	mov	bx,[esp+16]
-	inc	ebx
-	mov	ecx,[esp+12-2]
-	mov	cx,[esp+4]
-	add	cx,[esp+12]
-	add	ecx,2*65536-1
-	mcall
-  .exit:
-	ret	4*4
-endf
-
 popup_thread_start:
 	mov	[popup_active],1
 	mov	[pi_cur],0
@@ -314,6 +232,79 @@ func draw_popup_wnd
 	mcall	12,2
 	ret
 endf
+
+func setup_main_menu_popup
+	mov	ebx,[p_info.box.left]
+	add	ebx,[p_info.client_box.left]
+    @@: dec	ecx
+	jz	@f
+	add	edx,8+1
+	movzx	esi,byte[edx-1]
+	add	edx,esi
+	jmp	@b
+    @@: movzx	ecx,word[edx+2]
+	add	ebx,ecx
+
+	mov	[eax+POPUP.x],bx
+	mov	ebx,[p_info.box.top]
+	add	ebx,[p_info.client_box.top]
+	add	ebx,ATOPH-1
+	mov	[eax+POPUP.y],bx
+	mov	[POPUP_STACK],eax
+	ret
+endf
+
+onshow:
+
+  .file:
+	or	byte[mm.File+3],0x01
+	cmp	[f_info.length],0
+	jne	@f
+	and	byte[mm.File+3],0xFE
+    @@: ret
+
+  .edit:
+	or	byte[mm.Edit+2],0x01
+	cmp	[copy_size],0
+	jne	@f
+	and	byte[mm.Edit+2],0xFE
+    @@: or	dword[mm.Edit+0],0x01000101
+	cmp	[sel.selected],0
+	jne	@f
+	and	dword[mm.Edit+0],0xFEFFFEFE
+    @@: ret
+
+  .search:
+	mov	byte[mm.Search+0],0
+	ret
+  .run:
+	ret
+  .recode:
+	ret
+  .options:
+	mov	word[mm.Options+0],0
+	mov	byte[mm.Options+5],0
+	or	byte[mm.Options+2],0x02
+	test	[options],OPTS_SECURESEL
+	jnz	@f
+	and	byte[mm.Options+2],0xFD
+    @@: or	byte[mm.Options+3],0x02
+	test	[options],OPTS_AUTOBRACES
+	jnz	@f
+	and	byte[mm.Options+3],0xFD
+    @@: or	byte[mm.Options+4],0x02
+	test	[options],OPTS_AUTOINDENT
+	jnz	@f
+	and	byte[mm.Options+4],0xFD
+    @@: or	byte[mm.Options+6],0x02
+	test	[options],OPTS_OPTIMSAVE
+	jnz	@f
+	and	byte[mm.Options+6],0xFD
+    @@: or	byte[mm.Options+8],0x02
+	test	[options],OPTS_LINENUMS
+	jnz	@f
+	and	byte[mm.Options+8],0xFD
+    @@: ret
 
 pi_sel	 dd ?
 pi_cur	 dd ?

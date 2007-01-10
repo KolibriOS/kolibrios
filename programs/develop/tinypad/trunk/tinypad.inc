@@ -19,12 +19,12 @@ ends
 struct EDITOR
   FilePath	 db PATHL dup(?)
   FileName	 dd ?
-  Data		 dd ?
   Bounds	 RECT
+  Lines 	 dd ?
+  Lines.Count	 dd ?
+  Columns.Count  dd ?
   Caret 	 POINT
   SelStart	 POINT
-  Lines 	 dd ?
-  Columns	 dd ?
   TopLeft	 POINT
   VScroll	 SCROLLBAR
   HScroll	 SCROLLBAR
@@ -40,13 +40,16 @@ struct TABITEM
 ends
 
 struct TABCTL
-  Bounds      RECT
-  Items       dd ?
-  Items.Count dd ?
-  Current     TABITEM
-  Current.Ptr dd ?
-  Style       db ?
-	      db 3 dup(?)
+  Bounds	RECT
+  Items 	dd ?
+  Items.Count	dd ?
+  Items.Left	dd ?
+  Current	TABITEM
+  Current.Ptr	dd ?
+  Buttons.First dd ?
+  Buttons.Last	dd ?
+  Style 	db ?
+		db 3 dup(?)
 ends
 
 
@@ -192,6 +195,14 @@ OPTS_AUTOINDENT = 00000100b
 OPTS_SMARTTAB	= 00001000b
 OPTS_OPTIMSAVE	= 00010000b
 OPTS_LINENUMS	= 00100000b
+
+;// MOUSE EVENTS
+
+MEV_LDOWN = 1
+MEV_LUP   = 2
+MEV_RDOWN = 3
+MEV_RUP   = 4
+MEV_MOVE  = 5
 
 ;// KEY MODIFIERS
 

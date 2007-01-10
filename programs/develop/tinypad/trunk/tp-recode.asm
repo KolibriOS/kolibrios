@@ -19,8 +19,8 @@ recode:
 	mov	edi,table.koi.1251
 
   .main:
-	mov	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
-	mov	esi,[cur_tab.Editor.Data] ;! AREA_EDIT
+	mov	ecx,[cur_editor.Lines.Count] ;! ecx,[lines]
+	mov	esi,[cur_editor.Lines] ;! AREA_EDIT
 	jecxz	.exit
 	xor	eax,eax
   .lp0: dec	ecx

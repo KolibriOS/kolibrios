@@ -4,62 +4,62 @@ func check_cur_vis_inv ;//////////////////////////////////////////////////////
 	push	eax ebx
 	xor	bl,bl
   .chk_y:
-	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
 	or	eax,eax
 	jge	@f
-	mov	[cur_tab.Editor.Caret.Y],0 ;! [pos.y],0
+	mov	[cur_editor.Caret.Y],0 ;! [pos.y],0
 	jmp	.chk_dy
-    @@: cmp	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+    @@: cmp	eax,[cur_editor.Lines.Count] ;! eax,[lines]
 	jl	.chk_dy
-	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+	mov	eax,[cur_editor.Lines.Count] ;! eax,[lines]
 	dec	eax
-	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
+	mov	[cur_editor.Caret.Y],eax ;! [pos.y],eax
   .chk_dy:
-	mov	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
-	cmp	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
+	cmp	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
 	jle	@f
-	m2m	[cur_tab.Editor.TopLeft.Y],[cur_tab.Editor.Caret.Y]
+	m2m	[cur_editor.TopLeft.Y],[cur_editor.Caret.Y]
 ;!      push    [pos.y]
 ;!      pop     [top_line]
 	inc	bl
     @@: add	eax,[lines.scr]
-	cmp	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	cmp	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
 	jg	.chk_x
-	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
+	mov	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
 	sub	eax,[lines.scr]
 	inc	eax
-	mov	[cur_tab.Editor.TopLeft.Y],eax ;! [top_line],eax
+	mov	[cur_editor.TopLeft.Y],eax ;! [top_line],eax
 	inc	bl
   .chk_x:
-	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
+	mov	eax,[cur_editor.Caret.X] ;! eax,[pos.x]
 	or	eax,eax
 	jge	@f
-	mov	[cur_tab.Editor.Caret.X],0 ;! [pos.x],0
+	mov	[cur_editor.Caret.X],0 ;! [pos.x],0
 	jmp	.chk_dx
-    @@: cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
+    @@: cmp	eax,[cur_editor.Columns.Count] ;! eax,[columns]
 	jl	.chk_dx
-	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
-	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
+	mov	eax,[cur_editor.Columns.Count] ;! eax,[columns]
+	mov	[cur_editor.Caret.X],eax ;! [pos.x],eax
   .chk_dx:
-	mov	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
-	cmp	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
+	mov	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
+	cmp	eax,[cur_editor.Caret.X] ;! eax,[pos.x]
 	jle	@f
-	m2m	[cur_tab.Editor.TopLeft.X],[cur_tab.Editor.Caret.X]
+	m2m	[cur_editor.TopLeft.X],[cur_editor.Caret.X]
 ;!      push    [pos.x]
 ;!      pop     [left_col]
 	inc	bl
     @@: add	eax,[columns.scr]
-	cmp	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
+	cmp	eax,[cur_editor.Caret.X] ;! eax,[pos.x]
 	jg	@f
-	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
+	mov	eax,[cur_editor.Caret.X] ;! eax,[pos.x]
 	sub	eax,[columns.scr]
 	inc	eax
-	mov	[cur_tab.Editor.TopLeft.X],eax ;! [left_col],eax
+	mov	[cur_editor.TopLeft.X],eax ;! [left_col],eax
 	inc	bl
     @@: cmp	[mev],MEV_LDOWN
 	jne	.exit
-	push	[cur_tab.Editor.Caret.X] [cur_tab.Editor.Caret.Y] ;! [pos.x] [pos.y]
-	pop	[cur_tab.Editor.SelStart.Y] [cur_tab.Editor.SelStart.X] ;! [sel.y] [sel.x]
+	push	[cur_editor.Caret.X] [cur_editor.Caret.Y] ;! [pos.x] [pos.y]
+	pop	[cur_editor.SelStart.Y] [cur_editor.SelStart.X] ;! [sel.y] [sel.x]
   .exit:
 	or	bl,bl
 	clc
@@ -74,13 +74,13 @@ endf
 func clear_selection ;////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	eax ebx
-	mov	eax,[cur_tab.Editor.SelStart.Y] ;! eax,[sel.y]
-	mov	ebx,[cur_tab.Editor.Caret.Y] ;! ebx,[pos.y]
+	mov	eax,[cur_editor.SelStart.Y] ;! eax,[sel.y]
+	mov	ebx,[cur_editor.Caret.Y] ;! ebx,[pos.y]
 	cmp	eax,ebx
 	jle	@f
 	xchg	eax,ebx
-    @@: push	[cur_tab.Editor.Caret.X] [cur_tab.Editor.Caret.Y] ;! [pos.x] [pos.y]
-	pop	[cur_tab.Editor.SelStart.Y] [cur_tab.Editor.SelStart.X] ;! [sel.y] [sel.x]
+    @@: push	[cur_editor.Caret.X] [cur_editor.Caret.Y] ;! [pos.x] [pos.y]
+	pop	[cur_editor.SelStart.Y] [cur_editor.SelStart.X] ;! [sel.y] [sel.x]
 	call	draw_file.ex
 	pop	ebx eax
 	ret
@@ -107,24 +107,24 @@ endf
 func check_bottom_right ;/////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	eax
-	mov	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
+	mov	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
 	add	eax,[lines.scr]
-	cmp	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+	cmp	eax,[cur_editor.Lines.Count] ;! eax,[lines]
 	jbe	.lp1
-	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+	mov	eax,[cur_editor.Lines.Count] ;! eax,[lines]
 	sub	eax,[lines.scr]
 	jns	@f
 	xor	eax,eax
-    @@: mov	[cur_tab.Editor.TopLeft.Y],eax ;! [top_line],eax
-  .lp1: mov	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+    @@: mov	[cur_editor.TopLeft.Y],eax ;! [top_line],eax
+  .lp1: mov	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	add	eax,[columns.scr]
-	cmp	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
+	cmp	eax,[cur_editor.Columns.Count] ;! eax,[columns]
 	jbe	.exit
-	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
+	mov	eax,[cur_editor.Columns.Count] ;! eax,[columns]
 	sub	eax,[columns.scr]
 	jns	@f
 	xor	eax,eax
-    @@: mov	[cur_tab.Editor.TopLeft.X],eax ;! [left_col],eax
+    @@: mov	[cur_editor.TopLeft.X],eax ;! [left_col],eax
   .exit:
 	pop	eax
 	ret
@@ -150,12 +150,12 @@ endf
 ;-----------------------------------------------------------------------------
 func check_inv_all ;//////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[cur_tab.Editor.Caret.Y] ;! eax,[pos.y]
-	mov	ecx,[cur_tab.Editor.TopLeft.Y] ;! ecx,[top_line]
+	mov	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
+	mov	ecx,[cur_editor.TopLeft.Y] ;! ecx,[top_line]
   .skip_init:
 	call	check_cur_vis
-	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
-	mov	[cur_tab.Editor.TopLeft.Y],ecx ;! [top_line],ecx
+	mov	[cur_editor.Caret.Y],eax ;! [pos.y],eax
+	mov	[cur_editor.TopLeft.Y],ecx ;! [top_line],ecx
   .skip_check:
 ;       call    clear_screen
 	call	draw_file
@@ -169,9 +169,9 @@ func check_cur_vis ;//////////////////////////////////////////////////////////
 	jb	.low
 	mov	edx,ecx
 	add	edx,[lines.scr]
-	cmp	edx,[cur_tab.Editor.Lines] ;! edx,[lines]
+	cmp	edx,[cur_editor.Lines.Count] ;! edx,[lines]
 	jbe	@f
-	mov	edx,[cur_tab.Editor.Lines] ;! edx,[lines]
+	mov	edx,[cur_editor.Lines.Count] ;! edx,[lines]
     @@: cmp	eax,edx
 	jb	@f
 	lea	ecx,[eax+1]
@@ -182,17 +182,17 @@ func check_cur_vis ;//////////////////////////////////////////////////////////
   .low: mov	ecx,eax
     @@: mov	edx,ecx
 	add	edx,[lines.scr]
-	cmp	edx,[cur_tab.Editor.Lines] ;! edx,[lines]
+	cmp	edx,[cur_editor.Lines.Count] ;! edx,[lines]
 	jbe	@f
-	mov	ecx,[cur_tab.Editor.Lines] ;! ecx,[lines]
+	mov	ecx,[cur_editor.Lines.Count] ;! ecx,[lines]
 	sub	ecx,[lines.scr]
 	jns	@f
 	xor	ecx,ecx
     @@:;mov     [top_line],ecx
 
 	pushad
-	mov	eax,[cur_tab.Editor.Caret.X] ;! eax,[pos.x]
-	mov	ebx,[cur_tab.Editor.TopLeft.X] ;! ebx,[left_col]
+	mov	eax,[cur_editor.Caret.X] ;! eax,[pos.x]
+	mov	ebx,[cur_editor.TopLeft.X] ;! ebx,[left_col]
 	mov	ecx,ebx
 	add	ecx,[columns.scr]
 	cmp	eax,ebx
@@ -203,10 +203,10 @@ func check_cur_vis ;//////////////////////////////////////////////////////////
 	sub	ebx,[columns.scr]
 	jmp	@f
   .lp1: mov	ebx,eax
-    @@: mov	[cur_tab.Editor.TopLeft.X],ebx ;! [left_col],ebx
+    @@: mov	[cur_editor.TopLeft.X],ebx ;! [left_col],ebx
 
   .exit:
-	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
+	mov	[cur_editor.Caret.X],eax ;! [pos.x],eax
 	popad
 
 	ret
@@ -232,7 +232,7 @@ func get_line_offset ;////////////////////////////////////////////////////////
 ;  ESI = line data offset
 ;-----------------------------------------------------------------------------
 	push	eax ecx
-	mov	esi,[cur_tab.Editor.Data] ;! AREA_EDIT
+	mov	esi,[cur_editor.Lines] ;! AREA_EDIT
     @@: dec	ecx
 	js	.exit
 	movzx	eax,word[esi]
@@ -248,10 +248,10 @@ func init_sel_vars ;//////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	pushad
 	mov	[sel.selected],1
-	mov	eax,[cur_tab.Editor.SelStart.X] ;! eax,[sel.x]
-	mov	ebx,[cur_tab.Editor.SelStart.Y] ;! ebx,[sel.y]
-	mov	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
-	mov	edx,[cur_tab.Editor.Caret.Y] ;! edx,[pos.y]
+	mov	eax,[cur_editor.SelStart.X] ;! eax,[sel.x]
+	mov	ebx,[cur_editor.SelStart.Y] ;! ebx,[sel.y]
+	mov	ecx,[cur_editor.Caret.X] ;! ecx,[pos.x]
+	mov	edx,[cur_editor.Caret.Y] ;! edx,[pos.y]
 	cmp	ebx,edx
 	jl	.lp2
 	jne	@f
@@ -508,7 +508,7 @@ func line_add_spaces ;////////////////////////////////////////////////////////
 	jbe	.exit
 	sub	ecx,edx
 	push	ecx
-	mov	edi,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	mov	edi,[cur_editor.Lines] ;! AREA_TEMP2
 	add	edi,[edi-4]
 	dec	edi
 	mov	eax,esi
@@ -563,14 +563,14 @@ func delete_selection ;///////////////////////////////////////////////////////
 	mov	[edi-4],bx
 	add	edi,[sel.begin.x]
 	lea	esi,[esi+eax+4]
-	mov	ecx,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	mov	ecx,[cur_editor.Lines] ;! AREA_TEMP2
 	add	ecx,[ecx-4]
 	sub	ecx,esi
 	cld
 	rep	movsb
 	mov	eax,[sel.end.y]
 	sub	eax,[sel.begin.y]
-	sub	[cur_tab.Editor.Lines],eax ;! [lines],eax
+	sub	[cur_editor.Lines.Count],eax ;! [lines],eax
 	jmp	.exit
 
   .single_line:
@@ -589,7 +589,7 @@ func delete_selection ;///////////////////////////////////////////////////////
 	lea	edi,[esi+4]
 	add	edi,[sel.begin.x]
 	lea	esi,[edi+ecx]
-	mov	ecx,[cur_tab.Editor.Data] ;! AREA_TEMP2
+	mov	ecx,[cur_editor.Lines] ;! AREA_TEMP2
 	add	ecx,[ecx-4]
 	sub	ecx,esi
 	cld
@@ -597,13 +597,13 @@ func delete_selection ;///////////////////////////////////////////////////////
 
   .exit:
 	mov	eax,[sel.begin.x]
-	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
-	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
+	mov	[cur_editor.Caret.X],eax ;! [pos.x],eax
+	mov	[cur_editor.SelStart.X],eax ;! [sel.x],eax
 	mov	eax,[sel.begin.y]
-	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
-	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
+	mov	[cur_editor.Caret.Y],eax ;! [pos.y],eax
+	mov	[cur_editor.SelStart.Y],eax ;! [sel.y],eax
 	popad
-	mov	[cur_tab.Editor.Modified],1 ;! [modified],1
+	mov	[cur_editor.Modified],1 ;! [modified],1
 	clc
 	ret
 

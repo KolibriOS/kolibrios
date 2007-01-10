@@ -20,44 +20,77 @@ button:
 	cmp	byte[esi],0
 	jne	.acc
 
+	cmp	eax,[tab_bar.Buttons.First]
+	jb	@f
+	cmp	eax,[tab_bar.Buttons.Last]
+	ja	@f
+
+	;// TAB CONTROL BUTTONS
+
+	add	eax,-1000
+	imul	ebp,eax,sizeof.TABITEM
+	add	ebp,[tab_bar.Items]
+	cmp	ebp,[tab_bar.Current.Ptr]
+	je	@f
+	call	set_cur_tab
+	call	align_editor_in_tab
+	call	draw_editor
+	call	draw_statusbar
+	call	draw_tabctl
+
+    @@:
 	jmp	still.skip_write
 
-  btn.scroll_up:
-	dec	[cur_tab.Editor.TopLeft.Y] ;! [top_line]
+  btn.vscroll_up:
+	dec	[cur_editor.TopLeft.Y] ;! [top_line]
 	jns	@f
-	inc	[cur_tab.Editor.TopLeft.Y] ;! [top_line]
+	inc	[cur_editor.TopLeft.Y] ;! [top_line]
 	ret
     @@: call	check_inv_all.skip_check
 	ret
 
-  btn.scroll_down:
-	inc	[cur_tab.Editor.TopLeft.Y] ;! [top_line]
-	mov	eax,[cur_tab.Editor.Lines] ;! eax,[lines]
+  btn.vscroll_down:
+	inc	[cur_editor.TopLeft.Y] ;! [top_line]
+	mov	eax,[cur_editor.Lines.Count] ;! eax,[lines]
 	sub	eax,[lines.scr]
-	cmp	eax,[cur_tab.Editor.TopLeft.Y] ;! eax,[top_line]
+	cmp	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
 	jge	@f
-	dec	[cur_tab.Editor.TopLeft.Y] ;! [top_line]
+	dec	[cur_editor.TopLeft.Y] ;! [top_line]
 	ret
     @@: call	check_inv_all.skip_check
 	ret
 
-  btn.scroll_left:
-	dec	[cur_tab.Editor.TopLeft.X] ;! [left_col]
+  btn.hscroll_up:
+	dec	[cur_editor.TopLeft.X] ;! [left_col]
 	jns	@f
-	inc	[cur_tab.Editor.TopLeft.X] ;! [left_col]
+	inc	[cur_editor.TopLeft.X] ;! [left_col]
 	ret;jmp     still.skip_write
     @@: call	check_inv_all.skip_check
 	ret
 
-  btn.scroll_right:
-	inc	[cur_tab.Editor.TopLeft.X] ;! [left_col]
-	mov	eax,[cur_tab.Editor.Columns] ;! eax,[columns]
+  btn.hscroll_down:
+	inc	[cur_editor.TopLeft.X] ;! [left_col]
+	mov	eax,[cur_editor.Columns.Count] ;! eax,[columns]
 	sub	eax,[columns.scr]
-	cmp	eax,[cur_tab.Editor.TopLeft.X] ;! eax,[left_col]
+	cmp	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
 	jge	@f
-	dec	[cur_tab.Editor.TopLeft.X] ;! [left_col]
+	dec	[cur_editor.TopLeft.X] ;! [left_col]
 	ret
     @@: call	check_inv_all.skip_check
+	ret
+
+  btn.tabctl_right:
+	call	get_hidden_tabitems_number
+	or	eax,eax
+	jz	@f
+	inc	[tab_bar.Items.Left]
+	call	draw_tabctl
+    @@: ret
+  btn.tabctl_left:
+	dec	[tab_bar.Items.Left]
+	jns	@f
+	inc	[tab_bar.Items.Left]
+    @@: call	draw_tabctl
 	ret
 
   btn.search:
@@ -70,7 +103,7 @@ button:
 
 func search
 	cld
-	mov	ecx,[cur_tab.Editor.Caret.Y] ;! ecx,[pos.y]
+	mov	ecx,[cur_editor.Caret.Y] ;! ecx,[pos.y]
 	mov	edx,ecx
 	call	get_line_offset
 	cmp	word[esi],0
@@ -80,9 +113,9 @@ func search
 	or	eax,eax
 	jz	.end_line.2
 	mov	ecx,eax
-	sub	ecx,[cur_tab.Editor.Caret.X] ;! ecx,[pos.x]
+	sub	ecx,[cur_editor.Caret.X] ;! ecx,[pos.x]
 	push	esi
-	add	esi,[cur_tab.Editor.Caret.X] ;! esi,[pos.x]
+	add	esi,[cur_editor.Caret.X] ;! esi,[pos.x]
 	jmp	@f
 
   .next_line:
@@ -118,15 +151,15 @@ func search
 
   .found:
 	add	esp,4
-	mov	[cur_tab.Editor.Caret.Y],edx ;! [pos.y],edx
-	mov	[cur_tab.Editor.SelStart.Y],edx ;! [sel.y],edx
+	mov	[cur_editor.Caret.Y],edx ;! [pos.y],edx
+	mov	[cur_editor.SelStart.Y],edx ;! [sel.y],edx
 	mov	ecx,edx
 	lea	eax,[esi-4]
 	call	get_line_offset
 	sub	eax,esi
-	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
+	mov	[cur_editor.SelStart.X],eax ;! [sel.x],eax
 	add	eax,[s_search.size]
-	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
+	mov	[cur_editor.Caret.X],eax ;! [pos.x],eax
 	mov	[s_status],0
 	clc
 	ret
@@ -173,34 +206,37 @@ endf
     @@:
 
 	xor	eax,eax
-	mov	[cur_tab.Editor.TopLeft.Y],eax ;! [top_line],eax
-	mov	[cur_tab.Editor.TopLeft.X],eax ;! [left_col],eax
-	mov	[cur_tab.Editor.Caret.X],eax ;! [pos.x],eax
-	mov	[cur_tab.Editor.Caret.Y],eax ;! [pos.y],eax
-	mov	[cur_tab.Editor.SelStart.X],eax ;! [sel.x],eax
-	mov	[cur_tab.Editor.SelStart.Y],eax ;! [sel.y],eax
+	mov	[cur_editor.TopLeft.Y],eax ;! [top_line],eax
+	mov	[cur_editor.TopLeft.X],eax ;! [left_col],eax
+	mov	[cur_editor.Caret.X],eax ;! [pos.x],eax
+	mov	[cur_editor.Caret.Y],eax ;! [pos.y],eax
+	mov	[cur_editor.SelStart.X],eax ;! [sel.x],eax
+	mov	[cur_editor.SelStart.Y],eax ;! [sel.y],eax
 
-	mov	[cur_tab.Editor.Modified],al ;! [modified],al
+	mov	[cur_editor.Modified],al ;! [modified],al
 
 ; enable color syntax for ASM and INC files:
-	mov	[cur_tab.Editor.AsmMode],al ;! [asm_mode],al
+	mov	[cur_editor.AsmMode],al ;! [asm_mode],al
 
-	mov	eax,[f_info.length]
-	add	eax,f_info.path
-	mov	byte[eax],0
-	mov	ecx, dword [eax-3]
-	or	ecx, 0x202020
-	cmp	ecx, 'asm'
+;       mov     eax,[f_info.length]
+;       add     eax,f_info.path
+;       mov     byte[eax],0
+	lea	ebx,[cur_editor.FilePath]
+	mov	eax,ebx
+	call	strlen
+	mov	ecx,dword[ebx+eax-3]
+	or	ecx,0x202020
+	cmp	ecx,'asm'
 	jne	@f
-	inc	[cur_tab.Editor.AsmMode] ;! [asm_mode]
+	inc	[cur_editor.AsmMode] ;! [asm_mode]
 	jmp	.nocol
-    @@: cmp	ecx, 'inc'
+    @@: cmp	ecx,'inc'
 	jne	.nocol
-	inc	[cur_tab.Editor.AsmMode] ;! [asm_mode]
+	inc	[cur_editor.AsmMode] ;! [asm_mode]
     .nocol:
 
   update_caption:
-	lea	esi,[cur_tab.Editor.FilePath] ;! mov     esi,f_info.path
+	lea	esi,[cur_editor.FilePath] ;! mov     esi,f_info.path
 	mov	edi,s_title
 
     @@: lodsb

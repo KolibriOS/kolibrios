@@ -2,7 +2,7 @@
 sz s_defname,'Untitled',0
 
 ;-----------------------------------------------------------------------------
-func flush_cur_tab ;//////////////////////////////////////////////////////////
+func flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
 ;-----------------------------------------------------------------------------
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
@@ -17,7 +17,7 @@ func flush_cur_tab ;//////////////////////////////////////////////////////////
 endf
 
 ;-----------------------------------------------------------------------------
-func set_cur_tab ;////////////////////////////////////////////////////////////
+func set_cur_tab ;///// SET SPECIFIED TAB CURRENT (FOCUS IT) /////////////////
 ;-----------------------------------------------------------------------------
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
@@ -36,7 +36,43 @@ func set_cur_tab ;////////////////////////////////////////////////////////////
 endf
 
 ;-----------------------------------------------------------------------------
-func create_tab ;/////////////////////////////////////////////////////////////
+func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
+;-----------------------------------------------------------------------------
+	push	ebp
+	imul	eax,[tab_bar.Items.Left],sizeof.TABITEM
+	add	eax,[tab_bar.Items]
+	cmp	eax,ebp
+	jb	.go_right
+	ja	.go_left
+	add	esp,4
+	ret
+
+  .go_right:
+	call	get_hidden_tabitems_number
+	cmp	ebp,[esp]
+	ja	.lp1
+    @@: inc	[tab_bar.Items.Left]
+	call	get_hidden_tabitems_number
+	cmp	ebp,[esp]
+	jbe	@b
+    @@: inc	[tab_bar.Items.Left]
+  .lp1: pop	ebp
+	ret
+
+  .go_left:
+	mov	eax,ebp
+	sub	eax,[tab_bar.Items]
+	jz	@f
+	cwde
+	mov	ebx,sizeof.TABITEM
+	div	ebx
+    @@: mov	[tab_bar.Items.Left],eax
+	add	esp,4
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	eax ecx esi edi
 
@@ -50,20 +86,21 @@ func create_tab ;/////////////////////////////////////////////////////////////
 	sub	[tab_bar.Current.Ptr],ecx
 	lea	ebp,[eax+ebx-sizeof.TABITEM]
 	call	set_cur_tab
+	call	make_tab_visible
 
 	mov	eax,1024
 	call	mem.Alloc
-	mov	[cur_tab.Editor.Data],eax
-	mov	[cur_tab.Editor.Lines],1
-	mov	[cur_tab.Editor.Columns],1
+	mov	[cur_editor.Lines],eax
+	mov	[cur_editor.Lines.Count],1
+	mov	[cur_editor.Columns.Count],1
 	xor	eax,eax
-	mov	[cur_tab.Editor.TopLeft.X],eax
-	mov	[cur_tab.Editor.TopLeft.Y],eax
-	mov	[cur_tab.Editor.Caret.X],eax
-	mov	[cur_tab.Editor.Caret.Y],eax
-	mov	[cur_tab.Editor.SelStart.X],eax
-	mov	[cur_tab.Editor.SelStart.Y],eax
-	mov	edi,[cur_tab.Editor.Data]
+	mov	[cur_editor.TopLeft.X],eax
+	mov	[cur_editor.TopLeft.Y],eax
+	mov	[cur_editor.Caret.X],eax
+	mov	[cur_editor.Caret.Y],eax
+	mov	[cur_editor.SelStart.X],eax
+	mov	[cur_editor.SelStart.Y],eax
+	mov	edi,[cur_editor.Lines]
 	add	edi,4
 	mov	ecx,10
 	mov	[edi-4],ecx
@@ -73,14 +110,14 @@ func create_tab ;/////////////////////////////////////////////////////////////
 	rep	stosb
 
 	mov	esi,s_defname
-	mov	edi,cur_tab.Editor.FilePath
+	mov	edi,cur_editor.FilePath
 	mov	ecx,s_defname.size
 	rep	movsb
-	mov	[cur_tab.Editor.FileName],0
+	mov	[cur_editor.FileName],0
 
 	mov	[f_info.length],0
-	mov	[cur_tab.Editor.Modified],0
-	mov	[cur_tab.Editor.AsmMode],0
+	mov	[cur_editor.Modified],0
+	mov	[cur_editor.AsmMode],0
 
 	call	flush_cur_tab
 	call	update_caption
@@ -92,35 +129,81 @@ func create_tab ;/////////////////////////////////////////////////////////////
 endf
 
 ;-----------------------------------------------------------------------------
-func delete_tab ;/////////////////////////////////////////////////////////////
+func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 ;-----------------------------------------------------------------------------
+	mov	eax,[ebp+TABITEM.Editor.Lines]
+	call	mem.Free
+	imul	ecx,[tab_bar.Items.Count],sizeof.TABITEM
+	add	ecx,[tab_bar.Items]
+	sub	ecx,ebp
+	sub	ecx,sizeof.TABITEM
+	jle	@f
+	cld
+	shr	ecx,2
+	mov	edi,ebp
+	lea	esi,[edi+sizeof.TABITEM]
+	rep	movsd
+    @@: dec	[tab_bar.Items.Count]
+	jz	.no_tabs
+	imul	ebx,[tab_bar.Items.Count],sizeof.TABITEM
+	push	ebx
+	mov	eax,[tab_bar.Items]
+	mov	ecx,eax
+	call	mem.ReAlloc
+	mov	[tab_bar.Items],eax
+	sub	ecx,eax
+	sub	ebp,ecx
+
+	pop	ecx
+	add	ecx,[tab_bar.Items]
+	sub	ecx,ebp
+	ja	@f
+	add	ebp,-sizeof.TABITEM
+
+    @@: mov	[tab_bar.Current.Ptr],0
+	call	set_cur_tab
+	call	make_tab_visible
+	call	drawwindow
+	ret
+
+  .no_tabs:
+	mov	eax,[tab_bar.Items]
+	call	mem.Free
+	mov	[tab_bar.Items],0
+	mov	[tab_bar.Current.Ptr],0
 	ret
 endf
 
 ;-----------------------------------------------------------------------------
-func get_tab_size ;///////////////////////////////////////////////////////////
+func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 ;-----------------------------------------------------------------------------
-; EBP = TABITEM*
-;-----------------------------------------------------------------------------
-	push	eax
-	cmp	[tab_bar.Style],3
-	jae	.lp1
-	lea	eax,[ebp+TABITEM.Editor.FilePath]
-	add	eax,[ebp+TABITEM.Editor.FileName]
-	call	strlen
-	imul	ebx,eax,6
-	add	ebx,9
-	jmp	.lp2
-  .lp1: call	get_max_tab_width
-	mov	ebx,eax
-  .lp2: mov	ecx,TBARH-1
-	pop	eax
-	ret
-endf
 
-;-----------------------------------------------------------------------------
-func draw_tabctl ;////////////////////////////////////////////////////////////
-;-----------------------------------------------------------------------------
+	dec	[tab_bar.Items.Left]
+	js	.lp1
+    @@: call	get_hidden_tabitems_number
+	or	eax,eax
+	jnz	.lp1
+	dec	[tab_bar.Items.Left]
+	jns	@b
+  .lp1: inc	[tab_bar.Items.Left]
+	mov	eax,[tab_bar.Items.Count]
+	cmp	[tab_bar.Items.Left],eax
+	jb	@f
+	dec	eax
+	mov	[tab_bar.Items.Left],eax
+    @@:
+
+	mov	eax,8
+	mov	edx,[tab_bar.Buttons.First]
+    @@: cmp	edx,[tab_bar.Buttons.Last]
+	ja	@f
+	push	edx
+	or	edx,0x80000000
+	mcall
+	pop	edx
+	inc	edx
+	jmp	@b
+    @@:
 
 	mov	ebx,[tab_bar.Bounds.Left-2]
 	mov	bx,word[tab_bar.Bounds.Right]
@@ -150,9 +233,18 @@ func draw_tabctl ;////////////////////////////////////////////////////////////
 	xor	cx,cx
 	add	ecx,1*65536+TBARH
 	mcall	13
-	add	ecx,(TBARH-2)*65536-(TBARH-3)
+	add	ecx,(TBARH-1)*65536-(TBARH-1)
+	mcall	,,,[sc.work]
+	add	ecx,-1*65536+2
 	mov	edx,[cl_3d_inset]
 	call	draw_framerect
+
+	mov	esi,[tab_bar.Bounds.Left]
+	inc	esi
+	mov	edi,[tab_bar.Bounds.Top]
+	inc	edi
+	push	.curr_top .check_horz .next_horz
+	call	.draw_tabs
 	ret
 
   .tabs_on_bottom:
@@ -163,19 +255,86 @@ func draw_tabctl ;////////////////////////////////////////////////////////////
 	mcall	13
 	mov	cx,1
 	mcall	,,,[sc.work]
-	add	ecx,-1*65536+2;-(TBARH-3)
+	add	ecx,-1*65536+2
 	mov	edx,[cl_3d_inset]
 	call	draw_framerect
 
-	mov	ecx,[tab_bar.Items.Count]
-	mov	ebp,[tab_bar.Items]
 	mov	esi,[tab_bar.Bounds.Left]
 	inc	esi
 	mov	edi,[tab_bar.Bounds.Bottom]
 	add	edi,-TBARH+1
+	push	.curr_bottom .check_horz .next_horz
+	call	.draw_tabs
+	ret
+
+  .tabs_on_left:
+	call	get_max_tab_width
+	mov	ebx,[tab_bar.Bounds.Left-2]
+	mov	bx,ax
+	add	ebx,1*65536-1
+	add	ecx,1*65536-2
+	push	eax
+	mcall	13
+	pop	ebx
+	shl	ebx,16
+	add	ebx,1*65536+1
+	mcall	,,,[sc.work]
+	add	ebx,-1*65536+2
+	mov	edx,[cl_3d_inset]
+	call	draw_framerect
+
+	mov	esi,[tab_bar.Bounds.Left]
+	inc	esi
+	mov	edi,[tab_bar.Bounds.Top]
+	inc	edi
+	push	.curr_left .check_vert .next_vert
+	call	.draw_tabs
+	ret
+
+  .tabs_on_right:
+	call	get_max_tab_width
+	push	eax
+	mov	ebx,[tab_bar.Bounds.Right-2]
+	mov	bx,ax
+	shl	eax,16
+	sub	ebx,eax
+	add	ecx,1*65536-2
+	mcall	13
+	add	ebx,-1*65536
+	mov	bx,1
+	mcall	,,,[sc.work]
+	add	ebx,-1*65536+2
+	mov	edx,[cl_3d_inset]
+	call	draw_framerect
+
+	mov	esi,[tab_bar.Bounds.Right]
+	pop	eax
+	sub	esi,eax
+	mov	edi,[tab_bar.Bounds.Top]
+	inc	edi
+	push	.curr_right .check_vert .next_vert
+	call	.draw_tabs
+	ret
+
+
+  .draw_tabs:
+	mov	ecx,[tab_bar.Items.Count]
+	mov	ebx,[tab_bar.Items.Left]
+	imul	ebp,ebx,sizeof.TABITEM
+	add	ebp,[tab_bar.Items]
+	push	ecx
+	sub	[esp],ebx
+	add	ebx,1000
+	mov	[tab_bar.Buttons.First],ebx
+	dec	ebx
+	mov	[tab_bar.Buttons.Last],ebx
     @@: push	ecx
 
 	call	get_tab_size
+
+	call	dword[esp+(8+4)+4]
+	jc	.draw_tabs.dontfit
+
 	rol	ebx,16
 	mov	bx,si
 	rol	ebx,16
@@ -185,15 +344,17 @@ func draw_tabctl ;////////////////////////////////////////////////////////////
 	mov	edx,[cl_3d_inset]
 	call	draw_framerect
 
+	mov	edx,[sc.work_text]
 	cmp	ebp,[tab_bar.Current.Ptr]
-	jne	.lp1
+	jne	.draw_tabs.inactive
 	push	ebx ecx
-	add	ebx,1*65536-2
-	dec	ecx
+	call	dword[esp+(8+4)+8+8]
 	mcall	13,,,[sc.work]
 	pop	ecx ebx
-  .lp1:
-	pushad
+	mov	edx,[color_tbl+4*0]
+  .draw_tabs.inactive:
+
+	push	ebx ecx esi edx
 	lea	eax,[ebp+TABITEM.Editor.FilePath]
 	add	eax,[ebp+TABITEM.Editor.FileName]
 	mov	edx,eax
@@ -202,66 +363,287 @@ func draw_tabctl ;////////////////////////////////////////////////////////////
 	shr	ecx,16
 	mov	bx,cx
 	add	ebx,0x00050005
-	mcall	4,,0x00000000
-	popad
+	pop	ecx
+	mcall	4
+	pop	esi ecx ebx
 
-	movzx	ebx,bx
-	lea	esi,[esi+ebx+1]
+	inc	[tab_bar.Buttons.Last]
+	cmp	ebp,[tab_bar.Current.Ptr]
+	je	.draw_tabs.active
+	push	ebx ecx
+	dec	ebx
+	dec	ecx
+	mov	edx,[tab_bar.Buttons.Last]
+	or	edx,0x40000000
+	mcall	8
+	pop	ecx ebx
+  .draw_tabs.active:
+
+	call	dword[esp+(8+4)+0]
 	add	ebp,sizeof.TABITEM
 
 	pop	ecx
 	dec	ecx
+	dec	dword[esp]
 	jnz	@b
 
+	add	esp,4
+	or	ecx,ecx
+	jnz	@f
+
+	ret	8
+
+  .draw_tabs.dontfit:
+
+	add	esp,8
+
+    @@: mov	ebx,[tab_bar.Bounds.Right]
+	shl	ebx,16
+	mov	ecx,[tab_bar.Bounds.Bottom]
+	shl	ecx,16
+	add	ecx,(-SCRLW-1)*65536+SCRLW
+	call	get_max_tab_width
+	mov	edx,eax
+
+	mov	al,[tab_bar.Style]
+	dec	al
+	jz	.scroll_on_top
+	dec	al
+	jz	.scroll_on_bottom
+	dec	al
+	jz	.scroll_on_left
+	dec	al
+	jz	.scroll_on_right
 	ret
 
-  .tabs_on_left:
-	call	get_max_tab_width
-	mov	ebx,[tab_bar.Bounds.Left-2]
-	mov	bx,ax
-	add	ebx,1*65536
+  .scroll_on_top:
+	add	ebx,(-SCRLW*2-1)*65536+SCRLW
+	mov	ecx,[tab_bar.Bounds.Top]
+	shl	ecx,16
+	add	ecx,1*65536+SCRLW
+	jmp	.draw_tabs.draw_scroll
+  .scroll_on_bottom:
+	add	ebx,(-SCRLW*2-1)*65536+SCRLW
+	jmp	.draw_tabs.draw_scroll
+  .scroll_on_left:
+	mov	ebx,[tab_bar.Bounds.Left]
+	add	ebx,edx
+	shl	ebx,16
+	add	ebx,(-SCRLW*2)*65536+SCRLW
+	jmp	.draw_tabs.draw_scroll
+  .scroll_on_right:
+	shl	edx,16
+	sub	ebx,edx
+	add	ebx,SCRLW
+
+  .draw_tabs.draw_scroll:
+	mcall	8,,,'TBG' or 0x40000000
+	push	ebx
+	add	ebx,SCRLW*65536
+	mcall	8,,,'TBL' or 0x40000000
+	pop	ebx
+	push	ebx ecx
+	sar	ebx,16
+	sar	ecx,16
+	push	ebx ecx SCRLW SCRLW
+	call	draw_3d_panel
+	add	ebx,SCRLW
+	push	ebx ecx SCRLW SCRLW
+	call	draw_3d_panel
+	pop	ecx ebx
+
+	push	'<'
+	shr	ecx,16
+	mov	bx,cx
+	add	ebx,(SCRLW/2-2)*65536+SCRLW/2-3
+	mcall	4,,[sc.work_text],esp,1
+	add	ebx,0x00020000
+	mcall
+	add	ebx,(SCRLW-2)*65536
+	mov	byte[esp],'>'
+	mcall
+	add	ebx,0x00020000
+	mcall
+	add	esp,4
+
+	ret	8
+
+  .curr_left:
+	add	ebx,0x00010000
 	add	ecx,1*65536-2
+	ret
+  .curr_top:
+	add	ebx,1*65536-2
+	add	ecx,0x00010000
+	ret
+  .curr_right:
+	dec	ebx
+	add	ecx,1*65536-2
+	ret
+  .curr_bottom:
+	add	ebx,1*65536-2
+	dec	ecx
+	ret
+
+  .check_horz:
+	lea	eax,[ebx-1]
+	add	eax,esi
+	sub	eax,[tab_bar.Bounds.Right]
+	jge	.check.dontfit
+	add	eax,SCRLW*2+2
+	jl	.check.fit
+	cmp	dword[esp+4],1
+	jbe	.check.fit
+  .check.dontfit:
+	stc
+	ret
+  .check_vert:
+	lea	eax,[ecx-1]
+	add	eax,edi
+	sub	eax,[tab_bar.Bounds.Bottom]
+	jge	.check.dontfit
+	add	eax,SCRLW+2
+	jl	.check.fit
+	cmp	dword[esp+4],1
+	ja	.check.dontfit
+  .check.fit:
+	clc
+	ret
+
+  .next_horz:
+	movzx	ebx,bx
+	lea	esi,[esi+ebx+1]
+	ret
+  .next_vert:
+	movzx	ecx,cx
+	lea	edi,[edi+ecx+1]
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
+;-----------------------------------------------------------------------------
+; EBP = TABITEM*
+;-----------------------------------------------------------------------------
 	push	eax
-	mcall	13
+	cmp	[tab_bar.Style],3
+	jae	.lp1
+	lea	eax,[ebp+TABITEM.Editor.FilePath]
+	add	eax,[ebp+TABITEM.Editor.FileName]
+	call	strlen
+	imul	ebx,eax,6
+	add	ebx,9
+	jmp	.lp2
+  .lp1: call	get_max_tab_width
+	mov	ebx,eax
+  .lp2: mov	ecx,TBARH-1
 	pop	eax
-	add	eax,-2
-	shl	eax,16
-	add	ebx,eax
-	mov	bx,3
-	mov	edx,[cl_3d_inset]
-	call	draw_framerect
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func get_max_tab_width ;///// GET WIDTH OF LONGEST TAB ///////////////////////
+;-----------------------------------------------------------------------------
+	push	ebx ecx ebp
+	mov	ecx,[tab_bar.Items.Count]
+	mov	ebp,[tab_bar.Items]
+	xor	ebx,ebx
+    @@: dec	ecx
+	js	@f
+
+	lea	eax,[ebp+TABITEM.Editor.FilePath]
+	add	eax,[ebp+TABITEM.Editor.FileName]
+	call	strlen
+	imul	eax,6
+	add	eax,9
+
+	add	ebp,sizeof.TABITEM
+	cmp	ebx,eax
+	jae	@b
+	mov	ebx,eax
+	jmp	@b
+    @@: mov	eax,ebx
+	cmp	eax,SCRLW*2+2
+	jae	@f
+	mov	eax,SCRLW*2+2
+    @@: pop	ebp ecx ebx
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func get_hidden_tabitems_number ;/////////////////////////////////////////////
+;-----------------------------------------------------------------------------
+	mov	al,[tab_bar.Style]
+	dec	al
+	dec	al
+	jle	.tabs_horz
+	dec	al
+	dec	al
+	jle	.tabs_vert
 	ret
 
-  .tabs_on_right:
+  .tabs_horz:
+	push	draw_tabctl.check_horz draw_tabctl.next_horz
+	call	.calc_tabs
+	ret
+
+  .tabs_vert:
+	push	draw_tabctl.check_vert draw_tabctl.next_vert
+	call	.calc_tabs
+	ret
+
+  .calc_tabs:
+	mov	esi,[tab_bar.Bounds.Left]
+	inc	esi
+	mov	edi,[tab_bar.Bounds.Top]
+	inc	edi
+	mov	ecx,[tab_bar.Items.Count]
+	mov	ebp,[tab_bar.Items]
+	imul	eax,[tab_bar.Items.Left],sizeof.TABITEM
+	add	ebp,eax
+	mov	eax,ecx
+	sub	eax,[tab_bar.Items.Left]
+	push	eax
+    @@: push	ecx
+
+	call	get_tab_size
+
+	call	dword[esp+(8+4)+4]
+	jc	.calc_tabs.dontfit
+
+	call	dword[esp+(8+4)+0]
+	add	ebp,sizeof.TABITEM
+
+	pop	ecx
+	dec	ecx
+	dec	dword[esp]
+	jnz	@b
+
+	jmp	@f
+
+  .calc_tabs.dontfit:
+
+	add	esp,4
+    @@: pop	ecx
+	mov	eax,ecx
+	ret	8
+endf
+
+;-----------------------------------------------------------------------------
+func align_editor_in_tab ;///// ADJUST EDITOR POSITION TO FIT IN TAB /////////
+;-----------------------------------------------------------------------------
+	m2m	[cur_editor.Bounds.Left],[tab_bar.Bounds.Left]
+	m2m	[cur_editor.Bounds.Top],[tab_bar.Bounds.Top]
+	m2m	[cur_editor.Bounds.Right],[tab_bar.Bounds.Right]
+	m2m	[cur_editor.Bounds.Bottom],[tab_bar.Bounds.Bottom]
+
+	inc	[cur_editor.Bounds.Left]
+	inc	[cur_editor.Bounds.Top]
+	dec	[cur_editor.Bounds.Right]
+	dec	[cur_editor.Bounds.Bottom]
+
 	call	get_max_tab_width
-	mov	ebx,[tab_bar.Bounds.Right-2]
-	mov	bx,ax
-	shl	eax,16
-	sub	ebx,eax
-	add	ecx,1*65536-2
-	mcall	13
-	add	ebx,-1*65536
-	mov	bx,3
-	mov	edx,[cl_3d_inset]
-	call	draw_framerect
-	ret
-endf
-
-func get_max_tab_width
-	mov	eax,100
-	ret
-endf
-
-func align_editor_in_tab
-	m2m	[cur_tab.Editor.Bounds.Left],[tab_bar.Bounds.Left]
-	m2m	[cur_tab.Editor.Bounds.Top],[tab_bar.Bounds.Top]
-	m2m	[cur_tab.Editor.Bounds.Right],[tab_bar.Bounds.Right]
-	m2m	[cur_tab.Editor.Bounds.Bottom],[tab_bar.Bounds.Bottom]
-
-	inc	[cur_tab.Editor.Bounds.Left]
-	inc	[cur_tab.Editor.Bounds.Top]
-	dec	[cur_tab.Editor.Bounds.Right]
-	dec	[cur_tab.Editor.Bounds.Bottom]
+	lea	ebx,[eax+1]
 
 	mov	al,[tab_bar.Style]
 	dec	al
@@ -275,20 +657,18 @@ func align_editor_in_tab
 	ret
 
   .tabs_on_top:
-	add	[cur_tab.Editor.Bounds.Top],TBARH
+	add	[cur_editor.Bounds.Top],TBARH
 	ret
 
   .tabs_on_bottom:
-	sub	[cur_tab.Editor.Bounds.Bottom],TBARH
+	sub	[cur_editor.Bounds.Bottom],TBARH
 	ret
 
   .tabs_on_left:
-	call	get_max_tab_width
-	add	[cur_tab.Editor.Bounds.Left],eax
+	add	[cur_editor.Bounds.Left],ebx
 	ret
 
   .tabs_on_right:
-	call	get_max_tab_width
-	sub	[cur_tab.Editor.Bounds.Right],eax
+	sub	[cur_editor.Bounds.Right],ebx
 	ret
 endf

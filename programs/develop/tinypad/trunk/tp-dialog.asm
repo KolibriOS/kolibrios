@@ -313,10 +313,10 @@ botdlg.button:
 	mov	[copy_size],eax
 	mov	[copy_count],1
 
-	push	[cur_tab.Editor.SelStart.X] ;! [sel.x]
+	push	[cur_editor.SelStart.X] ;! [sel.x]
 	call	init_sel_vars
 	call	key.ctrl_v
-	pop	[cur_tab.Editor.SelStart.X] ;! [sel.x]
+	pop	[cur_editor.SelStart.X] ;! [sel.x]
 
 	mov	eax,[copy_buf]
 	call	mem.Free
