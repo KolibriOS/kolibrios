@@ -604,7 +604,7 @@ tbte_2:
 labelt:
      db   'Processes - Ctrl/Alt/Del'
 labellen:
-else
+else if lang eq de
 text:
   db ' NAME/BEENDEN       PID     CPU-LAST   % '
   db 'SPEICHER START/NUTZUNG  W-STACK  W-SIZE'
@@ -618,6 +618,21 @@ tbte_2:
 
 labelt:
      db   'Prozesse  - Ctrl/Alt/Del'
+labellen:
+else if lang eq et
+text:
+  db ' NIMI/LÕPETA        PID    CPU-KASUTUS %   '
+  db 'MÄLU ALGUS/KASUTUS  W-PUHVER  W-SUURUS'
+text_len = $-text
+
+tbts:	db  'EELMINE LEHT   JÄRGMINE LEHT                     REBOODI SÜSTEEM'
+tbte:
+tbts_2	db  '>'
+tbts_3	db  'START'
+tbte_2:
+
+labelt:
+     db   'Protsessid - Ctrl/Alt/Del'
 labellen:
 end if
 
