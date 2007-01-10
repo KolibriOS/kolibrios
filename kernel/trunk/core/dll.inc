@@ -544,6 +544,16 @@ proc load_file stdcall, file_name:dword
            mov eax, [file2]
            mov ebx, [file_size]
 .exit:
+           push eax
+           lea edi, [eax+ebx]     ;cleanup remain space
+           mov ecx, ebx          ;from file end
+           add ecx, 4095
+           and ecx, not 4095
+           sub ecx, ebx
+           xor eax, eax
+           cld
+           rep stosb
+           pop eax
            ret
 .cleanup:
            stdcall kernel_free, [file]

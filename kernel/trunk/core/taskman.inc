@@ -72,7 +72,7 @@ macro _clear_ op
 }
 
 align 4
-proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
+proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            locals
              save_cr3      dd ?
              slot          dd ?
@@ -85,6 +85,7 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
              app_eip       dd ? ;0x08
              app_esp       dd ? ;0x0C
              app_mem       dd ? ;0x10
+             app_i_end     dd ? ;0x14
            endl
 
            stdcall load_file,[file_name]
@@ -94,9 +95,6 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
 
            mov [file_base], eax
            mov [file_size], ebx
-
-           pushfd
-           cli
 
            lea ebx, [app_cmdline]
            call test_app_header
@@ -119,12 +117,15 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
            cmp eax, 0
            jne .wait_lock
 
+           pushfd
+           cli
+
            call set_application_table_status
 
            call get_new_process_place
            test eax, eax
            mov ecx, -0x20      ; too many processes
-           jz .err_hdr
+           jz .err
 
            mov [slot], eax
            shl eax, 8
@@ -157,11 +158,8 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
 
            mov ebx, cr3
            mov [save_cr3], ebx
-     if GREEDY_KERNEL
-           stdcall create_app_space,[app_mem],[file_size]
-     else
-           stdcall create_app_space,[app_mem],[app_mem]
-     end if
+
+           stdcall create_app_space,[app_mem],[file_base],[file_size]
            test eax, eax
            jz .failed
 
@@ -170,19 +168,24 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
            mov   eax,[app_mem]
            mov   [ebx+APPDATA.mem_size],eax
 
-           mov ecx, [file_size]
-           mov eax, ecx
-           shr ecx, 2
-           mov esi, [file_base]
-           mov edi, new_app_base
+if not GREEDY_KERNEL
+           mov ecx, [app_i_end]
+           mov edi, [file_size]
+           add edi, 4095
+           and edi, not 4095
+           sub ecx, edi
+           jna @F
+
+           xor eax, eax
+           add edi, new_app_base
            cld
-           rep movsd
-           and eax, 3
-           jz @F
-           mov ecx, eax
-           rep movsb
+           rep stosb
 @@:
-           stdcall kernel_free, [file_base]
+end if
+
+; release only virtual space, not phisical memory
+
+           stdcall free_kernel_space, [file_base]
            lea eax, [app_cmdline]
            stdcall set_app_params ,[slot],eax,[cmd_line],\
                                          [file_name], [flags]
@@ -198,9 +201,10 @@ proc fs_exec_EX stdcall file_name:dword, cmd_line:dword, flags:dword
 .failed:
            mov eax, [save_cr3]
            call set_cr3
+.err:
+           popfd
 .err_hdr:
            stdcall kernel_free,[file_base]
-           popfd
 .err_file:
            xor eax, eax
            mov [application_table_status],eax
@@ -234,6 +238,8 @@ test_app_header:
            mov  ecx,[APP_HEADER_00.i_param]
            mov  [ebx], ecx                     ;app_cmdline
            mov  [ebx+4], dword 0               ;app_path
+           mov  edx, [APP_HEADER_00.i_end]
+           mov  [ebx+0x14], edx
            ret
 
  .check_01_header:
@@ -251,6 +257,8 @@ test_app_header:
            mov  [ebx], edx                     ;app_cmdline
            mov  ecx,[APP_HEADER_01.i_icon]
            mov  [ebx+4], ecx                   ;app_path
+           mov  edx, [APP_HEADER_01.i_end]
+           mov  [ebx+0x14], edx
            ret
 .fail:
            xor eax, eax
@@ -292,8 +300,9 @@ proc get_new_process_place
            ret
 endp
 
+
 align 4
-proc create_app_space stdcall, app_size:dword,img_size:dword
+proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            locals
              app_pages   dd ?
              img_pages   dd ?
@@ -379,12 +388,44 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            mov edi, new_app_base
            shr edi, 10
            add edi, pages_tab
+
            mov ecx, [app_tabs]
            shl ecx, 10
            xor eax, eax
            rep stosd
 
+           mov ecx, [img_pages]
+           mov ebx, PG_UW
            mov edx, new_app_base
+           mov esi, [img_base]
+           mov edi, new_app_base
+           shr esi, 10
+           shr edi, 10
+           add esi, pages_tab
+           add edi, pages_tab
+.remap:
+           lodsd
+           or eax, ebx      ; force user level r/w access
+           stosd
+           add edx, 0x1000
+           dec [app_pages]
+           dec ecx
+           jnz .remap
+
+           mov ecx, [app_pages]
+           test ecx, ecx
+           jz .done
+
+if GREEDY_KERNEL
+           mov eax, 0x02
+.reserve:
+           stosd
+           invlpg [edx]
+           add edx, 4096
+           dec ecx
+           jnz .reserve
+else
+
 .alloc:
            call alloc_page
            test eax, eax
@@ -392,30 +433,12 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
 
            stdcall map_page,edx,eax,dword PG_UW
            add edx, 0x1000
-           sub [app_pages], 1
-           sub [img_pages], 1
+           dec [app_pages]
            jnz .alloc
 
-           mov ecx, [app_pages]
-           and ecx, ecx
-           jz .next
+end if
 
-           mov ebx, edx
-           shr edx, 12
-.reserve:
-           mov dword [pages_tab+edx*4], 0x02
-           invlpg [ebx]
-           inc edx
-           dec ecx
-           jnz .reserve
-.next:
-           mov edi, new_app_base
-           mov ecx, [img_size]
-           shr ecx, 2
-           xor eax, eax
-           cld
-           rep stosd
-
+.done:
            stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
 
            dec [pg_data.pg_mutex]
@@ -430,6 +453,8 @@ proc create_app_space stdcall, app_size:dword,img_size:dword
            xor eax, eax
            ret
 endp
+
+
 
 align 4
 set_cr3:
@@ -549,39 +574,26 @@ proc fs_execute
            stdcall wait_mutex, pg_data.tmp_task_mutex
 
            mov edi, [tmp_task_data]
-           mov ecx, (2048+256)/4
+           mov ecx, (1024+256)/4
            xor eax, eax
            rep stosd
 
            mov esi, [filename]
            mov edi, [tmp_task_data]
-           add edi, TMP_FILE_NAME
-           mov ecx, 1024
-           rep movsb
-
-           mov esi, [filename]
-           mov edi, [tmp_task_data]
-           add edi, TMP_ICON_OFFS
            mov ecx, 1024
            rep movsb
 
            mov esi, [cmdline]
            test esi, esi
            jz @f
-           mov edi, [tmp_task_data]
-           add edi, TMP_CMD_LINE
            mov ecx, 256
            rep movsb
 @@:
-           mov eax, TMP_FILE_NAME
-           add eax, [tmp_task_data]
-           mov ebx, [tmp_task_data]    ;cmd line
-           add ebx, TMP_CMD_LINE
+           mov eax, [tmp_task_data]
+           lea ebx, [eax+1024]        ;cmd line
 
-           stdcall fs_exec_EX, eax, ebx, [flags]
+           stdcall fs_exec, eax, ebx, [flags]
 
-;           stdcall fs_exec, eax, ebx, [flags], [ebp+8],\
-;                            [ebp+12], [ebp+16],[ebp+20]
            mov [retval], eax
            popad
            mov [pg_data.tmp_task_mutex], 0
@@ -1068,7 +1080,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._eip],eax    ;set eip in TSS
            mov eax, [esi+0x0C]       ;app_esp
            mov [edi+TSS._esp],eax    ;set stack in TSS
-           mov [edi+TSS._eflags],dword 0x1202
+           mov [edi+TSS._eflags],dword 0x3202
 
            mov [edi+TSS._cs],app_code  ;selector of code segment
            mov [edi+TSS._ss],app_data

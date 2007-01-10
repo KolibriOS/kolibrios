@@ -697,12 +697,12 @@ include 'vmodeld.inc'
         cmp   byte [0x2f0000+0x9030],1
         jne   no_load_vrr_m
 
-        stdcall fs_exec_EX, vrr_m, dword 0, dword 0
+        stdcall fs_exec, vrr_m, 0, 0
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
 no_load_vrr_m:
-        stdcall fs_exec_EX, firstapp, dword 0, dword 0
+        stdcall fs_exec, firstapp, 0, 0
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
         mov   eax, 0xDEADBEEF        ; otherwise halt
@@ -905,14 +905,14 @@ reserve_irqs_ports:
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0x0
         mov   [0x2d0000+edi+8],dword 0x2d
-        
+
         inc   dword [0x2d0000]          ; 0x30-0x4d
         mov   edi,[0x2d0000]
         shl   edi,4
         mov   [0x2d0000+edi+0],dword 1
         mov   [0x2d0000+edi+4],dword 0x30
         mov   [0x2d0000+edi+8],dword 0x4d
-        
+
         inc   dword [0x2d0000]          ; 0x50-0xdf
         mov   edi,[0x2d0000]
         shl   edi,4
