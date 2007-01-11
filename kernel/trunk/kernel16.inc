@@ -20,6 +20,8 @@ if lang eq en
 include "boot/booteng.inc"     ; english system boot messages
 else if lang eq ru
 include "boot/bootru.inc"      ; russian system boot messages
+else if lang eq et
+include "boot/bootet.inc"      ; estonian system boot messages
 else
 include "boot/bootge.inc"      ; german system boot messages
 ;!!!
