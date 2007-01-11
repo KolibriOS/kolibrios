@@ -679,6 +679,7 @@ l_0:
            and eax, 0xFFFFF000
            cmp eax, ecx    ;alloc_size
            jb  m_next
+	   jz  @f
 
            mov edx, esi
            add edx, ecx
@@ -687,6 +688,7 @@ l_0:
            shr edx, 12
            mov [pages_tab+edx*4], eax
 
+@@:
            or ecx, USED_BLOCK
            mov [pages_tab+ebx*4], ecx
            shr ecx, 12
