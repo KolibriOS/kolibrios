@@ -1080,7 +1080,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._eip],eax    ;set eip in TSS
            mov eax, [esi+0x0C]       ;app_esp
            mov [edi+TSS._esp],eax    ;set stack in TSS
-           mov [edi+TSS._eflags],dword 0x3202
+           mov [edi+TSS._eflags],dword 0x1202
 
            mov [edi+TSS._cs],app_code  ;selector of code segment
            mov [edi+TSS._ss],app_data

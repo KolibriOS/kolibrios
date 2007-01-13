@@ -288,6 +288,7 @@ ntfs_bCanContinue db    ?
                 rb      3
 
 ntfs_attrlist_buf       rb      0x400
+ntfs_attrlist_mft_buf   rb      0x400
 ntfs_bitmap_buf         rb      0x400
 
 ntfs_attr_iRecord       dd      ?
@@ -297,7 +298,6 @@ ntfs_attr_list          dd      ?
 ntfs_attr_size          dq      ?
 ntfs_cur_tail           dd      ?
 endg
-
 
 ntfs_read_attr:
 ; in: global variables
@@ -434,6 +434,12 @@ ntfs_read_attr:
         mov     [ntfs_attr_list], eax
         jmp     .scancont
 .okattr:
+; ignore named $DATA attributes (aka NTFS streams)
+        cmp     ecx, 0x80
+        jnz     @f
+        cmp     byte [eax+9], 0
+        jnz     .scancont
+@@:
         mov     [ntfs_attr_offs], eax
 .scancont:
         add     eax, [eax+4]
@@ -493,14 +499,19 @@ ntfs_read_attr:
         push    dword [ntfs_attr_size+4]
         or      dword [ntfs_attr_size], -1
         or      dword [ntfs_attr_size+4], -1
-        xor     edx, edx
-        mov     [ntfs_cur_offs], edx
+        and     [ntfs_cur_offs], 0
         mov     [ntfs_cur_size], 2
         and     [ntfs_cur_read], 0
-        mov     [ntfs_cur_buf], ntfs_attrlist_buf
-        push    edx
+        mov     eax, ntfs_attrlist_buf
+        cmp     [ntfs_cur_iRecord], 0
+        jnz     @f
+        mov     eax, ntfs_attrlist_mft_buf
+@@:
+        mov     [ntfs_cur_buf], eax
+        push    eax
         call    .doreadattr
-        pop     edx
+        pop     esi
+        mov     edx, 1
         pop     dword [ntfs_attr_size+4]
         pop     dword [ntfs_attr_size]
         mov     ebp, [ntfs_cur_read]
@@ -509,10 +520,9 @@ ntfs_read_attr:
         pop     [ntfs_cur_size]
         pop     [ntfs_cur_offs]
         jc      .errret
-        mov     esi, ntfs_attrlist_buf
         or      edi, -1
-.scanliststart:
         lea     ebp, [ebp+esi-1Ah]
+.scanliststart:
         mov     eax, [ntfs_cur_attr]
 .scanlist:
         cmp     esi, ebp
@@ -523,6 +533,12 @@ ntfs_read_attr:
         movzx   ecx, word [esi+4]
         add     esi, ecx
         jmp     .scanlist
+@@:
+; ignore named $DATA attributes (aka NTFS streams)
+        cmp     eax, 0x80
+        jnz     @f
+        cmp     byte [esi+6], 0
+        jnz     .scanlistcont
 @@:
         push    eax
         mov     eax, [esi+8]
@@ -550,8 +566,14 @@ ntfs_read_attr:
         jz      .errret_pop
         cmp     dword [eax], ecx
         jz      @f
+.l1:
         add     eax, [eax+4]
         jmp     @b
+@@:
+        cmp     eax, 0x80
+        jnz     @f
+        cmp     byte [eax+9], 0
+        jnz     .l1
 @@:
         cmp     byte [eax+8], 0
         jnz     .sdnores
@@ -590,39 +612,54 @@ ntfs_read_attr:
         ret
 .scanlistdone:
         sub     ebp, ntfs_attrlist_buf-1Ah
-        test    ebp, 1FFh
-        jnz     .scanlistfound
-        test    edx, edx
+        cmp     [ntfs_cur_iRecord], 0
         jnz     @f
-        inc     edx
+        sub     ebp, ntfs_attrlist_mft_buf-ntfs_attrlist_buf
+@@:
         cmp     ebp, 0x400
         jnz     .scanlistfound
-@@:
         inc     edx
         push    esi edi
         mov     esi, ntfs_attrlist_buf+0x200
         mov     edi, ntfs_attrlist_buf
+        cmp     [ntfs_cur_iRecord], 0
+        jnz     @f
+        mov     esi, ntfs_attrlist_mft_buf+0x200
+        mov     edi, ntfs_attrlist_mft_buf
+@@:
         mov     ecx, 0x200/4
         rep     movsd
+        mov     eax, edi
         pop     edi esi
         sub     esi, 0x200
         push    [ntfs_cur_offs]
         push    [ntfs_cur_size]
         push    [ntfs_cur_read]
         push    [ntfs_cur_buf]
+        push    dword [ntfs_attr_size]
+        push    dword [ntfs_attr_size+4]
+        or      dword [ntfs_attr_size], -1
+        or      dword [ntfs_attr_size+4], -1
         mov     [ntfs_cur_offs], edx
         mov     [ntfs_cur_size], 1
         and     [ntfs_cur_read], 0
-        mov     [ntfs_cur_buf], ntfs_attrlist_buf+0x200
+        mov     [ntfs_cur_buf], eax
+        mov     ecx, [ntfs_attr_list]
         push    esi edx
         call    .doreadattr
         pop     edx esi
         mov     ebp, [ntfs_cur_read]
+        pop     dword [ntfs_attr_size+4]
+        pop     dword [ntfs_attr_size]
         pop     [ntfs_cur_buf]
         pop     [ntfs_cur_read]
         pop     [ntfs_cur_size]
         pop     [ntfs_cur_offs]
         jc      .errret
+        add     ebp, ntfs_attrlist_buf+0x200-0x1A
+        cmp     [ntfs_cur_iRecord], 0
+        jnz     .scanliststart
+        add     ebp, ntfs_attrlist_mft_buf-ntfs_attrlist_buf
         jmp     .scanliststart
 
 .doreadattr:
