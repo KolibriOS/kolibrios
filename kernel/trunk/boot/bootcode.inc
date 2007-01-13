@@ -330,6 +330,13 @@ if lang eq ru
         mov  ax,1100h
           int  10h
  ; End set VGA russian font
+else if lang eq et
+        mov  bp,ET_FNT-10000h   ; ET_FNT1
+        mov  bx,1000h           ; 
+        mov  cx,255             ; 256 symbols
+        mov  dx,0h              ; 0 - position of first symbol
+        mov  ax,1100h
+        int  10h
 end if
 
 ; draw frames
@@ -822,6 +829,12 @@ if lang eq ru
     jz    @f
     mov    cl, 'ë'
 @@:    mov    [time_str+9-0x10000], cl
+else if lang eq et
+    cmp    al, 1
+    ja     @f
+    mov    [time_str+9-0x10000], ' '
+    mov    [time_str+10-0x10000],' '
+@@: 
 else
 ; wait 5/4/3/2 seconds, 1 second
     cmp    al, 1

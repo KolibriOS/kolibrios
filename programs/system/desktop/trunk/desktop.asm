@@ -986,35 +986,54 @@ lsz text,\
     en,  ' WINDOW WORK AREA GRAPH         ',\
     en,  '                                ',\
     en,  '  LOAD    SAVE                  ',\
-    en,  'x'
-
+    en,  'x',\
+    et,  ' AKNA RAAM                      ',\
+    et,  ' AKNA HAARAMISE RIBA            ',\
+    et,  ' AKNA HAARAMISE NUPP            ',\
+    et,  ' AKNA HAARAMISE NUPU TEKST      ',\
+    et,  ' AKNA HAARAMISE PEALKIRI        ',\
+    et,  ' AKNA TÖÖPIIRKOND               ',\
+    et,  ' AKNA TÖÖPIIRKONNA NUPP         ',\
+    et,  ' AKNA TÖÖPIIRKONNA NUPPU TEKST  ',\
+    et,  ' AKNA TÖÖPIIRKONNA TEKST        ',\
+    et,  ' AKNA TÖÖPIIRKONNA GRAAFIKA     ',\
+    et,  '                                ',\
+    et,  '  LAADI SALVESTA                ',\
+    et,  'x'
 
 lsz t1,\
     ru, '  3D   ‹‘Šˆ…   ˆŒ…ˆ’œ ',\
-    en, '  3D   FLAT    APPLY  '
+    en, '  3D   FLAT    APPLY  ',\
+    et, '  3D   LAME   KINNITA '
 
 lsz t2,\
     ru,  ' ‡€ƒ“‡ˆ’œ   ˆŒ…ˆ’œ ',\
     en,  '  LOAD     APPLY  ',\
+    et,  '  LAADI   KINNITA '
 
 lsz caption_text,\
     ru, '‡ £®«®¢®ª',\
-    en, 'Caption'
+    en, 'Caption',\
+    et, 'Pealkiri'
 
 sz  close_text,'x'
 
 lsz window_text,\
     ru, '’¥ªáâ ¢ ®ª­¥',\
-    en, 'Window text'
+    en, 'Window text',\
+    et, 'Akna tekst'
 
 lsz button_text,\
     ru, '’¥ªáâ ­  ª­®¯ª¥',\
-    en, 'Button text'
+    en, 'Button text',\
+    et, 'Nupu tekst'
 
 sz  default_skn, '/RD/1/DEFAULT.SKN',0
 
 if lang eq ru
   header db '€‘’‰Š€ Š',0
+else if lang eq et
+  header db 'AKNA SEADED - VALI VÄRV JA VAJUTA OBJEKTILE',0
 else
   header db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
 end if

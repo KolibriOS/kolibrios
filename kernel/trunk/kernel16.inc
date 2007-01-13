@@ -26,7 +26,11 @@ else
 include "boot/bootge.inc"      ; german system boot messages
 ;!!!
 end if
+if lang eq et
+include "boot/et.inc"          ; Estonian font
+else
 include "boot/ru.inc"          ; Russian font
+end if
 org $-0x10000
 
 include "boot/bootcode.inc"    ; 16 bit system boot code

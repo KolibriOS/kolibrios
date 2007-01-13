@@ -188,6 +188,20 @@ else if lang eq en
       db   '  RESTART         CANCEL'
   label3_len = $ - label3
 
+else if lang eq et
+
+  label1:
+      db   '  VALI:'
+  label1_len = $ - label1
+
+  label2:
+      db   'LÜLITA VÄLJA     KERNEL'
+  label2_len = $ - label2
+
+  label3:
+      db   '  RESTART         TÜHISTA'
+  label3_len = $ - label3
+
 else 
 
   label1:

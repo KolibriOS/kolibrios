@@ -94,7 +94,7 @@ prnotfnd  db      "Fataalne - Videoreziimi ei leitud.",0
 ;modena    db      "Fataalne - VBE 0x112+ on vajalik.",0
 not386    db      "Fataalne - CPU 386+ on vajalik.",0
 btns      db      "Fataalne - Ei suuda värvisügavust määratleda.",0
-fatalsel  db      "Fataalne - Graafiline reziimi riistvara ei toeta.",0
+fatalsel  db      "Fataalne - Graafilist reziimi riistvara ei toeta.",0
 badsect   db      13,10,186," Fataalne - Vigane sektor. Asenda diskett.",0
 memmovefailed db  13,10,186," Fataalne - Int 0x15 liigutamine ebaõnnestus.",0
 okt       db      " ... OK"
@@ -106,7 +106,7 @@ boot_dev  db      0  ; 0=floppy, 1=hd
 start_msg db      "Vajuta [abcd] seadete muutmiseks, vajuta [Enter] laadimise jätkamiseks",13,10,0
 time_msg  db      " või oota "
 time_str  db      " 5 sekundit"
-          db      " automaatset jatkamist",13,10,0
+          db      " automaatseks jätkamiseks",13,10,0
 current_cfg_msg db "Praegused seaded:",13,10,0
 curvideo_msg db   " [a] Videoreziim: ",0
 mode1     db      "640x480",0
@@ -131,4 +131,4 @@ pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "kasuta juba laaditud kujutist",13,10,0
 loading_msg db    "Laadin KolibriOS...",0
 save_quest db     "Jäta meelde praegused seaded? [y/n]: ",0
-loader_block_error db "Alglaaduri andmed vigased, ei saa järkata. Peatatud.",0
+loader_block_error db "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.",0
