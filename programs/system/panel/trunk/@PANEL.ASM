@@ -1913,11 +1913,12 @@ m_icon:
 
 lsz m_text,\
   ru, "åÖçû",\
-  en, "MENU"
+  en, "MENU",\
+  et, "MEN‹‹"
 
 mi_text   db   'WAVETETRBGRDGPL '
 
-flag_text db 'EnFiGeRuFr'
+flag_text db 'EnFiGeRuFrEt'
 
 type_lang db 0
 ;music_type db 1

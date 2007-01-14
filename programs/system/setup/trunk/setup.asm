@@ -196,7 +196,7 @@ set_syslanguage_and_exit:
     mov  ebx,5
 ;    mov  ecx,9
     int  0x40
-    cmp  eax,4
+    cmp  eax,6
     jne  temp      ;@f
     xor  eax,eax
 ;@@: inc  eax
@@ -477,7 +477,7 @@ close:
     dec  eax
     jmp  nodownup
    downuplbl:
-    mov  eax,4
+    mov  eax,5
    nodownup:
     mov  [keyboard],eax
     call draw_infotext
@@ -485,7 +485,7 @@ close:
     cmp  ah,5
     jnz  nokp
     mov  eax,[keyboard]
-    cmp  eax,4
+    cmp  eax,5
     je         updownlbl
     inc  eax
     jmp  noupdown
@@ -678,7 +678,7 @@ close:
     cmp  ah,43
     jnz  nosysp
     mov  eax,[syslang]
-    cmp  eax,4
+    cmp  eax,6
     je         nosysp
     inc  eax
     mov  [syslang],eax
@@ -842,6 +842,23 @@ close:
     mov  edx,5
     int  0x40
   nosetkeylfr:
+    cmp  [keyboard],5
+    jnz  nosetkeylet
+    mov  eax,21       ; estonian
+    mov  ebx,2
+    mov  ecx,1
+    mov  edx,et_keymap
+    int  0x40
+    mov  eax,21
+    inc  ecx
+    mov  edx,et_keymap_shift
+    int  0x40
+    mov  eax,21
+    mov  ecx,9
+    mov  edx,6
+    int  0x40
+    call alt_gen
+  nosetkeylet:
     ret
 
  alt_gen:
@@ -1029,7 +1046,11 @@ draw_infotext:
     mov  [text00+LLL*10+28],dword 'FREN'
     mov  [text00+LLL*10+32],dword 'CH  '
   nofr:
-
+    cmp  eax,5
+    jnz  noet
+    mov  [text00+LLL*10+28],dword 'ESTO'
+    mov  [text00+LLL*10+32],dword 'NIAN'
+  noet:
 
     mov  eax,[syslang]            ; SYSTEM LANGUAGE
     dec  eax
@@ -1058,7 +1079,11 @@ draw_infotext:
     mov  [text00+LLL*8+28],dword 'FREN'
     mov  [text00+LLL*8+32],dword 'CH  '
   nofr5:
-
+    cmp  eax,5
+    jne  noet5
+    mov  [text00+LLL*8+28],dword 'ESTO'
+    mov  [text00+LLL*8+32],dword 'NIAN'
+  noet5:
 
     mov  eax,[midibase]
     mov  esi,text00+LLL*0+32
@@ -1704,6 +1729,33 @@ ru_keymap_shift:
      db   0,"”›‚€Ž‹„†"
      db   0xf0, '-\'
      db   "Ÿ—‘Œˆ’œž",',-','45 '
+     db   '@234567890123',180,178,184,'6',176,'7'
+     db   179,'8',181,177,183,185,182
+     db   'AB>D',255,'FGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+et_keymap:
+
+     db   '6',27
+     db   '1234567890+´',8,9
+     db   'qwertyuiopüõ',13
+     db   '~asdfghjklöä','1',0,'<zxcvbnm,.-',0,'45 '
+     db   '@234567890123',180,178,184,'6',176,'7'
+     db   179,'8',181,177,183,185,182
+     db   'AB<D',255,'FGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+
+et_keymap_shift:
+
+     db   '6',27
+     db   '!"#¤%&/()=?`',8,9
+     db   'QWERTYUIOPÜÕ',13
+     db   '~ASDFGHJKLÖÄ','1',0,'>ZXCVBNM;:_',0,'45 '
      db   '@234567890123',180,178,184,'6',176,'7'
      db   179,'8',181,177,183,185,182
      db   'AB>D',255,'FGHIJKLMNOPQRSTUVWXYZ'
