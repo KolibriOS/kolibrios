@@ -95,7 +95,7 @@ iglobal
       dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd sys_sb16                ; 25-SetSb16
       dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
-      dd sys_wss                 ; 27-SetWssMainVol and SetWssCdVol
+      dd undefined_syscall       ; 27-reserved
       dd sys_sb16II              ; 28-SetSb16
       dd sys_date                ; 29-GetDate
       dd undefined_syscall       ; 30-reserved

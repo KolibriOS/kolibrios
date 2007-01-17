@@ -5,9 +5,9 @@
 ;*            to MBR - Mario79                               *
 ;*************************************************************
 
+uglobal
 align 4
 
-iglobal
 ;******************************************************
 ; Please do not change this place - variables  in text 
 ; Mario79
@@ -16,6 +16,7 @@ iglobal
 PARTITION_START      dd 0x3f
 PARTITION_END        dd 0
 fs_type              db 0       ; 0=none, 1=NTFS, 16=FAT16, 32=FAT32
+align 4
 
 fs_dependent_data_start:
 ; FATxx data
@@ -64,6 +65,8 @@ end virtual
 ; End place
 ; Mario79
 ;***************************************************************************
+endg
+iglobal
 
   partition_types:              ; list of fat16/32 partitions
     db    0x04                  ; DOS: fat16 <32M

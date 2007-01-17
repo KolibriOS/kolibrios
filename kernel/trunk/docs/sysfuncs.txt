@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.6.0.0
+SYSTEM FUNCTIONS of OS Kolibri 0.6.3.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -680,7 +680,7 @@ Returned value:
   * eax = 0 - success
   * else eax = error code of the file system
 Замечания:
-  * Filename is fixed, "menuet.img" (global kernel variable
+  * Filename is fixed, "kolibri.img" (global kernel variable
     'image_save' from 'preboot.inc')
   * Drive and partition are defined by subfunction 7
     and subfunction 8 of function 21.
@@ -812,7 +812,7 @@ Format of the table: short version:
     otherwise it shows number of the recognized partitions, which
     can be not presented (if the drive is not formatted or if
     the file system is not supported). Current version of the kernel
-    supports only FAT16 and FAT32 for hard disks.
+    supports only FAT16, FAT32 and NTFS for hard disks.
   * +6: 4 db: reserved
 Format of the table: full version:
   * +0: 10 db: same as for the short version
@@ -828,37 +828,13 @@ Format of the information about partition
   * +0: dword: first physical sector of the partition
   * +4: dword: last physical sector of the partition
     (belongs to the partition)
-  * +8: dword: sectors per one copy of FAT
-  * +12 = +0xC: dword: number of copies of FAT
-  * +16 = +0x10: dword: number of sectors per cluster
-  * +20 = +0x14: dword: bytes per sector;
-    current implementation expects 0x200 = 512 in this field
-  * +24 = +0x18: dword: first root cluster in FAT32, 0 for FAT16
-  * +28 = +0x1C: dword: first physical sector of FAT
-  * +32 = +0x20: dword: first physical root sector for FAT16,
-    ignored for FAT32
-  * +36 = +0x24: dword: number of root sectors for FAT16,
-    0 for FAT32
-  * +40 = +0x28: dword: physical sector of the beginning of
-    the data area
-  * +44 = +0x2C: dword: maximum number of a cluster
-  * +48 = +0x30: dword: physical sector of the information
-    about the file system for FAT32, ignored for FAT16
-  * +52 = +0x34: dword: value used as boundary for special
-    values in FAT
-  * +56 = +0x38: dword: value used for bad clusters in FAT
-  * +60 = +0x3C: dword: value used as the end marker for FAT chain
-  * +64 = +0x40: dword: mask for FAT items
-  * +68 = +0x44: byte: file system type: 16 или 32
-  * +69 = +0x45: 31 db: reserved
+  * +8: byte: file system type:
+    16=FAT16, 32=FAT32, 1=NTFS
+  * other data are dependent on file system, are modified with
+    kernel modifications and therefore are not described
 Remarks:
   * The short table can be used for obtaining the information about
     available devices.
-  * First two fields in the information about partition
-    gives the parameters of partition, other - parameters of
-    FAT file system. For other file systems (when they will be
-    supported) specific for file system information will be, of
-    course, another, but first two fields will have the same sense.
 
 ======================================================================
 ========== Function 18, subfunction 13 - get kernel version. =========
@@ -874,8 +850,8 @@ Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
 db 'name',0 - ASCIIZ-string with the name
-For Kolibri 0.5.8.1 kernel:
-db 0,5,8,1
+For Kolibri 0.6.3.0 kernel:
+db 0,6,3,0
 db 2
 db 'Kolibri',0
 
@@ -1138,21 +1114,6 @@ Remarks:
   * Function does not check for correctness, as the kernel does not
     use this variable.
   * To get system language use subfunction 5 of function 26.
-
-======================================================================
-=========== Function 21, subfunction 6 - set WSS base port. ==========
-======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 6 - subfunction number
-  * ecx = base port
-Returned value:
-  * eax = 0 - success
-  * eax = -1 - erratic port number
-Remarks:
-  * Port number must satisfy to condition 0x100<=ecx.
-  * WSS base is used by function 27.
-  * To get WSS base port use subfunction 6 of function 26.
 
 ======================================================================
 ============== Function 21, subfunction 7 - set HD base. =============
@@ -1575,18 +1536,6 @@ Remarks:
   * To set system language use subfunction 5 of function 21.
 
 ======================================================================
-=========== Function 26, subfunction 6 - get WSS base port. ==========
-======================================================================
-Parameters:
-  * eax = 26 - function number
-  * ebx = 6 - subfunction number
-Returned value:
-  * eax = base port
-Remarks:
-  * WSS base is used by function 27.
-  * To set WSS base port use subfunction 6 of function 21.
-
-======================================================================
 ============== Function 26, subfunction 7 - get HD base. =============
 ======================================================================
 The HD base defines hard disk to write with usage of obsolete
@@ -1675,27 +1624,6 @@ Remarks:
   * Is used by operations with PCI bus (function 62).
   * The current implementation uses only low bit of ecx.
   * To set the current state use subfunction 12 of function 21.
-
-======================================================================
-======== Function 27 - set Windows Sound System (WSS) volume. ========
-======================================================================
-Parameters:
-  * eax = 27 - function number
-  * ebx = what to set:
-    * 1 - set common volume
-    * 2 - set Line In volume
-  * cl = volume level (0x0=highest, 0x1F=lowest,
-    if bit 0x80 is set=disable)
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - WSS base is not defined
-  * eax = 2 - incorrect subfunction
-Remarks:
-  * Previously WSS base port must be defined by call to 
-    subfunction 6 of function 21.
-  * Set of common volume is ignored (function simply returns eax=0).
-  * Old documentation and kernel sources erraticly name function 2
-    as CD-audio volume.
 
 ======================================================================
 =================== Function 28 - set SB16 volume. ===================
@@ -1797,7 +1725,7 @@ Remarks:
     the current videomode, use function 61.
 
 ======================================================================
-========= Function 37 - get coordinates/status of the mouse. =========
+=================== Function 37 - work with mouse. ===================
 ======================================================================
 
 ---------- Subfunction 0 - screen coordinates of the mouse -----------
@@ -1832,6 +1760,54 @@ Returned value:
   * bit 0 is set = left button is pressed
   * bit 1 is set = right button is pressed
   * other bits are cleared
+
+-------------------- Subfunction 4 - load cursor ---------------------
+Parameters:
+  * eax = 37 - function number
+  * ebx = 4 - subfunction number
+  * dx = data source:
+  * dx = LOAD_FROM_FILE = 0 - data in a file
+    * ecx = pointer to full path to the cursor file
+    * the file must be in the format .cur, which is standard for
+      MS Windows, at that of the size 32*32 pixels
+  * dx = LOAD_FROM_MEM = 1 - data of file are already loaded in memory
+    * ecx = pointer to data of the cursor file
+    * the data format is the same as in the previous case
+  * dx = LOAD_INDIRECT = 2 - data in memory
+    * ecx = pointer to cursor image in the format ARGB 32*32 pixels
+    * edx = 0xXXYY0002, where
+      * XX = x-coordinate of cursor hotspot
+      * YY = y-coordinate
+      * 0 <= XX, YY <= 31
+Returned value:
+  * eax = 0 - failed
+  * otherwise eax = cursor handle
+
+--------------------- Subfunction 5 - set cursor ---------------------
+Sets new cursor for the window of the current thread.
+Parameters:
+  * eax = 37 - function number
+  * ebx = 5 - subfunction number
+  * ecx = cursor handle
+Returned value:
+  * eax = handle of previous cursor
+Remarks:
+  * If the handle is incorrect, the function restores the default
+    cursor (standard arrow). In particular, ecx=0 restores it.
+
+------------------- Subfunction 6 - delete cursor --------------------
+Parameters:
+  * eax = 37 - function number
+  * ebx = 6 - subfunction number
+  * ecx = cursor handle
+Returned value:
+  * eax destroyed
+Remarks:
+  * The cursor must be loaded previously by the current thread
+    (with the call to subfunction 4). The function does not delete
+    system cursors and cursors, loaded by another applications.
+  * If the active cursor (set by subfunction 5) is deleted,
+    the system restores the default cursor (standard arrow).
 
 ======================================================================
 ====================== Function 38 - draw line. ======================
@@ -2051,9 +2027,8 @@ Remarks:
     that was not earlier reserved by this function
     (with same ecx,edx).
   * If an error occurs (for both cases) function performs no action.
-  * At booting the system reserves for itself ports 0..0xff, and if
-    COM-mouse is detected - additionally range of COM-ports
-    0x3f0..0x3ff and/or 0x2f0..0x2ff.
+  * At booting the system reserves for itself ports
+    0..0x2d, 0x30..0x4d, 0x50..0xdf, 0xe5..0xff (inclusively).
   * When a thread terminates, all reserved by it ports
     are freed automatically.
 
@@ -2526,6 +2501,20 @@ Returned value:
     in future versions
 
 ======================================================================
+======== Function 52, subfunction 15 - get local MAC address. ========
+======================================================================
+Parameters:
+  * eax = 52 - function number
+  * ebx = 15 - subfunction number
+  * ecx = 0 - read first 4 bytes,
+    ecx = 4 - read last 2 bytes
+Returned value:
+  * for ecx=0: eax = first 4 bytes of MAC address
+  * for ecx=4: ax = last 2 bytes of MAC address,
+               high half of eax is destroyed
+  * for other ecx: eax = -1 indicates an error
+
+======================================================================
 ============ Function 53, subfunction 0 - open UDP-socket. ===========
 ======================================================================
 Parameters:
@@ -2818,30 +2807,6 @@ Remarks:
     the program.
   * The data must be kept in the memory at least up to the end
     of play.
-
-======================================================================
-=============== Function 56 - write file to hard disk. ===============
-======================================================================
-Parameters:
-  * eax = 56 - function number
-  * ebx = pointer to the file name
-  * ecx = size of data to write (in bytes)
-  * edx = pointer to data to write
-  * esi = pointer to path (ASCIIZ-string)
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-Remarks:
-  * This function is obsolete; function 70 allows to fulfil the same
-    operations with the extended possibilities.
-  * This function assumes that during its call by one application
-    no other application works with hard disk.
-  * The path to file is ASCIIZ-string, which may be empty
-    (if the file is created in the root folder) or have the format
-    /d1/d2/.../dn, where all folder names must have the 8+3 format,
-    i.e. 8 characters of name and 3 characters of the extension
-    without separator, supplemented by blanks if necessary;
-    all letters must be capital.
-  * The file name must also have the format 8+3.
 
 ======================================================================
 ================ Function 58 - work with file system. ================
@@ -3757,8 +3722,8 @@ Remarks:
   * The function can load only drivers which are registered in the
     system; the current implementation contains
     exactly 2 such drivers:
-    * name SOUND, file /rd/1/unisound.obj
-    * name INFINITY, file /rd/1/infinity.obj
+    * name SOUND, file /rd/1/drivers/unisound.obj
+    * name INFINITY, file /rd/1/drivers/infinity.obj
 
 ======================================================================
 ============ Function 68, subfunction 17 - driver control. ===========
@@ -3789,6 +3754,21 @@ Parameters:
   * ecx = address of the new exception handler
 Returned value:
   * eax = address of the old exception handler (0, if it was not set)
+
+======================================================================
+=============== Function 68, subfunction 19 - load DLL. ==============
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 19 - subfunction number
+  * ecx = pointer to ASCIIZ-string with the full path to DLL
+Returned value:
+  * eax = 0 - failed
+  * otherwise eax = pointer to DLL export table
+Remarks:
+  * Export table is an array of structures of 2 dword's, terminated
+    by zero. The first dword in structure points to function name,
+    the second dword contains address of function.
 
 ======================================================================
 ====================== Fucntion 69 - debugging. ======================

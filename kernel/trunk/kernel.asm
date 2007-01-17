@@ -1172,50 +1172,6 @@ sys_sb16II:
      ret
 
 
-align 4
-
-sys_wss:
-
-     cmp  word [wss],word 0
-     jnz  wssl1
-     mov  [esp+36],dword 1
-     ret
-   wssl1:
-
-     cmp  eax,1    ; set volume - main
-     jnz  wssl2
-     mov  [esp+36],dword 0
-     ret
-   wssl2:
-
-     cmp  eax,2    ; set volume - cd
-     jnz  wssl3
-     ; L
-     mov  dx,word [wss]
-     add  dx,4
-     mov  al,0x2
-     out  dx,al
-     mov  esi,1
-     call delay_ms
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     ; R
-     mov  dx,word [wss]
-     add  dx,4
-     mov  al,0x3
-     out  dx,al
-     mov  esi,1
-     call delay_ms
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     mov  [esp+36],dword 0
-     ret
-   wssl3:
-     mov   [esp+36],dword 2
-     ret
-
 display_number:
 
 ; eax = print type, al=0 -> ebx is number
@@ -1385,7 +1341,6 @@ sys_setup:
 ; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
 ; 4=sb16 base , base io address
 ; 5=system language, 1eng 2fi 3ger 4rus
-; 6=wss base , base io address
 ; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
 ; 8=fat32 partition in hd
 ; 9
@@ -1502,17 +1457,6 @@ cd_base db 0
      ret
    nsyse5:
 
-     cmp  eax,6                      ; WSS
-     jnz  nsyse6
-     cmp  ebx,0x100
-     jb   nsyse6
-     mov  [wss],ebx
-     ret
-
-wss_temp dd 0
-
-   nsyse6:
-
      cmp  eax,7                      ; HD BASE
      jne  nsyse7
      test ebx,ebx
@@ -1612,7 +1556,6 @@ sys_getsetup:
 ; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
 ; 4=sb16 base , base io address
 ; 5=system language, 1eng 2fi 3ger 4rus
-; 6=wss base
 ; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
 ; 8=fat32 partition in hd
 ; 9=get hs timer tic
@@ -1683,12 +1626,6 @@ sys_getsetup:
      mov  [esp+36],eax
      ret
    ngsyse5:
-     cmp  eax,6
-     jnz  ngsyse6
-     mov  eax,[wss]
-     mov  [esp+36],eax
-     ret
-   ngsyse6:
      cmp  eax,7
      jnz  ngsyse7
      movzx eax,[hd_base]
@@ -5022,7 +4959,6 @@ wraw_bacground_select db 0
   pci_access_enabled  dd   0x0  ; 0 = disabled , 1 = enabled
 
   sb16       dd 0x0
-  wss        dd 0x0
 
   buttontype         dd 0x0
   windowtypechanged  dd 0x0
