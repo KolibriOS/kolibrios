@@ -310,7 +310,8 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
              app_tabs    dd ?
            endl
 
-           stdcall wait_mutex, pg_data.pg_mutex
+           mov ebx, pg_data.pg_mutex
+           call wait_mutex   ;ebx
 
            xor eax, eax
            mov [dir_addr], eax
@@ -491,7 +492,8 @@ endp
 align 4
 proc destroy_app_space stdcall, pg_dir:dword
 
-           stdcall wait_mutex, pg_data.pg_mutex
+           mov ebx, pg_data.pg_mutex
+           call wait_mutex   ;ebx
 
            xor   edx,edx
            mov   eax,0x2
@@ -571,7 +573,8 @@ proc fs_execute
            mov eax, [ebp]
            mov [filename], eax
 
-           stdcall wait_mutex, pg_data.tmp_task_mutex
+           mov ebx, pg_data.tmp_task_mutex
+           call wait_mutex   ;ebx
 
            mov edi, [tmp_task_data]
            mov ecx, (1024+256)/4
@@ -941,24 +944,25 @@ proc new_sys_threads
            ret
 endp
 
+; param
+;  ebx=mutex
+
 align 4
-proc wait_mutex stdcall, mutex:dword
-           mov ebx, [mutex]
-.wait_lock:
+wait_mutex:
+           push eax
+           push ebx
            cmp dword [ebx],0
            je .get_lock
-           push ebx
            call change_task
-           pop ebx
-           jmp .wait_lock
-
+           jmp wait_mutex
 .get_lock:
            mov eax, 1
            xchg eax, [ebx]
            test eax, eax
-           jnz .wait_lock
+           jnz wait_mutex
+           pop ebx
+           pop eax
            ret
-endp
 
 align 4
 proc set_app_params stdcall,slot:dword, params:dword,\

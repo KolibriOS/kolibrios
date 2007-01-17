@@ -261,6 +261,25 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
 endp
 
 align 4
+alloc_cursor:
+
+           mov eax, CURSOR_SIZE
+           call malloc
+           test eax, eax
+           jz .fail
+
+           xor ebx, ebx
+           mov [eax+CURSOR.magic], 'CURS'
+           mov [eax+CURSOR.size],  CURSOR_SIZE
+           mov [eax+CURSOR.pid], ebx
+           mov [eax+CURSOR.hot_x], ebx
+           mov [eax+CURSOR.hot_y], ebx
+.fail:
+           ret
+
+if 0
+
+align 4
 proc alloc_cursor
 
            pushfd
@@ -295,6 +314,7 @@ proc alloc_cursor
            ret
 endp
 
+
 align 4
 proc free_cursor
            pushfd
@@ -322,6 +342,7 @@ proc free_cursor
            ret
 endp
 
+end if
 
 align 4
 proc set_cursor stdcall, hcursor:dword
@@ -465,8 +486,7 @@ proc delete_cursor stdcall, hcursor:dword
            stdcall kernel_free, [esi+CURSOR.base]
 .exit:
            mov eax, [hcursor]
-           call free_cursor
-           ret
+           call free
 .fail:
            ret
 endp
@@ -489,6 +509,7 @@ proc init_cursors
 .init:
            mov [cur_def_interl], ebx
 
+if 0
            xor eax, eax
            mov edi, cursors
            mov ecx, CURSOR_SIZE*16
@@ -502,7 +523,7 @@ proc init_cursors
            mov [cursor_start], edx
            add edx, 8
            mov [cursor_end], edx
-
+end if
            stdcall load_driver, drv_hw_mouse
            mov [hw_cursor], eax
            test eax, eax

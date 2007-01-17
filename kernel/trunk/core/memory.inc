@@ -370,7 +370,8 @@ endp
 align 4
 proc new_mem_resize stdcall, new_size:dword
 
-           stdcall wait_mutex, pg_data.pg_mutex
+           mov ebx, pg_data.pg_mutex
+           call wait_mutex    ;ebx
 
            mov edi, [new_size]
            add edi,4095
@@ -1275,10 +1276,10 @@ align 16
 align 16
 cur_saved_data   rb 4096
 
-cursors          rb CURSOR_SIZE*64
-cursor_map       rd 2
-cursor_start     rd 1
-cursor_end       rd 1
+;cursors          rb CURSOR_SIZE*64
+;cursor_map       rd 2
+;cursor_start     rd 1
+;cursor_end       rd 1
 
 def_cursor       rd 1
 hw_cursor        rd 1
@@ -1296,6 +1297,8 @@ endg
 
 uglobal
 align 16
+
+   mst MEM_STATE
 
    dll_tab         rb 32*32
    srv_tab         rb 36*32

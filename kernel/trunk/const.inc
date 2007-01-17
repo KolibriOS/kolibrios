@@ -363,6 +363,16 @@ virtual at 0
   BOOT_DATA BOOT_DATA
 end virtual
 
+struc MEM_STATE
+{  .mutex             rd 1
+   .smallmap          rd 1
+   .treemap           rd 1
+   .topsize           rd 1
+   .top               rd 1
+   .smallbins         rd 4*32
+   .treebins          rd 32
+}
+
 struc PG_DATA
 { .mem_amount        dd ?
   .vesa_mem          dd ?

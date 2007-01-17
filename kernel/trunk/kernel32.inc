@@ -223,6 +223,7 @@ include "core/syscall.inc"  ; system call
 include "core/fpu.inc"      ; all fpu/sse support
 include "core/memory.inc"
 include "core/heap.inc"     ; kernel and app heap
+include "core/malloc.inc"   ; small kernel heap
 include "core/taskman.inc"
 include "core/dll.inc"
 include "core/exports.inc"

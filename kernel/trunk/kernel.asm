@@ -406,6 +406,8 @@ B32:
            call init_mtrr
            call init_fpu
 
+           call init_malloc
+
            stdcall alloc_kernel_space, 0x4F000
            mov [ipc_tmp], eax
            mov ebx, 0x1000
