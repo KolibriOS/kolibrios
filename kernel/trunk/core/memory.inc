@@ -264,6 +264,52 @@ proc free_page
            ret
 endp
 
+; param
+;  ecx= size
+;  eax= base
+
+align 4
+release_pages:
+
+           mov ebx, pg_data.pg_mutex
+           call wait_mutex      ;ebx
+
+           shr ecx, 12
+           mov esi, eax
+           mov edi, eax
+
+           shr esi, 10
+           add esi, pages_tab
+
+           mov ebx, [page_start]
+           mov edx, sys_pgmap
+@@:
+           xor eax, eax
+           xchg eax, [esi]
+           invlpg [edi]
+
+           test eax, 1
+           jz .next
+
+           shr eax, 12
+           bts [edx], eax
+           inc [pg_data.pages_free]
+           shr eax, 3
+           and eax, -4
+           add eax, edx
+           cmp eax, ebx
+           jae .next
+
+           mov ebx, eax
+.next:
+           add edi, 0x1000
+           add esi, 4
+           dec ecx
+           jnz @B
+
+           and [pg_data.pg_mutex],0
+           ret
+
 align 4
 proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
            mov ebx, [lin_addr]
@@ -1317,6 +1363,8 @@ align 16
    mem_block_arr   rd 1
    mem_block_start rd 1
    mem_block_end   rd 1
+
+   heap_mutex      rd 1
    heap_size       rd 1
    heap_free       rd 1
    heap_blocks     rd 1
