@@ -3,8 +3,8 @@
 ; compiler:          flat assembler 1.67.15
 ; memory to compile: 2.0/7.0 MBytes (without/with size optimizations)
 ; version:           4.0.4 pre
-; last update:       2007-01-07 (Jan 7, 2007)
-; minimal kernel:    revision #138 (svn://kolibrios.org/kernel)
+; last update:       2007-01-18 (Jan 18, 2007)
+; minimal kernel:    revision #270 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Mike Semenyako          >> mike.dld@gmail.com
@@ -17,23 +17,23 @@
 ;   - other bug-fixes and speed/size optimizations
 ;   - save settings to ini file, not to executable
 ;
-; TODO (FOR 4.0.4, PLANNED FOR 2007-01-21):
-;   - finish tabbed interface (some bug with tab switching) [critical]
-;   - add memory reallocation to keys handler [critical]
-;   - rework save_file (memory manager) [critical]
-;   - fix scrollbars dragging coordinates calculation [critical]
-;   - fix parameters parsing (incl. DOCPAK) [average]
-;   - reduce flickering (introduce changes checker) [normal]
-;   - fix incorrect saved/modified lines flags on copy/paste [normal]
-;   - add prompt to save file before closing/opening [low]
+; TODO (4.0.4, PLANNED FOR 2007-01-21):
+;   normal:
+;     - finish tabbed interface (tab switching, Ctrl+F4)
+;     - reduce flickering (introduce changes checker)
+;     - compile default file if selected
+;   low:
+;     - add prompt to save file before closing/opening
 ;
 ; HISTORY:
 ; 4.0.4 pre (mike.dld)
 ;   bug-fixes:
 ;     - statusbar contained hint after dialog operation cancelled
 ;     - small drawing fix for gutter and line saved/modified markers
+;     - incorrect lines marking on Ctrl+V
 ;   changes:
-;     - editor and other modifications to ease parts placement changing
+;     - editor and other modifications to ease parts placement changing,
+;       including changes in look
 ;     - modified/saved colors now match those in MSVS
 ;     - function 70 for *all* file operations (including diamond's fixes)
 ;     - use memory manager instead of statically allocated region
@@ -43,7 +43,8 @@
 ;   new features:
 ;     - recode tables between CP866, CP1251 and KOI8-R (suggested by Victor)
 ;     - tabbed interface, ability to open several files in one app instance
-;       (thanks IRC guys for ideas and testing)
+;       (thanks IRC guys for ideas and testing
+;     - make any tab default to compile it disregarding currently active tab
 ; 4.0.3 (mike.dld)
 ;   bug-fixes:
 ;     - 1-char selection if pressing <BS> out of real line length
@@ -163,18 +164,21 @@ header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,self_path
 APP_VERSION equ '4.0.4 pre'
 
 ;include 'debug.inc'
+;define __DEBUG__ 1
+;define __DEBUG_LEVEL__ 1
+;include 'debug-fdo.inc'
 
-ASEPC = '-'	      ; separator character (char)
-ATOPH = POP_IHEIGHT+2 ; menu bar height (pixels)
-SCRLW = 16	      ; scrollbar widht/height (pixels)
-ATABW = 8	      ; tab width (chars)
-LINEH = 10	      ; line height (pixels)
-PATHL = 256	      ; maximum path length (chars) !!! don't change !!!
-AMINS = 8	      ; minimal scroll thumb size (pixels)
-LCHGW = 3	      ; changed/saved marker width
+ASEPC = '-'  ; separator character (char)
+ATOPH = 19   ; menu bar height (pixels)
+SCRLW = 16   ; scrollbar widht/height (pixels)
+ATABW = 8    ; tab key indent width (chars)
+LINEH = 10   ; line height (pixels)
+PATHL = 256  ; maximum path length (chars) !!! don't change !!!
+AMINS = 8    ; minimal scroll thumb size (pixels)
+LCHGW = 3    ; changed/saved marker width (pixels)
 
-STATH = 16	      ; status bar height
-TBARH = 18	      ; tab bar height
+STATH = 16   ; status bar height (pixels)
+TBARH = 18   ; tab bar height (pixels)
 
 ;-----------------------------------------------------------------------------
 section @OPTIONS ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -199,8 +203,8 @@ options  db OPTS_AUTOINDENT+OPTS_OPTIMSAVE+OPTS_SMARTTAB
 mainwnd_pos:
   .x dd 250
   .y dd 75
-  .w dd 6*80+6+SCRLW+5
-  .h dd 402
+  .w dd 6*80+6+SCRLW+5	;- 220
+  .h dd 402		;- 220
 
 ;-----------------------------------------------------------------------------
 section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
@@ -208,16 +212,16 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 ;       fninit
 
-;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_left,50
-;        mov     [mainwnd_pos.x],eax
-;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_top,50
-;        mov     [mainwnd_pos.y],eax
-;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_right,350
-;        sub     eax,[mainwnd_pos.x]
-;        mov     [mainwnd_pos.w],eax
-;        stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_bottom,450
-;        sub     eax,[mainwnd_pos.y]
-;        mov     [mainwnd_pos.h],eax
+;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_left,50
+;       mov     [mainwnd_pos.x],eax
+;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_top,50
+;       mov     [mainwnd_pos.y],eax
+;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_right,350
+;       sub     eax,[mainwnd_pos.x]
+;       mov     [mainwnd_pos.w],eax
+;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_bottom,450
+;       sub     eax,[mainwnd_pos.y]
+;       mov     [mainwnd_pos.h],eax
 
 	cld
 	mov	edi,@UDATA
@@ -235,16 +239,7 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	call	mem.Alloc
 	mov	[temp_buf],eax
 
-	mov	eax,65536
-	call	mem.Alloc
-	mov	[cur_editor.Lines],eax
-
 	inc	[do_not_draw]
-
-	mov	[left_ofs],40+1
-;       mov     [f_info+4],0
-;       mov     [f_info+12],AREA_TEMP
-;       mov     [f_info+16],AREA_EDIT-AREA_TEMP
 
 	mov	esi,s_example
 	mov	edi,tb_opensave.text
@@ -258,6 +253,8 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	[s_search.size],ecx
 	rep	movsb
 
+;       DEBUGF  1,"params: '%s'\n",@PARAMS
+
 	cmp	byte[@PARAMS],0
 	jz	no_params
 
@@ -265,6 +262,8 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 	cmp	byte[@PARAMS],'*'
 	jne	.noipc
+
+;       DEBUGF  1,"  started by DOCPAK\n"
 
 ;// diamond [ (convert size from decimal representation to dword)
 ;--     mov     edx,dword[@PARAMS+1]
@@ -282,16 +281,26 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 	add	edx,20
 
+;       DEBUGF  1,"  data size (+20) = %d\n",edx
+
 	mov	eax,edx
 	call	mem.Alloc
 	mov	ebp,eax
+	push	eax
+
+;       DEBUGF  1,"  mem.Alloc() returned 0x%x, allocated size = %d\n",eax,[eax-4]
 
 ;!      mcall   60,1,AREA_TEMP-16 ; 0x10000-16
 ;!      mov     dword[AREA_TEMP-16+4],8 ; [0x10000-16+4],8
-	mcall	60,1,ebp
+	mov	dword[ebp+0],0
 	mov	dword[ebp+4],8
+	mcall	60,1,ebp
 	mcall	40,1000000b
+
+;       DEBUGF  1,"  got IPC message within 2 secs? "
 	mcall	23,200
+;       DEBUGF  1,"%b\n",eax == 7
+
 	cmp	eax,7
 	jne	key.alt_x.close
 ;!      mov     esi,AREA_TEMP-16 ; 0x10000-16
@@ -302,13 +311,18 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;!      inc     eax
 ;!      call    load_file.file_found
 
+;       DEBUGF  1,"  creating new document\n"
+
 	mov	ecx,[ebp+12]
-	mov	esi,ebp
+	lea	esi,[ebp+16]
 	call	create_tab
 	call	load_from_memory
 
+	pop	ebp
 	mov	eax,ebp
 	call	mem.Free
+
+;       DEBUGF  1,"  mem.Free(0x%x) returned %d\n",ebp,eax
 
 	jmp	@f
   .noipc:
@@ -327,13 +341,14 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	jne	key.alt_x.close
 	lea	eax,[edi-tb_opensave.text-1]
 	mov	[tb_opensave.length],al
+	call	btn.load_file
+	jnc	@f
 
   no_params:
-	;call    btn.load_file;do_load_file
-	;jnc     @f
 	call	create_tab
 
     @@:
+	mov	[s_status],0
 	dec	[do_not_draw]
 	mcall	66,1,1
 	mcall	40,00100111b
@@ -514,12 +529,6 @@ set_opt:
 
   .main:
 	xor	[options],al
-;       test    [options],al
-;       je      @f
-;       not     al
-;       and     [options],al
-;       ret
-;   @@: or      [options],al
 	ret
 
 ;-----------------------------------------------------------------------------
@@ -578,6 +587,7 @@ accel_table_main dd		    \
   0x00000151,key.pgdn		   ,\ ; PageDown
   0x00000152,key.ins		   ,\ ; Insert
   0x00000153,key.del		   ,\ ; Delete
+  0x00010043,key.shift_f9	   ,\ ; Shift+F9
   0x00010147,key.shift_home	   ,\ ; Shift+Home
   0x00010148,key.shift_up	   ,\ ; Shift+Up
   0x00010149,key.shift_pgup	   ,\ ; Shift+PageUp
@@ -712,6 +722,8 @@ sz ini_window_left  ,'Left',0
 sz ini_window_right ,'Right',0
 sz ini_window_bottom,'Bottom',0
 
+;include_debug_strings
+
 TINYPAD_END:	 ; end of file
 
 self_path rb PATHL
@@ -745,8 +757,6 @@ __rc	      dd ?,?,?,?
 copy_count    dd ?    ; number of lines for copying (Ctrl+E)
 copy_size     dd ?    ; size of data to copy
 s_title.size  dd ?    ; caption length
-
-draw_blines   dd ?    ; last line to draw
 
 cur_line_len  dd ?
 h_popup       dd ?

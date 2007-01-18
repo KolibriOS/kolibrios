@@ -1,8 +1,6 @@
 ;-----------------------------------------------------------------------------
 func save_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	ret	; DISALLOW FOR NOW
-
 	mov	esi,tb_opensave.text
 	mov	edi,f_info.path
 	movzx	ecx,[tb_opensave.length]
@@ -12,26 +10,45 @@ func save_file ;//////////////////////////////////////////////////////////////
 	mov	byte[edi],0
 
 	mov	esi,[cur_editor.Lines] ;! AREA_EDIT     ; 0x70000 = 448 Kbytes (maximum)
-	mov	edi,0 ;!!! AREA_TEMP
+
+	xor	ebx,ebx
+	mov	ecx,[cur_editor.Lines.Count]
+    @@: call	get_real_length
+	add	ebx,eax
+	movzx	eax,word[esi]
+	lea	esi,[esi+eax+4]
+	loop	@b
+	mov	eax,[cur_editor.Lines.Count]
+	shl	eax,1
+	lea	eax,[eax+ebx+1024]
+	call	mem.Alloc
+	push	eax
+	mov	esi,[cur_editor.Lines]
+	mov	edi,eax ;!!! AREA_TEMP
+
+;       pop     eax
+;       ret     ; DISALLOW FOR NOW
 
   .new_string:
 	call	save_string
 	cmp	dword[esi],0
 	jne	.new_string
-	sub	edi,0 ;!!! AREA_TEMP+2   ; minus last CRLF
+	pop	eax
+	sub	edi,eax ;!!! AREA_TEMP+2   ; minus last CRLF
+	add	edi,-2
 ;!      mov     [filelen],edi
-	cmp	byte[f_info.path],'/'
-	je	.systree_save
-	mcall	33,f_info.path,0,edi,0 ;!!! AREA_TEMP,edi,0;[filelen],0
-	or	eax,eax
-	jz	.exit
+;       cmp     byte[f_info.path],'/'
+;       je      .systree_save
+;       mcall   33,f_info.path,0,edi,0 ;!!! AREA_TEMP,edi,0;[filelen],0
+;       or      eax,eax
+;       jz      .exit
 ;       call    file_not_found
-	jmp	.exit.2
+;       jmp     .exit.2
 
   .systree_save:
 	mov	[f_info70+0],2
 	mov	[f_info70+12],edi
-	mov	[f_info70+16],0 ;!!! AREA_TEMP
+	mov	[f_info70+16],eax ;!!! AREA_TEMP
 	mov	byte[f_info70+20],0
 	mov	[f_info70+21],f_info.path
 	mcall	70,f_info70
@@ -143,7 +160,12 @@ endf
 ;-----------------------------------------------------------------------------
 func load_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	esi,tb_opensave.text
+	cmp	[tb_opensave.text],0
+	jne	@f
+	stc
+	ret
+
+    @@: mov	esi,tb_opensave.text
 	mov	edi,f_info.path
 	movzx	ecx,[tb_opensave.length]
 	mov	[f_info.length],ecx
@@ -214,13 +236,22 @@ func load_from_memory ;///////////////////////////////////////////////////////
 ; ESI = data pointer
 ; EBP = EDITOR*
 ;-----------------------------------------------------------------------------
+;       DEBUGF  1,<">>> load_from_memory\n" # \
+;                  "  data length  = %d\n" # \
+;                  "  data pointer = 0x%x\n" # \
+;                  "  EDITOR*      = 0x%x\n">,ecx,esi,ebp
+
 	call	get_lines_in_file
-	inc	eax
+;       DEBUGF  1,"lines in file: %d\n",eax
 	mov	[ebp+EDITOR.Lines.Count],eax
+	lea	edx,[ebx+ecx]
 	imul	ebx,eax,14
-	add	ebx,ecx
+	add	ebx,edx
+;       DEBUGF  1,"36522: %d\n",ebx
 	mov	eax,[ebp+EDITOR.Lines]
+	mov	[ebp+EDITOR.Lines.Size],ebx
 	call	mem.ReAlloc
+;       DEBUGF  1,"mem.ReAlloc: 0x%x\n",eax
 	mov	[ebp+EDITOR.Lines],eax
 
 	mov	[ebp+EDITOR.Columns.Count],0

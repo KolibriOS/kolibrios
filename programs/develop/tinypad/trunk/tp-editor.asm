@@ -13,23 +13,7 @@ func draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 	inc	ecx
 	mov	edx,[cl_3d_inset]
 	call	draw_framerect
-@^
-	mov	ebx,[cur_editor.Bounds.Left-2]
-	mov	bx,word[cur_editor.Bounds.Right]
-	mov	ecx,[cur_editor.Bounds.Top-2]
-	mov	cx,word[cur_editor.Bounds.Top]
-	mcall	38,,,[cl_3d_inset]
-	mov	ecx,[cur_editor.Bounds.Bottom-2]
-	mov	cx,word[cur_editor.Bounds.Bottom]
-	mcall
-	mov	bx,word[cur_editor.Bounds.Left]
-	mov	cx,word[cur_editor.Bounds.Top]
-	mcall
-	mov	ebx,[cur_editor.Bounds.Right-2]
-	mov	bx,word[cur_editor.Bounds.Right]
-	mov	cx,word[cur_editor.Bounds.Top]
-	mcall
-^@
+
 	mov	[cur_editor.Gutter.Visible],0
 	test	[options],OPTS_LINENUMS
 	jnz	@f
@@ -49,12 +33,33 @@ func draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
   .lp1: mov	[cur_editor.Gutter.Width],eax ;! [left_ofs],eax
 	mov	[left_ofs],eax
 
+	mov	eax,[cur_editor.Bounds.Right]
+	sub	eax,[cur_editor.Bounds.Left]
+	sub	eax,[cur_editor.Gutter.Width]
+	sub	eax,SCRLW+LCHGW+4
+	js	.exit
+	cdq
+	mov	ebx,6
+	div	ebx
+	mov	[columns.scr],eax
+
+	mov	eax,[cur_editor.Bounds.Bottom]
+	sub	eax,[cur_editor.Bounds.Top]
+
+	sub	eax,SCRLW+3
+	js	.exit
+	cdq
+	mov	ebx,LINEH
+	div	ebx
+	mov	[lines.scr],eax
+
 	call	draw_editor_gutter
 	call	draw_editor_vscroll
 	call	draw_editor_hscroll
 	call	draw_editor_text
 	call	draw_editor_caret
 
+  .exit:
 	ret
 endf
 
@@ -171,7 +176,7 @@ func draw_editor_vscroll ;///// DRAW EDITOR VERTICAL SCROLL BAR //////////////
 	mov	ecx,[cur_editor.TopLeft.Y]
 	mov	edx,[cur_editor.Bounds.Bottom]
 	sub	edx,[cur_editor.Bounds.Top]
-	add	edx,-SCRLW*3+1
+	add	edx,-SCRLW*3;+1
 	call	get_scroll_vars
 	mov	[cur_editor.VScroll.Top],eax
 	mov	[cur_editor.VScroll.Size],ebx
@@ -273,6 +278,7 @@ func draw_editor_hscroll ;///// DRAW EDITOR HORIZONTAL SCROLL BAR ////////////
 	mov	ebx,[columns.scr]
 	mov	ecx,[cur_editor.TopLeft.X]
 	mov	edx,[cur_editor.Bounds.Right]
+	sub	edx,[cur_editor.Bounds.Left]
 	add	edx,-(SCRLW*3)
 	call	get_scroll_vars
 	mov	[cur_editor.HScroll.Top],eax
@@ -329,7 +335,10 @@ endf
 ;-----------------------------------------------------------------------------
 func draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[cur_editor.Bounds.Bottom]
+	cmp	[cur_editor.Lines],0
+	jne	@f
+	ret
+    @@: mov	eax,[cur_editor.Bounds.Bottom]
 	sub	eax,[cur_editor.Bounds.Top]
 	cmp	eax,LINEH
 	jge	@f
@@ -363,9 +372,6 @@ func draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	add	esp,-4
 
 	imul	ebp,[cur_editor.TopLeft.X],6*65536 ;! ebp,[left_col],6*65536
-	mov	eax,[lines.scr]
-	sub	eax,[cur_editor.Lines.Count] ;! eax,[lines]
-	mov	[draw_blines],eax
 
   .next_line:
 
@@ -683,13 +689,6 @@ func draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 
   .exit:
 
-	cmp	[draw_blines],0
-	jl	@f
-	mov	ecx,[esp-8]
-	shl	ecx,16
-	mov	cx,word[cur_editor.Bounds.Bottom]
-	sub	cx,[esp-8]
-	add	cx,-SCRLW
 	mov	eax,[cur_editor.Bounds.Left]
 	add	eax,[cur_editor.Gutter.Width]
 	inc	eax
@@ -698,8 +697,27 @@ func draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	mov	bx,word[cur_editor.Bounds.Right]
 	sub	bx,ax
 	add	ebx,-SCRLW
-	mcall	13,,,[color_tbl+4*5]
-    @@:
+	mov	edx,[color_tbl+4*5]
+	mov	eax,13
+	mov	ecx,[esp-8]
+	add	ecx,LINEH
+	shl	ecx,16
+	mov	cx,word[cur_editor.Bounds.Bottom]
+	sub	cx,[esp-8]
+	add	cx,-SCRLW-LINEH
+	jle	@f
+	mcall
+    @@: mov	ecx,[cur_editor.Bounds.Top-2]
+	mov	cx,2
+	add	ecx,0x00010000
+	mcall
+	mov	ebx,[cur_editor.Bounds.Right]
+	mov	ecx,[cur_editor.Bounds.Bottom]
+	shl	ebx,16
+	shl	ecx,16
+	add	ebx,-(SCRLW-1)*65536+SCRLW-1
+	add	ecx,-(SCRLW-1)*65536+SCRLW-1
+	mcall
 
 	popad
 	add	esp,4
@@ -743,5 +761,23 @@ func draw_editor_caret ;///// DRAW EDITOR TEXT CARET /////////////////////////
 	pop	ecx
 	loop	.lp8
     @@:
+	ret
+endf
+
+;-----------------------------------------------------------------------------
+func editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
+;-----------------------------------------------------------------------------
+; EAX = delta
+;-----------------------------------------------------------------------------
+	push	ebx ecx
+	mov	ebx,[cur_editor.Lines.Size]
+	add	ebx,eax
+	mov	eax,[cur_editor.Lines]
+	mov	[cur_editor.Lines.Size],ebx
+	mov	ecx,eax
+	call	mem.ReAlloc
+	mov	[cur_editor.Lines],eax
+	sub	eax,ecx
+	pop	ecx ebx
 	ret
 endf

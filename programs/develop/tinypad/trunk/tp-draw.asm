@@ -48,22 +48,7 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 
 	mov	[top_ofs],ATOPH;+1
 
-	mov	eax,[cur_editor.Bounds.Right]
-	sub	eax,[cur_editor.Bounds.Left]
-	sub	eax,[cur_editor.Gutter.Width]
-	sub	eax,SCRLW+LCHGW+4
-	cdq
-	mov	ebx,6
-	div	ebx
-	mov	[columns.scr],eax
-
-	mov	eax,[cur_editor.Bounds.Bottom]
-	sub	eax,[cur_editor.Bounds.Top]
-	sub	eax,SCRLW+3
-	cdq
-	mov	ebx,LINEH
-	div	ebx
-	mov	[lines.scr],eax
+	;// --- columns.scr and lines.scr calculation ---
 
 	mov	eax,[p_info.client_box.height]
 	add	eax,-STATH+1;*3-2-2
@@ -187,22 +172,34 @@ func draw_main_menu ;/////////////////////////////////////////////////////////
 	inc	ebx
 	mcall	13,,ATOPH-1,[cl_3d_normal]
 
-	mcall	38,[p_info.client_box.width],<ATOPH-1,ATOPH-1>,[sc.frame];[cl_3d_pushed]
+	mcall	38,[p_info.client_box.width],<ATOPH-1,ATOPH-1>,[cl_3d_inset]
 
 	mov	edx,main_menu
-	mov	ebx,9*65536+ATOPH/2-4
-	mov	ecx,[sc.work_text]
+	mov	ebx,9*65536+ATOPH/2-3;4
+	;mov     ecx,[sc.work_text]
 	mov	[mi_sel],0
 	mov	edi,[mi_cur]
     @@: inc	[mi_sel]
 	cmp	[mi_sel],main_menu.cnt_item
 	ja	.exit
+	mov	ecx,[sc.work_text]
 	cmp	edi,[mi_sel]
 	jne	.lp1
 	pushad
 	push	edx
-	mcall	13,[edx+0],[edx+4],[cl_3d_pushed]
+	;mov     ebx,[edx+0]
+	mov	ecx,[edx+4]
+	add	ecx,2*65536-2
+	mcall	13,[edx+0],,[sc.work];[cl_3d_pushed]
 	mov	edx,[esp]
+	mov	cx,[edx+6]
+	add	ecx,-1*65536+1
+	add	bx,[edx+2]
+	mcall	38,,,[cl_3d_inset]
+
+	mov	edx,[esp]
+	add	cx,[edx+4]
+	add	cx,-2
 	mov	bx,[edx+2]
 	mcall	38,,,[cl_3d_inset]
 	pop	edx
@@ -212,6 +209,7 @@ func draw_main_menu ;/////////////////////////////////////////////////////////
 	add	ebx,eax
 	mcall	38,,,[cl_3d_inset]
 	popad
+	mov	ecx,[color_tbl+4*0]
   .lp1: add	edx,8+1
 	movzx	esi,byte[edx-1]
 	mcall	4
@@ -1128,7 +1126,7 @@ func draw_statusbar ;///// WRITE POSITION ////////////////////////////////////
 	mov	ecx,[p_info.client_box.height-2]
 	mov	cx,word[p_info.client_box.height]
 	sub	ecx,STATH*65536+STATH
-	mcall	38,[p_info.client_box.width],,[sc.frame];[cl_3d_pushed]
+	mcall	38,[p_info.client_box.width],,[cl_3d_inset]
 
 ;       mcall   9,p_info,-1
 
@@ -1235,6 +1233,29 @@ func draw_framerect ; ebx,ecx,edx
 	ret
 endf
 
+func draw_check
+	push	bx
+	shl	ebx,16
+	pop	bx
+	add	ebx,0x00010000
+	push	cx
+	shl	ecx,16
+	pop	cx
+	add	ecx,0x00020001
+
+;       add     ecx,0x00040003
+;       sub     ebx,0x000A000B
+	mcall	38
+	add	ecx,0x00010001
+	mcall
+	add	ebx,4
+	sub	ecx,2
+	mcall
+	sub	ecx,0x00010001
+	mcall
+	ret
+endf
+
 func calc_middle
 	shr	eax,1
 	shr	ebx,1
@@ -1261,6 +1282,8 @@ func calc_3d_colors
     @@: pop	[cl_3d_outset]
 	mov	eax,[cl_3d_inset]
 	mov	ebx,[cl_3d_outset]
+	call	calc_middle
+	mov	ebx,[cl_3d_normal]
 	call	calc_middle
 	mov	[cl_3d_pushed],eax
 	mov	eax,[cl_3d_normal]

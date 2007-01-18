@@ -155,10 +155,12 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
+	cmp	[cur_editor.FilePath],'/'
+	jne	key.shift_ctrl_s
 	cmp	[cur_editor.Modified],0 ;! [modified],0
 	je	.exit
-	cmp	[f_info.length],0
-	je	key.shift_ctrl_s
+	;cmp     [f_info.length],0
+	;je      key.shift_ctrl_s
 	call	save_file
 	call	drawwindow
   .exit:
@@ -537,11 +539,23 @@ func key.ctrl_v
 
 	call	delete_selection
 
+	mov	eax,[copy_size]
+	call	editor_realloc_lines
+
+	mov	eax,[cur_editor.Lines]
+	mov	ebx,[cur_editor.Lines.Size]
+	add	ebx,[copy_size]
+	mov	[cur_editor.Lines.Size],ebx
+	call	mem.ReAlloc
+	mov	[cur_editor.Lines],eax
+
 	mov	ecx,[cur_editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	pushd	[esi] esi
 	mov	ecx,[cur_editor.Caret.X] ;! ecx,[pos.x]
 	call	line_add_spaces
+	add	[esp],eax		 ;!!!
+	add	esi,eax 		 ;!!!
 	mov	ecx,[copy_size]
 	sub	ecx,4
 	mov	edi,[cur_editor.Lines] ;! AREA_TEMP2
@@ -570,6 +584,7 @@ func key.ctrl_v
 	mov	ebx,[cur_editor.Caret.X] ;! ebx,[pos.x]
 	add	eax,ebx
 	mov	[edi-4],ax
+	mov	byte[edi-4+2],0x0001
 	sub	eax,ebx
 	call	.check_columns
 	add	edi,ebx
@@ -579,7 +594,7 @@ func key.ctrl_v
 	lodsd
 	and	eax,0x0000FFFF
 	stosd
-	or	dword[edi-4],0x00010000
+	mov	byte[edi-4+2],0x0001
 	pop	ecx
 	loop	@b
 
@@ -656,6 +671,9 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 ;-----------------------------------------------------------------------------
+	mov	eax,94
+	call	editor_realloc_lines
+
 	mov	ecx,[cur_editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	mov	ebx,esi
@@ -702,14 +720,27 @@ func key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 	call	get_line_offset
 	mov	edi,esi
 	lodsd
+	and	eax,0x0000FFFF
 	add	esi,eax
+	push	eax
 
 	dec	[cur_editor.Lines.Count] ;! [lines]
-	mov	ecx,[temp_buf] ;! AREA_TEMP2
+	;mov     ecx,[temp_buf] ;! AREA_TEMP2
+	mov	ecx,[cur_editor.Lines]
+	add	ecx,[ecx-4]
 	sub	ecx,esi
 	shr	ecx,2		       ;// fixed (was 4)
 	cld
 	rep	movsd
+
+	pop	eax
+	add	eax,4
+	neg	eax
+	call	editor_realloc_lines
+
+	m2m	[cur_editor.SelStart.X],[cur_editor.Caret.X]
+	m2m	[cur_editor.SelStart.Y],[cur_editor.Caret.Y]
+
 	call	check_inv_all
 	mov	[cur_editor.Modified],1 ;! [modified],1
 
@@ -1129,6 +1160,16 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
     @@: m2m	[cur_editor.SelStart.X],[cur_editor.Caret.X] ;! [sel.x],[pos.x]
 	m2m	[cur_editor.SelStart.Y],[cur_editor.Caret.Y] ;! [sel.y],[pos.y]
 
+	mov	ecx,[cur_editor.Lines.Count]
+	call	get_line_offset
+	movzx	eax,word[esi]
+	lea	esi,[esi+eax+4]
+	mov	eax,[cur_editor.Lines]
+	add	eax,[eax-4]
+	sub	esi,eax
+	lea	eax,[esi+4096]
+	call	editor_realloc_lines
+
 	mov	[cur_editor.Modified],1 ;! [modified],1
   .exit.2:
 	call	check_inv_all
@@ -1223,6 +1264,9 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 	push	eax ' '
 	sub	eax,ecx
   .direct:
+	push	eax
+	call	editor_realloc_lines
+	pop	eax
 	mov	ecx,[cur_editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
 	and	dword[esi],not 0x00020000
@@ -1238,6 +1282,11 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 	sub	edx,eax
 	cmp	ecx,edx
 	jl	@f
+	push	eax
+	mov	eax,10
+	call	editor_realloc_lines
+	add	esi,eax
+	pop	eax
 	pushad; esi ecx eax
 	mov	ecx,[cur_editor.Lines] ;! AREA_TEMP2-10+1
 	add	ecx,[ecx-4]
@@ -1247,7 +1296,7 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 ;       lea     eax,[esi+4]
 ;       add     eax,[esi]
 	movzx	eax,word[esi]
-	lea	eax,word[esi+eax+4]
+	lea	eax,[esi+eax+4]
 	sub	ecx,eax
 	lea	esi,[edi-10] ;! AREA_TEMP2-10
 	std
@@ -1297,6 +1346,9 @@ endf
 func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
+
+	mov	eax,14
+	call	editor_realloc_lines
 
 	mov	ecx,[cur_editor.Caret.Y] ;! ecx,[pos.y]
 	call	get_line_offset
@@ -1488,4 +1540,22 @@ func key.ctrl_f4 ;///// CLOSE CURRENT TAB ////////////////////////////////////
 	jne	@f
 	call	create_tab
     @@: ret
+endf
+
+;-----------------------------------------------------------------------------
+func key.shift_f9 ;///// SET DEFAULT TAB /////////////////////////////////////
+;-----------------------------------------------------------------------------
+	mov	eax,[tab_bar.Current.Ptr]
+	cmp	eax,[tab_bar.Default.Ptr]
+	jne	@f
+	xor	eax,eax
+    @@: mov	[tab_bar.Default.Ptr],eax
+	mov	ebp,[tab_bar.Current.Ptr]
+	call	make_tab_visible
+	cmp	[tab_bar.Style],2
+	jbe	@f
+	call	align_editor_in_tab
+	call	draw_editor
+    @@: call	draw_tabctl
+	ret
 endf

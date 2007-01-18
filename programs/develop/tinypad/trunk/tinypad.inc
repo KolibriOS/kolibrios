@@ -21,6 +21,7 @@ struct EDITOR
   FileName	 dd ?
   Bounds	 RECT
   Lines 	 dd ?
+  Lines.Size	 dd ?
   Lines.Count	 dd ?
   Columns.Count  dd ?
   Caret 	 POINT
@@ -46,6 +47,7 @@ struct TABCTL
   Items.Left	dd ?
   Current	TABITEM
   Current.Ptr	dd ?
+  Default.Ptr	dd ?
   Buttons.First dd ?
   Buttons.Last	dd ?
   Style 	db ?

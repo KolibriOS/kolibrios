@@ -499,14 +499,22 @@ endf
 ;-----------------------------------------------------------------------------
 func line_add_spaces ;////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-; esi = line offset
-; ecx = needed line length
+; Input:
+;  ESI = line offset
+;  ECX = needed line length
+; Output:
+;  EAX = delta
 ;-----------------------------------------------------------------------------
+	xor	eax,eax
 	pushad
 	movzx	edx,word[esi]
 	cmp	ecx,edx
 	jbe	.exit
 	sub	ecx,edx
+	lea	eax,[ecx+4]
+	call	editor_realloc_lines
+	mov	[esp+4*7],eax
+	add	esi,eax
 	push	ecx
 	mov	edi,[cur_editor.Lines] ;! AREA_TEMP2
 	add	edi,[edi-4]
@@ -520,7 +528,6 @@ func line_add_spaces ;////////////////////////////////////////////////////////
 	neg	ecx
 	lea	ecx,[esi+ecx+1]
 	std
-diff16 '32DC',0,$
 	rep	movsb
 	pop	edi ecx
 	add	[eax],cx
@@ -549,6 +556,7 @@ func delete_selection ;///////////////////////////////////////////////////////
 	or	dword[esi],0x00010000
 	mov	ecx,[sel.begin.x]
 	call	line_add_spaces
+	add	esi,eax
 	lea	edi,[esi+4]
 	mov	ecx,[sel.end.y]
 	call	get_line_offset
@@ -602,6 +610,17 @@ func delete_selection ;///////////////////////////////////////////////////////
 	mov	eax,[sel.begin.y]
 	mov	[cur_editor.Caret.Y],eax ;! [pos.y],eax
 	mov	[cur_editor.SelStart.Y],eax ;! [sel.y],eax
+
+	mov	ecx,[cur_editor.Lines.Count]
+	call	get_line_offset
+	movzx	eax,word[esi]
+	lea	esi,[esi+eax+4]
+	mov	eax,[cur_editor.Lines]
+	add	eax,[eax-4]
+	sub	esi,eax
+	lea	eax,[esi+4096]
+	call	editor_realloc_lines
+
 	popad
 	mov	[cur_editor.Modified],1 ;! [modified],1
 	clc
@@ -630,28 +649,44 @@ endf
 ;-----------------------------------------------------------------------------
 func get_lines_in_file ;//////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-; ESI = data pointer
-; ECX = data length
+; Input:
+;  ESI = data pointer
+;  ECX = data length
+; Output:
+;  EAX = lines number
+;  EBX = extra length after tabs expansion
 ;-----------------------------------------------------------------------------
-	push	ebx ecx esi
+	push	ecx edx esi 0
 	or	ebx,-1
+	xor	edx,edx
   .lp0: inc	ebx
   .lp1: dec	ecx
 	jle	.lp2
 	lodsb
+	cmp	al,0
+	je	.lp2
+	cmp	al,9
+	je	.TB
 	cmp	al,10
 	je	.LF
 	cmp	al,13
 	je	.CR
+	inc	edx
 	jmp	.lp1
-  .lp2: mov	eax,ebx
-	pop	esi ecx ebx
+  .lp2: lea	eax,[ebx+1]
+	pop	ebx esi edx ecx
 	ret
 
    .CR: cmp	byte[esi],10
-	jne	.lp0
+	jne	.LF
 	lodsb
-   .LF: jmp	.lp0
+   .LF: xor	edx,edx
+	jmp	.lp0
+   .TB: and	edx,00000111b
+	add	dword[esp],ATABW
+	sub	[esp],edx
+	xor	edx,edx
+	jmp	.lp1
 endf
 
 ;-----------------------------------------------------------------------------

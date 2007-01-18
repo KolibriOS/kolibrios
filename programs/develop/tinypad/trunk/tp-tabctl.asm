@@ -38,16 +38,15 @@ endf
 ;-----------------------------------------------------------------------------
 func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
 ;-----------------------------------------------------------------------------
-	push	ebp
 	imul	eax,[tab_bar.Items.Left],sizeof.TABITEM
 	add	eax,[tab_bar.Items]
 	cmp	eax,ebp
 	jb	.go_right
 	ja	.go_left
-	add	esp,4
 	ret
 
   .go_right:
+	push	ebp
 	call	get_hidden_tabitems_number
 	cmp	ebp,[esp]
 	ja	.lp1
@@ -67,13 +66,13 @@ func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
 	mov	ebx,sizeof.TABITEM
 	div	ebx
     @@: mov	[tab_bar.Items.Left],eax
-	add	esp,4
 	ret
 endf
 
 ;-----------------------------------------------------------------------------
 func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 ;-----------------------------------------------------------------------------
+;       DEBUGF  1,"items count before addition: %d\n",[tab_bar.Items.Count]
 	push	eax ecx esi edi
 
 	inc	[tab_bar.Items.Count]
@@ -84,11 +83,15 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	mov	[tab_bar.Items],eax
 	sub	ecx,eax
 	sub	[tab_bar.Current.Ptr],ecx
-	lea	ebp,[eax+ebx-sizeof.TABITEM]
+	cmp	[tab_bar.Default.Ptr],0
+	je	@f
+	sub	[tab_bar.Default.Ptr],ecx
+    @@: lea	ebp,[eax+ebx-sizeof.TABITEM]
 	call	set_cur_tab
 	call	make_tab_visible
 
 	mov	eax,1024
+	mov	[cur_editor.Lines.Size],eax
 	call	mem.Alloc
 	mov	[cur_editor.Lines],eax
 	mov	[cur_editor.Lines.Count],1
@@ -115,14 +118,19 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	rep	movsb
 	mov	[cur_editor.FileName],0
 
-	mov	[f_info.length],0
 	mov	[cur_editor.Modified],0
 	mov	[cur_editor.AsmMode],0
 
 	call	flush_cur_tab
 	call	update_caption
-	call	drawwindow
-
+	;call    drawwindow
+	cmp	[do_not_draw],0
+	jne	@f
+	call	align_editor_in_tab
+	call	draw_editor
+	call	draw_tabctl
+	call	draw_statusbar
+    @@:
 	mov	ebp,cur_tab
 	pop	edi esi ecx eax
 	ret
@@ -131,7 +139,18 @@ endf
 ;-----------------------------------------------------------------------------
 func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,[ebp+TABITEM.Editor.Lines]
+;       DEBUGF  1,"items count before deletion: %d\n",[tab_bar.Items.Count]
+	cmp	[tab_bar.Default.Ptr],0
+	je	@f
+	cmp	ebp,[tab_bar.Default.Ptr]
+	je	.lp1
+	ja	@f
+	sub	[tab_bar.Default.Ptr],sizeof.TABITEM
+	jmp	@f
+  .lp1:
+	mov	[tab_bar.Default.Ptr],0
+
+    @@: mov	eax,[ebp+TABITEM.Editor.Lines]
 	call	mem.Free
 	imul	ecx,[tab_bar.Items.Count],sizeof.TABITEM
 	add	ecx,[tab_bar.Items]
@@ -153,7 +172,10 @@ func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 	mov	[tab_bar.Items],eax
 	sub	ecx,eax
 	sub	ebp,ecx
-
+	cmp	[tab_bar.Default.Ptr],0
+	je	@f
+	sub	[tab_bar.Default.Ptr],ecx
+    @@:
 	pop	ecx
 	add	ecx,[tab_bar.Items]
 	sub	ecx,ebp
@@ -163,14 +185,20 @@ func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
     @@: mov	[tab_bar.Current.Ptr],0
 	call	set_cur_tab
 	call	make_tab_visible
-	call	drawwindow
+	;call    drawwindow
+	call	align_editor_in_tab
+	call	draw_editor
+	call	draw_tabctl
+	call	draw_statusbar
 	ret
 
   .no_tabs:
 	mov	eax,[tab_bar.Items]
 	call	mem.Free
-	mov	[tab_bar.Items],0
-	mov	[tab_bar.Current.Ptr],0
+	xor	eax,eax
+	mov	[tab_bar.Items],eax
+	mov	[tab_bar.Current.Ptr],eax
+	mov	[tab_bar.Default.Ptr],eax
 	ret
 endf
 
@@ -354,6 +382,26 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	mov	edx,[color_tbl+4*0]
   .draw_tabs.inactive:
 
+	cmp	ebp,[tab_bar.Default.Ptr]
+	jne	.draw_tabs.notdefault
+	push	ebx ecx edx
+	add	ebx,3*65536
+	add	ecx,(TBARH/2-6)*65536
+	mov	bx,11
+	mov	cx,bx
+	call	draw_framerect
+	add	ebx,1*65536-2
+	add	ecx,1*65536-2
+	mcall	13,,,[sc.work]
+	shr	ebx,16
+	shr	ecx,16
+	add	ebx,2
+	add	ecx,3
+	mov	edx,[esp]
+	call	draw_check
+	pop	edx ecx ebx
+  .draw_tabs.notdefault:
+
 	push	ebx ecx esi edx
 	lea	eax,[ebp+TABITEM.Editor.FilePath]
 	add	eax,[ebp+TABITEM.Editor.FileName]
@@ -362,9 +410,12 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	mov	esi,eax
 	shr	ecx,16
 	mov	bx,cx
-	add	ebx,0x00050005
+	add	ebx,5*65536+TBARH/2-4
 	pop	ecx
-	mcall	4
+	cmp	ebp,[tab_bar.Default.Ptr]
+	jne	.lp2
+	add	ebx,13*65536
+  .lp2: mcall	4
 	pop	esi ecx ebx
 
 	inc	[tab_bar.Buttons.Last]
@@ -533,6 +584,9 @@ func get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
 	call	strlen
 	imul	ebx,eax,6
 	add	ebx,9
+	cmp	ebp,[tab_bar.Default.Ptr]
+	jne	.lp2
+	add	ebx,13
 	jmp	.lp2
   .lp1: call	get_max_tab_width
 	mov	ebx,eax
@@ -566,6 +620,9 @@ func get_max_tab_width ;///// GET WIDTH OF LONGEST TAB ///////////////////////
 	cmp	eax,SCRLW*2+2
 	jae	@f
 	mov	eax,SCRLW*2+2
+    @@: cmp	[tab_bar.Default.Ptr],0
+	je	@f
+	add	eax,13
     @@: pop	ebp ecx ebx
 	ret
 endf
@@ -598,9 +655,8 @@ func get_hidden_tabitems_number ;/////////////////////////////////////////////
 	mov	edi,[tab_bar.Bounds.Top]
 	inc	edi
 	mov	ecx,[tab_bar.Items.Count]
-	mov	ebp,[tab_bar.Items]
-	imul	eax,[tab_bar.Items.Left],sizeof.TABITEM
-	add	ebp,eax
+	imul	ebp,[tab_bar.Items.Left],sizeof.TABITEM
+	add	ebp,[tab_bar.Items]
 	mov	eax,ecx
 	sub	eax,[tab_bar.Items.Left]
 	push	eax

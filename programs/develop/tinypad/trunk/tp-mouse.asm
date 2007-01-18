@@ -3,11 +3,13 @@ func check_mouse_in_edit_area
 	mov	ebx,eax
 	and	ebx,0x0000FFFF
 	shr	eax,16
-	mov	ecx,[top_ofs]
+	mov	ecx,[cur_editor.Bounds.Top] ; ecx,[top_ofs]
 	inc	ecx
-	pushd	[left_ofs] ATOPH [p_info.client_box.width] ATOPH
+	pushd	[cur_editor.Bounds.Left] ecx [cur_editor.Bounds.Right] ecx ; [left_ofs] ATOPH [p_info.client_box.width] ATOPH
 	popd	[__rc+0xC] [__rc+0x8] [__rc+0x4] [__rc+0x0]
 	sub	[__rc+0x8],SCRLW+6
+	mov	ecx,[cur_editor.Gutter.Width]
+	add	[__rc+0x0],ecx
 	imul	ecx,[lines.scr],LINEH
 	dec	ecx
 	add	[__rc+0xC],ecx
@@ -148,9 +150,11 @@ mouse:
 	call	clear_selection
 
   .check_body.2:
-	sub	eax,[left_ofs]
-	sub	ebx,[top_ofs]
-	dec	ebx
+	sub	eax,[cur_editor.Bounds.Left] ; eax,[left_ofs]
+	sub	ebx,[cur_editor.Bounds.Top] ; ebx,[top_ofs]
+	sub	eax,[cur_editor.Gutter.Width]
+	sub	eax,LCHGW
+	sub	ebx,2
 ;       sub     ebx,[__rc+0x4]
 	push	eax
 	mov	eax,ebx
@@ -196,19 +200,20 @@ mouse:
 	jmp	still
 
   .check_vscroll:
-	mov	ecx,[p_info.client_box.width]
-	sub	ecx,SCRLW-2
-	pushd	ecx [top_ofs] ecx [bot_ofs]
+	;mov     ecx,[p_info.client_box.width]
+	mov	ecx,[cur_editor.Bounds.Right]
+	sub	ecx,SCRLW-1;2
+	pushd	ecx [cur_editor.Bounds.Top] ecx [cur_editor.Bounds.Bottom] ;ecx [top_ofs] ecx [bot_ofs]
 	popd	[__rc+0xC] [__rc+0x8] [__rc+0x4] [__rc+0x0]
-	add	[__rc+0x8],SCRLW-1;!!!!!!!!!!!!!!-2
-	add	[__rc+0x4],SCRLW;!!!!!!!!!!!!!!+1
-	sub	[__rc+0xC],SCRLW*2+3
+	add	[__rc+0x8],SCRLW-2;!!!!!!!!!!!!!!-2
+	add	[__rc+0x4],SCRLW-1;!!!!!!!!!!!!!!+1
+	sub	[__rc+0xC],SCRLW*2+1;3
 	mov	ecx,__rc
 	call	pt_in_rect
 	jnc	.check_hscroll
 
   .check_vscroll.2:
-	sub	ebx,[top_ofs]
+	sub	ebx,[cur_editor.Bounds.Top] ; ebx,[top_ofs]
 	sub	ebx,SCRLW;!!!!!!!!!!!!!!+1
 ;       sub     ebx,[__rc+0x4]
 	cmp	[vscrl_capt],0
@@ -234,10 +239,10 @@ mouse:
 	jns	@f
 	xor	ebx,ebx
     @@: mov	[mouse_captured],1
-	mov	eax,[bot_ofs]
-	sub	eax,[top_ofs]
+	mov	eax,[cur_editor.Bounds.Bottom] ; eax,[bot_ofs]
+	sub	eax,[cur_editor.Bounds.Top] ; eax,[top_ofs]
 	sub	eax,[cur_editor.VScroll.Size] ;! eax,[vscrl_size]
-	sub	eax,SCRLW*3-2
+	sub	eax,SCRLW*3;-2
 	cmp	eax,ebx
 	jge	@f
 	mov	ebx,eax
@@ -246,9 +251,9 @@ mouse:
 	mov	eax,[cur_editor.Lines.Count] ;! eax,[lines]
 	sub	eax,[lines.scr]
 	imul	ebx
-	mov	ebx,[bot_ofs]
-	sub	ebx,[top_ofs]
-	sub	ebx,SCRLW*3-2	      ;**
+	mov	ebx,[cur_editor.Bounds.Bottom] ; ebx,[bot_ofs]
+	sub	ebx,[cur_editor.Bounds.Top] ; ebx,[top_ofs]
+	sub	ebx,SCRLW*3;-2         ;**
 	sub	ebx,[cur_editor.VScroll.Size] ;! ebx,[vscrl_size]
 	idiv	ebx
 	cmp	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
@@ -259,18 +264,21 @@ mouse:
 	jmp	still.skip_write
 
   .check_hscroll:
-	pushd	(5+SCRLW+1) [bot_ofs] [p_info.box.width] [bot_ofs]
+	pushd	[cur_editor.Bounds.Left] [cur_editor.Bounds.Bottom] [cur_editor.Bounds.Right] [cur_editor.Bounds.Bottom] ; (5+SCRLW+1) [bot_ofs] [p_info.box.width] [bot_ofs]
 	popd	[__rc+0xC] [__rc+0x8] [__rc+0x4] [__rc+0x0]
-	add	[__rc+0x8],-SCRLW*2-10-1
-	add	[__rc+0x4],-SCRLW
-	add	[__rc+0xC],-2
+	add	[__rc+0x8],-SCRLW*2-1
+	add	[__rc+0x4],-SCRLW+1
+	add	[__rc+0xC],-1
+	add	[__rc+0x0],SCRLW+1
 	mov	ecx,__rc
 	call	pt_in_rect
 	jnc	.check_main_menu
 
   .check_hscroll.2:
 	mov	ebx,eax
-	sub	ebx,(5+SCRLW+1)
+	;sub     ebx,(5+SCRLW+1)
+	sub	ebx,SCRLW+1
+	sub	ebx,[cur_editor.Bounds.Left]
 ;       sub     ebx,[__rc+0x0]
 	cmp	[hscrl_capt],0
 	jge	.hcaptured
@@ -295,9 +303,9 @@ mouse:
 	jns	@f
 	xor	ebx,ebx
     @@: mov	[mouse_captured],1
-	mov	eax,[p_info.box.width]
+	mov	eax,[cur_editor.Bounds.Right] ; eax,[p_info.box.width]
 	sub	eax,[cur_editor.HScroll.Size] ;! eax,[hscrl_size]
-	sub	eax,SCRLW*3+10+1
+	sub	eax,SCRLW*3+1 ; eax,SCRLW*3+10+1
 	cmp	eax,ebx
 	jge	@f
 	mov	ebx,eax
@@ -306,8 +314,8 @@ mouse:
 	mov	eax,[cur_editor.Columns.Count] ;! eax,[columns]
 	sub	eax,[columns.scr]
 	imul	ebx
-	mov	ebx,[p_info.box.width]
-	sub	ebx,SCRLW*3+10+1	;**
+	mov	ebx,[cur_editor.Bounds.Right] ; ebx,[p_info.box.width]
+	sub	ebx,SCRLW*3+1 ; ebx,SCRLW*3+10+1        ;**
 	sub	ebx,[cur_editor.HScroll.Size] ;! ebx,[hscrl_size]
 	idiv	ebx
 	cmp	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]

@@ -178,22 +178,11 @@ func draw_popup_wnd
 	test	byte[ebp+edi-1],0x02
 	jz	.lp8
 	movzx	ecx,bx
-	shl	ecx,16
-	mov	cx,bx
 	shr	ebx,16
-	push	bx
-	shl	ebx,16
-	pop	bx
-	add	ecx,0x00040003
-	sub	ebx,0x000A000B
-	mcall	38,,,[sc.work_text]
-	add	ecx,0x00010001
-	mcall
-	add	ebx,4
-	sub	ecx,2
-	mcall
-	sub	ecx,0x00010001
-	mcall
+	add	ebx,-11
+	add	ecx,2
+	mov	edx,[sc.work_text]
+	call	draw_check
   .lp8: popad
 
 	mov	ecx,[sc.work_text];0x00000000
