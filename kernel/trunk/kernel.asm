@@ -438,14 +438,18 @@ B32:
 
            call init_events
 
-           mov [dll_map], 0xFFFFFFFF
-           mov [srv_map], 0xFFFFFFFF
+;           mov [dll_map], 0xFFFFFFFF
+;           mov [srv_map], 0xFFFFFFFF
 
-           call alloc_dll
-           mov edi, eax
-           mov esi, szKernel
-           mov ecx, 16
-           rep movsb
+;           call alloc_dll
+;           mov edi, eax
+;           mov esi, szKernel
+;           mov ecx, 16
+;           rep movsb
+
+           mov eax, srv.fd-SRV_FD_OFFSET
+           mov [srv.fd], eax
+           mov [srv.bk], eax
 
            mov edi, irq_tab
            xor eax, eax

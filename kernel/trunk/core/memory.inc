@@ -1300,15 +1300,18 @@ align 16
 
    mst MEM_STATE
 
-   dll_tab         rb 32*32
-   srv_tab         rb 36*32
+;   dll_tab         rb 32*32
+;   srv_tab         rb 36*32
    mem_block_map   rb 512
    event_map       rb 128
    mem_block_list  rd 64
    mem_block_mask  rd 2
 
-   dll_map         rd 1
-   srv_map         rd 1
+;   dll_map         rd 1
+;   srv_map         rd 1
+
+   srv.fd          rd 1
+   srv.bk          rd 1
 
    mem_used_list   rd 1
    mem_block_arr   rd 1

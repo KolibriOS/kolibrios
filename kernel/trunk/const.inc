@@ -388,22 +388,27 @@ struc PG_DATA
   .tmp_task_mutex    dd ?
 }
 
-struc LIB
-{ .lib_name          rb 16
-  .lib_base          dd ?
-  .lib_start         dd ?
-  .export            dd ?
-  .import            dd ?
-}
+;struc LIB
+;{ .lib_name          rb 16
+;  .lib_base          dd ?
+;  .lib_start         dd ?
+;  .export            dd ?
+;  .import            dd ?
+;}
 
 struc SRV
-{ .srv_name          rb 16
-  .magic             dd ?
-  .size              dd ?
-  .base              dd ?
-  .entry             dd ?
-  .srv_proc          dd ?
+{ .srv_name          rb 16           ;ASCIIZ string
+  .magic             dd ?     ;+0x10 ;'SRV '
+  .size              dd ?     ;+0x14 ;size of structure SRV
+  .fd                dd ?     ;+0x18 ;next SRV descriptor
+  .bk                dd ?     ;+0x1C ;prev SRV descriptor
+  .base              dd ?     ;+0x20 ;service base address
+  .entry             dd ?     ;+0x24 ;service START function
+  .srv_proc          dd ?     ;+0x28 ;main service handler
 }
+
+SRV_FD_OFFSET  equ 0x18
+SRV_SIZE       equ 44
 
 struc COFF_HEADER
 {  .machine          dw ?
@@ -459,12 +464,9 @@ virtual at 0
   IOCTL IOCTL
 end virtual
 
-
-SRV_SIZE equ 36
-
-virtual at 0
-  LIB LIB
-end virtual
+;virtual at 0
+;  LIB LIB
+;end virtual
 
 virtual at 0
   SRV SRV

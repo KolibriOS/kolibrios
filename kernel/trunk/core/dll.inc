@@ -281,36 +281,31 @@ restore  out_size
 
 align 4
 proc get_service stdcall, sz_name:dword
-	   locals
-	     srv_ptr  dd ?
-	     counter  dd ?
-           endl
-
            mov eax, [sz_name]
            test eax, eax
            jnz @F
            ret
 @@:
-           mov [srv_ptr], srv_tab
-           mov [counter], 16
+           mov edx, [srv.fd]
 @@:
-           stdcall strncmp, [srv_ptr], [sz_name], 16
+           cmp edx, srv.fd-SRV_FD_OFFSET
+           je .not_load
+
+           stdcall strncmp, edx, [sz_name], 16
            test eax, eax
            je .ok
 
-           add [srv_ptr], SRV_SIZE
-           dec [counter]
-           jnz @B
+           mov edx, [edx+SRV.fd]
+           jmp @B
 .not_load:
            stdcall find_service, [sz_name]
            test eax, eax
-           jnz @F
-           ret
-@@:
+           jz @F
            stdcall load_driver, eax
+@@:
            ret
 .ok:
-           mov eax, [srv_ptr]
+           mov eax, edx
            ret
 endp
 
@@ -343,40 +338,43 @@ proc find_service stdcall ,sz_name:dword
 endp
 
 align 4
-proc reg_service stdcall, sz_name:dword, handler:dword
-	   locals
-	     srv dd ?
-	   endl
-
-	   mov eax, [sz_name]
+reg_service:
+.sz_name equ esp+4
+.handler equ esp+8
+           mov eax, [.sz_name]
 	   test eax, eax
 	   jz .fail
 
-	   mov ebx, [handler]
+           mov ebx, [.handler]
 	   test ebx, ebx
 	   jz .fail
 
-	   call alloc_service
+           mov eax, SRV_SIZE
+           call malloc           ;call alloc_service
 	   test eax, eax
 	   jz .fail
 
-	   mov [srv], eax
 	   mov edi, eax
-	   mov esi, [sz_name]
-	   mov ecx, 16
-	   rep movsb
+           mov esi, [.sz_name]
+           mov ecx, 16/4
+           rep movsd
 
-	   mov edi, eax
-	   mov [edi+SRV.magic], ' SRV'
-	   mov [edi+SRV.size], SRV_SIZE
-	   mov ebx, [handler]
-	   mov [edi+SRV.srv_proc], ebx
-           mov eax, [srv]
+           mov [eax+SRV.magic], ' SRV'
+           mov [eax+SRV.size], SRV_SIZE
+
+           mov ebx, srv.fd-SRV_FD_OFFSET
+           mov edx, [ebx+SRV.fd]
+           mov [eax+SRV.fd], edx
+           mov [eax+SRV.bk], ebx
+           mov [ebx+SRV.fd], eax
+           mov [edx+SRV.bk], eax
+
+           mov ecx, [.handler]
+           mov [eax+SRV.srv_proc], ecx
 	   ret
 .fail:
 	   xor eax, eax
 	   ret
-endp
 
 align 4
 proc get_proc stdcall, exp:dword, sz_name:dword
@@ -967,24 +965,26 @@ proc load_library stdcall, file_name:dword
            ret
 endp
 
+
 align 4
 proc stop_all_services
-           not [srv_map]
+
+           mov edx, [srv.fd]
 .next:
-           bsf eax, [srv_map]
-           jnz .find
-           ret
-.find:
-           btr [srv_map], eax
-           shl eax,0x02
-           lea eax,[srv_tab+eax+eax*8]   ;srv_tab+eax*36
-           cmp [eax+SRV.magic], ' SRV'
+           cmp edx,  srv.fd-SRV_FD_OFFSET
+           je .done
+           cmp [edx+SRV.magic], ' SRV'
            jne .next
-           cmp [eax+SRV.size], SRV_SIZE
+           cmp [edx+SRV.size], SRV_SIZE
            jne .next
-           mov ebx, [eax+SRV.entry]
+           mov ebx, [edx+SRV.entry]
+           mov edx, [edx+SRV.fd]
+           push edx
            stdcall ebx, dword -1
+           pop edx
            jmp .next
+.done:
+           ret
 endp
 
 

@@ -800,6 +800,7 @@ proc user_free stdcall, base:dword
            ret
 endp
 
+if 0
 align 4
 proc alloc_dll
            pushf
@@ -833,3 +834,5 @@ proc alloc_service
            lea eax,[srv_tab+eax+eax*8]   ;srv_tab+eax*36
            ret
 endp
+
+end if
