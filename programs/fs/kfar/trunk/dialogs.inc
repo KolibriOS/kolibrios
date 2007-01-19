@@ -215,7 +215,7 @@ GenericBox:
         mov     eax, esi
         pop     esi
         sub     eax, esi
-        inc     eax     ; eax = фышэр чруюыютър + 2
+        inc     eax     ; eax = длина заголовка + 2
         mov     ecx, [ebx+dlgtemplate.width]
         cmp     eax, ecx
         jbe     .fullhea
@@ -236,9 +236,9 @@ GenericBox:
         mov     ah, [ebx+dlgtemplate.header_color]
         mov     al, ' '
         stosw
-        dec     ecx
 .2:
-        jecxz   .3
+        dec     ecx
+        jz	.3
         lodsb
         test    al, al
         jz      .4
@@ -404,6 +404,8 @@ GenericBox:
         call    draw_keybar
         mov     eax, ebp
         call    mf_free
+        or      [cursor_x], -1
+        or      [cursor_y], -1
         call    draw_image
         popad
         ret     8
@@ -955,11 +957,18 @@ virtual at 0
 dlgitemtemplate:
 ; Элементы:
 ;       1 = статический текст
+;       2 = кнопка
+;       3 = поле редактирования
 .type           dd      ?
 .x1             dd      ?
 .y1             dd      ?
 .x2             dd      ?
 .y2             dd      ?
+; Данные:
+; для текста: const char* data - ASCIIZ-строка
+; для кнопки: const char* data - заголовок
+; для редактора: struct {unsigned maxlength; unsigned pos; unsigned start;
+;                        char data[maxlength+1];}* data;
 .data           dd      ?
 .flags          dd      ?
 ; Флаги:
@@ -967,6 +976,9 @@ dlgitemtemplate:
 ;       1 = выравнивание по центру
 ;       2 = выравнивание вправо
 ;       4 = элемент имеет фокус ввода
+;       8 = элемент может иметь фокус ввода
+;       10h: для кнопки = кнопка по умолчанию (Enter на не-кнопке)
+;            для поля ввода = данные были модифицированы
 .size = $
 end virtual
 ;       struct DLGDATA
@@ -1017,12 +1029,16 @@ ManagerDlgProc:
         jz      .tab
         cmp     al, 0x48
         jz      .up
+        cmp     al, 0x50
+        jz      .down
+        jecxz   @f
+        cmp     [ebx+dlgitemtemplate.type], 3
+        jz      .key_edit
+@@:
         cmp     al, 0x4B
         jz      .left
         cmp     al, 0x4D
         jz      .right
-        cmp     al, 0x50
-        jz      .down
 .ret0:
         xor     eax, eax
         ret     16
@@ -1030,8 +1046,22 @@ ManagerDlgProc:
         or      eax, -1
         ret     16
 .enter:
+        cmp     [ebx+dlgitemtemplate.type], 2
+        jnz     @f
+.enter_found:
         mov     eax, ebx
         ret     16
+@@:
+        mov     ebx, [esp+4]
+        add     ebx, dlgtemplate.size+12
+.enter_find:
+        cmp     [ebx+dlgitemtemplate.type], 2
+        jnz     @f
+        test    [ebx+dlgitemtemplate.flags], 0x10
+        jnz     .enter_found
+@@:
+        add     ebx, dlgitemtemplate.size
+        jmp     .enter_find
 .tab:
         test    [ctrlstate], 3
         jnz     .shift_tab
@@ -1043,19 +1073,20 @@ ManagerDlgProc:
         jz      .find_first_btn
 @@:
         add     ebx, dlgitemtemplate.size
-        cmp     [ebx+dlgitemtemplate.type], 2
-        jz      .btn_found
+        test    [ebx+dlgitemtemplate.flags], 8
+        jnz     .btn_found
         loop    @b
 .find_first_btn:
         mov     ebx, [esp+4]
         add     ebx, dlgtemplate.size+12
 @@:
-        cmp     [ebx+dlgitemtemplate.type], 2
-        jz      .btn_found
+        test    [ebx+dlgitemtemplate.flags], 8
+        jnz     .btn_found
         add     ebx, dlgitemtemplate.size
         jmp     @b
 .btn_found:
         or      byte [ebx+dlgitemtemplate.flags], 4
+.ret_draw:
         mov     ebx, [esp+4]
         call    .dodraw
         call    draw_image
@@ -1072,20 +1103,135 @@ ManagerDlgProc:
         jz      .find_last_btn
 @@:
         sub     ebx, dlgitemtemplate.size
-        cmp     [ebx+dlgitemtemplate.type], 2
-        loopnz  @b
-        jz      .btn_found
+        test    [ebx+dlgitemtemplate.flags], 8
+        loopz   @b
+        jnz     .btn_found
 .find_last_btn:
         mov     ebx, [eax+dlgtemplate.size+8]
         imul    ebx, dlgitemtemplate.size
         lea     ebx, [ebx+eax+dlgtemplate.size+12]
 @@:
         sub     ebx, dlgitemtemplate.size
-        cmp     [ebx+dlgitemtemplate.type], 2
-        jnz     @b
+        test    [ebx+dlgitemtemplate.flags], 8
+        jz      @b
         jmp     .btn_found
+.key_edit:
+; обработка клавиш в поле ввода
+        test    al, 0x80
+        jnz     .ret0
+        or      [ebx+dlgitemtemplate.flags], 0x10
+        mov     edx, [ebx+dlgitemtemplate.data]
+        cmp     al, 0x4B
+        jz      .editor_left
+        cmp     al, 0x4D
+        jz      .editor_right
+        cmp     al, 0x47
+        jz      .editor_home
+        cmp     al, 0x4F
+        jz      .editor_end
+        cmp     al, 0x0E
+        jz      .editor_backspace
+        cmp     al, 0x53
+        jz      .editor_del
+        test    [ctrlstate], 0x3C
+        jnz     .ret_draw
+; query keyboard layout
+        pushad
+        push    26
+        pop     eax
+        push    2
+        pop     ebx
+        xor     ecx, ecx
+        cmp     [ctrlstate], 1
+        sbb     ecx, -2
+        mov     edx, layout
+        int     0x40
+        popad
+; translate scancode to ASCII
+        movzx   eax, al
+        movzx   eax, byte [layout+eax]
+        push    eax
+; insert entered symbol
+        xor     eax, eax
+        lea     edi, [edx+12]
+        or      ecx, -1
+        repnz   scasb
+        not     ecx
+        pop     eax
+        cmp     ecx, [edx]
+        ja      .ret_test       ; buffer capacity exceeded
+        lea     edi, [edx+ecx+12-1]
+        mov     esi, [edx+4]
+        lea     esi, [edx+esi+12]
+@@:
+        mov     cl, [edi]
+        mov     [edi+1], cl
+        dec     edi
+        cmp     edi, esi
+        jae     @b
+        mov     [esi], al
+        inc     dword [edx+4]
+@@:     jmp     .ret_test
+.editor_left:
+        mov     ecx, [edx+4]
+        jecxz   @f
+        dec     dword [edx+4]
+@@:     jmp     .ret_test
+.editor_right:
+        mov     ecx, [edx+4]
+        cmp     byte [edx+ecx+12], 0
+        jz      @b
+        inc     dword [edx+4]
+        jmp     @b
+.editor_home:
+        and     dword [edx+4], 0
+        jmp     @b
+.editor_end:
+        lea     edi, [edx+12]
+        xor     eax, eax
+        or      ecx, -1
+        repnz   scasb
+        not     ecx
+        dec     ecx
+        mov     [edx+4], ecx
+.ret_test:
+        mov     eax, [edx+4]
+        cmp     [edx+8], eax
+        jl      .ret_test.l1
+        mov     [edx+8], eax
+        jmp     .ret_test.l2
+.ret_test.l1:
+        add     eax, [ebx+dlgitemtemplate.x1]
+        sub     eax, [ebx+dlgitemtemplate.x2]
+        cmp     [edx+8], eax
+        jge     .ret_test.l2
+        mov     [edx+8], eax
+.ret_test.l2:
+        jmp     .ret_draw
+.editor_backspace:
+        mov     ecx, [edx+4]
+        jecxz   .ret_test
+        dec     dword [edx+4]
+        lea     esi, [edx+ecx+12]
+        lea     edi, [esi-1]
+.copy_and_ret_test:
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        jmp     .ret_test
+.editor_del:
+        mov     ecx, [edx+4]
+        lea     edi, [ecx+edx+12]
+        lea     esi, [edi+1]
+        cmp     byte [edi], 0
+        jz      .ret_test
+        jmp     .copy_and_ret_test
 
 .dodraw:
+        or      [cursor_x], -1
+        or      [cursor_y], -1
         add     ebx, dlgtemplate.size+8
         mov     ecx, [ebx]
         add     ebx, 4
@@ -1096,7 +1242,12 @@ ManagerDlgProc:
         dec     eax
         jz      .draw_text
         dec     eax
+        jz      .draw_button
+        dec     eax
         jnz     .draw_loop_continue
+        call    draw_editbox
+        jmp     .draw_loop_continue
+.draw_button:
         call    draw_button
         jmp     .draw_loop_continue
 .draw_text:
@@ -1114,6 +1265,7 @@ draw_static_text:
 draw_text:
 ; определяем длину строки
         mov     esi, [ebx+dlgitemtemplate.data]
+draw_text_esi:
         test    esi, esi
         jz      .ret
         or      ecx, -1
@@ -1163,6 +1315,11 @@ draw_text:
         pop     ecx
         cmp     ecx, edx
         jbe     .text_copy
+        cmp     [ebx+dlgitemtemplate.type], 3
+        jnz     @f
+        mov     ecx, edx
+        jmp     .text_copy
+@@:
         cmp     edx, 3
         jb      .ret
         mov     al, '.'
@@ -1203,3 +1360,27 @@ draw_button:
         mov     ah, [dialog_selected_btn_color]
 @@:
         jmp     draw_text
+
+draw_editbox:
+        mov     edx, [ebx+dlgitemtemplate.data]
+        test    [ebx+dlgitemtemplate.flags], 4
+        jz      @f
+        mov     eax, [ebx+dlgitemtemplate.x1]
+        add     eax, [edx+4]
+        sub     eax, [edx+8]
+        mov     ecx, [esp+16]
+        add     eax, [ecx+dlgtemplate.x]
+        mov     [cursor_x], eax
+        mov     eax, [ebx+dlgitemtemplate.y1]
+        add     eax, [ecx+dlgtemplate.y]
+        mov     [cursor_y], eax
+@@:
+        mov     ah, [dialog_edit_color]
+        test    [ebx+dlgitemtemplate.flags], 10h
+        jnz     @f
+        mov     ah, [dialog_unmodified_edit_color]
+@@:
+        mov     esi, [ebx+dlgitemtemplate.data]
+        add     esi, [edx+8]
+        add     esi, 12
+        jmp     draw_text_esi

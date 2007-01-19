@@ -18,6 +18,7 @@ include 'viewer.inc'
 start:
         mov     eax, mem
         call    mf_init
+        call    init_console
         call    draw_window
         push    66
         pop     eax
@@ -25,7 +26,6 @@ start:
         pop     ebx
         mov     ecx, ebx
         int     40h     ; set keyboard mode to scancodes
-        call    init_console
         mov     esi, def_left_dir
         mov     edi, panel1_dir
 @@:
@@ -41,11 +41,20 @@ start:
         stosb
         test    al, al
         jnz     @b
-        mov     eax, 304
+        mov     eax, 200
         mov     [panel1_nfa], eax
         mov     [panel2_nfa], eax
-        mov     [panel1_files], buf1
-        mov     [panel2_files], buf2
+        mov     eax, 200*4 + 32 + 200*304
+        push    eax
+        call    mf_alloc
+        mov     [panel1_files], eax
+        pop     eax
+        call    mf_alloc
+        mov     [panel2_files], eax
+        test    eax, eax
+        jz      exit
+        cmp     [panel1_files], eax
+        jz      exit
         mov     [panel1_sortmode], 0    ; sort by name
         mov     [panel2_sortmode], 0
         mov     [num_screens], 1
@@ -76,6 +85,17 @@ exit:
         or      eax, -1
         int     40h
 redraw:
+; query kbd state from OS
+        mov     al, 66
+        push    3
+        pop     ebx
+        int     0x40
+        and     eax, 0x3F
+        cmp     al, [ctrlstate]
+        mov     [ctrlstate], al
+        jz      @f
+        call    draw_keybar
+@@:
         mov     al, 9
         mov     ebx, procinfo
         or      ecx, -1
@@ -101,7 +121,7 @@ redraw:
 @@:
         xor     ecx, ecx
         mov     eax, [ebx+42]
-        sub     eax, 5*2
+        sub     eax, 5*2-1
         jae     @f
         xor     eax, eax
 @@:
@@ -124,10 +144,9 @@ redraw:
         or      cl, ch
         test    edx, edx
         setnz   ch
-        or      cl, ch
         mov     eax, [ebx+46]
         sub     eax, [skinh]
-        sub     eax, 5
+        sub     eax, 5-1
         jns     @f
         xor     eax, eax
 @@:
@@ -146,29 +165,31 @@ redraw:
 @@:
         cmp     eax, [cur_height]
         mov     [cur_height], eax
-        setnz   ch
-        or      cl, ch
+        jnz     .resize
+        test    cl, cl
+        jnz     .resize
         test    edx, edx
-        setnz   ch
-        test    cx, cx
+        setnz   cl
+        or      cl, ch
         jz      @f
-        mov     eax, [MemForImage]
-        call    mf_free
-        and     [MemForImage], 0
-        call    init_console
+        test    byte [ebx+70], 1
+        jnz     @f
+.resize:
         push    67
         pop     eax
         or      ebx, -1
         or      ecx, -1
         mov     edx, [cur_width]
         imul    edx, font_width
-        add     edx, 5*2
+        add     edx, 5*2-1
         mov     esi, [cur_height]
         imul    esi, font_height
         add     esi, [skinh]
-        add     esi, 5
+        add     esi, 5-1
         int     40h
-        call    draw_window
+.resize_draw:
+        call    init_console
+;        call    draw_window
         call    draw_keybar
         mov     ebp, [active_screen_data]
         mov     eax, [active_screen_vtable]
@@ -177,6 +198,56 @@ redraw:
 @@:
         call    draw_window
         jmp     event
+alt_f9:
+        cmp     [saved_width], -1
+        jz      @f
+        mov     eax, [saved_width]
+        mov     [cur_width], eax
+        or      [saved_width], -1
+        mov     eax, [saved_height]
+        mov     [cur_height], eax
+        or      [saved_height], -1
+        jmp     redraw.resize
+@@:
+        push    48
+        pop     eax
+        push    5
+        pop     ebx
+        int     0x40
+        push    eax
+        sub     eax, [esp+2]
+        inc     eax
+        movzx   eax, ax
+        sub     eax, 10
+        xor     edx, edx
+        mov     ecx, font_width
+        div     ecx
+        xchg    [cur_width], eax
+        mov     [saved_width], eax
+        mov     eax, ebx
+        shr     ebx, 16
+        sub     eax, ebx
+        sub     eax, 5-1
+        sub     eax, [skinh]
+        xor     edx, edx
+        mov     ecx, font_height
+        div     ecx
+        xchg    [cur_height], eax
+        mov     [saved_height], eax
+        mov     ecx, ebx
+        pop     ebx
+        shr     ebx, 16
+        mov     edx, [cur_width]
+        imul    edx, font_width
+        add     edx, 5*2-1
+        mov     esi, [cur_height]
+        imul    esi, font_height
+        add     esi, [skinh]
+        add     esi, 4
+        push    67
+        pop     eax
+        int     0x40
+        jmp     redraw.resize_draw
 key:
         mov     al, 2
         int     40h
@@ -581,43 +652,19 @@ panels_OnKey:
         call    get_curfile_folder_entry
         test    byte [ecx], 10h
         jnz     .enter_folder
-; find extension
-        lea     esi, [ecx+40]
-        push    esi
-@@:
-        lodsb
-        test    al, al
-        jnz     @b
-@@:
-        dec     esi
-        cmp     byte [esi], '.'
-        jz      .found_ext
-        cmp     esi, [esp]
-        ja      @b
-        jmp     .run_app
-.found_ext:
-        inc     esi
-        mov     edi, associations
-@@:
-        push    esi edi
-        mov     edi, [edi]
-        call    strcmpi
-        pop     edi esi
-        jz      .run_association
-        add     edi, 8
-        cmp     edi, associations_end
-        jb      @b
-        jmp     .run_app
+        call    find_extension
+        jc      .run_app
+        jnz     .run_app
 .run_association:
-        mov     [execparams], execdata
         mov     eax, [edi+4]
+.run_association2:
+        mov     [execparams], execdata
         mov     [execptr], eax
         jmp     .dorun
 .run_app:
         mov     [execptr], execdata
         and     [execparams], 0
 .dorun:
-        pop     esi
         lea     esi, [ebp + panel1_dir - panel1_data]
         mov     edi, execdata
 ; TODO: add overflow check
@@ -636,10 +683,52 @@ panels_OnKey:
         stosb
         test    al, al
         jnz     @b
+; for fasm call - special handling, because
+; 1) fasm command line convention is different : fasm infile,outfile[,path] rather than tinypad infile
+; 2) fasm will probably create new file in directory, so we want to reload panel data
+        xor     edx, edx
+        cmp     [execparams], edx
+        jz      .nofasm
+        cmp     [execptr], fasm
+        jnz     .nofasm
+; TODO: add buffer/cmdline overflow check
+        mov     esi, execdata
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        mov     byte [esi-1], ','
+        inc     edx
+; output file: no extension if input file has extension, '.bin' otherwise
+        push    edi
+@@:
+        dec     edi
+        cmp     byte [edi], '.'
+        jz      .ptfound
+        cmp     byte [edi], '/'
+        jnz     @b
+        pop     edi
+        mov     dword [edi-1], '.bin'
+        mov     byte [edi+3], 0
+        jmp     .nofasm
+.ptfound:
+        mov     byte [edi], 0
+        pop     edi
+.nofasm:
         push    70
         pop     eax
         mov     ebx, execinfo
         int     40h
+        test    edx, edx
+        jz      @f
+        push    5
+        pop     eax
+        push    20
+        pop     ebx
+        int     0x40
+        jmp     .ctrl_r
+@@:
         ret
 .enter_folder:
         lea     esi, [ecx+40]
@@ -880,6 +969,270 @@ panels_OnKey:
         jnz     @b
         call    read_folder
         jmp     .done_redraw
+.shift_f5:
+        call    get_curfile_folder_entry
+        lea     esi, [ecx+40]
+        mov     edi, CopyDestEditBuf
+        mov     eax, CopyDestEditBuf.length
+        stosd
+        scasd
+        xor     eax, eax
+        stosd
+        mov     edx, edi
+@@:
+        lodsb
+        test    al, al
+        jz      .f5_common
+        stosb
+        jmp     @b
+.f5:
+        mov     edi, CopyDestEditBuf
+        mov     eax, CopyDestEditBuf.length
+        stosd
+        scasd
+        xor     eax, eax
+        stosd
+        mov     edx, edi
+        mov     esi, ebp
+        xor     esi, panel1_data xor panel2_data
+        add     esi, panel1_dir - panel1_data
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+        mov     al, '/'
+        stosb
+.f5_common:
+        mov     byte [edi], 0
+        sub     edi, edx
+        mov     [edx-8], edi
+        mov     edi, CopySourceTextBuf
+        mov     esi, aCopy1
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+        call    get_curfile_folder_entry
+        lea     esi, [ecx+40]
+        lea     eax, [esi+1]
+@@:
+        inc     esi
+        cmp     byte [esi-1], 0
+        jnz     @b
+        sub     esi, eax
+        xchg    eax, esi
+        dec     esi
+        mov     edx, [cur_width]
+        sub     edx, 50
+        sub     eax, edx
+        jbe     @f
+        add     esi, eax
+        mov     al, '.'
+        stosb
+        stosb
+        stosb
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+        mov     esi, aCopy2
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        mov     ebx, copy_dlgdata
+        mov     eax, [cur_width]
+        sub     eax, 12
+        mov     [ebx + dlgtemplate.width], eax
+        dec     eax
+        dec     eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.width2], eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.width3], eax
+        shr     eax, 1
+        dec     eax
+        dec     eax
+        mov     [ebx - copy_dlgdata + copy_dlgdata.copy_x2], eax
+        sub     eax, aCopyLength-1
+        mov     [ebx - copy_dlgdata + copy_dlgdata.copy_x1], eax
+        add     eax, aCopyLength+3
+        mov     [ebx - copy_dlgdata + copy_dlgdata.cnl_x1], eax
+        add     eax, aCancelBLength - 1
+        mov     [ebx - copy_dlgdata + copy_dlgdata.cnl_x2], eax
+        mov     al, [dialog_border_color]
+        mov     [ebx + dlgtemplate.border_color], al
+        mov     al, [dialog_header_color]
+        mov     [ebx + dlgtemplate.header_color], al
+        mov     al, [dialog_main_color]
+        mov     [ebx + dlgtemplate.main_color], al
+        mov     byte [ebx - copy_dlgdata + copy_dlgdata.flags0], 0xC
+        and     byte [ebx - copy_dlgdata + copy_dlgdata.flags1], not 4
+        and     byte [ebx - copy_dlgdata + copy_dlgdata.flags2], not 4
+        push    ebx
+        call    DialogBox
+        cmp     eax, copy_dlgdata.copy_btn
+        jnz     .ret2
+; Копируем
+        mov     esi, CopyDestEditBuf+12
+        mov     edi, esi
+        xor     eax, eax
+        or      ecx, -1
+        repnz   scasb
+        dec     edi
+        dec     edi
+        cmp     edi, esi
+        jb      .ret2
+        cmp     byte [edi], '/'
+        jnz     @f
+; Наличие/отсутствие заканчивающего слэша важно только для копирования папок
+        cmp     edi, esi
+        jz      @f
+        mov     byte [edi], 0
+        dec     edi
+@@:
+; Если путь не начинается со слэша, считаем его относительно текущей папки
+        cmp     byte [esi], '/'
+        jz      .copy_absolute_path
+        push    esi
+        push    edi
+        lea     edi, [ebp + panel1_dir - panel1_data]
+        or      ecx, -1
+        xor     eax, eax
+        repnz   scasb
+        not     ecx
+        pop     edi
+        lea     edx, [edi+2]
+        sub     edx, esi
+        lea     edi, [edi+ecx+1]
+        xchg    ecx, edx
+        std
+        lea     esi, [esi+ecx-1]
+        rep     movsb
+        cld
+        pop     edi
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        push    edi
+        mov     ecx, edx
+        rep     movsb
+        mov     byte [edi-1], '/'
+        pop     esi
+.copy_absolute_path:
+; Получаем атрибуты назначения
+        mov     cl, 0x10
+        xor     eax, eax
+        mov     edi, esi
+.countslashloop:
+        cmp     byte [edi], '/'
+        jnz     @f
+        inc     eax
+@@:
+        inc     edi
+        cmp     byte [edi], 0
+        jnz     .countslashloop
+        cmp     eax, 2
+        jbe     @f
+        mov     ebx, attrinfo
+        mov     [attrinfo.attr], 0
+        mov     [ebx + attrinfo.name - attrinfo], esi
+        push    70
+        pop     eax
+        int     0x40
+        mov     cl, byte [attrinfo.attr]
+@@:
+        test    cl, 0x10
+        jz      .copyfile
+; Нам подсунули каталог назначения, дописываем имя файла
+        mov     al, '/'
+        stosb
+        push    esi
+        call    get_curfile_folder_entry
+        lea     esi, [ecx+40]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     esi
+.copyfile:
+; Имя исходного файла
+        push    esi
+        lea     esi, [ebp+panel1_dir-panel1_data]
+        mov     edi, saved_file_name
+        push    edi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+        mov     al, '/'
+        stosb
+        call    get_curfile_folder_entry
+        lea     esi, [ecx+40]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     esi
+        pop     edi
+; Нельзя скопировать файл поверх самого себя!
+        push    esi edi
+        call    strcmpi
+        pop     edi esi
+        jz      .ret2
+; Собственно, копируем
+; esi->source name, edi->destination name
+        mov     [writeinfo.code], 2
+        mov     [writeinfo.name], edi
+        and     dword [writeinfo.first], 0
+        and     dword [writeinfo.first+4], 0
+        mov     [writeinfo.data], copy_buffer
+        mov     ebx, readinfo
+        and     dword [ebx+readinfo.first-readinfo], 0
+        and     dword [ebx+readinfo.first+4-readinfo], 0
+        mov     [ebx+readinfo.size-readinfo], copy_buffer_size
+        mov     [ebx+readinfo.data-readinfo], copy_buffer
+        mov     [ebx+readinfo.name-readinfo], esi
+.copyloop:
+        mov     ebx, readinfo
+        push    70
+        pop     eax
+        int     0x40
+        cmp     ebx, -1
+        jz      .copydone
+        test    ebx, ebx
+        jz      .copydone
+        add     dword [readinfo.first], ebx
+        adc     dword [readinfo.first+4], 0
+        mov     [writeinfo.size], ebx
+        mov     ebx, writeinfo
+        push    70
+        pop     eax
+        int     0x40
+        mov     ecx, [writeinfo.size]
+        add     dword [writeinfo.first], ecx
+        adc     dword [writeinfo.first+4], 0
+        mov     [writeinfo.code], 3
+        cmp     ecx, copy_buffer_size
+        jz      .copyloop
+.copydone:
+        push    ebp
+        call    .ctrl_r
+        pop     ebp
+        xor     ebp, panel1_data xor panel2_data
+        jmp     .ctrl_r
+
 .f3:
         call    view_file
 .ret2:
@@ -980,7 +1333,7 @@ panels_OnKey:
         mov     eax, [ebp + panel1_index - panel1_data]
         push    eax
         call    get_curfile_name
-        mov     esi, eax
+        mov     esi, ecx
         mov     edi, saved_file_name
 @@:
         lodsb
@@ -1034,6 +1387,108 @@ panels_OnKey:
         mov     [ebp + panel1_start - panel1_data], eax
 @@:
         jmp     .done_redraw
+.menu:
+; display context menu
+; ignore folders
+        call    get_curfile_folder_entry
+        test    byte [ecx], 10h
+        jz      @f
+.menuret:
+        ret
+@@:
+        call    find_extension
+        jc      .menuret
+        jnz     .menuret
+; known extension
+        mov     ebx, [edi+8]
+        test    ebx, ebx
+        jz      .menuret
+        mov     ecx, esi
+@@:
+        inc     ecx
+        cmp     byte [ecx-1], 0
+        jnz     @b
+        sub     ecx, esi        ; ecx = длина имени файла+1 = длина заголовка+1
+        cmp     ecx, 15
+        jb      @f
+        mov     cl, 15
+@@:
+        xor     edx, edx
+.menucreateloop:
+        mov     eax, [ebx]
+        test    eax, eax
+        jz      .menucreated
+@@:
+        inc     eax
+        cmp     byte [eax-1], 0
+        jnz     @b
+        sub     eax, [ebx]
+        cmp     eax, ecx
+        ja      @f
+        mov     eax, ecx
+@@:
+        add     eax, 12
+        call    mf_alloc
+        test    eax, eax
+        jz      .menucreated
+        add     eax, 4
+        test    edx, edx
+        jz      @f
+        mov     [edx], eax
+@@:
+        mov     [eax+4], edx
+        mov     edx, eax
+        push    esi
+        mov     esi, [ebx+4]
+        mov     [eax-4], esi
+        mov     esi, [ebx]
+        lea     edi, [eax+8]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        sub     esi, [ebx]
+        sub     esi, ecx
+        jae     .menunoadd
+        neg     esi
+@@:
+        mov     byte [edi-1], ' '
+        stosb
+        dec     esi
+        jnz     @b
+.menunoadd:
+        pop     esi
+        add     ebx, 8
+        jmp     .menucreateloop
+.menucreated:
+        test    edx, edx
+        jz      .menuret
+        and     dword [edx], 0
+@@:
+        cmp     dword [edx+4], 0
+        jz      @f
+        mov     edx, [edx+4]
+        jmp     @b
+@@:
+        push    1
+        push    esi
+        push    edx
+        call    menu
+        cmp     eax, -1
+        jz      .menuret
+        push    dword [eax-4]
+@@:
+        test    edx, edx
+        jz      @f
+        lea     eax, [edx-4]
+        mov     edx, [edx]
+        call    mf_free
+        jmp     @b
+@@:
+        pop     eax
+        call    get_curfile_folder_entry
+        jmp     .run_association2
 
 panels_OnRedraw:
         call    draw_cmdbar
@@ -1044,14 +1499,23 @@ panels_OnRedraw:
         ret
 
 init_console:
+        mov     eax, [console_data_ptr]
+        call    mf_free
+        mov     eax, [cur_width]
+        mul     [cur_height]
+        mov     ecx, eax
+        add     eax, eax
+        add     eax, eax
+        call    mf_alloc
+        test    eax, eax
+        jz      exit
+        mov     [console_data_ptr], eax
+        mov     edi, eax
         mov     ax, 0720h
-        mov     ecx, [cur_width]
-        imul    ecx, [cur_height]
-        mov     edi, console_data
         rep     stosw
-        and     [panel1_left], 0
-        and     [panel1_top], 0
-        and     [panel2_top], 0
+        mov     [panel1_left], ecx
+        mov     [panel1_top], ecx
+        mov     [panel2_top], ecx
         mov     eax, [cur_width]
         inc     eax
         shr     eax, 1
@@ -1192,10 +1656,10 @@ draw_window:
         mov     [skinh], eax
         mov     ebx, [cur_width]
         imul    ebx, font_width
-        add     ebx, 100*65536 + 5*2
+        add     ebx, 100*65536 + 5*2-1
         mov     ecx, [cur_height]
         imul    ecx, font_height
-        lea     ecx, [eax+ecx+5+100*65536]
+        lea     ecx, [eax+ecx+5-1+100*65536]
         xor     eax, eax
         mov     edx, 0x13000000
         mov     edi, header
@@ -1219,10 +1683,18 @@ draw_window:
 ;        push    4
 ;        pop     eax
 ;        int     40h
-        xor     ecx, ecx
-        call    draw_image
-        push    12
-        pop     eax
+;        xor     ecx, ecx
+;        call    draw_image
+        and     [min_x], 0
+        and     [min_y], 0
+        mov     eax, [cur_width]
+        dec     eax
+        mov     [max_x], eax
+        mov     eax, [cur_height]
+        dec     eax
+        mov     [max_y], eax
+        call    draw_image.force
+        mov     al, 12
         push    2
         pop     ebx
         int     40h
@@ -1248,34 +1720,129 @@ draw_image.nomem:
         ret
 
 draw_image:
-        cmp     [MemForImage], 0
-        jnz     .allocated
+; determine draw rectangle
+        and     [max_x], 0
+        or      [min_x], -1
+        or      [min_y], -1
+        mov     esi, [console_data_ptr]
+        xor     eax, eax
+        xor     edx, edx
+        mov     ecx, [cur_width]
+        imul    ecx, [cur_height]
+.m1:
+        mov     bx, [esi]
+        cmp     bx, [esi+ecx*2]
+        jz      .m2
+        cmp     eax, [min_x]
+        ja      @f
+        mov     [min_x], eax
+@@:
+        cmp     eax, [max_x]
+        jb      @f
+        mov     [max_x], eax
+@@:
+        cmp     edx, [min_y]
+        jae     @f
+        mov     [min_y], edx
+@@:
+        mov     [max_y], edx
+.m2:
+        add     esi, 2
+        inc     eax
+        cmp     eax, [cur_width]
+        jb      .m1
+        xor     eax, eax
+        inc     edx
+        cmp     edx, [cur_height]
+        jb      .m1
+        mov     eax, [cursor_x]
+        cmp     eax, -1
+        jz      .m3
+        cmp     eax, [min_x]
+        ja      @f
+        mov     [min_x], eax
+@@:
+        cmp     eax, [max_x]
+        jb      @f
+        mov     [max_x], eax
+@@:
+        mov     edx, [cursor_y]
+        cmp     edx, [min_y]
+        ja      @f
+        mov     [min_y], edx
+@@:
+        cmp     edx, [max_y]
+        jb      @f
+        mov     [max_y], edx
+@@:
+.m3:
+        xchg    eax, [old_cursor_x]
+        xchg    edx, [old_cursor_y]
+        cmp     eax, -1
+        jz      .m4
+        cmp     eax, [min_x]
+        ja      @f
+        mov     [min_x], eax
+@@:
+        cmp     eax, [max_x]
+        jb      @f
+        mov     [max_x], eax
+@@:
+        cmp     edx, [min_y]
+        ja      @f
+        mov     [min_y], edx
+@@:
+        cmp     edx, [max_y]
+        jb      @f
+        mov     [max_y], edx
+@@:
+.m4:
+        cmp     [min_y], -1
+        jz      .nodraw
+.force:
 ; allocate memory for image
+        mov     ecx, [max_x]
+        sub     ecx, [min_x]
+        inc     ecx
+        mov     [used_width], ecx
+        mov     edx, [max_y]
+        sub     edx, [min_y]
+        inc     edx
+        mov     [used_height], edx
+        imul    ecx, edx
+        imul    ecx, font_width*font_height
+        add     ecx, [heapend]
+        push    64
+        pop     eax
+        push    1
+        pop     ebx
+        int     0x40
+        test    eax, eax
+        jnz     draw_image.nomem
+        mov     edi, [heapend]
+        mov     esi, [console_data_ptr]
+        mov     eax, [min_y]
+        imul    eax, [cur_width]
+        add     eax, [min_x]
+        lea     esi, [esi+eax*2]
+        mov     ecx, [used_height]
+.lh:
+        push    ecx esi
+        mov     ecx, [used_width]
+.lw:
+        push    ecx
+        mov     ebx, [esi]
         mov     eax, [cur_width]
         imul    eax, [cur_height]
-        imul    eax, font_width*font_height*3
-        call    mf_alloc
-        test    eax, eax
-        jz      draw_image.nomem
-        mov     [MemForImage], eax
-.allocated:
-        mov     edi, [MemForImage]
-        mov     esi, console_data
-        mov     ecx, [cur_height]
-.lh:
-        push    ecx
-        mov     ecx, [cur_width]
-.lw:
-        push    ecx edi
-        xor     eax, eax
-        mov     al, [esi+1]
-        and     al, 0xF
-        mov     ebx, [console_colors + eax*4]   ; цвет текста
-        mov     al, [esi+1]
-        shr     al, 4
-        mov     ebp, [console_colors + eax*4]   ; цвет фона
-        lodsb
-        inc     esi
+        mov     [eax*2+esi], bx
+        movzx   eax, bl
+        push    edi
+        movzx   ebx, bh
+        mov     ebp, ebx
+        shr     ebp, 4
+        and     ebx, 0xF
+        sub     ebx, ebp
+        add     esi, 2
 if font_width > 8
         lea     edx, [eax+eax+font]
 else
@@ -1283,23 +1850,22 @@ else
 end if
         mov     ecx, font_height
 .sh:
-        push    ecx edi
+        push    ecx edx edi
         xor     ecx, ecx
+        mov     edx, [edx]
 .sw:
-        mov     eax, ebx
-        bt      [edx], ecx
-        jc      @f
-        mov     eax, ebp
-@@:
-        stosw
-        shr     eax, 16
-        stosb
-        inc     ecx
+        shr     edx, 1
+        sbb     eax, eax
+        and     eax, ebx
+        add     eax, ebp
+        mov     [edi], al
+        add     ecx, 1
+        add     edi, 1
         cmp     ecx, font_width
         jb      .sw
-        pop     edi ecx
-        mov     eax, [cur_width]
-        imul    eax, font_width*3
+        pop     edi edx ecx
+        mov     eax, [used_width]
+        imul    eax, font_width
         add     edi, eax
 if font_width > 8
         add     edx, 256*2
@@ -1307,24 +1873,76 @@ else
         add     edx, 256
 end if
         loop    .sh
-        pop     edi ecx
-        add     edi, font_width*3
-        loop    .lw
-        mov     eax, [cur_width]
-        imul    eax, (font_height-1)*font_width*3
-        add     edi, eax
+        pop     edi
+.skip_symbol:
         pop     ecx
-        loop    .lh
-        push    7
+        add     edi, font_width
+        dec     ecx
+        jnz     .lw
+        mov     eax, [used_width]
+        imul    eax, (font_height-1)*font_width
+        add     edi, eax
+        pop     esi ecx
+        add     esi, [cur_width]
+        add     esi, [cur_width]
+        dec     ecx
+        jnz     .lh
+; cursor
+        mov     eax, [cursor_y]
+        inc     eax
+        jz      .nocursor
+        sub     eax, [min_y]
+        mul     [used_width]
+        imul    eax, font_height*font_width
+        mov     edx, [cursor_x]
+        sub     edx, [min_x]
+        inc     edx
+        imul    edx, font_width
+        add     eax, edx
+        add     eax, [heapend]
+        mov     edx, [used_width]
+        imul    edx, font_width
+        neg     edx
+        mov     ecx, (font_height*15+50)/100
+.cursor_loop:
+        push    ecx
+        mov     ecx, font_width
+        add     eax, edx
+        push    eax
+@@:
+;        add     byte [eax-1], 0x10
+        xor     byte [eax-1], 7
+        sub     eax, 1
+        loop    @b
         pop     eax
-        mov     ebx, [MemForImage]
-        mov     ecx, [cur_width]
-        imul    ecx, font_width*10000h
-        mov     cx, word [cur_height]
+        pop     ecx
+        loop    .cursor_loop
+.nocursor:
+        mov     ecx, [used_width]
+        imul    ecx, font_width*65536
+        mov     cx, word [used_height]
         imul    cx, font_height
-        mov     edx, [skinh]
-        add     edx, 5*10000h
-        int     40h
+        mov     edx, [min_x]
+        imul    edx, font_width
+        add     edx, 5
+        shl     edx, 16
+        mov     dx, word [min_y]
+        imul    dx, font_height
+        add     edx, [skinh]
+        push    65
+        pop     eax
+        mov     ebx, [heapend]
+        push    8
+        pop     esi
+        mov     edi, console_colors
+        int     0x40
+        push    64
+        pop     eax
+        push    1
+        pop     ebx
+        mov     ecx, [heapend]
+        int     0x40
+.nodraw:
         ret
 
 get_console_ptr:
@@ -1333,7 +1951,8 @@ get_console_ptr:
         push    edx
         imul    edx, [cur_width]
         add     edx, eax
-        lea     edi, [console_data + edx*2]
+        mov     edi, [console_data_ptr]
+        lea     edi, [edi + edx*2]
         pop     edx
         ret
 
@@ -1431,7 +2050,7 @@ draw_keybar:
         dec     edi
 @@:
         push    edi
-        mov     eax, [cur_width]
+        xor     eax, eax
         mov     edx, [cur_height]
         call    get_console_ptr
         mov     ecx, edi
@@ -1755,6 +2374,7 @@ draw_panel:
         jae     .size_tera
 ; в гигабайтах
         mov     al, 'G'
+        shl     edx, 2
         jmp     .size_letter
 .size_tera:
 ; в терабайтах
@@ -1884,47 +2504,14 @@ end if
         mov     ecx, [ebp + panel1_nfa - panel1_data]
         lea     esi, [esi + ecx*4 + 32 + 40]
         add     esi, [ebp + panel1_files - panel1_data]
-; подсветка
-;        call    insert_last_dot
-        xor     ecx, ecx
-.highlight_test_loop:
-        mov     ebx, [highlight_groups+ecx*4]
-        mov     al, [ebx + highlight.IncludeAttributes]
-        mov     ah, [esi - 40]
-        and     ah, al
-        cmp     ah, al
-        jnz     .highlight_test_failed
-        push    edi
-        lea     edi, [ebx + highlight.Mask]
-        call    match_mask
-        pop     edi
-        jc      .highlight_test_failed
-        mov     ah, [ebx + highlight.NormalColor]
+        mov     ah, [esi - 40 + 5]
         cmp     ebp, [active_panel]
         jnz     @f
         mov     ecx, [column_index]
         cmp     ecx, [ebp + panel1_index - panel1_data]
         jnz     @f
-        mov     ah, [ebx + highlight.CursorColor]
+        mov     ah, [esi - 40 + 6]
 @@:
-        test    ah, ah
-        jz      .nohighlight
-        jmp     .doname
-.highlight_test_failed:
-        inc     ecx
-        cmp     ecx, [highlight_num_groups]
-        jb      .highlight_test_loop
-.nohighlight:
-        mov     ah, [panel_normal_color]
-        cmp     ebp, [active_panel]
-        jnz     @f
-        mov     ecx, [column_index]
-        cmp     ecx, [ebp + panel1_index - panel1_data]
-        jnz     @f
-        mov     ah, [panel_cursor_color]
-@@:
-.doname:
-;        call    delete_last_dot
         mov     ecx, [column_width]
         push    edi
 @@:
@@ -2056,12 +2643,7 @@ read_folder:
         jz      .readdone
         push    eax
         mov     eax, [ebp + panel1_files - panel1_data]
-        cmp     eax, buf1
-        jz      @f
-        cmp     eax, buf2
-        jz      @f
         call    mf_free
-@@:
         pop     eax
         mov     eax, [eax+8]
         add     eax, 0xF
@@ -2088,7 +2670,8 @@ read_folder:
         lea     esi, [edi + eax*4 + 32]
         xor     eax, eax
         mov     ecx, [esi-32+4]
-        jecxz   .loopdone
+        test    ecx, ecx
+        jz      .loopdone
 ; Игнорируем специальные входы, соответствующие папке '.' и метке тома
 .ptrinit:
         cmp     word [esi+eax+40], '.'
@@ -2096,9 +2679,61 @@ read_folder:
         test    byte [esi+eax], 8
         jnz     .loopcont
         stosd
+; подсветка
+;        call    insert_last_dot
+        pushad
+        lea     ebp, [esi+eax]
+        lea     esi, [ebp+40]
+        mov     edi, lower_file_name
+        mov     edx, edi
+@@:
+        lodsb
+        call    tolower
+        stosb
+        test    al, al
+        jnz     @b
+        mov     esi, edx
+        lea     edx, [edi-1]
+        xor     ecx, ecx
+.highlight_test_loop:
+        mov     ebx, [highlight_groups+ecx*4]
+        mov     al, [ebx + highlight.IncludeAttributes]
+        mov     ah, [ebp]
+        and     ah, al
+        cmp     ah, al
+        jnz     .highlight_test_failed
+        lea     edi, [ebx + highlight.Mask]
+        call    match_mask_rev_lowercase
+        jc      .highlight_test_failed
+        mov     ah, [ebx + highlight.NormalColor]
+        test    ah, ah
+        jnz     @f
+        mov     ah, [panel_normal_color]
+@@:
+        mov     [ebp+5], ah
+        mov     ah, [ebx + highlight.CursorColor]
+        test    ah, ah
+        jnz     @f
+        mov     ah, [panel_cursor_color]
+@@:
+        mov     [ebp+6], ah
+        jmp     .doname
+.highlight_test_failed:
+        inc     ecx
+        cmp     ecx, [highlight_num_groups]
+        jb      .highlight_test_loop
+.nohighlight:
+        mov     ah, [panel_normal_color]
+        mov     [ebp+5], ah
+        mov     ah, [panel_cursor_color]
+        mov     [ebp+6], ah
+.doname:
+;        call    delete_last_dot
+        popad
 .loopcont:
         add     eax, 304
-        loop    .ptrinit
+        dec     ecx
+        jnz     .ptrinit
 .loopdone:
         sub     edi, [ebp + panel1_files - panel1_data]
         shr     edi, 2
@@ -2730,6 +3365,7 @@ compare_accessed_rev:
         stc
         ret
 
+if 0
 match_mask:
 ; in: esi->name, edi->mask
 ; out: CF clear <=> match
@@ -2847,6 +3483,36 @@ match_single_mask:
         inc     esi
         jmp     .list
 .asterisk:
+        cmp     byte [esi], 0
+        jz      .done_succ
+        cmp     byte [esi], '?'
+        jnz     @f
+        mov     al, 0
+        scasb
+        jz      .done_fail
+        inc     esi
+        jmp     .asterisk
+@@:
+        cmp     byte [esi], '['
+        jz      .asterisk_common
+; the mask is ...*<normal-symbol>...
+.asterisk_normal:
+        mov     al, [esi]
+@@:
+        cmp     byte [edi], 0
+        jz      .done_fail
+        call    match_symbol
+        jz      @f
+        inc     edi
+        jmp     @b
+@@:
+        inc     edi
+        inc     esi
+        call    match_single_mask
+        jnc     .done_succ
+        dec     esi
+        jmp     .asterisk_normal
+.asterisk_common:
         push    edi
 @@:
         call    match_single_mask
@@ -2859,6 +3525,188 @@ match_single_mask:
 @@:
         pop     edi
         jmp     .done_succ
+
+match_mask_rev:
+; in: esi->name, edx->end of name, edi->mask
+; out: CF clear <=> match
+        pusha
+        xchg    esi, edx
+        xchg    esi, edi
+.main_cycle:
+        mov     ecx, esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, ','
+        jz      @f
+        cmp     al, '|'
+        jnz     @b
+@@:
+        dec     esi
+        mov     [esi], byte 0
+        call    match_single_mask_rev2
+        mov     [esi], al
+        inc     esi
+        jnc     .found
+        cmp     al, ','
+        jz      .main_cycle
+.done_fail:
+        stc
+        popa
+        ret
+.found:
+        test    al, al
+        jz      .done_succ
+        cmp     al, '|'
+        jz      .test_exclude
+        lodsb
+        jmp     .found
+.done_succ:
+        clc
+        popa
+        ret
+.test_exclude:
+        mov     ecx, esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, ','
+        jnz     @b
+@@:
+        dec     esi
+        mov     byte [esi], 0
+        call    match_single_mask_rev2
+        mov     [esi], al
+        inc     esi
+        jnc     .done_fail
+        test    al, al
+        jz      .done_succ
+        jmp     .test_exclude
+
+match_single_mask_rev2:
+        pusha
+        jmp     match_single_mask_rev.mask_symbol
+match_single_mask_rev:
+; in: esi->mask, edi->end of name, edx->start of name
+; out: CF clear <=> match
+        pusha
+        mov     ecx, esi
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+        dec     esi
+; esi->end of mask, ecx->start of mask
+.mask_symbol:
+        dec     esi
+        cmp     esi, ecx
+        jb      .mask_done
+        mov     al, [esi]
+        cmp     al, '*'
+        jz      .asterisk
+        cmp     al, '?'
+        jz      .quest
+        cmp     al, ']'
+        jz      .list
+        dec     edi
+        cmp     edi, edx
+        jb      .done_fail
+        call    match_symbol
+        jz      .mask_symbol
+.done_fail:
+        stc
+        popa
+        ret
+.mask_done:
+        cmp     edi, edx
+        jnz     .done_fail
+.done_succ:
+        clc
+        popa
+        ret
+.quest:
+        dec     edi
+        cmp     edi, edx
+        jb      .done_fail
+        jmp     .mask_symbol
+.list:
+        dec     edi
+        cmp     edi, edx
+        jb      .done_fail
+.list_check:
+        dec     esi
+        cmp     esi, ecx
+        jbe     .done_fail
+        mov     al, [esi]
+        cmp     al, '['
+        jz      .done_fail
+        cmp     byte [esi-1], '-'
+        jz      .range
+        call    match_symbol
+        jnz     .list_check
+.listok:
+@@:
+        dec     esi
+        cmp     esi, ecx
+        jb      .done_fail
+        cmp     byte [esi], '['
+        jnz     @b
+        jmp     .mask_symbol
+.range:
+        call    match_symbol
+        jb      @f
+        mov     al, [esi-2]
+        call    match_symbol
+        jbe     .listok
+@@:
+        dec     esi
+        dec     esi
+        jmp     .list_check
+.asterisk:
+        cmp     esi, ecx
+        jz      .done_succ
+        cmp     byte [esi-1], '?'
+        jnz     @f
+        cmp     edi, edx
+        jz      .done_fail
+        dec     esi
+        jmp     .asterisk
+@@:
+        cmp     byte [esi-1], ']'
+        jz      .asterisk_common
+; the mask is ...<normal-symbol>*...
+.asterisk_normal:
+        mov     al, [esi-1]
+@@:
+        cmp     edi, edx
+        jz      .done_fail
+        call    match_symbol
+        jz      @f
+        dec     edi
+        jmp     @b
+@@:
+        dec     edi
+        dec     esi
+        call    match_single_mask_rev2
+        jnc     .done_succ
+        inc     esi
+        jmp     .asterisk_normal
+.asterisk_common:
+        push    edi
+@@:
+        call    match_single_mask_rev2
+        jnc     @f
+        dec     edi
+        cmp     edi, edx
+        jae     @b
+        pop     edi
+        jmp     .done_fail
+@@:
+        pop     edi
+        jmp     .done_succ
+end if
 
 tolower:
         cmp     al, 'A'
@@ -2880,10 +3728,213 @@ match_symbol:
         pop     eax
         ret
 
+match_mask_rev_lowercase:
+; in: esi->name, edx->end of name, edi->mask
+; out: CF clear <=> match
+        pusha
+        xchg    esi, edx
+        xchg    esi, edi
+.main_cycle:
+        mov     ecx, esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, ','
+        jz      @f
+        cmp     al, '|'
+        jnz     @b
+@@:
+        dec     esi
+        mov     [esi], byte 0
+        call    match_single_mask_rev_lowercase
+        mov     [esi], al
+        inc     esi
+        jnc     .found
+        cmp     al, ','
+        jz      .main_cycle
+.done_fail:
+        stc
+        popa
+        ret
+.found:
+        test    al, al
+        jz      .done_succ
+        cmp     al, '|'
+        jz      .test_exclude
+        lodsb
+        jmp     .found
+.done_succ:
+        clc
+        popa
+        ret
+.test_exclude:
+        mov     ecx, esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, ','
+        jnz     @b
+@@:
+        dec     esi
+        mov     byte [esi], 0
+        call    match_single_mask_rev_lowercase
+        mov     [esi], al
+        inc     esi
+        jnc     .done_fail
+        test    al, al
+        jz      .done_succ
+        jmp     .test_exclude
 
-header  db      'Kolibri Far 0.14'
-;.length = $ - header
-        db      0
+match_single_mask_rev_lowercase:
+; in: esi->end of mask, ecx->start of mask, edi->end of name, edx->start of name
+; out: CF clear <=> match
+        push    esi edi eax
+.mask_symbol:
+        dec     esi
+        cmp     esi, ecx
+        jb      .mask_done
+        mov     al, [esi]
+        cmp     al, '*'
+        jz      .asterisk
+        cmp     al, '?'
+        jz      .quest
+        cmp     al, ']'
+        jz      .list
+        dec     edi
+        cmp     edi, edx
+        jb      .done_fail
+        cmp     al, [edi]
+        jz      .mask_symbol
+.done_fail:
+        stc
+        pop     eax edi esi
+        ret
+.mask_done:
+        cmp     edi, edx
+        jnz     .done_fail
+.done_succ:
+        clc
+        pop     eax edi esi
+        ret
+.quest:
+        dec     edi
+        cmp     edi, edx
+        jb      .done_fail
+        jmp     .mask_symbol
+.list:
+        dec     edi
+        cmp     edi, edx
+        jb      .done_fail
+.list_check:
+        dec     esi
+        cmp     esi, ecx
+        jbe     .done_fail
+        mov     al, [esi]
+        cmp     al, '['
+        jz      .done_fail
+        cmp     byte [esi-1], '-'
+        jz      .range
+        cmp     al, [edi]
+        jnz     .list_check
+.listok:
+@@:
+        dec     esi
+        cmp     esi, ecx
+        jb      .done_fail
+        cmp     byte [esi], '['
+        jnz     @b
+        jmp     .mask_symbol
+.range:
+        cmp     al, [edi]
+        jb      @f
+        mov     al, [esi-2]
+        cmp     al, [edi]
+        jbe     .listok
+@@:
+        dec     esi
+        dec     esi
+        jmp     .list_check
+.asterisk:
+        cmp     esi, ecx
+        jz      .done_succ
+        cmp     byte [esi-1], '?'
+        jnz     @f
+        cmp     edi, edx
+        jz      .done_fail
+        dec     esi
+        jmp     .asterisk
+@@:
+        cmp     byte [esi-1], ']'
+        jz      .asterisk_common
+; the mask is ...<normal-symbol>*...
+.asterisk_normal:
+        mov     al, [esi-1]
+@@:
+        cmp     edi, edx
+        jz      .done_fail
+        cmp     al, [edi]
+        jz      @f
+        dec     edi
+        jmp     @b
+@@:
+        dec     edi
+        dec     esi
+        call    match_single_mask_rev_lowercase
+        jnc     .done_succ
+        inc     esi
+        jmp     .asterisk_normal
+.asterisk_common:
+        push    edi
+@@:
+        call    match_single_mask_rev_lowercase
+        jnc     @f
+        dec     edi
+        cmp     edi, edx
+        jae     @b
+        pop     edi
+        jmp     .done_fail
+@@:
+        pop     edi
+        jmp     .done_succ
+
+find_extension:
+        lea     esi, [ecx+40]
+        push    esi
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+@@:
+        dec     esi
+        cmp     byte [esi], '.'
+        jz      .found_ext
+        cmp     esi, [esp]
+        ja      @b
+; empty extension
+        pop     esi
+        stc
+        ret
+.found_ext:
+        inc     esi
+        mov     edi, associations
+@@:
+        push    esi edi
+        mov     edi, [edi]
+        call    strcmpi
+        pop     edi esi
+        jz      @f
+        add     edi, 12
+        cmp     edi, associations_end
+        jb      @b
+; unknown extension
+        inc     edi
+@@:
+        pop     esi
+        ret
+
+header  db      'Kolibri Far 0.19',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
@@ -3257,8 +4308,16 @@ end if
         align   4
 cur_width       dd      80
 cur_height      dd      25
+saved_width     dd      -1
+saved_height    dd      -1
 max_width = 256
 max_height = 256
+console_data_ptr dd     0
+
+cursor_x        dd      -1
+cursor_y        dd      -1
+old_cursor_x    dd      -1
+old_cursor_y    dd      -1
 
 active_panel    dd      panel1_data
 
@@ -3375,10 +4434,18 @@ panels_ctrlkeys:
         dd      panels_OnKey.enter
         dw      0x3D, 0
         dd      panels_OnKey.f3
+        dw      0x3F, 0
+        dd      panels_OnKey.f5
+        dw      0x3F, 1
+        dd      panels_OnKey.shift_f5
         dw      0x42, 0
         dd      panels_OnKey.f8
+        dw      0x43, 0x100
+        dd      alt_f9
         dw      0x44, 0
         dd      exit
+        dw      0x5D, 0
+        dd      panels_OnKey.menu
 repeat 9-3+1
         dw      0x3D+%-1, 0x10
         dd      panels_OnKey.ctrl_f39
@@ -3434,6 +4501,8 @@ viewer_ctrlkeys:
         dd      viewer_OnKey.end
         dw      0x58, 0
         dd      F12
+        dw      0x43, 0x100
+        dd      alt_f9
         db      0
 
 dirinfo:
@@ -3447,6 +4516,14 @@ dirinfo:
 
 readinfo:
                 dd      0
+.first          dq      0
+.size           dd      0
+.data           dd      0
+                db      0
+.name           dd      0
+
+writeinfo:
+.code           dd      2
 .first          dq      0
 .size           dd      0
 .data           dd      0
@@ -3493,6 +4570,8 @@ dialog_border_color     db      70h
 dialog_header_color     db      70h
 dialog_normal_btn_color db      70h
 dialog_selected_btn_color db    30h
+dialog_edit_color       db      30h
+dialog_unmodified_edit_color db 38h
 ; Меню
 menu_normal_color       db      3Fh
 menu_selected_color     db      0Fh
@@ -3535,6 +4614,7 @@ highlight:
         .Mask:                  ; ASCIIZ-string
 end virtual
 
+; all highlight masks must be in lowercase!
 highlight_group0:
         db      13h
         db      38h
@@ -3590,20 +4670,20 @@ highlight_group9:
         db      '*',0
 
 associations:
-        dd      aAsm, tinypad
-        dd      aInc, tinypad
-        dd      aTxt, tinypad
-        dd      aJpg, jpegview
-        dd      aJpeg, jpegview
-        dd      aGif, gifview
-        dd      aWav, ac97
-        dd      aMp3, ac97
-        dd      aMid, midamp
-        dd      aBmp, mv
-        dd      aPng, archer
-        dd      aRtf, rtfread
-        dd      a3ds, view3ds
-        dd      aLif, life2
+        dd      aAsm, tinypad, AsmMenu
+        dd      aInc, tinypad, 0
+        dd      aTxt, tinypad, 0
+        dd      aJpg, jpegview, 0
+        dd      aJpeg, jpegview, 0
+        dd      aGif, gifview, GifMenu
+        dd      aWav, ac97, 0
+        dd      aMp3, ac97, 0
+        dd      aMid, midamp, 0
+        dd      aBmp, mv, BmpMenu
+        dd      aPng, archer, 0
+        dd      aRtf, rtfread, 0
+        dd      a3ds, view3ds, 0
+        dd      aLif, life2, 0
 associations_end:
 
 aAsm db 'asm',0
@@ -3640,13 +4720,38 @@ view3ds db '/rd/1/3d/view3ds',0
 aLif db 'lif',0
 life2 db '/rd/1/demos/life2',0
 
+AsmMenu:
+        dd      aEdit, tinypad
+        dd      aCompile, fasm
+        dd      0
+BmpMenu:
+        dd      aView, mv
+        dd      aEdit, animage
+        dd      0
+GifMenu:
+        dd      aView, gifview
+        dd      aEdit, animage
+        dd      0
+
+if lang eq en
+aView   db      '&View',0
+aCompile db     '&Compile',0
+aEdit   db      '&Edit',0
+else
+aView   db      '&Просмотр',0
+aCompile db     '&Компилировать',0
+aEdit   db      '&Редактор',0
+end if
+
+fasm    db      '/rd/1/develop/fasm',0
+animage db      '/rd/1/animage',0
+
 bConfirmDelete  db      1
 
 ; Здесь заканчиваются конфигурационные данные
 
 bWasE0          db      0
 ctrlstate       db      0
-MemForImage     dd      0
 
 align   4
 f8_confirm_dlgdata:
@@ -3697,6 +4802,56 @@ f8_confirm_dlgdata:
         dd      aCancel
 .flags2 dd      0
 
+; диалог копирования
+copy_dlgdata:
+        dd      0
+.x      dd      -1
+.y      dd      -1
+.width  dd      ?
+.height dd      4
+        dd      4
+        dd      2
+        dd      aCopyCaption
+.main_color db ?
+.border_color db ?
+.header_color db ?
+        db      0
+        dd      0
+        dd      0
+        dd      4
+; строка 'Копировать "%s" в:'
+        dd      1
+        dd      1,0
+.width2 dd      ?
+        dd      0
+        dd      CopySourceTextBuf
+        dd      0
+; поле редактирования с именем файла/папки назначения
+        dd      3
+        dd      1,1
+.width3 dd      ?
+        dd      1
+        dd      CopyDestEditBuf
+.flags0 dd      0
+; кнопка "копировать"
+.copy_btn:
+        dd      2
+.copy_x1 dd     ?
+        dd      3
+.copy_x2 dd     ?
+        dd      3
+        dd      aCopy
+.flags1 dd      18h
+; кнопка "отменить"
+        dd      2
+.cnl_x1 dd      ?
+        dd      3
+.cnl_x2 dd      ?
+        dd      3
+        dd      aCancelB
+.flags2 dd      8
+
+
 if lang eq ru
 aDeleteCaption          db      'Удаление',0
 aConfirmDeleteText      db      'Вы хотите удалить ',0
@@ -3707,6 +4862,13 @@ aDelete                 db      ' Удалить ',0
 aDeleteLength = $ - aDelete - 1
 aCancel                 db      ' Отменить ',0
 aCancelLength = $ - aCancel - 1
+aCancelB                db      '[ Отменить ]',0
+aCancelBLength = $ - aCancelB - 1
+aCopyCaption            db      'Копирование',0
+aCopy                   db      '[ Копировать ]',0
+aCopyLength = $ - aCopy - 1
+aCopy1                  db      'Копировать "',0
+aCopy2                  db      '" в:',0
 else
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete ',0
@@ -3717,6 +4879,13 @@ aDelete                 db      ' Delete ',0
 aDeleteLength = $ - aDelete - 1
 aCancel                 db      ' Cancel ',0
 aCancelLength = $ - aCancel - 1
+aCancelB                db      '[ Cancel ]',0
+aCancelBLength = $ - aCancelB - 1
+aCopyCaption            db      'Copy',0
+aCopy                   db      '[ Copy ]',0
+aCopyLength = $ - aCopy - 1
+aCopy1                  db      'Copy "',0
+aCopy2                  db      '" to:',0
 end if
 
 execinfo:
@@ -3770,13 +4939,20 @@ panel2_numfiles dd      ?
 panel2_files    dd      ?
 panel2_dir      rb      1024
 
-console_data    rb      max_width*max_height*2
+;console_data    rb      max_width*max_height*2
 
 cur_header      rb      max_width
 tmp             dd      ?
 
 skinh           dd      ?
 std_colors      rd      10
+
+min_y           dd      ?
+max_y           dd      ?
+min_x           dd      ?
+max_x           dd      ?
+used_width      dd      ?
+used_height     dd      ?
 
 column_left     dd      ?
 column_top      dd      ?
@@ -3789,6 +4965,7 @@ viewer_right_side dq    ?
 
 saved_file_name:
 procinfo        rb      1024
+lower_file_name = procinfo + 512
 
 driveinfo       rb      32+304
 tmpname         rb      32
@@ -3799,13 +4976,19 @@ active_screen_vtable dd ?
 active_screen_data dd   ?
 
 aConfirmDeleteTextBuf   rb      aConfirmDeleteTextMax + 1
+CopySourceTextBuf       rb      512
+CopyDestEditBuf         rb      12+512+1
+.length = $ - CopyDestEditBuf - 9
+
+align 4
+layout          rb      128
+
+copy_buffer_size = 32768
+copy_buffer     rb      copy_buffer_size
 
 ; stack
         align   4
         rb      512
 stacktop:
-; buffers for directory - may be resized dynamically
-buf1    rb      4*304 + 32 + 304*304
-buf2    rb      4*304 + 32 + 304*304
 
 mem:

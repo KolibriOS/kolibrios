@@ -71,7 +71,7 @@ macro epiloguedef procname,flag,parmbytes,localbytes,reglist
    if parmbytes | localbytes
     leave
    end if
-   if flag and 10000b
+   if (flag and 10000b) | (parmbytes=0)
     retn
    else
     retn parmbytes

@@ -709,6 +709,12 @@ Vesa12_getpixel32:
 
 
 vesa12_putimage:
+; ebx = pointer to image
+; ecx = size [x|y]
+; edx = coordinates [x|y]
+; ebp = pointer to 'get' function
+; esi = pointer to 'init' function
+; edi = parameter for 'get' function
 
 ;    mov  ebx,image
 ;    mov  ecx,320*65536+240
@@ -730,8 +736,7 @@ vesa12_putimage:
     add   ebx,[ecx-twdw+WDATA.box.top]
     push  eax
     mov   eax,ebx         ; y
-    mov   ebx,[0xfe08]
-    mul   ebx
+    mul   dword [0xfe08]
     pop   ecx
     add   eax,ecx         ; x
     add   eax,ecx
@@ -747,29 +752,18 @@ vesa12_putimage:
 
     ; x size
 
-    movzx eax,word [esp+6]
-    mov   ecx,eax
-    add   ecx,eax
-    add   ecx,eax
-    cmp   [0xfbf1],byte 24     ; 24 or 32 bpp ? - x size
-    jz    pi24312
-    add   ecx,eax
-
-  pi24312:
+    movzx ecx,word [esp+6]
 
     mov   esi,[esp+8]
     movzx ebx,word [esp+4]
 
     ; check limits while draw ?
 
-    push  eax
     push  ecx
     mov  eax,[0x3010]
-    mov  ecx,[eax+draw_data-0x3000+RECT.left]
-    cmp  ecx,0
+    cmp  dword [eax+draw_data-0x3000+RECT.left], 0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+RECT.top]
-    cmp  ecx,0
+    cmp  dword [eax+draw_data-0x3000+RECT.top], 0
     jnz  dbcblimitlset212
     mov  ecx,[eax+draw_data-0x3000+RECT.right]
     cmp  ecx,[0xfe00]
@@ -778,84 +772,67 @@ vesa12_putimage:
     cmp  ecx,[0xfe04]
     jnz  dbcblimitlset212
     pop  ecx
-    pop  eax
-    push dword 0
+    push 0
     jmp  dbcblimitlno212
 
   dbcblimitlset212:
 
     pop  ecx
-    pop  eax
-    push dword 1
+    push 1
 
   dbcblimitlno212:
 
     cmp  [0xfbf1],byte 24     ; 24 or 32 bpp ?
-    jz   pi24bit12
-    jmp  pi32bit12
+    jnz  pi32bit12
 
   pi24bit12:
-
-    cld
-    push  eax
-    push  ebx
-    push  edx
-    xor   edx,edx
-    mov   eax,ecx
-    mov   ebx,3
-    div   ebx
-    mov   ecx,eax
-    pop   edx
-    pop   ebx
-    pop   eax
 
   newpi12:
 
     push edi
-    push esi
     push ecx
     push ebx
 
-      xor  edx,edx
-      mov  eax,edi
-      sub  eax,[0xfe80]
+      mov  edx,edi
+      sub  edx,[0xfe80]
       mov  ebx,3
       div  ebx
-      add  eax,WinMapAddress
+      add  edx,WinMapAddress
       mov  ebx,[0x3000]
-      mov  bh,[esp+4*4]
+      mov  bh,[esp+4*3]
 
       np2412:
 
-        cmp  bl,[eax]
+        cmp  bl,[edx]
         jnz  imp24no12
-        mov  edx,[esi]
-        cmp  bh,0
-        jz   imp24yes12
+;        mov  eax,[esi]
+        push    dword [esp+4*3+20]
+        call    ebp
+;        cmp  bh,0
+;        jz   imp24yes12
 ;        call dbcplimit
 ;        jnz  imp24no12
 
      imp24yes12:
 
-        push eax
         push edi
+        push eax
         mov  eax,edi
         sub  eax,[0xfe80]
         shr  eax,16
         call set_bank
+        pop  eax
         and  edi,0xffff
         add  edi,0xa0000
-        mov  [edi],edx
-        shr  edx,2
-        mov  [edi+2],dl
-        sti
+        mov  [edi],ax
+        shr  eax,16
+        mov  [edi+2],al
         pop  edi
-        pop  eax
 
      imp24no12:
 
-        inc  eax
-        add  esi,3
+        inc  edx
+;        add  esi,3
         add  edi,3
         dec  ecx
         jnz  np2412
@@ -864,73 +841,63 @@ vesa12_putimage:
 
      pop  ebx
      pop  ecx
-     pop  esi
      pop  edi
 
     add  edi,[0xfe08]
-    xor  eax,eax
-    mov  ax,[esp+4+2+4]
-    lea  eax,[eax+eax*2]
-    add  esi,eax
     dec  ebx
-    jz   nonewpi12
-    jmp  newpi12
+    jnz  newpi12
 
   nonewpi12:
 
-    add  esp,7*4
-    mov  eax,0
-    ret
+        pop     eax edx ecx ebx eax edi esi
+        xor     eax, eax
+        ret
 
 
   pi32bit12:
 
-    cld
-    shr  ecx,2
-
    newpi3212:
 
     push edi
-    push esi
     push ecx
     push ebx
 
-      mov  eax,edi
-      sub  eax,[0xfe80]
-      shr  eax,2
-      add  eax,WinMapAddress
+      mov  edx,edi
+      sub  edx,[0xfe80]
+      shr  edx,2
+      add  edx,WinMapAddress
       mov   ebx,[0x3000]
-      mov   bh,[esp+4*4]
+      mov   bh,[esp+4*3]
 
       np3212:
 
-        cmp  bl,[eax]
+        cmp  bl,[edx]
         jnz  imp32no12
-        mov  edx,[esi]
-        cmp  bh,0
-        jz   imp32yes12
+;        mov  eax,[esi]
+        push    dword [esp+4*3+20]
+        call    ebp
+;        cmp  bh,0
+;        jz   imp32yes12
 ;        call dbcplimit
 ;        jnz  imp32no12
 
       imp32yes12:
 
-        push eax
         push edi
+        push eax
         mov  eax,edi
         sub  eax,[0xfe80]
         shr  eax,16
         call set_bank
-        and  edi,0xffff
-        add  edi,0xa0000
-        mov  [edi],edx
-        sti
-        pop  edi
         pop  eax
+        and  edi,0xffff
+        mov  [edi+0xa0000],eax
+        pop  edi
 
       imp32no12:
 
-        inc  eax
-        add  esi,3
+        inc  edx
+;        add  esi,3
         add  edi,4
         dec  ecx
         jnz  np3212
@@ -939,22 +906,17 @@ vesa12_putimage:
 
      pop  ebx
      pop  ecx
-     pop  esi
      pop  edi
 
     add   edi,[0xfe08]
-    movzx eax,word [esp+4+2+4]
-    lea   eax,[eax+eax*2]
-    add   esi,eax
     dec   ebx
-    jz    nonewpi3212
-    jmp   newpi3212
+    jnz   newpi3212
 
   nonewpi3212:
 
-    add   esp,7*4
-    mov   eax,0
-    ret
+        pop     eax edx ecx ebx eax edi esi
+        xor     eax, eax
+        ret
 
 
 vesa12_read_screen_pixel:

@@ -133,7 +133,7 @@ iglobal
       dd sys_pci                 ; 62-PCI functions
       dd sys_msg_board           ; 63-System message board
       dd sys_resize_app_memory   ; 64-Resize application memory usage
-      dd undefined_syscall       ; 65-UTF
+      dd syscall_putimage_palette; 65-PutImagePalette
       dd sys_process_def         ; 66-Process definitions - keyboard
       dd sys_window_move         ; 67-Window move or resize
       dd new_services            ; 68-Some internal services

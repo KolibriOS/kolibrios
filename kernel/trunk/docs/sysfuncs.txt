@@ -3429,6 +3429,26 @@ Remarks:
     with function 68.11.
 
 ======================================================================
+======== Function 65 - draw image with palette in the window. ========
+======================================================================
+Parameters:
+  * eax = 65 - function number
+  * ebx = pointer to the image
+  * ecx = [size on axis x]*65536 + [size on axis y]
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+  * esi = number of bits per pixel, must be 8
+  * edi = pointer to palette (256 colors 0x00RRGGBB)
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates of the image are coordinates of the upper left corner
+    of the image relative to the window.
+  * Size of the image in bytes is xsize*ysize.
+  * Each byte of image is index in the palette.
+  * If the image uses less than 256 colors, palette size may be
+    less than 256 too.
+
+======================================================================
 ================== Function 66 - work with keyboard. =================
 ======================================================================
 The input mode influences results of reading keys by function 2.

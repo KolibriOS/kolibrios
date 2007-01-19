@@ -1365,7 +1365,9 @@ sys_setup:
      mov  word [midisp],bx
      ret
 
+iglobal
 midi_base dw 0
+endg
 
    nsyse1:
 
@@ -1501,7 +1503,9 @@ cd_base db 0
    nosethd:
      ret
 
+iglobal
 hd_base db 0
+endg
 
    nsyse7:
 
@@ -1667,12 +1671,13 @@ sys_getsetup:
      mov  [esp+36],dword 1
      ret
 
-
+iglobal
 align 4
 mousefn dd msscreen, mswin, msbutton, msset
         dd app_load_cursor
         dd app_set_cursor
         dd app_delete_cursor
+endg
 
 readmousepos:
 
@@ -3972,6 +3977,11 @@ sys_putimage:
         add     dx,word[edi+0x80000+APPDATA.wnd_clientbox.left]
         rol     edx,16
   .forced:
+        push    esi ebp
+        mov     ebp, putimage_get24bpp
+        mov     esi, putimage_init24bpp
+sys_putimage_bpp:
+;        call    [disable_mouse] ; this will be done in xxx_putimage
 ;        mov     eax, vga_putimage
         cmp     [0xfe0c], word 0x12
         jz      @f   ;.doit
@@ -3986,12 +3996,55 @@ sys_putimage:
         inc     [mouse_pause]
         call    eax
         dec     [mouse_pause]
+        pop     ebp esi
         jmp     [draw_pointer]
+
+syscall_putimage_palette:
+        lea     edi, [esi+std_application_base_address]
+        mov     esi, edx
+        mov     edx, ecx
+        mov     ecx, ebx
+        lea     ebx, [eax+std_application_base_address]
+sys_putimage_palette:
+; ebx = pointer to image
+; ecx = [xsize]*65536 + [ysize]
+; edx = [xstart]*65536 + [ystart]
+; esi = number of bits per pixel, must be 8
+; edi = pointer to palette
+        mov     eax, [0x3000]
+        shl     eax, 8
+        add     dx, word [eax+0x80000+APPDATA.wnd_clientbox.top]
+        rol     edx, 16
+        add     dx, word [eax+0x80000+APPDATA.wnd_clientbox.left]
+        rol     edx, 16
+.forced:
+        push    esi ebp
+        mov     ebp, putimage_get8bpp
+        mov     esi, putimage_init8bpp
+        jmp     sys_putimage_bpp
+
+putimage_init24bpp:
+        lea     eax, [eax*3]
+putimage_init8bpp:
+        ret
+
+putimage_get24bpp:
+        mov     eax, [esi]
+        add     esi, 3
+        ret     4
+putimage_get8bpp:
+        movzx   eax, byte [esi]
+        push    edx
+        mov     edx, [esp+8]
+        mov     eax, [edx+eax*4]
+        pop     edx
+        inc     esi
+        ret     4
 
 ; eax x beginning
 ; ebx y beginning
 ; ecx x end
-; edx y end
+	; edx y end
 ; edi color
 
 __sys_drawbar:
@@ -4003,6 +4056,7 @@ __sys_drawbar:
         add     edx,[esi+0x80000+APPDATA.wnd_clientbox.top]
   .forced:
     inc   [mouse_pause]
+;        call    [disable_mouse]
     cmp   [0xfe0c],word 0x12
     je   dbv20
    sdbv20:
