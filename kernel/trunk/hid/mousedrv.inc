@@ -106,8 +106,8 @@ save_draw_mouse:
 
         cmp [ecx+CURSOR.magic], 'CURS'
         jne .fail
-        cmp [ecx+CURSOR.size], CURSOR_SIZE
-        jne .fail
+;        cmp [ecx+CURSOR.size], CURSOR_SIZE
+;        jne .fail
         push ecx
         call [set_hw_cursor]
         popad

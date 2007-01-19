@@ -270,87 +270,20 @@ alloc_cursor:
 
            xor ebx, ebx
            mov [eax+CURSOR.magic], 'CURS'
-           mov [eax+CURSOR.size],  CURSOR_SIZE
+;           mov [eax+CURSOR.destructor],  CURSOR_SIZE
            mov [eax+CURSOR.pid], ebx
            mov [eax+CURSOR.hot_x], ebx
            mov [eax+CURSOR.hot_y], ebx
 .fail:
            ret
 
-if 0
-
-align 4
-proc alloc_cursor
-
-           pushfd
-           cli
-           mov ebx, [cursor_start]
-           mov ecx, [cursor_end]
-.l1:
-           bsf eax,[ebx];
-           jnz .found
-           add ebx,4
-           cmp ebx, ecx
-           jb .l1
-           popfd
-           xor eax,eax
-           ret
-.found:
-           btr [ebx], eax
-           popfd
-
-           mov [cursor_start],ebx
-           sub ebx, cursor_map
-           lea eax,[eax+ebx*8]
-           shl eax,3
-           lea eax,[cursors+eax+eax*2]
-
-           xor ebx, ebx
-           mov [eax+CURSOR.magic], 'CURS'
-           mov [eax+CURSOR.size],  CURSOR_SIZE
-           mov [eax+CURSOR.pid], ebx
-           mov [eax+CURSOR.hot_x], ebx
-           mov [eax+CURSOR.hot_y], ebx
-           ret
-endp
-
-
-align 4
-proc free_cursor
-           pushfd
-           cli
-           xor edx, edx
-           mov ecx, CURSOR_SIZE
-           sub eax, cursors
-           div ecx
-           test edx, edx
-           jnz .exit
-
-           mov ebx, cursor_map
-           bts [ebx], eax
-           shr eax, 3
-           and eax, not 3
-           add eax, ebx
-           cmp [cursor_start], eax
-           ja @f
-.exit:
-           popfd
-           ret
-@@:
-           mov [cursor_start], eax
-           popfd
-           ret
-endp
-
-end if
-
 align 4
 proc set_cursor stdcall, hcursor:dword
            mov eax, [hcursor]
            cmp [eax+CURSOR.magic], 'CURS'
            jne .fail
-           cmp [eax+CURSOR.size], CURSOR_SIZE
-           jne .fail
+;           cmp [eax+CURSOR.size], CURSOR_SIZE
+;           jne .fail
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
            xchg eax, [ebx+PROC_BASE+APPDATA.cursor]
@@ -363,17 +296,43 @@ proc set_cursor stdcall, hcursor:dword
            ret
 endp
 
-proc vesa_cursor stdcall, hcursor:dword, src:dword, flags:dword
+; param
+;  eax= pid
+;  ebx= src
+;  ecx= flags
+
+vesa_cursor:
+.src     equ esp
+.flags   equ esp+4
+.hcursor equ esp+8
+
+           sub esp, 4          ;space for .hcursor
+           push ecx
+           push ebx
+
+           mov ebx, eax
+           mov eax, CURSOR_SIZE
+           call create_kernel_object
+           test eax, eax
+           jz .fail
+
+           mov [.hcursor],eax
+
+           xor ebx, ebx
+           mov [eax+CURSOR.magic], 'CURS'
+           mov [eax+CURSOR.destroy], destroy_cursor
+           mov [eax+CURSOR.hot_x], ebx
+           mov [eax+CURSOR.hot_y], ebx
 
            stdcall kernel_alloc, 0x1000
            test eax, eax
            jz .fail
 
-           mov edi, [hcursor]
+           mov edi, [.hcursor]
            mov [edi+CURSOR.base], eax
 
-           mov esi, [src]
-           mov ebx, [flags]
+           mov esi, [.src]
+           mov ebx, [.flags]
            cmp bx, LOAD_INDIRECT
            je .indirect
 
@@ -383,8 +342,9 @@ proc vesa_cursor stdcall, hcursor:dword, src:dword, flags:dword
            mov [edi+CURSOR.hot_y], edx
 
            stdcall vesa_init_cursor, eax, esi
-           mov eax, [hcursor]
+           mov eax, [.hcursor]
 .fail:
+           add esp, 12
            ret
 .indirect:
            shr ebx, 16
@@ -397,8 +357,8 @@ proc vesa_cursor stdcall, hcursor:dword, src:dword, flags:dword
            mov ecx, 1024
            cld
            rep movsd
+           add esp, 12
            ret
-endp
 
 align 4
 proc load_cursor stdcall, src:dword, flags:dword
@@ -416,16 +376,12 @@ proc load_cursor stdcall, src:dword, flags:dword
            jz .exit
            mov [src], eax
 @@:
-           call alloc_cursor
-           test eax, eax
-           jz .fail
-
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 5
-           mov ebx, [0x3000+ebx+4]
-           mov [eax+CURSOR.pid], ebx
-
-           stdcall [create_cursor], eax, [src], [flags]
+           mov eax, [CURRENT_TASK]
+           shl eax, 5
+           mov eax, [0x3000+eax+4]
+           mov ebx, [src]
+           mov ecx, [flags]
+           call [create_cursor]    ;eax, ebx, ecx
            mov [handle], eax
 .fail:
            cmp word [flags], LOAD_FROM_FILE
@@ -450,8 +406,8 @@ proc delete_cursor stdcall, hcursor:dword
            mov esi, [hcursor]
            cmp [esi+CURSOR.magic], 'CURS'
            jne .fail
-           cmp [esi+CURSOR.size], CURSOR_SIZE
-           jne .fail
+;           cmp [esi+CURSOR.size], CURSOR_SIZE
+;           jne .fail
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
@@ -466,30 +422,50 @@ proc delete_cursor stdcall, hcursor:dword
            mov eax, [def_cursor]
            mov [ebx+PROC_BASE+APPDATA.cursor], eax
 @@:
-           mov eax, [hw_cursor]
-           test eax, eax
-           jz @F
-
-           xor ebx, ebx
-           mov ecx, [esi+CURSOR.base]
-           mov [hsrv], eax
-           mov [io_code], VIDEO_FREE
-           mov [input], ecx
-           mov [inp_size], 4
-           mov [output], ebx
-           mov [out_size], ebx
-
-           lea eax, [hsrv]
-           stdcall srv_handler, eax
-           jmp .exit
-@@:
-           stdcall kernel_free, [esi+CURSOR.base]
-.exit:
            mov eax, [hcursor]
-           call free
+           call [eax+APPOBJ.destroy]
 .fail:
            ret
+
+;@@:
+;           mov eax, [hw_cursor]
+;           test eax, eax
+;           jz @F
+
+;           xor ebx, ebx
+;           mov ecx, [esi+CURSOR.base]
+;           mov [hsrv], eax
+;           mov [io_code], VIDEO_FREE
+;           mov [input], ecx
+;           mov [inp_size], 4
+;           mov [output], ebx
+;           mov [out_size], ebx
+
+;           lea eax, [hsrv]
+;           stdcall srv_handler, eax
+;           jmp .exit
+;@@:
+;           stdcall kernel_free, [esi+CURSOR.base]
+;.exit:
+;           mov eax, [hcursor]
+;           call destroy_kernel_object
+;.fail:
+;           ret
 endp
+
+; param
+;  eax= cursor
+
+align 4
+destroy_cursor:
+
+           push eax
+           stdcall kernel_free, [eax+CURSOR.base]
+           pop eax
+
+
+           call destroy_kernel_object
+           ret
 
 align 4
 proc init_cursors
@@ -509,21 +485,6 @@ proc init_cursors
 .init:
            mov [cur_def_interl], ebx
 
-if 0
-           xor eax, eax
-           mov edi, cursors
-           mov ecx, CURSOR_SIZE*16
-           cld
-           rep stosd
-
-           not eax
-           mov [cursor_map], eax
-           mov [cursor_map+4], eax
-           mov edx, cursor_map
-           mov [cursor_start], edx
-           add edx, 8
-           mov [cursor_end], edx
-end if
            stdcall load_driver, drv_hw_mouse
            mov [hw_cursor], eax
            test eax, eax

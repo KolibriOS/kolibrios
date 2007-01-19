@@ -3,6 +3,7 @@ format MS COFF
 
 
 include 'proc32.inc'
+include 'imports.inc'
 
 DEBUG	    equ 1
 
@@ -276,19 +277,6 @@ PROC_BASE	      equ OS_BASE+0x0080000
 public START
 public service_proc
 public version
-
-extrn AttachIntHandler
-extrn SysMsgBoardStr
-extrn PciApi
-extrn PciRead32
-extrn PciRead8
-extrn PciWrite8
-extrn AllocKernelSpace
-extrn MapPage
-extrn RegService
-extrn KernelAlloc
-extrn GetPgAddr
-extrn GetCurrentTask
 
 section '.flat' code readable align 16
 
@@ -1363,7 +1351,7 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
 
         dd 0    ;terminator
 
-version      dd 0x00010001
+version      dd 0x00020002
 
 msg_ICH      db 'Intel ICH',  13,10, 0
 msg_ICH0     db 'Intel ICH0', 13,10, 0

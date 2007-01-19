@@ -1,8 +1,8 @@
 
 format MS COFF
 
-
 include 'proc32.inc'
+include 'imports.inc'
 
 DEBUG	    equ 1
 
@@ -250,19 +250,6 @@ PROC_BASE	      equ OS_BASE+0x0080000
 public START
 public service_proc
 public version
-
-extrn AttachIntHandler
-extrn SysMsgBoardStr
-extrn PciApi
-extrn PciRead32
-extrn PciRead8
-extrn PciWrite8
-extrn AllocKernelSpace
-extrn MapPage
-extrn RegService
-extrn KernelAlloc
-extrn GetPgAddr
-extrn GetCurrentTask
 
 section '.flat' code readable align 16
 
@@ -1143,7 +1130,7 @@ align 4
 devices dd (CTRL_SIS  shl 16)+VID_SIS,msg_AC, set_SIS
         dd 0
 
-version      dd 0x00010001
+version      dd 0x00020002
 
 msg_AC       db '7012 AC97 controller',13,10, 0
 msg_SIS      db 'Silicon Integrated Systems',13,10, 0

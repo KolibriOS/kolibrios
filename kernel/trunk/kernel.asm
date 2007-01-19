@@ -438,15 +438,6 @@ B32:
 
            call init_events
 
-;           mov [dll_map], 0xFFFFFFFF
-;           mov [srv_map], 0xFFFFFFFF
-
-;           call alloc_dll
-;           mov edi, eax
-;           mov esi, szKernel
-;           mov ecx, 16
-;           rep movsb
-
            mov eax, srv.fd-SRV_FD_OFFSET
            mov [srv.fd], eax
            mov [srv.bk], eax
@@ -557,7 +548,6 @@ include 'vmodeld.inc'
         call  setmouse
 
         mov  [pci_access_enabled],1
-        call init_cursors
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -594,13 +584,18 @@ include 'vmodeld.inc'
         mov  dword [0x80000+APPDATA.sse_handler], 0
 
         ; name for OS/IDLE process
+
         mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
         mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
         mov ebx, [def_cursor]
         mov dword [0x80000+256+APPDATA.cursor], ebx
-
         mov  dword [0x80000+256+APPDATA.fpu_handler], 0
         mov  dword [0x80000+256+APPDATA.sse_handler], 0
+
+        mov ebx, PROC_BASE+256+APP_OBJ_OFFSET
+        mov  dword [0x80000+256+APPDATA.fd_obj], ebx
+        mov  dword [0x80000+256+APPDATA.bk_obj], ebx
+
 
 ;set fpu save area
         mov esi, eax
@@ -645,6 +640,9 @@ include 'vmodeld.inc'
 
         mov  ax,tss0
         ltr  ax
+
+        call init_cursors
+
 
 ; READ TSC / SECOND
 

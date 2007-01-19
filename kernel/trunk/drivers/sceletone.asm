@@ -4,7 +4,7 @@
 format MS COFF
 
 include 'proc32.inc'
-
+include 'imports.inc'
 
 OS_BASE         equ 0;
 new_app_base    equ 0x60400000
@@ -26,24 +26,6 @@ end virtual
 public START
 public service_proc
 public version
-
-extrn AttachIntHandler
-extrn SysMsgBoardStr
-extrn PciApi
-extrn PciRead32
-extrn PciRead8
-extrn PciWrite8
-extrn AllocKernelSpace
-extrn KernelAlloc
-extrn MapPage
-extrn GetPgAddr
-extrn RegService
-extrn ServiceHandler
-extrn SetHwCursor
-extrn LFBAddress
-extrn LoadFile
-extrn FpuSave
-extrn FpuRestore
 
 DEBUG      equ 1
 
@@ -161,7 +143,7 @@ align 4
 devices dd (DEVICE_ID shl 16)+VENDOR_ID
         dd 0    ;terminator
 
-version      dd 0x00010001
+version      dd 0x00020002
 
 my_service   db 'MY_SERVICE',0  ;max 16 chars include zero
 

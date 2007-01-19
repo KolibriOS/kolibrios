@@ -243,6 +243,13 @@ proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
 endp
 
 align 4
+map_space:    ;not implemented
+
+
+           ret
+
+
+align 4
 proc free_page
 ;arg:  eax  page address
            pushfd
@@ -265,8 +272,19 @@ proc free_page
 endp
 
 ; param
-;  ecx= size
+;  eax= page base
+;  ebx= liear address
+;  ecx= count
+
+align 4
+commit_pages:   ;not implemented
+
+
+           ret
+
+; param
 ;  eax= base
+;  ecx= count
 
 align 4
 release_pages:
@@ -274,7 +292,6 @@ release_pages:
            mov ebx, pg_data.pg_mutex
            call wait_mutex      ;ebx
 
-           shr ecx, 12
            mov esi, eax
            mov edi, eax
 

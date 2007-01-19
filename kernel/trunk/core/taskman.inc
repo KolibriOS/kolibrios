@@ -996,16 +996,20 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 @@:
            rep movsd
 
-           mov    ebx,[slot]
-           cmp    ebx,[TASK_COUNT]
-           jle    .noinc
-           inc    dword [TASK_COUNT]       ;update number of processes
+           mov ebx,[slot]
+           cmp ebx,[TASK_COUNT]
+           jle .noinc
+           inc dword [TASK_COUNT]       ;update number of processes
 .noinc:
-           shl    ebx,8
-           mov    ecx, [def_cursor]
-           mov    [PROC_BASE+APPDATA.cursor+ebx],ecx
+           shl ebx,8
+           lea edx, [ebx+PROC_BASE+APP_OBJ_OFFSET]
+           mov [PROC_BASE+APPDATA.fd_obj+ebx],edx
+           mov [PROC_BASE+APPDATA.bk_obj+ebx],edx
 
-           shr    ebx,3
+           mov ecx, [def_cursor]
+           mov [PROC_BASE+APPDATA.cursor+ebx],ecx
+
+           shr ebx,3
            mov eax, new_app_base
            mov dword [CURRENT_TASK+ebx+0x10],eax
 
@@ -1014,11 +1018,14 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov edx,[edx]           ;app_cmdline
            test edx,edx
            jz @F                   ;application don't need parameters
-        mov     eax, edx
-        add     eax, 256
-        jc      @f
-        cmp     eax, [PROC_BASE+APPDATA.mem_size+ebx*8]
-        ja      @f
+
+           mov     eax, edx
+           add     eax, 256
+           jc      @f
+
+           cmp     eax, [PROC_BASE+APPDATA.mem_size+ebx*8]
+           ja      @f
+
            add edx, new_app_base
            stdcall k_strncpy, edx, [cmd_line], 256
 @@:

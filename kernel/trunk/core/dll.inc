@@ -1,8 +1,8 @@
 
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1
-DRV_COMPAT   equ  1  ;minimal required drivers version
-DRV_CURRENT  equ  1  ;current drivers model version
+DRV_COMPAT   equ  2  ;minimal required drivers version
+DRV_CURRENT  equ  2  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 
@@ -371,10 +371,10 @@ reg_service:
 
            mov ecx, [.handler]
            mov [eax+SRV.srv_proc], ecx
-	   ret
+           ret 8
 .fail:
 	   xor eax, eax
-	   ret
+           ret 8
 
 align 4
 proc get_proc stdcall, exp:dword, sz_name:dword
@@ -965,7 +965,6 @@ proc load_library stdcall, file_name:dword
            ret
 endp
 
-
 align 4
 proc stop_all_services
 
@@ -986,6 +985,54 @@ proc stop_all_services
 .done:
            ret
 endp
+
+; param
+;  eax= pid
+;  ebx= size
+
+align 4
+create_kernel_object:
+
+           push ebx
+           call malloc
+           pop ebx
+           test eax, eax
+           jz .fail
+
+           mov ecx,[CURRENT_TASK]
+           shl ecx,8
+           add ecx, PROC_BASE+APP_OBJ_OFFSET
+
+           mov edx, [ecx+APPOBJ.fd]
+           mov [eax+APPOBJ.fd], edx
+           mov [eax+APPOBJ.bk], ecx
+           mov [eax+APPOBJ.pid], ebx
+
+           mov [ecx+APPOBJ.fd], eax
+           mov [edx+APPOBJ.bk], eax
+.fail:
+           ret
+
+; param
+;  eax= object
+
+align 4
+destroy_kernel_object:
+
+           mov ebx, [eax+APPOBJ.fd]
+           mov ecx, [eax+APPOBJ.bk]
+           mov [ebx+APPOBJ.bk], ecx
+           mov [ecx+APPOBJ.fd], ebx
+
+           xor edx, edx        ;clear common header
+           mov [eax], edx
+           mov [eax+4], edx
+           mov [eax+8], edx
+           mov [eax+12], edx
+           mov [eax+16], edx
+
+           call free           ;release object memory
+           ret
 
 
 drv_sound      db '/rd/1/drivers/unisound.obj', 0

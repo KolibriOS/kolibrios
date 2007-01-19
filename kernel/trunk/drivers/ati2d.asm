@@ -2,6 +2,7 @@
 format MS COFF
 
 include 'proc32.inc'
+include 'imports.inc'
 
 DEBUG     equ 1
 
@@ -33,18 +34,23 @@ virtual at 0
 end virtual
 
 struc CURSOR
-{  .magic       dd ?
-   .size        dd ?
-   .pid         dd ?
-   .base        dd ?
-   .hot_x       dd ?
+{;common object header
+   .magic       dd ?   ;'CURS'
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+
+ ;cursor data
+   .base        dd ?   ;allocated memory
+   .hot_x       dd ?   ;hotspot coords
    .hot_y       dd ?
 }
 virtual at 0
   CURSOR CURSOR
 end virtual
 
-CURSOR_SIZE     equ 24
+CURSOR_SIZE     equ 32
 
 R8500       equ 0x514C  ;R200
 R9000       equ 0x4966  ;RV250
@@ -155,18 +161,6 @@ public START
 public service_proc
 public version
 
-extrn SysMsgBoardStr
-extrn PciApi
-extrn PciRead32
-extrn AllocKernelSpace
-extrn MapPage
-extrn RegService
-extrn SetHwCursor
-extrn HwCursorRestore
-extrn HwCursorCreate
-extrn LFBAddress
-extrn LoadFile
-
 CURSOR_IMAGE_OFFSET  equ 0x00500000
 
 DRV_ENTRY equ 1
@@ -192,18 +186,12 @@ proc START stdcall, state:dword
            test eax, eax
            jz .fail
 
-           xor eax, eax
-           mov edi, cursors
-           mov ecx, CURSOR_SIZE*16
-           cld
-           rep stosd
-
-           not eax
+           or eax, -1
            mov [cursor_map], eax
            mov [cursor_map+4], eax
            mov edx, cursor_map
            mov [cursor_start], edx
-           add edx, 4
+           add edx, 8
            mov [cursor_end], edx
 
            stdcall RegService, sz_ati_srv, service_proc
@@ -457,16 +445,41 @@ video_free:
            popfd
            ret
 
+; param
+;  eax= pid
+;  ebx= src
+;  ecx= flags
+
 align 4
-proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
+ati_cursor:
+.src     equ esp
+.flags   equ esp+4
+.hcursor equ esp+8
 
-           stdcall video_alloc
+           sub esp, 4          ;space for .hcursor
+           push ecx
+           push ebx
 
-           mov edi, [hcursor]
+           mov ebx, eax
+           mov eax, CURSOR_SIZE
+           call CreateObject
+           test eax, eax
+           jz .fail
+
+           mov [.hcursor],eax
+
+           xor ebx, ebx
+           mov [eax+CURSOR.magic], 'CURS'
+           mov [eax+CURSOR.destroy], destroy_cursor
+           mov [eax+CURSOR.hot_x], ebx
+           mov [eax+CURSOR.hot_y], ebx
+
+           call video_alloc
+           mov edi, [.hcursor]
            mov [edi+CURSOR.base], eax
 
-           mov esi, [src]
-           mov ebx, [flags]
+           mov esi, [.src]
+           mov ebx, [.flags]
            cmp bx, LOAD_INDIRECT
            je .indirect
 
@@ -476,8 +489,9 @@ proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
            mov [edi+CURSOR.hot_y], edx
 
            stdcall ati_init_cursor, eax, esi
-           mov eax, [hcursor]
+           mov eax, [.hcursor]
 .fail:
+           add esp, 12
            ret
 .indirect:
            shr ebx, 16
@@ -486,14 +500,15 @@ proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
            mov [edi+CURSOR.hot_x], ecx
            mov [edi+CURSOR.hot_y], edx
 
-           xchg edi, eax
-           push edi
+           mov edi, eax
+           mov ebx, eax
            mov ecx, 64*64
            xor eax,eax
+           cld
            rep stosd
+           mov edi, ebx
 
-           mov esi, [src]
-           pop edi
+           mov esi, [.src]
            mov ebx, 32
            cld
 @@:
@@ -502,9 +517,20 @@ proc ati_cursor stdcall, hcursor:dword, src:dword, flags:dword
            add edi, 128
            dec ebx
            jnz @B
-           mov eax, [hcursor]
+           mov eax, [.hcursor]
+           add esp, 12
            ret
-endp
+
+align 4
+destroy_cursor:
+
+           push eax
+           mov eax, [eax+CURSOR.base]
+           call video_free
+           pop eax
+
+           call DestroyObject
+           ret
 
 align 4
 proc ati_init_cursor stdcall, dst:dword, src:dword
@@ -955,7 +981,7 @@ devices dd (R8500   shl 16)+VID_ATI
         dd (R9800XT shl 16)+VID_ATI
         dd 0    ;terminator
 
-version dd 0x00010001
+version dd 0x00020002
 
 sz_ati_srv   db 'HWCURSOR',0
 
@@ -970,7 +996,6 @@ section '.data' data readable writable align 16
 
 pCursor  db 4096 dup(?)
 
-cursors        rb CURSOR_SIZE*64
 cursor_map     rd 2
 cursor_start   rd 1
 cursor_end     rd 1

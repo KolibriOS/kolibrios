@@ -98,8 +98,13 @@ struc STREAM
     .r_silence     dd 0
 
     .base          dd 0
-    .curr_seg      dd 0
     .limit         dd 0
+    .seg_0         dd 0
+    .lim_0         dd 0
+    .seg_1         dd 0
+    .lim_1         dd 0
+    .curr_seg      dd 0
+
     .buff_size     dd 0
     .notify_off1   dd 0
     .notify_off2   dd 0
@@ -107,7 +112,7 @@ struc STREAM
     .resample      dd 0
 }
 
-STREAM_SIZE    equ 23*4
+STREAM_SIZE    equ 27*4
 
 virtual at 0
  STREAM STREAM

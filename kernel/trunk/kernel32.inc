@@ -182,8 +182,10 @@ struc APPDATA
   .cursor          dd ?            ;+44
   .ev_first        dd ?            ;+48
   .ev_last         dd ?            ;+52
+  .fd_obj          dd ?            ;+56
+  .bk_obj          dd ?            ;+60
 
-                   db 72 dup(?)    ;+56
+                   db 64 dup(?)    ;+64
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

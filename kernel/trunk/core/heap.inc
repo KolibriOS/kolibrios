@@ -578,7 +578,7 @@ proc kernel_free stdcall, base:dword
            and [heap_mutex], 0
 
            mov ecx, [esi+block_size];
-
+           shr ecx, 12
            call release_pages   ;eax, ecx
            stdcall free_kernel_space, [base]
            ret
@@ -643,7 +643,6 @@ proc user_alloc stdcall, alloc_size:dword
            mov edi, dword [ebx+PROC_BASE+APPDATA.heap_top]; heap_top
            add esi, new_app_base
            add edi, new_app_base
-
 l_0:
            cmp esi, edi
            jae m_exit

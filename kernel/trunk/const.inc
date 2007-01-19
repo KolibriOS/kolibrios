@@ -312,19 +312,39 @@ struc SYS_VARS
                   dd ?
 }
 
+struc APPOBJ           ;common object header
+{
+   .magic       dd ?   ;
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+};
+
+virtual at 0
+  APPOBJ APPOBJ
+end virtual
+
+APP_OBJ_OFFSET  equ 48
+
 struc CURSOR
-{  .magic       dd ?
-   .size        dd ?
-   .pid         dd ?
-   .base        dd ?
-   .hot_x       dd ?
+{;common object header
+   .magic       dd ?   ;'CURS'
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+
+ ;cursor data
+   .base        dd ?   ;allocated memory
+   .hot_x       dd ?   ;hotspot coords
    .hot_y       dd ?
 }
 virtual at 0
   CURSOR CURSOR
 end virtual
 
-CURSOR_SIZE     equ 24
+CURSOR_SIZE     equ 32
 
 struc BOOT_DATA
 { .bpp            dd ?

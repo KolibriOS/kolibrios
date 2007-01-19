@@ -17,6 +17,7 @@ format MS COFF
 
 include 'proc32.inc'
 include 'main.inc'
+include 'imports.inc'
 
 DEBUG		    equ 1
 
@@ -29,25 +30,6 @@ PROC_BASE             equ OS_BASE+0x0080000
 public START
 public service_proc
 public version
-
-extrn AttachIntHandler
-extrn SysMsgBoardStr
-extrn PciApi
-extrn PciRead32
-extrn PciRead8
-extrn PciWrite8
-extrn AllocKernelSpace
-extrn MapPage
-extrn RegService
-extrn KernelAlloc
-extrn KernelFree
-extrn GetPgAddr
-extrn GetCurrentTask
-extrn GetService
-extrn ServiceHandler
-extrn FpuSave
-extrn FpuRestore
-extrn SendEvent
 
 SND_CREATE_BUFF     equ 2
 SND_PLAY            equ 3
@@ -212,13 +194,17 @@ proc CreateBuffer stdcall, format:dword
 
            mov edi, [str]
            mov [edi+STREAM.base], eax
+           mov [edi+STREAM.seg_0], eax
            mov [edi+STREAM.curr_seg], eax
            mov [edi+STREAM.notify_off1], eax
-           add eax, 0x8000
+           add eax, 0x7FFF
+           mov [edi+STREAM.lim_0], eax
+           inc eax
+           mov [edi+STREAM.seg_1], eax
            mov [edi+STREAM.notify_off2], eax
            add eax, 0x7FFF
            mov [edi+STREAM.limit], eax
-
+           mov [edi+STREAM.lim_1], eax
            inc eax
 
            mov [edi+STREAM.work_buff], eax
@@ -266,7 +252,6 @@ proc CreateBuffer stdcall, format:dword
 
            mov eax, [str]
            ret
-
 .fail:
            xor eax, eax
            ret
@@ -367,7 +352,7 @@ proc play_buffer stdcall, str:dword
            mov [ebx+STREAM.work_write], eax
            mov [ebx+STREAM.work_count], 0
 
-           mov eax, [ebx+STREAM.base]
+           mov eax, [ebx+STREAM.seg_0]
            mov [ebx+STREAM.curr_seg], eax
 
            mov esi, [ebx+STREAM.curr_seg]
@@ -520,6 +505,7 @@ proc free_stream
            ret
 endp
 
+if 0
 align 4
 proc check_stream
 
@@ -529,18 +515,22 @@ proc check_stream
            mov esi, [play_list+edx]
 
            mov eax, [esi+STR.curr_seg]
-           cmp eax, [esi+STR.limit]
+           cmp eax, [esi+STR.lim_0]
            jb .next
 
-.m1:
-           mov eax,[esi+STR.base]
+           mov eax, [esi+STREAM.seg_0]
+           mov ecx, [esi+STREAM.lim_0]
+           xchg eax, [ebx+STREAM.seg_1]
+           xchg ecx, [ebx+STREAM.lim_1]
+           mov [esi+STREAM.seg_0], eax
+           mov [esi+STREAM.lim_0], ecx
            mov [esi+STR.curr_seg], eax
 .next:
            add edx, 4
            loop .l1
            ret
 endp
-
+end if
 
 align 4
 proc prepare_playlist
@@ -728,35 +718,35 @@ resampler_params:
      dd  2048, 0x02000000,  5462, resample_28    ;35  PCM_2_8_8
      dd  1024, 0x02000000,  5462, resample_18    ;36  PCM_1_8_8
 
-m7	     dw 0x8000,0x8000,0x8000,0x8000
-mm80	     dq 0x8080808080808080
-mm_mask      dq 0xFF00FF00FF00FF00
+m7            dw 0x8000,0x8000,0x8000,0x8000
+mm80          dq 0x8080808080808080
+mm_mask       dq 0xFF00FF00FF00FF00
 
-stream_map   dd 0xFFFF	      ; 16
-version      dd 0x00010001
+stream_map    dd 0xFFFF       ; 16
+version       dd 0x00020002
 
-szInfinity   db 'INFINITY',0
-szSound      db 'SOUND',0
+szInfinity    db 'INFINITY',0
+szSound       db 'SOUND',0
 
 if DEBUG
-msgFail      db 'Sound service not loaded',13,10,0
-msgPlay      db 'Play buffer',13,10,0
-msgStop      db 'Stop',13,10,0
-msgUser      db 'User callback',13,10,0
-msgMem       db 'Not enough memory',13,10,0
+msgFail       db 'Sound service not loaded',13,10,0
+msgPlay       db 'Play buffer',13,10,0
+msgStop       db 'Stop',13,10,0
+msgUser       db 'User callback',13,10,0
+msgMem        db 'Not enough memory',13,10,0
 end if
 
 section '.data' data readable writable align 16
 
-stream       rb STREAM_SIZE*16
+stream        rb STREAM_SIZE*16
 
-play_list    rd 16
-mix_input    rd 16
+play_list     rd 16
+mix_input     rd 16
 
-stream_list  rd 17
-play_count   rd 1
-stream_count rd 1
-hSound       rd 1
-mix_buff     rd 1
-mix_buff_map rd 1
+stream_list   rd 17
+play_count    rd 1
+stream_count  rd 1
+hSound        rd 1
+mix_buff      rd 1
+mix_buff_map  rd 1
 
