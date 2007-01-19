@@ -1,3 +1,4 @@
+; <Lrz> 19.01.2007 реализовал выделение текста по shift
 ; <Lrz> 12.12.2006 реализовал поддержку кнопки insert и сегодя компонент почти работает!!!!
 ; <Lrz> 07.12.2006 продолжается работа над переработкой компонента,изменениям подверглись многие функции, переработан вывод текста, а така же алгоритм внесения символов.
 ; <Lrz> 03.09.2006 по возможности отказался от 16 битной арифметики, добавил новые баги
@@ -52,16 +53,18 @@ ed_color	equ [edi+12]		;цвет фона компонента
 ed_focus_border_color	equ [edi+16]	;цвет рамки компонента
 ed_blur_border_color	equ [edi+20]    ;цвет не активного компонента
 ed_text_color	equ [edi+24]            ;цвет текста
-ed_flags	equ [edi+28]            ;флаги
-ed_max	equ [edi+32]                    ;кол-во символов которые можно максимально ввести
-ed_size equ [edi+36]                    ;кол-во символов
-ed_pos	equ [edi+40]                    ;позиция курсора
-ed_offset	equ [edi+44]            ;смещение
-ed_text equ [edi+48]                    ;указатель на буфер
-cl_curs_x	equ [edi+52]		;предыдущее координата курсора по х
-cl_curs_y	equ [edi+56]		;предыдущее координата курсора по у
-ed_insert	equ [edi+60]		;word 
+ed_max		equ [edi+28]                    ;кол-во символов которые можно максимально ввести
+ed_text 	equ [edi+32]                    ;указатель на буфер
+ed_flags	equ [edi+36]            ;флаги
+ed_size equ [edi+38]                    ;кол-во символов
+ed_pos	equ [edi+42]                    ;позиция курсора
+ed_offset	equ [edi+46]            ;смещение
+cl_curs_x	equ [edi+50]		;предыдущее координата курсора по х
+cl_curs_y	equ [edi+54]		;предыдущее координата курсора по у
+ed_insert	equ [edi+58]		;word 
+ed_shift_pos	equ [edi+60]
 ed_height=14 ; высота
+shift_color=0x6a9480
 ;==========================================================
 ;=== процедура прорисовки =================================
 ;==========================================================
@@ -77,13 +80,32 @@ pusha
 .draw_cursor_text:
 ;--- рисуем курсор ---
 	;--- может его не надо рисовать ----
-	test	dword ed_flags,1
+	test	word ed_flags,ed_focus
 	je	@f
 	call	.draw_cursor
 @@:
 	call	.draw_text
 popa
 ret
+
+.str:
+	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+	 ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+	jb @f
+	xor edx,edx  ;очистить edx
+	div ecx      ;разделить - остаток в edx
+	push edx     ;положить в стек
+	;dec edi	     ;смещение необходимое для записи с конца строки
+ 	call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+	pop eax
+	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+	;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
+	;das	    ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
+	or al,0x30  ;данная команда короче  чем две выше 
+	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
+
+	ret	    ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 ;----------------------------------------------------------
 ;--- процедура прорисовки текста --------------------------
@@ -116,22 +138,22 @@ ret
 ;eax
 ;----------------------------------------------------------
 .draw_bg_eax:
-pusha
+;pusha
 	mov	ecx,ed_top
 	add	ecx,1
 	shl	ecx,16
 	mov	cx,13
 ;	sub	ecx,1
-
-	mov	edx,ed_color
+	mov	edx,[esp+4]	;color
+;	mov	edx,ed_color
 	mov	eax,13
 	int	0x40
-popa
-ret
+;popa
+ret 4
 
 	jmp	@f
 .draw_bg:
-pusha
+;pusha
 	mov	ebx,ed_left
 	add	ebx,1
 	shl	ebx,16
@@ -148,7 +170,7 @@ pusha
 	mov	edx,ed_color
 	mov	eax,13
 	int	0x40
-popa
+;popa
 ret
 
 ;----------------------------------------------------------
@@ -167,10 +189,15 @@ ret
 ;----------------------------------------------------------
 .clear_cursor:
 	mov	edx,ed_color
+        test    word ed_flags,ed_shift
+	je	@f
+       	mov	edx,shift_color
+@@:    	
 	mov	ebx,cl_curs_x
 	mov	ecx,cl_curs_y
 	jmp	.draw_curs
 .draw_cursor:
+
 	mov	edx,ed_text_color
 @@:
 	mov	ebx,ed_pos
@@ -207,7 +234,7 @@ ret
 ;----------------------------------------------------------
 .draw_border:
 ;--- цвет рамки ---
-	test	dword ed_flags,1
+	test	dword ed_flags,ed_focus
 	mov	edx,ed_focus_border_color
 	jne     @f
 	mov	edx,ed_blur_border_color
@@ -271,6 +298,7 @@ ret
 	shl	ebx,16
 	mov	bx,ed_width
 	dec 	ebx
+	push	dword ed_color
 	call    .draw_bg_eax
 	mov	dword [esp+28],0
 @@:	popad
@@ -280,8 +308,20 @@ ret
 ;==========================================================
 .key:
 pusha
-	test	dword ed_flags,1 ; если не в фокусе, выходим
+	test	word ed_flags,ed_focus ; если не в фокусе, выходим
 	je     .no_figure ;@f
+
+	push	eax	
+	mov	ecx,1
+	mov	eax,66
+	mov	ebx,3
+	int	0x40
+	xor	ebx,ebx
+	test	al,0x03
+	je	@f
+        or      word ed_flags,ed_shift
+
+@@:     pop	eax
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
 ;----------------------------------------------------------
@@ -324,6 +364,7 @@ pusha
 	popa
 	ret
 .insert: not 	word ed_insert
+
         jmp	.no_figure
 .ins_v: 
 	pop	eax edi
@@ -366,10 +407,16 @@ pusha
 ; вставляем код клавиши туда, где курсор
 	; увеличиваем значение размера и позиции
 	inc	 dword ed_size
+
+	push	dword	ed_pos
+	push	dword	ed_size
+;	push	.return
 	call	.draw_all2
 	inc	 dword ed_pos
+;.return: 
 	jmp    .draw_cursor_text
 .delete:	
+
 	mov	edx,ed_size
 	mov	ecx,ed_pos
 
@@ -399,7 +446,8 @@ pusha
 	dec	 dword ed_pos
 
 .draw_all:
-;	mov	eax,.draw_cursor_text
+	push	dword	ed_pos
+	push	dword	ed_size
 	push	.draw_cursor_text;eax
 	dec	 dword ed_size
 .draw_all2:
@@ -409,19 +457,19 @@ pusha
 	push	eax
 	mov	ebx,ed_offset
 	add	eax,ebx	;eax = w_off= ed_offset+width
-	mov	ebx,ed_size
+	mov	ebx,[esp+8]	;ed_size
 	
 	cmp	eax,ebx
 	jb	@f
-	mov	eax,ed_pos
+	mov	eax,[esp+12]	;	ed_pos
 	sub	ebx,eax
 	mov	ecx,ed_offset
 	sub	eax,ecx
 	jmp	.nxt
-@@:	mov	ebx,ed_pos
+@@:	mov	ebx,[esp+12];ed_pos
 	push	ebx
 	sub	eax,ebx
-	mov	ebx,eax	;don't optimal
+	mov	ebx,eax	;It is don't optimal
 	
 	pop	eax	;ed_pos
        	mov	ecx,ed_offset
@@ -444,11 +492,18 @@ pusha
 	lea	ecx,[edx*2+edx]
 	shl	ecx,1	
 	mov	bx,cx
+	push	dword ed_color
 	call	.draw_bg_eax
-	ret
+	ret     8
 ;--- нажата клавиша left ---
-.left:
-	mov	ebx,ed_pos
+.left:  test    word ed_flags,ed_shift
+	je	@f
+	test	word ed_flags,ed_shift_on
+	jne	@f
+       	push	dword ed_pos
+	pop	dword ed_shift_pos
+	or	word ed_flags,ed_shift_on
+@@:     mov	ebx,ed_pos
 	test	ebx,ebx
 	jz	.nd_k
 	call	.clear_cursor
@@ -456,14 +511,25 @@ pusha
 	jmp	.nd_k
 ;--- нажата клавиша right ---
 .right:
-	mov	ebx,ed_pos
+	test    word ed_flags,ed_shift
+	je	@f
+	test	word ed_flags,ed_shift_on
+	jne	@f
+       	push	dword ed_pos
+	pop	dword ed_shift_pos
+	or	word ed_flags,ed_shift_on
+@@:	mov	ebx,ed_pos
 	cmp	ebx,ed_size
 	je	.nd_k
 	call	.clear_cursor
 	inc	dword  ed_pos
 	jmp	.nd_k
 .home:
-	mov	ebx,ed_pos
+;	test    word ed_flags,ed_shift
+;	je	@f
+ ;      	push	dword ed_pos
+;	pop	dword ed_shift_pos
+@@:	mov	ebx,ed_pos
 	test	ebx,ebx
 	jz	.nd_k
 	call	.clear_cursor
@@ -472,16 +538,124 @@ pusha
 	jmp	.nd_k
 
 .end:
-	mov	ebx,ed_pos
+;	test    word ed_flags,ed_shift
+;	je	@f
+ ;      	push	dword ed_pos
+;	pop	dword ed_shift_pos
+@@:	mov	ebx,ed_pos
 	cmp	ebx,dword ed_size
 	je	@f
 	call	.clear_cursor
 	mov	eax,ed_size
 	mov	ed_pos,eax
 .nd_k:	call	.check_offset
-	test	eax,eax
-	jz	.draw_bg_cursor_text
+	;test	eax,eax
+	;jz	.draw_bg_cursor_text
 	call	.draw_cursor
+
+.shift: ;;;;;;;SHIFT
+	;-----------  отладка
+	pushad
+	mov	[data_of_code],0
+	mov ax,word ed_flags
+	mov edi,data_of_code
+	call .str
+	;рисование фона
+	mov eax,13
+	mov ebx,178*65536+36
+	mov ecx,28*65536+10
+	xor edx,edx
+	int 0x40
+	;вывод значения на экран
+	mov eax,4
+	mov ebx,180*65536+30
+	mov ecx,0x10DDBBCC
+	mov edx,data_of_code
+	mov esi,4
+	int 0x40
+	popad
+	;----------- отладка
+		
+    	call	.draw_bg
+	test      word ed_flags,ed_shift
+        je	.f_exit
+;;;;;;SHIFT end
+	mov 	eax,dword	ed_pos
+	mov	ebx,dword	ed_shift_pos
+	cmp	eax,ebx
+	jae	.sh_n
+	push	eax  ;меньшее в eax
+	push	ebx  ;большее
+	jmp	.sh_n1
+	             ;если иначе
+.sh_n: 	push	ebx  
+	push	eax
+.sh_n1: 
+;        jmp	.draw_all2
+;;;;;;;;;;;;;;;;;;;;;;;;;
+	;call	.clear_cursor
+	call	.check_offset
+	call	.get_n
+	mov	edx,eax	;size of ed_box
+;	push	eax
+	mov	ecx,ed_offset
+	add	eax,ecx	;eax = w_off= ed_offset+width
+	mov	ebp,eax ;save
+	pop	ebx     ;большее
+	pop	eax     ;меньшее
+
+	
+	cmp	eax,ecx         ;сравнение с меньшего с offset.
+	jae	.f_f            ;если больше
+	xor	eax,eax
+	cmp	ebp,ebx		;cравним размер w_off с большим
+	jb	@f
+	sub	ebx,ecx
+	jmp     .nxt_f
+@@:	mov	ebx,ebp
+	sub	ebx,ecx	
+	jmp     .nxt_f
+
+.f_f:	
+	sub	eax,ecx
+	cmp	ebp,ebx		;cравним размер w_off с большим
+	jle	@f
+	sub	ebx,ecx
+	sub	ebx,eax
+	jmp     .nxt_f
+@@:
+	mov	ebx,ebp	
+	sub	ebx,ecx
+	sub	ebx,eax
+.nxt_f:
+;	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
+;	add	ebp,ebx
+;	pop	edx
+;	cmp	ebp,edx
+;	je	.ff
+;	inc	ebx
+
+.ff:     mov	edx,ebx
+	lea	ebx,[eax*2+eax]
+	shl	ebx,1
+	add	ebx,ed_left
+	inc	ebx
+	shl	ebx,16
+	lea	ecx,[edx*2+edx]
+	shl	ecx,1	
+	mov	bx,cx
+;	mov	ebp,ed_color
+;	not	ebp
+	push	dword shift_color
+	call	.draw_bg_eax
+;	pop	edx
+;	or	word ed_flags,ed_shift
+	and    word ed_flags,1111111111111011b
+        jmp	.draw_cursor_text
+;;;;;;;;;;;;;;;;;;;;;
+
+.f_exit:	and    word ed_flags,ed_shift_cl
+        jmp	.draw_cursor_text
 @@:
 popa
 ret
@@ -522,9 +696,6 @@ pusha
 ;----------------------------------------------------------
 	test	eax,1
 	jnz	.mouse_left_button
-;	or	eax,1
-;	jc	@f
-;	btr	dword ed_flags,2
 @@:     popa
 	ret
 
@@ -572,10 +743,7 @@ pusha
 @@:
 	mov	ed_pos,ax
 	call	.check_offset
-;	test	eax,eax
-;	jz	.draw_bg_cursor_text
 	call	.draw_cursor
-
 	call	.focus
 
 .mouse_pressed:
@@ -591,13 +759,13 @@ ret
 .blur:
 pusha
 ._blur:
-	btr	dword ed_flags,0
+	btr	dword ed_flags,1
 	jnc	@f
 	call	.clear_cursor
 	jmp	.blur_end
 .focus:
 pusha
-	bts	dword ed_flags,0
+	bts	dword ed_flags,1
 	jc	@f
 	call	.draw_cursor
 .blur_end:
@@ -622,6 +790,9 @@ ret
 }
 ed_figure_only=1000000000000000b
 ed_focus=10b
+ed_shift_on=1000b
+ed_shift=100b
+ed_shift_cl=0011b
 macro draw_edit_boxes start,end
 {
 	mov	edi,start
@@ -651,7 +822,7 @@ macro key_edit_boxes start,end
 	add	edi,ed_struc_size
 	loop	@b
 }
-ed_struc_size=62
+ed_struc_size=64
 struc  edit_box width,left,top,color,focus_border_color,\
        blur_border_color,text_color,max,text,flags,size
 {
@@ -662,15 +833,16 @@ struc  edit_box width,left,top,color,focus_border_color,\
 .focus_border_color dd focus_border_color
 .blur_border_color dd blur_border_color
 .text_color dd text_color
-.flags dd flags+0
 .max dd max
+.text dd text
+.flags dw flags+0
 .size dd size+0
 .pos dd 0
 .offset dd 0
-.text dd text
 .cl_curs_x dd 0
 .cl_curs_y dd 0
 .insert	   dw 0
+.shift	   dd 0
 }
 
 macro edit_boxes_set_sys_color start,end,color_table
