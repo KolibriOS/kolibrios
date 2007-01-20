@@ -352,7 +352,8 @@ int __stdcall decode_header(struct frame *fr,unsigned long newhead);
 int __stdcall set_reader(struct reader *rd, unsigned int filepos);
 double pow_test(double, double);
 void * __cdecl mem_cpy(void * dst,const void * src,size_t count);
-
+void init_dct();
+void reset_mpg();
 #ifdef __cplusplus
 }
 #endif

@@ -182,9 +182,9 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
         outbuf = UserAlloc(outremain);
         touch(outbuf, outremain);
         make_decode_tables(32767);
-              init_layer2();
-              init_layer3(SBLIMIT);
-              fr.single = -1;
+        init_layer2();
+        init_layer3(32);
+        fr.single = -1;
    };
 
    status = ST_PLAY;
@@ -266,14 +266,21 @@ void play_mp3()
     int totalout;
     int outcount;
 
-    set_reader(&rd, first_sync);
+ //   memset(&fr,0,sizeof(fr));
+    fr.down_sample_sblimit = 32;
+    fr.single = -1;
+    reset_mpg();
 
     outPtr = outbuf;
     totalout=0;
     done = 0;
+    outremain=0x40000;
 
-    memset(outbuf,0,0x10000); 
-    SetBuffer(hSound,hBuff,outbuf,0,0x10000);
+    memset(outbuf,0,0x40000); 
+
+    set_reader(&rd, 0);    //;first_sync);
+    SetBuffer(hSound,hBuff,outbuf,0,0x8000);
+    SetBuffer(hSound,hBuff,outbuf,0x8000,0x8000);
     PlayBuffer(hSound, hBuff);
 
     while(1)
@@ -339,6 +346,7 @@ void play_wave()
 
 //   read_file (fname,outbuf,offset,32*1024,0);
 //   offset+=32*1024;
+   set_reader(&rd,44); 
    stream_read_raw(&rd,outbuf,32768);
    SetBuffer(hSound,hBuff,outbuf,0,0x8000);
    stream_read_raw(&rd,outbuf,32768);

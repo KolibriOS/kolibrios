@@ -111,7 +111,16 @@ int __stdcall set_reader(struct reader *rd, unsigned int filepos)
     rd->stream = rd->buffer; 
     rd->strremain=bytes;
     rd->filepos=filepos+bytes;
-    rd->strpos = 0;  
+    rd->strpos = 0;
+ 
+    fsizeold=0;
+    firsthead=0;
+    bsbufold = 0;
+    bsbuf = bsspace[1];
+    bsnum = 0;
+    ssize=0;
+    oldhead=0;   
+    memset(bsspace,0,sizeof(bsspace));    
     return 1; 
 };
     
@@ -715,8 +724,8 @@ init_resync:
 }
 
 
-
 #if 0
+
 static int stream_back_bytes(struct reader *rds, off_t bytes)
 {
   if(stream_lseek(rds,-bytes,SEEK_CUR) < 0)

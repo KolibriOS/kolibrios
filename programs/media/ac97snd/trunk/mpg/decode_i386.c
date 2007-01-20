@@ -133,12 +133,22 @@ int synth_1to1_mono2stereo(real *bandPtr,unsigned char *samples,int *pnt)
   return ret;
 }
 
+
+static real buffs[2][2][0x110];
+static const int step = 2;
+static int bo = 1;
+
+void init_dct()
+{
+  bo = 1;
+  memset(buffs,0, sizeof(buffs));
+
+};
+
+
 int synth_1to1(real *bandPtr,int channel,unsigned char *out,int *pnt)
 {
 #ifndef PENTIUM_OPT
-  static real buffs[2][2][0x110];
-  static const int step = 2;
-  static int bo = 1;
   short *samples = (short *) (out + *pnt);
 
   real *b0,(*buf)[0x110];

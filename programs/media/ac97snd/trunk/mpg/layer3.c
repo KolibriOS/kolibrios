@@ -220,6 +220,20 @@ void layer3_gapless_buffercheck()
  * init tables for layer-3 
  */
 
+real hybridIn [2][SBLIMIT][SSLIMIT];
+real hybridOut[2][SSLIMIT][SBLIMIT];
+static real block[2][2][SBLIMIT*SSLIMIT] = { { { 0, } } };
+static int blc[2]={0,0};
+
+void reset_mpg()
+{
+  memset(block,0,sizeof(block));
+  blc[0]=0;
+  blc[1]=0;
+  init_dct(); 
+};
+
+
 #pragma warning(disable:4244)
 void init_layer3(int down_sample_sblimit)
 {
@@ -601,7 +615,7 @@ static int III_get_scale_factors_2(int *scf,struct gr_info_s *gr_info,int i_ster
   int i,j,n=0,numbits=0;
   unsigned int slen;
 
-  static unsigned char stab[3][6][4] = {
+  static const unsigned char stab[3][6][4] = {
    { { 6, 5, 5,5 } , { 6, 5, 7,3 } , { 11,10,0,0} ,
      { 7, 7, 7,0 } , { 6, 6, 6,3 } , {  8, 8,5,0} } ,
    { { 9, 9, 9,9 } , { 9, 9,12,6 } , { 18,18,0,0} ,
@@ -1727,10 +1741,7 @@ static void III_hybrid(real fsIn[SBLIMIT][SSLIMIT],real tsOut[SSLIMIT][SBLIMIT],
    int ch,struct gr_info_s *gr_info)
 #endif
 {
-   static real block[2][2][SBLIMIT*SSLIMIT] = { { { 0, } } };
-   static int blc[2]={0,0};
-
-   real *tspnt = (real *) tsOut;
+    real *tspnt = (real *) tsOut;
    real *rawout1,*rawout2;
    int bt,sb = 0;
 
@@ -1782,9 +1793,6 @@ static void III_hybrid(real fsIn[SBLIMIT][SSLIMIT],real tsOut[SSLIMIT][SBLIMIT],
    }
 }
 
-real hybridIn [2][SBLIMIT][SSLIMIT];
-real hybridOut[2][SSLIMIT][SBLIMIT];
- 
 int do_layer3(struct frame *fr,byte *pcm_sample,int *pcm_point)
 {
   int gr, ch, ss,clip=0;

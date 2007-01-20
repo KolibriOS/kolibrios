@@ -8,6 +8,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "pow_test", "pow_test\pow_test.vcproj", "{9FE40739-2ADC-4241-8182-20E1B3C661A7}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ac97", "ac97\ac97.vcproj", "{1C94A897-DA4F-45B2-B8A6-B97AD837828E}"
+	ProjectSection(ProjectDependencies) = postProject
+		{CF807B93-2860-41DF-A4D2-5B92B52DFD96} = {CF807B93-2860-41DF-A4D2-5B92B52DFD96}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mpg", "mpg\mpg.vcproj", "{CF807B93-2860-41DF-A4D2-5B92B52DFD96}"
 EndProject

@@ -4,7 +4,7 @@ typedef unsigned __int8 Byte;
 typedef unsigned __int32 size_t;
 
 
-extern char *__argv;
+extern char *__argv[2];
 
 void crtStartUp();
 int __cdecl _purecall();
