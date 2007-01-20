@@ -981,7 +981,7 @@ devices dd (R8500   shl 16)+VID_ATI
         dd (R9800XT shl 16)+VID_ATI
         dd 0    ;terminator
 
-version dd 0x00020002
+version dd 0x00030003
 
 sz_ati_srv   db 'HWCURSOR',0
 

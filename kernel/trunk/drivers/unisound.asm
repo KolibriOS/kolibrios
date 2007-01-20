@@ -521,7 +521,8 @@ proc create_primary_buff
            cld
            rep stosd
 
-           stdcall GetPgAddr, [ctrl.buffer]
+           mov eax, [ctrl.buffer]
+           call GetPgAddr
 
            mov ebx, 0xC0002000
            mov ecx, 4
@@ -572,10 +573,11 @@ proc create_primary_buff
            add edi, 4
            loop @B
 
-           mov ecx, pcmout_bdl
-           stdcall GetPgAddr, ecx
-           and ecx, 0xFFF
-           add eax, ecx
+           mov eax, pcmout_bdl
+           mov ebx, eax
+           call GetPgAddr     ;eax
+           and ebx, 0xFFF
+           add eax, ebx
 
            mov edx, PCM_OUT_BDL
            call [ctrl.ctrl_write32]
@@ -1351,7 +1353,7 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
 
         dd 0    ;terminator
 
-version      dd 0x00020002
+version      dd 0x00030003
 
 msg_ICH      db 'Intel ICH',  13,10, 0
 msg_ICH0     db 'Intel ICH0', 13,10, 0

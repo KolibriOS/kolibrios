@@ -40,7 +40,7 @@ if used AllocPages
   extrn AllocPages
 end if
 if used FreePage
-  extrn zFreePage
+  extrn FreePage
 end if
 if used MapPage
   extrn MapPage

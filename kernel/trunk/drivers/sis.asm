@@ -457,7 +457,8 @@ proc create_primary_buff
            xor eax, eax
            rep stosd
 
-           stdcall GetPgAddr, [ctrl.buffer]
+           mov eax, [ctrl.buffer]
+           call GetPgAddr
 
            mov ebx, 0xC0004000
            mov ecx, 4
@@ -501,10 +502,11 @@ proc create_primary_buff
            add edi, 4
            loop @B
 
-           mov ecx, pcmout_bdl
-           stdcall GetPgAddr, ecx
-           and ecx, 0xFFF
-           add eax, ecx
+           mov eax, pcmout_bdl
+           mov ebx, eax
+           call GetPgAddr     ;eax
+           and ebx, 0xFFF
+           add eax, ebx
 
            mov edx, PCM_OUT_BDL
            call [ctrl.ctrl_write32]
@@ -1130,7 +1132,7 @@ align 4
 devices dd (CTRL_SIS  shl 16)+VID_SIS,msg_AC, set_SIS
         dd 0
 
-version      dd 0x00020002
+version      dd 0x00030003
 
 msg_AC       db '7012 AC97 controller',13,10, 0
 msg_SIS      db 'Silicon Integrated Systems',13,10, 0

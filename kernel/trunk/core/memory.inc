@@ -566,14 +566,18 @@ proc new_mem_resize stdcall, new_size:dword
            ret
 endp
 
+; param
+;  eax= linear address
+;
+; retval
+;  eax= phisical page address
+
 align 4
-proc get_pg_addr stdcall, lin_addr:dword
-           mov ebx, [lin_addr]
-           shr ebx, 12
-           mov eax, [pages_tab+ebx*4]
+get_pg_addr:
+           shr eax, 12
+           mov eax, [pages_tab+eax*4]
            and eax, 0xFFFFF000
            ret
-endp
 
 align 4
 proc page_fault_handler

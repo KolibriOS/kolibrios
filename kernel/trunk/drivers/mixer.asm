@@ -223,9 +223,8 @@ proc refill stdcall, str:dword
 .m2:
            mov esi, [ebx+STREAM.curr_seg]
            mov edi, [ebx+STREAM.work_write]
-           mov edx, [ebx+STREAM.r_buff]
 
-           stdcall [ebx+STREAM.resample], edi, esi, edx,\
+           stdcall [ebx+STREAM.resample], edi, esi, \
            [ebx+STREAM.r_dt],[ebx+STREAM.r_size],[ebx+STREAM.r_end]
 
            mov ebx, [str]
@@ -237,6 +236,13 @@ proc refill stdcall, str:dword
            add eax, [ebx+STREAM.r_size]
            cmp eax, [ebx+STREAM.lim_0]
            jb @f
+
+           mov esi, [ebx+STREAM.seg_0]
+           lea edi, [esi-128]
+           add esi, 0x7F80
+           mov ecx, 128/4
+           cld
+           rep movsd
 
            mov eax, [ebx+STREAM.seg_0]
            mov ecx, [ebx+STREAM.lim_0]
@@ -273,19 +279,19 @@ proc refill stdcall, str:dword
 endp
 
 align 4
-proc resample_1 stdcall, dest:dword,src:dword,r_buff:dword,\
+proc resample_1 stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
-	   mov edi, [r_buff]
-	   add edi, 32*2
-	   mov esi, [src]
-	   mov ecx, [r_size]
-	   shr ecx, 2
-	   rep movsd
+; dest equ esp+8
+; src  equ esp+12
+; r_dt equ esp+16
+; r_size equ esp+20
+;r_end equ esp+24
 
-	   mov edi, [dest]
-	   mov edx, [r_buff]
-	   mov eax, 16
+           mov edi, [dest]
+           mov edx, [src]
+           sub edx, 32*2
+           mov eax, 16
 
 align 16
 .l1:
@@ -318,24 +324,11 @@ align 16
 	   mov [edi], ebx
 	   add edi, 4
 
-	   add eax, [esp+20]  ;rdt
-	   cmp eax, [esp+28]  ;r_end
+    add eax, [esp+16]
+    cmp eax, [esp+24]
 	   jb .l1
 
 	   mov ebp, esp
-
-	   mov esi, [src]
-	   add esi, [r_size]
-	   sub esi, 32*2
-	   mov edx, [r_buff]
-	   mov ecx, 16
-@@:
-	   mov ebx, [esi]
-	   mov [edx], ebx
-	   add esi, 4
-	   add edx, 4
-	   dec ecx
-	   jnz @B
 
 	   sub edi, [dest]
 	   mov eax, edi
@@ -343,18 +336,14 @@ align 16
 endp
 
 align 4
-proc resample_18 stdcall, dest:dword,src:dword,r_buff:dword,\
+proc resample_18 stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
-	   mov edi, [r_buff]
-	   add edi, 32
-	   mov esi, [src]
-	   mov ecx, [r_size]
-	   shr ecx, 2
-	   rep movsd
 
 	   mov edi, [dest]
-	   mov edx, [r_buff]
+           mov edx, [src]
+           sub edx, 32
+
 	   mov esi, 16
 
 align 16
@@ -393,32 +382,18 @@ align 16
 	   mov [edi], ebx
 	   add edi, 4
 
-	   add esi, [esp+20]  ;rdt
-	   cmp esi, [esp+28]  ;r_end
+    add esi, [esp+16]
+    cmp esi, [esp+24]
 	   jb .l1
 
 	   mov ebp, esp
-
-	   mov esi, [src]
-	   add esi, [r_size]
-	   sub esi, 32
-	   mov edx, [r_buff]
-	   mov ecx, 8
-@@:
-	   mov ebx, [esi]
-	   mov [edx], ebx
-	   add esi, 4
-	   add edx, 4
-	   dec ecx
-	   jnz @B
-
 	   sub edi, [dest]
 	   mov eax, edi
 	   ret
 endp
 
 align 4
-proc copy_stream stdcall, dest:dword,src:dword,r_buff:dword,\
+proc copy_stream stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
            mov ecx, [r_size]
@@ -432,93 +407,68 @@ proc copy_stream stdcall, dest:dword,src:dword,r_buff:dword,\
 endp
 
 align 4
-proc resample_2 stdcall, dest:dword,src:dword,r_buff:dword,\
+proc resample_2 stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
-	   mov edi, [r_buff]
-	   add edi, 32*4
-	   mov esi, [src]
-	   mov ecx, [r_size]
-	   shr ecx, 2
-	   rep movsd	  ;call memcpy
-
-	   mov edx, [r_buff]
-	   mov edi, [dest]
-	   mov ebx, [r_dt]
-	   mov eax, 16
-	   emms
+           mov edx, [src]
+           sub edx, 32*4
+           mov edi, [dest]
+           mov ebx, [r_dt]
+           mov eax, 16
+           emms
 
 align 16
 .l1:
-	   mov ecx, eax
-	   mov esi, eax
-	   and ecx, 0x7FFF
-	   shr esi, 15
-	   lea esi, [edx+esi*4]
+           mov ecx, eax
+           mov esi, eax
+           and ecx, 0x7FFF
+           shr esi, 15
+           lea esi, [edx+esi*4]
 
-	   movq mm0, [esi]
-	   movq mm1, mm0
+           movq mm0, [esi]
+           movq mm1, mm0
 
-	   movd mm2, ecx
-	   punpcklwd mm2, mm2
-	   movq mm3, qword [m7] ;                  // 0x8000
+           movd mm2, ecx
+           punpcklwd mm2, mm2
+           movq mm3, qword [m7]    ;0x8000
 
-	   psubw mm3, mm2	;         // 0x8000 - iconst
-	   punpckldq mm3, mm2
+           psubw mm3, mm2 ;        ;0x8000 - iconst
+           punpckldq mm3, mm2
 
-	   pmulhw mm0, mm3
-	   pmullw mm1, mm3
+           pmulhw mm0, mm3
+           pmullw mm1, mm3
 
-	   movq mm4, mm1
-	   punpcklwd mm1, mm0
-	   punpckhwd mm4, mm0
-	   paddd mm1, mm4
-	   psrad  mm1, 15
-	   packssdw mm1, mm1
-	   movd [edi], mm1
-	   add edi, 4
+           movq mm4, mm1
+           punpcklwd mm1, mm0
+           punpckhwd mm4, mm0
+           paddd mm1, mm4
+           psrad  mm1, 15
+           packssdw mm1, mm1
+           movd [edi], mm1
+           add edi, 4
 
-	   add eax, ebx
-	   cmp eax, [r_end]
-	   jb .l1
-	   emms
+           add eax, ebx
+           cmp eax, [r_end]
+           jb .l1
+           emms
 
-	   mov esi, [src]
-	   add esi, [r_size]
-	   sub esi, 32*4
-	   mov edx, [r_buff]
-	   mov ecx, 32
-@@:
-	   mov ebx, [esi]
-	   mov [edx], ebx
-	   add esi, 4
-	   add edx, 4
-	   dec ecx
-	   jnz @B
-
-	   sub edi, [dest]
-	   mov eax, edi
-	   ret
+           sub edi, [dest]
+           mov eax, edi
+           ret
 endp
 
 align 4
-proc resample_28 stdcall, dest:dword,src:dword,r_buff:dword,\
+proc resample_28 stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
-	   mov edi, [r_buff]
-	   add edi, 32*2
-	   mov esi, [src]
-	   mov ecx, [r_size]
-	   shr ecx, 2
-	   rep movsd	  ;call memcpy
-
-	   mov edx, [r_buff]
-	   mov edi, [dest]
-	   mov ebx, [r_dt]
-	   mov eax, 16
-	   emms
-	   movq mm7,[mm80]
-	   movq mm6,[mm_mask]
+           mov edx, [src]
+           sub edx, 32*2
+           mov edi, [dest]
+           mov ebx, [r_dt]
+           mov eax, 16
+           emms
+           movq mm7,[mm80]
+           movq mm6,[mm_mask]
 
 align 16
 .l1:
@@ -559,18 +509,6 @@ align 16
 	   jb .l1
 	   emms
 
-	   mov esi, [src]
-	   add esi, [r_size]
-	   sub esi, 32*2
-	   mov edx, [r_buff]
-	   mov ecx, 16
-@@:
-	   mov ebx, [esi]
-	   mov [edx], ebx
-	   add esi, 4
-	   add edx, 4
-	   dec ecx
-	   jnz @B
 
 	   sub edi, [dest]
 	   mov eax, edi
@@ -578,7 +516,7 @@ align 16
 endp
 
 
-proc m16_stereo stdcall, dest:dword,src:dword,r_buff:dword,\
+proc m16_stereo stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
 	   mov esi, [src]
@@ -607,7 +545,7 @@ proc m16_stereo stdcall, dest:dword,src:dword,r_buff:dword,\
 endp
 
 align 4
-proc s8_stereo stdcall, dest:dword,src:dword,r_buff:dword,\
+proc s8_stereo stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
            mov esi, [src]
@@ -638,7 +576,7 @@ proc s8_stereo stdcall, dest:dword,src:dword,r_buff:dword,\
            ret
 endp
 
-proc m8_stereo stdcall, dest:dword,src:dword,r_buff:dword,\
+proc m8_stereo stdcall, dest:dword,src:dword,\
 		       r_dt:dword, r_size:dword,r_end:dword
 
            mov esi, [src]

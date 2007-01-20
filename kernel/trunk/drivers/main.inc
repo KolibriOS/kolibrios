@@ -91,7 +91,6 @@ struc STREAM
     .work_write    dd 0
     .work_count    dd 0
     .work_top      dd 0
-    .r_buff        dd 0
     .r_size        dd 0
     .r_end         dd 0
     .r_dt          dd 0
@@ -112,7 +111,7 @@ struc STREAM
     .resample      dd 0
 }
 
-STREAM_SIZE    equ 27*4
+STREAM_SIZE    equ 26*4
 
 virtual at 0
  STREAM STREAM

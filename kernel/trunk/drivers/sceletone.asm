@@ -143,7 +143,7 @@ align 4
 devices dd (DEVICE_ID shl 16)+VENDOR_ID
         dd 0    ;terminator
 
-version      dd 0x00020002
+version      dd 0x00030003
 
 my_service   db 'MY_SERVICE',0  ;max 16 chars include zero
 

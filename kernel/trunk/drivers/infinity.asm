@@ -190,22 +190,22 @@ proc CreateBuffer stdcall, format:dword
            mov [edi+STREAM.magic], 'WAVE'
            mov [edi+STREAM.size], STREAM_SIZE
 
-           stdcall KernelAlloc, 180*1024
+           stdcall KernelAlloc, 172*1024
 
            mov edi, [str]
            mov [edi+STREAM.base], eax
+           add eax, 0x1000
            mov [edi+STREAM.seg_0], eax
            mov [edi+STREAM.curr_seg], eax
            mov [edi+STREAM.notify_off1], eax
-           add eax, 0x7FFF
+           add eax, 0x8000
            mov [edi+STREAM.lim_0], eax
-           inc eax
+           add eax, 0x1000
            mov [edi+STREAM.seg_1], eax
            mov [edi+STREAM.notify_off2], eax
-           add eax, 0x7FFF
+           add eax, 0x8000
            mov [edi+STREAM.limit], eax
            mov [edi+STREAM.lim_1], eax
-           inc eax
 
            mov [edi+STREAM.work_buff], eax
            mov [edi+STREAM.work_read], eax
@@ -213,8 +213,6 @@ proc CreateBuffer stdcall, format:dword
            mov [edi+STREAM.work_count], 0
            add eax, 0x10000
            mov [edi+STREAM.work_top], eax
-           add eax, 1024*32
-           mov [edi+STREAM.r_buff], eax
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
@@ -245,8 +243,18 @@ proc CreateBuffer stdcall, format:dword
            mov ebx, [resampler_params+eax+12]
            mov [edi+STREAM.resample], ebx
 
+           mov edx, [edi+STREAM.base]
+           lea eax, [edx+0x9000]
+           call GetPgAddr  ;eax
+           call FreePage   ;eax
+
+           mov eax, edx
+           lea ebx, [edx+0x9000]
+           call GetPgAddr  ;eax
+           stdcall MapPage, ebx, eax, dword 3
+
            mov edi, [edi+STREAM.base]
-           mov ecx, 180*1024/4
+           mov ecx, (168*1024)/4
            xor eax, eax
            rep stosd
 
@@ -338,52 +346,56 @@ align 4
 proc play_buffer stdcall, str:dword
 
            mov ebx, [str]
-
            cmp [ebx+STREAM.magic], 'WAVE'
            jne .fail
 
            cmp [ebx+STREAM.size], STREAM_SIZE
            jne .fail
 
-           mov [ebx+STREAM.flags], SND_PLAY
-
-           mov eax,[ebx+STREAM.work_buff]
-           mov [ebx+STREAM.work_read], eax
-           mov [ebx+STREAM.work_write], eax
+           mov edi,[ebx+STREAM.work_buff]
+           mov [ebx+STREAM.work_read], edi
+           mov [ebx+STREAM.work_write], edi
            mov [ebx+STREAM.work_count], 0
 
-           mov eax, [ebx+STREAM.seg_0]
-           mov [ebx+STREAM.curr_seg], eax
+           mov edx, [ebx+STREAM.base]
+           add edx, 0x1000
+           mov [ebx+STREAM.seg_0], edx
+           mov [ebx+STREAM.curr_seg], edx
+           add edx, 0x8000
+           mov [ebx+STREAM.lim_0], edx
+           add edx, 0x1000
+           mov [ebx+STREAM.seg_1], edx
+           add edx, 0x8000
+           mov [ebx+STREAM.lim_1], edx
 
-           mov esi, [ebx+STREAM.curr_seg]
-           mov edi, [ebx+STREAM.work_write]
-           mov edx, [ebx+STREAM.r_buff]
-
-           mov ecx, 32
+           mov edx, [ebx+STREAM.seg_0]
+           mov ecx, -128
            mov eax, [ebx+STREAM.r_silence]
 @@:
-           mov [edx], eax
-           add edx, 4
-           dec ecx
+           mov [edx+ecx], eax
+           add ecx, 4
            jnz @B
 
-           mov edx, [ebx+STREAM.r_buff]
-
-           stdcall [ebx+STREAM.resample], edi, esi, edx,\
+           stdcall [ebx+STREAM.resample], edi, edx,\
            [ebx+STREAM.r_dt],[ebx+STREAM.r_size],[ebx+STREAM.r_end]
 
            mov ebx, [str]
 
-           add [ebx+STREAM.work_count], eax;
-           add [ebx+STREAM.work_write], eax;
+           add [ebx+STREAM.work_count], eax
+           add [ebx+STREAM.work_write], eax
 
-           mov eax, [ebx+STREAM.r_size]
-           add [ebx+STREAM.curr_seg], eax
+           mov edx, [ebx+STREAM.r_size]
+           add [ebx+STREAM.curr_seg], edx
 
-;       if DEBUG
-;	   mov esi, msgPlay
-;	   call   [SysMsgBoardStr]
-;       end if
+           mov [ebx+STREAM.flags], SND_PLAY
+
+           mov eax, [ebx+STREAM.r_silence]
+           mov edi, [ebx+STREAM.work_write]
+           mov ecx, [ebx+STREAM.work_top]
+           sub ecx, edi
+           shr ecx, 2
+           cld
+           rep stosd
 
            stdcall  dev_play, [hSound]
            xor eax, eax
@@ -437,27 +449,35 @@ proc set_buffer stdcall, str:dword,src:dword,offs:dword,size:dword
            cmp esi, new_app_base
            jb .fail
 
-           mov ecx, [size]
-           test ecx, ecx
-           jz .fail
+           mov edi, [offs]
+           mov ecx, 0x8000
 
-           mov eax, [edx+STREAM.base]
-           add eax, [offs]
+           sub ecx, edi
+           jbe .seg_1
 
-           cmp eax, [edx+STREAM.base]
+           sub [size], ecx
            jb .fail
 
-           mov edi, eax
-           add eax, ecx
-           sub eax, 1
-
-           cmp eax, [edx+STREAM.limit]
-           ja .fail
-
+           add edi, [edx+STREAM.base]
+           add edi, 0x1000
            shr ecx, 2
            cld
            rep movsd
+           jmp @F
+.seg_1:
+           add edi, [edx+STREAM.base]
+           add edi, 0x1000
+@@:
+           add edi, 0x1000
+           mov ecx, [size]
+           test ecx, ecx
+           jz .done
+           cmp ecx, 0x8000
+           ja .fail
 
+           shr ecx, 2
+           rep movsd
+.done:
            xor eax, eax
            inc eax
            ret
@@ -504,33 +524,6 @@ proc free_stream
            xor eax, eax
            ret
 endp
-
-if 0
-align 4
-proc check_stream
-
-           xor edx, edx
-           mov ecx, [play_count]
-.l1:
-           mov esi, [play_list+edx]
-
-           mov eax, [esi+STR.curr_seg]
-           cmp eax, [esi+STR.lim_0]
-           jb .next
-
-           mov eax, [esi+STREAM.seg_0]
-           mov ecx, [esi+STREAM.lim_0]
-           xchg eax, [ebx+STREAM.seg_1]
-           xchg ecx, [ebx+STREAM.lim_1]
-           mov [esi+STREAM.seg_0], eax
-           mov [esi+STREAM.lim_0], ecx
-           mov [esi+STR.curr_seg], eax
-.next:
-           add edx, 4
-           loop .l1
-           ret
-endp
-end if
 
 align 4
 proc prepare_playlist
@@ -723,7 +716,7 @@ mm80          dq 0x8080808080808080
 mm_mask       dq 0xFF00FF00FF00FF00
 
 stream_map    dd 0xFFFF       ; 16
-version       dd 0x00020002
+version       dd 0x00030003
 
 szInfinity    db 'INFINITY',0
 szSound       db 'SOUND',0
