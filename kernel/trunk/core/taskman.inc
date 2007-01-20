@@ -169,7 +169,7 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            mov   [ebx+APPDATA.mem_size],eax
 
 if not GREEDY_KERNEL
-           mov ecx, [app_i_end]
+           mov ecx, [app_mem]
            mov edi, [file_size]
            add edi, 4095
            and edi, not 4095

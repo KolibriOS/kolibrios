@@ -1,8 +1,8 @@
 
 DRV_ENTRY    equ  1
 DRV_EXIT     equ -1
-DRV_COMPAT   equ  2  ;minimal required drivers version
-DRV_CURRENT  equ  2  ;current drivers model version
+DRV_COMPAT   equ  3  ;minimal required drivers version
+DRV_CURRENT  equ  3  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 
