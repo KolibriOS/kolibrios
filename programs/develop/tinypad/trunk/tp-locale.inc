@@ -14,7 +14,14 @@ menubar_res main_menu,\
   en,'Search'  ,mm.Search  ,onshow.search ,\
   en,'Run'     ,mm.Run	   ,onshow.run	  ,\
   en,'Encoding',mm.Encoding,onshow.recode ,\
-  en,'Options' ,mm.Options ,onshow.options
+  en,'Options' ,mm.Options ,onshow.options,\
+\
+  et,'Fail'	,mm.File    ,onshow.file   ,\
+  et,'Muuda'    ,mm.Edit    ,onshow.edit   ,\
+  et,'Otsi'	,mm.Search  ,onshow.search ,\
+  et,'K‰ivita'	,mm.Run	    ,onshow.run	   ,\
+  et,'Kodeering',mm.Encoding,onshow.recode ,\
+  et,'Seaded'	,mm.Options ,onshow.options
 
 popup_res mm.File,\
   ru,'çÆ¢Î©'	       ,'Ctrl+N'      ,New   ,\
@@ -33,7 +40,16 @@ popup_res mm.File,\
   en,'-'	 ,''		,      ,\
   en,'Close'	 ,'Ctrl+F4'	,Close ,\
   en,'-'	 ,''		,      ,\
-  en,'Exit'	 ,'Alt+X'	,Exit
+  en,'Exit'	 ,'Alt+X'	,Exit,\
+\
+  et,'Uus'	         ,'Ctrl+N'	,New   ,\
+  et,'Ava...'	         ,'Ctrl+O'	,Open  ,\
+  et,'Salvesta'	         ,'Ctrl+S'	,Save  ,\
+  et,'Salvesta nimega...','Ctrl+Shift+S',SaveAs,\
+  et,'-'	         ,''		,      ,\
+  et,'Sulge'	         ,'Ctrl+F4'	,Close ,\
+  et,'-'	         ,''		,      ,\
+  et,'V‰lju'	         ,'Alt+X'	,Exit
 
 popup_res mm.Edit,\
   ru,'ÇÎ‡•ß†‚Ï'    ,'Ctrl+X',Cut   ,\
@@ -48,7 +64,14 @@ popup_res mm.Edit,\
   en,'Paste'	 ,'Ctrl+V',Insert,\
   en,'Delete'	 ,''	  ,Delete,\
   en,'-'	 ,''	  ,	 ,\
-  en,'Select all','Ctrl+A',SelAll
+  en,'Select all','Ctrl+A',SelAll,\
+\
+  et,'Lıika'	 ,'Ctrl+X',Cut	 ,\
+  et,'Kopeeri'	 ,'Ctrl+C',Copy  ,\
+  et,'Kleebi'	 ,'Ctrl+V',Insert,\
+  et,'Kustuta'	 ,''	  ,Delete,\
+  et,'-'	 ,''	  ,	 ,\
+  et,'Vali kıik' ,'Ctrl+A',SelAll
 
 popup_res mm.Search,\
   ru,'è•‡•©‚®...' ,'Ctrl+G',Position,\
@@ -61,7 +84,13 @@ popup_res mm.Search,\
   en,'-'	  ,''	   ,	    ,\
   en,'Find...'	  ,'Ctrl+F',Find    ,\
   en,'Find next'  ,'F3'    ,FindNext,\
-  en,'Replace...' ,'Ctrl+H',Replace
+  en,'Replace...' ,'Ctrl+H',Replace ,\
+\
+  et,'Positsioon...','Ctrl+G',Position,\
+  et,'-'	    ,''	     ,	      ,\
+  et,'Leia...'	    ,'Ctrl+F',Find    ,\
+  et,'Leia j‰rgmine','F3'    ,FindNext,\
+  et,'Asenda...'    ,'Ctrl+H',Replace
 
 popup_res mm.Run,\
   ru,'á†Ø„·‚®‚Ï'	,'F9'	  ,Run	   ,\
@@ -74,7 +103,13 @@ popup_res mm.Run,\
   en,'Compile'		,'Ctrl+F9',Compile ,\
   en,'-'		,''	  ,	   ,\
   en,'Debug board'	,''	  ,DbgBoard,\
-  en,'System functions' ,''	  ,SysFuncs
+  en,'System functions' ,''	  ,SysFuncs,\
+\
+  et,'K‰ivita'		,'F9'	  ,Run	   ,\
+  et,'Kompileeri'	,'Ctrl+F9',Compile ,\
+  et,'-'		,''	  ,	   ,\
+  et,'Debug board'	,''	  ,DbgBoard,\
+  et,'S¸steemi funktsioonid' ,''	  ,SysFuncs
 
 popup_res mm.Encoding,\
   @!,<'CP866  ',0x1A,' CP1251'>,'',CP866.CP1251,\
@@ -105,48 +140,69 @@ popup_res mm.Options,\
   en,'Smart tabulation'      ,'',SmartTabs   ,\
   en,'Optimal fill on saving','',OptimalFill ,\
   en,'-'		     ,'',	     ,\
-  en,'Line numbers'	     ,'',LineNumbers
+  en,'Line numbers'	     ,'',LineNumbers ,\
+\
+  et,'V‰limus...'	     ,'',Appearance  ,\
+  et,'-'		     ,'',	     ,\
+  et,'Secure selection'      ,'',SecureSel   ,\
+  et,'Automatic brackets'    ,'',AutoBrackets,\
+  et,'Automatic indents'     ,'',AutoIndents ,\
+  et,'Tark tabulatsioon'      ,'',SmartTabs   ,\
+  et,'Optimal fill on saving','',OptimalFill ,\
+  et,'-'		     ,'',	     ,\
+  et,'Rea numbrid'	     ,'',LineNumbers
 
 lsz s_modified,\
   ru,'àß¨•≠•≠Æ',\
-  en,'Modified'
+  en,'Modified',\
+  et,'Muudetud'
 
 lsz s_2filename,\
   ru,'à¨Ô ‰†©´†:',\
-  en,'Filename:'
+  en,'Filename:',\
+  et,'Faili nimi:'
 lsz s_2open,\
   ru,'é‚™‡Î‚Ï',\
-  en,'Open'
+  en,'Open',\
+  et,'Ava'
 lsz s_2save,\
   ru,'ëÆÂ‡†≠®‚Ï',\
-  en,'Save'
+  en,'Save',\
+  et,'Salvesta'
 lsz s_2find,\
   ru,'ç†©‚®',\
-  en,'Find'
+  en,'Find',\
+  et,'Leia'
 db ':'
 lsz s_2replace,\
   ru,'á†¨•≠®‚Ï',\
-  en,'Replace'
+  en,'Replace',\
+  et,'Asenda'
 db ':'
 lsz s_2cancel,\
   ru,'é‚¨•≠†',\
-  en,'Cancel'
+  en,'Cancel',\
+  et,'T¸hista'
 
 lsz s_enter_filename,\
   ru,<'Ç¢•§®‚• ®¨Ô ‰†©´†',0>,\
-  en,<'Enter filename',0>
+  en,<'Enter filename',0>,\
+  et,<'Sisesta failinimi',0>
 
 lsz s_enter_text_to_find,\
   ru,<'Ç¢•§®‚• ‚•™·‚ §´Ô ØÆ®·™†',0>,\
-  en,<'Enter text to find',0>
+  en,<'Enter text to find',0>,\
+  et,<'Sisesta otsitav tekst',0>
 
 lsz s_enter_text_to_replace,\
   ru,<'Ç¢•§®‚• ‚•™·‚ §´Ô ß†¨•≠Î',0>,\
-  en,<'Enter text to replace',0>
+  en,<'Enter text to replace',0>,\
+  et,<'Sisesta asendatav tekst',0>
 
 lsz s_text_not_found,\
   ru,<'ÑÆ·‚®£≠„‚ ™Æ≠•Ê ‰†©´†, ‚•™·‚ ≠• ≠†©§•≠',0>,\
-  en,<'Reached end of file, text not found',0>
+  en,<'Reached end of file, text not found',0>,\
+  et,<'Faili lıpp, teksti ei leitud',0>
 
 lszc s_fs_error,b,\
   ru,<'éØ•‡†Ê®Ô ß†¢•‡Ë•≠† „·Ø•Ë≠Æ (0)',0>,\
@@ -173,11 +229,26 @@ lszc s_fs_error,b,\
   en,<'Disk is full (8)',0>,\
   en,<'FAT table is destroyed (9)',0>,\
   en,<'Access denied (10)',0>,\
-  en,<'Device error (11)',0>
+  en,<'Device error (11)',0>,\
+\
+  et,<'Operatsioon k‰ivitati edukalt (0)',0>,\
+  et,<'',0>,\
+  et,<'Failis¸steem ei toeta funktsiooni (2)',0>,\
+  et,<'Tundmatu failis¸steem (3)',0>,\
+  et,<'',0>,\
+  et,<'Faili ei suudetud avada (5)',0>,\
+  et,<'Operatsioon k‰ivitatud edukalt (6)',0>,\
+  et,<'Viit on v‰ljaspool programmi m‰lu (7)',0>,\
+  et,<'Ketas t‰is (8)',0>,\
+  et,<'FAT tabel h‰vitatud (9)',0>,\
+  et,<'Juurdep‰‰s keelatud (10)',0>,\
+  et,<'Seadme viga (11)',0>
+
 
 lsz sysfuncs_filename,\
   ru,<'SYSFUNCR.TXT',0>,\
-  en,<'SYSFUNCS.TXT',0>
+  en,<'SYSFUNCS.TXT',0>,\
+  et,<'SYSFUNCET.TXT',0>
 
 sz s_example,'EXAMPLE.ASM'
 sz s_still  ,'still'

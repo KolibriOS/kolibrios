@@ -1,5 +1,8 @@
 
-sz s_defname,'Untitled',0
+lsz s_defname,\
+  en,<'Untitled',0>,\
+  ru,<'Untitled',0>,\
+  et,<'Nimetu',0>
 
 ;-----------------------------------------------------------------------------
 func flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
