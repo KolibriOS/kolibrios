@@ -1,2 +1,2 @@
-@fasm editbox.asm checkbox
+@fasm editbox.asm editbox
 @pause

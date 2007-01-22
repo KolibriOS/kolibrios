@@ -1,4 +1,5 @@
-; <Lrz> 19.01.2007 реализовал выделение текста по shift
+; <Lrz> 22.01.2007 избавился от глюков при работе с выделением и удаление, корректная работа клавишей del & backspase
+; <Lrz> 20.01.2007 реализовал выделение текста по shift
 ; <Lrz> 12.12.2006 реализовал поддержку кнопки insert и сегодя компонент почти работает!!!!
 ; <Lrz> 07.12.2006 продолжается работа над переработкой компонента,изменениям подверглись многие функции, переработан вывод текста, а така же алгоритм внесения символов.
 ; <Lrz> 03.09.2006 по возможности отказался от 16 битной арифметики, добавил новые баги
@@ -144,12 +145,12 @@ ret
 	shl	ecx,16
 	mov	cx,13
 ;	sub	ecx,1
-	mov	edx,[esp+4]	;color
+;	pop	edx	;color
 ;	mov	edx,ed_color
 	mov	eax,13
 	int	0x40
 ;popa
-ret 4
+ret
 
 	jmp	@f
 .draw_bg:
@@ -298,7 +299,7 @@ ret
 	shl	ebx,16
 	mov	bx,ed_width
 	dec 	ebx
-	push	dword ed_color
+	mov	edx,ed_color
 	call    .draw_bg_eax
 	mov	dword [esp+28],0
 @@:	popad
@@ -356,7 +357,10 @@ pusha
 	cmp	ah,'9'
 	ja	.no_figure
 @@:        ; проверяем, находится ли курсор в конце
+	mov	ecx,ed_size
 	mov	edx, ed_max
+	cmp	ecx,edx
+	jae	.no_figure
 	mov	ebx, ed_pos
 	cmp	ebx,edx
 	jl	@f ; если меньше или равно
@@ -408,24 +412,24 @@ pusha
 	; увеличиваем значение размера и позиции
 	inc	 dword ed_size
 
-	push	dword	ed_pos
-	push	dword	ed_size
+	;push	dword	ed_pos
+	;push	dword	ed_size
 ;	push	.return
 	call	.draw_all2
 	inc	 dword ed_pos
 ;.return: 
-	jmp    .draw_cursor_text
+	jmp    .shift;.draw_cursor_text
 .delete:	
-
 	mov	edx,ed_size
 	mov	ecx,ed_pos
-
 	cmp	edx,ecx
 	jg	@f
+	test	word ed_flags,ed_shift_on
+	jne	.del_bac
 	popa
 	ret
-	
-@@:	call 	.del_char
+.bac_del:	
+@@:     call 	.del_char
 	jmp 	.draw_all
         
 ;--- нажата клавиша backspace ---
@@ -435,21 +439,35 @@ pusha
 	mov	ecx,ed_pos
 	test	ecx,ecx
 	jnz	@f
+        test	word ed_flags,ed_shift_on
+        jne	.bac_del
+	
+	;jmp	@b
+
 	popa
 	ret
-
+.del_bac:
 @@:	cmp	edx,ecx	;if ed_pos=ed_size
 	je	@f
 	dec	ecx
 	call 	.del_char
-@@:
+@@:     test	word ed_flags,ed_shift_on
+        jne	.bac_del
 	dec	 dword ed_pos
 
 .draw_all:
-	push	dword	ed_pos
-	push	dword	ed_size
-	push	.draw_cursor_text;eax
-	dec	 dword ed_size
+	push	.shift;.draw_cursor_text;eax
+
+        test	word ed_flags,ed_shift_on
+        je	@f
+        mov	eax,ed_shift_pos
+        mov	ebx,ed_size
+	sub	ebx,eax
+	mov	ed_size,ebx
+	jmp	.draw_all2
+
+@@:	dec	 dword ed_size
+
 .draw_all2:
 	call	.clear_cursor
 	call	.check_offset
@@ -457,16 +475,16 @@ pusha
 	push	eax
 	mov	ebx,ed_offset
 	add	eax,ebx	;eax = w_off= ed_offset+width
-	mov	ebx,[esp+8]	;ed_size
+	mov	ebx,ed_size
 	
 	cmp	eax,ebx
 	jb	@f
-	mov	eax,[esp+12]	;	ed_pos
+	mov	eax,ed_pos
 	sub	ebx,eax
 	mov	ecx,ed_offset
 	sub	eax,ecx
 	jmp	.nxt
-@@:	mov	ebx,[esp+12];ed_pos
+@@:	mov	ebx,ed_pos
 	push	ebx
 	sub	eax,ebx
 	mov	ebx,eax	;It is don't optimal
@@ -492,44 +510,28 @@ pusha
 	lea	ecx,[edx*2+edx]
 	shl	ecx,1	
 	mov	bx,cx
-	push	dword ed_color
+	mov	edx,ed_color
 	call	.draw_bg_eax
-	ret     8
+	ret
+;	jmp	.shift
 ;--- нажата клавиша left ---
-.left:  test    word ed_flags,ed_shift
-	je	@f
-	test	word ed_flags,ed_shift_on
-	jne	@f
-       	push	dword ed_pos
-	pop	dword ed_shift_pos
-	or	word ed_flags,ed_shift_on
-@@:     mov	ebx,ed_pos
+.left:  call	.sh_enable
+	mov	ebx,ed_pos
 	test	ebx,ebx
 	jz	.nd_k
 	call	.clear_cursor
 	dec	 dword ed_pos
 	jmp	.nd_k
 ;--- нажата клавиша right ---
-.right:
-	test    word ed_flags,ed_shift
-	je	@f
-	test	word ed_flags,ed_shift_on
-	jne	@f
-       	push	dword ed_pos
-	pop	dword ed_shift_pos
-	or	word ed_flags,ed_shift_on
-@@:	mov	ebx,ed_pos
+.right: call	.sh_enable
+	mov	ebx,ed_pos
 	cmp	ebx,ed_size
 	je	.nd_k
 	call	.clear_cursor
 	inc	dword  ed_pos
 	jmp	.nd_k
-.home:
-;	test    word ed_flags,ed_shift
-;	je	@f
- ;      	push	dword ed_pos
-;	pop	dword ed_shift_pos
-@@:	mov	ebx,ed_pos
+.home:  call	.sh_enable
+	mov	ebx,ed_pos
 	test	ebx,ebx
 	jz	.nd_k
 	call	.clear_cursor
@@ -537,12 +539,8 @@ pusha
 	mov	ed_pos,eax
 	jmp	.nd_k
 
-.end:
-;	test    word ed_flags,ed_shift
-;	je	@f
- ;      	push	dword ed_pos
-;	pop	dword ed_shift_pos
-@@:	mov	ebx,ed_pos
+.end:   call	.sh_enable
+	mov	ebx,ed_pos
 	cmp	ebx,dword ed_size
 	je	@f
 	call	.clear_cursor
@@ -554,27 +552,6 @@ pusha
 	call	.draw_cursor
 
 .shift: ;;;;;;;SHIFT
-	;-----------  отладка
-	pushad
-	mov	[data_of_code],0
-	mov ax,word ed_flags
-	mov edi,data_of_code
-	call .str
-	;рисование фона
-	mov eax,13
-	mov ebx,178*65536+36
-	mov ecx,28*65536+10
-	xor edx,edx
-	int 0x40
-	;вывод значения на экран
-	mov eax,4
-	mov ebx,180*65536+30
-	mov ecx,0x10DDBBCC
-	mov edx,data_of_code
-	mov esi,4
-	int 0x40
-	popad
-	;----------- отладка
 		
     	call	.draw_bg
 	test      word ed_flags,ed_shift
@@ -628,14 +605,7 @@ pusha
 	sub	ebx,ecx
 	sub	ebx,eax
 .nxt_f:
-;	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
-;	add	ebp,ebx
-;	pop	edx
-;	cmp	ebp,edx
-;	je	.ff
-;	inc	ebx
-
-.ff:     mov	edx,ebx
+	mov	edx,ebx
 	lea	ebx,[eax*2+eax]
 	shl	ebx,1
 	add	ebx,ed_left
@@ -644,38 +614,93 @@ pusha
 	lea	ecx,[edx*2+edx]
 	shl	ecx,1	
 	mov	bx,cx
-;	mov	ebp,ed_color
-;	not	ebp
-	push	dword shift_color
+	mov	edx,shift_color
 	call	.draw_bg_eax
-;	pop	edx
-;	or	word ed_flags,ed_shift
 	and    word ed_flags,1111111111111011b
         jmp	.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;
 
 .f_exit:	and    word ed_flags,ed_shift_cl
         jmp	.draw_cursor_text
-@@:
-popa
-ret
+
+.sh_enable:
+	test    word ed_flags,ed_shift
+	je	@f
+	test	word ed_flags,ed_shift_on
+	jne	@f
+       	push	dword ed_pos
+	pop	dword ed_shift_pos
+	or	word ed_flags,ed_shift_on
+@@:	ret
+
         ;- удаление символа
+	;Входные данные edx=ed_size;ecx=ed_pos
 .del_char:
 	mov     esi,ed_text
+
+
+        test	word ed_flags,ed_shift_on
+        je	@f
+	mov	eax,dword ed_shift_pos
+	mov	ebx,esi
+        cmp	eax,ecx
+	jae	.dh_n
+
+	mov	ed_pos,eax	;что бы не было убегания курсора
+	mov	ebp,ecx
+	sub	ebp,eax
+	add	ebx,eax  ;eax меньше 
+	sub	edx,ecx
 	add	esi,ecx
 
+
+	mov	ed_shift_pos,ebp
+        jmp	.del_ch_sh
+	             ;если иначе
+.dh_n: 	
+	mov	ebp,eax
+	sub	ebp,ecx
+	add	ebx,ecx
+	sub	edx,eax
+	add	esi,eax
+	mov	ed_shift_pos,ebp
+	jmp	.del_ch_sh
+
+@@:	add	esi,ecx ;указатель + смещение к реальному буфферу
 	mov	ebx,esi
 	inc 	esi
 	cld
 
 	sub	edx,ecx
-	mov	ecx,edx
+.del_ch_sh:
+	;-----------  отладка
+	pushad
+	mov	[data_of_code],0
+	mov eax,ed_pos;word ed_flags
+	mov edi,data_of_code
+	call .str
+	;рисование фона
+	mov eax,13
+	mov ebx,178*65536+36
+	mov ecx,28*65536+10
+	xor edx,edx
+	int 0x40
+	;вывод значения на экран
+	mov eax,4
+	mov ebx,180*65536+30
+	mov ecx,0x10DDBBCC
+	mov edx,data_of_code
+	mov esi,4
+	int 0x40
+	popad
+	;----------- отладка
+
 	push 	edi
 	mov 	edi,ebx
 @@:
 	lodsb
 	stosb
-	dec ecx
+	dec edx
 	jns @b
 	
 	pop edi
