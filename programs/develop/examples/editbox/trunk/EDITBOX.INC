@@ -469,6 +469,7 @@ pusha
 @@:	dec	 dword ed_size
 
 .draw_all2:
+	and    word ed_flags,ed_shift_cl
 	call	.clear_cursor
 	call	.check_offset
 	call	.get_n
@@ -817,7 +818,7 @@ ed_figure_only=1000000000000000b
 ed_focus=10b
 ed_shift_on=1000b
 ed_shift=100b
-ed_shift_cl=0011b
+ed_shift_cl=1111111111110011b
 macro draw_edit_boxes start,end
 {
 	mov	edi,start
