@@ -183,7 +183,7 @@ proc update_stream
 @@:
            mov [ev_code], 0xFF000001
            mov [ev_offs], ecx
-           mov eax, [ebx+STREAM.notify_task]
+           mov eax, [ebx+STREAM.pid]
 
            lea edx, [ev_code]
            push ebx
@@ -193,7 +193,7 @@ proc update_stream
            jnz .l_end
 
            not eax
-           mov [ebx+STREAM.notify_task], eax      ;-1
+           mov [ebx+STREAM.pid], eax      ;-1
 .l_end:
            inc [stream_index]
            dec [play_count]
@@ -264,7 +264,7 @@ proc refill stdcall, str:dword
 @@:
            mov [ev_code], 0xFF000001
            mov [ev_offs], ecx
-           mov eax, [ebx+STREAM.notify_task]
+           mov eax, [ebx+STREAM.pid]
 
            lea edx, [ev_code]
            push ebx
@@ -273,14 +273,14 @@ proc refill stdcall, str:dword
            test eax, eax
            jnz @F
            not eax
-           mov [ebx+STREAM.notify_task], eax      ;-1
+           mov [ebx+STREAM.pid], eax      ;-1
 @@:
-	   ret
+           ret
 endp
 
 align 4
 proc resample_1 stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
 ; dest equ esp+8
 ; src  equ esp+12
@@ -295,106 +295,106 @@ proc resample_1 stdcall, dest:dword,src:dword,\
 
 align 16
 .l1:
-	   mov ecx, eax
-	   mov esi, eax
-	   and ecx, 0x7FFF
-	   shr esi, 15
-	   lea esi, [edx+esi*2]
+           mov ecx, eax
+           mov esi, eax
+           and ecx, 0x7FFF
+           shr esi, 15
+           lea esi, [edx+esi*2]
 
-	   movsx ebp, word [esi]
-	   movsx esi, word [esi+2]
-	   mov ebx, 32768
-	   imul esi, ecx
-	   sub ebx, ecx
-	   imul ebx, ebp
-	   lea ecx, [ebx+esi+16384]
-	   sar ecx, 15
-	   cmp ecx, 32767	  ; 00007fffH
-	   jle @f
-	   mov ecx, 32767	  ; 00007fffH
-	   jmp .write
+           movsx ebp, word [esi]
+           movsx esi, word [esi+2]
+           mov ebx, 32768
+           imul esi, ecx
+           sub ebx, ecx
+           imul ebx, ebp
+           lea ecx, [ebx+esi+16384]
+           sar ecx, 15
+           cmp ecx, 32767         ; 00007fffH
+           jle @f
+           mov ecx, 32767         ; 00007fffH
+           jmp .write
 @@:
-	   cmp ecx, -32768	  ; ffff8000H
-	   jge .write
-	   mov ecx, -32768	  ; ffff8000H
+           cmp ecx, -32768        ; ffff8000H
+           jge .write
+           mov ecx, -32768        ; ffff8000H
 .write:
-	   mov ebx, ecx
-	   shl ebx, 16
-	   mov bx, cx
-	   mov [edi], ebx
-	   add edi, 4
+           mov ebx, ecx
+           shl ebx, 16
+           mov bx, cx
+           mov [edi], ebx
+           add edi, 4
 
     add eax, [esp+16]
     cmp eax, [esp+24]
-	   jb .l1
+           jb .l1
 
-	   mov ebp, esp
+           mov ebp, esp
 
-	   sub edi, [dest]
-	   mov eax, edi
-	   ret
+           sub edi, [dest]
+           mov eax, edi
+           ret
 endp
 
 align 4
 proc resample_18 stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
 
-	   mov edi, [dest]
+           mov edi, [dest]
            mov edx, [src]
            sub edx, 32
 
-	   mov esi, 16
+           mov esi, 16
 
 align 16
 .l1:
-	   mov ecx, esi
-	   mov eax, esi
-	   and ecx, 0x7FFF
-	   shr eax, 15
-	   lea eax, [edx+eax]
+           mov ecx, esi
+           mov eax, esi
+           and ecx, 0x7FFF
+           shr eax, 15
+           lea eax, [edx+eax]
 
-	   mov bx, word [eax]
-	   sub bh, 0x80
-	   sub bl, 0x80
-	   movsx eax, bh
-	   shl eax,8
-	   movsx ebp, bl
-	   shl ebp,8
-	   mov ebx, 32768
-	   imul eax, ecx
-	   sub ebx, ecx
-	   imul ebx, ebp
-	   lea ecx, [ebx+eax+16384]
-	   sar ecx, 15
-	   cmp ecx, 32767	  ; 00007fffH
-	   jle @f
-	   mov ecx, 32767	  ; 00007fffH
-	   jmp .write
+           mov bx, word [eax]
+           sub bh, 0x80
+           sub bl, 0x80
+           movsx eax, bh
+           shl eax,8
+           movsx ebp, bl
+           shl ebp,8
+           mov ebx, 32768
+           imul eax, ecx
+           sub ebx, ecx
+           imul ebx, ebp
+           lea ecx, [ebx+eax+16384]
+           sar ecx, 15
+           cmp ecx, 32767         ; 00007fffH
+           jle @f
+           mov ecx, 32767         ; 00007fffH
+           jmp .write
 @@:
-	   cmp ecx, -32768	  ; ffff8000H
-	   jge .write
-	   mov ecx, -32768	  ; ffff8000H
+           cmp ecx, -32768        ; ffff8000H
+           jge .write
+           mov ecx, -32768        ; ffff8000H
 .write:
-	   mov ebx, ecx
-	   shl ebx, 16
-	   mov bx, cx
-	   mov [edi], ebx
-	   add edi, 4
+           mov ebx, ecx
+           shl ebx, 16
+           mov bx, cx
+           mov [edi], ebx
+           add edi, 4
 
     add esi, [esp+16]
     cmp esi, [esp+24]
-	   jb .l1
+           jb .l1
 
-	   mov ebp, esp
-	   sub edi, [dest]
-	   mov eax, edi
-	   ret
+           mov ebp, esp
+           sub edi, [dest]
+           mov eax, edi
+           ret
 endp
 
 align 4
 proc copy_stream stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
            mov ecx, [r_size]
            mov eax, ecx
@@ -408,7 +408,7 @@ endp
 
 align 4
 proc resample_2 stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
            mov edx, [src]
            sub edx, 32*4
@@ -459,7 +459,7 @@ endp
 
 align 4
 proc resample_28 stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
            mov edx, [src]
            sub edx, 32*2
@@ -472,81 +472,81 @@ proc resample_28 stdcall, dest:dword,src:dword,\
 
 align 16
 .l1:
-	   mov ecx, eax
-	   mov esi, eax
-	   and ecx, 0x7FFF
-	   shr esi, 15
-	   lea esi, [edx+esi*2]
+           mov ecx, eax
+           mov esi, eax
+           and ecx, 0x7FFF
+           shr esi, 15
+           lea esi, [edx+esi*2]
 
-	   movq mm0, [esi]
-	   psubb mm0,mm7
-	   punpcklbw mm0,mm0
-	   pand mm0,mm6
+           movq mm0, [esi]
+           psubb mm0,mm7
+           punpcklbw mm0,mm0
+           pand mm0,mm6
 
-	   movq mm1, mm0
+           movq mm1, mm0
 
-	   movd mm2, ecx
-	   punpcklwd mm2, mm2
-	   movq mm3, qword [m7] ;                  // 0x8000
+           movd mm2, ecx
+           punpcklwd mm2, mm2
+           movq mm3, qword [m7] ;                  // 0x8000
 
-	   psubw mm3, mm2	;         // 0x8000 - iconst
-	   punpckldq mm3, mm2
+           psubw mm3, mm2       ;         // 0x8000 - iconst
+           punpckldq mm3, mm2
 
-	   pmulhw mm0, mm3
-	   pmullw mm1, mm3
+           pmulhw mm0, mm3
+           pmullw mm1, mm3
 
-	   movq mm4, mm1
-	   punpcklwd mm1, mm0
-	   punpckhwd mm4, mm0
-	   paddd mm1, mm4
-	   psrad  mm1, 15
-	   packssdw mm1, mm1
-	   movd [edi], mm1
-	   add edi, 4
+           movq mm4, mm1
+           punpcklwd mm1, mm0
+           punpckhwd mm4, mm0
+           paddd mm1, mm4
+           psrad  mm1, 15
+           packssdw mm1, mm1
+           movd [edi], mm1
+           add edi, 4
 
-	   add eax, ebx
-	   cmp eax, [r_end]
-	   jb .l1
-	   emms
+           add eax, ebx
+           cmp eax, [r_end]
+           jb .l1
+           emms
 
 
-	   sub edi, [dest]
-	   mov eax, edi
-	   ret
+           sub edi, [dest]
+           mov eax, edi
+           ret
 endp
 
 
 proc m16_stereo stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
-	   mov esi, [src]
-	   mov edi, [dest]
-	   mov ecx, [r_size]
-	   shr ecx,8
+           mov esi, [src]
+           mov edi, [dest]
+           mov ecx, [r_size]
+           shr ecx,8
 @@:
-	   call m16_s_mmx
-	   add edi, 128
-	   add esi, 64
-	   call m16_s_mmx
-	   add edi, 128
-	   add esi, 64
-	   call m16_s_mmx
-	   add edi, 128
-	   add esi, 64
-	   call m16_s_mmx
-	   add edi, 128
-	   add esi, 64
-	   dec ecx
-	   jnz @b
+           call m16_s_mmx
+           add edi, 128
+           add esi, 64
+           call m16_s_mmx
+           add edi, 128
+           add esi, 64
+           call m16_s_mmx
+           add edi, 128
+           add esi, 64
+           call m16_s_mmx
+           add edi, 128
+           add esi, 64
+           dec ecx
+           jnz @b
 
-	   mov eax, [r_size]
-	   add eax, eax
-	   ret
+           mov eax, [r_size]
+           add eax, eax
+           ret
 endp
 
 align 4
 proc s8_stereo stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
            mov esi, [src]
            mov edi, [dest]
@@ -577,7 +577,7 @@ proc s8_stereo stdcall, dest:dword,src:dword,\
 endp
 
 proc m8_stereo stdcall, dest:dword,src:dword,\
-		       r_dt:dword, r_size:dword,r_end:dword
+                       r_dt:dword, r_size:dword,r_end:dword
 
            mov esi, [src]
            mov edi, [dest]
@@ -624,64 +624,64 @@ endp
 
 proc m16_s_mmx
 
-	   movq    mm0, [esi]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi], mm0
-	   movq    [edi+8], mm1
+           movq    mm0, [esi]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi], mm0
+           movq    [edi+8], mm1
 
-	   movq    mm0, [esi+8]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+16], mm0
-	   movq    [edi+24], mm1
+           movq    mm0, [esi+8]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+16], mm0
+           movq    [edi+24], mm1
 
-	   movq    mm0, [esi+16]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+32], mm0
-	   movq    [edi+40], mm1
+           movq    mm0, [esi+16]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+32], mm0
+           movq    [edi+40], mm1
 
-	   movq    mm0, [esi+24]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+48], mm0
-	   movq    [edi+56], mm1
+           movq    mm0, [esi+24]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+48], mm0
+           movq    [edi+56], mm1
 
-	   movq    mm0, [esi+32]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+64], mm0
-	   movq    [edi+72], mm1
+           movq    mm0, [esi+32]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+64], mm0
+           movq    [edi+72], mm1
 
-	   movq    mm0, [esi+40]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+80], mm0
-	   movq    [edi+88], mm1
+           movq    mm0, [esi+40]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+80], mm0
+           movq    [edi+88], mm1
 
 
-	   movq    mm0, [esi+48]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+96], mm0
-	   movq    [edi+104], mm1
+           movq    mm0, [esi+48]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+96], mm0
+           movq    [edi+104], mm1
 
-	   movq    mm0, [esi+56]
-	   movq    mm1, mm0
-	   punpcklwd mm0, mm0
-	   punpckhwd mm1, mm1
-	   movq    [edi+112], mm0
-	   movq    [edi+120], mm1
+           movq    mm0, [esi+56]
+           movq    mm1, mm0
+           punpcklwd mm0, mm0
+           punpckhwd mm1, mm1
+           movq    [edi+112], mm0
+           movq    [edi+120], mm1
 
-	   ret
+           ret
 endp
 
 align 4
@@ -784,18 +784,22 @@ proc mix_2_1 stdcall, output:dword, str0:dword, str1:dword
            mov edi, [output]
 
            stdcall mix_2_1_mmx, edi, [str0],[str1]
+;           stdcall mix_2_1_sse, edi, [str0],[str1]
            add edi, 128
            add [str0], 128
            add [str1], 128
            stdcall mix_2_1_mmx, edi, [str0],[str1]
+;           stdcall mix_2_1_sse, edi, [str0],[str1]
            add edi, 128
            add [str0], 128
            add [str1], 128
            stdcall mix_2_1_mmx, edi, [str0],[str1]
+;           stdcall mix_2_1_sse, edi, [str0],[str1]
            add edi, 128
            add [str0], 128
            add [str1], 128
            stdcall mix_2_1_mmx, edi, [str0],[str1]
+;           stdcall mix_2_1_sse, edi, [str0],[str1]
 
            ret
 endp
@@ -804,95 +808,95 @@ endp
 align 4
 proc mix_3_1 stdcall, output:dword, str0:dword, str1:dword, str2:dword
 
-	   mov edi, [output]
+           mov edi, [output]
 
-	   stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
+           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
 
-	   ret
+           ret
 endp
 
 align 4
 proc mix_4_1 stdcall, str0:dword, str1:dword,\
-		      str2:dword, str3:dword
+                      str2:dword, str3:dword
 
-	   local output:DWORD
+           local output:DWORD
 
-	   call alloc_mix_buff
-	   and eax, eax
-	   jz .err
-	   mov [output], eax
+           call alloc_mix_buff
+           and eax, eax
+           jz .err
+           mov [output], eax
 
-	   mov edi, eax
+           mov edi, eax
 
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   add [str3], 128
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   add [str3], 128
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   add [str3], 128
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   mov eax, [output]
-	   ret
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           add [str3], 128
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           add [str3], 128
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           add [str3], 128
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           mov eax, [output]
+           ret
 .err:
-	   xor eax, eax
-	   ret
+           xor eax, eax
+           ret
 endp
 
 
 align 4
 proc final_mix stdcall, output:dword, str0:dword, str1:dword,\
-			str2:dword, str3:dword
+                        str2:dword, str3:dword
 
-	   mov edi, [output]
+           mov edi, [output]
 
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   add [str3], 128
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   add [str3], 128
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-	   add edi, 128
-	   add [str0], 128
-	   add [str1], 128
-	   add [str2], 128
-	   add [str3], 128
-	   stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           add [str3], 128
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           add [str3], 128
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, 128
+           add [str0], 128
+           add [str1], 128
+           add [str2], 128
+           add [str3], 128
+           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
 
-	   ret
+           ret
 endp
 
 align 4
@@ -904,86 +908,72 @@ proc mix_2_1_mmx stdcall, output:dword, str0:dword, str1:dword
 
            movq mm0, [eax]
            paddsw mm0, [ecx]
-           ; psraw   mm0, 1
            movq [edx], mm0
 
            movq mm1, [eax+8]
            paddsw mm1,[ecx+8]
-           ; psraw   mm1, 1
            movq [edx+8], mm1
 
            movq mm2, [eax+16]
            paddsw mm2, [ecx+16]
-           ; psraw   mm2, 1
            movq [edx+16], mm2
 
            movq mm3, [eax+24]
            paddsw mm3, [ecx+24]
-           ; psraw   mm3, 1
            movq [edx+24], mm3
 
            movq mm0, [eax+32]
            paddsw mm0, [ecx+32]
-           ; psraw   mm0, 1
            movq [edx+32], mm0
 
            movq mm1, [eax+40]
            paddsw mm1, [ecx+40]
-           ; psraw   mm1, 1
            movq [edx+40], mm1
 
            movq mm2, [eax+48]
            paddsw mm2, [ecx+48]
-           ; psraw   mm2, 1
            movq [edx+48], mm2
 
            movq mm3, [eax+56]
            paddsw mm3, [ecx+56]
-           ; psraw   mm3, 1
            movq [edx+56], mm3
 
            movq mm0, [eax+64]
            paddsw mm0, [ecx+64]
-           ; psraw   mm0, 1
            movq [edx+64], mm0
 
            movq mm1, [eax+72]
            paddsw mm1, [ecx+72]
-           ; psraw   mm1, 1
            movq [edx+72], mm1
 
            movq mm2, [eax+80]
            paddsw mm2, [ecx+80]
-           ; psraw   mm2, 1
            movq [edx+80], mm2
 
            movq mm3, [eax+88]
            paddsw mm3, [ecx+88]
-           ; psraw   mm3, 1
            movq [edx+88], mm3
 
            movq mm0, [eax+96]
            paddsw mm0, [ecx+96]
-           ; psraw   mm0, 1
            movq [edx+96], mm0
 
            movq mm1, [eax+104]
            paddsw mm1, [ecx+104]
-           ; psraw   mm1, 1
            movq [edx+104], mm1
 
            movq mm2, [eax+112]
            paddsw mm2, [ecx+112]
-           ; psraw   mm2, 1
            movq [edx+112], mm2
 
            movq mm3, [eax+120]
            paddsw mm3, [ecx+120]
-           ; psraw   mm3, 1
            movq [edx+120], mm3
 
            ret
 endp
+
+
 
 align 4
 proc mix_3_1_mmx stdcall, output:dword, str0:dword, str1:dword, str2:dword
@@ -1204,29 +1194,28 @@ endp
 align 4
 proc copy_mem stdcall, output:dword, input:dword
 
-	   mov edi, [output]
-	   mov esi, [input]
-	   mov ecx, 0x80
+           mov edi, [output]
+           mov esi, [input]
+           mov ecx, 0x80
 .l1:
-	   mov eax, [esi]
-	   mov [edi], eax
-	   add esi, 4
-	   add edi, 4
-	   loop .l1
+           mov eax, [esi]
+           mov [edi], eax
+           add esi, 4
+           add edi, 4
+           loop .l1
 
-	   ret
+           ret
 endp
 
 proc memcpy
 @@:
-	   mov eax, [esi]
-	   mov [edi], eax
-	   add esi, 4
-	   add edi, 4
-	   dec ecx
-	   jnz @B
-	   ret
+           mov eax, [esi]
+           mov [edi], eax
+           add esi, 4
+           add edi, 4
+           dec ecx
+           jnz @B
+           ret
 endp
-
 
 

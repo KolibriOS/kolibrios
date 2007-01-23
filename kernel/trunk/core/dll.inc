@@ -987,8 +987,8 @@ proc stop_all_services
 endp
 
 ; param
-;  eax= pid
-;  ebx= size
+;  eax= size
+;  ebx= pid
 
 align 4
 create_kernel_object:

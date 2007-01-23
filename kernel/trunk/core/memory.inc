@@ -254,10 +254,11 @@ proc free_page
 ;arg:  eax  page address
            pushfd
            cli
-           inc [pg_data.pages_free]
            shr eax, 12              ;page index
            mov ebx, sys_pgmap
            bts [ebx], eax           ;that's all!
+           cmc
+           adc [pg_data.pages_free], 0 
            shr eax, 3
            and eax, not 3           ;dword offset from page_map
            add eax, ebx
@@ -288,7 +289,8 @@ commit_pages:   ;not implemented
 
 align 4
 release_pages:
-
+    
+           push ebp
            mov ebx, pg_data.pg_mutex
            call wait_mutex      ;ebx
 
@@ -297,7 +299,8 @@ release_pages:
 
            shr esi, 10
            add esi, pages_tab
-
+           
+           mov ebp, [pg_data.pages_free] 
            mov ebx, [page_start]
            mov edx, sys_pgmap
 @@:
@@ -310,7 +313,8 @@ release_pages:
 
            shr eax, 12
            bts [edx], eax
-           inc [pg_data.pages_free]
+           cmc
+           adc ebp, 0 
            shr eax, 3
            and eax, -4
            add eax, edx
@@ -323,8 +327,9 @@ release_pages:
            add esi, 4
            dec ecx
            jnz @B
-
+           mov [pg_data.pages_free], ebp  
            and [pg_data.pg_mutex],0
+           pop ebp
            ret
 
 align 4

@@ -80,38 +80,47 @@ SND_STOP       equ   2
 
 
 struc STREAM
-{   .magic         dd 0
-    .size          dd 0
-    .device        dd 0
-    .format        dd 0
-    .flags         dd 0
+{
+    .magic         dd ?   ;'WAVE'
+    .destroy       dd ?   ;internal destructor
+    .fd            dd ?   ;next object in list
+    .bk            dd ?   ;prev object in list
+    .pid           dd ?   ;owner id
 
-    .work_buff     dd 0
-    .work_read     dd 0
-    .work_write    dd 0
-    .work_count    dd 0
-    .work_top      dd 0
-    .r_size        dd 0
-    .r_end         dd 0
-    .r_dt          dd 0
-    .r_silence     dd 0
+    .size          dd ?
+    .str_fd        dd ?
+    .str_bk        dd ?
+    .device        dd ?
+    .format        dd ?
+    .flags         dd ?
 
-    .base          dd 0
-    .limit         dd 0
-    .seg_0         dd 0
-    .lim_0         dd 0
-    .seg_1         dd 0
-    .lim_1         dd 0
-    .curr_seg      dd 0
+    .work_buff     dd ?
+    .work_read     dd ?
+    .work_write    dd ?
+    .work_count    dd ?
+    .work_top      dd ?
+    .r_size        dd ?
+    .r_end         dd ?
+    .r_dt          dd ?
+    .r_silence     dd ?
 
-    .buff_size     dd 0
-    .notify_off1   dd 0
-    .notify_off2   dd 0
-    .notify_task   dd 0
-    .resample      dd 0
+    .base          dd ?
+    .limit         dd ?
+    .seg_0         dd ?
+    .lim_0         dd ?
+    .seg_1         dd ?
+    .lim_1         dd ?
+    .curr_seg      dd ?
+
+    .buff_size     dd ?
+    .notify_off1   dd ?
+    .notify_off2   dd ?
+;    .notify_task   dd ?
+    .resample      dd ?
 }
 
-STREAM_SIZE    equ 26*4
+STREAM_SIZE    equ 31*4
+FD_OFFSET      equ 24
 
 virtual at 0
  STREAM STREAM
