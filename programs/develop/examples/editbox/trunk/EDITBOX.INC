@@ -1,3 +1,4 @@
+; <Lrz> 23.01.2007 пофиксел баги вызваные не правильным кодом )).
 ; <Lrz> 22.01.2007 избавился от глюков при работе с выделением и удаление, корректная работа клавишей del & backspase
 ; <Lrz> 20.01.2007 реализовал выделение текста по shift
 ; <Lrz> 12.12.2006 реализовал поддержку кнопки insert и сегодя компонент почти работает!!!!
@@ -62,10 +63,11 @@ ed_pos	equ [edi+42]                    ;позиция курсора
 ed_offset	equ [edi+46]            ;смещение
 cl_curs_x	equ [edi+50]		;предыдущее координата курсора по х
 cl_curs_y	equ [edi+54]		;предыдущее координата курсора по у
-ed_insert	equ [edi+58]		;word 
-ed_shift_pos	equ [edi+60]
+ed_shift_pos	equ [edi+58]
 ed_height=14 ; высота
 shift_color=0x6a9480
+ed_insert=10000b
+ed_insert_cl=1111111111101111b
 ;==========================================================
 ;=== процедура прорисовки =================================
 ;==========================================================
@@ -89,24 +91,24 @@ pusha
 popa
 ret
 
-.str:
-	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-	 ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-	jb @f
-	xor edx,edx  ;очистить edx
-	div ecx      ;разделить - остаток в edx
-	push edx     ;положить в стек
-	;dec edi	     ;смещение необходимое для записи с конца строки
- 	call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-	pop eax
-	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-	;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
-	;das	    ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
-	or al,0x30  ;данная команда короче  чем две выше 
-	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
-
-	ret	    ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
+;.str:
+;	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
+;	 ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
+;	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
+;	jb @f
+;	xor edx,edx  ;очистить edx
+;	div ecx      ;разделить - остаток в edx
+;	push edx     ;положить в стек
+;	;dec edi	     ;смещение необходимое для записи с конца строки
+ ;	call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+;	pop eax
+;	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
+;	;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
+;	;das	    ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
+;	or al,0x30  ;данная команда короче  чем две выше 
+;	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
+ ;
+;	ret	    ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 ;----------------------------------------------------------
 ;--- процедура прорисовки текста --------------------------
@@ -137,6 +139,7 @@ ret
 ;--- процедура прорисовки фона ----------------------------
 ;входные данные
 ;eax
+;edx - color
 ;----------------------------------------------------------
 .draw_bg_eax:
 ;pusha
@@ -144,9 +147,6 @@ ret
 	add	ecx,1
 	shl	ecx,16
 	mov	cx,13
-;	sub	ecx,1
-;	pop	edx	;color
-;	mov	edx,ed_color
 	mov	eax,13
 	int	0x40
 ;popa
@@ -311,13 +311,34 @@ ret
 pusha
 	test	word ed_flags,ed_focus ; если не в фокусе, выходим
 	je     .no_figure ;@f
+;	;-----------  отладка
+;	pushad
+;	mov	[data_of_code],0
+;	mov eax,edi;word ed_flags
+;	mov edi,data_of_code
+;	call .str
+;	;рисование фона
+;	mov eax,13
+;	mov ebx,178*65536+36
+;	mov ecx,28*65536+10
+;	xor edx,edx
+;	int 0x40
+;	;вывод значения на экран
+;	mov eax,4
+;	mov ebx,180*65536+30
+;	mov ecx,0x10DDBBCC
+;	mov edx,data_of_code
+;	mov esi,4
+;	int 0x40
+;	popad
+;	;----------- отладка
 
+	xor	ecx,ecx
 	push	eax	
-	mov	ecx,1
+	inc	ecx
 	mov	eax,66
 	mov	ebx,3
 	int	0x40
-	xor	ebx,ebx
 	test	al,0x03
 	je	@f
         or      word ed_flags,ed_shift
@@ -356,8 +377,25 @@ pusha
 	jb	.no_figure
 	cmp	ah,'9'
 	ja	.no_figure
-@@:        ; проверяем, находится ли курсор в конце
-	mov	ecx,ed_size
+
+
+;проверка на shift
+	test	word ed_flags,ed_shift_on
+	je	@f
+	;Входные данные edx=ed_size;ecx=ed_pos
+	push	eax
+	mov	edx,ed_size
+	mov	ecx,ed_pos
+        call	.del_char
+;;;;
+        mov	eax,ed_shift_pos
+        mov	ebx,ed_size
+	sub	ebx,eax
+	mov	ed_size,ebx
+	pop	eax
+
+        ; проверяем, находится ли курсор в конце
+@@:	mov	ecx,ed_size
 	mov	edx, ed_max
 	cmp	ecx,edx
 	jae	.no_figure
@@ -367,10 +405,14 @@ pusha
 .no_figure:
 	popa
 	ret
-.insert: not 	word ed_insert
-
+.insert: test	word ed_flags,ed_insert	;not 	word ed_insert
+         je     .insert_1
+         and	word ed_flags,ed_insert_cl
+	jmp	.no_figure
+.insert_1:
+	or	word ed_flags,ed_insert
         jmp	.no_figure
-.ins_v: 
+.ins_v:
 	pop	eax edi
 	dec	dword ed_size    ;processing is insert
 	push	edi eax
@@ -381,17 +423,17 @@ pusha
 @@:     ; сдвигаем символы после курсора вправо
 	mov	ecx,ed_size
 	push	edi eax
+	mov	ebp,edi
 	mov	esi,ed_text     ; Указатель на буфер
-	
-	movzx	eax,word ed_insert
 				;Будем работать со строкой
 	add	esi,ecx		;add ed_size добавим max size
 	mov	edi,esi
 
        	cmp 	ecx,ebx         ;Если у нас позиция курсора = текущему размеру напечатанных символов т.е. курсор стоит в конце
 	je	.In_k
-	cmp	ax,-1 ;IF insert is enable
-	je	.ins_v
+
+	test	word [ebp+36],ed_insert ;IF insert is enable  т.к. edi изменен адресуем через ebp
+	jne	.ins_v
 
 	sub	ecx,ebx         ;Найдем кол-во символов для передвижения.
 	inc	edi		;Сместим наши символы в право
@@ -411,25 +453,20 @@ pusha
 ; вставляем код клавиши туда, где курсор
 	; увеличиваем значение размера и позиции
 	inc	 dword ed_size
-
-	;push	dword	ed_pos
-	;push	dword	ed_size
-;	push	.return
 	call	.draw_all2
 	inc	 dword ed_pos
-;.return: 
 	jmp    .shift;.draw_cursor_text
 .delete:	
 	mov	edx,ed_size
 	mov	ecx,ed_pos
 	cmp	edx,ecx
-	jg	@f
+	jg	.bac_del
 	test	word ed_flags,ed_shift_on
 	jne	.del_bac
 	popa
 	ret
 .bac_del:	
-@@:     call 	.del_char
+	call 	.del_char
 	jmp 	.draw_all
         
 ;--- нажата клавиша backspace ---
@@ -438,7 +475,7 @@ pusha
 	mov	edx,ed_size
 	mov	ecx,ed_pos
 	test	ecx,ecx
-	jnz	@f
+	jnz	.del_bac
         test	word ed_flags,ed_shift_on
         jne	.bac_del
 	
@@ -447,7 +484,7 @@ pusha
 	popa
 	ret
 .del_bac:
-@@:	cmp	edx,ecx	;if ed_pos=ed_size
+	cmp	edx,ecx	;if ed_pos=ed_size
 	je	@f
 	dec	ecx
 	call 	.del_char
@@ -543,7 +580,7 @@ pusha
 .end:   call	.sh_enable
 	mov	ebx,ed_pos
 	cmp	ebx,dword ed_size
-	je	@f
+	je	.nd_k
 	call	.clear_cursor
 	mov	eax,ed_size
 	mov	ed_pos,eax
@@ -624,15 +661,19 @@ pusha
 .f_exit:	and    word ed_flags,ed_shift_cl
         jmp	.draw_cursor_text
 
+;проверка состояния shift был ли он нажат раньше?
 .sh_enable:
 	test    word ed_flags,ed_shift
 	je	@f
 	test	word ed_flags,ed_shift_on
-	jne	@f
+	jne	.sh_ext_en
        	push	dword ed_pos
 	pop	dword ed_shift_pos
 	or	word ed_flags,ed_shift_on
-@@:	ret
+	ret
+
+@@:     and	word ed_flags,ed_shift_cl
+.sh_ext_en:	ret
 
         ;- удаление символа
 	;Входные данные edx=ed_size;ecx=ed_pos
@@ -674,27 +715,6 @@ pusha
 
 	sub	edx,ecx
 .del_ch_sh:
-	;-----------  отладка
-	pushad
-	mov	[data_of_code],0
-	mov eax,ed_pos;word ed_flags
-	mov edi,data_of_code
-	call .str
-	;рисование фона
-	mov eax,13
-	mov ebx,178*65536+36
-	mov ecx,28*65536+10
-	xor edx,edx
-	int 0x40
-	;вывод значения на экран
-	mov eax,4
-	mov ebx,180*65536+30
-	mov ecx,0x10DDBBCC
-	mov edx,data_of_code
-	mov esi,4
-	int 0x40
-	popad
-	;----------- отладка
 
 	push 	edi
 	mov 	edi,ebx
@@ -770,8 +790,13 @@ pusha
 	mov	ed_pos,ax
 	call	.check_offset
 	call	.draw_cursor
-	call	.focus
-
+;----------------------------------------------------------
+;--- процедура установки фокуса ---------------------------
+;----------------------------------------------------------
+	bts	word ed_flags,1
+	jc	.mouse_pressed
+	call	.draw_cursor
+	call	.draw_border
 .mouse_pressed:
 popa
 ret
@@ -779,22 +804,12 @@ ret
 ;        call    .blur
 ;popa
 ;ret
-;----------------------------------------------------------
-;--- процедура установки фокуса ---------------------------
-;----------------------------------------------------------
-.blur:
-pusha
+;.blur:
+;pusha
 ._blur:
-	btr	dword ed_flags,1
-	jnc	@f
+	btr	word ed_flags,1 ; если не в фокусе, выходим
+	jnc     @f
 	call	.clear_cursor
-	jmp	.blur_end
-.focus:
-pusha
-	bts	dword ed_flags,1
-	jc	@f
-	call	.draw_cursor
-.blur_end:
 	call	.draw_border
 @@:
 popa
@@ -848,7 +863,7 @@ macro key_edit_boxes start,end
 	add	edi,ed_struc_size
 	loop	@b
 }
-ed_struc_size=64
+ed_struc_size=62
 struc  edit_box width,left,top,color,focus_border_color,\
        blur_border_color,text_color,max,text,flags,size
 {
@@ -867,7 +882,6 @@ struc  edit_box width,left,top,color,focus_border_color,\
 .offset dd 0
 .cl_curs_x dd 0
 .cl_curs_y dd 0
-.insert	   dw 0
 .shift	   dd 0
 }
 

@@ -2,7 +2,7 @@
 ;Эффективное программирование в KOLIBRI
 ;Оптимизированный компонент EditBox (Исходный вариант от Maxxxx32)
 ;Оптимизация команд.
-;<Lrz>  - Теплов Алексей  www.test-kolibri.narod.ru
+;<Lrz>  - Теплов Алексей  www.lrz.land.ru
 
 ;заголовок приложения
 use32		; транслятор, использующий 32 разрядных команды
@@ -28,20 +28,6 @@ start:				;Точка входа в программу
 	mov	eax,40		;установить маску для ожидаемых событий
 	mov 	ebx,0x27        ;система будет реагировать только на сообщение о перерисовке,нажата кнопка, определённая ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) и нажатие клавиши
         int	0x40
-
-;	mov  eax,66    ; keyboard mode definitions
-;	mov  ebx,1     ; set
-;	xor	ecx,ecx
-;	inc  ecx      ; return scancodes
-;	int  0x40
-
-;	mov  eax,26    ; get setup for keyboard
-;	inc	ebx
-;	mov  ebx,2
-;	mov  ecx,1     ; base keymap
-;	mov  edx,keymap
-;	int  0x40
-
 red_win:
     call draw_window  		;первоначально необходимо нарисовать окно
 still:				;основной обработчик 
@@ -101,22 +87,21 @@ draw_window:		;рисование окна приложения
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные 
 editboxes:
-edit1 edit_box 168,10,50,0xffffff,0,0,0,100,ed_buffer.1,ed_focus
+edit1 edit_box 168,10,50,0xffffff,0,0,0,512,ed_buffer.1,ed_focus
 edit2 edit_box 168,10,30,0xffffff,0,0,0,99,ed_buffer.2,ed_figure_only
 edit3 edit_box 35,10,70,0xffffff,0,0,0,9,ed_buffer.3,ed_figure_only
 edit4 edit_box 16,10,90,0xffffff,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
 data_of_code dd 0
-data_of_code1 dd 0
 ed_buffer:
-.1: rb 101;512;256
+.1: rb 513;256
 .2: rb 100
 .3: rb 10
 .4: rb 2
 ;text_b: db 'Кол-во символов'
 ;buffer: dd 0
 buffer_end:
-hed db   'EDITBOX optimization and retype <Lrz> date 22.01.2007'
+hed db   'EDITBOX optimization and retype <Lrz> date 24.01.2007'
 i_end1:
 rb 2048
 i_end:
