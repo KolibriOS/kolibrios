@@ -90,7 +90,7 @@ proc new_mix stdcall, output:dword
 .m3:
            add [output],512
 
-           sub [main_count], 1
+           dec [main_count]
            jnz .l00
 
            call update_stream
@@ -324,8 +324,8 @@ align 16
            mov [edi], ebx
            add edi, 4
 
-    add eax, [esp+16]
-    cmp eax, [esp+24]
+           add eax, [esp+16]
+           cmp eax, [esp+24]
            jb .l1
 
            mov ebp, esp
@@ -382,8 +382,8 @@ align 16
            mov [edi], ebx
            add edi, 4
 
-    add esi, [esp+16]
-    cmp esi, [esp+24]
+           add esi, [esp+16]
+           cmp esi, [esp+24]
            jb .l1
 
            mov ebp, esp
@@ -622,6 +622,7 @@ proc alloc_mix_buff
            ret
 endp
 
+align 4
 proc m16_s_mmx
 
            movq    mm0, [esi]
@@ -777,56 +778,59 @@ proc m8_s_mmx
            ret
 endp
 
-
 align 4
 proc mix_2_1 stdcall, output:dword, str0:dword, str1:dword
 
            mov edi, [output]
+           mov eax, [str0]
+           mov ebx, [str1]
+           mov esi, 128
+           call [mix_2_core]   ;edi, eax, ebx
 
-           stdcall mix_2_1_mmx, edi, [str0],[str1]
-;           stdcall mix_2_1_sse, edi, [str0],[str1]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           stdcall mix_2_1_mmx, edi, [str0],[str1]
-;           stdcall mix_2_1_sse, edi, [str0],[str1]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           stdcall mix_2_1_mmx, edi, [str0],[str1]
-;           stdcall mix_2_1_sse, edi, [str0],[str1]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           stdcall mix_2_1_mmx, edi, [str0],[str1]
-;           stdcall mix_2_1_sse, edi, [str0],[str1]
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           call [mix_2_core]   ;edi, eax, ebx
 
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           call [mix_2_core]   ;edi, eax, ebx
+
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           call [mix_2_core]   ;edi, eax, ebx
            ret
 endp
-
 
 align 4
 proc mix_3_1 stdcall, output:dword, str0:dword, str1:dword, str2:dword
 
            mov edi, [output]
+           mov eax, [str0]
+           mov ebx, [str1]
+           mov ecx, [str2]
+           mov esi, 128
+           call [mix_3_core]
 
-           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           stdcall mix_3_1_mmx, edi, [str0],[str1],[str2]
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           call [mix_3_core]
 
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           call [mix_3_core]
+
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           call [mix_3_core]
            ret
 endp
 
@@ -839,29 +843,35 @@ proc mix_4_1 stdcall, str0:dword, str1:dword,\
            call alloc_mix_buff
            and eax, eax
            jz .err
-           mov [output], eax
 
            mov edi, eax
+           mov eax, [str0]
+           mov ebx, [str1]
+           mov ecx, [str2]
+           mov edx, [str3]
+           mov esi, 128
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
 
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           add [str3], 128
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           add [str3], 128
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           add [str3], 128
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           add edx, esi
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
+
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           add edx, esi
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
+
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           add edx, esi
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
            mov eax, [output]
            ret
 .err:
@@ -876,318 +886,33 @@ proc final_mix stdcall, output:dword, str0:dword, str1:dword,\
 
            mov edi, [output]
 
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           add [str3], 128
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           add [str3], 128
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-           add edi, 128
-           add [str0], 128
-           add [str1], 128
-           add [str2], 128
-           add [str3], 128
-           stdcall mix_4_1_mmx, edi, [str0],[str1],[str2],[str3]
-
-           ret
-endp
-
-align 4
-proc mix_2_1_mmx stdcall, output:dword, str0:dword, str1:dword
-
-           mov edx, [output]
-           mov eax, [str0]
-           mov ecx, [str1]
-
-           movq mm0, [eax]
-           paddsw mm0, [ecx]
-           movq [edx], mm0
-
-           movq mm1, [eax+8]
-           paddsw mm1,[ecx+8]
-           movq [edx+8], mm1
-
-           movq mm2, [eax+16]
-           paddsw mm2, [ecx+16]
-           movq [edx+16], mm2
-
-           movq mm3, [eax+24]
-           paddsw mm3, [ecx+24]
-           movq [edx+24], mm3
-
-           movq mm0, [eax+32]
-           paddsw mm0, [ecx+32]
-           movq [edx+32], mm0
-
-           movq mm1, [eax+40]
-           paddsw mm1, [ecx+40]
-           movq [edx+40], mm1
-
-           movq mm2, [eax+48]
-           paddsw mm2, [ecx+48]
-           movq [edx+48], mm2
-
-           movq mm3, [eax+56]
-           paddsw mm3, [ecx+56]
-           movq [edx+56], mm3
-
-           movq mm0, [eax+64]
-           paddsw mm0, [ecx+64]
-           movq [edx+64], mm0
-
-           movq mm1, [eax+72]
-           paddsw mm1, [ecx+72]
-           movq [edx+72], mm1
-
-           movq mm2, [eax+80]
-           paddsw mm2, [ecx+80]
-           movq [edx+80], mm2
-
-           movq mm3, [eax+88]
-           paddsw mm3, [ecx+88]
-           movq [edx+88], mm3
-
-           movq mm0, [eax+96]
-           paddsw mm0, [ecx+96]
-           movq [edx+96], mm0
-
-           movq mm1, [eax+104]
-           paddsw mm1, [ecx+104]
-           movq [edx+104], mm1
-
-           movq mm2, [eax+112]
-           paddsw mm2, [ecx+112]
-           movq [edx+112], mm2
-
-           movq mm3, [eax+120]
-           paddsw mm3, [ecx+120]
-           movq [edx+120], mm3
-
-           ret
-endp
-
-
-
-align 4
-proc mix_3_1_mmx stdcall, output:dword, str0:dword, str1:dword, str2:dword
-
-           mov edx, [output]
            mov eax, [str0]
            mov ebx, [str1]
            mov ecx, [str2]
+           mov edx, [str3]
+           mov esi, 128
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
 
-           movq mm0, [eax]
-           paddsw mm0, [ebx]
-           paddsw mm0, [ecx]
-           movq [edx], mm0
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           add edx, esi
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
 
-           movq mm1, [eax+8]
-           paddsw mm1,[ebx+8]
-           paddsw mm1,[ecx+8]
-           movq [edx+8], mm1
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           add edx, esi
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
 
-           movq mm2, [eax+16]
-           paddsw mm2, [ebx+16]
-           paddsw mm2, [ecx+16]
-           movq [edx+16], mm2
-
-           movq mm3, [eax+24]
-           paddsw mm3, [ebx+24]
-           paddsw mm3, [ecx+24]
-           movq [edx+24], mm3
-
-           movq mm0, [eax+32]
-           paddsw mm0, [ebx+32]
-           paddsw mm0, [ecx+32]
-           movq [edx+32], mm0
-
-           movq mm1, [eax+40]
-           paddsw mm1, [ebx+40]
-           paddsw mm1, [ecx+40]
-           movq [edx+40], mm1
-
-           movq mm2, [eax+48]
-           paddsw mm2, [ebx+48]
-           paddsw mm2, [ecx+48]
-           movq [edx+48], mm2
-
-           movq mm3, [eax+56]
-           paddsw mm3, [ebx+56]
-           paddsw mm3, [ecx+56]
-           movq [edx+56], mm3
-
-           movq mm0, [eax+64]
-           paddsw mm0, [ebx+64]
-           paddsw mm0, [ecx+64]
-           movq [edx+64], mm0
-
-           movq mm1, [eax+72]
-           paddsw mm1, [ebx+72]
-           paddsw mm1, [ecx+72]
-           movq [edx+72], mm1
-
-           movq mm2, [eax+80]
-           paddsw mm2, [ebx+80]
-           paddsw mm2, [ecx+80]
-           movq [edx+80], mm2
-
-           movq mm3, [eax+88]
-           paddsw mm3, [ebx+88]
-           paddsw mm3, [ecx+88]
-           movq [edx+88], mm3
-
-           movq mm0, [eax+96]
-           paddsw mm0, [ebx+96]
-           paddsw mm0, [ecx+96]
-           movq [edx+96], mm0
-
-           movq mm1, [eax+104]
-           paddsw mm1, [ebx+104]
-           paddsw mm1, [ecx+104]
-           movq [edx+104], mm1
-
-           movq mm2, [eax+112]
-           paddsw mm2, [ebx+112]
-           paddsw mm2, [ecx+112]
-           movq [edx+112], mm2
-
-           movq mm3, [eax+120]
-           paddsw mm3, [ebx+120]
-           paddsw mm3, [ecx+120]
-           movq [edx+120], mm3
-
-           ret
-endp
-
-align 4
-proc mix_4_1_mmx stdcall, output:dword, str0:dword, str1:dword,\
-                          str2:dword, str3:dword
-
-           mov edx, [output]
-           mov esi, [str0]
-           mov eax, [str1]
-           mov ebx, [str2]
-           mov ecx, [str3]
-
-           movq mm0, [esi]
-           movq mm1, [eax]
-           paddsw mm0, [ebx]
-           paddsw mm1, [ecx]
-           paddsw mm0, mm1
-           movq [edx], mm0
-
-           movq mm2, [esi+8]
-           movq mm3, [eax+8]
-           paddsw mm2, [ebx+8]
-           paddsw mm3, [ecx+8]
-           paddsw mm2, mm3
-           movq [edx+8], mm2
-
-           movq mm0, [esi+16]
-           movq mm1, [eax+16]
-           paddsw mm0, [ebx+16]
-           paddsw mm1, [ecx+16]
-           paddsw mm0, mm1
-           movq [edx+16], mm0
-
-           movq mm2, [esi+24]
-           movq mm3, [eax+24]
-           paddsw mm2, [ebx+24]
-           paddsw mm3, [ecx+24]
-           paddsw mm2, mm3
-           movq [edx+24], mm2
-
-           movq mm0, [esi+32]
-           movq mm1, [eax+32]
-           paddsw mm0, [ebx+32]
-           paddsw mm1, [ecx+32]
-           paddsw mm0, mm1
-           movq [edx+32], mm0
-
-           movq mm2, [esi+40]
-           movq mm3, [eax+40]
-           paddsw mm2, [ebx+40]
-           paddsw mm3, [ecx+40]
-           paddsw mm2, mm3
-           movq [edx+40], mm2
-
-           movq mm0, [esi+48]
-           movq mm1, [eax+48]
-           paddsw mm0, [ebx+48]
-           paddsw mm1, [ecx+48]
-           paddsw mm0, mm1
-           movq [edx+48], mm0
-
-           movq mm2, [esi+56]
-           movq mm3, [eax+56]
-           paddsw mm2, [ebx+56]
-           paddsw mm3, [ecx+56]
-           paddsw mm2, mm3
-           movq [edx+56], mm2
-
-           movq mm0, [esi+64]
-           movq mm1, [eax+64]
-           paddsw mm0, [ebx+64]
-           paddsw mm1, [ecx+64]
-           paddsw mm0, mm1
-           movq [edx+64], mm0
-
-           movq mm2, [esi+72]
-           movq mm3, [eax+72]
-           paddsw mm2, [ebx+72]
-           paddsw mm3, [ecx+72]
-           paddsw mm2, mm3
-           movq [edx+72], mm2
-
-           movq mm2, [esi+80]
-           movq mm3, [eax+80]
-           paddsw mm2, [ebx+80]
-           paddsw mm3, [ecx+80]
-           paddsw mm2, mm3
-           movq [edx+80], mm2
-
-           movq mm2, [esi+88]
-           movq mm3, [eax+88]
-           paddsw mm2, [ebx+88]
-           paddsw mm3, [ecx+88]
-           paddsw mm2, mm3
-           movq [edx+88], mm2
-
-           movq mm2, [esi+96]
-           movq mm3, [eax+96]
-           paddsw mm2, [ebx+96]
-           paddsw mm3, [ecx+96]
-           paddsw mm2, mm3
-           movq [edx+96], mm2
-
-           movq mm2, [esi+104]
-           movq mm3, [eax+104]
-           paddsw mm2, [ebx+104]
-           paddsw mm3, [ecx+104]
-           paddsw mm2, mm3
-           movq [edx+104], mm2
-
-           movq mm2, [esi+112]
-           movq mm3, [eax+112]
-           paddsw mm2, [ebx+112]
-           paddsw mm3, [ecx+112]
-           paddsw mm2, mm3
-           movq [edx+112], mm2
-
-           movq mm2, [esi+120]
-           movq mm3, [eax+120]
-           paddsw mm2, [ebx+120]
-           paddsw mm3, [ecx+120]
-           paddsw mm2, mm3
-           movq [edx+120], mm2
-
+           add edi, esi
+           add eax, esi
+           add ebx, esi
+           add ecx, esi
+           add edx, esi
+           call [mix_4_core]  ;edi, eax, ebx, ecx, edx
            ret
 endp
 

@@ -19,17 +19,21 @@ include 'proc32.inc'
 include 'main.inc'
 include 'imports.inc'
 
-USE_MMX      equ 0
-USE_MMX_128  equ 0
-USE_SSE      equ 0
+FORCE_MMX        equ 0  ;set to 1 to force use mmx or
+FORCE_MMX_128    equ 0  ;integer sse2 extensions
+                        ;and reduce driver size
+;USE_SSE         equ 0
 
-DEBUG               equ 1
+DEBUG            equ 1
 
-EVENT_NOTIFY        equ 0x00000200
+EVENT_NOTIFY     equ 0x00000200
 
-OS_BASE               equ 0;  0x80400000
-new_app_base          equ 0x60400000;   0x01000000
-PROC_BASE             equ OS_BASE+0x0080000
+OS_BASE          equ 0
+new_app_base     equ 0x60400000
+PROC_BASE        equ OS_BASE+0x0080000
+
+CAPS_SSE2        equ 26
+
 
 public START
 public service_proc
@@ -79,6 +83,42 @@ proc START stdcall, state:dword
            mov [str.fd], eax
            mov [str.bk], eax
 
+if FORCE_MMX
+ if FORCE_MMX_128
+  display 'Use only FORCE_MMX or FORCE_MMX_128 not both together',13,10
+  stop
+ end if
+           mov [mix_2_core], mmx_mix_2
+           mov [mix_3_core], mmx_mix_3
+           mov [mix_4_core], mmx_mix_4
+end if
+
+if FORCE_MMX_128
+ if FORCE_MMX
+  display 'Use only FORCE_MMX or FORCE_MMX_128 not both together',13,10
+  stop
+ end if
+           mov [mix_2_core], mmx128_mix_2
+           mov [mix_3_core], mmx128_mix_3
+           mov [mix_4_core], mmx128_mix_4
+end if
+
+if ~(FORCE_MMX or FORCE_MMX_128)  ;autodetect
+           mov eax, 1
+           cpuid
+           bt edx, CAPS_SSE2
+           jc .mmx128
+                                           ;old 64-bit mmx
+           mov [mix_2_core], mmx_mix_2
+           mov [mix_3_core], mmx_mix_3
+           mov [mix_4_core], mmx_mix_4
+           jmp @F
+.mmx128:                                   ;new 128-bit sse2 extensions
+           mov [mix_2_core], mmx128_mix_2
+           mov [mix_3_core], mmx128_mix_3
+           mov [mix_4_core], mmx128_mix_4
+@@:
+end if
            stdcall set_handler, [hSound], new_mix
            stdcall RegService, szInfinity, service_proc
            ret
@@ -563,14 +603,8 @@ proc dev_play stdcall, hsrv:dword
 endp
 
 include 'mixer.asm'
-
-;if USE_MMX
-; include 'mix_mmx.inc'
-;end if
-
-if USE_MMX_128
- include 'mix_sse2.inc'
-end if
+include 'mix_mmx.inc'
+include 'mix_sse2.inc'
 
 ;if USE_SSE
 ; include 'mix_sse.inc'
@@ -664,7 +698,7 @@ mix_buff_map  rd 1
 str.fd        rd 1
 str.bk        rd 1
 
-mix_2_1.core  rd 1
-mix_3_1.core  rd 1
-mix_4_1.core  rd 1
+mix_2_core    rd 1
+mix_3_core    rd 1
+mix_4_core    rd 1
 
