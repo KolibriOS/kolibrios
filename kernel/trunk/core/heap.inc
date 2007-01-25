@@ -613,6 +613,7 @@ proc init_heap
            mov esi, [PROC_BASE+APPDATA.mem_size+ebx]
            add esi, 4095
            and esi, not 4095
+           mov [PROC_BASE+APPDATA.mem_size+ebx], esi
            mov eax, HEAP_TOP
            mov [PROC_BASE+APPDATA.heap_base+ebx], esi
            mov [PROC_BASE+APPDATA.heap_top+ebx], eax
@@ -676,6 +677,14 @@ l_0:
            dec ecx
            jnz @B
 
+        mov     edx, [CURRENT_TASK]
+        shl     edx, 8
+        mov     ebx, [alloc_size]
+        add     ebx, 0xFFF
+        and     ebx, not 0xFFF
+        add     ebx, [PROC_BASE+APPDATA.mem_size+edx]
+        call    update_mem_size
+
            mov eax, esi
            add eax, 4096
            sub eax, new_app_base
@@ -702,6 +711,7 @@ proc user_free stdcall, base:dword
            test esi, esi
            jz .exit
 
+           xor ebx, ebx
            sub esi, 4096
            shr esi, 12
            mov eax, [pages_tab+esi*4]
@@ -715,6 +725,7 @@ proc user_free stdcall, base:dword
            inc esi
            sub ecx, 4096
            shr ecx, 12
+           mov ebx, ecx
 .release:
            xor eax, eax
            xchg eax, [pages_tab+esi*4]
@@ -726,10 +737,13 @@ proc user_free stdcall, base:dword
            dec ecx
            jnz .release
 .not_used:
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           mov esi, dword [ebx+PROC_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [ebx+PROC_BASE+APPDATA.heap_top]; heap_top
+           mov edx, [CURRENT_TASK]
+           shl edx, 8
+           mov esi, dword [edx+PROC_BASE+APPDATA.heap_base]; heap_base
+           mov edi, dword [edx+PROC_BASE+APPDATA.heap_top]; heap_top
+           sub ebx, [edx+PROC_BASE+APPDATA.mem_size]
+           neg ebx
+           call update_mem_size
            add esi, new_app_base
            add edi, new_app_base
            shr esi, 12

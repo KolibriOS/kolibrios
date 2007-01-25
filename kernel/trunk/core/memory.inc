@@ -475,33 +475,9 @@ proc new_mem_resize stdcall, new_size:dword
            jb @B
 
 .update_size:
+        mov     ebx, [new_size]
+        call    update_mem_size
 
-           mov ebx, [new_size]
-           mov    [PROC_BASE+0x8c+edx],ebx
-
-;search threads and update
-;application memory size infomation
-           mov    ecx,[PROC_BASE+0xb8+edx]
-           mov    eax,2
-
-.search_threads:
-;eax = current slot
-;ebx = new memory size
-;ecx = page directory
-           cmp    eax,[TASK_COUNT]
-           jg     .search_threads_end
-           mov    edx,eax
-           shl    edx,5
-           cmp    word [CURRENT_TASK+edx+0xa],9 ;if slot empty?
-           jz     .search_threads_next
-           shl    edx,3
-           cmp    [PROC_BASE+edx+0xb8],ecx     ;if it is our thread?
-           jnz    .search_threads_next
-           mov    [PROC_BASE+edx+0x8c],ebx     ;update memory size
-.search_threads_next:
-           inc    eax
-           jmp    .search_threads
-.search_threads_end:
            xor eax, eax
            dec [pg_data.pg_mutex]
            ret
@@ -561,7 +537,7 @@ proc new_mem_resize stdcall, new_size:dword
 
            add esi, 0x1000
            cmp esi, edi
-           jna @B
+           jb  @B
 
            jmp .update_size
 .exit:
@@ -570,6 +546,37 @@ proc new_mem_resize stdcall, new_size:dword
            dec [pg_data.pg_mutex]
            ret
 endp
+
+update_mem_size:
+; in: edx = slot shl 8
+;     ebx = new memory size
+; destroys eax,ecx,edx
+
+           mov    [PROC_BASE+APPDATA.mem_size+edx],ebx
+;search threads and update
+;application memory size infomation
+           mov    ecx,[PROC_BASE+APPDATA.dir_table+edx]
+           mov    eax,2
+
+.search_threads:
+;eax = current slot
+;ebx = new memory size
+;ecx = page directory
+           cmp    eax,[TASK_COUNT]
+           jg     .search_threads_end
+           mov    edx,eax
+           shl    edx,5
+           cmp    word [CURRENT_TASK+edx+TASKDATA.state],9 ;if slot empty?
+           jz     .search_threads_next
+           shl    edx,3
+           cmp    [PROC_BASE+edx+APPDATA.dir_table],ecx     ;if it is our thread?
+           jnz    .search_threads_next
+           mov    [PROC_BASE+edx+APPDATA.mem_size],ebx     ;update memory size
+.search_threads_next:
+           inc    eax
+           jmp    .search_threads
+.search_threads_end:
+           ret
 
 ; param
 ;  eax= linear address
