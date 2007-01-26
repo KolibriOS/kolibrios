@@ -1,4 +1,5 @@
-; <Lrz> 23.01.2007 пофиксел баги вызваные не правильным кодом )).
+; <Lrz> 26.01.2007 нормальная работа компанента исправил фукцию .check_offset
+; <Lrz> 24.01.2007 пофиксел баги вызваные не правильным кодом )).
 ; <Lrz> 22.01.2007 избавился от глюков при работе с выделением и удаление, корректная работа клавишей del & backspase
 ; <Lrz> 20.01.2007 реализовал выделение текста по shift
 ; <Lrz> 12.12.2006 реализовал поддержку кнопки insert и сегодя компонент почти работает!!!!
@@ -100,14 +101,14 @@ ret
 ;	div ecx      ;разделить - остаток в edx
 ;	push edx     ;положить в стек
 ;	;dec edi	     ;смещение необходимое для записи с конца строки
- ;	call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
+;	call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
 ;	pop eax
 ;	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
 ;	;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
 ;	;das	    ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
 ;	or al,0x30  ;данная команда короче  чем две выше 
 ;	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
- ;
+;
 ;	ret	    ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
 
 ;----------------------------------------------------------
@@ -281,40 +282,42 @@ ret
 ;----------------------------------------------------------
 .check_offset:
 	pushad
-	push	dword ed_offset          ;сохраним смещение
+	mov	ecx,ed_pos
+	mov	ebx,ed_offset
+	cmp	ebx,ecx
+	ja	.sub_8
+
+	push	ebx
 	call	.get_n			;получим кол-во символов в паре регистров edx:eax 
-	mov	ebx,eax
-	mov	eax,ed_pos
-	xor 	edx,edx
-	idiv	ebx
-	xor 	edx,edx
-	imul    eax,ebx
-	mov	ed_offset,eax
 	pop	ebx
-	cmp	ax,bx
-	je	@f
-;;;;;;;; данные для закрашивания всей полосы прямоугольника
-	mov	ebx,ed_left
-	inc	ebx
-	shl	ebx,16
-	mov	bx,ed_width
-	dec 	ebx
-	mov	edx,ed_color
-	call    .draw_bg_eax
-	mov	dword [esp+28],0
-@@:	popad
-	ret
-;==========================================================
-;=== обработка клавиатуры =================================
-;==========================================================
-.key:
-pusha
-	test	word ed_flags,ed_focus ; если не в фокусе, выходим
-	je     .no_figure ;@f
+	mov	edx,ebx
+	add	edx,eax		;ed_offset+width editbox
+	cmp	edx,ecx
+	ja	@f
+
+	mov	edx,ed_size
+	sub	edx,eax
+	cmp	edx,8
+	jbe	.add_8
+	mov	ebx,edx
+;	add	ebx,8
+	jmp	.chk_d
+
+.sub_8: cmp	ecx,0
+	je	.sub_min
+	cmp	ebx,8
+        jbe	.sub_min
+	sub	ebx,8	;ebx=ed_offset
+	jmp	.chk_d
+.sub_min:
+        xor	ebx,ebx
+	jmp	.chk_d
+
+.add_8:	mov	ebx,edx
 ;	;-----------  отладка
 ;	pushad
 ;	mov	[data_of_code],0
-;	mov eax,edi;word ed_flags
+;	mov eax,ebx;ed_offset
 ;	mov edi,data_of_code
 ;	call .str
 ;	;рисование фона
@@ -332,6 +335,49 @@ pusha
 ;	int 0x40
 ;	popad
 ;	;----------- отладка
+
+.chk_d:	mov	ed_offset,ebx
+
+	call    .draw_bg
+	mov	dword [esp+28],-1
+	popad
+	ret
+
+@@:
+	mov	dword [esp+28],0
+	popad
+	ret
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;	mov	ebx,eax
+;	mov	eax,ed_pos
+;	xor 	edx,edx
+;	idiv	ebx
+;	xor 	edx,edx
+;	imul    eax,ebx
+;	mov	ed_offset,eax
+;	pop	ebx
+;	cmp	ax,bx
+;	je	@f
+;;;;;;;; данные для закрашивания всей полосы прямоугольника
+;	mov	ebx,ed_left
+;	inc	ebx
+;	shl	ebx,16
+;	mov	bx,ed_width
+;	dec 	ebx
+;	mov	edx,ed_color
+;	call    .draw_bg_eax
+;	mov	dword [esp+28],0
+;@@:	popad
+;	ret
+;==========================================================
+;=== обработка клавиатуры =================================
+;==========================================================
+.key:
+pusha
+	test	word ed_flags,ed_focus ; если не в фокусе, выходим
+	je     .no_figure ;@f
 
 	xor	ecx,ecx
 	push	eax	
@@ -453,9 +499,9 @@ pusha
 ; вставляем код клавиши туда, где курсор
 	; увеличиваем значение размера и позиции
 	inc	 dword ed_size
-	call	.draw_all2
 	inc	 dword ed_pos
-	jmp    .shift;.draw_cursor_text
+	call	.draw_all2
+	jmp	.shift;.draw_cursor_text
 .delete:	
 	mov	edx,ed_size
 	mov	ecx,ed_pos
@@ -509,7 +555,13 @@ pusha
 	and    word ed_flags,ed_shift_cl
 	call	.clear_cursor
 	call	.check_offset
-	call	.get_n
+;;;;;;;;;;;;;;;
+	cmp	eax,0
+	je      @f
+	call	.draw_bg
+	ret
+;;;;;;;;;;;;;;;
+@@:	call	.get_n
 	push	eax
 	mov	ebx,ed_offset
 	add	eax,ebx	;eax = w_off= ed_offset+width
@@ -591,7 +643,7 @@ pusha
 
 .shift: ;;;;;;;SHIFT
 		
-    	call	.draw_bg
+    	call	.draw_bg	;не оптимально
 	test      word ed_flags,ed_shift
         je	.f_exit
 ;;;;;;SHIFT end
