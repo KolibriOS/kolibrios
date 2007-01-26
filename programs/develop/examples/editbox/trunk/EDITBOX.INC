@@ -277,7 +277,7 @@ ret
 ;----------------------------------------------------------
 ;--- проверка, зашел ли курсор за границы и, если надо, ---
 ;--- изменяем смещение ------------------------------------
-;--- eax = 1, если не изменилось или eax = 0, если
+;--- eax = -1, если не изменилось или eax = 0, если
 ; изменилось
 ;----------------------------------------------------------
 .check_offset:
@@ -296,11 +296,13 @@ ret
 	ja	@f
 
 	mov	edx,ed_size
-	sub	edx,eax
+	cmp	edx,ecx
+	je      .add_end
+
+	sub	edx,ecx
 	cmp	edx,8
 	jbe	.add_8
-	mov	ebx,edx
-;	add	ebx,8
+	add	ebx,8
 	jmp	.chk_d
 
 .sub_8: cmp	ecx,0
@@ -313,7 +315,11 @@ ret
         xor	ebx,ebx
 	jmp	.chk_d
 
-.add_8:	mov	ebx,edx
+.add_end:sub	edx,eax
+	mov	ebx,edx
+	jmp	.chk_d
+.add_8:	add	ebx,edx
+
 ;	;-----------  отладка
 ;	pushad
 ;	mov	[data_of_code],0
