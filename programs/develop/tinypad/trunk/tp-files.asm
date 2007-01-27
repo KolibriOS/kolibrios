@@ -9,7 +9,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 	rep	movsb
 	mov	byte[edi],0
 
-	mov	esi,[cur_editor.Lines] ;! AREA_EDIT     ; 0x70000 = 448 Kbytes (maximum)
+	mov	esi,[cur_editor.Lines]
 
 	xor	ebx,ebx
 	mov	ecx,[cur_editor.Lines.Count]
@@ -24,31 +24,20 @@ func save_file ;//////////////////////////////////////////////////////////////
 	call	mem.Alloc
 	push	eax
 	mov	esi,[cur_editor.Lines]
-	mov	edi,eax ;!!! AREA_TEMP
-
-;       pop     eax
-;       ret     ; DISALLOW FOR NOW
+	mov	edi,eax
 
   .new_string:
 	call	save_string
 	cmp	dword[esi],0
 	jne	.new_string
 	pop	eax
-	sub	edi,eax ;!!! AREA_TEMP+2   ; minus last CRLF
-	add	edi,-2
-;!      mov     [filelen],edi
-;       cmp     byte[f_info.path],'/'
-;       je      .systree_save
-;       mcall   33,f_info.path,0,edi,0 ;!!! AREA_TEMP,edi,0;[filelen],0
-;       or      eax,eax
-;       jz      .exit
-;       call    file_not_found
-;       jmp     .exit.2
+	sub	edi,eax
+	add	edi,-2			; minus last CRLF
 
   .systree_save:
 	mov	[f_info70+0],2
 	mov	[f_info70+12],edi
-	mov	[f_info70+16],eax ;!!! AREA_TEMP
+	mov	[f_info70+16],eax
 	mov	byte[f_info70+20],0
 	mov	[f_info70+21],f_info.path
 	mcall	70,f_info70
@@ -59,7 +48,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 	jnz	.exit.2
 
   .exit:
-	mov	[cur_editor.Modified],0 ;! [modified],0
+	mov	[cur_editor.Modified],0
 	clc
 	ret
 
@@ -76,7 +65,6 @@ func save_string ;////////////////////////////////////////////////////////////
 	jz	@f
 	or	dword[esi],0x00020000
     @@: add	esi,4
-;       mov     ecx,eax
 
     @@: cmp	byte[esi+ecx-1],' '
 	jne	@f
@@ -89,8 +77,6 @@ func save_string ;////////////////////////////////////////////////////////////
   .next_char:
 	mov	al,[esi+ebx]
 	inc	ebx
-;        cmp     [asm_mode],0
-;        je      .put
 	test	[options],OPTS_OPTIMSAVE
 	jz	.put
 	test	ah,00000001b
@@ -206,8 +192,16 @@ func load_file ;//////////////////////////////////////////////////////////////
 
   .file_found:
 	mov	ecx,eax
-	call	create_tab
-	push	ecx esi edi
+	cmp	[tab_bar.Items.Count],1
+	jne	@f
+	cmp	[cur_editor.FilePath],'/'
+	je	@f
+	cmp	[cur_editor.Modified],0
+	jne	@f
+	mov	ebp,cur_editor
+	jmp	.lp1
+    @@: call	create_tab
+  .lp1: push	ecx esi edi
 	mov	esi,tb_opensave.text
 	lea	edi,[ebp+TABITEM.Editor.FilePath]
 	movzx	ecx,[tb_opensave.length]
@@ -225,6 +219,32 @@ func load_file ;//////////////////////////////////////////////////////////////
 	call	load_from_memory
 	mov	eax,[f_info70+16]
 	call	mem.Free
+
+	xor	eax,eax
+	mov	[cur_editor.TopLeft.Y],eax
+	mov	[cur_editor.TopLeft.X],eax
+	mov	[cur_editor.Caret.X],eax
+	mov	[cur_editor.Caret.Y],eax
+	mov	[cur_editor.SelStart.X],eax
+	mov	[cur_editor.SelStart.Y],eax
+	mov	[cur_editor.Modified],al
+	mov	[cur_editor.AsmMode],al
+
+	lea	ebx,[cur_editor.FilePath]
+	mov	eax,ebx
+	call	strlen
+	mov	ecx,dword[ebx+eax-3]
+	or	ecx,0x202020
+	cmp	ecx,'asm'
+	jne	@f
+	inc	[cur_editor.AsmMode]
+	jmp	.nocol
+    @@: cmp	ecx,'inc'
+	jne	.nocol
+	inc	[cur_editor.AsmMode]
+    .nocol:
+	call	update_caption
+
 	clc
 	ret
 endf
@@ -236,22 +256,14 @@ func load_from_memory ;///////////////////////////////////////////////////////
 ; ESI = data pointer
 ; EBP = EDITOR*
 ;-----------------------------------------------------------------------------
-;       DEBUGF  1,<">>> load_from_memory\n" # \
-;                  "  data length  = %d\n" # \
-;                  "  data pointer = 0x%x\n" # \
-;                  "  EDITOR*      = 0x%x\n">,ecx,esi,ebp
-
 	call	get_lines_in_file
-;       DEBUGF  1,"lines in file: %d\n",eax
 	mov	[ebp+EDITOR.Lines.Count],eax
 	lea	edx,[ebx+ecx]
 	imul	ebx,eax,14
 	add	ebx,edx
-;       DEBUGF  1,"36522: %d\n",ebx
 	mov	eax,[ebp+EDITOR.Lines]
 	mov	[ebp+EDITOR.Lines.Size],ebx
 	call	mem.ReAlloc
-;       DEBUGF  1,"mem.ReAlloc: 0x%x\n",eax
 	mov	[ebp+EDITOR.Lines],eax
 
 	mov	[ebp+EDITOR.Columns.Count],0
@@ -288,10 +300,10 @@ func load_from_memory ;///////////////////////////////////////////////////////
 	sub	eax,10
 	jnz	@f
 	inc	eax
-    @@: cmp	eax,[ebp+EDITOR.Columns.Count] ;! eax,[columns]
+    @@: cmp	eax,[ebp+EDITOR.Columns.Count]
 	jbe	@f
-	mov	[ebp+EDITOR.Columns.Count],eax ;! [columns],eax
-    @@: mov	[ebp+EDITOR.Modified],0 ;! [modified],0
+	mov	[ebp+EDITOR.Columns.Count],eax
+    @@: mov	[ebp+EDITOR.Modified],0
 	ret
 
   .CR:	cmp	byte[esi],10
@@ -304,11 +316,10 @@ func load_from_memory ;///////////////////////////////////////////////////////
 	lea	eax,[edi-4]
 	sub	eax,ebx
 	mov	[ebx],eax
-;       inc     [cur_editor.Lines] ;! [lines]
 	add	eax,-10
-	cmp	eax,[ebp+EDITOR.Columns.Count] ;! eax,[columns]
+	cmp	eax,[ebp+EDITOR.Columns.Count]
 	jbe	.next_line
-	mov	[ebp+EDITOR.Columns.Count],eax ;! [columns],eax
+	mov	[ebp+EDITOR.Columns.Count],eax
 	jmp	.next_line
 
   .TB:	lea	eax,[edi-4]

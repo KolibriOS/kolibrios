@@ -11,6 +11,18 @@ struct RECT
   Bottom dd ?
 ends
 
+struct TBOX
+  width  dw ?
+  x	 dw ?
+  height dw ?
+  y	 dw ?
+  sel.x  db ?
+  pos.x  db ?
+  ofs.x  db ?
+  length db ?
+  text	 rb 255
+ends
+
 struct SCROLLBAR
   Top  dd ?
   Size dd ?

@@ -3,9 +3,9 @@ func check_mouse_in_edit_area
 	mov	ebx,eax
 	and	ebx,0x0000FFFF
 	shr	eax,16
-	mov	ecx,[cur_editor.Bounds.Top] ; ecx,[top_ofs]
+	mov	ecx,[cur_editor.Bounds.Top]
 	inc	ecx
-	pushd	[cur_editor.Bounds.Left] ecx [cur_editor.Bounds.Right] ecx ; [left_ofs] ATOPH [p_info.client_box.width] ATOPH
+	pushd	[cur_editor.Bounds.Left] ecx [cur_editor.Bounds.Right] ecx
 	popd	[__rc+0xC] [__rc+0x8] [__rc+0x4] [__rc+0x0]
 	sub	[__rc+0x8],SCRLW+6
 	mov	ecx,[cur_editor.Gutter.Width]
@@ -69,10 +69,10 @@ mouse:
 	pop	eax
 	jne	still.skip_write
     @@:
-	cmp	[just_from_popup],0
-	je	@f
-	cmp	al,MEV_LUP
-	jne	still.skip_write
+;!!!        cmp     [just_from_popup],0
+;!!!        je      @f
+;!!!        cmp     al,MEV_LUP
+;!!!        jne     still.skip_write
     @@: mov	[mev],al
 	jmp	[mouse_ev+eax*4-4]
 
@@ -101,7 +101,6 @@ mouse:
 	pop	[mi_cur]
 	cmp	[popup_active],0
 	je	still.skip_write
-;        mcall   18,2,[h_popup]
 	mov	ecx,[mi_cur]
 	or	ecx,ecx
 	js	still.skip_write
@@ -110,7 +109,6 @@ mouse:
 	call	dword[main_menu.onshow+ecx*4-4]
 	call	setup_main_menu_popup
 	mcall	60,2,[h_popup],POPUP_STACK,4
-;       mcall   51,1,popup_thread_start,POPUP_STACK
 
 	jmp	still.skip_write
 
@@ -150,88 +148,76 @@ mouse:
 	call	clear_selection
 
   .check_body.2:
-	sub	eax,[cur_editor.Bounds.Left] ; eax,[left_ofs]
-	sub	ebx,[cur_editor.Bounds.Top] ; ebx,[top_ofs]
+	sub	eax,[cur_editor.Bounds.Left]
+	sub	ebx,[cur_editor.Bounds.Top]
 	sub	eax,[cur_editor.Gutter.Width]
 	sub	eax,LCHGW
 	sub	ebx,2
-;       sub     ebx,[__rc+0x4]
 	push	eax
 	mov	eax,ebx
-	cdq;xor     edx,edx
+	cdq
 	mov	ecx,LINEH
 	idiv	ecx
-    @@: add	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
+    @@: add	eax,[cur_editor.TopLeft.Y]
 	mov	ebx,eax
 	pop	eax
-	cdq;xor     edx,edx
+	cdq
 	mov	ecx,6
 	idiv	ecx
-    @@: add	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
+    @@: add	eax,[cur_editor.TopLeft.X]
 
-	cmp	eax,[cur_editor.Columns.Count] ;! eax,[columns]
+	cmp	eax,[cur_editor.Columns.Count]
 	jl	@f
-	mov	eax,[cur_editor.Columns.Count] ;! eax,[columns]
-    @@: cmp	ebx,[cur_editor.Lines.Count] ;! ebx,[lines]
+	mov	eax,[cur_editor.Columns.Count]
+    @@: cmp	ebx,[cur_editor.Lines.Count]
 	jl	@f
-	mov	ebx,[cur_editor.Lines.Count] ;! ebx,[lines]
+	mov	ebx,[cur_editor.Lines.Count]
 	dec	ebx
     @@:
-	cmp	[cur_editor.Caret.X],eax ;! [pos.x],eax
+	cmp	[cur_editor.Caret.X],eax
 	jne	.change_cur_pos
-	cmp	[cur_editor.Caret.Y],ebx ;! [pos.y],ebx
-	je	still.skip_write
+	cmp	[cur_editor.Caret.Y],ebx
+	jne	.change_cur_pos
+	call	editor_check_for_changes
+	jmp	still.skip_write
 
   .change_cur_pos:
-	mov	[cur_editor.Caret.X],eax ;! [pos.x],eax
-	mov	eax,[cur_editor.Caret.Y] ;! eax,[pos.y]
-	mov	[cur_editor.Caret.Y],ebx ;! [pos.y],ebx
-	call	check_cur_vis_inv
-	jc	.check_ldown
-;        cmp     eax,ebx
-;        je      @f
-;        push    ebx
-;        mov     ebx,eax
-;        call    drawfile.ex
-;        pop     eax
-;    @@: mov     ebx,eax
-	call	draw_file.ex
-  .check_ldown:
+	mov	[cur_editor.Caret.X],eax
+	mov	[cur_editor.Caret.Y],ebx
+	call	editor_check_for_changes
 	jmp	still
 
   .check_vscroll:
-	;mov     ecx,[p_info.client_box.width]
 	mov	ecx,[cur_editor.Bounds.Right]
-	sub	ecx,SCRLW-1;2
-	pushd	ecx [cur_editor.Bounds.Top] ecx [cur_editor.Bounds.Bottom] ;ecx [top_ofs] ecx [bot_ofs]
+	sub	ecx,SCRLW-1
+	pushd	ecx [cur_editor.Bounds.Top] ecx [cur_editor.Bounds.Bottom]
 	popd	[__rc+0xC] [__rc+0x8] [__rc+0x4] [__rc+0x0]
-	add	[__rc+0x8],SCRLW-2;!!!!!!!!!!!!!!-2
-	add	[__rc+0x4],SCRLW-1;!!!!!!!!!!!!!!+1
-	sub	[__rc+0xC],SCRLW*2+1;3
+	add	[__rc+0x8],SCRLW-2
+	add	[__rc+0x4],SCRLW-1
+	sub	[__rc+0xC],SCRLW*2+1
 	mov	ecx,__rc
 	call	pt_in_rect
 	jnc	.check_hscroll
 
   .check_vscroll.2:
-	sub	ebx,[cur_editor.Bounds.Top] ; ebx,[top_ofs]
-	sub	ebx,SCRLW;!!!!!!!!!!!!!!+1
-;       sub     ebx,[__rc+0x4]
+	sub	ebx,[cur_editor.Bounds.Top]
+	sub	ebx,SCRLW
 	cmp	[vscrl_capt],0
 	jge	.vcaptured
-	mov	eax,[cur_editor.VScroll.Top] ;! eax,[vscrl_top]
+	mov	eax,[cur_editor.VScroll.Top]
 	cmp	ebx,eax
 	jb	.center_vcapture
-	add	eax,[cur_editor.VScroll.Size] ;! eax,[vscrl_size]
+	add	eax,[cur_editor.VScroll.Size]
 	cmp	ebx,eax
 	jae	.center_vcapture
 	mov	eax,ebx
-	sub	eax,[cur_editor.VScroll.Top] ;! eax,[vscrl_top]
+	sub	eax,[cur_editor.VScroll.Top]
 	dec	eax
 	mov	[vscrl_capt],eax
 	dec	ebx
 	jmp	.vcaptured
   .center_vcapture:
-	mov	eax,[cur_editor.VScroll.Size] ;! eax,[vscrl_size]
+	mov	eax,[cur_editor.VScroll.Size]
 	shr	eax,1
 	mov	[vscrl_capt],eax
   .vcaptured:
@@ -239,32 +225,32 @@ mouse:
 	jns	@f
 	xor	ebx,ebx
     @@: mov	[mouse_captured],1
-	mov	eax,[cur_editor.Bounds.Bottom] ; eax,[bot_ofs]
-	sub	eax,[cur_editor.Bounds.Top] ; eax,[top_ofs]
-	sub	eax,[cur_editor.VScroll.Size] ;! eax,[vscrl_size]
-	sub	eax,SCRLW*3;-2
+	mov	eax,[cur_editor.Bounds.Bottom]
+	sub	eax,[cur_editor.Bounds.Top]
+	sub	eax,[cur_editor.VScroll.Size]
+	sub	eax,SCRLW*3
 	cmp	eax,ebx
 	jge	@f
 	mov	ebx,eax
     @@:
-	mov	[cur_editor.VScroll.Top],ebx ;! [vscrl_top],ebx
-	mov	eax,[cur_editor.Lines.Count] ;! eax,[lines]
+	mov	[cur_editor.VScroll.Top],ebx
+	mov	eax,[cur_editor.Lines.Count]
 	sub	eax,[lines.scr]
 	imul	ebx
-	mov	ebx,[cur_editor.Bounds.Bottom] ; ebx,[bot_ofs]
-	sub	ebx,[cur_editor.Bounds.Top] ; ebx,[top_ofs]
-	sub	ebx,SCRLW*3;-2         ;**
-	sub	ebx,[cur_editor.VScroll.Size] ;! ebx,[vscrl_size]
+	mov	ebx,[cur_editor.Bounds.Bottom]
+	sub	ebx,[cur_editor.Bounds.Top]
+	sub	ebx,SCRLW*3
+	sub	ebx,[cur_editor.VScroll.Size]
 	idiv	ebx
-	cmp	eax,[cur_editor.TopLeft.Y] ;! eax,[top_line]
+	cmp	eax,[cur_editor.TopLeft.Y]
 	je	still.skip_write
-	mov	[cur_editor.TopLeft.Y],eax ;! [top_line],eax
+	mov	[cur_editor.TopLeft.Y],eax
 	call	check_bottom_right
-	call	draw_file
+	call	draw_editor
 	jmp	still.skip_write
 
   .check_hscroll:
-	pushd	[cur_editor.Bounds.Left] [cur_editor.Bounds.Bottom] [cur_editor.Bounds.Right] [cur_editor.Bounds.Bottom] ; (5+SCRLW+1) [bot_ofs] [p_info.box.width] [bot_ofs]
+	pushd	[cur_editor.Bounds.Left] [cur_editor.Bounds.Bottom] [cur_editor.Bounds.Right] [cur_editor.Bounds.Bottom]
 	popd	[__rc+0xC] [__rc+0x8] [__rc+0x4] [__rc+0x0]
 	add	[__rc+0x8],-SCRLW*2-1
 	add	[__rc+0x4],-SCRLW+1
@@ -276,26 +262,24 @@ mouse:
 
   .check_hscroll.2:
 	mov	ebx,eax
-	;sub     ebx,(5+SCRLW+1)
 	sub	ebx,SCRLW+1
 	sub	ebx,[cur_editor.Bounds.Left]
-;       sub     ebx,[__rc+0x0]
 	cmp	[hscrl_capt],0
 	jge	.hcaptured
-	mov	eax,[cur_editor.HScroll.Top] ;! eax,[hscrl_top]
+	mov	eax,[cur_editor.HScroll.Top]
 	cmp	ebx,eax
 	jl	.center_hcapture
-	add	eax,[cur_editor.HScroll.Size] ;! eax,[hscrl_size]
+	add	eax,[cur_editor.HScroll.Size]
 	cmp	ebx,eax
 	jge	.center_hcapture
 	mov	eax,ebx
-	sub	eax,[cur_editor.HScroll.Top] ;! eax,[hscrl_top]
+	sub	eax,[cur_editor.HScroll.Top]
 	dec	eax
 	mov	[hscrl_capt],eax
 	dec	ebx
 	jmp	.hcaptured
   .center_hcapture:
-	mov	eax,[cur_editor.HScroll.Size] ;! eax,[hscrl_size]
+	mov	eax,[cur_editor.HScroll.Size]
 	shr	eax,1
 	mov	[hscrl_capt],eax
   .hcaptured:
@@ -303,26 +287,26 @@ mouse:
 	jns	@f
 	xor	ebx,ebx
     @@: mov	[mouse_captured],1
-	mov	eax,[cur_editor.Bounds.Right] ; eax,[p_info.box.width]
-	sub	eax,[cur_editor.HScroll.Size] ;! eax,[hscrl_size]
-	sub	eax,SCRLW*3+1 ; eax,SCRLW*3+10+1
+	mov	eax,[cur_editor.Bounds.Right]
+	sub	eax,[cur_editor.HScroll.Size]
+	sub	eax,SCRLW*3+1
 	cmp	eax,ebx
 	jge	@f
 	mov	ebx,eax
     @@:
-	mov	[cur_editor.HScroll.Top],ebx ;! [hscrl_top],ebx
-	mov	eax,[cur_editor.Columns.Count] ;! eax,[columns]
+	mov	[cur_editor.HScroll.Top],ebx
+	mov	eax,[cur_editor.Columns.Count]
 	sub	eax,[columns.scr]
 	imul	ebx
-	mov	ebx,[cur_editor.Bounds.Right] ; ebx,[p_info.box.width]
-	sub	ebx,SCRLW*3+1 ; ebx,SCRLW*3+10+1        ;**
-	sub	ebx,[cur_editor.HScroll.Size] ;! ebx,[hscrl_size]
+	mov	ebx,[cur_editor.Bounds.Right]
+	sub	ebx,SCRLW*3+1
+	sub	ebx,[cur_editor.HScroll.Size]
 	idiv	ebx
-	cmp	eax,[cur_editor.TopLeft.X] ;! eax,[left_col]
+	cmp	eax,[cur_editor.TopLeft.X]
 	je	still.skip_write
-	mov	[cur_editor.TopLeft.X],eax ;! [left_col],eax
+	mov	[cur_editor.TopLeft.X],eax
 	call	check_bottom_right
-	call	draw_file
+	call	draw_editor
 	jmp	still.skip_write
 
   .check_main_menu:
@@ -353,5 +337,5 @@ mouse:
 	mov	[hscrl_capt],eax
 	mov	[body_capt],eax
 	mov	[mouse_captured],0
-	mov	[just_from_popup],0
+;!!!        mov     [just_from_popup],0
 	jmp	still.skip_write

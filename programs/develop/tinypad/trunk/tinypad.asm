@@ -1,35 +1,29 @@
 ;-----------------------------------------------------------------------------
 ; project name:      TINYPAD
-; compiler:          flat assembler 1.67.15
-; memory to compile: 2.0/7.0 MBytes (without/with size optimizations)
-; version:           4.0.4 pre
-; last update:       2007-01-18 (Jan 18, 2007)
+; compiler:          flat assembler 1.67.18
+; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
+; version:           4.0.4
+; last update:       2007-01-28 (Jan 28, 2007)
 ; minimal kernel:    revision #270 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Mike Semenyako          >> mike.dld@gmail.com
 ;                    Ivan Poddubny           >> ivan-yar@bk.ru
 ;-----------------------------------------------------------------------------
-; TODO (FOR 4.1.0):
+; TODO (4.1.0):
 ;   - optimize drawing (reduce flickering)
 ;   - add vertical selection, undo, goto position, overwrite mode
 ;   - improve window drawing with small dimensions
-;   - other bug-fixes and speed/size optimizations
 ;   - save settings to ini file, not to executable
-;
-; TODO (4.0.4, PLANNED FOR 2007-01-21):
-;   normal:
-;     - finish tabbed interface (tab switching, Ctrl+F4)
-;     - reduce flickering (introduce changes checker)
-;     - compile default file if selected
-;   low:
-;     - add prompt to save file before closing/opening
+;   - add prompt to save file before closing/opening
+;   - other bug-fixes and speed/size optimizations
 ;
 ; HISTORY:
-; 4.0.4 pre (mike.dld)
+; 4.0.4 (mike.dld)
 ;   bug-fixes:
 ;     - statusbar contained hint after dialog operation cancelled
 ;     - small drawing fix for gutter and line saved/modified markers
+;       (incorrect calculations)
 ;     - incorrect lines marking on Ctrl+V
 ;   changes:
 ;     - editor and other modifications to ease parts placement changing,
@@ -39,12 +33,14 @@
 ;     - use memory manager instead of statically allocated region
 ;     - case-insensitive filenames input, to be able to open/save files with
 ;       non-latin chars in name (russian etc.)
+;     - reduced flickering (changes checker)
 ;     - overall code cleanup
 ;   new features:
 ;     - recode tables between CP866, CP1251 and KOI8-R (suggested by Victor)
 ;     - tabbed interface, ability to open several files in one app instance
-;       (thanks IRC guys for ideas and testing
+;       (thanks IRC guys for ideas and testing)
 ;     - make any tab default to compile it disregarding currently active tab
+;     - configuration dialog (colors, tabs positioning)
 ; 4.0.3 (mike.dld)
 ;   bug-fixes:
 ;     - 1-char selection if pressing <BS> out of real line length
@@ -157,11 +153,11 @@ include 'lang.inc'
 include 'macros.inc' ; useful stuff
 ;include 'proc32.inc'
 include 'tinypad.inc'
-purge mov,add,sub	     ;  SPEED
+;purge mov,add,sub            ;  SPEED
 
 header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,self_path
 
-APP_VERSION equ '4.0.4 pre'
+APP_VERSION equ '4.0.4'
 
 ;include 'debug.inc'
 ;define __DEBUG__ 1
@@ -185,18 +181,19 @@ section @OPTIONS ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
 
 label color_tbl dword
-  RGB(	0,  0,	0) ; RGB(  0,  0,  0) ; RGB(  0,  0,  0) ; text
-  RGB(	0,144,	0) ; RGB(  0,160,  0) ; RGB(  0,144,  0) ; numbers
-  RGB(176,  0,	0) ; RGB(  0,128,255) ; RGB(160,  0,  0) ; strings
-  RGB(128,128,128) ; RGB(160,160,160) ; RGB(144,144,144) ; comments
-  RGB( 48, 48,240) ; RGB(255,  0,  0) ; RGB( 48, 48,240) ; symbols
-  RGB(255,255,255) ; RGB(255,255,255) ; RGB(224,224,224) ; background
-  RGB(255,255,255) ; RGB(255,255,255) ; RGB(255,255,255) ; selection text
-  RGB( 10, 36,106) ; RGB(  0, 64,128) ; RGB(  0,  0,128) ; selection background
-  RGB(255,238, 98) ; modified line marker
-  RGB(108,226,108) ; saved line marker
+  .text:       RGB(  0,  0,  0)
+  .back:       RGB(255,255,255)
+  .text.sel:   RGB(255,255,255)
+  .back.sel:   RGB( 10, 36,106)
+  .symbol:     RGB( 48, 48,240)
+  .number:     RGB(  0,144,  0)
+  .string:     RGB(176,  0,  0)
+  .comment:    RGB(128,128,128)
+  .line.moded: RGB(255,238, 98)
+  .line.saved: RGB(108,226,108)
 
 ins_mode db 1
+tab_pos  db 2
 
 options  db OPTS_AUTOINDENT+OPTS_OPTIMSAVE+OPTS_SMARTTAB
 
@@ -229,7 +226,8 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	al,0
 	rep	stosb
 
-	mov	[tab_bar.Style],2
+	mov	al,[tab_pos]
+	mov	[tab_bar.Style],al
 
 	mcall	68,11
 	or	eax,eax
@@ -240,6 +238,8 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	[temp_buf],eax
 
 	inc	[do_not_draw]
+
+	mov	dword[app_start],7
 
 	mov	esi,s_example
 	mov	edi,tb_opensave.text
@@ -253,8 +253,6 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	[s_search.size],ecx
 	rep	movsb
 
-;       DEBUGF  1,"params: '%s'\n",@PARAMS
-
 	cmp	byte[@PARAMS],0
 	jz	no_params
 
@@ -262,8 +260,6 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 	cmp	byte[@PARAMS],'*'
 	jne	.noipc
-
-;       DEBUGF  1,"  started by DOCPAK\n"
 
 ;// diamond [ (convert size from decimal representation to dword)
 ;--     mov     edx,dword[@PARAMS+1]
@@ -281,37 +277,21 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 
 	add	edx,20
 
-;       DEBUGF  1,"  data size (+20) = %d\n",edx
-
 	mov	eax,edx
 	call	mem.Alloc
 	mov	ebp,eax
 	push	eax
 
-;       DEBUGF  1,"  mem.Alloc() returned 0x%x, allocated size = %d\n",eax,[eax-4]
-
-;!      mcall   60,1,AREA_TEMP-16 ; 0x10000-16
-;!      mov     dword[AREA_TEMP-16+4],8 ; [0x10000-16+4],8
 	mov	dword[ebp+0],0
 	mov	dword[ebp+4],8
 	mcall	60,1,ebp
 	mcall	40,1000000b
 
-;       DEBUGF  1,"  got IPC message within 2 secs? "
 	mcall	23,200
-;       DEBUGF  1,"%b\n",eax == 7
 
 	cmp	eax,7
 	jne	key.alt_x.close
-;!      mov     esi,AREA_TEMP-16 ; 0x10000-16
-;!      mov     byte[esi],1
-;!      mov     eax,[esi+12]
 	mov	byte[ebp],1
-;!      mov     eax,[ebp+12]
-;!      inc     eax
-;!      call    load_file.file_found
-
-;       DEBUGF  1,"  creating new document\n"
 
 	mov	ecx,[ebp+12]
 	lea	esi,[ebp+16]
@@ -322,14 +302,11 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mov	eax,ebp
 	call	mem.Free
 
-;       DEBUGF  1,"  mem.Free(0x%x) returned %d\n",ebp,eax
-
 	jmp	@f
   .noipc:
 
 ;// Willow's code to support DOCPAK ]
 
-    ; parameters are at @PARAMS
 	mov	esi,@PARAMS
 	mov	edi,tb_opensave.text
 	mov	ecx,PATHL
@@ -341,7 +318,7 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	jne	key.alt_x.close
 	lea	eax,[edi-tb_opensave.text-1]
 	mov	[tb_opensave.length],al
-	call	btn.load_file
+	call	load_file
 	jnc	@f
 
   no_params:
@@ -354,15 +331,14 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	mcall	40,00100111b
 red:
 	call	drawwindow
-	call	check_inv_all.skip_check
 
 ;-----------------------------------------------------------------------------
 
 still:
-       call    draw_statusbar ; write current position & number of strings
+	call	draw_statusbar ; write current position & number of strings
 
   .skip_write:
-	mcall	10;23,50; wait here until event
+	mcall	10	; wait here until event
 	cmp	[main_closed],0
 	jne	key.alt_x
 	dec	eax	; redraw ?
@@ -381,136 +357,111 @@ func start_fasm ;/////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; BL = run after compile
 ;-----------------------------------------------------------------------------
-	cmp	[cur_editor.AsmMode],0 ;! [asm_mode],0
+; FASM infile,outfile,/path/to/files[,run]
+;-----------------------------------------------------------------------------
+	cmp	[cur_editor.AsmMode],0
 	jne	@f
 	ret
-    @@: mov	esi,f_info.path ; s_fname
-	mov	edi,fasm_parameters
-
-	cmp	byte[esi],'/'
-	je	.yes_systree
-
-	mov	ecx,[f_info.length] ; [s_fname.size]
-	rep	movsb
-
-	mov	al,','
-	stosb
-
-	mov	ecx,[f_info.length] ; [s_fname.size]
-	add	ecx,-4
-	mov	esi,f_info.path ; s_fname
-	rep	movsb
-
-	mov	al,','
-	stosb
-
-	mov	dword[edi],'/RD/'
-	mov	word[edi+4],'1/'
-	add	edi,6
-
-	mov	al,0
-	stosb
-
-	jmp	.run
-
- .yes_systree:
-	mov	eax,[f_info.length]
-	add	esi,eax ; [s_fname.size]
-	dec	esi
-
-	xor	ecx,ecx
-	mov	al,'/'
-    @@: cmp	[esi],al
+    @@:
+	mov	eax,[tab_bar.Default.Ptr]
+	or	eax,eax
+	jnz	@f
+	mov	eax,[tab_bar.Current.Ptr]
+    @@: cmp	byte[eax+TABITEM.Editor.FilePath],'/'
 	je	@f
-	dec	esi
-	inc	ecx
+	ret
+    @@:
+	mov	edi,fasm_parameters
+	push	eax
+
+	cld
+
+	lea	esi,[eax+TABITEM.Editor.FilePath]
+	add	esi,[eax+TABITEM.Editor.FileName]
+	push	esi esi
+    @@: lodsb
+	cmp	al,0
+	je	@f
+	stosb
+	cmp	al,'.'
+	jne	@b
+	mov	ecx,esi
 	jmp	@b
-    @@: inc	esi
+    @@:
+	mov	al,','
+	stosb
 
-	push	esi esi ecx
-
+	pop	esi
+	sub	ecx,esi
+	dec	ecx
+	jz	@f
 	rep	movsb
-
+    @@:
 	mov	al,','
 	stosb
 
 	pop	ecx esi
-
-	add	ecx,-4
+	add	esi,TABITEM.Editor.FilePath
+	sub	ecx,esi
 	rep	movsb
 
-	mov	al,','
-	stosb
-
-	pop	ecx
-	sub	ecx,f_info.path ; s_fname
-	mov	esi,f_info.path ; s_fname
-
-	rep	movsb
-
+	cmp	bl,0 ; run outfile ?
+	je	@f
+	mov	dword[edi],',run'
+	add	edi,4
+    @@:
 	mov	al,0
 	stosb
 
- .run:
-	cmp	bl,0 ; run outfile ?
-	je	@f
-	mov	dword[edi-1],',run'
-	mov	byte[edi+3],0
-    @@:
-	mov	ebx, fasm_start
+	mov	[app_start.filename],app_fasm
+	mov	[app_start.params],fasm_parameters
 start_ret:
-	mov	eax, 70
-	int	0x40
+	mcall	70,app_start
 	ret
 endf
 
 ;-----------------------------------------------------------------------------
 func open_debug_board ;///////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	ebx, board_start
+	mov	[app_start.filename],app_board
+	mov	[app_start.params],0
 	jmp	start_ret
 endf
 
 ;-----------------------------------------------------------------------------
 func open_sysfuncs_txt ;//////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	ebx, docpak_start
+	mov	[app_start.filename],app_docpak
+	mov	[app_start.params],sysfuncs_param
 	call	start_ret
 	cmp	eax,0xfffffff0
 	jb	@f
-	mov	ebx, tinypad_start
-	mov	dword [ebx+8], sysfuncs_filename
+	mov	[app_start.filename],app_tinypad
+	mov	[app_start.params],sysfuncs_filename
 	call	start_ret
     @@: ret
 endf
 
-;-----------------------------------------------------------------------------
-;func layout  ;///// change keyboard layout ///////////////////////////////////
-;-----------------------------------------------------------------------------
-;        mcall   19,setup,param_setup
-;        mcall   5,eax
-;;       call    activate_me
-;;       ret
-;;endf
-
-;;func activate_me
-;        mcall   9,p_info,-1
-;        inc     eax
-;        inc     eax
-;        mov     ecx,eax
-;        mov     edi,[p_info.PID]
-;        mov     ebx,p_info
-;    @@: dec     ecx
-;        jz      @f    ; counter=0 => not found? => return
-;        mcall   9
-;        cmp     edi,[p_info.PID]
-;        jne     @b
-;        mcall   18,3
-;        mcall   5,eax
-;    @@: ret
-;endf
-
 set_opt:
+
+  .dialog:
+	mov	[bot_mode],1
+	mov	[bot_dlg_height],128
+	mov	[bot_dlg_handler],optsdlg_handler
+	mov	[focused_tb],tb_color
+	mov	al,[tb_color.length]
+	mov	[tb_color.pos.x],al
+	mov	[tb_color.sel.x],0
+	mov	[tb_casesen],1
+	mov	[cur_part],0
+	m2m	[cur_color],dword[color_tbl.text]
+	mov	esi,color_tbl
+	mov	edi,cur_colors
+	mov	ecx,10
+	cld
+	rep	movsd
+	call	drawwindow
+	ret
 
   .line_numbers:
 	mov	al,OPTS_LINENUMS
@@ -554,8 +505,6 @@ include 'tp-recode.asm'
 section @DATA ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
 
-;addr       dd s_fname  ; address of input string
-;temp       dd 0xABCD   ; used in read_string
 vscrl_capt dd -1
 hscrl_capt dd -1
 body_capt  dd -1
@@ -652,8 +601,8 @@ accel_table_textbox dd		    \
   0x00010153,key.tb.del 	   ,\ ; Shift+Del
   0
 
-accel_table2 dd 	   \
-  1,btn.close_main_window ,\
+accel_table2 dd 	  \
+  1    ,key.alt_x	 ,\
   'VSL',btn.vscroll_up	 ,\
   'VSG',btn.vscroll_down ,\
   'HSL',btn.hscroll_up	 ,\
@@ -663,10 +612,12 @@ accel_table2 dd 	   \
   0
 
 accel_table2_botdlg dd	   \
-  1,btn.close_main_window ,\
+  1    ,key.alt_x	  ,\
   20001,btn.bot.cancel	  ,\
   20002,btn.bot.opensave  ,\
   20003,btn.bot.find	  ,\
+  20004,btn.bot.appearance,\
+  21001,btn.bot.tabpos	  ,\
   0
 
 add_table:
@@ -680,6 +631,7 @@ add_table:
 
 s_status dd 0
 
+@^
 fasm_start:
 	dd	7
 	dd	0
@@ -708,10 +660,77 @@ docpak_start:
 	dd	0
 	dd	0
 	db	'/RD/1/DOCPAK',0
+^@
+
+sz app_fasm    ,'/RD/1/DEVELOP/FASM',0
+sz app_board   ,'/RD/1/BOARD',0
+sz app_tinypad ,'/RD/1/TINYPAD',0
+sz app_docpak  ,'/RD/1/DOCPAK',0
 
 sz sysfuncs_param,'g',0
 
 include 'tp-locale.inc'
+
+;// options dialog data [
+label optsdlg_editor at $-EDITOR.Bounds
+; rb PATHL     ; FilePath       db PATHL dup(?)
+; dd 0         ; FileName       dd ?
+  dd ?,?,?,?   ; Bounds         RECT
+  dd @f        ; Lines          dd ?
+  dd ?	       ; Lines.Size     dd ?
+  dd 9	       ; Lines.Count    dd ?
+  dd 21        ; Columns.Count  dd ?
+  dd 0,4       ; Caret          POINT
+  dd 100,4     ; SelStart       POINT
+  dd 0,0       ; TopLeft        POINT
+  dd 0,0       ; VScroll        SCROLLBAR
+  dd 0,0       ; HScroll        SCROLLBAR
+  dd 0	       ; Gutter.Width   dd ?
+  db 0	       ; Gutter.Visible db ?
+  db 1	       ; AsmMode        db ?
+  db 0	       ; Modified       db ?
+
+@@:
+  dd 0x00000000+1
+  db ' '
+  dd 0x00010000+9
+  db ' org 100h'
+  dd 0x00000000+1
+  db ' '
+  dd 0x00000000+20
+  db ' mov ah,09h  ; write'
+  dd 0x00000000+12
+  db ' mov dx,text'
+  dd 0x00000000+8
+  db ' int 21h'
+  dd 0x00030000+8
+  db ' int 20h'
+  dd 0x00000000+1
+  db ' '
+  dd 0x00000000+21
+  db ' text db "Hello!",24h'
+  dd 0
+
+optsdlg_editor_parts:	; left,top,right,bottom,type
+  db 0, 12, 13, 29, 22
+  db 0, 12, 33, 47, 42
+  db 0, 12, 53, 29, 72
+  db 0, 12, 83, 53, 92
+  db 2, 12, 43, 77, 52
+  db 3,  4, 43,148, 52
+  db 4, 48, 33, 53, 42
+  db 4,108, 83,113, 92
+  db 5, 36, 13, 59, 22
+  db 5, 54, 33, 71, 42
+  db 5, 36, 53, 53, 72
+  db 5,114, 83,131, 92
+  db 6, 60, 83,107, 92
+  db 7, 84, 33,125, 42
+  db 8,  1, 13,  5, 22
+  db 9,  1, 63,  5, 72
+  db 1,  1,  1,148,105
+  db -1
+;// ]
 
 sz symbols_ex,';?.%"',"'"
 sz symbols   ,'#&*\:/<>|{}()[]=+-, '
@@ -722,8 +741,6 @@ sz ini_window_left  ,'Left',0
 sz ini_window_right ,'Right',0
 sz ini_window_bottom,'Bottom',0
 
-;include_debug_strings
-
 TINYPAD_END:	 ; end of file
 
 self_path rb PATHL
@@ -732,12 +749,21 @@ self_path rb PATHL
 section @UDATA ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
 
+app_start:
+	   dd ?,?
+ .params   dd ?
+	   dd ?,?
+	   db ?
+ .filename dd ?
+
 f_info.length dd ?
 f_info.path:
     times PATHL+1 db ?
 f_info70 rd 7
 
 file_info FILEINFO
+
+checker_ed EDITOR
 
 tab_bar      TABCTL
 virtual at tab_bar.Current
@@ -774,6 +800,8 @@ do_not_draw   db ?    ; draw top and bottom buttons?
 main_closed   db ?    ; main window closed?
 tb_casesen    db ?    ; focused textbox is case-sensitive?
 
+draw_blines   db ?
+
 align 4
 s_fname.size  dd ?
 s_fname       rb PATHL+1
@@ -794,6 +822,7 @@ cl_3d_outset dd ?
 cl_3d_inset  dd ?
 cl_3d_grayed dd ?
 
+tb_color     TBOX
 tb_opensave  TBOX
 tb_find      TBOX
 tb_replace   TBOX
@@ -830,15 +859,6 @@ p_info	process_information
 p_info2 process_information
 sc	system_colors
 
-;store dword '/hd/' at tb_opensave.text+4*0
-;store dword '1/tp' at tb_opensave.text+4*1
-;store dword 'ad4/' at tb_opensave.text+4*2
-;store dword 'tiny' at tb_opensave.text+4*3
-;store dword 'pad.' at tb_opensave.text+4*4
-;store dword 'asm'  at tb_opensave.text+4*5
-;store byte  23     at tb_opensave.length
-
-;rb 1024*36
 rb 1024*4
 MAIN_STACK:
 rb 1024*4

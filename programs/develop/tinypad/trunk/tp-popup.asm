@@ -1,3 +1,4 @@
+
 ;POP_WIDTH   = (popup_text.max_title+popup_text.max_accel+6)*6
 POP_IHEIGHT = 16
 ;POP_HEIGHT  = popup_text.cnt_item*POP_IHEIGHT+popup_text.cnt_sep*4+4
@@ -44,14 +45,13 @@ popup_thread_start:
 	cmp	eax,7
 	jne	still_popup
 
-	mov	ebp,[POPUP_STACK];-32+12+4]
+	mov	ebp,[POPUP_STACK]
 	mov	dword[POPUP_STACK-32+4],8
 	movzx	ebx,[ebp+POPUP.x]
 	movzx	ecx,[ebp+POPUP.y]
 	movzx	edx,[ebp+POPUP.width]
 	movzx	esi,[ebp+POPUP.height]
 	mcall	67
-;       call    draw_popup_wnd
 	jmp	still_popup
 
   mouse_popup:
@@ -75,7 +75,7 @@ popup_thread_start:
 	jz	still_popup
 	mov	ebx,[ebp+POPUP.actions]
 	mov	[just_from_popup],1
-	call	dword[ebx+eax*4-4];dword[popup_text.actions+eax*4-4]
+	call	dword[ebx+eax*4-4]
 	inc	[just_from_popup]
 	jmp	close_popup
 
@@ -98,18 +98,12 @@ popup_thread_start:
   close_popup:
 	mcall	18,3,[p_info.PID]
 	mov	[popup_active],0
+	mov	[mi_cur],0
 	mcall	-1
 
 func draw_popup_wnd
 	mcall	12,1
 
-;       mcall   48,3,sc,sizeof.system_colors
-;       call    calc_3d_colors
-
-;        mov     ebx,[p_pos]
-;        mov     ecx,[p_pos-2]
-;        mov     bx,POP_WIDTH
-;        mov     cx,POP_HEIGHT
 	mov	ebx,dword[ebp+POPUP.x-2]
 	mov	bx,[ebp+POPUP.width]
 	mov	ecx,dword[ebp+POPUP.y-2]
@@ -118,20 +112,14 @@ func draw_popup_wnd
 
 	movzx	ebx,bx
 	movzx	ecx,cx
-	pushd	0 0 ebx ecx ;POP_WIDTH POP_HEIGHT
+	pushd	0 0 ebx ecx
 	call	draw_3d_panel
 
 	mov	[pi_sel],0
-;        mcall   37,1
-;        movsx   ebx,ax
-;        sar     eax,16
-;        mov     [c_pos.x],eax
-;        mov     [c_pos.y],ebx
-
 	mov	eax,4
 	mpack	ebx,3*6,3
 	mov	ecx,[sc.work_text]
-	mov	edx,[ebp+POPUP.data];popup_text.data
+	mov	edx,[ebp+POPUP.data]
     @@: inc	[pi_sel]
 	inc	edx
 	movzx	esi,byte[edx-1]
@@ -143,18 +131,17 @@ func draw_popup_wnd
 	mov	cx,bx
 	movzx	ebx,[ebp+POPUP.width]
 	add	ebx,0x00010000-1
-;       mpack   ebx,1,POP_WIDTH-1
 	add	ecx,0x00010001
-	mcall	38,,,[cl_3d_inset];0x006382BF;[sc.work_text]
+	mcall	38,,,[cl_3d_inset]
 	add	ecx,0x00010001
-	mcall	,,,[cl_3d_outset];0x00FFFFFF
+	mcall	,,,[cl_3d_outset]
 	popad
 	add	ebx,4
 	jmp	.lp2
   .lp1: mov	edi,[pi_sel]
 	cmp	edi,[pi_cur]
 	jne	.lp3
-	test	byte[ebp+edi-1],0x01 ; byte[popup_text+edi-1],0x01
+	test	byte[ebp+edi-1],0x01
 	jz	.lp3
 	pushad
 	movzx	ecx,bx
@@ -162,15 +149,14 @@ func draw_popup_wnd
 	mov	cl,POP_IHEIGHT-1
 	movzx	ebx,[ebp+POPUP.width]
 	add	ebx,0x00010000-1
-;       mpack   ebx,1,POP_WIDTH-1
-	mcall	13,,,[cl_3d_pushed];0x00A3B8CC
+	mcall	13,,,[cl_3d_pushed]
 	rol	ecx,16
 	mov	ax,cx
 	rol	ecx,16
 	mov	cx,ax
-	mcall	38,,,[cl_3d_inset];0x006382BF
+	mcall	38,,,[cl_3d_inset]
 	add	ecx,(POP_IHEIGHT-1)*65536+POP_IHEIGHT-1
-	mcall	,,,[cl_3d_outset];0x00FFFFFF
+	mcall	,,,[cl_3d_outset]
 	popad
   .lp3: add	ebx,(POP_IHEIGHT-7)/2
 
@@ -185,32 +171,30 @@ func draw_popup_wnd
 	call	draw_check
   .lp8: popad
 
-	mov	ecx,[sc.work_text];0x00000000
-	test	byte[ebp+edi-1],0x01 ; byte[popup_text+edi-1],0x01
+	mov	ecx,[sc.work_text]
+	test	byte[ebp+edi-1],0x01
 	jnz	.lp5
 	add	ebx,0x00010001
 	mov	ecx,[cl_3d_outset]
 	mcall
 	sub	ebx,0x00010001
 	mov	ecx,[cl_3d_inset]
-	;mov     ecx,[sc.grab_text];0x007F7F7F
   .lp5: mcall
 	push	ebx
 	add	edx,esi
 	inc	edx
 	movzx	esi,byte[edx-1]
-	add	ebx,[ebp+POPUP.acc_ofs] ; ((popup_text.max_title+2)*6-1)*65536
+	add	ebx,[ebp+POPUP.acc_ofs]
 	cmp	edi,[pi_cur]
 	je	.lp4
-	mov	ecx,[cl_3d_inset];0x006382BF
-  .lp4: test	byte[ebp+edi-1],0x01 ; byte[popup_text+edi-1],0x01
+	mov	ecx,[cl_3d_inset]
+  .lp4: test	byte[ebp+edi-1],0x01
 	jnz	.lp6
 	add	ebx,0x00010001
 	mov	ecx,[cl_3d_outset]
 	mcall
 	sub	ebx,0x00010001
 	mov	ecx,[cl_3d_inset]
-	;mov     ecx,[sc.grab_text];0x007F7F7F
   .lp6: mcall
 	pop	ebx
 	add	ebx,POP_IHEIGHT-(POP_IHEIGHT-7)/2
@@ -271,7 +255,7 @@ onshow:
   .recode:
 	ret
   .options:
-	mov	word[mm.Options+0],0
+	;mov     word[mm.Options+0],0
 	mov	byte[mm.Options+5],0
 	or	byte[mm.Options+2],0x02
 	test	[options],OPTS_SECURESEL

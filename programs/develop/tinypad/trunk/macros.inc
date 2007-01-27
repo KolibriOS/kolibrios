@@ -110,6 +110,7 @@ macro szc name,elsz,[data] {	     ; from MFAR [mike.dld]
   m = 0
   if used name
    label name
+ forward
    virtual at 0
     db data
     s = $
@@ -119,6 +120,7 @@ macro szc name,elsz,[data] {	     ; from MFAR [mike.dld]
     m = s
    end if
    db data
+ common
    .size = $-name
    .maxl = m
   end if
@@ -210,7 +212,7 @@ macro section name { align 16
  label name }
 macro func name {
  if ~used name
-  ;display 'FUNC NOT USED: ',`name,13,10
+  display 'FUNC NOT USED: ',`name,13,10
  else
   align 4
   name:

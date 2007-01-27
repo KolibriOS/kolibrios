@@ -1,15 +1,3 @@
-struct TBOX
-  x	 dw ?
-  width  dw ?
-  y	 dw ?
-  height dw ?
-  sel.x  db ?
-  pos.x  db ?
-  ofs.x  db ?
-  length db ?
-  text	 rb 255
-ends
-
 virtual at ebp
   tbox TBOX
 end virtual
@@ -20,7 +8,7 @@ tb.sel.selected db ?
 
 func textbox.get_width
 	push	ebx edx
-	movzx	eax,[tbox.width-2]
+	movzx	eax,[tbox.width]
 	add	eax,-6
 	xor	edx,edx
 	mov	ebx,6
@@ -84,7 +72,7 @@ func textbox.draw ; TBOX* ebp
     @@: mov	[tb.pos.x],al
 	mov	[tb.sel.x],ah
 
-	mcall	13,dword[tbox.x],dword[tbox.y],[color_tbl+4*5];[sc.work]
+	mcall	13,dword[tbox.width],dword[tbox.height],[color_tbl.back]
 	mov	edx,[cl_3d_inset]
 	call	draw_framerect
 
@@ -94,15 +82,14 @@ func textbox.draw ; TBOX* ebp
 
 	cmp	ebp,[focused_tb]
 	je	@f
-	mov	ebx,dword[tbox.x]
-	mov	bx,[tbox.y+2]
-	movzx	eax,[tbox.height-2]
+	mov	ebx,dword[tbox.x-2]
+	mov	bx,[tbox.y]
+	movzx	eax,[tbox.height]
 	shr	eax,1
 	add	eax,4*65536-4
 	add	ebx,eax
 	lea	edx,[tbox.text]
-;       movzx   esi,[tbox.length]
-	mcall	4,,[color_tbl+4*0];[sc.work_text]
+	mcall	4,,[color_tbl.text]
 	ret
 
     @@: movzx	eax,[tb.pos.x]
@@ -123,33 +110,32 @@ func textbox.draw ; TBOX* ebp
 	mov	eax,ecx
   .lp2: imul	eax,6
 	imul	ebx,6
-	movzx	ecx,[tbox.x+2]
+	movzx	ecx,[tbox.x]
 	add	ecx,3
-;       sub     eax,ebx
 	add	ebx,ecx
 	shl	ebx,16
 	add	ebx,eax
-	movzx	ecx,[tbox.height-2]
+	movzx	ecx,[tbox.height]
 	shr	ecx,1
-	add	cx,[tbox.y+2]
+	add	cx,[tbox.y]
 	shl	ecx,16
 	add	ecx,-5*65536+10
-	mcall	13,,,[color_tbl+4*7];0x0000007F
+	mcall	13,,,[color_tbl.back.sel]
 
 	mov	esi,[esp]
 	lea	edx,[tbox.text]
 	movzx	eax,[tbox.ofs.x]
 	add	edx,eax
-	mov	ebx,dword[tbox.x]
-	mov	bx,[tbox.y+2]
-	movzx	eax,[tbox.height-2]
+	mov	ebx,dword[tbox.x-2]
+	mov	bx,[tbox.y]
+	movzx	eax,[tbox.height]
 	shr	eax,1
 	add	eax,4*65536-4
 	add	ebx,eax
 	mov	eax,4
 	or	esi,esi
 	jz	.lp3
-	mcall	,,[color_tbl+4*0];[sc.work_text]
+	mcall	,,[color_tbl.text]
   .lp3: sub	edi,esi
 	jnz	.lp4
 	add	esp,8
@@ -164,46 +150,44 @@ func textbox.draw ; TBOX* ebp
 	jbe	.lp5
 	mov	esi,edi
   .lp5:
-	mcall	,,[color_tbl+4*6];0x00FFFFFF
+	mcall	,,[color_tbl.text.sel]
 	sub	edi,esi
 	jz	.exit
 	add	edx,esi
 	imul	esi,6*65536
 	add	ebx,esi
 	lea	ecx,[tbox.text]
-;        sub     ecx,edx
-;        add     edi,ecx
-	mcall	,,[color_tbl+4*0],,edi;[sc.work_text],,edi
+	mcall	,,[color_tbl.text],,edi
 	jmp	.exit
 
     @@: lea	edx,[tbox.text]
 	movzx	eax,[tbox.ofs.x]
 	add	edx,eax
-	mov	ebx,dword[tbox.x]
-	mov	bx,[tbox.y+2]
-	movzx	eax,[tbox.height-2]
+	mov	ebx,dword[tbox.x-2]
+	mov	bx,[tbox.y]
+	movzx	eax,[tbox.height]
 	shr	eax,1
 	add	eax,4*65536-4
 	add	ebx,eax
 	movzx	eax,[tbox.ofs.x]
 	call	textbox.get_width
 	mov	esi,eax
-	mcall	4,,[color_tbl+4*0];[sc.work_text]
+	mcall	4,,[color_tbl.text]
 
   .exit:
 	movzx	ebx,[tbox.pos.x]
 	movzx	eax,[tbox.ofs.x]
 	sub	ebx,eax
 	imul	ebx,6
-	movzx	eax,[tbox.x+2]
+	movzx	eax,[tbox.x]
 	add	eax,3
 	add	ebx,eax
 	push	bx
 	shl	ebx,16
 	pop	bx
-	movzx	ecx,[tbox.height-2]
+	movzx	ecx,[tbox.height]
 	shr	ecx,1
-	add	cx,[tbox.y+2]
+	add	cx,[tbox.y]
 	push	cx
 	shl	ecx,16
 	pop	cx

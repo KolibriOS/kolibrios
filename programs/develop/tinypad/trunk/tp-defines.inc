@@ -29,7 +29,7 @@ define mm.Encoding.KOI8R.CP866	recode.koi.866
 define mm.Encoding.CP1251.KOI8R recode.1251.koi
 define mm.Encoding.KOI8R.CP1251 recode.koi.1251
 
-define mm.Options.Appearance   0
+define mm.Options.Appearance   set_opt.dialog
 define mm.Options.SecureSel    set_opt.secure_sel
 define mm.Options.AutoBrackets set_opt.auto_braces
 define mm.Options.AutoIndents  set_opt.auto_indents

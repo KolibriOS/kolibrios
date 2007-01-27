@@ -17,9 +17,9 @@ menubar_res main_menu,\
   en,'Options' ,mm.Options ,onshow.options,\
 \
   et,'Fail'	,mm.File    ,onshow.file   ,\
-  et,'Muuda'    ,mm.Edit    ,onshow.edit   ,\
+  et,'Muuda'	,mm.Edit    ,onshow.edit   ,\
   et,'Otsi'	,mm.Search  ,onshow.search ,\
-  et,'Kфivita'	,mm.Run	    ,onshow.run	   ,\
+  et,'Kфivita'	,mm.Run     ,onshow.run    ,\
   et,'Kodeering',mm.Encoding,onshow.recode ,\
   et,'Seaded'	,mm.Options ,onshow.options
 
@@ -42,14 +42,14 @@ popup_res mm.File,\
   en,'-'	 ,''		,      ,\
   en,'Exit'	 ,'Alt+X'	,Exit,\
 \
-  et,'Uus'	         ,'Ctrl+N'	,New   ,\
-  et,'Ava...'	         ,'Ctrl+O'	,Open  ,\
-  et,'Salvesta'	         ,'Ctrl+S'	,Save  ,\
+  et,'Uus'		 ,'Ctrl+N'	,New   ,\
+  et,'Ava...'		 ,'Ctrl+O'	,Open  ,\
+  et,'Salvesta' 	 ,'Ctrl+S'	,Save  ,\
   et,'Salvesta nimega...','Ctrl+Shift+S',SaveAs,\
-  et,'-'	         ,''		,      ,\
-  et,'Sulge'	         ,'Ctrl+F4'	,Close ,\
-  et,'-'	         ,''		,      ,\
-  et,'Vфlju'	         ,'Alt+X'	,Exit
+  et,'-'		 ,''		,      ,\
+  et,'Sulge'		 ,'Ctrl+F4'	,Close ,\
+  et,'-'		 ,''		,      ,\
+  et,'Vфlju'		 ,'Alt+X'	,Exit
 
 popup_res mm.Edit,\
   ru,'Вырезать'    ,'Ctrl+X',Cut   ,\
@@ -87,7 +87,7 @@ popup_res mm.Search,\
   en,'Replace...' ,'Ctrl+H',Replace ,\
 \
   et,'Positsioon...','Ctrl+G',Position,\
-  et,'-'	    ,''	     ,	      ,\
+  et,'-'	    ,''      ,	      ,\
   et,'Leia...'	    ,'Ctrl+F',Find    ,\
   et,'Leia jфrgmine','F3'    ,FindNext,\
   et,'Asenda...'    ,'Ctrl+H',Replace
@@ -152,6 +152,11 @@ popup_res mm.Options,\
   et,'-'		     ,'',	     ,\
   et,'Rea numbrid'	     ,'',LineNumbers
 
+lsz s_defname,\
+  en,<'Untitled',0>,\
+  ru,<'Безымянный',0>,\
+  et,<'Nimetu',0>
+
 lsz s_modified,\
   ru,'Изменено',\
   en,'Modified',\
@@ -183,6 +188,14 @@ lsz s_2cancel,\
   ru,'Отмена',\
   en,'Cancel',\
   et,'T№hista'
+lsz s_color,\
+  ru,'Цвет: 0x',\
+  en,'Color: 0x',\
+  et,'Color: 0x'
+lsz s_tabpos,\
+  ru,'Расположение закладок',\
+  en,'Tabs placement',\
+  et,'Tabs placement'
 
 lsz s_enter_filename,\
   ru,<'Введите имя файла',0>,\
@@ -244,6 +257,28 @@ lszc s_fs_error,b,\
   et,<'Juurdepффs keelatud (10)',0>,\
   et,<'Seadme viga (11)',0>
 
+lszc s_appearance,b,\
+  ru,'Текст',\
+  ru,'Фон',\
+  ru,'Текст выделения',\
+  ru,'Фон выделения',\
+  ru,'Символы',\
+  ru,'Числа',\
+  ru,'Строки',\
+  ru,'Комментарии',\
+  ru,'Изменёные строки',\
+  ru,'Сохранённые строки',\
+\
+  en,'Text',\
+  en,'Background',\
+  en,'Selection text',\
+  en,'Selection background',\
+  en,'Symbols',\
+  en,'Numbers',\
+  en,'Strings',\
+  en,'Comments',\
+  en,'Modified lines',\
+  en,'Saved lines'
 
 lsz sysfuncs_filename,\
   ru,<'SYSFUNCR.TXT',0>,\

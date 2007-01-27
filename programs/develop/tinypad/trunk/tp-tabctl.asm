@@ -1,9 +1,3 @@
-
-lsz s_defname,\
-  en,<'Untitled',0>,\
-  ru,<'Untitled',0>,\
-  et,<'Nimetu',0>
-
 ;-----------------------------------------------------------------------------
 func flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
 ;-----------------------------------------------------------------------------
@@ -33,7 +27,7 @@ func set_cur_tab ;///// SET SPECIFIED TAB CURRENT (FOCUS IT) /////////////////
 	mov	ecx,sizeof.TABITEM/4
 	rep	movsd
 	mov	[tab_bar.Current.Ptr],ebp
-	call	update_caption
+;       call    update_caption
 	pop	edi esi ecx
 	ret
 endf
@@ -41,6 +35,7 @@ endf
 ;-----------------------------------------------------------------------------
 func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
 ;-----------------------------------------------------------------------------
+	call	flush_cur_tab
 	imul	eax,[tab_bar.Items.Left],sizeof.TABITEM
 	add	eax,[tab_bar.Items]
 	cmp	eax,ebp
@@ -52,20 +47,19 @@ func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
 	push	ebp
 	call	get_hidden_tabitems_number
 	cmp	ebp,[esp]
-	ja	.lp1
+	ja	@f
     @@: inc	[tab_bar.Items.Left]
 	call	get_hidden_tabitems_number
 	cmp	ebp,[esp]
 	jbe	@b
-    @@: inc	[tab_bar.Items.Left]
-  .lp1: pop	ebp
+    @@: pop	ebp
 	ret
 
   .go_left:
 	mov	eax,ebp
 	sub	eax,[tab_bar.Items]
 	jz	@f
-	cwde
+	cdq
 	mov	ebx,sizeof.TABITEM
 	div	ebx
     @@: mov	[tab_bar.Items.Left],eax
@@ -75,7 +69,6 @@ endf
 ;-----------------------------------------------------------------------------
 func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 ;-----------------------------------------------------------------------------
-;       DEBUGF  1,"items count before addition: %d\n",[tab_bar.Items.Count]
 	push	eax ecx esi edi
 
 	inc	[tab_bar.Items.Count]
@@ -91,7 +84,6 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	sub	[tab_bar.Default.Ptr],ecx
     @@: lea	ebp,[eax+ebx-sizeof.TABITEM]
 	call	set_cur_tab
-	call	make_tab_visible
 
 	mov	eax,1024
 	mov	[cur_editor.Lines.Size],eax
@@ -125,14 +117,16 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	mov	[cur_editor.AsmMode],0
 
 	call	flush_cur_tab
+	mov	ebp,[tab_bar.Current.Ptr]
+	call	make_tab_visible
 	call	update_caption
-	;call    drawwindow
 	cmp	[do_not_draw],0
 	jne	@f
 	call	align_editor_in_tab
 	call	draw_editor
 	call	draw_tabctl
 	call	draw_statusbar
+	call	update_caption
     @@:
 	mov	ebp,cur_tab
 	pop	edi esi ecx eax
@@ -142,7 +136,6 @@ endf
 ;-----------------------------------------------------------------------------
 func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 ;-----------------------------------------------------------------------------
-;       DEBUGF  1,"items count before deletion: %d\n",[tab_bar.Items.Count]
 	cmp	[tab_bar.Default.Ptr],0
 	je	@f
 	cmp	ebp,[tab_bar.Default.Ptr]
@@ -188,7 +181,6 @@ func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
     @@: mov	[tab_bar.Current.Ptr],0
 	call	set_cur_tab
 	call	make_tab_visible
-	;call    drawwindow
 	call	align_editor_in_tab
 	call	draw_editor
 	call	draw_tabctl
@@ -382,7 +374,7 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	call	dword[esp+(8+4)+8+8]
 	mcall	13,,,[sc.work]
 	pop	ecx ebx
-	mov	edx,[color_tbl+4*0]
+	mov	edx,[color_tbl.text]
   .draw_tabs.inactive:
 
 	cmp	ebp,[tab_bar.Default.Ptr]
@@ -540,8 +532,7 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	ret
 
   .check_horz:
-	lea	eax,[ebx-1]
-	add	eax,esi
+	lea	eax,[esi+ebx-1]
 	sub	eax,[tab_bar.Bounds.Right]
 	jge	.check.dontfit
 	add	eax,SCRLW*2+2
@@ -552,8 +543,7 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	stc
 	ret
   .check_vert:
-	lea	eax,[ecx-1]
-	add	eax,edi
+	lea	eax,[edi+ecx-1]
 	sub	eax,[tab_bar.Bounds.Bottom]
 	jge	.check.dontfit
 	add	eax,SCRLW+2
@@ -584,6 +574,10 @@ func get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
 	jae	.lp1
 	lea	eax,[ebp+TABITEM.Editor.FilePath]
 	add	eax,[ebp+TABITEM.Editor.FileName]
+	cmp	byte[eax],0
+	jne	@f
+	int3
+    @@:
 	call	strlen
 	imul	ebx,eax,6
 	add	ebx,9
@@ -658,11 +652,11 @@ func get_hidden_tabitems_number ;/////////////////////////////////////////////
 	mov	edi,[tab_bar.Bounds.Top]
 	inc	edi
 	mov	ecx,[tab_bar.Items.Count]
-	imul	ebp,[tab_bar.Items.Left],sizeof.TABITEM
+	mov	ebx,[tab_bar.Items.Left]
+	imul	ebp,ebx,sizeof.TABITEM
 	add	ebp,[tab_bar.Items]
-	mov	eax,ecx
-	sub	eax,[tab_bar.Items.Left]
-	push	eax
+	push	ecx
+	sub	[esp],ebx
     @@: push	ecx
 
 	call	get_tab_size
