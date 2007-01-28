@@ -145,9 +145,9 @@ popup_res mm.Options,\
   et,'Vфlimus...'	     ,'',Appearance  ,\
   et,'-'		     ,'',	     ,\
   et,'Secure selection'      ,'',SecureSel   ,\
-  et,'Automatic brackets'    ,'',AutoBrackets,\
-  et,'Automatic indents'     ,'',AutoIndents ,\
-  et,'Tark tabulatsioon'      ,'',SmartTabs   ,\
+  et,'Automaatsed sulud'     ,'',AutoBrackets,\
+  et,'Automaatsed taandread' ,'',AutoIndents ,\
+  et,'Tark tabulatsioon'     ,'',SmartTabs   ,\
   et,'Optimal fill on saving','',OptimalFill ,\
   et,'-'		     ,'',	     ,\
   et,'Rea numbrid'	     ,'',LineNumbers
@@ -191,11 +191,11 @@ lsz s_2cancel,\
 lsz s_color,\
   ru,'Цвет: 0x',\
   en,'Color: 0x',\
-  et,'Color: 0x'
+  et,'Vфrv: 0x'
 lsz s_tabpos,\
   ru,'Расположение закладок',\
   en,'Tabs placement',\
-  et,'Tabs placement'
+  et,'Saki asetus'
 
 lsz s_enter_filename,\
   ru,<'Введите имя файла',0>,\
@@ -278,7 +278,18 @@ lszc s_appearance,b,\
   en,'Strings',\
   en,'Comments',\
   en,'Modified lines',\
-  en,'Saved lines'
+  en,'Saved lines',\
+\
+  et,'Tekst',\
+  et,'Taust',\
+  et,'Valitud tekst',\
+  et,'Valitud taust',\
+  et,'S№mbolid',\
+  et,'Numbrid',\
+  et,'Stringid',\
+  et,'Kommentaarid',\
+  et,'Muudetud read',\
+  et,'Salvestatud read'
 
 lsz sysfuncs_filename,\
   ru,<'SYSFUNCR.TXT',0>,\

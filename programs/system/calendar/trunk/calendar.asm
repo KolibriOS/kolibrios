@@ -145,6 +145,20 @@ else if lang eq fi
      db   'Lokakuu  '
      db   'Marraskuu'
      db   'Joulukuu '
+else if lang eq et
+     db   9
+     db   'Jaanuar  '
+     db   'Veebruar '
+     db   'Märts    '
+     db   'Aprill   '
+     db   'Mai      '
+     db   'Juuni    '
+     db   'Juuli    '
+     db   'August   '
+     db   'September'
+     db   'Oktoober '
+     db   'November '
+     db   'Detsember'
 else
      db   9
      db   'January  '
@@ -202,6 +216,16 @@ else if lang eq fi
      db   'To'
      db   'Pe'
      db   'La'
+else if lang eq et
+     db   3
+     db   7
+     db   'Esm'
+     db   'Tei'
+     db   'Kol'
+     db   'Nel'
+     db   'Ree'
+     db   'Lau'
+     db   'Püh'
 else
      db   3
      db   7
@@ -779,6 +803,8 @@ else if lang eq ge
      db   'KALENDER'
 else if lang eq fr
      db   'CALENDRIER'
+else if lang eq et
+     db   'KALENDER'
 else
      db   'CALENDAR'
 end if
@@ -794,6 +820,9 @@ else if lang eq fr
 else if lang eq ge
      db   ' Datum 1 '
      db   ' Datum 2 '
+else if lang eq et
+     db   'Kuupäev 1'
+     db   'Kuupäev 2'
 else
      db   '1st date '
      db   '2nd date '
@@ -806,6 +835,8 @@ else if lang eq de
      db   'Neuer Stil'
 else if lang eq fr
      db   'Nouveau'
+else if lang eq et
+     db   'Uus stiil'
 else
      db   'New style'
 end if
@@ -817,6 +848,8 @@ else if lang eq ge
      db   'Heute'
 else if lang eq fr
      db   "Aujourd'hui"
+else if lang eq et
+     db   'Täna'
 else
      db   'Today'
 end if

@@ -1,5 +1,5 @@
 @erase lang.inc
 @echo lang fix et >lang.inc
-@fasm tinypad.asm tinypad
+@fasm calendar.asm calendar
 @erase lang.inc
 @pause
