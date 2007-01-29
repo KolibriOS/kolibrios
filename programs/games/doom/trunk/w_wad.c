@@ -515,6 +515,7 @@ W_CacheLumpName
     return W_CacheLumpNum (W_GetNumForName(name), tag);
 }
 
+#if 0
 
 //
 // W_Profile
@@ -567,14 +568,14 @@ void W_Profile (void)
 	for ( ; j<8 ; j++)
 	    name[j] = ' ';
 
-	fprintf (f,"%s ",name);
+	printf ("%s ",name);
 
 	for (j=0 ; j<profilecount ; j++)
 	    fprintf (f,"    %c",info[i][j]);
 
-	fprintf (f,"\n");
+	printf ("\n");
     }
     fclose (f);
 }
 
-
+#endif

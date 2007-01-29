@@ -38,7 +38,7 @@ rcsid[] = "$Id: v_video.c,v 1.5 1997/02/03 22:45:13 b1 Exp $";
 #include "m_bbox.h"
 
 #include "v_video.h"
-
+#include "kolibri.h"
 
 // Each screen is [SCREENWIDTH*SCREENHEIGHT]; 
 byte*				screens[5];	
@@ -225,9 +225,9 @@ V_DrawPatch
 	|| y+SHORT(patch->height)>SCREENHEIGHT 
 	|| (unsigned)scrn>4)
     {
-      fprintf( stderr, "Patch at %d,%d exceeds LFB\n", x,y );
+      printf("Patch at %d,%d exceeds LFB\n", x,y );
       // No I_Error abort - what is up with TNT.WAD?
-      fprintf( stderr, "V_DrawPatch: bad patch (ignored)\n");
+      printf("V_DrawPatch: bad patch (ignored)\n");
       return;
     }
 #endif 
@@ -292,7 +292,7 @@ V_DrawPatchFlipped
 	|| y+SHORT(patch->height)>SCREENHEIGHT 
 	|| (unsigned)scrn>4)
     {
-      fprintf( stderr, "Patch origin %d,%d exceeds LFB\n", x,y );
+      printf("Patch origin %d,%d exceeds LFB\n", x,y );
       I_Error ("Bad V_DrawPatch in V_DrawPatchFlipped");
     }
 #endif 
@@ -483,10 +483,10 @@ void V_Init (void)
 { 
     int		i;
     byte*	base;
-		
+	size_t  size;	
     // stick these in low dos memory on PCs
-
-    base = _aligned_malloc(SCREENWIDTH*SCREENHEIGHT*4, 128);I_AllocLow (SCREENWIDTH*SCREENHEIGHT*4);
+    size = SCREENWIDTH*SCREENHEIGHT*4;
+    base = (byte*)UserAlloc(size);
 
     for (i=0 ; i<4 ; i++)
 	screens[i] = base + i*SCREENWIDTH*SCREENHEIGHT;

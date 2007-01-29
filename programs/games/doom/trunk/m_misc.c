@@ -294,9 +294,9 @@ void M_SaveDefaults (void)
 	    && defaults[i].defaultvalue < 0xfff)
 	{
 	    v = *defaults[i].location;
-	    fprintf (f,"%s\t\t%i\n",defaults[i].name,v);
+	    printf ("%s\t\t%i\n",defaults[i].name,v);
 	} else {
-	    fprintf (f,"%s\t\t\"%s\"\n",defaults[i].name,
+	    printf ("%s\t\t\"%s\"\n",defaults[i].name,
 		     * (char **) (defaults[i].location));
 	}
     }
@@ -335,7 +335,7 @@ void M_LoadDefaults (void)
     }
     else
 	defaultfile = basedefault;
-    
+/**********
     // read the file in, overriding any set defaults
     f = fopen (defaultfile, "r");
     if (f)
@@ -373,6 +373,7 @@ void M_LoadDefaults (void)
 		
 	fclose (f);
     }
+**********/    
 }
 
 

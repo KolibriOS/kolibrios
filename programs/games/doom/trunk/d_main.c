@@ -633,8 +633,8 @@ void IdentifyVersion (void)
 
     char *home;
     char *doomwaddir;
-    doomwaddir = getenv("DOOMWADDIR");
-    if (!doomwaddir)
+//    doomwaddir = getenv("DOOMWADDIR");
+//    if (!doomwaddir)
 	doomwaddir = ".";
 
     // Commercial.
@@ -666,8 +666,8 @@ void IdentifyVersion (void)
     doom2fwad = malloc(strlen(doomwaddir)+1+10+1);
     sprintf(doom2fwad, "%s/doom2f.wad", doomwaddir);
 
-    home = getenv("HOME");
-    if (!home)
+//    home = getenv("HOME");
+//    if (!home)
       home = ".";
     sprintf(basedefault, "%s/doomrc.txt", home);
 
@@ -861,7 +861,7 @@ void D_DoomMain (void)
 
  //   I_BeginSplash();
 
-    setbuf (stdout, NULL);
+//    setbuf (stdout, NULL);
     modifiedgame = false;
 	
     nomonsters = M_CheckParm ("-nomonsters");
@@ -1102,15 +1102,15 @@ void D_DoomMain (void)
     // Iff additonal PWAD files are used, print modified banner
     if (modifiedgame)
     {
-//	__libclog_printf (
-//	    "===========================================================================\n"
-//	    "ATTENTION:  This version of DOOM has been modified.  If you would like to\n"
-//	    "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n"
-//	    "        You will not receive technical support for modified games.\n"
-//	    "                      press enter to continue\n"
-//	    "===========================================================================\n"
-//	    );
-	getchar ();
+	  printf (
+	    "===========================================================================\n"
+	    "ATTENTION:  This version of DOOM has been modified.  If you would like to\n"
+	    "get a copy of the original game, call 1-800-IDGAMES or see the readme file.\n"
+	    "        You will not receive technical support for modified games.\n"
+	    "                      press enter to continue\n"
+	    "===========================================================================\n"
+	    );
+//	  getchar ();
     }
 	
 
@@ -1119,21 +1119,21 @@ void D_DoomMain (void)
     {
       case shareware:
       case indetermined:
-//	__libclog_printf (
-//	    "===========================================================================\n"
-//	    "                                Shareware!\n"
-//	    "===========================================================================\n"
-//	);
+	  printf (
+	    "===========================================================================\n"
+	    "                                Shareware!\n"
+	    "===========================================================================\n"
+	);
 	break;
       case registered:
       case retail:
       case commercial:
-//	__libclog_printf (
-//	    "===========================================================================\n"
-//	    "                 Commercial product - do not distribute!\n"
-//	    "         Please report software piracy to the SPA: 1-800-388-PIR8\n"
-//	    "===========================================================================\n"
-//	);
+	  printf (
+	    "===========================================================================\n"
+	    "                 Commercial product - do not distribute!\n"
+	    "         Please report software piracy to the SPA: 1-800-388-PIR8\n"
+	    "===========================================================================\n"
+	);
 	break;
 	
       default:
@@ -1141,30 +1141,30 @@ void D_DoomMain (void)
 	break;
     }
 
-//    __libclog_printf ("M_Init: Init miscellaneous info.\n");
+    printf ("M_Init: Init miscellaneous info.\n");
     M_Init ();
 
-//    __libclog_printf ("R_Init: Init DOOM refresh daemon - ");
+    printf ("R_Init: Init DOOM refresh daemon - ");
     R_Init ();
 
-//    __libclog_printf ("\nP_Init: Init Playloop state.\n");
+    printf ("\nP_Init: Init Playloop state.\n");
     P_Init ();
 
-//    __libclog_printf ("I_Init: Setting up machine state.\n");
+    printf ("I_Init: Setting up machine state.\n");
     I_Init ();
 
-//    __libclog_printf ("D_CheckNetGame: Checking network game status.\n");
+    printf ("D_CheckNetGame: Checking network game status.\n");
     D_CheckNetGame ();
 
-//    __libclog_printf ("S_Init: Setting up sound.\n");
+    printf ("S_Init: Setting up sound.\n");
     S_Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
 
-//    __libclog_printf ("HU_Init: Setting up heads up display.\n");
+    printf ("HU_Init: Setting up heads up display.\n");
     HU_Init ();
 
 //    I_EndSplash();
 
-//    __libclog_printf ("ST_Init: Init status bar.\n");
+    printf ("ST_Init: Init status bar.\n");
     ST_Init ();
 
     // check for a driver that wants intermission stats

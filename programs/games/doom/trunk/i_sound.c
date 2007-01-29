@@ -552,7 +552,7 @@ void I_ShutdownSound(void)
   int i;
   
   // FIXME (below).
-  printf( stderr, "I_ShutdownSound: NOT finishing pending sounds\n");
+  printf( "I_ShutdownSound: NOT finishing pending sounds\n");
   
   while ( !done )
   {
@@ -568,7 +568,7 @@ void I_ShutdownSound(void)
 void I_InitSound()
 { int i;
 
-  printf( stderr, "I_InitSound: ");
+  printf("I_InitSound: ");
   
   for (i=1 ; i<NUMSFX ; i++)
   { 
@@ -586,14 +586,14 @@ void I_InitSound()
     }
   }
 
-  printf( stderr, " pre-cached all sound data\n");
+  printf( " pre-cached all sound data\n");
   
   // Now initialize mixbuffer with zero.
   for ( i = 0; i< MIXBUFFERSIZE; i++ )
     mixbuffer[i] = 0;
   
   // Finished initialization.
-  printf(stderr, "I_InitSound: sound module ready\n");
+  printf("I_InitSound: sound module ready\n");
     
 }
 

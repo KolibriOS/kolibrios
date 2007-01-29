@@ -39,6 +39,7 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 
 
 #include "i_system.h"
+#include "kolibri.h"
 
 int	mb_used = 6;
 
@@ -81,7 +82,7 @@ int  I_GetHeapSize (void)
 byte* I_ZoneBase (int*	size)
 {
  *size = mb_used*1024*1024;
- return (byte *) _aligned_malloc(*size, 128);;
+ return (byte *) UserAlloc(*size);
 }
 
 
@@ -169,8 +170,8 @@ void I_Error (char *error, ...)
     // Message first.
     va_start (argptr,error);
     printf ("Error: ");
-    printf (error,argptr);
-    printf (stderr, "\n");
+    printf (argptr);
+    printf ("\n");
     va_end (argptr);
 
     // Shutdown. Here might be other errors.
@@ -179,6 +180,6 @@ void I_Error (char *error, ...)
 
     D_QuitNetGame ();
     I_ShutdownGraphics();
-    getch();
+//    getch();
     exit(-1);
 }

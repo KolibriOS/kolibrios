@@ -493,30 +493,30 @@ void I_InitGraphics(void)
     UpdateWindow(win);
 
     GetClientRect(win, &rect);
-    fprintf(stderr, "I_InitGraphics: Client area: %ux%u\n",
+    printf("I_InitGraphics: Client area: %ux%u\n",
             rect.right-rect.left, rect.bottom-rect.top);
 
     if ( (rect.right-rect.left) != X_width )
     {
-        fprintf(stderr, "I_InitGraphics: Fixing width\n");
+        printf("I_InitGraphics: Fixing width\n");
         width += X_width - (rect.right-rect.left);
         MoveWindow(win, 0, 0, width, height, TRUE);
     }
     if ( (rect.bottom-rect.top) != X_height )
     {
-        fprintf(stderr, "I_InitGraphics: Fixing height\n");
+        printf("I_InitGraphics: Fixing height\n");
         height += X_height - (rect.bottom-rect.top);
         MoveWindow(win, 0, 0, width, height, TRUE);
     }
 
     GetClientRect(win, &rect);
-    fprintf(stderr, "I_InitGraphics: Client area: %ux%u\n",
+    printf("I_InitGraphics: Client area: %ux%u\n",
             rect.right-rect.left, rect.bottom-rect.top);    
         
     dibDC = GetDC(win);
     BPP=1;
     bits = 8; //GetDeviceCaps(dibDC, BITSPIXEL);
-    fprintf(stderr, "I_InitGraphics: %i bpp screen\n", bits);
+    printf("I_InitGraphics: %i bpp screen\n", bits);
 
     if ( BPP == 1 )
         bminfo = malloc(sizeof(BITMAPINFOHEADER) + 4*256);
@@ -606,20 +606,20 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
                 ClipCursor(NULL);
                 ShowCursor(TRUE);
             }
-            fprintf(stderr, "WM_DESTROY\n");
+            printf("WM_DESTROY\n");
             PostQuitMessage(0);
             closed = 1;
             break;
 
         case WM_MOVE:
             GetWindowRect(win, &rect);
-            fprintf(stderr, "%u,%u - %u, %u\n",
+            printf("%u,%u - %u, %u\n",
                     rect.left,rect.top,rect.right,rect.bottom);
             ClipCursor(&rect);
             break;
 
         case WM_ACTIVATE:
-            fprintf(stderr, "WM_ACTIVATE %u\n", (unsigned) LOWORD(wparam));
+            printf("WM_ACTIVATE %u\n", (unsigned) LOWORD(wparam));
             if ( LOWORD(wparam) )
             {
                 if ( !windowActive )
@@ -628,7 +628,7 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
                     {
                         ClipCursor(NULL); /* helps with Win95? */
                         GetWindowRect(win, &rect);
-                        fprintf(stderr, "%u,%u - %u, %u\n",
+                        printf("%u,%u - %u, %u\n",
                                 rect.left,rect.top,rect.right,rect.bottom);
                         ClipCursor(&rect);
                         ShowCursor(FALSE);

@@ -494,7 +494,7 @@ WI_drawOnLnode
     else
     {
 	// DEBUG
-//	__libclog_printf("Could not place patch on level %d", n+1); 
+	  printf("Could not place patch on level %d", n+1); 
     }
 }
 

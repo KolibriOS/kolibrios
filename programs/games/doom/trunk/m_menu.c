@@ -1733,40 +1733,42 @@ void M_Drawer (void)
     static short	y;
     short		i;
     short		max;
+    char *p;
+    int len;
     char		string[40];
     int			start;
 
     inhelpscreens = false;
 
-    
     // Horiz. & Vertically center string and print it.
     if (messageToPrint)
     {
-	start = 0;
-	y = 100 - M_StringHeight(messageString)/2;
-	while(*(messageString+start))
-	{
-	    for (i = 0;i < strlen(messageString+start);i++)
-		if (*(messageString+start+i) == '\n')
-		{
-		    memset(string,0,40);
-		    strncpy(string,messageString+start,40);
-		    start += i+1;
+	  y = 100 - M_StringHeight(messageString)/2;
+	  p = messageString;
+	  len = strlen(p);
+	  while(*p)
+	  {
+        for (i = 0;len;i++,len--)
+        {
+ 	      if (*(p+i) == '\n')
+		  { memset(string,0,40);
+		    strncpy(string,p,i);
+		    p+= i+1;
+		    len-= 1;
 		    break;
-		}
-				
-	    if (i == strlen(messageString+start))
-	    {
-		strcpy(string,messageString+start);
-		start += i;
-	    }
-				
-	    x = 160 - M_StringWidth(string)/2;
-	    M_WriteText(x,y,string);
-	    y += SHORT(hu_font[0]->height);
-	}
-	return;
-    }
+		  };
+	    };	  
+	
+        if (len == 0)
+        { strncpy(string,p,i);
+          p+=i;
+        };  
+        x = 160 - M_StringWidth(string)/2;
+        M_WriteText(x,y,string);
+        y += SHORT(hu_font[0]->height);
+	  };
+	  return;
+    };
 
     if (!menuactive)
 	return;

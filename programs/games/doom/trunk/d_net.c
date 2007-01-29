@@ -139,10 +139,7 @@ int ExpandTics (int low)
 //
 // HSendPacket
 //
-void
-HSendPacket
- (int	node,
-  int	flags )
+void HSendPacket (int node,int flags )
 {
     netbuffer->checksum = NetbufferChecksum () | flags;
 
@@ -172,14 +169,14 @@ HSendPacket
 	else
 	    realretrans = -1;
 
-	fprintf (debugfile,"send (%i + %i, R %i) [%i] ",
+	printf ("send (%i + %i, R %i) [%i] ",
 		 ExpandTics(netbuffer->starttic),
 		 netbuffer->numtics, realretrans, doomcom->datalength);
 	
 	for (i=0 ; i<doomcom->datalength ; i++)
-	    fprintf (debugfile,"%i ",((byte *)netbuffer)[i]);
+	    printf ("%i ",((byte *)netbuffer)[i]);
 
-	fprintf (debugfile,"\n");
+	printf ("\n");
     }
 
     I_NetCmd ();
@@ -214,14 +211,14 @@ boolean HGetPacket (void)
     if (doomcom->datalength != NetbufferSize ())
     {
 	if (debugfile)
-	    fprintf (debugfile,"bad packet length %i\n",doomcom->datalength);
+	    printf ("bad packet length %i\n",doomcom->datalength);
 	return false;
     }
 	
     if (NetbufferChecksum () != (netbuffer->checksum&NCMD_CHECKSUM) )
     {
 	if (debugfile)
-	    fprintf (debugfile,"bad packet checksum\n");
+	    printf ("bad packet checksum\n");
 	return false;
     }
 
@@ -231,7 +228,7 @@ boolean HGetPacket (void)
 	int	i;
 			
 	if (netbuffer->checksum & NCMD_SETUP)
-	    fprintf (debugfile,"setup packet\n");
+	    printf ("setup packet\n");
 	else
 	{
 	    if (netbuffer->checksum & NCMD_RETRANSMIT)
@@ -239,14 +236,14 @@ boolean HGetPacket (void)
 	    else
 		realretrans = -1;
 	    
-	    fprintf (debugfile,"get %i = (%i + %i, R %i)[%i] ",
+	    printf ("get %i = (%i + %i, R %i)[%i] ",
 		     doomcom->remotenode,
 		     ExpandTics(netbuffer->starttic),
 		     netbuffer->numtics, realretrans, doomcom->datalength);
 
 	    for (i=0 ; i<doomcom->datalength ; i++)
-		fprintf (debugfile,"%i ",((byte *)netbuffer)[i]);
-	    fprintf (debugfile,"\n");
+		printf ("%i ",((byte *)netbuffer)[i]);
+	    printf ("\n");
 	}
     }
     return true;	
@@ -306,7 +303,7 @@ void GetPackets (void)
 	{
 	    resendto[netnode] = ExpandTics(netbuffer->retransmitfrom);
 	    if (debugfile)
-		fprintf (debugfile,"retransmit from %i\n", resendto[netnode]);
+		printf ("retransmit from %i\n", resendto[netnode]);
 	    resendcount[netnode] = RESENDCOUNT;
 	}
 	else
@@ -319,8 +316,7 @@ void GetPackets (void)
 	if (realend < nettics[netnode])
 	{
 	    if (debugfile)
-		fprintf (debugfile,
-			 "out of order packet (%i + %i)\n" ,
+		printf ("out of order packet (%i + %i)\n" ,
 			 realstart,netbuffer->numtics);
 	    continue;
 	}
@@ -330,8 +326,7 @@ void GetPackets (void)
 	{
 	    // stop processing until the other system resends the missed tics
 	    if (debugfile)
-		fprintf (debugfile,
-			 "missed tics from %i (%i - %i)\n",
+		printf ("missed tics from %i (%i - %i)\n",
 			 netnode, realstart, nettics[netnode]);
 	    remoteresend[netnode] = true;
 	    continue;
