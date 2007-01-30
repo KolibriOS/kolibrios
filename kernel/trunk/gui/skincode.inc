@@ -346,6 +346,8 @@ drawwindow_IV:
         sub   ecx,4
         sub   edx,4
         mov   edi,[esi+WDATA.cl_workarea]
+	test  edi,0x40000000
+	jnz   _noinside2
         call  [drawbar]
       _noinside2:
 

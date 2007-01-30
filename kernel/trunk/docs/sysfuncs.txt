@@ -32,7 +32,7 @@ Parameters:
                   subfunction 1 of function 71
       * B = 1 - coordinates of all graphics primitives are relative to
                   window client area
-      * C is reserved (set to 0)
+      * C = 1 - don't fill working area on window draw
       * D = 0 - normal filling of the working area, 1 - gradient
     The following parameters are intended for windows
     of a type I and II, and ignored for styles Y=1,3:

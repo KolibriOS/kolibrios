@@ -737,6 +737,8 @@ drawwindow_I:
         mov   ecx,[esi+WDATA.box.width]
         mov   edx,[esi+WDATA.box.height]
         mov   edi,[esi+WDATA.cl_workarea]
+	test  edi,0x40000000
+	jnz   noinside
         call  [drawbar]
       noinside:
 
@@ -888,6 +890,8 @@ drawwindow_III:
         sub   ecx,4
         sub   edx,4
         mov   edi,[esi+WDATA.cl_workarea]
+	test  edi,0x40000000
+	jnz   noinside2
         call  [drawbar]
       noinside2:
 

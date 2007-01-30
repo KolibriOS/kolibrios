@@ -15,7 +15,7 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	m2m	[sc.work],dword[color_tbl.back]
 
 	mov	edx,[sc.work]
-	add	edx,0x33000000
+	add	edx,0x73000000
 	mov	ebx,[mainwnd_pos.x-2]
 	mov	bx,word[mainwnd_pos.w]
 	mov	ecx,[mainwnd_pos.y-2]
