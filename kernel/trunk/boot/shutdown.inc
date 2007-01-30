@@ -368,6 +368,13 @@ restart_kernel_4000:
     jcxz    $+2
         sti
 
+; (hint by Black_mirror)
+; We must read data from keyboard port,
+; because there may be situation when previous keyboard interrupt is lost
+; (due to return to real mode and IRQ reprogramming)
+; and next interrupt will not be generated (as keyboard waits for handling)
+        in      al, 0x60
+
 ; bootloader interface
     push    0x1000
     pop    ds
