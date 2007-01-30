@@ -33,34 +33,34 @@ StackCounters:
   dumped_rx_count:    dd  0
   arp_tx_count:       dd  0
   arp_rx_count:       dd  0
-  ip_rx_count:        dd  0
-  ip_tx_count:        dd  0
+  ip_rx_count:	      dd  0
+  ip_tx_count:	      dd  0
 endg
 
 ; socket buffers
-SOCKETBUFFSIZE     equ        4096  ; state + config + buffer.
-SOCKETHEADERSIZE   equ        76    ; thus 4096 - SOCKETHEADERSIZE bytes data
+SOCKETBUFFSIZE	   equ	      4096  ; state + config + buffer.
+SOCKETHEADERSIZE   equ	      76    ; thus 4096 - SOCKETHEADERSIZE bytes data
 
-NUM_SOCKETS        equ        16    ; Number of open sockets supported. Was 20
+NUM_SOCKETS	   equ	      16    ; Number of open sockets supported. Was 20
 
 ; IPBUFF status values
-BUFF_EMPTY         equ     0
-BUFF_RX_FULL       equ     1
-BUFF_ALLOCATED     equ     2
-BUFF_TX_FULL       equ     3
+BUFF_EMPTY	   equ	   0
+BUFF_RX_FULL	   equ	   1
+BUFF_ALLOCATED	   equ	   2
+BUFF_TX_FULL	   equ	   3
 
-NUM_IPBUFFERS      equ     20    ; buffers allocated for TX/RX
+NUM_IPBUFFERS	   equ	   20	 ; buffers allocated for TX/RX
 
-NUMQUEUES          equ        4
-EMPTY_QUEUE        equ        0
-IPIN_QUEUE         equ        1
-IPOUT_QUEUE        equ        2
-NET1OUT_QUEUE      equ        3
+NUMQUEUES	   equ	      4
+EMPTY_QUEUE	   equ	      0
+IPIN_QUEUE	   equ	      1
+IPOUT_QUEUE	   equ	      2
+NET1OUT_QUEUE	   equ	      3
 
-NO_BUFFER          equ        0xFFFF
-IPBUFFSIZE         equ        1500                ; MTU of an ethernet packet
-NUMQUEUEENTRIES    equ        NUM_IPBUFFERS
-NUMRESENDENTRIES    equ         18              ; Buffers for TCP resend packets
+NO_BUFFER	   equ	      0xFFFF
+IPBUFFSIZE	   equ	      1500		  ; MTU of an ethernet packet
+NUMQUEUEENTRIES    equ	      NUM_IPBUFFERS
+NUMRESENDENTRIES    equ 	18		; Buffers for TCP resend packets
 
 ; These are the 0x40 function codes for application access to the stack
 STACK_DRIVER_STATUS  equ   52
@@ -70,15 +70,15 @@ SOCKET_INTERFACE     equ   53
 ; 128KB allocated for the stack and network driver buffers and other
 ; data requirements
 stack_data_start     equ   0x700000
-eth_data_start       equ   0x700000
-stack_data           equ   0x704000
-stack_data_end       equ   0x71ffff
+eth_data_start	     equ   0x700000
+stack_data	     equ   0x704000
+stack_data_end	     equ   0x71ffff
 
 ; 32 bit word
-stack_config         equ   stack_data
+stack_config	     equ   stack_data
 
 ; 32 bit word - IP Address in network format
-stack_ip             equ   stack_data + 4
+stack_ip	     equ   stack_data + 4
 
 ; 1 byte. 0 == inactive, 1 = active
 ethernet_active      equ   stack_data + 9
@@ -87,32 +87,32 @@ ethernet_active      equ   stack_data + 9
 ; TODO :: empty memory area
 
 ; Address of selected socket
-sktAddr              equ   stack_data + 32
+sktAddr 	     equ   stack_data + 32
 ; Parameter to checksum routine - data ptr
-checkAdd1            equ   stack_data + 36
+checkAdd1	     equ   stack_data + 36
 ; Parameter to checksum routine - 2nd data ptr
-checkAdd2            equ   stack_data + 40
+checkAdd2	     equ   stack_data + 40
 ; Parameter to checksum routine - data size
-checkSize1           equ   stack_data + 44
+checkSize1	     equ   stack_data + 44
 ; Parameter to checksum routine - 2nd data size
-checkSize2           equ   stack_data + 46
+checkSize2	     equ   stack_data + 46
 ; result of checksum routine
-checkResult          equ   stack_data + 48
+checkResult	     equ   stack_data + 48
 
 ; holds the TCP/UDP pseudo header. SA|DA|0|prot|UDP len|
-pseudoHeader         equ   stack_data + 50
+pseudoHeader	     equ   stack_data + 50
 
 ; receive and transmit IP buffer allocation
-sockets              equ   stack_data + 62
-Next_free2           equ   sockets + (SOCKETBUFFSIZE * NUM_SOCKETS)
+sockets 	     equ   stack_data + 62
+Next_free2	     equ   sockets + (SOCKETBUFFSIZE * NUM_SOCKETS)
 ; 1560 byte buffer for rx / tx ethernet packets
-Ether_buffer         equ   Next_free2
-Next_free3           equ   Ether_buffer + 1518
+Ether_buffer	     equ   Next_free2
+Next_free3	     equ   Ether_buffer + 1518
 last_1sTick	     equ   Next_free3
-IPbuffs              equ   Next_free3 + 1
-queues               equ   IPbuffs + ( NUM_IPBUFFERS * IPBUFFSIZE )
-queueList            equ   queues + (2 * NUMQUEUES)
-last_1hsTick         equ   queueList + ( 2 * NUMQUEUEENTRIES )
+IPbuffs 	     equ   Next_free3 + 1
+queues		     equ   IPbuffs + ( NUM_IPBUFFERS * IPBUFFSIZE )
+queueList	     equ   queues + (2 * NUMQUEUES)
+last_1hsTick	     equ   queueList + ( 2 * NUMQUEUEENTRIES )
 
 ;resendQ              equ   queueList + ( 2 * NUMQUEUEENTRIES )
 ;resendBuffer         equ    resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
@@ -120,22 +120,22 @@ last_1hsTick         equ   queueList + ( 2 * NUMQUEUEENTRIES )
 
 
 
-resendQ             equ     0x770000
-resendBuffer        equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
+resendQ 	    equ     0x770000
+resendBuffer	    equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
 
 
 ; simple macro for memory set operation
 macro _memset_dw adr,value,amount
 {
-	mov 	edi, adr
-	mov 	ecx, amount
+	mov	edi, adr
+	mov	ecx, amount
 	if value = 0
 		xor	eax, eax
 	else
 		mov	eax, value
 	end if
 	cld
-	rep 	stosd
+	rep	stosd
 }
 
 
@@ -196,7 +196,7 @@ stack_handler:
     ; Test for 10ms tick, call tcp timer
     mov     eax, [timer_ticks] ;[0xfdf0]
     cmp     eax, [last_1hsTick]
-    je      sh_001
+    je	    sh_001
 
     mov     [last_1hsTick], eax
     call    tcp_tx_handler
@@ -206,9 +206,9 @@ sh_001:
     ; Test for 1 second event, call 1s timer functions
     mov     al, 0x0   ;second
     out     0x70, al
-    in      al, 0x71
+    in	    al, 0x71
     cmp     al, [last_1sTick]
-    je      sh_exit
+    je	    sh_exit
 
     mov     [last_1sTick], al
 
@@ -235,7 +235,7 @@ proc checksum_jb stdcall uses ebx esi ecx,\
     mov     esi, dword[buf_ptr]
     mov     ecx, dword[buf_size]
     shr     ecx, 1  ; ecx=ecx/2
-    jnc     @f      ; if CF==0 then size is even number
+    jnc     @f	    ; if CF==0 then size is even number
     mov     bh, byte[esi + ecx*2]
   @@:
     cld
@@ -270,11 +270,11 @@ endp
 checksum:
     pusha
 
-    xor     edx, edx                  ; edx is the accumulative checksum
+    xor     edx, edx		      ; edx is the accumulative checksum
     xor     ebx, ebx
     mov     cx, [checkSize1]
     shr     cx, 1
-    jz      cs1_1
+    jz	    cs1_1
 
     mov     eax, [checkAdd1]
 
@@ -289,7 +289,7 @@ cs1:
 
 cs1_1:
     and     word [checkSize1], 0x01
-    jz      cs_test2
+    jz	    cs_test2
 
     mov     bh, [eax]
     xor     bl, bl
@@ -299,10 +299,10 @@ cs1_1:
 cs_test2:
     mov     cx, [checkSize2]
     cmp     cx, 0
-    jz      cs_exit                     ; Finished if no 2nd buffer
+    jz	    cs_exit			; Finished if no 2nd buffer
 
     shr     cx, 1
-    jz      cs2_1
+    jz	    cs2_1
 
     mov     eax, [checkAdd2]
 
@@ -317,7 +317,7 @@ cs2:
 
 cs2_1:
     and     word [checkSize2], 0x01
-    jz      cs_exit
+    jz	    cs_exit
 
     mov     bh, [eax]
     xor     bl, bl
@@ -384,7 +384,7 @@ not1:
     and     bl, 0x7f
     cmp     bl, 3
 
-    je       ash_eth_enable
+    je	     ash_eth_enable
     ; Ethernet isn't enabled, so make sure that the card is disabled
     mov     [ethernet_active], byte 0
 
@@ -395,7 +395,7 @@ ash_eth_enable:
     ; if found
     call    eth_probe
     cmp     eax, 0
-    je      ash_eth_done            ; Abort if no hardware found
+    je	    ash_eth_done	    ; Abort if no hardware found
 
     mov     [ethernet_active], byte 1
 
@@ -524,8 +524,8 @@ not15:					; ARP stuff
 	cmp	ebx, 1
 	je	a_ann			; arp announce
 		
-;	cmp	ebx,2
-;	jne	a_resp			; arp response
+;       cmp     ebx,2
+;       jne     a_resp                  ; arp response
 
 	jmp	param15_error
 		
@@ -538,11 +538,11 @@ a_probe:
 	
 	mov	edx, [stack_ip]
 	mov	[stack_ip], dword 0
-	mov	esi, ecx		; pointer to target MAC address	
+	mov	esi, ecx		; pointer to target MAC address 
 	call	arp_request
 	
 	pop	dword [stack_ip]		
-	jmp 	@f
+	jmp	@f
 	
 ; arp announce, sender IP must be set to target IP
 ; ecx: pointer to target MAC
@@ -658,6 +658,21 @@ nots8:
     ret
 
 nots9:
+    cmp     eax, 10
+    jnz     nots10
+
+    mov     eax,dword[drvr_cable]
+    test    eax,eax
+    jnz     @f		      ; if function is not implented, return -1
+    mov     al,-1
+    ret
+
+   @@:
+    call    dword[drvr_cable]
+    ret
+
+
+nots10:
     cmp     eax, 254
     jnz     notdump
 
@@ -892,9 +907,9 @@ stack_get_packet:
     mov     eax, NET1OUT_QUEUE
     call    dequeue
     cmp     ax, NO_BUFFER
-    je      sgp_non_exit            ; Exit if no buffer available
+    je	    sgp_non_exit	    ; Exit if no buffer available
 
-    push    eax                     ; Save buffer number for freeing at end
+    push    eax 		    ; Save buffer number for freeing at end
 
     push    edx
     ; convert buffer pointer eax to the absolute address
@@ -903,7 +918,7 @@ stack_get_packet:
     add     eax, IPbuffs
     pop     edx
 
-    push    eax                     ; save address of IP data
+    push    eax 		    ; save address of IP data
 
     ; Get the address of the callers data
     mov     edi,[0x3010]
@@ -913,10 +928,10 @@ stack_get_packet:
 
     pop     eax
 
-    mov     ecx, 1500           ; should get the actual number of bytes to write
+    mov     ecx, 1500		; should get the actual number of bytes to write
     mov     esi, eax
     cld
-    rep     movsb               ; copy the data across
+    rep     movsb		; copy the data across
 
     ; And finally, return the buffer to the free queue
     pop     eax
@@ -947,7 +962,7 @@ stack_insert_packet:
     mov     eax, EMPTY_QUEUE
     call    dequeue
     cmp     ax, NO_BUFFER
-    je      sip_err_exit
+    je	    sip_err_exit
 
     push    eax
 
@@ -964,9 +979,9 @@ stack_insert_packet:
 
     ; So, edx holds the IPbuffer ptr
 
-    pop     ecx                     ; count of bytes to send
-    mov     ebx, ecx                ; need the length later
-    pop     eax                     ; get callers ptr to data to send
+    pop     ecx 		    ; count of bytes to send
+    mov     ebx, ecx		    ; need the length later
+    pop     eax 		    ; get callers ptr to data to send
 
     ; Get the address of the callers data
     mov     edi,[0x3010]
@@ -976,7 +991,7 @@ stack_insert_packet:
 
     mov     edi, edx
     cld
-    rep     movsb               ; copy the data across
+    rep     movsb		; copy the data across
 
     pop     ebx
 

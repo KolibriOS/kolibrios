@@ -36,15 +36,15 @@
 ;
 ;********************************************************************
 
-ETHER_IP                    equ     0x0008      ; Reversed from 0800 for intel
-ETHER_ARP                   equ     0x0608      ; Reversed from 0806 for intel
-ETHER_RARP                  equ     0x3580
+ETHER_IP		    equ     0x0008	; Reversed from 0800 for intel
+ETHER_ARP		    equ     0x0608	; Reversed from 0806 for intel
+ETHER_RARP		    equ     0x3580
 
 struc ETH_FRAME
-{  .DstMAC       dp   ?  ;destination MAC-address [6 bytes]
-   .SrcMAC       dp   ?  ;source MAC-address [6 bytes]
-   .Type         dw   ?  ;type of the upper-layer protocol [2 bytes]
-   .Data         db   ?  ;data [46-1500 bytes]
+{  .DstMAC	 dp   ?  ;destination MAC-address [6 bytes]
+   .SrcMAC	 dp   ?  ;source MAC-address [6 bytes]
+   .Type	 dw   ?  ;type of the upper-layer protocol [2 bytes]
+   .Data	 db   ?  ;data [46-1500 bytes]
 }
 
 virtual at Ether_buffer
@@ -110,105 +110,108 @@ include "drivers/pcnet32.inc"
 ; be several lines which refer to the same functions.
 ; The first driver found on the PCI bus will be the one used.
 
-PCICARDS_ENTRY_SIZE         equ     20    ; Size of each PCICARDS entry
+PCICARDS_ENTRY_SIZE	    equ     24	  ; Size of each PCICARDS entry
 
 iglobal
 PCICards:
-dd  0x12098086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit
-dd  0x10298086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit
-dd  0x12298086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit
-dd  0x10308086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit
-dd  0x24498086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit
-dd  0x802910ec, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit
-dd  0x12111113, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit
-dd  0x813910ec, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-; /+/ Новые вендоры сетевых карт на базе rtl8139
-dd  0x813810ec, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x12111113, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x13601500, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x13604033, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x13001186, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x13401186, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0xab0613d1, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0xa1171259, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0xa11e1259, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0xab0614ea, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0xab0714ea, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x123411db, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x91301432, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x101202ac, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x0106018a, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x1211126c, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x81391743, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-dd  0x8139021b, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit
-; /-/
-dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x597010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x595010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x595110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x595210b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x900010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x900110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x900410b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x900510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x900610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x900A10b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x905010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x905110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x905510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x905810b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x905A10b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x920010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x980010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x980510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x764610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x505510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x605510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x605610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x5b5710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x505710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x515710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x525710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x656010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x656210b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x656410b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x450010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit
-dd  0x09001039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit
-dd  0x20001022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit
-dd  0x26251022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit
-dd  0x20011022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit
+dd  0x12098086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
+dd  0x10298086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
+dd  0x12298086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
+dd  0x10308086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
+dd  0x24498086, I8255x_probe, I8255x_reset, I8255x_poll, I8255x_transmit, 0
+dd  0x802910ec, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit, 0
+dd  0x12111113, rtl8029_probe, rtl8029_reset, rtl8029_poll, rtl8029_transmit, 0
+
+dd  0x813910ec, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x813810ec, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x12111113, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x13601500, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x13604033, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x13001186, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x13401186, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0xab0613d1, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0xa1171259, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0xa11e1259, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0xab0614ea, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0xab0714ea, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x123411db, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x91301432, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x101202ac, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x0106018a, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x1211126c, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x81391743, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+dd  0x8139021b, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+
+dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x597010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x595010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x595110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x595210b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x900010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x900110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x900410b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x900510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x900610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x900A10b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x905010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x905110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x905510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x905810b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x905A10b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x920010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x980010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x980510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x764610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x505510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x605510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x605610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x5b5710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x505710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x515710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x525710b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x656010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x656210b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x656410b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+dd  0x450010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
+
+dd  0x09001039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
+
+dd  0x20001022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
+dd  0x26251022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
+dd  0x20011022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
 ; following card is untested
-dd  0x70161039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit
-dd  0,0,0,0,0  ; end of list marker, do not remove
+dd  0x70161039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
+rb PCICARDS_ENTRY_SIZE	; end of list marker, do not remove
 endg
 
 uglobal
 ;Net-stack's interface's settings
-  node_addr:          db  0,0,0,0,0,0
-  gateway_ip:         db  0, 0, 0, 0
-  dns_ip:             dd  0
+  node_addr:	      db  0,0,0,0,0,0
+  gateway_ip:	      dd  0
+  dns_ip:	      dd  0
 
   eth_rx_data_len:    dw  0
-  eth_status:         dd  0
-  io_addr:            dd  0
-  hdrtype:            db  0
+  eth_status:	      dd  0
+  io_addr:	      dd  0
+  hdrtype:	      db  0
   vendor_device:      dd  0
-  pci_data:           dd  0
-  pci_dev:            dd  0
-  pci_bus:            dd  0
+  pci_data:	      dd  0
+  pci_dev:	      dd  0
+  pci_bus:	      dd  0
 
   ; These will hold pointers to the selected driver functions
-  drvr_probe:         dd  0
-  drvr_reset:         dd  0
-  drvr_poll:          dd  0
+  drvr_probe:	      dd  0
+  drvr_reset:	      dd  0
+  drvr_poll:	      dd  0
   drvr_transmit:      dd  0
+  drvr_cable:	      dd  0
 
 endg
 
 iglobal
   broadcast_add:      db  0xff,0xff,0xff,0xff,0xff,0xff
-  subnet_mask:        dd  0x00ffffff   ; 255.255.255.0
+  subnet_mask:	      dd  0x00ffffff   ; 255.255.255.0
 endg
 
 include "arp.inc"    ;arp-protocol functions
@@ -236,7 +239,7 @@ local MACAddress  dp  ?  ;allocate 6 bytes in the stack
     mov     eax, NET1OUT_QUEUE
     call    dequeue
     cmp     ax, NO_BUFFER
-    je      .exit            ; Exit if no buffer available
+    je	    .exit	     ; Exit if no buffer available
 
     push    eax  ;save buffer number
 
@@ -247,8 +250,8 @@ local MACAddress  dp  ?  ;allocate 6 bytes in the stack
     ; Extract the destination IP
     ; find the destination IP in the ARP table, get MAC
     ; store this MAC in 'MACAddress'
-    mov     ebx, eax               ; Save buffer address
-    mov     edx, [ebx + 16]        ; get destination address
+    mov     ebx, eax		   ; Save buffer address
+    mov     edx, [ebx + 16]	   ; get destination address
 
     ; If the destination address is 255.255.255.255,
     ; set the MACAddress to all ones ( broadcast )
@@ -258,31 +261,31 @@ local MACAddress  dp  ?  ;allocate 6 bytes in the stack
     movsd
     movsw
     cmp     edx, 0xffffffff
-    je      .send                ; If it is broadcast, just send
+    je	    .send		 ; If it is broadcast, just send
 
-    lea     eax, [MACAddress]    ;cause this is local variable
+    lea     eax, [MACAddress]	 ;cause this is local variable
     stdcall arp_table_manager, ARP_TABLE_IP_TO_MAC, edx, eax ;opcode,IP,MAC_ptr - Get the MAC address.
 
     cmp     eax, ARP_VALID_MAPPING
-    je      .send
+    je	    .send
 
     ; No valid entry. Has the request been sent, but timed out?
     cmp     eax, ARP_RESPONSE_TIMEOUT
-    je      .freebuf
+    je	    .freebuf
 
-  .wait_response:                   ;we wait arp-response
-                                    ; Re-queue the packet, and exit
+  .wait_response:		    ;we wait arp-response
+				    ; Re-queue the packet, and exit
     pop     ebx
     mov     eax, NET1OUT_QUEUE
-    call    queue                        ; Get the buffer back
+    call    queue			 ; Get the buffer back
     jmp     .exit
 
   .send:    ;if ARP_VALID_MAPPING then send the packet
-    lea     edi, [MACAddress]     ; Pointer to 48 bit destination address
-    movzx   ecx, word[ebx+2]      ; Size of IP packet to send
-    xchg    ch, cl                ; because mirror byte-order
-    mov     esi, ebx              ; Pointer to packet data
-    mov     bx, ETHER_IP          ; Type of packet
+    lea     edi, [MACAddress]	  ; Pointer to 48 bit destination address
+    movzx   ecx, word[ebx+2]	  ; Size of IP packet to send
+    xchg    ch, cl		  ; because mirror byte-order
+    mov     esi, ebx		  ; Pointer to packet data
+    mov     bx, ETHER_IP	  ; Type of packet
     call    dword [drvr_transmit] ; Call the drivers transmit function
 
     ; OK, we have sent a packet, so increment the count
@@ -315,7 +318,7 @@ ether_IP_handler:
     mov     eax, EMPTY_QUEUE
     call    dequeue
     cmp     ax, NO_BUFFER
-    je      eiph00x
+    je	    eiph00x
 
     ; convert buffer pointer eax to the absolute address
     push    eax
@@ -330,7 +333,7 @@ ether_IP_handler:
 
     ; Now store it all away
     mov     ecx, IPBUFFSIZE / 4     ; Copy all of the available
-                              ; data across - worse case
+			      ; data across - worse case
     cld
     rep     movsd
 
@@ -356,14 +359,14 @@ eiph00x:
 ;***************************************************************************
 eth_probe:
     ; Find a card on the PCI bus, and get it's address
-    call    scan_bus                    ; Find the ethernet cards PIC address
+    call    scan_bus			; Find the ethernet cards PIC address
     xor     eax, eax
     cmp     [io_addr], eax
-    je      ep_00x                      ; Return 0 in eax if no cards found
+    je	    ep_00x			; Return 0 in eax if no cards found
 
-    call    dword [drvr_probe]          ; Call the drivers probe function
+    call    dword [drvr_probe]		; Call the drivers probe function
 
-    mov     eax, [io_addr]              ; return a non zero value
+    mov     eax, [io_addr]		; return a non zero value
 
 ep_00x:
     ret
@@ -380,7 +383,7 @@ ep_00x:
 ethernet_driver:
     ; Do nothing if the driver is inactive
     cmp     [ethernet_active], byte 0
-    je      eth_exit
+    je	    eth_exit
 
     call    eth_rx
     call    eth_tx
@@ -403,11 +406,11 @@ eth_exit:
 eth_rx:
     xor     ax, ax
     mov     [eth_rx_data_len], ax
-    call    dword [drvr_poll]       ; Call the drivers poll function
+    call    dword [drvr_poll]	    ; Call the drivers poll function
 
     mov     ax, [eth_rx_data_len]
     cmp     ax, 0
-    je      .exit
+    je	    .exit
 
 
     ; Check the protocol. Call appropriate handler
@@ -415,12 +418,12 @@ eth_rx:
     mov     ax, [ETH_FRAME.Type]    ; The address of the protocol word
 
     cmp     ax, ETHER_IP
-    je      .is_ip                   ; It's IP
+    je	    .is_ip		     ; It's IP
 
     cmp     ax, ETHER_ARP
-    je      .is_arp                  ; It is ARP
+    je	    .is_arp		     ; It is ARP
 
-    jmp     .exit               ; If not IP or ARP, ignore
+    jmp     .exit		; If not IP or ARP, ignore
 
   .is_ip:
     inc     dword [ip_rx_count]

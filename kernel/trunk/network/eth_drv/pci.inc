@@ -8,11 +8,11 @@
 ;***************************************************************************
 
 ; PCI Bus defines
-PCI_HEADER_TYPE             equ     0x0e  ;8 bit
-PCI_BASE_ADDRESS_0          equ     0x10  ;32 bit
-PCI_BASE_ADDRESS_5          equ     0x24  ;32 bits
+PCI_HEADER_TYPE 	    equ     0x0e  ;8 bit
+PCI_BASE_ADDRESS_0	    equ     0x10  ;32 bit
+PCI_BASE_ADDRESS_5	    equ     0x24  ;32 bits
 PCI_BASE_ADDRESS_SPACE_IO   equ     0x01
-PCI_VENDOR_ID               equ     0x00  ;16 bit
+PCI_VENDOR_ID		    equ     0x00  ;16 bit
 PCI_BASE_ADDRESS_IO_MASK    equ     0xFFFFFFFC
 
 ;***************************************************************************
@@ -32,11 +32,11 @@ config_cmd:
     push    ecx
     mov     eax, ebx
     shl     eax, 16
-    or      eax, 0x80000000
+    or	    eax, 0x80000000
     shl     ecx, 8
-    or      eax, ecx
+    or	    eax, ecx
     pop     ecx
-    or      eax, edx
+    or	    eax, edx
     and     eax, 0xFFFFFFFC
     ret
 
@@ -64,7 +64,7 @@ pcibios_read_config_byte:
     and     dx, 0x03
     add     dx, 0xCFC
 ;   and     dx, 0xFFC
-    in      al, dx
+    in	    al, dx
     ret
 
 ;***************************************************************************
@@ -91,7 +91,7 @@ pcibios_read_config_word:
     and     dx, 0x02
     add     dx, 0xCFC
 ;   and     dx, 0xFFC
-    in      ax, dx
+    in	    ax, dx
     ret
 
 ;***************************************************************************
@@ -116,7 +116,7 @@ pcibios_read_config_dword:
     pop     dx
     xor     eax, eax
     mov     dx, 0xCFC
-    in      eax, dx
+    in	    eax, dx
     pop     edx
     ret
 
@@ -190,16 +190,16 @@ delay_us:
 
     mov     ecx,2
 
-    in      al,0x61
+    in	    al,0x61
     and     al,0x10
     mov     ah,al
     cld
 
 dcnt1:
-    in      al,0x61
+    in	    al,0x61
     and     al,0x10
     cmp     al,ah
-    jz      dcnt1
+    jz	    dcnt1
 
     mov     ah,al
     loop    dcnt1
@@ -231,10 +231,10 @@ scan_bus:
     mov     [hdrtype], al
     mov     [pci_data], eax
 
-    xor     ebx, ebx         ; ebx = bus# 0 .. 255
+    xor     ebx, ebx	     ; ebx = bus# 0 .. 255
 
 sb_bus_loop:
-    xor     ecx, ecx         ; ecx = devfn# 0 .. 254  ( not 255? )
+    xor     ecx, ecx	     ; ecx = devfn# 0 .. 254  ( not 255? )
 
 sb_devf_loop:
     mov     eax, ecx
@@ -259,7 +259,7 @@ sb_002:
     call    pcibios_read_config_dword
     mov     [vendor_device], eax
     cmp     eax, 0xffffffff
-    je      sb_empty
+    je	    sb_empty
     cmp     eax, 0
     jne     sb_check_vendor
 
@@ -273,9 +273,9 @@ sb_check_vendor:
 
 sb_check:
     cmp     [esi], dword 0
-    je      sb_inc_devf                ; Quit if at last entry
+    je	    sb_inc_devf 	       ; Quit if at last entry
     cmp     eax, [esi]
-    je      sb_got_card
+    je	    sb_got_card
     add     esi, PCICARDS_ENTRY_SIZE
     jmp     sb_check
 
@@ -295,6 +295,8 @@ sb_got_card:
     mov     [drvr_poll], eax
     mov     eax, [esi+16]
     mov     [drvr_transmit], eax
+    mov     eax, [esi+20]
+    mov     [drvr_cable], eax
     pop     eax
 
     mov     edx, PCI_BASE_ADDRESS_0
@@ -304,11 +306,11 @@ sb_reg_check:
     mov     [io_addr], eax
     and     eax, PCI_BASE_ADDRESS_IO_MASK
     cmp     eax, 0
-    je      sb_inc_reg
+    je	    sb_inc_reg
     mov     eax, [io_addr]
     and     eax, PCI_BASE_ADDRESS_SPACE_IO
     cmp     eax, 0
-    je      sb_inc_reg
+    je	    sb_inc_reg
 
     mov     eax, [io_addr]
     and     eax, PCI_BASE_ADDRESS_IO_MASK
@@ -325,10 +327,10 @@ sb_inc_reg:
 sb_inc_devf:
     inc     ecx
     cmp     ecx, 255
-    jb      sb_devf_loop
+    jb	    sb_devf_loop
     inc     ebx
     cmp     ebx, 256
-    jb      sb_bus_loop
+    jb	    sb_bus_loop
 
     ; We get here if we didn't find our card
     ; set io_addr to 0 as an indication
