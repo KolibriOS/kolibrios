@@ -34,7 +34,6 @@ apply_all:
     call _sound_dma    ;10
     call _pci_acc    ;12
     call _sb16        ;4
-    call _wssp        ;6
     call _syslang    ;5
     call _keyboard    ;2
     call _mouse_speed
@@ -217,25 +216,6 @@ get_setup_values:
     mov [sb16],eax
     mcall 26,5
     mov [syslang],eax
-    mcall 26,6
-    cmp eax,0x530
-    jne s_wss_2
-    mov eax,1
-    jmp get_other
-s_wss_2:
-    cmp eax,0x608
-    jne s_wss_3
-    mov eax,2
-    jmp get_other
-s_wss_3:
-    cmp eax,0xe80
-    jne s_wss_4
-    mov eax,3
-    jmp get_other
-s_wss_4:
-    mov eax,4
-get_other:
-    mov [wss],eax
     mcall 26,7
     mov [hdbase],eax
     mcall 26,8
@@ -435,7 +415,6 @@ noseldate:
     cmp  ah,99
     jne  nosaveall
     mcall 70,save_fileinfo
-    call settime
     mov  dword [blinkpar],0
     call drawtime
     jmp  still
@@ -644,28 +623,6 @@ close:
     jnz  nosbs
     call _sb16
   nosbs:
-
-    cmp  ah,52        ; SET WINDOWS SOUND SYSTEM BASE
-    jnz  nowssm
-    mov  eax,[wss]
-    sub  eax,2
-    and  eax,3
-    inc  eax
-    mov  [wss],eax
-    call draw_infotext
-  nowssm:
-    cmp  ah,53
-    jnz  nowssp
-    mov  eax,[wss]
-    and  eax,3
-    inc  eax
-    mov  [wss],eax
-    call draw_infotext
-  nowssp:
-    cmp  ah,51
-    jnz  nowsss
-    call _wssp
-  nowsss:
 
     cmp  ah,42          ; SET SYSTEM LANGUAGE BASE
     jnz  nosysm
@@ -965,44 +922,40 @@ draw_window:
     mov  ecx,43+10*8
     call draw_buttons
 
-    mov  edx,51
-    mov  ecx,43+12*8
-    call draw_buttons
-
     mov  edx,61
     mov  ecx,43+6*8
     call draw_buttons
 
     mov  edx,91
-    mov  ecx,43+18*8
-    call draw_buttons
-
-    mov  edx,71
-    mov  ecx,43+14*8
-    call draw_buttons
-
-    mov  edx,81
     mov  ecx,43+16*8
     call draw_buttons
 
+    mov  edx,71
+    mov  ecx,43+12*8
+    call draw_buttons
+
+    mov  edx,81
+    mov  ecx,43+14*8
+    call draw_buttons
+
     mov  edx,101
-    mov  ecx,43+20*8
+    mov  ecx,43+18*8
     call draw_buttons
 
     mov  edx,111
-    mov  ecx,43+22*8 ; 22
+    mov  ecx,43+20*8 ; 22
     call draw_buttons
 
     mov  edx,121
-    mov  ecx,43+24*8 ; 24
+    mov  ecx,43+22*8 ; 24
     call draw_buttons
 
     mov  edx,131
-    mov  ecx,43+26*8 ; 26
+    mov  ecx,43+24*8 ; 26
     call draw_buttons
 
     mov  edx,141
-    mov  ecx,43+28*8 ; 26
+    mov  ecx,43+26*8 ; 26
     call draw_buttons
 
     call draw_infotext
@@ -1023,66 +976,66 @@ draw_infotext:
     mov  eax,[keyboard]       ; KEYBOARD
     test eax,eax
     jnz  noen
-    mov  [text00+LLL*10+28],dword 'ENGL'
-    mov  [text00+LLL*10+32],dword 'ISH '
+    mov  [text00+LLL*5+28],dword 'ENGL'
+    mov  [text00+LLL*5+32],dword 'ISH '
   noen:
     cmp  eax,1
     jnz  nofi
-    mov  [text00+LLL*10+28],dword 'FINN'
-    mov  [text00+LLL*10+32],dword 'ISH '
+    mov  [text00+LLL*5+28],dword 'FINN'
+    mov  [text00+LLL*5+32],dword 'ISH '
   nofi:
     cmp  eax,2
     jnz  noge
-    mov  [text00+LLL*10+28],dword 'GERM'
-    mov  [text00+LLL*10+32],dword 'AN  '
+    mov  [text00+LLL*5+28],dword 'GERM'
+    mov  [text00+LLL*5+32],dword 'AN  '
   noge:
     cmp  eax,3
     jnz  nogr
-    mov  [text00+LLL*10+28],dword 'RUSS'
-    mov  [text00+LLL*10+32],dword 'IAN '
+    mov  [text00+LLL*5+28],dword 'RUSS'
+    mov  [text00+LLL*5+32],dword 'IAN '
   nogr:
     cmp  eax,4
     jnz  nofr
-    mov  [text00+LLL*10+28],dword 'FREN'
-    mov  [text00+LLL*10+32],dword 'CH  '
+    mov  [text00+LLL*5+28],dword 'FREN'
+    mov  [text00+LLL*5+32],dword 'CH  '
   nofr:
     cmp  eax,5
     jnz  noet
-    mov  [text00+LLL*10+28],dword 'ESTO'
-    mov  [text00+LLL*10+32],dword 'NIAN'
+    mov  [text00+LLL*5+28],dword 'ESTO'
+    mov  [text00+LLL*5+32],dword 'NIAN'
   noet:
 
     mov  eax,[syslang]            ; SYSTEM LANGUAGE
     dec  eax
     test eax,eax
     jnz  noen5
-    mov  [text00+LLL*8+28],dword 'ENGL'
-    mov  [text00+LLL*8+32],dword 'ISH '
+    mov  [text00+LLL*4+28],dword 'ENGL'
+    mov  [text00+LLL*4+32],dword 'ISH '
   noen5:
     cmp  eax,1
     jnz  nofi5
-    mov  [text00+LLL*8+28],dword 'FINN'
-    mov  [text00+LLL*8+32],dword 'ISH '
+    mov  [text00+LLL*4+28],dword 'FINN'
+    mov  [text00+LLL*4+32],dword 'ISH '
   nofi5:
     cmp  eax,2
     jnz  noge5
-    mov  [text00+LLL*8+28],dword 'GERM'
-    mov  [text00+LLL*8+32],dword 'AN  '
+    mov  [text00+LLL*4+28],dword 'GERM'
+    mov  [text00+LLL*4+32],dword 'AN  '
   noge5:
     cmp  eax,3
     jnz  nogr5
-    mov  [text00+LLL*8+28],dword 'RUSS'
-    mov  [text00+LLL*8+32],dword 'IAN '
+    mov  [text00+LLL*4+28],dword 'RUSS'
+    mov  [text00+LLL*4+32],dword 'IAN '
   nogr5:
     cmp  eax,4
     jne  nofr5
-    mov  [text00+LLL*8+28],dword 'FREN'
-    mov  [text00+LLL*8+32],dword 'CH  '
+    mov  [text00+LLL*4+28],dword 'FREN'
+    mov  [text00+LLL*4+32],dword 'CH  '
   nofr5:
     cmp  eax,5
     jne  noet5
-    mov  [text00+LLL*8+28],dword 'ESTO'
-    mov  [text00+LLL*8+32],dword 'NIAN'
+    mov  [text00+LLL*4+28],dword 'ESTO'
+    mov  [text00+LLL*4+32],dword 'NIAN'
   noet5:
 
     mov  eax,[midibase]
@@ -1091,127 +1044,89 @@ draw_infotext:
 
 
     mov  eax,[sb16]           ; SB16 BASE
-    mov  esi,text00+LLL*2+32
+    mov  esi,text00+LLL*1+32
     call hexconvert
 
-
-    mov  eax,[wss]         ; WSS BASE
-    cmp  eax,1
-    jnz  nowss1
-    mov  [wssp],dword 0x530
-  nowss1:
-    cmp  eax,2
-    jnz  nowss2
-    mov  [wssp],dword 0x608
-  nowss2:
-    cmp  eax,3
-    jnz  nowss3
-    mov  [wssp],dword 0xe80
-  nowss3:
-    cmp  eax,4
-    jnz  nowss4
-    mov  [wssp],dword 0xf40
-  nowss4:
-
-    mov  eax,[wssp]
-    mov  esi,text00+LLL*12+32
-    call hexconvert
 
     mov  eax,[cdbase]          ; CD BASE
     cmp  eax,1
     jnz  noe1
-    mov  [text00+LLL*4+28],dword 'PRI.'
-    mov  [text00+LLL*4+32],dword 'MAST'
-    mov  [text00+LLL*4+36],dword 'ER  '
+    mov  [text00+LLL*2+28],dword 'PRI.'
+    mov  [text00+LLL*2+32],dword 'MAST'
+    mov  [text00+LLL*2+36],dword 'ER  '
   noe1:
     cmp  eax,2
     jnz  nof1
-    mov  [text00+LLL*4+28],dword 'PRI.'
-    mov  [text00+LLL*4+32],dword 'SLAV'
-    mov  [text00+LLL*4+36],dword 'E   '
+    mov  [text00+LLL*2+28],dword 'PRI.'
+    mov  [text00+LLL*2+32],dword 'SLAV'
+    mov  [text00+LLL*2+36],dword 'E   '
   nof1:
     cmp  eax,3
     jnz  nog1
-    mov  [text00+LLL*4+28],dword 'SEC.'
-    mov  [text00+LLL*4+32],dword 'MAST'
-    mov  [text00+LLL*4+36],dword 'ER  '
+    mov  [text00+LLL*2+28],dword 'SEC.'
+    mov  [text00+LLL*2+32],dword 'MAST'
+    mov  [text00+LLL*2+36],dword 'ER  '
   nog1:
     cmp  eax,4
     jnz  nog2
-    mov  [text00+LLL*4+28],dword 'SEC.'
-    mov  [text00+LLL*4+32],dword 'SLAV'
-    mov  [text00+LLL*4+36],dword 'E   '
+    mov  [text00+LLL*2+28],dword 'SEC.'
+    mov  [text00+LLL*2+32],dword 'SLAV'
+    mov  [text00+LLL*2+36],dword 'E   '
   nog2:
 
 
     mov  eax,[hdbase]            ; HD BASE
     cmp  eax,1
     jnz  hnoe1
-    mov  [text00+LLL*6+28],dword 'PRI.'
-    mov  [text00+LLL*6+32],dword 'MAST'
-    mov  [text00+LLL*6+36],dword 'ER  '
+    mov  [text00+LLL*3+28],dword 'PRI.'
+    mov  [text00+LLL*3+32],dword 'MAST'
+    mov  [text00+LLL*3+36],dword 'ER  '
   hnoe1:
     cmp  eax,2
     jnz  hnof1
-    mov  [text00+LLL*6+28],dword 'PRI.'
-    mov  [text00+LLL*6+32],dword 'SLAV'
-    mov  [text00+LLL*6+36],dword 'E   '
+    mov  [text00+LLL*3+28],dword 'PRI.'
+    mov  [text00+LLL*3+32],dword 'SLAV'
+    mov  [text00+LLL*3+36],dword 'E   '
   hnof1:
     cmp  eax,3
     jnz  hnog1
-    mov  [text00+LLL*6+28],dword 'SEC.'
-    mov  [text00+LLL*6+32],dword 'MAST'
-    mov  [text00+LLL*6+36],dword 'ER  '
+    mov  [text00+LLL*3+28],dword 'SEC.'
+    mov  [text00+LLL*3+32],dword 'MAST'
+    mov  [text00+LLL*3+36],dword 'ER  '
   hnog1:
     cmp  eax,4
     jnz  hnog2
-    mov  [text00+LLL*6+28],dword 'SEC.'
-    mov  [text00+LLL*6+32],dword 'SLAV'
-    mov  [text00+LLL*6+36],dword 'E   '
+    mov  [text00+LLL*3+28],dword 'SEC.'
+    mov  [text00+LLL*3+32],dword 'SLAV'
+    mov  [text00+LLL*3+36],dword 'E   '
   hnog2:
 
 
     mov  eax,[f32p]        ; FAT32 PARTITION
     add  al,48
-    mov  [text00+LLL*14+28],al
+    mov  [text00+LLL*6+28],al
 
     mov  eax,[sound_dma]      ; SOUND DMA
     add  eax,48
-    mov  [text00+LLL*16+28],al
+    mov  [text00+LLL*7+28],al
 
     mov  eax,[lba_read]
     call onoff          ; LBA READ
-    mov  [text00+LLL*18+28],ebx
+    mov  [text00+LLL*8+28],ebx
 
     mov  eax,[pci_acc]
     call onoff          ; PCI ACCESS
-    mov  [text00+LLL*20+28],ebx
+    mov  [text00+LLL*9+28],ebx
 
     mov  eax,[mouse_speed]      ; MOUSE SPEED
     add  al,48
-    mov  [text00+LLL*26+28],al
+    mov  [text00+LLL*12+28],al
 
     mov  eax,[mouse_delay]
-    mov  esi,text00+LLL*28+32
+    mov  esi,text00+LLL*13+32
     call hexconvert           ; MOUSE DELAY
 
-    mov  eax,13
-    mov  ebx,175*65536+85
-    mov  ecx,40*65536+245
-    mov  edx,0x80111199-19
-    int  0x40
-
-    mov  edx,text00
-    mov  ebx,10*65536+45
-    mov  eax,4
-    mov  ecx,0xffffff
-    mov  esi,LLL
-  newline:
-    int  0x40
-    add  ebx,8
-    add  edx,LLL
-    cmp  [edx],byte 'x'
-    jnz  newline
+    call text_out
 
     popa
     ret
@@ -1220,28 +1135,29 @@ draw_infotext:
     mov  ax,[time]      ;hours 22
     mov  cl,1
     call unpacktime
-    mov  [text00+LLL*22+28],word bx
+    mov  [text00+LLL*10+28],word bx
     mov  al,ah          ;minutes
     inc  cl
     call unpacktime
-    mov  [text00+LLL*22+31],word bx
+    mov  [text00+LLL*10+31],word bx
     mov  eax,[date]
     mov  ch,3
     call unpackdate
-    mov  [text00+LLL*24+34],word bx    ;year   24
+    mov  [text00+LLL*11+34],word bx    ;year   24
     mov  al,ah
     mov  ch,1
     call unpackdate
-    mov  [text00+LLL*24+28],word bx    ;month
+    mov  [text00+LLL*11+28],word bx    ;month
     bswap eax
     mov  al,ah
     inc  ch
     call unpackdate
-    mov  [text00+LLL*24+31],word bx    ;day
+    mov  [text00+LLL*11+31],word bx    ;day
 
+text_out:
     mov  eax,13
     mov  ebx,175*65536+85
-    mov  ecx,40*65536+245
+    mov  ecx,40*65536+225
     mov  edx,0x80111199-19
     int  0x40
 
@@ -1250,12 +1166,21 @@ draw_infotext:
     mov  eax,4
     mov  ecx,0xffffff
     mov  esi,LLL
-  newline1:
+    mov  ebp,text1_strings
+  newline:
     int  0x40
-    add  ebx,8
-    add  edx,LLL
-    cmp  [edx],byte 'x'
-    jnz  newline1
+    add  ebx,8+8
+    add  edx,esi
+    dec  ebp
+    jnz  newline
+    mov  ebp,text2_strings
+    add  ebx,8+8
+  @@:
+    int  0x40
+    add  ebx,8+8
+    add  edx,esi
+    dec  ebp
+    jnz  @b
     ret
 
   unpacktime:
@@ -1375,13 +1300,6 @@ _sb16:
     int  0x40
     ret
 
-_wssp:
-    mov  eax,21
-    mov  ebx,6
-    mov  ecx,[wssp]
-    int  0x40
- ret
-
 _syslang:
     mov  eax,21
     mov  ebx,5
@@ -1428,52 +1346,6 @@ cleantxt:
     mov  [text00+1711],byte 'x'
     ret
 
-settime:
-    mov  dx,0x70
-    call startstopclk
-    dec  dx
-    mov  al,2           ;set minutes
-    out  dx,al
-    inc  dx
-    mov  al,byte [time+1]
-    out  dx,al
-    dec  dx
-    mov  al,4           ;set hours
-    out  dx,al
-    inc  dx
-    mov  al,byte [time]
-    out  dx,al
-    dec  dx
-    mov  al,7           ;set day
-    out  dx,al
-    inc  dx
-    mov  al,byte [date+2]
-    out  dx,al
-    dec  dx
-    mov  al,8           ;set month
-    out  dx,al
-    inc  dx
-    mov  al,byte [date+1]
-    out  dx,al
-    dec  dx
-    mov  al,9           ;set year
-    out  dx,al
-    inc  dx
-    mov  al,byte [date]
-    out  dx,al
-    dec  dx
-    call startstopclk
-    ret
-
-startstopclk:
-    mov  al,0x0b
-    out  dx,al
-    inc  dx
-    in         al,dx
-    btc  ax,7
-    out  dx,al
-    ret
-
 ; DATA AREA
 count:          db 0x0
 blinkpar: dd 0x0
@@ -1483,76 +1355,44 @@ date:        dd 0x0
 textrus:
 
     db 'База MIDI ROLAND MPU-401  : 0x320           - +   Применить'
-    db '                                                           '
     db 'База SoundBlaster 16      : 0x240           - +   Применить'
-    db '                                                           '
     db 'База CD-ROMа              : PRI.SLAVE       - +   Применить'
-    db '                                                           '
     db 'База ЖД-1                 : PRI.MASTER      - +   Применить'
-    db '                                                           '
     db 'Язык системы              : ENGLISH         - +   Применить'
-    db '                                                           '
     db 'Раскладка клавиатуры      : ENGLISH         - +   Применить'
-    db '                                                           '
-    db 'База WSS                  : 0x200           - +   Применить'
-    db '                                                           '
     db 'Раздел FAT32 на ЖД-1      : 1               - +   Применить'
-    db '                                                           '
     db 'Звуковой канал DMA        : 1               - +   Применить'
-    db '                                                           '
     db 'Включить LBA              : OFF             - +   Применить'
-    db '                                                           '
     db 'Доступ к шине PCI         : OFF             - +   Применить'
-    db '                                                           '
     db 'Системное время           :  0:00           - +     Выбор  '
-    db '                                                           '
     db 'Системная дата (м,д,г)    : 00/00/00        - +     Выбор  '
-    db '                                                           '
     db 'Скорость курсора мыши     : 1               - +   Применить'
-    db '                                                           '
     db 'Задержка ускорения мыши   : 0x00a           - +   Применить'
-    db '                                                           '
+
     db 'ВНИМАНИЕ:                                    Применить все '
-    db 'ИСПОЛЬЗУЙТЕ ДОСТУП К FAT С ОСТОРОЖНОСТЬЮ!                  '
     db 'НЕ ЗАБУДЬТЕ СОХРАНИТЬ НАСТРОЙКИ              Сохранить все '
-    db 'x'
 
 texteng:
 
     db 'MIDI: ROLAND MPU-401 BASE : 0x320           - +     APPLY  '
-    db '                                                           '
     db 'SOUND: SB16 BASE          : 0x240           - +     APPLY  '
-    db '                                                           '
     db 'CD-ROM BASE               : PRI.SLAVE       - +     APPLY  '
-    db '                                                           '
     db 'HARDDISK-1 BASE           : PRI.MASTER      - +     APPLY  '
-    db '                                                           '
     db 'SYSTEM LANGUAGE           : ENGLISH         - +     APPLY  '
-    db '                                                           '
     db 'KEYBOARD LAYOUT           : ENGLISH         - +     APPLY  '
-    db '                                                           '
-    db 'WINDOWS SOUND SYSTEM BASE : 0x200           - +     APPLY  '
-    db '                                                           '
     db 'FAT32-1 PARTITION IN HD-1 : 1               - +     APPLY  '
-    db '                                                           '
     db 'SOUND DMA CHANNEL         : 1               - +     APPLY  '
-    db '                                                           '
     db 'LBA READ ENABLED          : OFF             - +     APPLY  '
-    db '                                                           '
     db 'PCI ACCESS FOR APPL.      : OFF             - +     APPLY  '
-    db '                                                           '
     db 'SYSTEM TIME               :  0:00           - +    SELECT  '
-    db '                                                           '
     db 'SYSTEM DATE (M,D,Y)       : 00/00/00        - +    SELECT  '
-    db '                                                           '
     db 'Mouse pointer speed       : 1               - +     APPLY  '
-    db '                                                           '
     db 'Mouse pointer delay       : 0x00a           - +     APPLY  '
-    db '                                                           '
+text1_strings = 14
+
     db 'NOTE:                                           APPLY ALL  '
-    db 'TEST FAT FUNCTIONS WITH EXTREME CARE                       '
-    db 'SAVE YOUR SETTINGS BEFORE QUIT MENUET           SAVE ALL   '
-    db 'x'
+    db 'SAVE YOUR SETTINGS BEFORE QUIT KOLIBRI          SAVE ALL   '
+text2_strings = 2
 
 labelt:
     db         'НАСТРОЙКА УСТРОЙСТВ DEVICE SETUP       '
@@ -1767,7 +1607,7 @@ read_fileinfo:
        dd 0
        dd 0
        dd 0
-       dd 56
+       dd 48
        dd keyboard
        db 0
        dd file_name
@@ -1776,7 +1616,7 @@ save_fileinfo:
        dd 2
        dd 0
        dd 0
-       dd 56
+       dd 48
        dd keyboard
 file_name:   db '/rd/1/setup.dat',0
 
@@ -1787,8 +1627,6 @@ midibase     dd 0x320
 cdbase         dd 0x2
 sb16         dd 0x220
 syslang      dd 0x1
-wss         dd 0x1
-wssp         dd 0x0
 hdbase         dd 0x1
 f32p         dd 0x1
 sound_dma    dd 0x1

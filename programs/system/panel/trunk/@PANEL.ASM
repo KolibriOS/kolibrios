@@ -54,13 +54,14 @@ handle_key:
         jz      page_list_next
         cmp     al, 72
         jz      page_list_prev
-; this is hotkey Ctrl+Shift or LShift+RShift
+; this is hotkey Ctrl+Shift ;or LShift+RShift
         mov     ebx, setup_exec
-        test    ah, 001100b
-        jnz     change_key_lang
-        mov     dword [ebx+8], syslang
+;        test    ah, 001100b
+;        jz      change_sys_lang
+change_key_lang:
+        mov     dword [ebx+8], chlang
         mcall   70
-        call    syslang_music
+        call    chlang_music
 ;       mcall   5, 25
 begin_1:
     mov  ecx,[active_process]
@@ -69,12 +70,12 @@ begin_1:
 .ret:
         ret
 
-change_key_lang:
-        mov     dword [ebx+8], chlang
-        mcall   70
-        call    chlang_music
-;       mcall   5, 25
-        jmp     begin_1
+;change_sys_lang:
+;        mov     dword [ebx+8], syslang
+;        mcall   70
+;        call    syslang_music
+;;       mcall   5, 25
+;        jmp     begin_1
 
   start_end_application:
         mov     dword [ebx+21], end_name
@@ -129,9 +130,9 @@ sysmeter_music:
 button_music:
     mcall 55,eax, , ,buttonmusic
     ret
-syslang_music:
-    mcall 55, eax, , , syslangmusic
-    ret
+;syslang_music:
+;    mcall 55, eax, , , syslangmusic
+;    ret
 chlang_music:
     mcall 55, eax, , , chlangmusic
     ret
@@ -141,7 +142,7 @@ menu_music:
 
 chlangmusic:    db 0x82,0x60,0x83,0x65,0x82,0x60,0
 
-syslangmusic:   db 0x82,0x65,0x83,0x70,0x82,0x65,0
+;syslangmusic:   db 0x82,0x65,0x83,0x70,0x82,0x65,0
 
 menumusic:      db 0x82,0x50,0x84,0x48,0x82,0x50,0x84,0x53,0x82,0x51,0
 
@@ -315,17 +316,17 @@ still:
     jmp  still
 
   noid16:
-    cmp  ah,17
-    jne  noid17
-        mov     ebx, setup_exec
-        mov     dword [ebx+8], syslang
-        mov     eax, 70
-        int     0x40
-    call syslang_music
-    mcall 5, 25
-    jmp  still
-
-  noid17:
+;    cmp  ah,17
+;    jne  noid17
+;        mov     ebx, setup_exec
+;        mov     dword [ebx+8], syslang
+;        mov     eax, 70
+;        int     0x40
+;    call syslang_music
+;    mcall 5, 25
+;    jmp  still
+;
+;  noid17:
     cmp  ah,18
     jne  noid18
         mov     dword [ebx+21], sysmeter_name
@@ -1470,15 +1471,16 @@ draw_info:    ; draw cpu usage, time, date
     int  0x40
 
 
-    mov  eax,26          ; check for change in time or country
-    mov  ebx,5
-    int  0x40
-    mov  edx,eax
+;    mov  eax,26          ; check for change in time or country
+;    mov  ebx,5
+;    int  0x40
+;    mov  edx,eax
     mov  eax,26
     mov  ebx,2
     mov  ecx,9
     int  0x40
-    add  edx,eax
+;    add  edx,eax
+    mov  edx,eax
     mov  eax,3
     int  0x40
     and  eax,0xffff
@@ -1522,12 +1524,12 @@ draw_info:    ; draw cpu usage, time, date
     int  0x40
     sub  ebx,17 shl 16
     inc  edx                ;button 17
-    int  0x40
+;    int  0x40
     add  ebx,33 shl 16
     mov  bx,8
     inc  edx                ;button 18
     int  0x40
-    sub  ebx,47 shl 16
+    sub  ebx,30 shl 16
     mov  bx,10
     inc  edx                ;button 19
     int  0x40
@@ -1545,14 +1547,14 @@ draw_info:    ; draw cpu usage, time, date
 
     ; flags
 
-    mov  eax,26
-    mov  ebx,5
-    int  0x40
-    mov  ebx,eax
-
-    mov  eax,1
-    mov  [type_lang],al
-    call draw_flag
+;    mov  eax,26
+;    mov  ebx,5
+;    int  0x40
+;    mov  ebx,eax
+;
+;    mov  eax,1
+;    mov  [type_lang],al
+;    call draw_flag
 
     mov  eax,26
     mov  ebx,2
@@ -1568,7 +1570,7 @@ draw_info:    ; draw cpu usage, time, date
     mov  [sound_flag],al
 
     mov  ebx,[maxx]
-    sub  ebx,109 ;112 ;28
+    sub  ebx,92 ;109 ;112 ;28
     shl  ebx,16
     mov  bx,12
     mov  ecx, 4*65536+13
@@ -1623,7 +1625,7 @@ draw_info:    ; draw cpu usage, time, date
 dalshe:
 
     mov  ebx,[maxx]
-    sub  ebx,123
+    sub  ebx,106;123
     shl  ebx,16
     mov  bx,12
     mov  ecx, 4*65536+13
@@ -1637,7 +1639,7 @@ dalshe:
     int  0x40
     mov  eax,4
     mov  ebx,[maxx]
-    sub  ebx,121
+    sub  ebx,104;121
     shl  ebx,16
     mov  bx,7
     mov  ecx,0x10000000
@@ -1650,7 +1652,7 @@ dalshe:
     mov  edx,0
     mov  eax,13
     mov  ebx,[maxx]
-    sub  ebx,134
+    sub  ebx,117;134
     shl  ebx,16
     mov  bx,9
     mov  ecx,6 shl 16+11
@@ -1668,7 +1670,7 @@ dalshe:
     mov  eax,4
     mov  edx,page_a1
     mov  ebx,[maxx]
-    sub  ebx,150
+    sub  ebx,133;150
     shl  ebx,16
     mov  bx,8
     mov  esi,4
@@ -1680,7 +1682,7 @@ dalshe:
     mov  ebx,0x10100
     mov  ecx,[page_list]
     mov  edx,[maxx]
-    sub  edx,141
+    sub  edx,124;141
     shl  edx,16
     mov  dx,7
     mov  esi,0xffffff
@@ -1932,7 +1934,7 @@ turn_text db  '><'
 gpl       db  'GPL'
 
 chlang db 'LANG',0
-syslang db 'SLAN',0
+;syslang db 'SLAN',0
 
 contrast  db 0
 
