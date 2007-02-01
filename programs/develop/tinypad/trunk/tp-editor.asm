@@ -999,7 +999,11 @@ func editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
 
 	xor	edx,edx
 
-	mov	eax,[cur_editor.TopLeft.Y]
+	mov	eax,[cur_editor.Lines.Count]
+	cmp	eax,[checker_ed.Lines.Count]
+	je	@f
+	or	dl,REDRAW_TEXT+REDRAW_VSCROLL+REDRAW_HSCROLL
+    @@: mov	eax,[cur_editor.TopLeft.Y]
 	cmp	eax,[checker_ed.TopLeft.Y]
 	je	@f
 	or	dl,REDRAW_TEXT+REDRAW_VSCROLL
@@ -1010,6 +1014,14 @@ func editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
     @@: or	dl,dl
 	jnz	.redraw
 
+	mov	ecx,[cur_editor.Caret.Y]
+	call	get_line_offset
+	call	get_real_length
+	cmp	eax,[checker_ed_ll]
+	je	@f
+	mov	[checker_ed_ll],eax
+	or	dl,REDRAW_ONELINE
+    @@:
 	mov	eax,[cur_editor.Caret.Y]
 	cmp	eax,[checker_ed.Caret.Y]
 	je	@f

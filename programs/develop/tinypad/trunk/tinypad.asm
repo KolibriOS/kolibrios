@@ -3,7 +3,7 @@
 ; compiler:          flat assembler 1.67.18
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
 ; version:           4.0.4
-; last update:       2007-01-28 (Jan 28, 2007)
+; last update:       2007-02-01 (Feb 01, 2007)
 ; minimal kernel:    revision #270 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
@@ -763,7 +763,8 @@ f_info70 rd 7
 
 file_info FILEINFO
 
-checker_ed EDITOR
+checker_ed    EDITOR
+checker_ed_ll dd ?
 
 tab_bar      TABCTL
 virtual at tab_bar.Current
