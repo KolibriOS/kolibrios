@@ -20,6 +20,7 @@ include 'scrsavef.inc'; вставляем процедуру сохранения файла
 	use_text_work  ; /
 include 'gp.inc'
 include 'srectwin.inc'
+include 'lang.inc'
 ;--- начало программы ---
 	app_start
 	;mov     al,[gs:1280*4*1024]
@@ -564,6 +565,54 @@ device_er db 'Ошибка устройства',0
 not_shooted db 'Сделайте снимок !!!',0
 no_file_name db 'Введите имя файла !!!',0
 invalid_rect db 'Недопустимые размеры области',0
+
+else
+text:
+.2 db 'Screen width:',0
+.1 db 'Screen height:',0
+.3 db 'Enter full path to the file:',0
+.4 db 'Bits per pixel:',0
+.5 db 'Bytes per line:',0
+.6 db '100 = 1 second',0
+;.7: db 'Enter name of file:',0
+;.8: db 'Instead of "*" in filename the number will be included.',0
+.9 db 'Current photo number:',0
+.10 db 'Amount of digits in number:',0
+
+but_text:
+.1 db 'Make screen photo',0
+.2 db 'Save screen photo',0
+.3 db 'Show photo now',0
+.4 db 'Apply',0
+.5 db 'Start autoshooting',0
+.6 db 'Stop autoshooting',0
+.7 db 'Set',0
+
+ch_text:
+.1 db 'Minimize window';,0
+.2 db 'Show photo';,0
+.3 db 'then make active';,0
+.4 db 'Delay:';,0
+.5 db 'Autosave';,0
+.6 db 'Start numeration from';,0
+.7 db 'Area'
+.8:
+
+no_shoot db 'There is no photo',0
+shooting db 'Photographing...',0
+shooted_ok db 'Photo created',0
+saving db 'Saving...',0
+saved_ok db 'Photo saved',0
+delay_now db 'Delay...',0
+bad_file_name db 'File name is wrong',0
+disk_filled db 'Disk is full',0
+bad_fat_table db 'FAT table destroyed',0
+ac_den db 'Access denied',0
+device_er db 'Device error',0
+not_shooted db 'Make photo !!!',0
+no_file_name db 'Enter file name !!!',0
+invalid_rect db 'Wrong area size',0
+
 end if
 
 sign_n_input:

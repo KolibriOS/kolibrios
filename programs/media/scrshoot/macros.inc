@@ -9,8 +9,6 @@ include 'file_sys.inc'
 include 'textwork.inc'
 ;include 'ini.inc'
 
-lang fix ru;en
-
 macro movr reg,val
 {
 if val < 65536
