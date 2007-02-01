@@ -45,6 +45,21 @@ pusha
 	jmp	.next
 .str_end:
 
+; Вычисляем, сколько байт нужно прибавлять к каждой строке,
+; чтобы следующая была выравнена на 4 байта.
+; Результат помещаем в edi.
+	xor	edx,edx
+	movzx	eax,word [scr_buf.width]  ; eax = ширина картинки
+	lea	eax,[eax*3]		  ; eax = байт на строку картинки
+	movr	ebx,4			  ; ebx = 4
+	mov	edi,ebx 		  ; edi = 4
+	div	ebx			  ; eax = байт на строку картинки div 4  edx = байт... mod 4
+	sub	edi,edx 		  ; edi = количество байт
+	test	edx,edx
+	jnz	@f
+	xor	edi,edi
+@@:
+
 	; выделяем память
 	mov	ecx,[scr_buf.end_ptr]
 	mov	[sf_buf.bmp_header],ecx
@@ -52,8 +67,10 @@ pusha
 	mov	[sf_buf.bmp_area],ecx
 	movsx	ebx,word [scr_buf.width]
 	movsx	edx,word [scr_buf.height]
-	imul	ebx,edx
+	;imul    ebx,edx
 	lea	ebx,[ebx*3]
+	add	ebx,edi
+	imul	ebx,edx
 	add	ecx,ebx
 	mov	[sf_buf.end],ecx
 	add	ecx,4096
@@ -62,6 +79,7 @@ pusha
 	movr	 eax,64
 	int	0x40
 
+	push	edi
 	; заполняем структуру для сохранения файла
 	mov	edi,fs_struc
 	mov	[edi],dword 2
@@ -82,36 +100,57 @@ pusha
 	add	ebx,0x36
 	mov	[edi+2],ebx ; размер файла
 	mov	[edi+14],dword 0x28
-	movsx	eax,word [scr_buf.width]
+	movzx	eax,word [scr_buf.width]
 	mov	[edi+18],eax ; горизонтальный размер
-	movsx	eax,word [scr_buf.height]
+	movzx	eax,word [scr_buf.height]
 	mov	[edi+22],eax ; вертикльный размер
 	mov	[edi+26],word 1
 	mov	[edi+28],word 24
 
 	; копируем и переворачиваем
-	mov	esi,[scr_buf.ptr]
-	mov	edi,[sf_buf.bmp_area]
-	mov	edx,[sf_buf.end]
-	sub	edx,edi
-	movsx	ecx,word [scr_buf.height]
-.next_str:
-push	ecx
+;        mov     esi,[scr_buf.ptr]
+;        mov     edi,[sf_buf.bmp_area]
+;        mov     edx,[sf_buf.end]
+;        sub     edx,edi
+;        movsx   ecx,word [scr_buf.height]
+;.next_str:
+;push    ecx
+;
+;        movsx   ecx,word [scr_buf.width]
+;        lea     ecx,[ecx*3]
+;        mov     ebx,ecx
+;.next_byte:
+;        mov     ah,[esi+ebx]
+;        mov     [edi+edx],ah
+;        dec     ebx
+;        dec     edx
+;        loop    .next_byte
+;        movsx   ecx,word [scr_buf.width]
+;        lea     ecx,[ecx*3]
+;        add     esi,ecx
+;pop     ecx
+;        loop    .next_str
 
-	movsx	ecx,word [scr_buf.width]
-	lea	ecx,[ecx*3]
-	mov	ebx,ecx
-.next_byte:
-	mov	ah,[esi+ebx]
-	mov	[edi+edx],ah
-	dec	ebx
+	mov	esi,[scr_buf.end_ptr]
+	mov	edi,[sf_buf.bmp_area]
+	movzx	ecx,word [scr_buf.height]
+	movzx	ebx,word [scr_buf.width]
+	lea	ebx,[ebx*3]
+	add	edi,ebx
+.next_str:
+	mov	edx,ebx
+.next_pixel:
+	mov	ah,[esi]
+	mov	[edi],ah
+	dec	esi
+	dec	edi
 	dec	edx
-	loop	.next_byte
-	movsx	ecx,word [scr_buf.width]
-	lea	ecx,[ecx*3]
-	add	esi,ecx
-pop	ecx
+	jnz	.next_pixel
+	lea	edi,[2*ebx+edi]
+	add	edi,[esp]
 	loop	.next_str
+
+	pop	edi
 
 	; сохраняем
 	draw_status saving
@@ -126,6 +165,7 @@ pop	ecx
 	call	draw_number
 
 	draw_status saved_ok
+
 popa
 ret
 

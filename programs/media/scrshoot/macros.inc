@@ -1,7 +1,7 @@
 ;--- другие макросы ---
 include 'editbox.inc'
 include 'txtbut.inc'
-include 'gp.inc'
+;include 'gp.inc'
 include 'label.inc'
 ;include 'checkbox.inc'
 include 'check.inc'
@@ -167,7 +167,7 @@ macro get_grab_area
 	int	0x40
 }
 
-macro get_scin_height
+macro get_skin_height
 {
 	movr	 eax,48
 	movr	 ebx,4
@@ -348,3 +348,7 @@ struc ipc_buffer size
 ;--- цвета ---
 cl_white=0xffffff
 cl_black=0x000000
+
+;==============================================================================
+;============== Константы =====================================================
+;==============================================================================

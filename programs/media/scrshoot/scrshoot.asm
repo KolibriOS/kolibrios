@@ -1,5 +1,6 @@
 ; Автор программы Евтихов Максим (Maxxxx32)
-; Дата последнего изменения: 20.07.06 18:05
+; 01.02.07 - обновлён editbox
+; 31.01.07 - всё теперь рисуется относительно клиентской области
 macro draw_status text_ptr
 {
 	mov	[status.text],dword text_ptr
@@ -7,20 +8,21 @@ macro draw_status text_ptr
 }
 
 
-title equ 'Maxxxx32 Screenshooter v 0.78' ; Заголовок окна
-include 'lang.inc'
+title equ 'Screenshooter v 0.9' ; Заголовок окна
 include 'macros.inc'  ; вставляем макросы
 	meos_header  cmdstr ; вставляем заголовок программы
 include 'scrwin.inc'  ; вставляем код окна прдпросмотра
 include 'scrsavef.inc'; вставляем процедуру сохранения файла
 	use_edit_box   ; \
 	use_txt_button ;  |
-	use_label      ;  |
-	use_gp	       ;  |-- GUI компоненты и некоторые процедуры
+	use_label      ;  |-- GUI компоненты и некоторые процедуры
 	use_check_box  ;  |
 	use_text_work  ; /
+include 'gp.inc'
+include 'srectwin.inc'
 ;--- начало программы ---
 	app_start
+	;mov     al,[gs:1280*4*1024]
 		    ; устанавливаем ipc буффер
 	push	60
 	pop	eax
@@ -106,6 +108,15 @@ ipc:
 
 p_close:
 	btr	dword [flags],1
+
+	bt	dword [flags],3
+	jnc	@f
+	movr	eax,18
+	mov	ebx,eax
+	mov	ecx,[set_rect_window_pid]
+	int	0x40
+@@:
+
 close:
 	app_close
 
@@ -114,27 +125,17 @@ close:
 ;--------------------------------------------------------------------
 draw_window:
 start_draw_window	 ; начало перерисовки
-	xor	eax,eax 	       ; определяем окно
+	; определяем окно
+	get_skin_height
 	mov	ebx,100*65536+320
-	mov	ecx,100*65536+240
+	mov	ecx,100*65536+220
+	add	cx,ax
 	mov	edx,[sc.work]
-	add	edx,0x03000000
+	add	edx,0x33000000;0x33000000
 	xor	esi,esi
-	xor	edi,edi
-	int	0x40
-
-	get_scin_height  ; получаем высоту заголовка окна и расчитываем
-	sub	ax,4	 ; положение текста заголовка
-	shr	ax,1
-	mov	bx,10
-	shl	ebx,16
-	mov	bx,ax
-
-	mov	eax,4		  ; рисуем текст загооловка
-	mov	ecx,[sc.grab_text]
-	bts	ecx,28
-	mov	edx,grab_text
-	mov	esi,grab_text_end-grab_text
+	;xor     edi,edi
+	mov	edi,grab_text
+	xor	eax,eax
 	int	0x40
 
 	movr	 eax,47 	    ; выводим числа в окно
@@ -193,7 +194,13 @@ shoot:
 	mov	edi,[scr_buf.ptr]
 	call	copy_screen_to_image
 
+	bt	dword [use_rect.flags],1
+	jc	.use_rect
 	push	dword [scr]
+	jmp	@f
+.use_rect:
+	push	dword [rect.height]
+@@:
 	pop	dword [scr_buf.size]
 
 	bt	dword [ch5.flags],1  ; включено ли автосохранение ?
@@ -220,10 +227,19 @@ shoot:
 @@:
 ret
 
+;--- получить память для снимка ---
 get_mem_for_shoot:
 	mov	[scr_buf.ptr],dword __app_end
-	movsx	ecx, word [scr.width]
-	movsx	ebx, word [scr.height]
+	bt	dword [use_rect.flags],1 ; фоткать область экрана
+	jc	.use_area
+	movzx	ecx, word [scr.width]
+	movzx	ebx, word [scr.height]
+	jmp	@f
+.use_area:
+	call	read_rect
+	movzx	ecx, word [rect.width]
+	movzx	ebx, word [rect.height]
+@@:
 	imul	ecx,ebx
 	lea	ecx,[ecx*3]
 	add	ecx,__app_end
@@ -263,7 +279,7 @@ draw_number:
 	call	zstr_to_int
 	mov	[sign_n],al
 	movr	 eax,13
-	mov	ebx,140*65536+96
+	mov	ebx,150*65536+96
 	mov	cx,[label9.top]
 	shl	ecx,16
 	mov	cx,10
@@ -273,7 +289,7 @@ draw_number:
 	movsx	bx,byte [sign_n]
 	shl	ebx,16
 	mov	ecx,[cur_number]
-	mov	dx,140
+	mov	dx,150
 	shl	edx,16
 	mov	dx,[label9.top]
 	mov	esi,[sc.work_text]
@@ -319,14 +335,14 @@ autoshoot:
 ; (должна вызываться потоком главного окна)
 dr_st:
 	movr	 eax,38 	     ; отрезок
-	mov	ebx,5*65536+315
-	mov	ecx,222*65536+222
+	mov	ebx,0*65536+310
+	mov	ecx,198*65536+198
 	mov	edx,[sc.work_graph]
 	int	0x40
 
 	movr	 eax,13 	     ; полоска
 	mov	bx,310
-	mov	ecx,223*65536+12
+	mov	ecx,199*65536+15
 	mov	edx,[sc.work]
 	int	0x40
 
@@ -343,22 +359,24 @@ get_slot_n:
 	dec	ecx
 	int	0x40
 
-	mov	edx,[app.pid]
+	mov	edx,[ebx+30]
 	xor	ecx,ecx
 @@:
 	movr	 eax,9
 	inc	ecx
 	int	0x40
-	cmp	[app.pid],edx
+	cmp	[ebx+30],edx
 	je	@f
 	jmp	@b
 @@:
 ret
 
+;--- процедура, запускающая поток, делающий 1 снимок ---
 one_shoot:
 	mov	ecx,one_shoot_thread
 	mov	edx,shoot_esp
 	jmp	@f
+;--- процедра, запускающая поток, сохраняющий снимок ---
 save_shoot:
 	mov	ecx,save_shoot_thread
 	mov	edx,shoot_esp
@@ -376,6 +394,7 @@ save_shoot:
 .running:
 ret
 
+;--- поток, делающий 1 снимок ---
 one_shoot_thread:
 	mov	ecx,[slot_n]
 	activ_window
@@ -392,6 +411,8 @@ one_shoot_thread:
 	btr	dword [flags],2
 	jmp	close
 
+;--- процедура, отправляющая главному окну сообщение о перерисовке
+; строки состояния ---
 send_draw_status:
 	movr	 eax,60
 	movr	 ebx,2
@@ -401,12 +422,47 @@ send_draw_status:
 	int	0x40
 ret
 
+;--- поток, сохраняюий файл ---
 save_shoot_thread:
 	mov	ecx,[slot_n]
 	activ_window
 	call	save_file
 	btr	dword [flags],2
 	jmp	close
+
+;--- процедура, запускающая поток окна установки области съемки ---
+show_set_rect_window:
+	bts	dword [flags],3
+	jc	@f
+	movr	 eax,51
+	xor	ebx,ebx
+	inc	ebx
+	mov	ecx,set_rect_window
+	mov	edx,set_rect_window_esp
+	int	0x40
+
+	mov	[set_rect_window_pid],eax
+ret
+
+@@:
+	movr	eax,18
+	mov	ebx,eax
+	mov	ecx,[set_rect_window_pid]
+	int	0x40
+	btr	dword [flags],3
+ret
+
+;--- получение информации об активном окне ---
+get_active_window_info:
+	movr	eax,18
+	movr	ebx,7
+	int	0x40
+
+	mov	ecx,eax
+	movr	eax,9
+	mov	ebx,active_app
+	int	0x40
+ret
 
 ;====================================================================
 ;=== данные программы ===============================================
@@ -418,77 +474,81 @@ messages:
 
 
 grab_text:
-	db	title
-grab_text_end:
+	db	title,0
+
 labels:
-label1 label 10,30,0,text.1   ; высота экрана
-label2 label 10,40,0,text.2   ; ширина экрана
-label3 label 10,50,0,text.3   ; введите имя файла
-label4 label 150,30,0,text.4  ; бит на пиксель
-label5 label 150,40,0,text.5  ; байт на строку
-label6 label 120,163,0,text.6
+label1 label 5,5,0,text.1   ; ширина экрана
+label2 label 5,15,0,text.2   ; высота экрана
+label3 label 5,25,0,text.3   ; введите имя файла
+label4 label 150,5,0,text.4  ; бит на пиксель
+label5 label 150,15,0,text.5  ; байт на строку
+label6 label 115,138,0,text.6  ; 100 = 1 сек.
 ;label7 label 10,190,0,text.7
 ;label8 label 10,225,0,text.8
-label9 label 10,78,0,text.9   ; текущий
-label10 label 10,210,0,text.10
-status label 10,226,0,no_shoot
+label9 label 5,52,0,text.9   ; номер текущего симка
+label10 label 5,185,0,text.10
+status label 5,201,0,no_shoot
 labels_end:
 
 editboxes:
-edit1 edit_box 300,10,60,cl_white,0,0,0,1024,ed_buffer.1,ed_focus
-edit2 edit_box 35,80,159,cl_white,0,0,0,9,ed_buffer.2,ed_figure_only
-edit3 edit_box 35,170,189,cl_white,0,0,0,9,ed_buffer.3,ed_figure_only
-edit4 edit_box 16,170,206,cl_white,0,0,0,1,sign_n_input,ed_figure_only,1
+edit1 edit_box 300,5,35,cl_white,0,0,0,1024,ed_buffer.1,ed_focus	 ; путь к файлу
+edit2 edit_box 35,75,134,cl_white,0,0,0,9,ed_buffer.2,ed_figure_only	 ; задержка
+edit3 edit_box 35,165,164,cl_white,0,0,0,9,ed_buffer.3,ed_figure_only
+edit4 edit_box 16,165,181,cl_white,0,0,0,1,sign_n_input,ed_figure_only,1
 editboxes_end:
 
 buttons:
-but1 txt_button 150,10,15,90,2,0,0,but_text.1,one_shoot
-but2 txt_button 145,165,15,90,3,0,0,but_text.2,save_shoot
-but3 txt_button 140,120,12,145,4,0,0,but_text.3,show_scr_window
-but4 txt_button 80,210,15,188,5,0,0,but_text.4,apply_number
-but5 txt_button 150,10,15,110,6,0,0,but_text.5,start_autoshoot
-but6 txt_button 145,165,15,110,7,0,0,but_text.6,stop_autoshoot
+but1 txt_button 150,5,15,65,2,0,0,but_text.1,one_shoot		  ; сделать снимок
+but2 txt_button 145,160,15,65,3,0,0,but_text.2,save_shoot	   ; сохранить снимок
+but3 txt_button 140,115,12,120,4,0,0,but_text.3,show_scr_window    ; показать снимок
+but4 txt_button 80,205,15,163,5,0,0,but_text.4,apply_number	   ; применить номер
+but5 txt_button 150,5,15,85,6,0,0,but_text.5,start_autoshoot	 ; начать автосъёмку
+but6 txt_button 145,160,15,85,7,0,0,but_text.6,stop_autoshoot	  ; остановить автосъёмку
+but7 txt_button 40,205,10,150,8,0,0,but_text.7,show_set_rect_window ; задать область
 buttons_end:
 
 check_boxes:
-ch1 check_box 10,130,cl_white,0,0,ch_text.1,(ch_text.2-ch_text.1)
-ch2 check_box 10,145,cl_white,0,0,ch_text.2,(ch_text.3-ch_text.2)
-ch3 check_box 150,130,cl_white,0,0,ch_text.3,(ch_text.4-ch_text.3)
-ch4 check_box 10,160,cl_white,0,0,ch_text.4,(ch_text.5-ch_text.4)
-ch5 check_box 10,175,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5)
-ch6 check_box 10,190,cl_white,0,0,ch_text.6,(ch_text.7-ch_text.6)
+ch1 check_box 5,105,cl_white,0,0,ch_text.1,(ch_text.2-ch_text.1)  ; свернуть окно
+ch2 check_box 5,120,cl_white,0,0,ch_text.2,(ch_text.3-ch_text.2)  ; затем сделать активным
+ch3 check_box 145,105,cl_white,0,0,ch_text.3,(ch_text.4-ch_text.3) ; показать снимок
+ch4 check_box 5,135,cl_white,0,0,ch_text.4,(ch_text.5-ch_text.4)  ;
+ch5 check_box 5,150,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5)
+ch6 check_box 5,165,cl_white,0,0,ch_text.6,(ch_text.7-ch_text.6)
+use_rect check_box 145,150,cl_white,0,0,ch_text.7,(ch_text.8-ch_text.7) ; исп. область
 ; автонумерация
 check_boxes_end:
 
 if lang eq ru
 text:
-.2: db 'Высота экрана:',0
-.1: db 'Ширина экрана:',0
-.3: db 'Введите полный путь к файлу:',0
-.4: db 'Бит на пиксель:',0
-.5: db 'Байт на строку:',0
-.6: db '100 = 1 секунда',0
+.2 db 'Высота экрана:',0
+.1 db 'Ширина экрана:',0
+.3 db 'Введите полный путь к файлу:',0
+.4 db 'Бит на пиксель:',0
+.5 db 'Байт на строку:',0
+.6 db '100 = 1 секунда',0
 ;.7: db 'Введите имя файла:',0
 ;.8: db 'Вместо "*" в имени файла будет вставляться номер.',0
-.9: db 'Текущий номер снимка:',0
-.10: db 'Количество знаков в номере:',0
+.9 db 'Номер текущего снимка:',0
+.10 db 'Количество знаков в номере:',0
 
 but_text:
-.1: db 'Сделать снимок экрана',0
-.2: db 'Сохранить снимок экрана',0
-.3: db 'Показать снимок сейчас',0
-.4: db 'Применить',0
-.5: db 'Начать автосъемку',0
-.6: db 'Остановить автосъемку',0
+.1 db 'Сделать снимок экрана',0
+.2 db 'Сохранить снимок экрана',0
+.3 db 'Показать снимок сейчас',0
+.4 db 'Применить',0
+.5 db 'Начать автосъемку',0
+.6 db 'Остановить автосъемку',0
+.7 db 'задать',0
 
 ch_text:
 .1 db 'Свернуть окно';,0
 .2 db 'Показать снимок';,0
 .3 db 'затем сделать активным';,0
-.4: db 'Задержка:';,0
-.5: db 'Автосохранение';,0
-.6: db 'Автонумерация, начиная с';,0
-.7:
+.4 db 'Задержка:';,0
+.5 db 'Автосохранение';,0
+.6 db 'Автонумерация, начиная с';,0
+.7 db 'Область'
+.8:
 
 no_shoot db 'Снимок не сделан',0
 shooting db 'Фотографирование...',0
@@ -503,6 +563,7 @@ ac_den db 'Доступ запрещен',0
 device_er db 'Ошибка устройства',0
 not_shooted db 'Сделайте снимок !!!',0
 no_file_name db 'Введите имя файла !!!',0
+invalid_rect db 'Недопустимые размеры области',0
 end if
 
 sign_n_input:
@@ -538,6 +599,15 @@ sf_buf:
 .bmp_area     dd      ?
 .end	      dd      ?
 
+set_rect_window_pid dd ?
+set_rect_window_slot dd ?
+
+rect_input_buffer:
+.left rb 6
+.top  rb 6
+.width	rb 6
+.height rb 6
+
 cmdstr rb 257
 
 ed_buffer:
@@ -549,7 +619,17 @@ file_name:
 	rb	1058
 
 scr screen_prop
+rect:
+.left dw ?
+.top dw ?
+.height dw ?
+.width dw ?
+
+
 sc sys_color_table
-app procinfo
-shoot_esp rb 512
+app procinfo	    ; информация о главном окне
+active_app procinfo ; информация об активном окне
+set_rect_window_procinfo procinfo  ; информация об окне области
+shoot_esp rb 512		   ; стек потока фотканья
+set_rect_window_esp rb 512	   ; стек окна области
 	app_end    ; конец программы
