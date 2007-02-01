@@ -1,3 +1,4 @@
+; <Lrz> 01.02.2007 доработка edit_box, исправил баги.
 ; <Lrz> 26.01.2007 нормальная работа компанента исправил фукцию .check_offset
 ; <Lrz> 24.01.2007 пофиксел баги вызваные не правильным кодом )).
 ; <Lrz> 22.01.2007 избавился от глюков при работе с выделением и удаление, корректная работа клавишей del & backspase
@@ -127,12 +128,12 @@ ret
 ;--- рисуем текст ---
 @@: 	mov	eax,4
 	mov	ebx,ed_left
+	mov	edx,ed_offset
 	add	ebx,2
 	shl	ebx,16
 	mov	bx,ed_top
 	add	ebx,4
 	mov	ecx,ed_text_color
-	mov	edx,ed_offset
 	add	edx,ed_text
 	int	0x40
 ret
@@ -143,19 +144,16 @@ ret
 ;edx - color
 ;----------------------------------------------------------
 .draw_bg_eax:
-;pusha
 	mov	ecx,ed_top
 	add	ecx,1
 	shl	ecx,16
 	mov	cx,13
 	mov	eax,13
 	int	0x40
-;popa
 ret
 
 	jmp	@f
 .draw_bg:
-;pusha
 	mov	ebx,ed_left
 	add	ebx,1
 	shl	ebx,16
@@ -164,23 +162,21 @@ ret
 
 @@:
 	mov	ecx,ed_top
+	mov	eax,13
 	add	ecx,1
 	shl	ecx,16
+	mov	edx,ed_color
 	mov	cx,ed_height
 	sub	ecx,1
-
-	mov	edx,ed_color
-	mov	eax,13
-	int	0x40
-;popa
+        int	0x40
 ret
 
 ;----------------------------------------------------------
 ;--- процедура получения количества символов в текущей щирине компонента --------------
 ;----------------------------------------------------------
 .get_n:
-	xor	edx,edx   ;результат распологается в паре edx:eax в eax - остаток
 	mov	eax,ed_width	;получем ширину компонента
+	xor	edx,edx   ;результат распологается в паре edx:eax в eax - остаток
 	sub	eax,4		;вычтим 4
 	mov	ebx,6		;загрузми делитель
 	div	ebx		;размделим на 6
@@ -210,14 +206,12 @@ ret
 	shl     ebx,1
 	;imul	ebx,6
 	add	bx,ed_left
+	mov	ecx,ed_top
 	inc	ebx
+	add	ecx,2
 	mov	ebp,ebx
-	;push	bx
 	shl	ebx,16
 	mov	bx,bp
-	;pop	bx
-	mov	ecx,ed_top
-	add	ecx,2
 	mov	ebp,ecx
 	
 	shl	ecx,16
@@ -281,7 +275,7 @@ ret
 ; изменилось
 ;----------------------------------------------------------
 .check_offset:
-	pushad
+pushad
 	mov	ecx,ed_pos
 	mov	ebx,ed_offset
 	cmp	ebx,ecx
@@ -346,12 +340,12 @@ ret
 
 	call    .draw_bg
 	mov	dword [esp+28],-1
-	popad
+popad
 	ret
 
 @@:
 	mov	dword [esp+28],0
-	popad
+popad
 	ret
 
 
@@ -432,7 +426,7 @@ pusha
 
 
 ;проверка на shift
-	test	word ed_flags,ed_shift_on
+@@:	test	word ed_flags,ed_shift_on
 	je	@f
 	;Входные данные edx=ed_size;ecx=ed_pos
 	push	eax
@@ -465,9 +459,7 @@ pusha
 	or	word ed_flags,ed_insert
         jmp	.no_figure
 .ins_v:
-	pop	eax edi
-	dec	dword ed_size    ;processing is insert
-	push	edi eax
+	dec	dword [ebp+38];ed_size    ;processing is insert
 	sub	esi,ecx
 	add	esi,ebx
         mov	edi,esi
@@ -530,9 +522,6 @@ pusha
 	jnz	.del_bac
         test	word ed_flags,ed_shift_on
         jne	.bac_del
-	
-	;jmp	@b
-
 	popa
 	ret
 .del_bac:
@@ -562,8 +551,8 @@ pusha
 	call	.clear_cursor
 	call	.check_offset
 ;;;;;;;;;;;;;;;
-	cmp	eax,0
-	je      @f
+	test	eax,eax
+	jne      @f
 	call	.draw_bg
 	ret
 ;;;;;;;;;;;;;;;
@@ -737,8 +726,6 @@ pusha
 	;Входные данные edx=ed_size;ecx=ed_pos
 .del_char:
 	mov     esi,ed_text
-
-
         test	word ed_flags,ed_shift_on
         je	@f
 	mov	eax,dword ed_shift_pos
@@ -865,6 +852,8 @@ ret
 ;.blur:
 ;pusha
 ._blur:
+	test	word ed_flags,ed_always_focus
+	jne	@f
 	btr	word ed_flags,1 ; если не в фокусе, выходим
 	jnc     @f
 	call	.clear_cursor
@@ -888,6 +877,7 @@ ret
 ;ret
 }
 ed_figure_only=1000000000000000b
+ed_always_focus=100000000000000b
 ed_focus=10b
 ed_shift_on=1000b
 ed_shift=100b
@@ -967,4 +957,22 @@ macro edit_boxes_set_sys_color start,end,color_table
 	mov	ed_blur_border_color,eax
 	add	edi,ed_struc_size
 	loop	@b
+}
+
+macro draw_edit_box ed_ptr
+{
+        mov     edi,ed_ptr
+        call    edit_box.draw
+}
+
+macro mouse_edit_box ed_ptr
+{
+        mov     edi,ed_ptr
+        call    edit_box.mouse
+}
+
+macro key_edit_box ed_ptr
+{
+        mov     edi,ed_ptr
+        call    edit_box.key
 }

@@ -101,7 +101,7 @@ ed_buffer:
 ;text_b: db 'Кол-во символов'
 ;buffer: dd 0
 buffer_end:
-hed db   'EDITBOX optimization and retype <Lrz> date 26.01.2007'
+hed db   'EDITBOX optimization and retype <Lrz> date 01.02.2007'
 i_end1:
 rb 2048
 i_end:
