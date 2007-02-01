@@ -156,24 +156,23 @@ draw_window:
 	shl	ebx,15
 	mov	bx,window_x
 	mov	edx,[sc.work]
-	or	edx,0x03000000
+	or	edx,0xb3000000
 	xor	eax,eax
-	xor	esi,esi
-	xor	edi,edi
+	mov	esi,[sc.grab_text]
+	mov	edi,hed
 	int	0x40
 
 	get_procinfo app
 
 	mov	ax,[app.width]
 	sub	ax,20
-	mov	[input_fn.width],ax
+	mov	[input_fn.width],eax
 	mov	[run_but.width],ax
 
-	mov	bx,5
-	shl	ebx,16
+	mov	ebx,10000
 	mov	bx,ax
-	add	bx,15
-	mov	cx,70
+	add	bx,10
+	mov	cx,47
 	push	cx
 	shl	ecx,16
 	pop	cx
@@ -190,8 +189,8 @@ draw_window:
 ret
 
 draw_status:
-	mov	ebx,5*65536+(window_x-5-5)
-	mov	ecx,(window_y-16)*65536+12
+	mov	ebx,5*65536+(window_x-5-10)
+	mov	ecx,(window_y-39)*65536+12
 	mov	edx,[sc.work]
 	mov	eax,13
 	int	0x40
@@ -205,18 +204,18 @@ draw_status_text:
 	jmp	@b
 @@:
 	mov	eax,4
-	mov	ebx,10*65536+(window_y-14)
+	mov	ebx,6*65536+(window_y-37)
 	mov	ecx,[sc.work_text]
 	int	0x40
 ret
 
-run_but txt_button 0,10,15,50,2,0,0,run_but_text,
+run_but txt_button 0,5,15,30,2,0,0,run_but_text,
 if lang eq ru
 run_but_text db 'ЗАПУСТИТЬ',0
 else
 run_but_text db 'RUN',0
 end if
-input_fn edit_box 0,10,30,0xffffff,0,0xaaaaaa,0,511,fn,ed_focus+\
+input_fn edit_box 0,5,10,0xffffff,0,0xaaaaaa,0,511,fn,ed_focus+\
 ed_always_focus
 
 if lang eq ru
@@ -241,6 +240,11 @@ file_not_executable db 'File is not executable',0      ; 31
 many_processes db 'Too many processes',0               ; 32
 end if
 
+if lang eq ru
+hed db 'RUN от первого Февраля 2007 года',0
+else
+hed db 'RUN of the first of FEBRUARY 2007 year',0
+end if
 status dd hello
 
 file_info:

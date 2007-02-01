@@ -1,13 +1,6 @@
 ;--- другие макросы ---
 include 'editbox.inc'
 include 'txtbut.inc'
-;include 'gp.inc'
-;include 'label.inc'
-;include 'checkbox.inc'
-;include 'file_sys.inc'
-;include 'textwork.inc'
-;include 'ini.inc'
-
 include 'lang.inc'
 
 ;--- заголовок ---
