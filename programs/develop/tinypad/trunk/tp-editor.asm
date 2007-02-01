@@ -996,7 +996,7 @@ REDRAW_TWOLINES  = 00010000b
 func editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
 ;-----------------------------------------------------------------------------
 	call	.check_cursor_visibility
-
+  .direct:
 	xor	edx,edx
 
 	mov	eax,[cur_editor.Lines.Count]

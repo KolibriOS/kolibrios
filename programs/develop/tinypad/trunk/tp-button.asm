@@ -47,7 +47,7 @@ button:
 	jns	@f
 	inc	[cur_editor.TopLeft.Y]
 	ret
-    @@: call	editor_check_for_changes
+    @@: call	editor_check_for_changes.direct
 	ret
 
   btn.vscroll_down:
@@ -58,7 +58,7 @@ button:
 	jge	@f
 	dec	[cur_editor.TopLeft.Y]
 	ret
-    @@: call	editor_check_for_changes
+    @@: call	editor_check_for_changes.direct
 	ret
 
   btn.hscroll_up:
@@ -66,7 +66,7 @@ button:
 	jns	@f
 	inc	[cur_editor.TopLeft.X]
 	ret
-    @@: call	editor_check_for_changes
+    @@: call	editor_check_for_changes.direct
 	ret
 
   btn.hscroll_down:
@@ -77,7 +77,7 @@ button:
 	jge	@f
 	dec	[cur_editor.TopLeft.X]
 	ret
-    @@: call	editor_check_for_changes
+    @@: call	editor_check_for_changes.direct
 	ret
 
   btn.tabctl_right:
