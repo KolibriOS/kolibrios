@@ -1,6 +1,9 @@
-window_y=88
+; 01.02.07 - обновлён editbox
+; 31.01.07 - исправлена некорректная отрисовка при большом значении высоты скина
+;            выравнивание снизу относительно рабочей области экрана
+window_y=67
 ;window_x=320
-window_x=450
+window_x=640
 include 'macros.inc'
 	meos_header par
 	use_edit_box
@@ -100,11 +103,11 @@ copy_par:
 	mov	ebx,file_info
 	int	0x40
 
-	;cmp     eax,0
-	;jg      error
-	bt	eax,31
-	je	error
-	jmp     still
+	cmp	eax,0
+	jl	error
+	mov	[status],run_ok
+	call	draw_status
+	jmp	still
 close:
 	app_close
 
@@ -115,13 +118,9 @@ macro cmp_err code,text_ptr
 	cmp	al,code
 	jne	@f
 	mov	[status],text_ptr
-	;jmp     .draw_status
 @@:
 }
 	neg	eax
-
-	;test    al,al
-	;jz      close
 
 	cmp_err 3,bad_file_sys
 
@@ -139,40 +138,51 @@ macro cmp_err code,text_ptr
 
 	cmp_err 32,many_processes
 
-.draw_status:
+
 	call	draw_status
 	jmp	still
 
 draw_window:
+	push	48
+	pop	eax
+	mov	ebx,5
+	int	0x40
+	mov	si,bx
 	start_draw_window
+	get_skin_height
+	mov	dx,ax
 	get_screen_size
-	mov	cx,ax
-	sub	cx,window_y+20
+	xor	ecx,ecx
+	sub	cx,window_y+2
+	sub	cx,dx
+	add	cx,si
 	shl	ecx,16
-	mov	cx,window_y
+	mov	cx,dx
+	add	cx,window_y
 	shr	eax,16
 	mov	bx,ax
 	sub	bx,window_x
 	shl	ebx,15
 	mov	bx,window_x
 	mov	edx,[sc.work]
-	or	edx,0xb3000000
+	or	edx,0x33000000
 	xor	eax,eax
-	mov	esi,[sc.grab_text]
-	mov	edi,hed
+	xor	esi,esi
+	mov	edi,grab_text
 	int	0x40
 
 	get_procinfo app
 
-	mov	ax,[app.width]
-	sub	ax,20
+	mov	eax,[app.width]
+	sub	eax,20
 	mov	[input_fn.width],eax
 	mov	[run_but.width],ax
 
-	mov	ebx,10000
+	xor	bx,bx
+	shl	ebx,16
 	mov	bx,ax
 	add	bx,10
-	mov	cx,47
+	mov	cx,45
 	push	cx
 	shl	ecx,16
 	pop	cx
@@ -189,8 +199,9 @@ draw_window:
 ret
 
 draw_status:
-	mov	ebx,5*65536+(window_x-5-10)
-	mov	ecx,(window_y-39)*65536+12
+	mov	ebx,[app.width]
+	sub	bx,10
+	mov	ecx,(50)*65536+12
 	mov	edx,[sc.work]
 	mov	eax,13
 	int	0x40
@@ -203,22 +214,17 @@ draw_status_text:
 	inc	esi
 	jmp	@b
 @@:
-	mov	eax,4
-	mov	ebx,6*65536+(window_y-37)
+	mov	ebx,5*65536+(50)
 	mov	ecx,[sc.work_text]
+	mov	eax,4
 	int	0x40
 ret
 
-run_but txt_button 0,5,15,30,2,0,0,run_but_text,
-if lang eq ru
+run_but txt_button 0,5,15,25,2,0,0,run_but_text,
 run_but_text db 'ЗАПУСТИТЬ',0
-else
-run_but_text db 'RUN',0
-end if
-input_fn edit_box 0,5,10,0xffffff,0,0xaaaaaa,0,511,fn,ed_focus+\
+input_fn edit_box 0,5,5,0xffffff,0,0xaaaaaa,0,511,fn,ed_focus+\
 ed_always_focus
 
-if lang eq ru
 hello db 'Введите полный путь к файлу и нажмите Enter',0
 bad_file_sys db 'Неизвестная файловая система',0 ; 3
 file_not_find db 'Файл не найден',0		 ; 5
@@ -228,23 +234,9 @@ device_error db 'Ошибка устройства',0		 ; 11
 out_of_memory db 'Недостаточно памяти',0	 ; 30
 file_not_executable db 'Файл не является исполняемым',0 ; 31
 many_processes db 'Слишком много процессов',0	 ; 32
-else
-hello db 'Enter full path to file and press <Enter>',0
-bad_file_sys db 'Unknown file system',0                ; 3
-file_not_find db 'File not found',0                    ; 5
-bad_fat_table db 'FAT table corrupted',0               ; 9
-acces_denyied db 'Access denied',0                     ; 10
-device_error db 'Device error',0                       ; 11
-out_of_memory db 'Out of memory',0                     ; 30
-file_not_executable db 'File is not executable',0      ; 31
-many_processes db 'Too many processes',0               ; 32
-end if
+run_ok db 'Программа успешно запущена',0
+grab_text db 'ЗАПУСК ПРОГРАММЫ',0
 
-if lang eq ru
-hed db 'RUN от первого Февраля 2007 года',0
-else
-hed db 'RUN of the first of FEBRUARY 2007 year',0
-end if
 status dd hello
 
 file_info:
