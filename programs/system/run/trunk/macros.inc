@@ -8,8 +8,6 @@ include 'txtbut.inc'
 ;include 'textwork.inc'
 ;include 'ini.inc'
 
-lang fix ru;en
-
 ;--- заголовок ---
 macro meos_header par_buf,cur_dir_buf
 {

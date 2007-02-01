@@ -5,6 +5,7 @@ window_y=67
 ;window_x=320
 window_x=640
 include 'macros.inc'
+include 'lang.inc'
 	meos_header par
 	use_edit_box
 	use_txt_button
@@ -221,10 +222,10 @@ draw_status_text:
 ret
 
 run_but txt_button 0,5,15,25,2,0,0,run_but_text,
-run_but_text db 'ЗАПУСТИТЬ',0
 input_fn edit_box 0,5,5,0xffffff,0,0xaaaaaa,0,511,fn,ed_focus+\
 ed_always_focus
 
+if lang eq ru
 hello db 'Введите полный путь к файлу и нажмите Enter',0
 bad_file_sys db 'Неизвестная файловая система',0 ; 3
 file_not_find db 'Файл не найден',0		 ; 5
@@ -236,6 +237,22 @@ file_not_executable db 'Файл не является исполняемым',0 ; 31
 many_processes db 'Слишком много процессов',0	 ; 32
 run_ok db 'Программа успешно запущена',0
 grab_text db 'ЗАПУСК ПРОГРАММЫ',0
+run_but_text db 'ЗАПУСТИТЬ',0
+else
+hello db 'Enter full path to file and press <Enter>',0
+bad_file_sys db 'Unknown file system',0                ; 3
+file_not_find db 'File not found',0                    ; 5
+bad_fat_table db 'FAT table corrupted',0               ; 9
+acces_denyied db 'Access denied',0                     ; 10
+device_error db 'Device error',0                       ; 11
+out_of_memory db 'Out of memory',0                     ; 30
+file_not_executable db 'File is not executable',0      ; 31
+many_processes db 'Too many processes',0               ; 32
+run_ok db 'The program was started successfully',0
+grab_text db 'RUN',0
+run_but_text db 'RUN',0
+end if
+
 
 status dd hello
 
