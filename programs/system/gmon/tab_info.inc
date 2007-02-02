@@ -1,4 +1,9 @@
 ;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+
+;
 ;
 ; Вкладка информации о системе
 ;
@@ -29,7 +34,7 @@ mmx_en:	int	0x40
 	mov	al, byte[edx]
 	movzx	esi, al
 	inc	edx
-	mov	ebx, 160 * 65536 + 315
+	mov	ebx, 160 * 65536 + 325
 	mov	al, 4
 	int	0x40
 	; Частота процессора
@@ -88,7 +93,7 @@ mmx_en:	int	0x40
 	fstp	dword[esp]
 	mov	esi, esp
 	call	ftoa
-	mov	ebx, 160 * 65536 + 325
+	mov	ebx, 160 * 65536 + 315
 	mov	edx, Data_String
 	mov	eax, 4
 	mov	esi, eax
@@ -130,6 +135,6 @@ lab_info_tab mls \
 	'CPU Vendor',\
 	'CPU frequency (MHz)',\
 	'MMX tehnology',\
-	'Monitoring chip',\
 	'Multiplier',\
+	'Monitoring chip',\
 	'Free memory (Kb)'

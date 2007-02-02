@@ -1,3 +1,8 @@
+;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+
 
 	mov	edx, msg_about
 	mov	ebx, 17 * 65536 + 285

@@ -1,4 +1,9 @@
 ;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+
+;
 ; Библиотека для чипов WinBond
 ;
 ;

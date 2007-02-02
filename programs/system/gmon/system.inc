@@ -1,3 +1,8 @@
+;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+
 ;--------------------------------------------------------------------
 ; Загрузка процессора
 ; OUT : AL - загрузка в процентах
@@ -259,7 +264,7 @@ noAMD:	cmp	dword [Vendor + 8], 'ntel'	; Check for International Electronics CPU
 	ret
 @@:	cmp	byte [CPU_mod], 2
 	jae	@f
-	mov	eax, 68		; Pentium 4 / Xeon (model < 2)
+	mov	eax, 68		; Pentium 4 / Xeon (model < 2) Willamete
 	mov	ebx, 3
 	mov	edx, 0x2A
 	int	0x40
@@ -267,17 +272,12 @@ noAMD:	cmp	dword [Vendor + 8], 'ntel'	; Check for International Electronics CPU
 	and	eax, 0x0F
 	mov	cl, [p4coef + eax]
 	ret
-@@:	mov	eax, 68		; Pentium 4 / Xeon (model >= 2)
+@@:	mov	eax, 68		; Pentium 4 / Xeon (model >= 2) NorthWood
 	mov	ebx, 3
 	mov	edx, 0x2C
 	int	0x40
-	
-	; shr	eax, 24
-	; and	eax, 0x1F
-	shr	eax, 27
-	and	al, 0Fh
-	add	al, 8
-	
+	shr	eax, 24
+	and	eax, 0x1F
 	mov	dl, 10
 	mul	dl
 	mov	cl, al
@@ -322,7 +322,7 @@ athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 1
 athlonmcoef:	db	110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
 		db	30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
 athloncoef3	db	45, 50, 40, 55, 25, 30, 60, 35
-p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4
+p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4 (Willamete)
 coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
 tualatcoeff	db	120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
 else

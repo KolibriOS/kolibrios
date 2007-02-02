@@ -1,7 +1,13 @@
 ;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
 ;
-;  k6, k7, p5 & p6 based on Robert Redelmeier's burnCPU tests
-;  ported by Ghost
+; k6, k7, p5 & p6 tests based on Robert J. Redelmeier cpuburn-1.4
+; Copyright 1999, 2000  Robert J. Redelmeier.  All Right Reserved 
+; Licensed under GNU General Public Licence 2.0.  No warrantee. 
+
+;  adapted by Mihailov Ilia
 ;
 ; Заметки :
 ;	переписть реакцию на ошибки

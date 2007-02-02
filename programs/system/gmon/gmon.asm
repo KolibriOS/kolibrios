@@ -1,5 +1,8 @@
 ;
 ; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+;
 ; ВОЗМОЖНА ПОРЧА ОБОРУДОВАНИЯ!
 ; ИСПОЛЬЗУЙТЕ НА СВОЙ СТРАХ И РИСК!
 ;
@@ -46,7 +49,8 @@
 ;      20/12/2006 - W83627DHG, W83627EHF, W83627EHG, mutipliers for AthonXP-M, Athlon64, Athlon64-M,
 ;            Intel Dothan, Yonah, Conroe, Merom
 ;      24/12/2006 - ITE chips model id bugfix by Serge
-;      26/15/2006 - исправленна глупая ошибка в определении ITE и uGuru
+;      26/12/2006 - исправленна глупая ошибка в определении ITE и uGuru
+;      31/01/2007 - исправлена ошибка внесённая 17/07/06 в определение множителя для Intel NorthWood
 ;
 ;    Эй! У меня нет много времени.
 

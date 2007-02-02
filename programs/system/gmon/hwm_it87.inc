@@ -1,3 +1,8 @@
+;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+
 ; Integrated Technology Express
 ;	Chip	Temp	Volt	Fan   ISA   SMBus
 ;	it8705	 3	 8	 3     +      +

@@ -1,4 +1,9 @@
 ;
+; Ghost Monitor - утилита (стресс) тестирования и мониторинга системы
+; Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
+; All Right Reserved
+
+;
 ; HWM abstract interface, provide:
 ;  hwm_init, hwm_get_params, hwm_enable, hwm_temps, hwm_rpms, hwm_voltages, hwm_chip_name
 ;
