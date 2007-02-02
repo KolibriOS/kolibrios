@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.6.3.0
+SYSTEM FUNCTIONS of OS Kolibri 0.6.4.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -850,8 +850,8 @@ Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
 db 'name',0 - ASCIIZ-string with the name
-For Kolibri 0.6.3.0 kernel:
-db 0,6,3,0
+For Kolibri 0.6.4.0 kernel:
+db 0,6,4,0
 db 2
 db 'Kolibri',0
 
@@ -2693,6 +2693,21 @@ Returned value:
   * ebx destroyed
 
 ======================================================================
+===== Function 53, subfunction 10 - query Ethernet cable status. =====
+======================================================================
+Parameters:
+  * eax = 53 - function number
+  * ebx = 10 - subfunction number
+Returned value:
+  * al = -1 - a network driver is not loaded or
+              does not support this function
+  * al = 0 - Ethernet cable is unplugged
+  * al = 1 - Ethernet cable is plugged
+Remarks:
+  * The current kernel implementation supports this function
+    only for RTL8139 network cards.
+
+======================================================================
 = Function 53, subfunction 255 - debug information of network driver. 
 ======================================================================
 Parameters:
@@ -3101,55 +3116,6 @@ Remarks:
     for hard disks.
 
 ======================================================================
-=============== Function 59 - trace last system calls. ===============
-======================================================================
-Gets data on all system calls of all processes.
-Parameters:
-  * eax = 59 - function number
-  * ebx = 0 - unique subfunction
-  * ecx = pointer to the buffer
-  * edx = size of the buffer
-Returned value:
-  * eax = total number of system calls made from system boot
-    (modulo 2^32)
-  * ebx = 0
-Format of information on one call: (size = 0x40 = 64 bytes)
-  * +0: dword: PID of process/thread
-  * +4: 7*dword: garbage
-  * +32 = +0x20: dword: value of edi at the call
-  * +36 = +0x24: dword: esi
-  * +40 = +0x28: dword: ebp
-  * +44 = +0x2C: dword: stack pointer of the kernel handler
-  * +48 = +0x30: dword: ebx
-  * +52 = +0x34: dword: edx
-  * +56 = +0x38: dword: ecx
-  * +60 = +0x3C: dword: eax (=number of system function)
-Remarks:
-  * The function is used only in the application 'systrace'.
-    It is rather difficult to imagine a situation, in which
-    this application or this function are really useful;
-    and all system calls for support of this function are a little
-    decelerated (though not strongly)...
-  * So there is a proposition to delete from the kernel
-    support of this function, together with application 'systrace'.
-  * The information on system calls saves in the system
-    ring buffer with 0x10 entries.
-    This function simply copies the given size of data
-    from this buffer to the given address.
-  * One can determine, which entry in the buffer corresponds to
-    last system call, by value of eax, namely, it is the entry
-    (eax and 0xF) (at offset (eax and 0xF)*0x40).
-  * In the current implementation there can be the seldom
-    meeting problems of unsynchronization, when the information
-    on some calls becomes outdated.
-  * Under the system buffer one page, 4Kb, is allocated.
-    Size of an entry = 64 bytes. Why only 16 entries are used,
-    is not clearly.
-  * The value of esp at the moment of system call cannot
-    be determined by this function.
-  * The current implementation does not check edx for correctness.
-
-======================================================================
 ========== Function 60 - Inter Process Communication (IPC). ==========
 ======================================================================
 IPC is used for message dispatching from one process/thread to
@@ -3436,8 +3402,10 @@ Parameters:
   * ebx = pointer to the image
   * ecx = [size on axis x]*65536 + [size on axis y]
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * esi = number of bits per pixel, must be 8
-  * edi = pointer to palette (256 colors 0x00RRGGBB)
+  * esi = number of bits per pixel, must be 8, 24 or 32
+  * edi = pointer to palette (256 colors 0x00RRGGBB);
+          ignored when esi = 24 and 32
+  * ebp = offset of next row data relative to previous row data
 Returned value:
   * function does not return value
 Remarks:
@@ -3447,6 +3415,8 @@ Remarks:
   * Each byte of image is index in the palette.
   * If the image uses less than 256 colors, palette size may be
     less than 256 too.
+  * The call to function 7 is equivalent to call to this function
+    with esi=24, ebp=0.
 
 ======================================================================
 ================== Function 66 - work with keyboard. =================

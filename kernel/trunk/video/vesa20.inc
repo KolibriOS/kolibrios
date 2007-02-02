@@ -82,6 +82,13 @@ virtual at esp
    .edi         dd      ?
    .esi         dd      ?
    .ebp         dd      ?
+   .esp         dd      ?
+   .ebx         dd      ?
+   .edx         dd      ?
+   .ecx         dd      ?
+   .eax         dd      ?
+   .ret_addr    dd      ?
+   .arg_0       dd      ?
 end virtual
 
 align 16
@@ -164,6 +171,7 @@ vesa20_putimage:
 ;;        imul    eax, [putimg.source_bpp]
 ;        lea     eax, [eax + eax * 2]
         call    esi
+        add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 
         ; winmap new line increment

@@ -54,8 +54,7 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   5FFF   save_syscall_data - syscall trace
-;   6000  ->   68FF   free
+;   5000  ->   68FF   free
 ;   6900  ->   6EFF   saved picture under mouse pointer
 ;
 ;   6F00  ->   6FFF   free

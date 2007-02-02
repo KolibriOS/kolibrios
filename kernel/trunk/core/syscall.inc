@@ -14,16 +14,13 @@ i40:
       mov   ds,ax
       mov   es,ax
 
-      ; for syscall trace function
-      call  save_registers
-
       ; load all registers in crossed order
-      mov   edi,[esp+28] ; eax
-      mov   eax,[esp+16] ; ebx
-      mov   ebx,[esp+24] ; ecx
-      mov   ecx,[esp+20] ; edx
-      mov   edx,[esp+4]  ; esi
-      mov   esi,[esp+0]  ; edi
+        mov     eax, ebx
+        mov     ebx, ecx
+        mov     ecx, edx
+        mov     edx, esi
+        mov     esi, edi
+        mov     edi, [esp+28]
 
       ; enable interupts  -  a task switch or an IRQ _CAN_ interrupt i40 handler
       sti
@@ -31,33 +28,11 @@ i40:
       and   edi,0xff
       call  dword [servetable+edi*4]
       pop   eax
-      cli
+;      cli
 
       popad
       pop   es ds
       iretd
-
-align 4
-save_registers:
-      mov   esi, [0x3010]
-      mov   eax, [esi+TASKDATA.pid] ; load PID
-      lea   esi, [esp+4]
-      inc   [save_syscall_count]
-      mov   edi,[save_syscall_count]
-      and   edi,0xF
-      shl   edi,6
-      add   edi,save_syscall_data+32
-      mov   [edi-32],eax
-      mov   ecx,32 / 4
-      cld
-      rep   movsd
-      ret
-
-uglobal
-  save_syscall_count  dd 0x0
-endg
-
-;label save_syscall_data dword at 0x5000
 
 
 iglobal
@@ -127,7 +102,7 @@ iglobal
       dd undefined_syscall       ; 56-reserved
       dd undefined_syscall       ; 57-reserved
       dd file_system             ; 58-Common file system interface
-      dd sys_trace               ; 59-System call trace
+      dd undefined_syscall       ; 59-reserved         
       dd sys_IPC                 ; 60-Inter Process Communication
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions

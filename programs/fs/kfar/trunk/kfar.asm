@@ -14,6 +14,7 @@ include 'kglobals.inc'
 include 'memalloc.inc'
 include 'dialogs.inc'
 include 'viewer.inc'
+include 'tools.inc'
 
 start:
         mov     eax, mem
@@ -61,14 +62,18 @@ start:
         mov     eax, 8
         call    mf_alloc
         mov     [screens], eax
+        test    eax, eax
+        jz      exit
         mov     ecx, panels_vtable
         mov     [eax], ecx
         mov     [active_screen_vtable], ecx
         call    draw_keybar
         call    draw_cmdbar
+        mov     [prev_dir], 0
         mov     ebp, panel1_data
         call    read_folder
         call    draw_panel
+        mov     [bSilentFolderMode], 1
         mov     ebp, panel2_data
         call    read_folder
         call    draw_panel
@@ -112,7 +117,7 @@ redraw:
         int     0x40
         xor     eax, eax
 ; ebx, ecx, edi are ignored by function 0 after first redraw
-        mov     edx, 0x13000000
+        mov     edx, 0x53000000
         int     0x40
         mov     al, 12
         inc     ebx
@@ -121,6 +126,7 @@ redraw:
 @@:
         xor     ecx, ecx
         mov     eax, [ebx+42]
+        mov     [wnd_width], eax
         sub     eax, 5*2-1
         jae     @f
         xor     eax, eax
@@ -143,8 +149,10 @@ redraw:
         setnz   cl
         or      cl, ch
         test    edx, edx
+        mov     [fill_width], edx
         setnz   ch
         mov     eax, [ebx+46]
+        mov     [wnd_height], eax
         sub     eax, [skinh]
         sub     eax, 5-1
         jns     @f
@@ -163,6 +171,7 @@ redraw:
         mov     eax, 255
         mov     cl, 1
 @@:
+        mov     [fill_height], edx
         cmp     eax, [cur_height]
         mov     [cur_height], eax
         jnz     .resize
@@ -405,9 +414,8 @@ ctrlkey_test4:
         setz    al
         ret
 
-; TODO: add "no memory" error handling
 new_screen:
-        call    mf_alloc
+        call    xmalloc
         test    eax, eax
         jnz     @f
         ret
@@ -417,7 +425,7 @@ new_screen:
         inc     ebx
         shl     ebx, 3
         mov     eax, [screens]
-        call    mf_realloc
+        call    xrealloc
         test    eax, eax
         jnz     @f
         mov     eax, ebp
@@ -461,7 +469,7 @@ delete_active_screen:
         mov     ebx, [num_screens]
         shl     ebx, 3
         mov     eax, [screens]
-        call    mf_realloc
+        call    mf_realloc      ; must succeed, because we decrease size
         pop     eax
         call    mf_free
         and     [active_screen], 0
@@ -484,7 +492,7 @@ F12:
         add     eax, 8
         mov     esi, eax
         mul     [num_screens]
-        call    mf_alloc
+        call    xmalloc
         test    eax, eax
         jnz     @f
         ret
@@ -737,11 +745,16 @@ panels_OnKey:
         cmp     byte [esi+2], 0
         jz      .dotdot
 @@:
-        lea     edi, [ebp + panel1_dir - panel1_data]
-        mov     al, 0
-        or      ecx, -1
-        repnz   scasb
-        dec     edi
+        push    esi
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        mov     edi, prev_dir
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        lea     edi, [esi-1]
+        pop     esi
         mov     al, '/'
         cmp     [edi-1], al
         jz      @f
@@ -879,7 +892,7 @@ panels_OnKey:
         test    eax, eax
         jnz     .drive_loop_i_done
         mov     eax, 32+8
-        call    mf_alloc
+        call    xmalloc
         test    eax, eax
         jz      .drive_loop_i_done
         jecxz   @f
@@ -951,6 +964,12 @@ panels_OnKey:
         jz      .ret2
         lea     esi, [eax+8]
         lea     edi, [ebp + panel1_dir - panel1_data]
+        push    ecx esi edi
+        mov     esi, edi
+        mov     edi, prev_dir
+        mov     ecx, 1024/4
+        rep     movsd
+        pop     edi esi ecx
 @@:
         lodsb
         stosb
@@ -1068,12 +1087,6 @@ panels_OnKey:
         mov     [ebx - copy_dlgdata + copy_dlgdata.cnl_x1], eax
         add     eax, aCancelBLength - 1
         mov     [ebx - copy_dlgdata + copy_dlgdata.cnl_x2], eax
-        mov     al, [dialog_border_color]
-        mov     [ebx + dlgtemplate.border_color], al
-        mov     al, [dialog_header_color]
-        mov     [ebx + dlgtemplate.header_color], al
-        mov     al, [dialog_main_color]
-        mov     [ebx + dlgtemplate.main_color], al
         mov     byte [ebx - copy_dlgdata + copy_dlgdata.flags0], 0xC
         and     byte [ebx - copy_dlgdata + copy_dlgdata.flags1], not 4
         and     byte [ebx - copy_dlgdata + copy_dlgdata.flags2], not 4
@@ -1292,12 +1305,6 @@ panels_OnKey:
         mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.cnl_x1], eax
         add     eax, aCancelLength - 1
         mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.cnl_x2], eax
-        mov     al, [dialog_border_color]
-        mov     [ebx + dlgtemplate.border_color], al
-        mov     al, [dialog_header_color]
-        mov     [ebx + dlgtemplate.header_color], al
-        mov     al, [dialog_main_color]
-        mov     [ebx + dlgtemplate.main_color], al
         or      byte [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.flags1], 4
         and     byte [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.flags2], not 4
         push    ebx
@@ -1428,7 +1435,7 @@ panels_OnKey:
         mov     eax, ecx
 @@:
         add     eax, 12
-        call    mf_alloc
+        call    xmalloc
         test    eax, eax
         jz      .menucreated
         add     eax, 4
@@ -1661,28 +1668,38 @@ draw_window:
         imul    ecx, font_height
         lea     ecx, [eax+ecx+5-1+100*65536]
         xor     eax, eax
-        mov     edx, 0x13000000
+        mov     edx, 0x53000000
         mov     edi, header
         int     40h
-        mov     al, 48
-        push    3
-        pop     ebx
-        mov     ecx, std_colors
-        push    40
-        pop     edx
-        int     40h
-;        mov     bl, 7
-;        int     40h
-;        xor     ax, ax
-;        shr     ebx, 16
-;        or      ebx, eax
-;        mov     ecx, [std_colors+16]
-;        mov     edx, header
-;        push    header.length
-;        pop     esi
-;        push    4
-;        pop     eax
-;        int     40h
+        mov     al, 13
+        xor     edx, edx
+        cmp     [fill_width], 0
+        jz      @f
+        mov     ebx, [wnd_width]
+        sub     ebx, [fill_width]
+        sub     ebx, 5-1
+        shl     ebx, 16
+        mov     bx, word [fill_width]
+        mov     ecx, [skinh-2]
+        mov     cx, word [wnd_height]
+        sub     cx, word [skinh]
+        sub     cx, 5-1
+        int     0x40
+@@:
+        cmp     [fill_height], 0
+        jz      @f
+        mov     al, 13
+        xor     edx, edx
+        mov     ebx, 50000h
+        mov     bx, word [wnd_width]
+        sub     ebx, 9
+        mov     ecx, [wnd_height]
+        sub     ecx, [fill_height]
+        sub     ecx, 5-1
+        shl     ecx, 16
+        mov     cx, word [fill_height]
+        int     0x40
+@@:
 ;        xor     ecx, ecx
 ;        call    draw_image
         and     [min_x], 0
@@ -1935,6 +1952,7 @@ end if
         push    8
         pop     esi
         mov     edi, console_colors
+        xor     ebp, ebp
         int     0x40
         push    64
         pop     eax
@@ -2611,6 +2629,7 @@ read_folder:
         mov     [dirinfo.dirdata], eax
         lea     eax, [ebp + panel1_dir - panel1_data]
         mov     [dirinfo.name], eax
+.retry:
         push    70
         pop     eax
         mov     ebx, dirinfo
@@ -2619,23 +2638,77 @@ read_folder:
         jz      .ok
         cmp     eax, 6
         jz      .ok
-; TODO: add error handling
-        mov     [ebp + panel1_numfiles - panel1_data], 2
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        shl     eax, 2
-        add     eax, [ebp + panel1_files - panel1_data]
-        add     eax, 32+40
-        mov     word [eax], '..'
-        mov     byte [eax+2], 0
-        add     eax, 304
-        mov     dword [eax], 'Read'
-        mov     dword [eax+4], ' err'
-        mov     dword [eax+8], 'or'
-        mov     eax, [ebp + panel1_files - panel1_data]
-        mov     dword [eax], 0
-        mov     dword [eax+4], 304
+; Failed to read folder, notify user
+        cmp     [bSilentFolderMode], 0
+        jnz     .dont_notify
+        push    aContinue
+        push    aRetry
+        mov     edx, esp
+        call    get_error_msg
+        push    [dirinfo.name]
+        push    aCannotReadFolder
+        push    eax
+        mov     eax, esp
+        push    edx
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 5*4
+        test    eax, eax
+        jz      .retry
+.dont_notify:
+        mov     esi, prev_dir
+        cmp     byte [esi], 0
+        jz      @f
+        lea     edi, [ebp + panel1_dir - panel1_data]
+        mov     ecx, 1024/4
+        rep     movsd
+        mov     byte [prev_dir], 0
+        ret
+@@:
+        mov     [bSilentFolderMode], 1  ; enter silent mode
+        mov     esi, [dirinfo.name]
+        xor     edx, edx
+.up1:
+        lodsb
+        test    al, al
+        jz      .up1done
+        cmp     al, '/'
+        jnz     .up1
+        inc     edx
+        lea     edi, [esi-1]
+        jmp     .up1
+.up1done:
+        cmp     edx, 2
+        jbe     .noup
+        stosb
+        jmp     read_folder
+.noup:
+        mov     esi, [dirinfo.name]
+        mov     edi, esi
+        lodsd
+        or      eax, 0x00202000
+        cmp     eax, '/rd/'
+        jnz     @f
+        lodsw
+        cmp     ax, '1'
+        jz      .nosetrd
+@@:
+        mov     eax, '/rd/'
+        stosd
+        mov     ax, '1'
+        stosw
+        jmp     read_folder
+.nosetrd:
+; Даже рамдиск не прочитался. Значит, не судьба...
+        and     dword [ebp + panel1_numfiles - panel1_data], 0
         and     dword [ebp + panel1_index - panel1_data], 0
         and     dword [ebp + panel1_start - panel1_data], 0
+        mov     [bSilentFolderMode], 0  ; leave silent mode
         ret
 .ok:
         mov     eax, [dirinfo.dirdata]
@@ -2651,11 +2724,10 @@ read_folder:
         push    eax
         imul    eax, 4+304
         add     eax, 32
-        call    mf_alloc
+        call    xmalloc
         test    eax, eax
         jnz     .succ1
         pop     eax
-; TODO: add error handling
         jmp     .readdone
 .succ1:
         mov     [ebp + panel1_files - panel1_data], eax
@@ -2746,6 +2818,7 @@ sort_files:
         mov     edx, [ebp + panel1_files - panel1_data]
         mov     ecx, [ebp + panel1_numfiles - panel1_data]
         call    sort
+        mov     [bSilentFolderMode], 0  ; leave silent mode
         ret
 
 compare_name:
@@ -3934,13 +4007,15 @@ find_extension:
         pop     esi
         ret
 
-header  db      'Kolibri Far 0.19',0
+header  db      'Kolibri Far 0.2',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
 
 def_left_dir    db      '/rd/1',0
 def_right_dir   db      '/hd0/1',0
+
+bSilentFolderMode db    1
 
 if lang eq ru
 aFolder         db      'Папка'
@@ -4310,6 +4385,8 @@ cur_width       dd      80
 cur_height      dd      25
 saved_width     dd      -1
 saved_height    dd      -1
+fill_width      dd      0
+fill_height     dd      0
 max_width = 256
 max_height = 256
 console_data_ptr dd     0
@@ -4367,6 +4444,25 @@ viewer_vtable:
         dd      viewer_OnKey
         dd      keybar_viewer
         dd      viewer_getname
+
+; additions to this table require changes in tools.inc::get_error_msg
+errors1:
+        dd      error0msg
+        dd      error1msg
+        dd      error2msg
+        dd      error3msg
+        dd      error4msg
+        dd      error5msg
+        dd      error6msg
+        dd      error7msg
+        dd      error8msg
+        dd      error9msg
+        dd      error10msg
+        dd      error11msg
+errors2:
+        dd      error30msg
+        dd      error31msg
+        dd      error32msg
 
 encodings:
 .cp866 = 0
@@ -4565,13 +4661,24 @@ panel_active_header_color db    30h
 column_header_color     db      1Eh
 panel_nscreens_color    db      0Bh
 ; Диалоги
+dialog_colors:
 dialog_main_color       db      70h
 dialog_border_color     db      70h
 dialog_header_color     db      70h
-dialog_normal_btn_color db      70h
-dialog_selected_btn_color db    30h
 dialog_edit_color       db      30h
 dialog_unmodified_edit_color db 38h
+dialog_normal_btn_color db      70h
+dialog_selected_btn_color db    30h
+; Предупреждения и ошибки
+warning_colors:
+; !!! должны быть те же поля и в том же порядке, что и для обычных диалогов !!!
+warning_main_color      db      4Fh
+warning_border_color    db      4Fh
+warning_header_color    db      4Fh
+warning_edit_color      db      30h
+warning_unmodified_edit_color db 38h
+warning_normal_btn_color db     4Fh
+warning_selected_btn_color db   70h
 ; Меню
 menu_normal_color       db      3Fh
 menu_selected_color     db      0Fh
@@ -4754,8 +4861,33 @@ bWasE0          db      0
 ctrlstate       db      0
 
 align   4
-f8_confirm_dlgdata:
+; Сообщение о обломе при выделении памяти
+nomem_dlgdata:
+        dd      2
+        dd      -1
+        dd      -1
+        dd      12
+        dd      2
+        dd      1
+        dd      1
+        dd      aError
+        rb      4
         dd      0
+        dd      0
+        dd      2
+; строка "No memory"
+        dd      1
+        dd      1,0,10,0
+        dd      aNoMemory
+        dd      1
+; кнопка "Ok"
+        dd      2
+        dd      4,1,7,1
+        dd      aOk
+        dd      0xD
+
+f8_confirm_dlgdata:
+        dd      1
 .x      dd      -1
 .y      dd      -1
 .width  dd      ?
@@ -4804,7 +4936,7 @@ f8_confirm_dlgdata:
 
 ; диалог копирования
 copy_dlgdata:
-        dd      0
+        dd      1
 .x      dd      -1
 .y      dd      -1
 .width  dd      ?
@@ -4869,6 +5001,26 @@ aCopy                   db      '[ Копировать ]',0
 aCopyLength = $ - aCopy - 1
 aCopy1                  db      'Копировать "',0
 aCopy2                  db      '" в:',0
+aError                  db      'Ошибка',0
+aContinue               db      'Продолжить',0
+aRetry                  db      'Повторить',0
+error0msg               db      'Странно... Нет ошибки',0
+error1msg               db      'Странно... Не определена база и/или раздел жёсткого диска',0
+error2msg               db      'Функция не поддерживается для данной файловой системы',0
+error3msg               db      'Неизвестная файловая система',0
+error4msg               db      'Странно... Ошибка 4',0
+error5msg               db      'Файл не найден',0
+error6msg               db      'Файл закончился',0
+error7msg               db      'Странно... Указатель вне памяти приложения',0
+error8msg               db      'Диск заполнен',0
+error9msg               db      'Файловая структура разрушена',0
+error10msg              db      'Доступ запрещён',0
+error11msg              db      'Ошибка устройства',0
+error30msg              db      'Недостаточно памяти',0
+error31msg              db      'Файл не является исполняемым',0
+error32msg              db      'Слишком много процессов',0
+aUnknownError           db      'Неизвестный код ошибки: ',0
+aCannotReadFolder       db      'Не могу прочитать папку',0
 else
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete ',0
@@ -4886,7 +5038,29 @@ aCopy                   db      '[ Copy ]',0
 aCopyLength = $ - aCopy - 1
 aCopy1                  db      'Copy "',0
 aCopy2                  db      '" to:',0
+aError                  db      'Error',0
+aContinue               db      'Continue',0
+aRetry                  db      'Retry',0
+error0msg               db      'Strange... No error',0
+error1msg               db      'Strange... Hard disk base and/or partition not defined',0
+error2msg               db      'The file system does not support this function',0
+error3msg               db      'Unknown file system',0
+error4msg               db      'Strange... Error 4',0
+error5msg               db      'File not found',0
+error6msg               db      'End of file',0
+error7msg               db      'Strange... Pointer lies outside of application memory',0
+error8msg               db      'Disk is full',0
+error9msg               db      'File structure is destroyed',0
+error10msg              db      'Access denied',0
+error11msg              db      'Device error',0
+error30msg              db      'Not enough memory',0
+error31msg              db      'File is not executable',0
+error32msg              db      'Too many processes',0
+aUnknownError           db      'Unknown error code: ',0
+aCannotReadFolder       db      'Cannot read folder',0
 end if
+aOk                     db      'OK',0
+aNoMemory               db      'No memory!',0
 
 execinfo:
         dd      7
@@ -4941,6 +5115,8 @@ panel2_dir      rb      1024
 
 ;console_data    rb      max_width*max_height*2
 
+nomem_dlgsavearea       rb      (12+4)*(3+3)*2
+
 cur_header      rb      max_width
 tmp             dd      ?
 
@@ -4954,6 +5130,9 @@ max_x           dd      ?
 used_width      dd      ?
 used_height     dd      ?
 
+wnd_width       dd      ?
+wnd_height      dd      ?
+
 column_left     dd      ?
 column_top      dd      ?
 column_width    dd      ?
@@ -4966,6 +5145,10 @@ viewer_right_side dq    ?
 saved_file_name:
 procinfo        rb      1024
 lower_file_name = procinfo + 512
+
+error_msg       rb      128
+
+prev_dir        rb      1024
 
 driveinfo       rb      32+304
 tmpname         rb      32

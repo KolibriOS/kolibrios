@@ -844,6 +844,7 @@ vesa12_putimage:
      pop  edi
 
     add  edi,[0xfe08]
+    add  esi,[esp+32]
     dec  ebx
     jnz  newpi12
 

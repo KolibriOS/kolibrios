@@ -3,6 +3,11 @@
 
 virtual at 0
 dlgtemplate:
+; Флаги:
+; бит 0: использовать стандартные цвета диалога
+; бит 1: использовать стандартные цвета предупреждения/ошибки
+; (если любой из этих битов установлен, поля main_color,border_color,header_color
+;  игнорируются)
 .flags          dd      ?
 .x              dd      ?
 .y              dd      ?
@@ -58,7 +63,28 @@ GenericBox:
         or      eax, -1
         ret     8
 .sizeok:
+; set color if required
+        test    byte [ebx+dlgtemplate.flags], 1
+        jz      @f
+        mov     edi, dialog_colors
+        jmp     .setcolor
+@@:
+        test    byte [ebx+dlgtemplate.flags], 2
+        jz      @f
+        mov     edi, warning_colors
+.setcolor:
+        mov     al, [dialog_main_color-dialog_colors+edi]
+        mov     [ebx+dlgtemplate.main_color], al
+        mov     al, [dialog_border_color-dialog_colors+edi]
+        mov     [ebx+dlgtemplate.border_color], al
+        mov     al, [dialog_header_color-dialog_colors+edi]
+        mov     [ebx+dlgtemplate.header_color], al
+@@:
 ; allocate memory for data under dialog
+; for 'No memory' dialog use static data area
+        mov     ebp, nomem_dlgsavearea
+        cmp     ebx, nomem_dlgdata
+        jz      .allocated
         mov     eax, [ebx+dlgtemplate.width]
         add     eax, [ebx+dlgtemplate.border_size_x]
         add     eax, [ebx+dlgtemplate.border_size_x]
@@ -73,12 +99,12 @@ GenericBox:
         call    mf_alloc
         test    eax, eax
         jnz     @f
-; TODO: add error message
         popad
         or      eax, -1
         ret     8
 @@:
         mov     ebp, eax
+.allocated:
 ; save data
         mov     eax, [ebx+dlgtemplate.y]
         add     eax, [ebx+dlgtemplate.height]
@@ -402,8 +428,11 @@ GenericBox:
         push    eax
         call    restore_console_data
         call    draw_keybar
+        cmp     ebx, nomem_dlgdata
+        jz      @f
         mov     eax, ebp
         call    mf_free
+@@:
         or      [cursor_x], -1
         or      [cursor_y], -1
         call    draw_image
@@ -526,7 +555,7 @@ menu_centered_in:
 ; +44: dd begin_variant
 ; +48: dd end_variant
 ; +52: dd cur_variant_idx
-        call    mf_alloc
+        call    xmalloc
         test    eax, eax
         jnz     @f
 .ret_bad:
@@ -995,9 +1024,10 @@ DialogBox:
         push    ManagerDlgProc
         push    dword [esp+8]
         call    GenericBox
-        ret     8
+        ret     4
 
 ManagerDlgProc:
+        mov     ebp, ebx
         mov     eax, [esp+8]
         dec     eax
         jz      .draw
@@ -1052,8 +1082,7 @@ ManagerDlgProc:
         mov     eax, ebx
         ret     16
 @@:
-        mov     ebx, [esp+4]
-        add     ebx, dlgtemplate.size+12
+        lea     ebx, [ebp+dlgtemplate.size+12]
 .enter_find:
         cmp     [ebx+dlgitemtemplate.type], 2
         jnz     @f
@@ -1077,8 +1106,7 @@ ManagerDlgProc:
         jnz     .btn_found
         loop    @b
 .find_first_btn:
-        mov     ebx, [esp+4]
-        add     ebx, dlgtemplate.size+12
+        lea     ebx, [ebp+dlgtemplate.size+12]
 @@:
         test    [ebx+dlgitemtemplate.flags], 8
         jnz     .btn_found
@@ -1087,7 +1115,7 @@ ManagerDlgProc:
 .btn_found:
         or      byte [ebx+dlgitemtemplate.flags], 4
 .ret_draw:
-        mov     ebx, [esp+4]
+        mov     ebx, ebp
         call    .dodraw
         call    draw_image
         xor     eax, eax
@@ -1097,8 +1125,7 @@ ManagerDlgProc:
 .up:
         jecxz   .ret0
         and     byte [ebx+dlgitemtemplate.flags], not 4
-        mov     eax, [esp+4]
-        sub     ecx, [eax+dlgtemplate.size+8]
+        sub     ecx, [ebp+dlgtemplate.size+8]
         neg     ecx
         jz      .find_last_btn
 @@:
@@ -1107,9 +1134,9 @@ ManagerDlgProc:
         loopz   @b
         jnz     .btn_found
 .find_last_btn:
-        mov     ebx, [eax+dlgtemplate.size+8]
+        mov     ebx, [ebp+dlgtemplate.size+8]
         imul    ebx, dlgitemtemplate.size
-        lea     ebx, [ebx+eax+dlgtemplate.size+12]
+        lea     ebx, [ebx+ebp+dlgtemplate.size+12]
 @@:
         sub     ebx, dlgitemtemplate.size
         test    [ebx+dlgitemtemplate.flags], 8
@@ -1262,6 +1289,9 @@ ManagerDlgProc:
 draw_static_text:
 ; рисуем статический текст
         mov     ah, [dialog_main_color]
+        test    byte [ebp+dlgtemplate.flags], 2
+        jz      draw_text
+        mov     ah, [warning_main_color]
 draw_text:
 ; определяем длину строки
         mov     esi, [ebx+dlgitemtemplate.data]
@@ -1299,13 +1329,12 @@ draw_text_esi:
         xor     eax, eax
 .text_draw:
         push    ecx
-        mov     ecx, [esp+24]
         push    eax
         mov     eax, [ebx+dlgitemtemplate.x1]
-        add     eax, [ecx+dlgtemplate.x]
+        add     eax, [ebp+dlgtemplate.x]
         push    edx
         mov     edx, [ebx+dlgitemtemplate.y1]
-        add     edx, [ecx+dlgtemplate.y]
+        add     edx, [ebp+dlgtemplate.y]
         call    get_console_ptr
         pop     edx
         pop     ecx
@@ -1337,9 +1366,8 @@ draw_text_esi:
         stosw
         loop    @b
 .ret:
-        mov     ecx, [esp+20]
-        mov     eax, [ecx+dlgtemplate.x]
-        mov     edx, [ecx+dlgtemplate.y]
+        mov     eax, [ebp+dlgtemplate.x]
+        mov     edx, [ebp+dlgtemplate.y]
         add     eax, [ebx+dlgitemtemplate.x2]
         inc     eax
         add     edx, [ebx+dlgitemtemplate.y1]
@@ -1354,10 +1382,15 @@ draw_text_esi:
         ret
 
 draw_button:
-        mov     ah, [dialog_normal_btn_color]
+        mov     ecx, dialog_colors
+        test    byte [ebp+dlgtemplate.flags], 2
+        jz      @f
+        mov     ecx, warning_colors
+@@:
+        mov     ah, [dialog_normal_btn_color-dialog_colors+ecx]
         test    [ebx+dlgitemtemplate.flags], 4
         jz      @f
-        mov     ah, [dialog_selected_btn_color]
+        mov     ah, [dialog_selected_btn_color-dialog_colors+ecx]
 @@:
         jmp     draw_text
 
@@ -1368,19 +1401,198 @@ draw_editbox:
         mov     eax, [ebx+dlgitemtemplate.x1]
         add     eax, [edx+4]
         sub     eax, [edx+8]
-        mov     ecx, [esp+16]
-        add     eax, [ecx+dlgtemplate.x]
+        add     eax, [ebp+dlgtemplate.x]
         mov     [cursor_x], eax
         mov     eax, [ebx+dlgitemtemplate.y1]
-        add     eax, [ecx+dlgtemplate.y]
+        add     eax, [ebp+dlgtemplate.y]
         mov     [cursor_y], eax
 @@:
-        mov     ah, [dialog_edit_color]
+        mov     ecx, dialog_colors
+        test    byte [ebp+dlgtemplate.flags], 2
+        jz      @f
+        mov     ecx, warning_colors
+@@:
+        mov     ah, [dialog_edit_color-dialog_colors+ecx]
         test    [ebx+dlgitemtemplate.flags], 10h
         jnz     @f
-        mov     ah, [dialog_unmodified_edit_color]
+        mov     ah, [dialog_unmodified_edit_color-dialog_colors+ecx]
 @@:
         mov     esi, [ebx+dlgitemtemplate.data]
         add     esi, [edx+8]
         add     esi, 12
         jmp     draw_text_esi
+
+; void __stdcall SayNoMem(void);
+SayNoMem:
+        or      dword [nomem_dlgdata+4], -1
+        or      dword [nomem_dlgdata+8], -1
+        push    nomem_dlgdata
+        call    DialogBox
+        ret
+
+; int __stdcall SayErr(const char* title, int x, int y,
+;                       int num_strings, const char* strings[],
+;                       int num_buttons, const char* buttons[]);
+; may be x=-1 and/or y=-1
+; [esp+4] = title
+; [esp+8] = x
+; [esp+12] = y
+; [esp+16] = num_strings
+; [esp+20] = strings
+; [esp+24] = num_buttons
+; [esp+28] = buttons
+SayErr:
+        mov     eax, [esp+16]
+        add     eax, [esp+24]
+        imul    eax, dlgitemtemplate.size
+        add     eax, dlgtemplate.size+12
+        call    xmalloc
+        test    eax, eax
+        jnz     @f
+        or      eax, -1
+        ret     28
+@@:
+        pushad
+        mov     ebx, eax
+        mov     edi, eax
+        mov     eax, 2
+        stosd                           ; dlgtemplate.flags
+        mov     eax, [esp+32+8]
+        stosd                           ; dlgtemplate.x
+        mov     eax, [esp+32+12]
+        stosd                           ; dlgtemplate.y
+; calculate width
+        mov     ecx, [esp+32+16]
+        mov     esi, [esp+32+20]
+        xor     edx, edx
+.calcwidth:
+        lodsd
+@@:
+        inc     eax
+        cmp     byte [eax-1], 0
+        jnz     @b
+        sub     eax, [esi-4]
+        inc     eax
+        cmp     edx, eax
+        ja      @f
+        mov     edx, eax
+@@:
+        loop    .calcwidth
+        mov     ecx, [esp+32+24]
+        mov     esi, [esp+32+28]
+        xor     ebp, ebp
+.calcwidth2:
+        lodsd
+@@:
+        inc     eax
+        cmp     byte [eax-1], 0
+        jnz     @b
+        sub     eax, [esi-4]
+        inc     eax
+        add     ebp, eax
+        loop    .calcwidth2
+        inc     ebp
+        inc     ebp
+        cmp     edx, ebp
+        ja      @f
+        mov     edx, ebp
+@@:
+        mov     eax, [cur_width]
+        sub     eax, 8
+        cmp     edx, eax
+        jb      @f
+        mov     edx, eax
+@@:
+        mov     eax, edx
+        stosd                           ; dlgtemplate.width
+        mov     eax, [esp+32+16]
+        inc     eax
+        stosd                           ; dlgtemplate.height
+        mov     eax, 3
+        stosd                           ; dlgtemplate.border_size_x
+        mov     al, 2
+        stosd                           ; dlgtemplate.border_size_y
+        mov     eax, [esp+32+4]
+        stosd                           ; dlgtemplate.title
+        xor     eax, eax
+        stosd                           ; (ignored)
+        stosd                           ; DlgProc
+        stosd                           ; userdata
+        mov     eax, [esp+32+16]
+        add     eax, [esp+32+24]
+        stosd                           ; num_items
+; fill strings
+        xor     ecx, ecx
+        mov     esi, [esp+32+20]
+@@:
+        mov     eax, 1
+        stosd                           ; dlgitemtemplate.type
+        dec     eax
+        stosd                           ; dlgitemtemplate.x1
+        mov     eax, ecx
+        stosd                           ; dlgitemtemplate.y1
+        lea     eax, [edx-1]
+        stosd                           ; dlgitemtemplate.x2
+        mov     eax, ecx
+        stosd                           ; dlgitemtemplate.y2
+        movsd                           ; dlgitemtemplate.data
+        mov     eax, 1
+        stosd                           ; dlgitemtemplate.flags
+        inc     ecx
+        cmp     ecx, [esp+32+16]
+        jb      @b
+; fill buttons
+        mov     ecx, [esp+32+24]
+        mov     esi, [esp+32+28]
+        sub     edx, ebp
+        jc      .big
+        shr     edx, 1
+        inc     edx
+        jmp     .fillbtns
+.big:
+        xor     edx, edx
+.fillbtns:
+        mov     eax, 2
+        stosd                           ; dlgitemtemplate.type
+        mov     eax, edx
+        stosd                           ; dlgitemtemplate.x1
+        mov     eax, [ebx+dlgtemplate.height]
+        dec     eax
+        stosd                           ; dlgitemtemplate.y1
+        push    eax
+        lodsd
+        sub     eax, edx
+@@:
+        inc     edx
+        cmp     byte [eax+edx-1], 0
+        jnz     @b
+        mov     eax, edx
+        inc     edx
+        stosd                           ; dlgitemtemplate.x2
+        pop     eax
+        stosd                           ; dlgitemtemplate.y2
+        mov     eax, [esi-4]
+        stosd                           ; dlgitemtemplate.data
+        mov     eax, 9
+        cmp     ecx, [esp+32+24]
+        jnz     @f
+        or      al, 4
+@@:
+        stosd                           ; dlgitemtemplate.flags
+        loop    .fillbtns
+        push    ebx
+        call    DialogBox
+        cmp     eax, -1
+        jz      @f
+        sub     eax, ebx
+        sub     eax, dlgtemplate.size+12
+        xor     edx, edx
+        mov     ecx, dlgitemtemplate.size
+        div     ecx
+        sub     eax, [esp+32+16]
+@@:
+        mov     [esp+28], eax
+        mov     eax, ebx
+        call    mf_free
+        popad
+        ret     28

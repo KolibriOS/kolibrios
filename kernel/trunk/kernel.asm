@@ -231,7 +231,7 @@ iglobal
   char2      db  'FONTS/CHAR2.MT',0
   bootpath   db  '/KOLIBRI    '
   bootpath2  db  0
-  vmode      db  'VMODE   MDR'
+  vmode      db  'VMODE.MDR',0
   vrr_m      db  '/rd/1/VRR_M',0
 endg
 
@@ -3977,7 +3977,7 @@ sys_putimage:
         add     dx,word[edi+0x80000+APPDATA.wnd_clientbox.left]
         rol     edx,16
   .forced:
-        push    esi ebp
+        push    ebp esi 0
         mov     ebp, putimage_get24bpp
         mov     esi, putimage_init24bpp
 sys_putimage_bpp:
@@ -3996,7 +3996,7 @@ sys_putimage_bpp:
         inc     [mouse_pause]
         call    eax
         dec     [mouse_pause]
-        pop     ebp esi
+        pop     ebp esi ebp
         jmp     [draw_pointer]
 
 syscall_putimage_palette:
@@ -4009,8 +4009,9 @@ sys_putimage_palette:
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]
 ; edx = [xstart]*65536 + [ystart]
-; esi = number of bits per pixel, must be 8
+; esi = number of bits per pixel, must be 8, 24 or 32
 ; edi = pointer to palette
+; ebp = row delta
         mov     eax, [0x3000]
         shl     eax, 8
         add     dx, word [eax+0x80000+APPDATA.wnd_clientbox.top]
@@ -4018,10 +4019,27 @@ sys_putimage_palette:
         add     dx, word [eax+0x80000+APPDATA.wnd_clientbox.left]
         rol     edx, 16
 .forced:
-        push    esi ebp
+        push    ebp esi ebp
+        cmp     esi, 8
+        jnz     @f
         mov     ebp, putimage_get8bpp
         mov     esi, putimage_init8bpp
         jmp     sys_putimage_bpp
+@@:
+        cmp     esi, 24
+        jnz     @f
+        mov     ebp, putimage_get24bpp
+        mov     esi, putimage_init24bpp
+        jmp     sys_putimage_bpp
+@@:
+        cmp     esi, 32
+        jnz     @f
+        mov     ebp, putimage_get32bpp
+        mov     esi, putimage_init32bpp
+        jmp     sys_putimage_bpp
+@@:
+        pop     ebp esi
+        ret
 
 putimage_init24bpp:
         lea     eax, [eax*3]
@@ -4039,6 +4057,13 @@ putimage_get8bpp:
         mov     eax, [edx+eax*4]
         pop     edx
         inc     esi
+        ret     4
+
+putimage_init32bpp:
+        shl     eax, 2
+        ret
+putimage_get32bpp:
+        lodsd
         ret     4
 
 ; eax x beginning
@@ -4415,28 +4440,6 @@ sys_msg_board:
    smbl2:
      ret
 
-
-
-sys_trace:
-
-     test eax, eax                  ; get event data
-     jnz  no_get_sys_events
-
-     mov  esi,save_syscall_data     ; data
-     mov  edi,[0x3010]
-     mov  edi,[edi+TASKDATA.mem_start]
-     add  edi,ebx
-     cld
-     rep  movsb
-
-     mov  [esp+24],dword 0
-     mov  eax,[save_syscall_count]  ; count
-     mov  [esp+36],eax
-     ret
-
-   no_get_sys_events:
-
-     ret
 
 
 sys_process_def:
