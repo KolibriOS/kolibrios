@@ -7,7 +7,7 @@
 ; SMBus interface
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
-include		'smb_nf2.inc'
+;include		'smb_nf2.inc'
 
 smb_base	dd	0	; IO port base for SMBus acces
 smb_slave	dd	0	; SMBus addres for monitoring chip
