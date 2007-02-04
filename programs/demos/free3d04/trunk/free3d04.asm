@@ -9,6 +9,8 @@
 ;   Willow - greatly srinked code size by using GIF texture and FPU to calculate sine table
 ;
 ;   !!!! Don't use GIF.INC in your apps - it's modified for FREE3D !!!!
+;
+;   Heavyiron - new 0-function of drawing window from kolibri (do not work correctly with menuet)
 
 TEX_SIZE equ 64*64*4
 ceil = sinus+16*1024
@@ -29,8 +31,8 @@ use32
                dd     0x01                    ; header version
                dd     START                   ; start of code
                dd     I_END                   ; size of image
-               dd     APP_MEM;0x300000                ; memory for app
-               dd     APP_MEM;0x300000                ; esp
+               dd     APP_MEM;0x100000        ; memory for app
+               dd     APP_MEM;0x100000        ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
 include 'lang.inc'
 include 'macros.inc'
@@ -307,27 +309,9 @@ draw_window:
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,50*65536+649         ; [x start] *65536 + [x size]
     mov  ecx,50*65536+504         ; [y start] *65536 + [y size]
-    mov  edx,0x02ffffff            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x80777777            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00777777            ; color of frames    RRGGBB
+    mov  edx,0x33ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edi,header
     int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ddeeff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
-                                   ; CLOSE BUTTON
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(649-19)*65536+12     ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,0x777777              ; button color RRGGBB
-    int  0x40
-
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
@@ -826,7 +810,7 @@ speedup:
     mov eax,7
     mov ebx,0x80000
     mov ecx,640*65536+480
-    mov edx,5*65536+20
+    xor edx,edx
     int 0x40
 
     ret
@@ -1007,10 +991,8 @@ dd 0x0001FFFF ; initial player position * 0xFFFF
  vpy:
 dd 0x0001FFFF
 
-labelt:
-      db   'FISHEYE RAYCASTING ENGINE ETC. FREE3D'
+header    db   'FISHEYE RAYCASTING ENGINE ETC. FREE3D',0
 
-labellen:
 sindegree dd 0.0
 sininc    dd 0.0017453292519943295769236907684886
 sindiv    dd 6553.5

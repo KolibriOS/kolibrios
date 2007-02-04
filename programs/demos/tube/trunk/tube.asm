@@ -5,6 +5,8 @@
 
 ;  Menuet port by VT
 
+appname equ 'TUBE - FPU'
+
 use32
              org  0x0
 
@@ -13,7 +15,7 @@ use32
              dd   START
              dd   I_END
              dd   0x40000
-             dd   0x3ff00
+             dd   0x40000
              dd   0,0
 
 include 'macros.inc'
@@ -47,7 +49,7 @@ still:
    cmp  eax,0
    je   still
 
-   mov  eax,-1
+   or   eax,-1
    int  0x40
 
 
@@ -175,7 +177,7 @@ display_image:
 
   mov eax,7
   mov ecx,320*65536+160
-  mov edx,10*65536+27
+  xor edx,edx
   mov ebx,0x10000
   int 0x40
 
@@ -192,19 +194,11 @@ draw_window:
      mov  ebx,1
      int  0x40
 
-     mov  eax,0
-     mov  ebx,100*65536+339
-     mov  ecx,100*65536+198
-     mov  edx,0x03225588
-     mov  esi,0x0
-     mov  esi,0x0
-     int  0x40
-
-     mov  eax,4
-     mov  ebx,8*65536+8
-     mov  ecx,0xffffff
-     mov  edx,labeltext
-     mov  esi,19
+     xor  eax,eax
+     mov  ebx,100*65536+329
+     mov  ecx,100*65536+186
+     mov  edx,0x33000000
+     mov  edi,header
      int  0x40
 
      mov  eax,12
@@ -214,7 +208,7 @@ draw_window:
      popa
      ret
 
-labeltext db 'TUBE.ASM - with FPU'
+header db appname,0
 
 db 41,0,0xC3,0x3C
 

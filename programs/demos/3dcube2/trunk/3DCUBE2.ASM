@@ -49,7 +49,7 @@ still:
 ;    cmp  eax,3                  ; button in buffer ?
     jz   button
 
-    fps  280,8,cl_White,cl_Black
+    fps  230,8,cl_White,cl_Black
 
 main_loop:
 
@@ -104,14 +104,8 @@ draw_window:
     mov eax,0   ;Draw window
     mov ebx,100*65536+(SCREEN_X+9) ;x start*65536+x size
     mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
-    mov edx,0x03000000         ;0x03 use skinned window
-    int 0x40
-
-    mov eax,4   ;Out Text
-    mov ebx,8*65536+8          ;x start*65536+y start
-    mov ecx,0x00ffffff         ;color White
-    mov edx,head_label
-    mov esi,hl_end-head_label
+    mov edx,0x13000000         ;0x03 use skinned window
+    mov edi,header
     int 0x40
 
     mov eax,12  ;End
@@ -119,9 +113,7 @@ draw_window:
     int 0x40
     ret
 
-head_label: db "3D TEST SAMPLE FOR MENUETOS"
-hl_end:
-
+header db '3D TEST SAMPLE FOR MENUETOS',0
 
 
 ; Draw faces procedure

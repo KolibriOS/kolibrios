@@ -38,7 +38,7 @@ CODE
     mov eax,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    mov edx,(5 shl 16)+23
+    xor edx,edx
     int 0x40
     jmp .event_loop
 
@@ -50,20 +50,14 @@ CODE
     xor eax,eax
     mov ebx,(100 shl 16)+(WND_SIZE_X+9)
     mov ecx,(100 shl 16)+(WND_SIZE_Y+28)
-    mov edx,0x03000000
+    mov edx,0x33000000
+    mov edi,header
     int 0x40
 
     mov eax,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    mov edx,(5 shl 16)+23
-    int 0x40
-
-    mov eax,4
-    mov ebx,0x00060006
-    mov ecx,0x10ffffff
-    mov edx,window_title
-    mov esi,window_title_len
+    xor edx,edx
     int 0x40
 
     mov eax,12
@@ -166,9 +160,7 @@ DATA
   delta_angle dd 0.0245436926066		; pi/128
   scale_sin dd 128.0
 
-  window_title:
-      db 'MoveBack'
-  window_title_len = $ - window_title
+  header      db 'MoveBack',0
 
 UDATA
   ver_counter dd ?

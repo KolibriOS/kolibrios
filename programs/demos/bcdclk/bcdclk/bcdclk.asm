@@ -13,8 +13,8 @@ use32
  dd 0x01
  dd START
  dd I_END
- dd 0x100000
- dd 0x7fff0
+ dd 0x1000
+ dd 0x1000
  dd 0x0 , 0x0
 
 include "lang.inc"
@@ -22,7 +22,7 @@ include "macros.inc"
 
 
 START:
-
+red:
      call drawwindow
 
 still:
@@ -41,18 +41,14 @@ still:
     call  drawclock
 
     jmp still
-
-red: ; redraw
-    call drawwindow
-    jmp  still
-
+ 
 button:
-    mov  eax,17   ; get id
+    mov  al,17   ; get id
     int  0x40
 
     cmp  ah,1 ; button id=1 ?
     jne  noclose
-    mov  eax,-1   ; close this program
+    or   eax,-1   ; close this program
     int  0x40
   noclose:
 
@@ -77,7 +73,7 @@ dgtomem:
     mov  ebx,74*65536+10
     mov  edi,dg1
 digitlp:
-    mov  ecx,30*65536+10
+    mov  ecx,10*65536+10
     xor  esi,esi
 plotlp:
     xor  edx,edx
@@ -122,23 +118,14 @@ drawwindow:
     mov  ebx,1 ; start redraw
     int  0x40
 
-    mov  eax,0 ; window
-    mov  ebx,100*65536+100
-    mov  ecx,100*65536+100
-    mov  edx,0x83400088
-    mov  esi,0x805080d0
-    mov  edi,0x000000ff
+    xor  eax,eax ; window
+    mov  ebx,100*65536+107
+    mov  ecx,100*65536+105
+    mov  edx,0x33400088
+    mov  edi,header
     int  0x40
 
 call drawclock
-
-    mov  eax,4 ; text
-    mov  ebx,8*65536+8
-    mov  ecx,0x10ddeeff
-    mov  edx,title
-    mov  esi,titlend-title
-    int  0x40
-
 
     mov  eax,12
     mov  ebx,2 ; end redraw
@@ -146,12 +133,6 @@ call drawclock
 
     ret
 
-
-
-title:
-     db   'BCD Clock'
-titlend:
-
+header   db   'BCD Clock',0
+I_END:
 dg1:   db  ?
-
-      I_END:

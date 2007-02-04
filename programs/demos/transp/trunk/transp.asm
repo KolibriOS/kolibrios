@@ -24,7 +24,9 @@ START:                          ; start of execution
     mov  [procinfo.x_size],  200
     mov  [procinfo.y_start], 80
     mov  [procinfo.y_size],  300
-
+    call draw_window
+red:    
+    call get_transparent
     call draw_window            ; at first, draw the window
 
 still:
@@ -38,26 +40,20 @@ still:
     je   key
     cmp  eax,3                  ; button in buffer ?
     je   button
-
-    jmp  still
-
-  red:                          ; redraw
-    call get_transparent
-    call draw_window
     jmp  still
 
   key:                          ; key
-    mov  eax,2                  ; just read it and ignore
+    mov  al,2                  ; just read it and ignore
     int  0x40
     jmp  still
 
   button:                       ; button
-    mov  eax,17                 ; get id
+    mov  al,17                 ; get id
     int  0x40
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
-    mov  eax,-1                 ; close this program
+    or   eax,-1                 ; close this program
     int  0x40
   noclose:
 
@@ -75,29 +71,19 @@ draw_window:
     mov  ebx,1                     ; 1, start of draw
     int  0x40
                                    ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
+    xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,[procinfo.x_start]
     shl  ebx,16
     add  ebx,[procinfo.x_size]
-    dec  ebx
     mov  ecx,[procinfo.y_start]
     shl  ecx,16
     add  ecx,[procinfo.y_size]
-    dec  ecx
-    mov  edx,0x03000000            ; color of work area RRGGBB,8->color gl
+    mov  edx,0x33000000            ; color of work area RRGGBB,8->color gl
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
 
     call draw_transparent
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
-;    call draw_transparent
-
+                                   
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
     int  0x40
@@ -116,7 +102,7 @@ draw_transparent:
     mov  ecx,[procinfo.x_size]
     shl  ecx,16
     add  ecx,[procinfo.y_size]
-    mov  edx,4*65536+22
+    xor  edx,edx
     int  0x40
 
     popa
@@ -131,10 +117,6 @@ get_transparent:
     mov  ebx,I_END
     mov  ecx,-1
     int  0x40
-;    mov  eax,[I_END+34]
-;    mov  [x_start],eax
-;    mov  eax,[I_END+38]
-;    mov  [y_start],eax
 
     mov  eax,14
     int  0x40
@@ -168,8 +150,6 @@ get_transparent:
     mov   eax,35
     int   0x40
 
-;    shr   eax,1
-;    and   eax,0x7f7f7f
     or    eax, 0x4e4e4e
 
     mov   ebx,[esp+4]
@@ -213,9 +193,7 @@ y_end    dd 0
 
 scx      dd 640
 
-labelt:
-     db   'EXAMPLE APPLICATION'
-labellen:
+header     db   'Transparent',0
 
 I_END:
 procinfo process_information

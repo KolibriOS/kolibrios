@@ -1,5 +1,5 @@
 ;
-;   TIMER
+;   TIMER (show how much system works)
 ;
 ;   Compile with flat assembler
 ;
@@ -53,11 +53,6 @@ still:
 ;   *********************************************
 
 draw_clock:
-    mov  eax, 13           ; clear area
-    mov  ebx, 10*65536+55
-    mov  ecx, 30*65536+10
-    mov  edx, [sc.work]
-    int  0x40
 
     mov  eax, 26           ; get system counter
     mov  ebx, 9
@@ -84,9 +79,10 @@ draw_clock:
 
   mov  eax,47           ; HH
   mov  esi,[sc.work_text]
-  or   esi,0x10000000
+  or   esi,0x50000000
+  mov  edi,[sc.work]
   mov  ebx,0x00020000
-  mov  edx,10*65536+30
+  mov  edx,15*65536+5
   int  0x40
 
   pop  eax              ; MM
@@ -122,30 +118,12 @@ draw_window:
     int  0x40
 
                                    ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+75          ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+45          ; [y start] *65536 + [y size]
+    xor  eax,eax                   ; function 0 : define and draw window
+    mov  ebx,100*65536+100         ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+40          ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color gl
-    mov  esi,[sc.grab]            ; color of grab bar  RRGGBB,8->color gl
-    or   esi,0x80000000
-    mov  edi,[sc.frame]            ; color of frames    RRGGBB
-    int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,6*65536+7             ; [x start] *65536 + [y start]
-    mov  ecx,[sc.grab_text]            ; font 1 & color ( 0xF0RRGGBB )
-    or   ecx,0x10000000
-    mov  edx,header                ; pointer to text beginning
-    mov  esi,header.len            ; text length
-    int  0x40
-
-                                   ; CLOSE BUTTON
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(75-16)*65536+12      ; [x start] *65536 + [x size]
-    mov  ecx,4*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,[sc.grab_button]      ; button color RRGGBB
+    or   edx,0x33000000
+    mov  edi,header
     int  0x40
 
     call draw_clock
@@ -160,13 +138,9 @@ draw_window:
 ; DATA AREA
 
 if lang eq ru
-    header:
-         db   'íÄâåÖê'
-      .len = $ - header
+    header   db   'íÄâåÖê',0
 else
-    header:
-         db   'TIMER'
-      .len = $ - header
+    header   db   'TIMER',0
 end if
 
 

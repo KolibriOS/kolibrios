@@ -31,7 +31,7 @@ CODE
     mov al,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    mov edx,(4 shl 16)+24
+    xor edx,edx
     int 0x40
     call rotate_pal
     jmp .event_loop
@@ -45,21 +45,15 @@ CODE
 
     xor eax,eax
     mov ebx,(100 shl 16)+(WND_SIZE_X+8)
-    mov ecx,(100 shl 16)+(WND_SIZE_Y+28)
-    mov edx,0x03000000
+    mov ecx,(100 shl 16)+(WND_SIZE_Y+25)
+    mov edx,0x33000000
+    mov edi,header
     int 0x40
 
     mov al,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
-    mov edx,(4 shl 16)+24
-    int 0x40
-
-    mov al,4
-    mov ebx,0x00060006
-    mov ecx,0x10ffffff
-    mov edx,window_title
-    mov esi,window_title_len
+    xor edx,edx
     int 0x40
 
     pop eax
@@ -167,9 +161,7 @@ include "graph8.inc"
 DATA
   _multiplier	dd 63.5
 
-  window_title:
-      db 'Plasma'
-  window_title_len = $ - window_title
+  header          db 'Plasma',0
 
 UDATA
   _fpom32		rd 1

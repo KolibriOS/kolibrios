@@ -64,7 +64,7 @@ use32
   dd	 START
   dd	 I_END
   dd	 0x100000
-  dd	 0x0cfff0
+  dd	 0x100000
   dd	 0x0
 not1strun  dd	 0x0
 
@@ -223,12 +223,19 @@ key:
     jmp  still
 
 draw_window:
+
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    int  0x40
+
     mov  eax,12
     mov  ebx,1
     int  0x40
 
     xor  eax,eax
-    mov  ebx,10*65536+_X*2
+    mov  ebx,10*65536+_X*2+30
     mov  ecx,100*65536+_Y*2
     mov  edx,0x03261212
     mov  esi,0x805080d0
@@ -237,7 +244,8 @@ draw_window:
 
     mov  eax,4
     mov  ebx,8*65536+8
-    mov  ecx,0x10ddeeff
+    mov  ecx,[sc.grab_text]
+    or   ecx,0x10000000
     mov  edx,title
     mov  esi,title_end-title
     cmp  [help],2
@@ -439,5 +447,5 @@ freetest BGIfree ?,?,?,?,?,?,?,?,?
 help db ?
 pinfo:
     times 1024 db ?
-rb 10000     ; reserve, unless process info will corrupt our fonts (why?)
+sc     system_colors
 I_END:

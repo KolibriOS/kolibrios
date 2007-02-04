@@ -79,16 +79,8 @@ draw_window:
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+200         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+200         ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x806688cc
-    mov  edi,0x006688cc
-    int  0x40
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ddeeff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
+    mov  edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
 
     call draw_slider_info
@@ -382,10 +374,5 @@ ret
 ;**************************************************
 
 ; DATA AREA
-labelt:     db  'Color Slider'
-labellen:
+header     db  'Color Slider',0
 I_END:
-
-
-
-

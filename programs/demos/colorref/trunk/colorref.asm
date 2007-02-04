@@ -148,15 +148,8 @@ draw_window:
     mov  eax,0                     ; DRAW WINDOW
     mov  ebx,1*65536+200           ; [x start] *65536 + [x size]
     mov  ecx,200*65536+240         ; [y start] *65536 + [y size]
-    mov  edx,0x03000000            ; work area color (type II)
-    mov  esi,0x82a0a0a0            ; grab bar color (w/glide)
-    mov  edi,0x82bbbbbb            ; frame color
-    int  0x40
-    mov  eax,4                     ; WINDOW LABEL
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0xeeeeee              ; color of text (white)
-    mov  edx,prog_name             ; pointer to header
-    mov  esi,namelen-prog_name     ; text length
+    mov  edx,0x13000000            ; work area color (type II)
+    mov  edi,header                ; frame color
     int  0x40
    
     call palette                   ; display color palette
@@ -325,9 +318,7 @@ h2: mov  ebx,4*65536+192           ; y and width
 ;   **********  DATA DEFINITIONS AREA ***********
 ;   *********************************************
 
-prog_name:
-    db   'COLOR REFERENCE     H>HELP'
-namelen:
+header    db   'COLOR REFERENCE H>HELP',0
 
 picks:
     dd   31,2           ; selected top/bot colors

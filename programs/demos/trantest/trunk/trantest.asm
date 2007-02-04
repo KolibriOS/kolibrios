@@ -87,7 +87,7 @@ draw_window:
     xor eax,eax   ;Draw window
     mov ebx,100*65536+(SCREEN_X+9) ;x start*65536+x size
     mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
-    mov edx,0x13000000              ;0x33 use skinned window
+    mov edx,0x13000000              ;0x13 use skinned window
     mov edi,header
     int 0x40
 
