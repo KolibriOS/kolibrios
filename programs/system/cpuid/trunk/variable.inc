@@ -242,15 +242,15 @@ TM2:
 TM2len:
 
 CNXT_ID:
-    db 'CNXT-ID:      '
+    db 'CNXT-ID:        '
 CNXT_IDlen:
 
 CX16:
-    db 'CX16:         '
+    db 'CX16:           '
 CX16len:
 
 ETPRD:
-    db 'ETPRD:       '
+    db 'xTPR/ETPRD:       ' ; xTPR
 ETPRDlen:
 
 ;Extended2
@@ -264,7 +264,7 @@ MP:
 MPlen:
 
 NX:
-    db 'NX(XD):            '
+    db 'NX/XD:            '
 NXlen:
 
 MMXPi:
@@ -280,15 +280,15 @@ FXSRn:
 FXSRnlen:
 
 FFXSR:
-    db 'FFXSR:         '
+    db 'FFXSR:           '
 FFXSRlen:
 
 TSCP:
-    db 'TSCP:          '
+    db 'TSCP:            '
 TSCPlen:
 
 LM:
-    db 'LM(AA64):            '
+    db 'EM64T/LM:             ' ; AA64
 LMlen:
 
 DNo:
@@ -300,8 +300,33 @@ DN:
 DNlen:
 
 LAF:
-    db 'LAHF:          '
+    db 'LAHF:           '
 LAFlen:
+
+VMX:
+    db 'VMX:          '
+VMXlen:
+
+SSSE3:
+    db 'SSSE3:              '
+SSSE3len:
+
+DCA:
+    db 'DCA:          '
+DCAlen:
+
+
+MCR8:
+    db 'MCR8:              '
+MCR8len:
+
+SVM:
+    db 'SVM:          '
+SVMlen:
+
+CMPL:
+    db 'CMPL:          '
+CMPLlen:
 ;================================
 abrand00:
     db '8-bit Brand (no details)'

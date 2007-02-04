@@ -469,10 +469,14 @@ draw_window:
     add  ecx, BTN_HEIGHT-1
 ;   edx = button identifier
     mov  esi, [sc.work]
+    cmp  esi, 0xdfdfdf
+    jb   nocorrect
+    sub  esi, 0x1b1b1b
+  nocorrect: 
     inc  dl
     cmp  [edi + cur_sel], dl
     jne  .nohighlight
-    add  esi, 0x101010
+    add  esi, 0x1a1a1a
   .nohighlight:
     or	   edx, 0x20000000
     int  0x40

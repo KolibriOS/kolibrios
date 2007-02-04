@@ -200,7 +200,7 @@ nofuncbtns:           ; закрываем меню
 
 
 
-_BTNS_            = 8     ; количество кнопок ("пунктов меню")
+_BTNS_            = 7     ; количество кнопок ("пунктов меню")
 
 if lang eq ru
   font            = 0x00000000
@@ -345,46 +345,31 @@ DATA
 
   strtbl startapps       ,\
     <"/RD/1/PIC4",0>     ,\
+    <"/RD/1/SKINSEL",0>  ,\
     <"/RD/1/DESKTOP",0>  ,\
-    <"/RD/1/MV",0>       ,\
-    <"/RD/1/JPEGVIEW",0> ,\
-    <"/RD/1/CPU",0>      ,\
-    <"/RD/1/SPANEL",0>   ,\
-    <"/RD/1/ICON",0> ,\
-    <"/RD/1/VRR",0>
-
-;  header:            ; заголовок
-;    db 'M E N U'
-;  header_len = $ - header
-
-;  text:              ; текст на кнопках
-;    db 'Background  '; 12
-;    db 'Colors      '
-;    db 'MeView      '
-;    db 'Processes   '
-;    db 'Panel setup '
-;    db 'Icon manager'
-
+    <"/RD/1/ICON",0>     ,\
+    <"/RD/1/SETUP",0>    ,\
+    <"/RD/1/VRR",0> ,\
+    <"/RD/1/CPU",0> 
+    
   sz header, "KolibriOS"
 
   lsz text,\
     en, 'Background  ',\
-    en, 'Colors      ',\
-    en, 'MeView      ',\
-    en, 'JpegView    ',\
-    en, 'Processes   ',\
-    en, 'Panel setup ',\
+    en, 'Change skin ',\
+    en, 'Desktop     ',\
     en, 'Icon manager',\
+    en, 'Device setup',\
     en, 'VRR         ',\
+    en, 'Processes   ',\
     \
     ru, 'Генератор обоев     ',\
-    ru, 'Системные цвета     ',\
-    ru, 'Просмотр BMP        ',\
-    ru, 'Просмотр JPEG       ',\
-    ru, 'Процессы            ',\
-    ru, 'Настройка панели    ',\
+    ru, 'Смена скина         ',\
+    ru, 'Настройка окон      ',\
     ru, 'Управление иконками ',\
-    ru, 'Настройка монитора  '
+    ru, 'Настройка устройств ',\
+    ru, 'Настройка монитора  ',\
+    ru, 'Процессы            '
 
 start_info:
         .mode   dd      7

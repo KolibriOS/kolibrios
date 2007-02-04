@@ -2,17 +2,18 @@
 ; project name:    CPUID                                                      *
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures                *
 ; compiler:        flat assembler 1.67.5                                      *
-; version:         2.05                                                       *
-; last update:     1st November  2006         1st 2nd 3rd 4th                 *
+; version:         2.17                                                       *
+; last update:     3rd February  2007          1st 2nd 3rd 4th                *
 ; maintained by:   Sergey Kuzmin aka Wildwest                                 *
 ; e-mail:          kuzmin_serg@list.ru                                        *
 ; site:            http://coolthemes.narod.ru/files.html                      *
-; license:         Copyright 2004-2006 Sergey Kuzmin and coauthors            *
+; license:         Copyright 2004-2007 Sergey Kuzmin and co-authors           *
 ;                  Rules:                                                     *
 ;                  1)you can use pieces of code in your project, but should   *
-;                    mention original author;                                 *
+;                    mention the original author (include copyright notice);  *
 ;                  2)if you modify CPUID (improve, port, translate, etc) send *
-;                    your changes to maintainer or KolibriOS project leader   *
+;                    your changes to the maintainer or make about post changes*
+;                    at forum  http://meos.sysbin.com                         *
 ;-----------------------------------------------------------------------------*
 ; English comments                                                            *
 ;------------------------------------------------------------------------------
@@ -34,15 +35,21 @@ macro udata
 }
 
 include 'mos_uzel.inc'
-; useful macroses and some required stuff
+; useful macroses and Brand ID decoding
+include 'caches.inc'
 ;(L1 and L2 cashes decoding for Intel)
+include 'multipli.inc'
+;(multiplier decoding)
+include 'features.inc'
+;(features decoding)
 
 include 'gif2img.inc'
-; include macro to convert gif to img
+; include macros to convert gif to img
 
-;include 'debug.inc'
 include 'rsatest.inc'
 include 'variable.inc'
+
+
 
 START:			;   LET'S GO!!!
 ;------------
@@ -51,11 +58,11 @@ CYCLES:
     mov eax, 18
     mov ebx,5
     int 0x40
-    mov [total1],eax  ;in Hz  example 1600490000
+    mov [total1],eax  ;in Hz,  example 1600490000
     xor  edx,edx
     mov  ebx,1000000
     div  ebx
-    mov [total], eax  ; in Mhz  example 1600
+    mov [total], eax  ; in Mhz,  example 1600
     xor edx, edx
     mov eax, [total1]
     mov ebx, 10000
@@ -110,7 +117,7 @@ dec [che]
 
 .eaxl:
 test  eax, $80000000 ;    Test bit 31
-jnz   .ebxl	     ;    <> 0 =>not valid values
+jnz   .ebxl	     ;    <> 0 =>invalid values
 shr eax, 8
 call decodecache
 shr eax, 8
@@ -212,7 +219,7 @@ mov ecx, eax	      ; get Extended family
 shr ecx, 20	      ;shift it to the correct position
 and ecx, 000000FFh
 add ecx, [f]
-mov dword[ef],ecx     ; effective   family
+mov dword[ef],ecx     ; effective family
 
 
 jmp fut
@@ -228,7 +235,7 @@ mov [ef], ecx
 jmp fut
 
 maybe_athlon:
-mov	eax, 0x80000001 	      ; CPUID ext. function 0x80000001
+mov eax, 0x80000001		  ; CPUID ext. function 0x80000001
 cpuid				    
 mov ecx, eax
 and ecx,00000F00h ;   get CPU family
@@ -315,9 +322,9 @@ xor ebx, ebx
 xor ecx, ecx
 xor edx, edx
 
-mov eax,dword [ost]	       ;example  166474
+mov eax,dword [ost]  ;example  166474
 mov  ebx,10
-div  ebx		       ; example  16647
+div  ebx	     ;example  16647
 
 mov dword [temp], eax
 
@@ -397,20 +404,20 @@ typedetect:
 
 cmp [t], 00b
 jne t2d
-Text 275,190,0x00000000,t1, t1len-t1
+Text 295,270,0x00000000,t1, t1len-t1
 jmp PROCCORE
 t2d:
 cmp [t], 01b
 jne t3d
-Text 275,190,0x00000000,t2, t2len-t2
+Text 295,270,0x00000000,t2, t2len-t2
 jmp PROCCORE
 t3d:
 cmp [t], 11b
 jne notype
-Text 275,190,0x00000000,t3, t3len-t3
+Text 295,270,0x00000000,t3, t3len-t3
 jmp PROCCORE
 notype:
-Text 275,190,0x00000000,t4, t4len-t4
+Text 295,270,0x00000000,t4, t4len-t4
 
 PROCCORE:    ;   Who are you?
 ; Intel - "GenuineIntel"           +
@@ -457,31 +464,105 @@ Text 20, 210,0x00000000,cache, cachelen-cache
 
 Text 80,90,0x00000000,AMDn, AMDnlen-AMDn
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, amd
 	call	load_gif
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area+8   ; pointer to image
-    mov  ecx,201*65536+49  ; resolution (all gif's included are 64*81)
-    mov  edx,130*65536+127  ; place to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PutImage 130,127,201,49,img_area+8
+;         place   size
 
 ; Relax, man. AMD made PRETTY SIMPLE cache detection routine
 ;CACHE1:
 mov eax, 80000005h
     cpuid
+
+mov eax, ecx
+;shl eax, 24
+;shr eax, 24
+
+and eax,000000FFh ;
+mov [lineld], eax
+
+mov eax, ecx
+;shl eax, 8
+;shr eax, 24
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayld], eax
+
 shr ecx, 24
 mov [L1d], ecx
+
+
+mov eax, edx
+;shl eax, 24
+;shr eax, 24
+
+and eax,000000FFh ;
+mov [lineli], eax
+
+mov eax, edx
+;shl eax, 8
+;shr eax, 24
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayli], eax
+
+
 shr edx, 24
 mov [L1i], edx
+
+
 ;CACHE2:
 mov eax, 80000006h
     cpuid
+
+mov eax, ecx
+;and eax,000000FFh ;
+shl eax, 24
+shr eax, 24
+mov dword[linel2], eax
+
+mov eax, ecx
+shl eax, 16
+shr eax, 28
+
+cmp eax, 0010b
+je way2
+
+cmp eax, 0100b
+je way4
+
+cmp eax, 0110b
+je way8
+
+cmp eax, 1000b
+je way16
+
+jmp to_next
+
+way2:
+mov dword[wayl2], 2
+jmp to_next
+
+way4:
+mov dword[wayl2], 4
+jmp to_next
+
+way8:
+mov dword[wayl2], 8
+jmp to_next
+
+way16:
+mov dword[wayl2], 16
+jmp to_next
+
+
+to_next:
+
 shr ecx, 16
 mov [L2],ecx
+
     cmp [f], $5
     jz .fiv
     cmp [f], $6
@@ -651,13 +732,13 @@ fif:  ;  AMD-64    Family=15
 ; checking sse3 for new AMD's is needed
     cmp [m],$1	; Dual-core Opteron      
     jz .AF1
-    cmp [m],$3	; Toledo 1024 0.09   // Manchester
+    cmp [m],$3	; Toledo 1024 0.09   // Manchester     ||Windsor Dual Core not supported
     jz .AF3
     cmp [m],$4	;Athlon 64 Mobile Athlon 64 FX  ClawHammer (1024) 0.13
     jz .AF4
     cmp [m],$5	; Opteron     Athlon 64 FX 0.13 (1024)
     jz .AF5
-    cmp [m],$7	;Athlon 64 Athlon 64 FX  Clawhammer(1024) 0.13   Sledgehammer(1024)  0.13  // SSE3+ SanDiego(1024) (¯- ¡  ¡ü-¿-¬¡)
+    cmp [m],$7	;Athlon 64 Athlon 64 FX  Clawhammer(1024) 0.13   Sledgehammer(1024)  0.13  // SSE3+ SanDiego(1024)
     jz .AF7
    cmp [m],$8 ; Athlon 64 Mobile Athlon 64 FX ClawHammer (1024) 0.13
     jz .AF8
@@ -735,6 +816,7 @@ mov [micron], 9    ; winchester
 jmp MMXtest
 
 .AFFsse:
+mov [micron], 9
 cmp [L2], 1024
 jz .AFs
 cmp [L2], 512
@@ -757,17 +839,10 @@ Text 105,90,0x00000000,AFCsp, AFCsplen-AFCsp
 Intel:
 Text 80,90,0x00000000,Inteln, Intelnlen-Inteln
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, intel
 	call	load_gif
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area+8   ; pointer to image
-    mov  ecx,201*65536+49  ; resolution (all gif's included are 64*81)
-    mov  edx,130*65536+127  ; place to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PutImage 130,127,201,49,img_area+8
+;         place   size
 
 det:
     cmp [f], $5
@@ -944,7 +1019,7 @@ Text 115,90,0x00000000,P6F, P6Flen-P6F
     jmp MMXtest
 
 ;06Ex - Pentium M Yonah 0.065
-;06Fx - Pentium D Conroe 0.065, Xeon Woodcrest, Celeron D AllenDale
+;06Fx - Pentium D Conroe 0.065, Xeon Woodcrest, Celeron D AllenDale, Core 2 Kentsfield
 
 .sev:	 ;Family=7
 .IS0:
@@ -1045,17 +1120,10 @@ Cyrix:
 
 Text 20, 210,0x00000000,cache, cachelen-cache
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, cyrix
 	call	load_gif
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area+8   ; pointer to image
-    mov  ecx,201*65536+49  ; resolution (all gif's included are 64*81)
-    mov  edx,130*65536+127  ; place to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PutImage 130,127,201,49,img_area+8
+;         place   size
 
     cmp [f], $5
     jz .fivv
@@ -1116,11 +1184,85 @@ shr ecx, 24
 mov [L1d], ecx
 shr edx, 24
 mov [L1i], edx
+
+
+
+; cache detection routine
+;CACHE1:
+mov eax, 80000005h
+    cpuid
+
+mov eax, ecx
+
+and eax,000000FFh ;
+mov [lineld], eax
+
+mov eax, ecx
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayld], eax
+
+shr ecx, 24
+mov [L1d], ecx
+
+mov eax, edx
+
+and eax,000000FFh ;
+mov [lineli], eax
+
+mov eax, edx
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayli], eax
+
+shr edx, 24
+mov [L1i], edx
+
+
 ;CACHE2:
 mov eax, 80000006h
     cpuid
-shr ecx, 24
+
+cmp [f], $6
+    jz vn
+    jmp vl2old	; if not then old identification
+vn:
+    cmp [m],$9
+    jl vl2old
+; else  new
+mov eax, ecx
+shl eax, 24
+shr eax, 24
+mov dword[linel2], eax
+
+mov eax, ecx
+shl eax, 16
+shr eax, 28
+
+mov dword[wayl2], eax
+
+shr ecx, 16  ; it is 16 bits now
 mov [L2],ecx
+
+
+
+vl2old:
+mov eax, ecx
+shl eax, 24
+shr eax, 24
+mov dword[linel2], eax
+
+mov eax, ecx
+shl eax, 8
+shr eax, 24
+
+mov dword[wayl2], eax
+
+shr ecx, 24  ; it was 8 bits earlier
+mov [L2],ecx
+
 
     cmp [f], $5
     jz fivC
@@ -1129,18 +1271,10 @@ mov [L2],ecx
 
 fivC:		   ;Family=5
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, idt
 	call	load_gif
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area+8   ; pointer to image
-    mov  ecx,201*65536+49  ; resolution (all gif's included are 64*81)
-    mov  edx,130*65536+127  ; place to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PutImage 130,127,201,49,img_area+8
+;         place   size
 
 Text 80,90,0x00000000,IDTn, IDTnlen-IDTn
     cmp [m],$4
@@ -1164,18 +1298,10 @@ Text 105,90,0x00000000,V59, V59len-V59
 
 sixC:	;Family=6
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, via
 	call	load_gif
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area+8   ; pointer to image
-    mov  ecx,201*65536+49  ; resolution (all gif's included are 64*81)
-    mov  edx,130*65536+127  ; place to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PutImage 130,127,201,49,img_area+8
+;         place   size
 
 Text 80,90,0x00000000,Centaurn, Centaurnlen-Centaurn
     cmp [m],$6
@@ -1186,7 +1312,7 @@ Text 80,90,0x00000000,Centaurn, Centaurnlen-Centaurn
     jz .V68
     cmp [m],$9
     jz .V69
-	cmp [m],$A
+    cmp [m],$A
     jz .V6A
 .V66:
    mov [micron], 18 ; 25?
@@ -1215,32 +1341,64 @@ Text 20, 210,0x00000000,cache, cachelen-cache
 
 Text 80,90,0x00000000,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, transmeta
 	call	load_gif
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area+8   ; pointer to image
-   mov	ecx,201*65536+49  ; resolution (all gif's included are 64*81)
-    mov  edx,130*65536+127  ; plce to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+PutImage 130,127,201,49,img_area+8
+;         place   size
 
-; cache detection routine
+; cache detection routine - it is the same as for AMD (almost)
 ;CACHE1:
 mov eax, 80000005h
     cpuid
+
+mov eax, ecx
+
+and eax,000000FFh ;
+mov [lineld], eax
+
+mov eax, ecx
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayld], eax
+
 shr ecx, 24
 mov [L1d], ecx
+
+mov eax, edx
+
+and eax,000000FFh ;
+mov [lineli], eax
+
+mov eax, edx
+
+and eax,00FF0000h
+shr eax, 16
+mov [wayli], eax
+
 shr edx, 24
 mov [L1i], edx
+
+
 ;CACHE2:
 mov eax, 80000006h
     cpuid
-shr ecx, 16
 
+mov eax, ecx
+shl eax, 24
+shr eax, 24
+mov dword[linel2], eax
+
+mov eax, ecx
+shl eax, 16
+shr eax, 28
+
+mov dword[wayl2], eax
+
+shr ecx, 16
 mov [L2],ecx
+
+
     cmp [f], $5
     jz .fivt
     cmp [f], $F
@@ -1276,8 +1434,8 @@ HTTtest:
    and ebx,00FF0000h ; numbers of logical processors
    shr ebx,16 ;        shift it to the correct position
    cmp ebx, 1
+   ;   mov [number_of_log_cpus], ebx
    je .ELN  ; HHT not enabled (Celeron)
-
 
    mov	dword [HTTn+9], $736579
    mov	dword [HTT+ 6], $736579
@@ -1296,19 +1454,31 @@ Text 20,170,0x00000000,step, steplen-step
 ;--------L1  L2
 Number 80,190,0,3,dword [L1d],0x000000;
 Number 80,210,0,3,dword [L1i],0x000000;
-Number 178,190,0,4,dword[L2],0x000000;
-Number 172,210,0,5,dword[L3],0x000000;
+Number 46,230,0,4,dword[L2],0x000000;
+Number 40,250,0,5,dword[L3],0x000000;
 ;-----------Features
 Number 263,70,0,2,dword [micron],0x000000  ; micron
 
-Text 280,250,0x00000000,HTT, HTTlen-HTT
-Text 280,270,0x00000000,sse3, sse3len-sse3
+Text 280,310,0x00000000,HTT, HTTlen-HTT
+Text 280,330,0x00000000,sse3, sse3len-sse3
 
 Text 20,90,0x00000000,name, namelen-name
 
-Text 20,250,0x00000000,MMXs, MMXslen-MMXs
-Text 20,270,0x00000000,SSE, SSElen-SSE
-Text 100,270,0x00000000,SSE2, SSE2len-SSE2
+Text 20,310,0x00000000,MMXs, MMXslen-MMXs
+Text 20,330,0x00000000,SSE, SSElen-SSE
+Text 100,330,0x00000000,SSE2, SSE2len-SSE2
+
+    Number 145,190,0,2,dword [wayld],0x000000
+    Number 223,190,0,2,dword [lineld],0x000000
+
+    Number 145,210,0,2,dword [wayli],0x000000
+    Number 223,210,0,2,dword [lineli],0x000000
+
+    Number 145,230,0,2,dword [wayl2],0x000000
+    Number 223,230,0,2,dword [linel2],0x000000
+
+    Number 145,250,0,2,dword [wayl3],0x000000
+    Number 223,250,0,2,dword [linel3],0x000000
 
     jmp TEST3DNOW
 ;-------------------
@@ -1387,9 +1557,9 @@ XITM:
 
 text3d:
 
-Text 180,250,0x00000000,now, nowlen-now
-Text 180,270,0x00000000,nowp, nowplen-nowp
-Text 100,250,0x00000000,mmxp, mmxplen-mmxp
+Text 180,310,0x00000000,now, nowlen-now
+Text 180,330,0x00000000,nowp, nowplen-nowp
+Text 100,310,0x00000000,mmxp, mmxplen-mmxp
 
 jmp still
 
@@ -1400,7 +1570,7 @@ NO_CPUID:
 
 FREEZE:
 nop
-jmp FREEZE
+jmp FREEZE ; maybe we should close application or just made some Warning and jump to still:
 ;----------------
 still:			
     mov  eax,10 	
@@ -1517,11 +1687,7 @@ thread_start:
 
    somewhere:
 ;======================================================================
-    mov  eax,51 	; 
-    mov  ebx,1
-    mov  ecx,window_2
-    mov  edx,thread2_esp
-    int  0x40
+CreateTread window_2,thread2_esp
 
     jmp  still
 
@@ -1568,14 +1734,12 @@ draw_window_2:
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,1h 		    ; 1, start of draw
     int  0x40
-				   ; DRAW WINDOW
-    mov  eax,0			   ; function 0 : define and draw window
-    mov  ebx,250 shl 16 + 410
-    mov  ecx,250 shl 16 + 350
-    mov  edx,0x03FFFFFF ;aabbcc   color of work area RRGGBB,8->color gl
-    int  0x40
 
-Text 8, 8,0x20ddeeff, standard, standardlen-standard
+
+  Window 250,250,419,390, 0x03FFFFFF, 0x805080d0, 0x005080d0
+	  ; place size
+
+Text 8, 8,0x20000000, standard, standardlen-standard  ;ddeeff
 
 Text 20, 30,0x00000000, STDCA, STDCAlen-STDCA
 Text 220, 30,0x00000000, EXTCA, EXTCAlen-EXTCA
@@ -1623,7 +1787,7 @@ Text 120,190,0x00000000,TM, TMlen-TM
 Text 220,190,0x00000000,IA64, IA64len-IA64
 Text 320,190,0x00000000,PBE, PBElen-PBE
 ;---------------
-DrawLine 5,  405, 205,205,0x8080FF  ;10
+DrawLine 5,  415, 205,205,0x8080FF  ;10
 
 mov   eax,$80000000
 cpuid
@@ -1641,31 +1805,39 @@ Text 20,235,0x00000000,MON, MONlen-MON
 Text 20,255,0x00000000,DS_CPL, DS_CPLlen-DS_CPL
 Text 20,275,0x00000000,EST, ESTlen-EST
 Text 20,295,0x00000000,TM2, TM2len-TM2
+Text 20,315,0x00000000,VMX, VMXlen-VMX
+Text 20,335,0x00000000,SVM, SVMlen-SVM
 
 Text 120,215,0x00000000,CNXT_ID, CNXT_IDlen-CNXT_ID
 Text 120,235,0x00000000,CX16, CX16len-CX16
 Text 120,255,0x00000000,ETPRD, ETPRDlen-ETPRD
 Text 120,275,0x00000000,SYS, SYSlen-SYS
 Text 120,295,0x00000000,LAF, LAFlen-LAF
+Text 120,315,0x00000000,SSSE3, SSSE3len-SSSE3
+Text 120,335,0x00000000,MCR8, MCR8len-MCR8
 
 Text 220,215,0x00000000,MP, MPlen-MP
 Text 220,235,0x00000000,NX, NXlen-NX
 Text 220,255,0x00000000,MMXPi, MMXPilen-MMXPi
 Text 220,275,0x00000000,MMXn, MMXnlen-MMXn
 Text 220,295,0x00000000,FXSRn, FXSRnlen-FXSRn
+Text 220,315,0x00000000,DCA,DCAlen-DCA
 
 Text 320,215,0x00000000,FFXSR, FFXSRlen-FFXSR
 Text 320,235,0x00000000,TSCP, TSCPlen-TSCP
 Text 320,255,0x00000000,LM, LMlen-LM
 Text 320,275,0x00000000,DNo, DNolen-DNo
 Text 320,295,0x00000000,DN, DNlen-DN
+Text 320,315,0x00000000,CMPL, CMPLlen-CMPL
+
+
 too:
-DrawLine 5,  405, 315,315,0x8080FF  ;10
+DrawLine 5,  415, 355,355,0x8080FF  ;10
 
-Text 20,330,0x00000000,speed, speedlen-speed
-Text 135,330,0x00000000,kbpersec, kbperseclen-kbpersec
+Text 20,370,0x00000000,speed, speedlen-speed
+Text 135,370,0x00000000,kbpersec, kbperseclen-kbpersec
 
-Number 100,330,0,5,dword [iter],0x000000; RSA test results
+Number 100,370,0,5,dword [iter],0x000000; RSA test results
 
     mov  eax,12
     mov  ebx,2h
@@ -1682,48 +1854,31 @@ draw_window:
    mov	ebx,1h
    int	0x40
 
-    mov  eax,0		     ;  0
-    mov  ebx,150*65536+351   ; [x ] *65536 + [x ]
-    mov  ecx,150*65536+325   ; [y ] *65536 + [y ]
-    mov  edx,0x03FFFFFF;aabbcc   RRGGBB,8->color gl
-    mov  esi,0x805080d0      ; RRGGBB,8->color gl
-    mov  edi,0x005080d0      ;  RRGGBB
-    int  0x40
+  Window 150,150,349,385, 0x03FFFFFF, 0x805080d0, 0x005080d0
+	  ; place size
 
-    mov  eax,8		     
-    mov  ebx,20 shl 16 + 92;93
-    mov  ecx,290 shl 16 + 23;24
-    mov  edx,2
-    mov  esi,0x03FFFFFF;aabbcc
-    int  0x40
+  Button 20,350,92,23,2,0x03FFFFFF   ;  button "press for more"
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;   Print the unpacked img to screen
 	mov	esi, knopka
 	mov	edi, img_area2
 	call	load_gif2
-    mov  eax,7		  ; sysfunc7: putimage
-    mov  ebx,img_area2+8   ; pointer to image
-    mov  ecx,93*65536+24  ; resolution (all gif's included are 64*81)
-    mov  edx,20*65536+290  ; plce to print image on screen (first number is
-			    ;pixels from left, second pixels from top)
-    int  0x40		  ; execute function
+PutImage 20,350,93,24,img_area2+8   ; image "press for more"
+;         place   size
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    Text 8,8,0x20ddeeff,zag,zaglen-zag	; application header
+    Text 8,8,0x20000000,zag,zaglen-zag	; application header
 
     mov  eax,12
     mov  ebx,2h
     int  0x40
 
-    Text 135,230,0x00000000,instruct, instructlen-instruct
+    Text 135,290,0x00000000,instruct, instructlen-instruct
 
-    DrawLine 15,  335, 285,285,0x8080FF
-    DrawLine 335,  335, 235,285,0x8080FF
-    DrawLine  15,   15, 235,285,0x8080FF
-    DrawLine  15,  130, 235,235,0x8080FF
-    DrawLine 235,  335, 235,235,0x8080FF
+    DrawLine 15,  335, 345,345,0x8080FF
+    DrawLine 335,  335, 295,345,0x8080FF
+    DrawLine  15,   15, 295,345,0x8080FF
+    DrawLine  15,  130, 295,295,0x8080FF
+    DrawLine 235,  335, 295,295,0x8080FF
 
   cmp dword[smallvendor], 'cAMD'
   jne cont
@@ -1732,13 +1887,7 @@ draw_window:
   cmp [f], $6
   jl cont
 
-    mov  eax,8		     ; new button for rating
-    mov  ebx,245 shl 16 + 69
-    mov  ecx,105 shl 16 + 15
-    mov  edx,3
-    ;mov  esi,0x03FFFFFF
-    mov  esi,0x030000FF
-    int  0x40
+   Button 245,105,69,15,3,0x030000FF  ;  button for rating
 
     Text 250,110,0x00FFFFFF,FR, FRlen-FR
 
@@ -1762,22 +1911,27 @@ draw_window:
 
   mov [ram_size_t], eax
 
-  Text 120,300,0x00000000,ram, ramlen-ram
-  Number 205,300,0,4,dword [ram_size_a],0x000000
+  Text 120,360,0x00000000,ram, ramlen-ram
+  Number 205,360,0,4,dword [ram_size_a],0x000000
 
-  Number 275,300,0,4,dword [ram_size_t],0x000000
-  Text 305,300,0x00000000,mb, mblen-mb
+  Number 275,360,0,4,dword [ram_size_t],0x000000
+  Text 305,360,0x00000000,mb, mblen-mb
 
 ;==============================
 
     Text 20,70,0x00000000,tsum, tsumlen-tsum   ; 
     Text 20,110,0x00000000,cpuname, cpunamelen-cpuname; 
-    Text 230,190,0x00000000,typen, typenlen-typen; 
+    Text 260,270,0x00000000,typen, typenlen-typen;
     Text 180, 70,0x00000000,tech, techlen-tech; 
 
     Number 87,70,0,4,dword [total],0x000000; MHz
     Number 115,70,0,2,dword [sot],0x000000; KHz
+
     Text 20,190,0x00000000,cache2, cache2len-cache2
+    Text 20,230,0x00000000,cache3, cache3len-cache3
+    Text 20,250,0x00000000,cache4, cache4len-cache4
+
+
     Number 80,130,1*256,1,dword [f],0x000000 ; 
     Number 80,150,1*256,1,dword [m],0x000000; 
     Number 80,170,1*256,1,dword [s],0x000000; 
@@ -1791,7 +1945,11 @@ Number 110,50,0,1,dword [multa],0x000000;
 
 Text   180,50,0x00000000,freql, freqllen-freql
 Number 264,50,0,4,dword [freqbb],0x000000;
-Number 294,50,0,2,dword [freqll],0x000000;  
+Number 294,50,0,2,dword [freqll],0x000000;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Text 120,300,0x00000000,logcpus, logcpuslen-logcpus
+;Number 255,300,0,2,dword [number_of_log_cpus],0x000000
+
 
     Text 20,30,0x00000000,stm, stmlen-stm
 ;  Fix for deleting leading whitespaces
@@ -1809,7 +1967,7 @@ Number 294,50,0,2,dword [freqll],0x000000;
     Text 110, 30, 0x00000000, edi, esi
 ;    Text 110,40,0x00000000,myname, mynamelen-myname
 ;-
-Text 230,210,0x00000000,brandid, brandidlen-brandid
+Text 20,270,0x00000000,brandid, brandidlen-brandid
 
     ret 		; 
 
@@ -1822,7 +1980,7 @@ load_gif2:
 ; DATA AREA
 
 zag:
-     db   'CPUID 2.05 by Sergey Kuzmin and the KolibriOS team'
+     db   'CPUID 2.17 by Sergey Kuzmin and the KolibriOS team'
 zaglen:
 tsum:
     db 'Frequency:     .   MHz'
@@ -1857,6 +2015,32 @@ brand dd ?
 ram_size_a dd ?
 ram_size_t dd ?
 
+stdc dd ?
+extc dd ?
+
+FRS dd ?
+freqsel db ?
+
+temp dd ?
+freqbb dd ?
+freqll dd ?
+
+wayli dd ?
+lineli dd ?
+
+wayld dd ?
+lineld dd ?
+
+wayl2 dd ?
+linel2 dd ?
+
+wayl3 dd ?
+linel3 dd ?
+
+;number_of_log_cpus dd ?
+
+che db ? ; numbers of calls for Intel caches detection
+
 ram:
 db 'Available RAM:     out of'
 ramlen:
@@ -1868,6 +2052,10 @@ NEFlen:
 mb :
 db 'MB'
 mblen:
+
+;logcpus :
+;db 'Number of logical CPU:'
+;logcpuslen:
 
 speed :
 db 'PERFORMANCE:'
@@ -1901,24 +2089,13 @@ brandid:
     db 'Brand:'
 brandidlen:
 
-stdc dd ?
-extc dd ?
-
-FRS dd ?
-freqsel db ?
-
-temp dd ?
-freqbb dd ?
-freqll dd ?
-
-che db ? ; numbers of calls for Intel caches detection
-
 oblom:
     db 'SORRY, CPUID IS NOT AVAILABLE'
 oblomlen:
 other:
     db 'SORRY, THIS VENDOR IS NOT SUPPORTED YET'
 otherlen:
+
 cpuname:
     db 'CPU VENDOR:             '
 cpunamelen:
@@ -1931,18 +2108,28 @@ modelen:
 step:
     db 'STEPPING:'
 steplen:
+
 cache2:
 
-    db 'L1(data):     KB      L2:      KB'
+    db 'L1(data):     KB       -way set     -byte line size'
 cache2len:
 
 cache:
-    db 'L1(inst):     KB      L3:      KB'
+    db 'L1(inst):     KB       -way set     -byte line size'
 cachelen:
+
+cache3:
+
+    db 'L2:      KB            -way set     -byte line size'
+cache3len:
+
+cache4:
+    db 'L3:      KB            -way set     -byte line size'
+cache4len:
 
 cacheP4:
 
-    db 'L1(inst):     Kuops   L3:      KB'
+    db 'L1(inst):     Kuops    -way set     -byte line size'
 cacheP4len:
 
 tech:
@@ -1968,6 +2155,7 @@ freqllen:
 name:
     db 'CODENAME:'
 namelen:
+
 AMDn:
     db 'AMD'
 AMDnlen:
@@ -2083,10 +2271,10 @@ P6D:
 db 'Pentium M (Dothan)'
 P6Dlen:
 P6E:
-db 'Pentium M (Yonah)'
+db 'Pentium M (Yonah)/ Core'
 P6Elen:
 P6F:
-db 'Pentium D (Conroe)'
+db 'Pentium D (Conroe)/ Core 2 (Kentsfield)'
 P6Flen:
 ;---
 PS0:
@@ -2285,11 +2473,13 @@ stm:
     db 'Internal name:'
 stmlen:
 
-athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105
-athloncoef2	db	120, 190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
-athloncoef3	db	45,  50, 40, 55, 25, 30, 60, 35
-p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4
-coppercoeff	db	50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,	20, 75,  15, 105
+athloncoef	db	110, 115, 120, 125, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 120
+		db	190, 120, 200, 130, 135, 140, 210, 150, 220, 160, 165, 170, 180, 230, 240
+athlonmcoef:	db	110, 115, 120, 125, 50, 55, 60, 65,  70, 75, 80, 85, 90, 95, 100, 105
+		db	30, 190, 40, 200, 130, 135, 14, 210, 150, 220, 160, 165, 170, 230, 240
+athloncoef3	db	45, 50, 40, 55, 25, 30, 60, 35
+p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 140, 150	; Pentium 4 (Willamete)
+coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
 tualatcoeff	db	120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
 
 myname:

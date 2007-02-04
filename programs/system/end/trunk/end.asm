@@ -76,7 +76,7 @@ do_draw:
     mov  esi,label1_len 	   ; text length
     int  0x40
 
-    mov  ecx,[sc.work_button_text] ; 8b window nro - RR GG BB color
+    mov  ecx,0xeeeeee            ; 8b window nro - RR GG BB color
     or   ecx,0x10000000
     mov  ebx,25*65536+30
     mov  edx,label2		   ; pointer to text beginning
@@ -88,7 +88,6 @@ do_draw:
     mov  esi,label3_len 	   ; text length
     int  0x40
 
-    mov  ecx,0xffffff
     mov  ebx,45*65536+41
     mov  edx,label4		   ; pointer to text beginning
     mov  esi,label4_len 	   ; text length
@@ -219,11 +218,11 @@ else
 end if
 
   label4:
-      db   '(End)            (Home)'
+      db   '(End)           (Home)'
   label4_len = $ - label4
 
   label5:
-      db   '(Enter)           (Esc)'
+      db   '(Enter)          (Esc)'
   label5_len = $ - label5  
 
 

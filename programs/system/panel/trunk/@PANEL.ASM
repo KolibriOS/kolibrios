@@ -989,6 +989,7 @@ draw_window:
     int  0x40
 
     mov  eax, [system_colours+4*6]
+    sub  eax, 0x101010
     mov  [wcolor], eax
 
     mov  eax,14                    ; get screen max x & max y
@@ -1813,12 +1814,12 @@ dalshe:
 
 draw_cpu_usage:
 
-    pusha
+    pushad
 
     mov  [ysi],30
     cmp  [graph_text],1
     jne  @f
-    mov  [ysi],10
+    mov  [ysi],12
   @@:
 
 
@@ -1838,6 +1839,10 @@ draw_cpu_usage:
     pop  ebx
     inc  ebx
     div  ebx
+    cmp  eax,[ysi]
+    jng  no_bug
+    mov  eax,[ysi]
+no_bug:
     push eax
 
     mov  eax,13
@@ -1848,47 +1853,21 @@ draw_cpu_usage:
     push ebx
     mov  eax,13
     mov  ecx,5*65536
-    add  cx,word [ysi]
-    inc  cx
-
-    push ebx
-    inc  ecx
-    sub  ebx,1 shl 16
-    add  ebx,2
-    xor  edx,edx
-    int  0x40
-    dec  ecx
-    pop  ebx
-
-    mov  edx,0xff0000  ;[wcolor]
-;    sub  edx,0x303030
+    add  ecx,[ysi]
+    mov  edx,0xff0000  ;[sc.work_button]
     int  0x40
     pop  ebx
     pop  eax
 
-;    push ebx
-    inc  eax
     mov  ecx,5*65536
     mov  cx,ax
-;    pop  ebx
-    push ecx
-    push ebx
-    sub  ecx,1 shl 16
-    add  ecx,1
-    sub  ebx,1 shl 16
-    add  ebx,2
     mov  eax,13
-    xor  edx,edx
-    int  0x40
-    pop  ebx
-    pop  ecx
-    mov  edx,0x44aa44  ;[wcolor]
-;    add  edx,0x00101010
+    mov  edx,0x44aa44  ;[sc.work_button]
     int  0x40
 
-    popa
-
+    popad
     ret
+
 
 ; DATA
 

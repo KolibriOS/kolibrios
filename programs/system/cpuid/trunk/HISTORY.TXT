@@ -2,10 +2,10 @@
 ; project name:    CPUID
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures
 ; compability:     probably some functions would work in MenuetOS 32 and MenuetOS 64, may be even in Miraculix;
-;                  CPUID (versions before 2.00) works in MS Windows by means of emulators
+;                  CPUID works in MS Windows by means of emulator from Diamond  (http://diamondz.land.ru)
 ; compiler:        flat assembler 1.67.5
-; version:         2.05
-; last update:     1st November 2006
+; version:         2.17
+; last update:     3rd February 2007
 ; maintained by:   Sergey Kuzmin aka Wildwest
 ; e-mail:          kuzmin_serg@list.ru
 ; site:            http://coolthemes.narod.ru/files.html
@@ -28,10 +28,36 @@
 ;                             Highest input values for standard and extended calls
 ;        performed tests    - Performance test (RSA encoding)
 ;******************************************************************************
+;"To do" plans:
+; actual use of Brand ID for description of Intel's CPU, i.e. Celeron/Pentium separation;
+; remove support of Cyrix and early Centaur (IDT)  - they are too old, rare and non-standard;
+; Sempron detection - probably they supports Brand-ID;
+; update caches descriptors for intel Core 1/2
+; quantity of logical CPU/cores - requires APIC ID analysis
+; newest AMD/Intel codename detection
+;******************************************************************************
 ;HISTORY:
-;2.1: CPUID   01/11/2006 (not finished)
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;3.0: CPUID   03/02/2007 (not finished)
+;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;            Iliya Mikhailov aka Ghost  <Ghost.nsk@gmail.com>
+;            /^S0rG^\ <s0rg@ngs.ru> 
 ;Features:  
+;          (+)  fixed address of LAHF feature, added detection of CMPL, SVM, MOVCR8 technologies for AMD; 
+;          (+)  fixed L2 cache size detection for VIA (they changed format from 8 bits to 16 bits several years ago); 
+;          (+)  more macroses for Interface and Threads (from Menuett.inc written by /^S0rG^\, 2002), sources separated into several include files;
+;          (++) more info about caches for VIA and Transmeta;
+;          (+)  added detection of DCA, SSSE3, VMX technologies for Intel;
+;          (+)  updated multiplier detection for AMD and Intel (thanks a lot to Ghost);
+;Known issues: Sempron marked as AthlonXP
+;              second window doesn't closed when you close main window
+;-----------------------------------------------------------------------------
+;2.1: CPUID   10/01/2007
+;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Features:         
+;          (++) more info about caches for AMD and Intel
+;          (+)  redesign
+;          (+)  fixes for names of some extended features
+;          (+)  fixed missing technology for some AMD64 cpu's
 ;          (+)  detection of dual-core AMD Opteron, but I came to conclusion that detection of AMD Fxxh CPU's should be changed (don't know how yet) 
 ;          (+)  new caches for Intel
 ;          (+)  fixed Celeron detection based on L2 cache size for newest Intel CPU (there are Celeron models with 512 Kb);
@@ -41,7 +67,7 @@
 ;              second window doesn't closed when you close main window
 ;-----------------------------------------------------------------------------
 ;2.0: CPUID   31/10/2006
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;           Eugeniy Grechnikov aka Diamond <diamondz@land.ru>
 ;           Iliya Mikhailov aka Ghost  <Ghost.nsk@gmail.com>
 ;Features:
@@ -74,8 +100,8 @@
 ;Known issues: Sempron is not supported (marked as AthlonXP)
 ;-----------------------------------------------------------------------------
 ;1.0: CPUID   26/09/2005
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Additions: Marat Zakiyanov aka Mario79 <mario79@bk.ru>
+;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;           Marat Zakiyanov aka Mario79 <mario79@bk.ru>
 ;           Andrey Halyavin aka halyavin <halyavin@land.ru>
 ;Features:
 ;          (+) fixed bug, when processor doesn't support extented features and program don't report 'no' in such case
@@ -99,8 +125,8 @@
 ;Known issues: Sempron is not supported (marked as AthlonXP)
 ;-----------------------------------------------------------------------------
 ;0.9: CPUID   24/01/2005
-;Author:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Additions: Madis Kalme aka Madis731 <madis.kalme@mail.ee>
+;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;           Madis Kalme aka Madis731 <madis.kalme@mail.ee>
 ;           Jeffrey Amelynck aka Profkid <the_adams_familie@hotmail.com>
 ;Features:
 ;          (+) deleting leading whitespaces in Intel P4's internal name
@@ -118,68 +144,5 @@
 ;Known issues: Sempron is not supported (marked as AthlonXP)
 ;              caches for IDT is not detected
 ;-----------------------------------------------------------------------------
-;0.8: CPUID     10/12/2004
-;Author:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features: (+) CPUID now display frequency in Mhz with accuracy 0.01 MHz
-;          (+) more codenames - Intel Itanium :-)
-;          (+) display Internal Name
-;          (+) caches for Intel Pentium
-;          (+) Technology
-;          (+) detect L1 Trace Instruction cache and some new caches for Intel
-;          (+) detect Celerons based on Pentium III/4 kernels
-;          (+) interface+(redesign) and Logo for Vendors
-;          (+) fix for HTT detection on Celeron(it wasn't bug, just Intel's marketing)
-;          (+) test for MMX+ and 3DNow!+
-;Bugs:     no !!!
-;Known issues: Sempron not supported (marked as AthlonXP)
-;              Xeon is not fully supported (marked as Pentium except some models)
-;-----------------------------------------------------------------------------
-;0.7: CPUID     28/11/2004
-;Author:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features: updated calculation of PR-rating for AMD AthlonXP,
-;          more codenames (AMD series: Applebred, Thorton),
-;          added L1 and L2 cache size detection,
-;          fix for 3DNow! detection on non-AMD CPU's
-;Bugs:     HTT detection on Celeron 4 (really Celeron 4 have HTT,
-;          but Intel disabled it in microcode)
-;-----------------------------------------------------------------------------
-;0.6: CPUID     28/10/2004
-;Author:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features: added calculation of PR-rating for AMD AthlonXP(on request of
-;          RU-team), more codenames (VIA, Cyrix, IDT (Centaur) series),
-;          interface+ (redesign), added output of CPU frequency in MHz,
-;          fix for CPU clock detection (needs changes in kernel.asm),
-;          fixed bugs which were founded during public testing,
-;          decreased required memory 0x100000->0x340
-;Bugs:     problem with 3DNow! detection on non-AMD CPU's (VIA C3 and others)
-;-----------------------------------------------------------------------------
-;0.5: CPUID     16/10/2004
-;Author:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features: added test for Hyper-Threading Technology support,
-;          more codenames (Intel and AMD series)
-;          fasm 1.50 compability, interface+ (window type 2->3 and redesign)
-;          fix for window redrawing bug
-;Bugs:     error in CPU clock detection (cause: error in sysfunc 18 subfunc 5)
-;-----------------------------------------------------------------------------
-;0.4: CPUID     27/09/2004
-;Author:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features: added processor codename's detection engine and little database of
-;          codenames (P1 and K7)
-;Bugs:     window redrawing bug, error in CPU clock detection
-;-----------------------------------------------------------------------------
-;0.3: CPUID     26/09/2004
-;Author:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
-;Features: display CPU frequency; CPU Vendor;
-;          CPU signature(family, model,stepping),
-;          test for MMX,SSE,SSE2,SSE3,3DNow!
-;Bugs:     window redrawing bug, error in CPU clock detection
-;-----------------------------------------------------------------------------
-;0.2:      TIMES from old OFFICIAL distribution 11/10/2001
-;Author:   unknown hero (VT?)
-;Features: display CPU frequency, CPU Vendor,
-;          test for MMX, Process Management
-;-----------------------------------------------------------------------------
-;0.1:      CPUSPEED from OFFICIAL distribution  21/05/2001
-;Author:   unknown hero (VT?)
-;Features: display CPU frequency
+;early history was removed; download any old version of CPUID and read it, if you want
 ;*****************************************************************************
