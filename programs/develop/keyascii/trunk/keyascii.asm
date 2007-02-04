@@ -18,7 +18,7 @@ include 'lang.inc'
 include 'macros.inc'
 
 START:                          ; start of execution
-
+  red: 
      call draw_window
 
 still:
@@ -35,10 +35,6 @@ still:
 
     jmp  still
 
-  red:                          ; redraw
-    call draw_window
-    jmp  still
-
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
     int  0x40
@@ -53,7 +49,7 @@ still:
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
 
-    mov  eax,-1                 ; close this program
+    or   eax,-1                 ; close this program
     int  0x40
   noclose:
 
@@ -78,20 +74,14 @@ draw_window:
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+270         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+80          ; [y start] *65536 + [y size]
-    mov  edx,0x83ffffff            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x805080d0            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x005080d0            ; color of frames    RRGGBB
+    mov  edx,0x33ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edi,header
     int  0x40
 
     mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ddeeff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-    xor  ecx,0xFFFFFF
+    xor  ecx,ecx
     mov  esi,4
-    add  ebx,23
+    mov  ebx,8*65536+8
     mov  edx,tdec
     int  0x40
     add  ebx,23
@@ -101,7 +91,7 @@ draw_window:
     mov  ecx,[keyid]
     mov  eax,47
     mov  ebx,3*65536
-    mov  edx,40*65536+31
+    mov  edx,40*65536+8
     mov  esi,0x224466
     int  0x40
     add  edx,23
@@ -117,11 +107,9 @@ draw_window:
 
 ; DATA AREA
 
- tdec: db 'DEC:'
- thex: db 'HEX:'
- labelt:
-     db   'KEYBOARD ASCIICODES-PRESS ANY KEY'
-labellen:dd 0
-keyid:db 0
+ tdec:  db 'DEC:'
+ thex:  db 'HEX:'
+ header db 'KEYBOARD ASCIICODES-PRESS ANY KEY',0
+ keyid: db  0
 I_END:
 

@@ -103,42 +103,23 @@ draw_window:
                                    ; СОЗДАЁМ ОКНО
 ;   mov  eax,0                     ; функция 0 : определить и отрисовать окно
 ;   mov  ebx,200*65536+200         ; [x старт] *65536 + [x размер]
-;   mov  ecx,200*65536+100         ; [y старт] *65536 + [y размер]
-;   mov  edx,0x02aabbcc            ; цвет рабочей области  RRGGBB,8->color gl
-;   mov  esi,0x805080d0            ; цвет полосы заголовка RRGGBB,8->color gl
-;   mov  edi,0x005080d0            ; цвет рамки            RRGGBB
+;   mov  ecx,200*65536+50          ; [y старт] *65536 + [y размер]
+;   mov  edx,0x33aabbcc            ; цвет рабочей области  RRGGBB,8->color gl
+;   mov  edi,header                ; ЗАГОЛОВОК ОКНА
 ;   int  0x40
 
-    mcall 0, <200,200>, <200,50>, 0x02AABBCC, 0x805080D0, 0x005080D0
+    mcall 0, <200,200>, <200,50>, 0x33AABBCC,,header
 
-                                   ; ЗАГОЛОВОК ОКНА
-;   mov  eax,4                     ; функция 4 : написать в окне текст
-;   mov  ebx,8*65536+8             ; [x] *65536 + [y]
-;   mov  ecx,0x10ddeeff            ; шрифт 1 и цвет ( 0xF0RRGGBB )
-;   mov  edx,header                ; адрес строки
-;   mov  esi,header.size           ; и её длина
-;   int  0x40
-
-    mcall 4, <8,8>, 0x10DDEEFF, header, header.size
+                                   
 
 ;   mov  eax,4
-;   mov  ebx,8 shl 16 + 30
+;   mov  ebx,3 shl 16 + 8
 ;   mov  ecx,0
 ;   mov  edx,message
 ;   mov  esi,message.size
 ;   int  0x40
 
-    mcall 4, <8, 30>, 0, message, message.size
-
-                                   ; КНОПКА ЗАКРЫТИЯ ОКНА
-;   mov  eax,8                     ; функция 8 : определить и нарисовать кнопку
-;   mov  ebx,(200-19)*65536+12     ; [x старт] *65536 + [x размер]
-;   mov  ecx,5*65536+12            ; [y старт] *65536 + [y размер]
-;   mov  edx,1                     ; идентификатор кнопки - 1
-;   mov  esi,0x6688dd              ; цвет кнопки RRGGBB
-;   int  0x40
-
-    mcall 8, <200-19, 12>, <5, 12>, 1, 0x6688DD
+    mcall 4, <3, 8>, 0, message, message.size
 
     mcall 12, 2                    ; функция 12: сообщить ОС об отрисовке окна
                                    ; 2, закончили рисовать

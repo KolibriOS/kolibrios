@@ -30,7 +30,7 @@ START:                 ; start of execution
     mov  ecx,1     ; base keymap
     mov  edx,keymap
     int  0x40
-
+  red:
     call draw_window
 
 still:
@@ -45,11 +45,6 @@ still:
     cmp  eax,3                  ; button in buffer ?
     je   button
 
-    jmp  still
-
-
-  red:                          ; redraw
-    call draw_window
     jmp  still
 
 
@@ -167,24 +162,13 @@ draw_window:
     mov  ebx, 100*65536+200        ; [x start] *65536 + [x size]
     mov  ecx, 100*65536+275        ; [y start] *65536 + [y size]
     mov  edx, [sc.work]            ; color of work area RRGGBB,8->color gl
-    or   edx, 0x03000000
-    mov  esi, [sc.grab]            ; color of grab bar  RRGGBB,8->color gl
-    or   esi, 0x80000000
-    mov  edi, [sc.frame]           ; color of frames    RRGGBB
+    or   edx, 0x33000000
+    mov  edi, header               ; WINDOW LABEL
     int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax, 4                    ; function 4 : write text to window
-    mov  ebx, 8*65536+8            ; [x start] *65536 + [y start]
-    mov  ecx, [sc.grab_text]       ; font 1 & color ( 0xF0RRGGBB )
-    or   ecx, 0x10000000
-    mov  edx, header               ; pointer to text beginning
-    mov  esi, header.len           ; text length
-    int  0x40
-
+                                   
     mov  eax, 4
-    mov  ebx, 20*65536+35
-    mov  ecx, 0
+    mov  ebx, 15*65536+10
+    xor  ecx, ecx
     mov  edx, text
     mov  esi, text.len
     int  0x40
@@ -202,7 +186,7 @@ draw_codes:
 
     mov  eax,47
     mov  ebx,6*65536
-    mov  edx,20*65536+60
+    mov  edx,15*65536+35
     mov  edi,0
     mov  esi,0
   newscan:
@@ -211,7 +195,7 @@ draw_codes:
     shl  ecx,16
     add  ecx,10
     mov  eax,13   ; filled rectangle
-    mov  ebx,20*65536+160
+    mov  ebx,15*65536+160
     mov  edx,[sc.work]
     int  0x40
     popa
@@ -307,17 +291,13 @@ if lang eq ru
       db 'ëóàíõÇÄû ÑÄççõÖ ë äãÄÇàÄíìêõ'
   .len = $ - text
 
-  header:
-      db   'ëäÄçäéÑõ äãÄÇàÄíìêõ'
-  .len = $ - header
+  header      db   'ëäÄçäéÑõ äãÄÇàÄíìêõ',0
 else
   text:
       db 'READING RAW SCANCODE DATA'
   .len = $ - text
 
-  header:
-      db   'KEYBOARD SCANCODES'
-  .len = $ - header
+  header      db   'KEYBOARD SCANCODES',0
 end if
 
 ext  db 0x0

@@ -38,7 +38,7 @@ START:                          ; start of execution
     mov  [edi],dl
     sub  edi,1
     loop newnum
-
+red:
     call draw_window            ; at first, draw the window
 
 still:
@@ -55,10 +55,6 @@ still:
 
     jmp  still
 
-  red:                          ; redraw
-    call draw_window
-    jmp  still
-
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
     int  0x40
@@ -70,7 +66,7 @@ still:
 
     cmp  ah,1                   ; button id=1 ?
     jnz  still
-    mov  eax,-1                 ; close this program
+    or   eax,-1                 ; close this program
     int  0x40
 
 
@@ -96,39 +92,18 @@ draw_window:
     mov  ebx,100*65536+200         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+65          ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color glide
-    mov  esi,[sc.grab]             ; color of grab bar  RRGGBB,8->color
-    or   esi,0x80000000
-    mov  edi,[sc.frame]            ; color of frames    RRGGBB
+    or   edx,0x33000000            ; color of grab bar  RRGGBB,8->color
+    mov  edi,header                ; WINDOW LABEL
     int  0x40
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,[sc.grab_text]        ; color of text RRGGBB
-    or   ecx,0x10000000
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-                                   ; CLOSE BUTTON
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(200-17)*65536+12     ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,[sc.grab_button]      ; button color RRGGBB
-    int  0x40
 
-    mov  ebx,25*65536+35           ; draw info text with function 4
+    mov  ebx,20*65536+14           ; draw info text with function 4
     mov  ecx,[sc.work_text]
     mov  edx,text
-    mov  esi,40
-  newline:
+    mov  esi,24
     mov  eax,4
     int  0x40
-    add  ebx,10
-    add  edx,40
-    cmp  [edx],byte 'x'
-    jnz  newline
-
+    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
     int  0x40
@@ -140,12 +115,9 @@ draw_window:
 
 
 text:
-    db 'CPU RUNNING AT       MHZ                '
-    db 'x' ; <- END MARKER, DONT DELETE
+    db 'CPU RUNNING AT       MHZ'
 
-labelt:
-    db   'CPU SPEED'
-labellen:
+header    db   'CPU SPEED',0
 
 I_END:
 
