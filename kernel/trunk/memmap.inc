@@ -105,7 +105,6 @@
 ;   FE04  dword       screen y size
 ;   FE08  dword       screen y multiplier
 ;   FE0C  dword       screen mode
-;   FE10  dword       entries in hd cache
 ;   FE80  dword       address of LFB in physical
 ;   FE84  dword       address of applications memory start in physical
 ;   FE88  dword       address of button list

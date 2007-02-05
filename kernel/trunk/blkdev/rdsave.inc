@@ -16,10 +16,12 @@ sysfn_saveramdisk:    ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
      add edx,ecx
  img_save_hd_3:
      call    reserve_hd1
+     call    reserve_hd_channel
      call restorefatchain      ; restore FAT !!!
      mov  eax,image_save
      mov  ebx,1440*1024        ; size 1440 Kb
      mov  ecx,0x100000         ; address of image
      call file_write
+     call    free_hd_channel
      mov  [esp+36],eax
      ret

@@ -1550,7 +1550,13 @@ fsfrfe:
         xor     ebx, ebx
         ret
 
+fs_FloppyCreateFolder:
+        mov     al, 1
+        jmp     fs_FloppyRewrite.common
+
 fs_FloppyRewrite:
+        xor     eax, eax
+.common:
         cmp     byte [esi], 0
         jz      @b
         call    read_flp_fat
@@ -1616,8 +1622,24 @@ fs_FloppyRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found; must not be directory
+; found
         test    byte [edi+11], 10h
+        jz      .exists_file
+; found directory; if we are creating directory, return OK,
+;                  if we are creating file, say "access denied"
+        add     esp, 28
+        popad
+        test    al, al
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      @f
+        mov     al, 0
+@@:
+        xor     ebx, ebx
+        ret
+.exists_file:
+; found file; if we are creating directory, return "access denied",
+;             if we are creating file, delete existing file and continue
+        cmp     byte [esp+28+28], 0
         jz      @f
         add     esp, 28
         popad
@@ -1635,7 +1657,7 @@ fs_FloppyRewrite:
 @@:
         cmp     eax, 0xFF8
         jae     .done1
-        lea     edi, [0x282000 + eax*2] ; position in FAT
+        lea     edi, [FLOPPY_FAT + eax*2] ; position in FAT
         xor     eax, eax
         xchg    ax, [edi]
         jmp     @b
@@ -1840,6 +1862,12 @@ fs_FloppyRewrite:
         and     word [edi+20], 0        ; high word of cluster
         and     word [edi+26], 0        ; low word of cluster - to be filled
         and     dword [edi+28], 0       ; file size - to be filled
+        cmp     byte [esp+28+28], 0
+        jz      .doit
+; create directory
+        mov     byte [edi+11], 10h      ; attributes: folder
+        mov     ecx, 32*2
+        mov     edx, edi
 .doit:
         lea     eax, [esp+8]
         call    dword [eax+12]  ; flush directory
@@ -1847,9 +1875,10 @@ fs_FloppyRewrite:
         push    edi
         push    0
         mov     esi, edx
-        jecxz   .done
+        test    ecx, ecx
+        jz      .done
         mov     ecx, 2849
-        mov     edi, 0x282000
+        mov     edi, FLOPPY_FAT
         push    0       ; first cluster
 .write_loop:
 ; allocate new cluster
@@ -1859,7 +1888,7 @@ fs_FloppyRewrite:
         jnz     .ret
         dec     edi
         dec     edi
-        lea     eax, [edi-0x282000]
+        lea     eax, [edi-(FLOPPY_FAT)]
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp+4]
@@ -1879,10 +1908,13 @@ fs_FloppyRewrite:
         jae     @f
         mov     ecx, [esp+20]
 @@:
-        push    ecx
         mov     edi, 0xD000
+        cmp     byte [esp+24+28+28], 0
+        jnz     .writedir
+        push    ecx
         rep     movsb
         pop     ecx
+.writedircont:
         push    ecx
         sub     ecx, 512
         neg     ecx
@@ -1935,6 +1967,28 @@ fs_FloppyRewrite:
         mov     eax, 11
         pop     edi ecx
         jmp     .ret
+.writedir:
+        push    ecx
+        mov     ecx, 32/4
+        push    ecx esi
+        rep     movsd
+        pop     esi ecx
+        mov     dword [edi-32], '.   '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     word [edi-32+26], ax
+        push    esi
+        rep     movsd
+        pop     esi
+        mov     dword [edi-32], '..  '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     ecx, [esp+28+8]
+        mov     word [edi-32+26], cx
+        pop     ecx
+        jmp     .writedircont
 
 ;----------------------------------------------------------------
 ;
@@ -2059,6 +2113,13 @@ fs_FloppyWrite:
         jz      .ret
         call    SetUserInterrupts
 .write_loop:
+; skip unmodified sectors
+        cmp     dword [esp], 0x200
+        jb      .modify
+        sub     ebx, 0x200
+        jae     .skip
+        add     ebx, 0x200
+.modify:
         lea     eax, [edi+31]   ; current sector
 ; get length of data in current sector
         push    ecx
@@ -2129,6 +2190,7 @@ fs_FloppyWrite:
         sub     [esp], ecx
         pop     ecx
         jz      .done
+.skip:
 .next_cluster:
         movzx   edi, word [edi*2+0x282000]
         sub     esi, 0x200
@@ -2488,6 +2550,7 @@ fs_FloppySetFileInfo:
 @@:
         ret
 
+if 0
 ;----------------------------------------------------------------
 ;
 ;  fs_FloppyExecute - LFN variant for executing from floppy
@@ -2589,6 +2652,7 @@ fs_FloppyExecute:
         popad
         mov     eax, 11
         ret
+end if
 
 ;----------------------------------------------------------------
 ;

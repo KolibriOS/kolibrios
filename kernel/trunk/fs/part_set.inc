@@ -39,6 +39,10 @@ fatEND               dd 0x0FFFFFF8
 fatMASK              dd 0x0FFFFFFF
 
 fs_dependent_data_end:
+file_system_data_size = $ - PARTITION_START
+if file_system_data_size > 96
+ERROR: sizeof(file system data) too big!
+end if
 
 virtual at fs_dependent_data_start
 ; NTFS data
@@ -111,10 +115,9 @@ endg
 ; - it will skip over removed partitions
 
 set_FAT32_variables:
-    mov   [0xfe10],dword 0      ; entries in hd cache
     mov   [problem_partition],0
     call  reserve_hd1
-    call  clear_hd_cache
+    call  reserve_hd_channel
 
     cmp   dword [hdpos],0
     je    problem_hd
@@ -303,6 +306,7 @@ problem_partition_or_fat:
 
 problem_hd:
     mov   [fs_type],0
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
     mov   [problem_partition],1
     ret
@@ -420,6 +424,7 @@ fat32_partition:
     mov   [fatEND],0x0FFFFFF8
     mov   [fatMASK],0x0FFFFFFF
     mov   [fs_type],32         ; Fat32
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret
 
@@ -434,5 +439,6 @@ fat16_partition:
     mov   [fatEND],0x0000FFF8
     mov   [fatMASK],0x0000FFFF
     mov   [fs_type],16         ; Fat16
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret

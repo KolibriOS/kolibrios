@@ -175,7 +175,6 @@ X_UNDER             equ OS_BASE+0x000FB4A
 Y_UNDER             equ OS_BASE+0x000FB4C
 ScreenBPP           equ OS_BASE+0x000FBF1
 MOUSE_BUFF_COUNT    equ OS_BASE+0x000FCFF
-HD_CACHE_ENT        equ OS_BASE+0x000FE10
 LFBAddress          equ OS_BASE+0x000FE80
 MEM_AMOUNT          equ OS_BASE+0x000FE8C
 ;LFBSize             equ OS_BASE+0x02f9050

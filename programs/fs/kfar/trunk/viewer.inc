@@ -19,9 +19,6 @@ end virtual
 view_file:
         mov     eax, [ebp + panel1_files - panel1_data]
         mov     ecx, [eax+ecx*4]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     ecx, [ecx+eax*4+32]
-        add     ecx, [ebp + panel1_files - panel1_data]
         test    byte [ecx], 10h
         jz      .file
         ret
@@ -59,10 +56,32 @@ view_file:
         push    eax
         mov     ebx, attrinfo
         mov     [ebx+21], eax
+.attr_retry:
         push    70
         pop     eax
         int     40h
-; TODO: add error handling
+        test    eax, eax
+        jz      @f
+        lea     ebx, [ebp+viewer_data.filename]
+        push    ebx
+        push    aCannotReadFile
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrCancelBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        mov     ebx, attrinfo
+        test    eax, eax
+        jz      .attr_retry
+        jmp     delete_active_screen
+@@:
         mov     eax, dword [attrinfo.attr+32]
         mov     dword [ebp+viewer_data.filesize], eax
         mov     eax, dword [attrinfo.attr+36]
@@ -80,11 +99,35 @@ view_file:
         mov     [readinfo.data], eax
         mov     [ebp+viewer_data.buf_pos], eax
         pop     dword [readinfo.name]
+.retry:
         push    70
         pop     eax
         int     40h
         mov     [ebp+viewer_data.buf_size], ebx
-; TODO: add error handling
+        test    eax, eax
+        jz      .readok
+        cmp     eax, 6
+        jz      .readok
+        lea     ebx, [ebp+viewer_data.filename]
+        push    ebx
+        push    aCannotReadFile
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrCancelBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        mov     ebx, readinfo
+        test    eax, eax
+        jz      .attr_retry
+        jmp     delete_active_screen
+.readok:
         call    viewer_set_keybar
         call    viewer_draw_text
         ret
@@ -118,10 +161,18 @@ viewer_get_next_char:
         mov     [readinfo.data], edi
         lea     eax, [ebp+viewer_data.filename]
         mov     [readinfo.name], eax
+.readretry:
         mov     ebx, readinfo
         push    70
         pop     eax
         int     40h
+        test    eax, eax
+        jz      .readok
+        cmp     eax, 6
+        jz      .readok
+        call    ask_retry_ignore
+        jz      .readretry
+.readok:
         sub     [ebp+viewer_data.buf_pos], 8192
         add     ebx, 16384-8192
         mov     [ebp+viewer_data.buf_size], ebx
@@ -781,6 +832,13 @@ viewer_seek:
         push    70
         pop     eax
         int     40h
+        test    eax, eax
+        jz      .readok
+        cmp     eax, 6
+        jz      .readok
+        call    ask_retry_ignore
+        jz      .doread
+.readok:
         cmp     ebx, [readinfo.size]
         jnz     @f
         add     ebx, [ebp+viewer_data.buf_size]
@@ -822,12 +880,43 @@ viewer_seek:
         mov     [ebx+12], eax
         lea     eax, [ebp+viewer_data.filename]
         mov     [ebx+21], eax
+@@:
         push    70
         pop     eax
         int     40h
+        test    eax, eax
+        jz      @f
+        cmp     eax, 6
+        jz      @f
+        call    ask_retry_ignore
+        jnz     @f
+        mov     ebx, readinfo
+        jmp     @b
+@@:
         sub     ebx, [readinfo.size]
         add     ebx, 16384
         jmp     .ret
+
+ask_retry_ignore:
+        push    esi
+        lea     esi, [ebp+viewer_data.filename]
+        push    esi
+        push    aCannotReadFile
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrIgnoreBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        pop     esi
+        test    eax, eax
+        ret
 
 viewer_set_curpos:
         mov     eax, [ebp+viewer_data.buf_pos]

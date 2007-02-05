@@ -4,7 +4,6 @@
 ;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
 ;; 29.04.2006 Elimination of hangup after the                           ;;
 ;;            expiration hd_wait_timeout (for LBA) -  Mario79           ;;
-;; xx.04.2006 LFN support - diamond                                     ;;
 ;; 15.01.2005 get file size/attr/date, file_append (only for hd) - ATV  ;;
 ;; 23.11.2004 test if hd/partition is set - ATV                         ;;
 ;; 18.11.2004 get_disk_info and more error codes - ATV                  ;;
@@ -37,8 +36,6 @@ file_system:
 ;
 ; eax = 0  ; read file          /RamDisk/First  6
 ; eax = 1  ; write file         /RamDisk/First 33   /HardDisk/First 56
-; eax = 4  ; makedir
-; eax = 5  ; rename file/directory
 ; eax = 8  ; lba read
 ; eax = 15 ; get_disk_info
 ;
@@ -87,10 +84,6 @@ file_system:
 
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
-    cmp   dword [eax+0],5       ; RENAME - dont care about read&write blocks
-    je    fs_read
-    cmp   dword [eax+0],4       ; MAKEDIR - dont care about read&write blocks
-    je    fs_read
 
     cmp   dword [0x3000],1      ; no memory checks for kernel requests
     jz    no_checks_for_kernel
@@ -384,6 +377,7 @@ fs_yesharddisk_IDE3:
      mov  [hdid],0x10
      mov  [hdpos],4
 fs_yesharddisk_partition:
+        call    reserve_hd_channel
 ;    call  choice_necessity_partition 
 ;    jmp   fs_yesharddisk_all     
     jmp   fs_for_new_semantic
@@ -445,6 +439,7 @@ choice_necessity_partition_1:
     cmp   [fat32part],0         ; is partition set?
     jnz   @f
 hd_err_return:
+    call  free_hd_channel
     and   [hd1_status], 0
     jmp   file_system_return
 @@:
@@ -469,6 +464,8 @@ hd_err_return:
     mov   edi,[esp+0]
     mov   byte [edi],'/'
 
+    call  free_hd_channel
+    and   [hd1_status], 0
     jmp   file_system_return
 
   fs_noharddisk_read:
@@ -493,76 +490,16 @@ hd_err_return:
 
     ; eax=0 ok - eax=1 not enough free space
 
+    call  free_hd_channel
+    and   [hd1_status], 0
     jmp   file_system_return
 
 
   fs_noharddisk_write:
 
-    cmp   dword [esp+20],4      ; MAKEDIR
-    jne   fs_noharddisk_makedir
 
-    mov   eax,[esp+0]           ; /dirname
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  makedir
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_makedir:
-
-    cmp   dword [esp+20],5      ; RENAME
-    jne   fs_noharddisk_rename
-
-    mov   edi,[esp+0]           ; start of source file name
-    add   edi,12+1              ; continue after name
-    call  expand_pathz          ; convert destination name
-
-    mov   eax,[edi+1]
-    cmp   eax,'HD  '
-    je    fs_rename_test1
-    cmp   eax,'HARD'
-    jne   fs_rename_error
-
-  fs_rename_test1:
-    mov   eax,[edi+1+12]
-    cmp   eax,'1   '
-    je    fs_rename_start
-    cmp   eax,'FIRS'
-    jne   fs_rename_error
-
-  fs_rename_start:
-    mov   byte [ebx],0          ; path to asciiz
-    inc   ebx                   ; filename start
-    add   edi,12*2              ; path start
-    cmp   byte [ebx],0
-    je    fs_rename_error
-    cmp   byte [ebx],32
-    je    fs_rename_error
-
-    mov   eax,[esp+0]           ; /filename
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  rename
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_rename_error:
-    mov   eax,4                 ; partition not defined at hd
-    jmp   file_system_return
-
-  fs_noharddisk_rename:
+    call  free_hd_channel
+    and   [hd1_status], 0
 
   fs_noharddisk:
 ; \begin{diamond}[18.03.2006]

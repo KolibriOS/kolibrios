@@ -1466,12 +1466,13 @@ fat_gen_short_name:
 
 ;----------------------------------------------------------------
 ;
-;  fs_RamdiskRewrite - LFN variant for writing sys floppy
+;  fs_RamdiskRewrite - LFN variant for writing ramdisk
+;  fs_RamdiskCreateFolder - create folder on ramdisk
 ;
-;  esi  points to filename
+;  esi  points to file/folder name
 ;  ebx  ignored (reserved)
-;  ecx  number of bytes to write, 0+
-;  edx  mem location to data
+;  ecx  number of bytes to write, 0+ (ignored for folders)
+;  edx  mem location to data (ignored for folders)
 ;
 ;  ret ebx = number of written bytes
 ;      eax = 0 ok read or other = errormsg
@@ -1482,7 +1483,13 @@ fat_gen_short_name:
         xor     ebx, ebx
         ret
 
+fs_RamdiskCreateFolder:
+        mov     al, 1           ; create folder
+        jmp     fs_RamdiskRewrite.common
+
 fs_RamdiskRewrite:
+        xor     eax, eax        ; create file
+.common:
         cmp     byte [esi], 0
         jz      @b
         pushad
@@ -1537,8 +1544,24 @@ fs_RamdiskRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found; must not be directory
+; found
         test    byte [edi+11], 10h
+        jz      .exists_file
+; found directory; if we are creating directory, return OK,
+;                  if we are creating file, say "access denied"
+        add     esp, 20
+        popad
+        test    al, al
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      @f
+        mov     al, 0
+@@:
+        xor     ebx, ebx
+        ret
+.exists_file:
+; found file; if we are creating directory, return "access denied",
+;             if we are creating file, delete existing file and continue
+        cmp     byte [esp+20+28], 0
         jz      @f
         add     esp, 20
         popad
@@ -1556,7 +1579,7 @@ fs_RamdiskRewrite:
 @@:
         cmp     eax, 0xFF8
         jae     .done1
-        lea     edi, [0x280000 + eax*2] ; position in FAT
+        lea     edi, [RAMDISK_FAT + eax*2] ; position in FAT
         xor     eax, eax
         xchg    ax, [edi]
         jmp     @b
@@ -1748,6 +1771,12 @@ fs_RamdiskRewrite:
         and     word [edi+20], 0        ; high word of cluster
         and     word [edi+26], 0        ; low word of cluster - to be filled
         and     dword [edi+28], 0       ; file size - to be filled
+        cmp     byte [esp+20+28], 0
+        jz      .doit
+; create directory
+        mov     byte [edi+11], 10h         ; attributes: folder
+        mov     ecx, 32*2
+        mov     edx, edi
 .doit:
         push    edx
         push    ecx
@@ -1756,7 +1785,7 @@ fs_RamdiskRewrite:
         push    edi
         jecxz   .done
         mov     ecx, 2849
-        mov     edi, 0x280000
+        mov     edi, RAMDISK_FAT
 .write_loop:
 ; allocate new cluster
         xor     eax, eax
@@ -1764,7 +1793,7 @@ fs_RamdiskRewrite:
         jnz     .disk_full2
         dec     edi
         dec     edi
-        lea     eax, [edi-0x280000]
+        lea     eax, [edi-(RAMDISK_FAT)]
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp]
@@ -1773,8 +1802,11 @@ fs_RamdiskRewrite:
         push    edi
         inc     ecx
 ; write data
+        cmp     byte [esp+16+20+28], 0
+        jnz     .writedir
         shl     eax, 9
-        add     eax, 0x100000+31*512
+        add     eax, RAMDISK+31*512
+.writefile:
         mov     ebx, edx
         xchg    eax, ebx
         push    ecx
@@ -1808,6 +1840,34 @@ fs_RamdiskRewrite:
         popad
         push    ERROR_DISK_FULL
         pop     eax
+        ret
+.writedir:
+        mov     edi, eax
+        shl     edi, 9
+        add     edi, RAMDISK+31*512
+        mov     esi, edx
+        mov     ecx, 32/4
+        push    ecx
+        rep     movsd
+        mov     dword [edi-32], '.   '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     word [edi-32+26], ax
+        mov     esi, edx
+        pop     ecx
+        rep     movsd
+        mov     dword [edi-32], '..  '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     eax, [esp+16+8]
+        mov     word [edi-32+26], ax
+        pop     edi edi ecx edx
+        add     esp, 20
+        popad
+        xor     eax, eax
+        xor     ebx, ebx
         ret
 
 .read_symbol:

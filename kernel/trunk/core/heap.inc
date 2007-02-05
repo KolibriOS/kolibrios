@@ -366,7 +366,7 @@ proc alloc_kernel_space stdcall, size:dword
 endp
 
 align 4
-proc free_kernel_space stdcall, base:dword
+proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 
            mov ebx, heap_mutex
            call wait_mutex    ;ebx
@@ -461,7 +461,7 @@ proc free_kernel_space stdcall, base:dword
 .m_eq:
            xor eax, eax
            mov [heap_mutex], eax
-           not eax
+           dec eax
            ret
 .insert:
            remove_from_used esi
@@ -480,7 +480,7 @@ proc free_kernel_space stdcall, base:dword
            mov [esi+block_flags],FREE_BLOCK
            xor eax, eax
            mov [heap_mutex], eax
-           not eax
+           dec eax
            ret
 .fail:
            xor eax, eax
@@ -557,6 +557,7 @@ endp
 
 align 4
 proc kernel_free stdcall, base:dword
+           push ebx esi
 
            mov ebx, heap_mutex
            call wait_mutex    ;ebx
@@ -577,13 +578,17 @@ proc kernel_free stdcall, base:dword
 
            and [heap_mutex], 0
 
+           push ecx
            mov ecx, [esi+block_size];
            shr ecx, 12
            call release_pages   ;eax, ecx
+           pop ecx
            stdcall free_kernel_space, [base]
+           pop esi ebx
            ret
 .fail:
            and [heap_mutex], 0
+           pop esi ebx
            ret
 endp
 

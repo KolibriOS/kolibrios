@@ -768,10 +768,12 @@ fpu_ok_1:
         mov     esi, [esi+0x3000+TASKDATA.pid]
         cmp     [hd1_status], esi
         jnz     @f
+        call    free_hd_channel
         mov     [hd1_status], 0
 @@:
         cmp     [cd_status], esi
         jnz     @f
+        call    free_cd_channel
         mov     [cd_status], 0
 @@:
         cmp     [flp_status], esi

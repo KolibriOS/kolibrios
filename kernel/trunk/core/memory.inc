@@ -231,6 +231,7 @@ endp
 
 align 4
 proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
+           push ebx
            mov eax, [phis_addr]
            and eax, not 0xFFF
            or eax, [flags]
@@ -239,6 +240,7 @@ proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
            mov [pages_tab+ebx*4], eax
            mov eax, [lin_addr]
            invlpg [eax]
+           pop ebx
            ret
 endp
 
@@ -289,8 +291,8 @@ commit_pages:   ;not implemented
 
 align 4
 release_pages:
-    
-           push ebp
+
+           pushad
            mov ebx, pg_data.pg_mutex
            call wait_mutex      ;ebx
 
@@ -329,11 +331,12 @@ release_pages:
            jnz @B
            mov [pg_data.pages_free], ebp  
            and [pg_data.pg_mutex],0
-           pop ebp
+           popad
            ret
 
 align 4
 proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
+           push ebx
            mov ebx, [lin_addr]
            shr ebx, 22
            mov eax, [phis_addr]
@@ -344,6 +347,7 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
            shr eax, 10
            add eax, pages_tab
            invlpg [eax]
+           pop ebx
            ret
 endp
 

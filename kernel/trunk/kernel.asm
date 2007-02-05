@@ -1496,9 +1496,9 @@ cd_base db 0
      mov  [hdpos],4
 ;     call set_FAT32_variables
    noseslhd:
-     mov   [0xfe10],dword 0
     call  reserve_hd1
-    call  clear_hd_cache
+    call  reserve_hd_channel
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
    nosethd:
      ret
@@ -1514,7 +1514,8 @@ endg
      mov  [fat32part],ebx
 ;     call set_FAT32_variables
     call  reserve_hd1
-    call  clear_hd_cache
+    call  reserve_hd_channel
+    call  free_hd_channel
      pusha
      call  choice_necessity_partition_1
      popa

@@ -65,7 +65,6 @@
         jmp   yes_sys_on_hd
 
   search_and_read_image:
-;        mov   [0xfe10],dword 0    ; entries in hd cache
         call  set_FAT32_variables
         mov   edx, bootpath
         call  read_image

@@ -34,7 +34,6 @@ start:
         stosb
         test    al, al
         jnz     @b
-@@:
         mov     esi, def_right_dir
         mov     edi, panel2_dir
 @@:
@@ -675,12 +674,13 @@ panels_OnKey:
 .dorun:
         lea     esi, [ebp + panel1_dir - panel1_data]
         mov     edi, execdata
-; TODO: add overflow check
 @@:
         lodsb
         test    al, al
         jz      @f
         stosb
+        cmp     edi, execdataend-1
+        jae     .bigfilename
         jmp     @b
 @@:
         lea     esi, [ecx+40]
@@ -689,6 +689,8 @@ panels_OnKey:
 @@:
         lodsb
         stosb
+        cmp     edi, execdataend
+        ja      .bigfilename
         test    al, al
         jnz     @b
 ; for fasm call - special handling, because
@@ -699,7 +701,8 @@ panels_OnKey:
         jz      .nofasm
         cmp     [execptr], fasm
         jnz     .nofasm
-; TODO: add buffer/cmdline overflow check
+        cmp     edi, execdata+(execdataend-execdata)/2
+        ja      .bigfilename
         mov     esi, execdata
 @@:
         lodsb
@@ -717,6 +720,8 @@ panels_OnKey:
         cmp     byte [edi], '/'
         jnz     @b
         pop     edi
+        cmp     edi, execdataend-4
+        ja      .bigfilename
         mov     dword [edi-1], '.bin'
         mov     byte [edi+3], 0
         jmp     .nofasm
@@ -724,10 +729,45 @@ panels_OnKey:
         mov     byte [edi], 0
         pop     edi
 .nofasm:
+        mov     ebx, execinfo
+; if command line is more than 256 symbols, the kernel will truncate it
+; we does not want this!
+; N.B. We know that command line is either NULL or execdata, which is always ASCIIZ string,
+;      but can be up to 1023 symbols
+        mov     esi, [ebx+8]
+        test    esi, esi
+        jz      .cmdlinelenok
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+        sub     esi, [ebx+8]
+        dec     esi
+        cmp     esi, 256
+        ja      .bigcmdline
+.cmdlinelenok:
         push    70
         pop     eax
-        mov     ebx, execinfo
         int     40h
+        neg     eax
+        js      @f
+        push    aContinue
+        mov     esi, esp
+        call    get_error_msg
+        push    eax
+        push    aRunError
+        mov     eax, esp
+        push    esi
+        push    1
+        push    eax
+        push    2
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        ret
+@@:
         test    edx, edx
         jz      @f
         push    5
@@ -738,6 +778,38 @@ panels_OnKey:
         jmp     .ctrl_r
 @@:
         ret
+.bigfilename3:
+        pop     esi
+.bigfilename2:
+        pop     esi
+.bigfilename:
+        mov     eax, aFileNameTooBig
+@@:
+        push    aContinue
+        mov     esi, esp
+        push    eax
+        mov     eax, esp
+        push    esi
+        push    1
+        push    eax
+        push    1
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 2*4
+        ret
+.bigcmdline:
+        mov     eax, aCmdLineTooBig
+        jmp     @b
+.bigfoldername2:
+        mov     byte [ecx], 0
+.bigfoldername:
+        mov     eax, aFolderNameTooBig
+        jmp     @b
+.copytoself:
+        mov     eax, aCannotCopyToSelf
+        jmp     @b
 .enter_folder:
         lea     esi, [ecx+40]
         cmp     word [esi], '..'
@@ -754,15 +826,19 @@ panels_OnKey:
         test    al, al
         jnz     @b
         lea     edi, [esi-1]
+        lea     edx, [ebp + panel1_dir - panel1_data + 1024]
+        cmp     esi, edx
         pop     esi
+        jae     .bigfoldername
+        mov     ecx, edi
         mov     al, '/'
         cmp     [edi-1], al
         jz      @f
         stosb
 @@:
-; TODO: add buffer overflow check
-@@:
         lodsb
+        cmp     edi, edx
+        jae     .bigfoldername2
         stosb
         test    al, al
         jnz     @b
@@ -791,9 +867,7 @@ panels_OnKey:
         mov     ecx, [ebp + panel1_numfiles - panel1_data]
 .scanloop:
         mov     esi, [edx]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     esi, [esi+eax*4+32+40]
-        add     esi, [ebp + panel1_files - panel1_data]
+        add     esi, 40
         push    esi edi
 @@:
         lodsb
@@ -1019,6 +1093,8 @@ panels_OnKey:
         lodsb
         test    al, al
         jz      @f
+        cmp     edi, CopyDestEditBuf+12+511
+        jae     .bigfoldername
         stosb
         jmp     @b
 @@:
@@ -1123,6 +1199,14 @@ panels_OnKey:
         repnz   scasb
         not     ecx
         pop     edi
+        push    edi
+        add     edi, ecx
+        cmp     edi, CopyDestEditBuf+12+513
+        pop     edi
+        jb      @f
+        pop     esi
+        jmp     .bigfilename
+@@:
         lea     edx, [edi+2]
         sub     edx, esi
         lea     edi, [edi+ecx+1]
@@ -1164,6 +1248,8 @@ panels_OnKey:
         test    cl, 0x10
         jz      .copyfile
 ; Нам подсунули каталог назначения, дописываем имя файла
+        cmp     edi, CopyDestEditBuf+12+513
+        jae     .bigfilename
         mov     al, '/'
         stosb
         push    esi
@@ -1171,6 +1257,8 @@ panels_OnKey:
         lea     esi, [ecx+40]
 @@:
         lodsb
+        cmp     edi, CopyDestEditBuf+12+513
+        jae     .bigfilename2
         stosb
         test    al, al
         jnz     @b
@@ -1194,6 +1282,8 @@ panels_OnKey:
         lea     esi, [ecx+40]
 @@:
         lodsb
+        cmp     edi, saved_file_name+1024
+        jae     .bigfilename3
         stosb
         test    al, al
         jnz     @b
@@ -1203,7 +1293,7 @@ panels_OnKey:
         push    esi edi
         call    strcmpi
         pop     edi esi
-        jz      .ret2
+        jz      .copytoself
 ; Собственно, копируем
 ; esi->source name, edi->destination name
         mov     [writeinfo.code], 2
@@ -1222,17 +1312,58 @@ panels_OnKey:
         push    70
         pop     eax
         int     0x40
-        cmp     ebx, -1
-        jz      .copydone
+        test    eax, eax
+        jz      .copyreadok
+        cmp     eax, 6
+        jz      .copyreadok
+        push    esi
+        push    aCannotReadFile
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrCancelBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        test    eax, eax
+        jz      .copyloop
+        jmp     .copyfailed
+.copyreadok:
         test    ebx, ebx
         jz      .copydone
         add     dword [readinfo.first], ebx
         adc     dword [readinfo.first+4], 0
         mov     [writeinfo.size], ebx
+.copywrite:
         mov     ebx, writeinfo
         push    70
         pop     eax
         int     0x40
+        test    eax, eax
+        jz      .copywriteok
+        push    edi
+        push    aCannotWriteFile
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrCancelBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        test    eax, eax
+        jz      .copywrite
+        jmp     .copyfailed
+.copywriteok:
         mov     ecx, [writeinfo.size]
         add     dword [writeinfo.first], ecx
         adc     dword [writeinfo.first+4], 0
@@ -1245,6 +1376,34 @@ panels_OnKey:
         pop     ebp
         xor     ebp, panel1_data xor panel2_data
         jmp     .ctrl_r
+.copyfailed:
+        cmp     [bConfirmDeleteIncomplete], 0
+        jz      @f
+        cmp     [writeinfo.code], 2
+        jz      .copydone
+        push    aIncompleteFile
+        mov     eax, esp
+        push    DeleteOrKeepBtn
+        push    2
+        push    eax
+        push    1
+        push    -1
+        push    -1
+        push    aCopyCaption
+        call    SayErr
+        add     esp, 4
+        test    eax, eax
+        jnz     .copydone
+@@:
+        mov     ebx, delinfo
+        push    dword [ebx+21]
+        mov     dword [ebx+21], edi
+        push    70
+        pop     eax
+        int     0x40
+; ignore errors
+        pop     dword [delinfo+21]
+        jmp     .copydone
 
 .f3:
         call    view_file
@@ -1326,13 +1485,39 @@ panels_OnKey:
         stosb
 @@:
         lodsb
+        cmp     edi, execdataend
+        jae     .bigfilename
         stosb
         test    al, al
         jnz     @b
+.retrydel:
         push    70
         pop     eax
         mov     ebx, delinfo
         int     0x40
+        test    eax, eax
+        jz      .ctrl_r
+        push    execdata
+        push    aCannotDeleteFolder
+        call    get_curfile_folder_entry
+        test    byte [ecx], 10h
+        jnz     @f
+        mov     dword [esp], aCannotDeleteFile
+@@:
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrCancelBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        test    eax, eax
+        jz      .retrydel
 .ctrl_r:
 ; Rescan panel
 ;       call    read_folder
@@ -1356,10 +1541,9 @@ panels_OnKey:
         inc     eax
         cmp     eax, [ebp + panel1_numfiles - panel1_data]
         jae     .ctrl_r.notfound
-        mov     esi, [ebp + panel1_nfa - panel1_data]
         mov     ecx, [ebp + panel1_files - panel1_data]
-        lea     esi, [ecx+esi*4+32+40]
-        add     esi, [ecx+eax*4]
+        mov     esi, [ecx+eax*4]
+        add     esi, 40
         mov     edi, saved_file_name
         call    strcmpi
         jnz     @b
@@ -1496,6 +1680,102 @@ panels_OnKey:
         pop     eax
         call    get_curfile_folder_entry
         jmp     .run_association2
+.f7:
+        mov     dword [CopyDestEditBuf], CopyDestEditBuf.length
+        and     dword [CopyDestEditBuf+4], 0
+        and     dword [CopyDestEditBuf+8], 0
+        mov     byte [CopyDestEditBuf+12], 0
+        mov     ebx, mkdir_dlgdata
+        mov     eax, [cur_width]
+        sub     eax, 12
+        mov     [ebx + dlgtemplate.width], eax
+        dec     eax
+        dec     eax
+        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.width2], eax
+        shr     eax, 1
+        dec     eax
+        dec     eax
+        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cont_x2], eax
+        sub     eax, a_ContinueLength-1
+        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cont_x1], eax
+        add     eax, a_ContinueLength+3
+        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cnl_x1], eax
+        add     eax, aCancelBLength - 1
+        mov     [ebx - mkdir_dlgdata + mkdir_dlgdata.cnl_x2], eax
+        mov     byte [ebx - mkdir_dlgdata + mkdir_dlgdata.flags0], 0xC
+        and     byte [ebx - mkdir_dlgdata + mkdir_dlgdata.flags1], not 4
+        and     byte [ebx - mkdir_dlgdata + mkdir_dlgdata.flags2], not 4
+        push    ebx
+        call    DialogBox
+        cmp     eax, mkdir_dlgdata.cont_btn
+        jnz     .ret2
+        mov     esi, CopyDestEditBuf+12
+        cmp     byte [esi], 0
+        jz      .ret2
+        cmp     byte [esi], '/'
+        jz      .mkdir_absolute_path
+        push    esi
+        lea     edi, [ebp + panel1_dir - panel1_data]
+        or      ecx, -1
+        xor     eax, eax
+        repnz   scasb
+        not     ecx
+        mov     edi, esi
+@@:
+        cmp     byte [edi+1], 0
+        jz      @f
+        inc     edi
+        jmp     @b
+@@:
+        push    edi
+        add     edi, ecx
+        cmp     edi, CopyDestEditBuf+12+513
+        pop     edi
+        jb      @f
+        pop     esi
+        jmp     .bigfilename
+@@:
+        lea     edx, [edi+2]
+        sub     edx, esi
+        lea     edi, [edi+ecx+1]
+        xchg    ecx, edx
+        std
+        lea     esi, [esi+ecx-1]
+        rep     movsb
+        cld
+        pop     edi
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        push    edi
+        mov     ecx, edx
+        rep     movsb
+        mov     byte [edi-1], '/'
+        pop     esi
+.mkdir_absolute_path:
+.mkdir_retry:
+        push    70
+        pop     eax
+        mov     ebx, mkdirinfo
+        int     0x40
+        test    eax, eax
+        jz      @f
+        push    CopyDestEditBuf+12
+        push    aCannotMakeFolder
+        call    get_error_msg
+        push    eax
+        mov     eax, esp
+        push    RetryOrCancelBtn
+        push    2
+        push    eax
+        push    3
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        add     esp, 3*4
+        test    eax, eax
+        jz      .mkdir_retry
+@@:
+        jmp     .copydone
 
 panels_OnRedraw:
         call    draw_cmdbar
@@ -1539,14 +1819,10 @@ init_console:
         ret
 
 get_curfile_folder_entry:
-        push    eax
         mov     ecx, [ebp + panel1_index - panel1_data]
-        mov     eax, [ebp + panel1_files - panel1_data]
-        mov     ecx, [eax+ecx*4]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     ecx, [ecx+eax*4+32]
+        shl     ecx, 2
         add     ecx, [ebp + panel1_files - panel1_data]
-        pop     eax
+        mov     ecx, [ecx]
         ret
 get_curfile_name:
         call    get_curfile_folder_entry
@@ -1602,12 +1878,11 @@ end if
         sub     ebx, [esp]
         dec     esi
         push    esi
-        mov     edx, [ebp + panel1_files - panel1_data]
         mov     esi, [ebp + panel1_index - panel1_data]
-        mov     esi, [edx+esi*4]
-        add     esi, edx
-        mov     edx, [ebp + panel1_nfa - panel1_data]
-        lea     esi, [esi+edx*4+32+40]
+        shl     esi, 2
+        add     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [esi]
+        add     esi, 40
         push    esi
 @@:
         lodsb
@@ -2286,9 +2561,6 @@ draw_panel:
         mov     ebx, [ebp + panel1_index - panel1_data]
         mov     eax, [ebp + panel1_files - panel1_data]
         mov     ebx, [eax+ebx*4]
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     ebx, [ebx+eax*4+32]
-        add     ebx, [ebp + panel1_files - panel1_data]
         mov     eax, [ebp + panel1_left - panel1_data]
         add     eax, [ebp + panel1_width - panel1_data]
         dec     eax
@@ -2519,9 +2791,7 @@ end if
         mov     esi, [column_index]
         mov     ecx, [ebp + panel1_files - panel1_data]
         mov     esi, [ecx+esi*4]
-        mov     ecx, [ebp + panel1_nfa - panel1_data]
-        lea     esi, [esi + ecx*4 + 32 + 40]
-        add     esi, [ebp + panel1_files - panel1_data]
+        add     esi, 40
         mov     ah, [esi - 40 + 5]
         cmp     ebp, [active_panel]
         jnz     @f
@@ -2732,6 +3002,7 @@ read_folder:
 .succ1:
         mov     [ebp + panel1_files - panel1_data], eax
         pop     [ebp + panel1_nfa - panel1_data]
+        mov     [prev_dir], 0
         jmp     read_folder
 .readdone:
         and     [ebp + panel1_start - panel1_data], 0
@@ -2739,22 +3010,44 @@ read_folder:
         and     [ebp + panel1_start - panel1_data], 0
         mov     edi, [ebp + panel1_files - panel1_data]
         mov     eax, [ebp + panel1_nfa - panel1_data]
-        lea     esi, [edi + eax*4 + 32]
-        xor     eax, eax
-        mov     ecx, [esi-32+4]
+        lea     eax, [edi + eax*4 + 32]
+        mov     ecx, [eax-32+4]
         test    ecx, ecx
         jz      .loopdone
+        xor     edx, edx
 ; Игнорируем специальные входы, соответствующие папке '.' и метке тома
 .ptrinit:
-        cmp     word [esi+eax+40], '.'
+        cmp     word [eax+40], '.'
         jz      .loopcont
-        test    byte [esi+eax], 8
+        test    byte [eax], 8
         jnz     .loopcont
+        test    edx, edx
+        jnz     .nodotdot
+        cmp     word [eax+40], '..'
+        jnz     .nodotdot
+        cmp     byte [eax+42], 0
+        jnz     .nodotdot
+        mov     edx, eax
+        push    edi
+@@:
+        cmp     edi, [ebp + panel1_files - panel1_data]
+        jbe     @f
+        push    dword [edi-4]
+        pop     dword [edi]
+        sub     edi, 4
+        jmp     @b
+@@:
         stosd
+        pop     edi
+        scasd
+        jmp     .dotdot
+.nodotdot:
+        stosd
+.dotdot:
 ; подсветка
 ;        call    insert_last_dot
         pushad
-        lea     ebp, [esi+eax]
+        mov     ebp, eax
         lea     esi, [ebp+40]
         mov     edi, lower_file_name
         mov     edx, edi
@@ -2817,27 +3110,21 @@ sort_files:
         mov     ebx, [compare_fns + eax*4]
         mov     edx, [ebp + panel1_files - panel1_data]
         mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        jecxz   .skip
+        mov     eax, [edx]
+        cmp     word [eax], '..'
+        jnz     .nodotdot
+        cmp     byte [eax+2], 0
+        jnz     .nodotdot
+        dec     ecx
+        add     edx, 4
+.nodotdot:
         call    sort
+.skip:
         mov     [bSilentFolderMode], 0  ; leave silent mode
         ret
 
 compare_name:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -2858,22 +3145,6 @@ compare_name:
         ret
 
 compare_name_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -2908,22 +3179,6 @@ strcmpi:
         ret
 
 compare_ext:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -2955,22 +3210,6 @@ compare_ext:
         ret
 
 compare_ext_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3021,22 +3260,6 @@ seek_ext:
         ret
 
 compare_modified:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3069,22 +3292,6 @@ compare_modified:
         ret
 
 compare_modified_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3118,22 +3325,6 @@ compare_modified_rev:
         ret
 
 compare_size:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3166,22 +3357,6 @@ compare_size:
         ret
 
 compare_size_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3218,49 +3393,10 @@ compare_unordered:
         cmp     esi, edi
         ret
 compare_unordered_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         cmp     edi, esi
-        ret
-.greater:
-        test    esi, esi
-        ret
-.less:
-        xor     edi, edi
-        stc
         ret
 
 compare_created:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3293,22 +3429,6 @@ compare_created:
         ret
 
 compare_created_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3342,22 +3462,6 @@ compare_created_rev:
         ret
 
 compare_accessed:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -3390,22 +3494,6 @@ compare_accessed:
         ret
 
 compare_accessed_rev:
-        push    eax
-        mov     eax, [ebp + panel1_nfa - panel1_data]
-        add     esi, [ebp + panel1_files - panel1_data]
-        add     edi, [ebp + panel1_files - panel1_data]
-        lea     esi, [esi+eax*4+0x20]
-        lea     edi, [edi+eax*4+0x20]
-        pop     eax
-        cmp     word [esi+40], '..'
-        jnz     @f
-        cmp     byte [esi+42], 0
-        jz      .less
-@@:     cmp     word [edi+40], '..'
-        jnz     @f
-        cmp     byte [edi+42], 0
-        jz      .greater
-@@:
         test    byte [esi], 10h
         jnz     .1dir
         test    byte [edi], 10h
@@ -4007,7 +4095,7 @@ find_extension:
         pop     esi
         ret
 
-header  db      'Kolibri Far 0.2',0
+header  db      'Kolibri Far 0.21',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
@@ -4534,6 +4622,8 @@ panels_ctrlkeys:
         dd      panels_OnKey.f5
         dw      0x3F, 1
         dd      panels_OnKey.shift_f5
+        dw      0x41, 0
+        dd      panels_OnKey.f7
         dw      0x42, 0
         dd      panels_OnKey.f8
         dw      0x43, 0x100
@@ -4643,6 +4733,15 @@ delinfo:
                 dd      0
                 db      0
                 dd      execdata
+
+mkdirinfo:
+                dd      9
+                dd      0
+                dd      0
+                dd      0
+                dd      0
+                db      0
+                dd      CopyDestEditBuf+12
 
 if lang eq ru
 compare_names   db      'иИрРмМаАнНсСдД'
@@ -4854,6 +4953,7 @@ fasm    db      '/rd/1/develop/fasm',0
 animage db      '/rd/1/animage',0
 
 bConfirmDelete  db      1
+bConfirmDeleteIncomplete db 0
 
 ; Здесь заканчиваются конфигурационные данные
 
@@ -4924,7 +5024,7 @@ f8_confirm_dlgdata:
 .del_x2 dd      ?
         dd      2
         dd      aDelete
-.flags1 dd      4
+.flags1 dd      0xC
 ; кнопка "отменить"
         dd      2
 .cnl_x1 dd      ?
@@ -4932,7 +5032,7 @@ f8_confirm_dlgdata:
 .cnl_x2 dd      ?
         dd      2
         dd      aCancel
-.flags2 dd      0
+.flags2 dd      8
 
 ; диалог копирования
 copy_dlgdata:
@@ -4983,6 +5083,56 @@ copy_dlgdata:
         dd      aCancelB
 .flags2 dd      8
 
+mkdir_dlgdata:
+        dd      1
+        dd      -1, -1
+.width  dd      ?
+.height dd      4
+        dd      4, 2
+        dd      aMkDirCaption
+        dd      ?
+        dd      0
+        dd      0
+        dd      4
+; Строка "Создать папку"
+        dd      1
+        dd      1,0,aMkDirLen,0
+        dd      aMkDir
+        dd      0
+; поле редактирования с именем создаваемой папки
+        dd      3
+        dd      1,1
+.width2 dd      ?
+        dd      1
+        dd      CopyDestEditBuf
+.flags0 dd      0xC
+; кнопка "Продолжить"
+.cont_btn:
+        dd      2
+.cont_x1 dd     ?
+        dd      3
+.cont_x2 dd     ?
+        dd      3
+        dd      a_Continue
+.flags1 dd      18h
+; кнопка "отменить"
+        dd      2
+.cnl_x1 dd      ?
+        dd      3
+.cnl_x2 dd      ?
+        dd      3
+        dd      aCancelB
+.flags2 dd      8
+
+RetryOrCancelBtn:
+        dd      aRetry
+        dd      a_Cancel
+DeleteOrKeepBtn:
+        dd      a_Delete
+        dd      aKeep
+RetryOrIgnoreBtn:
+        dd      aRetry
+        dd      aIgnore
 
 if lang eq ru
 aDeleteCaption          db      'Удаление',0
@@ -4999,11 +5149,15 @@ aCancelBLength = $ - aCancelB - 1
 aCopyCaption            db      'Копирование',0
 aCopy                   db      '[ Копировать ]',0
 aCopyLength = $ - aCopy - 1
+a_Continue              db      '[ Продолжить ]',0
+a_ContinueLength = $ - a_Continue - 1
 aCopy1                  db      'Копировать "',0
 aCopy2                  db      '" в:',0
 aError                  db      'Ошибка',0
 aContinue               db      'Продолжить',0
 aRetry                  db      'Повторить',0
+a_Cancel                db      'Отменить',0
+a_Delete                db      'Удалить',0
 error0msg               db      'Странно... Нет ошибки',0
 error1msg               db      'Странно... Не определена база и/или раздел жёсткого диска',0
 error2msg               db      'Функция не поддерживается для данной файловой системы',0
@@ -5021,6 +5175,22 @@ error31msg              db      'Файл не является исполняемым',0
 error32msg              db      'Слишком много процессов',0
 aUnknownError           db      'Неизвестный код ошибки: ',0
 aCannotReadFolder       db      'Не могу прочитать папку',0
+aRunError               db      'Ошибка при запуске программы:',0
+aFileNameTooBig         db      'Полное имя файла слишком длинное',0
+aFolderNameTooBig       db      'Полное имя папки слишком длинное',0
+aCmdLineTooBig          db      'Командная строка превышает границу OS в 256 символов',0
+aCannotCopyToSelf       db      'Файл не может быть скопирован в самого себя',0
+aCannotReadFile         db      'Не могу прочитать файл',0
+aIncompleteFile         db      'Был получен неполный файл. Удалить его?',0
+aKeep                   db      'Оставить',0
+aCannotWriteFile        db      'Не могу записать в файл',0
+aCannotDeleteFile       db      'Не могу удалить файл',0
+aCannotDeleteFolder     db      'Не могу удалить папку',0
+aIgnore                 db      'Игнорировать',0
+aMkDirCaption           db      'Создание папки',0
+aMkDir                  db      'Создать папку',0
+aMkDirLen = $ - aMkDir - 1
+aCannotMakeFolder       db      'Не могу создать папку',0
 else
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete ',0
@@ -5036,11 +5206,15 @@ aCancelBLength = $ - aCancelB - 1
 aCopyCaption            db      'Copy',0
 aCopy                   db      '[ Copy ]',0
 aCopyLength = $ - aCopy - 1
+a_Continue              db      '[ Continue ]',0
+a_ContinueLength = $ - a_Continue - 1
 aCopy1                  db      'Copy "',0
 aCopy2                  db      '" to:',0
 aError                  db      'Error',0
 aContinue               db      'Continue',0
 aRetry                  db      'Retry',0
+a_Cancel                db      'Cancel',0
+a_Delete                db      'Delete',0
 error0msg               db      'Strange... No error',0
 error1msg               db      'Strange... Hard disk base and/or partition not defined',0
 error2msg               db      'The file system does not support this function',0
@@ -5058,6 +5232,22 @@ error31msg              db      'File is not executable',0
 error32msg              db      'Too many processes',0
 aUnknownError           db      'Unknown error code: ',0
 aCannotReadFolder       db      'Cannot read folder',0
+aRunError               db      'Cannot execute program:',0
+aFileNameTooBig         db      'Full file name is too long',0
+aFolderNameTooBig       db      'Full folder name is too long',0
+aCmdLineTooBig          db      'Command line is too long (OS limit is 256 symbols)',0
+aCannotCopyToSelf       db      'File cannot be copied onto itself',0
+aCannotReadFile         db      'Cannot read file',0
+aIncompleteFile         db      'Incomplete file was retrieved. Delete it?',0
+aKeep                   db      'Keep',0
+aCannotWriteFile        db      'Cannot write file',0
+aCannotDeleteFile       db      'Cannot delete file',0
+aCannotDeleteFolder     db      'Cannot delete folder',0
+aIgnore                 db      'Ignore',0
+aMkDirCaption           db      'Make folder',0
+aMkDir                  db      'Create the folder',0
+aMkDirLen = $ - aMkDir - 1
+aCannotMakeFolder       db      'Cannot create folder',0
 end if
 aOk                     db      'OK',0
 aNoMemory               db      'No memory!',0
@@ -5078,6 +5268,7 @@ i_end:
 IncludeUGlobals
 
 execdata rb     1024
+execdataend:
         align   4
 attrinfo.attr   rb      40
 
@@ -5161,7 +5352,7 @@ active_screen_data dd   ?
 aConfirmDeleteTextBuf   rb      aConfirmDeleteTextMax + 1
 CopySourceTextBuf       rb      512
 CopyDestEditBuf         rb      12+512+1
-.length = $ - CopyDestEditBuf - 9
+.length = $ - CopyDestEditBuf - 13
 
 align 4
 layout          rb      128

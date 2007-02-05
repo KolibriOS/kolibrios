@@ -76,21 +76,21 @@
 partition_data_transfer: 
      mov edi,[transfer_adress]
      mov esi,PARTITION_START
-     xor ecx,ecx
-     mov cx,69   ;100
-     rep movsb
+     mov ecx,(file_system_data_size+3)/4
+     rep movsd
      ret
+uglobal
 transfer_adress dd 0
+endg
 partition_data_transfer_1:
-     cli
+;     cli
      push edi
      mov edi,PARTITION_START
      mov esi,[transfer_adress]
-     xor ecx,ecx
-     mov cx,69  ;100
-     rep movsb
+     mov ecx,(file_system_data_size+3)/4
+     rep movsd
      pop  edi
-     sti
+;     sti
      ret
 
  end_search_partitions_ide:

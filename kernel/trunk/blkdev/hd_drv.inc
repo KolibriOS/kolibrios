@@ -75,13 +75,11 @@ align 4
 hd_read_pio:
     push  eax edx
 
-    call  disable_ide_int
-
     call  wait_for_hd_idle
     cmp   [hd_error],0
     jne   hd_read_error    
 
-;    cli
+    cli
     xor   eax,eax
     mov   edx,[hdbase]
     inc   edx
@@ -107,14 +105,14 @@ hd_read_pio:
     inc   edx
     mov   al,20h
     out   dx,al   ; ATACommand регистр команд
-;    sti
+    sti
 
     call  wait_for_sector_buffer
 
     cmp   [hd_error],0
     jne   hd_read_error
 
-;    cli
+    cli
     push  edi
     shl   edi,9
     add   edi,0x600000+65536
@@ -123,9 +121,7 @@ hd_read_pio:
     cld
     rep   insw
     pop   edi
-;    sti
-
-    call  enable_ide_int
+    sti
 
     pop   edx eax
     ret
@@ -420,8 +416,8 @@ endg
 
 hd_timeout_error:
 
-    call  clear_hd_cache
-    call  clear_application_table_status
+;    call  clear_hd_cache
+;    call  clear_application_table_status
     mov   esi,hd_timeout_str
     call  sys_msg_board_str
 ;    jmp   $
@@ -431,8 +427,8 @@ hd_timeout_error:
 
 hd_read_error:
 
-    call  clear_hd_cache
-    call  clear_application_table_status
+;    call  clear_hd_cache
+;    call  clear_application_table_status
     mov   esi,hd_read_str
     call  sys_msg_board_str
     pop   edx eax
@@ -440,23 +436,23 @@ hd_read_error:
 
 hd_write_error:
 
-    call  clear_hd_cache
-    call  clear_application_table_status
+;    call  clear_hd_cache
+;    call  clear_application_table_status
     mov   esi,hd_write_str
     call  sys_msg_board_str
     ret
 
 hd_write_error_dma:
-        call    clear_hd_cache
-        call    clear_application_table_status
+;        call    clear_hd_cache
+;        call    clear_application_table_status
         mov     esi, hd_write_str
         call    sys_msg_board_str
         pop     esi
         ret
 
 hd_lba_error:
-    call  clear_hd_cache
-    call  clear_application_table_status
+;    call  clear_hd_cache
+;    call  clear_application_table_status
     mov   esi,hd_lba_str
     call  sys_msg_board_str
     jmp   LBA_read_ret

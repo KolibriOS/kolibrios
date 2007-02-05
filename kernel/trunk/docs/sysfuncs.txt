@@ -2878,8 +2878,6 @@ Examples:
 Existing subfunctions:
   * subfunction 0 - read file/folder
   * subfunction 1 - rewrite file
-  * subfunction 4 - make folder
-  * subfunction 5 - rename/move file/folder
   * subfunction 8 - LBA-read from device
   * subfunction 15 - get file system information
 
@@ -2967,59 +2965,6 @@ Returned value:
   * ebx destroyed
 Remarks:
   * This function is obsolete, use subfunction 2 of function 70.
-
-======================================================================
-============== Function 58, subfunction 4 - make folder. =============
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 4 = subfunction number
-  * +4: dword: ignored
-  * +8: dword: ignored
-  * +12 = +0xC: dword: ignored
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-  * ebx destroyed
-Remarks:
-  * Ramdisk and floppies do not support this function, it is only
-    for hard disks.
-
-======================================================================
-======== Function 58, subfunction 5 - rename/move file/folder. =======
-======================================================================
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 5 = subfunction number
-  * +4: dword: ignored
-  * +8: dword: ignored
-  * +12 = +0xC: dword: ignored
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-  * +20+n: (at once after terminating null character) new
-    ASCIIZ-name, must start from /hd/1, that is interpreted as
-    the hard disk, indicated in the first name
-    (moving from one disk to another is not supported)
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-  * ebx destroyed
-Remarks:
-  * Ramdisk and floppies do not support this function, it is only
-    for hard disks.
-  * If the new ASCIIZ-name is strongly incorrect, i.e. does not start
-    from /hd/1, /hd/first, /harddisk/1, /harddisk/first or after this
-    space or null character follows, function returns, strangely
-    enough, error code 4. It is the only function which returns
-    this code.
 
 ======================================================================
 ========= Function 58, subfunction 8 - LBA-read from device. =========
@@ -4060,6 +4005,7 @@ Available subfunctions:
   * subfunction 6 - set attributes of file/folder
   * subfunction 7 - start application
   * subfunction 8 - delete file/folder
+  * subfunction 9 - create folder
 For CD-drives due to hardware limitations only subfunctions
 0,1,5 and 7 are available, other subfunctions return error
 with code 2.
@@ -4158,7 +4104,7 @@ Structure of block of data for folder entry (BDFE):
   * +40 = +0x28: name
     * for ASCII format: maximum length is 263 characters
       (263 bytes), byte after the name has value 0
-    * для формата UNICODE: maximum length is 259 characters
+    * for UNICODE format: maximum length is 259 characters
       (518 bytes), 2 bytes after the name have value 0
 Time format:
   * +0: byte: seconds
@@ -4391,6 +4337,31 @@ Remarks:
   * The function is not supported for CD (returns error code 2).
   * The function can delete only empty folders (attempt to delete
     nonempty folder results in error with code 10, "access denied").
+
+======================================================================
+============= Function 70, subfunction 9 - create folder. ============
+======================================================================
+Parameters:
+  * eax = 70 - function number
+  * ebx = pointer to the information structure
+Format of the information structure:
+  * +0: dword: 9 = subfunction number
+  * +4: dword: 0 (reserved)
+  * +8: dword: 0 (reserved)
+  * +12 = +0xC: dword: 0 (reserved)
+  * +16 = +0x10: dword: 0 (reserved)
+  * +20 = +0x14: ASCIIZ-name of folder, the rules of names forming are
+    given in the general description
+    or
+  * +20 = +0x14: db 0
+  * +21 = +0x15: dd pointer to ASCIIZ-string with folder name
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+  * ebx destroyed
+Remarks:
+  * The function is not supported for CD (returns error code 2).
+  * The parent folder must already exist.
+  * If target folder already exists, function returns success (eax=0).
 
 ======================================================================
 ========== Function 71, subfunction 1 - set window caption. ==========

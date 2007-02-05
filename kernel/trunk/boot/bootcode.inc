@@ -91,7 +91,7 @@ app_data_l:
 
 graph_data_l:
 
-        dw     0x3ff
+        dw     0x7ff
         dw     0x0000
         db     0x00
         dw     11010000b *256 +11110010b

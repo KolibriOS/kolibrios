@@ -222,6 +222,7 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov     [ntfs_data.cur_index_buf], eax
 
         popad
+        call    free_hd_channel
         and     [hd1_status], 0
         ret
 

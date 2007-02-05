@@ -208,6 +208,7 @@ end if
 .err_file:
            xor eax, eax
            mov [application_table_status],eax
+           mov eax, ecx
            ret
 endp
 
@@ -951,15 +952,16 @@ align 4
 wait_mutex:
            push eax
            push ebx
+.do_wait:
            cmp dword [ebx],0
            je .get_lock
            call change_task
-           jmp wait_mutex
+           jmp .do_wait
 .get_lock:
            mov eax, 1
            xchg eax, [ebx]
            test eax, eax
-           jnz wait_mutex
+           jnz .do_wait
            pop ebx
            pop eax
            ret
