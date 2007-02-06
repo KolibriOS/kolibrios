@@ -97,6 +97,7 @@ include "drivers/rtl8139.inc"
 include "drivers/3c59x.inc"
 include "drivers/sis900.inc"
 include "drivers/pcnet32.inc"
+;include "drivers/mtd80x.inc"
 
 ; PCICards
 ; ========
@@ -180,8 +181,14 @@ dd  0x09001039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
 dd  0x20001022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
 dd  0x26251022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
 dd  0x20011022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
-; following card is untested
+
+;dd  0x08031516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
+
+; following cards are untested
 dd  0x70161039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
+;dd  0x08001516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
+;dd  0x08911516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
+
 rb PCICARDS_ENTRY_SIZE	; end of list marker, do not remove
 endg
 

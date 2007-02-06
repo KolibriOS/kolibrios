@@ -269,14 +269,12 @@ endp
 
 checksum:
     pusha
-
+    mov     eax, [checkAdd1]
     xor     edx, edx		      ; edx is the accumulative checksum
     xor     ebx, ebx
     mov     cx, [checkSize1]
     shr     cx, 1
     jz	    cs1_1
-
-    mov     eax, [checkAdd1]
 
 cs1:
     mov     bh, [eax]
@@ -301,10 +299,10 @@ cs_test2:
     cmp     cx, 0
     jz	    cs_exit			; Finished if no 2nd buffer
 
+    mov     eax, [checkAdd2]
+
     shr     cx, 1
     jz	    cs2_1
-
-    mov     eax, [checkAdd2]
 
 cs2:
     mov     bh, [eax]
@@ -673,6 +671,13 @@ nots9:
 
 
 nots10:
+    cmp     eax, 11
+    jnz     nots11
+
+    call    socket_read_packet
+    ret
+
+nots11:
     cmp     eax, 254
     jnz     notdump
 

@@ -460,10 +460,10 @@ rtl8139_transmit:
 	lea	edx, [edx+ecx*4+RTL8139_REG_TSD0]
 	push	edx ebx
 	in	ax, dx
-	and	ax, (1 shl RTL8139_BIT_TOK) or (1 shl RTL8139_BIT_OWN)
+	test    ax, 0x1fff ; or no size given
+      jz      .send_packet
+      and	ax, (1 shl RTL8139_BIT_TOK) or (1 shl RTL8139_BIT_OWN)
 	cmp	ax, (1 shl RTL8139_BIT_TOK) or (1 shl RTL8139_BIT_OWN)
-	jz	.send_packet
-	test	ax, 0x1fff ; or no size given
 	jz	.send_packet
 ; wait for timeout
 	mov	ebx, RTL8139_TX_TIMEOUT
