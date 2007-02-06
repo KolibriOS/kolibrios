@@ -3468,7 +3468,7 @@ calculatebackground:   ; background
 
         mov   edi,display_data              ; set os to use all pixels
         mov   eax,0x01010101
-        mov   ecx,0x1fff00 / 4
+        mov   ecx,0x15ff00 / 4
         rep   stosd
 
         mov   byte [0xFFF0], 0              ; do not draw background!

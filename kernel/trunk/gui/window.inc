@@ -552,7 +552,7 @@ repos_windows:
     jle    .lp3
         mov     [edi+WDATA.box.width],ebx
   .lp3: sub     ebx,[edi+WDATA.box.width]
-        mov     [esi+WDATA.box.left],ebx
+        mov     [edi+WDATA.box.left],ebx
   .lp4: mov     eax,[edi+WDATA.box.top]
         add     eax,[edi+WDATA.box.height]
     mov    ebx,[0x0000fe04]
