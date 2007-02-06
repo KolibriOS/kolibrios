@@ -9,7 +9,7 @@ int fgetc(FILE* f)
     return EOF;
 
   if(f->remain ==0)
-  { f->filepos+=4096;
+  { f->filepos+=8192;
     if(!fill_buff(f))
       return EOF;
   };

@@ -72,6 +72,7 @@ static char *roundl(long double fract, int *expv, char *start, char *end,
 static char *exponentl(char *p, int expv, unsigned char fmtch);
 
 static char NULL_REP[] = "(null)";
+static char buf[BUF];		/* space for %c, %[diouxX], %[eEfgG] */
 
 int _doprnt(char *dest, size_t maxlen, const char *fmt0, va_list argp)
 {
@@ -95,11 +96,10 @@ int _doprnt(char *dest, size_t maxlen, const char *fmt0, va_list argp)
   char sign;			/* sign prefix (' ', '+', '-', or \0) */
   char softsign;		/* temporary negative sign for floats */
   const char *digs;		/* digits for [diouxX] conversion */
-  char buf[BUF];		/* space for %c, %[diouxX], %[eEfgG] */
   char *p;
+  digs = "0123456789abcdef";
   
   fmt = fmt0;
-  digs = "0123456789abcdef";
   p = dest;
 
   for (cnt = 0;; ++fmt)
@@ -752,5 +752,18 @@ static int isspeciall(long double d, char *bufp)
   return(3);
 }
 
+static unsigned int strlen(const char* string)
+{
+	int i;
+	i=0;
+	while (*string++) i++;
+	return i;
+}
 
+static char* strcpy(char* dst,const char* src)
+{
+	char* res= dst;
+	while(*dst++ = *src++) ;
+	return res;	
+}
 

@@ -1,4 +1,4 @@
-int strlen(const char* string)
+unsigned int strlen(const char* string)
 {
 	int i;
 	i=0;

@@ -12,7 +12,7 @@ int fputc(int c,FILE* f)
     if(!f->remain)
     { if (!write_buffer(f))
         return EOF;
-      f->filepos+=4096;        
+      f->filepos+=8192;        
       fill_buff(f);
     };  
         
@@ -30,7 +30,7 @@ int write_buffer(FILE *f)
 { size_t bytes;
   int err;
 
-  bytes= f->filepos+4096 > f->filesize ? f->strpos:4096;   
+  bytes= f->filepos+8192 > f->filesize ? f->strpos:8192;   
   err=write_file(f->filename,f->buffer,f->filepos,bytes,&bytes);
   if(err)
     return 0;

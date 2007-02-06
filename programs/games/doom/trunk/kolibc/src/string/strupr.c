@@ -1,5 +1,4 @@
-#include "ctype.h"
-#include "string.h"
+#include "kolibc.h"
 
 char * strupr(char *_s)
 {

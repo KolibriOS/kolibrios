@@ -1,17 +1,22 @@
 
 #include "mf.h"
-void * memcpy(void * dst, void * src, size_t count);
+#include "kolibri.h"
+
+void * kmemcpy(void * dst, const void * src, size_t count);
 
 static struct m_state ms;
 
-void init_malloc(void* p)
+void mf_init()
 { mchunkptr chp;
   int i;
-  dword psize= 0x10000;
+  char  *p;
   
-  psize-= 40;
+  dword psize=  0x40000;
+  p = 0x2600000;      //(char*)UserAlloc(psize);
   ms.top = (mchunkptr)p;
   ms.topsize = psize;
+  ms.smallmap=0;
+  ms.treemap=0;
       
   chp = (mchunkptr)p;
   chp->head=psize|1;
@@ -25,7 +30,7 @@ void init_malloc(void* p)
   };   
 }
 
-void *malloc(size_t size)
+void *dlmalloc(size_t size)
 { size_t nb, psize,rsize;
   dword idx;
   dword smallbits;
@@ -36,20 +41,20 @@ void *malloc(size_t size)
   
   if (nb < 256)
   {
-//    idx = nb  >> 3;
+    idx = nb  >> 3;
 //    smallbits= (-1<<idx) & ms.smallmap;
     _asm
     {
-      mov ecx, [nb]
+      mov ecx, [idx]
       or eax, -1
       shl eax, cl
-      and eax, [ms.smallmap] 
-      mov [smallbits], eax    
+      and eax, dword ptr [ms] 
+      mov dword ptr [smallbits], eax    
     }
     if (smallbits)
     {
       _asm
-      { bsf eax, [smallbits]
+      { bsf eax, dword ptr [smallbits]
         mov [idx], eax   
       };
     
@@ -65,7 +70,7 @@ void *malloc(size_t size)
         _asm
         {
           mov eax, [idx]
-          btr [ms.smallmap], eax
+          btr dword ptr [ms], eax
         }
       }  
       B->fd = F;
@@ -119,7 +124,7 @@ void *malloc(size_t size)
   return 0; 
 };
 
-void free(void *mem)
+void dlfree(void *mem)
 { size_t psize;
   size_t prevsize;
   size_t nsize;
@@ -309,7 +314,7 @@ static void* malloc_small(size_t nb)
   dword i;
   
   _asm
-  { bsf ecx,[ms.treemap]
+  { bsf ecx,dword ptr [ms+4]
     mov [i], ecx
   }  
   v = t =  ms.treebins[i];
@@ -481,7 +486,7 @@ static void* malloc_large(size_t nb)
   {
     mchunkptr r = chunk_plus_offset((mchunkptr)v, nb);
     unlink_large_chunk(v);
-    if (rsize < 256)
+    if (rsize < 16)
     {      
       v->head = (rsize + nb)|PINUSE_BIT|CINUSE_BIT;
       ((mchunkptr)((char*)v+rsize + nb))->head |= PINUSE_BIT;
@@ -491,7 +496,7 @@ static void* malloc_large(size_t nb)
       v->head = nb|PINUSE_BIT|CINUSE_BIT;
       r->head = rsize|PINUSE_BIT;
       ((mchunkptr)((char*)r+rsize))->prev_foot = rsize;
-      insert_large_chunk((tchunkptr)r, rsize);
+      insert_chunk((mchunkptr)r, rsize);
     }
     return chunk2mem(v);
   }
@@ -501,10 +506,10 @@ static void* malloc_large(size_t nb)
 static void* internal_realloc(struct m_state *m, void* oldmem,
                                size_t bytes);
 
-void* realloc(void* oldmem, size_t bytes)
+void* dlrealloc(void* oldmem, size_t bytes)
 {
   if (oldmem == 0)
-    return malloc(bytes);
+    return dlmalloc(bytes);
   else
   {
     struct m_state *m = &ms;
@@ -577,19 +582,19 @@ static void* internal_realloc(struct m_state *m, void* oldmem, size_t bytes)
   if (newp != 0)
   {
     if (extra != 0) 
-       free(extra);
+       dlfree(extra);
       
     check_inuse_chunk(m, newp);
     return chunk2mem(newp);
   }
   else
   {
-    void* newmem = malloc(bytes);
+    void* newmem = dlmalloc(bytes);
     if (newmem != 0)
     {
        size_t oc = oldsize - 4;
        memcpy(newmem, oldmem, (oc < bytes)? oc : bytes);
-       free(oldmem);
+       dlfree(oldmem);
     }
     return newmem;
   }

@@ -15,9 +15,11 @@ typedef unsigned int dword;
 typedef unsigned int fpos_t;
 typedef unsigned int size_t;
 
-#define NULL (void*)0
+#//define NULL (void*)0
 
-typedef enum SEEKPOS {SEEK_SET=0,SEEK_CUR,SEEK_END};
+#define SEEK_SET 0
+#define SEEK_CUR 1
+#define SEEK_END 2
 
 #define FILE_OPEN_READ    0x01
 #define FILE_OPEN_WRITE   0x02
@@ -111,6 +113,7 @@ extern short int _is[128];
 
 #define abs(i) (((i)<0)?(-(i)):(i))
 
+#if 0
 extern int atoib(char *s,int b);
 extern int atoi(char *s);
 extern char tolower(char c);
@@ -139,14 +142,29 @@ extern char toupper(char c);
 #define isascii(char)   ( (unsigned)char < 0x80 )
 
 extern void* memchr(const void*,int,int);
+extern extern void* memchr(const void*,int,int);
 extern int memcmp(const void*,const void*,int);
-extern void* memcpy(void*,const void*,int);
+extern void* memcpy(void*,const void*,size_t);
+void kmemset (void *dst, int val, size_t count);
+
+extern void* memmove(void*,const void*,int);
+extern void* memset(void*,int,int);
+int memcmp(const void*,const void*,int);
+extern void* memcpy(void*,const void*,size_t);
+void kmemset (void *dst, int val, size_t count);
+
 extern void* memmove(void*,const void*,int);
 extern void* memset(void*,int,int);
 
-extern void *malloc(size_t size);
-extern void* realloc(void* oldmem, size_t bytes);
-extern void free(void *mem);
+#endif
+
+void debug_out_str(char* str);
+
+void* _cdecl dlmalloc(size_t size);
+void* _cdecl dlrealloc(void* oldmem, size_t bytes);
+void  _cdecl dlfree(void *mem);
+
+//double pow_test(x,y);
 
 
 #ifdef __cplusplus
@@ -155,3 +173,5 @@ extern "C"
 #endif
 
 #endif  //kolibc_h
+
+

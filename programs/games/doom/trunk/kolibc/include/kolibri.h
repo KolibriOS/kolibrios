@@ -64,6 +64,8 @@ typedef struct
 
 void  _stdcall InitHeap(int heap_size);
 void* _stdcall UserAlloc(int size);
+int   _stdcall UserFree(void* p);
+ 
 void  _stdcall GetNotify(DWORD *event);
 
 //void _stdcall CreateThread(void *fn, char *p_stack);
@@ -82,13 +84,16 @@ int _stdcall   StopBuffer(DWORD hSrv, DWORD hBuff);
 void _stdcall debug_out_hex(DWORD val);
 void debug_out_str(char* str);
 
-int _stdcall get_fileinfo(char *name,FILEINFO* pinfo);
-int _stdcall read_file (char *name,char*buff,int offset, int count,int *reads);
-int _stdcall write_file(char *name,char*buff,int offset,int count,int *writes);
+int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
+int _stdcall read_file (const char *name,char*buff,DWORD offset, DWORD count,DWORD *reads);
+int _stdcall write_file(const char *name,char*buff,int offset,int count,int *writes);
 
 //void exit();
-int _cdecl get_key(void);
+int _stdcall get_key(int *key);
+int _stdcall remap_key(int key);
+
 int _cdecl get_button_id();
+
 void delay(int val);
 int wait_for_event(int time);
 int wait_for_event_infinite();

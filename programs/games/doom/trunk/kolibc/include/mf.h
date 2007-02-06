@@ -1,4 +1,14 @@
-#include "kolibc.h"
+
+
+//#include "kolibc.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif /* __cplusplus */
+
+typedef unsigned int dword;
+typedef unsigned int size_t;
+
 
 #define PINUSE_BIT    1
 #define CINUSE_BIT    2
@@ -41,7 +51,7 @@ struct t_chunk
 typedef struct t_chunk* tchunkptr;
 typedef struct t_chunk* tbinptr;
 
-struct m_state
+typedef struct m_state 
 {
   dword      smallmap;
   dword      treemap;
@@ -55,27 +65,19 @@ struct m_state
   tbinptr    treebins[32];
 };
 
-#ifdef __cplusplus
-extern "C" {
-#endif /* __cplusplus */
 
-extern struct m_state ms;
-
-void init_malloc(void* p);
-void* mf_alloc(size_t);
-void  mf_free(void*);
-
-#ifdef __cplusplus
-}
-#endif /* __cplusplus */
+void _cdecl  mf_init();
+void* _cdecl dlmalloc(size_t);
+void* _cdecl dlrealloc(void *,size_t);
+void  _cdecl dlfree(void*);
 
 
 dword compute_tree_index(size_t s);
 
-void insert_chunk(mchunkptr P, size_t S);
-void insert_large_chunk(tchunkptr X, size_t S);
+static void insert_chunk(mchunkptr P, size_t S);
+static void insert_large_chunk(tchunkptr X, size_t S);
 
-void unlink_large_chunk(tchunkptr X);
+static void unlink_large_chunk(tchunkptr X);
 
 //void replace_dv(mchunkptr P, size_t S);
 static void* malloc_small(size_t nb);
@@ -88,4 +90,11 @@ static void* malloc_large(size_t nb);
 #define chunk2mem(p)    (void*)((char*)p + 8)
 #define mem2chunk(mem)  (mchunkptr)((char*)mem - 8)
 #define chunk_plus_offset(p, s)  ((mchunkptr)(((char*)(p)) + (s)))
+
+
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
+
+
 

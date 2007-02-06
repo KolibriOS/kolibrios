@@ -1,23 +1,23 @@
-#include "kolibc.h"
+
 #include "kolibri.h"
+#include "kolibc.h"
 
 int fsetpos(FILE* f,const fpos_t * pos)
 { int err;
   size_t bytes;
   
-  if (*pos>=0)
-  {
-    bytes= *pos & -4096;
-    err=read_file(f->filename,f->buffer,bytes,
-                             4096,&bytes);
-    if (err) return EOF; 
-    if(!bytes) return EOF;    
-    f->filepos= *pos & -4096;
-    f->strpos = *pos & 4095;
-    f->remain = 4096-f->strpos;
-    f->stream = f->buffer+f->strpos;
-    return 0;
-  }
-  else
-    return EOF;
+  bytes = *pos;
+  
+  bytes= *pos & -8192;
+  err=read_file(f->filename,f->buffer,bytes,
+                             8192,&bytes);
+  if(bytes == -1)
+    return EOF;                           
+    
+  f->filepos= *pos & -8192;
+  f->strpos = *pos & 8191;
+  f->remain = 8192-f->strpos;
+  f->stream = f->buffer+f->strpos;
+  return 0;
 }
+
