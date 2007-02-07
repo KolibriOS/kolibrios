@@ -261,23 +261,6 @@ proc vesa_init_cursor stdcall, dst:dword, src:dword
 endp
 
 align 4
-alloc_cursor:
-
-           mov eax, CURSOR_SIZE
-           call malloc
-           test eax, eax
-           jz .fail
-
-           xor ebx, ebx
-           mov [eax+CURSOR.magic], 'CURS'
-;           mov [eax+CURSOR.destructor],  CURSOR_SIZE
-           mov [eax+CURSOR.pid], ebx
-           mov [eax+CURSOR.hot_x], ebx
-           mov [eax+CURSOR.hot_y], ebx
-.fail:
-           ret
-
-align 4
 proc set_cursor stdcall, hcursor:dword
            mov eax, [hcursor]
            cmp [eax+CURSOR.magic], 'CURS'
@@ -426,31 +409,6 @@ proc delete_cursor stdcall, hcursor:dword
            call [eax+APPOBJ.destroy]
 .fail:
            ret
-
-;@@:
-;           mov eax, [hw_cursor]
-;           test eax, eax
-;           jz @F
-
-;           xor ebx, ebx
-;           mov ecx, [esi+CURSOR.base]
-;           mov [hsrv], eax
-;           mov [io_code], VIDEO_FREE
-;           mov [input], ecx
-;           mov [inp_size], 4
-;           mov [output], ebx
-;           mov [out_size], ebx
-
-;           lea eax, [hsrv]
-;           stdcall srv_handler, eax
-;           jmp .exit
-;@@:
-;           stdcall kernel_free, [esi+CURSOR.base]
-;.exit:
-;           mov eax, [hcursor]
-;           call destroy_kernel_object
-;.fail:
-;           ret
 endp
 
 ; param
@@ -462,7 +420,6 @@ destroy_cursor:
            push eax
            stdcall kernel_free, [eax+CURSOR.base]
            pop eax
-
 
            call destroy_kernel_object
            ret

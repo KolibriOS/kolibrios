@@ -27,6 +27,7 @@ malloc:
            jae .large
 
            mov ecx, esi
+           shr ecx, 3
            or eax, -1
            shl eax, cl
            and eax, [mst.smallmap]
@@ -687,7 +688,6 @@ malloc_small:
            lea eax, [edi+ebp+4]
            pop edi
            or ecx, 3
-           pop esi
            mov [ebx+4], ecx
            or dword [eax], 1
            pop ebp
@@ -918,9 +918,9 @@ malloc_large:
            lea esi, [ebx+ebp]
            call unlink_large_chunk
 
-; if (rsize < 256)
+; if (rsize < 16)
 
-           cmp edi, 256
+           cmp edi, 16
            jae .large
 
 ; v->head = (rsize + nb)|PINUSE_BIT|CINUSE_BIT;
@@ -954,8 +954,9 @@ malloc_large:
 ; insert_large_chunk((tchunkptr)r, rsize);
 
            mov [esi+edi], edi
-           mov ebx, edi
-           call insert_large_chunk
+           mov eax, edi
+           mov ecx, esi
+           call insert_chunk
 
            lea eax, [ebp+8]
            add esp, 8

@@ -491,7 +491,7 @@ proc ac97_irq
            call [ctrl.ctrl_write8]
 
            mov eax, [civ_val]
-           add eax, 2
+           add eax, 1
            and eax, 31
            mov ebx, dword [buff_list+eax*4]
 
