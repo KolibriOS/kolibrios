@@ -1,3 +1,4 @@
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -8,6 +9,18 @@
 #include "m_argv.h"
 #include "doomstat.h"
 #include "i_net.h"
+
+#ifdef DLHEAP
+
+void* _cdecl dlmalloc(size_t);
+void  _cdecl dlfree(void*);
+void _cdecl mf_init();
+
+#define malloc dlmalloc
+#define free dlfree
+#define realloc dlrealloc
+
+#endif
 
 #ifndef B_HOST_IS_LENDIAN
 #define B_HOST_IS_LENDIAN 1
@@ -26,7 +39,7 @@
         ((unsigned short int)((((unsigned short int)(x) & 0x00ff) << 8) | \
                               (((unsigned short int)(x) & 0xff00) >> 8)))
 #endif
-	  
+          
 #ifndef htonl
 #define htonl(x) ntohl(x)
 #endif
@@ -35,7 +48,7 @@
 #endif
 #endif
 
-void	NetSend (void);
+void    NetSend (void);
 int NetListen (void);
 
 
@@ -44,18 +57,19 @@ int NetListen (void);
 //
 
 #ifndef IPPORT_USERRESERVED
-#define IPPORT_USERRESERVED	5000
+#define IPPORT_USERRESERVED     5000
 #endif
 
-int	DOOMPORT = (IPPORT_USERRESERVED+0x1d);
-int	sendsocket[MAXNETNODES];
-int	insocket;
+int     DOOMPORT = (IPPORT_USERRESERVED+0x1d);
+int     sendsocket[MAXNETNODES];
+int     insocket;
 
-void	(*netget) (void);
-void	(*netsend) (void);
+void    (*netget) (void);
+void    (*netsend) (void);
 
 static int first_user_port=IPPORT_USERRESERVED+0x1D+0x10;
 
+/**********
 int GetAvailPort(void)
 {
  int i,d0;
@@ -70,11 +84,11 @@ int GetAvailPort(void)
  I_Error("Unable to get new port\n");
  return -1;
 }
-
+**********/
 
 int CreateInputUDPsocket(void)
 {
- int d0;
+ int d0=0;
  //__asm__ __volatile__(
  //    "int $0x40"
  //    :"=a"(d0)
@@ -108,7 +122,12 @@ int CreateOutputUDPSocket(int remote_ip)
 void PacketSend (void)
 {
  int c;
- doomdata_t sw;			
+ doomdata_t sw; 
+ 
+ 
+ //printf("ERROR Packet Send\n\r");
+
+                
  // byte swap
  sw.checksum = htonl(netbuffer->checksum);
  sw.player = netbuffer->player;
@@ -158,12 +177,13 @@ int GetLocalAddress (void)
 //
 // I_InitNetwork
 //
+
 void I_InitNetwork (void)
 {
-    boolean		trueval = true;
-    int			i;
-    int			p;
-	
+    boolean             trueval = true;
+    int                 i;
+    int                 p;
+        
     doomcom = malloc (sizeof (*doomcom) );
     memset (doomcom, 0, sizeof(*doomcom) );
     
@@ -171,25 +191,25 @@ void I_InitNetwork (void)
     i = M_CheckParm ("-dup");
     if (i && i< myargc-1)
     {
-	doomcom->ticdup = myargv[i+1][0]-'0';
-	if (doomcom->ticdup < 1)
-	    doomcom->ticdup = 1;
-	if (doomcom->ticdup > 9)
-	    doomcom->ticdup = 9;
+        doomcom->ticdup = myargv[i+1][0]-'0';
+        if (doomcom->ticdup < 1)
+            doomcom->ticdup = 1;
+        if (doomcom->ticdup > 9)
+            doomcom->ticdup = 9;
     }
     else
-	doomcom-> ticdup = 1;
-	
+        doomcom-> ticdup = 1;
+        
     if (M_CheckParm ("-extratic"))
-	doomcom-> extratics = 1;
+        doomcom-> extratics = 1;
     else
-	doomcom-> extratics = 0;
-		
+        doomcom-> extratics = 0;
+                
     p = M_CheckParm ("-port");
     if (p && p<myargc-1)
     {
-	DOOMPORT = atoi (myargv[p+1]);
-//	__libclog_printf ("using alternate port %i\n",DOOMPORT);
+        DOOMPORT = atoi (myargv[p+1]);
+//      __libclog_printf ("using alternate port %i\n",DOOMPORT);
     }
 
     // parse network game options,
@@ -198,13 +218,13 @@ void I_InitNetwork (void)
 
     if (!i)
     {
-	// single player game
-	netgame = false;
-	doomcom->id = DOOMCOM_ID;
-	doomcom->numplayers = doomcom->numnodes = 1;
-	doomcom->deathmatch = false;
-	doomcom->consoleplayer = 0;
-	return;
+        // single player game
+        netgame = false;
+        doomcom->id = DOOMCOM_ID;
+        doomcom->numplayers = doomcom->numnodes = 1;
+        doomcom->deathmatch = false;
+        doomcom->consoleplayer = 0;
+        return;
     }
 
     netsend = PacketSend;
@@ -214,7 +234,7 @@ void I_InitNetwork (void)
     // parse player number and host list
     doomcom->consoleplayer = myargv[i+1][0]-'1';
 
-    doomcom->numnodes = 1;	// this node for sure
+    doomcom->numnodes = 1;      // this node for sure
     doomcom->id = DOOMCOM_ID;
     doomcom->numplayers = doomcom->numnodes;
     sendsocket[0]=0;
@@ -226,17 +246,21 @@ void I_InitNetwork (void)
  //   __libclog_printf("DOOM: Input UDP socket is %d\n",insocket);
 }
 
-
 void I_NetCmd (void)
 {
+
+
+    //printf("ERROR NetCmd");
+
+
     if (doomcom->command == CMD_SEND)
     {
-	netsend ();
+//      netsend ();
     }
     else if (doomcom->command == CMD_GET)
     {
-	netget ();
+//      netget ();
     }
     else
-	I_Error ("Bad net cmd: %i\n",doomcom->command);
+        I_Error ("Bad net cmd: %i\n",doomcom->command);
 }

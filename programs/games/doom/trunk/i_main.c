@@ -17,32 +17,40 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	Main program, simply calls D_DoomMain high level loop.
+//      Main program, simply calls D_DoomMain high level loop.
 //
 //-----------------------------------------------------------------------------
 
 static const char
 rcsid[] = "$Id: i_main.c,v 1.4 1997/02/03 22:45:10 b1 Exp $";
 
-
-//#include "SDL.h"
-
 #include "doomdef.h"
 
 #include "m_argv.h"
 #include "d_main.h"
+#include "kolibri.h"
 
-int
-main( int	argc, char** argv) 
+int main(int argc, char **argv) 
 { 
-    static char * tmp[]=
-	{"/hd/1/menuetos/doom/mdoom",
-	 NULL};
+//    static char * tmp[]=
+//      {"/hd/1/menuetos/doom/mdoom",
+//       NULL};
     myargc = 1; 
-    myargv = tmp;
+    myargv = argv;
  
- //   chdir("/hd/1/menuetos/doom");
-
+//  InitHeap(32*1024*1024);
+  _asm
+  {
+    push ebx
+    push ecx
+    mov eax, 66
+    mov ebx, 1
+    mov ecx, 1
+    int 0x40
+    pop ecx
+    pop ebx
+  };
+  
     D_DoomMain (); 
 
     return 0;

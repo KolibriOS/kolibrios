@@ -1074,13 +1074,13 @@ void ST_drawWidgets(boolean refresh)
 
     STlib_updateBinIcon(&w_armsbg, refresh);
 
-    for (i=0;i<5;i++)
-      STlib_updateMultIcon(&w_arms[i], refresh);
+    for (i=0;i<6;i++)
+	STlib_updateMultIcon(&w_arms[i], refresh);
 
     STlib_updateMultIcon(&w_faces, refresh);
 
     for (i=0;i<3;i++)
-  	  STlib_updateMultIcon(&w_keyboxes[i], refresh);
+	STlib_updateMultIcon(&w_keyboxes[i], refresh);
 
     STlib_updateNum(&w_frags, refresh);
 
@@ -1273,7 +1273,7 @@ void ST_initData(void)
     for (i=0;i<3;i++)
 	keyboxes[i] = -1;
 
- //  STlib_init();
+    STlib_init();
 
 }
 

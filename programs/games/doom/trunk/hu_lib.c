@@ -25,11 +25,10 @@ rcsid[] = "$Id: hu_lib.c,v 1.3 1997/01/26 07:44:58 b1 Exp $";
 
 #include <ctype.h>
 
-#include "m_swap.h"
-
 #include "doomdef.h"
 
 #include "v_video.h"
+#include "m_swap.h"
 
 #include "hu_lib.h"
 #include "r_local.h"

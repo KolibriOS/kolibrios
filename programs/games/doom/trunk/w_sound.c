@@ -24,8 +24,6 @@
 static const char
 rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
-#include <windows.h>
-#include <dsound.h>
 #include "sounds.h"
 
 char MsgText[256];
@@ -67,13 +65,13 @@ void I_CreateSound(void)
   hret = DirectSoundCreate8(NULL, &lpDS, NULL);
   if (hret != DS_OK)
   {
-     printf("failed DirectSoundCreate");
+     //printf("failed DirectSoundCreate");
      return;
   }
 
   hret = lpDS->lpVtbl->SetCooperativeLevel(lpDS, win, DSSCL_PRIORITY);
   if (hret != DS_OK)
-       printf("failled DirectSound.SetCooperativeLevel");
+       //printf("failled DirectSound.SetCooperativeLevel");
 
   memset( &wfx,0, sizeof(WAVEFORMATEX) ); 
   wfx.wFormatTag      = WAVE_FORMAT_PCM; 
@@ -119,7 +117,7 @@ void I_SubmitSound(signed short *mixbuffer)
   hret=lpMix[mixbuff]->lpVtbl->Lock(lpMix[mixbuff],0,MIXBUFFERSIZE,&pPtr1,
                            &dwSize1,&pPtr2,&dwSize2,0);
   if (hret!=DS_OK)
-  {	printf("Error locking on play start");
+  {	//printf("Error locking on play start");
  	return ;
   }
   memcpy(pPtr1, (void*)mixbuffer, MIXBUFFERSIZE);

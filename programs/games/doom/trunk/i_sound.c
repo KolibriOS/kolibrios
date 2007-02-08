@@ -17,7 +17,7 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	System interface for sound.
+//      System interface for sound.
 //
 //-----------------------------------------------------------------------------
 
@@ -55,37 +55,37 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 
 // Needed for calling the actual sound output.
-#define SAMPLECOUNT		512
-#define NUM_CHANNELS	16
+#define SAMPLECOUNT             512
+#define NUM_CHANNELS    16
 // It is 2 for 16bit, and 2 for two channels.
 #define BUFMUL                  4
-#define MIXBUFFERSIZE		(SAMPLECOUNT*BUFMUL)
+#define MIXBUFFERSIZE           (SAMPLECOUNT*BUFMUL)
 
-#define SAMPLERATE		11025	// Hz
-#define SAMPLESIZE		2   	// 16bit
+#define SAMPLERATE              11025   // Hz
+#define SAMPLESIZE              2       // 16bit
 
 // The actual lengths of all sound effects.
-int 		lengths[NUMSFX];
+int             lengths[NUMSFX];
 
 // The actual output device.
-int	audio_fd;
+int     audio_fd;
 
 // The global mixing buffer.
 // Basically, samples from all active internal channels
 //  are modifed and added, and stored in the buffer
 //  that is submitted to the audio device.
-signed short	mixbuffer[MIXBUFFERSIZE];
+signed short    mixbuffer[MIXBUFFERSIZE];
 
 
 // The channel step amount...
-unsigned int	channelstep[NUM_CHANNELS];
+unsigned int    channelstep[NUM_CHANNELS];
 // ... and a 0.16 bit remainder of last step.
-unsigned int	channelstepremainder[NUM_CHANNELS];
+unsigned int    channelstepremainder[NUM_CHANNELS];
 
 
 // The channel data pointers, start and end.
-unsigned char*	channels[NUM_CHANNELS];
-unsigned char*	channelsend[NUM_CHANNELS];
+unsigned char*  channels[NUM_CHANNELS];
+unsigned char*  channelsend[NUM_CHANNELS];
 
 
 // Time/gametic that the channel started playing,
@@ -93,27 +93,27 @@ unsigned char*	channelsend[NUM_CHANNELS];
 //  has lowest priority.
 // In case number of active sounds exceeds
 //  available channels.
-int		channelstart[NUM_CHANNELS];
+int             channelstart[NUM_CHANNELS];
 
 // The sound in channel handles,
 //  determined on registration,
 //  might be used to unregister/stop/modify,
 //  currently unused.
-int 		channelhandles[NUM_CHANNELS];
+int             channelhandles[NUM_CHANNELS];
 
 // SFX id of the playing sound effect.
 // Used to catch duplicates (like chainsaw).
-int		channelids[NUM_CHANNELS];			
+int             channelids[NUM_CHANNELS];                       
 
 // Pitch to stepping lookup, unused.
-int		steptable[256];
+int             steptable[256];
 
 // Volume lookups.
-int		vol_lookup[128*256];
+int             vol_lookup[128*256];
 
 // Hardware left and right channel volume lookup.
-int*		channelleftvol_lookup[NUM_CHANNELS];
-int*		channelrightvol_lookup[NUM_CHANNELS];
+int*            channelleftvol_lookup[NUM_CHANNELS];
+int*            channelrightvol_lookup[NUM_CHANNELS];
 
 
 //
@@ -155,7 +155,7 @@ void* getsfx (char* sfxname, int* len)
     // Debug.
     // fprintf( stderr, "." );
     //fprintf( stderr, " -loading  %s (lump %d, %d bytes)\n",
-    //	     sfxname, sfxlump, size );
+    //       sfxname, sfxlump, size );
     //fflush( stderr );
     
     sfx = (unsigned char*)W_CacheLumpNum( sfxlump, PU_STATIC );
@@ -193,54 +193,54 @@ void* getsfx (char* sfxname, int* len)
 // Returns a handle.
 //
 
-static unsigned short	handlenums = 0;
+static unsigned short   handlenums = 0;
 
 int addsfx(int sfxid, int volume, int step, int seperation)
 {
 
-    int		i;
-    int		rc = -1;
+    int         i;
+    int         rc = -1;
     
-    int		oldest = gametic;
-    int		oldestnum = 0;
-    int		slot;
+    int         oldest = gametic;
+    int         oldestnum = 0;
+    int         slot;
 
-    int		rightvol;
-    int		leftvol;
+    int         rightvol;
+    int         leftvol;
 
     // Chainsaw troubles.
     // Play these sound effects only one at a time.
     if ( sfxid == sfx_sawup
-	 || sfxid == sfx_sawidl
-	 || sfxid == sfx_sawful
-	 || sfxid == sfx_sawhit
-	 || sfxid == sfx_stnmov
-	 || sfxid == sfx_pistol	 )
+         || sfxid == sfx_sawidl
+         || sfxid == sfx_sawful
+         || sfxid == sfx_sawhit
+         || sfxid == sfx_stnmov
+         || sfxid == sfx_pistol  )
     {
-	// Loop all channels, check.
-	for (i=0 ; i<NUM_CHANNELS ; i++)
-	{
-	    // Active, and using the same SFX?
-	    if ( (channels[i])
-		 && (channelids[i] == sfxid) )
-	    {
-		// Reset.
-		channels[i] = 0;
-		// We are sure that iff,
-		//  there will only be one.
-		break;
-	    }
-	}
+        // Loop all channels, check.
+        for (i=0 ; i<NUM_CHANNELS ; i++)
+        {
+            // Active, and using the same SFX?
+            if ( (channels[i])
+                 && (channelids[i] == sfxid) )
+            {
+                // Reset.
+                channels[i] = 0;
+                // We are sure that iff,
+                //  there will only be one.
+                break;
+            }
+        }
     }
 
     // Loop all channels to find oldest SFX.
     for (i=0; (i<NUM_CHANNELS) && (channels[i]); i++)
     {
-	if (channelstart[i] < oldest)
-	{
-	    oldestnum = i;
-	    oldest = channelstart[i];
-	}
+        if (channelstart[i] < oldest)
+        {
+            oldestnum = i;
+            oldest = channelstart[i];
+        }
     }
 
     // Tales from the cryptic.
@@ -248,9 +248,9 @@ int addsfx(int sfxid, int volume, int step, int seperation)
     // If not, we simply overwrite the first one, 0.
     // Probably only happens at startup.
     if (i == NUM_CHANNELS)
-	slot = oldestnum;
+        slot = oldestnum;
     else
-	slot = i;
+        slot = i;
 
     // Okay, in the less recent channel,
     //  we will handle the new SFX.
@@ -261,7 +261,7 @@ int addsfx(int sfxid, int volume, int step, int seperation)
 
     // Reset current handle number, limited to 0..100.
     if (!handlenums)
-	handlenums = 100;
+        handlenums = 100;
 
     // Assign current handle number.
     // Preserved so sounds could be stopped (unused).
@@ -282,17 +282,17 @@ int addsfx(int sfxid, int volume, int step, int seperation)
     //  x^2 seperation,
     //  adjust volume properly.
     leftvol =
-	volume - ((volume*seperation*seperation) >> 16); ///(256*256);
+        volume - ((volume*seperation*seperation) >> 16); ///(256*256);
     seperation = seperation - 257;
     rightvol =
-	volume - ((volume*seperation*seperation) >> 16);	
+        volume - ((volume*seperation*seperation) >> 16);        
 
     // Sanity check, clamp volume.
     if (rightvol < 0 || rightvol > 127)
-	I_Error("rightvol out of bounds");
+        I_Error("rightvol out of bounds");
     
     if (leftvol < 0 || leftvol > 127)
-	I_Error("leftvol out of bounds");
+        I_Error("leftvol out of bounds");
     
     // Get the proper lookup table piece
     //  for this volume level???
@@ -321,10 +321,10 @@ void I_SetChannels()
   // Init internal lookups (raw data, mixing buffer, channels).
   // This function sets up internal lookups used during
   //  the mixing process. 
-  int		i;
-  int		j;
+  int           i;
+  int           j;
     
-  int*	steptablemid = steptable + 128;
+  int*  steptablemid = steptable + 128;
   
   // Okay, reset internal mixing channels to zero.
   for (i=0; i<NUM_CHANNELS; i++)
@@ -332,8 +332,8 @@ void I_SetChannels()
     channels[i] = 0;
   }
 
-  for (i=-128 ; i<128 ; i++)
-    steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
+//  for (i=-128 ; i<128 ; i++)
+//    steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
   
   // Generates volume lookup tables
   //  which also turn the unsigned samples
@@ -341,7 +341,7 @@ void I_SetChannels()
   for (i=0 ; i<128 ; i++)
     for (j=0 ; j<256 ; j++)
       vol_lookup[i*256+j] = (i*(j-128)*256)/127;
-}	
+}       
 
  
 void I_SetSfxVolume(int volume)
@@ -428,19 +428,19 @@ void I_UpdateSound( void )
   
   // Mix current sound data.
   // Data, from raw sound, for right and left.
-  register unsigned int	sample;
-  register int		dl;
-  register int		dr;
+  register unsigned int sample;
+  register int          dl;
+  register int          dr;
   
   // Pointers in global mixbuffer, left, right, end.
-  signed short*		leftout;
-  signed short*		rightout;
-  signed short*		leftend;
+  signed short*         leftout;
+  signed short*         rightout;
+  signed short*         leftend;
   // Step in mixbuffer, left and right, thus two.
-  int				step;
+  int                           step;
 
   // Mixing channel index.
-  int				chan;
+  int                           chan;
     
     // Left and right channel
     //  are in global mixbuffer, alternating.
@@ -457,65 +457,65 @@ void I_UpdateSound( void )
     //  that is 512 values for two channels.
     while (leftout != leftend)
     {
-	// Reset left/right value. 
-	dl = 0;
-	dr = 0;
+        // Reset left/right value. 
+        dl = 0;
+        dr = 0;
 
-	// Love thy L2 chache - made this a loop.
-	// Now more channels could be set at compile time
-	//  as well. Thus loop those  channels.
-	for ( chan = 0; chan < NUM_CHANNELS; chan++ )
-	{
-	    // Check channel, if active.
-	    if (channels[ chan ])
-	    {
-		// Get the raw data from the channel. 
-		sample = *channels[ chan ];
-		// Add left and right part
-		//  for this channel (sound)
-		//  to the current data.
-		// Adjust volume accordingly.
-		dl += channelleftvol_lookup[ chan ][sample];
-		dr += channelrightvol_lookup[ chan ][sample];
-	
-		channelstepremainder[ chan ] += channelstep[ chan ];
-	
-		channels[ chan ] += channelstepremainder[ chan ] >> 16;
-	
-		channelstepremainder[ chan ] &= 65536-1;
+        // Love thy L2 chache - made this a loop.
+        // Now more channels could be set at compile time
+        //  as well. Thus loop those  channels.
+        for ( chan = 0; chan < NUM_CHANNELS; chan++ )
+        {
+            // Check channel, if active.
+            if (channels[ chan ])
+            {
+                // Get the raw data from the channel. 
+                sample = *channels[ chan ];
+                // Add left and right part
+                //  for this channel (sound)
+                //  to the current data.
+                // Adjust volume accordingly.
+                dl += channelleftvol_lookup[ chan ][sample];
+                dr += channelrightvol_lookup[ chan ][sample];
+        
+                channelstepremainder[ chan ] += channelstep[ chan ];
+        
+                channels[ chan ] += channelstepremainder[ chan ] >> 16;
+        
+                channelstepremainder[ chan ] &= 65536-1;
 
-		// Check whether we are done.
-		if (channels[ chan ] >= channelsend[ chan ])
-		    channels[ chan ] = 0;
-	    }
-	}
-	
-	// Clamp to range. Left hardware channel.
-	// Has been char instead of short.
-	// if (dl > 127) *leftout = 127;
-	// else if (dl < -128) *leftout = -128;
-	// else *leftout = dl;
+                // Check whether we are done.
+                if (channels[ chan ] >= channelsend[ chan ])
+                    channels[ chan ] = 0;
+            }
+        }
+        
+        // Clamp to range. Left hardware channel.
+        // Has been char instead of short.
+        // if (dl > 127) *leftout = 127;
+        // else if (dl < -128) *leftout = -128;
+        // else *leftout = dl;
 
-	if (dl > 0x7fff)
-	    *leftout = 0x7fff;
-	else if (dl < -0x8000)
-	    *leftout = -0x8000;
-	else
-	    *leftout = dl;
+        if (dl > 0x7fff)
+            *leftout = 0x7fff;
+        else if (dl < -0x8000)
+            *leftout = -0x8000;
+        else
+            *leftout = dl;
 
-	// Same for right hardware channel.
-	if (dr > 0x7fff)
-	    *rightout = 0x7fff;
-	else if (dr < -0x8000)
-	    *rightout = -0x8000;
-	else
-	    *rightout = dr;
+        // Same for right hardware channel.
+        if (dr > 0x7fff)
+            *rightout = 0x7fff;
+        else if (dr < -0x8000)
+            *rightout = -0x8000;
+        else
+            *rightout = dr;
 
-	// Increment current pointers in mixbuffer.
-	leftout += step;
-	rightout += step;
+        // Increment current pointers in mixbuffer.
+        leftout += step;
+        rightout += step;
     }
-    I_SubmitSound(mixbuffer);
+ //   I_SubmitSound(mixbuffer);
 }
 
 
@@ -577,7 +577,7 @@ void I_InitSound()
     {
       // Load data from WAD file.
       S_sfx[i].data = getsfx( S_sfx[i].name, &lengths[i] );
-    }	
+    }   
     else
     {
       // Previously loaded already?
@@ -603,11 +603,11 @@ void I_InitSound()
 // Still no music done.
 // Remains. Dummies.
 //
-void I_InitMusic(void)		{ }
-void I_ShutdownMusic(void)	{ }
+void I_InitMusic(void)          { }
+void I_ShutdownMusic(void)      { }
 
-static int	looping=0;
-static int	musicdies=-1;
+static int      looping=0;
+static int      musicdies=-1;
 
 void I_PlaySong(int handle, int looping)
 {

@@ -26,8 +26,6 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
-//#include "SDL.h"
-//#include "SDL_timer.h"
 
 #include "doomdef.h"
 #include "m_misc.h"
@@ -39,36 +37,23 @@ rcsid[] = "$Id: m_bbox.c,v 1.1 1997/02/03 22:45:10 b1 Exp $";
 
 
 #include "i_system.h"
+
 #include "kolibri.h"
 
-int	mb_used = 6;
-
-
-int I_strncasecmp(char *str1, char *str2, int len)
-{
-	char c1, c2;
-
-	while ( *str1 && *str2 && len-- ) {
-		c1 = *str1++;
-		c2 = *str2++;
-		if ( toupper(c1) != toupper(c2) )
-			return(1);
-	}
-	return(0);
-}
+int     mb_used = 8;
 
 void
 I_Tactile
-( int	on,
-  int	off,
-  int	total )
+( int   on,
+  int   off,
+  int   total )
 {
   // UNUSED.
   on = off = total = 0;
 }
 
-ticcmd_t	emptycmd;
-ticcmd_t*	I_BaseTiccmd(void)
+ticcmd_t        emptycmd;
+ticcmd_t*       I_BaseTiccmd(void)
 {
     return &emptycmd;
 }
@@ -79,7 +64,7 @@ int  I_GetHeapSize (void)
  return mb_used*1024*1024;
 }
 
-byte* I_ZoneBase (int*	size)
+byte* I_ZoneBase (int*  size)
 {
  *size = mb_used*1024*1024;
  return (byte *) UserAlloc(*size);
@@ -91,21 +76,17 @@ byte* I_ZoneBase (int*	size)
 // returns time in 1/35 second tics
 //
 
-__declspec(dllimport) unsigned int __stdcall GetTickCount(void);
-
 int  I_GetTime (void)
 {
  unsigned int tm;
-// _asm
-// {
-//    mov eax, 26
-//    mov ebx, 9
-//    int 0x40
-//    mov [tm], eax
-// };
- 
- tm=GetTickCount()/10;
- 
+ _asm
+ {  push ebx
+    mov eax, 26
+    mov ebx, 9
+    int 0x40
+    mov dword ptr [tm], eax
+    pop ebx
+ };
  
  return (tm*TICRATE)/100;
 }
@@ -118,7 +99,7 @@ int  I_GetTime (void)
 void I_Init (void)
 {
   I_InitGraphics();
-  I_InitSound();
+ // I_InitSound();
 }
 
 //
@@ -148,15 +129,16 @@ void I_EndRead(void)
 {
 }
 
-byte*	I_AllocLow(int length)
+/***********
+byte*   I_AllocLow(int length)
 {
-    byte*	mem;
+    byte*       mem;
         
     mem = (byte *)malloc (length);
     memset (mem,0,length);
     return mem;
 }
-
+************/
 
 //
 // I_Error
@@ -165,18 +147,18 @@ extern boolean demorecording;
 
 void I_Error (char *error, ...)
 {
-    va_list	argptr;
+    va_list     argptr;
 
     // Message first.
     va_start (argptr,error);
-    printf ("Error: ");
-    printf (argptr);
-    printf ("\n");
+    printf ("Error:  ");
+    printf (error,argptr);
+    printf ("\n\r");
     va_end (argptr);
 
     // Shutdown. Here might be other errors.
     if (demorecording)
-	G_CheckDemoStatus();
+        G_CheckDemoStatus();
 
     D_QuitNetGame ();
     I_ShutdownGraphics();
