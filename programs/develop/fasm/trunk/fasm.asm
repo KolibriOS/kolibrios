@@ -41,6 +41,10 @@ include 'fasm.inc'
 center fix true
 
 START:	    ; Start of execution
+        mov     edi, fileinfos
+        mov     ecx, (fileinfos_end-fileinfos)/4
+        or      eax, -1
+        rep     stosd
 
    cmp    [params],0
    jz	    red
@@ -545,4 +549,7 @@ memory_setting dd ?
 start_time dd ?
 
 sc    system_colors
+max_handles = 8
+fileinfos rb (4+20+MAX_PATH)*max_handles
+fileinfos_end:
 pinfo process_information

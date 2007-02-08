@@ -87,10 +87,35 @@ get_environment_variable:
 ;       stc
 	ret
 
+alloc_handle:
+        call    make_fullpaths
+        mov     ebx, fileinfos+4
+@@:
+        cmp     dword [ebx], -1
+        jz      .found
+        add     ebx, 4+20+MAX_PATH
+        cmp     ebx, fileinfos_end
+        jb      @b
+        stc
+        ret
+.found:
+        and     dword [ebx+4], 0
+        and     dword [ebx+8], 0
+        push    esi edi ecx
+        mov     esi, fullpath_open
+        lea     edi, [ebx+20]
+        mov     ecx, MAX_PATH
+        rep     movsb
+        pop     ecx edi esi
+        ret	; CF=0
 
 create:
-	call  make_fullpaths
-	ret
+        call    alloc_handle
+        jc      .ret
+        and     dword [ebx-4], 0
+        mov     dword [ebx], 2
+.ret:
+        ret
 
 
 open:
@@ -112,29 +137,26 @@ open:
 ;        stc
 ;        ret
 
-           call    make_fullpaths
-
-           xor eax, eax
-           mov [fileio.cmd], 5
-           mov [fileio.offset], eax
-           mov [fileio.offset+4], eax
-           mov [fileio.count], eax
-           mov [fileio.buff], fileinfo
-           mov byte [fileio.buff+4], al
-           mov [fileio.name], fullpath_open
-
-           mov eax, 70
-           mov ebx, fileio
-           int 0x40
-           test eax, eax
-           jnz .fail
-           mov ebx, [fileinfo.size]
-           mov [filesize],ebx
-           clc
-           ret
+        call    alloc_handle
+        jc      .ret
+        mov     dword [ebx], 5
+        and     dword [ebx+12], 0
+        mov     dword [ebx+16], fileinfo
+        mov     eax, 70
+        push    ebx
+        int     0x40
+        pop     ebx
+        test    eax, eax
+        jnz     .fail
+        mov     eax, [fileinfo.size]
+        mov     [ebx-4], eax
+        and     dword [ebx], 0
+.ret:
+        ret
 .fail:
-           stc
-           ret
+	or	dword [ebx], -1	; close handle
+        stc
+        ret
 
 read:
 ;          pusha
@@ -146,19 +168,27 @@ read:
 ;          popa
 ;;         ret
 
-           xor eax, eax
-           mov [fileio.cmd], eax
-           mov [fileio.offset], eax
-           mov [fileio.offset+4], eax
-           mov [fileio.count], ecx
-           mov [fileio.buff], edx
-           mov byte [fileio.buff+4], al
-           mov [fileio.name], fullpath_open
-           mov eax, 70
-           mov ebx, fileio
-           int 0x40
+        mov     [ebx+12], ecx
+        mov     [ebx+16], edx
+        push    ebx
+        mov     eax, 70
+        int     0x40
+        xchg    eax, [esp]
+        add     [eax+4], ebx
+        adc     [eax+8], dword 0
+        mov     ebx, eax
+        pop     eax
+        test    eax, eax
+        jz      .ok
+        cmp     eax, 6
+        jz      .ok
+        stc
+.ok:
+        ret
+
 close:
-           ret
+        or      dword [ebx], -1
+        ret
 
 
 ; ebx file handle
@@ -175,24 +205,20 @@ write:
 ;        popa
 ;        ret
 
-           xor eax, eax
-           mov [fileio.cmd], 2
-           mov [fileio.offset], eax
-           mov [fileio.offset+4], eax
-           mov [fileio.count], ecx
-           mov [fileio.buff], edx
-           mov byte [fileio.buff+4], al
-           mov [fileio.name], fullpath_write
-           mov eax, 70
-           mov ebx, fileio
-           int 0x40
-           test eax, eax
-           jnz .fail
-           clc
-           ret
-.fail:
-           stc
-           ret
+        mov     [ebx+12], ecx
+        mov     [ebx+16], edx
+        push    ebx
+        mov     eax, 70
+        int     0x40
+        xchg    eax, [esp]
+        add     [eax+4], ebx
+        adc     [eax+8], dword 0
+        mov     ebx, eax
+        pop     eax
+        mov     byte [ebx], 3
+        cmp     eax, 1
+        cmc
+        ret
 
 make_fullpaths:
 	pusha
@@ -278,16 +304,15 @@ make_fullpaths:
 lseek:
 	cmp	al,0
 	jnz	@f
-	mov	[filepos],0
-    @@: cmp	al,1
-	jnz	@f
+	and	dword [ebx+4], 0
+	and     dword [ebx+8], 0
     @@: cmp	al,2
 	jnz	@f
-	mov	eax,[filesize]
-	mov	[filepos],eax
-    @@: mov	eax,[filepos]
-	add	eax,edx
-	mov	[filepos],eax
+	mov	eax, [ebx-4]
+	mov	[ebx+4], eax
+	and     dword [ebx+8], 0
+    @@: add	dword [ebx+4], edx
+        adc     dword [ebx+8], 0
 	ret
 
 display_character:
@@ -508,8 +533,6 @@ display_line_data:
 	call	display_string
 	jmp	exit_program
 
-align 4
-fileio FILEIO
 align 4
 fileinfo FILEINFO
 
