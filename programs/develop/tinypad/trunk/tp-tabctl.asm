@@ -574,10 +574,6 @@ func get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
 	jae	.lp1
 	lea	eax,[ebp+TABITEM.Editor.FilePath]
 	add	eax,[ebp+TABITEM.Editor.FileName]
-	cmp	byte[eax],0
-	jne	@f
-	int3
-    @@:
 	call	strlen
 	imul	ebx,eax,6
 	add	ebx,9

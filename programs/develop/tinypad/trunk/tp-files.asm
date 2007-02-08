@@ -146,7 +146,7 @@ endf
 ;-----------------------------------------------------------------------------
 func load_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	cmp	[tb_opensave.text],0
+	cmp	[tb_opensave.length],0
 	jne	@f
 	stc
 	ret
@@ -200,19 +200,23 @@ func load_file ;//////////////////////////////////////////////////////////////
 	jne	@f
 	mov	ebp,cur_editor
 	jmp	.lp1
-    @@: call	create_tab
+    @@: inc	[do_not_draw]
+	call	create_tab
+	dec	[do_not_draw]
   .lp1: push	ecx esi edi
 	mov	esi,tb_opensave.text
 	lea	edi,[ebp+TABITEM.Editor.FilePath]
 	movzx	ecx,[tb_opensave.length]
+	cld
 	rep	movsb
 	mov	byte[edi],0
 	lea	edi,[ebp+TABITEM.Editor.FilePath]
 	movzx	ecx,[tb_opensave.length]
-    @@: cmp	byte[edi+ecx-1],'/'
-	je	@f
-	dec	ecx
-	jmp	@b
+	inc	ecx
+    @@: dec	ecx
+	jz	@f
+	cmp	byte[edi+ecx-1],'/'
+	jne	@b
     @@: mov	[ebp+TABITEM.Editor.FileName],ecx
 	call	flush_cur_tab
 	pop	edi esi ecx

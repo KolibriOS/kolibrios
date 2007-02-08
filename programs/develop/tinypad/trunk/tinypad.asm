@@ -3,7 +3,7 @@
 ; compiler:          flat assembler 1.67.18
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
 ; version:           4.0.4
-; last update:       2007-02-01 (Feb 01, 2007)
+; last update:       2007-02-08 (Feb 08, 2007)
 ; minimal kernel:    revision #270 (svn://kolibrios.org/kernel)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
@@ -25,6 +25,7 @@
 ;     - small drawing fix for gutter and line saved/modified markers
 ;       (incorrect calculations)
 ;     - incorrect lines marking on Ctrl+V
+;     - put filename of current tab into open/save dialog (noticed by Maxxxx32)
 ;   changes:
 ;     - editor and other modifications to ease parts placement changing,
 ;       including changes in look

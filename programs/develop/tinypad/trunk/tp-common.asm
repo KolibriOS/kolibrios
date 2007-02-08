@@ -536,15 +536,18 @@ func update_caption ;/////////////////////////////////////////////////////////
 	lea	esi,[cur_editor.FilePath]
 	mov	edi,s_title
 
+	xor	ecx,ecx
     @@: lodsb
 	cmp	al,0
 	je	@f
 	stosb
+	inc	ecx
 	jmp	@b
     @@:
+	push	ecx
 	mov	dword[edi],' - '
 	add	edi,3
-    @@: mov	esi,htext
+	mov	esi,htext
 	mov	ecx,htext.size
 	cld
 	rep	movsb
@@ -554,6 +557,19 @@ func update_caption ;/////////////////////////////////////////////////////////
 
 	mcall	71,1,s_title
 
+	cmp	[do_not_draw],0
+	jne	@f
+	lea	esi,[cur_editor.FilePath]
+	mov	edi,tb_opensave.text
+	mov	ecx,[esp]
+	cld
+	rep	movsb
+	pop	ecx
+	mov	[tb_opensave.length],cl
+	clc
+	ret
+    @@:
+	add	esp,4
 	clc
 	ret
 endf

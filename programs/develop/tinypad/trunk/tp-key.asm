@@ -137,14 +137,6 @@ func key.ctrl_o ;///// ENTER OPEN FILENAME ///////////////////////////////////
 	mov	[bot_dlg_handler],osdlg_handler
 	mov	[focused_tb],tb_opensave
 
-	mov	ecx,[f_info.length]
-	mov	[tb_opensave.length],cl
-	jecxz	@f
-	mov	esi,f_info.path
-	mov	edi,tb_opensave.text
-	cld
-	rep	movsb
-
     @@: mov	al,[tb_opensave.length]
 	mov	[tb_opensave.pos.x],al
 	mov	[tb_opensave.sel.x],0
