@@ -23,6 +23,7 @@
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
 ;;                                                                 ;;
+;;  10.01.2007 Bugfix for l8139_transmit from Paolo Franchetti     ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 	ETH_ALEN	       equ 6

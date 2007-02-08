@@ -13,6 +13,9 @@
 ;; Version 0.7                                                     ;;
 ;;         Added a timer per socket to allow delays when rx window ;;
 ;;         gets below 1KB                                          ;;
+;;                                                                 ;;
+;;  10.01.2007 Bugfix for checksum function from Paolo Franchetti  ;;
+;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
