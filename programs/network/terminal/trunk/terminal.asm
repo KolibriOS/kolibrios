@@ -1,27 +1,22 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ;    TERMINAL
-;
-;    Compile with FASM for Menuet
-;
-   
+  
 use32
-   
-                org     0x0
-   
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                                                ; esp = 0x7FFF0
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
    
 include 'lang.inc'
 include 'macros.inc'
    
    
-START:                          ; start of execution
+START:				; start of execution
    
     call draw_window
    
@@ -29,18 +24,18 @@ START:                          ; start of execution
    
 still:
    
-    mov  eax,23                 ; wait here for event
+    mov  eax,23 		; wait here for event
     mov  ebx,20
     int  0x40
    
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+    cmp  eax,1			; redraw request ?
+    je	 red
+    cmp  eax,2			; key in buffer ?
+    je	 key
+    cmp  eax,3			; button in buffer ?
+    je	 button
     cmp  eax,16+4
-    je   read_input
+    je	 read_input
    
     jmp  still
    
@@ -53,13 +48,13 @@ read_input:
     int  0x40
     pop  ecx
    
-    cmp  bl,27                          ; ESCAPE COMMAND
+    cmp  bl,27				; ESCAPE COMMAND
     jne  no_esc
     call esc_command
     jmp  newdata
   no_esc:
    
-    cmp  bl,13                          ; BEGINNING OF LINE
+    cmp  bl,13				; BEGINNING OF LINE
     jne  nobol
     mov  ecx,[pos]
     add  ecx,1
@@ -75,7 +70,7 @@ read_input:
     jmp  newdata
   nobol:
    
-    cmp  bl,10                            ; LINE DOWN
+    cmp  bl,10				  ; LINE DOWN
     jne  nolf
    addx1:
     add  [pos],dword 1
@@ -89,7 +84,7 @@ read_input:
     jmp  cm1
   nolf:
    
-    cmp  bl,8                            ; BACKSPACE
+    cmp  bl,8				 ; BACKSPACE
     jne  nobasp
     mov  eax,[pos]
     dec  eax
@@ -99,7 +94,7 @@ read_input:
     jmp  newdata
    nobasp:
    
-    cmp  bl,15                           ; CHARACTER
+    cmp  bl,15				 ; CHARACTER
     jbe  newdata
     mov  eax,[pos]
     call draw_data
@@ -109,7 +104,7 @@ read_input:
     mov  ebx,[scroll+4]
     imul ebx,80
     cmp  eax,ebx
-    jb   noeaxz
+    jb	 noeaxz
     mov  esi,text+80
     mov  edi,text
     mov  ecx,ebx
@@ -128,20 +123,20 @@ read_input:
     mov  eax,11
     int  0x40
     cmp  eax,16+4
-    je   read_input
+    je	 read_input
     call draw_text
     jmp  still
    
    
-  red:                          ; REDRAW WINDOW
+  red:				; REDRAW WINDOW
     call draw_window
     jmp  still
    
-  key:                          ; KEY
-    mov  eax,2                  ; send to modem
+  key:				; KEY
+    mov  eax,2			; send to modem
     int  0x40
     shr  eax,8
-    cmp  eax,178                ; ARROW KEYS
+    cmp  eax,178		; ARROW KEYS
     jne  noaup
     mov  al,'A'
     call arrow
@@ -172,12 +167,12 @@ read_input:
     int  0x40
     jmp  still
    
-  button:                       ; BUTTON
+  button:			; BUTTON
     mov  eax,17
     int  0x40
-    cmp  ah,1                   ; CLOSE PROGRAM
+    cmp  ah,1			; CLOSE PROGRAM
     jne  noclose
-    mov  eax,45                 ; FREE IRQ
+    mov  eax,45 		; FREE IRQ
     mov  ebx,1
     mov  ecx,4
     int  0x40
@@ -244,22 +239,22 @@ draw_data:
    
 irqtable:
    
-    dd  0x3f8  + 0x01000000  ; read port 0x3f8, byte
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
-    dd  0
+    dd	0x3f8  + 0x01000000  ; read port 0x3f8, byte
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
+    dd	0
    
    
    
@@ -274,7 +269,7 @@ set_variables:
     mov  edx,0x3ff
     int  0x40
    
-    mov  eax,45          ; reserve irq 4
+    mov  eax,45 	 ; reserve irq 4
     mov  ebx,0
     mov  ecx,4
     int  0x40
@@ -341,27 +336,11 @@ draw_window:
     mov  ebx,1
     int  0x40
    
-    mov  eax,0                     ; DRAW WINDOW
+    mov  eax,0			   ; DRAW WINDOW
     mov  ebx,100*65536+491
     mov  ecx,100*65536+270
-    mov  edx,[wcolor]
-    add  edx,0x02000000
-    mov  esi,0x80557799
-    mov  edi,0x00557799
-    int  0x40
-   
-    mov  eax,4                     ; WINDOW LABEL
-    mov  ebx,8*65536+8
-    mov  ecx,0x00ffffff
-    mov  edx,labelt
-    mov  esi,labellen-labelt
-    int  0x40
-   
-    mov  eax,8                     ; CLOSE BUTTON
-    mov  ebx,(491-19)*65536+12                                                 
-    mov  ecx,5*65536+12
-    mov  edx,1
-    mov  esi,0x557799
+    mov  edx,0x13000000
+    mov  edi,labelt
     int  0x40
    
     xor  eax,eax
@@ -458,11 +437,11 @@ draw_text:
     add  esi,1
     add  eax,6
     cmp  eax,80*6
-    jb   newletter
+    jb	 newletter
     mov  eax,0
     add  ebx,10
     cmp  ebx,24*10
-    jb   newletter
+    jb	 newletter
    
     popa
     ret
@@ -503,7 +482,7 @@ esc_command:
    
      call  get_numbers
    
-     cmp   bl,'H'                     ; SET CURSOR POSITION
+     cmp   bl,'H'		      ; SET CURSOR POSITION
      jne   no_cursor_position
      cmp   [escnumbers],0
      jne   ncp1
@@ -519,7 +498,7 @@ esc_command:
      jmp    cmd_done
    no_cursor_position:
    
-     cmp    bl,'K'                      ; ERASE LINE
+     cmp    bl,'K'			; ERASE LINE
      jne    no_erase_end_of_line
      cmp    [escnumbers],0
      jne    no_end_line
@@ -536,7 +515,7 @@ esc_command:
      jne    eeol
      jmp    cmd_done
     no_end_line:
-     cmp    [escnumbers],1              ; BEGINNING OF LINE
+     cmp    [escnumbers],1		; BEGINNING OF LINE
      jne    no_beg_line
      mov    ecx,[pos]
    ebol:
@@ -554,7 +533,7 @@ esc_command:
     no_beg_line:
    no_erase_end_of_line:
    
-     cmp    bl,'J'                          ; ERASE TO END OF SCREEN
+     cmp    bl,'J'			    ; ERASE TO END OF SCREEN
      jne    no_erase_to_end_of_screen
      cmp    [escnumbers],dword 0
      jne    no_erase_to_end_of_screen
@@ -568,7 +547,7 @@ esc_command:
      jmp    cmd_done
    no_erase_to_end_of_screen:
    
-     cmp    bl,'r'                           ; SET SCROLL REGION
+     cmp    bl,'r'			     ; SET SCROLL REGION
      jne    no_scroll_region
      mov    eax,[escnumbers]
      dec    eax
@@ -578,7 +557,7 @@ esc_command:
      jmp    cmd_done
    no_scroll_region:
    
-     cmp    bl,'A'                            ; CURSOR UP
+     cmp    bl,'A'			      ; CURSOR UP
      jne    no_cursor_up
      mov    eax,[pos]
      sub    eax,80
@@ -586,7 +565,7 @@ esc_command:
      jmp    cmd_done
    no_cursor_up:
    
-     cmp    bl,'C'                            ; CURSOR LEFT
+     cmp    bl,'C'			      ; CURSOR LEFT
      jne    no_cursor_left
      mov    eax,[pos]
      mov    ebx,[escnumbers]
@@ -595,14 +574,14 @@ esc_command:
      call   cmd_done
    no_cursor_left:
    
-     cmp    bl,'m'                           ; CHARACTER ATTRIBUTE
+     cmp    bl,'m'			     ; CHARACTER ATTRIBUTE
      jne    no_char_attribute
      mov    eax,[escnumbers]
      mov    [attribute],eax
      jmp    cmd_done
    no_char_attribute:
    
-     cmp    bl,'Z'                            ; TERMINAL TYPE
+     cmp    bl,'Z'			      ; TERMINAL TYPE
      jne    no_terminal_type
      mov    al,27
      call   to_modem
@@ -730,19 +709,18 @@ get_numbers:
 ; DATA AREA
    
    
-pos         dd  80*10
-irc_data    dd  0x0
-print       db  0x0
-attribute   dd  0
-scroll      dd  1
-            dd  24
-numtext     db  '                     '
-esccmd      dd  0,0,0,0,0,0,0,0,0,0,0,0,0
-escend      db  'ZrhlABCDHfDME=>NmKJgincoyq',0
-escnumbers  dd  0,0,0,0,0
-wcolor      dd  0x000000
-labelt      db  'TERMINAL FOR MODEM IN COM1  0.03'
-labellen:
+pos	    dd	80*10
+irc_data    dd	0x0
+print	    db	0x0
+attribute   dd	0
+scroll	    dd	1
+	    dd	24
+numtext     db	'                     '
+esccmd	    dd	0,0,0,0,0,0,0,0,0,0,0,0,0
+escend	    db	'ZrhlABCDHfDME=>NmKJgincoyq',0
+escnumbers  dd	0,0,0,0,0
+wcolor	    dd	0x000000
+labelt	    db	'TERMINAL FOR MODEM IN COM1  0.03',0
    
 text:
 db '                                                                   '

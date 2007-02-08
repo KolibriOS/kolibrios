@@ -1,60 +1,56 @@
 ;
 ;    TFTP Client
-;
-;    Compile with FASM for Menuet
-;
    
 use32
-   
-                org     0x0
-   
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
 include 'macros.inc'
    
-START:                          ; start of execution
-     mov  eax,40                 ; Report events
-     mov  ebx,10000111b          ; Stack 8 + defaults
+START:				; start of execution
+     mov  eax,40		 ; Report events
+     mov  ebx,10000111b 	 ; Stack 8 + defaults
      int  0x40
    
     mov   dword [prompt], p1
     mov  dword [promptlen], p1len - p1
    
-    call draw_window            ; at first, draw the window
+    call draw_window		; at first, draw the window
    
 still:
-    mov  eax,10                 ; wait here for event
+    mov  eax,10 		; wait here for event
     int  0x40
    
-    cmp  eax,1                  ; redraw request ?
-    jz   red
-    cmp  eax,2                  ; key in buffer ?
-    jz   key
-    cmp  eax,3                  ; button in buffer ?
-    jz   button
+    cmp  eax,1			; redraw request ?
+    jz	 red
+    cmp  eax,2			; key in buffer ?
+    jz	 key
+    cmp  eax,3			; button in buffer ?
+    jz	 button
    
     jmp  still
    
-red:                           ; redraw
+red:			       ; redraw
     call draw_window
     jmp  still
    
-key:                           ; Keys are not valid at this part of the
-    mov  eax,2                  ; loop. Just read it and ignore
+key:			       ; Keys are not valid at this part of the
+    mov  eax,2			; loop. Just read it and ignore
     int  0x40
     jmp  still
    
-button:                        ; button
-    mov  eax,17                 ; get id
+button: 		       ; button
+    mov  eax,17 		; get id
     int  0x40
    
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jnz  noclose
    
    
@@ -67,19 +63,19 @@ button:                        ; button
  mov  [socketNum], dword 0
    
    
-    mov  eax,0xffffffff         ; close this program
+    mov  eax,0xffffffff 	; close this program
     int  0x40
    
 noclose:
-    cmp  ah,2                   ; copy file to local machine?
+    cmp  ah,2			; copy file to local machine?
     jnz  nocopyl
    
     mov   dword [prompt], p5
     mov  dword [promptlen], p5len - p5
-    call  draw_window            ;
+    call  draw_window		 ;
    
     ; Copy File from Remote Host to this machine
-    call translateData  ; Convert Filename & IP address
+    call translateData	; Convert Filename & IP address
     mov  edi, tftp_filename + 1
     mov  [edi], byte 0x01 ; setup tftp msg
     call copyFromRemote
@@ -88,15 +84,15 @@ noclose:
    
 nocopyl:
    
-    cmp  ah,3        ; Copy file to host?
+    cmp  ah,3	     ; Copy file to host?
     jnz  nocopyh
    
     mov   dword [prompt], p5
     mov  dword [promptlen], p5len - p5
-    call  draw_window            ;
+    call  draw_window		 ;
    
     ; Copy File from this machine to Remote Host
-    call translateData  ; Convert Filename & IP address
+    call translateData	; Convert Filename & IP address
     mov  edi, tftp_filename + 1
     mov  [edi], byte 0x02 ; setup tftp msg
     call copyToRemote
@@ -105,9 +101,9 @@ nocopyl:
    
 nocopyh:
     cmp  ah,4
-    jz   f1
+    jz	 f1
     cmp  ah,5
-    jz   f2
+    jz	 f2
     jmp  nof12
    
   f1:
@@ -133,7 +129,7 @@ nocopyh:
     mov  eax,10
     int  0x40
     cmp  eax,2
-    jz   fbu
+    jz	 fbu
     jmp  still
   fbu:
     mov  eax,2
@@ -142,7 +138,7 @@ nocopyh:
     cmp  eax,8
     jnz  nobs
     cmp  edi,[addr]
-    jz   f11
+    jz	 f11
     sub  edi,1
     mov  [edi],byte ' '
     call print_text
@@ -151,7 +147,7 @@ nocopyh:
     cmp  eax,dword 31
     jbe  f11
     cmp  eax,dword 95
-    jb   keyok
+    jb	 keyok
     sub  eax,32
   keyok:
     mov  [edi],al
@@ -322,18 +318,18 @@ copyFromRemote:
    
  ; Get a random # for the local socket port #
  mov  eax, 3
- int     0x40
+ int	 0x40
  mov  ecx, eax
- shr  ecx, 8    ; Set up the local port # with a random #
+ shr  ecx, 8	; Set up the local port # with a random #
    
    ; open socket
  mov  eax, 53
  mov  ebx, 0
- mov  edx, 69    ; remote port
+ mov  edx, 69	 ; remote port
  mov  esi, [tftp_IP]  ; remote IP ( in intenet format )
     int   0x40
    
-   mov  [socketNum], eax
+   mov	[socketNum], eax
    
  ; make sure there is no data in the socket - there shouldn't be..
    
@@ -341,15 +337,15 @@ cfr001:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40    ; read byte
+    int   0x40	  ; read byte
    
  mov  eax, 53
  mov  ebx, 2
  mov  ecx, [socketNum]
-    int   0x40    ; any more data?
+    int   0x40	  ; any more data?
    
  cmp  eax, 0
- jne  cfr001    ; yes, so get it
+ jne  cfr001	; yes, so get it
    
  ; Now, request the file
  mov  eax, 53
@@ -360,15 +356,15 @@ cfr001:
     int   0x40
    
 cfr002:
-    mov  eax,10                 ; wait here for event
+    mov  eax,10 		; wait here for event
     int  0x40
    
-    cmp  eax,1                  ; redraw request ?
-    je   cfr003
-    cmp  eax,2                  ; key in buffer ?
-    je   cfr004
-    cmp  eax,3                  ; button in buffer ?
-    je   cfr005
+    cmp  eax,1			; redraw request ?
+    je	 cfr003
+    cmp  eax,2			; key in buffer ?
+    je	 cfr004
+    cmp  eax,3			; button in buffer ?
+    je	 cfr005
    
     ; Any data to fetch?
  mov  eax, 53
@@ -387,7 +383,7 @@ cfr002:
  je  cfr008
     mov   dword [prompt], p3
     mov  dword [promptlen], p3len - p3
-    call  draw_window            ;
+    call  draw_window		 ;
    
 cfr008:
  ; we have data - this will be a tftp frame
@@ -396,12 +392,12 @@ cfr008:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte
+    int   0x40	 ; read byte
    
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte
+    int   0x40	 ; read byte
    
  pop  eax
  ; bl holds tftp opcode. Can only be 3 (data) or 5 ( error )
@@ -415,7 +411,7 @@ cfr008:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte
+    int   0x40	 ; read byte
    
  mov  [blockNumber], bl
    
@@ -446,7 +442,7 @@ cfr007:
  inc  dword [fileposition]
  inc  dword [filesize]
    
- jmp  cfr007                                           
+ jmp  cfr007					       
    
 no_more_data:
    
@@ -486,32 +482,32 @@ cfrerr:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40    ; read byte
+    int   0x40	  ; read byte
    
  mov  eax, 53
  mov  ebx, 2
  mov  ecx, [socketNum]
-    int   0x40    ; any more data?
+    int   0x40	  ; any more data?
    
  cmp  eax, 0
- jne  cfrerr    ; yes, so get it
+ jne  cfrerr	; yes, so get it
    
- jmp  cfr006    ; close socket and close app
+ jmp  cfr006	; close socket and close app
    
-cfr003:                         ; redraw request
+cfr003: 			; redraw request
     call draw_window
     jmp  cfr002
    
-cfr004:                         ; key pressed
-    mov  eax,2                  ; just read it and ignore
+cfr004: 			; key pressed
+    mov  eax,2			; just read it and ignore
     int  0x40
     jmp  cfr002
    
-cfr005:                        ; button
-    mov  eax,17                 ; get id
+cfr005: 		       ; button
+    mov  eax,17 		; get id
     int  0x40
    
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jne  cfr002     ; If not, ignore.
    
 cfr006:
@@ -523,7 +519,7 @@ cfr006:
    
  mov  [socketNum], dword 0
    
-    mov  eax,-1                 ; close this program
+    mov  eax,-1 		; close this program
     int  0x40
    
     jmp $
@@ -539,7 +535,7 @@ cfrexit:
    
     mov   dword [prompt], p4
     mov  dword [promptlen], p4len - p4
-    call  draw_window            ;
+    call  draw_window		 ;
    
  ret
    
@@ -565,7 +561,7 @@ copyToRemote:
    
     mov   dword [prompt], p6
     mov  dword [promptlen], p6len - p6
-    call  draw_window            ;
+    call  draw_window		 ;
  jmp  ctr_exit
    
 filefound:
@@ -587,18 +583,18 @@ ctr000:
    
  ; Get a random # for the local socket port #
  mov  eax, 3
- int     0x40
+ int	 0x40
  mov  ecx, eax
- shr  ecx, 8    ; Set up the local port # with a random #
+ shr  ecx, 8	; Set up the local port # with a random #
    
    ; First, open socket
  mov  eax, 53
  mov  ebx, 0
- mov  edx, 69    ; remote port
+ mov  edx, 69	 ; remote port
  mov  esi, [tftp_IP]
     int   0x40
    
-   mov  [socketNum], eax
+   mov	[socketNum], eax
    
    ; write to socket ( request write file )
  mov  eax, 53
@@ -614,15 +610,15 @@ ctr000:
  ; or data from remote
    
 ctr001:
-    mov   eax,10                 ; wait here for event
+    mov   eax,10		 ; wait here for event
     int   0x40
    
-    cmp   eax,1                  ; redraw request ?
-    je    ctr003
-    cmp   eax,2                  ; key in buffer ?
-    je    ctr004
-    cmp   eax,3                  ; button in buffer ?
-    je    ctr005
+    cmp   eax,1 		 ; redraw request ?
+    je	  ctr003
+    cmp   eax,2 		 ; key in buffer ?
+    je	  ctr004
+    cmp   eax,3 		 ; button in buffer ?
+    je	  ctr005
    
    
     ; Any data in the UDP receive buffer?
@@ -641,31 +637,31 @@ ctr001:
    
     mov   dword [prompt], p2
     mov  dword [promptlen], p2len - p2
-    call  draw_window            ;
+    call  draw_window		 ;
    
  ; we have data - this will be the ack
 ctr002:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte - opcode
+    int   0x40	 ; read byte - opcode
    
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte - opcode
+    int   0x40	 ; read byte - opcode
    
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte - block (high byte)
+    int   0x40	 ; read byte - block (high byte)
    
  mov  [blockNumber], bl
    
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte - block (low byte )
+    int   0x40	 ; read byte - block (low byte )
    
  mov  [blockNumber+1], bl
    
@@ -673,13 +669,13 @@ ctr0022:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
-    int   0x40   ; read byte (shouldn't have worked)
+    int   0x40	 ; read byte (shouldn't have worked)
    
    
  mov  eax, 53
  mov  ebx, 2
  mov  ecx, [socketNum]
-    int   0x40   ; any more data?
+    int   0x40	 ; any more data?
    
  cmp  eax, 0
  jne  ctr0022  ; yes, so get it, and dump it
@@ -703,7 +699,7 @@ ctr0022:
  cmp  al, 0
  jne  ctr008
  dec  esi
- inc     byte [esi]
+ inc	 byte [esi]
    
 ctr008:
  ; Move forward through the file
@@ -759,20 +755,20 @@ txre:
    
  jmp  ctr001
    
-ctr003:                 ; redraw
+ctr003: 		; redraw
     call  draw_window
     jmp   ctr001
    
-ctr004:                 ; key
-    mov   eax,2          ; just read it and ignore
+ctr004: 		; key
+    mov   eax,2 	 ; just read it and ignore
     int   0x40
     jmp   ctr001
    
-ctr005:                 ; button
-    mov   eax,17         ; get id
+ctr005: 		; button
+    mov   eax,17	 ; get id
     int   0x40
    
-    cmp   ah,1           ; button id=1 ?
+    cmp   ah,1		 ; button id=1 ?
     jne   ctr001
    
     ; close socket
@@ -783,7 +779,7 @@ ctr005:                 ; button
    
  mov  [socketNum], dword 0
    
-    mov   eax,-1         ; close this program
+    mov   eax,-1	 ; close this program
     int   0x40
  jmp  $
    
@@ -796,7 +792,7 @@ ctr009:
    
     mov   dword [prompt], p4
     mov  dword [promptlen], p4len - p4
-    call  draw_window            ;
+    call  draw_window		 ;
    
 ctr_exit:
  ret
@@ -811,36 +807,26 @@ ctr_exit:
    
 draw_window:
    
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     int  0x40
    
-                                   ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
-    mov  ebx,100*65536+230         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+170         ; [y start] *65536 + [y size]
-    mov  edx,0x03224466            ; color of work area RRGGBB
-    mov  esi,0x00334455            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00ddeeff            ; color of frames    RRGGBB
+				   ; DRAW WINDOW
+    mov  eax,0			   ; function 0 : define and draw window
+    mov  ebx,100*65536+230	   ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+170	   ; [y start] *65536 + [y size]
+    mov  edx,0x13224466 	   ; color of work area RRGGBB
+    mov  edi,labelt
     int  0x40
    
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-   
-   
-    mov  eax,8              ; COPY BUTTON
+    mov  eax,8		    ; COPY BUTTON
     mov  ebx,20*65536+190
     mov  ecx,79*65536+15
     mov  edx,2
     mov  esi,0x557799
     int  0x40
    
-    mov  eax,8              ; DELETE BUTTON
+    mov  eax,8		    ; DELETE BUTTON
     mov  ebx,20*65536+190
     mov  ecx,111*65536+15
     mov  edx,3
@@ -886,7 +872,7 @@ draw_window:
    
     ; Re-draw the screen text
     cld
-    mov  ebx,25*65536+35           ; draw info text with function 4
+    mov  ebx,25*65536+35	   ; draw info text with function 4
     mov  ecx,0xffffff
     mov  edx,text
     mov  esi,40
@@ -899,8 +885,8 @@ draw_window:
     jnz  newline
    
    
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     int  0x40
    
     ret
@@ -908,11 +894,11 @@ draw_window:
    
 ; DATA AREA
    
-source       db  'KERNEL.ASM     '
+source	     db  'KERNEL.ASM     '
 destination  db  '192.168.1.23   '
    
    
-tftp_filename:  times 15 + 9 db 0
+tftp_filename:	times 15 + 9 db 0
 tftp_IP:   dd 0
 tftp_len:   dd 0
    
@@ -932,13 +918,10 @@ text:
     db '  COPY LOCAL  ->   HOST                 '
     db '                                        '
     db '                                        '
-    db 'x <- END MARKER, DONT DELETE            '
+    db 'x' ; <- END MARKER, DONT DELETE
    
    
-labelt:
-    db   'TFTP Client'
-labellen:
-   
+labelt	db   'TFTP Client',0   
    
 prompt: dd 0
 promptlen: dd 0

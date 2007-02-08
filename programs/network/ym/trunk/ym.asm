@@ -3,14 +3,15 @@
    
 ;B+ System header
 use32
-org 0x0
- db  'MENUET01'
- dd  0x01
- dd  START
- dd  I_END
- dd  0x100000
- dd  0x7fff0
- dd  0x0,0x0
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
+
 ;E:.
 include 'lang.inc'   
 ;B+ Definitions
@@ -19,13 +20,13 @@ h_sp equ 400
 fr_sp equ 120
    
 line_wid equ 45
-fr_max_lines equ 17                                                             
+fr_max_lines equ 17								
    
 ;memory
 sys_colors  equ I_END
 text_zone   equ sys_colors+4*10
 ;friend_zone equ text_zone+45*25                        ;uncom
-            ;friend_zone+32*fr_max_lines
+	    ;friend_zone+32*fr_max_lines
 ;E:.
    
 START:
@@ -143,41 +144,25 @@ noclose:
    
 draw_window:
 ;B+ Draw window
-  mov  ebx,1
-  mov  eax,12
-  int  0x40
-   
+  
   mov  ebx,3
   mov  ecx,sys_colors
   mov  edx,10*4
   mov  eax,48
   int  0x40
-   
+
+  mov  ebx,1
+  mov  eax,12
+  int  0x40
+ 
+  xor  eax,eax		     ;DRAW WINDOW
   mov  ebx,150*65536+h_sp
   mov  ecx,100*65536+v_sp
   mov  edx,[sys_colors+4*5]
-  or   edx,0x02000000
-  mov  esi,[sys_colors+4*1]
-  or   esi,0x80000000
-  mov  edi,[sys_colors+4*0]
-  mov  eax,0
+  or   edx,0x13000000
+  mov  edi,header
   int  0x40
-   
-  mov  ebx,8*65536+8
-  mov  ecx,[sys_colors+4*4]
-  or   ecx,0x10000000
-  mov  edx,caption
-  mov  esi,caption_end-caption
-  mov  eax,4
-  int  0x40
-   
-  mov  ebx,(400-19) shl 16 + 12
-  mov  ecx,5 shl 16 + 12
-  mov  edx,1
-  mov  esi,[sys_colors+4*2]
-  mov  eax,8
-  int  0x40
-   
+
 ;B+ Friend panel
   mov  ebx,(h_sp-fr_sp) shl 16 + 3
   mov  ecx,20 shl 16 + v_sp-31 -56
@@ -746,7 +731,7 @@ rep movsb
 .no_more:
   ret
    
-last_friend_place dd fr_e                               ;del
+last_friend_place dd fr_e				;del
 ;last_friend_place dd friend_zone                       ;uncom
    
 find_friend:
@@ -901,7 +886,7 @@ rep stosb
   mov  ecx,[sys_colors+4*5]
   mov  edx,f_password
   mov  esi,4
-  mov  eax,4                                                                   
+  mov  eax,4								       
   int  0x40
   jmp  still
 .unp dd username
@@ -918,7 +903,7 @@ show_username:
   mov  ecx,[sys_colors+4*8]
   mov  edx,username
   mov  esi,16
-  mov  eax,4                                                                    
+  mov  eax,4									
   int  0x40
   ret
    
@@ -939,7 +924,7 @@ rep stosb
   mov  ecx,[sys_colors+4*5]
   mov  edx,f_password
   mov  esi,4
-  mov  eax,4                                                                    
+  mov  eax,4									
   int  0x40
    
 .next:
@@ -963,7 +948,7 @@ rep stosb
 .no_next:
   call show_password
   jmp  still
-.no_still:                                                                      
+.no_still:									
    
   mov  ebx,[.unp]
   mov  [ebx],ah
@@ -979,10 +964,10 @@ show_password:
   mov  ecx,[sys_colors+4*8]
   mov  edx,f_password
   mov  esi,4
-  mov  eax,4                                                                    
+  mov  eax,4									
   int  0x40
 .end:
-  ret                                                                           
+  ret										
    
 f_password db '####'
    
@@ -1018,7 +1003,7 @@ password: times (24+1) db 0
  ; al - friend user char
  ; -----
  ; NOTE currenly don't show message if al='!'
-                                                                                
+										
 ;Variables
  ;usernave (zero terminated)
  ;password (zero terminated)
@@ -1036,7 +1021,7 @@ connect:
   mov  eax,0
   ret
    
-disconnect:                                                                     
+disconnect:									
   ;disconnect
   ret
    
@@ -1049,29 +1034,25 @@ check_message:
    
    
 ;B+ Test data                                           ;del
-friend_zone:                                            ;del
- db 1,'First:',0                                        ;del
- db 2,'hahaha',0                                        ;del
- db 3,'second',0                                        ;del
- db 3,'menuetos',0                                      ;del
- db 1,'Treti:',0                                        ;del
- db 2,'fourth',0                                        ;del
-fr_e db 0                                               ;del
-                                                        ;del
-times 200 db 0                                          ;del
-                                                        ;del
-last_friend_line dd 0x6                                 ;del
-;E:.                                                    ;del
-   
-;B+ Data area
-;caption db 'Yahoo Messanger for MenuetOS'
-caption db 'Messinger (Yahoo Compatible)'
-caption_end:
+friend_zone:						;del
+ db 1,'First:',0					;del
+ db 2,'hahaha',0					;del
+ db 3,'second',0					;del
+ db 3,'menuetos',0					;del
+ db 1,'Treti:',0					;del
+ db 2,'fourth',0					;del
+fr_e db 0						;del
+							;del
+times 200 db 0						;del
+							;del
+last_friend_line dd 0x6 				;del
+
+header db 'Messenger (Yahoo Compatible)',0
    
 ;User / Password
 login_txt db 'STATUS:            SESSION: ___.___.___.___'
-                     ;VISIBLE
-                     ;HIDDEN
+		     ;VISIBLE
+		     ;HIDDEN
 login_txt_end:
 user_txt db 'USER ID ->'
 user_txt_end:
