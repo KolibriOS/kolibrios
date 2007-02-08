@@ -464,7 +464,7 @@ proc ac97_irq
 ;     end if
 
            mov edx, PCM_OUT_CR_REG
-           mov al, 0x14
+           mov al, 0x10;               0x10
            call [ctrl.ctrl_write8]
 
            mov ax, 0x1c
@@ -487,7 +487,7 @@ proc ac97_irq
            call [ctrl.ctrl_write8]
 
            mov edx, PCM_OUT_CR_REG
-           mov ax, 0x1D
+           mov ax, 0x11              ;0x1D
            call [ctrl.ctrl_write8]
 
            mov eax, [civ_val]
@@ -504,7 +504,7 @@ proc ac97_irq
 
 .skip:
            mov edx, PCM_OUT_CR_REG
-           mov ax, 0x1D
+           mov ax, 0x11               ;0x1D
            call [ctrl.ctrl_write8]
            ret
 endp

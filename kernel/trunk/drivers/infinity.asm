@@ -33,6 +33,7 @@ new_app_base     equ 0x60400000
 PROC_BASE        equ OS_BASE+0x0080000
 
 CAPS_SSE2        equ 26
+PG_SW            equ 0x003
 
 
 public START
@@ -113,7 +114,7 @@ if ~(FORCE_MMX or FORCE_MMX_128)  ;autodetect
            mov [mix_3_core], mmx_mix_3
            mov [mix_4_core], mmx_mix_4
            jmp @F
-.mmx128:                                   ;new 128-bit sse2 extensions
+.mmx128:                                   ;128-bit integer sse2 extensions
            mov [mix_2_core], mmx128_mix_2
            mov [mix_3_core], mmx128_mix_3
            mov [mix_4_core], mmx128_mix_4
@@ -209,7 +210,7 @@ restore   out_size
 TASK_COUNT    equ 0x0003004
 CURRENT_TASK  equ 0x0003000
 
-align 8
+align 4
 proc CreateBuffer stdcall, format:dword
            locals
              str dd ?
@@ -239,7 +240,7 @@ proc CreateBuffer stdcall, format:dword
            mov [edx+STREAM.str_bk], eax
            popf
 
-           stdcall KernelAlloc, 168*1024
+           stdcall KernelAlloc, dword 72*1024
 
            mov edi, [str]
            mov [edi+STREAM.base], eax
@@ -256,13 +257,33 @@ proc CreateBuffer stdcall, format:dword
            mov [edi+STREAM.limit], eax
            mov [edi+STREAM.lim_1], eax
 
+; create ring buffer
+
+           stdcall AllocKernelSpace, dword 128*1024
+
+           mov edi, [str]
            mov [edi+STREAM.work_buff], eax
            mov [edi+STREAM.work_read], eax
            mov [edi+STREAM.work_write], eax
            mov [edi+STREAM.work_count], 0
-           add eax, 0x10000
+           add eax, 64*1024
            mov [edi+STREAM.work_top], eax
 
+           stdcall AllocPages, dword 64/4
+           mov edi, [str]
+           mov ebx, [edi+STREAM.work_buff]
+           mov ecx, 16
+           or eax, PG_SW
+           push eax
+           push ebx
+           call CommitPages ;eax, ebx, ecx
+           mov ecx, 16
+           pop ebx
+           pop eax
+           add ebx, 64*1024
+           call CommitPages    ;double mapped
+
+           mov edi, [str]
            mov eax, [format]
            mov [edi+STREAM.format], eax
            mov [edi+STREAM.flags], SND_STOP
@@ -297,8 +318,14 @@ proc CreateBuffer stdcall, format:dword
            stdcall MapPage, ebx, eax, dword 3
 
            mov edi, [edi+STREAM.base]
-           mov ecx, (168*1024)/4
+           mov ecx, (72*1024)/4
            xor eax, eax
+           cld
+           rep stosd
+
+           mov edi, [str]
+           mov edi, [edi+STREAM.work_buff]
+           mov ecx, (64*1024)/4
            rep stosd
 
            mov eax, [str]
@@ -308,6 +335,7 @@ proc CreateBuffer stdcall, format:dword
            ret
 endp
 
+if 0
 align 4
 pid_to_slot:
 
@@ -337,11 +365,14 @@ pid_to_slot:
            pop    ebx
            ret
 
+end if
+
 ;param
 ; eax= buffer handle
 
 align 4
 DestroyBuffer:
+           .handle  equ esp       ;local
 
            cmp [eax+STREAM.magic], 'WAVE'
            jne .fail
@@ -349,6 +380,8 @@ DestroyBuffer:
            cmp [eax+STREAM.size], STREAM_SIZE
            jne .fail
 .destroy:
+           push eax
+
            pushf
            cli
            mov ebx, [eax+STREAM.str_fd]
@@ -357,11 +390,12 @@ DestroyBuffer:
            mov [ecx+STREAM.str_fd], ebx
            popf
 
-           push eax
            stdcall KernelFree, [eax+STREAM.base]
-           pop eax
+           mov eax, [.handle]
+           stdcall KernelFree, [eax+STREAM.work_buff]
+
+           pop eax               ;restore stack
            call DestroyObject    ;eax
-           ret
 .fail:
            ret
 
@@ -526,13 +560,6 @@ prepare_playlist:
            cmp [edi+STREAM.size], STREAM_SIZE
            jne .next
 
-;           mov eax,[edi+STREAM.pid]
-;           cmp eax, -1
-;           je .next
-;           call pid_to_slot
-;           test eax, eax
-;           jz .next
-
            cmp [edi+STREAM.flags], SND_PLAY;
            jne .next
            cmp [edi+STREAM.work_count], 16384
@@ -673,7 +700,7 @@ mm80          dq 0x8080808080808080
 mm_mask       dq 0xFF00FF00FF00FF00
 
 ;stream_map    dd 0xFFFF       ; 16
-version       dd 0x00030003
+version       dd 0x00030004
 
 szInfinity    db 'INFINITY',0
 szSound       db 'SOUND',0

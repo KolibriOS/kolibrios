@@ -123,7 +123,7 @@ proc update_stream
            mov eax, [esi+STREAM.work_read]
            cmp eax, [esi+STREAM.work_top]
            jb @f
-           mov eax, [esi+STREAM.work_buff]
+           sub eax, 64*1024
 @@:
            mov [esi+STREAM.work_read], eax
 
@@ -146,7 +146,8 @@ proc update_stream
            mov edi, [ebx+STREAM.work_write]
            cmp edi, [ebx+STREAM.work_top]
            jb @f
-           mov edi, [ebx+STREAM.work_buff]
+
+           sub edi, 64*1024
            mov [ebx+STREAM.work_write], edi
 @@:
            mov esi, [ebx+STREAM.curr_seg]
@@ -210,17 +211,12 @@ proc refill stdcall, str:dword
            endl
 
            mov ebx, [str]
-           mov ecx, [ebx+STREAM.work_write]
-           cmp ecx, [ebx+STREAM.work_top]
-           jbe .m2
-           mov esi, [ebx+STREAM.work_top]
-           sub ecx, esi
-           mov edi, [ebx+STREAM.work_buff]
-           shr ecx, 2
-           rep movsd    ;call memcpy
-
+           mov edi, [ebx+STREAM.work_write]
+           cmp edi, [ebx+STREAM.work_top]
+           jb @F
+           sub edi, 64*1024
            mov [ebx+STREAM.work_write], edi
-.m2:
+@@:
            mov esi, [ebx+STREAM.curr_seg]
            mov edi, [ebx+STREAM.work_write]
 

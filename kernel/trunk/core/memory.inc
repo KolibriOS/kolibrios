@@ -260,7 +260,7 @@ proc free_page
            mov ebx, sys_pgmap
            bts [ebx], eax           ;that's all!
            cmc
-           adc [pg_data.pages_free], 0 
+           adc [pg_data.pages_free], 0
            shr eax, 3
            and eax, not 3           ;dword offset from page_map
            add eax, ebx
@@ -275,15 +275,35 @@ proc free_page
 endp
 
 ; param
-;  eax= page base
+;  eax= page base + page flags
 ;  ebx= liear address
 ;  ecx= count
 
 align 4
-commit_pages:   ;not implemented
+commit_pages:
 
+           test ecx, ecx
+           jz .fail
 
+           mov edi, ebx
+           mov ebx, pg_data.pg_mutex
+           call wait_mutex      ;ebx
+
+           mov edx, 0x1000
+           mov ebx, edi
+           shr ebx, 12
+@@:
+           mov [pages_tab+ebx*4], eax
+           invlpg [edi]
+           add edi, edx
+           add eax, edx
+           inc ebx
+           dec ecx
+           jnz @B
+           mov [pg_data.pg_mutex],ecx
+.fail:
            ret
+
 
 ; param
 ;  eax= base
@@ -301,8 +321,8 @@ release_pages:
 
            shr esi, 10
            add esi, pages_tab
-           
-           mov ebp, [pg_data.pages_free] 
+
+           mov ebp, [pg_data.pages_free]
            mov ebx, [page_start]
            mov edx, sys_pgmap
 @@:
@@ -316,7 +336,7 @@ release_pages:
            shr eax, 12
            bts [edx], eax
            cmc
-           adc ebp, 0 
+           adc ebp, 0
            shr eax, 3
            and eax, -4
            add eax, edx
@@ -329,7 +349,7 @@ release_pages:
            add esi, 4
            dec ecx
            jnz @B
-           mov [pg_data.pages_free], ebp  
+           mov [pg_data.pages_free], ebp
            and [pg_data.pg_mutex],0
            popad
            ret
@@ -1416,15 +1436,15 @@ align 16
    sys_page_map    rd 1
 endg
 
-
-;     push eax
-;     push edx
-;     mov edx, 0x400   ;bocsh
-;     mov al,0xff      ;bocsh
-;     out dx, al       ;bocsh
-;     pop edx
-;     pop eax
-
+if 0
+     push eax
+     push edx
+     mov edx, 0x400   ;bocsh
+     mov al,0xff      ;bocsh
+     out dx, al       ;bocsh
+     pop edx
+     pop eax
+end if
 
 align 4
 k_strrchr:
