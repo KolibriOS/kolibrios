@@ -456,8 +456,6 @@ end if
            ret
 endp
 
-
-
 align 4
 set_cr3:
            mov esi, [CURRENT_TASK]

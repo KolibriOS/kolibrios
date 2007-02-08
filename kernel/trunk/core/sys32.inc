@@ -543,19 +543,19 @@ get_app_params:
     stc
     ret
 
+uglobal
+  new_process_place  dd  0x0
+  app_start    dd  0x0
+  app_i_end    dd  0x0
+  app_mem      dd  0x0
+  app_esp      dd  0x0
+  app_i_param  dd  0x0
+  app_i_icon   dd  0x0
+  app_mem_pos  dd  0x0
+endg
+
 end if
 
-
-;uglobal
-;  new_process_place  dd  0x0
-;  app_start    dd  0x0
-;  app_i_end    dd  0x0
-;  app_mem      dd  0x0
-;  app_esp      dd  0x0
-;  app_i_param  dd  0x0
-;  app_i_icon   dd  0x0
-;  app_mem_pos  dd  0x0
-;endg
 
 sys_threads:
 
@@ -570,46 +570,64 @@ jmp new_sys_threads
 iglobal
   process_terminating   db 'K : Process - terminating',13,10,0
   process_terminated    db 'K : Process - done',13,10,0
+  msg_obj_destroy       db 'K : destroy app object',13,10,0
 endg
 
+; param
+;  esi= slot
 
 terminate: ; terminate application
-    push   esi
-    mov    esi,process_terminating
-    call   sys_msg_board_str
-    pop    esi
 
+           .slot equ esp   ;locals
+
+           push   esi      ;save .slot
+           mov    esi,process_terminating
+           call   sys_msg_board_str
 @@:
-    cli
-    cmp   [application_table_status],0
-    je    term9
-    sti
-    call  change_task
-    jmp   @b
-  term9:
+           cli
+           cmp   [application_table_status],0
+           je    term9
+           sti
+           call  change_task
+           jmp   @b
+term9:
+           call  set_application_table_status
 
-    call  set_application_table_status
+           mov esi, [.slot]
+           shl esi,8
+           add esi, PROC_BASE+APP_OBJ_OFFSET
+@@:
+           mov eax, [esi+APPOBJ.fd]
+           cmp eax, esi
+           je @F
 
-    mov    eax,esi
+           push esi
+           call [eax+APPOBJ.destroy]
+           mov  esi, msg_obj_destroy
+           call sys_msg_board_str
+           pop esi
+           jmp @B
+@@:
+           mov eax, [.slot]
+           shl eax, 8
+           mov eax,[PROC_BASE+eax+APPDATA.dir_table]
+           stdcall destroy_app_space, eax
 
-    pushad
-    shl   eax,8
-    mov   eax,[PROC_BASE+eax+0xB8]
-    stdcall destroy_app_space, eax
-    popad
+;;           mov esi, [.slot]
+           pop esi               ;restore stack
+           cmp [fpu_owner],esi   ; if user fpu last -> fpu user = 1
+           jne fpu_ok_1
 
-    cmp   [fpu_owner],esi   ; if user fpu last -> fpu user = 1
-    jne   fpu_ok_1
-
-    mov [fpu_owner],1
-    mov eax, [256+PROC_BASE+0x10]
-    bt [cpu_caps], CAPS_SSE
-    jnc .no_SSE
-    fxrstor [eax]
-    jmp fpu_ok_1
+           mov [fpu_owner],1
+           mov eax, [256+PROC_BASE+APPDATA.fpu_state]
+           bt [cpu_caps], CAPS_SSE
+           clts
+           jnc .no_SSE
+           fxrstor [eax]
+           jmp fpu_ok_1
 .no_SSE:
-    fnclex
-    frstor [eax]
+           fnclex
+           frstor [eax]
 fpu_ok_1:
 
     mov   [0xf400],byte 0           ; empty keyboard buffer
@@ -882,7 +900,6 @@ fpu_ok_1:
     mov   [application_table_status],0
     mov   esi,process_terminated
     call  sys_msg_board_str
-
     ret
 
 iglobal
