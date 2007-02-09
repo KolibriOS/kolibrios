@@ -581,6 +581,13 @@ terminate: ; terminate application
            .slot equ esp   ;locals
 
            push   esi      ;save .slot
+
+           shl esi, 8
+           cmp [PROC_BASE+esi+APPDATA.dir_table], 0
+           jne @F
+           add esp, 4
+           ret
+@@:
            mov    esi,process_terminating
            call   sys_msg_board_str
 @@:
@@ -598,6 +605,9 @@ term9:
            add esi, PROC_BASE+APP_OBJ_OFFSET
 @@:
            mov eax, [esi+APPOBJ.fd]
+           test eax, eax
+           jz @F
+
            cmp eax, esi
            je @F
 
