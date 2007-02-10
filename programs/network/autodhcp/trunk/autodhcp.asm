@@ -5,128 +5,98 @@
 ;
 ; by HidnPlayr & Derpenguin
 
-
-TIMEOUT equ 60 ; in seconds
-BUFFER	equ 1024
-__DEBUG__ equ 1
-__DEBUG_LEVEL__ equ 1; 1 = all, 2 = errors
-
 use32
 	       org    0x0
 
-	       db     'MENUET01'	      ; 8 byte id
-	       dd     0x01		      ; header version
-	       dd     START		      ; start of code
-	       dd     IM_END		      ; size of image
-	       dd     I_END		      ; memory for app
-	       dd     I_END		      ; esp
-	       dd     0x0 , 0x0 	      ; I_Param , I_Icon
+	       db     'MENUET01'	    ; 8 byte id
+	       dd     0x01		    ; header version
+	       dd     START		    ; start of code
+	       dd     IM_END		    ; size of image
+	       dd     I_END		    ; memory for app
+	       dd     I_END		    ; esp
+	       dd     0x0 , 0x0 	    ; I_Param , I_Icon
 
-;include 'macros.inc'
+; CONFIGURATION
+
+
+TIMEOUT 	    equ 60		    ; in seconds
+BUFFER		    equ 1024		    ; in bytes
+__DEBUG__	    equ 1		    ; enable/disable
+__DEBUG_LEVEL__     equ 1		    ; 1 = all, 2 = errors
+
+; CONFIGURATION FOR LINK-LOCAL
+
+PROBE_WAIT	    equ 1		    ; second  (initial random delay)
+PROBE_MIN	    equ 1		    ; second  (minimum delay till repeated probe)
+PROBE_MAX	    equ 2		    ; seconds (maximum delay till repeated probe)
+PROBE_NUM	    equ 3		    ;         (number of probe packets)
+
+ANNOUNCE_NUM	    equ 2		    ;         (number of announcement packets)
+ANNOUNCE_INTERVAL   equ 2		    ; seconds (time between announcement packets)
+ANNOUNCE_WAIT	    equ 2		    ; seconds (delay before announcing)
+
+MAX_CONFLICTS	    equ 10		    ;         (max conflicts before rate limiting)
+
+RATE_LIMIT_INTERVAL equ 60		    ; seconds (delay between successive attempts)
+
+DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
+
+include 'macros.inc'
 include 'eth.inc'
 include 'debug-fdo.inc'
+include 'dhcp.inc'
+include 'events.inc'
+include 'common.inc'
 
 
- ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-; CONFIGURATION FOR LINK-LOCAL                                                         ;
- ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-				       ;                                               ;
-PROBE_WAIT	    equ 1	       ; second  (initial random delay)                ;
-PROBE_MIN	    equ 1	       ; second  (minimum delay till repeated probe)   ;
-PROBE_MAX	    equ 2	       ; seconds (maximum delay till repeated probe)   ;
-PROBE_NUM	    equ 3	       ;         (number of probe packets)             ;
-				       ;                                               ;
-ANNOUNCE_NUM	    equ 2	       ;         (number of announcement packets)      ;
-ANNOUNCE_INTERVAL   equ 2	       ; seconds (time between announcement packets)   ;
-ANNOUNCE_WAIT	    equ 2	       ; seconds (delay before announcing)             ;
-				       ;                                               ;
-MAX_CONFLICTS	    equ 10	       ;         (max conflicts before rate limiting)  ;
-				       ;                                               ;
-RATE_LIMIT_INTERVAL equ 60	       ; seconds (delay between successive attempts)   ;
-				       ;                                               ;
-DEFEND_INTERVAL     equ 10	       ; seconds (min. wait between defensive ARPs)    ;
-				       ;                                               ;
- ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+START:					    ; start of execution
 
+    set_event_mask	event_network
+    eth.set_network_drv 0x00000383
 
-START:				       ; start of execution
+    DEBUGF  1,"Stack Initialized.\n"
 
-    mov     eax,40		       ; Report events
-    mov     ebx,10000000b	       ; Only Stack
-    int     0x40
-
-    mov     eax,52		       ; first, enable the stack (packet driver)
-    mov     ebx,2
-    mov     ecx,0x00000383
-    int     0x40
-
-    DEBUGF  1,"DHCP: Stack Initialized.\n"
-
-    eth.status eax		       ; Read the Stack status
-    test    eax,eax		       ; if eax is zero, no driver was found
+    eth.status eax			    ; Read the Stack status
+    test    eax,eax			    ; if eax is zero, no driver was found
     jnz     @f
-    DEBUGF  1,"DHCP: No Card detected\n"
+    DEBUGF  1,"No Card detected\n"
     jmp     close
 
    @@:
-    DEBUGF  1,"DHCP: Detected card: %x\n",eax
+    DEBUGF  1,"Detected card: %x\n",eax
    @@:
     eth.check_cable eax
     test    al,al
     jnz     @f
-    DEBUGF  1,"DHCP: Ethernet Cable not connected\n"
-
-    mov     eax,5
-    mov     ebx,500		       ; loop until cable is connected (check every 5 sec)
-    int     0x40
-
+    DEBUGF  1,"Ethernet Cable not connected\n"
+    wait 500				    ; loop until cable is connected (check every 5 sec)
     jmp     @r
 
    @@:
-    DEBUGF  1,"DHCP: Ethernet Cable status: %d\n",al
+    DEBUGF  1,"Ethernet Cable status: %d\n",al
 
     eth.read_mac MAC
-    DEBUGF  1,"DHCP: MAC address: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
+    DEBUGF  1,"MAC address: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
 
-;    jmp     apipa   ; comment this out if you want to skip DHCP and continue with link-local
-
-;***************************************************************************
-;
-;  DHCP rubish starts here
-;
-;***************************************************************************
-
-
-
-    eth.check_port 68,eax	       ; Check if port 68 is available
+    eth.check_port 68,eax		    ; Check if port 68 is available
     cmp     eax,1
     je	    @f
 
-    DEBUGF  1,"DHCP: Port 68 is already in use.\n"
+    DEBUGF  1,"Port 68 is already in use!\n"
     jmp     close
 
    @@:
-    eth.open_udp 68,67,-1,[socketNum]  ; open socket (local,remote,ip,socket)
-    DEBUGF  1,"DHCP: Socket opened: %d\n",eax
-				       ; Setup the first msg we will send
-    mov     byte [dhcpMsgType], 0x01   ; DHCP discover
-    mov     dword [dhcpLease], esi     ; esi is still -1 (-1 = forever)
+    eth.open_udp 68,67,-1,[socketNum]	    ; open socket (local,remote,ip,socket)
+    DEBUGF  1,"Socket opened: %d\n",eax
+					    ; Setup the first msg we will send
+    mov     byte [dhcpMsgType], 0x01	    ; DHCP discover
+    mov     dword [dhcpLease], esi	    ; esi is still -1 (-1 = forever)
 
-    mov     eax,26
-    mov     ebx,9
-    int     0x40
+    get_time_counter eax
     imul    eax,100
     mov     [currTime],eax
 
-;***************************************************************************
-;   Function
-;      buildRequest
-;
-;   Description
-;      Creates a DHCP request packet.
-;
-;***************************************************************************
-buildRequest:
+buildRequest:				    ; Creates a DHCP request packet.
     xor     eax,eax			    ; Clear dhcpMsg to all zeros
     mov     edi,dhcpMsg
     mov     ecx,BUFFER
@@ -142,39 +112,32 @@ buildRequest:
     mov     eax,[currTime]
     mov     [edx+8], eax		    ; secs, our uptime
     mov     [edx+10], byte 0x80 	    ; broadcast flag set
-
     mov     eax, dword [MAC]		    ; first 4 bytes of MAC
     mov     [edx+28],dword eax
     mov     ax, word [MAC+4]		    ; last 2 bytes of MAC
     mov     [edx+32],word ax
-
     mov     [edx+236], dword 0x63538263     ; magic number
-
     mov     [edx+240], word 0x0135	    ; option DHCP msg type
     mov     al, [dhcpMsgType]
     mov     [edx+240+2], al
-
     mov     [edx+240+3], word 0x0433	    ; option Lease time = infinity
     mov     eax, [dhcpLease]
     mov     [edx+240+5], eax
-
     mov     [edx+240+9], word 0x0432	    ; option requested IP address
     mov     eax, [dhcpClientIP]
     mov     [edx+240+11], eax
-
     mov     [edx+240+15], word 0x0437	    ; option request list
     mov     [edx+240+17], dword 0x0f060301
 
     cmp     [dhcpMsgType], byte 0x01	    ; Check which msg we are sending
-    jne     br001
+    jne     request_options
 
     mov     [edx+240+21], byte 0xff	    ; "Discover" options
 
     mov     [dhcpMsgLen], dword 262	    ; end of options marker
-    jmp     ctr000
+    jmp     send_request
 
-br001:					    ; "Request" options
-
+request_options:
     mov     [edx+240+21], word 0x0436	    ; server IP
     mov     eax, [dhcpServerIP]
     mov     [edx+240+23], eax
@@ -183,9 +146,8 @@ br001:					    ; "Request" options
 
     mov     [dhcpMsgLen], dword 268
 
-ctr000:
-
-    eth.write_udp [socketNum],[dhcpMsgLen],dhcpMsg    ; write to socket ( send broadcast request )
+send_request:
+    eth.write_udp [socketNum],[dhcpMsgLen],dhcpMsg ; write to socket ( send broadcast request )
 
     mov     eax, dhcpMsg		    ; Setup the DHCP buffer to receive response
     mov     [dhcpMsgLen], eax		    ; Used as a pointer to the data
@@ -197,14 +159,14 @@ ctr000:
     eth.poll [socketNum]
 
     test    eax,eax
-    jnz     ctr002
+    jnz     read_data
 
-    DEBUGF  2,"DHCP: Timeout!\n"
+    DEBUGF  2,"Timeout!\n"
     eth.close_udp [socketNum]
     jmp    apipa			    ; no server found, lets try zeroconf
 
 
-ctr002: 				    ; we have data - this will be the response
+read_data:				    ; we have data - this will be the response
     eth.read_packet [socketNum], dhcpMsg, BUFFER
     mov     [dhcpMsgLen], eax
     eth.close_udp [socketNum]
@@ -235,17 +197,12 @@ discover:
     jmp     buildRequest
 
 request:
-    call     parseResponse
+    call    parseResponse
 
     cmp     [dhcpMsgType], byte 0x05	    ; Was the response an ACK? It should be
     jne     apipa			    ; NO - so we do zeroconf
 
-close:
-    DEBUGF  1,"DHCP: Exiting\n"
-
-    mov     eax,-1			    ; at last, exit
-    int     0x40
-
+    jmp     close
 
 ;***************************************************************************
 ;   Function
@@ -261,126 +218,119 @@ close:
 ;
 ;***************************************************************************
 parseResponse:
-    DEBUGF  1,"DHCP: Data received, parsing response\n"
+    DEBUGF  1,"Data received, parsing response\n"
     mov     edx, dhcpMsg
 
     pusha
     eth.set_IP [edx+16]
     mov     eax,[edx]
     mov     [dhcpClientIP],eax
-    DEBUGF  1,"DHCP: Client: %u.%u.%u.%u\n",[edx+16]:1,[edx+17]:1,[edx+18]:1,[edx+19]:1
+    DEBUGF  1,"Client: %u.%u.%u.%u\n",[edx+16]:1,[edx+17]:1,[edx+18]:1,[edx+19]:1
     popa
 
-    add     edx, 240	    ; Point to first option
+    add     edx, 240			    ; Point to first option
+    xor     ecx, ecx
 
+next_option:
+    add     edx, ecx
 pr001:
     mov     al, [edx]
-    cmp     al, 0xff	    ; End of options?
+    cmp     al, 0xff			    ; End of options?
     je	    pr_exit
 
-    cmp     al, 53	    ; Msg type is a single byte option
-    jne     pr002
+    cmp     al, dhcp_msg_type		    ; Msg type is a single byte option
+    jne     @f
 
     mov     al, [edx+2]
     mov     [dhcpMsgType], al
     add     edx, 3
-    jmp     pr001	    ; Get next option
+    jmp     pr001			    ; Get next option
 
-pr002:
+@@:
     inc     edx
     movzx   ecx, byte [edx]
-    inc     edx 	    ; point to data
+    inc     edx 			    ; point to data
 
-    cmp     al, 54	    ; server id
-    jne     pr0021
-    mov     eax, [edx]	    ; All options are 4 bytes, so get it
+    cmp     al, dhcp_dhcp_server_id	    ; server ip
+    jne     @f
+    mov     eax, [edx]
     mov     [dhcpServerIP], eax
-    DEBUGF  1,"DHCP: Server: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
-    jmp     pr003
+    DEBUGF  1,"Server: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
+    jmp     next_option
 
-pr0021:
-    cmp     al, 51	    ; lease
-    jne     pr0022
+@@:
+    cmp     al, dhcp_address_time
+    jne     @f
 
     pusha
-    DEBUGF  1,"DHCP: lease: "
-    mov eax,[edx]
-    bswap eax
-    mov  [dhcpLease],eax
-    cmp  dword[edx],-1	    ; i really don't know, how to test it
-    jne  no_lease_forever
-    DEBUGF  1,"forever\n"
-    jmp  @f
-   no_lease_forever:
-    DEBUGF  1,"%d\n",eax
-   @@:
+    mov     eax,[edx]
+    bswap   eax
+    mov     [dhcpLease],eax
+    DEBUGF  1,"lease: %d\n",eax
     popa
 
-    jmp     pr003
+    jmp     next_option
 
-pr0022:
-    cmp     al, 1	    ; subnet mask
-    jne     pr0023
+@@:
+    cmp     al, dhcp_subnet_mask
+    jne     @f
 
     pusha
     eth.set_SUBNET [edx]
-    DEBUGF  1,"DHCP: Subnet: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
+    DEBUGF  1,"Subnet: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
-    jmp     pr003
+    jmp     next_option
 
-pr0023:
-    cmp     al, 3	    ; gateway ip
-    jne     pr0024
+@@:
+    cmp     al, dhcp_router
+    jne     @f
 
     pusha
     eth.set_GATEWAY [edx]
-    DEBUGF  1,"DHCP: Gateway: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
+    DEBUGF  1,"Gateway: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
+    jmp     next_option
 
-pr0024:
-    cmp     al, 6	    ; dns ip
-    jne     pr003
+
+@@:
+    cmp     al, dhcp_domain_server
+    jne     next_option
 
     pusha
     eth.set_DNS [edx]
-    DEBUGF  1,"DHCP: DNS: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
+    DEBUGF  1,"DNS: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
-
-pr003:
-    add     edx, ecx
-    jmp     pr001
+    jmp     next_option
 
 pr_exit:
 
-;    DEBUGF  1,"DHCP: Sending ARP probe\n"
-;    eth.ARP_ANNOUNCE [dhcpClientIP]      ; send an ARP announc packet
+;    DEBUGF  1,"Sending ARP announce\n"
+;    eth.ARP_ANNOUNCE [dhcpClientIP]         ; send an ARP announce packet
 
     jmp close
 
 apipa:
     call random
-    mov  ecx,0xfea9			 ; IP 169.254.0.0 link local net, see RFC3927
+    mov  ecx,0xfea9			    ; IP 169.254.0.0 link local net, see RFC3927
     mov  cx,ax
-    eth.set_IP ecx			 ; mask is 255.255.0.0
-    DEBUGF 1,"ZeroConf: Link Local IP assinged: 169.254.%u.%u\n",[generator+2]:1,[generator+3]:1
+    eth.set_IP ecx			    ; mask is 255.255.0.0
+    DEBUGF 1,"Link Local IP assinged: 169.254.%u.%u\n",[generator+2]:1,[generator+3]:1
     eth.set_SUBNET 0xffff
     eth.set_GATEWAY 0x0
     eth.set_DNS 0x0
 
-    mov   eax,5
-    mov   ebx,PROBE_WAIT*100
-    int   0x40
+    wait PROBE_WAIT*100
 
     xor esi,esi
    probe_loop:
-    call  random		       ; create a pseudo random number in eax (seeded by MAC)
+    call  random			    ; create a pseudo random number in eax (seeded by MAC)
 
-    cmp   al,PROBE_MIN*100	       ; check if al is bigger then PROBE_MIN
-    jge   @f			       ; all ok
-    add   al,(PROBE_MAX-PROBE_MIN)*100 ; al is too small
+    cmp   al,PROBE_MIN*100		    ; check if al is bigger then PROBE_MIN
+    jge   @f				    ; all ok
+    add   al,(PROBE_MAX-PROBE_MIN)*100	    ; al is too small
    @@:
 
     cmp   al,PROBE_MAX*100
@@ -389,45 +339,44 @@ apipa:
    @@:
 
     movzx ebx,al
-    DEBUGF  1,"ZeroConf: Waiting %u0ms\n",ebx
-    mov   eax,5
-    int   0x40
+    DEBUGF  1,"Waiting %u0ms\n",ebx
+    wait  ebx
 
-    DEBUGF  1,"ZeroConf: Sending Probe\n"
-;    eth.ARP_PROBE MAC2
+    DEBUGF  1,"Sending Probe\n"
+;    eth.ARP_PROBE MAC
     inc   esi
 
     cmp   esi,PROBE_NUM
     jl	  probe_loop
 
-; now we wait further ANNOUNCE_WAIT seconds and send ANNOUNCE_NUM ARP announces. If any other host has assingnd
+; now we wait further ANNOUNCE_WAIT seconds and send ANNOUNCE_NUM ARP announces. If any other host has assingned
 ; IP within this time, we should create another adress, that have to be done later
 
-    DEBUGF  1,"ZeroConf: Waiting %us\n",ANNOUNCE_WAIT
-    mov   eax,5
-    mov   ebx,ANNOUNCE_WAIT*100
-    int   0x40
-
+    DEBUGF  1,"Waiting %us\n",ANNOUNCE_WAIT
+    wait ANNOUNCE_WAIT*100
     xor   esi,esi
    announce_loop:
 
-    DEBUGF  1,"ZeroConf: Sending Announce\n"
-;    eth.ARP_ANNOUNCE MAC2
+    DEBUGF  1,"Sending Announce\n"
+;    eth.ARP_ANNOUNCE MAC
 
     inc   esi
     cmp   esi,ANNOUNCE_NUM
     je	  @f
 
-    DEBUGF  1,"ZeroConf: Waiting %us\n",ANNOUNCE_INTERVAL
-    mov   eax,5
-    mov   ebx,ANNOUNCE_INTERVAL*100
-    int   0x40
-
+    DEBUGF  1,"Waiting %us\n",ANNOUNCE_INTERVAL
+    wait  ANNOUNCE_INTERVAL*100
     jmp   announce_loop
    @@:
-    jmp   close   ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
+    ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
+
+close:
+    DEBUGF  1,"Exiting\n"
+    exit				    ; at last, exit
+
 
 random:
+
     mov   eax,[generator]
     add   eax,-43ab45b5h
     ror   eax,1
@@ -436,13 +385,12 @@ random:
     ror   eax,1
     xor   eax,dword[MAC+2]
     mov   [generator],eax
+
 ret
-
-
 
 ; DATA AREA
 
-include_debug_strings ; ALWAYS present in data section
+include_debug_strings
 
 IM_END:
 

@@ -93,6 +93,13 @@ macro eth.set_DNS DNS {
     int  0x40
 }
 
+macro eth.set_network_drv conf {
+    mov  ecx,conf
+    mov  ebx,2
+    mov  eax,52
+    int  0x40
+}
+
 macro eth.open_udp local,remote,ip,socket {
     mov  ecx, local
     mov  edx, remote
