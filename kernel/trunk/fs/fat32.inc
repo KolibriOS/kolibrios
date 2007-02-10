@@ -98,7 +98,6 @@ align 4
 fat_cache:           times 512 db 0
  Sector512:                      ; label for dev_hdcd.inc
   buffer:              times 512 db 0
-  deltree_buffer:      times 512 db 0
   fsinfo_buffer:       times 512 db 0
 endg
 
@@ -1236,25 +1235,7 @@ file_delete:
     jc    file_to_delete_not_found
 
     test  byte [ebx+11],0x10    ; is it directory?
-    jz    delete_notdir         ; no. it's file
-    cmp   edi,1                 ; allow directory remove
-    jnz   delete_no_access      ; no
-
-    push  eax                   ; save directory sector
-    mov   eax,[ebx+20-2]        ; first cluster of file
-    mov   ax,[ebx+26]           ; 0 length files start cluster = 0
-    and   eax,[fatMASK]
-    xor   ebp,ebp               ; counter for directory deepnes
-    call  clear_directory
-    pop   eax
-    jc    delete_no_access
-
-    push  ebx                   ; save directory pointer in buffer
-    mov   ebx,buffer
-    call  hd_read               ; read directory sector
-    cmp  [hd_error],0
-    jne  delete_no_access_1
-    pop   ebx
+    jnz   delete_no_access
 
   delete_notdir:
     call  delete_entry_name
@@ -1313,129 +1294,6 @@ clear_cluster_chain:
     call  add_disk_free_space   ; add clusters to free disk space
   access_denied_01:
     pop   edx ecx eax
-    ret
-
-
-clear_directory:
-;-----------------------------------------------------
-; input  : eax = directory cluster
-;          ebp = directory deepnes
-; Note   : use recursive call
-;-----------------------------------------------------
-    pushad
-    inc   ebp
-    cmp   ebp,64                ; if over 63 directory deep
-    jnb   clear_error           ; something must be wrong
-
-  clear_new_cluster:
-    cmp   eax,[LAST_CLUSTER]
-    ja    clear_end
-    cmp   eax,[ROOT_CLUSTER]    ; don't remove root cluster
-    jz    clear_end
-    mov   esi,eax               ; esi = current directory cluster
-    sub   eax,2
-    jb    clear_end
-    mov   ecx,[SECTORS_PER_CLUSTER]
-    imul  eax,ecx
-    add   eax,[DATA_START]
-
-  clear_new_sector:
-    mov   edi,eax               ; edi = current directory sector
-    mov   ebx,deltree_buffer
-    call  hd_read
-    cmp  [hd_error],0
-    jne  clear_error    
-
-    mov   edx,512/32            ; count of dir entrys per sector = 16
-
-  clear_analyze:
-    mov   al,[ebx+11]           ; file attribute
-    and   al,0xf
-    cmp   al,0xf
-    je    clear_long_filename
-
-    cmp   byte [ebx],'.'        ; parent or current directory
-    je    clear_next_entry
-    cmp   byte [ebx],0xe5       ; deleted
-    je    clear_next_entry
-    cmp   byte [ebx],0          ; empty
-    je    clear_write_last
-    ;je    clear_next_entry
-
-    mov   eax,[ebx+20-2]        ; first cluster of entry
-    mov   ax,[ebx+26]
-    and   eax,[fatMASK]
-
-    test  byte [ebx+11],0x10    ; is it directory?
-    jz    clear_file            ; no
-
-    push  eax ebx
-    mov   eax,edi
-    mov   ebx,deltree_buffer    ; save buffer over recursive call
-    call  hd_write              ; write directory sector to disk
-    cmp   [hd_error],0
-    jne   clear_error    
-
-    pop   ebx eax
-
-    call  clear_directory       ; recursive call !!!
-    jc    clear_error           ; exit if error found
-
-    push  eax ebx
-    mov   eax,edi
-    mov   ebx,deltree_buffer
-    call  hd_read               ; read directory sector again
-    cmp  [hd_error],0
-    jne   clear_error_1
-
-    pop   ebx eax
-
-  clear_file:
-    call  clear_cluster_chain
-    cmp  [hd_error],0
-    jne   clear_error
-
-  clear_long_filename:
-    mov   byte [ebx],0xe5
-
-  clear_next_entry:
-    add   ebx,32                ; position of next dir entry
-    dec   edx
-    jnz   clear_analyze
-
-    mov   eax,edi
-    mov   ebx,deltree_buffer
-    call  hd_write              ; write directory sector to disk
-    cmp   [hd_error],0
-    jne   clear_error
-
-    inc   eax                   ; next sector
-    dec   ecx
-    jnz   clear_new_sector
-
-    mov   eax,esi
-    call  get_FAT               ; get next cluster
-    cmp   [hd_error],0
-    jne   clear_error
-
-    jmp   clear_new_cluster     ; clear it
-
-  clear_write_last:
-    mov   eax,edi
-    mov   ebx,deltree_buffer
-    call  hd_write              ; write directory sector to disk
-    cmp   [hd_error],0
-    jne   clear_error
-
-  clear_end:
-    popad
-    clc
-    ret
-clear_error_1:
-    add  esp,8
-  clear_error:
-    popad
-    stc
     ret
 
 
@@ -2263,6 +2121,9 @@ fs_HdRewrite:
         push    fat16_root_next
         jmp     .common1
 .noroot:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp+1], 0
+        jz      .ret1
 ; check existence
         mov     byte [ebp], 0
         call    hd_find_lfn

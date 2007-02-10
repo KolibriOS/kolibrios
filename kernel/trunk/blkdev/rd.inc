@@ -1514,6 +1514,9 @@ fs_RamdiskRewrite:
         push    ramdisk_root_next
         jmp     .common1
 .noroot:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp+1], 0
+        jz      .ret1
 ; check existence
         mov     byte [ebp], 0
         call    rd_find_lfn
