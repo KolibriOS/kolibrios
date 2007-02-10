@@ -358,10 +358,6 @@ pr_exit:
 ;    DEBUGF  1,"DHCP: Sending ARP probe\n"
 ;    eth.ARP_ANNOUNCE [dhcpClientIP]      ; send an ARP announc packet
 
-    eth.get_GATEWAY eax 		  ; if gateway was not set, set it to the DHCP SERVER IP
-    test  eax,eax
-    jnz   close
-    eth.set_GATEWAY [dhcpServerIP]
     jmp close
 
 apipa:

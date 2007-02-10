@@ -286,7 +286,7 @@ local .getdata,.loop,.end
     cmp     endptr, bufferl
     jg	    .end
 
-    eth.read_packet socket, endptr, bufferl
+    eth.read_packet socket, endptr, 0
     add     endptr,eax
 
     test    eax, eax
