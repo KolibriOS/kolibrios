@@ -1,212 +1,334 @@
 ;
-;   Save Ramdisk to HD and FD
+;   RDsave для Kolibri (0.6.5.0 и старше)
+;   
 ;   Mario79 2005
-;   Compile with FASM for Menuet
+;   Heavyiron 12.02.2007
 ;
-
+;   Компилировать FASM'ом
+;
+;---------------------------------------------------------------------
 include 'lang.inc'
 include 'macros.inc'
 
 appname equ 'RDsave '
-version equ '1.1'
+version equ '1.2'
+  
+  use32              ; включить 32-битный режим ассемблера
+  org    0x0         ; адресация с нуля
 
-  use32
-  org     0x0
+  db     'MENUET01'  ; 8-байтный идентификатор MenuetOS
+  dd     0x01        ; версия заголовка (всегда 1)
+  dd     START       ; адрес первой команды
+  dd     I_END       ; размер программы
+  dd     0x1000      ; количество памяти
+  dd     0x1000      ; адрес вершины стэка
+  dd     0x0         ; адрес буфера для параметров (не используется)
+  dd     0x0         ; зарезервировано
 
-  db     'MENUET01'     ; 8 byte id
-  dd     0x01           ; header version
-  dd     START          ; start of code
-  dd     I_END          ; size of image
-  dd     0x1000         ; memory for app
-  dd     0x1000         ; esp
-  dd     0x0 , 0x0      ; I_Param , I_Icon
+include 'editbox.inc'
+use_edit_box
 
+;---------------------------------------------------------------------
+;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
+;---------------------------------------------------------------------
 
-;******************************************************************************
+START:
+   mov eax, 40
+   mov ebx, 100111b
+   int 0x40
+red:                    ; перерисовать окно
+    call draw_window    ; вызываем процедуру отрисовки окна
 
-
-START:                ; start of execution
-    xor  eax,eax
-    mov  edi,bootpath
-    mov  ecx,128
-    rep  stosd
-
-    mcall 6,filename,0,-1,bootpath
-
-    mov esi,bootpath+1
-    mov cx,512
-  start_search:
-    lodsb
-    cmp al,"'"
-    jz    set_end_path
-    dec cx
-    cmp cx,0
-    ja    start_search
-  set_end_path:
-    mov [esi-1],byte 0
-
-    mov  eax,40
-    mov  ebx,101b
-    int  0x40
-
-red:
-    call draw_window
+;---------------------------------------------------------------------
+;---  ЦИКЛ ОБРАБОТКИ СОБЫТИЙ  ----------------------------------------
+;---------------------------------------------------------------------
 
 still:
-    mov  eax, 10         ; wait here for event
+    push 10 
+    pop eax 
+    int 40h 
+
+    dec  eax             ; перерисовать окно?
+    jz   red             ; если да - на метку red
+    dec  eax 
+    jz   key
+    dec  eax
+    jz   button
+
+mouse:
+    mouse_edit_boxes editbox,editbox_end
+    jmp still
+    
+button:
+    mov  al,17           ; получить идентификатор нажатой кнопки
     int  0x40
 
-    dec  eax              ; redraw request ?
-    je     red
-;    dec  eax
-;    dec  eax                  ; button in buffer ?
-;    je   button
-
-
-  button:               ; button
-    mov  eax,17            ; get id
+    cmp  ah,1            ; кнопка с id=1("закрыть")?
+    jne  noclose
+    or   eax,-1          ; функция -1: завершить программу
     int  0x40
+
+noclose:
     cmp  ah,2
-    jne  ah_3
-    mcall 18,6,1
-    jmp  red
-  ah_3:
+    jne  path_2
+    call clear_err
+    mov  al,16
+    mov  ebx,1
+    int  0x40
+    call check_for_error
+    jmp  still
+ path_2:
     cmp  ah,3
-    jne  ah_4
-    mcall 18,6,2
-    jmp  red
-  ah_4:
+    jne  path_3
+    call clear_err
+    mov  al,16
+    mov  ebx,2
+    int  0x40
+    call check_for_error
+    jmp  still
+ path_3:
     cmp  ah,4
-    jne  ah_5
-    mcall 18,6,3,bootpath+1
-    jmp  red
-  ah_5:
-    cmp  ah,5
-    jne  ah_6
-    mcall 16,1
-    jmp  red
-  ah_6:
-    cmp  ah,6
-    jne  ah_1
-    mcall 16,2
-    jmp  red
-
-  ah_1:
-    cmp  ah,1
-    je     exit
+    jne  path_4
+    call clear_err
+    mov  al,18
+    mov  ebx,6
+    mov  ecx,path3
+    int  0x40
+    call check_for_error
+    jmp  still
+ path_4:
+    call clear_err
+    mov  eax,18
+    mov  ebx,6
+    mov  ecx,path4
+    int  0x40
+    call check_for_error
     jmp  still
 
-  exit:
-    or     eax,-1            ; close this program
+key:         
+    mov  al,2
     int  0x40
+    key_edit_boxes editbox,editbox_end
+    jmp  still
 
 
-;   *********************************************
-;   *******  WINDOW DEFINITIONS AND DRAW ********
-;   *********************************************
+check_for_error:                      ;Обработчик ошибок
+    cmp eax,0
+    jne err1
+    mov ecx,[sc.work_text]
+    mov edx,ok
+    jmp print
+ err1:
+    cmp eax,1
+    jne err3
+    mov ecx,0xdd2222
+    mov edx,error11
+    jmp print
+ err3:
+    cmp eax,3
+    jne err5
+    mov ecx,0xdd2222
+    mov edx,error3
+    jmp print
+ err5:
+    cmp eax,5
+    jne err8
+    mov ecx,0xdd2222
+    mov edx,error5
+    jmp print
+ err8:
+    cmp eax,8
+    jne err9
+    mov ecx,0xdd2222
+    mov edx,error8
+    jmp print
+ err9:
+    cmp eax,9
+    jne err10
+    mov ecx,0xdd2222
+    mov edx,error9
+    jmp print
+err10:
+    cmp eax,10
+    jne err11
+    mov ecx,0xdd2222
+    mov edx,error10
+    jmp print
+ err11:
+    mov ecx,0xdd2222
+    mov edx,error11
+    jmp print
+
+ print:
+    mov eax,4                              ;надписи
+    mov ebx,20 shl 16 + 148
+    or  ecx,0x80000000
+    int 0x40
+    ret
+
+clear_err:
+    mov al,13
+    mov ebx,15 shl 16 + 240
+    mov ecx,145 shl 16 +15
+    mov edx,[sc.work]
+    int 0x40
+    ret
+
+;---------------------------------------------------------------------
+;---  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА  ----------------------------------
+;---------------------------------------------------------------------
 
 draw_window:
 
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
+   mov  eax,48
+   mov  ebx,3
+   mov  ecx,sc
+   mov  edx,sizeof.system_colors
+   int  0x40
 
-    mov  eax, 12                ; function 12:tell os about windowdraw
-    mov  ebx, 1                 ; 1, start of draw
-    int  0x40
-                ; DRAW WINDOW
-    mov  eax, 0                 ; function 0 : define and draw window
-    mov  ebx, 200*65536+230     ; [x start] *65536 + [x size]
-    mov  ecx, 200*65536+260     ; [y start] *65536 + [y size]
-    mov  edx, [sc.work]         ; color of work area RRGGBB,8->color gl
-    or   edx,0x33000000
-    mov  edi,header             ; WINDOW LABEL
-    int  0x40
+   mov eax,12                            ; функция 12: сообщить ОС об отрисовке окна
+   mov bl,1                              ; 1 - начинаем рисовать
+   int 0x40
 
-    mcall 8,<11,17>,<26,17>,2,[sc.work_button]
-    inc  edx
-    mcall  , ,<56,17>, ,
-    inc  edx
-    mcall  , ,<86,17>, ,
-    inc  edx
-    mcall  , ,<166,17>, ,
-    inc  edx
-    mcall  , ,<196,17>, ,
+                                         ; СОЗДАЁМ ОКНО
+   xor eax,eax                           ; функция 0 : определить и отрисовать окно
+   mov ebx,200 shl 16 + 270              ; [x старт] *65536 + [x размер]
+   mov ecx,200 shl 16 + 190              ; [y старт] *65536 + [y размер]
+   mov edx,[sc.work]                     ; цвет рабочей области  RRGGBB,8->color gl
+   or  edx,0x33000000
+   mov edi,header                        ; ЗАГОЛОВОК ОКНА
+   int 0x40
 
-    mov    ecx,[sc.work_button_text]
-    or     ecx,0x10000000
-    mcall 4,<17,31>, ,text_123,1
-    add ebx,30
-    add edx,1
-    mcall
-    add ebx,30
-    add edx,1
-    mcall
-    add ebx,80
-    add edx,1
-    mcall
-    add ebx,30
-    add edx,1
-    mcall
+draw_edit_boxes editbox,editbox_end      ;рисование edit box'ов
 
-    mov    ecx,[sc.work_text]
-    or     ecx,0x80000000
-    mcall  ,<40,31>, ,text_1,
-    add    ebx,30
-    mcall  , , ,text_2,
-    add    ebx,30
-    mcall  , , ,text_3,
-    mcall  ,<15,115>, ,text_4,
-    mcall  ,<35,125>, ,text_5,
+   mov al,13                             ;отрисовка теней кнопок
+   mov ebx,194 shl 16 + 60
+   mov ecx,34 shl 16 +15
+   mov edx,0x444444
+   int 0x40
 
-    mcall  ,<35,41>, ,text_6,
-    mcall  ,<35,101>, ,text_6,
-    mcall  ,<40,171>, ,text_7,
-    mcall  ,<40,201>, ,text_8,
-    mcall  ,<25,10>, ,text_9,
-    mcall  ,<25,150>, ,text_10,
+   add ecx,20 shl 16
+   int 0x40
 
-    mov  eax,12           ; function 12:tell os about windowdraw
-    mov  ebx,2            ; 2, end of draw
-    int  0x40
-ret
+   add ecx,20 shl 16
+   int 0x40
+
+   add ecx,40 shl 16
+   int 0x40
+
+   mov eax,8                             ;отрисовка кнопок
+   sub ebx,4 shl 16
+   sub ecx,4 shl 16
+   mov edx,5
+   mov esi,[sc.work_button]
+   int 0x40
+
+   sub ecx,40 shl 16
+   dec edx
+   int 0x40
+
+   sub ecx,20 shl 16
+   dec edx
+   int 0x40
+
+   sub ecx,20 shl 16
+   dec edx
+   int 0x40
+
+   mov al,4                              ;надписи
+   mov ebx,45 shl 16 + 12
+   mov ecx,[sc.work_text]
+   or  ecx,0x80000000
+   mov edx,label1
+   int 0x40
+
+   mov ebx,150 shl 16 + 35
+   mov edx,path1
+   int 0x40
+
+   add ebx,20
+   mov edx,path2
+   int 0x40
+
+   mov ebx,75 shl 16 + 75
+   mov edx,path3
+   int 0x40
+
+   mov ebx,30 shl 16 + 97
+   mov edx,label2
+   int 0x40
+
+   mov ebx,40 shl 16 + 135
+   mov edx,label3
+   int 0x40
+
+   mov ecx,[sc.work_button_text]
+   or  ecx,0x80000000
+   mov ebx,195 shl 16 + 35
+   mov edx,save
+   int 0x40
+
+   add ebx,20
+   int 0x40
+
+   add ebx,20
+   int 0x40
+
+   add ebx,40
+   int 0x40
+
+   mov al,12                            ; функция 12: сообщить ОС об отрисовке окна
+   mov ebx,2                            ; 2, закончили рисовать
+   int 0x40
+
+   ret                                  ; выходим из процедуры
 
 
-header   db appname,version,0
+;---------------------------------------------------------------------
+;---  ДАННЫЕ ПРОГРАММЫ  ----------------------------------------------
+;---------------------------------------------------------------------
 
-text_123 db '12345'
+header db appname,version,0
+
+editbox:
+edit1 edit_box 170,10,113,0xffffff,0,0,0,1024,path4,ed_focus
+editbox_end:
+
+path1   db '/fd/1/',0
+path2   db '/fd/2/',0
+path3   db '/hd0/1/kolibri.img',0
 
 if lang eq ru
-
-text_1  db 'В папку С:\KOLIBRI',0
-text_2  db 'В корень диска С',0
-text_3  db 'Путь в файле RD2HD.TXT',0
-text_4  db 'п.3 для резервного сохранения',0
-text_5  db 'т.к. в ядре его нет.',0
-text_6  db '(папка должна присутствовать)',0
-text_7  db 'На /FD/1',0
-text_8  db 'На /FD/2',0
-text_9  db 'Сохранение на жесткий диск:',0
-text_10 db 'Сохранение на дискету:',0
+save    db 'Сохранить',0
+label1  db 'Выберите один из вариантов:',0
+label2  db 'Или введите полный путь к файлу:',0
+label3  db 'Все папки должны существовать',0
+ok      db 'RAM-диск сохранен успешно',0
+error3  db 'Неизвестная файловая система',0
+error5  db 'Несуществующий путь',0
+error8  db 'Нет места на диске',0
+error9  db 'Таблица FAT разрушена',0
+error10 db 'Доступ запрещен',0
+error11 db 'Ошибка устройства',0
 
 else
-
-text_1  db 'To the folder C:\KOLIBRI',0
-text_2  db 'To the root of C',0
-text_3  db 'To path in the file RD2HD.TXT',0
-text_4  db 'p.3 for backup, as the kernel',0
-text_5  db 'can not boot from there.',0
-text_6  db '(folder must exist)',0
-text_7  db 'To /FD/1',0
-text_8  db 'To /FD/2',0
-text_9  db 'Save to hard disk:',0
-text_10 db 'Save to floppy:',0
+save    db '  Save',0
+label1  db 'Select one of the variants:',0
+label2  db '   Or enter full path to file:',0
+label3  db '    All folders must exist',0
+ok      db 'RAM-drive was saved successfully',0
+error3  db 'Unknown file system',0
+error5  db 'Incorrect path',0
+error8  db 'Disk is full',0
+error9  db 'FAT table corrupted',0
+error10 db 'Access denied',0
+error11 db 'Device error',0
 
 end if
 
-filename db 'RD2HD   TXT'
-I_END:
-sc  system_colors
-bootpath:
+;---------------------------------------------------------------------
+
+I_END:                             ; метка конца программы
+
+sc     system_colors
+path4  rb 1025;1024+1

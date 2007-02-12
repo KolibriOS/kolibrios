@@ -126,7 +126,7 @@ still_end:
 ;close program if we going to reboot
 
   close:
-    mov  eax,-1                 ; close this program
+    or   eax,-1                 ; close this program
     int  0x40
 
 draw_next_process:
@@ -479,19 +479,12 @@ draw_window:
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,[winxpos]             ; [x start] *65536 + [x size]
     mov  ecx,[winypos]             ; [y start] *65536 + [y size]
-    mov  edx,0x03ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
-    mov  esi,0x805080d0            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x005080d0            ; color of frames    RRGGBB
+    mov  edx,0x13ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
+    mov  edi,header                ; WINDOW CAPTION;
     int  0x40
 
-                                   ; WINDOW CAPTION
+                                   
     mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
     mov  ebx,22*65536+35           ; draw info text with function 4
     xor  ecx,ecx
     mov  edx,text
@@ -601,9 +594,7 @@ tbts_2  db  '>'
 tbts_3  db  'START'
 tbte_2:
 
-labelt:
-     db   'Prozesse  - Ctrl/Alt/Del'
-labellen:
+header  db   'Prozesse  - Ctrl/Alt/Del',0
 
 else if lang eq et
 text:
@@ -617,9 +608,7 @@ tbts_2	db  '>'
 tbts_3	db  'START'
 tbte_2:
 
-labelt:
-     db   'Protsessid - Ctrl/Alt/Del'
-labellen:
+header  db   'Protsessid - Ctrl/Alt/Del',0
 
 else
 text:
@@ -633,9 +622,7 @@ tbts_2  db  '>'
 tbts_3  db  'RUN'
 tbte_2:
 
-labelt:
-     db   'Processes - Ctrl/Alt/Del'
-labellen:
+header  db   'Processes - Ctrl/Alt/Del',0
 
 end if
 

@@ -29,19 +29,14 @@ do_draw:
     movzx ecx,ax
 
     shr  eax,17
-;    sub  eax,110
     shl  eax,16
-;    mov  ebx,eax
-;    add  ebx,220
     lea  ebx,[eax-110*10000h+220]
 
     shr  ecx,1
-;    sub  ecx,50
     shl  ecx,16
-;    add  ecx,100
-    sub  ecx,50*10000h - 100
+    sub  ecx,50*10000h - 120
 
-    mov  eax,0			   ; define and draw window
+    xor  eax,eax			   ; define and draw window
     mov  edx,[sc.work]
     mov  esi,edx
     mov  edi,edx
@@ -51,11 +46,12 @@ do_draw:
    mov al,13
    mcall ,18 shl 16+90,29 shl 16+27
    push ebx
-   mcall ,121 shl 16+90,
+   mcall ,121 shl 16+90
    xchg ebx,[esp]
    mcall ,,63 shl 16+27
    pop  ebx
    mcall
+   mcall ,179 shl 16+30,99 shl 16+15
 
    xor edx,edx
    mov al,8
@@ -67,38 +63,38 @@ do_draw:
    mcall ,15 shl 16+87,60 shl 16+24,,0x9900
    inc edx
    mcall ,118 shl 16+87,,,0xaaaaaa ;cccccc
+   inc edx
+   mcall ,175 shl 16+30,95 shl 16+15,,[sc.work_button]
 
     mov  al,4			   ; 0x00000004 = write text
     mov  ebx,75*65536+10
     mov  ecx,[sc.work_text] ; 8b window nro - RR GG BB color
-    or   ecx,0x10000000
+    or   ecx,0x90000000
     mov  edx,label1		   ; pointer to text beginning
-    mov  esi,label1_len 	   ; text length
     int  0x40
 
-    mov  ecx,0xeeeeee            ; 8b window nro - RR GG BB color
-    or   ecx,0x10000000
+    mov  ebx,15*65536+101
+    mov  edx,label4
+    int  0x40
+
+    mov  ecx,0x90eeeeee            ; 8b window nro - RR GG BB color
     mov  ebx,25*65536+30
-    mov  edx,label2		   ; pointer to text beginning
-    mov  esi,label2_len 	   ; text length
+    mov  edx,label2		     ; pointer to text beginning
     int  0x40
 
     mov  ebx,20*65536+64
-    mov  edx,label3		   ; pointer to text beginning
-    mov  esi,label3_len 	   ; text length
+    mov  edx,label3
     int  0x40
 
     mov  ebx,45*65536+41
-    mov  edx,label4		   ; pointer to text beginning
-    mov  esi,label4_len 	   ; text length
+    mov  edx,label5
     int  0x40
 
     mov  ebx,40*65536+75
-    mov  edx,label5		   ; pointer to text beginning
-    mov  esi,label5_len 	   ; text length
+    mov  edx,label6
     int  0x40
 
-    mov  al,12 		   ; tell os about redraw end
+    mov  al,12 		   ;end of redraw 
     mov  ebx,2
     int  0x40
 
@@ -135,6 +131,8 @@ still:
     jz   restart_kernel
     dec  eax
     jz   restart
+    dec  eax
+    jnz   run_rdsave
 ; we have only one button left, this is close button
 ;    dec  eax
 ;    jnz  still
@@ -157,75 +155,67 @@ mcall_and_close:
     mcall 18,9
     jmp  close_1
 
+run_rdsave:
+    mov eax,70
+    mov ebx,rdsave
+    int 0x40
+    jmp still
+
 data
 
 if lang eq ru
-
   label1:
-      db   'ÇÄò ÇõÅéê:'
-  label1_len = $ - label1
-
+      db   'Ç†Ë ¢Î°Æ‡:',0
   label2:
-      db   'Çõäãûóàíú         üÑêé'
-  label2_len = $ - label2
-
+      db   'ÇÎ™´ÓÁ®‚Ï         ü§‡Æ',0
   label3:
-      db   'èÖêÖáÄèìëä       éíåÖçÄ'
-  label3_len = $ - label3
+      db   'è•‡•ß†Ø„·™       é‚¨•≠†',0
+  label4:
+      db   'ëÆÂ‡†≠®‚Ï ≠†·‚‡Æ©™®',0
 
 else if lang eq en
-
   label1:
-      db   ' SELECT:'
-  label1_len = $ - label1
-
+      db   ' SELECT:',0
   label2:
-      db   'POWER OFF        KERNEL'
-  label2_len = $ - label2
-
+      db   'POWER OFF        KERNEL',0
   label3:
-      db   '  RESTART         CANCEL'
-  label3_len = $ - label3
+      db   '  RESTART         CANCEL',0
+  label4:
+      db   'Save settings',0
 
 else if lang eq et
-
   label1:
-      db   '  VALI:'
-  label1_len = $ - label1
-
+      db   '  VALI:',0
   label2:
-      db   'L‹LITA VƒLJA     KERNEL'
-  label2_len = $ - label2
-
+      db   'L‹LITA VƒLJA     KERNEL',0
   label3:
-      db   '  RESTART         T‹HISTA'
-  label3_len = $ - label3
+      db   '  RESTART         T‹HISTA',0
+  label4:
+      db   'Save settings',0
 
 else 
-
   label1:
-      db   'WAEHLEN:'
-  label1_len = $ - label1
-
+      db   'WAEHLEN:',0
   label2:
-      db   ' BEENDEN         KERNEL'
-  label2_len = $ - label2
-
+      db   ' BEENDEN         KERNEL',0
   label3:
-      db   '  NEUSTART     ABBRECHEN'
-  label3_len = $ - label3
+      db   '  NEUSTART     ABBRECHEN',0
+  label4:
+      db   'Save settings',0
 
 end if
-
-  label4:
-      db   '(End)           (Home)'
-  label4_len = $ - label4
-
   label5:
-      db   '(Enter)          (Esc)'
-  label5_len = $ - label5  
+      db   '(End)           (Home)',0
+  label6:
+      db   '(Enter)          (Esc)',0
 
-
+rdsave:
+        dd      7
+        dd      0
+        dd      0
+        dd      0
+        dd      0
+        db      '/rd/1/rdsave',0
 udata
   sc  system_colors
 

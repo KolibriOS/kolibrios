@@ -671,19 +671,12 @@ Returned value:
 Parameters:
   * eax = 18 - function number
   * ebx = 6 - subfunction number
-  * ecx defines path to the file:
-    * 1 = in the folder "/KOLIBRI"
-    * 2 = in the root folder
-    * 3 = edx points to the path (names of folders in the format 8+3,
-      divided by '/')
+  * ecx = pointer to the full path to file
+    (for example, "/hd0/1/kolibri/kolibri.img")
 Returned value:
   * eax = 0 - success
   * else eax = error code of the file system
-Замечания:
-  * Filename is fixed, "kolibri.img" (global kernel variable
-    'image_save' from 'preboot.inc')
-  * Drive and partition are defined by subfunction 7
-    and subfunction 8 of function 21.
+Remarks:
   * All folders in the given path must exist, otherwise function
     returns value 5, "file not found".
 
