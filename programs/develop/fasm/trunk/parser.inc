@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2006, Tomasz Grysztar.
+; Copyright (c) 1999-2007, Tomasz Grysztar.
 ; All rights reserved.
 
 parser:
@@ -1297,10 +1297,14 @@ get_label_id:
 	cmp	al,39h
 	jbe	invalid_name
       name_first_char_ok:
-	cmp	ecx,1
-	jne	check_for_reserved_word
 	cmp	al,'$'
-	je	reserved_word
+	jne	check_for_reserved_word
+	cmp	ecx,1
+	jne	invalid_name
+      reserved_word:
+	mov	eax,0Fh
+	pop	edi
+	ret
       check_for_reserved_word:
 	call	get_instruction
 	jnc	reserved_word
@@ -1339,10 +1343,6 @@ get_label_id:
 	call	allocate_label
 	mov	[edx+4],eax
 	mov	[eax+24],ebx
-	pop	edi
-	ret
-      reserved_word:
-	mov	eax,0Fh
 	pop	edi
 	ret
       allocate_label:

@@ -2708,6 +2708,21 @@ Remarks:
     only for RTL8139 network cards.
 
 ======================================================================
+===== Function 53, subfunction 10 - read data from stack.        =====
+======================================================================
+Parameters:
+  * eax = 53
+  * ebx = 11
+  * ecx = socket number
+  * edx = pointer to where data must be written
+  * esi = buffer size (max bytes of data to copy)
+Returned value: 
+  * eax = number of bytes copied
+Remarks:
+  * if buffer size is zero, all data will be copied 
+    (this will be max 4096 bytes)
+
+======================================================================
 = Function 53, subfunction 255 - debug information of network driver. 
 ======================================================================
 Parameters:

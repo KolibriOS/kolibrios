@@ -589,22 +589,7 @@ file_start: dd 7
 start_application: db '/RD/1/LAUNCHER',0
                    times 60 db 32
 
-if lang eq en
-text:
-  db ' NAME/TERMINATE     PID     CPU-USAGE  %   '
-  db 'MEMORY START/USAGE  W-STACK   W-SIZE'
-text_len = $-text
-
-tbts:   db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
-tbte:
-tbts_2  db  '>'
-tbts_3  db  'RUN'
-tbte_2:
-
-labelt:
-     db   'Processes - Ctrl/Alt/Del'
-labellen:
-else if lang eq de
+if lang eq de
 text:
   db ' NAME/BEENDEN       PID     CPU-LAST   % '
   db 'SPEICHER START/NUTZUNG  W-STACK  W-SIZE'
@@ -619,6 +604,7 @@ tbte_2:
 labelt:
      db   'Prozesse  - Ctrl/Alt/Del'
 labellen:
+
 else if lang eq et
 text:
   db ' NIMI/LÕPETA        PID    CPU-KASUTUS %   '
@@ -634,6 +620,23 @@ tbte_2:
 labelt:
      db   'Protsessid - Ctrl/Alt/Del'
 labellen:
+
+else
+text:
+  db ' NAME/TERMINATE     PID     CPU-USAGE  %   '
+  db 'MEMORY START/USAGE  W-STACK   W-SIZE'
+text_len = $-text
+
+tbts:   db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
+tbte:
+tbts_2  db  '>'
+tbts_3  db  'RUN'
+tbte_2:
+
+labelt:
+     db   'Processes - Ctrl/Alt/Del'
+labellen:
+
 end if
 
 I_END:

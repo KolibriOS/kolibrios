@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2006, Tomasz Grysztar.
+; Copyright (c) 1999-2007, Tomasz Grysztar.
 ; All rights reserved.
 
 convert_expression:
@@ -2011,7 +2011,7 @@ get_address_value:
 	jz	address_size_ok
 	cmp	al,ah
 	je	address_size_ok
-	cmp	ax,0408h
+	cmp	ax,0804h
 	jne	address_sizes_do_not_agree
 	mov	[value_type],2
 	mov	eax,[edi]

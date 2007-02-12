@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2006, Tomasz Grysztar.
+; Copyright (c) 1999-2007, Tomasz Grysztar.
 ; All rights reserved.
 
 simple_instruction_except64:
@@ -6344,6 +6344,14 @@ store_instruction:
 	shl	cl,3
 	or	al,cl
 	stos	word [edi]
+      address_32bit_value:
+	cmp	[code_type],64
+	jne	store_address_32bit_value
+	mov	eax,edx
+	cdq
+	cmp	edx,[address_high]
+	jne	value_out_of_range
+	mov	edx,eax
 	jmp	store_address_32bit_value
       sib_address_8bit_value:
 	or	al,01000000b
@@ -6374,10 +6382,12 @@ store_instruction:
 	or	al,cl
 	stos	word [edi]
 	test	ch,44h
-	jnz	store_address_32bit_value
+	jnz	address_32bit_value
+	test	ch,88h
+	jnz	address_32bit_value
 	or	ch,ch
 	jnz	invalid_address_size
-	jmp	store_address_32bit_value
+	jmp	address_32bit_value
       zero_index_register:
 	mov	bl,4
 	mov	cl,1
@@ -6405,7 +6415,7 @@ store_instruction:
 	shl	cl,3
 	or	al,cl
 	stos	byte [edi]
-	jmp	store_address_32bit_value
+	jmp	address_32bit_value
       simple_address_8bit_value:
 	or	al,01000000b
 	mov	cl,[postbyte_register]
@@ -6452,6 +6462,10 @@ store_instruction:
 	jz	address_32bit_relocation_ok
 	mov	eax,ecx
 	shr	eax,16
+	cmp	al,4
+	jne	address_32bit_relocation
+	mov	al,2
+      address_32bit_relocation:
 	xchg	[value_type],al
 	mov	ebx,[address_symbol]
 	xchg	ebx,[symbol_identifier]

@@ -867,28 +867,9 @@ draw_window:
     xor  eax,eax       ; DRAW WINDOW
     mov  ebx,40*65536+355+BBB
     mov  ecx,40*65536+320
-    mov  edx,0x83111199
-;    mov  esi,0x805588dd
-;    mov  edi,0x005588dd
+    mov  edx,0x93111199
+    mov  edi,header
     int  0x40
-
-    mov  eax,4
-    mov  ebx,8*65536+8
-    mov  ecx,0x10ffffff
-    mov  edx,labelt
-    cmp  [syslang],4
-    je         ruslabel
-    add  edx,20
-  ruslabel:
-    mov  esi,19 ;26
-    int  0x40
-
-;    mov  eax,8               ; CLOSE BUTTON
-;    mov  ebx,(355+BBB-19)*65536+12
-;    mov  ecx,5*65536+12
-;    mov  edx,1
-;    mov  esi,0x005588dd
-;    int  0x40
 
     mov  eax,8             ; APPLY ALL
     mov  ebx,(350-79)*65536+100
@@ -1394,8 +1375,7 @@ text1_strings = 14
     db 'SAVE YOUR SETTINGS BEFORE QUIT KOLIBRI          SAVE ALL   '
 text2_strings = 2
 
-labelt:
-    db         'çÄëíêéâäÄ ìëíêéâëíÇ DEVICE SETUP       '
+header  db 'SETUP',0
 
 hex db         '0123456789ABCDEF'
 

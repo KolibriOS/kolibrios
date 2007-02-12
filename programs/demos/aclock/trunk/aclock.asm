@@ -31,12 +31,12 @@
 	; default window position/dimensions (work area)
 	%define DEFAULT_XPOS	-20
 	%define DEFAULT_YPOS	20
-	%define DEFAULT_WIDTH	80
-	%define DEFAULT_HEIGHT	80
+	%define DEFAULT_WIDTH	100
+	%define DEFAULT_HEIGHT	100
 
 	; minimal size (horizontal and vertical) of work area
-	%define MIN_WIDTH	80
-	%define MIN_HEIGHT	80
+	%define MIN_WIDTH	100
+	%define MIN_HEIGHT	100
 
 
 ;********************************************************************

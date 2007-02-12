@@ -480,9 +480,8 @@ draw_window:
   else
     mov  ecx,WIN_Y-15
   end if
-    mov  edx,0x03aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
-    mov  esi,0x805080d0 	   ; цвет полосы заголовка RRGGBB,8->color gl
-    mov  edi,0x005080d0 	   ; цвет рамки            RRGGBB
+    mov  edx,0x13aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
+    mov  edi,header              ; заголовок
     int  0x40
     call draw_week
 
@@ -520,13 +519,8 @@ draw_window:
     int  0x40
     call draw_days
 
-				   ; ЗАГОЛОВОК ОКНА
     mov  eax,4			   ; функция 4 : написать в окне текст
-    mov  ebx,8*65536+8		   ; [x] *65536 + [y]
     mov  ecx,0x10ddeeff 	   ; шрифт 1 и цвет ( 0xF0RRGGBB )
-    mov  edx,zagolovok		   ; адрес строки
-    mov  esi,zag_konets-zagolovok  ; и её длина
-    int  0x40
 
  if SKIP eq 0
     mov  ebx,B_DATE
@@ -796,19 +790,19 @@ calculate:
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
 Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
-zagolovok:		 ; строка заголовка
+header:		 ; строка заголовка
 if lang eq ru
-     db   'КАЛЕНДАРЬ'
+     db   'КАЛЕНДАРЬ',0
 else if lang eq ge
-     db   'KALENDER'
+     db   'KALENDER',0
 else if lang eq fr
-     db   'CALENDRIER'
+     db   'CALENDRIER',0
 else if lang eq et
-     db   'KALENDER'
+     db   'KALENDER',0
 else
-     db   'CALENDAR'
+     db   'CALENDAR',0
 end if
-zag_konets:		 ; и её конец
+
 if SKIP eq 0
 datebut:
 if lang eq ru

@@ -233,9 +233,8 @@ draw_window:
 	xor	eax, eax
 	mov	ebx, 300 * 65536 + 309
 	mov	ecx, 150 * 65536 + 450
-	mov	edx, tcol + 0x3000000	; color of work area RRGGBB,8->color
-	mov	esi, 0x805080d0		; color of grab bar  RRGGBB,8->color
-	mov	edi, 0x005080d0		; color of frames    RRGGBB
+	mov	edx, tcol + 0x13000000	; color of work area RRGGBB,8->color
+	mov	edi, title		; color of frames    RRGGBB
 	int	0x40
 	; Создаём рамку графика
 	mov	eax, 13
@@ -255,13 +254,6 @@ draw_window:
 	int	0x40
 	cmp	cx, 230			; привязано к координатам окна
 	jl	@b
-	; Пишим заголовок
-	mov	eax, 4
-	mov	ebx, 8 * 65536 + 8
-	mov	edx, title
-	mov	ecx, 0x10FFFFFF
-	mov	esi, 29
-	int	0x40
 	
 	; Пишим названия параметров (Cpu load, temper, etc...)
 	mov	edx, msgs_mon
@@ -515,7 +507,7 @@ about_tab:
 DATA
 act_tab		db	2 			; Номер активной вкладки
 tab_lab		db	'Info       Tests      Configs     About'
-title		db	'Ghost Monitor v0.4 [26/12/06]'
+title		db	'Ghost Monitor v0.4 [26/12/06]',0
 
 msgs_mon mls \
 	'CPU Load (%)',\
