@@ -151,6 +151,8 @@ void W_AddFile (char *filename)
         reloadname = filename;
         reloadlump = numlumps;
     }
+
+    printf("open file %s\n\r",filename);
                 
     if ( (handle = fopen (filename,"rb")) == NULL)
     {

@@ -23,7 +23,7 @@
 #ifndef __R_DEFS__
 #define __R_DEFS__
 
-
+#include "doomtype.h"
 // Screenwidth.
 #include "doomdef.h"
 

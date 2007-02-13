@@ -436,7 +436,7 @@ void D_DoomLoop (void)
         S_UpdateSounds (players[consoleplayer].mo);// move positional sounds
 
         D_Display ();
-//      I_UpdateSound();        
+  //      I_UpdateSound();        
         XXX(105);
     }
 }
@@ -1120,8 +1120,8 @@ void D_DoomMain (void)
     printf ("D_CheckNetGame: Checking network game status.\n\r");
     D_CheckNetGame ();
 
-//    printf ("S_Init: Setting up sound.\n\r");
-//    S_Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
+    printf ("S_Init: Setting up sound.\n\r");
+    S_Init (snd_SfxVolume /* *8 */, snd_MusicVolume /* *8*/ );
 
     printf ("HU_Init: Setting up heads up display.\n\r");
     HU_Init ();

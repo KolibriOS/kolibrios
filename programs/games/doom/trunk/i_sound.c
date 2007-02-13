@@ -48,6 +48,8 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 #include "doomdef.h"
 
+#include "kolibri.h"
+
 // The number of internal mixing channels,
 //  the samples calculated for each mixing step,
 //  the size of the 16bit, 2 hardware channel (stereo)
@@ -55,14 +57,14 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 
 // Needed for calling the actual sound output.
-#define SAMPLECOUNT             512
+#define SAMPLECOUNT     8192
 #define NUM_CHANNELS    16
 // It is 2 for 16bit, and 2 for two channels.
-#define BUFMUL                  4
+#define BUFMUL          4
 #define MIXBUFFERSIZE           (SAMPLECOUNT*BUFMUL)
 
-#define SAMPLERATE              11025   // Hz
-#define SAMPLESIZE              2       // 16bit
+#define SAMPLERATE      11025   // Hz
+#define SAMPLESIZE      2       // 16bit
 
 // The actual lengths of all sound effects.
 int             lengths[NUMSFX];
@@ -332,8 +334,8 @@ void I_SetChannels()
     channels[i] = 0;
   }
 
-//  for (i=-128 ; i<128 ; i++)
-//    steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
+  for (i=-128 ; i<128 ; i++)
+    steptablemid[i] = (int)(pow(2.0, (i/64.0))*65536.0);
   
   // Generates volume lookup tables
   //  which also turn the unsigned samples
@@ -423,6 +425,10 @@ int I_SoundIsPlaying(int handle)
 //
 // This function currently supports only 16bit.
 //
+
+extern DWORD hMixBuff[4];
+extern int mix_ptr;
+
 void I_UpdateSound( void )
 {
   
@@ -441,6 +447,9 @@ void I_UpdateSound( void )
 
   // Mixing channel index.
   int                           chan;
+  int i;
+  int flags;
+  flags = 0;
     
     // Left and right channel
     //  are in global mixbuffer, alternating.
@@ -455,7 +464,7 @@ void I_UpdateSound( void )
     // Mix sounds into the mixing buffer.
     // Loop over step*SAMPLECOUNT,
     //  that is 512 values for two channels.
-    while (leftout != leftend)
+    for (i=0; i < 8192; i++)
     {
         // Reset left/right value. 
         dl = 0;
@@ -469,6 +478,8 @@ void I_UpdateSound( void )
             // Check channel, if active.
             if (channels[ chan ])
             {
+                flags=1;
+                
                 // Get the raw data from the channel. 
                 sample = *channels[ chan ];
                 // Add left and right part
@@ -515,7 +526,10 @@ void I_UpdateSound( void )
         leftout += step;
         rightout += step;
     }
- //   I_SubmitSound(mixbuffer);
+    if(flags)
+    { WaveOut(hMixBuff[mix_ptr],(char*)&mixbuffer[0],32768);
+      mix_ptr= (mix_ptr+1)&3;
+    };  
 }
 
 

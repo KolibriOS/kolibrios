@@ -99,7 +99,7 @@ int  I_GetTime (void)
 void I_Init (void)
 {
   I_InitGraphics();
- // I_InitSound();
+  I_InitSound();
 }
 
 //

@@ -45,6 +45,9 @@ rcsid[] = "$Id: s_sound.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 
 //#include "qmus2mid.h"
 
+
+#include "kolibri.h"
+
 void WriteDebug(char *);
 
 // Purpose?
@@ -112,10 +115,10 @@ static channel_t*       channels;
 // These are not used, but should be (menu).
 // Maximum volume of a sound effect.
 // Internal default is max out of 0-15.
-int             snd_SfxVolume = 80;
+int             snd_SfxVolume = 15;
 
 // Maximum volume of music. Useless so far.
-int             snd_MusicVolume = 80; 
+int             snd_MusicVolume = 15; 
 
 
 
@@ -161,6 +164,10 @@ void S_StopChannel(int cnum);
 // Sets channels, SFX and music volume,
 //  allocates channel buffer, sets S_sfx lookup.
 //
+
+DWORD hMixBuff[4];
+int mix_ptr;
+
 void S_Init
 ( int           sfxVolume,
   int           musicVolume )
@@ -169,7 +176,13 @@ void S_Init
 
   printf("S_Init: default sfx volume %d\n", sfxVolume);
 
-  //I_CreateSound();
+  InitSound();
+
+  hMixBuff[0]= CreateBuffer(15);
+  hMixBuff[1]= CreateBuffer(15);
+  hMixBuff[2]= CreateBuffer(15);
+  hMixBuff[3]= CreateBuffer(15);
+  
   numChannels = NUM_CHANNELS;
 
   // Whatever these did with DMX, these are rather dummies now.
