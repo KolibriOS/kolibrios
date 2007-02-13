@@ -8,7 +8,7 @@ define mm.File.Exit   key.alt_x
 
 define mm.Edit.Cut    key.ctrl_x
 define mm.Edit.Copy   key.ctrl_c
-define mm.Edit.Insert key.ctrl_d
+define mm.Edit.Insert key.ctrl_v
 define mm.Edit.Delete key.del
 define mm.Edit.SelAll key.ctrl_a
 
