@@ -1,3 +1,5 @@
+; <Lrz> 13.02.2007 убрал по возможности мерцание, улучшена обработака перерисовки фона
+; добавил фитчу внесения 0х0 по адресу ed_size иначе у Maxxx32 были несостыковки в коде. Пречниа в том, что оптимизация была сведена к тому что я не чистил символы в буфере, когда удалял, я просто их не выводил, и потом когда вносился новый символ, он по просту затирал уже имеющийся. Если бы программа обрабатывала конец строки по ed_size, проблем бы не возникло. Но сейчас этот недостаток исправлен.
 ; <Lrz> 01.02.2007 доработка edit_box, исправил баги.
 ; <Lrz> 26.01.2007 нормальная работа компанента исправил фукцию .check_offset
 ; <Lrz> 24.01.2007 пофиксел баги вызваные не правильным кодом )).
@@ -153,6 +155,7 @@ ret
 ret
 
 	jmp	@f
+;вход только цвет edx
 .draw_bg:
 	mov	ebx,ed_left
 	add	ebx,1
@@ -347,30 +350,6 @@ popad
 	mov	dword [esp+28],0
 popad
 	ret
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;	mov	ebx,eax
-;	mov	eax,ed_pos
-;	xor 	edx,edx
-;	idiv	ebx
-;	xor 	edx,edx
-;	imul    eax,ebx
-;	mov	ed_offset,eax
-;	pop	ebx
-;	cmp	ax,bx
-;	je	@f
-;;;;;;;; данные для закрашивания всей полосы прямоугольника
-;	mov	ebx,ed_left
-;	inc	ebx
-;	shl	ebx,16
-;	mov	bx,ed_width
-;	dec 	ebx
-;	mov	edx,ed_color
-;	call    .draw_bg_eax
-;	mov	dword [esp+28],0
-;@@:	popad
-;	ret
 ;==========================================================
 ;=== обработка клавиатуры =================================
 ;==========================================================
@@ -379,6 +358,7 @@ pusha
 	test	word ed_flags,ed_focus ; если не в фокусе, выходим
 	je     .no_figure ;@f
 
+;Проверка на нажаты shift
 	xor	ecx,ecx
 	push	eax	
 	inc	ecx
@@ -387,9 +367,9 @@ pusha
 	int	0x40
 	test	al,0x03
 	je	@f
-        or      word ed_flags,ed_shift
+        or      word ed_flags,ed_shift   ;установим флаг
 
-@@:     pop	eax
+@@:     pop	eax   ;восстановим считаный символ с клавиатуры
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
 ;----------------------------------------------------------
@@ -433,6 +413,9 @@ pusha
 	mov	edx,ed_size
 	mov	ecx,ed_pos
         call	.del_char
+;clear
+	mov	ebp,ed_size
+        call	.clear_bg
 ;;;;
         mov	eax,ed_shift_pos
         mov	ebx,ed_size
@@ -443,9 +426,11 @@ pusha
         ; проверяем, находится ли курсор в конце
 @@:	mov	ecx,ed_size
 	mov	edx, ed_max
+	test	word ed_flags,ed_insert
+	jne	@f
 	cmp	ecx,edx
 	jae	.no_figure
-	mov	ebx, ed_pos
+@@:	mov	ebx, ed_pos
 	cmp	ebx,edx
 	jl	@f ; если меньше или равно
 .no_figure:
@@ -463,6 +448,12 @@ pusha
 	sub	esi,ecx
 	add	esi,ebx
         mov	edi,esi
+;clear
+pusha
+	mov	edi,ebp
+	mov	ebp,ed_pos
+	call	.clear_bg
+popa
 	jmp	.In_k
 @@:     ; сдвигаем символы после курсора вправо
 	mov	ecx,ed_size
@@ -478,6 +469,13 @@ pusha
 
 	test	word [ebp+36],ed_insert ;IF insert is enable  т.к. edi изменен адресуем через ebp
 	jne	.ins_v
+;clear
+pusha
+	mov	edi,ebp
+	mov	ebp,ed_size
+	call	.clear_bg
+popa
+
 
 	sub	ecx,ebx         ;Найдем кол-во символов для передвижения.
 	inc	edi		;Сместим наши символы в право
@@ -534,7 +532,7 @@ pusha
 	dec	 dword ed_pos
 
 .draw_all:
-	push	.shift;.draw_cursor_text;eax
+       	push	.shift;.draw_cursor_text;eax
 
         test	word ed_flags,ed_shift_on
         je	@f
@@ -542,7 +540,12 @@ pusha
         mov	ebx,ed_size
 	sub	ebx,eax
 	mov	ed_size,ebx
-	jmp	.draw_all2
+
+	call	.clear_cursor
+	call	.check_offset
+        call	.draw_bg
+
+	ret
 
 @@:	dec	 dword ed_size
 
@@ -550,55 +553,10 @@ pusha
 	and    word ed_flags,ed_shift_cl
 	call	.clear_cursor
 	call	.check_offset
-;;;;;;;;;;;;;;;
-	test	eax,eax
-	jne      @f
-	call	.draw_bg
+	mov	ebp,ed_size
+	call	.clear_bg
 	ret
-;;;;;;;;;;;;;;;
-@@:	call	.get_n
-	push	eax
-	mov	ebx,ed_offset
-	add	eax,ebx	;eax = w_off= ed_offset+width
-	mov	ebx,ed_size
-	
-	cmp	eax,ebx
-	jb	@f
-	mov	eax,ed_pos
-	sub	ebx,eax
-	mov	ecx,ed_offset
-	sub	eax,ecx
-	jmp	.nxt
-@@:	mov	ebx,ed_pos
-	push	ebx
-	sub	eax,ebx
-	mov	ebx,eax	;It is don't optimal
-	
-	pop	eax	;ed_pos
-       	mov	ecx,ed_offset
-	sub	eax,ecx
-
-.nxt:
-	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
-	add	ebp,ebx
-	pop	edx
-	cmp	ebp,edx
-	je	@f
-	inc	ebx
-
-@@:     mov	edx,ebx
-	lea	ebx,[eax*2+eax]
-	shl	ebx,1
-	add	ebx,ed_left
-	inc	ebx
-	shl	ebx,16
-	lea	ecx,[edx*2+edx]
-	shl	ecx,1	
-	mov	bx,cx
-	mov	edx,ed_color
-	call	.draw_bg_eax
-	ret
-;	jmp	.shift
+	;jmp	.shift
 ;--- нажата клавиша left ---
 .left:  call	.sh_enable
 	mov	ebx,ed_pos
@@ -636,9 +594,13 @@ pusha
 	;jz	.draw_bg_cursor_text
 	call	.draw_cursor
 
+
+
 .shift: ;;;;;;;SHIFT
-		
-    	call	.draw_bg	;не оптимально
+	;test	ed_flags,ed_
+
+	;mov	ebp,ed_size
+	;call	.clear_bg
 	test      word ed_flags,ed_shift
         je	.f_exit
 ;;;;;;SHIFT end
@@ -702,11 +664,13 @@ pusha
 	mov	edx,shift_color
 	call	.draw_bg_eax
 	and    word ed_flags,1111111111111011b
+	call	.enable_null
         jmp	.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;
 
-.f_exit:	and    word ed_flags,ed_shift_cl
-        jmp	.draw_cursor_text
+.f_exit: and    word ed_flags,ed_shift_cl
+        call	.enable_null
+	jmp	.draw_cursor_text
 
 ;проверка состояния shift был ли он нажат раньше?
 .sh_enable:
@@ -720,7 +684,22 @@ pusha
 	ret
 
 @@:     and	word ed_flags,ed_shift_cl
-.sh_ext_en:	ret
+	ret
+.sh_ext_en:	mov	ebp,ed_size
+		call	.clear_bg
+        	ret
+
+;функция внесения 0 по адресу ed_size+1
+.enable_null:
+        pusha
+        mov	eax,ed_size
+	mov	ebx,ed_text
+	add	eax,ebx
+	inc	eax
+	xor	ebx,ebx
+	mov 	[eax],bl
+	popa
+	ret
 
         ;- удаление символа
 	;Входные данные edx=ed_size;ecx=ed_pos
@@ -771,6 +750,54 @@ pusha
 	
 	pop edi
 	ret
+
+;вычислить закрашиваемую область
+;соглашение в ebp - передается ed_size
+.clear_bg:
+	call	.get_n  ;получить размер в символах ширины компонента
+	push	eax
+	mov	ebx,ed_offset
+	add	eax,ebx	;eax = w_off= ed_offset+width
+	mov	ebx,ebp ;ed_size
+	
+	cmp	eax,ebx
+	jb	@f
+	mov	eax,ed_pos
+	sub	ebx,eax
+	mov	ecx,ed_offset
+	sub	eax,ecx
+	jmp	.nxt
+@@:	mov	ebx,ed_pos
+	push	ebx
+	sub	eax,ebx
+	mov	ebx,eax	;It is don't optimal
+	
+	pop	eax	;ed_pos
+       	mov	ecx,ed_offset
+	sub	eax,ecx
+
+.nxt:
+	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
+	add	ebp,ebx
+	pop	edx
+	cmp	ebp,edx
+	je	@f
+	inc	ebx
+
+@@:     mov	edx,ebx
+	lea	ebx,[eax*2+eax]
+	shl	ebx,1
+	add	ebx,ed_left
+	inc	ebx
+	shl	ebx,16
+	lea	ecx,[edx*2+edx]
+	shl	ecx,1	
+	mov	bx,cx
+	mov	edx,ed_color
+	call	.draw_bg_eax
+	ret
+
+
 ;==========================================================
 ;=== обработка мыши =======================================
 ;==========================================================

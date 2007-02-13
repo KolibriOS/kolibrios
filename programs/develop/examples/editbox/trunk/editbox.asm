@@ -67,30 +67,24 @@ draw_window:		;рисование окна приложения
     xor eax,eax			;обнулить eax
     mov ebx,50*65536+390	;[координата по оси x]*65536 + [размер по оси x]
     mov ecx,30*65536+200	;[координата по оси y]*65536 + [размер по оси y]
-    mov edx,0x03AABBCC		;0xXYRRGGBB  Y =3 - вывод рамки, используя скрин
+    mov edx,0xb3AABBCC		;0xXYRRGGBB  Y =3 - вывод рамки, используя скрин
     mov esi,0x805080DD		;0xXYRRGGBB - цвет заголовка
-    mov edi,0x005080DD		;0x00RRGGBB - цвет рамки
+    mov edi,hed			;Указатель на строку с заголовком
     int 0x40			;нарисовать окно приложения
   
-    add eax,4  			;если предполагается использовать скалярный процессор, то можно использовать данню инструкцию 
-    mov ebx,8*65536+8		; [координата по оси x]*65536 + [координата по оси y]  mov ecx,0x10DDEEFF		; 0xX0RRGGBB, где RR, GG, BB задают цвет текста 
-    mov edx,hed			; указатель на начало строки
-    mov esi,i_end1 - hed	; длина строки, должна быть не больше 255
-    int 0x40			;вывести текст
-        
 	draw_edit_boxes editboxes,editboxes_end  ;рисование edit box'ов
 
-    add eax,8 			;Функция 12 - начать/закончить перерисовку окна.
+    mov eax,12 			;Функция 12 - начать/закончить перерисовку окна.
     mov ebx,2			;Подфункция 2 - закончить перерисовку окна.
     int 0x40
     ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные 
 editboxes:
-edit1 edit_box 168,10,50,0xffffff,0,0,0,512,ed_buffer.1,ed_focus
-edit2 edit_box 168,10,30,0xffffff,0,0,0,99,ed_buffer.2,ed_figure_only
-edit3 edit_box 35,10,70,0xffffff,0,0,0,9,ed_buffer.3,ed_figure_only
-edit4 edit_box 16,10,90,0xffffff,0,0,0,1,ed_buffer.4,ed_figure_only
+edit1 edit_box 168,5,30,0xffffff,0,0,0,512,ed_buffer.1,ed_focus
+edit2 edit_box 168,5,10,0xffffff,0,0,0,99,ed_buffer.2,ed_figure_only
+edit3 edit_box 35,5,50,0xffffff,0,0,0,9,ed_buffer.3,ed_figure_only
+edit4 edit_box 16,5,70,0xffffff,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
 ;data_of_code dd 0
 ed_buffer:
@@ -101,8 +95,8 @@ ed_buffer:
 ;text_b: db 'Кол-во символов'
 ;buffer: dd 0
 buffer_end:
-hed db   'EDITBOX optimization and retype <Lrz> date 01.02.2007'
+hed db   'EDITBOX optimization and retype <Lrz> date 26.01.2007',0
 i_end1:
-rb 2048
+rb 1024
 i_end:
 keymap:
