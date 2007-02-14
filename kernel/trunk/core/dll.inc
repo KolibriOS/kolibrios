@@ -1003,6 +1003,8 @@ create_kernel_object:
            shl ecx,8
            add ecx, PROC_BASE+APP_OBJ_OFFSET
 
+           pushfd
+           cli
            mov edx, [ecx+APPOBJ.fd]
            mov [eax+APPOBJ.fd], edx
            mov [eax+APPOBJ.bk], ecx
@@ -1010,6 +1012,7 @@ create_kernel_object:
 
            mov [ecx+APPOBJ.fd], eax
            mov [edx+APPOBJ.bk], eax
+           popfd
 .fail:
            ret
 
@@ -1019,10 +1022,13 @@ create_kernel_object:
 align 4
 destroy_kernel_object:
 
+           pushfd
+           cli
            mov ebx, [eax+APPOBJ.fd]
            mov ecx, [eax+APPOBJ.bk]
            mov [ebx+APPOBJ.bk], ecx
            mov [ecx+APPOBJ.fd], ebx
+           popfd
 
            xor edx, edx        ;clear common header
            mov [eax], edx

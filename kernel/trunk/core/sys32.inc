@@ -911,6 +911,7 @@ fpu_ok_1:
     mov   esi,process_terminated
     call  sys_msg_board_str
     ret
+restore .slot
 
 iglobal
   boot_sched_1    db   'Building gdt tss pointer',0

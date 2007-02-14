@@ -89,6 +89,18 @@ end if
 if used DestroyObject
   extrn DestroyObject
 end if
+if used CreateEvent
+  extrn CreateEvent
+end if
+if used RaiseEvent
+  extrn RaiseEvent
+end if
+if used WaitEvent
+  extrn WaitEvent
+end if
+if used DestroyEvent
+  extrn DestroyEvent
+end if
 
 if used LoadCursor
   extrn LoadCursor
