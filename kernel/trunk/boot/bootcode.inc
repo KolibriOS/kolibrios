@@ -580,7 +580,7 @@ cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
-; b) preboot_mtrr = use hardware acceleration?
+; b) preboot_dma_write  = use DMA write?
 ; c) preboot_vrrm = use VRR?
 ; d) preboot_device = from what boot?
     mov    di, preboot_graph-0x10000
@@ -620,8 +620,8 @@ cfgmanager:
 @@:
     mov    [di], al
 .preboot_gr_end:
-    cmp    [di+preboot_mtrr-preboot_graph], 1
-    adc    [di+preboot_mtrr-preboot_graph], 0
+    cmp    [di+preboot_dma_write-preboot_graph], 1
+    adc    [di+preboot_dma_write-preboot_graph], 0
     cmp    [di+preboot_vrrm-preboot_graph], 1
     adc    [di+preboot_vrrm-preboot_graph], 0
     cmp    [di+preboot_device-preboot_graph], 1
@@ -676,8 +676,8 @@ cfgmanager:
 .c:
     mov    si, linef-0x10000
     call    printplain
-    mov    si, mtrr_msg-0x10000
-    cmp    [preboot_mtrr-0x10000], 1
+    mov    si, dma_msg-0x10000
+    cmp    [preboot_dma_write-0x10000], 1
     call    .say_on_off
     mov    si, vrrm_msg-0x10000
     cmp    [preboot_vrrm-0x10000], 1
@@ -761,11 +761,11 @@ cfgmanager:
     jmp    .d
 .change_b:
     _setcursor 15,0
-    mov    si, gr_acc-0x10000
+    mov    si, ask_dma-0x10000
     call    print
     mov    bx, '12'
     call    getkey
-    mov    [preboot_mtrr-0x10000], al
+    mov    [preboot_dma_write-0x10000], al
     _setcursor 11,0
     jmp    .d
 .change_c:
@@ -1018,9 +1018,13 @@ end if
 
 
 ; GRAPHICS ACCELERATION
+; force yes
+        mov     [es:0x901C], byte 1
 
-        mov     al, [preboot_mtrr-0x10000]
-        mov     [es:0x901C],al
+; DMA WRITE
+
+        mov     al, [preboot_dma_write-0x10000]
+        mov     [es:0x901F],al
 
 ; VRR_M USE
 

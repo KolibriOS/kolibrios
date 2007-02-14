@@ -700,7 +700,7 @@ mm80          dq 0x8080808080808080
 mm_mask       dq 0xFF00FF00FF00FF00
 
 ;stream_map    dd 0xFFFF       ; 16
-version       dd 0x00030004
+version       dd 0x00030003
 
 szInfinity    db 'INFINITY',0
 szSound       db 'SOUND',0

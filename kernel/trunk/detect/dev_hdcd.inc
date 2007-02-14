@@ -11,25 +11,42 @@ FindHDD:
         mov     [ChannelNumber],1
         mov     [DiskNumber],0
         call    FindHDD_3
+;        mov     ax,[Sector512+176]
+;        mov     [0x40006],ax
+;        mov     ax,[Sector512+126]
+;        mov     [0x40008],ax
+;        mov     ax,[Sector512+128]
+;        mov     [0x40008],ax
         mov     [DiskNumber],1
         call    FindHDD_3
+;        mov     al,[Sector512+176]
+;        mov     [0x40007],al
         inc     [ChannelNumber]
         mov     [DiskNumber],0
         call    FindHDD_3
+;        mov     al,[Sector512+176]
+;        mov     [0x40008],al
         mov     [DiskNumber],1
         call    FindHDD_1
+;        mov     al,[Sector512+176]
+;        mov     [0x40009],al
+        
         jmp     EndFindHDD
 
 FindHDD_1:
-        call    DeviceReset
-        cmp     [DevErrorCode],0
-        jne     FindHDD_2_2
         call    ReadHDD_ID
         cmp     [DevErrorCode],0
         jne     FindHDD_2
+        cmp     [Sector512+6],word 16
+        ja      FindHDD_2
+        cmp     [Sector512+12],word 255
+        ja      FindHDD_2
         inc     byte [0x40001]
-        ret
+        jmp     FindHDD_2_2
    FindHDD_2:
+        call    DeviceReset
+        cmp     [DevErrorCode],0
+        jne     FindHDD_2_2
         call    ReadCD_ID
         cmp     [DevErrorCode],0
         jne      FindHDD_2_2

@@ -14,6 +14,7 @@
 ;   0:901C     byte   0 or 1 : enable MTRR graphics acceleration
 ;   0:901D     byte   not used anymore (0 or 1 : enable system log display)
 ;   0:901E     byte   0 or 1 : enable direct lfb write, paging disabled
+;   0:901F     byte   DMA write : 1=yes, 2=no
 ;   0:9020     8bytes pci data
 ;   0:9030     byte   VRR start enabled 1, 2-no
 ;   0:9031     word   IDEContrRegsBaseAddr

@@ -73,8 +73,7 @@ vrrmprint db      "Kinnita VRR? (ekraani sagedus suurem kui 60Hz"
 ;          db      " Vali port [1-3]: ",0
 ;no_com1   db      13,10,186, " No COM1 mouse",0
 ;no_com2   db      13,10,186, " No COM2 mouse",0         
-gr_acc    db      "Vesa 2.0+ : MTRR graafika kiirendus "
-          db      "[1-jah/2-ei] ? ",0
+ask_dma   db      "Use DMA for HDD writing? [1-jah/2-ei]: ",0
 ;gr_direct db      186," Use direct LFB writing? "
 ;          db      "[1-yes/2-no] ? ",0
 ;mem_model db      13,10,186," Motherboard memory [1-16 Mb / 2-32 Mb / "
@@ -120,7 +119,7 @@ mode9     db      "320x200, EGA/CGA 256 värvi",0
 mode10    db      "640x480, VGA 16 värvi",0
 probeno_msg db    " (standard reziim)",0
 probeok_msg db    " (kontrolli ebastandardseid reziime)",0
-mtrr_msg  db      " [b] kasuta MTRR graafika kiirendamiseks:",0
+dma_msg   db      " [b] Use DMA for HDD writing:",0
 on_msg    db      " sees",13,10,0
 off_msg   db      " väljas",13,10,0
 vrrm_msg  db      " [c] Kasuta VRR:",0

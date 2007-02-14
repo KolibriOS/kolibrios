@@ -442,7 +442,7 @@ proc init_cursors
 .init:
            mov [cur_def_interl], ebx
 
-           stdcall load_driver, drv_hw_mouse
+           stdcall load_driver, szHwMouse
            mov [hw_cursor], eax
            test eax, eax
            jz .sw_mouse

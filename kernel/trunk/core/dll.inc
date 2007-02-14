@@ -298,42 +298,10 @@ proc get_service stdcall, sz_name:dword
            mov edx, [edx+SRV.fd]
            jmp @B
 .not_load:
-           stdcall find_service, [sz_name]
-           test eax, eax
-           jz @F
-           stdcall load_driver, eax
-@@:
-           ret
+           pop ebp
+           jmp load_driver
 .ok:
            mov eax, edx
-           ret
-endp
-
-align 4
-proc find_service stdcall ,sz_name:dword
-
-	   mov eax, [sz_name]
-	   test eax, eax
-	   jz .fail
-
-           mov esi, services
-@@:
-           mov eax, [esi]
-           test eax, eax
-           jz .fail
-           push esi
-           stdcall strncmp, eax, [sz_name], 16
-           pop esi
-           test eax, eax
-           je .ok
-
-           add esi, 8
-           jmp @B
-.ok:
-           mov eax, [esi+4]
-           ret
-.fail:
-           xor eax, eax
            ret
 endp
 
@@ -705,7 +673,7 @@ proc fix_coff_relocs stdcall, coff:dword, sec:dword, sym:dword
 endp
 
 align 4
-proc load_driver stdcall, file_name:dword
+proc load_driver stdcall, driver_name:dword
            locals
              coff      dd ?
              sym       dd ?
@@ -716,9 +684,27 @@ proc load_driver stdcall, file_name:dword
 
              exports   dd ?   ;fake exports table
                        dd ?
+             file_name rb 14+16+4+1      ; '/rd/1/drivers/<up-to-16-chars>.obj'
            endl
 
-           stdcall load_file, [file_name]
+        lea     edx, [file_name]
+        mov     dword [edx], '/rd/'
+        mov     dword [edx+4], '1/dr'
+        mov     dword [edx+8], 'iver'
+        mov     word [edx+12], 's/'
+        mov     esi, [driver_name]
+        lea     edi, [edx+14]
+        mov     ecx, 16
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        loop    @b
+@@:
+        mov     dword [edi], '.obj'
+        mov     byte [edi+4], 0
+           stdcall load_file, edx
 
            test eax, eax
            jz .exit
@@ -835,7 +821,7 @@ proc load_driver stdcall, file_name:dword
 .ver_fail:
            mov esi, msg_CR
            call sys_msg_board_str
-           mov esi, [file_name]
+           mov esi, [driver_name]
            call sys_msg_board_str
            mov esi, msg_CR
            call sys_msg_board_str
@@ -848,7 +834,7 @@ proc load_driver stdcall, file_name:dword
 .link_fail:
            mov esi, msg_module
            call sys_msg_board_str
-           mov esi, [file_name]
+           mov esi, [driver_name]
            call sys_msg_board_str
            mov esi, msg_CR
            call sys_msg_board_str
@@ -1041,13 +1027,9 @@ destroy_kernel_object:
            ret
 
 
-drv_sound      db '/rd/1/drivers/unisound.obj', 0
-drv_infinity   db '/rd/1/drivers/infinity.obj', 0
-drv_hw_mouse   db '/rd/1/drivers/ati2d.obj',0
-
-szSound        db 'SOUND',0
-szInfinity     db 'INFINITY',0
-szHwMouse      db 'HWCURSOR',0
+;szSound        db 'SOUND',0
+;szInfinity     db 'INFINITY',0
+szHwMouse      db 'ATI2D',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
@@ -1063,10 +1045,3 @@ align 4
 create_cursor    dd 0
 set_hw_cursor    dd 0
 hw_restore       dd 0
-
-align 16
-services:
-           dd szSound,    drv_sound
-           dd szInfinity, drv_infinity
-           dd szHwMouse,  drv_hw_mouse
-           dd 0

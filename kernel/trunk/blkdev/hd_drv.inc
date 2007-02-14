@@ -220,9 +220,11 @@ write_cache:
     jb    danger
     cmp   eax,[PARTITION_END]
     ja    danger
-    
+
+        cmp     [allow_dma_write], 1
+        jnz     .nodma
         cmp     [dma_hdd], 1
-        jmp     .nodma
+        jnz     .nodma
 ; Объединяем запись цепочки последовательных секторов в одно обращение к диску
         cmp     ecx, 1
         jz      .nonext
@@ -586,6 +588,7 @@ cache_chain_size        db      0
 cache_chain_started     db      0
 dma_task_switched       db      0
 dma_hdd         db      0
+allow_dma_write db      0
 endg
 
 align 4

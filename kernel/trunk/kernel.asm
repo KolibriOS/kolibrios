@@ -77,7 +77,7 @@ drawbar         dd __sys_drawbar.forced
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-version           db    'Kolibri OS  version 0.6.3.0      ',13,10,13,10,0
+version           db    'Kolibri OS  version 0.6.5.0      ',13,10,13,10,0
                   ;dd    endofcode-0x10000
 
                   ;db   'Boot02'
@@ -231,7 +231,7 @@ iglobal
   char2      db  'FONTS/CHAR2.MT',0
   bootpath   db  '/KOLIBRI    '
   bootpath2  db  0
-  vmode      db  'VMODE.MDR',0
+  vmode      db  'drivers/VMODE.MDR',0
   vrr_m      db  '/rd/1/VRR_M',0
 endg
 
@@ -290,6 +290,8 @@ B32:
 ; -----------------------------------------
 ;        movzx eax,byte [0x2f0000+0x9010]  ; mouse port
 ;        mov   [0xF604],byte 1  ;al
+        mov     al, [0x2F0000+0x901F]   ; DMA writing
+        mov     [allow_dma_write], al
         mov   al,[0x2f0000+0x9000]        ; bpp
         mov   [0xFBF1],al
         movzx eax,word [0x2f0000+0x900A]  ; X max
@@ -2139,7 +2141,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,6,3,0  ; version 0.6.3.0
+  db 0,6,5,0  ; version 0.6.5.0
   db UID_KOLIBRI
   db 'Kolibri',0
 version_end:

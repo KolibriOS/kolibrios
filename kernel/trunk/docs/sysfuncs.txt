@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.6.4.0
+SYSTEM FUNCTIONS of OS Kolibri 0.6.5.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -676,7 +676,7 @@ Parameters:
 Returned value:
   * eax = 0 - success
   * else eax = error code of the file system
-Remarks:
+Замечания:
   * All folders in the given path must exist, otherwise function
     returns value 5, "file not found".
 
@@ -843,8 +843,8 @@ Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
 db 'name',0 - ASCIIZ-string with the name
-For Kolibri 0.6.4.0 kernel:
-db 0,6,4,0
+For Kolibri 0.6.5.0 kernel:
+db 0,6,5,0
 db 2
 db 'Kolibri',0
 
@@ -1112,10 +1112,8 @@ Remarks:
 ============== Function 21, subfunction 7 - set HD base. =============
 ======================================================================
 The HD base defines hard disk to write with usage of obsolete
-file system functions and functions implicitly using the hard disk
-(such as subfunction 6 of function 18);
-at usage of function 58 and 70 and modern syntax /HD0,/HD1,/HD2,/HD3
-these function set base themselves.
+syntax /HD in obsolete function 58; at usage of modern syntax
+/HD0,/HD1,/HD2,/HD3 base is set automatically.
 Parameters:
   * eax = 21 - function number
   * ebx = 7 - subfunction number
@@ -1134,10 +1132,9 @@ Remarks:
 ========= Function 21, subfunction 8 - set used HD partition. ========
 ======================================================================
 The HD partition defines partition of the hard disk to write with
-usage of obsolete file system functions and functions implicitly
-using the hard disk (such as subfunction 6 of function 18);
+usage of obsolete syntax /HD and obsolete function 58;
 at usage of functions 58 and 70 and modern syntax /HD0,/HD1,/HD2,/HD3
-these functions set base and partition themselves.
+base and partition are set automatically.
 Parameters:
   * eax = 21 - function number
   * ebx = 8 - subfunction number
@@ -1532,10 +1529,8 @@ Remarks:
 ============== Function 26, subfunction 7 - get HD base. =============
 ======================================================================
 The HD base defines hard disk to write with usage of obsolete
-file system functions and functions implicitly using the hard disk
-(such as subfunction 6 of function 18);
-at usage of function 58 and 70 and modern syntax /HD0,/HD1,/HD2,/HD3
-these function set base themselves.
+syntax /HD in obsolete function 58; at usage of modern syntax
+/HD0,/HD1,/HD2,/HD3 base is set automatically.
 Parameters:
   * eax = 26 - function number
   * ebx = 7 - subfunction number
@@ -1550,10 +1545,9 @@ Remarks:
 ========= Function 26, subfunction 8 - get used HD partition. ========
 ======================================================================
 The HD partition defines partition of the hard disk to write with
-usage of obsolete file system functions and functions implicitly
-using the hard disk (such as subfunction 6 of function 18);
+usage of obsolete syntax /HD in obsolete function 58;
 at usage of functions 58 and 70 and modern syntax /HD0,/HD1,/HD2,/HD3
-these functions set base and partition themselves.
+base and partition are set automatically.
 Parameters:
   * eax = 26 - function number
   * ebx = 8 - subfunction number
@@ -2696,24 +2690,26 @@ Returned value:
               does not support this function
   * al = 0 - Ethernet cable is unplugged
   * al = 1 - Ethernet cable is plugged
+  * ebx destroyed
 Remarks:
   * The current kernel implementation supports this function
     only for RTL8139 network cards.
 
 ======================================================================
-===== Function 53, subfunction 10 - read data from stack.        =====
+======= Function 53, subfunction 11 - read network stack data. =======
 ======================================================================
-Parameters:
-  * eax = 53
-  * ebx = 11
-  * ecx = socket number
-  * edx = pointer to where data must be written
-  * esi = buffer size (max bytes of data to copy)
-Returned value: 
-  * eax = number of bytes copied
-Remarks:
-  * if buffer size is zero, all data will be copied 
-    (this will be max 4096 bytes)
+Paramters:
+  * eax = 53 - function number
+  * ebx = 11 - subfunction number
+  * ecx = socket handle
+  * edx = pointer to buffer
+  * esi = number of bytes to read;
+  * esi = 0 - read all data (maximum 4096 bytes)
+Returned value:
+  * eax = number of bytes read
+  * ebx destroyed
+Remakrs:
+  * There is no check on handle correctness.
 
 ======================================================================
 = Function 53, subfunction 255 - debug information of network driver. 
@@ -3662,11 +3658,7 @@ Remarks:
   * Driver name is case-sensitive.
     Maximum length of the name is 16 characters, including
     terminating null character, the rest is ignored.
-  * The function can load only drivers which are registered in the
-    system; the current implementation contains
-    exactly 2 such drivers:
-    * name SOUND, file /rd/1/drivers/unisound.obj
-    * name INFINITY, file /rd/1/drivers/infinity.obj
+  * Driver ABC is loaded from file /rd/1/drivers/ABC.obj.
 
 ======================================================================
 ============ Function 68, subfunction 17 - driver control. ===========
