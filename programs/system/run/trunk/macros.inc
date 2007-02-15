@@ -1,5 +1,6 @@
 ;--- другие макросы ---
-include 'editbox.inc'
+include '../../../develop/examples/editbox/trunk/editbox.inc'
+;include 'editbox.inc'
 include 'txtbut.inc'
 ;include 'gp.inc'
 ;include 'label.inc'
