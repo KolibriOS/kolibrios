@@ -1,5 +1,6 @@
-; <Lrz> 13.02.2007 убрал по возможности мерцание, улучшена обработака перерисовки фона
-; добавил фитчу внесения 0х0 по адресу ed_size иначе у Maxxx32 были несостыковки в коде. Пречниа в том, что оптимизация была сведена к тому что я не чистил символы в буфере, когда удалял, я просто их не выводил, и потом когда вносился новый символ, он по просту затирал уже имеющийся. Если бы программа обрабатывала конец строки по ed_size, проблем бы не возникло. Но сейчас этот недостаток исправлен.
+; <Lrz> 15.02.2007 улучшение снятия выделения и перерисовки очищаемой области, значительно приятнее работает компонент
+; <Lrz> 13.02.2007 убрал по возможности мерцание, улучшена обработка перерисовки фона
+; добавил фитчу внесения 0х0 по адресу ed_size иначе у Maxxx32 были несостыковки в коде. Причина в том, что оптимизация была сведена к тому, что я не чистил символы в буфере, когда удалял, я просто их не выводил, и потом, когда вносился новый символ, он попросту затирал уже имеющийся. Если бы, программа обрабатывала конец строки по ed_size, проблемы не возникло. Но сейчас этот недостаток исправлен.
 ; <Lrz> 01.02.2007 доработка edit_box, исправил баги.
 ; <Lrz> 26.01.2007 нормальная работа компанента исправил фукцию .check_offset
 ; <Lrz> 24.01.2007 пофиксел баги вызваные не правильным кодом )).
@@ -414,8 +415,8 @@ pusha
 	mov	ecx,ed_pos
         call	.del_char
 ;clear
-	mov	ebp,ed_size
-        call	.clear_bg
+	mov	ebp,ed_color
+        call	.sh_cl_
 ;;;;
         mov	eax,ed_shift_pos
         mov	ebx,ed_size
@@ -594,16 +595,23 @@ popa
 	;jz	.draw_bg_cursor_text
 	call	.draw_cursor
 
-
-
 .shift: ;;;;;;;SHIFT
-	;test	ed_flags,ed_
-
-	;mov	ebp,ed_size
-	;call	.clear_bg
 	test      word ed_flags,ed_shift
         je	.f_exit
+
+	mov	ebp,shift_color
+	call	.sh_cl_
+        jmp	.draw_cursor_text
+;;;;;;;;;;;;;;;;;;;;;
+
+.f_exit: and    word ed_flags,ed_shift_cl
+        call	.enable_null
+	jmp	.draw_cursor_text
+
+.sh_cl_:
 ;;;;;;SHIFT end
+;для обработки снятия выделения
+	or	word ed_flags,ed_shift_bac
 	mov 	eax,dword	ed_pos
 	mov	ebx,dword	ed_shift_pos
 	cmp	eax,ebx
@@ -615,16 +623,13 @@ popa
 .sh_n: 	push	ebx  
 	push	eax
 .sh_n1: 
-;        jmp	.draw_all2
-;;;;;;;;;;;;;;;;;;;;;;;;;
-	;call	.clear_cursor
 	call	.check_offset
 	call	.get_n
 	mov	edx,eax	;size of ed_box
 ;	push	eax
 	mov	ecx,ed_offset
 	add	eax,ecx	;eax = w_off= ed_offset+width
-	mov	ebp,eax ;save
+	mov	edx,eax ;save
 	pop	ebx     ;большее
 	pop	eax     ;меньшее
 
@@ -632,23 +637,23 @@ popa
 	cmp	eax,ecx         ;сравнение с меньшего с offset.
 	jae	.f_f            ;если больше
 	xor	eax,eax
-	cmp	ebp,ebx		;cравним размер w_off с большим
+	cmp	edx,ebx		;cравним размер w_off с большим
 	jb	@f
 	sub	ebx,ecx
 	jmp     .nxt_f
-@@:	mov	ebx,ebp
+@@:	mov	ebx,edx
 	sub	ebx,ecx	
 	jmp     .nxt_f
 
 .f_f:	
 	sub	eax,ecx
-	cmp	ebp,ebx		;cравним размер w_off с большим
+	cmp	edx,ebx		;cравним размер w_off с большим
 	jle	@f
 	sub	ebx,ecx
 	sub	ebx,eax
 	jmp     .nxt_f
 @@:
-	mov	ebx,ebp	
+	mov	ebx,edx	
 	sub	ebx,ecx
 	sub	ebx,eax
 .nxt_f:
@@ -661,16 +666,14 @@ popa
 	lea	ecx,[edx*2+edx]
 	shl	ecx,1	
 	mov	bx,cx
-	mov	edx,shift_color
+
+	mov	edx,ebp;shift_color
+
 	call	.draw_bg_eax
 	and    word ed_flags,1111111111111011b
 	call	.enable_null
-        jmp	.draw_cursor_text
-;;;;;;;;;;;;;;;;;;;;;
+	ret
 
-.f_exit: and    word ed_flags,ed_shift_cl
-        call	.enable_null
-	jmp	.draw_cursor_text
 
 ;проверка состояния shift был ли он нажат раньше?
 .sh_enable:
@@ -683,12 +686,14 @@ popa
 	or	word ed_flags,ed_shift_on
 	ret
 
-@@:     and	word ed_flags,ed_shift_cl
-	ret
-.sh_ext_en:	mov	ebp,ed_size
-		call	.clear_bg
+@@:     test    word ed_flags,ed_shift_bac
+        je      @f
+	mov	ebp,ed_color
+	call	.sh_cl_  ;очистка выделеного фрагмента
+@@:	and	word ed_flags,ed_shift_cl
+;	ret
+.sh_ext_en:	
         	ret
-
 ;функция внесения 0 по адресу ed_size+1
 .enable_null:
         pusha
@@ -814,7 +819,7 @@ pusha
 ;----------------------------------------------------------
 	test	eax,1
 	jnz	.mouse_left_button
-@@:     popa
+	popa
 	ret
 
 .mouse_left_button:
@@ -866,25 +871,18 @@ pusha
 ;--- процедура установки фокуса ---------------------------
 ;----------------------------------------------------------
 	bts	word ed_flags,1
-	jc	.mouse_pressed
+	jc	@f
 	call	.draw_cursor
-	call	.draw_border
-.mouse_pressed:
-popa
-ret
-;.mouse_end_no_focus:
-;        call    .blur
-;popa
-;ret
-;.blur:
-;pusha
+	jmp	.drc
+
+
 ._blur:
 	test	word ed_flags,ed_always_focus
 	jne	@f
 	btr	word ed_flags,1 ; если не в фокусе, выходим
 	jnc     @f
 	call	.clear_cursor
-	call	.draw_border
+.drc:	call	.draw_border
 @@:
 popa
 ret
@@ -908,7 +906,8 @@ ed_always_focus=100000000000000b
 ed_focus=10b
 ed_shift_on=1000b
 ed_shift=100b
-ed_shift_cl=1111111111110011b
+ed_shift_bac=10000b
+ed_shift_cl=1111111111100011b
 macro draw_edit_boxes start,end
 {
 	mov	edi,start
