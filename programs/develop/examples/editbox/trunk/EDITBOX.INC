@@ -71,8 +71,8 @@ cl_curs_y	equ [edi+54]		;предыдущее координата курсора по у
 ed_shift_pos	equ [edi+58]
 ed_height=14 ; высота
 shift_color=0x6a9480
-ed_insert=10000b
-ed_insert_cl=1111111111101111b
+ed_insert=100000b
+ed_insert_cl=1111111111011111b
 ;==========================================================
 ;=== процедура прорисовки =================================
 ;==========================================================
@@ -279,7 +279,7 @@ ret
 ; изменилось
 ;----------------------------------------------------------
 .check_offset:
-pushad
+pusha
 	mov	ecx,ed_pos
 	mov	ebx,ed_offset
 	cmp	ebx,ecx
@@ -344,12 +344,12 @@ pushad
 
 	call    .draw_bg
 	mov	dword [esp+28],-1
-popad
+popa
 	ret
 
 @@:
 	mov	dword [esp+28],0
-popad
+popa
 	ret
 ;==========================================================
 ;=== обработка клавиатуры =================================
@@ -357,7 +357,7 @@ popad
 .key:
 pusha
 	test	word ed_flags,ed_focus ; если не в фокусе, выходим
-	je     .no_figure ;@f
+	je      @b
 
 ;Проверка на нажаты shift
 	xor	ecx,ecx
@@ -410,13 +410,24 @@ pusha
 @@:	test	word ed_flags,ed_shift_on
 	je	@f
 	;Входные данные edx=ed_size;ecx=ed_pos
+
 	push	eax
 	mov	edx,ed_size
 	mov	ecx,ed_pos
-        call	.del_char
+	pusha
+        
+	cmp	edx,ecx
+	jne	.sh_cl
 ;clear
 	mov	ebp,ed_color
         call	.sh_cl_
+        jmp	.sh_nxt
+.sh_cl: mov	ebp,edx ;ed_size
+        call	.clear_bg
+
+.sh_nxt: popa 
+	call	.del_char
+        
 ;;;;
         mov	eax,ed_shift_pos
         mov	ebx,ed_size
