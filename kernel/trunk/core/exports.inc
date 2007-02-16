@@ -35,6 +35,10 @@ iglobal
 
   szCreateObject      db 'CreateObject',0
   szDestroyObject     db 'DestroyObject',0
+  szCreateEvent       db 'CreateEvent',0
+  szRaiseEvent        db 'RaiseEvent',0
+  szWaitEvent         db 'WaitEvent',0
+  szDestroyEvent      db 'DestroyEvent',0
 
   szLoadCursor        db 'LoadCursor',0
   szSetHwCursor       db 'SetHwCursor',0
@@ -76,12 +80,16 @@ kernel_export:
   dd szKernelAlloc     , kernel_alloc
   dd szKernelFree      , kernel_free
   dd szUserAlloc       , user_alloc
-  dd szUserFree       , user_free
+  dd szUserFree        , user_free
   dd szKmalloc         , malloc
   dd szKfree           , free
 
   dd szCreateObject    , create_kernel_object
   dd szDestroyObject   , destroy_kernel_object
+  dd szCreateEvent     , create_event
+  dd szRaiseEvent      , raise_event
+  dd szWaitEvent       , wait_event
+  dd szDestroyEvent    , destroy_event
 
   dd szLoadCursor      , load_cursor
   dd szSetHwCursor     , set_hw_cursor

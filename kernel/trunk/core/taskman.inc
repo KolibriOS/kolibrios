@@ -1002,7 +1002,11 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            inc dword [TASK_COUNT]       ;update number of processes
 .noinc:
            shl ebx,8
-           lea edx, [ebx+PROC_BASE+APP_OBJ_OFFSET]
+           lea edx, [ebx+PROC_BASE+APP_EV_OFFSET]
+           mov [PROC_BASE+APPDATA.fd_ev+ebx],edx
+           mov [PROC_BASE+APPDATA.bk_ev+ebx],edx
+
+           add edx, APP_OBJ_OFFSET-APP_EV_OFFSET
            mov [PROC_BASE+APPDATA.fd_obj+ebx],edx
            mov [PROC_BASE+APPDATA.bk_obj+ebx],edx
 

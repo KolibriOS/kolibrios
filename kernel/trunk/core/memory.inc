@@ -1379,11 +1379,6 @@ align 16
 align 16
 cur_saved_data   rb 4096
 
-;cursors          rb CURSOR_SIZE*64
-;cursor_map       rd 2
-;cursor_start     rd 1
-;cursor_end       rd 1
-
 def_cursor       rd 1
 hw_cursor        rd 1
 
@@ -1403,15 +1398,10 @@ align 16
 
    mst MEM_STATE
 
-;   dll_tab         rb 32*32
-;   srv_tab         rb 36*32
    mem_block_map   rb 512
-   event_map       rb 128
+   event_map       rb 64
    mem_block_list  rd 64
    mem_block_mask  rd 2
-
-;   dll_map         rd 1
-;   srv_map         rd 1
 
    srv.fd          rd 1
    srv.bk          rd 1
@@ -1432,7 +1422,7 @@ align 16
    events          rd 1
    event_start     rd 1
    event_end       rd 1
-
+   event_uid       rd 1
    sys_page_map    rd 1
 endg
 

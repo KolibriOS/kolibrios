@@ -1,24 +1,14 @@
-struc EVENT
-{  .code    rd 1
-            rd 5
-   .next    rd 1   ;+24
-   .prev    rd 1   ;+28
-}
-EVENT_SIZE  equ 32
-
-virtual at 0
-  EVENT EVENT
-end virtual
 
 align 4
 init_events:
-           stdcall kernel_alloc, 1024*EVENT_SIZE
+           stdcall kernel_alloc, 512*EVENT_SIZE
            mov [events], eax
            xor eax, eax
+           mov [event_uid], eax
            not eax
            mov edi, event_map
            mov [event_start], edi
-           mov ecx, 128/4
+           mov ecx, 64/4
            cld
            rep stosd
            mov [event_end], edi
@@ -43,24 +33,30 @@ proc alloc_event
 .found:
            btr [ebx], eax
            mov [event_start],ebx
+           inc [event_uid]
+
            sub ebx, event_map
            lea eax,[eax+ebx*8]
+
+           lea ebx, [eax+eax*4]
            shl eax,5
+           lea eax,[eax+ebx*4]   ;eax*=52 (EVENT_SIZE)
            add eax, [events]
+           mov ebx, [event_uid]
            popfd
-           xor ebx, ebx
-           mov [eax+EVENT.next], ebx
-           mov [eax+EVENT.prev], ebx
            ret
 endp
 
 align 4
 free_event:
+           sub eax, [events]
+           mov ecx, EVENT_SIZE
+           mov ebx, event_map
+           cdq
+           div ecx
+
            pushfd
            cli
-           sub eax, [events]
-           shr eax, 5
-           mov ebx, event_map
            bts [ebx], eax
            shr eax, 3
            and eax, not 3
@@ -72,6 +68,97 @@ free_event:
 @@:
            mov [event_start], eax
            popfd
+           ret
+
+EVENT_WATCHED    equ 0x10000000
+EVENT_SIGNALED   equ 0x20000000
+MANUAL_RESET     equ 0x40000000
+MANUAL_DESTROY   equ 0x80000000
+
+
+; param
+;  eax= event data
+;  ebx= flags
+;
+; retval
+;  eax= event
+;  edx= id
+
+create_event:
+           .flags  equ  esp+4
+           .data   equ  esp
+
+           push ebx
+           push eax
+
+           call alloc_event
+           test eax, eax
+           jz .fail
+
+           mov [eax+APPOBJ.magic], 'EVNT'
+           mov [eax+APPOBJ.destroy], destroy_event
+           mov [eax+EVENT.id], ebx
+
+           mov ebx, [CURRENT_TASK]
+           shl ebx, 5
+           mov ebx, [0x3000+ebx+4]
+           mov [eax+APPOBJ.pid], ebx
+           mov edx, [.flags]
+           mov [eax+EVENT.state], edx
+
+           mov esi, [.data]
+           test esi, esi
+           jz @F
+           lea edi, [eax+EVENT.code]
+           mov ecx, 6
+           cld
+           rep movsd
+@@:
+           mov ecx, [CURRENT_TASK]
+           shl ecx,8
+           add ecx, PROC_BASE+APP_OBJ_OFFSET
+
+           pushfd
+           cli
+           mov edx, [ecx+APPOBJ.fd]
+           mov [eax+APPOBJ.fd], edx
+           mov [eax+APPOBJ.bk], ecx
+           mov [ecx+APPOBJ.fd], eax
+           mov [edx+APPOBJ.bk], eax
+           popfd
+           mov edx, [eax+EVENT.id]
+.fail:
+           add esp, 8
+           ret
+
+restore .flags
+restore .data
+
+; param
+;  eax= event
+;  ebx= id
+
+destroy_event:
+
+           cmp [eax+APPOBJ.magic], 'EVNT'
+           jne .fail
+           cmp [eax+EVENT.id], ebx
+           jne .fail
+
+           mov ebx, [eax+APPOBJ.fd]
+           mov ecx, [eax+APPOBJ.bk]
+           mov [ebx+APPOBJ.bk], ecx
+           mov [ecx+APPOBJ.fd], ebx
+.internal:
+           xor edx, edx             ;clear common header
+           mov [eax], edx
+           mov [eax+4], edx
+           mov [eax+8], edx
+           mov [eax+12], edx
+           mov [eax+16], edx
+
+           call free_event          ;release object memory
+.fail:
            ret
 
 align 4
@@ -90,65 +177,98 @@ proc send_event stdcall pid:dword, event:dword
            ja .fail
 
            mov [slot], eax
+
            call alloc_event
            test eax, eax
            jz .fail
 
-           mov edi, eax
+           lea edi, [eax+EVENT.code]
            mov ecx, 6
            mov esi, [event]
            cld
            rep movsd
 
-           mov esi, eax
-           mov eax, [slot]
-           mov edi, [PROC_BASE+eax+APPDATA.ev_last]
-           mov [esi+EVENT.prev], edi
-           test edi, edi
-           jz .set_last
-           mov [edi+EVENT.next], esi
-.set_last:
-           mov edx, [PROC_BASE+eax+APPDATA.ev_first]
-           test edx, edx
-           jnz @F
-           mov [PROC_BASE+eax+APPDATA.ev_first], esi
-@@:
-           mov [PROC_BASE+eax+APPDATA.ev_last], esi
-           inc [PROC_BASE+eax+APPDATA.ev_count]
-           or  [PROC_BASE+eax+APPDATA.event_mask], EVENT_EXTENDED
+           mov ecx, [slot]
+           add ecx, PROC_BASE+APP_EV_OFFSET
+
+           mov [eax+APPOBJ.magic], 'EVNT'
+           mov [eax+APPOBJ.destroy], destroy_event
+           mov ebx, [pid]
+           mov [eax+APPOBJ.pid], ebx
+           mov [eax+EVENT.state], EVENT_SIGNALED
+
+           pushfd
+           cli                         ;insert event into
+           mov edx, [ecx+APPOBJ.fd]    ;events list
+           mov [eax+APPOBJ.fd], edx    ;and set events flag
+           mov [eax+APPOBJ.bk], ecx
+           mov [ecx+APPOBJ.fd], eax
+           mov [edx+APPOBJ.bk], eax
+           inc [ecx+APPDATA.ev_count-APP_EV_OFFSET]
+           or  [ecx+APPDATA.event_mask-APP_EV_OFFSET], EVENT_EXTENDED
+           popfd
 .fail:
            ret
 endp
+
+; timeout ignored
 
 align 4
 proc get_event_ex stdcall, p_ev:dword, timeout:dword
 
 .wait:
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           cmp [PROC_BASE+ebx+APPDATA.ev_count], 0
+           mov edx,[CURRENT_TASK]
+           shl edx,8
+           cmp [PROC_BASE+edx+APPDATA.ev_count], 0
            je .switch
 
-           mov esi, [PROC_BASE+ebx+APPDATA.ev_first]
-           mov edx, [esi+EVENT.next]
-           mov [PROC_BASE+ebx+APPDATA.ev_first], edx
-           test edx, edx
-           jz @F
-           mov [edx+EVENT.prev], 0
-@@:
-           jnz @F
-           mov [PROC_BASE+ebx+APPDATA.ev_last], edx
-           and dword [PROC_BASE+ebx+APPDATA.event_mask], not EVENT_EXTENDED
-@@:
-           dec [PROC_BASE+ebx+APPDATA.ev_count]
+           add edx, PROC_BASE+APP_EV_OFFSET
 
-           mov eax, esi
-           and dword [esi], 0xFF00FFFF
-           mov edi, [p_ev]
+           mov eax, [edx+EVENT.fd]
+           cmp eax, edx
+           je .switch
+
+           lea esi, [eax+EVENT.code]
+           mov edi, [p_ev]                ;copy event data
            mov ecx, 6
            cld
            rep movsd
-           call free_event
+
+           and dword [edi-24], 0xFF00FFFF ;clear priority field
+                                          ;
+
+           test [eax+EVENT.state], MANUAL_RESET
+           jnz .done
+
+           pushfd
+           cli                         ;remove event from events
+           mov ebx, [eax+APPOBJ.fd]    ;list (reset event)
+           mov ecx, [eax+APPOBJ.bk]    ;and clear events flag
+           mov [ebx+APPOBJ.bk], ecx    ;if no active events
+           mov [ecx+APPOBJ.fd], ebx
+           dec [edx+APPDATA.ev_count-APP_EV_OFFSET]
+           jnz @F
+           and [edx+APPDATA.event_mask-APP_EV_OFFSET], not EVENT_EXTENDED
+           popfd
+
+           test [eax+EVENT.state], MANUAL_DESTROY
+           jz .destroy
+
+           add edx, (APP_OBJ_OFFSET-APP_EV_OFFSET)
+
+           pushfd
+           cli
+           mov edx, [ecx+APPOBJ.fd]  ;insert event into
+           mov [eax+APPOBJ.fd], edx  ;objects list
+           mov [eax+APPOBJ.bk], ecx
+           mov [ecx+APPOBJ.fd], eax
+           mov [edx+APPOBJ.bk], eax
+           popfd
+.done:
+           ret
+
+.destroy:
+           call destroy_event.internal
            ret
 .switch:
            mov eax, [0x3010]
@@ -156,6 +276,126 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
 	   call change_task
 	   jmp .wait
 endp
+
+; param
+;  eax= event
+;  ebx= id
+
+align 4
+wait_event:
+           .event equ esp
+           push eax
+.wait:
+           cmp [eax+APPOBJ.magic], 'EVNT'
+           jne .done
+           cmp [eax+EVENT.id], ebx
+           jne .done
+
+           test [eax+EVENT.state], EVENT_SIGNALED
+           jz .switch
+
+           test [eax+EVENT.state], MANUAL_RESET
+           jnz .done
+
+           mov edx,[CURRENT_TASK]
+           shl edx,8
+           add edx, PROC_BASE
+
+           pushfd
+           cli                         ;remove event from events
+           mov ebx, [eax+APPOBJ.fd]    ;list (reset event)
+           mov ecx, [eax+APPOBJ.bk]    ;and clear events flag
+           mov [ebx+APPOBJ.bk], ecx    ;if no active events
+           mov [ecx+APPOBJ.fd], ebx
+           dec [edx+APPDATA.ev_count]
+           jnz @F
+           and [edx+APPDATA.event_mask], not EVENT_EXTENDED
+@@:
+           and [eax+EVENT.state], not (EVENT_SIGNALED+EVENT_WATCHED)
+           popfd
+
+           test [eax+EVENT.state], MANUAL_DESTROY
+           jz .destroy
+
+           add edx, APP_OBJ_OFFSET
+
+           pushfd
+           cli
+           mov ecx, [edx+APPOBJ.fd]  ;insert event into
+           mov [eax+APPOBJ.fd], ecx  ;objects list
+           mov [eax+APPOBJ.bk], edx
+           mov [edx+APPOBJ.fd], eax
+           mov [ecx+APPOBJ.bk], eax
+           popfd
+.done:
+           add esp, 4
+           ret
+.destroy:
+           call destroy_event.internal
+           add esp, 4
+           ret
+.switch:
+           or [eax+EVENT.state], EVENT_WATCHED
+           mov eax, [0x3010]
+           mov [eax+TASKDATA.state], byte 5
+	   call change_task
+           mov eax, [.event]
+	   jmp .wait
+restore .event
+
+; param
+;  eax= event
+;  ebx= id
+;  ecx= flags
+
+raise_event:
+           .event equ esp
+           push eax
+
+           cmp [eax+APPOBJ.magic], 'EVNT'
+           jne .fail
+           cmp [eax+EVENT.id], ebx
+           jne .fail
+
+           mov eax, [eax+APPOBJ.pid]
+           call pid_to_slot
+           test eax, eax
+           jz .fail
+
+           mov edx, [.event]
+           test [edx+EVENT.state], EVENT_SIGNALED
+           jnz .done
+
+           test ecx, EVENT_WATCHED
+           jz @F
+           test [edx+EVENT.state], EVENT_WATCHED
+           jz .done
+@@:
+           shl eax, 8
+           add eax, PROC_BASE+APP_EV_OFFSET
+
+           pushfd
+           cli
+           mov ebx, [edx+APPOBJ.fd]
+           mov ecx, [edx+APPOBJ.bk]
+           mov [ebx+APPOBJ.bk], ecx
+           mov [ecx+APPOBJ.fd], ebx
+
+           mov ecx, [eax+APPOBJ.fd]
+           mov [edx+APPOBJ.fd], ecx
+           mov [edx+APPOBJ.bk], eax
+           mov [eax+APPOBJ.fd], edx
+           mov [ecx+APPOBJ.bk], edx
+           or [edx+EVENT.state], EVENT_SIGNALED
+
+           inc [eax+APPDATA.ev_count-APP_EV_OFFSET]
+           or  [eax+APPDATA.event_mask-APP_EV_OFFSET], EVENT_EXTENDED
+           popfd
+.fail:
+.done:
+           add esp, 4
+           ret
+restore .event
 
 sys_getevent:
 
@@ -321,27 +561,26 @@ get_event_for_app:
    no_stack_event:
 
      test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
-     jz    .test_ext
+     jz    .test_IRQ
      mov   eax, [0x3000]
      shl   eax, 8
      test  byte [eax+0x80000+APPDATA.event_mask+1], byte 1
-     jz    .test_ext
+     jz    .test_IRQ
      and   byte [eax+0x80000+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret
 
-.test_ext:
-     mov   eax, [0x3000]
-     shl   eax, 8
-     test  dword [eax+0x80000+APPDATA.event_mask], EVENT_EXTENDED
-     jz .test_IRQ
-     mov eax, 10
-     ret
+;.test_ext:
+;     mov   eax, [0x3000]
+;     shl   eax, 8
+;     test  dword [eax+0x80000+APPDATA.event_mask], EVENT_EXTENDED
+;     jz .test_IRQ
+;     popad
+;     mov eax, 10
+;     ret
 
 .test_IRQ:
-
-
      cmp   dword [edi+TASKDATA.event_mask], 0xFFFF
      jbe   no_events
 

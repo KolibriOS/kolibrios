@@ -323,6 +323,7 @@ virtual at 0
 end virtual
 
 APP_OBJ_OFFSET  equ 48
+APP_EV_OFFSET   equ 40
 
 struc CURSOR
 {;common object header
@@ -342,6 +343,41 @@ virtual at 0
 end virtual
 
 CURSOR_SIZE     equ 32
+
+struc EVENT
+{
+   .magic       dd ?   ;'EVNT'
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+
+   .id          dd ?   ;event uid
+   .state       dd ?   ;internal flags
+   .code        dd ?
+                rd 5
+}
+EVENT_SIZE  equ 52
+
+virtual at 0
+  EVENT EVENT
+end virtual
+
+
+
+struc HEAP_DATA
+{
+   .mutex         rd 1
+   .refcount      rd 1
+   .heap_base     rd 1
+   .heap_top      rd 1
+   .app_mem       rd 1
+}
+
+HEAP_DATA_SIZE  equ 20
+virtual at 0
+  HEAP_DATA HEAP_DATA
+end virtual
 
 struc BOOT_DATA
 { .bpp            dd ?

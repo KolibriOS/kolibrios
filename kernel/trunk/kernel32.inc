@@ -176,12 +176,12 @@ struc APPDATA
   .ev_count        dd ?            ;+20
   .fpu_handler     dd ?            ;+24
   .sse_handler     dd ?            ;+28
-  .event           dd ?            ;+32
+                   dd ? ;unused    ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
   .cursor          dd ?            ;+44
-  .ev_first        dd ?            ;+48
-  .ev_last         dd ?            ;+52
+  .fd_ev           dd ?            ;+48
+  .bk_ev           dd ?            ;+52
   .fd_obj          dd ?            ;+56
   .bk_obj          dd ?            ;+60
 
