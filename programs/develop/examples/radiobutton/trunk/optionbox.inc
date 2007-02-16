@@ -1,5 +1,5 @@
 ;компонент OptionBox (Основан на Checkbox)
-;Огромная благодарность Maxxxx32, Diamond, и другим программистам, и их программам, без
+;Огромная благодарность Maxxxx32, Diamond, Heavyiron, и другим программистам, и их программам, без
 ;которых я не смог бы написать этот компонент. 
 ;16.02.2007 
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
@@ -10,12 +10,11 @@ op_text_margin=4     ;расстояние от прямоугольника чек бокса до надписи
 op_size=10           ;размер квадрата чек бокса 
 op_left equ [edi]    ;координата начала рисования по х
 op_top equ [edi+2]   ;координата начала рисования по у
-op_color equ [edi+4] ;цвет внутри optionbox
-op_border_color equ [edi+8] ;цвет рамки optionbox
-op_text_color equ [edi+12]  ;цвет текста
-op_text_ptr equ [edi+16]    ;указатель на начало текстовой строки 
-op_text_length equ [edi+20] ;длина надписи (2^64 такой длины может быть текст)
-op_optibox_gr	equ [edi+22]
+op_border_color equ [edi+4] ;цвет рамки optionbox
+op_text_color equ [edi+8]  ;цвет текста
+op_text_ptr equ [edi+12]    ;указатель на начало текстовой строки 
+op_text_length equ [edi+16] ;длина надписи (2^64 такой длины может быть текст)
+op_optibox_gr	equ [edi+18]
 option_box:
 .draw:
 pusha   ;сохраним все регистры
@@ -34,7 +33,7 @@ pusha   ;сохраним все регистры
 	;pop	cx    	;[координата начала по оси y]*65536 + [координата начала по оси y]
 	;push	cx       
 	add	ecx,op_size ;[координата начала по оси y]*65536 + [координата конца по оси y]
-	mov	edx,op_border_color ;Цвет линии
+	mov	edx,dword op_border_color ;Цвет линии
 	int	0x40   ;рисование вертикальной левой линии квадрата (прямоугольника)
 ;
 	mov	ebp,ebx	;сохраним регистр bx в регистре указателя базы
@@ -70,10 +69,10 @@ pusha   ;сохраним все регистры
 	shl	ecx,16		;сдвинем на 16 разрядов в лево (умножим на 65536)
 	mov	cx,bp		;восстановим значение регистра cx
 	;pop	cx
-	mov	edx,op_color	;загрузим цвет полосы
+	mov	edx,dword [sc.work]	;загрузим цвет полосы
 	int	0x40            ;закрасили 
 
-        mov	eax,op_optibox_gr
+        mov	eax,dword op_optibox_gr
 	mov	dword eax,[eax]
         cmp	eax,edi
 	jne	@f
@@ -97,7 +96,7 @@ popa				;восстановить значения регистров из стека
 ret				;выйдем из процедуры
 
 .clear_op:			;очистка чек бокса
-	mov	edx,op_color	;цвет внутри чек бокса
+	mov	edx,dword [sc.work]	;цвет внутри чек бокса
 	jmp	@f		;безусловный прыжок на нижнюю метку @@
 
 .draw_op:            ;нарисовать включенный чек бокс
@@ -133,10 +132,11 @@ pusha
 	;lea	esi,[eax*2+eax]
 	;shl	eax,1
 	imul	esi,6               ; или можно и так умножить на 6
+	xor	ebx,ebx
         add	esi,op_text_margin   ;добавить 3 - расстояние от чек бокса до надписи
 	
 	mov	eax,37		;получим координаты мышки 
-	mov	ebx,1		;добавить 1
+	inc	ebx		;добавить 1
 	int	0x40                ;получить координаты курсора относительно окна 
 
 	movzx	ebx,word op_top           ;загрузить в bx значение координаты у
@@ -151,10 +151,10 @@ pusha
 	cmp	ax,bx		     ;сравнить регистры
 	jl	.mouse_end	     ;если меньше
 	add	ebx,op_size	     ;добавить длину стороны прямоугольника
-	add	ebx,esi		    ;Учесть в значении по х еще и длину надписи к чекбоксу
+	add	ebx,esi		     ;Учесть в значении по х еще и длину надписи к чекбоксу
 	cmp	ax,bx		     ;стравнить регистры
 	jg	.mouse_end	     ;если больше 
-	mov	eax,op_optibox_gr
+	mov	eax,dword op_optibox_gr
         mov	[eax],edi
 
 .mouse_end:
@@ -162,18 +162,17 @@ popa				  ;восстановить регистры из стека
 ret				  ;выйти
 }
 
-struc option_box left,top,color,border_color,text_color,text,text_length,point_gr,flags
+struc option_box left,top,border_color,text_color,text,text_length,point_gr,flags
 {	;структура параметров для чек бокса
 .left: dw left	;+0	;положение по х
 .top: dw top	;+2	;положение по у
-.color: dd color ;+4	;цвет внутри чек бокса
 .border_color: dd border_color ;+8	цвет рамки 
 .text_color: dd text_color     ;+12	цвет текста надписи
 .text: dd text	     ;+16		адрес в коде программы где расположен текстр
 .text_length: dw text_length ; +20	длина текста
 .option_group: dd point_gr	;указатель на размещение edi - идентификатора optibox
 }
-op_struc_size=26			;общая структура 24 байт
+op_struc_size=22			;общая структура 24 байт
 op_flag_en=10b
 macro draw_option_boxes start,end	;рисовать чек боксы
 {
@@ -197,7 +196,7 @@ macro mouse_option_boxes start,end	;установка чек боксов, в зависимости от событ
 	mov	ecx,((end-start)/op_struc_size)	;Количество чек боксов
 
 .home:
-	mov	eax,[edi+22]	;op_optibox_gr
+	mov	eax,[edi+18]	;op_optibox_gr
         mov	dword eax,[eax]
 
         pusha

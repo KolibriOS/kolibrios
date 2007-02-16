@@ -1,5 +1,5 @@
-;компонент OptionBox (Основан на Checkbox)
-;Огромная благодарность Maxxxx32, Diamond, и другим программистам, и их программам, без
+;компонент OptionBox (основан на Checkbox)
+;Огромная благодарность Maxxxx32, Diamond, Heavyiron и другим программистам, и их программам, без
 ;которых я не смог бы написать этот компонент. 
 ;16.02.2007 
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
@@ -23,7 +23,7 @@ use32		; транслятор, использующий 32 разрядных команды
 ;------------------
 	include	'macros.inc'
 	include 'optionbox.inc'	;включить файл check.inc
-	use_option_box		;используя макросы внести процедуры для рисования чек бокса
+	use_option_box		;используя макросы,внести процедуры для рисования optionbox
 align 16
 ;Область кода
 start:				;Точка входа в программу
@@ -49,10 +49,10 @@ still:				;основной обработчик
      mouse_option_boxes option_boxes,option_boxes_end  ;проверка чек бокса      
 	jmp still    ;если ничего из перечисленного то снова в цикл
 button:
-    mov eax,17		;получить идентификатор нажатой клавиши
-    int 0x40
-    test ah,ah		;если в ah 0, то перейти на обработчик событий still
-    jz  still
+;    mov eax,17		;получить идентификатор нажатой клавиши
+;    int 0x40
+;    test ah,ah		;если в ah 0, то перейти на обработчик событий still
+;    jz  still
     or eax,-1       ;в eax,-1 - 5 ,байтов у нас же только 3  выйти 
     int 0x40 ;далее выполняется выход из программы
 
@@ -67,8 +67,7 @@ draw_window:		;рисование окна приложения
     mov  ecx,30*65536+200	;[координата по оси y]*65536 + [размер по оси y]
     mov  edx,[sc.work] 	         ; color of work area RRGGBB,8->color gl
     or   edx,0xb3000000
-    mov	 esi,[sc.work_text]
-    mov  edi,hed;0x005080DD		;0x00RRGGBB - цвет рамки
+    mov  edi,hed
     int  0x40			;нарисовать окно приложения
 	draw_option_boxes option_boxes,option_boxes_end ;рисование чекбоксов
 
@@ -83,20 +82,20 @@ draw_window:		;рисование окна приложения
 ;Формат данных чек бокса:
 ;10 - координата чек бокса по х 
 ;30 - координата чек бокса по у
-;0xffffff - цвет внутри чек бокса
 ;0 - цвет рамки чек бокса
 ;0 - цвет текста надписи
 ;op_text.1 - указатель на начало строки
 ;option_group1 - это признак группы, т.е. этот код может обрабатывать много групп из optibox
 ;op_text.e1-ch_text.1 - длина строки
 ;
+align 16
 option_boxes:
-op1 option_box 10,15,0xffffff,0,0,ch_text.1,ch_text.e1-ch_text.1,option_group1
-op2 option_box 10,30,0xffffff,0,0,ch_text.2,ch_text.e2-ch_text.2,option_group1
-op3 option_box 10,45,0xffffff,0,0,ch_text.3,ch_text.e3-ch_text.3,option_group1
-op11 option_box 10,80,0xffffff,0,0,ch_text.1,ch_text.e1-ch_text.1,option_group2
-op12 option_box 10,95,0xffffff,0,0,ch_text.2,ch_text.e2-ch_text.2,option_group2
-op13 option_box 10,110,0xffffff,0,0,ch_text.3,ch_text.e3-ch_text.3,option_group2
+op1 option_box 10,15,0,0,ch_text.1,ch_text.e1-ch_text.1,option_group1
+op2 option_box 10,30,0,0,ch_text.2,ch_text.e2-ch_text.2,option_group1
+op3 option_box 10,45,0,0,ch_text.3,ch_text.e3-ch_text.3,option_group1
+op11 option_box 10,80,0,0,ch_text.1,ch_text.e1-ch_text.1,option_group2
+op12 option_box 10,95,0,0,ch_text.2,ch_text.e2-ch_text.2,option_group2
+op13 option_box 10,110,0,0,ch_text.3,ch_text.e3-ch_text.3,option_group2
 option_boxes_end:
 
 ch_text:		; Сопровождающий текст для чек боксов
@@ -113,3 +112,4 @@ option_group2	dd op11 ;приложение
 hed db 'Optionbox [16.02.2007]',0	;заголовок приложения
 sc     system_colors
 i_end:			;конец кода
+
