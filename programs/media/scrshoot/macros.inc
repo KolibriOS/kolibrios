@@ -1,9 +1,9 @@
 ;--- другие макросы ---
-include 'editbox.inc'
+include '..\..\develop\examples\editbox\trunk\editbox.inc'
 include 'txtbut.inc'
 ;include 'gp.inc'
 include 'label.inc'
-;include 'checkbox.inc'
+;include '..\..\develop\examples\checkbox\trunk\checkbox.inc'
 include 'check.inc'
 include 'file_sys.inc'
 include 'textwork.inc'

@@ -25,7 +25,7 @@ version equ '1.2'
   dd     0x0         ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
-include 'editbox.inc'
+include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
 use_edit_box
 
 ;---------------------------------------------------------------------

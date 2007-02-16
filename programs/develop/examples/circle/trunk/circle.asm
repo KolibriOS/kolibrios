@@ -16,7 +16,6 @@ use32
                 dd      0x1000                  ; esp
                 dd      0x00000000              ; reserved=no extended header
 
-include 'lang.inc'
 include 'macros.inc'
 
 
@@ -24,7 +23,7 @@ include 'macros.inc'
 START:                          ; start of execution
 
     call shape_window           ; function for shaping
-
+  red:
     call draw_window            ; at first, draw the window
 
 still:
@@ -32,32 +31,24 @@ still:
     mov  eax,10                 ; wait here for event
     int  0x40
 
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+    dec  eax                    ; redraw request ?
+    jz   red
+    dec  eax                    ; key in buffer ?
+    jz   key
 
-    jmp  still
-
-  red:                          ; redraw
-    call draw_window
-    jmp  still
-
-  key:                          ; key
-    mov  eax,2                  ; just read it and ignore
-    int  0x40
-    jmp  still
-
-  button:                       ; button
-    mov  eax,17                 ; get id
+  button:
+    mov  al,17                 ; get id
     int  0x40
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
-    mov  eax,-1                 ; close this program
+    or   eax,-1                 ; close this program
     int  0x40
+
+  key:                          ; key
+    mov  al,2                  ; just read it and ignore
+    int  0x40
+    jmp  still
   noclose:
 
     jmp  still
@@ -130,7 +121,7 @@ draw_window:
     int  0x40
 
                                    ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
+    xor  eax,eax                     ; function 0 : define and draw window
     mov  ebx,100*65536             ; [x start] *65536 + [x size]
     mov  ecx,100*65536             ; [y start] *65536 + [y size]
     mov  bx,word [x_size]
