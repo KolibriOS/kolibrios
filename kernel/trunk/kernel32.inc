@@ -176,7 +176,7 @@ struc APPDATA
   .ev_count        dd ?            ;+20
   .fpu_handler     dd ?            ;+24
   .sse_handler     dd ?            ;+28
-                   dd ? ;unused    ;+32
+  .pl0_stack       dd ? ;unused    ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
   .cursor          dd ?            ;+44

@@ -1,18 +1,16 @@
 
-HEAP_BASE equ 0x00C00000
-;HEAP_SIZE equ 0x01000000
-
 struc MEM_BLOCK
 {  .next_block  dd ?
    .prev_block  dd ? ;+4
-   .list_next   dd ? ;+8
-   .list_prev   dd ? ;+12
+   .list_fd     dd ? ;+8
+   .list_bk     dd ? ;+12
    .base        dd ? ;+16
    .size        dd ? ;+20
    .flags       dd ? ;+24
    .handle      dd ? ;+28
 }
 
+MEM_LIST_OFFSET equ  8
 FREE_BLOCK      equ  4
 USED_BLOCK      equ  8
 
@@ -24,8 +22,8 @@ MEM_BLOCK_SIZE equ 8*4
 
 block_next   equ MEM_BLOCK.next_block
 block_prev   equ MEM_BLOCK.prev_block
-list_next    equ MEM_BLOCK.list_next
-list_prev    equ MEM_BLOCK.list_prev
+list_fd      equ MEM_BLOCK.list_fd
+list_bk      equ MEM_BLOCK.list_bk
 block_base   equ MEM_BLOCK.base
 block_size   equ MEM_BLOCK.size
 block_flags  equ MEM_BLOCK.flags
@@ -40,18 +38,18 @@ macro calc_index op
 }
 
 macro remove_from_list op
-{          mov edx, [op+list_next]
-           mov ecx, [op+list_prev]
+{          mov edx, [op+list_fd]
+           mov ecx, [op+list_bk]
            test edx, edx
            jz @f
-           mov [edx+list_prev], ecx
+           mov [edx+list_bk], ecx
 @@:
            test ecx, ecx
            jz @f
-           mov [ecx+list_next], edx
+           mov [ecx+list_fd], edx
 @@:
-           mov [op+list_next],0
-           mov [op+list_prev],0
+           mov [op+list_fd],0
+           mov [op+list_bk],0
 }
 
 macro remove_from_free op
@@ -72,11 +70,12 @@ macro remove_from_free op
 
 macro remove_from_used op
 {
-           remove_from_list op
-           cmp [mem_used_list], op
-           jne @f
-           mov [mem_used_list], edx
-@@:
+           mov edx, [op+list_fd]
+           mov ecx, [op+list_bk]
+           mov [edx+list_bk], ecx
+           mov [ecx+list_fd], edx
+           mov [op+list_fd], 0
+           mov [op+list_bk], 0
 }
 
 align 4
@@ -97,6 +96,10 @@ proc init_kernel_heap
            mov [mem_block_end], mem_block_map+512
            mov [mem_block_arr], HEAP_BASE
 
+           mov eax, mem_used.fd-MEM_LIST_OFFSET
+           mov [mem_used.fd], eax
+           mov [mem_used.bk], eax
+
            stdcall alloc_pages, dword 32
            mov ecx, 32
            mov edx, eax
@@ -109,20 +112,20 @@ proc init_kernel_heap
            jnz .l1
 
            mov edi, HEAP_BASE
-           mov ebx, edi
-           add ebx, MEM_BLOCK_SIZE
+           mov ebx, HEAP_BASE+MEM_BLOCK_SIZE
            xor eax, eax
            mov [edi+block_next], ebx
            mov [edi+block_prev], eax
-           mov [edi+list_next], eax
-           mov [edi+list_prev], eax
+           mov [edi+list_fd], eax
+           mov [edi+list_bk], eax
            mov [edi+block_base], HEAP_BASE
            mov [edi+block_size], 4096*MEM_BLOCK_SIZE
            mov [edi+block_flags], USED_BLOCK
 
            mov [ebx+block_next], eax
            mov [ebx+block_prev], eax
-           mov [ebx+list_next], eax
+           mov [ebx+list_fd], eax
+           mov [ebx+list_bk], eax
            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
 
            mov ecx, [MEM_AMOUNT]
@@ -135,7 +138,6 @@ proc init_kernel_heap
            mov [mem_block_mask], eax
            mov [mem_block_mask+4],0x80000000
 
-           mov [mem_used_list], eax
            mov [mem_block_list+63*4], ebx
            mov byte [mem_block_map], 0xFC
            and [heap_mutex], 0
@@ -220,6 +222,15 @@ found:
 endp
 
 proc free_mem_block
+           mov dword [eax], 0
+           mov dword [eax+4], 0
+           mov dword [eax+8], 0
+           mov dword [eax+12], 0
+           mov dword [eax+16], 0
+;           mov dword [eax+20], 0
+           mov dword [eax+24], 0
+           mov dword [eax+28], 0
+
            sub eax, [mem_block_arr]
            shr eax, 5
 
@@ -285,8 +296,8 @@ proc alloc_kernel_space stdcall, size:dword
            mov eax, [edi+block_prev]
            mov [esi+block_prev], eax
            mov [edi+block_prev], esi
-           mov [esi+list_next], 0
-           mov [esi+list_prev], 0
+           mov [esi+list_fd], 0
+           mov [esi+list_bk], 0
            and eax, eax
            jz @f
            mov [eax+block_next], esi
@@ -318,22 +329,22 @@ proc alloc_kernel_space stdcall, size:dword
            btr [mem_block_mask], ecx
 @@:
            mov edx, [mem_block_list+eax*4]
-           mov [edi+list_next], edx
+           mov [edi+list_fd], edx
            test edx, edx
            jz @f
-           mov [edx+list_prev], edi
+           mov [edx+list_bk], edi
 @@:
            mov [mem_block_list+eax*4], edi
            bts [mem_block_mask], eax
 .m_eq_ind:
-           mov ebx, [mem_used_list]
-           mov [esi+list_next], ebx
-           test ebx, ebx
-           jz @f
-           mov [ebx+list_prev], esi
-@@:
+           mov ecx, mem_used.fd-MEM_LIST_OFFSET
+           mov edx, [ecx+list_fd]
+           mov [esi+list_fd], edx
+           mov [esi+list_bk], ecx
+           mov [ecx+list_fd], esi
+           mov [edx+list_bk], esi
+
            mov [esi+block_flags], USED_BLOCK
-           mov [mem_used_list], esi
            mov eax, [esi+block_base]
            mov ebx, [size]
            sub [heap_free], ebx
@@ -346,13 +357,13 @@ proc alloc_kernel_space stdcall, size:dword
            jnz @f
            btr [mem_block_mask], ebx
 @@:
-           mov ecx, [mem_used_list]
-           mov [edi+list_next], ecx
-           test ecx, ecx
-           jnz @f
-           mov [ecx+list_prev], edi
-@@:
-           mov [mem_used_list], edi
+           mov ecx, mem_used.fd-MEM_LIST_OFFSET
+           mov edx, [ecx+list_fd]
+           mov [edi+list_fd], edx
+           mov [edi+list_bk], ecx
+           mov [ecx+list_fd], edi
+           mov [edx+list_bk], edi
+
            mov [edi+block_flags], USED_BLOCK
            mov eax, [edi+block_base]
            mov ebx, [size]
@@ -372,14 +383,14 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            call wait_mutex    ;ebx
 
            mov eax, [base]
-           mov esi, [mem_used_list]
+           mov esi, [mem_used.fd]
 @@:
-           test esi, esi
-           jz .fail
+           cmp esi, mem_used.fd-MEM_LIST_OFFSET
+           je .fail
 
            cmp [esi+block_base], eax
            je .found
-           mov esi, [esi+list_next]
+           mov esi, [esi+list_fd]
            jmp @b
 .found:
            cmp [esi+block_flags], USED_BLOCK
@@ -452,10 +463,10 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 @@:
            mov esi, [mem_block_list+eax*4]
            mov [mem_block_list+eax*4], edi
-           mov [edi+list_next], esi
+           mov [edi+list_fd], esi
            test esi, esi
            jz @f
-           mov [esi+list_prev], edi
+           mov [esi+list_bk], edi
 @@:
            bts [mem_block_mask], eax
 .m_eq:
@@ -471,10 +482,10 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
 
            mov edi, [mem_block_list+eax*4]
            mov [mem_block_list+eax*4], esi
-           mov [esi+list_next], edi
+           mov [esi+list_fd], edi
            test edi, edi
            jz @f
-           mov [edi+list_prev], esi
+           mov [edi+list_bk], esi
 @@:
            bts [mem_block_mask], eax
            mov [esi+block_flags],FREE_BLOCK
@@ -500,14 +511,14 @@ proc kernel_alloc stdcall, size:dword
            and eax, not 4095;
            mov [size], eax
            and eax, eax
-           jz .error
+           jz .err
            mov ebx, eax
            shr ebx, 12
            mov [pages_count], ebx
 
            stdcall alloc_kernel_space, eax
-           and eax, eax
-           jz .error
+           test eax, eax
+           jz .err
            mov [lin_addr], eax
 
            mov ecx, [pages_count]
@@ -522,7 +533,7 @@ proc kernel_alloc stdcall, size:dword
            stdcall alloc_pages, ebx
            pop ecx                   ; yes ecx!!!
            and eax, eax
-           jz .error
+           jz .err
 
            mov edi, eax
            mov edx, [lin_addr]
@@ -536,12 +547,12 @@ proc kernel_alloc stdcall, size:dword
            mov ecx, [pages_count]
            and ecx, 7
            jz .end
-
-@@:        push ecx
+@@:
+           push ecx
            call alloc_page
            pop ecx
            test eax, eax
-           jz .error
+           jz .err
 
            stdcall map_page,edx,eax,dword PG_SW
            add edx, 0x1000
@@ -550,7 +561,7 @@ proc kernel_alloc stdcall, size:dword
 .end:
            mov eax, [lin_addr]
            ret
-.error:
+.err:
            xor eax, eax
            ret
 endp
@@ -563,14 +574,14 @@ proc kernel_free stdcall, base:dword
            call wait_mutex    ;ebx
 
            mov eax, [base]
-           mov esi, [mem_used_list]
+           mov esi, [mem_used.fd]
 @@:
-           test esi, esi
-           jz .fail
+           cmp esi, mem_used.fd-MEM_LIST_OFFSET
+           je .fail
 
            cmp [esi+block_base], eax
            je .found
-           mov esi, [esi+list_next]
+           mov esi, [esi+list_fd]
            jmp @b
 .found:
            cmp [esi+block_flags], USED_BLOCK

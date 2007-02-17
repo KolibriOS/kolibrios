@@ -356,32 +356,6 @@ B32:
         mov     [0xe024],dword Vesa20_getpixel32
       no_mode_0x12:
 
-; MEMORY MODEL
-
-           call mem_test
-
-           mov [MEM_AMOUNT], eax
-
-           mov [pg_data.mem_amount], eax
-           mov [pg_data.kernel_max], eax
-
-           shr eax, 12
-           mov edx, eax
-           mov [pg_data.pages_count], eax
-           mov [pg_data.kernel_pages], eax
-
-           shr eax, 3
-           mov [pg_data.pagemap_size], eax
-
-           shr edx, 10
-           cmp edx, 3
-           ja @f
-           inc edx       ;at least 4Mb for kernel heap
-@@:
-           mov [pg_data.kernel_tables], edx
-
-; ENABLE PAGING
-
            call test_cpu
 ;           btr [cpu_caps], CAPS_SSE    ;test: dont't use sse code
 ;           btr [cpu_caps], CAPS_SSE2   ;test: don't use sse2
@@ -393,9 +367,12 @@ B32:
 ;           btr [cpu_caps], CAPS_MTRR   ;test: don't use MTRR
            bts [cpu_caps], CAPS_TSC     ;force use rdtsc
 
-           call init_memEx
+; MEMORY MODEL
+           call mem_test
+           call init_mem
            call init_page_map
 
+; ENABLE PAGING
            mov eax, sys_pgdir
            mov cr3, eax
 
@@ -404,6 +381,8 @@ B32:
            mov cr0,eax
 
            call init_kernel_heap
+           stdcall kernel_alloc, 0x2000
+           mov [os_stack], eax
            call init_LFB
            call init_mtrr
            call init_fpu
@@ -580,40 +559,34 @@ include 'vmodeld.inc'
         mov  esi,boot_setostask
         call boot_log
 
-        mov eax, [fpu_data]
+        mov eax, fpu_data
         mov  dword [0x80000+APPDATA.fpu_state], eax
         mov  dword [0x80000+APPDATA.fpu_handler], 0
         mov  dword [0x80000+APPDATA.sse_handler], 0
 
         ; name for OS/IDLE process
 
-        mov  dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
-        mov  dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
+        mov dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
+        mov dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
+        mov edi, [os_stack]
+        mov dword [0x80000+256+APPDATA.pl0_stack], edi
+        add edi, 0x2000-512
+        mov dword [0x80000+256+APPDATA.fpu_state], edi
+
+        mov esi, fpu_data
+        mov ecx, 512/4
+        cld
+        rep movsd
+
+        mov dword [0x80000+256+APPDATA.fpu_handler], 0
+        mov dword [0x80000+256+APPDATA.sse_handler], 0
+
         mov ebx, [def_cursor]
         mov dword [0x80000+256+APPDATA.cursor], ebx
-        mov  dword [0x80000+256+APPDATA.fpu_handler], 0
-        mov  dword [0x80000+256+APPDATA.sse_handler], 0
 
         mov ebx, PROC_BASE+256+APP_OBJ_OFFSET
         mov  dword [0x80000+256+APPDATA.fd_obj], ebx
         mov  dword [0x80000+256+APPDATA.bk_obj], ebx
-
-
-;set fpu save area
-        mov esi, eax
-        bt [cpu_caps], CAPS_SSE
-        jnc .no_sse
-
-        lea edi, [eax+512]
-        mov  dword [PROC_BASE+256+APPDATA.fpu_state], edi
-        mov ecx, 512/4
-        jmp @F
-.no_sse:
-        lea edi, [eax+112]
-        mov  dword [PROC_BASE+256+APPDATA.fpu_state], edi
-        mov ecx, 112/4
-@@:
-        rep movsd
 
         ; task list
         mov  [0x3020+TASKDATA.wnd_number], 1 ; on screen number
@@ -632,7 +605,9 @@ include 'vmodeld.inc'
         mov  [edi+TSS._cr3],eax
         mov  [edi+TSS._eip],osloop
         mov  [edi+TSS._eflags],dword 0x11202 ; sti and resume
-        mov  [edi+TSS._esp],sysint_stack_data + 4096*2 ; uses slot 1 stack
+        mov eax, [os_stack]
+        add eax, 0x2000-512
+        mov  [edi+TSS._esp], eax
         mov  [edi+TSS._cs],os_code
         mov  [edi+TSS._ss],os_data
         mov  [edi+TSS._ds],os_data

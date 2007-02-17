@@ -31,7 +31,6 @@ build_process_gdt_tss_pointer:
 
         ret
 
-
 build_interrupt_table:
 
         mov    edi, idts+8
@@ -623,10 +622,9 @@ term9:
            mov eax,[PROC_BASE+eax+APPDATA.dir_table]
            stdcall destroy_app_space, eax
 
-;;           mov esi, [.slot]
-           pop esi               ;restore stack
+           mov esi, [.slot]
            cmp [fpu_owner],esi   ; if user fpu last -> fpu user = 1
-           jne fpu_ok_1
+           jne @F
 
            mov [fpu_owner],1
            mov eax, [256+PROC_BASE+APPDATA.fpu_state]
@@ -634,11 +632,11 @@ term9:
            clts
            jnc .no_SSE
            fxrstor [eax]
-           jmp fpu_ok_1
+           jmp @F
 .no_SSE:
            fnclex
            frstor [eax]
-fpu_ok_1:
+@@:
 
     mov   [0xf400],byte 0           ; empty keyboard buffer
     mov   [0xf500],byte 0           ; empty button buffer
@@ -747,24 +745,22 @@ fpu_ok_1:
 .nodebug:
     popad
 
-    pusha         ; at 0x80000+
-    mov   edi,esi
-    shl   edi,8
-    add   edi,0x80000
-    mov   ecx,256/4
-    xor   eax, eax
-    rep   stosd
-    popa
+           mov ebx, [.slot]
+           shl ebx, 8
+           mov ebx,[PROC_BASE+ebx+APPDATA.pl0_stack]
 
-    pusha          ; name to spaces
-    mov   edi,esi
-    shl   edi,8
-    add   edi,0x80000+APPDATA.app_name
-    mov   ecx,11
-    mov   eax,' '
-    rep   stosb
-    popa
+           stdcall kernel_free, ebx
 
+           mov edi, [.slot]
+           shl edi,8
+           add edi,0x80000
+           mov eax, 0x20202020
+           stosd
+           stosd
+           stosd
+           mov ecx,244/4
+           xor eax, eax
+           rep stosd
 
   ; activate window
         movzx  eax, word [0xC000 + esi*2]
@@ -823,7 +819,6 @@ fpu_ok_1:
   nofreeirq:
     loop   newirqfree
     popa
-
 
     pusha                     ; remove all port reservations
     mov   edx,esi
@@ -910,6 +905,7 @@ fpu_ok_1:
     mov   [application_table_status],0
     mov   esi,process_terminated
     call  sys_msg_board_str
+    add esp, 4
     ret
 restore .slot
 

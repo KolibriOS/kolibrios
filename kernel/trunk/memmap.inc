@@ -209,19 +209,11 @@
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
 ;
-; 802000  -> 802fff   free (4 Kb)
 ;
-; 803000  -> 902fff   sysint_stack_data
-;                     - ring0 stacks for ring3 processes
-;                     - used for interrupt handling
-;                     - 256 entries * 4096 step
-;
-; 903000  -> 91ffff   free (116 Kb)
-;
-; 920000  -> B28000   TSS and IO map for (8192*8)=65536 ports
+; 803000 -> 0xA0AFFF  TSS and IO map for (8192*8)=65536 ports
 ;                     (128+8192)*256 = 2129920 = 0x208000
 ;
-; C00000 ->           kernel heap
+; 0xA0B000 ->         kernel heap
 
 
 

@@ -226,9 +226,10 @@ resendQ             equ OS_BASE+0x0770000
 ;skin_data          equ OS_BASE+0x0778000
 
 draw_data           equ OS_BASE+0x0800000
-sysint_stack_data   equ OS_BASE+0x0803000
 
-tss_data            equ OS_BASE+0x0920000
+tss_data            equ 0x0803000    ;OS_BASE+0x0920000
+
+HEAP_BASE           equ 0xA0B000  ;x00C00000
 
 pages_tab           equ  0x60000000
 master_tab          equ  0x60180000
@@ -238,11 +239,7 @@ sys_pgdir           equ  OS_BASE+0x00050000
 sys_master_tab      equ  OS_BASE+0x00051000
 sys_pgmap           equ  OS_BASE+0x00052000
 
-;lfb_start          equ  0x00800000
 
-;new_app_pdir          equ OS_BASE+0x01000000
-;new_app_master_table  equ OS_BASE+0x01001000
-;new_app_ptable        equ OS_BASE+0x01002000
 
 new_app_base        equ  0x60400000
 

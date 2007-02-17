@@ -512,13 +512,13 @@ proc load_file stdcall, file_name:dword
 .exit:
            push eax
            lea edi, [eax+ebx]     ;cleanup remain space
-           mov ecx, ebx          ;from file end
-           add ecx, 4095
-           and ecx, not 4095
+           mov ecx, 4096          ;from file end
+           and ebx, 4095
            sub ecx, ebx
            xor eax, eax
            cld
            rep stosb
+           mov ebx, [file_size]
            pop eax
            ret
 .cleanup:

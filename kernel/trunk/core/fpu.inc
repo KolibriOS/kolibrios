@@ -6,9 +6,6 @@ init_fpu:
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
-           stdcall kernel_alloc, 512*256
-           mov [fpu_data], eax
-
            mov ebx, cr4
            mov ecx, cr0
            or ebx, CR4_OSFXSR+CR4_OSXMMEXPT
@@ -29,16 +26,14 @@ init_fpu:
            xorps xmm5, xmm5
            xorps xmm6, xmm6
            xorps xmm7, xmm7
-           fxsave [eax]
+           fxsave [fpu_data]  ;[eax]
            ret
 .no_SSE:
-           stdcall kernel_alloc, 112*256
-           mov [fpu_data], eax
            mov ecx, cr0
            and ecx, not CR0_EM
            or ecx, CR0_MP+CR0_NE
            mov cr0, ecx
-           fnsave [eax]
+           fnsave [fpu_data]
            ret
 
 align 4
@@ -117,8 +112,6 @@ e7:                        ;#NM exception handler
 iglobal
   fpu_owner dd 1
  endg
-
-
 
 reg_eip       equ ebp+4
 reg_cs        equ ebp+8

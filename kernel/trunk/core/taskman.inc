@@ -1,4 +1,4 @@
- GREEDY_KERNEL  equ 0
+GREEDY_KERNEL  equ 0
 
 
 struc APP_HEADER_00
@@ -168,7 +168,8 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            mov   eax,[app_mem]
            mov   [ebx+APPDATA.mem_size],eax
 
-if not GREEDY_KERNEL
+if GREEDY_KERNEL
+else
            mov ecx, [app_mem]
            mov edi, [file_size]
            add edi, 4095
@@ -300,7 +301,6 @@ proc get_new_process_place
            xor    eax,eax
            ret
 endp
-
 
 align 4
 proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
@@ -449,7 +449,7 @@ end if
 .fail:
            dec [pg_data.pg_mutex]
            cmp [dir_addr], 0
-           jz @f
+           je @f
            stdcall destroy_app_space, [dir_addr]
 @@:
            xor eax, eax
@@ -968,38 +968,30 @@ align 4
 proc set_app_params stdcall,slot:dword, params:dword,\
                         cmd_line:dword, app_path:dword, flags:dword
 
-           mov edi, [slot]
-           mov esi, [fpu_data]
-           bt [cpu_caps], CAPS_SSE
-           jnc .no_SSE
+           locals
+             pl0_stack dd ?
+           endl
 
-           shl edi, 8
-           mov eax, edi
-           lea edi, [esi+edi*2]
-           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
-           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
-           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
-           mov ecx, 512/4
-           jmp @F
-.no_SSE:
-           mov eax, edi
+           stdcall kernel_alloc, 0x2000
+           mov [pl0_stack], eax
+
+           lea edi, [eax+0x2000-512]
+
+           mov eax, [slot]
+           mov ebx, eax
+
            shl eax, 8
-           mov ebx, edi
-           shl edi, 7
-           shl ebx, 4
-           sub edi, ebx       ;edi*=112
-           add edi, esi
            mov [eax+PROC_BASE+APPDATA.fpu_state], edi
            mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
            mov [eax+PROC_BASE+APPDATA.sse_handler], 0
-           mov ecx, 112/4
-@@:
+
+           mov esi, fpu_data
+           mov ecx, 512/4
            rep movsd
 
-           mov ebx,[slot]
-           cmp ebx,[TASK_COUNT]
-           jle .noinc
-           inc dword [TASK_COUNT]       ;update number of processes
+           cmp    ebx,[TASK_COUNT]
+           jle    .noinc
+           inc    dword [TASK_COUNT]       ;update number of processes
 .noinc:
            shl ebx,8
            lea edx, [ebx+PROC_BASE+APP_EV_OFFSET]
@@ -1012,6 +1004,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 
            mov ecx, [def_cursor]
            mov [PROC_BASE+APPDATA.cursor+ebx],ecx
+           mov eax, [pl0_stack]
+           mov [PROC_BASE+APPDATA.pl0_stack+ebx],eax
 
            shr ebx,3
            mov eax, new_app_base
@@ -1105,9 +1099,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._gs],graph_data ;selector of graphic segment
            mov [edi+TSS._io],word 128
            mov [edi+TSS._ss0], os_data
-           mov ebx,[slot]
-           shl ebx,12
-           add ebx,sysint_stack_data+4096
+           mov ebx, [pl0_stack]
+           add ebx, 0x2000-512
            mov [edi+TSS._esp0],ebx
 
            mov ecx, edi    ;ecx - address of application TSS
