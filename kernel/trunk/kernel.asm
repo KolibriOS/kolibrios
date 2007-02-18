@@ -167,6 +167,10 @@ use32
 
 include 'unpacker.inc'
 
+__DEBUG__ fix 1
+__DEBUG_LEVEL__ fix 1
+include 'debug-fdo.inc'
+
 iglobal
   boot_memdetect    db   'Determining amount of memory',0
   boot_fonts        db   'Fonts loaded',0
@@ -5011,6 +5015,10 @@ iglobal
   sound_dma  dd 0x1
   syslang    dd 0x1
 endg
+
+if __DEBUG__ eq 1
+  include_debug_strings
+end if 
 
 IncludeIGlobals
 endofcode:

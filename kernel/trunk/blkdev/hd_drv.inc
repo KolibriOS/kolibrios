@@ -409,19 +409,20 @@ check_hd_wait_timeout:
     mov   [hd_error],0
     ret
 
-iglobal
-  hd_timeout_str   db 'K : FS - HD timeout',13,10,0
-  hd_read_str      db 'K : FS - HD read error',13,10,0
-  hd_write_str     db 'K : FS - HD write error',13,10,0
-  hd_lba_str       db 'K : FS - HD LBA error',13,10,0
-endg
+;iglobal
+;  hd_timeout_str   db 'K : FS - HD timeout',0
+;  hd_read_str      db 'K : FS - HD read error',0
+;  hd_write_str     db 'K : FS - HD write error',0
+;  hd_lba_str       db 'K : FS - HD LBA error',0
+;endg
 
 hd_timeout_error:
 
 ;    call  clear_hd_cache
 ;    call  clear_application_table_status
-    mov   esi,hd_timeout_str
-    call  sys_msg_board_str
+;    mov   esi,hd_timeout_str
+;    call  sys_msg_board_str
+    DEBUGF 1,"K : FS - HD timeout\n"
 ;    jmp   $
     mov   [hd_error],1
     pop   eax
@@ -431,8 +432,9 @@ hd_read_error:
 
 ;    call  clear_hd_cache
 ;    call  clear_application_table_status
-    mov   esi,hd_read_str
-    call  sys_msg_board_str
+;    mov   esi,hd_read_str
+;    call  sys_msg_board_str
+    DEBUGF 1,"K : FS - HD read error\n"
     pop   edx eax
     ret
 
@@ -440,23 +442,26 @@ hd_write_error:
 
 ;    call  clear_hd_cache
 ;    call  clear_application_table_status
-    mov   esi,hd_write_str
-    call  sys_msg_board_str
+;    mov   esi,hd_write_str
+;    call  sys_msg_board_str
+    DEBUGF 1,"K : FS - HD write error\n"
     ret
 
 hd_write_error_dma:
 ;        call    clear_hd_cache
 ;        call    clear_application_table_status
-        mov     esi, hd_write_str
-        call    sys_msg_board_str
+;        mov     esi, hd_write_str
+;        call    sys_msg_board_str
+	DEBUGF 1,"K : FS - HD read error\n"
         pop     esi
         ret
 
 hd_lba_error:
 ;    call  clear_hd_cache
 ;    call  clear_application_table_status
-    mov   esi,hd_lba_str
-    call  sys_msg_board_str
+;    mov   esi,hd_lba_str
+;    call  sys_msg_board_str
+    DEBUGF 1,"K : FS - HD LBA error\n"
     jmp   LBA_read_ret
 
 
