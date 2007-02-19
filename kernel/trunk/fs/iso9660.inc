@@ -64,8 +64,10 @@ free_cd_channel:
 .IDE_Channel_2:
     mov [IDE_Channel_2],0
     ret
-    
+
+uglobal    
 cd_status dd 0
+endg
 
 ;----------------------------------------------------------------
 ;
@@ -210,14 +212,14 @@ fs_CdReadFolder:
         call    cd_find_lfn
         jnc     .found
         pop     edi
-        cmp   [DevErrorCode],0
+        cmp     [DevErrorCode], 0
         jne     .noaccess_1
         or      ebx, -1
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
 .found:
-        mov    edi,[cd_current_pointer_of_input]
-        test   byte [edi+25],10b    ; do not allow read directories
+        mov     edi, [cd_current_pointer_of_input]
+        test    byte [edi+25], 10b    ; do not allow read directories
         jnz     .found_dir
         pop     edi
 .noaccess_1:
@@ -225,9 +227,9 @@ fs_CdReadFolder:
         mov     eax, ERROR_ACCESS_DENIED
         ret
 .found_dir:
-        mov    eax,[edi+2]    ; eax=cluster
-        mov    [CDSectorAddress],eax
-        mov    eax,[edi+10] ; размер директрории
+        mov     eax, [edi+2]    ; eax=cluster
+        mov     [CDSectorAddress], eax
+        mov     eax, [edi+10]   ; размер директрории
 .doit:
 ; init header
         push    eax ecx
@@ -237,33 +239,36 @@ fs_CdReadFolder:
         rep     stosd
         pop     ecx eax
         mov     byte [edx], 1   ; version
-        mov     [cd_mem_location],edx
-        add     [cd_mem_location],32 
+        mov     [cd_mem_location], edx
+        add     [cd_mem_location], 32 
 ; начинаем переброску БДВК в УСВК
 ;.mainloop:
-        mov  [cd_counter_block],dword 0
-        dec  dword [CDSectorAddress]
-        push ecx
+        mov     [cd_counter_block], dword 0
+        dec     dword [CDSectorAddress]
+        push    ecx
 .read_to_buffer:
-        inc  dword [CDSectorAddress]
-        mov  [CDDataBuf_pointer],CDDataBuf
-        call ReadCDWRetr         ; читаем сектор директории
-        cmp   [DevErrorCode],0
-        jne   .noaccess_1
-        call .get_names_from_buffer
-        sub  eax,2048
+        inc     dword [CDSectorAddress]
+        mov     [CDDataBuf_pointer], CDDataBuf
+        call    ReadCDWRetr         ; читаем сектор директории
+        cmp     [DevErrorCode], 0
+        jne     .noaccess_1
+        call    .get_names_from_buffer
+        sub     eax,2048
 ; директория закончилась?
-        cmp  eax,0
-        ja   .read_to_buffer
-        mov   edi,[cd_counter_block]
-        mov   [edx+8],edi
-        mov   edi,[ebx] 
-        sub   [edx+4],edi
+        ja      .read_to_buffer
+        mov     edi, [cd_counter_block]
+        mov     [edx+8], edi
+        mov     edi, [ebx]
+        sub     [edx+4], edi
+        xor     eax, eax
+        dec     ecx
+        js      @f
+        mov     al, ERROR_END_OF_FILE
+@@:
         pop     ecx edi
         mov     ebx, [edx+4]
-        mov     eax,ERROR_SUCCESS
-        ret    
-    
+        ret
+
 .get_names_from_buffer:
     mov     [cd_current_pointer_of_input_2],CDDataBuf
     push    eax esi edi edx
@@ -658,11 +663,9 @@ cd_find_lfn:
         cmp    byte [esi-1], 0
         jz    .done
         mov    eax,[cd_current_pointer_of_input]
-        add    eax,2
-        mov    eax,[eax]
-        mov    [CDSectorAddress],eax ; начало директории
-        add    eax,8
-        mov    eax,[eax]  ; размер директории
+        push    dword [eax+2]
+        pop     dword [CDSectorAddress]       ; начало директории
+        mov    eax,[eax+2+8]  ; размер директории
         jmp    .mainloop
 ; указатель файла найден
    .done:

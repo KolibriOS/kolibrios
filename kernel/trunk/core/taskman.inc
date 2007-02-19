@@ -190,6 +190,7 @@ proc fs_execute
            mov [save_cr3], ebx
 
            stdcall create_app_space,[hdr_mem],[file_base],[file_size]
+           mov ecx, -30  ; no memory
            test eax, eax
            jz .failed
 
