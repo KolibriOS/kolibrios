@@ -461,6 +461,20 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            ret
 endp
 
+; description
+;  allocate kernel memory and loads the specified file
+;
+; param
+;  file_name= full path to file
+;
+; retval
+;  eax= file image in kernel memory
+;  ebx= size of file
+;
+; warging
+;  You mast call kernel_free() to delete each file
+;  loaded by the load_file() function
+
 align 4
 proc load_file stdcall, file_name:dword
            locals

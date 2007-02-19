@@ -71,24 +71,54 @@ macro _clear_ op
    rep stosd
 }
 
+
 align 4
-proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
+proc fs_execute
+
+;fn_read:dword, file_size:dword, cluster:dword
+
+; ebx - cmdline
+; edx - flags
+; ebp - full filename
+; [esp+4] = procedure DoRead, [esp+8] = filesize & [esp+12]... - arguments for it
+
            locals
+             cmdline       rd 64        ;256/4
+             filename      rd 256       ;1024/4
+             flags         dd ?
+
              save_cr3      dd ?
              slot          dd ?
              slot_base     dd ?
              file_base     dd ?
              file_size     dd ?
-
-             app_cmdline   dd ? ;0x00
-             app_path      dd ? ;0x04
-             app_eip       dd ? ;0x08
-             app_esp       dd ? ;0x0C
-             app_mem       dd ? ;0x10
-             app_i_end     dd ? ;0x14
+                                          ;app header data
+             hdr_cmdline   dd ? ;0x00
+             hdr_path      dd ? ;0x04
+             hdr_eip       dd ? ;0x08
+             hdr_esp       dd ? ;0x0C
+             hdr_mem       dd ? ;0x10
+             hdr_i_end     dd ? ;0x14
            endl
 
-           stdcall load_file,[file_name]
+           pushad
+
+           mov [cmdline], ebx
+           mov [flags], edx
+
+; [ebp]  pointer to filename
+
+           lea eax, [filename]
+           mov dword [eax+1020],0              ;force terminate
+                                               ;string
+           stdcall k_strncpy, eax, [ebp], 1023
+
+           lea eax, [cmdline]
+           mov dword [eax+252], 0
+           stdcall k_strncpy, eax, [cmdline], 255
+
+           lea eax, [filename]
+           stdcall load_file, eax
            mov  ecx, -ERROR_FILE_NOT_FOUND
            test eax, eax
            jz .err_file
@@ -96,7 +126,7 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            mov [file_base], eax
            mov [file_size], ebx
 
-           lea ebx, [app_cmdline]
+           lea ebx, [hdr_cmdline]
            call test_app_header
            mov ecx, -0x1F
            test eax, eax
@@ -117,8 +147,8 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            cmp eax, 0
            jne .wait_lock
 
-           pushfd
-           cli
+;           pushfd
+;           cli
 
            call set_application_table_status
 
@@ -135,14 +165,14 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            _clear_ 256     ;clean extended information about process
 
 ; write application name
-           mov edi, [file_name]
+           lea edi, [filename]
            mov al, '/'
            call k_strrchr  ; now eax points to name without path
 
            lea esi, [eax+1]
            test eax, eax
            jnz @F
-           mov esi, [file_name]
+           lea esi, [filename]
 @@:
            mov ecx, 8  ; 8 chars for name
            mov edi, [slot_base]
@@ -159,18 +189,18 @@ proc fs_exec stdcall file_name:dword, cmd_line:dword, flags:dword
            mov ebx, cr3
            mov [save_cr3], ebx
 
-           stdcall create_app_space,[app_mem],[file_base],[file_size]
+           stdcall create_app_space,[hdr_mem],[file_base],[file_size]
            test eax, eax
            jz .failed
 
            mov   ebx,[slot_base]
            mov   [ebx+APPDATA.dir_table],eax
-           mov   eax,[app_mem]
+           mov   eax,[hdr_mem]
            mov   [ebx+APPDATA.mem_size],eax
 
 if GREEDY_KERNEL
 else
-           mov ecx, [app_mem]
+           mov ecx, [hdr_mem]
            mov edi, [file_size]
            add edi, 4095
            and edi, not 4095
@@ -187,14 +217,15 @@ end if
 ; release only virtual space, not phisical memory
 
            stdcall free_kernel_space, [file_base]
-           lea eax, [app_cmdline]
-           stdcall set_app_params ,[slot],eax,[cmd_line],\
-                                         [file_name], [flags]
+           lea eax, [hdr_cmdline]
+           lea ebx, [cmdline]
+           lea ecx, [filename]
+           stdcall set_app_params ,[slot],eax,ebx,ecx,[flags]
 
            mov eax, [save_cr3]
            call set_cr3
 
-           popfd
+ ;          popfd
            xor ebx, ebx
            mov [application_table_status],ebx ;unlock application_table_status mutex
            mov eax,[process_number]  ;set result
@@ -203,7 +234,7 @@ end if
            mov eax, [save_cr3]
            call set_cr3
 .err:
-           popfd
+ ;          popfd
 .err_hdr:
            stdcall kernel_free,[file_base]
 .err_file:
@@ -547,63 +578,6 @@ proc destroy_app_space stdcall, pg_dir:dword
            dec [pg_data.pg_mutex]
            ret
 endp
-
-align 4
-proc fs_execute
-
-;fn_read:dword, file_size:dword, cluster:dword
-
-; ebx - cmdline
-; edx - flags
-; ebp - full filename
-; [esp+4] = procedure DoRead, [esp+8] = filesize & [esp+12]... - arguments for it
-
-           locals
-             cmdline    dd ?
-             flags      dd ?
-             filename   dd ?
-             retval     dd ?
-           endl
-
-           pushad
-
-           mov [cmdline], ebx
-           mov [flags], edx
-           mov eax, [ebp]
-           mov [filename], eax
-
-           mov ebx, pg_data.tmp_task_mutex
-           call wait_mutex   ;ebx
-
-           mov edi, [tmp_task_data]
-           mov ecx, (1024+256)/4
-           xor eax, eax
-           rep stosd
-
-           mov esi, [filename]
-           mov edi, [tmp_task_data]
-           mov ecx, 1024
-           rep movsb
-
-           mov esi, [cmdline]
-           test esi, esi
-           jz @f
-           mov ecx, 256
-           rep movsb
-@@:
-           mov eax, [tmp_task_data]
-           lea ebx, [eax+1024]        ;cmd line
-
-           stdcall fs_exec, eax, ebx, [flags]
-
-           mov [retval], eax
-           popad
-           mov [pg_data.tmp_task_mutex], 0
-           mov eax, [retval]
-           ret
-
-endp
-
 
 pid_to_slot:
 ;Input:

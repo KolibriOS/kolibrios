@@ -199,10 +199,10 @@
 ; 760000  -> 76ffff   !vrr driver
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
 ;
-; 778000  -> 77ffff   window skinning  ( 32 kb)
-; 780000  -> 7fffff   reserved to physical memory manager
+; 780000  -> 987FFF   TSS and IO map for (8192*8)=65536 ports
+;                     (128+8192)*256 = 2129920 = 0x208000
 ;
-; 800000  -> 801FFF   draw_data   - 256 entries
+; 988000 -> 98AFFF    draw_data   - 256 entries
 ;
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
@@ -210,10 +210,7 @@
 ;         0C   dword  draw limit - y end
 ;
 ;
-; 803000 -> 0xA0AFFF  TSS and IO map for (8192*8)=65536 ports
-;                     (128+8192)*256 = 2129920 = 0x208000
-;
-; 0xA0B000 ->         kernel heap
+; 0x0098B000 ->       kernel heap
 
 
 

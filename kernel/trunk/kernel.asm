@@ -418,9 +418,6 @@ B32:
            add eax, ebx
            mov [ipc_ptab], eax
 
-           stdcall kernel_alloc, 0x1000
-           mov [tmp_task_data], eax
-
            call init_events
 
            mov eax, srv.fd-SRV_FD_OFFSET
@@ -682,12 +679,18 @@ include 'vmodeld.inc'
         cmp   byte [0x2f0000+0x9030],1
         jne   no_load_vrr_m
 
-        stdcall fs_exec, vrr_m, 0, 0
+        mov ebp, vrr_m
+        xor ebx, ebx
+        xor edx, edx
+        call fs_execute
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
 no_load_vrr_m:
-        stdcall fs_exec, firstapp, 0, 0
+        mov ebp, firstapp
+        xor ebx, ebx
+        xor edx, edx
+        call fs_execute
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
         mov   eax, 0xDEADBEEF        ; otherwise halt

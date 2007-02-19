@@ -1363,7 +1363,6 @@ align 16
 
   tmp_task_pdir     rd 1
   tmp_task_ptab     rd 1
-  tmp_task_data     rd 1
 
   fdd_buff          rd 1
   LFBSize           rd 1

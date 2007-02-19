@@ -96,7 +96,7 @@ create_event:
            jz .fail
 
            mov [eax+APPOBJ.magic], 'EVNT'
-           mov [eax+APPOBJ.destroy], destroy_event
+           mov [eax+APPOBJ.destroy], destroy_event.internal
            mov [eax+EVENT.id], ebx
 
            mov ebx, [CURRENT_TASK]
@@ -144,12 +144,12 @@ destroy_event:
            jne .fail
            cmp [eax+EVENT.id], ebx
            jne .fail
-
+.internal:
            mov ebx, [eax+APPOBJ.fd]
            mov ecx, [eax+APPOBJ.bk]
            mov [ebx+APPOBJ.bk], ecx
            mov [ecx+APPOBJ.fd], ebx
-.internal:
+.force:
            xor edx, edx             ;clear common header
            mov [eax], edx
            mov [eax+4], edx
@@ -268,7 +268,7 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
            ret
 
 .destroy:
-           call destroy_event.internal
+           call destroy_event.force
            ret
 .switch:
            mov eax, [0x3010]
@@ -331,7 +331,7 @@ wait_event:
            add esp, 4
            ret
 .destroy:
-           call destroy_event.internal
+           call destroy_event.force
            add esp, 4
            ret
 .switch:

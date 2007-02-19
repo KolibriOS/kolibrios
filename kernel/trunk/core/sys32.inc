@@ -543,14 +543,14 @@ get_app_params:
     ret
 
 uglobal
-  new_process_place  dd  0x0
-  app_start    dd  0x0
-  app_i_end    dd  0x0
-  app_mem      dd  0x0
-  app_esp      dd  0x0
-  app_i_param  dd  0x0
-  app_i_icon   dd  0x0
-  app_mem_pos  dd  0x0
+;  new_process_place  dd  0x0
+;  app_start    dd  0x0
+;  app_i_end    dd  0x0
+;  app_mem      dd  0x0
+;  app_esp      dd  0x0
+;  app_i_param  dd  0x0
+;  app_i_icon   dd  0x0
+;  app_mem_pos  dd  0x0
 endg
 
 end if

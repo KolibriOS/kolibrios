@@ -225,11 +225,10 @@ resendQ             equ OS_BASE+0x0770000
 
 ;skin_data          equ OS_BASE+0x0778000
 
-draw_data           equ OS_BASE+0x0800000
+tss_data            equ 0x780000
+draw_data           equ 0x988000
 
-tss_data            equ 0x0803000    ;OS_BASE+0x0920000
-
-HEAP_BASE           equ 0xA0B000  ;x00C00000
+HEAP_BASE           equ 0x98B000
 
 pages_tab           equ  0x60000000
 master_tab          equ  0x60180000
@@ -435,7 +434,6 @@ struc PG_DATA
   .kernel_tables     dd ?
   .sys_page_dir      dd ?
   .pg_mutex          dd ?
-  .tmp_task_mutex    dd ?
 }
 
 ;struc LIB
