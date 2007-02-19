@@ -1,7 +1,8 @@
 ;компонент OptionBox (основан на Checkbox)
 ;Огромная благодарность Maxxxx32, Diamond, Heavyiron и другим программистам, и их программам, без
 ;которых я не смог бы написать этот компонент. 
-;16.02.2007 
+;19.02.2007 общее улучшение кода, уменьшение размера и использование системных цветов для отображения optionkbox
+;16.02.2007 дата создания компонента
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
 
 ;заголовок приложения
@@ -22,7 +23,7 @@ use32		; транслятор, использующий 32 разрядных команды
                  ;    откуда запущено приложение
 ;------------------
 	include	'macros.inc'
-	include 'optionbox.inc'	;включить файл check.inc
+	include 'optionbox.inc'	;включить файл opeck.inc
 	use_option_box		;используя макросы,внести процедуры для рисования optionbox
 align 16
 ;Область кода
@@ -86,19 +87,19 @@ draw_window:		;рисование окна приложения
 ;0 - цвет текста надписи
 ;op_text.1 - указатель на начало строки
 ;option_group1 - это признак группы, т.е. этот код может обрабатывать много групп из optibox
-;op_text.e1-ch_text.1 - длина строки
+;op_text.e1-op_text.1 - длина строки
 ;
 align 16
 option_boxes:
-op1 option_box 10,15,0,0,ch_text.1,ch_text.e1-ch_text.1,option_group1
-op2 option_box 10,30,0,0,ch_text.2,ch_text.e2-ch_text.2,option_group1
-op3 option_box 10,45,0,0,ch_text.3,ch_text.e3-ch_text.3,option_group1
-op11 option_box 10,80,0,0,ch_text.1,ch_text.e1-ch_text.1,option_group2
-op12 option_box 10,95,0,0,ch_text.2,ch_text.e2-ch_text.2,option_group2
-op13 option_box 10,110,0,0,ch_text.3,ch_text.e3-ch_text.3,option_group2
+op1 option_box 10,15,op_text.1,op_text.e1-op_text.1,option_group1
+op2 option_box 10,30,op_text.2,op_text.e2-op_text.2,option_group1
+op3 option_box 10,45,op_text.3,op_text.e3-op_text.3,option_group1
+op11 option_box 10,80,op_text.1,op_text.e1-op_text.1,option_group2
+op12 option_box 10,95,op_text.2,op_text.e2-op_text.2,option_group2
+op13 option_box 10,110,op_text.3,op_text.e3-op_text.3,option_group2
 option_boxes_end:
 
-ch_text:		; Сопровождающий текст для чек боксов
+op_text:		; Сопровождающий текст для чек боксов
 .1 db 'Option_Box #1' 
 .e1:
 .2 db 'Option_Box #2'
@@ -109,7 +110,6 @@ ch_text:		; Сопровождающий текст для чек боксов
 option_group1	dd op1 	;указатели, они отображаются по умолчанию, когда выводится 
 option_group2	dd op11 ;приложение
 
-hed db 'Optionbox [16.02.2007]',0	;заголовок приложения
+hed db 'Optionbox [19.02.2007]',0	;заголовок приложения
 sc     system_colors
 i_end:			;конец кода
-
