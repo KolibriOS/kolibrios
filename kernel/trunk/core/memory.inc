@@ -240,7 +240,7 @@ proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
            or eax, [flags]
            mov ebx, [lin_addr]
            shr ebx, 12
-           mov [pages_tab+ebx*4], eax
+           mov [page_tabs+ebx*4], eax
            mov eax, [lin_addr]
            invlpg [eax]
            pop ebx
@@ -296,7 +296,7 @@ commit_pages:
            mov ebx, edi
            shr ebx, 12
 @@:
-           mov [pages_tab+ebx*4], eax
+           mov [page_tabs+ebx*4], eax
            invlpg [edi]
            add edi, edx
            add eax, edx
@@ -323,7 +323,7 @@ release_pages:
            mov edi, eax
 
            shr esi, 10
-           add esi, pages_tab
+           add esi, page_tabs
 
            mov ebp, [pg_data.pages_free]
            mov ebx, [page_start]
@@ -368,7 +368,7 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
            mov dword [current_pgdir+ebx*4], eax
            mov eax, [lin_addr]
            shr eax, 10
-           add eax, pages_tab
+           add eax, page_tabs
            invlpg [eax]
            pop ebx
            ret
@@ -439,7 +439,7 @@ proc map_LFB
            mov eax, [LFBAddress]
            mov esi, eax
            shr esi, 10
-           add esi, pages_tab
+           add esi, page_tabs
            or eax, PG_UW
            mov ecx, [pg_count]
            shr ecx, 2
@@ -488,10 +488,10 @@ proc new_mem_resize stdcall, new_size:dword
            shr edi, 12
            shr esi, 12
 @@:
-           mov eax, [pages_tab+0x00181000+edi*4]
+           mov eax, [page_tabs+0x00181000+edi*4]
            test eax, 1
            jz .next
-           mov dword [pages_tab+0x00181000+edi*4], 2
+           mov dword [page_tabs+0x00181000+edi*4], 2
            mov ebx, edi
            shl ebx, 12
            invlpg [ebx+std_application_base_address]
@@ -535,7 +535,7 @@ proc new_mem_resize stdcall, new_size:dword
 
            push edi
            shr edi, 10
-           add edi, pages_tab
+           add edi, page_tabs
            mov ecx, 1024
            xor eax, eax
            cld
@@ -614,7 +614,7 @@ update_mem_size:
 align 4
 get_pg_addr:
            shr eax, 12
-           mov eax, [pages_tab+eax*4]
+           mov eax, [page_tabs+eax*4]
            and eax, 0xFFFFF000
            ret
 
@@ -658,7 +658,7 @@ proc page_fault_handler
            test edx, 1
            jz .fail
 
-           mov eax, [pages_tab+ebx*4]
+           mov eax, [page_tabs+ebx*4]
            test eax, 2
            jz .fail
 .alloc:
@@ -696,13 +696,13 @@ proc page_fault_handler
 
 .kernel_space:
 ;           shr ebx, 12
-;           mov eax, [pages_tab+ebx*4]
+;           mov eax, [page_tabs+ebx*4]
 ;           shr ebx, 10
 ;           mov eax, [master_tab+ebx*4]
            jmp .exit
 .old_addr:
 ;           shr ebx, 12
-;           mov eax, [pages_tab+ebx*4]
+;           mov eax, [page_tabs+ebx*4]
 ;           shr ebx, 10
 ;           mov eax, [master_tab+ebx*4]
            jmp .exit
@@ -713,7 +713,7 @@ proc page_fault_handler
            jmp .exit
 .tab_space:
 ;           shr ebx, 12
-;           mov eax, [pages_tab+ebx*4]
+;           mov eax, [page_tabs+ebx*4]
 ;           shr ebx, 10
 ;           ;mov ecx, [sys_page_dir]
 ;           mov eax, [master_tab+ebx*4]
@@ -940,21 +940,21 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov edx, ebx
            shr ebx, 12
            xor eax, eax
-           mov [pages_tab+ebx*4], eax
+           mov [page_tabs+ebx*4], eax
            invlpg [edx]
 
            mov ebx, [ipc_pdir]
            mov edx, ebx
            shr ebx, 12
            xor eax, eax
-           mov [pages_tab+ebx*4], eax
+           mov [page_tabs+ebx*4], eax
            invlpg [edx]
 
            mov ebx, [ipc_ptab]
            mov edx, ebx
            shr ebx, 12
            xor eax, eax
-           mov [pages_tab+ebx*4], eax
+           mov [page_tabs+ebx*4], eax
            invlpg [edx]
 
            mov  eax, [dst_slot]

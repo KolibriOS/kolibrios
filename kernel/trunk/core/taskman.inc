@@ -421,7 +421,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
            mov edi, new_app_base
            shr edi, 10
-           add edi, pages_tab
+           add edi, page_tabs
 
            mov ecx, [app_tabs]
            shl ecx, 10
@@ -435,8 +435,8 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            mov edi, new_app_base
            shr esi, 10
            shr edi, 10
-           add esi, pages_tab
-           add edi, pages_tab
+           add esi, page_tabs
+           add edi, page_tabs
 .remap:
            lodsd
            or eax, ebx      ; force user level r/w access

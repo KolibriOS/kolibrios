@@ -640,7 +640,7 @@ proc init_heap
            mov ecx, eax
            sub eax, 4096
            or ecx, FREE_BLOCK
-           mov [pages_tab+esi], ecx
+           mov [page_tabs+esi], ecx
            ret
 .exit:
            xor eax, eax
@@ -666,7 +666,7 @@ l_0:
 
            mov ebx, esi
            shr ebx, 12
-           mov eax, [pages_tab+ebx*4]
+           mov eax, [page_tabs+ebx*4]
            test eax, FREE_BLOCK
            jz test_used
            and eax, 0xFFFFF000
@@ -679,16 +679,16 @@ l_0:
            sub eax, ecx;
            or eax, FREE_BLOCK
            shr edx, 12
-           mov [pages_tab+edx*4], eax
+           mov [page_tabs+edx*4], eax
 
 @@:
            or ecx, USED_BLOCK
-           mov [pages_tab+ebx*4], ecx
+           mov [page_tabs+ebx*4], ecx
            shr ecx, 12
            dec ecx
            inc ebx
 @@:
-           mov dword [pages_tab+ebx*4], 2
+           mov dword [page_tabs+ebx*4], 2
            inc ebx
            dec ecx
            jnz @B
@@ -730,21 +730,21 @@ proc user_free stdcall, base:dword
            xor ebx, ebx
            sub esi, 4096
            shr esi, 12
-           mov eax, [pages_tab+esi*4]
+           mov eax, [page_tabs+esi*4]
            test eax, USED_BLOCK
            jz .not_used
 
            and eax, not 4095
            mov ecx, eax
            or eax, FREE_BLOCK
-           mov [pages_tab+esi*4], eax
+           mov [page_tabs+esi*4], eax
            inc esi
            sub ecx, 4096
            shr ecx, 12
            mov ebx, ecx
 .release:
            xor eax, eax
-           xchg eax, [pages_tab+esi*4]
+           xchg eax, [page_tabs+esi*4]
            test eax, 1
            jz @F
            call free_page
@@ -765,7 +765,7 @@ proc user_free stdcall, base:dword
            shr esi, 12
            shr edi, 12
 @@:
-           mov eax, [pages_tab+esi*4]
+           mov eax, [page_tabs+esi*4]
            test eax, USED_BLOCK
            jz .test_free
            shr eax, 12
@@ -780,7 +780,7 @@ proc user_free stdcall, base:dword
            cmp edx, edi
            jae .exit
 
-           mov ebx, [pages_tab+edx*4]
+           mov ebx, [page_tabs+edx*4]
            test ebx, USED_BLOCK
            jz .next_free
 
@@ -791,11 +791,11 @@ proc user_free stdcall, base:dword
 .next_free:
            test ebx, FREE_BLOCK
            jz .err
-           and dword [pages_tab+edx*4], 0
+           and dword [page_tabs+edx*4], 0
            add eax, ebx
            and eax, not 4095
            or eax, FREE_BLOCK
-           mov [pages_tab+esi*4], eax
+           mov [page_tabs+esi*4], eax
            jmp @B
 .exit:
            xor eax, eax

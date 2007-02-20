@@ -230,7 +230,7 @@ draw_data           equ 0x988000
 
 HEAP_BASE           equ 0x98B000
 
-pages_tab           equ  0x60000000
+page_tabs           equ  0x60000000
 master_tab          equ  0x60180000
 current_pgdir       equ  0x60180000
 
