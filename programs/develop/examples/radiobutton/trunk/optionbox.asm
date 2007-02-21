@@ -1,6 +1,7 @@
 ;компонент OptionBox (основан на Checkbox)
 ;Огромная благодарность Maxxxx32, Diamond, Heavyiron и другим программистам, и их программам, без
 ;которых я не смог бы написать этот компонент. 
+;21.02.2007 модернизация и поддержка двух разных вариантов с использованием сис цветов и старой схемой
 ;19.02.2007 общее улучшение кода, уменьшение размера и использование системных цветов для отображения optionkbox
 ;16.02.2007 дата создания компонента
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
@@ -24,6 +25,9 @@ use32		; транслятор, использующий 32 разрядных команды
 ;------------------
 	include	'macros.inc'
 	include 'optionbox.inc'	;включить файл opeck.inc
+
+        version_op              ;вариант, при котором используются цвета, которые задает пользователь
+;	version_op1             ;цвета берутся из системы
 	use_option_box		;используя макросы,внести процедуры для рисования optionbox
 align 16
 ;Область кода
@@ -83,6 +87,7 @@ draw_window:		;рисование окна приложения
 ;Формат данных чек бокса:
 ;10 - координата чек бокса по х 
 ;30 - координата чек бокса по у
+;0 
 ;0 - цвет рамки чек бокса
 ;0 - цвет текста надписи
 ;op_text.1 - указатель на начало строки
@@ -91,12 +96,21 @@ draw_window:		;рисование окна приложения
 ;
 align 16
 option_boxes:
-op1 option_box 10,15,op_text.1,op_text.e1-op_text.1,option_group1
-op2 option_box 10,30,op_text.2,op_text.e2-op_text.2,option_group1
-op3 option_box 10,45,op_text.3,op_text.e3-op_text.3,option_group1
-op11 option_box 10,80,op_text.1,op_text.e1-op_text.1,option_group2
-op12 option_box 10,95,op_text.2,op_text.e2-op_text.2,option_group2
-op13 option_box 10,110,op_text.3,op_text.e3-op_text.3,option_group2
+;op1 option_box1 option_group1,10,15,op_text.1,op_text.e1-op_text.1
+;op2 option_box1 option_group1,10,30,op_text.2,op_text.e2-op_text.2
+;op3 option_box1 option_group1,10,45,op_text.3,op_text.e3-op_text.3
+;op11 option_box1 option_group2,10,80,op_text.1,op_text.e1-op_text.1
+;op12 option_box1 option_group2,10,95,op_text.2,op_text.e2-op_text.2
+;op13 option_box1 option_group2,10,110,op_text.3,op_text.e3-op_text.3
+;
+;struc option_box point_gr,left,top,color,border_color,text_color,text,text_length
+op1 option_box option_group1,10,15,0xffffff,0,0,op_text.1,op_text.e1-op_text.1
+op2 option_box option_group1,10,30,0xFFFFFF,0,0,op_text.2,op_text.e2-op_text.2
+op3 option_box option_group1,10,45,0xffffff,0,0,op_text.3,op_text.e3-op_text.3
+op11 option_box option_group2,10,80,0xffffff,0,0,op_text.1,op_text.e1-op_text.1
+op12 option_box option_group2,10,95,0xffffff,0,0,op_text.2,op_text.e2-op_text.2
+op13 option_box option_group2,10,110,0xffffff,0,0,op_text.3,op_text.e3-op_text.3
+
 option_boxes_end:
 
 op_text:		; Сопровождающий текст для чек боксов
@@ -110,6 +124,6 @@ op_text:		; Сопровождающий текст для чек боксов
 option_group1	dd op1 	;указатели, они отображаются по умолчанию, когда выводится 
 option_group2	dd op11 ;приложение
 
-hed db 'Optionbox [19.02.2007]',0	;заголовок приложения
+hed db 'Optionbox [21.02.2007]',0	;заголовок приложения
 sc     system_colors
 i_end:			;конец кода

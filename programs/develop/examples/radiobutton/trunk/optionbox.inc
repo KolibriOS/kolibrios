@@ -1,67 +1,61 @@
 ;компонент OptionBox (Основан на Checkbox)
 ;Огромная благодарность Maxxxx32, Diamond, Heavyiron, и другим программистам, и их программам, без
 ;которых я не смог бы написать этот компонент. 
+;21.02.2007 модернизация и поддержка двух разных вариантов с использованием сис цветов и старой схемой
 ;19.02.2007 общее улучшение кода, уменьшение размера и использование системных цветов для отображения optionkbox
 ;16.02.2007 дата создания компонента
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
 
-macro use_option_box
+macro version_op           ;для совместимости со старыми версиями optionbox все цвета задаются ручками
 {
-op_text_margin=4     ;расстояние от прямоугольника чек бокса до надписи 
-op_size=10           ;размер квадрата чек бокса 
-op_left equ [edi]    ;координата начала рисования по х
-op_top equ [edi+2]   ;координата начала рисования по у
+op_struc_size=26
+option_group equ [edi]
+op_left equ [edi+4]    ;координата начала рисования по х
+op_top equ [edi+6]   ;координата начала рисования по у
+op_color equ [edi+8]
+op_border_color equ [edi+12] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+op_text_color equ   [edi+16];[edi+4]  ;цвет текста
+op_text_ptr equ [edi+20]    ;указатель на начало текстовой строки 
+op_text_length equ [edi+24] ;длина надписи (2^64 такой длины может быть текст)
+}
+
+macro   version_op1        ;продвинутая версия, использует цвета скина. 
+{
+op_struc_size=14
+option_group equ [edi]
+op_left equ [edi+4]    ;координата начала рисования по х
+op_top equ [edi+6]   ;координата начала рисования по у
+op_color equ [sc.work] ;
 op_border_color equ [sc.work_graph] ; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
 op_text_color equ   [sc.work_text];[edi+4]  ;цвет текста
-;op_border_color equ [edi+4] ;цвет рамки optionbox
-;op_text_color equ [edi+8]  ;цвет текста
-op_text_ptr equ [edi+4]    ;указатель на начало текстовой строки 
-op_text_length equ [edi+8] ;длина надписи (2^64 такой длины может быть текст)
-op_optibox_gr	equ [edi+10]
+op_text_ptr equ [edi+8]    ;указатель на начало текстовой строки 
+op_text_length equ [edi+12] ;длина надписи (2^64 такой длины может быть текст)
+}
+
+
+macro use_option_box
+{
 option_box:
 .draw:
 pusha   ;сохраним все регистры
-	mov	eax,38     	;рисование линии
-	movzx	ebx,word op_left	;положение по х
-	mov	ecx,ebx		;сохраним в регистре cx значение bx  1 микрооперация
-	;push	bx  ;3 - микрооперации  используя стек можно выиграть в размере, используя регистры - в скорости
-	shl	ebx,16		;сдвинем на 16 разрядов в лево (умножим на 65536)
-	;pop	bx  ;2 - микрооперации  на данный момент сформирована [координата начала по оси x]*65536 + [координата начала по оси x]
-	mov	bx,cx		;восстановим значение bx
-	movzx	ecx,word op_top	;загрузим в cx значение y
-	mov	esi,ecx		;сохраним значение регистра cx в регистр указатель si				
-	;push	cx
-	shl	ecx,16		; сдвинем на 16 разрядов в лево (умножим на 65536)	mov	cx,si		;восстановим значение регистра cx
-	mov 	cx,si		;восстановим значение регистра cx
-	;pop	cx    	;[координата начала по оси y]*65536 + [координата начала по оси y]
-	;push	cx       
-	add	ecx,op_size ;[координата начала по оси y]*65536 + [координата конца по оси y]
-	mov	edx,dword op_border_color ;Цвет линии
-	int	0x40   ;рисование вертикальной левой линии квадрата (прямоугольника)
-;
-	mov	ebp,ebx	;сохраним регистр bx в регистре указателя базы
-	;push	bx   ;втолкнуть в bx [координата начала по оси х]*65536 + [координата начала по оси x]
-	add	ebx,op_size      ;[координата начала + длина стороны по оси х]
-	ror	ebx,16          ;[координата начала + дина стороны по оси х]*65536
-	add	ebx,op_size      ;[координата начала+длина стороны по оси х]*65536 + [координата начала+длина стороны по оси x]
-	int	0x40
-	
-	mov	bx,bp		;восстановим значение регистра bx
-	;pop	bx
-	mov	cx,si		;сохраним значение регистра cx в регистр указатель
-	;pop	cx
-	int	0x40
-	add	ecx,op_size	;добавим размер стороны 
-	mov	esi,ecx		;сохраним значение регистра cx в регистр указатель si
-	;push	cx
-	shl	ecx,16
-	mov	cx,si
-	;pop	cx
-	int	0x40            ;нарисовали прямоугольник
+op_text_margin=4     ;расстояние от прямоугольника чек бокса до надписи 
+op_size=12           ;размер квадрата чек бокса 
+       mov eax,13 
+       mov ebx,op_left 
+       shl ebx,16 
+       add ebx,op_size 
+       mov ecx,op_top 
+       shl ecx,16 
+       add ecx,op_size 
+       mov edx,op_border_color 
+       int 0x40 ;рисуем рамку 
 
-	call	.clear_op       ;очистка области
+       mov edx,op_color 
+       add ebx,1 shl 16 - 2 
+       add ecx,1 shl 16 - 2 
+       int 0x40 ;закрашиваем внутренности чекбокса 
 
-        mov	eax,dword op_optibox_gr
+        mov	eax,option_group
 	mov	dword eax,[eax]
         cmp	eax,edi
 	jne	@f
@@ -85,25 +79,25 @@ popa				;восстановить значения регистров из стека
 ret				;выйдем из процедуры
 
 .clear_op:			;очистка чек бокса
-	mov	edx,dword [sc.work]	;цвет внутри чек бокса
+	mov	edx,op_color	;цвет внутри чек бокса
 	jmp	@f		;безусловный прыжок на нижнюю метку @@
 
 .draw_op:            ;нарисовать включенный чек бокс
-	mov	edx,op_border_color	;загрузить цвет
+
+	mov   edx,op_border_color	;загрузить цвет
 @@:
-	movzx	ebx,word op_left	;загрузить координату по х
-	add	ebx,(op_size/3)	;добавить (сторона прямоугольника/3)
-	shl	ebx,16		;сдвинем на 16 разрядов в лево (умножим на 65536)
-	mov	bx,(op_size/2)	;загрузить (сторона прямоугольника/2)
-	mov	bp,bx		;сохраним регистр bx в регистре указателя базы
-	;push	bx
-	movzx	ecx,word op_top	;загрузить координату по у
-	mov	eax,13		;в eax - значения функции для вывода полосы т.е. по сути прямоугольника, который отображает включенный компонент чек бокс
-	add	ecx,(op_size/3)	;добавить (сторона прямоугольника/3)
-	shl	ecx,16		;сдвинем на 16 разрядов в лево (умножим на 65536)
-	mov	cx,bp		;загрузим значения регистра указателя базы в cx
-	;pop	cx
-	int	0x40		;вывод
+        movzx ebx,word op_left  ;загрузить координату по х
+        add   ebx,(op_size/4)   ;добавить (сторона прямоугольника/3)
+        shl   ebx,16            ;сдвинем на 16 разрядов в лево (умножим на 65536)
+        mov   bx,(op_size/2)    ;загрузить (сторона прямоугольника/2)
+        mov   bp,bx             ;сохраним регистр bx в регистре указателя базы
+        ;push        bx
+        movzx ecx,word op_top ;загрузить координату по у
+        mov   eax,13          ;в eax - значения функции для вывода полосы т.е. по сути прямоугольника, который отображает включенный компонент чек бокс
+        add   ecx,(op_size/4) ;добавить (сторона прямоугольника/3)
+        shl   ecx,16          ;сдвинем на 16 разрядов в лево (умножим на 65536)
+        mov   cx,bp           ;загрузим значения регистра указателя базы в cx
+        int   0x40            ;вывод
 ret				;выйти из процедуры
 
 .mouse:                 ;обработка мыши 
@@ -143,7 +137,7 @@ pusha
 	add	ebx,esi		     ;Учесть в значении по х еще и длину надписи к чекбоксу
 	cmp	ax,bx		     ;стравнить регистры
 	jg	.mouse_end	     ;если больше 
-	mov	eax,dword op_optibox_gr
+	mov	eax,option_group
         mov	[eax],edi
 
 .mouse_end:
@@ -151,17 +145,26 @@ popa				  ;восстановить регистры из стека
 ret				  ;выйти
 }
 
-struc option_box left,top,text,text_length,point_gr
+struc option_box1 point_gr,left,top,text,text_length
 {	;структура параметров для чек бокса
+.option_group: dd point_gr	;указатель на размещение edi - идентификатора optibox
 .left: dw left	;+0	;положение по х
 .top: dw top	;+2	;положение по у
-;.border_color: dd border_color ;+8	цвет рамки 
-;.text_color: dd text_color     ;+12	цвет текста надписи
 .text: dd text	     ;+16		адрес в коде программы где расположен текстр
 .text_length: dw text_length ; +20	длина текста
-.option_group: dd point_gr	;указатель на размещение edi - идентификатора optibox
 }
-op_struc_size=14			;общая структура 24 байт
+struc option_box point_gr,left,top,color,border_color,text_color,text,text_length
+{	;структура параметров для чек бокса
+.option_group: dd point_gr	;указатель на размещение edi - идентификатора optibox
+.left: dw left	;+0	;положение по х
+.top: dw top	;+2	;положение по у
+.color: dd color
+.border_color: dd border_color; or [edi+4] ;цвет рамки checkbox ее можно задать самостоятельно
+.text_color:   dd text_color;[edi+4]  ;цвет текста
+.text: dd text	     ;+16		адрес в коде программы где расположен текстр
+.text_length: dw text_length ; +20	длина текста
+}
+
 op_flag_en=10b
 macro draw_option_boxes start,end	;рисовать чек боксы
 {
@@ -185,7 +188,7 @@ macro mouse_option_boxes start,end	;установка чек боксов, в зависимости от событ
 	mov	ecx,((end-start)/op_struc_size)	;Количество чек боксов
 
 .home:
-	mov	eax,[edi+10]	;op_optibox_gr
+	mov	eax,[edi]	;op_optibox_gr
         mov	dword eax,[eax]
 
         pusha
