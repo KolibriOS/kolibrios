@@ -146,20 +146,25 @@ proc init_kernel_heap
            ret
 endp
 
-align 4
-proc get_block stdcall, index:dword
+; param
+;  eax= required size
+;
+; retval
+;  edi= memory block descriptor
+;  ebx= descriptor index
 
-           mov eax, 63
-           mov ecx, [index]
-           cmp ecx, eax
-           jna @f
-           ;cmova ecx, eax
+align 4
+get_block:
            mov ecx, eax
-@@:
-           xor esi, esi
+           shr ecx, 12
+           dec ecx
+           cmp ecx, 63
+           jle .get_index
+           mov ecx, 63
+.get_index:
+           lea esi, [mem_block_mask]
            xor ebx, ebx
-           xor edx, edx
-           not edx
+           or edx, -1
 
            cmp ecx, 32
            jb .bit_test
@@ -167,34 +172,33 @@ proc get_block stdcall, index:dword
            sub ecx, 32
            add ebx, 32
            add esi, 4
-
 .bit_test:
            shl edx, cl
-           and edx, [mem_block_mask+esi]
+           and edx, [esi]
+.find:
+           bsf edi, edx
            jz .high_mask
-           bsf eax, edx
-           add ebx, eax
-           mov eax, [mem_block_list+ebx*4]
+           add ebx, edi
+           mov edi, [mem_block_list+ebx*4]
+.check_size:
+           cmp eax, [edi+block_size]
+           ja .next
            ret
 
 .high_mask:
-
            add esi, 4
+           cmp esi, mem_block_mask+8
+           jae .err
            add ebx, 32
-           test esi, 0xFFFFFFF8
-           jnz .big_error
-           mov edx, [mem_block_mask+esi]
-           and edx, edx
-           jz .high_mask
-           bsf eax, edx
-           add ebx, eax
-           mov eax, [mem_block_list+ebx*4]
+           mov edx, [esi]
+           jmp .find
+.next:
+           mov edi, [edi+list_fd]
+           test edi, edi
+           jnz .check_size
+.err:
+           xor edi, edi
            ret
-
-.big_error:
-           xor eax, eax
-           ret
-endp
 
 align 4
 proc alloc_mem_block
@@ -266,16 +270,9 @@ proc alloc_kernel_space stdcall, size:dword
            cmp eax, [heap_free]
            ja .error
 
-           shr eax, 12
-           sub eax, 1
-
-           mov [block_ind], eax
-
-           stdcall get_block, eax
-           test eax, eax
+           call get_block ; eax
+           test edi, edi
            jz .error
-
-           mov edi, eax           ;edi - pBlock
 
            cmp [edi+block_flags], FREE_BLOCK
            jne .error
