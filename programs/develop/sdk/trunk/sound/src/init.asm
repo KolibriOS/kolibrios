@@ -26,10 +26,10 @@ proc _InitSound@0
            mov ebx, 16
            mov ecx, szInfinity
            int 0x40
+           mov [hSound], eax
            test eax, eax
            jz .fail
            
-           mov [hSound], eax
            mov eax, 68
            mov ebx, 16
            mov ecx, szSound
@@ -50,7 +50,9 @@ proc _InitSound@0
            mov ebx, 17
            lea ecx, [handle]
            int 0x40
-.fail:           
+.fail:     
+
+.done:
            pop ecx  
            pop ebx
            ret

@@ -5,10 +5,79 @@ include "proc32.inc"
 
 section '.text' align 16 code readable executable
 
+public _SetVolume@12
+public _GetVolume@12
+
 public _GetMasterVol@4
 public _SetMasterVol@4
 
+extrn hSound
 extrn hrdwSound   
+
+align 4
+proc _SetVolume@12 stdcall, str:dword, lvol:dword,rvol:dword
+           locals
+             handle     dd ?
+             io_code    dd ?
+             input      dd ?
+             inp_size   dd ?
+             output     dd ?
+             out_size   dd ?
+           endl
+           
+           push ebx
+           push ecx
+           mov eax, [hSound]
+           lea ebx, [str]
+           xor ecx, ecx
+
+           mov [handle], eax
+           mov [io_code], SND_SETVOLUME
+           mov [input], ebx
+           mov [inp_size], 12
+           mov [output], ecx
+           mov [out_size], ecx
+
+           mov eax, 68
+           mov ebx, 17
+           lea ecx, [handle]
+           int 0x40
+           pop ecx 
+           pop ebx
+           ret
+endp
+
+align 4
+proc _GetVolume@12 stdcall, str:dword, pleft:dword,pright:dword
+           locals
+             handle     dd ?
+             io_code    dd ?
+             input      dd ?
+             inp_size   dd ?
+             output     dd ?
+             out_size   dd ?
+           endl
+           
+           push ebx
+           push ecx
+           mov eax, [hSound]
+           lea ebx, [str]
+           lea ecx, [pleft]
+           mov [handle], eax
+           mov [io_code], SND_GETVOLUME
+           mov [input], ebx
+           mov [inp_size], 4
+           mov [output], ecx
+           mov [out_size], 8
+
+           mov eax, 68
+           mov ebx, 17
+           lea ecx, [handle]
+           int 0x40
+           pop ecx 
+           pop ebx
+           ret
+endp
 
 align 4
 proc _GetMasterVol@4 stdcall, pvol:dword

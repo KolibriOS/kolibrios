@@ -11,6 +11,9 @@ extern "C"
 
 #define PCM_ALL       0
 #define PCM_STATIC    0x80000000
+#define PCM_FILTER    0x40000000
+#define PCM_FLOAT     0x20000000
+
 #define PCM_2_16_48   1
 #define PCM_1_16_48   2
 #define PCM_2_16_44   3
@@ -68,13 +71,37 @@ SNDBUF _stdcall  CreateBuffer(unsigned int format,int size);
 int _stdcall  DestroyBuffer(SNDBUF hBuff);
 int _stdcall  SetBuffer(SNDBUF hBuff,void* buff,
                         int offs, int size);
+int _stdcall  SetFormat(SNDBUF hBuff, unsigned int format);                        
+int _stdcall  ResetBuffer(SNDBUF hBuff, unsigned int flags);
+int _stdcall  SetBufferPos(SNDBUF hBuff, int offset);
+int _stdcall  SetVolume(SNDBUF hBuff, int left, int right);
+int _stdcall  GetVolume(SNDBUF hBuff, int *left, int *right);
+int _stdcall  SetPan(SNDBUF hBuff, int pan);
+                        
 int _stdcall  WaveOut(SNDBUF hBuff,void *buff, int size);
                                
 int _stdcall  PlayBuffer(SNDBUF hBuff);
 int _stdcall  StopBuffer(SNDBUF hBuff);
 
-int _stdcall  GetMasterVol(int* vol);
-int _stdcall  SetMasterVol(int vol);
+typedef struct
+{  unsigned int       riff_id;
+   unsigned int       riff_size;
+   unsigned int       riff_format;
+
+   unsigned int       fmt_id;
+   unsigned int       fmt_size;
+
+   unsigned short int wFormatTag;
+   unsigned short int nChannels;
+   unsigned int       nSamplesPerSec;
+   unsigned int       nAvgBytesPerSec;
+   unsigned short int nBlockAlign;
+   unsigned short int wBitsPerSample;
+   unsigned int       data_id;
+   unsigned int       data_size;
+} WAVEHEADER;
+
+unsigned int _stdcall test_wav(WAVEHEADER *hdr);
 
 #ifdef __cplusplus
 extern "C"
