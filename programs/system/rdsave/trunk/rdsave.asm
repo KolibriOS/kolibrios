@@ -291,12 +291,14 @@ draw_edit_boxes editbox,editbox_end      ;рисование edit box'ов
 header db appname,version,0
 
 editbox:
-edit1 edit_box 170,10,113,0xffffff,0,0,0,1024,path4,ed_focus
+edit1 edit_box 170,10,113,0xffffff,0,0,0,512,path4,ed_focus,26
 editbox_end:
 
 path1   db '/fd/1/',0
 path2   db '/fd/2/',0
 path3   db '/hd0/1/kolibri.img',0
+path4   db '/hd0/1/kolibri/kolibri.img',0  ;для резервного сохранения
+rb 513
 
 if lang eq ru
 save    db 'Сохранить',0
@@ -331,4 +333,3 @@ end if
 I_END:                             ; метка конца программы
 
 sc     system_colors
-path4  rb 1025;1024+1
