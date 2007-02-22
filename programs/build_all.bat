@@ -34,7 +34,7 @@ echo *
 @fasm system\icon\trunk\icon.asm bin\icon
 @fasm system\kbd\trunk\kbd.ASM bin\kbd
 @fasm system\launcher\trunk\launcher.asm bin\launcher
-@fasm system\menu\trunk\menu.asm bin\menu
+@fasm system\menu\trunk\menu.asm bin\@menu
 @fasm system\PANEL\trunk\@PANEL.ASM bin\@PANEL
 @fasm system\pcidev\trunk\pcidev.asm bin\pcidev
 @fasm system\RB\trunk\@RB.ASM bin\@RB

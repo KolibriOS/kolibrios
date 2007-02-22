@@ -439,10 +439,6 @@ draw_running_applications:
     cmp  dword[0x8000+46],51
     je   norpl
   .noicon:
-    cmp  [0x8000+11],dword 'ENU '
-    je   norpl
-;    cmp  [0x8000+12],dword 'NEL '
-;    je   norpl
     cmp  [0x8000+10],dword '    '
     je   norpl
     dec  [draw_start_position]
@@ -1847,27 +1843,23 @@ no_bug:
 
     mov  eax,13
     mov  ebx,[maxx]
-    sub  ebx,60 ;;65
+    sub  ebx,60
     shl  ebx,16
-    mov  bx,8
-    push ebx
-    mov  eax,13
-    mov  ecx,5*65536
+    add  ebx,8
+    mov  ecx,5 shl 16
     add  ecx,[ysi]
-    mov  edx,0xff0000  ;[sc.work_button]
+    mov  edx,0xdd2222
     int  0x40
-    pop  ebx
-    pop  eax
 
-    mov  ecx,5*65536
-    mov  cx,ax
+    pop  eax
+    mov  ecx,5 shl 16
+    add  ecx,eax
     mov  eax,13
-    mov  edx,0x44aa44  ;[sc.work_button]
+    mov  edx,0x44aa44
     int  0x40
 
     popad
     ret
-
 
 ; DATA
 
@@ -1962,7 +1954,7 @@ exec_fileinfo:
 .name   dd      ?
 
 end_name        db      '/RD/1/END',0
-menu_name       db      '/RD/1/MENU',0
+menu_name       db      '/RD/1/@MENU',0
 calendar_name   db      '/RD/1/CALENDAR',0
 sysmeter_name   db      '/RD/1/GMON',0
 
