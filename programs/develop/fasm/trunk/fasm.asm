@@ -12,10 +12,6 @@ NORMAL_MODE    = 8
 CONSOLE_MODE   = 32
 
 MAGIC1         = 6*(text.line_size-1)+14
-MAGIC2         = 14
-MAGIC3         = 1
-MAGIC4         = 7
-OUTPUTXY       = 7 shl 16 + 53
 MAX_PATH       = 100
 
 APP_MEMORY     = 0x00800000
@@ -164,21 +160,21 @@ draw_window:
     sub   ebx,10
 
     push  ecx
-    madd  ecx,MAGIC2*3+2,MAGIC2*3+2
+    madd  ecx, 14*3+2, 14*3+2
     mcall 38,,,[sc.work_graph]
     pop   ecx
 
     sub   ebx,MAGIC1+3
     mcall
-    madd  ecx,MAGIC2,MAGIC2
+    madd  ecx, 14, 14
     mcall
-    madd  ecx,MAGIC2,MAGIC2
+    madd  ecx, 14, 14
     mcall
-    madd  ecx,MAGIC2,MAGIC2
+    madd  ecx, 14, 14
     mcall
     push  ebx
     mpack ebx,MAGIC1,MAGIC1
-    sub   ecx,MAGIC2*3
+    sub   ecx, 14*3
     mcall
     mov   ebx,[esp-2]
     pop   bx
@@ -186,30 +182,30 @@ draw_window:
     add   esp,2
 
     mpack ebx,0,MAGIC1-1
-    mpack ecx,MAGIC3+1,MAGIC2-2
+    mpack ecx,1+1, 14-2
     mcall 8,,,0x4000000B       ; Button: Enter Infile
-    madd  ecx,MAGIC2,0
+    madd  ecx, 14,0
     mcall  ,,,0x4000000C       ; Button: Enter Outfile
-    madd  ecx,MAGIC2,0
+    madd  ecx, 14,0
     mcall  ,,,0x4000000D       ; Button: Enter Path
 
     mpack ebx,[pinfo.x_size],MAGIC1
     msub  ebx,MAGIC1+10+1,0
-    mpack ecx,0,MAGIC2*3/2-1
-    madd  ecx,MAGIC3,0
+    mpack ecx,0, 14*3/2-1
+    madd  ecx,1,0
     mcall  ,,,0x00000002,[sc.work_button]
-    madd  ecx,MAGIC2*3/2+1,0
+    madd  ecx, 14*3/2+1,0
     mcall  ,,,0x00000003
 
     mpack ebx,6,0    ; Draw Window Text
-    add  ebx,MAGIC3+MAGIC2/2-3
+    add  ebx,1+ 14/2-3
     mov  ecx,[sc.work_text]
     mov  edx,text
     mov  esi,text.line_size
     mov  eax,4
    newline:
     int  0x40
-    add  ebx,MAGIC2
+    add  ebx, 14
     add  edx,text.line_size
     cmp  byte[edx],'x'
     jne  newline
@@ -217,13 +213,13 @@ draw_window:
     mov   ebx,[pinfo.x_size]
     sub   ebx,MAGIC1+10+1-9
     shl   ebx,16
-    add   ebx,MAGIC3+(MAGIC2*3/2-1)/2-3
+    add   ebx,1+( 14*3/2-1)/2-3
     mcall  ,,[sc.work_button_text],s_compile,7
-    add   ebx,MAGIC2*3/2+1
+    add   ebx,14*3/2+1
     mcall ,,,s_run
 
     mpack ebx,MAGIC1+6,0
-    add   ebx,MAGIC3+MAGIC2/2-3+MAGIC2*0
+    add   ebx,1+ 14/2-3+ 14*0
     mov   esi,[pinfo.x_size]
     sub   esi,MAGIC1*2+5*2+6+3
     mov   eax,esi
@@ -234,9 +230,9 @@ draw_window:
     mov   al,MAX_PATH
 @@: movzx esi,al
     mcall 4,,[sc.work_text],infile
-    add   ebx,MAGIC2
+    add   ebx,14
     mcall ,,,outfile
-    add   ebx,MAGIC2
+    add   ebx,14
     mcall ,,,path
 
     call  draw_messages
@@ -250,14 +246,14 @@ bottom_right dd ?
 
 draw_messages:
     mov    eax,13      ; clear work area
-    mpack  ebx,MAGIC4-2,[pinfo.x_size]
-    sub    ebx,5*2+MAGIC4*2-1-2*2
+    mpack  ebx,7-2,[pinfo.x_size]
+    sub    ebx,5*2+7*2-1-2*2
     mpack  ecx,0,[pinfo.y_size]
-    madd   ecx,MAGIC2*3+MAGIC3+MAGIC4+1,-(MAGIC2*3+MAGIC3+MAGIC4*2+25)
+    madd   ecx, 14*3+1+7+1,-( 14*3+1+7*2+25)
     mov    word[bottom_right+2],bx
     mov    word[bottom_right],cx
     msub   [bottom_right],7,11
-    add    [bottom_right],OUTPUTXY
+    add    [bottom_right],7 shl 16 + 53
     mov    edx,[sc.work]
     int    0x40
 _cy = 0
@@ -265,7 +261,7 @@ _sy = 2
 _cx = 4
 _sx = 6
     push   ebx ecx
-    mpack  ebx,MAGIC4-3,MAGIC4-2
+    mpack  ebx,4,5
     add    bx,[esp+_cx]
     mov    ecx,[esp+_sy-2]
     mov    cx,[esp+_sy]
@@ -277,7 +273,7 @@ _sx = 6
     add    ecx,esi
     madd   ecx,1,1
     mcall
-    mpack  ebx,MAGIC4-3,MAGIC4-3
+    mpack  ebx,4,4
     mov    esi,[esp+_sy-2]
     mov    si,cx
     mov    ecx,esi
@@ -294,13 +290,13 @@ _sx = 6
 ; read string
 
 f1: mov  [addr],infile
-    add  [ya],MAGIC2*0
+    add  [ya], 14*0
     jmp  rk
 f2: mov  [addr],outfile
-    add  [ya],MAGIC2*1
+    add  [ya], 14*1
     jmp  rk
 f3: mov  [addr],path
-    add  [ya],MAGIC2*2
+    add  [ya], 14*2
 rk:
 
     mov  edi,[addr]
@@ -365,7 +361,7 @@ f11:mcall  10
 print_text:
 
     mpack ebx,MAGIC1+6,[pinfo.x_size]
-    sub   ebx,MAGIC1*2+5*2+6+3
+    sub   ebx,MAGIC1*2+19
     movzx esi,bx
     mov   ecx,[ya-2]
     mov   cx,8
@@ -431,7 +427,7 @@ start:
     call   draw_messages
     push   0
     pop    [textxy]
-    add    [textxy],OUTPUTXY
+    add    [textxy],7 shl 16 + 53
 @@:
     mov    esi,_logo
     call   display_string
@@ -485,7 +481,7 @@ start:
     xor    al,al
 
     cmp    [_run_outfile],0
-    je	     @f
+    je     @f
     mov    edx,outfile
     call   make_fullpaths
     mov    eax,70
@@ -497,7 +493,6 @@ start:
 
 
 include 'system.inc'
-
 include 'version.inc'
 include 'errors.inc'
 include 'expressi.inc'

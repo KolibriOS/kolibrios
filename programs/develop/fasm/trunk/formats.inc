@@ -1418,12 +1418,12 @@ pe_heap:
 	jmp	instruction_assembled
 mark_pe_relocation:
 	push	eax ebx
-	mov	al,2
 	test	[format_flags],8
-	jz	check_pe_relocation_type
-	mov	al,4
-      check_pe_relocation_type:
-	cmp	[value_type],al
+	jz	check_pe32_relocation_type
+	cmp	[value_type],4
+	je	pe_relocation_type_ok
+      check_pe32_relocation_type:
+	cmp	[value_type],2
 	je	pe_relocation_type_ok
 	cmp	[error_line],0
 	jne	pe_relocation_type_ok
@@ -1438,11 +1438,18 @@ mark_pe_relocation:
 	mov	ebx,[free_additional_memory]
 	inc	[number_of_relocations]
 	jz	invalid_use_of_symbol
-	mov	[ebx],eax
-	add	ebx,4
+	add	ebx,5
 	cmp	ebx,[structures_buffer]
 	jae	out_of_memory
 	mov	[free_additional_memory],ebx
+	mov	[ebx-5],eax
+	cmp	[value_type],2
+	je	fixup_32bit
+	mov	byte [ebx-1],0Ah
+	jmp	fixup_ok
+      fixup_32bit:
+	mov	byte [ebx-1],3
+      fixup_ok:
 	pop	ebx eax
 	ret
 generate_pe_data:
@@ -1450,6 +1457,53 @@ generate_pe_data:
 	je	make_pe_resource
 	cmp	al,5
 	je	make_pe_fixups
+	ret
+make_pe_fixups:
+	bts	[resolver_flags],0
+	jc	pe_relocatable_ok
+	or	[next_pass_needed],-1
+     pe_relocatable_ok:
+	push	esi
+	mov	ecx,[number_of_relocations]
+	mov	esi,[free_additional_memory]
+	lea	eax,[ecx*5]
+	sub	esi,eax
+	mov	[free_additional_memory],esi
+	or	[number_of_relocations],-1
+	xor	edx,edx
+	mov	ebp,edi
+      make_fixups:
+	cmp	[esi],edx
+	jb	store_fixup
+	mov	eax,edi
+	sub	eax,ebp
+	test	eax,11b
+	jz	fixups_block
+	xor	ax,ax
+	stos	word [edi]
+	add	dword [ebx],2
+      fixups_block:
+	mov	eax,edx
+	add	edx,1000h
+	cmp	[esi],edx
+	jae	fixups_block
+	stos	dword [edi]
+	mov	ebx,edi
+	mov	eax,8
+	stos	dword [edi]
+      store_fixup:
+	jecxz	fixups_done
+	add	dword [ebx],2
+	mov	eax,[esi]
+	and	ax,0FFFh
+	mov	dl,[esi+4]
+	shl	dx,12
+	or	ax,dx
+	stos	word [edi]
+	add	esi,5
+	loop	make_fixups
+      fixups_done:
+	pop	esi
 	ret
 make_pe_resource:
 	cmp	byte [esi],82h
@@ -2016,58 +2070,6 @@ make_pe_resource:
 	sub	eax,[resource_data]
 	mov	[resource_size],eax
       resource_done:
-	ret
-make_pe_fixups:
-	bts	[resolver_flags],0
-	jc	pe_relocatable_ok
-	or	[next_pass_needed],-1
-     pe_relocatable_ok:
-	push	esi
-	mov	ecx,[number_of_relocations]
-	mov	esi,[free_additional_memory]
-	mov	eax,ecx
-	shl	eax,2
-	sub	esi,eax
-	mov	[free_additional_memory],esi
-	or	[number_of_relocations],-1
-	xor	edx,edx
-	mov	ebp,edi
-      make_fixups:
-	cmp	[esi],edx
-	jb	store_fixup
-	mov	eax,edi
-	sub	eax,ebp
-	test	eax,11b
-	jz	fixups_block
-	xor	ax,ax
-	stos	word [edi]
-	add	dword [ebx],2
-      fixups_block:
-	mov	eax,edx
-	add	edx,1000h
-	cmp	[esi],edx
-	jae	fixups_block
-	stos	dword [edi]
-	mov	ebx,edi
-	mov	eax,8
-	stos	dword [edi]
-      store_fixup:
-	jecxz	fixups_done
-	add	dword [ebx],2
-	mov	eax,[esi]
-	and	ax,0FFFh
-	test	[format_flags],8
-	jnz	fixup_64bit
-	or	ax,3000h
-	jmp	fixup_ok
-      fixup_64bit:
-	or	ax,0A000h
-      fixup_ok:
-	stos	word [edi]
-	add	esi,4
-	loop	make_fixups
-      fixups_done:
-	pop	esi
 	ret
 close_pe:
 	call	close_pe_section

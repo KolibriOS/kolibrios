@@ -1402,6 +1402,7 @@ push_instruction:
 	cmp	al,70h
 	jae	invalid_operand
 	sub	al,61h
+	jc	invalid_operand
 	cmp	al,4
 	jae	push_sreg_386
 	shl	al,3
@@ -1681,6 +1682,7 @@ pop_instruction:
 	cmp	al,70h
 	jae	invalid_operand
 	sub	al,61h
+	jc	invalid_operand
 	cmp	al,4
 	jae	pop_sreg_386
 	shl	al,3

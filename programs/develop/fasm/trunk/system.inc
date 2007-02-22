@@ -324,7 +324,7 @@ display_character:
 	cmp	dl,0xa
 	jnz	dc1
 	and	[textxy],0x0000FFFF
-	add	[textxy],OUTPUTXY and 0xFFFF0000 + 10
+	add	[textxy], 7 shl 16 +53 and 0xFFFF0000 + 10
 dc2:
   popa
 	ret
@@ -398,7 +398,7 @@ digit_ok:
 display_user_messages:
 ;    push   [skinh]
 ;    pop    [textxy]
-;    add    [textxy],OUTPUTXY
+;    add    [textxy], 7 shl 16 +53
 	mov	[displayed_count],0
 	call	flush_display_buffer
 	cmp	[displayed_count],1
