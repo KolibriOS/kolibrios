@@ -177,7 +177,7 @@ rtl8139_tx_buff     equ     rtl8139_rx_buff + (RTL8139_RX_BUFFER_SIZE + MAX_ETH_
 uglobal
 	align	4
 rtl8139_rx_buff_offset: dd 0
-curr_tx_desc: dd 0
+curr_tx_desc dd 0
 endg
 
 iglobal
@@ -442,8 +442,8 @@ rtl8139_read_eeprom:
 ;      Transmits a packet of data via the ethernet card
 ;         Pointer to 48 bit destination address in edi
 ;         Type of packet in bx
-;         size of packet in ecx
-;         pointer to packet data in esi
+;         Size of packet in ecx
+;         Pointer to packet data in esi
 ;   Destroyed registers
 ;      eax, edx, esi, edi
 ;   ToDo

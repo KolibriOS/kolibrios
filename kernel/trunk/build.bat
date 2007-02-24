@@ -52,7 +52,7 @@ goto :eof
 
    if not exist bin mkdir bin
    echo lang fix %lang% > lang.inc
-   fasm kernel.asm bin\kernel.mnt
+   fasm -m 65536 kernel.asm bin\kernel.mnt
    if not %errorlevel%==0 goto :Error_FasmFailed
    erase lang.inc
 goto :eof
@@ -72,7 +72,7 @@ goto :eof
    if not exist bin\drivers mkdir bin\drivers
    cd drivers
    for %%a in (%drivers%) do (
-     fasm %%a.asm ..\bin\drivers\%%a.obj
+     fasm -m 65536 %%a.asm ..\bin\drivers\%%a.obj
      if not %errorlevel%==0 goto :Error_FasmFailed
    )
    cd ..
@@ -84,7 +84,7 @@ goto :eof
 
    if not exist bin\skins mkdir bin\skins
    cd skin
-   fasm default.asm ..\bin\skins\default.skn
+   fasm -m 65536 default.asm ..\bin\skins\default.skn
    if not %errorlevel%==0 goto :Error_FasmFailed
    cd ..
 goto :eof

@@ -98,6 +98,7 @@ include "drivers/3c59x.inc"
 include "drivers/sis900.inc"
 include "drivers/pcnet32.inc"
 ;include "drivers/mtd80x.inc"
+include "drivers/rtl8169.inc"
 
 ; PCICards
 ; ========
@@ -142,6 +143,11 @@ dd  0x0106018a, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rt
 dd  0x1211126c, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
 dd  0x81391743, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
 dd  0x8139021b, rtl8139_probe, rtl8139_reset, rtl8139_poll, rtl8139_transmit, rtl8139_cable
+
+dd  0x816810ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
+dd  0x816910ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
+dd  0x011616ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
+dd  0x43001186, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 
 dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
@@ -433,12 +439,13 @@ eth_rx:
     jmp     .exit		; If not IP or ARP, ignore
 
   .is_ip:
+    DEBUGF  1,"K : eth_rx - IP packet\n"
     inc     dword [ip_rx_count]
     call    ether_IP_handler
     jmp     .exit
 
   .is_arp:
-
+    DEBUGF  1,"K : eth_rx - ARP packet\n"
     ; At this point, the packet is still in the Ether_buffer
     call    arp_handler
 

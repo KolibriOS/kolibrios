@@ -4374,7 +4374,7 @@ sys_msg_board_str:
      ret
 
 uglobal
-  msg_board_data: times 512 db 0
+  msg_board_data: times 4096 db 0
   msg_board_count dd 0x0
 endg
 
@@ -4390,7 +4390,7 @@ sys_msg_board:
 
      mov  [msg_board_data+ecx],bl
      inc  ecx
-     and  ecx, 511
+     and  ecx, 4095
      mov  [msg_board_count], ecx
      mov  [check_idle_semaphore], 5
      ret

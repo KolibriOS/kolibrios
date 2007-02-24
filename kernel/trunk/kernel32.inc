@@ -75,30 +75,30 @@ end if
 }
 ; \end{diamond}[29.09.2006]
 
-struc db [a] { common . db a
-  if ~used .
-    display 'not used db: ',`.,13,10
-  end if }
-struc dw [a] { common . dw a
-  if ~used .
-    display 'not used dw: ',`.,13,10
-  end if }
-struc dd [a] { common . dd a
-  if ~used .
-    display 'not used dd: ',`.,13,10
-  end if }
-struc dp [a] { common . dp a
-  if ~used .
-    display 'not used dp: ',`.,13,10
-  end if }
-struc dq [a] { common . dq a
-  if ~used .
-    display 'not used dq: ',`.,13,10
-  end if }
-struc dt [a] { common . dt a
-  if ~used .
-    display 'not used dt: ',`.,13,10
-  end if }
+;struc db [a] { common . db a
+;  if ~used .
+;    display 'not used db: ',`.,13,10
+;  end if }
+;struc dw [a] { common . dw a
+;  if ~used .
+;    display 'not used dw: ',`.,13,10
+;  end if }
+;struc dd [a] { common . dd a
+;  if ~used .
+;    display 'not used dd: ',`.,13,10
+;  end if }
+;struc dp [a] { common . dp a
+;  if ~used .
+;    display 'not used dp: ',`.,13,10
+;  end if }
+;struc dq [a] { common . dq a
+;  if ~used .
+;    display 'not used dq: ',`.,13,10
+;  end if }
+;struc dt [a] { common . dt a
+;  if ~used .
+;    display 'not used dt: ',`.,13,10
+;  end if }
 
 struc RECT {
   .left   dd ?

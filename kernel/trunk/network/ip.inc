@@ -158,6 +158,7 @@ local buffer_number dd ?
 
     cmp     al , PROTOCOL_TCP
     jne     .not_tcp
+    DEBUGF  1,"K : ip_rx - TCP packet\n"
     mov     eax, dword[buffer_number]
     call    tcp_rx
     jmp     .exit
@@ -165,6 +166,7 @@ local buffer_number dd ?
   .not_tcp:
     cmp     al, PROTOCOL_UDP
     jne     .not_udp
+    DEBUGF  1,"K : ip_rx - UDP packet\n"
     mov     eax, dword[buffer_number]
     call    udp_rx
     jmp     .exit
@@ -173,6 +175,7 @@ local buffer_number dd ?
     cmp     al , PROTOCOL_ICMP
     jne     .dump              ;protocol ain't supported
 
+    DEBUGF  1,"K : ip_rx - ICMP packet\n"
     ;GET_IHL ecx, ebx + IP_PACKET.VersionAndIHL ;get packet length in ecx
     mov     eax, dword[buffer_number]
     stdcall icmp_rx,eax,ebx,ecx  ;buffer_number,IPPacketBase,IPHeaderLength
