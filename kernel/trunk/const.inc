@@ -85,6 +85,12 @@ CAPS_CMP_LEG   equ    72 ;
 CAPS_SVM       equ    73 ;secure virual machine
 CAPS_ALTMOVCR8 equ    74 ;
 
+; CPU MSR names 
+MSR_SYSENTER_CS		equ	0x174
+MSR_SYSENTER_ESP	equ	0x175
+MSR_SYSENTER_EIP	equ	0x176
+MSR_AMD_EFER		equ	0xC0000080	; Extended Feature Enable Register
+MSR_AMD_STAR		equ	0xC0000081	; SYSCALL/SYSRET Target Address Register
 
 CR0_PE         equ    0x00000001   ;protected mode
 CR0_MP         equ    0x00000002   ;monitor fpu
@@ -245,6 +251,8 @@ new_app_base        equ  0x60400000
 twdw                equ (CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
+
+RING0_STACK_SIZE	equ	0x2000 - 512	;512 байт для контекста FPU
 
 PAGES_USED          equ 4
 

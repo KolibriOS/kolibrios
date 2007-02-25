@@ -35,6 +35,101 @@ i40:
       iretd
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                            ;;
+;;                     SYSENTER ENTRY                         ;;
+;;                                                            ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+uglobal
+times	100 db ?
+sysenter_stack:
+endg
+
+align 32
+SYSENTER_VAR	equ	0
+sysenter_entry:
+	; Настраиваем стек
+	cli
+	push	eax
+	mov	eax, [ss:CURRENT_TASK]
+	shl	eax, 8
+	mov	eax, [ss:PROC_BASE + eax + APPDATA.pl0_stack]
+	lea	esp, [ss:eax + RING0_STACK_SIZE]	; configure ESP
+	mov	eax, [ss:sysenter_stack - 4]		; eax - original eax, from app
+	sti
+	;------------------
+	push	ds es
+	pushad
+	cld
+
+	mov	ax, word os_data
+	mov	ds, ax
+	mov	es, ax
+
+        mov     eax, ebx
+        mov     ebx, ecx
+        mov     ecx, edx
+        mov     edx, esi
+        mov     esi, edi
+        mov     edi, [esp + 28]
+
+	push	eax
+	and	edi, 0xff
+	call	dword [servetable + edi * 4]
+	pop	eax
+
+	popad
+	pop	es ds
+	;------------------
+	mov	edx, [SYSENTER_VAR]		; eip
+	mov	ecx, [SYSENTER_VAR + 4]	; esp
+	sysexit
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                            ;;
+;;                     SYSCALL ENTRY                          ;;
+;;                                                            ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+align 32
+syscall_entry:
+	cli
+	xchg	ecx, [esp]
+	mov	[SYSENTER_VAR + 4], esp
+	mov	[ss:sysenter_stack - 4], eax
+	mov	eax, [ss:CURRENT_TASK]
+	shl	eax, 8
+	mov	eax, [ss:PROC_BASE + eax + APPDATA.pl0_stack]
+	lea	esp, [ss:eax + RING0_STACK_SIZE]	; configure ESP
+	mov	eax, [ss:sysenter_stack - 4]		; eax - original eax, from app
+	sti
+	;------------------
+	push	ds es
+	pushad
+	cld
+
+	mov	ax, word os_data
+	mov	ds, ax
+	mov	es, ax
+
+        mov     eax, ebx
+        mov     ebx, ecx
+        mov     ecx, edx
+        mov     edx, esi
+        mov     esi, edi
+        mov     edi, [esp + 28]
+
+	push	eax
+	and	edi, 0xff
+	call	dword [servetable + edi * 4]
+	pop	eax
+
+	popad
+	pop	es ds
+	;------------------
+	mov	esp, [SYSENTER_VAR + 4]
+	xchg	ecx, [esp]
+	sysret
 iglobal
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SYSTEM FUNCTIONS TABLE ;;
@@ -62,7 +157,7 @@ iglobal
       dd sys_cachetodiskette     ; 16-FlushFloppyCache
       dd sys_getbutton           ; 17-GetButton
       dd sys_system              ; 18-System Services
-      dd undefined_syscall       ; 19-reserved
+      dd paleholder;undefined_syscall       ; 19-reserved
       dd sys_midi                ; 20-ResetMidi and OutputMidi
       dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
       dd sys_settime             ; 22-setting date,time,clock and alarm-clock

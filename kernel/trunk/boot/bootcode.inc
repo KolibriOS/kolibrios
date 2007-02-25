@@ -39,9 +39,11 @@ gdts:
         dd     gdts
         dw     0
 
+; Attention! The order first four selectors not to change, is used in Fast System Call
+; must be : os_code, os_data, app_code, app_data, ....
+
 int_code_l:
 os_code_l:
-
         dw     0xffff
         dw     0x0000
         db     0x00
@@ -50,13 +52,26 @@ os_code_l:
 
 int_data_l:
 os_data_l:
-
         dw     0xffff
         dw     0x0000
         db     0x00
         dw     11011111b *256 +10010010b
         db     0x00
 
+app_code_l:
+        dw 0xFFFF;((0x80000000-std_application_base_address) shr 12) and 0xffff
+        dw 0
+        db 0x40
+        db cpl3
+        dw G32+D32+0x6000+0x7;
+
+app_data_l:
+        dw 0xFFFF;(0x80000000-std_application_base_address) shr 12 and 0xffff
+        dw 0
+        db 0x40
+        db drw3
+        dw G32+D32+0x6000+0x7;
+      
 ; --------------- APM ---------------------
 apm_code_32:
         dw     0x0f        ; limit 64kb
@@ -74,20 +89,6 @@ apm_data_16:
         dw     10010000b *256 +10010010b
         db     0x00
 ; -----------------------------------------
-
-app_code_l:
-      dw 0xFFFF;((0x80000000-std_application_base_address) shr 12) and 0xffff
-      dw 0
-      db 0x40
-      db cpl3
-      dw G32+D32+0x6000+0x7;
-
-app_data_l:
-      dw 0xFFFF;(0x80000000-std_application_base_address) shr 12 and 0xffff
-      dw 0
-      db 0x40
-      db drw3
-      dw G32+D32+0x6000+0x7;
 
 graph_data_l:
 
