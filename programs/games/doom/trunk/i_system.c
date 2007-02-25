@@ -91,8 +91,6 @@ int  I_GetTime (void)
  return (tm*TICRATE)/100;
 }
 
-
-
 //
 // I_Init
 //
@@ -109,10 +107,10 @@ void I_Quit (void)
 {
 //    __libclog_printf("Calling I_Quit from %x\n",__builtin_return_address(0));
     D_QuitNetGame ();
- //   I_ShutdownSound();
+    I_ShutdownSound();
  //   I_ShutdownMusic();
     M_SaveDefaults ();
-    I_ShutdownGraphics();
+//    I_ShutdownGraphics();
     exit(0);
 }
 
@@ -144,6 +142,7 @@ byte*   I_AllocLow(int length)
 // I_Error
 //
 extern boolean demorecording;
+extern volatile int sound_state;
 
 void I_Error (char *error, ...)
 {
@@ -162,6 +161,7 @@ void I_Error (char *error, ...)
 
     D_QuitNetGame ();
     I_ShutdownGraphics();
+    sound_state=0;
 //    getch();
     exit(-1);
 }

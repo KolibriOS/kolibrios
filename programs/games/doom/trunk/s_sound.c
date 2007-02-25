@@ -47,6 +47,7 @@ rcsid[] = "$Id: s_sound.c,v 1.6 1997/02/03 22:45:12 b1 Exp $";
 
 
 #include "kolibri.h"
+#include "sound.h"
 
 void WriteDebug(char *);
 
@@ -165,24 +166,20 @@ void S_StopChannel(int cnum);
 //  allocates channel buffer, sets S_sfx lookup.
 //
 
-DWORD hMixBuff[4];
-int mix_ptr;
+
+SNDBUF hMixBuff;
+volatile int sound_state; 
+void sound_proc(void);
+void I_UpdateSound( void );
 
 void S_Init
 ( int           sfxVolume,
   int           musicVolume )
 {  
   int           i;
+  char *thread_stack;
+  int ver;
 
-  printf("S_Init: default sfx volume %d\n", sfxVolume);
-
-  InitSound();
-
-  hMixBuff[0]= CreateBuffer(15);
-  hMixBuff[1]= CreateBuffer(15);
-  hMixBuff[2]= CreateBuffer(15);
-  hMixBuff[3]= CreateBuffer(15);
-  
   numChannels = NUM_CHANNELS;
 
   // Whatever these did with DMX, these are rather dummies now.
@@ -208,7 +205,119 @@ void S_Init
   // Note that sounds have not been cached (yet).
   for (i=1 ; i<NUMSFX ; i++)
     S_sfx[i].lumpnum = S_sfx[i].usefulness = -1;
+
+
+/********
+  if((ver = InitSound())< SOUND_VERSION )
+  {  
+     printf("Sound service version mismatch\n\r");
+     printf("Installed version: %d, required version %d\n\r",
+             ver, SOUND_VERSION);
+  };
+
+  hMixBuff = CreateBuffer(PCM_2_16_11,0);
+
+*********/
+
+   thread_stack = UserAlloc(4096);
+   thread_stack+=4092;
+
+   sound_state=1;  
+   CreateThread(sound_proc, thread_stack);
 }
+
+typedef struct
+{
+  unsigned int  code;
+  unsigned int  sender;
+  unsigned int  stream;
+  unsigned int  offset;
+  unsigned int  size;
+  unsigned int  unused;
+}SND_EVENT;     
+
+unsigned int mix_offset;
+int mix_size;
+extern signed short *mixbuffer;
+
+void sound_proc(void)
+{
+  int ver;
+  SND_EVENT evnt;
+  int i;
+    
+  if((ver = InitSound())< SOUND_VERSION )
+  {  
+     printf("Sound service version mismatch\n\r");
+     printf("Installed version: %d, required version %d\n\r",
+             ver, SOUND_VERSION);
+  };
+
+  hMixBuff=CreateBuffer(PCM_2_16_11|PCM_RING,0);
+  
+  if(!hMixBuff)
+  {
+    printf("sound not available\n\r");
+    _asm
+    {
+      mov eax, -1
+      int 0x40
+    };      
+  };
+
+  mix_size=GetBufferSize(hMixBuff)/2;
+  printf("mixer size %d\n\r", mix_size);
+
+  mixbuffer = malloc(mix_size);
+  
+  PlayBuffer(hMixBuff, 0); 
+  while(sound_state)
+  {
+     GetNotify(&evnt);
+
+     if(evnt.code != 0xFF000001)
+     {
+       printf("invalid code %d\n\r", evnt.code);
+       continue; 
+     }    
+     
+     if(evnt.stream != hMixBuff)
+     {
+       printf("invalid stream %d hMixBuff= %d\n\r", evnt.stream, hMixBuff);
+       continue; 
+     };
+     mix_offset= evnt.offset;
+     I_UpdateSound();
+  };
+
+  //flush sound buffers 
+
+  for(i=0; i<32; i++)
+  {
+     GetNotify(&evnt);
+
+     if(evnt.code != 0xFF000001)
+     {
+       printf("invalid code %d\n\r", evnt.code);
+       continue; 
+     }    
+     
+     if(evnt.stream != hMixBuff)
+     {
+       printf("invalid stream %d hMixBuff= %d\n\r", evnt.stream, hMixBuff);
+       continue; 
+     };
+     mix_offset= evnt.offset;
+     I_UpdateSound();
+  };  
+  
+  _asm
+  {
+    mov eax, -1
+    int 0x40
+  };      
+
+};
 
 //
 // Per level startup code.

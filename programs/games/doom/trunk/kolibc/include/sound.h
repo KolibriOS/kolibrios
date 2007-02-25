@@ -98,10 +98,31 @@ int _stdcall  StopBuffer(SNDBUF hBuff);
 int _stdcall  SetVolume(SNDBUF hBuff, int left, int right);
 int _stdcall  GetVolume(SNDBUF hBuff, int *left, int *right);
 int _stdcall  SetPan(SNDBUF hBuff, int pan);
-int _stdcall  GetPan(SNDBUF hBuff);
+int _stdcall  GetPan(SNDBUF hBuff, int pan);
                         
 int _stdcall  GetMasterVol(int* vol);
 int _stdcall  SetMasterVol(int vol);
+
+
+typedef struct
+{
+    unsigned int   riff_id;
+    unsigned int   riff_size;
+    unsigned int   riff_format;
+
+    unsigned int   fmt_id;
+    unsigned int   fmt_size;
+
+    unsigned short int wFormatTag;
+    unsigned short int nChannels;
+    unsigned int   nSamplesPerSec;
+    unsigned int   nAvgBytesPerSec;
+    unsigned short int nBlockAlign;
+    unsigned short int wBitsPerSample;
+    unsigned int   data_id;
+    unsigned int   data_size;
+} WAVEHEADER;
+
 
 unsigned int _stdcall test_wav(WAVEHEADER *hdr);
 

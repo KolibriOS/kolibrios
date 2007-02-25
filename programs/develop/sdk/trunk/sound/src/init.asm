@@ -128,12 +128,13 @@ endp
 
 section '.data' align 16 data readable writable
 
-szInfinity  db 'INFINITY',0
-szSound     db 'SOUND',0
-
 public hSound
 public hrdwSound
 
-align 4
 hSound      dd ?
 hrdwSound   dd ? 
+
+szInfinity  db 'INFINITY',0
+szSound     db 'SOUND',0
+
+

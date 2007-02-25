@@ -16,15 +16,19 @@ SRV_GETVERSION      equ 0
 SND_CREATE_BUFF     equ 1
 SND_DESTROY_BUFF    equ 2
 SND_SETFORMAT       equ 3
-SND_RESET           equ 4
-SND_SETPOS          equ 5
-SND_SETBUFF         equ 6
-SND_SETVOLUME       equ 7
-SND_GETVOLUME       equ 8
+SND_GETFORMAT       equ 4
+SND_RESET           equ 5
+SND_SETPOS          equ 6
+SND_GETPOS          equ 7
+SND_SETBUFF         equ 8
 SND_OUT             equ 9
 SND_PLAY            equ 10
 SND_STOP            equ 11
-SND_SETPAN          equ 12
+SND_SETVOLUME       equ 12
+SND_GETVOLUME       equ 13
+SND_SETPAN          equ 14
+SND_GETPAN          equ 15
+SND_GETBUFFSIZE     equ 16
 
 DEV_SET_BUFF        equ  4
 DEV_NOTIFY          equ  5

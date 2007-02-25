@@ -49,6 +49,7 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 #include "doomdef.h"
 
 #include "kolibri.h"
+#include "sound.h"
 
 // The number of internal mixing channels,
 //  the samples calculated for each mixing step,
@@ -57,11 +58,11 @@ rcsid[] = "$Id: i_unix.c,v 1.5 1997/02/03 22:45:10 b1 Exp $";
 
 
 // Needed for calling the actual sound output.
-#define SAMPLECOUNT     8192
+#define SAMPLECOUNT     1024
 #define NUM_CHANNELS    16
 // It is 2 for 16bit, and 2 for two channels.
-#define BUFMUL          4
-#define MIXBUFFERSIZE           (SAMPLECOUNT*BUFMUL)
+//#define BUFMUL          4
+//#define MIXBUFFERSIZE           (SAMPLECOUNT*BUFMUL)
 
 #define SAMPLERATE      11025   // Hz
 #define SAMPLESIZE      2       // 16bit
@@ -76,8 +77,7 @@ int     audio_fd;
 // Basically, samples from all active internal channels
 //  are modifed and added, and stored in the buffer
 //  that is submitted to the audio device.
-signed short    mixbuffer[MIXBUFFERSIZE];
-
+signed short    *mixbuffer;
 
 // The channel step amount...
 unsigned int    channelstep[NUM_CHANNELS];
@@ -291,10 +291,17 @@ int addsfx(int sfxid, int volume, int step, int seperation)
 
     // Sanity check, clamp volume.
     if (rightvol < 0 || rightvol > 127)
-        I_Error("rightvol out of bounds");
+    {
+        printf("rightvol out of bounds\n\r");
+        rightvol = 0;
+
+    }
     
     if (leftvol < 0 || leftvol > 127)
-        I_Error("leftvol out of bounds");
+    {
+        printf("leftvol out of bounds\n\r");
+        leftvol=0;
+    }
     
     // Get the proper lookup table piece
     //  for this volume level???
@@ -426,8 +433,9 @@ int I_SoundIsPlaying(int handle)
 // This function currently supports only 16bit.
 //
 
-extern DWORD hMixBuff[4];
-extern int mix_ptr;
+extern SNDBUF hMixBuff;
+extern unsigned int mix_offset;
+extern int mix_size;
 
 void I_UpdateSound( void )
 {
@@ -441,7 +449,7 @@ void I_UpdateSound( void )
   // Pointers in global mixbuffer, left, right, end.
   signed short*         leftout;
   signed short*         rightout;
-  signed short*         leftend;
+//  signed short*         leftend;
   // Step in mixbuffer, left and right, thus two.
   int                           step;
 
@@ -449,7 +457,7 @@ void I_UpdateSound( void )
   int                           chan;
   int i;
   int flags;
-  flags = 0;
+  int size = 0;
     
     // Left and right channel
     //  are in global mixbuffer, alternating.
@@ -459,12 +467,12 @@ void I_UpdateSound( void )
 
     // Determine end, for left channel only
     //  (right channel is implicit).
-    leftend = mixbuffer + SAMPLECOUNT*step;
+  //  leftend = mixbuffer + SAMPLECOUNT*step;
 
     // Mix sounds into the mixing buffer.
     // Loop over step*SAMPLECOUNT,
     //  that is 512 values for two channels.
-    for (i=0; i < 8192; i++)
+    for (i=0; i < mix_size/4; i++)
     {
         // Reset left/right value. 
         dl = 0;
@@ -473,12 +481,14 @@ void I_UpdateSound( void )
         // Love thy L2 chache - made this a loop.
         // Now more channels could be set at compile time
         //  as well. Thus loop those  channels.
+  //      flags=0;
+        
         for ( chan = 0; chan < NUM_CHANNELS; chan++ )
         {
             // Check channel, if active.
             if (channels[ chan ])
             {
-                flags=1;
+  //              flags=1;
                 
                 // Get the raw data from the channel. 
                 sample = *channels[ chan ];
@@ -525,11 +535,22 @@ void I_UpdateSound( void )
         // Increment current pointers in mixbuffer.
         leftout += step;
         rightout += step;
+//        if (flags)
+//          size+=4;
     }
-    if(flags)
-    { WaveOut(hMixBuff[mix_ptr],(char*)&mixbuffer[0],32768);
-      mix_ptr= (mix_ptr+1)&3;
-    };  
+
+    SetBuffer(hMixBuff,mixbuffer,mix_offset,mix_size);
+
+
+ //   WaveOut(hMixBuff,(char*)&mixbuffer[0],4096);
+    
+//    if(size)
+//    {
+//       WaveOut(hMixBuff,(char*)&mixbuffer[0],size);
+//       SetBufferPos(hMixBuff, 0);         
+//        SetBuffer(hMixBuff,(char*)&mixbuffer[0],mix_offset,4096);
+//       PlayBuffer(hMixBuff, PCM_SYNC); 
+//    };  
 }
 
 
@@ -559,23 +580,11 @@ void I_UpdateSoundParams(int handle, int vol, int sep, int pitch)
   handle = vol = sep = pitch = 0;
 }
 
+extern volatile int sound_state;
+
 void I_ShutdownSound(void)
 {    
-  // Wait till all pending sounds are finished.
-  int done = 0;
-  int i;
-  
-  // FIXME (below).
-  printf( "I_ShutdownSound: NOT finishing pending sounds\n");
-  
-  while ( !done )
-  {
-    for( i=0 ; i<8 && !channels[i] ; i++);
-    
-    // FIXME. No proper channel output.
-    //if (i==8)
-    done=1;
-  }
+  sound_state=0;
   return;
 }
 
@@ -603,8 +612,8 @@ void I_InitSound()
   printf( " pre-cached all sound data\n");
   
   // Now initialize mixbuffer with zero.
-  for ( i = 0; i< MIXBUFFERSIZE; i++ )
-    mixbuffer[i] = 0;
+//  for ( i = 0; i< MIXBUFFERSIZE; i++ )
+ //   mixbuffer[i] = 0;
   
   // Finished initialization.
   printf("I_InitSound: sound module ready\n");
