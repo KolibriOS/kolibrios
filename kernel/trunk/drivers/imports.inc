@@ -101,6 +101,9 @@ end if
 if used DestroyEvent
   extrn DestroyEvent
 end if
+if used ClearEvent
+  extrn ClearEvent
+end if
 
 if used LoadCursor
   extrn LoadCursor

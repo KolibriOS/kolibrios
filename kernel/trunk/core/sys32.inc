@@ -628,8 +628,8 @@ term9:
 
            mov [fpu_owner],1
            mov eax, [256+PROC_BASE+APPDATA.fpu_state]
+           clts  
            bt [cpu_caps], CAPS_SSE
-           clts
            jnc .no_SSE
            fxrstor [eax]
            jmp @F

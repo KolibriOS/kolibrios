@@ -219,12 +219,12 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
 .wait:
            mov edx,[CURRENT_TASK]
            shl edx,8
-           cmp [PROC_BASE+edx+APPDATA.ev_count], 0
-           je .switch
+;           cmp [PROC_BASE+edx+APPDATA.ev_count], 0
+;           je .switch
 
            add edx, PROC_BASE+APP_EV_OFFSET
 
-           mov eax, [edx+EVENT.fd]
+           mov eax, [edx+APPOBJ.fd]
            cmp eax, edx
            je .switch
 
@@ -235,8 +235,7 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
            rep movsd
 
            and dword [edi-24], 0xFF00FFFF ;clear priority field
-                                          ;
-
+                                         ;
            test [eax+EVENT.state], MANUAL_RESET
            jnz .done
 
@@ -246,9 +245,13 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
            mov ecx, [eax+APPOBJ.bk]    ;and clear events flag
            mov [ebx+APPOBJ.bk], ecx    ;if no active events
            mov [ecx+APPOBJ.fd], ebx
+
+           and [eax+EVENT.state], not (EVENT_SIGNALED+EVENT_WATCHED)
+
            dec [edx+APPDATA.ev_count-APP_EV_OFFSET]
            jnz @F
            and [edx+APPDATA.event_mask-APP_EV_OFFSET], not EVENT_EXTENDED
+@@:
            popfd
 
            test [eax+EVENT.state], MANUAL_DESTROY
@@ -258,11 +261,11 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
 
            pushfd
            cli
-           mov edx, [ecx+APPOBJ.fd]  ;insert event into
-           mov [eax+APPOBJ.fd], edx  ;objects list
-           mov [eax+APPOBJ.bk], ecx
-           mov [ecx+APPOBJ.fd], eax
-           mov [edx+APPOBJ.bk], eax
+           mov ebx, [edx+APPOBJ.fd]  ;insert event into
+           mov [eax+APPOBJ.fd], ebx  ;objects list
+           mov [eax+APPOBJ.bk], edx
+           mov [edx+APPOBJ.fd], eax
+           mov [ebx+APPOBJ.bk], eax
            popfd
 .done:
            ret
@@ -347,6 +350,7 @@ restore .event
 ;  eax= event
 ;  ebx= id
 ;  ecx= flags
+;  edx= event data
 
 raise_event:
            .event equ esp
@@ -362,7 +366,18 @@ raise_event:
            test eax, eax
            jz .fail
 
+           mov esi, edx
+           test esi, esi
            mov edx, [.event]
+           jz @F
+
+           push ecx
+           lea edi, [edx+EVENT.code]
+           mov ecx, 6
+           cld
+           rep movsd
+           pop ecx
+@@:
            test [edx+EVENT.state], EVENT_SIGNALED
            jnz .done
 
@@ -390,6 +405,54 @@ raise_event:
 
            inc [eax+APPDATA.ev_count-APP_EV_OFFSET]
            or  [eax+APPDATA.event_mask-APP_EV_OFFSET], EVENT_EXTENDED
+           popfd
+.fail:
+.done:
+           add esp, 4
+           ret
+restore .event
+
+; param
+;  eax= event
+;  ebx= id
+align 4
+clear_event:
+           .event equ esp
+           push eax
+
+           cmp [eax+APPOBJ.magic], 'EVNT'
+           jne .fail
+           cmp [eax+EVENT.id], ebx
+           jne .fail
+
+           mov eax, [eax+APPOBJ.pid]
+           call pid_to_slot
+           test eax, eax
+           jz .fail
+
+           shl eax, 8
+           add eax, PROC_BASE+APP_EV_OFFSET
+           mov edx, [.event]
+           pushfd
+           cli                         ;remove event from events
+           mov ebx, [edx+APPOBJ.fd]    ;list (reset event)
+           mov ecx, [edx+APPOBJ.bk]    ;and clear events flag
+           mov [ebx+APPOBJ.bk], ecx    ;if no active events
+           mov [ecx+APPOBJ.fd], ebx
+
+           and [edx+EVENT.state], not (EVENT_SIGNALED+EVENT_WATCHED)
+
+           dec [eax+APPDATA.ev_count-APP_EV_OFFSET]
+           jnz @F
+           and [eax+APPDATA.event_mask-APP_EV_OFFSET], not EVENT_EXTENDED
+@@:
+           add eax, (APP_OBJ_OFFSET-APP_EV_OFFSET)
+
+           mov ecx, [eax+APPOBJ.fd]  ;insert event into
+           mov [edx+APPOBJ.fd], ecx  ;objects list
+           mov [edx+APPOBJ.bk], eax
+           mov [eax+APPOBJ.fd], edx
+           mov [ecx+APPOBJ.bk], edx
            popfd
 .fail:
 .done:

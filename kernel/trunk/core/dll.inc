@@ -241,36 +241,33 @@ proc srv_handler stdcall, ioctl:dword
            ret
 endp
 
+; param
+;  ebx= io_control
+;
+; retval
+;  eax= error code
+
 align 4
-proc srv_handlerEx stdcall, ioctl:dword
-           mov esi, [ioctl]
-           test esi, esi
-           jz .err
-           add esi, new_app_base
+srv_handlerEx:
+           test ebx, ebx
+           jz .fail
+           add ebx, new_app_base
 
-           mov edi, [esi+handle]
-           cmp [edi+SRV.magic], ' SRV'
+           mov eax, [ebx+handle]
+           cmp [eax+SRV.magic], ' SRV'
 	   jne .fail
 
-           cmp [edi+SRV.size], SRV_SIZE
+           cmp [eax+SRV.size], SRV_SIZE
 	   jne .fail
 
-           add [esi+input], new_app_base
-           add [esi+output], new_app_base
+           add [ebx+input], new_app_base
+           add [ebx+output], new_app_base
 
-           stdcall [edi+SRV.srv_proc], esi
+           stdcall [eax+SRV.srv_proc], ebx
            ret
 .fail:
-           xor eax, eax
-           not eax
-           mov [esi+output], eax
-           mov [esi+out_size], 4
+           or eax, -1
            ret
-.err:
-           xor eax, eax
-           not eax
-           ret
-endp
 
 restore  handle
 restore  io_code
