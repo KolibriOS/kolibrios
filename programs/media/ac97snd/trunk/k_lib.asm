@@ -4,24 +4,13 @@ include "proc32.inc"
 
 section '.text' code readable executable
 
-public _GetService@4
-public _GetDevInfo@8
-public _GetMasterVol@8
-public _SetMasterVol@8
-public _CreateBuffer@8
-public _DestroyBuffer@8
-public _SetBuffer@20
-public _PlayBuffer@8
-public _StopBuffer@8
-
 public _InitHeap@4
 public _UserAlloc@4
-public _GetNotify@4
 public _CreateThread@8
 public _GetMousePos@4
 public _get_fileinfo@8
 public _read_file@20
-public _get_key
+public _get_key@4
 public _get_button_id
 public _DrawWindow@36
 public _make_button@24
@@ -41,34 +30,6 @@ struc FILEIO
                     db ?
     .name           dd ?
 };
-
-struc CTRL_INFO
-{   .pci_cmd        dd  ?
-    .irq            dd  ?
-    .glob_cntrl     dd  ?
-    .glob_sta       dd  ?
-    .codec_io_base  dd  ?
-    .ctrl_io_base   dd  ?
-    .codec_mem_base dd  ?
-    .ctrl_mem_base  dd  ?
-    .codec_id       dd  ?
-}
-CTRL_INFO_SIZE      equ 9*4
-
-
-SND_CREATE_DEV     equ  1
-SND_CREATE_BUFF    equ  2
-SND_PLAY           equ  3
-SND_STOP           equ  4
-SND_SETBUFF        equ  5
-SND_DESTROY_BUFF   equ  6
-
-DEV_SET_BUFF       equ  4
-DEV_NOTIFY         equ  5
-DEV_SET_MASTERVOL  equ  6
-DEV_GET_MASTERVOL  equ  7
-DEV_GET_INFO       equ  8
-
 
 align 4
 proc _get_button_id
@@ -145,12 +106,21 @@ proc _read_file@20 stdcall,name:dword, buff:dword, offset:dword,\
 endp
 
 align 4
-proc _get_key
+proc _get_key@4 stdcall, key:dword
+           push ebx
+           push ecx
            mov eax, 2
            int 0x40
-           shr eax, 8
+           mov ebx, [key]
+           mov ecx, eax
+           shr ecx, 8
+           mov [ebx], ecx
+           movzx eax, al
+           pop ecx
+           pop ebx
            ret
 endp
+
 
 align 4
 proc _InitHeap@4 stdcall, heap_size:dword
@@ -174,28 +144,6 @@ proc _UserAlloc@4 stdcall, alloc_size:dword
                   ret
 endp
 
-;align 4
-;proc _GetNotify@4 stdcall, p_ev:dword
-;                  push ebx
-;                  mov eax, 68
-;                  mov ebx, 14
-;              mov ecx, [p_ev]
-;                  int 0x40
-;                  pop ebx
-;                  ret
-;endp
-
-align 4
-proc _GetNotify@4 stdcall, p_ev:dword
-                  push ebx
-                  mov eax, 68
-                  mov ebx, 14
-                  mov ecx, [p_ev]
-                  int 0x40
-                  pop ebx
-                  ret
-endp
-
 align 4
 proc _CreateThread@8 stdcall, fn:dword, p_stack:dword
               push ebx
@@ -213,263 +161,11 @@ proc _GetMousePos@4 stdcall,rel_type:dword
            push ebx  
            mov eax, 37
            mov ebx, [rel_type]
-               int 0x40
-               pop ebx
-               ret
-endp
-
-align 4
-proc CallServiceEx stdcall, ioctl:dword
-              push ebx
-              mov eax, 68
-              mov ebx, 17
-          mov ecx, [ioctl]
-              int 0x40
-              pop ebx
-              ret
-endp
-
-align 4
-proc _GetService@4 stdcall, name:dword
-           push ebx
-           mov eax, 68
-               mov ebx, 16
-           mov ecx, [name]
-               int 0x40
-               pop ebx
-               ret
-endp
-
-align 4
-proc _GetDevInfo@8 stdcall, hSrv:dword, p_info:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-           
-           push ebx
-           mov eax, [hSrv]
-           xor ebx, ebx
-           mov ecx, [p_info]
-
-           mov [handle], eax
-           mov [io_code], DEV_GET_INFO
-           mov [input], ebx
-           mov [inp_size], ebx
-           mov [output], ecx
-           mov [out_size], CTRL_INFO_SIZE
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _GetMasterVol@8 stdcall, hSrv:dword,pvol:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-           
-           push ebx
-           mov eax, [hSrv]
-           mov ecx, [pvol]
-           xor ebx, ebx
-           mov [handle], eax
-           mov [io_code], DEV_GET_MASTERVOL
-           mov [input], ebx
-           mov [inp_size], ebx
-           mov [output], ecx
-           mov [out_size], 4
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _SetMasterVol@8 stdcall,hSrv:dword,vol:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-           
-           push ebx
-           mov eax, [hSrv]
-           lea ecx, [vol]
-           xor ebx, ebx
-
-           mov [handle], eax
-           mov [io_code], DEV_SET_MASTERVOL
-           mov [input], ecx
-           mov [inp_size], 4
-           mov [output], ebx
-           mov [out_size], 0
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _CreateBuffer@8 stdcall, hSound:dword,format:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-
-           push ebx
-           mov eax, [hSound]
-           lea ecx, [format]
-           xor ebx, ebx
-
-           mov [handle], eax
-           mov [io_code], SND_CREATE_BUFF
-           mov [input], ecx
-           mov [inp_size], 4
-           mov [output], ebx
-           mov [out_size], 0
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _DestroyBuffer@8 stdcall, hSound:dword, str:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-
-           push ebx
-           mov eax, [hSound]
-           lea ecx, [str]
-           xor ebx, ebx
-
-           mov [handle], eax
-           mov [io_code], SND_DESTROY_BUFF
-           mov [input], ecx
-           mov [inp_size], 4
-           mov [output], ebx
-           mov [out_size], 0
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _SetBuffer@20 stdcall,hSound:dword, str:dword, src:dword, offs:dword, size:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-
-           push ebx
-           mov eax, [hSound]
-           lea ecx, [str]
-           xor ebx, ebx
-
-           mov [handle], eax
-           mov [io_code], SND_SETBUFF
-           mov [input], ecx
-           mov [inp_size], 16
-           mov [output], ebx
-           mov [out_size], 0
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _PlayBuffer@8 stdcall, hSound:dword, str:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-
-           push ebx
-           mov eax, [hSound]
-           lea ecx, [str]
-           xor ebx, ebx
-
-           mov [handle], eax
-           mov [io_code], SND_PLAY
-           mov [input], ecx
-           mov [inp_size], 4
-           mov [output], ebx
-           mov [out_size], 0
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
-           pop ebx
-               ret
-endp
-
-align 4
-proc _StopBuffer@8 stdcall, hSound:dword, str:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-
-           push ebx
-           mov eax, [hSound]
-           lea ecx, [str]
-           xor ebx, ebx
-
-           mov [handle], eax
-           mov [io_code], SND_STOP
-           mov [input], ecx
-           mov [inp_size], 4
-           mov [output], ebx
-           mov [out_size], 0
-
-           lea eax, [handle]
-           stdcall CallServiceEx, eax
+           int 0x40
            pop ebx
            ret
 endp
+
 
 align 4
 proc _DrawWindow@36 stdcall, x:dword, y:dword, sx:dword, sy:dword,\

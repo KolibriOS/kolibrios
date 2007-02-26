@@ -10,34 +10,28 @@ extrn hSound
 public _StopBuffer@4
 
 align 4
-proc _StopBuffer@4 stdcall, str:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
+_StopBuffer@4:          ;str:dword
 
            push ebx
            push ecx
-           mov eax, [hSound]
-           lea ebx, [str]
-           xor ecx, ecx
 
-           mov [handle], eax
-           mov [io_code], SND_STOP
-           mov [input], ebx
-           mov [inp_size], 4
-           mov [output], ecx
-           mov [out_size], ecx
+           xor eax, eax
+           lea ebx, [esp+12]   ;[stream]
+
+           push eax            ;.out_size
+           push eax            ;.output
+           push 4              ;.inp_size
+           push ebx            ;.input
+           push SND_STOP       ;.code
+           push dword [hSound] ;.handle
 
            mov eax, 68
            mov ebx, 17
-           lea ecx, [handle]
+           mov ecx, esp
            int 0x40
+           add esp, 24
            pop ecx 
            pop ebx
-           ret
-endp
+           ret 4
+           
+           

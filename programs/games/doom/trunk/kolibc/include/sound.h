@@ -76,18 +76,18 @@ extern "C"
 
 typedef unsigned int SNDBUF;
 
-int _stdcall  InitSound();
+int _stdcall  InitSound(int *version);
 
-SNDBUF _stdcall  CreateBuffer(unsigned int format,int size);
+int _stdcall  CreateBuffer(unsigned int format,int size,SNDBUF *buf);
 int _stdcall  DestroyBuffer(SNDBUF hBuff);
 
 int _stdcall  SetFormat(SNDBUF hBuff, unsigned int format);                        
-int _stdcall  GetFormat(SNDBUF hBuff);                        
+int _stdcall  GetFormat(SNDBUF hBuff, unsigned int *format);                        
 
 int _stdcall  ResetBuffer(SNDBUF hBuff, unsigned int flags);
 int _stdcall  SetBufferPos(SNDBUF hBuff, int offset);
-int _stdcall  GetBufferPos(SNDBUF hBuff);
-int _stdcall  GetBufferSize(SNDBUF hBuff);
+int _stdcall  GetBufferPos(SNDBUF hBuff, int *offset);
+int _stdcall  GetBufferSize(SNDBUF hBuff, int *size);
 
 int _stdcall  SetBuffer(SNDBUF hBuff,void* buff,
                         int offs, int size);
@@ -98,7 +98,7 @@ int _stdcall  StopBuffer(SNDBUF hBuff);
 int _stdcall  SetVolume(SNDBUF hBuff, int left, int right);
 int _stdcall  GetVolume(SNDBUF hBuff, int *left, int *right);
 int _stdcall  SetPan(SNDBUF hBuff, int pan);
-int _stdcall  GetPan(SNDBUF hBuff, int pan);
+int _stdcall  GetPan(SNDBUF hBuff, int *pan);
                         
 int _stdcall  GetMasterVol(int* vol);
 int _stdcall  SetMasterVol(int vol);

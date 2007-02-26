@@ -11,67 +11,52 @@ public _SetBuffer@16
 public _PlayBuffer@8
 
 align 4
-proc _SetBuffer@16 stdcall,str:dword, src:dword, offs:dword, size:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
+_SetBuffer@16:   ;str:dword, src:dword, offs:dword, size:dword
 
            push ebx
            push ecx
-           mov eax, [hSound]
-           lea ebx, [str]
-           xor ecx, ecx
+           
+           xor eax, eax
+           lea ebx, [esp+12]   ;[stream]
 
-           mov [handle], eax
-           mov [io_code], SND_SETBUFF
-           mov [input], ebx
-           mov [inp_size], 16
-           mov [output], ecx
-           mov [out_size], ecx
+           push eax            ;.out_size
+           push eax            ;.output
+           push 16             ;.inp_size
+           push ebx            ;.input
+           push SND_SETBUFF    ;.code
+           push dword [hSound] ;.handle
 
            mov eax, 68
            mov ebx, 17
-           lea ecx, [handle]
+           mov ecx, esp
            int 0x40
+           add esp, 24
            pop ecx 
            pop ebx
-           ret
-endp
-
+           ret 16
+           
 align 4
-proc _PlayBuffer@8 stdcall, str:dword,flags:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
+_PlayBuffer@8:          ;str:dword,flags:dword
 
            push ebx
            push ecx
-           mov eax, [hSound]
-           lea ebx, [str]
-           xor ecx, ecx
 
-           mov [handle], eax
-           mov [io_code], SND_PLAY
-           mov [input], ebx
-           mov [inp_size], 4
-           mov [output], ecx
-           mov [out_size], ecx
+           xor eax, eax
+           lea ebx, [esp+12]   ;[stream]
+
+           push eax            ;.out_size
+           push eax            ;.output
+           push 8              ;.inp_size
+           push ebx            ;.input
+           push SND_PLAY       ;.code
+           push dword [hSound] ;.handle
 
            mov eax, 68
            mov ebx, 17
-           lea ecx, [handle]
+           mov ecx, esp
            int 0x40
+           add esp, 24
            pop ecx 
            pop ebx
-           ret
-endp
+           ret 8
+

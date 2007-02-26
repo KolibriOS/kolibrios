@@ -14,12 +14,12 @@
 //   GNU General Public License for more details.
 
 #include "kolibri.h"
-//#include "stdio.h"
 #include "string.h"
 #include "ac97wav.h"
 #include "mpg/mpg123.h"
+#include "sound.h"
 
-#define MP3_ERROR_OUT_OF_BUFFER                 5
+#define MP3_ERROR_OUT_OF_BUFFER  5
 int m_last_error;
 
 void thread_proc();
@@ -29,37 +29,22 @@ int stream_read_raw(struct reader *rd,unsigned char *buf, int size);
 
 char *fname;
 
-//extern char __path;
-
-/*****      for debug output only
-char formats[37][12] =
-{ "PCM_ALL",
-  "PCM_2_16_48","PCM_1_16_48","PCM_2_16_44","PCM_1_16_44",
-  "PCM_2_16_32","PCM_1_16_32","PCM_2_16_24","PCM_1_16_24",
-  "PCM_2_16_22","PCM_1_16_22","PCM_2_16_16","PCM_1_16_16",
-  "PCM_2_16_12","PCM_1_16_12","PCM_2_16_11","PCM_1_16_11",
-  "PCM_2_16_8","PCM_1_16_8","PCM_2_8_48","PCM_1_8_48",
-  "PCM_2_8_44","PCM_1_8_44","PCM_2_8_32","PCM_1_8_32",
-  "PCM_2_8_24","PCM_1_8_24","PCM_2_8_22","PCM_1_8_22",
-  "PCM_2_8_16","PCM_1_8_16","PCM_2_8_12","PCM_1_8_12",
-  "PCM_2_8_11","PCM_1_8_11","PCM_2_8_8","PCM_1_8_8"
-};
-*******/
-//int freqs[9] = {44100,48000,32000,22050,24000,16000 ,11025 ,12000 ,8000};
- 
 struct reader rd;
 struct frame fr;
 
 DWORD hDrv;
 DWORD hSound;
-DWORD hBuff;
-DWORD event[2];
+SNDBUF hBuff;
 
 CTRL_INFO info;
 
 FILEINFO   fileinfo;
 
 int m_vol;
+int l_vol=-500;
+int r_vol=-500;
+int pan =0;
+
 DWORD status;
 DWORD offset;
 DWORD first_sync;
@@ -74,9 +59,7 @@ int outsize;
 int outremain;
 int totalout;
 int done;
-
-char srv_name[] = "INFINITY";
-char srv_intel[] = "SOUND";
+ 
 char header[] = "AC97 MP3 player";
 char buttons_text[]=" Play    Stop     <<      >>     Vol-    Vol+";
 
@@ -111,10 +94,10 @@ void draw_window()
 
 void draw_progress_bar()
 {  DWORD x;
-   x = 286.0f * (float)(rd.filepos-rd.strremain)/(float)fileinfo.size;
+   x = 287.0f * (float)(rd.filepos-rd.strremain)/(float)fileinfo.size;
    if(x==0) return;
    draw_bar(7,41,x,11,0xA0A0A0);
-   draw_bar(x+7,41,286-x,11,0x404040);
+   draw_bar(x+7,41,287-x,11,0x404040);
 };
 
 void debug_out_str(char* str)
@@ -131,7 +114,9 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
    char *thread_stack;
    DWORD r_bytes;
    int retval;
-
+   int err;
+   int ver;
+    
    fname = argv[1];
    //debug_out_str(fname); 
     
@@ -139,20 +124,19 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
    if(get_fileinfo(fname, &fileinfo)==FILE_NOT_FOUND)
       return 0;
 
-   if((hDrv=GetService(srv_intel))==0)
-      return 0;
-
-   if ((hSound=GetService(srv_name))==0)
+   
+   if(err = InitSound(&ver))
+   {  
+     debug_out_str("Sound service not installed\n\r"); 
      return 0;
-
-   GetDevInfo(hDrv, &info);
-
-   m_vol = GetMasterVol(hDrv,&m_vol);
-   if (m_vol > 85)
-   { m_vol = 85;
-      SetMasterVol(hDrv,m_vol);
-   };
-
+   }
+   
+   if( ver != SOUND_VERSION)
+   {  
+     debug_out_str("Sound service version mismatch\n\r"); 
+     return 0;
+   }
+   
    testbuff = UserAlloc(4096); 
    get_fileinfo(fname, &fileinfo);
    offset = 0;
@@ -174,23 +158,28 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
      touch(outbuf, 32768);
    }   
    else  
-   {   fmt = test_mp3(testbuff);
-        if(fmt ==0) return 0;
-        snd_play = &play_mp3;
-       
-        outremain = 0x40000 ;
-        outbuf = UserAlloc(outremain);
-        touch(outbuf, outremain);
-        make_decode_tables(32767);
-        init_layer2();
-        init_layer3(32);
-        fr.single = -1;
+   { fmt = test_mp3(testbuff);
+     if(fmt ==0) return 0;
+     snd_play = &play_mp3;
+      
+     outremain = 0x40000 ;
+     outbuf = UserAlloc(outremain);
+     touch(outbuf, outremain);
+     make_decode_tables(32767);
+     init_layer2();
+     init_layer3(32);
+     fr.single = -1;
    };
 
    status = ST_PLAY;
    
-   hBuff = CreateBuffer(hSound,fmt);
-   if (hBuff == 0) return 0;
+   if (err = CreateBuffer(fmt,0, &hBuff))
+   {
+     debug_out_str("create buffer return error\n\r"); 
+     return 0;
+   }
+       
+   SetVolume(hBuff,l_vol,r_vol);
    thread_stack = UserAlloc(4096);
    thread_stack+=4092;
 
@@ -204,13 +193,13 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
            continue;
 
          case ST_STOP:
-           StopBuffer(hSound, hBuff);
+           StopBuffer(hBuff);
            status = ST_DONE;
            continue;
 
          case ST_EXIT:
-           StopBuffer(hSound, hBuff);
-           DestroyBuffer(hSound, hBuff);
+           StopBuffer(hBuff);
+           DestroyBuffer(hBuff);
            return 0;
       };
    };
@@ -254,12 +243,6 @@ DWORD test_mp3(char *buf)
     return test_wav(&whdr);
 };
 
-void wave_out(char* buff)
-{ DWORD ev[6];
-
-   GetNotify(&ev[0]);
-   SetBuffer(hSound,hBuff,buff,ev[1],0x8000);
-}
 
 void play_mp3()
 {  char *outPtr;
@@ -277,11 +260,7 @@ void play_mp3()
     outremain=0x40000;
 
     memset(outbuf,0,0x40000); 
-
     set_reader(&rd, 0);    //;first_sync);
-    SetBuffer(hSound,hBuff,outbuf,0,0x8000);
-    SetBuffer(hSound,hBuff,outbuf,0x8000,0x8000);
-    PlayBuffer(hSound, hBuff);
 
     while(1)
     { if(status!=ST_PLAY)
@@ -302,13 +281,14 @@ void play_mp3()
     };
   
     if(done)
-    { if(totalout < 32768)
-            {  memset(outPtr,0,32768-totalout); 
-                totalout = 32768;
+    { if(totalout < 4096)
+      {  memset(outPtr,0,4096-totalout); 
+                totalout = 4096;
       };
-    };
-    if(totalout < 32768)
-      continue;
+    }
+    else
+      if(totalout < 8192)
+        continue;
 /*       
      _asm
   {  push edx
@@ -321,13 +301,22 @@ void play_mp3()
   };  
 */      
     outPtr = outbuf;      
-    while (totalout > 32768)
-    { wave_out(outPtr);
-             totalout-=0x8000; 
-             outPtr+=0x8000;
-             outremain+=0x8000; 
+    while (totalout >= 4096)
+    { 
+    
+      WaveOut(hBuff,outPtr,4096);
+      if(status!=ST_PLAY)
+      { if(status != ST_EXIT)
+         status =  ST_STOP;
+        return; 
+      };
+      totalout-=4096; 
+      outPtr+=4096;
+      outremain+=4096; 
     };
-    if(done) break;  
+    if(done)
+      break;
+      
     memmove(outbuf,outPtr, totalout);
     outPtr = outbuf+totalout;
    } 
@@ -337,23 +326,9 @@ void play_mp3()
 };
 
 void play_wave()
-{ DWORD ev[6];
-   int retval;
-   int remain;
-   int i;
+{  int retval;
 
-//   offset = 44;
-
-//   read_file (fname,outbuf,offset,32*1024,0);
-//   offset+=32*1024;
    set_reader(&rd,44); 
-   stream_read_raw(&rd,outbuf,32768);
-   SetBuffer(hSound,hBuff,outbuf,0,0x8000);
-   stream_read_raw(&rd,outbuf,32768);
-   SetBuffer(hSound,hBuff,outbuf,0x8000,0x8000);
-
-   PlayBuffer(hSound, hBuff);
-
    retval = 0;
    while(1)
    {
@@ -364,7 +339,7 @@ void play_wave()
       {  done = 1;
           break; 
       }; 
-      wave_out(outbuf);
+      WaveOut(hBuff,outbuf,32768);
    };
 
    if(status != ST_EXIT)
@@ -373,7 +348,7 @@ void play_wave()
 
 void snd_stop()
 {
-  StopBuffer(hSound, hBuff);
+  StopBuffer(hBuff);
 };
 
 void thread_proc()
@@ -381,17 +356,21 @@ void thread_proc()
    int pos;
    int key;
 
-  _asm { fninit };
- 
+  _asm
+  {
+    mov eax, 66
+    mov ebx, 1
+    mov ecx, 1
+    int 0x40
+  };
     
   draw_window();
 
   while(1)
   {  if(status==ST_PLAY)
-      {  draw_progress_bar();
-          evnt = wait_for_event(80);
-       //   debug_out_str("BIG ERROR...\x0D\x0A\x00");          
-      }
+     {  draw_progress_bar();
+        evnt = wait_for_event(80);
+     }
      else
         evnt = wait_for_event_infinite();
 
@@ -402,24 +381,50 @@ void thread_proc()
         break;
 
       case EV_KEY:
-        key = get_key();
-        if(key==27)
-        {   status = ST_EXIT;
-            exit();
-        };
-        if((key==45)||key==54)
-        { if(m_vol > 0)
-          { m_vol--;
-            SetMasterVol(hDrv,m_vol);
-          };
-          break;
-        };
-        if((key==61)||key==56)
-        { if(m_vol < 90)
-          { m_vol++;
-            SetMasterVol(hDrv,m_vol);
-          };
-        };
+        if(!get_key(&key))
+        { 
+        
+          switch(key)
+          {  case 0xE0:
+             case 0xE1:
+               break;
+             default:
+               switch (key)
+               {
+                 case 0x01:  //Esc
+                   status = ST_EXIT;
+                   exit();
+                   break; 
+               
+                 case 0x47:  //Home
+                   if(l_vol < 0)
+                   { l_vol+=100;
+                     r_vol+=100;  
+                     SetVolume(hBuff,l_vol,r_vol);
+                   };
+                   break;
+                 case 0x4F:  //End                
+                   if(l_vol > -10000)
+                   { l_vol-=100;
+                     r_vol-=100;  
+                     SetVolume(hBuff,l_vol,r_vol);
+                   }; 
+                   break;
+                 case 0x53:
+                   if(pan > -10000)
+                   { pan -=100;
+                     SetPan(hBuff,pan);
+                   };
+                   break;   
+                 case 0x51:
+                   if(pan < 10000)
+                   { pan +=100;
+                     SetPan(hBuff,pan);
+                   };
+                   break;   
+               } 
+          };     
+        };  
         break;
 
       case EV_BUTTON:
@@ -439,24 +444,25 @@ void thread_proc()
 //           case 0x12:
 //           case 0x13:
            case 0x14:
-             if(m_vol > 0)
-             { m_vol--;
-               SetMasterVol(hDrv,m_vol);
-             };
-             break;
+            if(l_vol > -10000)
+            {
+              l_vol-=100;
+              r_vol-=100;  
+              SetVolume(hBuff,l_vol,r_vol);
+            };
+            break;
 
            case 0x15:
-             if(m_vol < 90)
-             { m_vol++;
-               SetMasterVol(hDrv,m_vol);
-             };
-             break;
+            if(l_vol < 0)
+            { l_vol+=100;
+              r_vol+=100;  
+              SetVolume(hBuff,l_vol,r_vol);
+            };
+            break;
 
            case 0x30:
             if(status==ST_DONE)
               break;
-//            if(snd_play == play_mp3)
-//              continue;   
             pos = (GetMousePos(REL_WINDOW)>>16)-7;
             offset = ((fileinfo.size-44)/286*pos+44)&0xFFFFFFFC;
             set_reader(&rd, offset); 
@@ -464,157 +470,6 @@ void thread_proc()
             break;
         };
     };
-  };
-};
-
-DWORD test_wav(WAVEHEADER *hdr)
-{
-  if(hdr->riff_id != 0x46464952)
-    return 0;
-
-  if(hdr->riff_format != 0x45564157)
-    return 0;
-
-  if (hdr->wFormatTag != 0x01)
-    return 0;
-
-  switch(hdr->nSamplesPerSec)
-  { case 48000:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_48;
-           else
-             return PCM_1_8_48;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_48;
-           else
-             return PCM_2_8_48;
-      };
-
-    case 44100:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_44;
-           else
-             return PCM_1_8_44;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_44;
-           else
-             return PCM_2_8_44;
-      };
-
-    case 32000:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_32;
-           else
-             return PCM_1_8_32;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_32;
-           else
-             return PCM_2_8_32;
-      };
-
-    case 24000:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_24;
-           else
-             return PCM_1_8_24;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_24;
-           else
-             return PCM_2_8_24;
-      };
-
-    case 22050:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_22;
-           else
-             return PCM_1_8_22;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_22;
-           else
-             return PCM_2_8_22;
-      };
-
-    case 16000:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_16;
-           else
-             return PCM_1_8_16;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_16;
-           else
-             return PCM_2_8_16;
-      };
-
-    case 12000:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_12;
-           else
-             return PCM_1_8_12;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_12;
-           else
-             return PCM_2_8_12;
-      };
-
-    case 11025:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_11;
-           else
-             return PCM_1_8_11;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_11;
-           else
-             return PCM_2_8_11;
-      };
-
-    case 8000:
-      switch (hdr->nChannels)
-      {  case 1:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_1_16_8;
-           else
-             return PCM_1_8_8;
-
-         case 2:
-           if(hdr->wBitsPerSample == 16)
-             return PCM_2_16_8;
-           else
-             return PCM_2_8_8;
-      };
-      default:
-        return 0;
   };
 };
 
@@ -639,8 +494,7 @@ int wait_for_event(int time)
 }; 
  
 int wait_for_event_infinite()
-{   void *a;
-     int retval;
+{ int retval;
   _asm
   {  mov  eax,10
       int  0x40

@@ -7,37 +7,29 @@ section '.text' align 16 code readable executable
 
 extrn hSound      
 
-public _GetFormat@4
+public _GetFormat@8
 
 align 4
-proc _GetFormat@4 stdcall, str:dword
-           locals
-             handle     dd ?
-             io_code    dd ?
-             input      dd ?
-             inp_size   dd ?
-             output     dd ?
-             out_size   dd ?
-           endl
-
+_GetFormat@8:       ;str:dword, p_fmt:dword
            push ebx
            push ecx
-           mov eax, [hSound]
-           lea ebx, [str]
-           xor ecx, ecx
+           
+           lea eax, [esp+16]   ;p_fmt
+           lea ebx, [esp+12]   ;[stream]
 
-           mov [handle], eax
-           mov [io_code], SND_GETFORMAT
-           mov [input], ebx
-           mov [inp_size], 4
-           mov [output], ecx
-           mov [out_size], ecx
+           push 4            ;.out_size
+           push eax            ;.output
+           push 4              ;.inp_size
+           push ebx            ;.input
+           push SND_GETFORMAT  ;.code
+           push dword [hSound] ;.handle
 
            mov eax, 68
            mov ebx, 17
-           lea ecx, [handle]
+           mov ecx, esp
            int 0x40
+           add esp, 24
            pop ecx 
            pop ebx
-           ret
-endp
+           ret 8
+           

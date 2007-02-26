@@ -178,7 +178,6 @@ void S_Init
 {  
   int           i;
   char *thread_stack;
-  int ver;
 
   numChannels = NUM_CHANNELS;
 
@@ -243,34 +242,70 @@ extern signed short *mixbuffer;
 void sound_proc(void)
 {
   int ver;
+  int err;
   SND_EVENT evnt;
   int i;
+
+  if(err = InitSound(&ver))
+  {  
+     printf("Error %x Sound service not installed\n\r", err);
+     _asm
+     {
+       mov eax, -1
+       int 0x40
+     };      
+  }
+
     
-  if((ver = InitSound())< SOUND_VERSION )
+  if(ver< SOUND_VERSION)
   {  
      printf("Sound service version mismatch\n\r");
      printf("Installed version: %d, required version %d\n\r",
              ver, SOUND_VERSION);
+     _asm
+     {
+       mov eax, -1
+       int 0x40
+     };      
   };
 
-  hMixBuff=CreateBuffer(PCM_2_16_11|PCM_RING,0);
-  
-  if(!hMixBuff)
+  if (err = CreateBuffer(PCM_2_16_11|PCM_RING,0, &hMixBuff))
   {
-    printf("sound not available\n\r");
+    printf("Error %x sound not available\n\r", err);
+    printf("handle = %x\n\r", hMixBuff);
+    _asm
+    {
+      mov eax, -1
+      int 0x40
+    };      
+  }
+  
+  if(err = GetBufferSize(hMixBuff, &mix_size))
+  {
+    printf("Error %x get buffer size\n\r", err);
+    printf("size = %x\n\r", mix_size);
     _asm
     {
       mov eax, -1
       int 0x40
     };      
   };
-
-  mix_size=GetBufferSize(hMixBuff)/2;
+  mix_size= mix_size/2;
+      
   printf("mixer size %d\n\r", mix_size);
 
+  if(err=PlayBuffer(hMixBuff, 0))
+  {
+    printf("Error %x play buffer\n\r", err);
+    _asm
+    {
+      mov eax, -1
+      int 0x40
+    };      
+  }
+  
   mixbuffer = malloc(mix_size);
   
-  PlayBuffer(hMixBuff, 0); 
   while(sound_state)
   {
      GetNotify(&evnt);

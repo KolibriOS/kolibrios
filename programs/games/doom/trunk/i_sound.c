@@ -456,8 +456,6 @@ void I_UpdateSound( void )
   // Mixing channel index.
   int                           chan;
   int i;
-  int flags;
-  int size = 0;
     
     // Left and right channel
     //  are in global mixbuffer, alternating.
@@ -481,15 +479,12 @@ void I_UpdateSound( void )
         // Love thy L2 chache - made this a loop.
         // Now more channels could be set at compile time
         //  as well. Thus loop those  channels.
-  //      flags=0;
         
         for ( chan = 0; chan < NUM_CHANNELS; chan++ )
         {
             // Check channel, if active.
             if (channels[ chan ])
             {
-  //              flags=1;
-                
                 // Get the raw data from the channel. 
                 sample = *channels[ chan ];
                 // Add left and right part
@@ -535,22 +530,9 @@ void I_UpdateSound( void )
         // Increment current pointers in mixbuffer.
         leftout += step;
         rightout += step;
-//        if (flags)
-//          size+=4;
     }
 
     SetBuffer(hMixBuff,mixbuffer,mix_offset,mix_size);
-
-
- //   WaveOut(hMixBuff,(char*)&mixbuffer[0],4096);
-    
-//    if(size)
-//    {
-//       WaveOut(hMixBuff,(char*)&mixbuffer[0],size);
-//       SetBufferPos(hMixBuff, 0);         
-//        SetBuffer(hMixBuff,(char*)&mixbuffer[0],mix_offset,4096);
-//       PlayBuffer(hMixBuff, PCM_SYNC); 
-//    };  
 }
 
 
