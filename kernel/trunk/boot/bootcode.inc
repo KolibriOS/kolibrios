@@ -59,19 +59,19 @@ os_data_l:
         db     0x00
 
 app_code_l:
-        dw 0xFFFF;((0x80000000-std_application_base_address) shr 12) and 0xffff
+        dw 0xFFFF
         dw 0
-        db 0x40
+        db 0
         db cpl3
-        dw G32+D32+0x6000+0x7;
+        dw G32+D32+0x8000+0x7;
 
 app_data_l:
-        dw 0xFFFF;(0x80000000-std_application_base_address) shr 12 and 0xffff
+        dw 0xFFFF
         dw 0
-        db 0x40
+        db 0
         db drw3
-        dw G32+D32+0x6000+0x7;
-      
+        dw G32+D32+0x8000+0x7;
+
 ; --------------- APM ---------------------
 apm_code_32:
         dw     0x0f        ; limit 64kb

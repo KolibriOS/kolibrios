@@ -169,7 +169,7 @@ include 'unpacker.inc'
 
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
-include 'debug-fdo.inc'
+include 'fdo.inc'
 
 iglobal
   boot_memdetect    db   'Determining amount of memory',0
@@ -370,33 +370,33 @@ B32:
 ;           btr [cpu_caps], CAPS_PGE    ;test: don't use global pages
 ;           btr [cpu_caps], CAPS_MTRR   ;test: don't use MTRR
            bts [cpu_caps], CAPS_TSC     ;force use rdtsc
-	   
+
 ; -------- Fast System Call init ----------
-	; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
-	bt	[cpu_caps], CAPS_SEP
-	jnc	.SEnP			; SysEnter not Present
-	xor	edx, edx
-	mov	ecx, MSR_SYSENTER_CS
-	mov	eax, os_code
-	wrmsr
-	mov	ecx, MSR_SYSENTER_ESP
-	mov	eax, sysenter_stack	; Check it
-	wrmsr
-	mov	ecx, MSR_SYSENTER_EIP
-	mov	eax, sysenter_entry
-	wrmsr
+; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
+           bt [cpu_caps], CAPS_SEP
+           jnc .SEnP   ; SysEnter not Present
+           xor edx, edx
+           mov ecx, MSR_SYSENTER_CS
+           mov eax, os_code
+           wrmsr
+           mov ecx, MSR_SYSENTER_ESP
+           mov eax, sysenter_stack ; Check it
+           wrmsr
+           mov ecx, MSR_SYSENTER_EIP
+           mov eax, sysenter_entry
+           wrmsr
 .SEnP:
-	; AMD SYSCALL/SYSRET
-	cmp	byte[cpu_vendor], 'A'
-	jne	.noSYSCALL
-	mov	eax, 0x80000001
-	cpuid
-	test	edx, 0x800		; bit_11 - SYSCALL/SYSRET support
-	jz	.noSYSCALL
-	mov	ecx, MSR_AMD_EFER
-	rdmsr
-	or	eax, 1			; bit_0 - System Call Extension (SCE)
-	wrmsr
+; AMD SYSCALL/SYSRET
+           cmp byte[cpu_vendor], 'A'
+           jne .noSYSCALL
+           mov eax, 0x80000001
+           cpuid
+           test edx, 0x800  ; bit_11 - SYSCALL/SYSRET support
+           jz .noSYSCALL
+           mov ecx, MSR_AMD_EFER
+           rdmsr
+           or eax, 1   ; bit_0 - System Call Extension (SCE)
+           wrmsr
 
 	; !!!! It`s dirty hack, fix it !!!
 	; Bits of EDX :
@@ -406,16 +406,19 @@ B32:
 	;  and the contents of this field, plus 8, are copied into the SS register.
 
 	; mov	edx, (os_code + 16) * 65536 + os_code
-	mov	edx, 0x1B0013
+           mov edx, 0x1B0013
 
-	mov	eax, syscall_entry
-	mov	ecx, MSR_AMD_STAR
-	wrmsr
+           mov eax, syscall_entry
+           mov ecx, MSR_AMD_STAR
+           wrmsr
 .noSYSCALL:
 ; -----------------------------------------
 
+
+
 ; MEMORY MODEL
            call mem_test
+           call init_mtrr
            call init_mem
            call init_page_map
 
@@ -430,8 +433,8 @@ B32:
            call init_kernel_heap
            stdcall kernel_alloc, 0x2000
            mov [os_stack], eax
+
            call init_LFB
-           call init_mtrr
            call init_fpu
 
            call init_malloc
@@ -4872,6 +4875,7 @@ read_from_hd:                           ; Read from hd - fn not in use
 align 4
 paleholder:
 	ret
+
 ; --------------- APM ---------------------
 apm_entry    dp    0
 apm_vf        dd    0
@@ -5066,7 +5070,7 @@ endg
 
 if __DEBUG__ eq 1
   include_debug_strings
-end if 
+end if
 
 IncludeIGlobals
 endofcode:

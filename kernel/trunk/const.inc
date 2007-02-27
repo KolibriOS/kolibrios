@@ -85,7 +85,7 @@ CAPS_CMP_LEG   equ    72 ;
 CAPS_SVM       equ    73 ;secure virual machine
 CAPS_ALTMOVCR8 equ    74 ;
 
-; CPU MSR names 
+; CPU MSR names
 MSR_SYSENTER_CS		equ	0x174
 MSR_SYSENTER_ESP	equ	0x175
 MSR_SYSENTER_EIP	equ	0x176
@@ -231,30 +231,32 @@ resendQ             equ OS_BASE+0x0770000
 
 ;skin_data          equ OS_BASE+0x0778000
 
+
 tss_data            equ 0x780000
 draw_data           equ 0x988000
 
 HEAP_BASE           equ 0x98B000
 
-page_tabs           equ  0x60000000
-master_tab          equ  0x60180000
-current_pgdir       equ  0x60180000
+LFB_BASE            equ 0x7DC00000
 
-sys_pgdir           equ  OS_BASE+0x00050000
-sys_master_tab      equ  OS_BASE+0x00051000
-sys_pgmap           equ  OS_BASE+0x00052000
+page_tabs           equ 0x7FC00000
+master_tab          equ 0x7FDFF000
+app_page_tabs       equ 0x7FE00000
+
+sys_pgdir           equ OS_BASE+0x00050000
+sys_master_tab      equ OS_BASE+0x00051000
+sys_pgmap           equ OS_BASE+0x00052000
 
 
 
-new_app_base        equ  0x60400000
+new_app_base        equ 0x80000000
 
 twdw                equ (CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
+RING0_STACK_SIZE    equ     0x2000 - 512    ;512 байт для контекста FPU
 
-RING0_STACK_SIZE	equ	0x2000 - 512	;512 байт для контекста FPU
-
-PAGES_USED          equ 4
+;PAGES_USED          equ 4
 
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001
@@ -445,11 +447,11 @@ struc PG_DATA
 }
 
 ;struc LIB
-;{ .lib_name          rb 16
-;  .lib_base          dd ?
-;  .lib_start         dd ?
-;  .export            dd ?
-;  .import            dd ?
+;{ .lib_name         rb 16
+;  .lib_base         dd ?
+;  .lib_start        dd ?
+;  .export           dd ?
+;  .import           dd ?
 ;}
 
 struc SRV

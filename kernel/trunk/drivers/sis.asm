@@ -44,15 +44,15 @@ BIT31 EQU 0x80000000
 VID_SIS           equ 0x1039
 CTRL_SIS          equ 0x7012
 
-PCM_OUT_BDL	  equ  0x10	 ; PCM out buffer descriptors list
-PCM_OUT_CR_REG	  equ  0x1b	 ; PCM out Control Register
+PCM_OUT_BDL       equ  0x10  ; PCM out buffer descriptors list
+PCM_OUT_CR_REG    equ  0x1b  ; PCM out Control Register
 PCM_OUT_LVI_REG   equ  0x15	 ; PCM last valid index
-PCM_OUT_SR_REG	  equ  0x18	 ; PCM out Status register
+PCM_OUT_SR_REG    equ  0x18  ; PCM out Status register
 PCM_OUT_PIV_REG   equ  0x1a	 ; PCM out prefetched index
 PCM_OUT_CIV_REG   equ  0x14      ; PCM out current index
 
 PCM_IN_CR_REG     equ  0x0b      ; PCM in Control Register
-MC_IN_CR_REG	  equ  0x2b	 ; MIC in Control Register
+MC_IN_CR_REG      equ  0x2b  ; MIC in Control Register
 RR		  equ  BIT1	 ; reset registers.  Nukes all regs
 
 CODEC_MASTER_VOL_REG            equ     0x02
@@ -65,24 +65,24 @@ CODEC_PCM_SURND_DACRATE_REG	equ	2eh	; surround sound sample rate
 CODEC_PCM_LFE_DACRATE_REG	equ	30h	; LFE sample rate
 
 
-GLOB_CTRL      equ  0x2C        ;   Global Control
-CTRL_STAT       equ  0x30        ;   Global Status
-CTRL_CAS	equ  0x34	 ;   Codec Access Semiphore
+GLOB_CTRL         equ  0x2C        ;   Global Control
+CTRL_STAT         equ  0x30        ;   Global Status
+CTRL_CAS          equ  0x34        ;   Codec Access Semiphore
 
-CAS_FLAG       equ  0x01	;   Codec Access Semiphore Bit
+CAS_FLAG          equ  0x01        ;   Codec Access Semiphore Bit
 
-CTRL_ST_CREADY	equ  BIT8+BIT9+BIT28 ;   Primary Codec Ready
+CTRL_ST_CREADY    equ  BIT8+BIT9+BIT28 ;   Primary Codec Ready
 
-CTRL_ST_RCS	equ  0x00008000  ;   Read Completion Status
+CTRL_ST_RCS       equ  0x00008000  ;   Read Completion Status
 
-CTRL_CNT_CRIE	equ  BIT4+BIT5+BIT6  ;   Codecs Resume Interrupt Enable
-CTRL_CNT_AC_OFF equ  0x00000008  ;   ACLINK Off
-CTRL_CNT_WARM	equ  0x00000004  ;   AC97 Warm Reset
-CTRL_CNT_COLD	equ  0x00000002  ;   AC97 Cold Reset
-CTRL_CNT_GIE	equ  0x00000001  ;   GPI Interrupt Enable
+CTRL_CNT_CRIE     equ  BIT4+BIT5+BIT6  ;   Codecs Resume Interrupt Enable
+CTRL_CNT_AC_OFF   equ  0x00000008  ;   ACLINK Off
+CTRL_CNT_WARM     equ  0x00000004  ;   AC97 Warm Reset
+CTRL_CNT_COLD     equ  0x00000002  ;   AC97 Cold Reset
+CTRL_CNT_GIE      equ  0x00000001  ;   GPI Interrupt Enable
 
 CODEC_REG_POWERDOWN   equ 0x26
-CODEC_REG_ST	      equ 0x26
+CODEC_REG_ST          equ 0x26
 
 
 DEV_PLAY              equ  1
@@ -217,24 +217,24 @@ struc CODEC		   ;Audio Chip base class
 }
 
 struc CTRL_INFO
-{   .pci_cmd	    dd	?
-    .irq            dd  ?
-    .glob_cntrl     dd  ?
-    .glob_sta       dd  ?
-    .codec_io_base  dd	?
-    .ctrl_io_base   dd	?
-    .codec_mem_base dd	?
-    .ctrl_mem_base  dd	?
-    .codec_id       dd  ?
+{   .pci_cmd          dd ?
+    .irq              dd ?
+    .glob_cntrl       dd ?
+    .glob_sta         dd ?
+    .codec_io_base    dd ?
+    .ctrl_io_base     dd ?
+    .codec_mem_base   dd ?
+    .ctrl_mem_base    dd ?
+    .codec_id         dd ?
 }
 
 struc IOCTL
-{  .handle           dd ?
-   .io_code          dd ?
-   .input            dd ?
-   .inp_size         dd ?
-   .output           dd ?
-   .out_size         dd ?
+{  .handle            dd ?
+   .io_code           dd ?
+   .input             dd ?
+   .inp_size          dd ?
+   .output            dd ?
+   .out_size          dd ?
 }
 
 virtual at 0
@@ -243,9 +243,9 @@ end virtual
 
 EVENT_NOTIFY	      equ 0x00000200
 
-OS_BASE 	      equ 0;  0x80400000
-new_app_base	      equ 0x60400000;   0x01000000
-PROC_BASE	      equ OS_BASE+0x0080000
+OS_BASE            equ 0;  0x80400000
+PROC_BASE          equ OS_BASE+0x0080000
+new_app_base       equ 0x80000000
 
 public START
 public service_proc
@@ -361,16 +361,15 @@ proc service_proc stdcall, ioctl:dword
 @@:
            cmp eax, DEV_SET_MASTERVOL
            jne @F
-           mov ebx, [edi+input]
-           stdcall set_master_vol, [ebx]
+           mov eax, [edi+input]
+           mov eax, [eax]
+           call set_master_vol      ;eax= vol
            ret
 @@:
            cmp eax, DEV_GET_MASTERVOL
            jne @F
            mov ebx, [edi+output]
-           test ebx, ebx
-           jz .fail
-
+           add ebx, new_app_base
            stdcall get_master_vol, ebx
            ret
 @@:
@@ -381,7 +380,7 @@ proc service_proc stdcall, ioctl:dword
            ret
 @@:
 .fail:
-           xor eax, eax
+           or eax, -1
            ret
 endp
 
@@ -401,7 +400,7 @@ proc ac97_irq
 ;     end if
 
            mov edx, PCM_OUT_CR_REG
-           mov al, 0x14
+           mov al, 0x10
            call [ctrl.ctrl_write8]
 
            mov ax, 0x1c
@@ -424,11 +423,11 @@ proc ac97_irq
            call [ctrl.ctrl_write8]
 
            mov edx, PCM_OUT_CR_REG
-           mov ax, 0x1D
+           mov ax, 0x11
            call [ctrl.ctrl_write8]
 
            mov eax, [civ_val]
-           add eax, 2
+           add eax, 1
            and eax, 31
            mov ebx, dword [buff_list+eax*4]
 
@@ -441,7 +440,7 @@ proc ac97_irq
 
 .skip:
            mov edx, PCM_OUT_CR_REG
-           mov ax, 0x1D
+           mov ax, 0x11
            call [ctrl.ctrl_write8]
            ret
 endp
@@ -455,6 +454,7 @@ proc create_primary_buff
            mov edi, eax
            mov ecx, 0x10000/4
            xor eax, eax
+           cld
            rep stosd
 
            mov eax, [ctrl.buffer]
@@ -1132,7 +1132,7 @@ align 4
 devices dd (CTRL_SIS  shl 16)+VID_SIS,msg_AC, set_SIS
         dd 0
 
-version      dd 0x00030003
+version      dd 0x00040004
 
 msg_AC       db '7012 AC97 controller',13,10, 0
 msg_SIS      db 'Silicon Integrated Systems',13,10, 0

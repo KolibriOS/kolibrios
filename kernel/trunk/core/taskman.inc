@@ -386,23 +386,17 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
            mov esi, sys_pgdir
            mov edi, [tmp_task_pdir]
-           mov ecx, 384
+           mov ecx, (page_tabs shr 20)/4
            cld
-           rep movsd
-
-           mov ecx, 384
-           xor eax, eax
-           cld
-           rep stosd
-
-           mov ecx, 256
-           mov esi, sys_pgdir+0xc00
            rep movsd
 
            mov eax, [dir_addr]
            or eax, PG_SW
-           mov ebx, [tmp_task_pdir]
-           mov [ebx+0x600], eax
+           stosd                 ; [(page_tabs shr 20)]= eax
+
+           mov ecx, 0x800/4
+           xor eax, eax
+           rep stosd
 
            mov eax, [dir_addr]
            call set_cr3
@@ -555,8 +549,8 @@ proc destroy_app_space stdcall, pg_dir:dword
            and eax, not 0xFFF
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
            mov esi, [tmp_task_pdir]
-           add esi, 0x604
-           mov edi, 383
+           add esi, 0x800
+           mov edi, 0x800/4
 .destroy:
            mov eax, [esi]
            test eax, 1

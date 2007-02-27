@@ -36,41 +36,95 @@ init_fpu:
            fnsave [fpu_data]
            ret
 
+; param
+;  eax= 512 bytes memory area
+
 align 4
-proc fpu_save
+fpu_save:
+           push ecx
+           push esi
+           push edi
+
+           pushfd
+           cli
+
            clts
-           mov ebx, [fpu_owner]
-           shl ebx, 8
-           mov eax, [ebx+PROC_BASE+0x10]
-           mov ebx, [CURRENT_TASK]
-           mov [fpu_owner], ebx
+           mov edi, eax
+
+           mov ecx, [fpu_owner]
+           mov eax, [CURRENT_TASK]
+           cmp ecx, eax
+           jne .save
+.copy:
+           shl eax, 8
+           mov esi, [eax+PROC_BASE+APPDATA.fpu_state]
+           mov ecx, 512/4
+           cld
+           rep movsd
+           fninit
+
+           popfd
+           pop edi
+           pop esi
+           pop ecx
+           ret
+.save:
+           mov [fpu_owner], eax
+
+           shl ecx, 8
+           mov ecx, [ecx+PROC_BASE+APPDATA.fpu_state]
 
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
-           fxsave [eax]
-           fninit            ;re-init fpu
-           ret
+           fxsave [ecx]
+           jmp .copy
 .no_SSE:
-           fnsave [eax]
-           ret
-endp
+           fnsave [ecx]
+           jmp .copy
 
 align 4
-proc fpu_restore
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           mov eax, [ebx+PROC_BASE+0x10]
+fpu_restore:
+           push ecx
+           push esi
+
+           mov esi, eax
+
+           pushfd
+           cli
+
+           mov ecx, [fpu_owner]
+           mov eax, [CURRENT_TASK]
+           cmp ecx, eax
+           jne .copy
+
+           clts
+
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
-           fxrstor [eax]
+           fxrstor [esi]
+           popfd
+           pop esi
+           pop ecx
            ret
 .no_SSE:
            fnclex               ;fix possible problems
-           frstor [eax]
+           frstor [esi]
+           popfd
+           pop esi
+           pop ecx
            ret
-endp
+.copy:
+           shl eax, 8
+           mov edi, [eax+PROC_BASE+APPDATA.fpu_state]
+           mov ecx, 512/4
+           cld
+           rep movsd
+           popfd
+           pop esi
+           pop ecx
+           ret
 
 align 4
 e7:                        ;#NM exception handler

@@ -51,38 +51,38 @@ BIT29 EQU 0x20000000
 BIT30 EQU 0x40000000
 BIT31 EQU 0x80000000
 
-VID_INTEL	  equ 0x8086
-VID_NVIDIA        equ 0x10DE
+VID_INTEL        equ 0x8086
+VID_NVIDIA       equ 0x10DE
 
-CTRL_ICH	  equ 0x2415
-CTRL_ICH0	  equ 0x2425
-CTRL_ICH2	  equ 0x2435
-CTRL_ICH3	  equ 0x2445
-CTRL_ICH4	  equ 0x24C5
-CTRL_ICH5	  equ 0x24D5
-CTRL_ICH6	  equ 0x266E
-CTRL_ICH7	  equ 0x27DE
+CTRL_ICH         equ 0x2415
+CTRL_ICH0        equ 0x2425
+CTRL_ICH2        equ 0x2435
+CTRL_ICH3        equ 0x2445
+CTRL_ICH4        equ 0x24C5
+CTRL_ICH5        equ 0x24D5
+CTRL_ICH6        equ 0x266E
+CTRL_ICH7        equ 0x27DE
 
-CTRL_NFORCE       equ 0x01B1
-CTRL_NFORCE2      equ 0x006A
-CTRL_NFORCE3      equ 0x00DA
-CTRL_MCP04        equ 0x003A
-CTRL_CK804        equ 0x0059
-CTRL_CK8          equ 0x008A
-CTRL_CK8S         equ 0x00EA
-CTRL_MCP51        equ 0x026B
+CTRL_NFORCE      equ 0x01B1
+CTRL_NFORCE2     equ 0x006A
+CTRL_NFORCE3     equ 0x00DA
+CTRL_MCP04       equ 0x003A
+CTRL_CK804       equ 0x0059
+CTRL_CK8         equ 0x008A
+CTRL_CK8S        equ 0x00EA
+CTRL_MCP51       equ 0x026B
 
 
-PCM_OUT_BDL	  equ  0x10	 ; PCM out buffer descriptors list
+PCM_OUT_BDL      equ  0x10  ; PCM out buffer descriptors list
 PCM_OUT_CR_REG	  equ  0x1b	 ; PCM out Control Register
-PCM_OUT_LVI_REG   equ  0x15	 ; PCM last valid index
+PCM_OUT_LVI_REG  equ  0x15  ; PCM last valid index
 PCM_OUT_SR_REG	  equ  0x16	 ; PCM out Status register
-PCM_OUT_PIV_REG   equ  0x1a
-PCM_OUT_CIV_REG   equ  0x14	 ; PCM out current index
+PCM_OUT_PIV_REG  equ  0x1a
+PCM_OUT_CIV_REG  equ  0x14  ; PCM out current index
 
-PCM_IN_CR_REG	  equ  0x0b	 ; PCM in Control Register
-MC_IN_CR_REG	  equ  0x2b	 ; MIC in Control Register
-RR		  equ  BIT1	 ; reset registers.  Nukes all regs
+PCM_IN_CR_REG    equ  0x0b  ; PCM in Control Register
+MC_IN_CR_REG     equ  0x2b  ; MIC in Control Register
+RR equ  BIT1  ; reset registers.  Nukes all regs
 
 CODEC_MASTER_VOL_REG		equ	0x02
 CODEC_AUX_VOL			equ	0x04	;
@@ -93,21 +93,21 @@ CODEC_PCM_FRONT_DACRATE_REG	equ	2ch	; PCM out sample rate
 CODEC_PCM_SURND_DACRATE_REG	equ	2eh	; surround sound sample rate
 CODEC_PCM_LFE_DACRATE_REG	equ	30h	; LFE sample rate
 
-GLOB_CTRL      equ  0x2C	;   Global Control
-CTRL_STAT	equ  0x30	 ;   Global Status
-CTRL_CAS	equ  0x34	 ;   Codec Access Semiphore
+GLOB_CTRL        equ  0x2C ;   Global Control
+CTRL_STAT        equ  0x30  ;   Global Status
+CTRL_CAS         equ  0x34  ;   Codec Access Semiphore
 
-CAS_FLAG	equ  0x01	 ;   Codec Access Semiphore Bit
+CAS_FLAG         equ  0x01  ;   Codec Access Semiphore Bit
 
-CTRL_ST_CREADY	equ  BIT8+BIT9+BIT28 ;   Primary Codec Ready
+CTRL_ST_CREADY   equ  BIT8+BIT9+BIT28 ;   Primary Codec Ready
 
-CTRL_ST_RCS	equ  0x00008000  ;   Read Completion Status
+CTRL_ST_RCS      equ  0x00008000  ;   Read Completion Status
 
-CTRL_CNT_CRIE	equ  BIT4+BIT5+BIT6  ;   Codecs Resume Interrupt Enable
-CTRL_CNT_AC_OFF equ  0x00000008  ;   ACLINK Off
-CTRL_CNT_WARM	equ  0x00000004  ;   AC97 Warm Reset
-CTRL_CNT_COLD	equ  0x00000002  ;   AC97 Cold Reset
-CTRL_CNT_GIE	equ  0x00000001  ;   GPI Interrupt Enable
+CTRL_CNT_CRIE    equ  BIT4+BIT5+BIT6  ;   Codecs Resume Interrupt Enable
+CTRL_CNT_AC_OFF  equ  0x00000008  ;   ACLINK Off
+CTRL_CNT_WARM    equ  0x00000004  ;   AC97 Warm Reset
+CTRL_CNT_COLD    equ  0x00000002  ;   AC97 Cold Reset
+CTRL_CNT_GIE     equ  0x00000001  ;   GPI Interrupt Enable
 
 CODEC_REG_POWERDOWN   equ 0x26
 CODEC_REG_ST          equ 0x26
@@ -271,8 +271,8 @@ end virtual
 EVENT_NOTIFY    equ 0x00000200
 
 OS_BASE         equ 0;
-new_app_base    equ 0x60400000
-PROC_BASE	      equ OS_BASE+0x0080000
+PROC_BASE	equ OS_BASE+0x0080000
+new_app_base equ 0x80000000
 
 public START
 public service_proc
@@ -405,27 +405,26 @@ proc service_proc stdcall, ioctl:dword
 @@:
            cmp eax, DEV_SET_MASTERVOL
            jne @F
-           mov ebx, [edi+input]
-           stdcall set_master_vol, [ebx]
+           mov eax, [edi+input]
+           mov eax, [eax]
+           call set_master_vol      ;eax= vol
            ret
 @@:
            cmp eax, DEV_GET_MASTERVOL
            jne @F
            mov ebx, [edi+output]
-           test ebx, ebx
-           jz .fail
-
+           add ebx, new_app_base
            stdcall get_master_vol, ebx
            ret
-@@:
-           cmp eax, DEV_GET_INFO
-           jne @F
-           mov ebx, [edi+output]
-           stdcall get_dev_info, ebx
-           ret
+;@@:
+;           cmp eax, DEV_GET_INFO
+;           jne @F
+;           mov ebx, [edi+output]
+;           stdcall get_dev_info, ebx
+;           ret
 @@:
 .fail:
-           xor eax, eax
+           or eax, -1
            ret
 endp
 
@@ -763,8 +762,8 @@ proc set_ICH
            ret
 endp
 
-PG_SW                equ 0x003
-PG_NOCACHE           equ 0x018
+PG_SW            equ 0x003
+PG_NOCACHE       equ 0x018
 
 align 4
 proc set_ICH4
@@ -1004,8 +1003,7 @@ proc cold_reset
 endp
 
 align 4
-proc play
-
+play:
            mov eax, 16
            mov [ctrl.lvi_reg], eax
            mov edx, PCM_OUT_LVI_REG
@@ -1014,11 +1012,11 @@ proc play
            mov edx, PCM_OUT_CR_REG
            mov ax, 0x1D
            call [ctrl.ctrl_write8]
+           xor eax, eax
            ret
-endp
 
 align 4
-proc stop
+stop:
            mov edx, PCM_OUT_CR_REG
            mov ax, 0x0
            call [ctrl.ctrl_write8]
@@ -1026,8 +1024,8 @@ proc stop
            mov ax, 0x1c
            mov edx, PCM_OUT_SR_REG
            call [ctrl.ctrl_write16]
+           xor eax, eax
            ret
-endp
 
 align 4
 proc get_dev_info stdcall, p_info:dword
@@ -1334,9 +1332,9 @@ include "codec.inc"
 
 align 4
 devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
-	dd (CTRL_ICH0 shl 16)+VID_INTEL,msg_ICH0,set_ICH
-	dd (CTRL_ICH2 shl 16)+VID_INTEL,msg_ICH2,set_ICH
-	dd (CTRL_ICH3 shl 16)+VID_INTEL,msg_ICH3,set_ICH
+        dd (CTRL_ICH0 shl 16)+VID_INTEL,msg_ICH0,set_ICH
+        dd (CTRL_ICH2 shl 16)+VID_INTEL,msg_ICH2,set_ICH
+        dd (CTRL_ICH3 shl 16)+VID_INTEL,msg_ICH3,set_ICH
         dd (CTRL_ICH4 shl 16)+VID_INTEL,msg_ICH4,set_ICH4
         dd (CTRL_ICH5 shl 16)+VID_INTEL,msg_ICH5,set_ICH4
         dd (CTRL_ICH6 shl 16)+VID_INTEL,msg_ICH6,set_ICH4
@@ -1353,7 +1351,7 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
 
         dd 0    ;terminator
 
-version      dd 0x00030003
+version      dd 0x00040004
 
 msg_ICH      db 'Intel ICH',  13,10, 0
 msg_ICH0     db 'Intel ICH0', 13,10, 0

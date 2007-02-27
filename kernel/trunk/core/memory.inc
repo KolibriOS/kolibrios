@@ -106,7 +106,7 @@ proc init_mem
            dec ecx
            jnz .map_kernel_tabs
 
-           mov dword [sys_pgdir+0x600], sys_pgdir+PG_SW
+           mov dword [sys_pgdir+(page_tabs shr 20)], sys_pgdir+PG_SW
            ret
 endp
 
@@ -365,7 +365,7 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
            mov eax, [phis_addr]
            and eax, not 0xFFF
            or eax, PG_UW          ;+PG_NOCACHE
-           mov dword [current_pgdir+ebx*4], eax
+           mov dword [master_tab+ebx*4], eax
            mov eax, [lin_addr]
            shr eax, 10
            add eax, page_tabs
@@ -376,6 +376,10 @@ endp
 
 align 4
 proc init_LFB
+           locals
+             pg_count dd ?
+           endl
+
            cmp dword [LFBAddress], -1
            jne @f
            mov [0x2f0000+0x901c],byte 2
@@ -388,18 +392,9 @@ proc init_LFB
            mov [0x2f0000+0x901c],byte 2
            ret
 @@:
-           call map_LFB
-           ret
-endp
-
-align 4
-proc map_LFB
-           locals
-             pg_count dd ?
-           endl
-
-           mov edi, [LFBSize]
+           mov edx, LFB_BASE
            mov esi, [LFBAddress]
+           mov edi, [LFBSize]
            mov dword [exp_lfb+4], esi
 
            shr edi, 12
@@ -408,13 +403,12 @@ proc map_LFB
 
            bt [cpu_caps], CAPS_PSE
            jnc .map_page_tables
-           mov ebx, esi
            or esi, PG_LARGE+PG_UW
-           shr ebx, 20
-           mov ecx, ebx
+           shr edx, 20
+           mov ecx, edx
 @@:
-           mov [sys_pgdir+ebx], esi
-           add ebx, 4
+           mov [sys_pgdir+edx], esi
+           add edx, 4
            add esi, 0x00400000
            dec edi
            jnz @B
@@ -423,6 +417,7 @@ proc map_LFB
            jnc @F
            or dword [sys_pgdir+ecx], PG_GLOBAL
 @@:
+           mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
            mov cr3, eax
            ret
@@ -431,31 +426,19 @@ proc map_LFB
 
 @@:
            call alloc_page
-           stdcall map_page_table, esi, eax
+           stdcall map_page_table, edx, eax
            add esi, 0x00400000
            dec edi
            jnz @B
 
            mov eax, [LFBAddress]
-           mov esi, eax
-           shr esi, 10
-           add esi, page_tabs
+           mov edi, page_tabs + (LFB_BASE shr 10)
            or eax, PG_UW
            mov ecx, [pg_count]
-           shr ecx, 2
-.map:
-           mov [esi], eax
-           add eax, 0x1000
-           mov [esi+4], eax
-           add eax, 0x1000
-           mov [esi+8], eax
-           add eax, 0x1000
-           mov [esi+12], eax
-           add eax, 0x1000
-           add esi, 16
-           sub ecx, 1
-           jnz .map
+           cld
+           rep stosd
 
+           mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
            mov cr3, eax
 
@@ -488,10 +471,10 @@ proc new_mem_resize stdcall, new_size:dword
            shr edi, 12
            shr esi, 12
 @@:
-           mov eax, [page_tabs+0x00181000+edi*4]
+           mov eax, [app_page_tabs+edi*4]
            test eax, 1
            jz .next
-           mov dword [page_tabs+0x00181000+edi*4], 2
+           mov dword [app_page_tabs+edi*4], 2
            mov ebx, edi
            shl ebx, 12
            invlpg [ebx+std_application_base_address]
@@ -636,17 +619,17 @@ proc page_fault_handler
 
            mov ebx, [ebp-4]
 
-           cmp ebx, 0xe0000000
-           jae .lfb_addr
-
-           cmp ebx, 0x60400000
+           cmp ebx, 0x80000000
            jae .user_space
 
-           cmp ebx, master_tab+0x1000
+           cmp ebx, app_page_tabs
            jae .alloc
 
-           cmp ebx, 0x60000000
+           cmp ebx, page_tabs
            jae .tab_space
+
+           cmp ebx, 0x7DC00000
+           jae .lfb_addr
 
            jmp .kernel_space
 
@@ -1075,7 +1058,7 @@ new_services:
 @@:
            cmp eax, 17
            ja @f
-           stdcall srv_handlerEx, ebx
+           call srv_handlerEx   ;ebx
            mov [esp+36], eax
            ret
 @@:

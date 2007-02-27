@@ -1,6 +1,6 @@
 ;
-;   This file is part of the Infinity sound AC97 driver.
-;   (C) copyright Serge 2006
+;   This file is part of the Infinity sound driver.
+;   (C) copyright Serge 2006-2007
 ;   email: infinity_sound@mail.ru
 ;
 ;   This program is free software; you can redistribute it and/or modify
@@ -12,6 +12,20 @@
 ;   but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;   GNU General Public License for more details.
+
+
+SOUND_VERSION  equ   0x01000100
+
+PLAY_SYNC      equ   0x80000000
+
+
+PCM_ALL        equ   0
+
+PCM_OUT        equ   0x08000000
+PCM_RING       equ   0x10000000
+PCM_STATIC     equ   0x20000000
+PCM_FLOAT      equ   0x40000000     ;reserved
+PCM_FILTER     equ   0x80000000     ;reserved
 
 PCM_2_16_48    equ   1
 PCM_1_16_48    equ   2
@@ -37,47 +51,53 @@ PCM_1_16_12    equ  14
 PCM_2_16_11    equ  15
 PCM_1_16_11    equ  16
 
-PCM_2_8_48     equ  17
-PCM_1_8_48     equ  18
+PCM_2_16_8     equ  17
+PCM_1_16_8     equ  18
 
-PCM_2_8_44     equ  19
-PCM_1_8_44     equ  20
+PCM_2_8_48     equ  19
+PCM_1_8_48     equ  20
 
-PCM_2_8_32     equ  21
-PCM_1_8_32     equ  22
+PCM_2_8_44     equ  21
+PCM_1_8_44     equ  22
 
-PCM_2_8_24     equ  23
-PCM_1_8_24     equ  24
+PCM_2_8_32     equ  23
+PCM_1_8_32     equ  24
 
-PCM_2_8_22     equ  25
-PCM_1_8_22     equ  26
+PCM_2_8_24     equ  25
+PCM_1_8_24     equ  26
 
-PCM_2_8_16     equ  27
-PCM_1_8_16     equ  28
+PCM_2_8_22     equ  27
+PCM_1_8_22     equ  28
 
-PCM_2_8_12     equ  29
-PCM_1_8_12     equ  30
+PCM_2_8_16     equ  29
+PCM_1_8_16     equ  30
 
-PCM_2_8_11     equ  31
-PCM_1_8_11     equ  32
+PCM_2_8_12     equ  31
+PCM_1_8_12     equ  32
 
-SND_PLAY       equ   1
-SND_STOP       equ   2
+PCM_2_8_11     equ  33
+PCM_1_8_11     equ  34
 
-;  struc SND_DEV
-;{ .magic          dd 0
-;  .size           dd 0
-;  .count          dd 0
-;                  dd 0
-;  .snd_buff       dd 16 dup (0)
-;}
+PCM_2_8_8      equ  35
+PCM_1_8_8      equ  36
 
-;virtual at 0
-; SND_DEV SND_DEV
-;end virtual
-
-;SND_DEV_SIZE     equ 80
-
+SRV_GETVERSION      equ 0
+SND_CREATE_BUFF     equ 1
+SND_DESTROY_BUFF    equ 2
+SND_SETFORMAT       equ 3
+SND_GETFORMAT       equ 4
+SND_RESET           equ 5
+SND_SETPOS          equ 6
+SND_GETPOS          equ 7
+SND_SETBUFF         equ 8
+SND_OUT             equ 9
+SND_PLAY            equ 10
+SND_STOP            equ 11
+SND_SETVOLUME       equ 12
+SND_GETVOLUME       equ 13
+SND_SETPAN          equ 14
+SND_GETPAN          equ 15
+SND_GETBUFFSIZE     equ 16
 
 struc STREAM
 {
@@ -94,32 +114,35 @@ struc STREAM
     .format        dd ?
     .flags         dd ?
 
-    .work_buff     dd ?
-    .work_read     dd ?
-    .work_write    dd ?
-    .work_count    dd ?
-    .work_top      dd ?
+    .out_base      dd ?
+    .out_wp        dd ?
+    .out_rp        dd ?
+    .out_count     dd ?
+    .out_top       dd ?
+
     .r_size        dd ?
-    .r_end         dd ?
     .r_dt          dd ?
     .r_silence     dd ?
-
-    .base          dd ?
-    .limit         dd ?
-    .seg_0         dd ?
-    .lim_0         dd ?
-    .seg_1         dd ?
-    .lim_1         dd ?
-    .curr_seg      dd ?
-
-    .buff_size     dd ?
-    .notify_off1   dd ?
-    .notify_off2   dd ?
-;    .notify_task   dd ?
     .resample      dd ?
+    .l_vol         dd ?
+    .r_vol         dd ?
+    .l_amp         dw ?
+    .r_amp         dw ?
+    .pan           dd ?
+
+    .in_base       dd ?
+    .in_size       dd ?
+    .in_wp         dd ?
+    .in_rp         dd ?
+    .in_count      dd ?
+    .in_free       dd ?
+    .in_top        dd ?
+
+    .notify_event  dd ?
+    .notify_id     dd ?
 }
 
-STREAM_SIZE    equ 31*4
+STREAM_SIZE    equ 34*4
 FD_OFFSET      equ 24
 
 virtual at 0

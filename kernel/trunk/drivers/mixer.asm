@@ -13,93 +13,64 @@
 ;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;   GNU General Public License for more details.
 
+
+align 4
+
+mix_list rq 32
+
 align 4
 proc new_mix stdcall, output:dword
            locals
-             mixCounter  dd ?
-             mixIndex  dd ?
-             streamIndex dd ?
-             inputCount  dd ?
-             main_count  dd ?
-             blockCount  dd ?
-             mix_out  dd ?
+             main_count   rd 1
+             fpu_state    rb 528   ;512+16
            endl
 
+           mov [main_count], 32
            call prepare_playlist
-
            cmp [play_count], 0
-           je .exit
+           je .clear
+
+           lea eax, [fpu_state+16]
+           and eax, -16             ;must be 16b aligned
            call FpuSave
-           mov [main_count], 32;
-.l00:
-           mov [mix_buff_map], 0x0000FFFF;
-           xor eax, eax
-           mov [mixCounter], eax
-           mov [mixIndex],eax
-           mov [streamIndex], eax;
-           mov ebx, [play_count]
-           mov [inputCount], ebx
-.l0:
-           mov ecx, 4
-.l1:
-           mov ebx, [streamIndex]
-           mov esi, [play_list+ebx*4]
-           mov eax, [esi+STREAM.work_read]
-           add [esi+STREAM.work_read], 512
-
-           mov ebx, [mixIndex]
-           mov [mix_input+ebx*4], eax
-           inc [mixCounter]
-           inc [mixIndex]
-           inc [streamIndex]
-           dec [inputCount]
-           jz .m2
-
-           dec ecx
-           jnz .l1
-
-           cmp [mixCounter], 4
-           jnz .m2
-
-           stdcall mix_4_1, [mix_input],[mix_input+4],[mix_input+8],[mix_input+12]
-           sub [mixIndex],4
-           mov ebx, [mixIndex]
-           mov [mix_input+ebx*4], eax
-           inc [mixIndex]
-           mov [mixCounter], 0
-
-           cmp [inputCount], 0
-           jnz .l0
-.m2:
-           cmp [mixIndex], 1
-           jne @f
-           stdcall copy_mem, [output], [mix_input]
-           jmp .m3
-@@:
-           cmp [mixIndex], 2
-           jne @f
-           stdcall mix_2_1, [output], [mix_input], [mix_input+4]
-           jmp .m3
-@@:
-           cmp [mixIndex], 3
-           jne @f
-           stdcall mix_3_1, [output],[mix_input],[mix_input+4],[mix_input+8]
-           jmp .m3
-@@:
-           stdcall final_mix, [output],[mix_input],[mix_input+4],[mix_input+8], [mix_input+12]
-.m3:
-           add [output],512
-
-           dec [main_count]
-           jnz .l00
 
            call update_stream
-           emms
+.mix:
+           lea eax, [mix_list]
+           call do_mix_list
+           test eax, eax
+           je .done
+
+  ;         cmp eax, 1
+  ;         je .copy
+
+           lea ebx, [mix_list]
+           stdcall mix_all, [output], ebx, eax
+@@:
+           add [output], 512
+           dec [main_count]
+           jnz .mix
+.exit:
+           lea eax, [fpu_state+16]
+           and eax, -16
            call FpuRestore
            ret
-.exit:
+.copy:
+           lea eax, [mix_list]
+           stdcall copy_mem, [output], [eax]
+           jmp @B
+.done:
+           mov ecx, [main_count]
+           shl ecx, 7     ;ecx*= 512/4
+
            mov edi, [output]
-           mov ecx, 0x1000
+           xor eax, eax
+           cld
+           rep stosd
+           jmp .exit
+.clear:
+           mov edi, [output]
+           mov ecx, 4096
            xor eax, eax
            cld
            rep stosd
@@ -120,81 +91,62 @@ proc update_stream
            mov edx, [stream_index]
            mov esi, [play_list+edx*4]
 
-           mov eax, [esi+STREAM.work_read]
-           cmp eax, [esi+STREAM.work_top]
+           mov eax, [esi+STREAM.out_rp]
+           cmp eax, [esi+STREAM.out_top]
            jb @f
            sub eax, 64*1024
 @@:
-           mov [esi+STREAM.work_read], eax
+           mov [esi+STREAM.out_rp], eax
 
-           cmp [esi+STREAM.format], PCM_2_16_48
+           cmp word [esi+STREAM.format], PCM_2_16_48
            je .copy
 
-           sub [esi+STREAM.work_count], 16384
+           cmp [esi+STREAM.out_count], 16384
+           ja .skip
 
-           cmp [esi+STREAM.work_count], 32768
-           ja @f
+           test [esi+STREAM.format], PCM_RING
+           jnz .ring
 
            stdcall refill, esi
-@@:
+.skip:
            inc [stream_index]
            dec [play_count]
            jnz .l1
            ret
+
+.ring:
+           stdcall refill_ring, esi
+           jmp .skip
 .copy:
            mov ebx, esi
-           mov edi, [ebx+STREAM.work_write]
-           cmp edi, [ebx+STREAM.work_top]
+           mov edi, [ebx+STREAM.out_wp]
+           cmp edi, [ebx+STREAM.out_top]
            jb @f
 
            sub edi, 64*1024
-           mov [ebx+STREAM.work_write], edi
+           mov [ebx+STREAM.out_wp], edi
 @@:
-           mov esi, [ebx+STREAM.curr_seg]
+           mov esi, [ebx+STREAM.in_rp]
            mov ecx, 16384/4
            cld
            rep movsd
 
-           mov [ebx+STREAM.work_write], edi
+           mov [ebx+STREAM.out_wp], edi
 
-           cmp esi, [ebx+STREAM.lim_0]
+           cmp esi, [ebx+STREAM.in_top]
            jb @f
 
-           mov esi, [ebx+STREAM.seg_0]
-           mov eax, [ebx+STREAM.lim_0]
-           xchg esi, [ebx+STREAM.seg_1]
-           xchg eax, [ebx+STREAM.lim_1]
-           mov [ebx+STREAM.seg_0], esi
-           mov [ebx+STREAM.lim_0], eax
+           sub esi, 0x10000
 @@:
-           mov [ebx+STREAM.curr_seg], esi
+           mov [ebx+STREAM.in_rp], esi
 
-           xor ecx, ecx
-           cmp esi, [ebx+STREAM.notify_off2]
-           je @f
-
-           mov ecx,0x8000
-           cmp esi, [ebx+STREAM.notify_off1]
-           je @f
-
-           inc [stream_index]
-           dec [play_count]
-           jnz .l1
-           ret
-@@:
-           mov [ev_code], 0xFF000001
-           mov [ev_offs], ecx
-           mov eax, [ebx+STREAM.pid]
-
-           lea edx, [ev_code]
-           push ebx
-           stdcall SendEvent, eax, edx
-           pop ebx
            test eax, eax
-           jnz .l_end
-
-           not eax
-           mov [ebx+STREAM.pid], eax      ;-1
+           jz .l_end
+           mov eax, [ebx+STREAM.notify_event]
+           mov ebx, [ebx+STREAM.notify_id]
+           mov ecx, EVENT_WATCHED
+           xor edx, edx
+           call RaiseEvent     ;eax, ebx, ecx, edx
 .l_end:
            inc [stream_index]
            dec [play_count]
@@ -205,72 +157,186 @@ endp
 align 4
 proc refill stdcall, str:dword
            locals
-             ev_code       dd ?  ;EVENT
-             ev_offs       dd ?
-                           rd 4
+             r_size    rd 1
+             event     rd 6
            endl
 
            mov ebx, [str]
-           mov edi, [ebx+STREAM.work_write]
-           cmp edi, [ebx+STREAM.work_top]
+           mov edi, [ebx+STREAM.out_wp]
+           cmp edi, [ebx+STREAM.out_top]
            jb @F
-           sub edi, 64*1024
-           mov [ebx+STREAM.work_write], edi
+           sub edi, 0x10000
+           mov [ebx+STREAM.out_wp], edi
 @@:
-           mov esi, [ebx+STREAM.curr_seg]
-           mov edi, [ebx+STREAM.work_write]
+           mov eax, [ebx+STREAM.in_count]
+           test eax, eax
+           jz .done
+
+           mov ecx, [ebx+STREAM.r_size]
+           cmp eax, ecx
+           jle @F
+
+           mov eax, ecx
+@@:
+           mov ecx, eax
+           cmp word [ebx+STREAM.format], PCM_1_16_8
+           ja @F
+
+           shr eax, 1                   ;two channles
+@@:
+           test [ebx+STREAM.format], 1  ;even formats mono
+           jz @F
+
+           shr eax, 1                   ;eax= samples
+@@:
+           shl eax, 15    ;eax*=32768 =r_end
+
+           mov [r_size], ecx
+
+           mov esi, [ebx+STREAM.in_rp]
+           mov edi, [ebx+STREAM.out_wp]
 
            stdcall [ebx+STREAM.resample], edi, esi, \
-           [ebx+STREAM.r_dt],[ebx+STREAM.r_size],[ebx+STREAM.r_end]
+           [ebx+STREAM.r_dt], ecx, eax
 
            mov ebx, [str]
 
-           add [ebx+STREAM.work_count], eax;
-           add [ebx+STREAM.work_write], eax;
+           add [ebx+STREAM.out_count], eax;
+           add [ebx+STREAM.out_wp], eax;
 
-           mov eax, [ebx+STREAM.curr_seg]
-           add eax, [ebx+STREAM.r_size]
-           cmp eax, [ebx+STREAM.lim_0]
+           mov eax, [ebx+STREAM.in_rp]
+           mov ecx, [r_size]
+           add eax, ecx
+           add [ebx+STREAM.in_free], ecx
+           sub [ebx+STREAM.in_count], ecx
+
+           cmp eax, [ebx+STREAM.in_top]
            jb @f
 
-           mov esi, [ebx+STREAM.seg_0]
-           lea edi, [esi-128]
-           add esi, 0x7F80
-           mov ecx, 128/4
-           cld
-           rep movsd
-
-           mov eax, [ebx+STREAM.seg_0]
-           mov ecx, [ebx+STREAM.lim_0]
-           xchg eax, [ebx+STREAM.seg_1]
-           xchg ecx, [ebx+STREAM.lim_1]
-           mov [ebx+STREAM.seg_0], eax
-           mov [ebx+STREAM.lim_0], ecx
+           sub eax, [ebx+STREAM.in_size]
 @@:
-           mov [ebx+STREAM.curr_seg], eax
+           mov [ebx+STREAM.in_rp], eax
 
-           xor ecx, ecx
-           cmp eax, [ebx+STREAM.notify_off2]
-           je @f
-
-           mov ecx,0x8000
-           cmp eax, [ebx+STREAM.notify_off1]
-           je @f
-           ret
-@@:
-           mov [ev_code], 0xFF000001
-           mov [ev_offs], ecx
-           mov eax, [ebx+STREAM.pid]
-
-           lea edx, [ev_code]
-           push ebx
-           stdcall SendEvent, eax, edx
-           pop ebx
+.done:
+           mov eax, [ebx+STREAM.notify_event]
            test eax, eax
-           jnz @F
-           not eax
-           mov [ebx+STREAM.pid], eax      ;-1
+           jz .exit
+
+           mov ebx, [ebx+STREAM.notify_id]
+           mov ecx, EVENT_WATCHED
+           xor edx, edx
+           call RaiseEvent   ;eax, ebx, ecx, edx
+.exit:
+           ret
+endp
+
+align 4
+proc refill_ring stdcall, str:dword
+           locals
+             event     rd 6
+           endl
+
+           mov ebx, [str]
+           mov edi, [ebx+STREAM.out_wp]
+           cmp edi, [ebx+STREAM.out_top]
+           jb @F
+           sub edi, 0x10000
+           mov [ebx+STREAM.out_wp], edi
 @@:
+           mov ecx, [ebx+STREAM.r_size]
+           mov eax, ecx
+           cmp word [ebx+STREAM.format], PCM_1_16_8
+           ja @F
+
+           shr eax, 1                   ;two channles
+@@:
+           test [ebx+STREAM.format], 1  ;even formats mono
+           jz @F
+
+           shr eax, 1                   ;eax= samples
+@@:
+           shl eax, 15    ;eax*=32768 =r_end
+
+           mov esi, [ebx+STREAM.in_rp]
+           mov edi, [ebx+STREAM.out_wp]
+
+           stdcall [ebx+STREAM.resample], edi, esi, \
+           [ebx+STREAM.r_dt], ecx, eax
+
+           mov ebx, [str]
+
+           add [ebx+STREAM.out_count], eax;
+           add [ebx+STREAM.out_wp], eax;
+
+           mov eax, [ebx+STREAM.in_rp]
+           mov ecx, [ebx+STREAM.r_size]
+           add eax, ecx
+           add [ebx+STREAM.in_free], ecx
+           sub [ebx+STREAM.in_count], ecx
+
+           cmp eax, [ebx+STREAM.in_top]
+           jb @f
+
+           sub eax, [ebx+STREAM.in_size]
+@@:
+           mov [ebx+STREAM.in_rp], eax
+
+           sub eax, [ebx+STREAM.in_base]
+           sub eax, 128
+           lea edx, [event]
+
+           mov dword [edx], RT_INP_EMPTY
+           mov dword [edx+4], 0
+           mov dword [edx+8], ebx
+           mov dword [edx+12], eax
+
+           mov eax, [ebx+STREAM.notify_event]
+           test eax, eax
+           jz .exit
+
+           mov ebx, [ebx+STREAM.notify_id]
+           xor ecx, ecx
+           call RaiseEvent   ;eax, ebx, ecx, edx
+.exit:
+           ret
+endp
+
+align 4
+proc mix_all stdcall, dest:dword, list:dword, count:dword
+
+           mov edi, [dest]
+           mov ebx, 64
+.mix:
+           mov edx, [list]
+           mov ecx, [count]
+
+           mov eax, [edx]
+           movq mm0, [eax]
+           movd mm1, [edx+4]
+           punpckldq mm1,mm1
+           pmulhw mm0, mm1
+           psllw  mm0, 1
+
+.mix_loop:
+           add dword [edx], 8
+           add edx, 8
+           dec ecx
+           jz @F
+
+           mov eax, [edx]
+           movq mm1, [eax]
+           movd mm2, [edx+4]
+           punpckldq mm2,mm2
+           pmulhw mm1, mm2
+           psllw  mm1, 1
+           paddsw mm0, mm1
+           jmp .mix_loop
+@@:
+           movq [edi], mm0
+           add edi, 8
+           dec ebx
+           jnz .mix
+
            ret
 endp
 
@@ -282,14 +348,14 @@ proc resample_1 stdcall, dest:dword,src:dword,\
 ; src  equ esp+12
 ; r_dt equ esp+16
 ; r_size equ esp+20
-;r_end equ esp+24
+; r_end equ esp+24
 
            mov edi, [dest]
            mov edx, [src]
            sub edx, 32*2
            mov eax, 16
 
-align 16
+align 4
 .l1:
            mov ecx, eax
            mov esi, eax
@@ -342,7 +408,7 @@ proc resample_18 stdcall, dest:dword,src:dword,\
 
            mov esi, 16
 
-align 16
+align 4
 .l1:
            mov ecx, esi
            mov eax, esi
@@ -413,7 +479,7 @@ proc resample_2 stdcall, dest:dword,src:dword,\
            mov eax, 16
            emms
 
-align 16
+align 4
 .l1:
            mov ecx, eax
            mov esi, eax
@@ -466,7 +532,7 @@ proc resample_28 stdcall, dest:dword,src:dword,\
            movq mm7,[mm80]
            movq mm6,[mm_mask]
 
-align 16
+align 4
 .l1:
            mov ecx, eax
            mov esi, eax
@@ -840,6 +906,8 @@ proc mix_4_1 stdcall, str0:dword, str1:dword,\
            and eax, eax
            jz .err
 
+           mov [output], eax
+
            mov edi, eax
            mov eax, [str0]
            mov ebx, [str1]
@@ -939,4 +1007,100 @@ proc memcpy
            ret
 endp
 
+if 0
+
+align 4
+proc new_mix stdcall, output:dword
+           locals
+             mixCounter  dd ?
+             mixIndex  dd ?
+             streamIndex dd ?
+             inputCount  dd ?
+             main_count  dd ?
+             blockCount  dd ?
+             mix_out  dd ?
+           endl
+
+           call prepare_playlist
+
+           cmp [play_count], 0
+           je .exit
+           call FpuSave
+           mov [main_count], 32;
+.l00:
+           mov [mix_buff_map], 0x0000FFFF;
+           xor eax, eax
+           mov [mixCounter], eax
+           mov [mixIndex],eax
+           mov [streamIndex], eax;
+           mov ebx, [play_count]
+           mov [inputCount], ebx
+.l0:
+           mov ecx, 4
+.l1:
+           mov ebx, [streamIndex]
+           mov esi, [play_list+ebx*4]
+           mov eax, [esi+STREAM.work_read]
+           add [esi+STREAM.work_read], 512
+
+           mov ebx, [mixIndex]
+           mov [mix_input+ebx*4], eax
+           inc [mixCounter]
+           inc [mixIndex]
+           inc [streamIndex]
+           dec [inputCount]
+           jz .m2
+
+           dec ecx
+           jnz .l1
+
+           cmp [mixCounter], 4
+           jnz .m2
+
+           stdcall mix_4_1, [mix_input],[mix_input+4],[mix_input+8],[mix_input+12]
+           sub [mixIndex],4
+           mov ebx, [mixIndex]
+           mov [mix_input+ebx*4], eax
+           inc [mixIndex]
+           mov [mixCounter], 0
+
+           cmp [inputCount], 0
+           jnz .l0
+.m2:
+           cmp [mixIndex], 1
+           jne @f
+           stdcall copy_mem, [output], [mix_input]
+           jmp .m3
+@@:
+           cmp [mixIndex], 2
+           jne @f
+           stdcall mix_2_1, [output], [mix_input], [mix_input+4]
+           jmp .m3
+@@:
+           cmp [mixIndex], 3
+           jne @f
+           stdcall mix_3_1, [output],[mix_input],[mix_input+4],[mix_input+8]
+           jmp .m3
+@@:
+           stdcall final_mix, [output],[mix_input],[mix_input+4],[mix_input+8], [mix_input+12]
+.m3:
+           add [output],512
+
+           dec [main_count]
+           jnz .l00
+
+           call update_stream
+           emms
+           call FpuRestore
+           ret
+.exit:
+           mov edi, [output]
+           mov ecx, 0x1000
+           xor eax, eax
+           cld
+           rep stosd
+           ret
+endp
+
+end if
 

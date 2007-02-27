@@ -65,9 +65,9 @@ R9800       equ 0x4E49  ;R350
 R9800P      equ 0x4E48  ;R350
 R9800XT     equ 0x4E4A  ;R360
 
-OS_BASE         equ 0;  0x80400000
-new_app_base    equ 0x60400000;   0x01000000
-PROC_BASE       equ OS_BASE+0x0080000
+OS_BASE         equ 0
+new_app_base    equ 0x80000000
+PROC_BASE       equ 0x0080000
 
 PG_SW        equ 0x003
 PG_NOCACHE   equ 0x018
@@ -85,8 +85,8 @@ virtual at 0
   IOCTL IOCTL
 end virtual
 
-;MMIO                  equ 0F9000000h
-RD_RB3D_CNTL          equ 1c3ch
+;MMIO                   equ 0F9000000h
+RD_RB3D_CNTL            equ 1c3ch
 
 RD_MEM_CNTL                equ 0140h
 RD_CRTC_GEN_CNTL           equ 0050h
@@ -232,7 +232,7 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edi+input]
            call video_free
 .fail:
-           xor eax, eax
+           or eax, -1
            ret
 endp
 
@@ -981,7 +981,7 @@ devices dd (R8500   shl 16)+VID_ATI
         dd (R9800XT shl 16)+VID_ATI
         dd 0    ;terminator
 
-version dd 0x00030003
+version dd 0x00040004
 
 sz_ati_srv   db 'HWCURSOR',0
 

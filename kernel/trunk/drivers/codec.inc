@@ -67,7 +67,7 @@ proc setup_codec
         xor eax, eax
         stdcall codec_write, dword CODEC_AUX_VOL
 
-        mov eax, 0x1010
+        mov eax, 0x0B0B
         stdcall codec_write, dword CODEC_MASTER_VOL_REG
 
         mov ax, 0x08
@@ -98,43 +98,40 @@ proc setup_codec
 
 	xor    eax, eax 			  ; exit with error
 	ret
-
 endp
+
+
+; param
+;  eax= volume  -10000 - 0 for both channels
 
 align 4
-proc set_master_vol stdcall, vol:dword
-
-	   mov ebx, 63
-	   mov ecx, 20644
-	   mov eax, [vol]
-	   cmp eax, 90
-	   jna @f
-	   mov eax, 90
+set_master_vol:
+           cmp eax, 0
+           jl @F
+           xor eax, eax
+           jmp .set
 @@:
-	   mul ecx
-	   shr eax, 15
-	   sub ebx, eax
-	   mov ah, bl
-	   mov al, bl
+           cmp eax, -9450
+           jg .set
+           mov eax, -9450     ;clamp into 6 bits
+.set:
+           cdq
+           mov ebx, -150
+           idiv ebx
+           mov ah, al
 	   stdcall codec_write, dword CODEC_MASTER_VOL_REG
+           xor eax, eax
 	   ret
-endp
 
 align 4
 proc get_master_vol stdcall, pvol:dword
 
 	   stdcall codec_read, dword CODEC_MASTER_VOL_REG
 	   and eax, 0x3F
-	   mov ebx, 63
-	   mov ecx, 20644
-
-	   xchg eax, ebx
-	   sub eax, ebx
-	   shl eax, 15
-	   xor edx, edx
-	   div ecx
+           imul eax, -150
            mov ebx, [pvol]
            mov [ebx], eax
+           xor eax, eax
 	   ret
 endp
 
