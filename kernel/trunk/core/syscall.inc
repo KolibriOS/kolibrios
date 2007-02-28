@@ -54,7 +54,7 @@ sysenter_entry:
 	push	eax
 	mov	eax, [ss:CURRENT_TASK]
 	shl	eax, 8
-	mov	eax, [ss:PROC_BASE + eax + APPDATA.pl0_stack]
+        mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
 	lea	esp, [ss:eax + RING0_STACK_SIZE]	; configure ESP
 	mov	eax, [ss:sysenter_stack - 4]		; eax - original eax, from app
 	sti
@@ -99,7 +99,7 @@ syscall_entry:
 	mov	[ss:sysenter_stack - 4], eax
 	mov	eax, [ss:CURRENT_TASK]
 	shl	eax, 8
-	mov	eax, [ss:PROC_BASE + eax + APPDATA.pl0_stack]
+        mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
 	lea	esp, [ss:eax + RING0_STACK_SIZE]	; configure ESP
 	mov	eax, [ss:sysenter_stack - 4]		; eax - original eax, from app
 	sti
@@ -197,7 +197,7 @@ iglobal
       dd undefined_syscall       ; 56-reserved
       dd undefined_syscall       ; 57-reserved
       dd file_system             ; 58-Common file system interface
-      dd undefined_syscall       ; 59-reserved         
+      dd undefined_syscall       ; 59-reserved
       dd sys_IPC                 ; 60-Inter Process Communication
       dd sys_gs                  ; 61-Direct graphics access
       dd sys_pci                 ; 62-PCI functions

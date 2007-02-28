@@ -616,20 +616,20 @@ proc init_heap
 
            mov ebx,[CURRENT_TASK]
            shl ebx,8
-           mov eax, [PROC_BASE+APPDATA.heap_top+ebx]
+           mov eax, [SLOT_BASE+APPDATA.heap_top+ebx]
            test eax, eax
            jz @F
-           sub eax,[PROC_BASE+APPDATA.heap_base+ebx]
+           sub eax,[SLOT_BASE+APPDATA.heap_base+ebx]
            sub eax, 4096
            ret
 @@:
-           mov esi, [PROC_BASE+APPDATA.mem_size+ebx]
+           mov esi, [SLOT_BASE+APPDATA.mem_size+ebx]
            add esi, 4095
            and esi, not 4095
-           mov [PROC_BASE+APPDATA.mem_size+ebx], esi
+           mov [SLOT_BASE+APPDATA.mem_size+ebx], esi
            mov eax, HEAP_TOP
-           mov [PROC_BASE+APPDATA.heap_base+ebx], esi
-           mov [PROC_BASE+APPDATA.heap_top+ebx], eax
+           mov [SLOT_BASE+APPDATA.heap_base+ebx], esi
+           mov [SLOT_BASE+APPDATA.heap_top+ebx], eax
 
            sub eax, esi
            add esi, new_app_base
@@ -653,8 +653,8 @@ proc user_alloc stdcall, alloc_size:dword
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
-           mov esi, dword [ebx+PROC_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [ebx+PROC_BASE+APPDATA.heap_top]; heap_top
+           mov esi, dword [ebx+SLOT_BASE+APPDATA.heap_base]; heap_base
+           mov edi, dword [ebx+SLOT_BASE+APPDATA.heap_top]; heap_top
            add esi, new_app_base
            add edi, new_app_base
 l_0:
@@ -695,7 +695,7 @@ l_0:
         mov     ebx, [alloc_size]
         add     ebx, 0xFFF
         and     ebx, not 0xFFF
-        add     ebx, [PROC_BASE+APPDATA.mem_size+edx]
+        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
         call    update_mem_size
 
            mov eax, esi
@@ -752,9 +752,9 @@ proc user_free stdcall, base:dword
 .not_used:
            mov edx, [CURRENT_TASK]
            shl edx, 8
-           mov esi, dword [edx+PROC_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [edx+PROC_BASE+APPDATA.heap_top]; heap_top
-           sub ebx, [edx+PROC_BASE+APPDATA.mem_size]
+           mov esi, dword [edx+SLOT_BASE+APPDATA.heap_base]; heap_base
+           mov edi, dword [edx+SLOT_BASE+APPDATA.heap_top]; heap_top
+           sub ebx, [edx+SLOT_BASE+APPDATA.mem_size]
            neg ebx
            call update_mem_size
            add esi, new_app_base

@@ -458,10 +458,10 @@ proc new_mem_resize stdcall, new_size:dword
 
            mov edx,[CURRENT_TASK]
            shl edx,8
-           cmp [PROC_BASE+APPDATA.heap_base+edx],0
+           cmp [SLOT_BASE+APPDATA.heap_base+edx],0
            jne .exit
 
-           mov esi, [PROC_BASE+APPDATA.mem_size+edx]
+           mov esi, [SLOT_BASE+APPDATA.mem_size+edx]
            add esi, 4095
            and esi, not 4095
 
@@ -562,10 +562,10 @@ update_mem_size:
 ;     ebx = new memory size
 ; destroys eax,ecx,edx
 
-           mov    [PROC_BASE+APPDATA.mem_size+edx],ebx
+           mov    [SLOT_BASE+APPDATA.mem_size+edx],ebx
 ;search threads and update
 ;application memory size infomation
-           mov    ecx,[PROC_BASE+APPDATA.dir_table+edx]
+           mov    ecx,[SLOT_BASE+APPDATA.dir_table+edx]
            mov    eax,2
 
 .search_threads:
@@ -579,9 +579,9 @@ update_mem_size:
            cmp    word [CURRENT_TASK+edx+TASKDATA.state],9 ;if slot empty?
            jz     .search_threads_next
            shl    edx,3
-           cmp    [PROC_BASE+edx+APPDATA.dir_table],ecx     ;if it is our thread?
+           cmp    [SLOT_BASE+edx+APPDATA.dir_table],ecx     ;if it is our thread?
            jnz    .search_threads_next
-           mov    [PROC_BASE+edx+APPDATA.mem_size],ebx     ;update memory size
+           mov    [SLOT_BASE+edx+APPDATA.mem_size],ebx     ;update memory size
 .search_threads_next:
            inc    eax
            jmp    .search_threads
@@ -838,7 +838,7 @@ proc set_ipc_buff
 
            mov  eax,[CURRENT_TASK]
            shl  eax,8
-           add  eax, PROC_BASE
+           add  eax, SLOT_BASE
            pushf
            cli
            mov  [eax+0xA0],ebx     ;set fields in extended information area
@@ -876,7 +876,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 
            mov [dst_slot], eax
            shl  eax,8
-           mov  edi,[eax+PROC_BASE+0xa0]  ;is ipc area defined?
+           mov  edi,[eax+SLOT_BASE+0xa0]  ;is ipc area defined?
            test edi,edi
            jz   .no_ipc_area
 
@@ -885,10 +885,10 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            and ebx, 0xFFF
            mov [dst_offset], ebx
 
-           mov esi, [eax+PROC_BASE+0xa4]
+           mov esi, [eax+SLOT_BASE+0xa4]
            mov [buf_size], esi
 
-           stdcall map_mem, [ipc_tmp], [PROC_BASE+eax+0xB8],\
+           stdcall map_mem, [ipc_tmp], [SLOT_BASE+eax+0xB8],\
                              edi, esi
 
            mov edi, [dst_offset]
@@ -942,7 +942,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 
            mov  eax, [dst_slot]
            shl eax, 8
-           or   [eax+PROC_BASE+0xA8],dword 0x40
+           or   [eax+SLOT_BASE+0xA8],dword 0x40
            cmp  dword [check_idle_semaphore],20
            jge  .ipc_no_cis
 
@@ -1039,8 +1039,8 @@ new_services:
            ja @f
            mov ecx, [CURRENT_TASK]
            shl ecx, 8
-           mov eax, [ecx+PROC_BASE+APPDATA.fpu_handler]
-           mov [ecx+PROC_BASE+APPDATA.fpu_handler], ebx
+           mov eax, [ecx+SLOT_BASE+APPDATA.fpu_handler]
+           mov [ecx+SLOT_BASE+APPDATA.fpu_handler], ebx
            mov [esp+36], eax
            ret
 @@:
@@ -1066,8 +1066,8 @@ new_services:
            ja @f
            mov ecx, [CURRENT_TASK]
            shl ecx, 8
-           mov eax, [ecx+PROC_BASE+APPDATA.sse_handler]
-           mov [ecx+PROC_BASE+APPDATA.sse_handler], ebx
+           mov eax, [ecx+SLOT_BASE+APPDATA.sse_handler]
+           mov [ecx+SLOT_BASE+APPDATA.sse_handler], ebx
            mov [esp+36], eax
            ret
 @@:

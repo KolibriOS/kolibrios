@@ -258,6 +258,7 @@ B32:
         rep   stosd
 ; CLEAR 0x80000-0x90000
 ;       xor   eax,eax
+
         mov   edi,0x80000
         mov   ecx,(0x90000-0x80000)/4
 ;       cld
@@ -607,33 +608,33 @@ include 'vmodeld.inc'
         call boot_log
 
         mov eax, fpu_data
-        mov  dword [0x80000+APPDATA.fpu_state], eax
-        mov  dword [0x80000+APPDATA.fpu_handler], 0
-        mov  dword [0x80000+APPDATA.sse_handler], 0
+        mov  dword [SLOT_BASE+APPDATA.fpu_state], eax
+        mov  dword [SLOT_BASE+APPDATA.fpu_handler], 0
+        mov  dword [SLOT_BASE+APPDATA.sse_handler], 0
 
         ; name for OS/IDLE process
 
-        mov dword [0x80000+256+APPDATA.app_name],   dword 'OS/I'
-        mov dword [0x80000+256+APPDATA.app_name+4], dword 'DLE '
+        mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
+        mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
         mov edi, [os_stack]
-        mov dword [0x80000+256+APPDATA.pl0_stack], edi
+        mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
         add edi, 0x2000-512
-        mov dword [0x80000+256+APPDATA.fpu_state], edi
+        mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
 
         mov esi, fpu_data
         mov ecx, 512/4
         cld
         rep movsd
 
-        mov dword [0x80000+256+APPDATA.fpu_handler], 0
-        mov dword [0x80000+256+APPDATA.sse_handler], 0
+        mov dword [SLOT_BASE+256+APPDATA.fpu_handler], 0
+        mov dword [SLOT_BASE+256+APPDATA.sse_handler], 0
 
         mov ebx, [def_cursor]
-        mov dword [0x80000+256+APPDATA.cursor], ebx
+        mov dword [SLOT_BASE+256+APPDATA.cursor], ebx
 
-        mov ebx, PROC_BASE+256+APP_OBJ_OFFSET
-        mov  dword [0x80000+256+APPDATA.fd_obj], ebx
-        mov  dword [0x80000+256+APPDATA.bk_obj], ebx
+        mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
+        mov  dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
+        mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
 
         ; task list
         mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
@@ -1328,9 +1329,9 @@ draw_num_text:
 
 ;        mov     edi,[CURRENT_TASK]
 ;        shl     edi,8
-;        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+;        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
 ;        rol     eax,16
-;        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+;        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
 ;        rol     eax,16
 
      mov   edx,eax
@@ -1341,10 +1342,10 @@ draw_num_text:
      push  edx                       ; add window start x & y
      mov   edx,[TASK_BASE]
      mov   ebx,[edx-twdw+WDATA.box.left]
-        add     ebx, [(edx-CURRENT_TASK)*8+0x80000+APPDATA.wnd_clientbox.left]
+     add   ebx, [(edx-CURRENT_TASK)*8+SLOT_BASE+APPDATA.wnd_clientbox.left]
      shl   ebx,16
      add   ebx,[edx-twdw+WDATA.box.top]
-        add     ebx, [(edx-CURRENT_TASK)*8+0x80000+APPDATA.wnd_clientbox.top]
+     add   ebx, [(edx-CURRENT_TASK)*8+SLOT_BASE+APPDATA.wnd_clientbox.top]
      add   eax,ebx
      pop   edx
      mov   ebx,[esp+64+32-12+4]
@@ -1741,9 +1742,9 @@ mswin:
 
            mov  edi,[CURRENT_TASK]
            shl  edi,8
-           sub  ax,word[edi+PROC_BASE+APPDATA.wnd_clientbox.top]
+           sub  ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
            rol  eax,16
-           sub  ax,word[edi+PROC_BASE+APPDATA.wnd_clientbox.left]
+           sub  ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
            rol  eax,16
            mov  [esp+36],eax
            ret
@@ -2000,15 +2001,15 @@ sysfn_activate:         ; 18.3 = ACTIVATE WINDOW
 
      mov   [window_minimize], 2   ; restore window if minimized
 
-     movzx esi, word [0xC000 + ebx*2]
+     movzx esi, word [WIN_STACK + ebx*2]
      cmp   esi, [TASK_COUNT]
      je    .nowindowactivate ; already active
 
      mov   edi, ebx
      shl   edi, 5
      add   edi, window_data
-     movzx esi, word [0xC000 + ebx * 2]
-     lea   esi, [0xC400 + esi * 2]
+     movzx esi, word [WIN_STACK + ebx * 2]
+     lea   esi, [WIN_POS + esi * 2]
      call  waredraw
 .nowindowactivate:
      ret
@@ -2030,7 +2031,7 @@ sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
 
 sysfn_getactive:        ; 18.7 = get active window
      mov  eax, [TASK_COUNT]
-   movzx  eax, word [0xC400 + eax*2]
+   movzx  eax, word [WIN_POS + eax*2]
      mov  [esp+36],eax
      ret
 
@@ -2348,7 +2349,7 @@ sys_getkey:
     mov   [esp+36],dword 1
 ; test main buffer
     mov   ebx, [CURRENT_TASK]                          ; TOP OF WINDOW STACK
-    movzx ecx,word [0xC000 + ebx * 2]
+    movzx ecx,word [WIN_STACK + ebx * 2]
     mov   edx,[TASK_COUNT]
     cmp   ecx,edx
     jne   .finish
@@ -2397,7 +2398,7 @@ sys_getbutton:
 
     mov   ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
     mov   [esp+36],dword 1
-    movzx ecx, word [0xC000 + ebx * 2]
+    movzx ecx, word [WIN_STACK + ebx * 2]
     mov   edx, [TASK_COUNT] ; less than 256 processes
     cmp   ecx,edx
     jne   .exit
@@ -2453,14 +2454,14 @@ sys_cpuusage:
     mov  ecx,[ebx]
     mov  [eax],ecx
     pop  ebx
-    mov  cx, [0xC000 + ebx * 2]
+    mov  cx, [WIN_STACK + ebx * 2]
     mov  [eax+4],cx
-    mov  cx, [0xC400 + ebx * 2]
+    mov  cx, [WIN_POS + ebx * 2]
     mov  [eax+6],cx
     push eax
     mov  eax,ebx
     shl  eax,8
-    add  eax,0x80000+APPDATA.app_name
+    add  eax,SLOT_BASE+APPDATA.app_name
     pop  ebx
     add  ebx,10
     mov  ecx,11
@@ -2474,7 +2475,7 @@ sys_cpuusage:
     cmp    ecx,1
     je     os_mem
     shl    ecx,8
-    mov    edx,[0x80000+ecx+APPDATA.mem_size] ;0x8c
+    mov    edx,[SLOT_BASE+ecx+APPDATA.mem_size] ;0x8c
     mov    eax,std_application_base_address
     ; eax run base -> edx used memory
   os_mem:
@@ -2513,7 +2514,7 @@ sys_cpuusage:
 
     mov    esi,[esp]
     shl    esi,8
-    add    esi,0x80000+APPDATA.wnd_clientbox
+    add    esi,SLOT_BASE+APPDATA.wnd_clientbox
     lea    edi,[ebx+44]
     mov    ecx,4
     rep    movsd
@@ -2732,7 +2733,7 @@ sys_drawwindow:
     ; parameter for drawwindow_IV
     push  0
     mov   edi, [TASK_COUNT]
-    movzx edi, word [0xC400 + edi*2]
+    movzx edi, word [WIN_POS + edi*2]
     cmp   edi, [CURRENT_TASK]
     jne   @f
     inc   dword [esp]
@@ -2758,7 +2759,7 @@ draw_window_caption:
 
         xor     eax,eax
         mov     edx,[TASK_COUNT]
-        movzx   edx,word[0xC400+edx*2]
+        movzx   edx,word[WIN_POS+edx*2]
         cmp     edx,[CURRENT_TASK]
         jne     @f
         inc     eax
@@ -2794,7 +2795,7 @@ draw_window_caption:
         shl     edi,5
         test    [edi+window_data+WDATA.fl_wstyle],WSTYLE_HASCAPTION
         jz      @f
-        mov     ecx,[edi*8+0x80000+APPDATA.wnd_caption]
+        mov     ecx,[edi*8+SLOT_BASE+APPDATA.wnd_caption]
         or      ecx,ecx
         jz      @f
         add     ecx,[edi+twdw+TASKDATA.mem_start]
@@ -2880,33 +2881,33 @@ set_window_clientbox:
         movzx   eax,[ecx+WDATA.fl_wstyle]
         and     eax,0x0F
         mov     eax,[eax*8+window_topleft+0]
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.left],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.left],eax
         shl     eax,1
         neg     eax
         add     eax,[ecx+WDATA.box.width]
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.width],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.width],eax
 
         movzx   eax,[ecx+WDATA.fl_wstyle]
         and     eax,0x0F
         push    [eax*8+window_topleft+0]
         mov     eax,[eax*8+window_topleft+4]
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.top],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.top],eax
         neg     eax
         sub     eax,[esp]
         add     eax,[ecx+WDATA.box.height]
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.height],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.height],eax
         add     esp,4
 
         pop     edi ecx eax
         ret
     @@:
         xor     eax,eax
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.left],eax
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.top],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.left],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.top],eax
         mov     eax,[ecx+WDATA.box.width]
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.width],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.width],eax
         mov     eax,[ecx+WDATA.box.height]
-        mov     [edi+0x80000+APPDATA.wnd_clientbox.height],eax
+        mov     [edi+SLOT_BASE+APPDATA.wnd_clientbox.height],eax
 
         pop     edi ecx eax
         ret
@@ -2950,7 +2951,7 @@ sys_set_window:
 
     sub   edi,window_data
     shl   edi,3
-    add   edi,0x80000
+    add   edi,SLOT_BASE
 
         and     cl,0x0F
         mov     [edi+APPDATA.wnd_caption],0
@@ -3004,12 +3005,12 @@ syscall_windowsettings:
         ;   caption still can become over bounds
 ; diamond, 31.10.2006: check removed because with new memory manager
 ; there can be valid data after APPDATA.mem_size bound
-;        mov     ecx,[edi*8+0x80000+APPDATA.mem_size]
+;        mov     ecx,[edi*8+SLOT_BASE+APPDATA.mem_size]
 ;        add     ecx,255 ; max caption length
 ;        cmp     ebx,ecx
 ;        ja      .exit_fail
 
-        mov     [edi*8+0x80000+APPDATA.wnd_caption],ebx
+        mov     [edi*8+SLOT_BASE+APPDATA.wnd_caption],ebx
         or      [edi+window_data+WDATA.fl_wstyle],WSTYLE_HASCAPTION
 
         call    draw_window_caption
@@ -3072,7 +3073,7 @@ sys_window_move:
         sub   edi,window_data
         shr   edi,5
         shl   edi,8
-        add   edi, 0x80000 + APPDATA.saved_box
+        add   edi, SLOT_BASE + APPDATA.saved_box
         mov   ecx,4
         cld
         rep   movsd
@@ -3302,7 +3303,7 @@ checkmisc:
     mov   ecx, [TASK_COUNT]
    set_mouse_event:
     add   edi, 256
-    or    [edi+0x80000+APPDATA.event_mask], dword 00100000b
+    or    [edi+SLOT_BASE+APPDATA.event_mask], dword 00100000b
     loop  set_mouse_event
   mouse_not_active:
 
@@ -4003,9 +4004,9 @@ sys_putimage:
  @@:
         mov     edi,[CURRENT_TASK]
         shl     edi,8
-        add     dx,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        add     dx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         rol     edx,16
-        add     dx,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        add     dx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
         rol     edx,16
   .forced:
         push    ebp esi 0
@@ -4045,9 +4046,9 @@ sys_putimage_palette:
 ; ebp = row delta
         mov     eax, [CURRENT_TASK]
         shl     eax, 8
-        add     dx, word [eax+0x80000+APPDATA.wnd_clientbox.top]
+        add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.top]
         rol     edx, 16
-        add     dx, word [eax+0x80000+APPDATA.wnd_clientbox.left]
+        add     dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
         rol     edx, 16
 .forced:
         push    ebp esi ebp
@@ -4106,10 +4107,10 @@ putimage_get32bpp:
 __sys_drawbar:
         mov     esi,[CURRENT_TASK]
         shl     esi,8
-        add     eax,[esi+0x80000+APPDATA.wnd_clientbox.left]
-        add     ecx,[esi+0x80000+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+0x80000+APPDATA.wnd_clientbox.top]
-        add     edx,[esi+0x80000+APPDATA.wnd_clientbox.top]
+        add     eax,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     ecx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     edx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
   .forced:
     inc   [mouse_pause]
 ;        call    [disable_mouse]
@@ -4480,7 +4481,7 @@ sys_process_def:
      jne   no_set_keyboard_setup
 
      shl   edi,8
-     mov   [edi+0x80000 + APPDATA.keyboard_mode],bl
+     mov   [edi+SLOT_BASE + APPDATA.keyboard_mode],bl
 
      ret
 
@@ -4490,7 +4491,7 @@ sys_process_def:
      jne   no_get_keyboard_setup
 
      shl   edi,8
-     movzx eax, byte [0x80000+edi + APPDATA.keyboard_mode]
+     movzx eax, byte [SLOT_BASE+edi + APPDATA.keyboard_mode]
 
      mov   [esp+36],eax
 
@@ -4640,8 +4641,8 @@ syscall_setpixel:                       ; SetPixel
      add   ebx,[edx-twdw+WDATA.box.top]
         mov     edi,[CURRENT_TASK]
         shl     edi,8
-        add     eax,[edi+0x80000+APPDATA.wnd_clientbox.left]
-        add     ebx,[edi+0x80000+APPDATA.wnd_clientbox.top]
+        add     eax,[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
      xor   edi,edi ; no force
 ;     mov   edi,1
      call  [disable_mouse]
@@ -4656,10 +4657,10 @@ syscall_writetext:                      ; WriteText
         push    esi
         mov     esi,[CURRENT_TASK]
         shl     esi,8
-        add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
      shl   ebp,16
      add   ebp,[edi-twdw+WDATA.box.top]
-        add     bp,word[esi+0x80000+APPDATA.wnd_clientbox.top]
+        add     bp,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         pop     esi
      add   ecx,[edi+TASKDATA.mem_start]
      add   eax,ebp
@@ -4696,8 +4697,8 @@ syscall_drawrect:                       ; DrawRect
      shr   ebx,16
         mov     esi,[CURRENT_TASK]
         shl     esi,8
-        add     eax,[esi+0x80000+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+0x80000+APPDATA.wnd_clientbox.top]
+        add     eax,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
      add   ecx,eax
      add   edx,ebx
      jmp   [drawbar]
@@ -4778,15 +4779,15 @@ syscall_drawline:                       ; DrawLine
      mov   ebp,edx
         mov     esi,[CURRENT_TASK]
         shl     esi,8
-        add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.left]
-        add     dx,word[esi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     dx,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
      shl   edx,16
      add   ebp,edx
      movzx edx,word[edi-twdw+WDATA.box.top]
      add   eax,ebp
      mov   ebp,edx
-        add     ebp,[esi+0x80000+APPDATA.wnd_clientbox.top]
-        add     dx,word[esi+0x80000+APPDATA.wnd_clientbox.top]
+        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     dx,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
      shl   edx,16
      xor   edi,edi
      add   edx,ebp

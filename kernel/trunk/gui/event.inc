@@ -116,7 +116,7 @@ create_event:
 @@:
            mov ecx, [CURRENT_TASK]
            shl ecx,8
-           add ecx, PROC_BASE+APP_OBJ_OFFSET
+           add ecx, SLOT_BASE+APP_OBJ_OFFSET
 
            pushfd
            cli
@@ -173,7 +173,7 @@ proc send_event stdcall pid:dword, event:dword
            jz .fail
 
            shl eax, 8
-           cmp [PROC_BASE+eax+APPDATA.ev_count], 32
+           cmp [SLOT_BASE+eax+APPDATA.ev_count], 32
            ja .fail
 
            mov [slot], eax
@@ -189,7 +189,7 @@ proc send_event stdcall pid:dword, event:dword
            rep movsd
 
            mov ecx, [slot]
-           add ecx, PROC_BASE+APP_EV_OFFSET
+           add ecx, SLOT_BASE+APP_EV_OFFSET
 
            mov [eax+APPOBJ.magic], 'EVNT'
            mov [eax+APPOBJ.destroy], destroy_event
@@ -219,10 +219,10 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
 .wait:
            mov edx,[CURRENT_TASK]
            shl edx,8
-;           cmp [PROC_BASE+edx+APPDATA.ev_count], 0
+;           cmp [SLOT_BASE+edx+APPDATA.ev_count], 0
 ;           je .switch
 
-           add edx, PROC_BASE+APP_EV_OFFSET
+           add edx, SLOT_BASE+APP_EV_OFFSET
 
            mov eax, [edx+APPOBJ.fd]
            cmp eax, edx
@@ -302,7 +302,7 @@ wait_event:
 
            mov edx,[CURRENT_TASK]
            shl edx,8
-           add edx, PROC_BASE
+           add edx, SLOT_BASE
 
            pushfd
            cli                         ;remove event from events
@@ -387,7 +387,7 @@ raise_event:
            jz .done
 @@:
            shl eax, 8
-           add eax, PROC_BASE+APP_EV_OFFSET
+           add eax, SLOT_BASE+APP_EV_OFFSET
 
            pushfd
            cli
@@ -431,7 +431,7 @@ clear_event:
            jz .fail
 
            shl eax, 8
-           add eax, PROC_BASE+APP_EV_OFFSET
+           add eax, SLOT_BASE+APP_EV_OFFSET
            mov edx, [.event]
            pushfd
            cli                         ;remove event from events
@@ -526,7 +526,7 @@ get_event_for_app:
      test  [edi+TASKDATA.event_mask],dword 2
      jz    no_eventoccur2
      mov   ecx, [CURRENT_TASK]
-     movzx edx,word [0xC000+ecx*2]
+     movzx edx,word [WIN_STACK+ecx*2]
      mov   eax, [TASK_COUNT]
      cmp   eax,edx
      jne   no_eventoccur2x
@@ -552,7 +552,7 @@ get_event_for_app:
      cmp   [0xf500],byte 0
      je    no_eventoccur3
      mov   ecx, [CURRENT_TASK]
-     movzx edx, word [0xC000+ecx*2]
+     movzx edx, word [WIN_STACK+ecx*2]
      mov   eax, [TASK_COUNT]
      cmp   eax,edx
      jnz   no_eventoccur3
@@ -577,9 +577,9 @@ get_event_for_app:
      jz    no_mouse_event
      mov   eax,[CURRENT_TASK]
      shl   eax,8
-     test  [eax+0x80000+APPDATA.event_mask],dword 00100000b
+     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     and   [eax+0x80000+APPDATA.event_mask],dword 0xffffffff-00100000b
+     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-00100000b
      popad
      mov   eax,6
      ret
@@ -601,9 +601,9 @@ get_event_for_app:
      jz    no_ipc
      mov   eax,[CURRENT_TASK]
      shl   eax,8
-     test  [eax+0x80000+APPDATA.event_mask],dword 01000000b
+     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 01000000b
      jz    no_ipc
-     and   [eax+0x80000+APPDATA.event_mask],dword 0xffffffff-01000000b
+     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-01000000b
      popad
      mov   eax,7
      ret
@@ -615,9 +615,9 @@ get_event_for_app:
      jz    no_stack_event
      mov   eax,[CURRENT_TASK]
      shl   eax,8
-     test  [eax+0x80000+APPDATA.event_mask],dword 10000000b
+     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     and   [eax+0x80000+APPDATA.event_mask],dword 0xffffffff-10000000b
+     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-10000000b
      popad
      mov   eax,8
      ret
@@ -627,9 +627,9 @@ get_event_for_app:
      jz    .test_IRQ
      mov   eax, [CURRENT_TASK]
      shl   eax, 8
-     test  byte [eax+0x80000+APPDATA.event_mask+1], byte 1
+     test  byte [eax+SLOT_BASE+APPDATA.event_mask+1], byte 1
      jz    .test_IRQ
-     and   byte [eax+0x80000+APPDATA.event_mask+1], not 1
+     and   byte [eax+SLOT_BASE+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret
@@ -637,7 +637,7 @@ get_event_for_app:
 ;.test_ext:
 ;     mov   eax, [CURRENT_TASK]
 ;     shl   eax, 8
-;     test  dword [eax+0x80000+APPDATA.event_mask], EVENT_EXTENDED
+;     test  dword [eax+SLOT_BASE+APPDATA.event_mask], EVENT_EXTENDED
 ;     jz .test_IRQ
 ;     popad
 ;     mov eax, 10

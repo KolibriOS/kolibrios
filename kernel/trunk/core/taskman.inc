@@ -159,7 +159,7 @@ proc fs_execute
 
            mov [slot], eax
            shl eax, 8
-           add eax, PROC_BASE
+           add eax, SLOT_BASE
            mov [slot_base], eax
            mov edi, eax
            _clear_ 256     ;clean extended information about process
@@ -487,7 +487,7 @@ set_cr3:
            mov esi, [CURRENT_TASK]
            mov ebx, esi
            shl esi,8
-           mov [PROC_BASE+esi+0xB8],eax
+           mov [SLOT_BASE+esi+0xB8],eax
            imul   ebx,tss_step
            add    ebx,tss_data
            mov [ebx+28], eax
@@ -531,7 +531,7 @@ proc destroy_app_space stdcall, pg_dir:dword
            cmp   byte [CURRENT_TASK+ecx+0xa],9  ;if process running?
            jz    @f                              ;skip empty slots
            shl   ecx,3
-           cmp   [PROC_BASE+ecx+0xB8],ebx       ;compare page directory addresses
+           cmp   [SLOT_BASE+ecx+0xB8],ebx       ;compare page directory addresses
            jnz   @f
            inc   edx                            ;thread found
 @@:
@@ -635,7 +635,7 @@ check_process_region:
      cmp  word [CURRENT_TASK+eax+0xa],0
      jnz  .failed
      shl  eax,3
-     mov  eax,[PROC_BASE+eax+0xb8]
+     mov  eax,[SLOT_BASE+eax+0xb8]
      test eax,eax
      jz   .failed
 
@@ -738,7 +738,7 @@ proc read_process_memory
            add ebx, new_app_base
            push ecx
            stdcall map_memEx, [proc_mem_map],\
-                              [PROC_BASE+eax+0xB8],\
+                              [SLOT_BASE+eax+0xB8],\
                               ebx, ecx
            pop ecx
 
@@ -804,7 +804,7 @@ proc write_process_memory
            add ebx, new_app_base
            push ecx
            stdcall map_memEx, [proc_mem_map],\
-                              [PROC_BASE+eax+0xB8],\
+                              [SLOT_BASE+eax+0xB8],\
                               ebx, ecx
            pop ecx
 
@@ -868,12 +868,12 @@ proc new_sys_threads
 
            mov    esi,[CURRENT_TASK]
            shl    esi,8
-           add    esi,PROC_BASE
+           add    esi,SLOT_BASE
            mov    ebx,esi             ;ebx=esi - pointer to extended information about current thread
 
            mov    edi, eax
            shl    edi,8
-           add    edi,PROC_BASE
+           add    edi,SLOT_BASE
            mov    edx,edi             ;edx=edi - pointer to extended infomation about new thread
            mov    ecx,256/4
            xor eax, eax
@@ -950,9 +950,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov ebx, eax
 
            shl eax, 8
-           mov [eax+PROC_BASE+APPDATA.fpu_state], edi
-           mov [eax+PROC_BASE+APPDATA.fpu_handler], 0
-           mov [eax+PROC_BASE+APPDATA.sse_handler], 0
+           mov [eax+SLOT_BASE+APPDATA.fpu_state], edi
+           mov [eax+SLOT_BASE+APPDATA.fpu_handler], 0
+           mov [eax+SLOT_BASE+APPDATA.sse_handler], 0
 
            mov esi, fpu_data
            mov ecx, 512/4
@@ -963,18 +963,18 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            inc    dword [TASK_COUNT]       ;update number of processes
 .noinc:
            shl ebx,8
-           lea edx, [ebx+PROC_BASE+APP_EV_OFFSET]
-           mov [PROC_BASE+APPDATA.fd_ev+ebx],edx
-           mov [PROC_BASE+APPDATA.bk_ev+ebx],edx
+           lea edx, [ebx+SLOT_BASE+APP_EV_OFFSET]
+           mov [SLOT_BASE+APPDATA.fd_ev+ebx],edx
+           mov [SLOT_BASE+APPDATA.bk_ev+ebx],edx
 
            add edx, APP_OBJ_OFFSET-APP_EV_OFFSET
-           mov [PROC_BASE+APPDATA.fd_obj+ebx],edx
-           mov [PROC_BASE+APPDATA.bk_obj+ebx],edx
+           mov [SLOT_BASE+APPDATA.fd_obj+ebx],edx
+           mov [SLOT_BASE+APPDATA.bk_obj+ebx],edx
 
            mov ecx, [def_cursor]
-           mov [PROC_BASE+APPDATA.cursor+ebx],ecx
+           mov [SLOT_BASE+APPDATA.cursor+ebx],ecx
            mov eax, [pl0_stack]
-           mov [PROC_BASE+APPDATA.pl0_stack+ebx],eax
+           mov [SLOT_BASE+APPDATA.pl0_stack+ebx],eax
 
            shr ebx,3
            mov eax, new_app_base
@@ -990,7 +990,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            add     eax, 256
            jc      @f
 
-           cmp     eax, [PROC_BASE+APPDATA.mem_size+ebx*8]
+           cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
            ja      @f
 
            add edx, new_app_base
@@ -1003,7 +1003,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         mov     eax, edx
         add     eax, 1024
         jc      @f
-        cmp     eax, [PROC_BASE+APPDATA.mem_size+ebx*8]
+        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
         ja      @f
            add edx, new_app_base
            stdcall k_strncpy, edx, [app_path], 1024
@@ -1050,7 +1050,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 ;set cr3 register in TSS of application
            mov ecx, [slot]
            shl ecx, 8
-           mov eax,[PROC_BASE+ecx+APPDATA.dir_table]
+           mov eax,[SLOT_BASE+ecx+APPDATA.dir_table]
            mov [edi+TSS._cr3],eax
 
            mov esi,[params]
@@ -1104,7 +1104,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            jz   .no_debug
            mov  [CURRENT_TASK+ebx+0xa],byte 1 ;set process state - suspended
            mov  eax,[CURRENT_TASK]
-           mov  [PROC_BASE+ebx*8+0xac],eax ;set debugger PID - current
+           mov  [SLOT_BASE+ebx*8+0xac],eax ;set debugger PID - current
 .no_debug:
            mov    esi,new_process_running
            call   sys_msg_board_str     ;output information about succefull startup

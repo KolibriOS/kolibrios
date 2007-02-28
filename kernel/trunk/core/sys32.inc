@@ -10,7 +10,6 @@
 idtreg:
      dw   8*0x41-1
      dd   idts+8
-;label idts at 0xB100-8
 
 build_process_gdt_tss_pointer:
 
@@ -122,7 +121,7 @@ exc_c:
         cli
         mov   eax, [CURRENT_TASK]
         shl   eax, 8
-        mov   eax, [0x80000+eax+APPDATA.debugger_slot]
+        mov   eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
         test  eax, eax
         jnz   .debug
         sti
@@ -582,7 +581,7 @@ terminate: ; terminate application
            push   esi      ;save .slot
 
            shl esi, 8
-           cmp [PROC_BASE+esi+APPDATA.dir_table], 0
+           cmp [SLOT_BASE+esi+APPDATA.dir_table], 0
            jne @F
            add esp, 4
            ret
@@ -601,7 +600,7 @@ term9:
 
            mov esi, [.slot]
            shl esi,8
-           add esi, PROC_BASE+APP_OBJ_OFFSET
+           add esi, SLOT_BASE+APP_OBJ_OFFSET
 @@:
            mov eax, [esi+APPOBJ.fd]
            test eax, eax
@@ -619,7 +618,7 @@ term9:
 @@:
            mov eax, [.slot]
            shl eax, 8
-           mov eax,[PROC_BASE+eax+APPDATA.dir_table]
+           mov eax,[SLOT_BASE+eax+APPDATA.dir_table]
            stdcall destroy_app_space, eax
 
            mov esi, [.slot]
@@ -627,7 +626,7 @@ term9:
            jne @F
 
            mov [fpu_owner],1
-           mov eax, [256+PROC_BASE+APPDATA.fpu_state]
+           mov eax, [256+SLOT_BASE+APPDATA.fpu_state]
            clts
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
@@ -732,7 +731,7 @@ term9:
     pushad
     mov  edi, esi
     shl  edi, 5
-    mov  eax, [0x80000+edi*8+APPDATA.debugger_slot]
+    mov  eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
     test eax, eax
     jz   .nodebug
     push 8
@@ -747,13 +746,13 @@ term9:
 
            mov ebx, [.slot]
            shl ebx, 8
-           mov ebx,[PROC_BASE+ebx+APPDATA.pl0_stack]
+           mov ebx,[SLOT_BASE+ebx+APPDATA.pl0_stack]
 
            stdcall kernel_free, ebx
 
            mov edi, [.slot]
            shl edi,8
-           add edi,0x80000
+           add edi,SLOT_BASE
            mov eax, 0x20202020
            stosd
            stosd
@@ -763,7 +762,7 @@ term9:
            rep stosd
 
   ; activate window
-        movzx  eax, word [0xC000 + esi*2]
+        movzx  eax, word [WIN_STACK + esi*2]
         cmp    eax, [TASK_COUNT]
         jne    .dont_activate
         pushad
@@ -771,7 +770,7 @@ term9:
         dec    eax
         cmp    eax, 1
         jbe    .nothing_to_activate
-        lea    esi, [0xc400+eax*2]
+        lea    esi, [WIN_POS+eax*2]
         movzx  edi, word [esi]               ; edi = process
         shl    edi, 5
         cmp    [CURRENT_TASK + edi + TASKDATA.state], byte 9  ; skip dead slots
@@ -870,7 +869,7 @@ term9:
     mov  [edi+CURRENT_TASK + TASKDATA.state],byte 9
 ; debugger test - terminate all debuggees
     mov  eax, 2
-    mov  ecx, 0x80000+2*0x100+APPDATA.debugger_slot
+    mov  ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
 .xd0:
     cmp  eax, [TASK_COUNT]
     ja   .xd1

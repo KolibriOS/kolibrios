@@ -21,7 +21,7 @@ debug_set_event_data:
 ; destroys eax
         mov     eax, [CURRENT_TASK]
 	shl	eax, 8
-	mov	[eax+0x80000+APPDATA.dbg_event_mem], ebx
+        mov     [eax+SLOT_BASE+APPDATA.dbg_event_mem], ebx
 	ret
 
 get_debuggee_slot:
@@ -37,7 +37,7 @@ get_debuggee_slot:
 	shl	eax, 5
 	push	ebx
         mov     ebx, [CURRENT_TASK]
-	cmp	[0x80000+eax*8+APPDATA.debugger_slot], ebx
+        cmp     [SLOT_BASE+eax*8+APPDATA.debugger_slot], ebx
 	pop	ebx
 	jnz	.ret_bad
 ;	clc	; automatically
@@ -51,7 +51,7 @@ debug_detach:
 ; destroys eax,ebx
 	call	get_debuggee_slot
 	jc	.ret
-	and	dword [eax*8+0x80000+APPDATA.debugger_slot], 0
+        and     dword [eax*8+SLOT_BASE+APPDATA.debugger_slot], 0
 	call	do_resume
 .ret:
 	sti
@@ -227,7 +227,7 @@ debug_set_drx:
 	call	get_debuggee_slot
 	jc	.errret
 	mov	ebp, eax
-	lea	eax, [eax*8+0x80000+APPDATA.dbg_regs]
+        lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
 	add	edx, std_application_base_address
@@ -358,7 +358,7 @@ debugger_notify:
 .1:
 	mov	eax, ebp
 	shl	eax, 8
-	mov	edx, [0x80000+eax+APPDATA.dbg_event_mem]
+        mov     edx, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
 	test	edx, edx
 	jz	.ret
 ; read buffer header
@@ -414,7 +414,7 @@ debugger_notify:
 ; new debug event
 	mov	eax, ebp
 	shl	eax, 8
-	or	byte [0x80000+eax+APPDATA.event_mask+1], 1	; set flag 100h
+        or      byte [SLOT_BASE+eax+APPDATA.event_mask+1], 1      ; set flag 100h
 .ret:
 	ret
 
@@ -432,7 +432,7 @@ debug_exc:
 ; set DRx registers for task and continue
         mov     eax, [CURRENT_TASK]
 	shl	eax, 8
-	add	eax, 0x80000+APPDATA.dbg_regs
+        add     eax, SLOT_BASE+APPDATA.dbg_regs
 	mov	ecx, [eax+0]
 	mov	dr0, ecx
 	mov	ecx, [eax+4]
@@ -455,7 +455,7 @@ debug_exc:
 	cli
         mov     eax, [CURRENT_TASK]
 	shl	eax, 8
-	mov	eax, [0x80000+eax+APPDATA.debugger_slot]
+        mov     eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
 	test	eax, eax
 	jnz	.debug
 	sti

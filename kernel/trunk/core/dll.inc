@@ -156,12 +156,12 @@ proc get_notify stdcall, p_ev:dword
 .wait:
            mov ebx,[CURRENT_TASK]
            shl ebx,8
-           test dword [ebx+PROC_BASE+0xA8],EVENT_NOTIFY
+           test dword [ebx+SLOT_BASE+0xA8],EVENT_NOTIFY
 	   jz @f
-           and dword [ebx+PROC_BASE+0xA8], not EVENT_NOTIFY
+           and dword [ebx+SLOT_BASE+0xA8], not EVENT_NOTIFY
 	   mov edi, [p_ev]
 	   mov dword [edi], EV_INTR
-           mov eax, [ebx+PROC_BASE+APPDATA.event]
+           mov eax, [ebx+SLOT_BASE+APPDATA.event]
 	   mov dword [edi+4], eax
 	   ret
 @@:
@@ -998,7 +998,7 @@ create_kernel_object:
 
            mov ecx,[CURRENT_TASK]
            shl ecx,8
-           add ecx, PROC_BASE+APP_OBJ_OFFSET
+           add ecx, SLOT_BASE+APP_OBJ_OFFSET
 
            pushfd
            cli

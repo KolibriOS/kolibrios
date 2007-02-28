@@ -167,10 +167,10 @@ sys_button:
         mov     edi,[CURRENT_TASK]
         shl     edi,8
         rol     eax,16
-        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
         rol     eax,16
         rol     ebx,16
-        add     bx,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        add     bx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         rol     ebx,16
         pop     edi
   .forced:
@@ -503,7 +503,7 @@ checkbuttons:
     ; check that button is at top of windowing stack
 
     movzx ebx,word [eax]
-    movzx ecx,word [0xC000 + ebx * 2]
+    movzx ecx,word [WIN_STACK + ebx * 2]
     cmp   ecx,[TASK_COUNT]
     jne   buttonnewcheck
 

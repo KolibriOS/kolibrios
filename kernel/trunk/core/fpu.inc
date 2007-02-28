@@ -57,7 +57,7 @@ fpu_save:
            jne .save
 .copy:
            shl eax, 8
-           mov esi, [eax+PROC_BASE+APPDATA.fpu_state]
+           mov esi, [eax+SLOT_BASE+APPDATA.fpu_state]
            mov ecx, 512/4
            cld
            rep movsd
@@ -72,7 +72,7 @@ fpu_save:
            mov [fpu_owner], eax
 
            shl ecx, 8
-           mov ecx, [ecx+PROC_BASE+APPDATA.fpu_state]
+           mov ecx, [ecx+SLOT_BASE+APPDATA.fpu_state]
 
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
@@ -117,7 +117,7 @@ fpu_restore:
            ret
 .copy:
            shl eax, 8
-           mov edi, [eax+PROC_BASE+APPDATA.fpu_state]
+           mov edi, [eax+SLOT_BASE+APPDATA.fpu_state]
            mov ecx, 512/4
            cld
            rep movsd
@@ -139,7 +139,7 @@ e7:                        ;#NM exception handler
         je .exit
 
         shl ebx, 8
-        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
+        mov eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
         bt [cpu_caps], CAPS_SSE
         jnc .no_SSE
 
@@ -147,7 +147,7 @@ e7:                        ;#NM exception handler
         mov ebx, [CURRENT_TASK]
         mov [fpu_owner], ebx
         shl ebx, 8
-        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
+        mov eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
         fxrstor [eax]
 .exit:
         restore_ring3_context
@@ -158,7 +158,7 @@ e7:                        ;#NM exception handler
         mov ebx, [CURRENT_TASK]
         mov [fpu_owner], ebx
         shl ebx, 8
-        mov eax, [ebx+PROC_BASE+APPDATA.fpu_state]
+        mov eax, [ebx+SLOT_BASE+APPDATA.fpu_state]
         frstor [eax]
         restore_ring3_context
         iret
@@ -186,7 +186,7 @@ except_16:           ;fpu native exceptions handler
            mov ebx, [ss:CURRENT_TASK]
            shl ebx, 8
 
-           mov eax, [ss:ebx+PROC_BASE+APPDATA.fpu_handler]
+           mov eax, [ss:ebx+SLOT_BASE+APPDATA.fpu_handler]
            test eax, eax
            jz .default
 
@@ -230,7 +230,7 @@ except_19:          ;sse exceptions handler
            mov ebx, [ss:CURRENT_TASK]
            shl ebx, 8
 
-           mov eax, [ss:ebx+PROC_BASE+APPDATA.sse_handler]
+           mov eax, [ss:ebx+SLOT_BASE+APPDATA.sse_handler]
            test eax, eax
            jz .default
 

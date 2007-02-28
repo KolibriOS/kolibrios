@@ -102,7 +102,7 @@ save_draw_mouse:
         mul ecx
         movzx edx, byte [display_data+ebx+eax]
         shl edx, 8
-        mov ecx, [edx+PROC_BASE+APPDATA.cursor]
+        mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
 
         cmp [ecx+CURSOR.magic], 'CURS'
         jne .fail
@@ -114,7 +114,7 @@ save_draw_mouse:
         ret
 .fail:
         mov ecx, [def_cursor]
-        mov [edx+PROC_BASE+APPDATA.cursor], ecx
+        mov [edx+SLOT_BASE+APPDATA.cursor], ecx
         push ecx
         call [set_hw_cursor]
         popad

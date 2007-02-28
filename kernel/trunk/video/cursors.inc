@@ -269,13 +269,13 @@ proc set_cursor stdcall, hcursor:dword
 ;           jne .fail
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
-           xchg eax, [ebx+PROC_BASE+APPDATA.cursor]
+           xchg eax, [ebx+SLOT_BASE+APPDATA.cursor]
            ret
 .fail:
            mov eax, [def_cursor]
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
-           xchg eax, [ebx+PROC_BASE+APPDATA.cursor]
+           xchg eax, [ebx+SLOT_BASE+APPDATA.cursor]
            ret
 endp
 
@@ -400,10 +400,10 @@ proc delete_cursor stdcall, hcursor:dword
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 8
-           cmp esi, [ebx+PROC_BASE+APPDATA.cursor]
+           cmp esi, [ebx+SLOT_BASE+APPDATA.cursor]
            jne @F
            mov eax, [def_cursor]
-           mov [ebx+PROC_BASE+APPDATA.cursor], eax
+           mov [ebx+SLOT_BASE+APPDATA.cursor], eax
 @@:
            mov eax, [hcursor]
            call [eax+APPOBJ.destroy]

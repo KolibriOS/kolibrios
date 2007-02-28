@@ -153,7 +153,7 @@ newsearch:
 
 foundPID:
     shl     ecx,8
-    or      dword [ecx+0x80000+APPDATA.event_mask],dword 10000000b ; stack event
+    or      dword [ecx+SLOT_BASE+APPDATA.event_mask],dword 10000000b ; stack event
 
     mov     [check_idle_semaphore],200
 

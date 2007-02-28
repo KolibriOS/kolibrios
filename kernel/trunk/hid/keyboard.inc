@@ -92,9 +92,9 @@ irq1:
 ;       mov   es, ax
 
        movzx eax,word[TASK_COUNT] ; top window process
-       movzx eax,word[0xC400+eax*2]
+       movzx eax,word[WIN_POS+eax*2]
        shl   eax,8
-       mov   al,[0x80000+eax+APPDATA.keyboard_mode]
+       mov   al,[SLOT_BASE+eax+APPDATA.keyboard_mode]
        mov   [keyboard_mode],al
 
        in    al,0x60

@@ -67,7 +67,7 @@ R9800XT     equ 0x4E4A  ;R360
 
 OS_BASE         equ 0
 new_app_base    equ 0x80000000
-PROC_BASE       equ 0x0080000
+SLOT_BASE       equ 0x0080000
 
 PG_SW        equ 0x003
 PG_NOCACHE   equ 0x018

@@ -9,7 +9,7 @@ give_back_application_data:  ; переслать приложению
      mov edi,[edi+TASKDATA.mem_start]
      add edi,ecx
 give_back_application_data_1:
-     mov esi,0xD000   ;FDD_DataBuffer  ;0x40000
+     mov esi,FDD_BUFF   ;FDD_DataBuffer  ;0x40000
      xor ecx,ecx
      mov cx,128
      cld
@@ -21,7 +21,7 @@ take_data_from_application:   ; взять из приложени
      mov esi,[esi+TASKDATA.mem_start]
      add esi,ecx
 take_data_from_application_1:
-     mov edi,0xD000   ;FDD_DataBuffer  ;0x40000
+     mov edi,FDD_BUFF   ;FDD_DataBuffer  ;0x40000
      xor ecx,ecx
      mov cx,128
      cld

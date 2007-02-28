@@ -134,108 +134,109 @@ SSE_FZ         equ    0x8000
 
 SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
-OS_BASE             equ 0;  0x80400000
+OS_BASE             equ 0
 
-window_data         equ OS_BASE+0x0000000
+window_data         equ (OS_BASE+0x0000000)
 
-CURRENT_TASK        equ OS_BASE+0x0003000
-TASK_COUNT          equ OS_BASE+0x0003004
-TASK_BASE           equ OS_BASE+0x0003010
-TASK_DATA           equ OS_BASE+0x0003020
-TASK_EVENT          equ OS_BASE+0x0003020
+CURRENT_TASK        equ (OS_BASE+0x0003000)
+TASK_COUNT          equ (OS_BASE+0x0003004)
+TASK_BASE           equ (OS_BASE+0x0003010)
+TASK_DATA           equ (OS_BASE+0x0003020)
+TASK_EVENT          equ (OS_BASE+0x0003020)
 
-;mouseunder          equ OS_BASE+0x0006900
-FLOPPY_BUFF         equ OS_BASE+0x0008000
-ACTIVE_PROC_STACK   equ OS_BASE+0x000A400
-idts                equ OS_BASE+0x000B100
-WIN_STACK           equ OS_BASE+0x000C000
-WIN_POS             equ OS_BASE+0x000C400
-FDD_DATA            equ OS_BASE+0x000D000
+mouseunder          equ (OS_BASE+0x0006900)
+FLOPPY_BUFF         equ (OS_BASE+0x0008000)
+ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400)
+idts                equ (OS_BASE+0x000B100)
+WIN_STACK           equ (OS_BASE+0x000C000)
+WIN_POS             equ (OS_BASE+0x000C400)
+FDD_BUFF            equ (OS_BASE+0x000D000)
+FDD_DATA            equ (OS_BASE+0x000D000)
 
-ENABLE_TASKSWITCH   equ OS_BASE+0x000E000
-PUTPIXEL            equ OS_BASE+0x000E020
-GETPIXEL            equ OS_BASE+0x000E024
-BANK_SWITCH         equ OS_BASE+0x000E030
+ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
+PUTPIXEL            equ (OS_BASE+0x000E020)
+GETPIXEL            equ (OS_BASE+0x000E024)
+BANK_SWITCH         equ (OS_BASE+0x000E030)
 
-MOUSE_PICTURE       equ OS_BASE+0x000F200
-MOUSE_VISIBLE       equ OS_BASE+0x000F204
-XY_TEMP             equ OS_BASE+0x000F300
-KEY_COUNT           equ OS_BASE+0x000F400
-KEY_BUFF            equ OS_BASE+0x000F401
+MOUSE_PICTURE       equ (OS_BASE+0x000F200)
+MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
+XY_TEMP             equ (OS_BASE+0x000F300)
+KEY_COUNT           equ (OS_BASE+0x000F400)
+KEY_BUFF            equ (OS_BASE+0x000F401)
 
-BTN_COUNT           equ OS_BASE+0x000F500
-BTN_BUFF            equ OS_BASE+0x000F501
+BTN_COUNT           equ (OS_BASE+0x000F500)
+BTN_BUFF            equ (OS_BASE+0x000F501)
 
-CPU_FREQ            equ OS_BASE+0x000F600
-MOUSE_PORT          equ OS_BASE+0x000F604
+CPU_FREQ            equ (OS_BASE+0x000F600)
+MOUSE_PORT          equ (OS_BASE+0x000F604)
 
-PS2_CHUNK           equ OS_BASE+0x000FB00
-MOUSE_X             equ OS_BASE+0x000FB0A
-MOUSE_Y             equ OS_BASE+0x000FB0C
+PS2_CHUNK           equ (OS_BASE+0x000FB00)
+MOUSE_X             equ (OS_BASE+0x000FB0A)
+MOUSE_Y             equ (OS_BASE+0x000FB0C)
 
-MOUSE_COLOR_MEM     equ OS_BASE+0x000FB10
-COLOR_TEMP          equ OS_BASE+0x000FB30
-BTN_DOWN            equ OS_BASE+0x000FB40
-MOUSE_DOWN          equ OS_BASE+0x000FB44
-X_UNDER             equ OS_BASE+0x000FB4A
-Y_UNDER             equ OS_BASE+0x000FB4C
-ScreenBPP           equ OS_BASE+0x000FBF1
-MOUSE_BUFF_COUNT    equ OS_BASE+0x000FCFF
-LFBAddress          equ OS_BASE+0x000FE80
-MEM_AMOUNT          equ OS_BASE+0x000FE8C
-;LFBSize             equ OS_BASE+0x02f9050
+MOUSE_COLOR_MEM     equ (OS_BASE+0x000FB10)
+COLOR_TEMP          equ (OS_BASE+0x000FB30)
+BTN_DOWN            equ (OS_BASE+0x000FB40)
+MOUSE_DOWN          equ (OS_BASE+0x000FB44)
+X_UNDER             equ (OS_BASE+0x000FB4A)
+Y_UNDER             equ (OS_BASE+0x000FB4C)
+ScreenBPP           equ (OS_BASE+0x000FBF1)
+MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
+LFBAddress          equ (OS_BASE+0x000FE80)
+MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
+;LFBSize             equ (OS_BASE+0x02f9050)
 
-SCR_X_SIZE          equ OS_BASE+0x000FE00
-SCR_Y_SIZE          equ OS_BASE+0x000FE04
-SCR_BYTES_PER_LINE  equ OS_BASE+0x000FE08
-SCR_MODE            equ OS_BASE+0x000FE0C
+SCR_X_SIZE          equ (OS_BASE+0x000FE00)
+SCR_Y_SIZE          equ (OS_BASE+0x000FE04)
+SCR_BYTES_PER_LINE  equ (OS_BASE+0x000FE08)
+SCR_MODE            equ (OS_BASE+0x000FE0C)
 
-BTN_ADDR            equ OS_BASE+0x000FE88
-SYS_SHUTDOWN        equ OS_BASE+0x000FF00
-TASK_ACTIVATE       equ OS_BASE+0x000FF01
+BTN_ADDR            equ (OS_BASE+0x000FE88)
+SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
+TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
 
-REDRAW_BACKGROUND   equ OS_BASE+0x000FFF0
-BANK_RW             equ OS_BASE+0x000FFF2
-MOUSE_BACKGROUND    equ OS_BASE+0x000FFF4
-DONT_DRAW_MOUSE     equ OS_BASE+0x000FFF5
-DONT_SWITCH         equ OS_BASE+0x000FFFF
+REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
+BANK_RW             equ (OS_BASE+0x000FFF2)
+MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
+DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
+DONT_SWITCH         equ (OS_BASE+0x000FFFF)
 
-STACK_TOP           equ OS_BASE+0x003EC00
+STACK_TOP           equ (OS_BASE+0x003EC00)
 
-FONT_II             equ OS_BASE+0x003EC00
-FONT_I              equ OS_BASE+0x003F600
-DISK_DATA           equ OS_BASE+0x0040000
-PROC_BASE           equ OS_BASE+0x0080000
-TMP_BUFF            equ OS_BASE+0x0090000
+FONT_II             equ (OS_BASE+0x003EC00)
+FONT_I              equ (OS_BASE+0x003F600)
+DISK_DATA           equ (OS_BASE+0x0040000)
+SLOT_BASE           equ (OS_BASE+0x0080000)
+TMP_BUFF            equ (OS_BASE+0x0090000)
 
-VGABasePtr          equ OS_BASE+0x00A0000
+VGABasePtr          equ (OS_BASE+0x00A0000)
 
-RAMDISK             equ OS_BASE+0x0100000
-RAMDISK_FAT         equ OS_BASE+0x0280000
-FLOPPY_FAT          equ OS_BASE+0x0282000
-SB16_Status         equ OS_BASE+0x02B0000
-BUTTON_INFO         equ OS_BASE+0x02C0000
-RESERVED_PORTS      equ OS_BASE+0x02D0000
-IRQ_SAVE            equ OS_BASE+0x02E0000
-SYS_VAR             equ OS_BASE+0x02f0000
-IMG_BACKGROUND      equ OS_BASE+0x0300000
-WinMapAddress       equ OS_BASE+0x0460000
-display_data        equ OS_BASE+0x0460000
-HD_CACHE            equ OS_BASE+0x0600000
-stack_data_start    equ OS_BASE+0x0700000
-eth_data_start      equ OS_BASE+0x0700000
-stack_data          equ OS_BASE+0x0704000
-stack_data_end      equ OS_BASE+0x071ffff
-VMODE_BASE          equ OS_BASE+0x0760000
-resendQ             equ OS_BASE+0x0770000
+RAMDISK             equ (OS_BASE+0x0100000)
+RAMDISK_FAT         equ (OS_BASE+0x0280000)
+FLOPPY_FAT          equ (OS_BASE+0x0282000)
+SB16_Status         equ (OS_BASE+0x02B0000)
+BUTTON_INFO         equ (OS_BASE+0x02C0000)
+RESERVED_PORTS      equ (OS_BASE+0x02D0000)
+IRQ_SAVE            equ (OS_BASE+0x02E0000)
+SYS_VAR             equ (OS_BASE+0x02f0000)
+IMG_BACKGROUND      equ (OS_BASE+0x0300000)
+WinMapAddress       equ (OS_BASE+0x0460000)
+display_data        equ (OS_BASE+0x0460000)
+HD_CACHE            equ (OS_BASE+0x0600000)
+stack_data_start    equ (OS_BASE+0x0700000)
+eth_data_start      equ (OS_BASE+0x0700000)
+stack_data          equ (OS_BASE+0x0704000)
+stack_data_end      equ (OS_BASE+0x071ffff)
+VMODE_BASE          equ (OS_BASE+0x0760000)
+resendQ             equ (OS_BASE+0x0770000)
 
-;skin_data          equ OS_BASE+0x0778000
+;skin_data          equ (OS_BASE+0x0778000)
 
 
-tss_data            equ 0x780000
-draw_data           equ 0x988000
+tss_data            equ (OS_BASE+0x780000)
+draw_data           equ (OS_BASE+0x988000)
 
-HEAP_BASE           equ 0x98B000
+HEAP_BASE           equ (OS_BASE+0x98B000)
 
 LFB_BASE            equ 0x7DC00000
 

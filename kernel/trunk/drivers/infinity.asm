@@ -29,7 +29,7 @@ DEBUG             equ 1
 
 OS_BASE           equ 0
 new_app_base      equ 0x80000000
-PROC_BASE         equ OS_BASE+0x0080000
+SLOT_BASE         equ OS_BASE+0x0080000
 
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003
