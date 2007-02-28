@@ -31,9 +31,9 @@ reserve_flp:
   reserve_flp_ok:
 
     push  eax
-    mov   eax,[0x3000]
+    mov   eax,[CURRENT_TASK]
     shl   eax,5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   [flp_status],eax
     pop   eax
     sti

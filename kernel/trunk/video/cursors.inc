@@ -361,7 +361,7 @@ proc load_cursor stdcall, src:dword, flags:dword
 @@:
            mov eax, [CURRENT_TASK]
            shl eax, 5
-           mov eax, [0x3000+eax+4]
+           mov eax, [CURRENT_TASK+eax+4]
            mov ebx, [src]
            mov ecx, [flags]
            call [create_cursor]    ;eax, ebx, ecx
@@ -394,7 +394,7 @@ proc delete_cursor stdcall, hcursor:dword
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
-           mov ebx, [0x3000+ebx+4]
+           mov ebx, [CURRENT_TASK+ebx+4]
            cmp ebx, [esi+CURSOR.pid]
            jne .fail
 

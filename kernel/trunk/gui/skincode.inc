@@ -365,7 +365,7 @@ drawwindow_IV:
         shl   eax,4
         add   eax,edi
 
-        mov   bx,[0x3000]
+        mov   bx,[CURRENT_TASK]
         mov   [eax],bx
 
         add   eax,2         ; save button id number
@@ -404,7 +404,7 @@ drawwindow_IV:
         shl   eax,4
         add   eax,edi
 
-        mov   bx,[0x3000]
+        mov   bx,[CURRENT_TASK]
         mov   [eax],bx
 
         add   eax,2         ; save button id number

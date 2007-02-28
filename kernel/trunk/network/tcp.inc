@@ -1057,14 +1057,14 @@ ste_data:
     ; flag an event to the application
     pop     eax
     mov     ecx,1
-    mov     esi,0x3020+TASKDATA.pid
+    mov     esi,TASK_DATA+TASKDATA.pid
 
 news:
     cmp     [esi],eax
     je      foundPID1
     inc     ecx
     add     esi,0x20
-    cmp     ecx,[0x3004]
+    cmp     ecx,[TASK_COUNT]
     jbe     news
 
 foundPID1:

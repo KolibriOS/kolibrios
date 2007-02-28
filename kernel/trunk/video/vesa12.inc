@@ -46,82 +46,82 @@
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ; set_bank for S3 videocards, work on S3 ViRGE PCI (325)
-; modified by kmeaw 
-set_bank: 
+; modified by kmeaw
+set_bank:
 pushfd
-cli 
-cmp al,[0xfff2] 
-je retsb 
-mov [0xfff2],al 
-push ax 
-push dx 
-push cx 
-mov cl, al 
-mov dx, 0x3D4 
-mov al, 0x38 
+cli
+cmp al,[0xfff2]
+je retsb
+mov [0xfff2],al
+push ax
+push dx
+push cx
+mov cl, al
+mov dx, 0x3D4
+mov al, 0x38
 out dx, al     ;CR38 Register Lock 1 ;Note: Traditionally 48h is used to
                ;unlock and 00h to lock
-inc dx 
-mov al, 0x48 
+inc dx
+mov al, 0x48
 out dx, al     ;3d5 -?
-dec dx 
-mov al, 0x31 
+dec dx
+mov al, 0x31
 out dx, al     ;CR31 Memory Configuration Register
 ;0  Enable Base Address Offset (CPUA BASE). Enables bank operation if set, ;disables if clear.
 ;4-5  Bit 16-17 of the Display Start Address. For the 801/5,928 see index 51h,
 ;for the 864/964 see index 69h.
 
-inc dx 
-in al, dx 
-dec dx 
-mov ah, al 
-mov al, 0x31 
-out dx, ax 
-mov al, ah 
-or al, 9 
-inc dx 
-out dx, al 
-dec dx 
-mov al, 0x35 
+inc dx
+in al, dx
+dec dx
+mov ah, al
+mov al, 0x31
+out dx, ax
+mov al, ah
+or al, 9
+inc dx
+out dx, al
+dec dx
+mov al, 0x35
 out dx, al   ;CR35 CRT Register Lock
-inc dx 
-in al, dx 
-dec dx 
-and al, 0xF0 
-mov ch, cl 
-and ch, 0x0F 
-or ch, al 
-mov al, 0x35 
-out dx, al 
-inc dx 
-mov al, ch 
-out dx, ax 
-dec dx 
+inc dx
+in al, dx
+dec dx
+and al, 0xF0
+mov ch, cl
+and ch, 0x0F
+or ch, al
+mov al, 0x35
+out dx, al
+inc dx
+mov al, ch
+out dx, ax
+dec dx
 mov al, 0x51  ;Extended System Control 2 Register
-out dx, al 
-inc dx 
-in al, dx 
-dec dx 
-and al, 0xF3 
-shr cl, 2 
-and cl, 0x0C 
-or cl, al 
-mov al, 0x51 
-out dx, al 
-inc dx 
-mov al, cl 
-out dx, al 
-dec dx 
-mov al, 0x38 
-out dx, al 
-inc dx 
-xor al, al 
-out dx, al 
-dec dx 
-pop cx 
-pop dx 
-pop ax 
-retsb: 
+out dx, al
+inc dx
+in al, dx
+dec dx
+and al, 0xF3
+shr cl, 2
+and cl, 0x0C
+or cl, al
+mov al, 0x51
+out dx, al
+inc dx
+mov al, cl
+out dx, al
+dec dx
+mov al, 0x38
+out dx, al
+inc dx
+xor al, al
+out dx, al
+dec dx
+pop cx
+pop dx
+pop ax
+retsb:
 popfd
 ret
 
@@ -364,7 +364,7 @@ vesa12_drawbar:
     push ebx
     push ecx
     push edx
-    mov  ecx,[0x3010]
+    mov  ecx,[TASK_BASE]
     add  eax,[ecx-twdw+WDATA.box.left]
     add  ebx,[ecx-twdw+WDATA.box.top]
     push eax
@@ -402,17 +402,17 @@ vesa12_drawbar:
 
     push eax
     push ecx
-    mov  eax,[0x3010]
-    mov  ecx,[eax+draw_data-0x3000+RECT.left]
+    mov  eax,[TASK_BASE]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.left]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+RECT.top]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.top]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+RECT.right]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
     cmp  ecx,[0xfe00]
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+RECT.bottom]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
     cmp  ecx,[0xfe04]
     jnz  dbcblimitlset12
     pop  ecx
@@ -462,7 +462,7 @@ dbpi24bit12:
       mov  ebx,3
       div  ebx
       add  eax,WinMapAddress
-      mov   ebx,[0x3000]
+      mov   ebx,[CURRENT_TASK]
       cld
 
       dbnp2412:
@@ -553,7 +553,7 @@ dbpi24bit12:
       sub  eax,[0xfe80]
       shr  eax,2
       add  eax,WinMapAddress
-      mov   ebx,[0x3000]
+      mov   ebx,[CURRENT_TASK]
       cld
 
       dbnp3212:
@@ -731,7 +731,7 @@ vesa12_putimage:
     push  edx
     movzx eax,word [esp+2]
     movzx ebx,word [esp+0]
-    mov   ecx,[0x3010]
+    mov   ecx,[TASK_BASE]
     add   eax,[ecx-twdw+WDATA.box.left]
     add   ebx,[ecx-twdw+WDATA.box.top]
     push  eax
@@ -760,15 +760,15 @@ vesa12_putimage:
     ; check limits while draw ?
 
     push  ecx
-    mov  eax,[0x3010]
-    cmp  dword [eax+draw_data-0x3000+RECT.left], 0
+    mov  eax,[TASK_BASE]
+    cmp  dword [eax+draw_data-CURRENT_TASK+RECT.left], 0
     jnz  dbcblimitlset212
-    cmp  dword [eax+draw_data-0x3000+RECT.top], 0
+    cmp  dword [eax+draw_data-CURRENT_TASK+RECT.top], 0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+RECT.right]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
     cmp  ecx,[0xfe00]
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+RECT.bottom]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
     cmp  ecx,[0xfe04]
     jnz  dbcblimitlset212
     pop  ecx
@@ -798,7 +798,7 @@ vesa12_putimage:
       mov  ebx,3
       div  ebx
       add  edx,WinMapAddress
-      mov  ebx,[0x3000]
+      mov  ebx,[CURRENT_TASK]
       mov  bh,[esp+4*3]
 
       np2412:
@@ -867,7 +867,7 @@ vesa12_putimage:
       sub  edx,[0xfe80]
       shr  edx,2
       add  edx,WinMapAddress
-      mov   ebx,[0x3000]
+      mov   ebx,[CURRENT_TASK]
       mov   bh,[esp+4*3]
 
       np3212:

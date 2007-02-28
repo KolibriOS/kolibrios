@@ -23,9 +23,9 @@ reserve_cd:
   reserve_ok2:
 
     push  eax
-    mov   eax,[0x3000]
+    mov   eax,[CURRENT_TASK]
     shl   eax,5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   [cd_status],eax
     pop   eax
     sti
@@ -59,13 +59,13 @@ free_cd_channel:
     cmp   [ChannelNumber],1
     jne   .IDE_Channel_2
 .IDE_Channel_1:
-    mov [IDE_Channel_1],0  
+    mov [IDE_Channel_1],0
     ret
 .IDE_Channel_2:
     mov [IDE_Channel_2],0
     ret
 
-uglobal    
+uglobal
 cd_status dd 0
 endg
 
@@ -93,7 +93,7 @@ fs_CdRead:
     or    ebx, -1
     mov    eax, ERROR_ACCESS_DENIED
     ret
- 
+
 .noaccess_3:
     pop     eax edx ecx edi
     jmp  .noaccess_2
@@ -161,7 +161,7 @@ fs_CdRead:
     mov  [CDDataBuf_pointer],CDDataBuf
     call ReadCDWRetr      ; читаем сектор файла
     cmp   [DevErrorCode],0
-    jne   .noaccess_3 
+    jne   .noaccess_3
     push    ecx
     add    ecx, ebx
     cmp    ecx, 2048
@@ -180,7 +180,7 @@ fs_CdRead:
     pop    ecx
     xor    ebx, ebx
     jmp    .next
-     
+
 .done:
         mov     ebx, edx
         pop     eax edx ecx edi
@@ -240,7 +240,7 @@ fs_CdReadFolder:
         pop     ecx eax
         mov     byte [edx], 1   ; version
         mov     [cd_mem_location], edx
-        add     [cd_mem_location], 32 
+        add     [cd_mem_location], 32
 ; начинаем переброску БДВК в УСВК
 ;.mainloop:
         mov     [cd_counter_block], dword 0
@@ -282,7 +282,7 @@ fs_CdReadFolder:
     test    ecx, ecx
     jz    .get_names_from_buffer_1
     mov   edi,[cd_counter_block]
-    mov   [edx+4],edi  
+    mov   [edx+4],edi
     dec     ecx
     mov   esi,ebp
     mov   edi,[cd_mem_location]
@@ -377,7 +377,7 @@ cd_get_parameters_of_file:
 cd_get_parameters_of_file_1:
 ; получаем атрибуты файла
     xor   eax,eax
-; файл не архивировался
+; файл не архивировалс
     inc   al
     shl   eax,1
 ; это каталог?
@@ -449,7 +449,7 @@ cd_get_parameters_of_file_1:
 ;
 ;  fs_CdGetFileInfo - LFN variant for CD
 ;                     get file/directory attributes structure
-;        
+;
 ;----------------------------------------------------------------
 fs_CdGetFileInfo:
         cmp     byte [esi], 0
@@ -554,7 +554,7 @@ fs_CdExecute:
         cmp     [eax+8],dword 0
         jne     @f
         mov     ecx,[eax+4]
-        inc     dword [eax+4] 
+        inc     dword [eax+4]
         mov     [CDSectorAddress],ecx
         mov     [CDDataBuf_pointer],CDDataBuf  ;edi
         call    ReadCDWRetr
@@ -564,7 +564,7 @@ fs_CdExecute:
         push    esi edi ecx
         mov     esi,512
         imul    esi,[eax+8]
-        add     esi,CDDataBuf  
+        add     esi,CDDataBuf
         mov     ecx,512/4
         cld
         rep     movsd
@@ -599,7 +599,7 @@ fs_CdExecute:
 .err:
         popad
         mov     eax, 11
-        ret        
+        ret
 
 cd_find_lfn:
 ; in: esi->name
@@ -621,10 +621,10 @@ cd_find_lfn:
         jne  .access_denied
 ; сектор является терминатором набор дескрипторов томов?
         cmp  [CDDataBuf],byte 0xff
-        je  .access_denied         
+        je  .access_denied
 ; сектор является дополнительным и улучшенным дескриптором тома?
         cmp  [CDDataBuf],byte 0x2
-        jne  .start 
+        jne  .start
 ; сектор является дополнительным дескриптором тома?
         cmp  [CDDataBuf+6],byte 0x1
         jne  .start
@@ -672,7 +672,7 @@ cd_find_lfn:
         pop  esi eax
         clc
         ret
-        
+
 cd_find_name_in_buffer:
         mov     [cd_current_pointer_of_input_2],CDDataBuf
 .start:
@@ -680,9 +680,9 @@ cd_find_name_in_buffer:
         jc    .not_found
         call    cd_compare_name
         jc    .start
-.found: 
+.found:
         clc
-        ret   
+        ret
 .not_found:
         stc
         ret
@@ -713,7 +713,7 @@ cd_compare_name:
 ; out: if names match: ZF=1 and esi->next component of name
 ;      else: ZF=0, esi is not changed
 ; destroys eax
-    push    esi eax edi 
+    push    esi eax edi
     mov     edi,ebp
 .loop:
     cld
@@ -729,7 +729,7 @@ cd_compare_name:
     call char_toupper
     call ansi2uni_char
     xchg ah,al
-    cld  
+    cld
     sub  edi,2
     scasw
     jne   .name_not_coincide
@@ -752,7 +752,7 @@ cd_compare_name:
     add   eax,ebp
     sub   eax,34
     cmp   edi,eax
-    je   .done_1 
+    je   .done_1
 ; проверка конца папки
     movzx   eax,byte [ebp-1]
     add   eax,ebp
@@ -764,7 +764,7 @@ cd_compare_name:
     inc   esi
     clc
     ret
-    
+
 char_todown:
 ; convert character to uppercase, using cp866 encoding
 ; in: al=symbol
@@ -788,7 +788,7 @@ char_todown:
 .az:
         add     al, 0x20
         ret
-        
+
 uni2ansi_char:
 ; convert UNICODE character in al to ANSI character in ax, using cp866 encoding
 ; in: ax=UNICODE character

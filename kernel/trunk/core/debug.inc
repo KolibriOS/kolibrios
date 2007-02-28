@@ -19,7 +19,7 @@ sys_debug_services_table:
 debug_set_event_data:
 ; in: ebx = pointer
 ; destroys eax
-	mov	eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
 	shl	eax, 8
 	mov	[eax+0x80000+APPDATA.dbg_event_mem], ebx
 	ret
@@ -36,7 +36,7 @@ get_debuggee_slot:
 	jz	.ret_bad
 	shl	eax, 5
 	push	ebx
-	mov	ebx, [0x3000]
+        mov     ebx, [CURRENT_TASK]
 	cmp	[0x80000+eax*8+APPDATA.debugger_slot], ebx
 	pop	ebx
 	jnz	.ret_bad
@@ -72,13 +72,13 @@ debug_suspend:
 ; destroys eax,ebx
 	call	get_debuggee_slot
 	jc	.ret
-	mov	bl, [0x3000+eax+TASKDATA.state]	; process state
+        mov     bl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
 	test	bl, bl
 	jz	.1
 	cmp	bl, 5
 	jnz	.ret
 	mov	bl, 2
-.2:	mov	[0x3000+eax+TASKDATA.state], bl
+.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], bl
 .ret:
 	sti
 	ret
@@ -87,13 +87,13 @@ debug_suspend:
 	jmp	.2
 
 do_resume:
-	mov	bl, [0x3000+eax+TASKDATA.state]
+        mov     bl, [CURRENT_TASK+eax+TASKDATA.state]
 	cmp	bl, 1
 	jz	.1
 	cmp	bl, 2
 	jnz	.ret
 	mov	bl, 5
-.2:	mov	[0x3000+eax+TASKDATA.state], bl
+.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], bl
 .ret:	ret
 .1:	dec	ebx
 	jmp	.2
@@ -380,7 +380,7 @@ debugger_notify:
 	pop	ecx
 	pop	ecx
 	pop	ecx
-	cmp	dword [0x3000], 1
+        cmp     dword [CURRENT_TASK], 1
 	jnz	.notos
 	cmp	[timer_ticks], edi
 	jae	.ret
@@ -430,7 +430,7 @@ debug_exc:
 	jns	@f
 ; this is exception from task switch
 ; set DRx registers for task and continue
-	mov	eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
 	shl	eax, 8
 	add	eax, 0x80000+APPDATA.dbg_regs
 	mov	ecx, [eax+0]
@@ -453,7 +453,7 @@ debug_exc:
 	mov	dr6, eax
 ; test if debugging
 	cli
-	mov	eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
 	shl	eax, 8
 	mov	eax, [0x80000+eax+APPDATA.debugger_slot]
 	test	eax, eax
@@ -463,7 +463,7 @@ debug_exc:
 	add	esp, 28h+4
 	mov	[error_interrupt], 1
 	call	show_error_parameters
-	mov	edx, [0x3010]
+        mov     edx, [TASK_BASE]
 	mov	byte [edx+TASKDATA.state], 4
 	jmp	change_task
 .debug:
@@ -483,7 +483,7 @@ debug_exc:
 	cmp	cl, not 10h
 	jnz	.l1
 	push	edx	; DR6 image
-	mov	ecx, [0x3010]
+        mov     ecx, [TASK_BASE]
 	push	dword [ecx+TASKDATA.pid]	; PID
 	push	12
 	pop	ecx
@@ -492,7 +492,7 @@ debug_exc:
 	pop	ecx
 	pop	ecx
 	pop	ecx
-	mov	edx, [0x3010]
+        mov     edx, [TASK_BASE]
 	mov	byte [edx+TASKDATA.state], 1	; suspended
 	call	change_task
 	restore_ring3_context

@@ -101,7 +101,7 @@ create_event:
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
-           mov ebx, [0x3000+ebx+4]
+           mov ebx, [CURRENT_TASK+ebx+4]
            mov [eax+APPOBJ.pid], ebx
            mov edx, [.flags]
            mov [eax+EVENT.state], edx
@@ -274,7 +274,7 @@ proc get_event_ex stdcall, p_ev:dword, timeout:dword
            call destroy_event.force
            ret
 .switch:
-           mov eax, [0x3010]
+           mov eax, [TASK_BASE]
            mov [eax+TASKDATA.state], byte 5
 	   call change_task
 	   jmp .wait
@@ -339,7 +339,7 @@ wait_event:
            ret
 .switch:
            or [eax+EVENT.state], EVENT_WATCHED
-           mov eax, [0x3010]
+           mov eax, [TASK_BASE]
            mov [eax+TASKDATA.state], byte 5
 	   call change_task
            mov eax, [.event]
@@ -497,7 +497,7 @@ sys_waitforevent:
      jne   eventoccur
    newwait:
 
-     mov   eax, [0x3010]
+     mov   eax, [TASK_BASE]
      mov   [eax+TASKDATA.state], byte 5
      call  change_task
 
@@ -511,10 +511,10 @@ get_event_for_app:
 
      pushad
 
-     mov   edi,[0x3010]              ; WINDOW REDRAW
+     mov   edi,[TASK_BASE]              ; WINDOW REDRAW
      test  [edi+TASKDATA.event_mask],dword 1
      jz    no_eventoccur1
-     ;mov   edi,[0x3010]
+     ;mov   edi,[TASK_BASE]
      cmp   [edi-twdw+WDATA.fl_redraw],byte 0
      je    no_eventoccur1
      popad
@@ -522,12 +522,12 @@ get_event_for_app:
      ret
    no_eventoccur1:
 
-     ;mov   edi,[0x3010]              ; KEY IN BUFFER
+     ;mov   edi,[TASK_BASE]              ; KEY IN BUFFER
      test  [edi+TASKDATA.event_mask],dword 2
      jz    no_eventoccur2
-     mov   ecx, [0x3000]
+     mov   ecx, [CURRENT_TASK]
      movzx edx,word [0xC000+ecx*2]
-     mov   eax, [0x3004]
+     mov   eax, [TASK_COUNT]
      cmp   eax,edx
      jne   no_eventoccur2x
      cmp   [0xf400],byte 0
@@ -546,14 +546,14 @@ get_event_for_app:
         jb      @b
    no_eventoccur2:
 
-     ;mov   edi,[0x3010]              ; BUTTON IN BUFFER
+     ;mov   edi,[TASK_BASE]              ; BUTTON IN BUFFER
      test  [edi+TASKDATA.event_mask],dword 4
      jz    no_eventoccur3
      cmp   [0xf500],byte 0
      je    no_eventoccur3
-     mov   ecx, [0x3000]
+     mov   ecx, [CURRENT_TASK]
      movzx edx, word [0xC000+ecx*2]
-     mov   eax, [0x3004]
+     mov   eax, [TASK_COUNT]
      cmp   eax,edx
      jnz   no_eventoccur3
      popad
@@ -572,10 +572,10 @@ get_event_for_app:
    no_eventoccur3:
 
 
-     ;mov   edi,[0x3010]              ; mouse event
+     ;mov   edi,[TASK_BASE]              ; mouse event
      test  [edi+TASKDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     mov   eax,[0x3000]
+     mov   eax,[CURRENT_TASK]
      shl   eax,8
      test  [eax+0x80000+APPDATA.event_mask],dword 00100000b
      jz    no_mouse_event
@@ -586,7 +586,7 @@ get_event_for_app:
    no_mouse_event:
 
 
-     ;mov   edi,[0x3010]              ; DESKTOP BACKGROUND REDRAW
+     ;mov   edi,[TASK_BASE]              ; DESKTOP BACKGROUND REDRAW
      test  [edi+TASKDATA.event_mask],dword 16
      jz    no_eventoccur5
      cmp   [0xfff0],byte 2
@@ -596,10 +596,10 @@ get_event_for_app:
      ret
    no_eventoccur5:
 
-     ;mov   edi,[0x3010]              ; IPC
+     ;mov   edi,[TASK_BASE]              ; IPC
      test  [edi+TASKDATA.event_mask],dword 01000000b
      jz    no_ipc
-     mov   eax,[0x3000]
+     mov   eax,[CURRENT_TASK]
      shl   eax,8
      test  [eax+0x80000+APPDATA.event_mask],dword 01000000b
      jz    no_ipc
@@ -610,10 +610,10 @@ get_event_for_app:
    no_ipc:
 
 
-     ;mov   edi,[0x3010]              ; STACK
+     ;mov   edi,[TASK_BASE]              ; STACK
      test  [edi+TASKDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     mov   eax,[0x3000]
+     mov   eax,[CURRENT_TASK]
      shl   eax,8
      test  [eax+0x80000+APPDATA.event_mask],dword 10000000b
      jz    no_stack_event
@@ -625,7 +625,7 @@ get_event_for_app:
 
      test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
      jz    .test_IRQ
-     mov   eax, [0x3000]
+     mov   eax, [CURRENT_TASK]
      shl   eax, 8
      test  byte [eax+0x80000+APPDATA.event_mask+1], byte 1
      jz    .test_IRQ
@@ -635,7 +635,7 @@ get_event_for_app:
      ret
 
 ;.test_ext:
-;     mov   eax, [0x3000]
+;     mov   eax, [CURRENT_TASK]
 ;     shl   eax, 8
 ;     test  dword [eax+0x80000+APPDATA.event_mask], EVENT_EXTENDED
 ;     jz .test_IRQ
@@ -651,14 +651,14 @@ get_event_for_app:
      mov   ebx,0x00010000
      xor   ecx, ecx
    irq_event_test:
-     mov   edi,[0x3010]
+     mov   edi,[TASK_BASE]
      test  [edi+TASKDATA.event_mask],ebx
      jz    no_irq_event
      mov   edi,ecx
      shl   edi,2
      add   edi,irq_owner
      mov   edx,[edi]
-     mov   eax,[0x3010]
+     mov   eax,[TASK_BASE]
      mov   eax,[eax+TASKDATA.pid]
      cmp   edx,eax
      jne   no_irq_event

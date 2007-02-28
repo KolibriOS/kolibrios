@@ -395,7 +395,7 @@ proc init_LFB
            mov edx, LFB_BASE
            mov esi, [LFBAddress]
            mov edi, [LFBSize]
-           mov dword [exp_lfb+4], esi
+           mov dword [exp_lfb+4], edx
 
            shr edi, 12
            mov [pg_count], edi

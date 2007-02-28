@@ -30,7 +30,7 @@ sound_interface:
 
    cmp  eax,0                     ; Load data
    jne  no_SB16_load_music
-   mov  edi,[0x3010]
+   mov  edi,[TASK_BASE]
    add  edi,TASKDATA.mem_start
    add  ebx,[edi]
    call code_SB16_load_music
@@ -67,17 +67,17 @@ sound_interface:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    cmp   eax, edi                      ; this is subfunction #55 ?
     jne  retFunc55                     ; if no then return.
-   cmp   byte [sound_flag],0           
+   cmp   byte [sound_flag],0
    jne   retFunc55
    movzx eax, byte [countDelayNote]
    or    al, al                        ; player is busy ?
     jnz  retFunc55                     ; return counter delay Note
-;   mov   eax, [0x3010]
+;   mov   eax, [TASK_BASE]
 ;   mov   eax, [eax+0x10]               ; address application im memory
 ;   add   eax, edx                      ; add offset Delay-Note string
 ;   mov   [memAdrNote], eax
    mov   [memAdrNote],edx
-   mov   eax,[0x3010]
+   mov   eax,[TASK_BASE]
    mov   eax,[eax+TASKDATA.pid]
    mov   [pidProcessNote],eax
    xor   eax, eax                      ; Ok!  EAX = 0

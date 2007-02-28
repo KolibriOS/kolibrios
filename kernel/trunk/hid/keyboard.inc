@@ -91,7 +91,7 @@ irq1:
 ;       mov   ds, ax
 ;       mov   es, ax
 
-       movzx eax,word[0x3004] ; top window process
+       movzx eax,word[TASK_COUNT] ; top window process
        movzx eax,word[0xC400+eax*2]
        shl   eax,8
        mov   al,[0x80000+eax+APPDATA.keyboard_mode]

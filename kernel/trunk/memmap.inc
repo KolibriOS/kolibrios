@@ -212,7 +212,7 @@
 ;
 ; 0x0098B000 ->       kernel heap
 ;
-; 0x01FFFFFF          heam min limit
+; 0x01FFFFFF          heap min limit
 ; 0x7DBFFFFF          heap max limit
 ; 0x7DC00000 -> 0x7FBFFFFF  LFB 32Mb
 ; 0x7DC00000 -> 0x7E3FFFFF  application available LFB 8Mb

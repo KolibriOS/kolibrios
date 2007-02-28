@@ -18,8 +18,8 @@
 ;;    socket_read
 ;;    socket_write
 ;;    socket_write_tcp
-;;    
-;;    
+;;
+;;
 ;;  Changes history:
 ;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net
 ;;   11.11.2006 - [Johnny_B] and [smb]
@@ -71,15 +71,15 @@
 ;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 ; 72| Retransmit queue # NOW WINDOW SIZE TIMER          INTEL format|
 ;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 76|      RX offset from 
+; 76|      RX offset from
 ; 76|       RX Data                                                 |
 ;   +-+-+-..........                                               -+
 
 
 ; so, define struct
 struc SOCKET
-{  .Status		    dd	 ?  ;+00 - Status ( of this buffer ) 
-   .PID 		    dd	 ?  ;+04 - Application Process ID    
+{  .Status		    dd	 ?  ;+00 - Status ( of this buffer )
+   .PID 		    dd	 ?  ;+04 - Application Process ID
    .LocalIP		    dd	 ?  ;+08 -  Local IP Address
    .LocalPort		    dw	 ?  ;+12 - Local Port
    .UnusedL		    dw	 ?  ;+14 - may be removed in future
@@ -88,17 +88,17 @@ struc SOCKET
    .UnusedR		    dw	 ?  ;+22 - may be removed in future
    .rxDataCount 	    dd	 ?  ;+24 - Rx Data Count
    .TCBState		    dd	 ?  ;+28 - TCB STATE
-   .TCBTimer		    dd	 ?  ;+32 - TCB Timer (seconds) 
+   .TCBTimer		    dd	 ?  ;+32 - TCB Timer (seconds)
    .ISS 		    dd	 ?  ;+36 - Initial Send Sequence
    .IRS 		    dd	 ?  ;+40 - Initial Receive Sequence
    .SND_UNA		    dd	 ?  ;+44 - Sequence number of unack'ed sent packets
-   .SND_NXT		    dd	 ?  ;+48 - Next send sequence number to use 
+   .SND_NXT		    dd	 ?  ;+48 - Next send sequence number to use
    .SND_WND		    dd	 ?  ;+52 - Send window
    .RCV_NXT		    dd	 ?  ;+56 - Next receive sequence number to use
    .RCV_WND		    dd	 ?  ;+60 - Receive window
    .SEG_LEN		    dd	 ?  ;+64 - Segment length
    .SEG_WND		    dd	 ?  ;+68 - Segment window
-   .wndsizeTimer	    dd	 ?  ;+72 - Retransmit queue # NOW WINDOW SIZE TIMER          
+   .wndsizeTimer	    dd	 ?  ;+72 - Retransmit queue # NOW WINDOW SIZE TIMER
    .rxData		    dd	 ?  ;+76 - receive data buffer here
 }
 
@@ -106,11 +106,11 @@ virtual at 0
   SOCKET SOCKET
 end virtual
 
-; simple macro calcing real memory address of SOCKET struct by socket's 
+; simple macro calcing real memory address of SOCKET struct by socket's
 macro	Index2RealAddr reg
 {
 	shl	reg, 12
-    add     reg, sockets	
+    add     reg, sockets
 }
 
 ;Constants
@@ -211,11 +211,11 @@ socket_open:
     mov     [eax + SOCKET.RemotePort], cx
 
     mov     ebx, [stack_ip]
-    mov     [eax + SOCKET.LocalIP], ebx 	
-    mov     [eax + SOCKET.RemoteIP], edx  
+    mov     [eax + SOCKET.LocalIP], ebx
+    mov     [eax + SOCKET.RemoteIP], edx
     mov     [eax + SOCKET.rxDataCount], dword 0      ; recieved data count
 
-    mov     esi, [0x3010]
+    mov     esi, [TASK_BASE]
     mov     ebx, [esi+TASKDATA.pid]
     mov     [eax + SOCKET.PID], ebx	    ; save the process ID
     pop     eax      ; Get the socket number back, so we can return it
@@ -256,19 +256,19 @@ socket_open_tcp:
     mov     [eax + SOCKET.wndsizeTimer], dword 0     ; Reset the window timer.
 
 	xchg	bh, bl
-	mov	[eax + SOCKET.LocalPort], bx	
+	mov	[eax + SOCKET.LocalPort], bx
 ;    mov     [eax + 12], byte bh      ; Local port ( LS 16 bits )
 ;    mov     [eax + 13], byte bl      ; Local port ( LS 16 bits )
 
 	xchg	ch, cl
-	mov	[eax + SOCKET.RemotePort], cx 
+	mov	[eax + SOCKET.RemotePort], cx
 ;    mov     [eax + 20], ch         ; Remote Port ( LS 16 bits )
 ;    mov     [eax + 21], cl         ; Remote Port ( LS 16 bits )
 
     mov     ebx, [stack_ip]
-    mov     [eax + SOCKET.LocalIP], ebx 	
-    mov     [eax + SOCKET.RemoteIP], edx	
-    mov     [eax + SOCKET.rxDataCount], dword 0    
+    mov     [eax + SOCKET.LocalIP], ebx
+    mov     [eax + SOCKET.RemoteIP], edx
+    mov     [eax + SOCKET.rxDataCount], dword 0
 
     ; Now fill in TCB state
     mov     ebx, TCB_LISTEN
@@ -279,7 +279,7 @@ socket_open_tcp:
 sot_001:
     mov     [eax + SOCKET.TCBState], ebx	    ; Indicate the state of the TCB
 
-    mov     esi, [0x3010]
+    mov     esi, [TASK_BASE]
     mov     ecx, [esi+TASKDATA.pid]
     mov     [eax + SOCKET.PID], ecx	    ; save the process ID
 
@@ -709,7 +709,7 @@ socket_write:
     pop     eax 		 ; get callers ptr to data to send
 
     ; Get the address of the callers data
-    mov     edi, [0x3010]
+    mov     edi, [TASK_BASE]
     add     edi, TASKDATA.mem_start
     add     eax, [edi]
     mov     esi, eax
@@ -824,7 +824,7 @@ socket_write_tcp:
     mov     bl, 0x10	    ; ACK
 
     ; Get the address of the callers data
-    mov     edi, [0x3010]
+    mov     edi, [TASK_BASE]
     add     edi, TASKDATA.mem_start
     add     edx, [edi]
     mov     esi, edx

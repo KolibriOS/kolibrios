@@ -4,8 +4,8 @@
 ; Автор исходного текста  Кулаков Владимир Геннадьевич.
 ; Адаптация и доработка Mario79
 
-give_back_application_data:  ; переслать приложению   
-     mov edi,[0x3010]
+give_back_application_data:  ; переслать приложению
+     mov edi,[TASK_BASE]
      mov edi,[edi+TASKDATA.mem_start]
      add edi,ecx
 give_back_application_data_1:
@@ -16,8 +16,8 @@ give_back_application_data_1:
      rep movsd
      ret
 
-take_data_from_application:   ; взять из приложения
-     mov esi,[0x3010]
+take_data_from_application:   ; взять из приложени
+     mov esi,[TASK_BASE]
      mov esi,[esi+TASKDATA.mem_start]
      add esi,ecx
 take_data_from_application_1:
@@ -66,7 +66,7 @@ FDC_C   DB ?
 FDC_H   DB ?
 FDC_R   DB ?
 FDC_N   DB ?
-; Счетчик повторения операции чтения
+; Счетчик повторения операции чтени
 ReadRepCounter  DB ?
 ; Счетчик повторения операции рекалибровки
 RecalRepCounter DB ?
@@ -136,7 +136,7 @@ FDCDataOutput:
         out     DX,AL
 @@End_5:
 ;        popa
-        pop edx ecx eax 
+        pop edx ecx eax
         ret
 
 ;******************************************
@@ -174,7 +174,7 @@ FDCDataInput:
 ;* ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ КОНТРОЛЛЕРА НГМД *
 ;*********************************************
 FDCInterrupt:
-; Установить флаг прерывания
+; Установить флаг прерывани
         mov     [FDD_IntFlag],1
         ret
 
@@ -194,7 +194,7 @@ WaitFDCInterrupt:
         pusha
 ; Сбросить байт состояния операции
         mov     [FDC_Status],FDC_Normal
-; Сбросить флаг прерывания
+; Сбросить флаг прерывани
         mov     [FDD_IntFlag],0
 ; Обнулить счетчик тиков
         mov     eax,[timer_ticks]
@@ -352,7 +352,7 @@ SeekTrack:
 ; Подать команду "Поиск"
         mov     AL,0Fh
         call    FDCDataOutput
-        ; Передать байт номера головки/накопителя
+        ; Передать байт номера головки/накопител
         mov     AL,[FDD_Head]
         shl     AL,2
         call    FDCDataOutput
@@ -467,15 +467,15 @@ ReadSectWithRetr:
 ; Обнулить счетчик повторения операции рекалибровки
         mov     [RecalRepCounter],0
 @@TryAgain:
-; Обнулить счетчик повторения операции чтения
+; Обнулить счетчик повторения операции чтени
         mov     [ReadRepCounter],0
 @@ReadSector_1:
         call    ReadSector
         cmp     [FDC_Status],0
         je      @@Exit_2
         cmp     [FDC_Status],1
-        je      @@Err_3 
-        ; Троекратное повторение чтения
+        je      @@Err_3
+        ; Троекратное повторение чтени
         inc     [ReadRepCounter]
         cmp     [ReadRepCounter],3
         jb      @@ReadSector_1
@@ -565,7 +565,7 @@ WriteSectWithRetr:
 ; Обнулить счетчик повторения операции рекалибровки
         mov     [RecalRepCounter],0
 @@TryAgain_1:
-; Обнулить счетчик повторения операции чтения
+; Обнулить счетчик повторения операции чтени
         mov     [ReadRepCounter],0
 @@WriteSector_1:
         call    WriteSector
@@ -573,7 +573,7 @@ WriteSectWithRetr:
         je      @@Exit_4
         cmp     [FDC_Status],1
         je      @@Err_4
-        ; Троекратное повторение чтения
+        ; Троекратное повторение чтени
         inc     [ReadRepCounter]
         cmp     [ReadRepCounter],3
         jb      @@WriteSector_1

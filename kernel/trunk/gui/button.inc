@@ -18,39 +18,39 @@ dececx:
     pop  ecx
     pop  edx
     ret
-    
+
 incecx:
     push edx
     push ecx
-    
+
     mov  edx,2
   .loop:
-    
+
     cmp  byte [esp+edx],0xdf
     jbe  @f
     mov  [esp+edx],byte 0xdf
    @@:
     add  [esp+edx],byte 0x20
-    
+
     dec  edx
     jns  .loop
     pop  ecx
     pop  edx
     ret
-    
+
 incecx2:
     push edx
     push ecx
-    
+
     mov  edx,2
   .loop:
-    
+
     cmp  byte [esp+edx],0xeb
     jbe  @f
     mov  [esp+edx],byte 0xeb
    @@:
     add  [esp+edx],byte 0x14
-    
+
     dec  edx
     jns  .loop
     pop  ecx
@@ -68,7 +68,7 @@ drawbuttonframes:
 
         shr   eax,16
         shr   ebx,16
-        mov   edx,[0x3010]
+        mov   edx,[TASK_BASE]
 
 		add   eax,[edx-twdw + WDATA.box.left]
 		add   ebx,[edx-twdw + WDATA.box.top]
@@ -164,7 +164,7 @@ button_dececx:
 sys_button:
 
         push    edi
-        mov     edi,[0x3000]
+        mov     edi,[CURRENT_TASK]
         shl     edi,8
         rol     eax,16
         add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
@@ -197,9 +197,9 @@ sys_button:
         push  ebx
         shr   eax,16
         shr   ebx,16
-        mov   edx,[0x3010]
-		mov   esi,[edx-twdw + WDATA.box.left]
-		mov   edi,[edx-twdw + WDATA.box.top]
+        mov   edx,[TASK_BASE]
+        mov   esi,[edx-twdw + WDATA.box.left]
+        mov   edi,[edx-twdw + WDATA.box.top]
         add   eax,esi
         add   ebx,edi
         mov   cx,ax
@@ -247,7 +247,7 @@ sys_button:
         shl   eax,4
         add   eax,edi
 
-        mov   bx,[0x3000]
+        mov   bx,[CURRENT_TASK]
         mov   [eax],bx
 
         add   eax,2         ; save button id number
@@ -298,7 +298,7 @@ remove_button:
 
     add   eax,0x10
 
-    mov   dx,[0x3000]
+    mov   dx,[CURRENT_TASK]
     cmp   dx,[eax]
     jnz   rnewba
 
@@ -504,7 +504,7 @@ checkbuttons:
 
     movzx ebx,word [eax]
     movzx ecx,word [0xC000 + ebx * 2]
-    cmp   ecx,[0x3004]
+    cmp   ecx,[TASK_COUNT]
     jne   buttonnewcheck
 
     ; check that button start is inside window x/y end

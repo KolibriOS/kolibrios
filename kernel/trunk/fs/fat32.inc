@@ -16,7 +16,7 @@
 ;;  27.05.2006 LFN create/rewrite file - diamond                   ;;
 ;;  04.05.2006 LFN read folder - diamond                           ;;
 ;;  29.04.2006 Elimination of hangup after the                     ;;
-;;             expiration hd_wait_timeout -  Mario79               ;;           
+;;             expiration hd_wait_timeout -  Mario79               ;;
 ;;  23.04.2006 LFN read file - diamond                             ;;
 ;;  28.01.2006 find all Fat16/32 partition in all input point      ;;
 ;;             to MBR, see file part_set.inc - Mario79             ;;
@@ -124,9 +124,9 @@ reserve_hd1:
   reserve_ok1:
 
     push  eax
-    mov   eax,[0x3000]
+    mov   eax,[CURRENT_TASK]
     shl   eax,5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   [hd1_status],eax
     pop   eax
     sti
@@ -184,7 +184,7 @@ free_hd_channel:
     mov [IDE_Channel_2],0
     ret
 ;********************************************
-problem_partition db 0  ; used for partitions search 
+problem_partition db 0  ; used for partitions search
 
 include  'part_set.inc'
 
@@ -225,7 +225,7 @@ set_FAT:
     call  hd_read
     cmp  [hd_error],0
     jne  sfc_error
-    
+
 
   sfc_in_cache:
     cmp   [fs_type],16
@@ -632,7 +632,7 @@ get_data_cluster:
   gdcl1:
     call  hd_read
     cmp  [hd_error],0
-    jne  gdc_error    
+    jne  gdc_error
 
     add   ebx,512               ; update pointer
     dec   edx
@@ -1329,7 +1329,7 @@ delete_entry_name:
     mov   ebx,buffer
     call  hd_read               ; read previous sector
     cmp  [hd_error],0
-    jne  delete_name_end    
+    jne  delete_name_end
 
     mov   ebx,buffer+0x1e0      ; start from last entry
 
@@ -1400,7 +1400,7 @@ get_hd_info:
     ret
 
   info_access_denied:
-    add   esp,4 
+    add   esp,4
     xor   edx,edx
     xor   ebx,ebx
     xor   ecx,ecx
@@ -1556,7 +1556,7 @@ fs_HdRead:
     or    ebx, -1
     mov    eax, ERROR_ACCESS_DENIED
     ret
- 
+
 .noaccess_3:
     add esp,4
 .noaccess_1:
@@ -1629,7 +1629,7 @@ fs_HdRead:
     mov    ebx, edx
     call    hd_read
     cmp  [hd_error],0
-    jne  .noaccess_1    
+    jne  .noaccess_1
     pop    ebx
     add    edx, 512
     sub    ecx, 512

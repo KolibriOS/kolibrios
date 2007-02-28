@@ -60,7 +60,7 @@ calculatescreen:
         mov     esi, 1
         call    setscreen
 
-        mov     ebp, [0x3004]        ; number of processes
+        mov     ebp, [TASK_COUNT]        ; number of processes
         cmp     ebp, 1
         jbe     .finish
         align 4
@@ -68,7 +68,7 @@ calculatescreen:
         movzx   edi, word [0xC400 + esi * 2]
         shl     edi, 5
 
-        cmp     [0x3000+edi+TASKDATA.state], byte 9
+        cmp     [CURRENT_TASK+edi+TASKDATA.state], byte 9
         je      .not_wnd
 
         add     edi, window_data
@@ -213,7 +213,7 @@ pushad
         pop   ecx
         pop   ebx
         pop   eax
-        ret  
+        ret
   .free_form:
 
         ;  for (y=0; y <= x_size; y++)
@@ -375,7 +375,7 @@ display_settings:
      cmp  eax,2       ; set common window colours
      jne  no_com_colours
      mov  [windowtypechanged],dword 1
-     mov  esi,[0x3010]
+     mov  esi,[TASK_BASE]
      add  esi,TASKDATA.mem_start
      add  ebx,[esi]
      mov  esi,ebx
@@ -389,7 +389,7 @@ display_settings:
 
      cmp  eax,3       ; get common window colours
      jne  no_get_com
-     mov  esi,[0x3010]
+     mov  esi,[TASK_BASE]
      add  esi,TASKDATA.mem_start
      add  ebx,[esi]
      mov  edi,ebx
@@ -468,7 +468,7 @@ display_settings:
         cmp     eax,8       ; set window skin
         jne     no_set_skin
         mov     eax,ebx
-        mov     edi,[0x3010]
+        mov     edi,[TASK_BASE]
         add     ebx,[edi+TASKDATA.mem_start]        ; abs start of info block
         pushd   [ebx+0] [ebx+4] [ebx+8] [ebx+12]
         mov     dword[ebx+0],0        ; read
@@ -515,7 +515,7 @@ display_settings:
 
 
 repos_windows:
-        mov     ecx,[0x3004]
+        mov     ecx,[TASK_COUNT]
         mov     edi,0x20*2
     mov    byte[0x0000fff0],1
         dec     ecx
@@ -911,7 +911,7 @@ windowactivate:
 
      ; if type of current active window is 3,
      ; it must be redrawn
-        mov   eax, [0x3004]
+        mov   eax, [TASK_COUNT]
         movzx eax, word [0xC400 + eax*2]
         shl   eax, 5
         add   eax, window_data
@@ -928,7 +928,7 @@ windowactivate:
 
         xor   esi, esi        ; drop others
       waloop:
-        cmp   esi, dword [0x3004]
+        cmp   esi, dword [TASK_COUNT]
         jae   wacont
         inc   esi
         lea   edi, [0xC000 + esi*2]
@@ -944,13 +944,13 @@ windowactivate:
         pop   esi           ;   esi = pointer at 0xC400
 
       movzx   eax, word [esi]
-        mov   bx, [0x3004]  ; number of processes
+        mov   bx, [TASK_COUNT]  ; number of processes
         mov   [0xC000+eax*2], bx     ; this is the last (and the upper)
 
         ; update on screen -window stack
         xor   esi, esi
       waloop2:
-        mov   edi, [0x3004]
+        mov   edi, [TASK_COUNT]
         cmp   esi, edi
         jae   wacont2
         inc   esi
@@ -992,7 +992,7 @@ checkwindowdraw:
         add   esi, 2
         push  esi
 
-        mov   eax, [0x3004]
+        mov   eax, [TASK_COUNT]
         lea   eax, word [0xC400 + eax * 2] ; number of the upper window
 
         cmp   esi, eax
@@ -1000,7 +1000,7 @@ checkwindowdraw:
 
         movzx eax, word [esi]
         shl   eax, 5
-        cmp   [0x3000 + eax + TASKDATA.state], byte 9
+        cmp   [CURRENT_TASK + eax + TASKDATA.state], byte 9
         je    .new_check                    ; skip dead windows
 
         lea   esi, [eax+window_data]
@@ -1010,7 +1010,7 @@ checkwindowdraw:
         add   edx, ebx      ; y0e
 
         mov   ecx, [esi+WDATA.box.top]  ; y  ; y check
-        cmp   ecx, edx      
+        cmp   ecx, edx
         jae   .new_check     ; y < y0e
         mov   eax, [esi+WDATA.box.height]
         add   ecx, eax       ; ye
@@ -1058,7 +1058,7 @@ waredraw:     ; if redraw necessary at activate
 
         ; update screen info
         pushad
-        mov   edi, [0x3004] ; the last process (number)
+        mov   edi, [TASK_COUNT] ; the last process (number)
         movzx esi, word [0xC400 + edi * 2]
         shl   esi, 5
         add   esi, window_data
@@ -1072,7 +1072,7 @@ waredraw:     ; if redraw necessary at activate
         add   ecx, eax       ; ecx = x_end
         add   edx, ebx       ; edx = y_end
 
-        mov   edi, [0x3004]
+        mov   edi, [TASK_COUNT]
         movzx esi, word [0xC400 + edi * 2]
         call  setscreen
         popad
@@ -1137,7 +1137,7 @@ restore_minimized_window:
         jz    .skip_redrawings
         mov   [edi+WDATA.fl_redraw], 1
         and   [edi+WDATA.fl_wstate], not WSTATE_MINIMIZED
-        cmp   eax, [0x3004] ; the uppermost window
+        cmp   eax, [TASK_COUNT] ; the uppermost window
         jnz   .no_uppermost
         mov   eax, [edi+WDATA.box.left]
         mov   ebx, [edi+WDATA.box.top]
@@ -1174,7 +1174,7 @@ checkwindows:
 
         cmp   [window_minimize], 0
         je    .no_minimizing
-        mov   eax, [0x3004]       ; the uppermost window
+        mov   eax, [TASK_COUNT]       ; the uppermost window
         mov   bl, 0
         xchg  [window_minimize], bl
         cmp   bl, 1
@@ -1192,7 +1192,7 @@ checkwindows:
         ret
     .mouse_buttons_pressed:
 
-        mov   esi,[0x3004]
+        mov   esi,[TASK_COUNT]
         inc   esi
 
       cwloop:
@@ -1214,7 +1214,7 @@ checkwindows:
 
        movzx  eax, word [0xfb0a]
        movzx  ebx, word [0xfb0c]
-       
+
         cmp   ecx, eax
         jae   cwloop
         cmp   edx, ebx
@@ -1228,7 +1228,7 @@ checkwindows:
 
         pushad
         mov   eax, esi
-        mov   ebx, [0x3004]
+        mov   ebx, [TASK_COUNT]
         cmp   eax, ebx      ; is this window active?
         jz    .move_resize_window
 
@@ -1453,7 +1453,7 @@ checkwindows:
 
       cwb:
         cmp   [0xfb40],byte 0
-        jne   newchm 
+        jne   newchm
                                      ; new position done
         mov     [0xfff5],byte 1
         mov     cl,0
@@ -1751,7 +1751,7 @@ random_shaped_window:
 
      test eax, eax
      jne  rsw_no_address
-     mov  eax,[0x3000]
+     mov  eax,[CURRENT_TASK]
      shl  eax,8
 
      mov  [eax+0x80000+APPDATA.wnd_shape],ebx
@@ -1759,7 +1759,7 @@ random_shaped_window:
 
      cmp  eax,1
      jne  rsw_no_scale
-     mov  eax,[0x3000]
+     mov  eax,[CURRENT_TASK]
      shl  eax,8
      mov  byte [eax+0x80000+APPDATA.wnd_shape_scale], bl
    rsw_no_scale:

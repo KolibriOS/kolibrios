@@ -265,9 +265,9 @@ __sys_disable_mouse:
       ret
 @@:
       pushad
-      cmp  [0x3000],dword 1
+      cmp  [CURRENT_TASK],dword 1
       je   disable_m
-      mov  edx,[0x3000]
+      mov  edx,[CURRENT_TASK]
       shl  edx,5
       add  edx,window_data
       movzx  eax, word [0xfb0a]
@@ -277,7 +277,7 @@ __sys_disable_mouse:
       imul  ecx,ebx
       add  ecx,eax
       add  ecx, display_data
-      mov   eax, [0x3000]
+      mov   eax, [CURRENT_TASK]
       movzx ebx, byte [ecx]
       cmp   eax,ebx
       je    yes_mouse_disable
@@ -296,7 +296,7 @@ __sys_disable_mouse:
       je    yes_mouse_disable
       jmp   no_mouse_disable
 yes_mouse_disable:
-      mov  edx,[0x3000]
+      mov  edx,[CURRENT_TASK]
       shl  edx,5
       add  edx,window_data
       movzx  eax, word [0xfb0a]

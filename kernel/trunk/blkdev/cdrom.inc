@@ -18,7 +18,7 @@ sys_cd_audio:
 
      cmp eax,2
      jnz nocdtl
-     mov edi,[0x3010]
+     mov edi,[TASK_BASE]
      add edi,TASKDATA.mem_start
      add ebx,[edi]
      call sys_cdtracklist

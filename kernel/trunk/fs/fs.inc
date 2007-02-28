@@ -85,7 +85,7 @@ file_system:
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
 
-    cmp   dword [0x3000],1      ; no memory checks for kernel requests
+    cmp   dword [CURRENT_TASK],1      ; no memory checks for kernel requests
     jz    no_checks_for_kernel
     mov   edx,eax
     cmp   dword [eax+0],1
@@ -96,7 +96,7 @@ file_system:
     call  check_region
     test  eax,eax
     jnz   area_in_app_mem
-    
+
 .error_output:
     mov   esi,buffer_failed
     call  sys_msg_board_str
@@ -105,7 +105,7 @@ file_system:
     ret
 iglobal
   buffer_failed db 'K : Buffer check failed',13,10,0
-endg 
+endg
 .usual_check:
     cmp   dword [eax+0],0
     mov   ecx,512
@@ -274,7 +274,7 @@ endg
 
   fs_noramdisk_write:
   fs_noramdisk:
-  
+
   ;********************************************************************
     mov   eax,[edi+1]
     cmp   eax,'FD  '
@@ -289,7 +289,7 @@ endg
     je    fs_give_dir1
 
     mov   eax,[edi+1+12]
-    cmp   eax,'1   '            
+    cmp   eax,'1   '
     je    fs_yesflpdisk_first
     cmp   eax,'FIRS'
     je    fs_yesflpdisk_first
@@ -342,7 +342,7 @@ endg
 
   fs_noflpdisk:
   ;*****************************************************************
-  
+
     mov   eax,[edi+1]
     cmp   eax,'HD0 '
     je    fs_yesharddisk_IDE0
@@ -378,8 +378,8 @@ fs_yesharddisk_IDE3:
      mov  [hdpos],4
 fs_yesharddisk_partition:
         call    reserve_hd_channel
-;    call  choice_necessity_partition 
-;    jmp   fs_yesharddisk_all     
+;    call  choice_necessity_partition
+;    jmp   fs_yesharddisk_all
     jmp   fs_for_new_semantic
 
 choice_necessity_partition:
@@ -429,7 +429,7 @@ choice_necessity_partition_1:
     je    fs_give_dir1
     call  reserve_hd1
  fs_for_new_semantic:
-    call  choice_necessity_partition 
+    call  choice_necessity_partition
 
   fs_yesharddisk_all:
     mov   eax,1
@@ -792,7 +792,7 @@ StringToNumber:
     mov   [partition_string],eax
     mov    edi,partition_string
     xor    cx,cx
-i1: 
+i1:
     mov    al,[edi]
     cmp    al,32  ;13
     je    i_exit

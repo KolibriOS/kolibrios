@@ -342,7 +342,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
 .test_ok:
            mov ebx, [CURRENT_TASK]      ;hack: direct accsess
            shl ebx, 5                   ;to kernel data
-           mov ebx, [0x3000+ebx+4]
+           mov ebx, [CURRENT_TASK+ebx+4]
            mov eax, STREAM_SIZE
 
            call CreateObject

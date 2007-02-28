@@ -120,7 +120,7 @@ exc_c:
 
 ; test if debugging
         cli
-        mov   eax, [0x3000]
+        mov   eax, [CURRENT_TASK]
         shl   eax, 8
         mov   eax, [0x80000+eax+APPDATA.debugger_slot]
         test  eax, eax
@@ -132,7 +132,7 @@ exc_c:
         mov   [error_interrupt], eax
         call  show_error_parameters
 
-        mov   edx, [0x3010]
+        mov   edx, [TASK_BASE]
         mov   [edx + TASKDATA.state], byte 4
 
         jmp   change_task
@@ -143,7 +143,7 @@ exc_c:
         cld
         movzx ecx, bl
         push  ecx
-        mov   ecx, [0x3010]
+        mov   ecx, [TASK_BASE]
         push  dword [ecx+TASKDATA.pid]    ; PID of current process
         push  12
         pop   ecx
@@ -152,7 +152,7 @@ exc_c:
         pop   ecx
         pop   ecx
         pop   ecx
-        mov   edx, [0x3010]
+        mov   edx, [TASK_BASE]
         mov   byte [edx+TASKDATA.state], 1        ; suspended
         call  change_task
         restore_ring3_context
@@ -196,9 +196,9 @@ endg
 show_error_parameters:
 
         mov    [write_error_to],process_pid+43
-        mov    eax,[0x3000]
+        mov    eax,[CURRENT_TASK]
         shl    eax, 5
-        mov    eax,[0x3000+TASKDATA.pid+eax]
+        mov    eax,[CURRENT_TASK+TASKDATA.pid+eax]
         call   writehex
 
         mov    [write_error_to],process_error+43
@@ -433,9 +433,9 @@ irqhandler:
 set_application_table_status:
         push eax
 
-        mov  eax,[0x3000]
+        mov  eax,[CURRENT_TASK]
         shl  eax, 5
-        add  eax,0x3000+TASKDATA.pid
+        add  eax,CURRENT_TASK+TASKDATA.pid
         mov  eax,[eax]
 
         mov  [application_table_status],eax
@@ -448,9 +448,9 @@ set_application_table_status:
 clear_application_table_status:
         push eax
 
-        mov  eax,[0x3000]
+        mov  eax,[CURRENT_TASK]
         shl  eax, 5
-        add  eax,0x3000+TASKDATA.pid
+        add  eax,CURRENT_TASK+TASKDATA.pid
         mov  eax,[eax]
 
         cmp  eax,[application_table_status]
@@ -628,7 +628,7 @@ term9:
 
            mov [fpu_owner],1
            mov eax, [256+PROC_BASE+APPDATA.fpu_state]
-           clts  
+           clts
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
            fxrstor [eax]
@@ -737,7 +737,7 @@ term9:
     jz   .nodebug
     push 8
     pop  ecx
-    push dword [0x3000+edi+TASKDATA.pid]   ; PID
+    push dword [CURRENT_TASK+edi+TASKDATA.pid]   ; PID
     push 2
     call debugger_notify
     pop  ecx
@@ -764,7 +764,7 @@ term9:
 
   ; activate window
         movzx  eax, word [0xC000 + esi*2]
-        cmp    eax, [0x3004]
+        cmp    eax, [TASK_COUNT]
         jne    .dont_activate
         pushad
  .check_next_window:
@@ -774,7 +774,7 @@ term9:
         lea    esi, [0xc400+eax*2]
         movzx  edi, word [esi]               ; edi = process
         shl    edi, 5
-        cmp    [0x3000 + edi + TASKDATA.state], byte 9  ; skip dead slots
+        cmp    [CURRENT_TASK + edi + TASKDATA.state], byte 9  ; skip dead slots
         je     .check_next_window
         add    edi, window_data
 ; \begin{diamond}[19.09.2006]
@@ -789,7 +789,7 @@ term9:
 
         push    esi     ; remove hd1 & cd & flp reservation
         shl     esi, 5
-        mov     esi, [esi+0x3000+TASKDATA.pid]
+        mov     esi, [esi+CURRENT_TASK+TASKDATA.pid]
         cmp     [hd1_status], esi
         jnz     @f
         call    free_hd_channel
@@ -809,7 +809,7 @@ term9:
     pusha ; remove all irq reservations
     mov   eax,esi
     shl   eax, 5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   edi,irq_owner
     mov   ecx,16
   newirqfree:
@@ -823,7 +823,7 @@ term9:
     pusha                     ; remove all port reservations
     mov   edx,esi
     shl   edx, 5
-    add   edx,0x3000
+    add   edx,CURRENT_TASK
     mov   edx,[edx+TASKDATA.pid]
 
   rmpr0:
@@ -867,12 +867,12 @@ term9:
     popa
     mov  edi,esi         ; do not run this process slot
     shl  edi, 5
-    mov  [edi+0x3000 + TASKDATA.state],byte 9
+    mov  [edi+CURRENT_TASK + TASKDATA.state],byte 9
 ; debugger test - terminate all debuggees
     mov  eax, 2
     mov  ecx, 0x80000+2*0x100+APPDATA.debugger_slot
 .xd0:
-    cmp  eax, [0x3004]
+    cmp  eax, [TASK_COUNT]
     ja   .xd1
     cmp  dword [ecx], esi
     jnz  @f

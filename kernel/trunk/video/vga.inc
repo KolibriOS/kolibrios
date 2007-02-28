@@ -53,8 +53,8 @@ paletteVGA:
        add ah,1
        loop palvganew
 ;       mov    dx, 3ceh
-;       mov    ax, 0005h 
-;       out    dx, ax        
+;       mov    ax, 0005h
+;       out    dx, ax
        ret
 
 palette320x200:
@@ -114,7 +114,7 @@ uglobal
   novesachecksum dd 0x0
   EGA_counter    db  0
   VGA_drawing_screen db 0
-  VGA_8_pixels: 
+  VGA_8_pixels:
      rb 16
   temp:
      .cx dd 0
@@ -196,7 +196,7 @@ checkVga_N13:
         ret
 
 VGA_drawbackground:
-; draw all  
+; draw all
         cmp    [0xfe0c],dword 0x12
         jne     .end
         pushad
@@ -206,7 +206,7 @@ VGA_drawbackground:
         mov    edx,480
      @@:
         push   ebx edx esi edi
-        shl    edx,9           
+        shl    edx,9
         lea    edx,[edx+edx*4]
         add    esi,edx
         shr    edx,5
@@ -224,7 +224,7 @@ VGA_draw_long_line:
         mov    dx,3ceh
         mov    ax,0ff08h
         cli
-        out    dx, ax 
+        out    dx, ax
         mov    ax,0005h
         out    dx, ax
     m12pix:
@@ -318,7 +318,7 @@ VGA_putpixel:
  ; ebx = y
         mov     ecx,eax
         mov     eax, [esp+32-8+4] ; color
-        shl        ebx,9           
+        shl        ebx,9
         lea        ebx,[ebx+ebx*4] ; умножение на 5
         lea     edx, [ebx+ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     edi,edx
@@ -346,7 +346,7 @@ VGA_putpixel:
         cmp    ah,170
         jbe    .p13red
         or     dl,0x08
-.p13red: 
+.p13red:
         shr    eax,8
         cmp    ah,85
         jbe    .p13cont
@@ -369,7 +369,7 @@ VGA_putpixel:
         popfd
 ;.end:
         ret
-        
+
 VGA__putimage:
 ; ecx = size [x|y]
 ; edx = coordinates [x|y]
@@ -409,12 +409,12 @@ VGA_draw_bar:
 
 VGA_draw_bar_1:
         mov     [temp.cx],eax
-        mov     eax, [0x3010]
+        mov     eax, [TASK_BASE]
         add     ebx, [eax-twdw + 4]
         mov     eax, [eax-twdw + 0]
         add     eax, [temp.cx]
         and     eax,0xfff8
-        shl     ebx,9           
+        shl     ebx,9
         lea     ebx,[ebx+ebx*4] ; умножение на 5
         lea     ebx, [ebx+eax*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     esi,ebx
@@ -434,7 +434,7 @@ VGA_draw_bar_1:
 
 VGA_draw_long_line_1:
         push   ebx edx esi edi
-        shl    edx,9           
+        shl    edx,9
         lea    edx,[edx+edx*4]
         add    esi,edx
         shr    edx,5

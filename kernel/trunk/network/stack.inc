@@ -215,7 +215,7 @@ sh_001:
 
     mov     [last_1sTick], al
 
-    stdcall arp_table_manager, ARP_TABLE_TIMER, 0, 0 
+    stdcall arp_table_manager, ARP_TABLE_TIMER, 0, 0
     call    tcp_tcb_handler
 
 sh_exit:
@@ -485,8 +485,8 @@ not13:
     ; write the dns IP Address
     mov     [dns_ip], ebx
 
-    ret       
-    
+    ret
+
 ;<added by Frank Sommer>
 not14:
 	cmp	eax, 15
@@ -495,7 +495,7 @@ not14:
     ; in ebx we need 4 to read the last 2 bytes
 	cmp	ebx, dword 4
 	je	read
-    
+
     ; or we need 0 to read the first 4 bytes
 	cmp	ebx, dword 0
 	jnz	param_error
@@ -504,13 +504,13 @@ not14:
 read:
 	mov	eax, [node_addr + ebx]
 	jmp	@f
-    
-param_error:	
+
+param_error:
 	mov	eax, -1     ; params not accepted
 @@:
 	ret
 
-    
+
 ; 0 -> arp_probe
 ; 1 -> arp_announce
 ; 2 -> arp_responce (not supported yet)
@@ -518,33 +518,33 @@ param_error:
 not15:					; ARP stuff
 	cmp	eax, 16
 	jnz	not16
-	
+
 	cmp	ebx, 0
 	je	a_probe
-		
+
 	cmp	ebx, 1
 	je	a_ann			; arp announce
-		
+
 ;       cmp     ebx,2
 ;       jne     a_resp                  ; arp response
 
 	jmp	param15_error
-		
-		
+
+
 ; arp probe, sender IP must be set to 0.0.0.0, target IP is set to address being probed
 ; ecx: pointer to target MAC, MAC should set to 0 by application
 ; edx: target IP
 a_probe:
 	push	dword [stack_ip]
-	
+
 	mov	edx, [stack_ip]
 	mov	[stack_ip], dword 0
-	mov	esi, ecx		; pointer to target MAC address 
+	mov	esi, ecx		; pointer to target MAC address
 	call	arp_request
-	
-	pop	dword [stack_ip]		
+
+	pop	dword [stack_ip]
 	jmp	@f
-	
+
 ; arp announce, sender IP must be set to target IP
 ; ecx: pointer to target MAC
 a_ann:
@@ -552,10 +552,10 @@ a_ann:
 	mov	esi, ecx		; pointer to target MAC address
 	call	arp_request
 	jmp	@f
-		
+
 param15_error:
 	mov	eax, -1
-		
+
 @@:
 	ret
 ;</added by Frank Sommer>
@@ -929,7 +929,7 @@ stack_get_packet:
     push    eax 		    ; save address of IP data
 
     ; Get the address of the callers data
-    mov     edi,[0x3010]
+    mov     edi,[TASK_BASE]
     add     edi,TASKDATA.mem_start
     add     edx,[edi]
     mov     edi, edx
@@ -992,7 +992,7 @@ stack_insert_packet:
     pop     eax 		    ; get callers ptr to data to send
 
     ; Get the address of the callers data
-    mov     edi,[0x3010]
+    mov     edi,[TASK_BASE]
     add     edi,TASKDATA.mem_start
     add     eax,[edi]
     mov     esi, eax
