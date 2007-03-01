@@ -552,30 +552,30 @@ fs_HasRamdisk:
         ret
 
 fs_HasFloppy:
-        cmp     byte [0x40000], 0
+        cmp     byte [DRIVE_DATA], 0
         setnz   al
         ret
 
 fs_HasHd0:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 11000000b
         cmp     al, 01000000b
         setz    al
         ret
 fs_HasHd1:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00110000b
         cmp     al, 00010000b
         setz    al
         ret
 fs_HasHd2:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00001100b
         cmp     al, 00000100b
         setz    al
         ret
 fs_HasHd3:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00000011b
         cmp     al, 00000001b
         setz    al
@@ -583,25 +583,25 @@ fs_HasHd3:
 
 ;*******************************************************
 fs_HasCd0:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 11000000b
         cmp     al, 10000000b
         setz    al
         ret
 fs_HasCd1:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00110000b
         cmp     al, 00100000b
         setz    al
         ret
 fs_HasCd2:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00001100b
         cmp     al, 00001000b
         setz    al
         ret
 fs_HasCd3:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00000011b
         cmp     al, 00000010b
         setz    al
@@ -624,15 +624,15 @@ fs_NextRamdisk:
         ret
 
 fs_NextFloppy:
-; we have /fd/1 iff (([0x40000] and 0xF0) != 0) and /fd/2 iff (([0x40000] and 0x0F) != 0)
-        test    byte [0x40000], 0xF0
+; we have /fd/1 iff (([DRIVE_DATA] and 0xF0) != 0) and /fd/2 iff (([DRIVE_DATA] and 0x0F) != 0)
+        test    byte [DRIVE_DATA], 0xF0
         jz      .no1
         test    eax, eax
         jnz     .no1
         inc     eax
         ret     ; CF cleared
 .no1:
-        test    byte [0x40000], 0x0F
+        test    byte [DRIVE_DATA], 0x0F
         jz      .no2
         cmp     al, 2
         jae     .no2
@@ -657,7 +657,7 @@ fs_NextHd3:
         push    3
 fs_NextHd:
         pop     ecx
-        movzx   ecx, byte [0x40002+ecx]
+        movzx   ecx, byte [DRIVE_DATA+2+ecx]
         cmp     eax, ecx
         jae     fs_NextFloppy.no2
         inc     eax

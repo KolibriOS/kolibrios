@@ -267,12 +267,12 @@ irq1:
 .scancode:
         mov     bl, ch
 .dowrite:
-       movzx eax,byte[0xF400]
+       movzx eax,byte[KEY_COUNT]
        cmp   al,120
        jae   .exit.irq1
        inc   eax
-       mov   [0xF400],al
-       mov   [0xF400+eax],bl
+       mov   [KEY_COUNT],al
+       mov   [KEY_COUNT+eax],bl
 
    .exit.irq1:
        mov   [check_idle_semaphore],5

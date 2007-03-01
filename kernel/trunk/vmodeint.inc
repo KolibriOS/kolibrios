@@ -16,7 +16,7 @@ endg
 
      cmp  eax,13                 ; CALL VIDEOMODE DRIVER FUNCTIONS
      jne  .no_vmode_drv_access
-	pushd	[0x0000fe00] [0x0000fe04]
+        pushd   [ScreenWidth] [ScreenHeight]
 	popd	[old_screen_height] [old_screen_width]
      or   eax,-1                 ; If driver is absent then eax does not change
      call 0x760100               ; Entry point of video driver
@@ -26,20 +26,20 @@ endg
 ;    mov  [esp+28],edx
 	mov	eax,[old_screen_width]
 	mov	ebx,[old_screen_height]
-	sub	eax,[0x0000fe00]
+        sub     eax,[ScreenWidth]
 	jnz	@f
-	sub	ebx,[0x0000fe04]
+        sub     ebx,[ScreenHeight]
 	jz	.resolution_wasnt_changed
 	jmp	.lp1
-    @@: sub	ebx,[0x0000fe04]
+    @@: sub     ebx,[ScreenHeight]
   .lp1: sub	[screen_workarea.right],eax
 	sub	[screen_workarea.bottom],ebx
 
 	call	repos_windows
         mov     eax, 0
         mov     ebx, 0
-        mov     ecx, [0xfe00]
-        mov     edx, [0xfe04]
+        mov     ecx, [ScreenWidth]
+        mov     edx, [ScreenHeight]
 	call	calculatescreen
 
   .resolution_wasnt_changed:

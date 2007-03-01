@@ -1,6 +1,6 @@
 include "skindata.inc"
 
-skin_data = 0x00778000
+;skin_data = 0x00778000
 
 load_skin_file:
 ; eax = filename
@@ -355,7 +355,7 @@ drawwindow_IV:
         jne   no_skin_add_button
 
 ;* close button
-        mov   edi,[0xfe88]
+        mov   edi,[BTN_ADDR]
         movzx eax,word [edi]
         cmp   eax,1000
         jge   no_skin_add_button
@@ -394,7 +394,7 @@ drawwindow_IV:
         mov   [eax],bx
 
 ;* minimize button
-        mov   edi,[0xfe88]
+        mov   edi,[BTN_ADDR]
         movzx eax,word [edi]
         cmp   eax,1000
         jge   no_skin_add_button

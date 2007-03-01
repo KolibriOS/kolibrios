@@ -426,11 +426,11 @@ destroy_cursor:
 
 align 4
 proc init_cursors
-           cmp [0xfe0c],word 0x13
+           cmp [SCR_MODE],word 0x13
            jbe .fail
 
            movzx eax, byte [ScreenBPP]
-           mov ebx, [SCR_BYTES_PER_LINE]
+           mov ebx, [BytesPerScanLine]
            cmp eax, 32
            jne @F
            sub ebx, 128
@@ -456,8 +456,8 @@ proc init_cursors
            stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
            mov [def_cursor], eax
 
-           mov ecx, [SCR_X_SIZE]
-           mov edx, [SCR_Y_SIZE]
+           mov ecx, [ScreenWidth]
+           mov edx, [ScreenHeight]
            inc ecx
            inc edx
            mov [scr_width], ecx

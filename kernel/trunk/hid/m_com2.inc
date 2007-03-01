@@ -61,7 +61,7 @@ check_mouse_data_com2:
         shr ah,5
         and ah,1
         add al,ah
-        mov    [0xfb40],al
+        mov    [BTN_DOWN],al
         mov    [mouse_active],1
 ; Прибавить перемещение по X к координате X
         mov     AL,[FirstByte_1]
@@ -69,21 +69,21 @@ check_mouse_data_com2:
         or      AL,[SecondByte_1]
         cbw
         call    mouse_acceleration_com2
-        add     AX,[0xFB0A]    ;[XCoordinate]
+        add     AX,[MOUSE_X]    ;[XCoordinate]
         ; Курсор не должен выходить за левую или
         ; правую границу экрана
         js      @@X1_1
-        cmp     AX,[0xFE00]   ;ScreenLength
+        cmp     AX,[ScreenWidth]   ;ScreenLength
         jb      @@X2_1
         ; Установить координату X по правой границе
-        mov     AX,[0xFE00]   ;ScreenLength-1
+        mov     AX,[ScreenWidth]   ;ScreenLength-1
         dec     ax
         jmp     @@X2_1
 @@X1_1:
        ; Установить координату X по левой границе
         xor     AX,AX
 @@X2_1:
-        mov     [0xFB0A],AX     ;[XCoordinate]
+        mov     [MOUSE_X],AX     ;[XCoordinate]
         ; Прибавить перемещение по Y к координате Y
         mov     AL,[FirstByte_1]
         and     AL,00001100b
@@ -91,21 +91,21 @@ check_mouse_data_com2:
         or      AL,[ThirdByte_1]
         cbw
         call    mouse_acceleration_com2
-        add     AX,[0xFB0C]   ;[YCoordinate]
+        add     AX,[MOUSE_Y]   ;[YCoordinate]
         ; Курсор не должен выходить за верхнюю или
         ; нижнюю границу экрана
         js      @@Y1_1
-        cmp     AX,[0xFE04]  ;ScreenHeigth
+        cmp     AX,[ScreenHeight]  ;ScreenHeigth
         jb      @@Y2_1
         ; Установить координату X по нижней границе
-        mov     AX,[0xFE04] ;ScreenHeigth-1
+        mov     AX,[ScreenHeight] ;ScreenHeigth-1
         dec     ax
         jmp     @@Y2_1
 @@Y1_1:
        ; Установить координату X по верхней границе
         xor     AX,AX
 @@Y2_1:
-        mov     [0xFB0C],AX     ;[YCoordinate]
+        mov     [MOUSE_Y],AX     ;[YCoordinate]
         mov   eax,[timer_ticks]
         mov   [timer_ticks_com_1],eax
         jmp     @@EndMouseInterrupt_1

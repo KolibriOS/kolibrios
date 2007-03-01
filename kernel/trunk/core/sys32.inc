@@ -361,7 +361,7 @@ irqhandler:
      shl    esi,6            ; 1
      add    esi,irq00read    ; 1
      shl    edi,12           ; 1
-     add    edi,0x2E0000
+     add    edi,IRQ_SAVE
      mov    ecx,16
 
      mov    [check_idle_semaphore],5
@@ -461,8 +461,6 @@ clear_application_table_status:
 
         ret
 
-
-
 sys_resize_app_memory:
         ; eax = 1 - resize
         ;     ebx = new amount of memory
@@ -476,84 +474,6 @@ sys_resize_app_memory:
 
 .no_application_mem_resize:
         ret
-
-if 0
-get_app_params:
-
-    push eax
-
-    cmp  [0x90000+6],word '00'
-    jne  no_00_header
-
-    mov  eax,[0x90000+12]
-    mov  [app_start],eax
-    mov  eax,[0x90000+16]
-    mov  [app_i_end],eax
-    mov  eax,[0x90000+20]
-    mov  [app_mem],eax
-; \begin{diamond}[20.08.2006]
-; sanity check (functions 19,58 load app_i_end bytes and that must
-; fit in allocated memory to prevent kernel faults)
-    cmp  eax,[app_i_end]
-    jb   no_01_header
-; \end{diamond}[20.08.2006]
-    shr  eax,1
-    sub  eax,0x10
-    mov  [app_esp],eax
-    mov  eax,[0x90000+24]
-    mov  [app_i_param],eax
-    mov  [app_i_icon],dword 0
-
-    pop  eax
-    clc
-    ret
-
-  no_00_header:
-
-
-    cmp  [0x90000+6],word '01'
-    jne  no_01_header
-
-    mov  eax,[0x90000+12]
-    mov  [app_start],eax
-    mov  eax,[0x90000+16]
-    mov  [app_i_end],eax
-    mov  eax,[0x90000+20]
-    mov  [app_mem],eax
-; \begin{diamond}[20.08.2006]
-    cmp  eax,[app_i_end]
-    jb   no_01_header
-; \end{diamond}[20.08.2006]
-    mov  eax,[0x90000+24]
-    mov  [app_esp],eax
-    mov  eax,[0x90000+28]
-    mov  [app_i_param],eax
-    mov  eax,[0x90000+32]
-    mov  [app_i_icon],eax
-
-    pop  eax
-    clc
-    ret
-
-   no_01_header:
-
-    pop  eax
-    stc
-    ret
-
-uglobal
-;  new_process_place  dd  0x0
-;  app_start    dd  0x0
-;  app_i_end    dd  0x0
-;  app_mem      dd  0x0
-;  app_esp      dd  0x0
-;  app_i_param  dd  0x0
-;  app_i_icon   dd  0x0
-;  app_mem_pos  dd  0x0
-endg
-
-end if
-
 
 sys_threads:
 
@@ -637,8 +557,8 @@ term9:
            frstor [eax]
 @@:
 
-    mov   [0xf400],byte 0           ; empty keyboard buffer
-    mov   [0xf500],byte 0           ; empty button buffer
+    mov   [KEY_COUNT],byte 0           ; empty keyboard buffer
+    mov   [BTN_COUNT],byte 0           ; empty button buffer
 
 
 ; remove defined hotkeys
@@ -677,7 +597,7 @@ term9:
 
     mov   ecx,esi                 ; remove buttons
   bnewba2:
-    mov   edi,[0xfe88]
+    mov   edi,[BTN_ADDR]
     mov   eax,edi
     cld
     movzx ebx,word [edi]
@@ -827,7 +747,7 @@ term9:
 
   rmpr0:
 
-    mov   esi,[0x2d0000]
+    mov   esi,[RESERVED_PORTS]
 
     cmp   esi,0
     je    rmpr9
@@ -836,7 +756,7 @@ term9:
 
     mov   edi,esi
     shl   edi,4
-    add   edi,0x2d0000
+    add   edi,RESERVED_PORTS
 
     cmp   edx,[edi]
     je    rmpr4
@@ -857,7 +777,7 @@ term9:
     cld
     rep   movsb
 
-    dec   dword [0x2d0000]
+    dec   dword [RESERVED_PORTS]
 
     jmp   rmpr0
 
@@ -898,8 +818,8 @@ term9:
     xor   esi, esi
     call  redrawscreen
 
-    mov   [0xfff4],byte 0  ; no mouse background
-    mov   [0xfff5],byte 0  ; draw mouse
+    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
+    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
     mov   [application_table_status],0
     mov   esi,process_terminated

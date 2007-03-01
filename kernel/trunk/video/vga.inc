@@ -122,14 +122,14 @@ endg
 
 checkVga_N13:
 
-        cmp    [0xfe0c],dword 0x13
+        cmp    [SCR_MODE],dword 0x13
         jne   @f
 
 ;      cnvl:
         pushad
         cmp   [EGA_counter],1
         je   novesal
-        mov    ecx,[0xfb0a]
+        mov    ecx,[MOUSE_X]
         cmp    ecx,[novesachecksum]
         jne    novesal
         popad
@@ -151,7 +151,7 @@ checkVga_N13:
         sub    eax,100
         imul   eax,640*4
         add    ecx,eax
-        movzx  eax,word [0xfb0a]
+        movzx  eax,word [MOUSE_X]
         cmp    eax,160
         jge    m13l1
         mov    eax,160
@@ -163,9 +163,9 @@ checkVga_N13:
         sub    eax,160
         shl    eax,2
         add    ecx,eax
-        mov    esi,[0xfe80]
+        mov    esi,[LFBAddress]
         add    esi,ecx
-        mov    edi,0xa0000
+        mov    edi,VGABasePtr
         mov    edx,200
         mov    ecx,320
         cld
@@ -197,11 +197,11 @@ checkVga_N13:
 
 VGA_drawbackground:
 ; draw all
-        cmp    [0xfe0c],dword 0x12
+        cmp    [SCR_MODE],dword 0x12
         jne     .end
         pushad
-        mov    esi,[0xfe80]
-        mov    edi,0xa0000
+        mov    esi,[LFBAddress]
+        mov    edi,VGABasePtr
         mov    ebx,640/32  ; 640*480/(8*4)
         mov    edx,480
      @@:
@@ -322,11 +322,11 @@ VGA_putpixel:
         lea        ebx,[ebx+ebx*4] ; умножение на 5
         lea     edx, [ebx+ecx*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     edi,edx
-        add     edi, [0xfe80]     ; + LFB address
+        add     edi, [LFBAddress]     ; + LFB address
         mov     [edi], eax        ; write to LFB for Vesa2.0
         shr     edx,5             ; change BytesPerPixel to 1/8
         mov     edi,edx
-        add     edi, 0x0a0000     ; address of pixel in VGA area
+        add     edi, VGABasePtr     ; address of pixel in VGA area
         and     ecx,0x07          ; bit no. (modulo 8)
         pushfd
         ; edi = address, eax = 24bit colour, ecx = bit no. (modulo 8)
@@ -373,7 +373,7 @@ VGA_putpixel:
 VGA__putimage:
 ; ecx = size [x|y]
 ; edx = coordinates [x|y]
-        cmp    [0xfe0c],dword 0x12
+        cmp    [SCR_MODE],dword 0x12
         jne     @f
          pushad
          rol  edx,16
@@ -393,7 +393,7 @@ VGA_draw_bar:
 ; ebx   cy
 ; ecx   xe
 ; edx   ye
-        cmp    [0xfe0c],dword 0x12
+        cmp    [SCR_MODE],dword 0x12
         jne     @f
          pushad
          sub   ecx,eax
@@ -418,10 +418,10 @@ VGA_draw_bar_1:
         lea     ebx,[ebx+ebx*4] ; умножение на 5
         lea     ebx, [ebx+eax*4]  ; + x*BytesPerPixel (Vesa2.0 32)
         mov     esi,ebx
-        add     esi, [0xfe80]     ; + LFB address
+        add     esi, [LFBAddress]     ; + LFB address
         shr     ebx,5             ; change BytesPerPixel to 1/8
         mov     edi,ebx
-        add     edi, 0x0a0000     ; address of pixel in VGA area
+        add     edi, VGABasePtr   ; address of pixel in VGA area
         mov     ebx,ecx
         shr     ebx,5
         inc     ebx

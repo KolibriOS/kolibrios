@@ -19,12 +19,12 @@ Detect_COM_Mouse:
         shl   eax,2
         mov   [irq_owner+eax],byte 1
 
-        inc   dword [0x2d0000]
-        mov   edi,[0x2d0000]
+        inc   dword [RESERVED_PORTS]
+        mov   edi,[RESERVED_PORTS]
         shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x3f0
-        mov   [0x2d0000+edi+8],dword 0x3ff
+        mov   [RESERVED_PORTS+edi+0],dword 1
+        mov   [RESERVED_PORTS+edi+4],dword 0x3f0
+        mov   [RESERVED_PORTS+edi+8],dword 0x3ff
 
         popa
         mov    esi,boot_setmouse_type+22
@@ -33,20 +33,20 @@ Detect_COM_Mouse:
         sub    [COMPortBaseAddr],100h
         call   MSMouseSearch
         cmp    AL,'M'
-        jne    @f        
+        jne    @f
         mov    [com2_mouse_detected],1
         pusha
 
         mov   eax,3
         shl   eax,2
         mov   [irq_owner+eax],byte 1
-        
-        inc   dword [0x2d0000]
-        mov   edi,[0x2d0000]
+
+        inc   dword [RESERVED_PORTS]
+        mov   edi,[RESERVED_PORTS]
         shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x2f0
-        mov   [0x2d0000+edi+8],dword 0x2ff        
+        mov   [RESERVED_PORTS+edi+0],dword 1
+        mov   [RESERVED_PORTS+edi+4],dword 0x2f0
+        mov   [RESERVED_PORTS+edi+8],dword 0x2ff
 
         popa
         mov    esi,boot_setmouse_type+44
@@ -77,14 +77,14 @@ MouseSearch:
         add     DX,3
         mov     AL,00000010b
         out     DX,AL
-        ; Запретить все прерывания
+        ; Запретить все прерывани
         mov     DX,[COMPortBaseAddr]
         inc     DX
         mov     AL,0
         out     DX,AL
-; Проверить, что устройство подключено и является
+; Проверить, что устройство подключено и являетс
 ; мышью типа MSMouse
-        ; Отключить питание мыши и прерывания
+        ; Отключить питание мыши и прерывани
         mov     DX,[COMPortBaseAddr]
         add     DX,4    ;регистр управления модемом
         mov     AL,0    ;сбросить DTR, RTS и OUT2
@@ -95,14 +95,14 @@ dT_1:
         dec  ecx
         cmp ecx,0
         jne dT_1
-        mov  ecx,0xffff 
+        mov  ecx,0xffff
         ; Включить питание мыши
         mov     AL,11b  ;установить DTR и RTS
         out     DX,AL
-        ; Очистить регистр данных 
+        ; Очистить регистр данных
         mov     DX,[COMPortBaseAddr]
         in      AL,DX
-; Цикл опроса порта 
+; Цикл опроса порта
 WaitData:
         ; Ожидать еще 10 "тиков"
          dec  ecx

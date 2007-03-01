@@ -22,14 +22,14 @@ irq0:
         call  updatecputimes
      .nocounter:
 
-        cmp   [0xffff], byte 1
+        cmp   [DONT_SWITCH], byte 1
         jne   .change_task
 
         mov   al,0x20   ; send End Of Interrupt signal
         mov   dx,0x20
         out   dx,al
 
-        mov   [0xffff], byte 0
+        mov   [DONT_SWITCH], byte 0
 
         restore_ring3_context
         iret
@@ -79,7 +79,7 @@ change_task:
         test  eax, eax    ; the same task -> skip switch
         jnz    .return
 @@:
-        mov   [0xffff],byte 1
+        mov   [DONT_SWITCH],byte 1
         call  do_change_task
 
      .return:

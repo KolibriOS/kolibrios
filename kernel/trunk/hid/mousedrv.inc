@@ -43,8 +43,8 @@ draw_mouse_under:
         cmp [set_hw_cursor], 0
         jz @F
         pushad
-        movzx  eax,word [0xfb4a]
-        movzx  ebx,word [0xfb4c]
+        movzx  eax,word [X_UNDER]
+        movzx  ebx,word [Y_UNDER]
         stdcall [hw_restore], eax, ebx
         popad
         ret
@@ -54,8 +54,8 @@ draw_mouse_under:
         xor    edx,edx
         align  4
 mres:
-        movzx  eax,word [0xfb4a]
-        movzx  ebx,word [0xfb4c]
+        movzx  eax,word [X_UNDER]
+        movzx  ebx,word [Y_UNDER]
         add    eax,ecx
         add    ebx,edx
         push   ecx
@@ -90,14 +90,14 @@ save_draw_mouse:
         jz @F
         pushad
 
-        mov    [0xfb4a],ax
-        mov    [0xfb4c],bx
-        movzx  eax,word [0xfb0c]
-        movzx  ebx,word [0xfb0a]
+        mov    [X_UNDER],ax
+        mov    [Y_UNDER],bx
+        movzx  eax,word [MOUSE_Y]
+        movzx  ebx,word [MOUSE_X]
         push eax
         push ebx
 
-        mov ecx, [0xfe00]
+        mov ecx, [ScreenWidth]
         inc ecx
         mul ecx
         movzx edx, byte [display_data+ebx+eax]
@@ -123,8 +123,8 @@ save_draw_mouse:
 @@:
         pushad
         ; save & draw
-        mov    [0xfb4a],ax
-        mov    [0xfb4c],bx
+        mov    [X_UNDER],ax
+        mov    [Y_UNDER],bx
         push   eax
         push   ebx
         mov    ecx,0
@@ -141,14 +141,14 @@ drm:
         add    ebx,edx
         push   ecx
         call   getpixel
-        mov    [0xfb30],ecx
+        mov    [COLOR_TEMP],ecx
         pop    ecx
         mov    eax,edx
         shl    eax,6
         shl    ecx,2
         add    eax,ecx
         add    eax,mouseunder
-        mov    ebx,[0xfb30]
+        mov    ebx,[COLOR_TEMP]
         mov    [eax],ebx
         pop  ecx
         mov    edi,edx       ; y cycle
@@ -157,13 +157,13 @@ drm:
         mov    esi, edi
         add    edi, esi
         add    edi, esi       ; *3
-        add    edi,[0xf200]      ; we have our str address
+        add    edi,[MOUSE_PICTURE]      ; we have our str address
         mov    esi, edi
         add    esi, 16*24*3
         push   ecx
-        mov    ecx, [0xfb30]
+        mov    ecx, [COLOR_TEMP]
         call   combine_colors
-        mov    [0xfb10], ecx
+        mov    [MOUSE_COLOR_MEM], ecx
         pop    ecx
         pop    edx
         pop    ecx
@@ -172,7 +172,7 @@ drm:
         add    eax,ecx       ; we have x coord+cycle
         add    ebx,edx       ; and y coord+cycle
         push   ecx
-        mov    ecx, [0xfb10]
+        mov    ecx, [MOUSE_COLOR_MEM]
         mov    edi, 1
         call   [putpixel]
         pop    ecx
@@ -260,7 +260,7 @@ combine_colors:
 
 
 __sys_disable_mouse:
-      cmp  dword [0xf204],dword 0
+      cmp  dword [MOUSE_VISIBLE],dword 0
       je    @f
       ret
 @@:
@@ -270,9 +270,9 @@ __sys_disable_mouse:
       mov  edx,[CURRENT_TASK]
       shl  edx,5
       add  edx,window_data
-      movzx  eax, word [0xfb0a]
-      movzx  ebx, word [0xfb0c]
-      mov  ecx,[0xfe00]
+      movzx  eax, word [MOUSE_X]
+      movzx  ebx, word [MOUSE_Y]
+      mov  ecx,[ScreenWidth]
       inc  ecx
       imul  ecx,ebx
       add  ecx,eax
@@ -284,7 +284,7 @@ __sys_disable_mouse:
       movzx ebx, byte [ecx+16]
       cmp   eax,ebx
       je    yes_mouse_disable
-      mov   ebx,[0xfe00]
+      mov   ebx,[ScreenWidth]
       inc   ebx
       imul  ebx,10
       add   ecx,ebx
@@ -299,8 +299,8 @@ yes_mouse_disable:
       mov  edx,[CURRENT_TASK]
       shl  edx,5
       add  edx,window_data
-      movzx  eax, word [0xfb0a]
-      movzx  ebx, word [0xfb0c]
+      movzx  eax, word [MOUSE_X]
+      movzx  ebx, word [MOUSE_Y]
       mov  ecx,[edx+0]   ; mouse inside the area ?
       add  eax,14
       cmp  eax,ecx
@@ -318,12 +318,12 @@ yes_mouse_disable:
       cmp  ebx,ecx
       jg   no_mouse_disable
 disable_m:
-      cmp  dword [0xf204],dword 0
+      cmp  dword [MOUSE_VISIBLE],dword 0
       jne  no_mouse_disable
       cli
       call draw_mouse_under
       sti
-      mov  [0xf204],dword 1
+      mov  [MOUSE_VISIBLE],dword 1
 no_mouse_disable:
       popad
       ret
@@ -345,11 +345,11 @@ __sys_draw_pointer:
         mov     [MouseTickCounter],eax
         pop     eax
         pushad
-        cmp    dword [0xf204],dword 0  ; mouse visible ?
+        cmp    dword [MOUSE_VISIBLE],dword 0  ; mouse visible ?
         je     chms00
-        mov     [0xf204], dword 0
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
+        mov     [MOUSE_VISIBLE], dword 0
+        movzx  ebx,word [MOUSE_Y]
+        movzx  eax,word [MOUSE_X]
         cli
         call   save_draw_mouse
         sti
@@ -357,10 +357,10 @@ nodmu2:
         popad
         ret
 chms00:
-        movzx  ecx,word [0xfb4a]
-        movzx  edx,word [0xfb4c]
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
+        movzx  ecx,word [X_UNDER]
+        movzx  edx,word [Y_UNDER]
+        movzx  ebx,word [MOUSE_Y]
+        movzx  eax,word [MOUSE_X]
         cmp    eax,ecx
         jne    redrawmouse
         cmp    ebx,edx

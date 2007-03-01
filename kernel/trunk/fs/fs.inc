@@ -579,7 +579,7 @@ LBA_read_ramdisk:
     mov   esi,eax
 
     shl   esi,9
-    add   esi,0x100000
+    add   esi,RAMDISK
     mov   ecx,512/4
 ;    cld
     rep   movsd

@@ -530,7 +530,7 @@ get_event_for_app:
      mov   eax, [TASK_COUNT]
      cmp   eax,edx
      jne   no_eventoccur2x
-     cmp   [0xf400],byte 0
+     cmp   [KEY_COUNT],byte 0
      je    no_eventoccur2x
    eventoccur2:
      popad
@@ -549,7 +549,7 @@ get_event_for_app:
      ;mov   edi,[TASK_BASE]              ; BUTTON IN BUFFER
      test  [edi+TASKDATA.event_mask],dword 4
      jz    no_eventoccur3
-     cmp   [0xf500],byte 0
+     cmp   [BTN_COUNT],byte 0
      je    no_eventoccur3
      mov   ecx, [CURRENT_TASK]
      movzx edx, word [WIN_STACK+ecx*2]
@@ -557,7 +557,7 @@ get_event_for_app:
      cmp   eax,edx
      jnz   no_eventoccur3
      popad
-     mov   eax,[0xf501]
+     mov   eax,[BTN_BUFF]
      cmp   eax,65535
      je    no_event_1
      mov   eax,3
@@ -565,7 +565,7 @@ get_event_for_app:
 
     no_event_1:
      mov   [window_minimize],1
-     mov   [0xf500],byte 0
+     mov   [BTN_COUNT],byte 0
      xor   eax, eax
      ret
 
@@ -589,7 +589,7 @@ get_event_for_app:
      ;mov   edi,[TASK_BASE]              ; DESKTOP BACKGROUND REDRAW
      test  [edi+TASKDATA.event_mask],dword 16
      jz    no_eventoccur5
-     cmp   [0xfff0],byte 2
+     cmp   [REDRAW_BACKGROUND],byte 2
      jnz   no_eventoccur5
      popad
      mov   eax,5
@@ -647,7 +647,7 @@ get_event_for_app:
      cmp   dword [edi+TASKDATA.event_mask], 0xFFFF
      jbe   no_events
 
-     mov   esi,0x2e0000              ; IRQ'S AND DATA
+     mov   esi,IRQ_SAVE              ; IRQ'S AND DATA
      mov   ebx,0x00010000
      xor   ecx, ecx
    irq_event_test:

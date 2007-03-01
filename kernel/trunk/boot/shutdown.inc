@@ -52,7 +52,7 @@ system_shutdown:          ; shut down the system
     lea  esi,[eax+220]        ; x end
     sub  eax,220        ; x start
 
-    mov  ebx,[0xfe04]
+    mov  ebx,[ScreenHeight]
     shr  ebx,1
     mov  [shutdownpos],ebx
     lea  ebp,[ebx+105]        ; y end

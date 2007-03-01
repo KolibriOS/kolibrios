@@ -284,6 +284,14 @@ test_app_header:
            mov  ecx,[APP_HEADER_01.start]
            mov  [ebx+0x08], ecx                ;app_eip
            mov  edx,[APP_HEADER_01.mem_size]
+
+; \begin{diamond}[20.08.2006]
+; sanity check (functions 19,58 load app_i_end bytes and that must
+; fit in allocated memory to prevent kernel faults)
+           cmp  edx,[APP_HEADER_01.i_end]
+           jb   .fail
+; \end{diamond}[20.08.2006]
+
            mov  [ebx+0x10], edx                ;app_mem
            mov  ecx,[APP_HEADER_01.stack_top]
            mov  [ebx+0x0C], ecx                ;app_esp
@@ -1029,9 +1037,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 
            mov    [ecx+0],dword 0
            mov    [ecx+4],dword 0
-           mov    eax,[SCR_X_SIZE]
+           mov    eax,[ScreenWidth]
            mov    [ecx+8],eax
-           mov    eax,[SCR_Y_SIZE]
+           mov    eax,[ScreenHeight]
            mov    [ecx+12],eax
 
            mov edi,[slot]

@@ -17,12 +17,12 @@
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
-ScreenWidth             equ     0xfe00
-ScreenHeight            equ     0xfe04
-BytesPerScanLine        equ     0xfe08
-LFBAddress              equ     0xfe80
-ScreenBPP               equ     0xfbf1
-WinMapAddress           equ     0x460000
+;ScreenWidth             equ     0xfe00
+;ScreenHeight            equ     0xfe04
+;BytesPerScanLine        equ     0xfe08
+;LFBAddress              equ     0xfe80
+;ScreenBPP               equ     0xfbf1
+;WinMapAddress           equ     0x460000
 
 
 
@@ -333,7 +333,7 @@ __sys_putpixel:
         mov   [esp+32-8],ecx
       .noneg:
         ; OK to set pixel
-        call  dword [0xe020]        ; call the real put_pixel function
+        call  dword [PUTPIXEL]    ; call the real put_pixel function
       .exit:
         popad
 
@@ -930,7 +930,7 @@ vesa20_drawbackground_tiled:
      mov ebx,[esp+8]               ; ebx:=B*3
      mul ebx                       ;
      add esi,eax                   ;
-     mov eax,[esi+0x300000]
+     mov eax,[esi+IMG_BACKGROUND]
      and eax,0xffffff
 
      xchg edi, ebp
@@ -1066,7 +1066,7 @@ shl ecx,16
 mov cx,dx
 imul eax, [esp+8] ;8
 add esi,eax
-mov eax,[esi+0x300000]
+mov eax,[esi+IMG_BACKGROUND]
 push eax
 ror ecx,16
 xor eax,eax
@@ -1079,7 +1079,7 @@ div ebx
 cmp eax,5
 pop eax
 jb @f
-mov ebx,[esi+0x300000+3]
+mov ebx,[esi+IMG_BACKGROUND+3]
 call overlapping_of_points
 @@:
 push eax
@@ -1097,7 +1097,7 @@ jb @f
 mov ebx,[display_data-8]
 shl ebx,1
 add ebx,[display_data-8]
-add ebx,0x300000
+add ebx,IMG_BACKGROUND
 add ebx,esi
 mov ebx,[ebx]
 call overlapping_of_points

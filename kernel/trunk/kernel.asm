@@ -298,26 +298,26 @@ B32:
         mov     al, [0x2F0000+0x901F]   ; DMA writing
         mov     [allow_dma_write], al
         mov   al,[0x2f0000+0x9000]        ; bpp
-        mov   [0xFBF1],al
+        mov   [ScreenBPP],al
         movzx eax,word [0x2f0000+0x900A]  ; X max
         dec   eax
-        mov   [0xfe00],eax
+        mov   [ScreenWidth],eax
         mov   [screen_workarea.right],eax
         movzx eax,word [0x2f0000+0x900C]  ; Y max
         dec   eax
-        mov   [0xfe04],eax
+        mov   [ScreenHeight],eax
         mov   [screen_workarea.bottom],eax
         movzx eax,word [0x2f0000+0x9008]  ; screen mode
-        mov   [0xFE0C],eax
+        mov   [SCR_MODE],eax
         mov   eax,[0x2f0000+0x9014]       ; Vesa 1.2 bnk sw add
-        mov   [0xE030],eax
-        mov   [0xfe08],word 640*4         ; Bytes PerScanLine
-        cmp   [0xFE0C],word 0x13          ; 320x200
+        mov   [BANK_SWITCH],eax
+        mov   [BytesPerScanLine],word 640*4         ; Bytes PerScanLine
+        cmp   [SCR_MODE],word 0x13          ; 320x200
         je    @f
-        cmp   [0xFE0C],word 0x12          ; VGA 640x480
+        cmp   [SCR_MODE],word 0x12          ; VGA 640x480
         je    @f
         mov   ax,[0x2f0000+0x9001]        ; for other modes
-        mov   [0xfe08],ax
+        mov   [BytesPerScanLine],ax
       @@:
 
 ; GRAPHICS ADDRESSES
@@ -334,30 +334,30 @@ B32:
       ;no_d_lfb:
         mov     [LFBAddress],eax
 
-        cmp     [0xfe0c],word 0100000000000000b
+        cmp     [SCR_MODE],word 0100000000000000b
         jge     setvesa20
-        cmp     [0xfe0c],word 0x13
+        cmp     [SCR_MODE],word 0x13
         je      v20ga32
-        mov     [0xe020],dword Vesa12_putpixel24  ; Vesa 1.2
+        mov     [PUTPIXEL],dword Vesa12_putpixel24  ; Vesa 1.2
         mov     [0xe024],dword Vesa12_getpixel24
-        cmp     [0xfbf1],byte 24
+        cmp     [ScreenBPP],byte 24
         jz      ga24
-        mov     [0xe020],dword Vesa12_putpixel32
+        mov     [PUTPIXEL],dword Vesa12_putpixel32
         mov     [0xe024],dword Vesa12_getpixel32
       ga24:
         jmp     v20ga24
       setvesa20:
-        mov     [0xe020],dword Vesa20_putpixel24  ; Vesa 2.0
+        mov     [PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0
         mov     [0xe024],dword Vesa20_getpixel24
-        cmp     [0xfbf1],byte 24
+        cmp     [ScreenBPP],byte 24
         jz      v20ga24
       v20ga32:
-        mov     [0xe020],dword Vesa20_putpixel32
+        mov     [PUTPIXEL],dword Vesa20_putpixel32
         mov     [0xe024],dword Vesa20_getpixel32
       v20ga24:
-        cmp     [0xfe0c],word 0x12                ; 16 C VGA 640x480
+        cmp     [SCR_MODE],word 0x12                ; 16 C VGA 640x480
         jne     no_mode_0x12
-        mov     [0xe020],dword VGA_putpixel
+        mov     [PUTPIXEL],dword VGA_putpixel
         mov     [0xe024],dword Vesa20_getpixel32
       no_mode_0x12:
 
@@ -512,13 +512,13 @@ include 'vmodeld.inc'
         mov   esi,char
         xor   ebx,ebx
         mov   ecx,2560;26000
-        mov   edx,0x3F600;0x37000
+        mov   edx,FONT_I
         call  fs_RamdiskRead
 
         mov   esi,char2
         xor   ebx,ebx
         mov   ecx,2560;26000
-        mov   edx,0x3EC00;0x30000
+        mov   edx,FONT_II
         call  fs_RamdiskRead
 
         mov   esi,boot_fonts
@@ -680,7 +680,7 @@ include 'vmodeld.inc'
         call  _rdtsc
         sub   eax,ecx
         shl   eax,2
-        mov   [0xf600],eax          ; save tsc / sec
+        mov   [CPU_FREQ],eax          ; save tsc / sec
         mov ebx, 1000000
         div ebx
         mov [stall_mcs], eax
@@ -696,14 +696,14 @@ include 'vmodeld.inc'
 
 ; PALETTE FOR 320x200 and 640x480 16 col
 
-        cmp   [0xfe0c],word 0x12
+        cmp   [SCR_MODE],word 0x12
         jne   no_pal_vga
         mov   esi,boot_pal_vga
         call  boot_log
         call  paletteVGA
       no_pal_vga:
 
-        cmp   [0xfe0c],word 0x13
+        cmp   [SCR_MODE],word 0x13
         jne   no_pal_ega
         mov   esi,boot_pal_ega
         call  boot_log
@@ -782,7 +782,7 @@ first_app_found:
         mov   esi,boot_tasking
         call  boot_log
 
-        mov   [0xe000],byte 1        ; multitasking enabled
+ ;      mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
 
@@ -935,32 +935,32 @@ reserve_irqs_ports:
 
                                        ; RESERVE PORTS
         mov   edi,1                    ; 0x00-0x2d
-        mov   [0x2d0000],edi
+        mov   [RESERVED_PORTS],edi
         shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x0
-        mov   [0x2d0000+edi+8],dword 0x2d
+        mov   [RESERVED_PORTS+edi+0],dword 1
+        mov   [RESERVED_PORTS+edi+4],dword 0x0
+        mov   [RESERVED_PORTS+edi+8],dword 0x2d
 
-        inc   dword [0x2d0000]          ; 0x30-0x4d
-        mov   edi,[0x2d0000]
+        inc   dword [RESERVED_PORTS]          ; 0x30-0x4d
+        mov   edi,[RESERVED_PORTS]
         shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x30
-        mov   [0x2d0000+edi+8],dword 0x4d
+        mov   [RESERVED_PORTS+edi+0],dword 1
+        mov   [RESERVED_PORTS+edi+4],dword 0x30
+        mov   [RESERVED_PORTS+edi+8],dword 0x4d
 
-        inc   dword [0x2d0000]          ; 0x50-0xdf
-        mov   edi,[0x2d0000]
+        inc   dword [RESERVED_PORTS]          ; 0x50-0xdf
+        mov   edi,[RESERVED_PORTS]
         shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0x50
-        mov   [0x2d0000+edi+8],dword 0xdf
+        mov   [RESERVED_PORTS+edi+0],dword 1
+        mov   [RESERVED_PORTS+edi+4],dword 0x50
+        mov   [RESERVED_PORTS+edi+8],dword 0xdf
 
-        inc   dword [0x2d0000]          ; 0xe5-0xff
-        mov   edi,[0x2d0000]
+        inc   dword [RESERVED_PORTS]          ; 0xe5-0xff
+        mov   edi,[RESERVED_PORTS]
         shl   edi,4
-        mov   [0x2d0000+edi+0],dword 1
-        mov   [0x2d0000+edi+4],dword 0xe5
-        mov   [0x2d0000+edi+8],dword 0xff
+        mov   [RESERVED_PORTS+edi+0],dword 1
+        mov   [RESERVED_PORTS+edi+4],dword 0xe5
+        mov   [RESERVED_PORTS+edi+8],dword 0xff
 
 
 ;        cmp   [0xf604],byte 2          ; com1 mouse -> 0x3f0-0x3ff
@@ -1011,10 +1011,10 @@ set_variables:
         mov   ecx,0x100                       ; flush port 0x60
 .fl60:  in    al,0x60
         loop  .fl60
-        mov   [0xfcff],byte 0                 ; mouse buffer
-        mov   [0xf400],byte 0                 ; keyboard buffer
-        mov   [0xf500],byte 0                 ; button buffer
-;        mov   [0xfb0a],dword 100*65536+100    ; mouse x/y
+        mov   [MOUSE_BUFF_COUNT],byte 0                 ; mouse buffer
+        mov   [KEY_COUNT],byte 0                 ; keyboard buffer
+        mov   [BTN_COUNT],byte 0                 ; button buffer
+;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
         push  eax
         mov   ax,[0x2f0000+0x900c]
@@ -1022,12 +1022,12 @@ set_variables:
         shl   eax,16
         mov   ax,[0x2f0000+0x900A]
         shr   ax,1
-        mov   [0xfb0a],eax
+        mov   [MOUSE_X],eax
         pop   eax
 
         mov   byte [SB16_Status],0            ; Minazzi Paolo
         mov   [display_data-12],dword 1       ; tiled background
-        mov   [0xfe88],dword 0x2C0000         ; address of button list
+        mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
 
      ;!! IP 04.02.2005:
         mov   [next_usage_update], 100
@@ -1038,12 +1038,12 @@ set_variables:
 ;* mouse centered - start code- Mario79
 mouse_centered:
         push  eax
-        mov   eax,[0xFE00]
+        mov   eax,[ScreenWidth]
         shr   eax,1
-        mov   [0xFB0A],ax
-        mov   eax,[0xFE04]
+        mov   [MOUSE_X],ax
+        mov   eax,[ScreenHeight]
         shr   eax,1
-        mov   [0xFB0C],ax
+        mov   [MOUSE_Y],ax
         pop   eax
         ret
 ;* mouse centered - end code- Mario79
@@ -1055,7 +1055,7 @@ sys_outport:
     mov   edi,ebx          ; separate flag for read / write
     and   ebx,65535
 
-    mov   ecx,[0x2d0000]
+    mov   ecx,[RESERVED_PORTS]
     test  ecx,ecx
     jne   sopl8
     mov   [esp+36],dword 1
@@ -1070,7 +1070,7 @@ sys_outport:
 
     mov   esi,ecx
     shl   esi,4
-    add   esi,0x2d0000
+    add   esi,RESERVED_PORTS
     cmp   edx,[esi+0]
     jne   sopl2
     cmp   ebx,[esi+4]
@@ -1725,15 +1725,15 @@ readmousepos:
            ja msset
            jmp [mousefn+eax*4]
 msscreen:
-           mov  eax,[0xfb0a]
+           mov  eax,[MOUSE_X]
            shl  eax,16
-           mov  ax,[0xfb0c]
+           mov  ax,[MOUSE_Y]
            mov  [esp+36],eax
            ret
 mswin:
-           mov  eax,[0xfb0a]
+           mov  eax,[MOUSE_X]
            shl  eax,16
-           mov  ax,[0xfb0c]
+           mov  ax,[MOUSE_Y]
            mov  esi,[TASK_BASE]
            mov  bx, word [esi-twdw+WDATA.box.left]
            shl  ebx,16
@@ -1749,7 +1749,7 @@ mswin:
            mov  [esp+36],eax
            ret
 msbutton:
-           movzx eax,byte [0xfb40]
+           movzx eax,byte [BTN_DOWN]
            mov  [esp+36],eax
            ret
 msset:
@@ -1935,7 +1935,7 @@ sysfn_shutdown:         ; 18.1 = BOOT
      mov  eax,[TASK_COUNT]
      add  eax,2
      mov  [shutdown_processes],eax
-     mov  [0xFF00],al
+     mov  [SYS_SHUTDOWN],al
      and  dword [esp+36], 0
      ret
   uglobal
@@ -2020,7 +2020,7 @@ sysfn_getidletime:              ; 18.4 = GET IDLETIME
      ret
 
 sysfn_getcpuclock:              ; 18.5 = GET TSC/SEC
-     mov  eax,[0xf600]
+     mov  eax,[CPU_FREQ]
      mov  [esp+36], eax
      ret
 
@@ -2074,7 +2074,7 @@ sysfn_getdiskinfo:      ; 18.11 = get disk info table
      mov edi,[TASK_BASE]
      mov edi,[edi+TASKDATA.mem_start]
      add edi,ecx
-     mov esi,0x40000
+     mov esi,DRIVE_DATA
      ret
   full_table:
      cmp  ebx,2
@@ -2141,9 +2141,9 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
  .set_pointer_position:
      cmp  ebx,4  ; set mouse pointer position
      jnz  .end
-     mov   [0xFB0C],cx    ;y
+     mov   [MOUSE_Y],cx    ;y
      ror   ecx,16
-     mov   [0xFB0A],cx    ;x
+     mov   [MOUSE_X],cx    ;x
      rol   ecx,16
  .end:
      ret
@@ -2255,7 +2255,7 @@ sys_background:
     and   edx,0xFF000000 ;255*256*256*256
     and   ecx,0x00FFFFFF ;255*256*256+255*256+255
     add   edx,ecx
-    mov   [ebx+0x300000],edx
+    mov   [ebx+IMG_BACKGROUND],edx
 ;    mov   [bgrchanged],1
     ret
   nosb2:
@@ -2267,7 +2267,7 @@ draw_background_temp:
 ;    je    nosb31
 ;draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
-    mov   [0xfff0],byte 1
+    mov   [REDRAW_BACKGROUND],byte 1
     mov    [background_defined], 1
    nosb31:
     ret
@@ -2296,7 +2296,7 @@ draw_background_temp:
     cmp   ecx, 0x160000-16
     ja    .fin
  ;   add   edi, 0x300000
-    add   ebx, 0x300000
+    add   ebx, IMG_BACKGROUND
     mov   ecx, edx
     cmp   ecx, 0x160000-16
     ja    .fin
@@ -2329,7 +2329,7 @@ sys_getbackground:
     mov   edx,0x160000-16
     cmp   edx,ebx
     jbe   nogb2
-    mov   eax, [ebx+0x300000]
+    mov   eax, [ebx+IMG_BACKGROUND]
     and   eax, 0xFFFFFF
     mov   [esp+36],eax
     ret
@@ -2353,21 +2353,21 @@ sys_getkey:
     mov   edx,[TASK_COUNT]
     cmp   ecx,edx
     jne   .finish
-    cmp   [0xf400],byte 0
+    cmp   [KEY_COUNT],byte 0
     je    .finish
-    movzx eax,byte [0xf401]
+    movzx eax,byte [KEY_BUFF]
     shl   eax,8
     push  eax
-    dec   byte [0xf400]
-    and   byte [0xf400],127
-    movzx ecx,byte [0xf400]
+    dec   byte [KEY_COUNT]
+    and   byte [KEY_COUNT],127
+    movzx ecx,byte [KEY_COUNT]
     add   ecx,2
  ;   mov   esi,0xf402
  ;   mov   edi,0xf401
  ;   cld
  ;  rep   movsb
-    mov   eax, 0xF402
-    mov   ebx, 0xF401
+    mov   eax, KEY_BUFF+1
+    mov   ebx, KEY_BUFF
     call  memmove
     pop   eax
 .ret_eax:
@@ -2402,12 +2402,12 @@ sys_getbutton:
     mov   edx, [TASK_COUNT] ; less than 256 processes
     cmp   ecx,edx
     jne   .exit
-    movzx eax,byte [0xf500]
+    movzx eax,byte [BTN_COUNT]
     test  eax,eax
     jz    .exit
-    mov   eax,[0xf501]
+    mov   eax,[BTN_BUFF]
     shl   eax,8
-    mov   [0xf500],byte 0
+    mov   [BTN_COUNT],byte 0
     mov   [esp+36],eax
  .exit:
     ret
@@ -2623,7 +2623,7 @@ sys_redrawstat:
 
   sys_newba2:
 
-    mov   edi,[0xfe88]
+    mov   edi,[BTN_ADDR]
     cmp   [edi],dword 0  ; empty button list ?
     je    end_of_buttons_away
 
@@ -2666,9 +2666,9 @@ sys_redrawstat:
     add   edx,draw_data-CURRENT_TASK
     mov   [edx+RECT.left], 0
     mov   [edx+RECT.top], 0
-    mov   eax,[0xfe00]
+    mov   eax,[ScreenWidth]
     mov   [edx+RECT.right],eax
-    mov   eax,[0xfe04]
+    mov   eax,[ScreenHeight]
     mov   [edx+RECT.bottom],eax
 
     mov   edi,[TASK_BASE]
@@ -2979,8 +2979,8 @@ sys_set_window:
     call  calculatescreen
     pop   edx ecx ebx eax
 
-    mov   [0xf400],byte 0           ; empty keyboard buffer
-    mov   [0xf500],byte 0           ; empty button buffer
+    mov   [KEY_COUNT],byte 0           ; empty keyboard buffer
+    mov   [BTN_COUNT],byte 0           ; empty button buffer
 
   newd:
     mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
@@ -3108,9 +3108,9 @@ sys_window_move:
         xor   esi,esi
         call  redrawscreen
 
-        mov   [0xfff5],byte 0 ; mouse pointer
-        mov   [0xfff4],byte 0 ; no mouse under
-        mov   [0xfb44],byte 0 ; react to mouse up/down
+        mov   [DONT_DRAW_MOUSE],byte 0 ; mouse pointer
+        mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
+        mov   [MOUSE_DOWN],byte 0 ; react to mouse up/down
 
         mov   ecx,10          ; wait 1/10 second
       .wmrl3:
@@ -3132,13 +3132,13 @@ sys_window_move:
 ;    call  change_task
 ;    mov   [draw_data+32+0],dword 0
 ;    mov   [draw_data+32+4],dword 0
-;    mov   eax,[0xfe00]
+;    mov   eax,[ScreenWidth
 ;    mov   ebx,[0xfe04]
 ;    mov   [draw_data+32+8],eax
 ;    mov   [draw_data+32+12],ebx
 ;    call  drawbackground
 ;    mov   [0xfff0],byte 0
-;    mov   [0xfff4],byte 0
+;    mov   [MOUSE_BACKGROUND],byte 0
 ;temp_nobackgr:
 ;    ret
 
@@ -3258,7 +3258,7 @@ ret
 checkpixel:
         push eax edx
 
-        mov  edx,[0xfe00]     ; screen x size
+        mov  edx,[ScreenWidth]     ; screen x size
         inc  edx
         imul edx, ebx
         mov  dl, [eax+edx+display_data] ; lea eax, [...]
@@ -3308,38 +3308,38 @@ checkmisc:
   mouse_not_active:
 
 
-    cmp   [0xfff0],byte 0               ; background update ?
+    cmp   [REDRAW_BACKGROUND],byte 0               ; background update ?
     jz    nobackgr
     cmp    [background_defined], 0
     jz    nobackgr
-    mov   [0xfff0],byte 2
+    mov   [REDRAW_BACKGROUND],byte 2
     call  change_task
 	mov   [draw_data+32 + RECT.left],dword 0
 	mov   [draw_data+32 + RECT.top],dword 0
-    mov   eax,[0xfe00]
-    mov   ebx,[0xfe04]
+    mov   eax,[ScreenWidth]
+    mov   ebx,[ScreenHeight]
 	mov   [draw_data+32 + RECT.right],eax
 	mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
-    mov   [0xfff0],byte 0
-    mov   [0xfff4],byte 0
+    mov   [REDRAW_BACKGROUND],byte 0
+    mov   [MOUSE_BACKGROUND],byte 0
 
   nobackgr:
 
 
     ; system shutdown request
 
-    cmp  [0xFF00],byte 0
+    cmp  [SYS_SHUTDOWN],byte 0
     je   noshutdown
 
     mov  edx,[shutdown_processes]
     sub  dl,2
 
-    cmp  [0xff00],dl
+    cmp  [SYS_SHUTDOWN],dl
     jne  no_mark_system_shutdown
 
     mov   edx,0x3040
-    movzx ecx,byte [0xff00]
+    movzx ecx,byte [SYS_SHUTDOWN]
     add   ecx,5
   markz:
     mov   [edx+TASKDATA.state],byte 3
@@ -3350,9 +3350,9 @@ checkmisc:
 
     call [disable_mouse]
 
-    dec  byte [0xff00]
+    dec  byte [SYS_SHUTDOWN]
 
-    cmp  [0xff00],byte 0
+    cmp  [SYS_SHUTDOWN],byte 0
     je   system_shutdown
 
   noshutdown:
@@ -3491,7 +3491,7 @@ calculatebackground:   ; background
         mov   [display_data-8],dword 4      ; size x
         mov   [display_data-4],dword 2      ; size y
 
-        mov   edi, 0x300000                 ; set background to black
+        mov   edi, IMG_BACKGROUND                 ; set background to black
         xor   eax, eax
         mov   ecx, 0x0fff00 / 4
         cld
@@ -3502,7 +3502,7 @@ calculatebackground:   ; background
         mov   ecx,0x15ff00 / 4
         rep   stosd
 
-        mov   byte [0xFFF0], 0              ; do not draw background!
+        mov   byte [REDRAW_BACKGROUND], 0              ; do not draw background!
 
         ret
 
@@ -3709,7 +3709,7 @@ get_irq_data:
 
      mov   ebx,eax
      shl   ebx,12
-     add   ebx,0x2e0000
+     add   ebx,IRQ_SAVE
      mov   eax,[ebx]
      mov   ecx,1
      test  eax,eax
@@ -3784,7 +3784,7 @@ r_f_port_area:
      ja    rpal1
      cmp   ecx,65536
      jae   rpal1
-     mov   esi,[0x2d0000]
+     mov   esi,[RESERVED_PORTS]
      test  esi,esi            ; no reserved areas ?
      je    rpal2
      cmp   esi,255            ; max reserved
@@ -3792,7 +3792,7 @@ r_f_port_area:
    rpal3:
      mov   edi,esi
      shl   edi,4
-     add   edi,0x2d0000
+     add   edi,RESERVED_PORTS
      cmp   ebx,[edi+8]
      ja    rpal4
      cmp   ecx,[edi+4]
@@ -3840,11 +3840,11 @@ r_f_port_area:
      popad                         ; end enable io map
      sti
 
-     mov   edi,[0x2d0000]
+     mov   edi,[RESERVED_PORTS]
      add   edi,1
-     mov   [0x2d0000],edi
+     mov   [RESERVED_PORTS],edi
      shl   edi,4
-     add   edi,0x2d0000
+     add   edi,RESERVED_PORTS
      mov   esi,[TASK_BASE]
      mov   esi,[esi+TASKDATA.pid]
      mov   [edi],esi
@@ -3858,7 +3858,7 @@ free_port_area:
 
      pushad
 
-     mov   esi,[0x2d0000]     ; no reserved areas ?
+     mov   esi,[RESERVED_PORTS]     ; no reserved areas ?
      test  esi,esi
      je    frpal2
      mov   edx,[TASK_BASE]
@@ -3866,7 +3866,7 @@ free_port_area:
    frpal3:
      mov   edi,esi
      shl   edi,4
-     add   edi,0x2d0000
+     add   edi,RESERVED_PORTS
      cmp   edx,[edi]
      jne   frpal4
      cmp   ebx,[edi+4]
@@ -3890,7 +3890,7 @@ free_port_area:
      cld
      rep   movsb
 
-     dec   dword [0x2d0000]
+     dec   dword [RESERVED_PORTS]
 
      popad
 
@@ -3960,12 +3960,12 @@ reserve_free_irq:
 
 drawbackground:
        inc   [mouse_pause]
-       cmp   [0xfe0c],word 0x12
+       cmp   [SCR_MODE],word 0x12
        je   dbrv20
      dbrv12:
-       cmp  [0xfe0c],word 0100000000000000b
+       cmp  [SCR_MODE],word 0100000000000000b
        jge  dbrv20
-       cmp  [0xfe0c],word 0x13
+       cmp  [SCR_MODE],word 0x13
        je   dbrv20
        call  vesa12_drawbackground
        dec   [mouse_pause]
@@ -4015,12 +4015,12 @@ sys_putimage:
 sys_putimage_bpp:
 ;        call    [disable_mouse] ; this will be done in xxx_putimage
 ;        mov     eax, vga_putimage
-        cmp     [0xfe0c], word 0x12
+        cmp     [SCR_MODE], word 0x12
         jz      @f   ;.doit
         mov     eax, vesa12_putimage
-        cmp     [0xfe0c], word 0100000000000000b
+        cmp     [SCR_MODE], word 0100000000000000b
         jae     @f
-        cmp     [0xfe0c], word 0x13
+        cmp     [SCR_MODE], word 0x13
         jnz     .doit
 @@:
         mov     eax, vesa20_putimage
@@ -4114,12 +4114,12 @@ __sys_drawbar:
   .forced:
     inc   [mouse_pause]
 ;        call    [disable_mouse]
-    cmp   [0xfe0c],word 0x12
+    cmp   [SCR_MODE],word 0x12
     je   dbv20
    sdbv20:
-    cmp  [0xfe0c],word 0100000000000000b
+    cmp  [SCR_MODE],word 0100000000000000b
     jge  dbv20
-    cmp  [0xfe0c],word 0x13
+    cmp  [SCR_MODE],word 0x13
     je   dbv20
     call vesa12_drawbar
     dec   [mouse_pause]
@@ -4244,7 +4244,7 @@ kb_cmd:
 setmouse:  ; set mousepicture -pointer
            ; ps2 mouse enable
 
-     mov     [0xf200],dword mousepointer
+     mov     [MOUSE_PICTURE],dword mousepointer
 
      cli
 ;     mov     bl,0xa8                 ; enable mouse cmd
@@ -4596,9 +4596,9 @@ sys_gs:                         ; direct screen access
 
      cmp  eax,1                 ; resolution
      jne  no_gs1
-     mov  eax,[0xfe00]
+     mov  eax,[ScreenWidth]
      shl  eax,16
-     mov  ax,[0xfe04]
+     mov  ax,[ScreenHeight]
      add  eax,0x00010001
      mov  [esp+36],eax
      ret
@@ -4606,14 +4606,14 @@ sys_gs:                         ; direct screen access
 
      cmp   eax,2                ; bits per pixel
      jne   no_gs2
-     movzx eax,byte [0xfbf1]
+     movzx eax,byte [ScreenBPP]
      mov   [esp+36],eax
      ret
    no_gs2:
 
      cmp   eax,3                ; bytes per scanline
      jne   no_gs3
-     mov   eax,[0xfe08]
+     mov   eax,[BytesPerScanLine]
      mov   [esp+36],eax
      ret
    no_gs3:
@@ -4709,9 +4709,9 @@ align 4
 
 syscall_getscreensize:                  ; GetScreenSize
 
-     movzx eax,word[0xfe00]
+     movzx eax,word[ScreenWidth]
      shl   eax,16
-     mov   ax,[0xfe04]
+     mov   ax,[ScreenHeight]
      mov   [esp+36],eax
      ret
 
@@ -4749,7 +4749,7 @@ syscall_writeramdiskfile:               ; WriteRamdiskFile
 align 4
 
 syscall_getpixel:                       ; GetPixel
-     mov   ecx,[0xfe00]
+     mov   ecx,[ScreenWidth]
      inc   ecx
      xor   edx,edx
      div   ecx

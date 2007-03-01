@@ -333,7 +333,7 @@ if lang eq ru
  ; End set VGA russian font
 else if lang eq et
         mov  bp,ET_FNT-10000h   ; ET_FNT1
-        mov  bx,1000h           ; 
+        mov  bx,1000h           ;
         mov  cx,255             ; 256 symbols
         mov  dx,0h              ; 0 - position of first symbol
         mov  ax,1100h
@@ -835,7 +835,7 @@ else if lang eq et
     ja     @f
     mov    [time_str+9-0x10000], ' '
     mov    [time_str+10-0x10000],' '
-@@: 
+@@:
 else
 ; wait 5/4/3/2 seconds, 1 second
     cmp    al, 1
@@ -982,8 +982,8 @@ end if
         mov     eax,[es:di+0x28]
         mov     [es:0x9018],eax
         ; ---- vbe voodoo
-        BytesPerScanLine equ 0x10
-        mov ax, [es:di+BytesPerScanLine]
+        BytesPerLine equ 0x10
+        mov ax, [es:di+BytesPerLine]
         mov [es:0x9001],ax
         ; BPP
         mov     al,byte [es:di+0x19]

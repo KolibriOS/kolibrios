@@ -4,8 +4,8 @@
 ;      автор Mario79
 ;***************************************************
         xor  eax,eax
-        mov  edi,0x40000
-        mov  ecx,16384 
+        mov  edi,DRIVE_DATA
+        mov  ecx,16384
         cld
         rep  stosd
 
@@ -17,4 +17,4 @@ wait_cmos:
       cmp cx,0
       jne wait_cmos
       in  al,0x71
-      mov [0x40000],al
+      mov [DRIVE_DATA],al
