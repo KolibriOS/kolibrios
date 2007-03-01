@@ -1,29 +1,32 @@
-;;   Calculator for MenuetOS (original version)
-;;  (c)Ville Turjanmaa
+;;   Calculator for MenuetOS (c) Ville Turjanmaa
+;;  
 ;;   Compile with FASM for Menuet
 ;;   
-;;What's new:
+;;  Pavel Rymovski (Heavyiron) - kolibri version
+;; What's new:
 ;;   Calc 1.1
-;;           1)changed design
-;;           2)new procedure of draw window (10 decimal digits, 23 binary, "+" not displayed now)
-;;           3)window with skin
-;;           4)I had used macroses
+;;           1) changed design
+;;           2) new procedure of draw window (10 decimal digits, 23 binary, "+" not displayed now)
+;;           3) window with skin
+;;           4) used macroses
 ;;   Calc 1.2
 ;;           1)added some useful functions, such as arcsin, arccos, arctg, 1/x, x^2
 ;;   Calc 1.31
 ;;           1)optimised program
 ;;           2)new type of window (you need kernel 114 revision or higher)
-;;  Pavel Rymovski (Heavyiron)
+;;   Calc 1.32
+;;           1)fixed arccos
+
 
 appname equ 'Calc '
-version equ '1.31'
+version    equ '1.32'
 
 use32
                org    0x0
-               db    'MENUET01'               ; 8 byte id
-               dd     0x01                    ; header version
-               dd     START                   ; start of code
-               dd     I_END                   ; size of image
+               db    'MENUET01'            ; 8 byte id
+               dd     0x01                      ; header version
+               dd     START                    ; start of code
+               dd     I_END                    ; size of image
                dd     0x1000                  ; memory for app
                dd     0x1000                  ; esp
                dd     0x0,0x0                 ; I_Param , I_Icon
@@ -31,6 +34,12 @@ use32
 include 'macros.inc'
 
 START:
+
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    int  0x40
 
 red:
     call draw_window
@@ -115,7 +124,6 @@ key:
     mov  [entry_multiplier],eax
     call print_display
     jmp  still
-  multipl:  dd 10,16,2
 
   no_display_change:
     cmp  eax,6
@@ -212,14 +220,13 @@ key:
     cmp  eax,25
     jne  no_acos
     fld  [trans1]
+    fld st0
+    fmul st,st1
     fld1
-    fsub st,st1
+    fsubrp st1,st0
     fsqrt
-    fld1
-    fadd st,st2
-    fsqrt
+    fxch st1
     fpatan
-    fadd st,st0
     jmp  show_result
   
   no_acos:   
@@ -441,17 +448,6 @@ new_entry:
     popa
     ret
 
-ten          dd  10.0,0
-tmp          dw  1,0
-sign         db  1,0
-tmp2         dq  0x0,0
-exp          dd  0x0,0
-new_dec      dd  100000,0
-id           db  0x0,0
-res          dd  0
-trans1       dq  0
-trans2       dq  0
-controlWord  dw  1
 
 ftoa:                         ; fpu st0 -> [integer],[decimal]
     pusha
@@ -471,8 +467,7 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
   
   no_neg:
     fld    [tmp2]
-    fistp  [integer]
-    fld    [tmp2]
+    fist   [integer]
     fisub  [integer]
     fldcw  [controlWord]
     cmp    byte [sign], 0     ; change fraction to positive
@@ -562,7 +557,7 @@ atof:
 
   .error:
     mov bh, 1    ; Set error code.
-    fstp st0    ; Pop top of fpu stack.
+   ; fstp st0    ; Pop top of fpu stack.
 
   .exit:
     pop di
@@ -652,12 +647,6 @@ atof_convertFractionalPart:
 
 draw_window:
     
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
-
     mov  eax,12
     mov  ebx,1
     int  0x40
@@ -689,7 +678,7 @@ draw_window:
     cmp  edx,39
     jbe  newbutton
   
-    mcall  ,199 shl 16+28,49 shl 16+18,2                  ; 'C'
+    mcall  ,199 shl 16+28,49 shl 16+18,2               ; 'C'
     mcall  ,220 shl 16+8,7 shl 16+8,3                     ; 'dec-bin-hex'
 
     mov  eax,4
@@ -860,11 +849,23 @@ display_type       dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier   dd  10
 display_type_text  db  'dec hex bin'
 
-dot     db  '.'
-calc    db  ' '
-integer dd    0
-decimal dd    0
-kymppi  dd   10
+dot           db  '.'
+calc         db  ' '
+integer    dd    0
+decimal   dd    0
+kymppi    dd   10
+ten           dd  10.0,0
+tmp          dw  1,0
+sign         db  1,0
+tmp2        dq  0x0,0
+exp          dd  0x0,0
+new_dec  dd  100000,0
+id             db  0x0,0
+res           dd  0
+trans1      dq  0
+trans2      dq  0
+controlWord  dw  1
+multipl:    dd 10,16,2
 
 dsign:
 muuta1  db   '+0000000000.000000'
