@@ -41,8 +41,8 @@ save_image:
     jne    unnecessary_save_image
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
-    mov    [FDD_Sector],1      ; Сектор    
-    mov    esi,0x100000
+    mov    [FDD_Sector],1      ; Сектор
+    mov    esi,RAMDISK
     call   SeekTrack
 save_image_1:
     push   esi
@@ -57,7 +57,7 @@ save_image_1:
     cmp    [FDD_Sector],19
     jne    save_image_1
     mov    [FDD_Sector],1
-    inc    [FDD_Head]   
+    inc    [FDD_Head]
     cmp    [FDD_Head],2
     jne    save_image_1
     mov    [FDD_Head],0

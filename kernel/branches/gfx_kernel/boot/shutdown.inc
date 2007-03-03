@@ -9,6 +9,7 @@
 
 
 system_shutdown:          ; shut down the system
+    call stop_all_services
 
     push 3        ; stop playing cd
     pop  eax
@@ -51,7 +52,7 @@ system_shutdown:          ; shut down the system
     lea  esi,[eax+220]        ; x end
     sub  eax,220        ; x start
 
-    mov  ebx,[0xfe04]
+    mov  ebx,[ScreenHeight]
     shr  ebx,1
     mov  [shutdownpos],ebx
     lea  ebp,[ebx+105]        ; y end
@@ -136,7 +137,10 @@ system_shutdown:          ; shut down the system
 
    nrl:
     call dtext
-    sub  ebx,0x050000
+;    sub  ebx,0x050000
+        ror     ebx, 16
+        sub     bl, 0x05
+        ror     ebx, 16
     add  eax,8
     add  ecx,31
     cmp  cx,word 0x0001+25*31
@@ -166,6 +170,10 @@ system_shutdown:          ; shut down the system
     call memmove
 
     call restorefatchain
+
+    mov al, 0xFF
+    out 0x21, al
+    out 0xA1, al
 
     mov  word [0x467+0],pr_mode_exit-0x10000
     mov  word [0x467+2],0x1000
@@ -199,30 +207,31 @@ org $-0x10000
     call rdelay
     out  0xA0,al
     call rdelay
-    
+
     mov  al,0x08
     out  0x21,al
     call rdelay
     mov  al,0x70
     out  0xA1,al
     call rdelay
-    
+
     mov  al,0x04
     out  0x21,al
     call rdelay
     mov  al,0x02
     out  0xA1,al
     call rdelay
-    
+
     mov  al,0x01
     out  0x21,al
     call rdelay
     out  0xA1,al
     call rdelay
-    
-    mov  al,0
+
+    mov  al,0xB8
     out  0x21,al
     call rdelay
+    mov  al,0xBD
     out  0xA1,al
     sti
 
@@ -234,7 +243,7 @@ org $-0x10000
     jl   nbw
     cmp  al,4
     jle  nbw32
-  
+
   nbw:
     in   al,0x60
     call pause_key
@@ -276,7 +285,7 @@ org $-0x10000
     jnz  restart_kernel        ; 4 = restart kernel
     push 0x40
     pop  ds
-    mov  word[0x0072],0x1234 
+    mov  word[0x0072],0x1234
     jmp  0xF000:0xFFF0
 
     pause_key:
@@ -284,12 +293,6 @@ org $-0x10000
     pause_key_1:
       loop  pause_key_1
       ret
-org $+0x10000
-old_ints_h:
-        dw      0x400
-        dd      0
-        dw      0
-org $-0x10000
 
 rdelay:
     ret
@@ -365,17 +368,19 @@ restart_kernel_4000:
     jcxz    $+2
         sti
 
+; (hint by Black_mirror)
+; We must read data from keyboard port,
+; because there may be situation when previous keyboard interrupt is lost
+; (due to return to real mode and IRQ reprogramming)
+; and next interrupt will not be generated (as keyboard waits for handling)
+        in      al, 0x60
+
 ; bootloader interface
     push    0x1000
     pop    ds
-    mov    si, .bootloader_block;-0x10000
+    mov    si, kernel_restart_bootblock-0x10000
     mov    ax, 'KL'
         jmp     0x1000:0000
-
-.bootloader_block:
-    db    1    ; version
-    dw    1    ; floppy image is in memory
-    dd    0    ; cannot save parameters
 
 APM_PowerOff:
         mov     ax, 5304h
@@ -506,8 +511,8 @@ shutdowntext:
     db   '1) SAVE RAMDISK TO FLOPPY               '
     db   '2) APM - POWEROFF                       '
     db   '3) REBOOT                               '
-    db   '4) RESTART KERNEL                       ' 
-else
+    db   '4) RESTART KERNEL                       '
+else if lang eq ru
 shutdowntext:
     db   "Безопасное выключение компьютера или    "
     db   '                                        '
@@ -515,6 +520,14 @@ shutdowntext:
     db   '2) APM - выключение питания             '
     db   '3) Перезагрузка системы                 '
     db   '4) Рестарт ядра из ОЗУ                  '
+else
+shutdowntext:
+    db   "SIE KOENNEN DEN COMPUTER NUN AUSSCHALTEN"
+    db   '                                        '
+    db   '1) RAMDISK AUF DISK SPEICHERN           '
+    db   '2) APM - AUSSCHALTEN                    '
+    db   '3) NEUSTARTEN                           '
+    db   '4) KERNEL NEU STARTEN                   '
 end if
 rosef:
     db 'ROSE    TXT'

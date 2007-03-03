@@ -13,7 +13,11 @@
 ;; Version 0.7                                                     ;;
 ;;         Added a timer per socket to allow delays when rx window ;;
 ;;         gets below 1KB                                          ;;
+;;                                                                 ;;
+;;  10.01.2007 Bugfix for checksum function from Paolo Franchetti  ;;
+;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 
 ;*******************************************************************
@@ -27,172 +31,39 @@
 ;
 ;*******************************************************************
 
-
-
-;
-;   IP Packet after reception - Normal IP packet format
-;
-;    0                   1                   2                   3
-;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-;
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;0  |Version|  IHL  |Type of Service|       Total Length            |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;4  |         Identification        |Flags|      Fragment Offset    |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;8  |  Time to Live |    Protocol   |         Header Checksum       |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;12 |                       Source Address                          |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;16 |                    Destination Address                        |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |      Data                                                     |
-;   +-+-+-..........                                               -+
-
-
-;   TCP Payload ( Data field in IP datagram )
-;
-;    0                   1                   2                   3
-;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;20 |          Source Port          |       Destination Port        |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;24 |                        Sequence Number                        |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;28 |                    Acknowledgment Number                      |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;32 |  Data |           |U|A|P|R|S|F|                               |
-;   | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
-;   |       |           |G|K|H|T|N|N|                               |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;36 |           Checksum            |         Urgent Pointer        |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;40 |                    Options                    |    Padding    |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |                             data
-
-
-;
-;   UDP Payload ( Data field in IP datagram )
-;
-;    0                   1                   2                   3
-;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-;
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |       Source Port             |      Destination Port         |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   | Length ( UDP Header + Data )  |           Checksum            |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |       UDP Data                                                |
-;   +-+-+-..........                                               -+
-;
-
-
-;
-;  Socket Descriptor + Buffer
-;
-;    0                   1                   2                   3
-;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-;
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |                    Status ( of this buffer )                  |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |  Application Process ID                                       |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |                  Local IP Address                             |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   | Local IP Port                 | Unused ( set to 0 )           |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   |                  Remote IP Address                            |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-;   | Remote IP Port                | Unused ( set to 0 )           |
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 24|   Rx Data Count                                   INTEL format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 28|                 TCB STATE                         INTEL format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 32|   TCB Timer (seconds)                             INTEL format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 36| ISS (Inital Sequence # used by this connection )   INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 40| IRS ( Inital Receive Sequence # )                  INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 44| SND.UNA  Seq # of unack'ed sent packets            INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 48| SND.NXT  Next send seq # to use                    INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 52| SND.WND  Send window                               INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 56| RCV.NXT  Next expected receive sequence #          INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 60| RCV.WND  Receive window                            INET format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 64| SEG.LEN  Segment length                           INTEL format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 68| SEG.WND  Segment window                           INTEL format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 72| Retransmit queue # NOW WINDOW SIZE TIMER          INTEL format|
-;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-; 76|       RX Data                                                 |
-;   +-+-+-..........                                               -+
-
-
-
-; IP protocol numbers
-PROTOCOL_ICMP     equ      1
-PROTOCOL_TCP      equ      6
-PROTOCOL_UDP      equ      17
-
-
-; TIPBUFF status values
-BUFF_EMPTY         equ     0
-BUFF_RX_FULL       equ     1
-BUFF_ALLOCATED     equ     2
-BUFF_TX_FULL       equ     3
-
-NUM_IPBUFFERS      equ     20    ; buffers allocated for TX/RX
-
-SOCK_EMPTY         equ     0        ; socket not in use
-SOCK_OPEN          equ     1        ; open issued, but no data sent
-
-; TCP opening modes
-SOCKET_PASSIVE     equ     0
-SOCKET_ACTIVE      equ     1
-
-; TCP TCB states
-TCB_LISTEN         equ        1
-TCB_SYN_SENT       equ        2
-TCB_SYN_RECEIVED   equ        3
-TCB_ESTABLISHED    equ        4
-TCB_FIN_WAIT_1     equ        5
-TCB_FIN_WAIT_2     equ        6
-TCB_CLOSE_WAIT     equ        7
-TCB_CLOSING        equ        8
-TCB_LAST_ACK       equ        9
-TCB_TIME_WAIT      equ        10
-TCB_CLOSED         equ        11
-
-TWOMSL              equ     10      ; # of secs to wait before closing socket
+uglobal
+StackCounters:
+  dumped_rx_count:    dd  0
+  arp_tx_count:       dd  0
+  arp_rx_count:       dd  0
+  ip_rx_count:	      dd  0
+  ip_tx_count:	      dd  0
+endg
 
 ; socket buffers
-SOCKETBUFFSIZE     equ        4096  ; state + config + buffer.
-SOCKETHEADERSIZE   equ        76    ; thus 4096 - SOCKETHEADERSIZE bytes data
+SOCKETBUFFSIZE	   equ	      4096  ; state + config + buffer.
+SOCKETHEADERSIZE   equ	      76    ; thus 4096 - SOCKETHEADERSIZE bytes data
 
-NUM_SOCKETS        equ        16    ; Number of open sockets supported. Was 20
+NUM_SOCKETS	   equ	      16    ; Number of open sockets supported. Was 20
 
+; IPBUFF status values
+BUFF_EMPTY	   equ	   0
+BUFF_RX_FULL	   equ	   1
+BUFF_ALLOCATED	   equ	   2
+BUFF_TX_FULL	   equ	   3
 
-NUMQUEUES          equ        4
-EMPTY_QUEUE        equ        0
-IPIN_QUEUE         equ        1
-IPOUT_QUEUE        equ        2
-NET1OUT_QUEUE      equ        3
+NUM_IPBUFFERS	   equ	   20	 ; buffers allocated for TX/RX
 
-NO_BUFFER          equ        0xFFFF
-IPBUFFSIZE         equ        1500                ; MTU of an ethernet packet
-NUMQUEUEENTRIES    equ        NUM_IPBUFFERS
-NUMRESENDENTRIES    equ         18              ; Buffers for TCP resend packets
-TCP_RETRIES         equ         5               ; Number of times to resend a packet
-TCP_TIMEOUT         equ         10              ; resend if not replied to in x hs
+NUMQUEUES	   equ	      4
+EMPTY_QUEUE	   equ	      0
+IPIN_QUEUE	   equ	      1
+IPOUT_QUEUE	   equ	      2
+NET1OUT_QUEUE	   equ	      3
+
+NO_BUFFER	   equ	      0xFFFF
+IPBUFFSIZE	   equ	      1500		  ; MTU of an ethernet packet
+NUMQUEUEENTRIES    equ	      NUM_IPBUFFERS
+NUMRESENDENTRIES    equ 	18		; Buffers for TCP resend packets
 
 ; These are the 0x40 function codes for application access to the stack
 STACK_DRIVER_STATUS  equ   52
@@ -202,60 +73,49 @@ SOCKET_INTERFACE     equ   53
 ; 128KB allocated for the stack and network driver buffers and other
 ; data requirements
 stack_data_start     equ   0x700000
-eth_data_start       equ   0x700000
-stack_data           equ   0x704000
-stack_data_end       equ   0x71ffff
+eth_data_start	     equ   0x700000
+stack_data	     equ   0x704000
+stack_data_end	     equ   0x71ffff
 
 ; 32 bit word
-stack_config         equ   stack_data
+stack_config	     equ   stack_data
+
 ; 32 bit word - IP Address in network format
-stack_ip             equ   stack_data + 4
-; 1 byte. 0 == inactive, 1 = active
-slip_active          equ   stack_data + 8       ; no longer used
+stack_ip	     equ   stack_data + 4
+
 ; 1 byte. 0 == inactive, 1 = active
 ethernet_active      equ   stack_data + 9
-unused               equ   stack_data + 10
-;  word. Buffer number, -1 if none
-rx_buff_ptr          equ   stack_data + 12
-; dword. Buffer number, -1 if none
-tx_buff_ptr          equ   stack_data + 16
-; byte.
-slip_rx_state        equ   stack_data + 20      ; no longer used
-; byte
-slip_tx_state        equ   stack_data + 21      ; no longer used
-; dword. Index into data
-rx_data_ptr          equ   stack_data + 22
-; dword. Index into data
-tx_data_ptr          equ   stack_data + 26
-; word. Count of bytes to send
-tx_msg_len           equ   stack_data + 30
+
+
+; TODO :: empty memory area
+
 ; Address of selected socket
-sktAddr              equ   stack_data + 32
+sktAddr 	     equ   stack_data + 32
 ; Parameter to checksum routine - data ptr
-checkAdd1            equ   stack_data + 36
+checkAdd1	     equ   stack_data + 36
 ; Parameter to checksum routine - 2nd data ptr
-checkAdd2            equ   stack_data + 40
+checkAdd2	     equ   stack_data + 40
 ; Parameter to checksum routine - data size
-checkSize1           equ   stack_data + 44
+checkSize1	     equ   stack_data + 44
 ; Parameter to checksum routine - 2nd data size
-checkSize2           equ   stack_data + 46
+checkSize2	     equ   stack_data + 46
 ; result of checksum routine
-checkResult          equ   stack_data + 48
+checkResult	     equ   stack_data + 48
 
 ; holds the TCP/UDP pseudo header. SA|DA|0|prot|UDP len|
-pseudoHeader         equ   stack_data + 50
+pseudoHeader	     equ   stack_data + 50
 
 ; receive and transmit IP buffer allocation
-sockets              equ   stack_data + 62
-Next_free2           equ   sockets + (SOCKETBUFFSIZE * NUM_SOCKETS)
+sockets 	     equ   stack_data + 62
+Next_free2	     equ   sockets + (SOCKETBUFFSIZE * NUM_SOCKETS)
 ; 1560 byte buffer for rx / tx ethernet packets
-Ether_buffer         equ   Next_free2
-Next_free3           equ   Ether_buffer + 1560
-last_1sTick          equ   Next_free3
-IPbuffs              equ   Next_free3 + 1
-queues               equ   IPbuffs + ( NUM_IPBUFFERS * IPBUFFSIZE )
-queueList            equ   queues + (2 * NUMQUEUES)
-last_1hsTick         equ   queueList + ( 2 * NUMQUEUEENTRIES )
+Ether_buffer	     equ   Next_free2
+Next_free3	     equ   Ether_buffer + 1518
+last_1sTick	     equ   Next_free3
+IPbuffs 	     equ   Next_free3 + 1
+queues		     equ   IPbuffs + ( NUM_IPBUFFERS * IPBUFFSIZE )
+queueList	     equ   queues + (2 * NUMQUEUES)
+last_1hsTick	     equ   queueList + ( 2 * NUMQUEUEENTRIES )
 
 ;resendQ              equ   queueList + ( 2 * NUMQUEUEENTRIES )
 ;resendBuffer         equ    resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
@@ -263,9 +123,34 @@ last_1hsTick         equ   queueList + ( 2 * NUMQUEUEENTRIES )
 
 
 
-resendQ             equ     0x770000
-resendBuffer        equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
+resendQ 	    equ     0x770000
+resendBuffer	    equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
 
+
+; simple macro for memory set operation
+macro _memset_dw adr,value,amount
+{
+	mov	edi, adr
+	mov	ecx, amount
+	if value = 0
+		xor	eax, eax
+	else
+		mov	eax, value
+	end if
+	cld
+	rep	stosd
+}
+
+
+; Below, the main network layer source code is included
+;
+include "queue.inc"
+include "eth_drv/ethernet.inc"
+include "ip.inc"
+include "icmp.inc"
+include "tcp.inc"
+include "udp.inc"
+include "socket.inc"
 
 ;***************************************************************************
 ;   Function
@@ -278,41 +163,21 @@ resendBuffer        equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
 ;       in set_variables
 ;
 ;***************************************************************************
+
 stack_init:
-    xor     eax,eax
-    mov     edi,stack_data_start
-    mov     ecx,0x20000 / 4  ; Assume that we have 128KB of data
-    cld
-    rep     stosd
+	; Init two address spaces with default values
+	_memset_dw	stack_data_start, 0, 0x20000/4
+	_memset_dw	resendQ, 0xFFFFFFFF, NUMRESENDENTRIES
 
-    ; Initialise TCP resend queue data structures
-    mov     eax, 0xFFFFFFFF
-    mov     edi, resendQ
-    mov     ecx, NUMRESENDENTRIES  ; 1 dword per entry
-    cld
-    rep     stosd
+	; Queries initialization
+	call	queueInit
 
-
-    mov     eax, 0xFFFFFFFF
-    mov     [rx_buff_ptr], eax
-    mov     [tx_buff_ptr], eax
-
-    ; Put in some defaults : slip, 0x3f8, 4, ip=192.168.1.22
-    ; Saves me entering them each boot up when debugging
-    mov     eax, 0x03f80401
-    mov     [stack_config], eax
-    mov     eax, 0xc801a8c0
-    mov     [stack_ip], eax
-
-    call    queueInit
-
-    ; The following block sets up the 1s timer
-    mov     al,0x0
-    out     0x70,al
-    in      al,0x71
-    mov     [last_1sTick], al
-
-    ret
+	; The following block sets up the 1s timer
+	mov	al, 0x0
+	out	0x70, al
+	in	al, 0x71
+	mov	[last_1sTick], al
+ret
 
 
 
@@ -334,7 +199,7 @@ stack_handler:
     ; Test for 10ms tick, call tcp timer
     mov     eax, [timer_ticks] ;[0xfdf0]
     cmp     eax, [last_1hsTick]
-    je      sh_001
+    je	    sh_001
 
     mov     [last_1hsTick], eax
     call    tcp_tx_handler
@@ -342,82 +207,55 @@ stack_handler:
 sh_001:
 
     ; Test for 1 second event, call 1s timer functions
-    mov     al,0x0   ;second
-    out     0x70,al
-    in      al,0x71
+    mov     al, 0x0   ;second
+    out     0x70, al
+    in	    al, 0x71
     cmp     al, [last_1sTick]
-    je      sh_exit
+    je	    sh_exit
 
     mov     [last_1sTick], al
 
-    call    arp_timer
+    stdcall arp_table_manager, ARP_TABLE_TIMER, 0, 0
     call    tcp_tcb_handler
 
 sh_exit:
     ret
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Checksum [by Johnny_B]
+;;  IN:
+;;    buf_ptr=POINTER to buffer
+;;    buf_size=SIZE of buffer
+;;  OUT:
+;;    AX=16-bit checksum
+;;              Saves all used registers
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+proc checksum_jb stdcall uses ebx esi ecx,\
+     buf_ptr:DWORD, buf_size:DWORD
 
+    xor     eax, eax
+    xor     ebx, ebx  ;accumulator
+    mov     esi, dword[buf_ptr]
+    mov     ecx, dword[buf_size]
+    shr     ecx, 1  ; ecx=ecx/2
+    jnc     @f	    ; if CF==0 then size is even number
+    mov     bh, byte[esi + ecx*2]
+  @@:
+    cld
 
+  .loop:
+    lodsw   ;eax=word[esi],esi=esi+2
+    xchg    ah,al    ;cause must be a net byte-order
+    add     ebx, eax
+    loop    .loop
 
-;***************************************************************************
-;   Function
-;      is_localport_unused
-;
-;   Description
-;         scans through all the active sockets , looking to see if the
-;      port number specified in bx is in use as a localport number.
-;      This is useful when you want a to generate a unique local port
-;      number.
-;          On return, eax = 1 for free, 0 for in use
-;
-;***************************************************************************
-is_localport_unused:
-    mov     al, bh
-    mov     ah, bl
-    mov     bx, ax
+    mov     eax, ebx
+    shr     eax, 16
+    add     ax, bx
+    not     ax
 
-    mov     edx, SOCKETBUFFSIZE * NUM_SOCKETS
-    mov     ecx, NUM_SOCKETS
-    mov     eax, 0                    ; Assume the return value is 'in use'
-
-ilu1:
-    sub     edx, SOCKETBUFFSIZE
-    cmp     [edx + sockets + 12], bx
-    loopnz  ilu1                  ; Return back if the socket is occupied
-
-    jz      ilu_exit
-    inc     eax                         ; return port not in use
-
-ilu_exit:
     ret
-
-
-
-;***************************************************************************
-;   Function
-;      get_free_socket
-;
-;   Description
-;
-;***************************************************************************
-get_free_socket:
-    push    ecx
-    mov     eax, SOCKETBUFFSIZE * NUM_SOCKETS
-    mov     ecx, NUM_SOCKETS
-
-gfs1:
-    sub     eax, SOCKETBUFFSIZE
-    cmp     [eax + sockets], dword SOCK_EMPTY
-    loopnz  gfs1                  ; Return back if the socket is occupied
-    mov     eax, ecx
-    pop     ecx
-    jz      gfs_exit
-    mov     eax, 0xFFFFFFFF
-
-gfs_exit:
-    ret
-
-
+endp
 
 ;***************************************************************************
 ;   Function
@@ -430,16 +268,16 @@ gfs_exit:
 ;       Internetworking with TCP/IP Volume II by D.E. Comer
 ;
 ;***************************************************************************
+
+
 checksum:
     pusha
-
-    xor     edx, edx                  ; edx is the accumulative checksum
+    mov     eax, [checkAdd1]
+    xor     edx, edx		      ; edx is the accumulative checksum
     xor     ebx, ebx
     mov     cx, [checkSize1]
     shr     cx, 1
-    jz      cs1_1
-
-    mov     eax, [checkAdd1]
+    jz	    cs1_1
 
 cs1:
     mov     bh, [eax]
@@ -452,7 +290,7 @@ cs1:
 
 cs1_1:
     and     word [checkSize1], 0x01
-    jz      cs_test2
+    jz	    cs_test2
 
     mov     bh, [eax]
     xor     bl, bl
@@ -462,12 +300,12 @@ cs1_1:
 cs_test2:
     mov     cx, [checkSize2]
     cmp     cx, 0
-    jz      cs_exit                     ; Finished if no 2nd buffer
-
-    shr     cx, 1
-    jz      cs2_1
+    jz	    cs_exit			; Finished if no 2nd buffer
 
     mov     eax, [checkAdd2]
+
+    shr     cx, 1
+    jz	    cs2_1
 
 cs2:
     mov     bh, [eax]
@@ -480,7 +318,7 @@ cs2:
 
 cs2_1:
     and     word [checkSize2], 0x01
-    jz      cs_exit
+    jz	    cs_exit
 
     mov     bh, [eax]
     xor     bl, bl
@@ -510,14 +348,14 @@ cs_exit:
 ;      app_stack_handler
 ;
 ;   Description
-;       This is an application service, called by int 0x40 fn 52
+;       This is an application service, called by int 0x40, function 52
 ;       It provides application access to the network interface layer
 ;
 ;***************************************************************************
 app_stack_handler:
     cmp     eax, 0
     jnz     not0
-    ; Read the configuartion word
+    ; Read the configuration word
     mov     eax, [stack_config]
     ret
 
@@ -547,7 +385,7 @@ not1:
     and     bl, 0x7f
     cmp     bl, 3
 
-    je       ash_eth_enable
+    je	     ash_eth_enable
     ; Ethernet isn't enabled, so make sure that the card is disabled
     mov     [ethernet_active], byte 0
 
@@ -558,7 +396,7 @@ ash_eth_enable:
     ; if found
     call    eth_probe
     cmp     eax, 0
-    je      ash_eth_done            ; Abort if no hardware found
+    je	    ash_eth_done	    ; Abort if no hardware found
 
     mov     [ethernet_active], byte 1
 
@@ -572,20 +410,9 @@ not2:
     mov     [stack_ip], ebx
     ret
 
+;old functions was deleted
+
 not3:
-    cmp     eax, 4
-    jnz     not4
-    ; Enabled the slip driver on the comm port
-    ; slip removed
-    ret
-
-not4:
-    cmp     eax, 5
-    jnz     not5
-    ; Disable the slip driver on the comm port
-    ; slip removed
-
-not5:
     cmp     eax, 6
     jnz     not6
 
@@ -653,15 +480,101 @@ not12:
 
 not13:
     cmp     eax, 14
-    jnz     stack_driver_end
+    jnz     not14
 
     ; write the dns IP Address
     mov     [dns_ip], ebx
 
     ret
 
-stack_driver_end:
+;<added by Frank Sommer>
+not14:
+	cmp	eax, 15
+	jnz	not15
+
+    ; in ebx we need 4 to read the last 2 bytes
+	cmp	ebx, dword 4
+	je	read
+
+    ; or we need 0 to read the first 4 bytes
+	cmp	ebx, dword 0
+	jnz	param_error
+
+    ; read MAC, returned (in mirrored byte order) in eax
+read:
+	mov	eax, [node_addr + ebx]
+	jmp	@f
+
+param_error:
+	mov	eax, -1     ; params not accepted
+@@:
+	ret
+
+
+; 0 -> arp_probe
+; 1 -> arp_announce
+; 2 -> arp_responce (not supported yet)
+
+not15:					; ARP stuff
+	cmp	eax, 16
+	jnz	not16
+
+	cmp	ebx, 0
+	je	a_probe
+
+	cmp	ebx, 1
+	je	a_ann			; arp announce
+
+;       cmp     ebx,2
+;       jne     a_resp                  ; arp response
+
+	jmp	param15_error
+
+
+; arp probe, sender IP must be set to 0.0.0.0, target IP is set to address being probed
+; ecx: pointer to target MAC, MAC should set to 0 by application
+; edx: target IP
+a_probe:
+	push	dword [stack_ip]
+
+	mov	edx, [stack_ip]
+	mov	[stack_ip], dword 0
+	mov	esi, ecx		; pointer to target MAC address
+	call	arp_request
+
+	pop	dword [stack_ip]
+	jmp	@f
+
+; arp announce, sender IP must be set to target IP
+; ecx: pointer to target MAC
+a_ann:
+	mov	edx, [stack_ip]
+	mov	esi, ecx		; pointer to target MAC address
+	call	arp_request
+	jmp	@f
+
+param15_error:
+	mov	eax, -1
+
+@@:
+	ret
+;</added by Frank Sommer>
+; modified by [smb]
+
+;<added by Johnny_B>
+; ARPTable manager interface
+not16:
+    cmp     eax, 17
+    jnz     stack_driver_end
+
+    ;see "proc arp_table_manager" for more details
+    stdcall arp_table_manager,ebx,ecx,edx  ;Opcode,Index,Extra
+
     ret
+;</added by Johnny_B>
+
+stack_driver_end:
+	ret
 
 
 
@@ -670,7 +583,7 @@ stack_driver_end:
 ;      app_socket_handler
 ;
 ;   Description
-;       This is an application service, called by int 0x40
+;       This is an application service, called by int 0x40, function 53
 ;       It provides application access to stack socket services
 ;       such as opening sockets
 ;
@@ -746,6 +659,28 @@ nots8:
     ret
 
 nots9:
+    cmp     eax, 10
+    jnz     nots10
+
+    mov     eax,dword[drvr_cable]
+    test    eax,eax
+    jnz     @f		      ; if function is not implented, return -1
+    mov     al,-1
+    ret
+
+   @@:
+    call    dword[drvr_cable]
+    ret
+
+
+nots10:
+    cmp     eax, 11
+    jnz     nots11
+
+    call    socket_read_packet
+    ret
+
+nots11:
     cmp     eax, 254
     jnz     notdump
 
@@ -980,9 +915,9 @@ stack_get_packet:
     mov     eax, NET1OUT_QUEUE
     call    dequeue
     cmp     ax, NO_BUFFER
-    je      sgp_non_exit            ; Exit if no buffer available
+    je	    sgp_non_exit	    ; Exit if no buffer available
 
-    push    eax                     ; Save buffer number for freeing at end
+    push    eax 		    ; Save buffer number for freeing at end
 
     push    edx
     ; convert buffer pointer eax to the absolute address
@@ -991,20 +926,20 @@ stack_get_packet:
     add     eax, IPbuffs
     pop     edx
 
-    push    eax                     ; save address of IP data
+    push    eax 		    ; save address of IP data
 
     ; Get the address of the callers data
-    mov     edi,[0x3010]
+    mov     edi,[TASK_BASE]
     add     edi,TASKDATA.mem_start
     add     edx,[edi]
     mov     edi, edx
 
     pop     eax
 
-    mov     ecx, 1500           ; should get the actual number of bytes to write
+    mov     ecx, 1500		; should get the actual number of bytes to write
     mov     esi, eax
     cld
-    rep     movsb               ; copy the data across
+    rep     movsb		; copy the data across
 
     ; And finally, return the buffer to the free queue
     pop     eax
@@ -1035,7 +970,7 @@ stack_insert_packet:
     mov     eax, EMPTY_QUEUE
     call    dequeue
     cmp     ax, NO_BUFFER
-    je      sip_err_exit
+    je	    sip_err_exit
 
     push    eax
 
@@ -1052,19 +987,19 @@ stack_insert_packet:
 
     ; So, edx holds the IPbuffer ptr
 
-    pop     ecx                     ; count of bytes to send
-    mov     ebx, ecx                ; need the length later
-    pop     eax                     ; get callers ptr to data to send
+    pop     ecx 		    ; count of bytes to send
+    mov     ebx, ecx		    ; need the length later
+    pop     eax 		    ; get callers ptr to data to send
 
     ; Get the address of the callers data
-    mov     edi,[0x3010]
+    mov     edi,[TASK_BASE]
     add     edi,TASKDATA.mem_start
     add     eax,[edi]
     mov     esi, eax
 
     mov     edi, edx
     cld
-    rep     movsb               ; copy the data across
+    rep     movsb		; copy the data across
 
     pop     ebx
 
@@ -1080,705 +1015,3 @@ sip_err_exit:
     mov     eax, 0xFFFFFFFF
     ret
 
-
-
-;***************************************************************************
-;   Function
-;      socket_open
-;
-;   Description
-;       find a free socket
-;       local port in ebx
-;       remote port in ecx
-;       remote ip in edx
-;       return socket # in eax, -1 if none available
-;
-;***************************************************************************
-socket_open:
-    call    get_free_socket
-
-    cmp     eax, 0xFFFFFFFF
-    jz      so_exit
-
-    ; ax holds the socket number that is free. Get real address
-    push    eax
-    shl     eax, 12
-    add     eax, sockets
-
-    mov     [eax], dword SOCK_OPEN
-
-    mov     [eax + 12], byte bh      ; Local port ( LS 16 bits )
-    mov     [eax + 13], byte bl      ; Local port ( LS 16 bits )
-    mov     ebx, [stack_ip]
-    mov     [eax + 8], ebx         ; Local IP
-    mov     [eax + 20], ch         ; Remote Port ( LS 16 bits )
-    mov     [eax + 21], cl         ; Remote Port ( LS 16 bits )
-    mov     [eax + 16], edx         ; Remote IP ( in Internet order )
-    mov     [eax + 24], dword 0      ; recieved data count
-
-    mov     esi, [0x3010]
-    mov     ebx, [esi+TASKDATA.pid]
-    mov     [eax + 4], ebx         ; save the process ID
-    pop     eax      ; Get the socket number back, so we can return it
-
-so_exit:
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_open_tcp
-;
-;   Description
-;       Opens a TCP socket in PASSIVE or ACTIVE mode
-;       find a free socket
-;       local port in ebx ( intel format )
-;       remote port in ecx ( intel format )
-;       remote ip in edx ( in Internet byte order )
-;       Socket open mode in esi  ( SOCKET_PASSIVE or SOCKET_ACTIVE )
-;       return socket # in eax, -1 if none available
-;
-;***************************************************************************
-socket_open_tcp:
-    call    get_free_socket
-
-    cmp     eax, 0xFFFFFFFF
-    jz      so_exit
-
-    ; ax holds the socket number that is free. Get real address
-    push    eax
-    shl     eax, 12
-    add     eax, sockets
-
-    mov     [sktAddr], eax
-    mov     [eax], dword SOCK_OPEN
-
-    ; TODO - check this works!
-    mov     [eax + 72], dword 0     ; Reset the window timer.
-
-    mov     [eax + 12], byte bh      ; Local port ( LS 16 bits )
-    mov     [eax + 13], byte bl      ; Local port ( LS 16 bits )
-    mov     ebx, [stack_ip]
-    mov     [eax + 8], ebx         ; Local IP
-    mov     [eax + 20], ch         ; Remote Port ( LS 16 bits )
-    mov     [eax + 21], cl         ; Remote Port ( LS 16 bits )
-    mov     [eax + 16], edx         ; Remote IP ( in Internet order )
-    mov     [eax + 24], dword 0      ; recieved data count
-
-    ; Now fill in TCB state
-    mov     ebx, TCB_LISTEN
-    cmp     esi, SOCKET_PASSIVE
-    jz      sot_001
-    mov     ebx, TCB_SYN_SENT
-
-sot_001:
-    mov     [eax + 28], ebx            ; Indicate the state of the TCB
-
-    mov     esi, [0x3010]
-    mov     ecx, [esi+TASKDATA.pid]
-    mov     [eax + 4], ecx         ; save the process ID
-
-    cmp     ebx, TCB_LISTEN
-    je      sot_done
-
-    ; Now, if we are in active mode, then we have to send a SYN to the specified remote port
-
-
-    mov     eax, EMPTY_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je      sot_done
-
-    push    eax
-
-    mov     bl, 0x02        ; SYN
-    mov     ecx, 0
-
-    call    buildTCPPacket
-
-    mov     eax, NET1OUT_QUEUE
-
-    mov     edx, [stack_ip]
-    mov     ecx, [ sktAddr ]
-    mov     ecx, [ ecx + 16 ]
-    cmp     edx, ecx
-    jne     sot_notlocal
-    mov     eax, IPIN_QUEUE
-
-sot_notlocal:
-       ; Send it.
-    pop     ebx
-    call    queue
-
-    mov     esi, [sktAddr]
-
-    ; increment SND.NXT in socket
-    add     esi, 48
-    call    inc_inet_esi
-
-sot_done:
-    pop     eax      ; Get the socket number back, so we can return it
-
-sot_exit:
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_close
-;
-;   Description
-;       socket # in ebx
-;       returns 0 for ok, -1 for socket not open (fail)
-;
-;***************************************************************************
-socket_close:
-    shl     ebx, 12
-    add     ebx, sockets
-    mov     eax, 0xFFFFFFFF         ; assume this operation will fail..
-    cmp     [ebx], dword SOCK_EMPTY
-    jz      sc_exit
-
-    ; Clear the socket varaibles
-    xor     eax, eax
-    mov     edi,ebx
-    mov     ecx,SOCKETHEADERSIZE
-    cld
-    rep     stosb
-
-sc_exit:
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_close_tcp
-;
-;   Description
-;       socket # in ebx
-;       returns 0 for ok, -1 for socket not open (fail)
-;
-;***************************************************************************
-socket_close_tcp:
-    ; first, remove any resend entries
-    pusha
-
-    mov     esi, resendQ
-    mov     ecx, 0
-
-sct001:
-    cmp     ecx, NUMRESENDENTRIES
-    je      sct003              ; None left
-    cmp     [esi], bl
-    je      sct002              ; found one
-    inc     ecx
-    add     esi, 4
-    jmp     sct001
-
-sct002:
-    dec     dword [arp_rx_count] ; ************ TEST ONLY!
-
-    mov     [esi], byte 0xFF
-    jmp     sct001
-
-sct003:
-    popa
-
-    shl     ebx, 12
-    add     ebx, sockets
-    mov     [sktAddr], ebx
-    mov     eax, 0xFFFFFFFF         ; assume this operation will fail..
-    cmp     [ebx], dword SOCK_EMPTY
-    jz      sct_exit
-
-    ; Now construct the response, and queue for sending by IP
-    mov     eax, EMPTY_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je      stl_exit
-
-    push    eax
-
-    mov     bl, 0x11        ; FIN + ACK
-    mov     ecx, 0
-    mov     esi, 0
-
-    call    buildTCPPacket
-
-    mov     ebx, [sktAddr]
-
-    ; increament SND.NXT in socket
-    mov     esi, 48
-    add     esi, ebx
-    call    inc_inet_esi
-
-
-    ; Get the socket state
-    mov     eax, [ebx + 28]
-    cmp     eax, TCB_LISTEN
-    je      destroyTCB
-    cmp     eax, TCB_SYN_SENT
-    je      destroyTCB
-    cmp     eax, TCB_SYN_RECEIVED
-    je      sct_finwait1
-    cmp     eax, TCB_ESTABLISHED
-    je      sct_finwait1
-
-    ; assume CLOSE WAIT
-    ; Send a fin, then enter last-ack state
-    mov     eax, TCB_LAST_ACK
-    mov     [ebx + 28], eax
-    xor     eax, eax
-    jmp     sct_send
-
-sct_finwait1:
-    ; Send a fin, then enter finwait2 state
-    mov     eax, TCB_FIN_WAIT_1
-    mov     [ebx + 28], eax
-    xor     eax, eax
-
-sct_send:
-    mov     eax, NET1OUT_QUEUE
-
-    mov     edx, [stack_ip]
-    mov     ecx, [ sktAddr ]
-    mov     ecx, [ ecx + 16 ]
-    cmp     edx, ecx
-    jne     sct_notlocal
-    mov     eax, IPIN_QUEUE
-
-sct_notlocal:
-       ; Send it.
-    pop     ebx
-    call    queue
-    jmp     sct_exit
-
-destroyTCB:
-    pop     eax
-    ; Clear the socket varaibles
-    xor     eax, eax
-    mov     edi,ebx
-    mov     ecx,SOCKETHEADERSIZE
-    cld
-    rep     stosb
-
-sct_exit:
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_poll
-;
-;   Description
-;       socket # in ebx
-;       returns count in eax.
-;
-;***************************************************************************
-socket_poll:
-    shl     ebx, 12
-    add     ebx, sockets
-    mov     eax, [ebx + 24]
-
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_status
-;
-;   Description
-;       socket # in ebx
-;       returns TCB state in eax.
-;
-;***************************************************************************
-socket_status:
-    shl     ebx, 12
-    add     ebx, sockets
-    mov     eax, [ebx + 28]
-
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_read
-;
-;   Description
-;       socket # in ebx
-;       returns # of bytes remaining in eax, data in bl
-;
-;***************************************************************************
-socket_read:
-    shl     ebx, 12
-    add     ebx, sockets
-    mov     eax, [ebx + 24]         ; get count of bytes
-    mov     ecx,1
-    test    eax, eax
-    jz      sr2
-
-    dec     eax
-    mov     esi, ebx            ; esi is address of socket
-    mov     [ebx + 24], eax         ; store new count
-    movzx   ebx, byte [ebx + SOCKETHEADERSIZE]  ; get the byte
-    add     esi, SOCKETHEADERSIZE
-    mov     edi, esi
-    inc     esi
-
-    mov     ecx, (SOCKETBUFFSIZE - SOCKETHEADERSIZE) / 4
-    cld
-    rep     movsd
-    xor     ecx, ecx
-
-sr1:
-    jmp     sor_exit
-
-sr2:
-    xor     bl, bl
-
-sor_exit:
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_write
-;
-;   Description
-;       socket in ebx
-;       # of bytes to write in ecx
-;       pointer to data in edx
-;       returns 0 in eax ok, -1 == failed ( invalid socket, or
-;       could not queue IP packet )
-;
-;***************************************************************************
-socket_write:
-    ; First, find the address of the socket descriptor
-    shl     ebx, 12
-    add     ebx, sockets         ; ebx = address of actual socket
-
-    mov     eax, 0xFFFFFFFF
-    ; If the socket is invalid, return with an error code
-    cmp     [ebx], dword SOCK_EMPTY
-    je      sw_exit
-
-
-    mov     eax, EMPTY_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je      sw_exit
-
-    ; Save the queue entry number
-    push    eax
-
-    ; save the pointers to the data buffer & size
-    push    edx
-    push    ecx
-
-    ; convert buffer pointer eax to the absolute address
-    mov     ecx, IPBUFFSIZE
-    mul     ecx
-    add     eax, IPbuffs
-
-    mov     edx, eax
-
-    ; So, ebx holds the socket ptr, edx holds the IPbuffer ptr
-
-    ; Fill in the IP header ( some data is in the socket descriptor)
-    mov     eax, [ebx + 8]
-    mov     [edx + 12], eax      ; source IP
-    mov     eax, [ebx + 16]
-    mov     [edx + 16], eax      ; Destination IP
-
-    mov     al, 0x45
-    mov     [edx], al         ; Version, IHL
-    xor     al, al
-    mov     [edx + 1], al     ; Type of service
-
-    pop     eax                   ; Get the UDP data length
-    push    eax
-
-    add     eax, 20 + 8           ; add IP header and UDP header lengths
-    mov     [edx + 2], ah
-    mov     [edx + 3], al
-    xor     al, al
-    mov     [edx + 4], al
-    mov     [edx + 5], al
-    mov     al, 0x40
-    mov     [edx + 6], al
-    xor     al, al
-    mov     [edx + 7], al
-    mov     al, 0x20
-    mov     [edx + 8], al
-    mov     al, 17
-    mov     [edx + 9], al
-
-    ; Checksum left unfilled
-    xor     ax, ax
-    mov     [edx + 10], ax
-
-    ; Fill in the UDP header ( some data is in the socket descriptor)
-    mov     ax, [ebx + 12]
-    mov     [edx + 20], ax
-
-    mov     ax, [ebx + 20]
-    mov     [edx + 20 + 2], ax
-
-    pop     eax
-    push    eax
-
-    add     eax, 8
-    mov     [edx + 20 + 4], ah
-    mov     [edx + 20 + 5], al
-
-    ; Checksum left unfilled
-    xor     ax, ax
-    mov     [edx + 20 + 6], ax
-
-    pop     ecx                  ; count of bytes to send
-    mov     ebx, ecx            ; need the length later
-    pop     eax                  ; get callers ptr to data to send
-
-    ; Get the address of the callers data
-    mov     edi,[0x3010]
-    add     edi,TASKDATA.mem_start
-    add     eax,[edi]
-    mov     esi, eax
-
-    mov     edi, edx
-    add     edi, 28
-    cld
-    rep     movsb               ; copy the data across
-
-    ; we have edx as IPbuffer ptr.
-    ; Fill in the UDP checksum
-    ; First, fill in pseudoheader
-    mov     eax, [edx + 12]
-    mov     [pseudoHeader], eax
-    mov     eax, [edx + 16]
-    mov     [pseudoHeader+4], eax
-    mov     ax, 0x1100            ; 0 + protocol
-    mov     [pseudoHeader+8], ax
-    add     ebx, 8
-    mov     eax, ebx
-    mov     [pseudoHeader+10], ah
-    mov     [pseudoHeader+11], al
-
-    mov     eax, pseudoHeader
-    mov     [checkAdd1], eax
-    mov     [checkSize1], word 12
-    mov     eax, edx
-    add     eax, 20
-    mov     [checkAdd2], eax
-    mov     eax, ebx
-    mov     [checkSize2], ax      ; was eax!! mjh 8/7/02
-
-    call    checksum
-
-    ; store it in the UDP checksum ( in the correct order! )
-    mov     ax, [checkResult]
-
-    ; If the UDP checksum computes to 0, we must make it 0xffff
-    ; (0 is reserved for 'not used')
-    cmp     ax, 0
-    jne     sw_001
-    mov     ax, 0xffff
-
-sw_001:
-    mov     [edx + 20 + 6], ah
-    mov     [edx + 20 + 7], al
-
-    ; Fill in the IP header checksum
-    mov     eax, edx
-    mov     [checkAdd1], eax
-    mov     [checkSize1], word 20
-    mov     [checkAdd2], dword 0
-    mov     [checkSize2], word 0
-
-    call    checksum
-
-    mov     ax, [checkResult]
-    mov     [edx + 10], ah
-    mov     [edx + 11], al
-
-    ; Check destination IP address.
-    ; If it is the local host IP, route it back to IP_RX
-
-    pop     ebx
-    mov     eax, NET1OUT_QUEUE
-
-    mov     ecx, [ edx + 16]
-    mov     edx, [stack_ip]
-    cmp     edx, ecx
-    jne     sw_notlocal
-    mov     eax, IPIN_QUEUE
-
-sw_notlocal:
-    ; Send it.
-    call    queue
-
-    xor     eax, eax
-
-sw_exit:
-    ret
-
-
-
-;***************************************************************************
-;   Function
-;      socket_write_tcp
-;
-;   Description
-;       socket in ebx
-;       # of bytes to write in ecx
-;       pointer to data in edx
-;       returns 0 in eax ok, -1 == failed ( invalid socket, or
-;       could not queue IP packet )
-;
-;***************************************************************************
-socket_write_tcp:
-    ; First, find the address of the socket descriptor
-    shl     ebx, 12
-    add     ebx, sockets         ; ebx = address of actual socket
-
-    mov     [sktAddr], ebx
-
-    mov     eax, 0xFFFFFFFF
-    ; If the socket is invalid, return with an error code
-    cmp     [ebx], dword SOCK_EMPTY
-    je      swt_exit
-
-    ; If the sockets window timer is nonzero, do not queue packet
-    ; TODO - done
-    cmp     [ebx + 72], dword 0
-    jne     swt_exit
-
-    mov     eax, EMPTY_QUEUE
-    call    dequeue
-    cmp     ax, NO_BUFFER
-    je      swt_exit
-
-    push    eax
-
-    mov     bl, 0x10        ; ACK
-
-    ; Get the address of the callers data
-    mov     edi,[0x3010]
-    add     edi,TASKDATA.mem_start
-    add     edx,[edi]
-    mov     esi, edx
-
-    pop     eax
-    push    eax
-
-    push    ecx
-    call    buildTCPPacket
-    pop     ecx
-
-    ; Check destination IP address.
-    ; If it is the local host IP, route it back to IP_RX
-
-    pop     ebx
-    push    ecx
-    mov     eax, NET1OUT_QUEUE
-
-    mov     edx, [stack_ip]
-    mov     ecx, [ sktAddr ]
-    mov     ecx, [ ecx + 16 ]
-    cmp     edx, ecx
-    jne     swt_notlocal
-    mov     eax, IPIN_QUEUE
-
-swt_notlocal:
-    pop     ecx
-
-    push    ebx                 ; save ipbuffer number
-
-    call    queue
-
-    mov     esi, [sktAddr]
-
-    ; increament SND.NXT in socket
-    ; Amount to increment by is in ecx
-    add     esi, 48
-    call    add_inet_esi
-
-    pop     ebx
-
-    ; Copy the IP buffer to a resend queue
-    ; If there isn't one, dont worry about it for now
-    mov     esi, resendQ
-    mov     ecx, 0
-
-swt003:
-    cmp     ecx, NUMRESENDENTRIES
-    je      swt001              ; None found
-    cmp     [esi], byte 0xFF
-    je      swt002              ; found one
-    inc     ecx
-    add     esi, 4
-    jmp     swt003
-
-swt002:
-    push    ebx
-
-    ; OK, we have a buffer descriptor ptr in esi.
-    ; resend entry # in ecx
-    ;  Populate it
-    ;  socket #
-    ;  retries count
-    ;  retry time
-    ;  fill IP buffer associated with this descriptor
-
-    mov     eax, [sktAddr]
-    sub     eax, sockets
-    shr     eax, 12             ; get skt #
-    mov     [esi], al
-    mov     [esi + 1], byte TCP_RETRIES
-    mov     [esi + 2], word TCP_TIMEOUT
-
-    inc     ecx
-    ; Now get buffer location, and copy buffer across. argh! more copying,,
-    mov     edi, resendBuffer - IPBUFFSIZE
-swt002a:
-    add     edi, IPBUFFSIZE
-    loop    swt002a
-
-    ; we have dest buffer location in edi
-    pop     eax
-    ; convert source buffer pointer eax to the absolute address
-    mov     ecx, IPBUFFSIZE
-    mul     ecx
-    add     eax, IPbuffs
-    mov     esi, eax
-
-    ; do copy
-    mov     ecx, IPBUFFSIZE
-    cld
-    rep     movsb
-
-    inc     dword [arp_rx_count] ; ************ TEST ONLY!
-
-swt001:
-    xor     eax, eax
-
-swt_exit:
-    ret
-
-
-
-; Below, the main network layer source code is included
-;
-
-include "queue.inc"
-include "ip.inc"
-include "tcp.inc"
-include "udp.inc"
-include "eth_drv/ethernet.inc"

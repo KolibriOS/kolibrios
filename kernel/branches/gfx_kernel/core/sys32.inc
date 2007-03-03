@@ -7,119 +7,9 @@
 ;;                                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 32
-
-; GDT TABLE
-
-gdts:
-
-        dw     gdte-$-1
-        dd     gdts
-        dw     0
-
-int_code_l:
-os_code_l:
-
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10011010b
-        db     0x00
-
-int_data_l:
-os_data_l:
-
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10010010b
-        db     0x00
-
-; --------------- APM ---------------------
-apm_code_32:
-        dw     0x10        ; limit 64kb
-        db     0, 0, 0
-        dw     11011111b *256 +10011010b
-        db     0x00
-apm_code_16:
-        dw     0x10
-        db     0, 0, 0
-        dw     10011111b *256 +10011010b
-        db     0x00
-apm_data_16:
-        dw     0x10
-        db     0, 0, 0
-        dw     10011111b *256 +10010010b
-        db     0x00
-; -----------------------------------------
-
-app_code_l:
-      dw ((0x80000000-std_application_base_address) shr 12) and 0xffff
-      dw 0
-      db 0
-      dw 11010000b*256+11111010b+256*((0x80000000-std_application_base_address) shr 28)
-      db std_application_base_address shr 24
-
-app_data_l:
-      dw (0x80000000-std_application_base_address) shr 12 and 0xffff
-      dw 0
-      db 0
-      dw 11010000b*256+11110010b+256*((0x80000000-std_application_base_address) shr 28)
-      db std_application_base_address shr 24
-
-graph_data_l:
-
-        dw     0x3ff
-        dw     0x0000
-        db     0x00
-        dw     11010000b *256 +11110010b
-        db     0x00
-
-tss0_l:
-      times (max_processes+10) dd 0,0
-
-gdte:
-
-
-
 idtreg:
      dw   8*0x41-1
      dd   idts+8
-label idts at 0xB100-8
-
-
-
-uglobal
- tss_sceleton:
-  l.back   dw 0,0
-  l.esp0   dd 0
-  l.ss0    dw 0,0
-  l.esp1   dd 0
-  l.ss1    dw 0,0
-  l.esp2   dd 0
-  l.ss2    dw 0,0
-  l.cr3    dd 0
-  l.eip    dd 0
-  l.eflags dd 0
-  l.eax    dd 0
-  l.ecx    dd 0
-  l.edx    dd 0
-  l.ebx    dd 0
-  l.esp    dd 0
-  l.ebp    dd 0
-  l.esi    dd 0
-  l.edi    dd 0
-  l.es     dw 0,0
-  l.cs     dw 0,0
-  l.ss     dw 0,0
-  l.ds     dw 0,0
-  l.fs     dw 0,0
-  l.gs     dw 0,0
-  l.ldt    dw 0,0
-  l.trap   dw 0
-  l.io     dw 0
-endg
-
 
 build_process_gdt_tss_pointer:
 
@@ -140,7 +30,6 @@ build_process_gdt_tss_pointer:
 
         ret
 
-
 build_interrupt_table:
 
         mov    edi, idts+8
@@ -157,7 +46,7 @@ build_interrupt_table:
         add    edi, 8
         dec    ecx
         jnz    @b
-        
+
         ;mov    edi,8*0x40+idts+8
         mov    [edi + 0], word (i40 and ((1 shl 16)-1))
         mov    [edi + 2], word os_code
@@ -166,16 +55,20 @@ build_interrupt_table:
 
         ret
 
-
-
 iglobal
   sys_int:
-    dd   e0,debug_exc,e2,e3,e4,e5,e6,e7,e8,e9,e10,e11,e12,e13,e14,e15
-    dd   e16,e17
-    times 14 dd unknown_interrupt
+    dd e0,debug_exc,e2,e3
+    dd e4,e5,e6,e7
+    dd e8,e9,e10,e11
+    dd e12,e13,page_fault_handler,e15
 
-    dd   irq0  ,irq1  ,p_irq2 ,p_irq3 ,p_irq4 ,p_irq5,p_irq6 ,p_irq7
-    dd   p_irq8,p_irq9,p_irq10,p_irq11,p_irq12,irqD  ,p_irq14,p_irq15
+    dd except_16, e17,e18, except_19
+    times 12 dd unknown_interrupt
+
+    dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
+    dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
+    dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
+    dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
 
     times 16 dd unknown_interrupt
 
@@ -216,7 +109,7 @@ macro exc_w_code [num]
       jmp exc_c
 }
 
-exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 16 ; 18, 19
+exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 18
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
 exc_c:
@@ -226,21 +119,21 @@ exc_c:
 
 ; test if debugging
         cli
-        mov   eax, [0x3000]
+        mov   eax, [CURRENT_TASK]
         shl   eax, 8
-        mov   eax, [0x80000+eax+APPDATA.debugger_slot]
+        mov   eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
         test  eax, eax
         jnz   .debug
         sti
 ; not debuggee => say error and terminate
         add   esp, 28h
-        movzx eax, bl        
+        movzx eax, bl
         mov   [error_interrupt], eax
         call  show_error_parameters
-        
-        mov   edx, [0x3010]
+
+        mov   edx, [TASK_BASE]
         mov   [edx + TASKDATA.state], byte 4
-        
+
         jmp   change_task
 
 .debug:
@@ -249,7 +142,7 @@ exc_c:
         cld
         movzx ecx, bl
         push  ecx
-        mov   ecx, [0x3010]
+        mov   ecx, [TASK_BASE]
         push  dword [ecx+TASKDATA.pid]    ; PID of current process
         push  12
         pop   ecx
@@ -258,49 +151,15 @@ exc_c:
         pop   ecx
         pop   ecx
         pop   ecx
-        mov   edx, [0x3010]
+        mov   edx, [TASK_BASE]
         mov   byte [edx+TASKDATA.state], 1        ; suspended
         call  change_task
         restore_ring3_context
         iretd
 
-;;;;;;;;;;;;;;;;;;;;;;;
-;; FPU ERROR HANDLER ;;
-;;;;;;;;;;;;;;;;;;;;;;;
-
-align 4
-e7:
-        save_ring3_context
-        clts
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
-        
-        mov   eax, [prev_user_of_fpu]
-        shl   eax, 8
-        add   eax, 0x80000 + APPDATA.fpu_save_area
-        fsave [eax]
-        
-        mov   eax, [0x3000]
-        mov   [prev_user_of_fpu], eax
-        shl   eax, 8
-        add   eax, 0x80000
-        cmp   [eax + APPDATA.is_fpu_saved], 0
-        je    @f
-        frstor [eax+APPDATA.fpu_save_area]
-     @@:
-        mov   [eax + APPDATA.is_fpu_saved], 1
-        restore_ring3_context
-        iret
-        
-iglobal
-  prev_user_of_fpu dd 1
-endg
-
-
 writehex:
       pusha
-      
+
       mov  edi, [write_error_to]
       mov  esi, 8
     @@:
@@ -334,13 +193,13 @@ uglobal
 endg
 
 show_error_parameters:
-        
+
         mov    [write_error_to],process_pid+43
-        mov    eax,[0x3000]
+        mov    eax,[CURRENT_TASK]
         shl    eax, 5
-        mov    eax,[0x3000+TASKDATA.pid+eax]
+        mov    eax,[CURRENT_TASK+TASKDATA.pid+eax]
         call   writehex
-        
+
         mov    [write_error_to],process_error+43
         mov    eax,[error_interrupt]
         call   writehex
@@ -380,7 +239,7 @@ macro irqh [num]
      jmp   irq_c
 }
 
-irqh 2,5,7,8,9,10,11,14,15
+irqh 2,5,7,8,9,10,11
 
  irq_c:
      mov   ax, os_data
@@ -412,7 +271,7 @@ p_irq3:
  old_irq3_handler:
      mov   edi,3
      call  irqhandler
-  p_irq3_1: 
+  p_irq3_1:
      restore_ring3_context
      iret
 
@@ -428,7 +287,7 @@ p_irq4:
  old_irq4_handler:
      mov   edi,4
      call  irqhandler
-  p_irq4_1:   
+  p_irq4_1:
      restore_ring3_context
      iret
 
@@ -440,6 +299,25 @@ p_irq12:
      call  check_mouse_data_ps2
      restore_ring3_context
      iret
+
+p_irq14:
+        save_ring3_context
+        mov     ax, os_data
+        mov     ds, ax
+        mov     es, ax
+        call    [irq14_func]
+        call    ready_for_next_irq_1
+        restore_ring3_context
+        iret
+p_irq15:
+        save_ring3_context
+        mov     ax, os_data
+        mov     ds, ax
+        mov     es, ax
+        call    [irq15_func]
+        call    ready_for_next_irq_1
+        restore_ring3_context
+        iret
 
 ready_for_next_irq:
      mov    [check_idle_semaphore],5
@@ -459,7 +337,7 @@ irqD:
      mov   ax, os_data
      mov   ds, ax
      mov   es, ax
-     
+
      mov   dx,0xf0
      mov   al,0
      out   dx,al
@@ -471,7 +349,7 @@ irqD:
      out   dx,al
 
      restore_ring3_context
-     
+
      iret
 
 
@@ -483,7 +361,7 @@ irqhandler:
      shl    esi,6            ; 1
      add    esi,irq00read    ; 1
      shl    edi,12           ; 1
-     add    edi,0x2E0000
+     add    edi,IRQ_SAVE
      mov    ecx,16
 
      mov    [check_idle_semaphore],5
@@ -554,9 +432,9 @@ irqhandler:
 set_application_table_status:
         push eax
 
-        mov  eax,[0x3000]
+        mov  eax,[CURRENT_TASK]
         shl  eax, 5
-        add  eax,0x3000+TASKDATA.pid
+        add  eax,CURRENT_TASK+TASKDATA.pid
         mov  eax,[eax]
 
         mov  [application_table_status],eax
@@ -569,9 +447,9 @@ set_application_table_status:
 clear_application_table_status:
         push eax
 
-        mov  eax,[0x3000]
+        mov  eax,[CURRENT_TASK]
         shl  eax, 5
-        add  eax,0x3000+TASKDATA.pid
+        add  eax,CURRENT_TASK+TASKDATA.pid
         mov  eax,[eax]
 
         cmp  eax,[application_table_status]
@@ -583,121 +461,19 @@ clear_application_table_status:
 
         ret
 
-
-
 sys_resize_app_memory:
         ; eax = 1 - resize
         ;     ebx = new amount of memory
 
         cmp    eax,1
         jne    .no_application_mem_resize
-        
-        jmp    new_mem_resize ;resize for new type of processes
 
-
-     .no_application_mem_resize:
-
+        stdcall new_mem_resize, ebx
+        mov [esp+36], eax
         ret
 
-
-
-get_app_params:
-
-    push eax
-
-    cmp  [0x90000+6],word '00'
-    jne  no_00_header
-
-    mov  eax,[0x90000+12]
-    mov  [app_start],eax
-    mov  eax,[0x90000+16]
-    mov  [app_i_end],eax
-    mov  eax,[0x90000+20]
-    mov  [app_mem],eax
-; \begin{diamond}[20.08.2006]
-; sanity check (functions 19,58 load app_i_end bytes and that must
-; fit in allocated memory to prevent kernel faults)
-    cmp  eax,[app_i_end]
-    jb   no_01_header
-; \end{diamond}[20.08.2006]
-    shr  eax,1
-    sub  eax,0x10
-    mov  [app_esp],eax
-    mov  eax,[0x90000+24]
-    mov  [app_i_param],eax
-    mov  [app_i_icon],dword 0
-
-    pop  eax
-    clc
-    ret
-
-  no_00_header:
-
-
-    cmp  [0x90000+6],word '01'
-    jne  no_01_header
-
-    mov  eax,[0x90000+12]
-    mov  [app_start],eax
-    mov  eax,[0x90000+16]
-    mov  [app_i_end],eax
-    mov  eax,[0x90000+20]
-    mov  [app_mem],eax
-; \begin{diamond}[20.08.2006]
-    cmp  eax,[app_i_end]
-    jb   no_01_header
-; \end{diamond}[20.08.2006]
-    mov  eax,[0x90000+24]
-    mov  [app_esp],eax
-    mov  eax,[0x90000+28]
-    mov  [app_i_param],eax
-    mov  eax,[0x90000+32]
-    mov  [app_i_icon],eax
-
-    pop  eax
-    clc
-    ret
-
-   no_01_header:
-
-    pop  eax
-    stc
-    ret
-
-
-start_application_fl:
-    jmp new_start_application_fl
-
-;************************************************************************
-
-start_application_floppy:
-    jmp  new_start_application_floppy
-
-;********************************************************************
-
-start_application_hd:
-    jmp   new_start_application_hd
-
-uglobal
-  new_process_place  dd  0x0
-  app_start    dd  0x0
-  app_i_end    dd  0x0
-  app_mem      dd  0x0
-  app_esp      dd  0x0
-  app_i_param  dd  0x0
-  app_i_icon   dd  0x0
-  ;app_mem_pos  dd  0x0
-  appl_path        dd 0x0
-  appl_path_size   dd 0x0         
-endg
-
-;iglobal
-  ;hd_app_string      db  'HDAPP       '
-  ;process_loading    db 'K : Process - loading ',13,10,0
-  ;process_running    db 'K : Process - done',13,10,0
-  ;first_gdt_search   dd 0x2
-;endg
-
+.no_application_mem_resize:
+        ret
 
 sys_threads:
 
@@ -712,36 +488,77 @@ jmp new_sys_threads
 iglobal
   process_terminating   db 'K : Process - terminating',13,10,0
   process_terminated    db 'K : Process - done',13,10,0
+  msg_obj_destroy       db 'K : destroy app object',13,10,0
 endg
 
+; param
+;  esi= slot
 
 terminate: ; terminate application
-    push   esi
-    mov    esi,process_terminating
-    call   sys_msg_board_str
-    pop    esi
 
+           .slot equ esp   ;locals
+
+           push   esi      ;save .slot
+
+           shl esi, 8
+           cmp [SLOT_BASE+esi+APPDATA.dir_table], 0
+           jne @F
+           add esp, 4
+           ret
 @@:
-    cli
-    cmp   [application_table_status],0
-    je    term9
-    sti
-    call  change_task
-    jmp   @b
-  term9:
+           mov    esi,process_terminating
+           call   sys_msg_board_str
+@@:
+           cli
+           cmp   [application_table_status],0
+           je    term9
+           sti
+           call  change_task
+           jmp   @b
+term9:
+           call  set_application_table_status
 
-    call  set_application_table_status
-    
-    mov    eax,esi
-    call   dispose_app_cr3_table
+           mov esi, [.slot]
+           shl esi,8
+           add esi, SLOT_BASE+APP_OBJ_OFFSET
+@@:
+           mov eax, [esi+APPOBJ.fd]
+           test eax, eax
+           jz @F
 
-    cmp   [prev_user_of_fpu],esi   ; if user fpu last -> fpu user = 1
-    jne   fpu_ok_1
-    mov   [prev_user_of_fpu],1
-  fpu_ok_1:
+           cmp eax, esi
+           je @F
 
-    mov   [0xf400],byte 0           ; empty keyboard buffer
-    mov   [0xf500],byte 0           ; empty button buffer
+           push esi
+           call [eax+APPOBJ.destroy]
+           mov  esi, msg_obj_destroy
+           call sys_msg_board_str
+           pop esi
+           jmp @B
+@@:
+           mov eax, [.slot]
+           shl eax, 8
+           mov eax,[SLOT_BASE+eax+APPDATA.dir_table]
+           stdcall destroy_app_space, eax
+
+           mov esi, [.slot]
+           cmp [fpu_owner],esi   ; if user fpu last -> fpu user = 1
+           jne @F
+
+           mov [fpu_owner],1
+           mov eax, [256+SLOT_BASE+APPDATA.fpu_state]
+           clts
+           bt [cpu_caps], CAPS_SSE
+           jnc .no_SSE
+           fxrstor [eax]
+           jmp @F
+.no_SSE:
+           fnclex
+           frstor [eax]
+@@:
+
+    mov   [KEY_COUNT],byte 0           ; empty keyboard buffer
+    mov   [BTN_COUNT],byte 0           ; empty button buffer
 
 
 ; remove defined hotkeys
@@ -780,7 +597,7 @@ terminate: ; terminate application
 
     mov   ecx,esi                 ; remove buttons
   bnewba2:
-    mov   edi,[0xfe88]
+    mov   edi,[BTN_ADDR]
     mov   eax,edi
     cld
     movzx ebx,word [edi]
@@ -816,12 +633,11 @@ terminate: ; terminate application
     add   eax,[esi+WDATA.box.height]
     mov   [dlye],eax
 
-    mov   [esi+WDATA.box.left], 0
-    mov   [esi+WDATA.box.width], 5
-    mov   eax,[0xFE04]
-    mov   [esi+WDATA.box.top],eax
-    mov   [esi+WDATA.box.height], 5
     xor   eax, eax
+    mov   [esi+WDATA.box.left],eax
+    mov   [esi+WDATA.box.width],eax
+    mov   [esi+WDATA.box.top],eax
+    mov   [esi+WDATA.box.height],eax
     mov   [esi+WDATA.cl_workarea],eax
     mov   [esi+WDATA.cl_titlebar],eax
     mov   [esi+WDATA.cl_frames],eax
@@ -835,12 +651,12 @@ terminate: ; terminate application
     pushad
     mov  edi, esi
     shl  edi, 5
-    mov  eax, [0x80000+edi*8+APPDATA.debugger_slot]
+    mov  eax, [SLOT_BASE+edi*8+APPDATA.debugger_slot]
     test eax, eax
     jz   .nodebug
     push 8
     pop  ecx
-    push dword [0x3000+edi+TASKDATA.pid]   ; PID
+    push dword [CURRENT_TASK+edi+TASKDATA.pid]   ; PID
     push 2
     call debugger_notify
     pop  ecx
@@ -848,40 +664,43 @@ terminate: ; terminate application
 .nodebug:
     popad
 
-    pusha         ; at 0x80000+
-    mov   edi,esi
-    shl   edi,8
-    add   edi,0x80000
-    mov   ecx,256/4
-    xor   eax, eax
-    rep   stosd
-    popa
+           mov ebx, [.slot]
+           shl ebx, 8
+           mov ebx,[SLOT_BASE+ebx+APPDATA.pl0_stack]
 
-    pusha          ; name to spaces
-    mov   edi,esi
-    shl   edi,8
-    add   edi,0x80000+APPDATA.app_name
-    mov   ecx,11
-    mov   eax,' '
-    rep   stosb
-    popa
+           stdcall kernel_free, ebx
 
+           mov edi, [.slot]
+           shl edi,8
+           add edi,SLOT_BASE
+           mov eax, 0x20202020
+           stosd
+           stosd
+           stosd
+           mov ecx,244/4
+           xor eax, eax
+           rep stosd
 
   ; activate window
-        movzx  eax, word [0xC000 + esi*2]
-        cmp    eax, [0x3004]
+        movzx  eax, word [WIN_STACK + esi*2]
+        cmp    eax, [TASK_COUNT]
         jne    .dont_activate
         pushad
  .check_next_window:
         dec    eax
         cmp    eax, 1
         jbe    .nothing_to_activate
-        lea    esi, [0xc400+eax*2]
+        lea    esi, [WIN_POS+eax*2]
         movzx  edi, word [esi]               ; edi = process
         shl    edi, 5
-        cmp    [0x3000 + edi + TASKDATA.state], byte 9  ; skip dead slots
+        cmp    [CURRENT_TASK + edi + TASKDATA.state], byte 9  ; skip dead slots
         je     .check_next_window
         add    edi, window_data
+; \begin{diamond}[19.09.2006]
+; skip minimized windows
+        test   [edi + WDATA.fl_wstate], WSTATE_MINIMIZED
+        jnz    .check_next_window
+; \end{diamond}
         call   waredraw
  .nothing_to_activate:
         popad
@@ -889,13 +708,15 @@ terminate: ; terminate application
 
         push    esi     ; remove hd1 & cd & flp reservation
         shl     esi, 5
-        mov     esi, [esi+0x3000+TASKDATA.pid]
+        mov     esi, [esi+CURRENT_TASK+TASKDATA.pid]
         cmp     [hd1_status], esi
         jnz     @f
+        call    free_hd_channel
         mov     [hd1_status], 0
 @@:
         cmp     [cd_status], esi
         jnz     @f
+        call    free_cd_channel
         mov     [cd_status], 0
 @@:
         cmp     [flp_status], esi
@@ -907,7 +728,7 @@ terminate: ; terminate application
     pusha ; remove all irq reservations
     mov   eax,esi
     shl   eax, 5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   edi,irq_owner
     mov   ecx,16
   newirqfree:
@@ -918,16 +739,15 @@ terminate: ; terminate application
     loop   newirqfree
     popa
 
-
     pusha                     ; remove all port reservations
     mov   edx,esi
     shl   edx, 5
-    add   edx,0x3000
+    add   edx,CURRENT_TASK
     mov   edx,[edx+TASKDATA.pid]
 
   rmpr0:
 
-    mov   esi,[0x2d0000]
+    mov   esi,[RESERVED_PORTS]
 
     cmp   esi,0
     je    rmpr9
@@ -936,7 +756,7 @@ terminate: ; terminate application
 
     mov   edi,esi
     shl   edi,4
-    add   edi,0x2d0000
+    add   edi,RESERVED_PORTS
 
     cmp   edx,[edi]
     je    rmpr4
@@ -957,7 +777,7 @@ terminate: ; terminate application
     cld
     rep   movsb
 
-    dec   dword [0x2d0000]
+    dec   dword [RESERVED_PORTS]
 
     jmp   rmpr0
 
@@ -966,12 +786,12 @@ terminate: ; terminate application
     popa
     mov  edi,esi         ; do not run this process slot
     shl  edi, 5
-    mov  [edi+0x3000 + TASKDATA.state],byte 9
+    mov  [edi+CURRENT_TASK + TASKDATA.state],byte 9
 ; debugger test - terminate all debuggees
     mov  eax, 2
-    mov  ecx, 0x80000+2*0x100+APPDATA.debugger_slot
+    mov  ecx, SLOT_BASE+2*0x100+APPDATA.debugger_slot
 .xd0:
-    cmp  eax, [0x3004]
+    cmp  eax, [TASK_COUNT]
     ja   .xd1
     cmp  dword [ecx], esi
     jnz  @f
@@ -998,14 +818,15 @@ terminate: ; terminate application
     xor   esi, esi
     call  redrawscreen
 
-    mov   [0xfff4],byte 0  ; no mouse background
-    mov   [0xfff5],byte 0  ; draw mouse
+    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
+    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
     mov   [application_table_status],0
     mov   esi,process_terminated
     call  sys_msg_board_str
-
+    add esp, 4
     ret
+restore .slot
 
 iglobal
   boot_sched_1    db   'Building gdt tss pointer',0

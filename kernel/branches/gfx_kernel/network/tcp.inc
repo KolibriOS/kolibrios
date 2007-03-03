@@ -14,6 +14,23 @@
 ;;         gets below 1KB                                          ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+; TCP TCB states
+TCB_LISTEN         equ        1
+TCB_SYN_SENT       equ        2
+TCB_SYN_RECEIVED   equ        3
+TCB_ESTABLISHED    equ        4
+TCB_FIN_WAIT_1     equ        5
+TCB_FIN_WAIT_2     equ        6
+TCB_CLOSE_WAIT     equ        7
+TCB_CLOSING        equ        8
+TCB_LAST_ACK       equ        9
+TCB_TIME_WAIT      equ        10
+TCB_CLOSED         equ        11
+
+TWOMSL              equ     10      ; # of secs to wait before closing socket
+
+TCP_RETRIES         equ         5               ; Number of times to resend a packet
+TCP_TIMEOUT         equ         10              ; resend if not replied to in x hs
 
 ;*******************************************************************
 ;   Interface
@@ -25,6 +42,48 @@
 ;       tcp_tcb_handler     1s timer, to erase tcb's in TIME_WAIT state
 ;
 ;*******************************************************************
+
+
+;   TCP Payload ( Data field in IP datagram )
+;
+;    0                   1                   2                   3
+;    0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;20 |          Source Port          |       Destination Port        |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;24 |                        Sequence Number                        |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;28 |                    Acknowledgment Number                      |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;32 |  Data |           |U|A|P|R|S|F|                               |
+;   | Offset| Reserved  |R|C|S|S|Y|I|            Window             |
+;   |       |           |G|K|H|T|N|N|                               |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;36 |           Checksum            |         Urgent Pointer        |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;40 |                    Options                    |    Padding    |
+;   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+;   |                             data
+
+
+struc TCP_PACKET
+{  .SourcePort       dw  ?  ;+00
+   .DestinationPort  dw  ?  ;+02
+   .SequenceNumber   dd  ?  ;+04
+   .AckNumber        dd  ?  ;+08
+   .DataOffset       db  ?  ;+12 - DataOffset[0-3 bits] and Reserved[4-7]
+   .Flags            db  ?  ;+13 - Reserved[0-1 bits]|URG|ACK|PSH|RST|SYN|FIN
+   .Window           dw  ?  ;+14
+   .Checksum         dw  ?  ;+16
+   .UrgentPointer    dw  ?  ;+18
+   .Options          rb  3  ;+20
+   .Padding          db  ?  ;+23
+   .Data             db  ?  ;+24
+}
+
+virtual at 0
+  TCP_PACKET TCP_PACKET
+end virtual
 
 
 
@@ -116,7 +175,7 @@ tth001:
     cmp     ecx, NUMRESENDENTRIES
     je      tth003              ; None left
     cmp     [esi], byte 0xFF
-    jne      tth002             ; found one
+    jne     tth002              ; found one
     inc     ecx
     add     esi, 4
     jmp     tth001
@@ -126,7 +185,7 @@ tth002:
     dec     word [esi+2]
     mov     ax, [esi+2]
     cmp     ax, 0
-    je     tth002a
+    je      tth002a
     inc     ecx
     add     esi, 4
     jmp     tth001              ; Timer not zero, so move on
@@ -494,15 +553,9 @@ btp_001:
     mov     [edx + 20 + 17], al
 
     ; Fill in the IP header checksum
-    mov     eax, edx
-    mov     [checkAdd1], eax
-    mov     [checkSize1], word 20
-    mov     [checkAdd2], dword 0
-    mov     [checkSize2], word 0
+    GET_IHL eax,edx              ; get IP-Header length
+    stdcall checksum_jb,edx,eax  ; buf_ptr, buf_size
 
-    call    checksum
-
-    mov     ax, [checkResult]
     mov     [edx + 10], ah
     mov     [edx + 11], al
 
@@ -1004,19 +1057,19 @@ ste_data:
     ; flag an event to the application
     pop     eax
     mov     ecx,1
-    mov     esi,0x3020+TASKDATA.pid
+    mov     esi,TASK_DATA+TASKDATA.pid
 
 news:
     cmp     [esi],eax
     je      foundPID1
     inc     ecx
     add     esi,0x20
-    cmp     ecx,[0x3004]
+    cmp     ecx,[TASK_COUNT]
     jbe     news
 
 foundPID1:
     shl     ecx,8
-    or      dword [ecx+0x80000+APPDATA.event_mask],dword 10000000b ; stack event
+    or      dword [ecx+SLOT_BASE+APPDATA.event_mask],dword 10000000b ; stack event
 
     pop     ecx
 

@@ -17,6 +17,8 @@ DRIVER_CODE_START:
 
 ;-----------------------------------------------------------------------------
 
+include '../const.inc' ; kernel defines
+
 include 'normal.inc'
 include 'clipping.asm'
 
@@ -55,24 +57,16 @@ end virtual
 ;-----------------------------------------------------------------------------
 
 CLIP_RECTS = 0x00720000 ; 0x00780000
-bg_address = 0x300000
 
-;label bg_bytes_per_scanline dword at 0x600000-16;0x460000-16
+;label bg_BytesPerScanLine dword at 0x600000-16;0x460000-16
 ;label bg_type   dword at 0x600000-12;0x460000-12
 ;label bg_width  dword at 0x600000-8;0x460000-8
 ;label bg_height dword at 0x600000-4;0x460000-4
 
-label bg_bytes_per_scanline dword at 0x460000-16
+label bg_BytesPerScanLine dword at 0x460000-16
 label bg_type   dword at 0x460000-12
 label bg_width  dword at 0x460000-8
 label bg_height dword at 0x460000-4
-
-label lfb_address dword at 0x0000FE80
-label mouse_invisible dword at 0x0000F204
-
-label screen_width dword at 0x0000FE00
-label screen_height dword at 0x0000FE04
-label bytes_per_scanline dword at 0x0000FE08
 
 BGT_TILE    = 1
 BGT_STRETCH = 2
@@ -100,24 +94,24 @@ begin
         cld
         rep     movsd
 
-;       push    dword[0x00003000]
-;       mov     dword[0x00003000],1
+;       push    dword[CURRENT_TASK]
+;       mov     dword[CURRENT_TASK],1
 ;       call    [SF.disable_mouse]
-;       pop     dword[0x00003000]
+;       pop     dword[CURRENT_TASK]
 
         mov     [viewport.left],0
         mov     [viewport.top],0
-        m2m     [viewport.right],[0x0000FE00]
-        m2m     [viewport.bottom],[0x0000FE04]
+        m2m     [viewport.right],[ScreenWidth]
+        m2m     [viewport.bottom],[ScreenHeight]
 
-        movzx   eax,byte[0xE035]
-        cmp     byte[0xE034],'2'
+        movzx   eax,byte[GFX_CARD_VENDOR]
+        cmp     byte[VESA_VER_MAJOR],'2'
         jb      @f
         mov     al,0
     @@: mov     eax,[setbnk+eax*4]
         mov     [set_bank],eax
 
-        mov     al,[0xFBF1]
+        mov     al,[ScreenBPP]
         cmp     al,32
         jne     @f
 
@@ -221,6 +215,9 @@ begin
         mov     [GF.calculatescreen],vm_mike_calculatescreen
         mov     [GF.setscreen],vm_mike_setscreen
 
+;!      mov     [GF.disable_mouse],vm_dummy
+;!      mov     [GF.draw_pointer],vm_dummy
+
         inc     [call_cnt]
         xor     eax,eax
   .exit.3:
@@ -231,20 +228,25 @@ begin
         retn
 endf
 
+func vm_dummy
+begin
+	ret
+endf
+
 func vm_mike_calculatescreen
 begin
 ;       call    [SF.calculatescreen]
   .direct:
         pushad
         cli
-        movzx   ecx,word[0x00003004]    ; number of processes
+        movzx   ecx,word[TASK_COUNT]    ; number of processes
         lea     edi,[CLIP_RECTS+ecx*4+4]
-        push    dword[0x00003000]
+        push    dword[CURRENT_TASK]
         xor     eax,eax
   .next_window:
         inc     eax
         push    ecx ebx eax edi
-        mov     [0x00003000],ax
+        mov     [CURRENT_TASK],ax
         call    calc_clipping_rects
         pop     edi eax ebx
         mov     [CLIP_RECTS+eax*4],edi
@@ -254,7 +256,7 @@ begin
         rep     movsd
         pop     ecx
         loop    .next_window
-        pop     dword[0x00003000]
+        pop     dword[CURRENT_TASK]
         sti
         popad
         ret
@@ -350,11 +352,11 @@ endf
 func get_cursor_rect
 begin
         push    eax
-        movsx   eax,word[0x0000FB0A]
+        movsx   eax,word[MOUSE_X]
         mov     [tr.left],eax
         add     eax,31
         mov     [tr.right],eax
-        movsx   eax,word[0x0000FB0C]
+        movsx   eax,word[MOUSE_Y]
         mov     [tr.top],eax
         add     eax,31
         mov     [tr.bottom],eax
@@ -436,9 +438,9 @@ begin
         mov     ebp,eax
         shr     eax,16
         sub     al,0x0A
-        cmp     al,[0xfff2]
+        cmp     al,[BANK_RW]
         je      .exit
-        mov     [0xfff2],al
+        mov     [BANK_RW],al
 
         mov     dx,3CEh
         mov     ah,al           ; Save value for later use
@@ -457,7 +459,7 @@ begin
 
   .exit:
         and     ebp,0x0000FFFF
-        add     ebp,0x000A0000
+        add     ebp,VGABasePtr
         pop     edx eax
         sti
         ret
@@ -474,9 +476,9 @@ begin
         mov     ebp,eax
         shr     eax,16
         sub     al,0x0A
-        cmp     al,[0xfff2]
+        cmp     al,[BANK_RW]
         je      .exit
-        mov     [0xfff2],al
+        mov     [BANK_RW],al
 
         mov     cl,al
         mov     dx,0x3D4
@@ -537,7 +539,7 @@ begin
 
   .exit:
         and     ebp,0x0000FFFF
-        add     ebp,0x000A0000
+        add     ebp,VGABasePtr
         pop     ecx edx eax
         sti
         ret
@@ -553,9 +555,9 @@ begin
         mov     ebp,eax
         shr     eax,16
         sub     al,0x0A
-        cmp     al,[0xfff2]
+        cmp     al,[BANK_RW]
         je      .exit
-        mov     [0xfff2],al
+        mov     [BANK_RW],al
 
         mov ah,al
 ; grrrr...mode-set locked the S3 registers, so unlock them again
@@ -584,7 +586,7 @@ begin
 
   .exit:
         and     ebp,0x0000FFFF
-        add     ebp,0x000A0000
+        add     ebp,VGABasePtr
         pop     edx eax
         sti
         ret
@@ -599,9 +601,9 @@ begin
         mov     ebp,eax
         shr     eax,16
         sub     al,0x0A
-        cmp     al,[0xfff2]
+        cmp     al,[BANK_RW]
         je      .exit
-        mov     [0xfff2],al
+        mov     [BANK_RW],al
 
         mov     ah,al
         mov     dx,0x03D4
@@ -626,7 +628,7 @@ begin
 
   .exit:
         and     ebp,0x0000FFFF
-        add     ebp,0x000A0000
+        add     ebp,VGABasePtr
         pop     edx eax
         sti
         ret

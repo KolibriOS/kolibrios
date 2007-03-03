@@ -17,6 +17,108 @@
 
 include 'drawtext.inc'
 
+; 16-bit data
+		org $+0x10000
+
+old_ints_h:
+        dw      0x400
+        dd      0
+        dw      0
+
+kernel_restart_bootblock:
+    db    1    ; version
+    dw    1    ; floppy image is in memory
+    dd    0    ; cannot save parameters
+
+
+align 32
+
+; GDT TABLE
+
+gdts:
+
+        dw     gdte-$-1
+        dd     gdts
+        dw     0
+
+; Attention! The order first four selectors not to change, is used in Fast System Call
+; must be : os_code, os_data, app_code, app_data, ....
+
+int_code_l:
+os_code_l:
+        dw     0xffff
+        dw     0x0000
+        db     0x00
+        dw     11011111b *256 +10011010b
+        db     0x00
+
+int_data_l:
+os_data_l:
+        dw     0xffff
+        dw     0x0000
+        db     0x00
+        dw     11011111b *256 +10010010b
+        db     0x00
+
+app_code_l:
+        dw 0xFFFF
+        dw 0
+        db 0
+        db cpl3
+        dw G32+D32+0x8000+0x7;
+
+app_data_l:
+        dw 0xFFFF
+        dw 0
+        db 0
+        db drw3
+        dw G32+D32+0x8000+0x7;
+
+; --------------- APM ---------------------
+apm_code_32:
+        dw     0x0f        ; limit 64kb
+        db     0, 0, 0
+        dw     11010000b *256 +10011010b
+        db     0x00
+apm_code_16:
+        dw     0x0f
+        db     0, 0, 0
+        dw     10010000b *256 +10011010b
+        db     0x00
+apm_data_16:
+        dw     0x0f
+        db     0, 0, 0
+        dw     10010000b *256 +10010010b
+        db     0x00
+; -----------------------------------------
+
+graph_data_l:
+
+        dw     0x7ff
+        dw     0x0000
+        db     0x00
+        dw     11010000b *256 +11110010b
+        db     0x00
+
+tss0_l:
+;      times (max_processes+10) dd 0,0
+gdte = $ + (max_processes+10)*8
+
+
+; table for move to extended memory (int 15h, ah=87h)
+       movedesc:
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+
+        db      0xff,0xff,0x0,0xa0,0x00,0x93,0x0,0x0
+        db      0xff,0xff,0x0,0x00,0x10,0x93,0x0,0x0
+
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
+        	org $-0x10000
+
 putchar:
 ; in: al=character
     mov    ah, 0Eh
@@ -141,16 +243,16 @@ macro _setcursor row,column
     call    setcursor
 }
 
-pagetable_set:
+;pagetable_set:
 ;eax - physical address
 ;es:di - page table
 ;ecx - number of pages to map
-    or    al, 7
-@@:
-    stosd
-    add    eax, 1000h
-    loop    @b
-    ret
+;    or    al, 7
+;@@:
+;    stosd
+;    add    eax, 1000h
+;    loop    @b
+;    ret
 
 boot_read_floppy:
         push    si
@@ -172,21 +274,6 @@ sayerr_plain:
         pop     si
         ret
 
-		org $+0x10000
-
-; table for move to extended memory (int 15h, ah=87h)
-       movedesc:
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-
-        db      0xff,0xff,0x0,0xa0,0x00,0x93,0x0,0x0
-        db      0xff,0xff,0x0,0x00,0x10,0x93,0x0,0x0
-
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        	org $-0x10000
 include 'bootvesa.inc'
 
 ;=========================================================================
@@ -236,6 +323,13 @@ if lang eq ru
         mov  ax,1100h
           int  10h
  ; End set VGA russian font
+else if lang eq et
+        mov  bp,ET_FNT-10000h   ; ET_FNT1
+        mov  bx,1000h           ;
+        mov  cx,255             ; 256 symbols
+        mov  dx,0h              ; 0 - position of first symbol
+        mov  ax,1100h
+        int  10h
 end if
 
 ; draw frames
@@ -351,14 +445,57 @@ sayerr:
 ;       test     al,2      ;проверка бита готовности
 ;       loopnz   test_kbd
 
+        push    0
+        pop     es
+        and     word [es:0x9031], 0
+; \begin{Mario79}
+; find HDD IDE DMA PCI device
+; check for PCI BIOS
+        mov     ax, 0xB101
+        int     0x1A
+        jc      .nopci
+        cmp     edx, 'PCI '
+        jnz     .nopci
+; find PCI class code
+; class 1 = mass storage
+; subclass 1 = IDE controller
+; a) class 1, subclass 1, programming interface 0x80
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x80
+        mov     si, 0   ; device index = 0
+        int     0x1A
+        jnc     .found
+; b) class 1, subclass 1, programming interface 0x8A
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x8A
+        mov     si, 0   ; device index = 0
+        int     0x1A
+        jnc     .found
+; c) class 1, subclass 1, programming interface 0x85
+        mov     ax, 0xB103
+        mov     ecx, 1*10000h + 1*100h + 0x85
+        mov     si, 0
+        int     0x1A
+        jc      .nopci
+.found:
+; get memory base
+        mov     ax, 0xB10A
+        mov     di, 0x20        ; memory base is config register at 0x20
+        int     0x1A
+        jc      .nopci
+        and     cx, 0xFFF0      ; clear address decode type
+        mov     [es:0x9031], cx
+.nopci:
+; \end{Mario79}
+
     mov   al,0xf6         ; Сброс клавиатуры, разрешить сканирование
     out   0x60,al
     xor   cx,cx
 wait_loop:       ; variant 2
 ; reading state of port of 8042 controller
-        in      al,64h 
+        in      al,64h
         and     al,00000010b  ; ready flag
-; wait until 8042 controller is ready 
+; wait until 8042 controller is ready
         loopnz  wait_loop
 
 ; --------------- APM ---------------------
@@ -373,7 +510,7 @@ wait_loop:       ; variant 2
     jz    apm_end                ; APM 32-bit protected-mode interface not supported
     mov    [es : 0x9044], ax        ; Save APM Version
     mov    [es : 0x9046], cx        ; Save APM flags
-    
+
     ; Write APM ver ----
     and    ax, 0xf0f
     add    ax, '00'
@@ -384,7 +521,7 @@ wait_loop:       ; variant 2
     call    printplain
     _setcursor d80x25_top_num,0
     ; ------------------
-    
+
     mov    ax, 0x5304            ; Disconnect interface
     xor    bx, bx
     int    0x15
@@ -409,7 +546,7 @@ wait_loop:       ; variant 2
     mov    [apm_data_16 - 0x10000 + 4], dl
     mov    [es : 0x9040], ebx              ; offset of APM entry point
 apm_end:
-; -----------------------------------------        
+; -----------------------------------------
 
 ; DISPLAY VESA INFORMATION
 
@@ -420,12 +557,12 @@ cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
-; b) preboot_mtrr = use hardware acceleration?
+; b) preboot_dma_write  = use DMA write?
 ; c) preboot_vrrm = use VRR?
 ; d) preboot_device = from what boot?
     mov    di, preboot_graph-0x10000
 ; check bootloader block
-    cmp    [.loader_block-0x10000], 0
+    cmp    [.loader_block-0x10000], -1
     jz    .noloaderblock
     les    bx, [.loader_block-0x10000]
     cmp    byte [es:bx], 1
@@ -443,8 +580,8 @@ cfgmanager:
     mov    [.bSettingsChanged-0x10000], 0
         call    calc_vmodes_table
 .preboot_gr_end:
-    cmp    [di+preboot_mtrr-preboot_graph], 1
-    adc    [di+preboot_mtrr-preboot_graph], 0
+    cmp    [di+preboot_dma_write-preboot_graph], 1
+    adc    [di+preboot_dma_write-preboot_graph], 0
     cmp    [di+preboot_vrrm-preboot_graph], 1
     adc    [di+preboot_vrrm-preboot_graph], 0
     cmp    [di+preboot_device-preboot_graph], 1
@@ -470,8 +607,8 @@ cfgmanager:
         call    draw_current_vmode
     mov    si, linef-0x10000
     call    printplain
-    mov    si, mtrr_msg-0x10000
-    cmp    [preboot_mtrr-0x10000], 1
+    mov    si, dma_msg-0x10000
+    cmp    [preboot_dma_write-0x10000], 1
     call    .say_on_off
     mov    si, vrrm_msg-0x10000
     cmp    [preboot_vrrm-0x10000], 1
@@ -589,11 +726,11 @@ cfgmanager:
     jmp    .d
 .change_b:
     _setcursor 15,0
-    mov    si, gr_acc-0x10000
+    mov    si, ask_dma-0x10000
     call    print
     mov    bx, '12'
     call    getkey
-    mov    [preboot_mtrr-0x10000], al
+    mov    [preboot_dma_write-0x10000], al
     _setcursor 11,0
     jmp    .d
 .change_c:
@@ -622,7 +759,7 @@ virtual at novesa
 .timer dd ?
 end virtual
 	org $+0x10000
-.loader_block dd 0
+.loader_block dd -1
 	org $-0x10000
 .gettime:
     mov    ah, 0
@@ -657,6 +794,12 @@ if lang eq ru
     jz    @f
     mov    cl, 'л'
 @@:    mov    [time_str+9-0x10000], cl
+else if lang eq et
+    cmp    al, 1
+    ja     @f
+    mov    [time_str+9-0x10000], ' '
+    mov    [time_str+10-0x10000],' '
+@@:
 else
 ; wait 5/4/3/2 seconds, 1 second
     cmp    al, 1
@@ -692,7 +835,7 @@ end if
     _setcursor 15,0
     cmp    [.bSettingsChanged-0x10000], 0
     jz    .load
-    cmp    [.loader_block-0x10000], 0
+    cmp    [.loader_block-0x10000], -1
     jz    .load
     les    bx, [.loader_block-0x10000]
     mov    eax, [es:bx+3]
@@ -738,8 +881,8 @@ end if
 
 ; GRAPHICS ACCELERATION
 
-        mov     al, [preboot_mtrr-0x10000]
-        mov     [es:0x901C],al
+        mov     al, [preboot_dma_write-0x10000]
+        mov     [es:0x901F],al
 
 ; VRR_M USE
 
@@ -966,8 +1109,8 @@ sayerr_floppy:
         cmp     di, 2880-31
         jnz     .read_loop
 
-;        mov     cx,0x0001               ; startcyl,startsector
-;        xor    dx, dx            ; starthead,drive
+;        mov     cx, 0x0001      ; startcyl,startsector
+;        xor     dx, dx          ; starthead,drive
 ;        push    word 80*2               ; read no of sect
 ;       reads:
 ;        pusha
@@ -1045,44 +1188,44 @@ sayerr_floppy:
        mov al,0
        out dx,al
 
-    push    es
+;   push    es
 ; PAGE TABLE
 
-    push    dword [es:0x9018]
-
-        map_mem equ 64                ; amount of memory to map
-
+;    push    dword [es:0x9018]
+;
+;        mmap_mem equ 64                ; amount of memory to map
+;
         push    0x6000
         pop    es                    ; es:di = 6000:0
-        xor     di,di
-        mov     cx,256*map_mem         ; Map (mapmem) M
-; initialize as identity mapping
-    xor    eax, eax
-    call    pagetable_set
-
-        
+;        xor     di,di
+;        mov     cx,256*mmap_mem         ; Map (mapmem) M
+;; initialize as identity mapping
+;        xor    eax, eax
+;        call    pagetable_set
+;
+;
 ; 4 KB PAGE DIRECTORY
+;
+;       push    0x7F00
+;       pop    es                ; es:di = 7F00:0
+;        xor     di, di
+;        mov     cx, 64 / 4
+;        mov     eax, 0x60007            ; for 0 M
+;        call    pagetable_set
+;        xor     si,si
+;        mov     di,second_base_address shr 20
+;        mov     cx,64/2
+;        rep     movs word [es:di], [es:si]
 
-    push    0x7F00
-    pop    es                ; es:di = 7F00:0
-        xor     di, di
-        mov     cx, 64 / 4
-        mov     eax, 0x60007            ; for 0 M
-        call    pagetable_set
-        xor     si,si
-        mov     di,second_base_address shr 20
-        mov     cx,64/2
-        rep     movs word [es:di], [es:si]
-       
-        mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
-        mov     cr3, eax
+;        mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
+;        mov     cr3, eax
 
 ; SET GRAPHICS
 
-        pop     es
+;       pop     es
         push    0
     pop    es
-        mov     ax,[es:0x9008]        ; vga & 320x200
+        mov   ax,[es:0x9008]        ; vga & 320x200
         mov    bx, ax
         cmp     ax,0x13
         je      setgr

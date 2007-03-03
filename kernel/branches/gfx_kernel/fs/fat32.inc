@@ -7,13 +7,16 @@
 ;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
 ;;                                                                 ;;
 ;;  See file COPYING for details                                   ;;
+;;  04.02.2007 LFN create folder - diamond                         ;;
+;;  08.10.2006 LFN delete file/folder - diamond                    ;;
+;;  20.08.2006 LFN set file size (truncate/extend) - diamond       ;;
 ;;  17.08.2006 LFN write/append to file - diamond                  ;;
 ;;  23.06.2006 LFN start application - diamond                     ;;
 ;;  15.06.2006 LFN get/set file/folder info - diamond              ;;
 ;;  27.05.2006 LFN create/rewrite file - diamond                   ;;
 ;;  04.05.2006 LFN read folder - diamond                           ;;
 ;;  29.04.2006 Elimination of hangup after the                     ;;
-;;             expiration hd_wait_timeout -  Mario79               ;;           
+;;             expiration hd_wait_timeout -  Mario79               ;;
 ;;  23.04.2006 LFN read file - diamond                             ;;
 ;;  28.01.2006 find all Fat16/32 partition in all input point      ;;
 ;;             to MBR, see file part_set.inc - Mario79             ;;
@@ -60,6 +63,8 @@ PUSHAD_EBP equ [esp+8]
 PUSHAD_ESI equ [esp+4]
 PUSHAD_EDI equ [esp+0]
 
+uglobal
+align 4
 cluster              dd 0       ; used by file_write,makedir,append
 partition_count      dd 0       ; partitions found by set_FAT32_variables
 longname_sec1        dd 0       ; used by analyze_directory to save 2 previous
@@ -82,22 +87,18 @@ new_filepos          dd 0       ; used by append
 bytes2write          dd 0       ; used by append
 
 cache_search_start   dd 0       ; used by find_empty_slot
-
-fat_in_cache         dd -1
-fat_cache:           times 512 db 0
-
-uglobal
- Sector512:                      ; label for dev_hdcd.inc
-  buffer:              times 512 db 0
-  deltree_buffer:      times 512 db 0
-  fsinfo_buffer:       times 512 db 0
 endg
 
 iglobal
-  NewDirEntry1         db ".          ",0x10
-                     times 20 db 0
-  NewDirEntry2         db "..         ",0x10
-                     times 20 db 0
+fat_in_cache         dd -1
+endg
+
+uglobal
+align 4
+fat_cache:           times 512 db 0
+ Sector512:                      ; label for dev_hdcd.inc
+  buffer:              times 512 db 0
+  fsinfo_buffer:       times 512 db 0
 endg
 
 uglobal
@@ -123,14 +124,19 @@ reserve_hd1:
   reserve_ok1:
 
     push  eax
-    mov   eax,[0x3000]
+    mov   eax,[CURRENT_TASK]
     shl   eax,5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   [hd1_status],eax
     pop   eax
     sti
     ret
 ;********************************************
+
+uglobal
+hd_in_cache db ?
+endg
+
 reserve_hd_channel:
     cmp   [hdbase], 0x1F0
     jne   .IDE_Channel_2
@@ -147,14 +153,27 @@ reserve_hd_channel:
     je    .reserve_ok_2
     sti
     call  change_task
-    jmp   .IDE_Channel_1
+    jmp   .IDE_Channel_2
 .reserve_ok_1:
-    mov [IDE_Channel_1],1
-    ret
+        mov     [IDE_Channel_1], 1
+        push    eax
+        mov     al, 1
+        jmp     @f
 .reserve_ok_2:
-    mov [IDE_Channel_2],1
-    ret
-    
+        mov     [IDE_Channel_2], 1
+        push    eax
+        mov     al, 3
+@@:
+        cmp     [hdid], 1
+        sbb     al, -1
+        cmp     al, [hd_in_cache]
+        jz      @f
+        mov     [hd_in_cache], al
+        call    clear_hd_cache
+@@:
+	pop     eax
+        ret
+
 free_hd_channel:
     cmp   [hdbase], 0x1F0
     jne   .IDE_Channel_2
@@ -165,21 +184,7 @@ free_hd_channel:
     mov [IDE_Channel_2],0
     ret
 ;********************************************
-clear_hd_cache:
-
-    push  eax ecx edi
-    mov   edi,0x600000
-    mov   ecx,16384
-    xor   eax,eax
-    cld
-    rep   stosd                 ; clear hd cache with 0
-    mov   [cache_search_start],eax
-    mov   [fat_in_cache],-1
-    mov   [fat_change],0
-    pop   edi ecx eax
-    ret
-
-problem_partition db 0  ; used for partitions search 
+problem_partition db 0  ; used for partitions search
 
 include  'part_set.inc'
 
@@ -195,7 +200,7 @@ set_FAT:
     jb    sfc_error
     cmp   eax,[LAST_CLUSTER]
     ja    sfc_error
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     je    sfc_1
     add   eax,eax
   sfc_1:
@@ -220,10 +225,10 @@ set_FAT:
     call  hd_read
     cmp  [hd_error],0
     jne  sfc_error
-    
+
 
   sfc_in_cache:
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   sfc_test32
 
   sfc_set16:
@@ -259,7 +264,7 @@ get_FAT:
 ;--------------------------------
     push  ebx esi
 
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     je    gfc_1
     add   eax,eax
   gfc_1:
@@ -387,7 +392,7 @@ analyze_directory:
     jnb   adr_data_cluster
 
     mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   adr_data_cluster
     mov   eax,[ROOT_START]
     mov   edx,[ROOT_SECTORS]
@@ -482,7 +487,7 @@ analyze_directory_to_write:
     jnb   adw_data_cluster
 
     mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   adw_data_cluster
     mov   eax,[ROOT_START]
     mov   edx,[ROOT_SECTORS]
@@ -605,7 +610,7 @@ get_data_cluster:
     jnb   gdc_cluster
 
     mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     jne   gdc_cluster
     mov   eax,[ROOT_START]
     mov   ecx,[ROOT_SECTORS]    ; Note: not cluster size
@@ -627,7 +632,7 @@ get_data_cluster:
   gdcl1:
     call  hd_read
     cmp  [hd_error],0
-    jne  gdc_error    
+    jne  gdc_error
 
     add   ebx,512               ; update pointer
     dec   edx
@@ -812,218 +817,6 @@ set_current_time_for_entry:
     ret
 
 
-makedir:
-;-----------------------------------------------------
-; input  : eax = directory name
-;          edx = path
-; output : eax = 0 - ok
-;                3 - unknown FS
-;                5 - file not found
-;                8 - disk full
-;               10 - access denied
-; Note   : can only make one directory at time
-;-----------------------------------------------------
-    cmp   [fat_type],0
-    jnz   make_dir_fat_ok
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
-
-  make_dir_fat_ok:
-;    call  reserve_hd1
-
-    pushad
-
-    mov   ebx,edx
-    call  get_cluster_of_a_path
-    jnc   make_dir_found_path
-    cmp   [hd_error],0
-    jne   make_dir_error_1
-
-  make_dir_path_not_found:
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   make_dir_error_2
-
-    mov   [hd1_status],0
-    mov   eax,ERROR_FILE_NOT_FOUND
-    ret
-
-  make_dir_disk_full:
-    cmp  [hd_error],0
-    jne   make_dir_error_1
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   make_dir_error_2
-
-    mov   [hd1_status],0
-    mov   eax,ERROR_DISK_FULL
-    ret
-
-  make_dir_already_exist:
-    cmp  [hd_error],0
-    jne   make_dir_error_1    
-    mov   eax,[cluster]         ; directory cluster
-    xor   edx,edx               ; free
-    call  set_FAT
-    cmp  [hd_error],0
-    jne   make_dir_error_1
-
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-  make_dir_error_2:
-    mov   [hd1_status],0
-    mov   eax,ERROR_ACCESS_DENIED
-    ret
-
-  make_dir_error_1:
-    popad
-    jmp   make_dir_error_2
-
-  make_dir_error_3:
-    add  esp,4
-    jmp   make_dir_error_1
-
-  make_dir_found_path:
-    cmp   eax,[ROOT_CLUSTER]
-    jnz   make_dir_not_root
-    xor   eax,eax
-
-  make_dir_not_root:
-    mov   ecx,eax               ; directorys start cluster
-    mov   word [NewDirEntry2+26],cx ; 16 bits low of cluster
-    shr   ecx,16
-    mov   word [NewDirEntry2+20],cx ; 16 bits high of cluster (=0 fat16)
-
-    push  eax                   ; save parent directory cluster
-    mov   eax,2
-    call  get_free_FAT
-    mov   [cluster],eax         ; first free cluster
-    pop   eax
-    jc    make_dir_disk_full
-
-    push  eax
-    mov   eax,[cluster]         ; directory cluster
-    mov   edx,[fatEND]          ; end for directory
-    call  set_FAT
-    cmp  [hd_error],0
-    jne   make_dir_error_3
-    pop   eax
-
-    mov   ebx,PUSHAD_EAX        ; dir name
-    push  eax
-    call  analyze_directory     ; check if directory already exist
-    cmp   [hd_error],0
-    jne   make_dir_error_1
-
-    pop   eax
-    jnc   make_dir_already_exist ; need to free allocated cluster!
-
-    call  analyze_directory_to_write
-    jc    make_dir_already_exist ; need to free allocated cluster!
-
-    mov   esi,PUSHAD_EAX        ; dir name
-    mov   edi,ebx               ; pointer in buffer
-    mov   ecx,11
-    cld
-    rep   movsb
-
-    mov   dword [ebx+28],0      ; dir size is always 0
-    mov   ecx,[cluster]
-    mov   [ebx+26],cx           ; 16 bits low of cluster
-    mov   word [NewDirEntry1+26],cx
-    shr   ecx,16
-    mov   [ebx+20],cx           ; 16 bits high of cluster (=0 fat16)
-    mov   word [NewDirEntry1+20],cx
-    mov   byte [ebx+11],0x10    ; attribute = directory
-
-    call  set_current_time_for_entry
-    mov   ecx,[ebx+22]
-    mov   dword [NewDirEntry1+22],ecx
-    mov   dword [NewDirEntry2+22],ecx
-
-    mov   ebx,buffer            ; save the directory name,length,cluster
-    call  hd_write
-    cmp   [hd_error],0
-    jne   make_dir_error_1
-
-    mov   ecx,512/4
-    xor   eax,eax
-    mov   edi,buffer
-    cld
-    rep   stosd                 ; clear new directory cluster
-
-    mov   eax,[cluster]         ; new directory cluster
-    sub   eax,2
-    mov   edx,[SECTORS_PER_CLUSTER]
-    imul  eax,edx
-    add   eax,[DATA_START]
-    mov   ebx,buffer
-    add   eax,edx               ; start from last sector
-
-  dir_set_empty_directory:
-    dec   eax                   ; next sector
-    cmp   edx,1                 ; is first directory sector?
-    jnz   not_first_sector      ; no. write empty sector
-    mov   esi,NewDirEntry1
-    mov   edi,buffer
-    mov   ecx,64/4
-    cld
-    rep   movsd                 ; copy 2 first directory entrys "." and ".."
-
-  not_first_sector:
-    call  hd_write
-    cmp   [hd_error],0
-    jne   make_dir_error_1
-  
-    dec   edx
-    jnz   dir_set_empty_directory
-
-    mov   ecx,-1                ; remove 1 cluster from free disk space
-    call  add_disk_free_space
-    cmp  [hd_error],0
-    jne   make_dir_error_1
-
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   make_dir_error_2
-    mov   [hd1_status],0
-    xor   eax,eax
-    ret
-
-
-removedir:
-;-----------------------------------------------------
-; input  : eax = file/directory name
-;          edx = path
-; output : eax = 0 - ok
-;                3 - unknown FS
-;                5 - file not found
-;               10 - access denied
-;-----------------------------------------------------
-    cmp   [fat_type],0
-    jnz   remove_dir_fat_ok
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
-
-  remove_dir_fat_ok:
-;    call  reserve_hd1
-
-    push  edi
-    mov   edi,1                 ; allow directory remove
-    call  file_delete
-    cmp   [hd_error],0
-    jne   @f
-
-    pop   edi
-
-    call  update_disk           ; write all of cache and fat to hd
-  @@:
-    mov   [hd1_status],0
-    ret
-   
 
 add_disk_free_space:
 ;-----------------------------------------------------
@@ -1033,7 +826,7 @@ add_disk_free_space:
 ;-----------------------------------------------------
     test  ecx,ecx               ; no change
     je    add_dfs_no
-    cmp   [fat_type],32         ; free disk space only used by fat32
+    cmp   [fs_type],32         ; free disk space only used by fat32
     jne   add_dfs_no
 
     push  eax ebx
@@ -1074,10 +867,13 @@ file_write:
 ;                8 - disk full
 ;               10 - access denied
 ;--------------------------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   fat_ok_for_writing
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      fat_ok_for_writing
+        cmp     [fs_type], 32
+        jz      fat_ok_for_writing
+        push    ERROR_UNKNOWN_FS
+        pop     eax
+        ret
 
   fat_ok_for_writing:
 ;    call  reserve_hd1
@@ -1260,8 +1056,10 @@ file_read:
 ;               10 - access denied
 ;          ebx = size of file/directory
 ;--------------------------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   fat_ok_for_reading
+        cmp     [fs_type], 16
+        jz      fat_ok_for_reading
+        cmp     [fs_type], 32
+        jz      fat_ok_for_reading
     xor   ebx,ebx
     mov   eax,ERROR_UNKNOWN_FS
     mov   [hd1_status], ebx
@@ -1382,7 +1180,7 @@ get_dir_size:
 
     mov   eax,[ROOT_SECTORS]
     shl   eax,9                 ; fat16 rootdir size in bytes
-    cmp   [fat_type],16
+    cmp   [fs_type],16
     je    dir_size_ret
     mov   eax,[ROOT_CLUSTER]
 
@@ -1417,10 +1215,13 @@ file_delete:
 ;                5 - file not found
 ;               10 - access denied
 ;-----------------------------------------------------
-    cmp   [fat_type],0
-    jnz   file_del_fat_ok
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      file_del_fat_ok
+        cmp     [fs_type], 32
+        jz      file_del_fat_ok
+        push    ERROR_UNKNOWN_FS
+        pop     eax
+        ret
 
   file_del_fat_ok:
     pushad
@@ -1434,25 +1235,7 @@ file_delete:
     jc    file_to_delete_not_found
 
     test  byte [ebx+11],0x10    ; is it directory?
-    jz    delete_notdir         ; no. it's file
-    cmp   edi,1                 ; allow directory remove
-    jnz   delete_no_access      ; no
-
-    push  eax                   ; save directory sector
-    mov   eax,[ebx+20-2]        ; first cluster of file
-    mov   ax,[ebx+26]           ; 0 length files start cluster = 0
-    and   eax,[fatMASK]
-    xor   ebp,ebp               ; counter for directory deepnes
-    call  clear_directory
-    pop   eax
-    jc    delete_no_access
-
-    push  ebx                   ; save directory pointer in buffer
-    mov   ebx,buffer
-    call  hd_read               ; read directory sector
-    cmp  [hd_error],0
-    jne  delete_no_access_1
-    pop   ebx
+    jnz   delete_no_access
 
   delete_notdir:
     call  delete_entry_name
@@ -1514,129 +1297,6 @@ clear_cluster_chain:
     ret
 
 
-clear_directory:
-;-----------------------------------------------------
-; input  : eax = directory cluster
-;          ebp = directory deepnes
-; Note   : use recursive call
-;-----------------------------------------------------
-    pushad
-    inc   ebp
-    cmp   ebp,64                ; if over 63 directory deep
-    jnb   clear_error           ; something must be wrong
-
-  clear_new_cluster:
-    cmp   eax,[LAST_CLUSTER]
-    ja    clear_end
-    cmp   eax,[ROOT_CLUSTER]    ; don't remove root cluster
-    jz    clear_end
-    mov   esi,eax               ; esi = current directory cluster
-    sub   eax,2
-    jb    clear_end
-    mov   ecx,[SECTORS_PER_CLUSTER]
-    imul  eax,ecx
-    add   eax,[DATA_START]
-
-  clear_new_sector:
-    mov   edi,eax               ; edi = current directory sector
-    mov   ebx,deltree_buffer
-    call  hd_read
-    cmp  [hd_error],0
-    jne  clear_error    
-
-    mov   edx,512/32            ; count of dir entrys per sector = 16
-
-  clear_analyze:
-    mov   al,[ebx+11]           ; file attribute
-    and   al,0xf
-    cmp   al,0xf
-    je    clear_long_filename
-
-    cmp   byte [ebx],'.'        ; parent or current directory
-    je    clear_next_entry
-    cmp   byte [ebx],0xe5       ; deleted
-    je    clear_next_entry
-    cmp   byte [ebx],0          ; empty
-    je    clear_write_last
-    ;je    clear_next_entry
-
-    mov   eax,[ebx+20-2]        ; first cluster of entry
-    mov   ax,[ebx+26]
-    and   eax,[fatMASK]
-
-    test  byte [ebx+11],0x10    ; is it directory?
-    jz    clear_file            ; no
-
-    push  eax ebx
-    mov   eax,edi
-    mov   ebx,deltree_buffer    ; save buffer over recursive call
-    call  hd_write              ; write directory sector to disk
-    cmp   [hd_error],0
-    jne   clear_error    
-
-    pop   ebx eax
-
-    call  clear_directory       ; recursive call !!!
-    jc    clear_error           ; exit if error found
-
-    push  eax ebx
-    mov   eax,edi
-    mov   ebx,deltree_buffer
-    call  hd_read               ; read directory sector again
-    cmp  [hd_error],0
-    jne   clear_error_1
-
-    pop   ebx eax
-
-  clear_file:
-    call  clear_cluster_chain
-    cmp  [hd_error],0
-    jne   clear_error
-
-  clear_long_filename:
-    mov   byte [ebx],0xe5
-
-  clear_next_entry:
-    add   ebx,32                ; position of next dir entry
-    dec   edx
-    jnz   clear_analyze
-
-    mov   eax,edi
-    mov   ebx,deltree_buffer
-    call  hd_write              ; write directory sector to disk
-    cmp   [hd_error],0
-    jne   clear_error
-
-    inc   eax                   ; next sector
-    dec   ecx
-    jnz   clear_new_sector
-
-    mov   eax,esi
-    call  get_FAT               ; get next cluster
-    cmp   [hd_error],0
-    jne   clear_error
-
-    jmp   clear_new_cluster     ; clear it
-
-  clear_write_last:
-    mov   eax,edi
-    mov   ebx,deltree_buffer
-    call  hd_write              ; write directory sector to disk
-    cmp   [hd_error],0
-    jne   clear_error
-
-  clear_end:
-    popad
-    clc
-    ret
-clear_error_1:
-    add  esp,8
-  clear_error:
-    popad
-    stc
-    ret
-
-
 delete_entry_name:
 ;-----------------------------------------------------
 ; input  : eax = directory sector
@@ -1669,7 +1329,7 @@ delete_entry_name:
     mov   ebx,buffer
     call  hd_read               ; read previous sector
     cmp  [hd_error],0
-    jne  delete_name_end    
+    jne  delete_name_end
 
     mov   ebx,buffer+0x1e0      ; start from last entry
 
@@ -1691,169 +1351,6 @@ delete_entry_name:
     ret
 
 
-rename:
-;-----------------------------------------------------------
-; input  : eax = source directory name
-;          edx = source path
-;          ebx = dest directory name
-;          edi = dest path
-; output : eax = 0 - ok
-;                3 - unknown FS
-;                5 - file not found
-;                8 - disk full
-;               10 - access denied
-;-----------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   fat_ok_for_rename
-    mov   eax,ERROR_UNKNOWN_FS
-    ret
-
-  fat_ok_for_rename:
-;    call  reserve_hd1
-
-    pushad
-
-    mov   ebx,edx               ; source path
-    call  get_cluster_of_a_path
-    jc    rename_entry_not_found
-
-    mov   ebx,PUSHAD_EAX        ; source directory name
-    call  analyze_directory
-    jc    rename_entry_not_found
-
-    mov   [sector_tmp],eax      ; save source sector
-    mov   [entry_pos],ebx
-    mov   esi,ebx
-    mov   edi,dir_entry
-    mov   ecx,32/4
-    cld
-    rep   movsd                 ; save entry
-
-    mov   ebx,PUSHAD_EDI        ; dest path
-    call  get_cluster_of_a_path
-    jc    rename_entry_not_found
-
-    mov   edx,eax               ; save dest directory cluster
-    mov   ebx,PUSHAD_EBX        ; dest directory name
-    push  [longname_sec1]
-    push  [longname_sec2]
-    call  analyze_directory     ; check if entry already exist
-    cmp  [hd_error],0
-    jne  rename_entry_already_exist_1
-
-    pop   [longname_sec2]
-    pop   [longname_sec1]
-    jnc   rename_entry_already_exist
-
-    mov   eax,edx
-    call  analyze_directory_to_write
-    jc    rename_disk_full
-
-    mov   esi,dir_entry
-    mov   edi,ebx
-    mov   ecx,32/4
-    cld
-    rep   movsd                 ; copy entry
-    mov   esi,PUSHAD_EBX        ; dest directory name
-    mov   edi,ebx
-    mov   ecx,11
-    rep   movsb                 ; copy name
-
-    mov   ebx,buffer            ; save the directory name,length,cluster
-    call  hd_write
-
-    test  byte [dir_entry+11],0x10 ; is it directory?
-    jz    rename_not_dir           ; no
-    mov   eax,[dir_entry+20-2]     ; FAT entry
-    mov   ax,[dir_entry+26]
-    and   eax,[fatMASK]
-    call  change_2dot_cluster
-    cmp   [hd_error],0
-    jne   rename_entry_already_exist
-
-  rename_not_dir:
-    cmp   [hd_error],0
-    jne   rename_entry_already_exist
-    mov   eax,[sector_tmp]
-    mov   ebx,buffer
-    call  hd_read               ; read source directory sector
-    cmp  [hd_error],0
-    jne  rename_entry_already_exist
-
-    mov   ebx,[entry_pos]
-    call  delete_entry_name
-    cmp   [hd_error],0
-    jne   rename_entry_already_exist
-
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   rename_entry_already_exist_2
-    mov   [hd1_status],0
-    xor   eax,eax
-    ret
-
-  rename_entry_not_found:
-    cmp  [hd_error],0
-    jne  rename_entry_already_exist
-    popad
-    mov   [hd1_status],0
-    mov   eax,ERROR_FILE_NOT_FOUND
-    ret
-
-  rename_entry_already_exist_1:
-    add   esp,8
-  rename_entry_already_exist:
-    popad
-  rename_entry_already_exist_2:
-    mov   [hd1_status],0
-    mov   eax,ERROR_ACCESS_DENIED
-    ret
-
-  rename_disk_full:
-    cmp  [hd_error],0
-    jne  rename_entry_already_exist
-    popad
-    mov   [hd1_status],0
-    mov   eax,ERROR_DISK_FULL
-    ret
-
-
-change_2dot_cluster:
-;-----------------------------------------------------------
-; input  : eax = directory cluster
-;          edx = value to save
-; change : eax,ebx,edx
-;-----------------------------------------------------------
-    cmp   eax,[LAST_CLUSTER]
-    ja    not_2dot              ; too big cluster number, something is wrong
-    sub   eax,2
-    jb    not_2dot
-
-    imul  eax,[SECTORS_PER_CLUSTER]
-    add   eax,[DATA_START]
-    mov   ebx,buffer
-    call  hd_read
-    cmp  [hd_error],0
-    jne  not_2dot
-
-    cmp   dword [ebx+32],'..  '
-    jnz   not_2dot
-
-    cmp   edx,[ROOT_CLUSTER]    ; is rootdir cluster?
-    jne   not_2dot_root
-    xor   edx,edx               ; yes. set it zero
-
-  not_2dot_root:
-    mov   [ebx+32+26],dx        ; 16 bits low of cluster
-    shr   edx,16
-    mov   [ebx+32+20],dx        ; 16 bits high of cluster (=0 fat16)
-    call  hd_write
-
-  not_2dot:
-    ret
-
-
 get_hd_info:
 ;-----------------------------------------------------------
 ; output : eax = 0 - ok
@@ -1863,8 +1360,10 @@ get_hd_info:
 ;          ebx = total clusters on disk
 ;          ecx = free clusters on disk
 ;-----------------------------------------------------------
-    cmp   [fat_type],0
-    jnz   info_fat_ok
+        cmp     [fs_type], 16
+        jz      info_fat_ok
+        cmp     [fs_type], 32
+        jz      info_fat_ok
     xor   edx,edx
     xor   ebx,ebx
     xor   ecx,ecx
@@ -1901,7 +1400,7 @@ get_hd_info:
     ret
 
   info_access_denied:
-    add   esp,4 
+    add   esp,4
     xor   edx,edx
     xor   ebx,ebx
     xor   ecx,ecx
@@ -1924,430 +1423,6 @@ update_disk:
     call  write_cache
   update_disk_acces_denied:
     ret
-
-
-;**************************************************************************
-;
-;   0x600008  - first entry in cache list
-;
-;            +0   - lba sector
-;            +4   - state of cache sector
-;                   0 = empty
-;                   1 = used for read  ( same as in hd )
-;                   2 = used for write ( differs from hd )
-;
-;      +65536 - cache entries
-;
-;**************************************************************************
-
-
-hd_read:
-;-----------------------------------------------------------
-; input  : eax = block to read
-;          ebx = destination
-;-----------------------------------------------------------
-    push  ecx esi edi           ; scan cache
-
-    mov   ecx,cache_max         ; entries in cache
-    mov   esi,0x600000+8
-    mov   edi,1
-
-  hdreadcache:
-
-    cmp   dword [esi+4],0       ; empty
-    je    nohdcache
-
-    cmp   [esi],eax             ; correct sector
-    je    yeshdcache
-
-  nohdcache:
-
-    add   esi,8
-    inc   edi
-    dec   ecx
-    jnz   hdreadcache
-
-    call  find_empty_slot       ; ret in edi
-    cmp   [hd_error],0
-    jne   return_01
-
-    push  eax edx
-
-    call  wait_for_hd_idle
-    cmp   [hd_error],0
-    jne   hd_read_error    
-
-    cli
-    xor   eax,eax
-    mov   edx,[hdbase]
-    inc   edx
-    out   dx,al   ; ATAFeatures регистр "особенностей"
-    inc   edx
-    inc   eax
-    out   dx,al   ; ATASectorCount счетчик секторов
-    inc   edx
-    mov   eax,[esp+4]
-    out   dx,al   ; ATASectorNumber регистр номера сектора
-    shr   eax,8
-    inc   edx
-    out   dx,al   ; ATACylinder номер цилиндра (младший байт)
-    shr   eax,8
-    inc   edx
-    out   dx,al   ; номер цилиндра (старший байт)
-    shr   eax,8
-    inc   edx
-    and   al,1+2+4+8
-    add   al,byte [hdid]
-    add   al,128+64+32
-    out   dx,al   ; номер головки/номер диска
-    inc   edx
-    mov   al,20h
-    out   dx,al   ; ATACommand регистр команд
-    sti
-
-    call  wait_for_sector_buffer
-
-    cmp   [hd_error],0
-    jne   hd_read_error
-
-    cli
-    push  edi
-    shl   edi,9
-    add   edi,0x600000+65536
-    mov   ecx,256
-    mov   edx,[hdbase]
-    cld
-    rep   insw
-    pop   edi
-    sti
-
-    pop   edx eax
- blok_read_2:
-    lea   esi,[edi*8+0x600000]
-    mov   [esi],eax             ; sector number
-    mov   dword [esi+4],1       ; hd read - mark as same as in hd
-
-  yeshdcache:
-
-    mov   esi,edi
-    shl   esi,9
-    add   esi,0x600000+65536
-    mov   edi,ebx
-    mov   ecx,512/4
-    cld
-    rep   movsd                 ; move data
- return_01:
-    pop   edi esi ecx
-    ret
-    
-
-hd_write:
-;-----------------------------------------------------------
-; input  : eax = block
-;          ebx = pointer to memory
-;-----------------------------------------------------------
-    push  ecx esi edi
-
-    ; check if the cache already has the sector and overwrite it
-
-    mov   ecx,cache_max
-    mov   esi,0x600000+8
-    mov   edi,1
-
-  hdwritecache:
-
-    cmp   dword [esi+4],0       ; if cache slot is empty
-    je    not_in_cache_write
-
-    cmp   [esi],eax             ; if the slot has the sector
-    je    yes_in_cache_write
-
-  not_in_cache_write:
-
-    add   esi,8
-    inc   edi
-    dec   ecx
-    jnz   hdwritecache
-
-    ; sector not found in cache
-    ; write the block to a new location
-
-    call  find_empty_slot       ; ret in edi
-    cmp   [hd_error],0
-    jne   hd_write_access_denied
-
-    lea   esi,[edi*8+0x600000]
-    mov   [esi],eax             ; sector number
-
-  yes_in_cache_write:
-
-    mov   dword [esi+4],2       ; write - differs from hd
-
-    shl   edi,9
-    add   edi,0x600000+65536
-    mov   esi,ebx
-    mov   ecx,512/4
-    cld
-    rep   movsd                 ; move data
- hd_write_access_denied:
-    pop   edi esi ecx
-    ret
-
-
-write_cache:
-;-----------------------------------------------------------
-; write all changed sectors to disk
-;-----------------------------------------------------------
-    push  eax ecx edx esi edi
-
-    ; write difference ( 2 ) from cache to hd
-
-    mov   ecx,cache_max
-    mov   esi,0x600000+8
-    mov   edi,1
-
-  write_cache_more:
-
-    cmp   dword [esi+4],2       ; if cache slot is not different
-    jne   does_not_need_writing
-
-    mov   dword [esi+4],1       ; same as in hd
-    mov   eax,[esi]             ; eax = sector to write
-
-    cmp   eax,[PARTITION_START]
-    jb    danger
-    cmp   eax,[PARTITION_END]
-    ja    danger
-
-    call  wait_for_hd_idle
-    cmp   [hd_error],0
-    jne   hd_write_error
-
-    cli
-    xor   eax,eax
-    mov   edx,[hdbase]
-    inc   edx
-    out   dx,al
-    inc   edx
-    inc   eax
-    out   dx,al
-    inc   edx
-    mov   eax,[esi]             ; eax = sector to write
-    out   dx,al
-    shr   eax,8
-    inc   edx
-    out   dx,al
-    shr   eax,8
-    inc   edx
-    out   dx,al
-    shr   eax,8
-    inc   edx
-    and   al,1+2+4+8
-    add   al,byte [hdid]
-    add   al,128+64+32
-    out   dx,al
-    inc   edx
-    mov   al,30h
-    out   dx,al
-    sti
-
-    call  wait_for_sector_buffer
-
-    cmp   [hd_error],0
-    jne   hd_write_error
-
-    push  ecx esi
-
-    cli
-    mov   esi,edi
-    shl   esi,9
-    add   esi,0x600000+65536    ; esi = from memory position
-    mov   ecx,256
-    mov   edx,[hdbase]
-    cld
-    rep   outsw
-    sti
-
-    pop   esi ecx
-
-  danger:
-  does_not_need_writing:
-
-    add   esi,8
-    inc   edi
-    dec   ecx
-    jnz   write_cache_more
- return_02:
-    pop   edi esi edx ecx eax
-    ret
-
-
-find_empty_slot:
-;-----------------------------------------------------------
-; find empty or read slot, flush cache if next 10% is used by write
-; output : edi = cache slot
-;-----------------------------------------------------------
-    push  ecx esi
-
-  search_again:
-
-    mov   ecx,cache_max*10/100
-    mov   edi,[cache_search_start]
-
-  search_for_empty:
-
-    inc   edi
-    cmp   edi,cache_max
-    jbe   inside_cache
-    mov   edi,1
-
-  inside_cache:
-
-    cmp   dword [edi*8+0x600000+4],2    ; get cache slot info
-    jb    found_slot                    ; it's empty or read
-    dec   ecx
-    jnz   search_for_empty
-
-    call  write_cache                   ; no empty slots found, write all
-    cmp   [hd_error],0
-    jne   found_slot_access_denied
-
-    jmp   search_again                  ; and start again
-
-  found_slot:
-
-    mov   [cache_search_start],edi
-  found_slot_access_denied:
-    pop   esi ecx
-    ret
-
-
-save_hd_wait_timeout:
-
-    push  eax
-    mov   eax,[timer_ticks];[0xfdf0]
-    add   eax,300               ; 3 sec timeout
-    mov   [hd_wait_timeout],eax
-    pop   eax
-    ret
-
-
-check_hd_wait_timeout:
-
-    push  eax
-    mov   eax,[hd_wait_timeout]
-    cmp   [timer_ticks], eax ;[0xfdf0],eax
-    jg    hd_timeout_error
-    pop   eax
-    mov   [hd_error],0
-    ret
-
-iglobal
-  hd_timeout_str   db 'K : FS - HD timeout',13,10,0
-  hd_read_str      db 'K : FS - HD read error',13,10,0
-  hd_write_str     db 'K : FS - HD write error',13,10,0
-  hd_lba_str       db 'K : FS - HD LBA error',13,10,0
-endg
-
-hd_timeout_error:
-
-    call  clear_hd_cache
-    call  clear_application_table_status
-    mov   esi,hd_timeout_str
-    call  sys_msg_board_str
-;    jmp   $
-    mov   [hd_error],1
-    pop   eax
-    ret
-
-hd_read_error:
-
-    call  clear_hd_cache
-    call  clear_application_table_status
-    mov   esi,hd_read_str
-    call  sys_msg_board_str
-    pop   edx eax
-    jmp    return_01
-;    jmp   $
-
-hd_write_error:
-
-    call  clear_hd_cache
-    call  clear_application_table_status
-    mov   esi,hd_write_str
-    call  sys_msg_board_str
-    jmp    return_02
-;    jmp   $
-
-hd_lba_error:
-    call  clear_hd_cache
-    call  clear_application_table_status
-    mov   esi,hd_lba_str
-    call  sys_msg_board_str
-    jmp   LBA_read_ret
-
-
-wait_for_hd_idle:
-
-    push  eax edx
-
-    call  save_hd_wait_timeout
-
-    mov   edx,[hdbase]
-    add   edx,0x7
-
-  wfhil1:
-
-    call  check_hd_wait_timeout
-    cmp   [hd_error],0
-    jne   @f
-
-    in    al,dx
-    test  al,128
-    jnz   wfhil1
-  
- @@:
-
-    pop   edx eax
-    ret
-
-
-
-wait_for_sector_buffer:
-
-    push  eax edx
-
-    mov   edx,[hdbase]
-    add   edx,0x7
-
-    call  save_hd_wait_timeout
-
-  hdwait_sbuf:                  ; wait for sector buffer to be ready
-
-    call  check_hd_wait_timeout
-    cmp   [hd_error],0
-    jne   @f
-
-    in    al,dx
-    test  al,8
-    jz    hdwait_sbuf
-
-    mov   [hd_error],0
-
-    cmp   [hd_setup],1          ; do not mark error for setup request
-    je    buf_wait_ok
-
-    test  al,1                  ; previous command ended up with an error
-    jz    buf_wait_ok
- @@:
-    mov   [hd_error],1
-
-  buf_wait_ok:
-
-    pop   edx eax
-    ret
-
-
 
 read_hd_file:
 ;-----------------------------------------------------------------
@@ -2411,7 +1486,7 @@ hd_find_lfn:
         push    fat16_root_first
         push    fat16_root_next
         mov     eax, [ROOT_CLUSTER]
-        cmp     [fat_type], 32
+        cmp     [fs_type], 32
         jz      .fat32
 .loop:
         call    fat_find_lfn
@@ -2462,11 +1537,15 @@ hd_find_lfn:
 ;
 ;--------------------------------------------------------------
 fs_HdRead:
-    cmp    [fat_type], 0
-    jnz    @f
-    or    ebx, -1
-    mov    eax, ERROR_UNKNOWN_FS
-    ret
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdRead
+        or      ebx, -1
+        mov     eax, ERROR_UNKNOWN_FS
+        ret
 @@:
     push    edi
     cmp    byte [esi], 0
@@ -2477,7 +1556,7 @@ fs_HdRead:
     or    ebx, -1
     mov    eax, ERROR_ACCESS_DENIED
     ret
- 
+
 .noaccess_3:
     add esp,4
 .noaccess_1:
@@ -2550,7 +1629,7 @@ fs_HdRead:
     mov    ebx, edx
     call    hd_read
     cmp  [hd_error],0
-    jne  .noaccess_1    
+    jne  .noaccess_1
     pop    ebx
     add    edx, 512
     sub    ecx, 512
@@ -2617,6 +1696,17 @@ fs_HdRead:
 ;
 ;--------------------------------------------------------------
 fs_HdReadFolder:
+        cmp     [fs_type], 1
+        jz      ntfs_HdReadFolder
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
+        push    ERROR_UNSUPPORTED_FS
+        pop     eax
+        or      ebx, -1
+        ret
+@@:
         mov     eax, [ROOT_CLUSTER]
         push    edi
         cmp     byte [esi], 0
@@ -2657,7 +1747,7 @@ fs_HdReadFolder:
         mov     [cluster_tmp], eax
         test    eax, eax
         jnz     @f
-        cmp     [fat_type], 32
+        cmp     [fs_type], 32
         jz      .notfound
         mov     eax, [ROOT_START]
         push    [ROOT_SECTORS]
@@ -2777,8 +1867,14 @@ fat16_root_next:
         ret     ; CF=0
 fat16_root_next_sector:
 ; read next sector
+        push    [longname_sec2]
+        pop     [longname_sec1]
         push    ecx
         mov     ecx, [eax+4]
+        push    ecx
+        add     ecx, [ROOT_START]
+        mov     [longname_sec2], ecx
+        pop     ecx
         inc     ecx
         mov     [eax+4], ecx
         cmp     ecx, [ROOT_SECTORS]
@@ -2828,6 +1924,12 @@ fat_notroot_next:
         add     edi, 0x20
         ret     ; CF=0
 fat_notroot_next_sector:
+        push    [longname_sec2]
+        pop     [longname_sec1]
+        push    eax
+        call    fat_get_sector
+        mov     [longname_sec2], eax
+        pop     eax
         push    ecx
         mov     ecx, [eax+4]
         inc     ecx
@@ -2974,9 +2076,20 @@ fshrfs:
         xor     ebx, ebx
         ret
 
+fs_HdCreateFolder:
+        mov     al, 1
+        jmp     fs_HdRewrite.common
+
 fs_HdRewrite:
-        cmp     [fat_type], 0
-        jz      fshrfs
+        xor     eax, eax
+.common:
+        cmp     [fs_type], 1
+        jz      ntfs_HdRewrite
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jnz     fshrfs
+@@:
         cmp     byte [esi], 0
         jz      fshrad
         pushad
@@ -2995,7 +2108,7 @@ fs_HdRewrite:
         test    ebp, ebp
         jnz     .noroot
         mov     ebp, [ROOT_CLUSTER]
-        cmp     [fat_type], 32
+        cmp     [fs_type], 32
         jz      .pushnotroot
         push    fat16_root_extend_dir
         push    fat16_root_end_write
@@ -3008,6 +2121,9 @@ fs_HdRewrite:
         push    fat16_root_next
         jmp     .common1
 .noroot:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp+1], 0
+        jz      .ret1
 ; check existence
         mov     byte [ebp], 0
         call    hd_find_lfn
@@ -3041,8 +2157,24 @@ fs_HdRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found; must not be directory
+; found
         test    byte [edi+11], 10h
+        jz      .exists_file
+; found directory; if we are creating directory, return OK,
+;                  if we are creating file, say "access denied"
+        add     esp, 32
+        popad
+        test    al, al
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      @f
+        mov     al, 0
+@@:
+        xor     ebx, ebx
+        ret
+.exists_file:
+; found file; if we are creating directory, return "access denied",
+;             if we are creating file, delete existing file and continue
+        cmp     byte [esp+32+28], 0
         jz      @f
         add     esp, 32
         popad
@@ -3279,11 +2411,23 @@ fs_HdRewrite:
         mov     word [edi+20], cx       ; high word of cluster
         mov     word [edi+26], cx       ; low word of cluster - to be filled
         mov     dword [edi+28], ecx     ; file size - to be filled
+        cmp     byte [esp+32+28], cl
+        jz      .doit
+; create directory
+        mov     byte [edi+11], 10h      ; attributes: folder
+        mov     edx, edi
+        lea     eax, [esp+8]
+        call    dword [eax+16]  ; flush directory
+        push    ecx
+        mov     ecx, [SECTORS_PER_CLUSTER]
+        shl     ecx, 9
+        jmp     .doit2
 .doit:
         lea     eax, [esp+8]
         call    dword [eax+16]  ; flush directory
         push    ecx
         mov     ecx, [esp+4+32+24]
+.doit2:
         push    ecx
         push    edi
         mov     esi, edx
@@ -3312,6 +2456,8 @@ fs_HdRewrite:
         add     eax, [DATA_START]
 ; write data
 .write_sector:
+        cmp     byte [esp+16+32+28], 0
+        jnz     .writedir
         mov     ecx, 512
         cmp     dword [esp+8], ecx
         jb      .writeshort
@@ -3325,6 +2471,7 @@ fs_HdRewrite:
         mov     edi, buffer
         mov     ebx, edi
         rep     movsb
+.writedircont:
         mov     ecx, buffer+0x200
         sub     ecx, edi
         push    eax
@@ -3391,10 +2538,44 @@ fs_HdRewrite:
         call    update_disk
         popad
         ret
+.writedir:
+        push    512
+        mov     edi, buffer
+        mov     ebx, edi
+        mov     ecx, [SECTORS_PER_CLUSTER]
+        shl     ecx, 9
+        cmp     ecx, [esp+12]
+        jnz     .writedircont
+        dec     dword [esp+16]
+        push    esi
+        mov     ecx, 32/4
+        rep     movsd
+        pop     esi
+        mov     dword [edi-32], '.   '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        push    esi
+        mov     ecx, 32/4
+        rep     movsd
+        pop     esi
+        mov     dword [edi-32], '..  '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     ecx, [esp+20+8]
+        cmp     ecx, [ROOT_CLUSTER]
+        jnz     @f
+        xor     ecx, ecx
+@@:
+        mov     word [edi-32+26], cx
+        shr     ecx, 16
+        mov     [edi-32+20], cx
+        jmp     .writedircont
 
 ;----------------------------------------------------------------
 ;
-;  fs_HdWrite - LFN variant for writing to floppy
+;  fs_HdWrite - LFN variant for writing to hard disk
 ;
 ;  esi  points to filename
 ;  ebx  pointer to 64-bit number = first wanted byte, 0+
@@ -3418,8 +2599,12 @@ fs_HdWrite.ret11:
         jmp     fs_HdWrite.ret0
 
 fs_HdWrite:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdWrite
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         push    ERROR_UNKNOWN_FS
         jmp     .ret0
 @@:
@@ -3529,6 +2714,13 @@ fs_HdWrite:
         sub     ecx, ebx
         jz      .ret
 .write_loop:
+; skip unmodified sectors
+        cmp     dword [esp], 0x200
+        jb      .modify
+        sub     ebx, 0x200
+        jae     .skip
+        add     ebx, 0x200
+.modify:
 ; get length of data in current sector
         push    ecx
         sub     ebx, 0x200
@@ -3585,9 +2777,8 @@ fs_HdWrite:
         add     edi, esi
         rep     stosb
 @@:
-        pop     edi ecx eax
+        pop     edi ecx
 ; copy new data
-        push    eax
         mov     eax, edx
         neg     ebx
         jecxz   @f
@@ -3607,6 +2798,7 @@ fs_HdWrite:
         sub     [esp], ecx
         pop     ecx
         jz      .ret
+.skip:
 ; next sector
         inc     ebp
         cmp     ebp, [SECTORS_PER_CLUSTER]
@@ -3751,8 +2943,12 @@ hd_extend_file:
 ;
 ;--------------------------------------------------------------
 fs_HdSetFileEnd:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdSetFileEnd
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         push    ERROR_UNKNOWN_FS
 .ret:
         pop     eax
@@ -3979,8 +3175,12 @@ fs_HdSetFileEnd:
         ret
 
 fs_HdGetFileInfo:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdGetFileInfo
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         mov     eax, ERROR_UNKNOWN_FS
         ret
 @@:
@@ -4003,8 +3203,12 @@ fs_HdGetFileInfo:
         jmp     fs_GetFileInfo_finish
 
 fs_HdSetFileInfo:
-        cmp     [fat_type], 0
-        jnz     @f
+        cmp     [fs_type], 1
+        jz      ntfs_HdSetFileInfo
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
         mov     eax, ERROR_UNKNOWN_FS
         ret
 @@:
@@ -4039,6 +3243,8 @@ fs_HdSetFileInfo:
         xor     eax, eax
         ret
 
+if 0    ; starting from revision 237 execute is implemented in taskman.inc
+        ; through fs_XxxGetFileInfo and fs_XxxRead
 ;----------------------------------------------------------------
 ;
 ;  fs_HdExecute - LFN variant for executing from harddisk
@@ -4076,7 +3282,7 @@ fs_HdExecute:
 .flags:
         cmp     [fat_type], 0
         jnz     @f
-        mov     eax, ERROR_UNKNOWN_FS
+        mov     eax, -ERROR_UNKNOWN_FS
         ret
 @@:
         cmp     byte [esi], 0
@@ -4157,6 +3363,161 @@ fs_HdExecute:
 .err:
         popad
         mov     eax, 11
+        ret
+end if
+
+;----------------------------------------------------------------
+;
+;  fs_HdDelete - delete file or empty folder from hard disk
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_HdDelete:
+        cmp     [fs_type], 1
+        jz      ntfs_HdDelete
+        cmp     [fs_type], 16
+        jz      @f
+        cmp     [fs_type], 32
+        jz      @f
+        push    ERROR_UNKNOWN_FS
+.pop_ret:
+        pop     eax
+        ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot delete root!
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+        jmp     .pop_ret
+@@:
+        and     [longname_sec1], 0
+        and     [longname_sec2], 0
+        push    edi
+        call    hd_find_lfn
+        jnc     .found
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .pop_ret
+.found:
+        cmp     dword [edi], '.   '
+        jz      .access_denied2
+        cmp     dword [edi], '..  '
+        jz      .access_denied2
+        test    byte [edi+11], 10h
+        jz      .dodel
+; we can delete only empty folders!
+        pushad
+        mov     ebp, [edi+20-2]
+        mov     bp, [edi+26]
+        xor     ecx, ecx
+        lea     eax, [ebp-2]
+        imul    eax, [SECTORS_PER_CLUSTER]
+        add     eax, [DATA_START]
+        mov     ebx, buffer
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     .err1
+        add     ebx, 2*0x20
+.checkempty:
+        cmp     byte [ebx], 0
+        jz      .empty
+        cmp     byte [ebx], 0xE5
+        jnz     .notempty
+        add     ebx, 0x20
+        cmp     ebx, buffer+0x200
+        jb      .checkempty
+        inc     ecx
+        cmp     ecx, [SECTORS_PER_CLUSTER]
+        jb      @f
+        mov     eax, ebp
+        call    get_FAT
+        cmp     [hd_error], 0
+        jnz     .err1
+        mov     ebp, eax
+        xor     ecx, ecx
+@@:
+        lea     eax, [ebp-2]
+        imul    eax, [SECTORS_PER_CLUSTER]
+        add     eax, [DATA_START]
+        add     eax, ecx
+        mov     ebx, buffer
+        call    hd_read
+        cmp     [hd_error], 0
+        jz      .checkempty
+.err1:
+        popad
+.err2:
+        pop     edi
+        push    11
+        pop     eax
+        ret
+.notempty:
+        popad
+.access_denied2:
+        pop     edi
+        push    ERROR_ACCESS_DENIED
+        pop     eax
+        ret
+.empty:
+        popad
+        push    ebx
+        mov     ebx, buffer
+        call    hd_read
+        pop     ebx
+        cmp     [hd_error], 0
+        jnz     .err2
+.dodel:
+        push    eax
+        mov     eax, [edi+20-2]
+        mov     ax, [edi+26]
+        xchg    eax, [esp]
+; delete folder entry
+        mov     byte [edi], 0xE5
+; delete LFN (if present)
+.lfndel:
+        cmp     edi, buffer
+        ja      @f
+        cmp     [longname_sec2], 0
+        jz      .lfndone
+        push    [longname_sec2]
+        push    [longname_sec1]
+        pop     [longname_sec2]
+        and     [longname_sec1], 0
+        push    ebx
+        mov     ebx, buffer
+        call    hd_write
+        mov     eax, [esp+4]
+        call    hd_read
+        pop     ebx
+        pop     eax
+        mov     edi, buffer+0x200
+@@:
+        sub     edi, 0x20
+        cmp     byte [edi], 0xE5
+        jz      .lfndone
+        cmp     byte [edi+11], 0xF
+        jnz     .lfndone
+        mov     byte [edi], 0xE5
+        jmp     .lfndel
+.lfndone:
+        push    ebx
+        mov     ebx, buffer
+        call    hd_write
+        pop     ebx
+; delete FAT chain
+        pop     eax
+        call    clear_cluster_chain
+        call    update_disk
+        pop     edi
+        xor     eax, eax
+        cmp     [hd_error], 0
+        jz      @f
+        mov     al, 11
+@@:
         ret
 
 ; \end{diamond}

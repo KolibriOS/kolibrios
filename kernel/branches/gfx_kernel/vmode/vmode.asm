@@ -42,19 +42,19 @@ B_HOST fix HOST_BENDIAN ; HOST_LENDIAN
 
 ;-----------------------------------------------------------------------------
 
-        org    0x760000
+	org    0x760000
 
 headerstart=$
 
-mdid    db     'MDAZ'              ; 4 byte id
-mdhver  dd     0x00                ; header version
-mdcode  dd     MDSTART             ; start of code
-mdver   dd     0x00000001          ; driver version (subversion*65536+version)
-mdname  db     'Trans VideoDriver' ; 32 bytes of full driver name
+mdid	db     'MDAZ'		   ; 4 byte id
+mdhver	dd     0x00		   ; header version
+mdcode	dd     MDSTART		   ; start of code
+mdver	dd     0x00000001	   ; driver version (subversion*65536+version)
+mdname	db     'Trans VideoDriver' ; 32 bytes of full driver name
     times (32-($-mdname)) db ' '   ;
 
 headerlen=$-headerstart
-    times (256-headerlen) db 0     ; reserved area for future
+    times (256-headerlen) db 0	   ; reserved area for future
 
 MDSTART:    ; start of driver code ( base_adr+256 bytes)
 ; ebx(=ecx in program):
@@ -113,7 +113,7 @@ begin
       pop ecx
       call vm_transfer_drv_info
       mov ebx,dword [refrate]
-      mov eax,dword [mdid]      ;dword [systlb]
+      mov eax,dword [mdid]	;dword [systlb]
       retn
 endf
 
@@ -233,12 +233,12 @@ endf
 ;
 func vm_search_sys_func_table
 begin
-      push eax     ; eax - current value
-      push ecx     ; ecx - will be counter of equevalent value
-      push edx     ; edx - last value
-      push esi     ; esi - current address
+      push eax	   ; eax - current value
+      push ecx	   ; ecx - will be counter of equevalent value
+      push edx	   ; edx - last value
+      push esi	   ; esi - current address
       xor ecx,ecx
-      mov esi,010000h            ; Start address of kernel location
+      mov esi,010000h		 ; Start address of kernel location
       lodsd
       mov edx,eax
       cld
@@ -328,28 +328,28 @@ endf
 
 func vm_calc_pixelclock
 begin
-        push ebx
-        push edx
-        xor eax,eax
-        mov al,[_00]
-        add ax,5
-        shl eax,3
-        xor ebx,ebx
-        mov bl,[_06]
-        mov bh,[_07]
-        and bh,00100001b
-        btr bx,13
-        jnc .vmcpc_00
-        or bh,2
+	push ebx
+	push edx
+	xor eax,eax
+	mov al,[_00]
+	add ax,5
+	shl eax,3
+	xor ebx,ebx
+	mov bl,[_06]
+	mov bh,[_07]
+	and bh,00100001b
+	btr bx,13
+	jnc .vmcpc_00
+	or bh,2
 .vmcpc_00:
-        xor edx,edx
-        mul ebx
-        xor edx,edx
-        mul [initrr]
-        mov [pclock],eax
-        pop edx
-        pop ebx
-        retn
+	xor edx,edx
+	mul ebx
+	xor edx,edx
+	mul [initrr]
+	mov [pclock],eax
+	pop edx
+	pop ebx
+	retn
 endf
 
 ;
@@ -368,7 +368,7 @@ begin
     inc dx
     in al,dx
     and al,7fh
-    out dx,al    ; Clear protection bit
+    out dx,al	 ; Clear protection bit
     dec dx
     xor ecx,ecx
     mov cl,19h
@@ -422,7 +422,7 @@ begin
     out dx,al
     inc dx
     in al,dx
-    and al,7fh  ; Clear Protection bit
+    and al,7fh	; Clear Protection bit
     out dx,al
     dec dx
     xor ecx,ecx
@@ -449,62 +449,62 @@ endf
 ;  (light version of function)
 func vm_calc_refrate
 begin
-        push ebx
-        push ecx
-        push edx
-        push edi
-        push esi
-        mov eax,[pclock]
-        xor edx,edx
-        mov edi,_m1
-        mov ebx,eax
-        mov ecx,(1696*1065)
-        div ecx
-        xor edx,edx
-        stosw
-        add edi,8
-        mov eax,ebx
-        mov ecx,(1344*804)
-        div ecx
-        xor edx,edx
-        stosw
-        add edi,8
-        mov eax,ebx
-        mov ecx,(1056*636)
-        div ecx
-        xor edx,edx
-        stosw
-        add edi,8
-        mov eax,ebx
-        mov ecx,(800*524)
-        div ecx
-        xor edx,edx
-        stosw
-        mov edi,_m1
-        mov esi,edi
-        mov ecx,5*4
+	push ebx
+	push ecx
+	push edx
+	push edi
+	push esi
+	mov eax,[pclock]
+	xor edx,edx
+	mov edi,_m1
+	mov ebx,eax
+	mov ecx,(1696*1065)
+	div ecx
+	xor edx,edx
+	stosw
+	add edi,8
+	mov eax,ebx
+	mov ecx,(1344*804)
+	div ecx
+	xor edx,edx
+	stosw
+	add edi,8
+	mov eax,ebx
+	mov ecx,(1056*636)
+	div ecx
+	xor edx,edx
+	stosw
+	add edi,8
+	mov eax,ebx
+	mov ecx,(800*524)
+	div ecx
+	xor edx,edx
+	stosw
+	mov edi,_m1
+	mov esi,edi
+	mov ecx,5*4
 .vmcrr_00:
-        lodsw
-        cmp ax,55
-        jb .vmcrr_01
-        stosw
-        loop .vmcrr_00
-        pop esi
-        pop edi
-        pop edx
-        pop ecx
-        pop ebx
-        retn
+	lodsw
+	cmp ax,55
+	jb .vmcrr_01
+	stosw
+	loop .vmcrr_00
+	pop esi
+	pop edi
+	pop edx
+	pop ecx
+	pop ebx
+	retn
 .vmcrr_01:
-        xor ax,ax
-        stosw
-        loop .vmcrr_00
-        pop esi
-        pop edi
-        pop edx
-        pop ecx
-        pop ebx
-        retn
+	xor ax,ax
+	stosw
+	loop .vmcrr_00
+	pop esi
+	pop edi
+	pop edx
+	pop ecx
+	pop ebx
+	retn
 endf
 
 func vm_get_initial_videomode
@@ -532,7 +532,7 @@ begin
     out dx,al
     inc dx
     in al,dx
-    and al,7fh  ; Clear Protection bit
+    and al,7fh	; Clear Protection bit
     out dx,al
     dec dx
     xor al,al
@@ -558,29 +558,29 @@ endf
 ; OUT:
 func vm_transfer_drv_info
 begin
-        push ecx
-        push edi
-        push esi
-        mov eax,ecx
-        xor ecx,ecx
-        mov cl,32/4
-        mov esi,mdname
-        mov edi,drvname
-        rep movsd
-        mov ecx,eax
-        mov eax,[mdver]
-        mov [drvver],eax
-        mov edi,[3010h]
-        mov edi,[edi+10h]
-        add edi,ecx
-        mov esi,drvinfo
-        xor ecx,ecx
-        mov cx,512
-        rep movsb
-        pop esi
-        pop edi
-        pop ecx
-        retn
+	push ecx
+	push edi
+	push esi
+	mov eax,ecx
+	xor ecx,ecx
+	mov cl,32/4
+	mov esi,mdname
+	mov edi,drvname
+	rep movsd
+	mov ecx,eax
+	mov eax,[mdver]
+	mov [drvver],eax
+	mov edi,[3010h]
+	mov edi,[edi+10h]
+	add edi,ecx
+	mov esi,drvinfo
+	xor ecx,ecx
+	mov cx,512
+	rep movsb
+	pop esi
+	pop edi
+	pop ecx
+	retn
 endf
 
 ;
@@ -675,16 +675,16 @@ include 'normal.asm'
 align 4
 
 mdvm_func_table:
-        dd MDSTART
-        dd vm_info_init,          vm_get_cur_mode
-        dd vm_set_video_mode,     vm_restore_init_video_mode
-        dd vm_change_screen_size ;vm_change_position_screen
+	dd MDSTART
+	dd vm_info_init,	  vm_get_cur_mode
+	dd vm_set_video_mode,	  vm_restore_init_video_mode
+	dd vm_change_screen_size ;vm_change_position_screen
 
 ;-[ mike.dld ]- begin ---------------
 
-        dd vm_mike_init
+	dd vm_mike_init
 ;       dd vm_mike_cursor_pos
-        dd vm_mike_uninit
+	dd vm_mike_uninit
 
 ;-[ mike.dld ]- end -----------------
 
@@ -730,27 +730,27 @@ align 4
 ;oldX      dd ?
 ;oldY      dd ?
 ;initvm    dd ?
-currvm     dd 0
+currvm	   dd 0
 refrate    dd 0
-initrr     dd 0
-systlb     dd 0
+initrr	   dd 0
+systlb	   dd 0
 ;pclock    dd ?
-mdrvm      dd 0 ; 0 - not drv init yet, 1 - already drv init
+mdrvm	   dd 0 ; 0 - not drv init yet, 1 - already drv init
 ;-[ mike.dld ]- end -----------------
 
 
 drvinfo:
 drvname:   times 32 db ' '
-drvver     dd 0
-           times (32-($-drvver))/4 dd 0
+drvver	   dd 0
+	   times (32-($-drvver))/4 dd 0
 drvmode    dw 011Bh,0118h,0115h,0112h
-           times (64-($-drvmode))/2 dw 00h
-_m1        dw 0,0,0,0,0
-_m2        dw 0,0,0,0,0
-_m3        dw 0,0,0,0,0
-_m4        dw 0,0,0,0,0
-_m5        dw 0,0,0,0,0
-           times (512-($-drvinfo)) db 0
+	   times (64-($-drvmode))/2 dw 00h
+_m1	   dw 0,0,0,0,0
+_m2	   dw 0,0,0,0,0
+_m3	   dw 0,0,0,0,0
+_m4	   dw 0,0,0,0,0
+_m5	   dw 0,0,0,0,0
+	   times (512-($-drvinfo)) db 0
 drvinfoend:
 
 ;-[ mike.dld ]- begin ---------------
@@ -765,10 +765,10 @@ DRVM_END:
 align 4
 
 ;-[ mike.dld ]- begin ---------------
-oldX       dd ?
-oldY       dd ?
-initvm     dd ?
-pclock     dd ?
+oldX	   dd ?
+oldY	   dd ?
+initvm	   dd ?
+pclock	   dd ?
 ;-[ mike.dld ]- end -----------------
 
 CRTCreg:
@@ -801,14 +801,10 @@ _19  db ?
 
 ;-[ mike.dld ]- begin ---------------
 
-align 4
- x_res  fix 0x0000FE00 ;  dd ?
- y_res  fix 0x0000FE04 ;  dd ?
-
- cnt      dd ?
+ cnt	  dd ?
 align 16
- tr       RECT
- rct      RECT
+ tr	  RECT
+ rct	  RECT
 ;rb       40*sizeof.RECT
 
 ;-[ mike.dld ]- end -----------------

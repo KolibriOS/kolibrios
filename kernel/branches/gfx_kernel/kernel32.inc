@@ -50,6 +50,31 @@ macro diff16 title,l1,l2
   display 13,10
 }
 
+; \begin{diamond}[29.09.2006]
+; may be useful for kernel debugging
+; example 1:
+;       dbgstr 'Hello, World!'
+; example 2:
+;       dbgstr 'Hello, World!', save_flags
+macro dbgstr string*, f
+{
+local a
+iglobal_nested
+a db 'K : ',string,13,10,0
+endg_nested
+if ~ f eq
+        pushfd
+end if
+        push    esi
+        mov     esi, a
+        call    sys_msg_board_str
+        pop     esi
+if ~ f eq
+        popfd
+end if
+}
+; \end{diamond}[29.09.2006]
+
 ;struc db [a] { common . db a
 ;  if ~used .
 ;    display 'not used db: ',`.,13,10
@@ -96,7 +121,7 @@ virtual at 0
 end virtual
 
 ; constants definition
-WSTATE_NORMAL	 = 00000000b
+WSTATE_NORMAL    = 00000000b
 WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
 WSTATE_ROLLEDUP  = 00000100b
@@ -146,13 +171,26 @@ struc APPDATA
 {
   .app_name	   db 11  dup(?)
 		   db 5   dup(?)
-  .fpu_save_area:  db 108 dup(?)
-		   db 3   dup(?)
-  .is_fpu_saved    db ?
-  .wnd_shape	   dd ?
-  .wnd_shape_scale dd ?
-		   dd ?
-  .mem_size	   dd ?
+
+  .fpu_state       dd ?            ;+16
+  .ev_count        dd ?            ;+20
+  .fpu_handler     dd ?            ;+24
+  .sse_handler     dd ?            ;+28
+  .pl0_stack       dd ? ;unused    ;+32
+  .heap_base       dd ?            ;+36
+  .heap_top        dd ?            ;+40
+  .cursor          dd ?            ;+44
+  .fd_ev           dd ?            ;+48
+  .bk_ev           dd ?            ;+52
+  .fd_obj          dd ?            ;+56
+  .bk_obj          dd ?            ;+60
+
+                   db 64 dup(?)    ;+64
+
+  .wnd_shape       dd ?            ;+128
+  .wnd_shape_scale dd ?            ;+132
+                   dd ?            ;+136
+  .mem_size        dd ?            ;+140
   .saved_box	   BOX
   .ipc_start	   dd ?
   .ipc_size	   dd ?
@@ -184,9 +222,13 @@ include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
 include "core/sched.inc"    ; process scheduling
 include "core/syscall.inc"  ; system call
-include "core/mem.inc"      ; high-level memory management
-include "core/newproce.inc" ;new process management
-include "core/physmem.inc"  ; access to physical memory for applications
+include "core/fpu.inc"      ; all fpu/sse support
+include "core/memory.inc"
+include "core/heap.inc"     ; kernel and app heap
+include "core/malloc.inc"   ; small kernel heap
+include "core/taskman.inc"
+include "core/dll.inc"
+include "core/exports.inc"
 
 ; GUI stuff
 include "gui/window.inc"
@@ -202,6 +244,7 @@ include "boot/shutdown.inc" ; shutdown or restart
 
 include "fs/fs.inc"       ; syscall
 include "fs/fat32.inc"    ; read / write for fat32 filesystem
+include "fs/ntfs.inc"     ; read / write for ntfs filesystem
 include "fs/fat12.inc"    ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
@@ -217,6 +260,7 @@ include "sound/playnote.inc" ; player Note for Speaker PC
 include "video/vesa12.inc"   ; Vesa 1.2 functions
 include "video/vesa20.inc"   ; Vesa 2.0 functions
 include "video/vga.inc"      ; VGA 16 color functions
+include "video/cursors.inc"  ; cursors functions
 
 ; Network Interface & TCPIP Stack
 
@@ -238,6 +282,9 @@ include "bus/pci/pci32.inc"
 
 include "blkdev/fdc.inc"
 include "blkdev/flp_drv.inc"
+
+; HD drive controller
+include "blkdev/hd_drv.inc"
 
 ; CD drive controller
 

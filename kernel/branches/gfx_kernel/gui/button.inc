@@ -18,39 +18,39 @@ dececx:
     pop  ecx
     pop  edx
     ret
-    
+
 incecx:
     push edx
     push ecx
-    
+
     mov  edx,2
   .loop:
-    
+
     cmp  byte [esp+edx],0xdf
     jbe  @f
     mov  [esp+edx],byte 0xdf
    @@:
     add  [esp+edx],byte 0x20
-    
+
     dec  edx
     jns  .loop
     pop  ecx
     pop  edx
     ret
-    
+
 incecx2:
     push edx
     push ecx
-    
+
     mov  edx,2
   .loop:
-    
+
     cmp  byte [esp+edx],0xeb
     jbe  @f
     mov  [esp+edx],byte 0xeb
    @@:
     add  [esp+edx],byte 0x14
-    
+
     dec  edx
     jns  .loop
     pop  ecx
@@ -68,7 +68,7 @@ drawbuttonframes:
 
         shr   eax,16
         shr   ebx,16
-        mov   edx,[0x3010]
+        mov   edx,[TASK_BASE]
 
 		add   eax,[edx-twdw + WDATA.box.left]
 		add   ebx,[edx-twdw + WDATA.box.top]
@@ -164,13 +164,13 @@ button_dececx:
 sys_button:
 
         push    edi
-        mov     edi,[0x3000]
+        mov     edi,[CURRENT_TASK]
         shl     edi,8
         rol     eax,16
-        add     ax,word[edi+0x80000+APPDATA.wnd_clientbox.left]
+        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
         rol     eax,16
         rol     ebx,16
-        add     bx,word[edi+0x80000+APPDATA.wnd_clientbox.top]
+        add     bx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
         rol     ebx,16
         pop     edi
   .forced:
@@ -197,9 +197,9 @@ sys_button:
         push  ebx
         sar   eax,16
         sar   ebx,16
-        mov   edx,[0x3010]
-		mov   esi,[edx-twdw + WDATA.box.left]
-		mov   edi,[edx-twdw + WDATA.box.top]
+        mov   edx,[TASK_BASE]
+        mov   esi,[edx-twdw + WDATA.box.left]
+        mov   edi,[edx-twdw + WDATA.box.top]
         add   eax,esi
         add   ebx,edi
         mov   cx,ax
@@ -238,7 +238,7 @@ sys_button:
 
         and   ecx,0xffff
 
-        mov   edi,[0xfe88]
+        mov   edi,[BTN_ADDR]
         movzx eax,word [edi]
         cmp   eax,max_buttons
         jge   noaddbutt
@@ -248,7 +248,7 @@ sys_button:
         shl   eax,4
         add   eax,edi
 
-        mov   bx,[0x3000]
+        mov   bx,[CURRENT_TASK]
         mov   [eax],bx
 
         add   eax,2         ; save button id number
@@ -287,7 +287,7 @@ remove_button:
 
   rnewba2:
 
-    mov   edi,[0xfe88]
+    mov   edi,[BTN_ADDR]
     mov   eax,edi
     movzx ebx,word [edi]
     inc   bx
@@ -299,7 +299,7 @@ remove_button:
 
     add   eax,0x10
 
-    mov   dx,[0x3000]
+    mov   dx,[CURRENT_TASK]
     cmp   dx,[eax]
     jnz   rnewba
 
@@ -330,11 +330,11 @@ find_pressed_button_frames:
         shl   ebx,5
         add   ebx,window_data
 		mov   ecx, [ebx+ WDATA.box.left]     ; window x start
-        movsx edx,word [eax+4]     ; button x start
+        movsx edx,word [eax+4]                       ; button x start
         add   ecx,edx
         push  ecx
 
-        movzx edx,word[eax+6]     ; button x size
+        movzx edx,word[eax+6]                        ; button x size
         add   ecx,edx
         mov   esi,ecx
         inc   esi
@@ -457,7 +457,7 @@ negativebutton:
 
 checkbuttons:
 
-    cmp   [0xfb40],byte 0    ; mouse buttons pressed
+    cmp   [BTN_DOWN],byte 0    ; mouse buttons pressed
     jnz   @f
     ret
   @@:
@@ -465,7 +465,7 @@ checkbuttons:
     pushad
 
     xor    esi, esi
-    mov    edi, [0xfe88]
+    mov    edi, [BTN_ADDR]
     movzx  edx, word [edi]
     test   edx, edx
     jne    @f
@@ -504,8 +504,8 @@ checkbuttons:
     ; check that button is at top of windowing stack
 
     movzx ebx,word [eax]
-    movzx ecx,word [0xC000 + ebx * 2]
-    cmp   ecx,[0x3004]
+    movzx ecx,word [WIN_STACK + ebx * 2]
+    cmp   ecx,[TASK_COUNT]
     jne   buttonnewcheck
 
     ; check that button start is inside window x/y end
@@ -570,7 +570,7 @@ checkbuttons:
     mov   bx,[eax+2]       ; button id : bits 00-16
     push  ebx
 
-    mov   [0xfb44],byte 1  ; no mouse down checks
+    mov   [MOUSE_DOWN],byte 1  ; no mouse down checks
     call find_pressed_button_frames
     call negativebutton
 
@@ -585,13 +585,13 @@ checkbuttons:
     call  stack_handler
     popad
 
-    cmp   [0xfb40],byte 0  ; mouse buttons pressed ?
+    cmp   [BTN_DOWN],byte 0  ; mouse buttons pressed ?
     jnz   cbwaitmouseup
     popad
 
     call  negativebutton
-    mov   [0xfff4],byte 0  ; no mouse background
-    mov   [0xfff5],byte 0  ; draw mouse
+    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
+    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 ;..................................... start 2/2 : modified by vhanla .............................
     ; check coordinates
     jmp afterbuttonid
@@ -631,16 +631,16 @@ checkbuttons:
    cmp   ecx,edx
    jg   no_on_button
    popa
-   mov   [0xf500],byte 1 ; no of buttons in buffer
+   mov   [BTN_COUNT],byte 1 ; no of buttons in buffer
    pop   ebx
-   mov   [0xf501],ebx   ; lets put the button id in buffer
+   mov   [BTN_BUFF],ebx   ; lets put the button id in buffer
    push  ebx
    pusha
    jmp yes_on_button
 no_on_button:
-   mov   [0xf500],byte 0 ; no of buttons in buffer
+   mov   [BTN_COUNT],byte 0 ; no of buttons in buffer
 yes_on_button:
-   mov   [0xfb44],byte 0 ; mouse down -> do not draw
+   mov   [MOUSE_DOWN],byte 0 ; mouse down -> do not draw
    popa
    pop ebx
    popa

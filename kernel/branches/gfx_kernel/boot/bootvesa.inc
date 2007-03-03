@@ -557,7 +557,7 @@ set_vmode:
 ;  .l0:  mov     al,[es:mi.BitsPerPixel];di+0x19]
 ;        mov     [es:0x9000],al
         ; ---- vbe voodoo
-        BytesPerScanLine equ 0x10
+        ;BytesPerScanLine equ 0x10
         push ax
         mov ax, [es:mi.BytesPerScanLine];di+BytesPerScanLine]
         mov [es:0x9001],ax
@@ -1016,7 +1016,7 @@ macro sdfawgsgwaew {
   .l0:  mov     al,[es:mi.BitsPerPixel];di+0x19]
         mov     [es:0x9000],al
         ; ---- vbe voodoo
-        BytesPerScanLine equ 0x10
+        ;BytesPerScanLine equ 0x10
         push ax
         mov ax, [es:mi.BytesPerScanLine];di+BytesPerScanLine]
         mov [es:0x9001],ax

@@ -41,7 +41,7 @@ rootdirs:
         db      3,'cd3'
         dd      fs_OnCd3
         dd      fs_NextCd
-;***********************************************        
+;***********************************************
         db      0
 
 
@@ -82,9 +82,8 @@ file_system_lfn:
 ; 5 : get file/directory attributes structure
 ; 6 : set file/directory attributes structure
 ; 7 : start application
-; 8 : delete file - not implemented yet
-; 9 : create directory - not implemented yet
-; 10: rename file/directory - not implemented yet
+; 8 : delete file
+; 9 : create directory
 
         add     eax, std_application_base_address
 ; parse file name
@@ -98,6 +97,18 @@ file_system_lfn:
         add     esi, std_application_base_address
         mov     ebp, esi
         lodsb
+@@:
+        cmp dword [ebx], 7
+        jne @F
+        mov edx, [ebx+4]
+        mov ebx, [ebx+8]
+        test ebx, ebx
+        jz .l1
+        add ebx, new_app_base
+.l1:
+        call fs_execute  ; ebp, ebx, edx
+        mov [esp+36], eax
+        ret
 @@:
         cmp     al, '/'
         jz      @f
@@ -351,7 +362,9 @@ fs_RamdiskServices:
         dd      fs_RamdiskSetFileEnd
         dd      fs_RamdiskGetFileInfo
         dd      fs_RamdiskSetFileInfo
-        dd      fs_RamdiskExecute
+        dd      0 ;fs_RamdiskExecute
+        dd      fs_RamdiskDelete
+        dd      fs_RamdiskCreateFolder
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
 
 fs_OnFloppy:
@@ -380,7 +393,9 @@ fs_FloppyServices:
         dd      fs_FloppySetFileEnd
         dd      fs_FloppyGetFileInfo
         dd      fs_FloppySetFileInfo
-        dd      fs_FloppyExecute
+        dd      0 ;fs_FloppyExecute
+        dd      fs_FloppyDelete
+        dd      fs_FloppyCreateFolder
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
@@ -451,7 +466,9 @@ fs_HdServices:
         dd      fs_HdSetFileEnd
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo
-        dd      fs_HdExecute
+        dd      0 ;fs_HdExecute
+        dd      fs_HdDelete
+        dd      fs_HdCreateFolder
 fs_NumHdServices = ($ - fs_HdServices)/4
 
 ;*******************************************************
@@ -535,30 +552,30 @@ fs_HasRamdisk:
         ret
 
 fs_HasFloppy:
-        cmp     byte [0x40000], 0
+        cmp     byte [DRIVE_DATA], 0
         setnz   al
         ret
 
 fs_HasHd0:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 11000000b
         cmp     al, 01000000b
         setz    al
         ret
 fs_HasHd1:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00110000b
         cmp     al, 00010000b
         setz    al
         ret
 fs_HasHd2:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00001100b
         cmp     al, 00000100b
         setz    al
         ret
 fs_HasHd3:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00000011b
         cmp     al, 00000001b
         setz    al
@@ -566,30 +583,30 @@ fs_HasHd3:
 
 ;*******************************************************
 fs_HasCd0:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 11000000b
         cmp     al, 10000000b
         setz    al
         ret
 fs_HasCd1:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00110000b
         cmp     al, 00100000b
         setz    al
         ret
 fs_HasCd2:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00001100b
         cmp     al, 00001000b
         setz    al
         ret
 fs_HasCd3:
-        mov     al, [0x40001]
+        mov     al, [DRIVE_DATA+1]
         and     al, 00000011b
         cmp     al, 00000010b
         setz    al
         ret
-;*******************************************************        
+;*******************************************************
 
 ; fs_NextXXX functions:
 ; in: eax = partition number, from which start to scan
@@ -607,15 +624,15 @@ fs_NextRamdisk:
         ret
 
 fs_NextFloppy:
-; we have /fd/1 iff (([0x40000] and 0xF0) != 0) and /fd/2 iff (([0x40000] and 0x0F) != 0)
-        test    byte [0x40000], 0xF0
+; we have /fd/1 iff (([DRIVE_DATA] and 0xF0) != 0) and /fd/2 iff (([DRIVE_DATA] and 0x0F) != 0)
+        test    byte [DRIVE_DATA], 0xF0
         jz      .no1
         test    eax, eax
         jnz     .no1
         inc     eax
         ret     ; CF cleared
 .no1:
-        test    byte [0x40000], 0x0F
+        test    byte [DRIVE_DATA], 0x0F
         jz      .no2
         cmp     al, 2
         jae     .no2
@@ -640,13 +657,13 @@ fs_NextHd3:
         push    3
 fs_NextHd:
         pop     ecx
-        movzx   ecx, byte [0x40002+ecx]
+        movzx   ecx, byte [DRIVE_DATA+2+ecx]
         cmp     eax, ecx
         jae     fs_NextFloppy.no2
         inc     eax
         clc
         ret
-        
+
 ;*******************************************************
 fs_NextCd:
 ; we always have /cdX/1

@@ -14,11 +14,10 @@
 ;   0:901C     byte   0 or 1 : enable MTRR graphics acceleration
 ;   0:901D     byte   not used anymore (0 or 1 : enable system log display)
 ;   0:901E     byte   0 or 1 : enable direct lfb write, paging disabled
+;   0:901F     byte   DMA write : 1=yes, 2=no
 ;   0:9020     8bytes pci data
 ;   0:9030     byte   VRR start enabled 1, 2-no
 ;   0:9031     word   IDEContrRegsBaseAddr
-;   0:9034     byte   vesa major version number (ascii)
-;   0:9035     byte   card vendor (intel=1, s3=2, other=3)
 ;    0x9040 - dword - entry point of APM BIOS
 ;    0x9044 -  word - version (BCD)
 ;    0x9046 -  word - flags
@@ -56,8 +55,7 @@
 ;         3c   dword  cpu usage in cpu timer tics
 ;
 ;
-;   5000  ->   5FFF   save_syscall_data - syscall trace
-;   6000  ->   68FF   free
+;   5000  ->   68FF   free
 ;   6900  ->   6EFF   saved picture under mouse pointer
 ;
 ;   6F00  ->   6FFF   free
@@ -81,8 +79,6 @@
 ;   E020  dword       putpixel address
 ;   E024  dword       getpixel address
 ;   E030  dword       Vesa 1.2 pm bank switch address
-;   E034  byte        vesa major version number (ascii)
-;   E035  byte        card vendor (intel=1, s3=2, other=3)
 ;   F200  dword       mousepicture -pointer
 ;   F204  dword       mouse appearance counter
 ;   F300  dword       x & y temp for windowmove
@@ -110,7 +106,6 @@
 ;   FE04  dword       screen y size
 ;   FE08  dword       screen y multiplier
 ;   FE0C  dword       screen mode
-;   FE10  dword       entries in hd cache
 ;   FE80  dword       address of LFB in physical
 ;   FE84  dword       address of applications memory start in physical
 ;   FE88  dword       address of button list
@@ -130,9 +125,10 @@
 ;  3F600  ->  3FFFF   basic text font I
 ;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
 
-;  50000  ->  5FFFF   free (64 Kb)
+;  50000  ->  50FFF   main page directory
+;  50200  ->  5FFFF   pages bitmap
 
-;  60000  ->  7FFFF   reserved to physical memory manager
+;  60000  ->  7FFFF   free (128 Kb)
 ;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
 ;           00  11db  name of app running
@@ -203,35 +199,26 @@
 ; 760000  -> 76ffff   !vrr driver
 ; 770000  -> 777fff   tcp memory       ( 32 kb)
 ;
-; 778000  -> 77ffff   window skinning  ( 32 kb)
-; 780000  -> 7fffff   reserved to physical memory manager
+; 780000  -> 987FFF   TSS and IO map for (8192*8)=65536 ports
+;                     (128+8192)*256 = 2129920 = 0x208000
 ;
-; 800000  -> BFFFFF   mapped to LFB
-;
-;
-; C00000  -> C01FFF   draw_data   - 256 entries
+; 988000 -> 98AFFF    draw_data   - 256 entries
 ;
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
 ;
-; C02000  -> C02fff   free (4 Kb)
 ;
-; C03000  -> D02fff   sysint_stack_data
-;                     - ring0 stacks for ring3 processes
-;                     - used for interrupt handling
-;                     - 256 entries * 4096 step
+; 0x0098B000 ->       kernel heap
 ;
-; D03000  -> D1ffff   free (116 Kb)
-;
-; D20000  -> F28000   TSS and IO map for (8192*8)=65536 ports
-;                     (128+8192)*256 = 557956 = 0x88000
-;
-; 1000000 -> 3FFFFFF  for applications
-;
-
-
+; 0x01FFFFFF          heap min limit
+; 0x7DBFFFFF          heap max limit
+; 0x7DC00000 -> 0x7FBFFFFF  LFB 32Mb
+; 0x7DC00000 -> 0x7E3FFFFF  application available LFB 8Mb
+; 0x7E400000 -> 0x7FBFFFFF  kernel LFB part 24 Mb
+; 0x7FC00000 -> 0x7FFFFFFF  page tables 4Mb
+; 0x80000000 -> 0xFFFFFFFF  application 2Gb
 
 
 

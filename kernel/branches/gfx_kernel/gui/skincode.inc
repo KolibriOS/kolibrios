@@ -1,6 +1,6 @@
 include "skindata.inc"
 
-skin_data = 0x00778000
+;skin_data = 0x00778000
 
 load_skin_file:
 ; eax = filename
@@ -270,7 +270,7 @@ drawwindow_IV:
 
         push  edx
 
-        mov   edi,[esp]                              ; RECTANGLE
+        mov   edi,edx
 
         mov     ebp,skin_active
         cmp     byte [esp+32+4+4],0
@@ -290,6 +290,7 @@ drawwindow_IV:
 ;        shr   esi,1
 ;        and   esi,0x007f7f7f
         mov   esi,[ebp+SKIN_DATA.colors.outer]
+        or      [edi+WDATA.fl_wdrawn], 4
         call  draw_rectangle
         mov   ecx,3
       _dw3l:
@@ -345,6 +346,8 @@ drawwindow_IV:
         sub   ecx,4
         sub   edx,4
         mov   edi,[esi+WDATA.cl_workarea]
+	test  edi,0x40000000
+	jnz   _noinside2
         call  [drawbar]
       _noinside2:
 
@@ -352,7 +355,7 @@ drawwindow_IV:
         jne   no_skin_add_button
 
 ;* close button
-        mov   edi,[0xfe88]
+        mov   edi,[BTN_ADDR]
         movzx eax,word [edi]
         cmp   eax,1000
         jge   no_skin_add_button
@@ -362,7 +365,7 @@ drawwindow_IV:
         shl   eax,4
         add   eax,edi
 
-        mov   bx,[0x3000]
+        mov   bx,[CURRENT_TASK]
         mov   [eax],bx
 
         add   eax,2         ; save button id number
@@ -391,7 +394,7 @@ drawwindow_IV:
         mov   [eax],bx
 
 ;* minimize button
-        mov   edi,[0xfe88]
+        mov   edi,[BTN_ADDR]
         movzx eax,word [edi]
         cmp   eax,1000
         jge   no_skin_add_button
@@ -401,7 +404,7 @@ drawwindow_IV:
         shl   eax,4
         add   eax,edi
 
-        mov   bx,[0x3000]
+        mov   bx,[CURRENT_TASK]
         mov   [eax],bx
 
         add   eax,2         ; save button id number
@@ -430,8 +433,13 @@ drawwindow_IV:
         mov   [eax],bx
 
       no_skin_add_button:
+        pop     edi
+        and     [edi+WDATA.fl_wdrawn], not 4
+        test    [edi+WDATA.fl_wdrawn], 2
+        jz      @f
+        call    drawwindowframes
+@@:
 
-        add   esp,4
         popa
 
         ret  4

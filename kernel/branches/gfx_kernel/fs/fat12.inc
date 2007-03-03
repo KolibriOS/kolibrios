@@ -31,9 +31,9 @@ reserve_flp:
   reserve_flp_ok:
 
     push  eax
-    mov   eax,[0x3000]
+    mov   eax,[CURRENT_TASK]
     shl   eax,5
-    mov   eax,[eax+0x3000+TASKDATA.pid]
+    mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   [flp_status],eax
     pop   eax
     sti
@@ -104,7 +104,7 @@ fr_do_1:
     mov    edi,edx
     dec    ebx
     shl    ebx,9
-    mov    esi,0x8000
+    mov    esi,FLOPPY_BUFF
     add    esi,ebx
     shl    ecx,9
     cld
@@ -147,7 +147,7 @@ l.20_1:
     cmp    [FDC_Status],0
     jne    fdc_status_error_3_1
     mov     dl,16
-    mov     edi,0xD000
+    mov     edi,FDD_BUFF
     inc     [FDD_Sector]
 l.21_1:
     mov    esi,eax            ;Name of file we want
@@ -219,7 +219,7 @@ frfl7_1:
 frfl8_1:
     mov    edi,[n_sector]
     shl    edi,1            ;find next cluster from FAT
-    add    edi,0x282000
+    add    edi,FLOPPY_FAT
     mov    eax,[edi]
     and    eax,4095
     mov    edi,eax
@@ -274,7 +274,7 @@ read_flp_root:
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],1      ; Сторона
     mov    [FDD_Sector],2      ; Сектор
-    mov    edi,0x8000
+    mov    edi,FLOPPY_BUFF
     call   SeekTrack
 read_flp_root_1:
     call   ReadSectWithRetr
@@ -303,7 +303,7 @@ read_flp_fat:
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
     mov    [FDD_Sector],2      ; Сектор
-    mov    edi,0x8000
+    mov    edi,FLOPPY_BUFF
     call   SeekTrack
 read_flp_fat_1:
     call   ReadSectWithRetr
@@ -332,8 +332,8 @@ unnecessary_flp_fat:
 calculatefatchain_flp:
    pushad
 
-   mov  esi,0x8000
-   mov  edi,0x282000
+   mov  esi,FLOPPY_BUFF
+   mov  edi,FLOPPY_FAT
 
  fcnew_1:
    mov  eax,dword [esi]
@@ -361,7 +361,7 @@ calculatefatchain_flp:
    add  edi,4
    add  esi,12
 
-   cmp  edi,0x282000+2856*2   ;2849 clusters
+   cmp  edi,FLOPPY_FAT+2856*2   ;2849 clusters
    jnz  fcnew_1
 
    popad
@@ -384,7 +384,7 @@ check_label:
     cmp    [FDC_Status],0
     jne    fdc_status_error
     mov    esi,flp_label
-    mov    edi,0xD000+39
+    mov    edi,FDD_BUFF+39
     mov    ecx,15
     cld
     rep    cmpsb
@@ -392,7 +392,7 @@ check_label:
     mov    [root_read],0
     mov    [flp_fat],0
 same_label:
-    mov    esi,0xD000+39
+    mov    esi,FDD_BUFF+39
     mov    edi,flp_label
     mov    ecx,15
     cld
@@ -413,7 +413,7 @@ save_flp_root:
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],1      ; Сторона
     mov    [FDD_Sector],2      ; Сектор
-    mov    esi,0x8000
+    mov    esi,FLOPPY_BUFF
     call   SeekTrack
 save_flp_root_1:
     push   esi
@@ -442,7 +442,7 @@ save_flp_fat:
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
     mov    [FDD_Sector],2      ; Сектор
-    mov    esi,0x8000
+    mov    esi,FLOPPY_BUFF
     call   SeekTrack
 save_flp_fat_1:
     push   esi
@@ -471,8 +471,8 @@ unnecessary_flp_fat_save:
 restorefatchain_flp:   ; restore fat chain
    pushad
 
-   mov  esi,0x282000
-   mov  edi,0x8000
+   mov  esi,FLOPPY_FAT
+   mov  edi,FLOPPY_BUFF
 
   fcnew2_1:
    mov  eax,dword [esi]
@@ -489,11 +489,11 @@ restorefatchain_flp:   ; restore fat chain
    add  edi,2
    add  esi,8
 
-   cmp  edi,0x8000+0x1200     ;4274 bytes - all used FAT
+   cmp  edi,FLOPPY_BUFF+0x1200     ;4274 bytes - all used FAT
    jb   fcnew2_1
 
-   mov  esi,0x8000           ; duplicate fat chain
-   mov  edi,0x8000+0x1200
+   mov  esi,FLOPPY_BUFF           ; duplicate fat chain
+   mov  edi,FLOPPY_BUFF+0x1200
    mov  ecx,0x1200/4
    cld
    rep  movsd
@@ -534,7 +534,7 @@ l.20_2:
     cmp    [FDC_Status],0
     jne    fdc_status_error_4
     mov     dl,16
-    mov     edi,0xD000
+    mov     edi,FDD_BUFF
     inc     [FDD_Sector]
 l.21_2:
     mov    esi,eax            ;Name of file we want
@@ -574,7 +574,7 @@ fifoundd_2_1:
         movzx   edi, word [edi+0xf] ;edi = cluster
 frnewd_1:
     shl    edi,1            ;find next cluster from FAT
-    add    edi,0x282000
+    add    edi,FLOPPY_FAT
     mov    eax,[edi]
     mov    [edi],word 0x0        ;clear fat chain cluster
     and    eax,4095
@@ -662,7 +662,7 @@ rd_do_save_1:
     call   read_flp_root
     cmp    [FDC_Status],0
     jne    fdc_status_error_7
-    mov    edi,0x8000   ;Point at directory
+    mov    edi,FLOPPY_BUFF   ;Point at directory
     mov    edx,224 +1
     ; find an empty spot for filename in the root dir
 l20ds_1:
@@ -689,7 +689,7 @@ l.20_3:
     cmp    [FDC_Status],0
     jne    fdc_status_error_7
     mov    dl,16
-    mov    edi,0xD000
+    mov    edi,FDD_BUFF
     inc     [FDD_Sector]
 l.21_3:
     mov    esi,eax            ;Name of file we want
@@ -783,7 +783,7 @@ frnewds_2:
     add    ebx,1
     mov    edi,ebx            ; find free cluster in FAT
     shl    edi,1
-    add    edi,0x282000
+    add    edi,FLOPPY_FAT
     mov    eax,[edi]
     and    eax,4095
     jnz    frnewds_2
@@ -920,7 +920,7 @@ adr56_flp:
    jne    not_found_file_analyze_flp
 
    mov ecx,512/32
-   mov ebx,0xD000
+   mov ebx,FDD_BUFF
 
 adr1_analyze_flp:
    mov esi,edx   ;[esp+16]
@@ -937,7 +937,7 @@ adr1_analyze_flp:
 
     mov eax,[clust_tmp_flp]
     shl    eax,1            ;find next cluster from FAT
-    add    eax,0x282000
+    add    eax,FLOPPY_FAT
     mov    eax,[eax]
     and    eax,4095
     cmp eax,0x0ff8
@@ -985,7 +985,7 @@ adr561:
    jne    error_found_file_analyze1
 
    mov ecx,512/32
-   mov ebx,0xD000
+   mov ebx,FDD_BUFF
 
 adr1_analyze1:
    cmp byte [ebx],0x00
@@ -999,7 +999,7 @@ avanti:
 
    mov eax,[clust_tmp_flp]
    shl    eax,1            ;find next cluster from FAT
-   add    eax,0x282000
+   add    eax,FLOPPY_FAT
    mov    eax,[eax]
    and    eax,4095
    cmp eax,0x0ff8
@@ -1013,14 +1013,14 @@ avanti:
 
    mov eax,[clust_tmp_flp]
    shl    eax,1            ;find next cluster from FAT
-   add    eax,0x282000
-   sub    edi,0x282000
+   add    eax,FLOPPY_FAT
+   sub    edi,FLOPPY_FAT
    mov    [eax],di
 
    pusha
    mov ecx,512/4
    xor eax,eax
-   mov edi,0xD000
+   mov edi,FDD_BUFF
    cld
    rep stosd
    popa
@@ -1032,7 +1032,7 @@ avanti:
    popa
    cmp    [FDC_Status],0
    jne    error_found_file_analyze1
-   mov    ebx,0xD000
+   mov    ebx,FDD_BUFF
 
 found_file_analyze1:
 
@@ -1061,7 +1061,7 @@ check_new_flp:
     add    ebx,1
     mov    edi,ebx            ; find free cluster in FAT
     shl    edi,1
-    add    edi,0x282000
+    add    edi,FLOPPY_FAT
     mov    eax,[edi]
     and    eax,4095
     cmp    eax,0x0
@@ -1114,6 +1114,12 @@ fat_find_lfn:
         popa
         ret
 
+uglobal
+; this is for delete support
+fd_prev_sector          dd      ?
+fd_prev_prev_sector     dd      ?
+endg
+
 flp_root_next:
         cmp     edi, 0xD200-0x20
         jae     @f
@@ -1124,6 +1130,13 @@ flp_root_next:
         inc     dword [eax]
         cmp     dword [eax], 14
         jae     flp_root_first.readerr
+        push    [fd_prev_sector]
+        pop     [fd_prev_prev_sector]
+        push    eax
+        mov     eax, [eax]
+        add     eax, 19-1
+        mov     [fd_prev_sector], eax
+        pop     eax
 flp_root_first:
         mov     eax, [eax]
         pusha
@@ -1132,19 +1145,19 @@ flp_root_first:
         popa
         cmp     [FDC_Status], 0
         jnz     .readerr
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         ret     ; CF=0
 .readerr:
         stc
         ret
 
 flp_rootmem_first:
-        mov     edi, 0x8000
+        mov     edi, FLOPPY_BUFF
         clc
         ret
 flp_rootmem_next:
         add     edi, 0x20
-        cmp     edi, 0x8000+14*0x200
+        cmp     edi, FLOPPY_BUFF+14*0x200
         cmc
 flp_rootmem_next_write:
 flp_rootmem_begin_write:
@@ -1162,7 +1175,11 @@ flp_notroot_next:
 flp_notroot_next_sector:
         push    ecx
         mov     ecx, [eax]
-        mov     ecx, [ecx*2+0x282000]
+        push    [fd_prev_sector]
+        pop     [fd_prev_prev_sector]
+        add     ecx, 31
+        mov     [fd_prev_sector], ecx
+        mov     ecx, [(ecx-31)*2+FLOPPY_FAT]
         and     ecx, 0xFFF
         cmp     ecx, 2849
         jae     flp_notroot_first.err2
@@ -1178,7 +1195,7 @@ flp_notroot_first:
         add     eax, 31
         call    read_chs_sector
         popa
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         cmp     [FDC_Status], 0
         jnz     .err
         ret     ; CF=0
@@ -1212,25 +1229,25 @@ flp_notroot_extend_dir:
 ; find free cluster in FAT
         pusha
         xor     eax, eax
-        mov     edi, 0x282000
+        mov     edi, FLOPPY_FAT
         mov     ecx, 2849
         repnz   scasw
         jnz     .notfound
         mov     word [edi-2], 0xFFF     ; mark as last cluster
-        sub     edi, 0x282000
+        sub     edi, FLOPPY_FAT
         shr     edi, 1
         dec     edi
         mov     eax, [esp+28]
         mov     ecx, [eax]
-        mov     [0x282000+ecx*2], di
+        mov     [FLOPPY_FAT+ecx*2], di
         mov     [eax], edi
         xor     eax, eax
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         mov     ecx, 128
         rep     stosd
         popa
         call    flp_notroot_end_write
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         clc
         ret
 .notfound:
@@ -1341,7 +1358,7 @@ fs_FloppyRead:
         popa
         cmp     [FDC_Status], 0
         jnz     .err
-        lea     eax, [0xD000+ebx+512]
+        lea     eax, [FDD_BUFF+ebx+512]
         neg     ebx
         push    ecx
         cmp     ecx, ebx
@@ -1355,7 +1372,7 @@ fs_FloppyRead:
         pop     ecx
         xor     ebx, ebx
 .skip:
-        movzx   edi, word [edi*2+0x282000]
+        movzx   edi, word [edi*2+FLOPPY_FAT]
         jmp     .new
 .done:
         mov     ebx, edx
@@ -1435,7 +1452,7 @@ fs_FloppyReadFolder:
         popa
         cmp     [FDC_Status], 0
         jnz     .error
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         push    eax
 .l1:
         call    fat_get_name
@@ -1451,7 +1468,7 @@ fs_FloppyReadFolder:
         jz      .done
         jns     @f
 ; read next sector from FAT
-        mov     eax, [(eax-31-1)*2+0x282000]
+        mov     eax, [(eax-31-1)*2+FLOPPY_FAT]
         and     eax, 0xFFF
         cmp     eax, 0xFF8
         jae     .done
@@ -1463,7 +1480,7 @@ fs_FloppyReadFolder:
         popa
         cmp     [FDC_Status], 0
         jnz     .error
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         push    eax
 .do_bdfe:
         inc     dword [edx+8]   ; new file found
@@ -1483,7 +1500,7 @@ fs_FloppyReadFolder:
         jz      .done
         jns     @f
 ; read next sector from FAT
-        mov     eax, [(eax-31-1)*2+0x282000]
+        mov     eax, [(eax-31-1)*2+FLOPPY_FAT]
         and     eax, 0xFFF
         cmp     eax, 0xFF8
         jae     .done
@@ -1533,7 +1550,13 @@ fsfrfe:
         xor     ebx, ebx
         ret
 
+fs_FloppyCreateFolder:
+        mov     al, 1
+        jmp     fs_FloppyRewrite.common
+
 fs_FloppyRewrite:
+        xor     eax, eax
+.common:
         cmp     byte [esi], 0
         jz      @b
         call    read_flp_fat
@@ -1567,6 +1590,9 @@ fs_FloppyRewrite:
         push    flp_rootmem_next
         jmp     .common1
 .noroot:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp+1], 0
+        jz      .ret1
 ; check existence
         mov     byte [ebp], 0
         call    fd_find_lfn
@@ -1599,8 +1625,24 @@ fs_FloppyRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found; must not be directory
+; found
         test    byte [edi+11], 10h
+        jz      .exists_file
+; found directory; if we are creating directory, return OK,
+;                  if we are creating file, say "access denied"
+        add     esp, 28
+        popad
+        test    al, al
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      @f
+        mov     al, 0
+@@:
+        xor     ebx, ebx
+        ret
+.exists_file:
+; found file; if we are creating directory, return "access denied",
+;             if we are creating file, delete existing file and continue
+        cmp     byte [esp+28+28], 0
         jz      @f
         add     esp, 28
         popad
@@ -1618,7 +1660,7 @@ fs_FloppyRewrite:
 @@:
         cmp     eax, 0xFF8
         jae     .done1
-        lea     edi, [0x282000 + eax*2] ; position in FAT
+        lea     edi, [FLOPPY_FAT + eax*2] ; position in FAT
         xor     eax, eax
         xchg    ax, [edi]
         jmp     @b
@@ -1823,6 +1865,12 @@ fs_FloppyRewrite:
         and     word [edi+20], 0        ; high word of cluster
         and     word [edi+26], 0        ; low word of cluster - to be filled
         and     dword [edi+28], 0       ; file size - to be filled
+        cmp     byte [esp+28+28], 0
+        jz      .doit
+; create directory
+        mov     byte [edi+11], 10h      ; attributes: folder
+        mov     ecx, 32*2
+        mov     edx, edi
 .doit:
         lea     eax, [esp+8]
         call    dword [eax+12]  ; flush directory
@@ -1830,9 +1878,10 @@ fs_FloppyRewrite:
         push    edi
         push    0
         mov     esi, edx
-        jecxz   .done
+        test    ecx, ecx
+        jz      .done
         mov     ecx, 2849
-        mov     edi, 0x282000
+        mov     edi, FLOPPY_FAT
         push    0       ; first cluster
 .write_loop:
 ; allocate new cluster
@@ -1842,7 +1891,7 @@ fs_FloppyRewrite:
         jnz     .ret
         dec     edi
         dec     edi
-        lea     eax, [edi-0x282000]
+        lea     eax, [edi-(FLOPPY_FAT)]
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp+4]
@@ -1862,10 +1911,13 @@ fs_FloppyRewrite:
         jae     @f
         mov     ecx, [esp+20]
 @@:
+        mov     edi, FDD_BUFF
+        cmp     byte [esp+24+28+28], 0
+        jnz     .writedir
         push    ecx
-        mov     edi, 0xD000
         rep     movsb
         pop     ecx
+.writedircont:
         push    ecx
         sub     ecx, 512
         neg     ecx
@@ -1918,6 +1970,28 @@ fs_FloppyRewrite:
         mov     eax, 11
         pop     edi ecx
         jmp     .ret
+.writedir:
+        push    ecx
+        mov     ecx, 32/4
+        push    ecx esi
+        rep     movsd
+        pop     esi ecx
+        mov     dword [edi-32], '.   '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     word [edi-32+26], ax
+        push    esi
+        rep     movsd
+        pop     esi
+        mov     dword [edi-32], '..  '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     ecx, [esp+28+8]
+        mov     word [edi-32+26], cx
+        pop     ecx
+        jmp     .writedircont
 
 ;----------------------------------------------------------------
 ;
@@ -2042,6 +2116,13 @@ fs_FloppyWrite:
         jz      .ret
         call    SetUserInterrupts
 .write_loop:
+; skip unmodified sectors
+        cmp     dword [esp], 0x200
+        jb      .modify
+        sub     ebx, 0x200
+        jae     .skip
+        add     ebx, 0x200
+.modify:
         lea     eax, [edi+31]   ; current sector
 ; get length of data in current sector
         push    ecx
@@ -2079,7 +2160,7 @@ fs_FloppyWrite:
         mov     ecx, 0x200
         sub     ecx, [esp+4+12]
         jbe     @f
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         add     edi, [esp+4+12]
         rep     stosb
 @@:
@@ -2087,7 +2168,7 @@ fs_FloppyWrite:
         mov     ecx, 0x200
         sub     ecx, esi
         jbe     @f
-        mov     edi, 0xD000
+        mov     edi, FDD_BUFF
         add     edi, esi
         rep     stosb
 @@:
@@ -2097,7 +2178,7 @@ fs_FloppyWrite:
         mov     eax, edx
         neg     ebx
         jecxz   @f
-        add     ebx, 0xD000+0x200
+        add     ebx, FDD_BUFF+0x200
         call    memmove
         xor     ebx, ebx
 @@:
@@ -2112,8 +2193,9 @@ fs_FloppyWrite:
         sub     [esp], ecx
         pop     ecx
         jz      .done
+.skip:
 .next_cluster:
-        movzx   edi, word [edi*2+0x282000]
+        movzx   edi, word [edi*2+FLOPPY_FAT]
         sub     esi, 0x200
         jae     @f
         xor     esi, esi
@@ -2143,7 +2225,7 @@ floppy_extend_file:
 @@:
         sub     ecx, 0x200
         jbe     @f
-        mov     eax, [eax*2+0x282000]
+        mov     eax, [eax*2+FLOPPY_FAT]
         and     eax, 0xFFF
         jz      .fat_err
         cmp     eax, 0xFF8
@@ -2156,7 +2238,7 @@ floppy_extend_file:
         ret
 @@:
         push    eax
-        mov     eax, [eax*2+0x282000]
+        mov     eax, [eax*2+FLOPPY_FAT]
         and     eax, 0xFFF
         cmp     eax, 0xFF8
         pop     eax
@@ -2167,7 +2249,7 @@ floppy_extend_file:
         pop     ecx
 ; now do extend
         push    edx esi
-        mov     esi, 0x282000+2*2       ; start scan from cluster 2
+        mov     esi, FLOPPY_FAT+2*2       ; start scan from cluster 2
         mov     edx, 2847               ; number of clusters to scan
 .extend_loop:
         cmp     [edi+28], ecx
@@ -2187,12 +2269,12 @@ floppy_extend_file:
         mov     word [edi-2], 0xFFF
         mov     esi, edi
         mov     edx, ecx
-        sub     edi, 0x282000
+        sub     edi, FLOPPY_FAT
         shr     edi, 1
         dec     edi     ; now edi=new cluster
         test    eax, eax
         jz      .first_cluster
-        mov     [0x282000+eax*2], di
+        mov     [FLOPPY_FAT+eax*2], di
         jmp     @f
 .first_cluster:
         pop     eax             ; eax->direntry
@@ -2330,7 +2412,7 @@ fs_FloppySetFileEnd:
         mov     ecx, [esp+4]
         neg     ecx
         push    edi
-        mov     edi, 0xD000+0x200
+        mov     edi, FDD_BUFF+0x200
         add     edi, [esp+8]
         xor     eax, eax
         mov     [esp+8], eax
@@ -2347,7 +2429,7 @@ fs_FloppySetFileEnd:
 .next_cluster:
         sub     dword [esp+12], 0x200
         jbe     .expand_done
-        movzx   edi, word [0x282000+edi*2]
+        movzx   edi, word [FLOPPY_FAT+edi*2]
         jmp     .zero_loop
 .expand_done:
         pop     eax ecx ecx edi edi
@@ -2362,13 +2444,13 @@ fs_FloppySetFileEnd:
 @@:
         sub     eax, 0x200
         jbe     @f
-        movzx   ecx, word [0x282000+ecx*2]
+        movzx   ecx, word [FLOPPY_FAT+ecx*2]
         jmp     @b
 @@:
 ; we will zero data at the end of last sector - remember it
         push    ecx
 ; terminate FAT chain
-        lea     ecx, [0x282000+ecx+ecx]
+        lea     ecx, [FLOPPY_FAT+ecx+ecx]
         push    dword [ecx]
         mov     word [ecx], 0xFFF
         pop     ecx
@@ -2382,7 +2464,7 @@ fs_FloppySetFileEnd:
 ; mark all clusters as free
         cmp     ecx, 0xFF8
         jae     .deleted
-        lea     ecx, [0x282000+ecx+ecx]
+        lea     ecx, [FLOPPY_FAT+ecx+ecx]
         push    dword [ecx]
         and     word [ecx], 0
         pop     ecx
@@ -2409,8 +2491,8 @@ fs_FloppySetFileEnd:
         pusha
         call    read_chs_sector
         popa
-        add     edi, 0xD000
-        mov     ecx, 0xD000+0x200
+        add     edi, FDD_BUFF
+        mov     ecx, FDD_BUFF+0x200
         sub     ecx, edi
         push    eax
         xor     eax, eax
@@ -2471,6 +2553,7 @@ fs_FloppySetFileInfo:
 @@:
         ret
 
+if 0
 ;----------------------------------------------------------------
 ;
 ;  fs_FloppyExecute - LFN variant for executing from floppy
@@ -2542,7 +2625,7 @@ fs_FloppyExecute:
         cmp     [FDC_Status], 0
         jnz     .err
         pop     edi
-        mov     esi, 0xD000
+        mov     esi, FDD_BUFF
         push    edi
         mov     ecx, 512/4
         rep     movsd
@@ -2559,7 +2642,7 @@ fs_FloppyExecute:
 @@:
         mov     [eax], ecx
         mov     edx, [eax+4]
-        mov     dx, [edx*2+0x282000]
+        mov     dx, [edx*2+FLOPPY_FAT]
         mov     [eax+4], dx     ; high word is already zero
         popad
         xor     eax, eax
@@ -2571,6 +2654,136 @@ fs_FloppyExecute:
 .err:
         popad
         mov     eax, 11
+        ret
+end if
+
+;----------------------------------------------------------------
+;
+;  fs_FloppyDelete - delete file or empty folder from floppy
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_FloppyDelete:
+        call    read_flp_fat
+        cmp     [FDC_Status], 0
+        jz      @f
+        push    11
+        jmp     .pop_ret
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot delete root!
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+.pop_ret:
+        pop     eax
+        ret
+@@:
+        and     [fd_prev_sector], 0
+        and     [fd_prev_prev_sector], 0
+        push    edi
+        call    fd_find_lfn
+        jnc     .found
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .pop_ret
+.found:
+        cmp     dword [edi], '.   '
+        jz      .access_denied2
+        cmp     dword [edi], '..  '
+        jz      .access_denied2
+        test    byte [edi+11], 10h
+        jz      .dodel
+; we can delete only empty folders!
+        push    eax
+        movzx   eax, word [edi+26]
+        push    ebx
+        pusha
+        add     eax, 31
+        call    read_chs_sector
+        popa
+        mov     ebx, FDD_BUFF + 2*0x20
+.checkempty:
+        cmp     byte [ebx], 0
+        jz      .empty
+        cmp     byte [ebx], 0xE5
+        jnz     .notempty
+        add     ebx, 0x20
+        cmp     ebx, FDD_BUFF + 0x200
+        jb      .checkempty
+        movzx   eax, word [FLOPPY_FAT + eax*2]
+        pusha
+        add     eax, 31
+        call    read_chs_sector
+        popa
+        mov     ebx, FDD_BUFF
+        jmp     .checkempty
+.notempty:
+        pop     ebx
+        pop     eax
+.access_denied2:
+        pop     edi
+        jmp     .access_denied
+.empty:
+        pop     ebx
+        pop     eax
+        pusha
+        call    read_chs_sector
+        popa
+.dodel:
+        push    eax
+        movzx   eax, word [edi+26]
+        xchg    eax, [esp]
+; delete folder entry
+        mov     byte [edi], 0xE5
+; delete LFN (if present)
+.lfndel:
+        cmp     edi, FDD_BUFF
+        ja      @f
+        cmp     [fd_prev_sector], 0
+        jz      .lfndone
+        push    [fd_prev_sector]
+        push    [fd_prev_prev_sector]
+        pop     [fd_prev_sector]
+        and     [fd_prev_prev_sector], 0
+        pusha
+        call    save_chs_sector
+        popa
+        pop     eax
+        pusha
+        call    read_chs_sector
+        popa
+        mov     edi, FDD_BUFF+0x200
+@@:
+        sub     edi, 0x20
+        cmp     byte [edi], 0xE5
+        jz      .lfndone
+        cmp     byte [edi+11], 0xF
+        jnz     .lfndone
+        mov     byte [edi], 0xE5
+        jmp     .lfndel
+.lfndone:
+        pusha
+        call    save_chs_sector
+        popa
+; delete FAT chain
+        pop     eax
+        test    eax, eax
+        jz      .done
+@@:
+        lea     eax, [FLOPPY_FAT + eax*2]
+        push    dword [eax]
+        and     word [eax], 0
+        pop     eax
+        and     eax, 0xFFF
+        jnz     @b
+.done:
+        call    save_flp_fat
+        pop     edi
+        xor     eax, eax
         ret
 
 ; \end{diamond}

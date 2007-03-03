@@ -4,7 +4,6 @@
 ;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
 ;; 29.04.2006 Elimination of hangup after the                           ;;
 ;;            expiration hd_wait_timeout (for LBA) -  Mario79           ;;
-;; xx.04.2006 LFN support - diamond                                     ;;
 ;; 15.01.2005 get file size/attr/date, file_append (only for hd) - ATV  ;;
 ;; 23.11.2004 test if hd/partition is set - ATV                         ;;
 ;; 18.11.2004 get_disk_info and more error codes - ATV                  ;;
@@ -37,12 +36,8 @@ file_system:
 ;
 ; eax = 0  ; read file          /RamDisk/First  6
 ; eax = 1  ; write file         /RamDisk/First 33   /HardDisk/First 56
-; eax = 2  ; delete file        /RamDisk/First 32
-; eax = 4  ; makedir
-; eax = 5  ; rename file/directory
 ; eax = 8  ; lba read
 ; eax = 15 ; get_disk_info
-; eax = 16 ; start application
 ;
 ; OUT:
 ;
@@ -89,16 +84,8 @@ file_system:
 
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
-    cmp   dword [eax+0],16      ; RUN - dont care about read&write blocks
-    je    fs_read
-    cmp   dword [eax+0],5       ; RENAME - dont care about read&write blocks
-    je    fs_read
-    cmp   dword [eax+0],4       ; MAKEDIR - dont care about read&write blocks
-    je    fs_read
-    cmp   dword [eax+0],2       ; DELETE - dont care about read&write blocks
-    je    fs_read
 
-    cmp   dword [0x3000],1      ; no memory checks for kernel requests
+    cmp   dword [CURRENT_TASK],1      ; no memory checks for kernel requests
     jz    no_checks_for_kernel
     mov   edx,eax
     cmp   dword [eax+0],1
@@ -109,7 +96,7 @@ file_system:
     call  check_region
     test  eax,eax
     jnz   area_in_app_mem
-    
+
 .error_output:
     mov   esi,buffer_failed
     call  sys_msg_board_str
@@ -118,7 +105,7 @@ file_system:
     ret
 iglobal
   buffer_failed db 'K : Buffer check failed',13,10,0
-endg 
+endg
 .usual_check:
     cmp   dword [eax+0],0
     mov   ecx,512
@@ -149,11 +136,7 @@ endg
 ; (execute operation returns eax=-10)
     cmp    dword [eax], 0
     jz    .read_root
-    mov    ecx, 10
-    cmp    dword [eax], 16
-    jnz    @f
-    neg    ecx
-@@:    mov    [esp+36], ecx
+    mov    dword [esp+36], 10
     ret
 .read_root:
 ; \end{diamond}[18.03.2006]
@@ -290,36 +273,8 @@ endg
     jmp   file_system_return
 
   fs_noramdisk_write:
-
-    cmp   dword [esp+20],16     ; START APPLICATION
-    jne   fs_noramdisk_start_application
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-
-    xor   ebx,ebx               ; parameters to pass
-    cmp   dword [esp+12],ebx;0
-    je    no_fl_start_param
-    mov   ebx, [esp+12]
-    add   ebx, std_application_base_address
-  no_fl_start_param:
-    mov   edx,[esp+16]        ; flags
-
-    call  start_application_fl
-
-    jmp   file_system_startapp_return
-
-  fs_noramdisk_start_application:     ;there's new code - Mihasik
-    cmp   dword [esp+20],2      ;DELETE
-    jne   fs_noramdisk_delete
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    call  filedelete
-    jmp   file_system_return
-
-  fs_noramdisk_delete:
   fs_noramdisk:
-  
+
   ;********************************************************************
     mov   eax,[edi+1]
     cmp   eax,'FD  '
@@ -334,7 +289,7 @@ endg
     je    fs_give_dir1
 
     mov   eax,[edi+1+12]
-    cmp   eax,'1   '            
+    cmp   eax,'1   '
     je    fs_yesflpdisk_first
     cmp   eax,'FIRS'
     je    fs_yesflpdisk_first
@@ -385,43 +340,9 @@ endg
 
   fs_noflpdisk_write:
 
-    cmp   dword [esp+20],2      ; DELETE
-    jne   fs_noflpdisk_delete
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    call  floppy_filedelete
-    mov   [flp_status],0
-    jmp   file_system_return
-
-  fs_noflpdisk_delete:
-    cmp   dword [esp+20],16     ; START APPLICATION
-    jne   fs_noflpdisk_start_application
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-
-    xor   ebx,ebx               ; parameters to pass
-    cmp   dword [esp+12],ebx;0
-    je    no_flp_start_param
-    mov   ebx,[0x3010]
-    mov   ebx,[ebx+0x10]
-    add   ebx,[esp+12]
-
-  no_flp_start_param:
-    mov   edx,[esp+16]        ; flags
-
-    call  start_application_floppy
-
-file_system_startapp_return:
-    mov    ebx, [esp+24+24]    ; do not modify ebx in application
-    jmp   file_system_return
-
-  fs_noflpdisk_start_application:
-
   fs_noflpdisk:
   ;*****************************************************************
-  
+
     mov   eax,[edi+1]
     cmp   eax,'HD0 '
     je    fs_yesharddisk_IDE0
@@ -456,8 +377,9 @@ fs_yesharddisk_IDE3:
      mov  [hdid],0x10
      mov  [hdpos],4
 fs_yesharddisk_partition:
-;    call  choice_necessity_partition 
-;    jmp   fs_yesharddisk_all     
+        call    reserve_hd_channel
+;    call  choice_necessity_partition
+;    jmp   fs_yesharddisk_all
     jmp   fs_for_new_semantic
 
 choice_necessity_partition:
@@ -507,19 +429,17 @@ choice_necessity_partition_1:
     je    fs_give_dir1
     call  reserve_hd1
  fs_for_new_semantic:
-    call  choice_necessity_partition 
+    call  choice_necessity_partition
 
   fs_yesharddisk_all:
     mov   eax,1
-    cmp    dword [esp+20], 16
-    jnz    @f
-    neg    eax
-@@:    mov    ebx, [esp+24+24]
+    mov    ebx, [esp+24+24]
     cmp   [hdpos],0             ; is hd base set?
     jz    hd_err_return
     cmp   [fat32part],0         ; is partition set?
     jnz   @f
 hd_err_return:
+    call  free_hd_channel
     and   [hd1_status], 0
     jmp   file_system_return
 @@:
@@ -544,6 +464,8 @@ hd_err_return:
     mov   edi,[esp+0]
     mov   byte [edi],'/'
 
+    call  free_hd_channel
+    and   [hd1_status], 0
     jmp   file_system_return
 
   fs_noharddisk_read:
@@ -568,130 +490,22 @@ hd_err_return:
 
     ; eax=0 ok - eax=1 not enough free space
 
+    call  free_hd_channel
+    and   [hd1_status], 0
     jmp   file_system_return
 
 
   fs_noharddisk_write:
 
-    cmp   dword [esp+20],2      ; DELETE
-    jne   fs_noharddisk_delete
 
-    mov   eax,[esp+0]           ; /dirname or /filename
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  removedir
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_delete:
-
-    cmp   dword [esp+20],4      ; MAKEDIR
-    jne   fs_noharddisk_makedir
-
-    mov   eax,[esp+0]           ; /dirname
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  makedir
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_noharddisk_makedir:
-
-    cmp   dword [esp+20],5      ; RENAME
-    jne   fs_noharddisk_rename
-
-    mov   edi,[esp+0]           ; start of source file name
-    add   edi,12+1              ; continue after name
-    call  expand_pathz          ; convert destination name
-
-    mov   eax,[edi+1]
-    cmp   eax,'HD  '
-    je    fs_rename_test1
-    cmp   eax,'HARD'
-    jne   fs_rename_error
-
-  fs_rename_test1:
-    mov   eax,[edi+1+12]
-    cmp   eax,'1   '
-    je    fs_rename_start
-    cmp   eax,'FIRS'
-    jne   fs_rename_error
-
-  fs_rename_start:
-    mov   byte [ebx],0          ; path to asciiz
-    inc   ebx                   ; filename start
-    add   edi,12*2              ; path start
-    cmp   byte [ebx],0
-    je    fs_rename_error
-    cmp   byte [ebx],32
-    je    fs_rename_error
-
-    mov   eax,[esp+0]           ; /filename
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  rename
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    jmp   file_system_return
-
-  fs_rename_error:
-    mov   eax,4                 ; partition not defined at hd
-    jmp   file_system_return
-
-  fs_noharddisk_rename:
-
-    cmp   dword [esp+20],16     ; START APPLICATION
-    jne   fs_noharddisk_start_application
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,12*2
-
-    mov   ebx,[esp+0]           ; length
-    sub   ebx,eax
-    add   ebx,12
-
-    mov   ecx,[esp+4]           ; work area
-    add   ecx,512
-
-    xor   ebp,ebp               ; parameters to pass
-    cmp   dword [esp+12],ebp;0
-    je    no_hd_start_param
-    mov   ebp, [esp+12]
-    add   ebp, std_application_base_address
-  no_hd_start_param:
-    mov   edx,[esp+16]        ; flags
-
-    call  start_application_hd
-
-    jmp   file_system_startapp_return
-
-  fs_noharddisk_start_application:
+    call  free_hd_channel
+    and   [hd1_status], 0
 
   fs_noharddisk:
 ; \begin{diamond}[18.03.2006]
     mov    eax, 5        ; file not found
 ; а может быть, возвращать другой код ошибки?
-    cmp    dword [esp+20], 16
-    jnz    @f
-    neg    eax
-@@:    mov    ebx, [esp+24+24]    ; do not change ebx in application
+    mov    ebx, [esp+24+24]    ; do not change ebx in application
 ; \end{diamond}[18.03.2006]
 
   file_system_return:
@@ -713,11 +527,7 @@ hd_err_return:
     jz    .read
     add    esp, 20
     pop    ecx
-    mov    eax, 10
-    cmp    ecx, 16
-    jnz    @f
-    neg    eax
-@@:    mov    [esp+36], eax
+    mov    dword [esp+36], 10
     ret
 .read:
 ; \end{diamond}[18.03.2006]
@@ -769,7 +579,7 @@ LBA_read_ramdisk:
     mov   esi,eax
 
     shl   esi,9
-    add   esi,0x100000
+    add   esi,RAMDISK
     mov   ecx,512/4
 ;    cld
     rep   movsd
@@ -982,7 +792,7 @@ StringToNumber:
     mov   [partition_string],eax
     mov    edi,partition_string
     xor    cx,cx
-i1: 
+i1:
     mov    al,[edi]
     cmp    al,32  ;13
     je    i_exit

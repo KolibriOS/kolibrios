@@ -44,7 +44,7 @@ EQUAL_TOP    = 00001000b
 func calc_clipping_rects
 begin
 	mov	[cnt],0
-	movzx	ebp,word[0x3000]
+	movzx	ebp,word[CURRENT_TASK]
 	shl	ebp,5
 
 	cmp	ebp,0x20
@@ -96,7 +96,7 @@ comment ^
 	inc	eax
 	add	[rct.bottom],eax
 ^
-	movzx	ecx,word[0x00003004]	; number of processes
+	movzx	ecx,word[TASK_COUNT]	; number of processes
 	jif	ecx,be,1,.exit
 
 ; calculate clipping rectangles
@@ -104,10 +104,10 @@ comment ^
 	mov	esi,1
   ; go forward through all windows
     .next_window:
-	movzx	edi,word[0x00003000]	; calling process number
+	movzx	edi,word[CURRENT_TASK]	; calling process number
 
-	mov	ax,[0x0000C000+esi*2]
-	jif	ax,be,[0x0000C000+edi*2],.end_window.2
+	mov	ax,[WIN_STACK+esi*2]
+	jif	ax,be,[WIN_STACK+edi*2],.end_window.2
 
 	mov	ebp,[cnt]
 	shl	ebp,4			; ebp *= SR
@@ -266,7 +266,7 @@ rc_left   equ edx
 	pop	esi; ecx
     .end_window.2:
 	inc	esi
-	jif	esi,be,[0x00003004],.next_window
+	jif	esi,be,[TASK_COUNT],.next_window
 ;       dec     ecx
 ;       jnz     .next_window
 

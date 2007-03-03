@@ -36,7 +36,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jnz     .font2
         pushad
         mov     esi, 9
-        lea     ebp, [0x3F600+8*edx+edx]
+        lea     ebp, [FONT_I+8*edx+edx]
 .symloop1:
         mov     dl, byte [ebp]
         or      dl, 1 shl 6
@@ -69,7 +69,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .font2:
         pushad
         add     edx, edx
-        lea     ebp, [0x3EC00+4*edx+edx+1]
+        lea     ebp, [FONT_II+4*edx+edx+1]
         push    9
         movzx   esi, byte [ebp-1]
 .symloop2:

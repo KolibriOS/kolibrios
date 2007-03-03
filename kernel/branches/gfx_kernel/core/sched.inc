@@ -22,14 +22,14 @@ irq0:
         call  updatecputimes
      .nocounter:
 
-        cmp   [0xffff], byte 1
+        cmp   [DONT_SWITCH], byte 1
         jne   .change_task
 
         mov   al,0x20   ; send End Of Interrupt signal
         mov   dx,0x20
         out   dx,al
 
-        mov   [0xffff], byte 0
+        mov   [DONT_SWITCH], byte 0
 
         restore_ring3_context
         iret
@@ -48,7 +48,7 @@ irq0:
         jnz   .return
 
         call  do_change_task
-        
+
      .return:
         restore_ring3_context
         iret
@@ -62,11 +62,24 @@ change_task:
         pushad
 
         call  update_counters
+; \begin{Mario79}
+        cmp     [dma_task_switched], 1
+        jne     .find_next_task
+        mov     [dma_task_switched], 0
+        mov     ebx, [dma_process]
+        cmp     [CURRENT_TASK], ebx
+        je      .return
+        mov     edi, [dma_slot_ptr]
+        mov     [CURRENT_TASK], ebx
+        mov     [TASK_BASE], edi
+        jmp     @f
+.find_next_task:
+; \end{Mario79}
         call  find_next_task
         test  eax, eax    ; the same task -> skip switch
         jnz    .return
-
-        mov   [0xffff],byte 1
+@@:
+        mov   [DONT_SWITCH],byte 1
         call  do_change_task
 
      .return:
@@ -90,7 +103,7 @@ endg
 
 
 update_counters:
-        mov   edi, [0x3010]
+        mov   edi, [TASK_BASE]
         mov   ebx, [edi+TASKDATA.counter_add] ; time stamp counter add
         call  _rdtsc
         sub   eax, ebx
@@ -106,17 +119,17 @@ ret
 ;         [0x3000] = ebx and [0x3010] = edi
 ;         corrupts other regs
 find_next_task:
-        mov   ebx, [0x3000]
-        mov   edi, [0x3010]
+        mov   ebx, [CURRENT_TASK]
+        mov   edi, [TASK_BASE]
         mov   [prev_slot], ebx
 
       .waiting_for_termination:
       .waiting_for_reuse:
       .waiting_for_event:
       .suspended:
-        cmp   ebx, [0x3004]
+        cmp   ebx, [TASK_COUNT]
         jb    @f
-        mov   edi, 0x3000
+        mov   edi, CURRENT_TASK
         xor   ebx, ebx
       @@:
 
@@ -137,8 +150,8 @@ find_next_task:
         cmp   al, 9
         je    .waiting_for_reuse
 
-        mov   [0x3000],ebx
-        mov   [0x3010],edi
+        mov   [CURRENT_TASK],ebx
+        mov   [TASK_BASE],edi
 
         cmp   al, 5
         jne   .noevents
@@ -149,8 +162,8 @@ find_next_task:
         mov   [edi+TASKDATA.state], byte 0
       .noevents:
       .found:
-        mov   [0x3000],ebx
-        mov   [0x3010],edi
+        mov   [CURRENT_TASK],ebx
+        mov   [TASK_BASE],edi
         call  _rdtsc
         mov   [edi+TASKDATA.counter_add],eax
 
@@ -178,8 +191,8 @@ updatecputimes:
         mov  eax,[idleuse]
         mov  [idleusesec],eax
         mov  [idleuse],dword 0
-        mov  ecx, [0x3004]
-        mov  edi, 0x3020
+        mov  ecx, [TASK_COUNT]
+        mov  edi, TASK_DATA
       .newupdate:
         mov  ebx,[edi+TASKDATA.counter_sum]
         mov  [edi+TASKDATA.cpu_usage],ebx

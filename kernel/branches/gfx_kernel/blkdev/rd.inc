@@ -12,8 +12,8 @@ calculatefatchain:
 
    pushad
 
-   mov  esi,0x100000+512
-   mov  edi,0x280000
+   mov  esi,RAMDISK+512
+   mov  edi,RAMDISK_FAT
 
  fcnew:
    mov  eax,dword [esi]
@@ -38,7 +38,7 @@ calculatefatchain:
    add  edi,16
    add  esi,12
 
-   cmp  edi,0x280000+2856*2   ;2849 clusters
+   cmp  edi,RAMDISK_FAT+2856*2   ;2849 clusters
    jnz  fcnew
 
    popad
@@ -49,8 +49,8 @@ restorefatchain:   ; restore fat chain
 
    pushad
 
-   mov  esi,0x280000
-   mov  edi,0x100000+512
+   mov  esi,RAMDISK_FAT
+   mov  edi,RAMDISK+512
 
   fcnew2:
    mov  eax,dword [esi]
@@ -66,11 +66,11 @@ restorefatchain:   ; restore fat chain
    add  edi,6
    add  esi,8
 
-   cmp  edi,0x100000+512+4278     ;4274 bytes - all used FAT
+   cmp  edi,RAMDISK+512+4278     ;4274 bytes - all used FAT
    jb   fcnew2
 
-   mov  esi,0x100000+512           ; duplicate fat chain
-   mov  edi,0x100000+512+0x1200
+   mov  esi,RAMDISK+512           ; duplicate fat chain
+   mov  edi,RAMDISK+512+0x1200
    mov  ecx,1069        ;4274/4
    cld
    rep  movsd
@@ -88,7 +88,7 @@ ramdisk_free_space:
 
         push   eax ebx ecx
 
-        mov  edi,0x280000 ;start of FAT
+        mov  edi,RAMDISK_FAT ;start of FAT
         xor  ax,ax    ;Free cluster=0x0000 in FAT
         xor  ebx,ebx  ;counter
         mov  ecx,2849 ;2849 clusters
@@ -102,7 +102,7 @@ ramdisk_free_space:
     rdfs2:
         shl  ebx,9    ;free clusters*512
         mov  edi,ebx
-        
+
         pop    ecx ebx eax
         ret
 
@@ -193,7 +193,7 @@ fileread:
         mov    edi,edx
         dec    ebx
         push   edx
-        mov    edx,ecx     
+        mov    edx,ecx
         add    edx,ebx
         cmp    edx,15     ;ebx+ecx=14+1
         pushf
@@ -202,7 +202,7 @@ fileread:
         sub    ecx,edx
       fr_do1:
         shl    ebx,9
-        mov    esi,0x100000+512*19
+        mov    esi,RAMDISK+512*19
         add    esi,ebx
         shl    ecx,7
         cld
@@ -246,7 +246,7 @@ fileread:
 
         add    eax,31                   ;bootsector+2*fat+filenames
         shl    eax,9                    ;*512
-        add    eax,0x100000             ;image base
+        add    eax,RAMDISK             ;image base
         mov    ebx,[esp+8]
         mov    ecx,512                  ;[esp+4]
 
@@ -260,7 +260,7 @@ fileread:
       frfl7:
         dec    dword [esp+16]
       frfl8:
-        movzx  eax,word [edi*2+0x280000]	; find next cluster from FAT
+        movzx  eax,word [edi*2+RAMDISK_FAT]        ; find next cluster from FAT
         mov    edi,eax
         cmp    edi,4095                 ;eof  - cluster
         jz     frnoread2
@@ -308,7 +308,7 @@ filedelete:
         call   expand_filename
 
         push   eax ebx ecx edx esi edi
-        
+
         call   rd_findfile
         je     fifoundd
         pop    edi esi edx ecx ebx eax ;file not found
@@ -326,7 +326,7 @@ filedelete:
       frnewd:
 
         shl    edi,1                    ;find next cluster from FAT
-        add    edi,0x280000
+        add    edi,RAMDISK_FAT
         movzx  eax,word [edi]
         mov    [edi],word 0x0           ;clear fat chain cluster
         mov    edi,eax
@@ -338,7 +338,7 @@ filedelete:
         xor    eax,eax       ; file found
         ret
 
-      
+
 
 filesave:
 ;----------------------------------------------------------
@@ -375,7 +375,7 @@ filesave:
 
         push   eax ebx ecx edx esi edi
 
-        mov    edi,0x100000+512*18+512  ;Point at directory
+        mov    edi,RAMDISK+512*18+512  ;Point at directory
         mov    edx,224 +1
         ; find an empty spot for filename in the root dir
      l20ds:
@@ -407,7 +407,7 @@ mov [edi+24],ax          ; date
 call get_time_for_file   ; from FAT32.INC
 mov [edi+22],ax          ; time
 ; End
-        mov    edi,0x280000            ;pointer to first cluster
+        mov    edi,RAMDISK_FAT            ;pointer to first cluster
         mov    ecx,2849
         cld
       frnewds:
@@ -423,7 +423,7 @@ mov [edi+22],ax          ; time
         pusha                           ; move save to floppy cluster
         add    ebx,31
         shl    ebx,9
-        add    ebx,0x100000
+        add    ebx,RAMDISK
         mov    eax,[esp+32+16]
         mov    ecx,512
         call   memmove
@@ -458,7 +458,7 @@ mov [edi+22],ax          ; time
    ;by Mihasik
    ;IN: eax - pointer to filename OUT: filestring+11 in edi or notZero in flags and fnf in eax,ebx
 
-        mov    edi,0x100000+512*18+512  ;Point at directory
+        mov    edi,RAMDISK+512*18+512  ;Point at directory
         cld
     rd_newsearch:
         mov    esi,eax
@@ -467,13 +467,13 @@ mov [edi+22],ax          ; time
         je     rd_ff
         add    cl,21
         add    edi,ecx
-        cmp    edi,0x100000+512*33
+        cmp    edi,RAMDISK+512*33
         jb     rd_newsearch
         mov    eax,5      ;if file not found - eax=5
         xor    ebx,ebx
-        dec    ebx    ;ebx=0xffffffff and zf=0    
+        dec    ebx    ;ebx=0xffffffff and zf=0
      rd_ff:
-        ret            
+        ret
 
 ; \begin{diamond}
 
@@ -599,45 +599,42 @@ fat_get_name:
         cmp     byte [edi+11], 0xF
         jz      .longname
         push    ecx
-        mov     ecx, 8
-        push    edi ebp ecx
+        push    edi ebp
         test    byte [ebp-4], 1
         jnz     .unicode_short
+
+        mov     eax, [edi]
+        mov     ecx, [edi+4]
+        mov     [ebp], eax
+        mov     [ebp+4], ecx
+
+        mov     ecx, 8
 @@:
-        mov     al, [edi]
-        inc     edi
-        mov     [ebp], al
-        inc     ebp
-        loop    @b
-        pop     ecx
-@@:
-        cmp     byte [ebp-1], ' '
-        jnz     @f
-        dec     ebp
-        loop    @b
-@@:
-        mov     byte [ebp], '.'
-        inc     ebp
+        cmp     byte [ebp+ecx-1], ' '
+        loope    @b
+
+        mov     eax, [edi+8]
+        cmp     al, ' '
+        je      .done
+        shl     eax, 8
+        mov     al, '.'
+
+        lea ebp, [ebp+ecx+1]
+        mov     [ebp], eax
         mov     ecx, 3
-        push    ecx
 @@:
-        mov     al, [edi]
-        inc     edi
-        mov     [ebp], al
-        inc     ebp
-        loop    @b
-        pop     ecx
-@@:
-        cmp     byte [ebp-1], ' '
-        jnz     @f
-        dec     ebp
-        loop    @b
-        dec     ebp
-@@:
-        and     byte [ebp], 0	; CF=0
+        rol eax, 8
+        cmp al, ' '
+        jne .done
+        loop   @b
+        dec ebp
+.done:
+        and     byte [ebp+ecx+1], 0   ; CF=0
         pop     ebp edi ecx
         ret
 .unicode_short:
+        mov     ecx, 8
+        push    ecx
 @@:
         mov     al, [edi]
         inc     edi
@@ -905,18 +902,24 @@ bdfe_to_fat_entry:
         ret
 
 ramdisk_root_first:
-        mov     edi, 0x100000+512*19
+        mov     edi, RAMDISK+512*19
         clc
         ret
 ramdisk_root_next:
         add     edi, 0x20
-        cmp     edi, 0x100000+512*33
+        cmp     edi, RAMDISK+512*33
         cmc
         ret
 
 ramdisk_root_extend_dir:
         stc
         ret
+
+uglobal
+; this is for delete support
+rd_prev_sector          dd      ?
+rd_prev_prev_sector     dd      ?
+endg
 
 ramdisk_notroot_next:
         add     edi, 0x20
@@ -926,7 +929,10 @@ ramdisk_notroot_next:
 ramdisk_notroot_next_sector:
         push    ecx
         mov     ecx, [eax]
-        mov     ecx, [ecx*2+0x280000]
+        push    [rd_prev_sector]
+        pop     [rd_prev_prev_sector]
+        mov     [rd_prev_sector], ecx
+        mov     ecx, [ecx*2+RAMDISK_FAT]
         and     ecx, 0xFFF
         cmp     ecx, 2849
         jae     ramdisk_notroot_first.err2
@@ -939,7 +945,7 @@ ramdisk_notroot_first:
         cmp     eax, 2849
         jae     .err
         shl     eax, 9
-        lea     edi, [eax+(31 shl 9)+0x100000]
+        lea     edi, [eax+(31 shl 9)+RAMDISK]
         clc
         ret
 .err2:
@@ -956,20 +962,20 @@ ramdisk_root_next_write:
 ramdisk_notroot_extend_dir:
         pusha
         xor     eax, eax
-        mov     edi, 0x280000
+        mov     edi, RAMDISK_FAT
         mov     ecx, 2849
         repnz   scasw
         jnz     .notfound
         mov     word [edi-2], 0xFFF
-        sub     edi, 0x280000
+        sub     edi, RAMDISK_FAT
         shr     edi, 1
         dec     edi
         mov     eax, [esp+28]
         mov     ecx, [eax]
-        mov     [0x280000+ecx*2], di
+        mov     [RAMDISK_FAT+ecx*2], di
         mov     [eax], edi
         shl     edi, 9
-        add     edi, (31 shl 9)+0x100000
+        add     edi, (31 shl 9)+RAMDISK
         mov     [esp], edi
         xor     eax, eax
         mov     ecx, 128
@@ -1073,7 +1079,7 @@ fs_RamdiskRead:
         jae     .eof
         lea     eax, [edi+31]           ; bootsector+2*fat+filenames
         shl     eax, 9                  ; *512
-        add     eax, 0x100000           ; image base
+        add     eax, RAMDISK           ; image base
 ; now eax points to data of cluster
         sub     ebx, 512
         jae     .skip
@@ -1091,7 +1097,7 @@ fs_RamdiskRead:
         pop     ecx
         xor     ebx, ebx
 .skip:
-        movzx   edi, word [edi*2+0x280000]      ; find next cluster from FAT
+        movzx   edi, word [edi*2+RAMDISK_FAT]      ; find next cluster from FAT
         jmp     .new
 .eof:
         mov     ebx, edx
@@ -1162,7 +1168,7 @@ fs_RamdiskReadFolder:
 .main_loop:
         mov     edi, eax
         shl     edi, 9
-        add     edi, 0x100000
+        add     edi, RAMDISK
         push    eax
 .l1:
         call    fat_get_name
@@ -1178,7 +1184,7 @@ fs_RamdiskReadFolder:
         jz      .done
         jns     @f
 ; read next sector from FAT
-        mov     eax, [(eax-31-1)*2+0x280000]
+        mov     eax, [(eax-31-1)*2+RAMDISK_FAT]
         and     eax, 0xFFF
         cmp     eax, 0xFF8
         jae     .done
@@ -1187,7 +1193,7 @@ fs_RamdiskReadFolder:
 @@:
         mov     edi, eax
         shl     edi, 9
-        add     edi, 0x100000
+        add     edi, RAMDISK
         push    eax
 .do_bdfe:
         inc     dword [edx+8]   ; new file found
@@ -1207,7 +1213,7 @@ fs_RamdiskReadFolder:
         jz      .done
         jns     @f
 ; read next sector from FAT
-        mov     eax, [(eax-31-1)*2+0x280000]
+        mov     eax, [(eax-31-1)*2+RAMDISK_FAT]
         and     eax, 0xFFF
         cmp     eax, 0xFF8
         jae     .done
@@ -1460,12 +1466,13 @@ fat_gen_short_name:
 
 ;----------------------------------------------------------------
 ;
-;  fs_RamdiskRewrite - LFN variant for writing sys floppy
+;  fs_RamdiskRewrite - LFN variant for writing ramdisk
+;  fs_RamdiskCreateFolder - create folder on ramdisk
 ;
-;  esi  points to filename
+;  esi  points to file/folder name
 ;  ebx  ignored (reserved)
-;  ecx  number of bytes to write, 0+
-;  edx  mem location to data
+;  ecx  number of bytes to write, 0+ (ignored for folders)
+;  edx  mem location to data (ignored for folders)
 ;
 ;  ret ebx = number of written bytes
 ;      eax = 0 ok read or other = errormsg
@@ -1476,7 +1483,13 @@ fat_gen_short_name:
         xor     ebx, ebx
         ret
 
+fs_RamdiskCreateFolder:
+        mov     al, 1           ; create folder
+        jmp     fs_RamdiskRewrite.common
+
 fs_RamdiskRewrite:
+        xor     eax, eax        ; create file
+.common:
         cmp     byte [esi], 0
         jz      @b
         pushad
@@ -1501,6 +1514,9 @@ fs_RamdiskRewrite:
         push    ramdisk_root_next
         jmp     .common1
 .noroot:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp+1], 0
+        jz      .ret1
 ; check existence
         mov     byte [ebp], 0
         call    rd_find_lfn
@@ -1531,8 +1547,24 @@ fs_RamdiskRewrite:
 .common1:
         call    fat_find_lfn
         jc      .notfound
-; found; must not be directory
+; found
         test    byte [edi+11], 10h
+        jz      .exists_file
+; found directory; if we are creating directory, return OK,
+;                  if we are creating file, say "access denied"
+        add     esp, 20
+        popad
+        test    al, al
+        mov     eax, ERROR_ACCESS_DENIED
+        jz      @f
+        mov     al, 0
+@@:
+        xor     ebx, ebx
+        ret
+.exists_file:
+; found file; if we are creating directory, return "access denied",
+;             if we are creating file, delete existing file and continue
+        cmp     byte [esp+20+28], 0
         jz      @f
         add     esp, 20
         popad
@@ -1550,7 +1582,7 @@ fs_RamdiskRewrite:
 @@:
         cmp     eax, 0xFF8
         jae     .done1
-        lea     edi, [0x280000 + eax*2] ; position in FAT
+        lea     edi, [RAMDISK_FAT + eax*2] ; position in FAT
         xor     eax, eax
         xchg    ax, [edi]
         jmp     @b
@@ -1742,6 +1774,12 @@ fs_RamdiskRewrite:
         and     word [edi+20], 0        ; high word of cluster
         and     word [edi+26], 0        ; low word of cluster - to be filled
         and     dword [edi+28], 0       ; file size - to be filled
+        cmp     byte [esp+20+28], 0
+        jz      .doit
+; create directory
+        mov     byte [edi+11], 10h         ; attributes: folder
+        mov     ecx, 32*2
+        mov     edx, edi
 .doit:
         push    edx
         push    ecx
@@ -1750,7 +1788,7 @@ fs_RamdiskRewrite:
         push    edi
         jecxz   .done
         mov     ecx, 2849
-        mov     edi, 0x280000
+        mov     edi, RAMDISK_FAT
 .write_loop:
 ; allocate new cluster
         xor     eax, eax
@@ -1758,7 +1796,7 @@ fs_RamdiskRewrite:
         jnz     .disk_full2
         dec     edi
         dec     edi
-        lea     eax, [edi-0x280000]
+        lea     eax, [edi-(RAMDISK_FAT)]
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp]
@@ -1767,8 +1805,11 @@ fs_RamdiskRewrite:
         push    edi
         inc     ecx
 ; write data
+        cmp     byte [esp+16+20+28], 0
+        jnz     .writedir
         shl     eax, 9
-        add     eax, 0x100000+31*512
+        add     eax, RAMDISK+31*512
+.writefile:
         mov     ebx, edx
         xchg    eax, ebx
         push    ecx
@@ -1802,6 +1843,34 @@ fs_RamdiskRewrite:
         popad
         push    ERROR_DISK_FULL
         pop     eax
+        ret
+.writedir:
+        mov     edi, eax
+        shl     edi, 9
+        add     edi, RAMDISK+31*512
+        mov     esi, edx
+        mov     ecx, 32/4
+        push    ecx
+        rep     movsd
+        mov     dword [edi-32], '.   '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     word [edi-32+26], ax
+        mov     esi, edx
+        pop     ecx
+        rep     movsd
+        mov     dword [edi-32], '..  '
+        mov     dword [edi-32+4], '    '
+        mov     dword [edi-32+8], '    '
+        mov     byte [edi-32+11], 10h
+        mov     eax, [esp+16+8]
+        mov     word [edi-32+26], ax
+        pop     edi edi ecx edx
+        add     esp, 20
+        popad
+        xor     eax, eax
+        xor     ebx, ebx
         ret
 
 .read_symbol:
@@ -1924,7 +1993,7 @@ fs_RamdiskWrite:
 @@:
         mov     eax, edi
         shl     eax, 9
-        add     eax, 0x100000+31*512+0x200
+        add     eax, RAMDISK+31*512+0x200
         sub     eax, ebx
         mov     ebx, eax
         mov     eax, edx
@@ -1935,7 +2004,7 @@ fs_RamdiskWrite:
         pop     ecx
         jz      .ret
 .next_cluster:
-        movzx   edi, word [edi*2+0x280000]
+        movzx   edi, word [edi*2+RAMDISK_FAT]
         jmp     .write_loop
 
 ramdisk_extend_file.zero_size:
@@ -1955,7 +2024,7 @@ ramdisk_extend_file:
 @@:
         sub     ecx, 0x200
         jbe     @f
-        mov     eax, [eax*2+0x280000]
+        mov     eax, [eax*2+RAMDISK_FAT]
         and     eax, 0xFFF
         jz      .fat_err
         cmp     eax, 0xFF8
@@ -1968,7 +2037,7 @@ ramdisk_extend_file:
         ret
 @@:
         push    eax
-        mov     eax, [eax*2+0x280000]
+        mov     eax, [eax*2+RAMDISK_FAT]
         and     eax, 0xFFF
         cmp     eax, 0xFF8
         pop     eax
@@ -1978,7 +2047,7 @@ ramdisk_extend_file:
         push    eax edi
         mov     edi, eax
         shl     edi, 9
-        lea     edi, [edi+0x100000+31*512+0x200+ecx]
+        lea     edi, [edi+RAMDISK+31*512+0x200+ecx]
         neg     ecx
         xor     eax, eax
         rep     stosb
@@ -1987,7 +2056,7 @@ ramdisk_extend_file:
         pop     ecx
 ; now do extend
         push    edx esi
-        mov     esi, 0x280000+2*2       ; start scan from cluster 2
+        mov     esi, RAMDISK_FAT+2*2       ; start scan from cluster 2
         mov     edx, 2847               ; number of clusters to scan
 .extend_loop:
         cmp     [edi+28], ecx
@@ -2006,12 +2075,12 @@ ramdisk_extend_file:
         mov     word [edi-2], 0xFFF
         mov     esi, edi
         mov     edx, ecx
-        sub     edi, 0x280000
+        sub     edi, RAMDISK_FAT
         shr     edi, 1
         dec     edi     ; now edi=new cluster
         test    eax, eax
         jz      .first_cluster
-        mov     [0x280000+eax*2], di
+        mov     [RAMDISK_FAT+eax*2], di
         jmp     @f
 .first_cluster:
         pop     eax     ; eax->direntry
@@ -2020,7 +2089,7 @@ ramdisk_extend_file:
 @@:
         push    edi
         shl     edi, 9
-        add     edi, 0x100000+31*512
+        add     edi, RAMDISK+31*512
         xor     eax, eax
         mov     ecx, 512/4
         rep     stosd
@@ -2117,21 +2186,21 @@ fs_RamdiskSetFileEnd:
 @@:
         sub     eax, 0x200
         jbe     @f
-        movzx   ecx, word [0x280000+ecx*2]
+        movzx   ecx, word [RAMDISK_FAT+ecx*2]
         jmp     @b
 @@:
 ; zero data at the end of last sector
         push    ecx
         mov     edi, ecx
         shl     edi, 9
-        lea     edi, [edi+0x100000+31*512+eax+0x200]
+        lea     edi, [edi+RAMDISK+31*512+eax+0x200]
         mov     ecx, eax
         neg     ecx
         xor     eax, eax
         rep     stosb
         pop     ecx
 ; terminate FAT chain
-        lea     ecx, [0x280000+ecx+ecx]
+        lea     ecx, [RAMDISK_FAT+ecx+ecx]
         push    dword [ecx]
         mov     word [ecx], 0xFFF
         pop     ecx
@@ -2144,7 +2213,7 @@ fs_RamdiskSetFileEnd:
 ; mark all clusters as free
         cmp     ecx, 0xFF8
         jae     .deleted
-        lea     ecx, [0x280000+ecx+ecx]
+        lea     ecx, [RAMDISK_FAT+ecx+ecx]
         push    dword [ecx]
         and     word [ecx], 0
         pop     ecx
@@ -2265,7 +2334,7 @@ fs_RamdiskExecute:
         mov     edx, [eax+4]    ; cluster
         lea     esi, [edx+31]
         shl     esi, 9
-        add     esi, 0x100000
+        add     esi, RAMDISK
         mov     ecx, 512/4
         rep     movsd
         mov     ecx, [eax]
@@ -2279,7 +2348,7 @@ fs_RamdiskExecute:
         pop     eax
 @@:
         mov     [eax], ecx
-        mov     dx, [edx*2+0x280000]
+        mov     dx, [edx*2+RAMDISK_FAT]
         mov     [eax+4], dx     ; high word is already zero
         popad
         xor     eax, eax
@@ -2287,6 +2356,109 @@ fs_RamdiskExecute:
 .eof:
         popad
         mov     eax, 6
+        ret
+
+;----------------------------------------------------------------
+;
+;  fs_RamdiskDelete - delete file or empty folder from ramdisk
+;
+;  esi  points to filename
+;
+;  ret  eax = 0 ok or other = errormsg
+;
+;--------------------------------------------------------------
+fs_RamdiskDelete:
+        cmp     byte [esi], 0
+        jnz     @f
+; cannot delete root!
+.access_denied:
+        push    ERROR_ACCESS_DENIED
+.pop_ret:
+        pop     eax
+        ret
+@@:
+        and     [rd_prev_sector], 0
+        and     [rd_prev_prev_sector], 0
+        push    edi
+        call    rd_find_lfn
+        jnc     .found
+        pop     edi
+        push    ERROR_FILE_NOT_FOUND
+        jmp     .pop_ret
+.found:
+        cmp     dword [edi], '.   '
+        jz      .access_denied2
+        cmp     dword [edi], '..  '
+        jz      .access_denied2
+        test    byte [edi+11], 10h
+        jz      .dodel
+; we can delete only empty folders!
+        movzx   eax, word [edi+26]
+        push    ebx
+        mov     ebx, eax
+        shl     ebx, 9
+        add     ebx, RAMDISK + 31*0x200 + 2*0x20
+.checkempty:
+        cmp     byte [ebx], 0
+        jz      .empty
+        cmp     byte [ebx], 0xE5
+        jnz     .notempty
+        add     ebx, 0x20
+        test    ebx, 0x1FF
+        jnz     .checkempty
+        movzx   eax, word [RAMDISK_FAT + eax*2]
+        test    eax, eax
+        jz      .empty
+        mov     ebx, eax
+        shl     ebx, 9
+        add     ebx, RAMDISK + 31*0x200
+        jmp     .checkempty
+.notempty:
+        pop     ebx
+.access_denied2:
+        pop     edi
+        jmp     .access_denied
+.empty:
+        pop     ebx
+.dodel:
+        movzx   eax, word [edi+26]
+; delete folder entry
+        mov     byte [edi], 0xE5
+; delete LFN (if present)
+.lfndel:
+        test    edi, 0x1FF
+        jnz     @f
+        cmp     [rd_prev_sector], 0
+        jz      @f
+        cmp     [rd_prev_sector], -1
+        jz      .lfndone
+        mov     edi, [rd_prev_sector]
+        push    [rd_prev_prev_sector]
+        pop     [rd_prev_sector]
+        or      [rd_prev_prev_sector], -1
+        shl     edi, 9
+        add     edi, RAMDISK + 31*0x200 + 0x200
+@@:
+        sub     edi, 0x20
+        cmp     byte [edi], 0xE5
+        jz      .lfndone
+        cmp     byte [edi+11], 0xF
+        jnz     .lfndone
+        mov     byte [edi], 0xE5
+        jmp     .lfndel
+.lfndone:
+; delete FAT chain
+        test    eax, eax
+        jz      .done
+        lea     eax, [RAMDISK_FAT + eax*2]
+        push    dword [eax]
+        and     word [eax], 0
+        pop     eax
+        and     eax, 0xFFF
+        jmp     .lfndone
+.done:
+        pop     edi
+        xor     eax, eax
         ret
 
 ; \end{diamond}

@@ -19,9 +19,9 @@ sys_debug_services_table:
 debug_set_event_data:
 ; in: ebx = pointer
 ; destroys eax
-	mov	eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
 	shl	eax, 8
-	mov	[eax+0x80000+APPDATA.dbg_event_mem], ebx
+        mov     [eax+SLOT_BASE+APPDATA.dbg_event_mem], ebx
 	ret
 
 get_debuggee_slot:
@@ -36,8 +36,8 @@ get_debuggee_slot:
 	jz	.ret_bad
 	shl	eax, 5
 	push	ebx
-	mov	ebx, [0x3000]
-	cmp	[0x80000+eax*8+APPDATA.debugger_slot], ebx
+        mov     ebx, [CURRENT_TASK]
+        cmp     [SLOT_BASE+eax*8+APPDATA.debugger_slot], ebx
 	pop	ebx
 	jnz	.ret_bad
 ;	clc	; automatically
@@ -51,7 +51,7 @@ debug_detach:
 ; destroys eax,ebx
 	call	get_debuggee_slot
 	jc	.ret
-	and	dword [eax*8+0x80000+APPDATA.debugger_slot], 0
+        and     dword [eax*8+SLOT_BASE+APPDATA.debugger_slot], 0
 	call	do_resume
 .ret:
 	sti
@@ -72,13 +72,13 @@ debug_suspend:
 ; destroys eax,ebx
 	call	get_debuggee_slot
 	jc	.ret
-	mov	bl, [0x3000+eax+TASKDATA.state]	; process state
+        mov     bl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
 	test	bl, bl
 	jz	.1
 	cmp	bl, 5
 	jnz	.ret
 	mov	bl, 2
-.2:	mov	[0x3000+eax+TASKDATA.state], bl
+.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], bl
 .ret:
 	sti
 	ret
@@ -87,13 +87,13 @@ debug_suspend:
 	jmp	.2
 
 do_resume:
-	mov	bl, [0x3000+eax+TASKDATA.state]
+        mov     bl, [CURRENT_TASK+eax+TASKDATA.state]
 	cmp	bl, 1
 	jz	.1
 	cmp	bl, 2
 	jnz	.ret
 	mov	bl, 5
-.2:	mov	[0x3000+eax+TASKDATA.state], bl
+.2:     mov     [CURRENT_TASK+eax+TASKDATA.state], bl
 .ret:	ret
 .1:	dec	ebx
 	jmp	.2
@@ -127,16 +127,16 @@ debug_getcontext:
 	imul	eax, tss_step/32
 	add	eax, tss_data
 	mov	edi, edx
-	cmp	[l.cs - tss_sceleton + eax], app_code
+        cmp     [eax+TSS._cs], app_code
 	jnz	.ring0
-	lea	esi, [l.eip - tss_sceleton + eax]
+        lea     esi, [eax+TSS._eip]
 	shr	ecx, 2
 	rep	movsd
 	jmp	.ret
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
 ; saves ring-3 context by push ds es, pushad in this order
-	mov	esi, [l.esp0 - tss_sceleton + eax]
+        mov     esi, [eax+TSS._esp0]
 ; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), ds, es, pushad
 	sub	esi, 8+12+8+20h
 	lodsd
@@ -186,14 +186,14 @@ debug_setcontext:
 	imul	eax, tss_step/32
 	add	eax, tss_data
 	mov	esi, edx
-	cmp	[l.cs - tss_sceleton + eax], app_code
+        cmp     [eax+TSS._cs], app_code
 	jnz	.ring0
-	lea	edi, [l.eip - tss_sceleton + eax]
+        lea     edi, [eax+TSS._eip]
 	shr	ecx, 2
 	rep	movsd
 	jmp	.stiret
 .ring0:
-	mov	edi, [l.esp0 - tss_sceleton + eax]
+        mov     edi, [eax+TSS._esp0]
 	sub	edi, 8+12+8+20h
 	mov	eax, [esi+24h]
 	stosd
@@ -227,7 +227,7 @@ debug_set_drx:
 	call	get_debuggee_slot
 	jc	.errret
 	mov	ebp, eax
-	lea	eax, [eax*8+0x80000+APPDATA.dbg_regs]
+        lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
 	add	edx, std_application_base_address
@@ -249,7 +249,7 @@ debug_set_drx:
 	test	byte [eax+10h], 55h
 	jnz	.okret
 	imul	eax, ebp, tss_step/32
-	and	byte [eax + tss_data + l.trap - tss_sceleton], not 1
+        and     byte [eax + tss_data + TSS._trap], not 1
 .okret:
 	and	dword [esp+36], 0
 	sti
@@ -291,7 +291,7 @@ debug_set_drx:
 	and	[eax+10h+2], dx
 	or	[eax+10h+2], bx		; set R/W and LEN fields
 	imul	eax, ebp, tss_step/32
-	or	byte [eax + tss_data + l.trap - tss_sceleton], 1
+        or      byte [eax + tss_data + TSS._trap], 1
 	jmp	.okret
 
 debug_read_process_memory:
@@ -358,7 +358,7 @@ debugger_notify:
 .1:
 	mov	eax, ebp
 	shl	eax, 8
-	mov	edx, [0x80000+eax+APPDATA.dbg_event_mem]
+        mov     edx, [SLOT_BASE+eax+APPDATA.dbg_event_mem]
 	test	edx, edx
 	jz	.ret
 ; read buffer header
@@ -380,7 +380,7 @@ debugger_notify:
 	pop	ecx
 	pop	ecx
 	pop	ecx
-	cmp	dword [0x3000], 1
+        cmp     dword [CURRENT_TASK], 1
 	jnz	.notos
 	cmp	[timer_ticks], edi
 	jae	.ret
@@ -414,7 +414,7 @@ debugger_notify:
 ; new debug event
 	mov	eax, ebp
 	shl	eax, 8
-	or	byte [0x80000+eax+APPDATA.event_mask+1], 1	; set flag 100h
+        or      byte [SLOT_BASE+eax+APPDATA.event_mask+1], 1      ; set flag 100h
 .ret:
 	ret
 
@@ -430,9 +430,9 @@ debug_exc:
 	jns	@f
 ; this is exception from task switch
 ; set DRx registers for task and continue
-	mov	eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
 	shl	eax, 8
-	add	eax, 0x80000+APPDATA.dbg_regs
+        add     eax, SLOT_BASE+APPDATA.dbg_regs
 	mov	ecx, [eax+0]
 	mov	dr0, ecx
 	mov	ecx, [eax+4]
@@ -453,9 +453,9 @@ debug_exc:
 	mov	dr6, eax
 ; test if debugging
 	cli
-	mov	eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
 	shl	eax, 8
-	mov	eax, [0x80000+eax+APPDATA.debugger_slot]
+        mov     eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
 	test	eax, eax
 	jnz	.debug
 	sti
@@ -463,7 +463,7 @@ debug_exc:
 	add	esp, 28h+4
 	mov	[error_interrupt], 1
 	call	show_error_parameters
-	mov	edx, [0x3010]
+        mov     edx, [TASK_BASE]
 	mov	byte [edx+TASKDATA.state], 4
 	jmp	change_task
 .debug:
@@ -483,7 +483,7 @@ debug_exc:
 	cmp	cl, not 10h
 	jnz	.l1
 	push	edx	; DR6 image
-	mov	ecx, [0x3010]
+        mov     ecx, [TASK_BASE]
 	push	dword [ecx+TASKDATA.pid]	; PID
 	push	12
 	pop	ecx
@@ -492,7 +492,7 @@ debug_exc:
 	pop	ecx
 	pop	ecx
 	pop	ecx
-	mov	edx, [0x3010]
+        mov     edx, [TASK_BASE]
 	mov	byte [edx+TASKDATA.state], 1	; suspended
 	call	change_task
 	restore_ring3_context

@@ -5,7 +5,9 @@
 ;*            to MBR - Mario79                               *
 ;*************************************************************
 
+uglobal
 align 4
+
 ;******************************************************
 ; Please do not change this place - variables  in text 
 ; Mario79
@@ -13,6 +15,12 @@ align 4
 ;******************************************************
 PARTITION_START      dd 0x3f
 PARTITION_END        dd 0
+fs_type              db 0       ; 0=none, 1=NTFS, 16=FAT16, 32=FAT32
+align 4
+
+fs_dependent_data_start:
+; FATxx data
+
 SECTORS_PER_FAT      dd 0x1f3a
 NUMBER_OF_FATS       dd 0x2
 SECTORS_PER_CLUSTER  dd 0x8
@@ -30,13 +38,40 @@ fatBAD               dd 0x0FFFFFF7
 fatEND               dd 0x0FFFFFF8
 fatMASK              dd 0x0FFFFFFF
 
-fat_type             db 0       ; 0=none, 16=fat16, 32=fat32
+fs_dependent_data_end:
+file_system_data_size = $ - PARTITION_START
+if file_system_data_size > 96
+ERROR: sizeof(file system data) too big!
+end if
+
+virtual at fs_dependent_data_start
+; NTFS data
+ntfs_data:
+.sectors_per_cluster    dd      ?
+.mft_cluster            dd      ?
+.mftmirr_cluster        dd      ?
+.frs_size               dd      ?       ; FRS size in bytes
+.iab_size               dd      ?       ; IndexAllocationBuffer size in bytes
+.frs_buffer             dd      ?
+.iab_buffer             dd      ?
+.mft_retrieval          dd      ?
+.mft_retrieval_size     dd      ?
+.mft_retrieval_alloc    dd      ?
+.mft_retrieval_end      dd      ?
+.cur_index_size         dd      ?
+.cur_index_buf          dd      ?
+if $ > fs_dependent_data_end
+ERROR: increase sizeof(fs_dependent_data)!
+end if
+end virtual
+
 ;***************************************************************************
 ; End place
 ; Mario79
 ;***************************************************************************
-
+endg
 iglobal
+
   partition_types:              ; list of fat16/32 partitions
     db    0x04                  ; DOS: fat16 <32M
     db    0x06                  ; DOS: fat16 >32M
@@ -55,6 +90,7 @@ iglobal
     db    0xce                  ; DRDOS/secured: fat16, LBA-mapped
     db    0xd4                  ; Old Multiuser DOS secured: fat16 <32M
     db    0xd6                  ; Old Multiuser DOS secured: fat16 >32M
+    db    0x07                  ; NTFS
   partition_types_end:
 
 
@@ -79,10 +115,9 @@ endg
 ; - it will skip over removed partitions
 
 set_FAT32_variables:
-    mov   [0xfe10],dword 0      ; entries in hd cache
     mov   [problem_partition],0
     call  reserve_hd1
-    call  clear_hd_cache
+    call  reserve_hd_channel
 
     cmp   dword [hdpos],0
     je    problem_hd
@@ -120,9 +155,17 @@ extended_already_set:
     cmp   ecx,[fat32part]       ; is it wanted partition?
     jnz   next_primary_partition        ; no
 
-    mov   edx,eax               ; start sector
-    add   edx,[ebx+0x1be+8]     ; add relative start
-    
+        mov     edx, eax                ; start sector
+        add     edx, [ebx+0x1be+8]      ; add relative start
+        push    edx
+        add     edx, [ebx+0x1be+12]     ; add length
+        dec     edx                     ; PARTITION_END is inclusive
+        mov     [PARTITION_END], edx    ; note that this can be changed
+                                        ; when file system data will be available
+        mov     dl, [ebx+0x1be+4]
+        mov     [fs_type], dl           ; save for FS recognizer (separate FAT vs NTFS)
+        pop     edx
+
 next_primary_partition:
     push  eax
     mov   al,[ebx+0x1be+4+16]      ; get primary partition type
@@ -134,8 +177,15 @@ next_primary_partition:
     cmp   ecx,[fat32part]       ; is it wanted partition?
     jnz   next_primary_partition_1        ; no
 
-    mov   edx,eax               ; start sector
-    add   edx,[ebx+0x1be+8+16]     ; add relative start
+        mov     edx, eax
+        add     edx, [ebx+0x1be+8+16]
+        push    edx
+        add     edx, [ebx+0x1be+12+16]
+        dec     edx
+        mov     [PARTITION_END], edx
+        mov     dl, [ebx+0x1be+4+16]
+        mov     [fs_type], dl
+        pop     edx
 
 next_primary_partition_1:
     push  eax
@@ -148,8 +198,15 @@ next_primary_partition_1:
     cmp   ecx,[fat32part]       ; is it wanted partition?
     jnz   next_primary_partition_2        ; no
 
-    mov   edx,eax               ; start sector
-    add   edx,[ebx+0x1be+8+16+16]     ; add relative start
+        mov     edx, eax
+        add     edx, [ebx+0x1be+8+16+16]
+        push    edx
+        add     edx, [ebx+0x1be+12+16+16]
+        dec     edx
+        mov     [PARTITION_END], edx
+        mov     dl, [ebx+0x1be+4+16+16]
+        mov     [fs_type], dl
+        pop     edx
 
 next_primary_partition_2:
     push  eax
@@ -162,8 +219,15 @@ next_primary_partition_2:
     cmp   ecx,[fat32part]       ; is it wanted partition?
     jnz   next_partition        ; no
 
-    mov   edx,eax               ; start sector
-    add   edx,[ebx+0x1be+8+16+16+16]     ; add relative start
+        mov     edx, eax
+        add     edx, [ebx+0x1be+8+16+16+16]
+        push    edx
+        add     edx, [ebx+0x1be+12+16+16+16]
+        dec     edx
+        mov     [PARTITION_END], edx
+        mov     dl, [ebx+0x1be+4+16+16+16]
+        mov     [fs_type], dl
+        pop     edx
 
 next_partition:
     push  eax
@@ -241,7 +305,8 @@ problem_partition_or_fat:
     popad
 
 problem_hd:
-    mov   [fat_type],0
+    mov   [fs_type],0
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
     mov   [problem_partition],1
     ret
@@ -249,14 +314,40 @@ problem_hd:
 hd_and_partition_ok:
     mov   eax,edx
     mov   [PARTITION_START],eax
+        mov     edx, [PARTITION_END]
+        sub     edx, eax
+        inc     edx     ; edx = length of partition
 
-    mov   [hd_setup],1
+;    mov   [hd_setup],1
     mov   ebx,buffer
     call  hd_read               ; read boot sector of partition
-    cmp  [hd_error],0
-    jne  problem_fat_dec_count
-
-    mov   [hd_setup],0
+        cmp     [hd_error], 0
+        jz      boot_read_ok
+        cmp     [fs_type], 7
+        jnz     problem_fat_dec_count
+; NTFS duplicates bootsector:
+; NT4/2k/XP+ saves bootsector copy in the end of disk
+; NT 3.51 saves bootsector copy in the middle of disk
+        and     [hd_error], 0
+        mov     eax, [PARTITION_END]
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     @f
+        call    ntfs_test_bootsec
+        jnc     boot_read_ok
+@@:
+        and     [hd_error], 0
+        mov     eax, edx
+        shr     eax, 1
+        add     eax, [PARTITION_START]
+        call    hd_read
+        cmp     [hd_error], 0
+        jnz     problem_fat_dec_count   ; не судьба...
+boot_read_ok:
+;        mov     [hd_setup], 0
+; if we are running on NTFS, check bootsector
+        cmp     [fs_type], 7
+        jz      ntfs_setup
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   problem_fat_dec_count
@@ -332,7 +423,8 @@ fat32_partition:
     mov   [fatBAD],0x0FFFFFF7
     mov   [fatEND],0x0FFFFFF8
     mov   [fatMASK],0x0FFFFFFF
-    mov   [fat_type],32         ; Fat32
+    mov   [fs_type],32         ; Fat32
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret
 
@@ -346,6 +438,7 @@ fat16_partition:
     mov   [fatBAD],0x0000FFF7
     mov   [fatEND],0x0000FFF8
     mov   [fatMASK],0x0000FFFF
-    mov   [fat_type],16         ; Fat16
+    mov   [fs_type],16         ; Fat16
+    call  free_hd_channel
     mov   [hd1_status],0        ; free
     ret

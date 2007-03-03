@@ -32,9 +32,9 @@
 ; modified by Mario79
 ;set_bank:
 ;cli
-;cmp al,[0xfff2]
+;cmp al,[BANK_RW]
 ;je retsb
-;mov [0xfff2],al
+;mov [BANK_RW],al
 ;push dx
 ;mov dx,3D8h
 ;out  dx,al
@@ -46,82 +46,82 @@
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ; set_bank for S3 videocards, work on S3 ViRGE PCI (325)
-; modified by kmeaw 
-set_bank: 
+; modified by kmeaw
+set_bank:
 pushfd
-cli 
-cmp al,[0xfff2] 
-je retsb 
-mov [0xfff2],al 
-push ax 
-push dx 
-push cx 
-mov cl, al 
-mov dx, 0x3D4 
-mov al, 0x38 
+cli
+cmp al,[BANK_RW]
+je retsb
+mov [BANK_RW],al
+push ax
+push dx
+push cx
+mov cl, al
+mov dx, 0x3D4
+mov al, 0x38
 out dx, al     ;CR38 Register Lock 1 ;Note: Traditionally 48h is used to
                ;unlock and 00h to lock
-inc dx 
-mov al, 0x48 
+inc dx
+mov al, 0x48
 out dx, al     ;3d5 -?
-dec dx 
-mov al, 0x31 
+dec dx
+mov al, 0x31
 out dx, al     ;CR31 Memory Configuration Register
 ;0  Enable Base Address Offset (CPUA BASE). Enables bank operation if set, ;disables if clear.
 ;4-5  Bit 16-17 of the Display Start Address. For the 801/5,928 see index 51h,
 ;for the 864/964 see index 69h.
 
-inc dx 
-in al, dx 
-dec dx 
-mov ah, al 
-mov al, 0x31 
-out dx, ax 
-mov al, ah 
-or al, 9 
-inc dx 
-out dx, al 
-dec dx 
-mov al, 0x35 
+inc dx
+in al, dx
+dec dx
+mov ah, al
+mov al, 0x31
+out dx, ax
+mov al, ah
+or al, 9
+inc dx
+out dx, al
+dec dx
+mov al, 0x35
 out dx, al   ;CR35 CRT Register Lock
-inc dx 
-in al, dx 
-dec dx 
-and al, 0xF0 
-mov ch, cl 
-and ch, 0x0F 
-or ch, al 
-mov al, 0x35 
-out dx, al 
-inc dx 
-mov al, ch 
-out dx, ax 
-dec dx 
+inc dx
+in al, dx
+dec dx
+and al, 0xF0
+mov ch, cl
+and ch, 0x0F
+or ch, al
+mov al, 0x35
+out dx, al
+inc dx
+mov al, ch
+out dx, ax
+dec dx
 mov al, 0x51  ;Extended System Control 2 Register
-out dx, al 
-inc dx 
-in al, dx 
-dec dx 
-and al, 0xF3 
-shr cl, 2 
-and cl, 0x0C 
-or cl, al 
-mov al, 0x51 
-out dx, al 
-inc dx 
-mov al, cl 
-out dx, al 
-dec dx 
-mov al, 0x38 
-out dx, al 
-inc dx 
-xor al, al 
-out dx, al 
-dec dx 
-pop cx 
-pop dx 
-pop ax 
-retsb: 
+out dx, al
+inc dx
+in al, dx
+dec dx
+and al, 0xF3
+shr cl, 2
+and cl, 0x0C
+or cl, al
+mov al, 0x51
+out dx, al
+inc dx
+mov al, cl
+out dx, al
+dec dx
+mov al, 0x38
+out dx, al
+inc dx
+xor al, al
+out dx, al
+dec dx
+pop cx
+pop dx
+pop ax
+retsb:
 popfd
 ret
 
@@ -132,9 +132,9 @@ ret
 ;
 ;set_bank:
 ;cli
-;cmp al,[0xfff2]
+;cmp al,[BANK_RW]
 ;je retsb
-;mov [0xfff2],al
+;mov [BANK_RW],al
 ;push ax
 ;push dx
 ;mov dx,3CEh
@@ -160,9 +160,9 @@ ret
 
 ;set_bank:
 ;   cli
-;   cmp al,[0xfff2]
+;   cmp al,[BANK_RW]
 ;   je retsb
-;   mov [0xfff2],al
+;   mov [BANK_RW],al
 ;   push ax
 ;   push dx
 ;   mov ah,al
@@ -216,7 +216,7 @@ vesa12_drawbackground:
 
         push  eax
         push  ebx
-        mov   esi,0x300000
+        mov   esi,IMG_BACKGROUND
 
         cmp   [WinMapAddress-12],dword 1     ; tiled background
         jne   no_vesa12_tiled_bgr
@@ -247,7 +247,7 @@ vesa12_drawbackground:
 
         imul  eax,dword [WinMapAddress-8]
         xor   edx,edx
-        mov   ecx,[0xfe00]
+        mov   ecx,[ScreenWidth]
         inc   ecx
         div   ecx
 
@@ -255,7 +255,7 @@ vesa12_drawbackground:
         mov   eax,ebx
         imul  eax,dword [WinMapAddress-4]
         xor   edx,edx
-        mov   ecx,[0xfe04]
+        mov   ecx,[ScreenHeight]
         inc   ecx
         div   ecx
         mov   ebx,eax
@@ -278,7 +278,7 @@ vesa12_drawbackground:
         add   esi,eax
         add   esi,eax
         add   esi,eax
-        add   esi,0x300000
+        add   esi,IMG_BACKGROUND
         pop   ebx
         pop   eax
 
@@ -288,20 +288,20 @@ vesa12_drawbackground:
         pusha
         mov   esi,eax
         mov   edi,ebx
-        mov   eax,[0xfe00]
+        mov   eax,[ScreenWidth]
         add   eax,1
         mul   ebx
         add   eax,esi
         add   eax,WinMapAddress
         cmp   [eax],byte 1
         jnz   v12nbgp
-        mov   eax,[0xfe08]
+        mov   eax,[BytesPerScanLine]
         mov   ebx,edi
         mul   ebx
         add   eax,esi
         add   eax,esi
         add   eax,esi
-        cmp   [0xFBF1],byte 24
+        cmp   [ScreenBPP],byte 24
         jz    v12bgl3
         add   eax,esi
 
@@ -310,13 +310,13 @@ vesa12_drawbackground:
         push ebx
         push eax
 
-        sub  eax,[0xfe80]
+        sub  eax,[LFBAddress]
 
         shr  eax,16
         call set_bank
         pop  eax
         and  eax,65535
-        add  eax,0xa0000
+        add  eax,VGABasePtr
         pop  ebx
 
         mov   [eax],cx
@@ -364,24 +364,24 @@ vesa12_drawbar:
     push ebx
     push ecx
     push edx
-    mov  ecx,[0x3010]
+    mov  ecx,[TASK_BASE]
     add  eax,[ecx-twdw+WDATA.box.left]
     add  ebx,[ecx-twdw+WDATA.box.top]
     push eax
     mov  eax,ebx         ; y
-    mov  ebx,[0xfe08]
+    mov  ebx,[BytesPerScanLine]
     mul  ebx
     pop  ecx
     add  eax,ecx         ; x
     add  eax,ecx
     add  eax,ecx
-    cmp  [0xfbf1],byte 24     ; 24 or 32 bpp ? - x start
+    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ? - x start
     jz   dbpi2412
     add  eax,ecx
 
   dbpi2412:
 
-    add  eax,[0xfe80]
+    add  eax,[LFBAddress]
     mov  edi,eax
 
     ; x size
@@ -390,7 +390,7 @@ vesa12_drawbar:
     mov  ecx,eax
     add  ecx,eax
     add  ecx,eax
-    cmp  [0xfbf1],byte 24     ; 24 or 32 bpp ? - x size
+    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ? - x size
     jz   dbpi24312
     add  ecx,eax
 
@@ -402,18 +402,18 @@ vesa12_drawbar:
 
     push eax
     push ecx
-    mov  eax,[0x3010]
-    mov  ecx,[eax+draw_data-0x3000+RECT.left]
+    mov  eax,[TASK_BASE]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.left]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+RECT.top]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.top]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+RECT.right]
-    cmp  ecx,[0xfe00]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
+    cmp  ecx,[ScreenWidth]
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-0x3000+RECT.bottom]
-    cmp  ecx,[0xfe04]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
+    cmp  ecx,[ScreenHeight]
     jnz  dbcblimitlset12
     pop  ecx
     pop  eax
@@ -428,7 +428,7 @@ vesa12_drawbar:
 
   dbcblimitlno12:
 
-    cmp  [0xfbf1],byte 24     ; 24 or 32 bpp ?
+    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ?
     jz   dbpi24bit12
     jmp  dbpi32bit12
 
@@ -458,11 +458,11 @@ dbpi24bit12:
 
       xor  edx,edx
       mov  eax,edi
-      sub  eax,[0xfe80]
+      sub  eax,[LFBAddress]
       mov  ebx,3
       div  ebx
       add  eax,WinMapAddress
-      mov   ebx,[0x3000]
+      mov   ebx,[CURRENT_TASK]
       cld
 
       dbnp2412:
@@ -481,11 +481,11 @@ dbpi24bit12:
 
         push edi
         mov  eax,edi
-        sub  eax,[0xfe80]
+        sub  eax,[LFBAddress]
         shr  eax,16
         call set_bank
         and  edi,0xffff
-        add  edi,0xa0000
+        add  edi,VGABasePtr
         mov  eax,[esp+8+3*4+16+4+4]
         stosw
         shr  eax,16
@@ -523,7 +523,7 @@ dbpi24bit12:
     pop  ecx
     pop  edi
     pop  ebx
-    add  edi,[0xfe08]
+    add  edi,[BytesPerScanLine]
     dec  ebx
     jz   dbnonewpi12
     jmp  dbnewpi12
@@ -550,10 +550,10 @@ dbpi24bit12:
     push ecx
 
       mov  eax,edi
-      sub  eax,[0xfe80]
+      sub  eax,[LFBAddress]
       shr  eax,2
       add  eax,WinMapAddress
-      mov   ebx,[0x3000]
+      mov   ebx,[CURRENT_TASK]
       cld
 
       dbnp3212:
@@ -572,11 +572,11 @@ dbpi24bit12:
 
         push edi
         mov  eax,edi
-        sub  eax,[0xfe80]
+        sub  eax,[LFBAddress]
         shr  eax,16
         call set_bank
         and  edi,0xffff
-        add  edi,0xa0000
+        add  edi,VGABasePtr
         mov  eax,[esp+8+3*4+16+4+4]
         stosw
         shr  eax,16
@@ -615,7 +615,7 @@ dbpi24bit12:
     pop  ecx
     pop  edi
     pop  ebx
-    add  edi,[0xfe08]
+    add  edi,[BytesPerScanLine]
     dec  ebx
     jz   nodbnewpi3212
     jmp  dbnewpi3212
@@ -631,14 +631,14 @@ Vesa12_putpixel24:
         mov  edi,eax ; x
         mov  eax,ebx ; y
         lea  edi,[edi+edi*2]
-        mov  ebx,[0xfe08]
+        mov  ebx,[BytesPerScanLine]
         mul  ebx
         add  edi,eax
         mov  eax,edi
         shr  eax,16
         call set_bank
         and  edi,65535
-        add  edi,0xa0000
+        add  edi,VGABasePtr
         mov  eax,[esp+28]
         stosw
         shr  eax,16
@@ -653,14 +653,14 @@ Vesa12_putpixel32:
         mov  edi,eax ; x
         mov  eax,ebx ; y
         shl  edi,2
-        mov  ebx,[0xfe08]
+        mov  ebx,[BytesPerScanLine]
         mul  ebx
         add  edi,eax
         mov  eax,edi
         shr  eax,16
         call set_bank
         and  edi,65535
-        add  edi,0xa0000
+        add  edi,VGABasePtr
         mov  ecx,[esp+28]
         mov  [edi],ecx
         sti
@@ -672,14 +672,14 @@ Vesa12_getpixel24:
         mov  edi,eax ; x
         mov  eax,ebx ; y
         lea  edi,[edi+edi*2]
-        mov  ebx,[0xfe08]
+        mov  ebx,[BytesPerScanLine]
         mul  ebx
         add  edi,eax
         mov  eax,edi
         shr  eax,16
         call set_bank
         and  edi,65535
-        add  edi,0xa0000
+        add  edi,VGABasePtr
         mov  ecx,[edi]
         and  ecx,255*256*256+255*256+255
         sti
@@ -691,7 +691,7 @@ Vesa12_getpixel32:
         mov  edi,eax ; x
         mov  eax,ebx ; y
         shl  edi,2
-        mov  ebx,[0xfe08]
+        mov  ebx,[BytesPerScanLine]
         xor  edx,edx
         mul  ebx
         add  edi,eax
@@ -699,7 +699,7 @@ Vesa12_getpixel32:
         shr  eax,16
         call set_bank
         and  edi,65535
-        add  edi,0xa0000
+        add  edi,VGABasePtr
         mov  ecx,[edi]
         and  ecx,255*256*256+255*256+255
         sti
@@ -709,6 +709,12 @@ Vesa12_getpixel32:
 
 
 vesa12_putimage:
+; ebx = pointer to image
+; ecx = size [x|y]
+; edx = coordinates [x|y]
+; ebp = pointer to 'get' function
+; esi = pointer to 'init' function
+; edi = parameter for 'get' function
 
 ;    mov  ebx,image
 ;    mov  ecx,320*65536+240
@@ -725,137 +731,108 @@ vesa12_putimage:
     push  edx
     movzx eax,word [esp+2]
     movzx ebx,word [esp+0]
-    mov   ecx,[0x3010]
+    mov   ecx,[TASK_BASE]
     add   eax,[ecx-twdw+WDATA.box.left]
     add   ebx,[ecx-twdw+WDATA.box.top]
     push  eax
     mov   eax,ebx         ; y
-    mov   ebx,[0xfe08]
-    mul   ebx
+    mul   dword [BytesPerScanLine]
     pop   ecx
     add   eax,ecx         ; x
     add   eax,ecx
     add   eax,ecx
-    cmp  [0xfbf1],byte 24     ; 24 or 32 bpp ? - x start
+    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ? - x start
     jz   pi2412
     add  eax,ecx
 
   pi2412:
 
-    add  eax,[0xfe80]
+    add  eax,[LFBAddress]
     mov  edi,eax
 
     ; x size
 
-    movzx eax,word [esp+6]
-    mov   ecx,eax
-    add   ecx,eax
-    add   ecx,eax
-    cmp   [0xfbf1],byte 24     ; 24 or 32 bpp ? - x size
-    jz    pi24312
-    add   ecx,eax
-
-  pi24312:
+    movzx ecx,word [esp+6]
 
     mov   esi,[esp+8]
     movzx ebx,word [esp+4]
 
     ; check limits while draw ?
 
-    push  eax
     push  ecx
-    mov  eax,[0x3010]
-    mov  ecx,[eax+draw_data-0x3000+RECT.left]
-    cmp  ecx,0
+    mov  eax,[TASK_BASE]
+    cmp  dword [eax+draw_data-CURRENT_TASK+RECT.left], 0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+RECT.top]
-    cmp  ecx,0
+    cmp  dword [eax+draw_data-CURRENT_TASK+RECT.top], 0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+RECT.right]
-    cmp  ecx,[0xfe00]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
+    cmp  ecx,[ScreenWidth]
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-0x3000+RECT.bottom]
-    cmp  ecx,[0xfe04]
+    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
+    cmp  ecx,[ScreenHeight]
     jnz  dbcblimitlset212
     pop  ecx
-    pop  eax
-    push dword 0
+    push 0
     jmp  dbcblimitlno212
 
   dbcblimitlset212:
 
     pop  ecx
-    pop  eax
-    push dword 1
+    push 1
 
   dbcblimitlno212:
 
-    cmp  [0xfbf1],byte 24     ; 24 or 32 bpp ?
-    jz   pi24bit12
-    jmp  pi32bit12
+    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ?
+    jnz  pi32bit12
 
   pi24bit12:
-
-    cld
-    push  eax
-    push  ebx
-    push  edx
-    xor   edx,edx
-    mov   eax,ecx
-    mov   ebx,3
-    div   ebx
-    mov   ecx,eax
-    pop   edx
-    pop   ebx
-    pop   eax
 
   newpi12:
 
     push edi
-    push esi
     push ecx
     push ebx
 
-      xor  edx,edx
-      mov  eax,edi
-      sub  eax,[0xfe80]
+      mov  edx,edi
+      sub  edx,[LFBAddress]
       mov  ebx,3
       div  ebx
-      add  eax,WinMapAddress
-      mov  ebx,[0x3000]
-      mov  bh,[esp+4*4]
+      add  edx,WinMapAddress
+      mov  ebx,[CURRENT_TASK]
+      mov  bh,[esp+4*3]
 
       np2412:
 
-        cmp  bl,[eax]
+        cmp  bl,[edx]
         jnz  imp24no12
-        mov  edx,[esi]
-        cmp  bh,0
-        jz   imp24yes12
+;        mov  eax,[esi]
+        push    dword [esp+4*3+20]
+        call    ebp
+;        cmp  bh,0
+;        jz   imp24yes12
 ;        call dbcplimit
 ;        jnz  imp24no12
 
      imp24yes12:
 
-        push eax
         push edi
+        push eax
         mov  eax,edi
-        sub  eax,[0xfe80]
+        sub  eax,[LFBAddress]
         shr  eax,16
         call set_bank
-        and  edi,0xffff
-        add  edi,0xa0000
-        mov  [edi],edx
-        shr  edx,2
-        mov  [edi+2],dl
-        sti
-        pop  edi
         pop  eax
+        and  edi,0xffff
+        add  edi,VGABasePtr
+        mov  [edi],ax
+        shr  eax,16
+        mov  [edi+2],al
+        pop  edi
 
      imp24no12:
 
-        inc  eax
-        add  esi,3
+        inc  edx
+;        add  esi,3
         add  edi,3
         dec  ecx
         jnz  np2412
@@ -864,73 +841,64 @@ vesa12_putimage:
 
      pop  ebx
      pop  ecx
-     pop  esi
      pop  edi
 
-    add  edi,[0xfe08]
-    xor  eax,eax
-    mov  ax,[esp+4+2+4]
-    lea  eax,[eax+eax*2]
-    add  esi,eax
+    add  edi,[BytesPerScanLine]
+    add  esi,[esp+32]
     dec  ebx
-    jz   nonewpi12
-    jmp  newpi12
+    jnz  newpi12
 
   nonewpi12:
 
-    add  esp,7*4
-    mov  eax,0
-    ret
+        pop     eax edx ecx ebx eax edi esi
+        xor     eax, eax
+        ret
 
 
   pi32bit12:
 
-    cld
-    shr  ecx,2
-
    newpi3212:
 
     push edi
-    push esi
     push ecx
     push ebx
 
-      mov  eax,edi
-      sub  eax,[0xfe80]
-      shr  eax,2
-      add  eax,WinMapAddress
-      mov   ebx,[0x3000]
-      mov   bh,[esp+4*4]
+      mov  edx,edi
+      sub  edx,[LFBAddress]
+      shr  edx,2
+      add  edx,WinMapAddress
+      mov   ebx,[CURRENT_TASK]
+      mov   bh,[esp+4*3]
 
       np3212:
 
-        cmp  bl,[eax]
+        cmp  bl,[edx]
         jnz  imp32no12
-        mov  edx,[esi]
-        cmp  bh,0
-        jz   imp32yes12
+;        mov  eax,[esi]
+        push    dword [esp+4*3+20]
+        call    ebp
+;        cmp  bh,0
+;        jz   imp32yes12
 ;        call dbcplimit
 ;        jnz  imp32no12
 
       imp32yes12:
 
-        push eax
         push edi
+        push eax
         mov  eax,edi
-        sub  eax,[0xfe80]
+        sub  eax,[LFBAddress]
         shr  eax,16
         call set_bank
-        and  edi,0xffff
-        add  edi,0xa0000
-        mov  [edi],edx
-        sti
-        pop  edi
         pop  eax
+        and  edi,0xffff
+        mov  [edi+VGABasePtr],eax
+        pop  edi
 
       imp32no12:
 
-        inc  eax
-        add  esi,3
+        inc  edx
+;        add  esi,3
         add  edi,4
         dec  ecx
         jnz  np3212
@@ -939,28 +907,23 @@ vesa12_putimage:
 
      pop  ebx
      pop  ecx
-     pop  esi
      pop  edi
 
-    add   edi,[0xfe08]
-    movzx eax,word [esp+4+2+4]
-    lea   eax,[eax+eax*2]
-    add   esi,eax
+    add   edi,[BytesPerScanLine]
     dec   ebx
-    jz    nonewpi3212
-    jmp   newpi3212
+    jnz   newpi3212
 
   nonewpi3212:
 
-    add   esp,7*4
-    mov   eax,0
-    ret
+        pop     eax edx ecx ebx eax edi esi
+        xor     eax, eax
+        ret
 
 
 vesa12_read_screen_pixel:
 
      and   eax,0x3FFFFF
-     cmp   [0xfbf1],byte 24      ; 24 or 32 bpp ?
+     cmp   [ScreenBPP],byte 24      ; 24 or 32 bpp ?
      jz    v12rsp24
      mov   edi,eax
      shl   edi,2
@@ -968,7 +931,7 @@ vesa12_read_screen_pixel:
      shr   eax,16
      call  set_bank
      and   edi,65535
-     add   edi,0xa0000
+     add   edi,VGABasePtr
      mov   eax,[edi]
      and   eax,0x00ffffff
      ret
@@ -979,7 +942,7 @@ vesa12_read_screen_pixel:
      shr   eax,16
      call  set_bank
      and   edi,65535
-     add   edi,0xa0000
+     add   edi,VGABasePtr
      mov   eax,[edi]
      and   eax,0x00ffffff
      ret

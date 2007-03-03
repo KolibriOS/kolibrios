@@ -17,12 +17,12 @@
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
-ScreenWidth             equ     0xfe00
-ScreenHeight            equ     0xfe04
-BytesPerScanLine        equ     0xfe08
-LFBAddress              equ     0xfe80
-ScreenBPP               equ     0xfbf1
-WinMapAddress           equ     0x460000
+;ScreenWidth             equ     0xfe00
+;ScreenHeight            equ     0xfe04
+;BytesPerScanLine        equ     0xfe08
+;LFBAddress              equ     0xfe80
+;ScreenBPP               equ     0xfbf1
+;WinMapAddress           equ     0x460000
 
 
 
@@ -76,28 +76,33 @@ virtual at esp
    .abs_cx         dd ?
    .abs_cy         dd ?
    .line_increment dd ?
-   .source_bpp     dd ?
    .winmap_newline dd ?
    .screen_newline dd ?
-   .stack_data = 4*13
+   .stack_data = 4*12
+   .edi         dd      ?
+   .esi         dd      ?
+   .ebp         dd      ?
+   .esp         dd      ?
+   .ebx         dd      ?
+   .edx         dd      ?
+   .ecx         dd      ?
+   .eax         dd      ?
+   .ret_addr    dd      ?
+   .arg_0       dd      ?
 end virtual
 
-align 4
+align 16
 ; ebx = pointer
 ; ecx = size [x|y]
 ; edx = coordinates [x|y]
+; ebp = pointer to 'get' function
+; esi = pointer to 'init' function
+; edi = parameter for 'get' function
 vesa20_putimage:
         pushad
         call    [disable_mouse]
 
         sub     esp, putimg.stack_data
-
-        mov     [putimg.source_bpp], 3
-;        test    ebx, 0x80000000
-;        jz      @f
-;        inc     [putimg.source_bpp]
-;      @@:
-;        and     ebx, 0x7FFFFFFF
 
         ; save pointer to image
         mov     [putimg.pti], ebx
@@ -117,7 +122,7 @@ vesa20_putimage:
         mov     [putimg.image_cy], edx
 
         ; calculate absolute (i.e. screen) coordinates
-        mov     eax, [0x3010]
+        mov     eax, [TASK_BASE]
         mov     ebx, [eax-twdw + WDATA.box.left]
         add     ebx, [putimg.image_cx]
         mov     [putimg.abs_cx], ebx
@@ -164,7 +169,9 @@ vesa20_putimage:
         mov     eax, [putimg.image_sx]
         sub     eax, [putimg.real_sx]
 ;;        imul    eax, [putimg.source_bpp]
-        lea     eax, [eax + eax * 2]
+;        lea     eax, [eax + eax * 2]
+        call    esi
+        add     eax, [putimg.arg_0]
         mov     [putimg.line_increment], eax
 
         ; winmap new line increment
@@ -183,7 +190,7 @@ vesa20_putimage:
         mov     [putimg.screen_newline], eax
 
         ; pointer to image
-        mov     ecx, [putimg.pti]
+        mov     esi, [putimg.pti]
 
         ; pointer to screen
         mov     edx, [putimg.abs_cy]
@@ -204,7 +211,7 @@ vesa20_putimage:
         xchg    eax, ebp
 
         ; get process number
-        mov     ebx, [0x3000]
+        mov     ebx, [CURRENT_TASK]
 
         cmp     byte [ScreenBPP], 32
         je      put_image_end_32
@@ -213,29 +220,32 @@ vesa20_putimage:
         mov     edi, [putimg.real_sy]
         align   4
       .new_line:
-        mov     esi, [putimg.real_sx]
+        mov     ecx, [putimg.real_sx]
 
 ;        push    ebp edx
         align   4
           .new_x:
 
+                push    [putimg.edi]
+                mov     eax, [putimg.ebp+4]
+                call    eax
                 cmp     [ebp], bl
                 jne     .skip
-                mov     eax, [ecx]        ; ecx = RRBBGGRR
+;                mov     eax, [esi]        ; eax = RRBBGGRR
                 mov     [edx], ax
                 shr     eax, 16
                 mov     [edx+2], al
               .skip:
 
-            add     ecx, 3 ;[putimg.source_bpp]
+;            add     esi, 3 ;[putimg.source_bpp]
             add     edx, 3
             inc     ebp
 
-            dec     esi
+            dec     ecx
             jnz     .new_x
 ;        pop     edx ebp
 
-        add     ecx, [putimg.line_increment]
+        add     esi, [putimg.line_increment]
         add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
         add     ebp, [putimg.winmap_newline] ;[ScreenWidth]
         ;inc     ebp
@@ -251,27 +261,30 @@ put_image_end_32:
         mov     edi, [putimg.real_sy]
         align   4
       .new_line:
-        mov     esi, [putimg.real_sx]
+        mov     ecx, [putimg.real_sx]
 
 ;        push    ebp edx
         align   4
           .new_x:
 
+                push    [putimg.edi]
+                mov     eax, [putimg.ebp+4]
+                call    eax
                 cmp     [ebp], bl
                 jne     .skip
-                mov     eax, [ecx]        ; ecx = RRBBGGRR
+;                mov     eax, [esi]        ; ecx = RRBBGGRR
                 mov     [edx], eax
               .skip:
 
-            add     ecx, [putimg.source_bpp]
+;            add     esi, [putimg.source_bpp]
             add     edx, 4
             inc     ebp
 
-            dec     esi
+            dec     ecx
             jnz     .new_x
 ;        pop     edx ebp
 
-        add     ecx, [putimg.line_increment]
+        add     esi, [putimg.line_increment]
         add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
         add     ebp, [putimg.winmap_newline] ;[ScreenWidth]
         ;inc     ebp
@@ -281,7 +294,7 @@ put_image_end_32:
    .finish:
         add     esp, putimg.stack_data
         popad
-        call   VGA__putimage 
+        call   VGA__putimage
         mov     [EGA_counter],1
 ret
 
@@ -315,12 +328,12 @@ __sys_putpixel:
         ; check if negation
         test  ecx,0x01000000
         jz    .noneg
-        call  __sys_getpixel
+        call  getpixel
         not   ecx
         mov   [esp+32-8],ecx
       .noneg:
         ; OK to set pixel
-        call  dword [0xe020]        ; call the real put_pixel function
+        call  dword [PUTPIXEL]    ; call the real put_pixel function
       .exit:
         popad
 
@@ -588,7 +601,7 @@ align 4
 ; edx   ye
 ; edi   color
 vesa20_drawbar:
-        
+
         pushad
         call    [disable_mouse]
 
@@ -606,7 +619,7 @@ vesa20_drawbar:
         mov     [drbar.bar_cx], eax
         mov     [drbar.bar_cy], ebx
 
-        mov     edi, [0x3010]
+        mov     edi, [TASK_BASE]
         add     eax, [edi-twdw + WDATA.box.left] ; win_cx
         add     ebx, [edi-twdw + WDATA.box.top] ; win_cy
         mov     [drbar.abs_cx], eax
@@ -625,7 +638,7 @@ vesa20_drawbar:
         popad
         xor     eax, eax
         inc     eax
-        
+
         ret
       @@:
         cmp     ebx, [drbar.bar_sx]
@@ -645,7 +658,7 @@ vesa20_drawbar:
         popad
         xor     eax, eax
         inc     eax
-        
+
         ret
       @@:
         cmp     ebx, [drbar.bar_sy]
@@ -688,7 +701,7 @@ vesa20_drawbar:
         xchg    eax, ebp
 
         ; get process number
-        mov     ebx, [0x3000]
+        mov     ebx, [CURRENT_TASK]
 
         cmp     byte [ScreenBPP], 24
         jne     draw_bar_end_32
@@ -917,7 +930,7 @@ vesa20_drawbackground_tiled:
      mov ebx,[esp+8]               ; ebx:=B*3
      mul ebx                       ;
      add esi,eax                   ;
-     mov eax,[esi+0x300000]
+     mov eax,[esi+IMG_BACKGROUND]
      and eax,0xffffff
 
      xchg edi, ebp
@@ -1032,45 +1045,110 @@ vesa20_drawbackground_stretch:
      call calculate_edi
 
 
-   sdp3:                            ; MAIN LOOP
+sdp3: ; MAIN LOOP
+cmp [edi+WinMapAddress],byte 1 ; ptrBuffer^<>byte(1)
+jne snbgp
+push eax
+push ebx
+mov eax,dword [WinMapAddress-8]
+imul eax, [esp+4] ;4
+xor edx,edx
+mov ebx,[ScreenWidth]
+div ebx
+mov cx,dx
+lea esi,[eax+eax*2]
+mov eax,dword [WinMapAddress-4]
+imul eax, [esp+0] ;0
+xor edx,edx
+mov ebx,[ScreenHeight]
+div ebx
+shl ecx,16
+mov cx,dx
+imul eax, [esp+8] ;8
+add esi,eax
+mov eax,[esi+IMG_BACKGROUND]
+push eax
+ror ecx,16
+xor eax,eax
+mov ax,cx
+shl eax,1 ; умножение на 2
+lea eax,[eax+eax*4] ; умножение на 5
+xor edx,edx
+mov ebx,[ScreenWidth]
+div ebx
+cmp eax,5
+pop eax
+jb @f
+mov ebx,[esi+IMG_BACKGROUND+3]
+call overlapping_of_points
+@@:
+push eax
+ror ecx,16
+xor eax,eax
+mov ax,cx
+shl eax,1 ; умножение на 2
+lea eax,[eax+eax*4] ; умножение на
+xor edx,edx
+mov ebx,[ScreenHeight]
+div ebx
+cmp eax,5
+pop eax
+jb @f
+mov ebx,[display_data-8]
+shl ebx,1
+add ebx,[display_data-8]
+add ebx,IMG_BACKGROUND
+add ebx,esi
+mov ebx,[ebx]
+call overlapping_of_points
+@@:
+and eax,0xffffff
+xchg edi, ebp
+stosw
+shr eax,16
+stosb
+xchg ebp, edi ; ebp+=3
+cmp [ScreenBPP],byte 24 ; 24 or 32 bpp ? - x size
+jz @f
+inc ebp ; +1
+@@:
+pop ebx
+pop eax
+jmp shook1
 
-     cmp [edi+WinMapAddress],byte 1     ; ptrBuffer^<>byte(1)
-     jne snbgp
-
-     push eax
-     push ebx
-
-     mov   eax,dword [WinMapAddress-8]
-     imul  eax, [esp+4]      ;4
-     xor   edx,edx
-     mov   ebx,[ScreenWidth]
-     div   ebx
-     lea   esi,[eax+eax*2]
-     mov   eax,dword [WinMapAddress-4]
-     imul  eax, [esp+0]      ;0
-     xor   edx,edx
-     mov   ebx,[ScreenHeight]
-     div   ebx
-     imul  eax, [esp+8]      ;8
-     add   esi,eax
-
-     mov   eax,[esi+0x300000]
-     and   eax,0xffffff
-
-     xchg edi, ebp
-     stosw
-     shr eax,16
-     stosb
-     xchg ebp, edi                 ; ebp+=3
-     cmp [ScreenBPP],byte 24       ; 24 or 32 bpp ? - x size
-     jz  @f
-     inc ebp ; +1
-   @@:
-
-     pop ebx
-     pop eax
-
-     jmp shook1
+overlapping_of_points:
+push ecx edi
+mov ecx,eax
+mov edx,ebx
+xor eax,eax
+mov al,cl
+xor ebx,ebx
+mov bl,dl
+add eax,ebx
+rcr eax,1
+xor edi,edi
+mov di,ax
+xor eax,eax
+mov al,ch
+xor ebx,ebx
+mov bl,dh
+add eax,ebx
+rcr eax,1
+ror edi,8
+add edi,eax
+ror ecx,8
+ror edx,8
+xor eax,eax
+mov al,ch
+xor ebx,ebx
+mov bl,dh
+add eax,ebx
+rcr eax,1
+ror edi,8
+add eax,edi
+ror eax,16
+pop edi ecx
+ret
 
    snbgp:
      add  ebp,3                     ; +3

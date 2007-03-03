@@ -10,18 +10,14 @@
 ;
 
 
-;vmode db 'VMODE   MDR'  ; MDR - Menuet Driver 
-; must be located after fonts filenames in kernel.asm
-
 ; LOAD VIDEOMODE DRIVER
                                        ; If vmode.mdr file not found
         or    eax,-1                   ; Driver ID = -1 (not present in system)
         mov   [0x760000],eax           ;
         mov   [0x760100],byte 0xC3     ; Instruction RETN - driver loop
 
-        mov   eax,vmode                ; File name of driver
-        mov   esi,12
-        mov   ebx,0
-        mov   ecx,26000
-        mov   edx,0x760000             ; Memory position of driver
-        call  fileread
+        mov     esi, vmode
+        xor     ebx, ebx
+        mov     ecx, 0x8000            ; size of memory area for driver
+        mov     edx, 0x760000          ; Memory position of driver
+        call    fs_RamdiskRead

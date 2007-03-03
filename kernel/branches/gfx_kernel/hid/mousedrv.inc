@@ -40,124 +40,152 @@ include 'm_com2.inc'
 __sys_draw_mouse_under:
         ; return old picture
 
+        cmp [set_hw_cursor], 0
+        jz @F
         pushad
-
+        movzx  eax,word [X_UNDER]
+        movzx  ebx,word [Y_UNDER]
+        stdcall [hw_restore], eax, ebx
+        popad
+        ret
+@@:
+        pushad
         xor    ecx,ecx
         xor    edx,edx
-        mov    esi,mouseunder-4
-
         align  4
-      mres:
-
-        add    esi,4
-
-        movsx  eax,word[0xfb4a]
+mres:
+        movzx  eax,word [X_UNDER]
+        movzx  ebx,word [Y_UNDER]
         add    eax,ecx
-        js     .skip
-        movsx  ebx,word[0xfb4c]
         add    ebx,edx
-        js     .skip
-
         push   ecx
         push   edx
-        mov    ecx,[esi]
-
-        mov    edi,1 ;force
-        push   esi
+        push   eax
+        push   ebx
+        mov    eax,edx
+        shl    eax,6
+        shl    ecx,2
+        add    eax,ecx
+        add    eax,mouseunder
+        mov    ecx,[eax]
+        pop    ebx
+        pop    eax
+        mov    edi, 1 ;force
         call   [putpixel]
-        pop    esi
-
         pop    edx
         pop    ecx
-    .skip:
         inc    ecx
-        cmp    ecx,32
-
+        cmp    ecx, 16
         jnz    mres
         xor    ecx, ecx
         inc    edx
-        cmp    edx,32
+        cmp    edx, 24
         jnz    mres
-
         popad
         ret
 
-
 save_draw_mouse:
+
+        cmp [set_hw_cursor], 0
+        jz @F
+        pushad
+
+        mov    [X_UNDER],ax
+        mov    [Y_UNDER],bx
+        movzx  eax,word [MOUSE_Y]
+        movzx  ebx,word [MOUSE_X]
+        push eax
+        push ebx
+
+        mov ecx, [ScreenWidth]
+        inc ecx
+        mul ecx
+        movzx edx, byte [display_data+ebx+eax]
+        shl edx, 8
+        mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
+
+        cmp [ecx+CURSOR.magic], 'CURS'
+        jne .fail
+;        cmp [ecx+CURSOR.size], CURSOR_SIZE
+;        jne .fail
+        push ecx
+        call [set_hw_cursor]
+        popad
+        ret
+.fail:
+        mov ecx, [def_cursor]
+        mov [edx+SLOT_BASE+APPDATA.cursor], ecx
+        push ecx
+        call [set_hw_cursor]
+        popad
+        ret
+
+@@:
         pushad
         ; save & draw
-        mov    [0xfb4a],ax
-        mov    [0xfb4c],bx
+        mov    [X_UNDER],ax
+        mov    [Y_UNDER],bx
         push   eax
         push   ebx
-        xor    ecx,ecx
-        mov    edx,ecx
-        mov    esi,mouseunder-4;3
-        mov    edi,mousepointer+62-4
-
-        mov    dword[0x6900],mouseunder+mousecomb
-
-      drm:
-
-        add    esi,4;3
-        add    edi,4
-
-        push   eax ebx ecx edx
-
-        push   eax ebx
+        mov    ecx,0
+        mov    edx,0
+        align  4
+drm:
+        push   eax
+        push   ebx
+        push   ecx
+        push   edx
+        ; helloworld
+        push  ecx
         add    eax,ecx  ; save picture under mouse
-        js     @f
         add    ebx,edx
-        js     @f
-        push   esi edi
-        call   [getpixel]
-        pop    edi esi
-        mov    [esi],ecx
-        pop    ebx eax
-
-        push   esi edi
+        push   ecx
+        call   getpixel
+        mov    [COLOR_TEMP],ecx
+        pop    ecx
+        mov    eax,edx
+        shl    eax,6
+        shl    ecx,2
+        add    eax,ecx
+        add    eax,mouseunder
+        mov    ebx,[COLOR_TEMP]
+        mov    [eax],ebx
+        pop  ecx
+        mov    edi,edx       ; y cycle
+        shl    edi,4       ; *16 bytes per row
+        add    edi,ecx       ; x cycle
+        mov    esi, edi
+        add    edi, esi
+        add    edi, esi       ; *3
+        add    edi,[MOUSE_PICTURE]      ; we have our str address
+        mov    esi, edi
+        add    esi, 16*24*3
+        push   ecx
+        mov    ecx, [COLOR_TEMP]
         call   combine_colors
-        pop    edi esi
-        mov    [0xfb10],ecx
-
-        pop    edx ecx ebx eax
-
-        xchg   esi,[0x6900]
-        push   dword[0xFB10]
-        pop    dword[esi]
-        add    esi,3
-        xchg   esi,[0x6900]
-
-        jc     mnext
-
-        add    eax,ecx       ; we have x coord+cycle
-        js     mnext
-        add    ebx,edx       ; and y coord+cycle
-        js     mnext
-
-        push   ecx edi esi
-        mov    ecx, [0xfb10]
-        mov    edi, 1
-        call   [putpixel]
-        pop    esi edi ecx
-        jmp    mnext
-    @@: add    esp,8
-        pop    edx ecx ebx eax
-      mnext:
-
-        mov    ebx,[esp+0]      ; pure y coord again
-        mov    eax,[esp+4]      ; and x
-
-        inc    ecx          ; +1 cycle
-        cmp    ecx,32
-        jnz    drm
-        xor    ecx,ecx
-        inc    edx
-        cmp    edx,32
-        jnz    drm
+        mov    [MOUSE_COLOR_MEM], ecx
+        pop    ecx
+        pop    edx
+        pop    ecx
         pop    ebx
         pop    eax
-
+        add    eax,ecx       ; we have x coord+cycle
+        add    ebx,edx       ; and y coord+cycle
+        push   ecx
+        mov    ecx, [MOUSE_COLOR_MEM]
+        mov    edi, 1
+        call   [putpixel]
+        pop    ecx
+        mov    ebx,[esp+0]      ; pure y coord again
+        mov    eax,[esp+4]      ; and x
+        inc    ecx          ; +1 cycle
+        cmp    ecx,16       ; if more than 16
+        jnz    drm
+        xor    ecx, ecx
+        inc    edx
+        cmp    edx,24
+        jnz    drm
+        add   esp,8
         popad
         ret
 
@@ -170,141 +198,132 @@ combine_colors:
       ;
       ; out
       ; ecx - new color ( roughly (ecx*[esi]>>8)+([edi]*[esi]>>8) )
-    ; colors:
-    ;   [esp] = background:
-    ;   [edi] = cursor
-    ;   <ecx> = combined
-
-    cmp byte[edi+3],0
-    jne @f
-    stc
-    ret
-  @@:
-    cmp byte[edi+3],255
-    jne @f
-    mov ecx,[edi]
-    and ecx,0x00FFFFFF
-    clc
-    ret
-  @@:
+      push eax
+      push ebx
+      push edx
       push ecx
-
-    xor  ecx,ecx
-
-    movzx eax,byte[edi+2]
-    movzx ebx,byte[esp+2]
-    sub   eax,ebx
-    movzx ebx,byte[edi+3]
-    imul  ebx
-    xor   edx,edx
-    mov   ebx,255
-    div   ebx
-    add   al,[esp+2]
-    mov   cl,al
-    shl   ecx,8
-
-    movzx eax,byte[edi+1]
-    movzx ebx,byte[esp+1]
-    sub   eax,ebx
-    movzx ebx,byte[edi+3]
-    imul  ebx
-    xor   edx,edx
-    mov   ebx,255
-    div   ebx
-    add   al,[esp+1]
-    mov   cl,al
-    shl   ecx,8
-
-    movzx eax,byte[edi+0]
-    movzx ebx,byte[esp+0]
-    sub   eax,ebx
-    movzx ebx,byte[edi+3]
-    imul  ebx
-    xor   edx,edx
-    mov   ebx,255
-    div   ebx
-    add   al,[esp+0]
-    mov   cl,al
-
-    add   esp,4
-
-    clc
+      xor ecx, ecx
+         ; byte 2
+      mov eax, 0xff
+      sub al, [esi+0]
+      mov ebx, [esp]
+      shr ebx, 16
+      and ebx, 0xff
+      mul ebx
+      shr eax, 8
+      add ecx, eax
+      xor eax, eax
+      xor ebx, ebx
+      mov al, [edi+0]
+      mov bl, [esi+0]
+      mul ebx
+      shr eax, 8
+      add ecx, eax
+      shl ecx, 8
+         ; byte 1
+      mov eax, 0xff
+      sub al, [esi+1]
+      mov ebx, [esp]
+      shr ebx, 8
+      and ebx, 0xff
+      mul ebx
+      shr eax, 8
+      add ecx, eax
+      xor eax, eax
+      xor ebx, ebx
+      mov al, [edi+1]
+      mov bl, [esi+1]
+      mul ebx
+      shr eax, 8
+      add ecx, eax
+      shl ecx, 8
+         ; byte 2
+      mov eax, 0xff
+      sub al, [esi+2]
+      mov ebx, [esp]
+      and ebx, 0xff
+      mul ebx
+      shr eax, 8
+      add ecx, eax
+      xor eax, eax
+      xor ebx, ebx
+      mov al, [edi+2]
+      mov bl, [esi+2]
+      mul ebx
+      shr eax, 8
+      add ecx, eax
+      pop eax
+      pop edx
+      pop ebx
+      pop eax
       ret
 
 
 __sys_disable_mouse:
-      cmp  dword [0xf204],dword 0
+      cmp  dword [MOUSE_VISIBLE],dword 0
       je    @f
       ret
-@@:  
+@@:
       pushad
-      cmp  [0x3000],dword 1
+      cmp  [CURRENT_TASK],dword 1
       je   disable_m
-      mov  edx,[0x3000]
+      mov  edx,[CURRENT_TASK]
       shl  edx,5
       add  edx,window_data
-      movzx  eax,word[0xfb0a]
-      movzx  ecx,word[mousepointer+10]
-      sub    eax,ecx
-      movzx  ebx,word[0xfb0c]
-      movzx  ecx,word[mousepointer+12]
-      sub    ebx,ecx
-      mov  ecx,[0xfe00]
+      movzx  eax, word [MOUSE_X]
+      movzx  ebx, word [MOUSE_Y]
+      mov  ecx,[ScreenWidth]
+      inc  ecx
       imul  ecx,ebx
       add  ecx,eax
       add  ecx, display_data
-;     mov   eax, [0x3000]
-      movzx eax, byte [edx+twdw+0xe]
+      mov   eax, [CURRENT_TASK]
       movzx ebx, byte [ecx]
       cmp   eax,ebx
       je    yes_mouse_disable
-      movzx ebx, byte [ecx+32]
+      movzx ebx, byte [ecx+16]
       cmp   eax,ebx
       je    yes_mouse_disable
-      mov   ebx,[0xfe00]
+      mov   ebx,[ScreenWidth]
       inc   ebx
-      imul  ebx,32
+      imul  ebx,10
       add   ecx,ebx
       movzx ebx, byte [ecx]
       cmp   eax,ebx
       je    yes_mouse_disable
-      movzx ebx, byte [ecx+32]
+      movzx ebx, byte [ecx+16]
       cmp   eax,ebx
       je    yes_mouse_disable
       jmp   no_mouse_disable
 yes_mouse_disable:
-      mov  edx,[0x3000]
+      mov  edx,[CURRENT_TASK]
       shl  edx,5
       add  edx,window_data
-      movzx  eax, word [0xfb0a]
-      movzx  ebx, word [0xfb0c]
-      movzx  ecx,word[mousepointer+10]
-      sub    eax,ecx
-      movzx  ecx,word[mousepointer+12]
-      sub    ebx,ecx
+      movzx  eax, word [MOUSE_X]
+      movzx  ebx, word [MOUSE_Y]
       mov  ecx,[edx+0]   ; mouse inside the area ?
-      add  eax,32
+      add  eax,14
       cmp  eax,ecx
-      jl   no_mouse_disable
-      sub  eax,32
+      jb   no_mouse_disable
+      sub  eax,14
       add  ecx,[edx+8]
       cmp  eax,ecx
       jg   no_mouse_disable
       mov  ecx,[edx+4]
-      add  ebx,32
+      add  ebx,20
       cmp  ebx,ecx
-      jl   no_mouse_disable
-      sub  ebx,32
+      jb   no_mouse_disable
+      sub  ebx,20
       add  ecx,[edx+12]
       cmp  ebx,ecx
       jg   no_mouse_disable
 disable_m:
-      cmp  dword [0xf204],dword 0
+      cmp  dword [MOUSE_VISIBLE],dword 0
       jne  no_mouse_disable
       cli
-       call [draw_mouse_under]
+      call [draw_mouse_under]
       sti
-      mov  [0xf204],dword 1
+      mov  [MOUSE_VISIBLE],dword 1
 no_mouse_disable:
       popad
       ret
@@ -326,15 +345,11 @@ __sys_draw_pointer:
         mov     [MouseTickCounter],eax
         pop     eax
         pushad
-        cmp    dword [0xf204],dword 0  ; mouse visible ?
+        cmp    dword [MOUSE_VISIBLE],dword 0  ; mouse visible ?
         je     chms00
-        mov     [0xf204], dword 0
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
-        movzx  esi,word[mousepointer+10]
-        sub    eax,esi
-        movzx  esi,word[mousepointer+12]
-        sub    ebx,esi
+        mov     [MOUSE_VISIBLE], dword 0
+        movzx  ebx,word [MOUSE_Y]
+        movzx  eax,word [MOUSE_X]
         cli
         call   save_draw_mouse
         sti
@@ -342,14 +357,10 @@ nodmu2:
         popad
         ret
 chms00:
-        movsx  ecx,word[0xfb4a]
-        movsx  edx,word[0xfb4c]
-        movzx  ebx,word [0xfb0c]
-        movzx  eax,word [0xfb0a]
-        movzx  esi,word[mousepointer+10]
-        sub    eax,esi
-        movzx  esi,word[mousepointer+12]
-        sub    ebx,esi
+        movzx  ecx,word [X_UNDER]
+        movzx  edx,word [Y_UNDER]
+        movzx  ebx,word [MOUSE_Y]
+        movzx  eax,word [MOUSE_X]
         cmp    eax,ecx
         jne    redrawmouse
         cmp    ebx,edx

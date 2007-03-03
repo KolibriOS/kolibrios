@@ -2,7 +2,7 @@ func color_24_to_4_bits
 begin
 	push	edx
 	mov	dl,0
-	cmp	al,85             ; blue
+	cmp	al,85		  ; blue
 	jbe	.p13green
 	or	dl,0x01
 	cmp	al,170
@@ -10,14 +10,14 @@ begin
 	or	dl,0x08
   .p13green:
 	shr	eax,8
-	cmp	al,85             ; green
+	cmp	al,85		  ; green
 	jbe	.p13red
 	or	dl,0x02
 	cmp	al,170
 	jbe	.p13red
 	or	dl,0x08
   .p13red:
-	cmp	ah,85             ; red
+	cmp	ah,85		  ; red
 	jbe	.p13cont
 	or	dl,0x04
 	cmp	ah,170
@@ -56,19 +56,19 @@ begin
 	mov	edi,eax
 	pop	eax
 
-	mov	ebp,[0x3010]
-	movsx	esi,word[ebp-0x3000+0]
+	mov	ebp,[TASK_BASE]
+	movsx	esi,word[ebp-CURRENT_TASK+0]
 	add	eax,esi
 	add	ecx,esi
-	movsx	esi,word[ebp-0x3000+4]
+	movsx	esi,word[ebp-CURRENT_TASK+4]
 	add	ebx,esi
 	add	edx,esi
-;	add	eax,[ebp-0x3000+0]
-;	add	ebx,[ebp-0x3000+4]
-;	add	ecx,[ebp-0x3000+0]
-;	add	edx,[ebp-0x3000+4]
+;       add     eax,[ebp-CURRENT_TASK+0]
+;       add     ebx,[ebp-CURRENT_TASK+4]
+;       add     ecx,[ebp-CURRENT_TASK+0]
+;       add     edx,[ebp-CURRENT_TASK+4]
 
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	ebp,[esi]
 	or	ebp,ebp
@@ -89,10 +89,10 @@ begin
 	mov	edx,[rr.bottom]
     @@: call	is_intersect_rc
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
   .put: sub	edx,ebx
 	push	edx edi ebx eax
 	mov	edi,ebx
@@ -101,7 +101,7 @@ begin
 	add	edi,ebx
 	shr	eax,3
 	add	edi,eax
-	add	edi,0x000A0000
+	add	edi,VGABasePtr
 	pop	eax ebx
 
 	mov	ebx,eax
@@ -114,102 +114,102 @@ begin
 ;ebx = x
 ; dx = Graphix Controller
 
-  mov   cl,bl		; Get StartBit
-  and   ecx,07h
+  mov	cl,bl		; Get StartBit
+  and	ecx,07h
 
-  mov   eax,esi
-  add   eax,ecx
-  cmp   eax,8		; Is x+Length<One Byte
-  jb    .D_One
+  mov	eax,esi
+  add	eax,ecx
+  cmp	eax,8		; Is x+Length<One Byte
+  jb	.D_One
 
-  mov   ax,0xff08	; 11111111b | BitMask Register
-  shr   ah,cl		; BitMask
-  out   dx,ax		; Write BitMask
-  push  ecx
-  mov   ah,[esp+4]
-  mov   ecx,[esp+4+4]
-  push  edi
+  mov	ax,0xff08	; 11111111b | BitMask Register
+  shr	ah,cl		; BitMask
+  out	dx,ax		; Write BitMask
+  push	ecx
+  mov	ah,[esp+4]
+  mov	ecx,[esp+4+4]
+  push	edi
 .D_LL:			; Draw Left of Box
-  mov   al,[edi]
-  mov   [edi],ah
-  add   edi,80		; edi:=edi+80
-  dec   ecx
-  jnz   .D_LL
-  pop   edi
-  inc   edi
-  pop   ecx
+  mov	al,[edi]
+  mov	[edi],ah
+  add	edi,80		; edi:=edi+80
+  dec	ecx
+  jnz	.D_LL
+  pop	edi
+  inc	edi
+  pop	ecx
 
-  mov   ax,0xFF08	; BitMask Register
-  out   dx,ax		; Write BitMask
+  mov	ax,0xFF08	; BitMask Register
+  out	dx,ax		; Write BitMask
 
-  mov   eax,esi
-  mov   ch,8
-  sub   ch,cl
+  mov	eax,esi
+  mov	ch,8
+  sub	ch,cl
   movzx ecx,ch
-  sub   eax,ecx
-  shr   eax,3		; Length div 8
+  sub	eax,ecx
+  shr	eax,3		; Length div 8
 
-  push  edi ebx
-  mov   ebx,[esp+8+4]
-  mov   edx,eax
-  mov   al,[esp+8]
+  push	edi ebx
+  mov	ebx,[esp+8+4]
+  mov	edx,eax
+  mov	al,[esp+8]
 .D_LC:
-  mov   ecx,edx
-  rep   stosb
-  add   edi,80
-  sub   edi,edx
-  dec   ebx
-  jnz   .D_LC
-  pop   ebx edi
-  add   edi,edx
+  mov	ecx,edx
+  rep	stosb
+  add	edi,80
+  sub	edi,edx
+  dec	ebx
+  jnz	.D_LC
+  pop	ebx edi
+  add	edi,edx
 
-  mov   ecx,ebx		; ecx:=x+Length
-  add   ecx,esi
-  and   ecx,07h		; ecx and 07
-  mov   ah,0ffh
-  shr   ah,cl		; BitMask
-  jz    .D_End
+  mov	ecx,ebx 	; ecx:=x+Length
+  add	ecx,esi
+  and	ecx,07h 	; ecx and 07
+  mov	ah,0ffh
+  shr	ah,cl		; BitMask
+  jz	.D_End
 
-  not   ah
-  mov   al,8		; BitMask Register
-  mov   dx,03ceh	; Graphics Controller
-  out   dx,ax		; Write BitMask
-  mov   ecx,[esp+4]
-  mov   al,[esp]
+  not	ah
+  mov	al,8		; BitMask Register
+  mov	dx,03ceh	; Graphics Controller
+  out	dx,ax		; Write BitMask
+  mov	ecx,[esp+4]
+  mov	al,[esp]
 .D_LR:
-  mov   ah,[edi]
-  mov   [edi],al
-  add   edi,80
-  dec   ecx
-  jnz   .D_LR
+  mov	ah,[edi]
+  mov	[edi],al
+  add	edi,80
+  dec	ecx
+  jnz	.D_LR
 
-  jmp   .D_End
+  jmp	.D_End
 
 .D_One:
-  mov   ah,0ffh
-  shr   ah,cl		; Left BitMask
+  mov	ah,0ffh
+  shr	ah,cl		; Left BitMask
 
-  add   ebx,esi
-  dec   ebx
-  and   ebx,07h
+  add	ebx,esi
+  dec	ebx
+  and	ebx,07h
 
-  mov   ecx,7
-  sub   ecx,ebx
+  mov	ecx,7
+  sub	ecx,ebx
 
-  mov   bl,0ffh
-  shl   bl,cl		; Right BitMask
+  mov	bl,0ffh
+  shl	bl,cl		; Right BitMask
 
-  and   ah,bl		; Full  BitMask
-  mov   al,8		; BitMask Register
-  out   dx,ax		; Write BitMask
-  mov   ecx,[esp+4]
-  mov   al,[esp]
+  and	ah,bl		; Full  BitMask
+  mov	al,8		; BitMask Register
+  out	dx,ax		; Write BitMask
+  mov	ecx,[esp+4]
+  mov	al,[esp]
 .D_L:
-  mov   dl,[edi]	; Fill Latches
-  mov   [edi],al	; Write Pixel
-  add   edi,80
-  dec   ecx
-  jnz   .D_L
+  mov	dl,[edi]	; Fill Latches
+  mov	[edi],al	; Write Pixel
+  add	edi,80
+  dec	ecx
+  jnz	.D_L
 .D_End:
 	pop	edi
 	add	esp,4
@@ -245,7 +245,7 @@ begin
 
 	mov	eax,ecx
 	call	color_24_to_4_bits
-;	mov	[esp+4*8],ecx
+;       mov     [esp+4*8],ecx
 	mov	[esp+4*8],al
 
 	movsx	eax,word[esp+4*7]  ; x end
@@ -274,7 +274,7 @@ begin
 	
 	test	edi,1
 	jnz	.forced
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -298,10 +298,10 @@ begin
   .draw:
     @@: call	is_intersect_vln
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
   .put: push	ebx eax
 	mov	ebp,ebx
 	shl	ebp,6
@@ -309,7 +309,7 @@ begin
 	add	ebp,ebx
 	shr	eax,3
 	add	ebp,eax
-	add	ebp,0x000A0000
+	add	ebp,VGABasePtr
 	pop	eax ebx
     @@: mov	ch,[ebp]
 	mov	[ebp],cl
@@ -349,7 +349,7 @@ begin
 	mov	ecx,[esp+4*8]
 	test	edi,1
 	jnz	.forced
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -373,18 +373,18 @@ begin
   .draw:
     @@: call	is_intersect_hln
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
-  .put:	push	edi ebx eax
+	mov	byte[MOUSE_VISIBLE],0
+  .put: push	edi ebx eax
 	mov	edi,eax
 	shl	edi,6
 	shl	eax,4
 	add	edi,eax
 	shr	ebx,3
 	add	edi,ebx
-	add	edi,0x000A0000
+	add	edi,VGABasePtr
 	pop	eax ebx
 
 	push	eax ebx edx esi ecx
@@ -396,88 +396,88 @@ begin
 ;esi = Length
 ;ebx = x
 ; dx = Graphix Controller
-  mov   cl,bl		; Get StartBit
-  and   ecx,07h
+  mov	cl,bl		; Get StartBit
+  and	ecx,07h
 
-  mov   eax,esi
-  add   eax,ecx
-  cmp   eax,8		; Is x+Length<One Byte
-  jb    .D_One
+  mov	eax,esi
+  add	eax,ecx
+  cmp	eax,8		; Is x+Length<One Byte
+  jb	.D_One
 
-  mov   ax,0xFF08	; 11111111b | BitMask Register
-  shr   ah,cl           ; BitMask
-  out   dx,ax           ; Write BitMask
-  mov   al,[edi]
-  mov   eax,[esp]
-  mov   [edi],al
-  inc   edi
+  mov	ax,0xFF08	; 11111111b | BitMask Register
+  shr	ah,cl		; BitMask
+  out	dx,ax		; Write BitMask
+  mov	al,[edi]
+  mov	eax,[esp]
+  mov	[edi],al
+  inc	edi
 
-  mov   ax,0xFF08	; BitMask | BitMask Register
-  out   dx,ax		; Write BitMask
+  mov	ax,0xFF08	; BitMask | BitMask Register
+  out	dx,ax		; Write BitMask
 
-  mov   eax,esi
-  mov   ch,8
-  sub   ch,cl
-  mov   cl,ch
-  xor   ch,ch
-  sub   eax,ecx
-  shr   eax,3		; Length div 8
-  mov   ecx,eax
-  mov   eax,[esp]
-  rep   stosb
+  mov	eax,esi
+  mov	ch,8
+  sub	ch,cl
+  mov	cl,ch
+  xor	ch,ch
+  sub	eax,ecx
+  shr	eax,3		; Length div 8
+  mov	ecx,eax
+  mov	eax,[esp]
+  rep	stosb
 
-  mov   ecx,ebx		; ecx:=x+Length
-  add   ecx,esi
-  and   ecx,07h		; ecx and 07
-  mov   ah,0ffh
-  shr   ah,cl		; BitMask
-  jz    .D_End
+  mov	ecx,ebx 	; ecx:=x+Length
+  add	ecx,esi
+  and	ecx,07h 	; ecx and 07
+  mov	ah,0ffh
+  shr	ah,cl		; BitMask
+  jz	.D_End
 
-  not   ah
-  mov   al,8		; BitMask Register
-  out   dx,ax		; Write BitMask
-  mov   cl,[edi]
-  mov   eax,[esp]
-  mov   [edi],al
-  jmp   .D_End
+  not	ah
+  mov	al,8		; BitMask Register
+  out	dx,ax		; Write BitMask
+  mov	cl,[edi]
+  mov	eax,[esp]
+  mov	[edi],al
+  jmp	.D_End
 
 .D_One:
-  mov   ax,0xff08	; | BitMask Register
-  shr   ah,cl		; Left BitMask
+  mov	ax,0xff08	; | BitMask Register
+  shr	ah,cl		; Left BitMask
 
-  add   ebx,esi
-  dec   ebx
-  and   ebx,07h
+  add	ebx,esi
+  dec	ebx
+  and	ebx,07h
 
-  mov   ecx,7
-  sub   ecx,ebx
+  mov	ecx,7
+  sub	ecx,ebx
 
-  mov   bl,0ffh
-  shl   bl,cl		; Right BitMask
+  mov	bl,0ffh
+  shl	bl,cl		; Right BitMask
 
-  and   ah,bl		; Full  BitMask
-  out   dx,ax		; Write BitMask
+  and	ah,bl		; Full  BitMask
+  out	dx,ax		; Write BitMask
 
-  mov   dl,[edi]	; Fill Latches
-  mov   eax,[esp]
-  mov   [edi],al	; Write Pixel
+  mov	dl,[edi]	; Fill Latches
+  mov	eax,[esp]
+  mov	[edi],al	; Write Pixel
 .D_End:
 	pop	ecx esi edx ebx eax edi
 
-;	mov	ebp,[bytes_per_scanline]
-;	imul	ebp,eax
-;	lea	ebp,[ebp+ebx*4]
-;	add	ebp,[lfb_address]
-;    @@: test	ecx,0x01000000
-;	jz	.dr
-;	mov	ecx,[ebp]
-;	not	ecx
-;	or	ecx,0x01000000
-;  .dr:	mov	[ebp],ecx
-;	add	ebp,4
-;	inc	ebx
-;	cmp	ebx,edx
-;	jle	@b
+;       mov     ebp,[BytesPerScanLine]
+;       imul    ebp,eax
+;       lea     ebp,[ebp+ebx*4]
+;       add     ebp,[LFBAddress]
+;    @@: test   ecx,0x01000000
+;       jz      .dr
+;       mov     ecx,[ebp]
+;       not     ecx
+;       or      ecx,0x01000000
+;  .dr: mov     [ebp],ecx
+;       add     ebp,4
+;       inc     ebx
+;       cmp     ebx,edx
+;       jle     @b
   .skip:
 	add	esi,SR
 	dec	edi
@@ -518,17 +518,17 @@ func vm_mike_put_pixel.04 ;///////////////////////////////////////////////////
 begin
 	pushad
 	cli
-;	mov	edx,[bytes_per_scanline]
-;	imul	edx,ebx
-;	lea	edx,[edx+eax*4]
-;	add	edx,[lfb_address]
-;	test	ecx,0x01000000
-;	jz	@f
-;	mov	ecx,[edx]
-;	not	ecx
+;       mov     edx,[BytesPerScanLine]
+;       imul    edx,ebx
+;       lea     edx,[edx+eax*4]
+;       add     edx,[LFBAddress]
+;       test    ecx,0x01000000
+;       jz      @f
+;       mov     ecx,[edx]
+;       not     ecx
     @@: test	edi,1
 	jnz	.forced
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -541,34 +541,34 @@ begin
 	call	get_cursor_rect
 	call	is_intersect_pt
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
-  .put:;mov	[edx],ecx
+	mov	byte[MOUSE_VISIBLE],0
+  .put:;mov     [edx],ecx
 ;  mov   ax,SegA000      {Calculate Offset}
 ;  mov   es,ax
 ; mov   bx,[y]
-  mov   edi,ebx
-  shl   edi,6            ; 80*y
-  shl   ebx,4
-  add   edi,ebx
+  mov	edi,ebx
+  shl	edi,6		 ; 80*y
+  shl	ebx,4
+  add	edi,ebx
 
-  push  ecx
-  mov   cl,al
-  shr   eax,3            ; /8
-  add   edi,eax          ; 80*y + (x/8)
+  push	ecx
+  mov	cl,al
+  shr	eax,3		 ; /8
+  add	edi,eax 	 ; 80*y + (x/8)
 
-  and   cl,7             ; Get Bit that Changes
-  mov   ax,0x8008
-  shr   ah,cl
-  mov   dx,0x03CE
-  out   dx,ax
-  add   edi,0x000A0000
+  and	cl,7		 ; Get Bit that Changes
+  mov	ax,0x8008
+  shr	ah,cl
+  mov	dx,0x03CE
+  out	dx,ax
+  add	edi,VGABasePtr
 
   call	color_24_to_4_bits
-  mov   ah,[edi]           ; dummy read
-  mov   [edi],al
+  mov	ah,[edi]	   ; dummy read
+  mov	[edi],al
 
   .exit:
 	sti
@@ -588,26 +588,26 @@ begin
 ;  mov   ax,SegA000      {Calculate Offset}
 ;  mov   es,ax
 ; mov   bx,[y]
-  mov   edi,ebx
-  shl   edi,6            ; 80*y
-  shl   ebx,4
-  add   edi,ebx
+  mov	edi,ebx
+  shl	edi,6		 ; 80*y
+  shl	ebx,4
+  add	edi,ebx
 
-  push  ecx
-  mov   cl,al
-  shr   eax,3            ; /8
-  add   edi,eax          ; 80*y + (x/8)
+  push	ecx
+  mov	cl,al
+  shr	eax,3		 ; /8
+  add	edi,eax 	 ; 80*y + (x/8)
 
-  and   cl,7             ; Get Bit that Changes
-  mov   ax,0x8008
-  shr   ah,cl
-  mov   dx,0x03CE
-  out   dx,ax
-  add   edi,0x000A0000
+  and	cl,7		 ; Get Bit that Changes
+  mov	ax,0x8008
+  shr	ah,cl
+  mov	dx,0x03CE
+  out	dx,ax
+  add	edi,VGABasePtr
 
 	pop	eax
 	call	color_24_to_4_bits
-	mov	ah,[edi]           ; dummy read
+	mov	ah,[edi]	   ; dummy read
 	mov	[edi],al
 
 	sti
@@ -632,37 +632,37 @@ begin
 	pushad
 	cli
 
-  mov   edi,ebx
-  shl   edi,6            ; 80*y
-  shl   ebx,4
-  add   edi,ebx
-  mov   cl,al
-  shr   eax,3            ; /8
-  add   edi,eax          ; 80*y + (x/8)
-  add   edi,0x000A0000
+  mov	edi,ebx
+  shl	edi,6		 ; 80*y
+  shl	ebx,4
+  add	edi,ebx
+  mov	cl,al
+  shr	eax,3		 ; /8
+  add	edi,eax 	 ; 80*y + (x/8)
+  add	edi,VGABasePtr
 
-  and     ecx,7
-  neg     ecx
-  add     cl,7
-  mov     dx,0x03CE
-  xor     bl,bl
-  mov     ah,3
+  and	  ecx,7
+  neg	  ecx
+  add	  cl,7
+  mov	  dx,0x03CE
+  xor	  bl,bl
+  mov	  ah,3
 @1:
-  mov     al,4
-  out     dx,al
-  inc     dx
-  mov     al,ah
-  out     dx,al
-  dec     dx
-  mov     al,[edi]
-  shr     al,cl
-  and     al,1
-  xchg    cl,ah
-  shl     al,cl
-  xchg    cl,ah
-  or      bl,al
-  dec     ah
-  jns     @1
+  mov	  al,4
+  out	  dx,al
+  inc	  dx
+  mov	  al,ah
+  out	  dx,al
+  dec	  dx
+  mov	  al,[edi]
+  shr	  al,cl
+  and	  al,1
+  xchg	  cl,ah
+  shl	  al,cl
+  xchg	  cl,ah
+  or	  bl,al
+  dec	  ah
+  jns	  @1
 
 	and	ebx,0x0000000F
 	mov	eax,[ebx*4+clr_table]
@@ -704,19 +704,19 @@ begin
 	push	edi
 	add	ecx,eax
 	add	edx,ebx
-	mov	edi,[0x00003010]
-	movsx	esi,word[edi-0x3000+0]
+	mov	edi,[TASK_BASE]
+	movsx	esi,word[edi-CURRENT_TASK+0]
 	add	eax,esi
 	add	ecx,esi
-	movsx	esi,word[edi-0x3000+4]
+	movsx	esi,word[edi-CURRENT_TASK+4]
 	add	ebx,esi
 	add	edx,esi
-;	add	eax,[esi-0x3000+0]
-;	add	ebx,[esi-0x3000+4]
-;	add	ecx,[esi-0x3000+0]
-;	add	edx,[esi-0x3000+4]
+;       add     eax,[esi-CURRENT_TASK+0]
+;       add     ebx,[esi-CURRENT_TASK+4]
+;       add     ecx,[esi-CURRENT_TASK+0]
+;       add     edx,[esi-CURRENT_TASK+4]
 
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -738,10 +738,10 @@ begin
 	mov	edx,[rr.bottom]
     @@: call	is_intersect_rc
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
   .put:
 	mov	esi,ebx
 	sub	esi,[esp+4*4]
@@ -751,25 +751,25 @@ begin
 	lea	edi,[edi*3]
 	add	esi,edi
 	add	esi,ebp
-  mov   edi,ebx
-  mov   ebp,ebx
-  shl   edi,6            ; 80*y
-  shl   ebp,4
-  add   edi,ebp
-  add   edi,0x000A0000
+  mov	edi,ebx
+  mov	ebp,ebx
+  shl	edi,6		 ; 80*y
+  shl	ebp,4
+  add	edi,ebp
+  add	edi,VGABasePtr
   .xxx: push	eax edx esi edi ebx eax
 	or	ebp,-1
 	mov	edx,0x03CE
     @@: mov	eax,[esp]
 	push	ecx edi
-  mov   cl,al
-  shr   eax,3            ; /8
-  add   edi,eax          ; 80*y + (x/8)
+  mov	cl,al
+  shr	eax,3		 ; /8
+  add	edi,eax 	 ; 80*y + (x/8)
 
-  mov   eax,0x8008
-  and   cl,7             ; Get Bit that Changes
-  shr   ah,cl
-  out   dx,ax
+  mov	eax,0x8008
+  and	cl,7		 ; Get Bit that Changes
+  shr	ah,cl
+  out	dx,ax
 
 	lodsd
 	dec	esi
@@ -783,8 +783,8 @@ begin
 	call	color_24_to_4_bits
 	mov	bl,al
   .ppp.2:
- mov    al,[edi]           ; dummy read
- mov    [edi],cl
+ mov	al,[edi]	   ; dummy read
+ mov	[edi],cl
 	pop	edi ecx
 	inc	dword[esp]
 	cmp	[esp],ecx
@@ -802,7 +802,7 @@ begin
 	jnz	.nx
 
   .exit:
-  	add	esp,4
+	add	esp,4
 	sti
 	popad
 	xor	eax,eax
@@ -856,10 +856,10 @@ begin
 	mov	edx,[rr.bottom]
     @@: call	is_intersect_rc
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
   .put: sub	edx,ebx
 	push	edx edi ebx eax
 	mov	edi,ebx
@@ -868,7 +868,7 @@ begin
 	add	edi,ebx
 	shr	eax,3
 	add	edi,eax
-	add	edi,0x000A0000
+	add	edi,VGABasePtr
 	pop	eax ebx
 
 	mov	ebx,eax
@@ -881,102 +881,102 @@ begin
 ;ebx = x
 ; dx = Graphix Controller
 
-  mov   cl,bl		; Get StartBit
-  and   ecx,07h
+  mov	cl,bl		; Get StartBit
+  and	ecx,07h
 
-  mov   eax,esi
-  add   eax,ecx
-  cmp   eax,8		; Is x+Length<One Byte
-  jb    .D_One
+  mov	eax,esi
+  add	eax,ecx
+  cmp	eax,8		; Is x+Length<One Byte
+  jb	.D_One
 
-  mov   ax,0xff08	; 11111111b | BitMask Register
-  shr   ah,cl		; BitMask
-  out   dx,ax		; Write BitMask
-  push  ecx
-  mov   ah,[esp+4]
-  mov   ecx,[esp+4+4]
-  push  edi
+  mov	ax,0xff08	; 11111111b | BitMask Register
+  shr	ah,cl		; BitMask
+  out	dx,ax		; Write BitMask
+  push	ecx
+  mov	ah,[esp+4]
+  mov	ecx,[esp+4+4]
+  push	edi
 .D_LL:			; Draw Left of Box
-  mov   al,[edi]
-  mov   [edi],ah
-  add   edi,80		; edi:=edi+80
-  dec   ecx
-  jnz   .D_LL
-  pop   edi
-  inc   edi
-  pop   ecx
+  mov	al,[edi]
+  mov	[edi],ah
+  add	edi,80		; edi:=edi+80
+  dec	ecx
+  jnz	.D_LL
+  pop	edi
+  inc	edi
+  pop	ecx
 
-  mov   ax,0xFF08	; BitMask Register
-  out   dx,ax		; Write BitMask
+  mov	ax,0xFF08	; BitMask Register
+  out	dx,ax		; Write BitMask
 
-  mov   eax,esi
-  mov   ch,8
-  sub   ch,cl
+  mov	eax,esi
+  mov	ch,8
+  sub	ch,cl
   movzx ecx,ch
-  sub   eax,ecx
-  shr   eax,3		; Length div 8
+  sub	eax,ecx
+  shr	eax,3		; Length div 8
 
-  push  edi ebx
-  mov   ebx,[esp+8+4]
-  mov   edx,eax
-  mov   al,[esp+8]
+  push	edi ebx
+  mov	ebx,[esp+8+4]
+  mov	edx,eax
+  mov	al,[esp+8]
 .D_LC:
-  mov   ecx,edx
-  rep   stosb
-  add   edi,80
-  sub   edi,edx
-  dec   ebx
-  jnz   .D_LC
-  pop   ebx edi
-  add   edi,edx
+  mov	ecx,edx
+  rep	stosb
+  add	edi,80
+  sub	edi,edx
+  dec	ebx
+  jnz	.D_LC
+  pop	ebx edi
+  add	edi,edx
 
-  mov   ecx,ebx		; ecx:=x+Length
-  add   ecx,esi
-  and   ecx,07h		; ecx and 07
-  mov   ah,0ffh
-  shr   ah,cl		; BitMask
-  jz    .D_End
+  mov	ecx,ebx 	; ecx:=x+Length
+  add	ecx,esi
+  and	ecx,07h 	; ecx and 07
+  mov	ah,0ffh
+  shr	ah,cl		; BitMask
+  jz	.D_End
 
-  not   ah
-  mov   al,8		; BitMask Register
-  mov   dx,03ceh	; Graphics Controller
-  out   dx,ax		; Write BitMask
-  mov   ecx,[esp+4]
-  mov   al,[esp]
+  not	ah
+  mov	al,8		; BitMask Register
+  mov	dx,03ceh	; Graphics Controller
+  out	dx,ax		; Write BitMask
+  mov	ecx,[esp+4]
+  mov	al,[esp]
 .D_LR:
-  mov   ah,[edi]
-  mov   [edi],al
-  add   edi,80
-  dec   ecx
-  jnz   .D_LR
+  mov	ah,[edi]
+  mov	[edi],al
+  add	edi,80
+  dec	ecx
+  jnz	.D_LR
 
-  jmp   .D_End
+  jmp	.D_End
 
 .D_One:
-  mov   ah,0ffh
-  shr   ah,cl		; Left BitMask
+  mov	ah,0ffh
+  shr	ah,cl		; Left BitMask
 
-  add   ebx,esi
-  dec   ebx
-  and   ebx,07h
+  add	ebx,esi
+  dec	ebx
+  and	ebx,07h
 
-  mov   ecx,7
-  sub   ecx,ebx
+  mov	ecx,7
+  sub	ecx,ebx
 
-  mov   bl,0ffh
-  shl   bl,cl		; Right BitMask
+  mov	bl,0ffh
+  shl	bl,cl		; Right BitMask
 
-  and   ah,bl		; Full  BitMask
-  mov   al,8		; BitMask Register
-  out   dx,ax		; Write BitMask
-  mov   ecx,[esp+4]
-  mov   al,[esp]
+  and	ah,bl		; Full  BitMask
+  mov	al,8		; BitMask Register
+  out	dx,ax		; Write BitMask
+  mov	ecx,[esp+4]
+  mov	al,[esp]
 .D_L:
-  mov   dl,[edi]	; Fill Latches
-  mov   [edi],al	; Write Pixel
-  add   edi,80
-  dec   ecx
-  jnz   .D_L
+  mov	dl,[edi]	; Fill Latches
+  mov	[edi],al	; Write Pixel
+  add	edi,80
+  dec	ecx
+  jnz	.D_L
 .D_End:
 	pop	edi
 	add	esp,4
@@ -992,7 +992,7 @@ begin
 	retn
 
   .tiled:
-	mov	eax,bg_address
+	mov	eax,IMG_BACKGROUND
 	mov	ebx,[bg_width-2]
 	mov	bx,word[bg_height]
 	xor	ecx,ecx
@@ -1001,7 +1001,7 @@ begin
 	call	vm_mike_put_image.04.direct
 	pop	eax
 	add	edx,[bg_width]
-	cmp	edx,[screen_width]
+	cmp	edx,[ScreenWidth]
 	jae	@f
 	shl	edx,16
 	add	ecx,edx
@@ -1010,8 +1010,8 @@ begin
     @@: and	ecx,0x0000FFFF
 	xor	edx,edx
 	add	ecx,[bg_height]
-    	cmp	ecx,[screen_height]
-    	jb	.lp1
+	cmp	ecx,[ScreenHeight]
+	jb	.lp1
 	popad
 	retn
 endf

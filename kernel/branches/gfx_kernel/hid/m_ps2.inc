@@ -42,13 +42,13 @@ check_mouse_data_ps2:
 ; Записать новое значение байта состояния кнопок
         mov al,[FirstByte_2]   ;[0xfb01]
         and    eax,3
-        mov    [0xfb40],al
+        mov    [BTN_DOWN],al
         mov    [mouse_active],1
 ; Вычислить новую X-координату курсора
         ; Занести в AX перемещение по X
         mov     AH,0   ;дублируем знак во все разряды AH
         mov     AL,[FirstByte_2]
-        test    AL,10000b     
+        test    AL,10000b
         jz      @@M0
         mov     AH,0FFh
         ; Занести в AL младший байт
@@ -57,18 +57,18 @@ check_mouse_data_ps2:
         call     mouse_acceleration_ps2
         ; Вычислить новое значение координаты
         ; курсора по X
-        add     AX,[0xFB0A]    ;[XCoordinate]
+        add     AX,[MOUSE_X]    ;[XCoordinate]
         cmp     AX,0
         jge     @@M1
         mov     AX,0
         jmp     @@M2
 @@M1:
-        cmp     AX,[0xFE00]   ;ScreenLength
+        cmp     AX,[ScreenWidth]   ;ScreenLength
         jl      @@M2
-        mov     AX,[0xFE00]   ;ScreenLength-1
+        mov     AX,[ScreenWidth]   ;ScreenLength-1
         dec     ax
 @@M2:
-        mov     [0xFB0A],AX     ;[XCoordinate]
+        mov     [MOUSE_X],AX     ;[XCoordinate]
 
 ; Вычисляем новую Y-координату курсора
         ; Занести в AX перемещение по Y
@@ -84,19 +84,19 @@ check_mouse_data_ps2:
         ; Вычислить новое значение координаты курсора
         ; по Y (Y-координата мыши PS/2 направлена
         ; противоположно экранной)
-        neg     AX  
-        add     AX,[0xFB0C]   ;[YCoordinate]
+        neg     AX
+        add     AX,[MOUSE_Y]   ;[YCoordinate]
         cmp     AX,0
         jge     @@M4
         mov     AX,0
         jmp     @@M5
 @@M4:
-        cmp     AX,[0xFE04]  ;ScreenHeigth
+        cmp     AX,[ScreenHeight]  ;ScreenHeigth
         jl      @@M5
-        mov     AX,[0xFE04] ;ScreenHeigth-1
+        mov     AX,[ScreenHeight] ;ScreenHeigth-1
         dec     ax
 @@M5:
-        mov     [0xFB0C],AX     ;[YCoordinate]
+        mov     [MOUSE_Y],AX     ;[YCoordinate]
 
 ; Показать курсор в новой позиции
         mov   eax,[timer_ticks]
@@ -106,7 +106,7 @@ check_mouse_data_ps2:
 ; Обнаружен сбой в порядке передачи информации от мыши
 @@Error_2:
         mov   [MouseByteNumber_2],0
-; Нормальное завершение прерывания
+; Нормальное завершение прерывани
 @@EndMouseInterrupt_2:
         call  ready_for_next_irq_1
         ret
@@ -129,7 +129,7 @@ mouse_acceleration_ps2:
 ;***********************************************
 Wait8042BufferEmpty:
 ;        push    CX
-;        mov     CX,0FFFFh  ;задать число циклов ожидания
+;        mov     CX,0FFFFh  ;задать число циклов ожидани
 ;@@kb:
 ;        in      AL,64h     ;получить статус
 ;        test    AL,10b     ;буфер i8042 свободен?
@@ -138,7 +138,7 @@ Wait8042BufferEmpty:
         push ecx
         xor ecx,ecx
       @@:
-        in     al,64h 
+        in     al,64h
         test    al,00000010b
         loopnz @b
         pop    ecx
@@ -150,8 +150,8 @@ Wait8042BufferEmpty:
 ;* ОЖИДАНИЕ ПОСТУПЛЕНИЯ ДАННЫХ ОТ МЫШИ *
 ;***************************************
 WaitMouseData:
-;        push    CX             
-;        mov     CX,0FFFFh  ;задать число циклов ожидания
+;        push    CX
+;        mov     CX,0FFFFh  ;задать число циклов ожидани
 ;@@mouse:
 ;        in      AL,64h     ;опросить регистр статуса
 ;        test    AL,100000b ;данные поступили?
@@ -160,11 +160,11 @@ WaitMouseData:
         push ecx
         mov     ECX,0FFFFh
       @@:
-        in     al,64h 
+        in     al,64h
         test    al,100000b
         loopz @b
         pop    ecx
         ;Если при выходе из подпрограммы установлен
         ;флаг ZF - ошибка
-        ret  
+        ret
 

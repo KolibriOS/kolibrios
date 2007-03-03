@@ -65,7 +65,6 @@
         jmp   yes_sys_on_hd
 
   search_and_read_image:
-;        mov   [0xfe10],dword 0    ; entries in hd cache
         call  set_FAT32_variables
         mov   edx, bootpath
         call  read_image
@@ -83,13 +82,13 @@
 read_image:
         mov   eax, hdsysimage
         mov   ebx, 1474560/512
-        mov   ecx, 0x100000
+        mov   ecx, RAMDISK
         mov   esi, 0
         mov   edi, 12
         call  file_read
-        ret    
+        ret
 
-image_retrieved  db 0      
+image_retrieved  db 0
 counter_of_partitions db 0
 no_sys_on_hd:
 yes_sys_on_hd:

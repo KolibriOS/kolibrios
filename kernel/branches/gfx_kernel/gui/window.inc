@@ -30,13 +30,13 @@ setwindowdefaults:
         pushad
 
         xor   eax,eax
-        mov   ecx,0xc000
+        mov   ecx,WIN_STACK
        @@:
         inc   eax
         add   ecx,2
         mov   [ecx+0x000],ax          ; process no
         mov   [ecx+0x400],ax          ; positions in stack
-        cmp   ecx,0xc400-2            ; the more high, the more surface
+        cmp   ecx,WIN_POS-2            ; the more high, the more surface
         jnz   @b
 
         popad
@@ -66,15 +66,15 @@ __sys_calculatescreen:
         mov   edx, [0xFE04]
 	call	[setscreen]
 
-        mov     ebp, [0x3004]        ; number of processes
+        mov     ebp, [TASK_COUNT]        ; number of processes
         cmp     ebp, 1
         jbe     .finish
         align 4
       .new_wnd:
-        movzx   edi, word [0xC400 + esi * 2]
+        movzx   edi, word [WIN_POS + esi * 2]
         shl     edi, 5
 
-        cmp     [0x3000+edi+TASKDATA.state], byte 9
+        cmp     [CURRENT_TASK+edi+TASKDATA.state], byte 9
         je      .not_wnd
 
         add     edi, window_data
@@ -114,7 +114,7 @@ __sys_calculatescreen:
      @@:
 
         push    esi
-        movzx   esi, word [0xC400 + esi * 2]
+        movzx   esi, word [WIN_POS + esi * 2]
 	call	[setscreen]
         pop     esi
 
@@ -191,9 +191,9 @@ display_settings:
   redraw_screen_direct:
      mov  [dlx],dword 0
      mov  [dly],dword 0
-     mov  eax,[0xfe00]
+     mov  eax,[ScreenWidth]
      mov  [dlxe],eax
-     mov  eax,[0xfe04]
+     mov  eax,[ScreenHeight]
      mov  [dlye],eax
      mov  eax,window_data
      call redrawscreen
@@ -217,7 +217,7 @@ display_settings:
      cmp  eax,2       ; set common window colours
      jne  no_com_colours
      mov  [windowtypechanged],dword 1
-     mov  esi,[0x3010]
+     mov  esi,[TASK_BASE]
      add  esi,TASKDATA.mem_start
      add  ebx,[esi]
      mov  esi,ebx
@@ -231,7 +231,7 @@ display_settings:
 
      cmp  eax,3       ; get common window colours
      jne  no_get_com
-     mov  esi,[0x3010]
+     mov  esi,[TASK_BASE]
      add  esi,TASKDATA.mem_start
      add  ebx,[esi]
      mov  edi,ebx
@@ -269,10 +269,10 @@ display_settings:
         movsx   ebx,word[esp+16]
         cmp     eax,ebx
         jge     .lp1
-        or      eax,eax;[0xFE00]
+        or      eax,eax;[ScreenWidth]
         jl      @f
         mov     [screen_workarea.left],eax
-    @@: cmp     ebx,[0xFE00]
+    @@: cmp     ebx,[ScreenWidth]
         jg      .lp1
         mov     [screen_workarea.right],ebx
   .lp1: movsx   eax,word[esp+24+2]
@@ -282,14 +282,14 @@ display_settings:
         or      eax,eax;[0xFE04]
         jl      @f
         mov     [screen_workarea.top],eax
-    @@: cmp     ebx,[0xFE04]
+    @@: cmp     ebx,[ScreenHeight]
         jg      .lp2
         mov     [screen_workarea.bottom],ebx
   .lp2: call    repos_windows
         mov     eax, 0
         mov     ebx, 0
-        mov     ecx, [0xfe00]
-        mov     edx, [0xfe04]
+        mov     ecx, [ScreenWidth]
+        mov     edx, [ScreenHeight]
 	call	[calculatescreen]
 ;    jmp    redraw_screen_direct
     .exit:
@@ -310,7 +310,7 @@ display_settings:
         cmp     eax,8       ; set window skin
         jne     no_set_skin
         mov     eax,ebx
-        mov     edi,[0x3010]
+        mov     edi,[TASK_BASE]
         add     ebx,[edi+TASKDATA.mem_start]        ; abs start of info block
         pushd   [ebx+0] [ebx+4] [ebx+8] [ebx+12]
         mov     dword[ebx+0],0        ; read
@@ -340,8 +340,8 @@ display_settings:
     pushad
         mov     eax, 0
         mov     ebx, 0
-        mov     ecx, [0xfe00]
-        mov     edx, [0xfe04]
+        mov     ecx, [ScreenWidth]
+        mov     edx, [ScreenHeight]
         call    [calculatescreen]
     popad
         mov     dword[esp+32+36],0
@@ -357,57 +357,57 @@ display_settings:
 
 
 repos_windows:
-        mov     ecx,[0x3004]
-        mov     esi,0x20*2
-    mov    byte[0x0000fff0],1
+        mov     ecx,[TASK_COUNT]
+        mov     edi,0x20*2
+    mov    byte[REDRAW_BACKGROUND],1
         dec     ecx
         jge    @f
         ret
-    @@: mov    [esi+WDATA.fl_redraw],1
-    test    [esi+WDATA.fl_wstate],WSTATE_MAXIMIZED
+    @@: mov     [edi+WDATA.fl_redraw],1
+        test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jz      .lp2
         mov     eax,[screen_workarea.left]
-        mov     [esi+WDATA.box.left],eax
+        mov     [edi+WDATA.box.left],eax
         sub     eax,[screen_workarea.right]
         neg     eax
-        mov     [esi+WDATA.box.width],eax
+        mov     [edi+WDATA.box.width],eax
         mov     eax,[screen_workarea.top]
-        mov     [esi+WDATA.box.top],eax
-        test    [esi+WDATA.fl_wstate],WSTATE_ROLLEDUP
+        mov     [edi+WDATA.box.top],eax
+        test    [edi+WDATA.fl_wstate],WSTATE_ROLLEDUP
         jnz     .lp1
         sub     eax,[screen_workarea.bottom]
         neg     eax
-        mov     [esi+WDATA.box.height],eax
-  .lp1: add     esi,0x20
+        mov     [edi+WDATA.box.height],eax
+  .lp1:
+        call    set_window_clientbox
+        add     edi,0x20
         loop    @b
         ret
-  .lp2: mov     eax,[esi+WDATA.box.left]
-        add     eax,[esi+WDATA.box.width]
-    mov    ebx,[0x0000fe00]
+  .lp2: mov     eax,[edi+WDATA.box.left]
+        add     eax,[edi+WDATA.box.width]
+    mov    ebx,[ScreenWidth]
 ;    inc    ebx
     cmp    eax,ebx
     jle    .lp4
-        mov     eax,[esi+WDATA.box.width]
+        mov     eax,[edi+WDATA.box.width]
     sub    eax,ebx
     jle    .lp3
-        mov     [esi+WDATA.box.width],ebx
-  .lp3: sub     ebx,[esi+WDATA.box.width]
-        mov     [esi+WDATA.box.left],ebx
-  .lp4: mov     eax,[esi+WDATA.box.top]
-        add     eax,[esi+WDATA.box.height]
-    mov    ebx,[0x0000fe04]
+        mov     [edi+WDATA.box.width],ebx
+  .lp3: sub     ebx,[edi+WDATA.box.width]
+        mov     [edi+WDATA.box.left],ebx
+  .lp4: mov     eax,[edi+WDATA.box.top]
+        add     eax,[edi+WDATA.box.height]
+    mov    ebx,[ScreenHeight]
 ;    inc    ebx
     cmp    eax,ebx
     jle    .lp6
-        mov     eax,[esi+WDATA.box.height]
+        mov     eax,[edi+WDATA.box.height]
     sub    eax,ebx
     jle    .lp5
-        mov     [esi+WDATA.box.height],ebx
-  .lp5: sub     ebx,[esi+WDATA.box.height]
-        mov     [esi+WDATA.box.top],ebx
-  .lp6: add     esi,0x20
-        loop    @b
-    ret
+        mov     [edi+WDATA.box.height],ebx
+  .lp5: sub     ebx,[edi+WDATA.box.height]
+        mov     [edi+WDATA.box.top],ebx
+  .lp6: jmp     .lp1
 
 uglobal
   common_colours:
@@ -434,8 +434,8 @@ sys_window_mouse:
     cmp   [new_window_starting],eax
     jb    swml1
 
-    mov   [0xfff4],byte 0  ; no mouse background
-    mov   [0xfff5],byte 0  ; draw mouse
+    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
+    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
     mov   [new_window_starting],eax
 
@@ -474,14 +474,22 @@ drawwindow_I_caption:
         add   eax,[esi+WDATA.box.left]
         add   eax,[esi+WDATA.box.width]
         sub   eax,1
+        push  edx
+        mov   edx,0x80000000
         mov   ecx,[esi+WDATA.cl_titlebar]
-	test	ecx,0x80000000
-	jz	.nofa
+        and   ecx,edx
+        cmp   ecx,edx
+        jnz   .nofa
+        mov   ecx,[esi+WDATA.cl_titlebar]
         sub   ecx,0x00040404
         mov   [esi+WDATA.cl_titlebar],ecx
-  .nofa:
-  .faj:
         and   ecx,0x00ffffff
+        jmp   .faj
+  .nofa:
+        mov   ecx,[esi+WDATA.cl_titlebar]
+        and   ecx,0x00ffffff
+  .faj:
+        pop   edx
         mov   edi,0
         call  [draw_line]
         inc   edx
@@ -497,6 +505,7 @@ drawwindow_I_caption:
 drawwindow_I:
 
         pushad
+        or      [edx+WDATA.fl_wdrawn], 4
 
         mov   esi,[edx+WDATA.cl_frames]   ; rectangle
         mov   eax,[edx+WDATA.box.left]
@@ -508,6 +517,12 @@ drawwindow_I:
         add   ebx,[edx+WDATA.box.top]
         add   ebx,[edx+WDATA.box.height]
         call  draw_rectangle
+
+        and     [edx+WDATA.fl_wdrawn], not 4
+        test    [edx+WDATA.fl_wdrawn], 2
+        jz      @f
+        call    drawwindowframes
+@@:
 
         call    drawwindow_I_caption
 
@@ -522,6 +537,8 @@ drawwindow_I:
         mov   ecx,[esi+WDATA.box.width]
         mov   edx,[esi+WDATA.box.height]
         mov   edi,[esi+WDATA.cl_workarea]
+	test  edi,0x40000000
+	jnz   noinside
         call  [drawbar]
       noinside:
 
@@ -638,7 +655,13 @@ drawwindow_III:
         shr   esi,1
         and   esi,0x007f7f7f
         push  esi
+        or      [edi+WDATA.fl_wdrawn], 4
         call  draw_rectangle
+        and     [edi+WDATA.fl_wdrawn], not 4
+        test    [edi+WDATA.fl_wdrawn], 2
+        jz      @f
+        call    drawwindowframes
+@@:
         mov   ecx,3
       dw3l:
         add   eax,1*65536-1
@@ -667,6 +690,8 @@ drawwindow_III:
         sub   ecx,4
         sub   edx,4
         mov   edi,[esi+WDATA.cl_workarea]
+	test  edi,0x40000000
+	jnz   noinside2
         call  [drawbar]
       noinside2:
 
@@ -686,8 +711,8 @@ windowactivate:
 
      ; if type of current active window is 3,
      ; it must be redrawn
-        mov   eax, [0x3004]
-        movzx eax, word [0xC400 + eax*2]
+        mov   eax, [TASK_COUNT]
+        movzx eax, word [WIN_POS + eax*2]
         shl   eax, 5
         add   eax, window_data
         mov   ebx, [eax + WDATA.cl_workarea]
@@ -699,14 +724,14 @@ windowactivate:
 
         push   esi
       movzx   eax, word [esi] ; ax <- process no
-      movzx   eax, word [0xC000+eax*2] ; ax <- position in window stack
+      movzx   eax, word [WIN_STACK+eax*2] ; ax <- position in window stack
 
         xor   esi, esi        ; drop others
       waloop:
-        cmp   esi, dword [0x3004]
+        cmp   esi, dword [TASK_COUNT]
         jae   wacont
         inc   esi
-        lea   edi, [0xC000 + esi*2]
+        lea   edi, [WIN_STACK + esi*2]
         mov   bx, [edi] ; position of the current process
         cmp   bx, ax
         jbe   @f
@@ -719,21 +744,22 @@ windowactivate:
         pop   esi           ;   esi = pointer at 0xC400
 
       movzx   eax, word [esi]
-        mov   bx, [0x3004]  ; number of processes
-        mov   [0xC000+eax*2], bx     ; this is the last (and the upper)
+        mov   bx, [TASK_COUNT]  ; number of processes
+        mov   [WIN_STACK+eax*2], bx     ; this is the last (and the upper)
 
         ; update on screen -window stack
         xor   esi, esi
       waloop2:
-	cmp	esi,[0x3004]
+        mov   edi, [TASK_COUNT]
+        cmp   esi, edi
         jae   wacont2
         inc   esi
-        movzx ebx, word [esi*2 + 0xC000]
-        mov   [ebx*2 + 0xC400], si
+        movzx ebx, word [esi*2 + WIN_STACK]
+        mov   [ebx*2 + WIN_POS], si
         jmp   waloop2
       wacont2:
-        mov   [0xf400], byte 0           ; empty keyboard buffer
-        mov   [0xf500], byte 0           ; empty button buffer
+        mov   [KEY_COUNT], byte 0           ; empty keyboard buffer
+        mov   [BTN_COUNT], byte 0           ; empty button buffer
         popad
         ret
 
@@ -755,8 +781,8 @@ checkwindowdraw:
 
         ; esi = process number
 
-        movzx eax, word [0xC000 + esi * 2] ; get value of the curr process
-        lea   esi, [0xC400 + eax * 2]      ; get address of this process at 0xC400
+        movzx eax, word [WIN_STACK + esi * 2] ; get value of the curr process
+        lea   esi, [WIN_POS + eax * 2]      ; get address of this process at 0xC400
 
         push  esi
 
@@ -766,15 +792,15 @@ checkwindowdraw:
         add   esi, 2
         push  esi
 
-        mov   eax, [0x3004]
-        lea   eax, word [0xC400 + eax * 2] ; number of the upper window
+        mov   eax, [TASK_COUNT]
+        lea   eax, word [WIN_POS + eax * 2] ; number of the upper window
 
         cmp   esi, eax
         ja    .all_wnds_to_top
 
         movzx eax, word [esi]
         shl   eax, 5
-        cmp   [0x3000 + eax + TASKDATA.state], byte 9
+        cmp   [CURRENT_TASK + eax + TASKDATA.state], byte 9
         je    .new_check                    ; skip dead windows
 
         lea   esi, [eax+window_data]
@@ -784,7 +810,7 @@ checkwindowdraw:
         add   edx, ebx      ; y0e
 
         mov   ecx, [esi+WDATA.box.top]  ; y  ; y check
-        cmp   ecx, edx      
+        cmp   ecx, edx
         jae   .new_check     ; y < y0e
         mov   eax, [esi+WDATA.box.height]
         add   ecx, eax       ; ye
@@ -827,14 +853,14 @@ waredraw:     ; if redraw necessary at activate
         jz    .do_not_draw
 
         popad
-        mov   [0xfb44], byte 1     ; do draw mouse
+        mov   [MOUSE_DOWN], byte 1     ; do draw mouse
         call  windowactivate
 
         ; update screen info
 	call	[calc_clipping_rects]
         pushad
-        mov   edi, [0x3004] ; the last process (number)
-        movzx esi, word [0xC400 + edi * 2]
+        mov   edi, [TASK_COUNT] ; the last process (number)
+        movzx esi, word [WIN_POS + edi * 2]
         shl   esi, 5
         add   esi, window_data
 
@@ -847,13 +873,13 @@ waredraw:     ; if redraw necessary at activate
         add   ecx, eax       ; ecx = x_end
         add   edx, ebx       ; edx = y_end
 
-        mov   edi, [0x3004]
-        movzx esi, word [0xC400 + edi * 2]
+        mov   edi, [TASK_COUNT]
+        movzx esi, word [WIN_POS + edi * 2]
         call  [setscreen]
         popad
 
     mov   [edi + WDATA.fl_redraw], 1  ; redraw flag for app
-    mov   [0xfb44],byte 0             ; mouse down checks
+    mov   [MOUSE_DOWN],byte 0             ; mouse down checks
 
         ret
 
@@ -862,16 +888,16 @@ waredraw:     ; if redraw necessary at activate
         popad
 
         call  windowactivate
-        mov   [0xfb44],byte 0  ; mouse down checks
-        mov   [0xfff4],byte 0  ; no mouse background
-        mov   [0xfff5],byte 0  ; draw mouse
+        mov   [MOUSE_DOWN],byte 0  ; mouse down checks
+        mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
+        mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
         ret
 
 
 ; eax = window number on screen
 ; corrupts registers and [dl*]
 minimize_window:
-        movzx eax, word [0xC400+eax*2]
+        movzx eax, word [WIN_POS+eax*2]
         shl   eax, 5
         add   eax, window_data
         test  [eax+WDATA.fl_wstate], WSTATE_MINIMIZED
@@ -904,7 +930,7 @@ minimize_window:
 restore_minimized_window:
         pushfd
         cli
-        movzx esi, word [0xC400+eax*2]
+        movzx esi, word [WIN_POS+eax*2]
         mov   edi, esi
         shl   edi, 5
         add   edi, window_data
@@ -912,7 +938,7 @@ restore_minimized_window:
         jz    .skip_redrawings
         mov   [edi+WDATA.fl_redraw], 1
         and   [edi+WDATA.fl_wstate], not WSTATE_MINIMIZED
-        cmp   eax, [0x3004] ; the uppermost window
+        cmp   eax, [TASK_COUNT] ; the uppermost window
         jnz   .no_uppermost
         mov   eax, [edi+WDATA.box.left]
         mov   ebx, [edi+WDATA.box.top]
@@ -931,7 +957,7 @@ restore_minimized_window:
         add   edx, [edi+WDATA.box.height]
         call  [calculatescreen]
 .done:
-        mov   [0xfff4],byte 0 ; no mouse under
+        mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
 .skip_redrawings:
         popfd
         ret
@@ -949,7 +975,7 @@ checkwindows:
 
         cmp   [window_minimize], 0
         je    .no_minimizing
-        mov   eax, [0x3004]       ; the uppermost window
+        mov   eax, [TASK_COUNT]       ; the uppermost window
         mov   bl, 0
         xchg  [window_minimize], bl
         cmp   bl, 1
@@ -961,13 +987,13 @@ checkwindows:
   .continue:
   .no_minimizing:
 
-        cmp   [0xfb40],byte 0    ; mouse buttons pressed ?
+        cmp   [BTN_DOWN],byte 0    ; mouse buttons pressed ?
         jne   .mouse_buttons_pressed
         popad
         ret
     .mouse_buttons_pressed:
 
-        mov   esi,[0x3004]
+        mov   esi,[TASK_COUNT]
         inc   esi
 
       cwloop:
@@ -975,7 +1001,7 @@ checkwindows:
         jb   .exit
 
         dec   esi
-        movzx edi, word [0xC400 + esi * 2] ; ebx
+        movzx edi, word [WIN_POS + esi * 2] ; ebx
         shl   edi, 5
         add   edi, window_data
 ;        mov   edi, ebx
@@ -987,9 +1013,9 @@ checkwindows:
         test    [edi+WDATA.fl_wstate],WSTATE_MINIMIZED
         jnz     cwloop
 
-       movzx  eax, word [0xfb0a]
-       movzx  ebx, word [0xfb0c]
-       
+       movzx  eax, word [MOUSE_X]
+       movzx  ebx, word [MOUSE_Y]
+
 	cmp	eax,ecx
 	jl	cwloop
 	cmp	ebx,edx
@@ -1003,13 +1029,13 @@ checkwindows:
 
         pushad
         mov   eax, esi
-        mov   ebx, [0x3004]
+        mov   ebx, [TASK_COUNT]
         cmp   eax, ebx      ; is this window active?
         jz    .move_resize_window
 
         ; eax = position in windowing stack
         ; redraw must ?
-        lea   esi, [0xC400 + esi * 2]
+        lea   esi, [WIN_POS + esi * 2]
         call  waredraw
         add   esp, 32
 
@@ -1018,7 +1044,6 @@ checkwindows:
         ret
 
    .move_resize_window:    ; MOVE OR RESIZE WINDOW
-
         popad
 
         ; Check for user enabled fixed window
@@ -1068,7 +1093,7 @@ checkwindows:
         mov   [latest_window_touch], ecx
         mov   [latest_window_touch_delta], edx
 
-        mov   cl, [0xfb40]     ; save for shade check
+        mov   cl, [BTN_DOWN]     ; save for shade check
         mov   [do_resize], cl
      no_emulation_righ_button:
     mov   ecx, [edi + WDATA.box.left]
@@ -1086,8 +1111,8 @@ checkwindows:
         sub   eax, ecx
         sub   ebx, edx
 
-        mov   esi, [0xfb0a]
-        mov   [0xf300], esi
+        mov   esi, [MOUSE_X]
+        mov   [WIN_TEMP_XY], esi
 
         push  eax;ad           ; wait for putimages to finish
 ;        mov   eax,5
@@ -1116,19 +1141,19 @@ checkwindows:
     @@:
 
         mov   [reposition],0
-        mov   [0xfb44],byte 1   ; no reaction to mouse up/down
+        mov   [MOUSE_DOWN],byte 1   ; no reaction to mouse up/down
 
         ; move window
 
       newchm:
 
-        mov   [0xfff5],byte 1
+        mov   [DONT_DRAW_MOUSE],byte 1
 
         call  checkidle
 
         call  checkVga_N13
 
-        mov   [0xfff4],byte 0
+        mov   [MOUSE_BACKGROUND],byte 0
 
         call  [draw_pointer]
 
@@ -1136,12 +1161,12 @@ checkwindows:
         call   stack_handler
         popad
 
-        mov   esi,[0xf300]
-        cmp   esi,[0xfb0a]
+        mov   esi,[WIN_TEMP_XY]
+        cmp   esi,[MOUSE_X]
         je    cwb
 
-        movzx ecx,word[0xfb0a]
-        movzx edx,word[0xfb0c]
+        movzx ecx,word[MOUSE_X]
+        movzx edx,word[MOUSE_Y]
         sub   ecx,eax
         sub   edx,ebx
         push  eax
@@ -1151,8 +1176,8 @@ checkwindows:
         call  drawwindowframes
     @@:
 
-        mov   ax,[0xfe00]
-        mov   bx,[0xfe04]
+        movzx eax,word[ScreenWidth]
+        movzx ebx,word[ScreenHeight]
 
         cmp   [do_resize_from_corner],1
         je    no_new_position
@@ -1178,9 +1203,9 @@ checkwindows:
         ;shr   edx,5
         ;shl   edx,8
         ;add   edx,0x80000                 ; process base at 0x80000+
-    lea   edx, [0x80000 + edx*8]
+    lea   edx, [SLOT_BASE + edx*8]
 
-        movzx eax,word [0xfb0a]
+        movzx eax,word [MOUSE_X]
     cmp   eax,[edi + WDATA.box.left]
         jl    nnepx
     sub   eax,[edi + WDATA.box.left]
@@ -1193,7 +1218,7 @@ checkwindows:
 
         call    get_rolledup_height
         mov     ebx,eax
-        movzx eax,word [0xfb0c]
+        movzx eax,word [MOUSE_Y]
     cmp   eax,[edi + WDATA.box.top]
         jl    nnepy
     sub   eax,[edi + WDATA.box.top]
@@ -1216,14 +1241,14 @@ checkwindows:
         call  drawwindowframes
     @@:
 
-        mov   esi,[0xfb0a]
-        mov   [0xf300],esi
+        mov   esi,[MOUSE_X]
+        mov   [WIN_TEMP_XY],esi
 
       cwb:
-        cmp   [0xfb40],byte 0
-        jne   newchm 
+        cmp   [BTN_DOWN],byte 0
+        jne   newchm
                                      ; new position done
-        mov     [0xfff5],byte 1
+        mov     [DONT_DRAW_MOUSE],byte 1
         mov     cl,0
         test    [edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
         jnz     @f
@@ -1238,6 +1263,7 @@ checkwindows:
     mov   [edi + WDATA.box.width],eax
         mov   eax,[npye]
     mov   [edi + WDATA.box.height],eax
+        call    set_window_clientbox
 
     @@: mov     [reposition],cl
 
@@ -1252,7 +1278,7 @@ checkwindows:
     @@: sub   edi,window_data
         shr   edi,5
         shl   edi,8
-        add   edi,0x80000+APPDATA.saved_box
+        add   edi,SLOT_BASE+APPDATA.saved_box
         cld
         rep   movsd
         pop   ecx edi esi
@@ -1266,7 +1292,7 @@ checkwindows:
         sub   edx,window_data
         shr   edx,5
         shl   edx,8
-        add   edx,0x80000                 ; process base at 0x80000+
+        add   edx,SLOT_BASE                 ; process base at 0x80000+
 
         cmp   [do_resize],2               ; window shade ?
         jne   no_window_shade
@@ -1286,6 +1312,7 @@ checkwindows:
         mov     eax,[screen_workarea.bottom]
         sub     eax,[screen_workarea.top]
     @@: mov     [edi+WDATA.box.height],eax
+        call    set_window_clientbox
 
       no_window_shade:
 
@@ -1310,7 +1337,7 @@ checkwindows:
         neg     eax
         mov     [edi+WDATA.box.height],eax
     @@:
-        jmp   no_fullscreen_restore
+        jmp     restore_from_fullscreen.clientbox
       restore_from_fullscreen:
         and     [edi+WDATA.fl_wstate],not WSTATE_MAXIMIZED
         push    [edi+WDATA.box.height]
@@ -1325,6 +1352,8 @@ checkwindows:
         jz      @f
         mov     [edi+WDATA.box.height],eax
     @@:
+    .clientbox:
+        call    set_window_clientbox
 
       no_fullscreen_restore:
 
@@ -1335,7 +1364,7 @@ checkwindows:
         cmp   [reposition],0
         je    retwm
 
-        mov   [0xfff5],byte 1 ; no mouse
+        mov   [DONT_DRAW_MOUSE],byte 1 ; no mouse
 	call	[calc_clipping_rects]
 
         mov   eax,edi
@@ -1346,7 +1375,7 @@ checkwindows:
 
         mov   ecx,100         ; wait to avoid mouse residuals
       waitre2:
-        mov   [0xfff5],byte 1
+        mov   [DONT_DRAW_MOUSE],byte 1
         call  checkidle
         cmp     [edi+WDATA.fl_redraw],0
         jz    retwm
@@ -1354,9 +1383,9 @@ checkwindows:
 
       retwm:
 
-        mov   [0xfff5],byte 0 ; mouse pointer
-        mov   [0xfff4],byte 0 ; no mouse under
-        mov   [0xfb44],byte 0 ; react to mouse up/down
+        mov   [DONT_DRAW_MOUSE],byte 0 ; mouse pointer
+        mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
+        mov   [MOUSE_DOWN],byte 0 ; react to mouse up/down
 
         mov    esi,window_moved
         call   sys_msg_board_str
@@ -1393,10 +1422,12 @@ endg
 
 
 ; draw negative window frames
-
 drawwindowframes:
-
         pushad
+        cli
+
+        mov   ecx,0x01000000
+        mov   edi,1
 
         mov   eax,[npx]
         shl   eax,16
@@ -1406,11 +1437,7 @@ drawwindowframes:
         mov   ebx,[npy]
         shl   ebx,16
         add   ebx,[npy]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
         call  [draw_line]
-        pop   edi
 
         mov   eax,[npx]
         shl   eax,16
@@ -1422,11 +1449,7 @@ drawwindowframes:
         shl   ebx,16
         add   ebx,[npy]
         add   ebx,[npye]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
         call  [draw_line]
-        pop   edi
 
         mov   eax,[npx]
         shl   eax,16
@@ -1435,11 +1458,7 @@ drawwindowframes:
         shl   ebx,16
         add   ebx,[npy]
         add   ebx,[npye]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
         call  [draw_line]
-        pop   edi
 
         mov   eax,[npx]
         add   eax,[npxe]
@@ -1450,18 +1469,11 @@ drawwindowframes:
         shl   ebx,16
         add   ebx,[npy]
         add   ebx,[npye]
-        mov   ecx,0x01000000
-        push  edi
-        mov   edi,1
         call  [draw_line]
-        mov   edi,[0x3000]
-        shl   edi,5
-        add   edi,window_data
-        mov   [edi+WDATA.fl_wdrawn],byte 1
-        pop   edi
 
+.ret:
+        sti
         popad
-
         ret
 
 
@@ -1476,17 +1488,17 @@ random_shaped_window:
 
      test eax, eax
      jne  rsw_no_address
-     mov  eax,[0x3000]
+     mov  eax,[CURRENT_TASK]
      shl  eax,8
 
-     mov  [eax+0x80000+APPDATA.wnd_shape],ebx
+     mov  [eax+SLOT_BASE+APPDATA.wnd_shape],ebx
    rsw_no_address:
 
      cmp  eax,1
      jne  rsw_no_scale
-     mov  eax,[0x3000]
+     mov  eax,[CURRENT_TASK]
      shl  eax,8
-     mov  byte [eax+0x80000+APPDATA.wnd_shape_scale], bl
+     mov  byte [eax+SLOT_BASE+APPDATA.wnd_shape_scale], bl
    rsw_no_scale:
 
      ret

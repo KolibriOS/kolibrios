@@ -26,22 +26,22 @@ macro line_space {
 }
 
 d80x25_top:
-                line_full_top
+		line_full_top
 verstr2:
-;               line_space
+;		line_space
 ; version string
-        db 186,32
-        repeat 78
-                load a byte from version+%-1
-                if a = 13
-                        break
-                end if
-                db a
-        end repeat
+	db 186,32
+	repeat 78
+		load a byte from version+%-1
+		if a = 13
+			break
+		end if
+		db a
+	end repeat
         repeat 78 - ($-verstr2)
-                db      ' '
-        end repeat
-        db 32,186
+		db	' '
+	end repeat
+	db 32,186
 verstr:
                 line_half
 space_msg:      line_space
@@ -67,11 +67,11 @@ s_bpp     db      13,10,186," Bits per pixel: "
 vrrmprint db      "Apply VRR? (picture frequency greater than 60Hz"
           db      " only for transfers:",13,10
           db      186," 1024*768->800*600 and 800*600->640*480) [1-yes,2-no]:",0
-gr_acc    db      "Vesa 2.0+ : MTRR graphics acceleration [1-yes/2-no] ? ",0
-bdev      db      "Load ramdisk from [1-floppy; 2-C:\menuet.img (FAT32);"
-          db      "                   3-use preloaded ram-image from kernel restart]: ",0
+ask_dma   db      "Use DMA for HDD writing? [1-yes/2-no]: ",0
+bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
+          db      "3-use preloaded ram-image from kernel restart]: ",0
 not386    db      "Fatal - CPU 386+ required.",0
-fatalsel  db      13,10,"Error - Selected mode is not supported.",0
+fatalsel  db      13,10,"Fatal - Graphics mode not supported by hardware.",0
 badsect   db      13,10,186," Fatal - Bad sector. Replace floppy.",0
 memmovefailed db  13,10,186," Fatal - Int 0x15 move failed.",0
 okt       db      " ... OK"
@@ -90,14 +90,14 @@ modevesa20 db     " with LFB",0
 modevesa12 db     ", VESA 1.2 Bnk",0
 mode9     db      "320x200, EGA/CGA 256 colors",0
 mode10    db      "640x480, VGA 16 colors",0
-mtrr_msg  db      " [b] Use MTRR for graphics acceleration:",0
+dma_msg   db      " [b] Use DMA for HDD writing:",0
 on_msg    db      " on",13,10,0
 off_msg   db      " off",13,10,0
 vrrm_msg  db      " [c] Use VRR:",0
 preboot_device_msg db " [d] Floppy image: ",0
 preboot_device_msgs dw 0,pdm1-0x10000,pdm2-0x10000,pdm3-0x10000
 pdm1      db      "real floppy",13,10,0
-pdm2      db      "C:\menuet.img (FAT32)",13,10,0
+pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "use already loaded image",13,10,0
 loading_msg db    "Loading KolibriOS...",0
 save_quest db     "Remember current settings? [y/n]: ",0

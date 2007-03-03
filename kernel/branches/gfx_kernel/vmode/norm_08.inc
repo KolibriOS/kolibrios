@@ -19,17 +19,17 @@ begin
 
 	call	get_cursor_rect
 
-	mov	ebp,[0x3010]
-	movsx	esi,word[ebp-0x3000+0]
+	mov	ebp,[TASK_BASE]
+	movsx	esi,word[ebp-CURRENT_TASK+0]
 	add	eax,esi
 	add	ecx,esi
-	movsx	esi,word[ebp-0x3000+4]
+	movsx	esi,word[ebp-CURRENT_TASK+4]
 	add	ebx,esi
 	add	edx,esi
-;       add     eax,[ebp-0x3000+0]
-;       add     ebx,[ebp-0x3000+4]
-;       add     ecx,[ebp-0x3000+0]
-;       add     edx,[ebp-0x3000+4]
+;       add     eax,[ebp-CURRENT_TASK+0]
+;       add     ebx,[ebp-CURRENT_TASK+4]
+;       add     ecx,[ebp-CURRENT_TASK+0]
+;       add     edx,[ebp-CURRENT_TASK+4]
 
 	push	ecx
 	mov	ecx,edi
@@ -37,7 +37,7 @@ begin
 	mov	edi,ecx
 	pop	ecx
 
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	ebp,[esi]
 	or	ebp,ebp
@@ -58,14 +58,14 @@ begin
 	mov	edx,[rr.bottom]
     @@: call	is_intersect_rc
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
-  .put: mov	ebp,[bytes_per_scanline]
+	mov	byte[MOUSE_VISIBLE],0
+  .put: mov	ebp,[BytesPerScanLine]
 	imul	ebp,ebx
 	add	ebp,eax
-	add	ebp,[lfb_address]
+	add	ebp,[LFBAddress]
   .xxx: push	eax ebp
 	xchg	eax,edi
     @@: push	ebp
@@ -79,7 +79,7 @@ begin
 	jl	@b
 	xchg	eax,edi
 	pop	ebp eax
-	add	ebp,[bytes_per_scanline]
+	add	ebp,[BytesPerScanLine]
 	inc	ebx
 	cmp	ebx,edx
 	jl	.xxx
@@ -128,7 +128,7 @@ begin
   dl.08.vert_line:
 	test	edi,1
 	jnz	.forced
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -152,14 +152,14 @@ begin
   .draw:
     @@: call	is_intersect_vln
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
-  .put: mov	ebp,[bytes_per_scanline]
+	mov	byte[MOUSE_VISIBLE],0
+  .put: mov	ebp,[BytesPerScanLine]
 	imul	ebp,ebx
 	add	ebp,eax
-	add	ebp,[lfb_address]
+	add	ebp,[LFBAddress]
     @@: push	ebp
 	call	[set_bank]
 	test	ecx,0x01000000
@@ -176,7 +176,7 @@ begin
 ;       mov     cx,[ebp]
 ;       not     cx
 ;  .dr: mov     [ebp],cx
-	add	ebp,[bytes_per_scanline]
+	add	ebp,[BytesPerScanLine]
 	inc	ebx
 	cmp	ebx,edx
 	jle	@b
@@ -209,7 +209,7 @@ begin
   dl.08.horz_line:
 	test	edi,1
 	jnz	.forced
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -233,14 +233,14 @@ begin
   .draw:
     @@: call	is_intersect_hln
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
-  .put: mov	ebp,[bytes_per_scanline]
+	mov	byte[MOUSE_VISIBLE],0
+  .put: mov	ebp,[BytesPerScanLine]
 	imul	ebp,eax
 	add	ebp,ebx
-	add	ebp,[lfb_address]
+	add	ebp,[LFBAddress]
     @@: push	ebp
 	call	[set_bank]
 	test	ecx,0x01000000
@@ -331,13 +331,13 @@ func vm_mike_put_pixel.08 ;///////////////////////////////////////////////////
 begin
 	pushad
 	cli
-	mov	edx,[bytes_per_scanline]
+	mov	edx,[BytesPerScanLine]
 	imul	edx,ebx
 	add	edx,eax
-	add	edx,[lfb_address]
+	add	edx,[LFBAddress]
 	test	edi,1
 	jnz	.forced
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -350,10 +350,10 @@ begin
 	call	get_cursor_rect
 	call	is_intersect_pt
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
   .put: push	edx
 	call	[set_bank]
 	pop	edx
@@ -387,7 +387,7 @@ begin
 	not	ecx
 	call	color_24_to_8_bits
 	mov	byte[ebp],cl
-	;not	byte[ebp]
+	;not    byte[ebp]
 	jmp	.exit
     @@: call	color_24_to_8_bits
 	mov	[ebp],cl
@@ -404,9 +404,9 @@ begin
 	pushad
 	cli
 
-	imul	ebx,[bytes_per_scanline]
+	imul	ebx,[BytesPerScanLine]
 	add	eax,ebx
-	add	eax,[lfb_address]
+	add	eax,[LFBAddress]
 	push	eax
 	call	[set_bank]
 	pop	eax
@@ -449,19 +449,19 @@ begin
 	push	edi
 	add	ecx,eax
 	add	edx,ebx
-	mov	edi,[0x00003010]
-	movsx	esi,word[edi-0x3000+0]
+	mov	edi,[TASK_BASE]
+	movsx	esi,word[edi-CURRENT_TASK+0]
 	add	eax,esi
 	add	ecx,esi
-	movsx	esi,word[edi-0x3000+4]
+	movsx	esi,word[edi-CURRENT_TASK+4]
 	add	ebx,esi
 	add	edx,esi
-;       add     eax,[esi-0x3000+0]
-;       add     ebx,[esi-0x3000+4]
-;       add     ecx,[esi-0x3000+0]
-;       add     edx,[esi-0x3000+4]
+;       add     eax,[esi-CURRENT_TASK+0]
+;       add     ebx,[esi-CURRENT_TASK+4]
+;       add     ecx,[esi-CURRENT_TASK+0]
+;       add     edx,[esi-CURRENT_TASK+4]
 
-	mov	esi,[0x00003000]
+	mov	esi,[CURRENT_TASK]
 	mov	esi,[CLIP_RECTS+esi*4]
 	mov	edi,[esi]
 	or	edi,edi
@@ -483,10 +483,10 @@ begin
 	mov	edx,[rr.bottom]
     @@: call	is_intersect_rc
 	jc	.put
-	cmp	[mouse_invisible],0
-	jne	.put
+	cmp	byte[MOUSE_VISIBLE],0
+	je	.put
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
   .put: mov	esi,ebx
 	sub	esi,[esp+4*4]
 	imul	esi,[esp+4*8]
@@ -495,10 +495,10 @@ begin
 	lea	edi,[edi*3]
 	add	esi,edi
 	add	esi,ebp
-	mov	edi,[bytes_per_scanline]
+	mov	edi,[BytesPerScanLine]
 	imul	edi,ebx
 	add	edi,eax
-	add	edi,[lfb_address]
+	add	edi,[LFBAddress]
   .xxx: push	eax esi edi eax
     @@: lodsd
 	xchg	eax,ecx
@@ -517,7 +517,7 @@ begin
 	jl	@b
 	pop	eax edi esi eax
 	add	esi,[esp+4*8]
-	add	edi,[bytes_per_scanline]
+	add	edi,[BytesPerScanLine]
 	inc	ebx
 	cmp	ebx,edx
 	jl	.xxx
@@ -549,7 +549,7 @@ begin
 	cli
 
 	call	[SF.draw_mouse_under]
-	mov	[mouse_invisible],1
+	mov	byte[MOUSE_VISIBLE],0
 
 	mov	esi,[CLIP_RECTS+4]
 	mov	ebp,[esi]
@@ -645,7 +645,7 @@ macro sdfsdSAFSDFG {
 	je	.tiled
     @@:
 	imul	eax,[bg_width],3
-	mov	[bg_bytes_per_scanline],eax
+	mov	[bg_BytesPerScanLine],eax
 
 	mov	eax,[viewport.left]
 	mov	ebx,[viewport.top]
@@ -686,10 +686,10 @@ macro sdfsdSAFSDFG {
 	jne	.put
 	call	[SF.draw_mouse_under]
 	mov	[mouse_invisible],1
-  .put: mov	ebp,[bytes_per_scanline]
+  .put: mov	ebp,[BytesPerScanLine]
 	imul	ebp,ebx
 	add	ebp,eax
-	add	ebp,[lfb_address]
+	add	ebp,[LFBAddress]
   .xxx: push	eax ebp
     @@: push	ebp
 	call	[set_bank]
@@ -701,7 +701,7 @@ macro sdfsdSAFSDFG {
 	cmp	eax,ecx
 	jl	@b
 	pop	ebp eax
-	add	ebp,[bytes_per_scanline]
+	add	ebp,[BytesPerScanLine]
 	inc	ebx
 	cmp	ebx,edx
 	jl	.xxx
@@ -717,7 +717,7 @@ macro sdfsdSAFSDFG {
 	retn
 
   .tiled:
-	mov	eax,bg_address
+	mov	eax,IMG_BACKGROUND
 	mov	ebx,[bg_width-2]
 	mov	bx,word[bg_height]
 	xor	ecx,ecx
@@ -738,7 +738,7 @@ macro sdfsdSAFSDFG {
 	retn
 
   .color:
-	mov	edi,[bg_address]
+	mov	edi,[IMG_BACKGROUND]
 	and	edi,0x00FFFFFF
 	call	vm_mike_draw_rect.08
 	popad
