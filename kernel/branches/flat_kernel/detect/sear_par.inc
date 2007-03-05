@@ -3,9 +3,9 @@
 ;     и занесение данных в область таблицы
 ;     автор Mario79
 ;****************************************************
-      mov   [transfer_adress],0x4000a
+      mov   [transfer_adress],DRIVE_DATA+0xa
  search_partitions_ide0:
-      test  [0x40001],byte 0x40
+      test  [DRIVE_DATA+1],byte 0x40
       jz   search_partitions_ide1
         mov   [hdbase],0x1f0
         mov   [hdid],0x0
@@ -15,14 +15,14 @@
       call  set_FAT32_variables
       cmp   [problem_partition],0
       jne   search_partitions_ide1
-      inc   byte [0x40002]
+      inc   byte [DRIVE_DATA+2]
       call  partition_data_transfer
       add   [transfer_adress],100
       inc   [fat32part]
       jmp   search_partitions_ide0_1
 
  search_partitions_ide1:
-      test  [0x40001],byte 0x10
+      test  [DRIVE_DATA+1],byte 0x10
       jz   search_partitions_ide2
         mov   [hdbase],0x1f0
         mov   [hdid],0x10
@@ -32,14 +32,14 @@
       call  set_FAT32_variables
       cmp   [problem_partition],0
       jne   search_partitions_ide2
-      inc   byte [0x40003]
+      inc   byte [DRIVE_DATA+3]
       call  partition_data_transfer
       add   [transfer_adress],100
       inc   [fat32part]
       jmp   search_partitions_ide1_1
 
  search_partitions_ide2:
-      test  [0x40001],byte 0x4
+      test  [DRIVE_DATA+1],byte 0x4
       jz   search_partitions_ide3
         mov   [hdbase],0x170
         mov   [hdid],0x0
@@ -49,14 +49,14 @@
       call  set_FAT32_variables
       cmp   [problem_partition],0
       jne   search_partitions_ide3
-      inc   byte [0x40004]
+      inc   byte [DRIVE_DATA+4]
       call  partition_data_transfer
       add   [transfer_adress],100
       inc   [fat32part]
       jmp   search_partitions_ide2_1
 
  search_partitions_ide3:
-      test  [0x40001],byte 0x1
+      test  [DRIVE_DATA+1],byte 0x1
       jz   end_search_partitions_ide
         mov   [hdbase],0x170
         mov   [hdid],0x10
@@ -66,14 +66,14 @@
       call  set_FAT32_variables
       cmp   [problem_partition],0
       jne   end_search_partitions_ide
-      inc   byte [0x40005]
+      inc   byte [DRIVE_DATA+5]
       call  partition_data_transfer
       add   [transfer_adress],100
       inc   [fat32part]
       jmp   search_partitions_ide3_1
 
- 
-partition_data_transfer: 
+
+partition_data_transfer:
      mov edi,[transfer_adress]
      mov esi,PARTITION_START
      mov ecx,(file_system_data_size+3)/4

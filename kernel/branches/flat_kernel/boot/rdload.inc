@@ -1,9 +1,9 @@
 ; READ RAMDISK IMAGE FROM HD
 
-        cmp   [boot_dev],1
+        cmp   [boot_dev+OS_BASE+0x10000],1
         jne   no_sys_on_hd
 
-        test  [0x40001],byte 0x40
+        test  [DRIVE_DATA+1],byte 0x40
         jz    position_2
         mov   [hdbase],0x1f0
         mov   [hdid],0x0
@@ -14,11 +14,11 @@
         call  search_and_read_image
         cmp   [image_retrieved],1
         je    yes_sys_on_hd
-        movzx eax,byte [0x40002]
+        movzx eax,byte [DRIVE_DATA+2]
         cmp   [fat32part],eax
         jle     position_1_1
   position_2:
-        test  [0x40001],byte 0x10
+        test  [DRIVE_DATA+1],byte 0x10
         jz    position_3
         mov   [hdbase],0x1f0
         mov   [hdid],0x10
@@ -29,11 +29,11 @@
         call  search_and_read_image
         cmp   [image_retrieved],1
         je    yes_sys_on_hd
-        movzx eax,byte [0x40003]
+        movzx eax,byte [DRIVE_DATA+3]
         cmp   eax,[fat32part]
         jle     position_2_1
   position_3:
-        test  [0x40001],byte 0x4
+        test  [DRIVE_DATA+1],byte 0x4
         jz    position_4
         mov   [hdbase],0x170
         mov   [hdid],0x0
@@ -44,11 +44,11 @@
         call  search_and_read_image
         cmp   [image_retrieved],1
         je    yes_sys_on_hd
-        movzx eax,byte [0x40004]
+        movzx eax,byte [DRIVE_DATA+4]
         cmp   eax,[fat32part]
         jle     position_3_1
   position_4:
-        test  [0x40001],byte 0x1
+        test  [DRIVE_DATA+1],byte 0x1
         jz    no_sys_on_hd
         mov   [hdbase],0x170
         mov   [hdid],0x10
@@ -59,7 +59,7 @@
         call  search_and_read_image
         cmp   [image_retrieved],1
         je    yes_sys_on_hd
-        movzx eax,byte [0x40005]
+        movzx eax,byte [DRIVE_DATA+5]
         cmp   eax,[fat32part]
         jle     position_4_1
         jmp   yes_sys_on_hd
@@ -80,7 +80,7 @@
         ret
 
 read_image:
-        mov   eax, hdsysimage
+        mov   eax, hdsysimage+OS_BASE+0x10000
         mov   ebx, 1474560/512
         mov   ecx, RAMDISK
         mov   esi, 0

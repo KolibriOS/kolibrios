@@ -100,6 +100,7 @@ save_draw_mouse:
         mov ecx, [ScreenWidth]
         inc ecx
         mul ecx
+
         movzx edx, byte [display_data+ebx+eax]
         shl edx, 8
         mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
@@ -320,9 +321,10 @@ yes_mouse_disable:
 disable_m:
       cmp  dword [MOUSE_VISIBLE],dword 0
       jne  no_mouse_disable
+      pushf
       cli
       call draw_mouse_under
-      sti
+      popf
       mov  [MOUSE_VISIBLE],dword 1
 no_mouse_disable:
       popad
@@ -350,9 +352,10 @@ __sys_draw_pointer:
         mov     [MOUSE_VISIBLE], dword 0
         movzx  ebx,word [MOUSE_Y]
         movzx  eax,word [MOUSE_X]
+        pushfd
         cli
         call   save_draw_mouse
-        sti
+        popfd
 nodmu2:
         popad
         ret
@@ -367,10 +370,11 @@ chms00:
         jne    redrawmouse
         jmp    nodmp
 redrawmouse:
+        pushfd
         cli
         call   draw_mouse_under
         call   save_draw_mouse
-        sti
+        popfd
 nodmp:
         popad
         ret

@@ -12,25 +12,25 @@ FindHDD:
         mov     [DiskNumber],0
         call    FindHDD_3
 ;        mov     ax,[Sector512+176]
-;        mov     [0x40006],ax
+;        mov     [DRIVE_DATA+6],ax
 ;        mov     ax,[Sector512+126]
-;        mov     [0x40008],ax
+;        mov     [DRIVE_DATA+8],ax
 ;        mov     ax,[Sector512+128]
-;        mov     [0x40008],ax
+;        mov     [DRIVE_DATA+8],ax
         mov     [DiskNumber],1
         call    FindHDD_3
 ;        mov     al,[Sector512+176]
-;        mov     [0x40007],al
+;        mov     [DRIVE_DATA+7],al
         inc     [ChannelNumber]
         mov     [DiskNumber],0
         call    FindHDD_3
 ;        mov     al,[Sector512+176]
-;        mov     [0x40008],al
+;        mov     [DRIVE_DATA+8],al
         mov     [DiskNumber],1
         call    FindHDD_1
 ;        mov     al,[Sector512+176]
-;        mov     [0x40009],al
-        
+;        mov     [DRIVE_DATA+9],al
+
         jmp     EndFindHDD
 
 FindHDD_1:
@@ -41,7 +41,7 @@ FindHDD_1:
         ja      FindHDD_2
         cmp     [Sector512+12],word 255
         ja      FindHDD_2
-        inc     byte [0x40001]
+        inc     byte [DRIVE_DATA+1]
         jmp     FindHDD_2_2
    FindHDD_2:
         call    DeviceReset
@@ -50,14 +50,14 @@ FindHDD_1:
         call    ReadCD_ID
         cmp     [DevErrorCode],0
         jne      FindHDD_2_2
-        inc     byte [0x40001]
-        inc     byte [0x40001]
+        inc     byte [DRIVE_DATA+1]
+        inc     byte [DRIVE_DATA+1]
    FindHDD_2_2:
         ret
 
 FindHDD_3:
         call    FindHDD_1
-        shl     byte [0x40001],2  
+        shl     byte [DRIVE_DATA+1],2
         ret
 
 
@@ -84,7 +84,7 @@ ReadHDD_ID:
         cmp     [DevErrorCode],0 ;проверить код ошибки
         jne     @@End  ;закончить, сохранив код ошибки
         mov     DX,[ATABasePortAddr]
-        add     DX,7     ;адрес регистра состояния
+        add     DX,7     ;адрес регистра состояни
         mov  ecx,0xffff
 @@WaitCompleet:
         ; Проверить время выполнения команды
@@ -191,15 +191,15 @@ SendCommandToHDD:
 ;        mov     eax,[timer_ticks]
 ;        mov     [TickCounter_1],eax
 @@WaitHDReady:
-        ; Проверить время ожидания
+        ; Проверить время ожидани
         dec  ecx
         cmp  ecx,0
         je     @@Err1
 ;        mov     eax,[timer_ticks]
 ;        sub     eax,[TickCounter_1]
-;        cmp     eax,300    ;ожидать 300 тиков        
+;        cmp     eax,300    ;ожидать 300 тиков
 ;        ja      @@Err1   ;ошибка тайм-аута
-        ; Прочитать регистр состояния
+        ; Прочитать регистр состояни
         in      AL,DX
         ; Проверить состояние сигнала BSY
         test    AL,80h
@@ -255,7 +255,7 @@ SendCommandToHDD:
         jmp @@End_2
 @@Err5: mov     [DevErrorCode],5
 ; Завершение работы программы
-@@End_2: 
+@@End_2:
         ret
 
 ;*************************************************
@@ -285,7 +285,7 @@ ReadCD_ID:
         add     DX,7   ;порт 1х7h
         mov  ecx,0xffff
 @@WaitCompleet_1:
-        ; Проверить время
+        ; Проверить врем
         dec  ecx
         cmp  ecx,0
         je     @@Error1_1  ;ошибка тайм-аута
@@ -348,11 +348,11 @@ DeviceReset:
         out     DX,AL
         mov     ecx,0x80000
 @@WaitHDReady_1:
-        ; Проверить время ожидания
+        ; Проверить время ожидани
         dec     ecx
         cmp     ecx,0
         je      @@Err1_2 ;ошибка тайм-аута
-        ; Прочитать регистр состояния
+        ; Прочитать регистр состояни
         in      AL,DX
         ; Проверить состояние сигнала BSY
         test    AL,80h

@@ -10,8 +10,8 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; edi 1 force
 
         pushad
-        call    [disable_mouse]
 
+        call    [disable_mouse]
         mov     ebp, ecx        ; ebp=pointer to text
         mov     ecx, ebx        ; ecx=color
         movsx   ebx, ax         ; ebx=y

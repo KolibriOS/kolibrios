@@ -38,7 +38,7 @@
 
 getpixel:
         push    eax ebx edx edi
-        call    dword [0xe024]
+        call    dword [GETPIXEL]
         pop     edi edx ebx eax
         ret
 

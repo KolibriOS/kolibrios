@@ -1,160 +1,4 @@
 
-tmp_page_tab      equ HEAP_BASE
-
-align 4
-proc mem_test
-
-           mov eax, cr0
-           and eax, not (CR0_CD+CR0_NW)
-           or eax, CR0_CD         ;disable caching
-           mov cr0, eax
-           wbinvd                 ;invalidate cache
-
-           xor edi, edi
-           mov ebx, 'TEST'
-@@:
-           add edi, 0x400000
-           xchg ebx, dword [edi]
-           cmp dword [edi], 'TEST'
-           xchg ebx, dword [edi]
-           je @b
-           mov [MEM_AMOUNT], edi
-
-           and eax, not (CR0_CD+CR0_NW)  ;enable caching
-           mov cr0, eax
-           mov eax, edi
-           mov [LFBSize], 0x00800000
-           ret
-endp
-
-align 4
-proc init_mem
-
-           mov eax, [MEM_AMOUNT]
-
-           mov [pg_data.mem_amount], eax
-           mov [pg_data.kernel_max], eax
-
-           shr eax, 12
-           mov edx, eax
-           mov [pg_data.pages_count], eax
-           mov [pg_data.kernel_pages], eax
-
-           shr eax, 3
-           mov [pg_data.pagemap_size], eax
-
-           shr edx, 10
-           cmp edx, 3
-           ja @f
-           inc edx       ;at least 4Mb for kernel heap
-@@:
-           mov [pg_data.kernel_tables], edx
-
-           xor eax, eax
-           mov edi, sys_pgdir
-           mov ecx, 2048
-           cld
-           rep stosd
-
-           mov edx, sys_pgdir
-           bt [cpu_caps], CAPS_PSE
-           jnc .no_PSE
-
-           mov ebx, cr4
-           or ebx, CR4_PSE
-           mov eax, PG_LARGE+PG_SW
-           bt [cpu_caps], CAPS_PGE
-           jnc @F
-           or eax, PG_GLOBAL
-           or ebx, CR4_PGE
-@@:
-           mov cr4, ebx
-           sub [pg_data.kernel_tables], 2
-
-           mov [edx], eax
-           add eax, 0x00400000
-           mov [edx+4], eax
-           add edx, 8
-
-           mov eax, 0x800000+PG_SW
-           mov ecx, (HEAP_BASE-0x800000)/4096
-           jmp .map_low
-.no_PSE:
-           mov eax, PG_SW
-           mov ecx, HEAP_BASE/4096
-.map_low:
-           mov edi, tmp_page_tab
-@@:                                   ;
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz @B
-
-           mov ecx, [pg_data.kernel_tables]
-           shl ecx, 10
-           xor eax, eax
-           rep stosd
-
-           mov ecx, [pg_data.kernel_tables]
-           mov eax, tmp_page_tab+PG_SW
-           mov edi, edx
-
-.map_kernel_tabs:
-
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz .map_kernel_tabs
-
-           mov dword [sys_pgdir+(page_tabs shr 20)], sys_pgdir+PG_SW
-           ret
-endp
-
-align 4
-proc init_page_map
-
-           mov edi, sys_pgmap
-           mov ecx, (HEAP_BASE/4096)/32      ;384/4
-           mov ebx, ecx
-           xor eax,eax
-           cld
-           rep stosd
-
-           not eax
-           mov ecx, [pg_data.pagemap_size]
-           sub ecx, ebx
-           shr ecx, 2
-           rep stosd
-
-           lea edi, [sys_pgmap+ebx*4]         ;+384
-           mov edx, [pg_data.pages_count]
-           mov ecx, [pg_data.kernel_tables]
-           add ecx, (HEAP_BASE/4096) and 31
-           sub edx, HEAP_BASE/4096
-           sub edx, ecx
-           mov [pg_data.pages_free], edx
-
-           xor eax, eax
-           mov ebx, ecx
-           shr ecx, 5
-           rep stosd
-
-           not eax
-           mov ecx, ebx
-           and ecx, 31
-           shl eax, cl
-           mov [page_start], edi;           sys_pgmap+384
-           stosd
-
-           mov ebx, sys_pgmap
-           add ebx, [pg_data.pagemap_size]
-           mov [page_end], ebx
-
-           mov [pg_data.pg_mutex], 0
-
-           ret
-endp
-
 align 4
 proc alloc_page
 
@@ -382,20 +226,28 @@ proc init_LFB
 
            cmp dword [LFBAddress], -1
            jne @f
-           mov [0x2f0000+0x901c],byte 2
+           mov [BOOT_VAR+0x901c],byte 2
            stdcall kernel_alloc, 0x280000
            mov [LFBAddress], eax
            ret
 @@:
            test [SCR_MODE],word 0100000000000000b
            jnz @f
-           mov [0x2f0000+0x901c],byte 2
+           mov [BOOT_VAR+0x901c],byte 2
            ret
 @@:
            mov edx, LFB_BASE
            mov esi, [LFBAddress]
-           mov edi, [LFBSize]
+           mov edi, 0x00800000
            mov dword [exp_lfb+4], edx
+
+     push eax
+     push edx
+     mov edx, 0x400   ;bocsh
+     mov al,0xff      ;bocsh
+     out dx, al       ;bocsh
+     pop edx
+     pop eax
 
            shr edi, 12
            mov [pg_count], edi
@@ -427,7 +279,7 @@ proc init_LFB
 @@:
            call alloc_page
            stdcall map_page_table, edx, eax
-           add esi, 0x00400000
+           add edx, 0x00400000
            dec edi
            jnz @B
 
@@ -436,7 +288,11 @@ proc init_LFB
            or eax, PG_UW
            mov ecx, [pg_count]
            cld
-           rep stosd
+@@:
+           stosd
+           add eax, 0x1000
+           dec ecx
+           jnz @B
 
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
@@ -605,6 +461,14 @@ align 4
 proc page_fault_handler
            pushad
 
+     push eax
+     push edx
+     mov edx, 0x400   ;bocsh
+     mov al,0xff      ;bocsh
+     out dx, al       ;bocsh
+     pop edx
+     pop eax
+
            mov ebp, esp
            mov eax, cr2
            push eax
@@ -670,6 +534,7 @@ proc page_fault_handler
            mov esp, ebp
            popad
            add esp, 4
+           iretd
 
            save_ring3_context     ;debugger support
 
@@ -1086,147 +951,9 @@ new_services:
            ret
 
 align 4
-proc strncmp stdcall, str1:dword, str2:dword, count:dword
-
-          mov ecx,[count]
-          jecxz .end
-
-          mov ebx,ecx
-
-          mov edi,[str1]
-          mov esi,edi
-          xor eax,eax
-          repne scasb
-          neg ecx             ; cx = count - strlen
-          add ecx,ebx         ; strlen + count - strlen
-
-.okay:
-          mov edi,esi
-          mov esi,[str2]
-          repe cmpsb
-          mov al,[esi-1]
-          xor ecx,ecx
-
-          cmp al,[edi-1]
-          ja .str2_big
-          je .end
-
-.str1_big:
-          sub ecx,2
-
-.str2_big:
-          not ecx
-.end:
-          mov eax,ecx
-          ret
-endp
-
-align 4
-proc test_cpu
-           locals
-              cpu_type   dd ?
-              cpu_id     dd ?
-              cpu_Intel  dd ?
-              cpu_AMD    dd ?
-           endl
-
-           mov [cpu_type], 0
-           xor eax, eax
-           mov [cpu_caps], eax
-           mov [cpu_caps+4], eax
-
-           pushfd
-           pop eax
-           mov ecx, eax
-           xor eax, 0x40000
-           push eax
-           popfd
-           pushfd
-           pop eax
-           xor eax, ecx
-           mov [cpu_type], CPU_386
-           jz .end_cpuid
-           push ecx
-           popfd
-
-           mov [cpu_type], CPU_486
-           mov eax, ecx
-           xor eax, 0x200000
-           push eax
-           popfd
-           pushfd
-           pop eax
-           xor eax, ecx
-           je .end_cpuid
-           mov [cpu_id], 1
-
-           xor eax, eax
-           cpuid
-           mov [cpu_vendor], ebx
-           mov [cpu_vendor+4], edx
-           mov [cpu_vendor+8], ecx
-           cmp ebx, dword [intel_str]
-           jne .check_AMD
-           cmp edx, dword [intel_str+4]
-           jne .check_AMD
-           cmp ecx, dword [intel_str+8]
-           jne .check_AMD
-           mov [cpu_Intel], 1
-           cmp eax, 1
-           jl .end_cpuid
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-
-           shr eax, 8
-           and eax, 0x0f
-           ret
-.end_cpuid:
-           mov eax, [cpu_type]
-           ret
-
-.check_AMD:
-           cmp ebx, dword [AMD_str]
-           jne .unknown
-           cmp edx, dword [AMD_str+4]
-           jne .unknown
-           cmp ecx, dword [AMD_str+8]
-           jne .unknown
-           mov [cpu_AMD], 1
-           cmp eax, 1
-           jl .unknown
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-           shr eax, 8
-           and eax, 0x0f
-           ret
-.unknown:
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-           shr eax, 8
-           and eax, 0x0f
-           ret
-endp
-
-MEM_WB     equ 6               ;write-back memory
-MEM_WC     equ 1               ;write combined memory
-MEM_UC     equ 0               ;uncached memory
-
-align 4
 proc init_mtrr
 
-           cmp [0x2f0000+0x901c],byte 2
+           cmp [BOOT_VAR+0x901c],byte 2
            je  .exit
 
            bt [cpu_caps], CAPS_MTRR
@@ -1297,6 +1024,43 @@ proc set_mtrr stdcall, reg:dword,base:dword,size:dword,mem_type:dword
            ret
 endp
 
+
+align 4
+proc strncmp stdcall, str1:dword, str2:dword, count:dword
+
+          mov ecx,[count]
+          jecxz .end
+
+          mov ebx,ecx
+
+          mov edi,[str1]
+          mov esi,edi
+          xor eax,eax
+          repne scasb
+          neg ecx             ; cx = count - strlen
+          add ecx,ebx         ; strlen + count - strlen
+
+.okay:
+          mov edi,esi
+          mov esi,[str2]
+          repe cmpsb
+          mov al,[esi-1]
+          xor ecx,ecx
+
+          cmp al,[edi-1]
+          ja .str2_big
+          je .end
+
+.str1_big:
+          sub ecx,2
+
+.str2_big:
+          not ecx
+.end:
+          mov eax,ecx
+          ret
+endp
+
 align 4
 proc stall stdcall, delay:dword
            push ecx
@@ -1323,106 +1087,6 @@ proc stall stdcall, delay:dword
            pop ecx
            ret
 endp
-
-iglobal
-align 4
-  intel_str    db "GenuineIntel",0
-  AMD_str      db "AuthenticAMD",0
-endg
-
-uglobal
-align 16
-  irq_tab           rd 16
-
-  MEM_FreeSpace     rd 1
-
-  ipc_tmp           rd 1
-  ipc_pdir          rd 1
-  ipc_ptab          rd 1
-
-  proc_mem_map      rd 1
-  proc_mem_pdir     rd 1
-  proc_mem_tab      rd 1
-
-  tmp_task_pdir     rd 1
-  tmp_task_ptab     rd 1
-
-  fdd_buff          rd 1
-  LFBSize           rd 1
-
-  stall_mcs         rd 1
-;;CPUID information
-
-  cpu_vendor        rd 3
-  cpu_sign          rd 1
-  cpu_info          rd 1
-
-;;;;;   cursors data
-
-align 16
-cur_saved_data   rb 4096
-
-def_cursor       rd 1
-hw_cursor        rd 1
-
-scr_width        rd 1
-scr_height       rd 1
-
-cur_def_interl   rd 1
-cur_saved_base   rd 1
-cur_saved_interl rd 1
-cur_saved_w      rd 1
-cur_saved_h      rd 1
-
-endg
-
-uglobal
-align 16
-   fpu_data:
-                   rb 512
-
-   mst MEM_STATE
-
-   mem_block_map   rb 512
-   event_map       rb 64
-   mem_block_list  rd 64
-   mem_block_mask  rd 2
-
-   srv.fd          rd 1
-   srv.bk          rd 1
-
-   mem_used.fd     rd 1
-   mem_used.bk     rd 1
-
-   mem_block_arr   rd 1
-   mem_block_start rd 1
-   mem_block_end   rd 1
-
-   heap_mutex      rd 1
-   heap_size       rd 1
-   heap_free       rd 1
-   heap_blocks     rd 1
-   free_blocks     rd 1
-
-   page_start      rd 1
-   page_end        rd 1
-   events          rd 1
-   event_start     rd 1
-   event_end       rd 1
-   event_uid       rd 1
-   sys_page_map    rd 1
-   os_stack        rd 1
-endg
-
-if 0
-     push eax
-     push edx
-     mov edx, 0x400   ;bocsh
-     mov al,0xff      ;bocsh
-     out dx, al       ;bocsh
-     pop edx
-     pop eax
-end if
 
 align 4
 k_strrchr:
@@ -1643,3 +1307,15 @@ k_strlen:
 	ret
 
 end if
+
+if 0
+     push eax
+     push edx
+     mov edx, 0x400   ;bocsh
+     mov al,0xff      ;bocsh
+     out dx, al       ;bocsh
+     pop edx
+     pop eax
+end if
+
+

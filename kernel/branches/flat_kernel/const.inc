@@ -134,9 +134,9 @@ SSE_FZ         equ    0x8000
 
 SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
-OS_BASE             equ 0
+OS_BASE             equ 0x01000000
 
-window_data         equ (OS_BASE+0x0000000)
+window_data         equ OS_BASE
 
 CURRENT_TASK        equ (OS_BASE+0x0003000)
 TASK_COUNT          equ (OS_BASE+0x0003004)
@@ -196,7 +196,6 @@ MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
 LFBAddress          equ (OS_BASE+0x000FE80)
 MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
-;LFBSize             equ (OS_BASE+0x02f9050)
 
 ScreenWidth         equ (OS_BASE+0x000FE00)
 ScreenHeight        equ (OS_BASE+0x000FE04)
@@ -235,7 +234,7 @@ SB16_Status         equ (OS_BASE+0x02B0000)
 BUTTON_INFO         equ (OS_BASE+0x02C0000)
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 IRQ_SAVE            equ (OS_BASE+0x02E0000)
-SYS_VAR             equ (OS_BASE+0x02f0000)
+BOOT_VAR            equ (OS_BASE+0x02f0000)
 IMG_BACKGROUND      equ (OS_BASE+0x0300000)
 WinMapAddress       equ (OS_BASE+0x0460000)
 display_data        equ (OS_BASE+0x0460000)
@@ -256,7 +255,7 @@ skin_data           equ (OS_BASE+0x0778000)
 tss_data            equ (OS_BASE+0x780000)
 draw_data           equ (OS_BASE+0x988000)
 
-HEAP_BASE           equ (OS_BASE+0x98B000)
+HEAP_BASE           equ (OS_BASE+0x01000000)
 
 LFB_BASE            equ 0x7DC00000
 
@@ -264,10 +263,8 @@ page_tabs           equ 0x7FC00000
 master_tab          equ 0x7FDFF000
 app_page_tabs       equ 0x7FE00000
 
-sys_pgdir           equ OS_BASE+0x00050000
-sys_master_tab      equ OS_BASE+0x00051000
-sys_pgmap           equ OS_BASE+0x00052000
-
+sys_pgdir           equ (OS_BASE+0x00050000)
+sys_pgmap           equ (OS_BASE+0x00052000)
 
 
 new_app_base        equ 0x80000000
@@ -330,10 +327,6 @@ struc SYS_VARS
   .vesa_mode      dd ?
   .x_res          dd ?
   .y_res          dd ?
-  .cpu_caps       dd ?
-                  dd ?
-                  dd ?
-                  dd ?
 }
 
 struc APPOBJ           ;common object header

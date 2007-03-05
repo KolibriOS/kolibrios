@@ -238,8 +238,6 @@ include "gui/button.inc"
 
 ; shutdown
 
-include "boot/shutdown.inc" ; shutdown or restart
-
 ; file system
 
 include "fs/fs.inc"       ; syscall

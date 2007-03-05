@@ -16,15 +16,15 @@ system_shutdown:          ; shut down the system
     call sys_cd_audio
     cld
 
-    mov  al,[0x2f0000+0x9030]
+    mov  al,[BOOT_VAR+0x9030]
     cmp  al,1
     jl   no_shutdown_parameter
     cmp  al,4
     jle  yes_shutdown_param
  no_shutdown_parameter:
 
-;    movzx ecx,word [0x2f0000+0x900A]
-;    movzx esi,word [0x2f0000+0x900C]
+;    movzx ecx,word [BOOT_VAR+0x900A]
+;    movzx esi,word [BOOT_VAR+0x900C]
 ;    imul ecx,esi  ;[0xfe04]
 ;;    mov  ecx,0x500000/4  ;3fff00/4    ; darken screen
 ;    push ecx
@@ -378,7 +378,7 @@ restart_kernel_4000:
 ; bootloader interface
     push    0x1000
     pop    ds
-    mov    si, kernel_restart_bootblock-0x10000
+    mov    si, kernel_restart_bootblock
     mov    ax, 'KL'
         jmp     0x1000:0000
 

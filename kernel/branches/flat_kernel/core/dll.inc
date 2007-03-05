@@ -1038,21 +1038,3 @@ destroy_kernel_object:
            ret
 
 
-;szSound        db 'SOUND',0
-;szInfinity     db 'INFINITY',0
-szHwMouse      db 'ATI2D',0
-
-szSTART        db 'START',0
-szEXPORTS      db 'EXPORTS',0
-szIMPORTS      db 'IMPORTS',0
-
-msg_unresolved db 'unresolved ',0
-msg_module     db 'in module ',0
-msg_version    db 'incompatible driver version',13,10,0
-msg_www        db 'please visit www.kolibrios.org',13,10,0
-msg_CR         db  13,10,0
-
-align 4
-create_cursor    dd 0
-set_hw_cursor    dd 0
-hw_restore       dd 0

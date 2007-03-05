@@ -25,7 +25,7 @@ hd_read:
     push  ecx esi edi           ; scan cache
 
     mov   ecx,cache_max         ; entries in cache
-    mov   esi,0x600000+8
+    mov   esi,OS_BASE+0x600000+8
     mov   edi,1
 
   hdreadcache:
@@ -54,7 +54,7 @@ hd_read:
         call    hd_read_pio
 @@:
 
-    lea   esi,[edi*8+0x600000]
+    lea   esi,[edi*8+OS_BASE+0x600000]
     mov   [esi],eax             ; sector number
     mov   dword [esi+4],1       ; hd read - mark as same as in hd
 
@@ -62,7 +62,7 @@ hd_read:
 
     mov   esi,edi
     shl   esi,9
-    add   esi,0x600000+65536
+    add   esi,OS_BASE+0x600000+65536
     mov   edi,ebx
     mov   ecx,512/4
     cld
@@ -77,7 +77,7 @@ hd_read_pio:
 
     call  wait_for_hd_idle
     cmp   [hd_error],0
-    jne   hd_read_error    
+    jne   hd_read_error
 
     cli
     xor   eax,eax
@@ -115,7 +115,7 @@ hd_read_pio:
     cli
     push  edi
     shl   edi,9
-    add   edi,0x600000+65536
+    add   edi,OS_BASE+0x600000+65536
     mov   ecx,256
     mov   edx,[hdbase]
     cld
@@ -126,7 +126,7 @@ hd_read_pio:
     pop   edx eax
     ret
 
-disable_ide_int:    
+disable_ide_int:
 ;        mov edx,[hdbase]
 ;        add edx,0x206
 ;        mov al,2
@@ -153,7 +153,7 @@ hd_write:
     ; check if the cache already has the sector and overwrite it
 
     mov   ecx,cache_max
-    mov   esi,0x600000+8
+    mov   esi,OS_BASE+0x600000+8
     mov   edi,1
 
   hdwritecache:
@@ -178,7 +178,7 @@ hd_write:
     cmp   [hd_error],0
     jne   hd_write_access_denied
 
-    lea   esi,[edi*8+0x600000]
+    lea   esi,[edi*8+OS_BASE+0x600000]
     mov   [esi],eax             ; sector number
 
   yes_in_cache_write:
@@ -186,7 +186,7 @@ hd_write:
     mov   dword [esi+4],2       ; write - differs from hd
 
     shl   edi,9
-    add   edi,0x600000+65536
+    add   edi,OS_BASE+0x600000+65536
     mov   esi,ebx
     mov   ecx,512/4
     cld
@@ -205,7 +205,7 @@ write_cache:
     ; write difference ( 2 ) from cache to hd
 
     mov   ecx,cache_max
-    mov   esi,0x600000+8
+    mov   esi,OS_BASE+0x600000+8
     mov   edi,1
 
   write_cache_more:
@@ -323,7 +323,7 @@ cache_write_pio:
 ;    cli
     mov   esi,edi
     shl   esi,9
-    add   esi,0x600000+65536    ; esi = from memory position
+    add   esi,OS_BASE+0x600000+65536    ; esi = from memory position
     mov   ecx,256
     mov   edx,[hdbase]
     cld
@@ -357,7 +357,7 @@ find_empty_slot:
 
   inside_cache:
 
-    cmp   dword [edi*8+0x600000+4],2    ; get cache slot info
+    cmp   dword [edi*8+OS_BASE+0x600000+4],2    ; get cache slot info
     jb    found_slot                    ; it's empty or read
     dec   ecx
     jnz   search_for_empty
@@ -378,7 +378,7 @@ align 4
 clear_hd_cache:
 
     push  eax ecx edi
-    mov   edi,0x600000
+    mov   edi,OS_BASE+0x600000
     mov   ecx,16384
     xor   eax,eax
     cld
@@ -484,7 +484,7 @@ wait_for_hd_idle:
     in    al,dx
     test  al,128
     jnz   wfhil1
-  
+
  @@:
 
     pop   edx eax
@@ -574,7 +574,7 @@ iglobal
 align 4
 ; note that IDE descriptor table must be 4-byte aligned and do not cross 4K boundary
 IDE_descriptor_table:
-        dd      284000h
+        dd      OS_BASE+284000h
         dw      2000h
         dw      8000h
 
@@ -607,16 +607,16 @@ hdd_irq14:
         out     dx, al
         call    update_counters
         mov     ebx, [dma_process]
-        cmp     [0x3000], ebx
+        cmp     [CURRENT_TASK], ebx
         jz      .noswitch
         mov     [dma_task_switched], 1
         mov     edi, [dma_slot_ptr]
-        mov     eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
         mov     [dma_process], eax
-        mov     eax, [0x3010]
+        mov     eax, [TASK_BASE]
         mov     [dma_slot_ptr], eax
-        mov     [0x3000], ebx
-        mov     [0x3010], edi
+        mov     [CURRENT_TASK], ebx
+        mov     [TASK_BASE], edi
         mov     byte [0xFFFF], 1
         call    do_change_task
 .noswitch:
@@ -638,16 +638,16 @@ hdd_irq15:
         out     dx, al
         call    update_counters
         mov     ebx, [dma_process]
-        cmp     [0x3000], ebx
+        cmp     [CURRENT_TASK], ebx
         jz      .noswitch
         mov     [dma_task_switched], 1
         mov     edi, [dma_slot_ptr]
-        mov     eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
         mov     [dma_process], eax
-        mov     eax, [0x3010]
+        mov     eax, [TASK_BASE]
         mov     [dma_slot_ptr], eax
-        mov     [0x3000], ebx
-        mov     [0x3010], edi
+        mov     [CURRENT_TASK], ebx
+        mov     [TASK_BASE], edi
         mov     byte [0xFFFF], 1
         call    do_change_task
 .noswitch:
@@ -668,11 +668,11 @@ hd_read_dma:
         mov     eax, [esp+4]
         sub     eax, [dma_cur_sector]
         shl     eax, 9
-        add     eax, 0x284000
+        add     eax, OS_BASE+0x284000
         push    ecx esi edi
         mov     esi, eax
         shl     edi, 9
-        add     edi, 0x610000
+        add     edi, OS_BASE+0x610000
         mov     ecx, 512/4
         cld
         rep     movsd
@@ -681,9 +681,9 @@ hd_read_dma:
         pop     eax
         ret
 .notread:
-        mov     eax, IDE_descriptor_table
-        mov     dword [eax], 0x284000
-        mov     word [eax+4], 0x2000
+        mov     eax, IDE_descriptor_table-OS_BASE
+        mov     dword [eax+OS_BASE],  0x284000
+        mov     word [eax+4+OS_BASE], 0x2000
         mov     dx, [IDEContrRegsBaseAddr]
         cmp     [hdbase], 0x1F0
         jz      @f
@@ -734,9 +734,9 @@ hd_read_dma:
 @@:
         mov     al, 9
         out     dx, al
-        mov     eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
         mov     [dma_process], eax
-        mov     eax, [0x3010]
+        mov     eax, [TASK_BASE]
         mov     [dma_slot_ptr], eax
         cmp     [hdbase], 0x1F0
         jnz     .ide1
@@ -766,7 +766,7 @@ write_cache_chain:
         mov     eax, IDE_descriptor_table
         mov     edx, [cache_chain_pos]
         shl     edx, 9
-        add     edx, 0x610000
+        add     edx, OS_BASE+0x610000
         mov     [eax], edx
         movzx   edx, [cache_chain_size]
         shl     edx, 9
@@ -777,7 +777,7 @@ write_cache_sector:
         mov     eax, IDE_descriptor_table
         mov     edx, edi
         shl     edx, 9
-        add     edx, 0x610000
+        add     edx, OS_BASE+0x610000
         mov     [eax], edx
         mov     word [eax+4], 0x200
 do_write_dma:
@@ -832,9 +832,9 @@ do_write_dma:
 @@:
         mov     al, 1
         out     dx, al
-        mov     eax, [0x3000]
+        mov     eax, [CURRENT_TASK]
         mov     [dma_process], eax
-        mov     eax, [0x3010]
+        mov     eax, [TASK_BASE]
         mov     [dma_slot_ptr], eax
         cmp     [hdbase], 0x1F0
         jnz     .ide1

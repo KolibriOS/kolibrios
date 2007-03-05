@@ -7,127 +7,12 @@
 ;;                                                        ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-
-
 ;==========================================================================
 ;
 ;                           16 BIT FUNCTIONS
 ;
 ;==========================================================================
 
-; 16-bit data
-		org $+0x10000
-
-old_ints_h:
-        dw      0x400
-        dd      0
-        dw      0
-
-kernel_restart_bootblock:
-    db    1    ; version
-    dw    1    ; floppy image is in memory
-    dd    0    ; cannot save parameters
-
-
-align 32
-
-; GDT TABLE
-
-gdts:
-
-        dw     gdte-$-1
-        dd     gdts
-        dw     0
-
-; Attention! The order first four selectors not to change, is used in Fast System Call
-; must be : os_code, os_data, app_code, app_data, ....
-
-int_code_l:
-os_code_l:
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10011010b
-        db     0x00
-
-int_data_l:
-os_data_l:
-        dw     0xffff
-        dw     0x0000
-        db     0x00
-        dw     11011111b *256 +10010010b
-        db     0x00
-
-app_code_l:
-        dw 0xFFFF
-        dw 0
-        db 0
-        db cpl3
-        dw G32+D32+0x8000+0x7;
-
-app_data_l:
-        dw 0xFFFF
-        dw 0
-        db 0
-        db drw3
-        dw G32+D32+0x8000+0x7;
-
-; --------------- APM ---------------------
-apm_code_32:
-        dw     0x0f        ; limit 64kb
-        db     0, 0, 0
-        dw     11010000b *256 +10011010b
-        db     0x00
-apm_code_16:
-        dw     0x0f
-        db     0, 0, 0
-        dw     10010000b *256 +10011010b
-        db     0x00
-apm_data_16:
-        dw     0x0f
-        db     0, 0, 0
-        dw     10010000b *256 +10010010b
-        db     0x00
-; -----------------------------------------
-
-graph_data_l:
-
-        dw     0x7ff
-        dw     0x0000
-        db     0x00
-        dw     11010000b *256 +11110010b
-        db     0x00
-
-tss0_l:
-;      times (max_processes+10) dd 0,0
-gdte = $ + (max_processes+10)*8
-
-; videomodes table
-gr_table:
-    dw      0x112+0100000000000000b ,  640 ,  480        ; 1
-    dw      0x115+0100000000000000b ,  800 ,  600        ; 2
-    dw      0x118+0100000000000000b , 1024 ,  768        ; 3
-    dw      0x11B+0100000000000000b , 1280 , 1024        ; 4
-    dw      0x112 ,  640 , 480                ; 5
-    dw      0x115 ,  800 , 600                ; 6
-    dw      0x118 , 1024 , 768                ; 7
-    dw      0x11B , 1280 ,1024                ; 8
-    dw    0x13, 640, 480                    ; 9
-    dw    0x12, 640, 480                    ; 0
-
-; table for move to extended memory (int 15h, ah=87h)
-       movedesc:
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-
-        db      0xff,0xff,0x0,0xa0,0x00,0x93,0x0,0x0
-        db      0xff,0xff,0x0,0x00,0x10,0x93,0x0,0x0
-
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        db      0x00,0x00,0x0,0x00,0x00,0x00,0x0,0x0
-        	org $-0x10000
 
 putchar:
 ; in: al=character
@@ -154,72 +39,6 @@ printplain:
     jnz    @b
     popa
     ret
-
-; Now int 16 is used for keyboard support.
-; This is shorter, simpler and more reliable.
-if 0
-getkey:      push  ecx
-             push  edx
-             add   ebx,0x0101
-             xor   eax,eax
-
-           gk1:
-             in    al,0x60
-             mov   cl,al
-           gk0:
-             in    al,0x60
-             cmp   al,cl
-             je    gk0
-             cmp   ax,11
-             jg    gk0
-             gk0_1:
-             mov   cl,al
-
-;             add   al,47
-;             mov   [ds:keyinbs-0x10000],al
-;             mov   si,keyinbs-0x10000
-;             call  printplain
-
-           gk12:
-             in    al,0x60
-             cmp   al,cl
-             je    gk12
-             cmp   ax,240
-             jne   gk13
-             mov   al,cl
-             jmp   gk14
-           gk13:
-             add   cl,128
-             cmp   al,cl
-             jne   gk1
-             sub   al,128
-           gk14:
-
-             movzx edx,bl
-             cmp   eax,edx
-             jb    gk1
-             movzx edx,bh
-             cmp   eax,edx
-             jg    gk1
-             test  ebx,0x010000
-             jnz   gk3
-             mov   cx,0x1000
-             mov   dx,cx
-             add   eax,47
-             mov   cx,ax
-             cmp   cx,58
-             jb    gk_nozero
-             sub   cx,10
-           gk_nozero:
-             mov   [ds:keyin-0x10000],cl
-             mov   si,keyin-0x10000
-             call  printplain
-           gk3:
-             sub   eax,48
-             pop   edx
-             pop   ecx
-             ret
-end if
 
 getkey:
 ; get number in range [bl,bh] (bl,bh in ['0'..'9'])
@@ -253,17 +72,6 @@ macro _setcursor row,column
     call    setcursor
 }
 
-;pagetable_set:
-;eax - physical address
-;es:di - page table
-;ecx - number of pages to map
-;    or    al, 7
-;@@:
-;    stosd
-;    add    eax, 1000h
-;    loop    @b
-;    ret
-
 boot_read_floppy:
         push    si
         xor     si, si
@@ -276,7 +84,7 @@ boot_read_floppy:
         inc     si
         cmp     si, 10
         jb      @b
-        mov     si, badsect-0x10000
+        mov     si, badsect
 sayerr_plain:
         call    printplain
         jmp     $
@@ -296,8 +104,8 @@ start_of_code:
 ; \begin{diamond}[02.12.2005]
     cmp    ax, 'KL'
     jnz    @f
-    mov    word [cs:cfgmanager.loader_block-0x10000], si
-    mov    word [cs:cfgmanager.loader_block+2-0x10000], ds
+    mov    word [cs:cfgmanager.loader_block], si
+    mov    word [cs:cfgmanager.loader_block+2], ds
 @@:
 ; \end{diamond}[02.12.2005]
 
@@ -317,14 +125,14 @@ start_of_code:
 
 if lang eq ru
  ; Load & set russian VGA font (RU.INC)
-        mov  bp,RU_FNT1-10000h   ; RU_FNT1 - First part
-          mov  bx,1000h            ; 768 bytes
-          mov  cx,30h              ; 48 symbols
-          mov  dx,80h              ; 128 - position of first symbol
+        mov  bp, RU_FNT1         ; RU_FNT1 - First part
+        mov  bx,1000h            ; 768 bytes
+        mov  cx,30h              ; 48 symbols
+        mov  dx,80h              ; 128 - position of first symbol
         mov  ax,1100h
-          int  10h
+        int  10h
 
-        mov  bp,RU_FNT2-10000h   ; RU_FNT2 -Second part
+        mov  bp,RU_FNT2          ; RU_FNT2 -Second part
         mov  bx,1000h            ; 512 bytes
         mov  cx,20h              ; 32 symbols
         mov  dx,0E0h             ; 224 - position of first symbol
@@ -332,7 +140,7 @@ if lang eq ru
           int  10h
  ; End set VGA russian font
 else if lang eq et
-        mov  bp,ET_FNT-10000h   ; ET_FNT1
+        mov  bp,ET_FNT          ; ET_FNT1
         mov  bx,1000h           ;
         mov  cx,255             ; 256 symbols
         mov  dx,0h              ; 0 - position of first symbol
@@ -344,23 +152,17 @@ end if
     push    0xb800
     pop    es
     xor    di, di
-;        mov  si,d80x25-0x10000
-;        mov  cx,80*25
-;        mov  ah,1*16+15
-;       dfl1:
-;        lodsb
-;        stosw
-;        loop dfl1
     mov    ah, 1*16+15
+
 ; draw top
-    mov    si, d80x25_top - 0x10000
+    mov    si, d80x25_top
     mov    cx, d80x25_top_num * 80
 @@:
     lodsb
     stosw
     loop    @b
 ; draw spaces
-    mov    si, space_msg - 0x10000
+    mov    si, space_msg
     mov    cx, 25 - d80x25_top_num - d80x25_bottom_num
 dfl1:
     push    cx
@@ -374,14 +176,14 @@ dfl1:
     pop    cx
     loop    dfl1
 ; draw bottom
-    mov    si, d80x25_bottom - 0x10000
+    mov    si, d80x25_bottom
     mov    cx, d80x25_bottom_num * 80
 @@:
     lodsb
     stosw
     loop    @b
 
-    mov    byte [space_msg-0x10000+80], 0    ; now space_msg is null terminated
+    mov    byte [space_msg+80], 0    ; now space_msg is null terminated
 
     _setcursor d80x25_top_num,0
 
@@ -401,73 +203,24 @@ dfl1:
         and     dx,bx
         cmp     ax,dx
         jnz     cpugood
-        mov     si,not386-0x10000
+        mov     si,not386
 sayerr:
         call    print
         jmp     $
      cpugood:
 
+
 ; set up esp
     movzx    esp, sp
-
-; FLUSH 8042 KEYBOARD CONTROLLER
-
-;// mike.dld [
- ;       mov     al,0xED
- ;       out     0x60,al
- ;       or      cx,-1
- ;     @@:
- ;       in      al,0x64
- ;       test    al,2
- ;       jz      @f
- ;       loop    @b
- ;     @@:
- ;       mov     al,0
- ;       out     0x60,al
- ;       or      cx,-1
- ;     @@:
- ;       in      al,0x64
- ;       test    al,2
- ;       jz      @f
- ;       loop    @b
- ;     @@:
-;// mike.dld ]
-
-;       mov     ecx,10000
-;      fl1:
-;       in      al,0x64
-;       loop    fl1
-;       test    al,1
-;       jz      fl2
-;       in      al,0x60
-;       jmp     fl1
-;      fl2:
-
-;****************************************************************
-; The function is modified Mario79
-;*****************************************************************
-; wait_kbd:        ; variant 1
-;       mov      cx,2500h  ;задержка порядка 10 мсек
-; test_kbd:
-;       in       al,64h    ;читаем состояние клавиатуры
-;       test     al,2      ;проверка бита готовности
-;       loopnz   test_kbd
 
         push    0
         pop     es
         and     word [es:0x9031], 0
-; \begin{Mario79}
-; find HDD IDE DMA PCI device
-; check for PCI BIOS
         mov     ax, 0xB101
         int     0x1A
         jc      .nopci
         cmp     edx, 'PCI '
         jnz     .nopci
-; find PCI class code
-; class 1 = mass storage
-; subclass 1 = IDE controller
-; a) class 1, subclass 1, programming interface 0x80
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x80
         mov     si, 0   ; device index = 0
@@ -522,10 +275,11 @@ wait_loop:       ; variant 2
     ; Write APM ver ----
     and    ax, 0xf0f
     add    ax, '00'
-    mov    si, msg_apm - 0x10000
+    mov    si, msg_apm
     mov    [si + 5], ah
     mov    [si + 7], al
     _setcursor 0, 3
+
     call    printplain
     _setcursor d80x25_top_num,0
     ; ------------------
@@ -536,25 +290,35 @@ wait_loop:       ; variant 2
     mov    ax, 0x5303            ; Connect 32 bit mode interface
     xor    bx, bx
     int    0x15
+
+    push 0
+    pop es
+
+    mov [es:0x9050], ax
+    mov [es:0x9052], cx
+    mov [es:0x9040], dx
+
+
     ; init selectors
-    movzx    eax, ax ; real-mode segment base address of protected-mode 32-bit code segment
-    shl    eax, 4
-    mov    [apm_code_32 - 0x10000 + 2], ax
-    shr    eax, 16
-    mov    [apm_code_32 - 0x10000 + 4], al
-    movzx    ecx, cx ; real-mode segment base address of protected-mode 16-bit code segment
-    shl    ecx, 4
-    mov    [apm_code_16 - 0x10000 + 2], cx
-    shr    ecx, 16
-    mov    [apm_code_16 - 0x10000 + 4], cl
-    movzx    edx, dx ; real-mode segment base address of protected-mode 16-bit data segment
-    shl    edx, 4
-    mov    [apm_data_16 - 0x10000 + 2], dx
-    shr    edx, 16
-    mov    [apm_data_16 - 0x10000 + 4], dl
-    mov    [es : 0x9040], ebx              ; offset of APM entry point
+;    movzx    eax, ax ; real-mode segment base address of protected-mode 32-bit code segment
+;    shl    eax, 4
+;    mov    [dword apm_code_32 + 2], ax
+;    shr    eax, 16
+;    mov    [dword apm_code_32 + 4], al
+;    movzx    ecx, cx ; real-mode segment base address of protected-mode 16-bit code segment
+;    shl    ecx, 4
+;    mov    [dword apm_code_16 + 2], cx
+;    shr    ecx, 16
+;    mov    [dword apm_code_16 + 4], cl
+;    movzx    edx, dx ; real-mode segment base address of protected-mode 16-bit data segment
+;    shl    edx, 4
+;    mov    [dword apm_data_16 + 2], dx
+;    shr    edx, 16
+;    mov    [dword apm_data_16 + 4], dl
+;    mov    [es : 0x9040], ebx              ; offset of APM entry point
 apm_end:
 ; -----------------------------------------
+
 
 ; DISPLAY VESA INFORMATION
 
@@ -564,14 +328,14 @@ apm_end:
         mov     di,0xa000
         int     0x10
         cmp     ax,0x004f
-        mov    si, novesa-0x10000
+        mov    si, novesa
         jnz    @f
         mov bx, word [es:di+0x12]
         shl ebx,16
         mov [es:0x9050], ebx
         mov     ax,[es:di+4]
         add     ax,'0'*256+'0'
-        mov    si,vervesa-0x10000
+        mov    si,vervesa
         mov     [si+vervesa_off], ah
         mov     [si+vervesa_off+2], al
 @@:     call    print
@@ -584,13 +348,13 @@ cfgmanager:
 ; b) preboot_dma_write  = use DMA write?
 ; c) preboot_vrrm = use VRR?
 ; d) preboot_device = from what boot?
-    mov    di, preboot_graph-0x10000
+    mov    di, preboot_graph
 ; check bootloader block
-    cmp    [.loader_block-0x10000], -1
+    cmp    [.loader_block], -1
     jz    .noloaderblock
-    les    bx, [.loader_block-0x10000]
+    les    bx, [.loader_block]
     cmp    byte [es:bx], 1
-    mov    si, loader_block_error-0x10000
+    mov    si, loader_block_error
     jnz    sayerr
     test    byte [es:bx+1], 1
     jz    @f
@@ -601,11 +365,11 @@ cfgmanager:
 @@:
 .noloaderblock:
 ; determine default settings
-    mov    [.bSettingsChanged-0x10000], 0
+    mov    [.bSettingsChanged], 0
     cmp    byte [di], 0
     jnz    .preboot_gr_end
     mov    [di+preboot_gprobe-preboot_graph], 0
-    mov    al, [vervesa+vervesa_off-0x10000]
+    mov    al, [vervesa+vervesa_off]
     cmp    al, 'x'
     jz    .novesa
     cmp    al, '1'
@@ -628,66 +392,66 @@ cfgmanager:
     cmp    [di+preboot_device-preboot_graph], 1
     adc    [di+preboot_device-preboot_graph], 0
 ; notify user
-    mov    si, linef-0x10000
+    mov    si, linef
     call    print
-    mov    si, start_msg-0x10000
+    mov    si, start_msg
     call    print
-    mov    si, time_msg-0x10000
+    mov    si, time_msg
     call    print
 ; get start time
     call    .gettime
-    mov    [.starttime-0x10000], eax
-    mov    word [.timer-0x10000], .newtimer
-    mov    word [.timer-0x10000+2], cs
+    mov    [.starttime], eax
+    mov    word [.timer], .newtimer
+    mov    word [.timer+2], cs
 .printcfg:
     _setcursor 9,0
-    mov    si, current_cfg_msg-0x10000
+    mov    si, current_cfg_msg
     call    print
-    mov    si, curvideo_msg-0x10000
+    mov    si, curvideo_msg
     call    print
-    mov    al, [preboot_graph-0x10000]
+    mov    al, [preboot_graph]
     cmp    al, 8
     ja    .pnovesa
     mov    dl, al
     and    eax, 3
-    mov    si, [modes_msg-0x10000+eax*2]
+    mov    si, [modes_msg+eax*2]
     call    printplain
-    mov    si, modevesa20-0x10000
+    mov    si, modevesa20
     cmp    dl, 4
     jbe    @f
-    mov    si, modevesa12-0x10000
+    mov    si, modevesa12
 @@:
     call    printplain
     cmp    dl, 4
     ja    .x
-    mov    si, probeno_msg-0x10000
-    cmp    [preboot_gprobe-0x10000], 2
+    mov    si, probeno_msg
+    cmp    [preboot_gprobe], 2
     jnz    @f
-    mov    si, probeok_msg-0x10000
+    mov    si, probeok_msg
 @@:
     call    printplain
 .x:
     jmp    .c
 .pnovesa:
     cmp    al, 9
-    mov    si, mode9-0x10000
+    mov    si, mode9
     jz    @b
-    mov    si, mode10-0x10000
+    mov    si, mode10
     jmp    @b
 .c:
-    mov    si, linef-0x10000
+    mov    si, linef
     call    printplain
-    mov    si, dma_msg-0x10000
-    cmp    [preboot_dma_write-0x10000], 1
+    mov    si, dma_msg
+    cmp    [preboot_dma_write], 1
     call    .say_on_off
-    mov    si, vrrm_msg-0x10000
-    cmp    [preboot_vrrm-0x10000], 1
+    mov    si, vrrm_msg
+    cmp    [preboot_vrrm], 1
     call    .say_on_off
-    mov    si, preboot_device_msg-0x10000
+    mov    si, preboot_device_msg
     call    print
-    mov    al, [preboot_device-0x10000]
+    mov    al, [preboot_device]
     and    eax, 3
-    mov    si, [preboot_device_msgs-0x10000+eax*2]
+    mov    si, [preboot_device_msgs+eax*2]
     call    printplain
 .wait:
     _setcursor 25,0        ; out of screen
@@ -696,8 +460,8 @@ cfgmanager:
     push    0
     pop    es
     mov    eax, [es:8*4]
-    mov    [.oldtimer-0x10000], eax
-    mov    eax, [.timer-0x10000]
+    mov    [.oldtimer], eax
+    mov    eax, [.timer]
     mov    [es:8*4], eax
     sti
 ; wait for keypressed
@@ -707,11 +471,11 @@ cfgmanager:
 ; restore timer interrupt
     push    0
     pop    es
-    mov    eax, [.oldtimer-0x10000]
+    mov    eax, [.oldtimer]
     mov    [es:8*4], eax
-    mov    [.timer-0x10000], eax
+    mov    [.timer], eax
     _setcursor 7,0
-    mov    si, space_msg-0x10000
+    mov    si, space_msg
     call    printplain
     pop    ax
 ; switch on key
@@ -727,15 +491,15 @@ cfgmanager:
     cmp    al, 'd'
     jnz    .wait
     _setcursor 15,0
-    mov     si,bdev-0x10000
+    mov     si,bdev
     call    print
     mov     bx,'13'
     call    getkey
-    mov    [preboot_device-0x10000], al
+    mov    [preboot_device], al
     _setcursor 13,0
 .d:
-    mov    [.bSettingsChanged-0x10000], 1
-    mov    si, space_msg-0x10000
+    mov    [.bSettingsChanged], 1
+    mov    si, space_msg
     call    printplain
     _setcursor 15,0
     mov    cx, 6
@@ -745,46 +509,46 @@ cfgmanager:
     jmp    .printcfg
 .change_a:
     _setcursor 15,0
-    mov    si, gr_mode-0x10000
+    mov    si, gr_mode
     call    printplain
     mov     bx, '09'
     call    getkey
-    mov    [preboot_graph-0x10000], al
+    mov    [preboot_graph], al
     cmp    al, 4
     ja    @f
-    mov    si, probetext-0x10000
+    mov    si, probetext
     call    printplain
     mov    bx, '12'
     call    getkey
-    mov    [preboot_gprobe-0x10000], al
+    mov    [preboot_gprobe], al
 @@:
     _setcursor 10,0
     jmp    .d
 .change_b:
     _setcursor 15,0
-    mov    si, ask_dma-0x10000
+    mov    si, ask_dma
     call    print
     mov    bx, '12'
     call    getkey
-    mov    [preboot_dma_write-0x10000], al
+    mov    [preboot_dma_write], al
     _setcursor 11,0
     jmp    .d
 .change_c:
     _setcursor 15,0
-    mov    si, vrrmprint-0x10000
+    mov    si, vrrmprint
     call    print
     mov    bx, '12'
     call    getkey
-    mov    [preboot_vrrm-0x10000], al
+    mov    [preboot_vrrm], al
     _setcursor 12,0
     jmp    .d
 .say_on_off:
     pushf
     call    print
-    mov    si, on_msg-0x10000
+    mov    si, on_msg
     popf
     jz    @f
-    mov    si, off_msg-0x10000
+    mov    si, off_msg
 @@:    call    printplain
     ret
 ; novesa and vervesa strings are not used at the moment of executing this code
@@ -794,10 +558,9 @@ virtual at novesa
 .bSettingsChanged db ?
 .timer dd ?
 end virtual
-	org $+0x10000
 .loader_block dd -1
-	org $-0x10000
 .gettime:
+
     mov    ah, 0
     int    1Ah
     xchg    ax, cx
@@ -809,10 +572,10 @@ end virtual
     push    cs
     pop    ds
     pushf
-    call    [.oldtimer-0x10000]
+    call    [.oldtimer]
     pushad
     call    .gettime
-    sub    eax, [.starttime-0x10000]
+    sub    eax, [.starttime]
     sub    ax, 18*5
     jae    .timergo
     neg    ax
@@ -829,12 +592,12 @@ if lang eq ru
     mov    cl, 'г'
     jz    @f
     mov    cl, 'л'
-@@:    mov    [time_str+9-0x10000], cl
+@@:    mov    [time_str+9], cl
 else if lang eq et
     cmp    al, 1
     ja     @f
-    mov    [time_str+9-0x10000], ' '
-    mov    [time_str+10-0x10000],' '
+    mov    [time_str+9], ' '
+    mov    [time_str+10],' '
 @@:
 else
 ; wait 5/4/3/2 seconds, 1 second
@@ -842,11 +605,11 @@ else
     mov    cl, 's'
     ja    @f
     mov    cl, ' '
-@@:    mov    [time_str+9-0x10000], cl
+@@:    mov    [time_str+9], cl
 end if
     add    al, '0'
-    mov    [time_str+1-0x10000], al
-    mov    si, time_msg-0x10000
+    mov    [time_str+1], al
+    mov    si, time_msg
     _setcursor 7,0
     call    print
     _setcursor 25,0
@@ -856,31 +619,31 @@ end if
 .timergo:
     push    0
     pop    es
-    mov    eax, [.oldtimer-0x10000]
+    mov    eax, [.oldtimer]
     mov    [es:8*4], eax
     mov    sp, 0EC00h
 .continue:
     sti
     _setcursor 6,0
-    mov    si, space_msg-0x10000
+    mov    si, space_msg
     call    printplain
     call    printplain
     _setcursor 6,0
-    mov    si, loading_msg-0x10000
+    mov    si, loading_msg
     call    print
     _setcursor 15,0
-    cmp    [.bSettingsChanged-0x10000], 0
+    cmp    [.bSettingsChanged], 0
     jz    .load
-    cmp    [.loader_block-0x10000], -1
+    cmp    [.loader_block], -1
     jz    .load
-    les    bx, [.loader_block-0x10000]
+    les    bx, [.loader_block]
     mov    eax, [es:bx+3]
     push    ds
     pop    es
     test    eax, eax
     jz    .load
     push    eax
-    mov    si, save_quest-0x10000
+    mov    si, save_quest
     call    print
 .waityn:
     mov    ah, 0
@@ -891,7 +654,7 @@ end if
     cmp    al, 'y'
     jnz    .waityn
     call    putchar
-    mov    byte [space_msg-0x10000+80], 186
+    mov    byte [space_msg+80], 186
     pop    eax
     push    cs
     push    .cont
@@ -902,7 +665,7 @@ end if
 .cont:
     push    cs
     pop    ds
-    mov    si, space_msg-0x10000
+    mov    si, space_msg
     mov    byte [si+80], 0
     _setcursor 15,0
     call    printplain
@@ -912,12 +675,12 @@ end if
 
 ; ASK GRAPHICS MODE
 
-    movzx    ax, [preboot_graph-0x10000]
+    movzx    ax, [preboot_graph]
     push    0
     pop    es
-; address is gr_table+6*(ax-1)-0x10000
+; address is gr_table+6*(ax-1)
         add    ax, ax
-        lea    si, [gr_table-0x10000 + eax + eax*2 - 6]
+        lea    si, [gr_table + eax + eax*2 - 6]
         mov     bx,[si+0]
         mov     cx,[si+2]
         mov     dx,[si+4]
@@ -936,14 +699,14 @@ end if
 ; USE DEFAULTS OR PROBE
 
 ; bx - mode : cx - x size : dx - y size
-    cmp    [preboot_gprobe-0x10000], 1
+    cmp    [preboot_gprobe], 1
     jz    noprobe
 
         mov     bx,0x100
      newprobe:
         inc     bx
         cmp     bx,0x17f
-        mov    si,prnotfnd-0x10000
+        mov    si,prnotfnd
         jz    sayerr
 
      probemore:
@@ -990,12 +753,12 @@ end if
         mov     [es:0x9000],al
        nov:
         cmp     al,24
-        mov    si,bt24-0x10000
+        mov    si,bt24
         jz    bppl
         cmp     al,32
-        mov     si,bt32-0x10000
+        mov     si,bt32
         jz     bppl
-        mov     si,btns-0x10000
+        mov     si,btns
         jmp    sayerr
        bppl:
         call    print
@@ -1024,108 +787,26 @@ end if
 
 ; DMA WRITE
 
-        mov     al, [preboot_dma_write-0x10000]
+        mov     al, [preboot_dma_write]
         mov     [es:0x901F],al
 
 ; VRR_M USE
 
-        mov     al,[preboot_vrrm-0x10000]
+        mov     al,[preboot_vrrm]
         mov     [es:0x9030],al
-
-
-; MEMORY MODEL
-
-;        movzx   eax,byte [es:preboot_memory-0x10000]
-;        cmp     eax,0
-;        jne     pre_mem
-;;;;;;;;;;;;;;;;;;;;;;;;;
-; mario79 - memory size ;
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;           mov ax,0E801h
-;;;           xor bx,bx    ; thanks to Alexei for bugfix [18.07.2004]
-;           xor cx, cx
-;           xor dx, dx
-;           int 0x15
-;           movzx ebx, dx ;bx
-;           movzx eax, cx ;ax
-;           shl   ebx,6   ; перевод в килобайты (x64)
-;           add   eax,ebx
-;           add eax, 1000h ;440h
-;           cmp eax,40000h ; 256?
-;           jge mem_256_z
-;           cmp eax,20000h ; 128?
-;           jge mem_128_z
-;           cmp eax,10000h ; 64?
-;           jge mem_64_z
-;           cmp eax,8000h ; 32?
-;           jge mem_32_z
-;           jmp mem_16_z
-;
-;mem_256_z: mov     si,memokz256-0x10000
-;           call    printplain
-;           mov eax,5
-;           jmp pre_mem
-;mem_128_z: mov     si,memokz128-0x10000
-;           call    printplain
-;           mov eax,4
-;           jmp pre_mem
-;mem_64_z:  mov     si,memokz64-0x10000
-;           call    printplain
-;           mov eax,3
-;           jmp pre_mem
-;mem_32_z:  mov     si,memokz32-0x10000
-;           call    printplain
-;           mov eax,2
-;           jmp pre_mem
-;mem_16_z:  mov     si,memokz16-0x10000
-;           call    printplain
-;           mov eax,1
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;      pre_mem:
-;        push    word 0x0000
-;        pop     es
-;        mov     [es:0x9030],al
-;        push    word 0x1000
-;        pop     es
-;        mov     si,linef-0x10000
-;        call    printplain
-
-
-
-
-; DIRECT WRITE TO LFB, PAGING DISABLED
-
-;        movzx   eax,byte [es:preboot_lfb-0x10000]
-;        mov     eax,1                             ; paging disabled
-;        cmp     eax,0
-;        jne     pre_lfb
-;        mov     si,gr_direct-0x10000
-;        call    printplain
-;        mov     ebx,'12'
-;        call    getkey
-;      pre_lfb:
-;        push    word 0x0000
-;        pop     es
-;        mov     [es:0x901E],al
-;        mov     ax,0x1000
-;        mov     es,ax
-;        mov     si,linef-0x10000
-;        call    printplain
         mov     [es:0x901E],byte 1
-
-
 
 ; BOOT DEVICE
 
-    mov    al, [preboot_device-0x10000]
+    mov    al, [preboot_device]
         dec     al
-        mov     [boot_dev-0x10000],al
+        mov     [boot_dev],al
 
 ; READ DISKETTE TO MEMORY
 
-;        cmp     [boot_dev-0x10000],0
+;        cmp     [boot_dev],0
         jne     no_sys_on_floppy
-        mov     si,diskload-0x10000
+        mov     si,diskload
         call    print
         xor    ax, ax            ; reset drive
         xor    dx, dx
@@ -1138,7 +819,7 @@ end if
         mov     bx, 0xB000      ; es:bx -> data area
         call    boot_read_floppy
 ; and copy them to extended memory
-        mov     si, movedesc-0x10000
+        mov     si, movedesc
         mov     [si+8*2+3], bh
         push    es
         push    ds
@@ -1152,7 +833,7 @@ sayerr_floppy:
         mov     dx, 0x3f2
         mov     al, 0
         out     dx, al
-        mov     si, memmovefailed-0x10000
+        mov     si, memmovefailed
         jmp     sayerr_plain
 @@:
         add     dword [si+8*3+2], 512*10
@@ -1241,7 +922,7 @@ sayerr_floppy:
         aam
         xchg    al, ah
         add     ax, '00'
-        mov     si, pros-0x10000
+        mov     si, pros
         cmp     [si], ax
         jz      @f
         mov     [si], ax
@@ -1319,53 +1000,22 @@ sayerr_floppy:
 ;        jnz     reads
 ;       readdone:
 ;        pop     ax
-        mov     si,backspace2-0x10000
+
+        mov     si,backspace2
         call    printplain
-        mov     si,okt-0x10000
+        mov     si,okt
         call    printplain
-       no_sys_on_floppy:
+
+no_sys_on_floppy:
         xor    ax, ax        ; reset drive
         xor    dx, dx
         int     0x13
-       mov dx,0x3f2 ; floppy motor off
-       mov al,0
-       out dx,al
+        mov dx,0x3f2 ; floppy motor off
+        mov al,0
+        out dx,al
 
-    push    es
-; PAGE TABLE
-
-    push    dword [es:0x9018]
-;
-;        mmap_mem equ 64                ; amount of memory to map
-;
-        push    0x6000
-        pop    es                    ; es:di = 6000:0
-;        xor     di,di
-;        mov     cx,256*mmap_mem         ; Map (mapmem) M
-;; initialize as identity mapping
-;        xor    eax, eax
-;        call    pagetable_set
-;
-;
-; 4 KB PAGE DIRECTORY
-;
-       push    0x7F00
-       pop    es                ; es:di = 7F00:0
-;        xor     di, di
-;        mov     cx, 64 / 4
-;        mov     eax, 0x60007            ; for 0 M
-;        call    pagetable_set
-;        xor     si,si
-;        mov     di,second_base_address shr 20
-;        mov     cx,64/2
-;        rep     movs word [es:di], [es:si]
-
-;        mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
-;        mov     cr3, eax
 
 ; SET GRAPHICS
-
-    pop    es
 
         xor ax, ax
         mov es, ax
@@ -1377,11 +1027,12 @@ sayerr_floppy:
         cmp     ax,0x12
         je      setgr
         mov     ax,0x4f02            ; Vesa
-       setgr:
+setgr:
         int     0x10
         test    ah,ah
-        mov    si, fatalsel-0x10000
+        mov    si, fatalsel
         jnz    sayerr
+
 ; set mode 0x12 graphics registers:
         cmp     bx,0x12
         jne     gmok2
@@ -1405,7 +1056,6 @@ sayerr_floppy:
         pop    dx
         out     dx,al      ; select GDC bit mask register
                            ; for writes to 0x03cf
-
-       gmok2:
+gmok2:
         push    ds
         pop    es

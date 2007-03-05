@@ -1119,13 +1119,5 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            ret
 endp
 
-
-
 include "debug.inc"
-
-iglobal
-    new_process_loading db 'K : New Process - loading',13,10,0
-    new_process_running db 'K : New Process - done',13,10,0
-    start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
-endg
 
