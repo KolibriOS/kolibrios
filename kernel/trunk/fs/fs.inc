@@ -389,8 +389,8 @@ choice_necessity_partition:
 choice_necessity_partition_1:
     mov   ecx,[hdpos]
     xor   eax,eax
-    mov   [0xfe10], eax    ; entries in hd cache
-    mov   edx,0x40002
+    mov   [hd_entries], eax    ; entries in hd cache
+    mov   edx,DRIVE_DATA+2
  search_partition_array:
     mov   bl,[edx]
     movzx ebx,bl
@@ -402,7 +402,7 @@ choice_necessity_partition_1:
     dec   eax
     xor   edx,edx
     imul  eax,100
-    add   eax,0x4000a
+    add   eax,DRIVE_DATA+0xa
     mov   [transfer_adress],eax
     call  partition_data_transfer_1
     ret

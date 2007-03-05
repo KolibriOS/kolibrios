@@ -516,7 +516,7 @@ display_settings:
 
 repos_windows:
         mov     ecx,[TASK_COUNT]
-        mov     edi,0x20*2
+        mov     edi, OS_BASE+0x20*2
     mov    byte[REDRAW_BACKGROUND],1
         dec     ecx
         jge    @f
@@ -537,6 +537,7 @@ repos_windows:
         neg     eax
         mov     [edi+WDATA.box.height],eax
   .lp1:
+
         call    set_window_clientbox
         add     edi,0x20
         loop    @b

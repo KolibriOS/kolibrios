@@ -5061,6 +5061,7 @@ align 4
   cpu_caps    dd 4 dup(0)
   pg_data  PG_DATA
   heap_test   dd ?
+  hd_entries  rd 1     ;unused ? 0xfe10
 endg
 
 iglobal

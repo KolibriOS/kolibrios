@@ -9,7 +9,7 @@ uglobal
 endg
 
 fdc_init:                               ;start with clean tracks.
-        mov edi,0xD201
+        mov edi,OS_BASE+0xD201
         mov al,0
         mov ecx,160
         rep stosb
@@ -22,7 +22,7 @@ fdc_filesave:                   ;ebx: cluster to be saved.
         mov bl,18
         div bl
         mov ah,0
-        add eax,0xD201
+        add eax,OS_BASE+0xD201
         mov [eax],byte 1                ;This track is now dirty.
         popa
 ret

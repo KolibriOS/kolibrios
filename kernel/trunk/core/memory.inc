@@ -424,19 +424,22 @@ proc init_LFB
 
 .map_page_tables:
 
-@@:
            call alloc_page
            stdcall map_page_table, edx, eax
-           add esi, 0x00400000
+           add edx, 0x00400000
            dec edi
-           jnz @B
+           jnz .map_page_tables
 
            mov eax, [LFBAddress]
            mov edi, page_tabs + (LFB_BASE shr 10)
            or eax, PG_UW
            mov ecx, [pg_count]
            cld
-           rep stosd
+@@:
+           stosd
+           add eax, 0x1000
+           dec ecx
+           jnz @B
 
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB

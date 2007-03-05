@@ -427,7 +427,7 @@ fs_OnHd:
         mov     [hdpos], eax
         cmp     ecx, 0x100
         jae     .nf
-        cmp     cl, [0x40001+eax]
+        cmp     cl, [DRIVE_DATA+eax]
         jbe     @f
 .nf:
         call    free_hd_channel
@@ -503,7 +503,7 @@ fs_OnCd:
         jae     .nf
         push    ecx ebx
         mov     cl,al
-        mov     bl,[0x40001]
+        mov     bl,[DRIVE_DATA+1]
         shr     bl,cl
         test    bl,2
         pop     ebx ecx
