@@ -93,7 +93,7 @@ include "bus/pci/pci16.inc"
 
 ; Enabling 32 bit protected mode
 
-    ;    sidt    [cs:old_ints_h-0x10000]
+        sidt    [cs:old_ints_h]
 
         cli                             ; disable all irqs
         cld
@@ -122,6 +122,8 @@ include "bus/pci/pci16.inc"
         and     eax, 10011111b *65536*256 + 0xffffff ; caching enabled
         mov     cr0, eax
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
+
+include "boot/shutdown.inc" ; shutdown or restart
 
 align 8
 tmp_gdt:
@@ -206,7 +208,6 @@ B32:
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
 include 'init.inc'
-include "boot/shutdown.inc" ; shutdown or restart
 
 org OS_BASE+$
 include 'fdo.inc'
@@ -265,7 +266,7 @@ high_code:
         je    @f
         mov   ax,[BOOT_VAR+0x9001]        ; for other modes
         mov   [BytesPerScanLine],ax
-      @@:
+@@:
 
 ; GRAPHICS ADDRESSES
 
@@ -3289,7 +3290,7 @@ checkmisc:
     cmp  [SYS_SHUTDOWN],dl
     jne  no_mark_system_shutdown
 
-    mov   edx,0x3040
+    mov   edx,OS_BASE+0x3040
     movzx ecx,byte [SYS_SHUTDOWN]
     add   ecx,5
   markz:
@@ -4870,6 +4871,68 @@ undefined_syscall:                      ; Undefined system call
 
      mov   [esp+36],dword -1
      ret
+
+align 4
+system_shutdown:          ; shut down the system
+
+           cmp byte [BOOT_VAR+0x9030], 1
+           jne @F
+           ret
+@@:
+           call stop_all_services
+
+     push eax
+     push edx
+     mov edx, 0x400   ;bocsh
+     mov al,0xff      ;bocsh
+     out dx, al       ;bocsh
+     pop edx
+     pop eax
+
+           push 3                ; stop playing cd
+           pop  eax
+           call sys_cd_audio
+
+yes_shutdown_param:
+           cli
+
+           mov  eax, kernel_file ; load kernel.mnt to 0x8000:0
+           push 12
+           pop  esi
+           xor  ebx,ebx
+           or   ecx,-1
+           mov  edx, OS_BASE+0x80000
+           call fileread
+
+           mov  esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
+           mov  edi,OS_BASE+0x40000
+           mov  ecx,1000
+           rep  movsb
+
+           mov  esi,OS_BASE+0x2F0000    ; restore 0x0 - 0xffff
+           mov  edi, OS_BASE
+           mov  ecx,0x10000/4
+           cld
+           rep movsd
+
+           call restorefatchain
+
+           mov al, 0xFF
+           out 0x21, al
+           out 0xA1, al
+
+           mov  word [OS_BASE+0x467+0],pr_mode_exit
+           mov  word [OS_BASE+0x467+2],0x1000
+
+           mov  al,0x0F
+           out  0x70,al
+           mov  al,0x05
+           out  0x71,al
+
+           mov  al,0xFE
+           out  0x64,al
+           hlt
+
 
 include "data32.inc"
 

@@ -87,6 +87,7 @@ bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
 vmode          db  'drivers/VMODE.MDR',0
 vrr_m          db  '/rd/1/VRR_M',0
+kernel_file    db  'KERNEL  MNT'
 
 
 ; mike.dld {
