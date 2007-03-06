@@ -1,3 +1,3 @@
 @fasm editbox.asm editbox
-@mtappack editbox
+@kpack editbox
 @pause
