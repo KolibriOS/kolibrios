@@ -432,7 +432,7 @@ B32:
            mov cr0,eax
 
            call init_kernel_heap
-           stdcall kernel_alloc, 0x2000
+           stdcall kernel_alloc, RING0_STACK_SIZE+512
            mov [os_stack], eax
 
            call init_LFB
@@ -618,7 +618,7 @@ include 'vmodeld.inc'
         mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
         mov edi, [os_stack]
         mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-        add edi, 0x2000-512
+        add edi, RING0_STACK_SIZE
         mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
 
         mov esi, fpu_data
@@ -654,7 +654,7 @@ include 'vmodeld.inc'
         mov  [edi+TSS._eip],osloop
         mov  [edi+TSS._eflags],dword 0x11202 ; sti and resume
         mov eax, [os_stack]
-        add eax, 0x2000-512
+        add eax, RING0_STACK_SIZE
         mov  [edi+TSS._esp], eax
         mov  [edi+TSS._cs],os_code
         mov  [edi+TSS._ss],os_data

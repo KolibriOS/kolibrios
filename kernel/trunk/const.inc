@@ -275,7 +275,7 @@ new_app_base        equ 0x80000000
 twdw                equ (CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ     0x2000 - 512    ;512 байт для контекста FPU
+RING0_STACK_SIZE    equ (0x2000-512)    ;512 байт для контекста FPU
 
 ;PAGES_USED          equ 4
 

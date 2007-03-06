@@ -889,6 +889,8 @@ proc new_sys_threads
            rep    stosd               ;clean extended information about new thread
            mov    esi,ebx
            mov    edi,edx
+           mov byte [edi], '@'
+           inc    edi
            mov    ecx,11
            rep    movsb               ;copy process name
 
@@ -949,10 +951,10 @@ proc set_app_params stdcall,slot:dword, params:dword,\
              pl0_stack dd ?
            endl
 
-           stdcall kernel_alloc, 0x2000
+           stdcall kernel_alloc, RING0_STACK_SIZE+512
            mov [pl0_stack], eax
 
-           lea edi, [eax+0x2000-512]
+           lea edi, [eax+RING0_STACK_SIZE]
 
            mov eax, [slot]
            mov ebx, eax
@@ -1077,7 +1079,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._io],word 128
            mov [edi+TSS._ss0], os_data
            mov ebx, [pl0_stack]
-           add ebx, 0x2000-512
+           add ebx, RING0_STACK_SIZE
            mov [edi+TSS._esp0],ebx
 
            mov ecx, edi    ;ecx - address of application TSS
