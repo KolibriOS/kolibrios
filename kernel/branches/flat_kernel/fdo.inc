@@ -230,7 +230,7 @@ debug_beginf
         pushad
         movzx   ebx,al
         mov     eax,1
-        call    sys_msg_board
+     ;   call    sys_msg_board
         popad
         ret
 debug_endf
@@ -243,7 +243,7 @@ debug_beginf
         movzx   ebx,byte[edx]
         or      bl,bl
         jz      .l2
-        call    sys_msg_board
+     ;   call    sys_msg_board
         inc     edx
         jmp     .l1
   .l2:  ret

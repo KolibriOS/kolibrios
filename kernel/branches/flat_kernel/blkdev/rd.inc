@@ -1796,7 +1796,12 @@ fs_RamdiskRewrite:
         jnz     .disk_full2
         dec     edi
         dec     edi
-        lea     eax, [edi-(RAMDISK_FAT)]
+
+    ;    lea     eax, [edi-(RAMDISK_FAT)]
+
+        mov eax, edi
+        sub edi, RAMDISK_FAT
+
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp]

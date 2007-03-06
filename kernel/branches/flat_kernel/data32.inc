@@ -149,14 +149,14 @@ app_code_l:
         dw 0
         db 0
         db cpl3
-        dw G32+D32+0x8000+0x7;
+        dw G32+D32+(new_app_base shr 16)+0x7;
 
 app_data_l:
         dw 0xFFFF
         dw 0
         db 0
         db drw3
-        dw G32+D32+0x8000+0x7;
+        dw G32+D32+(new_app_base shr 16)+0x7;
 
 ; --------------- APM ---------------------
 apm_code_32:

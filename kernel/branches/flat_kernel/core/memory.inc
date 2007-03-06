@@ -476,18 +476,16 @@ proc page_fault_handler
            mov ebx, [ebp-4]
 
            cmp ebx, 0x80000000
-           jae .user_space
+           jae .kernel_space
+
+           cmp ebx, page_tabs+0x800
+           jae .tab_space
 
            cmp ebx, app_page_tabs
            jae .alloc
 
-           cmp ebx, page_tabs
-           jae .tab_space
-
            cmp ebx, 0x7DC00000
            jae .lfb_addr
-
-           jmp .kernel_space
 
 .user_space:
            shr ebx, 12

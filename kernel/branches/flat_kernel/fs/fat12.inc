@@ -1891,7 +1891,11 @@ fs_FloppyRewrite:
         jnz     .ret
         dec     edi
         dec     edi
-        lea     eax, [edi-(FLOPPY_FAT)]
+
+  ;      lea     eax, [edi-FLOPPY_FAT]
+        mov eax, edi
+        sub edi, FLOPPY_FAT
+
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp+4]

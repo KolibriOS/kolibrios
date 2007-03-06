@@ -32,7 +32,6 @@ endp
 
 align 4
 proc init_mem
-
            mov eax, [MEM_AMOUNT-OS_BASE]
            mov [pg_data.mem_amount-OS_BASE], eax
            mov [pg_data.kernel_max-OS_BASE], eax
@@ -74,20 +73,20 @@ proc init_mem
            sub [pg_data.kernel_tables-OS_BASE], 2
 
            mov [edx], eax
-           mov [edx+16], eax
+           mov [edx+(OS_BASE shr 20)], eax
            add eax, 0x00400000
 
            mov [edx+4], eax
-           mov [edx+20], eax
+           mov [edx+(OS_BASE shr 20)+4], eax
            add eax, 0x00400000
 
            mov [edx+8], eax
-           mov [edx+24], eax
+           mov [edx+(OS_BASE shr 20)+8], eax
            add eax, 0x00400000
 
            mov [edx+12], eax
-           mov [edx+28], eax
-           add edx, 32
+           mov [edx+(OS_BASE shr 20)+12], eax
+           add edx, (OS_BASE shr 20)+16
            add eax, 0x00400000
 
 ;           mov eax, 0x800000+PG_SW
@@ -128,7 +127,7 @@ align 4
 proc init_page_map
 
            mov edi, sys_pgmap-OS_BASE
-           mov ecx, (HEAP_BASE/4096)/32      ;384/4
+           mov ecx, ((HEAP_BASE-OS_BASE)/4096)/32      ;384/4
            mov ebx, ecx
            xor eax,eax
            cld
@@ -143,8 +142,8 @@ proc init_page_map
            lea edi, [sys_pgmap-OS_BASE+ebx*4]         ;+384
            mov edx, [pg_data.pages_count-OS_BASE]
            mov ecx, [pg_data.kernel_tables-OS_BASE]
-           add ecx, (HEAP_BASE/4096) and 31
-           sub edx, HEAP_BASE/4096
+           add ecx, ((HEAP_BASE-OS_BASE)/4096) and 31
+           sub edx, (HEAP_BASE-OS_BASE)/4096
            sub edx, ecx
            mov [pg_data.pages_free-OS_BASE], edx
 

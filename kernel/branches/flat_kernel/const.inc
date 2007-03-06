@@ -134,7 +134,7 @@ SSE_FZ         equ    0x8000
 
 SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
-OS_BASE             equ 0x01000000
+OS_BASE             equ 0x80000000
 
 window_data         equ OS_BASE
 
@@ -261,13 +261,13 @@ LFB_BASE            equ 0x7DC00000
 
 page_tabs           equ 0x7FC00000
 master_tab          equ 0x7FDFF000
-app_page_tabs       equ 0x7FE00000
+app_page_tabs       equ 0x7FC00000  ;0x7FE00000
 
 sys_pgdir           equ (OS_BASE+0x00050000)
 sys_pgmap           equ (OS_BASE+0x00052000)
 
 
-new_app_base        equ 0x80000000
+new_app_base        equ 0x01000000 ; 0= flat
 
 twdw                equ (CURRENT_TASK-window_data)
 

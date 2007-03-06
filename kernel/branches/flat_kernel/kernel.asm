@@ -163,7 +163,7 @@ B32:
 
            xor   eax,eax
            mov   edi,0x280000
-           mov   ecx,(HEAP_BASE-0x280000) / 4
+           mov   ecx,(HEAP_BASE-OS_BASE-0x280000) / 4
            cld
            rep   stosd
 
@@ -202,6 +202,7 @@ B32:
            mov eax,cr0
            or eax,CR0_PG
            mov cr0,eax
+
            lgdt [gdts]
            jmp pword os_code:high_code
 
@@ -210,7 +211,6 @@ __DEBUG_LEVEL__ fix 1
 include 'init.inc'
 
 org OS_BASE+$
-include 'fdo.inc'
 
 align 4
 high_code:
@@ -353,7 +353,6 @@ high_code:
 
            call init_LFB
            call init_fpu
-
            call init_malloc
 
            stdcall alloc_kernel_space, 0x4F000
@@ -382,7 +381,6 @@ high_code:
            mov [ipc_ptab], eax
 
            call init_events
-
            mov eax, srv.fd-SRV_FD_OFFSET
            mov [srv.fd], eax
            mov [srv.bk], eax
@@ -731,6 +729,7 @@ first_app_found:
 
 
 include 'unpacker.inc'
+include 'fdo.inc'
 
 align 4
 boot_log:
@@ -1293,11 +1292,15 @@ draw_num_text:
      mov   eax,[esp+64+32-8+4]
      push  edx                       ; add window start x & y
      mov   edx,[TASK_BASE]
+
+     mov   edi,[CURRENT_TASK]
+     shl   edi,8
+
      mov   ebx,[edx-twdw+WDATA.box.left]
-     add   ebx, [(edx-CURRENT_TASK)*8+SLOT_BASE+APPDATA.wnd_clientbox.left]
+     add   ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
      shl   ebx,16
      add   ebx,[edx-twdw+WDATA.box.top]
-     add   ebx, [(edx-CURRENT_TASK)*8+SLOT_BASE+APPDATA.wnd_clientbox.top]
+     add   ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
      add   eax,ebx
      pop   edx
      mov   ebx,[esp+64+32-12+4]
@@ -2476,7 +2479,7 @@ sys_cpuusage:
     mov    esi,[esp]
     shl    esi,5
     add    esi,window_data + WDATA.box
-    mov    al,[esi+window_data+WDATA.fl_wstate]
+    mov    al,[esi+WDATA.fl_wstate]
     mov    [edi],al
 
     pop    ebx
@@ -2487,9 +2490,6 @@ sys_cpuusage:
     mov    eax,[TASK_COUNT]
     mov    [esp+36],eax
     ret
-
-
-
 
 align 4
 sys_clock:
