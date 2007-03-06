@@ -205,12 +205,12 @@ B32:
 
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
-include 'fdo.inc'
 include 'init.inc'
 include "boot/shutdown.inc" ; shutdown or restart
 
-
 org OS_BASE+$
+include 'fdo.inc'
+
 align 4
 high_code:
            mov   ax,os_data

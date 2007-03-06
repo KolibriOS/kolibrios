@@ -444,7 +444,6 @@ proc init_cursors
 
            stdcall load_driver, szHwMouse
            mov [hw_cursor], eax
-
            test eax, eax
            jz .sw_mouse
 

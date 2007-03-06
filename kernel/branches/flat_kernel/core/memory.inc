@@ -241,14 +241,6 @@ proc init_LFB
            mov edi, 0x00800000
            mov dword [exp_lfb+4], edx
 
-     push eax
-     push edx
-     mov edx, 0x400   ;bocsh
-     mov al,0xff      ;bocsh
-     out dx, al       ;bocsh
-     pop edx
-     pop eax
-
            shr edi, 12
            mov [pg_count], edi
            shr edi, 10
