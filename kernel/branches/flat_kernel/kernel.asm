@@ -336,7 +336,7 @@ high_code:
 	;  and the contents of this field, plus 8, are copied into the SS register.
 
 	; mov	edx, (os_code + 16) * 65536 + os_code
-           mov edx, 0x1B0013
+           mov edx, 0x1B0008
 
            mov eax, syscall_entry
            mov ecx, MSR_AMD_STAR

@@ -478,7 +478,7 @@ proc page_fault_handler
            cmp ebx, 0x80000000
            jae .kernel_space
 
-           cmp ebx, page_tabs+0x800
+           cmp ebx, page_tabs+0x200000
            jae .tab_space
 
            cmp ebx, app_page_tabs
@@ -486,6 +486,9 @@ proc page_fault_handler
 
            cmp ebx, 0x7DC00000
            jae .lfb_addr
+
+;           cmp ebx, 0x1000000
+;           jb .exit
 
 .user_space:
            shr ebx, 12
