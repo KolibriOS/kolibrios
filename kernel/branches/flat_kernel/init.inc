@@ -156,9 +156,9 @@ proc init_page_map
            mov ecx, ebx
            and ecx, 31
            shl eax, cl
+           mov [edi], eax
            add edi, OS_BASE
            mov [page_start-OS_BASE], edi;     sys_pgmap+384
-           stosd
 
            mov ebx, sys_pgmap
            add ebx, [pg_data.pagemap_size-OS_BASE]
