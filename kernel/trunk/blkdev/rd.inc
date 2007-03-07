@@ -598,6 +598,8 @@ fat_get_name:
 @@:
         cmp     byte [edi+11], 0xF
         jz      .longname
+        test    byte [edi+11], 8
+        jnz     .no
         push    ecx
         push    edi ebp
         test    byte [ebp-4], 1
