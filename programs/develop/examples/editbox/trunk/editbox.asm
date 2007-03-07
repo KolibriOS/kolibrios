@@ -81,22 +81,22 @@ draw_window:		;рисование окна приложения
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные 
 editboxes:
-edit1 edit_box 168,5,30,0xffffff,0,0,0,512,ed_buffer.1,ed_focus
-edit2 edit_box 168,5,10,0xffffff,0,0,0,99,ed_buffer.2,ed_figure_only
+edit1 edit_box 168,5,10,0xffffff,0,0,0,99,ed_buffer.2,ed_figure_only
+edit2 edit_box 168,5,30,0xffffff,0,0,0,512,ed_buffer.1,ed_focus
 edit3 edit_box 35,5,50,0xffffff,0,0,0,9,ed_buffer.3,ed_figure_only
 edit4 edit_box 16,5,70,0xffffff,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
-;data_of_code dd 0
+data_of_code dd 0
 ed_buffer:
-.1: rb 513;256
-.2: rb 100
-.3: rb 10
-.4: rb 2
+.1: rb 514;256
+.2: rb 101
+.3: rb 11
+.4: rb 3
+;два запасных байта необходимы для того что бы не пепереписать следующией байты, в конце буфера 0
 ;text_b: db 'Кол-во символов'
 ;buffer: dd 0
 buffer_end:
-hed db   'EDITBOX optimization and retype <Lrz> date 06.03.2007',0
+hed db   'EDITBOX optimization and retype <Lrz> date 07.03.2007',0
 i_end1:
 rb 1024
-i_end:
-keymap:
+i_end:  

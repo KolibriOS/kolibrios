@@ -1,3 +1,4 @@
+; <Lrz> 07.03.2007 Дописал управление с shift home + end усправил несколько багов
 ; <Lrz> 06.03.2007 Переписал полностью алгоритм управления shift
 ; <Lrz> 15.02.2007 улучшение снятия выделения и перерисовки очищаемой области, значительно приятнее работает компонент
 ; <Lrz> 13.02.2007 убрал по возможности мерцание, улучшена обработка перерисовки фона
@@ -69,8 +70,8 @@ ed_pos	equ [edi+42]                    ;позиция курсора
 ed_offset	equ [edi+46]            ;смещение
 cl_curs_x	equ [edi+50]		;предыдущее координата курсора по х
 cl_curs_y	equ [edi+54]		;предыдущее координата курсора по у
-ed_shift_pos	equ [edi+58]
-ed_shift_pos_old equ [edi+62]
+ed_shift_pos	equ [edi+58]            ;положение курсора
+ed_shift_pos_old equ [edi+62]           ;старое положение курсора
 ;==========================================================
 ;=== процедура прорисовки =================================
 ;==========================================================
@@ -93,26 +94,6 @@ pusha
 	call	.draw_text
 popa
 ret
-
-;.str:
-;	mov ecx,0x0a ;задается система счисления изменяются регистры ebx,eax,ecx,edx входные параметры eax - число
-;	 ;преревод числа в ASCII строку взодные данные ecx=система счисленя edi адрес куда записывать, будем строку, причем конец переменной 
-;	cmp eax,ecx  ;сравнить если в eax меньше чем в ecx то перейти на @@-1 т.е. на pop eax
-;	jb @f
-;	xor edx,edx  ;очистить edx
-;	div ecx      ;разделить - остаток в edx
-;	push edx     ;положить в стек
-;	;dec edi	     ;смещение необходимое для записи с конца строки
-;	call .str;перейти на саму себя т.е. вызвать саму себя и так до того момента пока в eax не станет меньше чем в ecx
-;	pop eax
-;	@@: ;cmp al,10 ;проверить не меньше ли значение в al чем 10 (для системы счисленя 10 данная команда - лишная))
-;	;sbb al,$69  ;- честно данная инструкция меня заставляет задуматься т.е. я не знаю как это работает
-;	;das	    ;после данной команды как бы происходит уменьшение al на 66h  (в книге написано другое)
-;	or al,0x30  ;данная команда короче  чем две выше 
-;	stosb	    ;записать элемент из регистра al в ячеку памяти es:edi
- ;
-;	ret	    ;вернуться чень интересный ход т.к. пока в стеке храниться кол-во вызовов то столько раз мы и будем вызываться
-
 ;----------------------------------------------------------
 ;--- процедура прорисовки текста --------------------------
 ;----------------------------------------------------------
@@ -172,7 +153,6 @@ ret
 	mov	ebx,6		;загрузми делитель
 	div	ebx		;размделим на 6
 ret
-
 ;----------------------------------------------------------
 ;--- процедура рисования курсора --------------------------
 ;----------------------------------------------------------
@@ -183,9 +163,7 @@ ret
 	mov	ecx,cl_curs_y
 	jmp	.draw_curs
 .draw_cursor:
-
 	mov	edx,ed_text_color
-;@@:
 	mov	ebx,ed_pos
 	mov	ecx,ed_offset
 	sub	ebx,ecx
@@ -212,13 +190,12 @@ ret
 	mov	eax,38
 	int	0x40
 ret
-
 ;----------------------------------------------------------
 ;--- процедура рисования рамки ----------------------------
 ;----------------------------------------------------------
 .draw_border:
 ;--- цвет рамки ---
-	test	dword ed_flags,ed_focus
+	test	word ed_flags,ed_focus
 	mov	edx,ed_focus_border_color
 	jne     @f
 	mov	edx,ed_blur_border_color
@@ -303,11 +280,11 @@ pusha
 .add_8:	add	ebx,edx
 .chk_d:	mov	ed_offset,ebx
 	call    .draw_bg
-	;mov	dword [esp+28],-1
+	and	word ed_flags,ed_offset_cl
 popa
 	ret
 @@:
-	mov	dword [esp+28],0
+	or	word ed_flags,ed_offset_fl
 popa
 	ret
 ;==========================================================
@@ -327,7 +304,6 @@ pusha
 	test	al,0x03
 	je	@f
         or      word ed_flags,ed_shift   ;установим флаг
-
 @@:     pop	eax   ;восстановим считаный символ с клавиатуры
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
@@ -362,36 +338,29 @@ pusha
 	jb	.no_figure
 	cmp	ah,'9'
 	ja	.no_figure
-
-
 ;проверка на shift
 @@:	test	word ed_flags,ed_shift_on
 	je	@f
 	;Входные данные edx=ed_size;ecx=ed_pos
-
 	push	eax
 	mov	edx,ed_size
 	mov	ecx,ed_pos
 	pusha
-        
-	;cmp	edx,ecx
-	;jne	.sh_cl
 ;clear
 	mov	ebp,edx ;ed_size
         call	.clear_bg
        	mov	ebp,ed_color
+	mov	ebx,dword	ed_shift_pos
         call	.sh_cl_
 
 .sh_nxt:popa 
 	call	.del_char
-        
 ;;;;
         mov	eax,dword ed_shift_pos
         mov	ebx,ed_size
 	sub	ebx,eax
 	mov	ed_size,ebx
 	pop	eax
-
         ; проверяем, находится ли курсор в конце
 @@:	mov	ecx,ed_size
 	mov	edx, ed_max
@@ -512,9 +481,7 @@ popa
 	call	.clear_cursor
 	call	.check_offset
         call	.draw_bg
-
 	ret
-
 @@:	dec	 dword ed_size
 
 .draw_all2:
@@ -525,7 +492,6 @@ popa
 	mov	ebp,ed_size
 	call	.clear_bg
 	ret
-	;jmp	.shift
 ;--- нажата клавиша left ---
 .left:  mov	ebx,ed_pos
 	test	ebx,ebx
@@ -557,6 +523,7 @@ popa
 	mov	ebx,ed_pos
 	cmp	ebx,dword ed_size
 	je	.sh_st_of
+	call	.sh_first_sh
 	mov	eax,ed_size
 	mov	ed_pos,eax
 	call	.sh_home_end
@@ -568,20 +535,21 @@ popa
 
 @@:	mov	ebp,shift_color
 	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
+	mov	ebx,dword	ed_shift_pos
 	call	.sh_cl_
         jmp	.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;
 .f_exit:call	.check_offset
-	and    word ed_flags,ed_shift_cl
+	and     word ed_flags,ed_shift_cl
         call	.enable_null
 	jmp	.draw_cursor_text
 .sh_cl_:
 ;;;;;;SHIFT end
 ;обработка очистки, при левом - правом движении выделения
 ;для обработки снятия выделения
-;	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
+;входные параметры ebp=color ebx=ed_shift_pos
 	mov 	eax,dword	ed_pos
-	mov	ebx,dword	ed_shift_pos
+;	mov	ebx,dword	ed_shift_pos
 	cmp	eax,ebx
 	jae	.sh_n
 	push	eax  ;меньшее в eax
@@ -592,11 +560,8 @@ popa
 	push	eax
 .sh_n1: 
 	call	.check_offset
-;	test	eax,eax
-;	jz      .drw_sim
 	call	.get_n
 	mov	edx,eax	;size of ed_box
-;	push	eax
 	mov	ecx,ed_offset
 	add	eax,ecx	;eax = w_off= ed_offset+width
 	mov	edx,eax ;save
@@ -613,7 +578,6 @@ popa
 @@:	mov	ebx,edx
 	sub	ebx,ecx	
 	jmp     .nxt_f
-
 .f_f:	
 	sub	eax,ecx
 	cmp	edx,ebx		;cравним размер w_off с большим
@@ -639,9 +603,7 @@ popa
 	mov	edx,ebp;shift_color
 
 	call	.draw_bg_eax
-@@:	;and    word ed_flags,1111111111111011b
-	call	.enable_null
-	;mov	dword	ed_shift_pos,0
+@@:	call	.enable_null
 	ret
 ;;;;;;;;;;;;;;;;;;;;;
 ;Установка- снятие выделения в один символ
@@ -651,8 +613,6 @@ popa
 	call    .draw_rectangle   ;нарисовать прямоугольник с заданным цветом
         jmp     @b
 ;;;;;;;;;;;;;;;;;;;;;
-
-;;;;;;;;;;
 ;Фукция установки выделения при движения влево и вправо и нажатии shift
 ;Логика: 
 ;;;;;;;;;;
@@ -664,11 +624,8 @@ popa
 	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
 	mov	ebp,shift_color
 	mov 	eax,dword	ed_pos
-	;mov	ebx,dword	ed_shift_pos
 	test	word ed_flags,ed_left_fl
 	jz      .low
-;	sub	eax,2
-	;dec	eax
 	jmp	@f
 ;;;;;;;;;;
 ;Фукция удаления выделения при движения влево и вправо и нажатии shift
@@ -681,7 +638,6 @@ popa
 
 	mov	ebp,ed_color
 	mov 	eax,dword	ed_pos
-	;mov	ebx,dword	ed_shift_pos
 	test	word ed_flags,ed_left_fl
 	jz      .low
 	;dec	eax
@@ -699,7 +655,6 @@ popa
 	mov	dword ed_shift_pos,ebx
        	or	word ed_flags,ed_shift_on
 @@:    	ret
-
 ;Обработка крайних положений в editbox при нажатом shift
 ;производит снятие выделение, если нет shift
 ;иначе вообще выходит
@@ -709,32 +664,11 @@ popa
 	test    word ed_flags,ed_shift_bac
         je      @f
        	mov	ebp,ed_color
+	mov	ebx,dword	ed_shift_pos
 	call	.sh_cl_  ;очистка выделеного фрагмента
-	call	.draw_wigwag_cl	
 	and	word ed_flags,ed_shift_cl ; очистка от того что убрали выделение 
 	jmp     .draw_cursor_text
 @@:
-     	;-----------  отладка
-;	pushad
-;	mov	dword [ed_buffer.3],0
-;	mov eax,ebx;word ed_flags
-;	mov edi,ed_buffer.3
-;	call .str
-;	;рисование фона
-;	mov eax,13
-;	mov ebx,178*65536+70
-;	mov ecx,28*65536+10
-;	xor edx,edx
-;	int 0x40
-;	;вывод значения на экран
-;	mov eax,4
-;	mov ebx,180*65536+30
-;	mov ecx,0x10DDBBCC
-;	mov edx,ed_buffer.3
-;	mov esi,8
-;	int 0x40
-;	popad
-	;----------- отладка
         and	word ed_flags,ed_shift_off
 	popa
 	ret	
@@ -749,6 +683,7 @@ popa
        	call	.check_offset
 
 	mov	ebp,ed_color
+	mov	ebx,dword	ed_shift_pos
 	call	.sh_cl_  ;очистка выделеного фрагмента
 	call	.draw_wigwag_cl	
 	and	word ed_flags,ed_shift_cl ; 1вар не нужно 
@@ -760,8 +695,8 @@ popa
 	ret
 .sh_ext_en:	
        	call	.check_offset
-	test	eax,eax
-	jnz	@f
+	test	word ed_flags,ed_offset_fl
+	jne	@f
 ;Рисование закрашеных прямоугольников и очистка их
         mov 	eax,dword	ed_shift_pos
 	mov	ebx,dword	ed_pos
@@ -784,6 +719,7 @@ popa
 .sh_e_end:	and	word ed_flags,ed_shift_off
 	ret
 @@:	mov	ebp,shift_color
+	mov	ebx,dword	ed_shift_pos
 	call	.sh_cl_
 	jmp	.sh_e_end
 ;функция для обработки shift при нажатии home and end
@@ -793,29 +729,18 @@ popa
 	test    word ed_flags,ed_shift_bac
         je      @f
 	mov	ebp,ed_color
+	mov	ebx,dword	ed_shift_pos_old
 	call	.sh_cl_
 
 @@:	test    word ed_flags,ed_shift
 	je	.sh_exit_ ;нарисовать закрашеный прямоугольник (область)
-    	call	.check_offset
         mov	ebp,shift_color
+        mov	ebx,dword	ed_shift_pos
 	call	.sh_cl_
 	or	word ed_flags,ed_shift_bac ;установка флага, выделенной области
 	jmp	.sh_e_end
-.sh_exit_:	ret
-
-
-;	test    word ed_flags,ed_shift_bac
-;        je      @f
-
-
-
-
-
-
-
-
-
+.sh_exit_: 	call	.check_offset
+	ret
 ;функция внесения 0 по адресу ed_size+1
 .enable_null:
         pusha
@@ -827,9 +752,8 @@ popa
 	mov 	[eax],bl
 	popa
 	ret
-
-        ;- удаление символа
-	;Входные данные edx=ed_size;ecx=ed_pos
+;- удаление символа
+;Входные данные edx=ed_size;ecx=ed_pos
 .del_char:
 	mov     esi,ed_text
         test	word ed_flags,ed_shift_on
@@ -876,7 +800,6 @@ popa
 	
 	pop edi
 	ret
-
 ;вычислить закрашиваемую область
 ;соглашение в ebp - передается ed_size
 .clear_bg:
@@ -930,7 +853,6 @@ popa
 ;eax=dword ed_pos
 ;ebp=-цвет ed_color or shift_color 
 .draw_rectangle:
-;        mov	eax,dword ed_pos
 	mov	ecx,dword ed_offset
 	sub     eax,ecx
         lea	ebx,[eax*2+eax]
@@ -1014,8 +936,6 @@ pusha
 	jc	@f
 	call	.draw_cursor
 	jmp	.drc
-
-
 ._blur:
 	test	word ed_flags,ed_always_focus
 	jne	@f
@@ -1042,9 +962,9 @@ ret
 ;popa
 ;ret
 }
-ed_figure_only= 1000000000000000b
+ed_figure_only= 1000000000000000b   ;одни символы 
 ed_always_focus= 100000000000000b
-ed_focus=10b
+ed_focus=                     10b   ;фокус приложения
 ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
 ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
 ed_shift_off=   1111111111111011b
@@ -1052,6 +972,8 @@ ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при у
 ed_shift_cl=    1111111111100011b
 ed_left_fl=               100000b
 ed_right_fl=    1111111111011111b
+ed_offset_fl=            1000000b
+ed_offset_cl=   1111111110111111b
 ed_insert=              10000000b
 ed_insert_cl=   1111111101111111b
 ed_height=14 ; высота
@@ -1081,13 +1003,15 @@ macro key_edit_boxes start,end
 	mov	edi,start
 	mov	ecx,((end-start)/ed_struc_size)
 @@:
+;	push	eax
 	call	edit_box.key
+;	pop	eax
 	add	edi,ed_struc_size
 	loop	@b
 }
 ed_struc_size=66
 struc  edit_box width,left,top,color,focus_border_color,\
-       blur_border_color,text_color,max,text,flags,size
+       blur_border_color,text_color,max,text,flags
 {
 .width dd width
 .left dd left
@@ -1099,7 +1023,7 @@ struc  edit_box width,left,top,color,focus_border_color,\
 .max dd max
 .text dd text
 .flags dw flags+0
-.size dd size+0
+.size dd 0
 .pos dd 0
 .offset dd 0
 .cl_curs_x dd 0
