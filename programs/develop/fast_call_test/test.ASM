@@ -18,23 +18,22 @@ org	0x0
 include 'macros.inc'
 include 'debug.inc'
 
-START:
-	mov	eax, 19		; функция пустышка
-	push	ecx
-	syscall
-	pop	ecx
-	
-	
-	print	'! Alive !'
-
+START:	print	'Please wait'
+	; через быстрый вызов (SYSENTER)
+test1:	mov	eax, 1
+	cpuid
+	test	edx, 0x800
+	jnz	.ok
+	dps	'unsupported     '
+	jmp	.end
+.ok:	
 	xor	eax, eax
 	cpuid
 	rdtsc
 	mov	[old_tsc], eax
 	mov	[old_tsc + 4], edx
 	
-; через быстрый вызов
-test1:	mov	ebx, 0x100000
+	mov	ebx, 0x100000
 	mov	dword[SYSENTER_VAR], .ret_p
 	mov	[SYSENTER_VAR + 4], esp
 	align	32
@@ -53,17 +52,57 @@ test1:	mov	ebx, 0x100000
 	sub	edx, [old_tsc + 4]
 	debug_print_hex edx
 	debug_print_hex eax
-	print	' <- Fast call'
-
+.end:	print	' <- Fast call (SYSENTER)'
 	
+	;----------------------------------------------
+	; через быстрый вызов (SYSCALL)
+test2:	xor	eax, eax
+	cpuid
+	cmp	ecx, "cAMD"
+	je	.ok
+.nf:	dps	'unsupported     '
+	jmp	.end
+.ok:	mov	eax, 0x80000001
+	cpuid
+	test	edx, 0x800  ; bit_11 - SYSCALL/SYSRET support
+	jz	.nf
 	
 	xor	eax, eax
 	cpuid
 	rdtsc
 	mov	[old_tsc], eax
 	mov	[old_tsc + 4], edx
-; через шлюз прерывания
-test2:	mov	ebx, 0x100000
+	
+	mov	ebx, 0x100000
+	align	32
+.nxt:	mov	eax, 19
+	push	ecx
+	syscall
+	pop	ecx
+	
+.ret_p: dec	ebx
+	jnz	.nxt
+
+	xor	eax, eax
+	cpuid
+	rdtsc
+	cmp	eax, [old_tsc]
+	jnb	@f
+	dec	edx
+@@:	sub	eax, [old_tsc]
+	sub	edx, [old_tsc + 4]
+	debug_print_hex edx
+	debug_print_hex eax
+.end:	print	' <- Fast call (SYSCALL)'
+	;----------------------------------------------
+	; через шлюз прерывания
+	xor	eax, eax
+	cpuid
+	rdtsc
+	mov	[old_tsc], eax
+	mov	[old_tsc + 4], edx
+	
+test3:	mov	ebx, 0x100000
 	align	32
 .nxt:	mov	eax, 19 	; функция пустышка
 	int	0x40
