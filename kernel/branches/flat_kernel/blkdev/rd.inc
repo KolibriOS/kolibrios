@@ -598,6 +598,8 @@ fat_get_name:
 @@:
         cmp     byte [edi+11], 0xF
         jz      .longname
+        test    byte [edi+11], 8
+        jnz     .no
         push    ecx
         push    edi ebp
         test    byte [ebp-4], 1
@@ -1800,7 +1802,7 @@ fs_RamdiskRewrite:
     ;    lea     eax, [edi-(RAMDISK_FAT)]
 
         mov eax, edi
-        sub edi, RAMDISK_FAT
+        sub eax, RAMDISK_FAT
 
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster

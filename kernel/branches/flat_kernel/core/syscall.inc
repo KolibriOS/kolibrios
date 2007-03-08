@@ -50,13 +50,18 @@ align 32
 SYSENTER_VAR	equ	0
 sysenter_entry:
 	; Настраиваем стек
-	cli
-	push	eax
-	mov	eax, [ss:CURRENT_TASK]
-	shl	eax, 8
-        mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
-	lea	esp, [ss:eax + RING0_STACK_SIZE]	; configure ESP
-	mov	eax, [ss:sysenter_stack - 4]		; eax - original eax, from app
+     ;   cli                   sysenter clear IF
+     ;   push    eax
+     ;   mov     eax, [ss:CURRENT_TASK]
+     ;   shl     eax, 8
+     ;   mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
+     ;   lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
+     ;   mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
+
+        mov     esp, [ss:CURRENT_TASK]
+        shl     esp, 8
+        mov     esp, [ss:SLOT_BASE + esp + APPDATA.pl0_stack]
+        add     esp, RING0_STACK_SIZE           ; configure ESP
 	sti
 	;------------------
 	push	ds es
@@ -93,15 +98,22 @@ sysenter_entry:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 syscall_entry:
-	cli
+  ;     cli                 syscall clear IF
 	xchg	ecx, [esp]
 	mov	[SYSENTER_VAR + 4], esp
-	mov	[ss:sysenter_stack - 4], eax
-	mov	eax, [ss:CURRENT_TASK]
-	shl	eax, 8
-        mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
-	lea	esp, [ss:eax + RING0_STACK_SIZE]	; configure ESP
-	mov	eax, [ss:sysenter_stack - 4]		; eax - original eax, from app
+
+  ;      mov     [ss:sysenter_stack - 4], eax
+  ;      mov     eax, [ss:CURRENT_TASK]
+  ;      shl     eax, 8
+  ;      mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
+  ;      lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
+  ;      mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
+
+        mov     esp, [ss:CURRENT_TASK]
+        shl     esp, 8
+        mov     esp, [ss:SLOT_BASE + esp + APPDATA.pl0_stack]
+        add     esp, RING0_STACK_SIZE             ; configure ESP
+
 	sti
 	;------------------
 	push	ds es
@@ -127,6 +139,8 @@ syscall_entry:
 	popad
 	pop	es ds
 	;------------------
+
+        cli
 	mov	esp, [SYSENTER_VAR + 4]
 	xchg	ecx, [esp]
 	sysret

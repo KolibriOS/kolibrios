@@ -248,10 +248,9 @@ proc init_LFB
            bt [cpu_caps], CAPS_PSE
            jnc .map_page_tables
            or esi, PG_LARGE+PG_UW
-           shr edx, 20
-           mov ecx, edx
+           mov edx, sys_pgdir+(LFB_BASE shr 20)
 @@:
-           mov [sys_pgdir+edx], esi
+           mov [edx], esi
            add edx, 4
            add esi, 0x00400000
            dec edi
@@ -259,7 +258,7 @@ proc init_LFB
 
            bt [cpu_caps], CAPS_PGE
            jnc @F
-           or dword [sys_pgdir+ecx], PG_GLOBAL
+           or dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
 @@:
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB

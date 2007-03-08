@@ -1889,12 +1889,13 @@ fs_FloppyRewrite:
         repnz   scasw
         mov     al, ERROR_DISK_FULL
         jnz     .ret
+
         dec     edi
         dec     edi
 
   ;      lea     eax, [edi-FLOPPY_FAT]
         mov eax, edi
-        sub edi, FLOPPY_FAT
+        sub eax, FLOPPY_FAT
 
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster

@@ -226,7 +226,6 @@ end if
            mov eax, [save_cr3]
            call set_cr3
 
- ;          popfd
            xor ebx, ebx
            mov [application_table_status],ebx ;unlock application_table_status mutex
            mov eax,[process_number]  ;set result
@@ -235,7 +234,6 @@ end if
            mov eax, [save_cr3]
            call set_cr3
 .err:
- ;          popfd
 .err_hdr:
            stdcall kernel_free,[file_base]
 .err_file:
@@ -334,9 +332,7 @@ proc get_new_process_place
            cmp    eax,256
            jge    .failed               ;it should be <256
            mov    word [ebx+0xa],9      ;set process state to 9 (for slot after hight boundary)
-        ;   mov [new_process_place], eax
            ret
-
 .failed:
            xor    eax,eax
            ret
@@ -393,19 +389,18 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
 
            mov edi, [tmp_task_pdir]
-           mov ecx, (LFB_BASE shr 20)/4  ;(page_tabs shr 20)/4
+           mov ecx, (page_tabs shr 20)/4
            xor eax, eax
            rep stosd
 
-           mov esi, sys_pgdir+(LFB_BASE shr 20) ;(OS_BASE shr 20)
+           mov eax, [dir_addr]
+           or eax, PG_SW
+           stosd
+
+           mov esi, sys_pgdir+(OS_BASE shr 20)
            mov ecx, (OS_BASE shr 20)/4
            cld
            rep movsd
-
-           mov edi, [tmp_task_pdir]
-           mov eax, [dir_addr]
-           or eax, PG_SW
-           mov [edi+(page_tabs shr 20)], eax
 
            mov eax, [dir_addr]
            call set_cr3
@@ -531,7 +526,6 @@ proc destroy_app_space stdcall, pg_dir:dword
            xor   edx,edx
            mov   eax,0x2
            mov ebx, [pg_dir]
-
 .loop:
 ;eax = current slot of process
            mov   ecx,eax
@@ -557,7 +551,7 @@ proc destroy_app_space stdcall, pg_dir:dword
            and eax, not 0xFFF
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
            mov esi, [tmp_task_pdir]
-           mov edi, (LFB_BASE shr 20)/4
+           mov edi, (page_tabs shr 20)/4
 .destroy:
            mov eax, [esi]
            test eax, 1

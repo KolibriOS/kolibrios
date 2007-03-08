@@ -225,9 +225,8 @@ high_code:
            mov dword [sys_pgdir], 0
            mov dword [sys_pgdir+4], 0
            mov dword [sys_pgdir+8], 0
-           mov dword [sys_pgdir+12], 0
 
-           mov eax, sys_pgdir-OS_BASE
+           mov eax, cr3
            mov cr3, eax
 
 ; SAVE REAL MODE VARIABLES

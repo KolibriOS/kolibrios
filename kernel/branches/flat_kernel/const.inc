@@ -255,9 +255,11 @@ skin_data           equ (OS_BASE+0x0778000)
 tss_data            equ (OS_BASE+0x780000)
 draw_data           equ (OS_BASE+0x988000)
 
-HEAP_BASE           equ (OS_BASE+0x01000000)
+tmp_page_tab        equ 0x98B000; draw_data+sizeof(drw_data)
 
-LFB_BASE            equ 0x7DC00000
+HEAP_BASE           equ (OS_BASE+tmp_page_tab)
+
+LFB_BASE            equ 0xFE000000
 
 page_tabs           equ 0x7FC00000
 master_tab          equ 0x7FDFF000
@@ -267,7 +269,7 @@ sys_pgdir           equ (OS_BASE+0x00050000)
 sys_pgmap           equ (OS_BASE+0x00052000)
 
 
-new_app_base        equ 0x01000000 ; 0= flat
+new_app_base        equ 0;     0x01000000
 
 twdw                equ (CURRENT_TASK-window_data)
 

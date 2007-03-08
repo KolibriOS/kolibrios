@@ -3,8 +3,6 @@ MEM_WB     equ 6               ;write-back memory
 MEM_WC     equ 1               ;write combined memory
 MEM_UC     equ 0               ;uncached memory
 
-tmp_page_tab equ 0x1000000        ; HEAP_BASE
-
 align 4
 proc mem_test
 
@@ -53,19 +51,21 @@ proc init_mem
 
            xor eax, eax
            mov edi, sys_pgdir-OS_BASE
-           mov ecx, 2048
+           mov ecx, 4096/4
            cld
            rep stosd
 
-           mov edx, sys_pgdir-OS_BASE
-;           bt [cpu_caps], CAPS_PSE
-;           jnc .no_PSE
+           mov edx, (sys_pgdir-OS_BASE)+ 0x800; (OS_BASE shr 20)
+           bt [cpu_caps-OS_BASE], CAPS_PSE
+           jnc .no_PSE
 
            mov ebx, cr4
            or ebx, CR4_PSE
            mov eax, PG_LARGE+PG_SW
+
            bt [cpu_caps-OS_BASE], CAPS_PGE
            jnc @F
+
            or eax, PG_GLOBAL
            or ebx, CR4_PGE
 @@:
@@ -73,35 +73,23 @@ proc init_mem
            sub [pg_data.kernel_tables-OS_BASE], 2
 
            mov [edx], eax
-           mov [edx+(OS_BASE shr 20)], eax
            add eax, 0x00400000
-
            mov [edx+4], eax
-           mov [edx+(OS_BASE shr 20)+4], eax
-           add eax, 0x00400000
+           add edx, 8
 
-           mov [edx+8], eax
-           mov [edx+(OS_BASE shr 20)+8], eax
-           add eax, 0x00400000
-
-           mov [edx+12], eax
-           mov [edx+(OS_BASE shr 20)+12], eax
-           add edx, (OS_BASE shr 20)+16
-           add eax, 0x00400000
-
-;           mov eax, 0x800000+PG_SW
-;           mov ecx, (HEAP_BASE-0x800000)/4096
-;           jmp .map_low
-;.no_PSE:
-;           mov eax, PG_SW
-;           mov ecx, HEAP_BASE/4096
-;.map_low:
+           mov eax, 0x800000+PG_SW
+           mov ecx, (tmp_page_tab-0x800000)/4096
+           jmp .map_low
+.no_PSE:
+           mov eax, PG_SW
+           mov ecx, tmp_page_tab/4096
+.map_low:
            mov edi, tmp_page_tab
-;@@:                                   ;
-;           stosd
-;           add eax, 0x1000
-;           dec ecx
-;           jnz @B
+@@:                                   ;
+           stosd
+           add eax, 0x1000
+           dec ecx
+           jnz @B
 
            mov ecx, [pg_data.kernel_tables-OS_BASE]
            shl ecx, 10
@@ -120,8 +108,16 @@ proc init_mem
            jnz .map_kernel_tabs
 
            mov dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
+
+           mov edi, (sys_pgdir-OS_BASE)
+           lea esi, [edi+(OS_BASE shr 20)]
+           movsd
+           movsd
+           movsd
            ret
 endp
+
+
 
 align 4
 proc init_page_map
@@ -158,7 +154,7 @@ proc init_page_map
            shl eax, cl
            mov [edi], eax
            add edi, OS_BASE
-           mov [page_start-OS_BASE], edi;     sys_pgmap+384
+           mov [page_start-OS_BASE], edi;
 
            mov ebx, sys_pgmap
            add ebx, [pg_data.pagemap_size-OS_BASE]
