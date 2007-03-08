@@ -112,7 +112,7 @@ mode1     db      "640x480",0
 mode2     db      "800x600",0
 mode3     db      "1024x768",0
 mode4     db      "1280x1024",0
-modes_msg dw mode4-0x10000,mode1-0x10000,mode2-0x10000,mode3-0x10000
+modes_msg dw mode4,mode1,mode2,mode3
 modevesa20 db     " with LFB",0
 modevesa12 db     ", VESA 1.2 Bnk",0
 mode9     db      "320x200, EGA/CGA 256 colors",0
@@ -124,7 +124,7 @@ on_msg    db      " on",13,10,0
 off_msg   db      " off",13,10,0
 vrrm_msg  db      " [c] Use VRR:",0
 preboot_device_msg db " [d] Floppy image: ",0
-preboot_device_msgs dw 0,pdm1-0x10000,pdm2-0x10000,pdm3-0x10000
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "use already loaded image",13,10,0
