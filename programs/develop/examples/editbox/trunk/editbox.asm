@@ -88,7 +88,7 @@ edit4 edit_box 16,5,70,0xffffff,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
 data_of_code dd 0
 ed_buffer:
-.1: rb 514;256
+;.1: rb 514;256
 .2: rb 101
 .3: rb 11
 .4: rb 3
@@ -96,7 +96,7 @@ ed_buffer:
 ;text_b: db 'Кол-во символов'
 ;buffer: dd 0
 buffer_end:
-hed db   'EDITBOX optimization and retype <Lrz> date 07.03.2007',0
+hed db   'EDITBOX optimization and retype <Lrz> date 09.03.2007',0
 rb  256
 i_end1:
 rb 1024

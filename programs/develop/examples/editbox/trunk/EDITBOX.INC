@@ -1,3 +1,4 @@
+; <Lrz> 09.03.2007 Дописал управление mouse + shift  выделение и перемещение
 ; <Lrz> 07.03.2007 Дописал управление с shift home + end усправил несколько багов
 ; <Lrz> 06.03.2007 Переписал полностью алгоритм управления shift
 ; <Lrz> 15.02.2007 улучшение снятия выделения и перерисовки очищаемой области, значительно приятнее работает компонент
@@ -309,16 +310,7 @@ pusha
 	test	word ed_flags,ed_focus ; если не в фокусе, выходим
 	je      @b
 ;Проверка на нажаты shift
-	xor	ecx,ecx
-	push	eax	
-	inc	ecx
-	mov	eax,66
-	mov	ebx,3
-	int	0x40
-	test	al,0x03
-	je	@f
-        or      word ed_flags,ed_shift   ;установим флаг
-@@:     pop	eax   ;восстановим считаный символ с клавиатуры
+        call	.check_shift
 ;----------------------------------------------------------
 ;--- проверяем, что нажато --------------------------------
 ;----------------------------------------------------------
@@ -875,6 +867,22 @@ popa
 	mov	edx,ebp
 	call	.draw_bg_eax
 	ret
+;;;;;;;;;;;;;;;;;;
+;;Проверка нажат ли shift
+;;;;;;;;;;;;;;;;;;
+.check_shift:
+pusha   ;сохраним все регистры
+	xor	ecx,ecx
+	inc	ecx
+	mov	eax,66
+	mov	ebx,3
+	int	0x40
+	test	al,0x03
+	je	@f
+        or      word ed_flags,ed_shift   ;установим флаг
+@@:     popa	   ;восстановим регистры
+	ret
+
 ;==========================================================
 ;=== обработка мыши =======================================
 ;==========================================================
@@ -937,32 +945,44 @@ pusha
 	jna	 @f
 	mov	ax,ed_size
 @@:
-	test    word ed_flags,ed_shift_bac
+;;;;;;;
+;;Секция обработки shift и выделения по shift
+;;;;;;;
+        test    word ed_flags,ed_shift_bac
         je      @f
 	mov	ebp,dword	ed_color
 	mov	ebx,dword ed_shift_pos
 	push	eax
 	call	.sh_cl_
-	and	word ed_flags,ed_shift_cl
+	and	word ed_flags,ed_shift_bac_cl
 	pop	eax
 
+@@:     call	.check_shift	;проверим нажат ли shift
+
+	test    word ed_flags,ed_shift
+        je	._msh_exit
+ 	test	word ed_flags,ed_shift_on
+	jne     @f
+
+        push	dword ed_pos
+        pop	dword ed_shift_pos
+	or	word ed_flags,ed_shift_on
 @@:
-        test    word ed_flags,ed_shift
-        je	@f
-        mov	ebx,ed_pos
-        mov	ed_shift_pos,ebx
-
         mov	ed_pos,eax
-	mov	ebp,dword	shift_color
-
+	mov	ebp,dword shift_color
+	mov	ebx,dword ed_shift_pos
 	call	.sh_cl_
 	or      word ed_flags,ed_shift_bac	;установим бит что мы выделили 
-	and	word ed_flags,ed_shift_off
 	jmp	.m_sh
-@@:	
- 	mov	ed_pos,ax
+._msh_exit:	
+ 	mov	ed_pos,eax
+        mov	dword ed_shift_pos,eax	
+
 .m_sh:  call	.draw_text
 	call	.draw_cursor
+
+
+	and	word ed_flags,ed_shift_off	;выключим в любом случае shift
 ;----------------------------------------------------------
 ;--- процедура установки фокуса ---------------------------
 ;----------------------------------------------------------
@@ -1004,6 +1024,7 @@ ed_shift_on=                1000b   ;если не установлен -значит впервые нажат sh
 ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
 ed_shift_off=   1111111111111011b
 ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
+ed_shift_bac_cl=1111111111101111b   ;очистка при удалении выделения
 ed_shift_cl=    1111111111100011b
 ed_left_fl=               100000b
 ed_right_fl=    1111111111011111b
@@ -1038,15 +1059,13 @@ macro key_edit_boxes start,end
 	mov	edi,start
 	mov	ecx,((end-start)/ed_struc_size)
 @@:
-;	push	eax
 	call	edit_box.key
-;	pop	eax
 	add	edi,ed_struc_size
 	loop	@b
 }
 ed_struc_size=66
 struc  edit_box width,left,top,color,focus_border_color,\
-       blur_border_color,text_color,max,text,flags
+       blur_border_color,text_color,max,text,flags,size
 {
 .width dd width
 .left dd left
