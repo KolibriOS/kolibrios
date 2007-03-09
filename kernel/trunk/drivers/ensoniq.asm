@@ -5,6 +5,7 @@ format MS COFF
 
 
 include 'proc32.inc'
+include 'imports.inc'
 
 DEBUG	    equ 1
 
@@ -51,22 +52,6 @@ BIT28 EQU 0x10000000
 BIT29 EQU 0x20000000
 BIT30 EQU 0x40000000
 BIT31 EQU 0x80000000
-
-VID_INTEL	  equ 0x8086
-VID_NVIDIA        equ 0x10DE
-
-CTRL_ICH	  equ 0x2415
-CTRL_ICH0	  equ 0x2425
-CTRL_ICH2	  equ 0x2435
-CTRL_ICH3	  equ 0x2445
-CTRL_ICH4	  equ 0x24C5
-CTRL_ICH5	  equ 0x24D5
-CTRL_ICH6	  equ 0x266E
-CTRL_ICH7	  equ 0x27DE
-
-CTRL_NFORCE       equ 0x01B1
-CTRL_NFORCE2      equ 0x006A
-CTRL_NFORCE3      equ 0x00DA
 
 
 PCM_OUT_BDL	  equ  0x10	 ; PCM out buffer descriptors list
@@ -266,50 +251,42 @@ end virtual
 
 EVENT_NOTIFY	      equ 0x00000200
 
-OS_BASE 	      equ 0;  0x80400000
-new_app_base	      equ 0x60400000;   0x01000000
-PROC_BASE	      equ OS_BASE+0x0080000
+OS_BASE         equ 0;
+SLOT_BASE       equ OS_BASE+0x0080000
+new_app_base    equ 0x80000000
 
 public START
-public STOP
 public service_proc
-
-extrn AttachIntHandler
-extrn SysMsgBoardStr
-extrn PciApi
-extrn PciRead32
-extrn PciRead8
-extrn PciWrite8
-extrn AllocKernelSpace
-extrn MapPage
-extrn RegService
-extrn KernelAlloc
-extrn GetPgAddr
-extrn GetCurrentTask
+public version
 
 section '.flat' code readable align 16
 
-START:
+proc START stdcall, state:dword
+
+           cmp [state], 1
+           jne .stop
+
      if DEBUG
-	   mov esi, msgInit
+           mov esi, msgDetect
            call SysMsgBoardStr
      end if
 
-	   call detect_controller
-	   test eax, eax
+           call detect_controller
+           test eax, eax
            jz .fail
 
      if DEBUG
-	   mov esi,[ctrl.vendor_ids]
+           mov esi,[ctrl.vendor_ids]
            call SysMsgBoardStr
-	   mov	  esi, [ctrl.ctrl_ids]
+           mov   esi, [ctrl.ctrl_ids]
            call SysMsgBoardStr
 
      end if
-
            call init_controller
            test eax, eax
            jz .fail
+           jmp .fail          ;force fail
+
 
      if DEBUG
            mov esi, msgInitCodec
@@ -321,10 +298,10 @@ START:
            jz .fail
 
      if DEBUG
-	   mov esi, [codec.ac_vendor_ids]
+           mov esi, [codec.ac_vendor_ids]
            call SysMsgBoardStr
 
-	   mov esi, [codec.chip_ids]
+           mov esi, [codec.chip_ids]
            call SysMsgBoardStr
      end if
 
@@ -335,16 +312,6 @@ START:
            call SysMsgBoardStr
 
            call create_primary_buff
-
-;     if REMAP_IRQ
-
-;           call get_LPC_bus
-;           cmp eax, -1
-;           jz .fail
-
-;           mov [lpc_bus], 0  ;eax
-;           call remap_irq
-;     end if
 
            mov eax, VALID_IRQ
            mov ebx, [ctrl.int_line]
@@ -361,12 +328,16 @@ START:
 	   ret
 .fail:
      if DEBUG
-	   mov esi, msgFail
+           mov esi, msgFail
            call SysMsgBoardStr
      end if
-	   xor eax, eax
-STOP:
+           xor eax, eax
            ret
+.stop:
+           call stop
+           xor eax, eax
+           ret
+endp
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code
@@ -380,54 +351,53 @@ proc service_proc stdcall, ioctl:dword
 
            mov edi, [ioctl]
            mov eax, [edi+io_code]
-	   cmp eax, DEV_PLAY
-	   jne @F
+           cmp eax, DEV_PLAY
+           jne @F
      if DEBUG
-	   mov esi, msgPlay
+           mov esi, msgPlay
            call SysMsgBoardStr
      end if
-	   call play
-	   ret
+           call play
+           ret
 @@:
-	   cmp eax, DEV_STOP
-	   jne @F
+           cmp eax, DEV_STOP
+           jne @F
      if DEBUG
-	   mov esi, msgStop
+           mov esi, msgStop
            call SysMsgBoardStr
      end if
-	   call stop
-	   ret
+           call stop
+           ret
 @@:
-	   cmp eax, DEV_CALLBACK
-	   jne @F
+           cmp eax, DEV_CALLBACK
+           jne @F
            mov ebx, [edi+input]
            stdcall set_callback, [ebx]
-	   ret
+           ret
 @@:
-	   cmp eax, DEV_SET_MASTERVOL
-	   jne @F
-           mov ebx, [edi+input]
-           stdcall set_master_vol, [ebx]
-	   ret
+           cmp eax, DEV_SET_MASTERVOL
+           jne @F
+           mov eax, [edi+input]
+           mov eax, [eax]
+           call set_master_vol      ;eax= vol
+           ret
 @@:
-	   cmp eax, DEV_GET_MASTERVOL
-	   jne @F
+           cmp eax, DEV_GET_MASTERVOL
+           jne @F
            mov ebx, [edi+output]
-           test ebx, ebx
-           jz .fail
-
+           add ebx, new_app_base
            stdcall get_master_vol, ebx
-	   ret
-@@:
-	   cmp eax, DEV_GET_INFO
-	   jne @F
-           mov ebx, [edi+output]
-	   stdcall get_dev_info, ebx
-	   ret
+           ret
+;@@:
+;           cmp eax, DEV_GET_INFO
+;           jne @F
+;           mov ebx, [edi+output]
+;           stdcall get_dev_info, ebx
+;           ret
 @@:
 .fail:
-	   xor eax, eax
-	   ret
+           or eax, -1
+           ret
 endp
 
 restore   handle
@@ -439,24 +409,6 @@ restore   out_size
 
 
 align 4
-proc remap_irq                         ;for Intel chipsets ONLY !!!
-	   mov eax, VALID_IRQ
-	   bt eax, IRQ_LINE
-	   jnc .exit
-
-	   mov edx, 0x4D0
-	   in ax,dx
-	   bts ax, IRQ_LINE
-	   out dx, aX
-
-           stdcall PciWrite8, dword 0, dword 0xF8, dword 0x61, dword IRQ_LINE
-	   mov [ctrl.int_line], IRQ_LINE
-
-.exit:
-	   ret
-endp
-
-align 4
 proc ac97_irq
 
 ;     if DEBUG
@@ -464,337 +416,239 @@ proc ac97_irq
 ;           call SysMsgBoardStr
 ;     end if
 
-	   mov edx, PCM_OUT_CR_REG
-	   mov al, 0x14
-	   call [ctrl.ctrl_write8]
 
-	   mov ax, 0x1c
-	   mov edx, PCM_OUT_SR_REG
-	   call [ctrl.ctrl_write16]
+           cmp [ctrl.user_callback], 0
+           je @f
 
-	   mov edx, PCM_OUT_CIV_REG
-	   call [ctrl.ctrl_read8]
-
-	   and eax, 0x1F
-	   cmp eax, [civ_val]
-	   je .skip
-
-	   mov [civ_val], eax
-	   dec eax
-	   and eax, 0x1F
-	   mov [ctrl.lvi_reg], eax
-
-	   mov edx, PCM_OUT_LVI_REG
-	   call [ctrl.ctrl_write8]
-
-	   mov edx, PCM_OUT_CR_REG
-	   mov ax, 0x1D
-	   call [ctrl.ctrl_write8]
-
-	   mov eax, [civ_val]
-	   add eax, 2
-	   and eax, 31
-	   mov ebx, dword [buff_list+eax*4]
-
-	   cmp [ctrl.user_callback], 0
-	   je @f
-
-	   stdcall [ctrl.user_callback], ebx
+           stdcall [ctrl.user_callback], ebx
 @@:
-	   ret
+           ret
 
 .skip:
-	   mov edx, PCM_OUT_CR_REG
-	   mov ax, 0x1D
-	   call [ctrl.ctrl_write8]
-	   ret
+           mov edx, PCM_OUT_CR_REG
+           mov ax, 0x11               ;0x1D
+           call [ctrl.ctrl_write8]
+           ret
 endp
 
 align 4
 proc create_primary_buff
 
            stdcall KernelAlloc, 0x10000
-	   mov [ctrl.buffer], eax
+           mov [ctrl.buffer], eax
 
-	   mov edi, eax
-	   mov ecx, 0x10000/4
-	   xor eax, eax
+           mov edi, eax
+           mov ecx, 0x10000/4
+           xor eax, eax
            cld
-	   rep stosd
+           rep stosd
 
-           stdcall GetPgAddr, [ctrl.buffer]
+           mov eax, [ctrl.buffer]
+           call GetPgAddr
 
-	   mov ebx, 0xC0002000
-	   mov ecx, 4
-	   mov edi, pcmout_bdl
+           mov ebx, 0xC0002000
+           mov ecx, 4
+           mov edi, pcmout_bdl
 @@:
-	   mov [edi], eax
-	   mov [edi+4], ebx
+           mov [edi], eax
+           mov [edi+4], ebx
 
-	   mov [edi+32], eax
-	   mov [edi+4+32], ebx
+           mov [edi+32], eax
+           mov [edi+4+32], ebx
 
-	   mov [edi+64], eax
-	   mov [edi+4+64], ebx
+           mov [edi+64], eax
+           mov [edi+4+64], ebx
 
-	   mov [edi+96], eax
-	   mov [edi+4+96], ebx
+           mov [edi+96], eax
+           mov [edi+4+96], ebx
 
-	   mov [edi+128], eax
-	   mov [edi+4+128], ebx
+           mov [edi+128], eax
+           mov [edi+4+128], ebx
 
-	   mov [edi+160], eax
-	   mov [edi+4+160], ebx
+           mov [edi+160], eax
+           mov [edi+4+160], ebx
 
-	   mov [edi+192], eax
-	   mov [edi+4+192], ebx
+           mov [edi+192], eax
+           mov [edi+4+192], ebx
 
-	   mov [edi+224], eax
-	   mov [edi+4+224], ebx
+           mov [edi+224], eax
+           mov [edi+4+224], ebx
 
-	   add eax, 0x4000
-	   add edi, 8
-	   loop @B
+           add eax, 0x4000
+           add edi, 8
+           loop @B
 
-	   mov edi, buff_list
-	   mov eax, [ctrl.buffer]
-	   mov ecx, 4
+           mov edi, buff_list
+           mov eax, [ctrl.buffer]
+           mov ecx, 4
 @@:
-	   mov [edi], eax
-	   mov [edi+16], eax
-	   mov [edi+32], eax
-	   mov [edi+48], eax
-	   mov [edi+64], eax
-	   mov [edi+80], eax
-	   mov [edi+96], eax
-	   mov [edi+112], eax
+           mov [edi], eax
+           mov [edi+16], eax
+           mov [edi+32], eax
+           mov [edi+48], eax
+           mov [edi+64], eax
+           mov [edi+80], eax
+           mov [edi+96], eax
+           mov [edi+112], eax
 
-	   add eax, 0x4000
-	   add edi, 4
-	   loop @B
+           add eax, 0x4000
+           add edi, 4
+           loop @B
 
-	   mov ecx, pcmout_bdl
-           stdcall GetPgAddr, ecx
-	   and ecx, 0xFFF
-	   add eax, ecx
+           mov eax, pcmout_bdl
+           mov ebx, eax
+           call GetPgAddr     ;eax
+           and ebx, 0xFFF
+           add eax, ebx
 
-	   mov edx, PCM_OUT_BDL
-	   call [ctrl.ctrl_write32]
+           mov edx, PCM_OUT_BDL
+           call [ctrl.ctrl_write32]
 
-	   mov eax, 16
-	   mov [ctrl.lvi_reg], eax
-	   mov edx, PCM_OUT_LVI_REG
-	   call [ctrl.ctrl_write8]
-
-	   ret
+           mov eax, 16
+           mov [ctrl.lvi_reg], eax
+           mov edx, PCM_OUT_LVI_REG
+           call [ctrl.ctrl_write8]
+           ret
 endp
 
 align 4
 proc detect_controller
-	   locals
-	     last_bus dd ?
-	     bus      dd ?
-	     devfn    dd ?
-	   endl
+         locals
+           last_bus dd ?
+           bus      dd ?
+           devfn    dd ?
+         endl
 
-	   xor eax, eax
-	   mov [bus], eax
-	   inc eax
+           xor eax, eax
+           mov [bus], eax
+           inc eax
            call PciApi
-	   cmp eax, -1
-           je .no_pci
+           cmp eax, -1
+           je .err
 
-	   mov [last_bus], eax
+           mov [last_bus], eax
 
 .next_bus:
-	   and [devfn], 0
+           and [devfn], 0
 .next_dev:
            stdcall PciRead32, [bus], [devfn], dword 0
-	   test eax, eax
-	   jz .next
-	   cmp eax, -1
-	   je .next
+           test eax, eax
+           jz .next
+           cmp eax, -1
+           je .next
 
-	   mov edi, devices
+           mov edi, devices
 @@:
-	   mov ebx, [edi]
-	   test ebx, ebx
-	   jz .next
+           mov ebx, [edi]
+           test ebx, ebx
+           jz .next
 
-	   cmp eax, ebx
-	   je .found
-	   add edi, 12
-	   jmp @B
+           cmp eax, ebx
+           je .found
+           add edi, 12
+           jmp @B
 
-.next:	   inc [devfn]
-	   cmp [devfn], 256
-	   jb  .next_dev
-	   mov eax, [bus]
-	   inc eax
-	   mov [bus], eax
-	   cmp eax, [last_bus]
-	   jna .next_bus
-	   xor eax, eax
-	   ret
-.found:
-	   mov ebx, [bus]
-	   mov [ctrl.bus], ebx
-
-	   mov ecx, [devfn]
-	   mov [ctrl.devfn], ecx
-
-	   mov edx, eax
-	   and edx, 0xFFFF
-	   mov [ctrl.vendor], edx
-	   shr eax, 16
-	   mov [ctrl.dev_id], eax
-
-	   mov ebx, [edi+4]
-	   mov [ctrl.ctrl_ids], ebx
-	   mov esi, [edi+8]
-	   mov [ctrl.ctrl_setup], esi
-
-           cmp ebx, VID_INTEL
-           jne @F
-	   mov [ctrl.vendor_ids], msg_Intel
+.next:
+           inc [devfn]
+           cmp [devfn], 256
+           jb  .next_dev
+           mov eax, [bus]
+           inc eax
+           mov [bus], eax
+           cmp eax, [last_bus]
+           jna .next_bus
+           xor eax, eax
            ret
-@@:
-           cmp ebx, VID_NVIDIA
-           jne @F
-           mov [ctrl.vendor_ids], msg_NVidia
-@@:
+.found:
+           mov ebx, [bus]
+           mov [ctrl.bus], ebx
+
+           mov ecx, [devfn]
+           mov [ctrl.devfn], ecx
+
+           mov edx, eax
+           and edx, 0xFFFF
+           mov [ctrl.vendor], edx
+           shr eax, 16
+           mov [ctrl.dev_id], eax
+
+           mov ebx, [edi+4]
+           mov [ctrl.ctrl_ids], ebx
+           mov esi, [edi+8]
+           mov [ctrl.ctrl_setup], esi
+
            cmp ebx, 0x1274
            jne @F
            mov [ctrl.vendor_ids], msgEnsoniq
            ret
 @@:
            mov [ctrl.vendor_ids], 0     ;something  wrong ?
-	   ret
-.no_pci:
-           mov esi, msgPCI
-           call SysMsgBoardStr
+           ret
 .err:
-	   xor eax, eax
-	   ret
-endp
-
-align 4
-proc get_LPC_bus                ;for Intel chipsets ONLY !!!
-	   locals
-	     last_bus dd ?
-	     bus      dd ?
-	   endl
-
-	   xor eax, eax
-	   mov [bus], eax
-	   inc eax
-	   call [PciApi]
-	   cmp eax, -1
-	   je .err
-
-	   mov [last_bus], eax
-.next_bus:
-           stdcall PciRead32, [bus], dword 0xF8, dword 0
-	   test eax, eax
-	   jz .next
-	   cmp eax, -1
-	   je .next
-
-	   cmp eax, 0x24D08086
-	   je .found
-.next:
-	   mov eax, [bus]
-	   inc eax
-	   cmp eax, [last_bus]
-	   mov [bus], eax
-	   jna .next_bus
-.err:
-	   xor eax, eax
-	   dec eax
-	   ret
-.found:
-	   mov eax, [bus]
-	   ret
+           xor eax, eax
+           ret
 endp
 
 align 4
 proc init_controller
 
+           mov esi, msgPCIcmd
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 4
-	   mov ebx, eax
-	   and eax, 0xFFFF
-	   mov [ctrl.pci_cmd], eax
-	   shr ebx, 16
-	   mov [ctrl.pci_stat], ebx
+           mov ebx, eax
+           and eax, 0xFFFF
+           mov [ctrl.pci_cmd], eax
+           shr ebx, 16
+           mov [ctrl.pci_stat], ebx
+
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgIObase
+           call SysMsgBoardStr
 
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x10
-	   and eax,0xFFFE
-	   mov [ctrl.codec_io_base], eax
+           and eax,0xFFFE
+           mov [ctrl.codec_io_base], eax
 
-           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x14
-	   and eax, 0xFFC0
-	   mov [ctrl.ctrl_io_base], eax
+           call dword2str
+           call SysMsgBoardStr
 
-           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x18
-	   mov [ctrl.codec_mem_base], eax
-
-           stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x1C
-	   mov [ctrl.ctrl_mem_base], eax
+           mov esi, msgIntline
+           call SysMsgBoardStr
 
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x3C
-	   and eax, 0xFF
-	   mov [ctrl.int_line], eax
+           and eax, 0xFF
+           mov [ctrl.int_line], eax
 
-           stdcall PciRead8, [ctrl.bus], [ctrl.devfn], dword 0x41
-	   and eax, 0xFF
-	   mov [ctrl.cfg_reg], eax
+           call dword2str
+           call SysMsgBoardStr
 
-	   call [ctrl.ctrl_setup]
-	   xor eax, eax
-	   inc eax
-	   ret
+           call [ctrl.ctrl_setup]
+           xor eax, eax
+           inc eax
+           ret
 endp
 
 align 4
 proc set_ICH
-	   mov [ctrl.codec_read16],  codec_io_r16    ;virtual
-	   mov [ctrl.codec_write16], codec_io_w16    ;virtual
+           mov [ctrl.codec_read16],  codec_io_r16    ;virtual
+           mov [ctrl.codec_write16], codec_io_w16    ;virtual
 
-	   mov [ctrl.ctrl_read8 ],  ctrl_io_r8	     ;virtual
-	   mov [ctrl.ctrl_read16],  ctrl_io_r16      ;virtual
-	   mov [ctrl.ctrl_read32],  ctrl_io_r32      ;virtual
+           mov [ctrl.ctrl_read8 ],  ctrl_io_r8      ;virtual
+           mov [ctrl.ctrl_read16],  ctrl_io_r16      ;virtual
+           mov [ctrl.ctrl_read32],  ctrl_io_r32      ;virtual
 
-	   mov [ctrl.ctrl_write8 ], ctrl_io_w8	     ;virtual
-	   mov [ctrl.ctrl_write16], ctrl_io_w16      ;virtual
-	   mov [ctrl.ctrl_write32], ctrl_io_w32      ;virtual
-	   ret
+           mov [ctrl.ctrl_write8 ], ctrl_io_w8      ;virtual
+           mov [ctrl.ctrl_write16], ctrl_io_w16      ;virtual
+           mov [ctrl.ctrl_write32], ctrl_io_w32      ;virtual
+           ret
 endp
 
 PG_SW                equ 0x003
 PG_NOCACHE           equ 0x018
 
-align 4
-proc set_ICH4
-           stdcall AllocKernelSpace, dword 0x2000
-	   mov edi, eax
-           stdcall MapPage, edi,[ctrl.codec_mem_base],PG_SW+PG_NOCACHE
-	   mov [ctrl.codec_mem_base], edi
-	   add edi, 0x1000
-           stdcall MapPage, edi, [ctrl.ctrl_mem_base],PG_SW+PG_NOCACHE
-	   mov [ctrl.ctrl_mem_base], edi
-
-	   mov [ctrl.codec_read16],  codec_mem_r16    ;virtual
-	   mov [ctrl.codec_write16], codec_mem_w16    ;virtual
-
-	   mov [ctrl.ctrl_read8 ],  ctrl_mem_r8       ;virtual
-	   mov [ctrl.ctrl_read16],  ctrl_mem_r16      ;virtual
-	   mov [ctrl.ctrl_read32],  ctrl_mem_r32      ;virtual
-
-	   mov [ctrl.ctrl_write8 ], ctrl_mem_w8       ;virtual
-	   mov [ctrl.ctrl_write16], ctrl_mem_w16      ;virtual
-	   mov [ctrl.ctrl_write32], ctrl_mem_w32      ;virtual
-	   ret
-endp
 
 align 4
 proc reset_controller
@@ -818,7 +672,6 @@ proc reset_controller
 
 	   mov	edx, MC_IN_CR_REG
 	   call [ctrl.ctrl_write8]
-
 	   ret
 endp
 
@@ -827,6 +680,26 @@ proc init_codec
 	   locals
 	     counter dd ?
 	   endl
+
+           mov esi, msgControl
+           call SysMsgBoardStr
+
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgStatus
+           call SysMsgBoardStr
+
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_read32]
+
+           call dword2str
+           call SysMsgBoardStr
+
+           test eax, CTRL_ST_CREADY
+           jnz .ready
 
 	   call reset_codec
 	   and eax, eax
@@ -864,8 +737,8 @@ endp
 
 align 4
 proc reset_codec
-	   mov edx, GLOB_CTRL
-	   call [ctrl.ctrl_read32]
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
 
            test eax, 0x02
            jz .cold
@@ -873,15 +746,15 @@ proc reset_codec
            call warm_reset
            jnc .ok
 .cold:
-	   call cold_reset
-	   jnc .ok
+           call cold_reset
+           jnc .ok
 
      if DEBUG
-	   mov esi, msgCFail
+           mov esi, msgCFail
            call SysMsgBoardStr
      end if
-	   xor eax, eax 	   ; timeout error
-	   ret
+           xor eax, eax     ; timeout error
+           ret
 .ok:
      if DEBUG
            mov esi, msgResetOk
@@ -889,8 +762,8 @@ proc reset_codec
      end if
 
            xor eax, eax
-	   inc eax
-	   ret
+           inc eax
+           ret
 endp
 
 align 4
@@ -992,8 +865,7 @@ proc cold_reset
 endp
 
 align 4
-proc play
-
+play:
 	   mov eax, 16
 	   mov [ctrl.lvi_reg], eax
 	   mov edx, PCM_OUT_LVI_REG
@@ -1002,22 +874,20 @@ proc play
 	   mov edx, PCM_OUT_CR_REG
 	   mov ax, 0x1D
 	   call [ctrl.ctrl_write8]
+           xor eax, eax
 	   ret
-endp
 
 align 4
-proc stop
+stop:
 	   mov edx, PCM_OUT_CR_REG
-	   mov ax, 0x14
+           mov ax, 0x0
 	   call [ctrl.ctrl_write8]
 
-	   mov eax, 16
-	   mov [ctrl.lvi_reg], eax
-	   mov edx, PCM_OUT_LVI_REG
-	   call [ctrl.ctrl_write8]
-
+           mov ax, 0x1c
+           mov edx, PCM_OUT_SR_REG
+           call [ctrl.ctrl_write16]
+           xor eax, eax
 	   ret
-endp
 
 align 4
 proc get_dev_info stdcall, p_info:dword
@@ -1051,7 +921,6 @@ proc get_dev_info stdcall, p_info:dword
 
 	   mov ebx, [ctrl.pci_cmd]
 	   mov [CTRL_INFO.pci_cmd], ebx
-
 	   ret
 endp
 
@@ -1127,8 +996,6 @@ proc codec_check_ready
 	  xor eax, wax
 	  inc eax
 	  ret
-
-align 4
 .not_ready:
 	  xor eax, eax
 	  ret
@@ -1176,7 +1043,7 @@ proc StallExec
 	   rdtsc
 	   sub eax, ebx
 	   sbb edx, ecx
-	   jb @B
+           js @B
 
 	   pop eax
 	   pop ebx
@@ -1191,181 +1058,117 @@ endp
 
 align 4
 proc codec_io_r16
-	add edx, [ctrl.codec_io_base]
-	in  ax, dx
-	ret
+           add edx, [ctrl.codec_io_base]
+           in  ax, dx
+           ret
 endp
 
 align 4
 proc codec_io_w16
-	add edx, [ctrl.codec_io_base]
-	out dx, ax
-	ret
+           add edx, [ctrl.codec_io_base]
+           out dx, ax
+           ret
 endp
 
 align 4
 proc ctrl_io_r8
-	add edx, [ctrl.ctrl_io_base]
-	in  al, dx
-	ret
+           add edx, [ctrl.ctrl_io_base]
+           in  al, dx
+           ret
 endp
 
 align 4
 proc ctrl_io_r16
-	add edx, [ctrl.ctrl_io_base]
-	in  ax, dx
-	ret
+           add edx, [ctrl.ctrl_io_base]
+           in  ax, dx
+           ret
 endp
 
 align 4
 proc ctrl_io_r32
-	add edx, [ctrl.ctrl_io_base]
-	in  eax, dx
-	ret
+           add edx, [ctrl.ctrl_io_base]
+           in  eax, dx
+           ret
 endp
 
 align 4
 proc ctrl_io_w8
-	add edx, [ctrl.ctrl_io_base]
-	out dx, al
-	ret
+           add edx, [ctrl.ctrl_io_base]
+           out dx, al
+           ret
 endp
 
 align 4
 proc ctrl_io_w16
-	add edx, [ctrl.ctrl_io_base]
-	out dx, ax
-	ret
+           add edx, [ctrl.ctrl_io_base]
+           out dx, ax
+           ret
 endp
 
 align 4
 proc ctrl_io_w32
-	add edx, [ctrl.ctrl_io_base]
-	out dx, eax
-	ret
+           add edx, [ctrl.ctrl_io_base]
+           out dx, eax
+           ret
 endp
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;         MEMORY MAPPED IO    (os depended)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
-proc codec_mem_r16
-	add edx, [ctrl.codec_mem_base]
-	mov ax, word [edx]
-	ret
-endp
+dword2str:
+      mov  esi, hex_buff
+      mov ecx, -8
+@@:
+      rol eax, 4
+      mov ebx, eax
+      and ebx, 0x0F
+      mov bl, [ebx+hexletters]
+      mov [8+esi+ecx], bl
+      inc ecx
+      jnz @B
+      ret
 
-align 4
-proc codec_mem_w16
-	add edx, [ctrl.codec_mem_base]
-	mov word [edx], ax
-	ret
-endp
-
-align 4
-proc ctrl_mem_r8
-	add edx, [ctrl.ctrl_mem_base]
-	mov al, [edx]
-	ret
-endp
-
-align 4
-proc ctrl_mem_r16
-	add edx, [ctrl.ctrl_mem_base]
-	mov ax, [edx]
-	ret
-endp
-
-align 4
-proc ctrl_mem_r32
-	add edx, [ctrl.ctrl_mem_base]
-	mov eax, [edx]
-	ret
-endp
-
-align 4
-proc ctrl_mem_w8
-	add edx, [ctrl.ctrl_mem_base]
-	mov [edx], al
-
-	ret
-endp
-
-align 4
-proc ctrl_mem_w16
-	add edx, [ctrl.ctrl_mem_base]
-	mov [edx], ax
-	ret
-endp
-
-align 4
-proc ctrl_mem_w32
-	add edx, [ctrl.ctrl_mem_base]
-	mov [edx], eax
-	ret
-endp
+hexletters   db '0123456789ABCDEF'
+hex_buff     db 8 dup(0),13,10,0
 
 
 include "codec.inc"
 
 align 4
-devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
-	dd (CTRL_ICH0 shl 16)+VID_INTEL,msg_ICH0,set_ICH
-	dd (CTRL_ICH2 shl 16)+VID_INTEL,msg_ICH2,set_ICH
-	dd (CTRL_ICH3 shl 16)+VID_INTEL,msg_ICH3,set_ICH
-        dd (CTRL_ICH4 shl 16)+VID_INTEL,msg_ICH4,set_ICH4
-        dd (CTRL_ICH5 shl 16)+VID_INTEL,msg_ICH5,set_ICH4
-        dd (CTRL_ICH6 shl 16)+VID_INTEL,msg_ICH6,set_ICH4
-        dd (CTRL_ICH7 shl 16)+VID_INTEL,msg_ICH7,set_ICH4
+devices      dd (0x5000 shl 16)+0x1274,msgEnsoniq,set_ICH
+             dd (0x5880 shl 16)+0x1274,msgVibra128,set_ICH
+             dd 0    ;terminator
 
-        dd (CTRL_NFORCE  shl 16)+VID_NVIDIA,msg_NForce, set_ICH
-        dd (CTRL_NFORCE2 shl 16)+VID_NVIDIA,msg_NForce2,set_ICH
-        dd (CTRL_NFORCE3 shl 16)+VID_NVIDIA,msg_NForce3,set_ICH
-        dd (0x5000 shl 16)+0x1274,msgEnsoniq,set_ICH
-
-        dd 0    ;terminator
-
-msg_ICH      db 'Intel ICH',  13,10, 0
-msg_ICH0     db 'Intel ICH0', 13,10, 0
-msg_ICH2     db 'Intel ICH2', 13,10, 0
-msg_ICH3     db 'Intel ICH3', 13,10, 0
-msg_ICH4     db 'Intel ICH4', 13,10, 0
-msg_ICH5     db 'Intel ICH5', 13,10, 0
-msg_ICH6     db 'Intel ICH6', 13,10, 0
-msg_ICH7     db 'Intel ICH7', 13,10, 0
-msg_Intel    db 'Intel Corp. ', 0
-
-msg_NForce   db 'NForce',   13,10, 0
-msg_NForce2  db 'NForce 2', 13,10, 0
-msg_NForce3  db 'NForce 3', 13,10, 0
-msg_NVidia   db 'NVidea', 0
+version      dd 0x00040000
 
 msgEnsoniq   db 'Ensonic 1371',0
+msgVibra128  db 'Sound Blaster AudioPCI Vibra 128',0
 
-szKernel	    db 'KERNEL', 0
-sz_sound_srv	    db 'SOUND',0
+sz_sound_srv db 'SOUND',0
 
-msgInit      db 'detect hardware...',13,10,0
-msgPCI       db 'PCI accsess not supported',13,10,0
+msgDetect    db 'detect hardware...',13,10,0
 msgFail      db 'device not found',13,10,0
 msgAttchIRQ  db 'IRQ line not supported', 13,10, 0
 msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
 msgNotify    db 'call notify',13,10,0
-msgIRQ	     db 'AC97 IRQ', 13,10,0
+msgIRQ       db 'AC97 IRQ', 13,10,0
 msgInitCtrl  db 'init controller',13,10,0
 msgInitCodec db 'init codec',13,10,0
 msgPrimBuff  db 'create primary buffer',13,10,0
-msgReg	     db 'set service handler',13,10,0
-msgOk	     db 'service installed',13,10,0
+msgReg       db 'set service handler',13,10,0
+msgOk        db 'service installed',13,10,0
 msgCold      db 'cold reset',13,10,0
 msgWarm      db 'warm reset',13,10,0
 msgWRFail    db 'warm reset failed',13,10,0
 msgCRFail    db 'cold reset failed',13,10,0
 msgCFail     db 'codec not ready',13,10,0
 msgResetOk   db 'reset complete',13,10,0
+msgStatus    db 'global status   ',0
+msgControl   db 'global control  ',0
+msgPCIcmd    db 'PCI command     ',0
+msgIObase    db 'IO base         ',0
+msgIntline   db 'Interrupt line  ',0
 
 section '.data' data readable writable align 16
 
