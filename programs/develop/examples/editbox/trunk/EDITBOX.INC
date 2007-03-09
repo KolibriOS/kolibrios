@@ -1058,7 +1058,7 @@ struc  edit_box width,left,top,color,focus_border_color,\
 .max dd max
 .text dd text
 .flags dw flags+0
-.size dd 0
+.size dd size+0
 .pos dd 0
 .offset dd 0
 .cl_curs_x dd 0
@@ -1067,27 +1067,6 @@ struc  edit_box width,left,top,color,focus_border_color,\
 .shift_old   dd 0
 }
 
-struc  edit_box1 width,left,top,color,focus_border_color,\
-       blur_border_color,text_color,max,text,flags,ed_size
-{
-.width dd width
-.left dd left
-.top dd top
-.color dd color
-.focus_border_color dd focus_border_color
-.blur_border_color dd blur_border_color
-.text_color dd text_color
-.max dd max
-.text dd text
-.flags dw flags+0
-.size dd ed_size
-.pos dd 0
-.offset dd 0
-.cl_curs_x dd 0
-.cl_curs_y dd 0
-.shift   dd 0
-.shift_old   dd 0
-}
 
 macro edit_boxes_set_sys_color start,end,color_table
 {
