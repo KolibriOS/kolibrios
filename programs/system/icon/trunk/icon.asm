@@ -6,6 +6,7 @@
 ;*                              *
 ;********************************
 ;  22.02.05 was modified for work with new multi-thread ICON.
+;  8.03.07 переход на 70 функцию by SPraid
 ;******************************************************************************
 RAW_SIZE equ 350000
 ICON_SIZE equ 32*32*3
@@ -32,7 +33,7 @@ include  'gif_lite.inc'
 purge newline
 ;******************************************************************************
 START:                       ; start of execution
-    mcall 58,finfo
+    mcall 70,finfo
     cmp   ebx,GIF_SIZE
     ja    close
     mov   esi,gif_file
@@ -139,14 +140,14 @@ still:
 
     ; (1) save list
 
-    mov  ebx,finfo
-    mov  dword[ebx],1
+    mov  ebx,finfo							; Change by spraid
+    mov  dword[ebx],2
     mov  edx,REC_SIZE
     imul edx,dword [icons]
-    mov  [ebx+8],edx
+    mov  [ebx+12],edx
     mov  esi,iconlst
     call lst_path
-    mcall 58
+    int 0x40
 
     ; (2) terminate all icons
     mov  eax,9
@@ -191,15 +192,18 @@ finfo_start:
         db      0
         dd      finfo.path
 
+
+
 finfo:
         dd 0
         dd 0
-        dd GIF_SIZE/512
+        dd 0
+        dd GIF_SIZE
         dd gif_file
-        dd icon_data
   .path:
         db ICON_STRIP,0
         rb 31-($-.path)
+
 
    all_terminated:
 
@@ -474,12 +478,11 @@ lst_path:
 
 load_ic:
     mov   ebx,finfo
-    mov   dword[ebx+8],(48*REC_SIZE)shr 9+1
-    mov   dword[ebx+12],icon_data
-    mov   dword[ebx+16],gif_file
+    mov   dword[ebx+12],48*REC_SIZE
+    mov   dword[ebx+16],icon_data
     mov   esi,iconlst
     call  lst_path
-    mcall 58
+    mcall 70
     lea   eax,[ebx+10]
     xor   edx,edx
     mov   ebx,REC_SIZE
