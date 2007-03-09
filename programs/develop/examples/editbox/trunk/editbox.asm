@@ -82,7 +82,7 @@ draw_window:		;рисование окна приложения
 ;DATA данные 
 editboxes:
 edit1 edit_box 168,5,10,0xffffff,0,0,0,99,ed_buffer.2,ed_figure_only
-edit2 edit_box 168,5,30,0xffffff,0,0,0,512,ed_buffer.1,ed_focus
+edit2 edit_box1 250,5,30,0xffffff,0,0,0,308,hed,ed_focus,53
 edit3 edit_box 35,5,50,0xffffff,0,0,0,9,ed_buffer.3,ed_figure_only
 edit4 edit_box 16,5,70,0xffffff,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
@@ -97,6 +97,7 @@ ed_buffer:
 ;buffer: dd 0
 buffer_end:
 hed db   'EDITBOX optimization and retype <Lrz> date 07.03.2007',0
+rb  256
 i_end1:
 rb 1024
 i_end:  

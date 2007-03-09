@@ -84,6 +84,8 @@ pusha
 	call	.check_offset		;вычисление позиции курсора стабильна
 ;--- рисуем внутреннюю область ---
 	call	.draw_bg                ;нарисовать прямоугольник рабочей области
+;---- рисуем выделение, по shift если есть
+	call	.draw_shift
 .draw_cursor_text:
 ;--- рисуем курсор ---
 	;--- может его не надо рисовать ----
@@ -94,6 +96,18 @@ pusha
 	call	.draw_text
 popa
 ret
+;----------------------------------------------------------
+;--- процедура прорисовки выделеной части -----------------
+;----------------------------------------------------------
+.draw_shift:
+	test	word ed_flags,ed_shift_bac ;установка флага, выделенной области
+	jz	@f
+        mov	ebp,shift_color
+        mov	ebx,dword	ed_shift_pos
+	call	.sh_cl_
+@@:	ret
+
+
 ;----------------------------------------------------------
 ;--- процедура прорисовки текста --------------------------
 ;----------------------------------------------------------
@@ -107,7 +121,7 @@ ret
 	cmp	eax,esi
 	jae	@F
 	mov	esi,eax		;чтобы не выходить за пределы экрана
-;--- рисуем текст ---
+;--- рисуем текст ---                                            
 @@: 	mov	eax,4
 	mov	ebx,ed_left
 	mov	edx,ed_offset
@@ -549,7 +563,6 @@ popa
 ;для обработки снятия выделения
 ;входные параметры ebp=color ebx=ed_shift_pos
 	mov 	eax,dword	ed_pos
-;	mov	ebx,dword	ed_shift_pos
 	cmp	eax,ebx
 	jae	.sh_n
 	push	eax  ;меньшее в eax
@@ -640,7 +653,6 @@ popa
 	mov 	eax,dword	ed_pos
 	test	word ed_flags,ed_left_fl
 	jz      .low
-	;dec	eax
 @@:     call	.draw_rectangle  ;нарисовать прямоугольник закрашиваемой области
 	ret
 .low:   dec	eax
@@ -696,7 +708,7 @@ popa
 .sh_ext_en:	
        	call	.check_offset
 	test	word ed_flags,ed_offset_fl
-	jne	@f
+	je	@f
 ;Рисование закрашеных прямоугольников и очистка их
         mov 	eax,dword	ed_shift_pos
 	mov	ebx,dword	ed_pos
@@ -733,7 +745,7 @@ popa
 	call	.sh_cl_
 
 @@:	test    word ed_flags,ed_shift
-	je	.sh_exit_ ;нарисовать закрашеный прямоугольник (область)
+	je	.sh_exit_ ;выйти
         mov	ebp,shift_color
         mov	ebx,dword	ed_shift_pos
 	call	.sh_cl_
@@ -824,7 +836,6 @@ popa
 	pop	eax	;ed_pos
        	mov	ecx,ed_offset
 	sub	eax,ecx
-
 .nxt:
 	mov	ebp,eax  ;проверка на выход закрашиваемой области за пределы длины
 	add	ebp,ebx
@@ -926,8 +937,31 @@ pusha
 	jna	 @f
 	mov	ax,ed_size
 @@:
-	mov	ed_pos,ax
-	call	.check_offset
+	test    word ed_flags,ed_shift_bac
+        je      @f
+	mov	ebp,dword	ed_color
+	mov	ebx,dword ed_shift_pos
+	push	eax
+	call	.sh_cl_
+	and	word ed_flags,ed_shift_cl
+	pop	eax
+
+@@:
+        test    word ed_flags,ed_shift
+        je	@f
+        mov	ebx,ed_pos
+        mov	ed_shift_pos,ebx
+
+        mov	ed_pos,eax
+	mov	ebp,dword	shift_color
+
+	call	.sh_cl_
+	or      word ed_flags,ed_shift_bac	;установим бит что мы выделили 
+	and	word ed_flags,ed_shift_off
+	jmp	.m_sh
+@@:	
+ 	mov	ed_pos,ax
+.m_sh:  call	.draw_text
 	call	.draw_cursor
 ;----------------------------------------------------------
 ;--- процедура установки фокуса ---------------------------
@@ -941,6 +975,7 @@ pusha
 	jne	@f
 	btr	word ed_flags,1 ; если не в фокусе, выходим
 	jnc     @f
+
 	mov	ebp,ed_color
 	call	.clear_cursor
 .drc:	call	.draw_border
@@ -1024,6 +1059,28 @@ struc  edit_box width,left,top,color,focus_border_color,\
 .text dd text
 .flags dw flags+0
 .size dd 0
+.pos dd 0
+.offset dd 0
+.cl_curs_x dd 0
+.cl_curs_y dd 0
+.shift   dd 0
+.shift_old   dd 0
+}
+
+struc  edit_box1 width,left,top,color,focus_border_color,\
+       blur_border_color,text_color,max,text,flags,ed_size
+{
+.width dd width
+.left dd left
+.top dd top
+.color dd color
+.focus_border_color dd focus_border_color
+.blur_border_color dd blur_border_color
+.text_color dd text_color
+.max dd max
+.text dd text
+.flags dw flags+0
+.size dd ed_size
 .pos dd 0
 .offset dd 0
 .cl_curs_x dd 0
