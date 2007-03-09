@@ -67,7 +67,7 @@ iglobal
     times 12 dd unknown_interrupt
 
     dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
-    dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
+    dd   irq_serv.irq_4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
     dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
     dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
 

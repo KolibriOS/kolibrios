@@ -721,11 +721,22 @@ first_app_found:
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
+;if 0
+        call init_com
+        mov eax, msg_com
+        mov ebx, 46
+        call comm_send
+;end if
+
         sti
         jmp   $                      ; wait here for timer to take control
 
         ; Fly :)
 
+;if 0
+msg_com db 'com1 port message ',0x0D, 0x0A
+        db 'test comm_send() function',0
+;end if
 
 include 'unpacker.inc'
 include 'fdo.inc'
