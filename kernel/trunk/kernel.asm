@@ -3290,10 +3290,11 @@ checkmisc:
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
     mov   ebp, cpustring
-    lea   esi,[ebp+6]
-    xor   ebx,ebx               ; no parameters
-    xor   edx,edx               ; no flags
-    call  fs_RamdiskExecute.flags
+    call   fs_execute               ; SPraid 8.03.2007
+    ;lea   esi,[ebp+6]
+    ;xor   ebx,ebx               ; no parameters
+    ;xor   edx,edx               ; no flags
+    ;call  fs_RamdiskExecute.flags
     mov   [ctrl_alt_del], 0
   nocpustart:
     cmp   [mouse_active], 1
