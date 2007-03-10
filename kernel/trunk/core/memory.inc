@@ -382,14 +382,14 @@ proc init_LFB
 
            cmp dword [LFBAddress], -1
            jne @f
-           mov [0x2f0000+0x901c],byte 2
+           mov [BOOT_VAR+0x901c],byte 2
            stdcall kernel_alloc, 0x280000
            mov [LFBAddress], eax
            ret
 @@:
            test [SCR_MODE],word 0100000000000000b
            jnz @f
-           mov [0x2f0000+0x901c],byte 2
+           mov [BOOT_VAR+0x901c],byte 2
            ret
 @@:
            mov edx, LFB_BASE
@@ -1229,7 +1229,7 @@ MEM_UC     equ 0               ;uncached memory
 align 4
 proc init_mtrr
 
-           cmp [0x2f0000+0x901c],byte 2
+           cmp [BOOT_VAR+0x901c],byte 2
            je  .exit
 
            bt [cpu_caps], CAPS_MTRR

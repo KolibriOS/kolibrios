@@ -226,7 +226,6 @@ end if
            mov eax, [save_cr3]
            call set_cr3
 
- ;          popfd
            xor ebx, ebx
            mov [application_table_status],ebx ;unlock application_table_status mutex
            mov eax,[process_number]  ;set result
@@ -235,7 +234,6 @@ end if
            mov eax, [save_cr3]
            call set_cr3
 .err:
- ;          popfd
 .err_hdr:
            stdcall kernel_free,[file_base]
 .err_file:
@@ -334,9 +332,7 @@ proc get_new_process_place
            cmp    eax,256
            jge    .failed               ;it should be <256
            mov    word [ebx+0xa],9      ;set process state to 9 (for slot after hight boundary)
-        ;   mov [new_process_place], eax
            ret
-
 .failed:
            xor    eax,eax
            ret
@@ -471,7 +467,6 @@ else
            add edx, 0x1000
            dec [app_pages]
            jnz .alloc
-
 end if
 
 .done:
@@ -531,7 +526,6 @@ proc destroy_app_space stdcall, pg_dir:dword
            xor   edx,edx
            mov   eax,0x2
            mov ebx, [pg_dir]
-
 .loop:
 ;eax = current slot of process
            mov   ecx,eax

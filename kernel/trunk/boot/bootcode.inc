@@ -1031,89 +1031,7 @@ end if
 
         mov     al,[preboot_vrrm-0x10000]
         mov     [es:0x9030],al
-
-
-; MEMORY MODEL
-
-;        movzx   eax,byte [es:preboot_memory-0x10000]
-;        cmp     eax,0
-;        jne     pre_mem
-;;;;;;;;;;;;;;;;;;;;;;;;;
-; mario79 - memory size ;
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;           mov ax,0E801h
-;;;           xor bx,bx    ; thanks to Alexei for bugfix [18.07.2004]
-;           xor cx, cx
-;           xor dx, dx
-;           int 0x15
-;           movzx ebx, dx ;bx
-;           movzx eax, cx ;ax
-;           shl   ebx,6   ; перевод в килобайты (x64)
-;           add   eax,ebx
-;           add eax, 1000h ;440h
-;           cmp eax,40000h ; 256?
-;           jge mem_256_z
-;           cmp eax,20000h ; 128?
-;           jge mem_128_z
-;           cmp eax,10000h ; 64?
-;           jge mem_64_z
-;           cmp eax,8000h ; 32?
-;           jge mem_32_z
-;           jmp mem_16_z
-;
-;mem_256_z: mov     si,memokz256-0x10000
-;           call    printplain
-;           mov eax,5
-;           jmp pre_mem
-;mem_128_z: mov     si,memokz128-0x10000
-;           call    printplain
-;           mov eax,4
-;           jmp pre_mem
-;mem_64_z:  mov     si,memokz64-0x10000
-;           call    printplain
-;           mov eax,3
-;           jmp pre_mem
-;mem_32_z:  mov     si,memokz32-0x10000
-;           call    printplain
-;           mov eax,2
-;           jmp pre_mem
-;mem_16_z:  mov     si,memokz16-0x10000
-;           call    printplain
-;           mov eax,1
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;      pre_mem:
-;        push    word 0x0000
-;        pop     es
-;        mov     [es:0x9030],al
-;        push    word 0x1000
-;        pop     es
-;        mov     si,linef-0x10000
-;        call    printplain
-
-
-
-
-; DIRECT WRITE TO LFB, PAGING DISABLED
-
-;        movzx   eax,byte [es:preboot_lfb-0x10000]
-;        mov     eax,1                             ; paging disabled
-;        cmp     eax,0
-;        jne     pre_lfb
-;        mov     si,gr_direct-0x10000
-;        call    printplain
-;        mov     ebx,'12'
-;        call    getkey
-;      pre_lfb:
-;        push    word 0x0000
-;        pop     es
-;        mov     [es:0x901E],al
-;        mov     ax,0x1000
-;        mov     es,ax
-;        mov     si,linef-0x10000
-;        call    printplain
         mov     [es:0x901E],byte 1
-
-
 
 ; BOOT DEVICE
 
@@ -1331,41 +1249,8 @@ sayerr_floppy:
        mov al,0
        out dx,al
 
-    push    es
-; PAGE TABLE
-
-    push    dword [es:0x9018]
-;
-;        mmap_mem equ 64                ; amount of memory to map
-;
-        push    0x6000
-        pop    es                    ; es:di = 6000:0
-;        xor     di,di
-;        mov     cx,256*mmap_mem         ; Map (mapmem) M
-;; initialize as identity mapping
-;        xor    eax, eax
-;        call    pagetable_set
-;
-;
-; 4 KB PAGE DIRECTORY
-;
-       push    0x7F00
-       pop    es                ; es:di = 7F00:0
-;        xor     di, di
-;        mov     cx, 64 / 4
-;        mov     eax, 0x60007            ; for 0 M
-;        call    pagetable_set
-;        xor     si,si
-;        mov     di,second_base_address shr 20
-;        mov     cx,64/2
-;        rep     movs word [es:di], [es:si]
-
-;        mov     eax, 0x7F000 +8+16      ; Page directory and enable caches
-;        mov     cr3, eax
 
 ; SET GRAPHICS
-
-    pop    es
 
         xor ax, ax
         mov es, ax
@@ -1377,7 +1262,7 @@ sayerr_floppy:
         cmp     ax,0x12
         je      setgr
         mov     ax,0x4f02            ; Vesa
-       setgr:
+setgr:
         int     0x10
         test    ah,ah
         mov    si, fatalsel-0x10000
@@ -1405,7 +1290,6 @@ sayerr_floppy:
         pop    dx
         out     dx,al      ; select GDC bit mask register
                            ; for writes to 0x03cf
-
-       gmok2:
+gmok2:
         push    ds
         pop    es

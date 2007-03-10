@@ -72,10 +72,10 @@ SOCKET_INTERFACE     equ   53
 
 ; 128KB allocated for the stack and network driver buffers and other
 ; data requirements
-stack_data_start     equ   0x700000
-eth_data_start	     equ   0x700000
-stack_data	     equ   0x704000
-stack_data_end	     equ   0x71ffff
+;stack_data_start     equ   0x700000
+;eth_data_start       equ   0x700000
+;stack_data           equ   0x704000
+;stack_data_end       equ   0x71ffff
 
 ; 32 bit word
 stack_config	     equ   stack_data
@@ -123,7 +123,7 @@ last_1hsTick	     equ   queueList + ( 2 * NUMQUEUEENTRIES )
 
 
 
-resendQ 	    equ     0x770000
+;resendQ             equ     0x770000
 resendBuffer	    equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
 
 
