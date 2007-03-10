@@ -57,22 +57,13 @@ still:
     mov  eax,10              ; wait here for event
     int  0x40
 
-    cmp  eax,1               ; redraw request ?
-    je   red
-    cmp  eax,2               ; key in buffer ?
-    je   key
-    cmp  eax,3               ; button in buffer ?
-    je   button
-
-    jmp  still
-
-  key:                       ; key
-    mov  eax,2               ; just read it and ignore
-    int  0x40
-    jmp  still
+    dec  eax                   ; redraw request ?
+    jz   red
+    dec  eax                   ; key in buffer ?
+    jz   key
 
   button:                    ; button
-    mov  eax,17              ; get id
+    mov  al,17              ; get id
     int  0x40
 
     shr  eax,8
@@ -153,7 +144,7 @@ still:
     ; (2) terminate all icons
     mov  eax,9
     mov  ebx,I_END
-    mov  ecx,-1
+    or      ecx,-1
     int  0x40
     mov  edi,[ebx+30]
      newread2:
@@ -223,16 +214,11 @@ finfo:
     cmp  eax,22                 ; user pressed the 'add icon' button
     jne  no_add_icon
 
-    mov  eax,13
-    mov  ebx,24*65536+270
-    mov  ecx,(250+8*14)*65536+8
-    mov  edx,0xffffff
-    int  0x40
     mov  eax,4
     mov  ebx,24*65536+250+8*14
-    mov  ecx,0xff0000
+    mov  ecx,0xc0ff0000
     mov  edx,add_text
-    mov  esi,add_text_len-add_text
+    mov  edi,0xffffff
     int  0x40
 
     mov  eax,10
@@ -294,16 +280,11 @@ finfo:
     cmp  eax,23                     ; user pressed the remove icon button
     jne  no_remove_icon
 
-    mov  eax,13
-    mov  ebx,24*65536+270
-    mov  ecx,(250+8*14)*65536+8
-    mov  edx,0xffffff
-    int  0x40
     mov  eax,4
     mov  ebx,24*65536+250+8*14
-    mov  ecx,0xff0000
+    mov  ecx,0xc0ff0000
     mov  edx,rem_text
-    mov  esi,rem_text_len-rem_text
+    mov  edi,0xffffff
     int  0x40
 
     mov  eax,10
@@ -412,7 +393,7 @@ finfo:
 
 
     jmp  still
-
+ 
 
 current_icon dd icon_data
 
@@ -565,6 +546,11 @@ read_string:
     popa
     ret
 
+ key:                       ; key
+    mov  al,2               ; just read it and ignore
+    int  0x40
+    jmp  still
+
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
@@ -577,20 +563,11 @@ draw_window:
     int  0x40
 
                                    ; DRAW WINDOW
-    mov  eax,0
+    xor  eax,eax
     mov  ebx,210*65536+300
     mov  ecx,30*65536+390-14
-    mov  edx,0x03ffffff
-    mov  esi,0x808899ff
-    mov  edi,0x008899ff
-    int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax,4
-    mov  ebx,8*65536+8
-    mov  ecx,0x10ffffff
-    mov  edx,labelt
-    mov  esi,labellen-labelt
+    mov  edx,0x13ffffff
+    mov  edi,header       ; WINDOW LABEL
     int  0x40
 
     mov  eax,13                    ; WINDOW AREA
@@ -660,6 +637,7 @@ draw_window:
     mcall 47,0x30000,,,0
 
 ;;
+    mov  eax,4
     mov  ebx,24*65536+250+14+14+14
     mov  ecx,0xffffff
     mov  edx,text
@@ -667,7 +645,6 @@ draw_window:
   newline:
     mov  ecx,[edx]
     add  edx,4
-    mov  eax,4
     int  0x40
     add  ebx,14
     add  edx,47
@@ -801,32 +778,12 @@ if lang eq ru
       db 255,255,255,0,   '      ÑéÅÄÇàíú              ìÑÄãàíú            '
       db 0,0,0,0,         'çÄÜåàíÖ çÄ èéáàñàû àäéçäà Ñãü êÖÑÄäíàêéÇÄçàü   '
       db                  'x' ; <- END MARKER, DONT DELETE
-add_text db 'çÄÜåàíÖ çÄ èéáàñàû çÖàëèéãúáìÖåéâ àäéçäà'
-add_text_len:
+add_text             db 'çÄÜåàíÖ çÄ èéáàñàû çÖàëèéãúáìÖåéâ àäéçäà     ',0
 
-rem_text db 'çÄÜåàíÖ çÄ èéáàñàû àëèéãúáìÖåéâ àäéçäà'
-rem_text_len:
-  labelt:
-       db 'ç†·‚‡Æ©™† ‡†°ÆÁ•£Æ ·‚Æ´†'
-  labellen:
-else if lang eq en
-  text:
-      db 255,255,255,0,   '   TITLE                                       '
-      db 255,255,255,0,   '  APP NAME                                     '
-      db 255,255,255,0,   ' PARAMETERS                                    '
-      db 255,255,255,0,   '                APPLY CHANGES                  '
-      db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
-      db 0,0,0,0,         'CLICK BUTTON ON ICON POSITION FOR EDIT         '
-      db                  'x' ; <- END MARKER, DONT DELETE
-add_text db 'CLICK ON A NOT USED POSITION'
-add_text_len:
+rem_text             db 'çÄÜåàíÖ çÄ èéáàñàû àëèéãúáìÖåéâ àäéçäà       ',0
+header                 db 'å•≠•§¶•‡ ®™Æ≠Æ™',0
 
-rem_text db 'CLICK ICON POSITION; YOU WANT TO DELETE'
-rem_text_len:
-  labelt:
-       db 'Icon Manager'
-  labellen:
-else
+else if lang eq ge
   text:
       db 255,255,255,0,   '   TITLE                                       '
       db 255,255,255,0,   '  APP NAME                                     '
@@ -835,18 +792,26 @@ else
       db 255,255,255,0,   '     HINZUFUEGEN              ENTFERNEN        '
       db 0,0,0,0,         'AUF BUTTON KLICKEN, UM ICON ZU EDITIEREN       '
       db                  'x' ; <- END MARKER, DONT DELETE
-add_text db 'AUF UNBENUTZTE ICONPOSITION KLICKEN'
-add_text_len:
+add_text             db 'AUF UNBENUTZTE ICONPOSITION KLICKEN         ',0
 
-rem_text db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL'
-rem_text_len:
-  labelt:
-       db 'Icon Manager'
-  labellen:
+rem_text             db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL',0
+header     db 'Icon Manager',0
+
+else
+  text:
+      db 255,255,255,0,   '   TITLE                                       '
+      db 255,255,255,0,   '  APP NAME                                     '
+      db 255,255,255,0,   ' PARAMETERS                                    '
+      db 255,255,255,0,   '                APPLY CHANGES                  '
+      db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
+      db 0,0,0,0,         'CLICK BUTTON ON ICON POSITION FOR EDIT         '
+      db                  'x' ; <- END MARKER, DONT DELETE
+add_text             db 'CLICK ON A NOT USED POSITION               ',0
+
+rem_text            db 'CLICK ICON POSITION; YOU WANT TO DELETE',0
+header     db 'Icon Manager',0
 
 end if
-
-;ya    dd 0
 
 arrows db '</>'
 iconname:
@@ -1033,16 +998,15 @@ still2:
         jmp     still2
 
   key2:
-    mov  eax,2
+    mov  al,2
     int  0x40
 
     jmp  still2
 
   button2:
-    mov  eax,17
+    mov  al,17
     int  0x40
 
-;    mcall 55,eax, , ,klick_music
 
     mov  esi,[ebp+8]
           mov  ebx,1
@@ -1061,12 +1025,9 @@ still2:
     mov  eax,70
     int  0x40
 ;    dph  eax
-    cmp  eax,1024
-    jae  still2
-    mcall 55,eax, , ,klick_music
+;    cmp  eax,1024
+;    jae  still2
     jmp  still2
-
-klick_music db 0x85,0x60,0x85,0x70,0x85,0x65,0
 
 fill_paths:
         push esi edi
@@ -1283,32 +1244,32 @@ draw_text:
     mov  esi,[ebp+8]
     add  esi,3
     push edi
-    mov  edi,labelt
+    mov  edi,header
     mov  ecx,8
     cld
     rep  movsb
     pop  edi
-    mov   eax,labelt
+    mov   eax,header
   news2:
     cmp   [eax],byte 33
     jb      founde
     inc   eax
-    cmp   eax,labelt+8;11
+    cmp   eax,header+8;11
     jb      news2
    founde:
-    sub   eax,labelt
+    sub   eax,header
     mov   [tl],eax
 
     mov   eax,[tl]
     lea   eax,[eax+eax*2]  ; eax *= char_width/2
     shl   eax,16
 
-    mov   ebx,27*65536+42
+    mov   ebx,27*65536+40
     sub   ebx,eax
 
     mov   eax,4
     xor   ecx,ecx         ; black shade of text
-    mov   edx,labelt
+    mov   edx,header
     mov   esi,[tl]
     add   ebx,1 shl 16      ;*65536+1
     int   0x40
@@ -1361,7 +1322,7 @@ draw_window2:
     mov  eax,8      ; button
     mov  ebx,51
     mov  ecx,50
-    mov  edx,1+20000000 ; or 0x40000000
+    mov  edx,0x40000001
     int  0x40
 
     mov  eax,5
