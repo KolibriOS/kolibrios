@@ -1719,6 +1719,10 @@ OnStep:
 	jnz	.doit
 	cmp	al, 0xCD
 	jz	.int
+	cmp	ax, 0x050F
+	jz	.syscall_enter
+	cmp	ax, 0x340F
+	jz	.syscall_enter
 ; resume process
 .doit:
 	call	GoOn
@@ -1727,6 +1731,9 @@ OnStep:
 	mov	[bAfterGo], 2
 @@:
 	ret
+.syscall_enter:
+	and	byte [_eflags+1], not 1	; clear TF - avoid system halt (!)
+	call	set_context
 .int:
 	mov	eax, [_eip]
 	inc	eax
@@ -2910,6 +2917,15 @@ cseggs:
 	db	0xFB,3,'sti'
 	db	0xFC,3,'cld'
 	db	0xFD,3,'std'
+csysenter:
+csyscall:
+ccpuid:
+crdtsc:
+	call	@f
+	db	0x05,7,'syscall'
+	db	0x31,5,'rdtsc'
+	db	0x34,8,'sysenter'
+	db	0xA2,5,'cpuid'
 @@:
 	pop	esi
 @@:
@@ -2954,9 +2970,6 @@ c66:
 center:
 caam:
 cxlat:
-crdtsc:
-csysenter:
-ccpuid:
 ccmpxchg:
 cbsf:
 cbsr:
@@ -4681,7 +4694,7 @@ disasm_table_1:
 	dd	cop0,  cop0,  cop0,  cop0,  cop0,  cop0,  cop1,  cop1
 
 disasm_table_2:
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 0x
+	dd	cunk,  cunk,  cunk,  cunk,  cunk,  csyscall,cunk,cunk		; 0x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 1x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
