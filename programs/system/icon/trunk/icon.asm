@@ -147,6 +147,7 @@ still:
     mov  [ebx+12],edx
     mov  esi,iconlst
     call lst_path
+    mov eax,70
     int 0x40
 
     ; (2) terminate all icons
@@ -168,7 +169,7 @@ still:
     cmp  esi,eax
     jg   all_terminated
 
-    cmp  [I_END+10],dword 'ICON'
+    cmp  [I_END+10],dword '@ICO'
     jne  newread
     mov  eax,51
     cmp  eax,[I_END+42]
