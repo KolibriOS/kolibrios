@@ -216,11 +216,18 @@ sayerr:
         push    0
         pop     es
         and     word [es:0x9031], 0
+; \begin{Mario79}
+; find HDD IDE DMA PCI device
+; check for PCI BIOS
         mov     ax, 0xB101
         int     0x1A
         jc      .nopci
         cmp     edx, 'PCI '
         jnz     .nopci
+; find PCI class code
+; class 1 = mass storage
+; subclass 1 = IDE controller
+; a) class 1, subclass 1, programming interface 0x80
         mov     ax, 0xB103
         mov     ecx, 1*10000h + 1*100h + 0x80
         mov     si, 0   ; device index = 0

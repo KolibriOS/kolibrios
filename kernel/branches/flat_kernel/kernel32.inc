@@ -263,9 +263,9 @@ include "video/cursors.inc"  ; cursors functions
 ; Network Interface & TCPIP Stack
 
 include "network/stack.inc"
-;if 0
+
 include "drivers/comport.asm"
-;end if
+
 
 ; Mouse pointer
 

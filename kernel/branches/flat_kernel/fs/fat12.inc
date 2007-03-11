@@ -1893,7 +1893,6 @@ fs_FloppyRewrite:
         dec     edi
         dec     edi
 
-  ;      lea     eax, [edi-FLOPPY_FAT]
         mov eax, edi
         sub eax, FLOPPY_FAT
 
