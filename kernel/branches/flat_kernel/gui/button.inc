@@ -59,225 +59,225 @@ incecx2:
 
 drawbuttonframes:
 
-        push  esi
-        push  edi
-        push  eax
-        push  ebx
-        push  ecx
-        push  edx
+	push  esi
+	push  edi
+	push  eax
+	push  ebx
+	push  ecx
+	push  edx
 
-        shr   eax,16
-        shr   ebx,16
-        mov   edx,[TASK_BASE]
+	shr   eax,16
+	shr   ebx,16
+	mov   edx,[TASK_BASE]
 
 		add   eax,[edx-twdw + WDATA.box.left]
 		add   ebx,[edx-twdw + WDATA.box.top]
-        mov   cx,ax
-        mov   dx,bx
-        shl   eax,16
-        shl   ebx,16
-        mov   ax,cx
-        mov   bx,dx
-        add   ax,word [esp+12]
-        mov   esi,ebx
-        mov   edi,0
-        mov   ecx,[esp+0]
-        call  incecx
-        call  [draw_line]
+	mov   cx,ax
+	mov   dx,bx
+	shl   eax,16
+	shl   ebx,16
+	mov   ax,cx
+	mov   bx,dx
+	add   ax,word [esp+12]
+	mov   esi,ebx
+	mov   edi,0
+	mov   ecx,[esp+0]
+	call  incecx
+	call  [draw_line]
 
-        movzx edx,word [esp+8]
-        add   ebx,edx
-        shl   edx,16
-        add   ebx,edx
-        mov   ecx,[esp+0]
-        call  dececx
-        call  [draw_line]
+	movzx edx,word [esp+8]
+	add   ebx,edx
+	shl   edx,16
+	add   ebx,edx
+	mov   ecx,[esp+0]
+	call  dececx
+	call  [draw_line]
 
-        mov   ebx,esi
-        push  edx
-        mov   edx,eax
-        shr   edx,16
-        mov   ax,dx
-        mov   edx,ebx
-        shr   edx,16
-        mov   bx,dx
-        mov   dx,[esp+8+4]
-        add   bx,dx
-        pop   edx
-        mov   edi,0
-        mov   ecx,[esp+0]
-        call  incecx
-        call  [draw_line]
+	mov   ebx,esi
+	push  edx
+	mov   edx,eax
+	shr   edx,16
+	mov   ax,dx
+	mov   edx,ebx
+	shr   edx,16
+	mov   bx,dx
+	mov   dx,[esp+8+4]
+	add   bx,dx
+	pop   edx
+	mov   edi,0
+	mov   ecx,[esp+0]
+	call  incecx
+	call  [draw_line]
 
-        mov   esi,edx
-        mov   dx,[esp+12]
-        add   ax,dx
-        shl   edx,16
-        add   eax,edx
-        add   ebx,1*65536
-        mov   edx,esi
-        mov   ecx,[esp+0]
-        call  dececx
-        call  [draw_line]
+	mov   esi,edx
+	mov   dx,[esp+12]
+	add   ax,dx
+	shl   edx,16
+	add   eax,edx
+	add   ebx,1*65536
+	mov   edx,esi
+	mov   ecx,[esp+0]
+	call  dececx
+	call  [draw_line]
 
-        pop   edx
-        pop   ecx
-        pop   ebx
-        pop   eax
-        pop   edi
-        pop   esi
+	pop   edx
+	pop   ecx
+	pop   ebx
+	pop   eax
+	pop   edi
+	pop   esi
 
-        ret
+	ret
 
 button_dececx:
 
-        cmp   [buttontype],dword 1
-        jne   .finish
+	cmp   [buttontype],dword 1
+	jne   .finish
 ;        je    bdece
 ;        ret
 ;      bdece:
-        push  eax
-        mov   eax,0x01
-        cmp   edi,20
-        jg    @f
-        mov   eax,0x02
+	push  eax
+	mov   eax,0x01
+	cmp   edi,20
+	jg    @f
+	mov   eax,0x02
       @@:
-        test  ecx,0xff
-        jz    @f
-        sub   ecx,eax
+	test  ecx,0xff
+	jz    @f
+	sub   ecx,eax
       @@:
-        shl   eax,8
-        test  ecx,0xff00
-        jz    @f
-        sub   ecx,eax
+	shl   eax,8
+	test  ecx,0xff00
+	jz    @f
+	sub   ecx,eax
       @@:
-        shl   eax,8
-        test  ecx,0xff0000
-        jz    @f
-        sub   ecx,eax
+	shl   eax,8
+	test  ecx,0xff0000
+	jz    @f
+	sub   ecx,eax
       @@:
-        pop    eax
+	pop    eax
       .finish:
-        ret
+	ret
 
 
 sys_button:
 
-        push    edi
-        mov     edi,[CURRENT_TASK]
-        shl     edi,8
-        rol     eax,16
-        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        rol     eax,16
-        rol     ebx,16
-        add     bx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        rol     ebx,16
-        pop     edi
+	push	edi
+	mov	edi,[CURRENT_TASK]
+	shl	edi,8
+	rol	eax,16
+	add	ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+	rol	eax,16
+	rol	ebx,16
+	add	bx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+	rol	ebx,16
+	pop	edi
   .forced:
 
-        test  ecx,0x80000000
-        jnz   remove_button
+	test  ecx,0x80000000
+	jnz   remove_button
 
-        push  esi
-        push  edi
-        push  eax ; <x,xs>
-        push  ebx ; <y,ys>
-        push  ecx ; <id>
-        push  edx
+	push  esi
+	push  edi
+	push  eax ; <x,xs>
+	push  ebx ; <y,ys>
+	push  ecx ; <id>
+	push  edx
 
-        or    ax,ax
-        jle   noaddbutt
-        or    bx,bx
-        jle   noaddbutt
+	or    ax,ax
+	jle   noaddbutt
+	or    bx,bx
+	jle   noaddbutt
 
-        test  ecx,0x40000000
-        jnz   button_no_draw
+	test  ecx,0x40000000
+	jnz   button_no_draw
 
-        pushad                       ; button body
-        push  ebx
-        shr   eax,16
-        shr   ebx,16
-        mov   edx,[TASK_BASE]
-        mov   esi,[edx-twdw + WDATA.box.left]
-        mov   edi,[edx-twdw + WDATA.box.top]
-        add   eax,esi
-        add   ebx,edi
-        mov   cx,ax
-        mov   dx,bx
-        shl   eax,16
-        shl   ebx,16
-        mov   ax,cx
-        mov   bx,dx
-        movzx ecx,word [4+32+esp+12]
-        add   eax,ecx
-        mov   ecx,[4+32+esp+0]
-        cmp   [buttontype],dword 0
-        je    @f
-        call  incecx2
+	pushad			     ; button body
+	push  ebx
+	shr   eax,16
+	shr   ebx,16
+	mov   edx,[TASK_BASE]
+	mov   esi,[edx-twdw + WDATA.box.left]
+	mov   edi,[edx-twdw + WDATA.box.top]
+	add   eax,esi
+	add   ebx,edi
+	mov   cx,ax
+	mov   dx,bx
+	shl   eax,16
+	shl   ebx,16
+	mov   ax,cx
+	mov   bx,dx
+	movzx ecx,word [4+32+esp+12]
+	add   eax,ecx
+	mov   ecx,[4+32+esp+0]
+	cmp   [buttontype],dword 0
+	je    @f
+	call  incecx2
        @@:
-        movzx edi,word [esp]
+	movzx edi,word [esp]
 
-        pop   edx
-        and   edx, 0xFFFF
+	pop   edx
+	and   edx, 0xFFFF
 
      .newline:
-        call  button_dececx
-        push  edi
-        xor   edi, edi
-        call  [draw_line]
-        pop   edi
-        add   ebx,1*65536+1   ; [ y start | y end ]
-        dec   edx
-        jnz   .newline
-        popad
+	call  button_dececx
+	push  edi
+	xor   edi, edi
+	call  [draw_line]
+	pop   edi
+	add   ebx,1*65536+1   ; [ y start | y end ]
+	dec   edx
+	jnz   .newline
+	popad
 
-        call  drawbuttonframes
+	call  drawbuttonframes
 
       button_no_draw:
 
-        and   ecx,0xffff
+	and   ecx,0xffff
 
-        mov   edi,[BTN_ADDR]
-        movzx eax,word [edi]
-        cmp   eax,max_buttons
-        jge   noaddbutt
-        inc   eax
-        mov   [edi],ax
+	mov   edi,[BTN_ADDR]
+	movzx eax,word [edi]
+	cmp   eax,max_buttons
+	jge   noaddbutt
+	inc   eax
+	mov   [edi],ax
 
-        shl   eax,4
-        add   eax,edi
+	shl   eax,4
+	add   eax,edi
 
-        mov   bx,[CURRENT_TASK]
-        mov   [eax],bx
+	mov   bx,[CURRENT_TASK]
+	mov   [eax],bx
 
-        add   eax,2         ; save button id number
-        mov   ebx,[esp+4]
-        mov   [eax],bx      ; bits 0-15
-        shr   ebx,16
-        mov   [eax-2+0xc],bx; bits 16-31
-        add   eax,2         ; x start
-        mov   bx,[esp+12+2]
-        mov   [eax],bx
-        add   eax,2         ; x size
-        mov   bx,[esp+12+0]
-        mov   [eax],bx
-        add   eax,2         ; y start
-        mov   bx,[esp+8+2]
-        mov   [eax],bx
-        add   eax,2         ; y size
-        mov   bx,[esp+8+0]
-        mov   [eax],bx
+	add   eax,2	    ; save button id number
+	mov   ebx,[esp+4]
+	mov   [eax],bx	    ; bits 0-15
+	shr   ebx,16
+	mov   [eax-2+0xc],bx; bits 16-31
+	add   eax,2	    ; x start
+	mov   bx,[esp+12+2]
+	mov   [eax],bx
+	add   eax,2	    ; x size
+	mov   bx,[esp+12+0]
+	mov   [eax],bx
+	add   eax,2	    ; y start
+	mov   bx,[esp+8+2]
+	mov   [eax],bx
+	add   eax,2	    ; y size
+	mov   bx,[esp+8+0]
+	mov   [eax],bx
 
      noaddbutt:
 
-        pop   edx
-        pop   ecx
-        pop   ebx
-        pop   eax
-        pop   edi
-        pop   esi
+	pop   edx
+	pop   ecx
+	pop   ebx
+	pop   eax
+	pop   edi
+	pop   esi
 
-        ret
+	ret
 
 
 remove_button:
@@ -294,7 +294,7 @@ remove_button:
   rnewba:
 
     dec   bx
-    jz    rnmba
+    jz	  rnmba
 
     add   eax,0x10
 
@@ -323,44 +323,44 @@ remove_button:
 
 find_pressed_button_frames:
 
-        pushad
+	pushad
 
-        movzx ebx,word [eax+0]
-        shl   ebx,5
-        add   ebx,window_data
+	movzx ebx,word [eax+0]
+	shl   ebx,5
+	add   ebx,window_data
 		mov   ecx, [ebx+ WDATA.box.left]     ; window x start
-        movzx edx,word [eax+4]     ; button x start
-        add   ecx,edx
-        push  ecx
+	movzx edx,word [eax+4]	   ; button x start
+	add   ecx,edx
+	push  ecx
 
-		mov   dx,[eax+6]                 ; button x size
-        add   cx,dx
-        mov   esi,ecx
-        inc   esi
-		mov   ecx, [ebx+WDATA.box.top]   ; window y start
-		mov   dx,[eax+8]                 ; button y start
-        add   ecx,edx
-        mov   ebx,ecx
-		mov   dx,[eax+10]                ; button y size
-        add   dx,cx
-        inc   dx
+		mov   dx,[eax+6]		 ; button x size
+	add   cx,dx
+	mov   esi,ecx
+	inc   esi
+		mov   ecx, [ebx+WDATA.box.top]	 ; window y start
+		mov   dx,[eax+8]		 ; button y start
+	add   ecx,edx
+	mov   ebx,ecx
+		mov   dx,[eax+10]		 ; button y size
+	add   dx,cx
+	inc   dx
 
-        pop   eax
+	pop   eax
 
-        ; eax x beginning
-        ; ebx y beginning
-        ; esi x end
-        ; edx y end
-        ; ecx color
+	; eax x beginning
+	; ebx y beginning
+	; esi x end
+	; edx y end
+	; ecx color
 
-        mov   [pressed_button_eax],eax
-        mov   [pressed_button_ebx],ebx
-        mov   [pressed_button_ecx],ecx
-        mov   [pressed_button_edx],edx
-        mov   [pressed_button_esi],esi
+	mov   [pressed_button_eax],eax
+	mov   [pressed_button_ebx],ebx
+	mov   [pressed_button_ecx],ecx
+	mov   [pressed_button_edx],edx
+	mov   [pressed_button_esi],esi
 
-        popad
-        ret
+	popad
+	ret
 
 uglobal
   pressed_button_eax  dd  0
@@ -373,70 +373,70 @@ endg
 ; negative button image
 
 negativebutton:
-        ; If requested, do not display button
-        ; boarder on press.
-        test  ebx,0x20000000
-        jz    draw_negative_button
-        ret
+	; If requested, do not display button
+	; boarder on press.
+	test  ebx,0x20000000
+	jz    draw_negative_button
+	ret
       draw_negative_button:
 
-        pushad
+	pushad
 
-        mov   eax,[pressed_button_eax]
-        mov   ebx,[pressed_button_ebx]
-        mov   ecx,[pressed_button_ecx]
-        mov   edx,[pressed_button_edx]
-        mov   esi,[pressed_button_esi]
-        mov   ecx,0x01000000
+	mov   eax,[pressed_button_eax]
+	mov   ebx,[pressed_button_ebx]
+	mov   ecx,[pressed_button_ecx]
+	mov   edx,[pressed_button_edx]
+	mov   esi,[pressed_button_esi]
+	mov   ecx,0x01000000
 
-        dec   edx
-        push  edx
-        inc   edx
-        dec   esi
-        push  esi
-        inc   esi
+	dec   edx
+	push  edx
+	inc   edx
+	dec   esi
+	push  esi
+	inc   esi
 
-        push  eax
-        push  ebx
-        push  ecx
-        push  edx
-        push  edi
+	push  eax
+	push  ebx
+	push  ecx
+	push  edx
+	push  edi
 
-        call  [disable_mouse]
+	call  [disable_mouse]
 
       bdbnewline:
-        mov   edi,1    ; force
-        cmp   eax,[esp+16]
-        jz    bneg
-        cmp   eax,[esp+20]
-        jz    bneg
-        cmp   ebx,[esp+12]
-        jz    bneg
-        cmp   ebx,[esp+24]
-        jnz   nbneg
+	mov   edi,1    ; force
+	cmp   eax,[esp+16]
+	jz    bneg
+	cmp   eax,[esp+20]
+	jz    bneg
+	cmp   ebx,[esp+12]
+	jz    bneg
+	cmp   ebx,[esp+24]
+	jnz   nbneg
 ;        jz    bneg
 ;        jmp   nbneg
 
       bneg:
 
-        ;;;call  [disable_mouse]
-        call  [putpixel]
+	;;;call  [disable_mouse]
+	call  [putpixel]
 
       nbneg:
 
-        inc   eax
-        cmp   eax,esi
-        jnz   bdbnewline
-        mov   eax,[esp+16]
-        inc   ebx
-        cmp   ebx,edx
-        jnz   bdbnewline
+	inc   eax
+	cmp   eax,esi
+	jnz   bdbnewline
+	mov   eax,[esp+16]
+	inc   ebx
+	cmp   ebx,edx
+	jnz   bdbnewline
 
-        add   esp,28
+	add   esp,28
 
-        popad
+	popad
 
-        ret
+	ret
 
 ; check buttons
 
@@ -458,9 +458,11 @@ checkbuttons:
 
     cmp   [BTN_DOWN],byte 0    ; mouse buttons pressed
     jnz   @f
+;..................................... start 1/5 : modified by vhanla .............................
+    mov [bPressedMouseXY_B],0
+;..................................... end 1/5 : modified by vhanla .............................
     ret
   @@:
-
     pushad
 
     xor    esi, esi
@@ -472,6 +474,20 @@ checkbuttons:
     ret
 
   @@:
+;..................................... start 2/5 : modified by vhanla .............................
+  ;here i catch the coordinates when the mouse's button is clicked
+   push ax
+   cmp [bPressedMouseXY_B],0;FALSE
+   jnz @f
+   mov [bPressedMouseXY_B],1;TRUE - it was already clicked
+   mov ax,[MOUSE_X]
+   mov [mx],ax
+   mov ax,[MOUSE_Y]
+   mov [my],ax
+   @@:
+   pop	ax
+   ;and it is only refreshed after the mouse's button release
+;..................................... end 2/5 : modified by vhanla .............................
 
     push  esi
     inc   edx
@@ -485,7 +501,7 @@ checkbuttons:
     cmp   edx,esi
     jge   bch
 
-    popad                 ; no button pressed
+    popad		  ; no button pressed
     ret
 
   bch:
@@ -495,10 +511,6 @@ checkbuttons:
     mov   eax,esi
     shl   eax,4
     add   eax,edi
-
-;......................start 1/2 : modified by vhanla .............................
-    mov   [buttonid],eax
-;......................end   1/2 : modified by vhanla .............................
 
     ; check that button is at top of windowing stack
 
@@ -512,8 +524,8 @@ checkbuttons:
     movzx ebx,word [eax+0]
     shl   ebx,5
 
-        test    [ebx+window_data+WDATA.fl_wstate],WSTATE_MINIMIZED
-        jnz     buttonnewcheck
+	test	[ebx+window_data+WDATA.fl_wstate],WSTATE_MINIMIZED
+	jnz	buttonnewcheck
 
 ;    add   ebx,window_data
 ;    mov   ecx,[window_data+ebx+8]          ; window end X
@@ -527,46 +539,50 @@ checkbuttons:
     jge   buttonnewcheck
 
     ; check coordinates
-                               ; mouse x >= button x ?
+			       ; mouse x >= button x ?
     movzx ebx,word [eax+0]
     shl   ebx,5
     add   ebx,window_data
 	mov   ecx, [ebx+WDATA.box.left]     ; window x start
     movzx edx,word [eax+4]     ; button x start
     add   edx,ecx
-    mov   cx,[MOUSE_X]
+;..................................... start 3/5 : modified by vhanla .............................
+    mov   cx,[mx]   ;mov cx,[MOUSE_X]
+;..................................... end 3/5 : modified by vhanla .............................
     cmp   edx,ecx
-    jg    buttonnewcheck
+    jg	  buttonnewcheck
 
     movzx ebx,word [eax+6]     ; button x size
     add   edx,ebx
     cmp   ecx,edx
-    jg    buttonnewcheck
+    jg	  buttonnewcheck
 
-                               ; mouse y >= button y ?
+			       ; mouse y >= button y ?
     movzx ebx,word [eax+0]
     shl   ebx,5
     add   ebx,window_data
-	mov   ecx, [ebx+WDATA.box.top]     ; window y start
+	mov   ecx, [ebx+WDATA.box.top]	   ; window y start
     movzx edx,word [eax+8]     ; button y start
     add   edx,ecx
-    mov   cx,[MOUSE_Y]
+;..................................... start 4/5 : modified by vhanla .............................
+    mov   cx,[my]  ;mov cx,[MOUSE_Y]
+;..................................... start 4/5 : modified by vhanla .............................
     cmp   edx,ecx
-    jg    buttonnewcheck
+    jg	  buttonnewcheck
 
     movzx ebx,word [eax+10]    ; button y size
     add   edx,ebx
     cmp   ecx,edx
-    jg    buttonnewcheck
+    jg	  buttonnewcheck
 
     ; mouse on button
 
     pop   edx
     pop   esi
 
-    mov   bx,[eax+0xc]     ; button id : bits 16-31
+    mov   bx,[eax+0xc]	   ; button id : bits 16-31
     shl   ebx,16
-    mov   bx,[eax+2]       ; button id : bits 00-16
+    mov   bx,[eax+2]	   ; button id : bits 00-16
     push  ebx
 
     mov   [MOUSE_DOWN],byte 1  ; no mouse down checks
@@ -591,58 +607,60 @@ checkbuttons:
     call  negativebutton
     mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
     mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
-;..................................... start 2/2 : modified by vhanla .............................
+;..................................... start 5/5 : modified by vhanla .............................
     ; check coordinates
-    jmp afterbuttonid
-    buttonid dd 0x0 ;here a will backup the eax value
-    afterbuttonid:
+    jmp @f
+    mx dw 0x0 ; keeps the x mouse's position when it was clicked
+    my dw 0x0 ; keeps the y mouse's position when it was clicked
+    bPressedMouseXY_B db 0x0
+    @@:
 
    pusha
   ; mouse x >= button x ?
    movzx ebx,word [eax+0]
-   shl   ebx,5
-   add   ebx,window_data
-   mov   ecx, [ebx+WDATA.box.left]    ; window x start
+   shl	 ebx,5
+   add	 ebx,window_data
+   mov	 ecx, [ebx+WDATA.box.left]    ; window x start
    movzx edx,word [eax+4]    ; button x start
-   add   edx,ecx
-   mov   cx,[MOUSE_X]
-   cmp   edx,ecx
-   jg   no_on_button ;if we release the pointer out of the button area
+   add	 edx,ecx
+   mov	 cx,[MOUSE_X]
+   cmp	 edx,ecx
+   jg	no_on_button ;if we release the pointer out of the button area
 
    movzx ebx,word [eax+6]    ; button x size
-   add   edx,ebx
-   cmp   ecx,edx
-   jg   no_on_button
+   add	 edx,ebx
+   cmp	 ecx,edx
+   jg	no_on_button
 
-        ; mouse y >= button y ?
+	; mouse y >= button y ?
    movzx ebx,word [eax+0]
-   shl   ebx,5
-   add   ebx,window_data
-   mov   ecx, [ebx+WDATA.box.top]    ; window y start
+   shl	 ebx,5
+   add	 ebx,window_data
+   mov	 ecx, [ebx+WDATA.box.top]    ; window y start
    movzx edx,word [eax+8]    ; button y start
-   add   edx,ecx
-   mov   cx,[MOUSE_Y]
-   cmp   edx,ecx
-   jg   no_on_button
+   add	 edx,ecx
+   mov	 cx,[MOUSE_Y]
+   cmp	 edx,ecx
+   jg	no_on_button
 
    movzx ebx,word [eax+10]   ; button y size
-   add   edx,ebx
-   cmp   ecx,edx
-   jg   no_on_button
+   add	 edx,ebx
+   cmp	 ecx,edx
+   jg	no_on_button
    popa
-   mov   [BTN_COUNT],byte 1 ; no of buttons in buffer
-   pop   ebx
-   mov   [BTN_BUFF],ebx   ; lets put the button id in buffer
+   mov	 [BTN_COUNT],byte 1 ; no of buttons in buffer
+   pop	 ebx
+   mov	 [BTN_BUFF],ebx   ; lets put the button id in buffer
    push  ebx
    pusha
    jmp yes_on_button
 no_on_button:
-   mov   [BTN_COUNT],byte 0 ; no of buttons in buffer
+   mov	 [BTN_COUNT],byte 0 ; no of buttons in buffer
 yes_on_button:
-   mov   [MOUSE_DOWN],byte 0 ; mouse down -> do not draw
+   mov	 [MOUSE_DOWN],byte 0 ; mouse down -> do not draw
    popa
    pop ebx
    popa
    ret
 
-;..................................... end 2/2 : modified by vhanla ................................
+;..................................... end 5/5 : modified by vhanla ................................
