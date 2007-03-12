@@ -70,7 +70,7 @@ IER_MSI          equ  0x08     ;modem status interrupt
 MCR_DTR          equ  0x01     ;0-> DTR=1, 1-> DTR=0
 MCR_RTS          equ  0x02     ;0-> RTS=1, 1-> RTS=0
 MCR_OUT_1        equ  0x04     ;0-> OUT1=1, 1-> OUT1=0
-MCR_OUT_2        equ  0x08     ;0-> OUT2=1, 1-> OUT2=0  enable intr
+MCR_OUT_2        equ  0x08     ;0-> OUT2=1, 1-> OUT2=0;  enable intr
 MCR_LOOP         equ  0x10     ;lopback mode
 
 MSR_DCTS         equ  0x01     ;delta clear to send
@@ -113,10 +113,10 @@ COM_2_IRQ        equ  3
 
 UART_CLOSED      equ  0
 UART_TRANSMIT    equ  1
+UART_STOP        equ  2
 
 struc UART
 {
-  ; .owner        dd ?   unused
    .lock         dd ?
    .base         dd ?
    .lcr_reg      dd ?
@@ -127,21 +127,20 @@ struc UART
 
    .rcvr_rp      dd ?
    .rcvr_wp      dd ?
-   .rcvr_free    dd ?
+   .rcvr_cnt     dd ?
 
+   .xmit_buff    dd ?
    .xmit_rp      dd ?
    .xmit_wp      dd ?
+   .xmit_count   dd ?
    .xmit_free    dd ?
-   .rcvr_buffer  rb 128
-   .xmit_buffer  rb 128
+   .xmit_top     dd ?
 }
 virtual at 0
   UART UART
 end virtual
 
-RCVR_OFFSET   equ 14*4
-XMIT_OFFSET   equ (13*4*128)
-UART_SIZE     equ (256+13*4)
+UART_SIZE     equ 16*4
 
 struc CONNECTION
 {
@@ -179,7 +178,39 @@ init_uart_service:
            mov eax, [com1]
            mov [eax+UART.base], COM_1_BASE
 
-           call uart_reset   ;eax= uart
+           stdcall alloc_kernel_space, 16384
+
+           mov edi, [com1]
+           mov edx, eax
+           mov [edi+UART.xmit_buff], eax
+           add eax, 8192
+           mov [edi+UART.xmit_top], eax
+
+           call alloc_page
+           test eax, eax
+           jz .fail
+
+           shr edx, 12
+           or eax, PG_SW
+           mov [page_tabs+edx*4], eax
+           mov [page_tabs+edx*4+8], eax
+
+           call alloc_page
+           test eax, eax
+           jz .fail
+
+           or eax, PG_SW
+           mov [page_tabs+edx*4+4], eax
+           mov [page_tabs+edx*4+12], eax
+
+           mov eax, [edi+UART.xmit_buff]
+           invlpg [eax]
+           invlpg [eax+0x1000]
+           invlpg [eax+0x2000]
+           invlpg [eax+0x3000]
+
+           mov eax, edi
+           call uart_reset.internal   ;eax= uart
 
            stdcall attach_int_handler, COM_1_IRQ, com_1_isr
            stdcall reg_service, sz_uart_srv, uart_proc
@@ -234,6 +265,7 @@ proc uart_proc stdcall, ioctl:dword
            ret
 @@:
            mov esi, [ebx+input]     ;input buffer
+           mov edi, [ebx+output]
            call [uart_func+eax*4]
            ret
 .fail:
@@ -250,6 +282,26 @@ restore   output
 restore   out_size
 
 
+; param
+;  esi=  input buffer
+;        +0 connection
+;
+; retval
+;  eax= error code
+
+align 4
+uart_reset:
+           mov eax, [esi]
+           cmp [eax+APPOBJ.magic], 'CNCT'
+           jne .fail
+
+           cmp [eax+APPOBJ.destroy], uart_close.destroy
+           jne .fail
+
+           mov eax, [eax+CONNECTION.uart]
+           test eax, eax
+           jz .fail
+
 ; set mode 2400 bod 8-bit
 ; disable DTR & RTS
 ; clear FIFO
@@ -259,7 +311,7 @@ restore   out_size
 ;  eax= uart
 
 align 4
-uart_reset:
+.internal:
            mov esi, eax
            mov [eax+UART.state], UART_CLOSED
            mov edx, [eax+UART.base]
@@ -322,21 +374,27 @@ uart_reset:
            in al, dx
            jmp .clear_IIR
 .done:
-           lea edi, [esi+UART.rcvr_buffer]
-           mov ecx, 256/4
+           mov edi, [esi+UART.xmit_buff]
+           mov ecx, 8192/4
            xor eax, eax
 
-           mov [esi+UART.rcvr_rp], eax
-           mov [esi+UART.rcvr_wp], eax
-           mov [esi+UART.rcvr_free], 128
-           mov [esi+UART.xmit_rp], eax
-           mov [esi+UART.xmit_wp], eax
-           mov [esi+UART.xmit_free], 128
+           mov [esi+UART.xmit_rp], edi
+           mov [esi+UART.xmit_wp], edi
+           mov [esi+UART.xmit_count], eax
+           mov [esi+UART.xmit_free], 8192
 
            cld
            rep stosd
-           ret
 
+
+;           mov [esi+UART.rcvr_rp], eax
+;           mov [esi+UART.rcvr_wp], eax
+;           mov [esi+UART.rcvr_cnt], eax
+
+           ret
+.fail:
+           or eax, -1
+           ret
 
 ; param
 ;  esi=  input buffer
@@ -406,15 +464,39 @@ align 4
            or eax, -1
            ret
 
+; param
+;  esi=  input buffer
+;        +0 connection
+;        +4 modem control reg valie
+;
+; retval
+;  eax= error code
 
 align 4
-uart_set_modem:
+uart_set_mcr:
+
+           mov eax, [esi]
+           cmp [eax+APPOBJ.magic], 'CNCT'
+           jne .fail
+
+           cmp [eax+APPOBJ.destroy], uart_close.destroy
+           jne .fail
+
+           mov eax, [eax+CONNECTION.uart]
+           test eax, eax
+           jz .fail
+
+           mov ebx, [esi+4]
 
            mov [eax+UART.mcr_reg], ebx
            mov edx, [eax+UART.base]
            add edx, MCR_REG
            mov al, bl
            out dx, al
+           xor eax, eax
+           ret
+.fail:
+           or eax, -1
            ret
 
 ; param
@@ -444,7 +526,7 @@ uart_open:
            jnz .do_wait
 
            mov eax, esi                  ;uart
-           call uart_reset
+           call uart_reset.internal
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
@@ -534,42 +616,132 @@ align 4
 transmit:
            push esi
            push edi
-           push ebp
 
            mov edx, [ebx+UART.base]
 
            pushfd
            cli
 
-           mov ebp, 16
            mov esi, [ebx+UART.xmit_rp]
-           lea edi, [ebx+UART.xmit_buffer]
-           mov ecx, [ebx+UART.xmit_free]
+           mov ecx, [ebx+UART.xmit_count]
+           test ecx, ecx
+           je .stop
 
-           cmp ecx, 128
-           je .exit
+           cmp ecx, 16
+           jbe @F
+           mov ecx, 16
 @@:
-           and esi, 127
-           mov al, [esi+edi]
-           inc esi
-
+           sub [ebx+UART.xmit_count], ecx
+           add [ebx+UART.xmit_free], ecx
+           cld
+@@:
+           lodsb
            out dx, al
-           inc ecx
-           dec ebp
-           jz .done
+           dec ecx
+           jnz @B
 
-           cmp ecx, 128
-           jne @B
-.done:
+           cmp esi,[ebx+UART.xmit_top]
+           jb @F
+           sub esi, 8192
+@@:
            mov [ebx+UART.xmit_rp], esi
-           mov [ebx+UART.xmit_free], ecx
+
+           cmp [ebx+UART.xmit_count], 0
+           je .stop
+
            mov [ebx+UART.state], UART_TRANSMIT
-.exit:
+           jmp @F
+.stop:
+           mov [ebx+UART.state], UART_STOP
+@@:
            popfd
-           pop ebp
            pop edi
            pop esi
            ret
+
+
+; param
+;  esi=  input buffer
+;        +0 connection
+;        +4 dst buffer
+;        +8 dst size
+;  edi=  output buffer
+;        +0 bytes read
+
+; retval
+;  eax= error code
+
+align 4
+uart_read:
+           mov eax, [esi]
+           cmp [eax+APPOBJ.magic], 'CNCT'
+           jne .fail
+
+           cmp [eax+APPOBJ.destroy], uart_close.destroy
+           jne .fail
+
+           mov eax, [eax+CONNECTION.uart]
+           test eax, eax
+           jz .fail
+
+           mov ebx, [esi+8]    ;dst size
+           mov ecx, [eax+UART.rcvr_cnt]
+           cmp ecx, ebx
+           jbe @F
+           mov ecx, ebx
+@@:
+           mov [edi], ecx      ;bytes read
+           test ecx, ecx
+           jz .done
+
+           sub [eax+UART.rcvr_cnt], ecx
+
+           push eax
+           mov edi, [esi+4]    ;dst
+       ;    lea esi, [eax+RCVR_OFFSET]
+           mov ebx, [eax+UART.rcvr_rp]
+           cld
+@@:
+           and ebx, 127
+           mov al, [esi+ebx]
+           stosb
+           inc ebx
+           dec ecx
+           jnz @B
+
+           pop eax
+           mov [eax+UART.rcvr_rp], ebx
+.done:
+           xor eax, eax
+           rep
+.fail:
+           or eax, -1
+           ret
+
+; param
+;  esi=  input buffer
+;        +0 connection
+;        +4 src buffer
+;        +8 src size
+;
+; retval
+;  eax= error code
+
+align 4
+uart_write:
+           mov eax, [esi]
+           cmp [eax+APPOBJ.magic], 'CNCT'
+           jne .fail
+
+           cmp [eax+APPOBJ.destroy], uart_close.destroy
+           jne .fail
+
+           mov eax, [eax+CONNECTION.uart]
+           test eax, eax
+           jz .fail
+
+           mov ebx, [esi+4]
+           mov edx, [esi+8]
 
 ; param
 ;  eax= uart
@@ -577,13 +749,12 @@ transmit:
 ;  edx= count
 
 align 4
-uart_write:
+.internal:
            mov esi, ebx
            mov edi, [eax+UART.xmit_wp]
-           lea ebx, [eax+UART.xmit_buffer]
 .write:
            test edx, edx
-           jz .done
+           jz .fail
 .wait:
            cmp [eax+UART.xmit_free], 0
            jne .fill
@@ -596,40 +767,38 @@ uart_write:
            call transmit
            pop edx
            mov eax, ebx
-           lea ebx, [ebx+UART.xmit_buffer]
            jmp .write
 .fill:
-           mov ecx, 128
-           sub ecx, edi
-           jz .clip
-           cmp ecx, [eax+UART.xmit_free]
-           jbe @F
-
            mov ecx, [eax+UART.xmit_free]
-@@:
            cmp ecx, edx
            jbe @F
            mov ecx, edx
 @@:
-           sub [eax+UART.xmit_free], ecx
-           sub edx, ecx
-
-           add edi, ebx
+           push ecx
            cld
            rep movsb
-
-           sub edi, ebx
-.clip:
-           and edi, 127
-           jmp .write
+           pop ecx
+           sub [eax+UART.xmit_free], ecx
+           add [eax+UART.xmit_count], ecx
+           sub edx, ecx
+           jnz .wait
 .done:
+           cmp edi, [eax+UART.xmit_top]
+           jb @F
+           sub edi, 8192
+@@:
            mov [eax+UART.xmit_wp], edi
            cmp [eax+UART.state], UART_TRANSMIT
            je @F
            mov ebx, eax
            call transmit
 @@:
+           xor eax, eax
            ret
+.fail:
+           or eax, -1
+           ret
+
 
 align 4
 com_2_isr:
@@ -638,7 +807,6 @@ com_2_isr:
 align 4
 com_1_isr:
            mov ebx, [com1]
-
 .get_info:
            mov edx, [ebx+UART.base]
            add edx, IIR_REG
@@ -684,16 +852,13 @@ align 4
 uart_func   dd 0                ;SRV_GETVERSION
             dd 0                ;PORT_OPEN
             dd uart_close       ;PORT_CLOSE
-            dd 0                ;PORT_RESET
+            dd uart_reset       ;PORT_RESET
             dd uart_set_mode    ;PORT_SETMODE
-;            dd uart.get_mode    ;PORT_GETMODE
-;            dd uart.set_mcr     ;PORT_SETMCR
-;PORT_GETMCR     equ 7
-;PORT_READ       equ 8
-;PORT_WRITE      equ 9
-
-
-
+            dd 0                ;PORT_GETMODE
+            dd uart_set_mcr     ;PORT_SETMODEM
+            dd 0                ;PORT_GETMODEM
+            dd uart_read        ;PORT_READ
+            dd uart_write       ;PORT_WRITE
 
 isr_action  dd isr_modem
             dd transmit
