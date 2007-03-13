@@ -19,7 +19,7 @@ endg
         pushd   [ScreenWidth] [ScreenHeight]
 	popd	[old_screen_height] [old_screen_width]
      or   eax,-1                 ; If driver is absent then eax does not change
-     call 0x760100               ; Entry point of video driver
+     call OS_BASE+0x760100       ; Entry point of video driver
      mov  [esp+36],eax
      mov  [esp+24],ebx
      mov  [esp+32],ecx

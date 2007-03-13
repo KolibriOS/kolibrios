@@ -125,9 +125,11 @@ struc UART
    .mode         dd ?
    .state        dd ?
 
+   .rcvr_buff    dd ?
    .rcvr_rp      dd ?
    .rcvr_wp      dd ?
-   .rcvr_cnt     dd ?
+   .rcvr_count   dd ?
+   .rcvr_top     dd ?
 
    .xmit_buff    dd ?
    .xmit_rp      dd ?
@@ -140,7 +142,7 @@ virtual at 0
   UART UART
 end virtual
 
-UART_SIZE     equ 16*4
+UART_SIZE     equ 18*4
 
 struc CONNECTION
 {
@@ -178,10 +180,15 @@ init_uart_service:
            mov eax, [com1]
            mov [eax+UART.base], COM_1_BASE
 
-           stdcall alloc_kernel_space, 16384
+           stdcall alloc_kernel_space, 32768
 
            mov edi, [com1]
            mov edx, eax
+
+           mov [edi+UART.rcvr_buff], eax
+           add eax, 8192
+           mov [edi+UART.rcvr_top], eax
+           add eax, 8192
            mov [edi+UART.xmit_buff], eax
            add eax, 8192
            mov [edi+UART.xmit_top], eax
@@ -203,11 +210,31 @@ init_uart_service:
            mov [page_tabs+edx*4+4], eax
            mov [page_tabs+edx*4+12], eax
 
-           mov eax, [edi+UART.xmit_buff]
+           call alloc_page
+           test eax, eax
+           jz .fail
+
+           or eax, PG_SW
+           mov [page_tabs+edx*4+16], eax
+           mov [page_tabs+edx*4+24], eax
+
+           call alloc_page
+           test eax, eax
+           jz .fail
+
+           or eax, PG_SW
+           mov [page_tabs+edx*4+20], eax
+           mov [page_tabs+edx*4+28], eax
+
+           mov eax, [edi+UART.rcvr_buff]
            invlpg [eax]
            invlpg [eax+0x1000]
            invlpg [eax+0x2000]
            invlpg [eax+0x3000]
+           invlpg [eax+0x4000]
+           invlpg [eax+0x5000]
+           invlpg [eax+0x6000]
+           invlpg [eax+0x7000]
 
            mov eax, edi
            call uart_reset.internal   ;eax= uart
@@ -374,24 +401,27 @@ align 4
            in al, dx
            jmp .clear_IIR
 .done:
-           mov edi, [esi+UART.xmit_buff]
+           mov edi, [esi+UART.rcvr_buff]
            mov ecx, 8192/4
            xor eax, eax
+
+           mov [esi+UART.rcvr_rp], edi
+           mov [esi+UART.rcvr_wp], edi
+           mov [esi+UART.rcvr_count], eax
+
+           cld
+           rep stosd
+
+           mov edi, [esi+UART.xmit_buff]
+           mov ecx, 8192/4
 
            mov [esi+UART.xmit_rp], edi
            mov [esi+UART.xmit_wp], edi
            mov [esi+UART.xmit_count], eax
            mov [esi+UART.xmit_free], 8192
 
-           cld
            rep stosd
-
-
-;           mov [esi+UART.rcvr_rp], eax
-;           mov [esi+UART.rcvr_wp], eax
-;           mov [esi+UART.rcvr_cnt], eax
-
-           ret
+           ret               ;eax= 0
 .fail:
            or eax, -1
            ret
@@ -685,7 +715,7 @@ uart_read:
            jz .fail
 
            mov ebx, [esi+8]    ;dst size
-           mov ecx, [eax+UART.rcvr_cnt]
+           mov ecx, [eax+UART.rcvr_count]
            cmp ecx, ebx
            jbe @F
            mov ecx, ebx
@@ -694,26 +724,23 @@ uart_read:
            test ecx, ecx
            jz .done
 
-           sub [eax+UART.rcvr_cnt], ecx
+           push ecx
 
-           push eax
            mov edi, [esi+4]    ;dst
-       ;    lea esi, [eax+RCVR_OFFSET]
-           mov ebx, [eax+UART.rcvr_rp]
+           mov esi, [eax+UART.rcvr_rp]
            cld
-@@:
-           and ebx, 127
-           mov al, [esi+ebx]
-           stosb
-           inc ebx
-           dec ecx
-           jnz @B
+           rep movsb
+           pop ecx
 
-           pop eax
-           mov [eax+UART.rcvr_rp], ebx
+           cmp esi, [eax+UART.rcvr_top]
+           jb @F
+           sub esi, 8192
+@@:
+           mov [eax+UART.rcvr_rp], esi
+           sub [eax+UART.rcvr_count], ecx
 .done:
            xor eax, eax
-           rep
+           ret
 .fail:
            or eax, -1
            ret
@@ -832,8 +859,29 @@ isr_line:
 
 align 4
 isr_recieve:
+           mov esi, [ebx+UART.base]
+           add esi, LSR_REG
+           mov edi, [ebx+UART.rcvr_wp]
+           xor ecx, ecx
+           cld
+.read:
+           mov edx, esi
+           in al, dx
+           test eax, LSR_DR
+           jz .done
+
            mov edx, [ebx+UART.base]
            in al, dx
+           stosb
+           inc ecx
+           jmp .read
+.done:
+           cmp edi, [ebx+UART.rcvr_top]
+           jb @F
+           sub edi, 8192
+@@:
+           mov [ebx+UART.rcvr_wp], edi
+           add [ebx+UART.rcvr_count], ecx
            ret
 
 align 4
