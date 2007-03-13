@@ -452,13 +452,13 @@ align 4
 proc page_fault_handler
            pushad
 
-;     push eax
-;     push edx
-;     mov edx, 0x400   ;bocsh
-;     mov al,0xff      ;bocsh
-;     out dx, al       ;bocsh
-;     pop edx
-;     pop eax
+     push eax
+     push edx
+     mov edx, 0x400   ;bocsh
+     mov al,0xff      ;bocsh
+     out dx, al       ;bocsh
+     pop edx
+     pop eax
 
            mov ebp, esp
            mov eax, cr2

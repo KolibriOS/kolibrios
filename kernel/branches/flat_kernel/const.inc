@@ -484,6 +484,9 @@ struc SRV
 SRV_FD_OFFSET  equ 0x18
 SRV_SIZE       equ 44
 
+DRV_ENTRY    equ  1
+DRV_EXIT     equ -1
+
 struc COFF_HEADER
 {  .machine          dw ?
    .nSections        dw ?

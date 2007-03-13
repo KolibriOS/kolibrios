@@ -27,9 +27,11 @@ FORCE_MMX_128     equ 0  ;integer sse2 extensions
 DEBUG             equ 1
 
 
-OS_BASE           equ 0
-new_app_base      equ 0x80000000
-SLOT_BASE         equ OS_BASE+0x0080000
+OS_BASE           equ 0x80000000
+SLOT_BASE         equ (OS_BASE+0x0080000)
+TASK_COUNT        equ (OS_BASE+0x0003004)
+CURRENT_TASK      equ (OS_BASE+0x0003000)
+
 
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003
@@ -165,7 +167,7 @@ proc service_proc stdcall, ioctl:dword
            jne @F
            mov eax, [edi+output]
            mov eax, [eax]
-           mov [eax+new_app_base], dword SOUND_VERSION
+           mov [eax], dword SOUND_VERSION
            xor eax, eax
            ret
 @@:
@@ -177,7 +179,7 @@ proc service_proc stdcall, ioctl:dword
            pop edi
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], ebx
+           mov [ecx], ebx
            ret
 @@:
            mov ebx, [edi+input]
@@ -206,7 +208,7 @@ proc service_proc stdcall, ioctl:dword
            movzx eax, word [edx+STREAM.format]
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], eax
+           mov [ecx], eax
            xor eax, eax
            ret
 @@:
@@ -227,13 +229,12 @@ proc service_proc stdcall, ioctl:dword
            pop edi
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], ebx
+           mov [ecx], ebx
            ret
 @@:
            cmp eax, SND_SETBUFF
            jne @F
            mov eax, [ebx+4]
-           add eax, new_app_base
            stdcall set_buffer, [ebx],eax,[ebx+8],[ebx+12]
            ret
 @@:
@@ -248,8 +249,6 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edi+output]
            mov ecx, [eax]
            mov eax, [eax+4]
-           add ecx, new_app_base
-           add eax, new_app_base
            stdcall GetBufferVol,[ebx],ecx,eax
            ret
 @@:
@@ -263,7 +262,7 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edx+STREAM.pan]
            mov ebx, [edi+output]
            mov ebx, [ebx]
-           mov [ebx+new_app_base], eax
+           mov [ebx], eax
            xor eax, eax
            ret
 @@:
@@ -271,7 +270,6 @@ proc service_proc stdcall, ioctl:dword
            jne @F
 
            mov eax, [ebx+4]
-           add eax, new_app_base
            stdcall wave_out, [ebx],eax,[ebx+8]
            ret
 @@:
@@ -292,7 +290,7 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edx+STREAM.in_size]
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], eax
+           mov [ecx], eax
            xor eax, eax
            ret
 @@:
@@ -307,10 +305,6 @@ restore   input
 restore   inp_size
 restore   output
 restore   out_size
-
-TASK_COUNT    equ 0x0003004
-CURRENT_TASK  equ 0x0003000
-
 
 align 4
 proc CreateBuffer stdcall, format:dword, size:dword
@@ -653,8 +647,8 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
            test esi, esi
            jz .fail
 
-           cmp esi, new_app_base
-           jb .fail
+           cmp esi, OS_BASE
+           ja .fail
 
            mov [state_saved], 0
 

@@ -721,7 +721,7 @@ first_app_found:
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
-        call init_uart_service
+        stdcall init_uart_service, DRV_ENTRY
 
         sti
         jmp   $                      ; wait here for timer to take control

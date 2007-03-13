@@ -1,6 +1,4 @@
 
-DRV_ENTRY    equ  1
-DRV_EXIT     equ -1
 DRV_COMPAT   equ  4  ;minimal required drivers version
 DRV_CURRENT  equ  4  ;current drivers model version
 
@@ -698,23 +696,23 @@ proc load_driver stdcall, driver_name:dword
              file_name rb 14+16+4+1      ; '/rd/1/drivers/<up-to-16-chars>.obj'
            endl
 
-        lea     edx, [file_name]
-        mov     dword [edx], '/rd/'
-        mov     dword [edx+4], '1/dr'
-        mov     dword [edx+8], 'iver'
-        mov     word [edx+12], 's/'
-        mov     esi, [driver_name]
-        lea     edi, [edx+14]
-        mov     ecx, 16
+           lea     edx, [file_name]
+           mov     dword [edx], '/rd/'
+           mov     dword [edx+4], '1/dr'
+           mov     dword [edx+8], 'iver'
+           mov     word [edx+12], 's/'
+           mov     esi, [driver_name]
+           lea     edi, [edx+14]
+           mov     ecx, 16
 @@:
-        lodsb
-        test    al, al
-        jz      @f
-        stosb
-        loop    @b
+           lodsb
+           test    al, al
+           jz      @f
+           stosb
+           loop    @b
 @@:
-        mov     dword [edi], '.obj'
-        mov     byte [edi+4], 0
+           mov     dword [edi], '.obj'
+           mov     byte [edi+4], 0
            stdcall load_file, edx
 
            test eax, eax

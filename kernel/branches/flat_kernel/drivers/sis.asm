@@ -84,7 +84,6 @@ CTRL_CNT_GIE      equ  0x00000001  ;   GPI Interrupt Enable
 CODEC_REG_POWERDOWN   equ 0x26
 CODEC_REG_ST          equ 0x26
 
-
 DEV_PLAY              equ  1
 DEV_STOP              equ  2
 DEV_CALLBACK          equ  3
@@ -243,9 +242,8 @@ end virtual
 
 EVENT_NOTIFY	      equ 0x00000200
 
-OS_BASE            equ 0;  0x80400000
+OS_BASE         equ 0x80000000
 SLOT_BASE          equ OS_BASE+0x0080000
-new_app_base       equ 0x80000000
 
 public START
 public service_proc
@@ -369,15 +367,14 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, DEV_GET_MASTERVOL
            jne @F
            mov ebx, [edi+output]
-           add ebx, new_app_base
            stdcall get_master_vol, ebx
            ret
-@@:
-           cmp eax, DEV_GET_INFO
-           jne @F
-           mov ebx, [edi+output]
-           stdcall get_dev_info, ebx
-           ret
+;@@:
+;           cmp eax, DEV_GET_INFO
+;           jne @F
+;           mov ebx, [edi+output]
+;           stdcall get_dev_info, ebx
+;           ret
 @@:
 .fail:
            or eax, -1

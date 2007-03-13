@@ -164,7 +164,11 @@ CONNECTION_SIZE equ 7*4
 
 UART_VERSION  equ 0x12345678        ;debug
 
-init_uart_service:
+proc init_uart_service stdcall, state:dword
+
+           cmp [state], 1
+           jne .stop
+
            mov eax, UART_SIZE
            call malloc
            test eax, eax
@@ -241,10 +245,14 @@ init_uart_service:
 
            stdcall attach_int_handler, COM_1_IRQ, com_1_isr
            stdcall reg_service, sz_uart_srv, uart_proc
+           mov [eax+SRV.entry], init_uart_service
            ret
 .fail:
+.stop:
            xor eax, eax
            ret
+endp
+
 
 handle     equ  IOCTL.handle
 io_code    equ  IOCTL.io_code

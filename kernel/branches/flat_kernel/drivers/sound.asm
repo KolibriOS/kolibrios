@@ -270,9 +270,8 @@ end virtual
 
 EVENT_NOTIFY    equ 0x00000200
 
-OS_BASE         equ 0;
+OS_BASE         equ 0x80000000
 SLOT_BASE       equ OS_BASE+0x0080000
-new_app_base    equ 0x80000000
 
 public START
 public service_proc
@@ -413,7 +412,6 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, DEV_GET_MASTERVOL
            jne @F
            mov ebx, [edi+output]
-           add ebx, new_app_base
            stdcall get_master_vol, ebx
            ret
 ;@@:
@@ -1409,5 +1407,3 @@ ctrl AC_CNTRL
 
 lpc_bus  rd 1
 civ_val  rd 1
-
-

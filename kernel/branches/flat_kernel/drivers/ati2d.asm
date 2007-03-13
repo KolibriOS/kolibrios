@@ -65,9 +65,8 @@ R9800       equ 0x4E49  ;R350
 R9800P      equ 0x4E48  ;R350
 R9800XT     equ 0x4E4A  ;R360
 
-OS_BASE         equ 0
-new_app_base    equ 0x80000000
-SLOT_BASE       equ 0x0080000
+OS_BASE         equ 0x80000000
+SLOT_BASE       equ (OS_BASE+0x0080000)
 
 PG_SW        equ 0x003
 PG_NOCACHE   equ 0x018

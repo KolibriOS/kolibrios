@@ -34,7 +34,7 @@ pci_api:
         or al,al
         jnz pci_fn_1
         ; PCI function 0: get pci version (AH.AL)
-        movzx eax,word [0x2F0000+0x9022]
+        movzx eax,word [BOOT_VAR+0x9022]
         ret
 
 pci_fn_1:
@@ -42,14 +42,14 @@ pci_fn_1:
         jnz pci_fn_2
 
         ; PCI function 1: get last bus in AL
-        mov al,[0x2F0000+0x9021]
+        mov al,[BOOT_VAR+0x9021]
         ret
 
 pci_fn_2:
         cmp al,2
         jne pci_fn_3
         ; PCI function 2: get pci access mechanism
-        mov al,[0x2F0000+0x9020]
+        mov al,[BOOT_VAR+0x9020]
         ret
 pci_fn_3:
 
@@ -108,7 +108,7 @@ pci_make_config_cmd:
 align 4
 
 pci_read_reg:
-        cmp     byte [0x2F0000+0x9020],2 ;what mechanism will we use?
+        cmp     byte [BOOT_VAR+0x9020],2 ;what mechanism will we use?
         je      pci_read_reg_2
 
                 ; mechanism 1
@@ -238,7 +238,7 @@ pci_read_reg_err:
 align 4
 
 pci_write_reg:
-        cmp byte [0x2F0000+0x9020],2 ;what mechanism will we use?
+        cmp byte [BOOT_VAR+0x9020],2 ;what mechanism will we use?
         je pci_write_reg_2
 
                 ; mechanism 1
