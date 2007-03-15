@@ -147,9 +147,6 @@ proc fs_execute
            cmp eax, 0
            jne .wait_lock
 
-;           pushfd
-;           cli
-
            call set_application_table_status
 
            call get_new_process_place
@@ -389,20 +386,20 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
 
            mov edi, [tmp_task_pdir]
-           mov ecx, (page_tabs shr 20)/4
+           mov ecx, (OS_BASE shr 20)/4
            xor eax, eax
+           cld
            rep stosd
 
-           mov eax, [dir_addr]
-           or eax, PG_SW
-           stosd
-
-           mov esi, sys_pgdir+(OS_BASE shr 20)
            mov ecx, (OS_BASE shr 20)/4
-           cld
+           mov esi, sys_pgdir+(OS_BASE shr 20)
            rep movsd
 
            mov eax, [dir_addr]
+           or eax, PG_SW
+           mov [edi-4096+(page_tabs shr 20)], eax
+
+           and eax, -4096
            call set_cr3
 
            mov edx, [app_tabs]
@@ -551,7 +548,7 @@ proc destroy_app_space stdcall, pg_dir:dword
            and eax, not 0xFFF
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
            mov esi, [tmp_task_pdir]
-           mov edi, (page_tabs shr 20)/4
+           mov edi, (OS_BASE shr 20)/4
 .destroy:
            mov eax, [esi]
            test eax, 1
@@ -942,10 +939,10 @@ proc set_app_params stdcall,slot:dword, params:dword,\
              pl0_stack dd ?
            endl
 
-           stdcall kernel_alloc, 0x2000
+           stdcall kernel_alloc, RING0_STACK_SIZE+512
            mov [pl0_stack], eax
 
-           lea edi, [eax+0x2000-512]
+           lea edi, [eax+RING0_STACK_SIZE]
 
            mov eax, [slot]
            mov ebx, eax
@@ -1070,7 +1067,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._io],word 128
            mov [edi+TSS._ss0], os_data
            mov ebx, [pl0_stack]
-           add ebx, 0x2000-512
+           add ebx, RING0_STACK_SIZE
            mov [edi+TSS._esp0],ebx
 
            mov ecx, edi    ;ecx - address of application TSS

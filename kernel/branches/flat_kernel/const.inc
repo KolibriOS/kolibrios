@@ -259,11 +259,13 @@ tmp_page_tab        equ 0x98B000; draw_data+sizeof(drw_data)
 
 HEAP_BASE           equ (OS_BASE+tmp_page_tab)
 
-LFB_BASE            equ 0xFE000000
 
-page_tabs           equ 0x7FC00000
-master_tab          equ 0x7FDFF000
-app_page_tabs       equ 0x7FC00000  ;0x7FE00000
+page_tabs           equ 0xFDC00000
+app_page_tabs       equ 0xFDC00000
+kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
+master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
+
+LFB_BASE            equ 0xFE000000
 
 sys_pgdir           equ (OS_BASE+0x00050000)
 sys_pgmap           equ (OS_BASE+0x00052000)

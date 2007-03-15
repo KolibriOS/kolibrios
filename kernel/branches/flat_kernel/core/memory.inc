@@ -448,8 +448,13 @@ get_pg_addr:
            and eax, 0xFFFFF000
            ret
 
+
 align 4
 proc page_fault_handler
+
+        .err_code equ ebp+32
+        .err_addr equ ebp-4
+
            pushad
 
      push eax
@@ -472,7 +477,7 @@ proc page_fault_handler
 
            inc [pg_data.pages_faults]
 
-           mov ebx, [ebp-4]
+           mov ebx, [.err_addr]
 
            cmp ebx, 0x80000000
            jae .kernel_space
