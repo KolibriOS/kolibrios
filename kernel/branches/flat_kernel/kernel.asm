@@ -227,15 +227,39 @@ high_code:
            mov dword [sys_pgdir+8], 0
 
            mov eax, cr3
-           mov cr3, eax
+           mov cr3, eax           ; flush TLB
 
 ; SAVE REAL MODE VARIABLES
         mov     ax, [BOOT_VAR + 0x9031]
         mov     [IDEContrRegsBaseAddr], ax
 ; --------------- APM ---------------------
-;    mov    eax, [BOOT_VAR + 0x9040]    ; entry point
-;    mov    dword[apm_entry], eax
-;    mov    word [apm_entry + 4], apm_code_32 - gdts
+
+; init selectors
+    mov ebx,    [BOOT_VAR+0x9040]              ; offset of APM entry point
+    movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
+                                      ; protected-mode 32-bit code segment
+    movzx ecx, word [BOOT_VAR+0x9052] ; real-mode segment base address of
+                                      ; protected-mode 16-bit code segment
+    movzx edx, word [BOOT_VAR+0x9054] ; real-mode segment base address of
+                                      ; protected-mode 16-bit data segment
+
+    shl    eax, 4
+    mov    [dword apm_code_32 + 2], ax
+    shr    eax, 16
+    mov    [dword apm_code_32 + 4], al
+
+    shl    ecx, 4
+    mov    [dword apm_code_16 + 2], cx
+    shr    ecx, 16
+    mov    [dword apm_code_16 + 4], cl
+
+    shl    edx, 4
+    mov    [dword apm_data_16 + 2], dx
+    shr    edx, 16
+    mov    [dword apm_data_16 + 4], dl
+
+    mov    dword[apm_entry], ebx
+    mov    word [apm_entry + 4], apm_code_32 - gdts
 
     mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
@@ -1711,9 +1735,9 @@ msset:
            ret
 
 app_load_cursor:
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb msset
+      ;     add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae msset
            stdcall load_cursor, ebx, ecx
            mov [esp+36], eax
            ret
@@ -3942,7 +3966,7 @@ syscall_putimage:                       ; PutImage
 
      mov   edx,ecx
      mov   ecx,ebx
-        lea     ebx, [eax+std_application_base_address]
+     mov   ebx, eax
 
 sys_putimage:
      test  ecx,0x80008000
@@ -3984,11 +4008,11 @@ sys_putimage_bpp:
         jmp     [draw_pointer]
 
 syscall_putimage_palette:
-        lea     edi, [esi+std_application_base_address]
+        mov     edi, esi
         mov     esi, edx
         mov     edx, ecx
         mov     ecx, ebx
-        lea     ebx, [eax+std_application_base_address]
+        mov     ebx, eax
 sys_putimage_palette:
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]
@@ -4840,7 +4864,8 @@ sys_apm:
     mov    [esp + 36], dword 8    ; 32-bit protected-mode interface not supported
     ret
 
-@@:    xchg    eax, ecx
+@@:
+    xchg    eax, ecx
     xchg    ebx, ecx
 
     cmp    al, 3
@@ -4852,7 +4877,22 @@ sys_apm:
     mov    [esp + 32], eax
     ret
 
-@@:    call    pword [apm_entry]    ; call APM BIOS
+@@:
+
+    mov esi, [master_tab+(OS_BASE shr 20)]
+    xchg [master_tab], esi
+    push esi
+    mov edi, cr3
+    mov cr3, edi                 ;flush TLB
+
+    call    pword [apm_entry]    ; call APM BIOS
+
+    xchg eax, [esp]
+    mov [master_tab], eax
+    mov eax, cr3
+    mov cr3, eax
+    pop eax
+
     mov    [esp + 8 ], edi
     mov    [esp + 12], esi
     mov    [esp + 24], ebx
@@ -4862,6 +4902,8 @@ sys_apm:
     setc    al
     and    [esp + 56], byte 0xfe
     or    [esp + 56], al
+
+
     ret
 ; -----------------------------------------
 
@@ -4880,15 +4922,6 @@ system_shutdown:          ; shut down the system
            ret
 @@:
            call stop_all_services
-
-     push eax
-     push edx
-     mov edx, 0x400   ;bocsh
-     mov al,0xff      ;bocsh
-     out dx, al       ;bocsh
-     pop edx
-     pop eax
-
            push 3                ; stop playing cd
            pop  eax
            call sys_cd_audio

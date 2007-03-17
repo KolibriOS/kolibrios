@@ -632,7 +632,7 @@ proc init_heap
            mov [SLOT_BASE+APPDATA.heap_top+ebx], eax
 
            sub eax, esi
-           add esi, new_app_base
+       ;    add esi, new_app_base
            shr esi, 10
            mov ecx, eax
            sub eax, 4096
@@ -655,8 +655,8 @@ proc user_alloc stdcall, alloc_size:dword
            shl ebx, 8
            mov esi, dword [ebx+SLOT_BASE+APPDATA.heap_base]; heap_base
            mov edi, dword [ebx+SLOT_BASE+APPDATA.heap_top]; heap_top
-           add esi, new_app_base
-           add edi, new_app_base
+      ;     add esi, new_app_base
+      ;     add edi, new_app_base
 l_0:
            cmp esi, edi
            jae m_exit
@@ -700,7 +700,7 @@ l_0:
 
            mov eax, esi
            add eax, 4096
-           sub eax, new_app_base
+      ;     sub eax, new_app_base
            ret
 m_next:
            add esi, eax
@@ -757,8 +757,8 @@ proc user_free stdcall, base:dword
            sub ebx, [edx+SLOT_BASE+APPDATA.mem_size]
            neg ebx
            call update_mem_size
-           add esi, new_app_base
-           add edi, new_app_base
+      ;     add esi, new_app_base
+      ;     add edi, new_app_base
            shr esi, 12
            shr edi, 12
 @@:

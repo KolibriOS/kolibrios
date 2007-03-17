@@ -351,6 +351,7 @@ proc START stdcall, state:dword
            jnc .fail
 
            stdcall AttachIntHandler, ebx, ac97_irq
+.reg:
            stdcall RegService, sz_sound_srv, service_proc
            ret
 .fail:

@@ -376,17 +376,17 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
 ; ring and waveout
 
-           mov eax, 0x10000
+           mov ebx, 0x10000
            test [format], PCM_RING
            jz .waveout
 
-           mov eax, [eax+STREAM.r_size]
-           add eax, 4095
-           and eax, -4096
-           add eax, eax
+           mov ebx, [eax+STREAM.r_size]
+           add ebx, 4095
+           and ebx, -4096
+           add ebx, ebx
 .waveout:
-           mov [ring_size], eax
-           mov ebx, eax
+           mov [ring_size], ebx
+           mov eax, ebx
            shr ebx, 12
            mov [ring_pages], ebx
 

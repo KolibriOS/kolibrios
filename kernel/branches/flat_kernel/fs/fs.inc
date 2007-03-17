@@ -80,7 +80,7 @@ file_system:
 ; \end{diamond}[18.03.2006]
 
     ; Extract parameters
-    add    eax, std_application_base_address    ; abs start of info block
+ ;   add    eax, std_application_base_address    ; abs start of info block
 
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
@@ -91,7 +91,7 @@ file_system:
     cmp   dword [eax+0],1
     jnz   .usual_check
     mov   ebx,[eax+12]
-    add   ebx,std_application_base_address
+ ;   add   ebx,std_application_base_address
     mov   ecx,[eax+8]
     call  check_region
     test  eax,eax
@@ -114,7 +114,7 @@ endg
     shl   ecx,9
 .small_size:
     mov   ebx,[eax+12]
-    add   ebx,std_application_base_address
+ ;   add   ebx,std_application_base_address
     call  check_region
     test  eax,eax
     jz    .error_output
@@ -142,7 +142,7 @@ endg
 ; \end{diamond}[18.03.2006]
     mov   esi,dir0
     mov   edi,[eax+12]
-    add   edi,std_application_base_address
+ ;   add   edi,std_application_base_address
     mov   ecx,11
     push  ecx
 ;    cld    ; already is
@@ -196,12 +196,12 @@ endg
     push  dword [eax+4]         ; 512 block number to read
     push  dword [eax+8]         ; bytes to write/append or 512 blocks to read
     mov   ebx,[eax+12]
-    add   ebx,std_application_base_address
+ ;   add   ebx,std_application_base_address
     push  ebx                   ; abs start of return/save area
 
     lea   esi,[eax+20]          ; abs start of dir + filename
     mov   edi,[eax+16]
-    add   edi,std_application_base_address    ; abs start of work area
+ ;   add   edi,std_application_base_address    ; abs start of work area
 
     call  expand_pathz
 

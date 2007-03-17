@@ -301,36 +301,17 @@ wait_loop:       ; variant 2
     push 0
     pop es
 
+    mov [es:0x9040], ebx
     mov [es:0x9050], ax
     mov [es:0x9052], cx
-    mov [es:0x9040], dx
+    mov [es:0x9054], dx
 
-
-    ; init selectors
-;    movzx    eax, ax ; real-mode segment base address of protected-mode 32-bit code segment
-;    shl    eax, 4
-;    mov    [dword apm_code_32 + 2], ax
-;    shr    eax, 16
-;    mov    [dword apm_code_32 + 4], al
-;    movzx    ecx, cx ; real-mode segment base address of protected-mode 16-bit code segment
-;    shl    ecx, 4
-;    mov    [dword apm_code_16 + 2], cx
-;    shr    ecx, 16
-;    mov    [dword apm_code_16 + 4], cl
-;    movzx    edx, dx ; real-mode segment base address of protected-mode 16-bit data segment
-;    shl    edx, 4
-;    mov    [dword apm_data_16 + 2], dx
-;    shr    edx, 16
-;    mov    [dword apm_data_16 + 4], dl
-;    mov    [es : 0x9040], ebx              ; offset of APM entry point
 apm_end:
-; -----------------------------------------
-
 
 ; DISPLAY VESA INFORMATION
+        push 0
+        pop es
 
-    push    0
-    pop    es
         mov     ax,0x4f00
         mov     di,0xa000
         int     0x10

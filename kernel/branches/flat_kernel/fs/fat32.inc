@@ -3263,7 +3263,7 @@ fs_HdExecute:
         mov     ebx, [ebx+4]
         test    ebx, ebx
         jz      @f
-        add     ebx, std_application_base_address
+   ;     add     ebx, std_application_base_address
 @@:
 
 ;----------------------------------------------------------------

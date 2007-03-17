@@ -340,8 +340,8 @@ proc new_mem_resize stdcall, new_size:dword
            ret
 
 .expand:
-           add edi, new_app_base
-           add esi, new_app_base
+         ;  add edi, new_app_base
+         ;  add esi, new_app_base
 
            push esi
            push edi
@@ -457,13 +457,13 @@ proc page_fault_handler
 
            pushad
 
-     push eax
-     push edx
-     mov edx, 0x400   ;bocsh
-     mov al,0xff      ;bocsh
-     out dx, al       ;bocsh
-     pop edx
-     pop eax
+;     push eax
+;     push edx
+;     mov edx, 0x400   ;bocsh
+;     mov al,0xff      ;bocsh
+;     out dx, al       ;bocsh
+;     pop edx
+;     pop eax
 
            mov ebp, esp
            mov eax, cr2
@@ -478,37 +478,48 @@ proc page_fault_handler
            inc [pg_data.pages_faults]
 
            mov ebx, [.err_addr]
+           mov eax, [.err_code]
 
-           cmp ebx, 0x80000000
-           jae .kernel_space
+           cmp ebx, OS_BASE
+           jb .user_space      ;страница в памяти приложени
 
-           cmp ebx, page_tabs+0x200000
-           jae .tab_space
+           cmp ebx, page_tabs
+           jb .kernel_space    ;страница в памяти ядра
 
-           cmp ebx, app_page_tabs
-           jae .alloc
+           cmp ebx, kernel_tabs
+           jb .alloc;.app_tabs ;таблицы страниц приложени
+                               ;просто создадим одну
 
-           cmp ebx, 0x7DC00000
-           jae .lfb_addr
+           cmp ebx, LFB_BASE
+           jb .core_tabs       ;таблицы страниц ядра
+                               ;Ошибка
+.lfb:
+                               ;область LFB
+                               ;Ошибка
+           jmp .fail
 
-;           cmp ebx, 0x1000000
-;           jb .exit
-
+align 4
 .user_space:
+           test eax, PG_MAP
+           jnz .err_access     ;Страница присутствует
+                               ;Ошибка доступа ?
+
            shr ebx, 12
            mov ecx, ebx
            shr ecx, 10
            mov edx, [master_tab+ecx*4]
-           test edx, 1
-           jz .fail
+           test edx, PG_MAP
+           jz .fail            ;таблица страниц не создана
+                               ;неверный адрес в программе
 
            mov eax, [page_tabs+ebx*4]
            test eax, 2
-           jz .fail
+           jz .fail            ;адрес не зарезервирован дл
+                               ;использования. Ошибка
 .alloc:
            call alloc_page
            and eax, eax
-           jz .exit
+           jz .fail
 
            stdcall map_page,[ebp-4],eax,dword PG_UW
 
@@ -525,6 +536,26 @@ proc page_fault_handler
            popad
            add esp, 4
            iretd
+
+.err_access:
+;никогда не происходит
+           jmp .fail
+
+.kernel_space:
+           test eax, PG_MAP
+           jz .fail        ;страница не присутствует
+
+           test eax, 4     ;U/S
+           jnz .fail       ;приложение обратилось к памяти
+                           ;ядра
+           test eax, 8
+           jnz .fail       ;установлен зарезервированный бит
+                           ;в таблицах страниц. добавлено в P4/Xeon
+
+;попытка записи в защищённую страницу ядра
+;не обрабатываем. Ошибка
+
+.core_tabs:
 .fail:
            pop es
            pop ds
@@ -539,30 +570,30 @@ proc page_fault_handler
            jmp exc_c
            iretd
 
-.kernel_space:
+;.kernel_space:
 ;           shr ebx, 12
 ;           mov eax, [page_tabs+ebx*4]
 ;           shr ebx, 10
 ;           mov eax, [master_tab+ebx*4]
            jmp .exit
-.old_addr:
+;.old_addr:
 ;           shr ebx, 12
 ;           mov eax, [page_tabs+ebx*4]
 ;           shr ebx, 10
 ;           mov eax, [master_tab+ebx*4]
            jmp .exit
-.lfb_addr:
+;.lfb_addr:
 ;           shr ebx, 22
 ;           ;mov ecx, [sys_page_dir]
 ;           mov eax, [master_tab+ebx*4]
            jmp .exit
-.tab_space:
+;.tab_space:
 ;           shr ebx, 12
 ;           mov eax, [page_tabs+ebx*4]
 ;           shr ebx, 10
 ;           ;mov ecx, [sys_page_dir]
 ;           mov eax, [master_tab+ebx*4]
-           jmp .exit
+;           jmp .exit
 endp
 
 align 4
@@ -706,7 +737,7 @@ proc set_ipc_buff
            mov  [eax+0xA0],ebx     ;set fields in extended information area
            mov  [eax+0xA4],ecx
 
-           add ebx,  new_app_base
+        ;   add ebx,  new_app_base
            add ecx, ebx
            add ecx, 4095
            and ecx, not 4095
@@ -743,7 +774,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            jz   .no_ipc_area
 
            mov ebx, edi
-           add edi, new_app_base
+       ;    add edi, new_app_base
            and ebx, 0xFFF
            mov [dst_offset], ebx
 
@@ -777,7 +808,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov [edi+4], ecx
            add edi, 8
            mov esi, [msg_addr]
-           add esi, new_app_base
+       ;    add esi, new_app_base
            cld
            rep movsb
 
@@ -835,9 +866,9 @@ endp
 align 4
 sysfn_meminfo:
 
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+        ;   add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
 
            mov eax, [pg_data.pages_count]
            mov [ebx], eax
@@ -883,16 +914,16 @@ new_services:
 @@:
            cmp eax, 13
            ja @f
-           add ebx, new_app_base
+       ;    add ebx, new_app_base
            stdcall user_free, ebx
            mov [esp+36], eax
            ret
 @@:
            cmp eax, 14
            ja @f
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+      ;     add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
            stdcall get_event_ex, ebx, ecx
            mov [esp+36], eax
            ret
@@ -911,9 +942,9 @@ new_services:
 
            test ebx, ebx
            jz .fail
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+     ;      add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
            stdcall get_service, ebx
            mov [esp+36], eax
            ret
@@ -935,9 +966,9 @@ new_services:
 @@:
            cmp eax, 19
            ja .fail
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+      ;     add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
            stdcall load_library, ebx
            mov [esp+36], eax
            ret

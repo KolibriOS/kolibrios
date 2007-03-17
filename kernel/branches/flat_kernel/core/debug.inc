@@ -115,7 +115,7 @@ debug_getcontext:
 ; destroys eax,ecx,edx,esi,edi
 	cmp	ecx, 28h
 	jnz	.ret
-	add	edx, std_application_base_address
+    ;    add     edx, std_application_base_address
 	push	ebx
 	mov	ebx, edx
 	call	check_region
@@ -174,7 +174,7 @@ debug_setcontext:
 ; destroys eax,ecx,edx,esi,edi
 	cmp	ecx, 28h
 	jnz	.ret
-	add	edx, std_application_base_address
+    ;    add     edx, std_application_base_address
 	push	ebx
 	mov	ebx, edx
 	call	check_region
@@ -230,7 +230,7 @@ debug_set_drx:
         lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
-	add	edx, std_application_base_address
+    ;    add     edx, std_application_base_address
 	jc	.errret
 	cmp	cl, 3
 	ja	.errret
@@ -302,7 +302,7 @@ debug_read_process_memory:
 ; edx=address in debuggee
 ; out: [esp+36]=sizeof(read)
 ; destroys all
-	add	esi, std_application_base_address
+    ;    add     esi, std_application_base_address
 	push	ebx
 	mov	ebx, esi
 	call	check_region
@@ -329,7 +329,7 @@ debug_write_process_memory:
 ; edx=address in debuggee
 ; out: [esp+36]=sizeof(write)
 ; destroys all
-	add	esi, std_application_base_address
+    ;    add     esi, std_application_base_address
 	push	ebx
 	mov	ebx, esi
 	call	check_region

@@ -249,7 +249,7 @@ align 4
 srv_handlerEx:
            test ebx, ebx
            jz .fail
-           add ebx, new_app_base
+      ;     add ebx, new_app_base
 
            mov eax, [ebx+handle]
            cmp [eax+SRV.magic], ' SRV'
@@ -258,8 +258,8 @@ srv_handlerEx:
            cmp [eax+SRV.size], SRV_SIZE
 	   jne .fail
 
-           add [ebx+input], new_app_base
-           add [ebx+output], new_app_base
+        ;   add [ebx+input], new_app_base
+        ;   add [ebx+output], new_app_base
 
            stdcall [eax+SRV.srv_proc], ebx
            ret
@@ -401,9 +401,9 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            xor eax, eax
            mov ebx, [file_name]
-           sub ebx, new_app_base
+    ;       sub ebx, new_app_base
            mov ecx, [info]
-           sub ecx, new_app_base
+    ;       sub ecx, new_app_base
 
            mov [cmd], 5
            mov [offset], eax
@@ -415,7 +415,7 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            mov eax, 70
            lea ebx, [cmd]
-           sub ebx, new_app_base
+     ;      sub ebx, new_app_base
            int 0x40
            ret
 endp
@@ -438,8 +438,8 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            mov ecx, [off]
            mov edx, [bytes]
            mov esi, [buffer]
-           sub ebx, new_app_base
-           sub esi, new_app_base
+    ;       sub ebx, new_app_base
+    ;       sub esi, new_app_base
 
            mov [cmd], eax
            mov [offset], ecx
@@ -451,7 +451,7 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
 
            mov eax, 70
            lea ebx, [cmd]
-           sub ebx, new_app_base
+     ;      sub ebx, new_app_base
            int 0x40
            ret
 endp
@@ -907,13 +907,13 @@ proc load_library stdcall, file_name:dword
            jmp .next
 .copy:
            add esi, edx
-           add edi, new_app_base
+    ;       add edi, new_app_base
            mov ecx, [eax+CFS.SizeOfRawData]
            cld
            rep movsb
 .next:
-           add edi, 15-new_app_base
-           and edi, not 15
+           add edi, 15 ;-new_app_base
+           and edi, -16
            add eax, COFF_SECTION_SIZE
            dec ebx
            jnz @B

@@ -276,9 +276,22 @@ new_app_base        equ 0;     0x01000000
 twdw                equ (CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ     0x2000 - 512    ;512 байт для контекста FPU
+RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
 
-;PAGES_USED          equ 4
+REG_SS              equ (RING0_STACK_SIZE-4)
+REG_ESP             equ (RING0_STACK_SIZE-8)
+REG_EFLAGS          equ (RING0_STACK_SIZE-12)
+REG_CS              equ (RING0_STACK_SIZE-16)
+REG_EIP             equ (RING0_STACK_SIZE-20)
+REG_EAX             equ (RING0_STACK_SIZE-24)
+REG_ECX             equ (RING0_STACK_SIZE-28)
+REG_EDX             equ (RING0_STACK_SIZE-32)
+REG_EBX             equ (RING0_STACK_SIZE-36)
+REG_ESP             equ (RING0_STACK_SIZE-40)  ;RING0_STACK_SIZE-20
+REG_EBP             equ (RING0_STACK_SIZE-44)
+REG_ESI             equ (RING0_STACK_SIZE-48)
+REG_EDI             equ (RING0_STACK_SIZE-52)
+REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001

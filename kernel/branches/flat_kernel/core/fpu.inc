@@ -193,7 +193,7 @@ except_16:           ;fpu native exceptions handler
            mov ecx, [reg_eip]
            mov edx, [reg_esp]
            sub edx, 4
-           mov [ss:edx+new_app_base], ecx
+           mov [ss:edx], ecx
            mov [reg_esp], edx
            mov dword [reg_eip], eax
 
@@ -237,7 +237,7 @@ except_19:          ;sse exceptions handler
            mov ecx, [reg_eip]
            mov edx, [reg_esp]
            sub edx, 4
-           mov [ss:edx+new_app_base], ecx
+           mov [ss:edx], ecx
            mov [reg_esp], edx
            mov dword [reg_eip], eax
 

@@ -24,9 +24,7 @@
 ;
 ;   Runtime:
 ;
-; 0x00000000 -> 0x7FBFFFFF  application 2Gb-4Mb
-; 0x7FC00000 -> 0x7FFFFFFF  page tables 4Mb
-
+; 0x00000000 -> 0x7FFFFFFF  application 2Gb
 
 ; 0x80000000 -> 1FFF   window_data   - 256 entries
 ;
@@ -229,8 +227,9 @@
 ;
 ; 0x8098B000 ->       kernel heap
 ; 0x81FFFFFF          heap min limit
-; 0xFDFFFFFF          heap max limit
+; 0xFDBFFFFF          heap max limit
 
+; 0xFDC00000 -> 0xFDFFFFFF  page tables 4Mb
 ; 0xFE000000 -> 0xFFFFFFFF  LFB 32Mb
 ; 0xFE000000 -> 0xFE7FFFFF  application available LFB 8Mb
 ; 0xFE800000 -> 0xFFFFFFFF  kernel LFB part 24 Mb

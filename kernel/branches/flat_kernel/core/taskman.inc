@@ -206,7 +206,7 @@ else
            jna @F
 
            xor eax, eax
-           add edi, new_app_base
+      ;     add edi, new_app_base
            cld
            rep stosb
 @@:
@@ -733,7 +733,7 @@ proc read_process_memory
            mov eax, [slot]
            shl  eax,8
            mov ebx, [offset]
-           add ebx, new_app_base
+     ;      add ebx, new_app_base
            push ecx
            stdcall map_memEx, [proc_mem_map],\
                               [SLOT_BASE+eax+0xB8],\
@@ -799,7 +799,7 @@ proc write_process_memory
            mov eax, [slot]
            shl  eax,8
            mov ebx, [offset]
-           add ebx, new_app_base
+      ;     add ebx, new_app_base
            push ecx
            stdcall map_memEx, [proc_mem_map],\
                               [SLOT_BASE+eax+0xB8],\
@@ -879,6 +879,8 @@ proc new_sys_threads
            rep    stosd               ;clean extended information about new thread
            mov    esi,ebx
            mov    edi,edx
+           mov byte [edi], '@'
+           inc    edi
            mov    ecx,11
            rep    movsb               ;copy process name
 
@@ -991,7 +993,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
            ja      @f
 
-           add edx, new_app_base
+     ;      add edx, new_app_base
            stdcall k_strncpy, edx, [cmd_line], 256
 @@:
            mov edx,[params]
@@ -1003,7 +1005,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
         jc      @f
         cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
         ja      @f
-           add edx, new_app_base
+    ;       add edx, new_app_base
            stdcall k_strncpy, edx, [app_path], 1024
 @@:
            mov    ebx,[slot]
@@ -1056,7 +1058,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._eip],eax    ;set eip in TSS
            mov eax, [esi+0x0C]       ;app_esp
            mov [edi+TSS._esp],eax    ;set stack in TSS
-           mov [edi+TSS._eflags],dword 0x1202
+           mov [edi+TSS._eflags],dword 0x3202
 
            mov [edi+TSS._cs],app_code  ;selector of code segment
            mov [edi+TSS._ss],app_data
