@@ -184,8 +184,9 @@ struc APPDATA
   .bk_ev           dd ?            ;+52
   .fd_obj          dd ?            ;+56
   .bk_obj          dd ?            ;+60
+  .saved_esp       dd ?            ;+64
 
-                   db 64 dup(?)    ;+64
+                   db 60 dup(?)    ;+68
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

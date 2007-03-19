@@ -19,7 +19,7 @@ max_processes    equ   255
 tss_step         equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
 
 
-os_data        equ  os_data_l-gdts    ; GDTs
+os_stack       equ  os_data_l-gdts    ; GDTs
 os_code        equ  os_code_l-gdts
 graph_data     equ  3+graph_data_l-gdts
 tss0           equ  tss0_l-gdts
@@ -151,7 +151,7 @@ org $+0x10000
 
 align 4
 B32:
-           mov   ax,os_data        ; Selector for os
+           mov   ax,os_stack       ; Selector for os
            mov   ds,ax
            mov   es,ax
            mov   fs,ax
@@ -214,13 +214,15 @@ org OS_BASE+$
 
 align 4
 high_code:
-           mov   ax,os_data
-           mov   ds,ax
-           mov   es,ax
-           mov   fs,ax
-           mov   gs,ax
+           mov   ax,os_stack
+           mov   bx,app_data
            mov   ss,ax
            add esp, OS_BASE
+
+           mov   ds,bx
+           mov   es,bx
+           mov   fs,bx
+           mov   gs,bx
 
            mov dword [sys_pgdir], 0
            mov dword [sys_pgdir+4], 0
@@ -369,7 +371,9 @@ high_code:
 
            call init_kernel_heap
            stdcall kernel_alloc, 0x2000
-           mov [os_stack], eax
+           mov [os_stack_seg], eax
+
+           lea esp, [eax+RING0_STACK_SIZE]
 
            mov [LFBSize], 0x800000
            call init_mtrr
@@ -552,7 +556,7 @@ include 'vmodeld.inc'
 
         mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
         mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-        mov edi, [os_stack]
+        mov edi, [os_stack_seg]
         mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
         add edi, 0x2000-512
         mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
@@ -583,21 +587,21 @@ include 'vmodeld.inc'
         cld
         rep stosd
 
-        mov  edi,tss_data+tss_step
-        mov  [edi+TSS._ss0], os_data
+        mov  edi,tss_data
+        mov  [edi+TSS._ss0], os_stack
         mov  eax,cr3
         mov  [edi+TSS._cr3],eax
         mov  [edi+TSS._eip],osloop
-        mov  [edi+TSS._eflags],dword 0x11202 ; sti and resume
-        mov eax, [os_stack]
+        mov  [edi+TSS._eflags],dword 0x1202 ; sti and resume
+        mov eax, [os_stack_seg]
         add eax, 0x2000-512
         mov  [edi+TSS._esp], eax
         mov  [edi+TSS._cs],os_code
-        mov  [edi+TSS._ss],os_data
-        mov  [edi+TSS._ds],os_data
-        mov  [edi+TSS._es],os_data
-        mov  [edi+TSS._fs],os_data
-        mov  [edi+TSS._gs],os_data
+        mov  [edi+TSS._ss],os_stack  ;os_stack
+        mov  [edi+TSS._ds],app_data  ;os_data
+        mov  [edi+TSS._es],app_data  ;os_data
+        mov  [edi+TSS._fs],app_data  ;os_data
+        mov  [edi+TSS._gs],app_data  ;os_data
 
         mov  ax,tss0
         ltr  ax
@@ -717,7 +721,7 @@ first_app_found:
         mov   esi,boot_tasking
         call  boot_log
 
- ;      mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
+;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
 
@@ -743,11 +747,15 @@ first_app_found:
 
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
-        setnz   [dma_hdd]
+;        setnz   [dma_hdd]
 
         stdcall init_uart_service, DRV_ENTRY
 
         sti
+        call change_task
+
+        jmp osloop
+
         jmp   $                      ; wait here for timer to take control
 
         ; Fly :)

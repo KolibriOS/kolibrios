@@ -4,15 +4,14 @@
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 32
+align 16
 i40:
-      push  ds es
       pushad
       cld
 
-      mov   ax,word os_data
-      mov   ds,ax
-      mov   es,ax
+ ;     mov   ax, word app_data
+ ;     mov   ds, ax
+ ;     mov   es, ax
 
       ; load all registers in crossed order
         mov     eax, ebx
@@ -28,10 +27,8 @@ i40:
       and   edi,0xff
       call  dword [servetable+edi*4]
       pop   eax
-;      cli
 
       popad
-      pop   es ds
       iretd
 
 
@@ -58,19 +55,18 @@ sysenter_entry:
      ;   lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
      ;   mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
 
-        mov     esp, [ss:CURRENT_TASK]
+        mov     esp, [CURRENT_TASK]
         shl     esp, 8
-        mov     esp, [ss:SLOT_BASE + esp + APPDATA.pl0_stack]
+        mov     esp, [SLOT_BASE + esp + APPDATA.pl0_stack]
         add     esp, RING0_STACK_SIZE           ; configure ESP
 	sti
-	;------------------
-	push	ds es
+    ;------------------
 	pushad
 	cld
 
-	mov	ax, word os_data
-	mov	ds, ax
-	mov	es, ax
+  ;      mov     ax, word app_data
+  ;      mov     ds, ax
+  ;      mov     es, ax
 
         mov     eax, ebx
         mov     ebx, ecx
@@ -85,10 +81,9 @@ sysenter_entry:
 	pop	eax
 
 	popad
-	pop	es ds
 	;------------------
-	mov	edx, [SYSENTER_VAR]		; eip
-	mov	ecx, [SYSENTER_VAR + 4]	; esp
+        mov     edx, [SYSENTER_VAR]       ; eip
+        mov     ecx, [SYSENTER_VAR + 4]   ; esp
 	sysexit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -109,20 +104,20 @@ syscall_entry:
   ;      lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
   ;      mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
 
-        mov     esp, [ss:CURRENT_TASK]
+        mov     esp, [CURRENT_TASK]
         shl     esp, 8
-        mov     esp, [ss:SLOT_BASE + esp + APPDATA.pl0_stack]
+        mov     esp, [SLOT_BASE + esp + APPDATA.pl0_stack]
         add     esp, RING0_STACK_SIZE             ; configure ESP
 
 	sti
 	;------------------
-	push	ds es
+;        push    ds es
 	pushad
 	cld
 
-	mov	ax, word os_data
-	mov	ds, ax
-	mov	es, ax
+  ;      mov     ax, word app_data
+  ;      mov     ds, ax
+  ;      mov     es, ax
 
         mov     eax, ebx
         mov     ebx, ecx
@@ -137,7 +132,7 @@ syscall_entry:
 	pop	eax
 
 	popad
-	pop	es ds
+ ;       pop     es ds
 	;------------------
 
         cli

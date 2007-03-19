@@ -78,13 +78,11 @@ endg
 
 macro save_ring3_context
 {
-    push    ds es
     pushad
 }
 macro restore_ring3_context
 {
     popad
-    pop    es ds
 }
 
 ; simply return control to interrupted process
@@ -114,9 +112,9 @@ exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 18
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
 exc_c:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
+        mov   ax, app_data  ;исключение
+        mov   ds, ax        ;загрузим правильные значени
+        mov   es, ax        ;в регистры
 
 ; test if debugging
         cli
@@ -127,7 +125,7 @@ exc_c:
         jnz   .debug
         sti
 ; not debuggee => say error and terminate
-        add   esp, 28h
+        add   esp, 0x20  ;28h
         movzx eax, bl
         mov   [error_interrupt], eax
         call  show_error_parameters
@@ -242,8 +240,8 @@ macro irqh [num]
 
 irqh 2,5,7,8,9,10,11
 
- irq_c:
-     mov   ax, os_data
+irq_c:
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      call  irqhandler
@@ -252,7 +250,7 @@ irqh 2,5,7,8,9,10,11
 
 p_irq6:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      call  fdc_irq
@@ -262,7 +260,7 @@ p_irq6:
 
 p_irq3:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      cmp   [com2_mouse_detected],0
@@ -278,7 +276,7 @@ p_irq3:
 
 p_irq4:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      cmp   [com1_mouse_detected],0
@@ -294,7 +292,7 @@ p_irq4:
 
 p_irq12:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      call  check_mouse_data_ps2
@@ -303,7 +301,7 @@ p_irq12:
 
 p_irq14:
         save_ring3_context
-        mov     ax, os_data
+        mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
         call    [irq14_func]
@@ -312,7 +310,7 @@ p_irq14:
         iret
 p_irq15:
         save_ring3_context
-        mov     ax, os_data
+        mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
         call    [irq15_func]
@@ -335,7 +333,7 @@ ready_for_next_irq_1:
 
 irqD:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
 

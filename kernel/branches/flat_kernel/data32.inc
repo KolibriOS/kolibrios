@@ -245,7 +245,7 @@ event_start       rd 1
 event_end         rd 1
 event_uid         rd 1
 sys_page_map      rd 1
-os_stack          rd 1
+os_stack_seg      rd 1
 
 srv.fd            rd 1
 srv.bk            rd 1
@@ -279,6 +279,7 @@ tmp_task_ptab     rd 1
 LFBSize           rd 1
 
 stall_mcs         rd 1
+current_slot      rd 1
 
 ; status
 hd1_status                  rd 1  ; 0 - free : other - pid

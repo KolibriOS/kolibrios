@@ -1011,6 +1011,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    ebx,[slot]
            mov    eax,ebx
            shl    ebx,5
+           lea    ecx,[draw_data+ebx]  ;ecx - pointer to draw data
+
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
            mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
            mov     [ebx+window_data+WDATA.fl_redraw], 1
@@ -1023,8 +1025,6 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    eax,[process_number]
            mov    [ebx+4],eax           ;set PID
 
-           mov    ecx,ebx
-           add    ecx,(draw_data-CURRENT_TASK)  ;ecx - pointer to draw data
 ;set draw data to full screen
 
            mov    [ecx+0],dword 0
@@ -1058,7 +1058,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._eip],eax    ;set eip in TSS
            mov eax, [esi+0x0C]       ;app_esp
            mov [edi+TSS._esp],eax    ;set stack in TSS
-           mov [edi+TSS._eflags],dword 0x3202
+           mov [edi+TSS._eflags],dword 0x1202
 
            mov [edi+TSS._cs],app_code  ;selector of code segment
            mov [edi+TSS._ss],app_data
@@ -1067,10 +1067,40 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [edi+TSS._fs],app_data
            mov [edi+TSS._gs],graph_data ;selector of graphic segment
            mov [edi+TSS._io],word 128
-           mov [edi+TSS._ss0], os_data
+           mov [edi+TSS._ss0], os_stack
            mov ebx, [pl0_stack]
            add ebx, RING0_STACK_SIZE
            mov [edi+TSS._esp0],ebx
+
+           xor eax, eax
+           mov ebx, [pl0_stack]
+           lea ecx, [ebx+REG_EIP]
+
+           mov [ebx+REG_RET], dword irq0.return
+           mov [ebx+REG_EDI], eax
+           mov [ebx+REG_ESI], eax
+           mov [ebx+REG_EBP], eax
+           mov [ebx+REG_ESP], ecx   ;ebx+REG_EIP
+           mov [ebx+REG_EBX], eax
+           mov [ebx+REG_EDX], eax
+           mov [ebx+REG_ECX], eax
+           mov [ebx+REG_EAX], eax
+
+           mov [ebx+REG_EFL_2], dword 0x1002
+
+           mov eax, [esi+0x08]       ;app_eip
+           mov [ebx+REG_EIP],  eax   ;app_entry
+           mov [ebx+REG_CS], dword app_code
+           mov [ebx+REG_EFLAGS], dword 0x1202
+
+           mov eax, [esi+0x0C]       ;app_esp
+           mov [ebx+REG_APP_ESP], eax    ;app_stack
+           mov [ebx+REG_SS], dword app_data
+
+           lea ecx, [ebx+REG_RET]
+           mov ebx, [slot]
+           shl ebx, 8
+           mov [ebx+SLOT_BASE+APPDATA.saved_esp], ecx
 
            mov ecx, edi    ;ecx - address of application TSS
            mov ebx,[slot]
@@ -1109,6 +1139,37 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    esi,new_process_running
            call   sys_msg_board_str     ;output information about succefull startup
            ret
+
+if 0
+; set stack frame
+
+           xor eax, eax
+           lea ecx, [ebx+REG_EIP]
+           mov ebx, [pl0_stack]
+           mov esi,[params]
+
+           mov [ebx+REG_RET], dword irq0.return
+           mov [ebx+REG_EDI], eax
+           mov [ebx+REG_ESI], eax
+           mov [ebx+REG_EBP], eax
+           mov [ebx+REG_ESP], ecx   ;ebx+REG_EIP
+           mov [ebx+REG_EBX], eax
+           mov [ebx+REG_EDX], eax
+           mov [ebx+REG_ECX], eax
+           mov [ebx+REG_EAX], eax
+
+           mov [ebx+REG_EFL_2], dword 0x1002
+
+           mov eax, [esi+0x08]       ;app_eip
+           mov [ebx+REG_EIP],  eax   ;app_entry
+           mov [ebx+REG_CS], dword app_code
+           mov [ebx+REG_EFLAGS], dword 0x1202
+
+           mov eax, [esi+0x0C]       ;app_esp
+           mov [ebx+REG_ESP], eax    ;app_stack
+           mov [ebx+REG_SS], dword app_data
+end if
+
 endp
 
 include "debug.inc"

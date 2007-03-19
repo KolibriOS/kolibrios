@@ -125,7 +125,7 @@ align 4
 align 16
 .main:
 	   save_ring3_context
-	   mov	 bx, os_data
+           mov   bx, app_data  ;os_data
 	   mov	 ds, bx
 	   mov	 es, bx
 

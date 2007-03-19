@@ -130,7 +130,7 @@ align 4
 e7:                        ;#NM exception handler
         save_ring3_context
         clts
-        mov ax, os_data
+        mov ax, app_data  ;
         mov ds, ax
         mov es, ax
 
@@ -183,17 +183,17 @@ except_16:           ;fpu native exceptions handler
            push ecx
            push edx
 
-           mov ebx, [ss:CURRENT_TASK]
+           mov ebx, [CURRENT_TASK]
            shl ebx, 8
 
-           mov eax, [ss:ebx+SLOT_BASE+APPDATA.fpu_handler]
+           mov eax, [ebx+SLOT_BASE+APPDATA.fpu_handler]
            test eax, eax
            jz .default
 
            mov ecx, [reg_eip]
            mov edx, [reg_esp]
            sub edx, 4
-           mov [ss:edx], ecx
+           mov [edx], ecx
            mov [reg_esp], edx
            mov dword [reg_eip], eax
 
@@ -227,17 +227,17 @@ except_19:          ;sse exceptions handler
            push ecx
            push edx
 
-           mov ebx, [ss:CURRENT_TASK]
+           mov ebx, [CURRENT_TASK]
            shl ebx, 8
 
-           mov eax, [ss:ebx+SLOT_BASE+APPDATA.sse_handler]
+           mov eax, [ebx+SLOT_BASE+APPDATA.sse_handler]
            test eax, eax
            jz .default
 
            mov ecx, [reg_eip]
            mov edx, [reg_esp]
            sub edx, 4
-           mov [ss:edx], ecx
+           mov [edx], ecx
            mov [reg_esp], edx
            mov dword [reg_eip], eax
 

@@ -5,10 +5,11 @@
 
 align 32
 irq0:
-        save_ring3_context
-	mov   ax, os_data
-	mov   ds, ax
-	mov   es, ax
+        pushfd
+        pushad
+        mov   ax, app_data  ;
+        mov   ds, ax
+        mov   es, ax
 
         inc   dword [timer_ticks]
 
@@ -20,8 +21,7 @@ irq0:
         add   eax,100
         mov   [next_usage_update],eax
         call  updatecputimes
-     .nocounter:
-
+.nocounter:
         cmp   [DONT_SWITCH], byte 1
         jne   .change_task
 
@@ -31,10 +31,11 @@ irq0:
 
         mov   [DONT_SWITCH], byte 0
 
-        restore_ring3_context
-        iret
+        popad
+        popfd
+        iretd
 
-     .change_task:
+.change_task:
         call  update_counters
 
         call  find_next_task
@@ -49,9 +50,10 @@ irq0:
 
         call  do_change_task
 
-     .return:
-        restore_ring3_context
-        iret
+.return:
+        popad
+        popfd
+        iretd
 
 
 align 4
@@ -82,10 +84,9 @@ change_task:
         mov   [DONT_SWITCH],byte 1
         call  do_change_task
 
-     .return:
+.return:
         popad
         popfd
-
         ret
 
 
@@ -105,7 +106,7 @@ endg
 update_counters:
         mov   edi, [TASK_BASE]
         mov   ebx, [edi+TASKDATA.counter_add] ; time stamp counter add
-        call  _rdtsc
+        rdtsc
         sub   eax, ebx
         add   eax, [edi+TASKDATA.counter_sum] ; counter sum
         mov   [edi+TASKDATA.counter_sum], eax
@@ -123,10 +124,10 @@ find_next_task:
         mov   edi, [TASK_BASE]
         mov   [prev_slot], ebx
 
-      .waiting_for_termination:
-      .waiting_for_reuse:
-      .waiting_for_event:
-      .suspended:
+.waiting_for_termination:
+.waiting_for_reuse:
+.waiting_for_event:
+.suspended:
         cmp   ebx, [TASK_COUNT]
         jb    @f
         mov   edi, CURRENT_TASK
@@ -160,28 +161,58 @@ find_next_task:
         jz    .waiting_for_event
         mov   [event_sched], eax
         mov   [edi+TASKDATA.state], byte 0
-      .noevents:
-      .found:
+.noevents:
+.found:
         mov   [CURRENT_TASK],ebx
         mov   [TASK_BASE],edi
-        call  _rdtsc
+        rdtsc                     ;call  _rdtsc
         mov   [edi+TASKDATA.counter_add],eax
 
+        mov esi, [prev_slot]
 	xor   eax, eax
-        cmp   ebx, [prev_slot]
+        cmp   ebx, esi
         sete  al
 ret
 
 ; in: ebx = TSS selector index
+;
+; param
+;  ebx = incoming task
+;  esi = outcomig task
+
 do_change_task:
-        shl   ebx, 3
-        xor   eax, eax
-        add   ebx, tss0
-        mov   [far_jump.sel],  bx   ; selector
-        mov   [far_jump.offs], eax  ; offset
-        jmp   pword [far_jump]
+
+        shl ebx, 8
+        add ebx, SLOT_BASE
+        mov [current_slot], ebx
+        shl esi, 8
+        add esi, SLOT_BASE
+
+        mov [esi+APPDATA.saved_esp], esp
+        mov esp, [ebx+APPDATA.saved_esp]
+
+        mov eax, [ebx+APPDATA.dir_table]
+        mov cr3, eax
+
+        mov ebx, [ebx+APPDATA.pl0_stack]
+        add ebx, RING0_STACK_SIZE
+        mov [tss_data+TSS._esp0], ebx
+        mov ecx, cr0
+        or ecx, CR0_TS   ;set task switch flag
+        mov cr0, ecx
         inc   [context_counter] ;noname & halyavin
-ret
+
+        ret
+
+;
+;        shl   ebx, 3
+;        xor   eax, eax
+;        add   ebx, tss0
+;        mov   [far_jump.sel],  bx   ; selector
+;        mov   [far_jump.offs], eax  ; offset
+;        jmp   pword [far_jump]
+;        inc   [context_counter] ;noname & halyavin
+;ret
 
 
 
@@ -193,7 +224,7 @@ updatecputimes:
         mov  [idleuse],dword 0
         mov  ecx, [TASK_COUNT]
         mov  edi, TASK_DATA
-      .newupdate:
+.newupdate:
         mov  ebx,[edi+TASKDATA.counter_sum]
         mov  [edi+TASKDATA.cpu_usage],ebx
         mov  [edi+TASKDATA.counter_sum],dword 0

@@ -135,32 +135,32 @@ debug_getcontext:
 	jmp	.ret
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
-; saves ring-3 context by push ds es, pushad in this order
+; saves ring-3 context by pushad in this order
         mov     esi, [eax+TSS._esp0]
-; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), ds, es, pushad
-	sub	esi, 8+12+8+20h
-	lodsd
+; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), pushad
+        sub     esi, 8+12+20h
+        lodsd                     ;edi
 	mov	[edi+24h], eax
-	lodsd
+        lodsd                     ;esi
 	mov	[edi+20h], eax
-	lodsd
+        lodsd                     ; ebp
 	mov	[edi+1Ch], eax
-	lodsd
-	lodsd
+        lodsd                     ;esp
+        lodsd                     ;ebx
 	mov	[edi+14h], eax
-	lodsd
+        lodsd                     ;edx
 	mov	[edi+10h], eax
-	lodsd
+        lodsd                     ;ecx
 	mov	[edi+0Ch], eax
-	lodsd
+        lodsd                     ;eax
 	mov	[edi+8], eax
-	add	esi, 8
-	lodsd
+;;;        add     esi, 8         ;ds es
+        lodsd                     ;eip
 	mov	[edi], eax
-	lodsd
-	lodsd
+        lodsd                     ;cs
+        lodsd                     ;eflags
 	mov	[edi+4], eax
-	lodsd
+        lodsd                     ;esp
 	mov	[edi+18h], eax
 .ret:
 	sti
@@ -194,29 +194,29 @@ debug_setcontext:
 	jmp	.stiret
 .ring0:
         mov     edi, [eax+TSS._esp0]
-	sub	edi, 8+12+8+20h
-	mov	eax, [esi+24h]
+        sub     edi, 8+12+20h
+        mov     eax, [esi+24h]    ;edi
 	stosd
-	mov	eax, [esi+20h]
+        mov     eax, [esi+20h]    ;esi
 	stosd
-	mov	eax, [esi+1Ch]
+        mov     eax, [esi+1Ch]    ;ebp
+	stosd
+        scasd
+        mov     eax, [esi+14h]    ;ebx
+	stosd
+        mov     eax, [esi+10h]    ;edx
+	stosd
+        mov     eax, [esi+0Ch]    ;ecx
+	stosd
+        mov     eax, [esi+8]      ;eax
+	stosd
+;;;        add     edi, 8         ;ds es
+        mov     eax, [esi]        ;eip
 	stosd
 	scasd
-	mov	eax, [esi+14h]
+        mov     eax, [esi+4]      ;eflags
 	stosd
-	mov	eax, [esi+10h]
-	stosd
-	mov	eax, [esi+0Ch]
-	stosd
-	mov	eax, [esi+8]
-	stosd
-	add	edi, 8
-	mov	eax, [esi]
-	stosd
-	scasd
-	mov	eax, [esi+4]
-	stosd
-	mov	eax, [esi+18h]
+        mov     eax, [esi+18h]    ;esp
 	stosd
 .stiret:
 	sti
@@ -422,7 +422,7 @@ debug_exc:
 ; int 1 = #DB
 	save_ring3_context
 	cld
-	mov	ax, os_data
+        mov     ax, app_data ;os_data
 	mov	ds, ax
 	mov	es, ax
 	mov	eax, dr6
@@ -460,7 +460,7 @@ debug_exc:
 	jnz	.debug
 	sti
 ; not debuggee => say error and terminate
-	add	esp, 28h+4
+        add     esp, 0x20+4
 	mov	[error_interrupt], 1
 	call	show_error_parameters
         mov     edx, [TASK_BASE]

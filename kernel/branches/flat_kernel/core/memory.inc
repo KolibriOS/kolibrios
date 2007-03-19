@@ -1339,9 +1339,9 @@ end if
 if 0
      push eax
      push edx
-     mov edx, 0x400   ;bocsh
-     mov al,0xff      ;bocsh
-     out dx, al       ;bocsh
+     mov edx, 0x400   ;bochs
+     mov al,0xff      ;bochs
+     out dx, al       ;bochs
      pop edx
      pop eax
 end if

@@ -209,6 +209,9 @@ sayerr:
         jmp     $
      cpugood:
 
+        push 0
+        popf
+        sti
 
 ; set up esp
     movzx    esp, sp
