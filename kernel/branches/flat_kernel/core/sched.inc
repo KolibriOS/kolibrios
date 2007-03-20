@@ -64,6 +64,9 @@ change_task:
         pushad
 
         call  update_counters
+
+if 0
+
 ; \begin{Mario79}
         cmp     [dma_task_switched], 1
         jne     .find_next_task
@@ -77,6 +80,9 @@ change_task:
         jmp     @f
 .find_next_task:
 ; \end{Mario79}
+
+end if
+
         call  find_next_task
         test  eax, eax    ; the same task -> skip switch
         jnz    .return
@@ -213,8 +219,6 @@ do_change_task:
 ;        jmp   pword [far_jump]
 ;        inc   [context_counter] ;noname & halyavin
 ;ret
-
-
 
 align 4
 updatecputimes:

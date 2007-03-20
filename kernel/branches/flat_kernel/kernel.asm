@@ -747,7 +747,7 @@ first_app_found:
 
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
-;        setnz   [dma_hdd]
+        setnz   [dma_hdd]
 
         stdcall init_uart_service, DRV_ENTRY
 

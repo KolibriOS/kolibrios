@@ -605,20 +605,20 @@ hdd_irq14:
         mov     dx, [IDEContrRegsBaseAddr]
         mov     al, 0
         out     dx, al
-        call    update_counters
-        mov     ebx, [dma_process]
-        cmp     [CURRENT_TASK], ebx
-        jz      .noswitch
-        mov     [dma_task_switched], 1
-        mov     edi, [dma_slot_ptr]
-        mov     eax, [CURRENT_TASK]
-        mov     [dma_process], eax
-        mov     eax, [TASK_BASE]
-        mov     [dma_slot_ptr], eax
-        mov     [CURRENT_TASK], ebx
-        mov     [TASK_BASE], edi
-        mov     byte [DONT_SWITCH], 1
-        call    do_change_task
+;        call    update_counters
+;        mov     ebx, [dma_process]
+;        cmp     [CURRENT_TASK], ebx
+;        jz      .noswitch
+;        mov     [dma_task_switched], 1
+;        mov     edi, [dma_slot_ptr]
+;        mov     eax, [CURRENT_TASK]
+;        mov     [dma_process], eax
+;        mov     eax, [TASK_BASE]
+;        mov     [dma_slot_ptr], eax
+;        mov     [CURRENT_TASK], ebx
+;        mov     [TASK_BASE], edi
+;        mov     byte [DONT_SWITCH], 1
+;        call    do_change_task
 .noswitch:
         popad
         popfd
@@ -636,20 +636,20 @@ hdd_irq15:
         add     dx, 8
         mov     al, 0
         out     dx, al
-        call    update_counters
-        mov     ebx, [dma_process]
-        cmp     [CURRENT_TASK], ebx
-        jz      .noswitch
-        mov     [dma_task_switched], 1
-        mov     edi, [dma_slot_ptr]
-        mov     eax, [CURRENT_TASK]
-        mov     [dma_process], eax
-        mov     eax, [TASK_BASE]
-        mov     [dma_slot_ptr], eax
-        mov     [CURRENT_TASK], ebx
-        mov     [TASK_BASE], edi
-        mov     byte [DONT_SWITCH], 1
-        call    do_change_task
+;        call    update_counters
+;        mov     ebx, [dma_process]
+;        cmp     [CURRENT_TASK], ebx
+;        jz      .noswitch
+;        mov     [dma_task_switched], 1
+;        mov     edi, [dma_slot_ptr]
+;        mov     eax, [CURRENT_TASK]
+;        mov     [dma_process], eax
+;        mov     eax, [TASK_BASE]
+;        mov     [dma_slot_ptr], eax
+;        mov     [CURRENT_TASK], ebx
+;        mov     [TASK_BASE], edi
+;        mov     byte [DONT_SWITCH], 1
+;        call    do_change_task
 .noswitch:
         popad
         popfd
