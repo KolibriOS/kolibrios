@@ -1,3 +1,4 @@
+$Revision$
 ;
 ; Load of videomode driver in memory
 ;

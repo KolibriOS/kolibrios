@@ -1,3 +1,4 @@
+$Revision$
 
 struc MEM_BLOCK
 {  .next_block  dd ?

@@ -1,3 +1,4 @@
+$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                            ;;
 ;; KERNEL32.INC                                               ;;
@@ -49,6 +50,26 @@ macro diff16 title,l1,l2
   end repeat
   display 13,10
 }
+macro diff10 title,l1,l2
+ {
+  local s,d,z,m
+  s = l2-l1
+  z = 0
+  m = 1000000000
+  display title,': '
+  repeat 10
+   d = '0' + s / m
+   s = s - (s/m)*m
+   m = m / 10
+   if d <> '0'
+    z = 1
+   end if
+   if z <> 0
+    display d
+   end if
+  end repeat
+  display 13,10
+ }
 
 ; \begin{diamond}[29.09.2006]
 ; may be useful for kernel debugging
@@ -63,14 +84,14 @@ iglobal_nested
 a db 'K : ',string,13,10,0
 endg_nested
 if ~ f eq
-        pushfd
+	pushfd
 end if
-        push    esi
-        mov     esi, a
-        call    sys_msg_board_str
-        pop     esi
+	push	esi
+	mov	esi, a
+	call	sys_msg_board_str
+	pop	esi
 if ~ f eq
-        popfd
+	popfd
 end if
 }
 ; \end{diamond}[29.09.2006]
@@ -102,7 +123,7 @@ end if
 
 struc RECT {
   .left   dd ?
-  .top    dd ?
+  .top	  dd ?
   .right  dd ?
   .bottom dd ?
 }
@@ -112,7 +133,7 @@ end virtual
 
 struc BOX {
   .left   dd ?
-  .top    dd ?
+  .top	  dd ?
   .width  dd ?
   .height dd ?
 }
@@ -121,7 +142,7 @@ virtual at 0
 end virtual
 
 ; constants definition
-WSTATE_NORMAL    = 00000000b
+WSTATE_NORMAL	 = 00000000b
 WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
 WSTATE_ROLLEDUP  = 00000100b
@@ -138,7 +159,7 @@ struc TASKDATA
   .pid	       dd ?
 	       dw ?
   .state       db ?
-               db ?
+	       db ?
 	       dw ?
   .wnd_number  db ?
 	       db ?
@@ -172,25 +193,25 @@ struc APPDATA
   .app_name	   db 11  dup(?)
 		   db 5   dup(?)
 
-  .fpu_state       dd ?            ;+16
-  .ev_count        dd ?            ;+20
-  .fpu_handler     dd ?            ;+24
-  .sse_handler     dd ?            ;+28
-  .pl0_stack       dd ? ;unused    ;+32
-  .heap_base       dd ?            ;+36
-  .heap_top        dd ?            ;+40
-  .cursor          dd ?            ;+44
-  .fd_ev           dd ?            ;+48
-  .bk_ev           dd ?            ;+52
-  .fd_obj          dd ?            ;+56
-  .bk_obj          dd ?            ;+60
+  .fpu_state	   dd ? 	   ;+16
+  .ev_count	   dd ? 	   ;+20
+  .fpu_handler	   dd ? 	   ;+24
+  .sse_handler	   dd ? 	   ;+28
+  .pl0_stack	   dd ? ;unused    ;+32
+  .heap_base	   dd ? 	   ;+36
+  .heap_top	   dd ? 	   ;+40
+  .cursor	   dd ? 	   ;+44
+  .fd_ev	   dd ? 	   ;+48
+  .bk_ev	   dd ? 	   ;+52
+  .fd_obj	   dd ? 	   ;+56
+  .bk_obj	   dd ? 	   ;+60
 
-                   db 64 dup(?)    ;+64
+		   db 64 dup(?)    ;+64
 
-  .wnd_shape       dd ?            ;+128
-  .wnd_shape_scale dd ?            ;+132
-                   dd ?            ;+136
-  .mem_size        dd ?            ;+140
+  .wnd_shape	   dd ? 	   ;+128
+  .wnd_shape_scale dd ? 	   ;+132
+		   dd ? 	   ;+136
+  .mem_size	   dd ? 	   ;+140
   .saved_box	   BOX
   .ipc_start	   dd ?
   .ipc_size	   dd ?
@@ -222,7 +243,7 @@ include "core/sync.inc"     ; macros for synhronization objects
 include "core/sys32.inc"    ; process management
 include "core/sched.inc"    ; process scheduling
 include "core/syscall.inc"  ; system call
-include "core/fpu.inc"      ; all fpu/sse support
+include "core/fpu.inc"	    ; all fpu/sse support
 include "core/memory.inc"
 include "core/heap.inc"     ; kernel and app heap
 include "core/malloc.inc"   ; small kernel heap
@@ -242,10 +263,10 @@ include "boot/shutdown.inc" ; shutdown or restart
 
 ; file system
 
-include "fs/fs.inc"       ; syscall
-include "fs/fat32.inc"    ; read / write for fat32 filesystem
-include "fs/ntfs.inc"     ; read / write for ntfs filesystem
-include "fs/fat12.inc"    ; read / write for fat12 filesystem
+include "fs/fs.inc"	  ; syscall
+include "fs/fat32.inc"	  ; read / write for fat32 filesystem
+include "fs/ntfs.inc"	  ; read / write for ntfs filesystem
+include "fs/fat12.inc"	  ; read / write for fat12 filesystem
 include "blkdev/rd.inc"   ; ramdisk read /write
 include "fs/fs_lfn.inc"    ; syscall, version 2
 include "fs/iso9660.inc"  ; read for iso9660 filesystem CD

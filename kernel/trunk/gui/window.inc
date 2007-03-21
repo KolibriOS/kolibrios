@@ -1,3 +1,4 @@
+$Revision$
 get_titlebar_height: ; edi = window draw_data pointer
 	mov	al,[edi+WDATA.fl_wstyle]
 	and	al,0x0F

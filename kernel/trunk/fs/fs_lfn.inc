@@ -1,3 +1,4 @@
+$Revision$
 ; System function 70 - files with long names (LFN)
 ; diamond, 2006
 

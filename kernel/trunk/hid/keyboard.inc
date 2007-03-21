@@ -1,3 +1,4 @@
+$Revision$
 ;// mike.dld [
 
 VKEY_LSHIFT   = 0000000000000001b

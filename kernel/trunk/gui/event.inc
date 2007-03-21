@@ -1,3 +1,4 @@
+$Revision$
 
 align 4
 init_events:

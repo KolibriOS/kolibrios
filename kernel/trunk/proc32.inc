@@ -1,4 +1,4 @@
-
+$Revision$
 ; Macroinstructions for defining and calling procedures
 
 macro stdcall proc,[arg]		; directly call STDCALL procedure

@@ -1,3 +1,4 @@
+$Revision$
 
 uglobal
 cd_current_pointer_of_input    dd  0

@@ -1,3 +1,4 @@
+$Revision$
 include "skindata.inc"
 
 ;skin_data = 0x00778000

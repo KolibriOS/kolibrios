@@ -1,3 +1,4 @@
+$Revision$
 sys_cd_audio:
 
      cmp  word [cdbase],word 0

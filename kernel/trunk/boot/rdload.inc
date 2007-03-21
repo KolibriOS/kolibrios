@@ -1,3 +1,4 @@
+$Revision$
 ; READ RAMDISK IMAGE FROM HD
 
         cmp   [boot_dev],1

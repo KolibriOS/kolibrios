@@ -1,3 +1,4 @@
+$Revision$
 align 4
 dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; eax x & y

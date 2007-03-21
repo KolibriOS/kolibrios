@@ -1,3 +1,4 @@
+$Revision$
 
 iglobal
   szKernel            db 'KERNEL', 0

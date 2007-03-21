@@ -1,3 +1,4 @@
+$Revision$
 ; diamond, 2006
 sys_debug_services:
 	cmp	eax, 9

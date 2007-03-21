@@ -1,3 +1,4 @@
+$Revision$
 ;setting date,time,clock and alarm-clock
 ;add sys_settime at servetable as for ex. 22 fcn:
 ; 22 - SETTING DATE TIME, CLOCK AND ALARM-CLOCK

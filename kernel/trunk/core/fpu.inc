@@ -1,3 +1,4 @@
+$Revision$
 
 init_fpu:
            clts

@@ -1,3 +1,4 @@
+$Revision$
 ;*************************************************************
 ;* 29.04.2006 Elimination of hangup after the                *
 ;*             expiration hd_wait_timeout -  Mario79         *

@@ -1,3 +1,4 @@
+$Revision$
 ;
 ; Call of videomode driver's functions
 ;

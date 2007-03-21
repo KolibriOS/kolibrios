@@ -1,3 +1,4 @@
+$Revision$
 display_modechg     db  0 ; display mode change for text, yes/no (0 or 2)
                           ;
                           ; !! Important note !!

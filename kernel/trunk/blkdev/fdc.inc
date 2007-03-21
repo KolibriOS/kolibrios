@@ -1,3 +1,4 @@
+$Revision$
 iglobal
   ;function pointers.
   fdc_irq_func    dd fdc_null
