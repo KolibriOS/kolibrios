@@ -31,6 +31,12 @@ include "boot/et.inc"          ; Estonian font
 else
 include "boot/ru.inc"          ; Russian font
 end if
+
+; сюда данные записываются в 16 разрядном режиме, читаются в 32 разрядном
+bx_from_load:			; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
+.from_disc	db 0		; a,b,c,d - винчестеры, r - рам диск 
+.from_part	db 0,0		; # диска... символ, а не байт. '1', а не 1
+
 org $-0x10000
 
 include "boot/bootcode.inc"    ; 16 bit system boot code

@@ -301,6 +301,10 @@ start_of_code:
 @@:
 ; \end{diamond}[02.12.2005]
 
+
+	mov    word [cs:bx_from_load - 0x10000], bx		; {SPraid}[13.03.2007]
+	
+	
 ; set up stack
     mov    ax, 3000h
     mov    ss, ax

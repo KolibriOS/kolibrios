@@ -8,8 +8,34 @@ load_skin_file:
     mov   ebx,1
     or    ecx,-1
     mov   esi,12
-    call  fileread
+;    call  fileread
+
+    pushad
+    push eax
+    sub edx,std_application_base_address
+    mov [skin_to_load.adr],edx
+    
+    ;sub eax,std_application_base_address
+    ;mov [skin_to_load.stradr],eax
+    mov [skin_to_load.stradr],_skin_file_default - std_application_base_address
+    mov eax,skin_to_load - std_application_base_address
+    call    file_system_lfn
+    ;call  fileread
+    pop eax
+    popad
     ret
+
+
+    ret
+    
+    
+skin_to_load:
+   			dd 0,0,0
+   			dd 64*1024
+ .adr  		dd 0
+   			db 0
+ .stradr	dd 0
+ 
 
 struct SKIN_HEADER
   .ident   dd ?

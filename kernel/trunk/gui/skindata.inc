@@ -3,7 +3,7 @@
 ;
 
 iglobal
-  _skin_file_default db 'DEFAULT SKN',0
+  _skin_file_default db '/rd/1/DEFAULT.SKN',0
 endg
 
 struct SKIN_DATA

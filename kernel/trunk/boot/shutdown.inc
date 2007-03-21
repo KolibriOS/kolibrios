@@ -114,7 +114,7 @@ system_shutdown:          ; shut down the system
     jnz  newsdt
 
 ; 3) load & display rose.txt
-    mov  eax,rosef          ; load rose.txt
+    mov  eax,rosef-std_application_base_address          ; load rose.txt
     xor  ebx,ebx
     push 2
     pop  ecx
@@ -123,7 +123,12 @@ system_shutdown:          ; shut down the system
     push 12
     pop  esi
     push edi    ; may be destroyed
-    call fileread
+    
+    pushad
+    push eax
+    call file_system_lfn ; by SPraid  fileread
+    pop eax
+    popad    
     pop  edi
 
     pop  ecx
@@ -530,5 +535,6 @@ shutdowntext:
     db   '4) KERNEL NEU STARTEN                   '
 end if
 rosef:
-    db 'ROSE    TXT'
+    dd 0,0,0,1024,0x90000-std_application_base_address
+    db '/rd/1/ROSE.TXT',0
 endg

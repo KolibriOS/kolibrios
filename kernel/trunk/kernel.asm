@@ -231,12 +231,26 @@ boot_log:
 
 iglobal
   firstapp   db  '/rd/1/LAUNCHER',0
-  char       db  'FONTS/CHAR.MT',0
-  char2      db  'FONTS/CHAR2.MT',0
+  vrr_m      db  '/rd/1/VRR_M',0
+  
+  char		dd 0,0,0
+  			dd 2560
+  			dd  0x3F600 - std_application_base_address
+  			db '/RD/1/FONTS/CHAR.MT',0
+  char2		dd 0,0,0
+  			dd 2560
+  			dd  0x3EC00 - std_application_base_address
+  			db '/RD/1/FONTS/CHAR2.MT',0
+
+  ;char       db  'FONTS/CHAR.MT',0
+  ;char2      db  'FONTS/CHAR2.MT',0
   bootpath   db  '/KOLIBRI    '
   bootpath2  db  0
-  vmode      db  'drivers/VMODE.MDR',0
-  vrr_m      db  '/rd/1/VRR_M',0
+;  vmode      db  'drivers/VMODE.MDR',0
+  vmode		dd 0,0,0
+  			dd 0x8000
+  			dd 0x760000 - std_application_base_address
+  			db '/RD/1/drivers/VMODE.MDR',0
 endg
 
 
@@ -509,17 +523,26 @@ include 'vmodeld.inc'
         mov   [TASK_COUNT],dword 1
         mov   [TASK_BASE],dword TASK_DATA
 
-        mov   esi,char
-        xor   ebx,ebx
-        mov   ecx,2560;26000
-        mov   edx,FONT_I
-        call  fs_RamdiskRead
+        pushad
+        push    eax
+        mov		eax,char  - std_application_base_address
+        call    file_system_lfn
+        mov		eax,char2  - std_application_base_address
+        call    file_system_lfn
+        pop     eax
+        popad
 
-        mov   esi,char2
-        xor   ebx,ebx
-        mov   ecx,2560;26000
-        mov   edx,FONT_II
-        call  fs_RamdiskRead
+;        mov   esi,char
+;        xor   ebx,ebx
+;        mov   ecx,2560;26000
+;        mov   edx,FONT_I
+;        call  fs_RamdiskRead
+
+;        mov   esi,char2
+;        xor   ebx,ebx
+;        mov   ecx,2560;26000
+;        mov   edx,FONT_II
+;        call  fs_RamdiskRead
 
         mov   esi,boot_fonts
         call  boot_log
