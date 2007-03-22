@@ -10,6 +10,9 @@
 ;;   Compile with last version FASM
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision:$
+
 include "proc32.inc"
 include "kglobals.inc"
 include "lang.inc"
