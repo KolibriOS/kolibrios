@@ -303,12 +303,11 @@ proc new_mem_resize stdcall, new_size:dword
            and edi,not 4095
            mov [new_size], edi
 
-           mov edx,[CURRENT_TASK]
-           shl edx,8
-           cmp [SLOT_BASE+APPDATA.heap_base+edx],0
+           mov edx,[current_slot]
+           cmp [edx+APPDATA.heap_base],0
            jne .exit
 
-           mov esi, [SLOT_BASE+APPDATA.mem_size+edx]
+           mov esi, [edx+APPDATA.mem_size]
            add esi, 4095
            and esi, not 4095
 
@@ -332,16 +331,13 @@ proc new_mem_resize stdcall, new_size:dword
            jb @B
 
 .update_size:
-        mov     ebx, [new_size]
-        call    update_mem_size
+           mov     ebx, [new_size]
+           call    update_mem_size
 
            xor eax, eax
            dec [pg_data.pg_mutex]
            ret
-
 .expand:
-         ;  add edi, new_app_base
-         ;  add esi, new_app_base
 
            push esi
            push edi
@@ -405,14 +401,14 @@ proc new_mem_resize stdcall, new_size:dword
 endp
 
 update_mem_size:
-; in: edx = slot shl 8
+; in: edx = slot base
 ;     ebx = new memory size
 ; destroys eax,ecx,edx
 
-           mov    [SLOT_BASE+APPDATA.mem_size+edx],ebx
+           mov    [APPDATA.mem_size+edx],ebx
 ;search threads and update
 ;application memory size infomation
-           mov    ecx,[SLOT_BASE+APPDATA.dir_table+edx]
+           mov    ecx,[APPDATA.dir_table+edx]
            mov    eax,2
 
 .search_threads:
@@ -456,38 +452,35 @@ proc page_fault_handler
         .err_addr equ ebp-4
 
            pushad
-
-;     push eax
-;     push edx
-;     mov edx, 0x400   ;bocsh
-;     mov al,0xff      ;bocsh
-;     out dx, al       ;bocsh
-;     pop edx
-;     pop eax
-
            mov ebp, esp
            mov eax, cr2
            push eax
-           push ds
-           push es
 
-           mov ax, 0x10
+           mov ax, app_data
            mov ds, ax
            mov es, ax
 
            inc [pg_data.pages_faults]
 
+     push eax
+     push edx
+     mov edx, 0x400   ;bochs
+     mov al,0xff      ;bochs
+     out dx, al       ;bochs
+     pop edx
+     pop eax
+
            mov ebx, [.err_addr]
            mov eax, [.err_code]
 
            cmp ebx, OS_BASE
-           jb .user_space      ;страница в памяти приложени
+           jb .user_space      ;страница в памяти приложения ;
 
            cmp ebx, page_tabs
            jb .kernel_space    ;страница в памяти ядра
 
            cmp ebx, kernel_tabs
-           jb .alloc;.app_tabs ;таблицы страниц приложени
+           jb .alloc;.app_tabs ;таблицы страниц приложения ;
                                ;просто создадим одну
 
            cmp ebx, LFB_BASE
@@ -514,7 +507,7 @@ align 4
 
            mov eax, [page_tabs+ebx*4]
            test eax, 2
-           jz .fail            ;адрес не зарезервирован дл
+           jz .fail            ;адрес не зарезервирован для ;
                                ;использования. Ошибка
 .alloc:
            call alloc_page
@@ -530,8 +523,6 @@ align 4
            cld
            rep stosd
 .exit:
-           pop es
-           pop ds
            mov esp, ebp
            popad
            add esp, 4
@@ -557,8 +548,6 @@ align 4
 
 .core_tabs:
 .fail:
-           pop es
-           pop ds
            mov esp, ebp
            popad
            add esp, 4
@@ -729,15 +718,12 @@ sys_IPC:
 align 4
 proc set_ipc_buff
 
-           mov  eax,[CURRENT_TASK]
-           shl  eax,8
-           add  eax, SLOT_BASE
+           mov  eax,[current_slot]
            pushf
            cli
-           mov  [eax+0xA0],ebx     ;set fields in extended information area
-           mov  [eax+0xA4],ecx
+           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
+           mov  [eax+APPDATA.ipc_size],ecx
 
-        ;   add ebx,  new_app_base
            add ecx, ebx
            add ecx, 4095
            and ecx, not 4095
@@ -914,14 +900,12 @@ new_services:
 @@:
            cmp eax, 13
            ja @f
-       ;    add ebx, new_app_base
            stdcall user_free, ebx
            mov [esp+36], eax
            ret
 @@:
            cmp eax, 14
            ja @f
-      ;     add ebx, new_app_base
            cmp ebx, OS_BASE
            jae .fail
            stdcall get_event_ex, ebx, ecx
@@ -930,10 +914,9 @@ new_services:
 @@:
            cmp eax, 15
            ja @f
-           mov ecx, [CURRENT_TASK]
-           shl ecx, 8
-           mov eax, [ecx+SLOT_BASE+APPDATA.fpu_handler]
-           mov [ecx+SLOT_BASE+APPDATA.fpu_handler], ebx
+           mov ecx, [current_slot]
+           mov eax, [ecx+APPDATA.fpu_handler]
+           mov [ecx+APPDATA.fpu_handler], ebx
            mov [esp+36], eax
            ret
 @@:
@@ -942,7 +925,6 @@ new_services:
 
            test ebx, ebx
            jz .fail
-     ;      add ebx, new_app_base
            cmp ebx, OS_BASE
            jae .fail
            stdcall get_service, ebx
@@ -957,10 +939,9 @@ new_services:
 @@:
            cmp eax, 18
            ja @f
-           mov ecx, [CURRENT_TASK]
-           shl ecx, 8
-           mov eax, [ecx+SLOT_BASE+APPDATA.sse_handler]
-           mov [ecx+SLOT_BASE+APPDATA.sse_handler], ebx
+           mov ecx, [current_slot]
+           mov eax, [ecx+APPDATA.sse_handler]
+           mov [ecx+APPDATA.sse_handler], ebx
            mov [esp+36], eax
            ret
 @@:

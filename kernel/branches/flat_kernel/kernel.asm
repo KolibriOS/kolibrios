@@ -424,6 +424,12 @@ high_code:
         mov     [graph_data_l+4],al
         mov     [graph_data_l+7],ah
 
+
+        mov   [CURRENT_TASK],dword 1
+        mov   [TASK_COUNT],dword 1
+        mov   [TASK_BASE],dword TASK_DATA
+        mov [current_slot], SLOT_BASE+256
+
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -445,10 +451,6 @@ include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 
 ; LOAD FONTS I and II
-
-        mov   [CURRENT_TASK],dword 1
-        mov   [TASK_COUNT],dword 1
-        mov   [TASK_BASE],dword TASK_DATA
 
         mov   esi,char
         xor   ebx,ebx
@@ -577,6 +579,7 @@ include 'vmodeld.inc'
         ; task list
         mov   [CURRENT_TASK],dword 1
         mov   [TASK_COUNT],dword 1
+        mov [current_slot], SLOT_BASE+256
         mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
         mov  [TASK_DATA+TASKDATA.pid], 1        ; process id number
         mov  [TASK_DATA+TASKDATA.mem_start], 0  ; process base address
@@ -3986,11 +3989,10 @@ sys_putimage:
   .exit:
      ret
  @@:
-        mov     edi,[CURRENT_TASK]
-        shl     edi,8
-        add     dx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     edi,[current_slot]
+        add     dx,word[edi+APPDATA.wnd_clientbox.top]
         rol     edx,16
-        add     dx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     dx,word[edi+APPDATA.wnd_clientbox.left]
         rol     edx,16
   .forced:
         push    ebp esi 0
@@ -4089,12 +4091,11 @@ putimage_get32bpp:
 ; edi color
 
 __sys_drawbar:
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     eax,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ecx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        add     edx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     esi,[current_slot]
+        add     eax,[esi+APPDATA.wnd_clientbox.left]
+        add     ecx,[esi+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+APPDATA.wnd_clientbox.top]
+        add     edx,[esi+APPDATA.wnd_clientbox.top]
   .forced:
     inc   [mouse_pause]
 ;        call    [disable_mouse]
@@ -4623,10 +4624,9 @@ syscall_setpixel:                       ; SetPixel
      mov   edx,[TASK_BASE]
      add   eax,[edx-twdw+WDATA.box.left]
      add   ebx,[edx-twdw+WDATA.box.top]
-        mov     edi,[CURRENT_TASK]
-        shl     edi,8
-        add     eax,[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     edi,[current_slot]
+        add     eax,[edi+APPDATA.wnd_clientbox.left]
+        add     ebx,[edi+APPDATA.wnd_clientbox.top]
      xor   edi,edi ; no force
 ;     mov   edi,1
      call  [disable_mouse]
@@ -4636,20 +4636,19 @@ align 4
 
 syscall_writetext:                      ; WriteText
 
-     mov   edi,[TASK_BASE]
-     mov   ebp,[edi-twdw+WDATA.box.left]
-        push    esi
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-     shl   ebp,16
-     add   ebp,[edi-twdw+WDATA.box.top]
-        add     bp,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        pop     esi
-     add   ecx,[edi+TASKDATA.mem_start]
-     add   eax,ebp
-     xor   edi,edi
-     jmp   dtext
+        mov   edi,[TASK_BASE]
+        mov   ebp,[edi-twdw+WDATA.box.left]
+        push  esi
+        mov   esi,[current_slot]
+        add   ebp,[esi+APPDATA.wnd_clientbox.left]
+        shl   ebp,16
+        add   ebp,[edi-twdw+WDATA.box.top]
+        add   bp,word[esi+APPDATA.wnd_clientbox.top]
+        pop   esi
+        add   ecx,[edi+TASKDATA.mem_start]
+        add   eax,ebp
+        xor   edi,edi
+        jmp   dtext
 
 align 4
 
@@ -4679,10 +4678,9 @@ syscall_drawrect:                       ; DrawRect
      shr   eax,16
      movzx edx,bx
      shr   ebx,16
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     eax,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     esi,[current_slot]
+        add     eax,[esi+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+APPDATA.wnd_clientbox.top]
      add   ecx,eax
      add   edx,ebx
      jmp   [drawbar]
@@ -4761,17 +4759,16 @@ syscall_drawline:                       ; DrawLine
      mov   edi,[TASK_BASE]
      movzx edx,word[edi-twdw+WDATA.box.left]
      mov   ebp,edx
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     dx,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        mov     esi,[current_slot]
+        add     ebp,[esi+APPDATA.wnd_clientbox.left]
+        add     dx,word[esi+APPDATA.wnd_clientbox.left]
      shl   edx,16
      add   ebp,edx
      movzx edx,word[edi-twdw+WDATA.box.top]
      add   eax,ebp
      mov   ebp,edx
-        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        add     dx,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     ebp,[esi+APPDATA.wnd_clientbox.top]
+        add     dx,word[esi+APPDATA.wnd_clientbox.top]
      shl   edx,16
      xor   edi,edi
      add   edx,ebp

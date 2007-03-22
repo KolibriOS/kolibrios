@@ -19,9 +19,8 @@ sys_debug_services_table:
 debug_set_event_data:
 ; in: ebx = pointer
 ; destroys eax
-        mov     eax, [CURRENT_TASK]
-	shl	eax, 8
-        mov     [eax+SLOT_BASE+APPDATA.dbg_event_mem], ebx
+        mov     eax, [current_slot]
+        mov     [eax+APPDATA.dbg_event_mem], ebx
 	ret
 
 get_debuggee_slot:
@@ -453,9 +452,8 @@ debug_exc:
 	mov	dr6, eax
 ; test if debugging
 	cli
-        mov     eax, [CURRENT_TASK]
-	shl	eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
+        mov     eax, [current_slot]
+        mov     eax, [eax+APPDATA.debugger_slot]
 	test	eax, eax
 	jnz	.debug
 	sti

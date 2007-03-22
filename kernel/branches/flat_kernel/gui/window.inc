@@ -1773,18 +1773,15 @@ random_shaped_window:
 
      test eax, eax
      jne  rsw_no_address
-     mov  eax,[CURRENT_TASK]
-     shl  eax,8
-
-     mov  [eax+SLOT_BASE+APPDATA.wnd_shape],ebx
-   rsw_no_address:
+     mov  eax,[current_slot]
+     mov  [eax+APPDATA.wnd_shape],ebx
+rsw_no_address:
 
      cmp  eax,1
      jne  rsw_no_scale
-     mov  eax,[CURRENT_TASK]
-     shl  eax,8
-     mov  byte [eax+SLOT_BASE+APPDATA.wnd_shape_scale], bl
-   rsw_no_scale:
+     mov  eax,[current_slot]
+     mov  byte [eax+APPDATA.wnd_shape_scale], bl
+rsw_no_scale:
 
      ret
 

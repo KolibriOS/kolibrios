@@ -21,40 +21,6 @@ struc APP_HEADER_01
   .i_icon      dd ?    ;+32
 }
 
-struc TSS
-{
-  ._back   rw 2
-  ._esp0   rd 1
-  ._ss0    rw 2
-  ._esp1   rd 1
-  ._ss1    rw 2
-  ._esp2   rd 1
-  ._ss2    rw 2
-  ._cr3    rd 1
-  ._eip    rd 1
-  ._eflags rd 1
-  ._eax    rd 1
-  ._ecx    rd 1
-  ._edx    rd 1
-  ._ebx    rd 1
-  ._esp    rd 1
-  ._ebp    rd 1
-  ._esi    rd 1
-  ._edi    rd 1
-  ._es     rw 2
-  ._cs     rw 2
-  ._ss     rw 2
-  ._ds     rw 2
-  ._fs     rw 2
-  ._gs     rw 2
-  ._ldt    rw 2
-  ._trap   rw 1
-  ._io     rw 1
-}
-
-virtual at 0
-  TSS  TSS
-end virtual
 
 struc APP_PARAMS
 { .app_cmdline   ;0x00
@@ -484,14 +450,19 @@ endp
 
 align 4
 set_cr3:
-           mov esi, [CURRENT_TASK]
-           mov ebx, esi
-           shl esi,8
-           mov [SLOT_BASE+esi+0xB8],eax
-           imul   ebx,tss_step
-           add    ebx,tss_data
-           mov [ebx+28], eax
+
+           mov ebx, [current_slot]
+           mov [ebx+APPDATA.dir_table], eax
            mov cr3, eax
+
+;           mov esi, [CURRENT_TASK]
+;           mov ebx, esi
+;           shl esi,8
+;           mov [SLOT_BASE+esi+0xB8],eax
+;           imul   ebx,tss_step
+;           add    ebx,tss_data
+;           mov [ebx+28], eax
+;           mov cr3, eax
            ret
 
 align 4
@@ -864,9 +835,7 @@ proc new_sys_threads
 
            mov [slot], eax
 
-           mov    esi,[CURRENT_TASK]
-           shl    esi,8
-           add    esi,SLOT_BASE
+           mov    esi,[current_slot]
            mov    ebx,esi             ;ebx=esi - pointer to extended information about current thread
 
            mov    edi, eax

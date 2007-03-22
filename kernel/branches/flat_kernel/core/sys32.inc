@@ -118,9 +118,8 @@ exc_c:
 
 ; test if debugging
         cli
-        mov   eax, [CURRENT_TASK]
-        shl   eax, 8
-        mov   eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
+        mov   eax, [current_slot]
+        mov   eax, [eax+APPDATA.debugger_slot]
         test  eax, eax
         jnz   .debug
         sti

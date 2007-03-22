@@ -134,10 +134,10 @@
 ; 0x80080000 ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
 ;         00  11db  name of app running
-;         10 dword  pointer to  fpu save area
-;         14 dword  event count
-;         18 dword  user fpu exceptoins handler
-;         1c dword  user sse exceptions handler
+;       0x10 dword  pointer to  fpu save area
+;       0x14 dword  event count
+;       0x18 dword  user fpu exceptoins handler
+;       0x1c dword  user sse exceptions handler
 ;         20 dword  PL0 stack base
 ;         24 dword  user heap base
 ;         28 dword  user heap top
@@ -234,4 +234,252 @@
 ; 0xFE000000 -> 0xFE7FFFFF  application available LFB 8Mb
 ; 0xFE800000 -> 0xFFFFFFFF  kernel LFB part 24 Mb
 
+if 0
+
+Эта бадяга с копирайтами уже задолбала. Приходится делать всё самому
+Вот проект заголовков.
+
+Для сравнения я брал исходники MeOS 079p1
+
+Если файл попал в один из списков ошибочно, укажите.
+
+Список разработчиков ядра KolibriOS взят из последнего дистрибутива.
+Если кого-то забыли, укажите
+
+Через две недели я проставлю заголовки на все перечисленные файлы.
+
+kernel.asm
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Copyright (C) KolibriOS team 2004-2007.  All rights reserved.
+;;   PROGRAMMING:
+;;     Иван Поддубный
+;;     Марат Закиянов (Mario79)
+;;     VaStaNi
+;;     Trans
+;;     Михаил Семеняко (mike.dld)
+;;     Сергей Кузьмин (Wildwest)
+;;     Халявин Андрей (halyavin)
+;;     Михаил Лисовин (Mihasik)
+;;     Андрей Игнатьев (andrew_programmer)
+;;     NoName
+;;     Евгений Гречников (Diamond)
+;;     Михайлов Илья  (Ghost)
+;;     Сергей Семёнов (Serge)
+;;     Johnny_B
+;;
+;; Data in this file was originally part of MenuetOS project which is
+;; distributed under the terms of GNU GPL. It is modified and redistributed as
+;; part of KolibriOS project under the terms of GNU GPL.
+;;
+;; Copyright (C) MenuetOS  2000-2004 Ville Mikael Turjanmaa
+;;   PROGRAMMING:
+;;
+;;     Ville Mikael Turjanmaa, villemt@itu.jyu.fi
+;;      - main os coding/design
+;;     Jan-Michael Brummer, BUZZ2@gmx.de
+;;     Felix Kaiser, info@felix-kaiser.de
+;;     Paolo Minazzi, paolo.minazzi@inwind.it
+;;     quickcode@mail.ru
+;;     Alexey, kgaz@crosswinds.net
+;;     Juan M. Caravaca, bitrider@wanadoo.es
+;;     kristol@nic.fi
+;;     Mike Hibbett, mikeh@oceanfree.net
+;;     Lasse Kuusijarvi, kuusijar@lut.fi
+;;     Jarek Pelczar, jarekp3@wp.pl
+;;
+;; KolibriOS is distributed in the hope that it will be useful, but WITHOUT ANY
+;; WARRANTY. No author or distributor accepts responsibility to anyone for the
+;; consequences of using it or for whether it serves any particular purpose or
+;; works at all, unless he says so in writing. Refer to the GNU General Public
+;; License (the "GPL") for full details.
+;
+;; Everyone is granted permission to copy, modify and redistribute KolibriOS,
+;; but only under the conditions described in the GPL. A copy of this license
+;; is supposed to have been given to you along with KolibriOS so you can know
+;; your rights and responsibilities. It should be in a file named COPYING.
+;; Among other things, the copyright notice and this notice must be preserved
+;; on all copies.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+
+На этих файлах уже стоят различные копирайты
+Будет добавлен копирайт KolibriOS Team
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;   Copyright (C) KolibriOS team 2004-2007.  All rights reserved.
+;;
+;;   Distributed under terms of the GNU General Public License
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+fdo.inc
+kernel16.inc
+kernel32.inc
+vmodeld.inc
+vmodeint.inc
+
+blkdev/cd_drv.inc
+blkdev/flp_drv.inc
+blkdev/hd_drv.inc
+blkdev/rd.inc
+
+boot/shutdown.inc
+
+bus/pci/pci16.inc
+bus/pci/pci32.inc
+
+core/sync.inc
+core/sys32.inc
+
+detect/commouse.inc
+detect/dev_fd.inc
+detect/dev_hdcd.inc
+detect/sear_par.inc
+
+fs/fat12.inc
+fs/fat32.inc
+fs/fs.inc
+fs/fs_lfn.inc
+fs/part_set.inc
+
+network/icmp.inc
+network/ip.inc
+network/queue.inc
+network/socket.inc
+network/stack.inc
+network/tcp.inc
+network/udp.inc
+
+network/eth_drv/arp.inc
+network/eth_drv/ethernet.inc
+network/eth_drv/drivers/3c59x.inc
+network/eth_drv/drivers/i8255x.inc
+network/eth_drv/drivers/pcnet32.inc
+network/eth_drv/drivers/rtl8029.inc
+network/eth_drv/drivers/rtl8139.inc
+network/eth_drv/drivers/rtl8169.inc
+network/eth_drv/drivers/sis900.inc
+
+sound/playnote.inc
+
+video/vesa12.inc
+video/vesa20.inc
+video/vga.inc
+
+
+Файлы без копирайтов с кодом из МеОС
+Будут добавлены копирайты KolibriOS Team и
+Menuet OS Team
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;   Copyright (C) KolibriOS team 2004-2007.  All rights reserved.
+;;   Copyright (C) MenuetOS  2000-2004 Ville Mikael Turjanmaa
+;;
+;;   Distributed under terms of the GNU General Public License
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+blkdev/cdrom.inc
+blkdev/fdc.inc
+
+boot/bootcode.inc
+
+core/sched.inc
+
+gui/button.inc
+gui/event.inc
+gui/mouse.inc
+gui/window.inc
+
+hid/keyboard.inc
+
+sound/sb16.inc
+
+
+Фалы с копирайтом только KolibriOS Team
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;;   Copyright (C) KolibriOS team 2004-2007.  All rights reserved.
+;;
+;;   Distributed under terms of the GNU General Public License
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+kglobals.inc
+unpacker.inc
+const.inc
+
+blkdev/rdsave.inc
+
+boot/preboot.inc
+boot/rdload.inc
+
+core/debug.inc
+core/dll.inc
+core/exports.inc
+core/fpu.inc
+core/heap.inc
+core/malloc.inc
+core/memory.inc
+core/syscall.inc
+core/taskman.inc
+
+detect/disks.inc
+detect/ps2mouse.inc
+
+docs/apm.txt
+docs/sysfuncr.txt
+docs/sysfuncs.txt
+
+drivers/ati2d.asm
+drivers/ensoniq.asm
+drivers/infinity.asm
+drivers/mixer.asm
+drivers/sceletone.asm
+drivers/sis.asm
+drivers/sound.asm
+drivers/codec.inc
+drivers/imports.inc
+drivers/main.inc
+drivers/mix_mmx.inc
+drivers/mix_sse2.inc
+
+fs/iso9660.inc
+fs/ntfs.inc
+
+gui/font.inc
+gui/skincode.inc
+gui/skindata.inc
+
+hid/m_com1.inc
+hid/m_com2.inc
+hid/m_ps2.inc
+hid/mousedrv.inc
+hid/set_dtc.inc
+
+network/eth_drv/pci.inc
+
+skin/default.asm
+skin/me_skin.inc
+
+video/cursors.inc
+
+
+файлы которые можно оставить без копирайта
+
+memmap.inc
+
+boot/booteng.inc
+boot/bootet.inc
+boot/bootge.inc
+boot/bootru.inc
+boot/et.inc
+boot/ru.inc
+
+end if
 

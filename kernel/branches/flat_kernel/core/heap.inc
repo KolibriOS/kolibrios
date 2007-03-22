@@ -614,22 +614,21 @@ HEAP_TOP  equ 0x5FC00000
 align 4
 proc init_heap
 
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           mov eax, [SLOT_BASE+APPDATA.heap_top+ebx]
+           mov ebx,[current_slot]
+           mov eax, [ebx+APPDATA.heap_top]
            test eax, eax
            jz @F
-           sub eax,[SLOT_BASE+APPDATA.heap_base+ebx]
+           sub eax,[ebx+APPDATA.heap_base]
            sub eax, 4096
            ret
 @@:
-           mov esi, [SLOT_BASE+APPDATA.mem_size+ebx]
+           mov esi, [ebx+APPDATA.mem_size]
            add esi, 4095
            and esi, not 4095
-           mov [SLOT_BASE+APPDATA.mem_size+ebx], esi
+           mov [ebx+APPDATA.mem_size], esi
            mov eax, HEAP_TOP
-           mov [SLOT_BASE+APPDATA.heap_base+ebx], esi
-           mov [SLOT_BASE+APPDATA.heap_top+ebx], eax
+           mov [ebx+APPDATA.heap_base], esi
+           mov [ebx+APPDATA.heap_top], eax
 
            sub eax, esi
        ;    add esi, new_app_base
@@ -651,12 +650,9 @@ proc user_alloc stdcall, alloc_size:dword
            add ecx, (4095+4096)
            and ecx, not 4095
 
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           mov esi, dword [ebx+SLOT_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [ebx+SLOT_BASE+APPDATA.heap_top]; heap_top
-      ;     add esi, new_app_base
-      ;     add edi, new_app_base
+           mov ebx, [current_slot]
+           mov esi, dword [ebx+APPDATA.heap_base]  ; heap_base
+           mov edi, dword [ebx+APPDATA.heap_top]   ; heap_top
 l_0:
            cmp esi, edi
            jae m_exit
@@ -677,7 +673,6 @@ l_0:
            or eax, FREE_BLOCK
            shr edx, 12
            mov [page_tabs+edx*4], eax
-
 @@:
            or ecx, USED_BLOCK
            mov [page_tabs+ebx*4], ecx
@@ -690,17 +685,15 @@ l_0:
            dec ecx
            jnz @B
 
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
-        mov     ebx, [alloc_size]
-        add     ebx, 0xFFF
-        and     ebx, not 0xFFF
-        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
-        call    update_mem_size
+           mov     edx, [current_slot]
+           mov     ebx, [alloc_size]
+           add     ebx, 0xFFF
+           and     ebx, not 0xFFF
+           add     ebx, [edx+APPDATA.mem_size]
+           call    update_mem_size
 
            mov eax, esi
            add eax, 4096
-      ;     sub eax, new_app_base
            ret
 m_next:
            add esi, eax
@@ -750,15 +743,12 @@ proc user_free stdcall, base:dword
            dec ecx
            jnz .release
 .not_used:
-           mov edx, [CURRENT_TASK]
-           shl edx, 8
-           mov esi, dword [edx+SLOT_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [edx+SLOT_BASE+APPDATA.heap_top]; heap_top
-           sub ebx, [edx+SLOT_BASE+APPDATA.mem_size]
+           mov edx, [current_slot]
+           mov esi, dword [edx+APPDATA.heap_base]
+           mov edi, dword [edx+APPDATA.heap_top]
+           sub ebx, [edx+APPDATA.mem_size]
            neg ebx
            call update_mem_size
-      ;     add esi, new_app_base
-      ;     add edi, new_app_base
            shr esi, 12
            shr edi, 12
 @@:

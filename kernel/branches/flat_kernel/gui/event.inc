@@ -114,9 +114,8 @@ create_event:
            cld
            rep movsd
 @@:
-           mov ecx, [CURRENT_TASK]
-           shl ecx,8
-           add ecx, SLOT_BASE+APP_OBJ_OFFSET
+           mov ecx, [current_slot]
+           add ecx, APP_OBJ_OFFSET
 
            pushfd
            cli
@@ -217,12 +216,11 @@ align 4
 proc get_event_ex stdcall, p_ev:dword, timeout:dword
 
 .wait:
-           mov edx,[CURRENT_TASK]
-           shl edx,8
+           mov edx,[current_slot]
 ;           cmp [SLOT_BASE+edx+APPDATA.ev_count], 0
 ;           je .switch
 
-           add edx, SLOT_BASE+APP_EV_OFFSET
+           add edx, APP_EV_OFFSET
 
            mov eax, [edx+APPOBJ.fd]
            cmp eax, edx
@@ -300,9 +298,7 @@ wait_event:
            test [eax+EVENT.state], MANUAL_RESET
            jnz .done
 
-           mov edx,[CURRENT_TASK]
-           shl edx,8
-           add edx, SLOT_BASE
+           mov edx,[current_slot]
 
            pushfd
            cli                         ;remove event from events
@@ -575,15 +571,14 @@ get_event_for_app:
      ;mov   edi,[TASK_BASE]              ; mouse event
      test  [edi+TASKDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     mov   eax,[CURRENT_TASK]
-     shl   eax,8
-     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 00100000b
+     mov   eax,[current_slot]
+     test  [eax+APPDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-00100000b
+     and   [eax+APPDATA.event_mask],dword 0xffffffff-00100000b
      popad
      mov   eax,6
      ret
-   no_mouse_event:
+no_mouse_event:
 
 
      ;mov   edi,[TASK_BASE]              ; DESKTOP BACKGROUND REDRAW
@@ -594,42 +589,39 @@ get_event_for_app:
      popad
      mov   eax,5
      ret
-   no_eventoccur5:
+no_eventoccur5:
 
      ;mov   edi,[TASK_BASE]              ; IPC
      test  [edi+TASKDATA.event_mask],dword 01000000b
      jz    no_ipc
-     mov   eax,[CURRENT_TASK]
-     shl   eax,8
-     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 01000000b
+     mov   eax,[current_slot]
+     test  [eax+APPDATA.event_mask],dword 01000000b
      jz    no_ipc
-     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-01000000b
+     and   [eax+APPDATA.event_mask],dword 0xffffffff-01000000b
      popad
      mov   eax,7
      ret
-   no_ipc:
+no_ipc:
 
 
      ;mov   edi,[TASK_BASE]              ; STACK
      test  [edi+TASKDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     mov   eax,[CURRENT_TASK]
-     shl   eax,8
-     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 10000000b
+     mov   eax,[current_slot]
+     test  [eax+APPDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-10000000b
+     and   [eax+APPDATA.event_mask],dword 0xffffffff-10000000b
      popad
      mov   eax,8
      ret
-   no_stack_event:
+no_stack_event:
 
      test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
      jz    .test_IRQ
-     mov   eax, [CURRENT_TASK]
-     shl   eax, 8
-     test  byte [eax+SLOT_BASE+APPDATA.event_mask+1], byte 1
+     mov   eax, [current_slot]
+     test  byte [eax+APPDATA.event_mask+1], byte 1
      jz    .test_IRQ
-     and   byte [eax+SLOT_BASE+APPDATA.event_mask+1], not 1
+     and   byte [eax+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret

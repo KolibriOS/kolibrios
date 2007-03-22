@@ -138,7 +138,7 @@ find_next_task:
         jb    @f
         mov   edi, CURRENT_TASK
         xor   ebx, ebx
-      @@:
+@@:
 
         add   edi,0x20
         inc   ebx
@@ -237,3 +237,91 @@ updatecputimes:
         jnz  .newupdate
 
         ret
+
+if 0
+
+MAX_PROIRITY         0   ; highest, used for kernel tasks
+MAX_USER_PRIORITY    0   ; highest priority for user processes
+USER_PRIORITY        7   ; default (should correspond to nice 0)
+MIN_USER_PRIORITY   14   ; minimum priority for user processes
+IDLE_PRIORITY       15   ; lowest, only IDLE process goes here
+NR_SCHED_QUEUES     16   ; MUST equal IDLE_PRIORYTY + 1
+
+rdy_head   rd 16
+
+
+align 4
+pick_task:
+
+           xor eax, eax
+.pick:
+           mov ebx, [rdy_head+eax*4]
+           test ebx, ebx
+           jz .next
+
+           mov [next_task], ebx
+           test [ebx+flags.billable]
+           jz @F
+           mov [bill_task], ebx
+@@:
+           ret
+.next:
+           inc eax
+           jmp .pick
+
+
+; param
+;  eax= task
+;
+; retval
+;  eax= task
+;  ebx= queue
+;  ecx= front if 1 or back if 0
+
+align 4
+shed:
+           cmp [eax+.tics_left], 0 ;signed compare
+           mov ebx, [eax+.priority]
+           setg ecx
+           jg @F
+
+           mov edx, [eax+.tics_quantum]
+           mov [eax+.ticks_left], edx
+           cmp ebx, (IDLE_PRIORITY-1)
+           je @F
+           inc ebx
+@@:
+           ret
+
+; param
+;  eax= task
+
+align 4
+enqueue:
+          call shed  ;eax
+          cmp [rdy_head+ebx*4],0
+          jnz @F
+
+          mov [rdy_head+ebx*4], eax
+          mov [rdy_tail+ebx*4], eax
+          mov [eax+.next_ready], 0
+          jmp .pick
+@@:
+          test ecx, ecx
+          jz .back
+
+          mov ecx, [rdy_head+ebx*4]
+          mov [eax+.next_ready], ecx
+          mov [rdy_head+ebx*4], eax
+          jmp .pick
+.back:
+          mov ecx, [rdy_tail+ebx*4]
+          mov [ecx+.next_ready], eax
+          mov [rdy_tail+ebx*4], eax
+          mov [eax+.next_ready], 0
+.pick:
+          call pick_proc     ;select next task
+          ret
+
+end if
+

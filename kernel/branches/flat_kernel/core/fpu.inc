@@ -227,10 +227,9 @@ except_19:          ;sse exceptions handler
            push ecx
            push edx
 
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
+           mov ebx, [current_slot]
 
-           mov eax, [ebx+SLOT_BASE+APPDATA.sse_handler]
+           mov eax, [ebx+APPDATA.sse_handler]
            test eax, eax
            jz .default
 

@@ -152,14 +152,13 @@ align 4
 proc get_notify stdcall, p_ev:dword
 
 .wait:
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           test dword [ebx+SLOT_BASE+0xA8],EVENT_NOTIFY
+           mov ebx,[current_slot]
+           test dword [ebx+APPDATA.event_mask],EVENT_NOTIFY
 	   jz @f
-           and dword [ebx+SLOT_BASE+0xA8], not EVENT_NOTIFY
+           and dword [ebx+APPDATA.event_mask], not EVENT_NOTIFY
 	   mov edi, [p_ev]
 	   mov dword [edi], EV_INTR
-           mov eax, [ebx+SLOT_BASE+APPDATA.event]
+           mov eax, [ebx+APPDATA.event]
 	   mov dword [edi+4], eax
 	   ret
 @@:
@@ -994,9 +993,8 @@ create_kernel_object:
            test eax, eax
            jz .fail
 
-           mov ecx,[CURRENT_TASK]
-           shl ecx,8
-           add ecx, SLOT_BASE+APP_OBJ_OFFSET
+           mov ecx,[current_slot]
+           add ecx, APP_OBJ_OFFSET
 
            pushfd
            cli
@@ -1034,5 +1032,70 @@ destroy_kernel_object:
 
            call free           ;release object memory
            ret
+
+
+
+if 0
+
+irq:
+
+.irq0:
+           pusfd
+           pushad
+           push IRQ_0
+           jmp .master
+.irq_1:
+           pusfd
+           pushad
+           push IRQ_1
+           jmp .master
+
+.master:
+           mov ax, app_data
+           mov ds, eax
+           mov es, eax
+           mov ebx, [esp+4]  ;IRQ_xx
+           mov eax, [irq_handlers+ebx+4]
+           call intr_handler
+           mov ecx, [esp+4]
+           cmp [irq_actids+ecx*4], 0
+           je @F
+           in al, 0x21
+           bts eax, ecx
+           out 0x21, al
+           mov al, 0x20
+           out 0x20, al
+           jmp .restart
+
+.slave:
+           mov ax, app_data
+           mov ds, eax
+           mov es, eax
+           mov ebx, [esp+4]  ;IRQ_xx
+           mov eax, [irq_handlers+ebx+4]
+           call intr_handler
+           mov ecx, [esp+4]
+           sub ecx, 8
+           cmp [irq_actids+ecx*4], 0
+           je @F
+           in al, 0xA1
+           bts eax, ecx
+           out 0xA1, al
+           mov al, 0x20
+           out 0xA0, al
+           out 0x20, al
+.restart:
+           mov ebx, [next_slot]
+           test ebx, ebx
+           jz @F
+           mov [next_task],0
+           mov esi, [prev_slot]
+           call do_change_task
+           add esp, 4
+           iretd
+
+end if
+
+
 
 

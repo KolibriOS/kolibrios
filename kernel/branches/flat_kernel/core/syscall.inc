@@ -55,9 +55,8 @@ sysenter_entry:
      ;   lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
      ;   mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
 
-        mov     esp, [CURRENT_TASK]
-        shl     esp, 8
-        mov     esp, [SLOT_BASE + esp + APPDATA.pl0_stack]
+        mov     esp, [current_slot]
+        mov     esp, [esp + APPDATA.pl0_stack]
         add     esp, RING0_STACK_SIZE           ; configure ESP
 	sti
     ;------------------
@@ -104,14 +103,12 @@ syscall_entry:
   ;      lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
   ;      mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
 
-        mov     esp, [CURRENT_TASK]
-        shl     esp, 8
-        mov     esp, [SLOT_BASE + esp + APPDATA.pl0_stack]
+        mov     esp, [current_slot]
+        mov     esp, [esp + APPDATA.pl0_stack]
         add     esp, RING0_STACK_SIZE             ; configure ESP
 
 	sti
 	;------------------
-;        push    ds es
 	pushad
 	cld
 
@@ -132,7 +129,6 @@ syscall_entry:
 	pop	eax
 
 	popad
- ;       pop     es ds
 	;------------------
 
         cli
