@@ -10,15 +10,11 @@
 ;;   Compile with last version FASM
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-_REV_ = 0
-macro $Revision a {
-  match =: Num =$,a \{
-    if _REV_ < Num
-      _REV_ = Num
-    end if
-  \}
-}
+
+include 'macros.inc'
+
 $Revision$
+
 include "proc32.inc"
 include "kglobals.inc"
 include "lang.inc"
@@ -5112,4 +5108,7 @@ endofcode:
 IncludeUGlobals
 uglobals_size = $ - endofcode
 diff16 "end of kernel code",0,$
-diff10 "revision",0,_REV_
+
+__REV__ = __REV
+
+diff10 "revision",0,__REV__

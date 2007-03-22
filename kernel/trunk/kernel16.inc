@@ -16,6 +16,10 @@ $Revision$
 
 ;% +include
 
+msg_svn db " SVN ",0
+msg_svn.len = $ - msg_svn
+svn_num_buf rb 12
+
 ;!!!
 if lang eq en
 include "boot/booteng.inc"     ; english system boot messages
@@ -29,7 +33,7 @@ include "boot/bootge.inc"      ; german system boot messages
 end if
 if lang eq et
 include "boot/et.inc"          ; Estonian font
-else
+else if lang eq ru
 include "boot/ru.inc"          ; Russian font
 end if
 

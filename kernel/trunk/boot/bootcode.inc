@@ -156,6 +156,20 @@ printplain:
     popa
     ret
 
+uint2str_16:
+	cmp	ax,cx
+	jb	@f
+	xor	dx,dx
+	div	cx
+	push	dx
+	call	uint2str_16
+	pop	ax
+    @@: cmp	al,10
+	sbb	al,$69
+	das
+	stosb
+	ret
+
 ; Now int 16 is used for keyboard support.
 ; This is shorter, simpler and more reliable.
 if 0
@@ -532,7 +546,6 @@ wait_loop:       ; variant 2
     mov    [si + 7], al
     _setcursor 0, 3
     call    printplain
-    _setcursor d80x25_top_num,0
     ; ------------------
 
     mov    ax, 0x5304            ; Disconnect interface
@@ -559,6 +572,26 @@ wait_loop:       ; variant 2
     mov    [apm_data_16 - 0x10000 + 4], dl
     mov    [es : 0x9040], ebx              ; offset of APM entry point
 apm_end:
+; -----------------------------------------
+
+; --------------- REVISION ----------------
+	push	ds
+	pop	es
+	mov	di,svn_num_buf - 0x10000
+	mov	ax,__REV__
+	mov	cx,10
+	call	uint2str_16
+	mov	ax,' '
+	stosw
+	sub	di,svn_num_buf - 0x10000
+	mov	dx,80 - 1 - msg_svn.len
+	sub	dx,di
+	call	setcursor
+	mov	si,msg_svn - 0x10000
+	call    printplain
+	mov	si,svn_num_buf - 0x10000
+	call    printplain
+	_setcursor d80x25_top_num,0
 ; -----------------------------------------
 
 ; DISPLAY VESA INFORMATION
@@ -1298,3 +1331,4 @@ setgr:
 gmok2:
         push    ds
         pop    es
+
