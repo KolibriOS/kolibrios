@@ -6,7 +6,7 @@ cpl0    equ  10011010b      ; code read dpl0
 cpl3    equ  11111010b      ; code read dpl3
 
 D32     equ  01000000b      ; 32bit segment
-G32    equ   10000000b      ; page gran
+G32     equ   10000000b     ; page gran
 
 
 ;;;;;;;;;;;;cpu_caps flags;;;;;;;;;;;;;;;;
@@ -173,6 +173,8 @@ virtual at 0
   TSS  TSS
 end virtual
 
+TSS_SIZE  equ (128+8192)
+
 OS_BASE             equ 0x80000000
 
 window_data         equ OS_BASE
@@ -290,14 +292,16 @@ resendQ             equ (OS_BASE+0x0770000)
 
 skin_data           equ (OS_BASE+0x0778000)
 
+draw_data           equ (OS_BASE+0x0780000);
 
-tss_data            equ (OS_BASE+0x780000)
-draw_data           equ (OS_BASE+0x988000)
+virtual at (OS_BASE+0x0783F80)
+  tss  TSS
+end virtual
 
-tmp_page_tab        equ 0x98B000; draw_data+sizeof(drw_data)
+tmp_page_tab        equ 0x0786000;
 
 HEAP_BASE           equ (OS_BASE+tmp_page_tab)
-
+HEAP_MIN_SIZE       equ 0x01000000
 
 page_tabs           equ 0xFDC00000
 app_page_tabs       equ 0xFDC00000
@@ -310,7 +314,7 @@ sys_pgdir           equ (OS_BASE+0x00050000)
 sys_pgmap           equ (OS_BASE+0x00052000)
 
 
-new_app_base        equ 0;     0x01000000
+new_app_base        equ 0;
 
 twdw                equ (CURRENT_TASK-window_data)
 
@@ -524,7 +528,6 @@ struc PG_DATA
   .pages_free        dd ?
   .pages_faults      dd ?
   .pagemap_size      dd ?
-  .kernel_max        dd ?
   .kernel_pages      dd ?
   .kernel_tables     dd ?
   .sys_page_dir      dd ?

@@ -180,8 +180,6 @@ find_next_task:
         sete  al
 ret
 
-; in: ebx = TSS selector index
-;
 ; param
 ;  ebx = incoming task
 ;  esi = outcomig task
@@ -197,12 +195,18 @@ do_change_task:
         mov [esi+APPDATA.saved_esp], esp
         mov esp, [ebx+APPDATA.saved_esp]
 
+; set thread io map
+
+        mov ecx, [ebx+APPDATA.io_map]
+        mov edx, [ebx+APPDATA.io_map+4]
+        mov dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], ecx
+        mov dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], edx
+
         mov eax, [ebx+APPDATA.dir_table]
         mov cr3, eax
-
         mov ebx, [ebx+APPDATA.pl0_stack]
         add ebx, RING0_STACK_SIZE
-        mov [tss_data+TSS._esp0], ebx
+        mov [tss._esp0], ebx
         mov ecx, cr0
         or ecx, CR0_TS   ;set task switch flag
         mov cr0, ecx

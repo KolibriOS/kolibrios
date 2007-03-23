@@ -123,19 +123,19 @@ debug_getcontext:
 	jnz	.ret
 	call	get_debuggee_slot
 	jc	.ret
-	imul	eax, tss_step/32
-	add	eax, tss_data
-	mov	edi, edx
-        cmp     [eax+TSS._cs], app_code
-	jnz	.ring0
-        lea     esi, [eax+TSS._eip]
-	shr	ecx, 2
-	rep	movsd
-	jmp	.ret
+;        imul    eax, tss_step/32
+;        add     eax, tss_data
+        mov     edi, edx
+;        cmp     [eax+TSS._cs], app_code
+;        jnz     .ring0
+;        lea     esi, [eax+TSS._eip]
+;        shr     ecx, 2
+;        rep     movsd
+;        jmp     .ret
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
 ; saves ring-3 context by pushad in this order
-        mov     esi, [eax+TSS._esp0]
+        mov     esi, [tss._esp0]
 ; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), pushad
         sub     esi, 8+12+20h
         lodsd                     ;edi
@@ -182,17 +182,17 @@ debug_setcontext:
 	jnz	.ret
 	call	get_debuggee_slot
 	jc	.stiret
-	imul	eax, tss_step/32
-	add	eax, tss_data
-	mov	esi, edx
-        cmp     [eax+TSS._cs], app_code
-	jnz	.ring0
-        lea     edi, [eax+TSS._eip]
-	shr	ecx, 2
-	rep	movsd
-	jmp	.stiret
+;        imul    eax, tss_step/32
+;        add     eax, tss_data
+        mov     esi, edx
+;        cmp     [eax+TSS._cs], app_code
+;        jnz     .ring0
+;        lea     edi, [eax+TSS._eip]
+;        shr     ecx, 2
+;        rep     movsd
+;        jmp     .stiret
 .ring0:
-        mov     edi, [eax+TSS._esp0]
+        mov     edi, [tss._esp0]
         sub     edi, 8+12+20h
         mov     eax, [esi+24h]    ;edi
 	stosd
@@ -247,8 +247,8 @@ debug_set_drx:
 	btr	dword [eax+10h], ecx	; clear L<i> bit
 	test	byte [eax+10h], 55h
 	jnz	.okret
-	imul	eax, ebp, tss_step/32
-        and     byte [eax + tss_data + TSS._trap], not 1
+;        imul    eax, ebp, tss_step/32
+;        and     byte [eax + tss_data + TSS._trap], not 1
 .okret:
 	and	dword [esp+36], 0
 	sti
@@ -289,8 +289,8 @@ debug_set_drx:
 	not	edx
 	and	[eax+10h+2], dx
 	or	[eax+10h+2], bx		; set R/W and LEN fields
-	imul	eax, ebp, tss_step/32
-        or      byte [eax + tss_data + TSS._trap], 1
+;        imul    eax, ebp, tss_step/32
+;        or      byte [eax + tss_data + TSS._trap], 1
 	jmp	.okret
 
 debug_read_process_memory:

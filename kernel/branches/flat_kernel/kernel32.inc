@@ -185,8 +185,9 @@ struc APPDATA
   .fd_obj          dd ?            ;+56
   .bk_obj          dd ?            ;+60
   .saved_esp       dd ?            ;+64
+  .io_map          rd 2            ;+68
 
-                   db 60 dup(?)    ;+68
+                   db 52 dup(?)    ;+76
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

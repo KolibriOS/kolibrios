@@ -12,25 +12,6 @@ idtreg:
      dw   8*0x41-1
      dd   idts+8
 
-build_process_gdt_tss_pointer:
-
-        mov    ecx,tss_data
-        mov    edi,0
-      setgdtl2:
-        mov    [edi+gdts+ tss0 +0], word tss_step
-        mov    [edi+gdts+ tss0 +2], cx
-        mov    eax,ecx
-        shr    eax,16
-        mov    [edi+gdts+ tss0 +4], al
-        mov    [edi+gdts+ tss0 +7], ah
-        mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-        add    ecx,tss_step
-        add    edi,8
-        cmp    edi,8*(max_processes+5)
-        jbe    setgdtl2
-
-        ret
-
 build_interrupt_table:
 
         mov    edi, idts+8
@@ -836,11 +817,10 @@ build_scheduler:
 
         mov    esi,boot_sched_1
         call   boot_log
-        call   build_process_gdt_tss_pointer
+  ;      call   build_process_gdt_tss_pointer
 
-        mov    esi,boot_sched_2
-        call   boot_log
-        call   build_interrupt_table
+  ;      mov    esi,boot_sched_2
+  ;      call   boot_log
 
         ret
 

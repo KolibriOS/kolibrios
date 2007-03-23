@@ -11,7 +11,7 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision:$
+; $Revision$
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -203,7 +203,7 @@ B32:
            mov cr3, eax
 
            mov eax,cr0
-           or eax,CR0_PG
+           or eax,CR0_PG+CR0_WP
            mov cr0,eax
 
            lgdt [gdts]
@@ -372,11 +372,36 @@ high_code:
 .noSYSCALL:
 ; -----------------------------------------
 
+; LOAD IDT
+
+           call build_interrupt_table
+           lidt [idtreg]
+
            call init_kernel_heap
-           stdcall kernel_alloc, 0x2000
+           stdcall kernel_alloc, RING0_STACK_SIZE+512
            mov [os_stack_seg], eax
 
            lea esp, [eax+RING0_STACK_SIZE]
+
+           mov [tss._ss0], os_stack
+           mov [tss._esp0], esp
+           mov [tss._esp], esp
+           mov [tss._cs],os_code
+           mov [tss._ss],os_stack
+           mov [tss._ds],app_data
+           mov [tss._es],app_data
+           mov [tss._fs],app_data
+           mov [tss._gs],app_data
+           mov [tss._io],128
+;Add IO access table - bit array of permitted ports
+           mov edi, tss._io_map_0
+           xor eax, eax
+           not eax
+           mov ecx, 8192/4
+           rep stosd                 ; access to 4096*8=65536 ports
+
+           mov  ax,tss0
+           ltr  ax
 
            mov [LFBSize], 0x800000
            call init_mtrr
@@ -385,7 +410,10 @@ high_code:
            call init_fpu
            call init_malloc
 
-           stdcall alloc_kernel_space, 0x4F000
+           stdcall alloc_kernel_space, 0x51000
+           mov [default_io_map], eax
+
+           add eax, 0x2000
            mov [ipc_tmp], eax
            mov ebx, 0x1000
 
@@ -497,9 +525,6 @@ include 'vmodeld.inc'
 
         call   build_scheduler ; sys32.inc
 
-; LOAD IDT
-        lidt   [idtreg]
-
         mov    esi,boot_devices
         call   boot_log
         call   detect_devices
@@ -565,6 +590,10 @@ include 'vmodeld.inc'
         mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
         add edi, 0x2000-512
         mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov dword [SLOT_BASE+256+APPDATA.io_map],\
+                  (tss._io_map_0-OS_BASE+PG_MAP)
+        mov dword [SLOT_BASE+256+APPDATA.io_map+4],\
+                  (tss._io_map_1-OS_BASE+PG_MAP)
 
         mov esi, fpu_data
         mov ecx, 512/4
@@ -586,31 +615,6 @@ include 'vmodeld.inc'
         mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
         mov  [TASK_DATA+TASKDATA.pid], 1        ; process id number
         mov  [TASK_DATA+TASKDATA.mem_start], 0  ; process base address
-
-        mov  edi,tss_data+tss_step
-        mov ecx, (tss_step)/4
-        xor eax, eax
-        cld
-        rep stosd
-
-        mov  edi,tss_data
-        mov  [edi+TSS._ss0], os_stack
-        mov  eax,cr3
-        mov  [edi+TSS._cr3],eax
-        mov  [edi+TSS._eip],osloop
-        mov  [edi+TSS._eflags],dword 0x1202 ; sti and resume
-        mov eax, [os_stack_seg]
-        add eax, 0x2000-512
-        mov  [edi+TSS._esp], eax
-        mov  [edi+TSS._cs],os_code
-        mov  [edi+TSS._ss],os_stack  ;os_stack
-        mov  [edi+TSS._ds],app_data  ;os_data
-        mov  [edi+TSS._es],app_data  ;os_data
-        mov  [edi+TSS._fs],app_data  ;os_data
-        mov  [edi+TSS._gs],app_data  ;os_data
-
-        mov  ax,tss0
-        ltr  ax
 
         call init_cursors
         mov eax, [def_cursor]
@@ -666,6 +670,18 @@ include 'vmodeld.inc'
         movsd
         movsd
         call    load_skin
+
+;protect io permission map
+
+           mov esi, [default_io_map]
+           stdcall map_page,esi,(tss._io_map_0-OS_BASE), PG_MAP
+           add esi, 0x1000
+           stdcall map_page,esi,(tss._io_map_1-OS_BASE), PG_MAP
+
+           stdcall map_page,tss._io_map_0,\
+                   (tss._io_map_0-OS_BASE), PG_MAP
+           stdcall map_page,tss._io_map_1,\
+                   (tss._io_map_1-OS_BASE), PG_MAP
 
 ; LOAD FIRST APPLICATION
         cli
@@ -3727,33 +3743,32 @@ set_io_access_rights:
 
      pushad
 
-     mov   edi,[CURRENT_TASK]
-     imul  edi,tss_step
-     add   edi,tss_data+128
-;     add   edi,128
+     mov edi, tss._io_map_0
 
-     mov   ecx,eax
-     and   ecx,7    ; offset in byte
+;     mov   ecx,eax
+;     and   ecx,7    ; offset in byte
 
-     shr   eax,3    ; number of byte
-     add   edi,eax
+;     shr   eax,3    ; number of byte
+;     add   edi,eax
 
-     mov   ebx,1
-     shl   ebx,cl
+;     mov   ebx,1
+;     shl   ebx,cl
 
      cmp   ebp,0                ; enable access - ebp = 0
      jne   siar1
 
-     not   ebx
-     and   [edi],byte bl
+;     not   ebx
+;     and   [edi],byte bl
+     btr [edi], eax
 
      popad
 
      ret
 
-   siar1:
+siar1:
 
-     or    [edi],byte bl        ; disable access - ebp = 1
+     bts [edi], eax
+  ;  or    [edi],byte bl        ; disable access - ebp = 1
 
      popad
 
@@ -3779,7 +3794,7 @@ r_f_port_area:
      je    rpal2
      cmp   esi,255            ; max reserved
      jae   rpal1
-   rpal3:
+ rpal3:
      mov   edi,esi
      shl   edi,4
      add   edi,RESERVED_PORTS
@@ -3789,7 +3804,7 @@ r_f_port_area:
      jae   rpal1
 ;     jb    rpal4
 ;     jmp   rpal1
-   rpal4:
+ rpal4:
 
      dec   esi
      jnz   rpal3

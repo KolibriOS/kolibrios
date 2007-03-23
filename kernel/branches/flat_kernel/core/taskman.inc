@@ -454,15 +454,6 @@ set_cr3:
            mov ebx, [current_slot]
            mov [ebx+APPDATA.dir_table], eax
            mov cr3, eax
-
-;           mov esi, [CURRENT_TASK]
-;           mov ebx, esi
-;           shl esi,8
-;           mov [SLOT_BASE+esi+0xB8],eax
-;           imul   ebx,tss_step
-;           add    ebx,tss_data
-;           mov [ebx+28], eax
-;           mov cr3, eax
            ret
 
 align 4
@@ -923,6 +914,12 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [eax+SLOT_BASE+APPDATA.fpu_handler], 0
            mov [eax+SLOT_BASE+APPDATA.sse_handler], 0
 
+;set default io permission map
+           mov [eax+SLOT_BASE+APPDATA.io_map],\
+                  (tss._io_map_0-OS_BASE+PG_MAP)
+           mov [eax+SLOT_BASE+APPDATA.io_map+4],\
+                  (tss._io_map_1-OS_BASE+PG_MAP)
+
            mov esi, fpu_data
            mov ecx, 512/4
            rep movsd
@@ -1003,47 +1000,10 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    eax,[ScreenHeight]
            mov    [ecx+12],eax
 
-           mov edi,[slot]
-           imul edi,tss_step
-           add edi,tss_data
-           mov ecx,128/4
-           xor eax, eax
-           cld
-           rep stosd
-;Add IO access table - bit array of permitted ports
-           not eax
-           mov ecx,2048
-           rep stosd                 ; access to 4096*8=65536 ports
-           sub edi, tss_step
-
-;set cr3 register in TSS of application
-           mov ecx, [slot]
-           shl ecx, 8
-           mov eax,[SLOT_BASE+ecx+APPDATA.dir_table]
-           mov [edi+TSS._cr3],eax
-
+           mov ebx, [pl0_stack]
            mov esi,[params]
-           mov eax, [esi+0x08]       ;app_eip
-           mov [edi+TSS._eip],eax    ;set eip in TSS
-           mov eax, [esi+0x0C]       ;app_esp
-           mov [edi+TSS._esp],eax    ;set stack in TSS
-           mov [edi+TSS._eflags],dword 0x1202
-
-           mov [edi+TSS._cs],app_code  ;selector of code segment
-           mov [edi+TSS._ss],app_data
-           mov [edi+TSS._ds],app_data
-           mov [edi+TSS._es],app_data
-           mov [edi+TSS._fs],app_data
-           mov [edi+TSS._gs],graph_data ;selector of graphic segment
-           mov [edi+TSS._io],word 128
-           mov [edi+TSS._ss0], os_stack
-           mov ebx, [pl0_stack]
-           add ebx, RING0_STACK_SIZE
-           mov [edi+TSS._esp0],ebx
-
-           xor eax, eax
-           mov ebx, [pl0_stack]
            lea ecx, [ebx+REG_EIP]
+           xor eax, eax
 
            mov [ebx+REG_RET], dword irq0.return
            mov [ebx+REG_EDI], eax
@@ -1071,17 +1031,6 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            shl ebx, 8
            mov [ebx+SLOT_BASE+APPDATA.saved_esp], ecx
 
-           mov ecx, edi    ;ecx - address of application TSS
-           mov ebx,[slot]
-           shl ebx,3
-;set TSS descriptor
-           mov [ebx+gdts+tss0+0],word tss_step ;limit (size)
-           mov [ebx+gdts+tss0+2],cx  ;part of offset
-           shr ecx,16
-           mov [ebx+gdts+tss0+4],cl  ;part of offset
-           mov [ebx+gdts+tss0+7],ch  ;part of offset
-           mov [ebx+gdts+tss0+5],word 01010000b*256+11101001b ;system flags
-
 ;flush keyboard and buttons queue
            mov    [KEY_COUNT],byte 0
            mov    [BTN_COUNT],byte 0
@@ -1108,37 +1057,6 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    esi,new_process_running
            call   sys_msg_board_str     ;output information about succefull startup
            ret
-
-if 0
-; set stack frame
-
-           xor eax, eax
-           lea ecx, [ebx+REG_EIP]
-           mov ebx, [pl0_stack]
-           mov esi,[params]
-
-           mov [ebx+REG_RET], dword irq0.return
-           mov [ebx+REG_EDI], eax
-           mov [ebx+REG_ESI], eax
-           mov [ebx+REG_EBP], eax
-           mov [ebx+REG_ESP], ecx   ;ebx+REG_EIP
-           mov [ebx+REG_EBX], eax
-           mov [ebx+REG_EDX], eax
-           mov [ebx+REG_ECX], eax
-           mov [ebx+REG_EAX], eax
-
-           mov [ebx+REG_EFL_2], dword 0x1002
-
-           mov eax, [esi+0x08]       ;app_eip
-           mov [ebx+REG_EIP],  eax   ;app_entry
-           mov [ebx+REG_CS], dword app_code
-           mov [ebx+REG_EFLAGS], dword 0x1202
-
-           mov eax, [esi+0x0C]       ;app_esp
-           mov [ebx+REG_ESP], eax    ;app_stack
-           mov [ebx+REG_SS], dword app_data
-end if
-
 endp
 
 include "debug.inc"

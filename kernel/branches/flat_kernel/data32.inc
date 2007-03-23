@@ -183,11 +183,13 @@ graph_data_l:
         db     0x00
         dw     11010000b *256 +11110010b
         db     0x00
-
-endofcode:
 tss0_l:
-        rq (max_processes+10)
-
+        dw     TSS_SIZE-1
+        dw     tss and 0xFFFF
+        db     (tss shr 16) and 0xFF
+        db     10001001b
+        dw     (tss shr 16) and 0xFF00
+endofcode:
 gdte:
 
 align 16
@@ -275,6 +277,8 @@ proc_mem_tab      rd 1
 
 tmp_task_pdir     rd 1
 tmp_task_ptab     rd 1
+
+default_io_map    rd 1
 
 LFBSize           rd 1
 

@@ -1,3 +1,4 @@
+; $Revision$
 
 align 4
 proc alloc_page
@@ -544,6 +545,40 @@ align 4
                            ;в таблицах страниц. добавлено в P4/Xeon
 
 ;попытка записи в защищённую страницу ядра
+
+           cmp ebx, tss._io_map_0
+           jb .fail
+
+           cmp ebx, tss._io_map_0+8192
+           jae .fail
+
+; io permission map
+; copy-on-write protection
+
+           call alloc_page
+           and eax, eax
+           jz .fail
+
+           push eax
+           stdcall map_page,[ebp-4],eax,dword PG_SW
+           pop eax
+           mov edi, [.err_addr]
+           and edi, -4096
+           lea esi, [edi+(not tss._io_map_0)+1]; -tss._io_map_0
+
+           mov ebx, esi
+           shr ebx, 12
+           mov edx, [current_slot]
+           or eax, PG_SW
+           mov [edx+APPDATA.io_map+ebx*4], eax
+
+           add esi, [default_io_map]
+           mov ecx, 4096/4
+           cld
+           rep movsd
+           jmp .exit
+
+
 ;не обрабатываем. Ошибка
 
 .core_tabs:

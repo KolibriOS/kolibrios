@@ -15,7 +15,7 @@ proc mem_test
            xor edi, edi
            mov ebx, 'TEST'
 @@:
-           add edi, 0x400000
+           add edi, 0x100000
            xchg ebx, dword [edi]
            cmp dword [edi], 'TEST'
            xchg ebx, dword [edi]
@@ -32,21 +32,24 @@ align 4
 proc init_mem
            mov eax, [MEM_AMOUNT-OS_BASE]
            mov [pg_data.mem_amount-OS_BASE], eax
-           mov [pg_data.kernel_max-OS_BASE], eax
 
            shr eax, 12
            mov edx, eax
            mov [pg_data.pages_count-OS_BASE], eax
-           mov [pg_data.kernel_pages-OS_BASE], eax
-
            shr eax, 3
            mov [pg_data.pagemap_size-OS_BASE], eax
 
-           shr edx, 10
-           cmp edx, 3
-           ja @f
-           inc edx       ;at least 4Mb for kernel heap
+           cmp edx, (OS_BASE/4096)
+           jbe @F
+           mov edx, (OS_BASE/4096)
+           jmp .set
 @@:
+           cmp edx, (HEAP_MIN_SIZE/4096)
+           jae .set
+           mov edx, (HEAP_MIN_SIZE/4096)
+.set:
+           mov [pg_data.kernel_pages-OS_BASE], edx
+           shr edx, 10
            mov [pg_data.kernel_tables-OS_BASE], edx
 
            xor eax, eax
@@ -70,15 +73,15 @@ proc init_mem
            or ebx, CR4_PGE
 @@:
            mov cr4, ebx
-           sub [pg_data.kernel_tables-OS_BASE], 2
+           sub [pg_data.kernel_tables-OS_BASE], 1
 
            mov [edx], eax
            add eax, 0x00400000
-           mov [edx+4], eax
-           add edx, 8
+;           mov [edx+4], eax
+           add edx, 4
 
-           mov eax, 0x800000+PG_SW
-           mov ecx, (tmp_page_tab-0x800000)/4096
+           mov eax, 0x400000+PG_SW
+           mov ecx, (tmp_page_tab-0x400000)/4096
            jmp .map_low
 .no_PSE:
            mov eax, PG_SW
