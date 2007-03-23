@@ -838,12 +838,12 @@ endg
 
 build_scheduler:
 
-        mov    esi,boot_sched_1
-        call   boot_log
+;        mov    esi,boot_sched_1
+;        call   boot_log
         call   build_process_gdt_tss_pointer
 
-        mov    esi,boot_sched_2
-        call   boot_log
+;        mov    esi,boot_sched_2
+;        call   boot_log
         call   build_interrupt_table
 
         ret

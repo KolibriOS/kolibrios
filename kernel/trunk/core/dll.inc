@@ -452,10 +452,13 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            mov byte [buff+4], al
            mov [name], ebx
 
-           mov eax, 70
-           lea ebx, [cmd]
-           sub ebx, new_app_base
-           int 0x40
+           pushad
+           push eax
+           lea eax, [cmd]
+           sub eax, new_app_base
+           call file_system_lfn
+           pop eax
+           popad
            ret
 endp
 
