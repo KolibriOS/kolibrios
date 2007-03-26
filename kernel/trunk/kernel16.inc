@@ -1,17 +1,20 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                            ;;
-;; KERNEL16.INC                                               ;;
-;;                                                            ;;
-;; Included 16 bit kernel files for MenuetOS                  ;;
-;;                                                            ;;
-;; This file is kept separate as it will be easier to         ;;
-;; maintain and compile with an automated SETUP program       ;;
-;; in the future.                                             ;;
-;;                                                            ;;
-;; Copyright Ville Turjanmaa, see file COPYING for details.   ;;
-;;                                                            ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;; KERNEL16.INC                                                 ;;
+;;                                                              ;;
+;; Included 16 bit kernel files for MenuetOS                    ;;
+;;                                                              ;;
+;; This file is kept separate as it will be easier to           ;;
+;; maintain and compile with an automated SETUP program         ;;
+;; in the future.                                               ;;
+;;                                                              ;;
+;; Copyright Ville Turjanmaa, see file COPYING for details.     ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;% +include
@@ -39,7 +42,7 @@ end if
 
 ; сюда данные записываются в 16 разрядном режиме, читаются в 32 разрядном
 bx_from_load:			; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
-.from_disc	db 0		; a,b,c,d - винчестеры, r - рам диск 
+.from_disc	db 0		; a,b,c,d - винчестеры, r - рам диск
 .from_part	db 0,0		; # диска... символ, а не байт. '1', а не 1
 
 org $-0x10000

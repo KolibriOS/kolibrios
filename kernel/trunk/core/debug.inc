@@ -1,4 +1,11 @@
 $Revision$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ; diamond, 2006
 sys_debug_services:
 	cmp	eax, 9

@@ -1,17 +1,20 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                 ;;
-;;  SB16.INC                                                       ;;
-;;                                                                 ;;
-;;  Sound Blaster 16 functions for MenuetOS                        ;;
-;;                                                                 ;;
-;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
-;;                                                                 ;;
-;;  See file COPYING for details                                   ;;
-;;                                                                 ;;
-;;  - 11.07.2002 8 bit stereo mode - Ville Turjanmaa               ;;
-;;                                                                 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  SB16.INC                                                    ;;
+;;                                                              ;;
+;;  Sound Blaster 16 functions for MenuetOS                     ;;
+;;                                                              ;;
+;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it       ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
+;;  - 11.07.2002 8 bit stereo mode - Ville Turjanmaa            ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 SB16_load_music  equ   0xc0000000

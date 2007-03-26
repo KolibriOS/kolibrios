@@ -1,3 +1,9 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 if used mmx128_mix_2
 

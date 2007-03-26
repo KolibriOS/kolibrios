@@ -1,10 +1,13 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;; FAT12.INC                                                            ;;
-;; (C) 2005 Mario79, License: GPL                                       ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;; FAT12.INC                                                    ;;
+;; (C) 2005 Mario79, License: GPL                               ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 n_sector    dd 0  ; temporary save for sector value
 flp_status  dd 0

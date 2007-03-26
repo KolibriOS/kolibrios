@@ -1,23 +1,26 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                 ;;
-;;  STACK.INC                                                      ;;
-;;                                                                 ;;
-;;  TCP/IP stack for Menuet OS                                     ;;
-;;                                                                 ;;
-;;  Version 0.7  4th July 2004                                     ;;
-;;                                                                 ;;
-;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net               ;;
-;;                                                                 ;;
-;;  See file COPYING for details                                   ;;
-;;                                                                 ;;
-;; Version 0.7                                                     ;;
-;;         Added a timer per socket to allow delays when rx window ;;
-;;         gets below 1KB                                          ;;
-;;                                                                 ;;
-;;  10.01.2007 Bugfix for checksum function from Paolo Franchetti  ;;
-;;                                                                 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  STACK.INC                                                   ;;
+;;                                                              ;;
+;;  TCP/IP stack for Menuet OS                                  ;;
+;;                                                              ;;
+;;  Version 0.7  4th July 2004                                  ;;
+;;                                                              ;;
+;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
+;; Version 0.7                                                  ;;
+;;      Added a timer per socket to allow delays when rx window ;;
+;;      gets below 1KB                                          ;;
+;;                                                              ;;
+;;10.01.2007 Bugfix for checksum function from Paolo Franchetti ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 

@@ -1,6 +1,9 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
 ;;  RTL8139.INC                                                    ;;
 ;;                                                                 ;;
 ;;  Ethernet driver for Menuet OS                                  ;;

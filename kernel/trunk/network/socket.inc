@@ -1,31 +1,34 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  SOCKET.INC
-;;
-;;  Sockets constants, structures and functions
-;;
-;;  Last revision: 11.11.2006
-;;
-;;  This file contains the following:
-;;    is_localport_unused
-;;    get_free_socket
-;;    socket_open
-;;    socket_open_tcp
-;;    socket_close
-;;    socket_close_tcp
-;;    socket_poll
-;;    socket_status
-;;    socket_read
-;;    socket_write
-;;    socket_write_tcp
-;;
-;;
-;;  Changes history:
-;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net
-;;   11.11.2006 - [Johnny_B] and [smb]
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  SOCKET.INC                                                  ;;
+;;                                                              ;;
+;;  Sockets constants, structures and functions                 ;;
+;;                                                              ;;
+;;  Last revision: 11.11.2006                                   ;;
+;;                                                              ;;
+;;  This file contains the following:                           ;;
+;;    is_localport_unused                                       ;;
+;;    get_free_socket                                           ;;
+;;    socket_open                                               ;;
+;;    socket_open_tcp                                           ;;
+;;    socket_close                                              ;;
+;;    socket_close_tcp                                          ;;
+;;    socket_poll                                               ;;
+;;    socket_status                                             ;;
+;;    socket_read                                               ;;
+;;    socket_write                                              ;;
+;;    socket_write_tcp                                          ;;
+;;                                                              ;;
+;;                                                              ;;
+;;  Changes history:                                            ;;
+;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net          ;;
+;;   11.11.2006 - [Johnny_B] and [smb]                          ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;
 ;  Socket Descriptor + Buffer

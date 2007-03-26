@@ -1,12 +1,16 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Shutdown for Menuet
-;;
-;;  Distributed under General Public License
-;;  See file COPYING for details.
-;;  Copyright 2003 Ville Turjanmaa
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  Shutdown for Menuet                                         ;;
+;;                                                              ;;
+;;  Distributed under General Public License                    ;;
+;;  See file COPYING for details.                               ;;
+;;  Copyright 2003 Ville Turjanmaa                              ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 system_shutdown:          ; shut down the system
@@ -124,12 +128,12 @@ system_shutdown:          ; shut down the system
     push 12
     pop  esi
     push edi    ; may be destroyed
-    
+
     pushad
     push eax
     call file_system_lfn ; by SPraid  fileread
     pop eax
-    popad    
+    popad
     pop  edi
 
     pop  ecx

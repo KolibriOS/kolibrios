@@ -1,4 +1,11 @@
 $Revision$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;------------------------------------------------------------------
 ; use "iglobal" for inserting initialized global data definitions.
 ;------------------------------------------------------------------
@@ -52,7 +59,7 @@ macro IncludeAllGlobals {
   IncludeIGlobals
   IncludeUGlobals
 }
- 
+
 iglobal
 endg
 

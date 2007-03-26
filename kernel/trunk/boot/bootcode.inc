@@ -1,12 +1,16 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                        ;;
-;;  BOOTCODE.INC                                          ;;
-;;                                                        ;;
-;;  KolibriOS 16-bit loader,                              ;;
-;;                        based on bootcode for MenuetOS  ;;
-;;                                                        ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  BOOTCODE.INC                                                ;;
+;;                                                              ;;
+;;  KolibriOS 16-bit loader,                                    ;;
+;;                        based on bootcode for MenuetOS        ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 

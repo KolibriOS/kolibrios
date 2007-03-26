@@ -1,6 +1,9 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
 ;;  PLAYNOTE.INC                    version 1.1  22 November 2003  ;;
 ;;                                                                 ;;
 ;;  Player Notes for Speaker PC                                    ;;
@@ -127,10 +130,10 @@ ReadNoteByte:
       mov   edx,[memAdrNote]
       inc   [memAdrNote]
       call  read_process_memory
-.failed:      
+.failed:
       pop   edx
       pop   ecx
       pop   ebx
       pop   eax
-      ret        
+      ret
 ;-------------------  END CODE  -------------------

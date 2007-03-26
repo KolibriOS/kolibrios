@@ -1,4 +1,11 @@
 $Revision$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 include "skindata.inc"
 
 ;skin_data = 0x00778000
@@ -15,7 +22,7 @@ load_skin_file:
     push eax
     sub edx,std_application_base_address
     mov [skin_to_load.adr],edx
-    
+
     ;sub eax,std_application_base_address
     ;mov [skin_to_load.stradr],eax
     mov [skin_to_load.stradr],_skin_file_default - std_application_base_address
@@ -28,15 +35,15 @@ load_skin_file:
 
 
     ret
-    
-    
+
+
 skin_to_load:
    			dd 0,0,0
    			dd 64*1024
  .adr  		dd 0
    			db 0
  .stradr	dd 0
- 
+
 
 struct SKIN_HEADER
   .ident   dd ?

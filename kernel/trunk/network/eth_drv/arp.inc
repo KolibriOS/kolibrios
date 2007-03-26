@@ -1,22 +1,25 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  ARP.INC
-;;
-;;  Address Resolution Protocol
-;;
-;;  Last revision: 10.11.2006
-;;
-;;  This file contains the following:
-;;   arp_table_manager - Manages an ARPTable
-;;   arp_request - Sends an ARP request on the ethernet
-;;   arp_handler - Called when an ARP packet is received
-;;
-;;  Changes history:
-;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net
-;;   11.11.2006 - [Johnny_B] and [smb]
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  ARP.INC                                                     ;;
+;;                                                              ;;
+;;  Address Resolution Protocol                                 ;;
+;;                                                              ;;
+;;  Last revision: 10.11.2006                                   ;;
+;;                                                              ;;
+;;  This file contains the following:                           ;;
+;;   arp_table_manager - Manages an ARPTable                    ;;
+;;   arp_request - Sends an ARP request on the ethernet         ;;
+;;   arp_handler - Called when an ARP packet is received        ;;
+;;                                                              ;;
+;;  Changes history:                                            ;;
+;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net          ;;
+;;   11.11.2006 - [Johnny_B] and [smb]                          ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ARP_NO_ENTRY                equ  0
 ARP_VALID_MAPPING           equ  1
@@ -158,7 +161,7 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
     movsx   esi, word [ebx + ARP_ENTRY.TTL]
     cmp     esi, 0xFFFFFFFF
     je      .timer_loop_end  ;if TTL==0xFFFF then it's static entry
-    
+
     test    esi, esi
     jnz     .timer_loop_end_with_dec  ;if TTL!=0
 
@@ -182,7 +185,7 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
 
 
   .timer_loop_end_with_dec:
-    dec     word [ebx + ARP_ENTRY.TTL]  ;decrease TTL    
+    dec     word [ebx + ARP_ENTRY.TTL]  ;decrease TTL
   .timer_loop_end:
     add     ebx, ARP_ENTRY_SIZE
     loop    .timer_loop

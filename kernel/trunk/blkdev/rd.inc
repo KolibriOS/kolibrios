@@ -1,11 +1,14 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;; RAMDISK functions                                                    ;;
-;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
-;; Addings by M.Lisovin                                                 ;;
-;; LFN support by diamond                                               ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;; RAMDISK functions                                            ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
+;; Addings by M.Lisovin                                         ;;
+;; LFN support by diamond                                       ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; calculate fat chain
 

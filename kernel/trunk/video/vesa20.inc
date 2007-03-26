@@ -1,19 +1,22 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                        ;;
-;;  VESA20.INC                                            ;;
-;;                                                        ;;
-;;  Vesa 2.0 functions for MenuetOS                       ;;
-;;                                                        ;;
-;;  Copyright 2002 Ville Turjanmaa                        ;;
-;;  Alexey, kgaz@crosswindws.net                          ;;
-;;  - Voodoo compatible graphics                          ;;
-;;  Juan M. Caravaca                                      ;;
-;;  - Graphics optimimizations eg. drawline               ;;
-;;                                                        ;;
-;;  See file COPYING for details                          ;;
-;;                                                        ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  VESA20.INC                                                  ;;
+;;                                                              ;;
+;;  Vesa 2.0 functions for MenuetOS                             ;;
+;;                                                              ;;
+;;  Copyright 2002 Ville Turjanmaa                              ;;
+;;  Alexey, kgaz@crosswindws.net                                ;;
+;;  - Voodoo compatible graphics                                ;;
+;;  Juan M. Caravaca                                            ;;
+;;  - Graphics optimimizations eg. drawline                     ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
