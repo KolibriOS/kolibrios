@@ -214,16 +214,6 @@ do_change_task:
 
         ret
 
-;
-;        shl   ebx, 3
-;        xor   eax, eax
-;        add   ebx, tss0
-;        mov   [far_jump.sel],  bx   ; selector
-;        mov   [far_jump.offs], eax  ; offset
-;        jmp   pword [far_jump]
-;        inc   [context_counter] ;noname & halyavin
-;ret
-
 align 4
 updatecputimes:
 
@@ -243,6 +233,23 @@ updatecputimes:
         ret
 
 if 0
+
+
+struc TIMER
+{
+  .next      dd ?
+  .exp_time  dd ?
+  .func      dd ?
+  .arg       dd ?
+}
+
+
+
+
+
+
+
+
 
 MAX_PROIRITY         0   ; highest, used for kernel tasks
 MAX_USER_PRIORITY    0   ; highest priority for user processes

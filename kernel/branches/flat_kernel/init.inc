@@ -120,8 +120,6 @@ proc init_mem
            ret
 endp
 
-
-
 align 4
 proc init_page_map
 

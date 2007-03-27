@@ -280,7 +280,6 @@ IMG_BACKGROUND      equ (OS_BASE+0x0300000)
 WinMapAddress       equ (OS_BASE+0x0460000)
 display_data        equ (OS_BASE+0x0460000)
 
-;unused ?
 HD_CACHE            equ (OS_BASE+0x0600000)
 
 stack_data_start    equ (OS_BASE+0x0700000)
@@ -387,10 +386,11 @@ struc THR_DATA
                   rb (8192-512)
   .pl0_stack:
   .fpu_state      rb 512
+  .tls_page       rb 4096
   .pdbr           rb 4096
 }
 
-THR_DATA_SIZE     equ 4096*3
+THR_DATA_SIZE     equ 4096*4
 
 virtual at (OS_BASE-THR_DATA_SIZE)
   thr_data  THR_DATA

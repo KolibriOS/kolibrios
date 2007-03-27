@@ -246,9 +246,8 @@ endp
 
 align 4
 srv_handlerEx:
-           test ebx, ebx
-           jz .fail
-      ;     add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
 
            mov eax, [ebx+handle]
            cmp [eax+SRV.magic], ' SRV'
@@ -256,9 +255,6 @@ srv_handlerEx:
 
            cmp [eax+SRV.size], SRV_SIZE
 	   jne .fail
-
-        ;   add [ebx+input], new_app_base
-        ;   add [ebx+output], new_app_base
 
            stdcall [eax+SRV.srv_proc], ebx
            ret
@@ -437,8 +433,6 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            mov ecx, [off]
            mov edx, [bytes]
            mov esi, [buffer]
-    ;       sub ebx, new_app_base
-    ;       sub esi, new_app_base
 
            mov [cmd], eax
            mov [offset], ecx
@@ -448,10 +442,12 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            mov byte [buff+4], al
            mov [name], ebx
 
-           mov eax, 70
-           lea ebx, [cmd]
-     ;      sub ebx, new_app_base
-           int 0x40
+           pushad
+           push eax
+           lea eax, [cmd]
+           call file_system_lfn
+           pop eax
+           popad
            ret
 endp
 

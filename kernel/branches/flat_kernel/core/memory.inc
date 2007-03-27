@@ -593,31 +593,6 @@ align 4
            mov bl, 14
            jmp exc_c
            iretd
-
-;.kernel_space:
-;           shr ebx, 12
-;           mov eax, [page_tabs+ebx*4]
-;           shr ebx, 10
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
-;.old_addr:
-;           shr ebx, 12
-;           mov eax, [page_tabs+ebx*4]
-;           shr ebx, 10
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
-;.lfb_addr:
-;           shr ebx, 22
-;           ;mov ecx, [sys_page_dir]
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
-;.tab_space:
-;           shr ebx, 12
-;           mov eax, [page_tabs+ebx*4]
-;           shr ebx, 10
-;           ;mov ecx, [sys_page_dir]
-;           mov eax, [master_tab+ebx*4]
-;           jmp .exit
 endp
 
 align 4
