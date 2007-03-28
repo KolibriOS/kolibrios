@@ -14,6 +14,8 @@ $Revision$
 
 align 32
 i40:
+; diamond, 27.03.2007: handler does not require disabled interrupts
+;                      so interrupts remain enabled when calling int 0x40
       push  ds es
       pushad
       cld
@@ -31,7 +33,7 @@ i40:
         mov     edi, [esp+28]
 
       ; enable interupts  -  a task switch or an IRQ _CAN_ interrupt i40 handler
-      sti
+;      sti
       push  eax
       and   edi,0xff
       call  dword [servetable+edi*4]
@@ -49,10 +51,10 @@ i40:
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-uglobal
-times	100 db ?
-sysenter_stack:
-endg
+;uglobal
+;times	100 db ?
+;sysenter_stack:
+;endg
 
 align 32
 SYSENTER_VAR	equ	0
@@ -65,11 +67,8 @@ sysenter_entry:
      ;   mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
      ;   lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
      ;   mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
+        mov     esp, [ss:CURRENT_RING0_ESP]
 
-        mov     esp, [ss:CURRENT_TASK]
-        shl     esp, 8
-        mov     esp, [ss:SLOT_BASE + esp + APPDATA.pl0_stack]
-        add     esp, RING0_STACK_SIZE           ; configure ESP
 	sti
 	;------------------
 	push	ds es
@@ -106,9 +105,15 @@ sysenter_entry:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 syscall_entry:
+
   ;     cli                 syscall clear IF
-	xchg	ecx, [esp]
-	mov	[SYSENTER_VAR + 4], esp
+        xchg    esp, [ss:CURRENT_RING0_ESP]
+        push    ecx
+        lea     ecx, [esp+4]
+        xchg    ecx, [ss:CURRENT_RING0_ESP]
+        sti
+        push    ecx
+        mov     ecx, [ecx]
 
   ;      mov     [ss:sysenter_stack - 4], eax
   ;      mov     eax, [ss:CURRENT_TASK]
@@ -117,12 +122,6 @@ syscall_entry:
   ;      lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
   ;      mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
 
-        mov     esp, [ss:CURRENT_TASK]
-        shl     esp, 8
-        mov     esp, [ss:SLOT_BASE + esp + APPDATA.pl0_stack]
-        add     esp, RING0_STACK_SIZE             ; configure ESP
-
-	sti
 	;------------------
 	push	ds es
 	pushad
@@ -148,10 +147,10 @@ syscall_entry:
 	pop	es ds
 	;------------------
 
-        cli
-	mov	esp, [SYSENTER_VAR + 4]
-	xchg	ecx, [esp]
-	sysret
+        mov     ecx, [ss:esp+4]
+        pop     esp
+        sysret
+
 iglobal
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SYSTEM FUNCTIONS TABLE ;;

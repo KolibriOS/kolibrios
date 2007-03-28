@@ -441,7 +441,8 @@ B32:
            mov eax, os_code
            wrmsr
            mov ecx, MSR_SYSENTER_ESP
-           mov eax, sysenter_stack ; Check it
+;           mov eax, sysenter_stack ; Check it
+           xor     eax, eax
            wrmsr
            mov ecx, MSR_SYSENTER_EIP
            mov eax, sysenter_entry

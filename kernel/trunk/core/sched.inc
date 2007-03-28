@@ -159,6 +159,12 @@ find_next_task:
 
         mov   [CURRENT_TASK],ebx
         mov   [TASK_BASE],edi
+        push    ebx
+        shl     ebx, 8
+        mov     ebx, [SLOT_BASE + ebx + APPDATA.pl0_stack]
+        add     ebx, RING0_STACK_SIZE
+        mov     [CURRENT_RING0_ESP], ebx
+        pop     ebx
 
         cmp   al, 5
         jne   .noevents

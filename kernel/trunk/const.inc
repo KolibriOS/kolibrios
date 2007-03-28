@@ -146,6 +146,7 @@ window_data         equ (OS_BASE+0x0000000)
 
 CURRENT_TASK        equ (OS_BASE+0x0003000)
 TASK_COUNT          equ (OS_BASE+0x0003004)
+CURRENT_RING0_ESP   equ (OS_BASE+0x0003008)
 TASK_BASE           equ (OS_BASE+0x0003010)
 TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
