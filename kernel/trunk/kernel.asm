@@ -679,10 +679,10 @@ include 'vmodeld.inc'
         mov  esi,boot_setostask
         call boot_log
 
-        mov eax, fpu_data
-        mov  dword [SLOT_BASE+APPDATA.fpu_state], eax
-        mov  dword [SLOT_BASE+APPDATA.fpu_handler], 0
-        mov  dword [SLOT_BASE+APPDATA.sse_handler], 0
+;        mov eax, fpu_data
+;        mov  dword [SLOT_BASE+APPDATA.fpu_state], eax
+;        mov  dword [SLOT_BASE+APPDATA.fpu_handler], 0
+;        mov  dword [SLOT_BASE+APPDATA.sse_handler], 0
 
         ; name for OS/IDLE process
 

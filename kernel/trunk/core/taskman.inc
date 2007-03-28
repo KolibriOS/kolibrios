@@ -967,6 +967,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 
            mov esi, fpu_data
            mov ecx, 512/4
+           cld
            rep movsd
 
            cmp    ebx,[TASK_COUNT]
