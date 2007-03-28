@@ -1,3 +1,9 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 init_fpu:
            clts
@@ -52,36 +58,43 @@ fpu_save:
            mov edi, eax
 
            mov ecx, [fpu_owner]
-           mov eax, [CURRENT_TASK]
-           cmp ecx, eax
+           mov esi, [CURRENT_TASK]
+           cmp ecx, esi
            jne .save
-.copy:
-           shl eax, 8
-           mov esi, [eax+SLOT_BASE+APPDATA.fpu_state]
+
+           call save_context
+           jmp .exit
+.save:
+           mov [fpu_owner], esi
+
+           shl ecx, 8
+           mov eax, [ecx+SLOT_BASE+APPDATA.fpu_state]
+
+           call save_context
+
+           shl esi, 8
+           mov esi, [esi+SLOT_BASE+APPDATA.fpu_state]
            mov ecx, 512/4
            cld
            rep movsd
            fninit
-
+.exit:
            popfd
            pop edi
            pop esi
            pop ecx
            ret
-.save:
-           mov [fpu_owner], eax
 
-           shl ecx, 8
-           mov ecx, [ecx+SLOT_BASE+APPDATA.fpu_state]
-
+align 4
+save_context:
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 
-           fxsave [ecx]
-           jmp .copy
+           fxsave [eax]
+           ret
 .no_SSE:
-           fnsave [ecx]
-           jmp .copy
+           fnsave [eax]
+           ret
 
 align 4
 fpu_restore:
@@ -99,7 +112,6 @@ fpu_restore:
            jne .copy
 
            clts
-
            bt [cpu_caps], CAPS_SSE
            jnc .no_SSE
 

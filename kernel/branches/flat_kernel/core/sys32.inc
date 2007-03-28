@@ -1,11 +1,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                               ;;
-;;  MenuetOS process management, protected ring3                 ;;
-;;                                                               ;;
-;;  Distributed under GPL. See file COPYING for details.         ;;
-;;  Copyright 2003 Ville Turjanmaa                               ;;
-;;                                                               ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;                                                              ;;
+;;  MenuetOS process management, protected ring3                ;;
+;;                                                              ;;
+;;  Distributed under GPL. See file COPYING for details.        ;;
+;;  Copyright 2003 Ville Turjanmaa                              ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
 idtreg:
@@ -18,23 +23,18 @@ build_interrupt_table:
         mov    esi, sys_int
         mov    ecx, 0x40
      @@:
-        mov    eax, [esi]
+        lodsd
         mov    [edi],   ax           ; lower part of offset
         mov    [edi+2], word os_code ; segment selector
-        shr    eax, 16
-        mov    [edi+4], word 10001110b shl 8 ; interrupt descriptor
-        mov    [edi+6], ax
-        add    esi, 4
+        mov     ax, word 10001110b shl 8        ; type: interrupt gate
+        mov     [edi+4], eax
         add    edi, 8
-        dec    ecx
-        jnz    @b
+        loop    @b
 
         ;mov    edi,8*0x40+idts+8
-        mov    [edi + 0], word (i40 and ((1 shl 16)-1))
-        mov    [edi + 2], word os_code
-        mov    [edi + 4], word 11101110b*256
-        mov    [edi + 6], word (i40 shr 16)
-
+        mov     dword [edi], (i40 and 0xFFFF) or (os_code shl 16)
+        mov     dword [edi+4], (11101111b shl 8) or (i40 and 0xFFFF0000)
+                                                ; type: trap gate
         ret
 
 iglobal
