@@ -659,7 +659,7 @@ term9:
            call free_page
 @@:
            mov eax, [edi+APPDATA.io_map+4]
-           cmp eax, (tss._io_map_0-OS_BASE+PG_MAP)
+           cmp eax, (tss._io_map_1-OS_BASE+PG_MAP)
            je @F
            call free_page
 @@:
