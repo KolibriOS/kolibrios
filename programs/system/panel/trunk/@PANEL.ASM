@@ -558,6 +558,14 @@ calculate_applications:
 
     cmp  byte [0x8000+10], '@'
     je   cnorpl
+; \begin{diamond}[29.03.2007]
+; do not draw undefined (zero-sized) windows
+        cmp     dword [0x8000+42], 0
+        jnz     @f
+        cmp     dword [0x8000+46], 0
+        jz      cnorpl
+@@:
+; \end{diamond}[29.03.2007]
     cmp  [0x8000+10],dword 'ICON'
     jne  .noicon
     cmp  dword[0x8000+42],51
@@ -567,8 +575,8 @@ calculate_applications:
   .noicon:
     cmp  [0x8000+11],dword 'CON '
     je   cnorpl
-    cmp  [0x8000+11],dword 'ENU '
-    je   cnorpl
+;    cmp  [0x8000+11],dword 'ENU '
+;    je   cnorpl
 ;    cmp  [0x8000+12],dword 'NEL '
 ;    je   cnorpl
     cmp  [0x8000+10],dword '    '

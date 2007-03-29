@@ -1872,6 +1872,9 @@ fs_RamdiskRewrite:
         mov     byte [edi-32+11], 10h
         mov     eax, [esp+16+8]
         mov     word [edi-32+26], ax
+        xor     eax, eax
+        mov     ecx, (512-32*2)/4
+        rep     stosd
         pop     edi edi ecx edx
         add     esp, 20
         popad

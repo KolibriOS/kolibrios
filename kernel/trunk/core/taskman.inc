@@ -890,8 +890,6 @@ proc new_sys_threads
            rep    stosd               ;clean extended information about new thread
            mov    esi,ebx
            mov    edi,edx
-           mov byte [edi], '@'
-           inc    edi
            mov    ecx,11
            rep    movsb               ;copy process name
 

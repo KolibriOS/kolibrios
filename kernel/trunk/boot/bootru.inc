@@ -5,46 +5,6 @@ $Revision$
 ;
 ;======================================================================
 
-macro line_full_top {
-          db       201
-          times    78   db 205
-          db       187
-}
-macro line_full_bottom {
-          db       200
-          times    78   db 205
-          db       188
-}
-macro line_half {
-          db      186,' '
-          times    76   db 0xc4
-          db      ' ',186
-}
-macro line_space {
-          db      186
-          times   78 db 32
-          db      186
-}
-d80x25_top:
-		line_full_top
-space_msg:	line_space
-verstr:
-;		line_space
-; version string
-	db 186,32
-	repeat 78
-		load a byte from version+%-1
-		if a = 13
-			break
-		end if
-		db a
-	end repeat
-	repeat 78 - ($-verstr)
-		db	' '
-	end repeat
-	db 32,186
-		line_half
-d80x25_top_num = 4
 d80x25_bottom:
           db       186,' Kolibri OS основана на Menuet OS и не предоставляет '
           db       'никаких гарaнтий.        ',186
@@ -57,6 +17,7 @@ novesa    db      "Видеокарта: EGA/CGA",13,10,0
 vervesa   db      "Версия VESA:  Vesa x.x",13,10,0
 vervesa_off=19
 msg_apm	  db      " APM x.x ", 0
+
 gr_mode   db      186," Vesa 2.0+ 16 M LFB:  [1] 640x480, [2] 800x600, "
           db      "[3] 1024x768, [4] 1280x1024",13,10
           db      186," Vesa 1.2  16 M Bnk:  [5] 640x480, [6] 800x600, "

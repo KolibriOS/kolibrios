@@ -19,11 +19,8 @@ $Revision$
 
 ;% +include
 
-msg_svn db " SVN ",0
-msg_svn.len = $ - msg_svn
-svn_num_buf rb 12
-
 ;!!!
+include "boot/bootstr.inc"     ; language-independent boot messages
 if lang eq en
 include "boot/booteng.inc"     ; english system boot messages
 else if lang eq ru
