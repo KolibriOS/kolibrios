@@ -52,7 +52,9 @@
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; $Revision$
+include 'macros.inc'
+
+$Revision$
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -107,6 +109,7 @@ use16
 
 version db    'Kolibri OS  version 0.6.5.0      ',13,10,13,10,0
 
+include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
 
 if lang eq en
@@ -5033,6 +5036,8 @@ yes_shutdown_param:
 
 
 include "data32.inc"
+
+__REV__ = __REV
 
 uglobals_size = $ - endofcode
 diff16 "end of kernel code",0,$

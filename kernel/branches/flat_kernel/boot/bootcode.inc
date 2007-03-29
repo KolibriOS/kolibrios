@@ -1,11 +1,18 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                        ;;
-;;  BOOTCODE.INC                                          ;;
-;;                                                        ;;
-;;  KolibriOS 16-bit loader,                              ;;
-;;                        based on bootcode for MenuetOS  ;;
-;;                                                        ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 437 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  BOOTCODE.INC                                                ;;
+;;                                                              ;;
+;;  KolibriOS 16-bit loader,                                    ;;
+;;                        based on bootcode for MenuetOS        ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
 
 ;==========================================================================
 ;
@@ -126,11 +133,11 @@ start_of_code:
 if lang eq ru
  ; Load & set russian VGA font (RU.INC)
         mov  bp, RU_FNT1         ; RU_FNT1 - First part
-        mov  bx,1000h            ; 768 bytes
-        mov  cx,30h              ; 48 symbols
-        mov  dx,80h              ; 128 - position of first symbol
+          mov  bx,1000h            ; 768 bytes
+          mov  cx,30h              ; 48 symbols
+          mov  dx,80h              ; 128 - position of first symbol
         mov  ax,1100h
-        int  10h
+          int  10h
 
         mov  bp,RU_FNT2          ; RU_FNT2 -Second part
         mov  bx,1000h            ; 512 bytes
@@ -289,9 +296,7 @@ wait_loop:       ; variant 2
     mov    [si + 5], ah
     mov    [si + 7], al
     _setcursor 0, 3
-
     call    printplain
-    _setcursor d80x25_top_num,0
     ; ------------------
 
     mov    ax, 0x5304            ; Disconnect interface
@@ -310,11 +315,13 @@ wait_loop:       ; variant 2
     mov [es:0x9054], dx
 
 apm_end:
+        _setcursor d80x25_top_num, 0
+; -----------------------------------------
 
 ; DISPLAY VESA INFORMATION
-        push 0
-        pop es
 
+    push    0
+    pop    es
         mov     ax,0x4f00
         mov     di,0xa000
         int     0x10
@@ -549,9 +556,10 @@ virtual at novesa
 .bSettingsChanged db ?
 .timer dd ?
 end virtual
+	org $+0x10000
 .loader_block dd -1
+	org $-0x10000
 .gettime:
-
     mov    ah, 0
     int    1Ah
     xchg    ax, cx
@@ -992,18 +1000,16 @@ sayerr_floppy:
 ;       readdone:
 ;        pop     ax
 
-        mov     si,backspace2
         call    printplain
         mov     si,okt
         call    printplain
-
-no_sys_on_floppy:
+       no_sys_on_floppy:
         xor    ax, ax        ; reset drive
         xor    dx, dx
         int     0x13
-        mov dx,0x3f2 ; floppy motor off
-        mov al,0
-        out dx,al
+       mov dx,0x3f2 ; floppy motor off
+       mov al,0
+       out dx,al
 
 
 ; SET GRAPHICS
@@ -1023,7 +1029,6 @@ setgr:
         test    ah,ah
         mov    si, fatalsel
         jnz    sayerr
-
 ; set mode 0x12 graphics registers:
         cmp     bx,0x12
         jne     gmok2

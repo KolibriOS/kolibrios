@@ -1,10 +1,14 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                      ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
 ;; RAMDISK functions                                                    ;;
 ;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
 ;; Addings by M.Lisovin                                                 ;;
 ;; LFN support by diamond                                               ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; calculate fat chain
 
@@ -1873,6 +1877,9 @@ fs_RamdiskRewrite:
         mov     byte [edi-32+11], 10h
         mov     eax, [esp+16+8]
         mov     word [edi-32+26], ax
+        xor     eax, eax
+        mov     ecx, (512-32*2)/4
+        rep     stosd
         pop     edi edi ecx edx
         add     esp, 20
         popad
