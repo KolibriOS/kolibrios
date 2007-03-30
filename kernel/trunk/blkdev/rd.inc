@@ -1317,7 +1317,7 @@ fat_next_short_name:
 .insert_tilde:
         mov     word [edi], '~1'
         popad
-;       clc     ; CF already cleared
+        clc
         ret
 .tilde:
         push    edi
