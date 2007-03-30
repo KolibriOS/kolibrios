@@ -316,7 +316,6 @@ wait_loop:       ; variant 2
 
 apm_end:
         _setcursor d80x25_top_num, 0
-; -----------------------------------------
 
 ; DISPLAY VESA INFORMATION
 
@@ -556,9 +555,7 @@ virtual at novesa
 .bSettingsChanged db ?
 .timer dd ?
 end virtual
-	org $+0x10000
 .loader_block dd -1
-	org $-0x10000
 .gettime:
     mov    ah, 0
     int    1Ah
@@ -1000,6 +997,7 @@ sayerr_floppy:
 ;       readdone:
 ;        pop     ax
 
+        mov     si,backspace2
         call    printplain
         mov     si,okt
         call    printplain

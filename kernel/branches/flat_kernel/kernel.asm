@@ -816,7 +816,7 @@ first_app_found:
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
-        stdcall init_uart_service, DRV_ENTRY
+;        stdcall init_uart_service, DRV_ENTRY
 
         sti
         call change_task
