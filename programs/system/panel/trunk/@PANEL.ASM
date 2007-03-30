@@ -42,6 +42,8 @@ handle_key:
         jnz     begin_1.ret
         mov     ebx, exec_fileinfo
         shr     eax, 8
+        cmp     al, 15
+        jz      alt_tab_pressed
         cmp     al, 88
         jz      start_end_application
         cmp     al, 91
@@ -54,6 +56,11 @@ handle_key:
         jz      page_list_next
         cmp     al, 72
         jz      page_list_prev
+        cmp     [current_alt_tab_app], -1
+        jz      @f
+        test    ah, 0x30
+        jz      alt_tab_released
+@@:
 ; this is hotkey Ctrl+Shift ;or LShift+RShift
         mov     ebx, setup_exec
 ;        test    ah, 001100b
@@ -116,6 +123,126 @@ page_list_prev:
   @@:
     jmp  begin_1.ret
 
+alt_tab_pressed:
+; handle Alt+Tab and Alt+Shift+Tab
+        mov     ebp, eax
+        cmp     [current_alt_tab_app], -1
+        jnz     has_alt_tab_app
+; заполняем таблицу приложений, подлежащих переключению
+        xor     edx, edx
+        mov     ebx, 0x8000
+        mov     ecx, 1
+        mov     eax, 9
+.fill:
+        inc     ecx
+        int     0x40
+        call    need_window_tab
+        jz      @f
+        cmp     edx, 256
+        jz      @f
+        mov     [alt_tab_list+edx*8], ecx
+        movzx   esi, word [ebx+4]
+        mov     [alt_tab_list+edx*8+4], esi
+        inc     edx
+@@:
+        cmp     ecx, eax
+        mov     eax, 9
+        jb      .fill
+        mov     [alt_tab_list_size], edx
+        cmp     edx, 2
+        jb      begin_1.ret
+        mcall   66,4,0,0        ; ловим момент отпускания всех управляющих клавиш
+        test    eax, eax
+        jnz     begin_1.ret
+        xor     edx, edx
+        mov     eax, [alt_tab_list+4]
+        xor     ecx, ecx
+        inc     ecx
+.findmax:
+        cmp     [alt_tab_list+ecx*8+4], eax
+        jb      @f
+        mov     edx, ecx
+        mov     eax, [alt_tab_list+ecx*8+4]
+@@:
+        inc     ecx
+        cmp     ecx, [alt_tab_list_size]
+        jb      .findmax
+        mov     [current_alt_tab_app], edx
+has_alt_tab_app:
+        mov     eax, [current_alt_tab_app]
+        mov     edx, [alt_tab_list+eax*8+4]     ; slot
+        xor     ecx, ecx
+        or      eax, -1
+        test    ebp, 300h
+        jz      .notshift
+        or      esi, -1
+.loop1:
+        cmp     [alt_tab_list+ecx*8+4], edx
+        jbe     @f
+        cmp     [alt_tab_list+ecx*8+4], esi
+        jae     @f
+        mov     eax, ecx
+        mov     esi, [alt_tab_list+ecx*8+4]
+@@:
+        inc     ecx
+        cmp     ecx, [alt_tab_list_size]
+        jb      .loop1
+        cmp     eax, -1
+        jnz     .found
+        xor     edx, edx
+        xor     ecx, ecx
+        jmp     .loop1
+.notshift:
+        xor     esi, esi
+.loop2:
+        cmp     [alt_tab_list+ecx*8+4], edx
+        jae     @f
+        cmp     [alt_tab_list+ecx*8+4], esi
+        jbe     @f
+        mov     eax, ecx
+        mov     esi, [alt_tab_list+ecx*8+4]
+@@:
+        inc     ecx
+        cmp     ecx, [alt_tab_list_size]
+        jb      .loop2
+        cmp     eax, -1
+        jnz     .found
+        or      edx, -1
+        xor     ecx, ecx
+        jmp     .loop2
+.found:
+        mov     [current_alt_tab_app], eax
+        push    eax
+        xor     edx, edx
+        div     [max_applications]
+        mov     [page_list], eax
+        mov     [draw_window_1], 1
+        mov     edi, app_list
+        push    edi
+        mov     ecx, 20
+        or      eax, -1
+        rep     stosd
+        pop     edi
+        pop     ecx
+        sub     ecx, edx
+@@:
+        cmp     ecx, [alt_tab_list_size]
+        jae     redraw_window_tabs
+        mov     eax, [alt_tab_list+ecx*8]
+        stosd
+        inc     ecx
+        jmp     @b
+
+alt_tab_released:
+        mcall   66,5,0,0        ; уже поймали, хватит :)
+        or      eax, -1
+        xchg    eax, [current_alt_tab_app]
+        mov     ecx, [alt_tab_list+eax*8]
+        mov     eax, 18
+        mov     ebx, 3
+        int     0x40
+        jmp     redraw_window_tabs
+
 active_process  dd 0
 
 calendar_music:
@@ -168,6 +295,8 @@ START:
         mcall 66,,62            ; Alt+F4
         mcall 66,,71            ; Alt+Home
         mcall 66,,72            ; Alt+Up
+        mcall 66,,15            ; Alt+Tab
+        mcall 66,,,101h         ; Alt+Shift+Tab
     mcall 18, 8, 1
     test eax, eax
     jne  @f
@@ -406,123 +535,7 @@ draw_running_applications:
 
     mov  [running_applications],edi
 
-    mov  edi,0
-    mov  ecx,2
-    mov  [contrast],0
-    mov  eax,[max_applications]
-    mul  [page_list]
-    test eax,eax
-    je    @f
-    inc  eax
-  @@:
-    mov  [draw_start_position],eax
-
-
-  newpr:
-
-    mov  eax,9
-    mov  ebx,0x8000
-    int  0x40
-
-    push eax
-    push ecx
-
-    cmp  eax,ecx
-    jb   norpl2
-
-    cmp  byte [0x8000+10], '@'
-    je   norpl
-    cmp  [0x8000+10],dword 'ICON'
-    jne  .noicon
-    cmp  dword[0x8000+42],51
-    jne  .noicon
-    cmp  dword[0x8000+46],51
-    je   norpl
-  .noicon:
-    cmp  [0x8000+10],dword '    '
-    je   norpl
-    dec  [draw_start_position]
-    cmp  [draw_start_position],0
-    jg    norpl
-    mov  eax,13
-    mov  ebx,edi
-    inc  ebx
-    shl  ebx,16
-    imul ebx,6*10
-    add  ebx,17 shl 16+54
-    mov  ecx,3 shl 16+14
-    xor  edx,edx
-    sub  ebx,10 shl 16
-    int  0x40
-
-    sub  ebx,1 shl 16
-    mov  bx,1
-    mov  ecx,4 shl 16+12
-    int  0x40
-
-    sub  ebx,1 shl 16
-    mov  ecx,5 shl 16+10
-    int  0x40
-
-    add  ebx,56 shl 16
-    mov  ecx,4 shl 16+12
-    int  0x40
-
-    add  ebx,1 shl 16
-    mov  ecx,5 shl 16+10
-    int  0x40
-
-    inc  [contrast]
-    and  [contrast],1
-    cmp  [contrast],1
-    je   contrast1
-    mov  edx,0x88ff
-    jmp  contrast2
-contrast1:
-    mov  edx,0x55ff
-contrast2:
-    sub  ebx,55 shl 16
-    mov  bx,54
-    mov  ecx,4 shl 16+12
-;    mov  edx,0x66ff
-    int  0x40
-
-    sub  ebx,1 shl 16
-    mov  bx,1
-    mov  ecx,5 shl 16+10
-    int  0x40
-
-    add  ebx,55 shl 16
-    int  0x40
-
-    mov  eax,4
-    mov  ebx,edi
-    inc  ebx
-    shl  ebx,16
-    imul ebx,6*10  ;13
-    add  ebx,20*65536+7
-    mov  ecx,0xffffff  ;[wcolor]
-;    add  ecx,0x303030
-    mov  edx,0x8000+10
-    mov  esi,11
-    sub  ebx,10 shl 16
-    int  0x40
-
-  norpl2:
-
-    inc  edi
-
-  norpl:
-
-    pop  ecx
-    pop  eax
-
-    inc  ecx
-
-    cmp  edi,[max_applications]
-    jb   newpr
-
-  nompr:
+        call    redraw_window_tabs
 
   dr_ret:
 
@@ -530,6 +543,97 @@ contrast2:
 
     ret
 
+need_window_tab:
+; in: ebx->process info
+; out: ZF set <=> do not draw
+        cmp     byte [ebx+10], '@'
+        jz      .nodraw
+; \begin{diamond}[29.03.2007]
+; do not draw undefined (zero-sized) windows
+        cmp     dword [ebx+42], 0
+        jnz     @f
+        cmp     dword [ebx+46], 0
+        jz      .nodraw
+@@:
+; \end{diamond}[29.03.2007]
+        cmp     dword [ebx+10], 'ICON'
+        jnz     @f
+        cmp     [ebx+42], dword 51
+        jnz     @f
+        cmp     [ebx+46], dword 51
+        jz      .nodraw
+@@:
+        cmp     [ebx+10], dword '    '
+.nodraw:
+        ret
+
+redraw_window_tabs:
+        xor     edi, edi
+        mov     [contrast], 0
+.loop:
+        mov     ecx, [app_list+edi*4]
+        cmp     ecx, -1
+        jz      .done
+
+        push    ecx
+        mov     eax, 9
+        mov     ebx, 0x8000
+        int     0x40
+
+        mov     eax, 13
+        imul    ebx, edi, 6*10*10000h
+        add     ebx, 6*10*10000h + 7*10000h + 54
+        mov     ecx, 3*10000h + 14
+        xor     edx, edx
+        int     0x40
+        sub     ebx, 10000h + 53
+        mov     ecx, 4*10000h + 12
+        int     0x40
+        sub     ebx, 10000h
+        mov     ecx, 5*10000h + 10
+        int     0x40
+        add     ebx, 56*10000h
+        mov     ecx, 4*10000h + 12
+        int     0x40
+        add     ebx, 10000h
+        mov     ecx, 5*10000h + 10
+        int     0x40
+
+        mov     edx, 0x88FF
+        xor     [contrast], 1
+        jz      @f
+        mov     dh, 0x55
+@@:
+        pop     ecx
+        mov     esi, [current_alt_tab_app]
+        cmp     esi, -1
+        jz      @f
+        cmp     ecx, [alt_tab_list+esi*8]
+        jnz     @f
+;        xor     edx, 0xFFFFFF
+        mov     edx, 0xFF8000
+@@:
+        sub     ebx, 55*10000h - 53
+        mov     ecx, 4*10000h + 12
+        int     0x40
+        sub     ebx, 10000h + 53
+        mov     ecx, 5*10000h + 10
+        int     0x40
+        add     ebx, 55*10000h
+        int     0x40
+
+        mov     eax, 4
+        sub     ebx, 51*10000h - 6
+        mov     ecx, 0xffffff   ;[wcolor]
+        mov     edx, 0x8000+10
+        mov     esi, 11
+        int     0x40
+
+        inc     edi
+        cmp     edi, [max_applications]
+        jb      .loop
+.done:
+        ret
 
 calculate_applications:
 
@@ -543,7 +647,7 @@ calculate_applications:
 
     mov  edi,app_list
     mov  ecx,20
-    mov  eax,0xff
+    mov  eax,-1
     cld
     rep  stosd
 
@@ -556,34 +660,10 @@ calculate_applications:
     mov  ebx,0x8000
     int  0x40
 
-    cmp  byte [0x8000+10], '@'
-    je   cnorpl
-; \begin{diamond}[29.03.2007]
-; do not draw undefined (zero-sized) windows
-        cmp     dword [0x8000+42], 0
-        jnz     @f
-        cmp     dword [0x8000+46], 0
+        call    need_window_tab
         jz      cnorpl
-@@:
-; \end{diamond}[29.03.2007]
-    cmp  [0x8000+10],dword 'ICON'
-    jne  .noicon
-    cmp  dword[0x8000+42],51
-    jne  .noicon
-    cmp  dword[0x8000+46],51
-    je   cnorpl
-  .noicon:
-    cmp  [0x8000+11],dword 'CON '
-    je   cnorpl
-;    cmp  [0x8000+11],dword 'ENU '
-;    je   cnorpl
-;    cmp  [0x8000+12],dword 'NEL '
-;    je   cnorpl
-    cmp  [0x8000+10],dword '    '
-    je   cnorpl
-    dec  [draw_start_position]
-    cmp  [draw_start_position],0
-    jg     cnorpl
+        sub     [draw_start_position], 1
+        jg      cnorpl
 
     mov  [app_list+edi*4],ecx
 
@@ -1920,6 +2000,8 @@ contrast  db 0
 running_applications  dd  0x100
 max_applications      dd  11
 
+current_alt_tab_app     dd      -1
+
 page_list  dd 0
 draw_start_position dd 0
 draw_window_1 db 0
@@ -2000,6 +2082,8 @@ screen_size:
 area9 rb 100
 system_colours rd 10
 app_list rd 50
+alt_tab_list    rd      256*2
+alt_tab_list_size dd    ?
 tictable:
   rd 256
 image:
