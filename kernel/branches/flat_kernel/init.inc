@@ -114,9 +114,15 @@ proc init_mem
 
            mov edi, (sys_pgdir-OS_BASE)
            lea esi, [edi+(OS_BASE shr 20)]
-           movsd
-           movsd
-           movsd
+           lodsd
+           and eax, not PG_GLOBAL
+           stosd
+           lodsd
+           and eax, not PG_GLOBAL
+           stosd
+           lodsd
+           and eax, not PG_GLOBAL
+           stosd
            ret
 endp
 
