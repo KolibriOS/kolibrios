@@ -1,3 +1,4 @@
+; <Lrz> 30.03.2007 Переделал процедуру выделения, теперь текст выделяется только только мышкой
 ; <Lrz> 09.03.2007 Дописал управление mouse + shift  выделение и перемещение
 ; <Lrz> 07.03.2007 Дописал управление с shift home + end усправил несколько багов
 ; <Lrz> 06.03.2007 Переписал полностью алгоритм управления shift
@@ -266,6 +267,7 @@ pusha
 	pop	ebx
 	mov	edx,ebx
 	add	edx,eax		;ed_offset+width editbox
+	inc	edx             ;необходимо для номального положения курсора в крайней левой позиции
 	cmp	edx,ecx
 	ja	@f
 
@@ -556,6 +558,7 @@ popa
 ;входные параметры ebp=color ebx=ed_shift_pos
 	mov 	eax,dword	ed_pos
 	cmp	eax,ebx
+
 	jae	.sh_n
 	push	eax  ;меньшее в eax
 	push	ebx  ;большее
@@ -899,6 +902,7 @@ pusha
 ;----------------------------------------------------------
 	test	eax,1
 	jnz	.mouse_left_button
+        and	word ed_flags,ed_mouse_on_off
 	popa
 	ret
 
@@ -956,39 +960,30 @@ pusha
 	call	.sh_cl_
 	and	word ed_flags,ed_shift_bac_cl
 	pop	eax
-
-@@:     call	.check_shift	;проверим нажат ли shift
-
-	test    word ed_flags,ed_shift
-        je	._msh_exit
- 	test	word ed_flags,ed_shift_on
+@@:     
+ 	test	word ed_flags,ed_mouse_on
 	jne     @f
-
-        push	dword ed_pos
-        pop	dword ed_shift_pos
-	or	word ed_flags,ed_shift_on
+        
+        mov	dword ed_shift_pos,eax
+	or	word  ed_flags,ed_mouse_on
+	mov	dword ed_pos,eax
+	jmp	.m_sh
 @@:
-        mov	ed_pos,eax
-	mov	ebp,dword shift_color
+	cmp	eax,dword ed_shift_pos  ;если позиции не изменились
+	je	@f
+	mov	ed_pos,eax
+        mov	ebp,dword shift_color
 	mov	ebx,dword ed_shift_pos
 	call	.sh_cl_
-	or      word ed_flags,ed_shift_bac	;установим бит что мы выделили 
-	jmp	.m_sh
-._msh_exit:	
- 	mov	ed_pos,eax
-        mov	dword ed_shift_pos,eax	
+	or      word ed_flags,ed_mous_adn_b	;установим бит что мы выделили 
 
 .m_sh:  call	.draw_text
 	call	.draw_cursor
-
-
-	and	word ed_flags,ed_shift_off	;выключим в любом случае shift
 ;----------------------------------------------------------
 ;--- процедура установки фокуса ---------------------------
 ;----------------------------------------------------------
 	bts	word ed_flags,1
 	jc	@f
-	call	.draw_cursor
 	jmp	.drc
 ._blur:
 	test	word ed_flags,ed_always_focus
@@ -1021,6 +1016,7 @@ ed_figure_only= 1000000000000000b   ;одни символы
 ed_always_focus= 100000000000000b
 ed_focus=                     10b   ;фокус приложения
 ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
+ed_shift_on_off=1111111111110111b
 ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
 ed_shift_off=   1111111111111011b
 ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
@@ -1032,6 +1028,9 @@ ed_offset_fl=            1000000b
 ed_offset_cl=   1111111110111111b
 ed_insert=              10000000b
 ed_insert_cl=   1111111101111111b
+ed_mouse_on =          100000000b
+ed_mous_adn_b=         100001000b
+ed_mouse_on_off=1111111011111111b
 ed_height=14 ; высота
 shift_color=0x6a9480
 macro draw_edit_boxes start,end
