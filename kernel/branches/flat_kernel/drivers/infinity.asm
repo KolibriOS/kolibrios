@@ -1,17 +1,12 @@
-;
-;   This file is part of the Infinity sound library.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;   (C) copyright Serge 2006
 ;   email: infinity_sound@mail.ru
-;
-;   This program is free software; you can redistribute it and/or modify
-;   it under the terms of the GNU General Public License as published by
-;   the Free Software Foundation; either version 2 of the License, or
-;   (at your option) any later version.
-;
-;   This program is distributed in the hope that it will be useful,
-;   but WITHOUT ANY WARRANTY; without even the implied warranty of
-;   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;   GNU General Public License for more details.
 
 format MS COFF
 
@@ -31,7 +26,6 @@ OS_BASE           equ 0x80000000
 SLOT_BASE         equ (OS_BASE+0x0080000)
 TASK_COUNT        equ (OS_BASE+0x0003004)
 CURRENT_TASK      equ (OS_BASE+0x0003000)
-
 
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003

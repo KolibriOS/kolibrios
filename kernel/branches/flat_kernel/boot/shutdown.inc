@@ -1,11 +1,16 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
-;;  Shutdown for Menuet
-;;
-;;  Distributed under General Public License
-;;  See file COPYING for details.
-;;  Copyright 2003 Ville Turjanmaa
-;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  Shutdown for Menuet                                         ;;
+;;                                                              ;;
+;;  Distributed under General Public License                    ;;
+;;  See file COPYING for details.                               ;;
+;;  Copyright 2003 Ville Turjanmaa                              ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
 pr_mode_exit:
@@ -83,6 +88,7 @@ nbw31:
         cmp  al,bl
         jne  nbw
         sub  al,129
+
 nbw32:
 
         dec  ax    ; 1 = write floppy

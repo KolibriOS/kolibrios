@@ -1,3 +1,11 @@
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;*************************************************************
 ;* 29.04.2006 Elimination of hangup after the                *
 ;*             expiration hd_wait_timeout -  Mario79         *
@@ -9,7 +17,7 @@ uglobal
 align 4
 
 ;******************************************************
-; Please do not change this place - variables  in text 
+; Please do not change this place - variables  in text
 ; Mario79
 ; START place
 ;******************************************************

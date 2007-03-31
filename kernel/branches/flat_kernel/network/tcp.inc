@@ -1,18 +1,22 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                 ;;
-;;  TCP.INC                                                        ;;
-;;                                                                 ;;
-;;  TCP Processes for Menuet OS  TCP/IP stack                      ;;
-;;                                                                 ;;
-;;  Version 0.6  4th July 2004                                       ;;
-;;                                                                 ;;
-;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net               ;;
-;;                                                                 ;;
-;;  See file COPYING for details                                   ;;
-;;  v0.6 : Added reset handling in the established state           ;;
-;;         Added a timer per socket to allow delays when rx window ;;
-;;         gets below 1KB                                          ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  TCP.INC                                                     ;;
+;;                                                              ;;
+;;  TCP Processes for Menuet OS  TCP/IP stack                   ;;
+;;                                                              ;;
+;;  Version 0.6  4th July 2004                                  ;;
+;;                                                              ;;
+;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;  v0.6 : Added reset handling in the established state        ;;
+;;         Added a timer per socket to allow delays when        ;;
+;;         rx window gets below 1KB                             ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; TCP TCB states
 TCB_LISTEN         equ        1

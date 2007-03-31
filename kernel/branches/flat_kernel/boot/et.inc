@@ -1,3 +1,4 @@
+$Revision: 425 $
 ; Full ASCII code font
 ; only õ and ä added
 ; Kaitz

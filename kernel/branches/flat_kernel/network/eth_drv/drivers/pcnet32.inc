@@ -1,23 +1,27 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                    ;;
-;;  PCNET32.INC                                                       ;;
-;;                                                                    ;;
-;;  Ethernet driver for Menuet OS                                     ;;
-;;                                                                    ;;
-;;  Version 1.0  31 July 2004                                         ;;
-;;                                                                    ;;
-;;  This driver is based on the PCNet32 driver from                   ;;
-;;  the etherboot 5.0.6 project. The copyright statement is           ;;
-;;                                                                    ;;
-;;          GNU GENERAL PUBLIC LICENSE                                ;;
-;;             Version 2, June 1991                                   ;;
-;;                                                                    ;;
-;;  remaining parts Copyright 2004 Jarek Pelczar,                     ;;
-;;   jpelczar@interia.pl                                              ;;
-;;                                                                    ;;
-;;  See file COPYING for details                                      ;;
-;;                                                                    ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                  ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.     ;;
+;; Distributed under terms of the GNU General Public License        ;;
+;;                                                                  ;;
+;;  PCNET32.INC                                                     ;;
+;;                                                                  ;;
+;;  Ethernet driver for Menuet OS                                   ;;
+;;                                                                  ;;
+;;  Version 1.0  31 July 2004                                       ;;
+;;                                                                  ;;
+;;  This driver is based on the PCNet32 driver from                 ;;
+;;  the etherboot 5.0.6 project. The copyright statement is         ;;
+;;                                                                  ;;
+;;          GNU GENERAL PUBLIC LICENSE                              ;;
+;;             Version 2, June 1991                                 ;;
+;;                                                                  ;;
+;;  remaining parts Copyright 2004 Jarek Pelczar,                   ;;
+;;   jpelczar@interia.pl                                            ;;
+;;                                                                  ;;
+;;  See file COPYING for details                                    ;;
+;;                                                                  ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;macro PutStr X
 ;{
 ; local .__xyz1

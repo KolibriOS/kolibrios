@@ -1,16 +1,20 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                        ;;
-;;  VESA12.INC                                            ;;
-;;                                                        ;;
-;;  Vesa 1.2 functions for MenuetOS                       ;;
-;;                                                        ;;
-;;  Copyright 2002 Ville Turjanmaa                        ;;
-;;                                                        ;;
-;;  quickcode@mail.ru - bankswitch for S3 cards           ;;
-;;                                                        ;;
-;;  See file COPYING for details                          ;;
-;;                                                        ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  VESA12.INC                                                  ;;
+;;                                                              ;;
+;;  Vesa 1.2 functions for MenuetOS                             ;;
+;;                                                              ;;
+;;  Copyright 2002 Ville Turjanmaa                              ;;
+;;                                                              ;;
+;;  quickcode@mail.ru - bankswitch for S3 cards                 ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ; A complete video driver should include the following types of function

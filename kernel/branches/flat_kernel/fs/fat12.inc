@@ -1893,7 +1893,6 @@ fs_FloppyRewrite:
         repnz   scasw
         mov     al, ERROR_DISK_FULL
         jnz     .ret
-
         dec     edi
         dec     edi
 

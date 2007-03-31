@@ -1,3 +1,11 @@
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 MouseSearch_PS2:
 	jmp	MouseSearch_PS2_begin
 
@@ -75,7 +83,7 @@ MouseSearch_PS2_begin:
 
         mov     bl, 0xAD	; disable keyboard interface
         call    kb_cmd_c
-     
+
         mov     bl, 0xA8	; enable mouse interface
         call    kb_cmd_c
 

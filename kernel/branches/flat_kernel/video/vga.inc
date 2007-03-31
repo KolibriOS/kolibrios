@@ -1,12 +1,16 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                        ;;
-;;  VGA.INC                                               ;;
-;;                                                        ;;
-;;  640x480 mode 0x12 VGA functions for MenuetOS          ;;
-;;                                                        ;;
-;;  Paul Butcher, paul.butcher@asa.co.uk                  ;;
-;;                                                        ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;  VGA.INC                                                     ;;
+;;                                                              ;;
+;;  640x480 mode 0x12 VGA functions for MenuetOS                ;;
+;;                                                              ;;
+;;  Paul Butcher, paul.butcher@asa.co.uk                        ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 

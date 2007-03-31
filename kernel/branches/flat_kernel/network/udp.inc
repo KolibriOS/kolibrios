@@ -1,16 +1,25 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                 ;;
-;;  UDP.INC                                                        ;;
-;;                                                                 ;;
-;;  UDP Processes for Menuet OS  TCP/IP stack                      ;;
-;;                                                                 ;;
-;;  Version 0.3  29 August 2002                                    ;;
-;;                                                                 ;;
-;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net               ;;
-;;                                                                 ;;
-;;  See file COPYING for details                                   ;;
-;;                                                                 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;                                                              ;;
+;;  UDP.INC                                                     ;;
+;;                                                              ;;
+;;  UDP Processes for Menuet OS  TCP/IP stack                   ;;
+;;                                                              ;;
+;;  Version 0.3  29 August 2002                                 ;;
+;;                                                              ;;
+;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 ;*******************************************************************

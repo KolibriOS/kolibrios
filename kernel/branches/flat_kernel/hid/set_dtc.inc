@@ -1,3 +1,11 @@
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 ;setting date,time,clock and alarm-clock
 ;add sys_settime at servetable as for ex. 22 fcn:
 ; 22 - SETTING DATE TIME, CLOCK AND ALARM-CLOCK
@@ -180,7 +188,7 @@ sys_settime:
       sti
       mov  [esp+36],dword 1
       ret
-   
+
 startstopclk:
     mov  al,0x0b
     out  dx,al

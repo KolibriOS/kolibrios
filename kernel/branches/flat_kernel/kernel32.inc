@@ -1,5 +1,9 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$Revision: 431 $
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                            ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
 ;; KERNEL32.INC                                               ;;
 ;;                                                            ;;
 ;; Included 32 bit kernel files for MenuetOS                  ;;
@@ -8,72 +12,7 @@
 ;; maintain and compile with an automated SETUP program       ;;
 ;; in the future.                                             ;;
 ;;                                                            ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-; structure definition helper
-macro struct name, [arg]
- {
-  common
-   name@struct equ name
-   struc name arg {
- }
-
-macro struct_helper name
- {
-  match xname,name
-  \{
-   virtual at 0
-   xname xname
-   sizeof.#xname = $ - xname
-   name equ sizeof.#xname
-   end virtual
-  \}
- }
-
-ends fix } struct_helper name@struct
-
-;// mike.dld, 2006-29-01 [
-
-; macros definition
-macro diff16 title,l1,l2
-{
-  local s,d
-  s = l2-l1
-  display title,': 0x'
-  repeat 8
-    d = 48 + s shr ((8-%) shl 2) and $0F
-    if d > 57
-      d = d + 65-57-1
-    end if
-    display d
-  end repeat
-  display 13,10
-}
-
-; \begin{diamond}[29.09.2006]
-; may be useful for kernel debugging
-; example 1:
-;       dbgstr 'Hello, World!'
-; example 2:
-;       dbgstr 'Hello, World!', save_flags
-macro dbgstr string*, f
-{
-local a
-iglobal_nested
-a db 'K : ',string,13,10,0
-endg_nested
-if ~ f eq
-        pushfd
-end if
-        push    esi
-        mov     esi, a
-        call    sys_msg_board_str
-        pop     esi
-if ~ f eq
-        popfd
-end if
-}
-; \end{diamond}[29.09.2006]
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;struc db [a] { common . db a
 ;  if ~used .
