@@ -1125,7 +1125,7 @@ fd_prev_prev_sector     dd      ?
 endg
 
 flp_root_next:
-        cmp     edi, 0xD200-0x20
+        cmp     edi, OS_BASE+0xD200-0x20
         jae     @f
         add     edi, 0x20
         ret     ; CF=0
@@ -1172,7 +1172,7 @@ flp_rootmem_extend_dir:
         ret
 
 flp_notroot_next:
-        cmp     edi, 0xD200-0x20
+        cmp     edi, OS_BASE+0xD200-0x20
         jae     flp_notroot_next_sector
         add     edi, 0x20
         ret     ; CF=0
@@ -1223,7 +1223,7 @@ flp_notroot_end_write:
         popa
         ret
 flp_notroot_next_write:
-        cmp     edi, 0xD200
+        cmp     edi, OS_BASE+0xD200
         jae     @f
         ret
 @@:
@@ -1464,7 +1464,7 @@ fs_FloppyReadFolder:
         cmp     byte [edi+11], 0xF
         jnz     .do_bdfe
         add     edi, 0x20
-        cmp     edi, 0xD200
+        cmp     edi, OS_BASE+0xD200
         jb      .do_bdfe
         pop     eax
         inc     eax
@@ -1496,7 +1496,7 @@ fs_FloppyReadFolder:
         call    fat_entry_to_bdfe
 .l2:
         add     edi, 0x20
-        cmp     edi, 0xD200
+        cmp     edi, OS_BASE+0xD200
         jb      .l1
         pop     eax
         inc     eax

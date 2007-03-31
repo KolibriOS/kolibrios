@@ -1023,7 +1023,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov eax, [esi+0x08]       ;app_eip
            mov [ebx+REG_EIP],  eax   ;app_entry
            mov [ebx+REG_CS], dword app_code
-           mov [ebx+REG_EFLAGS], dword 0x3202
+           mov [ebx+REG_EFLAGS], dword 0x1202
 
            mov eax, [esi+0x0C]       ;app_esp
            mov [ebx+REG_APP_ESP], eax    ;app_stack
