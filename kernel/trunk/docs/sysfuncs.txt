@@ -3285,7 +3285,7 @@ Remarks:
 ============== Function 63 - work with the debug board. ==============
 ======================================================================
 The debug board is the global system buffer (with the size
-512 bytes), to which any program can write (generally speaking,
+4096 bytes), to which any program can write (generally speaking,
 arbitrary) data and from which other program can read these data.
 By the agreement written data are text strings interpreted as
 debug messages on a course of program execution. The kernel in
@@ -3615,7 +3615,8 @@ Returned value:
   * eax = 1 - success
   * eax = 0 - failed
 Remarks:
-  * The memory block must have been allocated by subfunction 12.
+  * The memory block must have been allocated by subfunction 12
+    or subfunction 20.
 
 ======================================================================
 ======== Function 68, subfunction 14 - wait for driver notify. =======
@@ -3704,6 +3705,29 @@ Remarks:
   * Export table is an array of structures of 2 dword's, terminated
     by zero. The first dword in structure points to function name,
     the second dword contains address of function.
+
+======================================================================
+======= Function 68, subfunction 20 - reallocate memory block. =======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 20 - subfunction number
+  * ecx = new size in bytes
+  * edx = pointer to already allocated block
+Returned value:
+  * eax = pointer to the reallocated block, 0 = error
+Remarks:
+  * Before this call one must initialize process heap by call to
+    subfunction 11.
+  * The function allocates an integer number of pages (4 Kb) in such
+    way that the real size of allocated block is more than or equal to
+    requested size.
+  * If edx=0, the function call is equivalent to memory allocation
+    with subfunction 12. Otherwise the block at edx
+    must be allocated earlier with subfunction 12 or this subfunction.
+  * If ecx=0, the function frees memory block at edx and returns 0.
+  * The contents of the block are unchanged up to the shorter of
+    the new and old sizes.
 
 ======================================================================
 ====================== Fucntion 69 - debugging. ======================
@@ -4435,10 +4459,7 @@ Codes of events:
     (by subfunctions 7, 8 of function 21)
   * 2 = function is not supported for the given file system
   * 3 = unknown file system
-  * 4 = is returned only from function 'rename' by transmission of
-    the strongly incorrect parameter and in any way does not
-    correspond to the description in the kernel sources
-    "partition not defined at hd"
+  * 4 = reserved, is never returned in the current implementation
   * 5 = file not found
   * 6 = end of file, EOF
   * 7 = pointer lies outside of application memory

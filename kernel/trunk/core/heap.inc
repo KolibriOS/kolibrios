@@ -752,6 +752,9 @@ proc user_free stdcall, base:dword
            test eax, 1
            jz @F
            call free_page
+           mov eax, esi
+           shl eax, 12
+           invlpg [eax]
 @@:
            inc esi
            dec ecx
@@ -764,6 +767,18 @@ proc user_free stdcall, base:dword
            sub ebx, [edx+SLOT_BASE+APPDATA.mem_size]
            neg ebx
            call update_mem_size
+           call user_normalize
+           ret
+.exit:
+           xor eax, eax
+           inc eax
+           ret
+endp
+
+user_normalize:
+; in: esi=heap_base, edi=heap_top
+; out: eax=0 <=> OK
+; destroys: ebx,edx,esi,edi
            add esi, new_app_base
            add edi, new_app_base
            shr esi, 12
@@ -808,7 +823,239 @@ proc user_free stdcall, base:dword
 .err:
            xor eax, eax
            ret
-endp
+
+user_realloc:
+; in: eax = pointer, ebx = new size
+; out: eax = new pointer or NULL
+        test    eax, eax
+        jnz     @f
+; realloc(NULL,sz) - same as malloc(sz)
+        push    ebx
+        call    user_alloc
+        ret
+@@:
+        push    ecx edx
+        lea     ecx, [eax + new_app_base - 0x1000]
+        shr     ecx, 12
+        mov     edx, [page_tabs+ecx*4]
+        test    edx, USED_BLOCK
+        jnz     @f
+; attempt to realloc invalid pointer
+.ret0:
+        pop     edx ecx
+        xor     eax, eax
+        ret
+@@:
+        add     ebx, 0x1FFF
+        shr     edx, 12
+        shr     ebx, 12
+; edx = allocated size, ebx = new size
+        add     edx, ecx
+        add     ebx, ecx
+        cmp     edx, ebx
+        jb      .realloc_add
+; release part of allocated memory
+.loop:
+        cmp     edx, ebx
+        jz      .release_done
+        dec     edx
+        xor     eax, eax
+        xchg    eax, [page_tabs+edx*4]
+        test    al, 1
+        jz      .loop
+        call    free_page
+        mov     eax, edx
+        shl     eax, 12
+        invlpg  [eax]
+        jmp     .loop
+.release_done:
+        sub     ebx, ecx
+        cmp     ebx, 1
+        jnz     .nofreeall
+        mov     eax, [page_tabs+ecx*4]
+        and     eax, not 0xFFF
+        mov     edx, [CURRENT_TASK]
+        shl     edx, 8
+        mov     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        sub     ebx, eax
+        add     ebx, 0x1000
+        or      al, FREE_BLOCK
+        mov     [page_tabs+ecx*4], eax
+        push    esi edi
+        mov     esi, [SLOT_BASE+APPDATA.heap_base+edx]
+        mov     edi, [SLOT_BASE+APPDATA.heap_top+edx]
+        call    update_mem_size
+        call    user_normalize
+        pop     edi esi
+        jmp     .ret0   ; all freed
+.nofreeall:
+        sub     edx, ecx
+        shl     ebx, 12
+        or      ebx, USED_BLOCK
+        xchg    [page_tabs+ecx*4], ebx
+        shr     ebx, 12
+        sub     ebx, edx
+        push    ebx ecx edx
+        mov     edx, [CURRENT_TASK]
+        shl     edx, 8
+        shl     ebx, 12
+        sub     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        neg     ebx
+        call    update_mem_size
+        pop     edx ecx ebx
+        lea     eax, [ecx+1-(new_app_base shr 12)]
+        shl     eax, 12
+        push    eax
+        add     ecx, ebx
+        add     edx, ecx
+        shl     ebx, 12
+        jz      .ret
+        push    esi
+        mov     esi, [CURRENT_TASK]
+        shl     esi, 8
+        mov     esi, [SLOT_BASE+APPDATA.heap_top+esi]
+        shr     esi, 12
+@@:
+        cmp     edx, esi
+        jae     .merge_done
+        mov     eax, [page_tabs+edx*4]
+        test    al, USED_BLOCK
+        jz      .merge_done
+        and     dword [page_tabs+edx*4], 0
+        and     eax, not 0xFFF
+        add     ebx, eax
+        add     edx, eax
+        jmp     @b
+.merge_done:
+        pop     esi
+        or      ebx, FREE_BLOCK
+        mov     [page_tabs+ecx*4], ebx
+.ret:
+        pop     eax edx ecx
+        ret
+.realloc_add:
+; get some additional memory
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 8
+        mov     eax, [SLOT_BASE+APPDATA.heap_top+eax]
+        add     eax, new_app_base
+        shr     eax, 12
+        cmp     edx, eax
+        jae     .cant_inplace
+        mov     eax, [page_tabs+edx*4]
+        shr     eax, 12
+        add     eax, edx
+        cmp     eax, ebx
+        jb      .cant_inplace
+        sub     eax, ebx
+        jz      @f
+        shl     eax, 12
+        or      al, FREE_BLOCK
+        mov     [page_tabs+ebx*4], eax
+@@:
+        mov     eax, ebx
+        sub     eax, ecx
+        shl     eax, 12
+        or      al, USED_BLOCK
+        mov     [page_tabs+ecx*4], eax
+        lea     eax, [ecx+1-(new_app_base shr 12)]
+        shl     eax, 12
+        push    eax
+        push    edi
+        lea     edi, [page_tabs+edx*4]
+        mov     eax, 2
+        sub     ebx, edx
+        mov     ecx, ebx
+        cld
+        rep     stosd
+        pop     edi
+        mov     edx, [CURRENT_TASK]
+        shl     edx, 8
+        shl     ebx, 12
+        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        call    update_mem_size
+        pop     eax edx ecx
+        ret
+.cant_inplace:
+        push    esi edi
+        mov     eax, [CURRENT_TASK]
+        shl     eax, 8
+        mov     esi, [SLOT_BASE+APPDATA.heap_base+eax]
+        mov     edi, [SLOT_BASE+APPDATA.heap_top+eax]
+        add     esi, new_app_base
+        add     edi, new_app_base
+        shr     esi, 12
+        shr     edi, 12
+        sub     ebx, ecx
+.find_place:
+        cmp     esi, edi
+        jae     .place_not_found
+        mov     eax, [page_tabs+esi*4]
+        test    al, FREE_BLOCK
+        jz      .next_place
+        shr     eax, 12
+        cmp     eax, ebx
+        jae     .place_found
+        add     esi, eax
+        jmp     .find_place
+.next_place:
+        shr     eax, 12
+        add     esi, eax
+        jmp     .find_place
+.place_not_found:
+        pop     edi esi
+        jmp     .ret0
+.place_found:
+        sub     eax, ebx
+        jz      @f
+        push    esi
+        add     esi, eax
+        shl     eax, 12
+        or      al, FREE_BLOCK
+        mov     [page_tabs+esi*4], eax
+        pop     esi
+@@:
+        mov     eax, ebx
+        shl     eax, 12
+        or      al, USED_BLOCK
+        mov     [page_tabs+esi*4], eax
+        inc     esi
+        mov     eax, esi
+        shl     eax, 12
+        sub     eax, new_app_base
+        push    eax
+        mov     eax, [page_tabs+ecx*4]
+        and     eax, not 0xFFF
+        or      al, FREE_BLOCK
+        sub     edx, ecx
+        mov     [page_tabs+ecx*4], eax
+        inc     ecx
+@@:
+        xor     eax, eax
+        xchg    eax, [page_tabs+ecx*4]
+        mov     [page_tabs+esi*4], eax
+	mov     eax, ecx
+	shl     eax, 12
+	invlpg  [eax]
+        inc     ecx
+        inc     esi
+        dec     ebx
+        dec     edx
+        jnz     @b
+        push    ebx
+        mov     edx, [CURRENT_TASK]
+        shl     edx, 8
+        shl     ebx, 12
+        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        call    update_mem_size
+        pop     ebx
+@@:
+        mov     dword [page_tabs+esi*4], 2
+        inc     esi
+        dec     ebx
+        jnz     @b
+        pop     eax edi esi edx ecx
+        ret
 
 if 0
 align 4
