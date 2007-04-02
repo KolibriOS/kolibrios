@@ -36,11 +36,11 @@ START:                          ; start of execution
      mcall 60,1,ipcbuff,IPC_BUF+20
      mcall 40,1000111b
      mov  [ipcbuff+4],8
-     mov  ecx,1024
+     mov  ecx,4096
     flush:
      mov  eax,63
      mov  ebx,2
-     int  0x40
+     mcall
      loop flush
 
      mov  ecx, TMP
@@ -52,11 +52,18 @@ START:                          ; start of execution
      mov  [tmp2],'x'
 
      mov  eax,14
-     int  0x40
+     mcall
      and  eax,0xffff0000
      sub  eax,399 shl 16
      add  eax,399
      mov  [xstart],eax
+
+     mov  eax,48
+     mov  ebx,3
+     mov  ecx,sc
+     mov  edx,sizeof.system_colors
+     mcall
+
   red:
      call draw_window
 
@@ -64,7 +71,7 @@ still:
 
     mov  eax,23                 ; wait here for event
     mov  ebx,1
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -74,9 +81,10 @@ still:
     je   button
     cmp  eax,7
     je   ipc
+
     mov  eax,63
     mov  ebx,2
-    int  0x40
+    mcall
 
     cmp  ebx,1
     jne  still
@@ -141,7 +149,7 @@ still:
 
     mov  eax,63
     mov  ebx,2
-    int  0x40
+    mcall
 
     cmp  ebx,1
     je   new_data
@@ -176,8 +184,8 @@ still:
     rep  movsb
     jmp  red
   key:                          ; key
-    mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mov  al,2                  ; just read it and ignore
+    mcall
     cmp  ah,' '
     je   button.no_krnl_flt
     cmp  [vmode],2
@@ -199,14 +207,14 @@ still:
 arrows dd -1,16,-16,1
 
   button:                       ; button
-    mov  eax,17                 ; get id
-    int  0x40
+    mov  al,17                 ; get id
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  .noclose
 
-    mov  eax,-1                 ; close this program
-    int  0x40
+    or   eax,-1                 ; close this program
+    mcall
   .noclose:
    	shr  eax,8
   		cmp  eax,10
@@ -274,34 +282,28 @@ add_char:
 
 draw_window:
 
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
-
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
+    xor  eax,eax                     ; function 0 : define and draw window
 ;   mov  ebx,50*65536+400          ; [x start] *65536 + [x size]
     mov  ebx,[xstart]
     mov  ecx,MAXSTRINGS*10+45      ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color gl
     or   edx,0x13000000
     mov  edi,header                ; WINDOW LABEL
-    int  0x40
+    mcall
     
     mov  ecx,4
     mov  esi,[sc.work]
-    mov  ebx,316 shl 16+5*6
+    mov  ebx,296 shl 16+5*6
     mov  edx,3;+1 shl 30
     mcall 8,,<5,12>
     mov  edx,[vmode]
     lea  edx,[edx*4+duk]
-    mcall 4,<320,8>,,,4
+    mcall 4,<300,8>,,,4
 
     cmp  [vmode],2
     je   no_mdbg
@@ -313,9 +315,9 @@ draw_window:
     mov  edx,text2
   .kern:
     mov  esi,80
-  newline:
     mov  eax,4
-    int  0x40
+  newline:
+    mcall
     add  ebx,10
     add  edx,80
     cmp  [edx],byte 'x'
@@ -334,7 +336,7 @@ draw_window:
 		enddraw:
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -514,11 +516,11 @@ dump_cell_size dw HSPACE,VSPACE,6,VSPACE
 ; 11,11 > 0,-1
 ; 5,11  > 0,-1
 if lang eq ru
-   header    db   'ДОСКА ОТЛАДКИ И СООБЩЕНИЙ',0
+   header    db   'Доска отладки и сообщений',0
 else if lang eq en
-   header    db   'GENERAL DEBUG & MESSAGE BOARD',0
+   header    db   'General debug & message board',0
 else
-   header    db   'ALLGEMEINES DEBUG- & NACHRICHTENBOARD',0
+   header    db   'Allgemeines debug- & nachrichtenboard',0
 end if
    krnl_cnt dd 0
    vmode dd 0
