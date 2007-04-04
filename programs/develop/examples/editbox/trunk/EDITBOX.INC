@@ -1,3 +1,4 @@
+; <Lrz> 04.04.2007 Модернизировал систему выделения, существенно переделано управление и обработка, добавленно блокирования обработки других боксов, во время выделения мышкой текста, для этого в текст программы необходимо добавить идентификатор бокса т.е. dd 0x0 и в него будет помещаться укаатель на editbox
 ; <Lrz> 30.03.2007 Переделал процедуру выделения, теперь текст выделяется только только мышкой
 ; <Lrz> 09.03.2007 Дописал управление mouse + shift  выделение и перемещение
 ; <Lrz> 07.03.2007 Дописал управление с shift home + end усправил несколько багов
@@ -891,9 +892,18 @@ pusha   ;сохраним все регистры
 ;==========================================================
 .mouse:
 pusha
+	mov	eax,dword [mouse_flag]
+	test	eax,eax
+	jz	@f
+	cmp	eax,edi
+	je	@f
+
+	popa
+	ret
 ;----------------------------------------------------------
 ;--- получаем состояние кнопок мыши -----------------------
 ;----------------------------------------------------------
+@@:     
 	mov	eax,37
 	mov	ebx,2
 	int	0x40
@@ -903,35 +913,70 @@ pusha
 	test	eax,1
 	jnz	.mouse_left_button
         and	word ed_flags,ed_mouse_on_off
+	xor	ebx,ebx
+	mov	dword [mouse_flag],ebx
 	popa
 	ret
+;----------------------------------------------------------
+;--- Обработка .mouse_wigwag
+;----------------------------------------------------------
+.mouse_wigwag:
+	shr	eax,16
+	or	word ed_flags,ed_shift_on+ed_shift
+
+	mov	ecx,structure_of_potock
+	mov	ebx,dword [ecx+34]
+	add     ebx,ed_left
+	add	ebx,5
+	cmp	eax,ebx
+	jl	.left
+	add	ebx,ed_width
+        cmp	eax,ebx
+        jg	.right
+        jmp	._mvpos
 
 .mouse_left_button:
 ;----------------------------------------------------------
-;--- получаем координаты мыши -----------------------------
+;--- модифицируем координаты, т.е. добавляем координаты окна.
+;----------------------------------------------------------
+        mov	eax,9
+        mov 	ebx,structure_of_potock
+	or	ecx,-1
+	int	0x40
+;----------------------------------------------------------
+;--- получаем координаты мыши относительно 0 т.е всей области экрана
 ;----------------------------------------------------------
 	mov	eax,37
 	xor	ebx,ebx
-	inc	ebx
 	int	0x40
+;----------------------------------------------------------
+;--- А не удерживаем ли мы клавишу мышки, перемещая курсор, во все разные стороны?
+;----------------------------------------------------------
+	mov	ecx,structure_of_potock
+ 	test	word ed_flags,ed_mouse_on
+	jne     .mouse_wigwag
 ;----------------------------------------------------------
 ;--- проверяем, попадает ли курсор в edit box -------------
 ;----------------------------------------------------------
-	mov	ebx,ed_top
+	mov	ebx,dword [ecx+38]
+	add	ebx,ed_top
+	add	ebx,22
 	cmp	ax,bx
 	jl	._blur;.mouse_end_no_focus
 
-	add	bx,ed_height
+	add	ebx,ed_height
 	cmp	ax,bx
 	jg	._blur;.mouse_end_no_focus
 
 	shr	eax,16
 
-	mov	bx,ed_left
+	mov	ebx,dword [ecx+34]
+	add	ebx,ed_left
+	add	ebx,5
 	cmp	ax,bx
 	jl	._blur;.mouse_end_no_focus
 
-	add	bx,ed_width
+	add	ebx,ed_width
 	cmp	ax,bx
 	jg	._blur;.mouse_end_no_focus
 ;--- изменяем позицию курсора ---
@@ -939,16 +984,20 @@ pusha
 	mov	ebp,ed_color
 	call	.clear_cursor
 	pop	eax
-	xor	dx,dx
-	sub	ax,ed_left
-	add	ax,2
-	mov	bx,6
+._mvpos:
+	mov	ecx,structure_of_potock
+	mov	ebx,dword [ecx+34]
+	xor	edx,edx
+	sub	eax,ed_left
+	sub	eax,ebx
+	sub	eax,5-2    ;толщина обводки скина =5
+	mov	ebx,6
 	div	bx
-	add	ax,ed_offset
-	cmp	ax,ed_size
-	jna	 @f
-	mov	ax,ed_size
-@@:
+	add	eax,ed_offset
+	cmp	eax,ed_size
+	jna	._mshift
+	mov	eax,ed_size
+._mshift:
 ;;;;;;;
 ;;Секция обработки shift и выделения по shift
 ;;;;;;;
@@ -965,39 +1014,39 @@ pusha
 	jne     @f
         
         mov	dword ed_shift_pos,eax
-	or	word  ed_flags,ed_mouse_on
+	or	word  ed_flags,ed_mous_adn_b;ed_mouse_on
 	mov	dword ed_pos,eax
 	jmp	.m_sh
 @@:
 	cmp	eax,dword ed_shift_pos  ;если позиции не изменились
-	je	@f
+	je	.mouse_ex
 	mov	ed_pos,eax
         mov	ebp,dword shift_color
 	mov	ebx,dword ed_shift_pos
 	call	.sh_cl_
-	or      word ed_flags,ed_mous_adn_b	;установим бит что мы выделили 
-
+	or      word ed_flags,ed_mous_adn_b	;установим бит что мы выделили +shift_on +
+	mov	dword [mouse_flag],edi
 .m_sh:  call	.draw_text
 	call	.draw_cursor
 ;----------------------------------------------------------
 ;--- процедура установки фокуса ---------------------------
 ;----------------------------------------------------------
 	bts	word ed_flags,1
-	jc	@f
+	jc	.mouse_ex
 	jmp	.drc
 ._blur:
 	test	word ed_flags,ed_always_focus
-	jne	@f
+	jne	.mouse_ex
 	btr	word ed_flags,1 ; если не в фокусе, выходим
-	jnc     @f
+	jnc     .mouse_ex
 
 	mov	ebp,ed_color
 	call	.clear_cursor
 .drc:	call	.draw_border
-@@:
+.mouse_ex:
+
 popa
 ret
-
 ;----------------------------------------------------------
 ;--- процедура размывания фокуса --------------------------
 ;----------------------------------------------------------
