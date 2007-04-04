@@ -1,9 +1,9 @@
 ;******************************************************************************
 ; project name:    CPUID                                                      *
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures                *
-; compiler:        flat assembler 1.67.5                                      *
-; version:         2.17                                                       *
-; last update:     3rd February  2007          1st 2nd 3rd 4th                *
+; compiler:        flat assembler 1.67.21                                     *
+; version:         2.18                                                       *
+; last update:     1st April  2007          1st 2nd 3rd 4th                   *
 ; maintained by:   Sergey Kuzmin aka Wildwest                                 *
 ; e-mail:          kuzmin_serg@list.ru                                        *
 ; site:            http://coolthemes.narod.ru/files.html                      *
@@ -1572,11 +1572,47 @@ FREEZE:
 nop
 jmp FREEZE ; maybe we should close application or just made some Warning and jump to still:
 ;----------------
-still:			
-    mov  eax,10 	
-    int  0x40		; 
+still:
+
+; затем переходим в цикл ожидания событий
+event_wait:
+
+    ;================_RAM_==============
+  Number 205,360,0,4,dword [ram_size_a],0xFFFFFF
+
+  mov eax, 18
+  mov ebx, 16
+  int 0x40
+
+  shr eax, 10
+
+  mov [ram_size_a], eax
+
+  mov eax, 18
+  mov ebx, 17
+  int 0x40
+
+  shr eax, 10
+
+  mov [ram_size_t], eax
+
+  Text 120,360,0x00000000,ram, ramlen-ram
+
+  Number 205,360,0,4,dword [ram_size_a],0x000000
+
+  Number 275,360,0,4,dword [ram_size_t],0x000000
+  Text 305,360,0x00000000,mb, mblen-mb
+
+;==============================
+
+	mov	ebx,50	     ; ждемс 1 сек
+	mov	eax,23	     ; функция 23: ожидание события
+	int	0x40
+
+;    mov  eax,10
+;    int  0x40           ;
     cmp  eax,1		; 
-    je	 red		;  red
+    je	 red		;  redraw
     cmp  eax,2		; 
     je	 key		;  key
     cmp  eax,3		; 
@@ -1600,6 +1636,7 @@ still:
 
     jne  noclose
 
+    jmp     event_wait
 vybor:
 
  Number 315,90,0,4,dword [rating],0xFFFFFF ;
@@ -1894,30 +1931,7 @@ PutImage 20,350,93,24,img_area2+8   ; image "press for more"
    call newrating; !!!!
 
      cont:
-;================_RAM_==============
-  mov eax, 18
-  mov ebx, 16
-  int 0x40
 
-  shr eax, 10
-
-  mov [ram_size_a], eax
-
-  mov eax, 18
-  mov ebx, 17
-  int 0x40
-
-  shr eax, 10
-
-  mov [ram_size_t], eax
-
-  Text 120,360,0x00000000,ram, ramlen-ram
-  Number 205,360,0,4,dword [ram_size_a],0x000000
-
-  Number 275,360,0,4,dword [ram_size_t],0x000000
-  Text 305,360,0x00000000,mb, mblen-mb
-
-;==============================
 
     Text 20,70,0x00000000,tsum, tsumlen-tsum   ; 
     Text 20,110,0x00000000,cpuname, cpunamelen-cpuname; 
