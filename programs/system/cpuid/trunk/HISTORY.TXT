@@ -4,8 +4,8 @@
 ; compability:     probably some functions would work in MenuetOS 32 and MenuetOS 64, may be even in Miraculix;
 ;                  CPUID works in MS Windows by means of emulator KlbrInWin from Diamond  (http://diamondz.land.ru)
 ; compiler:        flat assembler 1.67.21
-; version:         2.18
-; last update:     1st April 2007
+; version:         2.2
+; last update:     5st April 2007
 ; maintained by:   Sergey Kuzmin aka Wildwest
 ; e-mail:          kuzmin_serg@list.ru
 ; site:            http://coolthemes.narod.ru/files.html
@@ -49,6 +49,8 @@
 ;          (++) more info about caches for VIA and Transmeta;
 ;          (+)  added detection of DCA, SSSE3, VMX technologies for Intel;
 ;          (+)  updated multiplier detection for AMD and Intel (thanks a lot to Ghost);
+;          (+)  client-relative drawing, title with function 0
+;               It means end of capability with MenuetOS!
 ;Known issues: Sempron marked as AthlonXP
 ;              second window doesn't closed when you close main window
 ;-----------------------------------------------------------------------------

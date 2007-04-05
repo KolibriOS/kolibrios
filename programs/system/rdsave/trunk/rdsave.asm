@@ -328,6 +328,9 @@ error11 db 'Device error',0
 
 end if
 
+mouse_flag: dd 0x0
+structure_of_potock:
+rb 100
 ;---------------------------------------------------------------------
 
 I_END:                             ; метка конца программы

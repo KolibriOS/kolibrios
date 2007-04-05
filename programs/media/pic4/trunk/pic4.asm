@@ -7,7 +7,7 @@
   dd      0x01          ; version
   dd      START         ; program start
   dd      I_END         ; image size
-  dd      0x80000      ; reguired amount of memory
+  dd      0x80000       ; reguired amount of memory
   dd      0x80000       ; stack pointer
   dd      I_Param,0
 
@@ -15,12 +15,18 @@
   include 'macros.inc'
 
 START:
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    mcall
 
     call check_parameters
     call draw_window
 
     call load_texture
     call draw_image
+
 
 still:
 
@@ -285,8 +291,6 @@ gentexture:
  ylup:
     mov ebx,0
 
-; call precalcbar
-
  xlup:
   push edi
   mov edi, 0
@@ -294,7 +298,6 @@ gentexture:
 
  pixlup:
    push esi
-;   add edi,4
    mov eax,ebx                 ; evaluate first distance
    sub eax, [ebp+edi]          ; x-x1
    call wrappit
@@ -318,11 +321,6 @@ gentexture:
    jne pixlup
 
    mov eax,esi                 ; now evaluate color...
-
-;   cmp eax,255*24
-;   jbe ok2
-;   imul eax,12
-; ok2:
 
    mov edi,24            ; 50 = max shaded distance
    idiv edi
@@ -353,22 +351,6 @@ wrappit:
   nowrap:
   ret
 
-;precalcbar:
-;  pusha
-;  mov eax,1
-;  mov ebx,ecx
-;  add ebx,18
-;  mov ecx,44
-;  mov edx,0x00000060
-;     bar:
-;     add ecx,2
-;     add edx,0x00020100
-;     int 0x40
-;     cmp ecx,298
-;     jb bar
-;  popa
-;  ret
-
 ; *********************************************
 ; ******* WINDOW DEFINITIONS AND DRAW *********
 ; *********************************************
@@ -379,21 +361,17 @@ draw_image:
     mov  eax,7
     mov  ebx,0x40000
     mov  ecx,256*65536+255
-    mov  edx,19*65536+65;55
+    mov  edx,14*65536+40;55
     int  0x40
 
     ret
 
 
-y_add  equ  44 ; 30
+y_add  equ  19 ; 30
 y_s    equ  13
 
-y_add2 equ  340 ;325
+y_add2 equ  315 ;325
 set    equ  0 ;15
-
-button_color     equ  0A0A0A0h ; 207090 306090h
-wnd_color        equ  3B0B0B0h ; 34090B0h
-
 
 draw_window:
 
@@ -401,70 +379,66 @@ draw_window:
     mov ebx, 1
     int 0x40
 
-    mov eax, 0                    ; define and draw window
+    xor eax, eax                    ; define and draw window
     mov ebx, 220*65536+293
     mov ecx, 50*65536+408
-    mov edx, wnd_color
+    mov edx, [sc.work]
+    or  edx, 0x33000000
+    mov edi, header
     int 0x40
 
     call draw_image
 
     mov  eax,8                     ; Blue button
-    mov  ebx,(set+195+27)*65536+17
+    mov  ebx,(set+190+27)*65536+17
     mov  ecx,y_add*65536+y_s
     mov  edx,11
-    mov  esi,0x004444cc
+    mov  esi,0x005555bb
     int  0x40
-    mov  eax,8                     ; Red button
-    mov  ebx,(set+213+27)*65536+17
+    ;mov  eax,8                     ; Red button
+    mov  ebx,(set+208+27)*65536+17
     mov  edx,12
-    mov  esi,0x00cc4444
+    mov  esi,0x00bb5555
     int  0x40
-    mov  eax,8                     ; Green button
-    mov  ebx,(set+258)*65536+17
+    ;mov  eax,8                     ; Green button
+    mov  ebx,(set+253)*65536+17
     mov  edx,13
-    mov  esi,0x0044cc44
+    mov  esi,0x0055bb55
     int  0x40
 
-    mov  eax, 8                     ; tiled
-    mov  ebx, 96*65536+63
+    ;mov  eax, 8                     ; tiled
+    mov  ebx, 90*65536+63
     mov  ecx, y_add*65536+y_s
     mov  edx, 101
-    mov  esi, button_color
+    mov  esi, [sc.work_button]
     int  0x40
 
-    mov  eax, 8                     ; stretch
-    mov  ebx, 160*65536+61
+    ;mov  eax, 8                     ; stretch
+    mov  ebx, 154*65536+61
     mov  edx, 102
     int  0x40
 
-    mov  eax, 4                    ; window header
-    mov  ebx, 8*65536+8
-    mov  ecx, 0x10ffffff
-    mov  edx, header
-    mov  esi, header.size
-    int  0x40
-
-    mov  ebx, 220*65536+30
-    mov  ecx, 0
+    mov  eax, 4
+    mov  ebx, 215*65536+5
+    mov  ecx, [sc.work_text]
     mov  edx, apply_text
     mov  esi, apply_text.size
     int  0x40
 
-    mov  ebx, 19*65536+326
+    mov  ebx, 14*65536+301
     mov  edx, image_buttons_text
     mov  esi, image_buttons_text.size
     int  0x40
 
-    mov  ebx, 19*65536+(y_add2+27)
+    mov  ebx, 14*65536+(y_add2+27)
     mov  edx, simple_text
     mov  esi, simple_text.size
     int  0x40
 
     mov  ecx, (y_add2)*65536+20
-    mov  ebx, (18)*65536+25
+    mov  ebx, (13)*65536+25
     mov  edx, 121
-    mov  esi, button_color
+    mov  esi, [sc.work_button]
     mov  edi, 9
     mov  eax, 8
   @@:
@@ -478,7 +452,7 @@ draw_window:
     mov  edx, 34+4
     mov  edi, 4
     mov  eax, 8
-    mov  ebx, 18*65536+18
+    mov  ebx, 13*65536+18
     mov  ecx, y_add*65536+y_s
   @@:
     int  0x40
@@ -489,8 +463,8 @@ draw_window:
 
 
     ;-----------------------
-    mov  edx,14                    ; button number
-    mov  ebx,(18)*65536+17         ; button start x & size
+    mov  edx,14                            ; button number
+    mov  ebx,(13)*65536+17                 ; button start x & size
     mov  ecx,(y_add2+40)*65536+14          ; button start y & size
 
   newcb:
@@ -508,8 +482,8 @@ draw_window:
     ;-----------------------
 
     mov  eax, 4
-    mov  ebx, 8*65536+4+y_add
-    mov  ecx, 0
+    mov  ebx, 94*65536+4+y_add
+    mov  ecx, [sc.work_button_text]
     mov  edx, la2
     mov  esi, la2.size
     int  0x40
@@ -524,9 +498,11 @@ draw_window:
 
 ; DATA SECTION
 
-lsz header,\
-    ru, "É•≠•‡†‚Æ‡ ‰Æ≠† ‡†°ÆÁ•£Æ ·‚Æ´†",\
-    en, "BACKGROUND"
+if lang eq ru
+    header db 'É•≠•‡†‚Æ‡ ‰Æ≠† ‡†°ÆÁ•£Æ ·‚Æ´†',0
+else
+    header db 'Background',0
+end if
 
 lsz apply_text,\
     ru, "è‡®¨•≠®‚Ï:",\
@@ -541,8 +517,8 @@ lsz simple_text,\
     en, "Single-color background:"
 
 lsz la2,\
-    ru, "                áÄåéëíàíú êÄëíüçìíú",\
-    en, "                 TILED     STRETCH"
+    ru, "áÄåéëíàíú  êÄëíüçìíú",\
+    en, "  TILED     STRETCH"
 
 
 xx   db    'x'
@@ -670,10 +646,10 @@ ptarray9:
      dd  0,248,64,128,128,64,196,48,160,160,94,224,240,96,5,5,777
 
 
-
 I_Param:
 
 image:
 
-
 I_END:
+
+sc system_colors

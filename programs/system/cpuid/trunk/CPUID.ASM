@@ -23,10 +23,8 @@ use32
   dd	 0x01
   dd	 START
   dd	 I_END
-  dd U_END+4096*8
-  dd U_END+4096*8
- ; dd     0x100000+4096
- ; dd     0x100000+4096
+  dd U_END+4096
+  dd U_END+4096
   dd	 0x0
   dd	 0x0
 
@@ -404,20 +402,20 @@ typedetect:
 
 cmp [t], 00b
 jne t2d
-Text 295,270,0x00000000,t1, t1len-t1
+Text 290,250,0x00000000,t1, t1len-t1
 jmp PROCCORE
 t2d:
 cmp [t], 01b
 jne t3d
-Text 295,270,0x00000000,t2, t2len-t2
+Text 290,250,0x00000000,t2, t2len-t2
 jmp PROCCORE
 t3d:
 cmp [t], 11b
 jne notype
-Text 295,270,0x00000000,t3, t3len-t3
+Text 290,250,0x00000000,t3, t3len-t3
 jmp PROCCORE
 notype:
-Text 295,270,0x00000000,t4, t4len-t4
+Text 290,250,0x00000000,t4, t4len-t4
 
 PROCCORE:    ;   Who are you?
 ; Intel - "GenuineIntel"           +
@@ -454,19 +452,19 @@ PROCCORE:    ;   Who are you?
 ; jz .NSC
   jmp Other   ;  I don't know what to do with you...
 Other:
-Text 80,90,0x00000000,other, otherlen-other
+Text 75,70,0x00000000,other, otherlen-other
     jmp MMXtest
 ;-------------------------
 
 AMD:
 
-Text 20, 210,0x00000000,cache, cachelen-cache
+Text 15, 190,0x00000000,cache, cachelen-cache
 
-Text 80,90,0x00000000,AMDn, AMDnlen-AMDn
+Text 75,70,0x00000000,AMDn, AMDnlen-AMDn
 
 	mov	esi, amd
 	call	load_gif
-PutImage 130,127,201,49,img_area+8
+PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 ; Relax, man. AMD made PRETTY SIMPLE cache detection routine
@@ -590,39 +588,39 @@ mov [L2],ecx
     jz .A5D
 .A50:
     mov [micron], 50   ; 0.35?
-Text 105,90,0x00000000,A50, A50len-A50
+Text 100,70,0x00000000,A50, A50len-A50
     jmp MMXtest
 .A51:
     mov [micron], 35
-Text 105,90,0x00000000,A51, A51len-A51
+Text 100,70,0x00000000,A51, A51len-A51
     jmp MMXtest
 .A52:
     mov [micron], 35
-Text 105,90,0x00000000,A52, A52len-A52
+Text 100,70,0x00000000,A52, A52len-A52
     jmp MMXtest
 .A53:
     mov [micron], 35
-Text 105,90,0x00000000,A53, A53len-A53
+Text 100,70,0x00000000,A53, A53len-A53
     jmp MMXtest
 .A56:
     mov [micron], 30
-Text 105,90,0x00000000,A56, A56len-A56
+Text 100,70,0x00000000,A56, A56len-A56
     jmp MMXtest
 .A57:
     mov [micron], 25
-Text 105,90,0x00000000,A57, A57len-A57
+Text 100,70,0x00000000,A57, A57len-A57
     jmp MMXtest
 .A58:
     mov [micron], 25
-Text 105,90,0x00000000,A58, A58len-A58
+Text 100,70,0x00000000,A58, A58len-A58
     jmp MMXtest
 .A59:
     mov [micron], 25
-Text 105,90,0x00000000,A59, A59len-A59
+Text 100,70,0x00000000,A59, A59len-A59
     jmp MMXtest
 .A5D:
     mov [micron], 18
-Text 105,90,0x00000000,A5D, A5Dlen-A5D
+Text 100,70,0x00000000,A5D, A5Dlen-A5D
     jmp MMXtest
 .si:   ;    Family=6
 
@@ -644,38 +642,38 @@ Text 105,90,0x00000000,A5D, A5Dlen-A5D
     jz AA
 A1:
     mov [micron], 25
-Text 105,90,0x00000000,At1, At1len-At1
+Text 100,70,0x00000000,At1, At1len-At1
  jmp MMXtest
 A2:
     mov [micron], 18
-Text 105,90,0x00000000,At2, At2len-At2
+Text 100,70,0x00000000,At2, At2len-At2
  jmp MMXtest
 A3:
     mov [micron], 18
- Text 105,90,0x00000000,At3, At3len-At3
+ Text 100,70,0x00000000,At3, At3len-At3
  jmp MMXtest
 A4:
     mov [micron], 18
-Text 105,90,0x00000000,At4, At4len-At4
+Text 100,70,0x00000000,At4, At4len-At4
  jmp MMXtest
 A6:
 
  mov [micron], 18
- Text 105,90,0x00000000,At6, At6len-At6
+ Text 100,70,0x00000000,At6, At6len-At6
 
  mov [FRS], 266  ;!!!!!!
 
-Number 320,110,0,3,dword [FRS],0x000000; MHz 
+Number 315,90,0,3,dword [FRS],0x000000; MHz 
 
  call newrating; !!!!
 
-Text 250,90,0x00000000,pr, prlen-pr
+Text 245,70,0x00000000,pr, prlen-pr
 
- Number 315,90,0,4,dword [rating],0x000000
+ Number 310,70,0,4,dword [rating],0x000000
  jmp MMXtest
 A7:
     mov [micron], 13
-Text 105,90,0x00000000,At7, At7len-At7
+Text 100,70,0x00000000,At7, At7len-At7
  jmp MMXtest
 
 A8:
@@ -683,22 +681,22 @@ A8:
  mov [micron], 13
 mov [FRS], 266	;!!!!!!
 
-   Number 320,110,0,3,dword [FRS],0x000000; MHz
+   Number 315,90,0,3,dword [FRS],0x000000; MHz
 
 
  cmp [L2], 256
  jl .App  ; Applebred
-Text 105,90,0x00000000,At8, At8len-At8
+Text 100,70,0x00000000,At8, At8len-At8
 
 
 call newrating;!!!!
 
-Text 250,90,0x00000000,pr, prlen-pr
-Number 315,90,0,4,dword [rating],0x000000
+Text 245,70,0x00000000,pr, prlen-pr
+Number 310,70,0,4,dword [rating],0x000000
 jmp MMXtest
 
  .App:
-Text 105,90,0x00000000,At8a, At8alen-At8a
+Text 100,70,0x00000000,At8a, At8alen-At8a
 jmp MMXtest
 
 AA:
@@ -706,23 +704,23 @@ AA:
  mov [micron], 13
 
 mov [FRS], 333; !!!!
-Text 250,90,0x00000000,pr, prlen-pr
+Text 245,70,0x00000000,pr, prlen-pr
 
-   Number 320,110,0,3,dword [FRS],0x000000; MHz 
+   Number 315,90,0,3,dword [FRS],0x000000; MHz 
 
  cmp [L2], 256
  jl .Tho ; Thorton
 
 call newrating;!!!!!
-Text 105,90,0x00000000,Ata, Atalen-Ata
+Text 100,70,0x00000000,Ata, Atalen-Ata
 
- Number 315,90,0,4,dword [rating],0x000000
+ Number 310,70,0,4,dword [rating],0x000000
 
 jmp MMXtest
  .Tho:
 call newrating;!!!!!
-Text 105,90,0x00000000,Atat, Atatlen-Atat
- Number 315,90,0,4,dword [rating],0x000000
+Text 100,70,0x00000000,Atat, Atatlen-Atat
+ Number 310,70,0,4,dword [rating],0x000000
  jmp MMXtest
 fif:  ;  AMD-64    Family=15
 
@@ -753,31 +751,31 @@ fif:  ;  AMD-64    Family=15
     jmp next_generation
 .AF1:
     mov [micron], 09  ;?
-Text 105,90,0x00000000,AF1, AF1len-AF1
+Text 100,70,0x00000000,AF1, AF1len-AF1
  jmp MMXtest
 .AF3:
     mov [micron], 09
-Text 105,90,0x00000000,AF3, AF3len-AF3
+Text 100,70,0x00000000,AF3, AF3len-AF3
  jmp MMXtest
 .AF4:
     mov [micron], 13
-Text 105,90,0x00000000,AF4, AF4len-AF4
+Text 100,70,0x00000000,AF4, AF4len-AF4
  jmp MMXtest
 .AF5:
     mov [micron], 13
-Text 105,90,0x00000000,AF5, AF5len-AF5
+Text 100,70,0x00000000,AF5, AF5len-AF5
  jmp MMXtest
 .AF7:
     mov [micron], 13
-Text 105,90,0x00000000,AF5, AF5len-AF5
+Text 100,70,0x00000000,AF5, AF5len-AF5
  jmp MMXtest
 .AF8:
     mov [micron], 13
-Text 105,90,0x00000000,AF4, AF5len-AF4
+Text 100,70,0x00000000,AF4, AF5len-AF4
  jmp MMXtest
 .AFB:
     mov [micron], 13
-Text 105,90,0x00000000,AF4, AF4len-AF4
+Text 100,70,0x00000000,AF4, AF4len-AF4
  jmp MMXtest
 
 .AFC:
@@ -789,18 +787,18 @@ je .AFCnpal
 
 .AFCnpar:  ; paris
     mov [micron], 13
-	Text 105,90,0x00000000,AFCs, AFCslen-AFCs
+	Text 100,70,0x00000000,AFCs, AFCslen-AFCs
  jmp MMXtest
 
 .AFCnpal: ; palermo
     mov [micron], 9
-	Text 105,90,0x00000000,AFCsp, AFCsplen-AFCsp
+	Text 100,70,0x00000000,AFCsp, AFCsplen-AFCsp
  jmp MMXtest
 
 
 .AFCn: ;newcastle
     mov [micron], 13
-	Text 105,90,0x00000000,AFC, AFClen-AFC
+	Text 100,70,0x00000000,AFC, AFClen-AFC
  jmp MMXtest
 
  .AFE:	 ; error in cpu
@@ -825,23 +823,23 @@ cmp [L2], 256
 jz .AFp
 
 .AFs:
-Text 105,90,0x00000000,AFS, AFSlen-AFS
+Text 100,70,0x00000000,AFS, AFSlen-AFS
  jmp MMXtest
 
 .AFd:
-Text 105,90,0x00000000,AFV, AFVlen-AFV
+Text 100,70,0x00000000,AFV, AFVlen-AFV
  jmp MMXtest
 
 .AFp:
-Text 105,90,0x00000000,AFCsp, AFCsplen-AFCsp
+Text 100,70,0x00000000,AFCsp, AFCsplen-AFCsp
  jmp MMXtest
 ;-----------------------------------------------
 Intel:
-Text 80,90,0x00000000,Inteln, Intelnlen-Inteln
+Text 75,70,0x00000000,Inteln, Intelnlen-Inteln
 
 	mov	esi, intel
 	call	load_gif
-PutImage 130,127,201,49,img_area+8
+PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 det:
@@ -855,7 +853,7 @@ det:
     jz .fift
 .five:	      ;Family=5
 
-Text 20, 210,0x00000000,cache, cachelen-cache
+Text 15, 190,0x00000000,cache, cachelen-cache
 
     cmp [m],$0
     jz .I0
@@ -872,49 +870,49 @@ Text 20, 210,0x00000000,cache, cachelen-cache
     cmp [m],$8
     jz .I8
 .I0:
-Text 115,90,0x00000000,P50, P50len-P50
+Text 110,70,0x00000000,P50, P50len-P50
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 80
  jmp MMXtest
 .I1:
-Text 115,90,0x00000000,P5, P5len-P5
+Text 110,70,0x00000000,P5, P5len-P5
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 50
  jmp MMXtest
 .I2:
-Text 115,90,0x00000000,P54C, P54Clen-P54C
+Text 110,70,0x00000000,P54C, P54Clen-P54C
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 50
  jmp MMXtest
 .I3:
-Text 115,90,0x00000000,P54T, P54Tlen-P54T
+Text 110,70,0x00000000,P54T, P54Tlen-P54T
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 50
  jmp MMXtest
 .I4:
-Text 115,90,0x00000000,P55C, P55Clen-P55C
+Text 110,70,0x00000000,P55C, P55Clen-P55C
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 35
  jmp MMXtest
 .I7:
-Text 115,90,0x00000000,P54C, P54Clen-P54C
+Text 110,70,0x00000000,P54C, P54Clen-P54C
    mov [L1d], 8
    mov [L1i], 8
    mov [L2], 256
    mov [micron], 35
  jmp MMXtest
 .I8:
-Text 115,90,0x00000000,P55C, P55Clen-P55C
+Text 110,70,0x00000000,P55C, P55Clen-P55C
    mov [L1d], 16
    mov [L1i], 16
    mov [L2], 256
@@ -922,7 +920,7 @@ Text 115,90,0x00000000,P55C, P55Clen-P55C
  jmp MMXtest
 .six:		   ;Family=6
 
-Text 20, 210,0x00000000,cache, cachelen-cache
+Text 15, 190,0x00000000,cache, cachelen-cache
 
     cmp [m],$0
     jz .I60
@@ -952,70 +950,70 @@ Text 20, 210,0x00000000,cache, cachelen-cache
     jz .I6F
 .I60:
     mov [micron], 50
-Text 115,90,0x00000000,P60, P60len-P60
+Text 110,70,0x00000000,P60, P60len-P60
  jmp MMXtest
 .I61:
     mov [micron], 35
-Text 115,90,0x00000000,P61, P61len-P61
+Text 110,70,0x00000000,P61, P61len-P61
  jmp MMXtest
 .I63:
     mov [micron], 28
-Text 115,90,0x00000000,P63, P63len-P63
+Text 110,70,0x00000000,P63, P63len-P63
  jmp MMXtest
 .I65:
     mov [micron], 25
     cmp [L2], 0
     jne .pp65  ; Pentium
-Text 115,90,0x00000000,P65c, P65clen-P65c
+Text 110,70,0x00000000,P65c, P65clen-P65c
     jmp MMXtest
 .pp65:
-Text 115,90,0x00000000,P65, P65len-P65
+Text 110,70,0x00000000,P65, P65len-P65
     jmp MMXtest
 .I66:
     mov [micron], 25
-Text 115,90,0x00000000,P66, P66len-P66
+Text 110,70,0x00000000,P66, P66len-P66
     jmp MMXtest
 .I67:
     mov [micron], 25
-Text 115,90,0x00000000,P67, P67len-P67
+Text 110,70,0x00000000,P67, P67len-P67
     jmp MMXtest
 .I68:
     mov [micron], 18
     cmp [L2], 128
     jne .pp68  ; Pentium
-Text 115,90,0x00000000,P68c, P68clen-P68c
+Text 110,70,0x00000000,P68c, P68clen-P68c
     jmp MMXtest
  .pp68:
-Text 115,90,0x00000000,P68, P68len-P68
+Text 110,70,0x00000000,P68, P68len-P68
     jmp MMXtest
 .I69:
     mov [micron], 13
-Text 115,90,0x00000000,P69 , P69len-P69
+Text 110,70,0x00000000,P69 , P69len-P69
     jmp MMXtest
 .I6A:
     mov [micron], 18
-Text 115,90,0x00000000,P6A, P6Alen-P6A
+Text 110,70,0x00000000,P6A, P6Alen-P6A
     jmp MMXtest
 .I6B:
     mov [micron], 13
     cmp [L2], 256
     jne .pp6B  ; Pentium
-Text 115,90,0x00000000,P6Bc, P6Bclen-P6Bc
+Text 110,70,0x00000000,P6Bc, P6Bclen-P6Bc
     jmp MMXtest
 .pp6B:
-Text 115,90,0x00000000,P6B, P6Blen-P6B
+Text 110,70,0x00000000,P6B, P6Blen-P6B
     jmp MMXtest
 .I6D:
     mov [micron], 9
-Text 115,90,0x00000000,P6D, P6Dlen-P6D
+Text 110,70,0x00000000,P6D, P6Dlen-P6D
     jmp MMXtest
 .I6E:
     mov [micron], 6
-Text 115,90,0x00000000,P6E, P6Elen-P6E
+Text 110,70,0x00000000,P6E, P6Elen-P6E
     jmp MMXtest
 .I6F:
     mov [micron], 6
-Text 115,90,0x00000000,P6F, P6Flen-P6F
+Text 110,70,0x00000000,P6F, P6Flen-P6F
     jmp MMXtest
 
 ;06Ex - Pentium M Yonah 0.065
@@ -1024,15 +1022,15 @@ Text 115,90,0x00000000,P6F, P6Flen-P6F
 .sev:	 ;Family=7
 .IS0:
 
-Text 20, 210,0x00000000,cache, cachelen-cache ;?
+Text 15, 190,0x00000000,cache, cachelen-cache ;?
 
     mov [micron], 18
-Text 115,90,0x00000000,PS0, PS0len-PS0
+Text 110,70,0x00000000,PS0, PS0len-PS0
  jmp MMXtest
 
 .fift:	  ;Family=15
 
-Text 20, 210,0x00000000,cacheP4, cacheP4len-cacheP4
+Text 15, 190,0x00000000,cacheP4, cacheP4len-cacheP4
 
     cmp [m],$0
     jz .IF0
@@ -1053,10 +1051,10 @@ Text 20, 210,0x00000000,cacheP4, cacheP4len-cacheP4
     mov [micron], 18
     cmp [L2], 128
     jne .ppF0  ; Pentium
-Text 115,90,0x00000000,PF0c, PF0clen-PF0c
+Text 110,70,0x00000000,PF0c, PF0clen-PF0c
     jmp MMXtest
 .ppF0:
-Text 115,90,0x00000000,PF0, PF0len-PF0
+Text 110,70,0x00000000,PF0, PF0len-PF0
     jmp MMXtest
 .IF1:
     mov [micron], 18
@@ -1070,55 +1068,55 @@ Text 115,90,0x00000000,PF0, PF0len-PF0
   ;  int   0x40
   ;jmp MMXtest
 ;.ppF1:
-Text 115,90,0x00000000,PF0, PF0len-PF0
+Text 110,70,0x00000000,PF0, PF0len-PF0
  jmp MMXtest
 .IF2:
     mov [micron], 13
     cmp [L2], 128
     jne .ppF2  ; Pentium
-Text 115,90,0x00000000,PF2c, PF2clen-PF2c
+Text 110,70,0x00000000,PF2c, PF2clen-PF2c
  jmp MMXtest
 .ppF2:
-Text 115,90,0x00000000,PF2, PF2len-PF2
+Text 110,70,0x00000000,PF2, PF2len-PF2
  jmp MMXtest
 .IF3:
     mov [micron], 09
     cmp [L2], 256
     jne .ppF3  ; Pentium
-Text 115,90,0x00000000,PF3c, PF3clen-PF3c
+Text 110,70,0x00000000,PF3c, PF3clen-PF3c
  jmp MMXtest
 .ppF3:
-Text 115,90,0x00000000,PF3, PF3len-PF3
+Text 110,70,0x00000000,PF3, PF3len-PF3
  jmp MMXtest
 
 .IF5:
     mov [micron], 09
     cmp [L2], 512
     jae .ppF5  ; Pentium
-Text 115,90,0x00000000,PF5c, PF5clen-PF5c
+Text 110,70,0x00000000,PF5c, PF5clen-PF5c
  jmp MMXtest
 .ppF5:
-Text 115,90,0x00000000,PF5, PF5len-PF5
+Text 110,70,0x00000000,PF5, PF5len-PF5
  jmp MMXtest
 
  .IF6:
     mov [micron], 06  ; 065
     cmp [L2], 512
     ja .ppF6  ; Pentium
-Text 115,90,0x00000000,PF6c, PF6clen-PF6c
+Text 110,70,0x00000000,PF6c, PF6clen-PF6c
  jmp MMXtest
 .ppF6:
-Text 115,90,0x00000000,PF6, PF6len-PF6
+Text 110,70,0x00000000,PF6, PF6len-PF6
  jmp MMXtest
 
 
  next_generation:
-Text 115,90,0x00000000,NG, NGlen-NG
+Text 110,70,0x00000000,NG, NGlen-NG
   jmp MMXtest
 ;----------------------------------
 Cyrix:
 
-Text 20, 210,0x00000000,cache, cachelen-cache
+Text 15, 190,0x00000000,cache, cachelen-cache
 
 	mov	esi, cyrix
 	call	load_gif
@@ -1139,16 +1137,16 @@ PutImage 130,127,201,49,img_area+8
     mov [L1i], 8
     mov [L1d], 8
     mov [L2], 512
-Text 80,90,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
-Text 115,90,0x00000000,C52, C52len-C52
+Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+Text 110,70,0x00000000,C52, C52len-C52
     jmp MMXtest
 .C54:
     mov [micron], 50
     mov [L1i], 8
     mov [L1d], 8
     mov [L2], 512
-Text 80,90,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
-Text 115,90,0x00000000,C54, C54len-C54
+Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+Text 110,70,0x00000000,C54, C54len-C54
     jmp MMXtest
 
 .sixx:	   ;Family=6
@@ -1161,21 +1159,21 @@ Text 115,90,0x00000000,C54, C54len-C54
     mov [L1i], 32
     mov [L1d], 32
     mov [L2], 512
-Text 80,90,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
-Text 115,90,0x00000000,C60, C60len-C60
+Text 75,70,0x00000000,Cyrixn, Cyrixnlen-Cyrixn
+Text 110,70,0x00000000,C60, C60len-C60
     jmp MMXtest
 .C65:
     mov [micron], 25 ;35?
     mov [L1i], 32
     mov [L1d], 32
     mov [L2], 512
-Text 80,90,0x00000000,Centaurn, Centaurnlen-Centaurn
-Text 105,90,0x00000000,C65, C65len-C65
+Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
+Text 100,70,0x00000000,C65, C65len-C65
     jmp MMXtest
 ;---------------------
 Centaur:
 
-Text 20, 210,0x00000000,cache, cachelen-cache
+Text 15, 190,0x00000000,cache, cachelen-cache
 
 ;CACHE1:
 mov eax, 80000005h
@@ -1273,10 +1271,10 @@ fivC:		   ;Family=5
 
 	mov	esi, idt
 	call	load_gif
-PutImage 130,127,201,49,img_area+8
+PutImage 125,107,201,49,img_area+8
 ;         place   size
 
-Text 80,90,0x00000000,IDTn, IDTnlen-IDTn
+Text 75,70,0x00000000,IDTn, IDTnlen-IDTn
     cmp [m],$4
     jz .V54
     cmp [m],$8
@@ -1285,25 +1283,25 @@ Text 80,90,0x00000000,IDTn, IDTnlen-IDTn
     jz .V59
 .V54:
    mov [micron], 35
-Text 105,90,0x00000000,V54, V54len-V54
+Text 100,70,0x00000000,V54, V54len-V54
     jmp MMXtest
 .V58:
     mov [micron], 25
-Text 105,90,0x00000000,V58, V58len-V58
+Text 100,70,0x00000000,V58, V58len-V58
     jmp MMXtest
 .V59:
     mov [micron], 25
-Text 105,90,0x00000000,V59, V59len-V59
+Text 100,70,0x00000000,V59, V59len-V59
     jmp MMXtest
 
 sixC:	;Family=6
 
 	mov	esi, via
 	call	load_gif
-PutImage 130,127,201,49,img_area+8
+PutImage 125,107,201,49,img_area+8
 ;         place   size
 
-Text 80,90,0x00000000,Centaurn, Centaurnlen-Centaurn
+Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
     cmp [m],$6
     jz .V66
     cmp [m],$7
@@ -1316,34 +1314,34 @@ Text 80,90,0x00000000,Centaurn, Centaurnlen-Centaurn
     jz .V6A
 .V66:
    mov [micron], 18 ; 25?
-Text 105,90,0x00000000,V66, V66len-V66
+Text 100,70,0x00000000,V66, V66len-V66
     jmp MMXtest
 .V67:
     mov [micron], 15
-Text 105,90,0x00000000,V67, V67len-V67
+Text 100,70,0x00000000,V67, V67len-V67
     jmp MMXtest
 .V68:
     mov [micron], 13
-Text 105,90,0x00000000,V68, V68len-V68
+Text 100,70,0x00000000,V68, V68len-V68
     jmp MMXtest
 .V69:
    mov [micron], 13
-Text 105,90,0x00000000,V69, V69len-V69
+Text 100,70,0x00000000,V69, V69len-V69
     jmp MMXtest
 .V6A:
    mov [micron], 9
-Text 105,90,0x00000000,VA, VAlen-VA
+Text 100,70,0x00000000,VA, VAlen-VA
     jmp MMXtest
 ;-----------
 Transmeta:
 
-Text 20, 210,0x00000000,cache, cachelen-cache
+Text 15, 190,0x00000000,cache, cachelen-cache
 
-Text 80,90,0x00000000,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
+Text 75,70,0x00000000,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
 
 	mov	esi, transmeta
 	call	load_gif
-PutImage 130,127,201,49,img_area+8
+PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 ; cache detection routine - it is the same as for AMD (almost)
@@ -1406,12 +1404,12 @@ mov [L2],ecx
 .fivt:	  ;     Family=5
 
     mov [micron], 13 ; ?
-Text 145,90,0x00000000,T5, T5len-T5
+Text 140,70,0x00000000,T5, T5len-T5
     jmp MMXtest
 
 .fift:	  ;     Family=F
     mov [micron], 13 ;
-Text 145,90,0x00000000,TF, TFlen-TF
+Text 140,70,0x00000000,TF, TFlen-TF
     jmp MMXtest
 
 ;----
@@ -1448,37 +1446,37 @@ HTTtest:
 
 TEXTOUT:
 
-Text 20,130,0x00000000,fam, famlen-fam
-Text 20,150,0x00000000,mode, modelen-mode
-Text 20,170,0x00000000,step, steplen-step
+Text 15,110,0x00000000,fam, famlen-fam
+Text 15,130,0x00000000,mode, modelen-mode
+Text 15,150,0x00000000,step, steplen-step
 ;--------L1  L2
-Number 80,190,0,3,dword [L1d],0x000000;
-Number 80,210,0,3,dword [L1i],0x000000;
-Number 46,230,0,4,dword[L2],0x000000;
-Number 40,250,0,5,dword[L3],0x000000;
+Number 75,170,0,3,dword [L1d],0x000000;
+Number 75,190,0,3,dword [L1i],0x000000;
+Number 41,210,0,4,dword[L2],0x000000;
+Number 35,230,0,5,dword[L3],0x000000;
 ;-----------Features
-Number 263,70,0,2,dword [micron],0x000000  ; micron
+Number 258,50,0,2,dword [micron],0x000000  ; micron
 
-Text 280,310,0x00000000,HTT, HTTlen-HTT
-Text 280,330,0x00000000,sse3, sse3len-sse3
+Text 275,290,0x00000000,HTT, HTTlen-HTT
+Text 275,310,0x00000000,sse3, sse3len-sse3
 
-Text 20,90,0x00000000,name, namelen-name
+Text 15,70,0x00000000,name, namelen-name
 
-Text 20,310,0x00000000,MMXs, MMXslen-MMXs
-Text 20,330,0x00000000,SSE, SSElen-SSE
-Text 100,330,0x00000000,SSE2, SSE2len-SSE2
+Text 15,290,0x00000000,MMXs, MMXslen-MMXs
+Text 15,310,0x00000000,SSE, SSElen-SSE
+Text 95,310,0x00000000,SSE2, SSE2len-SSE2
 
-    Number 145,190,0,2,dword [wayld],0x000000
-    Number 223,190,0,2,dword [lineld],0x000000
+    Number 140,170,0,2,dword [wayld],0x000000
+    Number 218,170,0,2,dword [lineld],0x000000
 
-    Number 145,210,0,2,dword [wayli],0x000000
-    Number 223,210,0,2,dword [lineli],0x000000
+    Number 140,190,0,2,dword [wayli],0x000000
+    Number 218,190,0,2,dword [lineli],0x000000
 
-    Number 145,230,0,2,dword [wayl2],0x000000
-    Number 223,230,0,2,dword [linel2],0x000000
+    Number 140,210,0,2,dword [wayl2],0x000000
+    Number 218,210,0,2,dword [linel2],0x000000
 
-    Number 145,250,0,2,dword [wayl3],0x000000
-    Number 223,250,0,2,dword [linel3],0x000000
+    Number 140,230,0,2,dword [wayl3],0x000000
+    Number 218,230,0,2,dword [linel3],0x000000
 
     jmp TEST3DNOW
 ;-------------------
@@ -1557,15 +1555,15 @@ XITM:
 
 text3d:
 
-Text 180,310,0x00000000,now, nowlen-now
-Text 180,330,0x00000000,nowp, nowplen-nowp
-Text 100,310,0x00000000,mmxp, mmxplen-mmxp
+Text 175,290,0x00000000,now, nowlen-now
+Text 175,310,0x00000000,nowp, nowplen-nowp
+Text 95,290,0x00000000,mmxp, mmxplen-mmxp
 
 jmp still
 
 ;--------------------------
 NO_CPUID:
- Text 20,70,0x00000000,oblom, oblomlen-oblom
+ Text 15,50,0x00000000,oblom, oblomlen-oblom
  jmp FREEZE
 
 FREEZE:
@@ -1578,7 +1576,7 @@ still:
 event_wait:
 
     ;================_RAM_==============
-  Number 205,360,0,4,dword [ram_size_a],0xFFFFFF
+  Number 200,340,0,4,dword [ram_size_a],0xFFFFFF
 
   mov eax, 18
   mov ebx, 16
@@ -1596,12 +1594,12 @@ event_wait:
 
   mov [ram_size_t], eax
 
-  Text 120,360,0x00000000,ram, ramlen-ram
+  Text 115,340,0x00000000,ram, ramlen-ram
 
-  Number 205,360,0,4,dword [ram_size_a],0x000000
+  Number 200,340,0,4,dword [ram_size_a],0x000000
 
-  Number 275,360,0,4,dword [ram_size_t],0x000000
-  Text 305,360,0x00000000,mb, mblen-mb
+  Number 270,340,0,4,dword [ram_size_t],0x000000
+  Text 300,340,0x00000000,mb, mblen-mb
 
 ;==============================
 
@@ -1639,9 +1637,9 @@ event_wait:
     jmp     event_wait
 vybor:
 
- Number 315,90,0,4,dword [rating],0xFFFFFF ;
+ Number 310,70,0,4,dword [rating],0xFFFFFF ;
 
- Number 320,110,0,3,dword [FRS],0xFFFFFF; MHz 
+ Number 315,90,0,3,dword [FRS],0xFFFFFF; MHz 
 
 cmp [FRS], 266
 jz .s1
@@ -1653,9 +1651,9 @@ jz .s3
 .s1:
 mov [FRS], 333
 call newrating
- Number 315,90,0,4,dword [rating],0x000000
+ Number 310,70,0,4,dword [rating],0x000000
 
- Number 320,110,0,3,dword [FRS],0x000000; MHz 
+ Number 315,90,0,3,dword [FRS],0x000000; MHz 
 jmp  still
 
 .s2:
@@ -1663,18 +1661,18 @@ mov [FRS], 400
 
 call newrating
 
- Number 315,90,0,4,dword [rating],0x000000
+ Number 310,70,0,4,dword [rating],0x000000
 
-   Number 320,110,0,3,dword [FRS],0x000000; MHz 
+   Number 315,90,0,3,dword [FRS],0x000000; MHz 
 jmp  still
 
 .s3:
 mov [FRS], 266
 call newrating
 
- Number 315,90,0,4,dword [rating],0x000000
+ Number 310,70,0,4,dword [rating],0x000000
 
-  Number 320,110,0,3,dword [FRS],0x000000; MHz 
+  Number 315,90,0,3,dword [FRS],0x000000; MHz 
 
 jmp  still
 
@@ -1773,58 +1771,56 @@ draw_window_2:
     int  0x40
 
 
-  Window 250,250,419,390, 0x03FFFFFF, 0x805080d0, 0x005080d0
+  Window 250,250,420,390, 0x33FFFFFF, 0x805080d0, standard
 	  ; place size
 
-Text 8, 8,0x20000000, standard, standardlen-standard  ;ddeeff
+Text 15, 10,0x00000000, STDCA, STDCAlen-STDCA
+Text 215, 10,0x00000000, EXTCA, EXTCAlen-EXTCA
 
-Text 20, 30,0x00000000, STDCA, STDCAlen-STDCA
-Text 220, 30,0x00000000, EXTCA, EXTCAlen-EXTCA
+Number 135,10,1*256,8,dword [stdc],0x000000
+Number 335,10,1*256,8,dword [extc],0x000000
 
-Number 140,30,1*256,8,dword [stdc],0x000000
-Number 340,30,1*256,8,dword [extc],0x000000
+Text 15, 30,0x00000000, FPU, FPUlen-FPU
+Text 115, 30,0x00000000, VME, VMElen-VME
+Text 215, 30,0x00000000, DE,  DElen-DE
+Text 315, 30,0x00000000, PSE, PSElen-PSE
 
-Text 20, 50,0x00000000, FPU, FPUlen-FPU
-Text 120, 50,0x00000000, VME, VMElen-VME
-Text 220, 50,0x00000000, DE,  DElen-DE
-Text 320, 50,0x00000000, PSE, PSElen-PSE
+Text 15, 50,0x00000000,TSC, TSClen-TSC
+Text 115, 50,0x00000000,MSR, MSRlen-MSR
+Text 215,50,0x00000000,PAE, PAElen-PAE
+Text 315,50,0x00000000,MCE, MCElen-MCE
 
-Text 20, 70,0x00000000,TSC, TSClen-TSC
-Text 120, 70,0x00000000,MSR, MSRlen-MSR
-Text 220,70,0x00000000,PAE, PAElen-PAE
-Text 320,70,0x00000000,MCE, MCElen-MCE
+Text 15,70,0x00000000,CX8, CX8len-CX8
+Text 115,70,0x00000000,APIC, APIClen-APIC
+Text 215,70,0x00000000,Res, Reslen-Res
+Text 315,70,0x00000000,SEP, SEPlen-SEP
 
-Text 20,90,0x00000000,CX8, CX8len-CX8
-Text 120,90,0x00000000,APIC, APIClen-APIC
-Text 220,90,0x00000000,Res, Reslen-Res
-Text 320,90,0x00000000,SEP, SEPlen-SEP
+Text 15,90,0x00000000,MTRR, MTRRlen-MTRR
+Text 115,90,0x00000000,PGE, PGElen-PGE
+Text 215,90,0x00000000,MCA, MCAlen-MCA
+Text 315,90,0x00000000,CMOV, CMOVlen-CMOV
 
-Text 20,110,0x00000000,MTRR, MTRRlen-MTRR
-Text 120,110,0x00000000,PGE, PGElen-PGE
-Text 220,110,0x00000000,MCA, MCAlen-MCA
-Text 320,110,0x00000000,CMOV, CMOVlen-CMOV
+Text 15,110,0x00000000,PAT, PATlen-PAT
+Text 115,110,0x00000000,PSE36, PSE36len-PSE36
+Text 215,110,0x00000000,PSNUM, PSNUMlen-PSNUM
+Text 315,110,0x00000000,CLFLUSHn, CLFLUSHnlen-CLFLUSHn
 
-Text 20,130,0x00000000,PAT, PATlen-PAT
-Text 120,130,0x00000000,PSE36, PSE36len-PSE36
-Text 220,130,0x00000000,PSNUM, PSNUMlen-PSNUM
-Text 320,130,0x00000000,CLFLUSHn, CLFLUSHnlen-CLFLUSHn
+Text 15,130,0x00000000,Res, Reslen-Res
+Text 115,130,0x00000000,DTS, DTSlen-DTS
+Text 215,130,0x00000000,ACPI, ACPIlen-ACPI
+Text 315,130,0x00000000,MMX, MMXlen-MMX
 
-Text 20,150,0x00000000,Res, Reslen-Res
-Text 120,150,0x00000000,DTS, DTSlen-DTS
-Text 220,150,0x00000000,ACPI, ACPIlen-ACPI
-Text 320,150,0x00000000,MMX, MMXlen-MMX
+Text 15,150,0x00000000,FXSR, FXSRlen-FXSR
+Text 115,150,0x00000000,SSE, SSElen-SSE
+Text  215,150,0x00000000,SSE2, SSE2len-SSE2
+Text 315,150,0x00000000,SSn, SSnlen-SSn
 
-Text 20,170,0x00000000,FXSR, FXSRlen-FXSR
-Text 120,170,0x00000000,SSE, SSElen-SSE
-Text  220,170,0x00000000,SSE2, SSE2len-SSE2
-Text 320,170,0x00000000,SSn, SSnlen-SSn
-
-Text 20,190,0x00000000,HTT, HTTnlen-HTTn
-Text 120,190,0x00000000,TM, TMlen-TM
-Text 220,190,0x00000000,IA64, IA64len-IA64
-Text 320,190,0x00000000,PBE, PBElen-PBE
+Text 15,170,0x00000000,HTT, HTTnlen-HTTn
+Text 115,170,0x00000000,TM, TMlen-TM
+Text 215,170,0x00000000,IA64, IA64len-IA64
+Text 315,170,0x00000000,PBE, PBElen-PBE
 ;---------------
-DrawLine 5,  415, 205,205,0x8080FF  ;10
+DrawLine 0,  410, 185,185,0x8080FF  ;10
 
 mov   eax,$80000000
 cpuid
@@ -1833,48 +1829,48 @@ test eax, 80000000h
 jnz goooddd
 
 baaadd:
-Text 100,255,0x00000000,NEF, NEFlen-NEF
+Text 95,235,0x00000000,NEF, NEFlen-NEF
 jmp too
 
 goooddd:
-Text 20,215,0x00000000,SS3, SS3len-SS3
-Text 20,235,0x00000000,MON, MONlen-MON
-Text 20,255,0x00000000,DS_CPL, DS_CPLlen-DS_CPL
-Text 20,275,0x00000000,EST, ESTlen-EST
-Text 20,295,0x00000000,TM2, TM2len-TM2
-Text 20,315,0x00000000,VMX, VMXlen-VMX
-Text 20,335,0x00000000,SVM, SVMlen-SVM
+Text 15,195,0x00000000,SS3, SS3len-SS3
+Text 15,215,0x00000000,MON, MONlen-MON
+Text 15,235,0x00000000,DS_CPL, DS_CPLlen-DS_CPL
+Text 15,255,0x00000000,EST, ESTlen-EST
+Text 15,275,0x00000000,TM2, TM2len-TM2
+Text 15,295,0x00000000,VMX, VMXlen-VMX
+Text 15,315,0x00000000,SVM, SVMlen-SVM
 
-Text 120,215,0x00000000,CNXT_ID, CNXT_IDlen-CNXT_ID
-Text 120,235,0x00000000,CX16, CX16len-CX16
-Text 120,255,0x00000000,ETPRD, ETPRDlen-ETPRD
-Text 120,275,0x00000000,SYS, SYSlen-SYS
-Text 120,295,0x00000000,LAF, LAFlen-LAF
-Text 120,315,0x00000000,SSSE3, SSSE3len-SSSE3
-Text 120,335,0x00000000,MCR8, MCR8len-MCR8
+Text 115,195,0x00000000,CNXT_ID, CNXT_IDlen-CNXT_ID
+Text 115,215,0x00000000,CX16, CX16len-CX16
+Text 115,235,0x00000000,ETPRD, ETPRDlen-ETPRD
+Text 115,255,0x00000000,SYS, SYSlen-SYS
+Text 115,275,0x00000000,LAF, LAFlen-LAF
+Text 115,295,0x00000000,SSSE3, SSSE3len-SSSE3
+Text 115,315,0x00000000,MCR8, MCR8len-MCR8
 
-Text 220,215,0x00000000,MP, MPlen-MP
-Text 220,235,0x00000000,NX, NXlen-NX
-Text 220,255,0x00000000,MMXPi, MMXPilen-MMXPi
-Text 220,275,0x00000000,MMXn, MMXnlen-MMXn
-Text 220,295,0x00000000,FXSRn, FXSRnlen-FXSRn
-Text 220,315,0x00000000,DCA,DCAlen-DCA
+Text 215,195,0x00000000,MP, MPlen-MP
+Text 215,215,0x00000000,NX, NXlen-NX
+Text 215,235,0x00000000,MMXPi, MMXPilen-MMXPi
+Text 215,255,0x00000000,MMXn, MMXnlen-MMXn
+Text 215,275,0x00000000,FXSRn, FXSRnlen-FXSRn
+Text 215,295,0x00000000,DCA,DCAlen-DCA
 
-Text 320,215,0x00000000,FFXSR, FFXSRlen-FFXSR
-Text 320,235,0x00000000,TSCP, TSCPlen-TSCP
-Text 320,255,0x00000000,LM, LMlen-LM
-Text 320,275,0x00000000,DNo, DNolen-DNo
-Text 320,295,0x00000000,DN, DNlen-DN
-Text 320,315,0x00000000,CMPL, CMPLlen-CMPL
+Text 315,195,0x00000000,FFXSR, FFXSRlen-FFXSR
+Text 315,215,0x00000000,TSCP, TSCPlen-TSCP
+Text 315,235,0x00000000,LM, LMlen-LM
+Text 315,255,0x00000000,DNo, DNolen-DNo
+Text 315,275,0x00000000,DN, DNlen-DN
+Text 315,295,0x00000000,CMPL, CMPLlen-CMPL
 
 
 too:
-DrawLine 5,  415, 355,355,0x8080FF  ;10
+DrawLine 0,  410, 335,335,0x8080FF  ;10
 
-Text 20,370,0x00000000,speed, speedlen-speed
-Text 135,370,0x00000000,kbpersec, kbperseclen-kbpersec
+Text 15,350,0x00000000,speed, speedlen-speed
+Text 130,350,0x00000000,kbpersec, kbperseclen-kbpersec
 
-Number 100,370,0,5,dword [iter],0x000000; RSA test results
+Number 95,350,0,5,dword [iter],0x000000; RSA test results
 
     mov  eax,12
     mov  ebx,2h
@@ -1891,31 +1887,29 @@ draw_window:
    mov	ebx,1h
    int	0x40
 
-  Window 150,150,349,385, 0x03FFFFFF, 0x805080d0, 0x005080d0
+  Window 150,150,350,385, 0x33FFFFFF, 0x805080d0, header
 	  ; place size
 
-  Button 20,350,92,23,2,0x03FFFFFF   ;  button "press for more"
+  Button 15,330,92,23,2,0x03FFFFFF   ;  button "press for more"
 
 	mov	esi, knopka
 	mov	edi, img_area2
 	call	load_gif2
-PutImage 20,350,93,24,img_area2+8   ; image "press for more"
+PutImage 15,330,93,24,img_area2+8   ; image "press for more"
 ;         place   size
 
-
-    Text 8,8,0x20000000,zag,zaglen-zag	; application header
 
     mov  eax,12
     mov  ebx,2h
     int  0x40
 
-    Text 135,290,0x00000000,instruct, instructlen-instruct
+    Text 130,270,0x00000000,instruct, instructlen-instruct
 
-    DrawLine 15,  335, 345,345,0x8080FF
-    DrawLine 335,  335, 295,345,0x8080FF
-    DrawLine  15,   15, 295,345,0x8080FF
-    DrawLine  15,  130, 295,295,0x8080FF
-    DrawLine 235,  335, 295,295,0x8080FF
+    DrawLine  10,  330, 325,325,0x8080FF
+    DrawLine 330,  330, 275,325,0x8080FF
+    DrawLine  10,   10, 275,325,0x8080FF
+    DrawLine  10,  125, 275,275,0x8080FF
+    DrawLine 230,  330, 275,275,0x8080FF
 
   cmp dword[smallvendor], 'cAMD'
   jne cont
@@ -1924,48 +1918,48 @@ PutImage 20,350,93,24,img_area2+8   ; image "press for more"
   cmp [f], $6
   jl cont
 
-   Button 245,105,69,15,3,0x030000FF  ;  button for rating
+   Button 240,85,69,15,3,0x030000FF  ;  button for rating
 
-    Text 250,110,0x00FFFFFF,FR, FRlen-FR
+    Text 245,90,0x00FFFFFF,FR, FRlen-FR
 
    call newrating; !!!!
 
      cont:
 
 
-    Text 20,70,0x00000000,tsum, tsumlen-tsum   ; 
-    Text 20,110,0x00000000,cpuname, cpunamelen-cpuname; 
-    Text 260,270,0x00000000,typen, typenlen-typen;
-    Text 180, 70,0x00000000,tech, techlen-tech; 
+    Text 15,50,0x00000000,tsum, tsumlen-tsum   ; 
+    Text 15,90,0x00000000,cpuname, cpunamelen-cpuname; 
+    Text 255,250,0x00000000,typen, typenlen-typen;
+    Text 175, 50,0x00000000,tech, techlen-tech; 
 
-    Number 87,70,0,4,dword [total],0x000000; MHz
-    Number 115,70,0,2,dword [sot],0x000000; KHz
+    Number 82,50,0,4,dword [total],0x000000; MHz
+    Number 110,50,0,2,dword [sot],0x000000; KHz
 
-    Text 20,190,0x00000000,cache2, cache2len-cache2
-    Text 20,230,0x00000000,cache3, cache3len-cache3
-    Text 20,250,0x00000000,cache4, cache4len-cache4
+    Text 15,170,0x00000000,cache2, cache2len-cache2
+    Text 15,210,0x00000000,cache3, cache3len-cache3
+    Text 15,230,0x00000000,cache4, cache4len-cache4
 
 
-    Number 80,130,1*256,1,dword [f],0x000000 ; 
-    Number 80,150,1*256,1,dword [m],0x000000; 
-    Number 80,170,1*256,1,dword [s],0x000000; 
+    Number 75,110,1*256,1,dword [f],0x000000 ; 
+    Number 75,130,1*256,1,dword [m],0x000000; 
+    Number 75,150,1*256,1,dword [s],0x000000; 
 
-    Number 115,130,1*256,2,dword [ef],0x000000 ; 
-    Number 115,150,1*256,2,dword [em],0x000000; 
+    Number 110,110,1*256,2,dword [ef],0x000000 ; 
+    Number 110,130,1*256,2,dword [em],0x000000; 
 
-Text   20,50,0x00000000,multil, multillen-multil
-Number 90,50,0,2,dword [multb],0x000000;
-Number 110,50,0,1,dword [multa],0x000000;
+Text   15,30,0x00000000,multil, multillen-multil
+Number 85,30,0,2,dword [multb],0x000000;
+Number 105,30,0,1,dword [multa],0x000000;
 
-Text   180,50,0x00000000,freql, freqllen-freql
-Number 264,50,0,4,dword [freqbb],0x000000;
-Number 294,50,0,2,dword [freqll],0x000000;
+Text   175,30,0x00000000,freql, freqllen-freql
+Number 259,30,0,4,dword [freqbb],0x000000;
+Number 289,30,0,2,dword [freqll],0x000000;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;Text 120,300,0x00000000,logcpus, logcpuslen-logcpus
-;Number 255,300,0,2,dword [number_of_log_cpus],0x000000
+;Text 115,280,0x00000000,logcpus, logcpuslen-logcpus
+;Number 250,280,0,2,dword [number_of_log_cpus],0x000000
 
 
-    Text 20,30,0x00000000,stm, stmlen-stm
+    Text 15,10,0x00000000,stm, stmlen-stm
 ;  Fix for deleting leading whitespaces
 ;  in Intel P4's internal name
 ;  by Madis Calme
@@ -1978,10 +1972,10 @@ Number 294,50,0,2,dword [freqll],0x000000;
     dec  edi
     mov  esi,mynamelen
     sub  esi,edi
-    Text 110, 30, 0x00000000, edi, esi
-;    Text 110,40,0x00000000,myname, mynamelen-myname
+    Text 105, 10, 0x00000000, edi, esi
+;    Text 105,20,0x00000000,myname, mynamelen-myname
 ;-
-Text 20,270,0x00000000,brandid, brandidlen-brandid
+Text 15,250,0x00000000,brandid, brandidlen-brandid
 
     ret 		; 
 
@@ -1993,67 +1987,16 @@ load_gif2:
 
 ; DATA AREA
 
-zag:
-     db   'CPUID 2.17 by Sergey Kuzmin and the KolibriOS team'
-zaglen:
+header    db   'CPUID 2.19 by S.Kuzmin & the KolibriOS team',0
+
 tsum:
     db 'Frequency:     .   MHz'
 tsumlen:
-ost dd ?
-sot dd ?
-f dd ?
-m dd ?
-s dd ?
-t dd ?
 
-ef dd ?
-em dd ?
-
-multiplier dd ?
-multa dd ?
-multb dd ?
-
-smallvendor dd ?
-L1d  dd ?
-L1i  dd ?
-L2   dd ?
-L3   dd ?
 total dd 0x0
 total1 dd 0x0
 rating dd 0x0
 rat dd 0x0  ;
-micron dd ?
-sse3sup dd ?
-brand dd ?
-
-ram_size_a dd ?
-ram_size_t dd ?
-
-stdc dd ?
-extc dd ?
-
-FRS dd ?
-freqsel db ?
-
-temp dd ?
-freqbb dd ?
-freqll dd ?
-
-wayli dd ?
-lineli dd ?
-
-wayld dd ?
-lineld dd ?
-
-wayl2 dd ?
-linel2 dd ?
-
-wayl3 dd ?
-linel3 dd ?
-
-;number_of_log_cpus dd ?
-
-che db ? ; numbers of calls for Intel caches detection
 
 ram:
 db 'Available RAM:     out of'
@@ -2083,9 +2026,7 @@ instruct:
     db 'Instruction sets'
 instructlen:
 
-standard:
-    db 'Standard and Extended features plus Performance test'
-standardlen:
+standard    db 'Standard and Extended features plus Performance test',0
 
 FR:
     db 'Choose FSB:'
@@ -2496,9 +2437,6 @@ p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 1
 coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
 tualatcoeff	db	120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
 
-myname:
-   db '                                                '
-mynamelen:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
@@ -2516,6 +2454,63 @@ rd 4096+1	   ;hash area size for unpacking gif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 I_END:
+
+ost dd ?
+sot dd ?
+f dd ?
+m dd ?
+s dd ?
+t dd ?
+
+ef dd ?
+em dd ?
+
+multiplier dd ?
+multa dd ?
+multb dd ?
+
+smallvendor dd ?
+L1d  dd ?
+L1i  dd ?
+L2   dd ?
+L3   dd ?
+micron dd ?
+sse3sup dd ?
+brand dd ?
+
+ram_size_a dd ?
+ram_size_t dd ?
+
+stdc dd ?
+extc dd ?
+
+FRS dd ?
+freqsel db ?
+
+temp dd ?
+freqbb dd ?
+freqll dd ?
+
+wayli dd ?
+lineli dd ?
+
+wayld dd ?
+lineld dd ?
+
+wayl2 dd ?
+linel2 dd ?
+
+wayl3 dd ?
+linel3 dd ?
+
+;number_of_log_cpus dd ?
+
+che db ? ; numbers of calls for Intel caches detection
+
+myname:
+   rb 48
+mynamelen:
+
 align 4
   udata
   thread2_stack_area rb 64

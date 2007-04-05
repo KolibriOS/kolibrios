@@ -620,6 +620,10 @@ sign_n_input:
 
 app_ipc ipc_buffer 32
 
+mouse_flag: dd 0x0
+structure_of_potock:
+rb 100
+
 cur_number	  dd	  ?
 
 sign_n	      db      ?

@@ -253,6 +253,7 @@ grab_text db 'RUN',0
 run_but_text db 'RUN',0
 end if
 
+mouse_flag: dd 0x0
 
 status dd hello
 
@@ -264,6 +265,9 @@ dd 0,0
 .name rb 512
 
 flags dw ?
+
+structure_of_potock:
+rb 100
 
 fn rb 512
 

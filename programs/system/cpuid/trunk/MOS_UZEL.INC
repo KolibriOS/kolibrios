@@ -180,7 +180,7 @@ je cnnn1
 
 rr:
 mov byte [brand], bl ;
-Text 275,210,0x00000000,abrand00, abrand00len-abrand00
+Text 270,190,0x00000000,abrand00, abrand00len-abrand00
 jmp B000
 ;jmp comppp
 
@@ -202,15 +202,15 @@ jae res3
 
 
 res1:
-Text 275,210,0x00000000,abrand0, abrand0len-abrand0
+Text 270,190,0x00000000,abrand0, abrand0len-abrand0
 jmp B000
 
 res2:
-Text 275,210,0x00000000,abrand1, abrand1len-abrand1
+Text 270,190,0x00000000,abrand1, abrand1len-abrand1
 jmp B000
 
 res3:
-Text 275,210,0x00000000,abrand2, abrand2len-abrand2
+Text 270,190,0x00000000,abrand2, abrand2len-abrand2
 jmp B000
 	     ;;;;;;;;;;;;;;;;;;;;; intel brand
 intel_br:
@@ -306,18 +306,18 @@ jne Bi00
 ;------------------
 Bi00:
 mov byte [brand], bl ;00h
-Text 65,270,0x00000000,brand0, brand0len-brand0
-;Number 275,200,1*256,2,dword [brand],0x000000     was in v. 1.11
+Text 60,250,0x00000000,brand0, brand0len-brand0
+;Number 270,180,1*256,2,dword [brand],0x000000     was in v. 1.11
 jmp B000
 
 Bi01:
 mov [brand], 01h
-Text 65,270,0x00000000,brand01, brand01len-brand01
+Text 60,250,0x00000000,brand01, brand01len-brand01
 jmp B000
 
 Bi02:
 mov [brand], 02h
-Text 65,270,0x00000000,brand02, brand02len-brand02
+Text 60,250,0x00000000,brand02, brand02len-brand02
 jmp B000
 
 Bi03:
@@ -325,40 +325,40 @@ mov [brand], 03h
 
 cmp [m], 8
 je E3
-Text 65,270,0x00000000,brand03, brand03len-brand03
+Text 60,250,0x00000000,brand03, brand03len-brand03
 jmp B000
 E3:
-Text 65,270,0x00000000,brand03d, brand03dlen-brand03d
+Text 60,250,0x00000000,brand03d, brand03dlen-brand03d
 jmp B000
 
 Bi04:
 mov [brand], 04h
-Text 65,270,0x00000000,brand04, brand04len-brand04
+Text 60,250,0x00000000,brand04, brand04len-brand04
 jmp B000
 
 Bi06:
 mov [brand], 06h
-Text 65,270,0x00000000,brand06, brand06len-brand06
+Text 60,250,0x00000000,brand06, brand06len-brand06
 jmp B000
 
 Bi07:
 mov [brand], 07h
-Text 65,270,0x00000000,brand07, brand07len-brand07
+Text 60,250,0x00000000,brand07, brand07len-brand07
 jmp B000
 
 Bi08:
 mov [brand], 08h
-Text 65,270,0x00000000,brand08, brand08len-brand08
+Text 60,250,0x00000000,brand08, brand08len-brand08
 jmp B000
 
 Bi09:
 mov [brand], 09h
-Text 65,270,0x00000000,brand09, brand09len-brand09
+Text 60,250,0x00000000,brand09, brand09len-brand09
 jmp B000
 
 Bi0A:
 mov [brand], 0Ah
-Text 65,270,0x00000000,brand0A, brand0Alen-brand0A
+Text 60,250,0x00000000,brand0A, brand0Alen-brand0A
 jmp B000
 
 Bi0B:
@@ -366,15 +366,15 @@ mov [brand], 0Bh
 
 cmp [m], 13
 jl Eb
-Text 65,270,0x00000000,brand0B, brand0Blen-brand0B
+Text 60,250,0x00000000,brand0B, brand0Blen-brand0B
 jmp B000
 Eb:
-Text 65,270,0x00000000,brand0Bd, brand0Bdlen-brand0Bd
+Text 60,250,0x00000000,brand0Bd, brand0Bdlen-brand0Bd
 jmp B000
 
 Bi0C:
 mov [brand], 0Ch
-Text 65,270,0x00000000,brand0C, brand0Clen-brand0C
+Text 60,250,0x00000000,brand0C, brand0Clen-brand0C
 jmp B000
 
 Bi0E:
@@ -382,50 +382,50 @@ mov [brand], 0Eh
 
 cmp [m], 13
 jl Ed
-Text 65,270,0x00000000,brand0E, brand0Elen-brand0E
+Text 60,250,0x00000000,brand0E, brand0Elen-brand0E
 jmp B000
 Ed:
-Text 65,270,0x00000000,brand0Ed, brand0Edlen-brand0Ed
+Text 60,250,0x00000000,brand0Ed, brand0Edlen-brand0Ed
 jmp B000
 
 Bi0F:
 mov [brand], 0Fh
-Text 65,270,0x00000000,brand0F, brand0Flen-brand0F
+Text 60,250,0x00000000,brand0F, brand0Flen-brand0F
 jmp B000
 
 Bi11:
 mov [brand], 11h
-Text 65,270,0x00000000,brand11, brand11len-brand11
+Text 60,250,0x00000000,brand11, brand11len-brand11
 jmp B000
 
 Bi12:
 mov [brand], 12h
-Text 65,270,0x00000000,brand12, brand12len-brand12
+Text 60,250,0x00000000,brand12, brand12len-brand12
 jmp B000
 
 Bi13:
 mov [brand], 13h
-Text 65,270,0x00000000,brand13, brand13len-brand13
+Text 60,250,0x00000000,brand13, brand13len-brand13
 jmp B000
 
 Bi14:
 mov [brand], 14h
-Text 65,270,0x00000000,brand14, brand14len-brand14
+Text 60,250,0x00000000,brand14, brand14len-brand14
 jmp B000
 
 Bi15:
 mov [brand], 15h
-Text 65,270,0x00000000,brand15, brand15len-brand15
+Text 60,250,0x00000000,brand15, brand15len-brand15
 jmp B000
 
 Bi16:
 mov [brand], 16h
-Text 65,270,0x00000000,brand16, brand16len-brand16
+Text 60,250,0x00000000,brand16, brand16len-brand16
 jmp B000
 
 Bi17:
 mov [brand], 17h
-Text 65,270,0x00000000,brand17, brand17len-brand17
+Text 60,250,0x00000000,brand17, brand17len-brand17
 jmp B000
 
 B000:
