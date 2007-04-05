@@ -8,7 +8,7 @@
 ; COMPILE WITH FASM
 
 WIN_X equ (150 shl 16+270)
-WIN_Y equ (100 shl 16+300)
+WIN_Y equ (100 shl 16+335)
 
 LINE1	  equ 27 shl 16+16
 B_MONTH_X equ 10 shl 16+158
@@ -271,8 +271,9 @@ red:			; перерисовать окно
 
 still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
 
-    mov  eax,10 	; функция 10 - ждать события
-    int  0x40		; вызываем систему
+    mov  eax,23 		; wait here for event
+    mov  ebx,50
+    mcall
   .evt:
     mov  ebp,[focus]
     cmp  eax,1		; перерисовать окно ?
@@ -282,11 +283,13 @@ still:			; ГЛАВНЫЙ ЦИКЛ ПРОГРАММЫ
     cmp  eax,3		; нажата кнопка ?
     je	 button 	; если да - на button
 
+    call draw_clock
+
     jmp  still		; если другое событие - в начало цикла
 
   key:			; нажата клавиша на клавиатуре
     mov  eax,2		; функция 2 - считать код символа
-    int  0x40		; вызов системы
+    mcall		; вызов системы
     cmp  ah,9
     jne  no_tab
   .tab:
@@ -355,7 +358,7 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
 
   button:		; нажата кнопка в окне программы
     mov  eax,17 	; 17 - получить идентификатор нажатой кнопки
-    int  0x40		; вызов системы
+    mcall		; вызов системы
     movzx ebx,ah
     cmp  ah,200
     jbe  nodayselect
@@ -380,9 +383,41 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jne  noclose	; если нет - иди вперёд на noclose
   close:
     or	 eax,-1 	; выход из программы
-    int  0x40		; вызов системы
+    mcall		; вызов системы
 
   noclose:
+
+    cmp  ah,72
+    je	 plus_he
+
+    cmp  ah,73
+    je	 plus_hd
+
+    cmp  ah,74
+    je	 minus_he
+
+    cmp  ah,75
+    je	 minus_hd
+
+    cmp  ah,76
+    je	 plus_me
+
+    cmp  ah,77
+    je	 plus_md
+
+    cmp  ah,78
+    je	 minus_me
+
+    cmp  ah,79
+    je	 minus_md
+
+    cmp  ah,80
+    je	 reset
+
+    ;jmp  still
+
+
+
     cmp  ah,2		; drop down list
     jne  no_dropdn
   .drop:
@@ -394,7 +429,7 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     mov  ecx,31
     mov  eax,8
   .bremove:
-    int  0x40
+    mcall
     dec  edx
     loop .bremove
     call draw_dropdown
@@ -463,15 +498,148 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     jmp  upd
 
 
+reset:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    shl  ecx,16
+    shr  ecx,16
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+plus_hd:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    add  ecx,1
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+plus_he:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    add  ecx,16
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+minus_hd:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    sub  ecx,1
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+minus_he:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    sub  ecx,16
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+plus_md:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    add  ecx,256
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+plus_me:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    add  ecx,4096
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+minus_md:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    sub  ecx,256
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
+minus_me:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    sub  ecx,4096
+    mov  eax,22
+    mov  ebx,0x00000000
+    mcall
+
+    jmp  still
+
 ;   *********************************************
 ;   *******  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА *******
 ;   *********************************************
 
+draw_clock:
+
+    mov  eax,3
+    mcall
+    mov  ecx,eax
+    mov  eax,47
+    mov esi,0x50000000
+    mov  edi,0xaabbcc
+    mov  ebx,0x00020100
+    mov  edx,205*65536+280
+    mcall
+
+    shr  ecx,8
+    add  edx,20*65536
+    ;mov  eax,47
+    mcall
+
+    shr  ecx,8
+    add  edx,20*65536
+    ;mov  eax,47
+    mcall
+    ret
+
 draw_window:
+
 
     mov  eax,12 		   ; функция 12: сообщить ОС об отрисовке окна
     mov  ebx,1			   ; 1 - начинаем рисовать
-    int  0x40
+    mcall
 				   ; СОЗДАЁМ ОКНО
     xor  eax,eax		   ; функция 0 : определить и отрисовать окно
     mov  ebx,WIN_X
@@ -481,9 +649,72 @@ draw_window:
     mov  ecx,WIN_Y-15
   end if
     mov  edx,0x13aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
-    mov  edi,header              ; заголовок
-    int  0x40
+    mov  edi,header		   ; заголовок
+    mcall
     call draw_week
+
+    mov  eax,8
+    mov  ebx,205*65536+7
+    mov  ecx,290*65536+10
+    mov  esi,0x005555dd
+    mov  edx,72
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,212*65536+7
+    ;mov  ecx,290*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,205*65536+7
+    mov  ecx,300*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,212*65536+7
+    ;mov  ecx,300*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,224*65536+7
+    mov  ecx,290*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,231*65536+7
+    ;mov  ecx,290*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,224*65536+7
+    mov  ecx,300*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,231*65536+7
+    ;mov  ecx,300*65536+10
+    ;mov  esi,0x005555dd
+    inc  edx
+    mcall
+
+    ;mov  eax,8
+    mov  ebx,243*65536+14
+    mov  ecx,290*65536+20
+    mov  esi,0x00dd7777
+    inc  edx
+    mcall
 
     mov  eax,8
     mov  esi,0x05080d0
@@ -491,10 +722,10 @@ draw_window:
     mov  ebx,B_DATE_X
     mov  ecx,B_DATE_Y
     mov  edx,eax
-    int  0x40
+    mcall
     inc  edx
     add  ebx,B_DATE_BSHIFT
-    int  0x40
+    mcall
     inc  edx
   else
     mov  edx,10
@@ -502,24 +733,43 @@ draw_window:
     or	 edx,1 shl 29+1 shl 30
     mov  ebx,B_NS_X
     mov  ecx,B_NS_Y
-    int  0x40
+    mcall
     add  edx,1-1 shl 29
     mov  ebx,B_TODAY_X+8*(today_end-today_msg)
     mov  ecx,B_TODAY_Y
-    int  0x40
+    mcall
     mov  ecx,B_Y
     mov  ebx,B_MONTH_X
     mov  edx,2
-    int  0x40
+    mcall
     mov  ebx,B_SPIN_X
     inc  edx
-    int  0x40
+    mcall
     add  ebx,B_SPIN_WIDTH shl 16
     inc  edx
-    int  0x40
+    mcall
     call draw_days
 
     mov  eax,4			   ; функция 4 : написать в окне текст
+    mov  ebx,110*65536+280
+    mov  ecx,0x800000ff
+    mov  edx,sys_text
+    mcall
+
+    ;mov  eax,4
+    mov  ebx,149*65536+302
+    ;mov  ecx,0x800000ff
+    mov  edx,minus
+    mcall
+
+    ;mov  eax,4
+    mov  ebx,137*65536+292
+    mov  ecx,0x80ff0000
+    mov  edx,plus
+    mcall
+
+
+    ;mov  eax,4
     mov  ecx,0x10ddeeff 	   ; шрифт 1 и цвет ( 0xF0RRGGBB )
 
  if SKIP eq 0
@@ -527,10 +777,10 @@ draw_window:
     mov  edx,datebut
     mov  esi,9
     btc  ecx,28
-    int  0x40
+    mcall
     add  ebx,B_DATE_SHIFT
     add  edx,esi
-    int  0x40
+    mcall
  end if
     mov  edx,n_style
     mov  esi,ns_end-n_style
@@ -542,19 +792,19 @@ draw_window:
   .high:
     mov  ecx,0xac0000;d048c8
   .int:
-    int  0x40
+    mcall
 
     mov  ecx,0xd048c8
     mov  edx,today_msg
     mov  ebx,B_TODAY
     mov  esi,today_end-today_msg
-    int  0x40
+    mcall
 
     mov  ebx,B_SPIN
     mov  edx,spinner
     mov  esi,3
     ShowFocus 4
-    int  0x40
+    mcall
 
     mov  edx,[Month]
     movzx  esi,byte[month_name]
@@ -562,13 +812,13 @@ draw_window:
     add  edx,month_name+1
     mov  ebx,B_MONTH
     ShowFocus 2
-    int  0x40
+    mcall
 
     call draw_year
     mov  [dropped],0
     mov  eax,12 		   ; функция 12: сообщить ОС об отрисовке окна
     mov  ebx,2			   ; 2, закончили рисовать
-    int  0x40
+    mcall
     ret 			   ; выходим из процедуры
 
 draw_year:
@@ -594,13 +844,13 @@ draw_dropdown:
     mov  ecx,[esp+4]
     mov  esi,0x6f9fef
     mov  eax,8
-    int  0x40
+    mcall
     shr  eax,1
     mov  ebx,[esp+8]
     xchg edx,[esp+12]
     movzx esi,byte[month_name]
     ShowFocus edi
-    int  0x40
+    mcall
     add  edx,esi
     xchg edx,[esp+12]
     add  dword[esp+8],16
@@ -616,7 +866,7 @@ draw_week:
     mov  ebx,B_WBAR_X
     mov  ecx,B_WBAR_Y
     mov  edx,0x90a0b0
-    int  0x40
+    mcall
     movzx esi,byte[week_days]
     movzx edi,byte[week_days+1]
     mov  ebx,B_WEEK
@@ -632,7 +882,7 @@ draw_week:
   .holiday:
     mov  ecx,0x10cc1010
   .noholiday:
-    int  0x40
+    mcall
     add  edx,esi
     add  ebx,B_WX_SHIFT
     pop  ecx
@@ -644,7 +894,7 @@ draw_days:
     mov  ebx,B_DBAR_X
     mov  ecx,B_DBAR_Y
     mov  edx,0xe0e0e0
-    int  0x40
+    mcall
     call count_days
     cmp  ecx,[day_sel]
     jae  .ok
@@ -692,9 +942,9 @@ draw_days:
   .draw_but:
     add  edx,200+1 shl 29
     mov  eax,8
-    int  0x40
+    mcall
     popa
-    int  0x40
+    mcall
     pop  ecx
     inc  edi
     cmp  edi,7
@@ -786,11 +1036,11 @@ calculate:
 
 ; Здесь находятся данные программы:
 
-; интерфейс программы двуязычный - задайте язык в macros.inc
+; интерфейс программы многоязычный - задайте язык в lang.inc
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
 Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
-header:		 ; строка заголовка
+header: 	 ; строка заголовка
 if lang eq ru
      db   'КАЛЕНДАРЬ',0
 else if lang eq ge
@@ -851,6 +1101,11 @@ today_end:
 focus dd  3
 new_style dd 1
 dropped db 0
+
+co_text:  db  'время сессии',0
+sys_text:  db  'системное время',0
+plus:  db  'добавить(+)',0
+minus:	db  'убрать(-)',0
 
 I_END:	; конец программы
 firstday  dd ?
