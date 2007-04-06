@@ -1,4 +1,4 @@
-$Revision: 431 $
+$Revision: 448 $
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
@@ -111,13 +111,12 @@ proc free_page
            pushfd
            cli
            shr eax, 12              ;page index
-           mov ebx, sys_pgmap
-           bts [ebx], eax           ;that's all!
+           bts dword [sys_pgmap], eax           ;that's all!
            cmc
            adc [pg_data.pages_free], 0
            shr eax, 3
            and eax, not 3           ;dword offset from page_map
-           add eax, ebx
+           add eax, sys_pgmap
            cmp [page_start], eax
            ja @f
            popfd
@@ -962,13 +961,20 @@ new_services:
            ret
 @@:
            cmp eax, 19
-           ja .fail
-      ;     add ebx, new_app_base
+           ja @f
            cmp ebx, OS_BASE
            jae .fail
            stdcall load_library, ebx
            mov [esp+36], eax
            ret
+
+@@:
+        cmp     eax, 20
+        ja      .fail
+        mov     eax, ecx
+        call    user_realloc
+        mov     [esp+36], eax
+        ret
 
 .fail:
            xor eax, eax

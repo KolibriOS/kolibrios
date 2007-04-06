@@ -205,7 +205,7 @@ include "video/cursors.inc"  ; cursors functions
 
 include "network/stack.inc"
 
-include "drivers/uart.inc"
+;include "drivers/uart.inc"
 
 
 ; Mouse pointer
