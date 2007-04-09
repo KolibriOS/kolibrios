@@ -1,0 +1,11 @@
+7			   # <- Number of programs in the list
+
+# Program	   Parameters  Delay
+/HD0/1/KOLIBRI/BIN/SETUP           BOOT       99    # System setup
+/HD0/1/KOLIBRI/BIN/JPEGVIEW        BOOT       99    # Background image
+/HD0/1/KOLIBRI/BIN/@RB             <NO>       30    # Desktop right-click menu
+/HD0/1/KOLIBRI/BIN/@SS             <NO>       30    # Screensaver
+/HD0/1/KOLIBRI/BIN/@TRACKER        <NO>       30    # tracker
+/HD0/1/KOLIBRI/BIN/@TASKBAR        <NO>       30    # taskbar
+/HD0/1/KOLIBRI/BIN/@DOCK           <NO>       30    # dock
+### Total: 2.6 seconds ###
