@@ -572,21 +572,21 @@ get_event_for_app:
      xor   eax, eax
      ret
 
-   no_eventoccur3:
-
+no_eventoccur3:
 
      ;mov   edi,[TASK_BASE]              ; mouse event
      test  [edi+TASKDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     mov   eax,[current_slot]
-     test  [eax+APPDATA.event_mask],dword 00100000b
+
+     mov eax, [CURRENT_TASK]
+     shl eax, 8
+     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     and   [eax+APPDATA.event_mask],dword 0xffffffff-00100000b
+     and   [eax+SLOT_BASE+APPDATA.event_mask],dword (not 00100000b)
      popad
      mov   eax,6
      ret
 no_mouse_event:
-
 
      ;mov   edi,[TASK_BASE]              ; DESKTOP BACKGROUND REDRAW
      test  [edi+TASKDATA.event_mask],dword 16

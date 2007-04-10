@@ -319,6 +319,8 @@ windowtypechanged rd 1
 hd_entries        rd 1     ;unused ? 0xfe10
 
 ;* start code - Mario79
+
+mouse_active          rd 1
 mouse_pause           rd 1
 MouseTickCounter      rd 1
 ps2_mouse_detected    rb 1

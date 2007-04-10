@@ -501,9 +501,9 @@ high_code:
         mov     [graph_data_l+7],ah
 
 
-        mov   [CURRENT_TASK],dword 1
-        mov   [TASK_COUNT],dword 1
-        mov   [TASK_BASE],dword TASK_DATA
+        mov [CURRENT_TASK],dword 1
+        mov [TASK_COUNT],dword 1
+        mov [TASK_BASE],dword TASK_DATA
         mov [current_slot], SLOT_BASE+256
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -654,9 +654,10 @@ include 'vmodeld.inc'
         mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
 
         ; task list
-        mov   [CURRENT_TASK],dword 1
-        mov   [TASK_COUNT],dword 1
-        mov [current_slot], SLOT_BASE+256
+        mov  [CURRENT_TASK],dword 1
+        mov  [TASK_COUNT],dword 1
+        mov  [current_slot], SLOT_BASE+256
+        mov  [TASK_BASE],dword TASK_DATA
         mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
         mov  [TASK_DATA+TASKDATA.pid], 1        ; process id number
         mov  [TASK_DATA+TASKDATA.mem_start], 0  ; process base address
@@ -3322,9 +3323,6 @@ checkpixel:
         pop  edx eax
         ret
 
-uglobal
-  mouse_active  db  0
-endg
 iglobal
   cpustring db '/RD/1/CPU',0
 endg
@@ -3346,19 +3344,19 @@ checkmisc:
     xor   edx,edx               ; no flags
     call  fs_RamdiskExecute.flags
     mov   [ctrl_alt_del], 0
-  nocpustart:
+
+nocpustart:
     cmp   [mouse_active], 1
     jne   mouse_not_active
     mov   [mouse_active], 0
     xor   edi, edi
-    mov   ecx, [TASK_COUNT]
-   set_mouse_event:
+    mov   ecx,  [TASK_COUNT]
+set_mouse_event:
     add   edi, 256
-    or    [edi+SLOT_BASE+APPDATA.event_mask], dword 00100000b
+    or    [edi+SLOT_BASE+APPDATA.event_mask], dword 100000b
     loop  set_mouse_event
-  mouse_not_active:
 
-
+mouse_not_active:
     cmp   [REDRAW_BACKGROUND],byte 0               ; background update ?
     jz    nobackgr
     cmp    [background_defined], 0

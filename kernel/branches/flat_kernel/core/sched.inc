@@ -13,7 +13,7 @@ $Revision: 434 $
 
 align 32
 irq0:
-        pushfd
+   ;     pushfd
         pushad
         mov   ax, app_data  ;
         mov   ds, ax
@@ -40,7 +40,7 @@ irq0:
         mov   [DONT_SWITCH], byte 0
 
         popad
-        popfd
+ ;       popfd
         iretd
 
 .change_task:
@@ -60,7 +60,7 @@ irq0:
 
 .return:
         popad
-        popfd
+ ;       popfd
         iretd
 
 
@@ -197,6 +197,7 @@ do_change_task:
         shl ebx, 8
         add ebx, SLOT_BASE
         mov [current_slot], ebx
+
         shl esi, 8
         add esi, SLOT_BASE
 

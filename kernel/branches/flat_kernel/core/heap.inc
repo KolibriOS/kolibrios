@@ -864,16 +864,15 @@ user_realloc:
         jnz     .nofreeall
         mov     eax, [page_tabs+ecx*4]
         and     eax, not 0xFFF
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
-        mov     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        mov     edx, [current_slot]
+        mov     ebx, [APPDATA.mem_size+edx]
         sub     ebx, eax
         add     ebx, 0x1000
         or      al, FREE_BLOCK
         mov     [page_tabs+ecx*4], eax
         push    esi edi
-        mov     esi, [SLOT_BASE+APPDATA.heap_base+edx]
-        mov     edi, [SLOT_BASE+APPDATA.heap_top+edx]
+        mov     esi, [APPDATA.heap_base+edx]
+        mov     edi, [APPDATA.heap_top+edx]
         call    update_mem_size
         call    user_normalize
         pop     edi esi
@@ -886,10 +885,9 @@ user_realloc:
         shr     ebx, 12
         sub     ebx, edx
         push    ebx ecx edx
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
+        mov     edx, [current_slot]
         shl     ebx, 12
-        sub     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        sub     ebx, [APPDATA.mem_size+edx]
         neg     ebx
         call    update_mem_size
         pop     edx ecx ebx
@@ -901,9 +899,8 @@ user_realloc:
         shl     ebx, 12
         jz      .ret
         push    esi
-        mov     esi, [CURRENT_TASK]
-        shl     esi, 8
-        mov     esi, [SLOT_BASE+APPDATA.heap_top+esi]
+        mov     esi, [current_slot]
+        mov     esi, [APPDATA.heap_top+esi]
         shr     esi, 12
 @@:
         cmp     edx, esi
@@ -925,9 +922,8 @@ user_realloc:
         ret
 .realloc_add:
 ; get some additional memory
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     eax, [SLOT_BASE+APPDATA.heap_top+eax]
+        mov     eax, [current_slot]
+        mov     eax, [APPDATA.heap_top+eax]
         shr     eax, 12
         cmp     edx, eax
         jae     .cant_inplace
@@ -958,19 +954,17 @@ user_realloc:
         cld
         rep     stosd
         pop     edi
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
+        mov     edx, [current_slot]
         shl     ebx, 12
-        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        add     ebx, [APPDATA.mem_size+edx]
         call    update_mem_size
         pop     eax edx ecx
         ret
 .cant_inplace:
         push    esi edi
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     esi, [SLOT_BASE+APPDATA.heap_base+eax]
-        mov     edi, [SLOT_BASE+APPDATA.heap_top+eax]
+        mov     eax, [current_slot]
+        mov     esi, [APPDATA.heap_base+eax]
+        mov     edi, [APPDATA.heap_top+eax]
         shr     esi, 12
         shr     edi, 12
         sub     ebx, ecx
@@ -1009,7 +1003,6 @@ user_realloc:
         inc     esi
         mov     eax, esi
         shl     eax, 12
-        sub     eax, new_app_base
         push    eax
         mov     eax, [page_tabs+ecx*4]
         and     eax, not 0xFFF
@@ -1030,10 +1023,9 @@ user_realloc:
         dec     edx
         jnz     @b
         push    ebx
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
+        mov     edx, [current_slot]
         shl     ebx, 12
-        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        add     ebx, [APPDATA.mem_size+edx]
         call    update_mem_size
         pop     ebx
 @@:
