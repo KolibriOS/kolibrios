@@ -122,7 +122,6 @@ debug_getcontext:
 ; destroys eax,ecx,edx,esi,edi
 	cmp	ecx, 28h
 	jnz	.ret
-    ;    add     edx, std_application_base_address
 	push	ebx
 	mov	ebx, edx
 	call	check_region
@@ -131,19 +130,12 @@ debug_getcontext:
 	jnz	.ret
 	call	get_debuggee_slot
 	jc	.ret
-;        imul    eax, tss_step/32
-;        add     eax, tss_data
+        mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        lea esi, [eax+RING0_STACK_SIZE]
         mov     edi, edx
-;        cmp     [eax+TSS._cs], app_code
-;        jnz     .ring0
-;        lea     esi, [eax+TSS._eip]
-;        shr     ecx, 2
-;        rep     movsd
-;        jmp     .ret
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
 ; saves ring-3 context by pushad in this order
-        mov     esi, [tss._esp0]
 ; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), pushad
         sub     esi, 8+12+20h
         lodsd                     ;edi
@@ -161,7 +153,6 @@ debug_getcontext:
 	mov	[edi+0Ch], eax
         lodsd                     ;eax
 	mov	[edi+8], eax
-;;;        add     esi, 8         ;ds es
         lodsd                     ;eip
 	mov	[edi], eax
         lodsd                     ;cs
@@ -181,7 +172,6 @@ debug_setcontext:
 ; destroys eax,ecx,edx,esi,edi
 	cmp	ecx, 28h
 	jnz	.ret
-    ;    add     edx, std_application_base_address
 	push	ebx
 	mov	ebx, edx
 	call	check_region
@@ -190,17 +180,10 @@ debug_setcontext:
 	jnz	.ret
 	call	get_debuggee_slot
 	jc	.stiret
-;        imul    eax, tss_step/32
-;        add     eax, tss_data
+        mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        lea edi, [eax+RING0_STACK_SIZE]
         mov     esi, edx
-;        cmp     [eax+TSS._cs], app_code
-;        jnz     .ring0
-;        lea     edi, [eax+TSS._eip]
-;        shr     ecx, 2
-;        rep     movsd
-;        jmp     .stiret
 .ring0:
-        mov     edi, [tss._esp0]
         sub     edi, 8+12+20h
         mov     eax, [esi+24h]    ;edi
 	stosd
@@ -217,7 +200,6 @@ debug_setcontext:
 	stosd
         mov     eax, [esi+8]      ;eax
 	stosd
-;;;        add     edi, 8         ;ds es
         mov     eax, [esi]        ;eip
 	stosd
 	scasd
@@ -237,8 +219,8 @@ debug_set_drx:
         lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
-    ;    add     edx, std_application_base_address
-	jc	.errret
+        cmp     edx, OS_BASE
+        jae      .errret
 	cmp	cl, 3
 	ja	.errret
 	mov	ebx, dr7
@@ -257,6 +239,7 @@ debug_set_drx:
 	jnz	.okret
 ;        imul    eax, ebp, tss_step/32
 ;        and     byte [eax + tss_data + TSS._trap], not 1
+        and [ebp*8 + SLOT_BASE+APPDATA.dbg_state], not 1
 .okret:
 	and	dword [esp+36], 0
 	sti
@@ -299,6 +282,7 @@ debug_set_drx:
 	or	[eax+10h+2], bx		; set R/W and LEN fields
 ;        imul    eax, ebp, tss_step/32
 ;        or      byte [eax + tss_data + TSS._trap], 1
+        or [ebp*8 + SLOT_BASE+APPDATA.dbg_state], 1
 	jmp	.okret
 
 debug_read_process_memory:
@@ -309,7 +293,6 @@ debug_read_process_memory:
 ; edx=address in debuggee
 ; out: [esp+36]=sizeof(read)
 ; destroys all
-    ;    add     esi, std_application_base_address
 	push	ebx
 	mov	ebx, esi
 	call	check_region
@@ -336,7 +319,6 @@ debug_write_process_memory:
 ; edx=address in debuggee
 ; out: [esp+36]=sizeof(write)
 ; destroys all
-    ;    add     esi, std_application_base_address
 	push	ebx
 	mov	ebx, esi
 	call	check_region
@@ -433,28 +415,6 @@ debug_exc:
 	mov	ds, ax
 	mov	es, ax
 	mov	eax, dr6
-	test	ax, ax
-	jns	@f
-; this is exception from task switch
-; set DRx registers for task and continue
-        mov     eax, [CURRENT_TASK]
-	shl	eax, 8
-        add     eax, SLOT_BASE+APPDATA.dbg_regs
-	mov	ecx, [eax+0]
-	mov	dr0, ecx
-	mov	ecx, [eax+4]
-	mov	dr1, ecx
-	mov	ecx, [eax+8]
-	mov	dr2, ecx
-	mov	ecx, [eax+0Ch]
-	mov	dr3, ecx
-	xor	ecx, ecx
-	mov	dr6, ecx
-	mov	ecx, [eax+10h]
-	mov	dr7, ecx
-	restore_ring3_context
-	iretd
-@@:
 	push	eax
 	xor	eax, eax
 	mov	dr6, eax

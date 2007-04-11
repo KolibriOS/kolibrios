@@ -468,13 +468,13 @@ proc page_fault_handler
 
            inc [pg_data.pages_faults]
 
-     push eax
-     push edx
-     mov edx, 0x400   ;bochs
-     mov al,0xff      ;bochs
-     out dx, al       ;bochs
-     pop edx
-     pop eax
+;     push eax
+;     push edx
+;     mov edx, 0x400   ;bochs
+;     mov al,0xff      ;bochs
+;     out dx, al       ;bochs
+;     pop edx
+;     pop eax
 
            mov ebx, [.err_addr]
            mov eax, [.err_code]
@@ -591,7 +591,8 @@ align 4
            mov esp, ebp
            popad
            add esp, 4
-           iretd
+
+;           iretd
 
            save_ring3_context     ;debugger support
 

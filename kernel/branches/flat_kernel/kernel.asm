@@ -1639,7 +1639,6 @@ sys_setup_err:
      mov  [esp+36],dword -1
      ret
 
-
 align 4
 
 sys_getsetup:
@@ -3363,18 +3362,17 @@ mouse_not_active:
     jz    nobackgr
     mov   [REDRAW_BACKGROUND],byte 2
     call  change_task
-	mov   [draw_data+32 + RECT.left],dword 0
-	mov   [draw_data+32 + RECT.top],dword 0
+    mov   [draw_data+32 + RECT.left],dword 0
+    mov   [draw_data+32 + RECT.top],dword 0
     mov   eax,[ScreenWidth]
     mov   ebx,[ScreenHeight]
-	mov   [draw_data+32 + RECT.right],eax
-	mov   [draw_data+32 + RECT.bottom],ebx
+    mov   [draw_data+32 + RECT.right],eax
+    mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
     mov   [REDRAW_BACKGROUND],byte 0
     mov   [MOUSE_BACKGROUND],byte 0
 
-  nobackgr:
-
+nobackgr:
 
     ; system shutdown request
 
@@ -3390,7 +3388,7 @@ mouse_not_active:
     mov   edx,OS_BASE+0x3040
     movzx ecx,byte [SYS_SHUTDOWN]
     add   ecx,5
-  markz:
+markz:
     mov   [edx+TASKDATA.state],byte 3
     add   edx,0x20
     loop  markz
@@ -3404,14 +3402,14 @@ mouse_not_active:
     cmp  [SYS_SHUTDOWN],byte 0
     je   system_shutdown
 
-  noshutdown:
+noshutdown:
 
 
     mov   eax,[TASK_COUNT]                  ; termination
     mov   ebx,TASK_DATA+TASKDATA.state
     mov   esi,1
 
-  newct:
+newct:
     mov   cl,[ebx]
     cmp   cl,byte 3
     jz    terminate
@@ -3424,8 +3422,6 @@ mouse_not_active:
     jnz   newct
 
     ret
-
-
 
 
 ; redraw screen

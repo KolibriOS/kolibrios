@@ -898,6 +898,12 @@ wait_mutex:
            pop eax
            ret
 
+EFL_IF      equ 0x0200
+EFL_IOPL1   equ 0x1000
+EFL_IOPL2   equ 0x2000
+EFL_IOPL3   equ 0x3000
+
+
 align 4
 proc set_app_params stdcall,slot:dword, params:dword,\
                         cmd_line:dword, app_path:dword, flags:dword
@@ -1018,12 +1024,10 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [ebx+REG_ECX], eax
            mov [ebx+REG_EAX], eax
 
-        ;   mov [ebx+REG_EFL_2], dword 0x1002
-
            mov eax, [esi+0x08]       ;app_eip
            mov [ebx+REG_EIP],  eax   ;app_entry
            mov [ebx+REG_CS], dword app_code
-           mov [ebx+REG_EFLAGS], dword 0x1202
+           mov [ebx+REG_EFLAGS], dword EFL_IOPL1+EFL_IF
 
            mov eax, [esi+0x0C]       ;app_esp
            mov [ebx+REG_APP_ESP], eax    ;app_stack

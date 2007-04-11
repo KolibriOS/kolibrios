@@ -1,7 +1,36 @@
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;OS_BASE         equ 0x80000000
-;new_app_base    equ 0x60400000
-;PROC_BASE       equ OS_BASE+0x0080000
+format MS COFF
+
+include 'proc32.inc'
+include 'imports.inc'
+
+PG_SW             equ 0x003
+page_tabs         equ 0xFDC00000     ;hack
+
+OS_BASE           equ 0x80000000
+SLOT_BASE         equ (OS_BASE+0x0080000)
+TASK_COUNT        equ (OS_BASE+0x0003004)
+CURRENT_TASK      equ (OS_BASE+0x0003000)
+
+
+struc APPOBJ           ;common object header
+{
+   .magic       dd ?   ;
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+};
+
+virtual at 0
+  APPOBJ APPOBJ
+end virtual
 
 struc IOCTL
 {  .handle      dd ?
@@ -12,10 +41,9 @@ struc IOCTL
    .out_size    dd ?
 }
 
-
-;public START
-;public service_proc
-;public version
+virtual at 0
+  IOCTL IOCTL
+end virtual
 
 DEBUG            equ   1
 
@@ -164,13 +192,19 @@ CONNECTION_SIZE equ 7*4
 
 UART_VERSION  equ 0x12345678        ;debug
 
-proc init_uart_service stdcall, state:dword
+public START
+public service_proc
+public version
+
+section '.flat' code readable align 16
+
+proc START stdcall, state:dword
 
            cmp [state], 1
            jne .stop
 
            mov eax, UART_SIZE
-           call malloc
+           call Kmalloc
            test eax, eax
            jz .fail
 
@@ -184,7 +218,7 @@ proc init_uart_service stdcall, state:dword
            mov eax, [com1]
            mov [eax+UART.base], COM_1_BASE
 
-           stdcall alloc_kernel_space, 32768
+           stdcall AllocKernelSpace, 32768
 
            mov edi, [com1]
            mov edx, eax
@@ -197,7 +231,7 @@ proc init_uart_service stdcall, state:dword
            add eax, 8192
            mov [edi+UART.xmit_top], eax
 
-           call alloc_page
+           call AllocPage
            test eax, eax
            jz .fail
 
@@ -206,7 +240,7 @@ proc init_uart_service stdcall, state:dword
            mov [page_tabs+edx*4], eax
            mov [page_tabs+edx*4+8], eax
 
-           call alloc_page
+           call AllocPage
            test eax, eax
            jz .fail
 
@@ -214,7 +248,7 @@ proc init_uart_service stdcall, state:dword
            mov [page_tabs+edx*4+4], eax
            mov [page_tabs+edx*4+12], eax
 
-           call alloc_page
+           call AllocPage
            test eax, eax
            jz .fail
 
@@ -222,7 +256,7 @@ proc init_uart_service stdcall, state:dword
            mov [page_tabs+edx*4+16], eax
            mov [page_tabs+edx*4+24], eax
 
-           call alloc_page
+           call AllocPage
            test eax, eax
            jz .fail
 
@@ -243,9 +277,8 @@ proc init_uart_service stdcall, state:dword
            mov eax, edi
            call uart_reset.internal   ;eax= uart
 
-           stdcall attach_int_handler, COM_1_IRQ, com_1_isr
-           stdcall reg_service, sz_uart_srv, uart_proc
-           mov [eax+SRV.entry], init_uart_service
+           stdcall AttachIntHandler, COM_1_IRQ, com_1_isr
+           stdcall RegService, sz_uart_srv, service_proc
            ret
 .fail:
 .stop:
@@ -273,7 +306,7 @@ PORT_READ       equ 8
 PORT_WRITE      equ 9
 
 align 4
-proc uart_proc stdcall, ioctl:dword
+proc service_proc stdcall, ioctl:dword
 
            mov ebx, [ioctl]
            mov eax, [ebx+io_code]
@@ -555,7 +588,7 @@ uart_open:
 .do_wait:
            cmp dword [esi+UART.lock],0
            je .get_lock
-           call change_task
+      ;     call change_task
            jmp .do_wait
 .get_lock:
            mov eax, 1
@@ -570,7 +603,7 @@ uart_open:
            shl ebx, 5
            mov ebx, [CURRENT_TASK+ebx+4]
            mov eax, CONNECTION_SIZE
-           call create_kernel_object
+           call CreateObject
            pop esi                       ;uart
            test eax, eax
            jz .fail
@@ -599,7 +632,7 @@ uart_close:
            jne .fail
 .destroy:
            push [eax+CONNECTION.uart]
-           call destroy_kernel_object   ;eax= object
+           call DestroyObject   ;eax= object
            pop eax                      ;eax= uart
            test eax, eax
            jz .fail
@@ -901,8 +934,9 @@ isr_modem:
 
 
 align 4
-com1        dd 0
-com2        dd 0
+divisor    dw 2304, 1536, 1047, 857, 768, 384
+           dw  192,   96,   64,  58,  48,  32
+           dw   24,   16,   12,   6,   3,   2, 1
 
 align 4
 uart_func   dd 0                ;SRV_GETVERSION
@@ -921,15 +955,12 @@ isr_action  dd isr_modem
             dd isr_recieve
             dd isr_line
 
-;version      dd 0x00040000
-
-divisor     dw 2304, 1536, 1047, 857, 768, 384
-            dw  192,   96,   64,  58,  48,  32
-            dw   24,   16,   12,   6,   3,   2, 1
-
-
+version     dd 0x00040000
 
 sz_uart_srv db 'UART',0
 
+align 4
 
+com1        rd 1
+com2        rd 1
 

@@ -601,23 +601,24 @@ no_eventoccur5:
      ;mov   edi,[TASK_BASE]              ; IPC
      test  [edi+TASKDATA.event_mask],dword 01000000b
      jz    no_ipc
-     mov   eax,[current_slot]
-     test  [eax+APPDATA.event_mask],dword 01000000b
+     mov eax, [CURRENT_TASK]
+     shl eax, 8
+     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 01000000b
      jz    no_ipc
-     and   [eax+APPDATA.event_mask],dword 0xffffffff-01000000b
+     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-01000000b
      popad
      mov   eax,7
      ret
 no_ipc:
 
-
      ;mov   edi,[TASK_BASE]              ; STACK
      test  [edi+TASKDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     mov   eax,[current_slot]
-     test  [eax+APPDATA.event_mask],dword 10000000b
+     mov eax, [CURRENT_TASK]
+     shl eax, 8
+     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     and   [eax+APPDATA.event_mask],dword 0xffffffff-10000000b
+     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-10000000b
      popad
      mov   eax,8
      ret
@@ -625,10 +626,11 @@ no_stack_event:
 
      test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
      jz    .test_IRQ
-     mov   eax, [current_slot]
-     test  byte [eax+APPDATA.event_mask+1], byte 1
+     mov eax, [CURRENT_TASK]
+     shl eax, 8
+     test  byte [eax+SLOT_BASE+APPDATA.event_mask+1], byte 1
      jz    .test_IRQ
-     and   byte [eax+APPDATA.event_mask+1], not 1
+     and   byte [eax+SLOT_BASE+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret

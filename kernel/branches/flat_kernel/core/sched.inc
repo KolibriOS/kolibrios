@@ -221,6 +221,22 @@ do_change_task:
         mov cr0, ecx
         inc   [context_counter] ;noname & halyavin
 
+        test [ebx+APPDATA.dbg_state], 1
+        jnz @F
+        ret
+@@:
+        mov eax, [ebx+APPDATA.dbg_regs.dr0]
+        mov dr0, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr1]
+        mov dr1, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr2]
+        mov dr2, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr3]
+        mov dr3, eax
+        xor eax, eax
+        mov dr6, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr7]
+        mov dr7, eax
         ret
 
 align 4
