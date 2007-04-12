@@ -646,10 +646,10 @@ ptarray9:
      dd  0,248,64,128,128,64,196,48,160,160,94,224,240,96,5,5,777
 
 
+I_END:
+sc system_colors
+
 I_Param:
 
 image:
 
-I_END:
-
-sc system_colors
