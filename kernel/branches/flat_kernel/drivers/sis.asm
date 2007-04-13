@@ -10,6 +10,8 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 
+API_VERSION     equ 0x01000100
+
 DEBUG	    equ 1
 
 CPU_FREQ    equ  2000d	 ;cpu freq in MHz
@@ -90,6 +92,7 @@ CTRL_CNT_GIE      equ  0x00000001  ;   GPI Interrupt Enable
 CODEC_REG_POWERDOWN   equ 0x26
 CODEC_REG_ST          equ 0x26
 
+SRV_GETVERSION        equ  0
 DEV_PLAY              equ  1
 DEV_STOP              equ  2
 DEV_CALLBACK          equ  3
@@ -339,6 +342,18 @@ proc service_proc stdcall, ioctl:dword
 
            mov edi, [ioctl]
            mov eax, [edi+io_code]
+
+           cmp eax, SRV_GETVERSION
+           jne @F
+
+           mov eax, [edi+output]
+           cmp [edi+out_size], 4
+           jne .fail
+
+           mov [eax], dword API_VERSION
+           xor eax, eax
+           ret
+@@:
            cmp eax, DEV_PLAY
            jne @F
      if DEBUG
@@ -1135,7 +1150,7 @@ align 4
 devices dd (CTRL_SIS  shl 16)+VID_SIS,msg_AC, set_SIS
         dd 0
 
-version      dd 0x00040004
+version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 msg_AC       db '7012 AC97 controller',13,10, 0
 msg_SIS      db 'Silicon Integrated Systems',13,10, 0

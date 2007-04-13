@@ -10,6 +10,10 @@
 
 format MS COFF
 
+API_VERSION    equ   0x01000100
+SOUND_VERSION  equ   API_VERSION
+
+
 include 'proc32.inc'
 include 'main.inc'
 include 'imports.inc'
@@ -160,6 +164,8 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, SRV_GETVERSION
            jne @F
            mov eax, [edi+output]
+           cmp [edi+out_size], 4
+           jne .fail
            mov eax, [eax]
            mov [eax], dword SOUND_VERSION
            xor eax, eax
@@ -1245,7 +1251,7 @@ vol_min       dd 0x0000D8F0,0x0000D8F0
 pan_max       dd 0x00002710,0x00002710
 
 ;stream_map    dd 0xFFFF       ; 16
-version       dd (4 shl 16) or (SOUND_VERSION and 0xFFFF)
+version       dd (5 shl 16) or (SOUND_VERSION and 0xFFFF)
 
 szInfinity    db 'INFINITY',0
 szSound       db 'SOUND',0
@@ -1276,4 +1282,9 @@ str.bk        rd 1
 mix_2_core    rd 1
 mix_3_core    rd 1
 mix_4_core    rd 1
+
+
+
+
+
 

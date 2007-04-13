@@ -8,10 +8,8 @@
 ;   (C) copyright Serge 2006-2007
 ;   email: infinity_sound@mail.ru
 
-SOUND_VERSION  equ   0x01000100
 
 PLAY_SYNC      equ   0x80000000
-
 
 PCM_ALL        equ   0
 

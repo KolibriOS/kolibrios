@@ -10,7 +10,6 @@ LOAD_FROM_FILE  equ 0
 LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
-VIDEO_FREE      equ 2
 
 struc BITMAPINFOHEADER {
   .biSize          dd ? ; DWORD

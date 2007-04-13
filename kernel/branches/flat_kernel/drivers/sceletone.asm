@@ -9,6 +9,8 @@
 
 format MS COFF
 
+API_VERSION     equ 0  ;debug
+
 include 'proc32.inc'
 include 'imports.inc'
 
@@ -33,11 +35,13 @@ public START
 public service_proc
 public version
 
-DEBUG      equ 1
+DEBUG        equ 1
 
-DRV_ENTRY  equ 1
-DRV_EXIT   equ -1
-STRIDE     equ 4      ;size of row in devices table
+DRV_ENTRY    equ 1
+DRV_EXIT     equ -1
+STRIDE       equ 4      ;size of row in devices table
+
+SRV_GETVERSION  equ 0
 
 section '.flat' code readable align 16
 
@@ -53,7 +57,7 @@ proc START stdcall, state:dword
      end if
 
            stdcall RegService, my_service, service_proc
-	   ret
+           ret
 .fail:
 .exit:
            xor eax, eax
@@ -70,11 +74,21 @@ out_size   equ  IOCTL.out_size
 align 4
 proc service_proc stdcall, ioctl:dword
 
-;           mov edi, [ioctl]
-;           mov eax, [edi+io_code]
+           mov ebx, [ioctl]
+           mov eax, [ebx+io_code]
+           cmp eax, SRV_GETVERSION
+           jne @F
 
-	   xor eax, eax
-	   ret
+           mov eax, [ebx+output]
+           cmp [ebx+out_size], 4
+           jne .fail
+           mov [eax], dword API_VERSION
+           xor eax, eax
+           ret
+@@:
+.fail:
+           or eax, -1
+           ret
 endp
 
 restore   handle
@@ -86,70 +100,70 @@ restore   out_size
 
 align 4
 proc detect
-	   locals
-	     last_bus dd ?
-	   endl
+           locals
+            last_bus dd ?
+           endl
 
-	   xor eax, eax
-	   mov [bus], eax
-	   inc eax
+           xor eax, eax
+           mov [bus], eax
+           inc eax
            call PciApi
-	   cmp eax, -1
+           cmp eax, -1
            je .err
 
-	   mov [last_bus], eax
+           mov [last_bus], eax
 
 .next_bus:
-	   and [devfn], 0
+           and [devfn], 0
 .next_dev:
            stdcall PciRead32, [bus], [devfn], dword 0
-	   test eax, eax
-	   jz .next
-	   cmp eax, -1
-	   je .next
+           test eax, eax
+           jz .next
+           cmp eax, -1
+           je .next
 
-	   mov edi, devices
+           mov edi, devices
 @@:
-	   mov ebx, [edi]
-	   test ebx, ebx
-	   jz .next
+           mov ebx, [edi]
+           test ebx, ebx
+           jz .next
 
-	   cmp eax, ebx
-	   je .found
+           cmp eax, ebx
+           je .found
+
            add edi, STRIDE
            jmp @B
-
-.next:	   inc [devfn]
-	   cmp [devfn], 256
-	   jb  .next_dev
-	   mov eax, [bus]
-	   inc eax
-	   mov [bus], eax
-	   cmp eax, [last_bus]
-	   jna .next_bus
-	   xor eax, eax
-	   ret
-.found:
-	   xor eax, eax
+.next:
+           inc [devfn]
+           cmp [devfn], 256
+           jb  .next_dev
+           mov eax, [bus]
            inc eax
-	   ret
+           mov [bus], eax
+           cmp eax, [last_bus]
+           jna .next_bus
+           xor eax, eax
+           ret
+.found:
+           xor eax, eax
+           inc eax
+           ret
 .err:
            xor eax, eax
            ret
 endp
 
-
-;DEVICE_ID equ  ; pci device id
-;VENDOR_ID equ  ; device vendor id
+DEVICE_ID    equ  1234;  pci device id
+VENDOR_ID    equ  5678;  device vendor id
 
 
 ;all initialized data place here
 
 align 4
-devices dd (DEVICE_ID shl 16)+VENDOR_ID
-        dd 0    ;terminator
+devices      dd (DEVICE_ID shl 16)+VENDOR_ID
+             dd 0    ;terminator
 
-version      dd 0x00030003
+version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 my_service   db 'MY_SERVICE',0  ;max 16 chars include zero
 

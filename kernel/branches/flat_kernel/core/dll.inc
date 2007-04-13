@@ -6,8 +6,8 @@ $Revision: 431 $
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-DRV_COMPAT   equ  4  ;minimal required drivers version
-DRV_CURRENT  equ  4  ;current drivers model version
+DRV_COMPAT   equ  5  ;minimal required drivers version
+DRV_CURRENT  equ  5  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 

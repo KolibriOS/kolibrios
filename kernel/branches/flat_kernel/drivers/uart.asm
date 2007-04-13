@@ -10,6 +10,9 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 
+API_VERSION       equ 0
+UART_VERSION      equ API_VERSION
+
 PG_SW             equ 0x003
 page_tabs         equ 0xFDC00000     ;hack
 
@@ -190,8 +193,6 @@ end virtual
 
 CONNECTION_SIZE equ 7*4
 
-UART_VERSION  equ 0x12345678        ;debug
-
 public START
 public service_proc
 public version
@@ -317,12 +318,17 @@ proc service_proc stdcall, ioctl:dword
            jne @F
 
            mov eax, [ebx+output]
+           cmp [ebx+out_size], 4
+           jne .fail
            mov [eax], dword UART_VERSION
            xor eax, eax
            ret
 @@:
            cmp eax, PORT_OPEN
            jne @F
+
+           cmp [ebx+out_size], 4
+           jne .fail
 
            mov ebx, [ebx+input]
            mov eax, [ebx]
@@ -955,7 +961,7 @@ isr_action  dd isr_modem
             dd isr_recieve
             dd isr_line
 
-version     dd 0x00040000
+version     dd (5 shl 16) or (UART_VERSION and 0xFFFF)
 
 sz_uart_srv db 'UART',0
 

@@ -11,6 +11,8 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 
+API_VERSION     equ 0x01000100
+
 DEBUG	    equ 1
 
 REMAP_IRQ   equ 0
@@ -57,6 +59,9 @@ BIT29 EQU 0x20000000
 BIT30 EQU 0x40000000
 BIT31 EQU 0x80000000
 
+PCM_4 equ BIT20
+PCM_6 equ BIT21
+
 VID_INTEL        equ 0x8086
 VID_NVIDIA       equ 0x10DE
 
@@ -90,16 +95,16 @@ PCM_IN_CR_REG    equ  0x0b  ; PCM in Control Register
 MC_IN_CR_REG     equ  0x2b  ; MIC in Control Register
 RR equ  BIT1  ; reset registers.  Nukes all regs
 
-CODEC_MASTER_VOL_REG		equ	0x02
-CODEC_AUX_VOL			equ	0x04	;
-CODEC_PCM_OUT_REG		equ	18h	; PCM output volume
-CODEC_EXT_AUDIO_REG		equ	28h	; extended audio
-CODEC_EXT_AUDIO_CTRL_REG	equ	2ah	; extended audio control
-CODEC_PCM_FRONT_DACRATE_REG	equ	2ch	; PCM out sample rate
-CODEC_PCM_SURND_DACRATE_REG	equ	2eh	; surround sound sample rate
-CODEC_PCM_LFE_DACRATE_REG	equ	30h	; LFE sample rate
+CODEC_MASTER_VOL_REG         equ 0x02
+CODEC_AUX_VOL                equ 0x04 ;
+CODEC_PCM_OUT_REG            equ 0x18 ; PCM output volume
+CODEC_EXT_AUDIO_REG          equ 0x28 ; extended audio
+CODEC_EXT_AUDIO_CTRL_REG     equ 0x2a ; extended audio control
+CODEC_PCM_FRONT_DACRATE_REG  equ 0x2c ; PCM out sample rate
+CODEC_PCM_SURND_DACRATE_REG  equ 0x2e ; surround sound sample rate
+CODEC_PCM_LFE_DACRATE_REG    equ 0x30 ; LFE sample rate
 
-GLOB_CTRL        equ  0x2C ;   Global Control
+GLOB_CTRL        equ  0x2C  ;   Global Control
 CTRL_STAT        equ  0x30  ;   Global Status
 CTRL_CAS         equ  0x34  ;   Codec Access Semiphore
 
@@ -118,6 +123,7 @@ CTRL_CNT_GIE     equ  0x00000001  ;   GPI Interrupt Enable
 CODEC_REG_POWERDOWN   equ 0x26
 CODEC_REG_ST          equ 0x26
 
+SRV_GETVERSION        equ  0
 DEV_PLAY              equ  1
 DEV_STOP              equ  2
 DEV_CALLBACK          equ  3
@@ -250,24 +256,24 @@ struc CODEC		   ;Audio Chip base class
 }
 
 struc CTRL_INFO
-{   .pci_cmd         dd ?
-    .irq             dd ?
-    .glob_cntrl      dd ?
-    .glob_sta        dd ?
-    .codec_io_base   dd ?
-    .ctrl_io_base    dd ?
-    .codec_mem_base  dd ?
-    .ctrl_mem_base   dd ?
-    .codec_id        dd ?
+{   .pci_cmd          dd ?
+    .irq              dd ?
+    .glob_cntrl       dd ?
+    .glob_sta         dd ?
+    .codec_io_base    dd ?
+    .ctrl_io_base     dd ?
+    .codec_mem_base   dd ?
+    .ctrl_mem_base    dd ?
+    .codec_id         dd ?
 }
 
 struc IOCTL
-{  .handle           dd ?
-   .io_code          dd ?
-   .input            dd ?
-   .inp_size         dd ?
-   .output           dd ?
-   .out_size         dd ?
+{  .handle            dd ?
+   .io_code           dd ?
+   .input             dd ?
+   .inp_size          dd ?
+   .output            dd ?
+   .out_size          dd ?
 }
 
 virtual at 0
@@ -385,6 +391,18 @@ proc service_proc stdcall, ioctl:dword
 
            mov edi, [ioctl]
            mov eax, [edi+io_code]
+
+           cmp eax, SRV_GETVERSION
+           jne @F
+
+           mov eax, [edi+output]
+           cmp [edi+out_size], 4
+           jne .fail
+
+           mov [eax], dword API_VERSION
+           xor eax, eax
+           ret
+@@:
            cmp eax, DEV_PLAY
            jne @F
      if DEBUG
@@ -871,6 +889,12 @@ proc init_codec
            xor eax, eax        ; timeout error
            ret
 .ready:
+           mov eax, 2      ;force set 16-bit 2-channel PCM
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_write32]
+           mov eax, 5000   ; wait 5 ms
+           call StallExec
+
            call detect_codec
 
            xor eax, eax
@@ -1356,7 +1380,8 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
 
         dd 0    ;terminator
 
-version      dd 0x00040004
+
+version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 msg_ICH      db 'Intel ICH',  13,10, 0
 msg_ICH0     db 'Intel ICH0', 13,10, 0
