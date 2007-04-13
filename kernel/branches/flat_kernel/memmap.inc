@@ -146,8 +146,11 @@
 ;         34 dword  last event in list
 ;         38 dword  first kernel object in list
 ;         3c dword  last kernel object in list
-;
-;         40-7F     unused
+;         40 dword  thread esp
+;         44 dword  io permission map page 0
+;         48 dword  io permission map page 1
+          4c dword  debug state: 1= load debug registers
+;         50-7F     unused
 ;
 ;         80 dword  address of random shaped window area
 ;         84 byte   shape area scale
@@ -208,24 +211,23 @@
 ;
 ; 0x80600000 -> 6FFFFF   hd cache
 ;
-; 0x80700000 -> 71ffff   tcp memory       (128 kb)
+; 0x80700000 -> 71ffff   tcp memory       128 Kb
 ; 0x80720000 -> 75ffff   free (256 kb)
 ;
 ; 0x80760000 -> 76ffff   !vrr driver
-; 0x80770000 -> 777fff   tcp memory       ( 32 kb)
+; 0x80770000 -> 777fff   tcp memory        32 Kb
 ;
-; 0x80780000 -> 0x80987FFF TSS and IO map for (8192*8)=65536 ports
-;                          (128+8192)*256 = 2129920 = 0x208000
-;
-; 0x80988000 -> 0x8098AFFF draw_data   - 256 entries
-;
+; 0x80780000 -> 0x80782FFF draw data     - 256 entries
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
 ;
+; 0x80783F80 -> 0x80783FFF TSS            128 bytes
 ;
-; 0x8098B000 ->       kernel heap
+; 0x80784000 -> 0x80785FFF IO map for (8192*8)=65536 ports
+;
+; 0x80786000 ->       kernel heap
 ; 0x81FFFFFF          heap min limit
 ; 0xFDBFFFFF          heap max limit
 
