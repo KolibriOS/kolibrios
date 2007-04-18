@@ -1339,11 +1339,8 @@ fat_next_short_name:
         jmp     @b
 .found:
         inc     byte [edi]
-.succ:
-        pop     edi
-        popad
-        clc
-        ret
+        add     dword [esp], 8
+        jmp     .zerorest
 .break:
         jecxz   .noplace
         inc     edi
@@ -1354,7 +1351,11 @@ fat_next_short_name:
         cmp     al, ' '
         mov     al, '0'
         jnz     @b
-        jmp     .succ
+.succ:
+        pop     edi
+        popad
+        clc
+        ret
 .noplace:
         dec     edi
         cmp     edi, [esp]
@@ -1365,6 +1366,7 @@ fat_next_short_name:
         inc     edi
 @@:
         mov     byte [edi], '0'
+.zerorest:
         inc     edi
         cmp     edi, [esp]
         jb      @b
