@@ -10,16 +10,18 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 
-DEBUG     equ 1
+API_VERSION     equ 0x01000100
 
-VID_ATI     equ 0x1002
+DEBUG           equ 1
+
+VID_ATI         equ 0x1002
 
 LOAD_FROM_FILE  equ 0
 LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
 
-VIDEO_FREE      equ 2
+SRV_GETVERSION  equ 0
 
 struc BITMAPINFOHEADER {
   .biSize          dd ? ; DWORD
@@ -71,9 +73,8 @@ R9800       equ 0x4E49  ;R350
 R9800P      equ 0x4E48  ;R350
 R9800XT     equ 0x4E4A  ;R360
 
-OS_BASE         equ 0
-new_app_base    equ 0x80000000
-SLOT_BASE       equ 0x0080000
+OS_BASE         equ 0x80000000
+SLOT_BASE       equ (OS_BASE+0x0080000)
 
 PG_SW        equ 0x003
 PG_NOCACHE   equ 0x018
@@ -230,13 +231,16 @@ out_size   equ  IOCTL.out_size
 align 4
 proc service_proc stdcall, ioctl:dword
 
-           mov edi, [ioctl]
-           mov ebx, [edi+io_code]
-           cmp ebx, VIDEO_FREE
+           mov ebx, [ioctl]
+           cmp [ebx+io_code], SRV_GETVERSION
            jne .fail
 
-           mov eax, [edi+input]
-           call video_free
+           mov eax, [ebx+output]
+           cmp [ebx+out_size], 4
+           jne .fail
+           mov [eax], dword API_VERSION
+           xor eax, eax
+           ret
 .fail:
            or eax, -1
            ret
@@ -987,7 +991,7 @@ devices dd (R8500   shl 16)+VID_ATI
         dd (R9800XT shl 16)+VID_ATI
         dd 0    ;terminator
 
-version dd 0x00040004
+version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
 sz_ati_srv   db 'HWCURSOR',0
 

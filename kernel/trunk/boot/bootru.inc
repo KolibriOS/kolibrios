@@ -17,7 +17,6 @@ novesa    db      "Видеокарта: EGA/CGA",13,10,0
 vervesa   db      "Версия VESA:  Vesa x.x",13,10,0
 vervesa_off=19
 msg_apm	  db      " APM x.x ", 0
-
 gr_mode   db      186," Vesa 2.0+ 16 M LFB:  [1] 640x480, [2] 800x600, "
           db      "[3] 1024x768, [4] 1280x1024",13,10
           db      186," Vesa 1.2  16 M Bnk:  [5] 640x480, [6] 800x600, "
@@ -74,7 +73,7 @@ mode1     db      "640x480",0
 mode2     db      "800x600",0
 mode3     db      "1024x768",0
 mode4     db      "1280x1024",0
-modes_msg dw mode4-0x10000,mode1-0x10000,mode2-0x10000,mode3-0x10000
+modes_msg dw mode4,mode1,mode2,mode3
 modevesa20 db     " с LFB",0
 modevesa12 db     ", VESA 1.2 Bnk",0
 mode9     db      "320x200, EGA/CGA 256 цветов",0
@@ -86,7 +85,7 @@ on_msg    db      " вкл",13,10,0
 off_msg   db      " выкл",13,10,0
 vrrm_msg  db      " [c] Использование VRR:",0
 preboot_device_msg db " [d] Образ дискеты: ",0
-preboot_device_msgs dw 0,pdm1-0x10000,pdm2-0x10000,pdm3-0x10000
+preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "настоящая дискета",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "использовать уже загруженный образ",13,10,0

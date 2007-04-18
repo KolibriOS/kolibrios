@@ -24,7 +24,7 @@ preboot_device      db  0 ; boot device
                           ;!!!! 0 - autodetect !!!!
 preboot_blogesc     db  1 ; start immediately after bootlog
 
-      if $>10200h
+      if $>0x200
 ERROR: prebooting parameters must fit in first sector!!!
       end if
 hdsysimage          db  'KOLIBRI IMG' ; load from

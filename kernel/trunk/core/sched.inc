@@ -10,12 +10,14 @@ $Revision$
 ;; IRQ0 HANDLER (TIMER INTERRUPT) ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
 align 32
 irq0:
-        save_ring3_context
-	mov   ax, os_data
-	mov   ds, ax
-	mov   es, ax
+   ;     pushfd
+        pushad
+        mov   ax, app_data  ;
+        mov   ds, ax
+        mov   es, ax
 
         inc   dword [timer_ticks]
 
@@ -27,8 +29,7 @@ irq0:
         add   eax,100
         mov   [next_usage_update],eax
         call  updatecputimes
-     .nocounter:
-
+.nocounter:
         cmp   [DONT_SWITCH], byte 1
         jne   .change_task
 
@@ -38,10 +39,11 @@ irq0:
 
         mov   [DONT_SWITCH], byte 0
 
-        restore_ring3_context
-        iret
+        popad
+ ;       popfd
+        iretd
 
-     .change_task:
+.change_task:
         call  update_counters
 
         call  find_next_task
@@ -56,9 +58,10 @@ irq0:
 
         call  do_change_task
 
-     .return:
-        restore_ring3_context
-        iret
+.return:
+        popad
+ ;       popfd
+        iretd
 
 
 align 4
@@ -69,6 +72,9 @@ change_task:
         pushad
 
         call  update_counters
+
+if 0
+
 ; \begin{Mario79}
         cmp     [dma_task_switched], 1
         jne     .find_next_task
@@ -82,6 +88,9 @@ change_task:
         jmp     @f
 .find_next_task:
 ; \end{Mario79}
+
+end if
+
         call  find_next_task
         test  eax, eax    ; the same task -> skip switch
         jnz    .return
@@ -89,10 +98,9 @@ change_task:
         mov   [DONT_SWITCH],byte 1
         call  do_change_task
 
-     .return:
+.return:
         popad
         popfd
-
         ret
 
 
@@ -112,7 +120,7 @@ endg
 update_counters:
         mov   edi, [TASK_BASE]
         mov   ebx, [edi+TASKDATA.counter_add] ; time stamp counter add
-        call  _rdtsc
+        rdtsc
         sub   eax, ebx
         add   eax, [edi+TASKDATA.counter_sum] ; counter sum
         mov   [edi+TASKDATA.counter_sum], eax
@@ -130,15 +138,15 @@ find_next_task:
         mov   edi, [TASK_BASE]
         mov   [prev_slot], ebx
 
-      .waiting_for_termination:
-      .waiting_for_reuse:
-      .waiting_for_event:
-      .suspended:
+.waiting_for_termination:
+.waiting_for_reuse:
+.waiting_for_event:
+.suspended:
         cmp   ebx, [TASK_COUNT]
         jb    @f
         mov   edi, CURRENT_TASK
         xor   ebx, ebx
-      @@:
+@@:
 
         add   edi,0x20
         inc   ebx
@@ -159,12 +167,6 @@ find_next_task:
 
         mov   [CURRENT_TASK],ebx
         mov   [TASK_BASE],edi
-        push    ebx
-        shl     ebx, 8
-        mov     ebx, [SLOT_BASE + ebx + APPDATA.pl0_stack]
-        add     ebx, RING0_STACK_SIZE
-        mov     [CURRENT_RING0_ESP], ebx
-        pop     ebx
 
         cmp   al, 5
         jne   .noevents
@@ -173,30 +175,69 @@ find_next_task:
         jz    .waiting_for_event
         mov   [event_sched], eax
         mov   [edi+TASKDATA.state], byte 0
-      .noevents:
-      .found:
+.noevents:
+.found:
         mov   [CURRENT_TASK],ebx
         mov   [TASK_BASE],edi
-        call  _rdtsc
+        rdtsc                     ;call  _rdtsc
         mov   [edi+TASKDATA.counter_add],eax
 
+        mov esi, [prev_slot]
 	xor   eax, eax
-        cmp   ebx, [prev_slot]
+        cmp   ebx, esi
         sete  al
 ret
 
-; in: ebx = TSS selector index
+; param
+;  ebx = incoming task
+;  esi = outcomig task
+
 do_change_task:
-        shl   ebx, 3
-        xor   eax, eax
-        add   ebx, tss0
-        mov   [far_jump.sel],  bx   ; selector
-        mov   [far_jump.offs], eax  ; offset
-        jmp   pword [far_jump]
+
+        shl ebx, 8
+        add ebx, SLOT_BASE
+        mov [current_slot], ebx
+
+        shl esi, 8
+        add esi, SLOT_BASE
+
+        mov [esi+APPDATA.saved_esp], esp
+        mov esp, [ebx+APPDATA.saved_esp]
+
+; set thread io map
+
+        mov ecx, [ebx+APPDATA.io_map]
+        mov edx, [ebx+APPDATA.io_map+4]
+        mov dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], ecx
+        mov dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], edx
+
+        mov eax, [ebx+APPDATA.dir_table]
+        mov cr3, eax
+        mov ebx, [ebx+APPDATA.pl0_stack]
+        add ebx, RING0_STACK_SIZE
+        mov [tss._esp0], ebx
+        mov ecx, cr0
+        or ecx, CR0_TS   ;set task switch flag
+        mov cr0, ecx
         inc   [context_counter] ;noname & halyavin
-ret
 
-
+        test [ebx+APPDATA.dbg_state], 1
+        jnz @F
+        ret
+@@:
+        mov eax, [ebx+APPDATA.dbg_regs.dr0]
+        mov dr0, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr1]
+        mov dr1, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr2]
+        mov dr2, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr3]
+        mov dr3, eax
+        xor eax, eax
+        mov dr6, eax
+        mov eax, [ebx+APPDATA.dbg_regs.dr7]
+        mov dr7, eax
+        ret
 
 align 4
 updatecputimes:
@@ -206,7 +247,7 @@ updatecputimes:
         mov  [idleuse],dword 0
         mov  ecx, [TASK_COUNT]
         mov  edi, TASK_DATA
-      .newupdate:
+.newupdate:
         mov  ebx,[edi+TASKDATA.counter_sum]
         mov  [edi+TASKDATA.cpu_usage],ebx
         mov  [edi+TASKDATA.counter_sum],dword 0
@@ -215,3 +256,108 @@ updatecputimes:
         jnz  .newupdate
 
         ret
+
+if 0
+
+
+struc TIMER
+{
+  .next      dd ?
+  .exp_time  dd ?
+  .func      dd ?
+  .arg       dd ?
+}
+
+
+
+
+
+
+
+
+
+MAX_PROIRITY         0   ; highest, used for kernel tasks
+MAX_USER_PRIORITY    0   ; highest priority for user processes
+USER_PRIORITY        7   ; default (should correspond to nice 0)
+MIN_USER_PRIORITY   14   ; minimum priority for user processes
+IDLE_PRIORITY       15   ; lowest, only IDLE process goes here
+NR_SCHED_QUEUES     16   ; MUST equal IDLE_PRIORYTY + 1
+
+rdy_head   rd 16
+
+
+align 4
+pick_task:
+
+           xor eax, eax
+.pick:
+           mov ebx, [rdy_head+eax*4]
+           test ebx, ebx
+           jz .next
+
+           mov [next_task], ebx
+           test [ebx+flags.billable]
+           jz @F
+           mov [bill_task], ebx
+@@:
+           ret
+.next:
+           inc eax
+           jmp .pick
+
+
+; param
+;  eax= task
+;
+; retval
+;  eax= task
+;  ebx= queue
+;  ecx= front if 1 or back if 0
+
+align 4
+shed:
+           cmp [eax+.tics_left], 0 ;signed compare
+           mov ebx, [eax+.priority]
+           setg ecx
+           jg @F
+
+           mov edx, [eax+.tics_quantum]
+           mov [eax+.ticks_left], edx
+           cmp ebx, (IDLE_PRIORITY-1)
+           je @F
+           inc ebx
+@@:
+           ret
+
+; param
+;  eax= task
+
+align 4
+enqueue:
+          call shed  ;eax
+          cmp [rdy_head+ebx*4],0
+          jnz @F
+
+          mov [rdy_head+ebx*4], eax
+          mov [rdy_tail+ebx*4], eax
+          mov [eax+.next_ready], 0
+          jmp .pick
+@@:
+          test ecx, ecx
+          jz .back
+
+          mov ecx, [rdy_head+ebx*4]
+          mov [eax+.next_ready], ecx
+          mov [rdy_head+ebx*4], eax
+          jmp .pick
+.back:
+          mov ecx, [rdy_tail+ebx*4]
+          mov [ecx+.next_ready], eax
+          mov [rdy_tail+ebx*4], eax
+          mov [eax+.next_ready], 0
+.pick:
+          call pick_proc     ;select next task
+          ret
+
+end if
+

@@ -8,7 +8,7 @@ $Revision$
 
 ; READ RAMDISK IMAGE FROM HD
 
-        cmp   [boot_dev],1
+        cmp   [boot_dev+OS_BASE+0x10000],1
         jne   no_sys_on_hd
 
         test  [DRIVE_DATA+1],byte 0x40
@@ -88,7 +88,7 @@ $Revision$
         ret
 
 read_image:
-        mov   eax, hdsysimage
+        mov   eax, hdsysimage+OS_BASE+0x10000
         mov   ebx, 1474560/512
         mov   ecx, RAMDISK
         mov   esi, 0

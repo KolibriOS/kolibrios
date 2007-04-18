@@ -1,21 +1,21 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
+;;                                                                      ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
-;; System service for filesystem call                           ;;
-;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
-;; 29.04.2006 Elimination of hangup after the                   ;;
-;;            expiration hd_wait_timeout (for LBA) -  Mario79   ;;
+;; System service for filesystem call                                   ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
+;; 29.04.2006 Elimination of hangup after the                           ;;
+;;            expiration hd_wait_timeout (for LBA) -  Mario79           ;;
 ;; 15.01.2005 get file size/attr/date,                          ;;
 ;;            file_append (only for hd) - ATV                   ;;
-;; 23.11.2004 test if hd/partition is set - ATV                 ;;
-;; 18.11.2004 get_disk_info and more error codes - ATV          ;;
-;; 08.11.2004 expand_pathz and rename (only for hd) - ATV       ;;
-;; 20.10.2004 Makedir/Removedir (only for hd) - ATV             ;;
-;;                                                              ;;
+;; 23.11.2004 test if hd/partition is set - ATV                         ;;
+;; 18.11.2004 get_disk_info and more error codes - ATV                  ;;
+;; 08.11.2004 expand_pathz and rename (only for hd) - ATV               ;;
+;; 20.10.2004 Makedir/Removedir (only for hd) - ATV                     ;;
+;;                                                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 iglobal
@@ -86,7 +86,7 @@ file_system:
 ; \end{diamond}[18.03.2006]
 
     ; Extract parameters
-    add    eax, std_application_base_address    ; abs start of info block
+ ;   add    eax, std_application_base_address    ; abs start of info block
 
     cmp   dword [eax+0],15      ; GET_DISK_INFO
     je    fs_info
@@ -97,7 +97,7 @@ file_system:
     cmp   dword [eax+0],1
     jnz   .usual_check
     mov   ebx,[eax+12]
-    add   ebx,std_application_base_address
+ ;   add   ebx,std_application_base_address
     mov   ecx,[eax+8]
     call  check_region
     test  eax,eax
@@ -120,7 +120,7 @@ endg
     shl   ecx,9
 .small_size:
     mov   ebx,[eax+12]
-    add   ebx,std_application_base_address
+ ;   add   ebx,std_application_base_address
     call  check_region
     test  eax,eax
     jz    .error_output
@@ -148,7 +148,7 @@ endg
 ; \end{diamond}[18.03.2006]
     mov   esi,dir0
     mov   edi,[eax+12]
-    add   edi,std_application_base_address
+ ;   add   edi,std_application_base_address
     mov   ecx,11
     push  ecx
 ;    cld    ; already is
@@ -202,12 +202,12 @@ endg
     push  dword [eax+4]         ; 512 block number to read
     push  dword [eax+8]         ; bytes to write/append or 512 blocks to read
     mov   ebx,[eax+12]
-    add   ebx,std_application_base_address
+ ;   add   ebx,std_application_base_address
     push  ebx                   ; abs start of return/save area
 
     lea   esi,[eax+20]          ; abs start of dir + filename
     mov   edi,[eax+16]
-    add   edi,std_application_base_address    ; abs start of work area
+ ;   add   edi,std_application_base_address    ; abs start of work area
 
     call  expand_pathz
 

@@ -172,16 +172,15 @@ button_dececx:
 sys_button:
 
 	push	edi
-	mov	edi,[CURRENT_TASK]
-	shl	edi,8
+        mov     edi,[current_slot]
 	rol	eax,16
-	add	ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     ax,word[edi+APPDATA.wnd_clientbox.left]
 	rol	eax,16
 	rol	ebx,16
-	add	bx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     bx,word[edi+APPDATA.wnd_clientbox.top]
 	rol	ebx,16
 	pop	edi
-  .forced:
+.forced:
 
 	test  ecx,0x80000000
 	jnz   remove_button
@@ -228,7 +227,7 @@ sys_button:
 	pop   edx
 	and   edx, 0xFFFF
 
-     .newline:
+.newline:
 	call  button_dececx
 	push  edi
 	xor   edi, edi
@@ -241,7 +240,7 @@ sys_button:
 
 	call  drawbuttonframes
 
-      button_no_draw:
+button_no_draw:
 
 	and   ecx,0xffff
 
@@ -276,7 +275,7 @@ sys_button:
 	mov   bx,[esp+8+0]
 	mov   [eax],bx
 
-     noaddbutt:
+noaddbutt:
 
 	pop   edx
 	pop   ecx
@@ -292,14 +291,14 @@ remove_button:
 
     and  ecx,0x7fffffff
 
-  rnewba2:
+rnewba2:
 
     mov   edi,[BTN_ADDR]
     mov   eax,edi
     movzx ebx,word [edi]
     inc   bx
 
-  rnewba:
+rnewba:
 
     dec   bx
     jz	  rnmba
@@ -325,7 +324,7 @@ remove_button:
 
     jmp   rnewba2
 
-  rnmba:
+rnmba:
 
     ret
 
@@ -336,17 +335,17 @@ find_pressed_button_frames:
 	movzx ebx,word [eax+0]
 	shl   ebx,5
 	add   ebx,window_data
-		mov   ecx, [ebx+ WDATA.box.left]     ; window x start
+        mov   ecx, [ebx+ WDATA.box.left]     ; window x start
 	movzx edx,word [eax+4]	   ; button x start
 	add   ecx,edx
 	push  ecx
 
-		mov   dx,[eax+6]		 ; button x size
+        mov   dx,[eax+6]                 ; button x size
 	add   cx,dx
 	mov   esi,ecx
 	inc   esi
-		mov   ecx, [ebx+WDATA.box.top]	 ; window y start
-		mov   dx,[eax+8]		 ; button y start
+        mov   ecx, [ebx+WDATA.box.top]   ; window y start
+        mov   dx,[eax+8]                 ; button y start
 	add   ecx,edx
 	mov   ebx,ecx
 		mov   dx,[eax+10]		 ; button y size

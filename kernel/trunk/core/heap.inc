@@ -621,25 +621,24 @@ HEAP_TOP  equ 0x5FC00000
 align 4
 proc init_heap
 
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           mov eax, [SLOT_BASE+APPDATA.heap_top+ebx]
+           mov ebx,[current_slot]
+           mov eax, [ebx+APPDATA.heap_top]
            test eax, eax
            jz @F
-           sub eax,[SLOT_BASE+APPDATA.heap_base+ebx]
+           sub eax,[ebx+APPDATA.heap_base]
            sub eax, 4096
            ret
 @@:
-           mov esi, [SLOT_BASE+APPDATA.mem_size+ebx]
+           mov esi, [ebx+APPDATA.mem_size]
            add esi, 4095
            and esi, not 4095
-           mov [SLOT_BASE+APPDATA.mem_size+ebx], esi
+           mov [ebx+APPDATA.mem_size], esi
            mov eax, HEAP_TOP
-           mov [SLOT_BASE+APPDATA.heap_base+ebx], esi
-           mov [SLOT_BASE+APPDATA.heap_top+ebx], eax
+           mov [ebx+APPDATA.heap_base], esi
+           mov [ebx+APPDATA.heap_top], eax
 
            sub eax, esi
-           add esi, new_app_base
+       ;    add esi, new_app_base
            shr esi, 10
            mov ecx, eax
            sub eax, 4096
@@ -658,12 +657,9 @@ proc user_alloc stdcall, alloc_size:dword
            add ecx, (4095+4096)
            and ecx, not 4095
 
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           mov esi, dword [ebx+SLOT_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [ebx+SLOT_BASE+APPDATA.heap_top]; heap_top
-           add esi, new_app_base
-           add edi, new_app_base
+           mov ebx, [current_slot]
+           mov esi, dword [ebx+APPDATA.heap_base]  ; heap_base
+           mov edi, dword [ebx+APPDATA.heap_top]   ; heap_top
 l_0:
            cmp esi, edi
            jae m_exit
@@ -684,7 +680,6 @@ l_0:
            or eax, FREE_BLOCK
            shr edx, 12
            mov [page_tabs+edx*4], eax
-
 @@:
            or ecx, USED_BLOCK
            mov [page_tabs+ebx*4], ecx
@@ -697,17 +692,15 @@ l_0:
            dec ecx
            jnz @B
 
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
-        mov     ebx, [alloc_size]
-        add     ebx, 0xFFF
-        and     ebx, not 0xFFF
-        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
-        call    update_mem_size
+           mov     edx, [current_slot]
+           mov     ebx, [alloc_size]
+           add     ebx, 0xFFF
+           and     ebx, not 0xFFF
+           add     ebx, [edx+APPDATA.mem_size]
+           call    update_mem_size
 
            mov eax, esi
            add eax, 4096
-           sub eax, new_app_base
            ret
 m_next:
            add esi, eax
@@ -760,11 +753,10 @@ proc user_free stdcall, base:dword
            dec ecx
            jnz .release
 .not_used:
-           mov edx, [CURRENT_TASK]
-           shl edx, 8
-           mov esi, dword [edx+SLOT_BASE+APPDATA.heap_base]; heap_base
-           mov edi, dword [edx+SLOT_BASE+APPDATA.heap_top]; heap_top
-           sub ebx, [edx+SLOT_BASE+APPDATA.mem_size]
+           mov edx, [current_slot]
+           mov esi, dword [edx+APPDATA.heap_base]
+           mov edi, dword [edx+APPDATA.heap_top]
+           sub ebx, [edx+APPDATA.mem_size]
            neg ebx
            call update_mem_size
            call user_normalize
@@ -779,8 +771,6 @@ user_normalize:
 ; in: esi=heap_base, edi=heap_top
 ; out: eax=0 <=> OK
 ; destroys: ebx,edx,esi,edi
-           add esi, new_app_base
-           add edi, new_app_base
            shr esi, 12
            shr edi, 12
 @@:
@@ -835,7 +825,7 @@ user_realloc:
         ret
 @@:
         push    ecx edx
-        lea     ecx, [eax + new_app_base - 0x1000]
+        lea     ecx, [eax - 0x1000]
         shr     ecx, 12
         mov     edx, [page_tabs+ecx*4]
         test    edx, USED_BLOCK
@@ -874,16 +864,15 @@ user_realloc:
         jnz     .nofreeall
         mov     eax, [page_tabs+ecx*4]
         and     eax, not 0xFFF
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
-        mov     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        mov     edx, [current_slot]
+        mov     ebx, [APPDATA.mem_size+edx]
         sub     ebx, eax
         add     ebx, 0x1000
         or      al, FREE_BLOCK
         mov     [page_tabs+ecx*4], eax
         push    esi edi
-        mov     esi, [SLOT_BASE+APPDATA.heap_base+edx]
-        mov     edi, [SLOT_BASE+APPDATA.heap_top+edx]
+        mov     esi, [APPDATA.heap_base+edx]
+        mov     edi, [APPDATA.heap_top+edx]
         call    update_mem_size
         call    user_normalize
         pop     edi esi
@@ -896,14 +885,13 @@ user_realloc:
         shr     ebx, 12
         sub     ebx, edx
         push    ebx ecx edx
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
+        mov     edx, [current_slot]
         shl     ebx, 12
-        sub     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        sub     ebx, [APPDATA.mem_size+edx]
         neg     ebx
         call    update_mem_size
         pop     edx ecx ebx
-        lea     eax, [ecx+1-(new_app_base shr 12)]
+        lea     eax, [ecx+1]
         shl     eax, 12
         push    eax
         add     ecx, ebx
@@ -911,9 +899,8 @@ user_realloc:
         shl     ebx, 12
         jz      .ret
         push    esi
-        mov     esi, [CURRENT_TASK]
-        shl     esi, 8
-        mov     esi, [SLOT_BASE+APPDATA.heap_top+esi]
+        mov     esi, [current_slot]
+        mov     esi, [APPDATA.heap_top+esi]
         shr     esi, 12
 @@:
         cmp     edx, esi
@@ -935,10 +922,8 @@ user_realloc:
         ret
 .realloc_add:
 ; get some additional memory
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     eax, [SLOT_BASE+APPDATA.heap_top+eax]
-        add     eax, new_app_base
+        mov     eax, [current_slot]
+        mov     eax, [APPDATA.heap_top+eax]
         shr     eax, 12
         cmp     edx, eax
         jae     .cant_inplace
@@ -958,7 +943,7 @@ user_realloc:
         shl     eax, 12
         or      al, USED_BLOCK
         mov     [page_tabs+ecx*4], eax
-        lea     eax, [ecx+1-(new_app_base shr 12)]
+        lea     eax, [ecx+1]
         shl     eax, 12
         push    eax
         push    edi
@@ -969,21 +954,17 @@ user_realloc:
         cld
         rep     stosd
         pop     edi
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
+        mov     edx, [current_slot]
         shl     ebx, 12
-        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        add     ebx, [APPDATA.mem_size+edx]
         call    update_mem_size
         pop     eax edx ecx
         ret
 .cant_inplace:
         push    esi edi
-        mov     eax, [CURRENT_TASK]
-        shl     eax, 8
-        mov     esi, [SLOT_BASE+APPDATA.heap_base+eax]
-        mov     edi, [SLOT_BASE+APPDATA.heap_top+eax]
-        add     esi, new_app_base
-        add     edi, new_app_base
+        mov     eax, [current_slot]
+        mov     esi, [APPDATA.heap_base+eax]
+        mov     edi, [APPDATA.heap_top+eax]
         shr     esi, 12
         shr     edi, 12
         sub     ebx, ecx
@@ -1022,7 +1003,6 @@ user_realloc:
         inc     esi
         mov     eax, esi
         shl     eax, 12
-        sub     eax, new_app_base
         push    eax
         mov     eax, [page_tabs+ecx*4]
         and     eax, not 0xFFF
@@ -1043,10 +1023,9 @@ user_realloc:
         dec     edx
         jnz     @b
         push    ebx
-        mov     edx, [CURRENT_TASK]
-        shl     edx, 8
+        mov     edx, [current_slot]
         shl     ebx, 12
-        add     ebx, [SLOT_BASE+APPDATA.mem_size+edx]
+        add     ebx, [APPDATA.mem_size+edx]
         call    update_mem_size
         pop     ebx
 @@:

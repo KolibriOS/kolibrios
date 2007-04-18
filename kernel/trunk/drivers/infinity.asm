@@ -10,6 +10,10 @@
 
 format MS COFF
 
+API_VERSION    equ   0x01000100
+SOUND_VERSION  equ   API_VERSION
+
+
 include 'proc32.inc'
 include 'main.inc'
 include 'imports.inc'
@@ -22,9 +26,10 @@ FORCE_MMX_128     equ 0  ;integer sse2 extensions
 DEBUG             equ 1
 
 
-OS_BASE           equ 0
-new_app_base      equ 0x80000000
-SLOT_BASE         equ OS_BASE+0x0080000
+OS_BASE           equ 0x80000000
+SLOT_BASE         equ (OS_BASE+0x0080000)
+TASK_COUNT        equ (OS_BASE+0x0003004)
+CURRENT_TASK      equ (OS_BASE+0x0003000)
 
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003
@@ -159,8 +164,10 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, SRV_GETVERSION
            jne @F
            mov eax, [edi+output]
+           cmp [edi+out_size], 4
+           jne .fail
            mov eax, [eax]
-           mov [eax+new_app_base], dword SOUND_VERSION
+           mov [eax], dword SOUND_VERSION
            xor eax, eax
            ret
 @@:
@@ -172,7 +179,7 @@ proc service_proc stdcall, ioctl:dword
            pop edi
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], ebx
+           mov [ecx], ebx
            ret
 @@:
            mov ebx, [edi+input]
@@ -201,7 +208,7 @@ proc service_proc stdcall, ioctl:dword
            movzx eax, word [edx+STREAM.format]
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], eax
+           mov [ecx], eax
            xor eax, eax
            ret
 @@:
@@ -222,13 +229,12 @@ proc service_proc stdcall, ioctl:dword
            pop edi
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], ebx
+           mov [ecx], ebx
            ret
 @@:
            cmp eax, SND_SETBUFF
            jne @F
            mov eax, [ebx+4]
-           add eax, new_app_base
            stdcall set_buffer, [ebx],eax,[ebx+8],[ebx+12]
            ret
 @@:
@@ -243,8 +249,6 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edi+output]
            mov ecx, [eax]
            mov eax, [eax+4]
-           add ecx, new_app_base
-           add eax, new_app_base
            stdcall GetBufferVol,[ebx],ecx,eax
            ret
 @@:
@@ -258,7 +262,7 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edx+STREAM.pan]
            mov ebx, [edi+output]
            mov ebx, [ebx]
-           mov [ebx+new_app_base], eax
+           mov [ebx], eax
            xor eax, eax
            ret
 @@:
@@ -266,7 +270,6 @@ proc service_proc stdcall, ioctl:dword
            jne @F
 
            mov eax, [ebx+4]
-           add eax, new_app_base
            stdcall wave_out, [ebx],eax,[ebx+8]
            ret
 @@:
@@ -287,7 +290,7 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edx+STREAM.in_size]
            mov ecx, [edi+output]
            mov ecx, [ecx]
-           mov [ecx+new_app_base], eax
+           mov [ecx], eax
            xor eax, eax
            ret
 @@:
@@ -302,10 +305,6 @@ restore   input
 restore   inp_size
 restore   output
 restore   out_size
-
-TASK_COUNT    equ 0x0003004
-CURRENT_TASK  equ 0x0003000
-
 
 align 4
 proc CreateBuffer stdcall, format:dword, size:dword
@@ -377,17 +376,17 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
 ; ring and waveout
 
-           mov eax, 0x10000
+           mov ebx, 0x10000
            test [format], PCM_RING
            jz .waveout
 
-           mov eax, [eax+STREAM.r_size]
-           add eax, 4095
-           and eax, -4096
-           add eax, eax
+           mov ebx, [eax+STREAM.r_size]
+           add ebx, 4095
+           and ebx, -4096
+           add ebx, ebx
 .waveout:
-           mov [ring_size], eax
-           mov ebx, eax
+           mov [ring_size], ebx
+           mov eax, ebx
            shr ebx, 12
            mov [ring_pages], ebx
 
@@ -648,8 +647,8 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
            test esi, esi
            jz .fail
 
-           cmp esi, new_app_base
-           jb .fail
+           cmp esi, OS_BASE
+           ja .fail
 
            mov [state_saved], 0
 
@@ -1252,7 +1251,7 @@ vol_min       dd 0x0000D8F0,0x0000D8F0
 pan_max       dd 0x00002710,0x00002710
 
 ;stream_map    dd 0xFFFF       ; 16
-version       dd (4 shl 16) or (SOUND_VERSION and 0xFFFF)
+version       dd (5 shl 16) or (SOUND_VERSION and 0xFFFF)
 
 szInfinity    db 'INFINITY',0
 szSound       db 'SOUND',0
@@ -1283,4 +1282,9 @@ str.bk        rd 1
 mix_2_core    rd 1
 mix_3_core    rd 1
 mix_4_core    rd 1
+
+
+
+
+
 

@@ -27,9 +27,8 @@ sys_debug_services_table:
 debug_set_event_data:
 ; in: ebx = pointer
 ; destroys eax
-        mov     eax, [CURRENT_TASK]
-	shl	eax, 8
-        mov     [eax+SLOT_BASE+APPDATA.dbg_event_mem], ebx
+        mov     eax, [current_slot]
+        mov     [eax+APPDATA.dbg_event_mem], ebx
 	ret
 
 get_debuggee_slot:
@@ -123,7 +122,6 @@ debug_getcontext:
 ; destroys eax,ecx,edx,esi,edi
 	cmp	ecx, 28h
 	jnz	.ret
-	add	edx, std_application_base_address
 	push	ebx
 	mov	ebx, edx
 	call	check_region
@@ -132,43 +130,35 @@ debug_getcontext:
 	jnz	.ret
 	call	get_debuggee_slot
 	jc	.ret
-	imul	eax, tss_step/32
-	add	eax, tss_data
-	mov	edi, edx
-        cmp     [eax+TSS._cs], app_code
-	jnz	.ring0
-        lea     esi, [eax+TSS._eip]
-	shr	ecx, 2
-	rep	movsd
-	jmp	.ret
+        mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        lea esi, [eax+RING0_STACK_SIZE]
+        mov     edi, edx
 .ring0:
 ; note that following code assumes that all interrupt/exception handlers
-; saves ring-3 context by push ds es, pushad in this order
-        mov     esi, [eax+TSS._esp0]
-; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), ds, es, pushad
-	sub	esi, 8+12+8+20h
-	lodsd
+; saves ring-3 context by pushad in this order
+; top of ring0 stack: ring3 stack ptr (ss+esp), iret data (cs+eip+eflags), pushad
+        sub     esi, 8+12+20h
+        lodsd                     ;edi
 	mov	[edi+24h], eax
-	lodsd
+        lodsd                     ;esi
 	mov	[edi+20h], eax
-	lodsd
+        lodsd                     ; ebp
 	mov	[edi+1Ch], eax
-	lodsd
-	lodsd
+        lodsd                     ;esp
+        lodsd                     ;ebx
 	mov	[edi+14h], eax
-	lodsd
+        lodsd                     ;edx
 	mov	[edi+10h], eax
-	lodsd
+        lodsd                     ;ecx
 	mov	[edi+0Ch], eax
-	lodsd
+        lodsd                     ;eax
 	mov	[edi+8], eax
-	add	esi, 8
-	lodsd
+        lodsd                     ;eip
 	mov	[edi], eax
-	lodsd
-	lodsd
+        lodsd                     ;cs
+        lodsd                     ;eflags
 	mov	[edi+4], eax
-	lodsd
+        lodsd                     ;esp
 	mov	[edi+18h], eax
 .ret:
 	sti
@@ -182,7 +172,6 @@ debug_setcontext:
 ; destroys eax,ecx,edx,esi,edi
 	cmp	ecx, 28h
 	jnz	.ret
-	add	edx, std_application_base_address
 	push	ebx
 	mov	ebx, edx
 	call	check_region
@@ -191,40 +180,32 @@ debug_setcontext:
 	jnz	.ret
 	call	get_debuggee_slot
 	jc	.stiret
-	imul	eax, tss_step/32
-	add	eax, tss_data
-	mov	esi, edx
-        cmp     [eax+TSS._cs], app_code
-	jnz	.ring0
-        lea     edi, [eax+TSS._eip]
-	shr	ecx, 2
-	rep	movsd
-	jmp	.stiret
+        mov eax, [eax*8+SLOT_BASE+APPDATA.pl0_stack]
+        lea edi, [eax+RING0_STACK_SIZE]
+        mov     esi, edx
 .ring0:
-        mov     edi, [eax+TSS._esp0]
-	sub	edi, 8+12+8+20h
-	mov	eax, [esi+24h]
+        sub     edi, 8+12+20h
+        mov     eax, [esi+24h]    ;edi
 	stosd
-	mov	eax, [esi+20h]
+        mov     eax, [esi+20h]    ;esi
 	stosd
-	mov	eax, [esi+1Ch]
+        mov     eax, [esi+1Ch]    ;ebp
 	stosd
-	scasd
-	mov	eax, [esi+14h]
+        scasd
+        mov     eax, [esi+14h]    ;ebx
 	stosd
-	mov	eax, [esi+10h]
+        mov     eax, [esi+10h]    ;edx
 	stosd
-	mov	eax, [esi+0Ch]
+        mov     eax, [esi+0Ch]    ;ecx
 	stosd
-	mov	eax, [esi+8]
+        mov     eax, [esi+8]      ;eax
 	stosd
-	add	edi, 8
-	mov	eax, [esi]
+        mov     eax, [esi]        ;eip
 	stosd
 	scasd
-	mov	eax, [esi+4]
+        mov     eax, [esi+4]      ;eflags
 	stosd
-	mov	eax, [esi+18h]
+        mov     eax, [esi+18h]    ;esp
 	stosd
 .stiret:
 	sti
@@ -238,8 +219,8 @@ debug_set_drx:
         lea     eax, [eax*8+SLOT_BASE+APPDATA.dbg_regs]
 ; [eax]=dr0, [eax+4]=dr1, [eax+8]=dr2, [eax+C]=dr3
 ; [eax+10]=dr7
-	add	edx, std_application_base_address
-	jc	.errret
+        cmp     edx, OS_BASE
+        jae      .errret
 	cmp	cl, 3
 	ja	.errret
 	mov	ebx, dr7
@@ -256,8 +237,9 @@ debug_set_drx:
 	btr	dword [eax+10h], ecx	; clear L<i> bit
 	test	byte [eax+10h], 55h
 	jnz	.okret
-	imul	eax, ebp, tss_step/32
-        and     byte [eax + tss_data + TSS._trap], not 1
+;        imul    eax, ebp, tss_step/32
+;        and     byte [eax + tss_data + TSS._trap], not 1
+        and [ebp*8 + SLOT_BASE+APPDATA.dbg_state], not 1
 .okret:
 	and	dword [esp+36], 0
 	sti
@@ -298,8 +280,9 @@ debug_set_drx:
 	not	edx
 	and	[eax+10h+2], dx
 	or	[eax+10h+2], bx		; set R/W and LEN fields
-	imul	eax, ebp, tss_step/32
-        or      byte [eax + tss_data + TSS._trap], 1
+;        imul    eax, ebp, tss_step/32
+;        or      byte [eax + tss_data + TSS._trap], 1
+        or [ebp*8 + SLOT_BASE+APPDATA.dbg_state], 1
 	jmp	.okret
 
 debug_read_process_memory:
@@ -310,7 +293,6 @@ debug_read_process_memory:
 ; edx=address in debuggee
 ; out: [esp+36]=sizeof(read)
 ; destroys all
-	add	esi, std_application_base_address
 	push	ebx
 	mov	ebx, esi
 	call	check_region
@@ -337,7 +319,6 @@ debug_write_process_memory:
 ; edx=address in debuggee
 ; out: [esp+36]=sizeof(write)
 ; destroys all
-	add	esi, std_application_base_address
 	push	ebx
 	mov	ebx, esi
 	call	check_region
@@ -430,45 +411,22 @@ debug_exc:
 ; int 1 = #DB
 	save_ring3_context
 	cld
-	mov	ax, os_data
+        mov     ax, app_data ;os_data
 	mov	ds, ax
 	mov	es, ax
 	mov	eax, dr6
-	test	ax, ax
-	jns	@f
-; this is exception from task switch
-; set DRx registers for task and continue
-        mov     eax, [CURRENT_TASK]
-	shl	eax, 8
-        add     eax, SLOT_BASE+APPDATA.dbg_regs
-	mov	ecx, [eax+0]
-	mov	dr0, ecx
-	mov	ecx, [eax+4]
-	mov	dr1, ecx
-	mov	ecx, [eax+8]
-	mov	dr2, ecx
-	mov	ecx, [eax+0Ch]
-	mov	dr3, ecx
-	xor	ecx, ecx
-	mov	dr6, ecx
-	mov	ecx, [eax+10h]
-	mov	dr7, ecx
-	restore_ring3_context
-	iretd
-@@:
 	push	eax
 	xor	eax, eax
 	mov	dr6, eax
 ; test if debugging
 	cli
-        mov     eax, [CURRENT_TASK]
-	shl	eax, 8
-        mov     eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
+        mov     eax, [current_slot]
+        mov     eax, [eax+APPDATA.debugger_slot]
 	test	eax, eax
 	jnz	.debug
 	sti
 ; not debuggee => say error and terminate
-	add	esp, 28h+4
+        add     esp, 0x20+4
 	mov	[error_interrupt], 1
 	call	show_error_parameters
         mov     edx, [TASK_BASE]

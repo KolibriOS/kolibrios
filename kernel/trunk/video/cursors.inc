@@ -1,10 +1,15 @@
 $Revision$
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 LOAD_FROM_FILE  equ 0
 LOAD_FROM_MEM   equ 1
 LOAD_INDIRECT   equ 2
 LOAD_SYSTEM     equ 3
-VIDEO_FREE      equ 2
 
 struc BITMAPINFOHEADER {
   .biSize          dd ? ; DWORD
@@ -268,15 +273,13 @@ proc set_cursor stdcall, hcursor:dword
            jne .fail
 ;           cmp [eax+CURSOR.size], CURSOR_SIZE
 ;           jne .fail
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           xchg eax, [ebx+SLOT_BASE+APPDATA.cursor]
+           mov ebx, [current_slot]
+           xchg eax, [ebx+APPDATA.cursor]
            ret
 .fail:
            mov eax, [def_cursor]
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           xchg eax, [ebx+SLOT_BASE+APPDATA.cursor]
+           mov ebx, [current_slot]
+           xchg eax, [ebx+APPDATA.cursor]
            ret
 endp
 
@@ -399,12 +402,11 @@ proc delete_cursor stdcall, hcursor:dword
            cmp ebx, [esi+CURSOR.pid]
            jne .fail
 
-           mov ebx, [CURRENT_TASK]
-           shl ebx, 8
-           cmp esi, [ebx+SLOT_BASE+APPDATA.cursor]
+           mov ebx, [current_slot]
+           cmp esi, [ebx+APPDATA.cursor]
            jne @F
            mov eax, [def_cursor]
-           mov [ebx+SLOT_BASE+APPDATA.cursor], eax
+           mov [ebx+APPDATA.cursor], eax
 @@:
            mov eax, [hcursor]
            call [eax+APPOBJ.destroy]

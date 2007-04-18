@@ -1,13 +1,13 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
+;;                                                                      ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
-;; RAMDISK functions                                            ;;
-;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
-;; Addings by M.Lisovin                                         ;;
-;; LFN support by diamond                                       ;;
+;; RAMDISK functions                                                    ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
+;; Addings by M.Lisovin                                                 ;;
+;; LFN support by diamond                                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; calculate fat chain
@@ -1802,7 +1802,12 @@ fs_RamdiskRewrite:
         jnz     .disk_full2
         dec     edi
         dec     edi
-        lea     eax, [edi-(RAMDISK_FAT)]
+
+    ;    lea     eax, [edi-(RAMDISK_FAT)]
+
+        mov eax, edi
+        sub eax, RAMDISK_FAT
+
         shr     eax, 1                  ; eax = cluster
         mov     word [edi], 0xFFF       ; mark as last cluster
         xchg    edi, [esp]
@@ -2294,7 +2299,7 @@ fs_RamdiskExecute:
         mov     ebx, [ebx+4]
         test    ebx, ebx
         jz      @f
-        add     ebx, std_application_base_address
+    ;    add     ebx, std_application_base_address
 @@:
 
 ;----------------------------------------------------------------

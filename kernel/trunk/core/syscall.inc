@@ -12,17 +12,16 @@ $Revision$
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-align 32
+align 16
 i40:
 ; diamond, 27.03.2007: handler does not require disabled interrupts
 ;                      so interrupts remain enabled when calling int 0x40
-      push  ds es
       pushad
       cld
 
-      mov   ax,word os_data
-      mov   ds,ax
-      mov   es,ax
+ ;     mov   ax, word app_data
+ ;     mov   ds, ax
+ ;     mov   es, ax
 
       ; load all registers in crossed order
         mov     eax, ebx
@@ -38,10 +37,8 @@ i40:
       and   edi,0xff
       call  dword [servetable+edi*4]
       pop   eax
-;      cli
 
       popad
-      pop   es ds
       iretd
 
 
@@ -67,17 +64,12 @@ sysenter_entry:
      ;   mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
      ;   lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
      ;   mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
-        mov     esp, [ss:CURRENT_RING0_ESP]
+        mov     esp, [ss:tss._esp0]
 
 	sti
-	;------------------
-	push	ds es
+    ;------------------
 	pushad
 	cld
-
-	mov	ax, word os_data
-	mov	ds, ax
-	mov	es, ax
 
         mov     eax, ebx
         mov     ebx, ecx
@@ -92,10 +84,9 @@ sysenter_entry:
 	pop	eax
 
 	popad
-	pop	es ds
 	;------------------
-	mov	edx, [SYSENTER_VAR]		; eip
-	mov	ecx, [SYSENTER_VAR + 4]	; esp
+        mov     edx, [SYSENTER_VAR]       ; eip
+        mov     ecx, [SYSENTER_VAR + 4]   ; esp
 	sysexit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -105,12 +96,11 @@ sysenter_entry:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 32
 syscall_entry:
-
   ;     cli                 syscall clear IF
-        xchg    esp, [ss:CURRENT_RING0_ESP]
+        xchg    esp, [ss:tss._esp0]
         push    ecx
         lea     ecx, [esp+4]
-        xchg    ecx, [ss:CURRENT_RING0_ESP]
+        xchg    ecx, [ss:tss._esp0]
         sti
         push    ecx
         mov     ecx, [ecx]
@@ -123,13 +113,12 @@ syscall_entry:
   ;      mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
 
 	;------------------
-	push	ds es
 	pushad
 	cld
 
-	mov	ax, word os_data
-	mov	ds, ax
-	mov	es, ax
+  ;      mov     ax, word app_data
+  ;      mov     ds, ax
+  ;      mov     es, ax
 
         mov     eax, ebx
         mov     ebx, ecx
@@ -144,13 +133,11 @@ syscall_entry:
 	pop	eax
 
 	popad
-	pop	es ds
 	;------------------
 
         mov     ecx, [ss:esp+4]
         pop     esp
-        sysret
-
+	sysret
 iglobal
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; SYSTEM FUNCTIONS TABLE ;;

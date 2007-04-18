@@ -93,7 +93,7 @@ file_system_lfn:
 ; 8 : delete file
 ; 9 : create directory
 
-        add     eax, std_application_base_address
+   ;     add     eax, std_application_base_address
 ; parse file name
         xchg    ebx, eax
         lea     esi, [ebx+20]
@@ -102,7 +102,7 @@ file_system_lfn:
         test    al, al
         jnz     @f
         mov     esi, [esi]
-        add     esi, std_application_base_address
+  ;      add     esi, std_application_base_address
         mov     ebp, esi
         lodsb
 @@:
@@ -112,7 +112,7 @@ file_system_lfn:
         mov ebx, [ebx+8]
         test ebx, ebx
         jz .l1
-        add ebx, new_app_base
+    ;    add ebx, new_app_base
 .l1:
         call fs_execute  ; ebp, ebx, edx
         mov [esp+36], eax
@@ -157,7 +157,7 @@ file_system_lfn:
         xor     eax, eax
         mov     ebp, [ebx+12]
         mov     edx, [ebx+16]
-        add     edx, std_application_base_address
+    ;    add     edx, std_application_base_address
         push    dword [ebx+4]   ; first block
         mov     ebx, [ebx+8]    ; flags
         mov     esi, [edi+4]
@@ -239,7 +239,7 @@ file_system_lfn:
         mov     esi, virtual_root_query
         mov     ebp, [ebx+12]
         mov     edx, [ebx+16]
-        add     edx, std_application_base_address
+    ;    add     edx, std_application_base_address
         push    dword [ebx+4]   ; first block
         mov     ebx, [ebx+8]    ; flags
         xor     eax, eax
@@ -348,7 +348,7 @@ fs_OnRamdisk:
         jae     .not_impl
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
-        add     edx, std_application_base_address
+   ;     add     edx, std_application_base_address
         add     ebx, 4
         call    dword [fs_RamdiskServices + eax*4]
         mov     [esp+36], eax
@@ -385,7 +385,7 @@ fs_OnFloppy:
         mov     [flp_number], cl
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
-        add     edx, std_application_base_address
+   ;     add     edx, std_application_base_address
         add     ebx, 4
         call    dword [fs_FloppyServices + eax*4]
         and     [flp_status], 0
@@ -449,7 +449,7 @@ fs_OnHd:
         pop     esi ebx
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
-        add     edx, std_application_base_address
+    ;    add     edx, std_application_base_address
         mov     eax, [ebx]
         cmp     eax, fs_NumHdServices
         jae     .not_impl
@@ -525,7 +525,7 @@ fs_OnCd:
 @@:
         mov     ecx, [ebx+12]
         mov     edx, [ebx+16]
-        add     edx, std_application_base_address
+    ;    add     edx, std_application_base_address
         mov     eax, [ebx]
         cmp     eax,fs_NumCdServices
         jae      .not_impl

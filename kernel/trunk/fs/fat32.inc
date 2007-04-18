@@ -1,48 +1,48 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
+;;                                                                 ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
-;;  FAT32.INC                                                   ;;
-;;                                                              ;;
-;;  FAT16/32 functions for KolibriOS                            ;;
-;;                                                              ;;
-;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it       ;;
-;;                                                              ;;
-;;  See file COPYING for details                                ;;
-;;  04.02.2007 LFN create folder - diamond                      ;;
-;;  08.10.2006 LFN delete file/folder - diamond                 ;;
-;;  20.08.2006 LFN set file size (truncate/extend) - diamond    ;;
-;;  17.08.2006 LFN write/append to file - diamond               ;;
-;;  23.06.2006 LFN start application - diamond                  ;;
-;;  15.06.2006 LFN get/set file/folder info - diamond           ;;
-;;  27.05.2006 LFN create/rewrite file - diamond                ;;
-;;  04.05.2006 LFN read folder - diamond                        ;;
-;;  29.04.2006 Elimination of hangup after the                  ;;
-;;             expiration hd_wait_timeout -  Mario79            ;;
-;;  23.04.2006 LFN read file - diamond                          ;;
-;;  28.01.2006 find all Fat16/32 partition in all input point   ;;
-;;             to MBR, see file part_set.inc - Mario79          ;;
-;;  15.01.2005 get file size/attr/date, file_append - ATV       ;;
-;;  04.12.2004 skip volume label, file delete bug fixed - ATV   ;;
-;;  29.11.2004 get_free_FAT changed, append dir bug fixed - ATV ;;
-;;  23.11.2004 don't allow overwrite dir with file - ATV        ;;
-;;  18.11.2004 get_disk_info and more error codes - ATV         ;;
-;;  17.11.2004 set_FAT/get_FAT and disk cache rewritten - ATV   ;;
-;;  10.11.2004 removedir clear whole directory structure - ATV  ;;
-;;  08.11.2004 rename - ATV                                     ;;
-;;  30.10.2004 file_read return also dirsize in bytes - ATV     ;;
-;;  20.10.2004 Makedir/Removedir - ATV                          ;;
-;;  14.10.2004 Partition chain/Fat16 - ATV (thanks drh3xx)      ;;
-;;  06.9.2004  Fix free space by Mario79 added - MH             ;;
-;;  24.5.2004  Write back buffer for File_write -VT             ;;
-;;  20.5.2004  File_read function to work with syscall 58 - VT  ;;
-;;  30.3.2004  Error parameters at function return - VT         ;;
-;;  01.5.2002  Bugfix in device write - VT                      ;;
-;;  20.5.2002  Hd status check - VT                             ;;
-;;  29.6.2002  Improved fat32 verification - VT                 ;;
-;;                                                              ;;
+;;  FAT32.INC                                                      ;;
+;;                                                                 ;;
+;;  FAT16/32 functions for KolibriOS                               ;;
+;;                                                                 ;;
+;;  Copyright 2002 Paolo Minazzi, paolo.minazzi@inwind.it          ;;
+;;                                                                 ;;
+;;  See file COPYING for details                                   ;;
+;;  04.02.2007 LFN create folder - diamond                         ;;
+;;  08.10.2006 LFN delete file/folder - diamond                    ;;
+;;  20.08.2006 LFN set file size (truncate/extend) - diamond       ;;
+;;  17.08.2006 LFN write/append to file - diamond                  ;;
+;;  23.06.2006 LFN start application - diamond                     ;;
+;;  15.06.2006 LFN get/set file/folder info - diamond              ;;
+;;  27.05.2006 LFN create/rewrite file - diamond                   ;;
+;;  04.05.2006 LFN read folder - diamond                           ;;
+;;  29.04.2006 Elimination of hangup after the                     ;;
+;;             expiration hd_wait_timeout -  Mario79               ;;
+;;  23.04.2006 LFN read file - diamond                             ;;
+;;  28.01.2006 find all Fat16/32 partition in all input point      ;;
+;;             to MBR, see file part_set.inc - Mario79             ;;
+;;  15.01.2005 get file size/attr/date, file_append - ATV          ;;
+;;  04.12.2004 skip volume label, file delete bug fixed - ATV      ;;
+;;  29.11.2004 get_free_FAT changed, append dir bug fixed - ATV    ;;
+;;  23.11.2004 don't allow overwrite dir with file - ATV           ;;
+;;  18.11.2004 get_disk_info and more error codes - ATV            ;;
+;;  17.11.2004 set_FAT/get_FAT and disk cache rewritten - ATV      ;;
+;;  10.11.2004 removedir clear whole directory structure - ATV     ;;
+;;  08.11.2004 rename - ATV                                        ;;
+;;  30.10.2004 file_read return also dirsize in bytes - ATV        ;;
+;;  20.10.2004 Makedir/Removedir - ATV                             ;;
+;;  14.10.2004 Partition chain/Fat16 - ATV (thanks drh3xx)         ;;
+;;  06.9.2004  Fix free space by Mario79 added - MH                ;;
+;;  24.5.2004  Write back buffer for File_write -VT                ;;
+;;  20.5.2004  File_read function to work with syscall 58 - VT     ;;
+;;  30.3.2004  Error parameters at function return - VT            ;;
+;;  01.5.2002  Bugfix in device write - VT                         ;;
+;;  20.5.2002  Hd status check - VT                                ;;
+;;  29.6.2002  Improved fat32 verification - VT                    ;;
+;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 cache_max equ 1919      ; max. is 1919*512+0x610000=0x6ffe00
@@ -3267,7 +3267,7 @@ fs_HdExecute:
         mov     ebx, [ebx+4]
         test    ebx, ebx
         jz      @f
-        add     ebx, std_application_base_address
+   ;     add     ebx, std_application_base_address
 @@:
 
 ;----------------------------------------------------------------

@@ -24,15 +24,8 @@ $Revision$
         mov   [OS_BASE+0x760000],eax   ;
         mov   [OS_BASE+0x760100],byte 0xC3     ; Instruction RETN - driver loop
 
-		pushad
-		push	eax
-		mov		eax, vmode - std_application_base_address
-		call    file_system_lfn
-        pop		eax
-        popad
-
-;        mov     esi, vmode
-;        xor     ebx, ebx
-;        mov     ecx, 0x8000            ; size of memory area for driver
-;        mov     edx, OS_BASE+0x760000  ; Memory position of driver
-;        call    fs_RamdiskRead
+        mov     esi, vmode
+        xor     ebx, ebx
+        mov     ecx, 0x8000            ; size of memory area for driver
+        mov     edx, OS_BASE+0x760000  ; Memory position of driver
+        call    fs_RamdiskRead

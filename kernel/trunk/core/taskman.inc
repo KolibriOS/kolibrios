@@ -28,40 +28,6 @@ struc APP_HEADER_01
   .i_icon      dd ?    ;+32
 }
 
-struc TSS
-{
-  ._back   rw 2
-  ._esp0   rd 1
-  ._ss0    rw 2
-  ._esp1   rd 1
-  ._ss1    rw 2
-  ._esp2   rd 1
-  ._ss2    rw 2
-  ._cr3    rd 1
-  ._eip    rd 1
-  ._eflags rd 1
-  ._eax    rd 1
-  ._ecx    rd 1
-  ._edx    rd 1
-  ._ebx    rd 1
-  ._esp    rd 1
-  ._ebp    rd 1
-  ._esi    rd 1
-  ._edi    rd 1
-  ._es     rw 2
-  ._cs     rw 2
-  ._ss     rw 2
-  ._ds     rw 2
-  ._fs     rw 2
-  ._gs     rw 2
-  ._ldt    rw 2
-  ._trap   rw 1
-  ._io     rw 1
-}
-
-virtual at 0
-  TSS  TSS
-end virtual
 
 struc APP_PARAMS
 { .app_cmdline   ;0x00
@@ -154,9 +120,6 @@ proc fs_execute
            cmp eax, 0
            jne .wait_lock
 
-;           pushfd
-;           cli
-
            call set_application_table_status
 
            call get_new_process_place
@@ -216,7 +179,7 @@ else
            jna @F
 
            xor eax, eax
-           add edi, new_app_base
+      ;     add edi, new_app_base
            cld
            rep stosb
 @@:
@@ -395,21 +358,21 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            mov [dir_addr], eax
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
 
-           mov esi, sys_pgdir
            mov edi, [tmp_task_pdir]
-           mov ecx, (page_tabs shr 20)/4
+           mov ecx, (OS_BASE shr 20)/4
+           xor eax, eax
            cld
+           rep stosd
+
+           mov ecx, (OS_BASE shr 20)/4
+           mov esi, sys_pgdir+(OS_BASE shr 20)
            rep movsd
 
            mov eax, [dir_addr]
            or eax, PG_SW
-           stosd                 ; [(page_tabs shr 20)]= eax
+           mov [edi-4096+(page_tabs shr 20)], eax
 
-           mov ecx, 0x800/4
-           xor eax, eax
-           rep stosd
-
-           mov eax, [dir_addr]
+           and eax, -4096
            call set_cr3
 
            mov edx, [app_tabs]
@@ -494,13 +457,9 @@ endp
 
 align 4
 set_cr3:
-           mov esi, [CURRENT_TASK]
-           mov ebx, esi
-           shl esi,8
-           mov [SLOT_BASE+esi+0xB8],eax
-           imul   ebx,tss_step
-           add    ebx,tss_data
-           mov [ebx+28], eax
+
+           mov ebx, [current_slot]
+           mov [ebx+APPDATA.dir_table], eax
            mov cr3, eax
            ret
 
@@ -558,8 +517,7 @@ proc destroy_app_space stdcall, pg_dir:dword
            and eax, not 0xFFF
            stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
            mov esi, [tmp_task_pdir]
-           add esi, 0x800
-           mov edi, 0x800/4
+           mov edi, (OS_BASE shr 20)/4
 .destroy:
            mov eax, [esi]
            test eax, 1
@@ -744,7 +702,7 @@ proc read_process_memory
            mov eax, [slot]
            shl  eax,8
            mov ebx, [offset]
-           add ebx, new_app_base
+     ;      add ebx, new_app_base
            push ecx
            stdcall map_memEx, [proc_mem_map],\
                               [SLOT_BASE+eax+0xB8],\
@@ -810,7 +768,7 @@ proc write_process_memory
            mov eax, [slot]
            shl  eax,8
            mov ebx, [offset]
-           add ebx, new_app_base
+      ;     add ebx, new_app_base
            push ecx
            stdcall map_memEx, [proc_mem_map],\
                               [SLOT_BASE+eax+0xB8],\
@@ -875,9 +833,7 @@ proc new_sys_threads
 
            mov [slot], eax
 
-           mov    esi,[CURRENT_TASK]
-           shl    esi,8
-           add    esi,SLOT_BASE
+           mov    esi,[current_slot]
            mov    ebx,esi             ;ebx=esi - pointer to extended information about current thread
 
            mov    edi, eax
@@ -942,6 +898,12 @@ wait_mutex:
            pop eax
            ret
 
+EFL_IF      equ 0x0200
+EFL_IOPL1   equ 0x1000
+EFL_IOPL2   equ 0x2000
+EFL_IOPL3   equ 0x3000
+
+
 align 4
 proc set_app_params stdcall,slot:dword, params:dword,\
                         cmd_line:dword, app_path:dword, flags:dword
@@ -963,9 +925,14 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [eax+SLOT_BASE+APPDATA.fpu_handler], 0
            mov [eax+SLOT_BASE+APPDATA.sse_handler], 0
 
+;set default io permission map
+           mov [eax+SLOT_BASE+APPDATA.io_map],\
+                  (tss._io_map_0-OS_BASE+PG_MAP)
+           mov [eax+SLOT_BASE+APPDATA.io_map+4],\
+                  (tss._io_map_1-OS_BASE+PG_MAP)
+
            mov esi, fpu_data
            mov ecx, 512/4
-           cld
            rep movsd
 
            cmp    ebx,[TASK_COUNT]
@@ -1003,24 +970,24 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
            ja      @f
 
-           add edx, new_app_base
            stdcall k_strncpy, edx, [cmd_line], 256
 @@:
            mov edx,[params]
            mov edx, [edx+4]        ;app_path
            test edx,edx
            jz @F                   ;application don't need path of file
-        mov     eax, edx
-        add     eax, 1024
-        jc      @f
-        cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
-        ja      @f
-           add edx, new_app_base
+           mov     eax, edx
+           add     eax, 1024
+           jc      @f
+           cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
+           ja      @f
            stdcall k_strncpy, edx, [app_path], 1024
 @@:
            mov    ebx,[slot]
            mov    eax,ebx
            shl    ebx,5
+           lea    ecx,[draw_data+ebx]  ;ecx - pointer to draw data
+
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
            mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
            mov     [ebx+window_data+WDATA.fl_redraw], 1
@@ -1033,8 +1000,6 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    eax,[process_number]
            mov    [ebx+4],eax           ;set PID
 
-           mov    ecx,ebx
-           add    ecx,(draw_data-CURRENT_TASK)  ;ecx - pointer to draw data
 ;set draw data to full screen
 
            mov    [ecx+0],dword 0
@@ -1044,54 +1009,34 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov    eax,[ScreenHeight]
            mov    [ecx+12],eax
 
-           mov edi,[slot]
-           imul edi,tss_step
-           add edi,tss_data
-           mov ecx,128/4
-           xor eax, eax
-           cld
-           rep stosd
-;Add IO access table - bit array of permitted ports
-           not eax
-           mov ecx,2048
-           rep stosd                 ; access to 4096*8=65536 ports
-           sub edi, tss_step
-
-;set cr3 register in TSS of application
-           mov ecx, [slot]
-           shl ecx, 8
-           mov eax,[SLOT_BASE+ecx+APPDATA.dir_table]
-           mov [edi+TSS._cr3],eax
-
-           mov esi,[params]
-           mov eax, [esi+0x08]       ;app_eip
-           mov [edi+TSS._eip],eax    ;set eip in TSS
-           mov eax, [esi+0x0C]       ;app_esp
-           mov [edi+TSS._esp],eax    ;set stack in TSS
-           mov [edi+TSS._eflags],dword 0x1202
-
-           mov [edi+TSS._cs],app_code  ;selector of code segment
-           mov [edi+TSS._ss],app_data
-           mov [edi+TSS._ds],app_data
-           mov [edi+TSS._es],app_data
-           mov [edi+TSS._fs],app_data
-           mov [edi+TSS._gs],graph_data ;selector of graphic segment
-           mov [edi+TSS._io],word 128
-           mov [edi+TSS._ss0], os_data
            mov ebx, [pl0_stack]
-           add ebx, RING0_STACK_SIZE
-           mov [edi+TSS._esp0],ebx
+           mov esi,[params]
+           lea ecx, [ebx+REG_EIP]
+           xor eax, eax
 
-           mov ecx, edi    ;ecx - address of application TSS
-           mov ebx,[slot]
-           shl ebx,3
-;set TSS descriptor
-           mov [ebx+gdts+tss0+0],word tss_step ;limit (size)
-           mov [ebx+gdts+tss0+2],cx  ;part of offset
-           shr ecx,16
-           mov [ebx+gdts+tss0+4],cl  ;part of offset
-           mov [ebx+gdts+tss0+7],ch  ;part of offset
-           mov [ebx+gdts+tss0+5],word 01010000b*256+11101001b ;system flags
+           mov [ebx+REG_RET], dword irq0.return
+           mov [ebx+REG_EDI], eax
+           mov [ebx+REG_ESI], eax
+           mov [ebx+REG_EBP], eax
+           mov [ebx+REG_ESP], ecx   ;ebx+REG_EIP
+           mov [ebx+REG_EBX], eax
+           mov [ebx+REG_EDX], eax
+           mov [ebx+REG_ECX], eax
+           mov [ebx+REG_EAX], eax
+
+           mov eax, [esi+0x08]       ;app_eip
+           mov [ebx+REG_EIP],  eax   ;app_entry
+           mov [ebx+REG_CS], dword app_code
+           mov [ebx+REG_EFLAGS], dword EFL_IOPL1+EFL_IF
+
+           mov eax, [esi+0x0C]       ;app_esp
+           mov [ebx+REG_APP_ESP], eax    ;app_stack
+           mov [ebx+REG_SS], dword app_data
+
+           lea ecx, [ebx+REG_RET]
+           mov ebx, [slot]
+           shl ebx, 8
+           mov [ebx+SLOT_BASE+APPDATA.saved_esp], ecx
 
 ;flush keyboard and buttons queue
            mov    [KEY_COUNT],byte 0
@@ -1121,13 +1066,5 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            ret
 endp
 
-
-
 include "debug.inc"
-
-iglobal
-    new_process_loading db 'K : New Process - loading',13,10,0
-    new_process_running db 'K : New Process - done',13,10,0
-    start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
-endg
 

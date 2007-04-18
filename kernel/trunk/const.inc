@@ -12,7 +12,7 @@ cpl0    equ  10011010b      ; code read dpl0
 cpl3    equ  11111010b      ; code read dpl3
 
 D32     equ  01000000b      ; 32bit segment
-G32    equ   10000000b      ; page gran
+G32     equ   10000000b     ; page gran
 
 
 ;;;;;;;;;;;;cpu_caps flags;;;;;;;;;;;;;;;;
@@ -140,13 +140,53 @@ SSE_FZ         equ    0x8000
 
 SSE_INIT equ (SSE_IM+SSE_DM+SSE_ZM+SSE_OM+SSE_UM+SSE_PM)
 
-OS_BASE             equ 0
 
-window_data         equ (OS_BASE+0x0000000)
+struc TSS
+{
+  ._back       rw 2
+  ._esp0       rd 1
+  ._ss0        rw 2
+  ._esp1       rd 1
+  ._ss1        rw 2
+  ._esp2       rd 1
+  ._ss2        rw 2
+  ._cr3        rd 1
+  ._eip        rd 1
+  ._eflags     rd 1
+  ._eax        rd 1
+  ._ecx        rd 1
+  ._edx        rd 1
+  ._ebx        rd 1
+  ._esp        rd 1
+  ._ebp        rd 1
+  ._esi        rd 1
+  ._edi        rd 1
+  ._es         rw 2
+  ._cs         rw 2
+  ._ss         rw 2
+  ._ds         rw 2
+  ._fs         rw 2
+  ._gs         rw 2
+  ._ldt        rw 2
+  ._trap       rw 1
+  ._io         rw 1
+               rb 24
+  ._io_map_0   rb 4096
+  ._io_map_1   rb 4096
+}
+
+virtual at 0
+  TSS  TSS
+end virtual
+
+TSS_SIZE  equ (128+8192)
+
+OS_BASE             equ 0x80000000
+
+window_data         equ OS_BASE
 
 CURRENT_TASK        equ (OS_BASE+0x0003000)
 TASK_COUNT          equ (OS_BASE+0x0003004)
-CURRENT_RING0_ESP   equ (OS_BASE+0x0003008)
 TASK_BASE           equ (OS_BASE+0x0003010)
 TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
@@ -203,7 +243,6 @@ MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
 LFBAddress          equ (OS_BASE+0x000FE80)
 MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
-;LFBSize             equ (OS_BASE+0x02f9050)
 
 ScreenWidth         equ (OS_BASE+0x000FE00)
 ScreenHeight        equ (OS_BASE+0x000FE04)
@@ -247,7 +286,6 @@ IMG_BACKGROUND      equ (OS_BASE+0x0300000)
 WinMapAddress       equ (OS_BASE+0x0460000)
 display_data        equ (OS_BASE+0x0460000)
 
-;unused ?
 HD_CACHE            equ (OS_BASE+0x0600000)
 
 stack_data_start    equ (OS_BASE+0x0700000)
@@ -259,32 +297,68 @@ resendQ             equ (OS_BASE+0x0770000)
 
 skin_data           equ (OS_BASE+0x0778000)
 
+draw_data           equ (OS_BASE+0x0780000);
 
-tss_data            equ (OS_BASE+0x780000)
-draw_data           equ (OS_BASE+0x988000)
+virtual at (OS_BASE+0x0783F80)
+  tss  TSS
+end virtual
 
-HEAP_BASE           equ (OS_BASE+0x98B000)
+tmp_page_tab        equ 0x0786000;
 
-LFB_BASE            equ 0x7DC00000
+HEAP_BASE           equ (OS_BASE+tmp_page_tab)
+HEAP_MIN_SIZE       equ 0x01000000
 
-page_tabs           equ 0x7FC00000
-master_tab          equ 0x7FDFF000
-app_page_tabs       equ 0x7FE00000
+page_tabs           equ 0xFDC00000
+app_page_tabs       equ 0xFDC00000
+kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
+master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
-sys_pgdir           equ OS_BASE+0x00050000
-sys_master_tab      equ OS_BASE+0x00051000
-sys_pgmap           equ OS_BASE+0x00052000
+LFB_BASE            equ 0xFE000000
+
+sys_pgdir           equ (OS_BASE+0x00050000)
+sys_pgmap           equ (OS_BASE+0x00052000)
 
 
+new_app_base        equ 0;
 
-new_app_base        equ 0x80000000
-
-twdw                equ (CURRENT_TASK-window_data)
+twdw                equ 0x3000   ;(CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
-RING0_STACK_SIZE    equ (0x2000-512)    ;512 байт для контекста FPU
+RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
 
-;PAGES_USED          equ 4
+if 0
+REG_SS              equ (RING0_STACK_SIZE-4)
+REG_APP_ESP         equ (RING0_STACK_SIZE-8)
+REG_EFLAGS          equ (RING0_STACK_SIZE-12)
+REG_CS              equ (RING0_STACK_SIZE-16)
+REG_EIP             equ (RING0_STACK_SIZE-20)
+REG_EFL_2           equ (RING0_STACK_SIZE-24)
+REG_EAX             equ (RING0_STACK_SIZE-28)
+REG_ECX             equ (RING0_STACK_SIZE-32)
+REG_EDX             equ (RING0_STACK_SIZE-36)
+REG_EBX             equ (RING0_STACK_SIZE-40)
+REG_ESP             equ (RING0_STACK_SIZE-44)  ;RING0_STACK_SIZE-20
+REG_EBP             equ (RING0_STACK_SIZE-48)
+REG_ESI             equ (RING0_STACK_SIZE-52)
+REG_EDI             equ (RING0_STACK_SIZE-56)
+REG_RET             equ (RING0_STACK_SIZE-60)  ;irq0.return
+end if
+
+REG_SS              equ (RING0_STACK_SIZE-4)
+REG_APP_ESP         equ (RING0_STACK_SIZE-8)
+REG_EFLAGS          equ (RING0_STACK_SIZE-12)
+REG_CS              equ (RING0_STACK_SIZE-16)
+REG_EIP             equ (RING0_STACK_SIZE-20)
+REG_EAX             equ (RING0_STACK_SIZE-24)
+REG_ECX             equ (RING0_STACK_SIZE-28)
+REG_EDX             equ (RING0_STACK_SIZE-32)
+REG_EBX             equ (RING0_STACK_SIZE-36)
+REG_ESP             equ (RING0_STACK_SIZE-40)  ;RING0_STACK_SIZE-20
+REG_EBP             equ (RING0_STACK_SIZE-44)
+REG_ESI             equ (RING0_STACK_SIZE-48)
+REG_EDI             equ (RING0_STACK_SIZE-52)
+REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
+
 
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001
@@ -331,16 +405,27 @@ EVENT_EXTENDED     equ 0x00000200
 
 EV_INTR            equ 1
 
+struc THR_DATA
+{
+                  rb (8192-512)
+  .pl0_stack:
+  .fpu_state      rb 512
+  .tls_page       rb 4096
+  .pdbr           rb 4096
+}
+
+THR_DATA_SIZE     equ 4096*4
+
+virtual at (OS_BASE-THR_DATA_SIZE)
+  thr_data  THR_DATA
+end virtual
+
 struc SYS_VARS
 { .bpp            dd ?
   .scanline       dd ?
   .vesa_mode      dd ?
   .x_res          dd ?
   .y_res          dd ?
-  .cpu_caps       dd ?
-                  dd ?
-                  dd ?
-                  dd ?
 }
 
 struc APPOBJ           ;common object header
@@ -467,7 +552,6 @@ struc PG_DATA
   .pages_free        dd ?
   .pages_faults      dd ?
   .pagemap_size      dd ?
-  .kernel_max        dd ?
   .kernel_pages      dd ?
   .kernel_tables     dd ?
   .sys_page_dir      dd ?
@@ -495,6 +579,9 @@ struc SRV
 
 SRV_FD_OFFSET  equ 0x18
 SRV_SIZE       equ 44
+
+DRV_ENTRY    equ  1
+DRV_EXIT     equ -1
 
 struc COFF_HEADER
 {  .machine          dw ?

@@ -25,7 +25,7 @@ Detect_COM_Mouse:
 
         mov   eax,4
         shl   eax,2
-        mov   [irq_owner+eax],byte 1
+        mov   [irq_owner+eax], 1
 
         inc   dword [RESERVED_PORTS]
         mov   edi,[RESERVED_PORTS]
@@ -47,7 +47,7 @@ Detect_COM_Mouse:
 
         mov   eax,3
         shl   eax,2
-        mov   [irq_owner+eax],byte 1
+        mov   [irq_owner+eax], 1
 
         inc   dword [RESERVED_PORTS]
         mov   edi,[RESERVED_PORTS]

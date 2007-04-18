@@ -17,25 +17,6 @@ idtreg:
      dw   8*0x41-1
      dd   idts+8
 
-build_process_gdt_tss_pointer:
-
-        mov    ecx,tss_data
-        mov    edi,0
-      setgdtl2:
-        mov    [edi+gdts+ tss0 +0], word tss_step
-        mov    [edi+gdts+ tss0 +2], cx
-        mov    eax,ecx
-        shr    eax,16
-        mov    [edi+gdts+ tss0 +4], al
-        mov    [edi+gdts+ tss0 +7], ah
-        mov    [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-        add    ecx,tss_step
-        add    edi,8
-        cmp    edi,8*(max_processes+5)
-        jbe    setgdtl2
-
-        ret
-
 build_interrupt_table:
 
         mov    edi, idts+8
@@ -43,11 +24,11 @@ build_interrupt_table:
         mov    ecx, 0x40
      @@:
         lodsd
-        mov     [edi], ax                       ; lower part of offset
-        mov     [edi+2], word os_code           ; segment selector
+        mov    [edi],   ax           ; lower part of offset
+        mov    [edi+2], word os_code ; segment selector
         mov     ax, word 10001110b shl 8        ; type: interrupt gate
         mov     [edi+4], eax
-        add     edi, 8
+        add    edi, 8
         loop    @b
 
         ;mov    edi,8*0x40+idts+8
@@ -67,7 +48,7 @@ iglobal
     times 12 dd unknown_interrupt
 
     dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
-    dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
+    dd   irq_serv.irq_4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
     dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
     dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
 
@@ -78,13 +59,11 @@ endg
 
 macro save_ring3_context
 {
-    push    ds es
     pushad
 }
 macro restore_ring3_context
 {
     popad
-    pop    es ds
 }
 
 ; simply return control to interrupted process
@@ -114,20 +93,19 @@ exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 18
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
 exc_c:
-        mov   ax, os_data
-        mov   ds, ax
-        mov   es, ax
+        mov   ax, app_data  ;исключение
+        mov   ds, ax        ;загрузим правильные значени
+        mov   es, ax        ;в регистры
 
 ; test if debugging
         cli
-        mov   eax, [CURRENT_TASK]
-        shl   eax, 8
-        mov   eax, [SLOT_BASE+eax+APPDATA.debugger_slot]
+        mov   eax, [current_slot]
+        mov   eax, [eax+APPDATA.debugger_slot]
         test  eax, eax
         jnz   .debug
         sti
 ; not debuggee => say error and terminate
-        add   esp, 28h
+        add   esp, 0x20  ;28h
         movzx eax, bl
         mov   [error_interrupt], eax
         call  show_error_parameters
@@ -242,8 +220,8 @@ macro irqh [num]
 
 irqh 2,5,7,8,9,10,11
 
- irq_c:
-     mov   ax, os_data
+irq_c:
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      call  irqhandler
@@ -252,7 +230,7 @@ irqh 2,5,7,8,9,10,11
 
 p_irq6:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      call  fdc_irq
@@ -262,7 +240,7 @@ p_irq6:
 
 p_irq3:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      cmp   [com2_mouse_detected],0
@@ -278,7 +256,7 @@ p_irq3:
 
 p_irq4:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      cmp   [com1_mouse_detected],0
@@ -294,7 +272,7 @@ p_irq4:
 
 p_irq12:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
      call  check_mouse_data_ps2
@@ -303,7 +281,7 @@ p_irq12:
 
 p_irq14:
         save_ring3_context
-        mov     ax, os_data
+        mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
         call    [irq14_func]
@@ -312,7 +290,7 @@ p_irq14:
         iret
 p_irq15:
         save_ring3_context
-        mov     ax, os_data
+        mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
         call    [irq15_func]
@@ -335,7 +313,7 @@ ready_for_next_irq_1:
 
 irqD:
      save_ring3_context
-     mov   ax, os_data
+     mov   ax, app_data  ;os_data
      mov   ds, ax
      mov   es, ax
 
@@ -674,6 +652,17 @@ term9:
            mov edi, [.slot]
            shl edi,8
            add edi,SLOT_BASE
+
+           mov eax, [edi+APPDATA.io_map]
+           cmp eax, (tss._io_map_0-OS_BASE+PG_MAP)
+           je @F
+           call free_page
+@@:
+           mov eax, [edi+APPDATA.io_map+4]
+           cmp eax, (tss._io_map_1-OS_BASE+PG_MAP)
+           je @F
+           call free_page
+@@:
            mov eax, 0x20202020
            stosd
            stosd
@@ -837,13 +826,12 @@ endg
 
 build_scheduler:
 
-;        mov    esi,boot_sched_1
-;        call   boot_log
-        call   build_process_gdt_tss_pointer
+        mov    esi,boot_sched_1
+        call   boot_log
+  ;      call   build_process_gdt_tss_pointer
 
-;        mov    esi,boot_sched_2
-;        call   boot_log
-        call   build_interrupt_table
+  ;      mov    esi,boot_sched_2
+  ;      call   boot_log
 
         ret
 

@@ -61,19 +61,17 @@ include "kglobals.inc"
 include "lang.inc"
 
 include "const.inc"
+max_processes    equ   255
+tss_step         equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
 
-;WinMapAddress      equ     0x460000
-;display_data       = 0x460000
 
-max_processes      equ   255
+os_stack       equ  (os_data_l-gdts)    ; GDTs
+os_code        equ  (os_code_l-gdts)
+graph_data     equ  (3+graph_data_l-gdts)
+tss0           equ  (tss0_l-gdts)
+app_code       equ  (3+app_code_l-gdts)
+app_data       equ  (3+app_data_l-gdts)
 
-;window_data        equ   0x0000
-;tss_data           equ   0xD20000
-tss_step           equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
-;draw_data          equ   0xC00000
-;sysint_stack_data  equ   0xC03000
-
-;twdw               equ   (0x3000-window_data)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -109,56 +107,31 @@ use16
                   org   0x0
                   jmp   start_of_code
 
-; mike.dld {
-        org $+0x10000
-db 0
-dd servetable-0x10000
-draw_line       dd __sys_draw_line
-disable_mouse   dd __sys_disable_mouse
-draw_pointer    dd __sys_draw_pointer
-;//mike.dld, 2006-08-02 [
-;drawbar         dd __sys_drawbar
-drawbar         dd __sys_drawbar.forced
-;//mike.dld, 2006-08-02 ]
-putpixel        dd __sys_putpixel
-; } mike.dld
+version db    'Kolibri OS  version 0.6.5.0      ',13,10,13,10,0
 
-version           db    'Kolibri OS  version 0.6.5.0      ',13,10,13,10,0
-                  ;dd    endofcode-0x10000
-
-                  ;db   'Boot02'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-preboot_lfb       db    0
-preboot_bootlog   db    0
+if lang eq en
+include "boot/booteng.inc"     ; english system boot messages
+else if lang eq ru
+include "boot/bootru.inc"      ; russian system boot messages
+include "boot/ru.inc"          ; Russian font
+else if lang eq et
+include "boot/bootet.inc"      ; estonian system boot messages
+include "boot/et.inc"          ; Estonian font
+else
+include "boot/bootge.inc"      ; german system boot messages
+end if
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                      16 BIT INCLUDED FILES                           ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-include "kernel16.inc"
+include "boot/bootcode.inc"    ; 16 bit system boot code
+include "bus/pci/pci16.inc"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                      ;;
 ;;                  SWITCH TO 32 BIT PROTECTED MODE                     ;;
 ;;                                                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-os_data        =  os_data_l-gdts    ; GDTs
-os_code        =  os_code_l-gdts
-int_code       equ  int_code_l-gdts
-int_data       equ  int_data_l-gdts
-tss0sys        equ  tss0sys_l-gdts
-graph_data     equ  3+graph_data_l-gdts
-tss0           equ  tss0_l-gdts
-app_code       equ  3+app_code_l-gdts
-app_data       equ  3+app_data_l-gdts
-
 
 
 ; CR0 Flags - Protected mode and Paging
@@ -167,7 +140,7 @@ app_data       equ  3+app_data_l-gdts
 
 ; Enabling 32 bit protected mode
 
-        sidt    [cs:old_ints_h-0x10000]
+        sidt    [cs:old_ints_h]
 
         cli                             ; disable all irqs
         cld
@@ -189,209 +162,188 @@ app_data       equ  3+app_data_l-gdts
         jnz     l.7
         mov     al, 0xFF
         out     0x64, al
-        lgdt    [cs:gdts-0x10000]       ; Load GDT
-        mov     eax, cr0                ; Turn on paging // protected mode
+
+        lgdt    [cs:tmp_gdt]            ; Load GDT
+        mov     eax, cr0                ; protected mode
         or      eax, ecx
         and     eax, 10011111b *65536*256 + 0xffffff ; caching enabled
         mov     cr0, eax
-        jmp     $+2
-org $+0x10000
-        mov     ax,os_data              ; Selector for os
-        mov     ds,ax
-        mov     es,ax
-        mov     fs,ax
-        mov     gs,ax
-        mov     ss,ax
-        mov     esp,0x3ec00             ; Set stack
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
 
-if gdte >= $
-error 'GDT overlaps with used code!'
-end if
+include "boot/shutdown.inc" ; shutdown or restart
+
+align 8
+tmp_gdt:
+
+        dw     23
+        dd     tmp_gdt+0x10000
+        dw     0
+
+        dw     0xffff
+        dw     0x0000
+        db     0x00
+        dw     11011111b *256 +10011010b
+        db     0x00
+
+        dw     0xffff
+        dw     0x0000
+        db     0x00
+        dw     11011111b *256 +10010010b
+        db     0x00
+
+include "data16.inc"
 
 use32
-
-include 'unpacker.inc'
-
-__DEBUG__ fix 1
-__DEBUG_LEVEL__ fix 1
-include 'fdo.inc'
-
-iglobal
-  boot_memdetect    db   'Determining amount of memory',0
-  boot_fonts        db   'Fonts loaded',0
-  boot_tss          db   'Setting TSSs',0
-  boot_cpuid        db   'Reading CPUIDs',0
-  boot_devices      db   'Detecting devices',0
-  boot_timer        db   'Setting timer',0
-  boot_irqs         db   'Reprogramming IRQs',0
-  boot_setmouse     db   'Setting mouse',0
-  boot_windefs      db   'Setting window defaults',0
-  boot_bgr          db   'Calculating background',0
-  boot_resirqports  db   'Reserving IRQs & ports',0
-  boot_setrports    db   'Setting addresses for IRQs',0
-  boot_setostask    db   'Setting OS task',0
-  boot_allirqs      db   'Unmasking all IRQs',0
-  boot_tsc          db   'Reading TSC',0
-  boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
-  boot_pal_vga      db   'Setting VGA 640x480 palette',0
-  boot_mtrr         db   'Setting MTRR',0
-  boot_tasking      db   'All set - press ESC to start',0
-endg
-
-iglobal
-  boot_y dd 10
-endg
-
-boot_log:
-         pushad
-
-         mov   eax,10*65536
-         mov   ax,word [boot_y]
-         add   [boot_y],dword 10
-         mov   ebx,0x80ffffff   ; ASCIIZ string with white color
-         mov   ecx,esi
-         mov   edi,1
-         call  dtext
-
-         mov   [novesachecksum],1000
-         call  checkVga_N13
-
-         cmp   [preboot_blogesc],byte 1
-         je    .bll2
-
-         cmp   esi,boot_tasking
-         jne   .bll2
-         ; begin ealex 04.08.05
-;         in    al,0x61
-;         and   al,01111111b
-;         out   0x61,al
-         ; end ealex 04.08.05
-.bll1:   in    al,0x60    ; wait for ESC key press
-         cmp   al,129
-         jne   .bll1
-
-.bll2:   popad
-
-         ret
-
-iglobal
-  firstapp   db  '/rd/1/LAUNCHER',0
-  vrr_m      db  '/rd/1/VRR_M',0
-
-  char  dd 0,0,0
-   dd 2560
-   dd  0x3F600 - std_application_base_address
-   db '/RD/1/FONTS/CHAR.MT',0
-  char2 	dd 0,0,0
-			dd 2560
-			dd  0x3EC00 - std_application_base_address
-			db '/RD/1/FONTS/CHAR2.MT',0
-
-  ;char       db  'FONTS/CHAR.MT',0
-  ;char2      db  'FONTS/CHAR2.MT',0
-  bootpath   db  '/KOLIBRI    '
-  bootpath2  db  0
-;  vmode      db  'drivers/VMODE.MDR',0
-  vmode 	dd 0,0,0
-			dd 0x8000
-			dd 0x760000 - std_application_base_address
-			db '/RD/1/drivers/VMODE.MDR',0
-endg
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                          32 BIT ENTRY                                ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+org $+0x10000
 
 align 4
-
 B32:
-; CLEAR 0x280000-0xF00000
+           mov   ax,os_stack       ; Selector for os
+           mov   ds,ax
+           mov   es,ax
+           mov   fs,ax
+           mov   gs,ax
+           mov   ss,ax
+           mov   esp,0x3ec00       ; Set stack
 
-        xor   eax,eax
-        mov   edi,0x280000
-        mov   ecx,(0x100000*0xF-0x280000) / 4
-        cld
-        rep   stosd
-; CLEAR 0x80000-0x90000
-;       xor   eax,eax
+; CLEAR 0x280000 - HEAP_BASE
 
-        mov   edi,0x80000
-        mov   ecx,(0x90000-0x80000)/4
-;       cld
-        rep   stosd
+           xor   eax,eax
+           mov   edi,0x280000
+           mov   ecx,(HEAP_BASE-OS_BASE-0x280000) / 4
+           cld
+           rep   stosd
+
+           mov   edi,0x40000
+           mov   ecx,(0x90000-0x40000)/4
+           rep   stosd
 
 ; CLEAR KERNEL UNDEFINED GLOBALS
-        mov   edi, endofcode
-        mov   ecx, (uglobals_size/4)+4
-        rep   stosd
+           mov   edi, endofcode-OS_BASE
+           mov   ecx, (uglobals_size/4)+4
+           rep   stosd
 
 ; SAVE & CLEAR 0-0xffff
 
-        mov   esi,0x0000
-        mov   edi,0x2F0000
-        mov   ecx,0x10000 / 4
-        cld
-        rep   movsd
-        xor   eax,eax
-        mov   edi,0
-        mov   ecx,0x10000 / 4
-        cld
-        rep   stosd
+           xor esi, esi
+           mov   edi,0x2F0000
+           mov   ecx,0x10000 / 4
+           rep   movsd
+           xor edi, edi
+           mov   ecx,0x10000 / 4
+           rep   stosd
+
+           call test_cpu
+           bts [cpu_caps-OS_BASE], CAPS_TSC     ;force use rdtsc
+
+; MEMORY MODEL
+           call mem_test
+           call init_mem
+           call init_page_map
+
+; ENABLE PAGING
+
+           mov eax, sys_pgdir-OS_BASE
+           mov cr3, eax
+
+           mov eax,cr0
+           or eax,CR0_PG+CR0_WP
+           mov cr0,eax
+
+           lgdt [gdts]
+           jmp pword os_code:high_code
+
+__DEBUG__ fix 1
+__DEBUG_LEVEL__ fix 1
+include 'init.inc'
+
+org OS_BASE+$
+
+align 4
+high_code:
+           mov   ax,os_stack
+           mov   bx,app_data
+           mov   ss,ax
+           add esp, OS_BASE
+
+           mov   ds,bx
+           mov   es,bx
+           mov   fs,bx
+           mov   gs,bx
+
+           mov dword [sys_pgdir], 0
+           mov dword [sys_pgdir+4], 0
+           mov dword [sys_pgdir+8], 0
+
+           mov eax, cr3
+           mov cr3, eax           ; flush TLB
 
 ; SAVE REAL MODE VARIABLES
-        mov     ax, [0x2f0000 + 0x9031]
+        mov     ax, [BOOT_VAR + 0x9031]
         mov     [IDEContrRegsBaseAddr], ax
 ; --------------- APM ---------------------
-    mov    eax, [0x2f0000 + 0x9040]    ; entry point
-    mov    dword[apm_entry], eax
+
+; init selectors
+    mov ebx,    [BOOT_VAR+0x9040]              ; offset of APM entry point
+    movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
+                                      ; protected-mode 32-bit code segment
+    movzx ecx, word [BOOT_VAR+0x9052] ; real-mode segment base address of
+                                      ; protected-mode 16-bit code segment
+    movzx edx, word [BOOT_VAR+0x9054] ; real-mode segment base address of
+                                      ; protected-mode 16-bit data segment
+
+    shl    eax, 4
+    mov    [dword apm_code_32 + 2], ax
+    shr    eax, 16
+    mov    [dword apm_code_32 + 4], al
+
+    shl    ecx, 4
+    mov    [dword apm_code_16 + 2], cx
+    shr    ecx, 16
+    mov    [dword apm_code_16 + 4], cl
+
+    shl    edx, 4
+    mov    [dword apm_data_16 + 2], dx
+    shr    edx, 16
+    mov    [dword apm_data_16 + 4], dl
+
+    mov    dword[apm_entry], ebx
     mov    word [apm_entry + 4], apm_code_32 - gdts
 
-    mov    eax, [0x2f0000 + 0x9044]    ; version & flags
+    mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
 ; -----------------------------------------
-;        movzx eax,byte [0x2f0000+0x9010]  ; mouse port
+;        movzx eax,byte [BOOT_VAR+0x9010]  ; mouse port
 ;        mov   [0xF604],byte 1  ;al
-        mov     al, [0x2F0000+0x901F]   ; DMA writing
+        mov     al, [BOOT_VAR+0x901F]   ; DMA writing
         mov     [allow_dma_write], al
-        mov   al,[0x2f0000+0x9000]        ; bpp
+        mov   al,[BOOT_VAR+0x9000]        ; bpp
         mov   [ScreenBPP],al
-        movzx eax,word [0x2f0000+0x900A]  ; X max
+        movzx eax,word [BOOT_VAR+0x900A]  ; X max
         dec   eax
         mov   [ScreenWidth],eax
         mov   [screen_workarea.right],eax
-        movzx eax,word [0x2f0000+0x900C]  ; Y max
+        movzx eax,word [BOOT_VAR+0x900C]  ; Y max
         dec   eax
         mov   [ScreenHeight],eax
         mov   [screen_workarea.bottom],eax
-        movzx eax,word [0x2f0000+0x9008]  ; screen mode
+        movzx eax,word [BOOT_VAR+0x9008]  ; screen mode
         mov   [SCR_MODE],eax
-        mov   eax,[0x2f0000+0x9014]       ; Vesa 1.2 bnk sw add
+        mov   eax,[BOOT_VAR+0x9014]       ; Vesa 1.2 bnk sw add
         mov   [BANK_SWITCH],eax
         mov   [BytesPerScanLine],word 640*4         ; Bytes PerScanLine
         cmp   [SCR_MODE],word 0x13          ; 320x200
         je    @f
         cmp   [SCR_MODE],word 0x12          ; VGA 640x480
         je    @f
-        mov   ax,[0x2f0000+0x9001]        ; for other modes
+        mov   ax,[BOOT_VAR+0x9001]        ; for other modes
         mov   [BytesPerScanLine],ax
-      @@:
+@@:
 
 ; GRAPHICS ADDRESSES
 
-        ;mov     eax,0x100000*8                    ; LFB address
-        ;cmp     [0xfe0c],word 0x13
-        ;je      no_d_lfb
-        ;cmp     [0xfe0c],word 0x12
-        ;je      no_d_lfb
-        ;cmp     [0x2f0000+0x901e],byte 1
-        ;jne     no_d_lfb
-        mov     byte [0x2f0000+0x901e],0x0
-        mov     eax,[0x2f0000+0x9018]
-      ;no_d_lfb:
+        mov     byte [BOOT_VAR+0x901e],0x0
+        mov     eax,[BOOT_VAR+0x9018]
         mov     [LFBAddress],eax
 
         cmp     [SCR_MODE],word 0100000000000000b
@@ -399,38 +351,27 @@ B32:
         cmp     [SCR_MODE],word 0x13
         je      v20ga32
         mov     [PUTPIXEL],dword Vesa12_putpixel24  ; Vesa 1.2
-        mov     [0xe024],dword Vesa12_getpixel24
+        mov     [GETPIXEL],dword Vesa12_getpixel24
         cmp     [ScreenBPP],byte 24
         jz      ga24
         mov     [PUTPIXEL],dword Vesa12_putpixel32
-        mov     [0xe024],dword Vesa12_getpixel32
+        mov     [GETPIXEL],dword Vesa12_getpixel32
       ga24:
         jmp     v20ga24
       setvesa20:
         mov     [PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0
-        mov     [0xe024],dword Vesa20_getpixel24
+        mov     [GETPIXEL],dword Vesa20_getpixel24
         cmp     [ScreenBPP],byte 24
         jz      v20ga24
       v20ga32:
         mov     [PUTPIXEL],dword Vesa20_putpixel32
-        mov     [0xe024],dword Vesa20_getpixel32
+        mov     [GETPIXEL],dword Vesa20_getpixel32
       v20ga24:
         cmp     [SCR_MODE],word 0x12                ; 16 C VGA 640x480
         jne     no_mode_0x12
         mov     [PUTPIXEL],dword VGA_putpixel
-        mov     [0xe024],dword Vesa20_getpixel32
+        mov     [GETPIXEL],dword Vesa20_getpixel32
       no_mode_0x12:
-
-           call test_cpu
-;           btr [cpu_caps], CAPS_SSE    ;test: dont't use sse code
-;           btr [cpu_caps], CAPS_SSE2   ;test: don't use sse2
-
-;           btr [cpu_caps], CAPS_FXSR   ;test: disable sse support
-                                        ;all sse commands rise #UD exption
-;           btr [cpu_caps], CAPS_PSE    ;test: don't use large pages
-;           btr [cpu_caps], CAPS_PGE    ;test: don't use global pages
-;           btr [cpu_caps], CAPS_MTRR   ;test: don't use MTRR
-           bts [cpu_caps], CAPS_TSC     ;force use rdtsc
 
 ; -------- Fast System Call init ----------
 ; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
@@ -468,7 +409,7 @@ B32:
 	;  and the contents of this field, plus 8, are copied into the SS register.
 
 	; mov	edx, (os_code + 16) * 65536 + os_code
-           mov edx, 0x1B0013
+           mov edx, 0x1B0008
 
            mov eax, syscall_entry
            mov ecx, MSR_AMD_STAR
@@ -476,32 +417,48 @@ B32:
 .noSYSCALL:
 ; -----------------------------------------
 
+; LOAD IDT
 
-
-; MEMORY MODEL
-           call mem_test
-           call init_mtrr
-           call init_mem
-           call init_page_map
-
-; ENABLE PAGING
-           mov eax, sys_pgdir
-           mov cr3, eax
-
-           mov eax,cr0
-           or eax,CR0_PG
-           mov cr0,eax
+           call build_interrupt_table
+           lidt [idtreg]
 
            call init_kernel_heap
            stdcall kernel_alloc, RING0_STACK_SIZE+512
-           mov [os_stack], eax
+           mov [os_stack_seg], eax
+
+           lea esp, [eax+RING0_STACK_SIZE]
+
+           mov [tss._ss0], os_stack
+           mov [tss._esp0], esp
+           mov [tss._esp], esp
+           mov [tss._cs],os_code
+           mov [tss._ss],os_stack
+           mov [tss._ds],app_data
+           mov [tss._es],app_data
+           mov [tss._fs],app_data
+           mov [tss._gs],app_data
+           mov [tss._io],128
+;Add IO access table - bit array of permitted ports
+           mov edi, tss._io_map_0
+           xor eax, eax
+           not eax
+           mov ecx, 8192/4
+           rep stosd                 ; access to 4096*8=65536 ports
+
+           mov  ax,tss0
+           ltr  ax
+
+           mov [LFBSize], 0x800000
+           call init_mtrr
 
            call init_LFB
            call init_fpu
-
            call init_malloc
 
-           stdcall alloc_kernel_space, 0x4F000
+           stdcall alloc_kernel_space, 0x51000
+           mov [default_io_map], eax
+
+           add eax, 0x2000
            mov [ipc_tmp], eax
            mov ebx, 0x1000
 
@@ -527,7 +484,6 @@ B32:
            mov [ipc_ptab], eax
 
            call init_events
-
            mov eax, srv.fd-SRV_FD_OFFSET
            mov [srv.fd], eax
            mov [srv.bk], eax
@@ -545,13 +501,10 @@ B32:
         mov     [graph_data_l+7],ah
 
 
-; BUILD SCHEDULER
-
-        call   build_scheduler ; sys32.inc
-
-; LOAD IDT
-        lidt   [cs:idtreg]
-        cli
+        mov [CURRENT_TASK],dword 1
+        mov [TASK_COUNT],dword 1
+        mov [TASK_BASE],dword TASK_DATA
+        mov [current_slot], SLOT_BASE+256
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -575,31 +528,17 @@ include 'vmodeld.inc'
 
 ; LOAD FONTS I and II
 
-        mov   [CURRENT_TASK],dword 1
-        mov   [TASK_COUNT],dword 1
-        mov   [TASK_BASE],dword TASK_DATA
+        mov   esi,char
+        xor   ebx,ebx
+        mov   ecx,2560
+        mov   edx,FONT_I
+        call  fs_RamdiskRead
 
-	pushad
-	push	eax
-	mov		eax,char  - std_application_base_address
-	call	file_system_lfn
-	mov		eax,char2  - std_application_base_address
-	call	file_system_lfn
-	pop	eax
-	popad
-
-
-;        mov   esi,char
-;        xor   ebx,ebx
-;        mov   ecx,2560;26000
-;        mov   edx,FONT_I
-;        call  fs_RamdiskRead
-
-;        mov   esi,char2
-;        xor   ebx,ebx
-;        mov   ecx,2560;26000
-;        mov   edx,FONT_II
-;        call  fs_RamdiskRead
+        mov   esi,char2
+        xor   ebx,ebx
+        mov   ecx,2560;26000
+        mov   edx,FONT_II
+        call  fs_RamdiskRead
 
         mov   esi,boot_fonts
         call  boot_log
@@ -627,11 +566,15 @@ include 'vmodeld.inc'
         mov    esi,boot_tss
         call   boot_log
 
+; BUILD SCHEDULER
+
+        call   build_scheduler ; sys32.inc
+
         mov    esi,boot_devices
         call   boot_log
         call   detect_devices
 
- ; TIMER SET TO 1/100 S
+; TIMER SET TO 1/100 S
 
         mov   esi,boot_timer
         call  boot_log
@@ -679,19 +622,23 @@ include 'vmodeld.inc'
         mov  esi,boot_setostask
         call boot_log
 
-;        mov eax, fpu_data
-;        mov  dword [SLOT_BASE+APPDATA.fpu_state], eax
-;        mov  dword [SLOT_BASE+APPDATA.fpu_handler], 0
-;        mov  dword [SLOT_BASE+APPDATA.sse_handler], 0
+        mov eax, fpu_data
+        mov  dword [SLOT_BASE+APPDATA.fpu_state], eax
+        mov  dword [SLOT_BASE+APPDATA.fpu_handler], 0
+        mov  dword [SLOT_BASE+APPDATA.sse_handler], 0
 
         ; name for OS/IDLE process
 
         mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
         mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-        mov edi, [os_stack]
+        mov edi, [os_stack_seg]
         mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
-        add edi, RING0_STACK_SIZE
+        add edi, 0x2000-512
         mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov dword [SLOT_BASE+256+APPDATA.io_map],\
+                  (tss._io_map_0-OS_BASE+PG_MAP)
+        mov dword [SLOT_BASE+256+APPDATA.io_map+4],\
+                  (tss._io_map_1-OS_BASE+PG_MAP)
 
         mov esi, fpu_data
         mov ecx, 512/4
@@ -700,8 +647,6 @@ include 'vmodeld.inc'
 
         mov dword [SLOT_BASE+256+APPDATA.fpu_handler], 0
         mov dword [SLOT_BASE+256+APPDATA.sse_handler], 0
-
-        mov ebx, [def_cursor]
         mov dword [SLOT_BASE+256+APPDATA.cursor], ebx
 
         mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
@@ -709,39 +654,20 @@ include 'vmodeld.inc'
         mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
 
         ; task list
+        mov  [CURRENT_TASK],dword 1
+        mov  [TASK_COUNT],dword 1
+        mov  [current_slot], SLOT_BASE+256
+        mov  [TASK_BASE],dword TASK_DATA
         mov  [TASK_DATA+TASKDATA.wnd_number], 1 ; on screen number
         mov  [TASK_DATA+TASKDATA.pid], 1        ; process id number
         mov  [TASK_DATA+TASKDATA.mem_start], 0  ; process base address
 
-        mov  edi,tss_data+tss_step
-        mov ecx, (tss_step)/4
-        xor eax, eax
-        cld
-        rep stosd
-
-        mov  edi,tss_data+tss_step
-        mov  [edi+TSS._ss0], os_data
-        mov  eax,cr3
-        mov  [edi+TSS._cr3],eax
-        mov  [edi+TSS._eip],osloop
-        mov  [edi+TSS._eflags],dword 0x11202 ; sti and resume
-        mov eax, [os_stack]
-        add eax, RING0_STACK_SIZE
-        mov  [edi+TSS._esp], eax
-        mov  [edi+TSS._cs],os_code
-        mov  [edi+TSS._ss],os_data
-        mov  [edi+TSS._ds],os_data
-        mov  [edi+TSS._es],os_data
-        mov  [edi+TSS._fs],os_data
-        mov  [edi+TSS._gs],os_data
-
-        mov  ax,tss0
-        ltr  ax
-
         call init_cursors
+        mov eax, [def_cursor]
+        mov [SLOT_BASE+APPDATA.cursor],eax
+        mov [SLOT_BASE+APPDATA.cursor+256],eax
 
-
-; READ TSC / SECOND
+  ; READ TSC / SECOND
 
         mov   esi,boot_tsc
         call  boot_log
@@ -791,11 +717,21 @@ include 'vmodeld.inc'
         movsd
         call    load_skin
 
+;protect io permission map
+
+           mov esi, [default_io_map]
+           stdcall map_page,esi,(tss._io_map_0-OS_BASE), PG_MAP
+           add esi, 0x1000
+           stdcall map_page,esi,(tss._io_map_1-OS_BASE), PG_MAP
+
+           stdcall map_page,tss._io_map_0,\
+                   (tss._io_map_0-OS_BASE), PG_MAP
+           stdcall map_page,tss._io_map_1,\
+                   (tss._io_map_1-OS_BASE), PG_MAP
+
 ; LOAD FIRST APPLICATION
-        mov   [CURRENT_TASK],dword 1
-        mov   [TASK_COUNT],dword 1
         cli
-        cmp   byte [0x2f0000+0x9030],1
+        cmp   byte [BOOT_VAR+0x9030],1
         jne   no_load_vrr_m
 
         mov ebp, vrr_m
@@ -819,7 +755,6 @@ first_app_found:
 
         ;mov   [TASK_COUNT],dword 2
         mov   [CURRENT_TASK],dword 1       ; set OS task fisrt
-
 
 ; SET KEYBOARD PARAMETERS
         mov   al, 0xf6         ; reset keyboard, scan enabled
@@ -854,7 +789,7 @@ first_app_found:
         mov   esi,boot_tasking
         call  boot_log
 
- ;      mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
+;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
 
@@ -882,10 +817,53 @@ first_app_found:
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
 
+;        stdcall init_uart_service, DRV_ENTRY
+
         sti
+        call change_task
+
+        jmp osloop
+
         jmp   $                      ; wait here for timer to take control
 
         ; Fly :)
+
+include 'unpacker.inc'
+include 'fdo.inc'
+
+align 4
+boot_log:
+         pushad
+
+         mov   eax,10*65536
+         mov   ax,word [boot_y]
+         add   [boot_y],dword 10
+         mov   ebx,0x80ffffff   ; ASCIIZ string with white color
+         mov   ecx,esi
+         mov   edi,1
+         call  dtext
+
+         mov   [novesachecksum],1000
+         call  checkVga_N13
+
+         cmp   [preboot_blogesc+OS_BASE+0x10000],byte 1
+         je    .bll2
+
+         cmp   esi,boot_tasking
+         jne   .bll2
+         ; begin ealex 04.08.05
+;         in    al,0x61
+;         and   al,01111111b
+;         out   0x61,al
+         ; end ealex 04.08.05
+.bll1:   in    al,0x60    ; wait for ESC key press
+         cmp   al,129
+         jne   .bll1
+
+.bll2:   popad
+
+         ret
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;
@@ -990,13 +968,14 @@ reserve_irqs_ports:
 
         pushad
 
-        mov  [irq_owner+4*0],byte 1    ; timer
-        mov  [irq_owner+4*1],byte 1    ; keyboard
-        mov  [irq_owner+4*5],byte 1    ; sound blaster
-        mov  [irq_owner+4*6],byte 1    ; floppy diskette
-        mov  [irq_owner+4*13],byte 1   ; math co-pros
-        mov  [irq_owner+4*14],byte 1   ; ide I
-        mov  [irq_owner+4*15],byte 1   ; ide II
+        mov  [irq_owner+4*0], 1    ; timer
+        mov  [irq_owner+4*1], 1    ; keyboard
+        mov  [irq_owner+4*5], 1    ; sound blaster
+        mov  [irq_owner+4*6], 1    ; floppy diskette
+        mov  [irq_owner+4*13], 1   ; math co-pros
+        mov  [irq_owner+4*14], 1   ; ide I
+        mov  [irq_owner+4*15], 1   ; ide II
+
 ;        movzx eax,byte [0xf604]        ; mouse irq
 ;        dec   eax
 ;        add   eax,mouseirqtable
@@ -1089,10 +1068,10 @@ set_variables:
 ;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
 
         push  eax
-        mov   ax,[0x2f0000+0x900c]
+        mov   ax,[BOOT_VAR+0x900c]
         shr   ax,1
         shl   eax,16
-        mov   ax,[0x2f0000+0x900A]
+        mov   ax,[BOOT_VAR+0x900A]
         shr   ax,1
         mov   [MOUSE_X],eax
         pop   eax
@@ -1103,7 +1082,7 @@ set_variables:
 
      ;!! IP 04.02.2005:
         mov   [next_usage_update], 100
-        mov   byte [0xFFFF], 0 ; change task if possible
+        mov   byte [DONT_SWITCH], 0 ; change task if possible
 
         ret
 
@@ -1413,11 +1392,15 @@ draw_num_text:
      mov   eax,[esp+64+32-8+4]
      push  edx                       ; add window start x & y
      mov   edx,[TASK_BASE]
+
+     mov   edi,[CURRENT_TASK]
+     shl   edi,8
+
      mov   ebx,[edx-twdw+WDATA.box.left]
-     add   ebx, [(edx-CURRENT_TASK)*8+SLOT_BASE+APPDATA.wnd_clientbox.left]
+     add   ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
      shl   ebx,16
      add   ebx,[edx-twdw+WDATA.box.top]
-     add   ebx, [(edx-CURRENT_TASK)*8+SLOT_BASE+APPDATA.wnd_clientbox.top]
+     add   ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
      add   eax,ebx
      pop   edx
      mov   ebx,[esp+64+32-12+4]
@@ -1656,7 +1639,6 @@ sys_setup_err:
      mov  [esp+36],dword -1
      ret
 
-
 align 4
 
 sys_getsetup:
@@ -1828,9 +1810,9 @@ msset:
            ret
 
 app_load_cursor:
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb msset
+      ;     add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae msset
            stdcall load_cursor, ebx, ecx
            mov [esp+36], eax
            ret
@@ -2001,7 +1983,7 @@ sys_system:
         ret
 
 sysfn_shutdown:         ; 18.1 = BOOT
-     mov  [0x2f0000+0x9030],byte 0
+     mov  [BOOT_VAR+0x9030],byte 0
   for_shutdown_parameter:
 
      mov  eax,[TASK_COUNT]
@@ -2125,7 +2107,7 @@ sysfn_shutdown_param:   ; 18.9 = system shutdown with param
      jl   exit_for_anyone
      cmp  ebx,4
      jg   exit_for_anyone
-     mov  [0x2f0000+0x9030],bl
+     mov  [BOOT_VAR+0x9030],bl
      jmp  for_shutdown_parameter
 
 sysfn_minimize:         ; 18.10 = minimize window
@@ -2596,7 +2578,7 @@ sys_cpuusage:
     mov    esi,[esp]
     shl    esi,5
     add    esi,window_data + WDATA.box
-    mov    al,[esi+window_data+WDATA.fl_wstate]
+    mov    al,[esi+WDATA.fl_wstate]
     mov    [edi],al
 
     pop    ebx
@@ -2607,9 +2589,6 @@ sys_cpuusage:
     mov    eax,[TASK_COUNT]
     mov    [esp+36],eax
     ret
-
-
-
 
 align 4
 sys_clock:
@@ -2870,7 +2849,7 @@ draw_window_caption:
         mov     ecx,[edi*8+SLOT_BASE+APPDATA.wnd_caption]
         or      ecx,ecx
         jz      @f
-        add     ecx,[edi+twdw+TASKDATA.mem_start]
+        add     ecx,[edi+CURRENT_TASK+TASKDATA.mem_start]
 
         movzx   eax,[edi+window_data+WDATA.fl_wstyle]
         and     al,0x0F
@@ -3343,9 +3322,6 @@ checkpixel:
         pop  edx eax
         ret
 
-uglobal
-  mouse_active  db  0
-endg
 iglobal
   cpustring db '/RD/1/CPU',0
 endg
@@ -3362,43 +3338,41 @@ checkmisc:
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
     mov   ebp, cpustring
-    call   fs_execute               ; SPraid 8.03.2007
-    ;lea   esi,[ebp+6]
-    ;xor   ebx,ebx               ; no parameters
-    ;xor   edx,edx               ; no flags
-    ;call  fs_RamdiskExecute.flags
+    lea   esi,[ebp+6]
+    xor   ebx,ebx               ; no parameters
+    xor   edx,edx               ; no flags
+    call  fs_RamdiskExecute.flags
     mov   [ctrl_alt_del], 0
-  nocpustart:
+
+nocpustart:
     cmp   [mouse_active], 1
     jne   mouse_not_active
     mov   [mouse_active], 0
     xor   edi, edi
-    mov   ecx, [TASK_COUNT]
-   set_mouse_event:
+    mov   ecx,  [TASK_COUNT]
+set_mouse_event:
     add   edi, 256
-    or    [edi+SLOT_BASE+APPDATA.event_mask], dword 00100000b
+    or    [edi+SLOT_BASE+APPDATA.event_mask], dword 100000b
     loop  set_mouse_event
-  mouse_not_active:
 
-
+mouse_not_active:
     cmp   [REDRAW_BACKGROUND],byte 0               ; background update ?
     jz    nobackgr
     cmp    [background_defined], 0
     jz    nobackgr
     mov   [REDRAW_BACKGROUND],byte 2
     call  change_task
-	mov   [draw_data+32 + RECT.left],dword 0
-	mov   [draw_data+32 + RECT.top],dword 0
+    mov   [draw_data+32 + RECT.left],dword 0
+    mov   [draw_data+32 + RECT.top],dword 0
     mov   eax,[ScreenWidth]
     mov   ebx,[ScreenHeight]
-	mov   [draw_data+32 + RECT.right],eax
-	mov   [draw_data+32 + RECT.bottom],ebx
+    mov   [draw_data+32 + RECT.right],eax
+    mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
     mov   [REDRAW_BACKGROUND],byte 0
     mov   [MOUSE_BACKGROUND],byte 0
 
-  nobackgr:
-
+nobackgr:
 
     ; system shutdown request
 
@@ -3411,10 +3385,10 @@ checkmisc:
     cmp  [SYS_SHUTDOWN],dl
     jne  no_mark_system_shutdown
 
-    mov   edx,0x3040
+    mov   edx,OS_BASE+0x3040
     movzx ecx,byte [SYS_SHUTDOWN]
     add   ecx,5
-  markz:
+markz:
     mov   [edx+TASKDATA.state],byte 3
     add   edx,0x20
     loop  markz
@@ -3428,14 +3402,14 @@ checkmisc:
     cmp  [SYS_SHUTDOWN],byte 0
     je   system_shutdown
 
-  noshutdown:
+noshutdown:
 
 
     mov   eax,[TASK_COUNT]                  ; termination
     mov   ebx,TASK_DATA+TASKDATA.state
     mov   esi,1
 
-  newct:
+newct:
     mov   cl,[ebx]
     cmp   cl,byte 3
     jz    terminate
@@ -3448,8 +3422,6 @@ checkmisc:
     jnz   newct
 
     ret
-
-
 
 
 ; redraw screen
@@ -3810,33 +3782,32 @@ set_io_access_rights:
 
      pushad
 
-     mov   edi,[CURRENT_TASK]
-     imul  edi,tss_step
-     add   edi,tss_data+128
-;     add   edi,128
+     mov edi, tss._io_map_0
 
-     mov   ecx,eax
-     and   ecx,7    ; offset in byte
+;     mov   ecx,eax
+;     and   ecx,7    ; offset in byte
 
-     shr   eax,3    ; number of byte
-     add   edi,eax
+;     shr   eax,3    ; number of byte
+;     add   edi,eax
 
-     mov   ebx,1
-     shl   ebx,cl
+;     mov   ebx,1
+;     shl   ebx,cl
 
      cmp   ebp,0                ; enable access - ebp = 0
      jne   siar1
 
-     not   ebx
-     and   [edi],byte bl
+;     not   ebx
+;     and   [edi],byte bl
+     btr [edi], eax
 
      popad
 
      ret
 
-   siar1:
+siar1:
 
-     or    [edi],byte bl        ; disable access - ebp = 1
+     bts [edi], eax
+  ;  or    [edi],byte bl        ; disable access - ebp = 1
 
      popad
 
@@ -3862,7 +3833,7 @@ r_f_port_area:
      je    rpal2
      cmp   esi,255            ; max reserved
      jae   rpal1
-   rpal3:
+ rpal3:
      mov   edi,esi
      shl   edi,4
      add   edi,RESERVED_PORTS
@@ -3872,7 +3843,7 @@ r_f_port_area:
      jae   rpal1
 ;     jb    rpal4
 ;     jmp   rpal1
-   rpal4:
+ rpal4:
 
      dec   esi
      jnz   rpal3
@@ -4063,7 +4034,7 @@ syscall_putimage:                       ; PutImage
 
      mov   edx,ecx
      mov   ecx,ebx
-        lea     ebx, [eax+std_application_base_address]
+     mov   ebx, eax
 
 sys_putimage:
      test  ecx,0x80008000
@@ -4075,11 +4046,10 @@ sys_putimage:
   .exit:
      ret
  @@:
-        mov     edi,[CURRENT_TASK]
-        shl     edi,8
-        add     dx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     edi,[current_slot]
+        add     dx,word[edi+APPDATA.wnd_clientbox.top]
         rol     edx,16
-        add     dx,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        add     dx,word[edi+APPDATA.wnd_clientbox.left]
         rol     edx,16
   .forced:
         push    ebp esi 0
@@ -4105,11 +4075,11 @@ sys_putimage_bpp:
         jmp     [draw_pointer]
 
 syscall_putimage_palette:
-        lea     edi, [esi+std_application_base_address]
+        mov     edi, esi
         mov     esi, edx
         mov     edx, ecx
         mov     ecx, ebx
-        lea     ebx, [eax+std_application_base_address]
+        mov     ebx, eax
 sys_putimage_palette:
 ; ebx = pointer to image
 ; ecx = [xsize]*65536 + [ysize]
@@ -4178,12 +4148,11 @@ putimage_get32bpp:
 ; edi color
 
 __sys_drawbar:
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     eax,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ecx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        add     edx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     esi,[current_slot]
+        add     eax,[esi+APPDATA.wnd_clientbox.left]
+        add     ecx,[esi+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+APPDATA.wnd_clientbox.top]
+        add     edx,[esi+APPDATA.wnd_clientbox.top]
   .forced:
     inc   [mouse_pause]
 ;        call    [disable_mouse]
@@ -4712,10 +4681,9 @@ syscall_setpixel:                       ; SetPixel
      mov   edx,[TASK_BASE]
      add   eax,[edx-twdw+WDATA.box.left]
      add   ebx,[edx-twdw+WDATA.box.top]
-        mov     edi,[CURRENT_TASK]
-        shl     edi,8
-        add     eax,[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ebx,[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     edi,[current_slot]
+        add     eax,[edi+APPDATA.wnd_clientbox.left]
+        add     ebx,[edi+APPDATA.wnd_clientbox.top]
      xor   edi,edi ; no force
 ;     mov   edi,1
      call  [disable_mouse]
@@ -4725,20 +4693,19 @@ align 4
 
 syscall_writetext:                      ; WriteText
 
-     mov   edi,[TASK_BASE]
-     mov   ebp,[edi-twdw+WDATA.box.left]
-        push    esi
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-     shl   ebp,16
-     add   ebp,[edi-twdw+WDATA.box.top]
-        add     bp,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        pop     esi
-     add   ecx,[edi+TASKDATA.mem_start]
-     add   eax,ebp
-     xor   edi,edi
-     jmp   dtext
+        mov   edi,[TASK_BASE]
+        mov   ebp,[edi-twdw+WDATA.box.left]
+        push  esi
+        mov   esi,[current_slot]
+        add   ebp,[esi+APPDATA.wnd_clientbox.left]
+        shl   ebp,16
+        add   ebp,[edi-twdw+WDATA.box.top]
+        add   bp,word[esi+APPDATA.wnd_clientbox.top]
+        pop   esi
+        add   ecx,[edi+TASKDATA.mem_start]
+        add   eax,ebp
+        xor   edi,edi
+        jmp   dtext
 
 align 4
 
@@ -4768,10 +4735,9 @@ syscall_drawrect:                       ; DrawRect
      shr   eax,16
      movzx edx,bx
      shr   ebx,16
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     eax,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        mov     esi,[current_slot]
+        add     eax,[esi+APPDATA.wnd_clientbox.left]
+        add     ebx,[esi+APPDATA.wnd_clientbox.top]
      add   ecx,eax
      add   edx,ebx
      jmp   [drawbar]
@@ -4828,7 +4794,7 @@ syscall_getpixel:                       ; GetPixel
      div   ecx
      mov   ebx,edx
      xchg  eax,ebx
-     call  dword [0xe024]
+     call  dword [GETPIXEL]
      mov   [esp+36],ecx
      ret
 
@@ -4850,17 +4816,16 @@ syscall_drawline:                       ; DrawLine
      mov   edi,[TASK_BASE]
      movzx edx,word[edi-twdw+WDATA.box.left]
      mov   ebp,edx
-        mov     esi,[CURRENT_TASK]
-        shl     esi,8
-        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-        add     dx,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.left]
+        mov     esi,[current_slot]
+        add     ebp,[esi+APPDATA.wnd_clientbox.left]
+        add     dx,word[esi+APPDATA.wnd_clientbox.left]
      shl   edx,16
      add   ebp,edx
      movzx edx,word[edi-twdw+WDATA.box.top]
      add   eax,ebp
      mov   ebp,edx
-        add     ebp,[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-        add     dx,word[esi+SLOT_BASE+APPDATA.wnd_clientbox.top]
+        add     ebp,[esi+APPDATA.wnd_clientbox.top]
+        add     dx,word[esi+APPDATA.wnd_clientbox.top]
      shl   edx,16
      xor   edi,edi
      add   edx,ebp
@@ -4961,7 +4926,8 @@ sys_apm:
     mov    [esp + 36], dword 8    ; 32-bit protected-mode interface not supported
     ret
 
-@@:    xchg    eax, ecx
+@@:
+    xchg    eax, ecx
     xchg    ebx, ecx
 
     cmp    al, 3
@@ -4973,7 +4939,22 @@ sys_apm:
     mov    [esp + 32], eax
     ret
 
-@@:    call    pword [apm_entry]    ; call APM BIOS
+@@:
+
+    mov esi, [master_tab+(OS_BASE shr 20)]
+    xchg [master_tab], esi
+    push esi
+    mov edi, cr3
+    mov cr3, edi                 ;flush TLB
+
+    call    pword [apm_entry]    ; call APM BIOS
+
+    xchg eax, [esp]
+    mov [master_tab], eax
+    mov eax, cr3
+    mov cr3, eax
+    pop eax
+
     mov    [esp + 8 ], edi
     mov    [esp + 12], esi
     mov    [esp + 24], ebx
@@ -4983,6 +4964,8 @@ sys_apm:
     setc    al
     and    [esp + 56], byte 0xfe
     or    [esp + 56], al
+
+
     ret
 ; -----------------------------------------
 
@@ -4993,166 +4976,63 @@ undefined_syscall:                      ; Undefined system call
      mov   [esp+36],dword -1
      ret
 
-
-;clear_busy_flag_at_caller:
-
-;      push  edi
-
-;      mov   edi,[CURRENT_TASK]    ; restore processes tss pointer in gdt, busyfl?
-;      imul  edi,8
-;      mov   [edi+gdts+ tss0 +5], word 01010000b *256 +11101001b
-
-;      pop   edi
-
-;      ret
-
-
-keymap:
-
-     db   '6',27
-     db   '1234567890-=',8,9
-     db   'qwertyuiop[]',13
-     db   '~asdfghjkl;',39,96,0,'\zxcvbnm,./',0,'45 '
-     db   '@234567890123',180,178,184,'6',176,'7'
-     db   179,'8',181,177,183,185,182
-     db   'AB<D',255,'FGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-
-keymap_shift:
-
-     db   '6',27
-     db   '!@#$%^&*()_+',8,9
-     db   'QWERTYUIOP{}',13
-     db   '~ASDFGHJKL:"~',0,'|ZXCVBNM<>?',0,'45 '
-     db   '@234567890123',180,178,184,'6',176,'7'
-     db   179,'8',181,177,183,185,182
-     db   'AB>D',255,'FGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-
-keymap_alt:
-
-     db   ' ',27
-     db   ' @ $  {[]}\ ',8,9
-     db   '            ',13
-     db   '             ',0,'           ',0,'4',0,' '
-     db   '             ',180,178,184,'6',176,'7'
-     db   179,'8',181,177,183,185,182
-     db   'ABCD',255,'FGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-     db   'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-
-; device irq owners
-uglobal
-irq_owner:       ; process id
-
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-     dd   0x0
-endg
-
-
-; on irq read ports
-uglobal
-  irq00read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq01read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq02read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq03read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq04read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq05read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq06read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq07read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq08read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq09read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq10read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq11read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq12read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq13read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq14read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-  irq15read  dd  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-endg
-
-; status
-uglobal
-  hd1_status                  dd 0x0  ; 0 - free : other - pid
-  application_table_status    dd 0x0  ; 0 - free : other - pid
-endg
-
-; device addresses
-uglobal
-  mididp     dd 0x0
-  midisp     dd 0x0
-
-  cdbase     dd 0x0
-  cdid       dd 0x0
-
-  hdbase              dd   0x0  ; for boot 0x1f0
-  hdid                dd   0x0
-  hdpos               dd   0x0  ; for boot 0x1
-  fat32part           dd   0x0  ; for boot 0x1
-
-  ;part2_ld            dd   0x0
-
-;* start code - Mario79
-mouse_pause         dd   0
-MouseTickCounter    dd   0
-ps2_mouse_detected  db   0
-com1_mouse_detected db   0
-com2_mouse_detected db   0
-;* end code - Mario79
-
-wraw_bacground_select db 0
-  lba_read_enabled    dd   0x0  ; 0 = disabled , 1 = enabled
-  pci_access_enabled  dd   0x0  ; 0 = disabled , 1 = enabled
-
-  sb16       dd 0x0
-
-  buttontype         dd 0x0
-  windowtypechanged  dd 0x0
-
 align 4
-  cpu_caps    dd 4 dup(0)
-  pg_data  PG_DATA
-  heap_test   dd ?
-  hd_entries  rd 1     ;unused ? 0xfe10
-endg
+system_shutdown:          ; shut down the system
 
-iglobal
-  keyboard   dd 0x1
-  sound_dma  dd 0x1
-  syslang    dd 0x1
-endg
+           cmp byte [BOOT_VAR+0x9030], 1
+           jne @F
+           ret
+@@:
+           call stop_all_services
+           push 3                ; stop playing cd
+           pop  eax
+           call sys_cd_audio
 
-if __DEBUG__ eq 1
-  include_debug_strings
-end if
+yes_shutdown_param:
+           cli
 
-IncludeIGlobals
-endofcode:
-IncludeUGlobals
-uglobals_size = $ - endofcode
-diff16 "end of kernel code",0,$
+           mov  eax, kernel_file ; load kernel.mnt to 0x8000:0
+           push 12
+           pop  esi
+           xor  ebx,ebx
+           or   ecx,-1
+           mov  edx, OS_BASE+0x80000
+           call fileread
+
+           mov  esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
+           mov  edi,OS_BASE+0x40000
+           mov  ecx,1000
+           rep  movsb
+
+           mov  esi,OS_BASE+0x2F0000    ; restore 0x0 - 0xffff
+           mov  edi, OS_BASE
+           mov  ecx,0x10000/4
+           cld
+           rep movsd
+
+           call restorefatchain
+
+           mov al, 0xFF
+           out 0x21, al
+           out 0xA1, al
+
+           mov  word [OS_BASE+0x467+0],pr_mode_exit
+           mov  word [OS_BASE+0x467+2],0x1000
+
+           mov  al,0x0F
+           out  0x70,al
+           mov  al,0x05
+           out  0x71,al
+
+           mov  al,0xFE
+           out  0x64,al
+           hlt
+
+
+include "data32.inc"
 
 __REV__ = __REV
 
-diff10 "revision",0,__REV__
+uglobals_size = $ - endofcode
+diff16 "end of kernel code",0,$
+

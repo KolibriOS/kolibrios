@@ -596,7 +596,7 @@ socket_read_packet:
 
 .startcopy:
     mov     edi, ecx					   ;
-    add     edi, std_application_base_address		   ; get data pointer to buffer in application
+ ;   add     edi, std_application_base_address              ; get data pointer to buffer in application
 
     mov     esi, ebx					   ;
     add     esi, SOCKETHEADERSIZE			   ; we dont need to copy the header

@@ -6,162 +6,6 @@ $Revision$
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-tmp_page_tab      equ HEAP_BASE
-
-align 4
-proc mem_test
-
-           mov eax, cr0
-           and eax, not (CR0_CD+CR0_NW)
-           or eax, CR0_CD         ;disable caching
-           mov cr0, eax
-           wbinvd                 ;invalidate cache
-
-           xor edi, edi
-           mov ebx, 'TEST'
-@@:
-           add edi, 0x400000
-           xchg ebx, dword [edi]
-           cmp dword [edi], 'TEST'
-           xchg ebx, dword [edi]
-           je @b
-           mov [MEM_AMOUNT], edi
-
-           and eax, not (CR0_CD+CR0_NW)  ;enable caching
-           mov cr0, eax
-           mov eax, edi
-           mov [LFBSize], 0x00800000
-           ret
-endp
-
-align 4
-proc init_mem
-
-           mov eax, [MEM_AMOUNT]
-
-           mov [pg_data.mem_amount], eax
-           mov [pg_data.kernel_max], eax
-
-           shr eax, 12
-           mov edx, eax
-           mov [pg_data.pages_count], eax
-           mov [pg_data.kernel_pages], eax
-
-           shr eax, 3
-           mov [pg_data.pagemap_size], eax
-
-           shr edx, 10
-           cmp edx, 3
-           ja @f
-           inc edx       ;at least 4Mb for kernel heap
-@@:
-           mov [pg_data.kernel_tables], edx
-
-           xor eax, eax
-           mov edi, sys_pgdir
-           mov ecx, 2048
-           cld
-           rep stosd
-
-           mov edx, sys_pgdir
-           bt [cpu_caps], CAPS_PSE
-           jnc .no_PSE
-
-           mov ebx, cr4
-           or ebx, CR4_PSE
-           mov eax, PG_LARGE+PG_SW
-           bt [cpu_caps], CAPS_PGE
-           jnc @F
-           or eax, PG_GLOBAL
-           or ebx, CR4_PGE
-@@:
-           mov cr4, ebx
-           sub [pg_data.kernel_tables], 2
-
-           mov [edx], eax
-           add eax, 0x00400000
-           mov [edx+4], eax
-           add edx, 8
-
-           mov eax, 0x800000+PG_SW
-           mov ecx, (HEAP_BASE-0x800000)/4096
-           jmp .map_low
-.no_PSE:
-           mov eax, PG_SW
-           mov ecx, HEAP_BASE/4096
-.map_low:
-           mov edi, tmp_page_tab
-@@:                                   ;
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz @B
-
-           mov ecx, [pg_data.kernel_tables]
-           shl ecx, 10
-           xor eax, eax
-           rep stosd
-
-           mov ecx, [pg_data.kernel_tables]
-           mov eax, tmp_page_tab+PG_SW
-           mov edi, edx
-
-.map_kernel_tabs:
-
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz .map_kernel_tabs
-
-           mov dword [sys_pgdir+(page_tabs shr 20)], sys_pgdir+PG_SW
-           ret
-endp
-
-align 4
-proc init_page_map
-
-           mov edi, sys_pgmap
-           mov ecx, (HEAP_BASE/4096)/32      ;384/4
-           mov ebx, ecx
-           xor eax,eax
-           cld
-           rep stosd
-
-           not eax
-           mov ecx, [pg_data.pagemap_size]
-           sub ecx, ebx
-           shr ecx, 2
-           rep stosd
-
-           lea edi, [sys_pgmap+ebx*4]         ;+384
-           mov edx, [pg_data.pages_count]
-           mov ecx, [pg_data.kernel_tables]
-           add ecx, (HEAP_BASE/4096) and 31
-           sub edx, HEAP_BASE/4096
-           sub edx, ecx
-           mov [pg_data.pages_free], edx
-
-           xor eax, eax
-           mov ebx, ecx
-           shr ecx, 5
-           rep stosd
-
-           not eax
-           mov ecx, ebx
-           and ecx, 31
-           shl eax, cl
-           mov [page_start], edi;           sys_pgmap+384
-           stosd
-
-           mov ebx, sys_pgmap
-           add ebx, [pg_data.pagemap_size]
-           mov [page_end], ebx
-
-           mov [pg_data.pg_mutex], 0
-
-           ret
-endp
-
 align 4
 proc alloc_page
 
@@ -400,7 +244,7 @@ proc init_LFB
 @@:
            mov edx, LFB_BASE
            mov esi, [LFBAddress]
-           mov edi, [LFBSize]
+           mov edi, 0x00800000
            mov dword [exp_lfb+4], edx
 
            shr edi, 12
@@ -410,10 +254,9 @@ proc init_LFB
            bt [cpu_caps], CAPS_PSE
            jnc .map_page_tables
            or esi, PG_LARGE+PG_UW
-           shr edx, 20
-           mov ecx, edx
+           mov edx, sys_pgdir+(LFB_BASE shr 20)
 @@:
-           mov [sys_pgdir+edx], esi
+           mov [edx], esi
            add edx, 4
            add esi, 0x00400000
            dec edi
@@ -421,7 +264,7 @@ proc init_LFB
 
            bt [cpu_caps], CAPS_PGE
            jnc @F
-           or dword [sys_pgdir+ecx], PG_GLOBAL
+           or dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
 @@:
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
@@ -430,11 +273,12 @@ proc init_LFB
 
 .map_page_tables:
 
+@@:
            call alloc_page
            stdcall map_page_table, edx, eax
            add edx, 0x00400000
            dec edi
-           jnz .map_page_tables
+           jnz @B
 
            mov eax, [LFBAddress]
            mov edi, page_tabs + (LFB_BASE shr 10)
@@ -465,12 +309,11 @@ proc new_mem_resize stdcall, new_size:dword
            and edi,not 4095
            mov [new_size], edi
 
-           mov edx,[CURRENT_TASK]
-           shl edx,8
-           cmp [SLOT_BASE+APPDATA.heap_base+edx],0
+           mov edx,[current_slot]
+           cmp [edx+APPDATA.heap_base],0
            jne .exit
 
-           mov esi, [SLOT_BASE+APPDATA.mem_size+edx]
+           mov esi, [edx+APPDATA.mem_size]
            add esi, 4095
            and esi, not 4095
 
@@ -494,16 +337,13 @@ proc new_mem_resize stdcall, new_size:dword
            jb @B
 
 .update_size:
-        mov     ebx, [new_size]
-        call    update_mem_size
+           mov     ebx, [new_size]
+           call    update_mem_size
 
            xor eax, eax
            dec [pg_data.pg_mutex]
            ret
-
 .expand:
-           add edi, new_app_base
-           add esi, new_app_base
 
            push esi
            push edi
@@ -567,14 +407,14 @@ proc new_mem_resize stdcall, new_size:dword
 endp
 
 update_mem_size:
-; in: edx = slot shl 8
+; in: edx = slot base
 ;     ebx = new memory size
 ; destroys eax,ecx,edx
 
-           mov    [SLOT_BASE+APPDATA.mem_size+edx],ebx
+           mov    [APPDATA.mem_size+edx],ebx
 ;search threads and update
 ;application memory size infomation
-           mov    ecx,[SLOT_BASE+APPDATA.dir_table+edx]
+           mov    ecx,[APPDATA.dir_table+edx]
            mov    eax,2
 
 .search_threads:
@@ -610,53 +450,75 @@ get_pg_addr:
            and eax, 0xFFFFF000
            ret
 
+
 align 4
 proc page_fault_handler
-           pushad
 
+        .err_code equ ebp+32
+        .err_addr equ ebp-4
+
+           pushad
            mov ebp, esp
            mov eax, cr2
            push eax
-           push ds
-           push es
 
-           mov ax, 0x10
+           mov ax, app_data
            mov ds, ax
            mov es, ax
 
            inc [pg_data.pages_faults]
 
-           mov ebx, [ebp-4]
+;     push eax
+;     push edx
+;     mov edx, 0x400   ;bochs
+;     mov al,0xff      ;bochs
+;     out dx, al       ;bochs
+;     pop edx
+;     pop eax
 
-           cmp ebx, 0x80000000
-           jae .user_space
+           mov ebx, [.err_addr]
+           mov eax, [.err_code]
 
-           cmp ebx, app_page_tabs
-           jae .alloc
+           cmp ebx, OS_BASE
+           jb .user_space      ;страница в памяти приложения ;
 
            cmp ebx, page_tabs
-           jae .tab_space
+           jb .kernel_space    ;страница в памяти ядра
 
-           cmp ebx, 0x7DC00000
-           jae .lfb_addr
+           cmp ebx, kernel_tabs
+           jb .alloc;.app_tabs ;таблицы страниц приложения ;
+                               ;просто создадим одну
 
-           jmp .kernel_space
+           cmp ebx, LFB_BASE
+           jb .core_tabs       ;таблицы страниц ядра
+                               ;Ошибка
+.lfb:
+                               ;область LFB
+                               ;Ошибка
+           jmp .fail
 
+align 4
 .user_space:
+           test eax, PG_MAP
+           jnz .err_access     ;Страница присутствует
+                               ;Ошибка доступа ?
+
            shr ebx, 12
            mov ecx, ebx
            shr ecx, 10
            mov edx, [master_tab+ecx*4]
-           test edx, 1
-           jz .fail
+           test edx, PG_MAP
+           jz .fail            ;таблица страниц не создана
+                               ;неверный адрес в программе
 
            mov eax, [page_tabs+ebx*4]
            test eax, 2
-           jz .fail
+           jz .fail            ;адрес не зарезервирован для ;
+                               ;использования. Ошибка
 .alloc:
            call alloc_page
            and eax, eax
-           jz .exit
+           jz .fail
 
            stdcall map_page,[ebp-4],eax,dword PG_UW
 
@@ -667,49 +529,76 @@ proc page_fault_handler
            cld
            rep stosd
 .exit:
-           pop es
-           pop ds
            mov esp, ebp
            popad
            add esp, 4
            iretd
+
+.err_access:
+;никогда не происходит
+           jmp .fail
+
+.kernel_space:
+           test eax, PG_MAP
+           jz .fail        ;страница не присутствует
+
+           test eax, 4     ;U/S
+           jnz .fail       ;приложение обратилось к памяти
+                           ;ядра
+           test eax, 8
+           jnz .fail       ;установлен зарезервированный бит
+                           ;в таблицах страниц. добавлено в P4/Xeon
+
+;попытка записи в защищённую страницу ядра
+
+           cmp ebx, tss._io_map_0
+           jb .fail
+
+           cmp ebx, tss._io_map_0+8192
+           jae .fail
+
+; io permission map
+; copy-on-write protection
+
+           call alloc_page
+           and eax, eax
+           jz .fail
+
+           push eax
+           stdcall map_page,[ebp-4],eax,dword PG_SW
+           pop eax
+           mov edi, [.err_addr]
+           and edi, -4096
+           lea esi, [edi+(not tss._io_map_0)+1]; -tss._io_map_0
+
+           mov ebx, esi
+           shr ebx, 12
+           mov edx, [current_slot]
+           or eax, PG_SW
+           mov [edx+APPDATA.io_map+ebx*4], eax
+
+           add esi, [default_io_map]
+           mov ecx, 4096/4
+           cld
+           rep movsd
+           jmp .exit
+
+
+;не обрабатываем. Ошибка
+
+.core_tabs:
 .fail:
-           pop es
-           pop ds
            mov esp, ebp
            popad
            add esp, 4
+
+;           iretd
 
            save_ring3_context     ;debugger support
 
            mov bl, 14
            jmp exc_c
            iretd
-
-.kernel_space:
-;           shr ebx, 12
-;           mov eax, [page_tabs+ebx*4]
-;           shr ebx, 10
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
-.old_addr:
-;           shr ebx, 12
-;           mov eax, [page_tabs+ebx*4]
-;           shr ebx, 10
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
-.lfb_addr:
-;           shr ebx, 22
-;           ;mov ecx, [sys_page_dir]
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
-.tab_space:
-;           shr ebx, 12
-;           mov eax, [page_tabs+ebx*4]
-;           shr ebx, 10
-;           ;mov ecx, [sys_page_dir]
-;           mov eax, [master_tab+ebx*4]
-           jmp .exit
 endp
 
 align 4
@@ -845,15 +734,12 @@ sys_IPC:
 align 4
 proc set_ipc_buff
 
-           mov  eax,[CURRENT_TASK]
-           shl  eax,8
-           add  eax, SLOT_BASE
+           mov  eax,[current_slot]
            pushf
            cli
-           mov  [eax+0xA0],ebx     ;set fields in extended information area
-           mov  [eax+0xA4],ecx
+           mov  [eax+APPDATA.ipc_start],ebx     ;set fields in extended information area
+           mov  [eax+APPDATA.ipc_size],ecx
 
-           add ebx,  new_app_base
            add ecx, ebx
            add ecx, 4095
            and ecx, not 4095
@@ -890,7 +776,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            jz   .no_ipc_area
 
            mov ebx, edi
-           add edi, new_app_base
+       ;    add edi, new_app_base
            and ebx, 0xFFF
            mov [dst_offset], ebx
 
@@ -924,7 +810,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov [edi+4], ecx
            add edi, 8
            mov esi, [msg_addr]
-           add esi, new_app_base
+       ;    add esi, new_app_base
            cld
            rep movsb
 
@@ -982,9 +868,9 @@ endp
 align 4
 sysfn_meminfo:
 
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+        ;   add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
 
            mov eax, [pg_data.pages_count]
            mov [ebx], eax
@@ -1030,26 +916,23 @@ new_services:
 @@:
            cmp eax, 13
            ja @f
-           add ebx, new_app_base
            stdcall user_free, ebx
            mov [esp+36], eax
            ret
 @@:
            cmp eax, 14
            ja @f
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+           cmp ebx, OS_BASE
+           jae .fail
            stdcall get_event_ex, ebx, ecx
            mov [esp+36], eax
            ret
 @@:
            cmp eax, 15
            ja @f
-           mov ecx, [CURRENT_TASK]
-           shl ecx, 8
-           mov eax, [ecx+SLOT_BASE+APPDATA.fpu_handler]
-           mov [ecx+SLOT_BASE+APPDATA.fpu_handler], ebx
+           mov ecx, [current_slot]
+           mov eax, [ecx+APPDATA.fpu_handler]
+           mov [ecx+APPDATA.fpu_handler], ebx
            mov [esp+36], eax
            ret
 @@:
@@ -1058,9 +941,8 @@ new_services:
 
            test ebx, ebx
            jz .fail
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+           cmp ebx, OS_BASE
+           jae .fail
            stdcall get_service, ebx
            mov [esp+36], eax
            ret
@@ -1073,18 +955,16 @@ new_services:
 @@:
            cmp eax, 18
            ja @f
-           mov ecx, [CURRENT_TASK]
-           shl ecx, 8
-           mov eax, [ecx+SLOT_BASE+APPDATA.sse_handler]
-           mov [ecx+SLOT_BASE+APPDATA.sse_handler], ebx
+           mov ecx, [current_slot]
+           mov eax, [ecx+APPDATA.sse_handler]
+           mov [ecx+APPDATA.sse_handler], ebx
            mov [esp+36], eax
            ret
 @@:
            cmp eax, 19
            ja @f
-           add ebx, new_app_base
-           cmp ebx, new_app_base
-           jb .fail
+           cmp ebx, OS_BASE
+           jae .fail
            stdcall load_library, ebx
            mov [esp+36], eax
            ret
@@ -1101,144 +981,6 @@ new_services:
            xor eax, eax
            mov [esp+36], eax
            ret
-
-align 4
-proc strncmp stdcall, str1:dword, str2:dword, count:dword
-
-          mov ecx,[count]
-          jecxz .end
-
-          mov ebx,ecx
-
-          mov edi,[str1]
-          mov esi,edi
-          xor eax,eax
-          repne scasb
-          neg ecx             ; cx = count - strlen
-          add ecx,ebx         ; strlen + count - strlen
-
-.okay:
-          mov edi,esi
-          mov esi,[str2]
-          repe cmpsb
-          mov al,[esi-1]
-          xor ecx,ecx
-
-          cmp al,[edi-1]
-          ja .str2_big
-          je .end
-
-.str1_big:
-          sub ecx,2
-
-.str2_big:
-          not ecx
-.end:
-          mov eax,ecx
-          ret
-endp
-
-align 4
-proc test_cpu
-           locals
-              cpu_type   dd ?
-              cpu_id     dd ?
-              cpu_Intel  dd ?
-              cpu_AMD    dd ?
-           endl
-
-           mov [cpu_type], 0
-           xor eax, eax
-           mov [cpu_caps], eax
-           mov [cpu_caps+4], eax
-
-           pushfd
-           pop eax
-           mov ecx, eax
-           xor eax, 0x40000
-           push eax
-           popfd
-           pushfd
-           pop eax
-           xor eax, ecx
-           mov [cpu_type], CPU_386
-           jz .end_cpuid
-           push ecx
-           popfd
-
-           mov [cpu_type], CPU_486
-           mov eax, ecx
-           xor eax, 0x200000
-           push eax
-           popfd
-           pushfd
-           pop eax
-           xor eax, ecx
-           je .end_cpuid
-           mov [cpu_id], 1
-
-           xor eax, eax
-           cpuid
-           mov [cpu_vendor], ebx
-           mov [cpu_vendor+4], edx
-           mov [cpu_vendor+8], ecx
-           cmp ebx, dword [intel_str]
-           jne .check_AMD
-           cmp edx, dword [intel_str+4]
-           jne .check_AMD
-           cmp ecx, dword [intel_str+8]
-           jne .check_AMD
-           mov [cpu_Intel], 1
-           cmp eax, 1
-           jl .end_cpuid
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-
-           shr eax, 8
-           and eax, 0x0f
-           ret
-.end_cpuid:
-           mov eax, [cpu_type]
-           ret
-
-.check_AMD:
-           cmp ebx, dword [AMD_str]
-           jne .unknown
-           cmp edx, dword [AMD_str+4]
-           jne .unknown
-           cmp ecx, dword [AMD_str+8]
-           jne .unknown
-           mov [cpu_AMD], 1
-           cmp eax, 1
-           jl .unknown
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-           shr eax, 8
-           and eax, 0x0f
-           ret
-.unknown:
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-           shr eax, 8
-           and eax, 0x0f
-           ret
-endp
-
-MEM_WB     equ 6               ;write-back memory
-MEM_WC     equ 1               ;write combined memory
-MEM_UC     equ 0               ;uncached memory
 
 align 4
 proc init_mtrr
@@ -1314,6 +1056,43 @@ proc set_mtrr stdcall, reg:dword,base:dword,size:dword,mem_type:dword
            ret
 endp
 
+
+align 4
+proc strncmp stdcall, str1:dword, str2:dword, count:dword
+
+          mov ecx,[count]
+          jecxz .end
+
+          mov ebx,ecx
+
+          mov edi,[str1]
+          mov esi,edi
+          xor eax,eax
+          repne scasb
+          neg ecx             ; cx = count - strlen
+          add ecx,ebx         ; strlen + count - strlen
+
+.okay:
+          mov edi,esi
+          mov esi,[str2]
+          repe cmpsb
+          mov al,[esi-1]
+          xor ecx,ecx
+
+          cmp al,[edi-1]
+          ja .str2_big
+          je .end
+
+.str1_big:
+          sub ecx,2
+
+.str2_big:
+          not ecx
+.end:
+          mov eax,ecx
+          ret
+endp
+
 align 4
 proc stall stdcall, delay:dword
            push ecx
@@ -1340,106 +1119,6 @@ proc stall stdcall, delay:dword
            pop ecx
            ret
 endp
-
-iglobal
-align 4
-  intel_str    db "GenuineIntel",0
-  AMD_str      db "AuthenticAMD",0
-endg
-
-uglobal
-align 16
-  irq_tab           rd 16
-
-  MEM_FreeSpace     rd 1
-
-  ipc_tmp           rd 1
-  ipc_pdir          rd 1
-  ipc_ptab          rd 1
-
-  proc_mem_map      rd 1
-  proc_mem_pdir     rd 1
-  proc_mem_tab      rd 1
-
-  tmp_task_pdir     rd 1
-  tmp_task_ptab     rd 1
-
-  fdd_buff          rd 1
-  LFBSize           rd 1
-
-  stall_mcs         rd 1
-;;CPUID information
-
-  cpu_vendor        rd 3
-  cpu_sign          rd 1
-  cpu_info          rd 1
-
-;;;;;   cursors data
-
-align 16
-cur_saved_data   rb 4096
-
-def_cursor       rd 1
-hw_cursor        rd 1
-
-scr_width        rd 1
-scr_height       rd 1
-
-cur_def_interl   rd 1
-cur_saved_base   rd 1
-cur_saved_interl rd 1
-cur_saved_w      rd 1
-cur_saved_h      rd 1
-
-endg
-
-uglobal
-align 16
-   fpu_data:
-                   rb 512
-
-   mst MEM_STATE
-
-   mem_block_map   rb 512
-   event_map       rb 64
-   mem_block_list  rd 64
-   mem_block_mask  rd 2
-
-   srv.fd          rd 1
-   srv.bk          rd 1
-
-   mem_used.fd     rd 1
-   mem_used.bk     rd 1
-
-   mem_block_arr   rd 1
-   mem_block_start rd 1
-   mem_block_end   rd 1
-
-   heap_mutex      rd 1
-   heap_size       rd 1
-   heap_free       rd 1
-   heap_blocks     rd 1
-   free_blocks     rd 1
-
-   page_start      rd 1
-   page_end        rd 1
-   events          rd 1
-   event_start     rd 1
-   event_end       rd 1
-   event_uid       rd 1
-   sys_page_map    rd 1
-   os_stack        rd 1
-endg
-
-if 0
-     push eax
-     push edx
-     mov edx, 0x400   ;bocsh
-     mov al,0xff      ;bocsh
-     out dx, al       ;bocsh
-     pop edx
-     pop eax
-end if
 
 align 4
 k_strrchr:
@@ -1660,3 +1339,15 @@ k_strlen:
 	ret
 
 end if
+
+if 0
+     push eax
+     push edx
+     mov edx, 0x400   ;bochs
+     mov al,0xff      ;bochs
+     out dx, al       ;bochs
+     pop edx
+     pop eax
+end if
+
+

@@ -992,7 +992,7 @@ init_malloc:
            mov [eax+12], eax
            add eax, 16
            cmp eax, mst.smallbins+512
-           jl @B
+           jb @B
 
            ret
 

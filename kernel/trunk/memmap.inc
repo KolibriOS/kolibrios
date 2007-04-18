@@ -1,4 +1,3 @@
-$Revision$
 ;
 ;   MEMORY MAP
 ;
@@ -25,7 +24,9 @@ $Revision$
 ;
 ;   Runtime:
 ;
-;   0000  ->   1FFF   window_data   - 256 entries
+; 0x00000000 -> 0x7FFFFFFF  application 2Gb
+
+; 0x80000000 -> 1FFF   window_data   - 256 entries
 ;
 ;         0000 dword  x start
 ;         0004 dword  y start
@@ -120,106 +121,119 @@ $Revision$
 ;   FFF5  byte        1 do not draw pointer
 ;   FFFF  byte        do not change task for 1/100 sec.
 ;
-;  10000  ->  3DBFF   kernel, 32-bit run-time code (up to 183 Kb)
-;  3DC00  ->  3EBFF   stack at boot time (4Kb)
-;  3EC00  ->  3F5FF   basic text font II
-;  3F600  ->  3FFFF   basic text font I
-;  40000  ->  4FFFF   data of retrieved disks and partitions (Mario79)
+; 0x80010000 ->  3DBFF   kernel, 32-bit run-time code (up to 183 Kb)
+; 0x8003DC00 ->  3EBFF   stack at boot time (4Kb)
+; 0x8003EC00 ->  3F5FF   basic text font II
+; 0x8003F600 ->  3FFFF   basic text font I
+; 0x80040000 ->  4FFFF   data of retrieved disks and partitions (Mario79)
 
-;  50000  ->  50FFF   main page directory
-;  50200  ->  5FFFF   pages bitmap
+; 0x80050000 ->  50FFF   main page directory
+; 0x80050200 ->  5FFFF   pages bitmap
 
-;  60000  ->  7FFFF   free (128 Kb)
-;  80000  ->  8FFFF   additional app info, in 256 byte steps - 256 entries
+; 0x80060000 ->  7FFFF   free (128 Kb)
+; 0x80080000 ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
-;           00  11db  name of app running
-;           10 108db  floating point unit save area
-;           7f byte   0= no fpu saved ,  1= fpu saved to 0x10 -> restore
-;           80 dword  address of random shaped window area
-;           84 byte   shape area scale
-;           88 dword  free
-;           8C dword  application memory size
-;           90 dword  window X position save
-;           94 dword  window Y position save
-;           98 dword  window X size save
-;           9C dword  window Y size save
-;           A0 dword  IPC memory start
-;           A4 dword  IPC memory size
-;           A8 dword  event bits: mouse, stack,..
-;           AC dword  0 or debugger slot
-;           B0 dword  free
-;           B4  byte  keyboard mode: 0 = keymap, 1 = scancodes
-;           B8 dword  physical address of directory table
-;           BC dword  address of debug event memory
-;           C0  5 dd  thread debug registers: DR0,DR1,DR2,DR3,DR7
+;         00  11db  name of app running
+;       0x10 dword  pointer to  fpu save area
+;       0x14 dword  event count
+;       0x18 dword  user fpu exceptoins handler
+;       0x1c dword  user sse exceptions handler
+;         20 dword  PL0 stack base
+;         24 dword  user heap base
+;         28 dword  user heap top
+;         2c dword  window cursor handle
+;         30 dword  first event in list
+;         34 dword  last event in list
+;         38 dword  first kernel object in list
+;         3c dword  last kernel object in list
+;         40 dword  thread esp
+;         44 dword  io permission map page 0
+;         48 dword  io permission map page 1
+          4c dword  debug state: 1= load debug registers
+;         50-7F     unused
 ;
-;  90000  ->  9FFFF   tmp
-;  A0000  ->  AFFFF   screen access area
-;  B0000  ->  FFFFF   bios rest in peace -area
-; 100000  -> 27FFFF   diskette image
-; 280000  -> 281FFF   ramdisk fat
-; 282000  -> 283FFF   floppy  fat
+;         80 dword  address of random shaped window area
+;         84 byte   shape area scale
+;         88 dword  free
+;         8C dword  application memory size
+;         90 dword  window X position save
+;         94 dword  window Y position save
+;         98 dword  window X size save
+;         9C dword  window Y size save
+;         A0 dword  IPC memory start
+;         A4 dword  IPC memory size
+;         A8 dword  event bits: mouse, stack,..
+;         AC dword  0 or debugger slot
+;         B0 dword  free
+;         B4  byte  keyboard mode: 0 = keymap, 1 = scancodes
+;         B8 dword  physical address of directory table
+;         BC dword  address of debug event memory
+;         C0  5 dd  thread debug registers: DR0,DR1,DR2,DR3,DR7
 ;
-; 284000  -> 29FFFF   free (112 Kb)
+; 0x80090000 ->  9FFFF   tmp
+; 0x800A0000 ->  AFFFF   screen access area
+; 0x800B0000 ->  FFFFF   bios rest in peace -area
+; 0x80100000 -> 27FFFF   diskette image
+; 0x80280000 -> 281FFF   ramdisk fat
+; 0x80282000 -> 283FFF   floppy  fat
 ;
-; 2A0000  -> 2B00ff   wav device data
-; 2C0000  -> 2C3fff   button info
+; 0x80284000 -> 29FFFF   free (112 Kb)
 ;
-;        0000 word    number of buttons
+; 0x802A0000 -> 2B00ff   wav device data
+; 0x802C0000 -> 2C3fff   button info
+;
+;       0000 word    number of buttons
 ;        first button entry at 0x10
-;        +0000 word   process number
-;        +0002 word   button id number : bits 00-15
-;        +0004 word   x start
-;        +0006 word   x size
-;        +0008 word   y start
-;        +000A word   y size
-;        +000C word   button id number : bits 16-31
+;       +0000 word   process number
+;       +0002 word   button id number : bits 00-15
+;       +0004 word   x start
+;       +0006 word   x size
+;       +0008 word   y start
+;       +000A word   y size
+;       +000C word   button id number : bits 16-31
 ;
-; 2C4000  -> 2CFFFF   free (48Kb)
+; 0x802C4000 -> 2CFFFF   free (48Kb)
 ;
-; 2D0000  -> 2DFFFF   reserved port area
+; 0x802D0000 -> 2DFFFF   reserved port area
 ;
-;     0000   dword    no of port areas reserved
-;     0010   dword    process id
-;            dword    start port
-;            dword    end port
-;            dword    0
+;       0000 dword   no of port areas reserved
+;       0010 dword   process id
+;            dword   start port
+;            dword   end port
+;            dword   0
 ;
-; 2E0000  -> 2EFFFF   irq data area
-; 2F0000  -> 2FFFFF   low memory save
+; 0x802E0000 -> 2EFFFF   irq data area
+; 0x802F0000 -> 2FFFFF   low memory save
 ;
-; 300000  -> 45FFFF   background image, max 1,375 M
+; 0x80300000 -> 45FFFF   background image, max 1,375 M
 ;
-; 460000  -> 5FFFFF   display info
+; 0x80460000 -> 5FFFFF   display info
 ;
-; 600000  -> 6FFFFF   hd cache
+; 0x80600000 -> 6FFFFF   hd cache
 ;
-; 700000  -> 71ffff   tcp memory       (128 kb)
-; 720000  -> 75ffff   free (256 kb)
+; 0x80700000 -> 71ffff   tcp memory       128 Kb
+; 0x80720000 -> 75ffff   free (256 kb)
 ;
-; 760000  -> 76ffff   !vrr driver
-; 770000  -> 777fff   tcp memory       ( 32 kb)
+; 0x80760000 -> 76ffff   !vrr driver
+; 0x80770000 -> 777fff   tcp memory        32 Kb
 ;
-; 780000  -> 987FFF   TSS and IO map for (8192*8)=65536 ports
-;                     (128+8192)*256 = 2129920 = 0x208000
-;
-; 988000 -> 98AFFF    draw_data   - 256 entries
-;
+; 0x80780000 -> 0x80782FFF draw data     - 256 entries
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
 ;
+; 0x80783F80 -> 0x80783FFF TSS            128 bytes
 ;
-; 0x0098B000 ->       kernel heap
+; 0x80784000 -> 0x80785FFF IO map for (8192*8)=65536 ports
 ;
-; 0x01FFFFFF          heap min limit
-; 0x7DBFFFFF          heap max limit
-; 0x7DC00000 -> 0x7FBFFFFF  LFB 32Mb
-; 0x7DC00000 -> 0x7E3FFFFF  application available LFB 8Mb
-; 0x7E400000 -> 0x7FBFFFFF  kernel LFB part 24 Mb
-; 0x7FC00000 -> 0x7FFFFFFF  page tables 4Mb
-; 0x80000000 -> 0xFFFFFFFF  application 2Gb
+; 0x80786000 ->       kernel heap
+; 0x81FFFFFF          heap min limit
+; 0xFDBFFFFF          heap max limit
 
+; 0xFDC00000 -> 0xFDFFFFFF  page tables 4Mb
+; 0xFE000000 -> 0xFFFFFFFF  LFB 32Mb
+; 0xFE000000 -> 0xFE7FFFFF  application available LFB 8Mb
+; 0xFE800000 -> 0xFFFFFFFF  kernel LFB part 24 Mb
 
 

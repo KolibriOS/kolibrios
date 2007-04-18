@@ -400,7 +400,7 @@ clear_hd_cache:
 save_hd_wait_timeout:
 
     push  eax
-    mov   eax,[timer_ticks];[0xfdf0]
+    mov   eax,[timer_ticks]
     add   eax,300               ; 3 sec timeout
     mov   [hd_wait_timeout],eax
     pop   eax
@@ -411,7 +411,7 @@ check_hd_wait_timeout:
 
     push  eax
     mov   eax,[hd_wait_timeout]
-    cmp   [timer_ticks], eax ;[0xfdf0],eax
+    cmp   [timer_ticks], eax
     jg    hd_timeout_error
     pop   eax
     mov   [hd_error],0
@@ -431,7 +431,7 @@ hd_timeout_error:
 ;    mov   esi,hd_timeout_str
 ;    call  sys_msg_board_str
     DEBUGF 1,"K : FS - HD timeout\n"
-;    jmp   $
+
     mov   [hd_error],1
     pop   eax
     ret
@@ -450,17 +450,17 @@ hd_write_error:
 
 ;    call  clear_hd_cache
 ;    call  clear_application_table_status
-;    mov   esi,hd_write_str
-;    call  sys_msg_board_str
+;     mov   esi,hd_write_str
+;     call  sys_msg_board_str
     DEBUGF 1,"K : FS - HD write error\n"
-    ret
+     ret
 
 hd_write_error_dma:
 ;        call    clear_hd_cache
 ;        call    clear_application_table_status
 ;        mov     esi, hd_write_str
 ;        call    sys_msg_board_str
-	DEBUGF 1,"K : FS - HD read error\n"
+        DEBUGF 1,"K : FS - HD read error\n"
         pop     esi
         ret
 
@@ -469,8 +469,8 @@ hd_lba_error:
 ;    call  clear_application_table_status
 ;    mov   esi,hd_lba_str
 ;    call  sys_msg_board_str
-    DEBUGF 1,"K : FS - HD LBA error\n"
-    jmp   LBA_read_ret
+     DEBUGF 1,"K : FS - HD LBA error\n"
+     jmp   LBA_read_ret
 
 
 align 4
@@ -582,9 +582,9 @@ iglobal
 align 4
 ; note that IDE descriptor table must be 4-byte aligned and do not cross 4K boundary
 IDE_descriptor_table:
-        dd      OS_BASE+284000h
-        dw      2000h
-        dw      8000h
+        dd      0x284000
+        dw      0x2000
+        dw      0x8000
 
 dma_cur_sector  dd      not 40h
 irq14_func      dd      hdd_irq_null
@@ -613,20 +613,20 @@ hdd_irq14:
         mov     dx, [IDEContrRegsBaseAddr]
         mov     al, 0
         out     dx, al
-        call    update_counters
-        mov     ebx, [dma_process]
-        cmp     [CURRENT_TASK], ebx
-        jz      .noswitch
-        mov     [dma_task_switched], 1
-        mov     edi, [dma_slot_ptr]
-        mov     eax, [CURRENT_TASK]
-        mov     [dma_process], eax
-        mov     eax, [TASK_BASE]
-        mov     [dma_slot_ptr], eax
-        mov     [CURRENT_TASK], ebx
-        mov     [TASK_BASE], edi
-        mov     byte [0xFFFF], 1
-        call    do_change_task
+;        call    update_counters
+;        mov     ebx, [dma_process]
+;        cmp     [CURRENT_TASK], ebx
+;        jz      .noswitch
+;        mov     [dma_task_switched], 1
+;        mov     edi, [dma_slot_ptr]
+;        mov     eax, [CURRENT_TASK]
+;        mov     [dma_process], eax
+;        mov     eax, [TASK_BASE]
+;        mov     [dma_slot_ptr], eax
+;        mov     [CURRENT_TASK], ebx
+;        mov     [TASK_BASE], edi
+;        mov     byte [DONT_SWITCH], 1
+;        call    do_change_task
 .noswitch:
         popad
         popfd
@@ -644,20 +644,20 @@ hdd_irq15:
         add     dx, 8
         mov     al, 0
         out     dx, al
-        call    update_counters
-        mov     ebx, [dma_process]
-        cmp     [CURRENT_TASK], ebx
-        jz      .noswitch
-        mov     [dma_task_switched], 1
-        mov     edi, [dma_slot_ptr]
-        mov     eax, [CURRENT_TASK]
-        mov     [dma_process], eax
-        mov     eax, [TASK_BASE]
-        mov     [dma_slot_ptr], eax
-        mov     [CURRENT_TASK], ebx
-        mov     [TASK_BASE], edi
-        mov     byte [0xFFFF], 1
-        call    do_change_task
+;        call    update_counters
+;        mov     ebx, [dma_process]
+;        cmp     [CURRENT_TASK], ebx
+;        jz      .noswitch
+;        mov     [dma_task_switched], 1
+;        mov     edi, [dma_slot_ptr]
+;        mov     eax, [CURRENT_TASK]
+;        mov     [dma_process], eax
+;        mov     eax, [TASK_BASE]
+;        mov     [dma_slot_ptr], eax
+;        mov     [CURRENT_TASK], ebx
+;        mov     [TASK_BASE], edi
+;        mov     byte [DONT_SWITCH], 1
+;        call    do_change_task
 .noswitch:
         popad
         popfd
@@ -689,9 +689,10 @@ hd_read_dma:
         pop     eax
         ret
 .notread:
-        mov     eax, IDE_descriptor_table-OS_BASE
-        mov     dword [eax+OS_BASE],  0x284000
-        mov     word [eax+4+OS_BASE], 0x2000
+        mov     eax, IDE_descriptor_table
+        mov     dword [eax],  0x284000
+        mov     word [eax+4], 0x2000
+        sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
         cmp     [hdbase], 0x1F0
         jz      @f
@@ -774,7 +775,7 @@ write_cache_chain:
         mov     eax, IDE_descriptor_table
         mov     edx, [cache_chain_pos]
         shl     edx, 9
-        add     edx, OS_BASE+0x610000
+        add     edx, 0x610000
         mov     [eax], edx
         movzx   edx, [cache_chain_size]
         shl     edx, 9
@@ -785,10 +786,11 @@ write_cache_sector:
         mov     eax, IDE_descriptor_table
         mov     edx, edi
         shl     edx, 9
-        add     edx, OS_BASE+0x610000
+        add     edx, 0x610000
         mov     [eax], edx
         mov     word [eax+4], 0x200
 do_write_dma:
+        sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
         cmp     [hdbase], 0x1F0
         jz      @f

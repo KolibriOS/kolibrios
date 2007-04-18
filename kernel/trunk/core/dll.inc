@@ -6,10 +6,8 @@ $Revision$
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-DRV_ENTRY    equ  1
-DRV_EXIT     equ -1
-DRV_COMPAT   equ  4  ;minimal required drivers version
-DRV_CURRENT  equ  4  ;current drivers model version
+DRV_COMPAT   equ  5  ;minimal required drivers version
+DRV_CURRENT  equ  5  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 
@@ -134,7 +132,7 @@ align 4
 align 16
 .main:
 	   save_ring3_context
-	   mov	 bx, os_data
+           mov   bx, app_data  ;os_data
 	   mov	 ds, bx
 	   mov	 es, bx
 
@@ -161,14 +159,13 @@ align 4
 proc get_notify stdcall, p_ev:dword
 
 .wait:
-           mov ebx,[CURRENT_TASK]
-           shl ebx,8
-           test dword [ebx+SLOT_BASE+0xA8],EVENT_NOTIFY
+           mov ebx,[current_slot]
+           test dword [ebx+APPDATA.event_mask],EVENT_NOTIFY
 	   jz @f
-           and dword [ebx+SLOT_BASE+0xA8], not EVENT_NOTIFY
+           and dword [ebx+APPDATA.event_mask], not EVENT_NOTIFY
 	   mov edi, [p_ev]
 	   mov dword [edi], EV_INTR
-           mov eax, [ebx+SLOT_BASE+APPDATA.event]
+           mov eax, [ebx+APPDATA.event]
 	   mov dword [edi+4], eax
 	   ret
 @@:
@@ -256,9 +253,8 @@ endp
 
 align 4
 srv_handlerEx:
-           test ebx, ebx
-           jz .fail
-           add ebx, new_app_base
+           cmp ebx, OS_BASE
+           jae .fail
 
            mov eax, [ebx+handle]
            cmp [eax+SRV.magic], ' SRV'
@@ -266,9 +262,6 @@ srv_handlerEx:
 
            cmp [eax+SRV.size], SRV_SIZE
 	   jne .fail
-
-           add [ebx+input], new_app_base
-           add [ebx+output], new_app_base
 
            stdcall [eax+SRV.srv_proc], ebx
            ret
@@ -410,9 +403,9 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            xor eax, eax
            mov ebx, [file_name]
-           sub ebx, new_app_base
+    ;       sub ebx, new_app_base
            mov ecx, [info]
-           sub ecx, new_app_base
+    ;       sub ecx, new_app_base
 
            mov [cmd], 5
            mov [offset], eax
@@ -424,7 +417,7 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            mov eax, 70
            lea ebx, [cmd]
-           sub ebx, new_app_base
+     ;      sub ebx, new_app_base
            int 0x40
            ret
 endp
@@ -447,8 +440,6 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            mov ecx, [off]
            mov edx, [bytes]
            mov esi, [buffer]
-           sub ebx, new_app_base
-           sub esi, new_app_base
 
            mov [cmd], eax
            mov [offset], ecx
@@ -461,7 +452,6 @@ proc read_file stdcall,file_name:dword, buffer:dword, off:dword,\
            pushad
            push eax
            lea eax, [cmd]
-           sub eax, new_app_base
            call file_system_lfn
            pop eax
            popad
@@ -708,23 +698,23 @@ proc load_driver stdcall, driver_name:dword
              file_name rb 14+16+4+1      ; '/rd/1/drivers/<up-to-16-chars>.obj'
            endl
 
-        lea     edx, [file_name]
-        mov     dword [edx], '/rd/'
-        mov     dword [edx+4], '1/dr'
-        mov     dword [edx+8], 'iver'
-        mov     word [edx+12], 's/'
-        mov     esi, [driver_name]
-        lea     edi, [edx+14]
-        mov     ecx, 16
+           lea     edx, [file_name]
+           mov     dword [edx], '/rd/'
+           mov     dword [edx+4], '1/dr'
+           mov     dword [edx+8], 'iver'
+           mov     word [edx+12], 's/'
+           mov     esi, [driver_name]
+           lea     edi, [edx+14]
+           mov     ecx, 16
 @@:
-        lodsb
-        test    al, al
-        jz      @f
-        stosb
-        loop    @b
+           lodsb
+           test    al, al
+           jz      @f
+           stosb
+           loop    @b
 @@:
-        mov     dword [edi], '.obj'
-        mov     byte [edi+4], 0
+           mov     dword [edi], '.obj'
+           mov     byte [edi+4], 0
            stdcall load_file, edx
 
            test eax, eax
@@ -919,13 +909,13 @@ proc load_library stdcall, file_name:dword
            jmp .next
 .copy:
            add esi, edx
-           add edi, new_app_base
+    ;       add edi, new_app_base
            mov ecx, [eax+CFS.SizeOfRawData]
            cld
            rep movsb
 .next:
-           add edi, 15-new_app_base
-           and edi, not 15
+           add edi, 15 ;-new_app_base
+           and edi, -16
            add eax, COFF_SECTION_SIZE
            dec ebx
            jnz @B
@@ -1006,9 +996,8 @@ create_kernel_object:
            test eax, eax
            jz .fail
 
-           mov ecx,[CURRENT_TASK]
-           shl ecx,8
-           add ecx, SLOT_BASE+APP_OBJ_OFFSET
+           mov ecx,[current_slot]
+           add ecx, APP_OBJ_OFFSET
 
            pushfd
            cli
@@ -1048,21 +1037,68 @@ destroy_kernel_object:
            ret
 
 
-;szSound        db 'SOUND',0
-;szInfinity     db 'INFINITY',0
-szHwMouse      db 'ATI2D',0
 
-szSTART        db 'START',0
-szEXPORTS      db 'EXPORTS',0
-szIMPORTS      db 'IMPORTS',0
+if 0
 
-msg_unresolved db 'unresolved ',0
-msg_module     db 'in module ',0
-msg_version    db 'incompatible driver version',13,10,0
-msg_www        db 'please visit www.kolibrios.org',13,10,0
-msg_CR         db  13,10,0
+irq:
 
-align 4
-create_cursor    dd 0
-set_hw_cursor    dd 0
-hw_restore       dd 0
+.irq0:
+           pusfd
+           pushad
+           push IRQ_0
+           jmp .master
+.irq_1:
+           pusfd
+           pushad
+           push IRQ_1
+           jmp .master
+
+.master:
+           mov ax, app_data
+           mov ds, eax
+           mov es, eax
+           mov ebx, [esp+4]  ;IRQ_xx
+           mov eax, [irq_handlers+ebx+4]
+           call intr_handler
+           mov ecx, [esp+4]
+           cmp [irq_actids+ecx*4], 0
+           je @F
+           in al, 0x21
+           bts eax, ecx
+           out 0x21, al
+           mov al, 0x20
+           out 0x20, al
+           jmp .restart
+
+.slave:
+           mov ax, app_data
+           mov ds, eax
+           mov es, eax
+           mov ebx, [esp+4]  ;IRQ_xx
+           mov eax, [irq_handlers+ebx+4]
+           call intr_handler
+           mov ecx, [esp+4]
+           sub ecx, 8
+           cmp [irq_actids+ecx*4], 0
+           je @F
+           in al, 0xA1
+           bts eax, ecx
+           out 0xA1, al
+           mov al, 0x20
+           out 0xA0, al
+           out 0x20, al
+.restart:
+           mov ebx, [next_slot]
+           test ebx, ebx
+           jz @F
+           mov [next_task],0
+           mov esi, [prev_slot]
+           call do_change_task
+           add esp, 4
+           iretd
+
+end if
+
+
+
+
