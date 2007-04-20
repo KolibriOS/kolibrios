@@ -6,7 +6,7 @@ $Revision$
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-ntfs_test_bootsec:
+ntfs_test_bootsec: 
 ; in: ebx->buffer, edx=size of partition
 ; out: CF set <=> invalid
 ; 1. Name=='NTFS    '

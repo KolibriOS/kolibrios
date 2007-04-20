@@ -6,7 +6,7 @@ $Revision$
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-; Low-level driver for HDD access
+; Low-level driver for HDD access 
 ; DMA support by Mario79
 
 ;**************************************************************************
