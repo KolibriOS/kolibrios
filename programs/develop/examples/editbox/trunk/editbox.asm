@@ -1,5 +1,4 @@
-; <Lrz> 30.03.2007 произведена оптимизация работы конпок DEL и Backspace? уменьшен размер выполняемого кода.
-;Эффективное программирование в KOLIBRI
+;Распространяется по лицензии GPL  SEE YOU File FAQ.txt and HISTORY. Good Like! 
 ;Оптимизированный компонент EditBox (Исходный вариант от Maxxxx32)
 ;Оптимизация команд.
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
@@ -16,7 +15,7 @@ use32           ; транслятор, использующий 32 разрядных команды
     dd 0x0,0x0          ; указатель на строку с параметрами.
         include 'macros.inc'
         include 'editbox.inc'
-        use_edit_box
+        use_edit_box structure_of_potock,22,5
 ;Область кода
 start:                          ;Точка входа в программу
         mcall   40,0x27         ;установить маску для ожидаемых событий
@@ -24,8 +23,7 @@ start:                          ;Точка входа в программу
 red_win:
     call draw_window            ;первоначально необходимо нарисовать окно
 still:                          ;основной обработчик 
-        mcall   10              ;Ожидать события в течение 2 миллисекунд
-  
+        mcall   10              ;Ожидать события
         cmp al,0x1    ;если изменилось положение окна
         jz red_win
         cmp al,0x2    ;если нажата клавиша то перейти
@@ -50,7 +48,7 @@ key:
 draw_window:            ;рисование окна приложения
         mcall   12,1
         mcall   0,(50*65536+390),(30*65536+200),0xb3AABBCC,0x805080DD,hed
-        draw_edit_boxes editboxes,editboxes_end  ;рисование edit box'ов
+        draw_edit_boxes editboxes,editboxes_end,use_f9,structure_of_potock  ;рисование edit box'ов
         mcall   12,2
     ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -63,7 +61,7 @@ edit4 edit_box 16,5,70,0xffffff,0x6a9480,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
 data_of_code dd 0
 mouse_flag dd 0x0
-hed db   'EDITBOX optimization and retype <Lrz> date 13.04.2007',0
+hed db   'EDITBOX optimization and retype <Lrz> date 19.04.2007',0
 rb  256
 ed_buffer:
 ;.1: rb 514;256

@@ -1,72 +1,15 @@
-; <Lrz> 04.04.2007 Исправлено управление мышкой, при удалении последнего символа в буфере пишеться 0 (спасибо Mario79)
-; <Lrz> 04.04.2007 Модернизировал систему выделения, существенно переделано управление и обработка, добавленно блокирования обработки других боксов, во время выделения мышкой текста, для этого в текст программы необходимо добавить идентификатор бокса т.е. dd 0x0 и в него будет помещаться укаатель на editbox
-; <Lrz> 30.03.2007 Переделал процедуру выделения, теперь текст выделяется только только мышкой
-; <Lrz> 09.03.2007 Дописал управление mouse + shift  выделение и перемещение
-; <Lrz> 07.03.2007 Дописал управление с shift home + end усправил несколько багов
-; <Lrz> 06.03.2007 Переписал полностью алгоритм управления shift
-; <Lrz> 15.02.2007 улучшение снятия выделения и перерисовки очищаемой области, значительно приятнее работает компонент
-; <Lrz> 13.02.2007 убрал по возможности мерцание, улучшена обработка перерисовки фона
-; добавил фитчу внесения 0х0 по адресу ed_size иначе у Maxxx32 были несостыковки в коде. Причина в том, что оптимизация была сведена к тому, что я не чистил символы в буфере, когда удалял, я просто их не выводил, и потом, когда вносился новый символ, он попросту затирал уже имеющийся. Если бы, программа обрабатывала конец строки по ed_size, проблемы не возникло. Но сейчас этот недостаток исправлен.
-; <Lrz> 01.02.2007 доработка edit_box, исправил баги.
-; <Lrz> 26.01.2007 нормальная работа компанента исправил фукцию .check_offset
-; <Lrz> 24.01.2007 пофиксел баги вызваные не правильным кодом )).
-; <Lrz> 22.01.2007 избавился от глюков при работе с выделением и удаление, корректная работа клавишей del & backspase
-; <Lrz> 20.01.2007 реализовал выделение текста по shift
-; <Lrz> 12.12.2006 реализовал поддержку кнопки insert и сегодя компонент почти работает!!!!
-; <Lrz> 07.12.2006 продолжается работа над переработкой компонента,изменениям подверглись многие функции, переработан вывод текста, а така же алгоритм внесения символов.
-; <Lrz> 03.09.2006 по возможности отказался от 16 битной арифметики, добавил новые баги
-; <Lrz> 09.08.2006 произведена оптимизация работы конпок DEL и Backspace, уменьшен размер выполняемого кода.
-; <Lrz> 21.07.2006 добавлена функция кнопки Del, теперь можно удалять символы при помощи данной клавиши
-; Автор: Евтихов Максим (Maxxxx32) email: maxxxxm@mail.ru
-; Дата последних изменений: 13.06.06 10:40
-;  Напишите в исходном коде своей программы use_edit_box,
-; это вставит необходимые процедуры в код вашей программы.
-;  Процедуры:
-;   edit_box.draw - полная перерисовка;
-;   edit_box.key - обработка клавиатуры;
-;   edit_box.mouse - обработка мыши;
-;   edit_box.focus - установка фокуса;
-;   edit_box.blur - его размывание;
-;   edit_box.get_n - получить количество прорисовываемых символов.
-;  При вызове любых из этих процедур в регистре edi следует
-; оставить указатель на структуру.
-;  Пример структуры:
-; some_edit edit_box 100,10,30,0x00ffffff,0,0x00aaaaaa,0,255,some_edit_text
-; длина, высота, верх, цвет фона, цвет рамки, если выбран,
-; цвет рамки, если не выбран, максимальное количество символов,
-; указатель на буфер, где будут хранится символы. Буфер должен
-; оканчиваться нулем, например если максимальное количество 255:
-;  some_edit_text:
-;       rb      256 ;255+1
-
-;  Пример вызова процедуры:
-;       mov     edi,some_edit
-;       call    edit_box.draw
-
-;  При вызове процедуры edit_box.key код клавиши должен
-; находится в ah, то есть перед вызовом этой процедуры надо вызвать
-; 2-ую сисемную функцию, например:
-;       mov     eax,2
-;       int     0x40
-;       mov     edi,some_edit1
-;       call    edit_box.key
-;       mov     edi,some_edit2
-;       call    edit_box.key
-;  Перед вызовом обработчика мыши следует проверить, является ли окно
-; активным.
-;  Если щелчок мыши был пройзведен за пределами edit box
-; фокус теряется.
+; SEE YOU File FAQ.txt and HISTORY. Good Like! 
 ;;;;;;;;;;;;;;;;;;
 include 'editbox.mac'    ;макрос который должен облегчить жизнь :) специально для editbox
 ;;;;;;;;;;;;;;;;;;
-macro use_edit_box
+macro use_edit_box structure_of_potock,scr_h,scr_w
 {
 edit_box:
 ed_width        equ [edi]               ;ширина компонента
 ed_left         equ [edi+4]             ;положение по оси х
 ed_top          equ [edi+8]             ;положение по оси у
 ed_color        equ [edi+12]            ;цвет фона компонента
-shift_color	equ [edi+16]		;=0x6a9480
+shift_color     equ [edi+16]            ;=0x6a9480
 ed_focus_border_color   equ [edi+20]    ;цвет рамки компонента
 ed_blur_border_color    equ [edi+24]    ;цвет не активного компонента
 ed_text_color   equ [edi+28]            ;цвет текста
@@ -184,7 +127,7 @@ ret
         mov     ecx,cl_curs_y
         jmp     .draw_curs
 .draw_cursor:
-	mov     edx,ed_text_color
+        mov     edx,ed_text_color
         mov     ebx,ed_pos
         mov     ecx,ed_offset
         sub     ebx,ecx
@@ -751,9 +694,9 @@ edit_ex
         pusha
         mov     eax,ed_size
         mov     ebx,ed_text
-	test	eax,eax
+        test    eax,eax
         add     eax,ebx
-	jne	@f
+        jne     @f
         inc     eax
 @@:     xor     ebx,ebx
         mov     [eax],bl
@@ -909,13 +852,9 @@ edit_ex
         je      @f
         jmp     ._blur
 ;----------------------------------------------------------
-;--- модифицируем координаты, т.е. добавляем координаты окна.
-;----------------------------------------------------------
-@@:     mcall   9,structure_of_potock,-1
-;----------------------------------------------------------
 ;--- получаем координаты мыши относительно 0 т.е всей области экрана
 ;----------------------------------------------------------
-        mcall   37,0
+@@:     mcall   37,0
 ;----------------------------------------------------------
 ;--- А не удерживаем ли мы клавишу мышки, перемещая курсор, во все разные стороны?
 ;----------------------------------------------------------
@@ -927,7 +866,10 @@ edit_ex
 ;----------------------------------------------------------
         mov     ebx,dword [ecx+38]
         add     ebx,ed_top
-        add     ebx,22
+if scr_h eq 
+else
+        add     ebx,scr_h
+end if
         cmp     ax,bx
         jl      ._blur;.mouse_end_no_focus
 
@@ -939,7 +881,10 @@ edit_ex
 
         mov     ebx,dword [ecx+34]
         add     ebx,ed_left
-        add     ebx,5
+if scr_w eq 
+else
+        add     ebx,scr_w
+end if
         cmp     ax,bx
         jl      ._blur;.mouse_end_no_focus
 
@@ -957,7 +902,11 @@ edit_ex
         xor     edx,edx
         sub     eax,ed_left
         sub     eax,ebx
-        sub     eax,5-2    ;толщина обводки скина =5
+if scr_w eq 
+else
+        add     ebx,scr_w
+        sub     eax,2
+end if
         mov     ebx,6
         div     bx
         add     eax,ed_offset
@@ -1037,16 +986,18 @@ edit_ex
         mov     ecx,structure_of_potock
         mov     ebx,dword [ecx+34]
         add     ebx,ed_left
-        add     ebx,5
+if scr_w eq 
+else
+        add     ebx,scr_w
+end if
+        cmp     eax,ebx
+        jb      .mleft
 
-	cmp	eax,ebx
-	jb	.mleft
+        add     ebx,ed_width
+        cmp     eax,ebx
+        ja      .mright 
 
-	add	ebx,ed_width
-	cmp	eax,ebx
-	ja	.mright	
-
-	sub	ebx,ed_width
+        sub     ebx,ed_width
 
         xor     edx,edx
         sub     eax,ebx ; вычтим из координат мышки по оси х координаты до editbox по оси х
@@ -1057,13 +1008,13 @@ edit_ex
 ;;;;;;;;;;;;;;;;;;
 ;Получили координаты в eax мышки, т.е. куда она переместилась
 ;Рисование закрашеных прямоугольников и очистка их
-	add	eax,ed_offset	;добавим смещение
-	cmp	eax,dword ed_size	;если вышли за пределы, то ничего не делать
-	ja	.mwigvag
+        add     eax,ed_offset   ;добавим смещение
+        cmp     eax,dword ed_size       ;если вышли за пределы, то ничего не делать
+        ja      .mwigvag
 .mdraw: 
         mov     dword   ed_pos,eax ;сохраним новое значение
 ;Рисование закрашеных прямоугольников и очистка их
-	mov     ecx,dword       ed_shift_pos
+        mov     ecx,dword       ed_shift_pos
         mov     ebx,dword       ed_shift_pos_old
         mov     dword   ed_shift_pos_old,eax    ;внесем новое значение старой позиции курсора
 ;проверка и рисование закрашеных областей
@@ -1072,7 +1023,7 @@ edit_ex
         jb      .msmaller       ;движение было ->
         cmp     ebx,eax         ;движение было до этого <- и тут мы проверяем сейчас куда движение происходит
         ja      .m1_shem        ;если было движение <- то нужно закрасить область
-	je	.mwigvag	;если изменения не было, то ничего не делать
+        je      .mwigvag        ;если изменения не было, то ничего не делать
         mov     ebp,ed_color    ;тут нужно очистить область c ed_pos ed_shift_pos_old
 ;входные параметры ebp=color ebx=ed_shift_pos
         call    .sh_cl_
@@ -1088,39 +1039,39 @@ edit_ex
 .m1_shem: 
         mov     ebp,shift_color
 ;входные параметры ebp=color ebx=ed_shift_pos
-	mov	ebx,ecx
+        mov     ebx,ecx
         call    .sh_cl_
         jmp     .mwigvag
 .mwigvag:
         and     word ed_flags,ed_shift_mcl
-	jmp	.draw_cursor_text
+        jmp     .draw_cursor_text
 ;       popa
 ;       ret
 .mleft:
-	mov	eax,ed_pos
-	test	eax,eax
-	jz	.mwigvag
-	dec	eax
-	call	.check_offset
-	push	eax
-	mov	ebx,ed_shift_pos
-	mov	ebp,shift_color
-	call	.sh_cl_
-	pop	eax
-	jmp	.mdraw
+        mov     eax,ed_pos
+        cmp     eax,0
+        jbe      .mwigvag
+        dec     eax
+        call    .check_offset
+        push    eax
+        mov     ebx,ed_shift_pos
+        mov     ebp,shift_color
+        call    .sh_cl_
+        pop     eax
+        jmp     .mdraw
 .mright:
-	mov	eax,ed_pos
-	mov	ebx,ed_size
-	cmp	eax,ebx
-	jae	.mwigvag
-	inc     eax
-	call	.check_offset
-	mov	ebx,ed_shift_pos
-	mov	ebp,shift_color
-	push	eax
-	call	.sh_cl_
-	pop	eax
-	jmp	.mdraw	
+        mov     eax,ed_pos
+        mov     ebx,ed_size
+        cmp     eax,ebx
+        jae     .mwigvag
+        inc     eax
+        call    .check_offset
+        mov     ebx,ed_shift_pos
+        mov     ebp,shift_color
+        push    eax
+        call    .sh_cl_
+        pop     eax
+        jmp     .mdraw  
 
 }
 ed_figure_only= 1000000000000000b   ;одни символы 
@@ -1144,20 +1095,24 @@ ed_mouse_on =          100000000b
 ed_mous_adn_b=         100011000b
 ed_mouse_on_off=1111111011111111b
 ed_height=14 ; высота
-macro draw_edit_boxes start,end
+macro draw_edit_boxes start,_end,use_f9,structure_of_potock
 {
+if use_f9 eq 
+else
+        mcall   9,structure_of_potock,-1
+end if
         mov     edi,start
-        mov     ecx,((end-start)/ed_struc_size)
+        mov     ecx,((_end-start)/ed_struc_size)
 @@:
         call    edit_box.draw
         add     edi,ed_struc_size
         loop    @b
 }
 
-macro mouse_edit_boxes start,end
+macro mouse_edit_boxes start,_end
 {
         mov     edi,start
-        mov     ecx,((end-start)/ed_struc_size)
+        mov     ecx,((_end-start)/ed_struc_size)
 @@:
         call    edit_box.mouse
         add     edi,ed_struc_size
@@ -1224,8 +1179,12 @@ macro edit_boxes_set_sys_color start,end,color_table
         loop    @b
 }
 
-macro draw_edit_box ed_ptr
+macro draw_edit_box ed_ptr,use_f9,structure_of_potock
 {
+if use_f9 eq 
+else
+        mcall   9,structure_of_potock,-1
+end if
         mov     edi,ed_ptr
         call    edit_box.draw
 }
@@ -1240,4 +1199,14 @@ macro key_edit_box ed_ptr
 {
         mov     edi,ed_ptr
         call    edit_box.key
+}
+macro default_box ed_ptr
+{
+pusha
+;	xor	eax,eax
+;	mov 	ed_shift_pos,eax
+;	mov	ed_shift_pos_old,eax
+	and	word ed_flags,ed_shift_cl
+;	mov	ed_offset,eax
+popa
 }
