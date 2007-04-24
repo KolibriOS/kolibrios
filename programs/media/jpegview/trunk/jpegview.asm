@@ -166,14 +166,15 @@ set_as_bgr2:
     mov ebp,dword[jpeg_st]
     test    ebp,ebp
     jz      .end
-
-    mov     dword [ebp+draw_ptr],put_chunk_to_bgr
-    call    jpeg_display
+    
     mov     eax, 15
     mov     ebx, 1
     mov     ecx, [ebp + x_size]
     mov     edx, [ebp + y_size]
     int     0x40
+
+    mov     dword [ebp+draw_ptr],put_chunk_to_bgr
+    call    jpeg_display
 
     ; Stretch the image to fit
     mov     eax, 15
