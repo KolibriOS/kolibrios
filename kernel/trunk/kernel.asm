@@ -500,11 +500,21 @@ high_code:
         mov     [graph_data_l+4],al
         mov     [graph_data_l+7],ah
 
-
         mov [CURRENT_TASK],dword 1
         mov [TASK_COUNT],dword 1
         mov [TASK_BASE],dword TASK_DATA
         mov [current_slot], SLOT_BASE+256
+
+; set background
+        xor  eax,eax
+        inc  eax
+        mov   [display_data-12],eax
+        mov   [display_data-8],eax
+        mov   [display_data-4],eax
+        mov    [mem_BACKGROUND],4095
+        stdcall kernel_alloc, [mem_BACKGROUND]
+        mov [img_background], eax
+
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -2296,8 +2306,37 @@ sys_background:
     mov   [display_data-8],ebx
     mov   [display_data-4],ecx
 ;    mov   [bgrchanged],1
+
+    pushad
+; return memory for old background
+    stdcall kernel_free, [img_background]
+; calculate RAW size
+    xor  eax,eax
+    inc  eax
+    cmp  [display_data-8],eax
+    jae   @f
+    mov [display_data-8],eax
+@@:
+    cmp  [display_data-4],eax
+    jae   @f
+    mov [display_data-4],eax
+@@:
+    mov  eax,[display_data-8]
+    imul eax,[display_data-4]
+    inc  eax
+    imul eax,3
+    mov  [mem_BACKGROUND],eax
+; get memory for new background
+    stdcall kernel_alloc, [mem_BACKGROUND]
+    test eax, eax
+    jz .exit_mem
+    mov [img_background], eax
+.exit_mem:
+    popad
+
   sbgrr:
     ret
+
   nosb1:
 
     cmp   eax,2                            ; SET PIXEL
@@ -2309,7 +2348,12 @@ sys_background:
     and   edx,0xFF000000 ;255*256*256*256
     and   ecx,0x00FFFFFF ;255*256*256+255*256+255
     add   edx,ecx
-    mov   [ebx+IMG_BACKGROUND],edx
+
+;    mov   [ebx+IMG_BACKGROUND],edx
+    push  eax
+    mov   eax,[img_background]
+    mov   [ebx+eax],edx
+    pop   eax
 ;    mov   [bgrchanged],1
     ret
   nosb2:
@@ -2342,28 +2386,16 @@ draw_background_temp:
   ; bughere
     mov   edi, [TASK_BASE]
     add   ebx, [edi+TASKDATA.mem_start]
- ;   mov   esi, ebx
- ;   mov   edi, ecx
     mov   eax, ebx
     mov   ebx, ecx
     add   ecx, edx
-    cmp   ecx, 0x160000-16
-    ja    .fin
- ;   add   edi, 0x300000
-    add   ebx, IMG_BACKGROUND
+    add   ebx, [img_background]   ;IMG_BACKGROUND
     mov   ecx, edx
-    cmp   ecx, 0x160000-16
-    ja    .fin
-;    mov   [bgrchanged],1
-  ;  cld
-  ;  rep   movsb
     call  memmove
   .fin:
     ret
   nosb5:
-
     ret
-
 
 align 4
 
@@ -2380,10 +2412,13 @@ sys_getbackground:
 
     cmp   eax,2                                  ; PIXEL
     jnz   nogb2
-    mov   edx,0x160000-16
-    cmp   edx,ebx
-    jbe   nogb2
-    mov   eax, [ebx+IMG_BACKGROUND]
+;    mov   edx,0x160000-16
+;    cmp   edx,ebx
+;    jbe   nogb2
+;    mov   eax, [ebx+IMG_BACKGROUND]
+    mov   eax,[img_background]
+    mov   eax,[ebx+eax]
+
     and   eax, 0xFFFFFF
     mov   [esp+36],eax
     ret
@@ -3533,12 +3568,12 @@ calculatebackground:   ; background
 
         ; all black
 
-        mov   [display_data-8],dword 4      ; size x
-        mov   [display_data-4],dword 2      ; size y
+;        mov   [display_data-8],dword 4      ; size x
+;        mov   [display_data-4],dword 2      ; size y
 
-        mov   edi, IMG_BACKGROUND                 ; set background to black
+        mov   edi, [img_background]  ;IMG_BACKGROUND                 ; set background to black
         xor   eax, eax
-        mov   ecx, 0x0fff00 / 4
+        mov   ecx, 1023    ;0x0fff00 / 4
         cld
         rep   stosd
 

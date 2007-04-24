@@ -329,6 +329,8 @@ com1_mouse_detected   rb 1
 com2_mouse_detected   rb 1
 ;* end code - Mario79
 
+img_background        rd 1
+mem_BACKGROUND        rd 1
 wraw_bacground_select rb 1
 
 lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled

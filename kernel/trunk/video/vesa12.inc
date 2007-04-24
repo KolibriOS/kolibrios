@@ -220,7 +220,7 @@ vesa12_drawbackground:
 
         push  eax
         push  ebx
-        mov   esi,IMG_BACKGROUND
+        mov   esi,[img_background]   ;IMG_BACKGROUND
 
         cmp   [WinMapAddress-12],dword 1     ; tiled background
         jne   no_vesa12_tiled_bgr
@@ -282,7 +282,7 @@ vesa12_drawbackground:
         add   esi,eax
         add   esi,eax
         add   esi,eax
-        add   esi,IMG_BACKGROUND
+        add   esi,[img_background]   ;IMG_BACKGROUND
         pop   ebx
         pop   eax
 

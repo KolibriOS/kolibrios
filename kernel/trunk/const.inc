@@ -282,7 +282,6 @@ BUTTON_INFO         equ (OS_BASE+0x02C0000)
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 IRQ_SAVE            equ (OS_BASE+0x02E0000)
 BOOT_VAR            equ (OS_BASE+0x02f0000)
-IMG_BACKGROUND      equ (OS_BASE+0x0300000)
 WinMapAddress       equ (OS_BASE+0x0460000)
 display_data        equ (OS_BASE+0x0460000)
 
