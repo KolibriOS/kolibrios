@@ -3568,9 +3568,6 @@ calculatebackground:   ; background
 
         ; all black
 
-;        mov   [display_data-8],dword 4      ; size x
-;        mov   [display_data-4],dword 2      ; size y
-
         mov   edi, [img_background]  ;IMG_BACKGROUND                 ; set background to black
         xor   eax, eax
         mov   ecx, 1023    ;0x0fff00 / 4
@@ -3579,7 +3576,7 @@ calculatebackground:   ; background
 
         mov   edi,display_data              ; set os to use all pixels
         mov   eax,0x01010101
-        mov   ecx,0x15ff00 / 4
+        mov   ecx,1280*1024 / 4
         rep   stosd
 
         mov   byte [REDRAW_BACKGROUND], 0              ; do not draw background!

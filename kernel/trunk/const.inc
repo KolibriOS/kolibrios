@@ -282,27 +282,27 @@ BUTTON_INFO         equ (OS_BASE+0x02C0000)
 RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 IRQ_SAVE            equ (OS_BASE+0x02E0000)
 BOOT_VAR            equ (OS_BASE+0x02f0000)
-WinMapAddress       equ (OS_BASE+0x0460000)
-display_data        equ (OS_BASE+0x0460000)
 
-HD_CACHE            equ (OS_BASE+0x0600000)
+DMA_HD_MEM          equ 0x0300000
+HD_CACHE            equ (OS_BASE+DMA_HD_MEM)
 
-stack_data_start    equ (OS_BASE+0x0700000)
-eth_data_start      equ (OS_BASE+0x0700000)
-stack_data          equ (OS_BASE+0x0704000)
-stack_data_end      equ (OS_BASE+0x071ffff)
-VMODE_BASE          equ (OS_BASE+0x0760000)
-resendQ             equ (OS_BASE+0x0770000)
+stack_data_start    equ (OS_BASE+0x0400000)
+eth_data_start      equ (OS_BASE+0x0400000)
+stack_data          equ (OS_BASE+0x0404000)
+stack_data_end      equ (OS_BASE+0x041ffff)
+resendQ             equ (OS_BASE+0x0420000)
+VMODE_BASE          equ (OS_BASE+0x0428000)
+skin_data           equ (OS_BASE+0x0430000)
+draw_data           equ (OS_BASE+0x0438000);
 
-skin_data           equ (OS_BASE+0x0778000)
-
-draw_data           equ (OS_BASE+0x0780000);
-
-virtual at (OS_BASE+0x0783F80)
+virtual at              (OS_BASE+0x043BF80)
   tss  TSS
 end virtual
 
-tmp_page_tab        equ 0x0786000;
+WinMapAddress       equ (OS_BASE+0x043F000)
+display_data        equ (OS_BASE+0x043F000)
+
+tmp_page_tab        equ 0x057F000;
 
 HEAP_BASE           equ (OS_BASE+tmp_page_tab)
 HEAP_MIN_SIZE       equ 0x01000000
