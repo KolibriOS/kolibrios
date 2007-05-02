@@ -10,6 +10,7 @@ viewer_data:
         .bEofReached    db      ?
         .flags          db      ?       ; & 1: hex mode
                                         ; & 2: unwrap
+                                        ; & 4: big-endian unicode
                         rb      1
         .filename       rb      1024
         .buf            rb      16384
@@ -24,9 +25,11 @@ view_file:
         ret
 .file:
         lea     esi, [ebp + panel1_dir - panel1_data]
-        mov     eax, viewer_data.size
+        push    ecx
+        mov     ecx, viewer_data.size
         mov     edx, viewer_vtable
         call    new_screen
+        pop     ecx
         test    eax, eax
         jnz     @f
         ret
@@ -128,12 +131,40 @@ view_file:
         jz      .attr_retry
         jmp     delete_active_screen
 .readok:
+        cmp     ebx, 2
+        jb      .nounicode
+        cmp     word [ebp+viewer_data.buf], 0xFEFF
+        jz      @f
+        cmp     word [ebp+viewer_data.buf], 0xFFFE
+        jnz     .nounicode
+        or      byte [ebp+viewer_data.flags], 4
+@@:
+        mov     [ebp+viewer_data.encoding], encodings.unicode
+.nounicode:
         call    viewer_set_keybar
         call    viewer_draw_text
         ret
 
 viewer_get_next_char:
         pusha
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jnz     @f
+        cmp     [bForHex], 0
+        jnz     @f
+        cmp     dword [ebp+viewer_data.buf_start], 0
+        jnz     @f
+        cmp     dword [ebp+viewer_data.buf_start+4], 0
+        jnz     @f
+        lea     eax, [ebp+viewer_data.buf]
+        cmp     eax, [ebp+viewer_data.buf_pos]
+        jnz     @f
+        cmp     word [eax], 0xFFFE
+        jz      .skip
+        cmp     word [eax], 0xFEFF
+        jnz     @f
+.skip:
+        add     [ebp+viewer_data.buf_pos], 2
+@@:
         mov     eax, [ebp+viewer_data.buf_pos]
         lea     ecx, [ebp+viewer_data.buf]
         add     ecx, [ebp+viewer_data.buf_size]
@@ -184,6 +215,8 @@ viewer_get_next_char:
         popa
         ret
 .buffered:
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jz      .unicode
         mov     al, [eax]
 .done:
         mov     [esp+28], al
@@ -191,6 +224,17 @@ viewer_get_next_char:
         clc
         popa
         ret
+
+.unicode:
+        inc     [ebp+viewer_data.buf_pos]
+        cmp     [bForHex], 0
+        jnz     @f
+        call    read_unicode_char
+        jmp     .done
+@@:
+        mov     ax, [eax]
+        mov     [esp+29], ah
+        jmp     .done
 
 viewer_get_prev_char:
         pusha
@@ -217,12 +261,59 @@ viewer_get_prev_char:
 .buffered:
         mov     eax, [ebp+viewer_data.buf_pos]
         dec     eax
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jz      .unicode
         mov     [ebp+viewer_data.buf_pos], eax
         mov     al, [eax]
         mov     [esp+28], al
+.done:
         clc
 .ret:
         popa
+        ret
+
+.unicode:
+        dec     eax
+        mov     [ebp+viewer_data.buf_pos], eax
+        call    read_unicode_char
+        jmp     .done
+
+read_unicode_char:
+        mov     ax, [eax]
+uni2ansi_char:
+        test    [ebp+viewer_data.flags], 4
+        jz      @f
+        xchg    al, ah
+@@:
+        cmp     ax, 0x80
+        jb      .ret
+        cmp     ax, 0x401
+        jz      .yo1
+        cmp     ax, 0x451
+        jz      .yo2
+        cmp     ax, 0x410
+        jb      .unk
+        cmp     ax, 0x440
+        jb      .rus1
+        cmp     ax, 0x450
+        jb      .rus2
+.unk:
+        mov     al, ' '
+.ret:
+        ret
+.yo1:
+        mov     al, 'ð'
+        ret
+.yo2:
+        mov     al, 'ñ'
+        ret
+.rus1:
+; 0x410-0x43F -> 0x80-0xAF
+        add     al, 0x70
+        ret
+.rus2:
+; 0x440-0x44F -> 0xE0-0xEF
+        add     al, 0xA0
         ret
 
 fld_uint64:
@@ -508,6 +599,8 @@ end if
         test    al, al
         jns     @f
         movzx   esi, [ebp+viewer_data.encoding]
+        cmp     esi, encodings.unicode
+        jz      @f
         shl     esi, 7
         movzx   eax, al
         mov     al, [encodings.tables-80h+esi+eax]
@@ -609,12 +702,15 @@ end if
         rep     stosw
         mov     ebx, edi
         pop     edi
+        mov     [bForHex], 1
         call    viewer_get_next_char
+        mov     [bForHex], 0
         jc      .hexdone
         push    eax
         push    edi
         add     edi, 36*2
         mov     al, 0xB3
+        mov     ah, [view_normal_color]
         call    .safechar
         pop     edi
         mov     eax, dword [ebp+viewer_data.cur_pos]
@@ -655,9 +751,13 @@ end if
         pop     eax
         jmp     @f
 .hexchar:
+        mov     [bForHex], 1
         call    viewer_get_next_char
+        mov     [bForHex], 0
         jc      .hexdone
 @@:
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jz      .hexchar_unicode
         push    eax
         shr     al, 4
         call    .hex_digit
@@ -698,6 +798,53 @@ end if
 @@:
         cmp     ecx, 16
         jnz     .hexchar
+        jmp     .hexchar_nextline
+.hexchar_unicode:
+        push    eax
+        shr     eax, 12
+        call    .hex_digit
+        pop     eax
+        push    eax
+        shr     eax, 8
+        and     al, 0xF
+        call    .hex_digit
+        pop     eax
+        push    eax
+        shr     al, 4
+        call    .hex_digit
+        pop     eax
+        push    eax
+        and     al, 0xF
+        call    .hex_digit
+        mov     al, ' '
+        mov     ah, [view_normal_color]
+        call    .safechar
+        pop     eax
+        push    edi
+        add     edi, 38*2
+        push    ecx
+        shl     ecx, 3
+        sub     edi, ecx
+        pop     ecx
+        cmp     ecx, 4
+        jb      @f
+        sub     edi, 4
+@@:
+        call    uni2ansi_char
+        mov     ah, [view_normal_color]
+        call    .safechar
+        pop     edi
+        inc     ecx
+        cmp     ecx, 4
+        jnz     @f
+        mov     al, 0xB3
+        call    .safechar
+        mov     al, ' '
+        call    .safechar
+@@:
+        cmp     ecx, 8
+        jnz     .hexchar
+.hexchar_nextline:
         mov     edi, ebx
         add     esi, 3
         mov     edx, esi
@@ -932,8 +1079,11 @@ viewer_set_curpos:
 viewer_next_newline:
         test    [ebp+viewer_data.flags], 1
         jz      .nohex
-        push    10h
+        push    8
         pop     ecx
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jz      @f
+        add     ecx, ecx
 @@:
         call    viewer_get_next_char
         jc      @f
@@ -978,6 +1128,9 @@ viewer_next_newline:
         cmp     cl, 0xD xor 0xA
         jz      .2
         dec     [ebp+viewer_data.buf_pos]
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jnz     .2
+        dec     [ebp+viewer_data.buf_pos]
 .2:
 .ret:
         call    viewer_set_curpos
@@ -986,8 +1139,11 @@ viewer_next_newline:
 viewer_prev_newline:
         test    [ebp+viewer_data.flags], 1
         jz      .nohex
-        push    10h
+        push    8
         pop     ecx
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jz      @f
+        add     ecx, ecx
 @@:
         call    viewer_get_prev_char
         jc      @f
@@ -1096,7 +1252,11 @@ else
 @@:
 end if
         movzx   esi, [ebp+viewer_data.encoding]
-        xor     esi, 1
+        dec     esi
+        jz      @f
+        push    1
+        pop     esi
+@@:
         lea     esi, [encodings.names+esi*8]
         lea     edi, [eax+keybar_cp-keybar_viewer]
         movsd
@@ -1154,11 +1314,13 @@ viewer_OnKey:
         ret
 .f8:
         movzx   esi, [ebp+viewer_data.encoding]
-        xor     [ebp+viewer_data.encoding], 1
-        call    viewer_set_keybar
-        jmp     .done_redraw
+        dec     [ebp+viewer_data.encoding]
+        jz      .done_redraw_keybar
+        mov     [ebp+viewer_data.encoding], 1
+        jmp     .done_redraw_keybar
 .f2:
         xor     [ebp+viewer_data.flags], 2
+.done_redraw_keybar:
         call    viewer_set_keybar
         jmp     .done_redraw
 .f4:
@@ -1167,7 +1329,13 @@ viewer_OnKey:
         call    viewer_set_keybar
         popf
         jnz     .tohex
-        add     dword [ebp+viewer_data.cur_pos], 1
+        push    1
+        pop     eax
+        cmp     [ebp+viewer_data.encoding], encodings.unicode
+        jnz     @f
+        add     eax, eax
+@@:
+        add     dword [ebp+viewer_data.cur_pos], eax
         adc     dword [ebp+viewer_data.cur_pos+4], 0
         call    viewer_seek_to_current
         call    viewer_prev_newline
@@ -1249,6 +1417,29 @@ viewer_OnKey:
         mov     dword [ebp+viewer_data.col], eax
         mov     dword [ebp+viewer_data.col+4], edx
         jmp     .done_redraw
+.shift_f8:
+        mov     ecx, encodings.menu.1
+        mov     al, [ebp+viewer_data.encoding]
+@@:
+        cmp     byte [ecx-1], al
+        jz      @f
+        mov     ecx, [ecx]
+        jmp     @b
+@@:
+        push    1
+        push    aTables
+        push    ecx
+        call    menu
+        cmp     eax, -1
+        jz      .ret
+        mov     al, [eax-1]
+        mov     [ebp+viewer_data.encoding], al
+        cmp     al, encodings.unicode
+        jnz     .done_redraw_keybar
+        add     dword [ebp+viewer_data.cur_pos], 1
+        adc     dword [ebp+viewer_data.cur_pos+4], 0
+        and     dword [ebp+viewer_data.cur_pos], not 1
+        jmp     .done_redraw_keybar
 
 viewer_getname:
 if lang eq ru

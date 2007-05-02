@@ -5,20 +5,62 @@ use32
         dd      i_end
 memsize dd      mem
         dd      stacktop
-        dd      0, 0
+        dd      0, app_path
 
 include 'lang.inc'
 include 'font.inc'
 include 'sort.inc'
 include 'kglobals.inc'
-include 'memalloc.inc'
 include 'dialogs.inc'
 include 'viewer.inc'
 include 'tools.inc'
+include 'filetool.inc'
 
 start:
-        mov     eax, mem
-        call    mf_init
+        mov     edi, tolower_table
+        push    'A'
+        pop     ecx
+        xor     eax, eax
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        add     al, 0x20
+        mov     cl, 'Z'-'A'+1
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        sub     al, 0x20
+        mov     cl, 'А'-'Z'-1
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        add     al, 0x20
+        mov     cl, 'Р'-'А'
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        add     al, 0x30
+        mov     cl, 'Я'-'Р'+1
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        sub     al, 0x50
+        mov     cl, 256-'Я'-1
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        mov     byte [edi-256+'Ё'], 'ё'
+        push    68
+        pop     eax
+        push    11
+        pop     ebx
+        int     0x40
         call    init_console
         call    draw_window
         push    66
@@ -27,6 +69,157 @@ start:
         pop     ebx
         mov     ecx, ebx
         int     40h     ; set keyboard mode to scancodes
+        mov     eax, 200
+        mov     [panel1_nfa], eax
+        mov     [panel2_nfa], eax
+        mov     ecx, 200*4 + 32 + 200*304
+        call    pgalloc
+        mov     [panel1_files], eax
+        call    pgalloc
+        mov     [panel2_files], eax
+        test    eax, eax
+        jz      exit
+        cmp     [panel1_files], eax
+        jz      exit
+        mov     [panel1_sortmode], 0    ; sort by name
+        mov     [panel2_sortmode], 0
+        push    2                       ; "средний" формат
+        pop     eax
+        mov     [panel1_colmode], eax
+        mov     [panel2_colmode], eax
+        mov     [num_screens], 1
+        mov     ecx, 0x1000
+        call    pgalloc
+        mov     [screens], eax
+        test    eax, eax
+        jz      exit
+        mov     ecx, panels_vtable
+        mov     [eax], ecx
+        mov     [active_screen_vtable], ecx
+; load libini.obj and kfar.ini
+        mov     eax, libini_name
+        mov     esi, ini_import
+        push    2
+        pop     ebp     ; we use version 2 of libini
+        call    load_dll_and_import
+        test    eax, eax
+        jnz     .noini
+        mov     edi, app_path
+        or      ecx, -1
+        repnz   scasb
+        mov     dword [edi-1], '.ini'
+        mov     byte [edi+3], 0
+        push    1
+        push    dword aConfirmDelete
+        push    dword aConfirmations
+        push    dword app_path
+        call    [ini.get_int]
+        mov     [bConfirmDelete], al
+        push    0
+        push    dword aConfirmDeleteIncomplete
+        push    dword aConfirmations
+        push    dword app_path
+        call    [ini.get_int]
+        mov     [bConfirmDeleteIncomplete], al
+        mov     ecx, 0x1000
+        call    xpgalloc
+        test    eax, eax
+        jz      .skip_assoc
+@@:
+        mov     edx, eax
+        push    edx ecx
+        push    ecx
+        push    edx
+        push    dword aAssociations
+        push    dword app_path
+        call    [ini.query_sec]
+        pop     ecx edx
+        cmp     eax, ecx
+        jbe     @f
+        add     ecx, ecx
+        call    xpgrealloc
+        test    eax, eax
+        jz      .skip_assoc
+        jmp     @b
+@@:
+        cmp     ecx, 0x1000
+        jbe     @f
+        mov     ecx, eax
+        call    xpgrealloc      ; must succeed, because we decrease size
+        mov     edx, eax
+@@:
+        mov     [associations], edx
+        xor     ebp, ebp
+        xor     esi, esi
+.skip_assoc:
+        mov     edi, saved_file_name
+        push    dword nullstr
+        push    512
+        push    edi
+        push    dword aShortcut
+        push    dword aFolderShortcuts
+        push    dword app_path
+        call    [ini.get_str]
+        cmp     byte [edi], 0
+        jz      .shortcut_cont
+        or      ecx, -1
+        xor     eax, eax
+        repnz   scasb
+        not     ecx
+        cmp     ecx, 2
+        jz      @f
+        cmp     byte [edi-2], '/'
+        jnz     @f
+        mov     byte [edi-2], 0
+        dec     ecx
+@@:
+        mov     al, [aShortcut.d]
+        push    esi
+        inc     esi
+        mov     [FolderShortcuts+(eax-'0')*4], esi
+        lea     esi, [esi+ecx-1]
+        push    esi
+        and     esi, 0xFFF
+        cmp     esi, ecx
+        pop     esi
+        ja      .norealloc
+        mov     edx, ebp
+        mov     ecx, esi
+        call    xpgrealloc
+        test    eax, eax
+        jnz     @f
+        mov     edi, FolderShortcuts
+        mov     ecx, 10
+        rep     stosd
+        jmp     .skip_shortcuts
+@@:
+        mov     ebp, eax
+.norealloc:
+        pop     edi
+        add     edi, ebp
+        mov     ecx, saved_file_name
+@@:
+        mov     al, [ecx]
+        inc     ecx
+        stosb
+        test    al, al
+        jnz     @b
+.shortcut_cont:
+        inc     [aShortcut.d]
+        cmp     [aShortcut.d], '9'
+        jbe     .skip_assoc
+        mov     esi, FolderShortcuts
+        mov     ecx, 10
+        dec     ebp
+.l3:
+        lodsd
+        test    eax, eax
+        jz      @f
+        add     [esi-4], ebp
+@@:
+        loop    .l3
+.skip_shortcuts:
+.noini:
         mov     esi, def_left_dir
         mov     edi, panel1_dir
 @@:
@@ -41,39 +234,16 @@ start:
         stosb
         test    al, al
         jnz     @b
-        mov     eax, 200
-        mov     [panel1_nfa], eax
-        mov     [panel2_nfa], eax
-        mov     eax, 200*4 + 32 + 200*304
-        push    eax
-        call    mf_alloc
-        mov     [panel1_files], eax
-        pop     eax
-        call    mf_alloc
-        mov     [panel2_files], eax
-        test    eax, eax
-        jz      exit
-        cmp     [panel1_files], eax
-        jz      exit
-        mov     [panel1_sortmode], 0    ; sort by name
-        mov     [panel2_sortmode], 0
-        mov     [num_screens], 1
-        mov     eax, 8
-        call    mf_alloc
-        mov     [screens], eax
-        test    eax, eax
-        jz      exit
-        mov     ecx, panels_vtable
-        mov     [eax], ecx
-        mov     [active_screen_vtable], ecx
         call    draw_keybar
         call    draw_cmdbar
         mov     [prev_dir], 0
         mov     ebp, panel1_data
+        call    calc_colwidths
         call    read_folder
         call    draw_panel
         mov     [bSilentFolderMode], 1
         mov     ebp, panel2_data
+        call    calc_colwidths
         call    read_folder
         call    draw_panel
 event:
@@ -196,6 +366,9 @@ redraw:
         add     esi, 5-1
         int     40h
 .resize_draw:
+        mov     ecx, [MemForImage]
+        call    pgfree
+        and     [MemForImage], 0
         call    init_console
 ;        call    draw_window
         call    draw_keybar
@@ -414,28 +587,37 @@ ctrlkey_test4:
         ret
 
 new_screen:
-        call    xmalloc
+; in: ecx=sizeof(screen data), edx->vtable
+; out: ebp=pointer or NULL, eax!=0 if successful
+; destroys ebx,ecx
+        call    xpgalloc
         test    eax, eax
         jnz     @f
         ret
 @@:
         mov     ebp, eax
-        mov     ebx, [num_screens]
-        inc     ebx
-        shl     ebx, 3
         mov     eax, [screens]
-        call    xrealloc
+        mov     ecx, [num_screens]
+        inc     ecx
+        shl     ecx, 3
+        test    ecx, 0xFFF
+        jnz     .norealloc
+        push    edx
+        mov     edx, eax
+        call    xpgrealloc
+        pop     edx
         test    eax, eax
         jnz     @f
-        mov     eax, ebp
-        call    mf_free
+        mov     ecx, ebp
+        call    pgfree
         xor     eax, eax
         ret
 @@:
         mov     [screens], eax
+.norealloc:
         inc     [num_screens]
-        mov     [eax+ebx-8], edx
-        mov     [eax+ebx-4], ebp
+        mov     [eax+ecx-8], edx
+        mov     [eax+ecx-4], ebp
         mov     eax, [num_screens]
         dec     eax
         mov     [active_screen], eax
@@ -465,12 +647,16 @@ delete_active_screen:
         add     ecx, ecx
         rep     movsd
         dec     [num_screens]
-        mov     ebx, [num_screens]
-        shl     ebx, 3
-        mov     eax, [screens]
-        call    mf_realloc      ; must succeed, because we decrease size
-        pop     eax
-        call    mf_free
+        mov     ecx, [num_screens]
+        shl     ecx, 3
+        test    ecx, 0xFFF
+        jnz     .norealloc
+        mov     edx, [screens]
+        call    pgrealloc               ; must succeed, because we decrease size
+        mov     [screens], eax
+.norealloc:
+        pop     ecx
+        call    pgfree
         and     [active_screen], 0
 
 change_screen:
@@ -491,7 +677,8 @@ F12:
         add     eax, 8
         mov     esi, eax
         mul     [num_screens]
-        call    xmalloc
+        mov     ecx, eax
+        call    xpgalloc
         test    eax, eax
         jnz     @f
         ret
@@ -553,7 +740,7 @@ F12:
         mul     esi
         add     eax, ebx
         push    1
-        push    aScreens
+        push    dword aScreens
         push    eax
         call    menu
         cmp     eax, -1
@@ -562,8 +749,8 @@ F12:
         div     esi
         mov     [active_screen], eax
 @@:
-        mov     eax, ebx
-        call    mf_free
+        mov     ecx, ebx
+        call    pgfree
         jmp     change_screen
 
 panels_OnKey:
@@ -587,10 +774,38 @@ panels_OnKey:
 ;        call    draw_panel
 ;        ret
         jmp     draw_panel
+.insert:
+        lea     eax, [ecx*4]
+        add     eax, [ebp + panel1_files - panel1_data]
+        mov     eax, [eax]
+        cmp     word [eax+40], '..'
+        jnz     @f
+        cmp     byte [eax+42], 0
+        jz      .insert.down
+@@:
+        xor     byte [eax+303], 1
+        mov     edx, [eax+32]
+        test    byte [eax+303], 1
+        mov     eax, [eax+36]
+        jnz     .insert.increase
+        sub     dword [ebp + panel1_selected_size - panel1_data], edx
+        sbb     dword [ebp + panel1_selected_size+4 - panel1_data], eax
+        dec     [ebp + panel1_selected_num - panel1_data]
+        jmp     .insert.down
+.insert.increase:
+        add     dword [ebp + panel1_selected_size - panel1_data], edx
+        adc     dword [ebp + panel1_selected_size+4 - panel1_data], eax
+        inc     [ebp + panel1_selected_num - panel1_data]
+.insert.down:
+        inc     ecx
+        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        jae     .done_redraw
+        jmp     @f
 .down:
         inc     ecx
         cmp     ecx, [ebp + panel1_numfiles - panel1_data]
         jae     .ret
+@@:
         mov     [ebp + panel1_index - panel1_data], ecx
         cmp     ecx, ebx
         jb      .done_redraw
@@ -599,31 +814,55 @@ panels_OnKey:
         mov     [ebp + panel1_start - panel1_data], ecx
         jmp     .done_redraw
 .left:
-        jecxz   .ret
-        sub     ecx, [ebp + panel1_colsz - panel1_data]
+        test    ecx, ecx
+        jnz     @f
+        ret
+@@:
+        mov     eax, [ebp + panel1_colsz - panel1_data]
+        sub     ecx, eax
         jae     @f
         xor     ecx, ecx
 @@:
         mov     [ebp + panel1_index - panel1_data], ecx
+.finalize_left:
         cmp     ecx, edx
         jae     .done_redraw
-        sub     edx, [ebp + panel1_colsz - panel1_data]
+        sub     edx, eax
         jae     @f
         xor     edx, edx
 @@:
         mov     [ebp + panel1_start - panel1_data], edx
         jmp     .done_redraw
+.pgup:
+        mov     eax, [ebp + panel1_colst - panel1_data]
+        dec     eax
+        jnz     @f
+        inc     eax
+@@:
+        test    ecx, ecx
+        jnz     @f
+        ret
+@@:
+        sub     ecx, eax
+        jae     @f
+        xor     ecx, ecx
+@@:
+        mov     [ebp + panel1_index - panel1_data], ecx
+        dec     ecx
+        jmp     .finalize_left
 .right:
-        add     ecx, [ebp + panel1_colsz - panel1_data]
+        mov     eax, [ebp + panel1_colsz - panel1_data]
+        add     ecx, eax
         cmp     ecx, [ebp + panel1_numfiles - panel1_data]
         jb      @f
         mov     ecx, [ebp + panel1_numfiles - panel1_data]
         dec     ecx
 @@:
         mov     [ebp + panel1_index - panel1_data], ecx
+.finalize_right:
         cmp     ecx, ebx
         jb      .done_redraw
-        add     ebx, [ebp + panel1_colsz - panel1_data]
+        add     ebx, eax
         cmp     ebx, [ebp + panel1_numfiles - panel1_data]
         jbe     @f
         mov     ebx, [ebp + panel1_numfiles - panel1_data]
@@ -634,6 +873,21 @@ panels_OnKey:
 @@:
         mov     [ebp + panel1_start - panel1_data], ebx
         jmp     .done_redraw
+.pgdn:
+        mov     eax, [ebp + panel1_colst - panel1_data]
+        dec     eax
+        jnz     @f
+        inc     eax
+@@:
+        add     ecx, eax
+        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        jb      @f
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        dec     ecx
+@@:
+        mov     [ebp + panel1_index - panel1_data], ecx
+        inc     ecx
+        jmp     .finalize_right
 .tab:
         xor     [active_panel], panel1_data xor panel2_data
         call    draw_cmdbar
@@ -661,12 +915,28 @@ panels_OnKey:
         jnz     .enter_folder
         call    find_extension
         jc      .run_app
-        jnz     .run_app
 .run_association:
-        mov     eax, [edi+4]
+        cmp     byte [edi], 0
+        jz      .l1
+        cmp     byte [edi], ';'
+        jnz     @f
+.l1:
+        ret
+@@:
+        mov     esi, edi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, ';'
+        jnz     @b
+        dec     esi
+        mov     byte [esi], 0
+        mov     [restore_semicolon], esi
+@@:
 .run_association2:
         mov     [execparams], execdata
-        mov     [execptr], eax
+        mov     [execptr], edi
         jmp     .dorun
 .run_app:
         mov     [execptr], execdata
@@ -699,7 +969,14 @@ panels_OnKey:
         xor     edx, edx
         cmp     [execparams], edx
         jz      .nofasm
-        cmp     [execptr], fasm
+        mov     esi, [execptr]
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+        mov     eax, [esi-5]
+        or      eax, 0x20202020
+        cmp     eax, 'fasm'
         jnz     .nofasm
         cmp     edi, execdata+(execdataend-execdata)/2
         ja      .bigfilename
@@ -749,13 +1026,19 @@ panels_OnKey:
         push    70
         pop     eax
         int     40h
+        xor     esi, esi
+        xchg    esi, [restore_semicolon]
+        test    esi, esi
+        jz      @f
+        mov     byte [esi], ';'
+@@:
         neg     eax
         js      @f
-        push    aContinue
+        push    dword aContinue
         mov     esi, esp
         call    get_error_msg
         push    eax
-        push    aRunError
+        push    dword aRunError
         mov     eax, esp
         push    esi
         push    1
@@ -763,7 +1046,7 @@ panels_OnKey:
         push    2
         push    -1
         push    -1
-        push    aError
+        push    dword aError
         call    SayErr
         add     esp, 3*4
         ret
@@ -784,8 +1067,14 @@ panels_OnKey:
         pop     esi
 .bigfilename:
         mov     eax, aFileNameTooBig
+.l2:
+        xor     esi, esi
+        xchg    esi, [restore_semicolon]
+        test    esi, esi
+        jz      @f
+        mov     byte [esi], ';'
 @@:
-        push    aContinue
+        push    dword aContinue
         mov     esi, esp
         push    eax
         mov     eax, esp
@@ -795,21 +1084,21 @@ panels_OnKey:
         push    1
         push    -1
         push    -1
-        push    aError
+        push    dword aError
         call    SayErr
         add     esp, 2*4
         ret
 .bigcmdline:
         mov     eax, aCmdLineTooBig
-        jmp     @b
+        jmp     .l2
 .bigfoldername2:
         mov     byte [ecx], 0
 .bigfoldername:
         mov     eax, aFolderNameTooBig
-        jmp     @b
+        jmp     .l2
 .copytoself:
         mov     eax, aCannotCopyToSelf
-        jmp     @b
+        jmp     .l2
 .enter_folder:
         lea     esi, [ecx+40]
         cmp     word [esi], '..'
@@ -940,6 +1229,7 @@ panels_OnKey:
         mov     [ebx+dirinfo.dirdata-dirinfo], driveinfo
         mov     [ebx+dirinfo.name-dirinfo], tmpname
         mov     byte [tmpname], '/'
+        xor     edx, edx
         xor     ecx, ecx
 .drive_loop_e:
         mov     byte [tmpname+1], 0
@@ -965,17 +1255,20 @@ panels_OnKey:
         mov     ebx, dirinfo
         test    eax, eax
         jnz     .drive_loop_i_done
-        mov     eax, 32+8
-        call    xmalloc
+        add     ecx, 32+8
+        push    ecx
+        and     ecx, 0xFFF
+        cmp     ecx, 32+8
+        pop     ecx
+        ja      @f
+        call    xpgrealloc
+        mov     edx, eax
         test    eax, eax
-        jz      .drive_loop_i_done
-        jecxz   @f
-        mov     [ecx], eax
+        jnz     @f
+        pop     eax
+        ret
 @@:
-        and     dword [eax], 0
-        mov     [eax+4], ecx
-        mov     ecx, eax
-        lea     edi, [eax+8]
+        lea     edi, [edx+ecx-32]
         mov     esi, tmpname
 @@:
         lodsb
@@ -1000,6 +1293,20 @@ panels_OnKey:
         jmp     .drive_loop_e
 .drive_loop_e_done:
         and     [ebx+dirinfo.first-dirinfo], 0
+        mov     edi, edx
+        xor     esi, esi
+        add     ecx, edx
+@@:
+        and     dword [edi], 0
+        mov     dword [edi+4], esi
+        mov     esi, edi
+        add     edi, 32+8
+        cmp     edi, ecx
+        jae     @f
+        mov     [esi], edi
+        jmp     @b
+@@:
+        mov     ecx, edx
         lea     edi, [ebp + panel1_dir - panel1_data]
 .find_cur_drive_loop:
         push    edi
@@ -1013,12 +1320,13 @@ panels_OnKey:
         inc     edi
         jmp     @b
 @@:
-        cmp     dword [ecx+4], 0
+        cmp     dword [ecx], 0
         jz      @f
         pop     edi
-        mov     ecx, [ecx+4]
+        mov     ecx, [ecx]
         jmp     .find_cur_drive_loop
 @@:
+        mov     ecx, edx
 .cur_drive_found:
         pop     edi
         push    1
@@ -1049,17 +1357,8 @@ panels_OnKey:
         stosb
         test    al, al
         jnz     @b
-@@:
-        cmp     dword [ecx+4], 0
-        jz      @f
-        mov     ecx, [ecx+4]
-        jmp     @b
-@@:
-        mov     eax, ecx
-        mov     ecx, [ecx]
-        call    mf_free
-        test    ecx, ecx
-        jnz     @b
+        mov     ecx, edx
+        call    pgfree
         call    read_folder
         jmp     .done_redraw
 .shift_f5:
@@ -1317,17 +1616,17 @@ panels_OnKey:
         cmp     eax, 6
         jz      .copyreadok
         push    esi
-        push    aCannotReadFile
+        push    dword aCannotReadFile
         call    get_error_msg
         push    eax
         mov     eax, esp
-        push    RetryOrCancelBtn
+        push    dword RetryOrCancelBtn
         push    2
         push    eax
         push    3
         push    -1
         push    -1
-        push    aError
+        push    dword aError
         call    SayErr
         add     esp, 3*4
         test    eax, eax
@@ -1347,17 +1646,17 @@ panels_OnKey:
         test    eax, eax
         jz      .copywriteok
         push    edi
-        push    aCannotWriteFile
+        push    dword aCannotWriteFile
         call    get_error_msg
         push    eax
         mov     eax, esp
-        push    RetryOrCancelBtn
+        push    dword RetryOrCancelBtn
         push    2
         push    eax
         push    3
         push    -1
         push    -1
-        push    aError
+        push    dword aError
         call    SayErr
         add     esp, 3*4
         test    eax, eax
@@ -1381,15 +1680,15 @@ panels_OnKey:
         jz      @f
         cmp     [writeinfo.code], 2
         jz      .copydone
-        push    aIncompleteFile
+        push    dword aIncompleteFile
         mov     eax, esp
-        push    DeleteOrKeepBtn
+        push    dword DeleteOrKeepBtn
         push    2
         push    eax
         push    1
         push    -1
         push    -1
-        push    aCopyCaption
+        push    dword aCopyCaption
         call    SayErr
         add     esp, 4
         test    eax, eax
@@ -1409,13 +1708,83 @@ panels_OnKey:
         call    view_file
 .ret2:
         ret
+.f8_has_selected:
+        mov     edi, saved_file_name+511
+        mov     byte [edi], 0
+        mov     eax, [ebp + panel1_selected_num - panel1_data]
+if lang eq ru
+        cmp     eax, 1
+        jz      @f
+        dec     edi
+        mov     byte [edi], 'а'
+        cmp     eax, 4
+        jbe     @f
+        dec     edi
+        mov     word [edi], 'ов'
+@@:
+        mov     dword [edi-4], 'мент'
+        mov     dword [edi-8], ' эле'
+        sub     edi, 8
+else
+        cmp     eax, 1
+        jz      @f
+        dec     edi
+        mov     byte [edi], 's'
+@@:
+        mov     dword [edi-4], 'item'
+        mov     byte [edi-5], ' '
+        sub     edi, 5
+end if
+        xor     edx, edx
+        push    10
+        pop     ecx
+@@:
+        div     ecx
+        add     dl, '0'
+        dec     edi
+        mov     [edi], dl
+        xor     edx, edx
+        test    eax, eax
+        jnz     @b
+        push    edi
+        push    aConfirmDeleteText
+        mov     eax, esp
+        push    DeleteOrCancelBtn
+        push    2
+        push    eax
+        push    2
+        push    -1
+        push    -1
+        push    aDeleteCaption
+        call    Message
+        add     esp, 8
+        test    eax, eax
+        jnz     .ret2
+        mov     [del_bSkipAll], 0
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        jecxz   .ret2
+        mov     esi, [ebp + panel1_files - panel1_data]
+.f8_loop:
+        lodsd
+        test    byte [eax+303], 1
+        jz      @f
+        call    delete_file
+        ja      .f8_multiple_cancel
+@@:
+        loop    .f8_loop
+.f8_multiple_cancel:
+        jmp     .ctrl_r
 .f8:
+        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        jnz     .f8_has_selected
         call    get_curfile_folder_entry
         cmp     [bConfirmDelete], 0
         jz      .f8_allowed
-        mov     ebx, f8_confirm_dlgdata
+        lea     eax, [ecx+40]
+        push    eax
         mov     esi, aConfirmDeleteText
         mov     edi, aConfirmDeleteTextBuf
+        push    edi
 @@:
         lodsb
         stosb
@@ -1431,93 +1800,23 @@ panels_OnKey:
         stosb
         test    al, al
         jnz     @b
-        lea     esi, [ecx+40]
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.name], esi
-        or      eax, -1
-@@:
-        inc     eax
-        cmp     byte [eax+esi], 0
-        jnz     @b
-        sub     edi, aConfirmDeleteTextBuf+1
-        cmp     eax, edi
-        jae     @f
-        mov     eax, edi
-@@:
-        inc     eax
-        inc     eax
-        mov     edx, [cur_width]
-        sub     edx, 8
-        cmp     eax, edx
-        jbe     @f
-        mov     eax, edx
-@@:
-        mov     [ebx + dlgtemplate.width], eax
-        dec     eax
-        dec     eax
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.width2], eax
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.width3], eax
-        shr     eax, 1
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.del_x2], eax
-        sub     eax, aDeleteLength-1
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.del_x1], eax
-        add     eax, aDeleteLength
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.cnl_x1], eax
-        add     eax, aCancelLength - 1
-        mov     [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.cnl_x2], eax
-        or      byte [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.flags1], 4
-        and     byte [ebx - f8_confirm_dlgdata + f8_confirm_dlgdata.flags2], not 4
-        push    ebx
-        call    DialogBox
-        cmp     eax, f8_confirm_dlgdata.del_btn
-        jnz     .ret2
-.f8_allowed:
-        lea     esi, [ebp + panel1_dir - panel1_data]
-        mov     edi, execdata
-@@:
-        lodsb
-        test    al, al
-        jz      @f
-        stosb
-        jmp     @b
-@@:
-        lea     esi, [ecx+40]
-        mov     al, '/'
-        stosb
-@@:
-        lodsb
-        cmp     edi, execdataend
-        jae     .bigfilename
-        stosb
-        test    al, al
-        jnz     @b
-.retrydel:
-        push    70
-        pop     eax
-        mov     ebx, delinfo
-        int     0x40
-        test    eax, eax
-        jz      .ctrl_r
-        push    execdata
-        push    aCannotDeleteFolder
-        call    get_curfile_folder_entry
-        test    byte [ecx], 10h
-        jnz     @f
-        mov     dword [esp], aCannotDeleteFile
-@@:
-        call    get_error_msg
-        push    eax
         mov     eax, esp
-        push    RetryOrCancelBtn
+        push    DeleteOrCancelBtn
         push    2
         push    eax
-        push    3
+        push    2
         push    -1
         push    -1
-        push    aError
-        call    SayErr
-        add     esp, 3*4
+        push    aDeleteCaption
+        call    Message
+        add     esp, 8
         test    eax, eax
-        jz      .retrydel
+        jz      .f8_allowed
+        ret
+.f8_allowed:
+        mov     [del_bSkipAll], 0
+        mov     eax, ecx
+        call    delete_file
 .ctrl_r:
 ; Rescan panel
 ;       call    read_folder
@@ -1589,10 +1888,24 @@ panels_OnKey:
 @@:
         call    find_extension
         jc      .menuret
-        jnz     .menuret
 ; known extension
-        mov     ebx, [edi+8]
-        test    ebx, ebx
+@@:
+        cmp     byte [edi], 0
+        jz      .menuret
+        cmp     byte [edi], ';'
+        jz      @f
+        inc     edi
+        jmp     @b
+@@:
+        inc     edi
+@@:
+        inc     edi
+        cmp     byte [edi-1], ' '
+        jz      @b
+        cmp     byte [edi-1], 9
+        jz      @b
+        dec     edi
+        cmp     byte [edi], 0
         jz      .menuret
         mov     ecx, esi
 @@:
@@ -1605,41 +1918,99 @@ panels_OnKey:
         mov     cl, 15
 @@:
         xor     edx, edx
+        xor     ebp, ebp
+        push    edx
 .menucreateloop:
-        mov     eax, [ebx]
-        test    eax, eax
-        jz      .menucreated
+        mov     eax, edi
+        xor     ebx, ebx
 @@:
+        cmp     byte [edi], ','
+        jz      @f
+        cmp     byte [edi], bl
+        jz      @f
+        inc     edi
+        jmp     @b
+@@:
+        xchg    bl, [edi]
+        pushad
+        push    nullstr
+        push    1024
+        push    saved_file_name
+        push    eax
+        push    aMenu
+        push    app_path
+        call    [ini.get_str]
+        popad
+        mov     [edi], bl
+        mov     eax, saved_file_name
+@@:
+        cmp     byte [eax], 0
+        jz      .menucreatecont
+        cmp     byte [eax], ','
+        jz      @f
         inc     eax
-        cmp     byte [eax-1], 0
-        jnz     @b
-        sub     eax, [ebx]
+        jmp     @b
+@@:
+        mov     byte [eax], 0
+        push    eax
+        sub     eax, saved_file_name-1
         cmp     eax, ecx
         ja      @f
         mov     eax, ecx
 @@:
-        add     eax, 12
-        call    xmalloc
+        xchg    eax, [esp]
+        inc     eax
+        push    eax
+@@:
+        inc     eax
+        cmp     byte [eax-1], 0
+        jnz     @b
+        sub     eax, [esp]
+        add     [esp+4], eax
+        pop     eax eax
+        add     eax, 8
+        add     ebp, eax
+        push    ebp
+        and     ebp, 0xFFF
+        cmp     ebp, eax
+        pop     ebp
+        ja      @f
+        push    eax
+        xchg    edx, [esp+4]
+        push    ecx
+        mov     ecx, ebp
+        call    xpgrealloc
+        pop     ecx
+        pop     edx
+        xchg    edx, [esp]
         test    eax, eax
+        xchg    eax, [esp]
         jz      .menucreated
-        add     eax, 4
+@@:
+        neg     eax
+        add     eax, ebp
+        add     eax, [esp]
+        and     dword [eax], 0
+        and     dword [eax+4], 0
         test    edx, edx
         jz      @f
+        sub     eax, [esp]
         mov     [edx], eax
-@@:
+        add     eax, [esp]
+        sub     edx, [esp]
         mov     [eax+4], edx
+@@:
         mov     edx, eax
-        push    esi
-        mov     esi, [ebx+4]
-        mov     [eax-4], esi
-        mov     esi, [ebx]
+        push    esi edi
+        mov     esi, saved_file_name
         lea     edi, [eax+8]
 @@:
         lodsb
         stosb
         test    al, al
         jnz     @b
-        sub     esi, [ebx]
+        push    esi
+        sub     esi, saved_file_name
         sub     esi, ecx
         jae     .menunoadd
         neg     esi
@@ -1650,36 +2021,50 @@ panels_OnKey:
         jnz     @b
 .menunoadd:
         pop     esi
-        add     ebx, 8
-        jmp     .menucreateloop
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     edi esi
+.menucreatecont:
+        inc     edi
+        cmp     byte [edi-1], ','
+        jz      .menucreateloop
 .menucreated:
         test    edx, edx
-        jz      .menuret
+        jz      .menuret_free
         and     dword [edx], 0
+        pop     edx
+        mov     ecx, edx
+        add     [ecx], edx
 @@:
-        cmp     dword [edx+4], 0
+        mov     ecx, [ecx]
+        cmp     dword [ecx], 0
         jz      @f
-        mov     edx, [edx+4]
+        add     [ecx], edx
+        add     [ecx+4], edx
         jmp     @b
 @@:
+        add     [ecx+4], edx
+        push    edx
         push    1
         push    esi
         push    edx
         call    menu
         cmp     eax, -1
-        jz      .menuret
-        push    dword [eax-4]
+        jz      .menuret_free
+        lea     edi, [eax+8]
 @@:
-        test    edx, edx
-        jz      @f
-        lea     eax, [edx-4]
-        mov     edx, [edx]
-        call    mf_free
-        jmp     @b
-@@:
-        pop     eax
+        inc     edi
+        cmp     byte [edi-1], 0
+        jnz     @b
+        mov     ebp, [active_panel]
         call    get_curfile_folder_entry
-        jmp     .run_association2
+        call    .run_association2
+.menuret_free:
+        pop     ecx
+        jmp     pgfree
 .f7:
         mov     dword [CopyDestEditBuf], CopyDestEditBuf.length
         and     dword [CopyDestEditBuf+4], 0
@@ -1758,42 +2143,161 @@ panels_OnKey:
         int     0x40
         test    eax, eax
         jz      @f
-        push    CopyDestEditBuf+12
-        push    aCannotMakeFolder
+        push    dword CopyDestEditBuf+12
+        push    dword aCannotMakeFolder
         call    get_error_msg
         push    eax
         mov     eax, esp
-        push    RetryOrCancelBtn
+        push    dword RetryOrCancelBtn
         push    2
         push    eax
         push    3
         push    -1
         push    -1
-        push    aError
+        push    dword aError
         call    SayErr
         add     esp, 3*4
         test    eax, eax
         jz      .mkdir_retry
 @@:
         jmp     .copydone
+.change_mode:
+        dec     eax
+        mov     [ebp + panel1_colmode - panel1_data], eax
+        call    calc_colwidths
+        jmp     draw_panel
+.quick_jump:
+        dec     eax
+        cmp     al, 10
+        jnz     @f
+        xor     eax, eax
+@@:
+        mov     eax, [FolderShortcuts+eax*4]
+        test    eax, eax
+        jnz     @f
+        ret
+@@:
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        push    eax esi
+        mov     edi, prev_dir
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     edi esi
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        jmp     .reread
+.greyplus:
+        push    0
+        mov     ecx, aSelect
+        jmp     @f
+.greyminus:
+        push    1
+        mov     ecx, aDeselect
+@@:
+        mov     eax, mark_dlgdata
+        mov     [eax+mark_dlgdata.title-mark_dlgdata], ecx
+        mov     [eax+mark_dlgdata.flags-mark_dlgdata], 0xC
+        mov     edi, enter_string_buf+12
+        mov     dword [edi-12], 512
+        mov     dword [edi-8], 1
+        and     dword [edi-4], 0
+        mov     word [edi], '*'
+        push    eax
+        call    DialogBox
+        inc     eax
+        jnz     @f
+.noselect:
+        pop     eax
+        ret
+@@:
+        xor     eax, eax
+        mov     esi, edi
+@@:
+        lodsb
+        mov     al, [tolower_table+eax]
+        mov     [esi-1], al
+        test    al, al
+        jnz     @b
+@@:
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     ebx, [ebp + panel1_files - panel1_data]
+        jecxz   .noselect
+        mov     eax, [ebx]
+        cmp     word [eax+40], '..'
+        jnz     .selectloop
+        cmp     byte [eax+42], 0
+        jnz     .selectloop
+        dec     ecx
+        jz      .noselect
+        add     ebx, 4
+.selectloop:
+        xor     eax, eax
+        mov     esi, [ebx]
+        add     esi, 40
+        mov     edx, lower_file_name-1
+@@:
+        lodsb
+        inc     edx
+        mov     al, [tolower_table+eax]
+        mov     [edx], al
+        test    al, al
+        jnz     @b
+        mov     esi, lower_file_name
+        call    match_mask_rev_lowercase
+        jc      @f
+        mov     esi, [ebx]
+        mov     eax, [esi+32]
+        cmp     byte [esp], 0
+        jz      .doselect
+        test    byte [esi+303], 1
+        jz      @f
+        and     byte [esi+303], not 1
+        sub     dword [ebp + panel1_selected_size - panel1_data], eax
+        mov     eax, [esi+36]
+        sbb     dword [ebp + panel1_selected_size+4 - panel1_data], eax
+        dec     dword [ebp + panel1_selected_num - panel1_data]
+        jmp     @f
+.doselect:
+        test    byte [esi+303], 1
+        jnz     @f
+        or      byte [esi+303], 1
+        add     dword [ebp + panel1_selected_size - panel1_data], eax
+        mov     eax, [esi+36]
+        adc     dword [ebp + panel1_selected_size+4 - panel1_data], eax
+        inc     dword [ebp + panel1_selected_num - panel1_data]
+@@:
+        add     ebx, 4
+        dec     ecx
+        jnz     .selectloop
+        pop     eax
+        jmp     .done_redraw
 
 panels_OnRedraw:
         call    draw_cmdbar
         mov     ebp, panel1_data
+        call    calc_colwidths
         call    draw_panel
         mov     ebp, panel2_data
+        call    calc_colwidths
         call    draw_panel
         ret
 
 init_console:
-        mov     eax, [console_data_ptr]
-        call    mf_free
+        mov     ecx, [console_data_ptr]
+        call    pgfree
         mov     eax, [cur_width]
         mul     [cur_height]
         mov     ecx, eax
-        add     eax, eax
-        add     eax, eax
-        call    mf_alloc
+        push    ecx
+        shl     ecx, 2
+        call    pgalloc
+        pop     ecx
         test    eax, eax
         jz      exit
         mov     [console_data_ptr], eax
@@ -1963,7 +2467,6 @@ draw_window:
 @@:
         cmp     [fill_height], 0
         jz      @f
-        mov     al, 13
         xor     edx, edx
         mov     ebx, 50000h
         mov     bx, word [wnd_width]
@@ -1977,15 +2480,21 @@ draw_window:
 @@:
 ;        xor     ecx, ecx
 ;        call    draw_image
-        and     [min_x], 0
-        and     [min_y], 0
-        mov     eax, [cur_width]
-        dec     eax
-        mov     [max_x], eax
-        mov     eax, [cur_height]
-        dec     eax
-        mov     [max_y], eax
-        call    draw_image.force
+        mov     al, 65
+        mov     ebx, [MemForImage]
+        test    ebx, ebx
+        jz      @f
+        mov     ecx, [cur_width]
+        imul    ecx, font_width*10000h
+        mov     cx, word [cur_height]
+        imul    cx, font_height
+        mov     edx, [skinh]
+        add     edx, 5*10000h
+        mov     esi, 8
+        mov     edi, console_colors
+        xor     ebp, ebp
+        int     0x40
+@@:
         mov     al, 12
         push    2
         pop     ebx
@@ -2012,187 +2521,145 @@ draw_image.nomem:
         ret
 
 draw_image:
-; determine draw rectangle
-        and     [max_x], 0
-        or      [min_x], -1
-        or      [min_y], -1
-        mov     esi, [console_data_ptr]
-        xor     eax, eax
-        xor     edx, edx
+        mov     [bMemForImageValidData], byte 1
+        cmp     [MemForImage], 0
+        jnz     .allocated
+; allocate memory for image
         mov     ecx, [cur_width]
         imul    ecx, [cur_height]
-.m1:
-        mov     bx, [esi]
-        cmp     bx, [esi+ecx*2]
-        jz      .m2
-        cmp     eax, [min_x]
-        ja      @f
-        mov     [min_x], eax
-@@:
-        cmp     eax, [max_x]
-        jb      @f
-        mov     [max_x], eax
-@@:
-        cmp     edx, [min_y]
-        jae     @f
-        mov     [min_y], edx
-@@:
-        mov     [max_y], edx
-.m2:
-        add     esi, 2
-        inc     eax
-        cmp     eax, [cur_width]
-        jb      .m1
-        xor     eax, eax
-        inc     edx
-        cmp     edx, [cur_height]
-        jb      .m1
-        mov     eax, [cursor_x]
-        cmp     eax, -1
-        jz      .m3
-        cmp     eax, [min_x]
-        ja      @f
-        mov     [min_x], eax
-@@:
-        cmp     eax, [max_x]
-        jb      @f
-        mov     [max_x], eax
-@@:
-        mov     edx, [cursor_y]
-        cmp     edx, [min_y]
-        ja      @f
-        mov     [min_y], edx
-@@:
-        cmp     edx, [max_y]
-        jb      @f
-        mov     [max_y], edx
-@@:
-.m3:
-        xchg    eax, [old_cursor_x]
-        xchg    edx, [old_cursor_y]
-        cmp     eax, -1
-        jz      .m4
-        cmp     eax, [min_x]
-        ja      @f
-        mov     [min_x], eax
-@@:
-        cmp     eax, [max_x]
-        jb      @f
-        mov     [max_x], eax
-@@:
-        cmp     edx, [min_y]
-        ja      @f
-        mov     [min_y], edx
-@@:
-        cmp     edx, [max_y]
-        jb      @f
-        mov     [max_y], edx
-@@:
-.m4:
-        cmp     [min_y], -1
-        jz      .nodraw
-.force:
-; allocate memory for image
-        mov     ecx, [max_x]
-        sub     ecx, [min_x]
-        inc     ecx
-        mov     [used_width], ecx
-        mov     edx, [max_y]
-        sub     edx, [min_y]
-        inc     edx
-        mov     [used_height], edx
-        imul    ecx, edx
         imul    ecx, font_width*font_height
-        add     ecx, [heapend]
-        push    64
-        pop     eax
-        push    1
-        pop     ebx
-        int     0x40
+        call    pgalloc
         test    eax, eax
-        jnz     draw_image.nomem
-        mov     edi, [heapend]
+        jz      draw_image.nomem
+        mov     [MemForImage], eax
+        mov     [bMemForImageValidData], byte 0
+.allocated:
+        and     [max_x], 0
+        or      [min_x], -1
+        and     [max_y], 0
+        or      [min_y], -1
+        mov     eax, [cursor_y]
+        mul     [cur_width]
+        add     eax, [cursor_x]
+        add     eax, eax
+        add     eax, [console_data_ptr]
+        xchg    [cur_cursor_pos], eax
+        mov     [old_cursor_pos], eax
+        mov     edi, [MemForImage]
         mov     esi, [console_data_ptr]
-        mov     eax, [min_y]
-        imul    eax, [cur_width]
-        add     eax, [min_x]
-        lea     esi, [esi+eax*2]
-        mov     ecx, [used_height]
+        mov     ecx, [cur_height]
 .lh:
-        push    ecx esi
-        mov     ecx, [used_width]
+        push    ecx
+        mov     ecx, [cur_width]
 .lw:
         push    ecx
-        mov     ebx, [esi]
         mov     eax, [cur_width]
         imul    eax, [cur_height]
+        mov     ebx, [esi]
+        cmp     [bMemForImageValidData], 0
+        jz      @f
+        cmp     esi, [cur_cursor_pos]
+        jz      @f
+        cmp     esi, [old_cursor_pos]
+        jz      @f
+        cmp     bx, [eax*2+esi]
+        jnz     @f
+        inc     esi
+        inc     esi
+        jmp     .skip_symbol
+@@:
         mov     [eax*2+esi], bx
-        movzx   eax, bl
+        cmp     ecx, [min_x]
+        ja      @f
+        mov     [min_x], ecx
+@@:
+        cmp     ecx, [max_x]
+        jb      @f
+        mov     [max_x], ecx
+@@:
+        mov     eax, [esp+4]
+        mov     [min_y], eax
+        cmp     eax, [max_y]
+        jb      @f
+        mov     [max_y], eax
+@@:
         push    edi
-        movzx   ebx, bh
-        mov     ebp, ebx
-        shr     ebp, 4
-        and     ebx, 0xF
+        xor     eax, eax
+        mov     al, [esi+1]
+        and     al, 0xF
+        mov     ebx, eax
+        mov     al, [esi+1]
+        shr     al, 4
+        mov     ebp, eax
         sub     ebx, ebp
-        add     esi, 2
+        lodsb
+        inc     esi
 if font_width > 8
         lea     edx, [eax+eax+font]
 else
         lea     edx, [eax+font]
 end if
-        mov     ecx, font_height
 .sh:
-        push    ecx edx edi
-        xor     ecx, ecx
-        mov     edx, [edx]
-.sw:
-        shr     edx, 1
+        mov     ecx, [edx]
+repeat font_width
+        shr     ecx, 1
         sbb     eax, eax
         and     eax, ebx
         add     eax, ebp
-        mov     [edi], al
-        add     ecx, 1
-        add     edi, 1
-        cmp     ecx, font_width
-        jb      .sw
-        pop     edi edx ecx
-        mov     eax, [used_width]
-        imul    eax, font_width
+        mov     [edi+%-1], al
+end repeat
+        mov     eax, [cur_width]
+;        imul    eax, font_width
+;        add     edi, eax
+if font_width = 6
+        lea     eax, [eax*2+eax]
+        lea     edi, [edi+eax*2]
+else if font_width = 7
+        lea     edi, [edi+eax*8]
+        sub     edi, eax
+else if font_width = 8
+        lea     edi, [edi+eax*8]
+else if font_width = 9
+        lea     edi, [edi+eax*8]
         add     edi, eax
+else if font_width = 10
+        lea     eax, [eax*4+eax]
+        lea     edi, [edi+eax*2]
+else
+Unknown font_width value!
+end if
 if font_width > 8
         add     edx, 256*2
+        cmp     edx, font+256*2*font_height
 else
         add     edx, 256
+        cmp     edx, font+256*font_height
 end if
-        loop    .sh
+        jb      .sh
         pop     edi
 .skip_symbol:
         pop     ecx
         add     edi, font_width
         dec     ecx
         jnz     .lw
-        mov     eax, [used_width]
+        mov     eax, [cur_width]
         imul    eax, (font_height-1)*font_width
         add     edi, eax
-        pop     esi ecx
-        add     esi, [cur_width]
-        add     esi, [cur_width]
+        pop     ecx
         dec     ecx
         jnz     .lh
 ; cursor
         mov     eax, [cursor_y]
         inc     eax
         jz      .nocursor
-        sub     eax, [min_y]
-        mul     [used_width]
+        mul     [cur_width]
         imul    eax, font_height*font_width
         mov     edx, [cursor_x]
-        sub     edx, [min_x]
         inc     edx
         imul    edx, font_width
         add     eax, edx
-        add     eax, [heapend]
-        mov     edx, [used_width]
+        add     eax, [MemForImage]
+        mov     edx, [cur_width]
         imul    edx, font_width
         neg     edx
         mov     ecx, (font_height*15+50)/100
@@ -2210,31 +2677,44 @@ end if
         pop     ecx
         loop    .cursor_loop
 .nocursor:
-        mov     ecx, [used_width]
-        imul    ecx, font_width*65536
-        mov     cx, word [used_height]
-        imul    cx, font_height
-        mov     edx, [min_x]
+        cmp     [min_y], -1
+        jz      .nodraw
+        mov     ecx, [cur_width]
+        mov     ebx, [cur_height]
+        mov     eax, ebx
+        sub     ebx, [max_y]
+        sub     eax, [min_y]
+        sub     eax, ebx
+        inc     eax
+        imul    ebp, eax, font_height
+        mov     edx, ecx
+        sub     edx, [max_x]
         imul    edx, font_width
-        add     edx, 5
+        mov     eax, edx
         shl     edx, 16
-        mov     dx, word [min_y]
-        imul    dx, font_height
+        imul    dx, bx, font_height
+        imul    ebx, [cur_width]
+        mov     ecx, [max_x]
+        sub     ecx, [min_x]
+        inc     ecx
+        imul    ecx, font_width*10000h
+        add     ecx, ebp
+        imul    ebx, font_width*font_height
+        add     ebx, [MemForImage]
+        add     ebx, eax
         add     edx, [skinh]
+        add     edx, 5*10000h
+        imul    esi, [cur_width], font_width
+        mov     ebp, ecx
+        shr     ebp, 16
+        sub     esi, ebp
+        mov     ebp, esi
         push    65
         pop     eax
-        mov     ebx, [heapend]
+        mov     edi, console_colors
         push    8
         pop     esi
-        mov     edi, console_colors
-        xor     ebp, ebp
-        int     0x40
-        push    64
-        pop     eax
-        push    1
-        pop     ebx
-        mov     ecx, [heapend]
-        int     0x40
+        int     40h
 .nodraw:
         ret
 
@@ -2419,6 +2899,60 @@ draw_border:
         stosw
         ret
 
+calc_colwidths:
+; in: ebp->panel data
+        imul    esi, [ebp + panel1_colmode - panel1_data], PanelMode.size
+        add     esi, colmodes
+        lodsd
+        mov     ecx, eax
+        lea     edx, [ecx-1]
+        xor     ebx, ebx
+        add     esi, PanelMode.ColumnWidths-4
+        push    ecx esi
+        xor     eax, eax
+.loop:
+        lodsb
+        add     edx, eax
+        cmp     al, 1
+        adc     ebx, 0
+        loop    .loop
+        pop     esi ecx
+        lea     edi, [ebp + panel1_colwidths - panel1_data]
+        test    ebx, ebx
+        jz      .loop2
+        mov     eax, [ebp + panel1_width - panel1_data]
+        dec     eax
+        dec     eax
+        sub     eax, edx
+        jae     @f
+        xor     eax, eax
+@@:
+        xor     edx, edx
+        div     ebx
+        test    eax, eax
+        jnz     @f
+        xor     edx, edx
+        inc     eax
+@@:
+        push    eax
+.loop2:
+        movzx   eax, byte [esi]
+        inc     esi
+        test    eax, eax
+        jnz     @f
+        pop     eax
+        push    eax
+        dec     ebx
+        cmp     ebx, edx
+        jae     @f
+        inc     eax
+@@:
+        stosd
+        loop    .loop2
+        pop     eax
+        and     dword [edi], 0
+        ret
+
 draw_panel:
         mov     eax, [ebp + panel1_left - panel1_data]
         mov     edx, [ebp + panel1_top - panel1_data]
@@ -2442,27 +2976,43 @@ draw_panel:
         rep     stosw
         mov     al, 0xB6
         stosw
-        mov     eax, [ebp + panel1_width - panel1_data]
-        sub     eax, 3
-        shr     eax, 1
-        mov     [column_width], eax
+
+        imul    esi, [ebp + panel1_colmode - panel1_data], PanelMode.size
+        add     esi, colmodes
+        lodsd
+        mov     ecx, eax        ; number of columns
+        lea     ebx, [ebp + panel1_colwidths - panel1_data]
         mov     eax, [ebp + panel1_left - panel1_data]
         inc     eax
         mov     [column_left], eax
-        add     eax, [column_width]
+        mov     eax, [ebp + panel1_top - panel1_data]
+        inc     eax
+        mov     [column_top], eax
+        mov     eax, [ebp + panel1_height - panel1_data]
+        sub     eax, 4
+        mov     [column_height], eax
+        dec     eax
+        mov     [ebp + panel1_colsz - panel1_data], eax
+        and     [ebp + panel1_colst - panel1_data], 0
+        mov     eax, [ebp + panel1_start - panel1_data]
+        mov     [column_index], eax
+        mov     [last_column_index], eax
+.columns_loop:
+        push    ecx
+        mov     eax, [ebx]
+        add     ebx, 4
+        mov     [column_width], eax
+        cmp     ecx, 1
+        jz      .skip_right_border
+        add     eax, [column_left]
         mov     edx, [ebp + panel1_top - panel1_data]
-        inc     edx
-        mov     [column_top], edx
-        dec     edx
         call    get_console_ptr
-        mov     ah, [panel_border_color]
+        mov     ah, [panel_header_color]
         mov     al, 0xD1
         mov     [edi], ax
         add     edi, [cur_width]
         add     edi, [cur_width]
-        mov     ecx, [ebp + panel1_height - panel1_data]
-        sub     ecx, 4
-        mov     [column_height], ecx
+        mov     ecx, [column_height]
         mov     al, 0xB3
 @@:
         mov     [edi], ax
@@ -2471,22 +3021,60 @@ draw_panel:
         loop    @b
         mov     al, 0xC1
         stosw
-        mov     eax, [column_height]
-        dec     eax
-        mov     [ebp + panel1_colsz - panel1_data], eax
-        add     eax, eax
-        mov     [ebp + panel1_colst - panel1_data], eax
-        mov     eax, [ebp + panel1_start - panel1_data]
-        mov     [column_index], eax
-        call    draw_column
-        mov     eax, [ebp + panel1_width - panel1_data]
-        sub     eax, 3
+.skip_right_border:
+        mov     eax, [column_left]
+        mov     edx, [column_top]
+        call    get_console_ptr
+; заголовок столбца
+        push    edi
+        mov     edx, [esi]
+        and     edx, 0xF
+        mov     edx, [column_headers+edx*4]
+        movzx   ecx, byte [edx]
+        inc     edx
+        cmp     ecx, [column_width]
+        jb      @f
         mov     ecx, [column_width]
-        sub     eax, ecx
-        mov     [column_width], eax
+@@:
+        push    ecx
+        sub     ecx, [column_width]
+        neg     ecx
+        shr     ecx, 1
+        mov     al, ' '
+        mov     ah, [column_header_color]
+        rep     stosw
+        pop     ecx
+        jecxz   .skipcopyhdr
+        push    ecx
+@@:
+        mov     al, [edx]
+        inc     edx
+        stosw
+        loop    @b
+        pop     ecx
+.skipcopyhdr:
+        sub     ecx, [column_width]
+        neg     ecx
         inc     ecx
-        add     [column_left], ecx
-        call    draw_column
+        shr     ecx, 1
+        mov     al, ' '
+        rep     stosw
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+; сам столбец
+        mov     eax, [esi]
+        and     eax, 0xF
+        push    ebx esi
+        call    dword [draw_column_proc+eax*4]
+        pop     esi ebx
+        inc     esi
+        mov     eax, [column_width]
+        inc     eax
+        add     [column_left], eax
+        pop     ecx
+        dec     ecx
+        jnz     .columns_loop
 ; Заголовок панели (текущая папка)
         lea     esi, [ebp + panel1_dir - panel1_data]
         mov     edi, cur_header
@@ -2555,9 +3143,68 @@ draw_panel:
         movzx   eax, [ebp + panel1_sortmode - panel1_data]
         mov     al, [compare_names+eax]
         stosb
+        mov     eax, [ebp + panel1_selected_num - panel1_data]
+        test    eax, eax
+        jz      .skip_selected_info
+; Информация о выделенных файлах
+        push    dword [ebp + panel1_selected_size+4 - panel1_data]
+        push    dword [ebp + panel1_selected_size - panel1_data]
+        call    fill_total_info
+        mov     eax, [ebp + panel1_width - panel1_data]
+        sub     eax, 2
+        cmp     ecx, eax
+        jbe     @f
+        mov     ecx, eax
+        mov     edi, saved_file_name+512
+        sub     edi, eax
+        mov     byte [edi], '.'
+        mov     word [edi+1], '..'
+@@:
+        mov     esi, edi
+        sub     eax, ecx
+        shr     eax, 1
+        inc     eax
+        add     eax, [ebp + panel1_left - panel1_data]
+        mov     edx, [ebp + panel1_top - panel1_data]
+        add     edx, [ebp + panel1_height - panel1_data]
+        sub     edx, 3
+        call    get_console_ptr
+        mov     ah, [panel_numselected_color]
+@@:
+        lodsb
+        stosw
+        loop    @b
+.skip_selected_info:
+; Информация об общем числе и размере файлов панели
+        mov     eax, [ebp + panel1_total_num - panel1_data]
+        push    dword [ebp + panel1_total_size+4 - panel1_data]
+        push    dword [ebp + panel1_total_size - panel1_data]
+        call    fill_total_info
+        mov     eax, [ebp + panel1_width - panel1_data]
+        sub     eax, 2
+        cmp     ecx, eax
+        jbe     @f
+        mov     ecx, eax
+        mov     byte [edi+ecx-3], '.'
+        mov     word [edi+ecx-2], '..'
+@@:
+        sub     eax, ecx
+        shr     eax, 1
+        inc     eax
+        add     eax, [ebp + panel1_left - panel1_data]
+        add     edx, [ebp + panel1_top - panel1_data]
+        add     edx, [ebp + panel1_height - panel1_data]
+        dec     edx
+        mov     esi, edi
+        call    get_console_ptr
+        mov     ah, [panel_number_color]
+@@:
+        lodsb
+        stosw
+        loop    @b
         cmp     [ebp + panel1_numfiles - panel1_data], 0
         jz      .skip_curinfo
-; Информация о выбранном файле
+; Информация о текущем файле
         mov     ebx, [ebp + panel1_index - panel1_data]
         mov     eax, [ebp + panel1_files - panel1_data]
         mov     ebx, [eax+ebx*4]
@@ -2572,6 +3219,8 @@ draw_panel:
         mov     ecx, [ebp + panel1_width - panel1_data]
         dec     ecx
         dec     ecx
+        cmp     [ebp + panel1_colmode - panel1_data], 3
+        jz      .show_curname
 ; Время модификации
         sub     edi, 5*2
         sub     ecx, 6
@@ -2702,6 +3351,7 @@ draw_panel:
         jnz     .size_num
 .size_done:
         cld
+.show_curname:
 ; Имя
         sub     edi, ecx
         sub     edi, ecx
@@ -2735,52 +3385,115 @@ draw_panel:
         call    draw_image
         ret
 
-draw_column:
-        mov     eax, [column_left]
-        mov     edx, [column_top]
-        call    get_console_ptr
-; заголовок столбца
-        push    edi
-        mov     ah, [column_header_color]
-        mov     al, ' '
-        mov     ecx, [column_width]
+fill_total_info:
+        mov     edi, saved_file_name+511
+        mov     byte [edi], ' '
 if lang eq ru
-        sub     ecx, 3
+        mov     byte [edi-1], 'е'
+        dec     edi
+        cmp     eax, 1
+        jz      @f
+        mov     word [edi-1], 'ах'
+        dec     edi
+@@:
+        mov     dword [edi-4], 'файл'
+        mov     byte [edi-5], ' '
+        sub     edi, 5
 else
-        sub     ecx, 4
+        cmp     eax, 1
+        jz      @f
+        dec     edi
+        mov     byte [edi], 's'
+@@:
+        mov     dword [edi-4], 'file'
+        mov     byte [edi-5], ' '
+        sub     edi, 5
 end if
-        shr     ecx, 1
-        rep     stosw
+        xor     edx, edx
+        push    10
+        pop     ecx
+@@:
+        div     ecx
+        dec     edi
+        add     dl, '0'
+        mov     [edi], dl
+        xor     edx, edx
+        test    eax, eax
+        jnz     @b
 if lang eq ru
-        mov     al, 'И'
-        stosw
-        mov     al, 'м'
-        stosw
-        mov     al, 'я'
-        stosw
+        mov     dword [edi-4], 'т в '
+        mov     dword [edi-8], ' бай'
+        sub     edi, 8
 else
-        mov     al, 'N'
-        stosw
-        mov     al, 'a'
-        stosw
-        mov     al, 'm'
-        stosw
-        mov     al, 'e'
-        stosw
+        mov     dword [edi-4], ' in '
+        mov     dword [edi-8], 'ytes'
+        mov     word [edi-10], ' b'
+        sub     edi, 10
 end if
-        mov     al, ' '
-        mov     ecx, [column_width]
-if lang eq ru
-        sub     ecx, 2
-else
-        sub     ecx, 3
-end if
-        shr     ecx, 1
-        rep     stosw
-        pop     edi
-        add     edi, [cur_width]
-        add     edi, [cur_width]
-; файлы
+        lea     esi, [edi-3]
+        mov     edx, [esp+8]
+        mov     eax, [esp+4]
+.selsizel:
+        push    edx
+        mov     ebx, edx
+        xor     edx, edx
+        add     ebx, ebx
+        adc     edx, edx
+        push    ebx
+        push    edx
+        add     ebx, ebx
+        adc     edx, edx
+        add     ebx, [esp+4]
+        adc     edx, [esp]
+        add     esp, 8
+        add     eax, ebx
+        adc     edx, 0
+        div     ecx
+        dec     edi
+        cmp     edi, esi
+        jae     @f
+        mov     byte [edi], ','
+        dec     edi
+        sub     esi, 4
+@@:
+        pop     ebx
+        add     dl, '0'
+        mov     byte [edi], dl
+        xchg    eax, ebx
+        mul     [muldiv10]
+        add     eax, ebx
+        adc     edx, 0
+        mov     ebx, eax
+        or      ebx, edx
+        jnz     .selsizel
+        dec     edi
+        mov     byte [edi], ' '
+        mov     ecx, saved_file_name+512
+        sub     ecx, edi
+        ret     8
+
+get_file_color:
+        mov     ah, [esi + 6]
+        cmp     ebp, [active_panel]
+        jnz     @f
+        cmp     ecx, [ebp + panel1_index - panel1_data]
+        jnz     @f
+        mov     ah, [esi + 7]
+@@:
+        test    byte [esi + 303], 1
+        jnz     @f
+        mov     ah, [esi + 4]
+        cmp     ebp, [active_panel]
+        jnz     @f
+        cmp     ecx, [ebp + panel1_index - panel1_data]
+        jnz     @f
+        mov     ah, [esi + 5]
+@@:
+        ret
+
+draw_name_column:
+        mov     eax, [column_index]
+        mov     [last_column_index], eax
         mov     edx, [ebp + panel1_numfiles - panel1_data]
         mov     ecx, [column_height]
         dec     ecx
@@ -2788,18 +3501,12 @@ end if
         cmp     [column_index], edx
         jae     .ret
         push    ecx
-        mov     esi, [column_index]
-        mov     ecx, [ebp + panel1_files - panel1_data]
-        mov     esi, [ecx+esi*4]
-        add     esi, 40
-        mov     ah, [esi - 40 + 5]
-        cmp     ebp, [active_panel]
-        jnz     @f
         mov     ecx, [column_index]
-        cmp     ecx, [ebp + panel1_index - panel1_data]
-        jnz     @f
-        mov     ah, [esi - 40 + 6]
-@@:
+        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [esi+ecx*4]
+        mov     ebx, [esi]
+        call    get_file_color
+        add     esi, 40
         mov     ecx, [column_width]
         push    edi
 @@:
@@ -2808,12 +3515,68 @@ end if
         jz      @f
         stosw
         loop    @b
-        cmp     byte [esi], 0
+        lodsb
+        test    al, al
         jz      @f
         mov     byte [edi], '}'
+        jmp     .continue
+@@:
+        test    bl, 10h
+        jnz     .noalignext
+        mov     ebx, [ebp + panel1_colmode - panel1_data]
+; sizeof(PanelMode) = 40
+        lea     ebx, [ebx+ebx*4]
+        cmp     [colmodes+ebx*8+PanelMode.bAlignExtensions], 0
+        jz      .noalignext
+        push    ecx
+        sub     ecx, [column_width]
+        neg     ecx
+        jz      .noalignext2
+        dec     esi
+@@:
+        dec     esi
+        cmp     byte [esi], '.'
+        loopnz  @b
+        jnz     .noalignext2
+        inc     esi
+        sub     ecx, [column_width]
+        neg     ecx
+        sub     ecx, [esp]
+        sub     edi, ecx
+        sub     edi, ecx
+        dec     ecx
+        mov     ebx, [esp+4]
+        cmp     ecx, 3
+        ja      @f
+        mov     cl, 3
+@@:
+        sub     ecx, [column_width]
+        sub     ebx, edi
+        sar     ebx, 1
+        sub     ebx, ecx
+        pop     ecx
+        inc     ecx
+        push    0
+        cmp     ecx, ebx
+        jbe     @f
+        sub     ecx, ebx
+        mov     [esp], ecx
+        mov     ecx, ebx
 @@:
         mov     al, ' '
         rep     stosw
+@@:
+        lodsb
+        test    al, al
+        jz      .noalignext2
+        stosw
+        jmp     @b
+.noalignext2:
+        pop     ecx
+.noalignext:
+        mov     al, ' '
+        rep     stosw
+.continue:
         pop     edi
         add     edi, [cur_width]
         add     edi, [cur_width]
@@ -2822,6 +3585,8 @@ end if
         dec     ecx
         jnz     .l
 .ret:
+        mov     eax, [ebp + panel1_colsz - panel1_data]
+        add     [ebp + panel1_colst - panel1_data], eax
         cmp     ebp, panel1_data
         jnz     .ret2
 ; Число экранов
@@ -2855,6 +3620,267 @@ end if
         mov     ah, [panel_nscreens_color]
         stosw
 .ret2:
+draw_empty_column:
+        ret
+
+draw_size_column:
+        add     edi, [column_width]
+        add     edi, [column_width]
+        dec     edi
+        dec     edi
+        std
+        mov     ecx, [column_height]
+        dec     ecx
+        push    [last_column_index]
+.l:
+        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        cmp     [last_column_index], edx
+        jae     .ret
+        push    ecx
+        push    edi
+        mov     ecx, [last_column_index]
+        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [esi+ecx*4]
+        call    get_file_color
+        mov     ecx, [column_width]
+@@:
+        mov     ebx, eax
+        cmp     word [esi+40], '..'
+        jnz     .nodotdot
+        cmp     byte [esi+42], 0
+        jnz     .nodotdot
+if lang eq ru
+        mov     al, 'х'
+        stosw
+        mov     al, 'р'
+        stosw
+        mov     al, 'е'
+        stosw
+        mov     al, 'в'
+        stosw
+        mov     al, 'В'
+        stosw
+        sub     ecx, 5
+else
+        mov     al, ' '
+        stosw
+        stosw
+        mov     al, 'p'
+        stosw
+        mov     al, 'U'
+        stosw
+        sub     ecx, 4
+end if
+        jmp     .size_written
+.nodotdot:
+        test    byte [esi], 10h
+        jz      .nofolder
+if lang eq ru
+        mov     al, 'а'
+        stosw
+        mov     al, 'к'
+        stosw
+        mov     al, 'п'
+        stosw
+        mov     al, 'а'
+        stosw
+        mov     al, 'П'
+        stosw
+        sub     ecx, 5
+else
+        mov     al, 'r'
+        stosw
+        mov     al, 'e'
+        stosw
+        mov     al, 'd'
+        stosw
+        mov     al, 'l'
+        stosw
+        mov     al, 'o'
+        stosw
+        mov     al, 'F'
+        stosw
+        sub     ecx, 6
+end if
+        jmp     .size_written
+.nofolder:
+        mov     eax, [esi+32]
+        mov     edx, [esi+36]
+        test    edx, edx
+        jz      .less_4G
+        cmp     edx, 10000/4*1024
+        jb      .giga
+        mov     al, 'T'
+        shr     edx, 10
+        jmp     .write_letter
+.giga:
+        mov     al, 'G'
+        shl     edx, 2
+        jmp     .write_letter
+.less_4G:
+        mov     edx, eax
+        cmp     eax, 1000000
+        jb      .byte
+        cmp     eax, 10000*1024
+        jb      .kilo
+        mov     al, 'M'
+        shr     edx, 20
+        jmp     .write_letter
+.kilo:
+        mov     al, 'K'
+        shr     edx, 10
+.write_letter:
+        mov     ah, bh
+        stosw
+        mov     al, ' '
+        stosw
+        dec     ecx
+        dec     ecx
+.byte:
+        xchg    eax, edx
+        xor     edx, edx
+        div     [_10d]
+        xchg    eax, edx
+        add     al, '0'
+        mov     ah, bh
+        stosw
+        dec     ecx
+        test    edx, edx
+        jnz     .byte
+.size_written:
+        mov     eax, ebx
+        test    ecx, ecx
+        jle     @f
+        mov     al, ' '
+        rep     stosw
+@@:
+        mov     byte [edi+1], ah
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        inc     [last_column_index]
+        pop     ecx
+        dec     ecx
+        jnz     .l
+.ret:
+        pop     [last_column_index]
+        cld
+        ret
+
+draw_date_column:
+        mov     ecx, [column_height]
+        dec     ecx
+        push    [last_column_index]
+.l:
+        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        cmp     [last_column_index], edx
+        jae     .ret
+        push    ecx
+        push    edi
+        mov     ecx, [last_column_index]
+        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [esi+ecx*4]
+        call    get_file_color
+        mov     bh, ah
+        mov     byte [edi-1], bh
+        mov     al, [esi+28]
+        aam
+        add     eax, '00'
+        push    eax
+        mov     al, ah
+        mov     ah, bh
+        stosw
+        pop     eax
+        mov     ah, bh
+        stosw
+        mov     al, '.'
+        stosw
+        mov     al, [esi+29]
+        aam
+        add     eax, '00'
+        push    eax
+        mov     al, ah
+        mov     ah, bh
+        stosw
+        pop     eax
+        mov     ah, bh
+        stosw
+        mov     al, '.'
+        stosw
+        movzx   eax, word [esi+30]
+        xor     edx, edx
+        div     [_10d]
+        xchg    eax, edx
+        add     al, '0'
+        mov     ah, bh
+        mov     [edi+2], ax
+        xchg    eax, edx
+        xor     edx, edx
+        div     [_10d]
+        xchg    eax, edx
+        add     al, '0'
+        mov     ah, bh
+        stosw
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        inc     [last_column_index]
+        pop     ecx
+        dec     ecx
+        jnz     .l
+.ret:
+        pop     [last_column_index]
+        cld
+        ret
+
+draw_time_column:
+        mov     ecx, [column_height]
+        dec     ecx
+        push    [last_column_index]
+.l:
+        mov     edx, [ebp + panel1_numfiles - panel1_data]
+        cmp     [last_column_index], edx
+        jae     .ret
+        push    ecx
+        push    edi
+        mov     ecx, [last_column_index]
+        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     esi, [esi+ecx*4]
+        call    get_file_color
+        mov     bh, ah
+        mov     byte [edi-1], bh
+        mov     al, [esi+26]
+        aam
+        add     eax, '00'
+        push    eax
+        mov     al, ah
+        mov     ah, bh
+        stosw
+        pop     eax
+        mov     ah, bh
+        stosw
+        mov     al, ':'
+        stosw
+        mov     al, [esi+25]
+        aam
+        add     eax, '00'
+        push    eax
+        mov     al, ah
+        mov     ah, bh
+        stosw
+        pop     eax
+        mov     ah, bh
+        stosw
+        pop     edi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        inc     [last_column_index]
+        pop     ecx
+        dec     ecx
+        jnz     .l
+.ret:
+        pop     [last_column_index]
+        cld
         ret
 
 ;insert_last_dot:
@@ -2899,6 +3925,13 @@ read_folder:
         mov     [dirinfo.dirdata], eax
         lea     eax, [ebp + panel1_dir - panel1_data]
         mov     [dirinfo.name], eax
+        xor     eax, eax
+        mov     [ebp + panel1_total_num - panel1_data], eax
+        mov     dword [ebp + panel1_total_size - panel1_data], eax
+        mov     dword [ebp + panel1_total_size+4 - panel1_data], eax
+        mov     [ebp + panel1_selected_num - panel1_data], eax
+        mov     dword [ebp + panel1_selected_size - panel1_data], eax
+        mov     dword [ebp + panel1_selected_size+4 - panel1_data], eax
 .retry:
         push    70
         pop     eax
@@ -2911,12 +3944,12 @@ read_folder:
 ; Failed to read folder, notify user
         cmp     [bSilentFolderMode], 0
         jnz     .dont_notify
-        push    aContinue
-        push    aRetry
+        push    dword aContinue
+        push    dword aRetry
         mov     edx, esp
         call    get_error_msg
         push    [dirinfo.name]
-        push    aCannotReadFolder
+        push    dword aCannotReadFolder
         push    eax
         mov     eax, esp
         push    edx
@@ -2925,7 +3958,7 @@ read_folder:
         push    3
         push    -1
         push    -1
-        push    aError
+        push    dword aError
         call    SayErr
         add     esp, 5*4
         test    eax, eax
@@ -2984,17 +4017,16 @@ read_folder:
         mov     eax, [dirinfo.dirdata]
         cmp     [eax+8], ebx
         jz      .readdone
-        push    eax
-        mov     eax, [ebp + panel1_files - panel1_data]
-        call    mf_free
-        pop     eax
-        mov     eax, [eax+8]
-        add     eax, 0xF
-        and     eax, not 0xF
-        push    eax
-        imul    eax, 4+304
-        add     eax, 32
-        call    xmalloc
+        push    dword [eax+8]
+        mov     ecx, [ebp + panel1_files - panel1_data]
+        call    pgfree
+        pop     ecx
+        add     ecx, 0xF
+        and     ecx, not 0xF
+        push    ecx
+        imul    ecx, 4+304
+        add     ecx, 32
+        call    xpgalloc
         test    eax, eax
         jnz     .succ1
         pop     eax
@@ -3021,6 +4053,7 @@ read_folder:
         jz      .loopcont
         test    byte [eax], 8
         jnz     .loopcont
+        mov     byte [eax+303], 0
         test    edx, edx
         jnz     .nodotdot
         cmp     word [eax+40], '..'
@@ -3043,6 +4076,14 @@ read_folder:
         jmp     .dotdot
 .nodotdot:
         stosd
+        xor     ebx, ebx
+        test    byte [eax], 10h
+        setz    bl
+        add     [ebp + panel1_total_num - panel1_data], ebx
+        mov     ebx, dword [eax+32]
+        add     dword [ebp + panel1_total_size - panel1_data], ebx
+        mov     ebx, dword [eax+36]
+        adc     dword [ebp + panel1_total_size+4 - panel1_data], ebx
 .dotdot:
 ; подсветка
 ;        call    insert_last_dot
@@ -3051,9 +4092,10 @@ read_folder:
         lea     esi, [ebp+40]
         mov     edi, lower_file_name
         mov     edx, edi
+        xor     eax, eax
 @@:
         lodsb
-        call    tolower
+        mov     al, [tolower_table+eax]
         stosb
         test    al, al
         jnz     @b
@@ -3075,13 +4117,25 @@ read_folder:
         jnz     @f
         mov     ah, [panel_normal_color]
 @@:
-        mov     [ebp+5], ah
+        mov     [ebp+4], ah
         mov     ah, [ebx + highlight.CursorColor]
         test    ah, ah
         jnz     @f
         mov     ah, [panel_cursor_color]
 @@:
+        mov     [ebp+5], ah
+        mov     ah, [ebx + highlight.SelectedColor]
+        test    ah, ah
+        jnz     @f
+        mov     ah, [panel_selected_color]
+@@:
         mov     [ebp+6], ah
+        mov     ah, [ebx + highlight.SelectedCursorColor]
+        test    ah, ah
+        jnz     @f
+        mov     ah, [panel_selected_cursor_color]
+@@:
+        mov     [ebp+7], ah
         jmp     .doname
 .highlight_test_failed:
         inc     ecx
@@ -3089,9 +4143,13 @@ read_folder:
         jb      .highlight_test_loop
 .nohighlight:
         mov     ah, [panel_normal_color]
-        mov     [ebp+5], ah
+        mov     [ebp+4], ah
         mov     ah, [panel_cursor_color]
+        mov     [ebp+5], ah
+        mov     ah, [panel_selected_color]
         mov     [ebp+6], ah
+        mov     ah, [panel_selected_cursor_color]
+        mov     [ebp+7], ah
 .doname:
 ;        call    delete_last_dot
         popad
@@ -3112,9 +4170,9 @@ sort_files:
         mov     ecx, [ebp + panel1_numfiles - panel1_data]
         jecxz   .skip
         mov     eax, [edx]
-        cmp     word [eax], '..'
+        cmp     word [eax+40], '..'
         jnz     .nodotdot
-        cmp     byte [eax+2], 0
+        cmp     byte [eax+42], 0
         jnz     .nodotdot
         dec     ecx
         add     edx, 4
@@ -3869,24 +4927,22 @@ match_single_mask_rev:
         jmp     .done_succ
 end if
 
-tolower:
-        cmp     al, 'A'
-        jb      @f
-        cmp     al, 'Z'
-        ja      @f
-        add     al, ' '
-@@:     ret
+;tolower:
+;        push    ecx
+;        movzx   ecx, al
+;        mov     al, [tolower_table+ecx]
+;        pop     ecx
+;        ret
 
 match_symbol:
 ; in: al,[edi]=symbols
 ; out: flags as 'cmp al,[edi]'
-        push    eax
-        call    tolower
-        mov     ah, [edi]
-        xchg    al, ah
-        call    tolower
-        cmp     ah, al
-        pop     eax
+        push    eax ecx
+        movzx   ecx, al
+        mov     al, [tolower_table+ecx]
+        movzx   ecx, byte [edi]
+        cmp     al, [tolower_table+ecx]
+        pop     ecx eax
         ret
 
 match_mask_rev_lowercase:
@@ -3903,6 +4959,8 @@ match_mask_rev_lowercase:
         jz      @f
         cmp     al, ','
         jz      @f
+        cmp     al, ';'
+        jz      @f
         cmp     al, '|'
         jnz     @b
 @@:
@@ -3913,6 +4971,8 @@ match_mask_rev_lowercase:
         inc     esi
         jnc     .found
         cmp     al, ','
+        jz      .main_cycle
+        cmp     al, ';'
         jz      .main_cycle
 .done_fail:
         stc
@@ -3936,6 +4996,8 @@ match_mask_rev_lowercase:
         test    al, al
         jz      @f
         cmp     al, ','
+        jz      @f
+        cmp     al, ';'
         jnz     @b
 @@:
         dec     esi
@@ -4079,23 +5141,31 @@ find_extension:
         ret
 .found_ext:
         inc     esi
-        mov     edi, associations
-@@:
+        mov     edi, [associations]
+.find_loop:
         push    esi edi
-        mov     edi, [edi]
         call    strcmpi
         pop     edi esi
-        jz      @f
-        add     edi, 12
-        cmp     edi, associations_end
-        jb      @b
-; unknown extension
-        inc     edi
+        pushf
 @@:
+        inc     edi
+        cmp     byte [edi-1], 0
+        jnz     @b
+        popf
+        jz      .found
+@@:
+        inc     edi
+        cmp     byte [edi-1], 0
+        jnz     @b
+        cmp     byte [edi], 0
+        jnz     .find_loop
+; unknown extension
+        stc
+.found:
         pop     esi
         ret
 
-header  db      'Kolibri Far 0.21',0
+header  db      'Kolibri Far 0.32',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
@@ -4121,8 +5191,10 @@ aDrive          db      'Drive',0
 aScreens        db      'Screens',0
 end if
 
+align 4
 _10d dd 10
 _100d dd 100
+muldiv10 dd 429496729
 _10 db 10
 _100 db 100
 
@@ -4481,10 +5553,12 @@ console_data_ptr dd     0
 
 cursor_x        dd      -1
 cursor_y        dd      -1
-old_cursor_x    dd      -1
-old_cursor_y    dd      -1
+cur_cursor_pos  dd      -1
+old_cursor_pos  dd      -1
 
 active_panel    dd      panel1_data
+
+associations    dd      0
 
 console_colors  dd      0x000000, 0x000080, 0x008000, 0x008080
                 dd      0x800000, 0x800080, 0x808000, 0xC0C0C0
@@ -4555,10 +5629,14 @@ errors2:
 encodings:
 .cp866 = 0
 .cp1251 = 1
+.koi8r = 2
+.unicode = 3
 
 .names:
         db      'cp866   '
         db      'cp1251  '
+        db      'koi8-r  '
+        db      'Unicode '
 
 .tables:
 ; cp866 - trivial map
@@ -4570,6 +5648,49 @@ encodings:
         db      0xF8,0x2B,0x49,0x69,0x3F,0xE7,0x14,0xFA,0xF1,0xFC,0xF3,0x3E,0x3F,0x3F,0x3F,0xF5
         times 0x30 db %-1+0x80
         times 0x10 db %-1+0xE0
+; koi8-r
+        db      0xC4,0xB3,0xDA,0xBF,0xC0,0xD9,0xC3,0xB4,0xC2,0xC1,0xC5,0xDF,0xDC,0xDB,0xDD,0xDE
+        db      0xB0,0xB1,0xB2,0xF4,0xFE,0xF9,0xFB,0xF7,0xF3,0xF2,0xFF,0xF5,0xF8,0xFD,0xFA,0xF6
+        db      0xCD,0xBA,0xD5,0xF1,0xD6,0xC9,0xB8,0xB7,0xBB,0xD4,0xD3,0xC8,0xBE,0xBD,0xBC,0xC6
+        db      0xC7,0xCC,0xB5,0xF0,0xB6,0xB9,0xD1,0xD2,0xCB,0xCF,0xD0,0xCA,0xD8,0xD7,0xCE,0xFC
+        db      0xEE,0xA0,0xA1,0xE6,0xA4,0xA5,0xE4,0xA3,0xE5,0xA8,0xA9,0xAA,0xAB,0xAC,0xAD,0xAE
+        db      0xAF,0xEF,0xE0,0xE1,0xE2,0xE3,0xA6,0xA2,0xEC,0xEB,0xA7,0xE8,0xED,0xE9,0xE7,0xEA
+        db      0x9E,0x80,0x81,0x96,0x84,0x85,0x94,0x83,0x95,0x88,0x89,0x8A,0x8B,0x8C,0x8D,0x8E
+        db      0x8F,0x9F,0x90,0x91,0x92,0x93,0x86,0x82,0x9C,0x9B,0x87,0x98,0x9D,0x99,0x97,0x9A
+
+.menu:
+        db      .cp866
+.menu.1:
+        dd      .menu.2
+        dd      0
+if lang eq ru
+        db      '&DOS текст (cp866)',0
+else
+        db      '&DOS text (cp866)',0
+end if
+        db      .cp1251
+.menu.2:
+        dd      .menu.3
+        dd      .menu.1
+if lang eq ru
+        db      '&Windows текст (cp1251)',0
+else
+        db      '&Windows text (cp1251)',0
+end if
+        db      .koi8r
+.menu.3:
+        dd      .menu.4
+        dd      .menu.2
+if lang eq ru
+        db      '&Linux текст (koi8-r)',0
+else
+        db      '&Linux text (koi8-r)',0
+end if
+        db      .unicode
+.menu.4:
+        dd      0
+        dd      .menu.3
+        db      '&Unicode',0
 
 active_screen   dd      0
 tabsize         dd      8
@@ -4608,6 +5729,10 @@ panels_ctrlkeys:
         dd      panels_OnKey.left
         dw      0x4D, 0
         dd      panels_OnKey.right
+        dw      0x51, 0
+        dd      panels_OnKey.pgdn
+        dw      0x49, 0
+        dd      panels_OnKey.pgup
         dw      0xF, 0
         dd      panels_OnKey.tab
         dw      0x47, 0
@@ -4644,6 +5769,24 @@ end repeat
         dd      F12
         dw      0x13, 0x10
         dd      panels_OnKey.ctrl_r
+        dw      2, 0x30
+        dd      panels_OnKey.change_mode
+        dw      3, 0x30
+        dd      panels_OnKey.change_mode
+        dw      4, 0x30
+        dd      panels_OnKey.change_mode
+        dw      5, 0x30
+        dd      panels_OnKey.change_mode
+repeat 10
+        dw      %+1, 0x40
+        dd      panels_OnKey.quick_jump
+end repeat
+        dw      0x52, 0
+        dd      panels_OnKey.insert
+        dw      0x4E, 0
+        dd      panels_OnKey.greyplus
+        dw      0x4A, 0
+        dd      panels_OnKey.greyminus
         db      0
 
 viewer_ctrlkeys:
@@ -4679,6 +5822,8 @@ viewer_ctrlkeys:
         dd      viewer_OnKey.f4
         dw      0x42, 0
         dd      viewer_OnKey.f8
+        dw      0x42, 1
+        dd      viewer_OnKey.shift_f8
         dw      0x44, 0
         dd      viewer_OnKey.exit
         dw      0x47, 0
@@ -4753,11 +5898,15 @@ end if
 
 ; Панель
 panel_normal_color      db      1Bh
+panel_selected_color    db      1Eh
 panel_border_color      db      1Bh
 panel_cursor_color      db      30h
+panel_selected_cursor_color db  3Eh
 panel_header_color      db      1Bh
 panel_active_header_color db    30h
 column_header_color     db      1Eh
+panel_number_color      db      1Bh
+panel_numselected_color db      3Eh
 panel_nscreens_color    db      0Bh
 ; Диалоги
 dialog_colors:
@@ -4814,151 +5963,71 @@ highlight_groups        dd      highlight_group0
 ; Формат описания группы подсветки:
 virtual at 0
 highlight:
+        .IncludeAttributes      db ?
         .NormalColor            db ?
         .CursorColor            db ?
-        .IncludeAttributes      db ?
+        .SelectedColor          db ?
+        .SelectedCursorColor    db ?
         .Mask:                  ; ASCIIZ-string
 end virtual
 
 ; all highlight masks must be in lowercase!
 highlight_group0:
-        db      13h
-        db      38h
         db      2
+        db      13h, 38h, 0, 0
         db      '*',0
 highlight_group1:
-        db      13h
-        db      38h
         db      4
+        db      13h, 38h, 0, 0
         db      '*',0
 highlight_group2:
-        db      1Fh
-        db      3Fh
         db      10h
+        db      1Fh, 3Fh, 0, 0
         db      '*|..',0
 highlight_group3:
-        db      0
-        db      0
         db      10h
+        db      0, 0, 0, 0
         db      '..',0
 highlight_group4:
-        db      1Ah
-        db      3Ah
         db      0
+        db      1Ah, 3Ah, 0, 0
         db      '*.exe,*.com,*.bat,*.cmd',0
 highlight_group5:
-        db      1Ah
-        db      3Ah
         db      0
+        db      1Ah, 3Ah, 0, 0
         db      '*|*.*',0
 highlight_group6:
-        db      1Dh
-        db      3Dh
         db      0
+        db      1Dh, 3Dh, 0, 0
         db      '*.rar,*.zip,*.[zj],*.[bg7]z,*.[bg]zip,*.tar,*.t[ag]z,*.ar[cj],*.r[0-9][0-9],'
         db      '*.a[0-9][0-9],*.bz2,*.cab,*.msi,*.jar,*.lha,*.lzh,*.ha,*.ac[bei],*.pa[ck],'
         db      '*.rk,*.cpio,*.rpm,*.zoo,*.hqx,*.sit,*.ice,*.uc2,*.ain,*.imp,*.777,*.ufa,*.boa,'
         db      '*.bs[2a],*.sea,*.hpk,*.ddi,*.x2,*.rkv,*.[lw]sz,*.h[ay]p,*.lim,*.sqz,*.chz',0
 highlight_group7:
-        db      16h
-        db      36h
         db      0
+        db      16h, 36h, 0, 0
         db      '*.bak,*.tmp',0
 highlight_group8:
-        db      17h
-        db      37h
         db      0
+        db      17h, 37h, 0, 0
         db      '*.asm,*.inc',0
 highlight_group9:
-        db      1Fh
-        db      3Fh
         db      10h
+        db      1Fh, 3Fh, 0, 0
         db      '*',0
-
-associations:
-        dd      aAsm, tinypad, AsmMenu
-        dd      aInc, tinypad, 0
-        dd      aTxt, tinypad, 0
-        dd      aJpg, jpegview, 0
-        dd      aJpeg, jpegview, 0
-        dd      aGif, gifview, GifMenu
-        dd      aWav, ac97, 0
-        dd      aMp3, ac97, 0
-        dd      aMid, midamp, 0
-        dd      aBmp, mv, BmpMenu
-        dd      aPng, archer, 0
-        dd      aRtf, rtfread, 0
-        dd      a3ds, view3ds, 0
-        dd      aLif, life2, 0
-associations_end:
-
-aAsm db 'asm',0
-aInc db 'inc',0
-aTxt db 'txt',0
-tinypad db '/rd/1/TinyPad',0
-
-aJpg db 'jpg',0
-aJpeg db 'jpeg',0
-jpegview db '/rd/1/JpegView',0
-
-aGif db 'gif',0
-gifview db '/rd/1/GIFVIEW',0
-
-aWav db 'wav',0
-aMp3 db 'mp3',0
-ac97 db '/rd/1/AC97SND',0
-
-aMid db 'mid',0
-midamp db '/rd/1/MIDAMP',0
-
-aBmp db 'bmp',0
-mv db '/rd/1/MV',0
-
-aPng db 'png',0
-archer db '/rd/1/@rcher',0
-
-aRtf db 'rtf',0
-rtfread db '/rd/1/RtfRead',0
-
-a3ds db '3ds',0
-view3ds db '/rd/1/3d/view3ds',0
-
-aLif db 'lif',0
-life2 db '/rd/1/demos/life2',0
-
-AsmMenu:
-        dd      aEdit, tinypad
-        dd      aCompile, fasm
-        dd      0
-BmpMenu:
-        dd      aView, mv
-        dd      aEdit, animage
-        dd      0
-GifMenu:
-        dd      aView, gifview
-        dd      aEdit, animage
-        dd      0
-
-if lang eq en
-aView   db      '&View',0
-aCompile db     '&Compile',0
-aEdit   db      '&Edit',0
-else
-aView   db      '&Просмотр',0
-aCompile db     '&Компилировать',0
-aEdit   db      '&Редактор',0
-end if
-
-fasm    db      '/rd/1/develop/fasm',0
-animage db      '/rd/1/animage',0
 
 bConfirmDelete  db      1
 bConfirmDeleteIncomplete db 0
+
+FolderShortcuts dd      0,0,0,0,0,0,0,0,0,0
 
 ; Здесь заканчиваются конфигурационные данные
 
 bWasE0          db      0
 ctrlstate       db      0
+MemForImage     dd      0
+restore_semicolon dd    0
+bForHex         db      0
 
 align   4
 ; Сообщение о обломе при выделении памяти
@@ -4985,54 +6054,6 @@ nomem_dlgdata:
         dd      4,1,7,1
         dd      aOk
         dd      0xD
-
-f8_confirm_dlgdata:
-        dd      1
-.x      dd      -1
-.y      dd      -1
-.width  dd      ?
-.height dd      3
-        dd      4
-        dd      2
-        dd      aDeleteCaption
-.main_color db ?
-.border_color db ?
-.header_color db ?
-        db      0
-        dd      0
-        dd      0
-        dd      4
-; строка "Вы хотите удалить ..."
-        dd      1
-        dd      1,0
-.width2 dd      ?
-        dd      0
-        dd      aConfirmDeleteTextBuf
-        dd      1
-; строка с именем файла/папки
-        dd      1
-        dd      1,1
-.width3 dd      ?
-        dd      1
-.name   dd      ?
-        dd      1
-; кнопка "удалить"
-.del_btn:
-        dd      2
-.del_x1 dd      ?
-        dd      2
-.del_x2 dd      ?
-        dd      2
-        dd      aDelete
-.flags1 dd      0xC
-; кнопка "отменить"
-        dd      2
-.cnl_x1 dd      ?
-        dd      2
-.cnl_x2 dd      ?
-        dd      2
-        dd      aCancel
-.flags2 dd      8
 
 ; диалог копирования
 copy_dlgdata:
@@ -5124,6 +6145,22 @@ mkdir_dlgdata:
         dd      aCancelB
 .flags2 dd      8
 
+; диалог выделения/снятия
+mark_dlgdata:
+        dd      1
+        dd      -1, -1
+        dd      37, 1
+        dd      4, 2
+.title  dd      ?
+        dd      ?
+        dd      0, 0
+        dd      1
+; поле редактирования
+        dd      3
+        dd      1, 0, 35, 0
+        dd      enter_string_buf
+.flags  dd      ?
+
 RetryOrCancelBtn:
         dd      aRetry
         dd      a_Cancel
@@ -5133,17 +6170,21 @@ DeleteOrKeepBtn:
 RetryOrIgnoreBtn:
         dd      aRetry
         dd      aIgnore
+DeleteOrCancelBtn:
+        dd      a_Delete
+        dd      a_Cancel
+DeleteErrorBtn:
+        dd      aRetry
+        dd      aSkip
+        dd      aSkipAll
+        dd      a_Cancel
 
 if lang eq ru
 aDeleteCaption          db      'Удаление',0
-aConfirmDeleteText      db      'Вы хотите удалить ',0
-aDeleteFolder           db      'папку',0
+aConfirmDeleteText      db      'Вы хотите удалить',0
+aDeleteFolder           db      ' папку',0
 aConfirmDeleteTextMax = $ - aConfirmDeleteText - 2
-aDeleteFile             db      'файл',0
-aDelete                 db      ' Удалить ',0
-aDeleteLength = $ - aDelete - 1
-aCancel                 db      ' Отменить ',0
-aCancelLength = $ - aCancel - 1
+aDeleteFile             db      ' файл',0
 aCancelB                db      '[ Отменить ]',0
 aCancelBLength = $ - aCancelB - 1
 aCopyCaption            db      'Копирование',0
@@ -5158,6 +6199,8 @@ aContinue               db      'Продолжить',0
 aRetry                  db      'Повторить',0
 a_Cancel                db      'Отменить',0
 a_Delete                db      'Удалить',0
+aSkip                   db      'Пропустить',0
+aSkipAll                db      'Пропустить все',0
 error0msg               db      'Странно... Нет ошибки',0
 error1msg               db      'Странно... Не определена база и/или раздел жёсткого диска',0
 error2msg               db      'Функция не поддерживается для данной файловой системы',0
@@ -5191,12 +6234,24 @@ aMkDirCaption           db      'Создание папки',0
 aMkDir                  db      'Создать папку',0
 aMkDirLen = $ - aMkDir - 1
 aCannotMakeFolder       db      'Не могу создать папку',0
+aName                   db      3,'Имя'
+aSize                   db      6,'Размер'
+aDate                   db      4,'Дата'
+aTime                   db      5,'Время'
+aCannotLoadDLL          db      'Не могу загрузить DLL',0
+aInvalidDLL             db      'Файл не найден или имеет неверный формат',0
+aMissingExport          db      'Необходимая функция не найдена',0
+aInitFailed             db      'Ошибка при инициализации',0
+aIncompatibleVersion    db      'Несовместимая версия',0
+aTables                 db      'Таблицы',0
+aSelect                 db      'Пометить',0
+aDeselect               db      'Снять',0
 else
 aDeleteCaption          db      'Delete',0
-aConfirmDeleteText      db      'Do you wish to delete ',0
-aDeleteFolder           db      'the folder',0
+aConfirmDeleteText      db      'Do you wish to delete',0
+aDeleteFolder           db      ' the folder',0
 aConfirmDeleteTextMax = $ - aConfirmDeleteText - 2
-aDeleteFile             db      'the file',0
+aDeleteFile             db      ' the file',0
 aDelete                 db      ' Delete ',0
 aDeleteLength = $ - aDelete - 1
 aCancel                 db      ' Cancel ',0
@@ -5215,6 +6270,8 @@ aContinue               db      'Continue',0
 aRetry                  db      'Retry',0
 a_Cancel                db      'Cancel',0
 a_Delete                db      'Delete',0
+aSkip                   db      'Skip',0
+aSkipAll                db      'Skip all',0
 error0msg               db      'Strange... No error',0
 error1msg               db      'Strange... Hard disk base and/or partition not defined',0
 error2msg               db      'The file system does not support this function',0
@@ -5240,17 +6297,150 @@ aCannotCopyToSelf       db      'File cannot be copied onto itself',0
 aCannotReadFile         db      'Cannot read file',0
 aIncompleteFile         db      'Incomplete file was retrieved. Delete it?',0
 aKeep                   db      'Keep',0
-aCannotWriteFile        db      'Cannot write file',0
-aCannotDeleteFile       db      'Cannot delete file',0
-aCannotDeleteFolder     db      'Cannot delete folder',0
+aCannotWriteFile        db      'Cannot write to the file',0
+aCannotDeleteFile       db      'Cannot delete the file',0
+aCannotDeleteFolder     db      'Cannot delete the folder',0
 aIgnore                 db      'Ignore',0
 aMkDirCaption           db      'Make folder',0
 aMkDir                  db      'Create the folder',0
 aMkDirLen = $ - aMkDir - 1
 aCannotMakeFolder       db      'Cannot create folder',0
+aName                   db      4,'Name'
+aSize                   db      4,'Size'
+aDate                   db      4,'Date'
+aTime                   db      4,'Time'
+aCannotLoadDLL          db      'Cannot load DLL',0
+aInvalidDLL             db      'File is not found or invalid',0
+aMissingExport          db      'Required function is not present',0
+aInitFailed             db      'Initialization failed',0
+aIncompatibleVersion    db      'Incompatible version',0
+aTables                 db      'Tables',0
+aSelect                 db      'Select',0
+aDeselect               db      'Deselect',0
 end if
+
 aOk                     db      'OK',0
-aNoMemory               db      'No memory!',0
+aNoMemory               db      'No memory!'
+nullstr                 db      0
+standard_dll_path:
+libini_name             db      '/rd/1/dll/'
+standard_dll_path_size = $ - standard_dll_path
+                        db      'libini.obj',0
+aStart                  db      'START',0
+aLibInit                db      'lib_init',0
+aVersion                db      'version',0
+aIniGetInt              db      'ini.get_int',0
+aIniGetStr              db      'ini.get_str',0
+aIniQuerySec            db      'ini.query_sec',0
+
+aConfirmations          db      'Confirmations',0
+aConfirmDelete          db      'Delete',0
+aConfirmDeleteIncomplete db     'DeleteIncomplete',0
+
+aAssociations           db      'Associations',0
+aMenu                   db      'Menu',0
+aFolderShortcuts        db      'FolderShortcuts',0
+aShortcut               db      'Shortcut'
+.d                      db      '0',0
+
+align 4
+ini_import:
+ini.get_int     dd      aIniGetInt
+ini.get_str     dd      aIniGetStr
+ini.query_sec   dd      aIniQuerySec
+                dd      0
+
+virtual at 0
+PanelMode:
+; up to 16 columns on one panel
+.NumColumns     dd      ?
+; available column types:
+COLUMN_TYPE_NONE = 0
+COLUMN_TYPE_NAME = 1
+        COLUMN_NAME_MARK = 10h          ; (reserved)
+        COLUMN_NAME_NOPATH = 20h        ; (reserved)
+        COLUMN_NAME_RIGHTALIGN = 40h    ; (reserved)
+COLUMN_TYPE_SIZE = 2
+        COLUMN_SIZE_COMMA = 10h         ; (reserved)
+COLUMN_TYPE_PACKED_SIZE = 3             ; (reserved)
+COLUMN_TYPE_DATE = 4
+COLUMN_TYPE_TIME = 5
+COLUMN_TYPE_DATETIME = 6                ; (reserved)
+COLUMN_TYPE_DATETIME_CREATION = 7       ; (reserved)
+COLUMN_TYPE_DATETIME_ACCESS = 8         ; (reserved)
+COLUMN_TYPE_ATTRIBUTES = 9              ; (reserved)
+COLUMN_TYPE_DESCRIPTION = 10            ; (reserved)
+COLUMN_TYPE_OWNER = 11                  ; (reserved)
+COLUMN_TYPE_NUMLINKS = 12               ; (reserved)
+COLUMN_TYPE_CUSTOM = 13                 ; (reserved)
+.ColumnTypes    rb      16
+
+.ColumnWidths   rb      16
+.bFullScreen    db      ?               ; (reserved)
+.bAlignExtensions db    ?
+                rb      2
+.size = $
+end virtual
+
+align 4
+column_headers:
+        dd      nullstr
+        dd      aName
+        dd      aSize
+        dd      nullstr
+        dd      aDate
+        dd      aTime
+draw_column_proc:
+        dd      draw_empty_column
+        dd      draw_name_column
+        dd      draw_size_column
+        dd      -1
+        dd      draw_date_column
+        dd      draw_time_column
+colmodes:
+; режим 0 : NM,SC,D
+        dd      3
+        db      COLUMN_TYPE_NAME+COLUMN_NAME_MARK, COLUMN_TYPE_SIZE+COLUMN_SIZE_COMMA
+                db      COLUMN_TYPE_DATE, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+        db      0, 10, 8
+                times 13 db 0
+        db      0, 1
+                times 2 db 0
+; режим 1 : N,N,N
+        dd      3
+        db      COLUMN_TYPE_NAME, COLUMN_TYPE_NAME, COLUMN_TYPE_NAME
+                times 13 db 0
+        times 16 db 0
+        db      0, 1
+                times 2 db 0
+; режим 2 : N,N
+        dd      2
+        db      COLUMN_TYPE_NAME, COLUMN_TYPE_NAME
+                times 14 db 0
+        times 16 db 0
+        db      0, 0
+                times 2 db 0
+; режим 3 : N,S,D,T
+        dd      4
+        db      COLUMN_TYPE_NAME, COLUMN_TYPE_SIZE, COLUMN_TYPE_DATE, COLUMN_TYPE_TIME
+                times 12 db 0
+        db      0, 6, 8, 5
+                times 12 db 0
+        db      0, 1
+                times 2 db 0
+; режим 4 : N,S
+        dd      2
+        db      COLUMN_TYPE_NAME, COLUMN_TYPE_SIZE
+                times 14 db 0
+        db      0, 6
+                times 14 db 0
+        db      0, 0
+                times 2 db 0
+; режим 5 : N,S,P,DM,DC,DA,A
+; режим 6 : N,Z
+; режим 7 : N,S,Z
+; режим 8 : N,S,O
+; режим 9 : N,S,LN
 
 execinfo:
         dd      7
@@ -5286,6 +6476,12 @@ panel1_sortmode db      ?
 panel1_nfa      dd      ?
 panel1_numfiles dd      ?
 panel1_files    dd      ?
+panel1_colmode  dd      ?
+panel1_colwidths rd     16+1
+panel1_total_num dd     ?
+panel1_total_size dq    ?
+panel1_selected_num dd ?
+panel1_selected_size dq ?
 panel1_dir      rb      1024
 
 panel2_data:
@@ -5302,6 +6498,12 @@ panel2_sortmode db      ?
 panel2_nfa      dd      ?
 panel2_numfiles dd      ?
 panel2_files    dd      ?
+panel2_colmode  dd      ?
+panel2_colwidths rd     16+1
+panel2_total_num dd     ?
+panel2_total_size dq    ?
+panel2_selected_num  dd ?
+panel2_selected_size dq ?
 panel2_dir      rb      1024
 
 ;console_data    rb      max_width*max_height*2
@@ -5329,6 +6531,7 @@ column_top      dd      ?
 column_width    dd      ?
 column_height   dd      ?
 column_index    dd      ?
+last_column_index dd    ?
 
 scrpos          dq      ?
 viewer_right_side dq    ?
@@ -5336,6 +6539,8 @@ viewer_right_side dq    ?
 saved_file_name:
 procinfo        rb      1024
 lower_file_name = procinfo + 512
+
+app_path        rb      1100
 
 error_msg       rb      128
 
@@ -5354,11 +6559,25 @@ CopySourceTextBuf       rb      512
 CopyDestEditBuf         rb      12+512+1
 .length = $ - CopyDestEditBuf - 13
 
+enter_string_buf        rb      12+512+1
+
+bMemForImageValidData   db      ?
+
 align 4
+tolower_table   rb      256
 layout          rb      128
 
 copy_buffer_size = 32768
 copy_buffer     rb      copy_buffer_size
+
+; data for directory delete
+; If directory nested level is >1024, then its full name is too big,
+; so we see the overflow when creating full name (we check for this!)
+del_dir_stack   rd      1024
+del_dir_stack_ptr dd    ?
+del_dir_query_size = 32
+del_dir_query_area rb   32+304*del_dir_query_size
+del_bSkipAll    db      ?
 
 ; stack
         align   4

@@ -27,6 +27,8 @@ GenericBox:
         pushad
         mov     ebx, [esp+20h+4]
 ; center window if required
+        push    [ebx+dlgtemplate.x]
+        push    [ebx+dlgtemplate.y]
         cmp     [ebx+dlgtemplate.x], -1
         jnz     @f
         mov     eax, [cur_width]
@@ -59,6 +61,8 @@ GenericBox:
         cmp     [ebx+dlgtemplate.border_size_y], 1
         jge     .sizeok
 .sizeerr:
+        pop     [ebx+dlgtemplate.y]
+        pop     [ebx+dlgtemplate.x]
         popad
         or      eax, -1
         ret     8
@@ -73,11 +77,11 @@ GenericBox:
         jz      @f
         mov     edi, warning_colors
 .setcolor:
-        mov     al, [dialog_main_color-dialog_colors+edi]
+        mov     al, [edi + dialog_main_color-dialog_colors]
         mov     [ebx+dlgtemplate.main_color], al
-        mov     al, [dialog_border_color-dialog_colors+edi]
+        mov     al, [edi + dialog_border_color-dialog_colors]
         mov     [ebx+dlgtemplate.border_color], al
-        mov     al, [dialog_header_color-dialog_colors+edi]
+        mov     al, [edi + dialog_header_color-dialog_colors]
         mov     [ebx+dlgtemplate.header_color], al
 @@:
 ; allocate memory for data under dialog
@@ -95,10 +99,12 @@ GenericBox:
         add     edx, [ebx+dlgtemplate.border_size_y]
         inc     edx
         mul     edx
-        add     eax, eax
-        call    mf_alloc
+        lea     ecx, [eax*2]
+        call    xpgalloc
         test    eax, eax
         jnz     @f
+        pop     [ebx+dlgtemplate.y]
+        pop     [ebx+dlgtemplate.x]
         popad
         or      eax, -1
         ret     8
@@ -296,7 +302,7 @@ GenericBox:
         dec     edx
         jnz     @b
 ; send redraw message
-        mov     eax, [esp+20h+8]
+        mov     eax, [esp+28h+8]
         push    ebx ebp
         push    0
         push    0
@@ -347,7 +353,7 @@ GenericBox:
         jz      .alt_down
         cmp     al, 0xB8
         jz      .alt_up
-        mov     ecx, [esp+20h+8]
+        mov     ecx, [esp+28h+8]
         push    ebx ebp
         push    0
         push    eax
@@ -357,7 +363,7 @@ GenericBox:
         pop     ebp ebx
         test    eax, eax
         jz      .event
-        mov     [esp+28], eax
+        mov     [esp+8+28], eax
         jmp     .exit
 .ctrl_down:
         test    ah, ah
@@ -430,9 +436,11 @@ GenericBox:
         call    draw_keybar
         cmp     ebx, nomem_dlgdata
         jz      @f
-        mov     eax, ebp
-        call    mf_free
+        mov     ecx, ebp
+        call    pgfree
 @@:
+        pop     [ebx+dlgtemplate.y]
+        pop     [ebx+dlgtemplate.x]
         or      [cursor_x], -1
         or      [cursor_y], -1
         call    draw_image
@@ -548,14 +556,14 @@ menu:
 ;       void* variants, const char* title, unsigned flags);
 menu_centered_in:
         pushad
-        mov     eax, 56
+        mov     ecx, 56
 ; 36 bytes for dlgtemplate + additional:
 ; +36: dd cur_variant
 ; +40: dd num_variants
 ; +44: dd begin_variant
 ; +48: dd end_variant
 ; +52: dd cur_variant_idx
-        call    xmalloc
+        call    xpgalloc
         test    eax, eax
         jnz     @f
 .ret_bad:
@@ -700,8 +708,8 @@ menu_centered_in:
         push    ebx
         call    GenericBox
         mov     [esp+28], eax
-        mov     eax, ebx
-        call    mf_free
+        mov     ecx, ebx
+        call    pgfree
         popad
         ret     28
 
@@ -715,6 +723,33 @@ MenuDlgProc:
 .draw:
         call    .dodraw
         ret     16
+.prev:
+        mov     eax, [ebx+36]
+        cmp     dword [eax+4], 0
+        jz      .end
+        call    .line_prev
+.posret:
+        mov     [ebx+36], eax
+.redraw:
+        call    .dodraw
+        call    draw_image
+        xor     eax, eax
+        ret     16
+.next:
+        mov     eax, [ebx+36]
+        cmp     dword [eax], 0
+        jz      .home
+        call    .line_next
+        jmp     .posret
+.pgdn:
+        mov     eax, [ebx+36]
+        mov     ecx, [ebx+dlgtemplate.height]
+.pgdnl:
+        cmp     dword [eax], 0
+        jz      .posret
+        call    .line_next
+        loop    .pgdnl
+        jmp     .posret
 .key:
         mov     al, [esp+12]
         cmp     al, 0x48
@@ -772,33 +807,6 @@ MenuDlgProc:
         jz      .posret
         call    .line_prev
         loop    .pgupl
-        jmp     .posret
-.prev:
-        mov     eax, [ebx+36]
-        cmp     dword [eax+4], 0
-        jz      .end
-        call    .line_prev
-.posret:
-        mov     [ebx+36], eax
-.redraw:
-        call    .dodraw
-        call    draw_image
-        xor     eax, eax
-        ret     16
-.next:
-        mov     eax, [ebx+36]
-        cmp     dword [eax], 0
-        jz      .home
-        call    .line_next
-        jmp     .posret
-.pgdn:
-        mov     eax, [ebx+36]
-        mov     ecx, [ebx+dlgtemplate.height]
-.pgdnl:
-        cmp     dword [eax], 0
-        jz      .posret
-        call    .line_next
-        loop    .pgdnl
         jmp     .posret
 .home:
         mov     eax, [ebx+36]
@@ -1083,6 +1091,7 @@ ManagerDlgProc:
         ret     16
 @@:
         lea     ebx, [ebp+dlgtemplate.size+12]
+        mov     ecx, [ebx-4]
 .enter_find:
         cmp     [ebx+dlgitemtemplate.type], 2
         jnz     @f
@@ -1090,7 +1099,8 @@ ManagerDlgProc:
         jnz     .enter_found
 @@:
         add     ebx, dlgitemtemplate.size
-        jmp     .enter_find
+        loop    .enter_find
+        jmp     .enter_found
 .tab:
         test    [ctrlstate], 3
         jnz     .shift_tab
@@ -1159,46 +1169,14 @@ ManagerDlgProc:
         cmp     al, 0x0E
         jz      .editor_backspace
         cmp     al, 0x53
-        jz      .editor_del
-        test    [ctrlstate], 0x3C
-        jnz     .ret_draw
-; query keyboard layout
-        pushad
-        push    26
-        pop     eax
-        push    2
-        pop     ebx
-        xor     ecx, ecx
-        cmp     [ctrlstate], 1
-        sbb     ecx, -2
-        mov     edx, layout
-        int     0x40
-        popad
-; translate scancode to ASCII
-        movzx   eax, al
-        movzx   eax, byte [layout+eax]
-        push    eax
-; insert entered symbol
-        xor     eax, eax
-        lea     edi, [edx+12]
-        or      ecx, -1
-        repnz   scasb
-        not     ecx
-        pop     eax
-        cmp     ecx, [edx]
-        ja      .ret_test       ; buffer capacity exceeded
-        lea     edi, [edx+ecx+12-1]
-        mov     esi, [edx+4]
-        lea     esi, [edx+esi+12]
-@@:
-        mov     cl, [edi]
-        mov     [edi+1], cl
-        dec     edi
-        cmp     edi, esi
-        jae     @b
-        mov     [esi], al
-        inc     dword [edx+4]
-@@:     jmp     .ret_test
+        jnz     .editor_char
+.editor_del:
+        mov     ecx, [edx+4]
+        lea     edi, [ecx+edx+12]
+        lea     esi, [edi+1]
+        cmp     byte [edi], 0
+        jz      .ret_test
+        jmp     .copy_and_ret_test
 .editor_left:
         mov     ecx, [edx+4]
         jecxz   @f
@@ -1248,13 +1226,46 @@ ManagerDlgProc:
         test    al, al
         jnz     @b
         jmp     .ret_test
-.editor_del:
-        mov     ecx, [edx+4]
-        lea     edi, [ecx+edx+12]
-        lea     esi, [edi+1]
-        cmp     byte [edi], 0
-        jz      .ret_test
-        jmp     .copy_and_ret_test
+.editor_char:
+        test    [ctrlstate], 0x3C
+        jnz     .ret_draw
+; query keyboard layout
+        pushad
+        push    26
+        pop     eax
+        push    2
+        pop     ebx
+        xor     ecx, ecx
+        cmp     [ctrlstate], 1
+        sbb     ecx, -2
+        mov     edx, layout
+        int     0x40
+        popad
+; translate scancode to ASCII
+        movzx   eax, al
+        movzx   eax, byte [layout+eax]
+        push    eax
+; insert entered symbol
+        xor     eax, eax
+        lea     edi, [edx+12]
+        or      ecx, -1
+        repnz   scasb
+        not     ecx
+        pop     eax
+        cmp     ecx, [edx]
+        ja      .ret_test       ; buffer capacity exceeded
+        lea     edi, [edx+ecx+12-1]
+        mov     esi, [edx+4]
+        lea     esi, [edx+esi+12]
+@@:
+        mov     cl, [edi]
+        mov     [edi+1], cl
+        dec     edi
+        cmp     edi, esi
+        jae     @b
+        mov     [esi], al
+        inc     dword [edx+4]
+@@:     jmp     .ret_test
 
 .dodraw:
         or      [cursor_x], -1
@@ -1434,6 +1445,16 @@ SayNoMem:
 ;                       int num_strings, const char* strings[],
 ;                       int num_buttons, const char* buttons[]);
 ; may be x=-1 and/or y=-1
+SayErr:
+        push    2
+        jmp     @f
+
+; int __stdcall Message(const char* title, int x, int y,
+;                       int num_strings, const char* strings[],
+;                       int num_buttons, const char* buttons[]);
+Message:
+        push    1
+@@:
 ; [esp+4] = title
 ; [esp+8] = x
 ; [esp+12] = y
@@ -1441,21 +1462,22 @@ SayNoMem:
 ; [esp+20] = strings
 ; [esp+24] = num_buttons
 ; [esp+28] = buttons
-SayErr:
-        mov     eax, [esp+16]
-        add     eax, [esp+24]
-        imul    eax, dlgitemtemplate.size
-        add     eax, dlgtemplate.size+12
-        call    xmalloc
+        pop     eax
+        pushad
+        mov     ecx, [esp+4+16]
+        add     ecx, [esp+4+24]
+        imul    ecx, dlgitemtemplate.size
+        add     ecx, dlgtemplate.size+12
+        call    xpgalloc
         test    eax, eax
         jnz     @f
+        popad
         or      eax, -1
         ret     28
 @@:
-        pushad
         mov     ebx, eax
         mov     edi, eax
-        mov     eax, 2
+        mov     eax, [esp+28]
         stosd                           ; dlgtemplate.flags
         mov     eax, [esp+32+8]
         stosd                           ; dlgtemplate.x
@@ -1592,7 +1614,7 @@ SayErr:
         sub     eax, [esp+32+16]
 @@:
         mov     [esp+28], eax
-        mov     eax, ebx
-        call    mf_free
+        mov     ecx, ebx
+        call    pgfree
         popad
         ret     28

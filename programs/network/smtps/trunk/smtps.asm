@@ -8,7 +8,7 @@
 ;;    Compile with FASM for Menuet                   ;;
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-include 'lang.inc'
+
 version equ '0.1'
 
 use32
@@ -23,26 +23,22 @@ use32
                 dd      0xffff0
                 dd      0,0
 
+include 'macros.inc'
+
 save_file:
 
-   pusha
-
-   cmp  [file_start],0x100000+10
-   jbe  nosub
-   sub  [file_start],8
-  nosub:
-
-   mov  edi,[file_start]
+;   cmp  [file_start],0x100000+10
+;   jbe  nosub
+;   sub  [file_start],8
+;  nosub:
 
    mov  eax,[file_start]
    sub  eax,0x100000
-   mov  [files+8],eax
-
-   mov  eax,58
    mov  ebx,files
-   int  0x40
+   mov  [ebx+12],eax
 
-   popa
+   mov  eax,70
+   int  0x40
 
    ret
 
@@ -51,19 +47,22 @@ START:                          ; start of execution
 
     mov  [file_start],0x100000
 
-    mov  eax,58
+    mov  eax,70
     mov  ebx,filel
     int  0x40
 
-    cmp  eax,0
-    jne  notfound
+    test eax,eax
+    jz   @f
+    cmp  eax,6
+    jnz  notfound
+@@:
     add  [file_start],ebx
   notfound:
 
 
     mov  edi,I_END
     mov  ecx,60*120
-    mov  eax,32
+    mov  al,32
     cld
     rep  stosb
 
@@ -630,17 +629,8 @@ draw_window:
     mov  eax,0                     ; draw window
     mov  ebx,5*65536+400
     mov  ecx,5*65536+200
-    mov  edx,[wcolor]
-    add  edx,0x03ffffff
-    mov  esi,0x80555599
-    mov  edi,0x00ffffff
-    int  0x40
-
-    mov  eax,4                     ; label
-    mov  ebx,9*65536+8
-    mov  ecx,0x10ffffff
-    mov  edx,labelt
-    mov  esi,labellen-labelt
+    mov  edx,0x13ffffff
+    mov  edi,labelt
     int  0x40
 
     mov  eax,8                     ; button: open socket
@@ -746,7 +736,7 @@ db '   Timeout is set to 15 seconds.                                      '
 db '                                                                      '
 db '        Open SMTP server port 25                Close SMTP            '
 
-db 'x <- END MARKER, DONT DELETE            '
+db 'x' ; <- END MARKER, DONT DELETE
 
 
 irc_server_ip   db      192,168,1,1
@@ -754,10 +744,10 @@ irc_server_ip   db      192,168,1,1
 file_start      dd      0x100000
 
 files:
-       dd  1,0,0,0x100000,0xd0000
+       dd  2,0,0,?,0x100000
        db  '/rd/1/smtps.txt',0
 filel:
-       dd  0,0,10000/512,0x100000,0xd0000
+       dd  0,0,0,0x100000,0x100000
        db  '/rd/1/smtps.txt',0
 
 
@@ -840,10 +830,6 @@ scroll      dd  1
 
 numtext     db  '                     '
 
-wcolor      dd  0x000000
-
-labelt      db  'Tiny SMTP email server v ',version
-labellen:
-
+labelt      db  'Tiny SMTP email server v ',version,0
 
 I_END:
