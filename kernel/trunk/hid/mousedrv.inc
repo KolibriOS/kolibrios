@@ -24,12 +24,13 @@ uglobal
   mousedata   dd  0x0
 endg
 
+iglobal
 mouse_delay     dd  10
 mouse_speed_factor dw 3
+endg
 
 include 'm_ps2.inc'
-include 'm_com1.inc'
-include 'm_com2.inc'
+include 'm_com.inc'
 
 
 ;test_mario79:

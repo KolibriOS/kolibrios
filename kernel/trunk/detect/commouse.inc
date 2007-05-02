@@ -21,20 +21,14 @@ Detect_COM_Mouse:
         cmp    AL,'M'
         jne    @f
         mov    [com1_mouse_detected],1
-        pusha
-
-        mov   eax,4
-        shl   eax,2
-        mov   [irq_owner+eax], 1
-
-        inc   dword [RESERVED_PORTS]
-        mov   edi,[RESERVED_PORTS]
-        shl   edi,4
-        mov   [RESERVED_PORTS+edi+0],dword 1
-        mov   [RESERVED_PORTS+edi+4],dword 0x3f0
-        mov   [RESERVED_PORTS+edi+8],dword 0x3ff
-
-        popa
+        mov     [irq_owner+4*4], 1      ; IRQ4 owner is System
+        mov     eax, [RESERVED_PORTS]
+        inc     eax
+        mov     [RESERVED_PORTS], eax
+        shl     eax, 4
+        mov     [RESERVED_PORTS+eax+0], dword 1
+        mov     [RESERVED_PORTS+eax+4], dword 0x3F8
+        mov     [RESERVED_PORTS+eax+8], dword 0x3FF
         mov    esi,boot_setmouse_type+22
         call  boot_log
      @@:
@@ -43,20 +37,14 @@ Detect_COM_Mouse:
         cmp    AL,'M'
         jne    @f
         mov    [com2_mouse_detected],1
-        pusha
-
-        mov   eax,3
-        shl   eax,2
-        mov   [irq_owner+eax], 1
-
-        inc   dword [RESERVED_PORTS]
-        mov   edi,[RESERVED_PORTS]
-        shl   edi,4
-        mov   [RESERVED_PORTS+edi+0],dword 1
-        mov   [RESERVED_PORTS+edi+4],dword 0x2f0
-        mov   [RESERVED_PORTS+edi+8],dword 0x2ff
-
-        popa
+        mov     [irq_owner+3*4], 1      ; IRQ3 owner is System
+        mov     eax, [RESERVED_PORTS]
+        inc     eax
+        mov     [RESERVED_PORTS], eax
+        shl     eax, 4
+        mov     [RESERVED_PORTS+eax+0], dword 1
+        mov     [RESERVED_PORTS+eax+4], dword 0x2F8
+        mov     [RESERVED_PORTS+eax+8], dword 0x2FF
         mov    esi,boot_setmouse_type+44
         call  boot_log
      @@:
@@ -94,22 +82,24 @@ MouseSearch:
 ; мышью типа MSMouse
         ; ќтключить питание мыши и прерывани
         mov     DX,[COMPortBaseAddr]
-        add     DX,4    ;регистр управлени€ модемом
+        add     EDX,4   ;регистр управлени€ модемом
         mov     AL,0    ;сбросить DTR, RTS и OUT2
         out     DX,AL
         ; ќжидать 5 "тиков" (0,2 с)
-        mov  ecx,0xffff
-dT_1:
-        dec  ecx
-        cmp ecx,0
-        jne dT_1
-        mov  ecx,0xffff
+        mov     ecx, 0xFFFF
+        loop    $
         ; ¬ключить питание мыши
+        mov     al, 1
+        out     dx, al
+        mov     ecx, 0xFFFF
+        loop    $
+        ; ќчистить регистр данных
+        sub     edx, 4
+        in      AL,DX
+        add     edx, 4
         mov     AL,11b  ;установить DTR и RTS
         out     DX,AL
-        ; ќчистить регистр данных
-        mov     DX,[COMPortBaseAddr]
-        in      AL,DX
+        mov     ecx, 0x1FFFF
 ; ÷икл опроса порта
 WaitData:
         ; ќжидать еще 10 "тиков"

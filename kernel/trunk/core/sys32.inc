@@ -48,7 +48,7 @@ iglobal
     times 12 dd unknown_interrupt
 
     dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
-    dd   irq_serv.irq_4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
+    dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
     dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
     dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
 
@@ -245,7 +245,9 @@ p_irq3:
      mov   es, ax
      cmp   [com2_mouse_detected],0
      je    old_irq3_handler
-     call  check_mouse_data_com2
+     mov   esi, com2_mouse
+     mov   dx, 2F8h     ;[COMPortBaseAddr]
+     call  check_mouse_data_com
      jmp   p_irq3_1
  old_irq3_handler:
      mov   edi,3
@@ -261,7 +263,9 @@ p_irq4:
      mov   es, ax
      cmp   [com1_mouse_detected],0
      je    old_irq4_handler
-     call  check_mouse_data_com1
+     mov   esi, com1_mouse
+     mov   dx, 3F8h     ;[COMPortBaseAddr]
+     call  check_mouse_data_com
      jmp   p_irq4_1
  old_irq4_handler:
      mov   edi,4

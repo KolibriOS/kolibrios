@@ -575,24 +575,28 @@ get_event_for_app:
 no_eventoccur3:
 
      ;mov   edi,[TASK_BASE]              ; mouse event
+     mov eax, [CURRENT_TASK]
+     shl eax, 8
+     add eax, SLOT_BASE
      test  [edi+TASKDATA.event_mask],dword 00100000b
      jz    no_mouse_event
 
-     mov eax, [CURRENT_TASK]
-     shl eax, 8
-     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 00100000b
+     test  [eax+APPDATA.event_mask],dword 00100000b
      jz    no_mouse_event
-     and   [eax+SLOT_BASE+APPDATA.event_mask],dword (not 00100000b)
+     and   [eax+APPDATA.event_mask],dword (not 00100000b)
      popad
      mov   eax,6
      ret
 no_mouse_event:
 
      ;mov   edi,[TASK_BASE]              ; DESKTOP BACKGROUND REDRAW
-     test  [edi+TASKDATA.event_mask],dword 16
+     test  [edi+TASKDATA.event_mask], 16
      jz    no_eventoccur5
-     cmp   [REDRAW_BACKGROUND],byte 2
-     jnz   no_eventoccur5
+;     cmp   [REDRAW_BACKGROUND],byte 2
+;     jnz   no_eventoccur5
+     test  [eax+APPDATA.event_mask], 16
+     jz    no_eventoccur5
+     and   [eax+APPDATA.event_mask], not 16
      popad
      mov   eax,5
      ret
@@ -601,11 +605,9 @@ no_eventoccur5:
      ;mov   edi,[TASK_BASE]              ; IPC
      test  [edi+TASKDATA.event_mask],dword 01000000b
      jz    no_ipc
-     mov eax, [CURRENT_TASK]
-     shl eax, 8
-     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 01000000b
+     test  [eax+APPDATA.event_mask],dword 01000000b
      jz    no_ipc
-     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-01000000b
+     and   [eax+APPDATA.event_mask],dword 0xffffffff-01000000b
      popad
      mov   eax,7
      ret
@@ -614,11 +616,9 @@ no_ipc:
      ;mov   edi,[TASK_BASE]              ; STACK
      test  [edi+TASKDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     mov eax, [CURRENT_TASK]
-     shl eax, 8
-     test  [eax+SLOT_BASE+APPDATA.event_mask],dword 10000000b
+     test  [eax+APPDATA.event_mask],dword 10000000b
      jz    no_stack_event
-     and   [eax+SLOT_BASE+APPDATA.event_mask],dword 0xffffffff-10000000b
+     and   [eax+APPDATA.event_mask],dword 0xffffffff-10000000b
      popad
      mov   eax,8
      ret
@@ -626,11 +626,9 @@ no_stack_event:
 
      test  byte [edi+TASKDATA.event_mask+1], 1		; DEBUG
      jz    .test_IRQ
-     mov eax, [CURRENT_TASK]
-     shl eax, 8
-     test  byte [eax+SLOT_BASE+APPDATA.event_mask+1], byte 1
+     test  byte [eax+APPDATA.event_mask+1], byte 1
      jz    .test_IRQ
-     and   byte [eax+SLOT_BASE+APPDATA.event_mask+1], not 1
+     and   byte [eax+APPDATA.event_mask+1], not 1
      popad
      mov   eax, 9
      ret

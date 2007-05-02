@@ -890,7 +890,6 @@ vesa20_drawbackground_stretch:
      push edx
      mov ebp,[draw_data+32+RECT.left] ; x start:=(x+Xwin)
      mov ebx,[draw_data+32+RECT.top] ; y start:=(y+Ywin)
-     dec ebx
      mov eax,[BytesPerScanLine]
      mul ebx
      xchg ebp, eax  ; BytesPerScanLine*(Ywin+y)

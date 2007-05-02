@@ -3395,8 +3395,14 @@ mouse_not_active:
     jz    nobackgr
     cmp    [background_defined], 0
     jz    nobackgr
-    mov   [REDRAW_BACKGROUND],byte 2
-    call  change_task
+;    mov   [REDRAW_BACKGROUND],byte 2
+;    call  change_task
+    xor   edi, edi
+    mov   ecx,  [TASK_COUNT]
+set_bgr_event:
+    add   edi, 256
+    or    [edi+SLOT_BASE+APPDATA.event_mask], 16
+    loop  set_bgr_event
     mov   [draw_data+32 + RECT.left],dword 0
     mov   [draw_data+32 + RECT.top],dword 0
     mov   eax,[ScreenWidth]
