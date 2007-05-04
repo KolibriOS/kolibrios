@@ -1,3 +1,44 @@
+
+;~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
+macro iglobal {
+  IGlobals equ IGlobals,
+  macro __IGlobalBlock { }
+  
+macro uglobal {
+  UGlobals equ UGlobals,
+  macro __UGlobalBlock { }
+
+endg fix }      ; Use endg for ending iglobal and uglobal blocks.
+
+
+macro IncludeIGlobals{
+  macro IGlobals dummy,[n] \{ __IGlobalBlock
+     purge __IGlobalBlock  \}
+  match I, IGlobals \{ I \} }
+
+macro IncludeUGlobals{
+  macro UGlobals dummy,[n] \{
+    \common
+      \local begin, size
+      begin = $
+      virtual at $
+    \forward
+      __UGlobalBlock
+      purge __UGlobalBlock
+    \common
+      size = $ - begin
+    end virtual
+    rb size
+  \}
+  match U, UGlobals \{ U \} }
+
+uglobal
+endg
+  
+iglobal
+endg
+
+;~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-~-
 ; new application structure
 macro meos_app_start
  {
@@ -30,6 +71,7 @@ CODE fix code
 macro data
  {
   __data:
+  IncludeIGlobals
  }
 DATA fix data
 
@@ -44,6 +86,7 @@ macro udata
     __end:
   end if
   __udata:
+  IncludeUGlobals
  }
 UDATA fix udata
 
@@ -71,6 +114,22 @@ struc mstr [sstring]
   common
     dd -1
  }
+ 
+; macro for defining multiline text data
+struc mls [sstring] {
+	forward
+	local ssize
+	virtual at 0
+		db sstring	; mod
+		ssize = $
+	end virtual
+	db ssize
+	db sstring
+	common
+
+	db -1			; mod
+}
+
 
 
 ; strings
@@ -131,15 +190,43 @@ macro __mov reg,a,b {         ; mike.dld
  end if
 }
 
-macro mcall a,b,c,d,e,f {   ; mike.dld
+__CPU_type	equ	p5
+SYSENTER_VAR	equ	0
+
+macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
+ local	..ret_point
  __mov eax,a
  __mov ebx,b
  __mov ecx,c
  __mov edx,d
  __mov esi,e
  __mov edi,f
- int   0x40
+
+ if __CPU_type eq p5
+	int	0x40
+ else
+  if __CPU_type eq p6
+	push	ebp
+	mov	ebp, esp
+	push	..ret_point	; it may be 2 or 5 byte
+	sysenter
+ ..ret_point:
+	pop	edx
+	pop	ecx
+
+  else
+   if __CPU_type eq k6
+	push	ecx
+	syscall
+	pop	ecx
+   else
+	display 'ERROR : unknown CPU type'
+	int	0x40
+   end if
+  end if
+ end if
 }
+
 
 
 
