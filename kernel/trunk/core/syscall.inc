@@ -48,26 +48,14 @@ i40:
 ;;                                                            ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;uglobal
-;times	100 db ?
-;sysenter_stack:
-;endg
-
 align 32
-SYSENTER_VAR	equ	0
 sysenter_entry:
 	; Настраиваем стек
-     ;   cli                   sysenter clear IF
-     ;   push    eax
-     ;   mov     eax, [ss:CURRENT_TASK]
-     ;   shl     eax, 8
-     ;   mov     eax, [ss:SLOT_BASE + eax + APPDATA.pl0_stack]
-     ;   lea     esp, [eax + RING0_STACK_SIZE]           ; configure ESP
-     ;   mov     eax, [ss:sysenter_stack - 4]            ; eax - original eax, from app
         mov     esp, [ss:tss._esp0]
-
 	sti
-    ;------------------
+	push	ebp			; save app esp + 4
+	mov	ebp, [ebp]		; ebp - original ebp
+	;------------------
 	pushad
 	cld
 
@@ -85,8 +73,13 @@ sysenter_entry:
 
 	popad
 	;------------------
-        mov     edx, [SYSENTER_VAR]       ; eip
-        mov     ecx, [SYSENTER_VAR + 4]   ; esp
+	xchg	ecx, [ss:esp]		; в вершин стека - app ecx, ecx - app esp + 4
+	sub	ecx, 4
+	xchg	edx, [ecx]		; edx - return point, & save original edx
+	push	edx
+	mov	edx, [ss:esp + 4]
+	mov	[ecx + 4], edx		; save original ecx
+	pop	edx
 	sysexit
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -4,7 +4,6 @@
 ;   Compile with FASM for Kolibri
 ;
 ;
-SYSENTER_VAR	equ	0
 use32
 org	0x0
 	db    'MENUET01'
@@ -20,6 +19,7 @@ include 'debug.inc'
 
 START:	print	'Please wait'
 	; через быстрый вызов (SYSENTER)
+	__CPU_type	equ	p6
 test1:	mov	eax, 1
 	cpuid
 	test	edx, 0x800
@@ -34,12 +34,10 @@ test1:	mov	eax, 1
 	mov	[old_tsc + 4], edx
 	
 	mov	ebx, 0x100000
-	mov	dword[SYSENTER_VAR], .ret_p
-	mov	[SYSENTER_VAR + 4], esp
 	align	32
-.nxt:	mov	eax, 19 	; функция пустышка
-	sysenter		; портятся ecx, edx
-.ret_p: dec	ebx
+.nxt:	mcall	19		; функция пустышка
+				; портятся ecx, edx
+	dec	ebx
 	jnz	.nxt
 
 	xor	eax, eax
@@ -56,6 +54,7 @@ test1:	mov	eax, 1
 	
 	;----------------------------------------------
 	; через быстрый вызов (SYSCALL)
+	__CPU_type	equ	k6
 test2:	xor	eax, eax
 	cpuid
 	cmp	ecx, "cAMD"
@@ -75,12 +74,9 @@ test2:	xor	eax, eax
 	
 	mov	ebx, 0x100000
 	align	32
-.nxt:	mov	eax, 19
-	push	ecx
-	syscall
-	pop	ecx
+.nxt:	mcall	19		; функция пустышка
 	
-.ret_p: dec	ebx
+	dec	ebx
 	jnz	.nxt
 
 	xor	eax, eax
@@ -96,6 +92,7 @@ test2:	xor	eax, eax
 .end:	print	' <- Fast call (SYSCALL)'
 	;----------------------------------------------
 	; через шлюз прерывания
+	__CPU_type	equ	p5
 	xor	eax, eax
 	cpuid
 	rdtsc
@@ -104,8 +101,7 @@ test2:	xor	eax, eax
 	
 test3:	mov	ebx, 0x100000
 	align	32
-.nxt:	mov	eax, 19 	; функция пустышка
-	int	0x40
+.nxt:	mcall	19		; функция пустышка
 	dec	ebx
 	jnz	.nxt
 	
@@ -121,42 +117,7 @@ test3:	mov	ebx, 0x100000
 	debug_print_hex eax
 	print	' <- Interrupt'
 
-	call	show_alive
-	mov	eax, -1
-	int	0x40
+	mcall -1
 ;---------------------------------------------
-show_alive:
-	; через быстрый вызов, настраиваем регистры для возврата
-	mov	eax, 63
-	mov	ebx, 1
-	mov	esi, msg_Ok
-.nxt:	mov	cl, [esi]
-	test	cl, cl
-	jz	.end
-
-	mov	dword[SYSENTER_VAR], .ret_p
-	mov	[SYSENTER_VAR + 4], esp
-	sysenter		; портятся ecx, edx
-
-.ret_p: inc	esi
-	jmp	.nxt
-.end:	ret
-	; через шлюз прерывания
-	; mov   eax, 63
-	; mov   ebx, 1
-	; mov   esi, msg_Ok
-; @@:   mov     cl, [esi]
-	; test  cl, cl
-	; jz    @f
-
-	; int   0x40
-
-	; inc   esi
-	; jmp   @b
-; @@:   ret
-
-
 old_tsc:	dd	0, 0
-
-msg_Ok	db	'Alive!', 10, 13, 0
 I_END:
