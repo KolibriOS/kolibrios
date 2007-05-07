@@ -143,7 +143,7 @@ checkVga_N13:
       novesal:
         mov    [novesachecksum],ecx
         mov    ecx,0
-        movzx  eax,word [0xfb0c]
+        movzx  eax,word [MOUSE_Y]
         cmp    eax,100
         jge    m13l3
         mov    eax,100
