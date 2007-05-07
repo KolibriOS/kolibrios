@@ -35,6 +35,9 @@ use32
   dd 0
   dd 0
 
+include 'macros.inc'
+;__CPU_type	equ	p6  ; charge it
+
 include 'proc32.inc'
 
 ; ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ S U B R O U T I N E ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ
@@ -65,9 +68,7 @@ locRedrawEvent: 			; CODE XREF: start+3Cj
 		call	subDrawMainWindow
 
 locWaitForEvent:			; CODE XREF: start+6Cj start:loc_B3j ...
-		mov	eax, 23
-		mov	ebx, 20
-		int	0x40		 ; Kolibri - WAIT FOR EVENT WITH TIMEOUT
+		mcall	23, 20		; Kolibri - WAIT FOR EVENT WITH TIMEOUT
 					; ebx = timeout
 					; Return: eax = event
 		cmp	eax, 1
@@ -93,10 +94,7 @@ loc_87: 				; CODE XREF: start+55j
 		btr	word[wFlags], 1
 		jnb	locWaitForEvent
 		call	subDelay100ms
-		mov	eax, 12h
-		mov	ebx, 3
-		mov	ecx, [dwMainWndSlot]
-		int	0x40		 ; Kolibri - ACTIVATE WINDOW
+		mcall	0x12, 3, [dwMainWndSlot]	; Kolibri - ACTIVATE WINDOW
 					; ecx = slot
 		call	subDelay100ms
 
@@ -112,9 +110,7 @@ endp
 
 
 proc		subGetThreadInfo	; CODE XREF: start+5p start:loc_36p
-		mov	eax, 9
-		mov	ebx, APP_MEM_END
-		int	0x40		 ; Kolibri - GET THREAD INFO
+		mcall	9, APP_MEM_END	; Kolibri - GET THREAD INFO
 					; ebx -> buffer, ecx = slot (-1 for self)
 					; Return: eax = maximum slot
 		retn
@@ -125,9 +121,7 @@ endp
 
 
 proc		subDelay100ms		; CODE XREF: start+6Ep start+85p
-		mov	eax, 5
-		mov	ebx, 0Ah
-		int	0x40		 ; Kolibri - DELAY
+		mcall	5, 0x0a 	; Kolibri - DELAY
 					; ebx = time (in 1/100th of second)
 		retn
 endp
@@ -136,8 +130,7 @@ endp
 ; START OF FUNCTION CHUNK FOR start
 
 locKeyEvent:				; CODE XREF: start+41j
-		mov	eax, 2
-		int	0x40		 ; Kolibri - GET KEY CODE
+		mcall	2		; Kolibri - GET KEY CODE
 					; Return: ah = keycode
 		cmp	ah, 't'
 		jz	locActionTest
@@ -153,13 +146,11 @@ locKeyEvent:				; CODE XREF: start+41j
 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
 locButtonEvent: 			; CODE XREF: start:loc_6Aj
-		mov	eax, 11h
-		int	0x40		 ; Kolibri - GET PRESSED BUTTON
+		mcall	0x11		; Kolibri - GET PRESSED BUTTON
 					; Return: ah = button ID
 		cmp	ah, 1
 		jnz	locNotClose
-		mov	eax, -1
-		int	0x40		 ; Kolibri - FINISH EXECUTION
+		mcall	-1		; Kolibri - FINISH EXECUTION
 
 locNotClose:				; CODE XREF: start+E6j
 		cmp	ah, 2
@@ -168,17 +159,11 @@ locNotClose:				; CODE XREF: start+E6j
 locActionTest:				; CODE XREF: start+B5j
 		bts	[wFlags], 0
 		jb	locWaitForEvent
-		mov	eax, 5
-		mov	ebx, 50
-		int	0x40		 ; Kolibri - DELAY
+		mcall	5, 50		; Kolibri - DELAY
 					; ebx = time (in 1/100th of second)
 
 loc_132:
-		mov	eax, 51
-		mov	ebx, 1
-		mov	ecx, subTestWndProc
-		mov	edx, 0x17FFF0
-		int	0x40		 ; Kolibri - CREATE THREAD
+		mcall	51, 1, subTestWndProc, 0x17FFF0; Kolibri - CREATE THREAD
 					; ebx = 1 - unique subfunction
 					; ecx = starting eip
 					; edx = starting esp
@@ -241,11 +226,7 @@ locActionSave:				; CODE XREF: start+D1j
 
 
 proc		subCreateOpenSaveDlg	  ; CODE XREF: start+15Ap start+1A9p ...
-		mov	eax, 51
-		mov	ebx, 1
-		mov	ecx, subOpenSaveDlgProc
-		mov	edx, 0x19FFF0
-		int	0x40		 ; Kolibri - CREATE THREAD
+		mcall	51, 1, subOpenSaveDlgProc, 0x19FFF0; Kolibri - CREATE THREAD
 					; ebx = 1 - unique subfunction
 					; ecx = starting eip
 					; edx = starting esp
@@ -282,11 +263,7 @@ locDrawNextWindow:			; CODE XREF: seg000:00000241j
 		call	subInitTestTimer
 
 locDrawNextBar: 			; CODE XREF: seg000:00000269j
-		mov	eax, 0Dh
-		mov	ebx, 0A0064h
-		mov	ecx, 1E00FAh
-		mov	edx, 6A73D0h
-		int	0x40		 ; Kolibri - DRAW RECTANGLE
+		mcall	0x0d, 0x0A0064, 0x1E00FA, 0x6A73D0; Kolibri - DRAW RECTANGLE
 					; ebx = [xstart]*65536+[xsize], ecx = [ystart]*65536+[ysize]
 					; edx = 0xRRGGBB or 0x80RRGGBB for gradient
 		call	subIfTimeElapsed
@@ -295,11 +272,8 @@ locDrawNextBar: 			; CODE XREF: seg000:00000269j
 		call	subInitTestTimer
 
 locDrawNextLine:			; CODE XREF: seg000:00000291j
-		mov	eax, 38
-		mov	ebx, 8C008Ch
-		mov	ecx, 1E017Ch
-		mov	edx, 1090207Fh
-		int	0x40		 ; Kolibri - DRAW LINE
+		; Kolibri - DRAW LINE
+		mcall	38, 0x8C008C, 0x1E017C, 0x1090207F
 					; ebx = [xstart]*65536+[xend], ecx = [ystart]*65536+[yend]
 					; edx = 0x00RRGGBB - color or 0x01****** - inversed line
 		call	subIfTimeElapsed
@@ -308,12 +282,8 @@ locDrawNextLine:			; CODE XREF: seg000:00000291j
 		call	subInitTestTimer
 
 locDrawNextText1:			; CODE XREF: seg000:000002BEj
-		mov	eax, 4
-		mov	ebx, 0A012Ch
-		mov	ecx, 0AA66h
-		mov	edx, aTestText ;        "This is a 34-charachters test text"
-		mov	esi, 34
-		int	0x40		 ; Kolibri - DRAW STRING
+		; Kolibri - DRAW STRING
+		mcall	4, 0x0A012C, 0x0AA66, aTestText, 34
 					; ebx = [xstart]*65536+[ystart]
 					; ecx = 0xX0RRGGBB, edx -> string
 		call	subIfTimeElapsed
@@ -322,12 +292,8 @@ locDrawNextText1:			; CODE XREF: seg000:000002BEj
 		call	subInitTestTimer
 
 locDrawNextText2:			; CODE XREF: seg000:000002EBj
-		mov	eax, 4
-		mov	ebx, 0A015Eh
-		mov	ecx, 10E7B850h
-		mov	edx, aTestText ;        "This is a 34-charachters test text"
-		mov	esi, 34
-		int	0x40		 ; Kolibri - DRAW STRING
+		; Kolibri - DRAW STRING
+		mcall	4, 0x0A015E, 0x10E7B850, aTestText, 34
 					; ebx = [xstart]*65536+[ystart]
 					; ecx = 0xX0RRGGBB, edx -> string
 		call	subIfTimeElapsed
@@ -336,38 +302,34 @@ locDrawNextText2:			; CODE XREF: seg000:000002EBj
 		call	subInitTestTimer
 
 locDrawNextNumber:			; CODE XREF: seg000:00000318j
-		mov	eax, 47
-		mov	ebx, 80000h
-		mov	ecx, 12345678
-		mov	edx, 140172h
-		mov	esi, 0E0B27Bh
-		int	0x40		 ; Kolibri - DRAW NUMBER
+					; Kolibri - DRAW NUMBER
 					; bl = 0/1 - ecx is number/pointer
 					; bh = 0/1/2 - dec/hex/bin
 					; highword(ebx) = number of digits
 					; ecx = number/pointer
 					; edx = [x]*65536+[y]
 					; esi = 0xX0RRGGBB
+		mcall	47, 80000h, 12345678, 140172h, 0E0B27Bh
+
+
+
 		call	subIfTimeElapsed
 		jb	locDrawNextNumber
 		mov	[results_table+TEST_REC_SIZE*5], edi
 		call	subInitTestTimer
 
 locDrawNextPixel:			; CODE XREF: seg000:00000340j
-		mov	eax, 1
-		mov	ebx, 100
-		mov	ecx, 100
-		mov	edx, 0FFFFFFh
-		int	0x40		 ; Kolibri - PUT PIXEL
+					; Kolibri - PUT PIXEL
 					; ebx = x, ecx = y, edx = color
+		mcall	1, 100, 100, 0x0FFFFFF
 		call	subIfTimeElapsed
 		jb	locDrawNextPixel
 		mov	[results_table+TEST_REC_SIZE*6], edi
 }
 		bts	word[wFlags], 1
 		btr	word[wFlags], 0
-		mov	eax, -1
-		int	0x40		 ; Kolibri - FINISH EXECUTION
+		; Kolibri - FINISH EXECUTION
+		mcall	-1
 
 ; ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ S U B R O U T I N E ÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛÛ
 
@@ -377,7 +339,7 @@ proc		subInitTestTimer	; CODE XREF: seg000:subTestWndProcp
 		xor	edi, edi
 		mov	eax, 26
 		mov	ebx, 9
-		int	0x40		 ; Kolibri - GET SYSTEM PARAMETERS - TIME COUNTER
+		mcall		 ; Kolibri - GET SYSTEM PARAMETERS - TIME COUNTER
 					; Return: eax = time counter
 		inc	eax
 		mov	ecx, eax
@@ -386,7 +348,7 @@ proc		subInitTestTimer	; CODE XREF: seg000:subTestWndProcp
 
 locWait10ms:				; CODE XREF: subInitTestTimer+22j
 		mov	eax, 26
-		int	0x40		 ; Kolibri - GET SYSTEM PARAMETERS - TIME COUNTER
+		mcall		 ; Kolibri - GET SYSTEM PARAMETERS - TIME COUNTER
 					; Return: eax = time counter
 		cmp	eax, ecx
 		jb	locWait10ms
@@ -402,7 +364,7 @@ proc		subIfTimeElapsed	; CODE XREF: seg000:0000023Cp
 		inc	edi
 		mov	eax, 26
 		mov	ebx, 9
-		int	0x40		 ; Kolibri - GET SYSTEM PARAMETERS - TIME COUNTER
+		mcall		 ; Kolibri - GET SYSTEM PARAMETERS - TIME COUNTER
 					; Return: eax = time counter
 		cmp	eax, [dwTestEndTime]
 		retn
@@ -439,17 +401,17 @@ endp
 proc		subDrawMainWindow	; CODE XREF: start:locRedrawEventp
 		mov	eax, 12
 		mov	ebx, 1
-		int	0x40		 ; Kolibri - BEGIN WINDOW REDRAW
+		mcall		 ; Kolibri - BEGIN WINDOW REDRAW
 		mov	eax,48
 		mov	ebx,4
-		int	0x40
+		mcall
 		mov	ebx, 100*65536+72*5+14;640145h
 		mov	ecx, 80*65536+TESTS_NUM*LINE_HEIGHT+15+20+35
 		add	cx, ax
 		mov	edx, 33000000h
 		mov	edi, aCaption
 		xor	eax, eax
-		int	0x40
+		mcall
 		mov	eax, 8
 		mov	ebx, 050036h+12
 		mov	ecx, 5*65536+20
@@ -457,7 +419,7 @@ proc		subDrawMainWindow	; CODE XREF: start:locRedrawEventp
 		mov	esi, 0x00007F7F;702050h
 
 locDrawButtonsLoop:			; CODE XREF: subDrawMainWindow+3Bj
-		int	0x40		 ; Kolibri - DEFINE/DELETE BUTTON
+		mcall		 ; Kolibri - DEFINE/DELETE BUTTON
 					; ebx = [xstart]*65536+[xsize]
 					; ecx = [ystart]*65536+[ysize]
 					; edx = 0xXYnnnnnn, esi = color
@@ -475,7 +437,7 @@ locDrawButtonsLoop:			; CODE XREF: subDrawMainWindow+3Bj
 		mov	ebx, 27*65536+12
 		mov	ecx, 0x80DDEEFF
 		mov	edx, aButtonsText ; "Test    Comment+  Pattern+   Open     "...
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 					; ebx = [xstart]*65536+[ystart]
 					; ecx = 0xX0RRGGBB, edx -> string
 		call	subDrawBars
@@ -487,14 +449,14 @@ locDrawButtonsLoop:			; CODE XREF: subDrawMainWindow+3Bj
 
 		mov	eax, 12
 		mov	ebx, 2
-		int	0x40		 ; Kolibri - END WINDOW REDRAW
+		mcall		 ; Kolibri - END WINDOW REDRAW
 		retn
 endp
 
 proc		drawSeparator
 		mov	eax,1
 		mov	ebx,3
-	    @@: int	0x40
+	    @@: mcall
 		add	ebx,2
 		dec	esi
 		jnz	@b
@@ -509,7 +471,7 @@ proc		testDrawWindow
 		mov	ebx, 640145h
 		mov	ecx, 4F0190h
 		mov	edx, 3000000h
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -518,7 +480,7 @@ proc		testDrawBar
 		mov	ebx, 0A0064h
 		mov	ecx, 1E00FAh
 		mov	edx, 6A73D0h
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -527,7 +489,7 @@ proc		testDrawPicture
 		mov	ebx, 0
 		mov	ecx, 90*65536+123
 		mov	edx, 15*65536+33
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -536,7 +498,7 @@ proc		testDrawVertLine
 		mov	ebx, 300*65536+300 ;8C008Ch
 		mov	ecx, 30*65536+380  ;1E017Ch
 		mov	edx, 1090207Fh
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -545,7 +507,7 @@ proc		testDrawHorzLine
 		mov	ebx, 30*65536+300  ;20008Ch
 		mov	ecx, 380*65536+380 ;17C017Ch
 		mov	edx, 1090207Fh
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -554,7 +516,7 @@ proc		testDrawFreeLine
 		mov	ebx, 30*65536+300  ;20008Ch
 		mov	ecx, 380*65536+30  ;17C001Eh
 		mov	edx, 1090207Fh
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -564,7 +526,7 @@ proc		testDrawText1
 		mov	ecx, 0AA66h
 		mov	edx, aTestText
 		mov	esi, 34
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -574,7 +536,7 @@ proc		testDrawText2
 		mov	ecx, 10E7B850h
 		mov	edx, aTestText
 		mov	esi, 34
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -584,7 +546,7 @@ proc		testDrawNumber
 		mov	ecx, 12345678
 		mov	edx, 2A014Ah
 		mov	esi, 0E0B27Bh
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -593,7 +555,7 @@ proc		testDrawPixel
 		mov	ebx, 100
 		mov	ecx, 100
 		mov	edx, 0FFFFFFh
-		int	0x40
+		mcall
 		retn
 endp
 
@@ -615,7 +577,7 @@ proc		subDrawBars		; CODE XREF: start:loc_AEp start+16Ep ...
 		mov	cx,LINE_HEIGHT
 		mov	ebx,0*65536+72*5+5
 		xor	edx,edx
-		int	0x40
+		mcall
 		pop	ebx
 
 		and	ebx,0x0000FFFF
@@ -623,7 +585,7 @@ proc		subDrawBars		; CODE XREF: start:loc_AEp start+16Ep ...
 		mov	edx,[edi+TEST_REC_SIZE-4]
 		mov	ecx,0x8000CCCC ; 0x00E7E05A
 		mov	eax,4
-		int	0x40
+		mcall
 
 		push	'=' 0x00FFFF00 0x00FFFF7F 0x00FFFF7F
 		mov	eax,[edi+0]
@@ -646,20 +608,20 @@ proc		subDrawBars		; CODE XREF: start:loc_AEp start+16Ep ...
 		mov	edx,APP_MEM_END
 		mov	esi,8
 		mov	eax,4
-		int	0x40
+		mcall
 
 		pop	ecx
 		mov	eax,[edi+4]
 		call	int2str
 		add	ebx,(6*8+6+10)*65536
 		mov	eax,4
-		int	0x40
+		mcall
 
 		pop	ecx
 		add	ebx,(-6-5)*65536
 		mov	edx,esp
 		mov	esi,1
-		int	0x40
+		mcall
 		add	esp,4
 
 		add	edi,TEST_REC_SIZE
@@ -671,31 +633,31 @@ proc		subDrawBars		; CODE XREF: start:loc_AEp start+16Ep ...
 		mov	ebx, 0*65536+72*5+5
 		mov	ecx, (TESTS_NUM*LINE_HEIGHT+15+25)*65536+26
 		xor	edx, edx
-		int	0x40
+		mcall
 
 		mov	eax, 4
 		mov	ebx, 5*65536+(TESTS_NUM*LINE_HEIGHT+15+27)
 		mov	ecx, 0x8000CCCC
 		mov	edx, aLeft
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 
 		add	ebx, (6*10)*65536
 		mov	ecx, 0x00FFFF00
 		mov	edx, aComment1
 		mov	esi, 42
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 
 		mov	eax, 4
 		mov	ebx, 5*65536+(TESTS_NUM*LINE_HEIGHT+15+27+12)
 		mov	ecx, 0x8000CCCC
 		mov	edx, aRight
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 
 		add	ebx, (6*10)*65536
 		mov	ecx, 0x00FFFF00
 		mov	edx, aComment2
 		mov	esi, 42
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 
 		retn
 endp
@@ -726,7 +688,7 @@ proc		subDrawResultComments	   ; CODE XREF: subDrawBars+92p
 		mov	eax, 4
 
 locDrawCommentsLoop:			; CODE XREF: subDrawResultComments+1Cj
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 					; ebx = [xstart]*65536+[ystart]
 					; ecx = 0xX0RRGGBB, edx -> string
 		add	bx, 13;55
@@ -753,7 +715,7 @@ proc		subDrawResultNumbers	  ; CODE XREF: subDrawBars+CDp
 
 locDrawNumbersLoop:			; CODE XREF: subDrawResultNumbers+1Ej
 		call	subGetDigitsCount
-		int	0x40		 ; Kolibri -
+		mcall		 ; Kolibri -
 		add	dx, 13;55
 		add	ecx, 4
 		inc	edi
@@ -801,7 +763,7 @@ subOpenSaveDlgProc:			; CODE XREF: seg000:0000059Dj
 locOSDWaitForEvent:			; CODE XREF: seg000:000005ADj
 					; seg000:000005C3j ...
 		mov	eax, 10
-		int	0x40		 ; Kolibri -
+		mcall		 ; Kolibri -
 		cmp	eax, 1
 		jz	subOpenSaveDlgProc
 		cmp	eax, 2
@@ -813,7 +775,7 @@ locOSDWaitForEvent:			; CODE XREF: seg000:000005ADj
 
 locOSDKeyEvent: 			; CODE XREF: seg000:000005A2j
 		mov	eax, 2
-		int	0x40		 ; Kolibri - GET KEY CODE
+		mcall		 ; Kolibri - GET KEY CODE
 					; Return: ah = keycode
 		cmp	ah, 0B3h
 		jnz	locOSDNotRightKey
@@ -882,7 +844,7 @@ locOSDReturnKey:			; CODE XREF: seg000:000006E1j
 		bts	word[wFlags], 2
 		mov	eax,70 ; 58
 		mov	ebx,stFileInfoBlock
-		int	0x40
+		mcall
 		mov	esi,APP_MEM_END+100
 		mov	edi,results_table+4
 		cld
@@ -915,7 +877,7 @@ locSaveFile:				; CODE XREF: seg000:00000654j
 		rep	movsb
 		mov	eax,70 ; 58
 		mov	ebx,stFileInfoBlock
-		int	0x40
+		mcall
 		jmp	locCloseOSD
 ; ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
 
@@ -941,7 +903,7 @@ locOSDNotReturnKey:			; CODE XREF: seg000:00000624j
 
 locOSDButtonEvent:			; CODE XREF: seg000:000005A7j
 		mov	eax, 17
-		int	0x40		 ; Kolibri - GET PRESSED BUTTON
+		mcall		 ; Kolibri - GET PRESSED BUTTON
 					; Return: ah = button ID
 		cmp	ah, 1
 		jnz	locNotCloseOSD
@@ -953,14 +915,14 @@ locCloseOSD:				; CODE XREF: seg000:00000644j
 		bts	[wFlags], 1
 		btr	[wFlags], 0
 		mov	eax, -1
-		int	0x40		 ; Kolibri - FINISH EXECUTION
+		mcall		 ; Kolibri - FINISH EXECUTION
 
 locNotCloseOSD: 			; CODE XREF: seg000:000006DFj
 		cmp	ah, 2
 		jnz	locNotSetCaretOSD
 		mov	eax, 37
 		mov	ebx, 1
-		int	0x40		 ; Kolibri - GET MOUSE COORDINATES, WINDOW-RELATIVE
+		mcall		 ; Kolibri - GET MOUSE COORDINATES, WINDOW-RELATIVE
 					; Return: eax = [x]*65536 + [y]
 		shr	eax, 16
 		sub	eax, 21
@@ -998,12 +960,12 @@ endp
 proc		subDrawOpenSaveDlg	; CODE XREF: seg000:subOpenSaveDlgProcp
 		mov	eax, 12
 		mov	ebx, 1
-		int	0x40		 ; Kolibri - BEGIN WINDOW REDRAW
+		mcall		 ; Kolibri - BEGIN WINDOW REDRAW
 		xor	eax, eax
 		mov	ebx, 64012Ch
 		mov	ecx, 640050h
 		mov	edx, 3780078h
-		int	0x40		 ; Kolibri - DEFINE/DRAW WINDOW
+		mcall		 ; Kolibri - DEFINE/DRAW WINDOW
 					; ebx = [xstart]*65536+[xsize]
 					; ecx = [ystart]*65536+[ysize]
 		mov	eax, 4
@@ -1011,13 +973,13 @@ proc		subDrawOpenSaveDlg	; CODE XREF: seg000:subOpenSaveDlgProcp
 		mov	ecx, 10DDEEFFh
 		mov	edx, [dwEditLabel]
 		mov	esi, [dwEditLabelLen]
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 					; ebx = [xstart]*65536+[ystart]
 					; ecx = 0xX0RRGGBB, edx -> string
 		call	subDrawOpenSaveDlgControls
 		mov	eax, 12
 		mov	ebx, 2
-		int	0x40		 ; Kolibri - END WINDOW REDRAW
+		mcall		 ; Kolibri - END WINDOW REDRAW
 		retn
 endp
 
@@ -1032,13 +994,13 @@ proc		subDrawOpenSaveDlgControls	; CODE XREF: seg000:000005CBp
 		mov	ebx, 150102h
 		mov	ecx, 28000Fh
 		mov	edx, 40000002h
-		int	0x40		 ; Kolibri - DEFINE/DELETE BUTTON
+		mcall		 ; Kolibri - DEFINE/DELETE BUTTON
 					; ebx = [xstart]*65536+[xsize]
 					; ecx = [ystart]*65536+[ysize]
 					; edx = 0xXYnnnnnn, esi = color
 		mov	eax, 13
 		mov	edx, 0E0E0E0h
-		int	0x40		 ; Kolibri - DRAW RECTANGLE
+		mcall		 ; Kolibri - DRAW RECTANGLE
 					; ebx = [xstart]*65536+[xsize], ecx = [ystart]*65536+[ysize]
 					; edx = 0xRRGGBB or 0x80RRGGBB for gradient
 		push	eax
@@ -1048,13 +1010,13 @@ proc		subDrawOpenSaveDlgControls	; CODE XREF: seg000:000005CBp
 		mov	ebx, eax
 		pop	eax
 		mov	edx, 6A73D0h
-		int	0x40		 ; Kolibri -
+		mcall		 ; Kolibri -
 		mov	eax, 4
 		mov	ebx, 15002Ch
 		xor	ecx, ecx
 		mov	edx, [dwBufferPtr]
 		mov	esi, 43
-		int	0x40		 ; Kolibri - DRAW STRING
+		mcall		 ; Kolibri - DRAW STRING
 					; ebx = [xstart]*65536+[ystart]
 					; ecx = 0xX0RRGGBB, edx -> string
 		popa
