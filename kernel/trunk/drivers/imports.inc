@@ -136,6 +136,15 @@ end if
 if used SendEvent
   extrn SendEvent
 end if
+if used SetMouseData
+  extrn SetMouseData
+end if
+if used Sleep
+  extrn Sleep
+end if
+if used GetTimerTicks
+  extrn GetTimerTicks
+end if
 if used LFBAddress
   extrn LFBAddress
 end if

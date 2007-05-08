@@ -50,7 +50,7 @@ iglobal
     dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
     dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
     dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
-    dd   irq_serv.irq_11,p_irq12,irqD ,p_irq14,p_irq15
+    dd   irq_serv.irq_11,irq_serv.irq_12,irqD ,p_irq14,p_irq15
 
     times 16 dd unknown_interrupt
 
@@ -271,15 +271,6 @@ p_irq4:
      mov   edi,4
      call  irqhandler
   p_irq4_1:
-     restore_ring3_context
-     iret
-
-p_irq12:
-     save_ring3_context
-     mov   ax, app_data  ;os_data
-     mov   ds, ax
-     mov   es, ax
-     call  check_mouse_data_ps2
      restore_ring3_context
      iret
 

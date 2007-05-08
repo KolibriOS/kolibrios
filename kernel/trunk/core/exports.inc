@@ -58,6 +58,9 @@ iglobal
   szLFBAddress        db 'LFBAddress',0
   szLoadFile          db 'LoadFile',0
   szSendEvent         db 'SendEvent',0
+  szSetMouseData      db 'SetMouseData',0
+  szSleep             db 'Sleep',0
+  szGetTimerTicks     db 'GetTimerTicks',0
 
 
 align 16
@@ -109,6 +112,9 @@ kernel_export:
   dd szGetCurrentTask  , get_curr_task
   dd szLoadFile        , load_file
   dd szSendEvent       , send_event
+  dd szSetMouseData    , set_mouse_data
+  dd szSleep           , delay_ms
+  dd szGetTimerTicks   , get_timer_ticks
 exp_lfb:
   dd szLFBAddress      , 0
   dd 0

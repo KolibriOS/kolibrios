@@ -227,8 +227,10 @@ MOUSE_PORT          equ (OS_BASE+0x000F604)
 ;unused
 PS2_CHUNK           equ (OS_BASE+0x000FB00)
 
+MOUSE_SCROLL_H      equ (OS_BASE+0x000FB08)
 MOUSE_X             equ (OS_BASE+0x000FB0A)
 MOUSE_Y             equ (OS_BASE+0x000FB0C)
+MOUSE_SCROLL_V      equ (OS_BASE+0x000FB0E)
 
 MOUSE_COLOR_MEM     equ (OS_BASE+0x000FB10)
 COLOR_TEMP          equ (OS_BASE+0x000FB30)

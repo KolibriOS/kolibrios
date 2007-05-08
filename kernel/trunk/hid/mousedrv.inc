@@ -25,11 +25,11 @@ uglobal
 endg
 
 iglobal
-mouse_delay     dd  10
-mouse_speed_factor dw 3
+mouse_delay        dd 10
+mouse_speed_factor: dd 3
+mouse_timer_ticks  dd 0
 endg
 
-include 'm_ps2.inc'
 include 'm_com.inc'
 
 
@@ -386,5 +386,67 @@ redrawmouse:
         popfd
 nodmp:
         popad
+        ret
+
+proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
+    
+    mov  eax,[BtnState]
+    mov  [BTN_DOWN],eax
+
+    mov  eax,[XMoving]
+    call mouse_acceleration
+    add  ax,[MOUSE_X]    ;[XCoordinate]
+    cmp  ax,0
+    jge  @@M1
+    mov  eax,0
+    jmp  @@M2
+@@M1:
+    cmp  ax,[ScreenWidth]   ;ScreenLength
+    jl   @@M2
+    mov  ax,[ScreenWidth]   ;ScreenLength-1
+
+@@M2:
+    mov  [MOUSE_X],ax     ;[XCoordinate]
+
+    mov  eax,[YMoving]
+    neg  eax
+    call mouse_acceleration
+
+    add  ax,[MOUSE_Y]   ;[YCoordinate]
+    cmp  ax,0
+    jge  @@M3
+    mov  ax,0
+    jmp  @@M4
+@@M3:
+    cmp  ax,[ScreenHeight]  ;ScreenHeigth
+    jl   @@M4
+    mov  ax,[ScreenHeight] ;ScreenHeigth-1
+
+@@M4:
+    mov  [MOUSE_Y],ax     ;[YCoordinate]
+
+    mov  eax,[VScroll]
+    add  [MOUSE_SCROLL_V],ax
+    
+    mov  eax,[HScroll]
+    add  [MOUSE_SCROLL_H],ax
+
+    mov  [mouse_active],1
+    mov  eax,[timer_ticks]
+    mov  [mouse_timer_ticks],eax
+    ret
+endp
+
+mouse_acceleration:
+        push  eax
+        mov   eax,[timer_ticks]
+        sub   eax,[mouse_timer_ticks]
+        cmp   eax,[mouse_delay]
+        pop   eax
+        ja    @f
+        ;push  edx
+        imul  eax,[mouse_speed_factor]
+        ;pop   edx
+@@:
         ret
 

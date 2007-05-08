@@ -583,6 +583,7 @@ include 'vmodeld.inc'
         mov    esi,boot_devices
         call   boot_log
         call   detect_devices
+        stdcall load_driver, szPS2MDriver
 
 ; TIMER SET TO 1/100 S
 
@@ -1767,12 +1768,17 @@ sys_getsetup:
      mov  [esp+36],dword 1
      ret
 
+get_timer_ticks:
+    mov eax,[timer_ticks]
+    ret
+
 iglobal
 align 4
 mousefn dd msscreen, mswin, msbutton, msset
         dd app_load_cursor
         dd app_set_cursor
         dd app_delete_cursor
+        dd msz
 endg
 
 readmousepos:
@@ -1784,8 +1790,9 @@ readmousepos:
 ; eax=4 load cursor
 ; eax=5 set cursor
 ; eax=6 delete cursor   ; reserved
+; eax=7 get mouse_z
 
-           cmp eax, 6
+           cmp eax, 7
            ja msset
            jmp [mousefn+eax*4]
 msscreen:
@@ -1815,6 +1822,21 @@ mswin:
 msbutton:
            movzx eax,byte [BTN_DOWN]
            mov  [esp+36],eax
+           ret
+msz:
+           mov   edi, [TASK_COUNT]
+           movzx edi, word [WIN_POS + edi*2]
+           cmp   edi, [CURRENT_TASK]
+           jne   @f
+           mov   ax,[MOUSE_SCROLL_H]
+           shl   eax,16
+           mov   ax,[MOUSE_SCROLL_V]
+           mov   [esp+36],eax
+           mov   [MOUSE_SCROLL_H],word 0
+           mov   [MOUSE_SCROLL_V],word 0
+           ret
+       @@:
+           mov  [esp+36],dword 0
            ret
 msset:
            ret
@@ -1939,7 +1961,7 @@ sys_midi:
 detect_devices:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/commouse.inc'
-include 'detect/ps2mouse.inc'
+;include 'detect/ps2mouse.inc'
 ;include 'detect/dev_fd.inc'
 ;include 'detect/dev_hdcd.inc'
 ;include 'detect/sear_par.inc'
@@ -2348,8 +2370,7 @@ sys_background:
     and   edx,0xFF000000 ;255*256*256*256
     and   ecx,0x00FFFFFF ;255*256*256+255*256+255
     add   edx,ecx
-
-;    mov   [ebx+IMG_BACKGROUND],edx
+    ;mov   [ebx+IMG_BACKGROUND],edx
     push  eax
     mov   eax,[img_background]
     mov   [ebx+eax],edx
@@ -2395,7 +2416,9 @@ draw_background_temp:
   .fin:
     ret
   nosb5:
+
     ret
+
 
 align 4
 
@@ -3298,23 +3321,11 @@ ret
 wrmsr_instr:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
-	; Fast Call MSR can't be destroy
-	; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
-	; включаются/выключаются расширенные возможности
-	cmp	ecx, MSR_SYSENTER_CS
-	je	@f
-	cmp	ecx, MSR_SYSENTER_ESP
-	je	@f
-	cmp	ecx, MSR_SYSENTER_EIP
-	je	@f
-	cmp	ecx, MSR_AMD_STAR
-	je	@f
-
-	mov	eax, esi
-	wrmsr
-@@:
+mov eax,esi
+wrmsr
+mov [esp+36],eax
+mov [esp+24],edx ;ret in ebx?
 ret
-
 
 cache_disable:
        mov eax,cr0

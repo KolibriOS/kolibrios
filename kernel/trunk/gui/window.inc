@@ -967,8 +967,10 @@ windowactivate:
 	mov   [ebx*2 + WIN_POS], si
 	jmp   waloop2
       wacont2:
-	mov   [KEY_COUNT], byte 0	    ; empty keyboard buffer
-	mov   [BTN_COUNT], byte 0	    ; empty button buffer
+	mov   [KEY_COUNT], byte 0	      ; empty keyboard buffer
+	mov   [BTN_COUNT], byte 0	      ; empty button buffer
+	mov   [MOUSE_SCROLL_H], word 0  ; zero mouse z-index
+	mov   [MOUSE_SCROLL_V], word 0  ; zero mouse z-index
 	popad
 	ret
 

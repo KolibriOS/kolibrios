@@ -141,6 +141,7 @@ align 16
 	   jz .exit
 
            call ebx
+           mov  [check_idle_semaphore],5
 
 .exit:
 	   restore_ring3_context

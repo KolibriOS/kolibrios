@@ -1,7 +1,7 @@
 @echo off
 
 set languages=en ru ge et
-set drivers=sound sis infinity ati2d vmode
+set drivers=sound sis infinity ati2d vmode ps2mouse
 set targets=all kernel drivers skins clean
 
 call :Check_Target %1
