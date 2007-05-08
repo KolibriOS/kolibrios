@@ -66,15 +66,13 @@ check_mouse_data_ps2:
         ; ¬ычислить новое значение координаты
         ; курсора по X
         add     AX,[MOUSE_X]    ;[XCoordinate]
-        cmp     AX,0
-        jge     @@M1
-        mov     AX,0
+        jns     @@M1
+        xor     eax, eax
         jmp     @@M2
 @@M1:
         cmp     AX,[ScreenWidth]   ;ScreenLength
         jl      @@M2
         mov     AX,[ScreenWidth]   ;ScreenLength-1
-        dec     ax
 @@M2:
         mov     [MOUSE_X],AX     ;[XCoordinate]
 
@@ -94,15 +92,13 @@ check_mouse_data_ps2:
         ; противоположно экранной)
         neg     AX
         add     AX,[MOUSE_Y]   ;[YCoordinate]
-        cmp     AX,0
-        jge     @@M4
-        mov     AX,0
+        jns     @@M4
+        xor     eax, eax
         jmp     @@M5
 @@M4:
         cmp     AX,[ScreenHeight]  ;ScreenHeigth
         jl      @@M5
         mov     AX,[ScreenHeight] ;ScreenHeigth-1
-        dec     ax
 @@M5:
         mov     [MOUSE_Y],AX     ;[YCoordinate]
 
