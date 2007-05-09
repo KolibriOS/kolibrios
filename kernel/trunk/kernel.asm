@@ -3321,10 +3321,23 @@ ret
 wrmsr_instr:
 ;now counter in ecx
 ;(edx:eax) esi:edi => edx:esi
-mov eax,esi
-wrmsr
-mov [esp+36],eax
-mov [esp+24],edx ;ret in ebx?
+	; Fast Call MSR can't be destroy
+	; Но MSR_AMD_EFER можно изменять, т.к. в этом регистре лиш
+	; включаются/выключаются расширенные возможности
+	cmp	ecx, MSR_SYSENTER_CS
+	je	@f
+	cmp	ecx, MSR_SYSENTER_ESP
+	je	@f
+	cmp	ecx, MSR_SYSENTER_EIP
+	je	@f
+	cmp	ecx, MSR_AMD_STAR
+	je	@f
+
+	mov	eax, esi
+	wrmsr
+	; mov	[esp + 36], eax
+	; mov	[esp + 24], edx ;ret in ebx?
+@@:
 ret
 
 cache_disable:
