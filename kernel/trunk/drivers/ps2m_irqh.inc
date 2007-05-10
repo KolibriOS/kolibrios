@@ -1,11 +1,11 @@
 ;**************************************
-;* ОБРАБОТЧИК ПРЕРЫВАНИЯ ОТ МЫШИ PS/2 *
+;* IRQ HANDLER FOR PS/2 MOUSE         *
 ;**************************************
 
 proc irq_handler
 
-        call    Wait8042BufferEmpty  ;очистка буфера
-        in      al,0x60              ;получить скэн-код
+        call    Wait8042BufferEmpty  ;clear buffer
+        in      al,0x60              ;get scan-code
 
         cmp     [mouse_byte],0
         je      .byte1
@@ -18,8 +18,8 @@ proc irq_handler
         jmp     .error
 
   .byte1:
-        test    al,1000b             ;первый байт посылки?
-        jz      .error               ;сбой синхронизации
+        test    al,1000b             ;first byte?
+        jz      .error               
         mov     [first_byte],al
         inc     [mouse_byte]
         jmp     .exit
@@ -66,7 +66,7 @@ proc irq_handler
         mov     [ZMoving],eax
 
   .xy_moving:
-        mov     ah,0   ;дублируем знак во все разряды AH
+        mov     ah,0   
         mov     al,[first_byte]
         test    al,10000b
         jz      @f
@@ -77,7 +77,7 @@ proc irq_handler
         cwd
         mov     [XMoving],eax
 
-        mov     ah,0   ;дублируем знак во все разряды AH
+        mov     ah,0   
         mov     al,[first_byte]
         test    al,100000b
         jz      @f
@@ -103,10 +103,10 @@ endp
 
 
 ;***********************************************
-;*   ОЖИДАНИЕ ОЧИСТКИ ВХОДНОГО БУФЕРА I8042    *
-;* При выходе из процедуры:                    *
-;* флаг ZF установлен - нормальное завершение, *
-;* флаг ZF сброшен - ошибка тайм-аута.         *
+;*   Waiting for clearing I8042 buffer         *
+;* Retutned state:                             *
+;* ZF is set - good ending,                    *
+;* ZF is cleared - time-out error.             *
 ;***********************************************
 Wait8042BufferEmpty:
         push ecx
@@ -117,4 +117,4 @@ Wait8042BufferEmpty:
         loopnz @b
         pop    ecx
 
-        ret                   ;возврат в подпрограмму
+        ret

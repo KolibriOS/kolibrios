@@ -674,7 +674,7 @@ Parameters:
 Returned value:
   * eax = 0 - success
   * else eax = error code of the file system
-Замечания:
+іамечания:
   * All folders in the given path must exist, otherwise function
     returns value 5, "file not found".
 
@@ -1414,7 +1414,7 @@ Parameters:
 Returned value:
   * eax = 0 - success
   * eax = 1 - CD base is not defined
-Замечания:
+іамечания:
   * Previously CD base port must be defined by call to 
     subfunction 3 of function 21.
 
@@ -1744,6 +1744,9 @@ Returned value:
   * eax contains information on the pressed mouse buttons:
   * bit 0 is set = left button is pressed
   * bit 1 is set = right button is pressed
+  * bit 2 is set = middle button is pressed
+  * bit 3 is set = 4th button is pressed
+  * bit 4 is set = 5th button is pressed
   * other bits are cleared
 
 -------------------- Subfunction 4 - load cursor ---------------------
@@ -1793,6 +1796,17 @@ Remarks:
     system cursors and cursors, loaded by another applications.
   * If the active cursor (set by subfunction 5) is deleted,
     the system restores the default cursor (standard arrow).
+
+------------------- Subfunction 7 - get scroll data --------------------
+Parameters:
+  * eax = 37 - function number
+  * ebx = 7 - subfunction number
+Returned value:
+  * eax = horizontal_offset*65536 + vertical_offset
+Remarks:
+  * Scroll data is available for active window only
+  * Values are zeroized after reading
+  * Values ara signed    
 
 ======================================================================
 ====================== Function 38 - draw line. ======================
@@ -2028,8 +2042,8 @@ Parameters:
     * bh = 0 - display in decimal number system
     * bh = 1 - display in hexadecimal system
     * bh = 2 - display in binary system
-    * биты 16-21 = how many digits to display
-    * биты 22-31 reserved and must be set to 0
+    * битv 16-21 = how many digits to display
+    * битv 22-31 reserved and must be set to 0
   * ecx = number (if bl=0) or pointer (if bl=1)
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
   * esi = 0xX0RRGGBB:
@@ -3560,7 +3574,7 @@ Parameters:
   * esi:edi = high:low dword
 Returned value:
   * ebx:eax = copy of esi:edi
-Замечания:
+іамечания:
   * If ecx contains nonexistent or not implemented for this processor
     MSR, processor will generate an exception in the kernel, which
     will kill the thread.
