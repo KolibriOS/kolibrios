@@ -173,7 +173,7 @@ TakeButtonInstruments:
 	mov ebx,136*65536+20
 	mov ecx,65*65536+21
 	mov edx,[Color]
-	int 0x40
+	mcall
 
 	jmp still
 	no_pipetka:
@@ -489,7 +489,7 @@ TakeButtonInstruments:
 	shl ecx,16
 	add ebx,13
 	add ecx,13
-	int 0x40
+	mcall
 	add [x],15
 	cmp [x],20+15*32
 	jl no_new_line
@@ -510,14 +510,14 @@ TakeButtonInstruments:
 	jne no_keys
 
 	mov eax,2
-	int 0x40
+	mcall
 
 	no_keys:
 
 	cmp eax,3
 	jne no_buttons
 	mov eax,17
-	int 0x40
+	mcall
 
 	no_buttons:
 
@@ -566,7 +566,7 @@ TakeButtonInstruments:
 
 	mov eax,5
 	mov ebx,10
-	int 0x40
+	mcall
 
 	call drawwin
 

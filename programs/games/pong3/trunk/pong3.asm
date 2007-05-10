@@ -17,7 +17,7 @@
 
 ;******************************************************************************
 
-
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 include 'ascgml.inc'
@@ -256,7 +256,7 @@ redraw_images:
 
   key:                          ; key
     mov eax,2
-    int 0x40
+    mcall
     cmp ah,key_Left
     jne no_l
     sub dword [ply1rx],32 ;16
@@ -282,11 +282,11 @@ no_sp:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
     jmp  still
 

@@ -41,7 +41,7 @@ use32
 
 stack_size=4096 + 1024
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:                          ; start of execution
 
@@ -63,7 +63,7 @@ still:
     push still
     mov ebx,100                ;1 second
     mov  eax,23                 ; wait here for event
-    int  0x40
+    mcall
     cmp  eax,1                  ; redraw request ?
     je   draw_window
     cmp  eax,2                  ; key in buffer ?
@@ -74,7 +74,7 @@ still:
 
 button:                       ; BUTTON
     mov  eax,17
-    int  0x40
+    mcall
     cmp ah,3
     je set_as_bgr2
     cmp ah,2
@@ -83,7 +83,7 @@ button:                       ; BUTTON
     jne  close_program.exit
 close_program:
     mov  eax,-1
-    int  0x40
+    mcall
   .exit:
     ret
 
@@ -109,7 +109,7 @@ put_image:
     mov     ebx,edi
     mov     eax,7
 
-    int     40h                         ; Put image function
+    mcall                         ; Put image function
 .l1:
     popad
     ret
@@ -171,7 +171,7 @@ set_as_bgr2:
     mov     ebx, 1
     mov     ecx, [ebp + x_size]
     mov     edx, [ebp + y_size]
-    int     0x40
+    mcall
 
     mov     dword [ebp+draw_ptr],put_chunk_to_bgr
     call    jpeg_display
@@ -180,11 +180,11 @@ set_as_bgr2:
     mov     eax, 15
     mov     ebx, 4
     mov     ecx, 2
-    int     0x40
+    mcall
 
     mov     eax, 15
     mov     ebx, 3
-    int     0x40
+    mcall
 
 
  .end:
@@ -214,7 +214,7 @@ put_chunk_to_bgr:
     mov     ecx, [x_pointer]
     mov     edx, [x_offset]
     mov     esi, [x_numofbytes]
-    int     0x40
+    mcall
     mov     eax, [x_numofbytes]
     add     [x_pointer], eax
     mov     eax, [x_numofb2]
@@ -240,11 +240,11 @@ draw_window:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     ; Draw the window to the appropriate size - it may have
     ; been resized by the user
@@ -263,7 +263,7 @@ dw_001:
     mov     eax, 9
     mov ebx, memsize - 1024
     mov ecx, -1
-    int     0x40
+    mcall
     mov     eax, [ebx + 34]
     mov     [winxo], ax
     mov     eax, [ebx + 38]
@@ -282,8 +282,8 @@ dw_002:
     xor  eax,eax                   ; DRAW WINDOW
     mov  edx,[sc.work]
     or   edx,0x33000000
-    mov  edi,header                ; WINDOW LABEL
-    int  0x40
+    mov  edi,title                ; WINDOW LABEL
+    mcall
 
 
     mov  eax,8                     ; BUTTON 2: slideshow
@@ -294,7 +294,7 @@ dw_002:
     add  ecx, 12
     mov  esi, [sc.work_button]
     mov  edx,2
-    int  0x40
+    mcall
 
     mov  eax,4                     ; Button text
     movzx ebx, word [winys]
@@ -302,7 +302,7 @@ dw_002:
     mov  ecx,[sc.work_button_text]
     mov  edx,setname
     mov  esi,setnamelen-setname
-    int  0x40
+    mcall
 
 
     mov  eax,8                     ; BUTTON 3: set as background
@@ -316,7 +316,7 @@ dw_002:
     add  ecx, 12
     mov  esi, [sc.work_button]
     mov  edx,3
-    int  0x40
+    mcall
 
     mov  eax,4                     ; Button text
     movzx ebx, word [winxs]
@@ -327,12 +327,12 @@ dw_002:
     mov  ecx,[sc.work_button_text]
     mov  edx,setbgr
     mov  esi,setbgrlen-setbgr
-    int  0x40
+    mcall
     call    print_strings
     call    load_image
     mov     eax,12                    ; function 12:tell os about windowdraw
     mov     ebx,2                     ; 2, end of draw
-    int     0x40
+    mcall
 
     ret
 
@@ -343,7 +343,7 @@ read_string:
     movzx edi,byte[name_string.cursor]
     add     edi,name_string
     mov     eax,2
-    int     0x40                        ; Get the key value
+    mcall                        ; Get the key value
     shr     eax,8
     cmp     eax,13                      ; Return key ends input
     je      .rs_done
@@ -391,7 +391,7 @@ load_image:
     add     ecx, 1  shl 16
 
     mov     edx,[sc.work]
-    int     0x40
+    mcall
     mov    ebp,[jpeg_st]
     test    ebp,ebp
     jz      .exit
@@ -409,7 +409,7 @@ print_strings:
     shl     ecx, 16
     add     ecx, 12
     mov     edx,0xffffff
-    int     0x40
+    mcall
 
     mov     eax,4               ;
     movzx   ebx, word [winys]
@@ -417,7 +417,7 @@ print_strings:
     mov     ecx,0x000000
     mov     edx,name_string
     mov     esi,60
-    int     0x40
+    mcall
     popa
     ret
 
@@ -455,7 +455,7 @@ display_next:
         mov     byte [ebx+12], 1
         mov     dword [ebx+16], dirinfo
         mov     eax, 70
-        int     0x40
+        mcall
         mov     eax, [file_dir]
         inc     dword [eax+4]
         cmp     ebx, 1
@@ -502,7 +502,7 @@ include 'jpeglib.asm'
 ; DATA AREA
 
 wcolor          dd  0x000000
-header          db  appname,version,0
+title          db  appname,version,0
 setname          db  'SLIDESHOW'
 setnamelen:
 

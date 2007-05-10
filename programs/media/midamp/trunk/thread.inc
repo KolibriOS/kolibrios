@@ -29,14 +29,14 @@ new_thread:
     mov  esi,play_area
     mov  eax,55
     mov  ebx,eax
-    int  0x40
+    mcall
   .nosound:
   end if
     movzx ebx,byte[play_area]
     and  ebx,0x7f
     add  [cur_tick],ebx
     mov  eax,23
-    int  0x40
+    mcall
     cmp  word[edi],0
     jne  .checkevt
     mov  eax,IPC_NEXT

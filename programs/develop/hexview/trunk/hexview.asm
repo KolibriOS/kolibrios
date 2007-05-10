@@ -17,7 +17,7 @@ use32
                 dd      0x00000000              ; reserved=no extended header
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 begin dd 0
 
@@ -31,7 +31,7 @@ red:
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     dec  eax                    ; redraw request ?
     je   red
@@ -48,12 +48,12 @@ still:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,3
     jne  no_up
@@ -72,9 +72,8 @@ still:
 
     dec  ah                     ; button id=1 ?
      jne  still
-     xor  eax,eax                ; close this program
-    dec  eax
-    int  0x40
+     or   eax,-1                ; close this program
+    mcall
 
 
 ;   *********************************************
@@ -86,40 +85,32 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+400         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+270         ; [y start] *65536 + [y size]
-    mov  edx,0x03224466            ; color of work area RRGGBB,8->c
-    mov  esi,0x006688aa            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00ffffff            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x13224466            ; color of work area RRGGBB,8->c
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
+                                   
     mov  eax,8
     mov  ebx,280*65536+16*6
     mov  ecx,240*65536+14
     mov  edx,2
     mov  esi,0x5599cc
-     int  0x40
+     mcall
 
     mov  ebx,15*65536+125
      inc  edx
-      int  0x40
+      mcall
 
 
     add  ebx,127*65536
      inc  edx
-     int  0x40
+     mcall
 
 
     mov  eax,4
@@ -127,7 +118,7 @@ draw_window:
     mov  ecx,0xffffff
     mov  edx,buttons
     mov  esi,blen-buttons
-    int  0x40
+    mcall
 
 
     mov  ebx,280*65536+35           ; draw info text with function 4
@@ -156,7 +147,7 @@ push edi
 
  ;   mov  ebx,0x00020101
  ;   mov  esi,0xffff00
-    int  0x40
+    mcall
 
     add  edx,16*65536
      inc  ecx
@@ -171,7 +162,7 @@ pop ebx
     mov  eax,4                     ; text
     mov  esi,16
     mov  ecx,0xffffff
-    int  0x40
+    mcall
     add  ebx,12
     add  edx,16
     dec  edi
@@ -179,7 +170,7 @@ pop ebx
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -197,7 +188,7 @@ open_file:
     xor  ecx,ecx
     mov  edx,-1
     mov  esi,text
-    int  0x40
+    mcall
 
     popa
 
@@ -207,8 +198,7 @@ open_file:
 
 ; DATA AREA
 
-labelt:  db  'HEXVIEW'
-labellen:
+title  db  'HEXVIEW',0
 
 buttons  db  '        UP                   DOWN'
          db  '              EXAMPLE      '

@@ -13,6 +13,7 @@ fg2color equ  0x00E0B0A0      ;colorref
 fg3color equ  0x007F7F55
 btcolor  equ  0x005B6200
 
+include '..\..\macros.inc'
 
 use32
 
@@ -34,7 +35,7 @@ START:				; start of execution
 still:
 
     mov  eax,10 		; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1			; redraw request ?
      je  red
@@ -53,7 +54,7 @@ still:
 
   key:				; key
     mov  eax,2			; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
   button:			; button
     call get_input
@@ -64,13 +65,13 @@ still:
 get_input:
 pusha
     mov  eax,17 		; get id
-    int  0x40
+    mcall
 
     cmp  ah,1			; button id=1 ?
     jne  .noclose
 
     mov  eax,-1 		; close this program
-    int  0x40
+    mcall
   .noclose:
     cmp  ah,4
     jne  .moderate
@@ -239,9 +240,9 @@ mov  ecx,10
 .down:
 mov  eax,5
 mov  ebx,10
-int  0x40
+mcall
 mov  eax,11
-int  0x40
+mcall
 cmp  eax,1
 jne  .nored
 call draw_window
@@ -282,9 +283,9 @@ pusha
       .down:
       mov   eax,5
       mov   ebx,2
-      int   0x40
+      mcall
       mov   eax,11
-      int   0x40
+      mcall
       cmp   eax,1
       jne   .nored
       call  draw_window
@@ -307,7 +308,7 @@ pusha
     call draw_message
     mov   eax,5
     mov   ebx,500
-    int   0x40
+    mcall
     mov [stat],0
     inc [level]
     cmp [speed],6		 ;waterflowdelay < 6 ?
@@ -331,25 +332,25 @@ mov  eax,13			 ;clear time and score area
 mov  ebx,50 shl 16 +15
 mov  ecx,395 shl 16 +15
 mov  edx,bgcolor
-int  0x40
+mcall
 add  ebx,60 shl 16 + 20
-int  0x40
+mcall
 add  ebx,80 shl 16
-int  0x40
+mcall
 mov  eax,47
 mov  ebx,0x20000
 mov  ecx,[time]
 mov  edx,50*65536+398
 mov  esi,fg2color
-int  0x40
+mcall
 mov  ebx,0x50000
 mov  ecx,[score]
 add  edx,60 shl 16
-int  0x40
+mcall
 mov  ebx,0x20000
 mov  ecx,[level]
 add  edx,80 shl 16
-int  0x40
+mcall
 
 popa
 ret
@@ -460,11 +461,11 @@ pusha
     mov  ebx,146 shl 16 + 200
     mov  ecx,190 shl 16 + 40
     mov  edx,0x0
-    int  0x40
+    mcall
     add  ebx,2 shl 16 - 4
     add  ecx,2 shl 16 - 4
     mov  edx,fgcolor
-    int  0x40
+    mcall
 
     cmp   [stat],1
      je   .winmessage
@@ -474,19 +475,19 @@ pusha
     movzx esi,byte [lbl_gameover]
     mov   ecx,btcolor
     add   ecx,0x10000000
-    int   0x40
+    mcall
     add   ebx,8 shl 16 +17
     mov   edx,lbl_yscore+1
     movzx esi,byte [lbl_yscore]
     mov   ecx,btcolor
-    int   0x40
+    mcall
     mov   esi,ecx	;color
     mov   edx,ebx	;pos
     add   edx,80 shl 16
     mov   ebx,0x50000	 ;type
     mov   ecx,[score]	 ;inp
     mov   eax,47
-    int   0x40
+    mcall
     jmp   .nomessage
    .winmessage:
     mov   eax,4
@@ -495,11 +496,11 @@ pusha
     movzx esi,byte [lbl_win]
     mov   ecx,btcolor
     add   ecx,0x10000000
-    int   0x40
+    mcall
     mov   ebx,152 shl 16 +217
     add   edx,esi
     mov   ecx,btcolor
-    int   0x40
+    mcall
    .nomessage:
 popa
 ret
@@ -519,14 +520,14 @@ pusha
     movsx edx, byte [map]
     add  edx,9		    ;button-id = map-pos + 10;gen_image inkrements
     add  edx,0x50000000     ;no button image - no esi need
-    int  0x40
+    mcall
     pop  edx
     push ebx
     push ecx
     mov  eax,7
     mov  ebx,0x10000
     mov  ecx,32 shl 16 +32
-    int  0x40
+    mcall
     pop  ecx
     pop  ebx
     add  edx,33 shl 16
@@ -549,7 +550,7 @@ pusha
 
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,1			   ; 1, start of draw
-    int  0x40
+    mcall
 
 				   ; DRAW WINDOW
     mov  eax,0			   ; function 0 : define and draw window
@@ -557,41 +558,41 @@ pusha
     mov  ecx,100*65536+420	   ; [y start] *65536 + [y size]
     mov  edx,bgcolor		   ; color of work area RRGGBB,8->color gl
     or   edx,0x13000000
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov   eax,8
     mov   ebx,84*65536+72
     mov   ecx,28*65536+15
     mov   edx,2
     mov   esi,btcolor
-    int   0x40
+    mcall
     add   ebx,76 shl 16
     inc   edx
-    int   0x40
+    mcall
     add   ebx,76 shl 16
     inc   edx
-    int   0x40
+    mcall
 
     mov   eax,4
     mov   ebx,26 shl 16 +32
     mov   ecx,fgcolor
     mov   edx,lbl_toolbar+1
     movsx esi, byte [lbl_toolbar]
-    int   0x40
+    mcall
     mov   ebx,18 shl 16 +398
     mov   edx,lbl_score+1
     movsx esi, byte [lbl_score]
-    int   0x40
+    mcall
     mov   ebx,350 shl 16 +405
     mov   ecx,fg3color
     mov   edx,lbl_copy+1
     movsx esi,byte [lbl_copy]
-    int   0x40
+    mcall
 
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,2			   ; 2, end of draw
-    int  0x40
+    mcall
 
     popa
     ret
@@ -600,7 +601,7 @@ pusha
 ; DATA AREA
 
 
-header  db   'PIPES',0
+title  db   'PIPES',0
 lbl_gameover:
      db 19
      db 'G a m e   O v e r !'

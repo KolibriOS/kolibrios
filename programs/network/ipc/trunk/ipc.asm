@@ -4,7 +4,7 @@
 ;   Compile with FASM for Menuet
 ;
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
   use32
   org    0x0
@@ -24,22 +24,23 @@ START:                          ; start of execution
     mov  ebx,1                  ; define receive area
     mov  ecx,received_messages  ; pointer to start
     mov  edx,1000               ; size of area
-    int  0x40
+    mcall
 
     mov  eax,40                 ; WANTED EVENTS
     mov  ebx,01000111b          ; IPC 7 + defaults
-    int  0x40
+    mcall
 
     mov  [received_messages+8],dword 0*256+0
     mov  [received_messages+12],dword 0
 
+  red:
     call draw_window            ; at first, draw the window
 
 still:
 
     mov  eax,23                 ; wait here for event
     mov  ebx,50
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -56,23 +57,19 @@ still:
 
     jmp  still
 
-  red:                          ; redraw
-    call draw_window
-    jmp  still
-
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
 
     cmp  ah,2
@@ -101,7 +98,7 @@ still:
     mov  ecx,[PID]
     mov  edx,message+4
     mov  esi,20;[message_size]
-    int  0x40
+    mcall
 
     jmp  still
   no_read:
@@ -161,7 +158,7 @@ ipc_message_pop:
     mov  ebx,25*65536+245
     mov  ecx,105*65536+90
     mov  edx,0xdddddd
-    int  0x40
+    mcall
 
     cmp  [received_messages+4],dword 8  ; empty list
     je   ipma1
@@ -179,14 +176,14 @@ ipc_message_pop:
     mov  eax,47
     mov  ebx,4*65536
     mov  esi,0xff0000
-    int  0x40
+    mcall
     popa
     pusha
     mov  esi,20
     add  edx,8
     add  ebx,30*65536
     mov  eax,4
-    int  0x40
+    mcall
     popa
 
     add  ebx,10
@@ -222,56 +219,49 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+290         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+220         ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mov  edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
+                                   
     mov  eax,9
     mov  ebx,process_info
     mov  ecx,-1
-    int  0x40
+    mcall
 
     mov  eax,47
     mov  ebx,4*65536
     mov  ecx,[process_info+30]
     mov  edx,180*65536+35
     mov  esi,0x000000
-    int  0x40
+    mcall
 
     mov  eax,8                     ; MESSAGE
     mov  ebx,25*65536+87
     mov  ecx,50*65536+16
     mov  edx,2
     mov  esi,0x5588dd
-    int  0x40
+    mcall
 
-    mov  eax,8                     ; POP
+    ;mov  eax,8                     ; POP
     mov  ebx,216*65536+53
     mov  ecx,80*65536+16
     mov  edx,3
-    mov  esi,0x5588dd
-    int  0x40
+    mcall
 
+    mov  eax,4
     mov  ebx,25*65536+35           ; draw info text with function 4
     mov  ecx,0x224466
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,40
     cmp  [edx],byte 'x'
@@ -281,7 +271,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -308,7 +298,7 @@ read_string:
 
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jz   fbu
 
@@ -319,7 +309,7 @@ read_string:
 
   fbu:
     mov  eax,2
-    int  0x40  ; get key
+    mcall  ; get key
     shr  eax,8
 
     cmp  eax,13
@@ -366,7 +356,7 @@ print_text:
     shl  ecx,16
     mov  cx,8
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,[xa]
@@ -375,7 +365,7 @@ print_text:
     mov  ecx,0x000000
     mov  edx,[addr]
     mov  esi,25
-    int  0x40
+    mcall
 
     ret
 
@@ -400,9 +390,7 @@ text:
     db 'x' ; <- END MARKER, DONT DELETE
 
 
-labelt:
-       db   'IPC - START AT LEAST 2'
-labellen:
+title      db   'IPC - START AT LEAST 2',0
 
 I_END:
 

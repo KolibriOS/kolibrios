@@ -13,7 +13,7 @@ use32
  dd	0x0 , 0x0     ; I_Param , I_Path
    
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
    
    
 START:				; start of execution
@@ -26,7 +26,7 @@ still:
    
     mov  eax,23 		; wait here for event
     mov  ebx,20
-    int  0x40
+    mcall
    
     cmp  eax,1			; redraw request ?
     je	 red
@@ -45,7 +45,7 @@ read_input:
     push ecx
     mov  eax,42
     mov  ebx,4
-    int  0x40
+    mcall
     pop  ecx
    
     cmp  bl,27				; ESCAPE COMMAND
@@ -121,7 +121,7 @@ read_input:
     mov  [pos],eax
   newdata:
     mov  eax,11
-    int  0x40
+    mcall
     cmp  eax,16+4
     je	 read_input
     call draw_text
@@ -134,7 +134,7 @@ read_input:
    
   key:				; KEY
     mov  eax,2			; send to modem
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,178		; ARROW KEYS
     jne  noaup
@@ -164,25 +164,25 @@ read_input:
     mov  ecx,0x3f8
     mov  bl,al
     mov  eax,43
-    int  0x40
+    mcall
     jmp  still
    
   button:			; BUTTON
     mov  eax,17
-    int  0x40
+    mcall
     cmp  ah,1			; CLOSE PROGRAM
     jne  noclose
     mov  eax,45 		; FREE IRQ
     mov  ebx,1
     mov  ecx,4
-    int  0x40
+    mcall
     mov  eax,46
     mov  ebx,1
     mov  ecx,0x3f0
     mov  edx,0x3ff
-    int  0x40
-     mov  eax,-1
-     int  0x40
+    mcall
+     or  eax,-1
+     mcall
   noclose:
    
     jmp  still
@@ -208,10 +208,10 @@ to_modem:
     mov  ecx,0x3f8
     mov  ebx,eax
     mov  eax,43
-    int  0x40
+    mcall
     mov  eax,5
     mov  ebx,5
-    int  0x40
+    mcall
    
     popa
     ret
@@ -267,55 +267,55 @@ set_variables:
     mov  ebx,0
     mov  ecx,0x3f0
     mov  edx,0x3ff
-    int  0x40
+    mcall
    
     mov  eax,45 	 ; reserve irq 4
     mov  ebx,0
     mov  ecx,4
-    int  0x40
+    mcall
    
     mov  eax,44
     mov  ebx,irqtable
     mov  ecx,4
-    int  0x40
+    mcall
    
 ;    jmp  noportint
    
     mov  cx,0x3f8+3
     mov  bl,0x80
     mov  eax,43
-    int  0x40
+    mcall
    
     mov  cx,0x3f8+1
     mov  bl,0
     mov  eax,43
-    int  0x40
+    mcall
    
     mov  cx,0x3f8+0
     mov  bl,0x30 / 16
     mov  eax,43
-    int  0x40
+    mcall
    
     mov  cx,0x3f8+3
     mov  bl,3
     mov  eax,43
-    int  0x40
+    mcall
    
     mov  cx,0x3f8+4
     mov  bl,0xB
     mov  eax,43
-    int  0x40
+    mcall
    
     mov  cx,0x3f8+1
     mov  bl,1
     mov  eax,43
-    int  0x40
+    mcall
    
   noportint:
    
      mov  eax,40
      mov  ebx,0000000000010000b shl 16 + 111b
-    int  0x40
+    mcall
    
     popa
    
@@ -334,14 +334,14 @@ draw_window:
    
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
    
     mov  eax,0			   ; DRAW WINDOW
     mov  ebx,100*65536+491
     mov  ecx,100*65536+270
     mov  edx,0x13000000
-    mov  edi,labelt
-    int  0x40
+    mov  edi,title
+    mcall
    
     xor  eax,eax
     mov  edi,text+80*30
@@ -353,7 +353,7 @@ draw_window:
    
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
    
     popa
    
@@ -412,7 +412,7 @@ draw_text:
     shl  ebx,16
     mov  bx,6
     mov  eax,13
-    int  0x40
+    mcall
     popa
    
     pusha
@@ -429,7 +429,7 @@ draw_text:
     mov  eax,4
     mov  edx,esi
     mov  esi,1
-    int  0x40
+    mcall
     popa
    
   noletter:
@@ -458,12 +458,12 @@ esc_command:
    newescc:
      mov   eax,42
      mov   ebx,4
-     int   0x40
+     mcall
      cmp   ecx,0
      je    escok
      mov   eax,5
      mov   ebx,1
-     int   0x40
+     mcall
      jmp   newescc
    escok:
      mov   [edi],bl
@@ -613,7 +613,7 @@ draw_numbers:
      mov  ebx,250*65536+100
      mov  ecx,8*65536+8
      mov  edx,0x000000
-     int  0x40
+     mcall
    
      mov  eax,[escnumbers]
      xor  edx,edx
@@ -638,7 +638,7 @@ draw_numbers:
      mov  ecx,0xffffff
      mov  edx,numtext
      mov  esi,10
-     int  0x40
+     mcall
    
      popa
    
@@ -652,14 +652,14 @@ draw_event:
      mov  ebx,150*65536+100
      mov  ecx,8*65536+8
      mov  edx,0xffffff
-     int  0x40
+     mcall
    
      mov  eax,4
      mov  ebx,150*65536+8
      mov  ecx,0x000000
      mov  edx,esccmd
      mov  esi,20
-     int  0x40
+     mcall
    
      popa
      ret
@@ -720,7 +720,7 @@ esccmd	    dd	0,0,0,0,0,0,0,0,0,0,0,0,0
 escend	    db	'ZrhlABCDHfDME=>NmKJgincoyq',0
 escnumbers  dd	0,0,0,0,0
 wcolor	    dd	0x000000
-labelt	    db	'TERMINAL FOR MODEM IN COM1  0.03',0
+title	    db	'TERMINAL FOR MODEM IN COM1  0.03',0
    
 text:
 db '                                                                   '
@@ -735,8 +735,4 @@ db '                                                                   '
 db '             '
    
 I_END:
-   
-   
-   
-   
-   
+  

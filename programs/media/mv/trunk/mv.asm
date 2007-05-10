@@ -15,7 +15,7 @@
     dd     temp_area , 0x0         ; I_Param , I_Icon
 
 include    'lang.inc'
-include    'macros.inc'
+include    '..\..\..\macros.inc'
 ;******************************************************************************
 
 START:                          ; start of execution
@@ -27,7 +27,7 @@ START:                          ; start of execution
    call  convert
    call  background
    or    eax,-1
-   int   0x40
+   mcall
  .no_boot:
 
    cmp   byte [temp_area],0
@@ -52,7 +52,7 @@ START:                          ; start of execution
  .no_param:
 
 
-   mov  ecx,-1           ; get information about me
+   or  ecx,-1           ; get information about me
    call getappinfo
 
    mov  edx,[process_info+30] ; теперь в edx наш идентификатор
@@ -75,7 +75,7 @@ draw_still:
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
         dec     eax
         jz      red
@@ -84,7 +84,7 @@ still:
 
   key:                          ; key
     mov  al,2
-    int  0x40
+    mcall
     mov  al,ah
     cmp  al,6
     je   kfile
@@ -102,19 +102,19 @@ still:
         mov     al, 18
         mov     ebx, 3
         mov     ecx, [process]
-        int     0x40
+        mcall
         and     byte [status], not 4
         jmp     still
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
 
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
     cmp  ah,2
     jne  nofile
@@ -126,7 +126,7 @@ still:
     mov  ebx,1
     mov  ecx,thread1
     mov  edx,0x29fff0
-    int  0x40
+    mcall
     jmp  still
   nofile:
     cmp  ah,3
@@ -141,7 +141,7 @@ still:
     add ecx,50*65536-55
     mov edx,0xffffff
     mov eax,13
-    int 0x40
+    mcall
 
     call load_image
 
@@ -163,7 +163,7 @@ still:
     mov  ebx,1
     mov  ecx,thread2
     mov  edx,0x2afff0
-    int  0x40
+    mcall
     jmp  still
   noinfo:
 
@@ -178,21 +178,21 @@ still:
     mov  ebx,1
     mov  ecx,thread3
     mov  edx,0x2bfff0
-    int  0x40
+    mcall
     jmp  still
     ;call background
 
  getappinfo:
     mov  eax,9
     mov  ebx,process_info
-    int  0x40
+    mcall
     ret
 
 
 load_image:
         mov     eax, 70
         mov     ebx, fileinfo
-        int     0x40
+        mcall
     mov  eax,[I_END+18]
     mov  ebx,[I_END+22]
         test    ebx, ebx
@@ -218,7 +218,7 @@ load_image:
     mov  ecx,-1
     mov  ebx,-1
     mov  eax,67
-    int  40h
+    mcall
 @@:
     ret
 
@@ -235,7 +235,7 @@ load_image:
         neg     cx
 @@:
     mov  edx,10*65536+50
-    int  0x40
+    mcall
   nodrawimage:
     ret
 
@@ -247,7 +247,7 @@ load_image:
     mov  ebx,1
     mov  ecx,[I_END+18] ; ширина
     mov  edx,[I_END+22] ; высота
-    int  0x40
+    mcall
 
     mov  esi, ecx
     imul esi, edx
@@ -256,14 +256,14 @@ load_image:
     mov  ecx,[soi]
     xor  edx,edx
 ;;;    mov  esi, ;640*480*3
-    int  0x40
+    mcall
 
     dec  ebx    ;tile/stretch
     mov  ecx,dword [bgrmode]
-    int  0x40
+    mcall
 
     dec  ebx
-    int  0x40
+    mcall
    @@:
     ret
 
@@ -443,7 +443,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
@@ -454,7 +454,7 @@ draw_window:
     add  ebx,[wnd_width]
     add  ecx,[wnd_height]
     mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mcall
 
     mov  eax,8
     mov  ebx,10*65536+46
@@ -462,7 +462,7 @@ draw_window:
     mov  edx,2
     mov  esi,0x780078
   newbutton:
-    int  0x40
+    mcall
     add  ebx,48*65536
     inc  edx
     cmp  edx,6
@@ -474,18 +474,18 @@ draw_window:
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt                ; pointer to text beginning
     mov  esi,12                    ; text length
-    int  0x40
+    mcall
 
     mov  ebx,14*65536+32
     mov  edx,buttext
     mov  esi,26
-    int  0x40
+    mcall
 
     call drawimage
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -507,7 +507,7 @@ thread1:                        ; start of thread1
 still1:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   thread1
@@ -519,7 +519,7 @@ still1:
     jmp  still1
 
   key1:                         ; key
-    int  0x40
+    mcall
     cmp  ah,179
     jne  noright
     mov  eax,[pos]
@@ -596,7 +596,7 @@ still1:
 
   button1:                      ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose1
@@ -605,13 +605,13 @@ still1:
     bts  dword [status],2
     btr  dword [status],0
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose1:
     cmp  ah,2
     jne  nosetcur
     mov  eax,37
     mov  ebx,1
-    int  0x40
+    mcall
     shr  eax,16
     sub  eax,21
     xor  edx,edx
@@ -645,14 +645,14 @@ draw_window1:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+300         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+80          ; [y start] *65536 + [y size]
     mov  edx,0x03780078            ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mcall
 
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
@@ -660,13 +660,13 @@ draw_window1:
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt1               ; pointer to text beginning
     mov  esi,labelt1.size          ; text length
-    int  0x40
+    mcall
 
     call drawstring
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -676,11 +676,11 @@ draw_window1:
     mov  ebx,21*65536+258
     mov  ecx,40*65536+15
     mov  edx,0x60000002
-    int  0x40
+    mcall
 
     mov  eax,13             ;bar
     mov  edx,0xe0e0e0
-    int  0x40
+    mcall
     push eax                ;cursor
     mov  eax,6*65536
     mul  dword [pos]
@@ -688,13 +688,13 @@ draw_window1:
     mov  ebx,eax
     pop  eax
     mov  edx,0x6a73d0
-    int  0x40
+    mcall
     mov  eax,4              ;path
     mov  ebx,21*65536+44
     xor  ecx,ecx
     mov  edx,string
     mov  esi,43
-    int  0x40
+    mcall
 
 
     popa
@@ -714,7 +714,7 @@ thread2:                          ; start of info thread
 still2:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   thread2
@@ -727,7 +727,7 @@ still2:
 
   button2:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose2
@@ -735,7 +735,7 @@ still2:
     btr dword [status],1
     bts dword [status],2
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose2:
 
     jmp  still2
@@ -753,14 +753,14 @@ draw_window2:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+330         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+90          ; [y start] *65536 + [y size]
     mov  edx,0x03780078            ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mcall
 
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
@@ -768,17 +768,17 @@ draw_window2:
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt2               ; pointer to text beginning
     mov  esi,labelt2.size          ; text length
-    int  0x40
+    mcall
 
     mov  ebx,10*65536+30
     mov  edx,string
     mov  esi,43
-    int  0x40
+    mcall
     mov  edx,fitext
     mov  esi,14
     add  ebx,70*65536+10
  followstring:
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,esi
     cmp  ebx,80*65536+70
@@ -788,23 +788,23 @@ draw_window2:
     mov  esi,ecx
     mov  ecx, [I_END+2]
     call digitcorrect
-    int  0x40
+    mcall
     add  edx,10
     mov  ecx, [I_END+18]
     call digitcorrect
-    int  0x40
+    mcall
     add  edx,10
     mov  ecx, [I_END+22]
     call digitcorrect
-    int  0x40
+    mcall
     add  edx,10
     movzx ecx,word [I_END+28]
     call digitcorrect
-    int  0x40
+    mcall
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -861,7 +861,7 @@ thread3:                          ; start of bgrd thread
 still3:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   thread3
@@ -873,7 +873,7 @@ still3:
     jmp  still3
 
   key3:
-    int  0x40
+    mcall
     cmp  ah,27
     je   close3
     cmp  ah,13
@@ -897,7 +897,7 @@ still3:
 
   button3:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose3
@@ -905,7 +905,7 @@ still3:
     btr dword [status],3
     bts dword [status],2
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose3:
     cmp  ah,4
     jne  nook
@@ -936,21 +936,21 @@ draw_window3:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+200         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+100         ; [y start] *65536 + [y size]
     mov  edx,0x03780078            ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mcall
 
     mov  eax,8
     mov  ebx,70*65536+40
     mov  ecx,70*65536+20
     mov  edx,4
     mov  esi,0xac0000
-    int  0x40
+    mcall
 
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
@@ -958,30 +958,30 @@ draw_window3:
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt3               ; pointer to text beginning
     mov  esi,labelt3.size          ; text length
-    int  0x40
+    mcall
     add  ebx,38*65536+20
     mov  ecx,0xddeeff
     mov  edx, bgrdtext
     mov  esi, bgrdtext.size
-    int  0x40
+    mcall
     add  ebx,40*65536+15
     mov  edx, tiled
     mov  esi, tiled.size
-    int  0x40
+    mcall
     add  ebx,15
     mov  edx, stretch
     mov  esi, stretch.size ;7
-    int  0x40
+    mcall
     add  ebx,18
     mov  edx, ok_btn
     mov  esi, ok_btn.size ;2
-    int  0x40
+    mcall
 
     call drawflags
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -991,10 +991,10 @@ draw_window3:
     mov  ecx,40*65536+10
     mov  edx,2
     mov  esi,0xe0e0e0
-    int  0x40
+    mcall
     add  ecx,15*65536
     inc  edx
-    int  0x40
+    mcall
     mov  eax,4
     mov  ebx,73*65536+42
     xor  ecx,ecx
@@ -1004,7 +1004,7 @@ draw_window3:
     je   nodownflag
     add  ebx,15
  nodownflag:
-    int  0x40
+    mcall
     ret
 
 

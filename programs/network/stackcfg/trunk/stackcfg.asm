@@ -22,6 +22,8 @@ use32
                dd     PARAMS , 0x0            ; I_Param , I_Icon
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
+
 START:                          ; start of execution
 
     cmp     [PARAMS], byte 0
@@ -29,41 +31,34 @@ START:                          ; start of execution
 
 no_params:
 
+  red:
     call draw_window            ; at first, draw the window
 
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
-    je   red
+    jz   red
     cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
-
-    jmp  still
-
-  red:                          ; redraw
-    call draw_window
-    jmp  still
+    jnz  button
 
   key:                          ; key
-    mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mov  al,2                  ; just read it and ignore
+    mcall
     jmp  still
 
   button:                       ; button
-    mov  eax,17                 ; get id
-    int  0x40
+    mov  al,17                 ; get id
+    mcall
 
     shr  eax,8
 
     cmp  eax,1                   ; button id=1 ?
     jne  noclose
-    mov  eax,-1                 ; close this program
-    int  0x40
+    or   eax,-1                 ; close this program
+    mcall
   noclose:
 
     cmp  eax,2
@@ -282,27 +277,27 @@ read_stack_setup:
 
     mov  eax,52
     mov  ebx,0
-    int  0x40
+    mcall
     mov  [config],eax
 
     mov  eax,52
     mov  ebx,1
-    int  0x40
+    mcall
     mov  dword [ip_address],eax
 
     mov  eax,52
     mov  ebx,9
-    int  0x40
+    mcall
     mov  dword [gateway_ip],eax
 
     mov  eax,52
     mov  ebx,10
-    int  0x40
+    mcall
     mov  dword [subnet_mask],eax
 
     mov  eax,52
     mov  ebx,13
-    int  0x40
+    mcall
     mov  dword [dns_ip],eax
 
     mov  eax,[config]   ; unwrap com IRQ
@@ -345,27 +340,27 @@ apply_stack_setup:
     mov  eax,52
     mov  ebx,3
     mov  ecx,dword [ip_address]
-    int  0x40
+    mcall
 
     mov  eax,52
     mov  ebx,11
     mov  ecx,dword [gateway_ip]
-    int  0x40
+    mcall
 
     mov  eax,52
     mov  ebx,12
     mov  ecx,dword [subnet_mask]
-    int  0x40
+    mcall
 
     mov  eax,52
     mov  ebx,14
     mov  ecx,dword [dns_ip]
-    int  0x40
+    mcall
 
     mov  eax,52
     mov  ebx,2
     mov  ecx,[config]
-    int  0x40
+    mcall
 
     ret
     jmp  still
@@ -390,11 +385,11 @@ read_string:
     mov  edi,string
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je   read_done
@@ -442,7 +437,7 @@ print_text:
     shl  ecx,16
     mov  cx,8
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,[string_x]
@@ -451,7 +446,7 @@ print_text:
     mov  ecx,0x000000
     mov  edx,string
     mov  esi,[string_length]
-    int  0x40
+    mcall
 
     popa
     ret
@@ -471,15 +466,15 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+330         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+157         ; [y start] *65536 + [y size]
     mov  edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
-    mov  edi,header                ; WINDOW LABEL
-    int  0x40
+    mov  edi,title                ; WINDOW LABEL
+    mcall
 
                                    
     mov  eax,8                     ; BUTTON : READ SETUP
@@ -487,20 +482,20 @@ draw_window:
     mov  ecx,127*65536+12
     mov  edx,2
     mov  esi,[button_color]
-    int  0x40
+    mcall
 
     ;mov  eax,8                     ; BUTTON : APPLY SETUP
     mov  ebx,163*65536+65
     mov  ecx,127*65536+12
     mov  edx,3
-    int  0x40
+    mcall
 
     ;mov  eax,8                     ; BUTTONS 11-14 : SELECT INTERFACE
     mov  ebx,29*65536+8
     mov  ecx,39*65536+8
     mov  edx,11
   interface_select:
-    int  0x40
+    mcall
     add  ecx,10*65536
     inc  edx
     cmp  edx,11+4
@@ -513,19 +508,19 @@ draw_window:
     mov  ecx,0xffffff
     mov  edx,xx
     mov  esi,1
-    int  0x40
+    mcall
 
     mov  eax,8                    ; BUTTONS 21-22 : SERVER / MANUAL IP
     mov  ebx,143*65536+8
     mov  ecx,69*65536+8
     mov  edx,21
     mov  esi,[button_color]
-    int  0x40
+    mcall
     ;mov  eax,8
     mov  ebx,143*65536+8
     mov  ecx,79*65536+8
     mov  edx,22
-    int  0x40
+    mcall
     mov  ebx,[assigned]           ; PRINT SELECTED SERVER/MANUAL 'X'
     not  ebx
     and  ebx,1
@@ -535,21 +530,21 @@ draw_window:
     mov  ecx,0xffffff
     mov  edx,xx
     mov  esi,1
-    int  0x40
+    mcall
 
     mov  eax,47                   ; COM ADDRESS
     mov  ebx,3*65536+1*256
     mov  ecx,[com_add]
     mov  edx,272*65536+40
     mov  esi,0x000000
-    int  0x40
+    mcall
 
     ;mov  eax,47                   ; COM IRQ
     mov  ebx,1*65536+1*256
     mov  ecx,[com_irq]
     mov  edx,(266+3*6)*65536+50
     mov  esi,0x000000
-    int  0x40
+    mcall
 
     mov  edi,ip_address
     mov  edx,205*65536+80
@@ -558,7 +553,7 @@ draw_window:
   ipdisplay:
     ;mov  eax,47
     movzx ecx,byte [edi]
-    int  0x40
+    mcall
     add  edx,6*4*65536
     inc  edi
     cmp  edi,ip_address+4
@@ -571,7 +566,7 @@ draw_window:
   gipdisplay:
     ;mov  eax,47
     movzx ecx,byte [edi]
-    int  0x40
+    mcall
     add  edx,6*4*65536
     inc  edi
     cmp  edi,gateway_ip+4
@@ -584,7 +579,7 @@ draw_window:
   sipdisplay:
     ;mov  eax,47
     movzx ecx,byte [edi]
-    int  0x40
+    mcall
     add  edx,6*4*65536
     inc  edi
     cmp  edi,subnet_mask+4
@@ -597,7 +592,7 @@ draw_window:
   dipdisplay:
     ;mov  eax,47
     movzx ecx,byte [edi]
-    int  0x40
+    mcall
     add  edx,6*4*65536
     inc  edi
     cmp  edi,dns_ip+4
@@ -609,35 +604,31 @@ draw_window:
     mov  ecx,39*65536+8
     mov  edx,5
     mov  esi,[button_color]
-    int  0x40
+    mcall
     ;mov  eax,8                     ; BUTTON 6 : SET IRQ
-    mov  ebx,299*65536+8
     mov  ecx,49*65536+8
     mov  edx,6
-    int  0x40
+    mcall
     ;mov  eax,8                     ; BUTTON 7 : SET IP
-    mov  ebx,299*65536+8
     mov  ecx,79*65536+8
     mov  edx,7
-    int  0x40
+    mcall
 
     ;mov  eax,8                     ; BUTTON 8 : SET gateway IP
     mov  ebx,299*65536+8
     mov  ecx,89*65536+8
     mov  edx,8
-    int  0x40
+    mcall
 
     ;mov  eax,8                     ; BUTTON 9 : SET subnet
-    mov  ebx,299*65536+8
     mov  ecx,99*65536+8
     mov  edx,9
-    int  0x40
+    mcall
 
     ;mov  eax,8                     ; BUTTON 10 : SET dns ip
-    mov  ebx,299*65536+8
     mov  ecx,109*65536+8
     mov  edx,10
-    int  0x40
+    mcall
 
     mov  ebx,31*65536+40           ; draw info text with function 4
     mov  edx,text
@@ -650,7 +641,7 @@ draw_window:
     mov  ecx,0xeeeeee
    nowhite:
     inc  edx
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,49
     cmp  [edx],byte 'x'
@@ -658,7 +649,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -675,7 +666,7 @@ boot_set_settings:
 
     mov  eax,52
     mov  ebx,0
-    int  0x40
+    mcall
     mov  [config],eax
 
     shr  eax,8          ; unwrap com IRQ
@@ -690,7 +681,7 @@ boot_set_settings:
     call apply_stack_setup
    
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 ;******************************************************************************
 
@@ -713,7 +704,7 @@ xx: db 'x' ;<- END MARKER, DONT DELETE
 
 button_color dd  0x2254b9
 
-header      db  'STACK CONFIGURATION',0
+title      db  'STACK CONFIGURATION',0
 
 
 ;ENTER YOUR SETTINGS HERE:

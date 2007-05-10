@@ -17,18 +17,17 @@ DEBUGGING_STATE             equ     DEBUGGING_DISABLED
 
 
 use32
-
-                org     0x0
-
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:                                      ; start of execution
     mov     eax,40                          ; Report events
@@ -38,11 +37,12 @@ START:                                      ; start of execution
     mov     dword [prompt], p1
     mov     dword [promptlen], p1len - p1   ; 'waiting for command'
 
+red:
     call    draw_window                     ; at first, draw the window
 
 still:
     mov     eax,10                          ; wait here for event
-    int     0x40
+    mcall
 
     cmp     eax,1                           ; redraw request ?
     jz      red
@@ -52,19 +52,14 @@ still:
     jz      button
 
     jmp     still
-
-red:                            ; redraw
-    call    draw_window
-    jmp     still
-
 key:                            ; Keys are not valid at this part of the
     mov     eax,2               ; loop. Just read it and ignore
-    int     0x40
+    mcall
     jmp     still
 
 button:                         ; button
     mov     eax,17              ; get id
-    int     0x40
+    mcall
 
     cmp     ah,1                ; button id=1 ?
     jnz     noclose
@@ -73,10 +68,10 @@ button:                         ; button
     mov     eax, 53
     mov     ebx, 1
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     mov     eax,0xffffffff      ; close this program
-    int     0x40
+    mcall
 
 noclose:
     cmp     ah,3                ; Resolve address?
@@ -122,14 +117,14 @@ rk:
 
 f11:
     mov     eax,10
-    int     0x40
+    mcall
     cmp     eax,2
     jz      fbu
     jmp     still
 
 fbu:
     mov     eax,2
-    int     0x40  ; get key
+    mcall  ; get key
     shr     eax,8
     cmp     eax,8
     jnz     nobs
@@ -169,7 +164,7 @@ print_text:
     shl     ecx,16
     mov     cx,8
     mov     edx,0x224466
-    int     0x40
+    mcall
 
     mov     eax,4
     mov     ebx,103*65536
@@ -177,7 +172,7 @@ print_text:
     mov     ecx,0xffffff
     mov     edx,[addr]
     mov     esi,26
-    int     0x40
+    mcall
 
     ret
 
@@ -320,7 +315,7 @@ getlp:
  push ecx
  mov     eax, 53
  mov     ebx, 9
- int     0x40
+ mcall
  pop     ecx
  cmp     eax, 0   ; is this local port in use?
  jz  getlp      ; yes - so try next
@@ -330,7 +325,7 @@ getlp:
     mov     ebx, 0
     mov     edx, 53    ; remote port - dns
     mov     esi, [dnsIP]
-    int     0x40
+    mcall
 
     mov     [socketNum], eax
 
@@ -340,7 +335,7 @@ getlp:
     mov     ecx, [socketNum]
     mov     edx, [dnsMsgLen]
     mov     esi, dnsMsg
-    int     0x40
+    mcall
 
     ; Setup the DNS response buffer
 
@@ -354,7 +349,7 @@ getlp:
 
 ctr001:
     mov     eax,10                 ; wait here for event
-    int     0x40
+    mcall
 
     cmp     eax,1                  ; redraw request ?
     je      ctr003
@@ -368,7 +363,7 @@ ctr001:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     cmp     eax, 0
     je      ctr001
@@ -378,7 +373,7 @@ ctr002:
     mov     eax, 53
     mov     ebx, 3
     mov     ecx, [socketNum]
-    int     0x40                ; read byte - block (high byte)
+    mcall                ; read byte - block (high byte)
 
     ; Store the data in the response buffer
     mov     eax, [dnsMsgLen]
@@ -393,7 +388,7 @@ end if
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socketNum]
-    int     0x40                ; any more data?
+    mcall                ; any more data?
 
     cmp     eax, 0
     jne     ctr002              ; yes, so get it
@@ -402,7 +397,7 @@ end if
     mov     eax, 53
     mov     ebx, 1
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     mov     [socketNum], dword 0xFFFF
 
@@ -489,18 +484,18 @@ ctr003:                         ; redraw
 
 ctr004:                         ; key
     mov     eax,2               ; just read it and ignore
-    int     0x40
+    mcall
     jmp     ctr001
 
 ctr005:                         ; button
     mov     eax,17              ; get id
-    int     0x40
+    mcall
 
     ; close socket
     mov     eax, 53
     mov     ebx, 1
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     mov     [socketNum], dword 0xFFFF
     mov     [hostIP], dword 0
@@ -554,43 +549,33 @@ sn_exit:
 draw_window:
     mov     eax,12                    ; function 12:tell os about windowdraw
     mov     ebx,1                     ; 1, start of draw
-    int     0x40
+    mcall
                                       ; DRAW WINDOW
     mov     eax,0                     ; function 0 : define and draw window
     mov     ebx,100*65536+300         ; [x start] *65536 + [x size]
     mov     ecx,100*65536+140         ; [y start] *65536 + [y size]
-    mov     edx,0x03224466            ; color of work area RRGGBB
-    mov     esi,0x00334455            ; color of grab bar  RRGGBB,8->color gl
-    mov     edi,0x00ddeeff            ; color of frames    RRGGBB
-    int     0x40
-                                      ; WINDOW LABEL
-    mov     eax,4                     ; function 4 : write text to window
-    mov     ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov     ecx,0x00ffffff            ; color of text RRGGBB
-    mov     edx,labelt                ; pointer to text beginning
-    mov     esi,labellen-labelt       ; text length
-    int     0x40
-
+    mov     edx,0x13224466            ; color of work area RRGGBB
+    mov     edi,title                 ; WINDOW LABEL;
+    mcall
+                                      
     mov     eax,8                     ; Resolve
     mov     ebx,20*65536+190
     mov     ecx,79*65536+15
     mov     edx,3
     mov     esi,0x557799
-    int     0x40
+    mcall
 
-    mov     eax,8
+    ;mov     eax,8
     mov     ebx,270*65536+10
     mov     ecx,34*65536+10
-    mov     edx,4
-    mov     esi,0x557799
-    int     0x40
+    inc     edx
+    mcall
 
-    mov     eax,8
+    ;mov     eax,8
     mov     ebx,270*65536+10
     mov     ecx,50*65536+10
-    mov     edx,5
-    mov     esi,0x557799
-    int     0x40
+    inc     edx
+    mcall
 
     ; Copy the file name to the screen buffer
     ; file name is same length as IP address, to
@@ -616,14 +601,13 @@ draw_window:
 
     ; Re-draw the screen text
     cld
+    mov     eax,4
     mov     ebx,25*65536+35           ; draw info text with function 4
     mov     ecx,0xffffff
     mov     edx,text
     mov     esi,40
-
 newline:
-    mov     eax,4
-    int     0x40
+    mcall
     add     ebx,16
     add     edx,40
     cmp     [edx],byte 'x'
@@ -644,7 +628,7 @@ newline:
 ipdisplay:
     mov     eax,47
     movzx   ecx,byte [edi]
-    int     0x40
+    mcall
     add     edx,6*4*65536
     inc     edi
     cmp     edi,hostIP+4
@@ -653,7 +637,7 @@ ipdisplay:
 dw001:
     mov     eax,12                    ; function 12:tell os about windowdraw
     mov     ebx,2                     ; 2, end of draw
-    int     0x40
+    mcall
 
     ret
 
@@ -681,7 +665,7 @@ dps_001:
     mov     eax,63
     mov     ebx, 1
     push    esi
-    int 0x40
+    mcall
 
     inc   word [ind]
     mov  ax, [ind]
@@ -692,11 +676,11 @@ dps_001:
     mov   cl, 13
     mov     eax,63
     mov     ebx, 1
-    int 0x40
+    mcall
     mov   cl, 10
     mov     eax,63
     mov     ebx, 1
-    int 0x40
+    mcall
 
 
 ds1:
@@ -750,9 +734,7 @@ text:
     db 'x <- END MARKER, DONT DELETE            '
 
 
-labelt:
-    db   'DNS Client'
-labellen:
+title    db   'DNS Client',0
 
 
 prompt: dd 0
@@ -770,7 +752,7 @@ p5len:
 
 
 dnsServer       db  '194.145.128.1              ' ; iolfree.ie DNS
-query           db  'WWW.MENUETOS.ORG           '
+query           db  'WWW.MENUETOS.NET           '
 
 hostIP:         dd 0
 dnsIP:          dd 0

@@ -45,7 +45,7 @@
 ;  dd 0,0
 
 ;******************************************************************************
-include 'macros.inc'
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 
@@ -55,7 +55,7 @@ START:		    ; start of execution
 ; //// Willow
 ;    mov eax,58
 ;    mov ebx,MRUfile
-;    int 0x40
+;    mcall
 ; //// Willow
     mcall 18,11,1,table_area
     cmp [edx+2],byte 0
@@ -101,7 +101,7 @@ START:		    ; start of execution
 
     mov eax,40
     mov ebx,0100111b
-    int 0x40
+    mcall
 
     cmp byte [param_area],0 ;test parameters line
     jne no_brow     ;it's dialog
@@ -115,7 +115,7 @@ no_brow:
     mov eax,9
     mov ebx,procinfo
     mov ecx,-1
-    int 0x40
+    mcall
 
     mov eax,dword [procinfo+30]
     mov edi,MYPID+4-1
@@ -151,7 +151,7 @@ new_d:
     mov ebx,2
     mov edx,MYPID
     mov esi,4
-    int 0x40
+    mcall
 no_dlg:
 
     giftoimg but_file,tempimg
@@ -210,25 +210,25 @@ still:
     mov eax,9
     mov ebx,procinfo
     mov ecx,-1
-    int 0x40
+    mcall
 
     wtevent red,key,button
 
 scrolltest:
     mov eax,37
     mov ebx,2
-    int 0x40
+    mcall
     dec eax
     jne still
 
 scrl:
     mov eax,37
     mov ebx,1
-    int 0x40
+    mcall
         movzx   ebx, ax         ; y
         shr     eax, 16         ; x
     mov ebp,eax
-    sub ebp,[listx] ;[procinfo.x_size]
+    sub ebp,[listx] ;[procinfo.box.left]
     sub ebp,[listxsize]
     add ebp,[scrollsize]
     cmp ebp,dword [scrollsize] ;8
@@ -291,7 +291,7 @@ menu_test:
 ;===================
 key:		  ; key
     mov  eax,2
-    int  0x40
+    mcall
     cmp dword [focus],0
     jne con_edit
     cmp  ah,key_Up
@@ -400,7 +400,7 @@ losx:
 
   button:	  ; button
     mov eax,17
-    int 0x40
+    mcall
 
     cmp ah,2	       ;Edit prompt line?
     je	    edit_prompt
@@ -411,7 +411,7 @@ losx:
 mousetest:
     mov eax,37
     mov ebx,1
-    int 0x40
+    mcall
     mov ebx,eax
     shr eax,16		 ;x
     and ebx,0xffff   ;y
@@ -565,7 +565,7 @@ file_set:
     mov ebx,2
     mov edx,paramtest
     mov esi,1024
-    int 0x40
+    mcall
 
     jmp exit
 
@@ -647,7 +647,7 @@ execute:
         mov     dword [ebx+21], paramtest       ; program name
 .do:
         mov     eax, 70
-        int     0x40
+        mcall
         jmp     still
 
 run:
@@ -818,7 +818,7 @@ copy_to_clip:
         mov     byte [ebx], 2
         mov     [ebx+12], edi
         mov     eax, 70
-        int     0x40
+        mcall
         jmp     still
 no_copyclip:
 
@@ -829,7 +829,7 @@ paste_from_clip:
         mov     byte [ebx], 0
         mov     dword [ebx+12], 1023
         mov     eax, 70
-        int     0x40
+        mcall
         cmp     ebx, 0
         jle     still
         mov     byte [paramtest+ebx], 0
@@ -884,18 +884,18 @@ paste_from_clip:
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
         mov     edx, copyr_param+1
         movzx   esi, byte [edx-1]
-    int  0x40
+    mcall
     mov  ebx,250*65536+67	; [x start] *65536 + [y start]
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
         mov     edx, ebp
         mov     esi, edi
-    int  0x40
+    mcall
 no_outpath:
 
 ; run COPYR
         mov     eax, 70
         mov     ebx, copyr_run
-        int     0x40
+        mcall
     delay 50   ;wait recoed file
     jmp update ;still
 no_clippaste:
@@ -999,10 +999,10 @@ exit:
 ;    mov ebx,MRUfile
 ;    mov dword[ebx+8],255
 ;    inc dword[ebx]
-;    int 0x40
+;    mcall
 ; //// Willow
     mov eax,-1
-    int 0x40
+    mcall
 
 draw_wd:
 ;    call draw_window
@@ -1028,10 +1028,10 @@ screen:
     cmp [browser], 1 ;it's browser?
     jne dialogscr
 
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,90
     drawfbox 40,76,300,eax,0x00000000
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,92
     drawfbox 41,77,298,eax,0x00ffffff
     mov edi,esi ;14
@@ -1041,10 +1041,10 @@ screen:
     jmp outlab
 
 dialogscr:
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,84
     drawfbox 16,54,270,eax,0x00000000
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,86
     drawfbox 17,55,268,eax,0x00ffffff
     mov edi,esi ;14
@@ -1056,7 +1056,7 @@ outlab:     ;out labels
     mov eax,4
     mov esi,40
 helploo:
-    int 0x40
+    mcall
     add ebx,11
     add edx,40
     dec edi
@@ -1144,8 +1144,8 @@ draw_window:
 ;    mov eax,9
 ;    mov ebx,procinfo
 ;    mov ecx,-1
-;    int 0x40
-;    mov  eax,[procinfo.x_size]
+;    mcall
+;    mov  eax,[procinfo.box.left]
 ;    cmp  eax,66
 ;    jg  temp12345
 ;    ret
@@ -1154,14 +1154,14 @@ draw_window:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
     mov  eax,[sc.work_button]
     mov  [b_color],eax
 
     mov  eax,12        ; function 12:tell os about windowdraw
     mov  ebx,1		   ; 1, start of draw
-    int  0x40
+    mcall
 
 ;Window
 
@@ -1178,43 +1178,43 @@ nob1:
 isb1:
 ;    mov  edx,[sc.work]             ; color of work area RRGGBB
     or	     edx,0x03ffffff;000000
-    int  0x40
+    mcall
 
 ;Get proc info
     mov eax,9
     mov ebx,procinfo
     mov ecx,-1
-    int 0x40
+    mcall
 
-    mov  eax,[procinfo.x_size]
+    mov  eax,[procinfo.box.left]
     cmp  eax,66
     jg	 @f
 .ret:
     ret
  @@:
-    cmp  [procinfo.y_size], 0x70
+    cmp  [procinfo.box.top], 0x70
     jl  .ret
 
     cmp  [browser], 1 ;it's browser
     jne  nob9
     mov  [listx],120
-;    mov  eax,[procinfo.x_size]
+;    mov  eax,[procinfo.box.left]
     sub  eax,127;[listx]+7
     cmp  eax,10
     jl   .ret
     mov  [listxsize],eax
     mov  [listy],73
-    mov  eax,[procinfo.y_size]
+    mov  eax,[procinfo.box.top]
     sub  eax,73+7;[listy]+7
     mov  [listysize],eax
     jmp isb9
 nob9:
     mov  [listx],10
-;    mov  eax,[procinfo.x_size]
+;    mov  eax,[procinfo.box.left]
     sub  eax,17 ;[listx]+7
     mov  [listxsize],eax
     mov  [listy],54
-    mov  eax,[procinfo.y_size]
+    mov  eax,[procinfo.box.top]
     sub  eax,54+34;[listy]+34
     mov  [listysize],eax
 isb9:
@@ -1235,12 +1235,12 @@ isb9:
     mov  edx,22;+1000000000000000000000000000000b  ;spoke butt
     mov  edi,3		  ;draw 13 button's
     mov  esi,0x00339933
-    int  0x40
+    mcall
     dec edi
 nexthbut:
     add  ebx,(6*8)*65536
     inc  edx
-    int  0x40
+    mcall
     dec  edi
     jnz  nexthbut
 
@@ -1248,17 +1248,17 @@ nexthbut:
     glabel 8,25,'  FILE    VIEW    INFO  ',  cl_White ;Black
 
 ;BlackLine
-    mov eax,[procinfo.x_size]
+    mov eax,[procinfo.box.left]
     sub eax,10
     drawfbox 5,35, eax, 1, cl_Black
 
 ;BlackLine2
-    mov eax,[procinfo.x_size]
+    mov eax,[procinfo.box.left]
     sub eax,10
     drawfbox 5,68, eax, 1, cl_Black
 
 ;BlackLine2 vertical
-;    mov eax,[procinfo.y_size]
+;    mov eax,[procinfo.box.top]
 ;    sub eax,69+4
 ;    drawfbox 115, 69, 1, eax, cl_Black
 
@@ -1329,12 +1329,12 @@ isb3:
     mov  edx,8;+1000000000000000000000000000000b  ;spoke butt
     mov  edi,13        ;draw 13 button's
     mov  esi,cl_Grey
-    int  0x40
+    mcall
     dec edi
 nextbut:
     add  ebx,(16+6)*65536
     inc  edx
-    int  0x40
+    mcall
     dec  edi
     jnz  nextbut
 
@@ -1344,7 +1344,7 @@ nextbut:
 ;But img browser
     setimg 10,37,butimg
 ;left logo
-    add eax,[procinfo.x_size]
+    add eax,[procinfo.box.left]
     sub eax,80
     mov [temp],eax
     setimg [temp],37,logoimg
@@ -1359,7 +1359,7 @@ isb4:
 
     mov [urlx],48
     mov [urly],55
-    mov eax,[procinfo.x_size]
+    mov eax,[procinfo.box.left]
     sub eax,48+10
     mov [urlxsize],eax
     mov [urlysize],12
@@ -1374,7 +1374,7 @@ isb4:
     mov ecx,cl_Black
     add edx,modetext
     mov esi,16
-    int 0x40
+    mcall
 
 ;List size
     outcount [listsize],294,25,cl_Black,4*65536
@@ -1388,10 +1388,10 @@ but_dlg:  db 'OPEN'
 nob5:
 
     mov [urlx],10
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,24
     mov [urly],eax
-    mov eax,[procinfo.x_size]
+    mov eax,[procinfo.box.left]
     sub eax,80
     mov [urlxsize],eax
     mov [urlysize],12
@@ -1410,30 +1410,30 @@ out_laby:
     or	    ecx,0x10000000
     mov esi,9
     mov eax,4
-    int 0x40
+    mcall
 no_saveh:
 
 
 ;Draw OPEN\SAVE button
     mov ebx,0*65536+50
     mov ecx,0*65536+12
-    mov eax,[procinfo.x_size]
+    mov eax,[procinfo.box.left]
     sub eax,63
     shl eax,16
     add ebx,eax
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,25
     shl eax,16
     add ecx,eax
     mov  eax,8
     mov  edx,5 ;button ID
     mov  esi,0x006699aa  ;gradient!!!
-    int  0x40
+    mcall
 
 ; label OPEN or SAVE
-    mov ebx,[procinfo.x_size]
+    mov ebx,[procinfo.box.left]
     sub ebx,48
-    mov eax,[procinfo.y_size]
+    mov eax,[procinfo.box.top]
     sub eax,22
     shl ebx,16
     add ebx,eax
@@ -1450,7 +1450,7 @@ out_labx:
     mov ecx,cl_White
     mov esi,4
     mov eax,4
-    int 0x40
+    mcall
 no_saveb:
 
 isb5:
@@ -1479,16 +1479,16 @@ draw_url:
     mov  eax,8
     mov  edx,2 ;button ID
     mov  esi,0x00aaaaaa  ;gradient!!!
-    int  0x40
+    mcall
 
 ;Draw URL String
     mov eax,13
     mov edx,cl_Black
-    int 0x40
+    mcall
     add ebx,1*65536-2+1
     add ecx,1*65536-2+1
     mov edx,cl_White
-    int 0x40
+    mcall
 
 ;Draw URL Cursor
     mov eax,6
@@ -1503,7 +1503,7 @@ draw_url:
     add ecx,2*65536-4
     mov eax,13
     mov edx,cl_Black
-    int 0x40
+    mcall
 
 ; OUT TEXT
     mov eax,[urlxsize]	    ;calculating text leight
@@ -1519,7 +1519,7 @@ draw_url:
     mov  eax,4		   ; function 4 : write text to window
     mov  ecx,0x00000000 ;[sc.grab_text] ; color of text RRGGBB
     mov  edx,path	 ; pointer to text beginning
-    int  0x40
+    mcall
 
     cmp  [flick],2
     jne  no_flick_url
@@ -1546,7 +1546,7 @@ no_flick_url:
     add ecx,[listysize]
     sub ecx,scrollbutsize*2
     mov edx,[scrollcolor] ;0x00006600
-    int 0x40
+    mcall
 
 ;Draw Scroll Box
     mov  edx,0
@@ -1595,7 +1595,7 @@ no_flick_url:
         shl     ebx, 16
         mov     bx, word [scrollsize]
         mov     edx, [scrollboxcol]
-        int     0x40
+        mcall
 notusescroll:
 
 
@@ -1611,12 +1611,12 @@ notusescroll:
 
     mov  eax,8
     mov  edx,4+1000000000000000000000000000000b  ;spoke butt
-    int  0x40
+    mcall
 
     add  ebx,15
     mov  eax,13
     mov  edx,[listcolor] ;ffffff
-    int  0x40
+    mcall
 
 ;Draw up/down buttons
     mov  ebx,[listx]
@@ -1629,12 +1629,12 @@ notusescroll:
     add  ecx,scrollbutsize-1
     mov  eax,8
     mov  edx,6+1000000000000000000000000000000b  ;spoke butt
-    int  0x40
+    mcall
 
     inc  ecx
     mov  eax,13
     mov  edx,[scrollbutcol] ;ffffff
-    int  0x40
+    mcall
 
 ; Draw image on up button
     pushad
@@ -1646,7 +1646,7 @@ notusescroll:
     mov  ecx,8*65536+9
     mov  ebx,upsb+8
     mov  eax,7
-    int  0x40
+    mcall
     popad
 
 
@@ -1658,12 +1658,12 @@ notusescroll:
     add  ecx,eax
 
     mov  eax,8
-    int  0x40
+    mcall
 
     inc  ecx
     mov  eax,13
     mov  edx,[scrollbutcol] ;ffffff
-    int  0x40
+    mcall
 
 ; Draw image on down button
     pushad
@@ -1675,7 +1675,7 @@ notusescroll:
     mov  ecx,8*65536+9
     mov  ebx,dnsb+8
     mov  eax,7
-    int  0x40
+    mcall
     popad
 
 
@@ -1795,7 +1795,7 @@ cset1:
 @@:
         push    eax
     mov  eax,4
-    int  0x40
+    mcall
         cmp     byte [edx+esi], 0
         jz      @f
         pushad
@@ -1805,7 +1805,7 @@ cset1:
         add     ebx, eax
         mov     esi, 1
         mov     eax, 4
-        int     0x40
+        mcall
         popad
 @@:
         pop     eax
@@ -1817,7 +1817,7 @@ cset1:
     add  edx,4
     mov  esi,23
     mov  eax,4
-    int  0x40
+    mcall
     pop  edx ebx
 
     pushad
@@ -1911,7 +1911,7 @@ out_ico:
 ;    mov  ebx,upsb+8
     pop  ebx
     mov  eax,7
-    int  0x40
+    mcall
 no_out_ico:
     popad
 
@@ -2008,7 +2008,7 @@ no_flick:
 
     mov  eax,12        ; function 12:tell os about windowdraw
     mov  ebx,2		   ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -2040,7 +2040,7 @@ drawmenu:
     mov eax,4
     mov esi,12
 menuloo:
-    int 0x40
+    mcall
     add ebx,11
     add edx,12
     dec edi
@@ -2050,7 +2050,7 @@ menuloo:
 menubutton:
     mov  eax,8
 nextmenubut:
-    int  0x40
+    mcall
     add  ecx,11*65536
     inc  edx
     dec  edi
@@ -2156,7 +2156,7 @@ nstep2:
 loorhd:
     mov  eax,70
     mov  ebx,fileinfoblock
-    int  0x40
+    mcall
 
     cmp eax,6
     je	    end_of_dir

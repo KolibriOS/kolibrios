@@ -1,6 +1,6 @@
 ; Originally written by Jarek Pelczar
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 
 WND_SIZE_X		= 320
 WND_SIZE_Y		= 200
@@ -10,21 +10,21 @@ CODE
     fninit
     mov al,40
     mov bl,101b
-    int 0x40
+    mcall
     call init_palette
     call init_texture
     jmp .paint_window
 .event_loop:
     mov al,23
     mov ebx,1
-    int 0x40
+    mcall
     test eax,eax
     je .draw_screen
     dec eax
     je .paint_window
 
     or  eax,-1
-    int 0x40
+    mcall
 
 .draw_screen:
     call blit_8_to_32
@@ -32,7 +32,7 @@ CODE
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
     xor edx,edx
-    int 0x40
+    mcall
     call rotate_pal
     jmp .event_loop
 
@@ -41,24 +41,24 @@ CODE
     push eax
     xor ebx,ebx
     inc ebx
-    int 0x40
+    mcall
 
     xor eax,eax
     mov ebx,(100 shl 16)+(WND_SIZE_X+8)
     mov ecx,(100 shl 16)+(WND_SIZE_Y+25)
     mov edx,0x33000000
-    mov edi,header
-    int 0x40
+    mov edi,title
+    mcall
 
     mov al,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
     xor edx,edx
-    int 0x40
+    mcall
 
     pop eax
     and ebx,2 ; bit 1 is set
-    int 0x40
+    mcall
 
     jmp .event_loop
 
@@ -161,7 +161,7 @@ include "graph8.inc"
 DATA
   _multiplier	dd 63.5
 
-  header          db 'Plasma',0
+  title          db 'Plasma',0
 
 UDATA
   _fpom32		rd 1

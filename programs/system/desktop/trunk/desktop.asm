@@ -19,50 +19,50 @@
    dd      0,0         ; parameters, reserved
 
    include 'lang.inc'
-   include 'macros.inc'
+   include '..\..\..\macros.inc'
    include 'kglobals.inc'
    include 'unpacker.inc'
 ;******************************************************************************
 
 
 struct SKIN_HEADER
-  .ident   dd ?
-  .version dd ?
-  .params  dd ?
-  .buttons dd ?
-  .bitmaps dd ?
+  ident   dd ?
+  version dd ?
+  params  dd ?
+  buttons dd ?
+  bitmaps dd ?
 ends
 
 struct SKIN_PARAMS
-  .skin_height    dd ?
-  .margin.right   dw ?
-  .margin.left    dw ?
-  .margin.bottom  dw ?
-  .margin.top     dw ?
-  .colors.inner   dd ?
-  .colors.outer   dd ?
-  .colors.frame   dd ?
-  .colors_1.inner dd ?
-  .colors_1.outer dd ?
-  .colors_1.frame dd ?
-  .dtp.size       dd ?
-  .dtp.data       db 40 dup (?)
+  skin_height    dd ?
+  margin.right   dw ?
+  margin.left    dw ?
+  margin.bottom  dw ?
+  margin.top     dw ?
+  colors.inner   dd ?
+  colors.outer   dd ?
+  colors.frame   dd ?
+  colors_1.inner dd ?
+  colors_1.outer dd ?
+  colors_1.frame dd ?
+  dtp.size       dd ?
+  dtp.data       db 40 dup (?)
 ends
 
 struct SKIN_BUTTONS
-  .type     dd ?
-  .pos:
-    .left   dw ?
-    .top    dw ?
-  .size:
-    .width  dw ?
-    .height dw ?
+  type     dd ?
+  pos:
+    left   dw ?
+    top    dw ?
+  size:
+    width  dw ?
+    height dw ?
 ends
 
 struct SKIN_BITMAPS
-  .kind  dw ?
-  .type  dw ?
-  .data  dd ?
+  kind  dw ?
+  type  dw ?
+  _data  dd ?
 ends
 
 
@@ -72,7 +72,7 @@ START:                          ; start of execution
     mov  ebx,3
     mov  ecx,color_table
     mov  edx,4*10
-    int  0x40
+    mcall
 
     cld
     mov  esi,default_skn
@@ -95,7 +95,7 @@ still:
 
     mov  eax,23                 ; wait here for event
     mov  ebx,5
-    int  0x40
+    mcall
 
     dec  eax                    ; redraw request ?
     jz   red
@@ -111,12 +111,12 @@ still:
 
   key:                          ; key
     mov  al,2                   ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
   button:                       ; button
     mov  al,17                  ; get id
-    int  0x40
+    mcall
 
     cmp  ah,11                  ; read string
     jne  no_string
@@ -142,7 +142,7 @@ still:
     mov  eax,48
     mov  ebx,1
     mov  ecx,1
-    int  0x40
+    mcall
     jmp  doapply
    no_3d:
 
@@ -161,7 +161,7 @@ doapply:
     mov  ebx,2
     mov  ecx,color_table
     mov  edx,10*4
-    int  0x40
+    mcall
     jmp  doapply
   no_apply:
 
@@ -202,7 +202,7 @@ doapply:
     cmp  ah,1                   ; terminate
     jnz  noid1
     or   eax,-1
-    int  0x40
+    mcall
   noid1:
 
     jmp  still
@@ -213,7 +213,7 @@ draw_cursor:
     pusha
     mov  eax,37
     mov  ebx,2
-    int  0x40
+    mcall
 
     cmp  eax,0
     jne  dc1
@@ -224,7 +224,7 @@ draw_cursor:
 
     mov  eax,37
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  ebx,eax
     shr  ebx,16
@@ -353,11 +353,11 @@ read_string:
 
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
 ;    mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je   read_done
@@ -415,20 +415,20 @@ draw_color:
     mov  ebx,266*65536+60
     mov  ecx,170*65536+30
     mov  edx,[color]
-    int  0x40
+    mcall
 
 ;   mov  eax,13
     mov  ebx,266*65536+60
     mov  ecx,200*65536+10
     mov  edx,[w_work]
-    int  0x40
+    mcall
 
     mov  eax,47
     mov  ebx,0+1*256+8*65536
     mov  ecx,[color]
     mov  edx,272*65536+201
     mov  esi,[w_work_text]
-    int  0x40
+    mcall
 
     popa
 
@@ -446,7 +446,7 @@ draw_colours:
   newcol:
     mov  eax,13
     mov  edx,[esi]
-    int  0x40
+    mcall
     add  ecx,18*65536
     add  esi,4
     cmp  esi,color_table+4*9
@@ -490,7 +490,7 @@ find_bitmap:
         je      .lp2
         cmp     dword[edi+0],eax
         jne     @f
-        mov     ebx,[edi+SKIN_BITMAPS.data]
+        mov     ebx,[edi+SKIN_BITMAPS._data]
         add     ebx,ebp
         mov     ecx,[ebx-2]
         mov     cx,[ebx+4]
@@ -786,16 +786,16 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
     mov  eax,48
     mov  ebx,3
     mov  ecx,app_colours
     mov  edx,10*4
-    int  0x40
+    mcall
 
     mov  eax,14
-    int  0x40
+    mcall
 
                                       ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
@@ -803,8 +803,8 @@ draw_window:
     mov  ecx,50*65536+255          ; [y start] *65536 + [y size]
     mov  edx,[w_work]              ; color of work area RRGGBB,8->color
     or   edx,0x13000000
-    mov  edi,header                ; WINDOW LABEL
-    int  0x40
+    mov  edi,title                ; WINDOW LABEL
+    mcall
 
 if lang eq ru
   load_w  = (5*2+6*9)
@@ -823,78 +823,78 @@ end if
     mov  ecx,212*65536+10
     mov  edx,0x4000000B
     mov  esi,[w_grab_button]       ; button color RRGGBB
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; LOAD BUTTON
     mov  ebx,15*65536+load_w
     mov  ecx,(30+18*11)*65536+14
     mov  edx,12
     mov  esi,[w_work_button]
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; SAVE BUTTON
     add  ebx,(load_w+2)*65536-load_w+save_w
     inc  edx
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; 3D
 ;   mov  ebx,15*65536+35
 ;   mov  ecx,(30+18*12)*65536+14
     mov  ebx,(340-t1.size*6-13)*65536+(5*2+6*4)
     inc  edx
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; FLAT
     add  ebx,(5*2+6*4+2)*65536-(5*2+6*4)+flat_w
     inc  edx
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; APPLY BUTTON
     add  ebx,(flat_w+6+2)*65536-flat_w+apply_w
     inc  edx
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; LOAD SKIN BUTTON
     mov  ebx,(336+(555-335)/2-t2.size*6/2)*65536+load_w
     inc  edx
-    int  0x40
+    mcall
 
 ;   mov  eax,8                    ; APPLY SKIN BUTTON
     add  ebx,(load_w+6+2)*65536-load_w+apply_w
     inc  edx
-    int  0x40
+    mcall
 
     mov  eax, 4
     mov  ebx, (339-t1.size*6-12)*65536+(30+18*11+4)
     mov  ecx, [w_work_button_text]
     mov  edx, t1
     mov  esi, t1.size
-    int  0x40
+    mcall
 
     mov  ebx,(336+(555-335)/2-t2.size*6/2)*65536+(30+18*11+4)
     mov  edx,t2
     mov  esi,t2.size
-    int  0x40
+    mcall
 
 ;   mov  eax, 4
 ;    mov  ebx, 277*65536+(30+18*12+4)
 ;    mov  edx, t2
 ;    mov  esi, t2.size
-;    int  0x40
+;    mcall
 
     mov  eax,38                    ; R G B COLOR GLIDES
     mov  ebx,266*65536+285
     mov  ecx,30*65536+30
     mov  edx,0xff0000
   .newl:
-    int  0x40
+    mcall
     pusha
     add  ebx,20*65536+20
     shr  edx,8
-    int  0x40
+    mcall
     add  ebx,20*65536+20
     shr  edx,8
-    int  0x40
+    mcall
     popa
     sub  edx,0x020000
     add  ecx,0x00010001
@@ -909,7 +909,7 @@ end if
     mov  esi,[w_work_button]
   newb:
     mov  eax,8
-    int  0x40
+    mcall
     add  ecx,18*65536
     inc  edx
     cmp  edx,40
@@ -921,7 +921,7 @@ end if
     mov  esi,32
   newline:
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,18
     add  edx,32
     cmp  [edx],byte 'x'
@@ -951,7 +951,7 @@ end if
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -1029,11 +1029,11 @@ lsz button_text,\
 sz  default_skn, '/RD/1/DEFAULT.SKN',0
 
 if lang eq ru
-  header db 'çÄëíêéâäÄ éäéç',0
+  title db 'çÄëíêéâäÄ éäéç',0
 else if lang eq et
-  header db 'AKNA SEADED - VALI VƒRV JA VAJUTA OBJEKTILE',0
+  title db 'AKNA SEADED - VALI VƒRV JA VAJUTA OBJEKTILE',0
 else
-  header db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
+  title db 'WINDOWS SETTINGS - DEFINE COLOR AND CLICK ON TARGET',0
 end if
 
 

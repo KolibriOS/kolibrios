@@ -20,7 +20,7 @@ use32
     dd      0x7FFF0                 ; esp = 0x7FFF0
     dd      0, 0                    ; no params, no path
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 ; Various states of client connection
 USER_NONE       equ 0   ; Awaiting a connection
 USER_CONNECTED  equ 1   ; User just connected, prompt given
@@ -55,7 +55,7 @@ still:
     mov     eax,53
     mov     ebx,6               ; Get socket status
     mov     ecx,[CmdSocket]
-    int     0x40
+    mcall
 
     mov     ebx, [CmdSocketStatus]
     mov     [CmdSocketStatus], eax
@@ -97,7 +97,7 @@ noc:
 waitev:
     mov     eax,23                 ; wait here for event
     mov     ebx,1                 ; Delay for up to 1s
-    int     0x40
+    mcall
 
     cmp     eax,1                  ; redraw request ?
     je      red
@@ -111,7 +111,7 @@ waitev:
     mov     eax, 53
     mov     ebx, 2                  ; Get # of bytes in input queue
     mov     ecx, [CmdSocket]
-    int     0x40
+    mcall
     test    eax, eax
     jz      still
 
@@ -119,7 +119,7 @@ read_input:
     mov     eax, 53
     mov     ebx, 3                  ; Get a byte from socket in bl
     mov     ecx, [CmdSocket]
-    int     0x40
+    mcall
 
     call    ftpRxCmdData            ; process incoming ftp command
 
@@ -127,7 +127,7 @@ read_input:
     mov     eax, 53
     mov     ebx, 2                  ; Get # of bytes in input queue
     mov     ecx, [CmdSocket]
-    int     0x40
+    mcall
     cmp     eax, 0
     jne     read_input
 
@@ -145,12 +145,12 @@ red:                          ; REDRAW WINDOW
 
 key:                          ; KEY
     mov     eax,2                  ; get but ignore
-    int     0x40
+    mcall
     jmp     still
 
 button:
     mov     eax,17
-    int     0x40
+    mcall
     cmp     ah,1
     jne     still
 
@@ -158,11 +158,11 @@ button:
     mov     eax,53
     mov     ebx,8
     mov     ecx,[CmdSocket]
-    int     0x40
+    mcall
 
     ; ... terminate program
-    mov     eax,-1
-    int     0x40
+    or     eax,-1
+    mcall
     jmp     still
 
 
@@ -175,21 +175,21 @@ draw_window:
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     xor  eax,eax                   ; DRAW WINDOW
     mov  ebx,100*65536+491 + 8 +15
     mov  ecx,100*65536+270 + 20     ; 20 for status bar
     mov  edx,0x13000000
     mov  edi,labelt
-    int  0x40
+    mcall
 
     ; draw status bar
     mov     eax, 13
     mov     ebx, 4*65536+484 + 8 +15
     mov     ecx, 270*65536 + 3
     mov     edx, 0x00557799
-    int     0x40
+    mcall
 
 
     mov  esi,contlen-contt          ; display connected status
@@ -203,7 +203,7 @@ pcon:
     mov  eax,4                      ; status text
     mov  ebx,380*65536+276
     mov  ecx,0x00ffffff
-    int  0x40
+    mcall
 
     ; Draw the text on the screen, clearing it first
     ; This can go when we loose debuggin info.
@@ -217,7 +217,7 @@ pcon:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
 
@@ -262,7 +262,7 @@ draw_text:
     shl     ebx, 16
     mov     bx, 6
     mov     eax, 13
-    int     0x40
+    mcall
     popa
 
     ; draw character
@@ -278,7 +278,7 @@ draw_text:
     mov  eax,4
     mov  edx,esi
     mov  esi,1
-    int  0x40
+    mcall
     popa
 
   noletter:
@@ -431,7 +431,7 @@ outputStr:
     mov     eax,53
     mov     ebx,7
     mov     ecx,[CmdSocket]
-    int     0x40
+    mcall
     pop     edx
     pop     esi
     
@@ -442,7 +442,7 @@ outputStr:
     pusha
     mov     eax,5
     mov     ebx,1                 ; Delay for up 100ms
-    int     0x40
+    mcall
     popa
     jmp     outputStr        
 os_exit:
@@ -468,7 +468,7 @@ outputDataStr:
     mov     eax,53
     mov     ebx,7
     mov     ecx,[DataSocket]
-    int     0x40
+    mcall
     pop     edx
     pop     esi
 
@@ -479,7 +479,7 @@ outputDataStr:
     pusha
     mov     eax,5
     mov     ebx,20           ; Delay for upto 200ms
-    int     0x40
+    mcall
     popa
     jmp     outputDataStr        
 ods_exit:
@@ -580,7 +580,7 @@ disconnect:
     mov     eax, 53         ; Stack Interface
     mov     ebx,8           ; Close TCP socket
     mov     ecx,[CmdSocket]
-    int     0x40
+    mcall
     ret
     
 
@@ -602,13 +602,13 @@ disconnectData:
     pusha
     mov     eax,5
     mov     ebx,200                 ; Delay for 2s
-    int     0x40
+    mcall
     popa
 
     mov     eax, 53         ; Stack Interface
     mov     ebx,8           ; Close TCP socket
     mov     ecx,[DataSocket]
-    int     0x40
+    mcall
     ret
 
 
@@ -634,7 +634,7 @@ connect:
     mov     edx, 0      ; No remote port
     mov     ecx, 21     ; ftp command port id
     mov     edi, 0      ; passive open
-    int     0x40
+    mcall
     mov     [CmdSocket], eax
 
     popa
@@ -663,7 +663,7 @@ connectData:
     mov     edx, [DataPort]    ; remote port
     mov     ecx, 20     ; ftp data port id
     mov     edi, 1      ; active open
-    int     0x40
+    mcall
     mov     [DataSocket], eax
 
     popa
@@ -853,7 +853,7 @@ sendDir:
 sd001:
 ; Read the next DirBlocksPerCall (=16) blocks
         mov     eax, 70
-        int     0x40
+        mcall
 ; Did we read anything?
         test    eax, eax
         jz      @f
@@ -1067,7 +1067,7 @@ sendFile:
 sf002a:
     ; now read the file..    
     mov     eax,70
-    int     0x40
+    mcall
     test    eax, eax
     jz      @f
     cmp     eax, 6
@@ -1083,7 +1083,7 @@ sf002a:
 ; wait a bit
     mov     eax, 5
     mov     ebx, 10
-    int     0x40
+    mcall
     mov     ebx, fileinfoblock
     add     dword [ebx+4], edx
     jmp     sf002a
@@ -1132,14 +1132,14 @@ gf000:
     mov     eax, 53
     mov     ebx, 2                  ; Get # of bytes in input queue
     mov     ecx, [DataSocket]
-    int     0x40
+    mcall
     test    eax, eax
     je      gf_sleep
         
     mov     eax, 53
     mov     ebx, 3                  ; Get a byte from socket in bl
     mov     ecx, [DataSocket]
-    int     0x40                    ; returned data in bl
+    mcall                    ; returned data in bl
     
     mov     esi, text + 0x1300
     add     esi, dword [fsize]
@@ -1156,7 +1156,7 @@ gf_sleep:
     mov     eax,53
     mov     ebx,6               ; Get socket status
     mov     ecx,[DataSocket]
-    int     0x40
+    mcall
 
     cmp     eax, 7
     jne     gf001               ; still open, so just sleep a bit
@@ -1166,7 +1166,7 @@ gf_sleep:
     mov     [fileinfoblock+12], eax
     mov     eax,70
     mov     ebx,fileinfoblock
-    int     0x40
+    mcall
 
     ret                         ; Finished
 
@@ -1174,7 +1174,7 @@ gf001:
     ; wait a bit
     mov     eax,5
     mov     ebx,10              ; Delay for up 100ms
-    int     0x40
+    mcall
     jmp     gf000               ; try for more data
             
     
@@ -1289,7 +1289,7 @@ cmdDELE:
     and     dword [ebx+12], 0
     and     dword [ebx+16], 0
     mov     eax, 70
-    int     0x40
+    mcall
     pop     dword [ebx+16]
     pop     dword [ebx+12]
     
@@ -1327,13 +1327,13 @@ cl001:
     ; wait a bit
     mov     eax,5
     mov     ebx,10                ; Delay for up 100ms
-    int     0x40
+    mcall
 
     ; check connection status
     mov     eax,53
     mov     ebx,6               ; Get socket status
     mov     ecx,[DataSocket]
-    int     0x40
+    mcall
 
     cmp     eax, 4
     jne     cl001
@@ -1363,13 +1363,13 @@ cr001:
     ; wait a bit
     mov     eax,5
     mov     ebx,10                ; Delay for up 100ms
-    int     0x40
+    mcall
 
     ; check connection status
     mov     eax,53
     mov     ebx,6               ; Get socket status
     mov     ecx,[DataSocket]
-    int     0x40
+    mcall
 
     cmp     eax, 4
     jne     cr001
@@ -1402,13 +1402,13 @@ cs001:
     ; wait a bit
     mov     eax,5
     mov     ebx,10                ; Delay for up 100ms
-    int     0x40
+    mcall
 
     ; check connection status
     mov     eax,53
     mov     ebx,6               ; Get socket status
     mov     ecx,[DataSocket]
-    int     0x40
+    mcall
 
     cmp     eax, 4
     je      @f

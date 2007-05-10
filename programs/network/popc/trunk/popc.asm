@@ -9,7 +9,7 @@
 ;;    Compile with FASM for Menuet                   ;;
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+include '..\..\..\macros.inc'
 version equ '0.1'
 
 use32
@@ -30,7 +30,7 @@ START:                          ; start of execution
 
     mov  eax,70
     mov  ebx,filel
-    int  0x40
+    mcall
 
     test eax,eax
     jz   @f
@@ -52,16 +52,18 @@ START:                          ; start of execution
 
     mov  ebp,0
     mov  edx,I_END
+
+redraw:                         ; redraw
     call draw_window            ; at first, draw the window
 
 still:
 
     mov  eax,5
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,11                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw
     je   redraw
@@ -106,7 +108,7 @@ save_file:
    mov  [ebx+12],eax
 
    mov  eax,70
-   int  0x40
+   mcall
 
    popa
 
@@ -150,7 +152,7 @@ send_request:
     mov  eax,53
     mov  ebx,7
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  [mcounter],0
 
     cmp  [esi],dword 'quit'
@@ -175,28 +177,28 @@ close_fetch:
     mov  ecx,[socket]
     mov  edx,14
     mov  esi,quitc
-    int  0x40
+    mcall
     mov  [mcounter],0
 
     mov  eax,5
     mov  ebx,150
-    int  0x40
+    mcall
 
     call read_incoming_data
 
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov  eax,5
     mov  ebx,2
-    int  0x40
+    mcall
 
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov  [server_active],0
 
@@ -209,16 +211,10 @@ close_fetch:
 ;;
 
 
-redraw:                         ; redraw
-
-    call draw_window
-    jmp  still
-
-
 key:
 
     mov  eax,2
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -226,20 +222,20 @@ key:
 button:                         ; button
 
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,60
     jne  no_open
         mov     eax, 70
         mov     ebx, tinypad_start
-        int     0x40
+        mcall
     jmp  still
   no_open:
 
     cmp  ah,1                   ; close program
     jne  noclose
     mov  eax,-1
-    int  0x40
+    mcall
   noclose:
 
     cmp  ah,51
@@ -270,10 +266,10 @@ socket_commands:
     mov  [ccounter],0
 
     mov  eax,3
-    int  0x40
+    mcall
 
     mov  eax,3
-    int  0x40
+    mcall
     mov  ecx,eax
     and  ecx,0xffff
 
@@ -282,7 +278,7 @@ socket_commands:
     mov  edx,110
     mov  esi,dword [ip]
     mov  edi,1
-    int  0x40
+    mcall
     mov  [socket], eax
 
     ret
@@ -294,7 +290,7 @@ socket_commands:
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  [header_sent],0
     mov  [mail_rp],0
     mov  [server_active],0
@@ -320,7 +316,7 @@ print_status:
     mov  eax,53
     mov  ebx,6
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov  [status],eax
 
@@ -335,7 +331,7 @@ print_status:
     mov  ebx,200*65536+30
     mov  ecx,160*65536+10
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     pop  ecx
 
@@ -346,7 +342,7 @@ print_status:
     mov  ebx,3*65536
     mov  edx,200*65536+160
     mov  esi,0x000000
-    int  0x40
+    mcall
 
   nopr:
 
@@ -449,11 +445,11 @@ read_string:
 
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je   read_done
@@ -549,7 +545,7 @@ print_input_text:
     shl  ecx,16
     mov  cx,9
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     cmp  [len],l3
     je   noprt
@@ -560,7 +556,7 @@ print_input_text:
     add  ebx,[ya]
     mov  ecx,0x000000
     mov  esi,23
-    int  0x40
+    mcall
 
   noprt:
 
@@ -778,7 +774,7 @@ read_incoming_byte:
     mov  eax, 53
     mov  ebx, 2
     mov  ecx, [socket]
-    int  0x40
+    mcall
 
     mov  ecx,-1
 
@@ -788,7 +784,7 @@ read_incoming_byte:
     mov  eax, 53
     mov  ebx, 3
     mov  ecx, [socket]
-    int  0x40
+    mcall
 
     mov  ecx,0
 
@@ -810,14 +806,14 @@ draw_window:
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,0                     ; draw window
     mov  ebx,5*65536+435
     mov  ecx,5*65536+232
     mov  edx,0x13ffffff
     mov  edi,labelt
-    int  0x40
+    mcall
 
     mov  [old_status],300
 
@@ -826,14 +822,14 @@ draw_window:
     mov  ecx,155*65536+10
     mov  edx,22
     mov  esi,0x44cc44
-    int  0x40
+    mcall
 
 ;    mov  eax,8                     ; button: close socket
     mov  ebx,295*65536+22
     mov  ecx,155*65536+10
     mov  edx,24
     mov  esi,0xcc4444
-    int  0x40
+    mcall
 
 ;    mov  eax,8                     ; button: text entries
     mov  ebx,243*65536+8
@@ -841,7 +837,7 @@ draw_window:
     mov  edx,51
     mov  esi,0x4488dd
   newi:
-    int  0x40
+    mcall
     inc  edx
     add  ecx,12*65536
     cmp  edx,53
@@ -852,13 +848,13 @@ draw_window:
     mov  ecx,190*65536+14
     mov  edx,60
     mov  esi,0x5577dd
-    int  0x40
+    mcall
 
     mov  eax,38                    ; line
     mov  ebx,5*65536+430
     mov  ecx,114*65536+114
     mov  edx,0x000000
-    int  0x40
+    mcall
 
     mov  ebx,5*65536+133          ; info text
     mov  ecx,0x000000
@@ -866,7 +862,7 @@ draw_window:
     mov  esi,70
   newline:
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,12
     add  edx,70
     cmp  [edx],byte 'x'
@@ -877,7 +873,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
 
@@ -902,12 +898,12 @@ draw_server_data:
     mov   bx,word [rxs]
     imul  bx,6
     mov   edx,0xffffff
-    int   0x40
+    mcall
     popa
     push  ecx
     mov   eax,4
     mov   ecx,0
-    int   0x40
+    mcall
     add   edx,[rxs]
     add   ebx,10
     pop   ecx

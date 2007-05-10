@@ -36,9 +36,9 @@ incf:
     mov eax,6
     mov ebx,clip_file
     mov ecx,0
-    mov edx,-1
+    or edx,-1
     mov esi,path
-    int 0x40
+    mcall
     cmp byte [clip_file+7],'Z'
     je  erroff
     cmp eax,0xffffffff
@@ -54,12 +54,12 @@ zzz2:
     mov edx,100
     mov esi,0
     mov eax,33
-    int 0x40
+    mcall
 
     mov ebx,dlg_file
     mov ecx,clip_file
     mov eax,19
-    int 0x40
+    mcall
 
 still:
     scevent red,key,button
@@ -72,7 +72,7 @@ still:
     mov ecx,0
     mov edx,-1
     mov esi,path
-    int 0x40
+    mcall
     cmp eax,0xffffffff
     je  erroff ;errexit
     mov dword [redwait],0
@@ -84,19 +84,19 @@ zzz:
 file_is_open:
     mov eax,32
     mov ebx,clip_file
-    int 0x40
+    mcall
     jmp openoff
 
 key:                          ; key
-    int  0x40                   ; read (eax=2)
+    mcall                   ; read (eax=2)
     jmp  still
 button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  still
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 red:
     call redproc
@@ -127,7 +127,7 @@ incf:
     mov ecx,0
     mov edx,-1
     mov esi,path
-    int 0x40
+    mcall
     cmp byte [clip_file+7],'Z'
     je  erroff
     cmp eax,0xffffffff
@@ -143,12 +143,12 @@ zzz2:
     mov edx,100
     mov esi,0
     mov eax,33
-    int 0x40
+    mcall
 
     mov ebx,dlg_file
     mov ecx,clip_file
     mov eax,19
-    int 0x40
+    mcall
 
 still:
     scevent red,key,button
@@ -161,7 +161,7 @@ still:
     mov ecx,0
     mov edx,-1
     mov esi,path
-    int 0x40
+    mcall
     cmp eax,0xffffffff
     je  erroff ;errexit
     mov dword [redwait],0
@@ -173,19 +173,19 @@ zzz:
 file_is_open:
     mov eax,32
     mov ebx,clip_file
-    int 0x40
+    mcall
     jmp openoff
 
 key:                          ; key
-    int  0x40                   ; read (eax=2)
+    mcall                   ; read (eax=2)
     jmp  still
 button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  still
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 red:
     call redproc
@@ -272,7 +272,7 @@ rxproc:
 macro scank
 {
     mov eax,10
-    int 0x40
+    mcall
 }
 
 macro putpix x,y,color
@@ -281,7 +281,7 @@ macro putpix x,y,color
     mov ecx,y
     mov edx,color
     mov eax,1
-    int 0x40
+    mcall
 }
 
 macro puttxt x,y,offs,size,color
@@ -293,7 +293,7 @@ macro puttxt x,y,offs,size,color
     mov edx,offs
     mov esi,size
     mov eax,4
-    int 0x40
+    mcall
 }
 
 ;_ equ '____'
@@ -306,7 +306,7 @@ macro puttxt x,y,offs,size,color
 ;    mov ecx,y
 ;    mov edx,color
 ;    mov eax,1
-;    int 0x40
+;    mcall
 ;}
 
 
@@ -318,7 +318,7 @@ macro outcount data, x, y, color, numtype
     mov edx,x*65536+y
     mov esi,color
     mov eax,47
-    int 0x40
+    mcall
 }
 
 ; SCEVENT - Scan event
@@ -326,7 +326,7 @@ macro outcount data, x, y, color, numtype
 macro scevent red,key,but
 {
     mov eax,11
-    int 0x40
+    mcall
     dec eax
     jz  red
     dec eax
@@ -340,7 +340,7 @@ macro scevent red,key,but
 macro wtevent red,key,but
 {
     mov eax,10
-    int 0x40
+    mcall
     dec eax
     jz  red
     dec eax
@@ -355,7 +355,7 @@ macro timeevent xfps,noevent,red,key,but
 {
     mov eax,23
     mov ebx,xfps
-    int 0x40
+    mcall
     cmp eax,0
     je  noevent
     dec eax
@@ -372,7 +372,7 @@ macro timeevent xfps,noevent,red,key,but
 macro close
 {
     mov eax,-1
-    int 0x40
+    mcall
 }
 
 ; DELAY - Create delay 1/100 sec
@@ -383,7 +383,7 @@ macro delay arg1
 {
     mov eax,5
     mov ebx,arg1
-    int 0x40
+    mcall
 }
 
 ; WINDOW - Draw window
@@ -396,7 +396,7 @@ macro window arg1,arg2,arg3,arg4,arg5
     mov ecx,arg2*65536+arg4
     mov edx,arg5
     mov eax,0
-    int 0x40
+    mcall
 }
 
 macro colorwindow arg1,arg2,arg3,arg4,arg5,arg6,arg7
@@ -407,7 +407,7 @@ macro colorwindow arg1,arg2,arg3,arg4,arg5,arg6,arg7
     mov esi,arg6
     mov edi,arg7
     mov eax,0
-    int 0x40
+    mcall
 }
 
 
@@ -417,7 +417,7 @@ macro startwd
 {
     mov eax,12
     mov ebx,1
-    int 0x40
+    mcall
 }
 
 ; ENDWD - End window draw
@@ -426,7 +426,7 @@ macro endwd
 {
     mov eax,12
     mov ebx,2
-    int 0x40
+    mcall
 }
 
 ; LABEL - Put text to frame
@@ -446,7 +446,7 @@ asd:
     mov edx,lab
     mov esi,asd-lab          ;calc size
     mov eax,4
-    int 0x40
+    mcall
 }
 
 ;Key's

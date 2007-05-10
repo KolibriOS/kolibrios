@@ -6,7 +6,7 @@ delete_file_worker:
         push    70
         pop     eax
         mov     ebx, delinfo
-        int     0x40
+        mcall
         pop     ebx
         test    eax, eax
         jz      .ret
@@ -102,7 +102,7 @@ delete_file:
         mov     [ebx+dirinfo.name-dirinfo], execdata
         push    70
         pop     eax
-        int     0x40
+        mcall
 ; if we get read error, the best available action is try to delete directory itself
         test    eax, eax
         jz      @f

@@ -35,7 +35,7 @@ use32
                dd     APP_MEM;0x100000        ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 COLOR_ORDER equ OTHER
 include 'gif.inc'
 
@@ -63,12 +63,12 @@ gamestart:
 ;   ******* MOUSE CHECK *******
 ;    mov eax,37    ; check mouse (use mouse over window to navigate)
 ;    mov ebx,2     ; check mousebuttons
-;    int 0x40
+;    mcall
 ;    cmp eax,0    ; only use mouse when button down
 ;    je noneed    ; deactivated cause of disappear-bug etc.
     mov eax,37
     mov ebx,1     ; check mouseposition
-    int 0x40
+    mcall
 
     mov ebx,eax
     shr eax,16
@@ -99,7 +99,7 @@ check_refresh:
 ;    mov eax,23  ; wait for system event with 10 ms timeout
 ;    mov ebx,1   ; thats max 100 FPS
     mov eax,11 ; ask no wait for full speed
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; window redraw request ?
     je   red2
@@ -126,7 +126,7 @@ red2:                          ; redraw
 
 key2:                          ; key
     mov  eax,2
-    int  0x40
+    mcall
     cmp  al,1
     je   gamestart     ; keybuffer empty
 
@@ -284,14 +284,14 @@ m_right:                                  ; turn right
 
   button2:                       ; button
     mov  eax,17                  ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  gamestart
 
 ; eo GAME mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm
  finish:
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 
 ;   *********************************************
@@ -303,19 +303,19 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,50*65536+649         ; [x start] *65536 + [x size]
     mov  ecx,50*65536+504         ; [y start] *65536 + [y size]
     mov  edx,0x33ffffff            ; color of work area RRGGBB,8->color gl
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -811,7 +811,7 @@ speedup:
     mov ebx,0x80000
     mov ecx,640*65536+480
     xor edx,edx
-    int 0x40
+    mcall
 
     ret
 
@@ -991,7 +991,7 @@ dd 0x0001FFFF ; initial player position * 0xFFFF
  vpy:
 dd 0x0001FFFF
 
-header    db   'FISHEYE RAYCASTING ENGINE ETC. FREE3D',0
+title    db   'FISHEYE RAYCASTING ENGINE ETC. FREE3D',0
 
 sindegree dd 0.0
 sininc    dd 0.0017453292519943295769236907684886

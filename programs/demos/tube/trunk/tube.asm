@@ -18,7 +18,7 @@ use32
              dd   0x40000
              dd   0,0
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:
 
@@ -38,7 +38,7 @@ still:
 
    mov  eax,23
    mov  ebx,1
-   int  0x40
+   mcall
 
    cmp  eax,1
    jne  no_red
@@ -50,8 +50,7 @@ still:
    je   still
 
    or   eax,-1
-   int  0x40
-
+   mcall
 
 SCREEN  equ 160
 PIXBUF  equ 200h
@@ -179,7 +178,7 @@ display_image:
   mov ecx,320*65536+160
   xor edx,edx
   mov ebx,0x10000
-  int 0x40
+  mcall
 
   popa
   ret
@@ -192,23 +191,20 @@ draw_window:
 
      mov  eax,12
      mov  ebx,1
-     int  0x40
-
+     mcall
      xor  eax,eax
      mov  ebx,100*65536+329
      mov  ecx,100*65536+186
      mov  edx,0x33000000
-     mov  edi,header
-     int  0x40
-
+     mov  edi,title
+     mcall
      mov  eax,12
      mov  ebx,2
-     int  0x40
-
+     mcall
      popa
      ret
 
-header db appname,0
+title db appname,0
 
 db 41,0,0xC3,0x3C
 

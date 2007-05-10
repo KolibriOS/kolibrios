@@ -1,3 +1,4 @@
+include '..\..\..\macros.inc'
 use32
         org     0x0
 
@@ -17,7 +18,7 @@ START:
         rep     stosd
 
         mov     al, 3
-        int     0x40
+        mcall
         mov     [curtime], eax
 
 red:
@@ -25,7 +26,7 @@ red:
         pop     eax
         push    1
         pop     ebx
-        int     0x40
+        mcall
 
         xor     eax, eax
         mov     ebx, 200*65536+325
@@ -33,14 +34,14 @@ red:
         xor     edx, edx
         xor     esi, esi
         mov     edi, 0x00100000
-        int     0x40
+        mcall
 
         mov     al, 8
         mov     ebx, (325-19)*65536+12
         mov     ecx, 5*65536+12
         inc     edx
         mov     esi, 0x00400000
-        int     0x40
+        mcall
 
         mov     al, 4
         mov     ebx, 8*65536+8
@@ -48,18 +49,18 @@ red:
         mov     edx, fire_label
         push    len00
         pop     esi
-        int     0x40
+        mcall
 
         mov     al, 12
         push    2
         pop     ebx
-        int     0x40
+        mcall
 
 still:
 
         push    11
         pop     eax
-        int     0x40
+        mcall
 
         dec     eax
         jz      red
@@ -71,7 +72,7 @@ still:
         call    image
         push    3
         pop     eax
-        int     0x40
+        mcall
         cmp     eax, [curtime]
         jz      still
         mov     [curtime], eax
@@ -81,25 +82,25 @@ print_fps:
         mov     ebx, (8+27*6)*65536+18
         mov     ecx, 8*65536+8
         xor     edx, edx
-        int     0x40
+        mcall
         lea     edx, [ebx-10]
         mov     al, 47
         mov     ebx, 30000h
         xor     ecx, ecx
         xchg    ecx, [fps]
         mov     esi, 0x00FFFFFF ;0x00400000
-        int     0x40
+        mcall
         jmp     still
 
 key:
         mov     al, 2
-        int     0x40
+        mcall
         cmp     ah, 1Bh   ;<Esc>
         jne     still
 button:
 ; we have only one button, close
         or      eax, -1
-        int     0x40
+        mcall
 
 image:
 

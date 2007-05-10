@@ -9,7 +9,7 @@
 ;;
 ;; макрос для создания массива указателей на ASCIIZ-строки
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 macro strtbl name,[string]
 {
  common
@@ -36,32 +36,40 @@ use32
 re_ID  dd  0x00000001	;для хранения номера текущего выводимого элемента
 
 START:
+
+      mov  eax,48
+      mov  ebx,3
+      mov  ecx,sc
+      mov  edx,sizeof.system_colors
+      mcall
+
 red:
       call draw_window
 
 still:		      ;основной цикл программы
-	push 10   ;ожидание события
+      push 10   ;ожидание события
       pop  eax
-	int  0x40
-	dec  eax
+      mcall
+
+      dec  eax
       je   red
       dec  eax
       jne  button
 
 key:
 	mov  al,2
-	int  0x40
+	mcall
 	jmp  still
 
 button:
 	mov  al,17   ;получаем ID нажатой кнопки
-	int  0x40
+	mcall
 	shr  eax,8    ; eax=24-битный ButtonID
 
 	cmp  eax,1    ;нажата ли "Закрыть" [x]
 	jne  noclose
 	or   eax,-1
-	int  0x40
+	mcall
 
 noclose:
       cmp eax,200
@@ -70,91 +78,85 @@ noclose:
 no_H: 
 	mov [re_ID],eax
 ;; <mistifi(ator>
-	call VYVOD
+	call draw_text
 ;; </mistifi(ator>
 	jmp still
 
 draw_window:
 	
-      mov  eax,48
-      mov  ebx,3
-      mov  ecx,sc
-      mov  edx,sizeof.system_colors
-      int  0x40
-
-      mov  eax,12   ;begin drawing
+        mov  eax,12   ;begin drawing
 	xor  ebx,ebx
 	inc  ebx
-	int  0x40
+	mcall
 				       ; DRAW WINDOW
 	xor  eax,eax
-	mov  ebx,50*65536+550  ;x
-	mov  ecx,30*65536+450  ;y
+	mov  ebx,50*65536+555  ;x
+	mov  ecx,30*65536+455  ;y
       mov  edx,[sc.work]
-	or   edx,0x13000000    ;style
-	mov  edi,Caption
-	int  0x40
+	or   edx,0x33000000    ;style
+	mov  edi,caption
+	mcall
 
-Nadpisi_v_okne:
+text_in_window:
 	mov  eax,4	     ;вывод текста
 	mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
 
-	mov  ebx,40*65536+225	      ;лантаноиды
+	mov  ebx,40*65536+200	      ;лантаноиды
 	mov  edx,Lantanoid_text
-	int  0x40
+	mcall
 
 	add  ebx,20		       ;актиноиды
 	mov  edx,Actinoid_text
-	int  0x40
+	mcall
 
-	mov  ebx,150*65536+280
-	mov  edx,Por_nomer
-	int  0x40
+	mov  ebx,150*65536+255
+	mov  edx,number
+	mcall
 
 	add  ebx,15
-	mov  edx,Nazvanie
-	int  0x40
+	mov  edx,name
+	mcall
 
 	add ebx,15
-	mov edx,Angl_nazv
-	int 0x40
+	mov edx,eng_name
+	mcall
 
 	add ebx,15
 	mov edx,Atomic_massa
-	int 0x40
+	mcall
 
 	add ebx,15
-	mov edx,Plotnost_caption
-	int 0x40
+	mov edx,density
+	mcall
 
 	add ebx,15
 	mov edx,Step_okisl
-	int 0x40
+	mcall
 
 	add ebx,15
 	mov edx,Electrootr
-	int 0x40
+	mcall
 
 	add ebx,15
 	mov edx,T_pl
-	int 0x40
+	mcall
 
 	add ebx,15
 	mov edx,T_kip
-	int 0x40
+	mcall
 
 	add ebx,15
 	mov edx,Raspr
-	int 0x40
+	mcall
 
 	add ebx,15
 	mov edx,Otkrytie
-	int 0x40
+	mcall
 
 	; ВЫВОД НОМЕРОВ ПЕРИОДОВ
-	mov ebx,30*65536+68
+	mov ebx,30*65536+43
 	mov edx,Period_text  ;1
-	int 0x40
+	mcall
 
 	call @f 	     ;2
 	call @f 	     ;3
@@ -167,393 +169,393 @@ Nadpisi_v_okne:
       @@:
 	add ebx,20
 	add edx,4   ;т.к. строка = 4 байтам(с нулём)
-	int 0x40
+	mcall
        ret
 
 Table:		       ;Отрисовка таблицы в виде конопочек
-	table_rjad_1:
+	table_row_1:
 			shl eax,1
 			mov  ebx,50*65536+25
-			mov  ecx,60*65536+20
+			mov  ecx,35*65536+20
 			mov  edx,200
 			mov  esi,0xE19123
-			int  0x40
+			mcall
 		He_:
 			mov  ebx,491*65536+25
 			mov  esi,0x0f0c314
 			mov  edx,2
-			int  0x40
-	table_rjad_2:
+			mcall
+	table_row_2:
 		Li:
 		      mov  ebx,50*65536+25
-			mov  ecx,81*65536+20
+			mov  ecx,56*65536+20
 			mov  esi,0xE19123
 			inc edx
-			int  0x40
+			mcall
 		Be:
 			mov  ebx,76*65536+25
 			inc edx
-			int  0x40
+			mcall
 		B_:
 			mov  ebx,361*65536+25
 			inc edx
 			mov esi,0x0f0c314
-			int  0x40
+			mcall
 			mov edi,4
-		table_rjad_2_loop:
+		table_row_2_loop:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns table_rjad_2_loop
-	table_rjad_3:
+			jns table_row_2_loop
+	table_row_3:
 		Na:
 		       mov  ebx,50*65536+25
-			mov  ecx,102*65536+20
+			mov  ecx,77*65536+20
 			mov  esi,0xE19123
 			inc edx
-			int  0x40
+			mcall
 
 			mov  ebx,76*65536+25
 			inc edx
-			int  0x40
+			mcall
 
 			mov  ebx,361*65536+25
 			inc edx
 			mov esi,0x0f0c314
-			int  0x40
+			mcall
 			mov edi,4
-		table_rjad_3_loop:
+		table_row_3_loop:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns table_rjad_3_loop
+			jns table_row_3_loop
 
-	Table_rjad_4:
+	Table_row_4:
 		K_:
 		       mov  ebx,50*65536+25
-			mov  ecx,123*65536+20
+			mov  ecx,98*65536+20
 			mov  esi,0xE19123
 			inc edx
-			int  0x40
+			mcall
 		Ca:
 		       mov  ebx,76*65536+25
 			inc edx
-			int  0x40
+			mcall
 		Sc:
 			mov  ebx,102*65536+25
 			inc edx
 			mov  esi,0x559beb
-			int  0x40
+			mcall
 			mov edi,8
-		Table_rjad_4_loop1:
+		Table_row_4_loop1:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns Table_rjad_4_loop1
+			jns Table_row_4_loop1
 
 			mov  ebx,361*65536+25
 			inc edx
 			mov esi,0x0f0c314
-			int  0x40
+			mcall
 			mov edi,4
-		table_rjad_4_loop2:
+		table_row_4_loop2:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns table_rjad_4_loop2
+			jns table_row_4_loop2
 
-	 Table_rjad_5:
+	 Table_row_5:
 		Rb_:
 		       mov  ebx,50*65536+25
-			mov  ecx,144*65536+20
+			mov  ecx,119*65536+20
 			mov  esi,0xE19123
 			inc edx
-			int  0x40
+			mcall
 		Sr_:
 		       mov  ebx,76*65536+25
 			inc edx
-			int  0x40
+			mcall
 		Y_:
 			mov  ebx,102*65536+25
 			inc edx
 			mov  esi,0x559beb
-			int  0x40
+			mcall
 			mov edi,8
-		Table_rjad_5_loop1:
+		Table_row_5_loop1:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns Table_rjad_5_loop1
+			jns Table_row_5_loop1
 
 			mov  ebx,361*65536+25
 			inc edx
 			mov esi,0x0f0c314
-			int  0x40
+			mcall
 			mov edi,4
-		table_rjad_5_loop2:
+		table_row_5_loop2:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns table_rjad_5_loop2
+			jns table_row_5_loop2
 
-	 Table_rjad_6:
+	 Table_row_6:
 		Cs_:
 		       mov  ebx,50*65536+25
-			mov  ecx,165*65536+20
+			mov  ecx,140*65536+20
 			mov  esi,0xE19123
 			inc edx
-			int  0x40
+			mcall
 		Ba_:
 		       mov  ebx,76*65536+25
 			inc edx
-			int  0x40
+			mcall
 		La_:
 			mov  ebx,102*65536+25
 			inc edx
 			mov  esi,0x559beb
-			int  0x40
+			mcall
 			mov edx,71
 			mov edi,8
-		Table_rjad_6_loop1:
+		Table_row_6_loop1:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns Table_rjad_6_loop1
+			jns Table_row_6_loop1
 
 			mov  ebx,361*65536+25
 			inc edx
 			mov esi,0x0f0c314
-			int  0x40
+			mcall
 			mov edi,4
-		table_rjad_6_loop2:
+		table_row_6_loop2:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns table_rjad_6_loop2
+			jns table_row_6_loop2
 
-	 Table_rjad_7:
+	 Table_row_7:
 		Fr_:
 		       mov  ebx,50*65536+25
-			mov  ecx,186*65536+20
+			mov  ecx,161*65536+20
 			mov  esi,0xE19123
 			inc edx
-			int  0x40
+			mcall
 		Ra_:
 		       mov  ebx,76*65536+25
 			inc edx
-			int  0x40
+			mcall
 		Ac_:
 			mov  ebx,102*65536+25
 			inc edx
 			mov  esi,0x559beb
-			int  0x40
+			mcall
 			mov edx,103
 			mov edi,8
-		Table_rjad_7_loop1:
+		Table_row_7_loop1:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns Table_rjad_7_loop1
+			jns Table_row_7_loop1
 
 			mov  ebx,361*65536+25
 			inc edx
 			mov esi,0x0f0c314
-			int  0x40
+			mcall
 			mov edi,2
-		table_rjad_7_loop2:
+		table_row_7_loop2:
 			add ebx,26*65536
 			inc edx
-			int 0x40
+			mcall
 			dec edi
-			jns table_rjad_7_loop2
+			jns table_row_7_loop2
 
-	Rjad_1:
+	row_1:
 		Cerium_:
 			mov  ebx,102*65536+25
-			mov  ecx,215*65536+20
+			mov  ecx,190*65536+20
 			mov  edx,58
 			mov  esi,0x73beeb
-			int  0x40
+			mcall
 			mov edi,12
 
-		Rjad_1_loop:
+		row_1_loop:
 			add ebx,26*65536
 			inc edx
 			dec edi
-			int  0x40
-			jns Rjad_1_loop
-	Rjad_2:
+			mcall
+			jns row_1_loop
+	row_2:
 		dgfsfHe_:
 			mov  ebx,102*65536+25
-			mov  ecx,236*65536+20
+			mov  ecx,211*65536+20
 			mov  edx,90
-			int  0x40
+			mcall
 			mov edi,12
-		Rjad_2_loop:
+		row_2_loop:
 
 			add ebx,26*65536
 			inc edx
 			dec edi
-			int  0x40
-			jns Rjad_2_loop
+			mcall
+			jns row_2_loop
 
-Nadpisi_na_knopkah:
-	nadp_rjad1:
+text_on_buttons:
+	text_row1:
 		;H
 			shr eax,1
-			mov ebx,62*65536+68
+			mov ebx,62*65536+43
 			mov ecx,0x00000000
 			mov edx,Symbols
 			mov esi,3
-			int 0x40
+			mcall
 		;Ne
-			mov ebx,500*65536+68
+			mov ebx,500*65536+43
 			add edx,3
-			int 0x40
-	nadp_rjad2_1:
-			mov ebx,60*65536+88
+			mcall
+	text_row2_1:
+			mov ebx,60*65536+63
 			add edx,3
-			int 0x40
+			mcall
 
-			mov ebx,85*65536+88
+			mov ebx,85*65536+63
 			add edx,3
-			int 0x40
-	nadp_rjad2_2:
-			mov ebx,374*65536+88
+			mcall
+	text_row2_2:
+			mov ebx,374*65536+63
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,4
 
-	nadp_rjad2_2_loop:
+	text_row2_2_loop:
 			add ebx,25*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad2_2_loop
-	nadp_rjad3_1:
-			mov ebx,60*65536+108
+			jns text_row2_2_loop
+	text_row3_1:
+			mov ebx,60*65536+83
 			add edx,3
-			int 0x40
+			mcall
 
-			mov ebx,85*65536+108
+			mov ebx,85*65536+83
 			add edx,3
-			int 0x40
-	nadp_rjad3_2:
-			mov ebx,374*65536+108
+			mcall
+	text_row3_2:
+			mov ebx,374*65536+83
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,4
-	nadp_rjad3_2_loop:
+	text_row3_2_loop:
 			add ebx,25*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad3_2_loop
-	nadp_rjad4:
-			mov ebx,60*65536+129
+			jns text_row3_2_loop
+	text_row4:
+			mov ebx,60*65536+104
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,16
-	nadp_rjad4_loop:
+	text_row4_loop:
 			add ebx,26*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad4_loop
-	nadp_rjad5:
-			mov ebx,60*65536+150
+			jns text_row4_loop
+	text_row5:
+			mov ebx,60*65536+125
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,16
-	nadp_rjad5_loop:
+	text_row5_loop:
 			add ebx,26*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad5_loop
-	nadp_rjad6:
-			mov ebx,60*65536+171
+			jns text_row5_loop
+	text_row6:
+			mov ebx,60*65536+146
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,16
-	nadp_rjad6_loop:
+	text_row6_loop:
 			add ebx,26*65536
 			add edx,3
-			int 0x40
+			mcall
 			dec edi
-			jns nadp_rjad6_loop
-	nadp_rjad7:
-			mov ebx,60*65536+192
+			jns text_row6_loop
+	text_row7:
+			mov ebx,60*65536+167
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,9
-	nadp_rjad7_loop:
+	text_row7_loop:
 			add ebx,26*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad7_loop
+			jns text_row7_loop
 			mov edi,4
-	nadp_rjad7_loop2:
+	text_row7_loop2:
 			add ebx,24*65536
 			add edx,3
-			int 0x40
+			mcall
 			dec edi
-			jns nadp_rjad7_loop2
+			jns text_row7_loop2
 
-	nadp_rjad8:
-			mov ebx,111*65536+222
+	text_row8:
+			mov ebx,111*65536+197
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,12
 
-	nadp_rjad8_loop:
+	text_row8_loop:
 			add ebx,26*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad8_loop
+			jns text_row8_loop
 
-	nadp_rjad9:
-			mov ebx,111*65536+242
+	text_row9:
+			mov ebx,111*65536+217
 			add edx,3
-			int 0x40
+			mcall
 			mov edi,12
 
-	nadp_rjad9_loop:
+	text_row9_loop:
 			add ebx,26*65536
 			add edx,3
-			int 0x40
+			mcall
 
 			dec edi
-			jns nadp_rjad9_loop
+			jns text_row9_loop
 
 ;; <mistifi(ator> - короче выносим в отдельную процедуру
-	call VYVOD
+	call draw_text
 ;; </mistifi(ator>
 
   finish:
 	mov eax,12  ;end drawing
 	mov ebx,2
-	int 0x40
+	mcall
 ret
 
-VYVOD:
+draw_text:
 
    ; 1 вывод порядкового номера [optmzd-mem]
    ; 2 вывод русского названия [optmzd-mem]
@@ -570,22 +572,21 @@ VYVOD:
 ;; <mistifi(ator> - закраска, что-бы не было наложения при прорисовке текста
 	mov eax,13
 	mov ebx,320*65536+210
-	mov ecx,280*65536+(15*11)
+	mov ecx,255*65536+(15*11)
 	mov edx,[sc.work]
-	int 0x40
+	mcall
 ;; </mistifi(ator>
   
 
   push edi  ; чтобы оптимизировать изменения ebx
 
 	; 1 вывод порядкового номера [optmzd-mem]
-	xor ebx,ebx
-	or ebx,00000000000000110000000000000000b
+	mov ebx,0x30000         ;выводить 3 цифры
 	mov ecx,[re_ID]
-	mov edx,320*65536+280+15*0
+	mov edx,320*65536+255
 	xor esi,esi
 	mov eax,47
-	int 0x40
+	mcall
 
 ;ВНИМАНИЕ! ЗДЕСЬ ЗАДАЁТСЯ ЦВЕТ ВСЕГО ОСТАЛЬНОГО ТЕКСТА! [сделано для сокращения кода на 20 байт :)))]
 	mov ecx,[sc.work_text]  ; ЦВЕТ
@@ -594,7 +595,7 @@ VYVOD:
 
 	; 2 вывод РУССКОЕ НАЗВАНИЕ [optmzd-mem]
 	mov edi,Rus_nazv	 ;указатель на начало массива указателей ;)
-	mov ebx,320*65536+280+15*0 ;здесь вносятся координаты, дальше будет лишь add ebx,15
+	mov ebx,320*65536+255    ;здесь вносятся координаты, дальше будет лишь add ebx,15
 	call out_asciiz_item
 
 	xor ecx,ecx   ;color
@@ -606,7 +607,7 @@ VYVOD:
 	imul edi,esi	 ;считаем указатель на нужную строку
 	add edx,edi
 	add ebx,15	 ; увеличиваем y-координату текста на 15 пикселей
-	int 0x40
+	mcall
 
 	; 4 вывод атомной массы [optmzd-spd]
 	mov edx,MassNo
@@ -616,7 +617,7 @@ VYVOD:
 	imul edi,esi	 ;считаем указатель на нужную строку
 	add edx,edi
 	add ebx,15
-	int 0x40
+	mcall
 
 	mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
 	; 5 вывод ПЛОТНОСТЬ [optmzd-mem]
@@ -636,7 +637,7 @@ VYVOD:
 	shl edi,2
 	add edx,edi
 	add ebx,15
-	int 0x40
+	mcall
 
 	mov  ecx,0x80000000  ;asciiz, ЦВЕТ !!!
 	; 8 вывод ТЕМПЕРАТУРА ПЛАВЛЕНИЯ [optmzd-mem]
@@ -665,7 +666,7 @@ out_asciiz_item:
 	shl edx,2		 ;умножить на 4 (размер указателя)
 	mov edx,[edx+edi]	 ;указатель на строку в edx
 	add ebx,15
-	int 0x40
+	mcall
 ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,18 +675,18 @@ ret
 ;;                                      ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;---- begin ---- Данные для ГЛАВНОГО окна --------------------------
-Caption 	  db  'Периодическая система Д.И.Менделеева by [navanax] & [Johnny_B]',0
-Plotnost_caption  db  'Плотность',0
+caption 	  db  'Периодическая система Д.И.Менделеева by [navanax] & [Johnny_B]',0
+density           db  'Плотность',0
 Atomic_massa	  db  'Атомная масса',0
-Nazvanie	  db  'Название',0
-Angl_nazv	  db  'Англ. название',0
+name    	  db  'Название',0
+eng_name	  db  'Англ. название',0
 T_pl		  db  'Температура пл.',0
 T_kip		  db  'Температура кип.',0
 Electrootr	  db  'Электроотрицательность',0
 Raspr		  db  'Распределение в земн. коре',0
 Step_okisl	  db  'Степень окисления',0
 Otkrytie	  db  'Открытие',0
-Por_nomer	  db  'Порядковый номер',0
+number  	  db  'Порядковый номер',0
 Period_text:
  db '  I',0
  db ' II',0
@@ -948,12 +949,12 @@ db 'Lr '
 
 ;АТОМНАЯ МАССА
 MassNo: 	 ;116 элементов
-db '1.00797'	 ; 1
+db '1.00794'	 ; 1
 db '4.0026 '
-db '6.939  '
-db '9.0122 '
+db '6.941  '
+db '9.01218'
 db '10.811 '
-db '12.0112'
+db '12.0107'
 db '14.0067'
 db '15.9994'
 db '18.9984'
@@ -961,21 +962,21 @@ db '20.179 '	 ; 10
 db '22.9898'
 db '24.305 '
 db '26.9815'
-db '28.086 '
+db '28.0855'
 db '30.9738'
 db '32.066 '
 db '35.453 '
 db '39.948 '
-db '39.102 '
-db '40.08  '	 ; 20
-db '44.958 '
+db '39.0983'
+db '40.078 '	 ; 20
+db '44.9559'
 db '47.88  '
-db '50.942 '
+db '50.9415'
 db '51.996 '
 db '54.938 '
 db '55.847 '
 db '58.9332'
-db '58.69  '
+db '58.6934'
 db '63.546 '
 db '65.39  '	 ; 30
 db '69.723 '

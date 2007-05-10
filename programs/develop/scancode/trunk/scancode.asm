@@ -5,7 +5,7 @@
 ;
 
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 
     use32
     org    0x0
@@ -23,20 +23,27 @@ START:                 ; start of execution
     mov  eax,66    ; keyboard mode definitions
     mov  ebx,1     ; set
     mov  ecx,1     ; return scancodes
-    int  0x40
+    mcall
 
     mov  eax,26    ; get setup for keyboard
     mov  ebx,2
     mov  ecx,1     ; base keymap
     mov  edx,keymap
-    int  0x40
+    mcall
+
+    mov  eax, 48                   ; GET SYSTEM COLORS
+    mov  ebx, 3
+    mov  ecx, sc
+    mov  edx, sizeof.system_colors
+    mcall
+
   red:
     call draw_window
 
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -50,7 +57,7 @@ still:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
 
     mov  esi,scan_codes+1
     mov  edi,scan_codes+0
@@ -135,7 +142,7 @@ still:
 
   button:                       ; button
     or   eax, -1                ; close this program
-    int  0x40
+    mcall
 
 
 
@@ -147,15 +154,10 @@ still:
 
 draw_window:
 
-    mov  eax, 48                   ; GET SYSTEM COLORS
-    mov  ebx, 3
-    mov  ecx, sc
-    mov  edx, sizeof.system_colors
-    int  0x40
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax, 0                    ; function 0 : define and draw window
@@ -163,21 +165,21 @@ draw_window:
     mov  ecx, 100*65536+275        ; [y start] *65536 + [y size]
     mov  edx, [sc.work]            ; color of work area RRGGBB,8->color gl
     or   edx, 0x33000000
-    mov  edi, header               ; WINDOW LABEL
-    int  0x40
+    mov  edi, title                ; WINDOW LABEL
+    mcall
                                    
     mov  eax, 4
     mov  ebx, 15*65536+10
     xor  ecx, ecx
     mov  edx, text
     mov  esi, text.len
-    int  0x40
+    mcall
 
     call draw_codes
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -197,7 +199,7 @@ draw_codes:
     mov  eax,13   ; filled rectangle
     mov  ebx,15*65536+160
     mov  edx,[sc.work]
-    int  0x40
+    mcall
     popa
     pusha
     mov  ebx,edx
@@ -208,10 +210,10 @@ draw_codes:
     imul edi,12
     add  edx,edi
     mov  esi,12
-    int  0x40
+    mcall
     popa
     movzx  ecx,byte [scan_codes+edi]
-    int  0x40     ; number
+    mcall     ; number
     inc  ecx
     add  edx,12
     inc  edi
@@ -291,13 +293,13 @@ if lang eq ru
       db '‘—ˆ’›‚€ „€›… ‘ Š‹€‚ˆ€’“›'
   .len = $ - text
 
-  header      db   '‘Š€Š„› Š‹€‚ˆ€’“›',0
+  title      db   '‘Š€Š„› Š‹€‚ˆ€’“›',0
 else
   text:
       db 'READING RAW SCANCODE DATA'
   .len = $ - text
 
-  header      db   'KEYBOARD SCANCODES',0
+  title      db   'KEYBOARD SCANCODES',0
 end if
 
 ext  db 0x0

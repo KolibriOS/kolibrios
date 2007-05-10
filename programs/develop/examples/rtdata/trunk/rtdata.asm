@@ -5,7 +5,7 @@
 ;
 
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\..\macros.inc"
 
   use32
   org    0x0
@@ -25,31 +25,38 @@ START:                          ; start of execution
     mov  eax,45                 ; reserve irq 4
     mov  ebx,0
     mov  ecx,4
-    int  0x40
+    mcall
 
     mov  eax,46                 ; reserve ports 0x3f8-0x3ff
     mov  ebx,0
     mov  ecx,0x3f8
     mov  edx,0x3ff
-    int  0x40
+    mcall
 
     mov  eax,44                 ; read these ports at interrupt/irq 4
     mov  ebx,irqtable
     mov  ecx,4
-    int  0x40
+    mcall
 
     mov  eax,40                 ; enable event for interrupt/irq 4
     mov  ebx,10000b shl 16 + 111b
-    int  0x40
+    mcall
 
     call program_com1
 
+    mov  eax, 48
+    mov  ebx, 3
+    mov  ecx, sc
+    mov  edx, sizeof.system_colors
+    mcall
+
+  red: 
     call draw_window
 
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -62,13 +69,9 @@ still:
 
     jmp  still
 
-  red:                          ; redraw
-    call draw_window
-    jmp  still
-
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
 
     mov  al,ah
     mov  dx,0x3f8
@@ -78,14 +81,14 @@ still:
 
   button:                       ; button
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 
   irq4:
 
     mov  eax,42
     mov  ebx,4
-    int  0x40
+    mcall
 
     ; eax = number of bytes left
     ; ecx = 0 success, =1 fail
@@ -141,15 +144,9 @@ program_com1:
 
 draw_window:
 
-    mov  eax, 48
-    mov  ebx, 3
-    mov  ecx, sc
-    mov  edx, sizeof.system_colors
-    int  0x40
-
     mov  eax, 12                   ; function 12:tell os about windowdraw
     mov  ebx, 1                    ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax, 0                    ; function 0 : define and draw window
@@ -157,16 +154,16 @@ draw_window:
     mov  ecx, 100*65536+85         ; [y start] *65536 + [y size]
     mov  edx, [sc.work]
     or   edx, 0x03000000           ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mcall
 
                                    ; WINDOW LABEL
     mov  eax, 4                    ; function 4 : write text to window
     mov  ebx, 8*65536+8            ; [x start] *65536 + [y start]
     mov  ecx, [sc.grab_text]
     or   ecx, 0x10000000           ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx, header               ; pointer to text beginning
-    mov  esi, header.len           ; text length
-    int  0x40
+    mov  edx, title               ; pointer to text beginning
+    mov  esi, title.len           ; text length
+    mcall
 
     mov  eax, 4                    ; draw text
     mov  ebx, 20*65536+33
@@ -176,7 +173,7 @@ draw_window:
     mov  esi, [edx-4]
     test esi, 0xFF000000
     jnz  .finstr
-    int  0x40
+    mcall
     add  edx, esi
     add  edx, 4
     add  ebx, 10
@@ -187,7 +184,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -198,7 +195,7 @@ draw_string:
     mov  ecx, [sc.work_text]
     mov  edx, string
     mov  esi, 32
-    int  0x40
+    mcall
 ret
 
 
@@ -209,16 +206,16 @@ if lang eq ru
    text mstr "‚‚„ˆŒ›… ‘ˆŒ‚‹› ……„€’‘Ÿ Œ„…Œ“.",\
              "„€›… ’ Œ„…Œ€ ‘—ˆ’›‚€’‘Ÿ ",\
              "…›‚€ˆ IRQ4 ˆ ’€†€’‘Ÿ ˆ†…."
-   header:
+   title:
         db   'Œ„…Œ € COM1'
-    .len = $ - header
+    .len = $ - title
 else
    text mstr "TYPED CHARACTERS ARE SENT TO MODEM.",\
              "DATA FROM MODEM IS READ BY IRQ4",\
              "INTERRUPT AND DISPLAYED BELOW."
-   header:
+   title:
         db   'MODEM AT COM1'
-    .len = $ - header
+    .len = $ - title
 end if
 
 pos  dd  0x0

@@ -27,7 +27,7 @@
     dd      0x0 , 0x0      ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'       ; very useful stuff for MeOS
+include '..\..\..\macros.inc'       ; very useful stuff for MeOS
 STRLEN = 48                ; maximal length of filename
 
 
@@ -39,7 +39,7 @@ red:
 still:                     ; main cycle of application begins here
 
     mov  eax,10     ; wait here for event
-    int  0x40
+    mcall
 
     dec  eax        ; redraw request ?
     jz   red
@@ -52,12 +52,12 @@ still:                     ; main cycle of application begins here
 
   key:              ; key event handler
     mov  eax,2      ;   just read it and ignore
-    int  0x40
+    mcall
     jmp  still      ;   return to main loop
 
   button:           ; button
     mov  eax,17     ;   get id
-    int  0x40
+    mcall
 
     cmp  ah,1       ;   button id=1 ?  (close_btn)
     jz   close
@@ -98,11 +98,11 @@ still:                     ; main cycle of application begins here
 
   .waitev:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jnz  still
 ;   mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,8
     jnz  .nobs         ; BACKSPACE
@@ -141,7 +141,7 @@ still:                     ; main cycle of application begins here
 
   close:
     or   eax,-1        ; close program
-    int  0x40
+    mcall
 
 
 ;====================================================
@@ -165,7 +165,7 @@ copy_file:
     add  ecx,0x10000 ; size of memory needed = 0x10000+filesize
     mov  eax,64      ; func 64
     mov  ebx,1       ; resize application memory
-    int  0x40
+    mcall
 
     ; check if alloc function failed
     test eax,eax     ; non-zero value means error
@@ -197,7 +197,7 @@ copy_file:
     mov  eax,64
     mov  ebx,1
     mov  ecx,0x10000
-    int  0x40
+    mcall
 
     xor  eax,eax      ; eax = message number (0-OK)
 
@@ -210,7 +210,7 @@ copy_error:
     mov  ecx,0x10ff0000
     mov  edx,[errors+edi*8]
     mov  esi,[errors+edi*8+4]
-    int  0x40
+    mcall
 jmp still
 
 
@@ -222,7 +222,7 @@ print_text:
     shl  ecx,16
     add  ecx,9
     mov  edx,0xf2f2f2
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,109*65536
@@ -230,7 +230,7 @@ print_text:
     xor  ecx,ecx
     mov  edx,[addr]
     mov  esi,STRLEN
-    int  0x40
+    mcall
 
     ret
 
@@ -244,41 +244,34 @@ draw_window:
 
     mov  eax, 12                   ; function 12:tell os about windowdraw
     mov  ebx, 1                    ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax, eax                  ; function 0 : define and draw window
     mov  ebx, 160*65536+415        ; [x start] *65536 + [x size]
     mov  ecx, 160*65536+100        ; [y start] *65536 + [y size]
-    mov  edx, 0x03DDDDDD           ; color of work area RRGGBB
-    int  0x40
-
-                                   ; WINDOW LABEL
-    mov  eax, 4                    ; function 4 : write text to window
-    mov  ebx, 8*65536+8            ; [x start] *65536 + [y start]
-    mov  ecx, 0x10ffffff           ; color of text RRGGBB
-    mov  edx, header               ; pointer to text beginning
-    mov  esi, header.size          ; text length
-    int  0x40
+    mov  edx, 0x13DDDDDD           ; color of work area RRGGBB
+    mov  edi, title                ; WINDOW LABEL
+    mcall
 
     mov  eax, 8                    ; COPY BUTTON
     mov  ebx, 20*65536+375
     mov  ecx, 63*65536+16
     mov  edx, 2
     mov  esi, 0xCCCCCC
-    int  0x40
+    mcall
 
     mov  ebx, 105*65536+290
     mov  ecx, 33*65536+12
     mov  edx, 4
     mov  esi, 0xEBEBEB
-    int  0x40
+    mcall
 
     mov  ebx, 105*65536+290
     mov  ecx, 49*65536+12
     mov  edx, 5
     mov  esi, 0xEBEBEB
-    int  0x40
+    mcall
 
     mov  esi, source_info.name  ;source
     mov  edi, text+14
@@ -296,7 +289,7 @@ draw_window:
     mov  esi, STRLEN+59-45
   newline:
     mov  eax, 4
-    int  0x40
+    mcall
     add  ebx, 16
     add  edx, STRLEN+59-45
     cmp  [edx], byte 'x'
@@ -304,7 +297,7 @@ draw_window:
 
     mov  eax, 12                   ; function 12:tell os about windowdraw
     mov  ebx, 2                    ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -391,7 +384,7 @@ lsz  text,\
   fr, 'x'
 
 
-lsz  header,\
+lsz  title,\
   ru, 'äéèàêéÇÄíú îÄâã',\
   en, 'SYSTREE FILE COPIER',\
   de, 'SYSTREE DATEIKOPIERER',\

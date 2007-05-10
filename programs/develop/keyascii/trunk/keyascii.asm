@@ -15,7 +15,7 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:                          ; start of execution
   red: 
@@ -24,7 +24,7 @@ START:                          ; start of execution
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -37,20 +37,20 @@ still:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     mov  [keyid],ah
     call draw_window
     jmp  still
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
 
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
 
     jmp  still
@@ -68,39 +68,39 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+270         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+80          ; [y start] *65536 + [y size]
     mov  edx,0x33ffffff            ; color of work area RRGGBB,8->color gl
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov  eax,4                     ; function 4 : write text to window
     xor  ecx,ecx
     mov  esi,4
     mov  ebx,8*65536+8
     mov  edx,tdec
-    int  0x40
+    mcall
     add  ebx,23
     mov  edx,thex
-    int  0x40
+    mcall
 
     mov  ecx,[keyid]
     mov  eax,47
     mov  ebx,3*65536
     mov  edx,40*65536+8
     mov  esi,0x224466
-    int  0x40
+    mcall
     add  edx,23
     mov  bh,1
-    int  0x40
+    mcall
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -109,7 +109,7 @@ draw_window:
 
  tdec:  db 'DEC:'
  thex:  db 'HEX:'
- header db 'KEYBOARD ASCIICODES-PRESS ANY KEY',0
+ title db 'KEYBOARD ASCIICODES-PRESS ANY KEY',0
  keyid: db  0
 I_END:
 

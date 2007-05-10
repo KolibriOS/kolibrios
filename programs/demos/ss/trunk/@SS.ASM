@@ -14,22 +14,22 @@
    dd     0x0 , 0x0      ; I_Param , I_Icon
 
 include   'lang.inc'
-include   'macros.inc'
+include   '..\..\..\macros.inc'
 
 ;include   'debug.inc'
 
 START:
      mov  eax,14
-     int  0x40
+     mcall
      and  eax,0xFFFF0000
      mov  [top_right_corner],eax
 
      mov  eax,40        ; установить маску событий
      mov  ebx,110010b   ; реагируем на клавиатуру, мышь, отрисовку фона
-     int  0x40
+     mcall
 
      mov  eax,14        ; получим размеры экрана
-     int  0x40
+     mcall
      mov  [y_max],ax
      shr  eax,16
      mov  [x_max],ax
@@ -37,18 +37,18 @@ START:
   event:              ; обработчик событий (всех)
     mov  eax,26
     mov  ebx,9
-    int  0x40         ; получить время системы
+    mcall         ; получить время системы
 ;    mov  eax,3
-;    int  0x40
+;    mcall
     mov  [evtime],eax ; запомнить его
     mov  eax,37
     mov  ebx,2
-    int  0x40
+    mcall
     cmp  eax,3        ; продолжим, если нажата средняя кнопка мыши
     jne  still
     mov  eax,37       ; проверим координаты
     mov  ebx,0
-    int  0x40
+    mcall
     cmp  [top_right_corner],eax
     je   create_setup ; создаём окно настройки, если мышь в верхнем правом
                       ; углу экрана
@@ -59,7 +59,7 @@ still:                  ; основной цикл программы
 
     mov  eax,23         ; ждём события в течение 1 секунды
     mov  ebx,100
-    int  0x40
+    mcall
 
     bt   dword [params],0  ; ssaver works?
     jc   event
@@ -75,7 +75,7 @@ still:                  ; основной цикл программы
 
     mov  eax,26
     mov  ebx,9
-    int  0x40
+    mcall
     sub  eax,[evtime]
     xor  edx,edx
     mov  ebx,60*100     ; поделим на 60*100, получим время в минутах
@@ -97,7 +97,7 @@ still:                  ; основной цикл программы
     mov  ebx,1
     mov  ecx,sthread
     mov  edx,0x3F000
-    int  0x40
+    mcall
     bts dword [params],1
     jmp  still
 
@@ -106,17 +106,17 @@ still:                  ; основной цикл программы
     mov  ebx,1
     mov  ecx,thread
     mov  edx,0x3E000
-    int  0x40
+    mcall
     bts dword [params],0
     ret
 
  thread:
     mov  eax,5
     mov  ebx,eax
-    int  0x40
+    mcall
     mov  eax,40
     mov  ebx,100010b
-    int  0x40
+    mcall
     cmp  dword [type],0
     je   drawsswin
     cmp  dword [type],24
@@ -135,7 +135,7 @@ still:                  ; основной цикл программы
     mov  dword [delay],25
     mov  eax,58
     mov  ebx,fileinfo
-    int  0x40
+    mcall
  asminit1:
     mov  eax,data_from_file
     mov  [stringstart],eax
@@ -152,14 +152,14 @@ still:                  ; основной цикл программы
     inc  ebx
     inc  ecx
     mov  edx,0x01000000
-    int  0x40
+    mcall
     mov  eax,13
     xor  edx,edx
-    int  0x40
+    mcall
  tstill:
     mov  eax,23
     mov  ebx,[delay]
-    int  0x40
+    mcall
     cmp  eax,2
     je   thr_end
     cmp  eax,6
@@ -174,10 +174,10 @@ still:                  ; основной цикл программы
     btr  dword [params],0
     mov  eax,26
     mov  ebx,9
-    int  0x40
+    mcall
     mov  [evtime],eax
     or   eax,-1
-    int  0x40
+    mcall
 
  drawssasm:
     mov  edi,[stringstart]
@@ -204,7 +204,7 @@ still:                  ; основной цикл программы
     mov  ecx,0x104ba010
     mov  edx,[stringstart]
     mov  esi,[stringlen]
-    int  0x40
+    mcall
     inc dword [stringlen]
     cmp byte [edi],byte ' '
     je   drawssasm
@@ -276,7 +276,7 @@ draw_line:
     mov  eax,38
     mov  edx,[lcolor]
     and  edx,0xffffff
-    int  0x40
+    mcall
 
    dnol:
 
@@ -292,7 +292,7 @@ sthread:                        ; start of execution
 sstill:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   sthread
@@ -305,14 +305,14 @@ sstill:
 
   sbutton:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  snoclose
 
     btr dword [params],1
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   snoclose:
     cmp  ah,7
     jne  nosetfl
@@ -362,7 +362,7 @@ sstill:
     jne  noshow
     mov  eax,5
     mov  ebx,150
-    int  0x40
+    mcall
     call create_ss
     jmp  sstill
   noshow:
@@ -387,57 +387,53 @@ sdraw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+215         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+70          ; [y start] *65536 + [y size]
     mov  edx,0x03400088            ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov  eax,8
     mov  ebx,47*65536+10
     mov  ecx,31*65536+10
     mov  edx,2
     mov  esi,0x702050
-    int  0x40
+    mcall
     push ebx
     add  ebx,13*65536
     mov  edi,ebx
     inc  edx
-    int  0x40
+    mcall
     pop  ebx
     add  ecx,15*65536
     inc  edx
-    int  0x40
+    mcall
     mov  ebx,edi
     inc  edx
-    int  0x40
+    mcall
     mov  ebx,160*65536+40
     mov  ecx,28*65536+14
     inc  edx
-    int  0x40
-                                   ; WINDOW LABEL
+    mcall
+
     mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,17                    ; text length
-    int  0x40
-    add  ebx,7*65536+25
+    mov  ebx,15*65536+33             ; [x start] *65536 + [y start]
     mov  ecx,0xffffff
     mov  edx,setuptext
     mov  esi,9
-    int  0x40
+    mcall
     add  ebx,15
     add  edx,esi
     mov  esi,30
-    int  0x40
+    mcall
     mov  ebx,169*65536+32
     mov  edx,buttext
     mov  esi,4
-    int  0x40
+    mcall
 
     call drawtype
     call drawtime
@@ -445,7 +441,7 @@ sdraw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -458,14 +454,14 @@ drawtype:
     jnc  noblue
     mov  edx,0x4e00e7
  noblue:
-    int  0x40
+    mcall
     mov  eax,4
     mov  ebx,82*65536+32
     xor  ecx,ecx
     mov  edx,typetext
     add  edx,[type]
     mov  esi,12
-    int  0x40
+    mcall
     ret
 
 drawtime:
@@ -477,13 +473,13 @@ drawtime:
     jnc  noblue1
     mov  edx,0x4e00e7
  noblue1:
-    int  0x40
+    mcall
     mov  eax,47
     mov  edx,82*65536+47
     xor  esi,esi
     movzx ecx,byte [time]
     mov  ebx,0x00020000
-    int  0x40
+    mcall
     ret
 
 drawflag:
@@ -492,7 +488,7 @@ drawflag:
     mov  ecx,45*65536+10
     mov  edx,7
     mov  esi,0xe0e0e0
-    int  0x40
+    mcall
     mov  eax,4
     mov  ebx,153*65536+47
     xor  ecx,ecx
@@ -502,13 +498,13 @@ drawflag:
     jc   setf
     inc  edx
   setf:
-    int  0x40
+    mcall
     ret
 
 ; DATA AREA
 buttext    db 'SHOW'
 flag       db 'V '
-labelt     db   'SCREENSAVER SETUP'
+title     db   'SCREENSAVER SETUP',0
 setuptext  db 'TYPE: < >TIME: < >     MINUTES    NEVER'
 typetext   db 'BLACK SCREENCOLOR LINES ASSEMBLER   '
 type       dd 12

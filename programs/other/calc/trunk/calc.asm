@@ -1,14 +1,14 @@
 ;;   Calculator for MenuetOS (c) Ville Turjanmaa
 ;;  
-;;   Compile with FASM for Menuet
+;;   Compile with FASM
 ;;   
-;;  Pavel Rymovski (Heavyiron) - kolibri version
+;;   Pavel Rymovski (Heavyiron) - version for KolibriOS
+;;
 ;; What's new:
 ;;   Calc 1.1
 ;;           1) changed design
 ;;           2) new procedure of draw window (10 decimal digits, 23 binary, "+" not displayed now)
 ;;           3) window with skin
-;;           4) used macroses
 ;;   Calc 1.2
 ;;           1)added some useful functions, such as arcsin, arccos, arctg, 1/x, x^2
 ;;   Calc 1.31
@@ -31,7 +31,7 @@ use32
                dd     0x1000                  ; esp
                dd     0x0,0x0                 ; I_Param , I_Icon
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:
 
@@ -39,29 +39,30 @@ START:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
-red:
+ red:
     call draw_window
 
-still:  
+ still:  
     push 10 
     pop eax 
-    int 40h 
-    dec eax 
+    mcall
+
+    dec eax
     jz red
     dec eax 
     jz key 
  
-button:
+  button:
     mov  al,17      ; получить идентификатор нажатой кнопки
-    int  0x40
+    mcall
     shr  eax,8
     jmp  testbut
 
-key:         
+  key:         
     mov  al,2       ; получить ASCII-код нажатой клавиши
-    int  0x40
+    mcall
     shr  eax,8
     mov  edi,asci   ; перевод ASCII в идентификатор кнопки
     mov  ecx,18
@@ -78,7 +79,7 @@ key:
     cmp  eax,1      ; кнопка 1 - закрытие программы
     jne  noclose
     or   eax,-1
-    int  0x40 
+    mcall 
  
   noclose:
     cmp  eax,2
@@ -649,15 +650,15 @@ draw_window:
     
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
                                    
     xor  eax,eax                     
     mov  ebx,200 shl 16+255        
     mov  ecx,200 shl 16+180
     mov  edx,[sc.work]
     or   edx,0x33000000
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov  eax,8
     mov  ebx,19 shl 16+28
@@ -672,7 +673,7 @@ draw_window:
     mov  ebx,19 shl 16+28
     add  ecx,20 shl 16
   no_new_row:
-    int  0x40
+    mcall
     add  ebx,30 shl 16
     inc  edx
     cmp  edx,39
@@ -687,7 +688,7 @@ draw_window:
     mov  edx,text
     mov  esi,33
   newline:
-    int  0x40
+    mcall
     add  ebx,20
     add  edx,33
     cmp  [edx],byte 'x'
@@ -697,7 +698,7 @@ draw_window:
     
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     ret
 
@@ -712,7 +713,7 @@ print_display:
     mov  edx,calc
     mov  esi,1
     mov  edi,[sc.work]
-    int  0x40
+    mcall
 
     mov  ebx,198 shl 16+8
     mov  edx,[display_type]
@@ -720,7 +721,7 @@ print_display:
     add  edx,display_type_text
     mov  esi,3
     mov  edi,[sc.work]
-    int  0x40
+    mcall
    
     cmp  [dsign],byte '+'
     je   positive
@@ -728,7 +729,7 @@ print_display:
     mov  ecx,0x0
     mov  edx,dsign
     mov  esi,1
-    int  0x40  
+    mcall  
  
 positive:  
     cmp  [display_type],0
@@ -740,20 +741,20 @@ positive:
     mov  ecx,0x0
     mov  edx,dot
     mov  esi,1
-    int  0x40
+    mcall
     
     mov  eax,47
     mov  ebx,10 shl 16
     mov  ecx,[integer]
     mov  edx,120 shl 16+22
     mov  esi,0x0
-    int  0x40     
+    mcall     
     
     mov  ebx,6 shl 16
     mov  ecx,[decimal]
     mov  edx,187 shl 16+22     
     mov  esi,0x0
-    int  0x40 
+    mcall 
 
     popa
     ret
@@ -763,7 +764,7 @@ whole:
     mov  ecx,0x0
     mov  edx,dot
     mov  esi,1
-    int  0x40
+    mcall
 
     cmp  [integer],0
     je  null
@@ -773,7 +774,7 @@ whole:
     mov  ecx,[integer]
     mov  edx,160 shl 16+22
     mov  esi,0x0
-    int  0x40
+    mcall
 
     popa
     ret
@@ -789,7 +790,7 @@ whole:
     mov  ecx,[integer]
     mov  edx,173 shl 16+22
     mov  esi,0x0
-    int  0x40
+    mcall
 
     popa
     ret
@@ -803,7 +804,7 @@ whole:
     mov  ecx,[integer]
     mov  edx,32 shl 16+22
     mov  esi,0x0
-    int  0x40
+    mcall
 
     popa
     ret
@@ -814,7 +815,7 @@ whole:
     mov  ecx,0
     mov  edx,214 shl 16+22
     mov  esi,0x0
-    int  0x40
+    mcall
 
     popa
     ret
@@ -843,34 +844,34 @@ clear_all:
 
 ;data
 
-header db appname,version,0
+title db appname,version,0
 
 display_type       dd  0    ; 0 = decimal, 1 = hexadecimal, 2= binary
 entry_multiplier   dd  10
 display_type_text  db  'dec hex bin'
 
 dot           db  '.'
-calc         db  ' '
-integer    dd    0
-decimal   dd    0
-kymppi    dd   10
+calc          db  ' '
+integer       dd  0
+decimal       dd  0
+kymppi        dd  10
 ten           dd  10.0,0
-tmp          dw  1,0
-sign         db  1,0
-tmp2        dq  0x0,0
-exp          dd  0x0,0
-new_dec  dd  100000,0
-id             db  0x0,0
+tmp           dw  1,0
+sign          db  1,0
+tmp2          dq  0x0,0
+exp           dd  0x0,0
+new_dec       dd  100000,0
+id            db  0x0,0
 res           dd  0
-trans1      dq  0
-trans2      dq  0
-controlWord  dw  1
-multipl:    dd 10,16,2
+trans1        dq  0
+trans2        dq  0
+controlWord   dw  1
+multipl:      dd  10,16,2
 
 dsign:
-muuta1  db   '+0000000000.000000'
-muuta2  db   '+0000000000.000000'
-muuta0  db   '+0000000000.000000'
+muuta1        db  '+0000000000.000000'
+muuta2        db  '+0000000000.000000'
+muuta0        db  '+0000000000.000000'
 
 text:
     db ' A    B    C    D    E    F    C '

@@ -17,7 +17,7 @@ use32
                 dd      0, 0
 
 
-include 'macros.inc'
+include '..\..\..\..\macros.inc'
 
 START:                          ; start of execution
 
@@ -27,17 +27,17 @@ set_variables:
     mov  ebx,0
     mov  ecx,0x3f0
     mov  edx,0x3ff
-    int  0x40
+    mcall
 
     mov  eax,45           ; reserve irq 4
     mov  ebx,0
     mov  ecx,4
-    int  0x40
+    mcall
 
     mov  eax,44           ; set read ports for irq 4
     mov  ebx,irqtable
 ;    mov  ecx,4
-    int  0x40
+    mcall
 
         mov     dh, 3     ; all ports have number 3xx hex
 
@@ -67,7 +67,7 @@ set_variables:
 
     mov  eax,5
     mov  ebx,100
-    int  0x40
+    mcall
 
         mov     dl, 0xf8
         mov     al, 'I'
@@ -75,14 +75,14 @@ set_variables:
 
     mov  eax,5
     mov  ebx,10
-    int  0x40
+    mcall
 
         mov     al, 'R'
         out     dx, al
 
     mov  eax,40                                 ; get com 1 data with irq 4
     mov  ebx,0000000000010000b shl 16 + 101b
-    int  0x40
+    mcall
 
 red:
         call    draw_window
@@ -90,7 +90,7 @@ red:
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
         dec     eax
         jz      red
         dec     eax
@@ -99,23 +99,23 @@ still:
 
   button:                       ; button
     mov  al,17                  ; get id
-    int  0x40
+    mcall
 
 ; we have only one button, close
 
     mov  eax,45                 ; free irq
     mov  ebx,1
     mov  ecx,4
-    int  0x40
+    mcall
 
     mov  eax,46                 ; free ports 0x3f0-0x3ff
     mov  ebx,1
     mov  ecx,0x3f0
     mov  edx,0x3ff
-    int  0x40
+    mcall
 
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 pos dd 0x0
 
@@ -130,14 +130,14 @@ cdplayer:
   readir:
     mov  eax,42
     mov  ebx,4
-    int  0x40
+    mcall
 
     cmp  ebx,80
     jne  nocd
 
     mov  eax,70
     mov  ebx,cdplayer
-    int  0x40
+    mcall
 
 
   nocd:
@@ -156,7 +156,7 @@ cdplayer:
     mov  ebx,20*65536+260
     mov  ecx,22*65536+220
     mov  edx,[wcolor]
-    int  0x40
+    mcall
     mov  eax,10*19+1
   noeaxz:
     mov  [pos],eax
@@ -209,7 +209,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
@@ -217,7 +217,7 @@ draw_window:
     mov  ecx,100*65536+250         ; [y start] *65536 + [y size]
     mov  edx,[wcolor]              ; color of work area RRGGBB,8->color
     mov  edi,labelt                ; caption string
-    int  0x40
+    mcall
 
 ;                                   ; WINDOW LABEL
 ;    mov  eax,4                     ; function 4 : write text to window
@@ -225,7 +225,7 @@ draw_window:
 ;    mov  ecx,0x00ffffff            ; color of text RRGGBB
 ;    mov  edx,labelt                ; pointer to text beginning
 ;    mov  esi,labellen-labelt       ; text length
-;    int  0x40
+;    mcall
 
                                    ; CLOSE BUTTON
 ;    mov  eax,8                     ; function 8 : define and draw button
@@ -233,7 +233,7 @@ draw_window:
 ;    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
 ;    mov  edx,1                     ; button id
 ;    mov  esi,0x5599cc              ; button color RRGGBB
-;    int  0x40
+;    mcall
 
 draw_text:
 
@@ -244,7 +244,7 @@ draw_text:
     mov  edi,20
   newline:
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,esi
     dec  edi
@@ -252,7 +252,7 @@ draw_text:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     ret
 

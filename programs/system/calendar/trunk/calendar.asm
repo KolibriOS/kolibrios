@@ -64,8 +64,8 @@ use32		     ; включить 32-битный режим ассемблера
   dd	 0x0	     ; адрес буфера для строки параметров (не используется)
   dd	 0x0	     ; зарезервировано
 include 'lang.inc'
-include 'macros.inc' ; уменьшает размер программы
-;include 'debug.inc'
+include '..\..\..\macros.inc' ; уменьшает размер программы
+
 
 
 macro  ShowFocus field,reg
@@ -107,7 +107,7 @@ else if lang eq de
      db   9
      db   'Januar   '
      db   'Februar  '
-     db   'M┴rz     '
+     db   'M+rz     '
      db   'April    '
      db   'Mai      '
      db   'Juni     '
@@ -138,8 +138,8 @@ else if lang eq fi
      db   'Maaliskuu'
      db   'Huhtikuu '
      db   'Toukokuu '
-     db   'Kes┴kuu  '
-     db   'Hein┴kuu '
+     db   'Kes+kuu  '
+     db   'Hein+kuu '
      db   'Elokuu   '
      db   'Syyskuu  '
      db   'Lokakuu  '
@@ -414,9 +414,8 @@ day_bounds db -1,0,7,0,-7,0,1,0 ; left,down,up,right
     cmp  ah,80
     je	 reset
 
-    ;jmp  still
-
-
+    cmp  ah,81
+    je	 set_date
 
     cmp  ah,2		; drop down list
     jne  no_dropdn
@@ -607,6 +606,36 @@ minus_me:
 
     jmp  still
 
+set_date:
+
+    mov  eax,0x00000000
+    mov ebx,[day_sel]
+    call additem
+    shl  eax,8
+    mov  ebx,[Month]
+    add  ebx,1
+    call additem
+    shl  eax,8
+    mov  ebx,[Year]
+    call additem
+    mov  ecx,eax
+    mov  eax,22
+    mov  ebx,1
+    mcall
+
+    jmp  still
+
+additem:
+
+    add  eax,1
+    daa
+    sub  ebx,1
+    cmp  ebx,0
+    jne  additem
+
+    ret
+
+
 ;   *********************************************
 ;   *******  ОПРЕДЕЛЕНИЕ И ОТРИСОВКА ОКНА *******
 ;   *********************************************
@@ -625,12 +654,10 @@ draw_clock:
 
     shr  ecx,8
     add  edx,20*65536
-    ;mov  eax,47
     mcall
 
     shr  ecx,8
     add  edx,20*65536
-    ;mov  eax,47
     mcall
     ret
 
@@ -649,7 +676,7 @@ draw_window:
     mov  ecx,WIN_Y-15
   end if
     mov  edx,0x13aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
-    mov  edi,header		   ; заголовок
+    mov  edi,title		   ; заголовок
     mcall
     call draw_week
 
@@ -660,63 +687,49 @@ draw_window:
     mov  edx,72
     mcall
 
-    ;mov  eax,8
     mov  ebx,212*65536+7
-    ;mov  ecx,290*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,205*65536+7
     mov  ecx,300*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,212*65536+7
-    ;mov  ecx,300*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,224*65536+7
     mov  ecx,290*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,231*65536+7
-    ;mov  ecx,290*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,224*65536+7
     mov  ecx,300*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,231*65536+7
-    ;mov  ecx,300*65536+10
-    ;mov  esi,0x005555dd
     inc  edx
     mcall
 
-    ;mov  eax,8
     mov  ebx,243*65536+14
     mov  ecx,290*65536+20
     mov  esi,0x00dd7777
     inc  edx
     mcall
 
-    mov  eax,8
+    mov  ebx,10*65536+100
+    mov  ecx,290*65536+20
+    mov  esi,0x00d5d5d5
+    inc  edx
+    mcall
+
     mov  esi,0x05080d0
   if SKIP eq 0
     mov  ebx,B_DATE_X
@@ -756,20 +769,21 @@ draw_window:
     mov  edx,sys_text
     mcall
 
-    ;mov  eax,4
     mov  ebx,149*65536+302
-    ;mov  ecx,0x800000ff
     mov  edx,minus
     mcall
 
-    ;mov  eax,4
     mov  ebx,137*65536+292
     mov  ecx,0x80ff0000
     mov  edx,plus
     mcall
 
+    mov  ebx,15*65536+298
+    mov  ecx,0x00000000
+    mov  esi,15
+    mov  edx,setd
+    mcall
 
-    ;mov  eax,4
     mov  ecx,0x10ddeeff 	   ; шрифт 1 и цвет ( 0xF0RRGGBB )
 
  if SKIP eq 0
@@ -1040,7 +1054,7 @@ calculate:
 day_count db 3,0,3,2,3,2,3,3,2,3,2,3
 Fkeys	  db 210,211,212,213,214,215,216,217,208,209,228,159
 
-header: 	 ; строка заголовка
+title: 	 ; строка заголовка
 if lang eq ru
      db   'КАЛЕНДАРЬ',0
 else if lang eq ge
@@ -1102,10 +1116,10 @@ focus dd  3
 new_style dd 1
 dropped db 0
 
-co_text:  db  'время сессии',0
 sys_text:  db  'системное время',0
 plus:  db  'добавить(+)',0
 minus:	db  'убрать(-)',0
+setd:	db  'Установить дату',0
 
 I_END:	; конец программы
 firstday  dd ?

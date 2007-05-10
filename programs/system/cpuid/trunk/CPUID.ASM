@@ -28,21 +28,14 @@ use32
   dd	 0x0
   dd	 0x0
 
-macro udata
-{
-}
+include '..\..\..\macros.inc' ; useful macroses
+include 'draw.inc'
+include 'brand.inc'           ;Brand ID decoding
+include 'caches.inc'          ;(L1 and L2 cashes decoding for Intel)
+include 'multipli.inc'        ;(multiplier decoding)
+include 'features.inc'        ;(features decoding)
 
-include 'mos_uzel.inc'
-; useful macroses and Brand ID decoding
-include 'caches.inc'
-;(L1 and L2 cashes decoding for Intel)
-include 'multipli.inc'
-;(multiplier decoding)
-include 'features.inc'
-;(features decoding)
-
-include 'gif2img.inc'
-; include macros to convert gif to img
+include 'gif2img.inc'         ;macros to convert gif to img
 
 include 'rsatest.inc'
 include 'variable.inc'
@@ -55,7 +48,7 @@ CYCLES:
 ;    CPU speed
     mov eax, 18
     mov ebx,5
-    int 0x40
+    mcall
     mov [total1],eax  ;in Hz,  example 1600490000
     xor  edx,edx
     mov  ebx,1000000
@@ -464,7 +457,7 @@ Text 75,70,0x00000000,AMDn, AMDnlen-AMDn
 
 	mov	esi, amd
 	call	load_gif
-PutImage 125,107,201,49,img_area+8
+PutImage 135,97,201,49,img_area+8
 ;         place   size
 
 ; Relax, man. AMD made PRETTY SIMPLE cache detection routine
@@ -1065,7 +1058,7 @@ Text 110,70,0x00000000,PF0, PF0len-PF0
   ;  mov   ecx,dword 0x00000000
   ;  mov   edx,PF0c
   ;  mov   esi,PF0clen-PF0c
-  ;  int   0x40
+  ;  mcall
   ;jmp MMXtest
 ;.ppF1:
 Text 110,70,0x00000000,PF0, PF0len-PF0
@@ -1580,7 +1573,7 @@ event_wait:
 
   mov eax, 18
   mov ebx, 16
-  int 0x40
+  mcall
 
   shr eax, 10
 
@@ -1588,7 +1581,7 @@ event_wait:
 
   mov eax, 18
   mov ebx, 17
-  int 0x40
+  mcall
 
   shr eax, 10
 
@@ -1603,12 +1596,10 @@ event_wait:
 
 ;==============================
 
-	mov	ebx,50	     ; ждемс 1 сек
 	mov	eax,23	     ; функция 23: ожидание события
-	int	0x40
+	mov	ebx,50	     ; ждемс 0.5 сек
+	mcall
 
-;    mov  eax,10
-;    int  0x40           ;
     cmp  eax,1		; 
     je	 red		;  redraw
     cmp  eax,2		; 
@@ -1618,11 +1609,11 @@ event_wait:
     jmp  still		; 
   key:			; 
     mov  eax,2		;  
-    int  0x40		; 
+    mcall		; 
     jmp  still		; 
   button:		; 
     mov  eax,17 	; 
-    int  0x40		; 
+    mcall		; 
     cmp  ah,1		;  = 1 ?
     je	close		; close
 
@@ -1681,7 +1672,7 @@ noclose:
 
 close:
     mov   eax,-1	
-    int  0x40	       
+    mcall	       
 
 ;**************************** THREAD-SECOND WINDOW
 thread_start:
@@ -1700,12 +1691,12 @@ thread_start:
 ;length of module - 256 bit
   mov  eax,26
   mov  ebx,9
-  int  0x40
+  mcall
   add  eax,100 ;test lasts 1 second.
   push eax
 .loop:
   mov  ecx,4 ;do 4 iterations
-  push ecx   ;this reduces number of calls int 0x40.
+  push ecx   ;this reduces number of calls mcall.
 .loop1:
   call rsa_test   ;this procedure change all registers
   dec  dword [esp]
@@ -1713,7 +1704,7 @@ thread_start:
   pop  ecx
   mov  eax,26
   mov  ebx,9
-  int  0x40
+  mcall
   cmp  eax,dword [esp]	 ;Is time changed?
   jl   .loop
   pop  eax
@@ -1733,7 +1724,7 @@ window_2:
 still_2:		
 
     mov  eax,10 	
-    int  0x40		
+    mcall		
 
     cmp  eax,1		
     je	 window_2	;  window_2
@@ -1746,12 +1737,12 @@ still_2:
 
   key_2:		; 
     mov  eax,2		;   2 
-    int  0x40		; 
+    mcall		; 
     jmp  still_2	; 
 
   button_2:		; 
     mov  eax,17 	; 17 
-    int  0x40		; 
+    mcall		; 
 
     cmp  ah,1		; = 1 ?
     jne  noclose_2	; noclose
@@ -1759,7 +1750,7 @@ still_2:
     mov  [num_win2],0	; 
 
     or	 eax,-1 	; 
-    int  0x40
+    mcall
 
   noclose_2:
 
@@ -1768,7 +1759,7 @@ still_2:
 draw_window_2:
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,1h 		    ; 1, start of draw
-    int  0x40
+    mcall
 
 
   Window 250,250,420,390, 0x33FFFFFF, 0x805080d0, standard
@@ -1874,7 +1865,7 @@ Number 95,350,0,5,dword [iter],0x000000; RSA test results
 
     mov  eax,12
     mov  ebx,2h
-    int  0x40
+    mcall
 
     ret
 
@@ -1885,9 +1876,9 @@ num_win2 db 0
 draw_window:
    mov eax,12
    mov	ebx,1h
-   int	0x40
+   mcall
 
-  Window 150,150,350,385, 0x33FFFFFF, 0x805080d0, header
+  Window 150,150,350,385, 0x33FFFFFF, 0x805080d0, title
 	  ; place size
 
   Button 15,330,92,23,2,0x03FFFFFF   ;  button "press for more"
@@ -1901,7 +1892,7 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
 
     mov  eax,12
     mov  ebx,2h
-    int  0x40
+    mcall
 
     Text 130,270,0x00000000,instruct, instructlen-instruct
 
@@ -1987,7 +1978,7 @@ load_gif2:
 
 ; DATA AREA
 
-header    db   'CPUID 2.19 by S.Kuzmin & the KolibriOS team',0
+title    db   'CPUID 2.2 by S.Kuzmin & the KolibriOS team',0
 
 tsum:
     db 'Frequency:     .   MHz'
@@ -2512,7 +2503,7 @@ myname:
 mynamelen:
 
 align 4
-  udata
+
   thread2_stack_area rb 64
   thread2_esp = $
 U_END:

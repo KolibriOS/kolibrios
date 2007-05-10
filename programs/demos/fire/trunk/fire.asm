@@ -13,7 +13,7 @@ use32
            dd      mem_end
            dd      0,0                  ; no parameters, no path
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:
 
@@ -27,7 +27,7 @@ draw_window:
 
     mov  eax,12                    ; tell os about redraw
     mov  ebx,1
-    int  0x40
+    mcall
 
     xor  eax,eax                   ; define and draw window
     mov  ebx,100*65536+321
@@ -35,37 +35,37 @@ draw_window:
     mov  edx,0x00000000
     mov  esi,0x00000000
     mov  edi,0x00000000
-    int  0x40
+    mcall
 
     mov  al,4      ; 'FIRE FOR MENUET'
     mov  ebx,110*65536+8
     mov  ecx,dword 0x00FFFFFF
     mov  edx,text
     mov  esi,textlen-text
-    int  0x40
+    mcall
 
     mov  al,8
     mov  ebx,(321-19)*65536+12     ; button start x & size
     mov  ecx,5*65536+12            ; button start y & size
     mov  edx,1                     ; button number
     mov  esi,0x009a0000
-    int  0x40
+    mcall
 
     mov  ebx,ecx ;5*65536+12
     inc  edx
-    int  0x40
+    mcall
 
     mov  ebx,18*65536+12
     inc  edx
-    int  0x40
+    mcall
 
     mov  ebx,31*65536+12
     inc  edx
-    int  0x40
+    mcall
 
     mov  al,12                    ; tell os about redraw end
     mov  ebx,2
-    int  0x40
+    mcall
 
 sta:                                         ; calculate fire image
 
@@ -134,7 +134,7 @@ typedone:
 
     mov  al, 5              ; in this moment always high 24 bits of eax are zero!
     mov  ebx,[delay]
-    int  0x40
+    mcall
 
     inc  [calc]
     cmp  [calc], byte 2
@@ -184,12 +184,12 @@ typedone:
     pop  ebx
     mov  ecx,4*80*65536+200
     mov  edx,1*65536+22
-    int  0x40
+    mcall
 
   nodrw:
 
     mov  eax,11                  ; check if os wants to talk to us
-    int  0x40
+    mcall
     dec  eax
     jz   red
     cmp  al, 3-1
@@ -197,13 +197,13 @@ typedone:
 
   button:                        ; get button id
     mov  al,17
-    int  0x40
+    mcall
     shr  eax, 8
 
     dec  eax
     jnz  noclose
     or   eax,-1                  ; close this program
-    int  0x40
+    mcall
   noclose:
 
     dec  eax                     ; change fire type

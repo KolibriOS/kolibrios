@@ -13,7 +13,7 @@
   dd	 0x0	     ; адрес буфера для параметров (не используется)
   dd	 0x0	     ; зарезервировано
 
-include 'MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
+include '..\..\..\MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
 
 
 START:
@@ -37,7 +37,7 @@ still:
 
  key:		       ; нажата клавиша на клавиатуре
     mov   eax, 2
-    int   0x40
+    mcall
     mov   edi, [index]
     cmp   edi, string1
     jz	  no_back
@@ -147,7 +147,7 @@ next_digit:
     draw_window:
 ;------------------------------------------------
     mcall 12, 1
-    mcall 0, 200*65536+300, 200*65536+175, 0x13AABBCC,,header
+    mcall 0, 200*65536+300, 200*65536+175, 0x13AABBCC,,title
 
     mcall  8, 15      *65536+ 38, 90*65536+ 15, 2, 0x6688DD ; кнопка shl
     mcall  ,		       ,110*65536+ 15,	,	   ; кнопка sal
@@ -239,7 +239,7 @@ string1_end:
   num	dd  0
 
 
- header db 'hex2dec2bin 0.2',0
+ title db 'hex2dec2bin 0.2',0
  minus	db '-'
  numstr db 'Number:',0
  hexstr db 'hex:',0

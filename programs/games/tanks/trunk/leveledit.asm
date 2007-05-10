@@ -14,7 +14,7 @@ include 'pixengin.inc'
 START:
    mov eax,40
    mov ebx,111b
-   int 0x40
+   mcall
    call drawwin
 ;main cycle(fps)
  fpst:
@@ -82,7 +82,7 @@ animation:
    call putimage
    mov eax,5
    mov ebx,2
-   int 0x40
+   mcall
    mov eax,[black]
    mov [phas],eax
    call PutSprite
@@ -101,13 +101,13 @@ next_action:
 	 mov ebx,420*65536+30
 	 mov ecx,425*65536+15
 	 mov edx,0xffffff
-	 int 0x40
+	 mcall
 	 mov eax,47
 	 mov ebx,3*65536
 	 mov ecx,[frames]
 	 mov edx,425*65536+427
 	 mov esi,0
-	 int 0x40
+	 mcall
 	 mov [frames],0
 no_frames:
 	 ;----------------------
@@ -127,14 +127,14 @@ no_frames:
 	 mov [eax],bl;write number of shablon to the map-array
 	 ;-----------------------
 	 ;mov eax,11
-	 ;int 0x40
+	 ;mcall
 	 mov eax,23
 	 mov ebx,2
-	 int 0x40
+	 mcall
 	 cmp eax,2
 	 jne animation
 	 mov eax,2
-	 int 0x40
+	 mcall
 	 shr eax,8
 	 cmp eax,32
 	 jne key2
@@ -170,12 +170,12 @@ no_frames:
     key8:cmp eax,27
 	 jne animation
 	 mov eax,-1
-	 int 0x40
+	 mcall
 ;-------------------------------------------
 drawwin:
  mov eax,12
 	mov ebx,1
-	int 0x40
+	mcall
 	;рисуем окно задавая все необходимые цвета
 	mov eax,0
 	mov ebx,50*65536+640
@@ -183,21 +183,21 @@ drawwin:
 	mov edx,0x02AABBCC
 	mov esi,0x805080d0
 	mov edi,0x005080d0
-	int 0x40
+	mcall
 	;пишем заголовок окна
 	mov eax,4
 	mov ebx,5*65536+5
 	mov ecx,0x10ddeeff
 	mov edx,name
 	mov esi,7
-	int 0x40
+	mcall
 	;рисуем кнопку закрытия окна
 	mov eax,8
 	mov ebx,(640-19)*65536+12
 	mov ecx,5*65536+12
 	mov edx,1
 	mov esi,0x6688dd
-	int 0x40
+	mcall
 	ret
 ;----------------------------------------------------------
 counter     dd 0
@@ -230,7 +230,7 @@ PutSprite:
 ;get time in 1/100 sec
 clock:	mov eax,26
 	mov ebx,9
-	int 0x40
+	mcall
 	mov [time],eax
 	ret
 ;---------------------------------------------------------
@@ -239,26 +239,26 @@ putimage:
 	 mov ebx,0x3000
 	 mov ecx,640*65536+400
 	 mov edx,1*65536+20
-	 int 0x40
+	 mcall
 	 ret
 ;---------------------------------------------------------
 print_pos:mov eax,13
 	  mov ebx,490*65536+60
 	  mov ecx,425*65536+15
 	  mov edx,0xffffff
-	  int 0x40
+	  mcall
 	  mov eax,47
 	  mov ebx,3*65536
 	  mov ecx,[x]
 	  mov edx,495*65536+430
 	  mov esi,0
-	  int 0x40
+	  mcall
 	  mov eax,47
 	  mov ebx,3*65536
 	  mov ecx,[y]
 	  mov edx,530*65536+430
 	  mov esi,0
-	  int 0x40
+	  mcall
 	  ret
 ;-----------------------------------------------------------
 ;-------------------------load files------------------------
@@ -269,7 +269,7 @@ loadfile:
 	 ;загружаем первый блок для того чтобы узнат размер файла
 	 mov eax,58
 	 mov ebx,file_read
-	 int 0x40
+	 mcall
 	 ;вычисляем сколько блоков по 512 байт нужно использовать
 	 ;для загрузки файла
 	 mov ecx,ebx
@@ -284,7 +284,7 @@ loadfile:
 	 ;загружаем блок
 	 mov eax,58
 	 mov ebx,file_read
-	 int 0x40
+	 mcall
 	 cmp eax,0
 	 jne scock2
 	 mov esi,0x3000+(640*400*3)+(16*20*20*3)
@@ -336,14 +336,14 @@ save_level:
 	   mov [file_write+12],dword 0x3000+(640*400*3)+(16*20*20*3);+(0x1000)
 	   mov eax,58
 	   mov ebx,file_write
-	   int 0x40
+	   mcall
 	   cmp eax,0
 	   jne scok
 	   xor esi,esi
 	   mov eax,55
 	   mov ebx,eax
 	   mov esi,sound
-	   int 0x40
+	   mcall
        scok:
 	  ret
 ;-----------------------------------------------------------------------------
@@ -363,14 +363,14 @@ load_level:
 	   mov [file_read+12],dword 0x3000+(640*400*3)+(16*20*20*3)
 	   mov eax,58
 	   mov ebx,file_read
-	   int 0x40
+	   mcall
 	   mov ecx,ebx
 	   shr ebx,9
 	   add ebx,1
 	   mov [file_read+8],ebx
 	   mov eax,58
 	   mov ebx,file_read
-	   int 0x40
+	   mcall
 	   cmp eax,0
 	   jne nosound
 	   mov esi,0x3000+(640*400*3)+(16*20*20*3)
@@ -380,7 +380,7 @@ load_level:
 	   mov eax,55
 	   mov ebx,55
 	   mov esi,sound
-	   int 0x40
+	   mcall
 	   xor esi,esi
 	   mov [x_l],0
 	   mov [y_l],0
@@ -434,13 +434,13 @@ input_path:
 	    mov ebx,25*65536+6
 	    mov ecx,433*65536+12
 	    mov edx,0xff6c58
-	    int 0x40
+	    mcall
       opros:mov eax,10
-	    int 0x40
+	    mcall
 	    cmp eax,2
 	    jne opros
 	    mov eax,2
-	    int 0x40
+	    mcall
 	    shr eax,8
 	    cmp eax,13
 	    je exit_cycle
@@ -486,7 +486,7 @@ input_path:
 	     mov ebx,20*65536+(64*6)+5
 	     mov ecx,430*65536+15
 	     mov edx,0xffffff
-	     int 0x40
+	     mcall
 	    ret
 ;---------------------------------------------------------------
 print_line:
@@ -494,13 +494,13 @@ print_line:
 	     mov ebx,20*65536+(64*6)+5
 	     mov ecx,430*65536+15
 	     mov edx,0xffffff
-	     int 0x40
+	     mcall
 	     mov eax,4
 	     mov ebx,25*65536+435
 	     mov ecx,0x1
 	     mov edx,string
 	     mov esi,64
-	     int 0x40
+	     mcall
 	     ret
 print_cursor:
 	     mov eax,13
@@ -512,7 +512,7 @@ print_cursor:
 	     add ebx,6
 	     mov ecx,433*65536+12
 	     mov edx,0xff6c58
-	     int 0x40
+	     mcall
 	     ret
 ;------------------------------------------------------------------------
 string:

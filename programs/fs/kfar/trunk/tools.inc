@@ -6,7 +6,7 @@ pgalloc:
         pop     eax
         push    12
         pop     ebx
-        int     0x40
+        mcall
         pop     ebx
         ret
 
@@ -18,7 +18,7 @@ pgfree:
         pop     eax
         push    13
         pop     ebx
-        int     0x40
+        mcall
         pop     ebx
         ret
 
@@ -30,7 +30,7 @@ pgrealloc:
         pop     eax
         push    20
         pop     ebx
-        int     0x40
+        mcall
         pop     ebx
         ret
 
@@ -188,7 +188,7 @@ load_dll_and_import:
         pop     eax
         push    19
         pop     ebx
-        int     0x40
+        mcall
         mov     edi, aInvalidDLL
         test    eax, eax
         jz      .sayerr

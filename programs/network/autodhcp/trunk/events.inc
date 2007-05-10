@@ -2,23 +2,23 @@
 macro set_event_mask mask {
    mov	ebx, mask
    mov	eax, 40
-   int	0x40
+   mcall
 }
 
 macro wait_for_event {
    mov	eax, 10
-   int	0x40
+   mcall
 }
 
 macro check_for_event {
    mov	eax, 11
-   int	0x40
+   mcall
 }
 
 macro wait_for_event_timeout timeout {
    mov	ebx,timeout
    mov	eax, 23
-   int	0x40
+   mcall
 }
 
 

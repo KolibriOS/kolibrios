@@ -22,6 +22,7 @@
 
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 include 'ascml.inc'
@@ -350,13 +351,13 @@ oelemsize = 20
     mov eax,66
     mov ebx,1
     mov ecx,1
-    int 0x40
+    mcall
 
     mov eax,26
     mov ebx,2
     mov ecx,1
     mov edx,keymap
-    int 0x40
+    mcall
 
 startgame:
     gif_hash_offset = gif_hash_area
@@ -388,11 +389,11 @@ redm:
     jmp stillm
 keym:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  stillm
 buttonm:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     je   close_app
     cmp  ah,2                   ; button id=1 ?
@@ -426,11 +427,11 @@ redh:
     jmp stillh
 keyh:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  stillh
 buttonh:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     je   close_app
     cmp  ah,2                   ; button id=1 ?
@@ -457,7 +458,7 @@ draw_helpwindow:
     dec ebp
 looht:
     mov eax,4
-    int 0x40
+    mcall
     add edx,esi
     add ebx,10
     dec ebp
@@ -882,7 +883,7 @@ xr_ok:
 
   key:                          ; key
     mov  eax,2
-    int  0x40                   ; read (eax=2)
+    mcall                   ; read (eax=2)
 
     shr eax,8
     and eax,0xff
@@ -954,12 +955,12 @@ no_num8u:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
 close_app:
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
     jmp  still
 
@@ -986,11 +987,11 @@ redgo:
     jmp stillgo
 keygo:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  stillgo
 buttongo:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1
     je   close_app
     cmp  ah,4
@@ -1077,11 +1078,11 @@ redeg:
     jmp stilleg
 keyeg:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  stilleg
 buttoneg:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1
     je   close_app
     cmp  ah,2
@@ -1211,11 +1212,11 @@ redeg2:
     jmp end_gm ;stilleg2
 keyeg2:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  main_menu
 buttoneg2:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     jmp  stilleg2
 
 

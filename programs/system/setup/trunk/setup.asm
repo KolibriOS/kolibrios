@@ -14,14 +14,13 @@
   use32
   org        0x0
   db      'MENUET01'   ; 8 byte identifier
-  dd      0x01           ; header version
+  dd      0x01           ; title version
   dd      START        ; pointer to program start
   dd      I_END        ; size of image
   dd      0x4000      ; reguired amount of memory
   dd      0x4000      ; stack pointer (esp)
   dd      I_PARAM,0    ; parameters, reserved
-;  include 'lang.inc'
-  include 'macros.inc'
+  include '..\..\..\macros.inc'
 ;******************************************************************************
 
 LLL equ (56+3)
@@ -174,7 +173,7 @@ set_language_and_exit:
     mov  eax,26
     mov  ebx,2
     mov  ecx,9
-    int  0x40
+    mcall
 ;    cmp  eax,5
 ;    jne  @f
 ;    xor  eax,eax
@@ -194,7 +193,7 @@ set_syslanguage_and_exit:
     mov  eax,26
     mov  ebx,5
 ;    mov  ecx,9
-    int  0x40
+    mcall
     cmp  eax,6
     jne  temp      ;@f
     xor  eax,eax
@@ -254,13 +253,13 @@ still:
     cmp  word [blinkpar],0
     jne  blinker
     mov  eax,29     ;get system date
-    int  0x40
+    mcall
     cmp  eax,[date]
     je         gettime
     mov  [date],eax
  gettime:
     mov  eax,3        ;get system time
-    int  0x40
+    mcall
     cmp  ax,[time]
     je         sysevent
     mov  [time],ax
@@ -269,7 +268,7 @@ still:
  sysevent:
     mov  eax,23
     mov  ebx,8        ; wait here for event with timeout
-    int  0x40
+    mcall
 
     cmp  eax,1
     jz         red
@@ -364,7 +363,7 @@ incdecdate:
 
   key:
     ;mov  eax,2
-    int  0x40
+    mcall
     cmp  ah,27
     jne  still
     mov  dword [blinkpar],0
@@ -374,7 +373,7 @@ incdecdate:
   button:
 
     mov  eax,17
-    int  0x40
+    mcall
 
     cmp  ah,112
     je         incdectime
@@ -429,7 +428,7 @@ no_apply_all:
     jne  no_close
 close:
     or         eax,-1
-    int  0x40
+    mcall
   no_close:
 
     cmp  ah,11         ; SET MIDI BASE
@@ -717,15 +716,15 @@ close:
     mov  ebx,2
     mov  ecx,1
     mov  edx,en_keymap
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,en_keymap_shift
-    int  0x40
+    mcall
     mov  eax,21
     mov  ecx,9
     mov  edx,1
-    int  0x40
+    mcall
     call alt_gen
   nosetkeyle:
     cmp  [keyboard],1
@@ -734,15 +733,15 @@ close:
     mov  ebx,2
     mov  ecx,1
     mov  edx,fi_keymap
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,fi_keymap_shift
-    int  0x40
+    mcall
     mov  eax,21
     mov  ecx,9
     mov  edx,2
-    int  0x40
+    mcall
     call alt_gen
   nosetkeylfi:
     cmp  [keyboard],2
@@ -751,15 +750,15 @@ close:
     mov  ebx,2
     mov  ecx,1
     mov  edx,ge_keymap
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,ge_keymap_shift
-    int  0x40
+    mcall
     mov  eax,21
     mov  ecx,9
     mov  edx,3
-    int  0x40
+    mcall
     call alt_gen
   nosetkeylge:
     cmp  [keyboard],3
@@ -768,16 +767,16 @@ close:
     mov  ebx,2
     mov  ecx,1
     mov  edx,ru_keymap
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,ru_keymap_shift
-    int  0x40
+    mcall
     call alt_gen
     mov  eax,21
     mov  ecx,9
     mov  edx,4
-    int  0x40
+    mcall
   nosetkeylru:
     cmp  [keyboard],4        ;french
     jnz  nosetkeylfr
@@ -785,19 +784,19 @@ close:
     mov  ebx,2
     mov  ecx,1
     mov  edx,fr_keymap
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,fr_keymap_shift
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,fr_keymap_alt_gr
-    int  0x40
+    mcall
     mov  eax,21
     mov  ecx,9
     mov  edx,5
-    int  0x40
+    mcall
   nosetkeylfr:
     cmp  [keyboard],5
     jnz  nosetkeylet
@@ -805,15 +804,15 @@ close:
     mov  ebx,2
     mov  ecx,1
     mov  edx,et_keymap
-    int  0x40
+    mcall
     mov  eax,21
     inc  ecx
     mov  edx,et_keymap_shift
-    int  0x40
+    mcall
     mov  eax,21
     mov  ecx,9
     mov  edx,6
-    int  0x40
+    mcall
     call alt_gen
   nosetkeylet:
     ret
@@ -822,7 +821,7 @@ close:
    mov eax,21
    mov ecx,3
    mov edx,alt_general
-   int 0x40
+   mcall
    ret
 
 
@@ -836,15 +835,15 @@ draw_buttons:
     mov  ebx,(350-50)*65536+46+BBB
 
     mov  eax,8
-    int  0x40
+    mcall
 
     mov  ebx,(350-79)*65536+9
     inc  edx
-    int  0x40
+    mcall
 
     mov  ebx,(350-67)*65536+9
     inc  edx
-    int  0x40
+    mcall
 
     popa
     ret
@@ -862,24 +861,24 @@ draw_window:
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     xor  eax,eax       ; DRAW WINDOW
     mov  ebx,40*65536+355+BBB
     mov  ecx,40*65536+320
     mov  edx,0x93111199
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov  eax,8             ; APPLY ALL
     mov  ebx,(350-79)*65536+100
     mov  ecx,282*65536+12
     mov  edx,100
     mov  esi,0x005588dd
-    int  0x40
+    mcall
     add  ecx,16*65536         ; SAVE ALL
     dec  edx
-    int  0x40
+    mcall
 
     mov  esi,0x5580c0
 
@@ -943,7 +942,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
     ret
@@ -1140,7 +1139,7 @@ text_out:
     mov  ebx,175*65536+85
     mov  ecx,40*65536+225
     mov  edx,0x80111199-19
-    int  0x40
+    mcall
 
     mov  edx,text00
     mov  ebx,10*65536+45
@@ -1149,7 +1148,7 @@ text_out:
     mov  esi,LLL
     mov  ebp,text1_strings
   newline:
-    int  0x40
+    mcall
     add  ebx,8+8
     add  edx,esi
     dec  ebp
@@ -1157,7 +1156,7 @@ text_out:
     mov  ebp,text2_strings
     add  ebx,8+8
   @@:
-    int  0x40
+    mcall
     add  ebx,8+8
     add  edx,esi
     dec  ebp
@@ -1229,63 +1228,63 @@ _midibase:
     mov  eax,21
     mov  ebx,1
     mov  ecx,[midibase]
-    int  0x40
+    mcall
  ret
 
 _cdbase:
     mov  eax,21
     mov  ebx,3
     mov  ecx,[cdbase]
-    int  0x40
+    mcall
  ret
 
 _hdbase:
     mov  eax,21
     mov  ebx,7
     mov  ecx,[hdbase]
-    int  0x40
+    mcall
     ret
 
 _sound_dma:
     mov  eax,21
     mov  ebx,10
     mov  ecx,[sound_dma]
-    int  0x40
+    mcall
     ret
 
 _lba_read:
     mov  eax,21
     mov  ebx,11
     mov  ecx,[lba_read]
-    int  0x40
+    mcall
     ret
 
 _pci_acc:
     mov  eax,21
     mov  ebx,12
     mov  ecx,[pci_acc]
-    int  0x40
+    mcall
     ret
 
 _f32p:
     mov  eax,21
     mov  ebx,8
     mov  ecx,[f32p]
-    int  0x40
+    mcall
  ret
 
 _sb16:
     mov  eax,21
     mov  ebx,4
     mov  ecx,[sb16]
-    int  0x40
+    mcall
     ret
 
 _syslang:
     mov  eax,21
     mov  ebx,5
     mov  ecx,[syslang]
-    int  0x40
+    mcall
  ret
 
 _mouse_speed:
@@ -1293,7 +1292,7 @@ _mouse_speed:
     mov  ebx,19
     mov  ecx,1
     mov  edx,[mouse_speed]
-    int  0x40
+    mcall
  ret
 
 _mouse_delay:
@@ -1301,7 +1300,7 @@ _mouse_delay:
     mov  ebx,19
     mov  ecx,3
     mov  edx,[mouse_delay]
-    int  0x40
+    mcall
  ret
 
 loadtxt:
@@ -1375,7 +1374,7 @@ text1_strings = 14
     db 'SAVE YOUR SETTINGS BEFORE QUIT KOLIBRI          SAVE ALL   '
 text2_strings = 2
 
-header  db 'SETUP',0
+title  db 'SETUP',0
 
 hex db         '0123456789ABCDEF'
 

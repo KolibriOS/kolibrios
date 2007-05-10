@@ -22,8 +22,8 @@ mov [dlg_pid_get],0
 ; Get my PID in dec format 4 bytes
     mov eax,9
     mov ebx,procinfo
-    mov ecx,-1
-    int 0x40
+    or  ecx,-1
+    mcall
 
 ; convert eax bin to param dec
     mov eax,dword [procinfo+30]  ;offset of myPID
@@ -57,12 +57,12 @@ new_d:
     mov ebx,1	     ; define IPC
     mov ecx,path     ; offset of area
     mov edx,1024+16  ; size
-    int 0x40
+    mcall
 
 ; change wanted events list 7-bit IPC event
     mov eax,40
     mov ebx,01000111b
-    int 0x40
+    mcall
 
 ;
 ; STEP 3 run SYSTEM XTREE with parameters
@@ -70,7 +70,7 @@ new_d:
 
     mov eax,70
     mov ebx,run_fileinfo
-    int 0x40
+    mcall
 
     call redproc
 
@@ -78,7 +78,7 @@ new_d:
 getmesloop:
     mov eax,23
     mov ebx,50	   ;0.5 sec
-    int 0x40
+    mcall
         dec     eax
         jz      mred
         dec     eax
@@ -92,14 +92,14 @@ getmesloop:
     mov ebx,procinfo
     mov ecx,-1
     mov eax,9
-    int 0x40
+    mcall
     mov ebp,eax
 
 loox:
     mov eax,9
     mov ebx,procinfo
     mov ecx,ebp
-    int 0x40
+    mcall
     mov eax,[DLGPID]
     cmp [procinfo+30],eax    ;IF Dialog find
     je	dlg_is_work	     ;jmp to dlg_is_work
@@ -124,15 +124,15 @@ mred:
     jmp  getmesloop
 mkey:
     mov  eax,2
-    int  0x40			; read (eax=2)
+    mcall			; read (eax=2)
     jmp  getmesloop
 mbutton:
     mov  eax,17 		; get id
-    int  0x40
+    mcall
     cmp  ah,1			; button id=1 ?
     jne  getmesloop
     mov  eax,-1 		; close this program
-    int  0x40
+    mcall
 mgetmes:
 
 ; If dlg_pid_get then second message get jmp to still
@@ -234,7 +234,7 @@ mov [dlg_pid_get],0
     mov eax,9
     mov ebx,procinfo
     mov ecx,-1
-    int 0x40
+    mcall
 
 ; convert eax bin to param dec
     mov eax,dword [procinfo+30]  ;offset of myPID
@@ -268,12 +268,12 @@ new_d:
     mov ebx,1	     ; define IPC
     mov ecx,path     ; offset of area
     mov edx,1024+16  ; size
-    int 0x40
+    mcall
 
 ; change wanted events list 7-bit IPC event
     mov eax,40
     mov ebx,01000111b
-    int 0x40
+    mcall
 
 ;
 ; STEP 3 run SYSTEM XTREE with parameters
@@ -281,7 +281,7 @@ new_d:
 
     mov eax,70
     mov ebx,run_fileinfo
-    int 0x40
+    mcall
 
     call redproc
 
@@ -289,7 +289,7 @@ new_d:
 getmesloop:
     mov eax,23
     mov ebx,50	   ;0.5 sec
-    int 0x40
+    mcall
         dec     eax
         jz      mred
         dec     eax
@@ -303,14 +303,14 @@ getmesloop:
     mov ebx,procinfo
     mov ecx,-1
     mov eax,9
-    int 0x40
+    mcall
     mov ebp,eax
 
 loox:
     mov eax,9
     mov ebx,procinfo
     mov ecx,ebp
-    int 0x40
+    mcall
     mov eax,[DLGPID]
     cmp [procinfo+30],eax    ;IF Dialog find
     je	dlg_is_work	     ;jmp to dlg_is_work
@@ -335,15 +335,15 @@ mred:
     jmp  getmesloop
 mkey:
     mov  eax,2
-    int  0x40			; read (eax=2)
+    mcall			; read (eax=2)
     jmp  getmesloop
 mbutton:
     mov  eax,17 		; get id
-    int  0x40
+    mcall
     cmp  ah,1			; button id=1 ?
     jne  getmesloop
     mov  eax,-1 		; close this program
-    int  0x40
+    mcall
 mgetmes:
 
 ; If dlg_pid_get then second message get jmp to still

@@ -16,13 +16,13 @@
   dd      0x00000000   ; reserved=no extended header
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\..\macros.inc'
 
 START:                          ; start of execution
 
     mov  eax,18
     mov  ebx,5
-    int  0x40
+    mcall
 
     xor  edx,edx
     mov  ebx,1000000
@@ -38,13 +38,20 @@ START:                          ; start of execution
     mov  [edi],dl
     sub  edi,1
     loop newnum
+    
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    mcall
+
 red:
     call draw_window            ; at first, draw the window
 
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -57,17 +64,17 @@ still:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jnz  still
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 
 ;   *********************************************
@@ -79,13 +86,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
-
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
@@ -93,8 +94,8 @@ draw_window:
     mov  ecx,100*65536+65          ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color glide
     or   edx,0x33000000            ; color of grab bar  RRGGBB,8->color
-    mov  edi,header                ; WINDOW LABEL
-    int  0x40
+    mov  edi,title                ; WINDOW LABEL
+    mcall
 
 
     mov  ebx,20*65536+14           ; draw info text with function 4
@@ -102,11 +103,11 @@ draw_window:
     mov  edx,text
     mov  esi,24
     mov  eax,4
-    int  0x40
+    mcall
     
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -117,7 +118,7 @@ draw_window:
 text:
     db 'CPU RUNNING AT       MHZ'
 
-header    db   'CPU SPEED',0
+title    db   'CPU SPEED',0
 
 I_END:
 

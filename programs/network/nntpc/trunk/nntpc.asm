@@ -8,7 +8,7 @@
 version equ '0.1'
 
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 
   use32
   org    0x0
@@ -87,7 +87,7 @@ connection_status:
     mov  eax,53
     mov  ebx,6
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  eax,[prev_state]
     je   no_cos
@@ -98,7 +98,7 @@ connection_status:
     mov  ebx,435*65536+12*6
     mov  ecx,42*65536+10
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     mov  ecx,-14
     mov  eax,[prev_state]
@@ -123,7 +123,7 @@ connection_status:
     mov  ebx,435*65536+42
     mov  ecx,0x000000
     mov  esi,12
-    int  0x40
+    mcall
 
   no_cos:
 
@@ -150,13 +150,13 @@ text_input:
     call draw_entries
 
     mov  eax,10
-    int  0x40
+    mcall
 
     cmp  eax,2
     jne  no_more_text
 
     mov  eax,2
-    int  0x40
+    mcall
 
     cmp   ah,8
     jne   no_bg
@@ -225,7 +225,7 @@ send_group:
     mov  ecx,[socket]
     mov  edx,[grouplen]
     mov  esi,group
-    int  0x40
+    mcall
     mov  [status],3
     call clear_text
     call save_coordinates
@@ -320,7 +320,7 @@ state_machine_write:
     mov  ecx,[socket]
     mov  edx,[statlen] ; -stat
     mov  esi,stat
-    int  0x40
+    mcall
     mov  [status],5
     call save_coordinates
     ret
@@ -333,7 +333,7 @@ state_machine_write:
     mov  ecx,[socket]
     mov  edx,articlelen-article
     mov  esi,article
-    int  0x40
+    mcall
     mov  [status],7
     call save_coordinates
     ret
@@ -485,7 +485,7 @@ wait_for_string:
 
     mov  eax,5
     mov  ebx,10
-    int  0x40
+    mcall
 
     call check_for_incoming_data
 
@@ -499,7 +499,7 @@ START:                          ; start of execution
 
      mov  eax,40
      mov  ebx,10000111b
-     int  0x40
+     mcall
 
      call clear_text
 
@@ -512,7 +512,7 @@ still:
 
     mov  eax,23                 ; wait here for event
     mov  ebx,5
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -533,7 +533,7 @@ still:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
 
     cmp  ah,' '
     jne  no_space
@@ -581,7 +581,7 @@ still:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     shr  eax,8
 
@@ -628,14 +628,14 @@ still:
     jne  no_start
     call clear_text
     mov  eax,3
-    int  0x40
+    mcall
     mov  ecx,eax
     mov  eax,53
     mov  ebx,5
     mov  edx,119
     mov  esi,dword [server_ip]
     mov  edi,1
-    int  0x40
+    mcall
     mov  [socket],eax
     mov  [status],1
     jmp  still
@@ -648,22 +648,22 @@ still:
     mov  ecx,[socket]
     mov  edx,quitlen-quit
     mov  esi,quit
-    int  0x40
+    mcall
     mov  eax,5
     mov  ebx,10
-    int  0x40
+    mcall
     call check_for_incoming_data
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  eax,5
     mov  ebx,5
-    int  0x40
+    mcall
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  [status],0
     jmp  still
   no_end:
@@ -671,7 +671,7 @@ still:
     cmp  eax,1                   ; button id=1 ?
     jne  noclose
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
 
     jmp  still
@@ -687,7 +687,7 @@ check_for_incoming_data:
     mov  eax,53
     mov  ebx,2
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  eax,0
     je   ch_ret
@@ -695,7 +695,7 @@ check_for_incoming_data:
     mov  eax,53
     mov  ebx,3
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     and  ebx,0xff
 
@@ -728,7 +728,7 @@ check_for_incoming_data:
     mov  eax,53
     mov  ebx,2
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  eax,0
     jne  check_for_incoming_data
@@ -754,63 +754,46 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+520         ; [x start] *65536 + [x size]
     mov  ecx,5*65536+470           ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x805080d0            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x005080d0            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
     mov  eax,38
     mov  ebx,5*65536+515
     mov  ecx,101*65536+101
     mov  edx,0x99bbff
-    int  0x40
-    mov  eax,38
-    mov  ebx,5*65536+515
+    mcall
     mov  ecx,102*65536+102
     mov  edx,0x3366aa
-    int  0x40
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
 
     mov  eax,8
     mov  ebx,238*65536+8
     mov  ecx,30*65536+8
     mov  edx,11
     mov  esi,0x88aadd
-    int  0x40
-    mov  eax,8
-    mov  ebx,238*65536+8
+    mcall
     mov  ecx,41*65536+8
     mov  edx,12
-    int  0x40
-    mov  eax,8
-    mov  ebx,238*65536+8
+    mcall
     mov  ecx,52*65536+8
     mov  edx,13
-    int  0x40
+    mcall
 
-    mov  eax,8
     mov  ebx,265*65536+75
     mov  ecx,39*65536+13
     mov  edx,14
-    int  0x40
-    mov  eax,8
+    mcall
     mov  ebx,351*65536+75
-    mov  ecx,39*65536+13
     mov  edx,15
-    int  0x40
+    mcall
 
     call draw_entries
 
@@ -818,7 +801,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     popa
 
@@ -833,18 +816,16 @@ draw_entries:
     mov  ebx,30*65536+200
     mov  ecx,30*65536+44
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
+    mov  eax,4
     mov  ebx,30*65536+31           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,66
     mov  edi,6
-
   newline2:
-
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,11
     add  edx,66
     dec  edi
@@ -862,7 +843,7 @@ draw_text:
     mov  eax,9
     mov  ebx,0x70000
     mov  ecx,-1
-    int  0x40
+    mcall
 
     mov  eax,[0x70000+46]
     cmp  eax,150
@@ -876,15 +857,15 @@ draw_text:
     dec  edi
 
     mov  [space],edi
-
+    mov  eax,4
     mov  ebx,20*65536+111           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,[text_start]
     imul edx,80
     add  edx,nntp_text
     mov  esi,80
-  newline:
-
+  
+ newline:
     pusha
     mov  ecx,ebx
     shl  ecx,16
@@ -892,11 +873,10 @@ draw_text:
     mov  ebx,20*65536+80*6
     mov  cx,10
     mov  edx,0xffffff
-    int  0x40
+    mcall
     popa
 
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,80
     dec  edi
@@ -922,9 +902,7 @@ text:
 textl:
 
 
-labelt:
-     db   'NNTP client v',version
-labellen:
+title    db   'NNTP client v',version,0
 
 nntp_text:
 

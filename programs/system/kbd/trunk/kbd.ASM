@@ -6,7 +6,7 @@
 ;
 ;
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 memsize = 1000h
                org 0
@@ -18,7 +18,7 @@ version equ ' 1.1 '
                use32              ; включить 32-битный режим ассемблера
 
                db     'MENUET01'              ; 8 byte id
-               dd     0x01                    ; header version
+               dd     0x01                    ; title version
                dd     START                   ; start of code
                dd     I_END                   ; size of image
                dd     memsize                 ; memory for app
@@ -43,49 +43,49 @@ drawwindow:
       mov  ebx,3
       mov  ecx,sc
       mov  edx,sizeof.system_colors
-      int  0x40
+      mcall
 
       mov	eax, 12
 	mov	ebx, 1 ; start redraw
-	int	0x40
+	mcall
 
 	mov	eax, 0 ; window
 	mov	ebx, 100 shl 16 + 300
 	mov	ecx, 100 shl 16 + 90
 	mov   edx, [sc.work]
       or    edx, 0x13000000
-	mov	edi, header
-	int	0x40
+	mov	edi, title
+	mcall
 
 	mov	eax, 4
 	mov	ebx, 17 shl 16 + 30
       mov   ecx, [sc.work_text]
 	mov	edx, msg_nb
 	mov	esi, 14
-	int	0x40
+	mcall
 	
 	mov	ebx, 105 shl 16 + 30
 	mov	edx, [nb_name]
 	movzx	esi, byte[edx]
 	inc	edx
-	int	0x40
+	mcall
 	
 	mov	ebx, 17 shl 16 + 40
 	mov	edx, msg_stat
 	mov	esi, 8
-	int	0x40
+	mcall
 	
 	mov	ebx, 102 shl 16 + 50
 	mov	edx, msg_divs
 	mov	esi, 32
-	int	0x40
+	mcall
 	mov	ebx, 17 shl 16 + 62
 	mov	edx, msg_hdd
 	mov	esi, 10
-	int	0x40
+	mcall
 	mov	ebx, 17 shl 16 + 72
 	mov	edx, msg_sgd
-	int	0x40
+	mcall
 	
 	call	get_divs
 	mov	eax, 47
@@ -96,14 +96,14 @@ drawwindow:
 	mov	ecx, edx
 	mov	edx, 80 shl 16 + 62
 	mov	esi, [sc.work_text]
-	int	0x40
+	mcall
 	
 	mov	ecx, [val_sgd]
 	mov	edx, 8
 	shl	edx, cl
 	mov	ecx, edx
 	mov	edx, 80 shl 16 + 72
-	int	0x40
+	mcall
 
 	
 	call	get_bd_stat
@@ -119,7 +119,7 @@ drawwindow:
 	jz	@f
 	mov	edx, msg_en
 @@:	mov	eax, 4
-	int	0x40
+	mcall
 
 	; Создаём кнопку
 	mov	ecx, 27 shl 16 + 20
@@ -127,7 +127,7 @@ drawwindow:
 	mov	ebx, 220 shl 16 + 70
 	mov	esi, [sc.work_button]
 	mov	edx, 2
-	int	0x40
+	mcall
 	
 	; И ещё 14 ;)
 	mov	edi, 7
@@ -136,7 +136,7 @@ drawwindow:
 	mov	ebx, 105 shl 16 + 25
 	mov	edx, 3
 	
-@@:	int	0x40
+@@:	mcall
 	inc	edx
 	add	ebx, 27 shl 16 
 	dec	edi
@@ -145,7 +145,7 @@ drawwindow:
 	add	ecx, 12 shl 16 
 	mov	ebx, 105 shl 16 + 25
 	mov	edi, 7
-@@:	int	0x40
+@@:	mcall
 	inc	edx
 	add	ebx, 27 shl 16 
 	dec	edi
@@ -153,21 +153,21 @@ drawwindow:
 	
 end_dr:	mov	eax, 12
 	mov	ebx, 2 ; end redraw
-	int	0x40
+	mcall
 
 ; Wait for event ...
 	mov	eax, 10
-	int	0x40
+	mcall
 	
 	cmp	al, 3
 	jne	not_bt
 	
 	mov	eax, 17			; get id
-	int	0x40
+	mcall
 	cmp	ah, 1
 	jne	no_exit
 	mov	eax, -1		; close this program
-	int	0x40
+	mcall
 no_exit:
 	cmp	ah, 2
 	jne	no_ch_bt
@@ -200,7 +200,7 @@ no_hdd_bt:
 not_bt:	cmp	al, 2
 	jne	drawwindow
 	mov	eax, 2			; пока клава не поддерживается - читаем и забываем
-	int	0x40
+	mcall
 	jmp	drawwindow	
 ;--------------------------------------------------------------------------
 bus_num:	db	2	; Номер шины
@@ -354,7 +354,7 @@ find_north_bridg:
 nbus:	mov	bh, [bus_num]
 ndevfn:	mov	ch, [devfn]
 	mov	eax, 62
-	int	0x40
+	mcall
 	cmp	eax, 0xffffffff
 	je	bd_next
 	;---------
@@ -398,7 +398,7 @@ get_bd_stat:
 	mov	ch, [devfn]
 	mov	cl, al
 	mov	eax, 62
-	int	0x40
+	mcall
 	pop	edx
 	and	al, dh
 	jnz	@f
@@ -426,20 +426,20 @@ bd_ss_nxt:
 	mov	ch, [devfn]
 	mov	cl, al
 	mov	eax, 62
-	int	0x40
+	mcall
 	mov	bl, 8
 	test	edi, edi
 	jz	@f
 	or	al, dl
 	mov	dl, al
 	mov	eax, 62
-	int	0x40
+	mcall
 	jmp	bd_ss_nxt
 @@:	not	dl
 	and	al, dl
 	mov	dl, al
 	mov	eax, 62
-	int	0x40	
+	mcall	
 	jmp	bd_ss_nxt
 bd_ss_end:
 	ret
@@ -452,22 +452,22 @@ set_stat_nforce2:
 	mov	ch, [devfn]
 	mov	cl, 0x6f
 	mov	eax, 62
-	int	0x40
+	mcall
 	and	al, 0x1F
 	mov	dl, al
 	mov	bl, 8
 	mov	eax, 62
-	int	0x40
+	mcall
 	pop	eax
 	test	eax, eax
 	jz	@f
 	or	dl, 0x10
 	mov	eax, 62
-	int	0x40
+	mcall
 	ret
 @@:	and	dl, 0xef
 	mov	eax, 62
-	int	0x40
+	mcall
 	ret
 ;--------------------------------------------------------------------------
 ;                        x8    x16   x32    x64  x128  x256  x512
@@ -491,7 +491,7 @@ set_divs:
 	mov	eax, 68
 	mov	ebx, 3
 	mov	edx, 0xC001001b
-	int	0x40
+	mcall
 	mov	al, [div_hdd + esi]
 	mov	ah, [div_sgd + edi]
 	and	eax, 0xFFFBFFFF
@@ -502,7 +502,7 @@ set_divs:
 	mov	esi, ebx
 	mov	eax, 68
 	mov	ebx, 4
-	int	0x40
+	mcall
 	ret
 
 get_divs:
@@ -511,7 +511,7 @@ get_divs:
 	mov	eax, 68
 	mov	ebx, 3
 	mov	edx, 0xC001001b
-	int	0x40
+	mcall
 	mov	ecx, 7
 @@:	cmp	[div_hdd + ecx - 1], al
 	je	@f
@@ -549,7 +549,7 @@ boot_bd_enable:
 
 ;--------------------------------------------------------------------------
 
-header	db appname,version,0
+title	db appname,version,0
 
 msg_divs	db ' x8  x16  x32 x64 x128 x256 x512'
 msg_hdd	db 'Hatl Disc.'

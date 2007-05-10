@@ -12,7 +12,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,brush_cursor
       mov edx,1
-      int 0x40
+      mcall
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -22,7 +22,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,flood_fill_cursor
       mov edx,1
-      int 0x40
+      mcall
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -32,7 +32,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,lastik_cursor
       mov edx,1
-      int 0x40
+      mcall
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -43,7 +43,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,other_cursor
       mov edx,1
-      int 0x40
+      mcall
 
 
       mov ebx,[PointerToCursorsID]
@@ -54,7 +54,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,pencil_cursor
       mov edx,1
-      int 0x40
+      mcall
 
 
       mov ebx,[PointerToCursorsID]
@@ -65,7 +65,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,pipette_cursor
       mov edx,1
-      int 0x40
+      mcall
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -75,7 +75,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,spray_cursor
       mov edx,1
-      int 0x40
+      mcall
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -85,7 +85,7 @@ load_cursors:
       mov ebx, 4
       mov ecx,zoom_cursor
       mov edx,1
-      int 0x40
+      mcall
 
       mov ebx,[PointerToCursorsID]
       mov [ebx],eax
@@ -288,7 +288,7 @@ set_cursor:
 
       mov eax, 37
       mov ebx, 5
-      int 0x40
+      mcall
 
       no_change_cursor:
 
@@ -312,7 +312,7 @@ delete_cursors:
 
      mov eax,37
      mov ebx,6
-     int 0x40
+     mcall
 
      add [PointerToCursorsID],4
 

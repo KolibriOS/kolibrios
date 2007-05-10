@@ -17,7 +17,7 @@ jmps_end:
 
 key:
     mov  eax,2
-    int  0x40
+    mcall
     mov  edi,key_codes
     cmp  ah,48
     jb   .jump
@@ -111,7 +111,7 @@ key:
 
   button:
     mov  eax,17
-    int  0x40
+    mcall
     cmp  ah,20
     jb   .nobott
     cmp  ah,25
@@ -149,7 +149,7 @@ SH_POPUP equ 10
   _close:
     call kill
     or   eax,-1
-    int  0x40
+    mcall
 
   bShade:
     call Shade
@@ -169,7 +169,7 @@ SH_POPUP equ 10
     mov  ecx,ebx
     mov  edx,ebx
     mov  eax,67
-    int  0x40
+    mcall
     ret
   bMinimize:
 ;    mcall 18,10
@@ -258,7 +258,7 @@ SH_POPUP equ 10
     jz   still
     mov  eax,37
     mov  ebx,1
-    int  0x40
+    mcall
     mov  ebp,[coo]
     sub  eax,[ebp-16]
     shr  eax,16

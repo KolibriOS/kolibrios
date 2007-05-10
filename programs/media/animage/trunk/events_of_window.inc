@@ -6,7 +6,7 @@ drawwin:
 	mov eax,9
 	mov ebx,IPC_table
 	or ecx,-1
-	int 0x40
+	mcall
 
 	mov eax,[IPC_table+34]
 	mov ebx,[IPC_table+38]
@@ -54,7 +54,7 @@ drawwin:
 
 	mov eax,12
 	mov ebx,1
-	int 0x40
+	mcall
 
 	and eax,0
 	mov ebx,[Window_CordinatX]
@@ -66,7 +66,7 @@ drawwin:
 	mov edx,0x03aabbcc
 	mov esi,0x805080d0
 	mov edi,0x005080d0
-	int 0x40
+	mcall
 
 	call draw_panel
 	call PrintMousePos
@@ -84,7 +84,7 @@ drawwin:
 
 	mov eax,12
 	mov ebx,2
-	int 0x40
+	mcall
 
 	mov ecx,[k]
 

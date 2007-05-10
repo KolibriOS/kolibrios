@@ -4,6 +4,7 @@
 use32
 org 0x0
 include 'lang.inc'
+include '..\..\..\macros.inc'
   db  'MENUET01'
   dd  0x1
   dd  START
@@ -15,7 +16,7 @@ include 'lang.inc'
 START:
    mov eax,40
    mov ebx,111b
-   int 0x40
+   mcall
 ;----------------------------------------------------------
 ;---------load all sprites from arrays to memory-----------
 ;----------------------------------------------------------
@@ -176,7 +177,7 @@ jnz @1
    mov ebx,0x4000
    mov ecx,640*65536+400
    mov edx,0*65536+20
-   int 0x40
+   mcall
    call menu
 ;----------------------------
 new_level:
@@ -277,7 +278,7 @@ maincycle:
 	 mov ebx,0x4000
 	 mov ecx,640*65536+400
 	 mov edx,0*65536+20
-	 int 0x40
+	 mcall
 	 NoPutScreen:
 	 ;put fon
 	 mov eax,23*4
@@ -337,7 +338,7 @@ maincycle:
 	 ;-------------------------------------------------
 	 mov eax,23
 	 mov ebx,3
-	 int 0x40
+	 mcall
 	 cmp eax,1
 	 jne keypressed
 	 call drawwin
@@ -348,7 +349,7 @@ maincycle:
 	 and [_dx],0
 	 and [_dy],0
 	 mov eax,2
-	 int 0x40
+	 mcall
 	 shr eax,8
 	 ;---------
 	 cmp eax,32
@@ -421,7 +422,7 @@ maincycle:
     key6:cmp eax,27
 	 jne action
 	 mov eax,-1
-	 int 0x40
+	 mcall
 action:
 	 mov [SpriteInfo+72+4],dword 1
 	 mov [SpriteInfo+72+16],dword 5 ;usal speed of tank
@@ -587,7 +588,7 @@ action:
 	 cmp [number_level],25
 	 jne no_end_game
 	 mov eax,-1
-	 int 0x40
+	 mcall
 	 no_end_game:
 	 jmp new_level
 	 no_end_level:
@@ -893,32 +894,32 @@ action:
 	 mov ebx,180*65536+220
 	 mov ecx,425*65536+17
 	 mov edx,0xdfffff
-	 int 0x40
+	 mcall
 	 mov eax,4
 	 mov ebx,190*65536+430
 	 mov ecx,0x1ded00;0
 	 mov edx,Level
 	 mov esi,5
-	 int 0x40
+	 mcall
 	 mov eax,4
 	 mov ebx,260*65536+430
 	 mov ecx,0x3558ff
 	 mov edx,Lifes
 	 mov esi,5
-	 int 0x40
+	 mcall
 	 mov eax,4
 	 mov ebx,330*65536+430
 	 mov ecx,0xf93500
 	 mov edx,Score
 	 mov esi,5
-	 int 0x40
+	 mcall
 	 mov eax,47
 	 mov ebx,3*65536
 	 mov ecx,[number_level]
 	 inc ecx
 	 mov edx,225*65536+430
 	 mov esi,0x1ded00
-	 int 0x40
+	 mcall
 	 mov eax,47
 	 mov ebx,3*65536
 	 xor ecx,ecx
@@ -926,14 +927,14 @@ action:
 	 shr ecx,2
 	 mov edx,295*65536+430
 	 mov esi,0x3558ff
-	 int 0x40
+	 mcall
 	 mov eax,47
 	 mov ebx,3*65536
 	 xor ecx,ecx
 	 mov cl,byte[score]
 	 mov edx,365*65536+430
 	 mov esi,0xf93500
-	 int 0x40
+	 mcall
 	 jmp maincycle
 ;----------------------------------------------------------
 ;-----------------end of main cycle------------------------
@@ -1034,7 +1035,7 @@ PutFon:
 ;get time in 1/100 sec
 clock:	mov eax,26
 	mov ebx,9
-	int 0x40
+	mcall
 	mov [time],eax
 	ret
 ;----------------------------------------------------------
@@ -1136,28 +1137,28 @@ you_won:
 	 mov ebx,1*65536+640
 	 mov ecx,20*65536+400
 	 mov edx,0xc6e9
-	 int 0x40
+	 mcall
 	 mov eax,4
 	 mov ebx,220*65536+190
 	 mov ecx,0xffffff
 	 mov edx,won1
 	 mov esi,29
-	 int 0x40
+	 mcall
 	 mov eax,4
 	 mov ebx,220*65536+200
 	 mov ecx,0xffffff
 	 mov edx,won2
 	 mov esi,29
-	 int 0x40
+	 mcall
 	 mov eax,4
 	 mov ebx,220*65536+210
 	 mov ecx,0xffffff
 	 mov edx,won3
 	 mov esi,29
-	 int 0x40
+	 mcall
 	 mov eax,5
 	 mov ebx,100
-	 int 0x40
+	 mcall
 	 ret
 ;----------------------------------------------------------
 end_game:
@@ -1165,22 +1166,22 @@ end_game:
 	mov ebx,0*65536+640
 	mov ecx,20*65536+400
 	mov edx,0
-	int 0x40
+	mcall
 	mov eax,4
 	mov ebx,280*65536+200
 	mov ecx,0xffffff
 	mov edx,game_over
 	mov esi,9
-	int 0x40
+	mcall
 	mov eax,5
 	mov ebx,150
-	int 0x40
+	mcall
 	ret
 ;----------------------------------------------------------
 drawwin:
 	mov eax,12
 	mov ebx,1
-	int 0x40
+	mcall
 	;рисуем окно задавая все необходимые цвета
 	mov eax,0
 	mov ebx,50*65536+640
@@ -1188,14 +1189,14 @@ drawwin:
 	mov edx,0x03AABBCC
 	mov esi,0x805080d0
 	mov edi,0x005080d0
-	int 0x40
+	mcall
 	;пишем заголовок окна
 	mov eax,4
 	mov ebx,5*65536+5
 	mov ecx,0x10ffffff
 	mov edx,name
 	mov esi,42
-	int 0x40
+	mcall
 	ret
 ;----------------------------------------------------------
 menu:
@@ -1204,26 +1205,26 @@ menu:
 	mov ebx,235*65536+140
 	mov ecx,230*65536+20
 	mov edx,0xed16
-	int 0x40
+	mcall
 	mov eax,4
 	mov ebx,255*65536+235
 	mov ecx,0xff0200
 	mov edx,start_menu
 	mov esi,11
-	int 0x40
+	mcall
 	mov eax,47
 	mov ebx,3*65536
 	mov ecx,[number_level]
 	mov edx,345*65536+235
 	mov esi,0xff0200
-	int 0x40
+	mcall
 	still:
 	mov eax,10
-	int 0x40
+	mcall
 	cmp eax,2
 	jne still
 	mov eax,2
-	int 0x40
+	mcall
 	shr eax,8
 	cmp eax,32
 	je start_game
@@ -1242,7 +1243,7 @@ menu:
 	cmp eax,27
 	jne cycle_menu
 	mov eax,-1
-	int 0x40
+	mcall
 	start_game:
 	ret
 ;----------------------------------------------------------

@@ -31,7 +31,7 @@ appname equ 'Doc Pack'
    dd     I_END+0x400             ; memory for app
    dd     I_END+0x400             ; esp
    dd     my_param , 0x0          ; I_Param , I_Icon
-include 'MACROS.INC'
+include '..\..\..\MACROS.INC'
 
 start:
   cmp   [my_param],0
@@ -90,7 +90,7 @@ red:
   mov  ebx,3
   mov  ecx,sc
   mov  edx,sizeof.system_colors
-  int  0x40
+  mcall
 
   mcall 12,1
   
@@ -99,8 +99,8 @@ red:
   mov  ecx,30*65536+FILECOUNT*16+35
   mov  edx,[sc.work]
   or   edx,0x33000000
-  mov  edi,header
-  int  0x40
+  mov  edi,title
+  mcall
 
   mov   ecx,FILECOUNT
   mov   ebx,5 shl 16+100
@@ -159,7 +159,7 @@ still:
   movzx  ecx,ah
   jmp   start.open
 
-header  db appname,0
+title  db appname,0
 
 fileinfo:
         dd      7

@@ -2363,8 +2363,8 @@ sys_background:
 
     cmp   eax,2                            ; SET PIXEL
     jnz   nosb2
-    mov   edx,0x160000-16
-    cmp   edx,ebx
+    mov   edx,[mem_BACKGROUND] 
+    cmp   edx,ebx 
     jbe   nosb2
     mov   edx,[ebx]
     and   edx,0xFF000000 ;255*256*256*256
@@ -3221,35 +3221,13 @@ sys_window_move:
         mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
         mov   [MOUSE_DOWN],byte 0 ; react to mouse up/down
 
-        mov   ecx,10          ; wait 1/10 second
-      .wmrl3:
         call  [draw_pointer]
-        mov   eax,1
-        call  delay_hs
-        loop  .wmrl3
 
         mov   [window_move_pr],0
 
       .window_move_return:
 
         ret
-
-;type_background_1:
-;    cmp   [0xfff0],byte 0               ; background update ?
-;    jz    temp_nobackgr
-;    mov   [0xfff0],byte 2
-;    call  change_task
-;    mov   [draw_data+32+0],dword 0
-;    mov   [draw_data+32+4],dword 0
-;    mov   eax,[ScreenWidth
-;    mov   ebx,[0xfe04]
-;    mov   [draw_data+32+8],eax
-;    mov   [draw_data+32+12],ebx
-;    call  drawbackground
-;    mov   [0xfff0],byte 0
-;    mov   [MOUSE_BACKGROUND],byte 0
-;temp_nobackgr:
-;    ret
 
 uglobal
   window_move_pr   dd  0x0

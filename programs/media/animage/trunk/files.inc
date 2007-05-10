@@ -26,7 +26,7 @@ load_heading_of_file:
 
          mov eax,70
          mov ebx,file_information
-         int 0x40
+         mcall
 
          ret
 ;-----------------------------------------------------------
@@ -55,7 +55,7 @@ load_file:
 
          mov eax,70
 	 mov ebx,file_information
-         int 0x40
+         mcall
          
          test eax,eax
          jnz error_load_file
@@ -75,7 +75,7 @@ load_file:
 
          mov eax,70
          mov ebx,file_information
-         int 0x40
+         mcall
 
          error_load_file:
 
@@ -108,7 +108,7 @@ save_file:
 
          mov eax,70
          mov ebx,file_information
-         int 0x40
+         mcall
 
 	 ret
 

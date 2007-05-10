@@ -25,7 +25,7 @@ use32
                 dd      0, 0                    ; param, icon
    
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
    
 START:                                  ; start of execution
    
@@ -34,7 +34,7 @@ START:                                  ; start of execution
     mov  ecx,0x4000            ; local port
     mov  edx,0x5000            ; remote port
     mov  esi,dword [remote_ip]   ; node IP
-    int  0x40
+    mcall
    
     mov  [socketNum], eax
 
@@ -44,7 +44,7 @@ red:
 still:
    
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     dec  eax
     jz   red
@@ -53,21 +53,21 @@ still:
 
 key:
     mov  al,2
-    int  0x40
+    mcall
     jmp  still
    
 button:
     mov  al,17
-    int  0x40
+    mcall
    
     dec  ah                    ; button id=1 ?
     jnz  noclose
     mov  eax, 53
     mov  ebx, 1
     mov  ecx, [socketNum]
-    int  0x40
-    mov  eax,-1
-    int  0x40
+    mcall
+    or  eax,-1
+    mcall
   noclose:
 ; it was not close button, so it must be send code button
 
@@ -84,7 +84,7 @@ send_xcode:
   mov  ecx,[socketNum]
   mov  edx,end_message-send_data
   mov  esi,send_data
-  int  0x40
+  mcall
 
   jmp  still
    
@@ -98,37 +98,31 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
    
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+250         ; [x start] *65536 + [x size]
     mov  ecx,60*65536+150          ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB
-    int  0x40
+    mov  edx,0x13ffffff            ; color of work area RRGGBB
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
    
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labeltext             ; pointer to text beginning
-    mov  esi,lte-labeltext         ; text length
-    int  0x40
    
     mov  eax,8                     ; SEND MESSAGE
     mov  ebx,50*65536+145
     mov  ecx,47*65536+13
     mov  edx,2
     mov  esi,0x667788
-    int  0x40
+    mcall
    
+    mov  eax,4
     mov  ebx,25*65536+50           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,esi
     cmp  [edx],byte 'x'
@@ -136,7 +130,7 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
    
@@ -161,8 +155,7 @@ text:
     db 'x' ; <- END MARKER, DONT DELETE
 end if   
    
-labeltext:  db  'NetSend(Client)'  ;
-lte:
+title  db  'NetSend(Client)',0
    
 remote_ip  db  192,168,1,2
    

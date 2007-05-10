@@ -40,7 +40,7 @@ use32
   dd 0x0
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 ; CODE AREA
 
 ENTRANCE:
@@ -53,7 +53,7 @@ ENTRANCE:
  still:
 
  mov eax,10                   ; wait for event
- int 0x40
+ mcall
 
  cmp eax,1                    ; redraw?
  jnz no_redraw
@@ -72,7 +72,7 @@ ENTRANCE:
 
  key:
  mov eax,2   ; read it
- int 0x40
+ mcall
  shr eax,8
 
  cmp byte [editstate],0
@@ -132,12 +132,12 @@ ENTRANCE:
  button:
 
  mov eax,17
- int 0x40
+ mcall
 
  cmp ah,1
  jnz no_quit
  mov eax,-1
- int 0x40
+ mcall
  no_quit:
 
  cmp ah,4
@@ -181,7 +181,7 @@ ENTRANCE:
  pusha
  mov eax,32
  mov ebx,iofile
- int 0x40
+ mcall
  popa
  no_delete_io:
 
@@ -190,7 +190,7 @@ ENTRANCE:
  pusha
  mov eax,32
  mov ebx,cmfile
- int 0x40
+ mcall
  popa
  no_delete_archive:
 
@@ -202,7 +202,7 @@ ENTRANCE:
 
  mov eax,12  ; Start redrawing
  mov ebx,1
- int 0x40
+ mcall
 
  xor eax,eax           ; Define window
  mov ebx,100*65536+240
@@ -210,25 +210,25 @@ ENTRANCE:
  mov edx,0x03AAAAAA
  mov esi,0x80777777
  mov edi,0x00777777
- int 0x40
+ mcall
 
  mov eax,4              ; Draw all needed texts
  mov ebx,8*65536+8
  mov ecx,0x00FFFFFF
  mov edx,title
  mov esi,arclab-title
- int 0x40
+ mcall
 
  xor ecx,ecx
  mov edx,arclab
  mov esi,unplab-arclab
  add ebx,10*65536+28
- int 0x40
+ mcall
 
  mov edx,unplab
  mov esi,fin_text-unplab
  add ebx,18
- int 0x40
+ mcall
 
  pusha
 
@@ -237,35 +237,35 @@ ENTRANCE:
 ; mov ecx,6*65536+10
 ; mov edx,1
 ; mov esi,0x555555
-; int 0x40
+; mcall
 
  mov eax,8
  mov ebx,15*65536+100
  mov ecx,70*65536+13
  mov edx,2
- int 0x40
+ mcall
 
  inc edx
  add ebx,110*65536
- int 0x40
+ mcall
 
  inc edx
  mov ebx,214*65536+11
  mov ecx,33*65536+11
- int 0x40
+ mcall
 
  inc edx
  add ecx,18*65536
- int 0x40
+ mcall
 
  inc edx
  mov ebx,15*65536+100
  mov ecx,86*65536+13
- int 0x40
+ mcall
 
  inc edx
  add ebx,110*65536
- int 0x40
+ mcall
 
  popa
 
@@ -273,18 +273,18 @@ ENTRANCE:
  mov edx,keylab
  mov esi,dellab-keylab
  add ebx,19
- int 0x40
+ mcall
 
  mov edx,dellab
  mov esi,title-dellab
  add ebx,16
- int 0x40
+ mcall
 
  call draw_info
 
  mov eax,12          ; Finish redrawing
  mov ebx,2
- int 0x40
+ mcall
 
  ret
 
@@ -298,7 +298,7 @@ ENTRANCE:
  mov ebx,127*65536+85
  mov ecx,33*65536+33
  mov edx,0x00AAAAAA
- int 0x40
+ mcall
 
  mov eax,4 ; Draw filenames
  mov ebx,134*65536+36
@@ -309,7 +309,7 @@ ENTRANCE:
  jnz no_active_1
  mov ecx,activecolor
  no_active_1:
- int 0x40
+ mcall
  xor ecx,ecx
  cmp byte [editstate],2
  jnz no_active_2
@@ -317,13 +317,13 @@ ENTRANCE:
  no_active_2:
  add ebx,18
  add edx,12
- int 0x40
+ mcall
 
  mov eax,13             ; Clean info area
  mov ebx,14*65536+210
  mov ecx,107*65536+14
  mov edx,0x00AAAAAA
- int 0x40
+ mcall
 
  cmp byte [msgid],0     ; Draw info string
  jz notype
@@ -338,7 +338,7 @@ ENTRANCE:
  mov dx,ax
  add edx,msgtable
  mov eax,4
- int 0x40
+ mcall
  notype:
 
  popa ; Restore registers
@@ -409,7 +409,7 @@ ENTRANCE:
  mov edx,ecx
  not edx
  mov esi,ifile
- int 0x40
+ mcall
 
  cmp eax,0xFFFFFFFF
  jnz  compress_filefound              ; i/o file not found
@@ -429,14 +429,14 @@ ENTRANCE:
 
  mov eax,32
  mov ebx,cmfile
- int 0x40
+ mcall
 
  mov eax,33
  pop edx
  mov ebx,cmfile
  mov ecx,ofile
  xor esi,esi
- int 0x40
+ mcall
 
  mov byte [msgid],0
  call draw_info
@@ -454,7 +454,7 @@ ENTRANCE:
  mov edx,ecx
  not edx
  mov esi,ofile
- int 0x40
+ mcall
 
  cmp eax,0xFFFFFFFF
  jnz  decompress_filefound              ; *.mhc file not found
@@ -481,14 +481,14 @@ ENTRANCE:
 
  mov eax,32
  mov ebx,iofile
- int 0x40
+ mcall
 
  mov eax,33
  pop edx
  mov ebx,iofile
  mov ecx,ifile
  xor esi,esi
- int 0x40
+ mcall
 
  mov byte [msgid],0
  call draw_info

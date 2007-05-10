@@ -9,7 +9,7 @@ load_dll:
     mov ecx,eax
     mov eax,68
     mov ebx,19
-    int 0x40
+    mcall
 
     ret
 

@@ -229,7 +229,7 @@ debug_beginf
         mov     cl,al
         mov     ebx,1
         mov     eax,63
-        int     0x40
+        mcall
         popad
         ret
 debug_endf
@@ -243,7 +243,7 @@ debug_beginf
         mov     cl,[edx]
         or      cl,cl
         jz      .l2
-        int     0x40
+        mcall
         inc     edx
         jmp     .l1
   .l2:  ret

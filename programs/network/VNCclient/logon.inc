@@ -3,7 +3,7 @@ red_logon:
 
 still_logon:			 ; main cycle of application begins here
     mov  eax,10     ; wait here for event
-    int  0x40
+    mcall
 
 checkevent_logon:	  ; Check what event was called _logon: this will be used to return from textbox focus
 
@@ -18,7 +18,7 @@ checkevent_logon:	  ; Check what event was called _logon: this will be used to r
 
   key_logon:		 ; key event handler
     mov  al,2		 ; eax was zero so will now be 2
-    int  0x40		 ; just read it and ignore
+    mcall		 ; just read it and ignore
 
     cmp  ah,13
     jne  still_logon	 ; return to main loop
@@ -27,7 +27,7 @@ checkevent_logon:	  ; Check what event was called _logon: this will be used to r
 
   button_logon: 	 ; eax was zero so will now be 17
     mov  al,17		 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1		 ; close ?
     jz	 close_logon
@@ -66,10 +66,10 @@ checkevent_logon:	  ; Check what event was called _logon: this will be used to r
 
   .waitev_logon:
     mov  eax,10 	 ; wait for event
-    int  0x40
+    mcall
     cmp  eax,2		 ; button presed ?
     jne  checkevent_logon    ; a key is pressed or redraw is nessesary, goto checkevent
-    int  0x40		 ; eax = 2, read button
+    mcall		 ; eax = 2, read button
     shr  eax,8
     cmp  eax,8
     jnz  .nobs_logon	 ; BACKSPACE
@@ -126,14 +126,14 @@ pusha
     mov  ecx, 33*65536+12
     mov  edx, 4
     mov  esi, 0xEBEBEB
-    int  0x40
+    mcall
 
     cmp  byte[mode],0
     je	 @f
 
     mov  ecx, 49*65536+12
     inc  edx
-    int  0x40
+    mcall
 
    @@:
     mov  eax, 4 			; function 4 _logon: write text to window
@@ -141,7 +141,7 @@ pusha
     xor  ecx, ecx			; color of text RRGGBB
     mov  edx, first			; pointer to text beginning
     mov  esi, STRLEN			; text length
-    int  0x40
+    mcall
 
     cmp  byte[mode],0
     je	 dont_draw_pass
@@ -156,7 +156,7 @@ pusha
     dec  edi
     mov  edx, passchar
     mov  esi, 1
-    int  0x40
+    mcall
     add  ebx,6*65536
     jmp  @r
 
@@ -166,8 +166,8 @@ popa
     ret
 
 close_logon:
-    mov  eax,-1
-    int  0x40
+    or  eax,-1
+    mcall
 
 connect_logon:
     ret
@@ -176,44 +176,39 @@ draw_window_logon:
 
     mov  eax, 12			; function 12_logon:tell os about windowdraw
     mov  ebx, 1 			; 1, start of draw
-    int  0x40
+    mcall
     pusha
 					; DRAW WINDOW
     xor  eax, eax			; function 0 _logon: define and draw window
     mov  ebx, 160*65536+330		; [x start] *65536 + [x size]
     mov  ecx, 160*65536+100		; [y start] *65536 + [y size]
-    mov  edx, 0x03DDDDDD		; color of work area RRGGBB
-    int  0x40
+    mov  edx, 0x13DDDDDD		; color of work area RRGGBB
+    mov  edi, title                     ; WINDOW LABEL
+    mcall
 
     mov  eax, 8 			; LOGON BUTTON
     mov  ebx, 220*65536+85
     mov  ecx, 63*65536+16
     mov  edx, 2
     mov  esi, 0xCCCCCC
-    int  0x40
+    mcall
 
     call print_text_logon
-					; WINDOW LABEL
-    mov  eax, 4 			; function 4 _logon: write text to window
-    mov  ebx, 8*65536+8 		; [x start] *65536 + [y start]
-    mov  ecx, 0x10ffffff		; color of text RRGGBB
-    mov  edx, labelt			; pointer to text beginning
-    mov  esi, labellen-labelt		; text length
-    int  0x40
-
+					
     cmp  byte[mode],0
     je	 servermode_
 
+    mov  eax, 4 			; function 4 _logon: write text to window
     mov  ebx, 25*65536+33		; [x start] *65536 + [y start]
     xor  ecx, ecx
     mov  edx, userstr			; pointer to text beginning
     mov  esi, passstr-userstr		; text length
-    int  0x40
+    mcall
 
     add  bl,16
     mov  edx, passstr			; pointer to text beginning
     mov  esi, connect-passstr		; text length
-    int  0x40
+    mcall
 
     jmp  drawtherest_
 
@@ -223,25 +218,24 @@ draw_window_logon:
     xor  ecx, ecx
     mov  edx, serverstr 		; pointer to text beginning
     mov  esi, userstr-serverstr 	; text length
-    int  0x40
+    mcall
 
    drawtherest_:
 
     mov  ebx, 240*65536+67		; [x start] *65536 + [y start]
     mov  edx, connect			; pointer to text beginning
     mov  esi, connect_e-connect 	; text length
-    int  0x40
+    mcall
 
     popa
     inc   ebx
-    int  0x40
+    mcall
 
     ret
 
 
 ; DATA AREA
-labelt:  db 'Kolibrios VNC client by HIDNPLAYR'
-labellen:
+title  db 'Kolibrios VNC client by HIDNPLAYR',0
 
 first:	      db '192.168.1.5'
 	      rb STRLEN

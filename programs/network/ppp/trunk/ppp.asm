@@ -60,20 +60,18 @@ MaxTx           equ         1500
 
 
 use32
-
-     org     0x0
-
-     db      'MENUET00'      ; 8 byte id
-     dd      38              ; required os
-     dd      STARTAPP        ; program start
-     dd      I_END           ; program image size
-     dd      0x100000        ; required amount of memory
-        ; esp = 0x7FFF0
-     dd      0x00000000      ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	STARTAPP      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
 
 
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 include "chat.inc"                  ; Hosts modem chatting routine
 
 
@@ -87,7 +85,7 @@ STARTAPP:
 
     mov   eax, 52                 ; Stack Interface
     mov   ebx, 0     ; read configuration word
-    int   0x40
+    mcall
     mov  ecx, eax
     shr  ecx, 16     ; get the port address
     mov  [comport], ecx
@@ -109,13 +107,13 @@ appdsp:
     mov     al, [welcomep_len]
     mov     [prompt_len], al
 
+red:
     call    draw_window                 ; at first, draw the window
-
 
 apploop:
     mov     eax, 23                     ; wait here for event
     mov     ebx, 20
-    int     0x40
+    mcall
 
     cmp     eax, 1                      ; redraw request ?
     je      red
@@ -129,18 +127,14 @@ apploop:
     je      flush_input                 ; Dont want serial data yet
     jmp     apploop
 
-red:                                    ; redraw
-    call    draw_window
-    jmp     apploop
-
 key:                                    ; key - ignore
     mov     eax, 2                      ; just read it
-    int     0x40
+    mcall
     jmp     apploop
 
 button:                                 ; button
     mov     eax, 17                     ; get id
-    int     0x40
+    mcall
 
     cmp     ah, 1                       ; close program ?
     jne     noclose
@@ -152,8 +146,8 @@ button:                                 ; button
 
     call    disable_port
 
-    mov     eax, -1                     ; close this program
-    int     0x40
+    or      eax, -1                     ; close this program
+    mcall
     jmp     apploop
 
 noclose:
@@ -173,10 +167,10 @@ noclose:
 flush_input:
     mov  eax,42
     mov  ebx, [comirq]
-    int  0x40
+    mcall
 
     mov  eax,11                     ; This will return 0 most of the time
-    int  0x40
+    mcall
     mov     ebx, [comirq]
     add     ebx, 16
     cmp     eax, ebx
@@ -200,7 +194,7 @@ dialloop:
 
     mov     eax, 23
     mov     ebx, 100
-    int     0x40                        ; wait for 1s to display message
+    mcall                        ; wait for 1s to display message
 
     call    PPPStateMachine         ; This is the main code
 
@@ -225,12 +219,12 @@ PPPStateMachine:
 PPPLoop:
 
     mov     eax, 11                 ; check event
-    int     0x40
+    mcall
     cmp     eax, 3
     jne     PPPLred
         ; button pressed
     mov     eax, 17                     ; get id
-    int     0x40
+    mcall
 
 
     mov     eax, hangp
@@ -246,7 +240,7 @@ PPPLoop:
 
     call    disable_port
     mov     eax, -1                     ; close this program
-    int     0x40
+    mcall
     jmp     PPPLoop
 
 PPPLred:
@@ -267,7 +261,7 @@ PPPLoop0:
 
     mov     eax, 42
     mov     ebx, [comirq]      ; ecx will return 0 =data read, 1 =no data
-    int     0x40               ; or 2 =not irq owner
+    mcall               ; or 2 =not irq owner
 
     inc     dword [rxbytes]
 
@@ -426,7 +420,7 @@ wait_txd2:
     mov     eax,43
     mov     ecx, [comport]
     add     ecx, 0x80000000 + 5
-    int     0x40
+    mcall
     and     bl, 0x40
     cmp     bl, 0
     jz      wait_txd2                  ; loop until free
@@ -440,7 +434,7 @@ wait_txd2:
 
     mov     ecx, [comport]
     mov     eax, 43
-    int     0x40
+    mcall
 
 ppp_003:
     mov     eax, [packet]
@@ -698,7 +692,7 @@ ppp_005d:
     mov     cl, [addr2]
     shl     ecx, 8
     mov     cl, [addr1]
-    int     0x40                       ; Set the stacks IP address
+    mcall                       ; Set the stacks IP address
 
     popa
 
@@ -735,7 +729,7 @@ ppp_006:
     mov     ebx, 6
     mov     edx, 1500   ; this should be exact amount
     mov     esi, rx_str + 4
-    int     0x40
+    mcall
 
     ; Debugging output to debug board
     pusha
@@ -883,7 +877,7 @@ ppp_012:
     ; 10ms Delay suggested by Ville
     mov     eax,23     ; over here
     mov     ebx,1
-    int     0x40
+    mcall
 
 
 
@@ -902,7 +896,7 @@ ppp_012a:
     mov     eax, 52
     mov     ebx, 8
     mov     esi, ip_buff
-    int     0x40
+    mcall
 
     cmp     eax, 0
     je      ppp_013
@@ -1225,13 +1219,13 @@ if DEBUG_PORT2_OUTPUT = TRUE
     and      ecx, 0xFF0
     mov      edx, ecx
     or       edx, 0x00F
-    int      0x40
+    mcall
 end if
 
     mov      eax, 45                 ; free irq 4
     mov      ebx, 1
     mov      ecx, [comirq]
-    int      0x40
+    mcall
 
     mov      eax, 46                 ; free port area
     mov      ebx, 1
@@ -1240,7 +1234,7 @@ end if
     and      ecx, 0xFF0
     mov      edx, ecx
     or       edx, 0x00F
-    int      0x40
+    mcall
     ret
 
 
@@ -1263,49 +1257,49 @@ if DEBUG_PORT2_OUTPUT = TRUE
     and      ecx, 0xFF0
     mov      edx, ecx
     or       edx, 0x00F
-    int      0x40                     ; reseve port memory to this process
+    mcall                     ; reseve port memory to this process
 
     mov      eax, 45                  ; reserve irq 3
     mov      ebx, 0
     mov      ecx, 3
-    int      0x40
+    mcall
 
 
     mov      ecx, 0x2f8             ; data format register
     add      ecx, 3
     mov      bl, 0x80               ; enable access to divisor latch
     mov      eax, 43                ; send data to device - com port setup
-    int      0x40
+    mcall
 
     mov      ecx, 0x2f8          ; interrupt enable register
     inc      ecx
     mov      bl, 0                    ; No interruts enabled
     mov      eax, 43                  ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, 0x2f8                 ; Divisor latch LSB
     mov      bl, BAUDRATE             ; set baud rate
     mov      eax, 43                  ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, 0x2f8             ; Data format register
     add      ecx, 3
     mov      bl, 3                    ; 8 data bits
     mov      eax, 43                  ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, 0x2f8        ; Modem control register
     add      ecx, 4                ; ** bl must be 0x0b for modem to dial!
     mov      bl, 0x0b              ; 0x08 -> out2 enabled. No handshaking.
        ; 0xb ->  out2 enabled, RTS/DTR enabled
     mov      eax, 43               ; send data to device (modem)
-    int      0x40
+    mcall
 
 ;    mov      ecx, 0x2f8        ; interrupt enable register
 ;    inc      ecx
 ;    mov      bl, 1                 ; rx data interrupt enabled, othrs not
 ;    mov      eax, 43               ; send data to device (modem)
-;    int      0x40
+;    mcall
 
 end if
 
@@ -1315,53 +1309,53 @@ end if
     and      ecx, 0xFF0
     mov      edx, ecx
     or       edx, 0x00F
-    int      0x40                     ; reseve port memory to this process
+    mcall                     ; reseve port memory to this process
 
     mov      eax, 45                  ; reserve irq 4
     mov      ebx, 0
     mov      ecx, [comirq]
-    int      0x40
+    mcall
 
     mov      eax, 44                  ; setup irq table
     mov      ebx, irqtable
     mov      ecx, [comirq]
-    int      0x40
+    mcall
 
     mov      ecx, [comport]             ; data format register
     add      ecx, 3
     mov      bl, 0x80               ; enable access to divisor latch
     mov      eax, 43                ; send data to device - com port setup
-    int      0x40
+    mcall
 
     mov      ecx, [comport]          ; interrupt enable register
     inc      ecx
     mov      bl, 0                    ; No interruts enabled
     mov      eax, 43                  ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, [comport]                 ; Divisor latch LSB
     mov      bl, BAUDRATE             ; set baud rate
     mov      eax, 43                  ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, [comport]             ; Data format register
     add      ecx, 3
     mov      bl, 3                    ; 8 data bits
     mov      eax, 43                  ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, [comport]        ; Modem control register
     add      ecx, 4                ; ** bl must be 0x0b for modem to dial!
     mov      bl, 0x0b              ; 0x08 -> out2 enabled. No handshaking.
        ; 0xb ->  out2 enabled, RTS/DTR enabled
     mov      eax, 43               ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, [comport]        ; interrupt enable register
     inc      ecx
     mov      bl, 1                 ; rx data interrupt enabled, othrs not
     mov      eax, 43               ; send data to device (modem)
-    int      0x40
+    mcall
 
     mov      ecx, [comirq]
     add      ecx, 16
@@ -1369,7 +1363,7 @@ end if
     shl      ebx, cl
     add      ebx, 111b
     mov      eax,40                  ; enable irq 4 data
-    int      0x40
+    mcall
 
     popa
     ret
@@ -1386,29 +1380,22 @@ end if
 draw_window:
     mov      eax, 12                 ; function 12:tell os about windowdraw
     mov      ebx, 1                  ; 1, start of draw
-    int      0x40
+    mcall
          ; DRAW WINDOW
     mov      eax, 0                  ; function 0 : define and draw window
     mov      ebx, 100*65536+250      ; [x start] *65536 + [x size]
     mov      ecx, 100*65536+150      ; [y start] *65536 + [y size]
-    mov      edx,0x03224466            ; color of work area RRGGBB
-    mov      esi,0x00334455            ; color of grab bar  RRGGBB
-    mov      edi,0x00ddeeff            ; color of frames    RRGGBB
-    int      0x40
-         ; WINDOW LABEL
-    mov      eax, 4                  ; function 4 : write text to window
-    mov      ebx, 8*65536+8          ; [x start] *65536 + [y start]
-    mov      ecx, 0x00ffffff         ; color of text RRGGBB
-    mov      edx, labelt             ; pointer to text beginning
-    mov      esi, labellen-labelt    ; text length
-    int      0x40
+    mov      edx,0x13224466          ; color of work area RRGGBB
+    mov      edi,title               ; color of frames    RRGGBB
+    mcall
+
        ; DIAL BUTTON
     mov      eax, 8                  ; function 8 : define and draw button
     mov      ebx, (50)*65536+40      ; [x start] *65536 + [x size]
     mov      ecx, 130*65536+12       ; [y start] *65536 + [y size]
     mov      edx, 2                  ; button id
     mov      esi, 0x5599cc           ; button color RRGGBB
-    int      0x40
+    mcall
 
     mov      ebx, 55*65536+133       ; Draw button text
     mov      ecx, 0x00FFFFFF
@@ -1417,14 +1404,14 @@ draw_window:
     mov      al,  [button1_text_len]
     mov      esi, eax
     mov      eax, 4
-    int      0x40
+    mcall
       ; DISCONNECT BUTTON
     mov      eax, 8                  ; function 8 : define and draw button
     mov      ebx, (150)*65536+65     ; [x start] *65536 + [x size]
     mov      ecx, 130*65536+12       ; [y start] *65536 + [y size]
     mov      edx, 3                  ; button id
     mov      esi, 0x5599cc           ; button color RRGGBB
-    int      0x40
+    mcall
 
     mov      ebx, 155*65536+133      ; Draw button text
     mov      ecx, 0x00FFFFFF
@@ -1433,7 +1420,7 @@ draw_window:
     mov      al,  [button3_text_len]
     mov      esi, eax
     mov      eax, 4
-    int      0x40
+    mcall
 
     mov      ebx, 5*65536+40         ; draw info text with function 4
     mov      ecx, 0x00FFFFFF
@@ -1442,7 +1429,7 @@ draw_window:
     mov      al,  [prompt_len]
     mov      esi, eax
     mov      eax, 4
-    int      0x40
+    mcall
 
     ; Draw IP address
     mov      edx, 10*65536+60
@@ -1450,25 +1437,25 @@ draw_window:
     mov      ebx, 0x00030000
     movzx    ecx, byte [addr1]
     mov      eax, 47
-    int      0x40
+    mcall
     mov      edx, 31*65536+60
     mov      esi, 0x00FFFFFF
     mov      ebx, 0x00030000
     movzx    ecx, byte [addr2]
     mov      eax, 47
-    int      0x40
+    mcall
     mov      edx, 52*65536+60
     mov      esi, 0x00FFFFFF
     mov      ebx, 0x00030000
     movzx    ecx, byte [addr3]
     mov      eax, 47
-    int      0x40
+    mcall
     mov      edx, 73*65536+60
     mov      esi, 0x00FFFFFF
     mov      ebx, 0x00030000
     movzx    ecx, byte [addr4]
     mov      eax, 47
-    int      0x40
+    mcall
 
     ; Status byte
     mov      edx, 100*65536+60
@@ -1476,7 +1463,7 @@ draw_window:
     mov      ebx, 0x00010000
     movzx    ecx, byte [state]
     mov      eax, 47
-    int      0x40
+    mcall
 
     ; bytes sent / received
     mov      eax, 4                  ; function 4 : write text to window
@@ -1484,20 +1471,20 @@ draw_window:
     mov      ecx, 0x00ffffff         ; color of text RRGGBB
     mov      edx, txmsg              ; pointer to text beginning
     mov      esi, txmsglen-txmsg    ; text length
-    int      0x40
+    mcall
 
     mov      eax, 4                  ; function 4 : write text to window
     mov      ebx, 10*65536+100          ; [x start] *65536 + [y start]
     mov      ecx, 0x00ffffff         ; color of text RRGGBB
     mov      edx, rxmsg              ; pointer to text beginning
     mov      esi, rxmsglen-rxmsg    ; text length
-    int      0x40
+    mcall
 
     call    draw_window_limited
 
     mov      eax, 12                 ; end of redraw
     mov      ebx, 2
-    int      0x40
+    mcall
 
     ret
 
@@ -1508,26 +1495,23 @@ draw_window_limited:
     mov     ebx,80*65536+10*6
     mov     ecx,80*65536+10
     mov     edx,0x03224466
-    int     0x40
-    mov     eax,13
-    mov     ebx,80*65536+10*6
+    mcall
     mov     ecx,100*65536+10
-    mov     edx,0x03224466
-    int     0x40
+    mcall
 
     mov     ebx, 0x000A0000
     mov     ecx, [txbytes]
     mov     esi, 0x00ffffff         ; color of text RRGGBB
     mov     eax, 47                  ; function 47 : write number to window
     mov     edx, 80*65536+80          ; [x start] *65536 + [y start]
-    int     0x40
+    mcall
 
     mov     ebx, 0x000A0000
     mov     ecx, [rxbytes]
     mov     esi, 0x00ffffff         ; color of text RRGGBB
     mov     eax, 47                  ; function 47 : write number to window
     mov     edx, 80*65536+100          ; [x start] *65536 + [y start]
-    int     0x40
+    mcall
     ret
 
 
@@ -1545,7 +1529,7 @@ settimer:
     push    eax
     mov     eax, 26
     mov     ebx, 9
-    int     0x40        ; get 100th second counter
+    mcall        ; get 100th second counter
     pop     ebx
     sub     eax, ebx    ; This could have some funny side effecs if PPP
    ; called within ebx seconds of startup
@@ -1566,7 +1550,7 @@ settimer:
 gettimer:
     mov     eax, 26
     mov     ebx, 9
-    int     0x40        ; get 100th second counter
+    mcall        ; get 100th second counter
 
     sub     eax, [timerValue]
     ret
@@ -1624,7 +1608,7 @@ sw_000:
     ; any data from modem?
 
     mov     eax,11                     ; This will return 0 most of the time
-    int     0x40
+    mcall
     mov     ecx, eax
     pop     edx
     pop     eax
@@ -1660,7 +1644,7 @@ sw_000a:
     push    eax
     mov     eax,42
     mov     ebx, [comirq]
-    int     0x40
+    mcall
     pop     eax
     pop     edx
 
@@ -1785,7 +1769,7 @@ sw_004:
     push    edi
     mov     eax, 5
     mov     ebx, 1
-    int     0x40        ; 10ms delay
+    mcall        ; 10ms delay
     pop     edi
 
     ; send the character
@@ -1796,7 +1780,7 @@ sw_004:
     inc     eax
     push    eax
     mov     eax, 43
-    int     0x40
+    mcall
 
     pop     eax
     pop     edx
@@ -1881,7 +1865,7 @@ txCom2:
 wait_txd2t:
     mov     eax,43
     mov     ecx,0x80000000 + 0x2f8 + 5
-    int     0x40
+    mcall
     and     bl, 0x40
     cmp     bl, 0
     jz      wait_txd2t                  ; loop until free
@@ -1893,7 +1877,7 @@ wait_txd2t:
 
     mov     ecx, 0x2f8
     mov     eax, 43
-    int     0x40
+    mcall
     ret
 
 
@@ -1924,7 +1908,7 @@ end if
     mov     eax,63
     mov     ebx, 1
     push    esi
-    int 0x40
+    mcall
     pop     esi
     inc     esi
     jmp     debug_print_string
@@ -2159,8 +2143,7 @@ prompt              dd  0
 prompt_len          db  0
 
 ; Application Title
-labelt              db  'PPP Dialer'
-labellen:
+title               db  'PPP Dialer',0
 
 txmsg:              db  'Tx bytes :'
 txmsglen:

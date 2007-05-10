@@ -63,7 +63,7 @@ use32
 listsel    dd 0
 channel dd 0
 COLOR_ORDER equ MENUETOS
-include 'macros.inc' ; decrease code size (optional)
+include '..\..\..\macros.inc' ; decrease code size (optional)
 lang fix en
 ;purge mov
 include 'debug.inc'
@@ -153,7 +153,7 @@ clearpath:
     rep  movsd
     mov  eax,70
     mov  ebx,file_info
-    int  0x40
+    mcall
     add  ebx,workarea
     mov  [midi_limit],ebx
     mov  edi,I_PARAM
@@ -225,7 +225,7 @@ still:
     mov  ecx,ipcarea
     call init_ipc
     mov  eax,10
-    int  0x40
+    mcall
 prc_event:
     test eax,eax
     jz	 still

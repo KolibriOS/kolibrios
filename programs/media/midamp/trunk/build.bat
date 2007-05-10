@@ -1,1 +1,2 @@
-fasm MIDAMP.ASM MIDAMP
+@fasm MIDAMP.ASM MIDAMP
+@pause

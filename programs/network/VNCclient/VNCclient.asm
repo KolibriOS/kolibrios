@@ -32,6 +32,7 @@ ypos = 22	 ;
 TIMEOUT = 60	 ; timeout in seconds
 BUFFER	= 1500	 ; Buffer size for DNS
 
+include '..\..\macros.inc'
 include 'fdo.inc'
 include 'ETH.INC'
 include 'logon.inc'
@@ -39,41 +40,40 @@ include 'raw.inc'
 include 'copyrect.inc'
 include 'thread.inc'
 
-
 START:				       ; start of execution
 
     call    red_logon
 
     mov     eax,40		       ; Report events
     mov     ebx,00000000b	       ; Only Stack
-    int     0x40
+    mcall
 
     mov     eax,67		       ; resize the window (hide it)
     xor     ebx,ebx
     mov     ecx,ebx
     mov     edx,ebx
     mov     esi,ebx
-    int     0x40
+    mcall
 
     mov     eax,51
     mov     ebx,1
     mov     ecx,thread_start
     mov     edx,thread_stack
-    int     0x40
+    mcall
 
     DEBUGF 1,'Thread created: %u\n',eax
 
    @@:
     mov     eax,5
     mov     ebx,10
-    int     0x40
+    mcall
 
     cmp     byte[thread_ready],0
     je	    @r
 
     mov     eax,40		   ; report events
     mov     ebx,100111b 	   ; mouse, button, key, redraw
-    int     0x40
+    mcall
 
     mov     eax,67		   ; resize the window
     mov     ebx,10
@@ -84,7 +84,7 @@ START:				       ; start of execution
     shr     edx,16
     add     edx,2*xpos
     add     esi,ypos+xpos
-    int     0x40
+    mcall
 
   mainloop:
     eth.socket_status [socket],eax
@@ -93,7 +93,7 @@ START:				       ; start of execution
 
     mov     eax,23		   ; wait for event with timeout
     mov     ebx,50		   ; 0,5 s
-    int     0x40
+    mcall
 
     cmp     eax,1
     je	    redraw
@@ -112,7 +112,7 @@ START:				       ; start of execution
     DEBUGF 1,'Sending key event\n'
 
     mov     eax,2
-    int     0x40
+    mcall
     mov     byte[keyevent.key+3],ah
 
     eth.write_tcp [socket],8,keyevent
@@ -124,7 +124,7 @@ START:				       ; start of execution
 
     mov     eax,37
     mov     ebx,1
-    int     0x40
+    mcall
 
     sub     eax,xpos*65536+ypos
     bswap   eax
@@ -134,7 +134,7 @@ START:				       ; start of execution
 
     mov     eax,37
     mov     ebx,2
-    int     0x40
+    mcall
 
     test    al,00000010b	    ; test if right button was pressed  (bit 1 in kolibri)
     jz	    @f
@@ -153,7 +153,7 @@ START:				       ; start of execution
 
     mov     eax,12
     mov     ebx,1
-    int     0x40
+    mcall
 
     mov     eax,0		      ; draw window
     mov     ebx,dword[framebuffer]
@@ -163,9 +163,7 @@ START:				       ; start of execution
     add     ebx,2*xpos
     add     ecx,ypos+xpos
     mov     edx,0x03ffffff
-    mov     esi,0x80555599
-    mov     edi,0x00ffffff
-    int     0x40
+    mcall
 
     mov     eax,4		      ; label
     mov     ebx,9*65536+8
@@ -173,13 +171,13 @@ START:				       ; start of execution
     mov     edx,name
     mov     esi,[name_length]
     bswap   esi
-    int     0x40
+    mcall
 
     call    drawbuffer
 
     mov     eax,12
     mov     ebx,2
-    int     0x40
+    mcall
 
     jmp     mainloop
 
@@ -189,14 +187,14 @@ START:				       ; start of execution
     mov     ebx,framebuffer_data
     mov     ecx,dword[screen]
     mov     edx,xpos*65536+ypos
-    int     0x40
+    mcall
 
     ret
 
 
   button:			  ; button
     mov     eax,17		  ; get id
-    int     0x40
+    mcall
 
   close:
     call    read_data
@@ -204,7 +202,7 @@ START:				       ; start of execution
     DEBUGF 1,'Socket closed\n'
 
     mov     eax,-1
-    int     0x40
+    mcall
 
     no_rfb:
     DEBUGF 1,'This is no vnc server!\n'

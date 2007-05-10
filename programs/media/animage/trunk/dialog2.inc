@@ -16,7 +16,7 @@ dialog_line:
 
       opros:
 	    mov eax,10
-	    int 0x40
+	    mcall
 
 	    cmp eax,1
 	    je exit_cycle
@@ -25,7 +25,7 @@ dialog_line:
 	    jne opros
 
 	    mov eax,2
-	    int 0x40
+	    mcall
 	    shr eax,8
 
 	    cmp eax,13
@@ -110,7 +110,7 @@ print_line:
 	     add ebx,2
 	     add ecx,10
 	     mov edx,0xffffff
-	     int 0x40
+	     mcall
 	     mov eax,4
 	     mov ebx,[string_x]
 	     shl ebx,16
@@ -118,7 +118,7 @@ print_line:
 	     mov ecx,0
 	     mov edx,string_
 	     mov esi,[MaxSizeString]
-	     int 0x40
+	     mcall
 	     ret
 
 print_cursor:
@@ -132,7 +132,7 @@ print_cursor:
 	     add ebx,2
 	     add ecx,8
 	     mov edx,0xff6c58
-	     int 0x40
+	     mcall
 	     ret
 ;----------------------------------------------------------
 MinMaxCorrect:

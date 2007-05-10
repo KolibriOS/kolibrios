@@ -5,7 +5,7 @@
 ;
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 use32
 
@@ -43,7 +43,7 @@ START:                          ; start of execution
 
     mov  eax,26
     mov  ebx,9
-    int  0x40
+    mcall
     mov  [next_tic],eax
 
 still:
@@ -58,11 +58,11 @@ still:
     mov  ebx,2
     mov  ecx,0
     mov  edx,[mono_stereo]
-    int  0x40
+    mcall
 
     mov  eax,23                 ; wait here for event
     mov  ebx,1
-    int  0x40
+    mcall
 
     cmp  eax,0
     jne  do_task
@@ -74,7 +74,7 @@ still2:
 
     mov  eax,26
     mov  ebx,9
-    int  0x40
+    mcall
     mov  ebx,[next_tic]
     cmp  eax,ebx
     jge  play_wave_block
@@ -101,7 +101,7 @@ still2:
     jne  no_irman
     mov  eax,42
     mov  ebx,4
-    int  0x40
+    mcall
     dec  [ir_count]
     cmp  bl,140
     jne  no_first
@@ -136,15 +136,15 @@ still2:
     mov  eax,55    ; load wave
     mov  ebx,0
     mov  ecx,[playposition]
-    int  0x40
+    mcall
 
     mov  eax,55    ; play wave
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,26
     mov  ebx,9
-    int  0x40
+    mcall
     add  eax,[delay]
     mov  [next_tic],eax
 
@@ -159,12 +159,12 @@ still2:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still2
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,6
     jne  no_ir
@@ -233,15 +233,15 @@ still2:
     mov  eax,45
     mov  ebx,1
     mov  ecx,4
-    int  0x40
+    mcall
     mov  eax,46
     mov  ebx,1
     mov  ecx,0x3f0
     mov  edx,0x3ff
-    int  0x40
+    mcall
   no_dis:
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
 
     jmp  still2
@@ -254,7 +254,7 @@ give_wav:
     mov  eax,55
     mov  ebx,0
     mov  ecx,0x20000
-    int  0x40
+    mcall
 
     popa
     ret
@@ -300,7 +300,7 @@ draw_volume:
     sub  esi,edx
     add  ecx,esi
     mov  edx,0x00ff00
-    int  0x40
+    mcall
 
     mov  eax,13
     mov  ebx,320*65536+20
@@ -311,7 +311,7 @@ draw_volume:
     shl  edx,16
     sub  ecx,edx
     mov  edx,0xff0000
-    int  0x40
+    mcall
 
     popa
 
@@ -329,7 +329,7 @@ read_header:
 
     mov  eax,58
     mov  ebx,file_info
-    int  0x40
+    mcall
 
     movzx eax,byte [0x10000+1024+12+10]
     mov   [channels],eax
@@ -381,17 +381,17 @@ unknownformat:
     mov  ebx,190*65536+10
     mov  ecx,104*65536+10
     mov  edx,0xff0000
-    int  0x40
+    mcall
     pusha
 
     mov  eax,5
     mov  ebx,[pause_between_songs]
-    int  0x40
+    mcall
 
     popa
     mov  eax,13
     mov  edx,0x000000
-    int  0x40
+    mcall
 
     popa
 
@@ -430,12 +430,12 @@ read_wav:
 
     mov  eax,58
     mov  ebx,file_info
-    int  0x40
+    mcall
 
 
     pusha
     mov  eax,11
-    int  0x40
+    mcall
     cmp  eax,1
     jne  no_wd
     call draw_window
@@ -448,7 +448,7 @@ read_wav:
     mov  ecx,71*65536+71
     add  ebx,25*65536+25
     mov  edx,0x555555
-;    int  0x40
+;    mcall
     mov  eax,38
     mov  ebx,[esp+32-12]
     and  ebx,65536/512 -1
@@ -456,7 +456,7 @@ read_wav:
     add  ebx,25*65536+25
     mov  ecx,71*65536+71
     mov  edx,0x999999
-;    int  0x40
+;    mcall
     popa
 
     cmp  eax,0
@@ -476,7 +476,7 @@ read_wav:
     mov  eax,5
     mov  ebx,[pause_between_songs]
     add  ebx,[delay]
-    int  0x40
+    mcall
 
     call read_header
 
@@ -632,11 +632,11 @@ read_string:
 
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je   read_done
@@ -689,7 +689,7 @@ display_progress:
     mov  ebx,25*65536+215
     mov  ecx,61*65536+8
     mov  edx,[border]
-    int  0x40
+    mcall
 
     cmp  [onoff],1
     je   yes_playing
@@ -710,13 +710,13 @@ display_progress:
     mov  ecx,61*65536+1
     mov  edx,[drawp]
    newbar:
-    int  0x40
+    mcall
     add  edx,0x101010
     add  ecx,1*65536
     cmp  ecx,65*65536
     jb   newbar
    newbar2:
-    int  0x40
+    mcall
     sub  edx,0x101010
     add  ecx,1*65536
     cmp  ecx,69*65536
@@ -738,7 +738,7 @@ display_progress:
     mov   eax,13
     mov   edi,5
   newb:
-;    int   0x40
+;    mcall
     add   ebx,1*65536-2
     add   ecx,1*65536-2
     sub   edx,0x332211;3366aa
@@ -758,14 +758,14 @@ display_progress:
     mov  ebx,42*65536+33*6
     mov  ecx,114*65536+11
     mov  edx,0x000000
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,42*65536+117
     mov  ecx,[textc]
     mov  edx,now_playing
     mov  esi,38
-    int  0x40
+    mcall
 
     popa
 
@@ -781,12 +781,12 @@ shape_window:
     mov  eax,50
     mov  ebx,0
     mov  ecx,shape_reference
-    int  0x40
+    mcall
 
     mov  eax,50
     mov  ebx,1
     mov  ecx,4
-    int  0x40
+    mcall
 
     popa
 
@@ -809,16 +809,16 @@ enable_ir:
     mov  ebx,0
     mov  ecx,0x3f0
     mov  edx,0x3ff
-    int  0x40
+    mcall
 
     mov  eax,45
     mov  ebx,0
     mov  ecx,4
-    int  0x40
+    mcall
 
     mov  eax,40
     mov  ebx,10000b shl 16 + 111b
-    int  0x40
+    mcall
 
     mov  [infrared_enabled],1
 
@@ -841,58 +841,50 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+320         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+140         ; [y start] *65536 + [y size]
     mov  edx,[bgr]
-    add  edx,0x03000000            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x808844ee
-    mov  edi,0x008844ee            ; color of frames    RRGGBB
-    int  0x40
+    or   edx,0x13000000            ; color of work area RRGGBB,8->color gl
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
+                                   
     mov  eax,8                     ; START/STOP  - id 2
     mov  ebx,24*65536+77
     mov  ecx,80*65536+16
     mov  edx,2
     mov  esi,[border]
-    int  0x40
+    mcall
 
     inc  edx                       ; << / >>     - id 3 , 4
     add  ebx,86*65536-57
     mov  eax,8
-    int  0x40
+    mcall
     inc  edx
     add  ebx,24*65536
     mov  eax,8
-    int  0x40
+    mcall
 
     mov  eax,8                      ; REPEAT
     add  ebx,29*65536+54
     inc  edx
-    int  0x40
+    mcall
 
     mov  eax,8                      ; enable infrared
     add  ebx,98*65536-33
     add  ecx,10*65536+10
     inc  edx
-    int  0x40
+    mcall
 
     pusha
     mov  eax,8
     mov  ebx,25*65536+9
     mov  ecx,115*65536+9
     inc  edx
-    int  0x40
+    mcall
     popa
 
     mov  eax,4
@@ -902,11 +894,11 @@ draw_window:
     mov  ecx,0xffffff
     mov  edx,infrared_text
     mov  esi,10
-    int  0x40
+    mcall
     add  ebx,11
     add  edx,10
     mov  eax,4
-    int  0x40
+    mcall
 
     mov  ebx,25*65536+35           ; draw info text with function 4
     mov  ecx,[textc]
@@ -914,7 +906,7 @@ draw_window:
     mov  esi,40
   newline:
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,40
     cmp  [edx],byte 'x'
@@ -926,7 +918,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
     ret
@@ -944,7 +936,7 @@ draw_wave:
     mov   ebx,260*65536+43
     mov   ecx,42*65536+32
     mov   edx,[border]
-    int   0x40
+    mcall
 
     mov   esi,[playposition]
     mov   ebx,260
@@ -955,7 +947,7 @@ draw_wave:
     shr   ecx,3
     add   ecx,42
     mov   edx,[drawc];0x2255aa
-    int   0x40
+    mcall
 
     add   esi,2
 
@@ -1003,8 +995,6 @@ wavfile:
     db '                                        '
 
 
-labelt:
-      db   ' WAVE PLAYER  :  8b Mono - 16b Stereo'
-labellen:
+title      db   ' WAVE PLAYER  :  8b Mono - 16b Stereo',0
 
 I_END:

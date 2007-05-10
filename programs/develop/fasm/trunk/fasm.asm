@@ -32,6 +32,7 @@ use32
   dd params,0x0  ; parameters,icon
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'fasm.inc'
 
 center fix true
@@ -90,7 +91,7 @@ red:	; Redraw
 still:  
     push 10          ; Wait here for event
     pop eax 
-    int 40h 
+    mcall 
     dec eax 
     je  red          ; Redraw request
     dec eax 
@@ -98,18 +99,18 @@ still:
 
 key:                 ; Key
     mov  al,2        ; Read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
 button:    ; Button in Window
 
     mov  al,17
-    int  0x40
+    mcall
 
     cmp     ah,1
     jne     noclose
     or      eax,-1
-    int     0x40
+    mcall
 
 noclose:    
     cmp  ah,2         ; Start compiling
@@ -150,13 +151,13 @@ draw_window:
     mov  ecx,50*65536+250
     mov  edx,[sc.work]
     or   edx,0x33000000
-    mov  edi,header             ; Draw Window Label Text
-    int  0x40
+    mov  edi,title             ; Draw Window Label Text
+    mcall
 
     mcall 9,PROCESSINFO,-1	    
 
     mpack ecx,1,1
-    mov   ebx,[pinfo.x_size]
+    mov   ebx,[pinfo.box.left]
     sub   ebx,10
 
     push  ecx
@@ -189,7 +190,7 @@ draw_window:
     madd  ecx, 14,0
     mcall  ,,,0x4000000D       ; Button: Enter Path
 
-    mpack ebx,[pinfo.x_size],MAGIC1
+    mpack ebx,[pinfo.box.left],MAGIC1
     msub  ebx,MAGIC1+10+1,0
     mpack ecx,0, 14*3/2-1
     madd  ecx,1,0
@@ -204,13 +205,13 @@ draw_window:
     mov  esi,text.line_size
     mov  eax,4
    newline:
-    int  0x40
+    mcall
     add  ebx, 14
     add  edx,text.line_size
     cmp  byte[edx],'x'
     jne  newline
 
-    mov   ebx,[pinfo.x_size]
+    mov   ebx,[pinfo.box.left]
     sub   ebx,MAGIC1+10+1-9
     shl   ebx,16
     add   ebx,1+( 14*3/2-1)/2-3
@@ -220,7 +221,7 @@ draw_window:
 
     mpack ebx,MAGIC1+6,0
     add   ebx,1+ 14/2-3+ 14*0
-    mov   esi,[pinfo.x_size]
+    mov   esi,[pinfo.box.left]
     sub   esi,MAGIC1*2+5*2+6+3
     mov   eax,esi
     mov   cl,6
@@ -246,16 +247,16 @@ bottom_right dd ?
 
 draw_messages:
     mov    eax,13      ; clear work area
-    mpack  ebx,7-2,[pinfo.x_size]
+    mpack  ebx,7-2,[pinfo.box.left]
     sub    ebx,5*2+7*2-1-2*2
-    mpack  ecx,0,[pinfo.y_size]
+    mpack  ecx,0,[pinfo.box.top]
     madd   ecx, 14*3+1+7+1,-( 14*3+1+7*2+25)
     mov    word[bottom_right+2],bx
     mov    word[bottom_right],cx
     msub   [bottom_right],7,11
     add    [bottom_right],7 shl 16 + 53
     mov    edx,[sc.work]
-    int    0x40
+    mcall
 _cy = 0
 _sy = 2
 _cx = 4
@@ -360,7 +361,7 @@ f11:mcall  10
 
 print_text:
 
-    mpack ebx,MAGIC1+6,[pinfo.x_size]
+    mpack ebx,MAGIC1+6,[pinfo.box.left]
     sub   ebx,MAGIC1*2+19
     movzx esi,bx
     mov   ecx,[ya-2]
@@ -487,7 +488,7 @@ start:
     mov    eax,70
     mov    ebx,file_info_start
     xor    ecx,ecx
-    int    0x40
+    mcall
 @@:
     jmp    exit_program
 
@@ -503,7 +504,7 @@ include 'formats.inc'
 include 'x86_64.inc'
 include 'tables.inc'
 
-header db appname,VERSION_STRING,0
+title db appname,VERSION_STRING,0
 
 _logo db 'flat assembler  version ',VERSION_STRING,13,10,0
 

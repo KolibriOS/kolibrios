@@ -20,6 +20,7 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 MAX_DEGS equ 512 ;quantity of angels 2^n.Minimize for speedup
 MAX_POINTS equ 8 ;quantity of points
 MAX_FACES equ 6  ;quantity of points
@@ -33,10 +34,10 @@ START:
 still:
     mov eax,23  ; wait for system event with 2 ms timeout
     mov ebx,2   ; wait 2 ms, then continue
-    int  0x40
+    mcall
 
 ;    mov eax,11 ;If you want maximum speed! :)
-;    int 0x40
+;    mcall
 
     dec  eax                  ; window redraw request ?
     je   red
@@ -86,30 +87,30 @@ key:
      jmp exit
 button:
      mov eax,17
-     int 0x40
+     mcall
      cmp ah,1
      jne still
 exit:
      mov eax,-1
-     int 0x40
+     mcall
 
 ;Draw window
 draw_window:
     mov eax,12  ;Start
     mov ebx,1
-    int 0x40
+    mcall
 
     mov eax,0   ;Draw window
     mov ebx,0*65536+(799) ;x start*65536+x size
     mov ecx,0*65536+(599) ;y start*65536+y size
     mov edx,0x00000000         ;0x03 use skinned window
-    int 0x40
+    mcall
 
     call clear_screen
 
     mov eax,12  ;End
     mov ebx,2
-    int 0x40
+    mcall
     ret
 
 head_label: db "3D TEXTURED CUBE THE LITTLE SCREEN SAVER FOR MENUETOS. USE "
@@ -163,14 +164,14 @@ clear_screen:
  mov ebx,0*65536+800
  mov ecx,0*65536+600
  mov edx,0
- int 40h
+ mcall
 
  mov eax,4   ;Out Text
  mov ebx,8*65536+8          ;x start*65536+y start
  mov ecx,0x00ffffff         ;color White
  mov edx,head_label
  mov esi,hl_end-head_label
- int 0x40
+ mcall
  ret
 
 clear_screen_buffer:
@@ -178,7 +179,7 @@ clear_screen_buffer:
  mov ecx,800*65536+(600-40)  ;sub 40 for antiflickering title
  mov edx,0*65536+40
  mov eax,7
- int 0x40
+ mcall
 
  mov eax,4   ;Out Text
  mov ebx,8*65536+580          ;x start*65536+y start
@@ -189,7 +190,7 @@ clear_screen_buffer:
  mov edx,move_text
  add edx,[step]
  mov esi,130 ;mt_end-move_text
- int 0x40
+ mcall
 
  inc [n_step]
  cmp [n_step],6

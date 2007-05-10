@@ -15,7 +15,7 @@ PL_show:
    mov  eax,13
    mov  ecx,PL_Y-1 shl 16+4+9*LISTITEMS
    xor  edx,edx
-   int  0x40
+   mcall
    movzx  ecx,byte[list_count]
    test ecx,ecx
    jz   .ex2
@@ -24,7 +24,7 @@ PL_show:
    add  ecx,PL_Y-1 shl 16-2
    mov  edx,11+1 shl 29+1 shl 30
    mov  eax,8
-   int  0x40
+   mcall
    pop  ecx
    mov  edi,[pl_ptr]
    mov  eax,4
@@ -45,7 +45,7 @@ PL_show:
    add  ecx,PL_Y-1 shl 16+8
    mov  edx,0xc6
    mov  eax,13
-   int  0x40
+   mcall
    popa
  .nosel:
    pusha
@@ -61,7 +61,7 @@ PL_show:
    mov  ecx,PCOLOR
  .int:
    add  ebx,25 shl 16
-   int  0x40
+   mcall
    popa
    add  edi,esi
    add  ebx,9
@@ -144,7 +144,7 @@ PL_getitemclick:
 ;  out: eax- item # (0..n)
    mov  ebx,1
    mov  eax,37
-   int  0x40
+   mcall
    sub  eax,PLY-1
    mov  ebx,9
    div  bl
@@ -240,7 +240,7 @@ PL_load:
    and  dword[ebx],0
    mov  dword[ebx+12],20*512
    mov  eax,70
-   int  0x40
+   mcall
    test eax,eax
    jz   .ok1     ; ebx- filesize
    cmp  eax,6
@@ -310,7 +310,7 @@ PL_save:
    mov  [ebx+12],edi
    mov  byte[ebx],2
    mov  eax,70
-   int  0x40
+   mcall
  .ex:
    ret
 

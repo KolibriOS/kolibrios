@@ -17,12 +17,12 @@ use32
     dd     0x0 , 0x0        ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:                      ; start of execution
     mov  eax, 40
     mov  ebx, 101b
-    int  0x40
+    mcall
 
 red:
     call draw_window
@@ -31,7 +31,7 @@ still:
 
     mov  eax,23                 ; wait here for event
     mov  ebx,50
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -45,7 +45,7 @@ still:
 
   button:                       ; button
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
 
 
 ;   *********************************************
@@ -56,7 +56,7 @@ draw_clock:
 
     mov  eax, 26           ; get system counter
     mov  ebx, 9
-    int  0x40
+    mcall
 
     cdq ;xor  edx,edx
     mov  ebx,100
@@ -83,7 +83,7 @@ draw_clock:
   mov  edi,[sc.work]
   mov  ebx,0x00020000
   mov  edx,15*65536+5
-  int  0x40
+  mcall
 
   pop  eax              ; MM
   imul ecx,ecx,60
@@ -91,7 +91,7 @@ draw_clock:
   mov  ecx,eax
   mov  eax,47
   add  edx,20*65536
-  int  0x40
+  mcall
 
   pop  ecx
   pop  eax
@@ -102,7 +102,7 @@ draw_clock:
   mov  ecx,eax          ; SS
   mov  eax,47
   add  edx,20*65536
-  int  0x40
+  mcall
 
   ret
 
@@ -111,11 +111,11 @@ draw_window:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
@@ -123,14 +123,14 @@ draw_window:
     mov  ecx,100*65536+40          ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color gl
     or   edx,0x33000000
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     call draw_clock
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -138,9 +138,9 @@ draw_window:
 ; DATA AREA
 
 if lang eq ru
-    header   db   '’€‰Œ…',0
+    title   db   '’€‰Œ…',0
 else
-    header   db   'TIMER',0
+    title   db   'TIMER',0
 end if
 
 

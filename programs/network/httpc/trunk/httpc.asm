@@ -23,18 +23,17 @@ DEBUGGING_DISABLED          equ     0
 DEBUGGING_STATE             equ     DEBUGGING_DISABLED
 
 use32
-
-                org     0x0
-
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	0x100000      ; required memory
+ dd	0x100000      ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 ;include "DEBUG.INC"
 
 URLMAXLEN       equ     50  ; maximum length of url string
@@ -50,14 +49,15 @@ START:                              ; start of execution
 
     mov     eax,40                          ; Report events
     mov     ebx,10000111b                   ; Stack 8 + defaults
-    int     0x40
+    mcall
 
+red:                    ; redraw
     call    draw_window
 
 still:
     mov     eax,23                 ; wait here for event
     mov     ebx,1
-    int     0x40
+    mcall
 
     cmp     eax,1                  ; redraw request ?
     je      red
@@ -75,7 +75,7 @@ still:
     mov     eax,53
     mov     ebx,6
     mov     ecx,[socket]
-    int     0x40
+    mcall
 
     mov     [status],eax
 
@@ -102,7 +102,7 @@ no_send:
     mov     eax,53
     mov     ebx,8
     mov     ecx,[socket]
-    int     0x40
+    mcall
 
     call    draw_page
 
@@ -111,13 +111,9 @@ no_send:
 no_close:
     jmp     still
 
-red:                    ; redraw
-    call    draw_window
-    jmp     still
-
 key:                    ; key
     mov     eax,2       ; just read it and ignore
-    int     0x40
+    mcall
     shr     eax,8
     cmp     eax,184
     jne     no_down
@@ -138,7 +134,7 @@ no_up:
 button:                 ; button
 ;dps <"Button pressed",13,10>
     mov     eax,17      ; get id
-    int     0x40
+    mcall
     cmp     ah,1                   ; button id=1 ?
     jne     noclose
 
@@ -147,14 +143,14 @@ button:                 ; button
     mov     eax, 53
     mov     ebx, 8
     mov     ecx, [socket]
-    int     0x40
+    mcall
 
 ;dpd eax
 ;dps <13,10>
 
 exit:
     or      eax,-1                 ; close this program
-    int     0x40
+    mcall
 
 noclose:
     cmp     ah,31
@@ -189,14 +185,14 @@ nodown:
 
 f11:
     mov     eax,10
-    int     0x40
+    mcall
     cmp     eax,2 ; key?
     jz      fbu
     jmp     still
 
 fbu:
     mov     eax,2
-    int     0x40  ; get key
+    mcall  ; get key
     shr     eax,8
     cmp     eax,8
     jnz     nobs
@@ -258,7 +254,7 @@ send_request:
     mov     ecx,[socket]
     mov     edx,4
     mov     esi,string0
-    int     0x40
+    mcall
 
     mov     edx,0
 
@@ -272,14 +268,14 @@ next_edx:
     mov     ebx,7
     mov     ecx,[socket]
     mov     esi,document
-    int     0x40
+    mcall
 
     mov     eax,53     ; ' HTTP/1.0 .. '
     mov     ebx,7
     mov     ecx,[socket]
     mov     edx,stringh_end-stringh
     mov     esi,stringh
-    int     0x40
+    mcall
 
     popa
     ret
@@ -298,7 +294,7 @@ print_status:
 
     mov     eax,26
     mov     ebx,9
-    int     0x40
+    mcall
 
     cmp     eax,[nextupdate]
     jb      status_return
@@ -313,7 +309,7 @@ print_status:
     shl     ecx,16
     add     ecx,-18*65536+10
     mov     edx,0xffffff
-    int     0x40
+    mcall
 
     mov     eax,47
     mov     ebx,3*65536
@@ -321,7 +317,7 @@ print_status:
     mov     edx,12*65536-18
     add     edx,[winys]
     mov     esi,0x000000
-    int     0x40
+    mcall
 
     mov     eax,47
     mov     ebx,6*65536
@@ -329,7 +325,7 @@ print_status:
     mov     edx,40*65536-18
     add     edx,[winys]
     mov     esi,0x000000
-    int     0x40
+    mcall
 
 status_return:
     popa
@@ -356,7 +352,7 @@ newbyteread:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socket]
-    int     0x40
+    mcall
 
     cmp     eax,0
     je      no_more_data
@@ -365,7 +361,7 @@ read_more:
     mov     eax, 53
     mov     ebx, 3
     mov     ecx, [socket]
-    int     0x40
+    mcall
 
 yesm:
     inc     [pos]
@@ -379,7 +375,7 @@ yesm:
 
     mov     eax,5
     mov     ebx,50
-    int     0x40
+    mcall
 
     jmp     newbyteread
 
@@ -675,7 +671,7 @@ newpxy:
     shl     ecx,16
     add     ecx,10
     mov     edx,0xffffff
-    int     0x40
+    mcall
 
     mov     eax,4
     mov     ebx,[esp+4]
@@ -715,7 +711,7 @@ noecx2:
 noecx128:
     mov     esi,1
 
-    int     0x40
+    mcall
 
     pop     ebx
     pop     eax
@@ -763,7 +759,7 @@ getlp1:
         push    ecx
         mov         eax, 53
         mov         ebx, 9
-        int     0x40
+        mcall
         pop         ecx
         cmp         eax, 0                      ; is this local port in use?
         jz              getlp1              ; yes - so try next
@@ -773,7 +769,7 @@ getlp1:
     mov     edx,80
     mov     esi,dword [server_ip]
     mov     edi,1
-    int     0x40
+    mcall
     mov     [socket], eax
 
     mov     [pos],0
@@ -791,7 +787,7 @@ tst3:
     mov     eax,53
     mov     ebx,8
     mov     ecx,[socket]
-    int     0x40
+    mcall
 
     call    draw_page
 
@@ -1068,7 +1064,7 @@ getlp:
         push    ecx
         mov         eax, 53
         mov         ebx, 9
-        int     0x40
+        mcall
         pop         ecx
         cmp         eax, 0                      ; is this local port in use?
         jz              getlp               ; yes - so try next
@@ -1078,7 +1074,7 @@ getlp:
     mov     ebx, 0
     mov     edx, 53    ; remote port - dns
     mov     esi, dword [dns_ip]
-    int     0x40
+    mcall
 
     mov     [socketNum], eax
 
@@ -1088,7 +1084,7 @@ getlp:
     mov     ecx, [socketNum]
     mov     edx, [dnsMsgLen]
     mov     esi, dnsMsg
-    int     0x40
+    mcall
 
     ; Setup the DNS response buffer
 
@@ -1102,7 +1098,7 @@ getlp:
 
 ctr001:
     mov     eax,10                 ; wait here for event
-    int     0x40
+    mcall
 
     cmp     eax,1                  ; redraw request ?
     je      ctr003
@@ -1116,7 +1112,7 @@ ctr001:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     cmp     eax, 0
     je      ctr001
@@ -1126,7 +1122,7 @@ ctr002:
     mov     eax, 53
     mov     ebx, 3
     mov     ecx, [socketNum]
-    int     0x40                ; read byte - block (high byte)
+    mcall                ; read byte - block (high byte)
 
     ; Store the data in the response buffer
     mov     eax, [dnsMsgLen]
@@ -1136,7 +1132,7 @@ ctr002:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socketNum]
-    int     0x40                ; any more data?
+    mcall                ; any more data?
 
     cmp     eax, 0
     jne     ctr002              ; yes, so get it
@@ -1145,7 +1141,7 @@ ctr002:
     mov     eax, 53
     mov     ebx, 1
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     mov     [socketNum], dword 0xFFFF
 
@@ -1239,12 +1235,12 @@ ctr003:                         ; redraw
 
 ctr004:                         ; key
     mov     eax,2               ; just read it and ignore
-    int     0x40
+    mcall
     jmp     ctr001
 
 ctr005:                         ; button
     mov     eax,17              ; get id
-    int     0x40
+    mcall
 
     mov     dl, ah
 
@@ -1252,7 +1248,7 @@ ctr005:                         ; button
     mov     eax, 53
     mov     ebx, 1
     mov     ecx, [socketNum]
-    int     0x40
+    mcall
 
     cmp     dl, 1
     je      exit
@@ -1316,7 +1312,7 @@ debug_print_string:
     mov     cl, '"'
     mov     eax,63
     mov     ebx, 1
-    int     0x40
+    mcall
     pop     esi
 
 dps_000:
@@ -1331,22 +1327,22 @@ dps_exit:
     mov     cl, '"'
     mov     eax,63
     mov     ebx, 1
-    int     0x40
+    mcall
     mov     cl, 13
     mov     eax,63
     mov     ebx, 1
-    int     0x40
+    mcall
     mov     cl, 10
     mov     eax,63
     mov     ebx, 1
-    int     0x40
+    mcall
     ret
 
 dps_001:
     mov     eax,63
     mov     ebx, 1
     push    esi
-    int     0x40
+    mcall
 
     pop     esi
     inc     esi
@@ -1370,7 +1366,7 @@ print_text:
     shl     ecx,16
     mov     cx,9
     mov     edx,0xFFFFFF
-    int     0x40
+    mcall
 
     ; write text
     mov     eax,4
@@ -1379,7 +1375,7 @@ print_text:
     mov     ecx,0x000000
     mov     edx,[addr]
     mov     esi,URLMAXLEN
-    int     0x40
+    mcall
 
     ret
 
@@ -1390,70 +1386,61 @@ print_text:
 draw_window:
     mov     eax,12                    ; function 12:tell os about windowdraw
     mov     ebx,1                     ; 1, start of draw
-    int     0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov     eax,0                     ; function 0 : define and draw window
     mov     ebx,50*65536+550          ; [x start] *65536 + [x size]
     mov     ecx,50*65536+400          ; [y start] *65536 + [y size]
-    mov     edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
-    mov     esi,0x805080d0            ; color of grab bar  RRGGBB,8->color gl
-    mov     edi,0x005080d0            ; color of frames    RRGGBB
-    int     0x40
+    mov     edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
+    mov     edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov     eax,4                     ; function 4 : write text to window
-    mov     ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov     ecx,0x00ddeeff            ; color of text RRGGBB
-    mov     edx,labelt                ; pointer to text beginning
-    mov     esi,labellen-labelt       ; text length
-    int     0x40
-
-
+                                   
     mov     esi, URLMAXLEN            ; URL
     mov     eax,4                     ; function 4 : write text to window
     mov     ebx,30*65536+38           ; [x start] *65536 + [y start]
     mov     ecx,0x000000              ; color of text RRGGBB
     mov     edx,document_user         ; pointer to text beginning
-    int     0x40
+    mcall
 
     mov     eax,38
     mov     ebx,5*65536+545
     mov     ecx,60*65536+60
     mov     edx,0x000000
-    int     0x40
+    mcall
 
-    mov     eax,38
-    mov     ebx,5*65536+545
+    ;mov     eax,38
+    ;mov     ebx,5*65536+545
     mov     ecx,[winys]
     shl     ecx,16
     add     ecx,[winys]
     sub     ecx,26*65536+26
-    mov     edx,0x000000
-    int     0x40
+    ;mov     edx,0x000000
+    mcall
                                    ; RELOAD
     mov     eax,8                     ; function 8 : define and draw button
     mov     ebx,388*65536+50          ; [x start] *65536 + [x size]
     mov     ecx,34*65536+14           ; [y start] *65536 + [y size]
     mov     edx,22                    ; button id
     mov     esi,0x5588dd              ; button color RRGGBB
-    int     0x40
+    mcall
 
                                    ; URL
-    mov     eax,8                     ; function 8 : define and draw button
+    ;mov     eax,8                     ; function 8 : define and draw button
     mov     ebx,10*65536+12          ; [x start] *65536 + [x size]
     mov     ecx,34*65536+12           ; [y start] *65536 + [y size]
     mov     edx,10                    ; button id
-    mov     esi,0x5588dd              ; button color RRGGBB
-    int     0x40
+    ;mov     esi,0x5588dd              ; button color RRGGBB
+    mcall
 
                                    ; STOP
-    mov     eax,8                     ; function 8 : define and draw button
+    ;mov     eax,8                     ; function 8 : define and draw button
     mov     ebx,443*65536+50          ; [x start] *65536 + [x size]
     mov     ecx,34*65536+14           ; [y start] *65536 + [y size]
     mov     edx,24                    ; button id
-    mov     esi,0x5588dd              ; button color RRGGBB
-    int     0x40
+    ;mov     esi,0x5588dd              ; button color RRGGBB
+    mcall
 
                                    ; BUTTON TEXT
     mov     eax,4                     ; function 4 : write text to window
@@ -1461,13 +1448,13 @@ draw_window:
     mov     ecx,0xffffff              ; color of text RRGGBB
     mov     edx,button_text           ; pointer to text beginning
     mov     esi,20                    ; text length
-    int     0x40
+    mcall
 
     call    display_page
 
     mov     eax,12                    ; function 12:tell os about windowdraw
     mov     ebx,2                     ; 2, end of draw
-    int     0x40
+    mcall
 
     ret
 
@@ -1499,8 +1486,7 @@ addr            dd  0x0
 ya              dd  0x0
 len             dd  0x00
 
-labelt:         db      'HTTPC - PgUp/PgDown'
-labellen:
+title         db      'HTTPC - PgUp/PgDown',0
 
 server_ip:      db      207,44,212,20
 dns_ip:         db      194,145,128,1

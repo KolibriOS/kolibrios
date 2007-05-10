@@ -373,7 +373,7 @@ macro drawfbox x,y,xs,ys,color
     words2reg ecx,y,ys ;y*65536+ys
     mov  edx,color
     mov  eax,13
-    int  0x40
+    mcall
 }
 
 ; FPS - Set Frame Per Second Display
@@ -390,7 +390,7 @@ ttt      dd 0
 spdat:
 get_time:
     mov eax,3
-    int 0x40
+    mcall
     cmp eax,[savetime]
     jne new_time
     inc [fps_cntr]
@@ -409,7 +409,7 @@ if ~(delcolor eq )
     mov ecx,y*65536+7
     mov edx,delcolor
     mov eax,13
-    int 0x40
+    mcall
 end if
     mov dword [ttt],fps_show_frequency
     mov eax,47
@@ -418,7 +418,7 @@ end if
     mov edx,x*65536+y
     mov esi,color
     mov ecx,[fps]
-    int 0x40
+    mcall
 no_out_fps:
 }
 
@@ -497,7 +497,7 @@ macro setimg x , y ,arg3
 ;    wordstoreg ecx,[arg3],[arg3+4]
 ;    wordstoreg edx,x,y
     words2reg edx, x , y  ;arg1*65536+arg2
-    int  0x40
+    mcall
 }
 
 macro setframe x , y ,arg3
@@ -508,7 +508,7 @@ macro setframe x , y ,arg3
     words2reg edx, x , y  ;arg1*65536+arg2
     add  edx,dword [arg3]
     mov  ecx,dword [arg3+4]
-    int  0x40
+    mcall
 }
 
 
@@ -1384,4 +1384,3 @@ loop2:
 gifmacend:
 }
 
-                       

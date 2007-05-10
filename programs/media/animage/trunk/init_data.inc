@@ -36,12 +36,12 @@
 
    ;mov eax,68
    ;mov ebx,11
-   ;int 0x40
+   ;mcall
 
    ;mov eax,68
    ;mov ebx,12
    ;mov ecx,60000
-   ;int 0x40
+   ;mcall
 
    ;mov [PointerToIcons],eax
 

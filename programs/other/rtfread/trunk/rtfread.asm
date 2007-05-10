@@ -52,7 +52,7 @@ syms equ 12
   dd     fname_buf   ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
-include 'MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
+include '..\..\..\MACROS.INC' ; макросы облегчают жизнь ассемблерщиков!
 include 'debug.inc'
 if ~ RENDER eq PIX
   TOP=TOP+4
@@ -94,7 +94,7 @@ START:
         mov     eax, 70
         and     [fileattr+32], 0
         mov     ebx, attrinfo
-        int     0x40
+        mcall
         mov     ebx, [fileattr+32]
         test    eax, eax
         jz      .sizok
@@ -132,11 +132,6 @@ still:
     je   red            ; если да - на метку red
     cmp  eax,3          ; нажата кнопка ?
     je   button         ; если да - на button
-    cmp  eax,2          ; нажата клавиша ?
-    je   key            ; если да - на key
-
-    jmp  still          ; если другое событие - в начало цикла
-
 
 ;---------------------------------------------------------------------
 
@@ -315,13 +310,13 @@ draw_window:
 
     mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
     mcall 9,procinfo,-1
-    mov   eax,[procinfo.x_size]
+    mov   eax,[procinfo.box.left]
     cmp   eax,1
     ja      .temp12345
     ret
   .temp12345:
 
-    mcall 4, <8,8>, 0x10DDEEFF, header, headersize-header
+    mcall 4, <8,8>, 0x10DDEEFF, title, titlesize-title
     mov  esi,ecx
     mcall 47,0x30000,isymImplemented,<114,8>
     add  edx,36 shl 16
@@ -483,10 +478,10 @@ end if
 
 ; интерфейс программы многоязычный
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
-procinfo process_information
-header:
+
+title:
   db 'RTF READER v1.    (     ):'
-headersize:
+titlesize:
 btn_text:
   if RENDER eq FREE
     db '+ - '
@@ -606,6 +601,8 @@ szKeyword rb 31
 szParameter rb 21
 block_end dd ?
 I_END:                             ; метка конца программы
+
+procinfo process_information
 rb RTFSIZE
 esp1:
 rb ESPSIZE

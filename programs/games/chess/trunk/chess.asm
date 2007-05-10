@@ -8,19 +8,17 @@ appname equ 'Chess Client for Chessclub.com '
 version equ '0.2'
 
 use32
-
-		org	0x0
-
-		db	'MENUET00'		; 8 byte id
-		dd	38			; required os
-		dd	START			; program start
-		dd	I_END			; program image size
-		dd	0x100000		; required amount of memory
-						; esp = 0x7FFF0
-		dd	0x00000000		; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 ;file_info:
 ;
@@ -67,7 +65,7 @@ START:				; start of execution
     mov  eax,70
 ;    mov  ebx,file_info
     mov  ebx,file_info
-    int  0x40
+    mcall
 
     mov  esi,0x4000+22*3+4+24*2
     mov  edi,0x10000+18*3
@@ -129,7 +127,7 @@ still:
     mov  eax,53
     mov  ebx,6
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov     ebx, [socket_status]
     mov     [socket_status], eax
@@ -142,7 +140,7 @@ still:
 waitev:
     mov  eax,23 		; wait here for event
     mov  ebx,20
-    int  0x40
+    mcall
 
     cmp  eax,1			; redraw request ?
     je	 red
@@ -156,7 +154,7 @@ waitev:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socket]
-    int     0x40
+    mcall
     cmp     eax, 0
     jne      read_input
 
@@ -169,7 +167,7 @@ read_input:
     mov     eax, 53
     mov     ebx, 3
     mov     ecx, [socket]
-    int     0x40
+    mcall
     pop  ecx
 
     call    handle_data
@@ -178,7 +176,7 @@ read_input:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socket]
-    int     0x40
+    mcall
     pop     ecx
     cmp     eax, 0
 
@@ -273,7 +271,7 @@ drsq:
    dbl22:
 
      mov  eax,13
-     int  0x40
+     mcall
 
      pop  ebx eax
 
@@ -334,7 +332,7 @@ draw_pawn:
      shr  edx,1
      and  edx,0x7f7f7f
    nobl:
-     int  0x40
+     mcall
    nowp:
 
      popa
@@ -465,7 +463,7 @@ draw_board:
      shl  ecx,16
      add  ecx,46*8
      mov  edx,[wcolor]
-     int  0x40
+     mcall
 
      mov  eax,4 		   ; numbers at left
      mov  ebx,[boardx]
@@ -477,7 +475,7 @@ draw_board:
      mov  edx,chess_board+80+5
      mov  esi,3
     db1:
-     int  0x40
+     mcall
      add  edx,80*2
      add  ebx,[boardxs]
      cmp  edx,chess_board+80*16
@@ -494,7 +492,7 @@ draw_board:
      shl  ecx,16
      add  ecx,10
      mov  edx,[wcolor]
-     int  0x40
+     mcall
 
      mov  eax,4 		   ; letters at bottom
      mov  ebx,[boardx]
@@ -508,7 +506,7 @@ draw_board:
      mov  edx,chess_board+80*17+8
      mov  esi,4
    db3:
-     int  0x40
+     mcall
      mov  edi,[boardxs]
      shl  edi,16
      add  ebx,edi
@@ -530,7 +528,7 @@ draw_board:
      shl  ecx,16
      add  ecx,10
      mov  edx,[wcolor]
-     int  0x40
+     mcall
 
      mov  eax,4
      mov  ebx,(conx)*65536
@@ -538,7 +536,7 @@ draw_board:
      mov  ecx,[tcolor]
      mov  edx,chess_board+80*7+59-1
      mov  esi,20
-     int  0x40
+     mcall
 
      mov  edi,74
      cmp  [chess_board+80+5],byte '1'
@@ -552,7 +550,7 @@ draw_board:
      shl  ecx,16
      add  ecx,10
      mov  edx,[wcolor]
-     int  0x40
+     mcall
 
      mov  eax,4
      mov  ebx,(conx)*65536
@@ -560,7 +558,7 @@ draw_board:
      mov  ecx,[tcolor]
      mov  edx,chess_board+80*9+59-1
      mov  esi,20
-     int  0x40
+     mcall
 
      ; move #
 
@@ -568,7 +566,7 @@ draw_board:
      mov  ebx,conx*65536+120
      mov  ecx,200*65536+10
      mov  edx,[wcolor]
-     int  0x40
+     mcall
 
      mov  eax,4
      mov  ebx,conx*65536
@@ -576,7 +574,7 @@ draw_board:
      mov  ecx,[tcolor]
      mov  edx,chess_board+80*1+46
      mov  esi,30
-     int  0x40
+     mcall
 
    no_change_in_board:
 
@@ -621,7 +619,7 @@ state2:
     mov     ebx,7
     mov     ecx,[socket]
     mov     esi, telnetrep
-    int     0x40
+    mcall
     ret
 
 hd001:
@@ -704,7 +702,7 @@ hd001:
 
   key:				; KEY
     mov  eax,2			; send to modem
-    int  0x40
+    mcall
 
     mov     ebx, [socket_status]
     cmp     ebx, 4		; connection open?
@@ -743,17 +741,17 @@ hd001:
 
   button:			; BUTTON
     mov  eax,17
-    int  0x40
+    mcall
     cmp  ah,1			; CLOSE PROGRAM
     jne  noclose
 
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
      mov  eax,-1
-     int  0x40
+     mcall
   noclose:
 
     cmp     ah, 4		; connect
@@ -803,7 +801,7 @@ tm_000:
     mov     ebx,7
     mov     ecx,[socket]
     mov     esi, tx_buff
-    int  0x40
+    mcall
     pop     bx
     mov     al, [echo]
     cmp     al, 0
@@ -832,7 +830,7 @@ disconnect:
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     ret
 
 
@@ -847,7 +845,7 @@ getlp:
  push ecx
  mov	 eax, 53
  mov	 ebx, 9
- int	 0x40
+ mcall
  pop	 ecx
  cmp	 eax, 0   ; is this local port in use?
  jz  getlp	; yes - so try next
@@ -864,7 +862,7 @@ getlp:
     mov     esi, edx
     movzx   edx, word [port]	  ; telnet port id
     mov     edi,1      ; active open
-    int     0x40
+    mcall
     mov     [socket], eax
 
     popa
@@ -884,10 +882,10 @@ draw_window:
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,14
-    int  0x40
+    mcall
 
     mov  ebx,eax
     mov  ecx,eax
@@ -910,8 +908,8 @@ draw_window:
     mov  cx,470
     mov  edx,[wcolor]
     add  edx,0x13000000
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     call display_status
 
@@ -920,13 +918,13 @@ draw_window:
     mov  ecx,cony*65536+15
      mov  esi,[wbutton]
      mov  edx,4
-    int  0x40
+    mcall
     mov  eax,4			   ; Button text
     mov  ebx,(conx+4)*65536+cony+4
     mov  ecx,0xffffff
     mov  edx,cont
     mov  esi,conlen-cont
-    int  0x40
+    mcall
 
 
     mov  eax,8			   ; BUTTON 5: disconnect
@@ -934,13 +932,13 @@ draw_window:
     mov  ecx,dcony*65536+15
     mov  edx,5
      mov  esi,[wbutton]
-     int  0x40
+     mcall
     mov  eax,4			   ; Button text
     mov  ebx,(dconx+4)*65536+dcony+4
     mov  ecx,0x00ffffff
     mov  edx,dist
     mov  esi,dislen-dist
-    int  0x40
+    mcall
 
 
     xor  eax,eax
@@ -967,7 +965,7 @@ draw_window:
 
   prqs:
 
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,30
     cmp  [edx],byte 'x'
@@ -975,7 +973,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
 
@@ -991,7 +989,7 @@ display_status:
     mov  ebx, statusx*65536+80
     mov  ecx, statusy*65536 + 16
     mov  edx, [wcolor]
-    int  0x40
+    mcall
 
     mov  esi,contlen-contt	    ; display connected status
     mov  edx, contt
@@ -1004,7 +1002,7 @@ display_status:
     mov  eax,4			   ; status text
     mov  ebx,statusx*65536+statusy+2
      mov  ecx,[tcolor]
-     int  0x40
+     mcall
 
     popa
     ret
@@ -1066,7 +1064,7 @@ draw_text:
     mov  ebx,10*65536+532
     mov  ecx,420*65536+40
      mov  edx,[wtcom]
-     int  0x40
+     mcall
 
     mov  eax,4
     mov  ebx,10*65536+420
@@ -1076,7 +1074,7 @@ draw_text:
 
   dtl3:
 
-    int  0x40
+    mcall
     add  edx,80
     add  ebx,10
     cmp  edx,texts+4*80
@@ -1117,11 +1115,11 @@ read_string:
     mov  edi,string
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je	 read_done
@@ -1169,7 +1167,7 @@ print_text:
     shl  ecx,16
     mov  cx,8
     mov  edx,[wcolor]
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,[string_x]
@@ -1178,7 +1176,7 @@ print_text:
     mov  ecx,[tcolor]
     mov  edx,string
     mov  esi,[string_length]
-    int  0x40
+    mcall
 
     popa
     ret
@@ -1218,7 +1216,7 @@ tcolor		dd  0x000000
 sq_black	dd  0x336688 ; 666666
 sq_white	dd  0xffffff
 
-header		db  appname,version,0
+title		db  appname,version,0
 
 setipt		db  '               .   .   .'
 setiplen:

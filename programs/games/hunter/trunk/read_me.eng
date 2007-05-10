@@ -1,0 +1,37 @@
+Hunter
+------
+
+Version:	1.1
+Target:		MenuetOS arcade game
+Author:		Trans
+Date:		07-18.03.2005
+Modification:	31.03.2005
+
+This program is arcade game.
+It was written specialy for MenueoOS game's compo,
+which suggested by Jaroslaw Pelczar from 05.03
+to 19.03 2005 year.
+
+Game target - destroy of maximum flying objects.
+
+The Rules.
+- You have 3 lives.
+- 5 misses - minus one live.
+- The game time is infinite.
+- ALL processes stopped by PAUSE.
+- Every 30 seconds increase objects speed
+- Not all objects may be destroed by ONE shoot.
+- Only after full group destroing is creating next group. 
+
+Control.
+Shot		- left mouse button
+Pause		- SPACE
+
+Support.
+All questions, wishes and suggestions send to author:
+transafe@rambler.ru
+trans397@yahoo.com
+
+Wish hunting!
+Trans.
+

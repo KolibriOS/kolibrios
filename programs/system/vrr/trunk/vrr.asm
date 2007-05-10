@@ -12,18 +12,18 @@ use32
         org    0x0
    
         db     'MENUET01'   ; 8 byte id
-        dd     0x01         ; header version
+        dd     0x01         ; title version
         dd     START        ; start of code
         dd     I_END        ; size of image
         dd     0x5000       ; memory for app
         dd     0x4ff0       ; esp
         dd     0x0 , 0x0    ; I_Param , I_Icon
    
-include 'macros.inc'
+include '..\..\..\macros.inc'
 START:    ; start of execution
    
     mov eax,14
-    int 40h
+    mcall
     mov ebx,eax
     shr ebx,16
     mov [oldX],ebx
@@ -36,7 +36,7 @@ START:    ; start of execution
     mov ebx,13
     mov ecx,1
     mov edx,drvinfo
-    int 40h
+    mcall
     cmp eax,0FFFFFFFFh ; = -1 - error or not installed
     jne vrr_00
     call warning_info
@@ -54,7 +54,7 @@ red:
 still:
    
     mov  eax,10   ; check here for event
-    int  0x40
+    mcall
    
     cmp  eax,1   ; redraw request ?
     je  red
@@ -67,7 +67,7 @@ still:
       
   key:    ; key
     mov  al,2   ; just read it
-    int  0x40
+    mcall
     cmp ah,'1'
     jne key_loc_00
     call safekey
@@ -141,12 +141,12 @@ key_loc_07:
    
 button:   ; button
     mov  al,17   ; get id
-    int  0x40
+    mcall
    
     cmp  ah,1   ; button id=1 ?
     jne  noclose
     mov  eax,-1           ; close this program
-    int  0x40
+    mcall
   noclose:
     cmp ah,2              ;'+' screen width
     jne button_loc_01
@@ -194,15 +194,15 @@ dw_continue:
    
     mov  eax,12      ; function 12:tell os about windowdraw
     mov  ebx,1      ; 1, start of draw
-    int  0x40
+    mcall
    
        ; DRAW WINDOW
     mov  eax,0      ; function 0 : define and draw window
     mov  ebx,100*65536+400    ; [x start] *65536 + [x size]
     mov  ecx,100*65536+200    ; [y start] *65536 + [y size]
     mov  edx,0x130020C0;0x00000040 ; color of work area RRGGBB,8->color glide
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
    
        ; BUTTONS
     mov eax,8
@@ -211,29 +211,29 @@ dw_continue:
     mov ecx,84*65536+48
     mov dl,2
     mov  esi,0x5599cc     ; button color RRGGBB
-    int 40h               ; Button '+'Width
+    mcall               ; Button '+'Width
     add ebx,30*65536
     mov dl,3
-    int 40h               ; Button '-'Width
+    mcall               ; Button '-'Width
     mov ebx,22*65536+85
     mov ecx,170*65536+15
     inc dl ;dl=4
-    int 40h               ; Button 'Ok'
+    mcall               ; Button 'Ok'
     add ebx,90*65536
     inc dl ;dl=5
-    int 40h               ; Button 'Cancel'
+    mcall               ; Button 'Cancel'
     add ebx,90*65536
     inc dl ;dl=6
-    int 40h               ; Button 'Return'
+    mcall               ; Button 'Return'
     add ebx,90*65536
     inc dl ;dl=7
-    int 40h               ; Button 'Default'
+    mcall               ; Button 'Default'
    
     call draw_face
    
     mov  eax,12      ; function 12:tell os about windowdraw
     mov  ebx,2      ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
    
@@ -246,7 +246,7 @@ restore_mode:
     mov eax,21
     mov ebx,13
     mov ecx,4
-    int 40h
+    mcall
     pop edx
     pop ecx
     pop eax
@@ -267,7 +267,7 @@ set_my_mode:
     mov eax,21
     mov ebx,13
     mov ecx,3
-    int 40h
+    mcall
     mcall 5,50
     mcall 15,3
     pop edx
@@ -284,7 +284,7 @@ inc_dec_rate:
     mov eax,21
     mov ebx,13
     mov ecx,5
-    int 40h
+    mcall
     pop edx
     pop ecx
     pop ebx
@@ -295,7 +295,7 @@ get_pid:
     mov ebx,buffer
     xor ecx,ecx
     dec ecx
-    int 40h
+    mcall
     mov [totp],eax
     mov eax,[ebx+30]
     mov [mypid],eax
@@ -310,7 +310,7 @@ get_vert_rate:
     mov al,21
     mov bl,13
     mov cl,2
-    int 40h
+    mcall
     mov [initrr],ebx
     mov [refrate],ebx
     ror ecx,16
@@ -328,15 +328,15 @@ draw_table:
     mov ebx,9*65536+303
     mov ecx,59*65536+87
     xor edx,edx
-    int 40h
+    mcall
     mov ebx,10*65536+300
     mov ecx,60*65536+24
     mov edx,00FF00FFh
-    int 40h
+    mcall
     mov ebx,10*65536+36
     mov ecx,72*65536+72
     mov edx,0000FFFFh
-    int 40h
+    mcall
     mov eax,38
     mov edx,00FFFFFFh
     mov ebx,10*65536+310
@@ -347,7 +347,7 @@ draw_table:
 dt_loc_hor_line:
     push ecx
     mov ecx,edi
-    int 40h
+    mcall
     add edi,esi
     pop ecx
     loop dt_loc_hor_line
@@ -355,14 +355,14 @@ dt_loc_hor_line:
     mov edi,60*65536+144
     mov esi,66*65536+66
     mov ecx,edi
-    int 40h
+    mcall
     add ebx,36*65536+36
     xor ecx,ecx
     mov cl,5
 dt_loc_vert_line:
     push ecx
     mov ecx,edi
-    int 40h
+    mcall
     add ebx,esi
     pop ecx
     loop dt_loc_vert_line
@@ -371,16 +371,16 @@ dt_loc_vert_line:
     mov ecx,000000FFh
     mov edx,_m1280x1024
     mov esi,9
-    int 40h
+    mcall
     add edx,9
     add ebx,66*65536
-    int 40h
+    mcall
     add edx,9
     add ebx,66*65536
-    int 40h
+    mcall
     add edx,9
     add ebx,66*65536
-    int 40h
+    mcall
     xor eax,eax
     mov ebx,eax
     mov ecx,eax
@@ -395,7 +395,7 @@ dt_loc_vert_line:
 dt_loc_00:
     push ecx
     mov ecx,edi
-    int 40h
+    mcall
     inc edi
     add dx,12
     pop ecx
@@ -409,7 +409,7 @@ dt_loc_00:
 dt_loc_01:
     push ecx
     mov ecx,edi
-    int 40h
+    mcall
     inc edi
     add edx,66*65536
     pop ecx
@@ -419,11 +419,11 @@ dt_loc_01:
     mov ecx,000000FFh
     mov edx,_mk
     mov esi,4
-    int 40h
+    mcall
     shl ecx,16
     add bx,12
     add edx,4
-    int 40h
+    mcall
     retn
    
 ;IN: ah=keycode
@@ -490,24 +490,24 @@ draw_rect:
     mov edi,ecx
     shr edi,16
     mov cx,di
-    int 40h
+    mcall
     pop ecx
     push ecx
     mov edi,ecx
     ror ecx,16
     mov cx,di
-    int 40h
+    mcall
     pop ecx
     push ebx
     mov edi,ebx
     shr edi,16
     mov bx,di
-    int 40h
+    mcall
     pop ebx
     mov edi,ebx
     ror ebx,16
     mov bx,di
-    int 40h
+    mcall
     pop edi
     pop edx
     pop ecx
@@ -524,7 +524,7 @@ protect_and_return:
     mov al,5
     xor ebx,ebx
     mov bx,300
-    int 40h
+    mcall
     call get_pid
     xor eax,eax
     mov ebx,eax
@@ -532,7 +532,7 @@ protect_and_return:
     mov al,18
     mov ebx,3
     mov cx,[mypno]
-    int 40h
+    mcall
     pop ecx
     pusha
     call draw_window
@@ -541,10 +541,10 @@ protect_and_return:
     mov al,5
     xor ebx,ebx
     mov bx,300
-    int 40h
+    mcall
     xor eax,eax
     mov al,11
-    int 40h
+    mcall
     cmp eax,1
     jne par_loc_00
     pusha
@@ -555,7 +555,7 @@ par_loc_00:
     mov ebx,eax
     mov al,23
     mov bx,700
-    int 40h
+    mcall
     cmp eax,0
     jnz par_loc_02
 ; mov [ftr_eax],eax
@@ -575,10 +575,10 @@ debug_ftr:
 ;    mov ecx,[ftr_eax]
 ;    mov edx,20*65536+180
 ;    mov esi,00FFFFFFh
-;    int 40h
+;    mcall
 ;    mov ecx,[ftr_ebx]
 ;    add edx,54*65536
-;    int 40h
+;    mcall
     retn
    
 print_cur_vm:
@@ -587,9 +587,9 @@ print_cur_vm:
     mov ecx,0000FF00h
     mov edx,curmode
     mov esi,cmlen
-    int 40h
+    mcall
     mov al,14
-    int 40h
+    mcall
     mov esi,00FFFFFFh
     mov edi,eax
     shr eax,16
@@ -601,21 +601,21 @@ print_cur_vm:
     shl ebx,16
     mov edx,104*65536+40
     mov eax,47
-    int 40h
+    mcall
     add edx,30*65536
     mov cx,di
     inc ecx
-    int 40h
+    mcall
     add edx,30*65536
     mov ecx,[initrr]
     sub ebx,1*65536
-    int 40h
+    mcall
     mov al,4
     mov ebx,200*65536+40
     mov ecx,0000FF00h
     mov edx,selmode
     mov esi,cmlen
-    int 40h
+    mcall
     mov ax,[vmselect]
     cmp ax,0
     jz pcv_loc_00
@@ -625,7 +625,7 @@ print_cur_vm:
     mov ebx,284*65536+54
     mov ecx,40*65536+10
     mov edx,000020C0h
-    int 40h
+    mcall
     pop eax
     push eax
     xor ecx,ecx
@@ -640,7 +640,7 @@ print_cur_vm:
     mov esi,9
     mov ebx,284*65536+40
     mov ecx,00ff0000h
-    int 40h
+    mcall
     pop eax
     cmp ah,0
     jz pcv_loc_00
@@ -653,7 +653,7 @@ print_cur_vm:
     mov ebx,344*65536+18
     mov ecx,40*65536+10
     mov edx,000020C0h
-    int 40h
+    mcall
     pop eax
     push eax
     mov bx,ax
@@ -682,7 +682,7 @@ print_cur_vm:
     xor eax,eax
     mov al,47
     mov esi,00ff0000h
-    int 40h
+    mcall
     pop eax
     pop ecx
     pop edx
@@ -747,7 +747,7 @@ print_noherz:
         mov edx,noherz
         xor esi,esi
         mov si,3
-        int 40h
+        mcall
         pop esi
         pop edx
         pop ecx
@@ -771,7 +771,7 @@ print_herz:
         mov esi,00FFFFFFh
         xor eax,eax
         mov al,47
-        int 40h
+        mcall
         pop esi
         pop edx
         pop ecx
@@ -863,13 +863,13 @@ draw_face:
         mov ebx,182*65536+36
         mov ecx,26*65536+5
         mov edx,000020C0h
-        int 40h
+        mcall
         mov ebx,173*65536+54
         mov ecx,153*65536+7
-        int 40h
+        mcall
         mov ebx,337*65536+36
         mov ecx,62*65536+10
-        int 40h
+        mcall
         mov al,4
         shr ecx,16
         mov bx,cx
@@ -877,41 +877,41 @@ draw_face:
         mov ecx,00FF0000h
         mov edx,width
         mov esi,5
-        int 40h
+        mcall
         xor ecx,ecx
         add edx,5
         xor esi,esi
         inc esi
         mov ebx,335*65536+104
-        int 40h
+        mcall
         add ebx,36*65536
         inc edx
-        int 40h
+        mcall
         mov edx,tmode
         mov ecx,00FF0000h
         mov ebx,182*65536+24
         mov esi,6
-        int 40h
+        mcall
         mov edx,actions
         mov ebx,173*65536+152
         mov esi,9
-        int 40h
+        mcall
         xor ecx,ecx
         mov edx,button1
         mov ebx,59*65536+174
         mov esi,2
-        int 40h
+        mcall
         add edx,esi
         mov esi,6
         add ebx,78*65536
-        int 40h
+        mcall
         add edx,esi
         add ebx,90*65536
-        int 40h
+        mcall
         add edx,esi
         mov esi,7
         add ebx,87*65536
-        int 40h
+        mcall
         call rect_select
 ;        call debug_ftr
         call print_cur_vm
@@ -926,7 +926,7 @@ warning_info:
 warning_window:
         mov  eax,12      ; function 12:tell os about windowdraw
         mov  ebx,1      ; 1, start of draw
-        int  0x40
+        mcall
    ; DRAW WARNING WINDOW
         xor  eax,eax      ; function 0 : define and draw window
         mov ebx,[oldX]
@@ -941,8 +941,8 @@ warning_window:
         shl ecx,16
         mov cx,200
         mov  edx,0x13808080     ; color of work area RRGGBB,8->color glide
-        mov  edi,header
-        int  0x40
+        mov  edi,title
+        mcall
 
    ; WARNING TEXT
         mov  eax,4      ; function 4 : write text to window
@@ -951,31 +951,31 @@ warning_window:
         mov  ecx,0xf0ff0000     ; color of text RRGGBB
         mov  edx,warn00        ; pointer to text beginning
         mov  esi,len_warn00     ; text length
-;        int  0x40
+;        mcall
 ;        inc  ebx
-        int  40h
+        mcall
         add  ebx,1*65536
-        int  40h
+        mcall
         mov  ebx,(200-(len_warn01/2)*6)*65536+100
         mov  edx,warn01
         mov  esi,len_warn01
-        int  40h
+        mcall
         mov  edx,button1
         add  ecx,0ffffh
         mov  ebx,(200-6)*65536+(160-4)
         mov  esi,2
-        int 40h
+        mcall
         mov  eax,12      ; function 12:tell os about windowdraw
         mov  ebx,2      ; 2, end of draw
-        int  0x40
+        mcall
         retn
    
 warning_loop:
         mov  eax,5
         mov ebx,13
-        int  0x40
+        mcall
         mov eax,11
-        int 40h
+        mcall
         cmp  eax,1      ; redraw request ?
         je  warning_red
         cmp  eax,2      ; key in buffer ?
@@ -995,30 +995,30 @@ warning_loop:
         shl ecx,16
         mov  edx,warn01
         mov  esi,len_warn01
-        int  40h
+        mcall
         sub ebx,1*65536
-        int 40h
+        mcall
         jmp  warning_loop
   warning_red:      ; redraw
         call warning_window
         jmp  warning_loop
   warning_key:      ; key
         mov  eax,2      ;  read key
-        int  0x40
+        mcall
         cmp ah,01h
         jne warning_loop
         xor eax,eax
         dec eax         ; Terminate application
-        int 40h
+        mcall
         jmp warning_loop
   warning_button:   ; button
         mov  eax,17     ; get id
-        int  0x40
+        mcall
         cmp  ah,1   ; button id=1 ?
         jne  warning_loop
         xor eax,eax
         dec eax         ; close this program
-        int  0x40
+        mcall
         jmp warning_loop
         retn
    
@@ -1045,7 +1045,7 @@ blinkcol   dd 0ffh
 ;_m3        dw 0,0,0,0,0
 ;_m4        dw 0,0,0,0,0
    
-header     db   'Vertical Refresh Rate v2.0 (C) 2003 TRANS',0
+title     db   'Vertical Refresh Rate v2.0 (C) 2003 TRANS',0
    
 _m1280x1024 db '1280x1024'
 _m1024x768  db '1024x768 '

@@ -4,29 +4,28 @@
 ;
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 use32
-
-    org   0x0
-    db    'MENUET00'     ; 8 byte id
-    dd    38             ; required os
-    dd    START          ; program start
-    dd    I_END          ; program image size
-    dd    0x1000         ; reguired amount of memory
-    dd    0x1000
-    dd    0x00000000     ; reserved=no extended header
-
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	0x1000        ; required memory
+ dd	0x1000        ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
 
 
 START:
 
+  red:
     call  draw_window
 
 still:
 
     mov       eax,10                 ; redraw ?
-    int       0x40
+    mcall
 
     cmp    eax,1
     jz     red
@@ -34,13 +33,9 @@ still:
     jz     button
     jmp    still
 
-  red:
-    call   draw_window
-    jmp    still
-
   button:
     mov  eax,17
-    int  0x40
+    mcall
 
     cmp  al,byte 0
     jnz  still
@@ -49,7 +44,7 @@ still:
     jnz  noexit
 
     mov  eax,0xffffffff
-    int  0x40
+    mcall
 
   noexit:
 
@@ -59,7 +54,7 @@ still:
     mov  eax,20   ; reset midi device
     mov  ebx,1
     mov  ecx,0
-    int  0x40
+    mcall
 
     cmp  eax,0
     jz   noe1
@@ -81,7 +76,7 @@ still:
     pusha
     mov  eax,5
     mov  ebx,8
-    int  0x40
+    mcall
     popa
     mov  ebx,0
 ;    call noteout
@@ -93,7 +88,7 @@ still:
     pusha
     mov  eax,5
     mov  ebx,8
-    int  0x40
+    mcall
     popa
     mov  ebx,0
 ;    call noteout
@@ -113,63 +108,41 @@ draw_window:
 
     mov       eax,12                    ; tell os about redraw
     mov       ebx,1
-    int       0x40
+    mcall
 
     mov       eax,0                     ; define and draw window
     mov       ebx,20*65536+250
     mov       ecx,20*65536+120
-    mov       edx,0x02ffffff
-    mov       esi,0x805070d0;88ccee
-    mov       edi,0x005070d0;88ccee
-    int       0x40
-
-                                        ; CLOSE BUTTON
-     mov       eax,8                     ; function 8 : define and draw
-     mov       ebx,(250-19)*65536+12     ; [x start] *65536 + [x size]
-    mov       ecx,5*65536+12            ; [y start] *65536 + [y size]
-    mov       edx,1                     ; button id
-    mov       esi,0x5577cc              ; button color RRGGBB
-    int       0x40
-
-
-    mov       eax,4                     ; 4 = write text
-    mov       ebx,8*65536+8
-    mov       ecx,dword 0x00ffffff      ; 8b window nro - RR GG BB color
-    mov       edx,labelt                ; pointer to text beginning
-    mov       esi,labellen-labelt       ; text length
-    int       0x40
+    mov       edx,0x13ffffff
+    mov       edi,title
+    mcall
 
     mov       eax,8
     mov       ebx,10*65536+200          ; button start x & size
     mov       ecx,40 *65536+17          ; button start y & size
     mov       edx,2                     ; button number
     mov       esi,0x4060b0              ; button color
-    int       0x40
+    mcall
 
-    mov       eax,8
-    mov       ebx,10*65536+200          ; button start x & size
     mov       ecx,60 *65536+17          ; button start y & size
     mov       edx,3                     ; button number
-    mov       esi,0x4060b0              ; button color
-    int       0x40
+    mcall
 
-    mov       eax,dword 4
+    mov       eax,4
     mov       ebx,25*65536+45
     mov       ecx,dword 0xffffff
     mov       edx,buttont
     mov       esi,buttontlen-buttont
-    int       0x40
+    mcall
 
-    mov       eax,dword 4
     mov       ebx,25*65536+65
-    mov       ecx,dword 0xffffff
     mov       edx,buttont2
     mov       esi,buttontlen2-buttont2
-    int       0x40
+    mcall
 
     mov       eax,12                    ; tell os about redraw end
     mov       ebx,2
-    int       0x40
+    mcall
 
     popa
     ret
@@ -185,15 +158,15 @@ noteout:
     mov  eax,20
     mov  ebx,2
     mov  ecx,0x9f
-    int  0x40
+    mcall
     mov  eax,20
     mov  ebx,2
     pop  ecx
-    int  0x40
+    mcall
     mov  eax,20
     mov  ebx,2
     pop  ecx
-    int  0x40
+    mcall
 
     cmp  eax,0
     jz   noe2
@@ -212,14 +185,14 @@ printerror:
      mov       ecx,0x000000
      mov       edx,error1
     mov       esi,errorlen1-error1
-    int       0x40
+    mcall
 
     mov       eax,dword 4
     mov       ebx,15*65536+95
      mov       ecx,0x000000
      mov       edx,error2
     mov       esi,errorlen2-error2
-    int       0x40
+    mcall
 
     ret
 
@@ -227,9 +200,7 @@ printerror:
 ; DATA AREA
 
 
-labelt:
-    db   'MIDI TEST'
-labellen:
+title    db   'MIDI TEST',0
 
 buttont:
     db   'PLAY A FEW NOTES'
@@ -247,7 +218,6 @@ error2:
 errorlen2:
 
 base db 0x0
-
 
 I_END:
 

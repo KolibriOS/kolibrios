@@ -130,7 +130,7 @@ multipl:
   mov  eax, 68	  ; AMD-K6 (p.30)
   mov  ebx, 3
   mov  edx, 0x0C0000087
-  int  0x40    ; eax - low dword
+  mcall    ; eax - low dword
   and  eax, 111b
   mov  cl, [athloncoef3 + eax]
   cmp  eax, 6
@@ -152,7 +152,7 @@ noAMDK6:cmp	byte [f], 6
 @@:	mov	eax, 68		; Athlon/AthlonXP
 	mov	ebx, 3
 	mov	edx, 0x0C0010015
-	int	0x40
+	mcall
 	mov	ebx, eax
 	shr	ebx, 24
 	and	ebx, 0x0F
@@ -165,7 +165,7 @@ noAMDK6:cmp	byte [f], 6
 AMDK7M:	mov	eax, 68		; AthonXP-M
 	mov	ebx, 3
 	mov	edx, 0xC0010042
-	int	0x40
+	mcall
 	and	eax, 0x1F
 	mov	cl, [athlonmcoef + eax]
 	ret
@@ -180,7 +180,7 @@ noAMDK7:cmp	byte [f], 0xF
 	mov	eax, 68		; Athon64
 	mov	ebx, 3
 	mov	edx, 0xC0010015
-	int	0x40
+	mcall
 	shr	eax, 24
 	and	al, 0x3F
 	shr	al, 1
@@ -193,7 +193,7 @@ noAMDK7:cmp	byte [f], 0xF
 AMDK8M:	mov	eax, 68		; Athon64-M
 	mov	ebx, 3
 	mov	edx, 0xC0010042
-	int	0x40
+	mcall
 	and	al, 0x3F
 	shr	al, 1
 	add	al, 4
@@ -211,7 +211,7 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 	mov	eax, 68		; Pentium M
 	mov	ebx, 3
 	mov	edx, 0x2A
-	int	0x40
+	mcall
 	shr	eax, 22
 	and	eax, 0x1F
 	mov	dl, 10
@@ -223,7 +223,7 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 	mov	eax, 68		; Pentium 4 / Xeon (model < 2) Willamete
 	mov	ebx, 3
 	mov	edx, 0x2A
-	int	0x40
+	mcall
 	shr	eax, 8
 	and	eax, 0x0F
 	mov	cl, [p4coef + eax]
@@ -231,7 +231,7 @@ noAMD:	cmp	dword [smallvendor], 'ntel'	; Check for International Electronics CPU
 @@:	mov	eax, 68		; Pentium 4 / Xeon (model >= 2) NorthWood
 	mov	ebx, 3
 	mov	edx, 0x2C
-	int	0x40
+	mcall
 	shr	eax, 24
 	and	eax, 0x1F
 	mov	dl, 10
@@ -244,7 +244,7 @@ noIntelP4:
 	mov	eax, 68		; Pentium Pro / Pentium II / Pentium III
 	mov	ebx, 3
 	mov	edx, 0x2A
-	int	0x40
+	mcall
 	shr	eax, 22
 	test	al, 0x20
 	jz	@f

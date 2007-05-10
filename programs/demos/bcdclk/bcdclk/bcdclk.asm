@@ -18,7 +18,7 @@ use32
  dd 0x0 , 0x0
 
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 
 
 START:
@@ -30,7 +30,7 @@ still:
 
     mov  eax,23   ; wait for timeout
     mov  ebx,50
-    int  0x40
+    mcall
 
     cmp  eax,1 ; redraw ?
     je red
@@ -44,12 +44,12 @@ still:
  
 button:
     mov  al,17   ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1 ; button id=1 ?
     jne  noclose
     or   eax,-1   ; close this program
-    int  0x40
+    mcall
   noclose:
 
     jmp  still
@@ -57,7 +57,7 @@ button:
 drawclock:
 
     mov eax,3 ; get time
-    int  0x40
+    mcall
     bswap eax
     shr  eax,8
     mov  edi,dg1
@@ -82,7 +82,7 @@ plotlp:
     mov  edx,0x00ff0000
 nobit:
     mov  eax,13  ; plot 8,4,2,1
-    int  0x40
+    mcall
     add  ecx,12*65536
     shl  byte[edi],1
     inc  esi
@@ -91,7 +91,7 @@ nobit:
     shr  byte[edi],4
     mov  edx,0x00880040
     mov  eax,13 ; draw digit box
-    int  0x40
+    mcall
     pusha
     mov  edx,ebx
     and  edx,0xffff0000
@@ -102,7 +102,7 @@ nobit:
     mov  ecx,[edi]
     mov  esi,0x00ffffff
     mov  eax,47  ; display decimal
-    int  0x40
+    mcall
     popa
     sub  ebx,12*65536
     inc  edi
@@ -116,23 +116,23 @@ drawwindow:
 
     mov  eax,12
     mov  ebx,1 ; start redraw
-    int  0x40
+    mcall
 
     xor  eax,eax ; window
     mov  ebx,100*65536+107
     mov  ecx,100*65536+105
     mov  edx,0x33400088
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
 call drawclock
 
     mov  eax,12
     mov  ebx,2 ; end redraw
-    int  0x40
+    mcall
 
     ret
 
-header   db   'BCD Clock',0
+title   db   'BCD Clock',0
 I_END:
 dg1:   db  ?

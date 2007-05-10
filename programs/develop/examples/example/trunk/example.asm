@@ -24,7 +24,7 @@
   dd     0x0         ; зарезервировано
 
 include 'lang.inc'
-include 'macros.inc' ; макросы облегчают жизнь ассемблерщиков!
+include '..\..\..\..\macros.inc' ; макросы облегчают жизнь ассемблерщиков!
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -108,7 +108,7 @@ draw_window:
 ;   mov  edi,header                ; ЗАГОЛОВОК ОКНА
 ;   int  0x40
 
-    mcall 0, <200,200>, <200,50>, 0x33AABBCC,,header
+    mcall 0, <200,200>, <200,50>, 0x33AABBCC,,title
 
                                    
 
@@ -148,7 +148,7 @@ lsz message,\
   en,'Press any key...',\
   fr,'Pressez une touche...'
 
-lsz header,\
+lsz title,\
   ru,'ПРИМЕР ПРОГРАММЫ',\
   en,'EXAMPLE APPLICATION',\
   fr,"L'exemplaire programme"

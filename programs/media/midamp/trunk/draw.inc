@@ -18,7 +18,7 @@ draw_bar:
     mov  ecx,[ebp-12]
     mov  edx,0x84706a
     mov  eax,13
-    int  0x40
+    mcall
     mov  esi,TOTALTIME_XY
     mov  eax,[tick_count]
     call draw_total_time
@@ -44,7 +44,7 @@ draw_bar:
 draw_window:
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
     or   [flag],FL_BOTTRED
     xor  eax,eax
     mov  ebx,100*65536+275
@@ -61,7 +61,7 @@ draw_window:
     mov  edx,WND_BACK
     mov  esi,edx
     mov  edi,edx
-    int  0x40
+    mcall
     mov  ecx,[channel]
     shl  ecx,4
     add  cl,[sel_track]
@@ -77,16 +77,16 @@ draw_window:
     mov  ebx,265 shl 16+7
     mov  ecx,3 shl 16+7
     mov  edx,1+1 shl 30
-    int  0x40        ; close button
+    mcall        ; close button
     sub  ebx,10 shl 16
     mov  edx,100+1 shl 30
-    int  0x40        ; shade button-101
+    mcall        ; shade button-101
     sub  ebx,10 shl 16
     add  edx,3
-    int  0x40        ; minimize button-103
+    mcall        ; minimize button-103
     sub  ebx,239 shl 16
     inc  edx         ; about button-104
-    int  0x40
+    mcall
     xor  esi,esi
     xor  edi,edi
     mov  ecx,3
@@ -101,7 +101,7 @@ draw_window:
     add  ecx,[ebp-24]
     mov  esi,0x2c2b46
     mov  edx,2+1 shl 29
-    int  0x40
+    mcall
 
     shr  eax,1
 
@@ -129,7 +129,7 @@ draw_window:
     mov  ebx,btn_raw+12
     mov  ecx,BTNS_SIZE
     mov  edx,BTNS_XY
-    int  0x40
+    mcall
   .nohide2:
     mov  esi,FL_SHUFFLE
     mov  edi,btncoords+8
@@ -148,7 +148,7 @@ draw_window:
     add  ecx,4 shl 16
     add  ecx,[ebp+4]
     mov  cx,2
-    int  0x40
+    mcall
     pop  ecx
   .el:
     add  edi,8
@@ -158,7 +158,7 @@ draw_window:
   .enddraw:
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
     ret
 
 draw_navigation:
@@ -176,7 +176,7 @@ draw_navigation:
     mov  ecx,[ebp+4]
     add  ecx,[ebp-4]
     add  ecx,edi
-    int  0x40
+    mcall
     pop  ecx
     add  ebx,[ebp+8]
     inc  edx
@@ -192,7 +192,7 @@ draw_navigation:
     mov  ecx,[edi+4]
     add  ecx,[ebp+4]
     add  ecx,[esp+4]
-    int  0x40
+    mcall
     pop  ecx
     add  edi,8
     inc  edx
@@ -230,7 +230,7 @@ draw_total_time:      ; eax -time to show
     mcall 47,0x20000,,esi,0xf000
     pop  ecx
     add  edx,17 shl 16
-    int  0x40
+    mcall
     sub  edx,5 shl 16
     mcall 4,edx,esi,dots,1
     popa

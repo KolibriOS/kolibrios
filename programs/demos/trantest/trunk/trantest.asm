@@ -19,6 +19,7 @@ use32
 SCREEN_X equ 320 ;800
 SCREEN_Y equ 200 ;600
 
+include '..\..\..\macros.inc'
 include 'lang.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
@@ -66,37 +67,37 @@ count dd 100
 
 key:
      mov eax,2
-     int 0x40
+     mcall
      jmp still
 button:
      mov eax,17
-     int 0x40
+     mcall
      cmp ah,1
      jne still
 exit:
      mov eax,-1
-     int 0x40
+     mcall
 
 ;Draw window
 draw_window:
     
     mov eax,12  ;Start
     mov ebx,1
-    int 0x40
+    mcall
 
     xor eax,eax   ;Draw window
     mov ebx,100*65536+(SCREEN_X+9) ;x start*65536+x size
     mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
     mov edx,0x13000000              ;0x13 use skinned window
-    mov edi,header
-    int 0x40
+    mov edi,title
+    mcall
 
     mov eax,12  ;End
     mov ebx,2
-    int 0x40
+    mcall
     ret
 
-header db '3D TEST SAMPLE',0
+title db '3D TEST SAMPLE',0
 
 outscr:
 
@@ -105,7 +106,7 @@ outscr:
  mov ecx,SCREEN_X*65536+SCREEN_Y
  mov edx,5*65536+22
  mov ax,7
- int 0x40
+ mcall
 
 	ret
 

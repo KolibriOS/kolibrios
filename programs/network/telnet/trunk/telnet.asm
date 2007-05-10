@@ -17,7 +17,7 @@ use32
 
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:				; start of execution
 
@@ -37,7 +37,7 @@ still:
     mov  eax,53
     mov  ebx,6
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov     ebx, [socket_status]
     mov     [socket_status], eax
@@ -45,12 +45,13 @@ still:
     cmp     eax, ebx
     je	    waitev
 
+red:
     call    draw_window
 
 waitev:
     mov  eax,23 		; wait here for event
     mov  ebx,20
-    int  0x40
+    mcall
 
     cmp  eax,1			; redraw request ?
     je	 red
@@ -64,7 +65,7 @@ waitev:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socket]
-    int     0x40
+    mcall
     cmp     eax, 0
     jne      read_input
 
@@ -77,7 +78,7 @@ read_input:
     mov     eax, 53
     mov     ebx, 3
     mov     ecx, [socket]
-    int     0x40
+    mcall
     pop  ecx
 
     call    handle_data
@@ -86,7 +87,7 @@ read_input:
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socket]
-    int     0x40
+    mcall
     pop     ecx
     cmp     eax, 0
 
@@ -133,7 +134,7 @@ state2:
     mov     ebx,7
     mov     ecx,[socket]
     mov     esi, telnetrep
-    int     0x40
+    mcall
     ret
 
 hd001:
@@ -200,14 +201,9 @@ hd001:
   newdata:
     ret
 
-
-  red:				; REDRAW WINDOW
-    call draw_window
-    jmp  still
-
   key:				; KEY
     mov  eax,2			; send to modem
-    int  0x40
+    mcall
 
     mov     ebx, [socket_status]
     cmp     ebx, 4		; connection open?
@@ -246,17 +242,17 @@ hd001:
 
   button:			; BUTTON
     mov  eax,17
-    int  0x40
+    mcall
     cmp  ah,1			; CLOSE PROGRAM
     jne  noclose
 
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
-     mov  eax,-1
-     int  0x40
+     or   eax,-1
+     mcall
   noclose:
     cmp     ah, 2		; Set IP
     jne     notip
@@ -376,7 +372,7 @@ tm_000:
     mov     ebx,7
     mov     ecx,[socket]
     mov     esi, tx_buff
-    int  0x40
+    mcall
     pop     bx
     mov     al, [echo]
     cmp     al, 0
@@ -405,7 +401,7 @@ disconnect:
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     ret
 
 
@@ -420,7 +416,7 @@ getlp:
  push ecx
  mov	 eax, 53
  mov	 ebx, 9
- int	 0x40
+ mcall
  pop	 ecx
  cmp	 eax, 0   ; is this local port in use?
  jz  getlp	; yes - so try next
@@ -437,7 +433,7 @@ getlp:
     mov     esi, edx
     movzx   edx, word [port]	  ; telnet port id
     mov     edi,1      ; active open
-    int     0x40
+    mcall
     mov     [socket], eax
 
     popa
@@ -457,45 +453,45 @@ draw_window:
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     xor  eax,eax		     ; DRAW WINDOW
     mov  ebx,100*65536+491 + 8 +15
     mov  ecx,100*65536+270 + 20     ; 20 for status bar
     mov  edx,0x13000000
-    mov  edi,labelt
-    int  0x40
+    mov  edi,title
+    mcall
 
     ; draw status bar
     mov     eax, 13
     mov     ebx, 4*65536+484 + 8 +15
     mov     ecx, 270*65536 + 3
     mov     edx, 0x00557799
-    int     0x40
+    mcall
 
     mov  eax,8			   ; BUTTON 2: SET IP
     mov  ebx,4*65536+70
     mov  ecx,273*65536+12
     mov     esi, 0x00557799
     mov  edx,2
-    int  0x40
+    mcall
 
     mov  eax,4			   ; Button text
     mov  ebx,6*65536+276
     mov  ecx,0x00ffffff
     mov  edx,setipt
     mov  esi,setiplen-setipt
-    int  0x40
+    mcall
 
 
+    mov  eax,47
     mov  edi,ip_address 	    ; display IP address
     mov  edx,78*65536+276
     mov  esi,0x00ffffff
     mov  ebx,3*65536
   ipdisplay:
-    mov  eax,47
     movzx ecx,byte [edi]
-    int  0x40
+    mcall
     add  edx,6*4*65536
     inc  edi
     cmp  edi,ip_address+4
@@ -506,14 +502,14 @@ draw_window:
     mov  ecx,273*65536+12
     mov  edx,3
     mov     esi, 0x00557799
-    int  0x40
+    mcall
 
     mov  eax,4			   ; Button text
     mov  ebx,178*65536+276
     mov  ecx,0x00ffffff
     mov  edx,setportt
     mov  esi,setportlen-setportt
-    int  0x40
+    mcall
 
 
     mov  edx,216*65536+276	     ; display port
@@ -521,21 +517,21 @@ draw_window:
     mov  ebx,4*65536
     mov  eax,47
     movzx  ecx,word [port]
-    int  0x40
+    mcall
 
     mov  eax,8			   ; BUTTON 4: Connect
     mov  ebx,250*65536+50
     mov  ecx,273*65536+12
     mov     esi, 0x00557799
     mov  edx,4
-    int     0x40
+    mcall
 
     mov  eax,4			   ; Button text
     mov  ebx,255*65536+276
     mov  ecx,0x00ffffff
     mov  edx,cont
     mov  esi,conlen-cont
-    int  0x40
+    mcall
 
 
     mov  eax,8			   ; BUTTON 5: disconnect
@@ -543,7 +539,7 @@ draw_window:
     mov  ecx,273*65536+12
     mov  edx,5
     mov     esi, 0x00557799
-    int     0x40
+    mcall
 
 
     mov  eax,4			   ; Button text
@@ -551,7 +547,7 @@ draw_window:
     mov  ecx,0x00ffffff
     mov  edx,dist
     mov  esi,dislen-dist
-    int  0x40
+    mcall
 
 
     mov  esi,contlen-contt	    ; display connected status
@@ -566,7 +562,7 @@ pcon:
     mov  eax,4			   ; status text
     mov  ebx,380*65536+276
     mov  ecx,0x00ffffff
-    int  0x40
+    mcall
 
 
     mov  eax,8			   ; BUTTON 6: echo
@@ -574,7 +570,7 @@ pcon:
     mov  ecx,273*65536+12
     mov  edx,6
     mov     esi, 0x00557799
-    int     0x40
+    mcall
 
     mov  edx,echot
     mov  esi,echolen-echot
@@ -588,7 +584,7 @@ peo:
     mov  eax,4			   ; Button text
     mov  ebx,463*65536+276
     mov  ecx,0x00ffffff
-    int  0x40
+    mcall
 
 
     xor  eax,eax
@@ -601,7 +597,7 @@ peo:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
 
@@ -636,7 +632,7 @@ draw_text:
     shl     ebx, 16
     mov     bx, 6
     mov     eax, 13
-    int     0x40
+    mcall
     popa
 
     ; draw character
@@ -652,7 +648,7 @@ draw_text:
     mov  eax,4
     mov  edx,esi
     mov  esi,1
-    int  0x40
+    mcall
     popa
 
   noletter:
@@ -683,11 +679,11 @@ read_string:
     mov  edi,string
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je	 read_done
@@ -735,7 +731,7 @@ print_text:
     shl  ecx,16
     mov  cx,8
     mov  edx,0x00000000
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,[string_x]
@@ -744,7 +740,7 @@ print_text:
     mov  ecx,0x00ffffff
     mov  edx,string
     mov  esi,[string_length]
-    int  0x40
+    mcall
 
     popa
     ret
@@ -773,7 +769,7 @@ pos		dd  80 * 1
 scroll		dd  1
 		dd  24
 wcolor		dd  0x000000
-labelt		db  'Telnet v0.1',0
+title		db  'Telnet v0.1',0
 setipt		db  'IP Address:    .   .   .'
 setiplen:
 setportt	db  'Port:'

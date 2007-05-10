@@ -25,7 +25,7 @@ include 'lang.inc'
    dd     i_end+0x2000                  ; memory for app (4 Kb)
    dd     i_end+0x2000                  ; esp
    dd     0x0 , 0x0               ; I_Param , I_Icon
-include 'MACROS.INC'
+include '..\..\..\MACROS.INC'
 include 'debug.inc'
 purge newline
 MAXSTRINGS = 16
@@ -293,7 +293,7 @@ draw_window:
     mov  ecx,MAXSTRINGS*10+45      ; [y start] *65536 + [y size]
     mov  edx,[sc.work]             ; color of work area RRGGBB,8->color gl
     or   edx,0x13000000
-    mov  edi,header                ; WINDOW LABEL
+    mov  edi,title                ; WINDOW LABEL
     mcall
     
     mov  ecx,4
@@ -516,11 +516,11 @@ dump_cell_size dw HSPACE,VSPACE,6,VSPACE
 ; 11,11 > 0,-1
 ; 5,11  > 0,-1
 if lang eq ru
-   header    db   'Доска отладки и сообщений',0
+   title    db   'Доска отладки и сообщений',0
 else if lang eq en
-   header    db   'General debug & message board',0
+   title    db   'General debug & message board',0
 else
-   header    db   'Allgemeines debug- & nachrichtenboard',0
+   title    db   'Allgemeines debug- & nachrichtenboard',0
 end if
    krnl_cnt dd 0
    vmode dd 0

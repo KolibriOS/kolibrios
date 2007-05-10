@@ -21,6 +21,7 @@
 
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 
@@ -43,7 +44,7 @@ START:                          ; start of execution
 still:
 
     mov  eax,11                 ; scan event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -58,14 +59,14 @@ out_scorea:
     mov ecx,[scorea]
     mov edx,300*65536+8
     mov esi,cl_Blue
-    int 0x40
+    mcall
 out_scoreb:
     mov eax,47
     mov ebx,5*65536
     mov ecx,[scoreb]
     mov edx,350*65536+8
     mov esi,cl_Red
-    int 0x40
+    mcall
 
 del_images:
     setimg dword [ply1x],dword [ply1y],img4
@@ -290,7 +291,7 @@ redraw_images:
 
   key:                          ; key
     mov eax,2
-    int 0x40
+    mcall
     cmp ah,key_Left
     jne no_l
     sub dword [ply1rx],16
@@ -316,11 +317,11 @@ no_sp:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
     jmp  still
 

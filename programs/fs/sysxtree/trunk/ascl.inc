@@ -50,14 +50,14 @@ open:
     mov  dword [fileinfo+8],1 ; how many blocks to read (1)
     mov  eax,58
     mov  ebx,fileinfo
-    int  0x40
+    mcall
     mov  eax,[file_load_area+2]
     shr  eax,9 ; поделим на 512 и прибавим 1 - получим число блоков
     inc  eax
     mov  dword [fileinfo+8],eax
     mov  eax,58
     mov  ebx,fileinfo
-    int  0x40
+    mcall
 }
 
 
@@ -143,7 +143,7 @@ asd:
     mov edx,id
     mov esi,bcolor
     mov eax,8
-    int 0x40
+    mcall
 
     mov eax,asd-lab          ;calc size
     mov ebx,6
@@ -168,7 +168,7 @@ asd:
     mov edx,lab
     mov esi,asd-lab          ;calc size
     mov eax,4
-    int 0x40
+    mcall
 }
 
 
@@ -197,7 +197,7 @@ mov [dlg_pid_get],0
     mov eax,9
     mov ebx,procinfo
     mov ecx,-1
-    int 0x40
+    mcall
 
 ; convert eax bin to param dec
     mov eax,dword [procinfo+30]  ;offset of myPID
@@ -231,12 +231,12 @@ new_d:
     mov ebx,1        ; define IPC
     mov ecx,path     ; offset of area
     mov edx,1024+16  ; size
-    int 0x40
+    mcall
 
 ; change wanted events list 7-bit IPC event
     mov eax,40
     mov ebx,01000111b
-    int 0x40
+    mcall
 
 ;
 ; STEP 3 run SYSTEM XTREE with parameters
@@ -244,7 +244,7 @@ new_d:
 
     mov eax,70
     mov ebx,run_fileinfo
-    int 0x40
+    mcall
 
     call redproc
 
@@ -252,7 +252,7 @@ new_d:
 getmesloop:
     mov eax,23
     mov ebx,50     ;0.5 sec
-    int 0x40
+    mcall
         dec     eax
         jz      mred
         dec     eax
@@ -266,14 +266,14 @@ getmesloop:
     mov ebx,procinfo
     mov ecx,-1
     mov eax,9
-    int 0x40
+    mcall
     mov ebp,eax
 
 loox:
     mov eax,9
     mov ebx,procinfo
     mov ecx,ebp
-    int 0x40
+    mcall
     mov eax,[DLGPID]
     cmp [procinfo+30],eax    ;IF Dialog find
     je  dlg_is_work          ;jmp to dlg_is_work
@@ -298,15 +298,15 @@ mred:
     jmp  getmesloop
 mkey:
     mov  eax,2
-    int  0x40                   ; read (eax=2)
+    mcall                   ; read (eax=2)
     jmp  getmesloop
 mbutton:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  getmesloop
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 mgetmes:
 
 ; If dlg_pid_get then second message get jmp to still
@@ -408,7 +408,7 @@ mov [dlg_pid_get],0
     mov eax,9
     mov ebx,procinfo
     mov ecx,-1
-    int 0x40
+    mcall
 
 ; convert eax bin to param dec
     mov eax,dword [procinfo+30]  ;offset of myPID
@@ -442,12 +442,12 @@ new_d:
     mov ebx,1        ; define IPC
     mov ecx,path ; offset of area
     mov edx,1024+16      ; size
-    int 0x40
+    mcall
 
 ; change wanted events list 7-bit IPC event
     mov eax,40
     mov ebx,01000111b
-    int 0x40
+    mcall
 
 ;
 ; STEP 3 run SYSTEM XTREE with parameters
@@ -455,7 +455,7 @@ new_d:
 
     mov eax,70
     mov ebx,run_fileinfo
-    int 0x40
+    mcall
 
     call redproc
 
@@ -463,7 +463,7 @@ new_d:
 getmesloop:
     mov eax,23
     mov ebx,50     ;0.5 sec
-    int 0x40
+    mcall
         dec     eax
         jz      mred
         dec     eax
@@ -477,14 +477,14 @@ getmesloop:
     mov ebx,procinfo
     mov ecx,-1
     mov eax,9
-    int 0x40
+    mcall
     mov ebp,eax
 
 loox:
     mov eax,9
     mov ebx,procinfo
     mov ecx,ebp
-    int 0x40
+    mcall
     mov eax,[DLGPID]
     cmp [procinfo+30],eax    ;IF Dialog find
     je  dlg_is_work          ;jmp to dlg_is_work
@@ -509,15 +509,15 @@ mred:
     jmp  getmesloop
 mkey:
     mov  eax,2
-    int  0x40                   ; read (eax=2)
+    mcall                   ; read (eax=2)
     jmp  getmesloop
 mbutton:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  getmesloop
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 mgetmes:
 
 ; If dlg_pid_get then second message get jmp to still
@@ -669,7 +669,7 @@ rxproc:
 macro scank
 {
     mov eax,10
-    int 0x40
+    mcall
 }
 
 macro putpix x,y,color
@@ -678,7 +678,7 @@ macro putpix x,y,color
     mov ecx,y
     mov edx,color
     mov eax,1
-    int 0x40
+    mcall
 }
 
 macro puttxt x,y,offs,size,color
@@ -696,7 +696,7 @@ macro puttxt x,y,offs,size,color
 ;    mov edx,offs
 ;    mov esi,size
     mov eax,4
-    int 0x40
+    mcall
 }
 
 macro outcount data, x, y, color, numtype
@@ -708,7 +708,7 @@ macro outcount data, x, y, color, numtype
     words2reg edx,x,y
     mov esi,color
     mov eax,47
-    int 0x40
+    mcall
 }
 
 ; SCEVENT - Scan event
@@ -716,7 +716,7 @@ macro outcount data, x, y, color, numtype
 macro scevent red,key,but
 {
     mov eax,11
-    int 0x40
+    mcall
     dec eax
     jz  red
     dec eax
@@ -730,7 +730,7 @@ macro scevent red,key,but
 macro wtevent red,key,but
 {
     mov eax,10
-    int 0x40
+    mcall
     dec eax
     jz  red
     dec eax
@@ -745,7 +745,7 @@ macro timeevent xfps,noevent,red,key,but
 {
     mov eax,23
     mov ebx,xfps
-    int 0x40
+    mcall
     cmp eax,0
     je  noevent
     dec eax
@@ -762,7 +762,7 @@ macro timeevent xfps,noevent,red,key,but
 macro close
 {
     mov eax,-1
-    int 0x40
+    mcall
 }
 
 ; DELAY - Create delay 1/100 sec
@@ -773,7 +773,7 @@ macro delay arg1
 {
     mov eax,5
     mov ebx,arg1
-    int 0x40
+    mcall
 }
 
 ; WINDOW - Draw window
@@ -788,7 +788,7 @@ macro window arg1,arg2,arg3,arg4,arg5
     words2reg ecx,arg2,arg4
     mov edx,arg5
     mov eax,0
-    int 0x40
+    mcall
 }
 
 macro colorwindow arg1,arg2,arg3,arg4,arg5,arg6,arg7
@@ -799,7 +799,7 @@ macro colorwindow arg1,arg2,arg3,arg4,arg5,arg6,arg7
     mov esi,arg6
     mov edi,arg7
     mov eax,0
-    int 0x40
+    mcall
 }
 
 
@@ -809,7 +809,7 @@ macro startwd
 {
     mov eax,12
     mov ebx,1
-    int 0x40
+    mcall
 }
 
 ; ENDWD - End window draw
@@ -818,7 +818,7 @@ macro endwd
 {
     mov eax,12
     mov ebx,2
-    int 0x40
+    mcall
 }
 
 ; LABEL - Put text to frame
@@ -842,7 +842,7 @@ asd:
     mov edx,lab
     mov esi,asd-lab          ;calc size
     mov eax,4
-    int 0x40
+    mcall
 }
 
 ;Key's

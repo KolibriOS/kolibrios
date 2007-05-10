@@ -8,23 +8,29 @@
 ;   Compile with flat assembler
 ;
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 meos_app_start
 code
 
+  mov   eax, 48                   ; получить системные цвета
+  mov   ebx, 3
+  mov   ecx, sc                   ;  адрес структуры
+  mov   edx, sizeof.system_colors ;  и ее размер
+  mcall
+
   mov   eax,40       ; установим маску событий
   mov   ebx,100000b  ; нас интересует только мышь
-  int   0x40
+  mcall
 
 still:               ; главный цикл основного процесса
 
   mov   eax,10       ; ждём события
-  int   0x40
+  mcall
 
   mov   eax,37       ; какие нажаты кпопки?
   mov   ebx,2
-  int   0x40
+  mcall
 
   cmp   eax,2        ; если не правая, возврат
   jne   still
@@ -33,7 +39,7 @@ still:               ; главный цикл основного процесса
 
 ;  mov   eax,37       ; это для отладки - если мышь в точке (0;0), закроемся
 ;  xor   ebx,ebx
-;  int   0x40
+;  mcall
 ;  test  eax,eax      ; курсор в точке (0;0), т.е. eax = 0
 ;  je    exit
 
@@ -41,7 +47,7 @@ still:               ; главный цикл основного процесса
   mov   eax,9        ; получим число процессов в системе
   mov   ebx,procinfo
   xor   ecx,ecx
-  int   0x40
+  mcall
 
   inc   eax          ; теперь в eax содержится число процессов + 1
   mov   [processes],eax
@@ -51,10 +57,10 @@ still:               ; главный цикл основного процесса
   pushad
   mov   eax,9        ; получим информацию о процессе; номер - в ecx
   mov   ebx,procinfo
-  int   0x40
+  mcall
   mov   eax,37       ; координаты курсора
   xor   ebx,ebx
-  int   0x40
+  mcall
   mov   ebx,eax                  ; eax = cursor_x
   shr   eax,16                   ; ebx = cursor_y
   and   ebx,0xffff
@@ -65,12 +71,12 @@ still:               ; главный цикл основного процесса
         test    [procinfo.wnd_state], 2
         jnz     ne_goden
 ; \end{diamond}[18.09.2006]
-  mov   eax,[procinfo.x_start]   ; eax = wnd_x_start
-  mov   ebx,[procinfo.y_start]   ; ebx = wnd_y_start
+  mov   eax,[procinfo.box.left]   ; eax = wnd_x_start
+  mov   ebx,[procinfo.box.top]    ; ebx = wnd_y_start
 
-  mov   ecx,[procinfo.x_size]
+  mov   ecx,[procinfo.box.width]
   add   ecx,eax                  ; ecx = wnd_x_end
-  mov   edx,[procinfo.y_size]
+  mov   edx,[procinfo.box.height]
   add   edx,ebx                  ; ecx = wnd_y_end
 
   cmp   eax,[curx1]  ; wnd_x_start > cursor_x => курсор левее окна
@@ -96,13 +102,13 @@ ne_goden:            ; клик был снаружи рассматриваемого окна, поэтому
 @@:             ; подождём, пока пользователь не отпустил правую кнопку мыши
   mov   eax,37
   mov   ebx,2   ; функция 37-2:
-  int   0x40    ;   нажаты ли кнопки мыши?
+  mcall    ;   нажаты ли кнопки мыши?
   cmp   eax,ebx ; если отпустил, (eax != 2)
   jnz   @f      ;   идём в начало главного цикла
 
   mov   eax,5   ; иначе
   mov   ebx,2   ;   подождём 2 мс
-  int   0x40
+  mcall
 
   jmp   @b      ;   и проверим мышь опять
 @@:
@@ -113,7 +119,7 @@ ne_goden:            ; клик был снаружи рассматриваемого окна, поэтому
   je    @f
   mov   eax,5
   mov   ebx,3  ; ждём 3 мс
-  int   0x40
+  mcall
   jmp   @b
 @@:
 
@@ -121,7 +127,7 @@ ne_goden:            ; клик был снаружи рассматриваемого окна, поэтому
   mov   ebx,1            ; создаём поток (thread)
   mov   ecx,start_wnd    ; точка входа потока
   mov   edx,stack_wnd    ; вершина стэка для потока
-  int   0x40
+  mcall
 
   jmp   still
 
@@ -131,7 +137,7 @@ exit_menu:            ; если выходим из меню, надо записать в [menu_opened] 0
   mov   [menu_opened],0
 exit:                 ; сюда мы идём, когда выходим из основного процесса
   or    eax,-1        ; eax = -1
-  int   0x40
+  mcall
 
 
 
@@ -141,7 +147,7 @@ start_wnd:
   mov   [menu_opened],1
   mov   eax,40      ; установим маску желаемых событий для этого процесса
   mov   ebx,100101b ; меню + кнопки + перерисовка
-  int   0x40
+  mcall
 
 red:
   call  draw_window
@@ -149,7 +155,7 @@ red:
 still2:             ; главный цикл процесса меню
 
   mov   eax,10      ; ждём события
-  int   0x40
+  mcall
 
   cmp   eax,1       ; перерисовка?
   je    red
@@ -165,7 +171,7 @@ still2:             ; главный цикл процесса меню
 mouse:            ; когда пользователь нажмёт кнопку мыши, закроемся
   mov   eax,37
   mov   ebx,2     ; какие кнопки нажаты?
-  int   0x40
+  mcall
   test  eax,eax   ; никакие? - тогда прекрасно! вернёмся в гланый цикл
   jz    still2
   jmp   exit_menu ; а если всё-таки нажаты - закроем окно
@@ -174,7 +180,7 @@ mouse:            ; когда пользователь нажмёт кнопку мыши, закроемся
 ; НАЖАТА КНОПКА
 button:
   mov   eax,17        ; получить идентификатор нажатой кнопки
-  int   0x40
+  mcall
 
   sub   ah,10         ; сравниваем с 10
   jl    nofuncbtns    ; если меньше - закрываем меню
@@ -192,7 +198,7 @@ button:
 
 ;  mov   eax,5         ; подождём, пока программа запуститься
 ;  mov   ebx,1         ; а то её окно не будет отрисовано (баг в ядре???)
-;  int   0x40          ; раскомментируйте эти строки, если у вас проблемы
+;  mcall          ; раскомментируйте эти строки, если у вас проблемы
                        ; с отрисовкой
 
 nofuncbtns:           ; закрываем меню
@@ -200,18 +206,18 @@ nofuncbtns:           ; закрываем меню
 
 
 
-_BTNS_            = 7     ; количество кнопок ("пунктов меню")
+_BTNS_            = 6     ; количество кнопок ("пунктов меню")
 
 if lang eq ru
   font            = 0x00000000
   string_length   = 20          ; длина строки
   wnd_x_size      = 133         ; ширина окна
-  header_pos      = 36 shl 16 + 7
+  title_pos      = 36 shl 16 + 7
 else
   font            = 0x10000000
   string_length   = 12          ; длина строки
   wnd_x_size      = 105         ; ширина окна
-  header_pos      = 23 shl 16 + 7
+  title_pos      = 23 shl 16 + 7
 end if
 
 ;*******************************
@@ -222,7 +228,7 @@ draw_window:
 
   mov   eax,12           ; начинаем "рисовать"
   mov   ebx,1
-  int   0x40
+  mcall
 
   mov   eax,[curx1]      ; текущие координаты курсора
   mov   [curx],eax       ; запишем в координаты окна
@@ -231,7 +237,7 @@ draw_window:
 
 ; теперь будем считать координаты окна, чтобы оно за край экрана не вылезло
   mov   eax,14                ; получим размер экрана
-  int   0x40
+  mcall
   mov   ebx,eax
   shr   eax,16                ; в eax - x_screen
   and   ebx,0xffff            ; в ebx - y_screen
@@ -248,12 +254,6 @@ draw_window:
   add   [cury], -_BTNS_*15-21
  .oky:
 
-  mov   eax, 48                   ; получить системные цвета
-  mov   ebx, 3
-  mov   ecx, sc                   ;  адрес структуры
-  mov   edx, sizeof.system_colors ;  и ее размер
-  int   0x40
-
   xor   eax, eax           ; функция 0 - создать окно
   mov   ebx, [curx]        ;  ebx = [координата по x] shl 16 + [ширина]
   shl   ebx, 16
@@ -265,10 +265,10 @@ draw_window:
   mov   esi, [sc.grab]     ;  цвет заголовка
   or    esi, 0x81000000
   mov   edi, [sc.frame]    ;  цвет рамки
-  int   0x40
+  mcall
 
   mov   eax, 4             ; заголовок
-  mov   ebx, header_pos    ;  [x] shl 16 + [y]
+  mov   ebx, title_pos    ;  [x] shl 16 + [y]
   mov   ecx, [sc.grab_text];  шрифт и цвет (серый)
   or    ecx, 0x10000000
 ;  add   ecx, -0x333333
@@ -283,12 +283,12 @@ draw_window:
   inc   edx
   jnp   .dec_color
   pop   ecx
-  mov   edx, header        ;  адрес заголовка
-  mov   esi, header.size   ;  длина заголовка ("M E N U")
-  int   0x40
+  mov   edx, title        ;  адрес заголовка
+  mov   esi, title.size   ;  длина заголовка ("M E N U")
+  mcall
   pop   ecx
   add   ebx, 1 shl 16      ;  сдвинем вправо на 1
-  int   0x40
+  mcall
 
   mov   ebx, 1*65536+wnd_x_size-2  ; начинаем делать кнопки
   mov   ecx, 20*65536+15
@@ -298,7 +298,7 @@ draw_window:
 
  newbtn:                     ; начало цикла
   mov   eax,8                ;  создаём кнопку
-  int   0x40
+  mcall
 
                              ;  пишем текст на кнопке
   pushad                     ;   спасаем регистры
@@ -313,7 +313,7 @@ draw_window:
   add   edx, text            ;   edx += text;  теперь в edx адрес строки
   mov   esi, string_length   ;   в esi - длина строки
   mov   eax, 4               ;   функция 4 - вывод текста
-  int   0x40
+  mcall
   popad
 
   inc   edx                  ;  номер кнопки++;
@@ -323,7 +323,7 @@ draw_window:
 
   mov   eax,12               ; закончили "рисовать"
   mov   ebx,2
-  int   0x40
+  mcall
 
 ret                          ; возврат
 
@@ -345,18 +345,16 @@ DATA
 
   strtbl startapps       ,\
     <"/RD/1/PIC4",0>     ,\
-    <"/RD/1/SKINSEL",0>  ,\
     <"/RD/1/DESKTOP",0>  ,\
-    <"/RD/1/ICON",0>     ,\
+    <"/RD/1/ICON",0>,\
     <"/RD/1/SETUP",0>    ,\
     <"/RD/1/VRR",0> ,\
     <"/RD/1/CPU",0> 
     
-  sz header, "KolibriOS"
+  sz title, "KolibriOS"
 
   lsz text,\
     en, 'Background  ',\
-    en, 'Change skin ',\
     en, 'Desktop     ',\
     en, 'Icon manager',\
     en, 'Device setup',\
@@ -364,7 +362,6 @@ DATA
     en, 'Processes   ',\
     \
     ru, 'Генератор обоев     ',\
-    ru, 'Смена скина         ',\
     ru, 'Настройка окон      ',\
     ru, 'Управление иконками ',\
     ru, 'Настройка устройств ',\

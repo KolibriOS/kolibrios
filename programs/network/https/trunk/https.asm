@@ -26,10 +26,10 @@ use32
 		dd	START			; program start
 		dd	I_END			; program image size
 		dd	0x400000		; required amount of memory
-		dd	0x20000
+		dd	0x400000
 		dd	0,0			; reserved=no extended header
 
-include "MACROS.INC"
+include "..\..\..\MACROS.INC"
 
 ; 0x0+       - program image
 ; 0x1ffff    - stack
@@ -57,7 +57,7 @@ START:				; start of execution
 
     mov  eax,70
     mov  ebx,filel
-    int  0x40
+    mcall
     mov  [board_size],ebx
     cmp  eax,0
     je   board_found
@@ -75,7 +75,7 @@ START:				; start of execution
     mov  ebx,files
     mov  ecx,[board_size]
     mov  [files+12],ecx
-    int  0x40
+    mcall
 
     mov  [status],-1
     mov  [last_status],-2
@@ -98,10 +98,10 @@ still:
 
     mov  eax,5
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,11
-    int  0x40
+    mcall
     call check_events
 
     jmp  still
@@ -121,22 +121,22 @@ check_events:
 
 key:			       ; Keys are not valid at this part of the
     mov  al,2		       ; loop. Just read it and ignore
-    int  0x40
+    mcall
     ret
 
 button: 			; button
 
     mov  al,17 		; get id
-    int  0x40
+    mcall
 
     cmp  ah,1		; close
     jnz  tst2
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  eax,-1
-    int  0x40
+    mcall
   tst2:
 
     cmp  ah,2            ; button id=2 ?
@@ -149,7 +149,7 @@ button: 			; button
     mov  edx,0	    ; no remote port specified
     mov  esi,0	    ; no remote ip specified
     mov  edi,0	    ; PASSIVE open
-    int  0x40
+    mcall
     mov  [socket], eax
     mov  [posy],1
     mov  [posx],0
@@ -167,14 +167,14 @@ button: 			; button
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  eax,5
     mov  ebx,2
-    int  0x40
+    mcall
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  [server_active],1
     jne  no_re_open
@@ -184,7 +184,7 @@ button: 			; button
     mov  edx,0	    ; no remote port specified
     mov  esi,0	    ; no remote ip specified
     mov  edi,0	    ; PASSIVE open
-    int  0x40
+    mcall
     mov  [socket], eax
   no_re_open:
 
@@ -245,7 +245,7 @@ start_transmission:
     je	 data_received
     mov  eax,5
     mov  ebx,1
-    int  0x40
+    mcall
     dec  [retries]
     jnz  wait_for_data
     jmp  no_http_request
@@ -280,7 +280,7 @@ start_transmission:
     mov  ebx,7
     mov  ecx,[socket]
     mov  esi,[filepos]
-    int  0x40
+    mcall
 
     mov  eax,esi
     add  eax,edx
@@ -312,16 +312,16 @@ wait_for_empty_slot:
 
     mov  eax,5
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,11
-    int  0x40
+    mcall
     call check_events
 
     mov  eax,53
     mov  ebx,255
     mov  ecx,103
-    int  0x40
+    mcall
 
     cmp  eax,0
     je   no_wait_more
@@ -346,14 +346,14 @@ display_progress:
   mov  ebx,115*65536+8*6
   mov  ecx,178*65536+10
   mov  edx,0xffffff
-  int  0x40
+  mcall
 
   mov  eax,47
   mov  ebx,8*65536
   mov  ecx,edi
   mov  edx,115*65536+178
   mov  esi,0x000000
-  int  0x40
+  mcall
 
   popa
   ret
@@ -368,14 +368,14 @@ send_header:
     mov   ecx,[socket]
     mov   edx,h_len-html_header
     mov   esi,html_header
-    int   0x40
+    mcall
 
     mov   eax,53		  ; send file type
     mov   ebx,7
     mov   ecx,[socket]
     mov   edx,[type_len]
     mov   esi,[file_type]
-    int   0x40
+    mcall
 
     popa
     ret
@@ -437,7 +437,7 @@ read_file:			    ; start of execution
 
     mov  eax,70
     mov  ebx,filel
-    int  0x40
+    mcall
     mov  [board_size],ebx
 
     cmp  [input_text+256+1],dword 'POST'
@@ -599,7 +599,7 @@ read_file:			    ; start of execution
 
     mov  eax,70
     mov  ebx,files
-    int  0x40
+    mcall
 
   no_new_message:
     mov  esi,0x20000
@@ -769,7 +769,7 @@ read_file:			    ; start of execution
     mov  [fileinfo+12],dword 1	 ; file exists ?
     mov  eax,70
     mov  ebx,fileinfo
-    int  0x40
+    mcall
 
     cmp  eax,0	       ; file not found - message
     je	 file_found
@@ -795,7 +795,7 @@ read_file:			    ; start of execution
     mov  [fileinfo+12],dword 0x2f0000 ; read all of file
     mov  eax,70
     mov  ebx,fileinfo
-    int  0x40
+    mcall
 
    file_not_found:
    file_loaded:
@@ -855,7 +855,7 @@ set_time:
     pusha
 
     mov  eax,3
-    int  0x40
+    mcall
 
     mov  ecx,3
   new_time_digit:
@@ -880,7 +880,7 @@ set_date:
     pusha
 
     mov  eax,29
-    int  0x40
+    mcall
 
     mov  ecx,3
     add  edi,6
@@ -910,7 +910,7 @@ check_for_incoming_data:
     mov  eax, 53
     mov  ebx, 2
     mov  ecx, [socket]
-    int  0x40
+    mcall
 
     cmp  eax,0
     je   _ret_now
@@ -920,7 +920,7 @@ check_for_incoming_data:
     mov  eax,53
     mov  ebx,2
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  eax,0
     je   _ret
@@ -928,7 +928,7 @@ check_for_incoming_data:
     mov  eax,53
     mov  ebx,3
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  bl,10
     jne  no_lf
@@ -964,7 +964,7 @@ check_for_incoming_data:
      jne  no_ld
      mov  ebx,50
    no_ld:
-     int  0x40
+     mcall
 
      jmp  check
 
@@ -985,7 +985,7 @@ check_status:
     mov  eax,53
     mov  ebx,6
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     cmp  eax,[status]
     je	 c_ret
@@ -1021,11 +1021,11 @@ read_string:
 
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  read_done
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je	 read_done
@@ -1083,7 +1083,7 @@ print_text:
     mov  ecx,0x40000000
     mov  esi,23
     mov  edi,0xffffff
-    int  0x40
+    mcall
 
     popa
     ret
@@ -1098,54 +1098,54 @@ draw_window:
 
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,1			   ; 1, start of draw
-    int  0x40
+    mcall
 
 				   ; DRAW WINDOW
     mov  eax,0			   ; function 0 : define and draw window
     mov  ebx,100*65536+480	   ; [x start] *65536 + [x size]
     mov  ecx,100*65536+215	   ; [y start] *65536 + [y size]
     mov  edx,0x13ffffff 	   ; color of work area RRGGBB
-    mov  edi,header		   ; WINDOW LABEL
-    int  0x40
+    mov  edi,title		   ; WINDOW LABEL
+    mcall
 
     mov  eax,8			   ; function 8 : define and draw button
     mov  ebx,(40)*65536+20	   ; [x start] *65536 + [x size]
     mov  ecx,59*65536+9 	   ; [y start] *65536 + [y size]
     mov  edx,2			   ; button id
     mov  esi,0x66aa66		   ; button color RRGGBB
-    int  0x40
+    mcall
 
 			   ; function 8 : define and draw button
     mov  ebx,(40)*65536+20	   ; [x start] *65536 + [x size]
     mov  ecx,72*65536+9          ; [y start] *65536 + [y size]
     mov  edx,4			   ; button id
     mov  esi,0xaa6666		   ; button color RRGGBB
-    int  0x40
+    mcall
 
 			   ; Enter directory
     mov  ebx,(25)*65536+66
     mov  ecx,135*65536+15
     mov  edx,6
     mov  esi,0x3388dd
-    int  0x40
+    mcall
 
     mov  eax,38
     mov  ebx,240*65536+240
     mov  ecx,22*65536+210
     mov  edx,0x6699cc ; 002288
-    int  0x40
+    mcall
 
 
     mov  ebx,241*65536+241
     mov  ecx,22*65536+210
     mov  edx,0x336699 ; 002288
-    int  0x40
+    mcall
 
     call draw_data
 
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,2			   ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -1158,6 +1158,7 @@ draw_data:
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,35
+    mov  eax,13
   newline:
     pusha
     cmp  ebx,25*65536+61
@@ -1170,13 +1171,12 @@ draw_data:
     mov  bx,35*6
     shl  ecx,16
     mov  cx,9
-    mov  eax,13
     mov  edx,0xffffff
-    int  0x40
+    mcall
    now:
     popa
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,13
     add  edx,40
     cmp  [edx],byte 'x'
@@ -1199,10 +1199,10 @@ draw_data:
     mov  cx,9
     mov  eax,13
     mov  edx,0xffffff
-    int  0x40
+    mcall
     popa
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,10
     add  edx,256
     dec  edi
@@ -1294,7 +1294,7 @@ unk:   db  'Content-Type: unknown/unknown',13,10,13,10
 unkl:
 
 
-header db   appname,version,0
+title db   appname,version,0
 
 socket		dd  0x0
 server_active	db  0x0

@@ -16,7 +16,7 @@ use32
                 dd      0x1000                  ; esp
                 dd      0x00000000              ; reserved=no extended header
 
-include 'macros.inc'
+include '..\..\..\..\macros.inc'
 
 
 
@@ -29,7 +29,7 @@ START:                          ; start of execution
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     dec  eax                    ; redraw request ?
     jz   red
@@ -38,16 +38,16 @@ still:
 
   button:
     mov  al,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
 
   key:                          ; key
     mov  al,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
   noclose:
 
@@ -61,12 +61,12 @@ shape_window:
     mov  eax,50       ; give the shape reference area
     mov  ebx,0
     mov  ecx,shape_reference
-    int  0x40
+    mcall
 
     mov  eax,50       ; give the shape scale  32 x 32  ->  128 x 128
     mov  ebx,1        ; you dont have to give this, scale is 1:1 by default
     mov  ecx,2
-    int  0x40
+    mcall
 
     popa
 
@@ -118,7 +118,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                     ; function 0 : define and draw window
@@ -129,7 +129,7 @@ draw_window:
     mov  edx,0x00cccc00            ; color of work area RRGGBB,8->color glide
     mov  esi,0x00cccc00            ; color of grab bar  RRGGBB,8->color glide
     mov  edi,0x00cccc00            ; color of frames    RRGGBB
-    int  0x40
+    mcall
 
 
                                    ; CLOSE BUTTON
@@ -138,12 +138,12 @@ draw_window:
     mov  ecx,20*65536+12           ; [y start] *65536 + [y size]
     mov  edx,1                     ; button id
     mov  esi,0x5599cc              ; button color RRGGBB
-    int  0x40
+    mcall
 
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 

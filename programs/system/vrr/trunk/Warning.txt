@@ -1,7 +1,0 @@
-
-Warning!
-~~~~~~~~~~~~
-
-This version requared of MeOS with supports driver model. Also for coorect work your system requared 
-video driver VMODE.MDR
-

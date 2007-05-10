@@ -151,7 +151,7 @@
 ;-----------------------------------------------------------------------------
 
 include 'lang.inc'
-include 'macros.inc' ; useful stuff
+include '..\..\..\macros.inc' ; useful stuff
 ;include 'proc32.inc'
 include 'tinypad.inc'
 ;purge mov,add,sub            ;  SPEED

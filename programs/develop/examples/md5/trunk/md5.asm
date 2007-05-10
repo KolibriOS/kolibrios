@@ -12,20 +12,7 @@
 ;
 ;    Компилируеться Fasm'ом для МенуэтОС
 include 'lang.inc'
-macro diff16 title,l2
- {
-  local s,d,l1
-  s = l2
-  display title,': 0x'
-  repeat 8
-   d = 48 + s shr ((8-%) shl 2) and $0F
-   if d > 57
-    d = d + 65-57-1
-   end if
-   display d
-  end repeat
-  display 13,10
- }    
+include '..\..\..\..\macros.inc'
 
 use32
 
@@ -35,47 +22,39 @@ use32
   dd     0x01        ; версия заголовка (всегда 1)
   dd     START       ; адрес первой команды
   dd     I_END       ; размер программы
-  dd     0x100000    ; количество памяти
-  dd     0x100000    ; адрес вершины стэка
+  dd     0x4000      ; количество памяти
+  dd     0x4000      ; адрес вершины стэка
   dd     0x0         ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
 START:                                  ; Начало выполнения программы
 
+red:
         call draw_window            ; Сперва перерисуем окно
 
 still:
 
-    mov  eax,23                 ; Ожидаем событий
-    mov  ebx,1
-    int  0x40
+    mov  eax,10                 ; Ожидаем событий
+    mcall
 
     cmp  eax,1                  ; Запрос на перерисовку ?
     jz   red
     cmp  eax,2                  ; нажата клавиши ?
-    jz   key
-    cmp  eax,3                  ; нажата кнопка ?
-    jz   button
-
-    jmp  still
-
-red:
-    call draw_window
-    jmp  still
+    jnz   button
 
 key:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  still
 
 button:
     mov  eax,17
-    int  0x40
+    mcall
 
     cmp  ah,1                  ;  id кнопки = 1 ?
     jnz  noclose
-    mov  eax,-1
-    int  0x40
+    or  eax,-1
+    mcall
 
   noclose:
 
@@ -356,30 +335,23 @@ draw_window:
 
     mov eax,12               ; function 12:tell os about windowdraw
     mov ebx,1                      ; 1, start of draw
-    int 0x40
+    mcall
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+230         ; [x start] *65536 + [x size]
     mov  ecx,60*65536+100          ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB
-    mov  esi,0x80aabbcc            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00aabbcc            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x13ffffff            ; color of work area RRGGBB
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labeltext             ; pointer to text beginning
-    mov  esi,lte-labeltext         ; text length
-    int  0x40
+                                   
                    ; Рисуем кнопку для генерации
     mov  eax,8                     ; function 8 : define and draw button
     mov  ebx,20*65536+80           ; [x start] *65536 + [x size]
     mov  ecx,34*65536+14           ; [y start] *65536 + [y size]
     mov  edx,2                     ; button id
     mov  esi,0x5588dd              ; button color RRGGBB
-    int  0x40
+    mcall
     
                                    ; Название на кнопку
     mov  eax,4                     ; function 4 : write text to window
@@ -387,9 +359,8 @@ draw_window:
     mov  ecx,0x000000              ; color of text RRGGBB
     mov  edx,gen_txt               ; pointer to text beginning
     mov  esi,gen_len-gen_txt       ; text length
-    int  0x40
+    mcall
 
-    mov  eax,4               ; draw info text with function 4
     mov  ebx,20*65536+70
     mov  ecx,0x000000
     mov  edx,[text]
@@ -397,18 +368,17 @@ draw_window:
     mov  al, [textlen]
     mov  esi,eax
     mov  eax,4
-    int  0x40
+    mcall
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
 ;Область данных
 
-labeltext: db 'MD5 Generator'
-lte:
+title db 'MD5 Generator',0
 
 text:  dd 0
 textlen: dd 0

@@ -41,7 +41,7 @@ RATE_LIMIT_INTERVAL equ 60		    ; seconds (delay between successive attempts)
 
 DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 include 'eth.inc'
 include 'debug-fdo.inc'
 include 'dhcp.inc'
@@ -154,7 +154,7 @@ send_request:
 
     mov     eax,23			    ; wait here for event (data from remote)
     mov     ebx,TIMEOUT*10
-    int     0x40
+    mcall
 
     eth.poll [socketNum]
 

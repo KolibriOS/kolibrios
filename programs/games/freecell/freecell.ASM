@@ -7,7 +7,7 @@
 ; e-mail:       gorsash@mail.ru
 
 
-include "macros.inc"
+include "..\..\macros.inc"
 meos_app_start
 
 code
@@ -16,7 +16,7 @@ code
 
   wait_event:
     mov     eax, 10
-    int     0x40
+    mcall
 
     cmp     eax, 1	     ;   if event == 1
     je	    redraw	     ;     jump to redraw handler
@@ -36,13 +36,13 @@ code
 
   key:			     ; key event handler
     mov     eax, 2	     ;   get key code
-    int     0x40
+    mcall
 
     jmp     wait_event
 
   button:		     ; button event handler
     mov     eax, 17	     ;   get button identifier
-    int     0x40
+    mcall
 
     cmp     ah, 1
     je	    exit_app	     ;   return if button id != 1
@@ -68,7 +68,7 @@ code
 
   exit_app:
     mov     eax, -1	     ;   exit application
-    int     0x40
+    mcall
 
   common_card:
     sub     ah, 2	     ;going from number of card to number of column
@@ -596,30 +596,30 @@ code
     mov  ebx,3
     mov  ecx,syscolors
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
 
     mov     eax, 12	     ; start drawing
     mov     ebx, 1
-    int     0x40
+    mcall
 
     mov     eax, 0	     ; create and draw the window
     mov     ebx, 100 * 65536 + 8 * cardwidth + 10 + 7 * columnspace
     mov     ecx, 100 * 65536 + 500
     mov     edx, 0x13008000
-    mov     edi, header
-    int     0x40
+    mov     edi, title
+    mcall
 
     mov     eax, 9	     ; getting window info
     mov     ebx, process_info
     mov     ecx, -1	     ; we want to know info of our window
-    int     0x40
+    mcall
 
 
-    mov     eax, [process_info.y_size]
+    mov     eax, [process_info.box.height]
     mov     [WindowHeight], ax
 
-    mov     eax, [process_info.x_size]
+    mov     eax, [process_info.box.width]
     mov     [WindowWidth], ax
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -628,11 +628,11 @@ code
     mov     eax, 13
     mov     ebx, 5
     shl     ebx, 16
-    add     bx, word [process_info.x_size]
+    add     bx, word [process_info.box.width]
     sub     bx, 9
     mov     ecx, 22 shl 16 + topbuttonsbarheight - 1
     mov     edx, [syscolors.work_graph]
-    int     $40
+    mcall
 
 			     ; draw button "new game"
 
@@ -641,14 +641,14 @@ code
     mov     ecx, 22 shl 16 + topbuttonsbarheight - 2
     mov     edx, 1 + 8 + 4 + 4 + 1 ;button id
     mov     esi, [syscolors.work_button]
-    int     $40
+    mcall
 
     mov     eax, 4
     mov     ebx, 20 shl 16 + 22 + topbuttonsbarheight/2 - 4
     mov     ecx, [syscolors.work_button_text]
     mov     edx, new_game
     mov     esi, new_game_len
-    int     $40
+    mcall
 
 
        ; draw button "exit"
@@ -657,28 +657,28 @@ code
     mov     ecx, 22 shl 16 + topbuttonsbarheight - 2
     mov     edx, 1 + 8 + 4 + 4 + 2 ;button id
     mov     esi, [syscolors.work_button]
-    int     $40
+    mcall
 
     mov     eax, 4
     mov     ebx, (40 + 80) shl 16 + 22 + topbuttonsbarheight/2 - 4
     mov     ecx, [syscolors.work_button_text]
     mov     edx, exit
     mov     esi, exit_len
-    int     $40
+    mcall
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                        draw separators between home, temp and common cells
     mov     eax, 13
                    ; horizontal line
     mov     ebx, 5
     shl     ebx, 16
-    add     bx,  word [process_info.x_size]
+    add     bx,  word [process_info.box.width]
     sub     bx,  9
     mov     ecx, (21 + topbuttonsbarheight + cardheight + columnspace) shl 16+1
 
     mov     edx, [syscolors.work_graph]
-    int     $40
+    mcall
                   ; verical line
-    mov     eax, [process_info.x_size]
+    mov     eax, [process_info.box.width]
     mov     edx, 0
     mov     ecx, 2
     div     ecx
@@ -691,7 +691,7 @@ code
     mov     ecx, (21 + topbuttonsbarheight) shl 16 + cardheight + columnspace
     mov     edx, [syscolors.work_graph]
     mov     eax, 13
-    int     $40
+    mcall
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            draw temp buttons
@@ -721,7 +721,7 @@ code
     mov     [row], eax
     mov     [column], edx
 
-    mov     eax, [process_info.x_size]	; width of window
+    mov     eax, [process_info.box.width]	; width of window
     sub     eax, 10
     sub     eax, cardwidth
     mov     ebx, 7
@@ -768,7 +768,7 @@ code
     mov     edx, [column]
     add     edx, 01000000000000000000000000000000b + 2 + 8;  button id = column
 					   ; id = 1 reserved as close button
-    int     $40
+    mcall
 
 
     inc     [j]
@@ -804,7 +804,7 @@ code
     mov     [row], eax
     mov     [column], edx
 
-    mov     eax, [process_info.x_size]	; width of window
+    mov     eax, [process_info.box.width]	; width of window
     sub     eax, 10
     sub     eax, cardwidth
     mov     ebx, 7
@@ -840,7 +840,7 @@ code
     add     edx, 01000000000000000000000000000000b + 2 + 8 + 4 ; button id
 
 			     ; id = 1 reserved as close button
-    int     $40
+    mcall
 
 
     inc     [j]
@@ -884,7 +884,7 @@ code
     mov     [row], eax
     mov     [column], edx
 
-    mov     eax, [process_info.x_size]	; width of window
+    mov     eax, [process_info.box.width]	; width of window
     sub     eax, 10
     sub     eax, cardwidth
     mov     ebx, 7
@@ -955,7 +955,7 @@ code
     mov     edx, [column]
     add     edx, 01000000000000000000000000000000b + 2; button id = column + 2,
 			     ; id = 1 reserved as close button
-    int     $40
+    mcall
 
 
     .no_define_button:
@@ -971,7 +971,7 @@ code
 
     mov     eax, 12	     ; finish drawing
     mov     ebx, 2
-    int     $40
+    mcall
 
   ret
 
@@ -1050,7 +1050,7 @@ code
 
     .exit:
       mov  eax, -1
-      int  $40
+      mcall
 
     .later:
 
@@ -1105,7 +1105,7 @@ code
     add     ecx, 2
     shl     ecx, 16
     mov     cx, cardheight - 4
-    int     $40
+    mcall
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1119,28 +1119,28 @@ code
     xor     cx, cx
     mov     cx, cardheight - 2 * radius - 2
     mov     edx, [blackcolor]
-    int     $40
+    mcall
 
     mov     ebx, [xpos]      ; left white line
     inc     ebx
     shl     ebx, 16
     mov     bx, 1
     mov     edx, [bgcolor]
-    int     $40
+    mcall
 
     mov     ebx, [xpos]      ; right black line
     add     ebx, cardwidth - 1
     shl     ebx, 16
     mov     bx,  1
     mov     edx, [blackcolor]
-    int     $40
+    mcall
 
     mov     ebx, [xpos]      ; right white line
     add     ebx, cardwidth - 2
     shl     ebx, 16
     mov     bx, 1
     mov     edx, [bgcolor]
-    int     $40
+    mcall
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1153,28 +1153,28 @@ code
     shl     ebx, 16
     mov     bx, cardwidth - 2 * radius - 2
     mov     edx, [blackcolor]
-    int     $40
+    mcall
 
     mov     ecx, [ypos]      ; top white line
     inc     ecx
     shl     ecx, 16
     mov     cx, 1
     mov     edx, [bgcolor]
-    int     $40
+    mcall
 
     mov     ecx, [ypos]      ; bottom black line
     add     ecx, cardheight - 1
     shl     ecx, 16
     mov     cx,  1
     mov     edx, [blackcolor]
-    int     $40
+    mcall
 
     mov     ecx, [ypos]      ; bottom white line
     add     ecx, cardheight - 2
     shl     ecx, 16
     mov     cx, 1
     mov     edx, [bgcolor]
-    int     $40
+    mcall
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1185,81 +1185,81 @@ code
     mov    ecx, [ypos]
     inc    ebx
     add    ecx, 4
-    int    $40
+    mcall
 
     dec    ecx
-    int    $40
-
-    dec    ecx
-    inc    ebx
-    int    $40
+    mcall
 
     dec    ecx
     inc    ebx
-    int    $40
+    mcall
+
+    dec    ecx
+    inc    ebx
+    mcall
 
     inc    ebx
-    int    $40
+    mcall
 
     mov    ebx, [xpos]	     ;drawing top right corner
     mov    ecx, [ypos]
     add    ebx, cardwidth - 2
     add    ecx, 4
-    int    $40
+    mcall
 
     dec    ecx
-    int    $40
+    mcall
 
     dec    ebx
     dec    ecx
-    int    $40
+    mcall
 
     dec    ebx
     dec    ecx
-    int    $40
+    mcall
 
     dec    ebx
-    int    $40
+    mcall
 			     ;drawing bottom left corner
     mov    ebx, [xpos]
     mov    ecx, [ypos]
     inc    ebx
     add    ecx, cardheight - 5
-    int    $40
+    mcall
 
     inc    ecx
-    int    $40
+    mcall
 
     inc    ebx
     inc    ecx
-    int    $40
+    mcall
 
     inc    ebx
     inc    ecx
-    int    $40
+    mcall
 
     inc    ebx
-    int    $40
+    mcall
 			     ;drawing bottom right corner
     mov    ebx, [xpos]
     mov    ecx, [ypos]
     add    ebx, cardwidth - 2
     add    ecx, cardheight - 5
-    int    $40
+    mcall
 
     inc    ecx
-    int    $40
+    mcall
 
     dec    ebx
     inc    ecx
-    int    $40
+    mcall
 
     dec    ebx
     inc    ecx
-    int    $40
+    mcall
 
     dec    ebx
-    int    $40
+    mcall
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1303,7 +1303,7 @@ code
        mov [imageflipaddr], heart_updown
 
        mov ebx, heart_small
-       int $40
+       mcall
 
        jmp .selnumber
 
@@ -1314,7 +1314,7 @@ code
        mov [imageflipaddr], diamond_updown
 
        mov ebx, diamond_small
-       int $40
+       mcall
 
        jmp .selnumber
 
@@ -1325,7 +1325,7 @@ code
       mov  [imageflipaddr], club_updown
 
       mov ebx, club_small
-      int $40
+      mcall
 
       jmp  .selnumber
 
@@ -1336,7 +1336,7 @@ code
       mov  [imageflipaddr], spade_updown
 
       mov ebx, spade_small
-      int $40
+      mcall
 
 
 
@@ -1419,7 +1419,7 @@ code
       mov  [s], byte 'A'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_1
       jmp .end
@@ -1429,7 +1429,7 @@ code
       mov  [s], byte '2'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_2
       jmp .end
@@ -1440,7 +1440,7 @@ code
       mov  [s], byte '3'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_1
       call draw_2
@@ -1452,7 +1452,7 @@ code
       mov  [s], byte '4'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_3
       jmp  .end
@@ -1462,7 +1462,7 @@ code
       mov  [s], byte '5'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_1
       call draw_3
@@ -1474,7 +1474,7 @@ code
       mov  [s], byte '6'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_3
       call draw_4
@@ -1486,7 +1486,7 @@ code
       mov  [s], byte '7'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_3
       call draw_4
@@ -1499,7 +1499,7 @@ code
       mov  [s], byte '8'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_3
       call draw_5
@@ -1511,7 +1511,7 @@ code
       mov  [s], byte '9'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       call draw_3
       call draw_5
@@ -1524,7 +1524,7 @@ code
       mov  [s], word '10'
       mov  edx, s
       mov  esi, 2
-      int  $40
+      mcall
 
       call draw_3
       call draw_5
@@ -1538,7 +1538,7 @@ code
       mov  [s], byte 'J'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       jmp  .end
 
@@ -1547,7 +1547,7 @@ code
       mov  [s], byte 'Q'
       mov  edx, s
       mov  esi, 1
-      int  $40
+      mcall
 
       jmp  .end
 
@@ -1556,7 +1556,7 @@ code
       mov  [s], byte 'K'
       mov  edx,s
       mov  esi, 1
-      int  $40
+      mcall
 
     .end:
 
@@ -1642,7 +1642,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight/2 - 8
       mov      eax, 7
-      int     $40
+      mcall
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1658,7 +1658,7 @@ code
       mov     dx, word [ypos]
       add     dx, margin
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw bottom image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
@@ -1667,7 +1667,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight - 16 - margin
       mov     eax, 7
-      int     $40
+      mcall
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1682,7 +1682,7 @@ code
       mov     dx, word [ypos]
       add     dx, margin
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw bottom left image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
@@ -1691,7 +1691,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight - margin - 16
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw top right image
       mov     ebx, [imageaddr]
       mov     edx, [xpos]
@@ -1700,7 +1700,7 @@ code
       mov     dx, word [ypos]
       add     dx, margin
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw bottom right image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
@@ -1709,7 +1709,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight - margin - 16
       mov     eax, 7
-      int     $40
+      mcall
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1724,7 +1724,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight/2 - 8
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw center right image
       mov     edx, [xpos]
       add     edx, cardwidth - margin - 16
@@ -1732,7 +1732,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight/2 - 8
       mov     eax, 7
-      int     $40
+      mcall
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1747,7 +1747,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight * 3 / 9
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw bottom left image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
@@ -1756,7 +1756,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight * 5 / 9
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw top right image
       mov     ebx, [imageaddr]
       mov     edx, [xpos]
@@ -1765,7 +1765,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight * 3 / 9
       mov     eax, 7
-      int     $40
+      mcall
 			     ;draw bottom right image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
@@ -1774,7 +1774,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight * 5 / 9
       mov     eax, 7
-      int     $40
+      mcall
   ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1788,7 +1788,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight * 2 / 9
       mov     eax, 7
-      int     $40
+      mcall
   ret
 
 
@@ -1802,7 +1802,7 @@ code
       mov     dx, word [ypos]
       add     dx, cardheight * 6 / 9
       mov     eax, 7
-      int     $40
+      mcall
   ret
 
 
@@ -1811,7 +1811,7 @@ code
     push eax
 
     mov  eax, 3
-    int  0x40
+    mcall
 
     mov  ebx, $A59E3F1C
     mul  ebx
@@ -1978,7 +1978,7 @@ code
 
 ; <--- initialised data --->
 data
-  header db 'Freecell',0
+  title db 'Freecell',0
 
   new_game: db "New game"
   new_game_len = $ - new_game

@@ -77,7 +77,7 @@ if  PARAM_PTR eq param
 end if
 ;match =meos,SYS
 ;{
-    include "macros.inc"
+    include "..\..\..\macros.inc"
 ;    purge mov
     include "debug.inc"
     include 'dump.inc'

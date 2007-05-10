@@ -17,10 +17,9 @@ use32
                dd     0x4000                  ; esp
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
-include 'macros.inc'
-labelt  db   'Memory Blocks for Menuet v0.1     Crown Soft (c)'
-labellen:
+include '..\..\..\macros.inc'
 
+title  db   'Memory Blocks for Menuet v0.1  Crown Soft (c)',0
 
 
 START:                          ; start of execution
@@ -28,7 +27,7 @@ START:                          ; start of execution
 
 still:
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -44,12 +43,12 @@ jmp  still
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
   jmp  still
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jz   close
@@ -110,7 +109,7 @@ jmp  still
 
   close:
     mov  eax,-1                 ; close program
-    int  0x40
+    mcall
 
 
 
@@ -120,54 +119,38 @@ jmp  still
 draw_window:
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+413         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+295         ; [y start] *65536 + [y size]
-    mov  edx,0x83000000            ; color of work area RRGGBB,8->color gl
-    mov  esi,0x805080d0            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x005080d0            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x93000000            ; color of work area RRGGBB,8->color gl
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ddeeff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
-;                                   ; CLOSE BUTTON
-;    mov  eax,8                     ; function 8 : define and draw button
-;    mov  ebx,(411-19)*65536+12     ; [x start] *65536 + [x size]
-;    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-;    mov  edx,1                     ; button id
-;    mov  esi,0x6688dd              ; button color RRGGBB
-;    int  0x40
-
+                                   
                                    ; init BUTTON
     mov  eax,8                     ; function 8 : define and draw button
     mov  ebx,10*65536+55           ; [x start] *65536 + [x size]
     mov  ecx,270*65536+12          ; [y start] *65536 + [y size]
     mov  edx,100                   ; button id
     mov  esi,0x6688dd              ; button color RRGGBB
-    int  0x40
+    mcall
                                    ; NEW GAME LABEL
     mov  eax,4                     ; function 4 : write text to window
     mov  ebx,15*65536+273          ; [x start] *65536 + [y start]
     mov  ecx,0x00ddeeff            ; color of text RRGGBB
     mov  edx,labnew                ; pointer to text beginning
     mov  esi,labnewlen-labnew      ; text length
-    int  0x40
+    mcall
 
     mov  ebx,40001h
     mov  ecx,nkeydown
     mov  edx,135*65536+273
     mov  esi,0x00ffffff
     mov  eax,47
-    int  0x40
+    mcall
 
 
     ;--- draw buttons ---
@@ -193,7 +176,7 @@ draw_window:
 
         mov  esi,[coltbl+16*4]     ; button color RRGGBB
         mov  eax,8                 ; function 8 : define and draw button
-        int  0x40
+        mcall
 
         ; PICTURE
         dec  edx
@@ -213,7 +196,7 @@ draw_window:
           mov  ebx,mas
           mov  ecx,32*65536+32     ; image size
           mov  eax,7               ; function 7 : putimage
-          int  0x40
+          mcall
         drm3:
 
         inc [bitid]
@@ -224,7 +207,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -292,7 +275,7 @@ initpict:
 
   ; Initialize RND
   mov   eax,3
-  int   0x40          ; eax=00SSMMHH
+  mcall          ; eax=00SSMMHH
   rol   eax,16        ; eax=MMHH00SS - fist random number
 
   mov   ebx,8088405h

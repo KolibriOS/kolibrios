@@ -13,7 +13,7 @@ GetMemory:
 	 add ecx,[ScreenPointer]
 	 add ecx,(1200*1000)*3+50*(20*20*3)+500000+16000+0x4000
 	 add ecx,[extended_memory]
-	 int 0x40
+	 mcall
 
 	 test eax,eax
 	 jz have_new_memory

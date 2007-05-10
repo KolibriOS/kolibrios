@@ -6,7 +6,7 @@
 ;           the same about ebx,ecx,edx
 
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 
 meos_app_start
 code
@@ -17,14 +17,14 @@ do_draw:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
     mov  al,12 		   ; eax=12 - tell os about redraw start
     mov  bl,1
-    int  0x40
+    mcall
 
     mov  al,14 		   ; eax=14 - get screen max x & max y
-    int  0x40
+    mcall
 
     movzx ecx,ax
 
@@ -40,7 +40,7 @@ do_draw:
     mov  edx,[sc.work]
     mov  esi,edx
     mov  edi,edx
-    int  0x40
+    mcall
 
    mov edx,0x444444
    mov al,13
@@ -71,37 +71,37 @@ do_draw:
     mov  ecx,[sc.work_text] ; 8b window nro - RR GG BB color
     or   ecx,0x90000000
     mov  edx,label1		   ; pointer to text beginning
-    int  0x40
+    mcall
 
     mov  ebx,15*65536+101
     mov  edx,label4
-    int  0x40
+    mcall
 
     mov  ecx,0x90eeeeee            ; 8b window nro - RR GG BB color
     mov  ebx,25*65536+30
     mov  edx,label2		     ; pointer to text beginning
-    int  0x40
+    mcall
 
     mov  ebx,20*65536+64
     mov  edx,label3
-    int  0x40
+    mcall
 
     mov  ebx,45*65536+41
     mov  edx,label5
-    int  0x40
+    mcall
 
     mov  ebx,40*65536+75
     mov  edx,label6
-    int  0x40
+    mcall
 
     mov  al,12 		   ;end of redraw 
     mov  ebx,2
-    int  0x40
+    mcall
 
 still:
 
     mov  eax,10 		; wait here for event
-    int  0x40
+    mcall
 
     dec  eax
     jz   do_draw
@@ -109,7 +109,7 @@ still:
     jnz  button
   key:
     mov  al,2	; now eax=2 - get key code
-    int  40h
+    mcall
     mov  al,ah
      cmp  al,13
      jz   restart
@@ -123,7 +123,7 @@ still:
 
   button:
     mov  al,17	; now eax=17 - get pressed button id
-    int  0x40
+    mcall
     xchg al,ah
     dec  eax
     jz   power_off
@@ -138,7 +138,7 @@ still:
 ;    jnz  still
 close_1:
     or   eax,-1
-    int  40h
+    mcall
 
  power_off:
     push 2
@@ -158,7 +158,7 @@ mcall_and_close:
 run_rdsave:
     mov eax,70
     mov ebx,rdsave
-    int 0x40
+    mcall
     jmp still
 
 data

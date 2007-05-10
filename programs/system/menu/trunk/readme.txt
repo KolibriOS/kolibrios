@@ -47,6 +47,8 @@ English text is below
 С уважением,
 Михаил Лисовин
 
+11.07.06 - Mario79, приложение использует функцию 70.
+
 NEW MAIN MENU
 Requirements: MENUET 0.76, color monitor
 WHAT'S NEW?
@@ -71,3 +73,5 @@ It is recommended to compile MMENU.ASM as MENU. So, you can run it from
 standard panel.
 All the comments and bugreports send to lisovin@26.ru
 Michail Lisovin.  
+
+11.07.06 - Mario79, application used function 70.

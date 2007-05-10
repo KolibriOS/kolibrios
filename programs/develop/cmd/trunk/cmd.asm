@@ -18,7 +18,7 @@ use32
  dd 0x0
  dd 0x0
 
-include "macros.inc"
+include "..\..\..\macros.inc"
 include "lang.inc"
 START:
 
@@ -33,7 +33,7 @@ START:
 still:
 
  mov eax,10
- int 0x40
+ mcall
 
  cmp eax,1
  je re
@@ -46,7 +46,7 @@ still:
 
 button:
  mov eax,17
- int 0x40
+ mcall
 
  cmp ah,1
  jne noclose
@@ -84,7 +84,7 @@ loop1:
  mov edx,tic_table
  add edx,dword [linev]
  mov esi,81
- int 0x40
+ mcall
  add dword [xpos],10
  add dword [linev],81
  pop ecx
@@ -101,7 +101,7 @@ no_red:
 
 key:
  mov eax,2
- int 0x40
+ mcall
 
  cmp ah,27
  jne no_escape
@@ -287,7 +287,7 @@ clear:
  shl ecx,16
  add ecx,9
  mov edx,0
- int 0x40
+ mcall
  add dword [ypos],6
  ret
 
@@ -295,18 +295,18 @@ draw:
 
  mov eax,12
  mov ebx,1
- int 0x40
+ mcall
 
  mov eax,0
  mov ebx,100*65536+492
  mov ecx,100*65536+280
  mov edx,0x13000000
  mov edi,title
- int 0x40
+ mcall
 
  mov eax,12
  mov ebx,2
- int 0x40
+ mcall
 
  ret
 
@@ -318,7 +318,7 @@ print:
  mov ecx,0x00ddeeff
  mov edx,smb
  mov esi,1
- int 0x40
+ mcall
 
  mov edi,tic_table
  add edi,dword [linen]
@@ -337,7 +337,7 @@ cursor:
  mov ecx,0x00ddeeff
  mov edx,smb_cursor
  mov esi,1
- int 0x40
+ mcall
 
  mov edi,tic_table
  mov esi,smb_cursor
@@ -356,7 +356,7 @@ ppr:
  mov ecx,0x00ddeeff
  mov edx,prompt
  mov esi,5
- int 0x40
+ mcall
  mov dword [ypos],42
 
  cld
@@ -471,7 +471,7 @@ loopls:
 
 	mov	eax, 70
 	mov	ebx, dirinfo
-	int	0x40
+	mcall
 	inc	dword [dirinfo+4]
 	cmp	ebx, 1
 	jnz	ls_end
@@ -542,7 +542,7 @@ ls_print:
  mov edx,filename
  mov ecx,0x00ddeeff
  mov esi,12
- int 0x40
+ mcall
 
  cld
  mov ecx,12
@@ -618,7 +618,7 @@ chdot:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je nosuchfile
@@ -647,7 +647,7 @@ chnodot:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je nosuchfile
@@ -667,7 +667,7 @@ lschok:
  mov edx,tic_table+400
  mov esi,12
  mov ecx,0x00ddeeff
- int 0x40
+ mcall
 
  cld
  mov ecx,12
@@ -701,7 +701,7 @@ ps:
  mov eax,9
  mov ebx,tic_table
  mov ecx,1
- int 0x40
+ mcall
 
  mov dword [count2],eax
 
@@ -710,7 +710,7 @@ ll1:
  mov eax,9
  mov ebx,tic_table
  mov ecx,[pn]
- int 0x40
+ mcall
 
  mov ebx,[tic_table+30]
  mov dword [fnumb],4
@@ -741,7 +741,7 @@ ll1:
  add ebx,[xpos]
  mov ecx,0x00ddeeff
  mov esi,12
- int 0x40
+ mcall
 
  cld
  mov ecx,11
@@ -838,7 +838,7 @@ printn:
  shl edx,16
  add edx,[xpos]
  mov esi,0x00ddeeff
- int 0x40
+ mcall
  ret
 
 pause2:
@@ -847,7 +847,7 @@ pause2:
  call printf
 
  mov eax,10
- int 0x40
+ mcall
 
 red3:
  cmp eax,2
@@ -859,19 +859,19 @@ red3:
  call red
 
  mov eax,10
- int 0x40
+ mcall
  jmp red3
 
 back:
  mov eax,2
- int 0x40
+ mcall
  cmp ah,27
  je checmd
  ret
 
 exit:
  mov eax,-1
- int 0x40
+ mcall
 
 checmd:
  cmp byte [callp],1
@@ -894,7 +894,7 @@ err:
  add ebx,[xpos]
  mov ecx,0x00ddeeff
  mov esi,33
- int 0x40
+ mcall
 
  cld
  mov ecx,27
@@ -1046,7 +1046,7 @@ gocp1:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je nosuchfile
@@ -1125,7 +1125,7 @@ gocp2:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  jne alreadyexist
@@ -1135,7 +1135,7 @@ gocp2:
  mov ecx,tic_table+25000
  mov edx,dword [filesize]
  mov esi,0
- int 0x40
+ mcall
 
  cmp eax,0
  jne no_ok
@@ -1145,7 +1145,7 @@ gocp2:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je no_ok
@@ -1289,7 +1289,7 @@ gorn1:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je nosuchfile
@@ -1366,7 +1366,7 @@ gorn2:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  jne alreadyexist
@@ -1376,7 +1376,7 @@ gorn2:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  mov dword [filesize],eax
 
@@ -1385,7 +1385,7 @@ gorn2:
  mov ecx,tic_table+25000
  mov edx,dword [filesize]
  mov esi,0
- int 0x40
+ mcall
 
  cmp eax,0
  jne no_ok1
@@ -1395,14 +1395,14 @@ gorn2:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je no_ok1
 
  mov eax,32
  mov ebx,tic_table+9000
- int 0x40
+ mcall
 
  call newline
  mov edx,mess14
@@ -1504,14 +1504,14 @@ godel:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+25000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je nosuchfile2
 
  mov eax,32
  mov ebx,tic_table+400
- int 0x40
+ mcall
 
  call newline
  mov edx,mess6
@@ -1562,7 +1562,7 @@ autoexec:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+15000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je noaxfile
@@ -1620,7 +1620,7 @@ strup7:
  mov ecx,0
  mov edx,-1
  mov esi,tic_table+15000
- int 0x40
+ mcall
 
  cmp eax,4294967295
  je nosuchfile3
@@ -1755,7 +1755,7 @@ go4:
  mov ecx,0x00ddeeff
  mov edx,tic_table+200
  mov esi,dword [fnumb]
- int 0x40
+ mcall
 
  ret
 
@@ -1795,7 +1795,7 @@ kill:
 
  mov eax,9
  mov ebx,tic_table
- int 0x40
+ mcall
 
  cmp eax,ecx
  jb nosuchprocess
@@ -1803,7 +1803,7 @@ kill:
  mov eax,18
  mov ebx,2
  mov edx,0
- int 0x40
+ mcall
 
  call clearsum
  call newline
@@ -1868,7 +1868,7 @@ gonext13:
  mov edx,tic_table+300
  mov ecx,0x00ddeeff
  mov esi,dword [count]
- int 0x40
+ mcall
 
  cld
  mov ecx,dword [count]
@@ -1895,7 +1895,7 @@ printf:
  add ebx,[xpos]
  mov ecx,0x00ddeeff
  mov esi,45
- int 0x40
+ mcall
 
  cld
  mov ecx,45
@@ -1918,7 +1918,7 @@ printipc:
  add ebx,[xpos]
  mov ecx,0x00ddeeff
  mov esi,79
- int 0x40
+ mcall
 
  cld
  mov ecx,79
@@ -2078,7 +2078,7 @@ cls1:
  mov ebx,6*65536+483
  mov ecx,24*65536+250
  mov edx,0
- int 0x40
+ mcall
  ret
 
 cls2:
@@ -2290,11 +2290,11 @@ no_cls:
 
  mov eax,18
  mov ebx,1
- int 0x40
+ mcall
 
  mov eax,5
  mov ebx,200
- int 0x40
+ mcall
 
 no_shutdown:
  cmp word [tic_table+600],'ps'
@@ -2454,17 +2454,17 @@ cmd_ok:
  mov ebx,1
  mov ecx,ipcb
  mov edx,118
- int 0x40
+ mcall
 
  call clearipc
 
  mov eax,40
  mov ebx,01000111b
- int 0x40
+ mcall
 
  mov eax,23
  mov ebx,10
- int 0x40
+ mcall
 
  cmp eax,7
  jne noipc
@@ -2478,7 +2478,7 @@ ipccontinue:
  mov eax,9
  mov ebx,tic_table+100000
  mov ecx,-1
- int 0x40
+ mcall
 
  mov ecx,eax
 loopfindipc:
@@ -2486,7 +2486,7 @@ loopfindipc:
 
  mov eax,9
  mov ebx,tic_table+100000
- int 0x40
+ mcall
 
  mov bl,[tic_table+600]
  cmp byte [tic_table+100000+10],bl
@@ -2548,7 +2548,7 @@ ipcfinished:
  mov ecx,dword [ipcpid]
  mov edx,ddot
  mov esi,1
- int 0x40
+ mcall
 
  call newline
  call clearipc
@@ -2576,7 +2576,7 @@ printcmd:
  mov edx,tic_table+600
  mov ecx,0x00ddeeff
  mov esi,dword [count]
- int 0x40
+ mcall
 
  cld
  mov ecx,dword [count]
@@ -2605,10 +2605,10 @@ cmd_ok2:
 waitipc:
  mov eax,40
  mov ebx,01000111b
- int 0x40
+ mcall
 
  mov eax,10
- int 0x40
+ mcall
 
  cmp eax,7
  je ipcok
@@ -2623,7 +2623,7 @@ waitipc:
 
 keyipc:
  mov eax,2
- int 0x40
+ mcall
 
  jmp waitipc
 
@@ -2662,7 +2662,7 @@ reipc2:
 
 ipckey:
  mov eax,10
- int 0x40
+ mcall
 
  cmp eax,1
  je reipc2
@@ -2675,7 +2675,7 @@ ipckey:
 
 ipckeypressed:
  mov eax,2
- int 0x40
+ mcall
 
  mov byte [ipckeyvalue],ah
 
@@ -2684,7 +2684,7 @@ ipckeypressed:
  mov ecx,dword [ipcpid]
  mov edx,ipckeyvalue
  mov esi,1
- int 0x40
+ mcall
 
  call clearipc
  jmp waitipc
@@ -2717,7 +2717,7 @@ cmdexist:
  mov eax,9
  mov ebx,tic_table
  mov ecx,-1
- int 0x40
+ mcall
 
  mov ecx,eax
 loopex:
@@ -2725,7 +2725,7 @@ loopex:
 
  mov eax,9
  mov ebx,I_END
- int 0x40
+ mcall
 
  cmp word [I_END+10],'CM'
  jne no_cmd
@@ -2764,7 +2764,7 @@ start_rd_app:
         mov     eax, 70
         mov     ebx, fileinfo_start
         mov     [ebx+8], ecx
-        int     0x40
+        mcall
         ret
 fileinfo_start:
         dd      7
@@ -2775,8 +2775,7 @@ fileinfo_start:
         db      0
         dd      fileinfo_buffer
 
-title:
- db 'CMD - Command line interpreter',0
+title   db 'CMD - Command line interpreter',0
 
 smb_cursor db '|'
 

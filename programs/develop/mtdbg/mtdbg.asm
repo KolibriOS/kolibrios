@@ -1,4 +1,5 @@
 format binary
+include '..\..\macros.inc'
 use32
 	db	'MENUET01'
 	dd	1
@@ -67,14 +68,14 @@ start:
 	push	40
 	pop	eax
 	mov	ebx, 0x107
-	int	40h
+	mcall
 ; set debug messages buffer
 	mov	ecx, dbgbufsize
 	mov	dword [ecx], 256
 	xor	ebx, ebx
 	mov	[ecx+4], ebx
 	mov	al, 69
-	int	40h
+	mcall
 	mov	esi, i_param
 	call	skip_spaces
 	test	al, al
@@ -89,7 +90,7 @@ dodraw:
 waitevent:
 	push	10
 	pop	eax
-	int	40h
+	mcall
 	cmp	al, 9
 	jz	debugmsg
 	dec	eax
@@ -101,10 +102,10 @@ waitevent:
 ; button pressed - we have only one button (close)
 	push	-1
 	pop	eax
-	int	40h
+	mcall
 keypressed:
 	mov	al, 2
-	int	40h
+	mcall
 	shr	eax, 8
 	cmp	al, 8
 	jz	.backspace
@@ -334,7 +335,7 @@ clear_cmdline_end:
 	or	ebx, ecx
 	mov	ecx, cmdline_y_pos*10000h + cmdline_y_size
 	mov	edx, 0xFFFFFF
-	int	40h
+	mcall
 	ret
 
 draw_cmdline:
@@ -353,7 +354,7 @@ draw_cmdline_end:
 	add	ebx, cmdline_x_pos
 	shl	ebx, 16
 	or	ebx, cmdline_y_pos+1
-	int	40h
+	mcall
 	ret
 
 put_message_nodraw:
@@ -449,7 +450,7 @@ draw_messages:
 	mov	edx, 0xFFFFFF
 	mov	ebx, messages_x_pos*10000h+messages_x_size
 	mov	ecx, messages_y_pos*10000h+messages_y_size
-	int	40h
+	mcall
 	mov	edx, messages
 	push	messages_width
 	pop	esi
@@ -457,7 +458,7 @@ draw_messages:
 	mov	al, 4
 	mov	ebx, messages_x_pos*10000h+messages_y_pos
 @@:
-	int	40h
+	mcall
 	add	edx, esi
 	add	ebx, 10
 	cmp	edx, messages+messages_width*messages_height
@@ -475,7 +476,7 @@ draw_cursor:
 	shl	ebx, 16
 	or	ebx, edx
 	xor	edx, edx
-	int	40h
+	mcall
 	ret
 hide_cursor:
 	mov	ebx, [cmdline_pos]
@@ -487,7 +488,7 @@ hide_cursor:
 	inc	ebx
 	mov	ecx, cmdline_y_pos*10000h + cmdline_y_size
 	mov	edx, 0xFFFFFF
-	int	40h
+	mcall
 	mov	ebx, [cmdline_pos]
 	cmp	ebx, [cmdline_len]
 	jae	.ret
@@ -500,7 +501,7 @@ hide_cursor:
 	or	ebx, cmdline_y_pos+1
 	push	1
 	pop	esi
-	int	40h
+	mcall
 .ret:
 	ret
 
@@ -510,13 +511,13 @@ redraw_title:
 	mov	edx, 0xFFFFFF
 	mov	ebx, title_x_pos*10000h + data_x_pos+data_x_size-title_x_pos
 	mov	ecx, title_y_pos*10000h + title_y_size
-	int	40h
+	mcall
 draw_title:
 	mov	al, 38
 	mov	ebx, (data_x_pos-2)*10000h + title_x_pos-5
 	mov	ecx, (title_y_pos+5)*10001h
 	xor	edx, edx
-	int	40h
+	mcall
 	push	NoPrgLoaded_len
 	pop	esi
 	cmp	[debuggee_pid], 0
@@ -530,9 +531,9 @@ draw_title:
 	jz	@f
 	add	ebx, 6
 @@:
-	int	40h
+	mcall
 	mov	ebx, (data_x_pos+data_x_size-10+4)*0x10000 + data_x_pos+data_x_size+2
-	int	40h
+	mcall
 	mov	al, 4
 	mov	ebx, title_x_pos*10000h+title_y_pos
 	xor	ecx, ecx
@@ -541,7 +542,7 @@ draw_title:
 	jz	@f
 	mov	edx, [prgname_ptr]
 @@:
-	int	40h
+	mcall
 	cmp	[debuggee_pid], 0
 	jz	.nodebuggee
 	mov	ebx, (data_x_pos+data_x_size-10-6*7)*10000h + title_y_pos
@@ -554,7 +555,7 @@ draw_title:
 	mov	edx, aPaused
 	dec	esi
 @@:
-	int	40h
+	mcall
 	ret
 .nodebuggee:
 	mov	al, 38
@@ -584,14 +585,14 @@ draw_register:
 .cd:
 	push	4
 	pop	eax
-	int	40h
+	mcall
 	imul	esi, 60000h
 	lea	edx, [ebx+esi]
 	mov	al, 47
 	mov	ebx, 80101h
 	mov	esi, ecx
 	pop	ecx
-	int	40h
+	mcall
 	lea	ebx, [edx+60000h*18]
 	mov	esi, ecx
 	pop	ecx
@@ -622,7 +623,7 @@ draw_flag:
 	mov	ecx, 0x00AA00
 .doit:
 	mov	ah, 0
-	int	40h
+	mcall
 	ret
 
 redraw_registers:
@@ -631,7 +632,7 @@ redraw_registers:
 	mov	edx, 0xFFFFFF
 	mov	ebx, data_x_pos*10000h + data_x_size
 	mov	ecx, registers_y_pos*10000h + registers_y_size
-	int	40h
+	mcall
 draw_registers:
 	mov	esi, _eax
 	push	4
@@ -672,7 +673,7 @@ draw_registers:
 	xor	esi, esi
 	inc	esi
 	mov	ebx, (registers_x_pos+37*6)*10000h + registers_y_pos+20
-	int	40h
+	mcall
 	mov	edx, flags
 @@:
 	add	ebx, 2*6*10000h
@@ -688,7 +689,7 @@ redraw_dump:
 	mov	edx, 0xFFFFFF
 	mov	ebx, data_x_pos*10000h + data_x_size
 	mov	ecx, dump_y_pos*10000h + dump_y_size
-	int	40h
+	mcall
 draw_dump:
 ; addresses
 	mov	al, 47
@@ -702,7 +703,7 @@ draw_dump:
 	jz	@f
 	xor	esi, esi
 @@:
-	int	40h
+	mcall
 	add	ecx, 10h
 	add	edx, 10
 	cmp	dl, dump_y_pos + dump_y_size
@@ -716,7 +717,7 @@ draw_dump:
 	cmp	[dumpread], edi
 	jz	.hexdumpdone1
 .hexdumploop1:
-	int	40h
+	mcall
 	add	edx, 3*6*10000h
 	inc	ecx
 	inc	edi
@@ -740,7 +741,7 @@ draw_dump:
 .hexdumploop2:
 	cmp	edi, dump_height*10h
 	jae	.hexdumpdone2
-	int	40h
+	mcall
 	add	ebx, 3*6*10000h
 	inc	edi
 	test	edi, 15
@@ -757,14 +758,14 @@ draw_dump:
 	mov	ebx, (data_x_pos+8*6)*10000h + dump_y_pos
 	mov	edx, aColon
 @@:
-	int	40h
+	mcall
 	add	ebx, 10
 	cmp	bl, dump_y_pos+dump_height*10
 	jb	@b
 	mov	ebx, (data_x_pos+(12+3*8)*6)*10000h + dump_y_pos
 	mov	edx, aMinus
 @@:
-	int	40h
+	mcall
 	add	ebx, 10
 	cmp	bl, dump_y_pos+dump_height*10
 	jb	@b
@@ -778,7 +779,7 @@ draw_dump:
 	jae	@f
 	mov	edx, aPoint
 @@:
-	int	40h
+	mcall
 	pop	edx
 	inc	edx
 	add	ebx, 6*10000h
@@ -797,7 +798,7 @@ redraw_disasm:
 	mov	edx, 0xFFFFFF
 	mov	ebx, data_x_pos*10000h + data_x_size
 	mov	ecx, (disasm_y_pos-1)*10000h + (disasm_y_size+1)
-	int	40h
+	mcall
 draw_disasm:
 	mov	eax, [disasm_start_pos]
 	mov	[disasm_cur_pos], eax
@@ -820,7 +821,7 @@ draw_disasm:
 	push	13
 	pop	eax
 	mov	edx, 0xFF0000
-	int	40h
+	mcall
 .nored:
 	mov	eax, [_eip]
 	cmp	eax, ebp
@@ -828,7 +829,7 @@ draw_disasm:
 	push	13
 	pop	eax
 	mov	edx, 0x0000FF
-	int	40h
+	mcall
 	mov	esi, 0xFFFFFF	; on blue bgr, use white color
 .noblue:
 	push	47
@@ -838,14 +839,14 @@ draw_disasm:
 	imul	edx, 10
 	add	edx, data_x_pos*10000h + disasm_y_pos
 	mov	ecx, ebp
-	int	40h
+	mcall
 	mov	al, 4
 	lea	ebx, [edx+8*6*10000h]
 	mov	ecx, esi
 	push	1
 	pop	esi
 	mov	edx, aColon
-	int	40h
+	mcall
 	push	9
 	pop	edi
 	lea	edx, [ebx+2*6*10000h]
@@ -856,7 +857,7 @@ draw_disasm:
 	sub	ecx, [disasm_start_pos]
 	add	ecx, disasm_buffer
 .drawhex:
-	int	40h
+	mcall
 	add	edx, 6*3*10000h
 	inc	ecx
 	inc	ebp
@@ -876,7 +877,7 @@ draw_disasm:
 	push	3
 	pop	esi
 	mov	edx, aDots
-	int	40h
+	mcall
 	mov	esi, ecx
 .hexdone:
 	xor	eax, eax
@@ -891,7 +892,7 @@ draw_disasm:
 	imul	ebx, 10
 	add	ebx, (data_x_pos+6*40)*10000h+disasm_y_pos
 	mov	al, 4
-	int	40h
+	mcall
 	inc	[disasm_cur_str]
 	cmp	[disasm_cur_str], disasm_height
 	jb	.loop
@@ -927,7 +928,7 @@ update_disasm:
 	mov	edi, disasm_buffer
 	mov	edx, 256
 	mov	esi, [disasm_start_pos]
-	int	40h
+	mcall
 	cmp	eax, -1
 	jnz	@f
 	mov	esi, read_mem_err
@@ -945,13 +946,13 @@ draw_window:
 	pop	eax
 	push	1
 	pop	ebx
-	int	40h
+	mcall
 ; define window
 	xor	eax, eax
 	mov	ebx, wnd_x_size
 	mov	ecx, wnd_y_size
 	mov	edx, 3FFFFFFh
-	int	40h
+	mcall
 ; caption
 	mov	al, 4
 	mov	ecx, 0xFFFFFF
@@ -959,34 +960,34 @@ draw_window:
 	mov	edx, caption_str
 	push	caption_len
 	pop	esi
-	int	40h
+	mcall
 ; messages frame
 	mov	al, 38
 	mov	ebx, (messages_x_pos-2)*10000h + (messages_x_pos+messages_x_size+2)
 	push	ebx
 	mov	ecx, (messages_y_pos-2)*10001h
 	xor	edx, edx
-	int	40h
+	mcall
 	mov	ecx, (messages_y_pos+messages_y_size+2)*10001h
-	int	40h
+	mcall
 	mov	ebx, (messages_x_pos-2)*10001h
 	push	ebx
 	mov	ecx, (messages_y_pos-2)*10000h + (messages_y_pos+messages_y_size+2)
-	int	40h
+	mcall
 	mov	ebx, (messages_x_pos+messages_x_size+2)*10001h
 	push	ebx
-	int	40h
+	mcall
 ; command line frame
 	mov	ecx, (cmdline_y_pos-2)*10000h + (cmdline_y_pos+cmdline_y_size+2)
 	pop	ebx
-	int	40h
+	mcall
 	pop	ebx
-	int	40h
+	mcall
 	pop	ebx
 	mov	ecx, (cmdline_y_pos+cmdline_y_size+2)*10001h
-	int	40h
+	mcall
 	mov	ecx, (cmdline_y_pos-2)*10001h
-	int	40h
+	mcall
 ; messages
 	call	draw_messages
 ; command line & cursor
@@ -996,14 +997,14 @@ draw_window:
 	mov	al, 38
 	mov	ebx, (data_x_pos-2)*10001h
 	mov	ecx, (title_y_pos+5)*10000h + (messages_y_pos-2)
-	int	40h
+	mcall
 	mov	ebx, (data_x_pos+data_x_size+2)*10001h
-	int	40h
+	mcall
 	mov	ebx, (data_x_pos-2)*10000h + (data_x_pos+data_x_size+2)
 	mov	ecx, (dump_y_pos-3)*10001h
-	int	40h
+	mcall
 	mov	ecx, (disasm_y_pos-4)*10001h
-	int	40h
+	mcall
 	call	draw_title
 	call	draw_registers
 	call	draw_dump
@@ -1012,7 +1013,7 @@ draw_window:
 	mov	al, 12
 	push	2
 	pop	ebx
-	int	40h
+	mcall
 	ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1037,7 +1038,7 @@ OnHelp:
 OnQuit:
 	xor	eax, eax
 	dec	eax
-	int	40h
+	mcall
 
 get_new_context:
 	mov	esi, context
@@ -1053,7 +1054,7 @@ get_context:
 	mov	esi, context
 	push	28h
 	pop	edx
-	int	40h
+	mcall
 	ret
 set_context:
 	push	2
@@ -1064,7 +1065,7 @@ set_context:
 	mov	esi, context
 	push	28h
 	pop	edx
-	int	40h
+	mcall
 	ret
 
 get_dump:
@@ -1080,7 +1081,7 @@ get_dump:
 	mov	al, 69
 	push	6
 	pop	ebx
-	int	40h
+	mcall
 	cmp	eax, -1
 	jnz	@f
 	mov	esi, read_mem_err
@@ -1141,13 +1142,13 @@ do_reload:
 	pop	eax
 	push	7
 	pop	ebx
-	int	40h
+	mcall
 	mov	[dbgwnd], eax
 	xchg	ecx, eax
 	push	70
 	pop	eax
 	mov	ebx, fn70_load_block
-	int	40h
+	mcall
 	test	eax, eax
 	jns	.load_ok
 .load_err:
@@ -1180,7 +1181,7 @@ do_reload:
 	mov	bl, 3
 	push	18
 	pop	eax
-	int	40h
+	mcall
 	call	redraw_title
 	call	redraw_registers
 	call	get_dump
@@ -1273,24 +1274,24 @@ do_reload:
 	pop	eax
 	push	7
 	pop	ebx
-	int	40h
+	mcall
 .wait:
 	push	10
 	pop	eax
-	int	40h
+	mcall
 	dec	eax
 	jz	.redraw
 	dec	eax
 	jz	.key
 	or	eax, -1
-	int	40h
+	mcall
 .redraw:
 	call	draw_window
 	call	hide_cursor
 	jmp	.wait
 .key:
 	mov	al, 2
-	int	40h
+	mcall
 	cmp	ah, 'y'
 	jz	.yes
 	cmp	ah, 'Y'
@@ -1305,7 +1306,7 @@ do_reload:
 	push	40
 	pop	eax
 	mov	ebx, 0x107
-	int	40h
+	mcall
 	call	draw_cursor
 	mov	esi, aN_str
 	jmp	put_message
@@ -1313,7 +1314,7 @@ do_reload:
 	push	40
 	pop	eax
 	mov	ebx, 0x107
-	int	40h
+	mcall
 	call	draw_cursor
 	mov	esi, aY_str
 	call	put_message
@@ -1402,7 +1403,7 @@ OnTerminate:
 	pop	ebx
 	push	69
 	pop	eax
-	int	40h
+	mcall
 	ret
 
 AfterSuspend:
@@ -1421,7 +1422,7 @@ OnSuspend:
 	pop	ebx
 	push	69
 	pop	eax
-	int	40h
+	mcall
 	call	AfterSuspend
 	mov	esi, aSuspended
 	jmp	put_message
@@ -1431,7 +1432,7 @@ DoResume:
 	pop	ebx
 	push	69
 	pop	eax
-	int	40h
+	mcall
 	mov	[bSuspended], 0
 	ret
 OnResume:
@@ -1481,7 +1482,7 @@ OnDetach:
 	pop	ebx
 	push	69
 	pop	eax
-	int	40h
+	mcall
 	and	[debuggee_pid], 0
 	call	redraw_title
 	call	redraw_registers
@@ -1620,7 +1621,7 @@ exception:
 	mov	esi, [_eip]
 	push	1
 	pop	edx
-	int	40h
+	mcall
 	pop	eax
 	cmp	al, 0xCC
 	jnz	.notdbg
@@ -1657,7 +1658,7 @@ exception:
 	push	3
 	pop	ebx
 	mov	ecx, [dbgwnd]
-	int	40h	; activate dbg window
+	mcall	; activate dbg window
 	call	redraw_title
 	call	redraw_registers
 	call	redraw_dump
@@ -1713,7 +1714,7 @@ OnStep:
 	pop	edx
 	mov	edi, esp
 	mov	esi, [_eip]
-	int	40h
+	mcall
 	cmp	eax, edx
 	pop	eax
 	jnz	.doit
@@ -1850,7 +1851,7 @@ get_byte_nobreak:
 	push	edx
 	inc	edx
 	mov	edi, esp
-	int	40h
+	mcall
 	dec	eax
 	clc
 	jz	@f
@@ -2338,7 +2339,7 @@ DoBpm:
 	mov	esi, ebp
 	push	9
 	pop	ebx
-	int	40h
+	mcall
 	test	eax, eax
 	jz	.ok
 	pop	ecx
@@ -2570,7 +2571,7 @@ disable_breakpoint:
 	xor	edx, edx
 	inc	edx
 	mov	esi, [edi-5]
-	int	40h
+	mcall
 	pop	esi
 .ret:
 	ret
@@ -2583,7 +2584,7 @@ disable_breakpoint:
 	push	9
 	pop	ebx
 	mov	ecx, [debuggee_pid]
-	int	40h
+	mcall
 	ret
 
 enable_breakpoint:
@@ -2607,14 +2608,14 @@ enable_breakpoint:
 	mov	ecx, [debuggee_pid]
 	xor	edx, edx
 	inc	edx
-	int	40h
+	mcall
 	dec	eax
 	jnz	.err
 	mov	al, 69
 	push	0xCC
 	mov	edi, esp
 	inc	ebx
-	int	40h
+	mcall
 	pop	eax
 .ret:
 	pop	esi
@@ -2636,7 +2637,7 @@ enable_breakpoint:
 	shr	dl, 6
 	mov	dh, [edi]
 	and	dh, 0xF
-	int	40h
+	mcall
 	test	eax, eax
 	jnz	.err
 	pop	esi
@@ -2712,7 +2713,7 @@ OnUnpack:
 @@:
 	push	69
 	pop	eax
-	int	40h
+	mcall
 	test	eax, eax
 	jz	.breakok
 	inc	edx
@@ -2724,7 +2725,7 @@ OnUnpack:
 .wait:
 	push	10
 	pop	eax
-	int	40h
+	mcall
 	dec	eax
 	jz	.redraw
 	dec	eax
@@ -2733,13 +2734,13 @@ OnUnpack:
 	jnz	.debug
 ; button; we have only one button, close
 	or	eax, -1
-	int	40h
+	mcall
 .redraw:
 	call	draw_window
 	jmp	.wait
 .key:
 	mov	al, 2
-	int	40h
+	mcall
 	cmp	ah, 3	; Ctrl+C
 	jnz	.wait
 .userbreak:
@@ -2754,7 +2755,7 @@ OnUnpack:
 	push	9
 	pop	ebx
 	mov	ecx, [debuggee_pid]
-	int	40h
+	mcall
 	cmp	esi, aUnpacked
 	jnz	OnSuspend
 	jmp	AfterSuspend
@@ -2776,7 +2777,7 @@ OnUnpack:
 	push	9
 	pop	ebx
 	mov	ecx, [debuggee_pid]
-	int	40h
+	mcall
 	jmp	debugmsg
 .our:
 	and	[dbgbuflen], 0
@@ -2791,7 +2792,7 @@ OnUnpack:
 	pop	edx
 	push	0xC
 	pop	esi
-	int	40h
+	mcall
 	pop	eax
 	pop	edx
 	cmp	eax, [_eip]

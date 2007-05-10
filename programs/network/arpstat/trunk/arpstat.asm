@@ -16,7 +16,7 @@ use32
                 dd      0x100000                ; required amount of memory
                 dd      0x00000000              ; reserved=no extended header
    include 'lang.inc'
-   include 'macros.inc'
+   include '..\..\..\macros.inc'
    
 START:                          ; start of execution
     call draw_window            ; at first, draw the window
@@ -24,7 +24,7 @@ START:                          ; start of execution
 still:
     mov  eax,23                 ; wait here for event
     mov  ebx,200				; Time out after 2s
-    int  0x40
+    mcall
    
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -38,7 +38,7 @@ still:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 200
-	int		0x40
+	mcall
 
 	push    eax		
 	mov		ebx, text + 24
@@ -47,7 +47,7 @@ still:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 201
-	int		0x40
+	mcall
 		
 	mov		ebx, text + 64
 	call	printhex
@@ -94,13 +94,13 @@ show_entries:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 202
-	int		0x40
+	mcall
 	
 	; Read the IP address
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 203
-	int		0x40
+	mcall
 	
 	; IP in eax. Get the address to put it back 
 	pop		ebx
@@ -124,7 +124,7 @@ show_entries:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 204
-	int		0x40
+	mcall
 	pop		ebx
 		
 	mov		ecx, eax
@@ -179,7 +179,7 @@ show_entries:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 205
-	int		0x40
+	mcall
 	pop		ebx
 	
 	mov		ecx, eax
@@ -213,7 +213,7 @@ show_entries:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 206
-	int		0x40
+	mcall
 	pop		ebx
 	
 	mov		ecx, eax
@@ -247,7 +247,7 @@ show_entries:
 	mov		eax, 53
 	mov		ebx, 255
 	mov		ecx, 207
-	int		0x40
+	mcall
 	pop		ebx
 	
 	mov		ecx, eax
@@ -289,18 +289,18 @@ red:                          	; redraw
    
 key:                          	; Keys are not valid at this part of the
     mov  eax,2                  ; loop. Just read it and ignore
-    int  0x40
+    mcall
     jmp  still
    
 button:                       	; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
    
     cmp  ah,1                   ; button id=1 ?
     jnz  still
 
     mov  eax,0xffffffff         ; close this program
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -339,34 +339,26 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
    
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+280         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+270         ; [y start] *65536 + [y size]
-    mov  edx,0x03224466            ; color of work area RRGGBB
-    mov  esi,0x00334455            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00ddeeff            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x13224466            ; color of work area RRGGBB
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
    
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-   
+                                   
    	; Re-draw the screen text
     cld
+    mov  eax,4
     mov  ebx,25*65536+35           ; draw info text with function 4
     mov  ecx,0xffffff
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,40
     cmp  [edx],byte 'x'
@@ -375,7 +367,7 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
  
@@ -426,9 +418,7 @@ blank:
  	  db ' xxx.xxx.xxx.xxx xxxxxxxxxxxx xxxx xxxx '
  
 
-labelt:
-    db   'ARP Table ( First 10 Entries )'
-labellen:
+title    db   'ARP Table ( First 10 Entries )',0
    
 hextable db '0123456789ABCDEF'
 

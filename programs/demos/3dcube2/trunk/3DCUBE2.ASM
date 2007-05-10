@@ -24,20 +24,17 @@ SCREEN_X equ 320
 SCREEN_Y equ 200
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
-include 'macros.inc'
+
 START:
     call draw_window
    	call init_sin_cos
 
 still:
-;    mov eax,23  ; wait for system event with 10 ms timeout
-;    mov ebx,1   ; wait 10 ms, then continue
-;    int  0x40
-
     mov eax,11
-    int 0x40
+    mcall
 
     dec eax
 ;    cmp  eax,1                  ; window redraw request ?
@@ -84,36 +81,36 @@ red:
      jmp still
 key:
      mov eax,2
-     int 0x40
+     mcall
      jmp still
 button:
      mov eax,17
-     int 0x40
+     mcall
      cmp ah,1
      jne still
 exit:
      mov eax,-1
-     int 0x40
+     mcall
 
 ;Draw window
 draw_window:
     mov eax,12  ;Start
     mov ebx,1
-    int 0x40
+    mcall
 
     mov eax,0   ;Draw window
     mov ebx,100*65536+(SCREEN_X+9) ;x start*65536+x size
     mov ecx,100*65536+(SCREEN_Y+26) ;y start*65536+y size
     mov edx,0x13000000         ;0x03 use skinned window
-    mov edi,header
-    int 0x40
+    mov edi,title
+    mcall
 
     mov eax,12  ;End
     mov ebx,2
-    int 0x40
+    mcall
     ret
 
-header db '3D TEST SAMPLE FOR MENUETOS',0
+title db '3D TEST SAMPLE FOR MENUETOS',0
 
 
 ; Draw faces procedure
@@ -182,7 +179,7 @@ clear_screen_buffer:
  mov ecx,SCREEN_X*65536+SCREEN_Y
  mov edx,5*65536+22
  mov ax,7
- int 0x40
+ mcall
 
 ;White background
  mov edi,scrbuf
@@ -578,7 +575,7 @@ translate_points:
  pushad
  mov eax,37
  mov ebx,1
- int 0x40
+ mcall
  mov ebx,eax
  shr eax,16
  and ebx,0xffff

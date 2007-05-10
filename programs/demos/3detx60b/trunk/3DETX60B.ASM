@@ -61,6 +61,7 @@ MAP_YSIZE equ 128
     dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'ascgl.inc'
 include 'ascl.inc'
 
@@ -271,13 +272,13 @@ skip_texgen:
     mov  eax,66
     mov  ebx,1
     mov  ecx,1
-    int  0x40
+    mcall
 
     mov  eax,26
     mov  ebx,2
     mov  ecx,1
     mov  edx,keymap+100
-    int  0x40
+    mcall
 
 ;Build triangle matrix
     mov  esi,points
@@ -384,7 +385,7 @@ skip_moddata:
 ;Main loop
 still:                          ; основной цикл
     mov  eax,11                 ; проверка состояния окна
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; окно сдвинули его нужно перерисовать
     je   red
@@ -490,16 +491,16 @@ ndt:
     mov  ecx,0x0000ff00            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,keymap                ; pointer to text beginning
     mov  esi,100       ; text length
-    int  0x40
+    mcall
     add  edx,100
     add  ebx,10
     mov  esi,60       ; text length
     mov  ecx,0x00dddddd            ; font 1 & color ( 0xF0RRGGBB )
-    int  0x40
+    mcall
     mov  edx,usemap
     mov  esi,60       ; text length
     mov  ecx,0x0000ff00
-    int  0x40
+    mcall
     jmp rx
           ;01234567890123456789012345678901234567890123456789
 usemap db ' E               wer  u   []  asd           zxc   '
@@ -721,7 +722,7 @@ ok4:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
 
     shr eax,8
     and eax,0xff
@@ -747,14 +748,14 @@ noisa:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp ah,1
     jz exit
     jmp  cycle
 
 exit:
-    mov eax,-1
-    int 0x40
+    or eax,-1
+    mcall
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -763,7 +764,7 @@ exit:
 draw_window:
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,0*65536+SCREEN_X-1         ; [x start] *65536 + [x size]
@@ -771,18 +772,18 @@ draw_window:
     mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
     mov  esi,0x005080d0            ; color of grab bar  RRGGBB,8->color gl
     mov  edi,0x005080d0            ; color of frames    RRGGBB
-    int  0x40
+    mcall
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
     mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
     mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
     mov  edx,labelt                ; pointer to text beginning
     mov  esi,labellen-labelt       ; text length
-    int  0x40
+    mcall
 
     mov eax,12
     mov ebx,2
-    int 0x40
+    mcall
     ret
 
 dispimg:
@@ -790,7 +791,7 @@ dispimg:
     mov ebx,I_END ;zbuffer
     mov ecx,SCREEN_X*65536+SCREEN_Y
     xor edx,edx  ;0*65536+0
-    int 0x40
+    mcall
 ;    ret
 
     mov eax,8
@@ -798,7 +799,7 @@ dispimg:
     mov ecx,10*65536+20
     mov edx,1
     mov esi,0x0000aa00
-    int 0x40
+    mcall
     ret
 
 clrscr:                         ; clear screen buffer

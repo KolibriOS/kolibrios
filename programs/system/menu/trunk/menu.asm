@@ -5,7 +5,7 @@
 ;   Compile with FASM for Menuet
 ;******************************************************************************
   include "lang.inc"
-  include "macros.inc"
+  include "..\..\..\macros.inc"
 
   BTN_HEIGHT  = 22
   TXT_Y       = (BTN_HEIGHT)/2-5
@@ -27,11 +27,11 @@ START:		       ; start of execution
      mov  ebx, 3
      mov  ecx, sc
      mov  edx, sizeof.system_colors
-     int  0x40
+     mcall
 
      mov  eax, 70	  ; load MENU.DAT
      mov  ebx, fileinfo
-     int  0x40
+     mcall
      test eax, eax	   ; error ?
      jz  @f
      cmp  eax,6
@@ -89,7 +89,7 @@ START:		       ; start of execution
      jmp  newprocess
   search_end1:
      mov  eax, 14
-     int  0x40
+     mcall
      sub  ax, 20
      mov  [menu_data + y_end],	    ax
      mov  [menu_data + x_start],  5
@@ -106,14 +106,14 @@ START:		       ; start of execution
 
      mov  eax, 40	  ; set event mask
      mov  ebx, 100111b	       ; mouse + button + key + redraw
-     int  0x40
+     mcall
 
      call draw_window
 
 still:
     mov  eax, 23	 ; wait here for event
     mov  ebx, 5
-    int  0x40
+    mcall
 
     test [close_now], 1      ; is close flag set?
     jnz  close
@@ -147,7 +147,7 @@ still:
 
   key:
 ;   mov  eax, 2
-    int  0x40
+    mcall
 
     mov  al,  [edi + rows]     ; number of buttons
 
@@ -189,7 +189,7 @@ still:
 
   button:	      ; BUTTON HANDLER
     mov  eax, 17	 ; get id
-    int  0x40
+    mcall
 
   button1:
     mov  esi, edi
@@ -238,7 +238,7 @@ still:
     mov  byte [edi], 0	       ; store terminator
     mov  eax, 70	 ; start program
     mov  ebx, fileinfo_start
-    int  0x40
+    mcall
 ;    mcall 5,100
     or	   [close_now], 1      ; set close flag
     pop  edi
@@ -306,7 +306,7 @@ thread_stack_not_full:
     mov  ebx, 1
     mov  ecx, thread
     mov  edx, [thread_stack]
-    int  0x40
+    mcall
 
     jmp  searchexit
 
@@ -314,12 +314,12 @@ thread_stack_not_full:
  mouse: 	      ; MOUSE EVENT HANDLER
     mov  eax, 37
     mov  ebx, 2
-    int  0x40
+    mcall
     test eax, eax	   ; check buttons state
     jnz  click
     mov  eax, 37
     mov  ebx, 1
-    int  0x40
+    mcall
     ror  eax, 16	  ; eax = [ Y | X ] relative to window
     cmp  ax,  140	   ; pointer in window?
     ja	   noinwindow
@@ -363,7 +363,7 @@ thread_stack_not_full:
   close:
     or	   eax, -1	  ; close this thread
     mov  [edi + child], al    ; my child is not mine
-    int  0x40
+    mcall
 
 
   backconvert:		  ; convert from pointer to process id
@@ -409,7 +409,7 @@ draw_window:
 
     mov  eax, 12	   ; function 12:tell os about windowdraw
     mov  ebx, 1 	   ; 1, start of draw
-    int  0x40
+    mcall
 
   movzx  ebx, [edi + rows]
    imul  eax, ebx, BTN_HEIGHT	    ; eax = height of window
@@ -424,13 +424,13 @@ draw_window:
     xor  eax, eax	    ; function 0 : define and draw window
     mov  edx, 0x01000000       ; color of work area RRGGBB,8->color gl
     mov  esi, edx	    ; unmovable window
-    int  0x40
+    mcall
 
     call draw_all_buttons
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     ret
 
@@ -479,7 +479,7 @@ draw_window:
     add  esi, 0x1a1a1a
   .nohighlight:
     or	   edx, 0x20000000
-    int  0x40
+    mcall
     movzx edx, dl
 
     dec  dl
@@ -504,7 +504,7 @@ draw_window:
     mov  ecx, [sc.work_text]
     mov  eax, 4
     mov  esi, 21
-    int  0x40
+    mcall
 
     pop  edx;ad
     ret

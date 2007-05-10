@@ -1,3 +1,4 @@
+include '..\..\macros.inc'
 use32
         db      'MENUET01'
         dd      1
@@ -10,14 +11,14 @@ start:
         push    70
         pop     eax
         mov     ebx, fileinfo
-        int     0x40
+        mcall
         cmp     ebx, max_file_size
         jz      exit
         cmp     ebx, -1
         jnz     @f
 exit:
         or      eax, -1
-        int     0x40
+        mcall
 @@:
         mov     esi, filebuf
         xor     ecx, ecx
@@ -45,7 +46,7 @@ scan1done:
         jecxz   exit
         push    3
         pop     eax
-        int     0x40
+        mcall
         ror     eax, 16
         mov     edx, 1024
 @@:
@@ -83,7 +84,7 @@ newline2:
         push    48
         pop     eax
         mov     bl, 8
-        int     0x40
+        mcall
         jmp     exit
 
 fileinfo:

@@ -12,18 +12,17 @@
 ;
    
 use32
-   
-                org     0x0
-   
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
    
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 remote_ip  db  192,168,0,1
    
    
@@ -34,17 +33,18 @@ START:                      ; start of execution
     mov  ecx, 0x5000              ; local port
     mov  edx, 0xffff              ; remote port
     mov  esi, dword [remote_ip]   ; remote IP
-    int  0x40
+    mcall
     mov  [socketNum],eax
     mov  [0],eax                  ; save for remote code
-   
+
+red:   
     call draw_window            ; at first, draw the window
    
 still:
    
     mov  eax,23                 ; wait here for event
     mov  ebx,1
-    int  0x40
+    mcall
    
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -56,20 +56,16 @@ still:
     mov  eax,53                 ; data from cluster terminal ?
     mov  ebx,2
     mov  ecx,[socketNum]
-    int  0x40
+    mcall
    
     cmp  eax,0
     jne  data_arrived
    
     jmp  still
    
-red:
-    call draw_window
-    jmp  still
-   
 key:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  still
    
 button:
@@ -77,16 +73,16 @@ button:
     mov  eax,53
     mov  ebx,1
     mov  ecx,[socketNum]
-    int  0x40
-    mov  eax,-1
-    int  0x40
+    mcall
+    or  eax,-1
+    mcall
    
    
 data_arrived:
    
     mov  eax,5                 ; wait a second for everything to arrive
     mov  ebx,10
-    int  0x40
+    mcall
    
     mov  edi,I_END
    
@@ -95,7 +91,7 @@ data_arrived:
     mov  eax,53
     mov  ebx,3
     mov  ecx,[socketNum]
-    int  0x40
+    mcall
    
     mov  [edi],bl
     inc  edi
@@ -103,7 +99,7 @@ data_arrived:
     mov  eax,53
     mov  ebx,2
     mov  ecx,[socketNum]
-    int  0x40
+    mcall
    
     cmp  eax,0
     jne  get_data
@@ -114,7 +110,7 @@ data_arrived:
     mov  ecx,0x000000
     mov  edx,I_END
     mov  esi,100
-    int  0x40
+    mcall
    
     add  [y],10
    
@@ -133,41 +129,26 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
    
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+300         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+330         ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB
-    mov  esi,0x80aabbcc            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00aabbcc            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x13ffffff            ; color of work area RRGGBB
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
    
-    mov  eax,8
-    mov  ebx,(286-19)*65536+12
-    mov  ecx,4*65536+12
-    mov  edx,1
-    mov  esi,0xaabbcc
-;    int  0x40
-   
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labeltext             ; pointer to text beginning
-    mov  esi,lte-labeltext         ; text length
-    int  0x40
-   
+                                   
     ; Re-draw the screen text
     cld
+    mov  eax,4
     mov  ebx,10*65536+30           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,40
     cmp  [edx],byte 'x'
@@ -176,7 +157,7 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
    
@@ -197,8 +178,7 @@ text:
     db 'x' ; <- END MARKER, DONT DELETE
 end if
    
-labeltext:  db  'NetSend(Server)'
-lte:
+title  db  'NetSend(Server)',0
    
 socketNum   dd  0x0
   

@@ -302,7 +302,7 @@ new_d:
     mov ebx,1        ; define IPC
     mov ecx,path     ; offset of area
     mov edx,1024+16  ; size
-    int 0x40
+    mcall
 
     mcall 40,1000111b
 ;
@@ -317,7 +317,7 @@ new_d:
 getmesloop:
     mov eax,23
     mov ebx,50     ;0.5 sec
-    int 0x40
+    mcall
         dec     eax
         jz      mred
         dec     eax
@@ -360,11 +360,11 @@ mkey:
     jmp  getmesloop
 mbutton:
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  getmesloop
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 mgetmes:
 ; If dlg_pid_get then second message get jmp to still
     cmp  [dlg_pid_get],dword 1

@@ -14,6 +14,7 @@ use32
 
 ;E:.
 include 'lang.inc'   
+include '..\..\..\macros.inc'
 ;B+ Definitions
 v_sp equ 330
 h_sp equ 400
@@ -31,6 +32,12 @@ text_zone   equ sys_colors+4*10
    
 START:
 ;B+ Main execution
+
+  mov  ebx,3
+  mov  ecx,sys_colors
+  mov  edx,10*4
+  mov  eax,48
+  mcall
    
   call clear_text
    
@@ -39,7 +46,7 @@ red:
 still:
   mov  ebx,50
   mov  eax,23
-  int  0x40
+  mcall
    
   cmp  eax,1
   je   red
@@ -54,7 +61,7 @@ still:
    
 key:
   mov  eax,2
-  int  0x40
+  mcall
   cmp  [is_connect],0
   je   still
   call send_key_string
@@ -62,12 +69,12 @@ key:
    
 button:
   mov  eax,17
-  int  0x40
+  mcall
    
   cmp  ah,1
   jne  noclose
-  mov  eax,-1
-  int  0x40
+  or  eax,-1
+  mcall
   jmp  $
 noclose:
    
@@ -113,7 +120,7 @@ noclose:
   mov  ecx,(v_sp-53) shl 16 + 10
   mov  edx,[sys_colors+4*5]
   mov  eax,13
-  int  0x40
+  mcall
  popa
    
   ;show item
@@ -145,30 +152,24 @@ noclose:
 draw_window:
 ;B+ Draw window
   
-  mov  ebx,3
-  mov  ecx,sys_colors
-  mov  edx,10*4
-  mov  eax,48
-  int  0x40
-
   mov  ebx,1
   mov  eax,12
-  int  0x40
+  mcall
  
   xor  eax,eax		     ;DRAW WINDOW
   mov  ebx,150*65536+h_sp
   mov  ecx,100*65536+v_sp
   mov  edx,[sys_colors+4*5]
   or   edx,0x13000000
-  mov  edi,header
-  int  0x40
+  mov  edi,title
+  mcall
 
 ;B+ Friend panel
   mov  ebx,(h_sp-fr_sp) shl 16 + 3
   mov  ecx,20 shl 16 + v_sp-31 -56
   mov  edx,[sys_colors+4*9]
   mov  eax,13
-  int  0x40
+  mcall
   call show_friends
 ;E:.
    
@@ -177,12 +178,12 @@ draw_window:
   mov  ecx,(v_sp-31 -33-3) shl 16 + 3
   mov  edx,[sys_colors+4*9]
   mov  eax,13
-  int  0x40
+  mcall
   mov  ebx,(h_sp-(fr_sp-12)*8/6) shl 16 + 4
   mov  ecx,(v_sp-31-33) shl 16 + 30
-  int  0x40
+  mcall
   mov  ebx,(h_sp-8) shl 16 + 4
-  int  0x40
+  mcall
   call show_a_friend
   call show_string
 ;E:.
@@ -192,14 +193,14 @@ draw_window:
   mov  ecx,(v_sp-35) shl 16 + 31
   mov  edx,[sys_colors+4*9]
   mov  eax,13
-  int  0x40
+  mcall
   mov  ebx,(5+2+8+(user_txt_end-user_txt)*6) shl 16 + 6*15+7
   mov  ecx,(v_sp-32) shl 16 + 12
   mov  edx,[sys_colors+4*5]
-  int  0x40
+  mcall
   mov  ebx,(171+2+8+(psw_txt_end-psw_txt)*6) shl 16 + 6*23+7
   mov  ecx,(v_sp-32) shl 16 + 12
-  int  0x40
+  mcall
    
   ;connect button
   mov  ebx,(h_sp-128) shl 16 + (con_txt_end-con_txt)*6 + 7
@@ -207,21 +208,21 @@ draw_window:
   mov  edx,101
   mov  esi,[sys_colors+4*6]
   mov  eax,8
-  int  0x40
+  mcall
   ;disconnect button
   shl  ebx,16
   add  ebx,(h_sp-128+3) shl 16 + (dis_txt_end-dis_txt)*6 + 7
   mov  edx,102
-  int  0x40
+  mcall
   ;user button
   mov  ebx,8 shl 16 + (user_txt_end-user_txt)*6 + 5
   mov  ecx,(v_sp-18-15) shl 16 + 12
   mov  edx,103
-  int  0x40
+  mcall
   ;password button
   mov  ebx,174 shl 16 + (psw_txt_end-psw_txt)*6 + 5
   mov  edx,104
-  int  0x40
+  mcall
    
   ;login text
   mov  ebx,11 shl 16 + v_sp-15
@@ -229,27 +230,27 @@ draw_window:
   mov  edx,login_txt
   mov  esi,login_txt_end-login_txt
   mov  eax,4
-  int  0x40
+  mcall
   ;user text
   mov  ebx,11 shl 16 + v_sp-15-15
   mov  edx,user_txt
   mov  esi,user_txt_end-user_txt
-  int  0x40
+  mcall
   ;password text
   mov  ebx,(174+5) shl 16 + v_sp-15-15
   mov  edx,psw_txt
   mov  esi,psw_txt_end-psw_txt
-  int  0x40
+  mcall
   ;connect text
   mov  ebx,(h_sp-128+5) shl 16 + v_sp-15
   mov  edx,con_txt
   mov  esi,con_txt_end-con_txt
-  int  0x40
+  mcall
   ;disconnect text
   add  ebx,((con_txt_end-con_txt)*6+8 + 3) shl 16
   mov  edx,dis_txt
   mov  esi,dis_txt_end-dis_txt
-  int  0x40
+  mcall
    
   call show_username
   call show_password
@@ -259,7 +260,7 @@ draw_window:
    
   mov  ebx,2
   mov  eax,12
-  int  0x40
+  mcall
   ret
 ;E:.
    
@@ -282,7 +283,7 @@ show_friends:
 .next_button:
   call test_friend
   jc   .no_b
-  int  0x40
+  mcall
   inc  edx
 .no_b:
   inc  edi
@@ -318,11 +319,11 @@ show_friends:
   call hi_light
   jne  .no_online
   mov  ecx,[sys_colors+4*7]
-  ;int  0x40
+  ;mcall
   ;or    ecx,0x10000000
 .no_online:
   ;sub  ebx,1 shl 16
-  int  0x40
+  mcall
   ;and  ecx,not 0x10000000
 .no_item:
   add  ebx,15
@@ -352,7 +353,7 @@ show_friends:
   jne  .no_group
   sub  ebx,12 shl 16
 .no_group:
-  int  0x40
+  mcall
   add  ebx,15
   inc  edi
   cmp  edi,[last_friend_line]
@@ -425,7 +426,7 @@ show_text:
 .next_line:
   cmp  [edx-1],byte 0
   jne  .shift
-  int  0x40
+  mcall
 .next:
   add  ebx,10
   add  edx,45
@@ -435,7 +436,7 @@ show_text:
   ret
 .shift:
   add  ebx,3 shl 16
-  int  0x40
+  mcall
   sub  ebx,3 shl 16
   jmp  .next
    
@@ -457,7 +458,7 @@ rep stosb
   mov  ecx,(25-2) shl 16 + 24*10-2 +2
   mov  edx,[sys_colors+4*5]
   mov  eax,13
-  int  0x40
+  mcall
   ;show text
   call show_text
  popa
@@ -508,14 +509,14 @@ rep movsb
   mov  edx,[.m_p]
   mov  esi,line_wid
   mov  eax,4
-  int  0x40
+  mcall
   add  ebx,3 shl 16
 .next_line:
   add  ebx,10
   add  edx,line_wid
   cmp  [edx-1],byte 0
   je   .good3
-  int  0x40
+  mcall
   jmp  .next_line
 .good3:
   mov  [.m_p],edx
@@ -532,7 +533,7 @@ show_a_friend:
   mov  edx,[f_name_b]
   mov  esi,[f_name_l]
   mov  eax,4
-  int  0x40
+  mcall
   ret
    
 f_name_b dd fnb
@@ -570,7 +571,7 @@ send_key_string:
   mov  edx,.this_c
   mov  esi,1
   mov  eax,4
-  int  0x40
+  mcall
   ;
   cmp  [.c_pl],41
   je   .new_line
@@ -615,7 +616,7 @@ send_key_string:
   mov  edx,.this_c
   mov  esi,1
   mov  eax,4
-  int  0x40
+  mcall
   mov  ebx,[.c_pl]
   mov  [in_text+ebx],byte 0
   jmp  show_cursor
@@ -649,7 +650,7 @@ rep stosd
   mov  ecx,(v_sp-31 -33) shl 16 + 29
   mov  edx,[sys_colors+4*5]
   mov  eax,13
-  int  0x40
+  mcall
   ;; move cursor
   mov  ebx,7 shl 16 + v_sp-62
   mov  [send_key_string.xy],ebx
@@ -671,16 +672,16 @@ show_cursor:
   mov  edx,curs
   mov  esi,1
   mov  eax,4
-  int  0x40
+  mcall
   add  ebx,4
-  int  0x40
+  mcall
   mov  ebx,[send_key_string.xy]
   mov  [.old_xy],ebx
   sub  ebx,3 shl 16 + 2
   mov  ecx,0xffffff;[sys_colors+4*8]
-  int  0x40
+  mcall
   add  ebx,4
-  int  0x40
+  mcall
   ret
    
 .old_xy dd 7 shl 16 + v_sp-62
@@ -692,13 +693,13 @@ show_string:
   mov  edx,in_text
   mov  esi,41
   mov  eax,4
-  int  0x40
+  mcall
   add  ebx,2 shl 16 + 9
   add  edx,41
-  int  0x40
+  mcall
   add  ebx,9
   add  edx,41
-  int  0x40
+  mcall
   call show_cursor
   ret
    
@@ -837,7 +838,7 @@ rep stosb
    
   ;get enen
   mov  eax,10
-  int  0x40
+  mcall
    
   cmp  eax,1
   je   .end
@@ -846,7 +847,7 @@ rep stosb
    
   ;key
   mov  eax,2
-  int  0x40
+  mcall
    
   cmp  ah,13
   je   .end
@@ -887,7 +888,7 @@ rep stosb
   mov  edx,f_password
   mov  esi,4
   mov  eax,4								       
-  int  0x40
+  mcall
   jmp  still
 .unp dd username
    
@@ -897,14 +898,14 @@ show_username:
   mov  ecx,(v_sp-15-15) shl 16 + 9
   mov  edx,[sys_colors+4*5]
   mov  eax,13
-  int  0x40
+  mcall
   ;show
   mov  ebx,(4+12*6) shl 16 + v_sp-15-15
   mov  ecx,[sys_colors+4*8]
   mov  edx,username
   mov  esi,16
   mov  eax,4									
-  int  0x40
+  mcall
   ret
    
 username: times (16+1) db 0
@@ -925,12 +926,12 @@ rep stosb
   mov  edx,f_password
   mov  esi,4
   mov  eax,4									
-  int  0x40
+  mcall
    
 .next:
   ;get enen
   mov  eax,10
-  int  0x40
+  mcall
    
   cmp  eax,1
   je   still
@@ -939,7 +940,7 @@ rep stosb
    
   ;key
   mov  eax,2
-  int  0x40
+  mcall
    
   cmp  [.unp],password+24
   je   .no_next
@@ -965,7 +966,7 @@ show_password:
   mov  edx,f_password
   mov  esi,4
   mov  eax,4									
-  int  0x40
+  mcall
 .end:
   ret										
    
@@ -1047,7 +1048,7 @@ times 200 db 0						;del
 							;del
 last_friend_line dd 0x6 				;del
 
-header db 'Messenger (Yahoo Compatible)',0
+title db 'Messenger (Yahoo Compatible)',0
    
 ;User / Password
 login_txt db 'STATUS:            SESSION: ___.___.___.___'

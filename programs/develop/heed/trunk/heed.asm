@@ -23,21 +23,23 @@ KEY_ENDBOTTOM equ 253 ;Ctrl + ']'
  dd 0x0 , 0x0   ; I_Param , I_Icon
 
  include 'lang.inc'
- include 'macros.inc'
+ include '..\..\..\macros.inc'
 
 
 START: ; start of execution
 
   mov  eax,40
   mov  ebx,100111b ;event mouse
-  int  0x40
+  mcall
   mov  dword [process_info+42],540
   mov  dword [process_info+46],414
+
+red:
   call draw_window
 
 still:
   mov  eax,10  ; wait here for event
-  int  0x40
+  mcall
   dec  al      ; redraw request ?
   je   red
   dec  al      ; key in buffer ?
@@ -48,20 +50,17 @@ still:
  mouse:
   mov  eax,37
   mov  ebx,2
-  int  0x40
+  mcall
   or   eax,eax
   jz   still
   cmp  [menu_opened],1
   jne  still
   mov  [menu_opened],0
 
- red:          ; redraw
-  call redraw_window
-  jmp  still
 
  key:          ; key
   mov  eax,2
-  int  0x40
+  mcall
 ; test al,al
 ; jnz  still
   cmp  ah,KEY_ESC
@@ -230,18 +229,18 @@ still:
   or   edx,edi
   mov  eax,47
   add  edx,8
-  int  0x40
+  mcall
   call redraw_window
   jmp  still
 
  button:   ; button
   mov  eax,17 ; get id
-  int  0x40
+  mcall
   dec  ah  ;close programm button
   jne  @f
  close:
   mov  eax,-1 ; close this program
-  int  0x40
+  mcall
  @@:
   dec  ah
   jne  @f
@@ -383,7 +382,7 @@ still:
   xor  ecx,ecx
   or   edx,-1
   mov  esi,0x10000
-  int  0x40
+  mcall
   inc  [o_s_flag]
   mov  [sizefile],eax
   jmp  end_Go
@@ -395,7 +394,7 @@ still:
   xor  esi,esi
   dec  edx
   mov  eax,33
-  int  0x40
+  mcall
  end_Go:
   call CtrlHome
   jmp  still
@@ -646,7 +645,7 @@ output_screen:
   sub  edx,0x10
   mov  esi,0x10
   mov  eax,4
-  int  0x40
+  mcall
   pop  eax
   pop  ecx
   loop @b
@@ -668,7 +667,7 @@ form_str:
   add  edx,[esp+0x24]  ;начало по У
   mov  esi,0x00ffffff ;цвет
   mov  eax,47 ;вывести число
-  int  0x40
+  mcall
   add  edx,0x600000   ;0x40 - 8chars + 0x20 - space
   mov  ebx,0x20100    ;2 цифры, 16-ричные, число в ecx
  @@:
@@ -677,7 +676,7 @@ form_str:
   and  ecx,0xff
   cmp  edi,0x11
   jz   endstr
-  int  0x40
+  mcall
   add  edx,0x100000
   jmp  @b
  endstr:
@@ -695,12 +694,12 @@ draw_cursor:
   mov  ecx,[esp+0x24]
   mov  edx,[color]
   mov  eax,13
-  int  0x40
+  mcall
   movzx edi,[o_s_flag]
   and  edi,8
   jnz  @f
   add  ebx,[text_cursor]
-  int  0x40
+  mcall
  @@:
   popad
   ret  4
@@ -731,13 +730,13 @@ menufile:
   mov  ecx,[sc.work_button_text]
   or   ecx,0x10000000
   sub  eax,4
-  int  0x40
+  mcall
   add  ebx,0x0c ;next full base text
   add  edx,4 ;next string
-  int  0x40
+  mcall
   add  ebx,0x0c
   add  edx,4
-  int  0x40
+  mcall
   ret
 
 menucoding:
@@ -759,7 +758,7 @@ menucoding:
   or   ecx,0x10000000
   sub  eax,4
  @@:
-  int  0x40
+  mcall
   add  ebx,0x0c
   add  edx,8 ;next string
   dec  edi
@@ -782,11 +781,11 @@ menuhelp:
   mov  ecx,[sc.work_button_text]
   or   ecx,0x10000000
   sub  eax,4
-  int  0x40
+  mcall
   add  ebx,0x0c
   inc  esi ;add lebgth output text
   add  edx,4
-  int  0x40
+  mcall
   ret
 
 f1:;uses for drawing low-level menu buttons
@@ -798,7 +797,7 @@ f1:;uses for drawing low-level menu buttons
   push ecx                  ;for output text
  @@:
   add  ecx,0xc0000
-  int  0x40
+  mcall
   inc  edx ;id
   dec  edi ;counter
   jnz  @b
@@ -819,7 +818,7 @@ debug:
   mov  edx,0x10000a0
   mov  eax,47
   mov  esi,0x00ffffff
-  int  0x40
+  mcall
   popad
   ret  4
 
@@ -833,11 +832,11 @@ draw_window:
   mov  ebx,3
   mov  ecx,sc
   mov  edx,sizeof.system_colors
-  int  0x40
+  mcall
 
   mov  eax,12                 ; function 12:tell os about windowdraw
   mov  ebx,1                  ; 1, start of draw
-  int  0x40
+  mcall
      ; DRAW WINDOW
   mov  eax,0                  ; function 0 : define and draw window
                               ; [x start] *65536 + [x size]
@@ -845,7 +844,7 @@ draw_window:
                               ; [y start] *65536 + [y size]
   mov  ecx,[process_info+46]
   mov  edx,0x03000000         ; color of work area RRGGBB,8->color gl
-  int  0x40
+  mcall
      ; WINDOW LABEL
   mov  eax,4                  ; function 4 : write text to window
   mov  ebx,8*65536+8          ; [x start] *65536 + [y start]
@@ -853,7 +852,7 @@ draw_window:
   or   ecx,0x10000000         ; font 1 & color ( 0xF0RRGGBB )
   mov  edx,labelt             ; pointer to text beginning
   mov  esi,labellen-labelt    ; text length
-  int  0x40
+  mcall
     ;check for only header window output
   cmp  dword [process_info+46],25
   jle  minimaze_view
@@ -873,7 +872,7 @@ draw_window:
   shl  ecx,0x10
   mov  eax,13
   add  ecx,0x10
-  int  0x40
+  mcall
      ;MENU BUTTONS
   ;now in hi-half ecx register begin Y-coord. menu area
   ;in hi-half ebx begin X-coord.
@@ -888,18 +887,18 @@ draw_window:
   mov  [xf_menu],ebx;for low-level menus func.
   mov  eax,8
   push ebx ;for output buttons texts
-  int  0x40
+  mcall
   ;registers is't change
   ;menu 'Coding'
   add  ebx,0x290018 ;80x12
   inc  edx ;menu 'coding' id = 3
   mov  [xe_menu],ebx;for low-level menus func.
-  int  0x40
+  mcall
   ;menu 'Help'
   add  ebx,0x40ffe8 ;+0x280000 - 0x28, 40x12
   inc  edx ;menu 'Help' id = 4
   mov  [xh_menu],ebx;for low-level menus func.
-  int  0x40
+  mcall
      ;MENU BUTTONS TEXTS
   ;'File'
   pop  ebx
@@ -914,7 +913,7 @@ draw_window:
   mov  ecx,[sc.work_button_text]
   or   ecx,0x10000000            ; font 1 & color ( 0xF0RRGGBB )
   push esi                       ;for 'Help' menu text
-  int  0x40
+  mcall
   ;'coding'
   ;registers is't change
   add  ebx,0x2d0000
@@ -922,14 +921,14 @@ draw_window:
   add  esi,2
 ;  mov  edx,e_menu
   add  edx,4
-  int  0x40
+  mcall
   ;'Help'
   add  ebx,0x3b0000
 ;   mov  esi,4
   pop  esi
 ;  mov  edx,h_menu
   add  edx,6
-  int  0x40
+  mcall
  ;LOW_LEVEL MENU
   ;for every hi-level menu exists one procedure
   ;in begin programm they are not calls,
@@ -951,7 +950,7 @@ draw_window:
   shl  ecx,16              ;y start
   mov  eax,13
   add  ecx,20
-  int  0x40
+  mcall
 
 ;filename input area
 ;  mov  ecx,[process_info+46]
@@ -966,7 +965,7 @@ draw_window:
   add  ecx,16
   mov  eax,13
   push ecx ;for button 'Go'
-  int  0x40
+  mcall
 
 ;button 'Go', press in case open/save if filename input complete
   ;button size = 24x16
@@ -976,7 +975,7 @@ draw_window:
   dec  ecx
   mov  edx,0xff ;id
   mov  esi,[sc.work_button]
-  int  0x40
+  mcall
   shr  ecx,0x10
   and  ebx,0xffff0000
   add  ecx,0x50004
@@ -986,7 +985,7 @@ draw_window:
   mov  ecx,[sc.work_button_text]
   or   ecx,0x10000000
   sub  eax,4
-  int  0x40
+  mcall
 
 ;where output cursor?
   mov  al,[o_s_flag]
@@ -1011,7 +1010,7 @@ draw_window:
   add  ebx,eax
   movzx esi,[name_l]
   mov  eax,4
-  int  0x40
+  mcall
 
 ;info strings
      ; sizefile text
@@ -1024,13 +1023,13 @@ draw_window:
   mov  edx,sizestr   ; pointer to text beginning
   mov  eax,4
   mov  esi,5
-  int  0x40
+  mcall
   add  ebx,0x00530000
   inc  esi
 ;    mov  edx,offst
   add  edx,5
   inc  esi
-  int  0x40
+  mcall
     ;sizefile
   mov  ecx,[sizefile]
   mov  edx,ebx
@@ -1038,10 +1037,10 @@ draw_window:
   sub  edx,0x00350000
   mov  eax,47
   mov  ebx,0x80100
-  int  0x40
+  mcall
   mov  ecx,[current]
   add  edx,0x005f0000
-  int  0x40
+  mcall
 
   push [text_cursor] ;это позиция курсора в текстовой строке
   call draw_cursor
@@ -1052,7 +1051,7 @@ draw_window:
  minimaze_view:
   mov  eax,12  ; function 12:tell os about windowdraw
   mov  ebx,2 ; 2, end of draw
-  int  0x40
+  mcall
   popad
   ret
 
@@ -1066,7 +1065,7 @@ get_process_info:
   mov  ebx,process_info
   xor  ecx,ecx
   dec  ecx
-  int  0x40
+  mcall
   popad
   ret
 
@@ -1104,7 +1103,7 @@ create_process:
   mov  ecx,[esp+0x24]
   inc  ebx
   mov  edx,0x7E000 ;0x1000
-  int  0x40
+  mcall
   popad
   ret  4
 
@@ -1112,7 +1111,7 @@ help_thread:
   call help_window
  help_still:
   mov  eax,10
-  int  0x40
+  mcall
   dec  eax
   jz   help_red
   dec  eax
@@ -1126,35 +1125,35 @@ help_thread:
  help_key:
   inc  eax
   inc  eax
-  int  0x40
+  mcall
   jmp  help_still
  help_button:
   mov  eax,17
-  int  0x40
+  mcall
   dec  ah
   jne  help_still
   shr  eax,8
   dec  eax
-  int  0x40
+  mcall
 
 help_window:
   pushad
   mov  eax,12  ; function 12:tell os about windowdraw
   mov  ebx,1 ; 1, start of draw
-  int  0x40
+  mcall
      ; DRAW WINDOW
   mov  eax,0 ; function 0 : define and draw window
   mov  ebx,0x500140 ; [x start] *65536 + [x size]
   mov  ecx,0x700110 ; [y start] *65536 + [y size]
   mov  edx,0x03000000 ; color of work area RRGGBB,8->color gl
-  int  0x40
+  mcall
      ; WINDOW LABEL
   mov  eax,4 ; function 4 : write text to window
   mov  ebx,8*65536+8 ; [x start] *65536 + [y start]
   mov  ecx,0x10ffffff ; font 1 & color ( 0xF0RRGGBB )
   mov  edx,help_label ; pointer to text beginning
   mov  esi,14 ; text length
-  int  0x40
+  mcall
      ; HELP TEXT
   add  edx,14 ;help_text addr.
   add  esi,37 ; = 51 - length 1 line
@@ -1162,7 +1161,7 @@ help_window:
   mov  edi,(help_end-help_text)/51
  @@:
   add  ebx,0x10
-  int  0x40
+  mcall
   add  edx,51
   dec  edi
   jnz  @b
@@ -1170,7 +1169,7 @@ help_window:
 
   mov  eax,12  ; function 12:tell os about windowdraw
   mov  ebx,2 ; 2, end of draw
-  int  0x40
+  mcall
   popad
   ret
 
@@ -1178,7 +1177,7 @@ about_thread:
   call about_window
  about_still:
   mov  eax,10
-  int  0x40
+  mcall
   dec  eax
   jz   about_red
   dec  eax
@@ -1192,28 +1191,28 @@ about_thread:
  about_key:
   inc  eax
   inc  eax
-  int  0x40
+  mcall
   jmp  about_still
  about_button:
   mov  eax,17
-  int  0x40
+  mcall
   dec  ah
   jne  about_still
   shr  eax,8
   dec  eax
-  int  0x40
+  mcall
 
 about_window:
   pushad
   mov  eax,12  ; function 12:tell os about windowdraw
   mov  ebx,1 ; 1, start of draw
-  int  0x40
+  mcall
      ; DRAW WINDOW
   mov  eax,0           ; function 0 : define and draw window
   mov  ebx,0x500140    ; [x start] *65536 + [x size]
   mov  ecx,0x700110    ; [y start] *65536 + [y size]
   mov  edx,0x03000000  ; color of work area RRGGBB,8->color gl
-  int  0x40
+  mcall
      ; WINDOW LABEL
   mov  eax,4           ; function 4 : write text to window
   mov  ebx,8*65536+8   ; [x start] *65536 + [y start]
@@ -1221,7 +1220,7 @@ about_window:
   or   ecx,0x10000000  ; font 1 & color ( 0xF0RRGGBB )
   mov  edx,about_label ; pointer to text beginning
   mov  esi,17          ; text length
-  int  0x40
+  mcall
      ; ABOUT TEXT
   add  edx,17 ;about_text addr.
   add  esi,34 ; = 51 - length 1 line
@@ -1229,14 +1228,14 @@ about_window:
   mov  edi,15
  @@:
   add  ebx,0x10
-  int  0x40
+  mcall
   add  edx,51
   dec  edi
   jnz  @b
 
   mov  eax,12  ; function 12:tell os about windowdraw
   mov  ebx,2 ; 2, end of draw
-  int  0x40
+  mcall
   popad
   ret
 

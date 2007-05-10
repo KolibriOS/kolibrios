@@ -217,7 +217,7 @@ rectangle:
  shl ecx,16
  add ebx,[line_size_x]
  add ecx,[line_size_y]
- int 0x40
+ mcall
  ret
 ;----------------------------------------------------------
 draw_conture:
@@ -303,17 +303,17 @@ print_text:
  mov ebx,[text_x]
  shl ebx,16
  add ebx,[text_y]
- int 0x40
+ mcall
  ret
 ;----------------------------------------------------------
 draw_rectangle:
  mov eax,13
- int 0x40
+ mcall
  ret
 ;------------------------
 draw_line:
  mov eax,38
- int 0x40
+ mcall
  ret
 ;----------------------------------------------------------
 ;lightlin 12508927

@@ -59,7 +59,7 @@ check_mouse:
 
      mov  eax,37
      mov  ebx,2
-     int  0x40
+     mcall
 
      cmp  [window_on],0
      jne  openw2
@@ -73,14 +73,14 @@ check_mouse:
 
      mov  eax,23
      mov  ebx,2
-     int  0x40
+     mcall
 
      cmp  eax,0
      jne  no_open
 
      mov  eax,37
      mov  ebx,2
-     int  0x40
+     mcall
 
      cmp  eax,0
      jne  waitformouse
@@ -88,7 +88,7 @@ check_mouse:
 
      mov  eax,37
      mov  ebx,1
-     int  0x40
+     mcall
 
      mov  esi,eax
 
@@ -120,7 +120,7 @@ check_mouse:
    waitm:
      mov  eax,5
      mov  ebx,1
-     int  0x40
+     mcall
      dec  ecx
      jz   no_open
      cmp  [window_on],0
@@ -150,7 +150,7 @@ check_mouse:
      mov  eax,9
      mov  ebx,table
      mov  ecx,-1
-     int  0x40
+     mcall
 
      mov  eax,[table+34]
      mov  [mo_x],eax
@@ -161,7 +161,7 @@ check_mouse:
      mov  ebx,1
      mov  ecx,alert_entry
      mov  edx,[g_stack]
-     int  0x40
+     mcall
 
      mov  [esp+28],dword 0  ; clear button entry
 
@@ -179,7 +179,7 @@ draw_menu:
      mov  eax,9
      mov  ebx,table
      mov  ecx,-1
-     int  0x40
+     mcall
 
      cmp  [table+46],dword 30
      jb   drmr
@@ -193,7 +193,7 @@ draw_menu:
      shl  ecx,16
      add  ecx,[m_ys]
      mov  edx,0xf0f8ff
-     int  0x40
+     mcall
 
      mov  eax,38     ; egde lines
      mov  ebx,[m_x]
@@ -204,14 +204,14 @@ draw_menu:
      shl  ecx,16
      add  ecx,[m_y]
      mov  edx,0x000000
-     int  0x40
+     mcall
      mov  eax,38
      mov  ecx,[m_y]
      add  ecx,[m_ys]
      shl  ecx,16
      add  ecx,[m_y]
      add  ecx,[m_ys]
-     int  0x40
+     mcall
 
      mov  esi,menu-1
      mov  edi,[m_x]
@@ -231,7 +231,7 @@ draw_menu:
      mov  edx,esi
      add  edx,3
      mov  esi,12
-     int  0x40    ; draw text
+     mcall    ; draw text
      pop  esi
      add  esi,2
      add  edi,50
@@ -282,7 +282,7 @@ alert_box:
    mov  ebx,1
    mov  ecx,alert_entry
    mov  edx,[g_stack]
-   int  0x40
+   mcall
 
    mov  [menu_action],'MA  '
 
@@ -298,7 +298,7 @@ alert_still:
 
     mov  eax,23                 ; wait here for event
     mov  ebx,1
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   alert_red
@@ -313,7 +313,7 @@ alert_still:
     mov  eax,9
     mov  ebx,table
     mov  ecx,-1
-    int  0x40
+    mcall
 
     cmp  ax,[table+4]
     je   no_close
@@ -323,7 +323,7 @@ alert_still:
     mov  [menu_action],'----'
     mov  [window_on],0
     mov  eax,-1
-    int  0x40
+    mcall
   no_close:
 
     jmp  alert_still
@@ -334,12 +334,12 @@ alert_still:
 
   alert_key:                    ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  alert_still
 
   alert_button:                 ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     shr  eax,8
     cmp  eax,3
@@ -364,7 +364,7 @@ alert_still:
     mov  [g_n],-1
     mov  [window_on],0
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 
   rtext db 'NO  YES OK  '
 
@@ -381,7 +381,7 @@ alert_draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
     cmp  [window_on],2
     jne  no_win_type_2
@@ -418,7 +418,7 @@ alert_draw_window:
     mov  edx,0x00ffffff            ; color of work area RRGGBB,8->color gl
     mov  esi,0x00ffffff            ; color of grab bar  RRGGBB,8->color gl
     mov  edi,0x000000cc            ; color of frames    RRGGBB
-    int  0x40
+    mcall
 
     pop  edx
 
@@ -445,10 +445,10 @@ alert_draw_window:
     mov  edx,0x40000000
     add  edx,ebp
     mov  esi,0
-    int  0x40
+    mcall
     popa
     mov  eax,4     ; draw text
-    int  0x40
+    mcall
     inc  ebp
     add  ebx,14
     jmp  no_d_found
@@ -461,7 +461,7 @@ alert_draw_window:
     jne  no_win_1
 
     mov  eax,14                    ; to middle of screen
-    int  0x40
+    mcall
     mov  ecx,eax
     and  ecx,0xffff
     shr  ecx,1
@@ -480,7 +480,7 @@ alert_draw_window:
     mov  edx,0x02ffffff            ; color of work area RRGGBB,8->color gl
     mov  esi,0x80d05050            ; color of grab bar  RRGGBB,8->color gl
     mov  edi,0x00d05050            ; color of frames    RRGGBB
-    int  0x40
+    mcall
 
 
     mov  eax,4                       ; label
@@ -488,14 +488,14 @@ alert_draw_window:
     mov  ecx,0x10ddeeff
     mov  edx,alert_labelt1
     mov  esi,alert_label1len-alert_labelt1
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,10*65536+43
     mov  ecx,0x10000000
     mov  edx,[g_t]
     mov  esi,[g_l]
-    int  0x40
+    mcall
 
     cmp  [g_1],1
     jne  gadgets_no_1
@@ -509,7 +509,7 @@ alert_draw_window:
     mov  ecx,75*65536+16
     mov  edx,3
     mov  esi,0x446688
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,[g_x]
@@ -520,7 +520,7 @@ alert_draw_window:
     mov  ecx,0x10ffffff
     mov  edx,alert_t2
     mov  esi,alert_t2len-alert_t2
-    int  0x40
+    mcall
 
   gadgets_no_1:
 
@@ -536,7 +536,7 @@ alert_draw_window:
     mov  ecx,75*65536+16
     mov  edx,1
     mov  esi,0x446688
-    int  0x40
+    mcall
 
     mov  eax,8
     mov  ebx,[g_x]
@@ -547,7 +547,7 @@ alert_draw_window:
     mov  ecx,75*65536+16
     mov  edx,2
     mov  esi,0x446688
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,[g_x]
@@ -558,7 +558,7 @@ alert_draw_window:
     mov  ecx,0x10ffffff
     mov  edx,alert_t1
     mov  esi,alert_t1len-alert_t1
-    int  0x40
+    mcall
 
   gadgets_no_2:
 
@@ -566,7 +566,7 @@ alert_draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 

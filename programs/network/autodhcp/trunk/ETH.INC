@@ -39,7 +39,7 @@ ACTIVE = 1
 macro eth.get_IP IP {
     mov  ebx,1
     mov  eax,52
-    int  0x40
+    mcall
 
     mov  IP ,eax
 }
@@ -47,21 +47,21 @@ macro eth.get_IP IP {
 macro eth.get_GATEWAY GATEWAY {
     mov  ebx,9
     mov  eax,52
-    int  0x40
+    mcall
     mov GATEWAY ,eax
 }
 
 macro eth.get_SUBNET SUBNET {
     mov  ebx,10
     mov  eax,52
-    int  0x40
+    mcall
     mov SUBNET ,eax
 }
 
 macro eth.get_DNS DNS {
     mov  ebx,13
     mov  eax,52
-    int  0x40
+    mcall
     mov  DNS ,eax
 }
 
@@ -69,35 +69,35 @@ macro eth.set_IP IP {
     mov  ecx,IP
     mov  ebx,3
     mov  eax,52
-    int  0x40
+    mcall
 }
 
 macro eth.set_GATEWAY GATEWAY {
     mov  ecx,GATEWAY
     mov  ebx,11
     mov  eax,52
-    int  0x40
+    mcall
 }
 
 macro eth.set_SUBNET SUBNET {
     mov  ecx,SUBNET
     mov  ebx,12
     mov  eax,52
-    int  0x40
+    mcall
 }
 
 macro eth.set_DNS DNS {
     mov  ecx,DNS
     mov  ebx,14
     mov  eax,52
-    int  0x40
+    mcall
 }
 
 macro eth.set_network_drv conf {
     mov  ecx,conf
     mov  ebx,2
     mov  eax,52
-    int  0x40
+    mcall
 }
 
 macro eth.open_udp local,remote,ip,socket {
@@ -106,7 +106,7 @@ macro eth.open_udp local,remote,ip,socket {
     mov  esi, ip
     mov  ebx, 0
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  socket,eax
 }
@@ -115,21 +115,21 @@ macro eth.close_udp socket {
     mov  ecx, socket
     mov  ebx, 1
     mov  eax, 53
-    int  0x40
+    mcall
 }
 
 macro eth.poll socket {
     mov  ecx, socket
     mov  ebx, 2
     mov  eax, 53
-    int  0x40
+    mcall
 }
 
 macro eth.read_byte socket, result {
     mov  ecx, socket
     mov  ebx, 3
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  result,bl
 }
@@ -140,7 +140,7 @@ macro eth.read_packet socket, result, buffersize {
     mov  ecx, socket
     mov  ebx, 11
     mov  eax, 53
-    int  0x40
+    mcall
 }
 
 macro eth.write_udp socket,length,msg,verify {
@@ -149,7 +149,7 @@ macro eth.write_udp socket,length,msg,verify {
     mov  esi, msg
     mov  ebx, 4
     mov  eax, 53
-    int  0x40
+    mcall
 
     if verify eq 1
     call verifysend
@@ -165,9 +165,9 @@ verifysend:
     pusha
     mov  eax,5
     mov  ebx,100
-    int  0x40
+    mcall
     popa
-    int  0x40
+    mcall
 ret
 
 macro eth.open_tcp local,remote,ip,passive,socket {
@@ -178,7 +178,7 @@ macro eth.open_tcp local,remote,ip,passive,socket {
     mov  edi, passive	   ; 0 = PASSIVE open
     mov  ebx, 5
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  socket,eax
 }
@@ -187,7 +187,7 @@ macro eth.socket_status socket,result {
     mov  ecx, socket
     mov  ebx, 6
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  result,eax
 }
@@ -198,7 +198,7 @@ macro eth.write_tcp socket,length,msg,verify {
     mov  esi, msg
     mov  ebx, 7
     mov  eax, 53
-    int  0x40
+    mcall
 
     if verify eq 1
     call verifysend
@@ -210,11 +210,11 @@ macro eth.read_mac mac {
     mov  ebx, 15
     xor  ecx, ecx
     pusha
-    int  0x40
+    mcall
     mov  dword[mac],eax
     popa
     add  cl, 4
-    int  0x40
+    mcall
     mov  word[mac+4],ax
 
 }
@@ -223,14 +223,14 @@ macro eth.close_tcp socket {
     mov  ecx, socket
     mov  ebx, 8
     mov  eax, 53
-    int  0x40
+    mcall
 }
 
 macro eth.check_port port,result {
     mov  ecx, port
     mov  ebx, 9
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  result,eax
 }
@@ -238,7 +238,7 @@ macro eth.check_port port,result {
 macro eth.check_cable result {
     mov  ebx, 10
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  result,eax
 }
@@ -247,7 +247,7 @@ macro eth.status status {
     mov  ebx, 255
     mov  ecx, 6
     mov  eax, 53
-    int  0x40
+    mcall
 
     mov  status,eax
 }
@@ -268,7 +268,7 @@ macro eth.ARP_PROBE address{
     mov  eax,52
     mov  ebx,16
     xor  ecx,ecx
-    int  0x40
+    mcall
 
 }
 
@@ -280,7 +280,7 @@ macro eth.ARP_ANNOUNCE address{
     mov  ebx,16
     xor  ecx,ecx
     inc  ecx
-    int  0x40
+    mcall
 
 }
 
@@ -308,7 +308,7 @@ local .getdata,.loop,.end
 
     mov     eax,5
     mov     ebx,1
-    int     0x40
+    mcall
 
     inc     edx
     cmp     edx,30
@@ -331,7 +331,7 @@ macro eth.wait_for_data socket,TIMEOUT,abort {
 
     mov   eax,5 			      ; wait here for event
     mov   ebx,10
-    int   0x40
+    mcall
 
     jmp   @r
    @@:

@@ -65,26 +65,26 @@ TakeInstruments:
 	 mov ecx,115*65536+14
 	 mov edx,1000000000000000000000000000000b
 	 add edx,1000
-	 int 0x40
+	 mcall
 
 	 mov eax,8
 	 mov ebx,177*65536+40
 	 mov ecx,139*65536+14
 	 mov edx,1000000000000000000000000000000b
 	 add edx,1001
-	 int 0x40
+	 mcall
 
 	 mov eax,8
 	 mov ebx,175*65536+40
 	 mov ecx,170*65536+15
 	 mov edx,1000000000000000000000000000000b
 	 add edx,1002
-	 int 0x40
+	 mcall
 
 	 no_activate_space:
 
 	 mov eax,10
-	 int 0x40
+	 mcall
 
 	 cmp eax,1
 	 je exit_new
@@ -93,7 +93,7 @@ TakeInstruments:
 	 jne no_activate_space
 
 	 mov eax,17
-	 int 0x40
+	 mcall
 	 shr eax,8
 
 	 cmp eax,1000
@@ -155,21 +155,21 @@ TakeInstruments:
 	 mov ecx,170*65536+15
 	 mov edx,11100000000000000000000000000000b
 	 add edx,1002
-	 int 0x40
+	 mcall
 
 	 mov eax,8
 	 mov ebx,177*65536+40
 	 mov ecx,139*65536+14
 	 mov edx,11100000000000000000000000000000b
 	 add edx,1001
-	 int 0x40
+	 mcall
 
 	 mov eax,8
 	 mov ebx,177*65536+40
 	 mov ecx,115*65536+14
 	 mov edx,11100000000000000000000000000000b
 	 add edx,1000
-	 int 0x40
+	 mcall
 
 	 ;get memory for new picture
 	 mov eax,[Picture_SizeX]
@@ -222,7 +222,7 @@ TakeInstruments:
 
 	 mov eax,40
 	 mov ebx,100111b
-	 int 0x40
+	 mcall
 
 	 mov eax,file_path
 	 mov ebx,[ScreenPointer]
@@ -387,7 +387,7 @@ TakeInstruments:
 	 save_enter:
 	 mov eax,40
 	 mov ebx,100111b
-	 int 0x40
+	 mcall
 
 	 call analizing_picture_to_palette
 	 ;eax => number of colors in picture
@@ -428,7 +428,7 @@ TakeInstruments:
 	 jne no_exit_program
 
 	 mov eax,-1
-	 int 0x40
+	 mcall
 
 	 no_exit_program:
 

@@ -33,7 +33,7 @@ macro drawfbox x,y,xs,ys,color
     add  ecx,ys
     mov  edx,color
     mov  eax,13
-    int  0x40
+    mcall
 }
 
 ; FPS - Set Frame Per Second Display
@@ -50,7 +50,7 @@ ttt      dd 0
 spdat:
 get_time:
     mov eax,3
-    int 0x40
+    mcall
     cmp eax,[savetime]
     jne new_time
     inc [fps_cntr]
@@ -69,7 +69,7 @@ if ~(delcolor eq )
     mov ecx,y*65536+7
     mov edx,delcolor
     mov eax,13
-    int 0x40
+    mcall
 end if
     mov dword [ttt],fps_show_frequency
     mov eax,47
@@ -78,7 +78,7 @@ end if
     mov edx,x*65536+y
     mov esi,color
     mov ecx,[fps]
-    int 0x40
+    mcall
 no_out_fps:
 }
 
@@ -153,7 +153,7 @@ else
     shl  edx,16
     add  edx,arg2
 end if    
-    int  0x40
+    mcall
   nodi:
 }
 
@@ -173,7 +173,7 @@ else
     shl  edx,16
     add  edx,arg2
 end if   
-    int  0x40
+    mcall
 }
 
 ;Not optimiz
@@ -451,14 +451,14 @@ local noaddword
     mov  dword [fileinfo+8],1 ; how many blocks to read (1)
     mov  eax,58
     mov  ebx,fileinfo
-    int  0x40
+    mcall
     mov  eax,[bmp_load_area+2]
     shr  eax,9 ; поделим на 512 и прибавим 1 - получим число блоков
     inc  eax
     mov  dword [fileinfo+8],eax
     mov  eax,58
     mov  ebx,fileinfo
-    int  0x40
+    mcall
 
 ;     jmp  qwe
 ;bmpfn db bmp_file_name
@@ -469,7 +469,7 @@ local noaddword
 ;     mov edx,0xFFFFFF
 ;     mov esi,bmp_load_area
 ;     mov edi,0
-;     int 0x40
+;     mcall
 
 ;  convert:
     movzx eax,word [bmp_load_area+28]

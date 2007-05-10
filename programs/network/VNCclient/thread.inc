@@ -3,7 +3,7 @@
 
     mov     eax,40		       ; Report events
     mov     ebx,10000000b	       ; Only Stack
-    int     0x40
+    mcall
 
     resolve first,[server_ip]	       ; the input window putted the server @ 'first', resolve it into a real ip
     mov     [server_port],5900	       ; no port input for now, only standard port 5900
@@ -171,7 +171,7 @@
     mov     eax,55
     mov     ebx,eax
     mov     esi,beep
-    int     0x40
+    mcall
 
     jmp     thread_loop
 

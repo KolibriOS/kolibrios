@@ -18,7 +18,7 @@ STACK_SIZE=1024
   dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 display_processes=32            ; number of processes to show
 START:                          ; start of execution
 ; calculate window position
@@ -311,9 +311,9 @@ draw_next_process:
     int  0x40
     
 ;show window xy size
-    mov  ecx,[process_info_buffer.x_size]
+    mov  ecx,[process_info_buffer.box.left]
     shl  ecx,16
-    add  ecx,[process_info_buffer.y_size]
+    add  ecx,[process_info_buffer.box.top]
     add  edx,60*65536
     int  0x40    
             
@@ -480,7 +480,7 @@ draw_window:
     mov  ebx,[winxpos]             ; [x start] *65536 + [x size]
     mov  ecx,[winypos]             ; [y start] *65536 + [y size]
     mov  edx,0x13ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
-    mov  edi,header                ; WINDOW CAPTION;
+    mov  edi,title                ; WINDOW CAPTION;
     int  0x40
 
                                    
@@ -594,7 +594,7 @@ tbts_2  db  '>'
 tbts_3  db  'START'
 tbte_2:
 
-header  db   'Prozesse  - Ctrl/Alt/Del',0
+title  db   'Prozesse  - Ctrl/Alt/Del',0
 
 else if lang eq et
 text:
@@ -608,7 +608,7 @@ tbts_2	db  '>'
 tbts_3	db  'START'
 tbte_2:
 
-header  db   'Protsessid - Ctrl/Alt/Del',0
+title  db   'Protsessid - Ctrl/Alt/Del',0
 
 else
 text:
@@ -622,7 +622,7 @@ tbts_2  db  '>'
 tbts_3  db  'RUN'
 tbte_2:
 
-header  db   'Processes - Ctrl/Alt/Del',0
+title  db   'Processes - Ctrl/Alt/Del',0
 
 end if
 

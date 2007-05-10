@@ -15,6 +15,7 @@ use32
          dd   0x0,0x0              ; I_Param , I_Icon
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 wide:    dd   0                    ; screen pixels width
 mouse:   dd   0                    ; 1=right,2=left [mouse click]
 
@@ -22,7 +23,7 @@ mouse:   dd   0                    ; 1=right,2=left [mouse click]
 start:
 
     mov  eax,14                    ; get screen size
-    int  0x40
+    mcall
     shr  eax,16                    ; get width into AX
     inc  eax                       ; not 0 based
     mov  [wide],eax
@@ -32,7 +33,7 @@ start:
 still:
     mov  eax,23                    ; wait for event w/timeout
     mov  ebx,5                     ; delay in hundredths
-    int  0x40
+    mcall
 
     cmp  eax,1                     ; redraw request ?
     jne  s1
@@ -46,7 +47,7 @@ s2: cmp  eax,3                     ; button in buffer ?
 s3: mov  eax,9                     ; process info function
     mov  ebx,stat_table            ; return data table
     mov  ecx,-1                    ; who am i
-    int  0x40
+    mcall
     cmp  ax,[stat_table+4]         ; are we active?
     je   active                    ; yep
     jmp  still
@@ -54,7 +55,7 @@ s3: mov  eax,9                     ; process info function
   active:
     mov  eax,37                    ; mouse info function
     mov  ebx,2                     ; get buttons
-    int  0x40
+    mcall
     cmp  eax,0                     ; mouse click?
     jne  click
     jmp  still
@@ -62,7 +63,7 @@ s3: mov  eax,9                     ; process info function
     mov  [mouse],eax               ; save mouse click
     mov  eax,37                    ; mouse info
     xor  ebx,ebx                   ; get screen pos for mouse
-    int  0x40                      ; into EAX
+    mcall                      ; into EAX
     xor  ebx,ebx
     mov  bx,ax                     ; BX=y screen position
     shr  eax,16                    ; AX=x screen position
@@ -72,7 +73,7 @@ s3: mov  eax,9                     ; process info function
     mul  ecx
     add  ebx,eax                   ; add x
     mov  eax,35                    ; get mouse pos pixel
-    int  0x40                      ; EAX=mouse pixel color
+    mcall                      ; EAX=mouse pixel color
     mov  ebx,eax                   ; EBX has color
     mov  esi,colors                ; color table
     mov  ecx,72                    ; total colors
@@ -110,7 +111,7 @@ r1: mov  [picks+4],edx             ; update right pick color
 
   key:                             ; key
     mov  eax,2                     ; just read it and ignore
-    int  0x40
+    mcall
     cmp  al,0                      ; key in buffer?
     je   k1                        ; yep
     jmp  still
@@ -124,14 +125,14 @@ k2: call help                      ; show help screen
 
   button:                          ; button
     mov  eax,17                    ; get id
-    int  0x40
+    mcall
     cmp  ah,1                      ; button id=1 ?
     je   close
     jmp  still
 
   close:
     mov  eax,-1                    ; close this program
-    int  0x40
+    mcall
 
 
 ;   *********************************************
@@ -143,20 +144,20 @@ draw_window:
 
     mov  eax,12                    ; tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
     mov  eax,0                     ; DRAW WINDOW
     mov  ebx,1*65536+200           ; [x start] *65536 + [x size]
     mov  ecx,200*65536+240         ; [y start] *65536 + [y size]
     mov  edx,0x13000000            ; work area color (type II)
-    mov  edi,header                ; frame color
-    int  0x40
+    mov  edi,title                ; frame color
+    mcall
    
     call palette                   ; display color palette
 
     mov  eax,12                    ; tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -178,7 +179,7 @@ p2: push ecx
     mov  ecx,edx                   ; y coord
     mov  edx,[ebp]                 ; color
     mov  eax,13                    ; draw bar function
-    int  0x40
+    mcall
     pop  edx
     pop  ecx
     add  ebx,19*65536              ; next column
@@ -197,7 +198,7 @@ draw_picks:
     mov  ecx,188*65536+42          ; draw y and depth
     mov  edx,0xc0c0c0              ; color grey
     mov  eax,13                    ; draw bar function
-    int  0x40
+    mcall
     mov  eax,[picks]               ; first picked color
     mov  esi,22*65536+196          ; print at x and y
     call do_hex                    ; print color number
@@ -232,7 +233,7 @@ do_hex:
     mov  edx,esi                   ; copy color
     mov  esi,0xe1e1e1              ; use white
     mov  eax,47                    ; print number function
-    int  0x40
+    mcall
 
     ret
 
@@ -245,7 +246,7 @@ do_color:
     mov  edx,[edi]                 ; color
     mov  ecx,esi                   ; recover y an depth
     mov  eax,13                    ; draw bar function
-    int  0x40
+    mcall
 
     ret
 
@@ -258,7 +259,7 @@ do_name:
     mov  ecx,0xe1e1e1              ; color
     mov  esi,15
     mov  eax,4                     ; print text function
-    int  0x40
+    mcall
 
     ret
 
@@ -267,12 +268,12 @@ clear:
     mov  ecx,196*65536+26          ; y and depth
     mov  edx,0x000000              ; color
     mov  eax,13                    ; draw bar funx
-    int  0x40
+    mcall
     mov  ebx,96*65536+90           ; x and width
     mov  ecx,196*65536+26          ; y and depth
     mov  edx,0x000000              ; color
     mov  eax,13                    ; draw bar funx
-    int  0x40
+    mcall
 
     ret
 
@@ -281,7 +282,7 @@ help:
     mov  ecx,20*65536+216          ; y and depth
     mov  edx,0x465e8f              ; dark denim color
     mov  eax,13                    ; write text funx
-    int  0x40
+    mcall
     mov  ebx,20*65536+40           ; starting x and y
     mov  edx,text                  ; start of text
     mov  esi,27                    ; width of text
@@ -290,25 +291,25 @@ help:
 h1: push ecx
     sub  ebx,65537                 ; drop shadow x and y
     mov  ecx,0x000000              ; black shadow
-    int  0x40
+    mcall
     add  ebx,65537                 ; original x and y
     mov  ecx,0xefefef              ; white text
-    int  0x40
+    mcall
     add  edx,27                    ; next line of text
     add  bx,12                     ; next row
     pop  ecx
     loop h1
     mov  eax,10                    ; wait on event
-    int  0x40
+    mcall
     cmp  eax,2                     ; got a key?
     jne  h2                        ; nope
     mov  eax,2                     ; yep, burn it
-    int  0x40
+    mcall
 h2: mov  ebx,4*65536+192           ; y and width
     mov  ecx,20*65536+216          ; x and depth
     mov  edx,0x00000               ; restore black bkg
     mov  eax,13                    ; draw bar funx
-    int  0x40
+    mcall
     call palette                   ; redraw color palette
 
     ret
@@ -318,7 +319,7 @@ h2: mov  ebx,4*65536+192           ; y and width
 ;   **********  DATA DEFINITIONS AREA ***********
 ;   *********************************************
 
-header    db   'COLOR REFERENCE H>HELP',0
+title    db   'COLOR REFERENCE H>HELP',0
 
 picks:
     dd   31,2           ; selected top/bot colors

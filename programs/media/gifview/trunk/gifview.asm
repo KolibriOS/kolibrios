@@ -29,7 +29,7 @@ use32
   dd     0x0
 
 include 'lang.inc'
-include 'macros.inc' ; decrease code size (optional)
+include '..\..\..\macros.inc' ; decrease code size (optional)
 include 'debug.inc'
 COLOR_ORDER equ MENUETOS
 
@@ -54,7 +54,7 @@ openfile:
 openfile2:
     mov  eax,70
     mov  ebx,file_info
-    int  0x40
+    mcall
     cmp  eax,6
     je   temp
     test eax,eax
@@ -96,6 +96,12 @@ temp:
   ok2:
     and  dword[img_index],0
 
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    mcall
+
 red:
 
     call draw_window
@@ -109,7 +115,7 @@ still:
 .delay:
     mov  ebx,DELAY
     mov  eax,23
-    int  0x40
+    mcall
 @@:
         dec     eax
         jz      red
@@ -131,20 +137,20 @@ still:
 
   key:
     mov  eax,2
-    int  0x40
+    mcall
     cmp  ah,13
     je   is_input
     jmp  still
 
   button:
     mov  eax,17
-    int  0x40
+    mcall
 
     cmp  ah,1
     jne  noclose
   _close:
     or   eax,-1
-    int  0x40
+    mcall
 
   noclose:
   is_input:             ; simple input line with backspace feature
@@ -152,12 +158,12 @@ still:
   wait_input:
     call draw_input
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jne  still
     mov  edi,[inp_pos]
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,27
     je   still
@@ -191,13 +197,13 @@ draw_input:
     mov  ebx,INP_X
     mov  ecx,INP_Y
     mov  edx,2
-    int  0x40
+    mcall
     mov  eax,4
     mov  ecx,0x00107a30
     mov  ebx,INP_XY
     mov  edx,fn_input
     mov  esi,[inp_pos]
-    int  0x40
+    mcall
     pop  edi
     ret
 
@@ -207,23 +213,17 @@ draw_input:
 
 draw_window:
 
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    int  0x40
-
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,0
     mov  ebx,50*65536+700
     mov  ecx,50*65536+500
     mov  edx,[sc.work]
     or   edx,0x33000000
-    mov  edi,header
-    int  0x40
+    mov  edi,title
+    mcall
 
     call draw_input
 
@@ -237,7 +237,7 @@ draw_window:
   .enddraw:
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
     ret
 
 draw_subimage:
@@ -259,13 +259,13 @@ draw_subimage:
     add  edx,eax
     add  edx,5 shl 16 +25
     mov  eax,7
-    int  0x40
+    mcall
   .enddraw:
     ret
 
 ; Здесь находятся данные программы:
 
-header db appname,0               ; строка заголовка
+title db appname,0               ; строка заголовка
 
 inp_pos    dd inp_end-fn_input
 fn_input:

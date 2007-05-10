@@ -16,44 +16,37 @@
   dd     0x0 , 0x0     ; I_Param , I_Icon
 
 include  'lang.inc'
-include  'macros.inc'
+include  '..\..\..\..\macros.inc'
 
 START:                             ; start of execution
 
+  red: 
     call draw_window               ; draw window
     call clear_data                ; clear status bar
 
 still:
 
     mov  eax,10                    ; wait here for event
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     cmp  eax,1                     ; redraw request ?
-    je   red                       ; yes jump to it
+    jz   red                       ; yes jump to it
     cmp  eax,2                     ; key in buffer ?
-    je   key                       ; yes jump to it
-    cmp  eax,3                     ; button in buffer ?
-    je   button                    ; yes jump to it
-    jmp  still                     ; start again
-
-  red:                             ; redraw
-    call draw_window               ; redraw window
-    call clear_data                ; clear status info
-    jmp  still                     ; start again
+    jnz   button
 
   key:                             ; key
     mov  eax,2                     ; just read it and ignore
-    int  0x40                      ; do it
+    mcall                      ; do it
     jmp  still                     ; start again
 
   button:                          ; button
     mov  eax,17                    ; get id
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     cmp  ah,1                      ; is it the close button
     jne  noclose                   ; no then jump code
-    mov  eax,-1                    ; close this program
-    int  0x40                      ; do it
+    or   eax,-1                    ; close this program
+    mcall                      ; do it
 noclose:
 
     cmp  ah,100                    ; is it main menu
@@ -92,7 +85,7 @@ draw_window:
 
     mov  eax,12                    ; function 12: tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  eax,0                     ; function 0: define and draw window
     mov  ebx,50*65536              ; [x start] *65536
@@ -101,21 +94,21 @@ draw_window:
     add  ecx,[y_size]              ; add [y size]
     mov  edx,0x80ffffff            ; colour of work area RRGGBB
     mov  esi,0x806688dd            ; grab bar colour. negative glide
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  eax,4                     ; function 4: write text to window
     mov  ebx,6*65536+7             ; [x start] *65536 + [y start]
     mov  ecx,0x00ffffff            ; text colour
     mov  edx,window_text           ; pointer to text beginning
     mov  esi,12                    ; text length
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  eax,8                     ; function 8: define and draw button
     mov  ebx,(381-18)*65536+13     ; [x start] *65536 + [x size]
     mov  ecx,4*65536+13            ; [y start] *65536 + [y size]
     mov  edx,1                     ; button id
     mov  esi,0x6688dd              ; button color RRGGBB
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  eax,13                    ; function 13: draw bar
     mov  ebx,1*65536               ; [x start] *65536
@@ -126,7 +119,7 @@ draw_window:
     shl  ecx,16                    ; *65536
     add  ecx,17                    ; add height
     mov  edx,0x006688dd            ; bar colour
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  eax,4                     ; function 4 : write text to window
     mov  ebx,5*65536               ; [x start] *65536
@@ -135,17 +128,17 @@ draw_window:
     xor  ecx,ecx                   ; text colour
     mov  edx,button_no             ; pointer to text beginning
     mov  esi,14                    ; text length
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     add  ebx,95*65536              ; move xy position
     mov  edx,menu_text             ; pointer to text beginning
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     call write_main                ; draw menu
 
     mov  eax,12                    ; function 12: tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     pop  eax                       ; restore register
     ret                            ; return
@@ -160,7 +153,7 @@ write_main:
     dec  ebx                       ; x size - 1
     mov  ecx,21*65536+17           ; [y start] *65536 +[y size]
     mov  edx,[menu_colour]         ; menu colour
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  [main_pos],1              ; start position first button
     xor  edi,edi                   ; data offset = 0
@@ -184,14 +177,14 @@ main_menu:
     xor  edx,edx                   ; clear register
     mov  dl,[MENU_DATA+edi+2]      ; get byte button id number
     mov  esi,[menu_colour]         ; button colour
-    int  0x40                      ; do it
+    mcall                      ; do it
     mov  eax,4                     ; function 4: write text to window
     add  ebx,6*65536-49            ; move xy position
     xor  ecx,ecx                   ; text colour
     mov  edx,MENU_DATA+3           ; point at menu text
     add  edx,edi                   ; add our offset
     mov  esi,11                    ; number of characters
-    int  0x40                      ; do it
+    mcall                      ; do it
 
 is_main_bar:
     add  [main_pos],76             ; update button position
@@ -217,7 +210,7 @@ draw_data:
     add  edx,[y_size]              ; +[y start]
     sub  edx,12                    ; move position
     xor  esi,esi                   ; text colour
-    int  0x40                      ; do it
+    mcall                      ; do it
     pop  eax                       ; restore register
 
     cmp  [button_press],1          ; has a sub button been pressed
@@ -238,7 +231,7 @@ draw_data:
     mov  esi,1                     ; 1 character
     mov  eax,4                     ; function 4: write text to window
     xor  ecx,ecx                   ; text colour
-    int  0x40                      ; do it
+    mcall                      ; do it
     pop  eax                       ; restore register
 
 draw_get_out:
@@ -256,9 +249,9 @@ clear_data:
     shl  ecx,16                    ; *65536
     add  ecx,13                    ; [y size]
     mov  edx,0x00aaaaaa            ; bar colour
-    int  0x40                      ; do it
+    mcall                      ; do it
     mov  ebx,185*65536+11          ; move position
-    int  0x40                      ; do it again
+    mcall                      ; do it again
 
     pop  eax                       ; restore register
     ret                            ; return
@@ -309,7 +302,7 @@ sub_menu:
     mov  ecx,[but_pos]             ; [y start]
     shl  ecx,16                    ; *65536
     add  ecx,17                    ; [y size]
-    int  0x40                      ; do it
+    mcall                      ; do it
     jmp  is_sub_bar                ; jump button code
 
 is_sub_button:
@@ -323,7 +316,7 @@ is_sub_button:
     shl  ecx,16                    ; *65536
     add  ecx,16                    ; [y size]
     mov  esi,[menu_colour]         ; button colour
-    int  0x40                      ; do it
+    mcall                      ; do it
 
     mov  ebx,[sub_pos]             ; [x start]
     shl  ebx,16                    ; *65536
@@ -335,7 +328,7 @@ is_sub_button:
     add  edx,edi                   ; add offset
     mov  esi,11                    ; number of characters
     mov  eax,4                     ; function 4: write text to window
-    int  0x40                      ; do it
+    mcall                      ; do it
 is_sub_bar:
     add  [but_pos],17              ; move y position
 

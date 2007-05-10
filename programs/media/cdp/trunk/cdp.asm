@@ -4,7 +4,7 @@
 ;                                                           ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-include "macros.inc"
+include "..\..\..\macros.inc"
 include "lang.inc"
 
 FALSE  equ 0
@@ -35,12 +35,14 @@ use32
 START:
     call chk_cdrom                      ; start of execution
     call read_cd
+
+  red:                          ; redraw
     call draw_window            ; at first, draw the window
 still:
 
     mov  eax,23
     mov  ebx,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -56,14 +58,10 @@ still:
    @@:
     jmp  still
 
-  red:                          ; redraw
-    call draw_window
-
-    jmp  still
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
 
 ;======  hotkeys:
     cmp  ah,0x61
@@ -189,15 +187,15 @@ still:
 
   button:                       ; button
     mov  eax,17
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jnz  no_but_close
     mov  eax,24
     mov  ebx,3
-    int 0x40
+    mcall
     mov  eax,0xffffffff         ; close this program
-    int  0x40
+    mcall
   no_but_close:
 
     cmp  ah,2
@@ -526,7 +524,7 @@ play_from_x_time:
 
     mov  eax,24
     mov  ebx,1
-    int  0x40
+    mcall
     ret
 
 play_n_track:
@@ -536,7 +534,7 @@ play_n_track:
     call draw_window
 ;    mov  eax,26
 ;    mov  ebx,9
-;    int  0x40
+;    mcall
     call get_uptime
     mov  [stimtrk],eax
     xor  ebx,ebx
@@ -588,7 +586,7 @@ play_n_track:
     mov ecx,ebx
     mov  eax,24
     mov  ebx,1
-    int  0x40
+    mcall
     ret
 
 
@@ -640,7 +638,7 @@ play_acd:
 stop_playing:
     mov eax, 24
     mov ebx,3
-    int 0x40
+    mcall
     mov  cl,[max_trk]
     mov  [shuftab],cl
     mov [if_stopped],TRUE
@@ -661,17 +659,17 @@ draw_info:
     mov ebx, 10 shl 16 + 41
     mov ecx,120 shl 16 + 9
     mov edx,0x00ffffff
-    int 0x40
+    mcall
     mov ebx, 96 shl 16 + 11
-    int 0x40
+    mcall
     mov ebx, 185 shl 16 + 11
-    int 0x40
+    mcall
     mov ebx, 200 shl 16 + 11
-    int 0x40
+    mcall
     mov ebx, 150 shl 16 + 11
-    int 0x40
+    mcall
     mov ebx, 165 shl 16 + 11
-    int 0x40
+    mcall
    ;bar<-
 
     mov  eax,4
@@ -701,7 +699,7 @@ draw_info:
     jmp  info_mode_end
    info_mode_end:
     mov  esi,7
-    int 0x40
+    mcall
 
   ;num info ->
     mov  eax,47
@@ -713,7 +711,7 @@ draw_info:
     mov  cl, [curr_trk]            ;number to draw
     mov  edx,96 shl 16 + 120
     mov  esi,0x111111
-    int 0x40
+    mcall
     mov  eax,[curr_trk_pg_time]
     xor  edx,edx
     mov  ecx,60
@@ -722,10 +720,10 @@ draw_info:
     mov  ecx,eax
     mov  eax,47
     mov  edx,150 shl 16 + 120
-    int  0x40
+    mcall
     pop ecx
     mov  edx,165 shl 16 + 120
-    int 0x40
+    mcall
     mov  eax,[curr_trk_length]
     xor  edx,edx
     mov  ecx,60
@@ -734,10 +732,10 @@ draw_info:
     mov  ecx,eax
     mov  eax,47
     mov  edx,185 shl 16 + 120
-    int  0x40
+    mcall
     pop  ecx
     mov  edx,200 shl 16 + 120
-    int  0x40
+    mcall
    ;num info <-
 ret
 
@@ -746,7 +744,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx, 50*65536+219         ; [x start] *65536 + [x size]
@@ -754,20 +752,20 @@ draw_window:
     mov  edx,0x03ffffff            ; color of work area RRGGBB
     mov  esi,0x8099bbff            ; color of grab bar  RRGGBB,8->color glide
     mov  edi,0x0099bbee            ; color of frames    RRGGBB
-    int  0x40
+    mcall
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
     mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
     mov  ecx,0x1000ffff            ; color of text RRGGBB
     mov  edx,labelt                ; pointer to text beginning
     mov  esi,labellen-labelt       ; text length
-    int  0x40
+    mcall
 
     mov  eax,13                    ;bar
     mov  ebx,8 shl 16 + 204
     mov  ecx,28 shl 16 + 84
     mov  edx,0x000fe6f5
-    int  0x40
+    mcall
 
     ;info ->
     mov  eax,4
@@ -775,24 +773,24 @@ draw_window:
     mov  ecx,0x00111111
     mov  edx,playing_trk_info
     mov  esi,6
-    int 0x40
+    mcall
     mov  ebx,120 shl 16 + 120
     mov  edx,playing_time_info
 ;    mov  esi,5
     dec  esi
-    int 0x40
+    mcall
     mov  ebx,178 shl 16 + 120
     mov  edx,slash
     mov  esi,1
-    int 0x40
+    mcall
     mov  ebx,196 shl 16 + 120
     mov  edx,column
 ;    mov  esi,1
-    int 0x40
+    mcall
     mov  ebx,161 shl 16 + 120
     mov  edx,column
 ;    mov  esi,1
-    int 0x40
+    mcall
     ;info <-
 
 ; button  MODE
@@ -801,14 +799,14 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,7
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
    ; text
     mov  eax,4
     mov  ebx,19*65536+142
     mov  ecx,0x100f73f5;ffff0f
     mov  edx,but_mode_lab
     mov  esi,1
-    int  0x40
+    mcall
 
 ; button  BACK
     mov  eax,8
@@ -816,7 +814,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,6
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     mov [coord_x],51
     mov [coord_y],141
     call draw_left_triangle
@@ -829,7 +827,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,5
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     mov [coord_x],68
     mov [coord_y],141
     call draw_right_triangle
@@ -842,7 +840,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,8
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     mov [coord_x],102
     mov [coord_y],141
     call draw_left_triangle
@@ -855,7 +853,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,3
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     mov [coord_x],118
     mov [coord_y],142
     call draw_square
@@ -867,7 +865,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,2
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     cmp [if_stopped],TRUE
     je  playing_paused
     cmp [if_paused],TRUE
@@ -891,7 +889,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,9
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     mov [coord_x],167
     mov [coord_y],141
     call draw_right_triangle
@@ -904,7 +902,7 @@ draw_window:
     mov  ecx,135*65536+20
     mov  edx,4
     mov  esi,COLOR_FUNC_BUTS
-    int 0x40
+    mcall
     mov  [coord_x],192
     mov  [coord_y],140
     call draw_vert_list_line
@@ -951,7 +949,7 @@ draw_window:
     add  edx,10
     mov  esi,0xaaaaaa
     add  esi,edi
-    int  0x40
+    mcall
    ;---draw tracs numbers
     mov  eax,47
     xor  ebx,ebx
@@ -966,7 +964,7 @@ draw_window:
     add  dl,[posy]
     add  dl,5
     mov  esi,0xffffff
-    int 0x40
+    mcall
    ;---
     mov  al,[posx]
     add  al,20
@@ -998,7 +996,7 @@ draw_window:
     mov ecx,0x10ffff00
     mov edx,define_cdrom
     mov esi,define_cdrom_len-define_cdrom
-    int 0x40
+    mcall
   flag3:
     cmp [flag],3
     jne flag4
@@ -1007,7 +1005,7 @@ draw_window:
     mov ecx,0x10ffff00
     mov edx,no_cda
     mov esi,no_cda_len-no_cda
-    int 0x40
+    mcall
   flag4:
     cmp [flag],4
     jne flag5
@@ -1030,7 +1028,7 @@ draw_window:
    mov eax,4
    mov ecx,0x111111
    mov esi,31
-   int 0x40
+   mcall
   noline:
    add ebx,10
    add edx,31
@@ -1042,7 +1040,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
 ret
 
@@ -1066,7 +1064,7 @@ draw_right_triangle:
     inc  ebx
     push eax
     mov  eax,1
-    int  0x40
+    mcall
     pop  eax
     cmp  esi,0
     jne  draw_pixel
@@ -1090,7 +1088,7 @@ draw_square:
     inc  ebx
     push eax
     mov  eax,1
-    int  0x40
+    mcall
     pop  eax
     cmp  esi,0
     jne  q_draw_pixel
@@ -1121,7 +1119,7 @@ draw_left_triangle:
     dec  ebx
     push eax
     mov  eax,1
-    int  0x40
+    mcall
     pop  eax
     cmp  esi,0
     jne  l_draw_pixel
@@ -1144,7 +1142,7 @@ draw_vertical_line:
     inc  ecx
     push eax
     mov  eax,1
-    int  0x40
+    mcall
     pop  eax
     dec  esi
     cmp  esi,0
@@ -1164,7 +1162,7 @@ draw_vert_list_line:
     mov  esi,11
    vlstart_draw_vline:
     inc  ecx
-    int  0x40
+    mcall
     dec  esi
     cmp  esi,0
     jne  vlstart_draw_vline
@@ -1181,7 +1179,7 @@ draw_hor_list_line:
     mov  esi,11
    hlstart_draw_vline:
     inc  ebx
-    int  0x40
+    mcall
     dec  esi
     cmp  esi,0
     jne  hlstart_draw_vline
@@ -1198,7 +1196,7 @@ draw_str_list_line:
     mov  esi,5
    slstart_draw_vline:
     inc  ebx
-    int  0x40
+    mcall
     dec  esi
     cmp  esi,0
     jne  slstart_draw_vline
@@ -1210,7 +1208,7 @@ ret
  chk_cdrom:
     mov eax,24
     mov ebx,1
-    int 0x40
+    mcall
     cmp eax,0
     je chk_cdrom_ok
     mov [flag],2
@@ -1232,7 +1230,7 @@ read_cd:
     mov ebx,2
     mov ecx, cdp
     mov edx,321
-    int 0x40
+    mcall
     mov [flag],1
     mov al,100
     cmp [cdp+3],al
@@ -1247,7 +1245,7 @@ get_uptime:
     push ebx
     mov  eax,26
     mov  ebx,9
-    int  0x40
+    mcall
     pop  ebx
 ret
 

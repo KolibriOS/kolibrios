@@ -493,10 +493,8 @@ Parameters:
 Returned value:
   * function does not return value
 Remarks:
-  * There is no checks for correctness. The setting of too large
-    values will result that the background will contain data abroad
-    of buffer for the background image. Buffer size = 0x160000-0x10,
-    that corresponds to maximum size 800*600. (800*600*3=0x15F900)
+  * Before calling functions 15.2 and 15.5 you should call this function
+    to set image size!
   * For update of the screen (after completion of a series of commands
     working with a background) call subfunction 3.
   * There is a pair function for get size of the background image -
@@ -515,7 +513,7 @@ Returned value:
 Remarks:
   * Offset for a pixel with coordinates (x,y) is calculated as
     (x+y*xsize)*3.
-  * If the given offset exceeds 0x160000-16 = 1.375 Mb - 16 bytes,
+  * If the given offset exceeds size sets by function 15.1,
     the call is ignored.
   * For update of the screen (after completion of a series of commands
     working with a background) call subfunction 3.
@@ -561,7 +559,7 @@ Parameters:
 Returned value:
   * function does not return value
 Remarks:
-  * If the block gets out abroad 0x160000-16 = 1.375 Mb - 16 bytes,
+  * If the block gets out abroad size sets by function 15.1,
     the call is ignored.
   * Color of each pixel is stored as 3-bytes value BBGGRR.
   * Pixels of the background image are written sequentially

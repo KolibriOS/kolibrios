@@ -239,7 +239,7 @@ _BGIfont_Prepare:
 if ~ BGI_LEVEL eq KERNEL
         mov     eax, 70
         mov     ebx, .fontattr
-        int     0x40
+        mcall
         test    eax, eax
         jnz     .fail
         dps2    '1'
@@ -247,7 +247,7 @@ if ~ BGI_LEVEL eq KERNEL
         mov     [.fsize], eax
     mov  ebx,.fontinfo
     mov  eax,70
-    int  0x40	     ; ebx - file size
+    mcall	     ; ebx - file size
 else
     push edi esi edx
     mov  eax,.font
@@ -454,7 +454,7 @@ if  ~ BGI_LEVEL eq KERNEL
     mov  eax,9
     mov  ebx,BGI_PRC_INFO
     mov  ecx,-1
-    int  0x40
+    mcall
     popa
   end if
 end if
@@ -587,14 +587,14 @@ if ~ BGI_LEVEL eq KERNEL
     and  edx, 0xFFFFFF
 ; \end{diamond}[18.08.2006]
     mov  eax,38
-    int  0x40
+    mcall
     test ebp,BGI_BOLD
     jz	 .nobold
     test ebp,BGI_FREE
     jnz  .free5
   .free5:
     add  ebx,1 shl 16+1
-    int  0x40
+    mcall
   .nobold:
     pop  eax
 else

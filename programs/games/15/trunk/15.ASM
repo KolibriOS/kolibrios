@@ -4,9 +4,8 @@
 ;   Compile with FASM
 ;
 include 'lang.inc'
-include 'macros.inc' ; decreases program size (not required)
+include '..\..\..\macros.inc' ; decreases program size (not required)
 
-BgdColor equ 0x02aabbcc
 StatusColor equ 0x02ffffff
 StatusColor2 equ 0x02dc1e14
 BgdColor equ 0x03aabbcc
@@ -63,7 +62,7 @@ use32
 START:
     mov  [cptr],CONF_COUNT  ; number of task
     mov  eax,3
-    int  0x40
+    mcall
     mov  cl,16
     ror  eax,cl
     mov  [generator],eax    ; random generator from Tetris
@@ -97,7 +96,7 @@ red:                    ; window redraw
 still:                  ; MAIN PROGRAM CYCLE
 
     mov  eax,10         ; wait for event
-    int  0x40
+    mcall
 
     cmp  eax,1          ; redraw? -
     je   red            ; goto red
@@ -110,7 +109,7 @@ still:                  ; MAIN PROGRAM CYCLE
 
   key:                  ; Key pressed
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,32         ; <Space> = Shuffle
     je   SHUF
@@ -126,13 +125,13 @@ still:                  ; MAIN PROGRAM CYCLE
 
   button:              ; Button pressed
     mov  eax,17
-    int  0x40
+    mcall
     shr  eax,8
     sub  eax,2
 
     cmp  eax,-1        ; id == 1 (closeme)?
     jne  noclose
-    int  0x40
+    mcall
 
   noclose:
     jl   SHUF          ; Shuffle (id=0) pressed
@@ -160,7 +159,7 @@ fail:
 draw_window:
     mov  eax,12
     mov  ebx,1                     ; begin draw
-    int  0x40
+    mcall
 
                                    ; CREATING WINDOW
     mov  eax,0
@@ -169,40 +168,40 @@ draw_window:
     mov  edx,BgdColor
     mov  esi,0x805080d0
     mov  edi,0x005080d0
-    int  0x40
+    mcall
 
                                    ; PROGRAM TITLE
     mov  eax,4
     mov  ebx,8*65536+8
-    mov  ecx,0x10ddeeff
+    mov  ecx,0x10000000
     mov  edx,txtTitle
     mov  esi,lenTitle-txtTitle
-    int  0x40
+    mcall
 
     mov  eax,8                     ; SHUFFLE BUTTON
     mov  ebx,XXSh
     mov  ecx,YYSh
     xor  edx,edx
     mov  esi,BtnColor
-    int  0x40
+    mcall
 
     mov  ebx,XXCnf                  ; CONF BUTTON
     mov  ecx,YYCnf
     mov  edx,20
     mov  esi,BtnColor
-    int  0x40
+    mcall
 
     mov  ebx, XYShText             ; SHUFFLE TEXT
     mov  ecx, StatusColor
     mov  edx,txtSh
     mov  esi,lenSh-txtSh
     mov  eax,4
-    int  0x40
+    mcall
 
     mov  ebx, XYCnfText             ; CONF TEXT
     mov  edx,lenVictory-1
     mov  esi,1
-    int  0x40
+    mcall
 
     mov  ecx, 16                   ; FIELD BUTTONS
   dbut:
@@ -213,7 +212,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,2                     ; end of drawing
-    int  0x40
+    mcall
     ret
 
 
@@ -250,7 +249,7 @@ draw_button:
     inc  ecx
     mov  edx,BgdColor
     mov  eax,13         ; clearing - 'hole'
-    int  0x40
+    mcall
     popa
 
     or   edx,0x80000000 ; and removing button under it
@@ -265,7 +264,7 @@ highlight:
     mov  esi,BtnColor2
 s_rbutton:
     mov  eax,8          ; set/remove button
-    int  0x40
+    mcall
     movzx eax,byte [null]
     cmp  eax,edi
     je   no_text        ; no digits - that's hole
@@ -282,7 +281,7 @@ s_rbutton:
 two_num:
     mov  esi,NumColor
     mov  eax,47
-    int  0x40
+    mcall
 no_text:
     popa
     ret
@@ -297,7 +296,7 @@ draw_moves:
     mov  ebx, XXbar
     mov  ecx, YYbar
     mov  edx, BgdColor
-    int  0x40
+    mcall
 
     mov  eax, 4
     mov  ebx, XYstatus
@@ -312,7 +311,7 @@ draw_moves:
     mov  edx,txtMoves  ; how many moves done
     mov  esi,lenMoves-txtMoves
     mov  eax,4
-    int  0x40
+    mcall
     mov  esi,ecx
     mov  edx,ebx
     add  edx, 40 shl 16
@@ -325,7 +324,7 @@ draw_moves:
     mov  edx,txtVictory
     mov  esi,lenVictory-txtVictory
   e_dm:
-    int  0x40
+    mcall
     ret
 
 

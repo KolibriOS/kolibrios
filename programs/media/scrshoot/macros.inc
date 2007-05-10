@@ -9,6 +9,10 @@ include 'file_sys.inc'
 include 'textwork.inc'
 ;include 'ini.inc'
 
+__CPU_type	equ	p5
+SYSENTER_VAR	equ	0
+
+
 macro movr reg,val
 {
 if val < 65536
@@ -18,6 +22,49 @@ else
 	mov	reg,val
 end if
 }
+
+macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
+ local	..ret_point
+ __mov eax,a
+ __mov ebx,b
+ __mov ecx,c
+ __mov edx,d
+ __mov esi,e
+ __mov edi,f
+
+ if __CPU_type eq p5
+	int	0x40
+ else
+  if __CPU_type eq p6
+	push	ebp
+	mov	ebp, esp
+	push	..ret_point	; it may be 2 or 5 byte
+	sysenter
+ ..ret_point:
+	pop	edx
+	pop	ecx
+
+  else
+   if __CPU_type eq k6
+	push	ecx
+	syscall
+	pop	ecx
+   else
+	display 'ERROR : unknown CPU type'
+	int	0x40
+   end if
+  end if
+ end if
+}
+
+macro __mov reg,a,b {	    ; mike.dld
+ if (~a eq)&(~b eq)
+   mpack reg,a,b
+ else if (~a eq)&(b eq)
+   mov reg,a
+ end if
+}
+
 
 ;--- заголовок ---
 macro meos_header par_buf,cur_dir_buf

@@ -8,6 +8,7 @@ memsize dd      mem
         dd      0, app_path
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'font.inc'
 include 'sort.inc'
 include 'kglobals.inc'
@@ -60,7 +61,7 @@ start:
         pop     eax
         push    11
         pop     ebx
-        int     0x40
+        mcall
         call    init_console
         call    draw_window
         push    66
@@ -68,7 +69,7 @@ start:
         push    1
         pop     ebx
         mov     ecx, ebx
-        int     40h     ; set keyboard mode to scancodes
+        mcall     ; set keyboard mode to scancodes
         mov     eax, 200
         mov     [panel1_nfa], eax
         mov     [panel2_nfa], eax
@@ -249,7 +250,7 @@ start:
 event:
         push    10
         pop     eax
-        int     40h
+        mcall
         dec     eax
         jz      redraw
         dec     eax
@@ -257,13 +258,13 @@ event:
 ; button - we have only one button, close
 exit:
         or      eax, -1
-        int     40h
+        mcall
 redraw:
 ; query kbd state from OS
         mov     al, 66
         push    3
         pop     ebx
-        int     0x40
+        mcall
         and     eax, 0x3F
         cmp     al, [ctrlstate]
         mov     [ctrlstate], al
@@ -273,7 +274,7 @@ redraw:
         mov     al, 9
         mov     ebx, procinfo
         or      ecx, -1
-        int     40h
+        mcall
 ; test if rolled up
 ; height of rolled up window is [skinh]+3
         mov     eax, [ebx+46]
@@ -283,14 +284,14 @@ redraw:
         mov     al, 12
         push    1
         pop     ebx
-        int     0x40
+        mcall
         xor     eax, eax
 ; ebx, ecx, edi are ignored by function 0 after first redraw
         mov     edx, 0x53000000
-        int     0x40
+        mcall
         mov     al, 12
         inc     ebx
-        int     0x40
+        mcall
         jmp     event
 @@:
         xor     ecx, ecx
@@ -364,7 +365,7 @@ redraw:
         imul    esi, font_height
         add     esi, [skinh]
         add     esi, 5-1
-        int     40h
+        mcall
 .resize_draw:
         mov     ecx, [MemForImage]
         call    pgfree
@@ -394,7 +395,7 @@ alt_f9:
         pop     eax
         push    5
         pop     ebx
-        int     0x40
+        mcall
         push    eax
         sub     eax, [esp+2]
         inc     eax
@@ -427,11 +428,11 @@ alt_f9:
         add     esi, 4
         push    67
         pop     eax
-        int     0x40
+        mcall
         jmp     redraw.resize_draw
 key:
         mov     al, 2
-        int     40h
+        mcall
         test    al, al
         jnz     event
         xchg    al, ah
@@ -1025,7 +1026,7 @@ panels_OnKey:
 .cmdlinelenok:
         push    70
         pop     eax
-        int     40h
+        mcall
         xor     esi, esi
         xchg    esi, [restore_semicolon]
         test    esi, esi
@@ -1057,7 +1058,7 @@ panels_OnKey:
         pop     eax
         push    20
         pop     ebx
-        int     0x40
+        mcall
         jmp     .ctrl_r
 @@:
         ret
@@ -1235,7 +1236,7 @@ panels_OnKey:
         mov     byte [tmpname+1], 0
         push    70
         pop     eax
-        int     40h
+        mcall
         mov     ebx, dirinfo
         test    eax, eax
         jnz     .drive_loop_e_done
@@ -1251,7 +1252,7 @@ panels_OnKey:
 .drive_loop_i:
         push    70
         pop     eax
-        int     40h
+        mcall
         mov     ebx, dirinfo
         test    eax, eax
         jnz     .drive_loop_i_done
@@ -1541,7 +1542,7 @@ panels_OnKey:
         mov     [ebx + attrinfo.name - attrinfo], esi
         push    70
         pop     eax
-        int     0x40
+        mcall
         mov     cl, byte [attrinfo.attr]
 @@:
         test    cl, 0x10
@@ -1610,7 +1611,7 @@ panels_OnKey:
         mov     ebx, readinfo
         push    70
         pop     eax
-        int     0x40
+        mcall
         test    eax, eax
         jz      .copyreadok
         cmp     eax, 6
@@ -1642,7 +1643,7 @@ panels_OnKey:
         mov     ebx, writeinfo
         push    70
         pop     eax
-        int     0x40
+        mcall
         test    eax, eax
         jz      .copywriteok
         push    edi
@@ -1699,7 +1700,7 @@ panels_OnKey:
         mov     dword [ebx+21], edi
         push    70
         pop     eax
-        int     0x40
+        mcall
 ; ignore errors
         pop     dword [delinfo+21]
         jmp     .copydone
@@ -2140,7 +2141,7 @@ end if
         push    70
         pop     eax
         mov     ebx, mkdirinfo
-        int     0x40
+        mcall
         test    eax, eax
         jz      @f
         push    dword CopyDestEditBuf+12
@@ -2435,10 +2436,10 @@ draw_window:
         pop     eax
         push    1
         pop     ebx
-        int     40h
+        mcall
         mov     al, 48
         mov     bl, 4
-        int     40h
+        mcall
         mov     [skinh], eax
         mov     ebx, [cur_width]
         imul    ebx, font_width
@@ -2448,8 +2449,8 @@ draw_window:
         lea     ecx, [eax+ecx+5-1+100*65536]
         xor     eax, eax
         mov     edx, 0x53000000
-        mov     edi, header
-        int     40h
+        mov     edi, title
+        mcall
         mov     al, 13
         xor     edx, edx
         cmp     [fill_width], 0
@@ -2463,7 +2464,7 @@ draw_window:
         mov     cx, word [wnd_height]
         sub     cx, word [skinh]
         sub     cx, 5-1
-        int     0x40
+        mcall
 @@:
         cmp     [fill_height], 0
         jz      @f
@@ -2476,7 +2477,7 @@ draw_window:
         sub     ecx, 5-1
         shl     ecx, 16
         mov     cx, word [fill_height]
-        int     0x40
+        mcall
 @@:
 ;        xor     ecx, ecx
 ;        call    draw_image
@@ -2493,12 +2494,12 @@ draw_window:
         mov     esi, 8
         mov     edi, console_colors
         xor     ebp, ebp
-        int     0x40
+        mcall
 @@:
         mov     al, 12
         push    2
         pop     ebx
-        int     40h
+        mcall
         ret
 
 draw_image.nomem:
@@ -2510,14 +2511,14 @@ draw_image.nomem:
         mov     ecx, [skinh-2]
         mov     cx, word [cur_height]
         imul    cx, font_height
-        int     40h
+        mcall
         mov     al, 4
         mov     ebx, 32*65536+32
         mov     ecx, 0xFFFFFF
         mov     edx, nomem_draw
         push    nomem_draw.size
         pop     esi
-        int     40h
+        mcall
         ret
 
 draw_image:
@@ -2714,7 +2715,7 @@ end if
         mov     edi, console_colors
         push    8
         pop     esi
-        int     40h
+        mcall
 .nodraw:
         ret
 
@@ -3936,7 +3937,7 @@ read_folder:
         push    70
         pop     eax
         mov     ebx, dirinfo
-        int     40h
+        mcall
         test    eax, eax
         jz      .ok
         cmp     eax, 6
@@ -5165,7 +5166,7 @@ find_extension:
         pop     esi
         ret
 
-header  db      'Kolibri Far 0.32',0
+title  db      'Kolibri Far 0.32',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw

@@ -168,7 +168,7 @@ ofstruc_end:
     add  esi,30
     mcall 67
     mcall 7,outfile,[outfile.size],10 shl 16+15
- .ex:
+ .ext:
     ret
 
 MIN_WIDTH equ 300

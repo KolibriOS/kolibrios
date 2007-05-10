@@ -21,7 +21,7 @@ buttons:
 	no_finish_instrument_button:
 
 	mov eax,17
-	int 0x40
+	mcall
 
 	shr eax,8
 
@@ -31,8 +31,8 @@ buttons:
 	mov eax,CursorsID
 	call delete_cursors
 
-	mov eax,-1
-	int 0x40
+	or eax,-1
+	mcall
 
 	no_exit:
 

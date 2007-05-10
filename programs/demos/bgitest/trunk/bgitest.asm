@@ -69,7 +69,7 @@ use32
 not1strun  dd	 0x0
 
 include 'lang.inc'
-include  'macros.inc'
+include  '..\..\..\macros.inc'
 ;include   'debug.inc'
 include  'bgifont.inc'
 
@@ -101,7 +101,7 @@ red:
 still:
 
     mov  eax,10
-    int  0x40
+    mcall
 
     cmp  eax,1
     je	 red
@@ -114,19 +114,19 @@ still:
 
 button:
     mov  eax,17
-    int  0x40
+    mcall
     cmp  ah,1
     jnz  noclose
 close:
     xor  eax,eax
     dec  eax
-    int  0x40
+    mcall
   noclose:
     jmp  still
 
 key:
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  al,27 ; esc - close
     je   close
@@ -228,11 +228,11 @@ draw_window:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    int  0x40
+    mcall
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     xor  eax,eax
     mov  ebx,10*65536+_X*2+30
@@ -240,7 +240,7 @@ draw_window:
     mov  edx,0x03261212
     mov  esi,0x805080d0
     mov  edi,0x005080d0
-    int  0x40
+    mcall
 
     mov  eax,4
     mov  ebx,8*65536+8
@@ -252,7 +252,7 @@ draw_window:
     je   .int
     sub  esi,12
   .int:
-    int  0x40
+    mcall
 
     cmp  [help],0
     jnz  .help
@@ -282,16 +282,16 @@ draw_window:
     mov  edx,0x4b331a
     mov  ebx,[edi]
     mov  ecx,[edi+4]
-    int  0x40
+    mcall
     mov  ebx,[edi+8]
     mov  ecx,[edi+12]
-    int  0x40
+    mcall
     mov  ebx,freetest
     BGIfont_Freetext
   .eod:
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
     ret
 
 Print:	; eax-pointer to _txt struc
@@ -326,7 +326,7 @@ PixelPrint: ; eax-pointer to _txt struc, but used differently
    and  esi,0xfff
    push ecx
    mov  ecx,[ebp+8]
-   int  0x40
+   mcall
    pop  ecx
    lea  edx,[esi+edx+4]
    add  ebx,[ebp+4]

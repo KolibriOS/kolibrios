@@ -24,7 +24,7 @@
     dd      param_area , 0x0      ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'       ; very useful stuff for MeOS
+include '..\..\..\macros.inc'       ; very useful stuff for MeOS
 include 'ascl.inc'
 
 START:                     ; start of execution
@@ -82,12 +82,12 @@ copy_error:
     mov  ecx,0x10ff0000
     lea  edx,[errors+ebp]
     mov  esi,43  ;[errors+edi*8+4]
-    int  0x40
+    mcall
     jmp dexit
 
 ;closep:
 ;    or   eax,-1        ; close program
-;    int  0x40
+;    mcall
 
 
 ;====================================================
@@ -124,7 +124,7 @@ copy_file:
     lea  ecx,[ebx+0x10000] ; size of memory needed = 0x10000+filesize
     mov  eax,64      ; func 64
     mov  ebx,1       ; resize application memory
-    int  0x40
+    mcall
     pop  ebx         ; restore filesize
 
     ; check if alloc function failed
@@ -139,14 +139,14 @@ copy_file:
     ; read the source file
     mov  eax,70
     mov  ebx,source_info
-    int  0x40
+    mcall
 
     ; ebx = number of read bytes = file size
     ; save loaded file
     mov  [dest_info.bytes],ebx ; file size in bytes
     mov  eax,70
     mov  ebx,dest_info
-    int  0x40
+    mcall
 
     ; check if 58 function failed
     test eax,eax
@@ -162,7 +162,7 @@ copy_file:
     mov  eax,64
     mov  ebx,1
     mov  ecx,0x10000
-    int  0x40
+    mcall
 
     xor  eax,eax      ; eax = message number (0-OK)
     jmp  copy_error
@@ -177,14 +177,14 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,160*65536+415         ; [x start] *65536 + [x size]
     mov  ecx,160*65536+90         ; [y start] *65536 + [y size]
     mov  edx,0x03DDDDDD            ; color of work area RRGGBB
-    int  0x40
+    mcall
 
                                    ; WINDOW LABEL
     mov  eax,4                     ; function 4 : write text to window
@@ -192,19 +192,19 @@ draw_window:
     mov  ecx,0x10ffffff            ; color of text RRGGBB
     mov  edx,labelt                ; pointer to text beginning
     mov  esi,labellen-labelt       ; text length
-    int  0x40
+    mcall
 
     mov  eax,8
     mov  ebx,105*65536+290
     mov  ecx,33*65536+12
     mov  edx,4
     mov  esi,0xEBEBEB
-    int  0x40
+    mcall
     mov  ebx,105*65536+290
     mov  ecx,49*65536+12
     mov  edx,5
     mov  esi,0xEBEBEB
-    int  0x40
+    mcall
 
     mov  esi,source
     mov  edi,text+14
@@ -222,7 +222,7 @@ draw_window:
     mov  esi,62
   newline:
     mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,62
     cmp  [edx],byte 'x'
@@ -230,7 +230,7 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 

@@ -20,6 +20,7 @@
 ;******************************************************************************
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 include 'ascgml.inc'
@@ -318,7 +319,7 @@ lose_test:
 ;    mov edx,2
 ;    mov esi,0x0000ff00
 ;    mov eax,8
-;    int 0x40
+;    mcall
     mov [level],0
     mov [nextlev],0
     mov [againbut],1
@@ -334,7 +335,7 @@ stl2:
 
   key:                          ; key
     mov eax,2
-    int 0x40
+    mcall
     cmp ah,key_Left
     jne no_l
     sub dword [ply1rx],50 ;24 ;16
@@ -359,11 +360,11 @@ no_sp:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
 noclose:
     cmp ah,2
     jne  noplayagain
@@ -432,10 +433,10 @@ draw_window:
     mov edx,2
     mov esi,0x0000aa00
     mov eax,8
-    int 0x40
+    mcall
     mov ecx,260*65536+12
     mov edx,1
-    int 0x40
+    mcall
     label 152,244,'Play again?',cl_Red+font_Big
     jmp elev
 nlev:
@@ -447,10 +448,10 @@ nlev:
     mov edx,2
     mov esi,0x0000aa00
     mov eax,8
-    int 0x40
+    mcall
     mov ecx,260*65536+12
     mov edx,1
-    int 0x40
+    mcall
     label 152,244,'Next level?',cl_Red+font_Big
 elev:
 

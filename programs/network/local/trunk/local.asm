@@ -6,18 +6,18 @@
    
    
 use32
-   
-                org     0x0
-   
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
+
    
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
    
 START:                                  ; start of execution
    
@@ -26,17 +26,18 @@ START:                                  ; start of execution
     mov  ecx,0x2000            ; local port
     mov  edx,0x3000            ; remote port
     mov  esi,dword [host_ip]   ; node IP
-    int  0x40
+    mcall
    
     mov  [socketNum], eax
-   
+
+red:   
     call draw_window            ; at first, draw the window
    
 still:
    
     mov  eax,23                 ; wait here for event
     mov  ebx,1
-    int  0x40
+    mcall
    
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -48,33 +49,29 @@ still:
     mov  eax, 53                ; get data
     mov  ebx, 2
     mov  ecx, [socketNum]
-    int  0x40
+    mcall
     cmp  eax, 0
     jne  read
    
     jmp  still
    
-red:
-    call draw_window
-    jmp  still
-   
 key:
     mov  eax,2
-    int  0x40
+    mcall
     jmp  still
    
 button:
     mov  eax,17
-    int  0x40
+    mcall
    
     cmp  ah,1                  ; button id=1 ?
     jnz  noclose
     mov  eax, 53
     mov  ebx, 1
     mov  ecx, [socketNum]
-    int  0x40
+    mcall
     mov  eax,-1
-    int  0x40
+    mcall
   noclose:
    
     cmp  ah,2                  ; SEND CODE ?
@@ -96,7 +93,7 @@ button:
     mov  ecx,[socketNum]
     mov  edx,23 + 4
     mov  esi,I_END
-    int  0x40
+    mcall
     jmp  still
   no_left:
    
@@ -116,7 +113,7 @@ button:
     mov  ecx,[socketNum]
     mov  edx,23 + 4
     mov  esi,I_END
-    int  0x40
+    mcall
     jmp  still
   no_right:
    
@@ -159,7 +156,7 @@ send_xcode:
   mov  ecx,[socketNum]
   mov  edx,23 + remote_code_end - remote_code_start
   mov  esi,I_END
-  int  0x40
+  mcall
    
   jmp  still
    
@@ -173,7 +170,7 @@ send_execute:
   mov  ecx,[socketNum]
   mov  edx,19
   mov  esi,execute
-  int  0x40
+  mcall
    
   mov  edi,3
    
@@ -196,7 +193,7 @@ cfr007:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
- int  0x40   ; read byte
+ mcall   ; read byte
    
  shl  edx,8
  mov  dl,bl
@@ -213,7 +210,7 @@ cfr007:
  add  ebx,15
  add  ecx,35
  add  ebx,[picture_position]
- int  0x40
+ mcall
    
  inc  [xx]
  cmp  [xx],dword 128
@@ -230,7 +227,7 @@ cok:
  mov  eax, 53
  mov  ebx, 2
  mov  ecx, [socketNum]
- int  0x40   ; any more data?
+ mcall   ; any more data?
    
  cmp  eax, 0
  jne  cfr007  ; yes, so get it
@@ -249,62 +246,51 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
    
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+286         ; [x start] *65536 + [x size]
-    mov  ecx,60*65536+330         ; [y start] *65536 + [y size]
+    mov  ecx,60*65536+330          ; [y start] *65536 + [y size]
     mov  edx,0x03ffffff            ; color of work area RRGGBB
-    mov  esi,0x80aabbcc            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00aabbcc            ; color of frames    RRGGBB
-    int  0x40
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
    
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labeltext             ; pointer to text beginning
-    mov  esi,lte-labeltext         ; text length
-    int  0x40
-   
+                                   
     mov  eax,8                     ; SEND CODE
     mov  ebx,60*65536+160
     mov  ecx,181*65536+13
     mov  edx,2
     mov  esi,0x667788
-    int  0x40
+    mcall
    
-    mov  eax,8                     ; LEFT
+    ;mov  eax,8                     ; LEFT
     mov  ebx,60*65536+75
     mov  ecx,197*65536+13
     mov  edx,3
-    mov  esi,0x667788
-    int  0x40
+    mcall
    
-    mov  eax,8                     ; RIGHT
+    ;mov  eax,8                     ; RIGHT
     mov  ebx,148*65536+72
     mov  ecx,197*65536+13
     mov  edx,4
-    mov  esi,0x667788
-    int  0x40
+    mcall
    
-    mov  eax,8                     ; SEND EXECUTE
+    ;mov  eax,8                     ; SEND EXECUTE
     mov  ebx,60*65536+160
     mov  ecx,213*65536+13
     mov  edx,5
-    mov  esi,0x667788
-    int  0x40
+    mcall
    
    
     cld
+    mov  eax,4
     mov  ebx,25*65536+185           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,40
     cmp  [edx],byte 'x'
@@ -312,7 +298,7 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
    
@@ -328,11 +314,10 @@ text:
     db ' LOCAL   : 192.168.1.26                 '
     db ' REMOTE  : 192.168.1.22                 '
     db ' REMOTE CODE AT THE END OF THIS FILE    '
-    db 'x <- END MARKER, DONT DELETE            '
+    db 'x' ;<- END MARKER, DONT DELETE
    
    
-labeltext:  db  'CLUSTER LOCAL'  ;
-lte:
+title  db  'CLUSTER LOCAL',0
    
 socketNum   dd  0x0
    
@@ -492,11 +477,11 @@ return_data:
       mov  ebx,4
       mov  ecx,[0]
       mov  edx,3*16
-      int  0x40
+      mcall
    
       mov  eax,5
       mov  ebx,1
-      int  0x40
+      mcall
    
       popa
    

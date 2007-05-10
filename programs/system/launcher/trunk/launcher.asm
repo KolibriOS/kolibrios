@@ -6,7 +6,7 @@
 ;
 ;   Компилируйте с помощью FASM 1.52 и выше
 ;
-include "MACROS.INC"
+include "..\..\..\MACROS.INC"
 
   use32
   org    0x0
@@ -24,13 +24,13 @@ START:                           ; start of execution
 
 ;   mov  eax, 5
 ;   mov  ebx, 10
-;   int  0x40
+;   mcall
 
    mcall 18,15
 
    mov  eax, 70               ; load AUTORUN.DAT
    mov  ebx, autorun_dat_info
-   int  0x40
+   mcall
 
    call get_number
    mov  [number_of_files], eax
@@ -54,7 +54,7 @@ START:                           ; start of execution
 
  exit:
    or   eax, -1
-   int  0x40
+   mcall
 
 
  run_program:     ; time to delay in eax
@@ -63,7 +63,7 @@ START:                           ; start of execution
    pop  ebx
 
    mov  eax, 5
-   int  0x40
+   mcall
  ret
 
 

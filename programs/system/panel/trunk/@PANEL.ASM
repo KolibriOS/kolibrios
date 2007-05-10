@@ -15,7 +15,7 @@ use32
   dd   0x0,0x0      ; param, icon
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 width           dd  305
 buttons         dd    1  ;  0 no frames  ; 1 frames

@@ -1,10 +1,10 @@
-include "macros.inc"
+include "..\..\..\macros.inc"
 
 initipc:
  mov eax,9
  mov ebx,prc
- mov ecx,-1
- int 0x40
+ or ecx,-1
+ mcall
 
  mov ecx,eax
 loop1:
@@ -12,7 +12,7 @@ loop1:
 
  mov eax,9
  mov ebx,prc
- int 0x40
+ mcall
 
  cmp word [prc+10],'CM'
  jne no_cmd
@@ -39,18 +39,18 @@ no_exit:
  mov ecx,dword [cmdpid]
  mov edx,printf
  mov esi,4
- int 0x40
+ mcall
 
  call initcmd
 
 waitcmdinit:
  mov eax,40
  mov ebx,01000000b
- int 0x40
+ mcall
 
  mov eax,23
  mov ebx,100
- int 0x40
+ mcall
 
  cmp eax,7
  je cmd_ok
@@ -64,19 +64,19 @@ cmd_ok:
  mov eax,18
  mov ebx,3
  mov ecx,dword [cmdnumb]
- int 0x40
+ mcall
 
  ret
 
 pause1:
  mov eax,5
  mov ebx,1
- int 0x40
+ mcall
  ret
 
 exit:
- mov eax,-1
- int 0x40
+ or eax,-1
+ mcall
 
 cls:
  mov eax,60
@@ -84,7 +84,7 @@ cls:
  mov ecx,dword [cmdpid]
  mov edx,ipccls
  mov esi,4
- int 0x40
+ mcall
 
  call pause1
 
@@ -120,7 +120,7 @@ loopprt:
  mov ecx,dword [cmdpid]
  mov edx,stripc
  mov esi,84
- int 0x40
+ mcall
 
  call pause1
 
@@ -132,7 +132,7 @@ eol:
  mov ecx,dword [cmdpid]
  mov edx,ipceol
  mov esi,4
- int 0x40
+ mcall
 
  call pause1
 
@@ -144,13 +144,13 @@ initcmd:
  mov ecx,dword [cmdpid]
  mov edx,ipckey
  mov esi,4
- int 0x40
+ mcall
 
  mov eax,60
  mov ebx,1
  mov ecx,ipcb
  mov edx,28
- int 0x40
+ mcall
 
  cld
  mov ecx,28
@@ -166,10 +166,10 @@ getkey:
 waitagain:
  mov eax,40
  mov ebx,01000000b
- int 0x40
+ mcall
 
  mov eax,10
- int 0x40
+ mcall
 
  cmp eax,7
  jne waitagain
@@ -186,7 +186,7 @@ endipc:
  mov ecx,dword [cmdpid]
  mov edx,ipcend
  mov esi,4
- int 0x40
+ mcall
 
  jmp exit
 

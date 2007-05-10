@@ -16,7 +16,7 @@ use32
                 dd      0x1000                  ; esp
                 dd      0, 0                    ; no parameters, no path
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 delay   equ     20
 
 magnify_width = 40
@@ -30,7 +30,7 @@ still:
 wtevent:
         mov     eax, 23         ; wait here for event with timeout
         mov     ebx, delay
-        int     0x40
+        mcall
         dec     eax
         js      still
         jz      redraw
@@ -38,12 +38,12 @@ wtevent:
         jnz     button
 ; key in buffer
         mov     al, 2
-        int     0x40
+        mcall
         jmp     wtevent
 button:
 ; we have only one button, close
         or      eax, -1
-        int     0x40
+        mcall
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -52,11 +52,11 @@ button:
 draw_window:
         mov     eax, 12         ; function 12:tell os about windowdraw
         mov     ebx, 1          ; 1, start of draw
-        int     0x40
+        mcall
 
         mov     al, 48          ; function 48 : graphics parameters
         mov     bl, 4           ; subfunction 4 : get skin height
-        int     0x40
+        mcall
 
                                         ; DRAW WINDOW
         mov     ebx, 100*65536 + 8*magnify_width + 8
@@ -64,19 +64,19 @@ draw_window:
         mov     edx, 0x33000000         ; color of work area RRGGBB
         mov     edi, labelt             ; header
         xor     eax, eax                ; function 0 : define and draw window
-        int     0x40
+        mcall
 
 
         mov     al, 12                  ; function 12:tell os about windowdraw
         mov     ebx, 2                  ; 2, end of draw
-        int     0x40
+        mcall
 
         ret
 
 draw_screen:
 draw_magnify:
         mov     eax, 14
-        int     0x40            ; get screen size
+        mcall            ; get screen size
         movzx   ecx, ax
         inc     ecx
         mov     [size_y], ecx
@@ -86,7 +86,7 @@ draw_magnify:
 
         mov     eax, 37
         xor     ebx, ebx
-        int     0x40            ; get mouse coordinates
+        mcall            ; get mouse coordinates
         mov     ecx, eax
         shr     ecx, 16         ; ecx = x
         movzx   edx, ax         ; edx = y
@@ -113,7 +113,7 @@ draw_magnify:
         imul    ebx, [size_x]
         add     ebx, ecx
         mov     eax, 35
-        int     0x40            ; read pixel
+        mcall            ; read pixel
 .nopix:
         push    ecx edx
         sub     ecx, [m_x]
@@ -126,7 +126,7 @@ draw_magnify:
         mov     cl, 7
         mov     edx, eax
         mov     eax, 13
-        int     0x40
+        mcall
         pop     edx ecx
         inc     ecx
         cmp     ecx, [m_xe]

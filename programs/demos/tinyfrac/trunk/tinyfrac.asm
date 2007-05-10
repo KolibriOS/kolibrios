@@ -59,7 +59,7 @@ ZOOMLIMIT   equ  13       ; can change to up to 13 for extended zoom in
 ; feel free to experiment with the following constants:
 
 DELTA       equ 200       ; the unit of pan movement in pixels
-THRESHOLD   equ  7       ; must be in the range of (0,255)
+THRESHOLD   equ  7        ; must be in the range of (0,255)
 STARTSCALE  equ  5        ; a number from 0 to ZOOMLIMIT, inclusive
 CHAR_COLOR  equ 0fh       ; white on black background (for PRINTZOOM feature)
 
@@ -83,7 +83,7 @@ use32
                   dd      0,0
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 STARTX  dd  200
 STARTY  dd  120
@@ -93,32 +93,77 @@ scaleaddx dd 200
 
 START:
 
+red:
         call    draw_window
-
         call    draw_fractal
 
 still:
 
         mov  eax,10
-        int  0x40
+        mcall
 
-        cmp  eax,1
-        je   red
-        cmp  eax,2
-        je   key
-        cmp  eax,3
-        je   button
+        dec  eax
+        jz   red
+        dec  eax
+        jz   key
+
+      button:
+        mov  al,17
+        mcall
+
+        cmp  ah,1
+        jne  no_close
+        or   eax,-1
+        mcall
+      no_close:
+
+        cmp  ah,2
+        jne  no_bgr
+
+
+        mov  eax,15   ; bgr 512 x 256
+        mov  ebx,1
+        mov  ecx,512
+        mov  edx,256
+        mcall
+
+        mov  eax,15
+        mov  ebx,5
+        mov  ecx,0x1000
+        mov  edx,0
+        mov  esi,512*3*256
+        mcall
+
+        mov  eax,15
+        mov  ebx,3
+        mcall
 
         jmp  still
 
-      red:
-        call draw_window
-        call put_image
+      no_bgr:
+
+        cmp  ah,3
+        jb   no_color
+        cmp  ah,5
+        jg   no_color
+        shr  eax,8
+        sub  eax,3
+        imul eax,8
+        add  eax,8
+        not  eax
+        and  eax,11000b
+        mov  [shlc],al
+        call draw_fractal
         jmp  still
+
+      no_color:
+
+        jmp  still
+
 
       key:
-        mov  eax,2
-        int  0x40
+        mov  al,2
+        mcall
 
         cmp  ah,'e'
         je   cycle
@@ -179,61 +224,6 @@ still:
         call draw_fractal
         jmp  still
 
-      button:
-        mov  eax,17
-        int  0x40
-
-        cmp  ah,1
-        jne  no_close
-        mov  eax,-1
-        int  0x40
-      no_close:
-
-        cmp  ah,2
-        jne  no_bgr
-
-        mov  eax,15   ; bgr 512 x 256
-        mov  ebx,1
-        mov  ecx,512
-        mov  edx,256
-        int  0x40
-
-        mov  eax,15
-        mov  ebx,5
-        mov  ecx,0x1000
-        mov  edx,0
-        mov  esi,512*3*256
-        int  0x40
-
-        mov  eax,15
-        mov  ebx,3
-        int  0x40
-
-        jmp  still
-
-      no_bgr:
-
-        cmp  ah,3
-        jb   no_color
-        cmp  ah,5
-        jg   no_color
-        shr  eax,8
-        sub  eax,3
-        imul eax,8
-        add  eax,8
-        not  eax
-        and  eax,11000b
-;        sub  eax,8
-        mov  [shlc],al
-        call draw_fractal
-        jmp  still
-
-      no_color:
-
-
-        jmp  still
-
-
 color_cycle:
 
      pusha
@@ -257,7 +247,7 @@ color_cycle:
      call put_image
      mov  eax,5
      mov  ebx,1
-     int  0x40
+     mcall
      dec  esi
      jnz  newcycle
 
@@ -287,11 +277,10 @@ draw_fractal:
 
         pusha
         mov     eax,4
-        mov     ebx,15*65536+35
-        mov     ecx,0xffffff
+        mov     ebx,10*65536+30
+        mov     ecx,0x80ffffff
         mov     edx,calc
-        mov     esi,calcl-calc
-        int     0x40
+        mcall
         popa
         pusha
 
@@ -308,12 +297,6 @@ draw_fractal:
 @@CalcRow:
 
         push    cx
-
-;        and     cl,0x7
-;        cmp     cl,0
-;        jne     noim
-;        call    put_image
-;     noim:
 
         mov     cx, PIXWIDTH -1  ; width of screen in pixels
 
@@ -369,9 +352,9 @@ put_image:
 
         mov  eax,7
         mov  ebx,0x1000
-        mov  ecx,512*65536+255
-        mov  edx,10*65536+30
-        int  0x40
+        mov  ecx,512*65536+256
+        mov  edx,4*65536+21
+        mcall
 
         popa
 
@@ -446,38 +429,30 @@ draw_window:
 
       mov  eax,12
       mov  ebx,1
-      int  0x40
+      mcall
 
-      mov  eax,0
-      mov  ebx,50*65536+531
-      mov  ecx,100*65536+256+48
-      mov  edx,0x02334455
-      mov  esi,0x80778899
-      mov  edi,0x00778899
-      int  0x40
-
-      mov  eax,8
-      mov  ebx,(531-19)*65536+12
-      mov  ecx,5*65536+12
-      mov  edx,1
-      mov  esi,0x808080
-      int  0x40
+      xor  eax,eax
+      mov  ebx,50*65536+PIXWIDTH+8
+      mov  ecx,100*65536+PIXHEIGHT+25
+      mov  edx,0x13334455
+      mov  edi,title
+      mcall
 
       mov  eax,8
-      mov  ebx,300*65536+112
+      mov  ebx,290*65536+112
       mov  ecx,5*65536+12
       mov  edx,2
       mov  esi,0x808080
-      int  0x40
+      mcall
 
-      mov  ebx,430*65536+12
+      mov  ebx,420*65536+12
       mov  ecx,5*65536+12
       mov  edx,3
       mov  esi,0xa00000
       mov  edi,3
+      ;mov  eax,8
     newcolor:
-      mov  eax,8
-      int  0x40
+      mcall
       add  ebx,13*65536
       shr  esi,8
       inc  edx
@@ -485,15 +460,14 @@ draw_window:
       jnz  newcolor
 
       mov  eax,4
-      mov  ebx,8*65536+8
-      mov  ecx,0xffffff
-      mov  edx,l
-      mov  esi,ll-l
-      int  0x40
+      mov  ebx,300*65536+8
+      mov  ecx,0x80ffffff
+      mov  edx,button_txt
+      mcall
 
       mov  eax,12
       mov  ebx,2
-      int  0x40
+      mcall
 
       popa
       ret
@@ -505,15 +479,9 @@ draw_window:
 ;
 
 
-l:  db 'TINYFRAC - MOVE: ARROWS, ZOOM Q/W, CYCLE: E/R     '
-    db 'SET AS WALLPAPER'
-ll:
+title      db 'Tinyfrac - MOVE: ARROWS, ZOOM Q/W, CYCLE: E/R',0
+button_txt  db 'Set as wallpaper',0
 
-calc   db 'CALCULATING'
-calcl:
+calc        db 'CALCULATING',0
 
 I_END:
-
-
-
-

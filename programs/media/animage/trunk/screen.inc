@@ -239,7 +239,7 @@ MovePictureToWorkScreen:
 	 fps:
 	 ;mov eax,18
 	 ;mov ebx,14
-	 ;int 0x40
+	 ;mcall
 
 	 mov eax,7
 	 mov ebx,[ScreenPointer]
@@ -248,7 +248,7 @@ MovePictureToWorkScreen:
 	 shl ecx,16
 	 add ecx,edx
 	 mov edx,8*65536+20+15+49+5+1
-	 int 0x40
+	 mcall
 
 	 ret
 ;----------------------------------------------------------

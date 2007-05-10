@@ -4,7 +4,7 @@
    keys:
 
    mov eax,2
-   int 0x40
+   mcall
    shr eax,8
 
    cmp eax,176
@@ -80,7 +80,7 @@
     call delete_cursors
 
     mov eax,-1
-    int 0x40
+    mcall
 
    jmp still
 

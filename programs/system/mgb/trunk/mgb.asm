@@ -35,7 +35,7 @@ use32
   dd 0
   dd 0
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 ;__CPU_type	equ	p6  ; charge it
 
 include 'proc32.inc'

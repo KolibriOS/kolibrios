@@ -136,7 +136,7 @@
 ;                 * detect Revision, Class and Subclass of Device,
 ;                 * and make Description based on Class
 ;-------------------------------------------------------------
-include	'macros.inc'
+include	'..\..\..\macros.inc'
 MEOS_APP_START
 CODE
 	call draw_window
@@ -152,13 +152,13 @@ still:	mcall	10			; wait here for event
 
 red:					; redraw
 	mcall	9, Proc_Info, -1	; window redraw requested so get new window coordinates and size
-	mov	eax, [Proc_Info.x_start]; store the window coordinates into the Form Structure
+	mov	eax, [Proc_Info.box.left]; store the window coordinates into the Form Structure
 	mov	[Form + 2], ax		; x start position
-	mov	eax, [Proc_Info.y_start];
+	mov	eax, [Proc_Info.box.top];
 	mov	[Form + 6], ax		; ystart position
-	mov	eax, [Proc_Info.x_size]	;
+	mov	eax, [Proc_Info.box.width]	;
 	mov	[Form], ax		; window width
-	mov	eax, [Proc_Info.y_size]	;
+	mov	eax, [Proc_Info.box.height]	;
 	mov	[Form + 4] ,ax		; window height
 	call	draw_window		; go redraw window now
 	jmp	still

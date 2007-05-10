@@ -55,7 +55,7 @@ debug_outchar:          ; al - char
    mov  cl,al
    mov  eax,63
    mov  ebx,1
-   int  0x40
+   mcall
    popad
    popf
 ret
@@ -67,7 +67,7 @@ debug_outstr:
    mov  cl,[edx]
    test cl,cl
    jz   @f
-   int  40h
+   mcall
    inc  edx
    jmp  @b
  @@:

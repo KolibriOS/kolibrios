@@ -33,7 +33,7 @@ copyrightlen:
 
 include "lang.inc"
 include "figuresi.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 start:
     cld
     finit
@@ -46,7 +46,7 @@ start:
     cmp [flscr],0
     jz	nofullscreen
       mov  eax,14
-      int  0x40
+      mcall
 
       mov  [maxy],ax
       sub  ax,480
@@ -80,7 +80,7 @@ red:
 still:
     mov  eax,23
     mov  ebx,delay
-    int  0x40			; wait here for event
+    mcall			; wait here for event
 
     cmp  eax,1			; redraw request ?
     je	 red
@@ -95,12 +95,12 @@ still:
     mov  ecx,[outsize]	      ; ecx=image position in window [x]*65536+[y]
     mov  ebx,scr	      ; ebx pointer to image in memory
     mov  eax,07 	      ; putimage
-    int  0x40
+    mcall
 jmp  still
 
 key:
     mov  eax,2
-    int  0x40
+    mcall
 
     cmp  al,1			; is key in buffer ?
     jz	 still
@@ -110,14 +110,14 @@ jmp  still
 
 button: 			; button
     mov  eax,17 		; get id
-    int  0x40
+    mcall
 
 ;    cmp  ah,1                   ; button id=1 ?
 ;    jne  still
 
 close:
     mov  eax,-1 		; close this program
-    int  0x40
+    mcall
 
 
 ;   *********************************************
@@ -128,7 +128,7 @@ close:
 draw_window:
     mov  eax,12 		     ; function 12:tell os about windowdraw
     mov  ebx,1			     ; 1, start of draw
-    int  0x40
+    mcall
 
     cmp  [flscr],0
     jnz  m2
@@ -138,7 +138,7 @@ draw_window:
       mov  esi,0x805080d0	     ; color of grab bar  RRGGBB,8->color gl
       mov  edi,0x005080d0	     ; color of frames    RRGGBB
       xor  eax,eax		     ; function 0 : define and draw window
-      int  0x40
+      mcall
 
 				     ; WINDOW LABEL
       mov  ebx,8*65536+8	     ; [x start] *65536 + [y start]
@@ -146,7 +146,7 @@ draw_window:
       mov  edx,copyright	     ; pointer to text beginning
       mov  esi,copyrightlen-copyright; text length
       mov  eax,4		     ; function 4 : write text to window
-      int  0x40
+      mcall
 
 				     ; CLOSE BUTTON
       mov  ebx,(640-19)*65536+12     ; [x start] *65536 + [x size]
@@ -154,7 +154,7 @@ draw_window:
       mov  edx,1		     ; button id
       mov  esi,0x6688dd 	     ; button color RRGGBB
       mov  eax,8		     ; function 8 : define and draw button
-      int  0x40
+      mcall
     jmp m3
     m2:
       movzx  ebx,[maxx] 	     ; [x start] *65536 + [x size]
@@ -164,17 +164,17 @@ draw_window:
       mov  esi,0x805080d0	     ; color of grab bar  RRGGBB,8->color gl
       mov  edi,0x005080d0	     ; color of frames    RRGGBB
       xor  eax,eax		     ; function 0 : define and draw window
-      int  0x40
+      mcall
 
       inc bx
       inc cx
       mov eax,13		     ; functiom 13 : draw bar
-      int 0x40
+      mcall
     m3:
 
     mov  eax,12 		     ; function 12:tell os about windowdraw
     mov  ebx,2			     ; 2, end of draw
-    int  0x40
+    mcall
 ret
 
 
@@ -332,7 +332,7 @@ ret
 filling_alfbet:
      ; Initialize RND
      mov   eax,3
-     int   40h
+     mcall
      ; eax - fist random number
 
      mov   ecx,n_points

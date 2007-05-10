@@ -12,21 +12,22 @@ use32
  dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
    
 START:				; start of execution
      mov  eax,40		 ; Report events
      mov  ebx,10000111b 	 ; Stack 8 + defaults
-     int  0x40
+     mcall
    
     mov   dword [prompt], p1
     mov  dword [promptlen], p1len - p1
-   
+
+red:   
     call draw_window		; at first, draw the window
    
 still:
     mov  eax,10 		; wait here for event
-    int  0x40
+    mcall
    
     cmp  eax,1			; redraw request ?
     jz	 red
@@ -36,19 +37,15 @@ still:
     jz	 button
    
     jmp  still
-   
-red:			       ; redraw
-    call draw_window
-    jmp  still
-   
+
 key:			       ; Keys are not valid at this part of the
     mov  eax,2			; loop. Just read it and ignore
-    int  0x40
+    mcall
     jmp  still
    
 button: 		       ; button
     mov  eax,17 		; get id
-    int  0x40
+    mcall
    
     cmp  ah,1			; button id=1 ?
     jnz  noclose
@@ -63,8 +60,8 @@ button: 		       ; button
  mov  [socketNum], dword 0
    
    
-    mov  eax,0xffffffff 	; close this program
-    int  0x40
+    or  eax,-1 	; close this program
+    mcall
    
 noclose:
     cmp  ah,2			; copy file to local machine?
@@ -127,13 +124,13 @@ nocopyh:
    
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jz	 fbu
     jmp  still
   fbu:
     mov  eax,2
-    int  0x40  ; get key
+    mcall  ; get key
     shr  eax,8
     cmp  eax,8
     jnz  nobs
@@ -170,7 +167,7 @@ print_text:
     shl  ecx,16
     mov  cx,8
     mov  edx,0x224466
-    int  0x40
+    mcall
    
     mov  eax,4
     mov  ebx,103*65536
@@ -178,7 +175,7 @@ print_text:
     mov  ecx,0xffffff
     mov  edx,[addr]
     mov  esi,15
-    int  0x40
+    mcall
    
     ret
    
@@ -357,7 +354,7 @@ cfr001:
    
 cfr002:
     mov  eax,10 		; wait here for event
-    int  0x40
+    mcall
    
     cmp  eax,1			; redraw request ?
     je	 cfr003
@@ -427,7 +424,7 @@ cfr007:
  mov  eax, 53
  mov  ebx, 2
  mov  ecx, [socketNum]
- int  0x40   ; any more data?
+ mcall   ; any more data?
    
  cmp  eax, 0
  je   no_more_data ; no
@@ -435,7 +432,7 @@ cfr007:
  mov  eax, 53
  mov  ebx, 3
  mov  ecx, [socketNum]
- int  0x40   ; read byte
+ mcall   ; read byte
    
  mov  esi, [fileposition]
  mov  [esi], bl
@@ -473,7 +470,7 @@ no_more_data:
  mov  edx, [filesize]
  mov  ecx, I_END + 512
  mov  esi, 0
- int  0x40
+ mcall
    
  jmp  cfrexit
    
@@ -500,12 +497,12 @@ cfr003: 			; redraw request
    
 cfr004: 			; key pressed
     mov  eax,2			; just read it and ignore
-    int  0x40
+    mcall
     jmp  cfr002
    
 cfr005: 		       ; button
     mov  eax,17 		; get id
-    int  0x40
+    mcall
    
     cmp  ah,1			; button id=1 ?
     jne  cfr002     ; If not, ignore.
@@ -520,7 +517,7 @@ cfr006:
  mov  [socketNum], dword 0
    
     mov  eax,-1 		; close this program
-    int  0x40
+    mcall
    
     jmp $
    
@@ -809,43 +806,40 @@ draw_window:
    
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,1			   ; 1, start of draw
-    int  0x40
+    mcall
    
 				   ; DRAW WINDOW
     mov  eax,0			   ; function 0 : define and draw window
     mov  ebx,100*65536+230	   ; [x start] *65536 + [x size]
     mov  ecx,100*65536+170	   ; [y start] *65536 + [y size]
     mov  edx,0x13224466 	   ; color of work area RRGGBB
-    mov  edi,labelt
-    int  0x40
+    mov  edi,title
+    mcall
    
     mov  eax,8		    ; COPY BUTTON
     mov  ebx,20*65536+190
     mov  ecx,79*65536+15
     mov  edx,2
     mov  esi,0x557799
-    int  0x40
+    mcall
    
-    mov  eax,8		    ; DELETE BUTTON
+ ;   mov  eax,8		    ; DELETE BUTTON
     mov  ebx,20*65536+190
     mov  ecx,111*65536+15
     mov  edx,3
-    mov  esi,0x557799
-    int  0x40
+    mcall
    
-    mov  eax,8
-    mov  ebx,200*65536+10
+ ;   mov  eax,8
+ ;   mov  ebx,200*65536+10
     mov  ecx,34*65536+10
     mov  edx,4
-    mov  esi,0x557799
-    int  0x40
+    mcall
    
-    mov  eax,8
-    mov  ebx,200*65536+10
+ ;   mov  eax,8
+ ;   mov  ebx,200*65536+10
     mov  ecx,50*65536+10
     mov  edx,5
-    mov  esi,0x557799
-    int  0x40
+    mcall
    
    
  ; Copy the file name to the screen buffer
@@ -872,13 +866,13 @@ draw_window:
    
     ; Re-draw the screen text
     cld
+    mov  eax,4
     mov  ebx,25*65536+35	   ; draw info text with function 4
     mov  ecx,0xffffff
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,40
     cmp  [edx],byte 'x'
@@ -887,7 +881,7 @@ draw_window:
    
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,2			   ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
    
@@ -921,7 +915,7 @@ text:
     db 'x' ; <- END MARKER, DONT DELETE
    
    
-labelt	db   'TFTP Client',0   
+title	db   'TFTP Client',0   
    
 prompt: dd 0
 promptlen: dd 0

@@ -1,5 +1,5 @@
 include "lang.inc"
-include "macros.inc"
+include "..\..\..\macros.inc"
 
 WND_SIZE_X		= 320
 WND_SIZE_Y		= 200
@@ -15,13 +15,13 @@ CODE
     call init_palette
     mov eax,40
     mov ebx,101b
-    int 0x40
+    mcall
     jmp .paint_window
 
 .event_loop:
     mov eax,23
     mov ebx,1
-    int 0x40
+    mcall
 
     test eax,eax
     je .draw_screen
@@ -29,7 +29,7 @@ CODE
     je .paint_window
 
     or  eax,-1
-    int 0x40
+    mcall
 
 .draw_screen:
     add word [ver_counter],VC_DELTA
@@ -39,30 +39,30 @@ CODE
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
     xor edx,edx
-    int 0x40
+    mcall
     jmp .event_loop
 
 .paint_window:
     mov eax,12
     mov ebx,1
-    int 0x40
+    mcall
 
     xor eax,eax
     mov ebx,(100 shl 16)+(WND_SIZE_X+9)
     mov ecx,(100 shl 16)+(WND_SIZE_Y+28)
     mov edx,0x33000000
-    mov edi,header
-    int 0x40
+    mov edi,title
+    mcall
 
     mov eax,7
     mov ebx,virtual_screen_32
     mov ecx,(WND_SIZE_X shl 16)+WND_SIZE_Y
     xor edx,edx
-    int 0x40
+    mcall
 
     mov eax,12
     mov ebx,2
-    int 0x40
+    mcall
 
     jmp .event_loop
 
@@ -160,7 +160,7 @@ DATA
   delta_angle dd 0.0245436926066		; pi/128
   scale_sin dd 128.0
 
-  header      db 'MoveBack',0
+  title      db 'MoveBack',0
 
 UDATA
   ver_counter dd ?

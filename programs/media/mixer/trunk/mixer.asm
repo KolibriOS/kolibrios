@@ -5,30 +5,32 @@
 ;    Compile with FASM
 ;
 
-use32
-
-                org   0x0
-                db    'MENUET00'              ; 8 byte id
-                dd    38                      ; required os
-                dd    START                   ; program start
-                dd    I_END                   ; program image size
-                dd    0x1000                  ; reguired amount of memory
-                dd    0x1000
-                dd    0x00000000              ; reserved=no extended header
-
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
+
+
+use32
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	0x1000        ; required memory
+ dd	0x1000        ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
+
+
 
 START:                          ; start of execution
 
-
+  red:                          ; redraw
     call draw_window            ; at first, draw the window
 
 
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -39,25 +41,20 @@ still:
 
     jmp  still
 
-  red:                          ; redraw
-    call draw_window
-
-    jmp  still
-
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
 
     jmp  still
 
   button:                       ; button
     mov  eax,17
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jnz  noclose
-    mov  eax,-1                 ; close this program
-    int  0x40
+    or   eax,-1                 ; close this program
+    mcall
   noclose:
 
     cmp  ah,101
@@ -123,7 +120,7 @@ still:
 
     mov  eax,25
     mov  ebx,1
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -154,7 +151,7 @@ still:
 
     mov  eax,25
     mov  ebx,2
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -196,7 +193,7 @@ still:
 
     mov  eax,28
     mov  ebx,1
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -227,7 +224,7 @@ still:
 
     mov  eax,28
     mov  ebx,2
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -274,7 +271,7 @@ still:
 
     mov  eax,27
     mov  ebx,1
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -305,7 +302,7 @@ still:
 
     mov  eax,27
     mov  ebx,2
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -326,32 +323,16 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+195         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+140         ; [y start] *65536 + [y size]
     mov  edx,[wcolor]              ; color of work area RRGGBB
-    mov  esi,0x8099bbff            ; color of grab bar  RRGGBB,8->color glide
-    mov  edi,0x0099bbee            ; color of frames    RRGGBB
-    int  0x40
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-
-                                   ; CLOSE BUTTON
-    mov  eax,8                     ; function 8 : define and draw button
-    mov  ebx,(195-19)*65536+12     ; [x start] *65536 + [x size]
-    mov  ecx,5*65536+12            ; [y start] *65536 + [y size]
-    mov  edx,1                     ; button id
-    mov  esi,0x22aacc              ; button color RRGGBB
-;    int  0x40
 
     mov  edx,16                    ; button id
     mov  ebx,10*65536
@@ -367,27 +348,23 @@ draw_window:
     mov  bx,22                     ; [x start] *65536 + [x size]
     mov  ecx,35*65536+8            ; [y start] *65536 + [y size]
     dec  edx
-    int  0x40
-    mov  eax,8                     ; function 8 : define and draw button
+    mcall
     mov  bx,22                     ; [x start] *65536 + [x size]
     mov  ecx,45*65536+8            ; [y start] *65536 + [y size]
     dec  edx
-    int  0x40
-    mov  eax,8                     ; function 8 : define and draw button
+    mcall
     mov  bx,22                     ; [x start] *65536 + [x size]
     mov  ecx,55*65536+8            ; [y start] *65536 + [y size]
     dec  edx
-    int  0x40
-    mov  eax,8                     ; function 8 : define and draw button
+    mcall
     mov  bx,22                     ; [x start] *65536 + [x size]
     mov  ecx,65*65536+8            ; [y start] *65536 + [y size]
     dec  edx
-    int  0x40
-    mov  eax,8                     ; function 8 : define and draw button
+    mcall
     mov  bx,22                     ; [x start] *65536 + [x size]
     mov  ecx,75*65536+8            ; [y start] *65536 + [y size]
     dec  edx
-    int  0x40
+    mcall
 
     pop  ebx
     pop  edx
@@ -408,20 +385,20 @@ draw_window:
     mov  ecx,0x00ffffff            ; color of text RRGGBB
     mov  edx,text                  ; pointer to text beginning
     mov  esi,29
-    int  0x40
+    mcall
 
     mov  eax,8                     ; function 8 : define and draw button
     mov  ebx,(5)*65536+185         ; [x start] *65536 + [x size]
     mov  ecx,120*65536+14          ; [y start] *65536 + [y size]
     mov  edx,101                   ; button id
     mov  esi,[bcolor]              ; button color RRGGBB
-    int  0x40
+    mcall
 
     call drawusedcard
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -434,7 +411,7 @@ drawusedcard:
     mov  ebx,14*65536+160
     mov  ecx,123*65536+10
     mov  edx,[bcolor]
-    int  0x40
+    mcall
 
     mov  eax,[usecard]
     mov  edx,c3
@@ -456,7 +433,7 @@ drawusedcard:
     mov  ebx,14*65536+123
     mov  ecx,0x00ffffff
     mov  esi,30
-    int  0x40
+    mcall
 
     popa
 
@@ -468,7 +445,7 @@ drawusedcard:
 
 bcolor  dd  0x5577c8
 
-wcolor  dd  0x03000000
+wcolor  dd  0x13000000
 
 
 text:
@@ -481,9 +458,7 @@ c3  db 'WINDOWS SOUND SYSTEM          '
 
 usecard dd 0x1
 
-labelt:
-    db   'MIXER'
-labellen:
+title    db   'MIXER',0
 
 I_END:
 

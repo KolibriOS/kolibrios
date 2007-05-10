@@ -23,7 +23,7 @@ use32
                 dd      0xffff0
                 dd      0,0
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 save_file:
 
@@ -38,7 +38,7 @@ save_file:
    mov  [ebx+12],eax
 
    mov  eax,70
-   int  0x40
+   mcall
 
    ret
 
@@ -49,7 +49,7 @@ START:                          ; start of execution
 
     mov  eax,70
     mov  ebx,filel
-    int  0x40
+    mcall
 
     test eax,eax
     jz   @f
@@ -72,6 +72,8 @@ START:                          ; start of execution
 
     mov  ebp,0
     mov  edx,I_END
+
+redraw:
     call draw_window            ; at first, draw the window
 
 still:
@@ -80,10 +82,10 @@ still:
 
     mov  eax,5
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,11                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw
     je   redraw
@@ -130,28 +132,21 @@ check_header:
     mov  ecx,[socket]
     mov  edx,6
     mov  esi,r220
-    int  0x40
+    mcall
     mov  [header_sent],1
 
-    jmp  still
-
-
-
-redraw:                         ; redraw
-
-    call draw_window
     jmp  still
 
 
 button:                         ; button
 
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; close program
     jne  noclose
-    mov  eax,-1
-    int  0x40
+    or   eax,-1
+    mcall
   noclose:
 
     call socket_commands
@@ -168,7 +163,7 @@ print_status:
     mov  eax,53
     mov  ebx,6
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov  [status],eax
 
@@ -183,7 +178,7 @@ print_status:
     mov  ebx,360*65536+30
     mov  ecx,151*65536+10
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     pop  ecx
     mov  eax,47
@@ -194,7 +189,7 @@ print_status:
     cmp  [server_active],0
     je   no_print
 
-    int  0x40
+    mcall
 
   no_print:
 
@@ -208,7 +203,7 @@ socket_commands:
     cmp  ah,22       ; open socket
     jnz  tst3
     mov  eax,3
-    int  0x40
+    mcall
 
     mov  [server_active],1
 
@@ -218,7 +213,7 @@ socket_commands:
     mov  edx,0      ; no remote port specified
     mov  esi,0      ; no remote ip specified
     mov  edi,0      ; PASSIVE open
-    int  0x40
+    mcall
     mov  [socket], eax
 
     ret
@@ -230,7 +225,7 @@ socket_commands:
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
     mov  [header_sent],0
     mov  [mail_rp],0
     mov  [server_active],0
@@ -246,7 +241,7 @@ socket_commands:
 key:
 
     mov  eax,2
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -349,7 +344,7 @@ analyze_command:
     mov  ecx,[socket]
     mov  edx,6
     mov  esi,r354
-    int  0x40
+    mcall
     mov  [cmd],0
     popa
     ret
@@ -363,7 +358,7 @@ analyze_command:
     mov  ecx,[socket]
     mov  edx,6
     mov  esi,r250
-    int  0x40
+    mcall
     mov  [cmd],0
     popa
     ret
@@ -390,26 +385,26 @@ analyze_command:
     mov  ecx,[socket]
     mov  edx,6
     mov  esi,r221
-    int  0x40
+    mcall
     mov  [cmd],0
 
     mov  eax,5
     mov  ebx,5
-    int  0x40
+    mcall
 
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov  eax,5
     mov  ebx,5
-    int  0x40
+    mcall
 
     mov  eax,53
     mov  ebx,8
     mov  ecx,[socket]
-    int  0x40
+    mcall
 
     mov  [header_sent],0
     mov  [mail_rp],0
@@ -418,7 +413,7 @@ analyze_command:
 
     mov  eax,5
     mov  ebx,20
-    int  0x40
+    mcall
 
     mov  eax,53
     mov  ebx,5
@@ -426,7 +421,7 @@ analyze_command:
     mov  edx,0      ; no remote port specified
     mov  esi,0      ; no remote ip specified
     mov  edi,0      ; PASSIVE open
-    int  0x40
+    mcall
     mov  [socket], eax
 
     popa
@@ -442,7 +437,7 @@ analyze_command:
     mov  ecx,[socket]
     mov  edx,6
     mov  esi,r250
-    int  0x40
+    mcall
     mov  [cmd],0
     popa
     ret
@@ -596,7 +591,7 @@ read_incoming_byte:
     mov  eax, 53
     mov  ebx, 2
     mov  ecx, [socket]
-    int  0x40
+    mcall
 
     mov  ecx,-1
 
@@ -606,7 +601,7 @@ read_incoming_byte:
     mov  eax, 53
     mov  ebx, 3
     mov  ecx, [socket]
-    int  0x40
+    mcall
 
     mov  ecx,0
 
@@ -622,7 +617,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  [old_status],300
 
@@ -630,36 +625,35 @@ draw_window:
     mov  ebx,5*65536+400
     mov  ecx,5*65536+200
     mov  edx,0x13ffffff
-    mov  edi,labelt
-    int  0x40
+    mov  edi,title
+    mcall
 
     mov  eax,8                     ; button: open socket
     mov  ebx,23*65536+22
     mov  ecx,169*65536+10
     mov  edx,22
     mov  esi,0x55aa55
-    int  0x40
+    mcall
 
-    mov  eax,8                     ; button: close socket
+ ;   mov  eax,8                     ; button: close socket
     mov  ebx,265*65536+22
-    mov  ecx,169*65536+10
     mov  edx,24
     mov  esi,0xaa5555
-    int  0x40
+    mcall
 
     mov  eax,38                    ; line
     mov  ebx,5*65536+395
     mov  ecx,108*65536+108
     mov  edx,0x000000
-    int  0x40
+    mcall
 
+    mov  eax,4
     mov  ebx,5*65536+123          ; info text
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,70
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,12
     add  edx,70
     cmp  [edx],byte 'x'
@@ -670,7 +664,7 @@ draw_window:
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     popa
 
@@ -698,7 +692,7 @@ draw_channel_text:
     mov   bx,word [rxs]
     imul  bx,6
     mov   edx,0xffffff
-    int   0x40
+    mcall
     popa
     push  ecx
     mov   eax,4
@@ -717,7 +711,7 @@ draw_channel_text:
     jne   no_blue
     mov   ecx,0x00ff00
   no_blue:
-    int   0x40
+    mcall
     add   edx,[rxs]
     add   ebx,10
     pop   ecx
@@ -735,7 +729,6 @@ db '   The file can be fetched with TinyServer and a Html-browser.        '
 db '   Timeout is set to 15 seconds.                                      '
 db '                                                                      '
 db '        Open SMTP server port 25                Close SMTP            '
-
 db 'x' ; <- END MARKER, DONT DELETE
 
 
@@ -830,6 +823,6 @@ scroll      dd  1
 
 numtext     db  '                     '
 
-labelt      db  'Tiny SMTP email server v ',version,0
+title       db  'Tiny SMTP email server v ',version,0
 
 I_END:

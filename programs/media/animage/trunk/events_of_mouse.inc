@@ -297,7 +297,7 @@ GetMouseCoordinats:
 
 	mov eax,37
 	mov ebx,1
-	int 0x40
+	mcall
 
 	mov ebx,eax
 	shr eax,16
@@ -313,6 +313,6 @@ GetMouseCoordinats:
 GetMouseClick:
 	 mov eax,37
 	 mov ebx,2
-	 int 0x40
+	 mcall
 
 	 ret

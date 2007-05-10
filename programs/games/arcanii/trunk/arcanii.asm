@@ -8,6 +8,7 @@ VERSION equ 'ARCANOID II v. 0.30'
 ;----------------------------------------
 
 include 'lang.inc'
+include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 include 'asjc.inc'
@@ -64,7 +65,7 @@ still:
     .no_game:
 
     mov  eax,11
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -81,11 +82,11 @@ still:
 
   key:                          ; key
     mov  eax,2                  ; just read it and ignore
-    int  0x40
+    mcall
     cmp  ah,key_Esc ; if Esc ?
     jne  .no_q
-      mov eax,-1
-      int 0x40
+      or eax,-1
+      mcall
     .no_q:
 
     if_e dword [mode],4,.end_if6
@@ -117,13 +118,13 @@ still:
 
   button:                       ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
 
     mov  eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
 
     jmp  still
@@ -139,7 +140,7 @@ show_screen:  ; flips the virtual screen to the window
     mov  ebx,screen
     mov  ecx,X_SIZE*65536+Y_SIZE
     mov  edx,4*65536+20
-    int  0x40
+    mcall
 
     pop_abc
 ret
@@ -458,7 +459,7 @@ fast_gfx:
 
     mov  eax,37  ; get mouse position
     mov  ebx,1
-    int  0x40
+    mcall
     shr  eax,16
     mov  [x],eax
     add  eax,[s_x]

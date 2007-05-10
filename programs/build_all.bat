@@ -1,6 +1,7 @@
 @echo off
 
 set languages=en ru ge et
+set __CPU_type=p5 p6 k6
 set kpack=y n
 cls
 echo Build KolibriOS apps
@@ -11,6 +12,14 @@ set /P res=">
 
 @erase lang.inc
 echo lang fix %res% > lang.inc
+
+echo Enter CPU_type ("p5" for interrupt, "p6" for SYSENTER, "k6" for SYSCALL)
+
+set /p res=">
+
+@erase config.inc
+echo __CPU_type fix %res% > config.inc
+
 
 if not exist bin mkdir bin
 if not exist bin\demos mkdir bin\demos
@@ -35,6 +44,7 @@ echo *
 @fasm system\kbd\trunk\kbd.ASM bin\kbd
 @fasm system\launcher\trunk\launcher.asm bin\launcher
 @fasm system\menu\trunk\menu.asm bin\@menu
+@fasm system\mgb\trunk\mgb.asm bin\mgb
 @fasm system\PANEL\trunk\@PANEL.ASM bin\@PANEL
 @fasm system\pcidev\trunk\pcidev.asm bin\pcidev
 @fasm system\RB\trunk\@RB.ASM bin\@RB
@@ -77,10 +87,12 @@ echo *
 @fasm network\dhcp\trunk\dhcp.asm bin\network\dhcp
 @fasm network\dnsr\trunk\dnsr.asm bin\network\dnsr
 @fasm network\ethstat\trunk\ethstat.asm bin\network\ethstat
+@fasm network\ftps\trunk\https.asm bin\network\ftps
 @fasm network\httpc\trunk\httpc.asm bin\network\httpc
 @fasm network\https\trunk\https.asm bin\network\https
 @fasm network\ipc\trunk\ipc.asm bin\network\ipc
 @fasm network\local\trunk\local.asm bin\network\local
+@fasm network\mp3s\trunk\mp3s.asm bin\network\mp3s
 @fasm network\netsendc\trunk\netsendc.asm bin\network\netsendc
 @fasm network\netsends\trunk\netsends.asm bin\network\netsends
 @fasm network\nntpc\trunk\nntpc.asm bin\network\nntpc
@@ -119,7 +131,7 @@ rem media\ac97snd\trunk\ac97snd.asm ac97snd
 @fasm media\midamp\trunk\midamp.asm bin\midamp
 @fasm media\midiplay\trunk\midiplay.asm bin\midiplay
 @fasm media\mixer\trunk\mixer.asm bin\mixer
-@fasm media\mp3s\trunk\mp3s.asm bin\mp3s
+
 @fasm media\mv\trunk\mv.asm bin\mv
 @fasm media\pic4\trunk\pic4.asm bin\pic4
 @fasm media\sb\trunk\sb.asm bin\sb
@@ -143,6 +155,7 @@ cd ..\..\..
 @fasm games\pong3\trunk\pong3.asm bin\games\pong3
 @fasm games\tanks\trunk\tanks.asm bin\games\tanks
 @fasm games\tetris\trunk\tetris.asm bin\games\tetris
+rem @fasm games\hunter\trunk\hunter.asm bin\games\hunter
 
 echo *
 echo Building demos
@@ -200,6 +213,7 @@ echo *
 @kpack bin\kbd
 @kpack bin\launcher
 @kpack bin\menu
+@kpack bin\mgb
 @kpack bin\@PANEL
 @kpack bin\pcidev
 @kpack bin\@RB

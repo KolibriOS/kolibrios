@@ -24,7 +24,7 @@ draw_icons:
 	 add ebx,(1200*1000*3)+12
 	 mov eax,7
 	 mov ecx,417*65536+46
-	 int 0x40
+	 mcall
 
 
 	 ;main buttons of instrumnts
@@ -47,7 +47,7 @@ draw_icons:
 	 mov edx,[counter]
 	 add edx,10
 	 add edx,1000000000000000000000000000000b
-	 int 0x40
+	 mcall
 
 
 	 add [Icon_X],22
@@ -77,7 +77,7 @@ draw_icons:
 	 mov edx,[counter]
 	 add edx,40
 	 add edx,1000000000000000000000000000000b
-	 int 0x40
+	 mcall
 
 	 add [Icon_X],19
 
@@ -106,7 +106,7 @@ draw_icons:
 	 mov edx,[counter]
 	 add edx,45
 	 add edx,1000000000000000000000000000000b
-	 int 0x40
+	 mcall
 
 	 add [Icon_X],19
 
@@ -130,7 +130,7 @@ draw_icons:
 	 add ecx,21
 	 mov edx,51
 	 add edx,1000000000000000000000000000000b
-	 int 0x40
+	 mcall
 
 	 ; button of color
 	 mov [Icon_X],7+128+1
@@ -147,12 +147,12 @@ draw_icons:
 	 add ecx,21
 	 mov edx,52
 	 add edx,1000000000000000000000000000000b
-	 int 0x40
+	 mcall
 
 	 mov eax,13
 	 mov ebx,136*65536+20
 	 mov ecx,65*65536+20
 	 mov edx,[Color]
-	 int 0x40
+	 mcall
 
 	 ret

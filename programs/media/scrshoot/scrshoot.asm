@@ -13,11 +13,11 @@ include 'macros.inc'  ; вставляем макросы
 	meos_header  cmdstr ; вставляем заголовок программы
 include 'scrwin.inc'  ; вставляем код окна прдпросмотра
 include 'scrsavef.inc'; вставляем процедуру сохранения файла
-	use_edit_box   ; \
-	use_txt_button ;  |
-	use_label      ;  |-- GUI компоненты и некоторые процедуры
-	use_check_box  ;  |
-	use_text_work  ; /
+	use_edit_box   structure_of_potock,22,5 ; \
+	use_txt_button                          ;  |
+	use_label                               ;  |-- GUI компоненты и некоторые процедуры
+	use_check_box                           ;  |
+	use_text_work                           ; /
 include 'gp.inc'
 include 'srectwin.inc'
 include 'lang.inc'
@@ -492,10 +492,10 @@ status label 5,201,0,no_shoot
 labels_end:
 
 editboxes:
-edit1 edit_box 300,5,35,cl_white,0,0,0,1024,ed_buffer.1,ed_focus	 ; путь к файлу
-edit2 edit_box 35,75,134,cl_white,0,0,0,9,ed_buffer.2,ed_figure_only	 ; задержка
-edit3 edit_box 35,165,164,cl_white,0,0,0,9,ed_buffer.3,ed_figure_only
-edit4 edit_box 16,165,181,cl_white,0,0,0,1,sign_n_input,ed_figure_only,1
+edit1 edit_box 300,5,35,cl_white,0xaabbcc,0,0,0,1024,ed_buffer.1,ed_focus	 ; путь к файлу
+edit2 edit_box 35,75,134,cl_white,0xaabbcc,0,0,0,9,ed_buffer.2,ed_figure_only	 ; задержка
+edit3 edit_box 35,165,164,cl_white,0xaabbcc,0,0,0,9,ed_buffer.3,ed_figure_only
+edit4 edit_box 16,165,181,cl_white,0xaabbcc,0,0,0,1,sign_n_input,ed_figure_only,1
 editboxes_end:
 
 buttons:

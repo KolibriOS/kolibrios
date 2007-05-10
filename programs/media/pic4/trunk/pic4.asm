@@ -12,7 +12,7 @@
   dd      I_Param,0
 
   include 'lang.inc'
-  include 'macros.inc'
+  include '..\..\..\macros.inc'
 
 START:
     mov  eax,48
@@ -31,18 +31,16 @@ START:
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
-    cmp  eax,1
+    mcall
+
+    dec  eax
     jz   red
-    cmp  eax,2
-    jz   key
-    cmp  eax,3
-    jz   button
-    jmp  still
+    dec  eax
+    jnz  button
 
   key:
-    mov  eax,2
-    int  0x40
+    mov  al,2
+    mcall
     jmp  still
 
   red:
@@ -50,21 +48,20 @@ still:
     jmp  still
 
   button:
-    mov  eax,17
-    int  0x40
+    mov  al,17
+    mcall
 
     shr  eax,8
-    and  eax,255
 
     cmp  eax,101                ; tiled
     jne  no101
     mov  eax,15
     mov  ebx,4
     mov  ecx,1
-    int  0x40
+    mcall
     mov  eax,15
     mov  ebx,3
-    int  0x40
+    mcall
     jmp  still
   no101:
 
@@ -73,18 +70,18 @@ still:
     mov  eax,15
     mov  ebx,4
     mov  ecx,2
-    int  0x40
+    mcall
     mov  eax,15
     mov  ebx,3
-    int  0x40
+    mcall
     jmp  still
   no102:
 
     cmp  eax,1           ; end program
-    jnz  noproend
+    jnz  no_end
     or   eax,-1
-    int  0x40
-  noproend:
+    mcall
+  no_end:
 
     cmp  eax,11
     jz   bg
@@ -126,7 +123,7 @@ check_parameters:
     mov  ebx,1
     mov  ecx,256
     mov  edx,256
-    int  0x40
+    mcall
 
     mov  eax,15
     mov  ebx,5
@@ -134,19 +131,19 @@ check_parameters:
                        ; <<< 0x40000+2 for green background at boot
     mov  edx,0
     mov  esi,256*3*256
-    int  0x40
+    mcall
 
     mov  eax,15
     mov  ebx,4
     mov  ecx,2
-    int  0x40
+    mcall
 
     mov  eax,15
     mov  ebx,3
-    int  0x40
+    mcall
 
     mov  eax,-1
-    int  0x40
+    mcall
 
 
 
@@ -194,18 +191,18 @@ bg:
     mov  ebx,1
     mov  ecx,256
     mov  edx,256
-    int  0x40
+    mcall
 
     mov  eax,15
     mov  ebx,5
     mov  ecx,edi
     mov  edx,0
     mov  esi,256*256*3
-    int  0x40
+    mcall
 
     mov  eax,15
     mov  ebx,3
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -216,35 +213,30 @@ bg2:
 
     push eax
 
+    mcall 15,4,1
+
     mov  eax,15
     mov  ebx,1
-    mov  ecx,8
-    mov  edx,8
-    int  0x40
+    mov  ecx,1
+    mov  edx,1
+    mcall
 
-    mov  eax,[esp]
-
+    pop  eax
     sub  eax,14
-    shl  eax,2
+    imul eax,3
 
-    mov  edx,[colors+eax]
+    mov  ecx,fill
+    add  ecx,eax
 
-    mov  esi,32*32*4
-    mov  edi,0
-    mov  ecx,0
-  dbl2:
     mov  eax,15
-    mov  ebx,2
-    int  0x40
-    add  ecx,3
-    inc  edi
-    cmp  edi,esi
-    jb   dbl2
-
+    mov  ebx,5
+    xor  edx,edx
+    mov  esi,3*1*1
+    mcall
 
     mov  eax,15
     mov  ebx,3
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -261,11 +253,11 @@ bg4:
 
     mov  eax,15
     mov  ebx,1
-    int  0x40
+    mcall
 
     mov  eax,15
     mov  ebx,3
-    int  0x40
+    mcall
 
     jmp  still
 
@@ -362,7 +354,7 @@ draw_image:
     mov  ebx,0x40000
     mov  ecx,256*65536+255
     mov  edx,14*65536+40;55
-    int  0x40
+    mcall
 
     ret
 
@@ -377,15 +369,15 @@ draw_window:
 
     mov eax, 12                   ; tell os about draw
     mov ebx, 1
-    int 0x40
+    mcall
 
     xor eax, eax                    ; define and draw window
     mov ebx, 220*65536+293
     mov ecx, 50*65536+408
     mov edx, [sc.work]
     or  edx, 0x33000000
-    mov edi, header
-    int 0x40
+    mov edi, title
+    mcall
 
     call draw_image
 
@@ -394,46 +386,46 @@ draw_window:
     mov  ecx,y_add*65536+y_s
     mov  edx,11
     mov  esi,0x005555bb
-    int  0x40
+    mcall
     ;mov  eax,8                     ; Red button
     mov  ebx,(set+208+27)*65536+17
     mov  edx,12
     mov  esi,0x00bb5555
-    int  0x40
+    mcall
     ;mov  eax,8                     ; Green button
     mov  ebx,(set+253)*65536+17
     mov  edx,13
     mov  esi,0x0055bb55
-    int  0x40
+    mcall
 
     ;mov  eax, 8                     ; tiled
     mov  ebx, 90*65536+63
     mov  ecx, y_add*65536+y_s
     mov  edx, 101
     mov  esi, [sc.work_button]
-    int  0x40
+    mcall
 
     ;mov  eax, 8                     ; stretch
     mov  ebx, 154*65536+61
     mov  edx, 102
-    int  0x40
+    mcall
 
     mov  eax, 4
     mov  ebx, 215*65536+5
     mov  ecx, [sc.work_text]
     mov  edx, apply_text
     mov  esi, apply_text.size
-    int  0x40
+    mcall
 
     mov  ebx, 14*65536+301
     mov  edx, image_buttons_text
     mov  esi, image_buttons_text.size
-    int  0x40
+    mcall
 
     mov  ebx, 14*65536+(y_add2+27)
     mov  edx, simple_text
     mov  esi, simple_text.size
-    int  0x40
+    mcall
 
     mov  ecx, (y_add2)*65536+20
     mov  ebx, (13)*65536+25
@@ -442,7 +434,7 @@ draw_window:
     mov  edi, 9
     mov  eax, 8
   @@:
-    int  0x40
+    mcall
     add  ebx, 29*65536
     inc  edx
     dec  edi
@@ -451,11 +443,11 @@ draw_window:
 
     mov  edx, 34+4
     mov  edi, 4
-    mov  eax, 8
+    ;mov  eax, 8
     mov  ebx, 13*65536+18
     mov  ecx, y_add*65536+y_s
   @@:
-    int  0x40
+    mcall
     inc  edx
     add  ebx, 19*65536
     dec  edi
@@ -463,6 +455,7 @@ draw_window:
 
 
     ;-----------------------
+    mov  eax,8
     mov  edx,14                            ; button number
     mov  ebx,(13)*65536+17                 ; button start x & size
     mov  ecx,(y_add2+40)*65536+14          ; button start y & size
@@ -470,12 +463,10 @@ draw_window:
   newcb:
     mov  esi,[(edx-14)*4+colors]
 
-    mov  eax,8
-    int  0x40
+    mcall
 
     inc  edx
     add  ebx,20*65536
-    add  esi,5*256*256
 
     cmp  edx,27
     jnz  newcb
@@ -486,11 +477,11 @@ draw_window:
     mov  ecx, [sc.work_button_text]
     mov  edx, la2
     mov  esi, la2.size
-    int  0x40
+    mcall
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     ret
 
@@ -499,9 +490,9 @@ draw_window:
 ; DATA SECTION
 
 if lang eq ru
-    header db 'Генератор фона рабочего стола',0
+    title db 'Генератор фона рабочего стола',0
 else
-    header db 'Background',0
+    title db 'Background',0
 end if
 
 lsz apply_text,\
@@ -535,9 +526,23 @@ colors:
     dd  0x775533
     dd  0x773355
     dd  0x553377
-    dd  0x000000
+    dd  0x111111
     dd  0xcccccc
 
+fill:
+    db  0x00,0x00,0x77
+    db  0x00,0x77,0x00
+    db  0x77,0x00,0x00
+    db  0x00,0x77,0x77
+    db  0x77,0x00,0x77
+    db  0x77,0x77,0x00
+    db  0x77,0x77,0x77
+    db  0x77,0x55,0x33
+    db  0x33,0x55,0x77
+    db  0x55,0x33,0x77
+    db  0x77,0x33,0x55
+    db  0x11,0x11,0x11
+    db  0xcc,0xcc,0xcc
 
 shape:
 

@@ -17,13 +17,13 @@ use32
                dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
 
 START:                          ; start of execution
-    mov  [procinfo.x_start], 100
-    mov  [procinfo.x_size],  200
-    mov  [procinfo.y_start], 80
-    mov  [procinfo.y_size],  300
+    mov  [procinfo.box.left], 100
+    mov  [procinfo.box.width],  200
+    mov  [procinfo.box.top], 80
+    mov  [procinfo.box.height],  300
     call draw_window
 red:    
     call get_transparent
@@ -32,7 +32,7 @@ red:
 still:
 
     mov  eax,10                 ; wait here for event
-    int  0x40
+    mcall
 
     cmp  eax,1                  ; redraw request ?
     je   red
@@ -44,17 +44,17 @@ still:
 
   key:                          ; key
     mov  al,2                  ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
   button:                       ; button
     mov  al,17                 ; get id
-    int  0x40
+    mcall
 
     cmp  ah,1                   ; button id=1 ?
     jne  noclose
     or   eax,-1                 ; close this program
-    int  0x40
+    mcall
   noclose:
 
     jmp  still
@@ -69,24 +69,24 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
-    mov  ebx,[procinfo.x_start]
+    mov  ebx,[procinfo.box.left]
     shl  ebx,16
-    add  ebx,[procinfo.x_size]
-    mov  ecx,[procinfo.y_start]
+    add  ebx,[procinfo.box.width]
+    mov  ecx,[procinfo.box.top]
     shl  ecx,16
-    add  ecx,[procinfo.y_size]
+    add  ecx,[procinfo.box.height]
     mov  edx,0x33000000            ; color of work area RRGGBB,8->color gl
-    mov  edi,header                ; WINDOW LABEL
-    int  0x40
+    mov  edi,title                ; WINDOW LABEL
+    mcall
 
     call draw_transparent
                                    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -99,11 +99,11 @@ draw_transparent:
 
     mov  eax,7
     mov  ebx,0x1000
-    mov  ecx,[procinfo.x_size]
+    mov  ecx,[procinfo.box.width]
     shl  ecx,16
-    add  ecx,[procinfo.y_size]
+    add  ecx,[procinfo.box.height]
     xor  edx,edx
-    int  0x40
+    mcall
 
     popa
     ret
@@ -116,29 +116,29 @@ get_transparent:
     mov  eax,9
     mov  ebx,I_END
     mov  ecx,-1
-    int  0x40
+    mcall
 
     mov  eax,14
-    int  0x40
+    mcall
 
     shr  eax,16
     inc  eax
     mov  [scx],eax
 
-    add  [procinfo.x_start], 4
-    sub  [procinfo.x_size],  4+4
-    add  [procinfo.y_start], 22
-    sub  [procinfo.y_size],  22+4
+    add  [procinfo.box.left], 4
+    sub  [procinfo.box.width],  4+4
+    add  [procinfo.box.top], 22
+    sub  [procinfo.box.height],  22+4
 
-    mov  eax,[procinfo.x_start]
-    add  eax,[procinfo.x_size]
+    mov  eax,[procinfo.box.left]
+    add  eax,[procinfo.box.width]
     mov  [x_end],eax
-    mov  eax,[procinfo.y_start]
-    add  eax,[procinfo.y_size]
+    mov  eax,[procinfo.box.top]
+    add  eax,[procinfo.box.height]
     mov  [y_end],eax
 
-    mov  eax,[procinfo.x_start]
-    mov  ebx,[procinfo.y_start]
+    mov  eax,[procinfo.box.left]
+    mov  ebx,[procinfo.box.top]
 
   dtpl1:
 
@@ -148,15 +148,15 @@ get_transparent:
     imul  ebx,[scx]
     add   ebx,eax
     mov   eax,35
-    int   0x40
+    mcall
 
     or    eax, 0x4e4e4e
 
     mov   ebx,[esp+4]
     mov   ecx,[esp]
-    sub   ebx,[procinfo.x_start]
-    sub   ecx,[procinfo.y_start]
-    imul  ecx,[procinfo.x_size]
+    sub   ebx,[procinfo.box.left]
+    sub   ecx,[procinfo.box.top]
+    imul  ecx,[procinfo.box.width]
     imul  ebx,3
     imul  ecx,3
     add   ebx,ecx
@@ -168,7 +168,7 @@ get_transparent:
     inc   eax
     cmp   eax,[x_end]
     jb    dtpl1
-    mov   eax,[procinfo.x_start]
+    mov   eax,[procinfo.box.left]
     inc   ebx
     cmp   ebx,[y_end]
     jb    dtpl1
@@ -182,18 +182,13 @@ get_transparent:
 
 ; DATA AREA
 
-;x_start  dd 100
-;y_start  dd 80
-
-;x_size   dd 160
-;y_size   dd 200
 
 x_end    dd 0
 y_end    dd 0
 
 scx      dd 640
 
-header     db   'Transparent',0
+title     db   'Transparent',0
 
 I_END:
 procinfo process_information

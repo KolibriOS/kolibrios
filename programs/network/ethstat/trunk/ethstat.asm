@@ -5,26 +5,26 @@
 ;
    
 use32
-   
-                org     0x0
-   
-                db      'MENUET00'              ; 8 byte id
-                dd      38                      ; required os
-                dd      START                   ; program start
-                dd      I_END                   ; program image size
-                dd      0x100000                ; required amount of memory
-                dd      0x00000000              ; reserved=no extended header
+ org	0x0
+ db	'MENUET01'    ; header
+ dd	0x01	      ; header version
+ dd	START	      ; entry point
+ dd	I_END	      ; image size
+ dd	I_END+0x10000 ; required memory
+ dd	I_END+0x10000 ; esp
+ dd	0x0 , 0x0     ; I_Param , I_Path
    
 include 'lang.inc'
-include 'macros.inc'
+include '..\..\..\macros.inc'
    
 START:                          ; start of execution
+
     call draw_window            ; at first, draw the window
    
 still:
     mov  eax,23                 ; wait here for event
     mov  ebx,200    ; Time out after 2s
-    int  0x40
+    mcall
    
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -38,7 +38,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 6
- int  0x40
+ mcall
    
  mov  ebx, text + 24
  call printhex
@@ -46,7 +46,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 2
- int  0x40
+ mcall
    
  mov  ebx, text + 107
  call printhex
@@ -54,7 +54,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 5
- int  0x40
+ mcall
    
  mov  ebx, text + 107 + 40
  call printhex
@@ -62,7 +62,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 4
- int  0x40
+ mcall
    
  mov  ebx, text + 107 + 80
  call printhex
@@ -70,7 +70,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 100
- int  0x40
+ mcall
    
  mov  ebx, text + 258
  call printhex
@@ -78,7 +78,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 101
- int  0x40
+ mcall
    
  mov  ebx, text + 258 + 40
  call printhex
@@ -86,7 +86,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 102
- int  0x40
+ mcall
    
  mov  ebx, text + 258 + 80
  call printhex
@@ -94,7 +94,7 @@ still:
  mov  eax, 53
  mov  ebx, 255
  mov  ecx, 103
- int  0x40
+ mcall
    
  mov  ebx, text + 258 + 120
  call printhex
@@ -105,18 +105,18 @@ red:                           ; redraw
    
 key:                           ; Keys are not valid at this part of the
     mov  eax,2                  ; loop. Just read it and ignore
-    int  0x40
+    mcall
     jmp  still
    
 button:                        ; button
     mov  eax,17                 ; get id
-    int  0x40
+    mcall
    
     cmp  ah,1                   ; button id=1 ?
     jnz  still
    
-    mov  eax,0xffffffff         ; close this program
-    int  0x40
+    or  eax,-1                 ; close this program
+    mcall
    
     jmp  still
    
@@ -132,34 +132,26 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
    
                                    ; DRAW WINDOW
-    mov  eax,0                     ; function 0 : define and draw window
+    xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+260         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+205         ; [y start] *65536 + [y size]
-    mov  edx,0x03224466            ; color of work area RRGGBB
-    mov  esi,0x00334455            ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x00ddeeff            ; color of frames    RRGGBB
-    int  0x40
+    mov  edx,0x13224466            ; color of work area RRGGBB
+    mov  edi,title                 ; WINDOW LABEL
+    mcall
    
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x00ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    int  0x40
-   
+                                  
     ; Re-draw the screen text
     cld
+    mov  eax,4
     mov  ebx,25*65536+35           ; draw info text with function 4
     mov  ecx,0xffffff
     mov  edx,text
     mov  esi,40
   newline:
-    mov  eax,4
-    int  0x40
+    mcall
     add  ebx,16
     add  edx,40
     cmp  [edx],byte 'x'
@@ -168,7 +160,7 @@ draw_window:
    
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
    
     ret
    
@@ -211,9 +203,7 @@ text:
     db 'x <- END MARKER, DONT DELETE            '
    
    
-labelt:
-    db   'Stack Status'
-labellen:
+title    db   'Stack Status',0
    
 hextable db '0123456789ABCDEF'
    

@@ -19,13 +19,13 @@ ICON_STRIP equ '/RD/1/ICONSTRP.GIF'
   use32
   org    0x0
   db     'MENUET01'     ; 8 byte id
-  dd     0x01           ; header version
+  dd     0x01           ; title version
   dd     START          ; start of code
   dd     I_END          ; size of image
   dd     icon_data+0x30000        ; memory for app
   dd     icon_data+0x30000        ; esp
   dd     I_Param , 0x0  ; I_Param , I_Icon
-include  'macros.inc'
+include  '..\..\..\macros.inc'
 include  'lang.inc'
 COLOR_ORDER equ MENUETOS
 include  'gif_lite.inc'
@@ -55,7 +55,7 @@ START:                       ; start of execution
 still:
 
     mov  eax,10              ; wait here for event
-    int  0x40
+    mcall
 
     dec  eax                   ; redraw request ?
     jz   red
@@ -64,7 +64,7 @@ still:
 
   button:                    ; button
     mov  al,17              ; get id
-    int  0x40
+    mcall
 
     shr  eax,8
 
@@ -139,13 +139,13 @@ still:
     mov  esi,iconlst
     call lst_path
     mov eax,70
-    int 0x40
+    mcall
 
     ; (2) terminate all icons
     mov  eax,9
     mov  ebx,I_END
     or      ecx,-1
-    int  0x40
+    mcall
     mov  edi,[ebx+30]
      newread2:
     mov  esi,1
@@ -154,7 +154,7 @@ still:
     mov  eax,9
     mov  ebx,I_END
     mov  ecx,esi
-    int  0x40
+    mcall
     cmp  edi,[ebx+30]
     je   newread
     cmp  esi,eax
@@ -171,7 +171,7 @@ still:
     mov  eax,18
     mov  ebx,2
     mov  ecx,esi
-    int  0x40
+    mcall
 
     jmp  newread2
 
@@ -206,7 +206,7 @@ finfo:
         mov     esi, iconname
         call    lst_path
         mov     eax, 70
-        int     0x40
+        mcall
     jmp   still
 
   no_apply:
@@ -219,14 +219,14 @@ finfo:
     mov  ecx,0xc0ff0000
     mov  edx,add_text
     mov  edi,0xffffff
-    int  0x40
+    mcall
 
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,3
     jne  still
     mov  eax,17
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,40
     jb   no_f
@@ -285,14 +285,14 @@ finfo:
     mov  ecx,0xc0ff0000
     mov  edx,rem_text
     mov  edi,0xffffff
-    int  0x40
+    mcall
 
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,3
     jne  no_f;ound
     mov  eax,17
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,40
     jb   red;no_f;ound
@@ -406,7 +406,7 @@ print_strings:
     mov  ebx,100*65536+180
     mov  ecx,(278+12)*65536+40
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
           xor  edi,edi
     mov  eax,4               ; icon text
@@ -419,7 +419,7 @@ print_strings:
     add  edx,[positions+edi*4]
     movzx esi,byte[str_lens+edi]
     inc  edi
-    int  0x40
+    mcall
     add  ebx,14
     pop  ecx
     loop .ll
@@ -504,13 +504,13 @@ read_string:
     pop  edi
   f11:
     mov  eax,10
-    int  0x40
+    mcall
     cmp  eax,2
     jz   fbu
     jmp  rs_done
   fbu:
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     cmp  eax,13
     je   rs_done
@@ -548,7 +548,7 @@ read_string:
 
  key:                       ; key
     mov  al,2               ; just read it and ignore
-    int  0x40
+    mcall
     jmp  still
 
 ;   *********************************************
@@ -560,64 +560,64 @@ draw_window:
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    int  0x40
+    mcall
 
                                    ; DRAW WINDOW
     xor  eax,eax
     mov  ebx,210*65536+300
     mov  ecx,30*65536+390-14
     mov  edx,0x13ffffff
-    mov  edi,header       ; WINDOW LABEL
-    int  0x40
+    mov  edi,title       ; WINDOW LABEL
+    mcall
 
     mov  eax,13                    ; WINDOW AREA
     mov  ebx,20*65536+260
     mov  ecx,35*65536+200
     mov  edx,0x3366cc
-    int  0x40
+    mcall
 
     mov  eax,38                    ; VERTICAL LINE ON WINDOW AREA
     mov  ebx,150*65536+150
     mov  ecx,35*65536+235
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     mov  eax,38                    ; HOROZONTAL LINE ON WINDOW AREA
     mov  ebx,20*65536+280
     mov  ecx,135*65536+135
     mov  edx,0xffffff
-    int  0x40
+    mcall
 
     mov  eax,8                     ; TEXT ENTER BUTTONS
     mov  ebx,20*65536+72
     mov  ecx,(275+1+14)*65536+13-2
     mov  edx,11
     mov  esi,[bcolor]
-    int  0x40
+    mcall
     inc  edx
     add  ecx,14*65536
-    int  0x40
+    mcall
     inc  edx
     add  ecx,14*65536
-    int  0x40
+    mcall
 
 ;    mov  eax,8                     ; APPLY AND SAVE CHANGES BUTTON
     mov  ebx,20*65536+259
     mov  ecx,(329+2)*65536+15-4
     mov  edx,21
     mov  esi,[bcolor]
-    int  0x40
+    mcall
 
 ;    mov  eax,8                     ; ADD ICON BUTTON
     mov  ebx,20*65536+129-2
     add  ecx,14*65536
     inc  edx
-    int  0x40
+    mcall
 
 ;    mov  eax,8                     ; REMOVE ICON BUTTON
     add  ebx,(130+2)*65536
     inc  edx
-    int  0x40
+    mcall
 
     mcall ,<20-14,8>,<260-23,32>,30+1 shl 30    ; IMAGE BUTTON
     inc  edx
@@ -645,7 +645,7 @@ draw_window:
   newline:
     mov  ecx,[edx]
     add  edx,4
-    int  0x40
+    mcall
     add  ebx,14
     add  edx,47
     cmp  [edx],byte 'x'
@@ -673,7 +673,7 @@ draw_btns:
 
     push eax
     mov  eax,8
-    int  0x40
+    mcall
     pop  eax
 
   no_button:
@@ -702,7 +702,7 @@ draw_btns:
     call draw_icon
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
+    mcall
 
     ret
 
@@ -778,10 +778,10 @@ if lang eq ru
       db 255,255,255,0,   '      ÑéÅÄÇàíú              ìÑÄãàíú            '
       db 0,0,0,0,         'çÄÜåàíÖ çÄ èéáàñàû àäéçäà Ñãü êÖÑÄäíàêéÇÄçàü   '
       db                  'x' ; <- END MARKER, DONT DELETE
-add_text             db 'çÄÜåàíÖ çÄ èéáàñàû çÖàëèéãúáìÖåéâ àäéçäà     ',0
 
-rem_text             db 'çÄÜåàíÖ çÄ èéáàñàû àëèéãúáìÖåéâ àäéçäà       ',0
-header                 db 'å•≠•§¶•‡ ®™Æ≠Æ™',0
+add_text               db 'çÄÜåàíÖ çÄ èéáàñàû çÖàëèéãúáìÖåéâ àäéçäà     ',0
+rem_text               db 'çÄÜåàíÖ çÄ èéáàñàû àëèéãúáìÖåéâ àäéçäà       ',0
+title                 db 'å•≠•§¶•‡ ®™Æ≠Æ™',0
 
 else if lang eq ge
   text:
@@ -792,10 +792,10 @@ else if lang eq ge
       db 255,255,255,0,   '     HINZUFUEGEN              ENTFERNEN        '
       db 0,0,0,0,         'AUF BUTTON KLICKEN, UM ICON ZU EDITIEREN       '
       db                  'x' ; <- END MARKER, DONT DELETE
-add_text             db 'AUF UNBENUTZTE ICONPOSITION KLICKEN         ',0
 
-rem_text             db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL',0
-header     db 'Icon Manager',0
+add_text               db 'AUF UNBENUTZTE ICONPOSITION KLICKEN          ',0
+rem_text               db 'ICON ANKLICKEN; DAS GELOESCHT WERDEN SOLL    ',0
+title                 db 'Icon Manager',0
 
 else
   text:
@@ -806,10 +806,9 @@ else
       db 255,255,255,0,   '      ADD ICON              REMOVE ICON        '
       db 0,0,0,0,         'CLICK BUTTON ON ICON POSITION FOR EDIT         '
       db                  'x' ; <- END MARKER, DONT DELETE
-add_text             db 'CLICK ON A NOT USED POSITION               ',0
-
-rem_text            db 'CLICK ICON POSITION; YOU WANT TO DELETE',0
-header     db 'Icon Manager',0
+add_text               db 'CLICK ON A NOT USED POSITION                 ',0
+rem_text               db 'CLICK ICON POSITION; YOU WANT TO DELETE      ',0
+title                 db 'Icon Manager',0
 
 end if
 
@@ -835,12 +834,12 @@ rep_text_len:
 get_bg_info:
     mov  eax,39
     mov  ebx,4
-    int  0x40
+    mcall
     mov  [bgrdrawtype],eax
 
     mov  eax,39     ; get background size
     mov  ebx,1
-    int  0x40
+    mcall
     mov  [bgrxy],eax
 
     mov  ebx,eax
@@ -860,6 +859,7 @@ calc_icon_pos:
     movzx ebx,[warea.left]
     add  eax,ebx
     jmp  x_done
+
   no_left:
     sub  eax,9
     sal  eax,6 ;imul eax,64
@@ -867,7 +867,6 @@ calc_icon_pos:
     movzx ebx,[warea.right]
     add  eax,ebx
   x_done:
-;    mov  [xpos],eax
     mov  [ebp-12],eax
 
     movzx eax,byte [ebp-20+1]  ; y position
@@ -886,7 +885,6 @@ calc_icon_pos:
     movzx ebx,[warea.bottom]
     add  eax,ebx
   y_done:
-;    mov  [ypos],eax
     mov  [ebp-8],eax
     ret
 
@@ -899,7 +897,7 @@ load_icon_list2:
         mov     [warea.by_y],ebx
 
         mov     eax,14
-        int     0x40
+        mcall
         add     eax,0x00010001
         mov     [scrxy],eax
 
@@ -917,13 +915,9 @@ apply_changes2:
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread
-;    mov  edx,[thread_stack]
     mov  edx,ebp
-;    sub  edx,4
-;    mov  [edx],esi
     mov  dword[ebp-4],esi
-    int  0x40
-;    add  [thread_stack],0x100
+    mcall
     add  ebp,0x100
 
     mov  eax,5
@@ -931,7 +925,7 @@ apply_changes2:
 wait_thread_start:         ;wait until thread draw itself first time
     cmp  [create_thread_event],bl
     jz     wait_thread_end
-    int  0x40
+    mcall
     jmp  wait_thread_start
 wait_thread_end:
     dec  [create_thread_event]     ;reset event
@@ -942,7 +936,7 @@ wait_thread_end:
     jnz  start_new
   close:
     or     eax,-1
-    int  0x40
+    mcall
 
 thread:
 ;   pop  ebp ;ebp - address of our icon
@@ -953,19 +947,17 @@ thread:
     mov  [create_thread_event],1
     mov  eax,40
     mov  ebx,010101b
-    int  0x40
+    mcall
 
 still2:
 
     mov  eax,10
-    int  0x40
+    mcall
 
     cmp  eax,1
     je     red2
     cmp  eax,3
     je     button2
-    cmp  eax,5
-    jne  still2
 
     call  get_bg_info
     mov   eax,5
@@ -985,10 +977,10 @@ still2:
         call    calc_icon_pos
         add     ebp,-12
         mcall   9,I_END,-1
-        mov     eax,[I_END+process_information.x_start]
+        mov     eax,[I_END+process_information.box.left]
         cmp     eax,[ebp+0]
         jne     @f
-        mov     eax,[I_END+process_information.y_start]
+        mov     eax,[I_END+process_information.box.top]
         cmp     eax,[ebp+4]
         je      .lp1
     @@: call    get_bg_info
@@ -997,15 +989,9 @@ still2:
   .lp1: call    draw_window2
         jmp     still2
 
-  key2:
-    mov  al,2
-    int  0x40
-
-    jmp  still2
-
   button2:
     mov  al,17
-    int  0x40
+    mcall
 
 
     mov  esi,[ebp+8]
@@ -1020,13 +1006,9 @@ still2:
     jne  .no0
     and  dword[finfo_start+8],0
   .no0:
-;    lea  ebx,[ebp+19]
     mov  ebx,finfo_start
     mov  eax,70
-    int  0x40
-;    dph  eax
-;    cmp  eax,1024
-;    jae  still2
+    mcall
     jmp  still2
 
 fill_paths:
@@ -1035,7 +1017,6 @@ fill_paths:
         movzx ecx,byte[str_lens+ebx]
         add  esi,[positions+ebx*4]
         push esi
-;  mov  edx,esi
         add  esi,ecx
 
     .l1:
@@ -1077,7 +1058,6 @@ atoi:
         ret
 
 itoa:
-;        mov  esi,[current_icon]
         add  esi,2
     mov ebx,10
     mov ecx,3
@@ -1088,7 +1068,6 @@ itoa:
     mov [esi],dl
     dec esi
     loop .l0
-;    and byte[esi],0
         ret
 
 draw_picture:
@@ -1138,7 +1117,6 @@ no_correction_pixpos:
   stretch:
     cmp   [bgrdrawtype],dword 2
     jne   nostretch
-;    mov   eax,[ypos]
     mov   eax,[ebp+4]
     add   eax,ecx
     imul  eax,[bgry]
@@ -1147,7 +1125,6 @@ no_correction_pixpos:
     div   ebx
     imul  eax,[bgrx]
     push  eax
-;    mov   eax,[xpos]
     mov   eax,[ebp+0]
     add   eax,[esp+8]
     imul  eax,[bgrx]
@@ -1163,7 +1140,6 @@ no_correction_pixpos:
 
     cmp   [bgrdrawtype],dword 1
     jne   notiled
-;    mov   eax,[ypos]
     mov   eax,[ebp+4]
     add   eax,ecx
     cdq
@@ -1172,7 +1148,6 @@ no_correction_pixpos:
     mov   eax,edx
     imul  eax,[bgrx]
     push  eax
-;    mov   eax,[xpos]
     mov   eax,[ebp+0]
     add   eax,[esp+8]
     movzx ebx,word [bgrxy+2]
@@ -1187,7 +1162,7 @@ no_correction_pixpos:
     lea  ecx,[eax+eax*2]
     mov  eax,39
     mov  ebx,2
-    int  0x40
+    mcall
 
   nobpix:
 
@@ -1234,7 +1209,7 @@ no_correction_pixpos:
     mov  ebx,0x3000
     mov  ecx,52 shl 16 + 52
     xor  edx,edx
-    int  0x40
+    mcall
   .ex:
     mov  [load_pic],0
     ret
@@ -1244,20 +1219,20 @@ draw_text:
     mov  esi,[ebp+8]
     add  esi,3
     push edi
-    mov  edi,header
+    mov  edi,title
     mov  ecx,8
     cld
     rep  movsb
     pop  edi
-    mov   eax,header
+    mov   eax,title
   news2:
     cmp   [eax],byte 33
     jb      founde
     inc   eax
-    cmp   eax,header+8;11
+    cmp   eax,title+8;11
     jb      news2
    founde:
-    sub   eax,header
+    sub   eax,title
     mov   [tl],eax
 
     mov   eax,[tl]
@@ -1269,31 +1244,31 @@ draw_text:
 
     mov   eax,4
     xor   ecx,ecx         ; black shade of text
-    mov   edx,header
+    mov   edx,title
     mov   esi,[tl]
     add   ebx,1 shl 16      ;*65536+1
-    int   0x40
+    mcall
     inc   ebx
-    int   0x40
+    mcall
     add   ebx,1 shl 16
-    int   0x40
+    mcall
     inc   ebx
-    int   0x40
+    mcall
     sub   ebx,1 shl 16
-    int   0x40
+    mcall
     dec   ebx
     sub   ebx,1 shl 16
-    int   0x40
+    mcall
     sub   ebx,1 shl 16
     dec   ebx
-    int   0x40
+    mcall
     dec   ebx
     add   ebx,1 shl 16
-    int   0x40
+    mcall
     inc   ebx
     mov   ecx,0xffffff
 
-    int   0x40
+    mcall
     mov   [draw_pic],0
     ret
 
@@ -1306,24 +1281,22 @@ draw_window2:
 
     mov  eax,12            ; function 12:tell os about windowdraw
     mov  ebx,1               ; 1, start of draw
-    int  0x40
+    mcall
 
                    ; DRAW WINDOW
     xor  eax,eax             ; function 0 : define and draw window
-;    mov  ebx,[xpos-2]
     mov  ebx,[ebp+0-2]
-;    mov  ecx,[ypos-2]
     mov  ecx,[ebp+4-2]
     add  ebx,[yw]           ; [x start] *65536 + [x size]
     add  ecx,51            ; [y start] *65536 + [y size]
     mov  edx,0x01000000        ; color of work area RRGGBB,8->color gl
-    int  0x40
+    mcall
 
     mov  eax,8      ; button
     mov  ebx,51
     mov  ecx,50
     mov  edx,0x40000001
-    int  0x40
+    mcall
 
     mov  eax,5
     mov  ebx,1
@@ -1331,7 +1304,7 @@ draw_icon2:
     xchg [load_pic],bl
     test bl,bl
     je     draw_icon_end
-    int  0x40
+    mcall
     jmp  draw_icon2
 draw_icon_end:
 
@@ -1341,21 +1314,21 @@ draw_icon_2:
     xchg [draw_pic],bl
     test bl,bl
     je     draw_icon_end_2
-    int  0x40
+    mcall
     jmp  draw_icon_2
 draw_icon_end_2:
 
     mov  eax,9
     mov  ebx,process_table
     mov  ecx,-1
-    int  0x40
+    mcall
 
     call draw_picture
     call draw_text
 
     mov  eax,12
     mov  ebx,2
-    int  0x40
+    mcall
 
     ret
 
@@ -1364,25 +1337,17 @@ yw        dd     51
 ya        dd      0
 cur_btn   dd 40
 
-;xpos       dd   15
-;ypos       dd  185
 draw_pic    db      0
 load_pic    db      0
 create_thread_event db 0
 
 
 image          dd  0x3000
-;thread_stack  dd  0x5000
-
-;icons dd 0
-
 
 I_Param:
 
  icon_data = I_END+0x1400
  process_table = I_END+0x2400
-
-;I_END:
 
 bgrx dd ?
 bgry dd ?
@@ -1411,8 +1376,5 @@ sel_icon1  rd 1
 icon_count rd 1
 gif_file  rb  GIF_SIZE
 strip_file rb RAW_SIZE
-;I_Param:
-
-; icon_data = I_END+256
 
 I_END:

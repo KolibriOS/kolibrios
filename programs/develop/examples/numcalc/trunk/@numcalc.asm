@@ -1,3 +1,4 @@
+include '..\..\..\..\macros.inc'
 use32
         db      'MENUET01'
         dd      1
@@ -15,24 +16,24 @@ start:
         pop     ebx
         mov     cl, 45h         ; NumLock scancode
         xor     edx, edx
-        int     40h
+        mcall
         mov     al, 40          ; старшие биты уже обнулены
         mov     bl, 2           ; старшие биты уже обнулены
-        int     40h
+        mcall
 event:
         push    10
         pop     eax
-        int     40h
+        mcall
 ; у нас может быть только одно событие - нажата клавиша
         mov     al, 2
-        int     40h
+        mcall
         cmp     al, 2
         jnz     event
 ; у нас есть только одна горячая клавиша
         push    70
         pop     eax
         mov     ebx, fileinfo
-        int     40h
+        mcall
         jmp     event
 
 fileinfo:

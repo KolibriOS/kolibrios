@@ -26,7 +26,7 @@ use32
   dd 0x0
   dd 0x0
 
-include 'macros.inc'
+include '..\..\..\macros.inc'
 ENTRANCE: ; start of code
 
 ; ==== main ====
@@ -41,7 +41,7 @@ call draw_eyes                   ; draw those funny "eyes"
 
 mov eax,23                       ; wait for event with timeout
 mov ebx,TIMEOUT
-int 0x40
+mcall
 
 cmp eax,1                        ; redraw ?
 jnz  no_draw
@@ -60,12 +60,12 @@ jmp still                        ; loop
 
 key:
 mov eax,2        ; just read and ignore
-int 0x40
+mcall
 jmp still
 
 button:          ; analyze button
 mov eax,-1       ; this is button 1 - we have only one button :-)
-int 0x40
+mcall
 jmp still
 
 ; -====- declarations -====-
@@ -81,7 +81,7 @@ shape_window:
 mov eax,50                   ; set up shape reference area
 mov ebx,0
 mov ecx,winref
-int 0x40
+mcall
 
 ret
 
@@ -91,7 +91,7 @@ draw_eyes:                   ; check mousepos to disable blinking
 
 mov eax,37
 xor ebx,ebx
-int 0x40
+mcall
 cmp dword [mouse],eax
 jne redraw_ok
 ret
@@ -102,7 +102,7 @@ redraw_overlap:              ; label for redraw event (without checkmouse)
 
 mov eax,12
 mov ebx,1
-int 0x40
+mcall
 
 xor eax,eax                  ; define window
 mov ebx,[win_ebx]
@@ -110,19 +110,19 @@ mov ecx,[win_ecx]
 xor edx,edx
 xor esi,esi
 xor edi,edi
-int 0x40
+mcall
 
 mov eax,8                    ; define closebutton
 mov ebx,60
 mov ecx,45
 mov edx,1
-int 0x40
+mcall
 
 mov eax,7
 mov ebx,skindata
 mov ecx,60*65536+30
 mov edx,15
-int 0x40
+mcall
 
 mov eax,15
 mov ebx,30
@@ -132,7 +132,7 @@ call draw_eye_point
 
 mov eax,12
 mov ebx,2
-int 0x40
+mcall
 
 ret
 
@@ -281,7 +281,7 @@ shl ebx,16
 add ebx,4
 mov eax,13
 xor edx,edx
-int 0x40
+mcall
 
 popa
 ret
@@ -295,12 +295,12 @@ prepare_eyes:
 ;mov ecx,0x00000000
 ;mov edx,0xFFFFFFFF
 ;mov esi,imagedata
-;int 0x40
+;mcall
 ;cmp eax,0xFFFFFFFF
 ;jnz filefound
 
 ;mov eax,-1           ; file not exists...
-;int 0x40
+;mcall
 
 ;filefound:
 mov esi,imagedata+25 ; transform grayscale to putimage format
@@ -327,7 +327,7 @@ pop  ecx
 loop transform_loop
 
 mov eax,14           ; calculating screen position
-int 0x40
+mcall
 shr eax,1
 mov ax,59
 sub eax,30*65536

@@ -4,7 +4,7 @@
 Clock:
 	  mov eax,26
 	  mov ebx,9
-	  int 0x40
+	  mcall
 	  mov [time],eax
 
 	  ret

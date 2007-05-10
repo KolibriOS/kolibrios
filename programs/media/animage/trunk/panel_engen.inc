@@ -5,7 +5,7 @@ panel_interraction:
 	;>>>>>>>>>>>>>>>>>>>>>>>>>>
 	mov eax,18
 	mov ebx,14
-	;int 0x40
+	;mcall
 
 	and [Panel_flag],0
 	;collision with text on panel
@@ -50,7 +50,7 @@ panel_interraction:
 
 	mov eax,18
 	mov ebx,14
-	;int 0x40
+	;mcall
 
 	call print_panel_menu
 
@@ -92,7 +92,7 @@ print_panel_menu:
 	mov eax,8
 	mov edx,[counter]
 	add edx,11100000000000000000000000000000b
-	int 0x40
+	mcall
 	inc [counter]
 
 	cmp [counter],30
@@ -106,7 +106,7 @@ print_panel_menu:
 	mov eax,8
 	mov edx,[counter]
 	add edx,11100000000000000000000000000000b
-	int 0x40
+	mcall
 	inc [counter]
 
 	cmp [counter],45
@@ -120,7 +120,7 @@ print_panel_menu:
 	mov eax,8
 	mov edx,[counter]
 	add edx,11100000000000000000000000000000b
-	int 0x40
+	mcall
 	inc [counter]
 
 	cmp [counter],50
@@ -130,14 +130,14 @@ print_panel_menu:
 	mov eax,8
 	mov edx,51
 	add edx,11100000000000000000000000000000b
-	int 0x40
+	mcall
 
 
 	;delit buttons of color
 	mov eax,8
 	mov edx,52
 	add edx,11100000000000000000000000000000b
-	int 0x40
+	mcall
 
 	pop [counter]
 
@@ -174,7 +174,7 @@ print_panel_menu:
 	;сглаживание анимации >>>>>>>>>>>>>>>>>>
 	mov eax,18
 	mov ebx,14
-	;int 0x40
+	;mcall
 
     menu_loop:
 
@@ -231,11 +231,11 @@ print_panel_menu:
 	menu_still:
 
 	mov eax,10
-	int 0x40
+	mcall
 	mov eax,2
-	int 0x40
+	mcall
 	mov eax,17
-	int 0x40
+	mcall
 
 	call GetMouseClick
 
@@ -292,7 +292,7 @@ print_panel_menu:
 
 	mov eax,5
 	mov ebx,15
-	int 0x40
+	mcall
 
 	push [counter]
 	pushad
@@ -356,7 +356,7 @@ PrintMousePos:
 	shl edx,16
 	add edx,20+15+6+6
 	and esi,0
-	int 0x40
+	mcall
 
 	mov eax,47
 	mov ebx,4*65536
@@ -367,7 +367,7 @@ PrintMousePos:
 	shl edx,16
 	add edx,20+15+6+18+1+6
 	and esi,0
-	int 0x40
+	mcall
 
 	popad
 	ret

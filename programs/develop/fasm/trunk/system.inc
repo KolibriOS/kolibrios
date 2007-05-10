@@ -63,7 +63,7 @@ exit_program:
 	cmp	[_mode],NORMAL_MODE
 	je	still
 	or	eax,-1
-	int	0x40
+	mcall
 
 make_timestamp:
 	push	ebx
@@ -144,7 +144,7 @@ open:
         mov     dword [ebx+16], fileinfo
         mov     eax, 70
         push    ebx
-        int     0x40
+        mcall
         pop     ebx
         test    eax, eax
         jnz     .fail
@@ -172,7 +172,7 @@ read:
         mov     [ebx+16], edx
         push    ebx
         mov     eax, 70
-        int     0x40
+        mcall
         xchg    eax, [esp]
         add     [eax+4], ebx
         adc     [eax+8], dword 0
@@ -201,7 +201,7 @@ write:
 ;        mov     [filesize],edx
 ;        mov     eax,58
 ;        mov     ebx,file_info_write
-;        int     0x40
+;        mcall
 ;        popa
 ;        ret
 
@@ -209,7 +209,7 @@ write:
         mov     [ebx+16], edx
         push    ebx
         mov     eax, 70
-        int     0x40
+        mcall
         xchg    eax, [esp]
         add     [eax+4], ebx
         adc     [eax+8], dword 0
@@ -344,7 +344,7 @@ dc1:
   mov	eax,63
 	mov	ebx,1
 	mov	cl,dl
-	int	0x40
+	mcall
 	popa
 	ret
 
