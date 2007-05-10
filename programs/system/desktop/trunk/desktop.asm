@@ -15,11 +15,13 @@
    dd      START       ; start address
    dd      I_END       ; file size
    dd      28000h      ; memory
-   dd      28000h      ; stack pointer (0x10000+ - work area for os)
+   dd      10000h      ; stack pointer
    dd      0,0         ; parameters, reserved
 
    include 'lang.inc'
    include 'macros.inc'
+   include 'kglobals.inc'
+   include 'unpacker.inc'
 ;******************************************************************************
 
 
@@ -141,16 +143,13 @@ still:
     mov  ebx,1
     mov  ecx,1
     int  0x40
-    mov  eax,48
-    mov  ebx,0
-    mov  ecx,0
-    int  0x40
-    jmp  still
+    jmp  doapply
    no_3d:
 
     cmp  ah,15                  ; set flat buttons
     jne  no_flat
     mcall 48, 1, 0
+doapply:
     mcall 48, 0, 0
     jmp  still
   no_flat:
@@ -163,10 +162,7 @@ still:
     mov  ecx,color_table
     mov  edx,10*4
     int  0x40
-    mov  eax,48
-    mov  ebx,0
-    mov  ecx,0
-    int  0x40
+    jmp  doapply
   no_apply:
 
     cmp  ah,17                  ; load skin file
@@ -275,42 +271,49 @@ draw_cursor:
 
 
 load_file:
-    pushad
-
-    mov   [read_info.mode]       ,0
-    mov   [read_info.start_block],0
-    mov   [read_info.blocks]     ,1
-    mov   [read_info.address]    ,color_table
-    mov   [read_info.workarea]   ,0x10000
-    mcall 58, read_info
-
-;   call  draw_colours
-
-    popad
-ret
+        xor     eax, eax
+        mov     ebx, read_info
+        mov     dword [ebx], eax       ; subfunction: read
+        mov     dword [ebx+4], eax     ; offset (low dword)
+        mov     dword [ebx+8], eax     ; offset (high dword)
+        mov     dword [ebx+12], 40     ; read colors file: 4*10 bytes
+        mov     dword [ebx+16], color_table ; address
+        mcall   70
+        ret
 
 load_skin_file:
-    pushad
+        xor     eax, eax
+        mov     ebx, read_info
+        mov     dword [ebx], eax       ; subfunction: read
+        mov     dword [ebx+4], eax     ; offset (low dword)
+        mov     dword [ebx+8], eax     ; offset (high dword)
+        mov     dword [ebx+12], 32*1024 ; read: max 32 KBytes
+        mov     dword [ebx+16], 0x10000 ; address
+        mcall   70
 
-    mov   [read_info.mode]       ,0
-    mov   [read_info.start_block],0
-    mov   [read_info.blocks]     ,64
-    mov   [read_info.address]    ,0x20000
-    mov   [read_info.workarea]   ,0x10000
-    mcall 58, read_info
+        mov     esi, 0x10000
 
-    cmp   dword[0x20000+SKIN_HEADER.ident],'SKIN'
-    jne   @f
+        cmp     dword [esi], 'KPCK'
+        jnz     notpacked
+        cmp     dword [esi+4], 32*1024 ; max 32 KBytes
+        ja      doret
+        push    0x20000
+        push    esi
+        call    unpack
+        mov     esi, 0x20000
+notpacked:
+
+    cmp   dword[esi+SKIN_HEADER.ident],'SKIN'
+    jne   doret
+
+    mov   edi,0x18000
+    mov   ecx,0x8000/4
+    rep   movsd
 
     mov   esi,fname
     mov   edi,skin_info.fname
     mov   ecx,257
     rep   movsb
-
-    mov   esi,0x20000
-    mov   edi,0x18000
-    mov   ecx,0x8000/4
-    rep   movsd
 
     mov   ebp,0x18000
     mov   esi,[ebp+SKIN_HEADER.params]
@@ -319,24 +322,20 @@ load_skin_file:
     mov   edi,color_table
     mov   ecx,10
     rep   movsd
-  @@:
+  doret:
 
-    popad
 ret
 
 
 save_file:
-    pushad
-
-    mov   [write_info.mode]       ,1
-    mov   [write_info.bytes2write],10*4
-    mov   [write_info.address]    ,color_table
-    mov   [write_info.workarea]   ,0x10000
-    mcall 58, write_info
-
-    popad
-ret
-
+        mov     ebx, write_info
+        mov     dword [ebx], 2         ; subfunction: write
+        and     dword [ebx+4], 0       ; (reserved)
+        and     dword [ebx+8], 0       ; (reserved)
+        mov     dword [ebx+12], 10*4   ; bytes to write
+        mov     dword [ebx+16], color_table ; address
+        mcall   70
+        ret
 
 read_string:
 
@@ -357,7 +356,7 @@ read_string:
     int  0x40
     cmp  eax,2
     jne  read_done
-    mov  eax,2
+;    mov  eax,2
     int  0x40
     shr  eax,8
     cmp  eax,13
@@ -381,8 +380,7 @@ read_string:
 
   read_done:
 
-    mov  ecx, fname
-    add  ecx, 88
+    mov  ecx, fname+88
     sub  ecx, edi
     mov  eax, 0
     cld
@@ -1041,7 +1039,11 @@ end if
 
 color dd  0
 
+IncludeIGlobals
+
 I_END:
+
+IncludeUGlobals
 
 read_info:
   .mode         dd ?            ; read

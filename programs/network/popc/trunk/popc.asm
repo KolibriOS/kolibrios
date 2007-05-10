@@ -10,7 +10,6 @@
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-include 'lang.inc'
 version equ '0.1'
 
 use32
@@ -29,18 +28,21 @@ START:                          ; start of execution
 
     mov  [file_start],0x100000
 
-    mov  eax,58
+    mov  eax,70
     mov  ebx,filel
     int  0x40
 
-    cmp  eax,0
-    jne  notfound
+    test eax,eax
+    jz   @f
+    cmp  eax,6
+    jnz  notfound
+@@:
     add  [file_start],ebx
   notfound:
 
     mov  edi,I_END
     mov  ecx,60*120
-    mov  eax,32
+    mov  al,32
     cld
     rep  stosb
 
@@ -98,14 +100,12 @@ save_file:
 
    pusha
 
-   mov  edi,[file_start]
-
+   mov  ebx,files
    mov  eax,[file_start]
    sub  eax,0x100000
-   mov  [files+8],eax
+   mov  [ebx+12],eax
 
-   mov  eax,58
-   mov  ebx,files
+   mov  eax,70
    int  0x40
 
    popa
@@ -230,10 +230,9 @@ button:                         ; button
 
     cmp  ah,60
     jne  no_open
-    mov  eax,19
-    mov  ebx,tp
-    mov  ecx,pr
-    int  0x40
+        mov     eax, 70
+        mov     ebx, tinypad_start
+        int     0x40
     jmp  still
   no_open:
 
@@ -816,20 +815,11 @@ draw_window:
     mov  eax,0                     ; draw window
     mov  ebx,5*65536+435
     mov  ecx,5*65536+232
-    mov  edx,[wcolor]
-    add  edx,0x03ffffff
-    mov  esi,0x80555599
-    mov  edi,0x00ffffff
+    mov  edx,0x13ffffff
+    mov  edi,labelt
     int  0x40
 
     mov  [old_status],300
-
-    mov  eax,4                     ; label
-    mov  ebx,9*65536+8
-    mov  ecx,0x10ffffff
-    mov  edx,labelt
-    mov  esi,labellen-labelt
-    int  0x40
 
     mov  eax,8                     ; button: open socket
     mov  ebx,23*65536+22
@@ -838,14 +828,14 @@ draw_window:
     mov  esi,0x44cc44
     int  0x40
 
-    mov  eax,8                     ; button: close socket
+;    mov  eax,8                     ; button: close socket
     mov  ebx,295*65536+22
     mov  ecx,155*65536+10
     mov  edx,24
     mov  esi,0xcc4444
     int  0x40
 
-    mov  eax,8                     ; button: text entries
+;    mov  eax,8                     ; button: text entries
     mov  ebx,243*65536+8
     mov  ecx,180*65536+8
     mov  edx,51
@@ -857,7 +847,7 @@ draw_window:
     cmp  edx,53
     jbe  newi
 
-    mov  eax,8                     ; open inbox
+;    mov  eax,8                     ; open inbox
     mov  ebx,295*65536+102
     mov  ecx,190*65536+14
     mov  edx,60
@@ -904,9 +894,9 @@ draw_server_data:
     mov   esi,[rxs]
   dct:
     pusha
-    mov   cx,bx
+    mov   ecx,ebx
     shl   ecx,16
-    mov   cx,9
+    mov   cl,9
     mov   eax,13
     mov   ebx,10*65536
     mov   bx,word [rxs]
@@ -941,16 +931,18 @@ db '   User      :                          <         Open popc.txt       '
  l3_text:
 db '   Password  : (not shown)              <                             '
 
-db 'x <- END MARKER, DONT DELETE            '
+db 'x' ; <- END MARKER, DONT DELETE
 
 file_start      dd      0x100000
 
+; max size is 0x100000 bytes, read to/write from 0x100000
 files:
-       dd  1,0,0,0x100000,0xd0000
-       db  '/rd/1/popc.txt',0
+       dd  2,0,0,?,0x100000
+       db  0
+       dd  pr
 filel:
-       dd  0,0,10000/512,0x100000,0xd0000
-       db  '/rd/1/popc.txt',0
+       dd  0,0,0,0x100000,0x100000
+pr db  '/rd/1/popc.txt',0
 
 ip     db 192,168,1,200
 
@@ -973,14 +965,16 @@ command_position  dd 0
 counter           dd 0
 
 numtext      db  '                     '
-wcolor       dd  0x000000
-labelt       db  'POP client v ',version
-labellen:
+labelt       db  'POP client v ',version,0
 scroll:      dd 1,8
 
-tp: db 'TINYPAD    '
-pr: db 'POPC    TXT',0
-
+tinypad_start:
+        dd      7
+        dd      0
+        dd      pr
+        dd      0
+        dd      0
+        db      '/RD/1/TINYPAD',0
 
 getmail:
        db  'user xyz                      ',13,10
