@@ -116,6 +116,16 @@ start_of_code:
 @@:
 ; \end{diamond}[02.12.2005]
 
+    cmp    cx,'HA'						; по регистрам определяется загрузка с винта
+    jnz    no_hd_load
+    cmp    dx,'RD'
+    jnz    no_hd_load
+    mov    word [bx_from_load], bx		; {SPraid}[13.03.2007]
+    jmp    load_next
+no_hd_load:
+    mov    word [bx_from_load], 'r1'	; if work with floppy
+load_next:
+
 ; set up stack
     mov    ax, 3000h
     mov    ss, ax

@@ -16,8 +16,24 @@ load_skin_file:
     mov   ebx,1
     or    ecx,-1
     mov   esi,12
-    call  fileread
+    pushad
+    push eax
+    mov [skin_to_load.adr],edx
+
+    mov [skin_to_load.stradr],_skin_file_default
+    mov eax,skin_to_load
+    call    file_system_lfn
+    pop eax
+    popad
     ret
+
+skin_to_load:
+   			dd 0,0,0
+   			dd 64*1024
+ .adr  		dd 0
+   			db 0
+ .stradr	dd 0
+
 
 struct SKIN_HEADER
   .ident   dd ?

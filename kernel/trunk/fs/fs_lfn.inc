@@ -6,6 +6,9 @@ $Revision$
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+image_of_eax EQU esp+44 ;36
+image_of_ebx EQU esp+32 ;24
+
 ; System function 70 - files with long names (LFN)
 ; diamond, 2006
 
@@ -79,6 +82,12 @@ virtual_root_query:
         dd      0
 endg
 
+end_of_file_system_lfn:
+		pop edx
+		stdcall kernel_free, edx
+		ret
+
+
 file_system_lfn:
 ; in: eax->fileinfo block
 ; operation codes:
@@ -92,6 +101,53 @@ file_system_lfn:
 ; 7 : start application
 ; 8 : delete file
 ; 9 : create directory
+
+		; замена адреса возврата
+		push	eax
+		stdcall kernel_alloc, 200
+		mov		edx,eax
+		pop		eax
+		push	edx
+		push	end_of_file_system_lfn
+		mov		ebx,edx
+				
+		mov		ecx, [eax]
+        mov		[ebx],ecx
+
+		add		ebx,4
+		mov		ecx, [eax+4]
+        mov		[ebx],ecx
+
+		add		ebx,4
+		mov		ecx, [eax+8]
+        mov		[ebx],ecx
+
+		add		ebx,4
+		mov		ecx, [eax+12]
+        mov		[ebx],ecx
+
+		add		ebx,4
+		mov		ecx, [eax+16]
+        mov		[ebx],ecx
+
+		add		ebx,4
+		push	edx	  ; !!!!!!!!!!!!!!!!!!!
+		; eax - yначало старого пакета
+		; edx - начало нового пакета
+		; ebx - куда ложить строку			
+		add		eax,20
+		mov		cl,	[eax]
+		test	cl,cl
+		jnz		@f
+		mov		eax,[eax+1]
+@@:
+		stdcall full_file_name,eax,ebx
+		pop		eax
+		
+		
+		
+		
+
 
    ;     add     eax, std_application_base_address
 ; parse file name
@@ -115,13 +171,13 @@ file_system_lfn:
     ;    add ebx, new_app_base
 .l1:
         call fs_execute  ; ebp, ebx, edx
-        mov [esp+36], eax
+        mov [image_of_eax], eax
         ret
 @@:
         cmp     al, '/'
         jz      @f
 .notfound:
-        mov     dword [esp+36], 5       ; file not found
+        mov     dword [image_of_eax], 5       ; file not found
         ret
 @@:
         cmp     byte [esi], 0
@@ -223,15 +279,15 @@ file_system_lfn:
         js      @f
         mov     al, ERROR_END_OF_FILE
 @@:
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
         ret
 ; directory /
 .rootdir:
         cmp     dword [ebx], 1  ; read folder?
         jz      .readroot
 .access_denied:
-        mov     dword [esp+36], 10      ; access denied
+        mov     dword [image_of_eax], 10      ; access denied
         ret
 
 .readroot:
@@ -299,8 +355,8 @@ file_system_lfn:
         js      @f
         mov     al, ERROR_END_OF_FILE
 @@:
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
         ret
 
 .found1:
@@ -338,7 +394,7 @@ file_system_lfn:
 ; in: ecx = partition number
 ;     esi -> relative (for device) name
 ;     ebx -> fileinfo
-; out: [esp+36]=image of eax, [esp+24]=image of ebx
+; out: [image_of_eax]=image of eax, [image_of_ebx]=image of ebx
 
 fs_OnRamdisk:
         cmp     ecx, 1
@@ -351,11 +407,11 @@ fs_OnRamdisk:
    ;     add     edx, std_application_base_address
         add     ebx, 4
         call    dword [fs_RamdiskServices + eax*4]
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
         ret
 .not_impl:
-        mov     dword [esp+36], 2       ; not implemented
+        mov     dword [image_of_eax], 2       ; not implemented
         ret
 
 fs_NotImplemented:
@@ -389,8 +445,8 @@ fs_OnFloppy:
         add     ebx, 4
         call    dword [fs_FloppyServices + eax*4]
         and     [flp_status], 0
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
         ret
 
 fs_FloppyServices:
@@ -440,7 +496,7 @@ fs_OnHd:
 .nf:
         call    free_hd_channel
         and     [hd1_status], 0
-        mov     dword [esp+36], 5       ; not found
+        mov     dword [image_of_eax], 5       ; not found
         ret
 @@:
         mov     [fat32part], ecx
@@ -457,13 +513,13 @@ fs_OnHd:
         call    dword [fs_HdServices + eax*4]
         call    free_hd_channel
         and     [hd1_status], 0
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
         ret
 .not_impl:
         call    free_hd_channel
         and     [hd1_status], 0
-        mov     dword [esp+36], 2       ; not implemented
+        mov     dword [image_of_eax], 2       ; not implemented
         ret
 
 fs_HdServices:
@@ -520,7 +576,7 @@ fs_OnCd:
 .nf:
         call    free_cd_channel
         and    [cd_status], 0
-        mov     dword [esp+36], 5       ; not found
+        mov     dword [image_of_eax], 5       ; not found
         ret
 @@:
         mov     ecx, [ebx+12]
@@ -533,13 +589,13 @@ fs_OnCd:
         call    dword [fs_CdServices + eax*4]
         call    free_cd_channel
         and     [cd_status], 0
-        mov     [esp+36], eax
-        mov     [esp+24], ebx
+        mov     [image_of_eax], eax
+        mov     [image_of_ebx], ebx
         ret
 .not_impl:
         call    free_cd_channel
         and     [cd_status], 0
-        mov     dword [esp+36], 2       ; not implemented
+        mov     dword [image_of_eax], 2       ; not implemented
         ret
 
 fs_CdServices:

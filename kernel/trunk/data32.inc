@@ -82,13 +82,21 @@ szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
-firstapp       db  '/rd/1/LAUNCHER',0
-char           db  'FONTS/CHAR.MT',0
-char2          db  'FONTS/CHAR2.MT',0
+firstapp       db  '%sys%/LAUNCHER',0
+  char  dd 0,0,0
+   dd 2560
+   dd  FONT_I
+   db '%sys%/FONTS/CHAR.MT',0
+  char2 	dd 0,0,0
+			dd 2560
+			dd  FONT_II
+			db '%sys%/FONTS/CHAR2.MT',0
+
+
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
 vmode          db  'drivers/VMODE.MDR',0
-vrr_m          db  '/rd/1/VRR_M',0
+vrr_m          db  '%sys%/VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
 
@@ -105,6 +113,16 @@ drawbar         dd __sys_drawbar.forced
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
+; SPraid.simba { 6.05.2007
+; константы для обращения к ини файлу для определения устройств
+;
+
+ini_dev_sect: db 'dev',0     ; секция об устройствах
+ini_com1_mouse_detect:   db 'com1_mouse',0
+ini_com2_mouse_detect:   db 'com2_mouse',0
+
+dev_dev_val: db '2',0		; далее если 2 - то детектировать
+; } SPraid.simba
 
 align 4
 keyboard   dd 1

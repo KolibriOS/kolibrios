@@ -5,6 +5,10 @@ flm               db 0
 preboot_lfb       db 0
 preboot_bootlog   db 0
 
+bx_from_load: dw 0		; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
+						; a,b,c,d - винчестеры, r - рам диск
+						; # диска... символ, а не байт. '1', а не 1
+
 align 4
 old_ints_h:
     dw      0x400

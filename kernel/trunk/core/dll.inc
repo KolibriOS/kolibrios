@@ -700,8 +700,8 @@ proc load_driver stdcall, driver_name:dword
            endl
 
            lea     edx, [file_name]
-           mov     dword [edx], '/rd/'
-           mov     dword [edx+4], '1/dr'
+           mov     dword [edx], '%sys'
+           mov     dword [edx+4], '%/dr'
            mov     dword [edx+8], 'iver'
            mov     word [edx+12], 's/'
            mov     esi, [driver_name]

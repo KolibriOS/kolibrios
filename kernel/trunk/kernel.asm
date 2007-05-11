@@ -536,20 +536,40 @@ include 'boot/rdload.inc'
 include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 
+  call Parser_params
+
+  mov ax,[BOOT_VAR+bx_from_load]
+  cmp ax,'r1'		; если срам диск - то не грузить библиотеки
+  je  no_lib_load
+; LOADING LIBRARES
+   stdcall dll.Load,@IMPORT				; SPraid - загрузка функционала (пока что ини файл)
+   call load_conf_file					; prepare configuration file
+no_lib_load:
+
 ; LOAD FONTS I and II
 
-        mov   esi,char
-        xor   ebx,ebx
-        mov   ecx,2560
-        mov   edx,FONT_I
-        call  fs_RamdiskRead
+;        mov   esi,char
+;        xor   ebx,ebx
+;        mov   ecx,2560
+;        mov   edx,FONT_I
+;        call  fs_RamdiskRead
 
-        mov   esi,char2
-        xor   ebx,ebx
-        mov   ecx,2560;26000
-        mov   edx,FONT_II
-        call  fs_RamdiskRead
+;        mov   esi,char2
+;        xor   ebx,ebx
+;        mov   ecx,2560;26000
+;        mov   edx,FONT_II
+;        call  fs_RamdiskRead
 
+	pushad
+	push	eax
+	mov		eax,char
+	call	file_system_lfn
+	mov		eax,char2
+	call	file_system_lfn
+	pop	eax
+	popad 
+ 
+ 
         mov   esi,boot_fonts
         call  boot_log
 
@@ -745,22 +765,58 @@ include 'vmodeld.inc'
         cmp   byte [BOOT_VAR+0x9030],1
         jne   no_load_vrr_m
 
-        mov ebp, vrr_m
+;        mov ebp, vrr_m
+;        xor ebx, ebx
+;        xor edx, edx
+;        call fs_execute
+;        cmp   eax,2                  ; if vrr_m app found (PID=2)
+;        je    first_app_found
+
+
+        stdcall kernel_alloc, 0x100
+        push eax    
+        mov ebx,eax
+        stdcall full_file_name,vrr_m,eax
+        mov ebp, eax
+
         xor ebx, ebx
         xor edx, edx
         call fs_execute
+        pop ebx
+        push eax
+        stdcall kernel_free, ebx
+        pop eax
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
 no_load_vrr_m:
-        mov ebp, firstapp
+;        mov ebp, firstapp
+;        xor ebx, ebx
+;        xor edx, edx
+;        call fs_execute
+;        cmp   eax,2                  ; continue if a process has been loaded
+;        je    first_app_found
+;        mov   eax, 0xDEADBEEF        ; otherwise halt
+;        hlt
+
+        stdcall kernel_alloc, 0x100
+        push eax    
+        mov ebx,eax
+        stdcall full_file_name,firstapp,eax
+        mov ebp, eax
         xor ebx, ebx
         xor edx, edx
         call fs_execute
+        pop ebx
+        push eax
+        stdcall kernel_free, ebx
+        pop eax
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
         mov   eax, 0xDEADBEEF        ; otherwise halt
         hlt
+
+
 first_app_found:
         cli
 
@@ -3372,7 +3428,7 @@ checkpixel:
         ret
 
 iglobal
-  cpustring db '/RD/1/CPU',0
+  cpustring db '%sys%/CPU',0
 endg
 
 uglobal

@@ -244,3 +244,15 @@ include "hid/mousedrv.inc"
 include "hid/set_dtc.inc"
 
 ;% -include
+
+;parser file names
+include "fs/parse_fn.inc"
+
+; work with conf lib
+include "core/conf_lib.inc"
+
+; load external lib
+include "core/ext_lib.inc"
+
+; list of external functions
+include "lib_func.inc"
