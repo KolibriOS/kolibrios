@@ -1,355 +1,395 @@
 @echo off
+cls
+goto MAIN
 
+
+rem
+rem %1 - variable name
+rem %2-x - allowed values
+rem
+:input_value
+   set __var_name=%1
+   set __values=
+   set __value=
+   set __res=
+   shift
+   
+  :__allowed
+   set __values=%1 %__values%
+   shift
+   if not "%1"=="" goto __allowed
+   
+   set /P __res=">
+  :Check_Value
+   for %%a in (%__values%) do if %%a==%__res% set __value=%__res%
+   if defined __value goto :__input_value_end
+
+   echo Value '%__res%' is incorrect
+   echo Enter valid value from [ %__values% ]:
+
+   set /P __res=">
+   goto Check_Value
+   :__input_value_end
+   set %__var_name%=%__value%
+goto :eof
+
+
+
+
+:MAIN
 set languages=en ru ge et
 set __CPU_type=p5 p6 k6
-set kpack=y n
-cls
+set BIN=bin
+
 echo Build KolibriOS apps
 echo Enter valide language
 echo     [%languages%]
-
-set /P res=">
-
-@erase lang.inc
+call :input_value res %languages%
 echo lang fix %res% > lang.inc
 
 echo Enter CPU_type ("p5" for interrupt, "p6" for SYSENTER, "k6" for SYSCALL)
-
-set /p res=">
-
-@erase config.inc
+call :input_value res %__CPU_type%
 echo __CPU_type fix %res% > config.inc
 
-
-if not exist bin mkdir bin
-if not exist bin\demos mkdir bin\demos
-if not exist bin\develop mkdir bin\develop
-if not exist bin\games mkdir bin\games
-if not exist bin\network mkdir bin\network
-if not exist bin\3d mkdir bin\3d
-if not exist bin\fonts mkdir bin\fonts
+for %%i in (%BIN% %BIN%\demos %BIN%\develop %BIN%\games %BIN%\network %BIN%\3d %BIN%\fonts) do if not exist %%i mkdir %%i
 
 echo *
 echo Building system
 echo *
-@fasm system\calendar\trunk\calendar.asm bin\calendar
-@fasm system\board\trunk\board.asm bin\develop\board
-@fasm system\cpu\trunk\cpu.asm bin\cpu 
-@fasm system\cpuid\trunk\cpuid.asm bin\cpuid
-@fasm system\desktop\trunk\desktop.asm bin\desktop
-@fasm system\docpack\trunk\docpack.asm bin\docpack
-@fasm system\end\trunk\end.asm bin\end
-@fasm system\gmon\gmon.asm bin\gmon
-@fasm system\icon\trunk\icon.asm bin\icon
-@fasm system\kbd\trunk\kbd.ASM bin\kbd
-@fasm system\launcher\trunk\launcher.asm bin\launcher
-@fasm system\menu\trunk\menu.asm bin\@menu
-@fasm system\mgb\trunk\mgb.asm bin\mgb
-@fasm system\PANEL\trunk\@PANEL.ASM bin\@PANEL
-@fasm system\pcidev\trunk\pcidev.asm bin\pcidev
-@fasm system\RB\trunk\@RB.ASM bin\@RB
-@fasm system\rdsave\trunk\rdsave.asm bin\rdsave
-@fasm system\run\trunk\run.asm bin\run
-@fasm system\setup\trunk\setup.asm bin\setup
-@fasm system\skinsel\skinsel.asm bin\skinsel
-@fasm system\vrr\trunk\vrr.asm bin\vrr
-@fasm system\vrr_m\trunk\vrr_m.asm bin\vrr_m
+fasm system\calendar\trunk\calendar.asm %BIN%\calendar
+fasm system\board\trunk\board.asm %BIN%\develop\board
+fasm system\cpu\trunk\cpu.asm %BIN%\cpu 
+fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
+fasm system\desktop\trunk\desktop.asm %BIN%\desktop
+fasm system\docpack\trunk\docpack.asm %BIN%\docpack
+fasm system\end\trunk\end.asm %BIN%\end
+fasm system\gmon\gmon.asm %BIN%\gmon
+fasm system\icon\trunk\icon.asm %BIN%\icon
+fasm system\kbd\trunk\kbd.ASM %BIN%\kbd
+fasm system\launcher\trunk\launcher.asm %BIN%\launcher
+fasm system\menu\trunk\menu.asm %BIN%\@menu
+fasm system\mgb\trunk\mgb.asm %BIN%\mgb
+fasm system\PANEL\trunk\@PANEL.ASM %BIN%\@PANEL
+fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
+fasm system\RB\trunk\@RB.ASM %BIN%\@RB
+fasm system\rdsave\trunk\rdsave.asm %BIN%\rdsave
+fasm system\run\trunk\run.asm %BIN%\run
+fasm system\setup\trunk\setup.asm %BIN%\setup
+fasm system\skinsel\skinsel.asm %BIN%\skinsel
+fasm system\vrr\trunk\vrr.asm %BIN%\vrr
+fasm system\vrr_m\trunk\vrr_m.asm %BIN%\vrr_m
 
 echo *
 echo Building develop
 echo *
-@fasm develop\cmd\trunk\cmd.asm bin\cmd
-@fasm develop\fasm\trunk\fasm.asm bin\develop\fasm
-@fasm develop\h2d2b\trunk\h2d2b.asm bin\develop\h2d2b
-@fasm develop\heed\trunk\heed.asm bin\demos\heed
-rem @fasm develop\hexview\trunk\hexview.asm hexview
-@fasm develop\keyascii\trunk\keyascii.asm bin\develop\keyascii
-@fasm develop\mtdbg\mtdbg.asm bin\develop\mtdbg
-rem @fasm develop\param\trunk\param.asm param
-@fasm develop\scancode\trunk\scancode.asm bin\develop\scancode
-@fasm develop\tinypad\trunk\tinypad.asm bin\tinypad
+fasm develop\cmd\trunk\cmd.asm %BIN%\cmd
+fasm develop\fasm\trunk\fasm.asm %BIN%\develop\fasm
+fasm develop\h2d2b\trunk\h2d2b.asm %BIN%\develop\h2d2b
+fasm develop\heed\trunk\heed.asm %BIN%\demos\heed
+rem fasm develop\hexview\trunk\hexview.asm hexview
+fasm develop\keyascii\trunk\keyascii.asm %BIN%\develop\keyascii
+fasm develop\mtdbg\mtdbg.asm %BIN%\develop\mtdbg
+rem fasm develop\param\trunk\param.asm param
+fasm develop\scancode\trunk\scancode.asm %BIN%\develop\scancode
+fasm develop\tinypad\trunk\tinypad.asm %BIN%\tinypad
 
 echo *
 echo Building fs
 echo *
-@fasm fs\copy2\trunk\copy2.asm bin\copy2
-@fasm fs\copyr\trunk\copyr.asm bin\copyr
-@fasm fs\kfar\trunk\kfar.asm bin\kfar
-rem @fasm fs\mfar\trunk\mfar.asm bin\mfar
-@fasm fs\sysxtree\trunk\sysxtree.asm bin\sysxtree
+fasm fs\copy2\trunk\copy2.asm %BIN%\copy2
+fasm fs\copyr\trunk\copyr.asm %BIN%\copyr
+fasm fs\kfar\trunk\kfar.asm %BIN%\kfar
+rem fasm fs\mfar\trunk\mfar.asm %BIN%\mfar
+fasm fs\sysxtree\trunk\sysxtree.asm %BIN%\sysxtree
 
 echo *
 echo Building network
 echo *
-@fasm network\airc\trunk\airc.asm bin\network\airc
-@fasm network\arpstat\trunk\arpstat.asm bin\network\arpstat
-@fasm network\autodhcp\trunk\autodhcp.asm bin\network\autodhcp
-@fasm network\dhcp\trunk\dhcp.asm bin\network\dhcp
-@fasm network\dnsr\trunk\dnsr.asm bin\network\dnsr
-@fasm network\ethstat\trunk\ethstat.asm bin\network\ethstat
-@fasm network\ftps\trunk\https.asm bin\network\ftps
-@fasm network\httpc\trunk\httpc.asm bin\network\httpc
-@fasm network\https\trunk\https.asm bin\network\https
-@fasm network\ipc\trunk\ipc.asm bin\network\ipc
-@fasm network\local\trunk\local.asm bin\network\local
-@fasm network\mp3s\trunk\mp3s.asm bin\network\mp3s
-@fasm network\netsendc\trunk\netsendc.asm bin\network\netsendc
-@fasm network\netsends\trunk\netsends.asm bin\network\netsends
-@fasm network\nntpc\trunk\nntpc.asm bin\network\nntpc
-@fasm network\popc\trunk\popc.asm bin\network\popc
-@fasm network\ppp\trunk\ppp.asm bin\network\ppp
-@fasm network\rccc\trunk\rccc.asm bin\network\rccc
-@fasm network\rccs\trunk\rccs.asm bin\network\rccs
-@fasm network\remote\trunk\remote.asm bin\network\remote
-@fasm network\smtps\trunk\smtps.asm bin\network\smtps
-@fasm network\stackcfg\trunk\stackcfg.asm bin\network\stackcfg
-@fasm network\telnet\trunk\telnet.asm bin\network\telnet
-@fasm network\terminal\trunk\terminal.asm bin\network\terminal
-@fasm network\tftpa\trunk\tftpa.asm bin\network\tftpa
-@fasm network\tftpc\trunk\tftpc.asm bin\network\tftpc
-@fasm network\VNCclient\VNCclient.asm bin\network\VNCclient
-@fasm network\ym\trunk\ym.asm bin\network\ym
+fasm network\airc\trunk\airc.asm %BIN%\network\airc
+fasm network\arpstat\trunk\arpstat.asm %BIN%\network\arpstat
+fasm network\autodhcp\trunk\autodhcp.asm %BIN%\network\autodhcp
+fasm network\dhcp\trunk\dhcp.asm %BIN%\network\dhcp
+fasm network\dnsr\trunk\dnsr.asm %BIN%\network\dnsr
+fasm network\ethstat\trunk\ethstat.asm %BIN%\network\ethstat
+fasm network\ftps\trunk\https.asm %BIN%\network\ftps
+fasm network\httpc\trunk\httpc.asm %BIN%\network\httpc
+fasm network\https\trunk\https.asm %BIN%\network\https
+fasm network\ipc\trunk\ipc.asm %BIN%\network\ipc
+fasm network\local\trunk\local.asm %BIN%\network\local
+fasm network\mp3s\trunk\mp3s.asm %BIN%\network\mp3s
+fasm network\netsendc\trunk\netsendc.asm %BIN%\network\netsendc
+fasm network\netsends\trunk\netsends.asm %BIN%\network\netsends
+fasm network\nntpc\trunk\nntpc.asm %BIN%\network\nntpc
+fasm network\popc\trunk\popc.asm %BIN%\network\popc
+fasm network\ppp\trunk\ppp.asm %BIN%\network\ppp
+fasm network\rccc\trunk\rccc.asm %BIN%\network\rccc
+fasm network\rccs\trunk\rccs.asm %BIN%\network\rccs
+fasm network\remote\trunk\remote.asm %BIN%\network\remote
+fasm network\smtps\trunk\smtps.asm %BIN%\network\smtps
+fasm network\stackcfg\trunk\stackcfg.asm %BIN%\network\stackcfg
+fasm network\telnet\trunk\telnet.asm %BIN%\network\telnet
+fasm network\terminal\trunk\terminal.asm %BIN%\network\terminal
+fasm network\tftpa\trunk\tftpa.asm %BIN%\network\tftpa
+fasm network\tftpc\trunk\tftpc.asm %BIN%\network\tftpc
+fasm network\VNCclient\VNCclient.asm %BIN%\network\VNCclient
+fasm network\ym\trunk\ym.asm %BIN%\network\ym
 
 echo *
 echo Building other
 echo *
-rem @fasm other\archer\trunk\@rcher.asm bin\@rcher
-@fasm other\calc\trunk\calc.asm bin\calc
-@fasm other\mhc\trunk\mhc.asm bin\mhc
-@fasm other\period\trunk\period.asm bin\period
-@fasm other\rtfread\trunk\rtfread.asm bin\rtfread
+rem fasm other\archer\trunk\@rcher.asm %BIN%\@rcher
+fasm other\calc\trunk\calc.asm %BIN%\calc
+fasm other\mhc\trunk\mhc.asm %BIN%\mhc
+fasm other\period\trunk\period.asm %BIN%\period
+fasm other\rtfread\trunk\rtfread.asm %BIN%\rtfread
 
 echo *
 echo Building media
 echo *
 rem media\ac97snd\trunk\ac97snd.asm ac97snd
-@fasm media\animage\trunk\animage.asm bin\animage
-@fasm media\cdp\trunk\cdp.asm bin\cdp
-@fasm media\gifview\trunk\gifview.asm bin\gifview
-@fasm media\iconedit\trunk\iconedit.asm bin\iconedit
-@fasm media\jpegview\trunk\jpegview.asm bin\jpegview
-@fasm media\midamp\trunk\midamp.asm bin\midamp
-@fasm media\midiplay\trunk\midiplay.asm bin\midiplay
-@fasm media\mixer\trunk\mixer.asm bin\mixer
+fasm media\animage\trunk\animage.asm %BIN%\animage
+fasm media\cdp\trunk\cdp.asm %BIN%\cdp
+fasm media\gifview\trunk\gifview.asm %BIN%\gifview
+fasm media\iconedit\trunk\iconedit.asm %BIN%\iconedit
+fasm media\jpegview\trunk\jpegview.asm %BIN%\jpegview
+fasm media\midamp\trunk\midamp.asm %BIN%\midamp
+fasm media\midiplay\trunk\midiplay.asm %BIN%\midiplay
+fasm media\mixer\trunk\mixer.asm %BIN%\mixer
 
-@fasm media\mv\trunk\mv.asm bin\mv
-@fasm media\pic4\trunk\pic4.asm bin\pic4
-@fasm media\sb\trunk\sb.asm bin\sb
-@fasm media\scrshoot\scrshoot.asm bin\scrshoot
+fasm media\mv\trunk\mv.asm %BIN%\mv
+fasm media\pic4\trunk\pic4.asm %BIN%\pic4
+fasm media\sb\trunk\sb.asm %BIN%\sb
+fasm media\scrshoot\scrshoot.asm %BIN%\scrshoot
 
 echo *
 echo Building games
 echo *
-@fasm games\15\trunk\15.asm bin\games\15
-@fasm games\arcanii\trunk\arcanii.asm bin\games\arcanii
-@fasm games\arcanoid\trunk\arcanoid.asm bin\games\arcanoid
+fasm games\15\trunk\15.asm %BIN%\games\15
+fasm games\arcanii\trunk\arcanii.asm %BIN%\games\arcanii
+fasm games\arcanoid\trunk\arcanoid.asm %BIN%\games\arcanoid
 cd games\c4\trunk\
-@nasmw -f bin -o ..\..\..\bin\games\c4 c4.asm
+nasmw -f bin -o ..\..\..\%BIN%\games\c4 c4.asm
 cd ..\..\..
-@fasm games\chess\trunk\chess.asm bin\games\chess
-@fasm games\freecell\freecell.asm bin\games\freecell
-@fasm games\mblocks\trunk\mblocks.asm bin\games\mblocks
-@fasm games\phenix\trunk\phenix.asm bin\games\phenix
-@fasm games\pipes\pipes.asm bin\games\pipes
-@fasm games\pong\trunk\pong.asm bin\games\pong
-@fasm games\pong3\trunk\pong3.asm bin\games\pong3
-@fasm games\tanks\trunk\tanks.asm bin\games\tanks
-@fasm games\tetris\trunk\tetris.asm bin\games\tetris
-rem @fasm games\hunter\trunk\hunter.asm bin\games\hunter
+fasm games\chess\trunk\chess.asm %BIN%\games\chess
+fasm games\freecell\freecell.asm %BIN%\games\freecell
+fasm games\mblocks\trunk\mblocks.asm %BIN%\games\mblocks
+fasm games\phenix\trunk\phenix.asm %BIN%\games\phenix
+fasm games\pipes\pipes.asm %BIN%\games\pipes
+fasm games\pong\trunk\pong.asm %BIN%\games\pong
+fasm games\pong3\trunk\pong3.asm %BIN%\games\pong3
+fasm games\tanks\trunk\tanks.asm %BIN%\games\tanks
+fasm games\tetris\trunk\tetris.asm %BIN%\games\tetris
+rem fasm games\hunter\trunk\hunter.asm %BIN%\games\hunter
 
 echo *
 echo Building demos
 echo *
-@fasm demos\3dcube2\trunk\3dcube2.asm bin\3d\3dcube2
-rem @fasm demos\3detx60b\trunk\3detx60b.asm bin\3d\3detx60b
-@fasm demos\3dtcub10\trunk\3dtcub10.asm bin\3d\3dtcub10
+fasm demos\3dcube2\trunk\3dcube2.asm %BIN%\3d\3dcube2
+rem fasm demos\3detx60b\trunk\3detx60b.asm %BIN%\3d\3detx60b
+fasm demos\3dtcub10\trunk\3dtcub10.asm %BIN%\3d\3dtcub10
 cd demos\aclock\trunk\
-@nasmw -t -f bin -o ..\..\..\bin\demos\aclock aclock.asm
+nasmw -t -f bin -o ..\..\..\%BIN%\demos\aclock aclock.asm
 cd ..\..\..
-@fasm demos\bcdclk\bcdclk\bcdclk.asm bin\demos\bcdclk
-@fasm demos\bgitest\trunk\bgitest.asm bin\fonts\bgitest
-@fasm demos\colorref\trunk\colorref.asm bin\demos\colorref
-@fasm demos\crownscr\trunk\crownscr.asm bin\3d\crownscr
-@fasm demos\cslide\trunk\cslide.asm bin\demos\cslide
-@fasm demos\eyes\trunk\eyes.asm bin\demos\eyes
-@fasm demos\fire\trunk\fire.asm bin\demos\fire
-@fasm demos\fire2\trunk\fire2.asm bin\demos\fire2
-@fasm demos\free3d04\trunk\free3d04.asm bin\3d\free3d04
-@fasm demos\magnify\trunk\magnify.asm bin\magnify
-@fasm demos\movback\trunk\movback.asm bin\demos\movback
-@fasm demos\plasma\trunk\plasma.asm bin\demos\plasma
-@fasm demos\ss\trunk\@ss.asm bin\@ss
-@fasm demos\timer\trunk\timer.asm bin\demos\timer
-@fasm demos\tinyfrac\trunk\tinyfrac.asm bin\demos\tinyfrac
-@fasm demos\transp\trunk\transp.asm bin\demos\transp
-@fasm demos\trantest\trunk\trantest.asm bin\demos\trantest
-@fasm demos\tube\trunk\tube.asm bin\demos\tube
+fasm demos\bcdclk\bcdclk\bcdclk.asm %BIN%\demos\bcdclk
+fasm demos\bgitest\trunk\bgitest.asm %BIN%\fonts\bgitest
+fasm demos\colorref\trunk\colorref.asm %BIN%\demos\colorref
+fasm demos\crownscr\trunk\crownscr.asm %BIN%\3d\crownscr
+fasm demos\cslide\trunk\cslide.asm %BIN%\demos\cslide
+fasm demos\eyes\trunk\eyes.asm %BIN%\demos\eyes
+fasm demos\fire\trunk\fire.asm %BIN%\demos\fire
+fasm demos\fire2\trunk\fire2.asm %BIN%\demos\fire2
+fasm demos\free3d04\trunk\free3d04.asm %BIN%\3d\free3d04
+fasm demos\magnify\trunk\magnify.asm %BIN%\magnify
+fasm demos\movback\trunk\movback.asm %BIN%\demos\movback
+fasm demos\plasma\trunk\plasma.asm %BIN%\demos\plasma
+fasm demos\ss\trunk\@ss.asm %BIN%\@ss
+fasm demos\timer\trunk\timer.asm %BIN%\demos\timer
+fasm demos\tinyfrac\trunk\tinyfrac.asm %BIN%\demos\tinyfrac
+fasm demos\transp\trunk\transp.asm %BIN%\demos\transp
+fasm demos\trantest\trunk\trantest.asm %BIN%\demos\trantest
+fasm demos\tube\trunk\tube.asm %BIN%\demos\tube
 
-@erase lang.inc
+erase lang.inc
+
+rem verify accessibility of kpack
+rem param "-v" can understand as version 
+kpack -v 2> nul
+if "%errorlevel%"=="9009" (
+echo   *** NOTICE ***
+echo If you want pack all applications you may 
+echo place "kpack" in accessible directory.
+echo You can download that tool from http://diamondz.land.ru/
+goto END
+)
+
 
 echo *
 echo Finished building 
 echo *
 
 echo Kpack KolibriOS apps?
-echo     [%kpack%]
+echo     
 
-set /P res=">
+set /P res=[y/n]?
 
 if "%res%"=="y" (
 
 echo *
 echo Compressing system
 echo *
-@kpack bin\calendar
-@kpack bin\develop\board
-@kpack bin\cpu 
-@kpack bin\cpuid
-@kpack bin\desktop
-@kpack bin\docpack
-@kpack bin\end
-@kpack bin\gmon
-@kpack bin\icon
-@kpack bin\kbd
-@kpack bin\launcher
-@kpack bin\menu
-@kpack bin\mgb
-@kpack bin\@PANEL
-@kpack bin\pcidev
-@kpack bin\@RB
-@kpack bin\rdsave
-@kpack bin\run
-@kpack bin\setup
-@kpack bin\skinsel
-@kpack bin\vrr
-@kpack bin\vrr_m
+kpack %BIN%\calendar
+kpack %BIN%\develop\board
+kpack %BIN%\cpu 
+kpack %BIN%\cpuid
+kpack %BIN%\desktop
+kpack %BIN%\docpack
+kpack %BIN%\end
+kpack %BIN%\gmon
+kpack %BIN%\icon
+kpack %BIN%\kbd
+kpack %BIN%\launcher
+kpack %BIN%\menu
+kpack %BIN%\mgb
+kpack %BIN%\@PANEL
+kpack %BIN%\pcidev
+kpack %BIN%\@RB
+kpack %BIN%\rdsave
+kpack %BIN%\run
+kpack %BIN%\setup
+kpack %BIN%\skinsel
+kpack %BIN%\vrr
+kpack %BIN%\vrr_m
 
 echo *
 echo Compressing develop
 echo *
 
-@kpack bin\cmd
-@kpack bin\develop\fasm
-@kpack bin\develop\h2d2b
-@kpack bin\demos\heed
-@kpack bin\develop\keyascii
-@kpack bin\develop\mtdbg
-@kpack bin\develop\scancode
+kpack %BIN%\cmd
+kpack %BIN%\develop\fasm
+kpack %BIN%\develop\h2d2b
+kpack %BIN%\demos\heed
+kpack %BIN%\develop\keyascii
+kpack %BIN%\develop\mtdbg
+kpack %BIN%\develop\scancode
 
 echo *
 echo Compressing fs
 echo *
 
-@kpack bin\copy2
-@kpack bin\copyr
-@kpack bin\kfar
-@kpack bin\sysxtree
+kpack %BIN%\copy2
+kpack %BIN%\copyr
+kpack %BIN%\kfar
+kpack %BIN%\sysxtree
 
 echo *
 echo Compressing network
 echo *
 
-@kpack bin\network\airc
-@kpack bin\network\arpstat
-@kpack bin\network\autodhcp
-@kpack bin\network\dhcp
-@kpack bin\network\dnsr
-@kpack bin\network\ethstat
-@kpack bin\network\httpc
-@kpack bin\network\https
-@kpack bin\network\ipc
-@kpack bin\network\local
-@kpack bin\network\netsendc
-@kpack bin\network\netsends
-@kpack bin\network\nntpc
-@kpack bin\network\popc
-@kpack bin\network\ppp
-@kpack bin\network\rccc
-@kpack bin\network\rccs
-@kpack bin\network\remote
-@kpack bin\network\smtps
-@kpack bin\network\stackcfg
-@kpack bin\network\telnet
-@kpack bin\network\terminal
-@kpack bin\network\tftpa
-@kpack bin\network\tftpc
-@kpack bin\network\VNCclient
-@kpack bin\network\ym
+kpack %BIN%\network\airc
+kpack %BIN%\network\arpstat
+kpack %BIN%\network\autodhcp
+kpack %BIN%\network\dhcp
+kpack %BIN%\network\dnsr
+kpack %BIN%\network\ethstat
+kpack %BIN%\network\httpc
+kpack %BIN%\network\https
+kpack %BIN%\network\ipc
+kpack %BIN%\network\local
+kpack %BIN%\network\netsendc
+kpack %BIN%\network\netsends
+kpack %BIN%\network\nntpc
+kpack %BIN%\network\popc
+kpack %BIN%\network\ppp
+kpack %BIN%\network\rccc
+kpack %BIN%\network\rccs
+kpack %BIN%\network\remote
+kpack %BIN%\network\smtps
+kpack %BIN%\network\stackcfg
+kpack %BIN%\network\telnet
+kpack %BIN%\network\terminal
+kpack %BIN%\network\tftpa
+kpack %BIN%\network\tftpc
+kpack %BIN%\network\VNCclient
+kpack %BIN%\network\ym
 
 echo *
 echo Compressing other
 echo *
 
-rem @kpack bin\@rcher
-@kpack bin\calc
-@kpack bin\mhc
-@kpack bin\period
-@kpack bin\rtfread
+rem kpack %BIN%\@rcher
+kpack %BIN%\calc
+kpack %BIN%\mhc
+kpack %BIN%\period
+kpack %BIN%\rtfread
 
 echo *
 echo Compressing media
 echo *
 
-@kpack bin\animage
-@kpack bin\cdp
-@kpack bin\gifview
-@kpack bin\iconedit
-@kpack bin\jpegview
-@kpack bin\midamp
-@kpack bin\midiplay
-@kpack bin\mixer
-@kpack bin\mp3s
-@kpack bin\mv
-@kpack bin\pic4
-@kpack bin\sb
-@kpack bin\scrshoot
+kpack %BIN%\animage
+kpack %BIN%\cdp
+kpack %BIN%\gifview
+kpack %BIN%\iconedit
+kpack %BIN%\jpegview
+kpack %BIN%\midamp
+kpack %BIN%\midiplay
+kpack %BIN%\mixer
+kpack %BIN%\mp3s
+kpack %BIN%\mv
+kpack %BIN%\pic4
+kpack %BIN%\sb
+kpack %BIN%\scrshoot
 
 echo *
 echo Compressing games
 echo *
 
-@kpack bin\games\15
-@kpack bin\games\arcanii
-@kpack bin\games\arcanoid
-@kpack bin\games\chess
-@kpack bin\games\freecell
-@kpack bin\games\mblocks
-@kpack bin\games\phenix
-@kpack bin\games\pipes
-@kpack bin\games\pong
-@kpack bin\games\pong3
-@kpack bin\games\tanks
-@kpack bin\games\tetris
+kpack %BIN%\games\15
+kpack %BIN%\games\arcanii
+kpack %BIN%\games\arcanoid
+kpack %BIN%\games\chess
+kpack %BIN%\games\freecell
+kpack %BIN%\games\mblocks
+kpack %BIN%\games\phenix
+kpack %BIN%\games\pipes
+kpack %BIN%\games\pong
+kpack %BIN%\games\pong3
+kpack %BIN%\games\tanks
+kpack %BIN%\games\tetris
 
 echo *
 echo Compressing demos
 echo *
 
-@kpack bin\3d\3dcube2
-@kpack bin\3d\3dtcub10
-@kpack bin\demos\aclock
-@kpack bin\demos\bcdclk
-@kpack bin\fonts\bgitest
-@kpack bin\demos\colorref
-@kpack bin\3d\crownscr
-@kpack bin\demos\cslide
-@kpack bin\demos\eyes
-@kpack bin\demos\fire
-@kpack bin\demos\fire2
-@kpack bin\3d\free3d04
-@kpack bin\magnify
-@kpack bin\demos\movback
-@kpack bin\demos\plasma
-@kpack bin\@ss
-@kpack bin\demos\timer
-@kpack bin\demos\tinyfrac
-@kpack bin\demos\transp
-@kpack bin\demos\trantest
-@kpack bin\demos\tube
+kpack %BIN%\3d\3dcube2
+kpack %BIN%\3d\3dtcub10
+kpack %BIN%\demos\aclock
+kpack %BIN%\demos\bcdclk
+kpack %BIN%\fonts\bgitest
+kpack %BIN%\demos\colorref
+kpack %BIN%\3d\crownscr
+kpack %BIN%\demos\cslide
+kpack %BIN%\demos\eyes
+kpack %BIN%\demos\fire
+kpack %BIN%\demos\fire2
+kpack %BIN%\3d\free3d04
+kpack %BIN%\magnify
+kpack %BIN%\demos\movback
+kpack %BIN%\demos\plasma
+kpack %BIN%\@ss
+kpack %BIN%\demos\timer
+kpack %BIN%\demos\tinyfrac
+kpack %BIN%\demos\transp
+kpack %BIN%\demos\trantest
+kpack %BIN%\demos\tube
 
 echo *
 echo Compressing complete
 echo *
 )
 
+:END
+echo *
+echo Done. Thanks for your choise ;)
+echo *
 pause

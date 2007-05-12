@@ -100,13 +100,7 @@ goto :eof
 
 :Target_clean
    echo *** cleaning ...
-
-   del /Q bin\drivers\*.*
-   del /Q bin\skins\*.*
-   del /Q bin\*.*
-   rmdir bin\drivers
-   rmdir bin\skins
-   rmdir bin
+   rmdir /S /Q bin
 goto :Exit_OK
 
 
