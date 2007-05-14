@@ -242,6 +242,8 @@ proc init_LFB
            mov [BOOT_VAR+0x901c],byte 2
            ret
 @@:
+           call init_mtrr
+
            mov edx, LFB_BASE
            mov esi, [LFBAddress]
            mov edi, 0x00800000
@@ -968,15 +970,13 @@ new_services:
            stdcall load_library, ebx
            mov [esp+36], eax
            ret
-
 @@:
-        cmp     eax, 20
-        ja      .fail
-        mov     eax, ecx
-        call    user_realloc
-        mov     [esp+36], eax
-        ret
-
+           cmp     eax, 20
+           ja      .fail
+           mov     eax, ecx
+           call    user_realloc
+           mov     [esp+36], eax
+           ret
 .fail:
            xor eax, eax
            mov [esp+36], eax

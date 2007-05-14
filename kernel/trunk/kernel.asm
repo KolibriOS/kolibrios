@@ -449,8 +449,6 @@ high_code:
            ltr  ax
 
            mov [LFBSize], 0x800000
-           call init_mtrr
-
            call init_LFB
            call init_fpu
            call init_malloc
@@ -567,9 +565,9 @@ no_lib_load:
 	mov		eax,char2
 	call	file_system_lfn
 	pop	eax
-	popad 
- 
- 
+	popad
+
+
         mov   esi,boot_fonts
         call  boot_log
 
