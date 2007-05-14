@@ -291,13 +291,12 @@ edit_ex
 ;----------------------------------------------------------
 ;--- А не удерживаем ли мы клавишу мышки, перемещая курсор, во все разные стороны?
 ;----------------------------------------------------------
-        mov     ecx,procinfo
         test    word ed_flags,ed_mouse_on
         jne     .mouse_wigwag
 ;----------------------------------------------------------
 ;--- проверяем, попадает ли курсор в edit box -------------
 ;----------------------------------------------------------
-        mov     ebx,dword [ecx+38]
+        mov     ebx,[procinfo.box.top]
         add     ebx,ed_top
 if scr_h eq 
 else
@@ -312,7 +311,7 @@ end if
 
         shr     eax,16
 
-        mov     ebx,dword [ecx+34]
+        mov     ebx,[procinfo.box.left]
         add     ebx,ed_left
 if scr_w eq 
 else
@@ -330,8 +329,7 @@ end if
         call    .clear_cursor
         pop     eax
 ._mvpos:
-        mov     ecx,procinfo
-        mov     ebx,dword [ecx+34]
+        mov     ebx,dword [procinfo.box.left]
         xor     edx,edx
         sub     eax,ed_left
         sub     eax,ebx
@@ -424,8 +422,7 @@ use_key_func
 ;;;;;;;;;;;;;;;;;;
 ;;процедура обработки положения выделенного текста, когда происходит выход за пределы editbox
 ;;;;;;;;;;;;;;;;;;
-        mov     ecx,procinfo
-        mov     ebx,dword [ecx+34]
+        mov     ebx,[procinfo.box.left]
         add     ebx,ed_left
 if scr_w eq 
 else
