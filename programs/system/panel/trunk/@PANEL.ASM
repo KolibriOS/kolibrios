@@ -93,10 +93,33 @@ begin_1:
    kill_active_application:
      mcall  18, 7
      mov    ecx,eax
-;     mcall  9, area9
-;     mov    eax,area9
-;     mov    ecx,[eax+4]
+     
+     ;//{SPraid.simba do not kill panel and icon
+     push eax
+     mov eax,9
+     mov ebx, process_info_buffer
+     int 0x40
+     mov eax,process_info_buffer
+     add eax,10
+     mov ebx,[eax]
+     cmp ebx,'ICON'
+     je  no_kill
+     cmp ebx,'@PAN'
+     jne  kill_app
+     add eax,4
+     mov ebx,[eax]
+     and ebx,0x0000FFFF
+     cmp ebx,'EL'
+     je  no_kill
+   kill_app:  
+     pop ecx
      mcall  18, 2
+     jmp if_kill
+   no_kill:
+     pop eax
+   if_kill:
+     ;// }SPraid.simba
+     
      jmp    begin_1.ret
 
    start_menu_application:
@@ -2079,11 +2102,11 @@ screen_size:
   .height dw ?
   .width  dw ?
 
-area9 rb 100
 system_colours rd 10
 app_list rd 50
 alt_tab_list    rd      256*2
 alt_tab_list_size dd    ?
+process_info_buffer  rb 1024
 tictable:
   rd 256
 image:

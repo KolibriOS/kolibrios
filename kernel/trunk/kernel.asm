@@ -542,6 +542,7 @@ include 'vmodeld.inc'
 ; LOADING LIBRARES
    stdcall dll.Load,@IMPORT				; SPraid - загрузка функционала (пока что ини файл)
    call load_conf_file					; prepare configuration file
+   ;call set_kentel_conf					; configure devices and gui
 no_lib_load:
 
 ; LOAD FONTS I and II
