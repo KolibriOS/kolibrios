@@ -1,0 +1,7 @@
+macro cmp_err code,text_ptr
+{
+        cmp     al,code
+        jne     @f
+        mov     [status],text_ptr
+@@:
+} 

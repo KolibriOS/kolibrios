@@ -12,7 +12,7 @@ pusha
         mov     ecx,[edi+4] ;[but.height]
         mov     edx,[edi+8];[but.id]
         mov     esi,[edi+12];[but.color]
-        int     0x40
+        mcall
 ;--- текст на ней ---
         ; считаем количество символов
         mov     edx,[edi+20]
@@ -45,7 +45,7 @@ pusha
         ; рисуем строку текста
         mov     ecx,[edi+16] ;[but.text_color]
         shr     eax,1
-        int     0x40
+        mcall
 popa
 ret
 }
