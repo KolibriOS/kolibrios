@@ -41,7 +41,6 @@ file_system:
 ; IN:
 ;
 ; eax = 0  ; read file          /RamDisk/First  6
-; eax = 1  ; write file         /RamDisk/First 33   /HardDisk/First 56
 ; eax = 8  ; lba read
 ; eax = 15 ; get_disk_info
 ;
@@ -263,22 +262,6 @@ endg
 
 
   fs_noramdisk_read:
-
-    cmp   dword [esp+20],1      ; WRITE
-    jne   fs_noramdisk_write
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    mov   ebx,[esp+8]           ; buffer
-    mov   ecx,[esp+12]          ; count to write
-    mov   edx,0                 ; create new
-    call  filesave
-
-    ; eax=0 ok - eax=1 not enough free space
-
-    jmp   file_system_return
-
-  fs_noramdisk_write:
   fs_noramdisk:
 
   ;********************************************************************
@@ -329,23 +312,6 @@ endg
 
 
   fs_noflpdisk_read:
-
-    cmp   dword [esp+20],1      ; WRITE
-    jne   fs_noflpdisk_write
-
-    mov   eax,[esp+4]           ; fname
-    add   eax,2*12+1
-    mov   ebx,[esp+8]           ; buffer
-    mov   ecx,[esp+12]          ; count to write
-    mov   edx,0                 ; create new
-    call  floppy_filesave
-
-    ; eax=0 ok - eax=1 not enough free space
-
-    jmp   file_system_return
-
-  fs_noflpdisk_write:
-
   fs_noflpdisk:
   ;*****************************************************************
 
@@ -475,34 +441,6 @@ hd_err_return:
     jmp   file_system_return
 
   fs_noharddisk_read:
-
-
-    cmp   dword [esp+20],1      ; WRITE
-    jne   fs_noharddisk_write
-
-    mov   eax,[esp+0]           ; /fname
-    mov   byte [eax],0          ; path to asciiz
-    inc   eax                   ; filename start
-
-    mov   ebx,[esp+12]          ; count to write
-    mov   ecx,[esp+8]           ; buffer
-    mov   edx,[esp+4]
-    add   edx,12*2              ; path start
-
-    call  file_write
-
-    mov   edi,[esp+0]
-    mov   byte [edi],'/'
-
-    ; eax=0 ok - eax=1 not enough free space
-
-    call  free_hd_channel
-    and   [hd1_status], 0
-    jmp   file_system_return
-
-
-  fs_noharddisk_write:
-
 
     call  free_hd_channel
     and   [hd1_status], 0

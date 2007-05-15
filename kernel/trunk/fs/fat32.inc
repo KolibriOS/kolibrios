@@ -1,9 +1,9 @@
 $Revision$
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
+;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
 ;;  FAT32.INC                                                      ;;
 ;;                                                                 ;;
 ;;  FAT16/32 functions for KolibriOS                               ;;
@@ -69,7 +69,6 @@ PUSHAD_EDI equ [esp+0]
 
 uglobal
 align 4
-cluster              dd 0       ; used by file_write,makedir,append
 partition_count      dd 0       ; partitions found by set_FAT32_variables
 longname_sec1        dd 0       ; used by analyze_directory to save 2 previous
 longname_sec2        dd 0       ; directory sectors for delete long filename
@@ -82,13 +81,6 @@ cluster_tmp          dd 0       ; used by analyze_directory
                                 ; and analyze_directory_to_write
 
 file_size            dd 0       ; used by file_read
-
-sector_tmp           dd 0       ; used by rename,append,file_write
-entry_pos            dd 0       ; used by rename,append,file_write
-
-old_filesize         dd 0       ; used by append
-new_filepos          dd 0       ; used by append
-bytes2write          dd 0       ; used by append
 
 cache_search_start   dd 0       ; used by find_empty_slot
 endg
@@ -106,13 +98,8 @@ fat_cache:           times 512 db 0
 endg
 
 uglobal
-  dir_entry:           times 32 db 0
-
-  startpath:           times 255 db 0
-
   fat16_root           db 0       ; flag for fat16 rootdir
   fat_change           db 0       ; 1=fat has changed
-
 endg
 
 reserve_hd1:
@@ -470,131 +457,6 @@ analyze_directory:
     ret
 
 
-analyze_directory_to_write:
-;-----------------------------------------------------------
-; input  : EAX = first cluster of the directory
-; output : IF CARRY=0 EAX = sector where the empty pos is found
-;                     EBX = pointer in buffer
-;                     [buffer .. buffer+511]
-;                     ECX,EDX,ESI,EDI not changed
-;          IF CARRY=1 disk full or fat corrupted
-; Note   : if cluster=0 it's changed to read rootdir
-;-----------------------------------------------------------
-    push  ecx edx edi
-
-  adw_new_cluster:
-    mov   [cluster_tmp],eax
-    mov   [fat16_root],0
-    cmp   eax,[LAST_CLUSTER]
-    ja    adw_not_found         ; too big cluster number, something is wrong
-    cmp   eax,2
-    jnb   adw_data_cluster
-
-    mov   eax,[ROOT_CLUSTER]    ; if cluster < 2 then read rootdir
-    cmp   [fs_type],16
-    jne   adw_data_cluster
-    mov   eax,[ROOT_START]
-    mov   edx,[ROOT_SECTORS]
-    mov   [fat16_root],1        ; flag for fat16 rootdir
-    jmp   adw_new_sector
-
-  adw_data_cluster:
-    sub   eax,2
-    mov   edx,[SECTORS_PER_CLUSTER]
-    imul  eax,edx
-    add   eax,[DATA_START]
-
-  adw_new_sector:
-    mov   ebx,buffer
-    call  hd_read
-    cmp  [hd_error],0
-    jne  adw_not_found
-
-    mov   ecx,512/32            ; count of dir entrys per sector = 16
-
-  adw_analyze:
-    cmp   byte [ebx],0x00       ; is free entry?
-    je    adw_found             ; yes
-    cmp   byte [ebx],0xe5       ; is deleted entry?
-    je    adw_found             ; yes
-    add   ebx,32                ; position of next dir entry
-    dec   ecx
-    jnz   adw_analyze
-
-    inc   eax                   ; next sector
-    dec   edx
-    jne   adw_new_sector
-    cmp   [fat16_root],1        ; end of fat16 rootdir
-    je    adw_not_found
-
-    mov   eax,[cluster_tmp]
-    call  get_FAT               ; get next cluster
-    cmp   [hd_error],0
-    jne   adw_not_found
-
-    cmp   eax,2                 ; incorrect fat chain?
-    jb    adw_not_found         ; yes
-    cmp   eax,[fatRESERVED]     ; is it end of directory?
-    jb    adw_new_cluster       ; no. analyse it
-
-    mov   eax,2                 ; this block of code add a new cluster
-    call  get_free_FAT          ; for the directory because the directory
-    jc    adw_not_found         ; is full
-
-    mov   edx,[fatEND]          ; new end for directory
-    call  set_FAT
-    cmp  [hd_error],0
-    jne  adw_not_found
-
-    push  eax                   ; save new cluster
-    mov   edx,eax
-    mov   eax,[cluster_tmp]     ; change last cluster to point new cluster
-    call  set_FAT
-    cmp  [hd_error],0
-    jne  adw_not_found_1
-
-    mov   ecx,-1                ; remove 1 cluster from free disk space
-    call  add_disk_free_space
-    cmp  [hd_error],0
-    jne    adw_not_found_1
-
-    mov   ecx,512/4
-    xor   eax,eax
-    mov   edi,buffer
-    cld
-    rep   stosd                 ; clear new directory cluster
-    pop   eax
-
-    sub   eax,2
-    mov   ecx,[SECTORS_PER_CLUSTER]
-    imul  eax,ecx
-    add   eax,[DATA_START]
-    mov   ebx,buffer
-    push  eax                   ; save sector number
-
-  adw_set_empty_directory:
-    call  hd_write
-    cmp   [hd_error],0
-    jne   adw_not_found_1
-
-    inc   eax                   ; next sector
-    dec   ecx
-    jnz   adw_set_empty_directory
-
-    pop   eax
-
-  adw_found:
-    pop   edi edx ecx
-    clc                         ; free space found
-    ret
-  adw_not_found_1:
-    add  esp,4
-  adw_not_found:
-    pop   edi edx ecx
-    stc                         ; free space not found
-    ret
-
-
 get_data_cluster:
 ;-----------------------------------------------------------
 ; input  : EAX = cluster
@@ -656,43 +518,6 @@ get_data_cluster:
 
   gdc_error:
     pop   ecx eax
-    stc
-    ret
-
-
-set_data_cluster:
-;-----------------------------------------------------------
-; input  : EAX = cluster
-;          EBX = pointer to buffer
-; output : if CARRY=0 ok
-;          if CARRY=1 cluster out of range
-;-----------------------------------------------------------
-    push  eax ebx edx
-
-    cmp   eax,[LAST_CLUSTER]
-    ja    sdc_error             ; too big cluster number, something is wrong
-    sub   eax,2
-    jb    sdc_error             ; don't allow rootdir write
-
-    mov   edx,[SECTORS_PER_CLUSTER]
-    imul  eax,edx
-    add   eax,[DATA_START]
-
-  sdc_write:
-    call  hd_write
-    cmp   [hd_error],0
-    jne   sdc_error
-
-    add   ebx,512               ; update pointer
-    inc   eax
-    dec   edx
-    jnz   sdc_write
-    pop   edx ebx eax
-    clc
-    ret
-
-  sdc_error:
-    pop   edx ebx eax
     stc
     ret
 
@@ -852,191 +677,6 @@ add_disk_free_space:
     pop   ebx eax
 
   add_dfs_no:
-    ret
-
-
-file_write:
-;--------------------------------------------------------------------------
-;   INPUT : user-reg  register-in-this  meaning      symbol-in-this-routine
-;
-;            EAX        EDI            system call to write    /
-;            EBX        EAX   (PAR0)   pointer to file-name    PAR0
-;            EDX        ECX   (PAR1)   pointer to buffer       PAR1
-;            ECX        EBX   (PAR2)   file size               PAR2
-;            ESI        EDX   (PAR3)   pointer to path         PAR3
-;
-; output : eax = 0 - ok
-;                3 - unknown FS
-;                5 - file not found
-;                8 - disk full
-;               10 - access denied
-;--------------------------------------------------------------------------
-        cmp     [fs_type], 16
-        jz      fat_ok_for_writing
-        cmp     [fs_type], 32
-        jz      fat_ok_for_writing
-        push    ERROR_UNKNOWN_FS
-        pop     eax
-        ret
-
-  fat_ok_for_writing:
-;    call  reserve_hd1
-
-    pushad
-
-    xor   edi,edi               ; don't allow directory remove
-    call  file_delete           ; try to delete the file first
-    cmp   [hd_error],0
-    jne   exit_write_access_1
-
-    test  eax,eax
-    jz    old_deleted           ; deleted ok
-    cmp   eax,ERROR_FILE_NOT_FOUND
-    jnz   exit_write_access     ; it exist but can't delete
-
-  old_deleted:
-    mov   ebx,PUSHAD_EDX
-    call  get_cluster_of_a_path
-    jnc   found_directory_for_writing
-    cmp   [hd_error],0
-    jne   exit_write_access
-
-  exit_writing_with_error:
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   exit_write_access_2
-
-    mov   [hd1_status],0
-    mov   eax,ERROR_FILE_NOT_FOUND
-    ret
-
-  exit_writing_disk_full_clear:
-    cmp  [hd_error],0
-    jne  exit_write_access_1
-    mov   eax,[sector_tmp]
-    mov   ebx,buffer
-    call  hd_read               ; read directory sector
-    cmp  [hd_error],0
-    jne  exit_write_access_1
-
-    mov   edx,[entry_pos]
-    mov   byte [edx],0xe5       ; mark as deleted
-    call  hd_write
-    cmp   [hd_error],0
-    jne   exit_write_access_1
-
-    mov   eax,[edx+20-2]        ; FAT entry
-    mov   ax,[edx+26]
-    and   eax,[fatMASK]
-    call  clear_cluster_chain
-
-  exit_writing_disk_full:
-    cmp  [hd_error],0
-    jne  exit_write_access_1
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   exit_write_access_2
-    mov   [hd1_status],0
-    mov   eax,ERROR_DISK_FULL
-    ret
-
-  exit_write_access:
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    mov   [hd1_status],0
-    mov   eax,ERROR_ACCESS_DENIED
-    ret
-
-  exit_write_access_1:
-    popad
-  exit_write_access_2:
-    mov   [hd1_status],0
-    mov   eax,ERROR_ACCESS_DENIED
-    ret
-
-found_directory_for_writing:
-    call  analyze_directory_to_write
-    jc    exit_writing_disk_full
-
-    mov   [sector_tmp],eax
-    mov   [entry_pos],ebx
-    push  eax                   ; save directory sector
-    mov   eax,2
-    call  get_free_FAT
-    mov   [cluster],eax         ; first free cluster
-    pop   eax
-    jc    exit_writing_disk_full
-
-    mov   esi,PUSHAD_EAX        ; file name
-    mov   edi,ebx               ; pointer in buffer
-    mov   ecx,11
-    cld
-    rep   movsb
-
-    mov   esi,PUSHAD_EBX        ; file size (bytes left)
-    mov   [ebx+28],esi          ; file size
-    mov   ecx,[cluster]
-    mov   [ebx+26],cx           ; 16 bits low of cluster
-    shr   ecx,16
-    mov   [ebx+20],cx           ; 16 bits high of cluster (=0 fat16)
-    mov   byte [ebx+11],0x20    ; attribute = archive
-
-    call  set_current_time_for_entry
-
-    mov   ebx,buffer            ; save the directory name,length,cluster
-    call  hd_write
-    cmp   [hd_error],0
-    jne   exit_write_access_1
-
-    imul  edi,[SECTORS_PER_CLUSTER],512 ; edi = cluster size in bytes
-    xor   ecx,ecx               ; cluster count
-    mov   ebx,PUSHAD_ECX        ; ebx = buffer
-
-hd_new_block_write:
-
-    mov   eax,[cluster]         ; eax = block
-    call  set_data_cluster
-    cmp   [hd_error],0
-    jne   exit_write_access_1
-
-    sub   esi,edi               ; sub wrote bytes
-    jbe   file_saved_OK         ; end if all done
-    add   ebx,edi               ; update buffer position
-
-    inc   eax
-    call  get_free_FAT          ; next free in FAT
-    jc    exit_writing_disk_full_clear
-
-    mov   edx,eax
-    xchg  eax,[cluster]         ; get old cluster and save new cluster
-    call  set_FAT               ; add it in cluster chain
-    cmp  [hd_error],0
-    jne   exit_write_access_1
-
-    dec   ecx                   ; update cluster count
-    jmp   hd_new_block_write
-
-file_saved_OK:
-
-    mov   edx,[fatEND]          ; new end for cluster chain
-    call  set_FAT
-    cmp  [hd_error],0
-    jne   exit_write_access_1
-
-    dec   ecx                   ; update cluster count
-
-    call  add_disk_free_space   ; remove clusters from free disk space
-    cmp  [hd_error],0
-    jne   exit_write_access_1
-
-    popad
-    call  update_disk           ; write all of cache and fat to hd
-    cmp   [hd_error],0
-    jne   exit_write_access_2
-    mov   [hd1_status],0
-    xor   eax,eax
     ret
 
 
@@ -1209,67 +849,6 @@ get_dir_size:
     ret
 
 
-file_delete:
-;-----------------------------------------------------
-; input  : eax = file/directory name
-;          edx = path
-;          edi = 1 - allow directory remove else don't remove directory
-; output : eax = 0 - ok
-;                3 - unknown FS
-;                5 - file not found
-;               10 - access denied
-;-----------------------------------------------------
-        cmp     [fs_type], 16
-        jz      file_del_fat_ok
-        cmp     [fs_type], 32
-        jz      file_del_fat_ok
-        push    ERROR_UNKNOWN_FS
-        pop     eax
-        ret
-
-  file_del_fat_ok:
-    pushad
-
-    mov   ebx,edx
-    call  get_cluster_of_a_path
-    jc    file_to_delete_not_found
-
-    mov   ebx,PUSHAD_EAX        ; file/directory name
-    call  analyze_directory
-    jc    file_to_delete_not_found
-
-    test  byte [ebx+11],0x10    ; is it directory?
-    jnz   delete_no_access
-
-  delete_notdir:
-    call  delete_entry_name
-    cmp   [hd_error],0
-    jne   delete_no_access
-
-    mov   eax,ecx               ; first cluster of file
-    call  clear_cluster_chain
-    cmp   [hd_error],0
-    jne   delete_no_access
-
-    popad
-    xor   eax,eax
-    ret
-
-  delete_no_access_1:
-     add esp,4
-  delete_no_access:
-    popad
-    mov   eax,ERROR_ACCESS_DENIED
-    ret
-
-  file_to_delete_not_found:
-    cmp  [hd_error],0
-    jne  delete_no_access
-    popad
-    mov   eax,ERROR_FILE_NOT_FOUND
-    ret
-
-
 clear_cluster_chain:
 ;-----------------------------------------------------
 ; input  : eax = first cluster
@@ -1298,60 +877,6 @@ clear_cluster_chain:
     call  add_disk_free_space   ; add clusters to free disk space
   access_denied_01:
     pop   edx ecx eax
-    ret
-
-
-delete_entry_name:
-;-----------------------------------------------------
-; input  : eax = directory sector
-;          ebx = directory pointer in buffer
-;          longname_sec = 2 previous directory sectors
-; output : ecx = first cluster
-; change : eax,ebx,edx
-;-----------------------------------------------------
-    mov   byte [ebx],0xe5
-    mov   ecx,[ebx+20-2]        ; first cluster of file
-    mov   cx,[ebx+26]           ; 0 length files start cluster = 0
-    and   ecx,[fatMASK]
-
-  delete_empty:
-    sub   ebx,32
-    cmp   ebx,buffer
-    jnb   delete_test_long
-
-    mov   ebx,buffer
-    call  hd_write              ; write directory sector back
-    cmp   [hd_error],0
-    jne   delete_name_end
-
-    xor   eax,eax
-    xchg  eax,[longname_sec2]
-    xchg  eax,[longname_sec1]
-    test  eax,eax               ; is there previous directory sector?
-    jz    delete_name_end       ; no
-
-    mov   ebx,buffer
-    call  hd_read               ; read previous sector
-    cmp  [hd_error],0
-    jne  delete_name_end
-
-    mov   ebx,buffer+0x1e0      ; start from last entry
-
-  delete_test_long:
-    mov   dh,[ebx+11]           ; file attribute
-    and   dh,0xf
-    cmp   dh,0xf
-    jne   delete_write_buffer
-
-    cmp   byte [ebx],0x40       ; end of long dir entry?
-    mov   byte [ebx],0xe5
-    jb    delete_empty
-
-  delete_write_buffer:
-    mov   ebx,buffer
-    call  hd_write              ; write directory sector back
-
-  delete_name_end:
     ret
 
 
@@ -1428,55 +953,6 @@ update_disk:
   update_disk_acces_denied:
     ret
 
-read_hd_file:
-;-----------------------------------------------------------------
-;
-; Converting old reading function for hd-application start.
-;
-; IN:
-;
-; eax - pointer to file (0 = read only first sector of drive: eg 'label')
-; ebx - file lenght
-; ecx - start 512 byte block number
-; edx - number of blocks to read
-; esi - pointer to return/work area (atleast 20 000 bytes)
-;
-; For new read function
-;
-; EAX   (PAR0)      pointer to file-name
-; ECX   (PAR1)      pointer to buffer
-; EBX   (PAR2)   vt file blocks to read
-; EDX   (PAR3)      pointer to path
-; ESI            vt first 512 block to read
-; EDI               if 0 - return root
-;--------------------------------------------------------------------------
-
-    push  ecx esi edi
-    mov   esi,eax
-    mov   edi,startpath
-    mov   ecx,250
-    cld
-    rep   movsb
-    pop   edi esi ecx
-
-    mov   eax,startpath
-    mov   [eax+ebx-12],byte 0
-
-    push  eax ebx ecx edx esi
-
-    pop   ecx ; pointer to buffer
-    add   ecx,1024
-    pop   ebx ; number of blocks to read
-    pop   esi ; first block to read
-    dec   esi
-    pop   eax ; file length
-    pop   edx ; pointer to path
-
-    mov   edi,12
-    lea   eax,[eax+edx-12+1]
-    call  file_read
-
-    ret
 
 ; \begin{diamond}
 hd_find_lfn:
