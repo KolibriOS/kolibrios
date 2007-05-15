@@ -542,7 +542,7 @@ include 'vmodeld.inc'
 ; LOADING LIBRARES
    stdcall dll.Load,@IMPORT				; SPraid - загрузка функционала (пока что ини файл)
    call load_conf_file					; prepare configuration file
-   ;call set_kentel_conf					; configure devices and gui
+   call set_kentel_conf					; configure devices and gui
 no_lib_load:
 
 ; LOAD FONTS I and II
@@ -3441,11 +3441,23 @@ checkmisc:
 
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
-    mov   ebp, cpustring
-    lea   esi,[ebp+6]
-    xor   ebx,ebx               ; no parameters
-    xor   edx,edx               ; no flags
-    call  fs_RamdiskExecute.flags
+    
+    
+    stdcall kernel_alloc, 0x100
+    push eax    
+    mov ebx,eax
+    stdcall full_file_name,cpustring,eax
+    mov ebp, eax
+
+    xor ebx, ebx
+    xor edx, edx
+    call fs_execute
+
+    pop ebx
+    push eax
+    stdcall kernel_free, ebx
+    pop eax
+    
     mov   [ctrl_alt_del], 0
 
 nocpustart:
