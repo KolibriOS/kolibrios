@@ -26,7 +26,7 @@ version equ '1.2'
   dd     0x0         ; зарезервировано
 
 include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
-use_edit_box structure_of_potock,22,5
+use_edit_box procinfo,22,5
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -199,7 +199,7 @@ draw_window:
    mov edi,title                        ; ЗАГОЛОВОК ОКНА
    mcall
 
-draw_edit_boxes editbox,editbox_end,use_f9,structure_of_potock  ;рисование edit box'ов
+draw_edit_boxes editbox,editbox_end,use_f9,procinfo  ;рисование edit box'ов
 
    mov al,13                             ;отрисовка теней кнопок
    mov ebx,194 shl 16 + 60
@@ -336,7 +336,6 @@ rb 514
 
 sc     system_colors
 
-structure_of_potock:
-rb 100
+procinfo process_information
 
 

@@ -12,7 +12,7 @@ use32
         org    0x0
    
         db     'MENUET01'   ; 8 byte id
-        dd     0x01         ; title version
+        dd     0x01         ; header version
         dd     START        ; start of code
         dd     I_END        ; size of image
         dd     0x5000       ; memory for app

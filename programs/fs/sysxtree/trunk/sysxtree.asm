@@ -228,7 +228,7 @@ scrl:
         movzx   ebx, ax         ; y
         shr     eax, 16         ; x
     mov ebp,eax
-    sub ebp,[listx] ;[procinfo.box.left]
+    sub ebp,[listx] ;[procinfo.box.width]
     sub ebp,[listxsize]
     add ebp,[scrollsize]
     cmp ebp,dword [scrollsize] ;8
@@ -1028,10 +1028,10 @@ screen:
     cmp [browser], 1 ;it's browser?
     jne dialogscr
 
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,90
     drawfbox 40,76,300,eax,0x00000000
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,92
     drawfbox 41,77,298,eax,0x00ffffff
     mov edi,esi ;14
@@ -1041,10 +1041,10 @@ screen:
     jmp outlab
 
 dialogscr:
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,84
     drawfbox 16,54,270,eax,0x00000000
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,86
     drawfbox 17,55,268,eax,0x00ffffff
     mov edi,esi ;14
@@ -1145,7 +1145,7 @@ draw_window:
 ;    mov ebx,procinfo
 ;    mov ecx,-1
 ;    mcall
-;    mov  eax,[procinfo.box.left]
+;    mov  eax,[procinfo.box.width]
 ;    cmp  eax,66
 ;    jg  temp12345
 ;    ret
@@ -1186,35 +1186,35 @@ isb1:
     mov ecx,-1
     mcall
 
-    mov  eax,[procinfo.box.left]
+    mov  eax,[procinfo.box.width]
     cmp  eax,66
     jg	 @f
 .ret:
     ret
  @@:
-    cmp  [procinfo.box.top], 0x70
+    cmp  [procinfo.box.height], 0x70
     jl  .ret
 
     cmp  [browser], 1 ;it's browser
     jne  nob9
     mov  [listx],120
-;    mov  eax,[procinfo.box.left]
+;    mov  eax,[procinfo.box.width]
     sub  eax,127;[listx]+7
     cmp  eax,10
     jl   .ret
     mov  [listxsize],eax
     mov  [listy],73
-    mov  eax,[procinfo.box.top]
+    mov  eax,[procinfo.box.height]
     sub  eax,73+7;[listy]+7
     mov  [listysize],eax
     jmp isb9
 nob9:
     mov  [listx],10
-;    mov  eax,[procinfo.box.left]
+;    mov  eax,[procinfo.box.width]
     sub  eax,17 ;[listx]+7
     mov  [listxsize],eax
     mov  [listy],54
-    mov  eax,[procinfo.box.top]
+    mov  eax,[procinfo.box.height]
     sub  eax,54+34;[listy]+34
     mov  [listysize],eax
 isb9:
@@ -1248,17 +1248,17 @@ nexthbut:
     glabel 8,25,'  FILE    VIEW    INFO  ',  cl_White ;Black
 
 ;BlackLine
-    mov eax,[procinfo.box.left]
+    mov eax,[procinfo.box.width]
     sub eax,10
     drawfbox 5,35, eax, 1, cl_Black
 
 ;BlackLine2
-    mov eax,[procinfo.box.left]
+    mov eax,[procinfo.box.width]
     sub eax,10
     drawfbox 5,68, eax, 1, cl_Black
 
 ;BlackLine2 vertical
-;    mov eax,[procinfo.box.top]
+;    mov eax,[procinfo.box.height]
 ;    sub eax,69+4
 ;    drawfbox 115, 69, 1, eax, cl_Black
 
@@ -1344,7 +1344,7 @@ nextbut:
 ;But img browser
     setimg 10,37,butimg
 ;left logo
-    add eax,[procinfo.box.left]
+    add eax,[procinfo.box.width]
     sub eax,80
     mov [temp],eax
     setimg [temp],37,logoimg
@@ -1359,7 +1359,7 @@ isb4:
 
     mov [urlx],48
     mov [urly],55
-    mov eax,[procinfo.box.left]
+    mov eax,[procinfo.box.width]
     sub eax,48+10
     mov [urlxsize],eax
     mov [urlysize],12
@@ -1388,10 +1388,10 @@ but_dlg:  db 'OPEN'
 nob5:
 
     mov [urlx],10
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,24
     mov [urly],eax
-    mov eax,[procinfo.box.left]
+    mov eax,[procinfo.box.width]
     sub eax,80
     mov [urlxsize],eax
     mov [urlysize],12
@@ -1417,11 +1417,11 @@ no_saveh:
 ;Draw OPEN\SAVE button
     mov ebx,0*65536+50
     mov ecx,0*65536+12
-    mov eax,[procinfo.box.left]
+    mov eax,[procinfo.box.width]
     sub eax,63
     shl eax,16
     add ebx,eax
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,25
     shl eax,16
     add ecx,eax
@@ -1431,9 +1431,9 @@ no_saveh:
     mcall
 
 ; label OPEN or SAVE
-    mov ebx,[procinfo.box.left]
+    mov ebx,[procinfo.box.width]
     sub ebx,48
-    mov eax,[procinfo.box.top]
+    mov eax,[procinfo.box.height]
     sub eax,22
     shl ebx,16
     add ebx,eax

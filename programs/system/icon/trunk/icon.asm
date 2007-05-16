@@ -19,7 +19,7 @@ ICON_STRIP equ '/RD/1/ICONSTRP.GIF'
   use32
   org    0x0
   db     'MENUET01'     ; 8 byte id
-  dd     0x01           ; title version
+  dd     0x01           ; header version
   dd     START          ; start of code
   dd     I_END          ; size of image
   dd     icon_data+0x30000        ; memory for app

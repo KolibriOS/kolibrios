@@ -14,7 +14,7 @@
   use32
   org        0x0
   db      'MENUET01'   ; 8 byte identifier
-  dd      0x01           ; title version
+  dd      0x01           ; header version
   dd      START        ; pointer to program start
   dd      I_END        ; size of image
   dd      0x4000      ; reguired amount of memory

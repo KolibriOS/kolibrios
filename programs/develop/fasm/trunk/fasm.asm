@@ -157,7 +157,7 @@ draw_window:
     mcall 9,PROCESSINFO,-1	    
 
     mpack ecx,1,1
-    mov   ebx,[pinfo.box.left]
+    mov   ebx,[pinfo.box.width]
     sub   ebx,10
 
     push  ecx
@@ -190,7 +190,7 @@ draw_window:
     madd  ecx, 14,0
     mcall  ,,,0x4000000D       ; Button: Enter Path
 
-    mpack ebx,[pinfo.box.left],MAGIC1
+    mpack ebx,[pinfo.box.width],MAGIC1
     msub  ebx,MAGIC1+10+1,0
     mpack ecx,0, 14*3/2-1
     madd  ecx,1,0
@@ -211,7 +211,7 @@ draw_window:
     cmp  byte[edx],'x'
     jne  newline
 
-    mov   ebx,[pinfo.box.left]
+    mov   ebx,[pinfo.box.width]
     sub   ebx,MAGIC1+10+1-9
     shl   ebx,16
     add   ebx,1+( 14*3/2-1)/2-3
@@ -221,7 +221,7 @@ draw_window:
 
     mpack ebx,MAGIC1+6,0
     add   ebx,1+ 14/2-3+ 14*0
-    mov   esi,[pinfo.box.left]
+    mov   esi,[pinfo.box.width]
     sub   esi,MAGIC1*2+5*2+6+3
     mov   eax,esi
     mov   cl,6
@@ -247,9 +247,9 @@ bottom_right dd ?
 
 draw_messages:
     mov    eax,13      ; clear work area
-    mpack  ebx,7-2,[pinfo.box.left]
+    mpack  ebx,7-2,[pinfo.box.width]
     sub    ebx,5*2+7*2-1-2*2
-    mpack  ecx,0,[pinfo.box.top]
+    mpack  ecx,0,[pinfo.box.height]
     madd   ecx, 14*3+1+7+1,-( 14*3+1+7*2+25)
     mov    word[bottom_right+2],bx
     mov    word[bottom_right],cx
@@ -361,7 +361,7 @@ f11:mcall  10
 
 print_text:
 
-    mpack ebx,MAGIC1+6,[pinfo.box.left]
+    mpack ebx,MAGIC1+6,[pinfo.box.width]
     sub   ebx,MAGIC1*2+19
     movzx esi,bx
     mov   ecx,[ya-2]

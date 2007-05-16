@@ -18,7 +18,7 @@ version equ ' 1.1 '
                use32              ; включить 32-битный режим ассемблера
 
                db     'MENUET01'              ; 8 byte id
-               dd     0x01                    ; title version
+               dd     0x01                    ; header version
                dd     START                   ; start of code
                dd     I_END                   ; size of image
                dd     memsize                 ; memory for app

@@ -26,7 +26,7 @@ use32
 		dd	START			; program start
 		dd	I_END			; program image size
 		dd	0x400000		; required amount of memory
-		dd	0x400000
+		dd	0x20000
 		dd	0,0			; reserved=no extended header
 
 include "..\..\..\MACROS.INC"
@@ -1158,7 +1158,6 @@ draw_data:
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,35
-    mov  eax,13
   newline:
     pusha
     cmp  ebx,25*65536+61
@@ -1172,6 +1171,7 @@ draw_data:
     shl  ecx,16
     mov  cx,9
     mov  edx,0xffffff
+    mov  eax,13
     mcall
    now:
     popa

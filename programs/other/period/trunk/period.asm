@@ -390,8 +390,8 @@ Table:		       ;Отрисовка таблицы в виде конопочек
 		row_1_loop:
 			add ebx,26*65536
 			inc edx
-			dec edi
 			mcall
+			dec edi
 			jns row_1_loop
 	row_2:
 		dgfsfHe_:
@@ -404,8 +404,8 @@ Table:		       ;Отрисовка таблицы в виде конопочек
 
 			add ebx,26*65536
 			inc edx
-			dec edi
 			mcall
+			dec edi
 			jns row_2_loop
 
 text_on_buttons:

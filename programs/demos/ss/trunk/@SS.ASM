@@ -393,7 +393,7 @@ sdraw_window:
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,100*65536+215         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+70          ; [y start] *65536 + [y size]
-    mov  edx,0x03400088            ; color of work area RRGGBB,8->color gl
+    mov  edx,0x13400088            ; color of work area RRGGBB,8->color gl
     mov  edi,title
     mcall
 
@@ -504,7 +504,7 @@ drawflag:
 ; DATA AREA
 buttext    db 'SHOW'
 flag       db 'V '
-title     db   'SCREENSAVER SETUP',0
+title      db 'SCREENSAVER SETUP',0
 setuptext  db 'TYPE: < >TIME: < >     MINUTES    NEVER'
 typetext   db 'BLACK SCREENCOLOR LINES ASSEMBLER   '
 type       dd 12
