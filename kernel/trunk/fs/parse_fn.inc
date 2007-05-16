@@ -13,13 +13,15 @@ locals
   param  rb 60
   val    rb 60
   tmpsrc rb 60	; временное хранение преобразования
-endl  
+endl
   pushad
 
-    
+
   mov esi,[sourc]
-  mov edi,ebp
-  add edi,tmpsrc-ebp
+;  mov edi,ebp
+;  add edi,tmpsrc-ebp
+   lea edi, [tmpsrc]
+
 @@:
   lodsb
   stosb
@@ -29,55 +31,62 @@ endl
   mov al,[conf_file_loaded]					; требуется при обращении к первому файлу (конфигу)
   or al,al
   jnz @use_replace
-      
+
   jmp full_file_name_exit
 
-    
+
 ;--------------------------------
  @use_replace:
-  
+
   xor eax,eax
 .loop:
   push eax
-  mov ebx,ebp
-  add ebx,param-ebp
-  mov ecx,ebp
-  add ecx,val-ebp
+;  mov ebx,ebp
+;  add ebx,param-ebp
+;  mov ecx,ebp
+;  add ecx,val-ebp
+  lea ebx, [param]
+  lea ecx, [val]
   invoke ini.get_par,sect, ebx, ecx, eax
 
   mov bl,[param]
   or bl,bl
   jz .done
 
-  mov eax,ebp
-  add eax,tmpsrc-ebp
-  mov ebx,ebp
-  add ebx,param-ebp
-  mov ecx,ebp
-  add ecx,val-ebp
-  mov edx,[dest] 
+;  mov eax,ebp
+;  add eax,tmpsrc-ebp
+;  mov ebx,ebp
+;  add ebx,param-ebp
+;  mov ecx,ebp
+;  add ecx,val-ebp
+  lea eax, [tmpsrc]
+  lea ebx, [param]
+  lea ecx, [val]
+  mov edx,[dest]
 
   stdcall full_file_name_parse, eax,edx,ebx,ecx
-  
+
   mov esi,[dest]
-  mov edi,ebp
-  add edi,tmpsrc-ebp
+;  mov edi,ebp
+;  add edi,tmpsrc-ebp
+  lea edi, [tmpsrc]
 @@:
   lodsb
   stosb
   or al,al
   jnz @b
-  
+
   pop eax
   inc eax
   jmp .loop
-  
-.done:  
+
+.done:
   pop eax
 full_file_name_exit:
 
-  mov eax,ebp
-  add eax,tmpsrc-ebp
+;  mov eax,ebp
+;  add eax,tmpsrc-ebp
+  lea eax, [tmpsrc]
   stdcall full_file_name_parse , eax , [dest], sysdir_ , sys_path
   popad
   ret
@@ -104,7 +113,7 @@ proc full_file_name_parse stdcall,sourc,dest,def,dval
   je  @@bad_s
   cmp dl,0
   je  @@good
-  
+
   or cl,0x20
   or dl,0x20
   cmp cl,dl
@@ -116,8 +125,8 @@ proc full_file_name_parse stdcall,sourc,dest,def,dval
 
 @@bad_s:
   cmp dl,0
-  je  @@good  
-  
+  je  @@good
+
 @@bad:
   mov edi,[dest]
   mov esi,[sourc]
@@ -136,23 +145,23 @@ proc full_file_name_parse stdcall,sourc,dest,def,dval
   lodsb
   stosb
   or al,al
-  jnz	@b 
+  jnz	@b
 
-@@goodl:  
+@@goodl:
   pop esi
   dec edi
 @@:
   lodsb
-  stosb 
+  stosb
   or al,al
-  jnz	@b 
+  jnz	@b
 
 @@ret_ok:
   popad
   ret
 
-endp                            
-    
+endp
+
  sys_dir_mess: db 'System dir is '
  sys_path: db '/HD0/1/KOLIBRI',0,0
  sysdir_ db '%sys%',0
@@ -176,8 +185,8 @@ Parser_params:
   mov [sys_path+6],dword '/KOL'
   mov [sys_path+10],dword 'IBRI'
   mov [sys_path+14],word 0 ;0x002F
-  
+
 .done:
   popad
   ret
-  
+

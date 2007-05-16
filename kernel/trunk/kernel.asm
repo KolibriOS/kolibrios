@@ -552,27 +552,18 @@ no_lib_load:
 
 ; LOAD FONTS I and II
 
-;        mov   esi,char
-;        xor   ebx,ebx
-;        mov   ecx,2560
-;        mov   edx,FONT_I
-;        call  fs_RamdiskRead
 
-;        mov   esi,char2
-;        xor   ebx,ebx
-;        mov   ecx,2560;26000
-;        mov   edx,FONT_II
-;        call  fs_RamdiskRead
+; pushad
+; push eax
+; mov  eax,char
+; call file_system_lfn
+; mov  eax,char2
+; call file_system_lfn
+; pop eax
+; popad
 
-	pushad
-	push	eax
-	mov		eax,char
-	call	file_system_lfn
-	mov		eax,char2
-	call	file_system_lfn
-	pop	eax
-	popad
-
+        stdcall read_file, char, FONT_I, 0, 2560
+        stdcall read_file, char2, FONT_II, 0, 2560
 
         mov   esi,boot_fonts
         call  boot_log
@@ -657,10 +648,10 @@ no_lib_load:
         mov  esi,boot_setostask
         call boot_log
 
-        mov eax, fpu_data
-        mov  dword [SLOT_BASE+APPDATA.fpu_state], eax
-        mov  dword [SLOT_BASE+APPDATA.fpu_handler], 0
-        mov  dword [SLOT_BASE+APPDATA.sse_handler], 0
+        xor  eax, eax
+        mov  dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
+        mov  dword [SLOT_BASE+APPDATA.fpu_handler], eax
+        mov  dword [SLOT_BASE+APPDATA.sse_handler], eax
 
         ; name for OS/IDLE process
 
@@ -680,9 +671,8 @@ no_lib_load:
         cld
         rep movsd
 
-        mov dword [SLOT_BASE+256+APPDATA.fpu_handler], 0
-        mov dword [SLOT_BASE+256+APPDATA.sse_handler], 0
-        mov dword [SLOT_BASE+256+APPDATA.cursor], ebx
+        mov dword [SLOT_BASE+256+APPDATA.fpu_handler], eax
+        mov dword [SLOT_BASE+256+APPDATA.sse_handler], eax
 
         mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
         mov  dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
@@ -766,19 +756,13 @@ no_lib_load:
 
 ; LOAD FIRST APPLICATION
         cli
+
+if 0
         cmp   byte [BOOT_VAR+0x9030],1
         jne   no_load_vrr_m
 
-;        mov ebp, vrr_m
-;        xor ebx, ebx
-;        xor edx, edx
-;        call fs_execute
-;        cmp   eax,2                  ; if vrr_m app found (PID=2)
-;        je    first_app_found
-
-
         stdcall kernel_alloc, 0x100
-        push eax    
+        push eax
         mov ebx,eax
         stdcall full_file_name,vrr_m,eax
         mov ebp, eax
@@ -790,21 +774,14 @@ no_lib_load:
         push eax
         stdcall kernel_free, ebx
         pop eax
+
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
 no_load_vrr_m:
-;        mov ebp, firstapp
-;        xor ebx, ebx
-;        xor edx, edx
-;        call fs_execute
-;        cmp   eax,2                  ; continue if a process has been loaded
-;        je    first_app_found
-;        mov   eax, 0xDEADBEEF        ; otherwise halt
-;        hlt
 
         stdcall kernel_alloc, 0x100
-        push eax    
+        push eax
         mov ebx,eax
         stdcall full_file_name,firstapp,eax
         mov ebp, eax
@@ -820,8 +797,44 @@ no_load_vrr_m:
         mov   eax, 0xDEADBEEF        ; otherwise halt
         hlt
 
+first_app_found:
+
+else
+        sub esp, 0x100
+
+        cmp   byte [BOOT_VAR+0x9030],1
+        jne   no_load_vrr_m
+
+        mov ebp, esp
+        stdcall full_file_name,vrr_m,ebp
+
+        xor ebx, ebx
+        xor edx, edx
+        call fs_execute
+
+        cmp   eax,2                  ; if vrr_m app found (PID=2)
+        je    first_app_found
+
+no_load_vrr_m:
+
+        mov ebp, esp
+        stdcall full_file_name,firstapp,ebp
+
+        xor ebx, ebx
+        xor edx, edx
+        call fs_execute
+
+        cmp   eax,2                  ; continue if a process has been loaded
+        je    first_app_found
+
+        mov   eax, 0xDEADBEEF        ; otherwise halt
+        hlt
 
 first_app_found:
+
+        add esp, 0x100
+
+end if
         cli
 
         ;mov   [TASK_COUNT],dword 2
@@ -2423,8 +2436,8 @@ sys_background:
 
     cmp   eax,2                            ; SET PIXEL
     jnz   nosb2
-    mov   edx,[mem_BACKGROUND] 
-    cmp   edx,ebx 
+    mov   edx,[mem_BACKGROUND]
+    cmp   edx,ebx
     jbe   nosb2
     mov   edx,[ebx]
     and   edx,0xFF000000 ;255*256*256*256
@@ -3446,10 +3459,10 @@ checkmisc:
 
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
-    
-    
+
+
     stdcall kernel_alloc, 0x100
-    push eax    
+    push eax
     mov ebx,eax
     stdcall full_file_name,cpustring,eax
     mov ebp, eax
@@ -3462,7 +3475,7 @@ checkmisc:
     push eax
     stdcall kernel_free, ebx
     pop eax
-    
+
     mov   [ctrl_alt_del], 0
 
 nocpustart:

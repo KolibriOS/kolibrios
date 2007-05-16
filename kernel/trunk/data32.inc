@@ -83,14 +83,23 @@ szEXPORTS      db 'EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
 firstapp       db  '%sys%/LAUNCHER',0
-  char  dd 0,0,0
-   dd 2560
-   dd  FONT_I
-   db '%sys%/FONTS/CHAR.MT',0
-  char2 	dd 0,0,0
-			dd 2560
-			dd  FONT_II
-			db '%sys%/FONTS/CHAR2.MT',0
+
+if 0
+char    dd 0,0,0
+        dd 2560
+        dd  FONT_I
+        db '%sys%/FONTS/CHAR.MT',0
+
+char2   dd 0,0,0
+        dd 2560
+        dd  FONT_II
+        db '%sys%/FONTS/CHAR2.MT',0
+else
+
+char    db '%sys%/FONTS/CHAR.MT',0
+char2   db '%sys%/FONTS/CHAR2.MT',0
+
+end if
 
 
 bootpath       db  '/KOLIBRI    '
