@@ -493,7 +493,7 @@ Parameters:
 Returned value:
   * function does not return value
 Remarks:
-  * Before calling functions 15.2 and 15.5 you should call this function
+  * Before calling subfunctions 2 and 5 you should call this function
     to set image size!
   * For update of the screen (after completion of a series of commands
     working with a background) call subfunction 3.
@@ -513,7 +513,7 @@ Returned value:
 Remarks:
   * Offset for a pixel with coordinates (x,y) is calculated as
     (x+y*xsize)*3.
-  * If the given offset exceeds size sets by function 15.1,
+  * If the given offset exceeds size set by subfunction 1,
     the call is ignored.
   * For update of the screen (after completion of a series of commands
     working with a background) call subfunction 3.
@@ -559,8 +559,7 @@ Parameters:
 Returned value:
   * function does not return value
 Remarks:
-  * If the block gets out abroad size sets by function 15.1,
-    the call is ignored.
+  * Offset and size are not checked for correctness.
   * Color of each pixel is stored as 3-bytes value BBGGRR.
   * Pixels of the background image are written sequentially
     from left to right, from up to down.
@@ -674,7 +673,7 @@ Parameters:
 Returned value:
   * eax = 0 - success
   * else eax = error code of the file system
-іамечания:
+Remarks:
   * All folders in the given path must exist, otherwise function
     returns value 5, "file not found".
 
@@ -1414,7 +1413,7 @@ Parameters:
 Returned value:
   * eax = 0 - success
   * eax = 1 - CD base is not defined
-іамечания:
+Remarks:
   * Previously CD base port must be defined by call to 
     subfunction 3 of function 21.
 
@@ -1797,16 +1796,16 @@ Remarks:
   * If the active cursor (set by subfunction 5) is deleted,
     the system restores the default cursor (standard arrow).
 
-------------------- Subfunction 7 - get scroll data --------------------
+------------------ Subfunction 7 - get scroll data -------------------
 Parameters:
   * eax = 37 - function number
   * ebx = 7 - subfunction number
 Returned value:
-  * eax = horizontal_offset*65536 + vertical_offset
+  * eax = [horizontal offset]*65536 + [vertical offset]
 Remarks:
-  * Scroll data is available for active window only
-  * Values are zeroized after reading
-  * Values ara signed    
+  * Scroll data is available for active window only.
+  * Values are zeroed after reading.
+  * Values are signed.
 
 ======================================================================
 ====================== Function 38 - draw line. ======================
@@ -2042,8 +2041,8 @@ Parameters:
     * bh = 0 - display in decimal number system
     * bh = 1 - display in hexadecimal system
     * bh = 2 - display in binary system
-    * битv 16-21 = how many digits to display
-    * битv 22-31 reserved and must be set to 0
+    * bits 16-21 = how many digits to display
+    * bits 22-31 reserved and must be set to 0
   * ecx = number (if bl=0) or pointer (if bl=1)
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
   * esi = 0xX0RRGGBB:
@@ -2893,7 +2892,6 @@ Examples:
   * '/hd0/1/menuet/pics/tanzania.bmp',0
 Existing subfunctions:
   * subfunction 0 - read file/folder
-  * subfunction 1 - rewrite file
   * subfunction 8 - LBA-read from device
   * subfunction 15 - get file system information
 
@@ -2958,29 +2956,6 @@ Remarks:
     is not described. To obtain the information about the equipment
     use subfunction 11 of function 18 or
     read corresponding folder with subfunction 1 of function 70.
-
-======================================================================
-============= Function 58, subfunction 1 - rewrite file. =============
-======================================================================
-If the file does not exist, it is created.
-If the file exists, it is rewritten.
-Parameters:
-  * eax = 58 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 1 = subfunction number
-  * +4: dword: ignored (set to 0)
-  * +8: dword: number of bytes to write
-  * +12 = +0xC: dword: pointer to data to write
-  * +16 = +0x10: dword: pointer to buffer for system operations
-    (4096 bytes)
-  * +20 = +0x14: ASCIIZ-name of file, the rules of names forming are
-    given in the general description
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-  * ebx destroyed
-Remarks:
-  * This function is obsolete, use subfunction 2 of function 70.
 
 ======================================================================
 ========= Function 58, subfunction 8 - LBA-read from device. =========
@@ -3297,7 +3272,7 @@ Remarks:
 ============== Function 63 - work with the debug board. ==============
 ======================================================================
 The debug board is the global system buffer (with the size
-4096 bytes), to which any program can write (generally speaking,
+1024 bytes), to which any program can write (generally speaking,
 arbitrary) data and from which other program can read these data.
 By the agreement written data are text strings interpreted as
 debug messages on a course of program execution. The kernel in
@@ -3573,8 +3548,8 @@ Parameters:
   * edx = MSR address
   * esi:edi = high:low dword
 Returned value:
-  * ebx:eax = copy of esi:edi
-іамечания:
+  * function does not return value
+Remarks:
   * If ecx contains nonexistent or not implemented for this processor
     MSR, processor will generate an exception in the kernel, which
     will kill the thread.
@@ -3773,7 +3748,7 @@ If debugger does not want this, it must previously detach by
 subfunction 3.
 
 All subfunctions are applicable only to processes/threads started
-from the current by function 58 or 70 with set debugging flag.
+from the current by function 70 with set debugging flag.
 Debugging of multithreaded programs is not supported yet.
 The full list of subfunctions:
   * subfunction 0 - define data area for debug messages
