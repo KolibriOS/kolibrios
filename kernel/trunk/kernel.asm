@@ -170,8 +170,6 @@ include "bus/pci/pci16.inc"
         mov     cr0, eax
         jmp     pword os_code:B32       ; jmp to enable 32 bit mode
 
-include "boot/shutdown.inc" ; shutdown or restart
-
 align 8
 tmp_gdt:
 
@@ -252,6 +250,13 @@ B32:
 
            lgdt [gdts]
            jmp pword os_code:high_code
+
+
+use16
+org $-0x10000
+include "boot/shutdown.inc" ; shutdown or restart
+org $+0x10000
+use32
 
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
@@ -542,7 +547,7 @@ include 'vmodeld.inc'
 ; LOADING LIBRARES
    stdcall dll.Load,@IMPORT				; SPraid - загрузка функционала (пока что ини файл)
    call load_conf_file					; prepare configuration file
-   call set_kentel_conf					; configure devices and gui
+   call set_kernel_conf					; configure devices and gui
 no_lib_load:
 
 ; LOAD FONTS I and II
