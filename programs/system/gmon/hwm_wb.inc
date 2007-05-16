@@ -15,24 +15,24 @@
 ;    О маркировке (?) : H - H/W Monitor, G - Pb-free package, T - ACPI, S - Smart Card Reader Interface
 ;      D - SuperIO supporting Intel* PECI* & SST* interfaces, U - UART
 ;
-;		      | Chip name	| ID		Vin	Fanin	PWM	Temp   ISA   SMBus
-msg_wb27HF:	db 8, 'W83627HF'	; 0x20|0x21	 9	  3	 2	 3      +      +
-msg_wb27THF:	db 9, 'W83627THF'	; 0x90|0x91	 7	  3	 3	 3      +      +
-msg_wb37THF:	db 9, 'W83637THF'	; 0x80		 7	  3	 3	 3      +      +
-msg_wb97HF:	db 8, 'W83697HF'	; 0x60|0x61	 8	  2	 2	 2      +      -
-msg_wb27THFA:	db 11,'W83627THF-A'	; 0x1A
+;		   | Chip name  	 | ID		Vin	Fanin	PWM	Temp   ISA   SMBus
+msg_wb27HF:	db 'W83627HF', 0	; 0x20|0x21	 9	  3	 2	 3      +      +
+msg_wb27THF:	db 'W83627THF', 0	; 0x90|0x91	 7	  3	 3	 3      +      +
+msg_wb37THF:	db 'W83637THF', 0	; 0x80		 7	  3	 3	 3      +      +
+msg_wb97HF:	db 'W83697HF', 0	; 0x60|0x61	 8	  2	 2	 2      +      -
+msg_wb27THFA:	db 'W83627THF-A', 0	; 0x1A
 
-msg_w83627DHG:	db 9, 'W83627DHG'	; 0xC1		 ?	  5	 ?	 3      +      +
-msg_w83627EHF:	db 9, 'W83627EHF'	; 0x88		 10	  5	 3	 3      +      +
-msg_w83627EHG:	db 9, 'W83627EHG'	; 0xA1		 10	  5	 3	 3      +      +
+msg_w83627DHG:	db 'W83627DHG', 0	; 0xC1		 ?	  5	 ?	 3      +      +
+msg_w83627EHF:	db 'W83627EHF', 0	; 0x88		 10	  5	 3	 3      +      +
+msg_w83627EHG:	db 'W83627EHG', 0	; 0xA1		 10	  5	 3	 3      +      +
 
 
-;		db 7, 'W83781D'		; 0x10|0x11	 7	  	 3	 3      +      +
-;		db 7, 'W83782D'		; 0x30		 9	   	 3	 3      +      +
-;		db 8, 'AS99127F'	; 0x31           7               3       3      -      +
-;		db 7, 'W83783S'		; 0x40|0x41	 5-6	   	 3	 1-2    -      +
-;		db 7, 'W83791D'		; 0x70|0x71	 10	   	 5	 3      -      +
-msg_wbunk:	db 15,'Unknown Winbond'	; other, non zero ;-)
+;		db 'W83781D', 0		; 0x10|0x11	 7	  	 3	 3      +      +
+;		db 'W83782D', 0		; 0x30		 9	   	 3	 3      +      +
+;		db 'AS99127F', 0	; 0x31           7               3       3      -      +
+;		db 'W83783S', 0		; 0x40|0x41	 5-6	   	 3	 1-2    -      +
+;		db 'W83791D', 0		; 0x70|0x71	 10	   	 5	 3      -      +
+msg_wbunk:	db 'Unknown Winbond', 0	; other, non zero ;-)
 
 uglobal
 wb_fans_num	db	0

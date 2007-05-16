@@ -31,9 +31,7 @@
 mmx_en:	int	0x40
 	; Чип мониторинга
 	mov	edx, [hwm_chip_name]
-	mov	al, byte[edx]
-	movzx	esi, al
-	inc	edx
+	or	ecx, 0x80000000
 	mov	ebx, 160 * 65536 + 325
 	mov	al, 4
 	int	0x40

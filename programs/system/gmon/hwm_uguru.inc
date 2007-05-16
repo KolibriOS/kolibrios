@@ -47,7 +47,7 @@ v_mult:	dd	MLTP_3V49, MLTP_3V49, MLTP_3V49, MLTP_3V49, MLTP_3V49, MLTP_3V49
 	dd	MLTP_3V49, MLTP_6V25, MLTP_4V36, MLTP_6V25, MLTP_4V36
 
 
-msg_uguru:	db	10, 'ABIT uGuru'
+msg_uguru:	db	'ABIT uGuru', 0
 
 ;-----------------------------------
 uGuru_init:
