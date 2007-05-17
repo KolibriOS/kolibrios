@@ -209,9 +209,9 @@ still:
     mcall
     mov  eax,4
     mov  ebx,19*65536+225
-    mov  ecx,0xff0000
+    mov  ecx,0xc0ff0000
     mov  edx,add_text
-    mov  esi,add_text_len-add_text
+    mov  edi,0xffffff
     mcall
 
     mov  eax,10
@@ -277,9 +277,9 @@ still:
     mcall
     mov  eax,4
     mov  ebx,19*65536+225
-    mov  ecx,0xff0000
+    mov  ecx,0xc0ff0000
     mov  edx,rem_text
-    mov  esi,rem_text_len-rem_text
+    mov  edi,0xffffff
     mcall
 
     mov  eax,10
@@ -469,8 +469,6 @@ load_icon_list:
     add   esi,76+2
     loop  ldl1
 
-    ;popa
-
     ret
 
 
@@ -488,8 +486,6 @@ check_parameters:
 positions dd 65,34,3
 
 read_string:
-
-    ;pusha
 
     sub  eax,11
     shl  eax,2
@@ -532,8 +528,6 @@ read_string:
   nobsl:
     cmp  eax,31
     jbe  f11
-
-  keyok:
     mov  [edi],al
     call print_strings
 
@@ -553,8 +547,6 @@ read_string:
     rep  stosb
 
     call print_strings
-
-    ;popa
 
     ret
 
@@ -672,17 +664,17 @@ draw_window:
     cmp  ah,9
     jbe  newbline
 
-    mov  ebx,19*65536+225
+    mov  ebx,24*65536+225
     mov  ecx,0xffffff
     mov  edx,text
-    mov  esi,37
+    mov  esi,36
     mov  eax,4
   newline:
     mov  ecx,[edx]
     add  edx,4
     mcall
     add  ebx,14
-    add  edx,37
+    add  edx,36
     cmp  [edx],byte 'x'
     jne  newline
 
@@ -712,16 +704,16 @@ icons_reserved:
 
 
 text:
-    db 0,0,0,0,         'CLICK ON ICON POSITION TO EDIT       '
-    db 0,0,0,0,         '                                     '
-    db 255,255,255,0  , ' ICON TEXT                           '
-    db 255,255,255,0  , ' ICON APP                            '
-    db 255,255,255,0  , ' ICON FILE                           '
-    db 0,0,0,0,         '                                     '
-    db 255,255,255,0,   '        SAVE AND APPLY ALL CHANGES   '
-    db 0,0,0,0,         '                                     '
-    db 255,255,255,0,   '      ADD ICON            REMOVE ICON'
-    db                  'x' ; <- END MARKER, DONT DELETE
+    db 0,0,0,0,         'Click on icon position to edit      '
+    db 0,0,0,0,         '                                    '
+    db 255,255,255,0  , 'Icon text                           '
+    db 255,255,255,0  , 'Icon app                            '
+    db 255,255,255,0  , 'Icon file                           '
+    db 0,0,0,0,         '                                    '
+    db 255,255,255,0,   '       Save and apply all changes   '
+    db 0,0,0,0,         '                                    '
+    db 255,255,255,0,   '     Add icon            Remove icon'
+    db                  'x' ; <- End marker, dont delete
 
 
 title    db 'Icon manager',0
@@ -731,11 +723,9 @@ icons dd 0
 addr  dd 0
 ya    dd 0
 
-add_text db 'PRESS BUTTON OF UNUSED ICON POSITION'
-add_text_len:
+add_text    db 'Press button of unused icon position',0
 
-rem_text db 'PRESS BUTTON OF USED ICON'
-rem_text_len:
+rem_text    db 'Press button of used icon           ',0
 
 finfo_start:
           dd 7

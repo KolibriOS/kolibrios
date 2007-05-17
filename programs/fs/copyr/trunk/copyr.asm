@@ -182,18 +182,12 @@ draw_window:
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,160*65536+415         ; [x start] *65536 + [x size]
-    mov  ecx,160*65536+90         ; [y start] *65536 + [y size]
-    mov  edx,0x03DDDDDD            ; color of work area RRGGBB
+    mov  ecx,160*65536+90          ; [y start] *65536 + [y size]
+    mov  edx,0x13DDDDDD            ; color of work area RRGGBB
+    mov  edi,labelt                ; WINDOW LABEL
     mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ffffff            ; color of text RRGGBB
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,labellen-labelt       ; text length
-    mcall
-
+                                   
     mov  eax,8
     mov  ebx,105*65536+290
     mov  ecx,33*65536+12
@@ -220,8 +214,8 @@ draw_window:
     xor  ecx,ecx
     mov  edx,text
     mov  esi,62
-  newline:
     mov  eax,4
+  newline:
     mcall
     add  ebx,16
     add  edx,62
@@ -248,9 +242,9 @@ text:
       db '    äìÑÄ:     |        è†¢´ÓË®≠ Ö¢£•≠®©, waptap@mail.ru       '
       db '                                                              '
       db 'x' ; <- END MARKER, DONT DELETE
+
 labelt:
-      db   'äéèàêéÇÄçàÖ îÄâãÄ'
-labellen:
+      db   'äéèàêéÇÄçàÖ îÄâãÄ',0
 
 errors:
   db     "‰†©´ ·™ÆØ®‡Æ¢†≠ „·Ø•Ë≠Æ                    "

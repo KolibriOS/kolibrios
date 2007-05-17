@@ -24,7 +24,7 @@ include  '..\..\..\macros.inc'
 ;__DEBUG__ fix 1
 ;__DEBUG_LEVEL__ fix 1
 ;include  'debug-fdo.inc'
-flipdelay = 5
+flipdelay = 7
 
 START:           ; start of execution
 
@@ -454,14 +454,11 @@ draw_text:
     mcall
     sub   ebx,1 shl 16
     mcall
-    dec   ebx
-    sub   ebx,1 shl 16
+    sub   ebx,1 shl 16 +1
     mcall
-    sub   ebx,1 shl 16
-    dec   ebx
+    sub   ebx,1 shl 16 + 1
     mcall
-    dec   ebx
-    add   ebx,1 shl 16
+    add   ebx,1 shl 16 - 1
     mcall
     inc   ebx
     mov   ecx,0xffffff

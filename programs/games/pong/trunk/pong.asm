@@ -1,382 +1,420 @@
 ;
-;   Pong Gaem 2Ver Mini Sample by Pavlushin Evgeni for ASCL
-;   www.waptap@mail.ru
+;    PONG for MENUET v1.0
+;    2001 by Mario Birkner, Germany
+;    cyflexx@digitalrice.com
+;
+;    PONG for MENUET is
+;    a small PONG-clone for MenuetOS
+;
+; HINT: If the Paddle moves too slow,increase the
+;       typematic Rate in your BIOS
 ;
 
-
-;******************************************************************************
-    use32
-    org    0x0
-    db     'MENUET01'              ; 8 byte id
-    dd     0x01                    ; header version
-    dd     START                   ; start of code
-    dd     IM_END                  ; size of image
-    dd     0x300000                ; memory for app
-    dd     0x300000                ; esp
-    dd     temp_area , 0x0         ; I_Param , I_Icon
-
-;******************************************************************************
-;5941 ;4523(with new random)
-
-
-
-include 'lang.inc'
 include '..\..\..\macros.inc'
-include 'ascl.inc'
-include 'ascgl.inc'
 
-START:                          ; start of execution
+CK_UP1 equ 113
+CK_DOWN1 equ 97
+CK_UP2 equ 130+48
+CK_DOWN2 equ 129+48
+
+use32
+
+                org     0x0
+
+                db      'MENUET00'              ; 8 byte id
+                dd      38                      ; required os
+                dd      START                   ; program start
+                dd      I_END                   ; program image size
+                dd      0x2000                  ; required amount of memory
+                dd      0x2000                  ; esp = 0x7FFF0
+                dd      0x00000000              ; reserved=no extended header
+
+
+
+START:
+
     call draw_window
-
-    loadbmp '/RD/1/MFAR.BMP',temp_area,I_END,tsoi
-    bmptoimg I_END,tsoi,img
-    loadbmp '/RD/1/COPY.BMP',temp_area,I_END,tsoi
-    bmptoimg I_END,tsoi,img2
-    loadbmp '/RD/1/SMILE.BMP',temp_area,I_END,tsoi
-    bmptoimg I_END,tsoi,img3
-
-    fullimg img4 , 32 ,32 ,0x00000000   ;black
-
-    loadbmp '/RD/1/MBAR_I3.BMP',temp_area,I_END,tsoi
-    bmptoimg I_END,tsoi,img5
 
 
 still:
 
-    mov  eax,11                 ; scan event
+    mov  eax,10
+    add  eax,[control]
     mcall
-
-    cmp  eax,1                  ; redraw request ?
+    cmp  eax,1
     je   red
-    cmp  eax,2                  ; key in buffer ?
+    cmp  eax,2
     je   key
-    cmp  eax,3                  ; button in buffer ?
+    cmp  eax,3
     je   button
+    cmp  [control],1
+    jne  still
 
-out_scorea:
-    mov eax,47
-    mov ebx,5*65536
-    mov ecx,[scorea]
-    mov edx,300*65536+8
-    mov esi,cl_Blue
-    mcall
-out_scoreb:
-    mov eax,47
-    mov ebx,5*65536
-    mov ecx,[scoreb]
-    mov edx,350*65536+8
-    mov esi,cl_Red
+    mov  eax,5
+    mov  ebx,[delay]
     mcall
 
-del_images:
-    setimg dword [ply1x],dword [ply1y],img4
-    setimg dword [ply2x],dword [ply2y],img4
-    setimg dword [ballx],dword [bally],img4
-    setimg dword [gravx],dword [gravy],img4
+    jmp  move
 
-
-move_images:
-
-x_move:
-    mov eax,dword [ply1rx]
-    cmp dword [ply1x],eax
-    je  no_m
-    cmp dword [ply1x],eax
-    ja  m_m
-m_p:
-    add dword [ply1x],4
-    jmp no_m
-m_m:
-    sub dword [ply1x],4
-no_m:
-
-
-y_move:
-    mov eax,dword [ply1ry]
-    cmp dword [ply1y],eax
-    je  no_m2
-    cmp dword [ply1y],eax
-    ja  m_m2
-m_p2:
-    add dword [ply1y],2
-    jmp no_m2
-m_m2:
-    sub dword [ply1y],2
-no_m2:
-
-;automove ball
-    mov eax,dword [ballxv]
-    add dword [ballx],eax
-    mov eax,dword [ballyv]
-    add dword [bally],eax
-
-
-;autoslow ball
-    cmp dword [ballxv],0
-    jl ballb
-balla:
-    cmp dword [ballxv],2
-    jng  balln
-    dec dword [ballxv]
-;   mov dword [ballxv],2
-   jmp balln
-
-ballb:
-    cmp dword [ballxv],-2
-    jng  balln
-    inc dword [ballxv]
-;   mov dword [ballxv],-2
-   jmp balln
-
-balln:
-
-    cmp dword [ballyv],2
-    jng by_n
-    dec dword [ballyv]
-by_n:
-
-;test ball on collusion of screen
-;    cmp dword [bally],480+16-32
-;    jna ya_ok
-;    neg dword [ballyv]
-;ya_ok:
-;    cmp dword [bally],30
-;    jnb yb_ok
-;    neg dword [ballyv]
-;yb_ok:
-    cmp dword [ballx],640-32
-    jna xa_ok
-    neg dword [ballxv]
-xa_ok:
-    cmp dword [ballx],6
-    jnb xb_ok
-    neg dword [ballxv]
-xb_ok:
-
-;if ball far out of screen come back
-; is not work already
-    cmp dword [bally],466
-    jng yax_ok
+ red:
     call draw_window
-    inc dword [scoreb]
-    mov dword [bally],240
-    mov dword [ballx],310
-    mov dword [ballyv],2
-    random 5,dword [ballxv]
-    sub dword [ballxv],2
-yax_ok:
-    cmp dword [bally],30
-    jnl yax_ok2
+    cmp  [control],1
+    jne  still
+    call clall
+    call drawpad
+    jmp  still
+ key:
+    mov  eax,2
+    mcall
+    cmp  [control],1
+    jne  still
+
+   up1:
+    cmp  ah,CK_UP1
+    jne  dn1
+    cmp  [posya],52*65536+64
+    je   still
+    sub  [posya],4*65536
+    call cl0
+    call drawpad
+    jmp  still
+   dn1:
+    cmp  ah,CK_DOWN1
+    jne  up2
+    cmp  [posya],140*65536+64
+    je   still
+    add  [posya],4*65536
+    call cl0
+    call drawpad
+    jmp  still
+   up2:
+    cmp  ah,CK_UP2
+    jne  dn2
+    cmp  [posyb],52*65536+64
+    je   still
+    sub  [posyb],4*65536
+    call cl1
+    call drawpad
+    jmp  still
+   dn2:
+    cmp  ah,CK_DOWN2
+    jne  still
+    cmp  [posyb],140*65536+64
+    je   still
+    add  [posyb],4*65536
+    call cl1
+    call drawpad
+    jmp  still
+
+  button:
+    mov  eax,17
+    mcall
+
+    cmp  ah,1
+    jne  button2
+    mov  eax,-1
+    mcall
+
+    jmp  still
+
+  button2:
+    cmp  ah,2
+    jne  still
+    mov  [control],1
+    mov  [scp1],0
+    mov  [scp2],0
+    jmp  res
+ move:
+    mov  eax,[mposx]
+    mov  ebx,[mposy]
+    add  [bposx],eax
+    add  [bposy],ebx
+    cmp  [bposx],16*65536+16
+     je  pf1
+    cmp  [bposx],272*65536+16
+     je  pf2
+    cmp  [bposy],191*65536+16
+     je  bot
+    cmp  [bposy],48*65536+16
+     je  top
+    cmp  [bposx],247*65536+16
+     je  rig
+     jg  padr
+    cmp  [bposx],55*65536+16
+     je  lef
+     jl  padl
+    jmp  draw
+
+ padr:
+    mov  ecx,[posyb]
+    jmp  pad
+ padl:
+    mov  ecx,[posya]
+ pad:
+    mov  eax,[bposy]
+    sub  eax,16
+    mov  ebx,eax
+    add  ebx,17*65536
+    sub  ecx,64
+    mov  edx,ecx
+    add  edx,65*65536
+    cmp  eax,edx
+    je   top
+    cmp  ebx,ecx
+    je   bot
+    jmp  draw
+
+  bot:
+    mov  [mposy],-65536
+    jmp  draw
+  top:
+    mov  [mposy],65536
+    jmp  draw
+  rig:
+    mov  eax,[posyb]
+    sub  eax,1*65536-64 ;verhindert das der ball ins paddle eindringt
+    mov  ebx,[posyb]
+    add  ebx,64*65536-64
+    mov  ecx,[bposy]
+    add  ecx,16*65536-16
+    mov  edx,[bposy]
+    sub  edx,16
+    cmp  ecx,eax
+     je  blr
+     jl  draw
+    cmp  edx,ebx
+     je  blr
+     jl  blr
+     jg  draw
+   blr:
+    mov  [mposx],-65536
+    jmp  draw
+
+  lef:
+    mov  eax,[posya]
+    sub  eax,1*65536+64
+    mov  ebx,[posya]
+    add  ebx,64*65536-64
+    mov  ecx,[bposy]
+    add  ecx,16*65536-16
+    mov  edx,[bposy]
+    add  edx,16
+    cmp  ecx,eax
+     je  bll
+     jl  draw
+    cmp  edx,ebx
+     je  bll
+     jl  bll
+     jg  draw
+   bll:
+    mov  [mposx],65536
+    jmp  draw
+
+drawpad:
+; draw paddle
+    mov  edx,[posya]
+    shr  edx,16
+    add  edx,32*65536
+    mov  ecx,24*65536+64
+    mov  ebx,paddle
+    mov  eax,7
+    mcall
+    mov  edx,[posyb]
+    shr  edx,16
+    add  edx,264*65536
+    mov  eax,7
+    mov  ebx,paddle
+    mov  ecx,24*65536+64
+    mcall
+    ret
+
+draw:
+; draw ball
+    mov  eax,13
+    mov  ebx,-65536+2
+    mov  ecx,-65536+2
+    add  ebx,[bposx]
+    add  ecx,[bposy]
+    xor  edx,edx
+    mcall
+    add  ebx,65536-2
+    add  ecx,65536-2
+    mov  edx,ebx
+    and  edx,0xffff0000
+    mov  esi,ecx
+    shr  esi,16
+    add  edx,esi
+    mov  esi,ebx
+    shl  esi,16
+    mov  edi,ecx
+    and  edi,0x0000ffff
+    add  esi,edi
+    mov  ecx,esi
+    mov  ebx,ball
+    mov  eax,7
+    mcall
+    jmp  still
+cls:
+    mov  eax,13
+    mov  edx,0x00000000
+    mcall
+    ret
+cl0:
+    mov  ebx,32*65536+24
+    mov  ecx,[posya]
+    sub  ecx,4*65536+60
+    call cls
+    mov  ecx,[posya]
+    add  ecx,64*65536-60
+    call cls
+    ret
+cl1:
+    mov  ebx,264*65536+24
+    mov  ecx,[posyb]
+    sub  ecx,4*65536+60
+    call cls
+    mov  ecx,[posyb]
+    add  ecx,64*65536-60
+    call cls
+    ret
+clall:
+    mov  ebx,16*65536+288
+    mov  ecx,47*65536+161
+    call cls
+    ret
+pf1:
+    inc  [scp2]
+    jmp  res
+pf2:
+     inc  [scp1]
+ res:
+    cmp  [scp2],20
+     je  over
+    cmp  [scp1],20
+     je  over
+    mov  [bposx],152*65536+16 ;default position ball
+    mov  [bposy],119*65536+16
     call draw_window
-    inc dword [scorea]
-    mov dword [bally],240
-    mov dword [ballx],310
-    mov dword [ballyv],2
-    random 5,dword [ballxv]
-    sub dword [ballxv],2
-yax_ok2:
-
-xorx:
-    cmp dword [ballxv],0
-    jne norx
-    random 5,dword [ballxv]
-    sub dword [ballxv],2
-    cmp dword [ballxv],0
-    je  xorx
-norx:
-
-;test on collusion ply1 of ball
-collusion_test:
-    collimg img,[ply1x],[ply1y],img3,[ballx],[bally],eax
-    cmp eax,1
-    jne not_coll
-    neg dword [ballyv]
-    add dword [bally],18
-;    neg dword [ballxv]
-not_coll:
-
-;test on collusion com of ball
-collusion_com:
-    collimg img,[ply2x],[ply2y],img3,[ballx],[bally],eax
-    cmp eax,1
-    jne not_collcom
-    neg dword [ballyv]
-    sub dword [bally],18
-;    neg dword [ballxv]
-not_collcom:
-
-;test on collusion gravity of ball
-collusion_grav:
-    collimg img,[gravx],[gravy],img3,[ballx],[bally],eax
-    cmp eax,1
-    jne not_collg
-    neg dword [ballyv]
-
-;    mov dword [ballxv],-20
-
-    cmp dword [ballyv],0
-    jl  ab
-    jg  bf
-    jmp not_collgx
-ab:
-    sub dword [ballyv],30
-    jmp not_collgx
-bf:
-    add dword [ballyv],30
-not_collgx:
-    cmp dword [ballxv],0
-    jl  abx
-    jg  bfx
-    jmp not_collg
-abx:
-    sub dword [ballxv],10
-    jmp not_collg
-bfx:
-    add dword [ballxv],10
-
-
-;    mov dword [ballyv],20
-not_collg:
-
-;com move
-cx_move:
-    cmp dword [bally],200
-    jna cno_m
-    mov eax,dword [ballx]
-    cmp dword [ply2x],eax
-    je  cno_m
-    cmp dword [ply2x],eax
-    ja  cm_m
-cm_p:
-    add dword [ply2x],3
-    jmp cno_m
-cm_m:
-    sub dword [ply2x],3
-cno_m:
-
-gravity:
-    cmp dword [gravtime],0
-    je no_dg
-    dec dword [gravtime]
-no_dg:
-
-draw_gravity:
-    cmp dword [gravtime],0
-    je  nograv
-    mov eax,dword [ply1x]
-    mov ebx,dword [ply1y]
-    add ebx,20
-    mov dword [gravx],eax
-    mov dword [gravy],ebx
-    jmp endgrav
-nograv:
-    mov dword [gravx],1000
-    mov dword [gravy],1000
-endgrav:
-
-redraw_images:
-    setimg dword [ply1x],dword [ply1y],img
-    setimg dword [ply2x],dword [ply2y],img2 ;2
-    setimg dword [ballx],dword [bally],img3
-    setimg dword [gravx],dword [gravy],img5
-
-
-    delay 2             ;don't generate delay for fast speed programm
-
-    jmp  still
-
-  red:
+    call clall
+    call drawpad
+    jmp  draw
+over:
+    mov  [control],0
     call draw_window
+    mov  eax,4
+    mov  ebx,120*65536+100
+    mov  ecx,0x00ffdd00
+    mov  esi,14
+    cmp  [scp1],20
+    jne  win
+    mov  edx,w1
+    mcall
+    jmp  still
+ win:
+    mov  edx,w2
+    mcall
     jmp  still
 
-  key:                          ; key
-    mov eax,2
-    mcall
-    cmp ah,key_Left
-    jne no_l
-    sub dword [ply1rx],16
-no_l:
-    cmp ah,key_Right
-    jne no_r
-    add dword [ply1rx],16
-no_r:
-    cmp ah,key_Up
-    jne no_u
-    sub dword [ply1ry],16
-no_u:
-    cmp ah,key_Down
-    jne no_d
-    add dword [ply1ry],16
-no_d:
-    cmp ah,key_Space
-    jne no_sp
-    mov dword [gravtime],100
-no_sp:
-
-    jmp  still
-
-  button:                       ; button
-    mov  eax,17                 ; get id
-    mcall
-    cmp  ah,1                   ; button id=1 ?
-    jne  noclose
-    mov  eax,-1                 ; close this program
-    mcall
-  noclose:
-    jmp  still
+;   *********************************************
+;   *******  WINDOW DEFINITIONS AND DRAW ********
+;   *********************************************
 
 
 draw_window:
-    startwd
-    window 0,0,640+8,480+24,window_Skinned
-    label 12,8,'PONG: USE ARROW KEYS              SCORE',cl_White+font_Big
-    endwd
+
+    mov  eax,12
+    mov  ebx,1
+    mcall
+
+
+    mov  eax,0
+    mov  ebx,100*65536+320
+    mov  ecx,100*65536+250
+    mov  edx,0x134873a0    ;70d0
+    mov  edi,labelt
+    mcall
+
+    mov  eax,8
+    mov  ebx,20*65536+80
+    mov  ecx,220*65536+20
+    mov  edx,2
+    mov  esi,0x900000
+    mcall
+
+    mov  eax,4
+    mov  ebx,38*65536+227
+    mov  ecx,0x00FFFFFF
+    mov  edx,b0lab
+    mov  esi,8
+    mcall
+
+    mov  eax,4
+    mov  ebx,25*65536+30
+    mov  ecx,0x00ffdd00
+    mov  edx,welcome
+    mov  esi,40
+    mcall
+
+    mov  eax,4
+    mov  ebx,220*65536+228
+    mov  ecx,0x00ffdd00
+    mov  edx,scotext
+    mov  esi,11
+    mcall
+
+    mov  eax,47
+    mov  ebx,0x00020000
+    mov  ecx,[scp1]
+    mov  edx,268 shl 16+228
+    mov  esi,0x0000ddff
+    mcall
+
+    mov  eax,47
+    mov  ebx,0x00020000
+    mov  ecx,[scp2]
+    mov  edx,285 shl 16+228
+    mov  esi,0x0000ddff
+    mcall
+
+    mov  eax,12
+    mov  ebx,2
+    mcall
+
     ret
 
 
 ; DATA AREA
-xt dd 100
-yt dd 100
+posya   dd 96*65536+64  ;default position paddle
+posyb   dd 96*65536+64
+bposx   dd 152*65536+16 ;default position ball
+bposy   dd 119*65536+16
+mposx   dd 65536        ;richtung ball
+mposy   dd 65536
+control dd 0x0
+delay   dd 0x1          ;delay betw. frames
+scp1    dd 0x0
+scp2    dd 0x0
 
-gravtime dd 10
-gravx dd 1000
-gravy dd 1000
 
-ply1rx dd 200
-ply1ry dd 50
+scotext:
+     db  'SCORE:    :'
+welcome:
+     db  'PLAYER1: Q , A            PLAYER2:  , '
+b0lab:
+     db  'NEW GAME'
+labelt:
+     db  'PONG FOR MENUET v1.0',0
+w1:
+     db  'Player 1 wins!'
+w2:
+     db  'Player 2 wins!'
+clsign:
+     db   'x'
 
-ply1x dd 200
-ply1y dd 50
+ball:
+file "ball.raw"
 
-ply2x dd 200
-ply2y dd 400
-
-ballx dd 200
-bally dd 200
-
-ballyv dd 3
-ballxv dd 3
-
-scorea dd 0
-scoreb dd 0
-
-counter dd 0
-tsoi dd 0
-
-IM_END:
-
-img:
-rd 32*32*3+8
-img2:
-rb 32*32*3+8
-img3:
-rb 32*32*3+8
-img4:
-rb 32*32*3+8
-img5:
-rb 32*32*3+8
-
-temp_area:
-rb 0x15000
+paddle:
+file "paddle.raw"
 
 I_END:

@@ -13,8 +13,8 @@ use32
  dd	0x01	      ; header version
  dd	START	      ; entry point
  dd	I_END	      ; image size
- dd	I_END+0x10000 ; required memory
- dd	I_END+0x10000 ; esp
+ dd	0x100000      ; required memory
+ dd	0x100000      ; esp
  dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
@@ -31,7 +31,7 @@ file_info:
 	dd 0
 	dd -1
 	dd 0x4000
-	db  '/rd/1/chess.bmp',0
+	db  '/rd/1/network/chess.bmp',0
 
 pawn_color:
 
@@ -61,9 +61,7 @@ text   equ  texts+80*32*4
 
 START:				; start of execution
 
-;    mov  eax,58
     mov  eax,70
-;    mov  ebx,file_info
     mov  ebx,file_info
     mcall
 
