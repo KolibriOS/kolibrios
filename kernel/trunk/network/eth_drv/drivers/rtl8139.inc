@@ -354,7 +354,8 @@ rtl8139_reset:
 	add	edx, RTL8139_REG_IMR - RTL8139_REG_MPC
 	out	dx, ax
 ; set RxBuffer address, init RX buffer offset, init TX ring
-	mov	eax, rtl8139_rx_buff
+	mov	eax, rtl8139_rx_buff					; simba
+    sub eax,OS_BASE
 	add	edx, RTL8139_REG_RBSTART - RTL8139_REG_IMR
 	out	dx, eax
 ; Indicate that we have successfully reset the card
@@ -511,6 +512,7 @@ rtl8139_transmit:
 	and	ecx, 3
 	rep	movsb
 ; set address
+	sub eax,OS_BASE
 	add	edx, RTL8139_REG_TSAD0 - RTL8139_REG_TSD0
 	out	dx, eax
 ; set size and early threshold
