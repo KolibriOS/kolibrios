@@ -185,22 +185,26 @@ show_error_parameters:
 
         cmp    dword [esp+4+4], os_code ; CS
         jnz    @f
-        mov    esi,system_error
-        call   sys_msg_board_str
+        ;mov    esi,system_error
+        ;call   sys_msg_board_str
+        DEBUGF 1,"%s",system_error
       @@:
         mov    eax, [esp+4] ; EIP
 
         mov    [write_error_to],process_eip+43
         call   writehex
 
-        mov    esi,process_error
-        call   sys_msg_board_str
+        ;mov    esi,process_error
+        ;call   sys_msg_board_str
+        DEBUGF 1,"%s",process_error
 
-        mov    esi,process_pid
-        call   sys_msg_board_str
+        ;mov    esi,process_pid
+        ;call   sys_msg_board_str
+        DEBUGF 1,"%s",process_pid
 
-        mov    esi,process_eip
-        call   sys_msg_board_str
+        ;mov    esi,process_eip
+        ;call   sys_msg_board_str
+        DEBUGF 1,"%s",process_eip
 
         ret
 
@@ -480,8 +484,9 @@ terminate: ; terminate application
            add esp, 4
            ret
 @@:
-           mov    esi,process_terminating
-           call   sys_msg_board_str
+           ;mov    esi,process_terminating
+           ;call   sys_msg_board_str
+           DEBUGF 1,"%s",process_terminating
 @@:
            cli
            cmp   [application_table_status],0
@@ -505,8 +510,9 @@ term9:
 
            push esi
            call [eax+APPOBJ.destroy]
-           mov  esi, msg_obj_destroy
-           call sys_msg_board_str
+           ;mov  esi, msg_obj_destroy
+           ;call sys_msg_board_str
+           DEBUGF 1,"%s",msg_obj_destroy
            pop esi
            jmp @B
 @@:
@@ -807,8 +813,9 @@ term9:
     mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 
     mov   [application_table_status],0
-    mov   esi,process_terminated
-    call  sys_msg_board_str
+    ;mov   esi,process_terminated
+    ;call  sys_msg_board_str
+    DEBUGF 1,"%s",process_terminated
     add esp, 4
     ret
 restore .slot

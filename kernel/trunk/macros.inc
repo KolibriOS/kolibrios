@@ -41,8 +41,8 @@ macro diff16 title,l1,l2
   local s,d
   s = l2-l1
   display title,': 0x'
-  repeat 8
-    d = 48 + s shr ((8-%) shl 2) and $0F
+  repeat 16
+    d = 48 + s shr ((16-%) shl 2) and $0F
     if d > 57
       d = d + 65-57-1
     end if
