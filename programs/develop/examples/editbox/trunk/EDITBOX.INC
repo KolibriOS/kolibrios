@@ -45,6 +45,10 @@ pusha
         call    .draw_cursor
 @@:
         call    .draw_text
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Общий выход из editbox для всех функций и пост обработчиков
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+.editbox_exit:
 edit_ex
 ;==========================================================
 ;=== обработка клавиатуры =================================
@@ -52,7 +56,7 @@ edit_ex
 .key:
 pusha
         test    word ed_flags,ed_focus ; если не в фокусе, выходим
-        je      .no_figure
+        je      .editbox_exit
 ;Проверка нажат shift ?
         call    .check_shift
 ;----------------------------------------------------------
@@ -68,193 +72,18 @@ use_key_no_process   up,down,esc
 ;Проверка установлен ли флаг при котором нужно выводить только цифры в нужном боксе если такойнеобходимости нет нужно закоментировать макрос
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use_key_figures_only
-;проверка на shift
-@@:     test    word ed_flags,ed_shift_on
-        je      @f
-        ;Входные данные edx=ed_size;ecx=ed_pos
-        push    eax
-        mov     edx,ed_size
-        mov     ecx,ed_pos
-        pusha
-;clear
-;        mov     ebp,edx ;ed_size
-;        call    .clear_bg
-        mov     ebp,ed_color
-        mov     ebx,dword       ed_shift_pos
-        call    .sh_cl_
-
-.sh_nxt:popa 
-        call    .del_char
-;;;;
-        mov     eax,dword ed_shift_pos
-        mov     ebx,ed_size
-        sub     ebx,eax
-        mov     ed_size,ebx
-        pop     eax
-        ; проверяем, находится ли курсор в конце
-@@:     mov     ecx,ed_size
-        mov     edx, ed_max
-        test    word ed_flags,ed_insert
-        jne     @f
-        cmp     ecx,edx
-        jae     .no_figure
-@@:     mov     ebx, ed_pos
-        cmp     ebx,edx
-        jl      @f ; если меньше или равно
-.no_figure:
-edit_ex
-.insert: test   word ed_flags,ed_insert ;not    word ed_insert
-         je     .insert_1
-         and    word ed_flags,ed_insert_cl
-        jmp     .no_figure
-.insert_1:
-        or      word ed_flags,ed_insert
-        jmp     .no_figure
-.ins_v:
-        dec     dword [ebp+42];ed_size    ;processing is insert
-        sub     esi,ecx
-        add     esi,ebx
-        mov     edi,esi
-;clear
-pusha
-        mov     edi,ebp
-        mov     ebp,ed_pos
-        call    .clear_bg
-popa
-        jmp     .In_k
-@@:     ; сдвигаем символы после курсора вправо
-        mov     ecx,ed_size
-        push    edi eax
-        mov     ebp,edi
-        mov     esi,ed_text     ; Указатель на буфер
-                                ;Будем работать со строкой
-        add     esi,ecx         ;add ed_size добавим max size
-        mov     edi,esi
-
-        cmp     ecx,ebx         ;Если у нас позиция курсора = текущему размеру напечатанных символов т.е. курсор стоит в конце
-        je      .In_k
-
-        test    word [ebp+40],ed_insert ;IF insert is enable  т.к. edi изменен адресуем через ebp
-        jne     .ins_v
-;clear
-pusha
-        mov     edi,ebp
-        mov     ebp,ed_size
-        call    .clear_bg
-popa
-        sub     ecx,ebx         ;Найдем кол-во символов для передвижения.
-        inc     edi             ;Сместим наши символы в право
-        std
-        inc     ecx
-   @@:  
-        ;--------
-        lodsb
-        stosb
-        ;--------
-        loop    @b
-.In_k:  cld
-        pop eax
-        mov al,ah
-        stosb
-        pop edi
-; вставляем код клавиши туда, где курсор
-        ; увеличиваем значение размера и позиции
-        inc      dword ed_size
-        inc      dword ed_pos
-        call    .draw_all2
-        jmp     .shift;.draw_cursor_text
-.delete:        
-        mov     edx,ed_size
-        mov     ecx,ed_pos
-        cmp     edx,ecx
-        jg      .bac_del
-        test    word ed_flags,ed_shift_on
-        jne     .del_bac
-edit_ex
-.bac_del:       
-        call    .del_char
-        jmp     .draw_all
-        
-;--- нажата клавиша backspace ---
-.backspace:
-        ; проверяем, курсор у левого края ?
-        mov     ecx,ed_pos
-        test    ecx,ecx
-        jnz     .del_bac
-        test    word ed_flags,ed_shift_on
-        jne     .bac_del
-
-edit_ex
-.del_bac:
-        mov     edx,ed_size
-        cmp     edx,ecx ;if ed_pos=ed_size
-        je      @f
-        dec     ecx
-        call    .del_char
-@@:     test    word ed_flags,ed_shift_on
-        jne     .bac_del
-        dec      dword ed_pos
-.draw_all:
-        push    .shift;.draw_cursor_text;eax
-
-        test    word ed_flags,ed_shift_on
-        je      @f
-        mov     eax,dword ed_shift_pos
-        mov     ebx,ed_size
-        sub     ebx,eax
-        mov     ed_size,ebx
-
-        mov     ebp,ed_color
-        call    .clear_cursor
-        call    .check_offset
-        call    .draw_bg
-        ret
-@@:     dec      dword ed_size
-
-.draw_all2:
-        and    word ed_flags,ed_shift_cl
-        mov     ebp,ed_color
-        call    .clear_cursor
-        call    .check_offset
-        mov     ebp,ed_size
-        call    .clear_bg
-        ret
-;--- нажата клавиша left ---
-.left:  mov     ebx,ed_pos
-        test    ebx,ebx
-        jz      .sh_st_of
-        or      word ed_flags,ed_left_fl
-        call    .sh_first_sh
-        dec      dword ed_pos
-        call    .sh_enable
-        jmp     .draw_cursor_text
-;--- нажата клавиша right ---
-.right: mov     ebx,ed_pos
-        cmp     ebx,ed_size
-        je      .sh_st_of
-        and     word ed_flags,ed_right_fl
-        call    .sh_first_sh
-        inc     dword  ed_pos
-        call    .sh_enable
-        jmp     .draw_cursor_text
-.home:  
-        mov     ebx,ed_pos
-        test    ebx,ebx
-        jz      .sh_st_of
-        call    .sh_first_sh
-        xor     eax,eax
-        mov     ed_pos,eax
-        call    .sh_home_end
-        jmp     .draw_cursor_text
-.end:   
-        mov     ebx,ed_pos
-        cmp     ebx,dword ed_size
-        je      .sh_st_of
-        call    .sh_first_sh
-        mov     eax,ed_size
-        mov     ed_pos,eax
-        call    .sh_home_end
-        jmp     .draw_cursor_text
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;проверка на shift был ли нажат 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+are_key_shift_press
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; проверяем, находится ли курсор в конце + дальнейшая обработка
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+are_key_cur_end
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Обработка клавиш insert,delete.backspase,home,end,left,right
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+use_work_key
 ;==========================================================
 ;=== обработка мыши =======================================
 ;==========================================================
@@ -273,7 +102,7 @@ pusha
         and     word ed_flags,ed_mouse_on_off
         xor     ebx,ebx
         mov     dword [mouse_flag],ebx
-edit_ex
+        jmp     .editbox_exit
 .mouse_left_button:
 ;----------------------------------------------------------
 ;--- блокировка от фокусировки в других боксах при попадании на них курсора
@@ -288,110 +117,10 @@ edit_ex
 ;--- получаем координаты мыши относительно 0 т.е всей области экрана
 ;----------------------------------------------------------
 @@:     mcall   37,0
-;----------------------------------------------------------
-;--- А не удерживаем ли мы клавишу мышки, перемещая курсор, во все разные стороны?
-;----------------------------------------------------------
-        test    word ed_flags,ed_mouse_on
-        jne     .mouse_wigwag
-;----------------------------------------------------------
-;--- проверяем, попадает ли курсор в edit box -------------
-;----------------------------------------------------------
-        mov     ebx,[procinfo.box.top]
-        add     ebx,ed_top
-if scr_h eq 
-else
-        add     ebx,scr_h
-end if
-        cmp     ax,bx
-        jl      ._blur;.mouse_end_no_focus
-
-        add     ebx,ed_height
-        cmp     ax,bx
-        jg      ._blur;.mouse_end_no_focus
-
-        shr     eax,16
-
-        mov     ebx,[procinfo.box.left]
-        add     ebx,ed_left
-if scr_w eq 
-else
-        add     ebx,scr_w
-end if
-        cmp     ax,bx
-        jl      ._blur;.mouse_end_no_focus
-
-        add     ebx,ed_width
-        cmp     ax,bx
-        jg      ._blur;.mouse_end_no_focus
-;--- изменяем позицию курсора ---
-        push    eax
-        mov     ebp,ed_color
-        call    .clear_cursor
-        pop     eax
-._mvpos:
-        mov     ebx,dword [procinfo.box.left]
-        xor     edx,edx
-        sub     eax,ed_left
-        sub     eax,ebx
-if scr_w eq 
-else
-        add     ebx,scr_w
-        sub     eax,2
-end if
-        mov     ebx,6
-        div     bx
-        add     eax,ed_offset
-        cmp     eax,ed_size
-        jna     ._mshift
-        mov     eax,ed_size
-._mshift:
-;;;;;;;
-;;Секция обработки shift и выделения по shift
-;;;;;;;
-        test    word ed_flags,ed_shift_bac
-        je      @f
-        mov     ebp,dword       ed_color
-        mov     ebx,dword ed_shift_pos
-        push    eax
-        call    .sh_cl_
-        and     word ed_flags,ed_shift_bac_cl
-        pop     eax
-@@:     
-        test    word ed_flags,ed_mouse_on
-        jne     @f
-        
-        mov     dword ed_shift_pos,eax
-        or      word  ed_flags,ed_mouse_on
-        mov     dword ed_pos,eax
-        mov     dword [mouse_flag],edi          ;установим идентификатор
-        bts     word ed_flags,1                 ;установка фокуса
-        jmp     .m_sh
-@@:             
-        cmp     eax,dword ed_shift_pos  ;если позиции не изменились
-        je      .mouse_ex
-        mov     ed_pos,eax
-        mov     ebp,dword shift_color
-        mov     ebx,dword ed_shift_pos
-        call    .sh_cl_
-        or      word ed_flags,ed_mous_adn_b     ;установим бит что мы выделили +shift_on +
-.m_sh:  call    .draw_text
-        call    .draw_cursor
-;----------------------------------------------------------
-;--- процедура установки фокуса ---------------------------
-;----------------------------------------------------------
-        jmp     .drc
-._blur:
-        test    word ed_flags,ed_always_focus
-        jne     .mouse_ex
-        btr     word ed_flags,1 ; если не в фокусе, выходим
-        jnc     .mouse_ex
-
-        mov     ebp,ed_color
-        call    .clear_cursor
-.drc:   call    .draw_border
-.mouse_ex:
-
-edit_ex
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Функция обработки  мышки получение координат и проверка их + выделения
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+use_work_mause scr_h,scr_w
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Общие функции обработки 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -400,118 +129,14 @@ use_general_func
 ;Функции для работы с key
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 use_key_func
-;----------------------------------------------------------
-;--- процедура размывания фокуса --------------------------
-;----------------------------------------------------------
-;.blur:
-;pusha
-;._blur:
-        ;btr     ed_flags,1
-        ;jnc     @f
-        ;call    .draw_border
-        ;call    .clear_cursor
-;@@:
-;edit_ex
-
-;----------------------------------------------------------
-;--- Обработка .mouse_wigwag
-;----------------------------------------------------------
-.mouse_wigwag:
-        shr     eax,16
-        or      word ed_flags,ed_shift_bac+ed_shift_on+ed_shift
-;;;;;;;;;;;;;;;;;;
-;;процедура обработки положения выделенного текста, когда происходит выход за пределы editbox
-;;;;;;;;;;;;;;;;;;
-        mov     ebx,[procinfo.box.left]
-        add     ebx,ed_left
-if scr_w eq 
-else
-        add     ebx,scr_w
-end if
-        cmp     eax,ebx
-        jb      .mleft
-
-        add     ebx,ed_width
-        cmp     eax,ebx
-        ja      .mright 
-
-        sub     ebx,ed_width
-
-        xor     edx,edx
-        sub     eax,ebx ; вычтим из координат мышки по оси х координаты до editbox по оси х
-        mov     ebx,6
-        div     ebx
-;;;;;;;;;;;;;;;;;;
-;;процедура обработки положения выделенного текста, в пределах области editbox
-;;;;;;;;;;;;;;;;;;
-;Получили координаты в eax мышки, т.е. куда она переместилась
-;Рисование закрашеных прямоугольников и очистка их
-        add     eax,ed_offset   ;добавим смещение
-        cmp     eax,dword ed_size       ;если вышли за пределы, то ничего не делать
-        ja      .mwigvag
-.mdraw: 
-        mov     dword   ed_pos,eax ;сохраним новое значение
-;Рисование закрашеных прямоугольников и очистка их
-        mov     ecx,dword       ed_shift_pos
-        mov     ebx,dword       ed_shift_pos_old
-        mov     dword   ed_shift_pos_old,eax    ;внесем новое значение старой позиции курсора
-;проверка и рисование закрашеных областей
-        cmp     ecx,ebx         ;выясняем куда было движение на один шаг назад
-        je      .m1_shem        ;движения не было ранее 
-        jb      .msmaller       ;движение было ->
-        cmp     ebx,eax         ;движение было до этого <- и тут мы проверяем сейчас куда движение происходит
-        ja      .m1_shem        ;если было движение <- то нужно закрасить область
-        je      .mwigvag        ;если изменения не было, то ничего не делать
-        mov     ebp,ed_color    ;тут нужно очистить область c ed_pos ed_shift_pos_old
-;входные параметры ebp=color ebx=ed_shift_pos
-        call    .sh_cl_
-        jmp     .mwigvag
-.msmaller:
-        cmp     ebx,eax
-        jb      .m1_shem
-        mov     ebp,ed_color
-;входные параметры ebp=color ebx=ed_shift_pos
-        call    .sh_cl_
-        jmp     .mwigvag
-;alike  =
-.m1_shem: 
-        mov     ebp,shift_color
-;входные параметры ebp=color ebx=ed_shift_pos
-        mov     ebx,ecx
-        call    .sh_cl_
-        jmp     .mwigvag
-.mwigvag:
-        and     word ed_flags,ed_shift_mcl
-        jmp     .draw_cursor_text
-;       popa
-;       ret
-.mleft:
-        mov     eax,ed_pos
-        cmp     eax,0                                        
-        jbe      .mwigvag
-        dec     eax
-        call    .check_offset
-        push    eax
-        mov     ebx,ed_shift_pos
-        mov     ebp,shift_color
-        call    .sh_cl_
-        pop     eax
-        jmp     .mdraw
-.mright:
-        mov     eax,ed_pos
-        mov     ebx,ed_size
-        cmp     eax,ebx
-        jae     .mwigvag
-        inc     eax
-        call    .check_offset
-        mov     ebx,ed_shift_pos
-        mov     ebp,shift_color
-        push    eax
-        call    .sh_cl_
-        pop     eax
-        jmp     .mdraw  
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Функции для работы с mouse
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+use_mouse_func scr_w
 }
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Bit mask from editbox 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ed_figure_only= 1000000000000000b   ;одни символы 
 ed_always_focus= 100000000000000b
 ed_focus=                     10b   ;фокус приложения
