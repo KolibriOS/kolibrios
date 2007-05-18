@@ -211,9 +211,12 @@ fasm demos\tube\trunk\tube.asm %BIN%\demos\tube
 
 erase lang.inc
 
-rem verify accessibility of kpack
-rem param "-v" can understand as version 
-kpack -v 2> nul
+echo *
+echo Finished building 
+echo *
+
+
+kpack /nologo 2> nul
 if "%errorlevel%"=="9009" (
 echo   *** NOTICE ***
 echo If you want pack all applications you may 
@@ -221,11 +224,6 @@ echo place "kpack" in accessible directory.
 echo You can download that tool from http://diamondz.land.ru/
 goto END
 )
-
-
-echo *
-echo Finished building 
-echo *
 
 echo Kpack KolibriOS apps?
 echo     
