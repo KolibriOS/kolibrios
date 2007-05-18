@@ -43,7 +43,7 @@ endg
 IO_Read		dd	isaRead		; In : al - addr, out : al - value
 IO_Write	dd	isaWrite	; In : al - addr, bl - value
 
-hwm_unk		db	9, 'Not found'
+hwm_unk		db	'Not found', 0
 hwm_chip_name	dd	hwm_unk
 
 ; NOTE !!!

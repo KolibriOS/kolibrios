@@ -269,7 +269,8 @@ macro mcall a,b,c,d,e,f {   ; mike.dld, updated by Ghost for Fast System Calls
 	syscall
 	pop	ecx
    else
-	display 'ERROR : unknown CPU type'
+	display 'ERROR : unknown CPU type (set to p5)', 10, 13
+	__CPU_type equ p5
 	int	0x40
    end if
   end if
