@@ -169,7 +169,7 @@ endp
 ; берет параметры bx_from_load и исчит файл конфигурации
 Parser_params:
   pushad
-  mov ax,[BOOT_VAR+bx_from_load]
+  mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp al,'r' ; рам диск
   jnz @f
   mov [sys_path],dword '/RD/'

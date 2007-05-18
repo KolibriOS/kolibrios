@@ -541,7 +541,7 @@ include 'vmodeld.inc'
 
   call Parser_params
 
-  mov ax,[BOOT_VAR+bx_from_load]
+  mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'		; если срам диск - то не грузить библиотеки
   je  no_lib_load
 ; LOADING LIBRARES
