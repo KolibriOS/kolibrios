@@ -7,20 +7,16 @@
 ;
 ;-------------------------------------------------------------------------
 
+full_file_name_table dd 0		; указатель на память для таблицы путей 4К   запись 64 (32 - строка шаблон для поиска, 32 - строка шаблон для замены)
+
 ; перебирает по файлу варианты замен
 proc full_file_name stdcall,sourc,dest
 locals
-  param  rb 60
-  val    rb 60
   tmpsrc rb 60	; временное хранение преобразования
 endl
   pushad
-
-
   mov esi,[sourc]
-;  mov edi,ebp
-;  add edi,tmpsrc-ebp
-   lea edi, [tmpsrc]
+  lea edi, [tmpsrc]
 
 @@:
   lodsb
@@ -41,34 +37,22 @@ endl
   xor eax,eax
 .loop:
   push eax
-;  mov ebx,ebp
-;  add ebx,param-ebp
-;  mov ecx,ebp
-;  add ecx,val-ebp
-  lea ebx, [param]
-  lea ecx, [val]
-  invoke ini.get_par,sect, ebx, ecx, eax
-
-  mov bl,[param]
-  or bl,bl
+  
+  imul eax,eax,64
+  add eax,[full_file_name_table] 
+  mov ebx,eax
+  add eax,32
+  
+  mov cl,[ebx]
+  or cl,cl
   jz .done
 
-;  mov eax,ebp
-;  add eax,tmpsrc-ebp
-;  mov ebx,ebp
-;  add ebx,param-ebp
-;  mov ecx,ebp
-;  add ecx,val-ebp
-  lea eax, [tmpsrc]
-  lea ebx, [param]
-  lea ecx, [val]
+  lea ecx, [tmpsrc]
   mov edx,[dest]
 
-  stdcall full_file_name_parse, eax,edx,ebx,ecx
+  stdcall full_file_name_parse, ecx,edx,ebx,eax
 
   mov esi,[dest]
-;  mov edi,ebp
-;  add edi,tmpsrc-ebp
   lea edi, [tmpsrc]
 @@:
   lodsb
@@ -84,15 +68,11 @@ endl
   pop eax
 full_file_name_exit:
 
-;  mov eax,ebp
-;  add eax,tmpsrc-ebp
   lea eax, [tmpsrc]
   stdcall full_file_name_parse , eax , [dest], sysdir_ , sys_path
   popad
   ret
 endp
-
-sect: db 'path',0
 
 ;
 ;  Преобразовать имя в полное. Если в начале стоит
@@ -189,4 +169,48 @@ Parser_params:
 .done:
   popad
   ret
+  
+proc load_file_parse_table
+  pushad
+  stdcall kernel_alloc,0x1000
+  mov [full_file_name_table],eax
+
+  invoke ini.enum_keys,conf_fname,conf_path_sect,get_every_key
+  
+  mov eax,[loading_counter]
+  imul eax,eax,64
+  add eax,[full_file_name_table]
+  mov [eax],byte 0
+  popad
+  ret
+endp
+
+loading_counter dd 0
+def_val_1 db 0
+
+proc get_every_key stdcall,f_name, sec_name, key_name
+  pushad
+  mov esi,[key_name]
+  mov edi,[loading_counter]
+  imul edi,edi,64
+  add edi,[full_file_name_table]
+@@:
+  lodsb
+  stosb
+  or al,al
+  jnz	@b
+
+  mov eax,[loading_counter]
+  imul eax,eax,64
+  add eax,[full_file_name_table]
+  add eax,32
+  mov ebx,[key_name]
+  invoke ini.get_str,conf_fname,conf_path_sect,ebx,eax,32,def_val_1
+
+  inc dword [loading_counter]
+  
+  popad
+  mov eax,1
+  ret
+endp
 

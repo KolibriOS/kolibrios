@@ -13,9 +13,10 @@
 @IMPORT:
 
 library \
-	libini,'inifiles.obj'
+	libini,'libini.obj'
 
 import	libini, \
-	ini.load,'ini.load',\
+	lib_init,'lib_init',\
 	ini.get_str,'ini.get_str',\
-	ini.get_par,'ini.get_par'
+	ini.enum_keys,'ini.enum_keys',\
+	ini.get_int,'ini.get_int'

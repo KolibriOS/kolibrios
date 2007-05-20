@@ -546,8 +546,9 @@ include 'vmodeld.inc'
   je  no_lib_load
 ; LOADING LIBRARES
    stdcall dll.Load,@IMPORT				; SPraid - загрузка функционала (пока что ини файл)
-   call load_conf_file					; prepare configuration file
+   call load_file_parse_table			; prepare file parse table
    call set_kernel_conf					; configure devices and gui
+   mov byte [conf_file_loaded],1
 no_lib_load:
 
 ; LOAD FONTS I and II
@@ -753,6 +754,12 @@ no_lib_load:
                    (tss._io_map_0-OS_BASE), PG_MAP
            stdcall map_page,tss._io_map_1,\
                    (tss._io_map_1-OS_BASE), PG_MAP
+
+  mov ax,[OS_BASE+0x10000+bx_from_load]
+  cmp ax,'r1'		; если срам диск - то не грузить библиотеки
+  je  no_st_network
+        call set_network_conf
+  no_st_network:
 
 ; LOAD FIRST APPLICATION
         cli

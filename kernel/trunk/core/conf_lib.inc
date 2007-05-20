@@ -8,16 +8,10 @@
 ;-------------------------------------------------------------------------
 
 conf_file_loaded: db 0			; флаг загрузки конфига
+conf_path_sect: db 'path',0
 
-; загрузка ини файла в библиотеку  
-proc load_conf_file
-  pushad
-  invoke ini.load,.fname
-  mov [conf_file_loaded],byte 1
-  popad
-  ret
-  .fname db '%sys%/sys.conf',0
-endp
+conf_fname db '%sys%/sys.conf',0
+
 
 
 proc set_kernel_conf
@@ -27,10 +21,9 @@ endl
   pushad
   ;[gui]
   ;mouse_speed
-  mov eax,ebp
-  add eax,par-ebp
+  lea eax,[par]
   push eax
-  invoke ini.get_str, ugui, ugui_mouse_speed, eax, ugui_mouse_speed_def        
+  invoke ini.get_str,conf_fname, ugui, ugui_mouse_speed, eax,30, ugui_mouse_speed_def        
   pop eax
   stdcall strtoint,eax 
   push eax
@@ -41,10 +34,9 @@ endl
   ret
   
   ;mouse_delay
-  mov eax,ebp
-  add eax,par-ebp
+  lea eax,[par]
   push eax
-  invoke ini.get_str, ugui, ugui_mouse_delay, eax, ugui_mouse_delay_def
+  invoke ini.get_str,conf_fname, ugui, ugui_mouse_delay, eax,30, ugui_mouse_delay_def
   pop eax
   stdcall strtoint,eax
   push eax
@@ -53,10 +45,9 @@ endl
 
   ;[dev]
   ;sb16
-  mov eax,ebp
-  add eax,par-ebp
+  lea eax,[par]
   push eax
-  invoke ini.get_str, udev, udev_sb16, eax, udev_sb16_def
+  invoke ini.get_str,conf_fname, udev, udev_sb16, eax,30, udev_sb16_def
   pop eax
   stdcall strtoint,eax
   push eax
@@ -64,10 +55,9 @@ endl
   call _sb16
   
   ;sound_dma
-  mov eax,ebp
-  add eax,par-ebp
+  lea eax,[par]
   push eax
-  invoke ini.get_str, udev, udev_sound_dma, eax, udev_sound_dma_def
+  invoke ini.get_str,conf_fname, udev, udev_sound_dma, eax,30, udev_sound_dma_def
   pop eax
   stdcall strtoint,eax
   push eax
@@ -76,16 +66,16 @@ endl
   
   
   ;midibase
-  mov eax,ebp
-  add eax,par-ebp
+  lea eax,[par]
   push eax
-  invoke ini.get_str, udev, udev_midibase, eax, udev_midibase_def
+  invoke ini.get_str,conf_fname, udev, udev_midibase, eax,30, udev_midibase_def
   pop eax
   stdcall strtoint,eax
   push eax
   pop ecx
   call _midibase
-
+ 
+  
   popad
   ret
 endp
@@ -103,6 +93,63 @@ udev_sound_dma db 'sound_dma',0
 udev_sound_dma_def db '1',0
 udev_midibase db 'midibase',0
 udev_midibase_def db '0x320',0
+
+proc set_network_conf
+locals
+  par db 30 dup(?)
+endl
+  pushad
+  
+  ;[net]
+  ;active
+  lea eax,[par]
+  invoke ini.get_int,conf_fname, unet, unet_active, 0
+  or eax,eax
+  jz .do_not_set_net
+  call _net_up  
+  
+  ;addr
+  lea eax,[par]
+  push eax
+  invoke ini.get_str,conf_fname, unet, unet_addr, eax,30, unet_def
+  pop eax
+  stdcall do_inet_adr,eax
+  push eax
+  pop ecx
+  call _net_addr
+  
+  ;mask
+  lea eax,[par]
+  push eax
+  invoke ini.get_str,conf_fname, unet, unet_mask, eax,30, unet_def
+  pop eax
+  stdcall do_inet_adr,eax
+  push eax
+  pop ecx
+  call _net_mask  
+  
+  ;gate
+  lea eax,[par]
+  push eax
+  invoke ini.get_str,conf_fname, unet, unet_gate, eax,30, unet_def
+  pop eax
+  stdcall do_inet_adr,eax
+  push eax
+  pop ecx
+  call _net_gate
+.do_not_set_net: 
+  popad
+  ret
+
+
+endp
+
+unet db 'net',0
+unet_active db 'active',0
+unet_addr db 'addr',0
+unet_mask db 'mask',0
+unet_gate db 'gate',0
+unet_def db 0
 
 ; конверчение строки в DWord в eax (по второму символу определяет систему счисления)
      
@@ -238,6 +285,39 @@ proc strtoint_hex stdcall,strs
 endp    
 
 
+ ; преобразовать адрес в то что нада, если пусто то вернуть 0
+proc do_inet_adr stdcall,strs
+  pushad
+  
+  mov esi,[strs]
+  mov ebx,0
+.next:
+  push esi
+@@:
+  lodsb
+  or al,al
+  jz @f
+  cmp al,'.'
+  jz @f
+  jmp @b
+@@:
+  mov cl, al
+  mov [esi-1],byte 0
+  ;pop eax
+  call strtoint_dec
+  rol eax,24
+  ror ebx,8
+  add ebx,eax
+  or cl,cl
+  jz @f
+  jmp .next
+@@:
+  mov [esp+28],ebx
+  popad
+  ret
+endp
+
+
 ; установки из setup
 
 _mouse_speed:
@@ -270,5 +350,36 @@ _sound_dma:
 _midibase:
     mov  eax,21
     mov  ebx,1
+    int 0x40
+ ret
+  
+_net_addr:
+    mov eax,52
+    mov ebx,3
+    int 0x40
+ ret
+ 
+_net_mask:
+    mov eax,52
+    mov ebx,12
+    int 0x40
+ ret
+
+_net_gate:
+    mov eax,52
+    mov ebx,11
+    int 0x40
+ ret
+ 
+_net_up:
+    mov eax,52
+    mov ebx,0
+    int 0x40
+    and eax,0xFFFFFF80
+    add eax,3
+    mov ecx,eax
+    
+    mov eax,52
+    mov ebx,2
     int 0x40
  ret
