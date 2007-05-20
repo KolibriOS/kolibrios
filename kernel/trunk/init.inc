@@ -40,6 +40,10 @@ proc init_mem
            shr eax, 3
            mov [pg_data.pagemap_size-OS_BASE], eax
 
+           add eax, (sys_pgmap-OS_BASE)+4095
+           and eax, not 4095
+           mov [tmp_page_tabs], eax
+
            cmp edx, (OS_BASE/4096)
            jbe @F
            mov edx, (OS_BASE/4096)
@@ -74,21 +78,23 @@ proc init_mem
            or ebx, CR4_PGE
 @@:
            mov cr4, ebx
-           sub [pg_data.kernel_tables-OS_BASE], 1
+           dec [pg_data.kernel_tables-OS_BASE]
 
            mov [edx], eax
            add eax, 0x00400000
-;           mov [edx+4], eax
            add edx, 4
 
            mov eax, 0x400000+PG_SW
-           mov ecx, (tmp_page_tab-0x400000)/4096
+           mov ecx, [tmp_page_tabs]
+           sub ecx, 0x400000
+           shr ecx, 12          ;ecx/=4096
            jmp .map_low
 .no_PSE:
            mov eax, PG_SW
-           mov ecx, tmp_page_tab/4096
+           mov ecx, [tmp_page_tabs]
+           shr ecx, 12
 .map_low:
-           mov edi, tmp_page_tab
+           mov edi, [tmp_page_tabs]
 @@:                                   ;
            stosd
            add eax, 0x1000
@@ -101,7 +107,8 @@ proc init_mem
            rep stosd
 
            mov ecx, [pg_data.kernel_tables-OS_BASE]
-           mov eax, tmp_page_tab+PG_SW
+           mov eax, [tmp_page_tabs]
+           or eax, PG_SW
            mov edi, edx
 
 .map_kernel_tabs:
@@ -131,29 +138,23 @@ align 4
 proc init_page_map
 
            mov edi, sys_pgmap-OS_BASE
-           mov ecx, ((HEAP_BASE-OS_BASE)/4096)/32      ;384/4
-           mov ebx, ecx
-           xor eax,eax
+           mov ecx, [pg_data.pagemap_size-OS_BASE]
+           shr ecx, 2
+           or eax, -1
            cld
            rep stosd
 
-           not eax
-           mov ecx, [pg_data.pagemap_size-OS_BASE]
-           sub ecx, ebx
-           shr ecx, 2
-           rep stosd
-
-           lea edi, [sys_pgmap-OS_BASE+ebx*4]         ;+384
+           mov ecx, [tmp_page_tabs]
            mov edx, [pg_data.pages_count-OS_BASE]
-           mov ecx, [pg_data.kernel_tables-OS_BASE]
-           add ecx, ((HEAP_BASE-OS_BASE)/4096) and 31
-           sub edx, (HEAP_BASE-OS_BASE)/4096
+           shr ecx, 12
+           add ecx, [pg_data.kernel_tables-OS_BASE]
            sub edx, ecx
            mov [pg_data.pages_free-OS_BASE], edx
 
-           xor eax, eax
+           mov edi, sys_pgmap-OS_BASE
            mov ebx, ecx
            shr ecx, 5
+           xor eax, eax
            rep stosd
 
            not eax
@@ -169,7 +170,6 @@ proc init_page_map
            mov [page_end-OS_BASE], ebx
 
            mov [pg_data.pg_mutex-OS_BASE], 0
-
            ret
 endp
 

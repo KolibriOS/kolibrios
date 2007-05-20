@@ -251,7 +251,8 @@ B32:
            lgdt [gdts]
            jmp pword os_code:high_code
 
-
+align 4
+tmp_page_tabs   dd ?
 use16
 org $-0x10000
 include "boot/shutdown.inc" ; shutdown or restart

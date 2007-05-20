@@ -128,9 +128,8 @@
 ; 0x80040000 ->  4FFFF   data of retrieved disks and partitions (Mario79)
 
 ; 0x80050000 ->  50FFF   main page directory
-; 0x80050200 ->  5FFFF   pages bitmap
+; 0x80051000 ->  7FFFF   free (188 Kb)
 
-; 0x80060000 ->  7FFFF   free (128 Kb)
 ; 0x80080000 ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
 ;         00  11db  name of app running
@@ -205,29 +204,28 @@
 ; 0x802E0000 -> 2EFFFF   irq data area
 ; 0x802F0000 -> 2FFFFF   low memory save
 ;
-; 0x80300000 -> 45FFFF   background image, max 1,375 M
+; 0x80300000 -> 400000   hd cache
+
+; 0x80400000 -> 41FFFF   tcp memory       128 Kb
+; 0x80420000 -> 427FFF   tcp memory        32 Kb
 ;
-; 0x80460000 -> 5FFFFF   display info
-;
-; 0x80600000 -> 6FFFFF   hd cache
-;
-; 0x80700000 -> 71ffff   tcp memory       128 Kb
-; 0x80720000 -> 75ffff   free (256 kb)
-;
-; 0x80760000 -> 76ffff   !vrr driver
-; 0x80770000 -> 777fff   tcp memory        32 Kb
-;
-; 0x80780000 -> 0x80782FFF draw data     - 256 entries
+; 0x80428000 -> 42FFFF   !vrr driver       32 Kb
+
+; 0x80430000 -> 477FFF   skin data
+
+; 0x80438000 -> 43AFFF draw data     - 256 entries
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
+
+; 0x8043BF80 -> 43BFFF TSS            128 bytes
+; 0x8043C000 -> 43DFFF IO map for (8192*8)=65536 ports
+
+; 0x8043F000 -> 57EFFF   display info
+; 0x8057F000 -> 58FFFF   page map     max 128 Kb
 ;
-; 0x80783F80 -> 0x80783FFF TSS            128 bytes
-;
-; 0x80784000 -> 0x80785FFF IO map for (8192*8)=65536 ports
-;
-; 0x80786000 ->       kernel heap
+; 0x80800000 ->       kernel heap
 ; 0x81FFFFFF          heap min limit
 ; 0xFDBFFFFF          heap max limit
 

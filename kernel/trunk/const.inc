@@ -266,6 +266,9 @@ TMP_STACK_TOP       equ 0x003EC00
 FONT_II             equ (OS_BASE+0x003EC00)
 FONT_I              equ (OS_BASE+0x003F600)
 DRIVE_DATA          equ (OS_BASE+0x0040000)
+
+sys_pgdir           equ (OS_BASE+0x0050000)
+
 SLOT_BASE           equ (OS_BASE+0x0080000)
 
 ;unused
@@ -304,9 +307,10 @@ end virtual
 WinMapAddress       equ (OS_BASE+0x043F000)
 display_data        equ (OS_BASE+0x043F000)
 
-tmp_page_tab        equ 0x057F000;
+sys_pgmap           equ (OS_BASE+0x057F000)
 
-HEAP_BASE           equ (OS_BASE+tmp_page_tab)
+
+HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000
 
 page_tabs           equ 0xFDC00000
@@ -315,9 +319,6 @@ kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
 LFB_BASE            equ 0xFE000000
-
-sys_pgdir           equ (OS_BASE+0x00050000)
-sys_pgmap           equ (OS_BASE+0x00052000)
 
 
 new_app_base        equ 0;

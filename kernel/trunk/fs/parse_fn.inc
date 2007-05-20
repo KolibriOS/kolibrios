@@ -12,7 +12,7 @@ full_file_name_table dd 0		; указатель на память для таблицы путей 4К   запись 6
 ; перебирает по файлу варианты замен
 proc full_file_name stdcall,sourc,dest
 locals
-  tmpsrc rb 60	; временное хранение преобразования
+  tmpsrc rb 260  ; временное хранение преобразования
 endl
   pushad
   mov esi,[sourc]
