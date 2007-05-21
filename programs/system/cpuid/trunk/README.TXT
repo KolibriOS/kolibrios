@@ -5,7 +5,7 @@ ENGLISH
 Hi! My name is Sergey Kuzmin aka Wildwest. 
 This is one of the mostly famous program for KolibriOS/MenuetOS.
 I called it CPUID. CPUID talks with you CPU and show log. 
-Current version is 2.17 and you can use it on your own risk without any warranty. 
+Current version is 2.21 and you can use it on your own risk without any warranty. 
 E-mail me (kuzmin_serg@list.ru) if you have some problems or suggestions.
 All righs on this program are mine, except parts of code written by other developers.
 
@@ -29,12 +29,16 @@ People from international KolibriOS/MenuetOS team help me and I wish to mention 
 
  Eugeniy Grechnikov (Russia) for great code clean-up and optimization;
 
- Iliya Mikhailov (Russia) for piece of code from his great GMON.
+ Iliya Mikhailov (Russia) for piece of code from his great GMON;
+
+ Pavel Rymovskiy (Belarus) and Leency (Ukraine) for their work, which enhance look & feel of CPUID.
                                                                              
  Also I want to thank folks which help me by testing and suggestions -        
  Sonny, Smiddy and all the RU-Team.                                          
 
 Please, test it and e-mail me screenshot.
+
+The CPUID thread with announcements and discussion is at http://meos.sysbin.com/viewtopic.php?t=594
 
 Bye...
 
@@ -44,7 +48,7 @@ RUSSIAN
 Привет! Меня зовут Сергей Кузьмин aka Wildwest. 
 Это одна из самых известных программ для KolibriOS/MenuetOS.
 Она называется CPUID и показывает результаты идентификации процессора.
-Это версия 2.17 и ВЫ можете её использовать на свой собственный риск безо всяких гарантий.
+Это версия 2.21 и ВЫ можете её использовать на свой собственный риск безо всяких гарантий.
 Если будут какие-то проблемы или предложения, то напишите мне (kuzmin_serg@list.ru).
 Все права на программу принадлежат мне, кроме прав на части, написанных остальными разработчиками.
 
@@ -68,14 +72,16 @@ RUSSIAN
 
  Евгения Гречникова (Россия) за чистку кода и оптимизацию;
 
- Илью Михайлова (Россия) за кусок кода из его замечательной программы GMON.
+ Илью Михайлова (Россия) за кусок кода из его замечательной программы GMON;
+
+ Павла Рымовского (Белоруссия) и  Leency (Украина) за работу, спосособствовавшую улучшению внешнего вида CPUID.
                                                                              
  Также я хочу поблагодарить людей, помогавших мне тестированием и предложениями -        
  Sonny, Smiddy и всю "советскую команду" KolibriOS/MenuetOS .                                      
 
 Пожалуйста, протестируйте программу и пришлите мне скриншот по e-mail.
 
-До встреч на форумах( http://meos.sysbin.com, http://board.flatassembler.net/forum.php?f=12).
+До встреч на форуме(http://meos.sysbin.com/viewtopic.php?t=594).
 
 
 

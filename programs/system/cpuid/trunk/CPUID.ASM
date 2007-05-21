@@ -2,8 +2,8 @@
 ; project name:    CPUID                                                      *
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures                *
 ; compiler:        flat assembler 1.67.21                                     *
-; version:         2.18                                                       *
-; last update:     1st April  2007          1st 2nd 3rd 4th                   *
+; version:         2.21                                                        *
+; last update:     18th May 2007         1st 2nd 3rd 4th 5th 6th 7th 8th 9th  *
 ; maintained by:   Sergey Kuzmin aka Wildwest                                 *
 ; e-mail:          kuzmin_serg@list.ru                                        *
 ; site:            http://coolthemes.narod.ru/files.html                      *
@@ -457,7 +457,7 @@ Text 75,70,0x00000000,AMDn, AMDnlen-AMDn
 
 	mov	esi, amd
 	call	load_gif
-PutImage 135,97,201,49,img_area+8
+PutImage 135,107,201,49,img_area+8
 ;         place   size
 
 ; Relax, man. AMD made PRETTY SIMPLE cache detection routine
@@ -739,33 +739,33 @@ fif:  ;  AMD-64    Family=15
     jz .AFC
    cmp [m],$E  ; Athlon 64    //
     jz .AFE
-	cmp [m],$F ; Athlon 64 Winchester(512) |SSE3+ SanDiego(1024)  Venice (512)  Palermo (256) 0.09
+   cmp [m],$F ; Athlon 64 Winchester(512) |SSE3+ SanDiego(1024)  Venice (512)  Palermo (256) 0.09
     jz .AFF
     jmp next_generation
 .AF1:
     mov [micron], 09  ;?
-Text 100,70,0x00000000,AF1, AF1len-AF1
- jmp MMXtest
+    Text 100,70,0x00000000,AF1, AF1len-AF1
+    jmp MMXtest
 .AF3:
     mov [micron], 09
-Text 100,70,0x00000000,AF3, AF3len-AF3
- jmp MMXtest
+    Text 100,70,0x00000000,AF3, AF3len-AF3
+    jmp MMXtest
 .AF4:
     mov [micron], 13
-Text 100,70,0x00000000,AF4, AF4len-AF4
- jmp MMXtest
+    Text 100,70,0x00000000,AF4, AF4len-AF4
+    jmp MMXtest
 .AF5:
     mov [micron], 13
-Text 100,70,0x00000000,AF5, AF5len-AF5
- jmp MMXtest
+    Text 100,70,0x00000000,AF5, AF5len-AF5
+    jmp MMXtest
 .AF7:
     mov [micron], 13
-Text 100,70,0x00000000,AF5, AF5len-AF5
- jmp MMXtest
+    Text 100,70,0x00000000,AF5, AF5len-AF5
+    jmp MMXtest
 .AF8:
-    mov [micron], 13
-Text 100,70,0x00000000,AF4, AF5len-AF4
- jmp MMXtest
+   mov [micron], 13
+   Text 100,70,0x00000000,AF4, AF4len-AF4  ; AF4, AF5len-AF4
+   jmp MMXtest
 .AFB:
     mov [micron], 13
 Text 100,70,0x00000000,AF4, AF4len-AF4
@@ -780,21 +780,20 @@ je .AFCnpal
 
 .AFCnpar:  ; paris
     mov [micron], 13
-	Text 100,70,0x00000000,AFCs, AFCslen-AFCs
- jmp MMXtest
+    Text 100,70,0x00000000,AFCs, AFCslen-AFCs
+    jmp MMXtest
 
 .AFCnpal: ; palermo
     mov [micron], 9
-	Text 100,70,0x00000000,AFCsp, AFCsplen-AFCsp
- jmp MMXtest
-
+    Text 100,70,0x00000000,AFCsp, AFCsplen-AFCsp
+    jmp MMXtest
 
 .AFCn: ;newcastle
     mov [micron], 13
-	Text 100,70,0x00000000,AFC, AFClen-AFC
- jmp MMXtest
+    Text 100,70,0x00000000,AFC, AFClen-AFC
+    jmp MMXtest
 
- .AFE:	 ; error in cpu
+.AFE:	; error in cpu
  jmp .AFC
 
 .AFF:
@@ -832,7 +831,8 @@ Text 75,70,0x00000000,Inteln, Intelnlen-Inteln
 
 	mov	esi, intel
 	call	load_gif
-PutImage 125,107,201,49,img_area+8
+PutImage 135,107,201,49,img_area+8
+;PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 det:
@@ -1113,7 +1113,8 @@ Text 15, 190,0x00000000,cache, cachelen-cache
 
 	mov	esi, cyrix
 	call	load_gif
-PutImage 130,127,201,49,img_area+8
+PutImage 135,107,201,49,img_area+8
+;PutImage 130,127,201,49,img_area+8
 ;         place   size
 
     cmp [f], $5
@@ -1264,7 +1265,8 @@ fivC:		   ;Family=5
 
 	mov	esi, idt
 	call	load_gif
-PutImage 125,107,201,49,img_area+8
+PutImage 135,107,201,49,img_area+8
+;PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 Text 75,70,0x00000000,IDTn, IDTnlen-IDTn
@@ -1291,7 +1293,8 @@ sixC:	;Family=6
 
 	mov	esi, via
 	call	load_gif
-PutImage 125,107,201,49,img_area+8
+PutImage 135,107,201,49,img_area+8
+;PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
@@ -1334,7 +1337,8 @@ Text 75,70,0x00000000,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
 
 	mov	esi, transmeta
 	call	load_gif
-PutImage 125,107,201,49,img_area+8
+PutImage 135,107,201,49,img_area+8
+;PutImage 125,107,201,49,img_area+8
 ;         place   size
 
 ; cache detection routine - it is the same as for AMD (almost)
@@ -1978,7 +1982,7 @@ load_gif2:
 
 ; DATA AREA
 
-title    db   'CPUID 2.2 by S.Kuzmin & the KolibriOS team',0
+title	 db   'CPUID 2.21 by S.Kuzmin & the KolibriOS team',0
 
 tsum:
     db 'Frequency:     .   MHz'

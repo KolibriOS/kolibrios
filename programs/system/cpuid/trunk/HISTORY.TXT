@@ -1,11 +1,10 @@
 ;******************************************************************************
 ; project name:    CPUID
 ; target platform: KolibriOS, x86 (IA-32), x86-64 achitectures
-; compability:     probably some functions would work in MenuetOS 32 and MenuetOS 64, may be even in Miraculix;
-;                  CPUID works in MS Windows by means of emulator KlbrInWin from Diamond  (http://diamondz.land.ru)
+; compability:     CPUID works in MS Windows by means of emulator KlbrInWin from Diamond  (http://diamondz.land.ru)
 ; compiler:        flat assembler 1.67.21
-; version:         2.2
-; last update:     5st April 2007
+; version:         2.21
+; last update:     18th May 2007
 ; maintained by:   Sergey Kuzmin aka Wildwest
 ; e-mail:          kuzmin_serg@list.ru
 ; site:            http://coolthemes.narod.ru/files.html
@@ -37,11 +36,22 @@
 ; newest AMD/Intel codename detection
 ;******************************************************************************
 ;HISTORY:
-;3.0: CPUID   01/04/2007 (not finished)
+;3.0: CPUID   18/05/2007 (not finished)
+;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Features:  
+;          (+)  fixed typo, which makes selection of incorrect codename for AMD F8x CPU's; 
+;Known issues: Sempron marked as AthlonXP
+;              second window doesn't closed when you close main window
+;-----------------------------------------------------------------------------
+;2.2: CPUID   01/05/2007
 ;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;            Iliya Mikhailov aka Ghost  <Ghost.nsk@gmail.com>
 ;            /^S0rG^\ <s0rg@ngs.ru> 
+;            Pavel Rymovskiy aka Heavyiron <Heavyiron@pisem.net>
+;            Leency <Leency@email.ua>
 ;Features:  
+;          (+)  creative work by Leency - logos now much better and they take less size; 
+;          (+)  changes from Heavyiron: client-relative drawing, title with function 0. It means the end of compatibility with MenuetOS!
 ;          (+)  real-time RAM monitoring (previous versions showed changed amount of available RAM only at redraw event or CPUID window activation); 
 ;          (+)  fixed address of LAHF feature, added detection of CMPL, SVM, MOVCR8 technologies for AMD; 
 ;          (+)  fixed L2 cache size detection for VIA (they changed format from 8 bits to 16 bits several years ago); 
@@ -49,8 +59,6 @@
 ;          (++) more info about caches for VIA and Transmeta;
 ;          (+)  added detection of DCA, SSSE3, VMX technologies for Intel;
 ;          (+)  updated multiplier detection for AMD and Intel (thanks a lot to Ghost);
-;          (+)  client-relative drawing, title with function 0
-;               It means end of capability with MenuetOS!
 ;Known issues: Sempron marked as AthlonXP
 ;              second window doesn't closed when you close main window
 ;-----------------------------------------------------------------------------
@@ -70,7 +78,7 @@
 ;              second window doesn't closed when you close main window
 ;-----------------------------------------------------------------------------
 ;2.0: CPUID   31/10/2006
-;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Authors:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;           Eugeniy Grechnikov aka Diamond <diamondz@land.ru>
 ;           Iliya Mikhailov aka Ghost  <Ghost.nsk@gmail.com>
 ;Features:
@@ -103,7 +111,7 @@
 ;Known issues: Sempron is not supported (marked as AthlonXP)
 ;-----------------------------------------------------------------------------
 ;1.0: CPUID   26/09/2005
-;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Authors:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;           Marat Zakiyanov aka Mario79 <mario79@bk.ru>
 ;           Andrey Halyavin aka halyavin <halyavin@land.ru>
 ;Features:
@@ -128,7 +136,7 @@
 ;Known issues: Sempron is not supported (marked as AthlonXP)
 ;-----------------------------------------------------------------------------
 ;0.9: CPUID   24/01/2005
-;Authors:    Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
+;Authors:   Sergey Kuzmin aka Wildwest <kuzmin_serg@list.ru>
 ;           Madis Kalme aka Madis731 <madis.kalme@mail.ee>
 ;           Jeffrey Amelynck aka Profkid <the_adams_familie@hotmail.com>
 ;Features:
