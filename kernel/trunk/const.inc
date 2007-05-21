@@ -261,13 +261,14 @@ MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
 DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
 DONT_SWITCH         equ (OS_BASE+0x000FFFF)
 
-TMP_STACK_TOP       equ 0x003EC00
+TMP_STACK_TOP       equ 0x006CC00
 
-FONT_II             equ (OS_BASE+0x003EC00)
-FONT_I              equ (OS_BASE+0x003F600)
-DRIVE_DATA          equ (OS_BASE+0x0040000)
+FONT_II             equ (OS_BASE+0x006DC00)
+FONT_I              equ (OS_BASE+0x006E600)
 
-sys_pgdir           equ (OS_BASE+0x0050000)
+sys_pgdir           equ (OS_BASE+0x006F000)
+
+DRIVE_DATA          equ (OS_BASE+0x0070000)
 
 SLOT_BASE           equ (OS_BASE+0x0080000)
 

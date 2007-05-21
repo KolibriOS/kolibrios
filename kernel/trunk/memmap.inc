@@ -121,15 +121,15 @@
 ;   FFF5  byte        1 do not draw pointer
 ;   FFFF  byte        do not change task for 1/100 sec.
 ;
-; 0x80010000 ->  3DBFF   kernel, 32-bit run-time code (up to 183 Kb)
-; 0x8003DC00 ->  3EBFF   stack at boot time (4Kb)
-; 0x8003EC00 ->  3F5FF   basic text font II
-; 0x8003F600 ->  3FFFF   basic text font I
-; 0x80040000 ->  4FFFF   data of retrieved disks and partitions (Mario79)
+; 0x80010000 ->  6CBFF   kernel, 32-bit run-time code (up to 371 Kb)
 
-; 0x80050000 ->  50FFF   main page directory
-; 0x80051000 ->  7FFFF   free (188 Kb)
+; 0x8006CC00 ->  6DBFF   stack at boot time (4Kb)
+;
+; 0x8006DC00 ->  6E5FF   basic text font II
+; 0x8006E600 ->  6Efff   basic text font I
+; 0x8006F000 ->  6FFFF   main page directory
 
+; 0x80070000 ->  7FFFF   data of retrieved disks and partitions (Mario79)
 ; 0x80080000 ->  8FFFF   additional app info, in 256 byte steps - 256 entries
 ;
 ;         00  11db  name of app running
