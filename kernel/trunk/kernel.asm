@@ -321,8 +321,8 @@ high_code:
 ; -----------------------------------------
 ;        movzx eax,byte [BOOT_VAR+0x9010]  ; mouse port
 ;        mov   [0xF604],byte 1  ;al
-        mov     al, [BOOT_VAR+0x901F]   ; DMA writing
-        mov     [allow_dma_write], al
+        mov     al, [BOOT_VAR+0x901F]   ; DMA access
+        mov     [allow_dma_access], al
         mov   al,[BOOT_VAR+0x9000]        ; bpp
         mov   [ScreenBPP],al
         movzx eax,word [BOOT_VAR+0x900A]  ; X max

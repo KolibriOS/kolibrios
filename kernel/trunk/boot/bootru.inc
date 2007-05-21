@@ -34,7 +34,7 @@ vrrmprint db      "Использовать VRR? (частота кадров выше 60 Гц"
 ;          db      " Выберите порт [1-3]: ",0
 ;no_com1   db      13,10,186," No COM1 mouse",0
 ;no_com2   db      13,10,186," No COM2 mouse",0
-ask_dma   db      "Использовать DMA для записи на HDD? [1-да/2-нет]: ",0
+ask_dma   db      "Использовать DMA для доступа к HDD? [1-да, 2-только чтение, 3-нет]: ",0
 ;gr_direct db      186," Использовать линейный видеобуфер? "
 ;          db      "[1-да/2-нет]: ",0
 ;mem_model db      13,10,186," Объ+м памяти [1-16 Mb / 2-32 Mb / "
@@ -80,9 +80,10 @@ mode9     db      "320x200, EGA/CGA 256 цветов",0
 mode10    db      "640x480, VGA 16 цветов",0
 probeno_msg db    " (стандартный видеорежим)",0
 probeok_msg db    " (проверить нестандартные режимы)",0
-dma_msg   db      " [b] Использование DMA для записи на HDD:",0
+dma_msg   db      " [b] Использование DMA для доступа к HDD:",0
 on_msg    db      " вкл",13,10,0
 off_msg   db      " выкл",13,10,0
+readonly_msg db   " только чтение",13,10,0
 vrrm_msg  db      " [c] Использование VRR:",0
 preboot_device_msg db " [d] Образ дискеты: ",0
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3

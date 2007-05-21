@@ -54,6 +54,9 @@ hd_read:
     call  find_empty_slot       ; ret in edi
     cmp   [hd_error],0
     jne   return_01
+; DMA read is permitted if [allow_dma_access]=1 or 2
+        cmp     [allow_dma_access], 2
+        ja      .nodma
         cmp     [dma_hdd], 1
         jnz     .nodma
         call    hd_read_dma
@@ -229,8 +232,9 @@ write_cache:
     cmp   eax,[PARTITION_END]
     ja    danger
 
-        cmp     [allow_dma_write], 1
-        jnz     .nodma
+; DMA write is permitted only if [allow_dma_access]=1
+        cmp     [allow_dma_access], 2
+        jae     .nodma
         cmp     [dma_hdd], 1
         jnz     .nodma
 ; Объединяем запись цепочки последовательных секторов в одно обращение к диску
@@ -601,7 +605,7 @@ cache_chain_size        db      0
 cache_chain_started     db      0
 dma_task_switched       db      0
 dma_hdd         db      0
-allow_dma_write db      0
+allow_dma_access db      0
 endg
 
 align 4
