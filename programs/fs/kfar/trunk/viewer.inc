@@ -62,7 +62,7 @@ view_file:
 .attr_retry:
         push    70
         pop     eax
-        mcall
+        int     40h
         test    eax, eax
         jz      @f
         lea     ebx, [ebp+viewer_data.filename]
@@ -105,7 +105,7 @@ view_file:
 .retry:
         push    70
         pop     eax
-        mcall
+        int     40h
         mov     [ebp+viewer_data.buf_size], ebx
         test    eax, eax
         jz      .readok
@@ -196,7 +196,7 @@ viewer_get_next_char:
         mov     ebx, readinfo
         push    70
         pop     eax
-        mcall
+        int     40h
         test    eax, eax
         jz      .readok
         cmp     eax, 6
@@ -978,7 +978,7 @@ viewer_seek:
         mov     [ebx+21], eax
         push    70
         pop     eax
-        mcall
+        int     40h
         test    eax, eax
         jz      .readok
         cmp     eax, 6
@@ -1030,7 +1030,7 @@ viewer_seek:
 @@:
         push    70
         pop     eax
-        mcall
+        int     40h
         test    eax, eax
         jz      @f
         cmp     eax, 6

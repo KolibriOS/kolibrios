@@ -315,13 +315,13 @@ GenericBox:
 .event:
         push    10
         pop     eax
-        mcall
+        int     40h
         dec     eax
         jz      .redraw
         dec     eax
         jz      .key
         or      eax, -1
-        mcall
+        int     40h
 .redraw:
         push    ebx ebp
         call    draw_window
@@ -329,7 +329,7 @@ GenericBox:
         jmp     .event
 .key:
         mov     al, 2
-        mcall
+        int     40h
         shr     eax, 8
         cmp     al, 0xE0
         jnz     @f
@@ -1239,7 +1239,7 @@ ManagerDlgProc:
         cmp     [ctrlstate], 1
         sbb     ecx, -2
         mov     edx, layout
-        mcall
+        int     0x40
         popad
 ; translate scancode to ASCII
         movzx   eax, al

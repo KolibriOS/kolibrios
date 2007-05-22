@@ -8,7 +8,6 @@ memsize dd      mem
         dd      0, app_path
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
 include 'font.inc'
 include 'sort.inc'
 include 'kglobals.inc'
@@ -61,7 +60,7 @@ start:
         pop     eax
         push    11
         pop     ebx
-        mcall
+        int     0x40
         call    init_console
         call    draw_window
         push    66
@@ -69,7 +68,7 @@ start:
         push    1
         pop     ebx
         mov     ecx, ebx
-        mcall     ; set keyboard mode to scancodes
+        int     40h     ; set keyboard mode to scancodes
         mov     eax, 200
         mov     [panel1_nfa], eax
         mov     [panel2_nfa], eax
@@ -80,7 +79,7 @@ start:
         mov     [panel2_files], eax
         test    eax, eax
         jz      exit
-        cmp     [panel1_files], eax
+        cmp     [panel1_files], 0
         jz      exit
         mov     [panel1_sortmode], 0    ; sort by name
         mov     [panel2_sortmode], 0
@@ -100,8 +99,8 @@ start:
 ; load libini.obj and kfar.ini
         mov     eax, libini_name
         mov     esi, ini_import
-        push    2
-        pop     ebp     ; we use version 2 of libini
+        push    3
+        pop     ebp     ; we use version 3 of libini
         call    load_dll_and_import
         test    eax, eax
         jnz     .noini
@@ -126,33 +125,14 @@ start:
         call    xpgalloc
         test    eax, eax
         jz      .skip_assoc
-@@:
-        mov     edx, eax
-        push    edx ecx
-        push    ecx
-        push    edx
-        push    dword aAssociations
-        push    dword app_path
-        call    [ini.query_sec]
-        pop     ecx edx
-        cmp     eax, ecx
-        jbe     @f
-        add     ecx, ecx
-        call    xpgrealloc
-        test    eax, eax
-        jz      .skip_assoc
-        jmp     @b
-@@:
-        cmp     ecx, 0x1000
-        jbe     @f
-        mov     ecx, eax
-        call    xpgrealloc      ; must succeed, because we decrease size
-        mov     edx, eax
-@@:
-        mov     [associations], edx
+        mov     [associations], eax
+        push    enum_associations_callback
+        push    aAssociations
+        push    app_path
+        call    [ini.enum_keys]
+.skip_assoc:
         xor     ebp, ebp
         xor     esi, esi
-.skip_assoc:
         mov     edi, saved_file_name
         push    dword nullstr
         push    512
@@ -250,7 +230,7 @@ start:
 event:
         push    10
         pop     eax
-        mcall
+        int     40h
         dec     eax
         jz      redraw
         dec     eax
@@ -258,13 +238,13 @@ event:
 ; button - we have only one button, close
 exit:
         or      eax, -1
-        mcall
+        int     40h
 redraw:
 ; query kbd state from OS
         mov     al, 66
         push    3
         pop     ebx
-        mcall
+        int     0x40
         and     eax, 0x3F
         cmp     al, [ctrlstate]
         mov     [ctrlstate], al
@@ -274,7 +254,7 @@ redraw:
         mov     al, 9
         mov     ebx, procinfo
         or      ecx, -1
-        mcall
+        int     40h
 ; test if rolled up
 ; height of rolled up window is [skinh]+3
         mov     eax, [ebx+46]
@@ -284,14 +264,14 @@ redraw:
         mov     al, 12
         push    1
         pop     ebx
-        mcall
+        int     0x40
         xor     eax, eax
 ; ebx, ecx, edi are ignored by function 0 after first redraw
         mov     edx, 0x53000000
-        mcall
+        int     0x40
         mov     al, 12
         inc     ebx
-        mcall
+        int     0x40
         jmp     event
 @@:
         xor     ecx, ecx
@@ -365,7 +345,7 @@ redraw:
         imul    esi, font_height
         add     esi, [skinh]
         add     esi, 5-1
-        mcall
+        int     40h
 .resize_draw:
         mov     ecx, [MemForImage]
         call    pgfree
@@ -395,7 +375,7 @@ alt_f9:
         pop     eax
         push    5
         pop     ebx
-        mcall
+        int     0x40
         push    eax
         sub     eax, [esp+2]
         inc     eax
@@ -428,11 +408,11 @@ alt_f9:
         add     esi, 4
         push    67
         pop     eax
-        mcall
+        int     0x40
         jmp     redraw.resize_draw
 key:
         mov     al, 2
-        mcall
+        int     40h
         test    al, al
         jnz     event
         xchg    al, ah
@@ -586,6 +566,77 @@ ctrlkey_test4:
         cmp     al, 2
         setz    al
         ret
+
+enum_associations_callback:
+; LongBool __stdcall callback(f_name,sec_name,key_name);
+; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name
+        mov     esi, [esp+12]
+        mov     edi, esi
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+        sub     esi, edi        ; esi = size of key name
+        push    nullstr
+        push    1024
+        push    saved_file_name
+        push    edi
+        push    dword [esp+16+8]
+        push    dword [esp+20+4]
+        call    [ini.get_str]
+        test    eax, eax
+        jnz     .ret
+        mov     eax, saved_file_name
+@@:
+        inc     esi
+        inc     eax
+        cmp     byte [eax-1], 0
+        jnz     @b
+; esi = total size of entry
+        push    esi
+        add     esi, [associations_size]
+        mov     ecx, [associations_allocated]
+@@:
+        cmp     esi, ecx
+        jbe     @f
+        add     ecx, ecx
+        jmp     @b
+@@:
+        pop     esi
+        cmp     [associations_allocated], ecx
+        jz      @f
+        mov     [associations_allocated], ecx
+        mov     edx, [associations]
+        call    xpgrealloc
+        mov     [associations], eax
+        test    eax, eax
+        jz      .err
+@@:
+        mov     eax, esi
+        mov     esi, edi
+        mov     edi, [associations]
+        add     edi, [associations_size]
+        dec     edi
+        add     [associations_size], eax
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        mov     esi, saved_file_name
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+.ret:
+        mov     al, 1
+        ret     12
+.err:
+        mov     ecx, edx
+        call    pgfree
+        xor     eax, eax
+        ret     12
 
 new_screen:
 ; in: ecx=sizeof(screen data), edx->vtable
@@ -1009,7 +1060,7 @@ panels_OnKey:
 .nofasm:
         mov     ebx, execinfo
 ; if command line is more than 256 symbols, the kernel will truncate it
-; we does not want this!
+; we do not want this!
 ; N.B. We know that command line is either NULL or execdata, which is always ASCIIZ string,
 ;      but can be up to 1023 symbols
         mov     esi, [ebx+8]
@@ -1026,7 +1077,7 @@ panels_OnKey:
 .cmdlinelenok:
         push    70
         pop     eax
-        mcall
+        int     40h
         xor     esi, esi
         xchg    esi, [restore_semicolon]
         test    esi, esi
@@ -1035,13 +1086,11 @@ panels_OnKey:
 @@:
         neg     eax
         js      @f
-        push    dword aContinue
-        mov     esi, esp
         call    get_error_msg
         push    eax
         push    dword aRunError
         mov     eax, esp
-        push    esi
+        push    ContinueBtn
         push    1
         push    eax
         push    2
@@ -1049,7 +1098,8 @@ panels_OnKey:
         push    -1
         push    dword aError
         call    SayErr
-        add     esp, 3*4
+        pop     eax
+        pop     eax
         ret
 @@:
         test    edx, edx
@@ -1058,7 +1108,7 @@ panels_OnKey:
         pop     eax
         push    20
         pop     ebx
-        mcall
+        int     0x40
         jmp     .ctrl_r
 @@:
         ret
@@ -1075,11 +1125,9 @@ panels_OnKey:
         jz      @f
         mov     byte [esi], ';'
 @@:
-        push    dword aContinue
-        mov     esi, esp
         push    eax
         mov     eax, esp
-        push    esi
+        push    ContinueBtn
         push    1
         push    eax
         push    1
@@ -1087,7 +1135,7 @@ panels_OnKey:
         push    -1
         push    dword aError
         call    SayErr
-        add     esp, 2*4
+        pop     eax
         ret
 .bigcmdline:
         mov     eax, aCmdLineTooBig
@@ -1096,9 +1144,6 @@ panels_OnKey:
         mov     byte [ecx], 0
 .bigfoldername:
         mov     eax, aFolderNameTooBig
-        jmp     .l2
-.copytoself:
-        mov     eax, aCannotCopyToSelf
         jmp     .l2
 .enter_folder:
         lea     esi, [ecx+40]
@@ -1236,7 +1281,7 @@ panels_OnKey:
         mov     byte [tmpname+1], 0
         push    70
         pop     eax
-        mcall
+        int     40h
         mov     ebx, dirinfo
         test    eax, eax
         jnz     .drive_loop_e_done
@@ -1252,7 +1297,7 @@ panels_OnKey:
 .drive_loop_i:
         push    70
         pop     eax
-        mcall
+        int     40h
         mov     ebx, dirinfo
         test    eax, eax
         jnz     .drive_loop_i_done
@@ -1363,6 +1408,9 @@ panels_OnKey:
         call    read_folder
         jmp     .done_redraw
 .shift_f5:
+        mov     esi, ebp
+        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        jnz     .f5_2
         call    get_curfile_folder_entry
         lea     esi, [ecx+40]
         mov     edi, CopyDestEditBuf
@@ -1379,6 +1427,10 @@ panels_OnKey:
         stosb
         jmp     @b
 .f5:
+        mov     esi, ebp
+        xor     esi, panel1_data xor panel2_data
+.f5_2:
+        add     esi, panel1_dir - panel1_data
         mov     edi, CopyDestEditBuf
         mov     eax, CopyDestEditBuf.length
         stosd
@@ -1386,9 +1438,6 @@ panels_OnKey:
         xor     eax, eax
         stosd
         mov     edx, edi
-        mov     esi, ebp
-        xor     esi, panel1_data xor panel2_data
-        add     esi, panel1_dir - panel1_data
 @@:
         lodsb
         test    al, al
@@ -1413,6 +1462,53 @@ panels_OnKey:
         stosb
         jmp     @b
 @@:
+        mov     eax, [ebp + panel1_selected_num - panel1_data]
+        test    eax, eax
+        jz      .f5_noselected1
+        mov     ebx, eax
+        push    10
+        pop     ecx
+        push    -'0'
+@@:
+        xor     edx, edx
+        div     ecx
+        push    edx
+        test    eax, eax
+        jnz     @b
+@@:
+        pop     eax
+        add     al, '0'
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+if lang eq ru
+        mov     dword [edi], ' эле'
+        mov     dword [edi+4], 'мент'
+        add     edi, 8
+        cmp     ebx, 1
+        jz      @f
+        mov     al, 'а'
+        stosb
+        cmp     ebx, 4
+        jbe     @f
+        mov     word [edi-1], 'ов'
+        inc     edi
+@@:
+else
+        mov     dword [edi], ' ite'
+        mov     byte [edi+4], 'm'
+        add     edi, 5
+        cmp     ebx, 1
+        jz      @f
+        mov     al, 's'
+        stosb
+@@:
+end if
+        jmp     .f5_selected1
+.f5_noselected1:
+        mov     al, '"'
+        stosb
         call    get_curfile_folder_entry
         lea     esi, [ecx+40]
         lea     eax, [esi+1]
@@ -1439,6 +1535,9 @@ panels_OnKey:
         stosb
         jmp     @b
 @@:
+        mov     al, '"'
+        stosb
+.f5_selected1:
         mov     esi, aCopy2
 @@:
         lodsb
@@ -1480,13 +1579,14 @@ panels_OnKey:
         dec     edi
         cmp     edi, esi
         jb      .ret2
+        mov     [bEndSlash], 0
         cmp     byte [edi], '/'
         jnz     @f
-; Наличие/отсутствие заканчивающего слэша важно только для копирования папок
         cmp     edi, esi
         jz      @f
         mov     byte [edi], 0
         dec     edi
+        mov     [bEndSlash], 1
 @@:
 ; Если путь не начинается со слэша, считаем его относительно текущей папки
         cmp     byte [esi], '/'
@@ -1523,186 +1623,178 @@ panels_OnKey:
         mov     byte [edi-1], '/'
         pop     esi
 .copy_absolute_path:
-; Получаем атрибуты назначения
-        mov     cl, 0x10
+; Сначала создаём все вышележащие папки, которые ещё не существуют
+; Последний из элементов может быть как файлом, так и папкой;
+; форсируем папку в случае, если хотя бы один из источников является папкой
+        xor     edx, edx
+        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        jz      .f5_noselected2
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     edi, [ebp + panel1_files - panel1_data]
+.scanselected2:
+        mov     eax, [edi]
+        add     edi, 4
+        test    byte [eax+303], 1
+        jz      @f
+        test    byte [eax], 10h
+        jz      @f
+        inc     edx
+@@:
+        loop    .scanselected2
+        jmp     .f5_selected2
+.f5_noselected2:
+        call    get_curfile_folder_entry
+        test    byte [ecx], 10h
+        setnz   dl
+.f5_selected2:
         xor     eax, eax
         mov     edi, esi
 .countslashloop:
         cmp     byte [edi], '/'
         jnz     @f
         inc     eax
+        mov     ecx, edi
 @@:
         inc     edi
         cmp     byte [edi], 0
         jnz     .countslashloop
+        mov     [bNeedRestoreName], 0
+; "/file-system/partition" folders already exist, so we don't need to create them
         cmp     eax, 2
-        jbe     @f
+        jbe     .createupdone
+; we interpret destination as folder if edx!=0 or bEndSlash!=0
+        test    edx, edx
+        jnz     @f
+        cmp     [bEndSlash], 0
+        jnz     @f
+        mov     edi, ecx
+        dec     eax
+@@:
+        mov     [attrinfo.name], esi
+        mov     ecx, eax
+; ищем последнюю папку, которая ещё существует
+.createuploop1:
+        cmp     eax, 2
+        jbe     .createupdone1
+        mov     dl, [edi]
+        mov     byte [edi], 0
+        push    eax
+        push    70
+        pop     eax
         mov     ebx, attrinfo
-        mov     [attrinfo.attr], 0
-        mov     [ebx + attrinfo.name - attrinfo], esi
-        push    70
+        int     0x40
+        test    eax, eax
         pop     eax
-        mcall
-        mov     cl, byte [attrinfo.attr]
-@@:
-        test    cl, 0x10
-        jz      .copyfile
-; Нам подсунули каталог назначения, дописываем имя файла
-        cmp     edi, CopyDestEditBuf+12+513
-        jae     .bigfilename
-        mov     al, '/'
-        stosb
+        jnz     .createupcont1
+        test    byte [attrinfo.attr], 10h
+        jnz     .createupdone1
+; the item required to be a folder, but is file
+        push    aNotFolder
         push    esi
-        call    get_curfile_folder_entry
-        lea     esi, [ecx+40]
+        mov     eax, esp
+        push    ContinueBtn
+        push    1
+        push    eax
+        push    2
+        push    -1
+        push    -1
+        push    aError
+        call    SayErr
+        pop     eax
+        pop     eax
+.ret3:
+        ret
+.createupcont1:
+        mov     [edi], dl
+        dec     eax
 @@:
-        lodsb
-        cmp     edi, CopyDestEditBuf+12+513
-        jae     .bigfilename2
-        stosb
-        test    al, al
+        dec     edi
+        cmp     byte [edi], '/'
         jnz     @b
-        pop     esi
-.copyfile:
-; Имя исходного файла
-        push    esi
-        lea     esi, [ebp+panel1_dir-panel1_data]
-        mov     edi, saved_file_name
-        push    edi
+        jmp     .createuploop1
+.createupdone1:
+; создаём все папки, которые нам нужны
+        cmp     eax, ecx
+        jae     .createupdone
 @@:
-        lodsb
-        test    al, al
+        inc     edi
+        cmp     byte [edi], 0
         jz      @f
-        stosb
-        jmp     @b
-@@:
-        mov     al, '/'
-        stosb
-        call    get_curfile_folder_entry
-        lea     esi, [ecx+40]
-@@:
-        lodsb
-        cmp     edi, saved_file_name+1024
-        jae     .bigfilename3
-        stosb
-        test    al, al
+        cmp     byte [edi], '/'
         jnz     @b
-        pop     esi
-        pop     edi
-; Нельзя скопировать файл поверх самого себя!
-        push    esi edi
-        call    strcmpi
-        pop     edi esi
-        jz      .copytoself
-; Собственно, копируем
-; esi->source name, edi->destination name
-        mov     [writeinfo.code], 2
-        mov     [writeinfo.name], edi
-        and     dword [writeinfo.first], 0
-        and     dword [writeinfo.first+4], 0
-        mov     [writeinfo.data], copy_buffer
-        mov     ebx, readinfo
-        and     dword [ebx+readinfo.first-readinfo], 0
-        and     dword [ebx+readinfo.first+4-readinfo], 0
-        mov     [ebx+readinfo.size-readinfo], copy_buffer_size
-        mov     [ebx+readinfo.data-readinfo], copy_buffer
-        mov     [ebx+readinfo.name-readinfo], esi
-.copyloop:
-        mov     ebx, readinfo
+@@:
+        mov     dl, byte [edi]
+        mov     byte [edi], 0
+        push    eax
+        push    RetryOrCancelBtn
+        push    2
+        call    makedir
+        mov     [bNeedRestoreName], 1
+        pop     eax
+        jnz     .ret3
+        inc     eax
+        jmp     .createupdone1
+.createupdone:
+        mov     dl, 1
+        cmp     byte [edi], 1
+        sbb     eax, -1
+        cmp     eax, 2
+        jbe     .docopy
+        mov     [attrinfo.attr], 0      ; assume zero attributes if error
         push    70
         pop     eax
-        mcall
-        test    eax, eax
-        jz      .copyreadok
-        cmp     eax, 6
-        jz      .copyreadok
-        push    esi
-        push    dword aCannotReadFile
-        call    get_error_msg
-        push    eax
-        mov     eax, esp
-        push    dword RetryOrCancelBtn
-        push    2
-        push    eax
-        push    3
-        push    -1
-        push    -1
-        push    dword aError
-        call    SayErr
-        add     esp, 3*4
-        test    eax, eax
-        jz      .copyloop
-        jmp     .copyfailed
-.copyreadok:
-        test    ebx, ebx
-        jz      .copydone
-        add     dword [readinfo.first], ebx
-        adc     dword [readinfo.first+4], 0
-        mov     [writeinfo.size], ebx
-.copywrite:
-        mov     ebx, writeinfo
-        push    70
-        pop     eax
-        mcall
-        test    eax, eax
-        jz      .copywriteok
-        push    edi
-        push    dword aCannotWriteFile
-        call    get_error_msg
-        push    eax
-        mov     eax, esp
-        push    dword RetryOrCancelBtn
-        push    2
-        push    eax
-        push    3
-        push    -1
-        push    -1
-        push    dword aError
-        call    SayErr
-        add     esp, 3*4
-        test    eax, eax
-        jz      .copywrite
-        jmp     .copyfailed
-.copywriteok:
-        mov     ecx, [writeinfo.size]
-        add     dword [writeinfo.first], ecx
-        adc     dword [writeinfo.first+4], 0
-        mov     [writeinfo.code], 3
-        cmp     ecx, copy_buffer_size
-        jz      .copyloop
+        mov     ebx, attrinfo
+        int     0x40
+        test    [attrinfo.attr], 10h
+        setnz   dl
+.docopy:
+        call    get_curfile_folder_entry
+        mov     eax, ecx
+        cmp     [bNeedRestoreName], 0
+        jz      @f
+        cmp     [bEndSlash], 0
+        jnz     @f
+        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        jnz     @f
+        test    byte [eax], 10h
+        jz      @f
+        mov     dl, 0
+@@:
+; начинаем собственно копирование
+        mov     [bDestIsFolder], dl
+        mov     [copy_bSkipAll], 0
+        mov     [copy_bSkipAll2], 0
+        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        jnz     .f5_selected3
+        call    copy_file
 .copydone:
         push    ebp
         call    .ctrl_r
         pop     ebp
         xor     ebp, panel1_data xor panel2_data
         jmp     .ctrl_r
-.copyfailed:
-        cmp     [bConfirmDeleteIncomplete], 0
+.f5_selected3:
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     esi, [ebp + panel1_files - panel1_data]
+.f5_selected_copyloop:
+        lodsd
+        test    byte [eax+303], 1
+        jz      .f5_selected_copycont
+        mov     [bDestIsFolder], dl
+        call    copy_file
+        ja      .f5_multiple_cancel
+        and     byte [eax+303], not 1
+        pushad
+        call    draw_panel
+        cmp     [bNeedRestoreName], 0
         jz      @f
-        cmp     [writeinfo.code], 2
-        jz      .copydone
-        push    dword aIncompleteFile
-        mov     eax, esp
-        push    dword DeleteOrKeepBtn
-        push    2
-        push    eax
-        push    1
-        push    -1
-        push    -1
-        push    dword aCopyCaption
-        call    SayErr
-        add     esp, 4
-        test    eax, eax
-        jnz     .copydone
+        mov     esi, CopyDestEditBuf+12
+        call    delete_last_name_from_end
 @@:
-        mov     ebx, delinfo
-        push    dword [ebx+21]
-        mov     dword [ebx+21], edi
-        push    70
-        pop     eax
-        mcall
-; ignore errors
-        pop     dword [delinfo+21]
+        popad
+.f5_selected_copycont:
+        loop    .f5_selected_copyloop
+.f5_multiple_cancel:
         jmp     .copydone
 
 .f3:
@@ -2137,30 +2229,9 @@ end if
         mov     byte [edi-1], '/'
         pop     esi
 .mkdir_absolute_path:
-.mkdir_retry:
-        push    70
-        pop     eax
-        mov     ebx, mkdirinfo
-        mcall
-        test    eax, eax
-        jz      @f
-        push    dword CopyDestEditBuf+12
-        push    dword aCannotMakeFolder
-        call    get_error_msg
-        push    eax
-        mov     eax, esp
-        push    dword RetryOrCancelBtn
+        push    RetryOrCancelBtn
         push    2
-        push    eax
-        push    3
-        push    -1
-        push    -1
-        push    dword aError
-        call    SayErr
-        add     esp, 3*4
-        test    eax, eax
-        jz      .mkdir_retry
-@@:
+        call    makedir
         jmp     .copydone
 .change_mode:
         dec     eax
@@ -2277,6 +2348,35 @@ end if
         dec     ecx
         jnz     .selectloop
         pop     eax
+        jmp     .done_redraw
+.greyasterisk:
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        mov     esi, [ebp + panel1_files - panel1_data]
+        jecxz   .galoopdone
+.galoop:
+        lodsd
+        cmp     word [eax+40], '..'
+        jnz     @f
+        cmp     byte [eax+42], 0
+        jz      .gacont
+@@:
+        xor     byte [eax+303], 1
+        mov     edx, [eax+32]
+        test    byte [eax+303], 1
+        jz      .gadel
+        add     dword [ebp + panel1_selected_size - panel1_data], edx
+        mov     edx, [eax+36]
+        adc     dword [ebp + panel1_selected_size+4 - panel1_data], edx
+        inc     dword [ebp + panel1_selected_num - panel1_data]
+        jmp     .gacont
+.gadel:
+        sub     dword [ebp + panel1_selected_size - panel1_data], edx
+        mov     edx, [eax+36]
+        sbb     dword [ebp + panel1_selected_size+4 - panel1_data], edx
+        dec     dword [ebp + panel1_selected_num - panel1_data]
+.gacont:
+        loop    .galoop
+.galoopdone:
         jmp     .done_redraw
 
 panels_OnRedraw:
@@ -2436,10 +2536,10 @@ draw_window:
         pop     eax
         push    1
         pop     ebx
-        mcall
+        int     40h
         mov     al, 48
         mov     bl, 4
-        mcall
+        int     40h
         mov     [skinh], eax
         mov     ebx, [cur_width]
         imul    ebx, font_width
@@ -2449,8 +2549,8 @@ draw_window:
         lea     ecx, [eax+ecx+5-1+100*65536]
         xor     eax, eax
         mov     edx, 0x53000000
-        mov     edi, title
-        mcall
+        mov     edi, header
+        int     40h
         mov     al, 13
         xor     edx, edx
         cmp     [fill_width], 0
@@ -2464,7 +2564,7 @@ draw_window:
         mov     cx, word [wnd_height]
         sub     cx, word [skinh]
         sub     cx, 5-1
-        mcall
+        int     0x40
 @@:
         cmp     [fill_height], 0
         jz      @f
@@ -2477,7 +2577,7 @@ draw_window:
         sub     ecx, 5-1
         shl     ecx, 16
         mov     cx, word [fill_height]
-        mcall
+        int     0x40
 @@:
 ;        xor     ecx, ecx
 ;        call    draw_image
@@ -2494,12 +2594,12 @@ draw_window:
         mov     esi, 8
         mov     edi, console_colors
         xor     ebp, ebp
-        mcall
+        int     0x40
 @@:
         mov     al, 12
         push    2
         pop     ebx
-        mcall
+        int     40h
         ret
 
 draw_image.nomem:
@@ -2511,14 +2611,14 @@ draw_image.nomem:
         mov     ecx, [skinh-2]
         mov     cx, word [cur_height]
         imul    cx, font_height
-        mcall
+        int     40h
         mov     al, 4
         mov     ebx, 32*65536+32
         mov     ecx, 0xFFFFFF
         mov     edx, nomem_draw
         push    nomem_draw.size
         pop     esi
-        mcall
+        int     40h
         ret
 
 draw_image:
@@ -2715,7 +2815,7 @@ end if
         mov     edi, console_colors
         push    8
         pop     esi
-        mcall
+        int     40h
 .nodraw:
         ret
 
@@ -3937,7 +4037,7 @@ read_folder:
         push    70
         pop     eax
         mov     ebx, dirinfo
-        mcall
+        int     40h
         test    eax, eax
         jz      .ok
         cmp     eax, 6
@@ -5143,6 +5243,8 @@ find_extension:
 .found_ext:
         inc     esi
         mov     edi, [associations]
+        test    edi, edi
+        jz      .notfound
 .find_loop:
         push    esi edi
         call    strcmpi
@@ -5160,13 +5262,14 @@ find_extension:
         jnz     @b
         cmp     byte [edi], 0
         jnz     .find_loop
+.notfound:
 ; unknown extension
         stc
 .found:
         pop     esi
         ret
 
-title  db      'Kolibri Far 0.32',0
+header  db      'Kolibri Far 0.34',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
@@ -5560,6 +5663,8 @@ old_cursor_pos  dd      -1
 active_panel    dd      panel1_data
 
 associations    dd      0
+associations_size dd    1               ; terminating zero
+associations_allocated dd 0x1000        ; start with one page
 
 console_colors  dd      0x000000, 0x000080, 0x008000, 0x008080
                 dd      0x800000, 0x800080, 0x808000, 0xC0C0C0
@@ -5788,6 +5893,8 @@ end repeat
         dd      panels_OnKey.greyplus
         dw      0x4A, 0
         dd      panels_OnKey.greyminus
+        dw      0x37, 0
+        dd      panels_OnKey.greyasterisk
         db      0
 
 viewer_ctrlkeys:
@@ -6179,6 +6286,8 @@ DeleteErrorBtn:
         dd      aSkip
         dd      aSkipAll
         dd      a_Cancel
+ContinueBtn:
+        dd      aContinue
 
 if lang eq ru
 aDeleteCaption          db      'Удаление',0
@@ -6193,8 +6302,8 @@ aCopy                   db      '[ Копировать ]',0
 aCopyLength = $ - aCopy - 1
 a_Continue              db      '[ Продолжить ]',0
 a_ContinueLength = $ - a_Continue - 1
-aCopy1                  db      'Копировать "',0
-aCopy2                  db      '" в:',0
+aCopy1                  db      'Копировать ',0
+aCopy2                  db      ' в:',0
 aError                  db      'Ошибка',0
 aContinue               db      'Продолжить',0
 aRetry                  db      'Повторить',0
@@ -6230,6 +6339,7 @@ aKeep                   db      'Оставить',0
 aCannotWriteFile        db      'Не могу записать в файл',0
 aCannotDeleteFile       db      'Не могу удалить файл',0
 aCannotDeleteFolder     db      'Не могу удалить папку',0
+aNotFolder              db      'не является папкой',0
 aIgnore                 db      'Игнорировать',0
 aMkDirCaption           db      'Создание папки',0
 aMkDir                  db      'Создать папку',0
@@ -6301,6 +6411,7 @@ aKeep                   db      'Keep',0
 aCannotWriteFile        db      'Cannot write to the file',0
 aCannotDeleteFile       db      'Cannot delete the file',0
 aCannotDeleteFolder     db      'Cannot delete the folder',0
+aNotFolder              db      'is not a folder',0
 aIgnore                 db      'Ignore',0
 aMkDirCaption           db      'Make folder',0
 aMkDir                  db      'Create the folder',0
@@ -6332,7 +6443,7 @@ aLibInit                db      'lib_init',0
 aVersion                db      'version',0
 aIniGetInt              db      'ini.get_int',0
 aIniGetStr              db      'ini.get_str',0
-aIniQuerySec            db      'ini.query_sec',0
+aIniEnumKeys            db      'ini.enum_keys',0
 
 aConfirmations          db      'Confirmations',0
 aConfirmDelete          db      'Delete',0
@@ -6348,7 +6459,7 @@ align 4
 ini_import:
 ini.get_int     dd      aIniGetInt
 ini.get_str     dd      aIniGetStr
-ini.query_sec   dd      aIniQuerySec
+ini.enum_keys   dd      aIniEnumKeys
                 dd      0
 
 virtual at 0
@@ -6568,7 +6679,7 @@ align 4
 tolower_table   rb      256
 layout          rb      128
 
-copy_buffer_size = 32768
+copy_buffer_size = 65536
 copy_buffer     rb      copy_buffer_size
 
 ; data for directory delete
@@ -6578,7 +6689,18 @@ del_dir_stack   rd      1024
 del_dir_stack_ptr dd    ?
 del_dir_query_size = 32
 del_dir_query_area rb   32+304*del_dir_query_size
-del_bSkipAll    db      ?
+
+label copy_dir_stack dword at del_dir_stack
+label copy_dir_stack_ptr dword at del_dir_stack_ptr
+copy_dir_query_size = del_dir_query_size
+copy_dir_query_area = del_dir_query_area
+del_bSkipAll    db      ?       ; for directory errors
+label copy_bSkipAll byte at del_bSkipAll
+copy_bSkipAll2  db      ?       ; for file read/write errors
+
+bEndSlash       db      ?
+bDestIsFolder   db      ?
+bNeedRestoreName db     ?
 
 ; stack
         align   4
