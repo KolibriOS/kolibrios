@@ -465,7 +465,7 @@ about_tab:
 DATA
 act_tab		db	2 			; Номер активной вкладки
 tab_lab		db	'Info       Tests      Configs     About'
-title		db	'Ghost Monitor v0.4 [16/05/07]',0
+title		db	'Ghost Monitor v0.4 [23/05/07]',0
 
 msgs_mon mls \
 	'CPU Load (%)',\

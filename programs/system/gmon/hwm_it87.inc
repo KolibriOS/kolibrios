@@ -154,6 +154,11 @@ it87_get_fan_speed:
 @@:	mov	al, 0x0D
 	add	al, cl
 	call	[IO_Read]
+	
+	test	al, al
+	jz	@f
+	cmp	al, 0xff
+	je	@f	
 
 	movzx	ebx, al
 	push	ecx
@@ -167,7 +172,7 @@ it87_get_fan_speed:
 	inc	ecx
 	cmp	ecx, 3
 	jb	@b
-
+@@:
 	ret
 ;--------------------------------------------------------------------------
 ;

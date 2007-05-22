@@ -4,6 +4,7 @@ Copyright (C) 2005, 2006, 2007 Mihailov Ilia (ghost.nsk@mail.ru)
 All Right Reserved
 
 
+23/05/2007 - исправлена ошибка в it87_get_fan_speed, найдена SPraid
 16/05/2007 - ASCIIZ имена чипов, вынесена история
 31/01/2007 - исправлена ошибка внесённая 17/07/06 в определение множителя для Intel NorthWood
 26/12/2006 - исправленна глупая ошибка в определении ITE и uGuru
