@@ -56,9 +56,9 @@ proc load_k_library stdcall, file_name:dword
              img_base  dd ?
              exports   dd ?
            endl
-		
+
 		   cli
-			
+
            stdcall load_file, [file_name]
            test eax, eax
            jz .fail
@@ -116,7 +116,7 @@ proc load_k_library stdcall, file_name:dword
            mov [strings], ecx
 
            lea eax, [edx+20]
-						
+
            stdcall fix_coff_symbols, eax, [sym], [edx+CFH.nSymbols],\
                                      [strings], dword 0
            test eax, eax
@@ -158,7 +158,7 @@ proc dll.Load, import_table:dword
 		push	esi
 
 		mov	edi,s_libname
-		
+
 		mov esi,sys_path
 	    @@: lodsb
 		stosb
@@ -228,7 +228,7 @@ proc dll.GetProcAddress, exp:dword,sz_name:dword
 		mov	edx,[exp]
   .next:	test	edx,edx
 		jz	.end
-		stdcall strcmp,[edx],[sz_name]
+                stdcall strncmp,[edx],[sz_name], dword -1
 		test	eax,eax
 		jz	.ok
 		add	edx,8
@@ -305,22 +305,5 @@ proc mem.Free mptr ;//////////////////////////////////////////////////////////
 	stdcall kernel_free, [mptr]
 	ret
 endp
-
-proc strcmp, str1:dword,str2:dword
-		push	esi edi
-		mov	esi,[str1]
-		mov	edi,[str2]
-		xor	eax,eax
-	    @@: lodsb
-		scasb
-		jne	.fail
-		or	al,al
-		jnz	@b
-		jmp	.ok
-  .fail:	or	eax,-1
-  .ok:		pop	edi esi
-		ret
-endp
-
 
 s_libname  db 64 dup (0)

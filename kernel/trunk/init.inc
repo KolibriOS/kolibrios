@@ -71,12 +71,13 @@ proc init_mem
            or ebx, CR4_PSE
            mov eax, PG_LARGE+PG_SW
 
-           bt [cpu_caps-OS_BASE], CAPS_PGE
-           jnc @F
+;           bt [cpu_caps-OS_BASE], CAPS_PGE
+;           jnc @F
 
-           or eax, PG_GLOBAL
-           or ebx, CR4_PGE
-@@:
+;           or eax, PG_GLOBAL
+;           or ebx, CR4_PGE
+;
+;@@:
            mov cr4, ebx
            dec [pg_data.kernel_tables-OS_BASE]
 
@@ -122,15 +123,8 @@ proc init_mem
 
            mov edi, (sys_pgdir-OS_BASE)
            lea esi, [edi+(OS_BASE shr 20)]
-           lodsd
-           and eax, not PG_GLOBAL
-           stosd
-           lodsd
-           and eax, not PG_GLOBAL
-           stosd
-           lodsd
-           and eax, not PG_GLOBAL
-           stosd
+           movsd
+           movsd
            ret
 endp
 

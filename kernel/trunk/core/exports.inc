@@ -62,6 +62,13 @@ iglobal
   szSleep             db 'Sleep',0
   szGetTimerTicks     db 'GetTimerTicks',0
 
+  szStrncat           db 'strncat',0
+  szStrncpy           db 'strncpy',0
+  szstrncmp           db 'strncmp',0
+  szStrnlen           db 'strnlen',0
+  szStrchr            db 'strchr',0
+  szStrrchr           db 'strrchr',0
+
 
 align 16
 kernel_export:
@@ -115,9 +122,18 @@ kernel_export:
   dd szSetMouseData    , set_mouse_data
   dd szSleep           , delay_ms
   dd szGetTimerTicks   , get_timer_ticks
+
+  dd szStrncat         , strncat
+  dd szStrncpy         , strncpy
+  dd szstrncmp         , strncmp
+  dd szStrnlen         , strnlen
+  dd szStrchr          , strchr
+  dd szStrrchr         , strrchr
+
+
 exp_lfb:
   dd szLFBAddress      , 0
-  dd 0
+  dd 0                      ;terminator, must be zero
 
 endg
 

@@ -171,6 +171,7 @@ include "core/malloc.inc"   ; small kernel heap
 include "core/taskman.inc"
 include "core/dll.inc"
 include "core/exports.inc"
+include "core/string.inc"
 
 ; GUI stuff
 include "gui/window.inc"

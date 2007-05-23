@@ -267,19 +267,28 @@ org OS_BASE+$
 
 align 4
 high_code:
-           mov   ax,os_stack
-           mov   bx,app_data
-           mov   ss,ax
-           add esp, OS_BASE
+           mov ax,os_stack
+           mov bx,app_data
+           mov ss,ax
+           add  esp, OS_BASE
 
-           mov   ds,bx
-           mov   es,bx
-           mov   fs,bx
-           mov   gs,bx
+           mov ds,bx
+           mov es,bx
+           mov fs,bx
+           mov gs,bx
 
-           mov dword [sys_pgdir], 0
-           mov dword [sys_pgdir+4], 0
-           mov dword [sys_pgdir+8], 0
+           bt [cpu_caps], CAPS_PGE
+           jnc @F
+
+           or dword [sys_pgdir+(OS_BASE shr 20)], PG_GLOBAL
+
+           mov ebx, cr4
+           or ebx, CR4_PGE
+           mov cr4, ebx
+@@:
+           xor eax, eax
+           mov dword [sys_pgdir], eax
+           mov dword [sys_pgdir+4], eax
 
            mov eax, cr3
            mov cr3, eax           ; flush TLB

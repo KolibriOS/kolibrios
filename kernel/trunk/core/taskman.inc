@@ -76,7 +76,6 @@ proc fs_execute
 
            pushad
 
-           mov [cmdline], ebx
            mov [flags], edx
 
 ; [ebp]  pointer to filename
@@ -84,12 +83,16 @@ proc fs_execute
            lea eax, [filename]
            mov dword [eax+1020],0              ;force terminate
                                                ;string
-           stdcall k_strncpy, eax, [ebp], 1023
+           stdcall strncpy, eax, [ebp], 1023
+
+           mov [cmdline], ebx
+           test ebx, ebx
+           jz @F
 
            lea eax, [cmdline]
            mov dword [eax+252], 0
-           stdcall k_strncpy, eax, [cmdline], 255
-
+           stdcall strncpy, eax, ebx, 255
+@@:
            lea eax, [filename]
            stdcall load_file, eax
            mov  ecx, -ERROR_FILE_NOT_FOUND
@@ -136,9 +139,8 @@ proc fs_execute
            _clear_ 256     ;clean extended information about process
 
 ; write application name
-           lea edi, [filename]
-           mov al, '/'
-           call k_strrchr  ; now eax points to name without path
+           lea eax, [filename]
+           stdcall strrchr,  eax, '/'  ; now eax points to name without path
 
            lea esi, [eax+1]
            test eax, eax
@@ -963,7 +965,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 .add_command_line:
            mov edx,[params]
            mov edx,[edx]           ;app_cmdline
-           test edx,edx
+           test edx, [cmd_line]    ;check both src & dst
            jz @F                   ;application don't need parameters
 
            mov     eax, edx
@@ -973,7 +975,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
            ja      @f
 
-           stdcall k_strncpy, edx, [cmd_line], 256
+           stdcall strncpy, edx, [cmd_line], 256
 @@:
            mov edx,[params]
            mov edx, [edx+4]        ;app_path
@@ -984,7 +986,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            jc      @f
            cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
            ja      @f
-           stdcall k_strncpy, edx, [app_path], 1024
+           stdcall strncpy, edx, [app_path], 1024
 @@:
            mov    ebx,[slot]
            mov    eax,ebx

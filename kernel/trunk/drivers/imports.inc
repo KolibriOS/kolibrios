@@ -145,6 +145,26 @@ end if
 if used GetTimerTicks
   extrn GetTimerTicks
 end if
+
+if used strncat
+  extrn strncat
+end if
+if used strncpy
+  extrn strncpy
+end if
+if used strncmp
+  extrn strncmp
+end if
+if used strnlen
+  extrn strnlen
+end if
+if used strchr
+  extrn strchr
+end if
+if used strrchr
+  extrn strrchr
+end if
+
 if used LFBAddress
   extrn LFBAddress
 end if
