@@ -133,6 +133,7 @@ start:
 .skip_assoc:
         xor     ebp, ebp
         xor     esi, esi
+.shortcut_loop:
         mov     edi, saved_file_name
         push    dword nullstr
         push    512
@@ -169,6 +170,7 @@ start:
         call    xpgrealloc
         test    eax, eax
         jnz     @f
+        pop     esi
         mov     edi, FolderShortcuts
         mov     ecx, 10
         rep     stosd
@@ -188,7 +190,7 @@ start:
 .shortcut_cont:
         inc     [aShortcut.d]
         cmp     [aShortcut.d], '9'
-        jbe     .skip_assoc
+        jbe     .shortcut_loop
         mov     esi, FolderShortcuts
         mov     ecx, 10
         dec     ebp
@@ -1685,6 +1687,7 @@ end if
         int     0x40
         test    eax, eax
         pop     eax
+        mov     byte [edi], dl
         jnz     .createupcont1
         test    byte [attrinfo.attr], 10h
         jnz     .createupdone1
@@ -1705,7 +1708,6 @@ end if
 .ret3:
         ret
 .createupcont1:
-        mov     [edi], dl
         dec     eax
 @@:
         dec     edi
@@ -1729,6 +1731,7 @@ end if
         push    RetryOrCancelBtn
         push    2
         call    makedir
+        mov     byte [edi], dl
         mov     [bNeedRestoreName], 1
         pop     eax
         jnz     .ret3
@@ -1866,7 +1869,7 @@ end if
 @@:
         loop    .f8_loop
 .f8_multiple_cancel:
-        jmp     .ctrl_r
+        jmp     .copydone
 .f8:
         cmp     [ebp + panel1_selected_num - panel1_data], 0
         jnz     .f8_has_selected
@@ -1910,6 +1913,7 @@ end if
         mov     [del_bSkipAll], 0
         mov     eax, ecx
         call    delete_file
+        jmp     .copydone
 .ctrl_r:
 ; Rescan panel
 ;       call    read_folder
@@ -5269,7 +5273,7 @@ find_extension:
         pop     esi
         ret
 
-header  db      'Kolibri Far 0.34',0
+header  db      'Kolibri Far 0.35',0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
