@@ -28,4 +28,5 @@ $Revision$
         xor     ebx, ebx
         mov     ecx, 0x8000            ; size of memory area for driver
         mov     edx, VMODE_BASE        ; Memory position of driver
+        xor     ebp, ebp
         call    fs_RamdiskRead

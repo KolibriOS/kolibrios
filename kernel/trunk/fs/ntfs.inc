@@ -938,7 +938,7 @@ ntfs_decode_mcb_entry:
         ret
 
 ntfs_find_lfn:
-; in: esi->name
+; in: esi+ebp -> name
 ; out: CF=1 - file not found
 ;      else CF=0, [ntfs_cur_iRecord] valid, eax->record in parent directory
         mov     [ntfs_cur_iRecord], 5   ; start parse from root cluster
@@ -1090,6 +1090,12 @@ ntfs_find_lfn:
         inc     esi
         cmp     byte [esi-1], 0
         jnz     .doit2
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
+        xor     ebp, ebp
+        jmp     .doit2
+@@:
         ret
 
 ;----------------------------------------------------------------

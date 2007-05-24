@@ -71,6 +71,8 @@ macro diff10 title,l1,l2
   display 13,10
  }
 
+include 'kglobals.inc'
+
 ; \begin{diamond}[29.09.2006]
 ; may be useful for kernel debugging
 ; example 1:

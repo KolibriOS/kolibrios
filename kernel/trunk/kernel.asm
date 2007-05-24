@@ -533,6 +533,8 @@ high_code:
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  call Parser_params
+
 ; READ RAMDISK IMAGE FROM HD
 
 ;!!!!!!!!!!!!!!!!!!!!!!!
@@ -548,8 +550,6 @@ include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
-
-  call Parser_params
 
   mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'		; если срам диск - то не грузить библиотеки
@@ -689,6 +689,8 @@ no_lib_load:
         mov  dword [SLOT_BASE+256+APPDATA.fd_obj], ebx
         mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
 
+        mov  dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
+
         ; task list
         mov  [CURRENT_TASK],dword 1
         mov  [TASK_COUNT],dword 1
@@ -774,72 +776,19 @@ no_lib_load:
 ; LOAD FIRST APPLICATION
         cli
 
-if 0
         cmp   byte [BOOT_VAR+0x9030],1
         jne   no_load_vrr_m
 
-        stdcall kernel_alloc, 0x100
-        push eax
-        mov ebx,eax
-        stdcall full_file_name,vrr_m,eax
-        mov ebp, eax
-
-        xor ebx, ebx
-        xor edx, edx
-        call fs_execute
-        pop ebx
-        push eax
-        stdcall kernel_free, ebx
-        pop eax
+        mov     ebp, vrr_m
+        call    fs_execute_from_sysdir
 
         cmp   eax,2                  ; if vrr_m app found (PID=2)
         je    first_app_found
 
 no_load_vrr_m:
 
-        stdcall kernel_alloc, 0x100
-        push eax
-        mov ebx,eax
-        stdcall full_file_name,firstapp,eax
-        mov ebp, eax
-        xor ebx, ebx
-        xor edx, edx
-        call fs_execute
-        pop ebx
-        push eax
-        stdcall kernel_free, ebx
-        pop eax
-        cmp   eax,2                  ; continue if a process has been loaded
-        je    first_app_found
-        mov   eax, 0xDEADBEEF        ; otherwise halt
-        hlt
-
-first_app_found:
-
-else
-        sub esp, 0x100
-
-        cmp   byte [BOOT_VAR+0x9030],1
-        jne   no_load_vrr_m
-
-        mov ebp, esp
-        stdcall full_file_name,vrr_m,ebp
-
-        xor ebx, ebx
-        xor edx, edx
-        call fs_execute
-
-        cmp   eax,2                  ; if vrr_m app found (PID=2)
-        je    first_app_found
-
-no_load_vrr_m:
-
-        mov ebp, esp
-        stdcall full_file_name,firstapp,ebp
-
-        xor ebx, ebx
-        xor edx, edx
-        call fs_execute
+        mov     ebp, firstapp
+        call    fs_execute_from_sysdir
 
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
@@ -849,9 +798,6 @@ no_load_vrr_m:
 
 first_app_found:
 
-        add esp, 0x100
-
-end if
         cli
 
         ;mov   [TASK_COUNT],dword 2
@@ -3462,7 +3408,7 @@ checkpixel:
         ret
 
 iglobal
-  cpustring db '%sys%/CPU',0
+  cpustring db 'CPU',0
 endg
 
 uglobal
@@ -3477,21 +3423,8 @@ checkmisc:
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
 
-
-    stdcall kernel_alloc, 0x100
-    push eax
-    mov ebx,eax
-    stdcall full_file_name,cpustring,eax
-    mov ebp, eax
-
-    xor ebx, ebx
-    xor edx, edx
-    call fs_execute
-
-    pop ebx
-    push eax
-    stdcall kernel_free, ebx
-    pop eax
+        mov     ebp, cpustring
+        call    fs_execute_from_sysdir
 
     mov   [ctrl_alt_del], 0
 

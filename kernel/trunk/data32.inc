@@ -82,30 +82,15 @@ szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
-firstapp       db  '%sys%/LAUNCHER',0
+firstapp       db  'LAUNCHER',0
 
-if 0
-char    dd 0,0,0
-        dd 2560
-        dd  FONT_I
-        db '%sys%/FONTS/CHAR.MT',0
-
-char2   dd 0,0,0
-        dd 2560
-        dd  FONT_II
-        db '%sys%/FONTS/CHAR2.MT',0
-else
-
-char    db '%sys%/FONTS/CHAR.MT',0
-char2   db '%sys%/FONTS/CHAR2.MT',0
-
-end if
-
+char    db '/%sys%/FONTS/CHAR.MT',0
+char2   db '/%sys%/FONTS/CHAR2.MT',0
 
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
 vmode          db  'drivers/VMODE.MDR',0
-vrr_m          db  '%sys%/VRR_M',0
+vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
 

@@ -526,10 +526,12 @@ proc load_file stdcall, file_name:dword
            lea edi, [eax+ebx]     ;cleanup remain space
            mov ecx, 4096          ;from file end
            and ebx, 4095
+           jz  @f
            sub ecx, ebx
            xor eax, eax
            cld
            rep stosb
+@@:
            mov ebx, [file_size]
            pop eax
            ret
@@ -696,16 +698,16 @@ proc load_driver stdcall, driver_name:dword
 
              exports   dd ?   ;fake exports table
                        dd ?
-             file_name rb 14+16+4+1      ; '/rd/1/drivers/<up-to-16-chars>.obj'
+             file_name rb 15+16+4+1      ; '/%sys%/drivers/<up-to-16-chars>.obj'
            endl
 
            lea     edx, [file_name]
-           mov     dword [edx], '%sys'
-           mov     dword [edx+4], '%/dr'
-           mov     dword [edx+8], 'iver'
-           mov     word [edx+12], 's/'
+           mov     dword [edx], '/%sy'
+           mov     dword [edx+4], 's%/d'
+           mov     dword [edx+8], 'rive'
+           mov     dword [edx+12], 'rs/'
            mov     esi, [driver_name]
-           lea     edi, [edx+14]
+           lea     edi, [edx+15]
            mov     ecx, 16
 @@:
            lodsb

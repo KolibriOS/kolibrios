@@ -809,7 +809,7 @@ flp_notroot_extend_dir:
         ret
 
 fd_find_lfn:
-; in: esi->name
+; in: esi+ebp -> name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry, eax=directory cluster (0 for root)
         push    esi edi
@@ -821,6 +821,7 @@ fd_find_lfn:
         jc      .notfound
         cmp     byte [esi], 0
         jz      .found
+.continue:
         test    byte [edi+11], 10h
         jz      .notfound
         movzx   eax, word [edi+26]      ; cluster
@@ -834,6 +835,12 @@ fd_find_lfn:
         stc
         ret
 .found:
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
+        xor     ebp, ebp
+        jmp     .continue
+@@:
         mov     eax, [esp+8]
         add     eax, 31
         cmp     dword [esp], flp_root_next
@@ -1116,20 +1123,25 @@ fs_FloppyRewrite:
         cmp     [FDC_Status], 0
         jnz     fsfrfe
         pushad
-        xor     ebp, ebp
+        xor     edi, edi
         push    esi
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
 @@:
         lodsb
         test    al, al
         jz      @f
         cmp     al, '/'
         jnz     @b
-        lea     ebp, [esi-1]
+        lea     edi, [esi-1]
         jmp     @b
 @@:
         pop     esi
-        test    ebp, ebp
+        test    edi, edi
         jnz     .noroot
+        test    ebp, ebp
+        jnz     .hasebp
         call    read_flp_root
         cmp     [FDC_Status], 0
         jnz     fsfrfe2
@@ -1142,16 +1154,28 @@ fs_FloppyRewrite:
         push    flp_rootmem_first
         push    flp_rootmem_next
         jmp     .common1
+.hasebp:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp], 0
+        jz      .ret1
+        push    ebp
+        xor     ebp, ebp
+        call    fd_find_lfn
+        pop     esi
+        jc      .notfound0
+        jmp     .common0
 .noroot:
         mov     eax, ERROR_ACCESS_DENIED
-        cmp     byte [ebp+1], 0
+        cmp     byte [edi+1], 0
         jz      .ret1
 ; check existence
-        mov     byte [ebp], 0
+        mov     byte [edi], 0
+        push    edi
         call    fd_find_lfn
-        mov     byte [ebp], '/'
-        lea     esi, [ebp+1]
+        pop     esi
+        mov     byte [esi], '/'
         jnc     @f
+.notfound0:
         mov     eax, ERROR_FILE_NOT_FOUND
 .ret1:
         mov     [esp+28], eax
@@ -1159,6 +1183,8 @@ fs_FloppyRewrite:
         xor     ebx, ebx
         ret
 @@:
+        inc     esi
+.common0:
         test    byte [edi+11], 0x10     ; must be directory
         mov     eax, ERROR_ACCESS_DENIED
         jz      .ret1
@@ -2108,110 +2134,6 @@ fs_FloppySetFileInfo:
         mov     al, 11
 @@:
         ret
-
-if 0
-;----------------------------------------------------------------
-;
-;  fs_FloppyExecute - LFN variant for executing from floppy
-;
-;  esi  points to floppy filename (e.g. 'dir1/name')
-;  ebp  points to full filename (e.g. '/fd/1/dir1/name')
-;  dword [ebx] = flags
-;  dword [ebx+4] = cmdline
-;
-;  ret ebx,edx destroyed
-;      eax > 0 - PID, < 0 - error
-;
-;--------------------------------------------------------------
-fs_FloppyExecute:
-        mov     edx, [ebx]
-        mov     ebx, [ebx+4]
-        test    ebx, ebx
-        jz      @f
-    ;    add     ebx, std_application_base_address
-@@:
-
-;----------------------------------------------------------------
-;
-; fs_FloppyExecute.flags - second entry
-;
-;  esi  points to floppy filename (kernel address)
-;  ebp  points to full filename
-;  edx  flags
-;  ebx  cmdline (kernel address)
-;
-;  ret  eax > 0 - PID, < 0 - error
-;
-;--------------------------------------------------------------
-
-.flags:
-        call    read_flp_fat
-        cmp     byte [esi], 0
-        jnz     @f
-; cannot execute root!
-        mov     eax, -ERROR_ACCESS_DENIED
-        ret
-@@:
-        push    edi
-        call    fd_find_lfn
-        jnc     .found
-        pop     edi
-        mov     eax, -ERROR_FILE_NOT_FOUND
-        ret
-.found:
-        movzx   eax, word [edi+26]      ; cluster
-        push    eax
-        push    dword [edi+28]          ; size
-        push    .DoRead
-        call    fs_execute
-        add     esp, 12
-        pop     edi
-        ret
-
-.DoRead:
-; read next block
-; in: eax->parameters, edi->buffer
-; out: eax = error code
-        pushad
-        cmp     dword [eax], 0  ; file size
-        jz      .eof
-        mov     eax, [eax+4]    ; cluster
-        add     eax, 31
-        call    read_chs_sector
-        cmp     [FDC_Status], 0
-        jnz     .err
-        pop     edi
-        mov     esi, FDD_BUFF
-        push    edi
-        mov     ecx, 512/4
-        rep     movsd
-        mov     eax, [esp+28]
-        mov     ecx, [eax]
-        sub     ecx, 512
-        jae     @f
-        add     edi, ecx
-        neg     ecx
-        push    eax
-        xor     eax, eax
-        rep     stosb
-        pop     eax
-@@:
-        mov     [eax], ecx
-        mov     edx, [eax+4]
-        mov     dx, [edx*2+FLOPPY_FAT]
-        mov     [eax+4], dx     ; high word is already zero
-        popad
-        xor     eax, eax
-        ret
-.eof:
-        popad
-        mov     eax, 6
-        ret
-.err:
-        popad
-        mov     eax, 11
-        ret
-end if
 
 ;----------------------------------------------------------------
 ;

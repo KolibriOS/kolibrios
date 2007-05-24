@@ -7,210 +7,194 @@
 ;
 ;-------------------------------------------------------------------------
 
-full_file_name_table dd 0		; указатель на память для таблицы путей 4К   запись 64 (32 - строка шаблон для поиска, 32 - строка шаблон для замены)
+iglobal
+; pointer to memory for path replace table,
+; size of one record is 128 bytes: 64 bytes for search pattern + 64 bytes for replace string
 
-; перебирает по файлу варианты замен
-proc full_file_name stdcall,sourc,dest
-locals
-  tmpsrc rb 260  ; временное хранение преобразования
-endl
-  pushad
-  mov esi,[sourc]
-  lea edi, [tmpsrc]
+; start with one entry: %sys% -> <sysdir>
+full_file_name_table dd sysdir_name
+.size           dd      1
 
-@@:
-  lodsb
-  stosb
-  or al,al
-  jnz @b
+tmp_file_name_size dd   1
+endg
 
-  mov al,[conf_file_loaded]					; требуется при обращении к первому файлу (конфигу)
-  or al,al
-  jnz @use_replace
+uglobal
+; Parser_params will initialize: sysdir_name = "%sys%", sysdir_path = <sysdir>
+sysdir_name     rb      64
+sysdir_path     rb      64
+tmp_file_name_table dd  ?
+endg
 
-  jmp full_file_name_exit
-
-
-;--------------------------------
- @use_replace:
-
-  xor eax,eax
-.loop:
-  push eax
-  
-  imul eax,eax,64
-  add eax,[full_file_name_table] 
-  mov ebx,eax
-  add eax,32
-  
-  mov cl,[ebx]
-  or cl,cl
-  jz .done
-
-  lea ecx, [tmpsrc]
-  mov edx,[dest]
-
-  stdcall full_file_name_parse, ecx,edx,ebx,eax
-
-  mov esi,[dest]
-  lea edi, [tmpsrc]
-@@:
-  lodsb
-  stosb
-  or al,al
-  jnz @b
-
-  pop eax
-  inc eax
-  jmp .loop
-
-.done:
-  pop eax
-full_file_name_exit:
-
-  lea eax, [tmpsrc]
-  stdcall full_file_name_parse , eax , [dest], sysdir_ , sys_path
-  popad
-  ret
-endp
-
-;
-;  Преобразовать имя в полное. Если в начале стоит
-;     sourc - ссылка на строку...
-;	  dest - ссылка на буфер куда результат ложить
-;	  def - строка шаблон для поиска
-;	  dval - к чему приравнивать шаблон
-proc full_file_name_parse stdcall,sourc,dest,def,dval
-  ; для одного
-  pushad
-
-  mov eax,[sourc]
-  mov ebx,[def]
-@@:
-  mov dl,[ebx]
-  mov cl,[eax]
-  cmp cl,0
-  je  @@bad_s
-  cmp dl,0
-  je  @@good
-
-  or cl,0x20
-  or dl,0x20
-  cmp cl,dl
-  jne  @@bad
-
-  inc eax
-  inc ebx
-  jmp @b
-
-@@bad_s:
-  cmp dl,0
-  je  @@good
-
-@@bad:
-  mov edi,[dest]
-  mov esi,[sourc]
-@@:
-  lodsb
-  stosb
-  or al,al
-  jnz	@b
-  jmp @@ret_ok
-
-@@good:
-  push eax
-  mov edi,[dest]
-  mov esi,[dval]
-@@:
-  lodsb
-  stosb
-  or al,al
-  jnz	@b
-
-@@goodl:
-  pop esi
-  dec edi
-@@:
-  lodsb
-  stosb
-  or al,al
-  jnz	@b
-
-@@ret_ok:
-  popad
-  ret
-
-endp
-
- sys_dir_mess: db 'System dir is '
- sys_path: db '/HD0/1/KOLIBRI',0,0
- sysdir_ db '%sys%',0
-
-; берет параметры bx_from_load и исчит файл конфигурации
+; берет параметры bx_from_load и инициализирует замену для %sys%
 Parser_params:
-  pushad
-  mov ax,[OS_BASE+0x10000+bx_from_load]
+  mov eax,[OS_BASE+0x10000+bx_from_load]
+  mov ecx,sysdir_path
+  mov [ecx-64],dword '%sys'
+  mov [ecx-64+4],word '%'
   cmp al,'r' ; рам диск
   jnz @f
-  mov [sys_path],dword '/RD/'
-  mov [sys_path+4],byte ah
-  mov [sys_path+5],word 0 ;0x002F
-  jmp .done
+  mov [ecx],dword 'RD/?'
+  mov [ecx+3],byte ah
+  mov [ecx+4],byte 0
+  ret
 @@:
   sub al,49
-  mov [sys_path],dword '/HDa'
-  mov [sys_path+3],byte al
-  mov [sys_path+4],byte '/'
-  mov [sys_path+5],byte ah
-  mov [sys_path+6],dword '/KOL'
-  mov [sys_path+10],dword 'IBRI'
-  mov [sys_path+14],word 0 ;0x002F
-
-.done:
-  popad
+  mov [ecx],dword 'HD?/'
+  mov [ecx+2],byte al
+  mov [ecx+4],byte ah
+  mov [ecx+5],dword '/KOL'
+  mov [ecx+9],dword 'IBRI'
+  mov [ecx+13],byte 0
   ret
-  
+
 proc load_file_parse_table
-  pushad
   stdcall kernel_alloc,0x1000
-  mov [full_file_name_table],eax
+  mov [tmp_file_name_table],eax
+  mov edi,eax
+  mov esi,sysdir_name
+  mov ecx,128/4
+  rep movsd
 
   invoke ini.enum_keys,conf_fname,conf_path_sect,get_every_key
-  
-  mov eax,[loading_counter]
-  imul eax,eax,64
-  add eax,[full_file_name_table]
-  mov [eax],byte 0
-  popad
+
+  mov eax,[tmp_file_name_table]
+  mov [full_file_name_table],eax
+  mov eax,[tmp_file_name_size]
+  mov [full_file_name_table.size],eax
   ret
 endp
 
-loading_counter dd 0
+uglobal
 def_val_1 db 0
+endg
 
-proc get_every_key stdcall,f_name, sec_name, key_name
-  pushad
-  mov esi,[key_name]
-  mov edi,[loading_counter]
-  imul edi,edi,64
-  add edi,[full_file_name_table]
+proc get_every_key stdcall, f_name, sec_name, key_name
+        mov     esi, [key_name]
+        mov     ecx, esi
+        cmp     byte [esi], '/'
+        jnz     @f
+        inc     esi
 @@:
-  lodsb
-  stosb
-  or al,al
-  jnz	@b
+        mov     edi, [tmp_file_name_size]
+        shl     edi, 7
+        cmp     edi, 0x1000
+        jae     .stop_parse
+        add     edi, [tmp_file_name_table]
+        lea     ebx, [edi+64]
+@@:
+        cmp     edi, ebx
+        jae     .skip_this_key
+        lodsb
+        test    al, al
+        jz      @f
+        or      al, 20h
+        stosb
+        jmp     @b
+@@:
+        stosb
 
-  mov eax,[loading_counter]
-  imul eax,eax,64
-  add eax,[full_file_name_table]
-  add eax,32
-  mov ebx,[key_name]
-  invoke ini.get_str,conf_fname,conf_path_sect,ebx,eax,32,def_val_1
+        invoke  ini.get_str, [f_name],[sec_name],ecx,ebx,64,def_val_1
 
-  inc dword [loading_counter]
-  
-  popad
-  mov eax,1
-  ret
+        cmp     byte [ebx], '/'
+        jnz     @f
+        lea     esi, [ebx+1]
+        mov     edi, ebx
+        mov     ecx, 63
+        rep     movsb
+@@:
+        push    ebp
+        mov     ebp, [tmp_file_name_table]
+        mov     ecx, [tmp_file_name_size]
+        jecxz   .noreplace
+        mov     eax, ecx
+        dec     eax
+        shl     eax, 7
+        add     ebp, eax
+.replace_loop:
+        mov     edi, ebx
+        mov     esi, ebp
+@@:
+        lodsb
+        test    al, al
+        jz      .doreplace
+        mov     dl, [edi]
+        inc     edi
+        test    dl, dl
+        jz      .replace_loop_cont
+        or      dl, 20h
+        cmp     al, dl
+        jz      @b
+        jmp     .replace_loop_cont
+.doreplace:
+        cmp     byte [edi], 0
+        jz      @f
+        cmp     byte [edi], '/'
+        jnz     .replace_loop_cont
+@@:
+        lea     esi, [ebp+64]
+        call    .replace
+        jc      .skip_this_key2
+.replace_loop_cont:
+        sub     ebp, 128
+        loop    .replace_loop
+.noreplace:
+        pop     ebp
+
+        inc     [tmp_file_name_size]
+.skip_this_key:
+        xor     eax, eax
+        inc     eax
+        ret
+.skip_this_key2:
+        pop     ebp
+        jmp     .skip_this_key
+.stop_parse:
+        xor     eax, eax
+        ret
 endp
 
+proc get_every_key.replace
+; in: ebx->destination, esi->first part of name, edi->second part of name
+; maximum length is 64 bytes
+; out: CF=1 <=> overflow
+; 1) allocate temporary buffer in stack
+        sub     esp, 64
+; 2) save second part of name to temporary buffer
+        push    esi
+        lea     esi, [esp+4]    ; esi->tmp buffer
+        xchg    esi, edi        ; edi->tmp buffer, esi->source
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+; 3) copy first part of name to destination
+        pop     esi
+        mov     edi, ebx
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        jmp     @b
+@@:
+; 4) restore second part of name from temporary buffer to destination
+; (may cause overflow)
+        lea     edx, [ebx+64]   ; limit of destination
+        mov     esi, esp
+@@:
+        cmp     edi, edx
+        jae     .overflow
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+; all is OK
+        add     esp, 64         ; CF is cleared
+        ret
+.overflow:
+; name is too long
+        add     esp, 64
+        stc
+        ret
+endp

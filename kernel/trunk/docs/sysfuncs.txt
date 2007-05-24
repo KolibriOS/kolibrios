@@ -1642,6 +1642,30 @@ Remarks:
   * To set system date use function 22.
 
 ======================================================================
+============= Function 30 - work with the current folder. ============
+======================================================================
+
+--------- Subfunction 1 - set current folder for the thread. ---------
+Parameters:
+  * eax = 30 - function number
+  * ebx = 1 - subfunction number
+  * ecx = pointer to ASCIIZ-string with the path to new current folder
+Returned value:
+  * function does not return value
+
+--------- Subfunction 2 - get current folder for the thread. ---------
+Parameters:
+  * eax = 30 - function number
+  * ebx = 2 - subfunction number
+  * ecx = pointer to buffer
+  * edx = size of buffer
+Returned value:
+  * eax = size of the current folder's name (including terminating 0)
+Remarks:
+  * If the buffer is too small to hold all data, only first (edx-1)
+    bytes are copied and than terminating 0 is inserted.
+
+======================================================================
 =============== Function 32 - delete file from ramdisk. ==============
 ======================================================================
 Parameters:

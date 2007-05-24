@@ -6,8 +6,8 @@ $Revision$
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-image_of_eax EQU esp+44 ;36
-image_of_ebx EQU esp+32 ;24
+image_of_eax EQU esp+36
+image_of_ebx EQU esp+24
 
 ; System function 70 - files with long names (LFN)
 ; diamond, 2006
@@ -82,12 +82,6 @@ virtual_root_query:
         dd      0
 endg
 
-end_of_file_system_lfn:
-		pop edx
-                stdcall kernel_free, edx
-		ret
-
-
 file_system_lfn:
 ; in: eax->fileinfo block
 ; operation codes:
@@ -102,84 +96,39 @@ file_system_lfn:
 ; 8 : delete file
 ; 9 : create directory
 
-		; замена адреса возврата
-                push    eax
-		stdcall kernel_alloc, 200
-                mov     edx,eax
-                pop     eax
-
-		push	edx
-		push	end_of_file_system_lfn
-                mov     ebx,edx
-
-                mov     ecx, [eax]
-                mov     [ebx],ecx
-
-                add     ebx,4
-                mov     ecx, [eax+4]
-                mov     [ebx],ecx
-
-                add     ebx,4
-                mov     ecx, [eax+8]
-                mov     [ebx],ecx
-
-                add     ebx,4
-                mov     ecx, [eax+12]
-                mov     [ebx],ecx
-
-                add     ebx,4
-                mov     ecx, [eax+16]
-                mov     [ebx],ecx
-
-                add     ebx,4
-		push	edx	  ; !!!!!!!!!!!!!!!!!!!
-		; eax - yначало старого пакета
-		; edx - начало нового пакета
-		; ebx - куда ложить строку
-		add		eax,20
-		mov		cl,	[eax]
-		test	cl,cl
-		jnz		@f
-		mov		eax,[eax+1]
-@@:
-		stdcall full_file_name,eax,ebx
-		pop		eax
-
-
-
-   ;     add     eax, std_application_base_address
 ; parse file name
         xchg    ebx, eax
         lea     esi, [ebx+20]
-        mov     ebp, esi        ; for 'start app' function full path must be known
         lodsb
         test    al, al
         jnz     @f
         mov     esi, [esi]
-  ;      add     esi, std_application_base_address
-        mov     ebp, esi
         lodsb
 @@:
+        cmp     al, '/'
+        jz      .notcurdir
+        dec     esi
+        mov     ebp, esi
+        test    al, al
+        jnz     @f
+        xor     ebp, ebp
+@@:
+        mov     esi, [current_slot]
+        mov     esi, [esi+APPDATA.cur_dir]
+        jmp     .parse_normal
+.notcurdir:
+        cmp     byte [esi], 0
+        jz      .rootdir
+        call    process_replace_file_name
+.parse_normal:
         cmp dword [ebx], 7
         jne @F
         mov edx, [ebx+4]
         mov ebx, [ebx+8]
-        test ebx, ebx
-        jz .l1
-    ;    add ebx, new_app_base
-.l1:
-        call fs_execute  ; ebp, ebx, edx
+        call fs_execute  ; esi+ebp, ebx, edx
         mov [image_of_eax], eax
         ret
 @@:
-        cmp     al, '/'
-        jz      @f
-.notfound:
-        mov     dword [image_of_eax], 5       ; file not found
-        ret
-@@:
-        cmp     byte [esi], 0
-        jz      .rootdir
         mov     edi, rootdirs-8
         xor     ecx, ecx
         push    esi
@@ -189,7 +138,8 @@ file_system_lfn:
         scasd
         scasd
         mov     cl, byte [edi]
-        jecxz   .notfound
+        test    cl, cl
+        jz      .notfound
         inc     edi
         push    esi
 @@:
@@ -356,6 +306,10 @@ file_system_lfn:
         mov     [image_of_eax], eax
         mov     [image_of_ebx], ebx
         ret
+.notfound:
+        mov     dword [image_of_eax], ERROR_FILE_NOT_FOUND
+        and     dword [image_of_ebx], 0
+        ret
 
 .found1:
         pop     eax
@@ -373,15 +327,21 @@ file_system_lfn:
         sub     al, '0'
         cmp     al, 9
         ja      .notfound
-        imul    ecx, 10
-        add     ecx, eax
+        lea     ecx, [ecx*5]
+        lea     ecx, [ecx*2+eax]
         jmp     @b
 .done1:
-        test    ecx, ecx
-        jz      .notfound
+        jecxz   .notfound
         test    al, al
         jnz     @f
         dec     esi
+@@:
+        cmp     byte [esi], 0
+        jnz     @f
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
+        xor     ebp, ebp
 @@:
 ; now [edi] contains handler address, ecx - partition number,
 ; esi points to ASCIIZ string - rest of name
@@ -392,6 +352,7 @@ file_system_lfn:
 ; in: ecx = partition number
 ;     esi -> relative (for device) name
 ;     ebx -> fileinfo
+;     ebp = 0 or pointer to rest of name from folder addressed by esi
 ; out: [image_of_eax]=image of eax, [image_of_ebx]=image of ebx
 
 fs_OnRamdisk:
@@ -424,7 +385,7 @@ fs_RamdiskServices:
         dd      fs_RamdiskSetFileEnd
         dd      fs_RamdiskGetFileInfo
         dd      fs_RamdiskSetFileInfo
-        dd      0 ;fs_RamdiskExecute
+        dd      0
         dd      fs_RamdiskDelete
         dd      fs_RamdiskCreateFolder
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
@@ -455,7 +416,7 @@ fs_FloppyServices:
         dd      fs_FloppySetFileEnd
         dd      fs_FloppyGetFileInfo
         dd      fs_FloppySetFileInfo
-        dd      0 ;fs_FloppyExecute
+        dd      0
         dd      fs_FloppyDelete
         dd      fs_FloppyCreateFolder
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
@@ -528,7 +489,7 @@ fs_HdServices:
         dd      fs_HdSetFileEnd
         dd      fs_HdGetFileInfo
         dd      fs_HdSetFileInfo
-        dd      0 ;fs_HdExecute
+        dd      0
         dd      fs_HdDelete
         dd      fs_HdCreateFolder
 fs_NumHdServices = ($ - fs_HdServices)/4
@@ -604,7 +565,7 @@ fs_CdServices:
         dd      fs_NotImplemented
         dd      fs_CdGetFileInfo
         dd      fs_NotImplemented
-        dd      fs_CdExecute
+        dd      0
 fs_NumCdServices = ($ - fs_CdServices)/4
 
 ;*******************************************************
@@ -738,3 +699,156 @@ fs_NextCd:
         ret
 ;*******************************************************
 
+process_replace_file_name:
+        mov     ebp, [full_file_name_table]
+        mov     edi, [full_file_name_table.size]
+        dec     edi
+        shl     edi, 7
+        add     edi, ebp
+.loop:
+        cmp     edi, ebp
+        jb      .notfound
+        push    esi edi
+@@:
+        cmp     byte [edi], 0
+        jz      .dest_done
+        lodsb
+        test    al, al
+        jz      .cont
+        or      al, 20h
+        scasb
+        jz      @b
+        jmp     .cont
+.dest_done:
+        cmp     byte [esi], 0
+        jz      .found
+        cmp     byte [esi], '/'
+        jnz     .cont
+        inc     esi
+        jmp     .found
+.cont:
+        pop     edi esi
+        sub     edi, 128
+        jmp     .loop
+.found:
+        pop     edi eax
+        mov     ebp, esi
+        cmp     byte [esi], 0
+        lea     esi, [edi+64]
+        jnz     .ret
+.notfound:
+        xor     ebp, ebp
+.ret:
+        ret
+
+sys_current_directory:
+        mov     esi, [current_slot]
+        mov     esi, [esi+APPDATA.cur_dir]
+        mov     edx, esi
+        dec     eax
+        jz      .set
+        dec     eax
+        jz      .get
+        ret
+.get:
+; sysfunction 30.2: [for app] eax=30,ebx=2,ecx->buffer,edx=len
+; for our code: ebx->buffer,ecx=len
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+        sub     esi, edx
+        inc     esi
+        mov     [esp+36], esi
+        cmp     ecx, esi
+        jbe     @f
+        mov     ecx, esi
+@@:
+        cmp     ecx, 1
+        jbe     .ret
+        mov     esi, edx
+        mov     edi, ebx
+        mov     al, '/'
+        stosb
+        dec     ecx
+        dec     ecx
+        rep     movsb
+        mov     byte [edi], 0
+.ret:
+        ret
+.set:
+; sysfunction 30.1: [for app] eax=30,ebx=1,ecx->string
+; for our code: ebx->string to set
+@@:
+        inc     esi
+        cmp     byte [esi-1], 0
+        jnz     @b
+        dec     esi
+        cmp     byte [ebx], '/'
+        jz      .set_absolute
+; string gives relative path
+.relative:
+        cmp     byte [ebx], 0
+        jz      .set_ok
+        cmp     word [ebx], '.'
+        jz      .set_ok
+        cmp     word [ebx], './'
+        jnz     @f
+        add     ebx, 2
+        jmp     .relative
+@@:
+        cmp     word [ebx], '..'
+        jnz     .doset_relative
+        cmp     byte [ebx+2], 0
+        jz      @f
+        cmp     byte [ebx+2], '/'
+        jnz     .doset_relative
+@@:
+        dec     esi
+        cmp     byte [esi], '/'
+        jnz     @b
+        mov     byte [esi], 0
+        add     ebx, 3
+        jmp     .relative
+.doset_relative:
+        add     edx, 0x1000
+        mov     byte [esi], '/'
+        inc     esi
+        cmp     esi, edx
+        jae     .overflow_esi
+@@:
+        mov     al, [ebx]
+        inc     ebx
+        mov     [esi], al
+        inc     esi
+        test    al, al
+        jz      .set_ok
+        cmp     esi, edx
+        jb      @b
+.overflow_esi:
+        mov     byte [esi-1], 0         ; force null-terminated string
+.set_ok:
+        ret
+.set_absolute:
+        lea     esi, [ebx+1]
+        call    process_replace_file_name
+        mov     edi, edx
+        add     edx, 0x1000
+.set_copy:
+        lodsb
+        stosb
+        test    al, al
+        jz      .set_part2
+.set_copy_cont:
+        cmp     edi, edx
+        jb      .set_copy
+.overflow_edi:
+        mov     byte [edi-1], 0
+        ret
+.set_part2:
+        mov     esi, ebp
+        xor     ebp, ebp
+        test    esi, esi
+        jz      .set_ok
+        mov     byte [edi-1], '/'
+        jmp     .set_copy_cont

@@ -995,7 +995,7 @@ ramdisk_notroot_extend_dir:
         ret
 
 rd_find_lfn:
-; in: esi->name
+; in: esi+ebp -> name
 ; out: CF=1 - file not found
 ;      else CF=0 and edi->direntry
         push    esi edi
@@ -1007,6 +1007,7 @@ rd_find_lfn:
         jc      .notfound
         cmp     byte [esi], 0
         jz      .found
+.continue:
         test    byte [edi+11], 10h
         jz      .notfound
         movzx   eax, word [edi+26]
@@ -1020,6 +1021,12 @@ rd_find_lfn:
         stc
         ret
 .found:
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
+        xor     ebp, ebp
+        jmp     .continue
+@@:
         mov     eax, [esp+8]
         add     esp, 16         ; CF=0
         pop     esi
@@ -1501,36 +1508,53 @@ fs_RamdiskRewrite:
         cmp     byte [esi], 0
         jz      @b
         pushad
-        xor     ebp, ebp
+        xor     edi, edi
         push    esi
+        test    ebp, ebp
+        jz      @f
+        mov     esi, ebp
 @@:
         lodsb
         test    al, al
         jz      @f
         cmp     al, '/'
         jnz     @b
-        lea     ebp, [esi-1]
+        lea     edi, [esi-1]
         jmp     @b
 @@:
         pop     esi
-        test    ebp, ebp
+        test    edi, edi
         jnz     .noroot
+        test    ebp, ebp
+        jnz     .hasebp
         push    ramdisk_root_extend_dir
         push    ramdisk_root_next_write
-        push    ebp
+        push    edi
         push    ramdisk_root_first
         push    ramdisk_root_next
         jmp     .common1
+.hasebp:
+        mov     eax, ERROR_ACCESS_DENIED
+        cmp     byte [ebp], 0
+        jz      .ret1
+        push    ebp
+        xor     ebp, ebp
+        call    rd_find_lfn
+        pop     esi
+        jc      .notfound0
+        jmp     .common0
 .noroot:
         mov     eax, ERROR_ACCESS_DENIED
-        cmp     byte [ebp+1], 0
+        cmp     byte [edi+1], 0
         jz      .ret1
 ; check existence
-        mov     byte [ebp], 0
+        mov     byte [edi], 0
+        push    edi
         call    rd_find_lfn
-        mov     byte [ebp], '/'
-        lea     esi, [ebp+1]
+        pop     esi
+        mov     byte [esi], '/'
         jnc     @f
+.notfound0:
         mov     eax, ERROR_FILE_NOT_FOUND
 .ret1:
         mov     [esp+28], eax
@@ -1538,6 +1562,8 @@ fs_RamdiskRewrite:
         xor     ebx, ebx
         ret
 @@:
+        inc     esi
+.common0:
         test    byte [edi+11], 0x10     ; must be directory
         mov     eax, ERROR_ACCESS_DENIED
         jz      .ret1
@@ -2281,97 +2307,6 @@ fs_RamdiskSetFileInfo:
         call    bdfe_to_fat_entry
         pop     edi
         xor     eax, eax
-        ret
-
-;----------------------------------------------------------------
-;
-;  fs_RamdiskExecute - LFN variant for executing on sys floppy
-;
-;  esi  points to ramdisk filename (e.g. 'launcher')
-;  ebp  points to full filename (e.g. '/rd/1/launcher')
-;  dword [ebx] = flags
-;  dword [ebx+4] = cmdline
-;
-;  ret ebx,edx destroyed
-;      eax > 0 - PID, < 0 - error
-;
-;--------------------------------------------------------------
-fs_RamdiskExecute:
-        mov     edx, [ebx]
-        mov     ebx, [ebx+4]
-        test    ebx, ebx
-        jz      @f
-    ;    add     ebx, std_application_base_address
-@@:
-
-;----------------------------------------------------------------
-;
-; fs_RamdiskExecute.flags - second entry
-;
-;  esi  points to ramdisk filename (kernel address)
-;  ebp  points to full filename
-;  edx  flags
-;  ebx  cmdline (kernel address)
-;
-;  ret  eax > 0 - PID, < 0 - error
-;
-;--------------------------------------------------------------
-
-.flags:
-        cmp     byte [esi], 0
-        jnz     @f
-; cannot execute root!
-        mov     eax, -ERROR_ACCESS_DENIED
-        ret
-@@:
-        push    edi
-        call    rd_find_lfn
-        jnc     .found
-        pop     edi
-        mov     eax, -ERROR_FILE_NOT_FOUND
-        ret
-.found:
-        movzx   eax, word [edi+26]      ; cluster
-        push    eax
-        push    dword [edi+28]          ; size
-        push    .DoRead
-        call    fs_execute
-        add     esp, 12
-        pop     edi
-        ret
-
-.DoRead:
-; read next block
-; in: eax->parameters, edi->buffer
-; out: eax = error code
-        pushad
-        cmp     dword [eax], 0  ; file size
-        jz      .eof
-        mov     edx, [eax+4]    ; cluster
-        lea     esi, [edx+31]
-        shl     esi, 9
-        add     esi, RAMDISK
-        mov     ecx, 512/4
-        rep     movsd
-        mov     ecx, [eax]
-        sub     ecx, 512
-        jae     @f
-        add     edi, ecx
-        neg     ecx
-        push    eax
-        xor     eax, eax
-        rep     stosb
-        pop     eax
-@@:
-        mov     [eax], ecx
-        mov     dx, [edx*2+RAMDISK_FAT]
-        mov     [eax+4], dx     ; high word is already zero
-        popad
-        xor     eax, eax
-        ret
-.eof:
-        popad
-        mov     eax, 6
         ret
 
 ;----------------------------------------------------------------

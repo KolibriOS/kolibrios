@@ -169,7 +169,7 @@ iglobal
       dd undefined_syscall       ; 27-reserved
       dd sys_sb16II              ; 28-SetSb16
       dd sys_date                ; 29-GetDate
-      dd undefined_syscall       ; 30-reserved
+      dd sys_current_directory   ; 30-Get/SetCurrentDirectory
       dd undefined_syscall       ; 31-reserved
       dd syscall_delramdiskfile  ; 32-DelRamdiskFile
       dd syscall_writeramdiskfile; 33-WriteRamdiskFile

@@ -44,6 +44,10 @@ macro _clear_ op
    rep stosd
 }
 
+fs_execute_from_sysdir:
+        xor     ebx, ebx
+        xor     edx, edx
+        mov     esi, sysdir_path
 
 align 4
 proc fs_execute
@@ -80,10 +84,34 @@ proc fs_execute
 
 ; [ebp]  pointer to filename
 
-           lea eax, [filename]
-           mov dword [eax+1020],0              ;force terminate
-                                               ;string
-           stdcall strncpy, eax, [ebp], 1023
+           lea edi, [filename]
+           lea ecx, [edi+1024]
+           mov al, '/'
+           stosb
+@@:
+           cmp edi, ecx
+           jae .bigfilename
+           lodsb
+           stosb
+           test al, al
+           jnz @b
+           mov esi, [ebp]
+           test esi, esi
+           jz .namecopied
+           mov byte [edi-1], '/'
+@@:
+           cmp edi, ecx
+           jae .bigfilename
+           lodsb
+           stosb
+           test al, al
+           jnz @b
+           jmp .namecopied
+.bigfilename:
+           popad
+           mov eax, -ERROR_FILE_NOT_FOUND
+           ret
+.namecopied:
 
            mov [cmdline], ebx
            test ebx, ebx
@@ -688,7 +716,7 @@ proc read_process_memory
 
            mov [slot], eax
            mov [buff], ebx
-           mov [r_count], ecx
+           and [r_count], 0
            mov [tmp_r_cnt], ecx
            mov [offset], edx
 
@@ -724,6 +752,7 @@ proc read_process_memory
            mov edi, [buff]
            mov edx, ecx
            rep movsb
+           add [r_count], edx
 
            add [offset], edx
            sub [tmp_r_cnt], edx
@@ -754,7 +783,7 @@ proc write_process_memory
 
            mov [slot], eax
            mov [buff], ebx
-           mov [w_count], ecx
+           and [w_count], 0
            mov [tmp_w_cnt], ecx
            mov [offset], edx
 
@@ -791,6 +820,7 @@ proc write_process_memory
            mov edx, ecx
            rep movsb
 
+           add [w_count], edx
            add [offset], edx
            sub [tmp_w_cnt], edx
            jnz .read_mem
@@ -963,6 +993,16 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [SLOT_BASE+APPDATA.cursor+ebx],ecx
            mov eax, [pl0_stack]
            mov [SLOT_BASE+APPDATA.pl0_stack+ebx],eax
+
+           push ebx
+           stdcall kernel_alloc, 0x1000
+           pop ebx
+           mov esi,[current_slot]
+           mov esi,[esi+APPDATA.cur_dir]
+           mov ecx,0x1000/4
+           mov edi,eax
+           mov [ebx+SLOT_BASE+APPDATA.cur_dir],eax
+           rep movsd
 
            shr ebx,3
            mov eax, new_app_base

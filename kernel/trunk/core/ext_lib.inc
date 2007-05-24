@@ -15,7 +15,6 @@ macro library [name,fname]
   common
     dd 0
   forward
-    align 4
     __#name#_library_name__ db fname,0
 }
 
@@ -29,18 +28,17 @@ macro import lname,[name,sname]
   common
     dd 0
   forward
-    align 4
     __#name#_import_name__ db sname,0
 }
 
 macro export [name,sname]
 {
+align 4
   forward
     dd __#name#_export_name__,name
   common
     dd 0
   forward
-    align 4
     __#name#_export_name__ db sname,0
 }
 
@@ -159,7 +157,9 @@ proc dll.Load, import_table:dword
 
 		mov	edi,s_libname
 
-		mov esi,sys_path
+		mov     al, '/'
+		stosb
+		mov esi,sysdir_path
 	    @@: lodsb
 		stosb
 		or	al,al
@@ -306,4 +306,6 @@ proc mem.Free mptr ;//////////////////////////////////////////////////////////
 	ret
 endp
 
+uglobal
 s_libname  db 64 dup (0)
+endg

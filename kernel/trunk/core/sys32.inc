@@ -646,8 +646,13 @@ term9:
 
            mov ebx, [.slot]
            shl ebx, 8
+           push ebx
            mov ebx,[SLOT_BASE+ebx+APPDATA.pl0_stack]
 
+           stdcall kernel_free, ebx
+
+           pop ebx
+           mov ebx,[SLOT_BASE+ebx+APPDATA.cur_dir]
            stdcall kernel_free, ebx
 
            mov edi, [.slot]
