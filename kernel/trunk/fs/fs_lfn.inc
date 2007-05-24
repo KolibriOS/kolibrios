@@ -84,7 +84,7 @@ endg
 
 end_of_file_system_lfn:
 		pop edx
-		stdcall kernel_free, edx
+                stdcall kernel_free, edx
 		ret
 
 
@@ -103,38 +103,39 @@ file_system_lfn:
 ; 9 : create directory
 
 		; замена адреса возврата
-		push	eax
+                push    eax
 		stdcall kernel_alloc, 200
-		mov		edx,eax
-		pop		eax
+                mov     edx,eax
+                pop     eax
+
 		push	edx
 		push	end_of_file_system_lfn
-		mov		ebx,edx
-				
-		mov		ecx, [eax]
-        mov		[ebx],ecx
+                mov     ebx,edx
 
-		add		ebx,4
-		mov		ecx, [eax+4]
-        mov		[ebx],ecx
+                mov     ecx, [eax]
+                mov     [ebx],ecx
 
-		add		ebx,4
-		mov		ecx, [eax+8]
-        mov		[ebx],ecx
+                add     ebx,4
+                mov     ecx, [eax+4]
+                mov     [ebx],ecx
 
-		add		ebx,4
-		mov		ecx, [eax+12]
-        mov		[ebx],ecx
+                add     ebx,4
+                mov     ecx, [eax+8]
+                mov     [ebx],ecx
 
-		add		ebx,4
-		mov		ecx, [eax+16]
-        mov		[ebx],ecx
+                add     ebx,4
+                mov     ecx, [eax+12]
+                mov     [ebx],ecx
 
-		add		ebx,4
+                add     ebx,4
+                mov     ecx, [eax+16]
+                mov     [ebx],ecx
+
+                add     ebx,4
 		push	edx	  ; !!!!!!!!!!!!!!!!!!!
 		; eax - yначало старого пакета
 		; edx - начало нового пакета
-		; ebx - куда ложить строку			
+		; ebx - куда ложить строку
 		add		eax,20
 		mov		cl,	[eax]
 		test	cl,cl
@@ -143,10 +144,7 @@ file_system_lfn:
 @@:
 		stdcall full_file_name,eax,ebx
 		pop		eax
-		
-		
-		
-		
+
 
 
    ;     add     eax, std_application_base_address

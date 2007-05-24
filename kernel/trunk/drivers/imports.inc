@@ -88,7 +88,13 @@ end if
 if used Kfree
   extrn Kfree
 end if
+if used CreateRingBuffer
+  extrn CreateRingBuffer
+end if
 
+if used GetPid
+  extrn GetPid
+end if
 if used CreateObject
   extrn CreateObject
 end if

@@ -39,7 +39,9 @@ iglobal
   szUserFree          db 'UserFree',0
   szKmalloc           db 'Kmalloc',0
   szKfree             db 'Kfree',0
+  szCreateRingBuffer  db 'CreateRingBuffer',0
 
+  szGetPid            db 'GetPid',0
   szCreateObject      db 'CreateObject',0
   szDestroyObject     db 'DestroyObject',0
   szCreateEvent       db 'CreateEvent',0
@@ -101,7 +103,9 @@ kernel_export:
   dd szUserFree        , user_free
   dd szKmalloc         , malloc
   dd szKfree           , free
+  dd szCreateRingBuffer, create_ring_buffer
 
+  dd szGetPid          , get_pid
   dd szCreateObject    , create_kernel_object
   dd szDestroyObject   , destroy_kernel_object
   dd szCreateEvent     , create_event

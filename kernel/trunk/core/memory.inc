@@ -1085,6 +1085,58 @@ proc stall stdcall, delay:dword
            ret
 endp
 
+align 4
+proc create_ring_buffer stdcall, size:dword, flags:dword
+           locals
+             buf_ptr  dd ?
+           endl
+
+           mov eax, [size]
+           test eax, eax
+           jz .fail
+
+           add eax, eax
+           stdcall alloc_kernel_space, eax
+           test eax, eax
+           jz .fail
+
+           mov [buf_ptr], eax
+
+           mov ebx, [size]
+           shr ebx, 12
+           push ebx
+
+           stdcall alloc_pages, ebx
+           pop ecx
+
+           test eax, eax
+           jz .mm_fail
+
+           or eax, [flags]
+           mov edi, [buf_ptr]
+           mov ebx, [buf_ptr]
+           mov edx, ecx
+           shl edx, 2  
+           shr edi, 10
+@@:
+           mov [page_tabs+edi], eax
+           mov [page_tabs+edi+edx], eax
+           invlpg [ebx]
+           invlpg [ebx+esi]
+           add eax, 0x1000
+           add ebx, 0x1000
+           add edi, 4 
+           dec ecx
+           jnz @B
+
+           mov eax, [buf_ptr]
+           ret
+.mm_fail:
+           stdcall free_kernel_space, [buf_ptr]
+           xor eax, eax
+.fail:
+           ret
+endp
 
 if 0
      push eax

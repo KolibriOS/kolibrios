@@ -15,7 +15,10 @@ SOUND_VERSION  equ   API_VERSION
 
 
 include 'proc32.inc'
+
+;include 'system.inc'
 include 'main.inc'
+
 include 'imports.inc'
 
 FORCE_MMX         equ 0  ;set to 1 to force use mmx or
@@ -27,9 +30,6 @@ DEBUG             equ 1
 
 
 OS_BASE           equ 0x80000000
-SLOT_BASE         equ (OS_BASE+0x0080000)
-TASK_COUNT        equ (OS_BASE+0x0003004)
-CURRENT_TASK      equ (OS_BASE+0x0003000)
 
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003
@@ -334,9 +334,9 @@ proc CreateBuffer stdcall, format:dword, size:dword
            test eax, PCM_OUT+PCM_STATIC
            jnz .fail
 .test_ok:
-           mov ebx, [CURRENT_TASK]      ;hack: direct accsess
-           shl ebx, 5                   ;to kernel data
-           mov ebx, [CURRENT_TASK+ebx+4]
+
+           call GetPid
+           mov ebx, eax
            mov eax, STREAM_SIZE
 
            call CreateObject
@@ -390,9 +390,11 @@ proc CreateBuffer stdcall, format:dword, size:dword
            shr ebx, 12
            mov [ring_pages], ebx
 
-           add eax, eax              ;double ring size
-           stdcall AllocKernelSpace, eax
+           stdcall CreateRingBuffer, eax, PG_SW
 
+if 0
+           stdcall AllocKernelSpace, eax
+end if
            mov edi, [str]
            mov ecx, [ring_size]
            mov [edi+STREAM.in_base], eax
@@ -407,6 +409,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
            add eax, ecx
            mov [edi+STREAM.in_top], eax
 
+if 0
            mov ebx, [ring_pages]
            stdcall AllocPages, ebx
            mov edi, [str]
@@ -421,7 +424,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
            pop eax
            add ebx, [ring_size]
            call CommitPages    ;double mapped
-
+end if
            jmp .out_buff
 .static:
            mov ecx, [size]

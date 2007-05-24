@@ -544,6 +544,12 @@ proc destroy_app_space stdcall, pg_dir:dword
            ret
 endp
 
+align 4
+get_pid:
+           mov eax, [TASK_DATA]
+           mov eax, [eax+4]
+           ret
+
 pid_to_slot:
 ;Input:
 ;  eax - pid of process
