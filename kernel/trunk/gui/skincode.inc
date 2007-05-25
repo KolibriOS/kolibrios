@@ -10,30 +10,35 @@ include "skindata.inc"
 
 ;skin_data = 0x00778000
 
-load_skin_file:
-; eax = filename
-; edx = destination
-    mov   ebx,1
-    or    ecx,-1
-    mov   esi,12
-    pushad
-    push eax
-    mov [skin_to_load.adr],edx
+read_skin_file:
+        stdcall load_file, ebx
+        test    eax, eax
+        jz      .notfound
+        cmp     dword [eax], 'SKIN'
+        jnz     .noskin
+        cmp     ebx, 32*1024
+        jb      @f
+        mov     ebx, 32*1024
+@@:
+        lea     ecx, [ebx+3]
+        shr     ecx, 2
+        mov     esi, eax
+        mov     edi, skin_data
+        rep     movsd
+        stdcall kernel_free, eax
 
-    mov [skin_to_load.stradr],_skin_file_default
-    mov eax,skin_to_load
-    call    file_system_lfn
-    pop eax
-    popad
-    ret
-
-skin_to_load:
-   			dd 0,0,0
-   			dd 64*1024
- .adr  		dd 0
-   			db 0
- .stradr	dd 0
-
+        call    parse_skin_data
+        xor     eax, eax
+        ret
+.notfound:
+        xor     eax, eax
+        inc     eax
+        ret
+.noskin:
+        stdcall kernel_free, eax
+        push    2
+        pop     eax
+        ret
 
 struct SKIN_HEADER
   .ident   dd ?
@@ -75,20 +80,10 @@ struct SKIN_BITMAPS
   .data  dd ?
 ends
 
-load_skin:
-        pushad
+load_default_skin:
         mov     [_skinh],22
-        mov     eax,_skin_file
-        mov     edx,skin_data
-        mov     [edx+SKIN_HEADER.ident],'????'
-        call    load_skin_file
-        cmp     eax,ERROR_SUCCESS
-        je      @f
-        cmp     eax,ERROR_END_OF_FILE
-        jne     .exit
-    @@: call    parse_skin_data
-  .exit:
-        popad
+        mov     ebx,_skin_file_default
+        call    read_skin_file
         ret
 
 parse_skin_data:

@@ -216,6 +216,8 @@ do_change_task:
         mov ebx, [ebx+APPDATA.pl0_stack]
         add ebx, RING0_STACK_SIZE
         mov [tss._esp0], ebx
+	push	graph_data
+	pop	gs
         mov ecx, cr0
         or ecx, CR0_TS   ;set task switch flag
         mov cr0, ecx

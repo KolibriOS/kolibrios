@@ -475,47 +475,19 @@ display_settings:
 
 	cmp	eax,8	    ; set window skin
 	jne	no_set_skin
-	mov	eax,ebx
-	mov	edi,[TASK_BASE]
-	add	ebx,[edi+TASKDATA.mem_start]	    ; abs start of info block
-	pushd	[ebx+0] [ebx+4] [ebx+8] [ebx+12]
-	mov	dword[ebx+0],0	      ; read
-	mov	dword[ebx+4],0	      ; from the beginning
-	mov	dword[ebx+8],64       ; 32 KBytes maximum
-	mov	ecx,skin_data+64*512
-	sub	ecx,[edi+0x10]
-	mov	dword[ebx+12],ecx     ; destination
-	push	eax
-	pushad
-	call	file_system
-	popad
-	pop    eax
-	popd	[ebx+12] [ebx+8] [ebx+4] [ebx+0]
-	cmp	eax,ERROR_SUCCESS
-	je	@f
-	cmp	eax,ERROR_END_OF_FILE
-	jne	.exit
-    @@: cmp	[skin_data+64*512+SKIN_HEADER.ident],'SKIN'
-	mov	eax,ERROR_UNKNOWN_FS
-	jne	.exit
-	mov	esi,skin_data+64*512
-	mov	edi,skin_data
-	mov	ecx,(64*512)/4
-	rep	movsd
-	call	parse_skin_data
-    pushad
-	mov	eax, 0
-	mov	ebx, 0
-	mov	ecx, [ScreenWidth]
-	mov	edx, [ScreenHeight]
-	call	calculatescreen
-    popad
-	mov	dword[esp+32+36],0
+        call    read_skin_file
+        mov     [esp+32+36], eax
+        test    eax, eax
+        jnz     .ret
+        xor     eax, eax
+        xor     ebx, ebx
+        mov     ecx, [ScreenWidth]
+        mov     edx, [ScreenHeight]
+        call    calculatescreen
 	jmp	redraw_screen_direct
-  .exit:
-	mov	[esp+32+36],eax
-	popad
-	ret
+.ret:
+        popad
+        ret
    no_set_skin:
 
      popad

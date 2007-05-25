@@ -381,9 +381,11 @@ cfgmanager:
 @@:
         mov     [di], al
 .preboot_gr_end:
-; following 6 lines set variables to 1 if its current value is 0
-        cmp     [di+preboot_dma-preboot_graph], 1
-        adc     [di+preboot_dma-preboot_graph], 0
+        cmp     [di+preboot_dma-preboot_graph], 0
+        jnz     @f
+        mov     [di+preboot_dma-preboot_graph], 3 ; DMA: defaults to none
+@@:
+; following 4 lines set variables to 1 if its current value is 0
         cmp     [di+preboot_vrrm-preboot_graph], 1
         adc     [di+preboot_vrrm-preboot_graph], 0
         cmp     [di+preboot_device-preboot_graph], 1

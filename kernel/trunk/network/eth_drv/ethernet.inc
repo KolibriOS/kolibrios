@@ -160,7 +160,7 @@ dd  0x595110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x595210b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x900010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x900110b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
-;dd  0x900410b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0  ; tested by hidnplayr: makes system crash
+dd  0x900410b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x900510b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x900610b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x900A10b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
@@ -319,7 +319,9 @@ local MACAddress  dp  ?  ;allocate 6 bytes in the stack
     xchg    ch, cl		  ; because mirror byte-order
     mov     esi, ebx		  ; Pointer to packet data
     mov     bx, ETHER_IP	  ; Type of packet
+    push    ebp
     call    dword [drvr_transmit] ; Call the drivers transmit function
+    pop     ebp
 
     ; OK, we have sent a packet, so increment the count
     inc     dword [ip_tx_count]

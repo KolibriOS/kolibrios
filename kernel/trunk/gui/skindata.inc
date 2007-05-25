@@ -55,8 +55,6 @@ skin_udata:
   skin_active       SKIN_DATA
   skin_inactive     SKIN_DATA
 
-  _skin_file        rb 256
-
 align 4
 
 skin_udata.end:
