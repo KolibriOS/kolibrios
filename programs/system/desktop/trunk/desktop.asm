@@ -19,7 +19,7 @@
    dd      0,0         ; parameters, reserved
 
    include 'lang.inc'
-   include '..\..\..\macros.inc'
+   include '..\..\macros.inc'
    include 'kglobals.inc'
    include 'unpacker.inc'
 ;******************************************************************************
@@ -79,8 +79,6 @@ START:                          ; start of execution
     mov  edi,fname
     mov  ecx,default_skn.size
     rep  movsb
-    mov  [skin_info.fname],0
-    mov  [skin_info.workarea],0x10000
     call load_skin_file
 
 ;    mov  esi, default_dtp
@@ -176,7 +174,7 @@ doapply:
     jne   no_apply_skin
     cmp   [skin_info.fname],0
     je    no_apply_skin
-    mcall 48,8,skin_info
+    mcall 48,8,skin_info.fname
     call  draw_window
     jmp   still
   no_apply_skin:
@@ -1063,11 +1061,6 @@ virtual at read_info
 end virtual
 
 skin_info:
-  .mode         dd ?
-  .start_block  dd ?
-  .blocks       dd ?
-  .address      dd ?
-  .workarea     dd ?
   .fname rb 256+1
 
 app_colours:

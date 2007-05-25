@@ -79,8 +79,7 @@ newline2:
         jns     scan2l1
         mov     byte [esi-1], 0
 ; set eax (-> ASCIIZ string) as skin
-        mov     [eax-4], esi
-        lea     ecx, [eax-20]
+        mov     ecx, eax
         push    48
         pop     eax
         mov     bl, 8
