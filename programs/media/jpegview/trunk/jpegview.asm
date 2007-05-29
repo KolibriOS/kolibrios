@@ -20,8 +20,14 @@
 ;                   Mike Hibbett Added setting default colours
 ;    version 0.15   24th August 2006
 ;                   diamond (rewritten to function 70)
-;
-
+;    version 0.16   19th May 2007
+;                   Mario79
+;                   1) correction for changed function 15,
+;                   2) use monochrome background if free memory there are less than 2 MB
+;                   3) use COL0 - COL9 boot parameter
+;                   0=black,1=white,2=green,3=lilas,4=grey
+;                   5=light-blue,6=blue,7=salad,8=pink,9=yellow
+                  
                memsize=20000h
                org 0
  PARAMS     =    memsize - 1024
@@ -121,7 +127,11 @@ put_image:
 check_parameters:
     cmp     [PARAMS], dword "BOOT" ; received BOOT parameter -> goto handler
     je      boot_set_background
-
+    cmp     [PARAMS], word "CO"
+    jne     @f
+    cmp     [PARAMS+2], byte "L"
+    je      boot_set_background    
+@@:
     mov     edi, name_string       ; clear string with file name
     mov     al,  0
     mov     ecx, 100
@@ -141,11 +151,10 @@ check_parameters:
     jmp     START.l1       ; return to beggining of the progra
 
 ;******************************************************************************
-
-
-
 boot_set_background:
-
+    mcall 18,16
+    cmp   eax,1024*2
+    jb    set_mono
     mov     ecx,memsize-fin-stack_size  ; size
     mov     edi,fin                     ; pointer
     call    add_mem             ; mark memory from fin to 0x100000-1024 as free
@@ -160,6 +169,55 @@ boot_set_background:
     jmp     close_program       ; close the program right now
 
 ;******************************************************************************
+set_mono:
+    mov     eax, 15
+    mov     ebx, 1
+    mov     ecx, 1
+    mov     edx, 1
+    mcall
+
+    cmp     [PARAMS], dword "BOOT" ; received BOOT parameter -> goto handler
+    jne     @f
+.green:
+    mov     ecx,mono+6
+    jmp     .set
+@@:
+;    cmp     [PARAMS], word "CO" ; received BOOT parameter -> goto handler
+;    jne     .green
+    xor     ecx,ecx
+    mov     cl,[PARAMS+3]
+    sub     cl,0x30
+    cmp     ecx,0
+    jb      .green
+    cmp     ecx,9     
+    ja      .green
+    imul    ecx,3
+    add     ecx,mono
+.set:
+    mcall   15,5, ,0,3
+
+    ; Stretch the image to fit
+    mov     eax, 15
+    mov     ebx, 4
+    mov     ecx, 1
+    mcall
+
+    mov     eax, 15
+    mov     ebx, 3
+    mcall
+    jmp     close_program
+    
+mono:
+    db 0,0,0       ; black
+    db 255,255,255 ; white
+    db 128,128,0   ; green
+    db 240,202,166 ; lilas
+    db 192,192,192 ; grey
+    db 255,255,0   ; light-blue
+    db 255,0,0     ; blue
+    db 192,220,192 ; salad
+    db 255,0,255   ; pink
+    db 0,255,255   ; yellow
 ;******************************************************************************
 
 set_as_bgr2:

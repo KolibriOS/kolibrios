@@ -33,6 +33,7 @@ use32
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
+purge add,sub    ; macros.inc does incorrect substitution
 include 'fasm.inc'
 
 center fix true
