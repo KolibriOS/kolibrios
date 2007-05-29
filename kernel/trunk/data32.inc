@@ -84,8 +84,8 @@ szIMPORTS      db 'IMPORTS',0
 
 firstapp       db  'LAUNCHER',0
 
-char    db '/%sys%/FONTS/CHAR.MT',0
-char2   db '/%sys%/FONTS/CHAR2.MT',0
+char    db '/sys/FONTS/CHAR.MT',0
+char2   db '/sys/FONTS/CHAR2.MT',0
 
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
@@ -139,7 +139,7 @@ gdts:
         dd     gdts
         dw     0
 
-; Attention! The order first four selectors not to change, is used in Fast System Call
+; Attention! Do not change the order of the first four selectors. They are used in Fast System Call
 ; must be : os_code, os_data, app_code, app_data, ....
 
 int_code_l:

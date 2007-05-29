@@ -10,7 +10,7 @@
 conf_file_loaded: db 0			; флаг загрузки конфига
 conf_path_sect: db 'path',0
 
-conf_fname db '/%sys%/sys.conf',0
+conf_fname db '/sys/sys.conf',0
 
 
 

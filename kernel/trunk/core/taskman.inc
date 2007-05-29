@@ -1011,8 +1011,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 .add_command_line:
            mov edx,[params]
            mov edx,[edx]           ;app_cmdline
-           test edx, [cmd_line]    ;check both src & dst
-           jz @F                   ;application don't need parameters
+           test edx,edx
+           jz @f                   ;application doesn't need parameters
 
            mov     eax, edx
            add     eax, 256
@@ -1021,7 +1021,11 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            cmp     eax, [SLOT_BASE+APPDATA.mem_size+ebx*8]
            ja      @f
 
-           stdcall strncpy, edx, [cmd_line], 256
+           mov     byte [edx], 0   ;force empty string if no cmdline given
+           mov     eax, [cmd_line]
+           test    eax, eax
+           jz      @f
+           stdcall strncpy, edx, eax, 256
 @@:
            mov edx,[params]
            mov edx, [edx+4]        ;app_path

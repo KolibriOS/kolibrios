@@ -698,16 +698,16 @@ proc load_driver stdcall, driver_name:dword
 
              exports   dd ?   ;fake exports table
                        dd ?
-             file_name rb 15+16+4+1      ; '/%sys%/drivers/<up-to-16-chars>.obj'
+             file_name rb 13+16+4+1      ; '/sys/drivers/<up-to-16-chars>.obj'
            endl
 
            lea     edx, [file_name]
-           mov     dword [edx], '/%sy'
-           mov     dword [edx+4], 's%/d'
-           mov     dword [edx+8], 'rive'
-           mov     dword [edx+12], 'rs/'
+           mov     dword [edx], '/sys'
+           mov     dword [edx+4], '/dri'
+           mov     dword [edx+8], 'vers'
+           mov     byte [edx+12], '/'
            mov     esi, [driver_name]
-           lea     edi, [edx+15]
+           lea     edi, [edx+13]
            mov     ecx, 16
 @@:
            lodsb

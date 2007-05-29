@@ -11,7 +11,7 @@ iglobal
 ; pointer to memory for path replace table,
 ; size of one record is 128 bytes: 64 bytes for search pattern + 64 bytes for replace string
 
-; start with one entry: %sys% -> <sysdir>
+; start with one entry: sys -> <sysdir>
 full_file_name_table dd sysdir_name
 .size           dd      1
 
@@ -19,18 +19,17 @@ tmp_file_name_size dd   1
 endg
 
 uglobal
-; Parser_params will initialize: sysdir_name = "%sys%", sysdir_path = <sysdir>
+; Parser_params will initialize: sysdir_name = "sys", sysdir_path = <sysdir>
 sysdir_name     rb      64
 sysdir_path     rb      64
 tmp_file_name_table dd  ?
 endg
 
-; берет параметры bx_from_load и инициализирует замену для %sys%
+; берет параметры bx_from_load и инициализирует замену для /sys
 Parser_params:
   mov eax,[OS_BASE+0x10000+bx_from_load]
   mov ecx,sysdir_path
-  mov [ecx-64],dword '%sys'
-  mov [ecx-64+4],word '%'
+  mov [ecx-64],dword 'sys'
   cmp al,'r' ; рам диск
   jnz @f
   mov [ecx],dword 'RD/?'
