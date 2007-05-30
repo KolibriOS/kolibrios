@@ -16,10 +16,10 @@
    dd      I_END       ; file size
    dd      28000h      ; memory
    dd      10000h      ; stack pointer
-   dd      0,0         ; parameters, reserved
+   dd      param,0     ; parameters, reserved
 
    include 'lang.inc'
-   include '..\..\macros.inc'
+   include '..\..\..\macros.inc'
    include 'kglobals.inc'
    include 'unpacker.inc'
 ;******************************************************************************
@@ -67,18 +67,26 @@ ends
 
 
 START:                          ; start of execution
-
     mov  eax,48                 ; get current colors
     mov  ebx,3
     mov  ecx,color_table
     mov  edx,4*10
     mcall
 
-    cld
+        mov     esi, param
+        cmp     byte [esi], 0
+        jnz     has_param
+
     mov  esi,default_skn
     mov  edi,fname
     mov  ecx,default_skn.size
     rep  movsb
+    jmp  @f
+has_param:
+        mov     ecx, 256/4
+        mov     edi, fname
+        rep     movsd
+@@:
     call load_skin_file
 
 ;    mov  esi, default_dtp
@@ -1063,6 +1071,9 @@ end virtual
 skin_info:
   .fname rb 256+1
 
+param   rb      257
+
+align 4
 app_colours:
 
 w_frame              dd ?
