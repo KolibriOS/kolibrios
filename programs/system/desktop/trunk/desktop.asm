@@ -1032,7 +1032,7 @@ lsz button_text,\
     en, 'Button text',\
     et, 'Nupu tekst'
 
-sz  default_skn, '/RD/1/DEFAULT.SKN',0
+sz  default_skn, '/sys/DEFAULT.SKN',0
 
 if lang eq ru
   title db '€‘’‰Š€ Š',0

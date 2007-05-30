@@ -215,7 +215,7 @@ rdsave:
         dd      0
         dd      0
         dd      0
-        db      '/rd/1/rdsave',0
+        db      '/sys/rdsave',0
 udata
   sc  system_colors
 

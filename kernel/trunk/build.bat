@@ -2,7 +2,7 @@
 
 set languages=en ru ge et
 set drivers=sound sis infinity ati2d vmode ps2mouse
-set targets=all kernel drivers skins lib clean
+set targets=all kernel drivers skins clean
 
 call :Check_Target %1
 for %%a in (all kernel) do if %%a==%target% call :Check_Lang %2
@@ -60,7 +60,6 @@ goto :eof
    call :Target_kernel
    call :Target_drivers
    call :Target_skins
-   call :Target_lib
 goto :eof
 
 
@@ -84,16 +83,6 @@ goto :eof
    if not exist bin\skins mkdir bin\skins
    cd skin
    fasm -m 65536 default.asm ..\bin\skins\default.skn
-   if not %errorlevel%==0 goto :Error_FasmFailed
-   cd ..
-goto :eof
-
-:Target_lib
-   echo *** building libs ...
-
-   if not exist bin\lib mkdir bin\lib
-   cd lib
-   fasm -m 65536 inifiles.asm ..\bin\lib\inifiles.obj
    if not %errorlevel%==0 goto :Error_FasmFailed
    cd ..
 goto :eof

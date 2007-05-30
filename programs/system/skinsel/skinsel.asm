@@ -91,7 +91,7 @@ fileinfo:
         dq      0
         dd      max_file_size
         dd      filebuf
-        db      '/rd/1/skinsel.dat',0
+        db      '/sys/skinsel.dat',0
 i_end:
 max_file_size = 0x1000 - 0x40 - $
 filebuf:

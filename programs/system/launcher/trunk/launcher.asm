@@ -180,7 +180,7 @@ START:                           ; start of execution
                    dd 0
    .blocks         dd 16*512       ; 16*512 bytes max
    .address        dd file_data
-   db "/RD/1/AUTORUN.DAT",0
+   db "AUTORUN.DAT",0
 
  start_info:
    .mode           dd 7

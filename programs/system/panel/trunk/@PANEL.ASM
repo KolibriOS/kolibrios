@@ -2054,7 +2054,7 @@ setup_exec:
 .cmdline dd     ?
         dd      0
         dd      0
-        db      '/RD/1/'
+        db      '/sys/'
 file_sys db     'SETUP',0
 
 exec_fileinfo:
@@ -2066,10 +2066,10 @@ exec_fileinfo:
         db      0
 .name   dd      ?
 
-end_name        db      '/RD/1/END',0
-menu_name       db      '/RD/1/@MENU',0
-calendar_name   db      '/RD/1/CALENDAR',0
-sysmeter_name   db      '/RD/1/GMON',0
+end_name        db      '/sys/END',0
+menu_name       db      '/sys/@MENU',0
+calendar_name   db      '/sys/CALENDAR',0
+sysmeter_name   db      '/sys/GMON',0
 
 dat_fileinfo:
         dd      0
@@ -2077,7 +2077,7 @@ dat_fileinfo:
         dd      0
         dd      1024
         dd      I_END
-        db      '/RD/1/PANEL.DAT',0
+        db      '/sys/PANEL.DAT',0
 
 m_bmp_fileinfo:
         dd      0
@@ -2085,7 +2085,7 @@ m_bmp_fileinfo:
         dd      0
         dd      8192
         dd      image
-        db      '/RD/1/MENUET.BMP',0
+        db      '/sys/MENUET.BMP',0
 
 iconf_fileinfo:
         dd      0
@@ -2093,7 +2093,7 @@ iconf_fileinfo:
         dd      0
         dd      8192
         dd      image
-        db      '/RD/1/'
+        db      '/sys/'
 iconf   db      'MBAR_IX.BMP',0
 
 I_END:

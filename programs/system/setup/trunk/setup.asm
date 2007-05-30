@@ -1597,7 +1597,7 @@ save_fileinfo:
        dd 0
        dd 48
        dd keyboard
-file_name:   db '/rd/1/setup.dat',0
+file_name:   db '/sys/setup.dat',0
 
 I_PARAM   dd 0
 

@@ -1054,7 +1054,7 @@ fileinfo:
      dd 0x290000-I_END
      dd I_END
 string:
-        db      '/rd/1/bgr.bmp',0
+        db      '/sys/bgr.bmp',0
 
 IM_END:
         rb      string+257-$

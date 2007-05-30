@@ -532,7 +532,7 @@ fileinfo:
  .size		 dd   0x10000-mem_end ; blocks to read
  .return	 dd   mem_end	      ; return data pointer
  .name:
-     db   '/RD/1/MENU.DAT',0   ; ASCIIZ dir & filename
+     db   '/sys/MENU.DAT',0   ; ASCIIZ dir & filename
 
 fileinfo_start:
  .subfunction	 dd   7 	 ; 7=START APPLICATION

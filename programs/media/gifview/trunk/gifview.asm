@@ -270,7 +270,7 @@ title db appname,0               ; строка заголовка
 inp_pos    dd inp_end-fn_input
 fn_input:
 ;   db '/hd/1/gif/smileys/sm100000.gif'
-   db '/rd/1/meos.gif'
+   db '/sys/meos.gif'
 ;    db '/hd/1/1/tex256.gif',0
 ;    db '/rd/1/tex256.gif'
 inp_end:

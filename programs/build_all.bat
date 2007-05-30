@@ -387,6 +387,7 @@ echo *
 )
 
 :END
+erase config.inc
 echo *
 echo Done. Thanks for your choise ;)
 echo *

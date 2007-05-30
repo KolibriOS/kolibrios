@@ -578,7 +578,7 @@ winxs           dw  0
 winys           dw  0
 jpeg_st         dd  0
 file_dir        dd  0
-name_string:    db '/rd/1/jpegview.jpg',0
+name_string:    db '/sys/jpegview.jpg',0
 rb 256
     .end:
     .cursor: db 19

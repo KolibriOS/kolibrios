@@ -101,7 +101,7 @@ launcher:
         dd      0
         dd      0
         dd      0
-        db      '/RD/1/LAUNCHER'
+        db      '/sys/LAUNCHER'
 I_END:                             ; метка конца программы
         db      ?       ; system loader will zero all memory after program end
                         ; this byte will be terminating zero for launcher string

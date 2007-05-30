@@ -330,7 +330,7 @@ dest_info:                   ; DESTINATION FILEINFO
  .size         dd   0	      
  .return	      dd   0x10000
  .name:
-     db   '/rd/1/kernel.mnt',0   ; ASCIIZ dir & filename
+     db   '/sys/kernel.mnt',0   ; ASCIIZ dir & filename
     times (STRLEN-16) db 0
 
 param_info:

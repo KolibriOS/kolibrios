@@ -344,12 +344,12 @@ DATA
   }
 
   strtbl startapps       ,\
-    <"/RD/1/PIC4",0>     ,\
-    <"/RD/1/DESKTOP",0>  ,\
-    <"/RD/1/ICON",0>,\
-    <"/RD/1/SETUP",0>    ,\
-    <"/RD/1/VRR",0> ,\
-    <"/RD/1/CPU",0> 
+    <"/sys/PIC4",0>     ,\
+    <"/sys/DESKTOP",0>  ,\
+    <"/sys/ICON",0>,\
+    <"/sys/SETUP",0>    ,\
+    <"/sys/VRR",0> ,\
+    <"/sys/CPU",0> 
     
   sz title, "KolibriOS"
 

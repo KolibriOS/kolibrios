@@ -579,7 +579,7 @@ list_start  dd 0
 file_start: dd 7
             dd 0,0,0,0
 
-start_application: db '/RD/1/LAUNCHER',0
+start_application: db '/sys/LAUNCHER',0
                    times 60 db 32
 
 if lang eq de

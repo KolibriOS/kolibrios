@@ -736,7 +736,7 @@ finfo_start:
           db 0
           dd icon_path
 
-icon_path db '/rd/1/@ICON',0
+icon_path db '/sys/@ICON',0
 
 finfo:
           dd 0
@@ -747,7 +747,7 @@ finfo:
           db 0
           dd icon_list
 
-icon_list db '/rd/1/icons.dat',0
+icon_list db '/sys/icons.dat',0
 
 icon_start_parameters:
       db   25,1,1,1

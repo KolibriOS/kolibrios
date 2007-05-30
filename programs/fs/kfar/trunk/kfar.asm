@@ -6439,7 +6439,7 @@ aOk                     db      'OK',0
 aNoMemory               db      'No memory!'
 nullstr                 db      0
 standard_dll_path:
-libini_name             db      '/rd/1/dll/'
+libini_name             db      '/sys/dll/'
 standard_dll_path_size = $ - standard_dll_path
                         db      'libini.obj',0
 aStart                  db      'START',0
