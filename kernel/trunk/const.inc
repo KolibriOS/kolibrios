@@ -305,6 +305,9 @@ virtual at              (OS_BASE+0x043BF80)
   tss  TSS
 end virtual
 
+BgrDrawMode         equ (OS_BASE+0x043EFF4)
+BgrDataWidth        equ (OS_BASE+0x043EFF8)
+BgrDataHeight       equ (OS_BASE+0x043EFFC)
 WinMapAddress       equ (OS_BASE+0x043F000)
 display_data        equ (OS_BASE+0x043F000)
 

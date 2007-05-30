@@ -107,7 +107,7 @@ use16
                   org   0x0
                   jmp   start_of_code
 
-version db    'Kolibri OS  version 0.6.5.0      ',13,10,13,10,0
+version db    'Kolibri OS  version 0.7.0.0 pre  ',13,10,13,10,0
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
@@ -521,9 +521,9 @@ high_code:
 ; set background
         xor  eax,eax
         inc  eax
-        mov   [display_data-12],eax
-        mov   [display_data-8],eax
-        mov   [display_data-4],eax
+        mov   [BgrDrawMode],eax
+        mov   [BgrDataWidth],eax
+        mov   [BgrDataHeight],eax
         mov    [mem_BACKGROUND],4095
         stdcall kernel_alloc, [mem_BACKGROUND]
         mov [img_background], eax
@@ -1119,7 +1119,6 @@ set_variables:
         pop   eax
 
         mov   byte [SB16_Status],0            ; Minazzi Paolo
-        mov   [display_data-12],dword 1       ; tiled background
         mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
 
      ;!! IP 04.02.2005:
@@ -2287,7 +2286,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,6,5,0  ; version 0.6.5.0
+  db 0,7,0,0  ; version 0.7.0.0
   db UID_KOLIBRI
   db 'Kolibri',0
 version_end:
@@ -2356,8 +2355,8 @@ sys_background:
     je    sbgrr
     cmp   ecx,0
     je    sbgrr
-    mov   [display_data-8],ebx
-    mov   [display_data-4],ecx
+    mov   [BgrDataWidth],ebx
+    mov   [BgrDataHeight],ecx
 ;    mov   [bgrchanged],1
 
     pushad
@@ -2366,18 +2365,17 @@ sys_background:
 ; calculate RAW size
     xor  eax,eax
     inc  eax
-    cmp  [display_data-8],eax
+    cmp  [BgrDataWidth],eax
     jae   @f
-    mov [display_data-8],eax
+    mov [BgrDataWidth],eax
 @@:
-    cmp  [display_data-4],eax
+    cmp  [BgrDataHeight],eax
     jae   @f
-    mov [display_data-4],eax
+    mov [BgrDataHeight],eax
 @@:
-    mov  eax,[display_data-8]
-    imul eax,[display_data-4]
-    inc  eax
-    imul eax,3
+    mov  eax,[BgrDataWidth]
+    imul eax,[BgrDataHeight]
+    lea  eax,[eax*3]
     mov  [mem_BACKGROUND],eax
 ; get memory for new background
     stdcall kernel_alloc, [mem_BACKGROUND]
@@ -2425,9 +2423,9 @@ draw_background_temp:
 
     cmp   eax,4                            ; TILED / STRETCHED
     jnz   nosb4
-    cmp   ebx,[display_data-12]
+    cmp   ebx,[BgrDrawMode]
     je    nosb41
-    mov   [display_data-12],ebx
+    mov   [BgrDrawMode],ebx
 ;    mov   [bgrchanged],1
    nosb41:
     ret
@@ -2436,11 +2434,8 @@ draw_background_temp:
     cmp   eax,5                            ; BLOCK MOVE TO BGR
     jnz   nosb5
   ; bughere
-    mov   edi, [TASK_BASE]
-    add   ebx, [edi+TASKDATA.mem_start]
     mov   eax, ebx
     mov   ebx, ecx
-    add   ecx, edx
     add   ebx, [img_background]   ;IMG_BACKGROUND
     mov   ecx, edx
     call  memmove
@@ -2457,9 +2452,9 @@ sys_getbackground:
 
     cmp   eax,1                                  ; SIZE
     jnz   nogb1
-    mov   eax,[display_data-8]
+    mov   eax,[BgrDataWidth]
     shl   eax,16
-    mov   ax,[display_data-4]
+    mov   ax,[BgrDataWidth]
     mov   [esp+36],eax
     ret
   nogb1:
@@ -2480,7 +2475,7 @@ sys_getbackground:
 
     cmp   eax,4                                  ; TILED / STRETCHED
     jnz   nogb4
-    mov   eax,[display_data-12]
+    mov   eax,[BgrDrawMode]
   nogb4:
     mov   [esp+36],eax
     ret
@@ -4098,7 +4093,7 @@ drawbackground:
        call   [draw_pointer]
        ret
      dbrv20:
-       cmp   [display_data-12],dword 1
+       cmp   [BgrDrawMode],dword 1
        jne   bgrstr
        call  vesa20_drawbackground_tiled
        dec   [mouse_pause]

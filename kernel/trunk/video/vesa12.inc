@@ -206,8 +206,8 @@ vesa12_drawbackground:
         push  edx
 
         xor   edx,edx
-        mov   eax,dword[WinMapAddress-8]
-        mov   ebx,dword[WinMapAddress-4]
+        mov   eax,dword[BgrDataWidth]
+        mov   ebx,dword[BgrDataHeight]
         mul   ebx
         mov   ebx,3
         mul   ebx
@@ -220,23 +220,19 @@ vesa12_drawbackground:
 
         push  eax
         push  ebx
-        mov   esi,[img_background]   ;IMG_BACKGROUND
 
-        cmp   [WinMapAddress-12],dword 1     ; tiled background
+        cmp   [BgrDrawMode],dword 1     ; tiled background
         jne   no_vesa12_tiled_bgr
 
         push  edx
 
         xor   edx,edx
-        mov   ecx,[WinMapAddress-8]
-        div   ecx
-        mov   eax,edx
+        div   dword [BgrDataWidth]
 
-        push  eax
+        push  edx
         mov   eax,ebx
         xor   edx,edx
-        mov   ecx,[WinMapAddress-4]
-        div   ecx
+        div   dword [BgrDataHeight]
         mov   ebx,edx
         pop   eax
 
@@ -244,21 +240,19 @@ vesa12_drawbackground:
 
       no_vesa12_tiled_bgr:
 
-        cmp   [WinMapAddress-12],dword 2     ; stretched background
+        cmp   [BgrDrawMode],dword 2     ; stretched background
         jne   no_vesa12_stretched_bgr
 
         push  edx
 
-        imul  eax,dword [WinMapAddress-8]
-        xor   edx,edx
+        mul   dword [BgrDataWidth]
         mov   ecx,[ScreenWidth]
         inc   ecx
         div   ecx
 
         push  eax
         mov   eax,ebx
-        imul  eax,dword [WinMapAddress-4]
-        xor   edx,edx
+        mul   dword [BgrDataHeight]
         mov   ecx,[ScreenHeight]
         inc   ecx
         div   ecx
@@ -270,34 +264,26 @@ vesa12_drawbackground:
       no_vesa12_stretched_bgr:
 
 
-        push  eax
-        mov   eax,ebx
-        xor   edx,edx
-        mov   ebx,[WinMapAddress-8]
-        add   ebx,[WinMapAddress-8]
-        add   ebx,[WinMapAddress-8]
-        mul   ebx
-        mov   esi,eax
-        pop   eax
+        mov   esi,ebx
+        imul  esi, dword [BgrDataWidth]
         add   esi,eax
-        add   esi,eax
-        add   esi,eax
+        lea   esi,[esi*3]
         add   esi,[img_background]   ;IMG_BACKGROUND
         pop   ebx
         pop   eax
 
       v12di4:
 
-        mov   ecx,[esi]
+        mov   cl,[esi+2]
+        shl   ecx,16
+        mov   cx,[esi]
         pusha
         mov   esi,eax
         mov   edi,ebx
         mov   eax,[ScreenWidth]
         add   eax,1
         mul   ebx
-        add   eax,esi
-        add   eax,WinMapAddress
-        cmp   [eax],byte 1
+        cmp   [eax+esi+WinMapAddress],byte 1
         jnz   v12nbgp
         mov   eax,[BytesPerScanLine]
         mov   ebx,edi

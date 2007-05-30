@@ -1,13 +1,13 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
+;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
-;; RAMDISK functions                                                    ;;
-;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
-;; Addings by M.Lisovin                                                 ;;
-;; LFN support by diamond                                               ;;
+;; RAMDISK functions                                            ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
+;; Addings by M.Lisovin                                         ;;
+;; LFN support by diamond                                       ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ; calculate fat chain
@@ -1444,14 +1444,19 @@ fat_gen_short_name:
         add     ebx, edi
         sub     ebx, ecx
         push    ebx
+        cmp     ebx, ecx
+        jb      @f
+        pop     ebx
+        push    ecx
+@@:
         cmp     edi, ecx
         jbe     .skip
 @@:
         dec     edi
-        mov     al, ' '
-        xchg    al, [edi]
+        mov     al, [edi]
         dec     ebx
         mov     [ebx], al
+        mov     byte [edi], ' '
         cmp     edi, ecx
         ja      @b
 .skip:
