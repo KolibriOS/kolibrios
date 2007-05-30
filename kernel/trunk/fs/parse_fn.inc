@@ -1,7 +1,7 @@
 $Revision$
 ;-------------------------------------------------------------------------
 ;
-;    Замена имен файлов
+;  File path partial substitution (according to configuration)
 ;
 ;
 ;     SPraid

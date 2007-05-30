@@ -257,4 +257,4 @@ include "core/conf_lib.inc"
 include "core/ext_lib.inc"
 
 ; list of external functions
-include "lib_func.inc"
+include "imports.inc"
