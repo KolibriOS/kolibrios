@@ -13,6 +13,7 @@
 
   include 'lang.inc'
   include '..\..\..\macros.inc'
+purge mov       ; decrease kpack'ed size
 
 START:
     mov  eax,48
@@ -21,7 +22,9 @@ START:
     mov  edx,sizeof.system_colors
     mcall
 
-    call check_parameters
+    cmp  dword [I_Param], 'BOOT'
+    jz   OnBoot
+
     call draw_window
 
     call load_texture
@@ -53,69 +56,54 @@ still:
 
     shr  eax,8
 
-    cmp  eax,101                ; tiled
+    cmp  al,101                  ; tiled
     jne  no101
+    mov  ecx,1
+setbgrmode:
     mov  eax,15
     mov  ebx,4
-    mov  ecx,1
     mcall
-    mov  eax,15
-    mov  ebx,3
+    dec  ebx
     mcall
     jmp  still
   no101:
 
-    cmp  eax,102               ; stretch
-    jne  no102
-    mov  eax,15
-    mov  ebx,4
-    mov  ecx,2
-    mcall
-    mov  eax,15
-    mov  ebx,3
-    mcall
-    jmp  still
+    mov  ecx, 2
+    cmp  al, 102
+    jz   setbgrmode
   no102:
 
-    cmp  eax,1           ; end program
+    cmp  al,1           ; end program
     jnz  no_end
     or   eax,-1
     mcall
   no_end:
 
-    cmp  eax,11
+    cmp  al,11
     jz   bg
-    cmp  eax,12
+    cmp  al,12
     jz   bg
-    cmp  eax,13
+    cmp  al,13
     jz   bg
 
-    cmp  eax,121
+    cmp  al,121
     jb   no_bg_select
-    cmp  eax,133
-    jg   no_bg_select
-    sub  eax,121
-    shl  eax,2
-    add  eax,arrays
-    mov  eax,[eax]
+    cmp  al,133
+    ja   no_bg_select
+    mov  eax,[arrays + (eax-121)*4]
     mov  [usearray],eax
     call load_texture
     call draw_image
     jmp  still
   no_bg_select:
 
-    cmp  eax,14+20
+    cmp  al,14+20
     jge  bg4
 
     jmp  bg2
 
 
-check_parameters:
-
-    cmp  [I_Param],dword 'BOOT'
-    je   @f
-    ret
-  @@:
+OnBoot:
 
     call load_texture
 
@@ -125,7 +113,6 @@ check_parameters:
     mov  edx,256
     mcall
 
-    mov  eax,15
     mov  ebx,5
     mov  ecx,0x40000 ; <<< 0x40000 for blue, 0x40000+1 for red,
                        ; <<< 0x40000+2 for green background at boot
@@ -133,13 +120,11 @@ check_parameters:
     mov  esi,256*3*256
     mcall
 
-    mov  eax,15
-    mov  ebx,4
+    dec  ebx
     mov  ecx,2
     mcall
 
-    mov  eax,15
-    mov  ebx,3
+    dec  ebx
     mcall
 
     mov  eax,-1
@@ -178,13 +163,13 @@ bg:
 
     mov  edi,0x40000
 
-    cmp  eax,12
+    cmp  al,12
     jnz  bb1
-    mov  edi,0x40000+1
+    inc  edi
   bb1:
-    cmp  eax,13
+    cmp  al,13
     jnz  bb2
-    mov  edi,0x40000+2
+    inc  edi
   bb2:
 
     mov  eax,15
@@ -193,14 +178,12 @@ bg:
     mov  edx,256
     mcall
 
-    mov  eax,15
     mov  ebx,5
     mov  ecx,edi
     mov  edx,0
     mov  esi,256*256*3
     mcall
 
-    mov  eax,15
     mov  ebx,3
     mcall
 
@@ -210,33 +193,12 @@ bg:
 ; colored background
 
 bg2:
-
-    push eax
-
-    mcall 15,4,1
-
-    mov  eax,15
-    mov  ebx,1
-    mov  ecx,1
-    mov  edx,1
-    mcall
-
-    pop  eax
-    sub  eax,14
-    imul eax,3
-
-    mov  ecx,fill
-    add  ecx,eax
-
-    mov  eax,15
-    mov  ebx,5
-    xor  edx,edx
-    mov  esi,3*1*1
-    mcall
-
-    mov  eax,15
-    mov  ebx,3
-    mcall
+        mov     edi, eax
+        mcall   15,4,1
+        mcall   ,1,,1
+        lea     ecx, [(edi-14)*3+fill]
+        mcall   ,5,,0,3*1*1
+        mcall   ,3
 
     jmp  still
 
@@ -245,9 +207,8 @@ bg2:
 
 bg4:
 
-    sub  eax,14+20
     shl  eax,3
-    add  eax,shape
+    add  eax,shape - (14+20)*8
     mov  ecx,[eax+0]
     mov  edx,[eax+4]
 
@@ -255,7 +216,6 @@ bg4:
     mov  ebx,1
     mcall
 
-    mov  eax,15
     mov  ebx,3
     mcall
 
@@ -275,17 +235,17 @@ bg4:
 
 gentexture:
 
-  mov ecx,0          ; ycounter
-  mov edi,0          ; pixel counter
+  xor ecx,ecx        ; ycounter
+  xor edi,edi        ; pixel counter
 
   mov ebp,[usearray]
 
  ylup:
-    mov ebx,0
+    xor ebx,ebx
 
  xlup:
   push edi
-  mov edi, 0
+  xor edi, edi
   mov esi, 512000000           ; abnormous initial value :)
 
  pixlup:

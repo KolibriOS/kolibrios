@@ -68,6 +68,30 @@ CMPL_FLAG equ 0002h    ; core multi-processing legacy mode 1
 SVM_FLAG equ 0004h     ; secure virtual machine 2
 MOVCR8_FLAG equ 0010h    ;AltMovCr8  4
 
+;//////////////////////////////////////////////
+decode_sse3:   ; is SS3 supported
+        xor     eax, eax
+        inc     eax
+        cpuid
+        test    ecx, 1
+        setnz   [sse3sup]
+        mov     eax, sse3+6
+
+write_yes_no:
+        mov     dword [eax], 'no'
+        jz      @f
+        mov     dword [eax], 'yes'
+@@:
+        ret
+
+show_next_bit:
+        shr     edx, 1
+write_yes_no_cf:
+        mov     dword [eax], 'no'
+        jnc     @f
+        mov     dword [eax], 'yes'
+@@:
+        ret
 
 ;decoding standard features
 
@@ -77,668 +101,230 @@ decode_standard_features:
  inc eax
  cpuid
 
-Test0:
-test edx, FPU_FLAG
-jnz Test0e
+        mov     eax, FPU+6
+        call    show_next_bit
 
-mov dword  [FPU+6], $6F6E
-jmp Test1
+        mov     eax, VME+7
+        call    show_next_bit
 
-Test0e:
-mov  dword [FPU+6], $736579
+        mov     eax, DE+7
+        call    show_next_bit
 
-;;;;;;
-Test1:
-test edx, VME_FLAG
-jnz Test1e
+        mov     eax, PSE+8
+        call    show_next_bit
 
-mov   dword [VME+ 7], $6F6E
-jmp Test2
+        mov     eax, TSC+6
+        call    show_next_bit
 
-Test1e:
-mov   dword [VME+ 7], $736579
+        mov     eax, MSR+7
+        call    show_next_bit
 
-;;;;;;
-Test2:
-test edx, DE_FLAG
-jnz Test2e
+        mov     eax, PAE+7
+        call    show_next_bit
 
-mov   dword [DE+ 7], $6F6E
-jmp Test3
+        mov     eax, MCE+8
+        call    show_next_bit
 
-Test2e:
-mov   dword [DE+ 7], $736579
-;;;;;;
+        mov     eax, CX8+6
+        call    show_next_bit
 
-Test3:
-test edx, PSE_FLAG
-jnz Test3e
+        mov     eax, APIC+7
+        call    show_next_bit
 
-mov   dword [PSE+ 8], $6F6E
-jmp Test4
+        shr     edx, 1          ; skip reserved bit
 
-Test3e:
-mov   dword [PSE+ 8], $736579
+        mov     eax, SEP+8
+        call    show_next_bit
 
-;;;;
-Test4:
-test edx, TSC_FLAG
-jnz Test4e
+        mov     eax, MTRR+6
+        call    show_next_bit
 
-mov   dword [TSC+ 6], $6F6E
-jmp Test5
+        mov     eax, PGE+7
+        call    show_next_bit
 
-Test4e:
-mov   dword [TSC+ 6], $736579
+        mov     eax, MCA+7
+        call    show_next_bit
 
-;;;;
-Test5:
-test edx, MSR_FLAG
-jnz Test5e
+        mov     eax, CMOV+8
+        call    show_next_bit
 
-mov   dword [MSR+ 7], $6F6E
-jmp Test6
+        mov     eax, PAT+6
+        call    show_next_bit
 
-Test5e:
-mov   dword [MSR+ 7], $736579
+        mov     eax, PSE36+7
+        call    show_next_bit
 
-;;;;
-Test6:
-test edx, PAE_FLAG
-jnz Test6e
+        mov     eax, PSNUM+7
+        call    show_next_bit
 
-mov   dword [PAE+ 7], $6F6E
-jmp Test7
+        mov     eax, CLFLUSHn+8
+        call    show_next_bit
 
-Test6e:
-mov   dword [PAE+ 7], $736579
+        shr     edx, 1          ; skip reserved bit
 
-;;;;
-Test7:
-test edx, MCE_FLAG
-jnz Test7e
+        mov     eax, DTS+7
+        call    show_next_bit
 
-mov   dword [MCE+ 8], $6F6E
-jmp Test8
+        mov     eax, ACPI+7
+        call    show_next_bit
 
-Test7e:
-mov   dword [MCE+ 8], $736579
+        mov     eax, MMX+8
+        call    show_next_bit
+        mov     eax, [eax]
+        mov     [MMXs+7], eax
 
-;;;;
-Test8:
-test edx, CX8_FLAG
-jnz Test8e
+        mov     eax, FXSR+6
+        call    show_next_bit
 
-mov   dword [CX8+ 6], $6F6E
-jmp Test9
+        mov     eax, SSE+7
+        call    show_next_bit
 
-Test8e:
-mov   dword [CX8+ 6], $736579
-;;;;
+        mov     eax, SSE2+7
+        call    show_next_bit
 
-Test9:
-test edx, APIC_FLAG
-jnz Test9e
+        mov     eax, SSn+8
+        call    show_next_bit
 
-mov   dword [APIC+ 7], $6F6E
-jmp Test11
+        shr     edx, 1
+;       mov     eax, HTT+8
+;       test    edx, HTT_FLAG
+;       call    write_yes_no
 
-Test9e:
-mov   dword [APIC+ 7], $736579
-;;;;;
+        mov     eax, TM+7
+        call    show_next_bit
 
-Test11:
-test edx, SEP_FLAG
-jnz Test11e
+        mov     eax, IA64+7
+        call    show_next_bit
 
-mov   dword [SEP+ 8], $6F6E
-jmp Test12
+        mov     eax, PBE+8
+        call    show_next_bit
 
-Test11e:
-mov   dword [SEP+ 8], $736579
-;;;;
+        ret
 
-Test12:
-test edx, MTRR_FLAG
-jnz Test12e
-
-mov   dword [MTRR+ 6], $6F6E
-jmp Test13
-
-Test12e:
-mov   dword [MTRR+ 6], $736579
-;;;;
-
-Test13:
-test edx, PGE_FLAG
-jnz Test13e
-
-mov   dword [PGE+ 7], $6F6E
-jmp Test14
-
-Test13e:
-mov   dword [PGE+ 7], $736579
-;;;;;
-
-Test14:
-test edx, MCA_FLAG
-jnz Test14e
-
-mov   dword [MCA+ 7], $6F6E
-jmp Test15
-
-Test14e:
-mov   dword [MCA+ 7], $736579
-;;;;
-
-Test15:
-test edx, CMOV_FLAG
-jnz Test15e
-
-mov   dword [CMOV+ 8], $6F6E
-jmp Test16
-
-Test15e:
-mov   dword [CMOV+ 8], $736579
-;;;;
-
-Test16:
-test edx, PAT_FLAG
-jnz Test16e
-
-mov   dword [PAT+ 6], $6F6E
-jmp Test17
-
-Test16e:
-mov   dword [PAT+ 6], $736579
-;;;;
-
-Test17:
-test edx, PSE36_FLAG
-jnz Test17e
-
-mov   dword [PSE36+ 7], $6F6E
-jmp Test18
-
-Test17e:
-mov   dword [PSE36+ 7], $736579
-;;;;
-
-Test18:
-test edx, PSNUM_FLAG
-jnz Test18e
-
-mov   dword [PSNUM+ 7], $6F6E
-jmp Test19
-
-Test18e:
-mov   dword [PSNUM+ 7], $736579
-;;;;
-
-Test19:
-test edx, CLFLUSH_FLAG
-jnz Test19e
-
-mov   dword [CLFLUSHn + 8], $6F6E
-jmp Test21
-
-Test19e:
-mov   dword [CLFLUSHn + 8], $736579
-;;;;
-
-Test21:
-test edx, DTS_FLAG
-jnz Test21e
-
-mov   dword [DTS+ 7], $6F6E
-jmp Test22
-
-Test21e:
-mov   dword [DTS+ 7], $736579
-;;;;
-
-Test22:
-test edx, ACPI_FLAG
-jnz Test22e
-
-mov   dword [ACPI+ 7], $6F6E
-jmp Test23
-
-Test22e:
-mov   dword [ACPI+ 7], $736579
-;;;;;
-
-Test23:
-test edx, MMX_FLAG
-jnz Test23e
-
-mov   dword [MMX+ 8], $6F6E
-mov   dword [MMXs+ 7], $6F6E
-jmp Test24
-
-Test23e:
-mov   dword [MMX+ 8], $736579
-mov   dword [MMXs+ 7], $736579
-;;;;;
-
-Test24:
-test edx, FXSR_FLAG
-jnz Test24e
-
-mov   dword [FXSR+ 6], $6F6E
-jmp Test25
-
-Test24e:
-mov   dword [FXSR+ 6], $736579
-;;;;;
-
-Test25:
-test edx, SSE_FLAG
-jnz Test25e
-
-mov   dword [SSE+ 7], $6F6E
-jmp Test26
-
-Test25e:
-mov   dword [SSE+ 7], $736579
-
-;;;;
-Test26:
-test edx, SSE2_FLAG
-jnz Test26e
-
-mov   dword [SSE2+ 7], $6F6E
-jmp Test27
-
-Test26e:
-mov   dword [SSE2+ 7], $736579
-
-;;;;
-
-Test27:
-test edx, SS_FLAG
-jnz Test27e
-
-mov   dword [SSn+ 8], $6F6E
-jmp Test29;28
-
-Test27e:
-mov   dword [SSn+ 8], $736579
-
-;;;;
-
-;Test28:
-;test edx, HTT_FLAG
-;jnz Test28e
-;
-;mov   dword [HTT+ 8], $6F6E
-;jmp Test29
-;
-;Test28e:
-;mov   dword [HTT+ 8], $736579
-
-;;;;
-
-Test29:
-test edx, TM_FLAG
-jnz Test29e
-
-mov   dword [TM+ 7], $6F6E
-jmp Test30
-
-Test29e:
-mov   dword [TM+ 7], $736579
-
-;;;;
-
-Test30:
-test edx, IA64_FLAG
-jnz Test30e
-
-mov   dword [IA64+ 7], $6F6E
-jmp Test31
-
-Test30e:
-mov   dword [IA64+ 7], $736579
-
-;;;;
-Test31:
-test edx, PBE_FLAG
-jnz Test31e
-
-mov   dword [PBE+ 8], $6F6E
-jmp Standart_out
-
-Test31e:
-mov   dword [PBE+ 8], $736579
-
-Standart_out:
-
-ret
-;//////////////////////////////////////////////
-decode_sse3:   ; is SS3 supported
-      xor eax,eax
-      inc eax
-      cpuid
-  test	ecx, $1 ; Test bit 1
-  jnz	.EX; SSE3 technology is  supported
-  jz .EXN
-
-.EX:
-   mov dword  [sse3+ 6],  $736579
-   mov [sse3sup], 1
-   jmp exitter
-.EXN:
-    mov dword [sse3+ 6], $6F6E
-    mov [sse3sup],0
-
-exitter:
-
-ret
 ;//////////////////////////////////////////////
 decode_extended_features:
-      xor eax,eax
-      inc eax
-      cpuid
-Tes1:
-test ecx, SSE3_FLAG
-jnz Tes1e
+; is called immediately after decode_standard_features
+;        xor     eax, eax
+;        inc     eax
+;        cpuid
 
-mov   dword [SS3+ 8], $6F6E
-jmp Tes2
+        mov     eax, SS3+8
+        test    ecx, SSE3_FLAG
+        call    write_yes_no
 
-Tes1e:
-mov   dword [SS3+ 8], $736579
+        mov     eax, MON+8
+        test    ecx, MON_FLAG
+        call    write_yes_no
 
+        mov     eax, DS_CPL+8
+        test    ecx, DS_CPL_FLAG
+        call    write_yes_no
 
-Tes2:
-test ecx, MON_FLAG
-jnz Tes2e
+        mov     eax, EST+8
+        test    ecx, EST_FLAG
+        call    write_yes_no
 
-mov   dword [MON+ 8], $6F6E
-jmp Tes3
+        mov     eax, TM2+8
+        test    ecx, TM2_FLAG
+        call    write_yes_no
 
-Tes2e:
-mov   dword [MON+ 8], $736579
+        mov     eax, CNXT_ID+12
+        test    ecx, CNXT_ID_FLAG
+        call    write_yes_no
 
+        mov     eax, CX16+12
+        test    ecx, CX16_FLAG
+        call    write_yes_no
 
-Tes3:
-test ecx, DS_CPL_FLAG
-jnz Tes3e
+        mov     eax, ETPRD+12
+        test    ecx, ETPRD_FLAG
+        call    write_yes_no
 
-mov   dword [DS_CPL+ 8], $6F6E
-jmp Tes4
+        mov     eax, VMX+8
+        test    ecx, VMX_FLAG
+        call    write_yes_no
 
-Tes3e:
-mov   dword [DS_CPL+ 8], $736579
+        mov     eax, SSSE3+12
+        test    ecx, SSSE3_FLAG
+        call    write_yes_no
 
-Tes4:
-test ecx, EST_FLAG
-jnz Tes4e
-
-mov   dword [EST+ 8], $6F6E
-jmp Tes5
-
-Tes4e:
-mov   dword [EST+ 8], $736579
-
-
-Tes5:
-test ecx, TM2_FLAG
-jnz Tes5e
-
-mov   dword [TM2+ 8], $6F6E
-jmp Tes6
-
-Tes5e:
-mov   dword [TM2+ 8], $736579
-
-
-Tes6:
-test ecx, CNXT_ID_FLAG
-jnz Tes6e
-
-mov   dword [CNXT_ID+ 12], $6F6E
-jmp Tes7
-
-Tes6e:
-mov   dword [CNXT_ID+ 12], $736579
-
-
-Tes7:
-test ecx, CX16_FLAG
-jnz Tes7e
-
-mov   dword [CX16+ 12], $6F6E
-jmp Tes8
-
-Tes7e:
-mov   dword [CX16+ 12], $736579
-
-
-Tes8:
-test ecx, ETPRD_FLAG
-jnz Tes8e
-
-mov   dword [ETPRD+ 12], $6F6E
-jmp Tes9
-
-Tes8e:
-mov   dword [ETPRD+ 12], $736579
-
-Tes9:
-test ecx, VMX_FLAG
-jnz Tes9e
-
-mov   dword [VMX+ 8], $6F6E
-jmp Tes10
-
-Tes9e:
-mov   dword [VMX+ 8], $736579
-
-Tes10:
-test ecx, SSSE3_FLAG
-jnz Tes10e
-
-mov   dword [SSSE3+ 12], $6F6E
-jmp Tes11
-
-Tes10e:
-mov   dword [SSSE3+ 12], $736579
-
-Tes11:
-test ecx, DCA_FLAG
-jnz Tes11e
-
-mov   dword [DCA+ 8], $6F6E
-jmp Tes12
-
-Tes11e:
-mov   dword [DCA+ 8], $736579
-
-Tes12:
-
-
-ret
+        mov     eax, DCA+8
+        test    ecx, DCA_FLAG
+        call    write_yes_no
+@@:
+        ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 decode_extended:
-    xor   eax, eax
-    mov   eax,$80000000
-    cpuid
+        mov     eax, $80000000
+        cpuid
+        mov     [extc], eax     ; max number of calls
+        test    eax, eax
+        jns     @b
 
-test eax, 80000000h
-jnz gooodd
+        mov     eax, $80000001 ;// Setup extended function 8000_0001h
+        cpuid
 
-jmp baaad
+        mov     eax, MP+8
+        test    edx, MP_FLAG
+        call    write_yes_no
 
-baaad:
+        mov     eax, NX+8
+        test    edx, NX_FLAG
+        call    write_yes_no
 
-
-jmp Tez13
-
-gooodd:
-  xor eax, eax
-  mov	eax, $80000001 ;// Setup extended function 8000_0001h
-  cpuid
-
-Tez1:
-test edx, MP_FLAG
-jnz Tez1e
-
-mov   dword [MP+8], $6F6E
-jmp Tez2
-
-Tez1e:
-mov   dword [MP+ 8], $736579
-
-Tez2:
-test edx, NX_FLAG
-jnz Tez2e
-
-mov   dword [NX+ 8], $6F6E
-jmp Tez4
 ;jmp Tez3 we do detection in another place, because of Cyrix specific MMX+ detection 
+;       mov     eax, MMXPi+8
+;       test    edx, MMXPi_FLAG
+;       call    write_yes_no
 
-Tez2e:
-mov   dword [NX+ 8], $736579
+        mov     eax, MMXn+8
+        test    edx, MMXn_FLAG
+        call    write_yes_no
 
-;Tez3:
-;test edx, MMXPi_FLAG
-;jnz Tez3e
+        mov     eax, FXSRn+8
+        test    edx, FXSRn_FLAG
+        call    write_yes_no
 
-;mov   dword [MMXPi+ 8], $6F6E
-;jmp Tez4
+        mov     eax, FFXSR+12
+        test    edx, FFXSR_FLAG
+        call    write_yes_no
 
+        mov     eax, TSCP+12
+        test    edx, TSCP_FLAG
+        call    write_yes_no
 
-;Tez3e:
-;mov   dword [MMXPi+ 8], $736579
+        mov     eax, LM+12
+        test    edx, LM_FLAG
+        call    write_yes_no
 
-Tez4:
-test edx, MMXn_FLAG
-jnz Tez4e
+        mov     eax, DNo+12
+        test    edx, DNo_FLAG
+        call    write_yes_no
 
-mov   dword [MMXn+ 8], $6F6E
-jmp Tez5
-
-Tez4e:
-mov   dword [MMXn+ 8], $736579
-
-Tez5:
-test edx, FXSRn_FLAG
-jnz Tez5e
-
-mov   dword [FXSRn+ 8], $6F6E
-jmp Tez6
-
-Tez5e:
-mov   dword [FXSRn+ 8], $736579
-
-Tez6:
-test edx, FFXSR_FLAG
-jnz Tez6e
-
-mov   dword [FFXSR+ 12], $6F6E
-jmp Tez7
-
-Tez6e:
-mov   dword [FFXSR+ 12], $736579
-
-Tez7:
-test edx, TSCP_FLAG
-jnz Tez7e
-
-mov   dword [TSCP+ 12], $6F6E
-jmp Tez8
-
-Tez7e:
-mov   dword [TSCP+ 12], $736579
-
-
-Tez8:
-test edx, LM_FLAG
-jnz Tez8e
-
-mov   dword [LM+ 12], $6F6E
-jmp Tez9
-
-Tez8e:
-mov   dword [LM+ 12], $736579
-
-Tez9:
-test edx, DNo_FLAG
-jnz Tez9e
-
-mov   dword [DNo+ 12], $6F6E
-jmp Tez10
-
-Tez9e:
-mov   dword [DNo+ 12], $736579
-
-
-Tez10:
-test edx, DN_FLAG
-jnz Tez10e
-
-mov   dword [DN+ 12], $6F6E
-jmp Tez11
-
-Tez10e:
-mov   dword [DN+ 12], $736579
+        mov     eax, DN+12
+        test    edx, DN_FLAG
+        call    write_yes_no
 
 ;Intel
+        mov     eax, SYS+12
+        test    edx, SYS_FLAG
+        call    write_yes_no
 
-Tez11:
-test edx, SYS_FLAG
-jnz Tez11e
+        mov     eax, LAF+12
+        test    ecx, LAHF_FLAG
+        call    write_yes_no
 
-mov   dword [SYS+ 12], $6F6E
-jmp Tez12
+        mov     eax, CMPL+12
+        test    ecx, CMPL_FLAG
+        call    write_yes_no
 
-Tez11e:
-mov   dword [SYS+ 12], $736579
+        mov     eax, SVM+8
+        test    ecx, SVM_FLAG
+        call    write_yes_no
 
+        mov     eax, MCR8+12
+        test    ecx, MOVCR8_FLAG
+        call    write_yes_no
 
-Tez12:
-test ecx, LAHF_FLAG
-jnz Tez12e
-
-mov   dword [LAF+ 12], $6F6E
-jmp Tez13
-
-Tez12e:
-mov   dword [LAF+ 12], $736579
-
-Tez13:
-test ecx, CMPL_FLAG
-jnz Tez13e
-
-mov   dword [CMPL+ 12], $6F6E
-jmp Tez14
-
-Tez13e:
-mov   dword [CMPL+ 12], $736579
-
-Tez14:
-test ecx, SVM_FLAG
-jnz Tez14e
-
-mov   dword [SVM+ 8], $6F6E
-jmp Tez15
-
-Tez14e:
-mov   dword [SVM+ 8], $736579
-
-Tez15:
-test ecx, MOVCR8_FLAG
-jnz Tez15e
-
-mov   dword [MCR8+ 12], $6F6E
-jmp Tez16
-
-Tez15e:
-mov   dword [MCR8+ 12], $736579
-
-Tez16:
-
-ret
+        ret

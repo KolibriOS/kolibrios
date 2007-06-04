@@ -25,8 +25,10 @@ version equ '1.2'
   dd     0x0         ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
-include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
+include '..\..\develop\editbox\editbox.inc'
 use_edit_box procinfo,22,5
+al equ eax      ; \ decrease kpack'ed size
+purge mov       ; /
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
@@ -44,9 +46,7 @@ red:                    ; перерисовать окно
 ;---------------------------------------------------------------------
 
 still:
-    push 10 
-    pop eax 
-    mcall 
+    mcall 10
 
     dec  eax             ; перерисовать окно?
     jz   red             ; если да - на метку red
@@ -56,8 +56,8 @@ still:
     jz   button
 
 mouse:
-    mouse_edit_boxes editbox,editbox_end
-    jmp still
+        mouse_edit_box editbox
+        jmp     still
     
 button:
     mov  al,17           ; получить идентификатор нажатой кнопки
@@ -69,95 +69,66 @@ button:
     mcall
 
 noclose:
-    cmp  ah,2
-    jne  path_2
-    call clear_err
-    mov  al,16
-    mov  ebx,1
-    mcall
-    call check_for_error
-    jmp  still
- path_2:
-    cmp  ah,3
-    jne  path_3
-    call clear_err
-    mov  al,16
-    mov  ebx,2
-    mcall
-    call check_for_error
-    jmp  still
- path_3:
-    cmp  ah,4
-    jne  path_4
-    call clear_err
-    mov  al,18
-    mov  ebx,6
-    mov  ecx,path3
-    mcall
-    call check_for_error
-    jmp  still
- path_4:
-    call clear_err
-    mov  eax,18
-    mov  ebx,6
-    mov  ecx,path4
-    mcall
-    call check_for_error
-    jmp  still
+        push    eax
+        call    clear_err
+        pop     eax
+        push    16
+        xor     ebx, ebx
+        inc     ebx     ; 16.1 = save to /FD/1
+        cmp     ah, 2
+        je      doit
+        inc     ebx     ; 16.2 = save to /FD/2
+        cmp     ah, 3
+        je      doit
+        pop     ebx
+        push    18
+        mov     bl, 6   ; 18.6 = save to specified folder
+        mov     ecx, path3
+        cmp     ah, 4
+        je      doit
+        mov     ecx, path4
+doit:
+        pop     eax
+        mcall
+        call    check_for_error
+        jmp     still
 
 key:         
     mov  al,2
     mcall
-    key_edit_boxes editbox,editbox_end
+    key_edit_box editbox
     jmp  still
 
 
 check_for_error:                      ;Обработчик ошибок
-    cmp eax,0
-    jne err1
-    mov ecx,[sc.work_text]
-    mov edx,ok
-    jmp print
- err1:
-    cmp eax,1
-    jne err3
-    mov ecx,0xdd2222
-    mov edx,error11
-    jmp print
- err3:
-    cmp eax,3
-    jne err5
-    mov ecx,0xdd2222
-    mov edx,error3
-    jmp print
- err5:
-    cmp eax,5
-    jne err8
-    mov ecx,0xdd2222
-    mov edx,error5
-    jmp print
- err8:
-    cmp eax,8
-    jne err9
-    mov ecx,0xdd2222
-    mov edx,error8
-    jmp print
- err9:
-    cmp eax,9
-    jne err10
-    mov ecx,0xdd2222
-    mov edx,error9
-    jmp print
-err10:
-    cmp eax,10
-    jne err11
-    mov ecx,0xdd2222
-    mov edx,error10
-    jmp print
- err11:
-    mov ecx,0xdd2222
-    mov edx,error11
-    jmp print
+        mov     ecx, [sc.work_text]
+        mov     edx, ok
+        test    eax, eax
+        jz      print
+        mov     ecx, 0xdd2222
+        add     edx, error3 - ok
+        dec     eax
+        dec     eax
+        jz      print
+        add     edx, error5 - error3
+        dec     eax
+        dec     eax
+        jz      print
+        add     edx, error8 - error5
+        dec     eax
+        dec     eax
+        dec     eax
+        jz      print
+        add     edx, error9 - error8
+        dec     eax
+        jz      print
+        add     edx, error10 - error9
+        dec     eax
+        jz      print
+        add     edx, error11 - error10
+        dec     eax
+        jz      print
+        add     edx, aUnknownError - error11
 
  print:
     mov eax,4                              ;надписи
@@ -167,7 +138,7 @@ err10:
     ret
 
 clear_err:
-    mov al,13
+    mov eax,13
     mov ebx,15 shl 16 + 240
     mov ecx,145 shl 16 +15
     mov edx,[sc.work]
@@ -199,9 +170,9 @@ draw_window:
    mov edi,title                        ; ЗАГОЛОВОК ОКНА
    mcall
 
-draw_edit_boxes editbox,editbox_end,use_f9,procinfo  ;рисование edit box'ов
+draw_edit_box editbox,use_f9,procinfo   ;рисование edit box'ов
 
-   mov al,13                             ;отрисовка теней кнопок
+   mov al,13                            ;отрисовка теней кнопок
    mov ebx,194 shl 16 + 60
    mov ecx,34 shl 16 +15
    mov edx,0x444444
@@ -306,6 +277,7 @@ error8  db 'Нет места на диске',0
 error9  db 'Таблица FAT разрушена',0
 error10 db 'Доступ запрещен',0
 error11 db 'Ошибка устройства',0
+aUnknownError db 'Неизвестная ошибка',0
 
 else
 save    db '  Save',0
@@ -319,6 +291,7 @@ error8  db 'Disk is full',0
 error9  db 'FAT table corrupted',0
 error10 db 'Access denied',0
 error11 db 'Device error',0
+aUnknownError db 'Unknown error',0
 
 end if
 

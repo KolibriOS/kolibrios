@@ -5,115 +5,80 @@
    use32
    org    0x0
 
+used_memory = 0x10000
+
    db     'MENUET01'     ; 8 byte id
    dd     0x01           ; header version
    dd     START          ; start of code
    dd     I_END          ; size of image
-   dd     0x40000        ; memory for app (256 Kb)
-   dd     0x40000        ; esp
+   dd     used_memory    ; memory for app
+   dd     used_memory    ; esp
    dd     0x0 , 0x0      ; I_Param , I_Icon
 
 include   'lang.inc'
 include   '..\..\..\macros.inc'
+purge mov       ; decrease kpack'ed size
 
 ;include   'debug.inc'
 
 START:
-     mov  eax,14
-     mcall
-     and  eax,0xFFFF0000
-     mov  [top_right_corner],eax
-
      mov  eax,40        ; установить маску событий
      mov  ebx,110010b   ; реагируем на клавиатуру, мышь, отрисовку фона
      mcall
 
-     mov  eax,14        ; получим размеры экрана
-     mcall
-     mov  [y_max],ax
-     shr  eax,16
-     mov  [x_max],ax
+bgr_changed:
 
-  event:              ; обработчик событий (всех)
-    mov  eax,26
-    mov  ebx,9
-    mcall         ; получить время системы
-;    mov  eax,3
-;    mcall
-    mov  [evtime],eax ; запомнить его
-    mov  eax,37
-    mov  ebx,2
-    mcall
-    cmp  eax,3        ; продолжим, если нажата средняя кнопка мыши
-    jne  still
-    mov  eax,37       ; проверим координаты
-    mov  ebx,0
-    mcall
-    cmp  [top_right_corner],eax
-    je   create_setup ; создаём окно настройки, если мышь в верхнем правом
-                      ; углу экрана
+        mov     eax,14
+        mcall
+        mov     [y_max], ax
+        shr     eax, 16
+        mov     [x_max], ax
+        shl     eax, 16
+        mov     [top_right_corner], eax
 
+still:
+        movzx   ebx, [time]
+        imul    ebx, 60*100
+        mcall   23              ; ждём события в течение [time] минут
+        test    eax, eax
+        jz      create_ss_thread
+        cmp     al, 2           ; key in buffer?
+        jz      key
+        cmp     al, 5           ; background redraw?
+        jz      bgr_changed
+; mouse event
+        mcall   37,2            ; проверим кнопки
+        and     al, 3
+        cmp     al, 3           ; нажаты обе кнопки мыши?
+        jnz     still
+        mcall   37,0            ; проверим координаты
+        cmp     [top_right_corner], eax
+        jnz     still
+create_setup:
+        test    [params], 2
+        jnz     still           ; окно настроек уже создано
+        mcall   51,1,sthread,used_memory-0x1000
+        or      [params], 2
+        jmp     still
+key:
+        mcall                   ; eax = 2
+        jmp     still
 
+create_ss_thread:
+        test    [params], 3
+        jnz     still
+        call    create_ss
+        jmp     still
 
-still:                  ; основной цикл программы
-
-    mov  eax,23         ; ждём события в течение 1 секунды
-    mov  ebx,100
-    mcall
-
-    bt   dword [params],0  ; ssaver works?
-    jc   event
-    bt   dword [params],1  ; setup works?
-    jc   event
-
-    cmp  eax,2          ; key in buffer ?
-    je   event
-    cmp  eax,5
-    je   event
-    cmp  eax,6
-    je   event
-
-    mov  eax,26
-    mov  ebx,9
-    mcall
-    sub  eax,[evtime]
-    xor  edx,edx
-    mov  ebx,60*100     ; поделим на 60*100, получим время в минутах
-    div  ebx
-    cmp  al,[time]
-    jb   still
-
-; current_time-evtime/100/60 = время в минутах с прошлого события
-
-    call create_ss
-    jmp  still
-
-
-
-  create_setup:
-    bt dword [params],1
-    jc   still
-    mov  eax,51
-    mov  ebx,1
-    mov  ecx,sthread
-    mov  edx,0x3F000
-    mcall
-    bts dword [params],1
-    jmp  still
-
-  create_ss:
-    mov  eax,51
-    mov  ebx,1
-    mov  ecx,thread
-    mov  edx,0x3E000
-    mcall
-    bts dword [params],0
-    ret
+create_ss:
+        mcall   51,1,thread,used_memory-0x2000
+        or      [params], 1
+        ret
 
  thread:
-    mov  eax,5
-    mov  ebx,eax
-    mcall
+;    mov  eax,5
+;    mov  ebx,eax
+;    mcall
     mov  eax,40
     mov  ebx,100010b
     mcall
@@ -133,22 +98,20 @@ still:                  ; основной цикл программы
     jmp  drawsswin
  asminit:                 ; for "assembler"
     mov  dword [delay],25
-    mov  eax,58
+    mov  eax,70
     mov  ebx,fileinfo
     mcall
+    mov  [filesize], ebx
  asminit1:
-    mov  eax,data_from_file
-    mov  [stringstart],eax
+    mov  [stringstart],data_from_file
     mov  dword [stringlen],1
  newpage:
     mov  word [stringpos],10
 
  drawsswin:
     xor  eax,eax
-    mov  ebx,eax
-    mov  ecx,eax
-    mov  bx,[x_max]
-    mov  cx,[y_max]
+    movzx ebx,[x_max]
+    movzx ecx,[y_max]
     inc  ebx
     inc  ecx
     mov  edx,0x01000000
@@ -160,10 +123,8 @@ still:                  ; основной цикл программы
     mov  eax,23
     mov  ebx,[delay]
     mcall
-    cmp  eax,2
-    je   thr_end
-    cmp  eax,6
-    je   thr_end
+    test eax,eax
+    jnz  thr_end
     cmp  dword [type],0
     je   tstill
     cmp  dword [type],24
@@ -171,11 +132,7 @@ still:                  ; основной цикл программы
     call draw_line
     jmp  tstill
  thr_end:
-    btr  dword [params],0
-    mov  eax,26
-    mov  ebx,9
-    mcall
-    mov  [evtime],eax
+    and  [params], not 1
     or   eax,-1
     mcall
 
@@ -183,12 +140,15 @@ still:                  ; основной цикл программы
     mov  edi,[stringstart]
     add  edi,[stringlen]
     dec  edi
-    mov  eax,edi
-    sub  eax,data_from_file
-    cmp  eax,10450
+    lea  eax,[edi-data_from_file]
+    cmp  eax,[filesize]
     ja   asminit1
-    cmp word [edi],0x0a0d
+    cmp  word [edi],0x0a0d
+    je   addstring
+    cmp  byte [edi],0x0a
     jne  noaddstring
+    dec  edi
+addstring:
     add  word [stringpos],10
     add  edi,2
     mov  [stringstart],edi
@@ -211,11 +171,8 @@ still:                  ; основной цикл программы
     jmp  tstill
 
 draw_line:
-
-    xor  esi,esi
-    xor  edi,edi
-    mov  si,[x_max]
-    mov  di,[y_max]
+    movzx esi,[x_max]
+    movzx edi,[y_max]
 
     mov  eax,[addx1]
     add  [lx1],eax
@@ -294,13 +251,12 @@ sstill:
     mov  eax,10                 ; wait here for event
     mcall
 
-    cmp  eax,1                  ; redraw request ?
+    dec  eax                    ; redraw request ?
     je   sthread
-    cmp  eax,2                  ; key in buffer ?
-    je   sstill
-    cmp  eax,3                  ; button in buffer ?
-    je   sbutton
-
+    dec  eax                    ; key in buffer ?
+    jne  sbutton
+    mov  al,2
+    mcall
     jmp  sstill
 
   sbutton:                       ; button
@@ -310,20 +266,20 @@ sstill:
     cmp  ah,1                   ; button id=1 ?
     jne  snoclose
 
-    btr dword [params],1
+    and  [params], not 2
     mov  eax,-1                 ; close this program
     mcall
   snoclose:
     cmp  ah,7
     jne  nosetfl
-    btc dword [params],0
+    xor  [params], 1
     call drawflag
     call drawtype
     call drawtime
     jmp  sstill
   nosetfl:
-    bt dword [params],0
-    jc   sstill
+    test [params], 1
+    jnz  sstill
     cmp  ah,2
     jne  notypedown
     mov  eax,[type]
@@ -345,7 +301,7 @@ sstill:
     mov  al,[time]
     cmp  al,1
     jbe  sstill
-    dec  al
+    dec  eax
 ;    das
     jmp  timeupdn
   notimedown:
@@ -354,17 +310,16 @@ sstill:
     mov  al,[time]
     cmp  al,59 ; 0x59
     jae  sstill
-    inc  al
+    inc  eax
 ;    daa
     jmp  timeupdn
   notimeup:
     cmp  ah,6
     jne  noshow
     mov  eax,5
-    mov  ebx,150
+    mov  ebx,10;150
     mcall
     call create_ss
-    jmp  sstill
   noshow:
     jmp  sstill
 
@@ -397,7 +352,7 @@ sdraw_window:
     mov  edi,title
     mcall
 
-    mov  eax,8
+    mov  al,8
     mov  ebx,47*65536+10
     mov  ecx,31*65536+10
     mov  edx,2
@@ -420,19 +375,16 @@ sdraw_window:
     inc  edx
     mcall
 
-    mov  eax,4                     ; function 4 : write text to window
+    mov  al,4                        ; function 4 : write text to window
     mov  ebx,15*65536+33             ; [x start] *65536 + [y start]
-    mov  ecx,0xffffff
+    mov  ecx,0x80ffffff
     mov  edx,setuptext
-    mov  esi,9
     mcall
     add  ebx,15
-    add  edx,esi
-    mov  esi,30
+    add  edx,10
     mcall
     mov  ebx,169*65536+32
     mov  edx,buttext
-    mov  esi,4
     mcall
 
     call drawtype
@@ -450,12 +402,12 @@ drawtype:
     mov  ebx,80*65536+75
     mov  ecx,30*65536+12
     mov  edx,0xffffff
-    bt   dword [params],0
-    jnc  noblue
+    test [params], 1
+    jz   noblue
     mov  edx,0x4e00e7
  noblue:
     mcall
-    mov  eax,4
+    mov  al,4
     mov  ebx,82*65536+32
     xor  ecx,ecx
     mov  edx,typetext
@@ -469,12 +421,12 @@ drawtime:
     mov  ebx,80*65536+15
     mov  ecx,45*65536+12
     mov  edx,0xffffff
-    bt   dword [params],0
-    jnc  noblue1
+    test [params], 1
+    jz   noblue1
     mov  edx,0x4e00e7
  noblue1:
     mcall
-    mov  eax,47
+    mov  al,47
     mov  edx,82*65536+47
     xor  esi,esi
     movzx ecx,byte [time]
@@ -489,7 +441,7 @@ drawflag:
     mov  edx,7
     mov  esi,0xe0e0e0
     mcall
-    mov  eax,4
+    mov  al,4
     mov  ebx,153*65536+47
     xor  ecx,ecx
     mov  esi,1
@@ -502,10 +454,11 @@ drawflag:
     ret
 
 ; DATA AREA
-buttext    db 'SHOW'
+buttext    db 'SHOW',0
 flag       db 'V '
 title      db 'SCREENSAVER SETUP',0
-setuptext  db 'TYPE: < >TIME: < >     MINUTES    NEVER'
+setuptext  db 'TYPE: < >',0
+           db 'TIME: < >     MINUTES    NEVER',0
 typetext   db 'BLACK SCREENCOLOR LINES ASSEMBLER   '
 type       dd 12
 time       db 15     ; время до запуска заставки в минутах
@@ -527,11 +480,12 @@ stringlen   dd 1
 stringstart dd 0
 stringpos   dw 10
 
-params  dd 0     ;if bit 0 set-ssaver works if bit 1 set-setup works
+params  db 0     ;if bit 0 set-ssaver works if bit 1 set-setup works
 
 fileinfo:
-  dd 0,0,21,data_from_file,work_area
-  db '/RD/1/SS.ASM',0
+; used_memory-0x3000-data_from_file = ~50 Kb with current settings
+  dd 0,0,0,used_memory-0x3000-data_from_file,data_from_file
+  db '/RD/1/NETWORK/PPP.ASM',0
 
 I_END:
 
@@ -539,11 +493,9 @@ I_END:
 ; UNINITIALIZED DATA:
 
 lcolor           dd ?
-evtime           dd ?     ; время предыдущего события
 x_max            dw ?     ; размеры экрана
 y_max            dw ?
 
 top_right_corner dd ?
-work_area:
-rb 0x10000
+filesize        dd ?
 data_from_file:

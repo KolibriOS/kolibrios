@@ -20,19 +20,6 @@ use32
 include 'lang.inc'
 include '..\..\..\macros.inc'
 
-;file_info:
-;
-;      dd  0,0,-1,0x4000,0x20000
-;      db  '/rd/1/chess.bmp',0
-
-file_info:
-	dd 0
-	dd 0
-	dd 0
-	dd -1
-	dd 0x4000
-	db  '/rd/1/network/chess.bmp',0
-
 pawn_color:
 
      dd  0x000000
@@ -61,11 +48,7 @@ text   equ  texts+80*32*4
 
 START:				; start of execution
 
-    mov  eax,70
-    mov  ebx,file_info
-    mcall
-
-    mov  esi,0x4000+22*3+4+24*2
+    mov  esi,chess_bmp
     mov  edi,0x10000+18*3
 
     mov  ebx,0
@@ -1309,16 +1292,10 @@ chess_board:
 
     times  80*20 db 0
 
+chess_bmp:
+        file    'chess.bmp':22*3+4+24*2
+
 board_old:
 
 
 I_END:
-
-
-
-
-
-
-
-
-

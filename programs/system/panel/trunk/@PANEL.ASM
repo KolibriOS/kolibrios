@@ -172,8 +172,8 @@ alt_tab_pressed:
         mov     eax, 9
         jb      .fill
         mov     [alt_tab_list_size], edx
-        cmp     edx, 2
-        jb      begin_1.ret
+        test    edx, edx
+        jz      begin_1.ret
         mcall   66,4,0,0        ; ловим момент отпускания всех управляющих клавиш
         test    eax, eax
         jnz     begin_1.ret

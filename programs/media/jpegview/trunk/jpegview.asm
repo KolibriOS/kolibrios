@@ -33,7 +33,7 @@
  PARAMS     =    memsize - 1024
 
 appname equ 'Jpegview '
-version equ '0.15'
+version equ '0.16'
 
 use32
 
@@ -132,6 +132,8 @@ check_parameters:
     cmp     [PARAMS+2], byte "L"
     je      boot_set_background    
 @@:
+        cmp     byte [PARAMS], 1
+        jz      ipc_service
     mov     edi, name_string       ; clear string with file name
     mov     al,  0
     mov     ecx, 100
@@ -250,6 +252,110 @@ set_as_bgr2:
 
 ;******************************************************************************
 
+ipc_service:
+        mcall   68, 11
+        mov     esi, PARAMS+1
+        xor     eax, eax
+        xor     ecx, ecx
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        lea     ecx, [ecx*5]
+        lea     ecx, [ecx*2+eax-'0']
+        jmp     @b
+@@:
+        add     ecx, 16
+        mov     edx, ecx
+        mcall   68, 12
+        test    eax, eax
+        jnz     @f
+.exit:
+        mcall   -1
+@@:
+        mov     ecx, eax
+        and     dword [ecx], 0
+        mov     dword [ecx+4], 8
+        mov     [ipc_mem], ecx
+        mcall   60, 1
+        mcall   40, 1 shl 6
+        mcall   23, 500         ; wait up to 5 seconds for IPC message
+        test    eax, eax
+        jz      .exit
+; we got message with JPEG data, now decode it
+        mov     eax, [ecx+12]
+        mov     [ipc_mem_size], eax
+; init JPEG decoder
+    mov     ecx,memsize-fin-stack_size  ; size
+    mov     edi,fin                     ; pointer
+    call    add_mem             ; mark memory from fin to 0x100000-1024 as free
+    call    colorprecalc        ; calculate colors
+; hook file functions
+        mov     ecx, 4
+        call    malloc
+        and     dword [edi], 0
+        lea     eax, [edi-file_handler.position]
+        mov     byte [read], 0xE9
+        mov     dword [read+1], read_from_mem - (read+5)
+; decode
+    call    jpeg_info
+    mov     dword [jpeg_st],ebp
+    test    ebp,ebp
+    jz      .end
+
+        mov     eax, [ebp + x_size]
+        mul     dword [ebp + y_size]
+        lea     eax, [eax*3+8]
+        mov     ecx, eax
+        mcall   68, 12
+        test    eax, eax
+        jz      .end
+        mov     [ipc_mem_out], eax
+        mov     ebx, [ebp + x_size]
+        mov     [eax], ebx
+        mov     ebx, [ebp + y_size]
+        mov     [eax+4], ebx
+
+    mov     dword [ebp+draw_ptr],put_chunk_to_mem
+    call    jpeg_display
+
+; IPC response
+        mov     esi, [ebp + x_size]
+        imul    esi, [ebp + y_size]
+        lea     esi, [esi*3+8]
+        mov     edx, [ipc_mem_out]
+.response:
+        mov     ecx, [ipc_mem]
+        mov     ecx, [ecx+8]
+        mcall   60,2
+
+    jmp     close_program       ; close the program right now
+
+.end:
+        mov     esi, 8
+        mov     edx, x_pointer  ; points to 2 null dwords
+        jmp     .response
+
+read_from_mem:
+; in: eax=handle, ecx=size, edi=pointer to buffer
+; out: ecx=number of read bytes, buffer filled
+        pushad
+        mov     esi, [ipc_mem]
+        add     esi, 16
+        add     esi, [eax+file_handler.position]
+        add     ecx, [eax+file_handler.position]
+        cmp     ecx, [ipc_mem_size]
+        jb      @f
+        mov     ecx, [ipc_mem_size]
+@@:
+        sub     ecx, [eax+file_handler.position]
+        add     [eax+file_handler.position], ecx
+        rep     movsb
+        popad
+        ret
+
+;******************************************************************************
+
 put_chunk_to_bgr:
     pushad
 
@@ -282,6 +388,32 @@ put_chunk_to_bgr:
 
     popad
     ret
+
+;******************************************************************************
+
+put_chunk_to_mem:
+; in: (eax,ebx) = start coordinates of chunk
+;     (ecx,edx) = sizes of chunk
+;     edi -> chunk data
+        push    esi edi edx
+        mov     esi, edi
+        mov     edi, ebx
+        imul    edi, [ebp + x_size]
+        add     edi, eax
+        lea     edi, [edi*3+8]
+        add     edi, [ipc_mem_out]
+@@:
+        push    ecx edi
+        lea     ecx, [ecx*3]
+        rep     movsb
+        pop     edi ecx
+        add     edi, [ebp + x_size]
+        add     edi, [ebp + x_size]
+        add     edi, [ebp + x_size]
+        dec     edx
+        jnz     @b
+        pop     edx edi esi
+        ret
 
 ;******************************************************************************
 
@@ -597,8 +729,11 @@ iniciomemoria:
               dd -(iniciomemoria+4),-(iniciomemoria+4),(iniciomemoria+4),.l1,0
 .l1           dd 0
 
-fin:
 I_END:
 sc     system_colors
+ipc_mem dd ?
+ipc_mem_size dd ?
+ipc_mem_out dd ?
 fileattr: rb 40
 dirinfo: rb 32+304
+fin:

@@ -4,9 +4,9 @@ gif_hash_offset = gif_hash_area
 macro gif2img gifsrc,imgsrc
 {
 local hasharea, ReadGIF, nextblock,_null
-local globalColor, img_count, cur_info, img_start
-local codesize, compsize, bit_count, CC, EOI, Palette
-local block_ofs, table_ptr, gifmacend
+;local globalColor, img_count, cur_info, img_start
+;local codesize, compsize, bit_count, CC, EOI, Palette
+;local block_ofs, table_ptr, gifmacend
 local no_gc, block_skip, no_comm, noextblock, uselocal
 local setPal, filltable, reinit, cycle, zadd, noinc
 local notintable, er, zend, nxt, continue, ex, Gif_skipmap
@@ -29,7 +29,7 @@ end if
     end if
 
     call ReadGIF
-    jmp  gifmacend
+    ret
 
     if defined gif_hash_offset
     else
@@ -46,7 +46,7 @@ ReadGIF:
     mov  [img_count],eax
     inc  eax
     cmp  dword[esi],'GIF8'
-    jne  er	       ; signature
+    jne  ex	       ; signature
     mov  ecx,[esi+0xa]
     inc  eax
     add  esi,0xd
@@ -81,7 +81,7 @@ no_comm:
     jmp  block_skip
 noextblock:
     cmp  byte[edi],0x2c    ; image beginning
-    jne  er
+    jne  ex
     inc  [img_count]
     inc  edi
     mov  esi,[cur_info]
@@ -137,7 +137,6 @@ filltable:
     inc  eax
     loop filltable
     pop  edi
-    mov  [img_start],edi
 reinit:
     mov  edx,[EOI]
     inc  edx
@@ -180,9 +179,6 @@ notintable:
     call Gif_output
     pop  ebx eax
     jmp  zadd
-er:
-    pop  edi
-    jmp  ex
 zend:
 ;    mov  eax,[.cur_info]    ; skip offset to next frame
 ;    mov  [eax],edi
@@ -197,8 +193,6 @@ nxt:
 continue:
 ;    cmp  byte[edi],0x3b    ;read next frame
 ;    jne  nextblock
-    xor  eax,eax
-    stosd
     mov  ecx,[img_count]
 ex:
     pop  edi esi
@@ -283,18 +277,6 @@ loop2:
     pop  edx eax esi
     ret
 
-    globalColor dd 1
-    img_count dd 1
-    cur_info dd 1	 ; image table pointer
-    img_start dd 1
-    codesize dd 1
-    compsize dd 1
-    bit_count dd 1
-    CC dd 1
-    EOI dd 1
-    Palette dd 1
-    block_ofs dd 1
-    table_ptr dd 1
 
 gifmacend:
 }

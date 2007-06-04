@@ -1,5 +1,14 @@
 ; Decoding cache L1,L2,L3 for Intel
 
+decodecache32:
+call decodecache
+
+decodecache24:
+shr eax, 8
+call decodecache
+shr eax, 8
+call decodecache
+shr eax, 8
 
 decodecache:
 
@@ -61,256 +70,207 @@ je kk10
 comp11:
 cmp al, 0Ah
 je kk11
-je Ld8
 
 comp12:
 cmp al, 66h
 je kk12
-je Ld8
 
 comp13:
 cmp al, 0Ch
 je kk13
-je Ld16
 
 comp14:
 cmp al, 10h
 je kk14
-je Ld16
 
 comp15:
 cmp al, 67h
 je kk15
-je Ld16
 
 comp16:
 cmp al, 2Ch
 je kk16
-je Ld32
 
 comp17:
 cmp al, 68h
 je kk17
-je Ld32
 
 ;-------L2
 comp18:
 cmp al, 39h
 je kk18
-je L128
 
 comp19:
 cmp al, 3Bh
 je kk19
-je L128
 
 comp20:
 cmp al, 79h
 je kk20
-je L128
 
 comp21:
 cmp al, 81h
 je kk21
-je L128
 
 comp22:
 cmp al, 3Ch
 je kk22
-je L256
 
 comp23:
 cmp al, 7Ah
 je kk23
-je L256
 
 comp24:
 cmp al, 7Eh
 je kk24
-je L256
 
 comp25:
 cmp al, 82h
 je kk25
-je L256
 
 comp26:
 cmp al, 7Bh
 je kk26
-je L512
 
 comp27:
 cmp al, 83h
 je kk27
-je L512
 
 comp28:
 cmp al, 86h
 je kk28
-je L512
 
 comp29:
 cmp al, 7Ch
 je kk29
-je L1024
 
 comp30:
 cmp al, 84h
 je kk30
-je L1024
 
 comp31:
 cmp al, 87h
 je kk31
-je L1024
 
 comp32:
 cmp al, 85h
 je kk32
-je L2048
 
 ;-----L1 Trace instr
 
 comp33:
 cmp al, 70h
 je kk33
-je Li12
 
 comp34:
 cmp al, 71h
 je kk34
-je Li16
 
 comp35:
 cmp al, 72h
 je kk35
-je Li32
 
 ;----New codes
 
 comp36:
 cmp al, 60h
 je kk36
-je Ld16
 
 comp37:
 cmp al, 78h
 je kk37
-je L1024
 
 comp38:
 cmp al, 7Dh
 je kk38
-je L2048
 
 ;---- L3
 comp39:
 cmp al, 22h
 je kk39
-je L305
 
 comp40:
 cmp al, 23h
 je kk40
-je L31
 
 comp41:
 cmp al, 25h
 je kk41
-je L32
 
 comp42:
 cmp al, 29h
 je kk42
-je L34
 
 comp43:
 cmp al, 88h
 je kk43
-je L32
 
 comp44:
 cmp al, 89h
 je kk44
-je L34
 
 comp45:
 cmp al, 8Ah
 je kk45
-je L38
 
 comp46:
 cmp al, 8Dh
 je kk46
-je L34
 
 ;============= v. 2.04
 comp47:
 cmp al, 73h
 je kk47
-je Li64
 
 comp48:
 cmp al, 1Ah
 je kk48
-je L96
 
 comp49:
 cmp al, 3Ah
 je kk49
-je L192
 
 comp50:
 cmp al, 3Dh
 je kk50
-je L384
 
 comp51:
 cmp al, 3Eh
 je kk51
-je L512
 
 comp52:
 cmp al, 7Fh
 je kk52
-je L512
 
 comp53:
 cmp al, 46h
 je kk53
-je L34
 
 comp54:
 cmp al, 47h
 je kk54
-je L38
 
 comp55:
 cmp al, 49h
 je kk55
-je L34
 
 comp56:
 cmp al, 4Ah
 je kk56
-je L36
 
 comp57:
 cmp al, 4Bh
 je kk57
-je L38
 
 comp58:
 cmp al, 4Ch
 je kk58
-je L312
 
 comp59:
 cmp al, 4Dh
 je kk59
-je L316
 
-jne L000
+ret
 ;------------------
 
 kk1:
@@ -708,7 +668,7 @@ jmp L000
 
 L316:
 mov [L3], 16384
-jmp L000
+;jmp L000
 
 
 

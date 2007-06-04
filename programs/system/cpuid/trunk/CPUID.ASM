@@ -59,12 +59,11 @@ CYCLES:
     mov ebx, 10000
     div ebx
     mov [ost], eax    ; example 160049
-    mov eax, [total]
-    imul eax, 100
-    mov [sot], eax    ;  example 160000
-    mov eax, [ost]
-    sub eax, [sot]
-    mov [sot], eax    ; example 49
+    mov ecx, [total]
+    imul ecx, 100
+    neg  ecx
+    add  ecx, eax
+    mov [sot], ecx    ; example 49
 ;------------
 cpu:		      ;is CPUID supported?
   pushfd	      ;push original EFLAGS
@@ -92,10 +91,8 @@ CPUNAME:	      ; VENDOR
 
 ;Decoding cache L1 and L2 for Intel
 
-  cmp [smallvendor], 'ntel'
+  cmp ecx, 'ntel'
   jne cpu1     ;is not Intel
-  je .detec
-.detec:
 
 ;Starting L1, L2, L3 caches detection (Intel made it VERY HARD)
 
@@ -104,52 +101,28 @@ cpuid
 
 mov [che], al	     ; number of calls
 multik:
-dec [che]
 
 .eaxl:
-test  eax, $80000000 ;    Test bit 31
-jnz   .ebxl	     ;    <> 0 =>invalid values
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
+test  eax, eax       ;    Test bit 31
+js    .ebxl	     ;    <> 0 =>invalid values
+call decodecache24
 .ebxl:
-test  ebx, $80000000
-jnz   .ecxl
+test  ebx, ebx
+js    .ecxl
 mov eax, ebx
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
+call decodecache32
 .ecxl:
-test  ecx, $80000000
-jnz   .edxl
+test  ecx, ecx
+js    .edxl
 mov eax, ecx
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
+call decodecache32
 .edxl:
-test  edx, $80000000
-jnz   cpu1
+test  edx, edx
+js    cpu1
 mov eax, edx
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
-shr eax, 8
-call decodecache
+call decodecache32
 
-cmp [che], 0 ; we made all calls
+dec [che]    ; we made all calls
 je cpu1
 
 multi: ; not yet
@@ -166,13 +139,13 @@ cpu1:
     cpuid
 
 mov ecx, eax
-and ecx,00000F00h ;   get CPU family
 shr ecx,8	  ;   shift it to the correct position
+and ecx,0000000Fh ;   get CPU family
 mov dword[f],ecx
 
 mov ecx, eax
-and ecx,000000F0h ;    get CPU model
 shr ecx,4
+and ecx,0000000Fh ;    get CPU model
 mov dword[m],ecx
 
 mov ecx, eax
@@ -190,8 +163,7 @@ mov dword[t], ecx
 cmp dword[smallvendor], 'cAMD'
 jz maybe_athlon
 cmp dword[smallvendor], 'ntel'
-jz detect_it
-jmp no_full   ; if not AMD or Intel
+jnz no_full   ; if not AMD or Intel
 
 detect_it:
 cmp [f], 0Fh
@@ -229,13 +201,13 @@ maybe_athlon:
 mov eax, 0x80000001		  ; CPUID ext. function 0x80000001
 cpuid				    
 mov ecx, eax
-and ecx,00000F00h ;   get CPU family
 shr ecx,8	  ;   shift it to the correct position
+and ecx,0000000Fh ;   get CPU family
 mov dword[ef],ecx
 
 mov ecx, eax
-and ecx,000000F0h ;    get CPU model
 shr ecx,4
+and ecx,0000000Fh ;    get CPU model
 mov dword[em],ecx
 
 fut:
@@ -244,19 +216,11 @@ call decode_sse3
 ;-
     call decode_extended
 
-    mov   eax,$80000000
-    cpuid
+mov  dword [myname], $612F6E
 
-    mov   [extc], eax  ; max number of calls
+        cmp     [extc], $80000003
+        jbe     .noname
 
-  test	eax, $80000000 ;// Test bit 31
-  jz .noname
-
-  cmp  eax,$80000003
-  ja .mynameis
-  jmp .noname
-
-.mynameis:
     mov       eax,$80000002
     cpuid
     mov   [myname],eax
@@ -275,140 +239,61 @@ call decode_sse3
     mov   [myname+36],ebx
     mov   [myname+40],ecx
     mov   [myname+44],edx
-    jmp   red
 
 .noname:
-mov  dword [myname], $612F6E
-
 red:			
-
-xor ecx, ecx
-xor eax, eax
-xor edx, edx
-xor ebx, ebx
 
 ;mov byte [multiplier], 115;     ; for testing
 
 call multipl			      ; get multiplier 
 mov byte [multiplier], cl
 
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
+mov   dword [freqbb], 0
+mov   dword [freqll], 0 
 
-cmp dword[multiplier], 0
-jz contin
+mov   ebx, dword [multiplier]
+test  ebx, ebx
+jz output
 
 calc:
 
 mov eax,dword [ost]   ; example 166474
 imul eax, 10	      ; example 1664740
-mov  ebx, dword [multiplier]   ; get system clock (if multiplier detected)
-div ebx  
-mov dword [freqbb], eax  ;  16647
+xor edx,edx
+div ebx               ; get system clock (if multiplier detected)
 
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
+xor edx, edx                    ; example eax=16647
+mov ebx, 100
+div ebx
+mov dword [freqbb], eax         ; example 166
+mov dword [freqll], edx         ; example 47
+
 xor edx, edx
-
-mov eax,dword [ost]  ;example  166474
-mov  ebx,10
-div  ebx	     ;example  16647
-
-mov dword [temp], eax
-
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
-
-mov eax, dword [temp]
-
-mov  ebx, dword [multiplier]   
-div ebx 		       ; example 166
-
-imul eax, 100 
-mov  dword[freqll], eax  ; example 16600
-
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
-
-mov eax, dword[freqbb]; example  16647
-sub eax, dword[freqll];  example   16600
-mov dword[freqll], eax	  ;example  47
-
-
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
-
-
-mov eax,dword [freqbb]; example 16647
-mov  ebx, 100	
-div ebx  
-mov dword [freqbb], eax  ; example 166
-
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
-
     mov eax,dword[multiplier]  ; example 115
     mov  ebx,10
     div  ebx
     mov dword[multb], eax  ;   example 11
-  
-    imul eax, 10
-    mov dword[multa], eax    ;  example 110
-
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
-
-    mov eax, dword[multiplier]
-    sub eax, dword[multa]
-    mov dword[multa], eax    ; example 5
-					  
-xor eax, eax
-xor ebx, ebx
-xor ecx, ecx
-xor edx, edx
-
-jmp output 
-
-contin:
-
-mov   dword [freqbb], 0
-mov   dword [freqll], 0 
+    mov dword[multa], edx    ; example 5
 
 output:
 
    call draw_window    ;     Draw window
 
 typedetect:
-
-cmp [t], 00b
-jne t2d
-Text 290,250,0x00000000,t1, t1len-t1
-jmp PROCCORE
-t2d:
-cmp [t], 01b
-jne t3d
-Text 290,250,0x00000000,t2, t2len-t2
-jmp PROCCORE
-t3d:
-cmp [t], 11b
-jne notype
-Text 290,250,0x00000000,t3, t3len-t3
-jmp PROCCORE
-notype:
-Text 290,250,0x00000000,t4, t4len-t4
+        mov     edx, t1
+        cmp     [t], 00b
+        jz      @f
+        mov     edx, t2
+        cmp     [t], 01b
+        jz      @f
+        mov     edx, t3
+        cmp     [t], 11b
+        jz      @f
+        mov     edx, t4
+@@:
+        mov     ebx, 290*65536 + 250
+        mov     ecx, 0x80000000
+        mcall   4
 
 PROCCORE:    ;   Who are you?
 ; Intel - "GenuineIntel"           +
@@ -443,7 +328,7 @@ PROCCORE:    ;   Who are you?
 ; jz .SiS
 ; cmp ecx, ' NSC'
 ; jz .NSC
-  jmp Other   ;  I don't know what to do with you...
+; jmp Other   ;  I don't know what to do with you...
 Other:
 Text 75,70,0x00000000,other, otherlen-other
     jmp MMXtest
@@ -453,7 +338,7 @@ AMD:
 
 Text 15, 190,0x00000000,cache, cachelen-cache
 
-Text 75,70,0x00000000,AMDn, AMDnlen-AMDn
+Text 75,70,,AMDn, AMDnlen-AMDn
 
 	mov	esi, amd
 	call	load_gif
@@ -465,11 +350,7 @@ PutImage 135,107,201,49,img_area+8
 mov eax, 80000005h
     cpuid
 
-mov eax, ecx
-;shl eax, 24
-;shr eax, 24
-
-and eax,000000FFh ;
+movzx eax, cl
 mov [lineld], eax
 
 mov eax, ecx
@@ -484,11 +365,7 @@ shr ecx, 24
 mov [L1d], ecx
 
 
-mov eax, edx
-;shl eax, 24
-;shr eax, 24
-
-and eax,000000FFh ;
+movzx eax, dl
 mov [lineli], eax
 
 mov eax, edx
@@ -508,48 +385,16 @@ mov [L1i], edx
 mov eax, 80000006h
     cpuid
 
-mov eax, ecx
-;and eax,000000FFh ;
-shl eax, 24
-shr eax, 24
+movzx eax, cl
 mov dword[linel2], eax
 
-mov eax, ecx
-shl eax, 16
-shr eax, 28
-
-cmp eax, 0010b
-je way2
-
-cmp eax, 0100b
-je way4
-
-cmp eax, 0110b
-je way8
-
-cmp eax, 1000b
-je way16
-
-jmp to_next
-
-way2:
-mov dword[wayl2], 2
-jmp to_next
-
-way4:
-mov dword[wayl2], 4
-jmp to_next
-
-way8:
-mov dword[wayl2], 8
-jmp to_next
-
-way16:
-mov dword[wayl2], 16
-jmp to_next
-
-
-to_next:
+push ecx
+shr ecx, 12+1
+and ecx, 0x7
+mov eax, 1
+shl eax, cl
+mov dword [wayl2], eax
+pop ecx
 
 shr ecx, 16
 mov [L2],ecx
@@ -561,160 +406,119 @@ mov [L2],ecx
     cmp [f], $F
     jz fif
 .fiv:	 ;     Family=5
-    cmp [m],$0
-    jz .A50
-    cmp [m],$1
-    jz .A51
-    cmp [m],$2
-    jz .A52
-    cmp [m],$3
-    jz .A53
-    cmp [m],$6
-    jz .A56
-    cmp [m],$7
-    jz .A57
-    cmp [m],$8
-    jz .A58
-    cmp [m],$9
-    jz .A59
-    cmp [m],$D
-    jz .A5D
-.A50:
-    mov [micron], 50   ; 0.35?
-Text 100,70,0x00000000,A50, A50len-A50
-    jmp MMXtest
-.A51:
-    mov [micron], 35
-Text 100,70,0x00000000,A51, A51len-A51
-    jmp MMXtest
-.A52:
-    mov [micron], 35
-Text 100,70,0x00000000,A52, A52len-A52
-    jmp MMXtest
-.A53:
-    mov [micron], 35
-Text 100,70,0x00000000,A53, A53len-A53
-    jmp MMXtest
-.A56:
-    mov [micron], 30
-Text 100,70,0x00000000,A56, A56len-A56
-    jmp MMXtest
-.A57:
-    mov [micron], 25
-Text 100,70,0x00000000,A57, A57len-A57
-    jmp MMXtest
-.A58:
-    mov [micron], 25
-Text 100,70,0x00000000,A58, A58len-A58
-    jmp MMXtest
-.A59:
-    mov [micron], 25
-Text 100,70,0x00000000,A59, A59len-A59
-    jmp MMXtest
-.A5D:
-    mov [micron], 18
-Text 100,70,0x00000000,A5D, A5Dlen-A5D
-    jmp MMXtest
+        mov     [micron], 50
+        mov     edx, A50
+        cmp     [m], $0
+        jz      @f
+        mov     [micron], 35
+        mov     edx, A51
+        cmp     [m], $1
+        jz      @f
+        mov     edx, A52
+        cmp     [m], $2
+        jz      @f
+        mov     edx, A53
+        cmp     [m], $3
+        jz      @f
+        mov     [micron], 30
+        mov     edx, A56
+        cmp     [m], $6
+        jz      @f
+        mov     [micron], 25
+        mov     edx, A57
+        cmp     [m], $7
+        jz      @f
+        mov     edx, A58
+        cmp     [m], $8
+        jz      @f
+        mov     edx, A59
+        cmp     [m], $9
+        jz      @f
+        mov     [micron], 18
+        mov     edx, A5D
+@@:
+        jmp     @f
+
 .si:   ;    Family=6
-
-    cmp [m],$1
-    jz A1
-    cmp [m],$2
-    jz A2
-    cmp [m],$3
-    jz A3
-    cmp [m],$4
-    jz A4
-    cmp [m],$6
-    jz A6
-    cmp [m],$7
-    jz A7
-    cmp [m],$8
-    jz A8
-    cmp [m],$A
-    jz AA
-A1:
-    mov [micron], 25
-Text 100,70,0x00000000,At1, At1len-At1
- jmp MMXtest
-A2:
-    mov [micron], 18
-Text 100,70,0x00000000,At2, At2len-At2
- jmp MMXtest
-A3:
-    mov [micron], 18
- Text 100,70,0x00000000,At3, At3len-At3
- jmp MMXtest
-A4:
-    mov [micron], 18
-Text 100,70,0x00000000,At4, At4len-At4
- jmp MMXtest
+        mov     [micron], 25
+        mov     edx, At1
+        cmp     [m], $1
+        jz      @f
+        mov     [micron], 18
+        mov     edx, At2
+        cmp     [m], $2
+        jz      @f
+        mov     edx, At3
+        cmp     [m], $3
+        jz      @f
+        mov     edx, At4
+        cmp     [m], $4
+        jz      @f
+        cmp     [m], $6
+        jz      A6
+        mov     [micron], 13
+        mov     edx, At7
+        cmp     [m], $7
+        jz      @f
+        cmp     [m], $8
+        jz      A8
+        jmp     AA
+@@:
+        Text    100,70,0x80000000
+        jmp     MMXtest
 A6:
+        mov     [FRS], 266  ;!!!!!!
 
- mov [micron], 18
- Text 100,70,0x00000000,At6, At6len-At6
+        Number  315,90,0,3,dword [FRS],0x000000; MHz 
 
- mov [FRS], 266  ;!!!!!!
+        call    newrating; !!!!
 
-Number 315,90,0,3,dword [FRS],0x000000; MHz 
+        Text    245,70,0x00000000,pr, prlen-pr
 
- call newrating; !!!!
-
-Text 245,70,0x00000000,pr, prlen-pr
-
- Number 310,70,0,4,dword [rating],0x000000
- jmp MMXtest
-A7:
-    mov [micron], 13
-Text 100,70,0x00000000,At7, At7len-At7
- jmp MMXtest
+        Number  310,70,0,4,dword [rating],0x000000
+        mov     edx, At6
+        jmp     @b
 
 A8:
 
- mov [micron], 13
-mov [FRS], 266	;!!!!!!
+        mov     [FRS], 266	;!!!!!!
 
-   Number 315,90,0,3,dword [FRS],0x000000; MHz
+        Number  315,90,0,3,dword [FRS],0x000000; MHz
 
+        cmp     [L2], 256
+        jl      .App  ; Applebred
 
- cmp [L2], 256
- jl .App  ; Applebred
-Text 100,70,0x00000000,At8, At8len-At8
+        call    newrating;!!!!
 
+        Text    245,70,0x00000000,pr, prlen-pr
+        Number  310,70,0,4,dword [rating],0x000000
+        mov     edx, At8
+        jmp     @b
 
-call newrating;!!!!
-
-Text 245,70,0x00000000,pr, prlen-pr
-Number 310,70,0,4,dword [rating],0x000000
-jmp MMXtest
-
- .App:
-Text 100,70,0x00000000,At8a, At8alen-At8a
-jmp MMXtest
+.App:
+        mov     edx, At8a
+        jmp     @b
 
 AA:
 
- mov [micron], 13
+        mov     [FRS], 333; !!!!
+        Text    245,70,0x00000000,pr, prlen-pr
 
-mov [FRS], 333; !!!!
-Text 245,70,0x00000000,pr, prlen-pr
+        Number  315,90,0,3,dword [FRS],0x000000; MHz 
 
-   Number 315,90,0,3,dword [FRS],0x000000; MHz 
+        mov     edx, Atat
+        cmp     [L2], 256
+        jl      .Tho ; Thorton
+        mov     edx, Ata
+.Tho:
+        push    edx
 
- cmp [L2], 256
- jl .Tho ; Thorton
+        call    newrating;!!!!!
 
-call newrating;!!!!!
-Text 100,70,0x00000000,Ata, Atalen-Ata
+        Number  310,70,0,4,dword [rating],0x000000
+        pop     edx
+        jmp     @b
 
- Number 310,70,0,4,dword [rating],0x000000
-
-jmp MMXtest
- .Tho:
-call newrating;!!!!!
-Text 100,70,0x00000000,Atat, Atatlen-Atat
- Number 310,70,0,4,dword [rating],0x000000
- jmp MMXtest
 fif:  ;  AMD-64    Family=15
 
 ;here is a need to rewrite detection of AMD F-th family according to "Revision Guide for
@@ -1162,8 +966,9 @@ Text 110,70,0x00000000,C60, C60len-C60
     mov [L1d], 32
     mov [L2], 512
 Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
-Text 100,70,0x00000000,C65, C65len-C65
-    jmp MMXtest
+    mov edx,C65
+    mov esi,C65len-C65
+    jmp OutProcName
 ;---------------------
 Centaur:
 
@@ -1184,29 +989,24 @@ mov [L1i], edx
 mov eax, 80000005h
     cpuid
 
-mov eax, ecx
-
-and eax,000000FFh ;
+movzx eax, cl
 mov [lineld], eax
 
 mov eax, ecx
-
-and eax,00FF0000h
 shr eax, 16
+and eax,000000FFh
 mov [wayld], eax
 
 shr ecx, 24
 mov [L1d], ecx
 
-mov eax, edx
-
-and eax,000000FFh ;
+movzx eax, dl
 mov [lineli], eax
 
 mov eax, edx
 
-and eax,00FF0000h
 shr eax, 16
+and eax,000000FFh
 mov [wayli], eax
 
 shr edx, 24
@@ -1224,9 +1024,7 @@ vn:
     cmp [m],$9
     jl vl2old
 ; else  new
-mov eax, ecx
-shl eax, 24
-shr eax, 24
+movzx eax, cl
 mov dword[linel2], eax
 
 mov eax, ecx
@@ -1241,9 +1039,7 @@ mov [L2],ecx
 
 
 vl2old:
-mov eax, ecx
-shl eax, 24
-shr eax, 24
+movzx eax, cl
 mov dword[linel2], eax
 
 mov eax, ecx
@@ -1278,16 +1074,19 @@ Text 75,70,0x00000000,IDTn, IDTnlen-IDTn
     jz .V59
 .V54:
    mov [micron], 35
-Text 100,70,0x00000000,V54, V54len-V54
-    jmp MMXtest
+   mov edx,V54
+   mov esi,V54len-V54
+    jmp OutProcName
 .V58:
     mov [micron], 25
-Text 100,70,0x00000000,V58, V58len-V58
-    jmp MMXtest
+    mov edx,V58
+    mov esi,V58len-V58
+    jmp OutProcName
 .V59:
     mov [micron], 25
-Text 100,70,0x00000000,V59, V59len-V59
-    jmp MMXtest
+    mov edx,V59
+    mov esi,V59len-V59
+    jmp OutProcName
 
 sixC:	;Family=6
 
@@ -1310,30 +1109,35 @@ Text 75,70,0x00000000,Centaurn, Centaurnlen-Centaurn
     jz .V6A
 .V66:
    mov [micron], 18 ; 25?
-Text 100,70,0x00000000,V66, V66len-V66
-    jmp MMXtest
+   mov edx,V66
+   mov esi,V66len-V66
+    jmp OutProcName
 .V67:
     mov [micron], 15
-Text 100,70,0x00000000,V67, V67len-V67
-    jmp MMXtest
+    mov edx,V67
+    mov esi,V67len-V67
+    jmp OutProcName
 .V68:
     mov [micron], 13
-Text 100,70,0x00000000,V68, V68len-V68
-    jmp MMXtest
+    mov edx,V68
+    mov esi,V68len-V68
+    jmp OutProcName
 .V69:
    mov [micron], 13
-Text 100,70,0x00000000,V69, V69len-V69
-    jmp MMXtest
+   mov edx,V69
+   mov esi,V69len-V69
+   jmp OutProcName
 .V6A:
    mov [micron], 9
-Text 100,70,0x00000000,VA, VAlen-VA
-    jmp MMXtest
+   mov edx,VA
+   mov esi,VAlen-VA
+   jmp OutProcName
 ;-----------
 Transmeta:
 
 Text 15, 190,0x00000000,cache, cachelen-cache
 
-Text 75,70,0x00000000,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
+Text 75,70,,Tranmsmetan, Tranmsmetanlen-Tranmsmetan
 
 	mov	esi, transmeta
 	call	load_gif
@@ -1346,29 +1150,25 @@ PutImage 135,107,201,49,img_area+8
 mov eax, 80000005h
     cpuid
 
-mov eax, ecx
-
-and eax,000000FFh ;
+movzx eax, cl
 mov [lineld], eax
 
 mov eax, ecx
 
-and eax,00FF0000h
-shr eax, 16
+shr eax,16
+and eax,000000FFh
 mov [wayld], eax
 
 shr ecx, 24
 mov [L1d], ecx
 
-mov eax, edx
-
-and eax,000000FFh ;
+movzx eax, dl
 mov [lineli], eax
 
 mov eax, edx
 
-and eax,00FF0000h
 shr eax, 16
+and eax,000000FFh
 mov [wayli], eax
 
 shr edx, 24
@@ -1379,9 +1179,7 @@ mov [L1i], edx
 mov eax, 80000006h
     cpuid
 
-mov eax, ecx
-shl eax, 24
-shr eax, 24
+movzx eax, cl
 mov dword[linel2], eax
 
 mov eax, ecx
@@ -1400,14 +1198,20 @@ mov [L2],ecx
     jz .fift
 .fivt:	  ;     Family=5
 
-    mov [micron], 13 ; ?
-Text 140,70,0x00000000,T5, T5len-T5
-    jmp MMXtest
+    mov edx,T5
+    mov esi,T5len-T5
+    jmp @f
 
 .fift:	  ;     Family=F
+    mov edx,TF
+    mov esi,TFlen-TF
+@@:
     mov [micron], 13 ;
-Text 140,70,0x00000000,TF, TFlen-TF
+    Text 140,70,0
     jmp MMXtest
+
+OutProcName:
+        Text    100,70,0
 
 ;----
 MMXtest:	     ; MMX test and Brand ID decoding
@@ -1422,13 +1226,11 @@ call decode_extended_features
       cpuid
 HTTtest:
   test	edx, $10000000; ;Test bit 28
-  jnz	.EL   ;HTT technology is supported
   jz .ELN
 
-.EL:
+.EL:   ;HTT technology is supported
    and ebx,00FF0000h ; numbers of logical processors
-   shr ebx,16 ;        shift it to the correct position
-   cmp ebx, 1
+   cmp ebx, 1 shl 16
    ;   mov [number_of_log_cpus], ebx
    je .ELN  ; HHT not enabled (Celeron)
 
@@ -1439,92 +1241,67 @@ HTTtest:
 
    mov	dword [HTTn+ 9],  $6F6E
    mov	dword [HTT+ 6],  $6F6E
-   jmp	TEXTOUT
 
 TEXTOUT:
 
 Text 15,110,0x00000000,fam, famlen-fam
-Text 15,130,0x00000000,mode, modelen-mode
-Text 15,150,0x00000000,step, steplen-step
+Text 15,130,,mode, modelen-mode
+Text 15,150,,step, steplen-step
 ;--------L1  L2
 Number 75,170,0,3,dword [L1d],0x000000;
-Number 75,190,0,3,dword [L1i],0x000000;
-Number 41,210,0,4,dword[L2],0x000000;
-Number 35,230,0,5,dword[L3],0x000000;
+Number 75,190,,,dword [L1i]
+Number 41,210,0,4,dword[L2]
+Number 35,230,0,5,dword[L3]
 ;-----------Features
-Number 258,50,0,2,dword [micron],0x000000  ; micron
+Number 258,50,0,2,dword [micron]  ; micron
 
 Text 275,290,0x00000000,HTT, HTTlen-HTT
-Text 275,310,0x00000000,sse3, sse3len-sse3
+Text 275,310,,sse3, sse3len-sse3
 
-Text 15,70,0x00000000,name, namelen-name
+Text 15,70,,name, namelen-name
 
-Text 15,290,0x00000000,MMXs, MMXslen-MMXs
-Text 15,310,0x00000000,SSE, SSElen-SSE
-Text 95,310,0x00000000,SSE2, SSE2len-SSE2
+Text 15,290,,MMXs, MMXslen-MMXs
+Text 15,310,,SSE, SSElen-SSE
+Text 95,310,,SSE2, SSE2len-SSE2
 
     Number 140,170,0,2,dword [wayld],0x000000
-    Number 218,170,0,2,dword [lineld],0x000000
+    Number 218,170,,,dword [lineld]
 
-    Number 140,190,0,2,dword [wayli],0x000000
-    Number 218,190,0,2,dword [lineli],0x000000
+    Number 140,190,,,dword [wayli]
+    Number 218,190,,,dword [lineli]
 
-    Number 140,210,0,2,dword [wayl2],0x000000
-    Number 218,210,0,2,dword [linel2],0x000000
+    Number 140,210,,,dword [wayl2]
+    Number 218,210,,,dword [linel2]
 
-    Number 140,230,0,2,dword [wayl3],0x000000
-    Number 218,230,0,2,dword [linel3],0x000000
+    Number 140,230,,,dword [wayl3]
+    Number 218,230,,,dword [linel3]
 
-    jmp TEST3DNOW
 ;-------------------
 TEST3DNOW:
 
+  xor edx, edx
   cmp [smallvendor], 'ntel'
-  je .NOEXTENDED
-  jne .t
-
-.t:
+  je @f
 
   mov	eax, $80000001 ;// Setup extended function 8000_0001h
   cpuid
 
-  test	edx, $80000000 ;// Test bit 31
-  jnz	.XIT
+@@:
+  mov   eax, now+9
+  add   edx, edx
+  call  write_yes_no_cf
 
-.NOEXTENDED: ;// 3DNow! technology is supported
-   mov	dword [now+ 9], $6F6E
-   jmp TEST3DNOWP
-.XIT:
-   mov	dword [now+ 9],  $736579
-   jmp TEST3DNOWP
-
-TEST3DNOWP:
-
-  cmp [smallvendor], 'ntel'
-  je .NOEXTENDEDP
-
-.tp:
-
-  mov	eax, $80000001 ;// Setup extended function 8000_0001h
-  cpuid
-
-  test	edx, $40000000 ;// Test bit 30
-  jnz	.XITP  ;// 3DNow! technology is supported
-
-.NOEXTENDEDP:
-   mov	dword [nowp+ 9], $6F6E
-   jmp TESTMMXP
-.XITP:
-   mov	dword [nowp+ 9],  $736579
-   jmp TESTMMXP
+  mov   eax, nowp+9
+  add   edx, edx
+  call  write_yes_no_cf
 
 TESTMMXP:
 
     mov   eax,$80000000
     cpuid
 
-    test eax, 80000000h
-jna NOEXTENDEDM
+    test eax, eax
+    jns NOEXTENDEDM
 
   ;cmp   eax, $80000000 ;// Is 800_0001h supported?
   ;jz   .NOEXTENDEDM    ;// If not, 3DNow! technology is not supported
@@ -1548,20 +1325,18 @@ NOEXTENDEDM:
 XITM:
    mov	dword [mmxp+ 7],  $736579
    mov	dword [MMXPi+ 8],  $736579
-   jmp text3d
 
 text3d:
 
 Text 175,290,0x00000000,now, nowlen-now
-Text 175,310,0x00000000,nowp, nowplen-nowp
-Text 95,290,0x00000000,mmxp, mmxplen-mmxp
+Text 175,310,,nowp, nowplen-nowp
+Text 95,290,,mmxp, mmxplen-mmxp
 
 jmp still
 
 ;--------------------------
 NO_CPUID:
  Text 15,50,0x00000000,oblom, oblomlen-oblom
- jmp FREEZE
 
 FREEZE:
 nop
@@ -1592,11 +1367,11 @@ event_wait:
   mov [ram_size_t], eax
 
   Text 115,340,0x00000000,ram, ramlen-ram
+  Text 300,340,,mb, mblen-mb
 
   Number 200,340,0,4,dword [ram_size_a],0x000000
 
-  Number 270,340,0,4,dword [ram_size_t],0x000000
-  Text 300,340,0x00000000,mb, mblen-mb
+  Number 270,340,,,dword [ram_size_t]
 
 ;==============================
 
@@ -1612,7 +1387,6 @@ event_wait:
     je	 button 	;  button
     jmp  still		; 
   key:			; 
-    mov  eax,2		;  
     mcall		; 
     jmp  still		; 
   button:		; 
@@ -1625,16 +1399,13 @@ event_wait:
     je	thread_start	; 
 			; 
     cmp  ah,3		;  = 3 ?
-    je	vybor		; vybor
+    jne  still
 
-    jne  noclose
-
-    jmp     event_wait
 vybor:
 
  Number 310,70,0,4,dword [rating],0xFFFFFF ;
 
- Number 315,90,0,3,dword [FRS],0xFFFFFF; MHz 
+ Number 315,90,0,3,dword [FRS]; MHz 
 
 cmp [FRS], 266
 jz .s1
@@ -1645,34 +1416,20 @@ jz .s3
 
 .s1:
 mov [FRS], 333
+.rating:
 call newrating
  Number 310,70,0,4,dword [rating],0x000000
 
- Number 315,90,0,3,dword [FRS],0x000000; MHz 
+ Number 315,90,0,3,dword [FRS]; MHz 
 jmp  still
 
 .s2:
 mov [FRS], 400
-
-call newrating
-
- Number 310,70,0,4,dword [rating],0x000000
-
-   Number 315,90,0,3,dword [FRS],0x000000; MHz 
-jmp  still
+jmp .rating
 
 .s3:
 mov [FRS], 266
-call newrating
-
- Number 310,70,0,4,dword [rating],0x000000
-
-  Number 315,90,0,3,dword [FRS],0x000000; MHz 
-
-jmp  still
-
-noclose:
-    jmp  still		
+jmp .rating
 
 close:
     mov   eax,-1	
@@ -1686,12 +1443,9 @@ thread_start:
     jne  still		
 
 ;================================================RSA test
-  call init_test   ; start RSA code
-  call module_test
-  jmp somewhere
 
- module_test:
 ;test rsa coding speed
+        call    init_test
 ;length of module - 256 bit
   mov  eax,26
   mov  ebx,9
@@ -1699,8 +1453,7 @@ thread_start:
   add  eax,100 ;test lasts 1 second.
   push eax
 .loop:
-  mov  ecx,4 ;do 4 iterations
-  push ecx   ;this reduces number of calls mcall.
+  push 4     ;do 4 iterations - this reduces number of calls mcall.
 .loop1:
   call rsa_test   ;this procedure change all registers
   dec  dword [esp]
@@ -1713,13 +1466,8 @@ thread_start:
   jl   .loop
   pop  eax
   shr  dword [iter],4 ;[iter] - speed in Kb/sec. (every iteration codes 64 bytes)
-  ret
-
-   somewhere:
-;======================================================================
 CreateTread window_2,thread2_esp
-
-    jmp  still
+  jmp  still
 
 window_2:
     mov  [num_win2],1	
@@ -1740,7 +1488,6 @@ still_2:
     jmp  still_2	; 
 
   key_2:		; 
-    mov  eax,2		;   2 
     mcall		; 
     jmp  still_2	; 
 
@@ -1749,16 +1496,12 @@ still_2:
     mcall		; 
 
     cmp  ah,1		; = 1 ?
-    jne  noclose_2	; noclose
+    jne  still_2	; noclose
 
     mov  [num_win2],0	; 
 
     or	 eax,-1 	; 
     mcall
-
-  noclose_2:
-
-    jmp  still_2	; 
 
 draw_window_2:
     mov  eax,12 		   ; function 12:tell os about windowdraw
@@ -1770,58 +1513,58 @@ draw_window_2:
 	  ; place size
 
 Text 15, 10,0x00000000, STDCA, STDCAlen-STDCA
-Text 215, 10,0x00000000, EXTCA, EXTCAlen-EXTCA
+Text 215, 10,, EXTCA, EXTCAlen-EXTCA
 
 Number 135,10,1*256,8,dword [stdc],0x000000
-Number 335,10,1*256,8,dword [extc],0x000000
+Number 335,10,,,dword [extc],
 
 Text 15, 30,0x00000000, FPU, FPUlen-FPU
-Text 115, 30,0x00000000, VME, VMElen-VME
-Text 215, 30,0x00000000, DE,  DElen-DE
-Text 315, 30,0x00000000, PSE, PSElen-PSE
+Text 115, 30,, VME, VMElen-VME
+Text 215, 30,, DE,  DElen-DE
+Text 315, 30,, PSE, PSElen-PSE
 
-Text 15, 50,0x00000000,TSC, TSClen-TSC
-Text 115, 50,0x00000000,MSR, MSRlen-MSR
-Text 215,50,0x00000000,PAE, PAElen-PAE
-Text 315,50,0x00000000,MCE, MCElen-MCE
+Text 15, 50,,TSC, TSClen-TSC
+Text 115,50,,MSR, MSRlen-MSR
+Text 215,50,,PAE, PAElen-PAE
+Text 315,50,,MCE, MCElen-MCE
 
-Text 15,70,0x00000000,CX8, CX8len-CX8
-Text 115,70,0x00000000,APIC, APIClen-APIC
-Text 215,70,0x00000000,Res, Reslen-Res
-Text 315,70,0x00000000,SEP, SEPlen-SEP
+Text 15,70,,CX8, CX8len-CX8
+Text 115,70,,APIC, APIClen-APIC
+Text 215,70,,Res, Reslen-Res
+Text 315,70,,SEP, SEPlen-SEP
 
-Text 15,90,0x00000000,MTRR, MTRRlen-MTRR
-Text 115,90,0x00000000,PGE, PGElen-PGE
-Text 215,90,0x00000000,MCA, MCAlen-MCA
-Text 315,90,0x00000000,CMOV, CMOVlen-CMOV
+Text 15,90,,MTRR, MTRRlen-MTRR
+Text 115,90,,PGE, PGElen-PGE
+Text 215,90,,MCA, MCAlen-MCA
+Text 315,90,,CMOV, CMOVlen-CMOV
 
-Text 15,110,0x00000000,PAT, PATlen-PAT
-Text 115,110,0x00000000,PSE36, PSE36len-PSE36
-Text 215,110,0x00000000,PSNUM, PSNUMlen-PSNUM
-Text 315,110,0x00000000,CLFLUSHn, CLFLUSHnlen-CLFLUSHn
+Text 15,110,,PAT, PATlen-PAT
+Text 115,110,,PSE36, PSE36len-PSE36
+Text 215,110,,PSNUM, PSNUMlen-PSNUM
+Text 315,110,,CLFLUSHn, CLFLUSHnlen-CLFLUSHn
 
-Text 15,130,0x00000000,Res, Reslen-Res
-Text 115,130,0x00000000,DTS, DTSlen-DTS
-Text 215,130,0x00000000,ACPI, ACPIlen-ACPI
-Text 315,130,0x00000000,MMX, MMXlen-MMX
+Text 15,130,,Res, Reslen-Res
+Text 115,130,,DTS, DTSlen-DTS
+Text 215,130,,ACPI, ACPIlen-ACPI
+Text 315,130,,MMX, MMXlen-MMX
 
-Text 15,150,0x00000000,FXSR, FXSRlen-FXSR
-Text 115,150,0x00000000,SSE, SSElen-SSE
-Text  215,150,0x00000000,SSE2, SSE2len-SSE2
-Text 315,150,0x00000000,SSn, SSnlen-SSn
+Text 15,150,,FXSR, FXSRlen-FXSR
+Text 115,150,,SSE, SSElen-SSE
+Text  215,150,,SSE2, SSE2len-SSE2
+Text 315,150,,SSn, SSnlen-SSn
 
-Text 15,170,0x00000000,HTT, HTTnlen-HTTn
-Text 115,170,0x00000000,TM, TMlen-TM
-Text 215,170,0x00000000,IA64, IA64len-IA64
-Text 315,170,0x00000000,PBE, PBElen-PBE
+Text 15,170,,HTT, HTTnlen-HTTn
+Text 115,170,,TM, TMlen-TM
+Text 215,170,,IA64, IA64len-IA64
+Text 315,170,,PBE, PBElen-PBE
 ;---------------
 DrawLine 0,  410, 185,185,0x8080FF  ;10
 
 mov   eax,$80000000
 cpuid
 ;mov eax, $03020101   for test of reaction
-test eax, 80000000h
-jnz goooddd
+test eax, eax
+js  goooddd
 
 baaadd:
 Text 95,235,0x00000000,NEF, NEFlen-NEF
@@ -1829,41 +1572,41 @@ jmp too
 
 goooddd:
 Text 15,195,0x00000000,SS3, SS3len-SS3
-Text 15,215,0x00000000,MON, MONlen-MON
-Text 15,235,0x00000000,DS_CPL, DS_CPLlen-DS_CPL
-Text 15,255,0x00000000,EST, ESTlen-EST
-Text 15,275,0x00000000,TM2, TM2len-TM2
-Text 15,295,0x00000000,VMX, VMXlen-VMX
-Text 15,315,0x00000000,SVM, SVMlen-SVM
+Text 15,215,,MON, MONlen-MON
+Text 15,235,,DS_CPL, DS_CPLlen-DS_CPL
+Text 15,255,,EST, ESTlen-EST
+Text 15,275,,TM2, TM2len-TM2
+Text 15,295,,VMX, VMXlen-VMX
+Text 15,315,,SVM, SVMlen-SVM
 
-Text 115,195,0x00000000,CNXT_ID, CNXT_IDlen-CNXT_ID
-Text 115,215,0x00000000,CX16, CX16len-CX16
-Text 115,235,0x00000000,ETPRD, ETPRDlen-ETPRD
-Text 115,255,0x00000000,SYS, SYSlen-SYS
-Text 115,275,0x00000000,LAF, LAFlen-LAF
-Text 115,295,0x00000000,SSSE3, SSSE3len-SSSE3
-Text 115,315,0x00000000,MCR8, MCR8len-MCR8
+Text 115,195,,CNXT_ID, CNXT_IDlen-CNXT_ID
+Text 115,215,,CX16, CX16len-CX16
+Text 115,235,,ETPRD, ETPRDlen-ETPRD
+Text 115,255,,SYS, SYSlen-SYS
+Text 115,275,,LAF, LAFlen-LAF
+Text 115,295,,SSSE3, SSSE3len-SSSE3
+Text 115,315,,MCR8, MCR8len-MCR8
 
-Text 215,195,0x00000000,MP, MPlen-MP
-Text 215,215,0x00000000,NX, NXlen-NX
-Text 215,235,0x00000000,MMXPi, MMXPilen-MMXPi
-Text 215,255,0x00000000,MMXn, MMXnlen-MMXn
-Text 215,275,0x00000000,FXSRn, FXSRnlen-FXSRn
-Text 215,295,0x00000000,DCA,DCAlen-DCA
+Text 215,195,,MP, MPlen-MP
+Text 215,215,,NX, NXlen-NX
+Text 215,235,,MMXPi, MMXPilen-MMXPi
+Text 215,255,,MMXn, MMXnlen-MMXn
+Text 215,275,,FXSRn, FXSRnlen-FXSRn
+Text 215,295,,DCA,DCAlen-DCA
 
-Text 315,195,0x00000000,FFXSR, FFXSRlen-FFXSR
-Text 315,215,0x00000000,TSCP, TSCPlen-TSCP
-Text 315,235,0x00000000,LM, LMlen-LM
-Text 315,255,0x00000000,DNo, DNolen-DNo
-Text 315,275,0x00000000,DN, DNlen-DN
-Text 315,295,0x00000000,CMPL, CMPLlen-CMPL
+Text 315,195,,FFXSR, FFXSRlen-FFXSR
+Text 315,215,,TSCP, TSCPlen-TSCP
+Text 315,235,,LM, LMlen-LM
+Text 315,255,,DNo, DNolen-DNo
+Text 315,275,,DN, DNlen-DN
+Text 315,295,,CMPL, CMPLlen-CMPL
 
 
 too:
 DrawLine 0,  410, 335,335,0x8080FF  ;10
 
 Text 15,350,0x00000000,speed, speedlen-speed
-Text 130,350,0x00000000,kbpersec, kbperseclen-kbpersec
+Text 130,350,,kbpersec, kbperseclen-kbpersec
 
 Number 95,350,0,5,dword [iter],0x000000; RSA test results
 
@@ -1901,17 +1644,15 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
     Text 130,270,0x00000000,instruct, instructlen-instruct
 
     DrawLine  10,  330, 325,325,0x8080FF
-    DrawLine 330,  330, 275,325,0x8080FF
-    DrawLine  10,   10, 275,325,0x8080FF
-    DrawLine  10,  125, 275,275,0x8080FF
-    DrawLine 230,  330, 275,275,0x8080FF
+    DrawLine 330,  330, 275,325;,0x8080FF
+    DrawLine  10,   10, 275,325;,0x8080FF
+    DrawLine  10,  125, 275,275;,0x8080FF
+    DrawLine 230,  330, 275,275;,0x8080FF
 
   cmp dword[smallvendor], 'cAMD'
   jne cont
   cmp [f], $6
   jne cont
-  cmp [f], $6
-  jl cont
 
    Button 240,85,69,15,3,0x030000FF  ;  button for rating
 
@@ -1923,32 +1664,31 @@ PutImage 15,330,93,24,img_area2+8   ; image "press for more"
 
 
     Text 15,50,0x00000000,tsum, tsumlen-tsum   ; 
-    Text 15,90,0x00000000,cpuname, cpunamelen-cpuname; 
-    Text 255,250,0x00000000,typen, typenlen-typen;
-    Text 175, 50,0x00000000,tech, techlen-tech; 
+    Text 15,90,,cpuname, cpunamelen-cpuname; 
+    Text 255,250,,typen, typenlen-typen;
+    Text 175, 50,,tech, techlen-tech; 
 
     Number 82,50,0,4,dword [total],0x000000; MHz
-    Number 110,50,0,2,dword [sot],0x000000; KHz
+    Number 110,50,0,2,dword [sot]; KHz
 
     Text 15,170,0x00000000,cache2, cache2len-cache2
-    Text 15,210,0x00000000,cache3, cache3len-cache3
-    Text 15,230,0x00000000,cache4, cache4len-cache4
+    Text 15,210,,cache3, cache3len-cache3
+    Text 15,230,,cache4, cache4len-cache4
 
 
     Number 75,110,1*256,1,dword [f],0x000000 ; 
-    Number 75,130,1*256,1,dword [m],0x000000; 
-    Number 75,150,1*256,1,dword [s],0x000000; 
+    Number 75,130,,,dword [m]
+    Number 75,150,,,dword [s]
 
-    Number 110,110,1*256,2,dword [ef],0x000000 ; 
-    Number 110,130,1*256,2,dword [em],0x000000; 
+    Number 110,110,1*256,2,dword [ef]
+    Number 110,130,,,dword [em]
 
 Text   15,30,0x00000000,multil, multillen-multil
+Text   175,30,,freql, freqllen-freql
 Number 85,30,0,2,dword [multb],0x000000;
-Number 105,30,0,1,dword [multa],0x000000;
-
-Text   175,30,0x00000000,freql, freqllen-freql
-Number 259,30,0,4,dword [freqbb],0x000000;
-Number 289,30,0,2,dword [freqll],0x000000;
+Number 105,30,0,1,dword [multa]
+Number 259,30,0,4,dword [freqbb]
+Number 289,30,0,2,dword [freqll]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Text 115,280,0x00000000,logcpus, logcpuslen-logcpus
 ;Number 250,280,0,2,dword [number_of_log_cpus],0x000000
@@ -1970,7 +1710,7 @@ Number 289,30,0,2,dword [freqll],0x000000;
     Text 105, 10, 0x00000000, edi, esi
 ;    Text 105,20,0x00000000,myname, mynamelen-myname
 ;-
-Text 15,250,0x00000000,brandid, brandidlen-brandid
+Text 15,250,,brandid, brandidlen-brandid
 
     ret 		; 
 
@@ -1978,7 +1718,7 @@ load_gif:
 	mov	edi, img_area
 load_gif2:
 	gif2img esi,edi
-	ret
+;	ret
 
 ; DATA AREA
 
@@ -2154,21 +1894,10 @@ nowplen:
 
 ;-Type
 
-t1:
-    db 'OEM'
-t1len:
-
-t2:
-    db 'Overdrive'
-t2len:
-
-t3:
-    db 'Dual'
-t3len:
-
-t4:
-    db 'Unknown'
-t4len:
+t1      db      'OEM',0
+t2      db      'Overdrive',0
+t3      db      'Dual',0
+t4      db      'Unknown',0
 
 ;----------Intel
 P50:
@@ -2272,64 +2001,26 @@ PF6c:
 db 'Celeron D (Presler)'
 PF6clen:
 ;---------AMD
-A50:
-db 'K5 (PR75, PR90, PR100)'
-A50len:
-A51:
-db '5k86 (PR120, PR133)'
-A51len:
-A52:
-db '5k86 (PR166)'
-A52len:
-A53:
-db '5k86 (PR200)'
-A53len:
-A56:
-db 'K6'
-A56len:
-A57:
-db 'K6'
-A57len:
-A58:
-db 'K6-2'
-A58len:
-A59:
-db 'K6-III'
-A59len:
-A5D:
-db 'K6-2+ or K6-III+'
-A5Dlen:
+A50     db 'K5 (PR75, PR90, PR100)',0
+A51     db '5k86 (PR120, PR133)',0
+A52     db '5k86 (PR166)',0
+A53     db '5k86 (PR200)',0
+A56     db 'K6',0
+A57     db 'K6',0
+A58     db 'K6-2',0
+A59     db 'K6-III',0
+A5D     db 'K6-2+ or K6-III+',0
 ;-------------------
-At1:
-db 'Athlon'
-At1len:
-At2:
-db 'Athlon'
-At2len:
-At3:
-db 'Duron (Spitfire)'
-At3len:
-At4:
-db 'Athlon (Thunderbird)'
-At4len:
-At6:
-db 'AthlonXP (Palomino)'
-At6len:
-At7:
-db 'Duron (Morgan)'
-At7len:
-At8:
-db 'AthlonXP (Thoroughbred)'
-At8len:
-At8a:
-db 'Duron (Applebred)'
-At8alen:
-Ata:
-db 'AthlonXP (Barton)'
-Atalen:
-Atat:
-db 'AthlonXP (Thorton)'
-Atatlen:
+At1     db 'Athlon',0
+At2     db 'Athlon',0
+At3     db 'Duron (Spitfire)',0
+At4     db 'Athlon (Thunderbird)',0
+At6     db 'AthlonXP (Palomino)',0
+At7     db 'Duron (Morgan)',0
+At8     db 'AthlonXP (Thoroughbred)',0
+At8a    db 'Duron (Applebred)',0
+Ata     db 'AthlonXP (Barton)',0
+Atat    db 'AthlonXP (Thorton)',0
 ;-------------------
 AF1:
 db 'Dual-core Opteron'
@@ -2432,7 +2123,6 @@ p4coef		db	160, 170, 180, 190, 200, 210, 220, 230, 80, 90, 100, 110, 120, 130, 1
 coppercoeff	db	 50, 30, 40, 20, 55, 35,  45, 25,  35, 70, 80, 60, 20, 75, 15, 65, 90, 110, 120, 20, 95, 115, 85, 25, 35, 70,  80, 100,  20, 75,  15, 105
 tualatcoeff	db	120, 35, 35, 40, 55, 35, 115, 35, 160, 70, 80, 60, 40, 75, 35, 65, 90, 110,  35, 35, 95,  35, 85, 35, 35, 35, 130, 100, 140, 35, 150, 105
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
 ;  include images and unpacking- and hasharea
@@ -2449,6 +2139,28 @@ rd 4096+1	   ;hash area size for unpacking gif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 I_END:
+
+; RSA test data
+align 4
+  num1 rd 40
+  num2 rd 40
+  num3 rd 40
+  iter rd 1
+  openkey rd 1
+
+; GIF unpacker data
+    globalColor dd ?
+    img_count dd ?
+    cur_info dd ?	 ; image table pointer
+    codesize dd ?
+    compsize dd ?
+    bit_count dd ?
+    CC dd ?
+    EOI dd ?
+    Palette dd ?
+    block_ofs dd ?
+    table_ptr dd ?
+
 
 ost dd ?
 sot dd ?
@@ -2470,7 +2182,6 @@ L1i  dd ?
 L2   dd ?
 L3   dd ?
 micron dd ?
-sse3sup dd ?
 brand dd ?
 
 ram_size_a dd ?
@@ -2481,8 +2192,8 @@ extc dd ?
 
 FRS dd ?
 freqsel db ?
+sse3sup db ?
 
-temp dd ?
 freqbb dd ?
 freqll dd ?
 

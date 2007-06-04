@@ -19,14 +19,13 @@ inc eax
 cpuid
 
 cnnn0:
-cmp bl, 00h
-ja rr
-je cnnn1
+test bl, bl
+jz cnnn1
 
 rr:
 mov byte [brand], bl ;
 Text 60,250,0x00000000,abrand00, abrand00len-abrand00
-jmp B000
+ret
 ;jmp comppp
 
 cnnn1:
@@ -34,245 +33,222 @@ cnnn1:
 mov	eax, 0x80000001 	      ; CPUID ext. function 0x80000001
 cpuid
 
-cmp ebx, 0
+test ebx, ebx
 je Bi00
-mov word [brand], bx ;
+mov [brand], ebx ;
 
 comppp:
-cmp  [brand], 400h
-jl res1
-cmp  [brand], 500h
-jl res2
-jae res3
+cmp  byte [brand+1], 4
+jb   res1
+jz   res2
+ja   res3
 
 
 res1:
 Text 60,250,0x00000000,abrand0, abrand0len-abrand0
-jmp B000
+ret
 
 res2:
 Text 60,250,0x00000000,abrand1, abrand1len-abrand1
-jmp B000
+ret
 
 res3:
 Text 60,250,0x00000000,abrand2, abrand2len-abrand2
-jmp B000
+ret
 	     ;;;;;;;;;;;;;;;;;;;;; intel brand
 intel_br:
       xor eax,eax
       inc eax
       cpuid
+      movzx ebx, bl
+      mov [brand], ebx
 cmp0:
-cmp bl, 00h
+test ebx, ebx
 je Bi00
 
 cmp1:
-cmp bl, 01h
+dec ebx
 je Bi01
 
 cmp2:
-cmp bl, 02h
+dec ebx
 je Bi02
 
 cmp3:
-cmp bl, 03h
+dec ebx
 je Bi03
 
 cmp4:
-cmp bl, 04h
+dec ebx
 je Bi04
 
 cmp6:
-cmp bl, 06h
+dec ebx
+dec ebx
 je Bi06
 
 cmp7:
-cmp bl, 07h
+dec ebx
 je Bi07
 
 cmp8:
-cmp bl, 08h
+dec ebx
 je Bi08
 
 cmp9:
-cmp bl, 09h
+dec ebx
 je Bi09
 
 cmpA:
-cmp bl, 0Ah
+dec ebx
 je Bi0A
 
 cmpB:
-cmp bl, 0Bh
+dec ebx
 je Bi0B
 
 cmpC:
-cmp bl, 0Ch
+dec ebx
 je Bi0C
 
 cmpE:
-cmp bl, 0Eh
+dec ebx
+dec ebx
 je Bi0E
 
 cmpF:
-cmp bl, 0Fh
+dec ebx
 je Bi0F
 
 cmp11:
-cmp bl, 11h
+dec ebx
+dec ebx
 je Bi11
 
 cmp12:
-cmp bl, 12h
+dec ebx
 je Bi12
 
 cmp13:
-cmp bl, 13h
+dec ebx
 je Bi13
 
 cmp14:
-cmp bl, 14h
+dec ebx
 je Bi14
 
 cmp15:
-cmp bl, 15h
+dec ebx
 je Bi15
 
 cmp16:
-cmp bl, 16h
+dec ebx
 je Bi16
 
 cmp17:
-cmp bl, 17h
+dec ebx
 je Bi17
-
-jne Bi00
 
 ;------------------
 Bi00:
-mov byte [brand], bl ;00h
 Text 60,250,0x00000000,brand0, brand0len-brand0
 ;Number 270,180,1*256,2,dword [brand],0x000000     was in v. 1.11
-jmp B000
+ret
 
 Bi01:
-mov [brand], 01h
 Text 60,250,0x00000000,brand01, brand01len-brand01
-jmp B000
+ret
 
 Bi02:
-mov [brand], 02h
 Text 60,250,0x00000000,brand02, brand02len-brand02
-jmp B000
+ret
 
 Bi03:
-mov [brand], 03h
 
 cmp [m], 8
 je E3
 Text 60,250,0x00000000,brand03, brand03len-brand03
-jmp B000
+ret
 E3:
 Text 60,250,0x00000000,brand03d, brand03dlen-brand03d
-jmp B000
+ret
 
 Bi04:
-mov [brand], 04h
 Text 60,250,0x00000000,brand04, brand04len-brand04
-jmp B000
+ret
 
 Bi06:
-mov [brand], 06h
 Text 60,250,0x00000000,brand06, brand06len-brand06
-jmp B000
+ret
 
 Bi07:
-mov [brand], 07h
 Text 60,250,0x00000000,brand07, brand07len-brand07
-jmp B000
+ret
 
 Bi08:
-mov [brand], 08h
 Text 60,250,0x00000000,brand08, brand08len-brand08
-jmp B000
+ret
 
 Bi09:
-mov [brand], 09h
 Text 60,250,0x00000000,brand09, brand09len-brand09
-jmp B000
+ret
 
 Bi0A:
-mov [brand], 0Ah
 Text 60,250,0x00000000,brand0A, brand0Alen-brand0A
-jmp B000
+ret
 
 Bi0B:
-mov [brand], 0Bh
 
 cmp [m], 13
 jl Eb
 Text 60,250,0x00000000,brand0B, brand0Blen-brand0B
-jmp B000
+ret
 Eb:
 Text 60,250,0x00000000,brand0Bd, brand0Bdlen-brand0Bd
-jmp B000
+ret
 
 Bi0C:
-mov [brand], 0Ch
 Text 60,250,0x00000000,brand0C, brand0Clen-brand0C
-jmp B000
+ret
 
 Bi0E:
-mov [brand], 0Eh
 
 cmp [m], 13
 jl Ed
 Text 60,250,0x00000000,brand0E, brand0Elen-brand0E
-jmp B000
+ret
 Ed:
 Text 60,250,0x00000000,brand0Ed, brand0Edlen-brand0Ed
-jmp B000
+ret
 
 Bi0F:
-mov [brand], 0Fh
 Text 60,250,0x00000000,brand0F, brand0Flen-brand0F
-jmp B000
+ret
 
 Bi11:
-mov [brand], 11h
 Text 60,250,0x00000000,brand11, brand11len-brand11
-jmp B000
+ret
 
 Bi12:
-mov [brand], 12h
 Text 60,250,0x00000000,brand12, brand12len-brand12
-jmp B000
+ret
 
 Bi13:
-mov [brand], 13h
 Text 60,250,0x00000000,brand13, brand13len-brand13
-jmp B000
+ret
 
 Bi14:
-mov [brand], 14h
 Text 60,250,0x00000000,brand14, brand14len-brand14
-jmp B000
+ret
 
 Bi15:
-mov [brand], 15h
 Text 60,250,0x00000000,brand15, brand15len-brand15
-jmp B000
+ret
 
 Bi16:
-mov [brand], 16h
 Text 60,250,0x00000000,brand16, brand16len-brand16
-jmp B000
+ret
 
 Bi17:
-mov [brand], 17h
 Text 60,250,0x00000000,brand17, brand17len-brand17
-jmp B000
-
-B000:
-
 ret
