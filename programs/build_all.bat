@@ -76,6 +76,7 @@ fasm system\rdsave\trunk\rdsave.asm %BIN%\rdsave
 fasm system\run\trunk\run.asm %BIN%\run
 fasm system\setup\trunk\setup.asm %BIN%\setup
 fasm system\skinsel\skinsel.asm %BIN%\skinsel
+fasm system\ss\trunk\@ss.asm %BIN%\@ss
 fasm system\vrr\trunk\vrr.asm %BIN%\vrr
 fasm system\vrr_m\trunk\vrr_m.asm %BIN%\vrr_m
 
@@ -108,10 +109,11 @@ echo *
 fasm network\airc\trunk\airc.asm %BIN%\network\airc
 fasm network\arpstat\trunk\arpstat.asm %BIN%\network\arpstat
 fasm network\autodhcp\trunk\autodhcp.asm %BIN%\network\autodhcp
+fasm network\chess\trunk\chess.asm %BIN%\network\chess
 fasm network\dhcp\trunk\dhcp.asm %BIN%\network\dhcp
 fasm network\dnsr\trunk\dnsr.asm %BIN%\network\dnsr
 fasm network\ethstat\trunk\ethstat.asm %BIN%\network\ethstat
-fasm network\ftps\trunk\https.asm %BIN%\network\ftps
+fasm network\ftps\trunk\ftps.asm %BIN%\network\ftps
 fasm network\httpc\trunk\httpc.asm %BIN%\network\httpc
 fasm network\https\trunk\https.asm %BIN%\network\https
 fasm network\ipc\trunk\ipc.asm %BIN%\network\ipc
@@ -170,7 +172,6 @@ fasm games\arcanoid\trunk\arcanoid.asm %BIN%\games\arcanoid
 cd games\c4\trunk\
 nasmw -f bin -o ..\..\..\%BIN%\games\c4 c4.asm
 cd ..\..\..
-fasm games\chess\trunk\chess.asm %BIN%\games\chess
 fasm games\freecell\freecell.asm %BIN%\games\freecell
 fasm games\mblocks\trunk\mblocks.asm %BIN%\games\mblocks
 fasm games\phenix\trunk\phenix.asm %BIN%\games\phenix
@@ -202,7 +203,6 @@ fasm demos\free3d04\trunk\free3d04.asm %BIN%\3d\free3d04
 fasm demos\magnify\trunk\magnify.asm %BIN%\magnify
 fasm demos\movback\trunk\movback.asm %BIN%\demos\movback
 fasm demos\plasma\trunk\plasma.asm %BIN%\demos\plasma
-fasm demos\ss\trunk\@ss.asm %BIN%\@ss
 fasm demos\timer\trunk\timer.asm %BIN%\demos\timer
 fasm demos\tinyfrac\trunk\tinyfrac.asm %BIN%\demos\tinyfrac
 fasm demos\transp\trunk\transp.asm %BIN%\demos\transp
@@ -255,6 +255,7 @@ kpack %BIN%\rdsave
 kpack %BIN%\run
 kpack %BIN%\setup
 kpack %BIN%\skinsel
+kpack %BIN%\@ss
 kpack %BIN%\vrr
 kpack %BIN%\vrr_m
 
@@ -286,6 +287,7 @@ echo *
 kpack %BIN%\network\airc
 kpack %BIN%\network\arpstat
 kpack %BIN%\network\autodhcp
+kpack %BIN%\network\chess
 kpack %BIN%\network\dhcp
 kpack %BIN%\network\dnsr
 kpack %BIN%\network\ethstat
@@ -345,7 +347,6 @@ echo *
 kpack %BIN%\games\15
 kpack %BIN%\games\arcanii
 kpack %BIN%\games\arcanoid
-kpack %BIN%\games\chess
 kpack %BIN%\games\freecell
 kpack %BIN%\games\mblocks
 kpack %BIN%\games\phenix
@@ -374,7 +375,6 @@ kpack %BIN%\3d\free3d04
 kpack %BIN%\magnify
 kpack %BIN%\demos\movback
 kpack %BIN%\demos\plasma
-kpack %BIN%\@ss
 kpack %BIN%\demos\timer
 kpack %BIN%\demos\tinyfrac
 kpack %BIN%\demos\transp
