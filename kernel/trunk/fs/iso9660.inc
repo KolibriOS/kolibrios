@@ -15,8 +15,6 @@ IDE_Channel_1                  db  0
 IDE_Channel_2                  db  0
 endg
 
-CDDataBuf equ 0x7000
-
 reserve_cd:
 
     cli
@@ -533,8 +531,10 @@ cd_find_lfn:
         call ReadCDWRetr         ; читаем сектор директории
         cmp   [DevErrorCode],0
         jne   .access_denied
-        call cd_find_name_in_buffer
-        jnc    .found
+        push    ebp
+        call    cd_find_name_in_buffer
+        pop     ebp
+        jnc     .found
         sub  eax,2048
 ; директория закончилась?
         cmp  eax,0
@@ -571,9 +571,9 @@ cd_find_name_in_buffer:
         mov     [cd_current_pointer_of_input_2],CDDataBuf
 .start:
         call    cd_get_name
-        jc    .not_found
+        jc      .not_found
         call    cd_compare_name
-        jc    .start
+        jc      .start
 .found:
         clc
         ret

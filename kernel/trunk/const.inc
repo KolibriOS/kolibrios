@@ -192,6 +192,7 @@ TASK_DATA           equ (OS_BASE+0x0003020)
 TASK_EVENT          equ (OS_BASE+0x0003020)
 
 mouseunder          equ (OS_BASE+0x0006900)
+CDDataBuf           equ (OS_BASE+0x0007000)
 FLOPPY_BUFF         equ (OS_BASE+0x0008000)
 ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
 idts                equ (OS_BASE+0x000B100)
