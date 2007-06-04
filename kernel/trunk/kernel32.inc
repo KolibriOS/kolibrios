@@ -127,8 +127,9 @@ struc APPDATA
   .io_map          rd 2            ;+68
   .dbg_state       dd ?            ;+76
   .cur_dir         dd ?            ;+80
+  .wait_timeout    dd ?            ;+84
 
-                   db 44 dup(?)    ;+84
+                   db 40 dup(?)    ;+88
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

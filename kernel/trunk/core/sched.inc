@@ -172,7 +172,14 @@ find_next_task:
         jne   .noevents
         call  get_event_for_app
         test  eax, eax
-        jz    .waiting_for_event
+        jnz   @f
+        mov   eax, ebx
+        shl   eax, 8
+        mov   eax, [SLOT_BASE + APPDATA.wait_timeout + eax]
+        cmp   eax, [timer_ticks]
+        jae   .waiting_for_event
+        xor   eax, eax
+@@:
         mov   [event_sched], eax
         mov   [edi+TASKDATA.state], byte 0
 .noevents:

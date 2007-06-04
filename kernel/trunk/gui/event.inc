@@ -469,53 +469,34 @@ sys_getevent:
      mov    [esp+36],eax
      ret
 
-
-align 4
-sys_wait_event_timeout:
-
-     mov   ebx,[timer_ticks]
-     add   ebx,eax
-     cmp   ebx,[timer_ticks]
-     jna   .swfet2
-.swfet1:
-     call  get_event_for_app
-     test  eax,eax
-     jne   .eventoccur_time
-     call  change_task
-     cmp   ebx,[timer_ticks]
-     jg    .swfet1
-.swfet2:
-     xor   eax,eax
-.eventoccur_time:
-     mov   [esp+36],eax
-     ret
-
-
-align 4
-
 sys_waitforevent:
+        or      eax, 0xFFFFFFFF         ; infinite timeout
+        jmp     @f
 
-     call  get_event_for_app
-     test  eax,eax
-     jne   eventoccur
-   newwait:
+sys_wait_event_timeout:
+        add     eax, [timer_ticks]
+@@:
+        mov     ebx, [current_slot]
+        mov     [ebx + APPDATA.wait_timeout], eax
+        call    get_event_for_app
+        test    eax, eax
+        jnz     eventoccur
 
-     mov   eax, [TASK_BASE]
-     mov   [eax+TASKDATA.state], byte 5
-     call  change_task
+        mov     eax, [TASK_BASE]
+        mov     [eax+TASKDATA.state], byte 5
+        call    change_task
 
-     mov eax, [event_sched]
-
-   eventoccur:
-     mov   [esp+36],eax
-     ret
+        mov     eax, [event_sched]
+eventoccur:
+        mov     [esp+36], eax
+        ret
 
 get_event_for_app:
 
      pushad
 
      mov   edi,[TASK_BASE]              ; WINDOW REDRAW
-     test  [edi+TASKDATA.event_mask],dword 1
+     test  [edi+TASKDATA.event_mask], 1
      jz    no_eventoccur1
      ;mov   edi,[TASK_BASE]
      cmp   [edi-twdw+WDATA.fl_redraw],byte 0
