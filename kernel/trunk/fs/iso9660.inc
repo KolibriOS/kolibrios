@@ -382,13 +382,13 @@ cd_get_parameters_of_file:
 cd_get_parameters_of_file_1:
 ; получаем атрибуты файла
     xor   eax,eax
-; файл не архивировалс
-    inc   al
+; файл не архивировался
+    inc   eax
     shl   eax,1
 ; это каталог?
     test  [ebp-8],byte 2
     jz    .file
-    inc   al
+    inc   eax
 .file:
 ; метка тома не как в FAT, в этом виде отсутсвует
 ; файл не является системным
@@ -396,11 +396,11 @@ cd_get_parameters_of_file_1:
 ; файл является скрытым? (атрибут существование)
     test  [ebp-8],byte 1
     jz    .hidden
-    inc   al
+    inc   eax
 .hidden:
     shl   eax,1
 ; файл всегда только для чтения, так как это CD
-    inc   al
+    inc   eax
     mov   [edi],eax
 ; получаем время для файла
 ;час
@@ -462,27 +462,31 @@ fs_CdGetFileInfo:
         mov     eax, 2
         ret
 @@:
-        push    edi ebp
+        push    edi
         call    cd_find_lfn
         pushfd
         cmp     [DevErrorCode], 0
         jz      @f
         popfd
-        pop     ebp edi
+        pop     edi
         mov     eax, 11
         ret
 @@:
         popfd
         jnc     @f
-        pop     ebp edi
+        pop     edi
         mov     eax, ERROR_FILE_NOT_FOUND
         ret
 @@:
 
         mov     edi, edx
+        push    ebp
+        mov     ebp, [cd_current_pointer_of_input]
+        add     ebp, 33
         call    cd_get_parameters_of_file_1
+        pop     ebp
         and     dword [edi+4], 0
-        pop     ebp edi
+        pop     edi
         xor     eax, eax
         ret
 
@@ -612,18 +616,16 @@ cd_compare_name:
 .loop:
     cld
     lodsb
-    push ax
+    push eax
     call char_todown
     call ansi2uni_char
     xchg ah,al
-    cld
     scasw
-    pop  ax
+    pop  eax
     je    .coincides
     call char_toupper
     call ansi2uni_char
     xchg ah,al
-    cld
     sub  edi,2
     scasw
     jne   .name_not_coincide

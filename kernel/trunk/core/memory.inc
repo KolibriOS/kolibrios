@@ -613,16 +613,15 @@ proc map_mem stdcall, lin_addr:dword,pdir:dword,\
            mov eax, [pdir]
            and eax, 0xFFFFF000
 
-           stdcall map_page,[ipc_pdir],eax,dword PG_UW
+           stdcall map_page,[ipc_pdir],eax,PG_UW
            mov ebx, [ofs]
            shr ebx, 22
            mov esi, [ipc_pdir]
            mov edi, [ipc_ptab]
            mov eax, [esi+ebx*4]
            and eax, 0xFFFFF000
-           test eax, eax
            jz .exit
-           stdcall map_page,edi,eax,dword PG_UW
+           stdcall map_page,edi,eax,PG_UW
 ;           inc ebx
 ;           add edi, 0x1000
 ;           mov eax, [esi+ebx*4]
@@ -645,13 +644,22 @@ proc map_mem stdcall, lin_addr:dword,pdir:dword,\
 
 .map:      mov eax, [esi+edx*4]
            and eax, 0xFFFFF000
-           test eax, eax
-           jz .exit
-           stdcall map_page,edi,eax,dword PG_UW
+           jz  .exit
+           stdcall map_page,edi,eax,PG_UW
+           dec ecx
+           jz  .exit
            add edi, 0x1000
            inc edx
-           dec ecx
+           cmp edx, 0x400
            jnz .map
+           inc ebx
+           mov eax, [ipc_pdir]
+           mov eax, [eax+ebx*4]
+           and eax, 0xFFFFF000
+           jz  .exit
+           stdcall map_page,esi,eax,PG_UW
+           xor edx, edx
+           jmp .map
 
 .exit:
            ret
@@ -749,7 +757,7 @@ proc set_ipc_buff
 .touch:    mov eax, [ebx]
            add ebx, 0x1000
            cmp ebx, ecx
-           jna .touch
+           jb  .touch
 
            popf
            xor eax, eax
@@ -761,6 +769,7 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
              dst_slot   dd ?
              dst_offset dd ?
              buf_size   dd ?
+             used_buf   dd ?
            endl
 
            pushf
@@ -785,11 +794,21 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov esi, [eax+SLOT_BASE+0xa4]
            mov [buf_size], esi
 
-           stdcall map_mem, [ipc_tmp], [SLOT_BASE+eax+0xB8],\
+           mov ecx, [ipc_tmp]
+           cmp esi, 0x40000-0x1000 ; size of [ipc_tmp] minus one page
+           jbe @f
+           push eax esi edi
+           add esi,0x1000
+           stdcall alloc_kernel_space,esi
+           mov ecx, eax
+           pop edi esi eax
+@@:
+           mov [used_buf], ecx
+           stdcall map_mem, ecx, [SLOT_BASE+eax+0xB8],\
                              edi, esi
 
            mov edi, [dst_offset]
-           add edi, [ipc_tmp]
+           add edi, [used_buf]
            cmp dword [edi], 0
            jnz  .ipc_blocked          ;if dword [buffer]<>0 - ipc blocked now
 
@@ -803,8 +822,6 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov dword [edi+4], ebx
            mov eax,[TASK_BASE]
            mov eax, [eax+0x04]         ;eax - our PID
-           mov edi, [dst_offset]
-           add edi, [ipc_tmp]
            add edi, edx
            mov [edi], eax
            mov ecx, [msg_size]
@@ -845,12 +862,11 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 
            mov  dword [check_idle_semaphore],5
 .ipc_no_cis:
-           popf
-           xor eax, eax
-           ret
+           push 0
+           jmp .ret
 .no_pid:
            popf
-           mov  eax, 4
+           mov eax, 4
            ret
 .no_ipc_area:
            popf
@@ -858,12 +874,18 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            inc eax
            ret
 .ipc_blocked:
-           popf
-           mov  eax, 2
-           ret
+           push 2
+           jmp .ret
 .buffer_overflow:
+           push 3
+.ret:
+           mov eax, [used_buf]
+           cmp eax, [ipc_tmp]
+           jz @f
+           stdcall free_kernel_space,eax
+@@:
+           pop eax
            popf
-           mov  eax, 3
            ret
 endp
 

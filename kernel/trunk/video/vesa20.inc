@@ -911,6 +911,10 @@ vesa20_drawbackground_stretch:
                                 ; dword [esp+4] = y * BgrDataHeight / ScreenHeight
         push    eax
         mov     ecx, [BgrDataWidth]
+        lea     edx, [ecx*3]
+        imul    edx, [BgrDataHeight]
+        add     edx, [img_background]
+        push    edx
         mul     ecx
         imul    esi, ecx
         dec     ecx
@@ -932,16 +936,18 @@ vesa20_drawbackground_stretch:
 ; dword [esp] = saved esi
 ; dword [esp+4] = saved edx
 ; dword [esp+8] = saved ecx
-; dword [esp+12] = limit for overlapping of points
-; dword [esp+16] = x
-; dword [esp+20] = (y * BgrDataHeight) mod ScreenHeight (used to fast recalculating of esi)
-; dword [esp+24] = y
+; dword [esp+12] = BgrDataWidth-1, x-limit for overlapping of points
+; dword [esp+16] = end of bgr memory (defines y-limit for overlapping of points)
+; dword [esp+20] = x
+; dword [esp+24] = (y * BgrDataHeight) mod ScreenHeight (used to fast recalculating of esi)
+; dword [esp+28] = y
 ; precalculated constants:
-; dword [esp+28] = BgrDataHeight mod ScreenHeight
-; dword [esp+32] = BgrDataHeight div ScreenHeight
-; dword [esp+36] = BgrDataWidth mod ScreenWidth
-; dword [esp+40] = BgrDataWidth div ScreenWidth
+; dword [esp+32] = BgrDataHeight mod ScreenHeight
+; dword [esp+36] = BgrDataHeight div ScreenHeight
+; dword [esp+40] = BgrDataWidth mod ScreenWidth
+; dword [esp+44] = BgrDataWidth div ScreenWidth
 sdp3:
+        add     edx, [esp+40]
         cmp     [ebp+WinMapAddress], byte 1
         jnz     snbgp
         mov     al, [esi+2]
@@ -949,7 +955,22 @@ sdp3:
         mov     ax, [esi]
         cmp     ecx, [esp+12]
         jae     @f
+        cmp     edx, [ScreenWidth]
+        jb      @f
         mov     ebx, [esi+2]
+        shr     ebx, 8
+        call    overlapping_of_points
+@@:
+        mov     ebx, [esp+24]
+        add     ebx, [esp+32]
+        cmp     ebx, [ScreenHeight]
+        jbe     @f
+        mov     ebx, [BgrDataWidth]
+        lea     ebx, [ebx*3]
+        add     ebx, esi
+        cmp     ebx, [esp+16]
+        jae     @f
+        mov     ebx, [ebx-1]
         shr     ebx, 8
         call    overlapping_of_points
 @@:
@@ -960,16 +981,16 @@ snbgp:
         cmp     [ScreenBPP], byte 25
         sbb     edi, -4
         add     ebp, 1
-        mov     eax, [esp+16]
+        mov     eax, [esp+20]
         add     eax, 1
-        mov     [esp+16], eax
+        mov     [esp+20], eax
         cmp     eax, [draw_data+32+RECT.right]
         ja      sdp4
-        mov     eax, [esp+40]
+        mov     eax, [esp+44]
         add     ecx, eax
         lea     eax, [eax*3]
         add     esi, eax
-        add     edx, [esp+36]
+;        add     edx, [esp+40]
         cmp     edx, [ScreenWidth]
         jbe     sdp3
         sub     edx, [ScreenWidth]
@@ -979,9 +1000,9 @@ snbgp:
         jmp     sdp3
 sdp4:
 ; next y
-        mov     ebx, [esp+24]
+        mov     ebx, [esp+28]
         add     ebx, 1
-        mov     [esp+24], ebx
+        mov     [esp+28], ebx
         cmp     ebx, [draw_data+32+RECT.bottom]
         ja      sdpdone
 ; advance edi, ebp to next scan line
@@ -1001,25 +1022,25 @@ sdp4:
         pop     esi edx ecx
         push    ecx edx
         xor     ebx, ebx
-        mov     eax, [esp+20-4]
-        add     eax, [esp+28-4]
+        mov     eax, [esp+24-4]
+        add     eax, [esp+32-4]
         cmp     eax, [ScreenHeight]
         jbe     @f
         sub     eax, [ScreenHeight]
         mov     ebx, 1
         sub     eax, ebx
 @@:
-        mov     [esp+20-4], eax
-        add     ebx, [esp+32-4]
+        mov     [esp+24-4], eax
+        add     ebx, [esp+36-4]
         lea     ebx, [ebx*3]
         imul    ebx, [BgrDataWidth]
         add     esi, ebx
         push    esi
         mov     eax, [draw_data+32+RECT.left]
-        mov     [esp+16], eax
+        mov     [esp+20], eax
         jmp     sdp3
 sdpdone:
-        add     esp, 44
+        add     esp, 48
         popad
         mov     [EGA_counter],1
         call    VGA_drawbackground

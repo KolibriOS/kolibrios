@@ -20,13 +20,8 @@ endl
   push eax
   invoke ini.get_str,conf_fname, ugui, ugui_mouse_speed, eax,30, ugui_mouse_speed_def        
   pop eax
-  stdcall strtoint,eax 
-  push eax
-  pop edx
-  call _mouse_speed
-
-  popad
-  ret
+  stdcall strtoint,eax
+        mov     [mouse_speed_factor], ax
   
   ;mouse_delay
   lea eax,[par]
@@ -34,9 +29,7 @@ endl
   invoke ini.get_str,conf_fname, ugui, ugui_mouse_delay, eax,30, ugui_mouse_delay_def
   pop eax
   stdcall strtoint,eax
-  push eax
-  pop edx
-  call _mouse_delay
+        mov     [mouse_delay], eax
 
   ;[dev]
   ;sb16
@@ -45,9 +38,12 @@ endl
   invoke ini.get_str,conf_fname, udev, udev_sb16, eax,30, udev_sb16_def
   pop eax
   stdcall strtoint,eax
-  push eax
-  pop ecx
-  call _sb16
+        cmp     eax, 0x100
+        jb      @f
+        cmp     eax, 0x10000
+        jae     @f
+        mov     [sb16], eax
+@@:
   
   ;sound_dma
   lea eax,[par]
@@ -55,10 +51,10 @@ endl
   invoke ini.get_str,conf_fname, udev, udev_sound_dma, eax,30, udev_sound_dma_def
   pop eax
   stdcall strtoint,eax
-  push eax
-  pop ecx
-  call _sound_dma  
-  
+        cmp     eax, 3
+        ja      @f
+        mov     [sound_dma], eax
+@@:
   
   ;midibase
   lea eax,[par]
@@ -66,10 +62,15 @@ endl
   invoke ini.get_str,conf_fname, udev, udev_midibase, eax,30, udev_midibase_def
   pop eax
   stdcall strtoint,eax
-  push eax
-  pop ecx
-  call _midibase
- 
+        cmp     eax, 0x100
+        jb      @f
+        cmp     eax, 0x10000
+        jae     @f
+        mov     [midi_base], ax
+        mov     [mididp], eax
+        inc     eax
+        mov     [midisp], eax
+@@:
   
   popad
   ret
@@ -102,7 +103,11 @@ endl
   invoke ini.get_int,conf_fname, unet, unet_active, 0
   or eax,eax
   jz .do_not_set_net
-  call _net_up  
+        mov     eax, [stack_config]
+        and     eax, 0xFFFFFF80
+        add     eax, 3
+        mov     [stack_config], eax
+        call    ash_eth_enable
   
   ;addr
   lea eax,[par]
@@ -110,9 +115,7 @@ endl
   invoke ini.get_str,conf_fname, unet, unet_addr, eax,30, unet_def
   pop eax
   stdcall do_inet_adr,eax
-  push eax
-  pop ecx
-  call _net_addr
+        mov     [stack_ip], eax
   
   ;mask
   lea eax,[par]
@@ -120,9 +123,7 @@ endl
   invoke ini.get_str,conf_fname, unet, unet_mask, eax,30, unet_def
   pop eax
   stdcall do_inet_adr,eax
-  push eax
-  pop ecx
-  call _net_mask  
+        mov     [subnet_mask], eax
   
   ;gate
   lea eax,[par]
@@ -130,9 +131,7 @@ endl
   invoke ini.get_str,conf_fname, unet, unet_gate, eax,30, unet_def
   pop eax
   stdcall do_inet_adr,eax
-  push eax
-  pop ecx
-  call _net_gate
+        mov     [gateway_ip], eax
 .do_not_set_net: 
   popad
   ret
@@ -311,70 +310,3 @@ proc do_inet_adr stdcall,strs
   popad
   ret
 endp
-
-
-;setup configurations
-
-_mouse_speed:
-    mov  eax,18
-    mov  ebx,19
-    mov  ecx,1
-    int 0x40
- ret
-
-_mouse_delay:
-    mov  eax,18
-    mov  ebx,19
-    mov  ecx,3
-    int 0x40
- ret
- 
-_sb16:
-    mov  eax,21
-    mov  ebx,4
-    int 0x40
- ret
-    
-_sound_dma:
-    mov  eax,21
-    mov  ebx,10
-    int 0x40
- ret
- 
- 
-_midibase:
-    mov  eax,21
-    mov  ebx,1
-    int 0x40
- ret
-  
-_net_addr:
-    mov eax,52
-    mov ebx,3
-    int 0x40
- ret
- 
-_net_mask:
-    mov eax,52
-    mov ebx,12
-    int 0x40
- ret
-
-_net_gate:
-    mov eax,52
-    mov ebx,11
-    int 0x40
- ret
- 
-_net_up:
-    mov eax,52
-    mov ebx,0
-    int 0x40
-    and eax,0xFFFFFF80
-    add eax,3
-    mov ecx,eax
-    
-    mov eax,52
-    mov ebx,2
-    int 0x40
- ret
