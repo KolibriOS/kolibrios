@@ -26,12 +26,12 @@ sysdir_path     rb      64
 tmp_file_name_table dd  ?
 endg
 
-; берет параметры bx_from_load и инициализирует замену для /sys
+; use bx_from_load and init system directory /sys
 Parser_params:
   mov eax,[OS_BASE+0x10000+bx_from_load]
   mov ecx,sysdir_path
   mov [ecx-64],dword 'sys'
-  cmp al,'r' ; рам диск
+  cmp al,'r' ; if ram disk
   jnz @f
   mov [ecx],dword 'RD/?'
   mov [ecx+3],byte ah
@@ -39,7 +39,7 @@ Parser_params:
   ret
 @@:
   sub al,49
-  mov [ecx],dword 'HD?/'
+  mov [ecx],dword 'HD?/'	; if hard disk
   mov [ecx+2],byte al
   mov [ecx+4],byte ah
   mov [ecx+5],dword '/KOL'

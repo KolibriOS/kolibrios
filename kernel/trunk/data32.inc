@@ -107,16 +107,6 @@ drawbar         dd __sys_drawbar.forced
 putpixel        dd __sys_putpixel
 ; } mike.dld
 
-; SPraid.simba { 6.05.2007
-; константы для обращения к ини файлу для определения устройств
-;
-
-ini_dev_sect: db 'dev',0     ; секция об устройствах
-ini_com1_mouse_detect:   db 'com1_mouse',0
-ini_com2_mouse_detect:   db 'com2_mouse',0
-
-dev_dev_val: db '2',0		; далее если 2 - то детектировать
-; } SPraid.simba
 
 align 4
 keyboard   dd 1

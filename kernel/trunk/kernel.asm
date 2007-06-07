@@ -552,13 +552,12 @@ include 'vmodeld.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 
   mov ax,[OS_BASE+0x10000+bx_from_load]
-  cmp ax,'r1'		; если срам диск - то не грузить библиотеки
+  cmp ax,'r1'		; if using not ram disk, then load librares and parameters {SPraid.simba}
   je  no_lib_load
 ; LOADING LIBRARES
-   stdcall dll.Load,@IMPORT				; SPraid - загрузка функционала (пока что ини файл)
+   stdcall dll.Load,@IMPORT				; loading librares for kernel (.obj files)
    call load_file_parse_table			; prepare file parse table
    call set_kernel_conf					; configure devices and gui
-   mov byte [conf_file_loaded],1
 no_lib_load:
 
 ; LOAD FONTS I and II
@@ -763,7 +762,7 @@ no_lib_load:
                    (tss._io_map_1-OS_BASE), PG_MAP
 
   mov ax,[OS_BASE+0x10000+bx_from_load]
-  cmp ax,'r1'		; если срам диск - то не грузить библиотеки
+  cmp ax,'r1'		; if not rused ram disk - load network configuration from files {SPraid.simba}
   je  no_st_network
         call set_network_conf
   no_st_network:

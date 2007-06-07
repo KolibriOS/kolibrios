@@ -40,7 +40,7 @@ align 4
 
 
 
-align 4            ; загрузка библиотеки с условием, что будит использываться из ядра
+align 4            ; loading library (use kernel functions)
 proc load_k_library stdcall, file_name:dword
            locals
              coff      dd ?

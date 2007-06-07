@@ -1,20 +1,14 @@
 $Revision$
 ;-------------------------------------------------------------------------
-;
-;    Файл конфигурации
-;
-;
-;     SPraid
-;
+;Loading configuration from ini file
+;    {SPraid.simba}
 ;-------------------------------------------------------------------------
 
-conf_file_loaded: db 0			; флаг загрузки конфига
 conf_path_sect: db 'path',0
 
 conf_fname db '/sys/sys.conf',0
 
-
-
+; set soke kernel configuration
 proc set_kernel_conf
 locals
   par db 30 dup(?)
@@ -95,6 +89,7 @@ udev_sound_dma_def db '1',0
 udev_midibase db 'midibase',0
 udev_midibase_def db '0x320',0
 
+;set up netvork configuration
 proc set_network_conf
 locals
   par db 30 dup(?)
@@ -152,8 +147,7 @@ unet_mask db 'mask',0
 unet_gate db 'gate',0
 unet_def db 0
 
-; конверчение строки в DWord в eax (по второму символу определяет систему счисления)
-     
+; convert string to DWord
 proc strtoint stdcall,strs
   pushad
   
@@ -178,7 +172,7 @@ proc strtoint stdcall,strs
   ret  
 endp
 
-; конверчение строки в DWord в eax для десятичного
+; convert string to DWord for decimal value
 proc strtoint_dec stdcall,strs
   pushad
   xor edx,edx
@@ -231,7 +225,7 @@ proc strtoint_dec stdcall,strs
   ret
 endp
 
-; конверчение строки в DWord в eax для шеснадцатиричного
+;convert string to DWord for hex value
 proc strtoint_hex stdcall,strs
   pushad
   xor edx,edx
@@ -286,7 +280,7 @@ proc strtoint_hex stdcall,strs
 endp    
 
 
- ; преобразовать адрес в то что нада, если пусто то вернуть 0
+; convert string to DWord for IP addres
 proc do_inet_adr stdcall,strs
   pushad
   
@@ -319,7 +313,7 @@ proc do_inet_adr stdcall,strs
 endp
 
 
-; установки из setup
+;setup configurations
 
 _mouse_speed:
     mov  eax,18
