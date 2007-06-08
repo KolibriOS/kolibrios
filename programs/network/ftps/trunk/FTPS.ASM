@@ -1609,7 +1609,7 @@ dirinfoblock:
                     dd      DirBlocksPerCall
                     dd      text + 0x1300   ; data area
 ; The 'filename' for a directory listing
-dirpath             db      '/RD/1',0
+dirpath             db      '/sys',0
 
 fsize:              dd      0
                     

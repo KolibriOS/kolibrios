@@ -42,7 +42,7 @@ fileinfo:
         dd      0
         dd      0
         dd      0
-        db      '/rd/1/calc',0
+        db      '/sys/calc',0
 
 i_end:
         align   16

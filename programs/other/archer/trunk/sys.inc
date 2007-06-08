@@ -350,7 +350,7 @@ fileinfo:
         dd      editor_par
         dd      0
         dd      0
-        db      '/RD/1/TINYPAD',0
+        db      '/sys/TINYPAD',0
 editor_par db '*'
 par_fsize rb 11
 end if

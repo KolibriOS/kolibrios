@@ -46,7 +46,7 @@ file_info_start: ;this part is already rewrited to 70th function
 fullpath_start:  ; db '/RD/1/EXAMPLE'
 		    times MAX_PATH db 0
 
-_ramdisk	 db '/RD/1/'
+_ramdisk	 db '/sys/'
 filepos 	 dd 0x0
 
 ; info by Privalov: starting from FASM 1.51

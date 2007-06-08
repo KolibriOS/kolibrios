@@ -125,7 +125,7 @@ cdplayer:
         dd      0
         dd      0
         dd      0
-        db      '/RD/1/CDP',0
+        db      '/sys/CDP',0
 
   readir:
     mov  eax,42

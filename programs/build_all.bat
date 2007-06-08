@@ -210,6 +210,7 @@ fasm demos\trantest\trunk\trantest.asm %BIN%\demos\trantest
 fasm demos\tube\trunk\tube.asm %BIN%\demos\tube
 
 erase lang.inc
+erase config.inc
 
 echo *
 echo Finished building 
@@ -387,7 +388,6 @@ echo *
 )
 
 :END
-erase config.inc
 echo *
 echo Done. Thanks for your choise ;)
 echo *

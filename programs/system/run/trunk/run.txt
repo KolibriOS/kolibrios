@@ -11,6 +11,7 @@ MODIFY 15.05.2007 Kolibri team
 необязательно).
                                Примеры
 /rd/1/tinypad /rd/1/menu.dat
+/sys/tinypad /sys/menu.dat
 "/hd0/1/long name dir with spaces/tinypad" /rd/1/autorun.dat
 
 Всего можно вводить до 512 символов.

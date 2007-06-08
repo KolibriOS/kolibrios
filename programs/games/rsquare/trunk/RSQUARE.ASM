@@ -521,7 +521,7 @@ fileinfo:
      dd   0x0
 .fsize dd   10000
 .ptr dd   0x20000
-     db   '/RD/1/newlev.bin',0
+     db   '/sys/newlev.bin',0
 
 macro flush
 {

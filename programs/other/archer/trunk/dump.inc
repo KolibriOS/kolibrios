@@ -57,5 +57,5 @@ Board_seek:
         dd      0
         dd      0
         dd      0
-        db      '/RD/1/BOARD',0
+        db      '/sys/develop/BOARD',0
 end if

@@ -2544,18 +2544,18 @@ b_color   dd   0x6677cc
 ; //// Willow
 
 ;Name of programs
-editor	      db '/RD/1/TINYPAD',0
+editor	      db '/sys/TINYPAD',0
 bmpview   db '/sys/MV',0
 jpgview   db '/sys/JPEGVIEW',0
 gifview   db '/sys/GIFVIEW',0
-ac97      db '/RD/1/AC97SND',0
-rtfread   db '/RD/1/RTFREAD',0
+ac97      db '/sys/AC97SND',0
+rtfread   db '/sys/RTFREAD',0
 ; //// Willow
 pngview   db '/sys/@RCHER',0
 ; //// Willow
-midamp	  db '/RD/1/MIDAMP',0
-view3ds   db '/RD/1/3D/VIEW3DS',0
-life2     db '/RD/1/DEMOS/LIFE2',0
+midamp	  db '/sys/MIDAMP',0
+view3ds   db '/sys/3D/VIEW3DS',0
+life2     db '/sys/DEMOS/LIFE2',0
 
 more_char db 10h
 
@@ -2576,7 +2576,7 @@ clipfile_info:
         dd      0
         dd      ?
         dd      paramtest
-        db      '/RD/1/CLIPFILE.TXT',0
+        db      '/sys/CLIPFILE.TXT',0
 copyr_run:
         dd      7
         dd      0

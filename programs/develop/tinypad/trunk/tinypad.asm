@@ -639,34 +639,34 @@ fasm_start:
 	dd	fasm_parameters
 	dd	0
 	dd	0
-	db	'/RD/1/DEVELOP/FASM',0
+	db	'/sys/DEVELOP/FASM',0
 board_start:
 	dd	7
 	dd	0
 	dd	0
 	dd	0
 	dd	0
-	db	'/RD/1/BOARD',0
+	db	'/sys/DEVELOP/BOARD',0
 tinypad_start:
 	dd	7
 	dd	0
 	dd	?
 	dd	0
 	dd	0
-	db	'/RD/1/TINYPAD',0
+	db	'/sys/TINYPAD',0
 docpak_start:
 	dd	7
 	dd	0
 	dd	sysfuncs_param
 	dd	0
 	dd	0
-	db	'/RD/1/DOCPAK',0
+	db	'/sys/DOCPAK',0
 ^@
 
-sz app_fasm    ,'/RD/1/DEVELOP/FASM',0
-sz app_board   ,'/RD/1/BOARD',0
-sz app_tinypad ,'/RD/1/TINYPAD',0
-sz app_docpak  ,'/RD/1/DOCPAK',0
+sz app_fasm    ,'/sys/DEVELOP/FASM',0
+sz app_board   ,'/sys/DEVELOP/BOARD',0
+sz app_tinypad ,'/sys/TINYPAD',0
+sz app_docpak  ,'/sys/DOCPAK',0
 
 sz sysfuncs_param,'g',0
 

@@ -774,7 +774,7 @@ ya       dd  0
 bps      dd  128*1000
 
 fileinfo:  dd  0,0,0,0,0x20000
-filename:  db  '/RD/1/MENUET.MP3',0
+filename:  db  '/sys/MENUET.MP3',0
 times 50   db  0
 
 input_text:

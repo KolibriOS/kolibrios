@@ -166,7 +166,7 @@ fileinfo:
         dd      0
         dd      param
         dd      0 ,0
-        db      '/RD/1/TINYPAD',0
+        db      '/sys/TINYPAD',0
 
 param  db '*'
 fsize:

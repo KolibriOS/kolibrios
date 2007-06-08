@@ -752,14 +752,14 @@ icon_list db '/sys/icons.dat',0
 icon_start_parameters:
       db   25,1,1,1
       db   35,1,1,1
-      db   '/rd/1/icons/fs.ico',0
+      db   '/sys/icons/fs.ico',0
       rb   12
-      db   '/rd/1/kfar',0
+      db   '/sys/kfar',0
       rb   20
       db   'KFAR      '
 
 icon_default:
-      db   'AA-/rd/1/icons/fs.ico            -/rd/1/kfar                    -KFAR      *',13,10
+      db   'AA-/sys/icons/fs.ico             -/sys/kfar                     -KFAR      *',13,10
 
 icon_data:   ; data length 76+2
 

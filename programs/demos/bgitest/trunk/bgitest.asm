@@ -7,7 +7,7 @@
 ; Last changed: February 2, 2005
 ;
 
-BGIFONT_PATH equ '/RD/1/FONTS/'
+BGIFONT_PATH equ '/sys/FONTS/'
 _X equ 340
 _Y equ 240
 

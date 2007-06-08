@@ -5,7 +5,7 @@
 #include "string.h" 
 #include "mesys.h" 
 
-char* dllname="/rd/1/console.obj";
+char* dllname="/sys/console.obj";
 int i;
 
 char* imports[] = {"START","version","con_init","con_write_asciiz","con_printf","con_exit",NULL};

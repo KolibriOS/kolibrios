@@ -398,7 +398,7 @@ infile	  db 'example.asm'
   times MAX_PATH+$-infile  db 0
 outfile db 'example'
   times MAX_PATH+$-outfile db 0
-path	db '/rd/1/'
+path	db '/sys/'
   times MAX_PATH+$-path    db 0
 
 lf db 13,10,0

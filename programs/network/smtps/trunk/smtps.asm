@@ -724,7 +724,7 @@ draw_channel_text:
 
 text:
 
-db '   Incoming mails are written to /rd/1/smtps.txt                      '
+db '   Incoming mails are written to /sys/smtps.txt                       '
 db '   The file can be fetched with TinyServer and a Html-browser.        '
 db '   Timeout is set to 15 seconds.                                      '
 db '                                                                      '
@@ -738,10 +738,10 @@ file_start      dd      0x100000
 
 files:
        dd  2,0,0,?,0x100000
-       db  '/rd/1/smtps.txt',0
+       db  '/sys/smtps.txt',0
 filel:
        dd  0,0,0,0x100000,0x100000
-       db  '/rd/1/smtps.txt',0
+       db  '/sys/smtps.txt',0
 
 
 server_active dd 0

@@ -2942,7 +2942,7 @@ dirinfo:
 	dd	0
 	dd	1
 	dd	direntry_buffer
-	db	'/RD/1',0
+	db	'/sys',0
 
 ipcb:
  db 0

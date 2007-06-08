@@ -323,7 +323,7 @@ run_fileinfo:
  dd 0
  dd 0
 ;run_filepath
- db '/RD/1/SYSXTREE',0
+ db '/sys/SYSXTREE',0
 
 procinfo:
 times 1024 db 0
@@ -534,7 +534,7 @@ run_fileinfo:
  dd 0
  dd 0
 ;run_filepath:
- db '/RD/1/SYSXTREE',0
+ db '/sys/SYSXTREE',0
 
 procinfo:
 times 1024 db 0

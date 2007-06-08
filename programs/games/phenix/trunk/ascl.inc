@@ -379,7 +379,7 @@ run_fileinfo:
  dd 0
  dd procinfo ; 0x10000
 ;run_filepath
- db '/RD/1/SYSXTREE',0
+ db '/sys/SYSXTREE',0
 
 procinfo:
 times 256 db 0
@@ -590,7 +590,7 @@ run_fileinfo:
  dd 0
  dd procinfo
 run_filepath:
- db '/RD/1/SYSXTREE',0
+ db '/sys/SYSXTREE',0
 
 procinfo:
 times 256 db 0

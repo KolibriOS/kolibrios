@@ -485,7 +485,7 @@ params  db 0     ;if bit 0 set-ssaver works if bit 1 set-setup works
 fileinfo:
 ; used_memory-0x3000-data_from_file = ~50 Kb with current settings
   dd 0,0,0,used_memory-0x3000-data_from_file,data_from_file
-  db '/RD/1/NETWORK/PPP.ASM',0
+  db '/sys/NETWORK/PPP.ASM',0
 
 I_END:
 

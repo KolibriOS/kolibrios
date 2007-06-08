@@ -42,7 +42,7 @@ filel:
    dd 0
    dd 50000
    dd 0x20000
-   db	'/rd/1/board.htm',0
+   db	'/sys/board.htm',0
 
 files:
     dd 2
@@ -50,7 +50,7 @@ files:
     dd 0
     dd 0
     dd 0x20000
-    db '/rd/1/board.htm',0
+    db '/sys/board.htm',0
 
 
 START:				; start of execution
@@ -385,7 +385,7 @@ fileinfo	dd 0
 		dd 0
 		dd 512
 		dd 0x100000
-getf		db '/rd/1/'
+getf		db '/sys/'
 	     times 50 db 0
 wanted_file: times 100 db 0
 
@@ -1227,7 +1227,7 @@ text:
     db '          /TinyBoard -message board     '
     db '                                        '
 dirp:
-    db '   Files:   /rd/1/                      '
+    db '   Files:   /sys/                       '
     db '                                        '
 filename:
     db '                                        '

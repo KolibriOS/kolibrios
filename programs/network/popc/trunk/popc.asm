@@ -938,7 +938,7 @@ files:
        dd  pr
 filel:
        dd  0,0,0,0x100000,0x100000
-pr db  '/rd/1/popc.txt',0
+pr db  '/sys/popc.txt',0
 
 ip     db 192,168,1,200
 
@@ -970,7 +970,7 @@ tinypad_start:
         dd      pr
         dd      0
         dd      0
-        db      '/RD/1/TINYPAD',0
+        db      '/sys/TINYPAD',0
 
 getmail:
        db  'user xyz                      ',13,10
