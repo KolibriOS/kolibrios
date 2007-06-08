@@ -22,7 +22,7 @@ MaxRetr equ 3
 ; Предельное время ожидания готовности к приему команды
 ; (в тиках)
 BSYWaitTime equ 1000  ;2
-
+NoTickWaitTime equ 0xfffff
 ;*************************************************
 ;*      ПОЛНОЕ ЧТЕНИЕ СЕКТОРА КОМПАКТ-ДИСКА      *
 ;* Считываются данные пользователя, информация   *
@@ -68,7 +68,7 @@ ReadCD:
 ;* Многократное повторение чтения при сбоях *
 ;********************************************
 ReadCDWRetr:
-        pusha
+        pushad
 ; Цикл, пока команда не выполнена успешно или не
 ; исчерпано количество попыток
         mov     ECX,MaxRetr
@@ -77,6 +77,15 @@ ReadCDWRetr:
         call    ReadCD
         cmp     [DevErrorCode],0
         je      @@End_4
+        cmp    [timer_ticks_enable],0
+        jne     @f
+        mov     eax,NoTickWaitTime
+.wait:
+        dec     eax
+        cmp     eax,0
+        je      @@NextRetr
+        jmp     .wait
+@@:
 ; Задержка на 2,5 секунды
         mov     EAX,[timer_ticks]
         add     EAX,250 ;50
@@ -85,12 +94,8 @@ ReadCDWRetr:
         cmp     EAX,[timer_ticks]
         ja      @@Wait
         loop    @@NextRetr
-;        call test_mario79
-; Сообщение об ошибке
-;        mov     SI,offset ErrS
-;        call    FatalError
 @@End_4:
-        popa
+        popad
         ret
 
 
@@ -143,7 +148,6 @@ SendPacketDatCommand:
         mov     [ATAHead],0
         mov     [ATACommand],0A0h
         call    SendCommandToHDD_1
-;        call test_mario79
         cmp     [DevErrorCode],0 ;проверить код ошибки
         jne     @@End_8    ;закончить, сохранив код ошибки
 
@@ -151,7 +155,15 @@ SendPacketDatCommand:
 ; пакетной команды
         mov     DX,[ATABasePortAddr]
         add     DX,7     ;порт 1х7h
+        mov     ecx,NoTickWaitTime
 @@WaitDevice0:
+        cmp     [timer_ticks_enable],0
+        jne     @f
+        dec     ecx
+        cmp     ecx,0
+        je      @@Err1_1
+        jmp     .test
+@@:
         call    change_task
         ; Проверить время выполнения команды
         mov     EAX,[timer_ticks]
@@ -159,13 +171,14 @@ SendPacketDatCommand:
         cmp     EAX,BSYWaitTime
         ja      @@Err1_1   ;ошибка тайм-аута
         ; Проверить готовность
+.test:
         in      AL,DX
         test    AL,80h   ;состояние сигнала BSY
         jnz     @@WaitDevice0
-        test    AL,1     ;состояние сигнала ERR
-        jnz     @@Err6
         test    AL,08h   ;состояние сигнала DRQ
         jz      @@WaitDevice0
+        test    AL,1     ;состояние сигнала ERR
+        jnz     @@Err6
 ; Послать пакетную команду
         cli
         mov     DX,[ATABasePortAddr]
@@ -185,7 +198,15 @@ SendPacketDatCommand:
 ; Ожидание готовности данных
         mov     DX,[ATABasePortAddr]
         add     DX,7   ;порт 1х7h
+        mov     ecx,NoTickWaitTime
 @@WaitDevice1:
+        cmp     [timer_ticks_enable],0
+        jne     @f
+        dec     ecx
+        cmp     ecx,0
+        je      @@Err1_1
+        jmp     .test_1
+@@:
         call    change_task
         ; Проверить время выполнения команды
         mov     EAX,[timer_ticks]
@@ -193,23 +214,25 @@ SendPacketDatCommand:
         cmp     EAX,MaxCDWaitTime
         ja      @@Err1_1   ;ошибка тайм-аута
         ; Проверить готовность
+.test_1:
         in      AL,DX
         test    AL,80h   ;состояние сигнала BSY
         jnz     @@WaitDevice1
-        test    AL,1     ;состояние сигнала ERR
-        jnz     @@Err6_temp
         test    AL,08h   ;состояние сигнала DRQ
         jz      @@WaitDevice1
-        cli
+        test    AL,1     ;состояние сигнала ERR
+        jnz     @@Err6_temp
 ; Принять блок данных от контроллера
         mov     EDI,[CDDataBuf_pointer] ;0x7000  ;CDDataBuf
         ; Загрузить адрес регистра данных контроллера
         mov     DX,[ATABasePortAddr] ;порт 1x0h
         ; Загрузить в счетчик размер блока в байтах
+        xor     ecx,ecx
         mov     CX,[CDBlockSize]
         ; Вычислить размер блока в 16-разрядных словах
         shr     CX,1 ;разделить размер блока на 2
         ; Принять блок данных
+        cli
         cld
         rep     insw
         sti
@@ -368,20 +391,25 @@ SendCommandToHDD_1:
         out     DX,AL
         ; Ожидать, пока диск не будет готов
         inc     DX
-;        mov  ecx,0xfff
         mov     eax,[timer_ticks]
         mov     [TickCounter_1],eax
+        mov     ecx,NoTickWaitTime
 @@WaitHDReady_2:
+        cmp    [timer_ticks_enable],0
+        jne    @f
+        dec    ecx
+        cmp    ecx,0
+        je     @@Err1_4
+        jmp    .test
+@@:
         call    change_task
         ; Проверить время ожидания
-;        dec  ecx
-;        cmp  ecx,0
-;        je     @@Err1
         mov     eax,[timer_ticks]
         sub     eax,[TickCounter_1]
         cmp     eax,BSYWaitTime ;300    ;ожидать 3 сек.        
         ja      @@Err1_4   ;ошибка тайм-аута
         ; Прочитать регистр состояния
+.test:
         in      AL,DX
         ; Проверить состояние сигнала BSY
         test    AL,80h
@@ -389,6 +417,7 @@ SendCommandToHDD_1:
         ; Проверить состояние сигнала DRQ
         test    AL,08h
         jnz     @@WaitHDReady_2
+
 ; Загрузить команду в регистры контроллера
         cli
         mov     DX,[ATABasePortAddr]
@@ -443,7 +472,7 @@ SendCommandToHDD_1:
         mov     [DevErrorCode],5
 ; Завершение работы программы
 @@End_10:
-        sti
+;        sti
         popad 
         ret
         

@@ -337,6 +337,7 @@ wraw_bacground_select rb 1
 
 lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled
+timer_ticks_enable rb 1 	; for cd driver
 
 IncludeUGlobals
 

@@ -857,6 +857,7 @@ first_app_found:
 ;        mov    [dma_hdd],1
         cmp     [IDEContrRegsBaseAddr], 0
         setnz   [dma_hdd]
+        mov [timer_ticks_enable],1		; for cd driver
 
 ;        stdcall init_uart_service, DRV_ENTRY
 
