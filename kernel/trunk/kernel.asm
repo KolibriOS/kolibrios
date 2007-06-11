@@ -2288,7 +2288,7 @@ iglobal
 version_inf:
   db 0,7,0,0  ; version 0.7.0.0
   db UID_KOLIBRI
-  db 'Kolibri',0
+  dd __REV__
 version_end:
 endg
 

@@ -148,7 +148,7 @@
 ;         40 dword  thread esp
 ;         44 dword  io permission map page 0
 ;         48 dword  io permission map page 1
-          4c dword  debug state: 1= load debug registers
+;         4c dword  debug state: 1= load debug registers
 ;         50-7F     unused
 ;
 ;         80 dword  address of random shaped window area
