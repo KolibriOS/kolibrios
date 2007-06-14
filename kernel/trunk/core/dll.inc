@@ -618,6 +618,11 @@ proc fix_coff_symbols stdcall, sec:dword, symbols:dword,\
            mov [edi+CSYM.Value], eax
            jmp .next
 .internal:
+           cmp bx, -1
+           je .next
+           cmp bx, -2
+           je .next
+
            dec ebx
            shl ebx, 3
            lea ebx, [ebx+ebx*4]
