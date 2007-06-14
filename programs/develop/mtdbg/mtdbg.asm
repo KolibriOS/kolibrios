@@ -1,5 +1,5 @@
 format binary
-include '..\..\macros.inc'
+include '../../macros.inc'
 use32
 	db	'MENUET01'
 	dd	1
@@ -51,6 +51,7 @@ wnd_x_size equ (data_x_pos + messages_x_size + data_x_pos)
 wnd_y_size equ (cmdline_y_pos + cmdline_y_size + data_x_pos)
 
 start:
+	mcall	68, 11
 	mov	edi, messages
 	mov	ecx, messages_width*messages_height
 	mov	al, ' '
@@ -804,6 +805,27 @@ draw_disasm:
 	mov	[disasm_cur_pos], eax
 	and	[disasm_cur_str], 0
 .loop:
+	mov	eax, [disasm_cur_pos]
+	call	find_symbol
+	jc	.nosymb
+	mov	ebx, [disasm_cur_str]
+	imul	ebx, 10
+	add	ebx, (data_x_pos+6*2)*10000h + disasm_y_pos
+	mov	edx, esi
+@@:	lodsb
+	test	al, al
+	jnz	@b
+	mov	byte [esi-1], ':'
+	sub	esi, edx
+	xor	ecx, ecx
+	push	4
+	pop	eax
+	mcall
+	mov	byte [esi+edx-1], 0
+	inc	[disasm_cur_str]
+	cmp	[disasm_cur_str], disasm_height
+	jae	.loopend
+.nosymb:
 	push	[disasm_cur_pos]
 	call	disasm_instr
 	pop	ebp
@@ -904,16 +926,21 @@ update_disasm_eip:
 	mov	ecx, disasm_height
 	mov	eax, [disasm_start_pos]
 	mov	[disasm_cur_pos], eax
+.l:
+	mov	eax, [disasm_cur_pos]
+	call	find_symbol
+	jc	@f
+	dec	ecx
+	jz	.m
 @@:
-	mov	eax, [_eip]
-	cmp	[disasm_cur_pos], eax
+	cmp	[_eip], eax
 	jz	redraw_disasm
 	push	ecx
 	call	disasm_instr
 	pop	ecx
-	jc	@f
-	loop	@b
-@@:
+	jc	.m
+	loop	.l
+.m:
 update_disasm_eip_force:
 	mov	eax, [_eip]
 	mov	[disasm_start_pos], eax
@@ -951,15 +978,8 @@ draw_window:
 	xor	eax, eax
 	mov	ebx, wnd_x_size
 	mov	ecx, wnd_y_size
-	mov	edx, 3FFFFFFh
-	mcall
-; caption
-	mov	al, 4
-	mov	ecx, 0xFFFFFF
-	mov	ebx, 80008h
-	mov	edx, caption_str
-	push	caption_len
-	pop	esi
+	mov	edx, 13FFFFFFh
+	mov	edi, caption_str
 	mcall
 ; messages frame
 	mov	al, 38
@@ -1036,8 +1056,8 @@ OnHelp:
 	jmp	.x
 
 OnQuit:
-	xor	eax, eax
-	dec	eax
+	push	-1
+	pop	eax
 	mcall
 
 get_new_context:
@@ -1137,6 +1157,11 @@ OnLoadInit:
 	mov	[load_params], esi
 @@:
 	and	[dumppos], 0
+	mov	ecx, [symbols]
+	jecxz	do_reload
+	mcall	68, 13
+	and	[symbols], 0
+	and	[num_symbols], 0
 do_reload:
 	push	18
 	pop	eax
@@ -1191,6 +1216,31 @@ do_reload:
 	push	[debuggee_pid]
 	call	put_message_nodraw
 	call	draw_messages
+; try to load symbols
+	mov	esi, loadname
+	mov	edi, symbolsfile
+	push	edi
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jnz	@b
+	lea	ecx, [edi-1]
+@@:
+	dec	edi
+	cmp	edi, symbolsfile
+	jb	@f
+	cmp	byte [edi], '/'
+	jz	@f
+	cmp	byte [edi], '.'
+	jnz	@b
+	mov	ecx, edi
+@@:
+	mov	dword [ecx], '.dbg'
+	mov	byte [ecx+4], 0
+	pop	esi
+	mov	ebp, esi
+	call	OnLoadSymbols.silent
 ; now test for packed progs
 	cmp	[disasm_buf_size], 100h
 	jz	@f
@@ -1487,6 +1537,7 @@ OnDetach:
 	call	redraw_title
 	call	redraw_registers
 	call	redraw_dump
+	call	free_symbols
 	mov	esi, aContinued
 	jmp	put_message
 
@@ -1592,6 +1643,8 @@ terminated:
 	rep	stosd
 	cmp	[bReload], 1
 	sbb	[bReload], -1
+	jnz	exception.done
+	call	free_symbols
 	jmp	exception.done
 exception:
 	mov	[bSuspended], 1
@@ -1721,9 +1774,9 @@ OnStep:
 	cmp	al, 0xCD
 	jz	.int
 	cmp	ax, 0x050F
-	jz	.syscall_enter
+	jz	.syscall
 	cmp	ax, 0x340F
-	jz	.syscall_enter
+	jz	.sysenter
 ; resume process
 .doit:
 	call	GoOn
@@ -1732,13 +1785,30 @@ OnStep:
 	mov	[bAfterGo], 2
 @@:
 	ret
-.syscall_enter:
+.sysenter:	; return address is [ebp-4]
+	push	0
+	push	69
+	pop	eax
+	inc	edx	; read 4 bytes
+	mov	esi, [_ebp]
+	sub	esi, 4
+	mcall
+	cmp	eax, edx
+	pop	eax
+	jnz	.syscall
+	push	eax
+	and	byte [_eflags+1], not 1
+	call	set_context
+	pop	eax
+	jmp	@f
+.syscall:
 	and	byte [_eflags+1], not 1	; clear TF - avoid system halt (!)
 	call	set_context
 .int:
 	mov	eax, [_eip]
 	inc	eax
 	inc	eax
+@@:
 	push	eax
 	call	find_enabled_breakpoint
 	pop	eax
@@ -1990,6 +2060,26 @@ expr_get_token:
 	mov	al, token_reg
 	ret
 .regnotfound:
+; test for symbol
+	push	esi
+@@:
+	lodsb
+	cmp	al, ' '
+	ja	@b
+	push	eax
+	mov	byte [esi], 0
+	xchg	esi, [esp+4]
+	call	find_symbol_name
+	mov	edi, eax
+	pop	eax
+	xchg	esi, [esp]
+	mov	byte [esi], al
+	jc	@f
+	add	esp, 4
+	mov	al, token_hex
+	ret
+@@:
+	pop	esi
 ; test for hex number
 	xor	ecx, ecx
 	xor	edi, edi
@@ -2182,12 +2272,19 @@ OnUnassemble:
 	mov	eax, [disasm_start_pos]
 	mov	ecx, disasm_height
 	mov	[disasm_cur_pos], eax
+.l:
+	mov	eax, [disasm_cur_pos]
+	call	find_symbol
+	jc	@f
+	dec	ecx
+	jz	.m
 @@:
 	push	ecx
 	call	disasm_instr
 	pop	ecx
 	jc	.err
-	loop	@b
+	loop	.l
+.m:
 	mov	eax, [disasm_cur_pos]
 	jmp	.doit
 .param:
@@ -2803,6 +2900,354 @@ OnUnpack:
 	mov	esi, aUnpacked
 	jmp	.x1
 
+include 'sort.inc'
+compare:
+	cmpsd
+	jnz	@f
+	cmp	esi, edi
+@@:	ret
+compare2:
+	cmpsd
+@@:
+	cmpsb
+	jnz	@f
+	cmp	byte [esi], 0
+	jnz	@b
+	cmp	esi, edi
+@@:
+	ret
+
+free_symbols:
+	mov	ecx, [symbols]
+	jecxz	@f
+	mcall	68, 13
+	and	[symbols], 0
+	and	[num_symbols], 0
+@@:
+	ret
+
+OnLoadSymbols.fileerr:
+	test	ebp, ebp
+	jz	@f
+	mcall	68, 13, edi
+	ret
+@@:
+	push	eax
+	mcall	68, 13, edi
+	mov	esi, aCannotLoadFile
+	call	put_message_nodraw
+	pop	eax
+	cmp	eax, 0x20
+	jae	.unk
+	mov	esi, [load_err_msgs + eax*4]
+	test	esi, esi
+	jnz	put_message
+.unk:
+	mov	esi, unk_err_msg2
+	jmp	put_message
+
+OnLoadSymbols:
+	xor	ebp, ebp
+; load input file
+	mov	esi, [curarg]
+	call	free_symbols
+.silent:
+	xor	edi, edi
+	cmp	[num_symbols], edi
+	jz	@f
+	ret
+@@:
+	mov	ebx, fn70_attr_block
+	mov	[ebx+21], esi
+	mcall	70
+	test	eax, eax
+	jnz	.fileerr
+	cmp	dword [fileattr+36], edi
+	jnz	.memerr
+	mov	ecx, dword [fileattr+32]
+	mcall	68, 12
+	test	eax, eax
+	jz	.memerr
+	mov	edi, eax
+	mov	ebx, fn70_read_block
+	mov	[ebx+12], ecx
+	mov	[ebx+16], edi
+	mov	[ebx+21], esi
+	mcall	70
+	test	eax, eax
+	jnz	.fileerr
+; calculate memory requirements
+	lea	edx, [ecx+edi-1]	; edx = EOF-1
+	mov	esi, edi
+	xor	ecx, ecx
+.calcloop:
+	cmp	esi, edx
+	jae	.calcdone
+	cmp	word [esi], '0x'
+	jnz	.skipline
+	inc	esi
+	inc	esi
+@@:
+	cmp	esi, edx
+	jae	.calcdone
+	lodsb
+	or	al, 20h
+	sub	al, '0'
+	cmp	al, 9
+	jbe	@b
+	sub	al, 'a'-'0'-10
+	cmp	al, 15
+	jbe	@b
+	dec	esi
+@@:
+	cmp	esi, edx
+	ja	.calcdone
+	lodsb
+	cmp	al, 20h
+	jz	@b
+	jb	.calcloop
+	cmp	al, 9
+	jz	@b
+	add	ecx, 12+1
+	inc	[num_symbols]
+@@:
+	inc	ecx
+	cmp	esi, edx
+	ja	.calcdone
+	lodsb
+	cmp	al, 0xD
+	jz	.calcloop
+	cmp	al, 0xA
+	jz	.calcloop
+	jmp	@b
+.skipline:
+	cmp	esi, edx
+	jae	.calcdone
+	lodsb
+	cmp	al, 0xD
+	jz	.calcloop
+	cmp	al, 0xA
+	jz	.calcloop
+	jmp	.skipline
+.calcdone:
+	mcall	68, 12
+	test	eax, eax
+	jnz	.memok
+	inc	ebx
+	mov	ecx, edi
+	mov	al, 68
+	mcall
+.memerr:
+	mov	esi, aNoMemory
+	jmp	put_message
+.memok:
+	mov	[symbols], eax
+	mov	ebx, eax
+	push	edi
+	mov	esi, edi
+	mov	edi, [num_symbols]
+	lea	ebp, [eax+edi*4]
+	lea	edi, [eax+edi*8]
+; parse input data, esi->input, edx->EOF, ebx->ptrs, edi->names
+.readloop:
+	cmp	esi, edx
+	jae	.readdone
+	cmp	word [esi], '0x'
+	jnz	.readline
+	inc	esi
+	inc	esi
+	xor	eax, eax
+	xor	ecx, ecx
+@@:
+	shl	ecx, 4
+	add	ecx, eax
+	cmp	esi, edx
+	jae	.readdone
+	lodsb
+	or	al, 20h
+	sub	al, '0'
+	cmp	al, 9
+	jbe	@b
+	sub	al, 'a'-'0'-10
+	cmp	al, 15
+	jbe	@b
+	dec	esi
+@@:
+	cmp	esi, edx
+	ja	.readdone
+	lodsb
+	cmp	al, 20h
+	jz	@b
+	jb	.readloop
+	cmp	al, 9
+	jz	@b
+	mov	dword [ebx], edi
+	add	ebx, 4
+	mov	dword [ebp], edi
+	add	ebp, 4
+	mov	dword [edi], ecx
+	add	edi, 4
+	stosb
+@@:
+	xor	eax, eax
+	stosb
+	cmp	esi, edx
+	ja	.readdone
+	lodsb
+	cmp	al, 0xD
+	jz	.readloop
+	cmp	al, 0xA
+	jz	.readloop
+	mov	byte [edi-1], al
+	jmp	@b
+.readline:
+	cmp	esi, edx
+	jae	.readdone
+	lodsb
+	cmp	al, 0xD
+	jz	.readloop
+	cmp	al, 0xA
+	jz	.readloop
+	jmp	.readline
+.readdone:
+	pop	ecx
+	mcall	68, 13
+	mov	ecx, [num_symbols]
+	mov	edx, [symbols]
+	mov	ebx, compare
+	call	sort
+	mov	ecx, [num_symbols]
+	lea	edx, [edx+ecx*4]
+	mov	ebx, compare2
+	call	sort
+	mov	esi, aSymbolsLoaded
+	call	put_message
+	jmp	redraw_disasm
+
+find_symbol:
+; in: eax=address
+; out: esi, CF
+	cmp	[num_symbols], 0
+	jnz	@f
+.ret0:
+	xor	esi, esi
+	stc
+	ret
+@@:
+	push	ebx ecx edx
+	xor	edx, edx
+	mov	esi, [symbols]
+	mov	ecx, [num_symbols]
+	mov	ebx, [esi]
+	cmp	[ebx], eax
+	jz	.donez
+	jb	@f
+	pop	edx ecx ebx
+	jmp	.ret0
+@@:
+; invariant: symbols_addr[edx] < eax < symbols_addr[ecx]
+.0:
+	push	edx
+.1:
+	add	edx, ecx
+	sar	edx, 1
+	cmp	edx, [esp]
+	jz	.done2
+	mov	ebx, [esi+edx*4]
+	cmp	[ebx], eax
+	jz	.done
+	ja	.2
+	mov	[esp], edx
+	jmp	.1
+.2:
+	mov	ecx, edx
+	pop	edx
+	jmp	.0
+.donecont:
+	dec	edx
+.done:
+	test	edx, edx
+	jz	@f
+	mov	ebx, [esi+edx*4-4]
+	cmp	[ebx], eax
+	jz	.donecont
+@@:
+	pop	ecx
+.donez:
+	mov	esi, [esi+edx*4]
+	add	esi, 4
+	pop	edx ecx ebx
+	clc
+	ret
+.done2:
+	lea	esi, [esi+edx*4]
+	pop	ecx edx ecx ebx
+	stc
+	ret
+
+find_symbol_name:
+; in: esi->name
+; out: if found: CF clear, eax=value
+;      otherwise CF set
+	cmp	[num_symbols], 0
+	jnz	@f
+.stc_ret:
+	stc
+	ret
+@@:
+	push	ebx ecx edx edi
+	push	-1
+	pop	edx
+	mov	ebx, [symbols]
+	mov	ecx, [num_symbols]
+	lea	ebx, [ebx+ecx*4]
+; invariant: symbols_name[edx] < name < symbols_name[ecx]
+.0:
+	push	edx
+.1:
+	add	edx, ecx
+	sar	edx, 1
+	cmp	edx, [esp]
+	jz	.done2
+	call	.cmp
+	jz	.done
+	jb	.2
+	mov	[esp], edx
+	jmp	.1
+.2:
+	mov	ecx, edx
+	pop	edx
+	jmp	.0
+.done:
+	pop	ecx
+.donez:
+	mov	eax, [ebx+edx*4]
+	mov	eax, [eax]
+	pop	edi edx ecx ebx
+	clc
+	ret
+.done2:
+	pop	edx edi edx ecx ebx
+	stc
+	ret
+
+.cmp:
+	mov	edi, [ebx+edx*4]
+	push	esi
+	add	edi, 4
+@@:
+	cmpsb
+	jnz	@f
+	cmp	byte [esi-1], 0
+	jnz	@b
+@@:
+	pop	esi
+	ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DISASSEMBLER ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 disasm_get_byte:
 ; out: al=byte
 	push	ecx
@@ -2869,7 +3314,9 @@ cseges:
 csegss:
 csegfs:
 cseggs:
-	call	@f
+	mov	esi, cmd1
+iglobal
+cmd1:
 	db	0x2E,3,'cs:'
 	db	0x36,3,'ss:'
 	db	0x3E,3,'ds:'
@@ -2918,17 +3365,20 @@ cseggs:
 	db	0xFB,3,'sti'
 	db	0xFC,3,'cld'
 	db	0xFD,3,'std'
-csysenter:
-csyscall:
-ccpuid:
-crdtsc:
-	call	@f
+cmd2:
 	db	0x05,7,'syscall'
 	db	0x31,5,'rdtsc'
 	db	0x34,8,'sysenter'
 	db	0xA2,5,'cpuid'
-@@:
-	pop	esi
+	db	0x77,4,'emms'
+endg
+	jmp	@f
+csysenter:
+csyscall:
+ccpuid:
+crdtsc:
+cemms:
+	mov	esi, cmd2
 @@:
 	cmp	al, [esi]
 	jz	.found
@@ -3034,6 +3484,25 @@ cret2:
 	jmp	cmov2.2
 
 disasm_write_num:
+	push	esi
+	cmp	eax, 0x80
+	jl	.nosymb
+	lea	esi, [eax-1]
+	test	eax, esi
+	jz	.nosymb
+	call	find_symbol
+	jc	.nosymb
+@@:
+	lodsb
+	test	al, al
+	jz	@f
+	stosb
+	jmp	@b
+@@:
+	pop	esi
+	ret
+.nosymb:
+	pop	esi
 	push	ecx eax
 	inc	edi
 @@:
@@ -3072,6 +3541,7 @@ disasm_write_num:
 @@:
 	ret
 
+iglobal
 label disasm_regs32 dword
 label disasm_regs dword
 	db	'eax',0
@@ -3085,6 +3555,7 @@ label disasm_regs dword
 disasm_regs16	dw	'ax','cx','dx','bx','sp','bp','si','di'
 disasm_regs8	dw	'al','cl','dl','bl','ah','ch','dh','bh'
 disasm_scale	db	'1248'
+endg
 disasm_readrmop:
 	call	disasm_get_byte
 	test	ch, 40h
@@ -3156,12 +3627,15 @@ disasm_readrmop:
 	mov	byte [edi-1], '-'
 .2:
 	call	disasm_write_num
+.2a:
 	mov	al, ']'
 	stosb
 	pop	ecx
 	ret
 .vmod3:
 	pop	ecx
+	test	ch, 10h
+	jnz	.vmod3_mmi
 	test	ch, 80h
 	jz	.vmod3_byte
 	test	ch, 1
@@ -3182,6 +3656,18 @@ disasm_readrmop:
 	jmp	@b
 .vmod3_sti:
 	mov	word [edi], 'st'
+	add	al, '0'
+	mov	byte [edi+2], al
+	add	edi, 3
+	ret
+.vmod3_mmi:
+disasm_write_mmreg = $
+	test	ch, 1
+	jz	@f
+	mov	byte [edi], 'x'
+	inc	edi
+@@:
+	mov	word [edi], 'mm'
 	add	al, '0'
 	mov	byte [edi+2], al
 	add	edi, 3
@@ -3262,8 +3748,10 @@ disasm_readrmop:
 	pop	edx
 	ret
 
+iglobal
 disasm_rm16_1	dd	'bxsi','bxdi','bpsi','bpdi'
 disasm_rm16_2	dw	'si','di','bp','bx'
+endg
 disasm_readrmop16:
 	push	ecx
 	movzx	ecx, al
@@ -3450,7 +3938,9 @@ cmov12:
 	stosw
 	jmp	cmov2.1
 
+iglobal
 disasm_shifts	dd	'rol ','ror ','rcl ','rcr ','shl ','shr ','sal ','sar '
+endg
 cshift2:
 ; shift r/m,1 = D0/D1
 cshift3:
@@ -3587,7 +4077,9 @@ cmovsx:		; 0F BE/BF
 	and	byte [edi], 0
 	ret
 
+iglobal
 disasm_op2cmds	dd 'add ','or  ','adc ','sbb ','and ','sub ','xor ','cmp '
+endg
 cop21:
 	disasm_set_modew
 	mov	esi, 'test'
@@ -3719,6 +4211,26 @@ ctest:
 	and	byte [edi], 0
 	ret
 
+cmovcc:
+	or	ch, 0C0h
+	and	eax, 0xF
+	mov	ax, [disasm_jcc_codes + eax*2]
+	mov	dword [edi], 'cmov'
+	add	edi, 4
+	stosw
+	mov	ax, '  '
+	stosw
+	call	disasm_get_byte
+	dec	[disasm_cur_pos]
+	shr	eax, 3
+	and	eax, 7
+	call	disasm_write_reg1632
+	mov	ax, ', '
+	stosw
+	call	disasm_readrmop
+	and	byte [edi], 0
+	ret
+
 cbtx1:
 ; btx r/m,i8 = 0F BA
 	or	ch, 80h
@@ -3736,7 +4248,9 @@ cbtx1:
 	mov	ax, ', '
 	stosw
 	jmp	disasm_i8u
+iglobal
 btx1codes	dd	'bt  ','bts ','btr ','btc '
+endg
 cbtx2:
 ; btx r/m,r = 0F 101xx011 (A3,AB,B3,BB)
 	shr	al, 3
@@ -3772,7 +4286,9 @@ csetcc:
 	and	byte [edi], 0
 	ret
 
+iglobal
 disasm_jcc_codes dw 'o ','no','b ','ae','z ','nz','be','a ','s ','ns','p ','np','l ','ge','le','g '
+endg
 cjcc1:
 cjmp2:
 	cmp	al, 0xEB
@@ -3819,8 +4335,10 @@ cjcc2:
 	call	disasm_get_dword
 	jmp	disasm_rva
 
+iglobal
 op11codes	dd	'test',0,'not ','neg ','mul ','imul','div ','idiv'
 op12codes	dd	'inc ','dec ','call',0,'jmp ',0,'push',0
+endg
 cop1:
 	disasm_set_modew
 	xchg	eax, edx
@@ -3995,7 +4513,9 @@ ccwd:
 	mov	eax, 'cdq '
 	jmp	@b
 
+iglobal
 fpuD8	dd	'add ','mul ','com ','comp','sub ','subr','div ','divr'
+endg
 
 cD8:
 	call	disasm_get_byte
@@ -4030,6 +4550,7 @@ cD8:
 	and	byte [edi], 0
 	ret
 
+iglobal
 fpuD9_2:
 	dq	'fchs    ','fabs    ',0,0,'ftst    ','fxam    ',0,0
 	db	'fld1    fldl2t  fldl2e  fldpi   fldlg2  fldln2  fldz    '
@@ -4037,6 +4558,7 @@ fpuD9_2:
 	db	'f2xm1   fyl2x   fptan   fpatan  fxtract fprem1  fdecstp fincstp '
 	db	'fprem   fyl2xp1 fsqrt   fsincos frndint fscale  fsin    fcos    '
 fpuD9_fnop	db	'fnop    '
+endg
 cD9:
 	call	disasm_get_byte
 	sub	al, 0xC0
@@ -4138,7 +4660,9 @@ cDA:
 	and	byte [edi], 0
 	ret
 
+iglobal
 fpuDB	dd	'ild ',0,'ist ','istp',0,'ld  ',0,'stp '
+endg
 cDB:
 	call	disasm_get_byte
 	cmp	al, 0xC0
@@ -4176,7 +4700,9 @@ cDB:
 	dec	edi
 	ret		; CF cleared
 
+iglobal
 fpuDC	dd	'add ','mul ',0,0,'subr','sub ','divr','div '
+endg
 cDC:
 	call	disasm_get_byte
 	cmp	al, 0xC0
@@ -4218,8 +4744,10 @@ cDC:
 	stosw
 	ret	; CF cleared
 
+iglobal
 fpuDD	dd	'fld ',0,'fst ','fstp',0,0,0,0
 fpuDD_2	dq	'ffree   ',0,'fst     ','fstp    ','fucom   ','fucomp  ',0,0
+endg
 cDD:
 	call	disasm_get_byte
 	cmp	al, 0xC0
@@ -4258,7 +4786,9 @@ cDD:
 	and	byte [edi], 0
 	ret
 
+iglobal
 fpuDE	dd	'add ','mul ',0,0,'subr','sub ','divr','div '
+endg
 cDE:
 	call	disasm_get_byte
 	cmp	al, 0xC0
@@ -4316,7 +4846,9 @@ cDE:
 	and	byte [edi], 0
 	ret
 
+iglobal
 fpuDF	dd	'ild ',0,'ist ','istp','bld ','ild ','bstp','istp'
+endg
 
 cDF:
 	call	disasm_get_byte
@@ -4358,13 +4890,272 @@ cDF:
 	and	byte [edi], 0
 	ret
 
+cmovd1:
+	mov	eax, 'movd'
+	stosd
+	mov	eax, '    '
+	stosd
+	call	disasm_get_byte
+	dec	[disasm_cur_pos]
+	shr	al, 3
+	and	eax, 7
+	call	disasm_write_mmreg
+	mov	ax, ', '
+	stosw
+	or	ch, 0C0h
+	and	ch, not 1
+	call	disasm_readrmop
+	and	byte [edi], 0
+	ret
+cmovd2:
+	mov	eax, 'movd'
+	stosd
+	mov	eax, '    '
+	stosd
+	call	disasm_get_byte
+	dec	[disasm_cur_pos]
+	shr	al, 3
+	and	eax, 7
+	push	eax ecx
+	or	ch, 0C0h
+	and	ch, not 1
+	call	disasm_readrmop
+	mov	ax, ', '
+	stosw
+	pop	ecx eax
+	call	disasm_write_mmreg
+	and	byte [edi], 0
+	ret
+
+cmovq1:
+	test	ch, 1
+	jz	.mm
+	mov	eax, 'movd'
+	stosd
+	mov	eax, 'qa  '
+	stosd
+	jmp	disasm_mmx1
+.mm:
+	mov	eax, 'movq'
+	stosd
+	mov	eax, '    '
+	stosd
+	jmp	disasm_mmx1
+cmovq2:
+	test	ch, 1
+	jz	.mm
+	mov	eax, 'movd'
+	stosd
+	mov	eax, 'qa  '
+	stosd
+	jmp	disasm_mmx3
+.mm:
+	mov	eax, 'movq'
+disasm_mmx2:
+	stosd
+	mov	eax, '    '
+	stosd
+disasm_mmx3:
+	or	ch, 50h
+	call	disasm_get_byte
+	dec	[disasm_cur_pos]
+	push	eax
+	call	disasm_readrmop
+	mov	ax, ', '
+	stosw
+	pop	eax
+	shr	al, 3
+	and	eax, 7
+	call	disasm_write_mmreg
+	and	byte [edi], 0
+	ret
+
+iglobal
+mmx_cmds:
+	db	0x60,'unpcklbw'
+	db	0x61,'unpcklwd'
+	db	0x62,'unpckldq'
+	db	0x63,'packsswb'
+	db	0x64,'pcmpgtb '
+	db	0x65,'pcmpgtw '
+	db	0x66,'pcmpgtd '
+	db	0x67,'packuswb'
+	db	0x68,'unpckhbw'
+	db	0x69,'unpckhwd'
+	db	0x6A,'unpckhdq'
+	db	0x6B,'packssdw'
+	db	0x74,'pcmpeqb '
+	db	0x75,'pcmpeqw '
+	db	0x76,'pcmpeqd '
+	db	0xD4,'paddq   '
+	db	0xD5,'pmullw  '
+	db	0xD8,'psubusb '
+	db	0xD9,'psubusw '
+	db	0xDA,'pminub  '
+	db	0xDB,'pand    '
+	db	0xDC,'paddusb '
+	db	0xDD,'paddusw '
+	db	0xDE,'pmaxub  '
+	db	0xDF,'pandn   '
+	db	0xE0,'pavgb   '
+	db	0xE3,'pavgw   '
+	db	0xE4,'pmulhuw '
+	db	0xE5,'pmulhw  '
+	db	0xE8,'psubsb  '
+	db	0xE9,'psubsw  '
+	db	0xEA,'pminsw  '
+	db	0xEB,'por     '
+	db	0xEC,'paddsb  '
+	db	0xED,'paddsw  '
+	db	0xEE,'pmaxsw  '
+	db	0xEF,'pxor    '
+	db	0xF4,'pmuludq '
+	db	0xF5,'pmaddwd '
+	db	0xF6,'psadbw  '
+	db	0xF8,'psubb   '
+	db	0xF9,'psubw   '
+	db	0xFA,'psubd   '
+	db	0xFB,'psubq   '
+	db	0xFC,'paddb   '
+	db	0xFD,'paddw   '
+	db	0xFE,'paddd   '
+endg
+cpcmn:
+	mov	esi, mmx_cmds
+@@:
+	cmp	al, [esi]
+	jz	@f
+	add	esi, 9
+	jmp	@b
+@@:
+	inc	esi
+	mov	al, 'p'
+	cmp	byte [esi], al
+	jz	@f
+	stosb
+@@:
+	movsd
+	movsd
+	cmp	byte [edi-1], ' '
+	jz	@f
+	mov	al, ' '
+	stosb
+@@:
+
+disasm_mmx1:
+	or	ch, 50h
+	call	disasm_get_byte
+	dec	[disasm_cur_pos]
+	shr	al, 3
+	and	eax, 7
+	call	disasm_write_mmreg
+	mov	ax, ', '
+	stosw
+	call	disasm_readrmop
+	and	byte [edi], 0
+	ret
+
+cpsrlw:
+	mov	eax, 'psrl'
+	jmp	@f
+cpsraw:
+	mov	eax, 'psra'
+	jmp	@f
+cpsllw:
+	mov	eax, 'psll'
+@@:
+	stosd
+	mov	eax, 'w   '
+	stosd
+	jmp	disasm_mmx1
+cpsrld:
+	mov	eax, 'psrl'
+	jmp	@f
+cpsrad:
+	mov	eax, 'psra'
+	jmp	@f
+cpslld:
+	mov	eax, 'psll'
+@@:
+	stosd
+	mov	eax, 'd   '
+	stosd
+	jmp	disasm_mmx1
+cpsrlq:
+	mov	eax, 'psrl'
+	jmp	@f
+cpsllq:
+	mov	eax, 'psll'
+@@:
+	stosd
+	mov	eax, 'q   '
+	stosd
+	jmp	disasm_mmx1
+
+cpshift:
+	mov	dl, al
+	mov	ax, 'ps'
+	stosw
+	call	disasm_get_byte
+	push	eax
+	and	al, 0xC0
+	cmp	al, 0xC0
+	jnz	.pop_cunk
+	pop	eax
+	push	eax
+	shr	al, 3
+	and	eax, 7
+	cmp	al, 2
+	jz	.rl
+	cmp	al, 4
+	jz	.ra
+	cmp	al, 6
+	jz	.ll
+.pop_cunk:
+	pop	eax
+	jmp	cunk
+.ll:
+	mov	ax, 'll'
+	jmp	@f
+.rl:
+	mov	ax, 'rl'
+	jmp	@f
+.ra:
+	cmp	dl, 0x73
+	jz	.pop_cunk
+	mov	ax, 'ra'
+@@:
+	stosw
+	mov	al, 'w'
+	cmp	dl, 0x71
+	jz	@f
+	mov	al, 'd'
+	cmp	dl, 0x72
+	jz	@f
+	mov	al, 'q'
+@@:
+	stosb
+	mov	ax, '  '
+	stosw
+	stosb
+	pop	eax
+	and	eax, 7
+	call	disasm_write_mmreg
+	mov	ax, ', '
+	stosw
+	xor	eax, eax
+	call	disasm_get_byte
+	call	disasm_write_num
+	and	byte [edi], 0
+	ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DATA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 caption_str db 'Kolibri Debugger',0
 caption_len = $ - caption_str
-begin_str db	'Kolibri Debugger, version 0.2',10
+begin_str db	'Kolibri Debugger, version 0.3',10
 	db	'Hint: type "help" for help, "quit" for quit'
 newline	db	10,0
 prompt	db	'> ',0
@@ -4432,6 +5223,8 @@ commands:
 	db	0Ah
 	dd	aUnpack, OnUnpack, UnpackSyntax, UnpackHelp
 	db	9
+	dd	aLoadSymbols, OnLoadSymbols, LoadSymbolsSyntax, LoadSymbolsHelp
+	db	0Ah
 	dd	0
 aHelp	db	5,'help',0
 _aH	db	2,'h',0
@@ -4448,6 +5241,7 @@ help_control_msg db	'List of control commands:',10
 	db	'quit                 - exit from debugger',10
 	db	'load <name> [params] - load program for debugging',10
 	db	'reload               - reload debugging program',10
+	db	'load-symbols <name>  - load information on symbols for program',10
 	db	'terminate            - terminate loaded program',10
 	db	'detach               - detach from debugging program',10
 	db	'stop                 - suspend execution of debugging program',10
@@ -4573,10 +5367,16 @@ aUnpack	db	7,'unpack',0
 UnpackHelp db	'Try to bypass unpacker code',10
 UnpackSyntax db	'Usage: unpack',10,0
 
+aLoadSymbols db	13,'load-symbols',0
+LoadSymbolsHelp db 'Load symbolic information for executable',10
+LoadSymbolsSyntax db 'Usage: load-symbols <symbols-file-name>',10,0
+
 aUnknownCommand db 'Unknown command',10,0
 
 load_err_msg	db	'Cannot load program. ',0
 unk_err_msg	db	'Unknown error code -%4X',10,0
+aCannotLoadFile	db	'Cannot load file. ',0
+unk_err_msg2	db	'Unknown error code %4X.',10,0
 load_err_msgs:
 	dd	.1, 0, .3, 0, .5, .6, 0, 0, .9, .A, 0, 0, 0, 0, 0, 0
 	dd	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, .1E, .1F, .20
@@ -4629,6 +5429,8 @@ aDots		db	'...'
 aParseError	db	'Parse error',10,0
 aDivByZero	db	'Division by 0',10,0
 calc_string	db	'%8X',10,0
+aNoMemory	db	'No memory',10,0
+aSymbolsLoaded	db	'Symbols loaded',10,0
 aUnaligned	db	'Unaligned address',10,0
 aEnabledBreakErr db	'Enabled breakpoints are not allowed',10,0
 aInterrupted	db	'Interrupted',10,0
@@ -4703,14 +5505,14 @@ disasm_table_2:
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
 	dd	cunk,  crdtsc,cunk,  cunk,  csysenter,cunk,cunk, cunk		; 3x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 4x
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
+	dd	cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc		; 4x
+	dd	cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 5x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 6x
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 7x
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
+	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn		; 6x
+	dd	cpcmn, cpcmn, cpcmn, cpcmn, cunk,  cunk,  cmovd1,cmovq1
+	dd	cunk,  cpshift,cpshift,cpshift,cpcmn,cpcmn,cpcmn,cemms		; 7x
+	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cmovd2,cmovq2
 	dd	cjcc2, cjcc2, cjcc2, cjcc2, cjcc2, cjcc2, cjcc2, cjcc2		; 8x
 	dd	cjcc2, cjcc2, cjcc2, cjcc2, cjcc2, cjcc2, cjcc2, cjcc2
 	dd	csetcc,csetcc,csetcc,csetcc,csetcc,csetcc,csetcc,csetcc		; 9x
@@ -4721,12 +5523,12 @@ disasm_table_2:
 	dd	cunk,  cunk,  cbtx1, cbtx2, cbsf,  cbsr,  cmovsx,cmovsx
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  ccmpxchg8b	; Cx
 	dd	cbswap,cbswap,cbswap,cbswap,cbswap,cbswap,cbswap,cbswap
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; Dx
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; Ex
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; Fx
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
+	dd	cunk,  cpsrlw,cpsrlw,cpsrlq,cpcmn, cpcmn, cunk,  cunk		; Dx
+	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn
+	dd	cpcmn, cpsraw,cpsrad,cpcmn, cpcmn, cpcmn, cunk,  cunk		; Ex
+	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn
+	dd	cunk,  cpsllw,cpslld,cpsllq,cpcmn, cpcmn, cpcmn, cunk		; Fx
+	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cunk
 
 reg_table:
 	db	2,'al',0
@@ -4756,6 +5558,23 @@ reg_table:
 	db	3,'eip',24
 	db	0
 
+IncludeIGlobals
+
+fn70_read_block:
+	dd	0
+	dq	0
+	dd	?
+	dd	?
+	db	0
+	dd	?
+
+fn70_attr_block:
+	dd	5
+	dd	0,0,0
+	dd	fileattr
+	db	0
+	dd	?
+
 fn70_load_block:
 	dd	7
 	dd	1
@@ -4767,8 +5586,12 @@ loadname:
 	db	0
 	rb	255
 
+symbolsfile	rb	260
+
 prgname_ptr dd ?
 prgname_len dd ?
+
+IncludeUGlobals
 
 dbgwnd		dd	?
 
@@ -4785,6 +5608,8 @@ was_temp_break	db	?
 dbgbufsize	dd	?
 dbgbuflen	dd	?
 dbgbuf		rb	256
+
+fileattr	rb	40
 
 needzerostart:
 
@@ -4820,6 +5645,9 @@ breakpoints	rb	breakpoints_n*6
 drx_break	rd	4
 
 disasm_buf_size		dd	?
+
+symbols		dd	?
+num_symbols	dd	?
 
 bReload			db	?
 

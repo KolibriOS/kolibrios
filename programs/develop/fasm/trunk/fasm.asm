@@ -48,7 +48,7 @@ START:	    ; Start of execution
    jz	    red
 
    mov    ecx,10
-   mov    al,' '
+   mov    eax,'    '
    mov    edi,infile
    push   ecx
    cld
@@ -125,7 +125,15 @@ noclose:
 ;   xor   ecx,ecx
     jmp  still
    norunout:
+    cmp  ah,4
+    jnz  norundebug
 
+    mov  edx,outfile
+    call make_fullpaths
+    mcall 70,file_info_debug
+    jmp  still
+
+   norundebug:
     mov  ecx,5
     mov  [ya],ecx
 
@@ -135,9 +143,16 @@ noclose:
     je   f2
     cmp  ah,13	   ; Path
     je   f3
+    cmp  ah,14
+    je   f4
 
     jmp  still
 
+f4:
+        xor     [bGenerateDebugInfo], 1
+        mcall   8,,,0x8000000E
+        call    draw_checkbox
+        jmp     still
 
 draw_window:
 
@@ -148,8 +163,8 @@ draw_window:
     get_sys_colors 1,0
 
     xor  eax,eax                     
-    mov  ebx,50*65536+280        
-    mov  ecx,50*65536+250
+    mov  ebx,50*65536+280
+    mov  ecx,50*65536+260
     mov  edx,[sc.work]
     or   edx,0x33000000
     mov  edi,title             ; Draw Window Label Text
@@ -162,7 +177,7 @@ draw_window:
     sub   ebx,10
 
     push  ecx
-    madd  ecx, 14*3+2, 14*3+2
+    madd  ecx, 14*3+16+2, 14*3+16+2
     mcall 38,,,[sc.work_graph]
     pop   ecx
 
@@ -193,11 +208,13 @@ draw_window:
 
     mpack ebx,[pinfo.box.width],MAGIC1
     msub  ebx,MAGIC1+10+1,0
-    mpack ecx,0, 14*3/2-1
+    mpack ecx,0, (14*3+16)/3-1
     madd  ecx,1,0
     mcall  ,,,0x00000002,[sc.work_button]
-    madd  ecx, 14*3/2+1,0
+    madd  ecx, (14*3+16)/3+1,0
     mcall  ,,,0x00000003
+    madd  ecx, (14*3+16)/3+1,0
+    mcall ,,,4
 
     mpack ebx,6,0    ; Draw Window Text
     add  ebx,1+ 14/2-3
@@ -215,10 +232,12 @@ draw_window:
     mov   ebx,[pinfo.box.width]
     sub   ebx,MAGIC1+10+1-9
     shl   ebx,16
-    add   ebx,1+( 14*3/2-1)/2-3
+    add   ebx,1+( (14*3+16)/3-1)/2-3
     mcall  ,,[sc.work_button_text],s_compile,7
-    add   ebx,14*3/2+1
+    add   ebx,(14*3+16)/3+1
     mcall ,,,s_run
+    add   ebx,(14*3+16)/3+1
+    mcall ,,,s_debug
 
     mpack ebx,MAGIC1+6,0
     add   ebx,1+ 14/2-3+ 14*0
@@ -237,6 +256,8 @@ draw_window:
     add   ebx,14
     mcall ,,,path
 
+        call    draw_checkbox
+
     call  draw_messages
 
     mcall  12,2 ; End of Draw
@@ -246,12 +267,25 @@ draw_window:
 
 bottom_right dd ?
 
+draw_checkbox:
+        mcall   8,<5,10>,<14*3+5,10>,14,[sc.work_button]
+        cmp     [bGenerateDebugInfo], 0
+        jz      @f
+        mov     edx, [sc.work_button_text]
+        mcall   38,<7,13>,<14*3+7,14*3+13>
+        mcall   38,,<14*3+13,14*3+7>
+@@:
+        mov     ecx, [sc.work_text]
+        or      ecx, 0x80000000
+        mcall   4,<20,14*3+7>,,s_dbgdescr
+        ret
+
 draw_messages:
     mov    eax,13      ; clear work area
     mpack  ebx,7-2,[pinfo.box.width]
     sub    ebx,5*2+7*2-1-2*2
     mpack  ecx,0,[pinfo.box.height]
-    madd   ecx, 14*3+1+7+1,-( 14*3+1+7*2+25)
+    madd   ecx, 14*3+16+1+7+1,-( 14*3+16+1+7*2+25)
     mov    word[bottom_right+2],bx
     mov    word[bottom_right],cx
     msub   [bottom_right],7,11
@@ -392,13 +426,16 @@ text:
   db 'x'
 
 s_compile db 'COMPILE'
-s_run	   db '  RUN  '
+s_run     db '  RUN  '
+s_debug   db ' DEBUG '
+
+s_dbgdescr      db      'Generate debug information',0
 
 infile	  db 'example.asm'
   times MAX_PATH+$-infile  db 0
 outfile db 'example'
   times MAX_PATH+$-outfile db 0
-path	db '/sys/'
+path	db '/rd/1/'
   times MAX_PATH+$-path    db 0
 
 lf db 13,10,0
@@ -427,9 +464,7 @@ start:
     cmp    [_mode],NORMAL_MODE
     jne    @f
     call   draw_messages
-    push   0
-    pop    [textxy]
-    add    [textxy],7 shl 16 + 53
+    mov    [textxy],7 shl 16 + 70
 @@:
     mov    esi,_logo
     call   display_string
@@ -449,6 +484,10 @@ start:
     call   preprocessor
     call   parser
     call   assembler
+    cmp    [bGenerateDebugInfo], 0
+    jz     @f
+    call   symbol_dump
+@@:
     call   formatter
 
     call   display_user_messages
@@ -504,6 +543,7 @@ include 'assemble.inc'
 include 'formats.inc'
 include 'x86_64.inc'
 include 'tables.inc'
+include 'symbdump.inc'
 
 title db appname,VERSION_STRING,0
 
@@ -519,6 +559,7 @@ _counter db 4,'0000'
 
 _mode	       dd NORMAL_MODE
 _run_outfile  dd 0
+bGenerateDebugInfo db 0
 
 sub_table:
 times $41 db $00
@@ -544,6 +585,8 @@ program_base dd ?
 buffer_address dd ?
 memory_setting dd ?
 start_time dd ?
+
+dbgfilename     rb      MAX_PATH+4
 
 sc    system_colors
 max_handles = 8

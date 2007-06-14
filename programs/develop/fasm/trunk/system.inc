@@ -1,8 +1,6 @@
 ; flat assembler
-; Copyright (c) 1999-2006, Tomasz Grysztar
+; Copyright (c) 1999-2007, Tomasz Grysztar
 ; All rights reserved.
-;
-; MenuetOS system.inc by VT
 
 struc FILEIO
 {   .cmd            dd ?
@@ -37,7 +35,7 @@ fullpath_open:  ;  db '/RD/1/EXAMPLE.ASM'
 fullpath_write:; db '/RD/1/EXAMPLE'
 		    times MAX_PATH db 0
 
-file_info_start: ;this part is already rewrited to 70th function
+file_info_start:
     dd 7
     dd 0
     dd 0
@@ -46,7 +44,14 @@ file_info_start: ;this part is already rewrited to 70th function
 fullpath_start:  ; db '/RD/1/EXAMPLE'
 		    times MAX_PATH db 0
 
-_ramdisk	 db '/sys/'
+file_info_debug:
+	dd	7
+	dd	0
+	dd	fullpath_start
+	dd	0, 0
+	db	'/SYS/DEVELOP/MTDBG',0
+
+_ramdisk	 db '/RD/1/'
 filepos 	 dd 0x0
 
 ; info by Privalov: starting from FASM 1.51
