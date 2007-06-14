@@ -16,6 +16,7 @@
 ;; Iliya Mihailov (Ghost)
 ;; Sergey Semyonov (Serge)
 ;; Johnny_B
+;; SPraid (simba)
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as

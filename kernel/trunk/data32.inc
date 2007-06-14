@@ -82,6 +82,7 @@ szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
+read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
 
 char    db '/sys/FONTS/CHAR.MT',0

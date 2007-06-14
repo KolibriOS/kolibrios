@@ -18,7 +18,7 @@ $Revision$
 
 
 ; ћаксимальное количество повторений операции чтени€
-MaxRetr equ 3
+MaxRetr equ 10
 ; ѕредельное врем€ ожидани€ готовности к приему команды
 ; (в тиках)
 BSYWaitTime equ 1000  ;2
@@ -69,6 +69,7 @@ ReadCD:
 ;********************************************
 ReadCDWRetr:
         pushad
+                
 ; ÷икл, пока команда не выполнена успешно или не
 ; исчерпано количество попыток
         mov     ECX,MaxRetr
@@ -77,6 +78,11 @@ ReadCDWRetr:
         call    ReadCD
         cmp     [DevErrorCode],0
         je      @@End_4
+        
+        or		ecx,ecx                 ;{SPraid.simba} (for cd load)
+        jz 		@@End_4
+        dec     ecx
+        
         cmp    [timer_ticks_enable],0
         jne     @f
         mov     eax,NoTickWaitTime

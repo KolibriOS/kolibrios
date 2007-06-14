@@ -27,7 +27,10 @@ tmp_file_name_table dd  ?
 endg
 
 ; use bx_from_load and init system directory /sys
-Parser_params:
+proc Parser_params
+locals
+  buff db 4 dup(?)		; for test cd
+endl
   mov eax,[OS_BASE+0x10000+bx_from_load]
   mov ecx,sysdir_path
   mov [ecx-64],dword 'sys'
@@ -38,6 +41,27 @@ Parser_params:
   mov [ecx+4],byte 0
   ret
 @@:
+  cmp al,'m' ; if ram disk
+  jnz @f
+  mov [ecx],dword 'CD?/'	; if cd disk {m}
+  mov [ecx+4],byte '1'
+  mov [ecx+5],dword '/KOL'
+  mov [ecx+9],dword 'IBRI'
+  mov [ecx+13],byte 0
+.next_cd:
+  mov [ecx+2],byte ah
+  inc ah
+  cmp ah,'5'
+  je  .not_found_cd
+  lea edx,[buff]
+  pushad
+  stdcall read_file,read_firstapp,edx,0,4
+  popad
+  cmp [edx],dword 'MENU'
+  jne .next_cd
+  jmp .ok
+  
+@@:
   sub al,49
   mov [ecx],dword 'HD?/'	; if hard disk
   mov [ecx+2],byte al
@@ -45,7 +69,10 @@ Parser_params:
   mov [ecx+5],dword '/KOL'
   mov [ecx+9],dword 'IBRI'
   mov [ecx+13],byte 0
+.ok:
+.not_found_cd:
   ret
+endp
 
 proc load_file_parse_table
   stdcall kernel_alloc,0x1000
