@@ -456,7 +456,7 @@ cfgmanager:
         mov     si, preboot_device_msg
         call    print
         mov     al, [preboot_device]
-        and     eax, 3
+        and     eax, 7
         mov     si, [preboot_device_msgs+eax*2]
         call    printplain
 .wait:
@@ -499,7 +499,7 @@ cfgmanager:
         _setcursor 15,0
         mov     si, bdev
         call    print
-        mov     bx, '13'
+        mov     bx, '14'
         call    getkey
         mov     [preboot_device], al
         _setcursor 13,0

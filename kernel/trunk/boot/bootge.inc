@@ -47,7 +47,8 @@ ask_dma   db      "Nutze DMA zum HDD Zugriff? [1-ja, 2-allein fur Lesen, 3-nein]
 ;bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
 bdev      db      "Lade die Ramdisk von [1-Diskette; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
-          db      "3-benutze ein bereits geladenes Kernel image]: ",0
+          db      "3-benutze ein bereits geladenes Kernel image;"
+          db      13,10,186,"4-create blank image]: ",0
 probetext db      13,10,13,10,186," Nutze Standardgrafikmodi? [1-ja, "
           db      "2-BIOS Test (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
@@ -95,6 +96,7 @@ preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "Echte Diskette",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "Nutze bereits geladenes Image",13,10,0
+pdm4      db      "create blank image",13,10,0
 loading_msg db    "Lade KolibriOS...",0
 save_quest db     "Aktuelle Einstellungen speichern? [y/n]: ",0
 loader_block_error db "Bootloader Daten ungueltig, Kann nicht fortfahren. Angehalten.",0

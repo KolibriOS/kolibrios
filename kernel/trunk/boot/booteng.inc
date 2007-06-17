@@ -42,7 +42,8 @@ ask_dma   db      "Use DMA for HDD access? [1-yes, 2-only for reading, 3-no]: ",
 ;bootlog   db      13,10,186," After bootlog display [1-continue/2-pause] ? ",0
 bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
-          db      "3-use preloaded ram-image from kernel restart]: ",0
+          db      "3-use preloaded ram-image from kernel restart;"
+          db      13,10,186,"4-create blank image]: ",0
 probetext db      13,10,13,10,186," Use standart graphics mode? [1-yes, "
           db      "2-probe bios (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
@@ -90,6 +91,7 @@ preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "real floppy",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "use already loaded image",13,10,0
+pdm4      db      "create blank image",13,10,0
 loading_msg db    "Loading KolibriOS...",0
 save_quest db     "Remember current settings? [y/n]: ",0
 loader_block_error db "Bootloader data invalid, I cannot continue. Stopped.",0
