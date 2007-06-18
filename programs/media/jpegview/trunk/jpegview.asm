@@ -27,13 +27,15 @@
 ;                   3) use COL0 - COL9 boot parameter
 ;                   0=black,1=white,2=green,3=lilas,4=grey
 ;                   5=light-blue,6=blue,7=salad,8=pink,9=yellow
+;    version 0.17   17th June 2007
+;                   diamond (background definition now uses shared memory)
                   
                memsize=20000h
                org 0
  PARAMS     =    memsize - 1024
 
 appname equ 'Jpegview '
-version equ '0.16'
+version equ '0.17'
 
 use32
 
@@ -50,6 +52,7 @@ stack_size=4096 + 1024
 include '..\..\..\macros.inc'
 
 START:                          ; start of execution
+        mcall   68,11           ; initialize heap
 
     cmp     [PARAMS], byte 0
     jne     check_parameters
@@ -233,8 +236,19 @@ set_as_bgr2:
     mov     edx, [ebp + y_size]
     mcall
 
-    mov     dword [ebp+draw_ptr],put_chunk_to_bgr
+        mov     ebx, 6
+        mcall
+        test    eax, eax
+        jz      .end
+        mov     [ipc_mem_out], eax
+
+    mov     dword [ebp+draw_ptr],put_chunk_to_mem
     call    jpeg_display
+
+        mov     eax, 15
+        mov     ebx, 7
+        mov     ecx, [ipc_mem_out]
+        mcall
 
     ; Stretch the image to fit
     mov     eax, 15
@@ -253,7 +267,6 @@ set_as_bgr2:
 ;******************************************************************************
 
 ipc_service:
-        mcall   68, 11
         mov     esi, PARAMS+1
         xor     eax, eax
         xor     ecx, ecx
@@ -310,11 +323,12 @@ ipc_service:
         mcall   68, 12
         test    eax, eax
         jz      .end
+        add     eax, 8
         mov     [ipc_mem_out], eax
         mov     ebx, [ebp + x_size]
-        mov     [eax], ebx
+        mov     [eax-8], ebx
         mov     ebx, [ebp + y_size]
-        mov     [eax+4], ebx
+        mov     [eax-4], ebx
 
     mov     dword [ebp+draw_ptr],put_chunk_to_mem
     call    jpeg_display
@@ -324,6 +338,7 @@ ipc_service:
         imul    esi, [ebp + y_size]
         lea     esi, [esi*3+8]
         mov     edx, [ipc_mem_out]
+        sub     edx, 8
 .response:
         mov     ecx, [ipc_mem]
         mov     ecx, [ecx+8]
@@ -356,41 +371,6 @@ read_from_mem:
 
 ;******************************************************************************
 
-put_chunk_to_bgr:
-    pushad
-
-    mov     [x_pointer], edi
-    mov     esi, ecx
-    imul    esi, 3
-    mov     [x_numofbytes], esi
-    mov     ecx, [ebp + x_size]
-    imul    ecx, ebx
-    add     ecx, eax
-    imul    ecx, 3
-    mov     [x_offset], ecx
-    mov     [x_counter], edx
-    mov     eax, [ebp + x_size]
-    imul    eax, 3
-    mov     [x_numofb2], eax
- .new_string:
-    mov     eax, 15
-    mov     ebx, 5
-    mov     ecx, [x_pointer]
-    mov     edx, [x_offset]
-    mov     esi, [x_numofbytes]
-    mcall
-    mov     eax, [x_numofbytes]
-    add     [x_pointer], eax
-    mov     eax, [x_numofb2]
-    add     [x_offset], eax
-    dec     [x_counter]
-    jnz     .new_string
-
-    popad
-    ret
-
-;******************************************************************************
-
 put_chunk_to_mem:
 ; in: (eax,ebx) = start coordinates of chunk
 ;     (ecx,edx) = sizes of chunk
@@ -400,7 +380,7 @@ put_chunk_to_mem:
         mov     edi, ebx
         imul    edi, [ebp + x_size]
         add     edi, eax
-        lea     edi, [edi*3+8]
+        lea     edi, [edi*3]
         add     edi, [ipc_mem_out]
 @@:
         push    ecx edi
