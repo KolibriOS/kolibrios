@@ -20,6 +20,7 @@ struc MEM_BLOCK
 MEM_LIST_OFFSET equ  8
 FREE_BLOCK      equ  4
 USED_BLOCK      equ  8
+DONT_FREE_BLOCK equ  10h
 
 virtual at 0
   MEM_BLOCK MEM_BLOCK
@@ -728,8 +729,10 @@ proc user_free stdcall, base:dword
            sub esi, 4096
            shr esi, 12
            mov eax, [page_tabs+esi*4]
-           test eax, USED_BLOCK
+           test al, USED_BLOCK
            jz .not_used
+           test al, DONT_FREE_BLOCK
+           jnz .cantfree
 
            and eax, not 4095
            mov ecx, eax
@@ -764,6 +767,9 @@ proc user_free stdcall, base:dword
 .exit:
            xor eax, eax
            inc eax
+           ret
+.cantfree:
+           xor eax, eax
            ret
 endp
 
@@ -836,6 +842,8 @@ user_realloc:
         xor     eax, eax
         ret
 @@:
+        test    edx, DONT_FREE_BLOCK
+        jnz     .ret0
         add     ebx, 0x1FFF
         shr     edx, 12
         shr     ebx, 12

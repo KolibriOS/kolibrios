@@ -720,6 +720,11 @@ term9:
         mov     [flp_status], 0
 @@:
         pop     esi
+        cmp     [bgrlockpid], esi
+        jnz     @f
+        and     [bgrlockpid], 0
+        mov     [bgrlock], 0
+@@:
 
     pusha ; remove all irq reservations
     mov   eax,esi

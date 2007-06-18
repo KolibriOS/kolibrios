@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.6.5.0
+SYSTEM FUNCTIONS of OS Kolibri 0.7.0.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -566,6 +566,33 @@ Remarks:
   * Offset of pixel with coordinates (x,y) is (x+y*xsize)*3.
   * For update of the screen (after completion of a series of commands
     working with a background) call subfunction 3.
+
+======================================================================
+===================== Function 15, subfunction 6 =====================
+======== Map background data to the address space of process. ========
+======================================================================
+Parameters:
+  * eax = 15 - function number
+  * ebx = 6 - subfunction number
+Returned value:
+  * eax = pointer to background data, 0 if error
+Remarks:
+  * Mapped data are available for read and write.
+  * Size of background data is 3*xsize*ysize. The system blocks
+    changes of background sizes while process works with mapped data.
+  * Color of each pixel is stored as 3-bytes value BBGGRR.
+  * Pixels of the background image are written sequentially
+    from left to right, from up to down.
+
+======================================================================
+===== Function 15, subfunction 7 - close mapped background data. =====
+======================================================================
+Parameters:
+  * eax = 15 - function number
+  * ebx = 7 - subfunction number
+  * ecx = pointer to mapped data
+Returned value:
+  * eax = 1 - success, 0 - error
 
 ======================================================================
 =============== Function 16 - save ramdisk on a floppy. ==============
@@ -4025,11 +4052,14 @@ one of
   * /CD0/1, /CD1/1, /CD2/1, /CD3/1 to access accordingly to
     CD on IDE0 (Primary Master), IDE1 (Primary Slave),
     IDE2 (Secondary Master), IDE3 (Secondary Slave)
+  * /SYS means system folder; with the usual boot (from floppy)
+    is equivalent to /RD/1
 Examples:
   * '/rd/1/kernel.asm',0
   * '/HD0/1/kernel.asm',0
   * '/hd0/2/menuet/pics/tanzania.bmp',0
   * '/hd0/1/Program files/NameOfProgram/SomeFile.SomeExtension',0
+  * '/sys/MySuperApp.ini',0
 Available subfunctions:
   * subfunction 0 - read file
   * subfunction 1 - read folder

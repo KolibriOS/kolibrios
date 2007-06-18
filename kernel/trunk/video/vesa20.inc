@@ -862,20 +862,24 @@ vesa20_drawbackground_stretch:
         call    [disable_mouse]
         pushad
 ; Helper variables
+; calculate 2^32*(BgrDataWidth-1) mod (ScreenWidth-1)
         mov     eax, [BgrDataWidth]
+        dec     eax
         xor     edx, edx
-        mov     ecx, [ScreenWidth]
-        inc     ecx
-        div     ecx
-        push    eax     ; quo
-        push    edx     ; rem
+        div     dword [ScreenWidth]
+        push    eax     ; high
+        xor     eax, eax
+        div     dword [ScreenWidth]
+        push    eax     ; low
+; the same for height
         mov     eax, [BgrDataHeight]
+        dec     eax
         xor     edx, edx
-        mov     ecx, [ScreenHeight]
-        inc     ecx
-        div     ecx
-        push    eax
-        push    edx
+        div     dword [ScreenHeight]
+        push    eax     ; high
+        xor     eax, eax
+        div     dword [ScreenHeight]
+        push    eax     ; low
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
         mov     ebp, [draw_data+32+RECT.left]   ; x start
@@ -897,83 +901,76 @@ vesa20_drawbackground_stretch:
         xchg    edi, ebp
 ; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
         push    ebx
+        push    eax
 ; 2) Calculate offset in background memory block
-        push    eax
         mov     eax, ebx
-        mul     dword [BgrDataHeight]
-        mov     ecx, [ScreenHeight]
-        inc     ecx
-        div     ecx             ; eax := y * BgrDataHeight / ScreenHeight
-                                ; edx := (y * BgrDataHeight) mod ScreenHeight
-        mov     esi, eax
-        pop     eax
-        push    edx             ; dword [esp] = (y * BgrDataHeight) mod ScreenHeight
-                                ; dword [esp+4] = y * BgrDataHeight / ScreenHeight
-        push    eax
-        mov     ecx, [BgrDataWidth]
-        lea     edx, [ecx*3]
-        imul    edx, [BgrDataHeight]
-        add     edx, [img_background]
+        imul    ebx, dword [esp+12]
+        mul     dword [esp+8]
+        add     edx, ebx        ; edx:eax = y * 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
+        mov     esi, edx
+        imul    esi, [BgrDataWidth]
         push    edx
-        mul     ecx
-        imul    esi, ecx
-        dec     ecx
-        push    ecx
-        mov     ecx, [ScreenWidth]
-        inc     ecx
-        div     ecx             ; eax := x * BgrDataWidth / ScreenWidth
-                                ; edx := (x * BgrDataWidth) mod ScreenWidth
-        add     esi, eax
+        push    eax
+        mov     eax, [esp+8]
+        mul     dword [esp+28]
+        push    eax
+        mov     eax, [esp+12]
+        mul     dword [esp+28]
+        add     [esp], edx
+        pop     edx             ; edx:eax = x * 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
+        add     esi, edx
         lea     esi, [esi*3]
         add     esi, [img_background]
-        push    ecx edx esi
+        mov     ecx, eax
+        push    eax edx esi
 ; 3) Loop through redraw rectangle and copy background data
 ; Registers meaning:
-; ecx = (x * BgrDataWidth) / ScreenWidth
-; edx = (x * BgrDataWidth) mod ScreenWidth (used to fast recalculating of ecx,esi)
+; edx:ecx = x * 2^32 * (BgrDataWidth-1) / (ScreenWidth-1)
 ; esi -> bgr memory, edi -> output
 ; ebp = offset in WinMapAddress
 ; dword [esp] = saved esi
 ; dword [esp+4] = saved edx
 ; dword [esp+8] = saved ecx
-; dword [esp+12] = BgrDataWidth-1, x-limit for overlapping of points
-; dword [esp+16] = end of bgr memory (defines y-limit for overlapping of points)
+; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (ScreenHeight-1)
 ; dword [esp+20] = x
-; dword [esp+24] = (y * BgrDataHeight) mod ScreenHeight (used to fast recalculating of esi)
-; dword [esp+28] = y
+; dword [esp+24] = y
 ; precalculated constants:
-; dword [esp+32] = BgrDataHeight mod ScreenHeight
-; dword [esp+36] = BgrDataHeight div ScreenHeight
-; dword [esp+40] = BgrDataWidth mod ScreenWidth
-; dword [esp+44] = BgrDataWidth div ScreenWidth
+; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
+; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 sdp3:
-        add     edx, [esp+40]
         cmp     [ebp+WinMapAddress], byte 1
         jnz     snbgp
         mov     al, [esi+2]
         shl     eax, 16
         mov     ax, [esi]
-        cmp     ecx, [esp+12]
-        jae     @f
-        cmp     edx, [ScreenWidth]
-        jb      @f
+        test    ecx, ecx
+        jz      @f
         mov     ebx, [esi+2]
         shr     ebx, 8
         call    overlapping_of_points
 @@:
-        mov     ebx, [esp+24]
-        add     ebx, [esp+32]
-        cmp     ebx, [ScreenHeight]
-        jbe     @f
+        cmp     dword [esp+12], 0
+        jz      .novert
         mov     ebx, [BgrDataWidth]
         lea     ebx, [ebx*3]
         add     ebx, esi
-        cmp     ebx, [esp+16]
-        jae     @f
-        mov     ebx, [ebx-1]
+        push    eax
+        mov     al, [ebx+2]
+        shl     eax, 16
+        mov     ax, [ebx]
+        test    ecx, ecx
+        jz      .nohorz
+        mov     ebx, [ebx+2]
         shr     ebx, 8
         call    overlapping_of_points
-@@:
+.nohorz:
+        mov     ebx, eax
+        pop     eax
+        push    ecx
+        mov     ecx, [esp+4+12]
+        call    overlapping_of_points
+        pop     ecx
+.novert:
         mov     [edi], ax
         shr     eax, 16
         mov     [edi+2], al
@@ -986,23 +983,18 @@ snbgp:
         mov     [esp+20], eax
         cmp     eax, [draw_data+32+RECT.right]
         ja      sdp4
-        mov     eax, [esp+44]
-        add     ecx, eax
+        add     ecx, [esp+36]
+        mov     eax, edx
+        adc     edx, [esp+40]
+        sub     eax, edx
         lea     eax, [eax*3]
-        add     esi, eax
-;        add     edx, [esp+40]
-        cmp     edx, [ScreenWidth]
-        jbe     sdp3
-        sub     edx, [ScreenWidth]
-        add     ecx, 1
-        add     esi, 3
-        sub     edx, 1
+        sub     esi, eax
         jmp     sdp3
 sdp4:
 ; next y
-        mov     ebx, [esp+28]
+        mov     ebx, [esp+24]
         add     ebx, 1
-        mov     [esp+28], ebx
+        mov     [esp+24], ebx
         cmp     ebx, [draw_data+32+RECT.bottom]
         ja      sdpdone
 ; advance edi, ebp to next scan line
@@ -1019,56 +1011,55 @@ sdp4:
 @@:
         add     edi, [BytesPerScanLine]
 ; restore ecx,edx; advance esi to next background line
+        mov     eax, [esp+28]
+        mov     ebx, [esp+32]
+        add     [esp+12], eax
+        mov     eax, [esp+16]
+        adc     [esp+16], ebx
         pop     esi edx ecx
         push    ecx edx
-        xor     ebx, ebx
-        mov     eax, [esp+24-4]
-        add     eax, [esp+32-4]
-        cmp     eax, [ScreenHeight]
-        jbe     @f
-        sub     eax, [ScreenHeight]
-        mov     ebx, 1
-        sub     eax, ebx
-@@:
-        mov     [esp+24-4], eax
-        add     ebx, [esp+36-4]
-        lea     ebx, [ebx*3]
-        imul    ebx, [BgrDataWidth]
-        add     esi, ebx
+        sub     eax, [esp+16-4]
+        lea     eax, [eax*3]
+        imul    eax, [BgrDataWidth]
+        sub     esi, eax
         push    esi
         mov     eax, [draw_data+32+RECT.left]
         mov     [esp+20], eax
         jmp     sdp3
 sdpdone:
-        add     esp, 48
+        add     esp, 44
         popad
         mov     [EGA_counter],1
         call    VGA_drawbackground
         ret
 
 overlapping_of_points:
-        push    ecx edx edi
-        mov     ecx, eax
-        mov     edx, ebx
+        push    ecx edx
+        mov     edx, eax
+        push    esi
+        shr     ecx, 24
+        mov     esi, ecx
+        mov     ecx, ebx
+        movzx   ebx, dl
+        movzx   eax, cl
+        sub     eax, ebx
+        movzx   ebx, dh
+        imul    eax, esi
+        add     dl, ah
+        movzx   eax, ch
+        sub     eax, ebx
+        imul    eax, esi
+        add     dh, ah
+        ror     ecx, 16
+        ror     edx, 16
         movzx   eax, cl
         movzx   ebx, dl
-        add     eax, ebx
-        rcr     eax, 1
-        movzx   edi, ax
-        movzx   eax, ch
-        movzx   ebx, dh
-        add     eax, ebx
-        rcr     eax, 1
-        ror     edi, 8
-        add     edi, eax
-        shr     ecx, 8
-        shr     edx, 8
-        movzx   eax, ch
-        movzx   ebx, dh
-        add     eax, ebx
-        rcr     eax, 1
-        ror     edi, 8
-        add     eax, edi
+        sub     eax, ebx
+        imul    eax, esi
+        pop     esi
+        add     dl, ah
+        mov     eax, edx
+        pop     edx
         ror     eax, 16
-        pop     edi edx ecx
+        pop     ecx
         ret

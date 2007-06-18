@@ -2346,6 +2346,8 @@ sys_cachetodiskette:
 
 uglobal
 ;  bgrchanged  dd  0x0
+bgrlock db 0
+bgrlockpid dd 0
 endg
 
 sys_background:
@@ -2356,6 +2358,14 @@ sys_background:
     je    sbgrr
     cmp   ecx,0
     je    sbgrr
+@@:
+        mov     al, 1
+        xchg    [bgrlock], al
+        test    al, al
+        jz      @f
+        call    change_task
+        jmp     @b
+@@:
     mov   [BgrDataWidth],ebx
     mov   [BgrDataHeight],ecx
 ;    mov   [bgrchanged],1
@@ -2379,12 +2389,13 @@ sys_background:
     lea  eax,[eax*3]
     mov  [mem_BACKGROUND],eax
 ; get memory for new background
-    stdcall kernel_alloc, [mem_BACKGROUND]
+    stdcall kernel_alloc, eax
     test eax, eax
     jz .exit_mem
     mov [img_background], eax
 .exit_mem:
     popad
+        mov     [bgrlock], 0
 
   sbgrr:
     ret
@@ -2444,6 +2455,84 @@ draw_background_temp:
     ret
   nosb5:
 
+        cmp     eax, 6
+        jnz     nosb6
+@@:
+        mov     al, 1
+        xchg    [bgrlock], al
+        test    al, al
+        jz      @f
+        call    change_task
+        jmp     @b
+@@:
+        mov     eax, [CURRENT_TASK]
+        mov     [bgrlockpid], eax
+        stdcall user_alloc, [mem_BACKGROUND]
+        mov     [esp+36], eax
+        test    eax, eax
+        jz      .nomem
+        mov     ebx, eax
+        shr     ebx, 12
+        or      dword [page_tabs+(ebx-1)*4], DONT_FREE_BLOCK
+        mov     esi, [img_background]
+        shr     esi, 12
+        mov     ecx, [mem_BACKGROUND]
+        add     ecx, 0xFFF
+        shr     ecx, 12
+.z:
+        mov     eax, [page_tabs+ebx*4]
+        test    al, 1
+        jz      @f
+        call    free_page
+@@:
+        mov     eax, [page_tabs+esi*4]
+        or      al, PG_UW
+        mov     [page_tabs+ebx*4], eax
+        mov     eax, ebx
+        shl     eax, 12
+        invlpg  [eax]
+        inc     ebx
+        inc     esi
+        loop    .z
+        ret
+.nomem:
+        and     [bgrlockpid], 0
+        mov     [bgrlock], 0
+nosb6:
+        cmp     eax, 7
+        jnz     nosb7
+        cmp     [bgrlock], 0
+        jz      .err
+        mov     eax, [CURRENT_TASK]
+        cmp     [bgrlockpid], eax
+        jnz     .err
+        mov     eax, ebx
+        shr     eax, 12
+        mov     ecx, [page_tabs+(eax-1)*4]
+        test    cl, USED_BLOCK+DONT_FREE_BLOCK
+        jz      .err
+        jnp     .err
+        push    eax
+        shr     ecx, 12
+@@:
+        and     dword [page_tabs+eax*4], 0
+        mov     edx, eax
+        shl     edx, 12
+        invlpg  [edx]
+        inc     eax
+        loop    @b
+        pop     eax
+        and     dword [page_tabs+(eax-1)*4], not DONT_FREE_BLOCK
+        stdcall user_free, ebx
+        mov     [esp+36], eax
+        and     [bgrlockpid], 0
+        mov     [bgrlock], 0
+        ret
+.err:
+        and     dword [esp+36], 0
+        ret
+
+nosb7:
     ret
 
 
