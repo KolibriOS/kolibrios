@@ -48,23 +48,6 @@
 #include "seterrno.h"
 #include "handleio.h"
 
-#ifdef DLHEAP
-
-void* _cdecl dlmalloc(size_t);
-void  _cdecl dlfree(void*);
-void _cdecl mf_init();
-
-#define malloc  dlmalloc
-#define free    dlfree
-#define realloc dlrealloc
-
-#define lib_malloc   dlmalloc
-#define lib_free     dlfree
-#define lib_realloc  dlrealloc
-
-#endif
-
-
 #undef __getOSHandle
 
 extern  unsigned    __NFiles;       // the size of the iomode array
@@ -153,6 +136,7 @@ HANDLE __getOSHandle( int hid )
     return( __OSHandles[ hid ] );
 }
 
+
 int __setOSHandle( unsigned hid, HANDLE hdl )
 {
     // call the Win32 API for a standard file handle
@@ -184,24 +168,11 @@ static int __topFakeHandle = 0;
 HANDLE __NTGetFakeHandle( void )
 {
     HANDLE os_handle;
-
+    static DWORD fakeHandle = 0x80000000L;
     _AccessFList();
-    
-//    os_handle = CreateEvent( 0, 0, 0, 0 );
-    os_handle = 0;
-    if( os_handle == NULL )
-    {
-        // win32s does not support event handles
-        static DWORD fakeHandle = 0x80000000L;
-        fakeHandle++;
-        os_handle = (HANDLE)fakeHandle;
-    }
-    else
-    {
-        __FakeHandles = lib_realloc( __FakeHandles, (__topFakeHandle+1) * sizeof( HANDLE ) );
-        __FakeHandles[ __topFakeHandle ] = os_handle;
-        __topFakeHandle++;
-    }
+  
+    fakeHandle++;
+    os_handle = (HANDLE)fakeHandle;
     _ReleaseFList();
     return( os_handle );
 }

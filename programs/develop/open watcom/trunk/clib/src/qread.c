@@ -20,35 +20,22 @@
 *    ALL SUCH WARRANTIES, INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF
 *    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR
 *    NON-INFRINGEMENT. Please see the License for the specific language
-*    governing rights and limitations under the License.*
+*    governing rights and limitations under the License.
+*
 *  ========================================================================
 *
-* Description:  low level lseek without file extend for Windows NT
+* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
+*               DESCRIBE IT HERE!
 *
 ****************************************************************************/
 
 
 #include "variety.h"
-#include <stdio.h>
-#include <unistd.h>
 #include "iomode.h"
 #include "rtcheck.h"
 #include "seterrno.h"
-#include "lseek.h"
-#include "handleio.h"
-
-/*
-    DWORD SetFilePointer(
-      HANDLE hFile,                // handle to file
-      LONG lDistanceToMove,        // bytes to move pointer
-      PLONG lpDistanceToMoveHigh,  // bytes to move pointer
-      DWORD dwMoveMethod           // starting point
-    );
- */
-
-#ifndef INVALID_SET_FILE_POINTER
-#define INVALID_SET_FILE_POINTER 0xFFFFFFFF
-#endif
+#include "qread.h"
+#include <stdio.h>
 
 typedef struct 
 {
@@ -56,50 +43,26 @@ typedef struct
   unsigned int offset;
 }__file_handle;
 
-typedef struct
-{   DWORD    attr;
-    DWORD    flags;
-    DWORD    cr_time;
-    DWORD    cr_date;
-    DWORD    acc_time;
-    DWORD    acc_date;
-    DWORD    mod_time;
-    DWORD    mod_date;
-    DWORD    size;
-    DWORD    size_high; 
-} FILEINFO;
 
-int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
+int _stdcall read_file (const char *name,char *buff,unsigned offset, unsigned count,unsigned *reads);
 
-_WCRTLINK long __lseek( int hid, long offset, int origin )
+int __qread( int handle, void *buffer, unsigned len )
 {
     __file_handle *fh;
-    long rc;
+    unsigned amount_read=0;
     
-    __handle_check( hid, -1 );
-    fh = (__file_handle*) __getOSHandle( hid );
-
-    switch(origin)
+    __handle_check( handle, -1 );
+    fh = (__file_handle*) __getOSHandle( handle );
+      
+    if(read_file(fh->name,buffer,fh->offset,len,&amount_read))
     {
-      case SEEK_SET:
-        rc = offset;
-        break;
-      case SEEK_CUR:  
-        rc = fh->offset + offset;
-        break;
-      case SEEK_END:
-      {
-        FILEINFO info;
-        get_fileinfo(fh->name,&info);
-        rc = offset + info.size;
-        break;
-      }    
-      default:
-        return -1;
-    };
-    
-    fh->offset = rc;
+      if ( amount_read == 0)
+        return (-1);   
 
-    return( rc );
-}
+    }
+    fh->offset+=amount_read;
+    return( amount_read );
+};
+
+
 
