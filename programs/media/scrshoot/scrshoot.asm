@@ -132,7 +132,7 @@ start_draw_window	 ; начало перерисовки
 	mov	ecx,100*65536+220
 	add	cx,ax
 	mov	edx,[sc.work]
-	add	edx,0x33000000;0x33000000
+	add	edx,0x34000000;0x33000000
 	xor	esi,esi
 	;xor     edi,edi
 	mov	edi,grab_text

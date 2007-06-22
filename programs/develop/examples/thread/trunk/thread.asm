@@ -93,7 +93,7 @@ draw_window:
     shl  esi,16
     add  ebx,esi
     add  ecx,esi
-    mov  edx,0x33ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edx,0x34ffffff            ; color of work area RRGGBB,8->color gl
     mov  edi,title               ; WINDOW LABEL
     mcall
 

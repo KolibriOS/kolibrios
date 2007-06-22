@@ -1385,7 +1385,7 @@ draw_window:
     mov      eax, 0                  ; function 0 : define and draw window
     mov      ebx, 100*65536+250      ; [x start] *65536 + [x size]
     mov      ecx, 100*65536+150      ; [y start] *65536 + [y size]
-    mov      edx,0x13224466          ; color of work area RRGGBB
+    mov      edx,0x14224466          ; color of work area RRGGBB
     mov      edi,title               ; color of frames    RRGGBB
     mcall
 

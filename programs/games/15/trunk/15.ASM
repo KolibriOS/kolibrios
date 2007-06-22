@@ -8,7 +8,7 @@ include '..\..\..\macros.inc' ; decreases program size (not required)
 
 StatusColor equ 0x02ffffff
 StatusColor2 equ 0x02dc1e14
-BgdColor equ 0x03aabbcc
+BgdColor equ 0x04aabbcc
 
 ; Main window dimensions
 XXwindow equ 200 shl 16+276

@@ -46,7 +46,7 @@ CODE
     xor eax,eax
     mov ebx,(100 shl 16)+(WND_SIZE_X+8)
     mov ecx,(100 shl 16)+(WND_SIZE_Y+25)
-    mov edx,0x33000000
+    mov edx,0x34000000
     mov edi,title
     mcall
 

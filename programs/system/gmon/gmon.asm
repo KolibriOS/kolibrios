@@ -191,7 +191,7 @@ draw_window:
 	xor	eax, eax
 	mov	ebx, 300 * 65536 + 309
 	mov	ecx, 150 * 65536 + 450
-	mov	edx, tcol + 0x13000000	; color of work area RRGGBB,8->color
+	mov	edx, tcol + 0x14000000	; color of work area RRGGBB,8->color
 	mov	edi, title		; color of frames    RRGGBB
 	int	0x40
 	; Создаём рамку графика

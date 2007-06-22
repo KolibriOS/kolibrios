@@ -888,7 +888,7 @@ draw_window:
     mov  bx,550
     mov  cx,470
     mov  edx,[wcolor]
-    add  edx,0x13000000
+    add  edx,0x14000000
     mov  edi,title
     mcall
 

@@ -121,7 +121,7 @@ drawwindow:
     xor  eax,eax ; window
     mov  ebx,100*65536+107
     mov  ecx,100*65536+105
-    mov  edx,0x33400088
+    mov  edx,0x34400088
     mov  edi,title
     mcall
 

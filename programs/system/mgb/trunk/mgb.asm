@@ -408,7 +408,7 @@ proc		subDrawMainWindow	; CODE XREF: start:locRedrawEventp
 		mov	ebx, 100*65536+72*5+14;640145h
 		mov	ecx, 80*65536+TESTS_NUM*LINE_HEIGHT+15+20+35
 		add	cx, ax
-		mov	edx, 33000000h
+		mov	edx, 34000000h
 		mov	edi, aCaption
 		xor	eax, eax
 		mcall

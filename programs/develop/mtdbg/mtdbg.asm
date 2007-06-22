@@ -978,7 +978,7 @@ draw_window:
 	xor	eax, eax
 	mov	ebx, wnd_x_size
 	mov	ecx, wnd_y_size
-	mov	edx, 13FFFFFFh
+	mov	edx, 14FFFFFFh
 	mov	edi, caption_str
 	mcall
 ; messages frame

@@ -628,7 +628,7 @@ draw_window:
     mov  eax,0                     ; Draw Window
     mov  ebx,50*65536+410
     mov  ecx,100*65536+141
-    mov  edx,0x13ffffff
+    mov  edx,0x14ffffff
     mov  edi,title
     mcall
 

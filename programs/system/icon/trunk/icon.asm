@@ -566,7 +566,7 @@ draw_window:
     xor  eax,eax
     mov  ebx,210*65536+300
     mov  ecx,30*65536+390-14
-    mov  edx,0x13ffffff
+    mov  edx,0x14ffffff
     mov  edi,title       ; WINDOW LABEL
     mcall
 

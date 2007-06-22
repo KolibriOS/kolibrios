@@ -61,7 +61,7 @@ draw_window:
                                         ; DRAW WINDOW
         mov     ebx, 100*65536 + 8*magnify_width + 8
         lea     ecx, [eax + 100*65536 + 8*magnify_height + 3]
-        mov     edx, 0x33000000         ; color of work area RRGGBB
+        mov     edx, 0x34000000         ; color of work area RRGGBB
         mov     edi, labelt             ; header
         xor     eax, eax                ; function 0 : define and draw window
         mcall

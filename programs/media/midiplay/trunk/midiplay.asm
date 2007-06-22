@@ -113,7 +113,7 @@ draw_window:
     mov       eax,0                     ; define and draw window
     mov       ebx,20*65536+250
     mov       ecx,20*65536+120
-    mov       edx,0x13ffffff
+    mov       edx,0x14ffffff
     mov       edi,title
     mcall
 

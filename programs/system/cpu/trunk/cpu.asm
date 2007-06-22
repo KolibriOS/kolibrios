@@ -479,7 +479,7 @@ draw_window:
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,[winxpos]             ; [x start] *65536 + [x size]
     mov  ecx,[winypos]             ; [y start] *65536 + [y size]
-    mov  edx,0x13ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
+    mov  edx,0x14ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
     mov  edi,title                ; WINDOW CAPTION;
     int  0x40
 

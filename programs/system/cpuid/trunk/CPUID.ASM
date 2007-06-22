@@ -1625,7 +1625,7 @@ draw_window:
    mov	ebx,1h
    mcall
 
-  Window 150,150,350,385, 0x33FFFFFF, 0x805080d0, title
+  Window 150,150,350,385, 0x34FFFFFF, 0x805080d0, title
 	  ; place size
 
   Button 15,330,92,23,2,0x03FFFFFF   ;  button "press for more"

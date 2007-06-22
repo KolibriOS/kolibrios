@@ -749,7 +749,7 @@ draw_window:
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx, 50*65536+219         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+168         ; [y start] *65536 + [y size]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB
+    mov  edx,0x04ffffff            ; color of work area RRGGBB
     mov  esi,0x8099bbff            ; color of grab bar  RRGGBB,8->color glide
     mov  edi,0x0099bbee            ; color of frames    RRGGBB
     mcall

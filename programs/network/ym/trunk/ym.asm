@@ -160,7 +160,7 @@ draw_window:
   mov  ebx,150*65536+h_sp
   mov  ecx,100*65536+v_sp
   mov  edx,[sys_colors+4*5]
-  or   edx,0x13000000
+  or   edx,0x14000000
   mov  edi,title
   mcall
 

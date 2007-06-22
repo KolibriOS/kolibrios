@@ -847,7 +847,7 @@ draw_window:
     mov  ebx,100*65536+320         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+140         ; [y start] *65536 + [y size]
     mov  edx,[bgr]
-    or   edx,0x13000000            ; color of work area RRGGBB,8->color gl
+    or   edx,0x14000000            ; color of work area RRGGBB,8->color gl
     mov  edi,title                 ; WINDOW LABEL
     mcall
 

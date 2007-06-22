@@ -434,7 +434,7 @@ draw_window:
       xor  eax,eax
       mov  ebx,50*65536+PIXWIDTH+8
       mov  ecx,100*65536+PIXHEIGHT+25
-      mov  edx,0x13334455
+      mov  edx,0x14334455
       mov  edi,title
       mcall
 

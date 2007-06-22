@@ -785,7 +785,7 @@ draw_window:
 
     startwd
 
-    window 100,100,X_SIZE+8,Y_SIZE+21,0x03ffffff
+    window 100,100,X_SIZE+8,Y_SIZE+21,0x04ffffff
     label 8,8,VERSION,cl_White+font_Big
     label 200,8,'LIVES:',0x10ddeeff
     outcount dword [lives],250,8,0x10ddeeff,65536

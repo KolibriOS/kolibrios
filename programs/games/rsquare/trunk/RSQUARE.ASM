@@ -184,7 +184,7 @@ button:                       ; BUTTON - only close supported
 draw_window:
     mov  [ticks],TICKS
     mcall 12,1
-    mcall 0,<100,FLDSIZE2+16>,<100,FLDSIZE2+38>,0x03008000
+    mcall 0,<100,FLDSIZE2+16>,<100,FLDSIZE2+38>,0x04008000
     mcall 4,<8,8>,0x10ffffff,header,header.size
     mov   esi,ecx
   if lang eq ru

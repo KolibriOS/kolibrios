@@ -812,7 +812,7 @@ key_PgDown equ 183
 ;Attributes
 
 ;Window Attributes
-window_Skinned equ 0x03000000
+window_Skinned equ 0x04000000
 window_Type2   equ 0x02000000
 window_Type1   equ 0x00000000
 window_Reserve equ 0x01000000

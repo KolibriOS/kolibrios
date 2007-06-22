@@ -29,7 +29,7 @@ void draw_window()
   // WINDOW
   EBX = xpos << 16 + xsize;
   ECX = ypos << 16 + ysize;
-  sys_draw_window(EBX, ECX, 0x13CCCCCC, colors.w_grab | 0x80000000, "MineSweeper");
+  sys_draw_window(EBX, ECX, 0x14CCCCCC, colors.w_grab | 0x80000000, "MineSweeper");
  
    // <NEW GAME> BUTTON (911)
   EBX = xsize / 2 - 10;

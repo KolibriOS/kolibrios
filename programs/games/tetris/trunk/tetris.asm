@@ -257,7 +257,7 @@ draw_window:
   mov  ebx,320*65536+(LEN_X-BORDER_LEFT-BORDER_RIGHT)*ADOBE_SIZE+X_LOCATION*2
   mov  ecx,25*65536+ (LEN_Y-BORDER_TOP-BORDER_BOTTOM)*ADOBE_SIZE+Y_LOCATION+30
   mov  edx,[sc.work]             ; color of work area RRGGBB
-  or   edx,0x13000000
+  or   edx,0x14000000
   mov  edi,title                ; WINDOW LABEL
   mcall
 

@@ -254,7 +254,7 @@ draw_window:
     mov  eax,0                     ; function 0 : define and draw window
     mov  ebx,100*65536+300         ; [x start] *65536 + [x size]
     mov  ecx,100*65536+330         ; [y start] *65536 + [y size]
-    mov  edx,0x13ffffff            ; color of work area RRGGBB
+    mov  edx,0x14ffffff            ; color of work area RRGGBB
     mov  edi,title                 ; WINDOW LABEL
     mcall
    

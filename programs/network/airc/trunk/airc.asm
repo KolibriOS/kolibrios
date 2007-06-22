@@ -1845,7 +1845,7 @@ draw_window:
     mov  ebx,5*65536+499
     mov  ecx,5*65536+345
     mov  edx,[wcolor]
-    add  edx,0x13ffffff
+    add  edx,0x14ffffff
     mov  edi,title
     mcall
 

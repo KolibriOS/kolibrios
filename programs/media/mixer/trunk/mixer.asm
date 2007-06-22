@@ -323,7 +323,7 @@ drawusedcard:
 
 bcolor  dd  0x5577c8
 
-wcolor  dd  0x13000000
+wcolor  dd  0x14000000
 
 
 text:

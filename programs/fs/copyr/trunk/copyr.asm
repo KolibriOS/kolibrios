@@ -183,7 +183,7 @@ draw_window:
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,160*65536+415         ; [x start] *65536 + [x size]
     mov  ecx,160*65536+90          ; [y start] *65536 + [y size]
-    mov  edx,0x13DDDDDD            ; color of work area RRGGBB
+    mov  edx,0x14DDDDDD            ; color of work area RRGGBB
     mov  edi,labelt                ; WINDOW LABEL
     mcall
 

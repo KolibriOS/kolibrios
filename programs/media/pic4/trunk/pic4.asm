@@ -335,7 +335,7 @@ draw_window:
     mov ebx, 220*65536+293
     mov ecx, 50*65536+408
     mov edx, [sc.work]
-    or  edx, 0x33000000
+    or  edx, 0x34000000
     mov edi, title
     mcall
 

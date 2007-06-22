@@ -149,7 +149,7 @@ draw_window:
     mov  eax,0                     ; DRAW WINDOW
     mov  ebx,1*65536+200           ; [x start] *65536 + [x size]
     mov  ecx,200*65536+240         ; [y start] *65536 + [y size]
-    mov  edx,0x13000000            ; work area color (type II)
+    mov  edx,0x14000000            ; work area color (type II)
     mov  edi,title                ; frame color
     mcall
    

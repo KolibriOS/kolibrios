@@ -93,7 +93,7 @@ draw_window:
 	mov  ebx,50*65536+555  ;x
 	mov  ecx,30*65536+455  ;y
       mov  edx,[sc.work]
-	or   edx,0x33000000    ;style
+	or   edx,0x34000000    ;style
 	mov  edi,caption
 	mcall
 

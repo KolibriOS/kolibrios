@@ -675,7 +675,7 @@ draw_window:
   else
     mov  ecx,WIN_Y-15
   end if
-    mov  edx,0x13aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
+    mov  edx,0x14aabbcc 	   ; цвет рабочей области  RRGGBB,8->color gl
     mov  edi,title		   ; заголовок
     mcall
     call draw_week

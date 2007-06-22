@@ -207,7 +207,7 @@ ENTRANCE:
  xor eax,eax           ; Define window
  mov ebx,100*65536+240
  mov ecx,100*65536+130
- mov edx,0x03AAAAAA
+ mov edx,0x04AAAAAA
  mov esi,0x80777777
  mov edi,0x00777777
  mcall

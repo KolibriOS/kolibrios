@@ -166,7 +166,7 @@ draw_window:
    mov ebx,200 shl 16 + 270              ; [x старт] *65536 + [x размер]
    mov ecx,200 shl 16 + 190              ; [y старт] *65536 + [y размер]
    mov edx,[sc.work]                     ; цвет рабочей области  RRGGBB,8->color gl
-   or  edx,0x33000000
+   or  edx,0x34000000
    mov edi,title                        ; ЗАГОЛОВОК ОКНА
    mcall
 

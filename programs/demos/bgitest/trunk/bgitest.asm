@@ -237,7 +237,7 @@ draw_window:
     xor  eax,eax
     mov  ebx,10*65536+_X*2+30
     mov  ecx,100*65536+_Y*2
-    mov  edx,0x03261212
+    mov  edx,0x04261212
     mov  esi,0x805080d0
     mov  edi,0x005080d0
     mcall

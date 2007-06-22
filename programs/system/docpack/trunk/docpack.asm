@@ -98,7 +98,7 @@ red:
   mov  ebx,220*65536+120        
   mov  ecx,30*65536+FILECOUNT*16+35
   mov  edx,[sc.work]
-  or   edx,0x33000000
+  or   edx,0x34000000
   mov  edi,title
   mcall
 

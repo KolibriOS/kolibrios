@@ -866,7 +866,7 @@ draw_window:
     xor  eax,eax       ; DRAW WINDOW
     mov  ebx,40*65536+355+BBB
     mov  ecx,40*65536+320
-    mov  edx,0x93111199
+    mov  edx,0x94111199
     mov  edi,title
     mcall
 

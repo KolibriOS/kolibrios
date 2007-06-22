@@ -330,7 +330,7 @@ draw_window:
     mov  eax,0
     mov  ebx,100*65536+320
     mov  ecx,100*65536+250
-    mov  edx,0x134873a0    ;70d0
+    mov  edx,0x144873a0    ;70d0
     mov  edi,labelt
     mcall
 
