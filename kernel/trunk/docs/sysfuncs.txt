@@ -22,6 +22,7 @@ Parameters:
       * Y=1 - only define window area, draw nothing
       * Y=2 - type II - variable-size window
       * Y=3 - skinned window
+      * Y=4 - skinned window with fixed sizes
       * other possible values (from 4 up to 15) are reserved,
         function call with such Y is ignored
     * RR, GG, BB = accordingly red, green, blue components of a color

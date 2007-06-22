@@ -2953,8 +2953,11 @@ sys_drawwindow:
   nosyswIII:
 
     cmp   edi,3   ; type IV - skinned window
-    jne   nosyswIV
-
+    je    draw_skin_window
+    cmp   edi,4   ; type V - skinned window not sized!		{not_sized_skin_window}
+    jne   nosyswV
+  draw_skin_window:
+  
     ; parameter for drawwindow_IV
     push  0
     mov   edi, [TASK_COUNT]
@@ -2973,7 +2976,7 @@ sys_drawwindow:
     ;call   [draw_pointer]
     ;ret
     jmp   draw_window_caption.2
-  nosyswIV:
+  nosyswV:
 
     ret
 
@@ -2994,7 +2997,12 @@ draw_window_caption:
         movzx   ebx,[edx+WDATA.fl_wstyle]
         and     bl,0x0F
         cmp     bl,3
-        jne     .not_style_3
+        je      .draw_caption_style_3		;{for 3 and 4 style write caption}
+        cmp     bl,4
+        je      .draw_caption_style_3
+    
+        jmp     .not_style_3
+  .draw_caption_style_3:
 
         push    edx
         call    drawwindow_IV_caption
@@ -3028,8 +3036,12 @@ draw_window_caption:
         movzx   eax,[edi+window_data+WDATA.fl_wstyle]
         and     al,0x0F
         cmp     al,3
-        jne     .not_skinned
-
+        je      .skinned
+        cmp     al,4
+        je      .skinned
+       
+        jmp     .not_skinned
+  .skinned:		
         mov     ebp,[edi+window_data+WDATA.box.left-2]
         mov     bp,word[edi+window_data+WDATA.box.top]
         movzx   eax,word[edi+window_data+WDATA.box.width]
@@ -3085,10 +3097,11 @@ draw_window_caption:
 iglobal
 align 4
 window_topleft dd \
-  1, 21,\
-  0,  0,\
-  5, 20,\
-  5,  ?
+  1, 21,\		;type 0
+  0,  0,\       ;type 1
+  5, 20,\       ;type 2
+  5,  ?,\       ;type 3 {set by skin}
+  5,  ?         ;type 4 {set by skin}
 endg
 
 set_window_clientbox:
@@ -3096,6 +3109,7 @@ set_window_clientbox:
 
         mov     eax,[_skinh]
         mov     [window_topleft+4*7],eax
+        mov     [window_topleft+4*9],eax
 
         mov     ecx,edi
         sub     edi,window_data
@@ -3181,7 +3195,12 @@ sys_set_window:
         and     cl,0x0F
         mov     [edi+APPDATA.wnd_caption],0
         cmp     cl,3
-        jne     @f
+        je      set_APPDATA_wnd_caption
+        cmp     cl,4								; {SPraid.simba}
+        je      set_APPDATA_wnd_caption
+        
+        jmp     @f		
+    set_APPDATA_wnd_caption:
         mov     [edi+APPDATA.wnd_caption],esi
     @@: mov     esi,[esp+0]
 

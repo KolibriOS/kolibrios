@@ -899,7 +899,11 @@ windowactivate:
 	mov   ebx, [eax + WDATA.cl_workarea]
 	and   ebx, 0x0f000000
 	cmp   ebx, 0x03000000
-	jne   @f
+	je   .set_WDATA_fl_redraw   ; for 3 and 4 style
+	cmp   ebx, 0x04000000
+	je   .set_WDATA_fl_redraw
+	jmp @f
+	.set_WDATA_fl_redraw:
 	mov   [eax + WDATA.fl_redraw], byte 1
      @@:
 
@@ -957,6 +961,8 @@ checkwindowdraw:
 	and   eax, 0x0f000000
 	cmp   eax, 0x03000000
 	je    .return_yes      ; window type 3
+	cmp   eax, 0x04000000
+	je    .return_yes      ; window type 4
 
 	mov   esi, edi
 	sub   esi, window_data
@@ -1264,8 +1270,13 @@ checkwindows:
 	mov   [do_resize_from_corner],byte 0   ; resize for skinned window
     mov   edx, [edi + WDATA.cl_workarea]
 	and   edx, 0x0f000000
-	cmp   edx, 0x02000000
-	jb    .no_resize_2 ; not type 2 wnd
+	cmp   edx, 0x00000000						;{test for resized}
+	je    .no_resize_2
+	cmp   edx, 0x01000000						;{test for resized}
+	je    .no_resize_2
+	cmp   edx, 0x04000000						;{test for resized}					
+	je    .no_resize_2
+;	jb    .no_resize_2 ; not type 2 wnd
 
     mov   edx, [edi + WDATA.box.top]
     add   edx, [edi + WDATA.box.height]
@@ -1496,6 +1507,16 @@ checkwindows:
       no_bounds_save:
 
 	pushad				   ; WINDOW SHADE/FULLSCREEN
+
+	;{doule click not worked for 4 type window}
+    mov   edx, [edi + WDATA.cl_workarea]
+	and   edx, 0x0f000000
+	cmp   edx, 0x00000000
+	je    no_fullscreen_restore
+	cmp   edx, 0x01000000
+	je    no_fullscreen_restore
+	cmp   edx, 0x04000000
+	je    no_fullscreen_restore
 
 	cmp   [reposition],1
 	je    no_window_sizing
