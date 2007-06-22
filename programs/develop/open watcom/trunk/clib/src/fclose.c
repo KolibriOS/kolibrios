@@ -44,18 +44,6 @@
 #include "close.h"
 #include "flush.h"
 
-#ifdef DLHEAP
-
-void* _cdecl dlmalloc(size_t);
-void  _cdecl dlfree(void*);
-void _cdecl mf_init();
-
-#define malloc dlmalloc
-#define free dlfree
-#define realloc dlrealloc
-
-#define lib_free dlfree
-#endif
 
 #ifndef __UNIX__
 void    (*__RmTmpFileFn)( FILE *fp );

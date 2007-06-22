@@ -64,28 +64,21 @@ typedef struct
 
 void  _stdcall InitHeap(int heap_size);
 void* _stdcall UserAlloc(int size);
-void  _stdcall GetNotify(DWORD *event);
+int   _stdcall UserFree(void* p);
+ 
+void  _stdcall GetNotify(void *event);
 
-//void _stdcall CreateThread(void *fn, char *p_stack);
+void _stdcall CreateThread(void *fn, char *p_stack);
+
 DWORD _stdcall GetMousePos(DWORD rel_type);
-int _stdcall   GetService(char *srv_name);
-void _stdcall  GetDevInfo(DWORD hSrv,CTRL_INFO *pInfo);
-int _stdcall   GetMasterVol(DWORD hSrv,int* vol);
-int _stdcall   SetMasterVol(DWORD hSrv, int vol);
-DWORD _stdcall CreateBuffer(DWORD hSrv, DWORD format);
-int _stdcall   DestroyBuffer(DWORD hSrv, DWORD hBuff);
-int _stdcall   SetBuffer(DWORD hSrv, DWORD hBuff,char* buff,
-                               DWORD offs, int size);
-int _stdcall   PlayBuffer(DWORD hSrv, DWORD hBuff);
-int _stdcall   StopBuffer(DWORD hSrv, DWORD hBuff);
 
 void _stdcall debug_out_hex(DWORD val);
+void debug_out_str(char* str);
 
-//void debug_out_str(char* str);
-
-int _stdcall get_fileinfo(char *name,FILEINFO* pinfo);
-int _stdcall read_file (char *name,char*buff,int offset, int count,int *reads);
-int _stdcall write_file(char *name,char*buff,int offset,int count,int *writes);
+int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
+int _stdcall create_file(const char *name);
+int _stdcall read_file (const char *name,char*buff,DWORD offset,DWORD count,DWORD *reads);
+int _stdcall write_file(const char *name,const void *buff,DWORD offset,DWORD count,DWORD *writes);
 
 //void exit();
 int _stdcall get_key(int *key);
@@ -94,26 +87,18 @@ int _stdcall remap_key(int key);
 int _cdecl get_button_id();
 
 void delay(int val);
-
 int wait_for_event(int time);
 int wait_for_event_infinite();
+void BeginDraw(void);
+void EndDraw(void);
 
-//void BeginDraw(void);
-//void EndDraw(void);
-
+void _stdcall GetScreenSize(int *x, int*y);
 void _stdcall DrawWindow(int x,int y, int sx, int sy,int workcolor,int style,
                                int captioncolor,int windowtype,int bordercolor);
 void _stdcall debug_out(int ch);
 void _stdcall make_button(int x, int y, int xsize, int ysize, int id, int color);
 void _stdcall draw_bar(int x, int y, int xsize, int ysize, int color);
 void _stdcall write_text(int x,int y,int color,char* text,int len);
-
-void _cdecl mf_init();
-void* _cdecl dlmalloc(size_t size);
-void _cdecl dlfree(void *mem);
-void* _cdecl dlrealloc(void* oldmem, size_t bytes);
-
-
 
 #ifdef __cplusplus
 extern "C"

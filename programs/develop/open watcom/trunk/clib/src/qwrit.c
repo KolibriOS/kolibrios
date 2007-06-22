@@ -34,19 +34,14 @@
 #include <stdio.h>
 #include <errno.h>
 
-//#if defined(__NT__)
-//#elif defined(__OS2__)
-//#else
-//    #include "tinyio.h"
-//#endif
-
 #include "iomode.h"
 #include "fileacc.h"
 #include "rtcheck.h"
 #include "rtdata.h"
 #include "seterrno.h"
-//#include "defwin.h"
 #include "qwrite.h"
+#include "liballoc.h"
+
 
 /*
     Use caution when setting the file pointer in a multithreaded
@@ -56,83 +51,79 @@
     using a critical section object or a mutex object.
  */
 
+typedef struct
+{   DWORD    attr;
+    DWORD    flags;
+    DWORD    cr_time;
+    DWORD    cr_date;
+    DWORD    acc_time;
+    DWORD    acc_date;
+    DWORD    mod_time;
+    DWORD    mod_date;
+    DWORD    size;
+    DWORD    size_high; 
+} FILEINFO;
+
+typedef struct 
+{
+  char     *name;
+  unsigned int offset;
+}__file_handle;
+
+int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
+int _stdcall write_file(const char *name,const void *buff,unsigned offset,unsigned count,unsigned *writes);
+char* getfullpath(const char* path);
 
 int __qwrite( int handle, const void *buffer, unsigned len )
 {
     int             atomic;
-#if defined(__NT__)
-    DWORD           len_written;
-    HANDLE          h;
-    int             error;
+    __file_handle   *fh;
+    unsigned        len_written;
     
-#elif defined(__WARP__)
-#elif defined(__OS2_286__)
-#else
-#endif
-#if !defined(__NT__)
-    tiny_ret_t      rc;
-#endif
 
     __handle_check( handle, -1 );
 
-#if defined(__NT__)
-    h = __getOSHandle( handle );
-#endif
+    fh = (__file_handle*) __getOSHandle( handle );
+
     atomic = 0;
     if( __GetIOMode( handle ) & _APPEND )
     {
-        _AccessFileH( handle );
-        atomic = 1;
-#if defined(__NT__)
-//        if( SetFilePointer( h, 0, NULL, FILE_END ) == -1 )
-//        {
-//            error = GetLastError();
-//            _ReleaseFileH( handle );
-//            return( __set_errno_dos( error ) );
-//        }
-#elif defined(__OS2__)
-#else
-        rc = TinySeek( handle, 0L, SEEK_END );
-#endif
-#if !defined(__NT__)
-        if( TINY_ERROR( rc ) ) {
-            _ReleaseFileH( handle );
-            return( __set_errno_dos( TINY_INFO( rc ) ) );
-        }
-#endif
-    }
-#if defined(__NT__)
+      FILEINFO info;
+        
+      _AccessFileH( handle );
+      atomic = 1;
+      get_fileinfo(fh->name,&info);
+      fh->offset = info.size;
+    };
 
-//    if( !WriteFile( h, buffer, len, &len_written, NULL ) )
-//    {
-//        error = GetLastError();
-//        if( atomic == 1 ) {
-//            _ReleaseFileH( handle );
-//        }
-//        return( __set_errno_dos( error ) );
-//    }
+    if(write_file(fh->name,buffer,fh->offset,len,&len_written))
+    {
+      if ( len_written == 0)
+      {
+        if( atomic == 1 )
+          _ReleaseFileH( handle );
+
+        return (-1);
+      };   
+    };
     
-#elif defined(__OS2__)
-#elif defined(__WINDOWS_386__)
-#else
-    rc = TinyWrite( handle, buffer, len );
-    len_written = TINY_LINFO( rc );
-#endif
+    fh->offset+=len_written;
+        
 
-#if !defined(__NT__)
-    if( TINY_ERROR( rc ) ) {
-        if( atomic == 1 ) {
-            _ReleaseFileH( handle );
-        }
-        return( __set_errno_dos( TINY_INFO( rc ) ) );
-    }
-#endif
-    if( len_written != len ) {
-        __set_errno( ENOSPC );
-    }
     if( atomic == 1 )
     {
         _ReleaseFileH( handle );
     }
     return( len_written );
+}
+
+int write_once(const char *name, void *buffer, unsigned len)
+{   char *path;
+    unsigned count;
+
+    path= getfullpath(name);
+    write_file(path,buffer,0,len,&count);
+    lib_free(path);
+    return count;
+         
 }

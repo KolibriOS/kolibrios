@@ -1168,9 +1168,9 @@ void D_DoomMain (void)
     if (p && p < myargc-1)
     {
         if (M_CheckParm("-cdrom"))
-            sprintf(file, "c:\\doomdata\\"SAVEGAMENAME"%c.dsg",myargv[p+1][0]);
+            sprintf(file, "c:\\doomdata\\doomsav%c.dsg",myargv[p+1][0]);
         else
-            sprintf(file, SAVEGAMENAME"%c.dsg",myargv[p+1][0]);
+            sprintf(file, "doomsav%c.dsg",myargv[p+1][0]);
         G_LoadGame (file);
     }
         

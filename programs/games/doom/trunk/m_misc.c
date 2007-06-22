@@ -29,7 +29,6 @@ rcsid[] = "$Id: m_misc.c,v 1.6 1997/02/03 22:45:10 b1 Exp $";
 
 #include <stdlib.h>
 #include <ctype.h>
-//#include "//kolibc.h"
 
 //extern int access(char *file, int mode);
 
@@ -106,22 +105,29 @@ M_DrawText
 #define O_BINARY 0
 #endif
 
+int write_once(const char *name, void *buffer, unsigned len);
+
 boolean
 M_WriteFile
 ( char const*   name,
   void*         source,
   int           length )
 {
-    FILE       *handle;
+//    FILE       *handle;
     int         count;
         
-    handle = fopen ( name, "wb");
+//    handle = fopen ( name, "wb");
 
-    if (handle == NULL)
-        return false;
+//    if (handle == NULL)
+//        return false;
 
-  //  count = fwrite (source, 1, length, handle);
-    fclose (handle);
+//    printf("writeFile %s, &s, %d \n\r", name, source, length);
+    count = write_once(name, source, length);
+    
+//    printf("%d \n\r", count);
+      
+//    count = fwrite (source, 1, length, handle);
+//    fclose (handle);
         
     if (count < length)
         return false;

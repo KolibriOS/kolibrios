@@ -18,7 +18,7 @@
 // $Log:$
 //
 // DESCRIPTION:
-//	DOOM strings, by language.
+//      DOOM strings, by language.
 //
 //-----------------------------------------------------------------------------
 
@@ -38,7 +38,7 @@
 #endif
 
 // Misc. other strings.
-#define SAVEGAMENAME	"doomsav"
+//#define SAVEGAMENAME    "doomsav"
 
 
 //

@@ -1206,7 +1206,7 @@ void G_DoLoadGame (void)
     char        vcheck[VERSIONSIZE]; 
          
     gameaction = ga_nothing; 
-         
+    
     length = M_ReadFile (savename, &savebuffer); 
     save_p = savebuffer + SAVESTRINGSIZE;
     
@@ -1266,20 +1266,20 @@ G_SaveGame
     strcpy (savedescription, description); 
     sendsave = true; 
 } 
- 
+
 void G_DoSaveGame (void) 
 { 
-    char        name[100]; 
+    char        name[128]; 
     char        name2[VERSIONSIZE]; 
     char*       description; 
     int         length; 
     int         i; 
         
-    sprintf (name,"%d.dsg",savegameslot); 
+    sprintf (name,"doomsav%d.dsg",savegameslot); 
     description = savedescription; 
          
     save_p = savebuffer = screens[1]+0x4000; 
-         
+
     memcpy (save_p, description, SAVESTRINGSIZE); 
     save_p += SAVESTRINGSIZE; 
     memset (name2,0,sizeof(name2)); 
@@ -1305,7 +1305,8 @@ void G_DoSaveGame (void)
          
     length = save_p - savebuffer; 
     if (length > SAVEGAMESIZE) 
-        I_Error ("Savegame buffer overrun"); 
+        I_Error ("Savegame buffer overrun");
+     
     M_WriteFile (name, savebuffer, length); 
     gameaction = ga_nothing; 
     savedescription[0] = 0;              

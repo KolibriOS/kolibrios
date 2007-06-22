@@ -42,22 +42,10 @@ rcsid[] = "$Id: w_wad.c,v 1.5 1997/02/03 16:47:57 b1 Exp $";
 
 extern char *main_file;
 
-#ifdef DLHEAP
-
-void* _cdecl dlmalloc(size_t);
-void  _cdecl dlfree(void*);
-void _cdecl mf_init();
-
-#define malloc dlmalloc
-#define free dlfree
-#define realloc dlrealloc
-
-#endif
-
 size_t FileSize(FILE *handle); 
 
-int _stdcall read_file (char *name, void *buff,
-                        size_t offset, size_t count, size_t *reads);
+//int _stdcall read_file (char *name, void *buff,
+//                        size_t offset, size_t count, size_t *reads);
 
 
 
@@ -196,7 +184,6 @@ void W_AddFile (char *filename)
         length = header.numlumps*sizeof(filelump_t);
 
         fileinfo = alloca(length);
-        
         fseek (handle, header.infotableofs, SEEK_SET);
         fread (fileinfo, 1, length, handle);
         numlumps += header.numlumps;

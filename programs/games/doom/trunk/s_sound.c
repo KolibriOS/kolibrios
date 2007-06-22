@@ -256,11 +256,23 @@ void sound_proc(void)
      };      
   }
 
-    
-  if(ver< SOUND_VERSION)
+
+  if( SOUND_VERSION>(ver&0xFFFF))
+  {
+     printf("Sound version mismatch\n\r");
+     printf("Current version: %d, required version %d\n\r",
+             ver&0xFFFF, SOUND_VERSION);
+     _asm
+     {
+       mov eax, -1
+       int 0x40
+     };      
+  };
+      
+  if(SOUND_VERSION<(ver >> 16))
   {  
-     printf("Sound service version mismatch\n\r");
-     printf("Installed version: %d, required version %d\n\r",
+     printf("Sound version obsolete\n\r");
+     printf("Compatible version: %d, required version %d\n\r",
              ver, SOUND_VERSION);
      _asm
      {

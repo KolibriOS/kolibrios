@@ -67,6 +67,7 @@ typedef struct
 } FILEINFO;
 
 int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
+int _stdcall create_file(const char *name);
 
 
 typedef struct 
@@ -76,7 +77,7 @@ typedef struct
 }__file_handle;
 
 
-static char* getfullpath(const char* path)
+char* getfullpath(const char* path)
 {
     int prev_is_slash=0;
     int len=0, depth=0, i;
@@ -177,20 +178,27 @@ int access(const char *path, int mode)
 
 }
 
-
-static HANDLE __createFileHandle(const CHAR_TYPE *name)
+static HANDLE __openFileHandle(const CHAR_TYPE *name, int mode)
 {
   FILEINFO info;
   __file_handle *handle;
   char *path;
-
+  int err;
+  
   path = getfullpath(name);
   
-  if(get_fileinfo(path,&info))
+  if(err=get_fileinfo(path,&info))
   {
-//    printf("failed getfileinfo %s\n\r", path);  
-    lib_free(path); 
-    return (HANDLE)-1;
+//    printf("failed getfileinfo %s\n\r", path);
+      
+    if(mode & O_CREAT)
+      err=create_file(path);
+      
+    if(err)
+    {        
+      lib_free(path); 
+      return (HANDLE)-1;
+    };
   };
   
   if ( !(handle=(__file_handle*)lib_malloc(sizeof( __file_handle) )))
@@ -203,7 +211,6 @@ static HANDLE __createFileHandle(const CHAR_TYPE *name)
 
   return (HANDLE)handle;
 };    
-
 
 
 static int __F_NAME(_sopen,__wsopen)( const CHAR_TYPE *name, int mode, int share, va_list args )
@@ -225,24 +232,12 @@ static int __F_NAME(_sopen,__wsopen)( const CHAR_TYPE *name, int mode, int share
 
     /*** Open the file ***/
         
-    handle = __createFileHandle( name);
+    handle = __openFileHandle( name, mode);
     
     if( handle==(HANDLE)-1 )
     {
-
-      printf("handle = -1 \n\r");
-        
-      if( mode&O_CREAT )
-      {
-//             handle = CreateFileA( name, desired_access,
-//                                   share_mode, NULL, create_disp,
-//                                    fileattr, NULL );
-      }
-      if( handle == (HANDLE)-1 )
-      {
-         __freePOSIXHandle( hid );
-         return( -1 ); //error
-      }
+      __freePOSIXHandle( hid );
+      return( -1 ); //error
     }
 
 // Now use the slot we got.

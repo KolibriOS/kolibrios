@@ -7,8 +7,7 @@ extern "C"
 {
 #endif
 
-#define SOUND_VERSION 5
-
+#define SOUND_VERSION 0x0100
 #define PCM_ALL       0
 
 #define PCM_OUT       0x08000000
@@ -58,7 +57,7 @@ extern "C"
 #define SND_CREATE_BUFF     1
 #define SND_DESTROY_BUFF    2
 #define SND_SETFORMAT       3
-#define SND_GETFORMAT       4 
+#define SND_GETFORMAT       4
 #define SND_RESET           5
 #define SND_SETPOS          6
 #define SND_GETPOS          7
@@ -81,8 +80,8 @@ int _stdcall  InitSound(int *version);
 int _stdcall  CreateBuffer(unsigned int format,int size,SNDBUF *buf);
 int _stdcall  DestroyBuffer(SNDBUF hBuff);
 
-int _stdcall  SetFormat(SNDBUF hBuff, unsigned int format);                        
-int _stdcall  GetFormat(SNDBUF hBuff, unsigned int *format);                        
+int _stdcall  SetFormat(SNDBUF hBuff, unsigned int format);
+int _stdcall  GetFormat(SNDBUF hBuff, unsigned int *format);
 
 int _stdcall  ResetBuffer(SNDBUF hBuff, unsigned int flags);
 int _stdcall  SetBufferPos(SNDBUF hBuff, int offset);
@@ -94,12 +93,12 @@ int _stdcall  SetBuffer(SNDBUF hBuff,void* buff,
 int _stdcall  WaveOut(SNDBUF hBuff,void *buff, int size);
 int _stdcall  PlayBuffer(SNDBUF hBuff,unsigned int flags);
 int _stdcall  StopBuffer(SNDBUF hBuff);
-                        
+
 int _stdcall  SetVolume(SNDBUF hBuff, int left, int right);
 int _stdcall  GetVolume(SNDBUF hBuff, int *left, int *right);
 int _stdcall  SetPan(SNDBUF hBuff, int pan);
 int _stdcall  GetPan(SNDBUF hBuff, int *pan);
-                        
+
 int _stdcall  GetMasterVol(int* vol);
 int _stdcall  SetMasterVol(int vol);
 
