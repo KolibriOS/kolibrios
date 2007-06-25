@@ -142,7 +142,7 @@ load_picture:
 	 cmp [type],'GI'
 	 jne no_unpakcing_file_1
 	   ;GIF DECODER
-	   sub edi,12
+	   sub edi,8
 	   call ReadGIF
 	   mov [save_flag],1
 	 no_unpakcing_file_1:

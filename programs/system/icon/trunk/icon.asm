@@ -40,7 +40,7 @@ START:                       ; start of execution
     mov   edi,strip_file
     mov   eax,icon_data
     call  ReadGIF
-    movzx eax,word[strip_file+10]
+    mov  eax,dword[edi+4]
     shr  eax,5
     mov  [icon_count],eax
     call load_ic
@@ -727,7 +727,7 @@ draw_icon:
     and  eax,0xfffffff8
     push eax
     imul eax,ICON_SIZE
-    lea  ebx,[strip_file+12+eax]
+    lea  ebx,[strip_file+8+eax]
     mov  ecx,8
     mov  edx,(33-18) shl 16+238
   .nxt:
@@ -1078,10 +1078,10 @@ draw_picture:
           cmp  eax,[icon_count]
           ja  toponly.ex
           imul eax,(32*3*32)
-          lea  edi,[eax+strip_file+12]
+          lea  edi,[eax+strip_file+8]
     xor  ebx,ebx
     xor  ecx,ecx
-    mov  esi,edi;strip_file+12+(32*3*32)*2
+    mov  esi,edi;strip_file+8+(32*3*32)*2
 
     mov  [pixpos],0
   newb:
@@ -1376,5 +1376,7 @@ sel_icon1  rd 1
 icon_count rd 1
 gif_file  rb  GIF_SIZE
 strip_file rb RAW_SIZE
+
+IncludeUGlobals
 
 I_END:

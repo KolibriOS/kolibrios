@@ -75,7 +75,7 @@ PL_show:
    test [flag],FL_BOTTRED
    jz   .nobott
    pusha
-   mcall 7,hdr_raw+12+275*16*3,<275,12>,<10,(WND_HEIGHT-20)>
+   mcall 7,hdr_raw+8+275*16*3,<275,12>,<10,(WND_HEIGHT-20)>
    mov  ebp,main_coo2
    mov  esi,10 shl 16
    mov  edi,(WND_HEIGHT-22)shl 16

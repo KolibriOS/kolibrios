@@ -22,7 +22,8 @@ org 0x0
 
 
   include '..\..\..\macros.inc'
-  include 'giflib.inc'
+  COLOR_ORDER equ MENUETOS
+  include 'gif_lite.inc'
   include 'bmplib.inc'
   include 'dialog.inc'
   include 'dialog2.inc'
@@ -274,4 +275,4 @@ file 'zoom.cur'
 
 I_END:
 
-
+IncludeUGlobals

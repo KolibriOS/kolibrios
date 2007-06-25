@@ -411,6 +411,8 @@ end if
         movsb
         movsb
         movsb
+	mov  byte [edi],0
+	inc  edi
     end if
     end if
 

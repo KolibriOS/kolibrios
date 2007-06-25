@@ -49,8 +49,6 @@ include '..\..\..\macros.inc'
 include 'ascl.inc'
 include 'ascgl.inc'
 
-    gif_hash_offset = gif_hash
-
 START:		    ; start of execution
 ; //// Willow
 ;    mov eax,58
@@ -1104,6 +1102,7 @@ cyc:
     popad
     ret
 
+iglobal
 ;HELP TEXT
 help_text:
        ;0123456789012345678901234567890123456789
@@ -1131,7 +1130,7 @@ info_text:
     db '        Create by Pavlushin Evgeni      '
     db 'with ASCL library special for Kolibri OS'
     db ' www.deck4.narod.ru      waptap@mail.ru '
-
+endg
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -1380,10 +1379,12 @@ isb4:
     outcount [listsize],294,25,cl_Black,4*65536
     jmp isb5
 
+iglobal
 head_dlg: db 'OPEN FILE'
       db 'SAVE FILE'
 but_dlg:  db 'OPEN'
       db 'SAVE'
+endg
 
 nob5:
 
@@ -1944,8 +1945,8 @@ extloo:
     mov ecx,cl_Black
     mov edx,file_text_label
     call drawmenu
-    jmp no_drawhftext
 
+iglobal
 file_text_label:
     db	     '    Open    '
     db	     '    Copy    '
@@ -1955,6 +1956,7 @@ file_text_label:
     db	     '    Edit    '
     db	     '            '
     db	     '    Exit    '
+endg
 
 no_drawhftext:
 
@@ -1969,13 +1971,14 @@ no_drawhftext:
     mov ecx,cl_Black
     mov edx,view_text_label
     call drawmenu
-    jmp no_drawhvtext
 
+iglobal
 view_text_label:
     db	     '  Name sort '
     db	     '  Ext. sort '
     db	     '  Size sort '
     db	     '  Date sort '
+endg
 
 no_drawhvtext:
 
@@ -1991,11 +1994,12 @@ no_drawhvtext:
     mov ecx,cl_Black
     mov edx,info_text_label
     call drawmenu
-    jmp no_drawhitext
 
+iglobal
 info_text_label:
     db	     '   Help     '
     db	     '   About    '
+endg
 
 no_drawhitext:
 
@@ -2014,6 +2018,7 @@ no_flick:
 
 ;FILE LIST PARAMETRS
 
+iglobal
 listx	    dd 15
 listy	    dd 72
 listxsize dd 350
@@ -2034,7 +2039,7 @@ urlx	 dd 10
 urly	 dd 20
 urlxsize dd 350
 urlysize dd 12
-
+endg
 
 drawmenu:
     mov eax,4
@@ -2559,6 +2564,8 @@ life2     db '/sys/DEMOS/LIFE2',0
 
 more_char db 10h
 
+IncludeIGlobals
+
 fileinfo_start:
         dd      7
         dd      0
@@ -2576,14 +2583,14 @@ clipfile_info:
         dd      0
         dd      ?
         dd      paramtest
-        db      '/sys/CLIPFILE.TXT',0
+        db      '/SYS/CLIPFILE.TXT',0
 copyr_run:
         dd      7
         dd      0
         dd      copyr_param
         dd      0
         dd      0
-        db      '/sys/COPYR',0
+        db      '/SYS/COPYR',0
 
 fileinfoblock:
    dd 0x1    ; read folder
@@ -2643,9 +2650,6 @@ tempimg:    ;reserve ram for images
 rb 400*100*3+8	     ;for picture
 rb 8000
 
-gif_hash:
-rd 4096
-
 MYPID:
 rd 8
 
@@ -2655,6 +2659,8 @@ paramtest:
 rb 1024
 filedir:
 rb 1024
+
+IncludeUGlobals
 
 procinfo process_information
 sc system_colors

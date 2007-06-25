@@ -4,7 +4,6 @@
 load_icons:
 	 mov esi,panel_picture
 	 mov edi,[ScreenPointer]
-	 mov eax,edi
 	 add edi,(1200*1000*3)
 	 ;mov edi,[PointerToIcons]
 	 call ReadGIF
@@ -21,7 +20,7 @@ draw_icons:
 	 shl edx,16
 	 add edx,[Icon_Y]
 	 mov ebx,[ScreenPointer]
-	 add ebx,(1200*1000*3)+12
+	 add ebx,(1200*1000*3)+8
 	 mov eax,7
 	 mov ecx,417*65536+46
 	 mcall

@@ -8,7 +8,7 @@
 ;
 ;   Willow - greatly srinked code size by using GIF texture and FPU to calculate sine table
 ;
-;   !!!! Don't use GIF.INC in your apps - it's modified for FREE3D !!!!
+;   !!!! Don't use GIF_LITE.INC in your apps - it's modified for FREE3D !!!!
 ;
 ;   Heavyiron - new 0-function of drawing window from kolibri (do not work correctly with menuet)
 
@@ -37,12 +37,11 @@ use32
 include 'lang.inc'
 include '..\..\..\macros.inc'
 COLOR_ORDER equ OTHER
-include 'gif.inc'
+include 'gif_lite.inc'
 
 START:                          ; start of execution
 		mov  esi,textures
-		mov  edi,ceil
-		mov  eax,sinus
+		mov  edi,ceil-8
 		call ReadGIF
 		mov  esi,sinus
 		mov  ecx,360*10
@@ -151,10 +150,7 @@ s_up:             ; walk forward (key or mouse)
 
 
     mov ecx,[vheading]
-;    imul ecx,4
-;    add ecx,sinus
-    lea ecx, [sinus+ecx*4]
-    mov edi,[ecx]
+    mov edi,[sinus+ecx*4]
 
     mov edx,[vheading]
 ;    imul edx,4
@@ -193,10 +189,7 @@ s_down:                    ; walk backward
     mov ebx,[vpy]
 
     mov ecx,[vheading]
-;    imul ecx,4
-;    add ecx,sinus
-    lea ecx, [sinus+ecx*4]
-    mov edi,[ecx]
+    mov edi,[sinus+ecx*4]
 
     mov edx,[vheading]
 ;    imul edx,4
@@ -1087,5 +1080,6 @@ lasty:
  dd ?;-
 
 I_END:
+IncludeUGlobals
 sinus rd 360*10
 eosinus:

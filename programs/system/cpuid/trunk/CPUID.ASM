@@ -35,8 +35,6 @@ include 'caches.inc'          ;(L1 and L2 cashes decoding for Intel)
 include 'multipli.inc'        ;(multiplier decoding)
 include 'features.inc'        ;(features decoding)
 
-include 'gif2img.inc'         ;macros to convert gif to img
-
 include 'rsatest.inc'
 include 'variable.inc'
 
@@ -1715,10 +1713,11 @@ Text 15,250,,brandid, brandidlen-brandid
     ret 		; 
 
 load_gif:
-	mov	edi, img_area
+        mov     edi, img_area
 load_gif2:
-	gif2img esi,edi
-;	ret
+
+COLOR_ORDER equ MENUETOS
+include 'gif_lite.inc'        ; parse GIF files
 
 ; DATA AREA
 
@@ -2134,8 +2133,6 @@ rb 201*49*3+8	   ; image resolution (bits to reserve)
 img_area2:	   ; image is going to be unpacked to here
 rb 93*24*3+8	   ; image resolution (bits to reserve)
 
-gif_hash_area:
-rd 4096+1	   ;hash area size for unpacking gif
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 I_END:
@@ -2148,19 +2145,7 @@ align 4
   iter rd 1
   openkey rd 1
 
-; GIF unpacker data
-    globalColor dd ?
-    img_count dd ?
-    cur_info dd ?	 ; image table pointer
-    codesize dd ?
-    compsize dd ?
-    bit_count dd ?
-    CC dd ?
-    EOI dd ?
-    Palette dd ?
-    block_ofs dd ?
-    table_ptr dd ?
-
+IncludeUGlobals
 
 ost dd ?
 sot dd ?

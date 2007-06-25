@@ -360,10 +360,7 @@ oelemsize = 20
     mcall
 
 startgame:
-    gif_hash_offset = gif_hash_area
     giftoimg gif_file_area2,canvas
-
-    gif_hash_offset = gif_hash_area
     giftoimg gif_file_area,img_area
 
     getimg img_area,0,0,32,32,ship
@@ -1275,17 +1272,14 @@ imgsize:
 ;dd 20  ;size of element in bytes
 ;rb 400*20
 
-
 keymap:
 rb 1000
 
 ;gif_file_area ~21500
 gif_file_area2:
 file 'phenix.gif'
-rb 50
 gif_file_area:
 file 'star2.gif';include gif file
-rb 50          ;50 bytes temp back zone
 img_area:
 rb 256*64*3+8
 ship:
@@ -1307,8 +1301,7 @@ rb 32*32*3+8
 box:
 rb 32*32*3+8
 
-gif_hash_area:
-rd 4096+1      ;hash area size for unpacking GIF
+IncludeUGlobals
 
 massive:
 rd massize  ;elements num

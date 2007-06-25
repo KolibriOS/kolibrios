@@ -83,15 +83,12 @@ START:
     mcall 40,1000111b
     mov  esi,btns
     mov  edi,btn_raw
-    mov  eax,hash_table
     call ReadGIF
     mov  esi,hdrimg
     mov  edi,hdr_raw
-    mov  eax,hash_table
     call ReadGIF
     mov  esi,bottom
     mov  edi,bottom_raw
-    mov  eax,hash_table
     call ReadGIF
     call respawn
     mcall 9,prcinfo,-1
@@ -385,12 +382,11 @@ sel_track  db ?
 ipcmsg	   db ?
 fnbuf:
 	   rb 1024
-btn_raw    rb 222*17*3+12
-hdr_raw    rb 275*29*3+12
-bottom_raw rb 25*378*3+12
+btn_raw    rb 222*17*3+8
+hdr_raw    rb 275*29*3+8
+bottom_raw rb 25*378*3+8
 	   rb 4
 playlist   rb 256*LISTITEMS
-hash_table:
-	   rd 4096
+IncludeUGlobals
 dir_table  rb 32+304
 workarea:

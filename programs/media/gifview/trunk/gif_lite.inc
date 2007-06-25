@@ -1,39 +1,66 @@
-; GIF LITE v2.0 by Willow
+; GIF LITE v3.0 by Willow
 ; Written in pure assembler by Ivushkin Andrey aka Willow
+; Modified by Diamond
 ;
 ; This include file will contain functions to handle GIF image format
 ;
 ; Created: August 15, 2004
-; Last changed: August 25, 2006
+; Last changed: June 24, 2007
 
-; Change COLOR_ORDER in your program
-; if colors are displayed improperly
+; Requires kglobals.inc (iglobal/uglobal macro)
+; (program must 'include "kglobals.inc"' and say 'IncludeUGlobal'
+; somewhere in uninitialized data area).
 
-if ~ (COLOR_ORDER in <MENUETOS,OTHER>)
+; Configuration: [changed from program which includes this file]
+; 1. The constant COLOR_ORDER: must be one of
+;    PALETTE - for 8-bit image with palette (sysfunction 65)
+;    MENUETOS - for MenuetOS and KolibriOS color order (sysfunction 7)
+;    OTHER - for standard color order
+; 2. Define constant GIF_SUPPORT_INTERLACED if you want to support interlaced
+;    GIFs.
+; 3. Single image mode vs multiple image mode:
+;    if the program defines the variable 'gif_img_count' of type dword
+;    somewhere, ReadGIF will enter multiple image mode: gif_img_count
+;    will be initialized with image count, output format is GIF_list,
+;    the function GetGIFinfo retrieves Nth image info. Otherwise, ReadGIF
+;    uses single image mode: exit after end of first image, output is
+;    <dd width,height, times width*height[*3] db image>
+
+if ~ (COLOR_ORDER in <PALETTE,MENUETOS,OTHER>)
 ; This message may not appear under MenuetOS, so watch...
-  display 'Please define COLOR_ORDER: MENUETOS or OTHER',13,10
+  display 'Please define COLOR_ORDER: PALETTE, MENUETOS or OTHER',13,10
 end if
 
+if defined gif_img_count
 ; virtual structure, used internally
 
-struc GIF_list
-{
-    .NextImg rd 1
-    .Left   rw 1
-    .Top    rw 1
-    .Width  rw 1
-    .Height rw 1
-}
+struct GIF_list
+    NextImg rd 1
+    Left   rw 1
+    Top    rw 1
+    Width  rw 1
+    Height rw 1
+    Delay  rd 1
+    Displacement rd 1 ; 0 = not specified
+                       ; 1 = do not dispose
+                       ; 2 = restore to background color
+                       ; 3 = restore to previous
+if COLOR_ORDER eq PALETTE
+    Image rd 1
+end if
+ends
 
-struc GIF_info
-{
-    .Left   rw 1
-    .Top    rw 1
-    .Width  rw 1
-    .Height rw 1
-}
-
-_null fix 0x1000
+struct GIF_info
+    Left   rw 1
+    Top    rw 1
+    Width  rw 1
+    Height rw 1
+    Delay  rd 1
+    Displacement rd 1
+if COLOR_ORDER eq PALETTE
+    Palette rd 1
+end if
+ends
 
 ; ****************************************
 ;   FUNCTION GetGIFinfo - retrieve Nth image info
@@ -56,13 +83,24 @@ GetGIFinfo:
     jz    .error
     loop  .lp
   .eloop:
-    add   esi,4
+    lodsd
     movsd
     movsd
+    movsd
+    movsd
+if COLOR_ORDER eq PALETTE
+    lodsd
+    mov   [edi],esi
+else
     mov   eax,esi
+end if
   .error:
     pop   edi ecx esi
     ret
+
+end if
+
+_null fix 0x1000
 
 ; ****************************************
 ;   FUNCTION ReadGIF - unpacks GIF image
@@ -70,72 +108,109 @@ GetGIFinfo:
 ; in:
 ;   esi - pointer to GIF file in memory
 ;   edi - pointer to output image list
-;   eax - pointer to work area (MIN 16 KB!)
 
 ; out:
 ;   eax - 0, all OK;
 ;   eax - 1, invalid signature;
 ;   eax >=8, unsupported image attributes
 ;
-;   ecx - number of images
 
 ReadGIF:
     push esi edi
-    mov  [.table_ptr],eax
     mov  [.cur_info],edi
     xor  eax,eax
     mov  [.globalColor],eax
-    mov  [.img_count],eax
+if defined gif_img_count
+    mov  [gif_img_count],eax
+    mov  [.anim_delay],eax
+    mov  [.anim_disp],eax
+end if
     inc  eax
     cmp  dword[esi],'GIF8'
     jne  .ex            ; signature
     mov  ecx,[esi+0xa]
-    inc  eax
     add  esi,0xd
     mov  edi,esi
-    bt   ecx,7
-    jnc  .nextblock
+    test cl,cl
+    jns  .nextblock
     mov  [.globalColor],esi
     call .Gif_skipmap
   .nextblock:
     cmp  byte[edi],0x21
     jne  .noextblock
     inc  edi
+if defined gif_img_count
     cmp  byte[edi],0xf9 ; Graphic Control Ext
     jne  .no_gc
+    movzx eax,word [edi+3]
+    mov  [.anim_delay],eax
+    mov  al,[edi+2]
+    shr  al,2
+    and  eax,7
+    mov  [.anim_disp],eax
     add  edi,7
     jmp  .nextblock
   .no_gc:
-    cmp  byte[edi],0xfe ; Comment Ext
-    jne  .no_comm
+end if
     inc  edi
   .block_skip:
     movzx eax,byte[edi]
     lea  edi,[edi+eax+1]
-    cmp  byte[edi],0
+    test eax,eax
     jnz  .block_skip
-    inc  edi
     jmp  .nextblock
-  .no_comm:
-    cmp  byte[edi],0xff ; Application Ext
-    jne  .nextblock
-    add  edi,13
-    jmp  .block_skip
   .noextblock:
+    mov  al,8
     cmp  byte[edi],0x2c    ; image beginning
     jne  .ex
-    inc  [.img_count]
+if defined gif_img_count
+    inc  [gif_img_count]
+end if
     inc  edi
     mov  esi,[.cur_info]
+if defined gif_img_count
     add  esi,4
+end if
     xchg esi,edi
+if defined GIF_SUPPORT_INTERLACED
+    movzx ecx,word[esi+4]
+    mov  [.width],ecx
+    movzx eax,word[esi+6]
+    imul eax,ecx
+if ~(COLOR_ORDER eq PALETTE)
+    lea  eax,[eax*3]
+end if
+    mov  [.img_end],eax
+    inc  eax
+    mov  [.row_end],eax
+    and  [.pass],0
+    test byte[esi+8],40h
+    jz   @f
+if ~(COLOR_ORDER eq PALETTE)
+    lea  ecx,[ecx*3]
+end if
+    mov  [.row_end],ecx
+@@:
+end if
+if defined gif_img_count
     movsd
     movsd
+    mov  eax,[.anim_delay]
+    stosd
+    mov  eax,[.anim_disp]
+    stosd
+else
+    movzx eax,word[esi+4]
+    stosd
+    movzx eax,word[esi+6]
+    stosd
+    add   esi,8
+end if
     push edi
-    movzx ecx,word[esi]
+    mov  ecx,[esi]
     inc  esi
-    bt   ecx,7
-    jc   .uselocal
+    test cl,cl
+    js   .uselocal
     push [.globalColor]
     mov  edi,esi
     jmp  .setPal
@@ -147,11 +222,12 @@ ReadGIF:
     inc  ecx
     mov  [.codesize],ecx
     dec  ecx
+if ~(COLOR_ORDER eq PALETTE)
     pop  [.Palette]
+end if
     lea  esi,[edi+1]
-    mov  edi,[.table_ptr]
+    mov  edi,.gif_workarea
     xor  eax,eax
-    cld
     lodsb               ; eax - block_count
     add  eax,esi
     mov  [.block_ofs],eax
@@ -159,16 +235,40 @@ ReadGIF:
     mov  eax,1
     shl  eax,cl
     mov  [.CC],eax
+    mov  ecx,eax
     inc  eax
     mov  [.EOI],eax
-    lea  ecx,[eax-1]
     mov  eax, _null shl 16
   .filltable:
     stosd
     inc  eax
     loop .filltable
+if COLOR_ORDER eq PALETTE
+    pop  eax
     pop  edi
+    push edi
+    scasd
+    push esi
+    mov  esi,eax
+    mov  ecx,[.CC]
+@@:
+    lodsd
+    dec  esi
+    bswap eax
+    shr  eax,8
+    stosd
+    loop @b
+    pop  esi
+    pop  eax
+    mov  [eax],edi
+else
+    pop  edi
+end if
+if defined GIF_SUPPORT_INTERLACED
     mov  [.img_start],edi
+    add  [.img_end],edi
+    add  [.row_end],edi
+end if
   .reinit:
     mov  edx,[.EOI]
     inc  edx
@@ -189,10 +289,7 @@ ReadGIF:
     je   .end
     call .Gif_output
   .add:
-    push eax
-    mov  eax,[.table_ptr]
-    mov  [eax+edx*4],ebx
-    pop  eax
+    mov  dword [.gif_workarea+edx*4],ebx
     cmp  edx,0xFFF
     jae  .cycle
     inc  edx
@@ -212,6 +309,10 @@ ReadGIF:
     pop  ebx eax
     jmp  .add
   .end:
+if defined GIF_SUPPORT_INTERLACED
+    mov  edi,[.img_end]
+end if
+if defined gif_img_count
     mov  eax,[.cur_info]
     mov  [eax],edi
     mov  [.cur_info],edi
@@ -225,9 +326,10 @@ ReadGIF:
   .continue:
     cmp  byte[edi],0x3b
     jne  .nextblock
+    xchg esi,edi
+    and  dword [eax],0
+end if
     xor  eax,eax
-    stosd
-    mov  ecx,[.img_count]
   .ex:
     pop  edi esi
     ret
@@ -281,7 +383,7 @@ ReadGIF:
 
 .Gif_output:
     push esi eax edx
-    mov  edx,[.table_ptr]
+    mov  edx,.gif_workarea
   .next:
     push word[edx+eax*4]
     mov  ax,word[edx+eax*4+2]
@@ -293,8 +395,11 @@ ReadGIF:
   .loop2:
     pop  ax
 
-    lea  esi,[eax+eax*2]
-    add  esi,[.Palette]
+    if COLOR_ORDER eq PALETTE
+        stosb
+    else
+        lea  esi,[eax+eax*2]
+        add  esi,[.Palette]
 
     if COLOR_ORDER eq MENUETOS
         mov  esi,[esi]
@@ -303,23 +408,78 @@ ReadGIF:
         mov  [edi],esi
         add  edi,3
     else
-        movsw
+        movsb
+        movsb
         movsb
     end if
+    end if
+
+if defined GIF_SUPPORT_INTERLACED
+    cmp  edi,[.row_end]
+    jb   .norowend
+    mov  eax,[.width]
+if ~(COLOR_ORDER eq PALETTE)
+    lea  eax,[eax*3]
+end if
+    push eax
+    sub  edi,eax
+    add  eax,eax
+    cmp  [.pass],3
+    jz   @f
+    add  eax,eax
+    cmp  [.pass],2
+    jz   @f
+    add  eax,eax
+@@:
+    add  edi,eax
+    pop  eax
+    cmp  edi,[.img_end]
+    jb   .nextrow
+    mov  edi,[.img_start]
+    inc  [.pass]
+    add  edi,eax
+    cmp  [.pass],3
+    jz   @f
+    add  edi,eax
+    cmp  [.pass],2
+    jz   @f
+    add  edi,eax
+    add  edi,eax
+@@:
+.nextrow:
+    add  eax,edi
+    mov  [.row_end],eax
+    xor  eax,eax
+.norowend:
+end if
 
     loop .loop2
     pop  edx eax esi
     ret
 
-    .globalColor rd 1
-    .img_count rd 1
-    .cur_info rd 1        ; image table pointer
-    .img_start rd 1
-    .codesize rd 1
-    .compsize rd 1
-    .bit_count rd 1
-    .CC rd 1
-    .EOI rd 1
-    .Palette rd 1
-    .block_ofs rd 1
-    .table_ptr rd 1
+uglobal
+align 4
+    ReadGIF.globalColor rd 1
+    ReadGIF.cur_info rd 1        ; image table pointer
+    ReadGIF.codesize rd 1
+    ReadGIF.compsize rd 1
+    ReadGIF.bit_count rd 1
+    ReadGIF.CC rd 1
+    ReadGIF.EOI rd 1
+if ~(COLOR_ORDER eq PALETTE)
+    ReadGIF.Palette rd 1
+end if
+    ReadGIF.block_ofs rd 1
+if defined GIF_SUPPORT_INTERLACED
+    ReadGIF.row_end rd 1
+    ReadGIF.img_end rd 1
+    ReadGIF.img_start rd 1
+    ReadGIF.pass rd 1
+    ReadGIF.width rd 1
+end if
+if defined gif_img_count
+    ReadGIF.anim_delay rd 1
+    ReadGIF.anim_disp rd 1
+end if
+    ReadGIF.gif_workarea rb 16*1024
+endg

@@ -49,7 +49,7 @@ draw_window:
     xor  eax,eax
     mov  ebx,100*65536+275
     mov  ecx,200*65536+WND_HEIGHT
-    mov  edi,hdr_raw+12
+    mov  edi,hdr_raw+8
     mov  ebp,[coo]
     test [flag],FL_HIDDEN
     jz   .nohide1
@@ -126,7 +126,7 @@ draw_window:
     test [flag],FL_HIDDEN
     jnz  .nohide2
     mov  eax,7
-    mov  ebx,btn_raw+12
+    mov  ebx,btn_raw+8
     mov  ecx,BTNS_SIZE
     mov  edx,BTNS_XY
     mcall
@@ -254,7 +254,7 @@ draw_bottom:
     mov  ecx,5
     mov  esi,bot_btn
     push esi
-    mov  ebx,bottom_raw+12
+    mov  ebx,bottom_raw+8
     xor  eax,eax
   .nxt:
     push ecx
@@ -323,7 +323,7 @@ draw_popup:
     push edx
   .noadj3:
     imul ebx,eax,BOTT_S
-    add  ebx,bottom_raw+12
+    add  ebx,bottom_raw+8
     push ecx
   .nxt:
     push ecx

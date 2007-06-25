@@ -23,19 +23,16 @@ use32
   dd     0x01
   dd     START
   dd     I_END
-  dd     0x300000
-  dd     0x27fff0
+  dd     0x400000
+  dd     0x400000
   dd     filename ;0x0
   dd     0x0
 
 include 'lang.inc'
 include '..\..\..\macros.inc' ; decrease code size (optional)
-include 'debug.inc'
-COLOR_ORDER equ MENUETOS
 
-DELAY equ 20         ; animation speed
-
-;include '/hd/1/gif/gif_lite.inc'
+COLOR_ORDER equ PALETTE
+GIF_SUPPORT_INTERLACED = 1
 include 'gif_lite.inc'
 
 START:
@@ -43,17 +40,17 @@ START:
     jne openfile2
 ;    jmp openfile2
 openfile:
-    and  [entered],0
     xor  eax,eax
-    mov  [imgcount],eax
+    mov  [entered], eax
+    mov  [gif_img_count],eax
     mov  esi,fn_input
     mov  edi,filename
     mov  ecx,[inp_pos]
     rep  movsb
     stosb
 openfile2:
-    mov  eax,70
     mov  ebx,file_info
+    mov  eax,70
     mcall
     cmp  eax,6
     je   temp
@@ -63,9 +60,8 @@ temp:
 ;    cmp  ebx,64
 ;    jbe  ok2
 
-    and  [entered],0
     xor  eax,eax
-    mov  [imgcount],eax
+    mov  [entered], eax
     mov  esi,filename
     mov  edi,fn_input
     mov  ecx,256/4  ;[filename_len]
@@ -73,12 +69,9 @@ temp:
 
     mov  edi,fn_input
     mov  ecx,256
-    xor  eax,eax
     repne scasb
     sub  edi,fn_input
-    dec  edi
     mov  [inp_pos],edi
-    inc  [inp_pos]
 
 ;    test eax,eax
 ;    jnz  .ok2
@@ -86,36 +79,67 @@ temp:
 ;    jbe  .ok2
     mov  esi,workarea
     mov  edi,Image
-    mov  eax,hashtable
     call ReadGIF
     test eax,eax
     jz   .ok
-    xor  ecx,ecx
+    and  [gif_img_count], 0
   .ok:
-    mov  [imgcount],ecx
   ok2:
     and  dword[img_index],0
 
-    mov  eax,48
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
+    mov  eax,48
     mcall
 
 red:
 
-    call draw_window
+;   *********************************************
+;   *******  éèêÖÑÖãÖçàÖ à éíêàëéÇäÄ éäçÄ *******
+;   *********************************************
+
+draw_window:
+
+    mov  ebx,1
+    mov  eax,12
+    mcall
+
+    xor  eax,eax
+    mov  ebx,50*65536+700
+    mov  ecx,50*65536+500
+    mov  edx,[sc.work]
+    or   edx,0x33000000
+    mov  edi,title
+    mcall
+
+    call draw_input
+
+    xor  ecx,ecx
+    call draw_subimage
+    cmp  [gif_img_count],1
+    jz   @f
+
+    mov  ecx,[img_index]
+    call draw_subimage
+@@:
+
+    mov  ebx,2
+    mov  eax,12
+    mcall
 
 still:
-        cmp     [imgcount], 1
-        jnz     .delay
-        mov     eax, 10
-        int     0x40
+        cmp     [gif_img_count], 1
+        jbe     .infinite
+        mov     ebx, [cur_anim_delay]
+        test    ebx, ebx
+        jz      .infinite
+        mov     eax, 23
+        mcall
         jmp     @f
-.delay:
-    mov  ebx,DELAY
-    mov  eax,23
-    mcall
+.infinite:
+        mov     eax, 10
+        mcall
 @@:
         dec     eax
         jz      red
@@ -123,7 +147,7 @@ still:
         jz      key
         dec     eax
         jz      button
-    mov  eax,[imgcount]
+    mov  eax,[gif_img_count]
     cmp  eax,1
     je   still
     inc  [img_index]
@@ -143,33 +167,31 @@ still:
     jmp  still
 
   button:
-    mov  eax,17
-    mcall
-
+    mcall 17
     cmp  ah,1
-    jne  noclose
+    jnz  wait_input
+
   _close:
     or   eax,-1
     mcall
 
-  noclose:
   is_input:             ; simple input line with backspace feature
     inc  [entered]      ; sorry - no cursor
   wait_input:
     call draw_input
     mov  eax,10
     mcall
-    cmp  eax,2
+    cmp  al,2
     jne  still
     mov  edi,[inp_pos]
-    mov  eax,2
+;    mov  eax,2
     mcall
     shr  eax,8
-    cmp  eax,27
+    cmp  al,27
     je   still
-    cmp  eax,13
+    cmp  al,13
     je   openfile
-    cmp  eax,8
+    cmp  al,8
     je   backsp
     mov  [fn_input+edi],al
     inc  [inp_pos]
@@ -185,80 +207,44 @@ still:
 ;******* DRAW CONTENTS OF INPUT LINE ****
 ;****************************************
 draw_input:
-    push edi
+    mov  esi,0xe0e0e0
     cmp  [entered],0
     jne  highlight
     mov  esi,0x00aabbcc
-    jmp  di_draw
   highlight:
-    mov  esi,0xe0e0e0
-  di_draw:
-    mov  eax,8
-    mov  ebx,INP_X
     mov  ecx,INP_Y
     mov  edx,2
+    mov  ebx,INP_X
+    mov  eax,8
     mcall
-    mov  eax,4
     mov  ecx,0x00107a30
-    mov  ebx,INP_XY
     mov  edx,fn_input
     mov  esi,[inp_pos]
-    mcall
-    pop  edi
-    ret
-
-;   *********************************************
-;   *******  éèêÖÑÖãÖçàÖ à éíêàëéÇäÄ éäçÄ *******
-;   *********************************************
-
-draw_window:
-
-    mov  eax,12
-    mov  ebx,1
-    mcall
-
-    mov  eax,0
-    mov  ebx,50*65536+700
-    mov  ecx,50*65536+500
-    mov  edx,[sc.work]
-    or   edx,0x33000000
-    mov  edi,title
-    mcall
-
-    call draw_input
-
-    xor  ecx,ecx
-    call draw_subimage
-    cmp  [imgcount],1
-    je   .enddraw
-
-    mov  ecx,[img_index]
-    call draw_subimage
-  .enddraw:
-    mov  eax,12
-    mov  ebx,2
+    mov  ebx,INP_XY
+    mov  eax,4
     mcall
     ret
 
 draw_subimage:
-    cmp  [imgcount],0
+    cmp  [gif_img_count],0
     jz   .enddraw
     mov  esi,Image
     mov  edi,gif_inf
     call GetGIFinfo
     test eax,eax
     jz   .enddraw
-    movzx ebx,[gif_inf.Width]
-    shl  ebx,16
-    movzx ecx,[gif_inf.Height]
-    add  ecx,ebx
+    mov  ecx, dword [edi+GIF_info.Width-2]
+    mov  cx, [edi+GIF_info.Height]
     mov  ebx,eax
-    movzx  eax,[gif_inf.Top]
-    movzx  edx,[gif_inf.Left]
-    shl  edx,16
-    add  edx,eax
+    mov  eax, [edi+GIF_info.Delay]
+    mov  [cur_anim_delay],eax
+    mov  edx, dword [edi+GIF_info.Left-2]
+    mov  dx, [edi+GIF_info.Top]
     add  edx,5 shl 16 +25
-    mov  eax,7
+    mov  esi, 8
+    mov  edi, [edi+GIF_info.Palette]
+    xor  ebp, ebp
+    mov  eax, 65
     mcall
   .enddraw:
     ret
@@ -291,14 +277,17 @@ filename:
 ;   db '/hd/1/gif/meos.gif',0
    rb 257
 ;filename_len dd 0
+
 entered    rd 1
 sc system_colors
 
-imgcount  rd 1
+gif_img_count  rd 1
+cur_anim_delay rd 1
 img_index  rd 1
 gif_inf  GIF_info
 
-hashtable rd 4096
+IncludeUGlobals
+
 workarea rb 0x100000
 
 Image:
