@@ -9,7 +9,7 @@
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.5'
+version equ '0.51'
 
 
 ;__DEBUG__ equ 1
@@ -32,9 +32,9 @@ include "..\..\..\macros.inc"
 include "eth.inc"
 ;include "lang.inc"
 
-irc_server_ip	db	83,149,74,246		  ;server: kolibrios.org
+irc_server_name db      'kolibrios.org',0                 ; default server name
 
-user_nick	dd	12				        ; length
+user_nick	dd	12				  ; length
 		db	'kolibri_user           '	  ; string
 
 user_real_name	dd	14				  ; length
@@ -59,6 +59,8 @@ START:				; start of execution
 
     mov  ebp,0
     mov  edx,I_END
+
+redraw: 			; redraw
     call draw_window		; at first, draw the window
 
 still:
@@ -101,13 +103,6 @@ still:
 
     jmp  still
 
-
-redraw: 			; redraw
-
-    call draw_window
-    jmp  still
-
-
 button: 			; button
 
     mov  eax,17 		; get id
@@ -115,7 +110,7 @@ button: 			; button
 
     cmp  ah,1			; close program
     jne  noclose
-    mov  eax,-1
+    or   eax,-1
     mcall
   noclose:
 
@@ -172,6 +167,13 @@ socket_commands:
     mov  eax,3
     mcall
     mov  ecx,eax
+
+pusha
+    mov     eax,irc_server_name
+    resolve irc_server_name,dword[irc_server_ip]
+    ;DEBUGF 1,'%u.%u.%u.%u\n',1[irc_server_ip],1[irc_server_ip+1],1[irc_server_ip+2],1[irc_server_ip+3]
+popa
+
     mov  eax,53
     mov  ebx,5
     mov  edx,6667
@@ -607,35 +609,6 @@ send_data_to_server:
 
     cmp  [send_string+1],dword 'aser'
     jne  no_set_server
-
-;    pusha
-;    mov   edi,irc_server_ip
-;    mov   esi,send_string+7
-;    mov   eax,0
-;    mov   edx,[xpos]
-;    add   edx,send_string-1
-;  newsip:
-;    cmp   [esi],byte '.'
-;    je    sipn
-;    cmp   esi,edx
-;    jg    sipn
-;    movzx ebx,byte [esi]
-;    inc   esi
-;    imul  eax,10
-;    sub   ebx,48
-;    add   eax,ebx
-;    jmp   newsip
-;  sipn:
-;    mov   [edi],al
-;    xor   eax,eax
-;    inc   esi
-;    cmp   esi,send_string+30
-;    jg    sipnn
-;    inc   edi
-;    cmp   edi,irc_server_ip+3
-;    jbe   newsip
-;  sipnn:
-;    popa
 
 pusha
     mov     eax,send_string
@@ -1662,13 +1635,14 @@ print_text:
 
 cp1251_table:
   db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; 8
-  db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; 9
-  db '?','?','?','?','?','?','?','?' , $F0,'?','?','?','?','?','?','?' ; A
-  db '?','?','?','?','?','?','?','?' , $F1,'?','?','?','?','?','?','?' ; B
+  db '?','?','?','?','?',$F9,'?','?' , '?','?','?','?','?','?','?','?' ; 9
+  db '?',$F6,$F7,'?',$FD,'?','?','?' , $F0,'?',$F2,'?','?','?','?',$F4 ; A
+  db $F8,'?','?','?','?','?','?',$FA , $F1,$FC,$F3,'?','?','?','?',$F5 ; B
   db $80,$81,$82,$83,$84,$85,$86,$87 , $88,$89,$8A,$8B,$8C,$8D,$8E,$8F ; C
   db $90,$91,$92,$93,$94,$95,$96,$97 , $98,$99,$9A,$9B,$9C,$9D,$9E,$9F ; D
   db $A0,$A1,$A2,$A3,$A4,$A5,$A6,$A7 , $A8,$A9,$AA,$AB,$AC,$AD,$AE,$AF ; E
   db $E0,$E1,$E2,$E3,$E4,$E5,$E6,$E7 , $E8,$E9,$EA,$EB,$EC,$ED,$EE,$EF ; F
+
 ;    0   1   2   3   4   5   6   7     8   9   A   B   C   D   E   F
 
 cp866_table:
@@ -1679,7 +1653,8 @@ cp866_table:
   db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; C
   db '?','?','?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; D
   db $F0,$F1,$F2,$F3,$F4,$F5,$F6,$F7 , $F8,$F9,$FA,$FB,$FC,$FD,$FE,$FF ; E
-  db $A8,$B8,'?','?','?','?','?','?' , '?','?','?','?','?','?','?','?' ; F
+  db $A8,$B8,$AA,$BA,$AF,$BF,$A1,$A2 , $B0,$95,$B7,'?',$B9,$A4,'?','?' ; F
+
 ;    0   1   2   3   4   5   6   7     8   9   A   B   C   D   E   F
 
 print_character:
@@ -1778,21 +1753,6 @@ draw_data:
     pusha
 
     and  ebx,0xff
-
-    cmp  bl,0xe4   ; finnish a
-    jne  noe4
-    mov  bl,0xc1
-  noe4:
-    cmp  bl,0xc4   ; ?
-    jne  noc4
-    mov  bl,0xc9
-  noc4:
-
-    cmp  ebx,229   ; swedish a
-    jne  no_swedish_a
-    mov  bl,192
-  no_swedish_a:
-
     add  eax,[text_start]
     mov  [eax],bl
 
@@ -1917,7 +1877,7 @@ main_button  dd 0x6565cc
 text:
 
 db '   Real name : KolibriOS User  - change with eg /areal Jill User      '
-db '   Nick      : KolibriOS User  - change with eg /anick Jill           '
+db '   Nick      : kolibri_user    - change with eg /anick Jill           '
 db '   Server    : kolibrios.org   - change with eg /aserv irc.by         '
 db '                                                                      '
 db '        1) Open socket         2) Send userinfo       Close socket    '
@@ -1928,7 +1888,6 @@ db '   /join #ChannelName         - eg /join #general                     '
 db '   /part #ChannelName         - eg /part #windows                     '
 db '   /query Nickname            - eg /query Mary                        '
 db '   /quit                      - Quit server and Close socket          '
-
 db 'x' ; <- END MARKER, DONT DELETE
 
 
@@ -2215,17 +2174,10 @@ thread_draw_window:
 
     mov  ebx,ebp		   ; draw window
     shl  ebx,16+4
-    mov  eax,0
+    xor  eax,eax
     mov  ecx,ebx
     mov  bx,499
     mov  cx,170
-
-;    mov  edx,ebp                   ; draw window
-;    imul edx,120*80
-;    add  edx,I_END+120*60+8
-;    movzx edx,byte [edx]
-;    imul edx,88
-;    sub  bx,dx
 
     mov  edx,[wcolor]
     add  edx,0x03ffffff
@@ -2380,6 +2332,8 @@ title	    db	'IRC client ',version,0
 
 ;include_debug_strings  ; ALWAYS present in data section
 
+irc_server_ip db ?  ; bufer for server_IP
+
 dnsMsg:  rb 512     ; buffer used by DNS client
 
 
@@ -2401,4 +2355,4 @@ dnsMsg:  rb 512     ; buffer used by DNS client
 ;;  120*69+252  ,  4        length of names string
 ;;  120*70      ,  1200     names separated with space
 ;;
-I_END: ;;
+I_END:
