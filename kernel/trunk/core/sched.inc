@@ -219,12 +219,15 @@ do_change_task:
         mov dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], edx
 
         mov eax, [ebx+APPDATA.dir_table]
+        cmp eax, [esi+APPDATA.dir_table]
+        je @F
         mov cr3, eax
+@@:
         mov ebx, [ebx+APPDATA.pl0_stack]
         add ebx, RING0_STACK_SIZE
         mov [tss._esp0], ebx
-	push	graph_data
-	pop	gs
+        mov ax, graph_data
+        mov gs, ax
         mov ecx, cr0
         or ecx, CR0_TS   ;set task switch flag
         mov cr0, ecx

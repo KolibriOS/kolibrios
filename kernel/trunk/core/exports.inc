@@ -19,8 +19,10 @@ iglobal
 
   szPciApi            db 'PciApi', 0
   szPciRead32         db 'PciRead32', 0
+  szPciRead16         db 'PciRead16', 0
   szPciRead8          db 'PciRead8', 0
   szPciWrite8         db 'PciWrite8',0
+  szPciWrite16        db 'PciWrite16',0
 
   szAllocPage         db 'AllocPage',0
   szAllocPages        db 'AllocPages',0
@@ -83,8 +85,10 @@ kernel_export:
 
   dd szPciApi          , pci_api
   dd szPciRead32       , pci_read32
+  dd szPciRead16       , pci_read16
   dd szPciRead8        , pci_read8
   dd szPciWrite8       , pci_write8
+  dd szPciWrite16      , pci_write16
 
   dd szAllocPage       , alloc_page
   dd szAllocPages      , alloc_pages
@@ -133,7 +137,6 @@ kernel_export:
   dd szStrnlen         , strnlen
   dd szStrchr          , strchr
   dd szStrrchr         , strrchr
-
 
 exp_lfb:
   dd szLFBAddress      , 0

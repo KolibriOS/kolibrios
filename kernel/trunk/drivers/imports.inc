@@ -32,11 +32,17 @@ end if
 if used PciRead32
   extrn PciRead32
 end if
+if used PciRead16
+ extrn PciRead16
+end if
 if used PciRead8
   extrn PciRead8
 end if
 if used PciWrite8
   extrn PciWrite8
+end if
+if used PciWrite16
+  extrn PciWrite16
 end if
 
 if used AllocPage
