@@ -282,6 +282,7 @@ RAMDISK             equ (OS_BASE+0x0100000)
 RAMDISK_FAT         equ (OS_BASE+0x0280000)
 FLOPPY_FAT          equ (OS_BASE+0x0282000)
 
+BgrAuxTable         equ (OS_BASE+0x0298000)
 ; unused?
 SB16_Status         equ (OS_BASE+0x02B0000)
 

@@ -640,6 +640,7 @@ no_lib_load:
 
         mov   esi,boot_bgr
         call  boot_log
+        call  init_background
         call  calculatebackground
 
 ; RESERVE SYSTEM IRQ'S JA PORT'S

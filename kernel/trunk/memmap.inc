@@ -176,7 +176,9 @@
 ; 0x80280000 -> 281FFF   ramdisk fat
 ; 0x80282000 -> 283FFF   floppy  fat
 ;
-; 0x80284000 -> 29FFFF   free (112 Kb)
+; 0x80284000 -> 297FFF   free (80 Kb)
+;
+; 0x80298000 -> 29ffff   auxiliary table for background smoothing code
 ;
 ; 0x802A0000 -> 2B00ff   wav device data
 ; 0x802C0000 -> 2C3fff   button info

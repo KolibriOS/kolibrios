@@ -921,55 +921,53 @@ vesa20_drawbackground_stretch:
         add     esi, edx
         lea     esi, [esi*3]
         add     esi, [img_background]
-        mov     ecx, eax
-        push    eax edx esi
-; 3) Loop through redraw rectangle and copy background data
+        push    eax
+        push    edx
+        push    esi
+; 3) Smooth horizontal
+bgr_resmooth0:
+        mov     ecx, [esp+8]
+        mov     edx, [esp+4]
+        mov     esi, [esp]
+        push    edi
+        mov     edi, bgr_cur_line
+        call    smooth_line
+        cmp     dword [BgrDataHeight], 1
+        jz      bgr.no2nd
+bgr_resmooth1:
+        mov     ecx, [esp+8+4]
+        mov     edx, [esp+4+4]
+        mov     esi, [esp+4]
+        add     esi, [BgrDataWidth]
+        add     esi, [BgrDataWidth]
+        add     esi, [BgrDataWidth]
+        mov     edi, bgr_next_line
+        call    smooth_line
+bgr.no2nd:
+        pop     edi
+sdp3:
+        xor     esi, esi
+        mov     ecx, [esp+12]
+; 4) Loop through redraw rectangle and copy background data
 ; Registers meaning:
-; edx:ecx = x * 2^32 * (BgrDataWidth-1) / (ScreenWidth-1)
-; esi -> bgr memory, edi -> output
+; esi = offset in current line, edi -> output
 ; ebp = offset in WinMapAddress
-; dword [esp] = saved esi
-; dword [esp+4] = saved edx
-; dword [esp+8] = saved ecx
+; dword [esp] = offset in bgr data
+; qword [esp+4] = x * 2^32 * (BgrDataWidth-1) / (ScreenWidth-1)
 ; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (ScreenHeight-1)
 ; dword [esp+20] = x
 ; dword [esp+24] = y
 ; precalculated constants:
 ; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
-sdp3:
+sdp3a:
         cmp     [ebp+WinMapAddress], byte 1
         jnz     snbgp
-        mov     al, [esi+2]
-        shl     eax, 16
-        mov     ax, [esi]
+        mov     eax, [bgr_cur_line+esi]
         test    ecx, ecx
-        jz      @f
-        mov     ebx, [esi+2]
-        shr     ebx, 8
-        call    overlapping_of_points
-@@:
-        cmp     dword [esp+12], 0
         jz      .novert
-        mov     ebx, [BgrDataWidth]
-        lea     ebx, [ebx*3]
-        add     ebx, esi
-        push    eax
-        mov     al, [ebx+2]
-        shl     eax, 16
-        mov     ax, [ebx]
-        test    ecx, ecx
-        jz      .nohorz
-        mov     ebx, [ebx+2]
-        shr     ebx, 8
-        call    overlapping_of_points
-.nohorz:
-        mov     ebx, eax
-        pop     eax
-        push    ecx
-        mov     ecx, [esp+4+12]
-        call    overlapping_of_points
-        pop     ecx
+        mov     ebx, [bgr_next_line+esi]
+        call    [overlapping_of_points_ptr]
 .novert:
         mov     [edi], ax
         shr     eax, 16
@@ -981,15 +979,9 @@ snbgp:
         mov     eax, [esp+20]
         add     eax, 1
         mov     [esp+20], eax
+        add     esi, 4
         cmp     eax, [draw_data+32+RECT.right]
-        ja      sdp4
-        add     ecx, [esp+36]
-        mov     eax, edx
-        adc     edx, [esp+40]
-        sub     eax, edx
-        lea     eax, [eax*3]
-        sub     esi, eax
-        jmp     sdp3
+        jbe     sdp3a
 sdp4:
 ; next y
         mov     ebx, [esp+24]
@@ -1016,16 +1008,24 @@ sdp4:
         add     [esp+12], eax
         mov     eax, [esp+16]
         adc     [esp+16], ebx
-        pop     esi edx ecx
-        push    ecx edx
-        sub     eax, [esp+16-4]
+        sub     eax, [esp+16]
+        mov     ebx, eax
         lea     eax, [eax*3]
         imul    eax, [BgrDataWidth]
-        sub     esi, eax
-        push    esi
+        sub     [esp], eax
         mov     eax, [draw_data+32+RECT.left]
         mov     [esp+20], eax
-        jmp     sdp3
+        test    ebx, ebx
+        jz      sdp3
+        cmp     ebx, -1
+        jnz     bgr_resmooth0
+        push    edi
+        mov     esi, bgr_next_line
+        mov     edi, bgr_cur_line
+        mov     ecx, [ScreenWidth]
+        inc     ecx
+        rep     movsd
+        jmp     bgr_resmooth1
 sdpdone:
         add     esp, 44
         popad
@@ -1033,7 +1033,44 @@ sdpdone:
         call    VGA_drawbackground
         ret
 
+uglobal
+align 4
+bgr_cur_line    rd      1280    ; maximum width of screen
+bgr_next_line   rd      1280
+endg
+
+smooth_line:
+        mov     al, [esi+2]
+        shl     eax, 16
+        mov     ax, [esi]
+        test    ecx, ecx
+        jz      @f
+        mov     ebx, [esi+2]
+        shr     ebx, 8
+        call    [overlapping_of_points_ptr]
+@@:
+        stosd
+        mov     eax, [esp+20+8]
+        add     eax, 1
+        mov     [esp+20+8], eax
+        cmp     eax, [draw_data+32+RECT.right]
+        ja      @f
+        add     ecx, [esp+36+8]
+        mov     eax, edx
+        adc     edx, [esp+40+8]
+        sub     eax, edx
+        lea     eax, [eax*3]
+        sub     esi, eax
+        jmp     smooth_line
+@@:
+        mov     eax, [draw_data+32+RECT.left]
+        mov     [esp+20+8], eax
+        ret
+
+align 16
 overlapping_of_points:
+if 0
+; this version of procedure works, but is slower than next version
         push    ecx edx
         mov     edx, eax
         push    esi
@@ -1062,4 +1099,79 @@ overlapping_of_points:
         pop     edx
         ror     eax, 16
         pop     ecx
+        ret
+else
+        push    ecx edx
+        mov     edx, eax
+        push    esi
+        shr     ecx, 26
+        mov     esi, ecx
+        mov     ecx, ebx
+        shl     esi, 9
+        movzx   ebx, dl
+        movzx   eax, cl
+        sub     eax, ebx
+        movzx   ebx, dh
+        add     dl, [BgrAuxTable+(eax+0x100)+esi]
+        movzx   eax, ch
+        sub     eax, ebx
+        add     dh, [BgrAuxTable+(eax+0x100)+esi]
+        ror     ecx, 16
+        ror     edx, 16
+        movzx   eax, cl
+        movzx   ebx, dl
+        sub     eax, ebx
+        add     dl, [BgrAuxTable+(eax+0x100)+esi]
+        pop     esi
+        mov     eax, edx
+        pop     edx
+        ror     eax, 16
+        pop     ecx
+        ret
+end if
+
+iglobal
+align 4
+overlapping_of_points_ptr       dd      overlapping_of_points
+endg
+
+init_background:
+        mov     edi, BgrAuxTable
+        xor     edx, edx
+.loop2:
+        mov     eax, edx
+        shl     eax, 8
+        neg     eax
+        mov     ecx, 0x200
+.loop1:
+        mov     byte [edi], ah
+        inc     edi
+        add     eax, edx
+        loop    .loop1
+        add     dl, 4
+        jnz     .loop2
+        test    byte [cpu_caps+(CAPS_MMX/8)], CAPS_MMX mod 8
+        jz      @f
+        mov     [overlapping_of_points_ptr], overlapping_of_points_mmx
+@@:
+        ret
+
+align 16
+overlapping_of_points_mmx:
+        movd    mm0, eax
+        movd    mm4, eax
+        movd    mm1, ebx
+        pxor    mm2, mm2
+        punpcklbw mm0, mm2
+        punpcklbw mm1, mm2
+        psubw   mm1, mm0
+        movd    mm3, ecx
+        psrld   mm3, 24
+        packuswb mm3, mm3
+        packuswb mm3, mm3
+        pmullw  mm1, mm3
+        psrlw   mm1, 8
+        packuswb mm1, mm2
+        paddb   mm4, mm1
+        movd    eax, mm4
         ret
