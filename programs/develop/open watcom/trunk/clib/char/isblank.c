@@ -24,35 +24,24 @@
 *
 *  ========================================================================
 *
-* Description:  verify Pentium processor divide bug
+* Description:  Implementation if isblank().
 *
 ****************************************************************************/
 
 
 #include "variety.h"
-#include "rtinit.h"
-#include "rtdata.h"
+#include "widechar.h"
+#include <ctype.h>
+#ifdef __WIDECHAR__
+ #include <wctype.h>
+#endif
+#undef  isblank
 
-extern unsigned _WCNEAR __chipbug;
-
-enum {
-    PROB_P5_DIV = 0x0001
-};
-
-_WCRTLINK void __verify_pentium_fdiv_bug()
+_WCRTLINK int __F_NAME(isblank,iswblank)( INTCHAR_TYPE c )
 {
-    /*
-        Verify we have got the Pentium FDIV problem.
-        The volatiles are to scare the optimizer away.
-    */
-    volatile double     num     = 4195835;
-    volatile double     denom   = 3145727;
-
-    if( _RWD_real87 >= 3 ) {
-        if( (num - (num/denom)*denom) > 1.0e-8 ) {
-            __chipbug |= PROB_P5_DIV;
-        }
+    if( IS_ASCII( c ) ) {
+        return( (c == ' ') || (c == '\t') );
+    } else {
+        return( 0 );
     }
 }
-
-AXI( __verify_pentium_fdiv_bug, INIT_PRIORITY_FPU + 4 );
