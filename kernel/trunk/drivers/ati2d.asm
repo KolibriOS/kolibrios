@@ -63,6 +63,7 @@ CURSOR_SIZE     equ 32
 R8500       equ 0x514C  ;R200
 R9000       equ 0x4966  ;RV250
 R9200       equ 0x5961  ;RV280
+R9200SE     equ 0x5964  ;RV280
 R9500       equ 0x4144  ;R300
 R9500P      equ 0x4E45  ;R300
 R9550       equ 0x4153  ;RV350
@@ -980,6 +981,7 @@ align 4
 devices dd (R8500   shl 16)+VID_ATI
         dd (R9000   shl 16)+VID_ATI
         dd (R9200   shl 16)+VID_ATI
+        dd (R9200SE shl 16)+VID_ATI
         dd (R9500   shl 16)+VID_ATI
         dd (R9500P  shl 16)+VID_ATI
         dd (R9550   shl 16)+VID_ATI
