@@ -932,9 +932,11 @@ bgr_resmooth0:
         push    edi
         mov     edi, bgr_cur_line
         call    smooth_line
-        cmp     dword [BgrDataHeight], 1
-        jz      bgr.no2nd
 bgr_resmooth1:
+        mov     eax, [esp+16+4]
+        inc     eax
+        cmp     eax, [BgrDataHeight]
+        jae     bgr.no2nd
         mov     ecx, [esp+8+4]
         mov     edx, [esp+4+4]
         mov     esi, [esp+4]
