@@ -37,9 +37,6 @@ proc new_mix stdcall, output:dword
            test eax, eax
            je .done
 
-  ;         cmp eax, 1
-  ;         je .copy
-
            lea ebx, [mix_list]
            stdcall mix_all, [output], ebx, eax
 @@:

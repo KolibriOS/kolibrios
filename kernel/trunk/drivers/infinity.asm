@@ -174,9 +174,8 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, SND_CREATE_BUFF
            jne @F
            mov ebx, [edi+input]
-           push edi
            stdcall CreateBuffer,[ebx],[ebx+4]
-           pop edi
+           mov edi, [ioctl]
            mov ecx, [edi+output]
            mov ecx, [ecx]
            mov [ecx], ebx
@@ -224,9 +223,8 @@ proc service_proc stdcall, ioctl:dword
 @@:
            cmp eax, SND_GETPOS
            jne @F
-           push edi
            stdcall GetBufferPos, [ebx]
-           pop edi
+           mov edi, [ioctl]
            mov ecx, [edi+output]
            mov ecx, [ecx]
            mov [ecx], ebx
@@ -392,15 +390,12 @@ proc CreateBuffer stdcall, format:dword, size:dword
 
            stdcall CreateRingBuffer, eax, PG_SW
 
-if 0
-           stdcall AllocKernelSpace, eax
-end if
            mov edi, [str]
            mov ecx, [ring_size]
            mov [edi+STREAM.in_base], eax
            mov [edi+STREAM.in_size], ecx
            add eax, 128
-           sub ecx, 128
+        ;   sub ecx, 128
            mov [edi+STREAM.in_wp], eax
            mov [edi+STREAM.in_rp], eax
            mov [edi+STREAM.in_count], 0
@@ -409,22 +404,6 @@ end if
            add eax, ecx
            mov [edi+STREAM.in_top], eax
 
-if 0
-           mov ebx, [ring_pages]
-           stdcall AllocPages, ebx
-           mov edi, [str]
-           mov ebx, [edi+STREAM.in_base]
-           mov ecx, [ring_pages]
-           or eax, PG_SW
-           push eax
-           push ebx
-           call CommitPages ;eax, ebx, ecx
-           mov ecx, [ring_pages]
-           pop ebx
-           pop eax
-           add ebx, [ring_size]
-           call CommitPages    ;double mapped
-end if
            jmp .out_buff
 .static:
            mov ecx, [size]
