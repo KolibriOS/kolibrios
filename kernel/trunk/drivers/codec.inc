@@ -7,103 +7,115 @@
 
 align 4
 proc detect_codec
-	   locals
-	     codec_id dd ?
-	   endl
+           locals
+             codec_id dd ?
+           endl
 
-	   stdcall codec_read, dword 0x7C
-	   shl eax, 16
-	   mov [codec_id], eax
+           stdcall codec_read, dword 0x7C
+           shl eax, 16
+           mov [codec_id], eax
 
-	   stdcall codec_read, dword 0x7E
-	   or eax, [codec_id]
+           stdcall codec_read, dword 0x7E
+           or eax, [codec_id]
 
-	   mov [codec.chip_id], eax
-	   and eax, 0xFFFFFF00
+           mov [codec.chip_id], eax
+           and eax, 0xFFFFFF00
 
-	   mov edi, codecs
+           mov edi, codecs
 @@:
-	   mov ebx, [edi]
-	   test ebx, ebx
-	   jz .unknown
+           mov ebx, [edi]
+           test ebx, ebx
+           jz .unknown
 
-	   cmp eax, ebx
-	   jne .next
-	   mov eax, [edi+4]
-	   mov [codec.ac_vendor_ids], eax
-	   stdcall detect_chip, [edi+8]
-	   ret
+           cmp eax, ebx
+           jne .next
+           mov eax, [edi+4]
+           mov [codec.ac_vendor_ids], eax
+           mov esi, eax
+           call SysMsgBoardStr
+           stdcall detect_chip, [edi+8]
+
+           ret
 .next:
-	   add edi, 12
-	   jmp @B
+           add edi, 12
+           jmp @B
 .unknown:
-	   mov [codec.ac_vendor_ids], ac_unknown
-	   mov [codec.chip_ids], chip_unknown
-	   ret
+           mov [codec.ac_vendor_ids], ac_unknown
+           mov [codec.chip_ids], chip_unknown
+
+           mov esi, chip_unknown
+           call SysMsgBoardStr
+           mov eax, [codec.chip_id]
+           call dword2str
+           call SysMsgBoardStr
+           ret
 endp
 
 align 4
 proc detect_chip stdcall, chip_tab:dword
 
-	   mov eax, [codec.chip_id]
-	   and eax, 0xFF
+           mov eax, [codec.chip_id]
+           and eax, 0xFF
 
-	   mov edi, [chip_tab]
+           mov edi, [chip_tab]
 @@:
-	   mov ebx, [edi]
-	   test ebx, ebx
-	   jz .unknown
+           mov ebx, [edi]
+           test ebx, ebx
+           jz .unknown
 
-	   cmp eax,ebx
-	   jne .next
-	   mov eax, [edi+4]
-	   mov [codec.chip_ids], eax
-	   ret
+           cmp eax,ebx
+           jne .next
+           mov eax, [edi+4]
+           mov [codec.chip_ids], eax
+           ret
 .next:
-	   add edi, 8
-	   jmp @b
+           add edi, 8
+           jmp @b
 .unknown:
-	   mov [codec.chip_ids], chip_unknown
-	   ret
+           mov [codec.chip_ids], chip_unknown
+           mov esi, chip_unknown
+           call SysMsgBoardStr
+           mov eax, [codec.chip_id]
+           call dword2str
+           call SysMsgBoardStr
+           ret
 endp
 
 align 4
 proc setup_codec
 
-        xor eax, eax
-        stdcall codec_write, dword CODEC_AUX_VOL
+           xor eax, eax
+           stdcall codec_write, dword CODEC_AUX_VOL
 
-        mov eax, 0x0B0B
-        stdcall codec_write, dword CODEC_MASTER_VOL_REG
+           mov eax, 0x0B0B
+           stdcall codec_write, dword CODEC_MASTER_VOL_REG
 
-        mov ax, 0x08
-        stdcall codec_write, dword 0x0C
+           mov ax, 0x08
+           stdcall codec_write, dword 0x0C
 
-        mov ax, 0x0808
-	stdcall codec_write, dword CODEC_PCM_OUT_REG
+           mov ax, 0x0808
+           stdcall codec_write, dword CODEC_PCM_OUT_REG
 
-        mov ax, 0x0808
-        stdcall codec_write, dword 0x10
+           mov ax, 0x0808
+           stdcall codec_write, dword 0x10
 
-        mov ax, 0x0808
-        stdcall codec_write, dword 0x12
+           mov ax, 0x0808
+           stdcall codec_write, dword 0x12
 
-        mov ax, 0x0808
-        stdcall codec_write, dword 0x16
+           mov ax, 0x0808
+           stdcall codec_write, dword 0x16
 
 
-	stdcall codec_read, dword CODEC_EXT_AUDIO_CTRL_REG
+           stdcall codec_read, dword CODEC_EXT_AUDIO_CTRL_REG
+           and eax, 0FFFFh - BIT1                  ; clear DRA (BIT1)
+           or eax, BIT0                           ; set VRA (BIT0)
+           stdcall codec_write, dword CODEC_EXT_AUDIO_CTRL_REG
 
-	and  eax, 0FFFFh - BIT1 		 ; clear DRA (BIT1)
-	or   eax, BIT0				 ; set VRA (BIT0)
-	stdcall codec_write, dword CODEC_EXT_AUDIO_CTRL_REG
-
-	stdcall set_sample_rate, dword 48000
+           stdcall set_sample_rate, dword 48000
 
 .init_error:
-
-	xor    eax, eax 			  ; exit with error
-	ret
+           xor    eax, eax                           ; exit with error
+           ret
 endp
 
 
@@ -125,27 +137,27 @@ set_master_vol:
            mov ebx, -150
            idiv ebx
            mov ah, al
-	   stdcall codec_write, dword CODEC_MASTER_VOL_REG
+           stdcall codec_write, dword CODEC_MASTER_VOL_REG
            xor eax, eax
-	   ret
+           ret
 
 align 4
 proc get_master_vol stdcall, pvol:dword
 
-	   stdcall codec_read, dword CODEC_MASTER_VOL_REG
-	   and eax, 0x3F
+           stdcall codec_read, dword CODEC_MASTER_VOL_REG
+           and eax, 0x3F
            imul eax, -150
            mov ebx, [pvol]
            mov [ebx], eax
            xor eax, eax
-	   ret
+           ret
 endp
 
 align 4
 proc set_sample_rate stdcall, rate:dword
-	   mov eax, [rate]
-	   stdcall codec_write, dword CODEC_PCM_FRONT_DACRATE_REG
-	   ret
+           mov eax, [rate]
+           stdcall codec_write, dword CODEC_PCM_FRONT_DACRATE_REG
+           ret
 endp
 
 align 16
@@ -153,7 +165,7 @@ ac_unknown     db 'unknown manufacturer',13,10,0
 ac_Realtek     db 'Realtek Semiconductor',13,10,0
 ac_Analog      db 'Analog Devices',13,10,0
 ac_CMedia      db 'C-Media Electronics',13,10,0
-chip_unknown   db 'unknown chip', 13,10,0
+chip_unknown   db 'unknown codec id ', 0
 
 CHIP_ANALOG    equ 0x41445300
 CHIP_REALTEK   equ 0x414C4700
@@ -161,39 +173,40 @@ CHIP_CMEDIA    equ 0x434D4900
 
 align 16
 codecs	       dd CHIP_ANALOG, ac_Analog,  chips_Analog
-	       dd CHIP_CMEDIA, ac_CMedia,  chips_CMedia
-	       dd CHIP_REALTEK,ac_Realtek, chips_Realtek
+               dd CHIP_CMEDIA, ac_CMedia,  chips_CMedia
+               dd CHIP_REALTEK,ac_Realtek, chips_Realtek
 	       dd 0
 
 align 16
 chips_Analog   dd 0x03, chip_AD1819
-	       dd 0x40, chip_AD1881
-	       dd 0x48, chip_AD1881A
-	       dd 0x60, chip_AD1884
-	       dd 0x61, chip_AD1886
-	       dd 0x62, chip_AD1887
-	       dd 0x63, chip_AD1886A
-	       dd 0x70, chip_AD1980
-	       dd 0x75, chip_AD1985
-	       dd 0
+               dd 0x40, chip_AD1881
+               dd 0x48, chip_AD1881A
+               dd 0x60, chip_AD1884
+               dd 0x61, chip_AD1886
+               dd 0x62, chip_AD1887
+               dd 0x63, chip_AD1886A
+               dd 0x70, chip_AD1980
+               dd 0x75, chip_AD1985
+               dd 0
 
-chips_Realtek  dd 0x20, chip_ALC650
-	       dd 0x21, chip_ALC650D
-	       dd 0x22, chip_ALC650E
-	       dd 0x23, chip_ALC650F
-	       dd 0x60, chip_ALC655
-	       dd 0x80, chip_ALC658
-	       dd 0x81, chip_ALC658D
-	       dd 0x90, chip_ALC850
-	       dd 0
+chips_Realtek:
+               dd 0x20, chip_ALC650
+               dd 0x21, chip_ALC650D
+               dd 0x22, chip_ALC650E
+               dd 0x23, chip_ALC650F
+               dd 0x60, chip_ALC655
+               dd 0x80, chip_ALC658
+               dd 0x81, chip_ALC658D
+               dd 0x90, chip_ALC850
+               dd 0
 
 chips_CMedia   dd 0x41, chip_CM9738
-	       dd 0x61, chip_CM9739
-	       dd 0x69, chip_CM9780
-	       dd 0x78, chip_CM9761
-	       dd 0x82, chip_CM9761
-	       dd 0x83, chip_CM9761
-	       dd 0
+               dd 0x61, chip_CM9739
+               dd 0x69, chip_CM9780
+               dd 0x78, chip_CM9761
+               dd 0x82, chip_CM9761
+               dd 0x83, chip_CM9761
+               dd 0
 
 align 16
 ;Analog Devices

@@ -16,13 +16,13 @@ API_VERSION     equ 0x01000100
 DEBUG	    equ 1
 
 REMAP_IRQ   equ 0
+IRQ_LINE    equ 0
 
 ;irq 0,1,2,8,12,13 недоступны
 ;               FEDCBA9876543210
 VALID_IRQ   equ 1100111011111000b
 ATTCH_IRQ   equ 0000111010101000b
 
-IRQ_LINE    equ 0
 
 CPU_FREQ    equ  2600d
 
@@ -62,38 +62,38 @@ BIT31 EQU 0x80000000
 PCM_4 equ BIT20
 PCM_6 equ BIT21
 
-VID_INTEL        equ 0x8086
-VID_NVIDIA       equ 0x10DE
+VID_INTEL         equ 0x8086
+VID_NVIDIA        equ 0x10DE
 
-CTRL_ICH         equ 0x2415
-CTRL_ICH0        equ 0x2425
-CTRL_ICH2        equ 0x2435
-CTRL_ICH3        equ 0x2445
-CTRL_ICH4        equ 0x24C5
-CTRL_ICH5        equ 0x24D5
-CTRL_ICH6        equ 0x266E
-CTRL_ICH7        equ 0x27DE
+CTRL_ICH          equ 0x2415
+CTRL_ICH0         equ 0x2425
+CTRL_ICH2         equ 0x2435
+CTRL_ICH3         equ 0x2445
+CTRL_ICH4         equ 0x24C5
+CTRL_ICH5         equ 0x24D5
+CTRL_ICH6         equ 0x266E
+CTRL_ICH7         equ 0x27DE
 
-CTRL_NFORCE      equ 0x01B1
-CTRL_NFORCE2     equ 0x006A
-CTRL_NFORCE3     equ 0x00DA
-CTRL_MCP04       equ 0x003A
-CTRL_CK804       equ 0x0059
-CTRL_CK8         equ 0x008A
-CTRL_CK8S        equ 0x00EA
-CTRL_MCP51       equ 0x026B
+CTRL_NFORCE       equ 0x01B1
+CTRL_NFORCE2      equ 0x006A
+CTRL_NFORCE3      equ 0x00DA
+CTRL_MCP04        equ 0x003A
+CTRL_CK804        equ 0x0059
+CTRL_CK8          equ 0x008A
+CTRL_CK8S         equ 0x00EA
+CTRL_MCP51        equ 0x026B
 
 
-PCM_OUT_BDL      equ  0x10  ; PCM out buffer descriptors list
-PCM_OUT_CR_REG	  equ  0x1b	 ; PCM out Control Register
-PCM_OUT_LVI_REG  equ  0x15  ; PCM last valid index
-PCM_OUT_SR_REG	  equ  0x16	 ; PCM out Status register
-PCM_OUT_PIV_REG  equ  0x1a
-PCM_OUT_CIV_REG  equ  0x14  ; PCM out current index
+PCM_OUT_BDL       equ  0x10  ; PCM out buffer descriptors list
+PCM_OUT_CR_REG    equ  0x1b  ; PCM out Control Register
+PCM_OUT_LVI_REG   equ  0x15  ; PCM last valid index
+PCM_OUT_SR_REG    equ  0x16  ; PCM out Status register
+PCM_OUT_PIV_REG   equ  0x1a
+PCM_OUT_CIV_REG   equ  0x14  ; PCM out current index
 
-PCM_IN_CR_REG    equ  0x0b  ; PCM in Control Register
-MC_IN_CR_REG     equ  0x2b  ; MIC in Control Register
-RR equ  BIT1  ; reset registers.  Nukes all regs
+PCM_IN_CR_REG     equ  0x0b  ; PCM in Control Register
+MC_IN_CR_REG      equ  0x2b  ; MIC in Control Register
+RR                equ  BIT1  ; reset registers.  Nukes all regs
 
 CODEC_MASTER_VOL_REG         equ 0x02
 CODEC_AUX_VOL                equ 0x04 ;
@@ -104,21 +104,21 @@ CODEC_PCM_FRONT_DACRATE_REG  equ 0x2c ; PCM out sample rate
 CODEC_PCM_SURND_DACRATE_REG  equ 0x2e ; surround sound sample rate
 CODEC_PCM_LFE_DACRATE_REG    equ 0x30 ; LFE sample rate
 
-GLOB_CTRL        equ  0x2C  ;   Global Control
-CTRL_STAT        equ  0x30  ;   Global Status
-CTRL_CAS         equ  0x34  ;   Codec Access Semiphore
+GLOB_CTRL         equ  0x2C  ;   Global Control
+CTRL_STAT         equ  0x30  ;   Global Status
+CTRL_CAS          equ  0x34  ;   Codec Access Semiphore
 
-CAS_FLAG         equ  0x01  ;   Codec Access Semiphore Bit
+CAS_FLAG          equ  0x01  ;   Codec Access Semiphore Bit
 
-CTRL_ST_CREADY   equ  BIT8+BIT9+BIT28 ;   Primary Codec Ready
+CTRL_ST_CREADY    equ  BIT8+BIT9+BIT28 ;   Primary Codec Ready
 
-CTRL_ST_RCS      equ  0x00008000  ;   Read Completion Status
+CTRL_ST_RCS       equ  0x00008000  ;   Read Completion Status
 
-CTRL_CNT_CRIE    equ  BIT4+BIT5+BIT6  ;   Codecs Resume Interrupt Enable
-CTRL_CNT_AC_OFF  equ  0x00000008  ;   ACLINK Off
-CTRL_CNT_WARM    equ  0x00000004  ;   AC97 Warm Reset
-CTRL_CNT_COLD    equ  0x00000002  ;   AC97 Cold Reset
-CTRL_CNT_GIE     equ  0x00000001  ;   GPI Interrupt Enable
+CTRL_CNT_CRIE     equ  BIT4+BIT5+BIT6  ;   Codecs Resume Interrupt Enable
+CTRL_CNT_AC_OFF   equ  0x00000008  ;   ACLINK Off
+CTRL_CNT_WARM     equ  0x00000004  ;   AC97 Warm Reset
+CTRL_CNT_COLD     equ  0x00000002  ;   AC97 Cold Reset
+CTRL_CNT_GIE      equ  0x00000001  ;   GPI Interrupt Enable
 
 CODEC_REG_POWERDOWN   equ 0x26
 CODEC_REG_ST          equ 0x26
@@ -282,9 +282,6 @@ end virtual
 
 EVENT_NOTIFY    equ 0x00000200
 
-OS_BASE         equ 0x80000000
-SLOT_BASE       equ OS_BASE+0x0080000
-
 public START
 public service_proc
 public version
@@ -317,22 +314,14 @@ proc START stdcall, state:dword
            test eax, eax
            jz .fail
 
-     if DEBUG
-           mov esi, msgInitCodec
-           call SysMsgBoardStr
-     end if
+;     if DEBUG
+;           mov esi, msgInitCodec
+;           call SysMsgBoardStr
+;     end if
 
            call init_codec
            test eax, eax
            jz .fail
-
-     if DEBUG
-           mov esi, [codec.ac_vendor_ids]
-           call SysMsgBoardStr
-
-           mov esi, [codec.chip_ids]
-           call SysMsgBoardStr
-     end if
 
            call reset_controller
            call setup_codec
@@ -613,11 +602,11 @@ endp
 
 align 4
 proc detect_controller
-	   locals
-	     last_bus dd ?
-	     bus      dd ?
-	     devfn    dd ?
-	   endl
+           locals
+             last_bus dd ?
+             bus      dd ?
+             devfn    dd ?
+           endl
 
            xor eax, eax
            mov [bus], eax
@@ -677,19 +666,19 @@ proc detect_controller
            mov esi, [edi+8]
            mov [ctrl.ctrl_setup], esi
 
-           cmp ebx, VID_INTEL
+           cmp edx, VID_INTEL
            jne @F
            mov [ctrl.vendor_ids], msg_Intel
            ret
 @@:
-           cmp ebx, VID_NVIDIA
+           cmp edx, VID_NVIDIA
            jne @F
            mov [ctrl.vendor_ids], msg_NVidia
-@@:
-           mov [ctrl.vendor_ids], 0     ;something  wrong ?
            ret
+@@:
 .err:
            xor eax, eax
+           mov [ctrl.vendor_ids], eax     ;something  wrong ?
            ret
 endp
 
@@ -742,19 +731,56 @@ proc init_controller
            shr ebx, 16
            mov [ctrl.pci_stat], ebx
 
+           mov esi, msgPciCmd
+           call SysMsgBoardStr
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgPciStat
+           call SysMsgBoardStr
+           mov eax, [ctrl.pci_stat]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgMixIsaIo
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x10
+
+           call dword2str
+           call SysMsgBoardStr
+
            and eax,0xFFFE
            mov [ctrl.codec_io_base], eax
 
+           mov esi, msgCtrlIsaIo
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x14
+
+           call dword2str
+           call SysMsgBoardStr
+
            and eax, 0xFFC0
            mov [ctrl.ctrl_io_base], eax
+
+           mov esi, msgMixMMIo
+           call SysMsgBoardStr
 
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x18
            mov [ctrl.codec_mem_base], eax
 
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgCtrlMMIo
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x1C
            mov [ctrl.ctrl_mem_base], eax
+
+           call dword2str
+           call SysMsgBoardStr
 
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x3C
            and eax, 0xFF
@@ -775,11 +801,11 @@ proc set_ICH
            mov [ctrl.codec_read16],  codec_io_r16    ;virtual
            mov [ctrl.codec_write16], codec_io_w16    ;virtual
 
-           mov [ctrl.ctrl_read8 ],  ctrl_io_r8      ;virtual
+           mov [ctrl.ctrl_read8 ],  ctrl_io_r8       ;virtual
            mov [ctrl.ctrl_read16],  ctrl_io_r16      ;virtual
            mov [ctrl.ctrl_read32],  ctrl_io_r32      ;virtual
 
-           mov [ctrl.ctrl_write8 ], ctrl_io_w8      ;virtual
+           mov [ctrl.ctrl_write8 ], ctrl_io_w8       ;virtual
            mov [ctrl.ctrl_write16], ctrl_io_w16      ;virtual
            mov [ctrl.ctrl_write32], ctrl_io_w32      ;virtual
            ret
@@ -855,17 +881,21 @@ proc init_codec
 
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
-
+           push eax
            call dword2str
            call SysMsgBoardStr
+           pop eax
+           cmp eax, 0xFFFFFFFF
+           je .err
 
            test eax, CTRL_ST_CREADY
            jnz .ready
 
            call reset_codec
-           and eax, eax
+           test eax, eax
            jz .err
 
+.ready:
            xor edx, edx     ;ac_reg_0
            call [ctrl.codec_write16]
 
@@ -875,20 +905,21 @@ proc init_codec
 
            mov [counter], 200     ; total 200*5 ms = 1s
 .wait:
+           mov eax, 5000   ; wait 5 ms
+           call StallExec
+
            mov edx, CODEC_REG_POWERDOWN
            call [ctrl.codec_read16]
            and eax, 0x0F
            cmp eax, 0x0F
-           jz .ready
+           jz .done
 
-           mov eax, 5000   ; wait 5 ms
-           call StallExec
            sub [counter] , 1
            jnz .wait
 .err:
            xor eax, eax        ; timeout error
            ret
-.ready:
+.done:
            mov eax, 2      ;force set 16-bit 2-channel PCM
            mov edx, GLOB_CTRL
            call [ctrl.ctrl_write32]
@@ -953,30 +984,24 @@ proc warm_reset
            mov eax, 100000    ; wait 100 ms
            call StallExec
 
-           mov edx, GLOB_CTRL
+           mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
-           test eax, 4
-           jz .ok
-           sub [counter], 1
+           test eax, CTRL_ST_CREADY
+           jnz .ok
+
+           dec [counter]
            jnz .wait
 
      if DEBUG
            mov esi, msgWRFail
            call SysMsgBoardStr
      end if
-
+.fail:
            stc
            ret
 .ok:
-           mov edx, CTRL_STAT
-           call [ctrl.ctrl_read32]
-           and eax, CTRL_ST_CREADY
-           jz .fail
            clc
            ret
-.fail:
-           stc
-	   ret
 endp
 
 align 4
@@ -985,7 +1010,7 @@ proc cold_reset
              counter dd ?
            endl
 
-           xor eax, eax
+           mov eax, 0x02
            mov edx, GLOB_CTRL
            call [ctrl.ctrl_write32]
 
@@ -994,40 +1019,53 @@ proc cold_reset
            call SysMsgBoardStr
      end if
 
-           mov eax, 1000000    ; wait 1 s
+           mov eax, 400000     ; wait 400 ms
            call StallExec
 
-           mov eax, 2
-           mov edx, GLOB_CTRL
-           call [ctrl.ctrl_write32]
-
-           mov [counter], 10    ; total 10*100 ms = 1s
+           mov [counter], 16    ; total 20*100 ms = 2s
 .wait:
+
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_read32]
+           test eax, CTRL_ST_CREADY
+           jnz .ok
+
            mov eax, 100000    ; wait 100 ms
            call StallExec
 
-           mov edx, GLOB_CTRL
-           call [ctrl.ctrl_read32]
-           test eax, 4
-           jz .ok
-           sub [counter], 1
+           dec [counter]
            jnz .wait
 
      if DEBUG
            mov esi, msgCRFail
            call SysMsgBoardStr
      end if
+
+.fail:
            stc
            ret
 .ok:
+           mov esi, msgControl
+           call SysMsgBoardStr
+
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgStatus
+           call SysMsgBoardStr
+
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
-           and eax, CTRL_ST_CREADY
+           push eax
+           call dword2str
+           call SysMsgBoardStr
+           pop eax
+
+           test eax, CTRL_ST_CREADY
            jz .fail
            clc
-           ret
-.fail:
-           stc
            ret
 endp
 
@@ -1383,15 +1421,15 @@ devices dd (CTRL_ICH  shl 16)+VID_INTEL,msg_ICH, set_ICH
 
 version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
-msg_ICH      db 'Intel ICH',  13,10, 0
-msg_ICH0     db 'Intel ICH0', 13,10, 0
-msg_ICH2     db 'Intel ICH2', 13,10, 0
-msg_ICH3     db 'Intel ICH3', 13,10, 0
-msg_ICH4     db 'Intel ICH4', 13,10, 0
-msg_ICH5     db 'Intel ICH5', 13,10, 0
-msg_ICH6     db 'Intel ICH6', 13,10, 0
-msg_ICH7     db 'Intel ICH7', 13,10, 0
-msg_Intel    db 'Intel Corp. ', 0
+msg_ICH      db '802801AA (ICH)',  13,10, 0
+msg_ICH0     db '802801AB (ICH0)', 13,10, 0
+msg_ICH2     db '802801BA (ICH2)', 13,10, 0
+msg_ICH3     db '802801CA (ICH3)', 13,10, 0
+msg_ICH4     db '802801DB (ICH4)', 13,10, 0
+msg_ICH5     db '802801EB (ICH5)', 13,10, 0
+msg_ICH6     db '802801FB (ICH6)', 13,10, 0
+msg_ICH7     db '802801GB (ICH7)', 13,10, 0
+msg_Intel    db 'Intel ', 0
 
 msg_NForce   db 'NForce',      13,10, 0
 msg_NForce2  db 'NForce 2',    13,10, 0
@@ -1413,12 +1451,12 @@ msgAttchIRQ  db 'IRQ line not supported', 13,10, 0
 msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
-msgNotify    db 'call notify',13,10,0
-msgIRQ       db 'AC97 IRQ', 13,10,0
+;msgNotify    db 'call notify',13,10,0
+;msgIRQ       db 'AC97 IRQ', 13,10,0
 msgInitCtrl  db 'init controller',13,10,0
-msgInitCodec db 'init codec',13,10,0
+;msgInitCodec db 'init codec',13,10,0
 msgPrimBuff  db 'create primary buffer',13,10,0
-msgReg       db 'set service handler',13,10,0
+;msgReg       db 'set service handler',13,10,0
 msgOk        db 'service installed',13,10,0
 msgCold      db 'cold reset',13,10,0
 msgWarm      db 'warm reset',13,10,0
@@ -1428,6 +1466,12 @@ msgCFail     db 'codec not ready',13,10,0
 msgResetOk   db 'reset complete',13,10,0
 msgStatus    db 'global status   ',0
 msgControl   db 'global control  ',0
+msgPciCmd    db 'PCI command     ',0
+msgPciStat   db 'PCI status      ',0
+msgCtrlIsaIo db 'controller io base   ',0
+msgMixIsaIo  db 'codec io base        ',0
+msgCtrlMMIo  db 'controller mmio base ',0
+msgMixMMIo   db 'codec mmio base      ',0
 
 section '.data' data readable writable align 16
 
