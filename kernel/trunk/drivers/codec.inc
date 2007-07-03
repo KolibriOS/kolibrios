@@ -60,13 +60,15 @@ proc detect_chip stdcall, chip_tab:dword
            mov edi, [chip_tab]
 @@:
            mov ebx, [edi]
-           test ebx, ebx
-           jz .unknown
+           cmp ebx, 0xFF
+           je .unknown
 
            cmp eax,ebx
            jne .next
            mov eax, [edi+4]
            mov [codec.chip_ids], eax
+           mov esi, eax
+           call SysMsgBoardStr
            ret
 .next:
            add edi, 8
@@ -165,17 +167,21 @@ ac_unknown     db 'unknown manufacturer',13,10,0
 ac_Realtek     db 'Realtek Semiconductor',13,10,0
 ac_Analog      db 'Analog Devices',13,10,0
 ac_CMedia      db 'C-Media Electronics',13,10,0
+ac_Cirrus      db 'Cirrus Logic',13,10,0
+
 chip_unknown   db 'unknown codec id ', 0
 
 CHIP_ANALOG    equ 0x41445300
 CHIP_REALTEK   equ 0x414C4700
 CHIP_CMEDIA    equ 0x434D4900
+CHIP_CIRRUS    equ 0x43525900
 
 align 16
-codecs	       dd CHIP_ANALOG, ac_Analog,  chips_Analog
+codecs         dd CHIP_ANALOG, ac_Analog,  chips_Analog
                dd CHIP_CMEDIA, ac_CMedia,  chips_CMedia
                dd CHIP_REALTEK,ac_Realtek, chips_Realtek
-	       dd 0
+               dd CHIP_CIRRUS, ac_Cirrus,  chips_Cirrus
+               dd 0
 
 align 16
 chips_Analog   dd 0x03, chip_AD1819
@@ -187,7 +193,7 @@ chips_Analog   dd 0x03, chip_AD1819
                dd 0x63, chip_AD1886A
                dd 0x70, chip_AD1980
                dd 0x75, chip_AD1985
-               dd 0
+               dd 0xFF
 
 chips_Realtek:
                dd 0x20, chip_ALC650
@@ -198,7 +204,7 @@ chips_Realtek:
                dd 0x80, chip_ALC658
                dd 0x81, chip_ALC658D
                dd 0x90, chip_ALC850
-               dd 0
+               dd 0xFF
 
 chips_CMedia   dd 0x41, chip_CM9738
                dd 0x61, chip_CM9739
@@ -206,7 +212,20 @@ chips_CMedia   dd 0x41, chip_CM9738
                dd 0x78, chip_CM9761
                dd 0x82, chip_CM9761
                dd 0x83, chip_CM9761
-               dd 0
+               dd 0xFF
+
+chips_Cirrus   dd 0x00, chip_CS4297
+               dd 0x10, chip_CS4297A
+               dd 0x20, chip_CS4298
+               dd 0x28, chip_CS4294
+               dd 0x30, chip_CS4299
+               dd 0x34, chip_CS4299D
+               dd 0x48, chip_CS4201
+               dd 0x58, chip_CS4205
+               dd 0x60, chip_CS4291
+               dd 0x70, chip_CS4202
+               dd 0xFF
+
 
 align 16
 ;Analog Devices
@@ -222,18 +241,31 @@ chip_AD1980      db 'AD1980 ',0dh,0ah,00h
 chip_AD1985      db 'AD1985 ',0dh,0ah,00h
 
 ;Realtek
-chip_ALC650	 db 'ALC650 ',0dh,0ah,00h
-chip_ALC650D	 db 'ALC650D',0dh,0ah,00h
-chip_ALC650E	 db 'ALC650E',0dh,0ah,00h
-chip_ALC650F	 db 'ALC650F',0dh,0ah,00h
-chip_ALC655	 db 'ALC655 ',0dh,0ah,00h
-chip_ALC658	 db 'ALC658 ',0dh,0ah,00h
-chip_ALC658D	 db 'ALC658D',0dh,0ah,00h
-chip_ALC850	 db 'ALC850 ',0dh,0ah,00h
+chip_ALC650      db 'ALC650 ',0dh,0ah,00h
+chip_ALC650D     db 'ALC650D',0dh,0ah,00h
+chip_ALC650E     db 'ALC650E',0dh,0ah,00h
+chip_ALC650F     db 'ALC650F',0dh,0ah,00h
+chip_ALC655      db 'ALC655 ',0dh,0ah,00h
+chip_ALC658      db 'ALC658 ',0dh,0ah,00h
+chip_ALC658D     db 'ALC658D',0dh,0ah,00h
+chip_ALC850      db 'ALC850 ',0dh,0ah,00h
 
 ;CMedia
-chip_CM9738	 db 'CMI9738', 0dh,0ah,0
-chip_CM9739	 db 'CMI9739', 0dh,0ah,0
-chip_CM9780	 db 'CMI9780', 0dh,0ah,0
-chip_CM9761	 db 'CMI9761', 0dh,0ah,0
+chip_CM9738      db 'CMI9738', 0dh,0ah,0
+chip_CM9739      db 'CMI9739', 0dh,0ah,0
+chip_CM9780      db 'CMI9780', 0dh,0ah,0
+chip_CM9761      db 'CMI9761', 0dh,0ah,0
+
+;Cirrus
+chip_CS4297      db 'CS4297',13,10,0
+chip_CS4297A     db 'CS4297A',13,10,0
+chip_CS4298      db 'CS4298',13,10,0
+chip_CS4294      db 'CS4294',13,10,0
+chip_CS4299      db 'CS4299',13,10,0
+chip_CS4299D     db 'CS4299D',13,10,0
+chip_CS4201      db 'CS4201',13,10,0
+chip_CS4205      db 'CS4205',13,10,0
+chip_CS4291      db 'CS4291',13,10,0
+chip_CS4202      db 'CS4202',13,10,0
+
 

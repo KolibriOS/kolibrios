@@ -331,25 +331,24 @@ proc START stdcall, state:dword
 
            call create_primary_buff
 
-;     if REMAP_IRQ
+     if REMAP_IRQ
 
-;           call get_LPC_bus
-;           cmp eax, -1
-;           jz .fail
-
-;           mov [lpc_bus], 0  ;eax
-;           call remap_irq
-;     end if
+    ;       call get_LPC_bus             ;проверка на интелловский чипсет
+    ;       cmp eax, -1                  ;можно пропустить
+    ;       jz .fail
+           mov [lpc_bus], 0  ;eax
+           call remap_irq
+     end if
 
            mov eax, VALID_IRQ
            mov ebx, [ctrl.int_line]
            mov esi, msgInvIRQ
            bt eax, ebx
-           jnc .fail
+           jnc .fail_msg
            mov eax, ATTCH_IRQ
            mov esi, msgAttchIRQ
            bt eax, ebx
-           jnc .fail
+           jnc .fail_msg
 
            stdcall AttachIntHandler, ebx, ac97_irq
 .reg:
@@ -360,6 +359,10 @@ proc START stdcall, state:dword
            mov esi, msgFail
            call SysMsgBoardStr
      end if
+           xor eax, eax
+           ret
+.fail_msg:
+           call SysMsgBoardStr
            xor eax, eax
            ret
 .stop:
@@ -692,7 +695,7 @@ proc get_LPC_bus                ;for Intel chipsets ONLY !!!
            xor eax, eax
            mov [bus], eax
            inc eax
-           call [PciApi]
+           call PciApi
            cmp eax, -1
            je .err
 
@@ -818,11 +821,22 @@ align 4
 proc set_ICH4
            stdcall AllocKernelSpace, dword 0x2000
            mov edi, eax
-           stdcall MapPage, edi,[ctrl.codec_mem_base],PG_SW+PG_NOCACHE
-           mov [ctrl.codec_mem_base], edi
+           mov ebx, [ctrl.codec_mem_base]
+           and ebx, -4096
+           stdcall MapPage, edi,ebx,PG_SW+PG_NOCACHE
+           mov ebx, [ctrl.codec_mem_base]
+           and ebx, 4095
+           add ebx, edi
+           mov [ctrl.codec_mem_base], ebx
            add edi, 0x1000
-           stdcall MapPage, edi, [ctrl.ctrl_mem_base],PG_SW+PG_NOCACHE
-           mov [ctrl.ctrl_mem_base], edi
+
+           mov ebx, [ctrl.ctrl_mem_base]
+           and ebx, -4096
+           stdcall MapPage, edi, ebx,PG_SW+PG_NOCACHE
+           mov ebx, [ctrl.ctrl_mem_base]
+           and ebx, 4095
+           add ebx, edi
+           mov [ctrl.ctrl_mem_base], ebx
 
            mov [ctrl.codec_read16],  codec_mem_r16    ;virtual
            mov [ctrl.codec_write16], codec_mem_w16    ;virtual
