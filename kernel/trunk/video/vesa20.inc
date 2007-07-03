@@ -1152,7 +1152,7 @@ init_background:
         loop    .loop1
         add     dl, 4
         jnz     .loop2
-        test    byte [cpu_caps+(CAPS_MMX/8)], CAPS_MMX mod 8
+        test    byte [cpu_caps+(CAPS_MMX/8)], 1 shl (CAPS_MMX mod 8)
         jz      @f
         mov     [overlapping_of_points_ptr], overlapping_of_points_mmx
 @@:
