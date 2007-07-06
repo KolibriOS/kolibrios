@@ -47,10 +47,15 @@ iglobal
     dd except_16, e17,e18, except_19
     times 12 dd unknown_interrupt
 
-    dd   irq0  , irq_serv.irq_1, p_irq2 , p_irq3     ;irq_serv.irq_3
-    dd   p_irq4 ,irq_serv.irq_5,p_irq6,irq_serv.irq_7
-    dd   irq_serv.irq_8, irq_serv.irq_9, irq_serv.irq_10
-    dd   irq_serv.irq_11,irq_serv.irq_12,irqD ,p_irq14,p_irq15
+    dd   irq0, irq_serv.irq_1, p_irq2
+if USE_COM_IRQ
+    dd   irq_serv.irq_3, irq_serv.irq_4
+else
+    dd   p_irq3, p_irq4
+end if
+    dd   irq_serv.irq_5,  p_irq6,         irq_serv.irq_7
+    dd   irq_serv.irq_8,  irq_serv.irq_9, irq_serv.irq_10
+    dd   irq_serv.irq_11, irq_serv.irq_12,irqD ,p_irq14,p_irq15
 
     times 16 dd unknown_interrupt
 

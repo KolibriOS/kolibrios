@@ -57,6 +57,8 @@ include 'macros.inc'
 
 $Revision$
 
+USE_COM_IRQ equ 0      ;make irq 3 and irq 4 available for PCI devices
+
 include "proc32.inc"
 include "kglobals.inc"
 include "lang.inc"

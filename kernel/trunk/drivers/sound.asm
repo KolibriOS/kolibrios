@@ -13,18 +13,24 @@ include 'imports.inc'
 
 API_VERSION     equ 0x01000100
 
-DEBUG	    equ 1
+DEBUG           equ 1
+DEBUG_IRQ       equ 0
 
-REMAP_IRQ   equ 0
-IRQ_LINE    equ 0
+USE_COM_IRQ     equ 0    ;make irq 3 and irq 4 available for PCI devices
+IRQ_REMAP       equ 0
+IRQ_LINE        equ 0
+
 
 ;irq 0,1,2,8,12,13 недоступны
-;               FEDCBA9876543210
-VALID_IRQ   equ 1100111011111000b
-ATTCH_IRQ   equ 0000111010100000b
+;                   FEDCBA9876543210
+VALID_IRQ       equ 1100111011111000b
+ATTCH_IRQ       equ 0000111010100000b
 
+if USE_COM_IRQ
+ATTCH_IRQ       equ 0000111010111000b
+end if
 
-CPU_FREQ    equ  2600d
+CPU_FREQ        equ  2600d
 
 BIT0  EQU 0x00000001
 BIT1  EQU 0x00000002
@@ -314,11 +320,6 @@ proc START stdcall, state:dword
            test eax, eax
            jz .fail
 
-;     if DEBUG
-;           mov esi, msgInitCodec
-;           call SysMsgBoardStr
-;     end if
-
            call init_codec
            test eax, eax
            jz .fail
@@ -328,17 +329,38 @@ proc START stdcall, state:dword
 
            mov esi, msgPrimBuff
            call SysMsgBoardStr
-
            call create_primary_buff
+           mov esi, msgDone
+           call SysMsgBoardStr
 
-     if REMAP_IRQ
+  if IRQ_REMAP
+           pushf
+           cli
 
-    ;       call get_LPC_bus             ;проверка на интелловский чипсет
-    ;       cmp eax, -1                  ;можно пропустить
-    ;       jz .fail
-           mov [lpc_bus], 0  ;eax
-           call remap_irq
-     end if
+           mov ebx, [ctrl.int_line]
+           in al, 0xA1
+           mov ah, al
+           in al, 0x21
+           test ebx, ebx
+           jz .skip
+           bts ax, bx
+.skip
+           bts ax, IRQ_LINE
+           out 0x21, al
+           mov al, ah
+           out 0xA1, al
+
+           stdcall PciWrite8, 0, 0xF8, 0x61, IRQ_LINE
+
+           mov dx, 0x4d0
+           in al, dx
+           bts ax, IRQ_LINE
+           out dx, al
+           mov [ctrl.int_line], IRQ_LINE
+           popf
+           mov esi, msgRemap
+           call SysMsgBoardStr
+  end if
 
            mov eax, VALID_IRQ
            mov ebx, [ctrl.int_line]
@@ -450,32 +472,13 @@ restore   inp_size
 restore   output
 restore   out_size
 
-
-align 4
-proc remap_irq                         ;for Intel chipsets ONLY !!!
-           mov eax, VALID_IRQ
-           bt eax, IRQ_LINE
-           jnc .exit
-
-           mov edx, 0x4D0
-           in ax,dx
-           bts ax, IRQ_LINE
-           out dx, aX
-
-           stdcall PciWrite8, dword 0, dword 0xF8, dword 0x61, dword IRQ_LINE
-           mov [ctrl.int_line], IRQ_LINE
-
-.exit:
-	   ret
-endp
-
 align 4
 proc ac97_irq
 
-;     if DEBUG
-;           mov esi, msgIRQ
-;           call SysMsgBoardStr
-;     end if
+     if DEBUG_IRQ
+           mov esi, msgIRQ
+           call SysMsgBoardStr
+     end if
 
            mov edx, PCM_OUT_CR_REG
            mov al, 0x10;               0x10
@@ -686,45 +689,6 @@ proc detect_controller
 endp
 
 align 4
-proc get_LPC_bus                ;for Intel chipsets ONLY !!!
-           locals
-             last_bus dd ?
-             bus      dd ?
-           endl
-
-           xor eax, eax
-           mov [bus], eax
-           inc eax
-           call PciApi
-           cmp eax, -1
-           je .err
-
-           mov [last_bus], eax
-.next_bus:
-           stdcall PciRead32, [bus], dword 0xF8, dword 0
-           test eax, eax
-           jz .next
-           cmp eax, -1
-           je .next
-
-           cmp eax, 0x24D08086
-           je .found
-.next:
-           mov eax, [bus]
-           inc eax
-           cmp eax, [last_bus]
-           mov [bus], eax
-           jna .next_bus
-.err:
-           xor eax, eax
-           dec eax
-           ret
-.found:
-           mov eax, [bus]
-           ret
-endp
-
-align 4
 proc init_controller
 
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 4
@@ -785,8 +749,24 @@ proc init_controller
            call dword2str
            call SysMsgBoardStr
 
+;;patch for some ugly BIOS
+           cmp [ctrl.vendor], VID_INTEL
+           jne .default
+
+           mov esi, msgIrqMap
+           call SysMsgBoardStr
+           stdcall PciRead8, 0, 0xF8, 0x61
+           and eax, 0xFF
+           call dword2str
+           call SysMsgBoardStr
+           btr eax, 7                 ;when bit 7 set remap disabled
+           jnc @F
+           xor eax, eax
+           jmp @F
+.default:
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x3C
            and eax, 0xFF
+@@:
            mov [ctrl.int_line], eax
 
            stdcall PciRead8, [ctrl.bus], [ctrl.devfn], dword 0x41
@@ -1466,10 +1446,13 @@ msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
 ;msgNotify    db 'call notify',13,10,0
-;msgIRQ       db 'AC97 IRQ', 13,10,0
+   msgIRQ       db 'AC97 IRQ', 13,10,0
 msgInitCtrl  db 'init controller',13,10,0
 ;msgInitCodec db 'init codec',13,10,0
-msgPrimBuff  db 'create primary buffer',13,10,0
+msgPrimBuff  db 'create primary buffer ...',0
+msgDone      db 'done',13,10,0
+msgRemap     db 'Remap IRQ',13,10,0
+msgIrqMap    db 'irq remap  ',0
 ;msgReg       db 'set service handler',13,10,0
 msgOk        db 'service installed',13,10,0
 msgCold      db 'cold reset',13,10,0

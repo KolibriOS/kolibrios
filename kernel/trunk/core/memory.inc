@@ -519,7 +519,7 @@ align 4
                                ;использования. Ошибка
 .alloc:
            call alloc_page
-           and eax, eax
+           test eax, eax
            jz .fail
 
            stdcall map_page,[ebp-4],eax,dword PG_UW
@@ -563,7 +563,7 @@ align 4
 ; copy-on-write protection
 
            call alloc_page
-           and eax, eax
+           test eax, eax
            jz .fail
 
            push eax
@@ -787,7 +787,6 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            jz   .no_ipc_area
 
            mov ebx, edi
-       ;    add edi, new_app_base
            and ebx, 0xFFF
            mov [dst_offset], ebx
 
@@ -812,9 +811,8 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            cmp dword [edi], 0
            jnz  .ipc_blocked          ;if dword [buffer]<>0 - ipc blocked now
 
-           mov ebx, dword [edi+4]
-           mov edx, ebx
-           add ebx, 8
+           mov edx, dword [edi+4]
+           lea ebx, [edx+8]
            add ebx, [msg_size]
            cmp ebx, [buf_size]
            ja .buffer_overflow         ;esi<0 - not enough memory in buffer
@@ -1138,7 +1136,7 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
            mov edi, [buf_ptr]
            mov ebx, [buf_ptr]
            mov edx, ecx
-           shl edx, 2  
+           shl edx, 2
            shr edi, 10
 @@:
            mov [page_tabs+edi], eax
@@ -1147,7 +1145,7 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
            invlpg [ebx+esi]
            add eax, 0x1000
            add ebx, 0x1000
-           add edi, 4 
+           add edi, 4
            dec ecx
            jnz @B
 
