@@ -2963,7 +2963,10 @@ sys_drawwindow:
     jne   nosyswV
   draw_skin_window:
 
-    ; parameter for drawwindow_IV
+    inc   [mouse_pause]
+    call  [disable_mouse]
+    call  sys_set_window
+    call  [disable_mouse]
     push  0
     mov   edi, [TASK_COUNT]
     movzx edi, word [WIN_POS + edi*2]
@@ -2971,11 +2974,6 @@ sys_drawwindow:
     jne   @f
     inc   dword [esp]
  @@:
-
-    inc   [mouse_pause]
-    call  [disable_mouse]
-    call  sys_set_window
-    call  [disable_mouse]
     call  drawwindow_IV
     ;dec   [mouse_pause]
     ;call   [draw_pointer]
@@ -3215,6 +3213,11 @@ sys_set_window:
         movsd
         movsd
     pop   edi esi ecx
+
+        mov     esi, [CURRENT_TASK]
+        movzx   esi, word [WIN_STACK+esi*2]
+        lea     esi, [WIN_POS+esi*2]
+        call    waredraw
 
     push  eax ebx ecx edx
 ;;;    mov   eax, 1

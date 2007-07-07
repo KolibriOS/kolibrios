@@ -1090,32 +1090,18 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 
            lea ecx, [ebx+REG_RET]
            mov ebx, [slot]
-           shl ebx, 8
-           mov [ebx+SLOT_BASE+APPDATA.saved_esp], ecx
+           shl ebx, 5
+           mov [ebx*8+SLOT_BASE+APPDATA.saved_esp], ecx
 
-;flush keyboard and buttons queue
-           mov    [KEY_COUNT],byte 0
-           mov    [BTN_COUNT],byte 0
-
-           mov    edi,[slot]
-           shl    edi,5
-           add    edi,window_data
-           mov    ebx,[slot]
-           movzx  esi,word [WIN_STACK+ebx*2]
-           lea    esi,[WIN_POS+esi*2]
-           call   windowactivate        ;gui initialization
-
-           mov    ebx,[slot]
-           shl    ebx,5
-           mov    [CURRENT_TASK+ebx+0xa],byte 0 ;set process state - running
+           xor  ecx, ecx        ; process state - running
 ; set if debuggee
-           mov eax, [flags]
            test byte [flags], 1
            jz   .no_debug
-           mov  [CURRENT_TASK+ebx+0xa],byte 1 ;set process state - suspended
+           inc  ecx             ; process state - suspended
            mov  eax,[CURRENT_TASK]
-           mov  [SLOT_BASE+ebx*8+0xac],eax ;set debugger PID - current
+           mov  [SLOT_BASE+ebx*8+APPDATA.debugger_slot],eax
 .no_debug:
+           mov  [CURRENT_TASK+ebx+TASKDATA.state], cl
            ;mov    esi,new_process_running
            ;call   sys_msg_board_str     ;output information about succefull startup
            DEBUGF 1,"%s",new_process_running
@@ -1123,4 +1109,3 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 endp
 
 include "debug.inc"
-
