@@ -18,6 +18,8 @@ public _draw_bar@20
 public _write_text@20
 public _debug_out@4
 public _debug_out_hex@4
+public _create_thread@12
+
 
 public _memset
 
@@ -30,6 +32,49 @@ struc FILEIO
                     db ?
     .name           dd ?
 };
+
+align 4
+_create_thread@12:
+.thr_proc    equ esp+4
+.param       equ esp+8
+.stack_size  equ esp+12
+
+           mov eax, 68
+           mov ebx, 12
+           mov ecx, [.stack_size]
+           add ecx, 4095
+           and ecx, -4096
+           int 0x40
+           test eax, eax
+           jz .fail
+
+           lea edx, [eax+ecx-12]
+           mov [edx], dword .exit_point
+           mov ebx, [.param]
+           mov [edx+4], ebx
+           mov [edx+8], ecx
+
+           mov eax, 51
+           mov ebx, 1
+           mov ecx, [.thr_proc]
+           int 0x40
+           ret 12
+.fail:
+           not eax
+           ret 12
+align 4
+.exit_point:
+           pop ecx
+           mov eax, 68
+           mov ebx, 13
+           int 0x40
+           mov eax, -1
+           int 0x40
+
+restore .thr_proc
+restore .param
+restore .stack_size
+
 
 align 4
 proc _get_button_id
@@ -158,7 +203,7 @@ endp
 
 align 4
 proc _GetMousePos@4 stdcall,rel_type:dword
-           push ebx  
+           push ebx
            mov eax, 37
            mov ebx, [rel_type]
            int 0x40
@@ -170,7 +215,7 @@ endp
 align 4
 proc _DrawWindow@36 stdcall, x:dword, y:dword, sx:dword, sy:dword,\
                                workcolor:dword, style:dword, captioncolor:dword,\
-                               windowtype:dword, bordercolor:dword  
+                               windowtype:dword, bordercolor:dword
            push ebx edi esi
            mov ebx, [x]
            mov ecx, [y]
@@ -199,7 +244,7 @@ _make_button@24:
 ;arg4 - ysize
 ;arg5 - id
 ;arg6 - color
-      
+
   push  ebx esi
   mov   ebx,[esp+12]
   shl   ebx,16
@@ -261,7 +306,7 @@ proc _debug_out@4 stdcall, val:dword
            int  0x40
            pop ebx
            ret
-endp           
+endp
 
 align 4
 proc _debug_out_hex@4 stdcall val:dword
@@ -282,29 +327,29 @@ proc _debug_out_hex@4 stdcall val:dword
            jnz .new_char
            ret
 endp
-                   
+
 align 4
 _memset:
            mov     edx,[esp + 0ch]
-           mov     ecx,[esp + 4] 
+           mov     ecx,[esp + 4]
 
-           test    edx,edx         
-           jz      short toend    
-        
+           test    edx,edx
+           jz      short toend
+
            xor     eax,eax
            mov     al,[esp + 8]
 
-           push    edi            
-           mov     edi,ecx      
+           push    edi
+           mov     edi,ecx
 
            cmp     edx,4
-           jb      tail    
-           
+           jb      tail
+
            neg     ecx
-           and     ecx,3           
-           jz      short dwords  
-           
-           sub     edx,ecx   
+           and     ecx,3
+           jz      short dwords
+
+           sub     edx,ecx
 adjust_loop:
            mov     [edi],al
            add     edi,1
@@ -312,66 +357,66 @@ adjust_loop:
            jnz     adjust_loop
 
 dwords:
-        mov     ecx,eax        
-        shl     eax,8           
-        add     eax,ecx         
-        mov     ecx,eax         
-        shl     eax,10h         
-        add     eax,ecx         
-        
-        mov     ecx,edx         
-        and     edx,3           
-        shr     ecx,2           
-        jz      tail        
+        mov     ecx,eax
+        shl     eax,8
+        add     eax,ecx
+        mov     ecx,eax
+        shl     eax,10h
+        add     eax,ecx
 
-                cld     
+        mov     ecx,edx
+        and     edx,3
+        shr     ecx,2
+        jz      tail
+
+                cld
         rep     stosd
 main_loop_tail:
-        test    edx,edx    
-        jz      finish        
+        test    edx,edx
+        jz      finish
 
 
 tail:
-        mov     [edi],al      
+        mov     [edi],al
         add     edi,1
 
-        sub     edx,1         
-        jnz     tail            
+        sub     edx,1
+        jnz     tail
 
 finish:
-        mov     eax,[esp + 8] 
-        pop     edi             
+        mov     eax,[esp + 8]
+        pop     edi
 
         ret
 
 toend:
-        mov     eax,[esp + 4] 
+        mov     eax,[esp + 4]
 
         ret
 
 public _allmul
 
-_allmul: 
+_allmul:
         mov eax, [esp+8]
         mov ecx, [esp+16]
-        or ecx,eax         
+        or ecx,eax
         mov ecx, [esp+12]
-        jnz .hard     
+        jnz .hard
         mov eax, [esp+4]
         mul ecx
-        ret 16   
+        ret 16
 .hard:
         push ebx
-        mul ecx       
+        mul ecx
         mov ebx,eax
         mov eax, [esp+8]
         mul dword [esp+20]
-        add ebx,eax         
+        add ebx,eax
         mov eax,[esp+8]
-        mul ecx             
-        add edx,ebx      
+        mul ecx
+        add edx,ebx
         pop ebx
-        ret 16    
+        ret 16
 
 align 4
 _allshr:
@@ -410,7 +455,7 @@ __ftol2_sse:
            mov eax, [esp+10]
            test eax, eax
            jz .QnaNZ
-           
+
 .not_QnaNZ:
            fsubp st1, st0
            test edx, edx
@@ -435,13 +480,13 @@ __ftol2_sse:
            jne .not_QnaNZ
            fstp dword [esp+18]
            fstp dword [esp+18]
-.exit:           
+.exit:
            leave
            ret
 
 public __fltused
 __fltused    dd 0
-           
+
 align 4
 __hexdigits db '0123456789ABCDEF'
 

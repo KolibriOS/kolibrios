@@ -14,28 +14,11 @@
 //   GNU General Public License for more details.
 
 
-#define ST_DONE 0x0
-#define ST_PLAY 0x1
-#define ST_EXIT 0x2
-#define ST_STOP 0x4
+#define ST_DONE  0x0
+#define ST_PLAY  0x1
+#define ST_EXIT  0x2
+#define ST_STOP  0x4
 
-typedef struct
-{  DWORD riff_id;
-    DWORD riff_size;
-    DWORD riff_format;
-
-    DWORD fmt_id;
-    DWORD fmt_size;
-
-    WORD  wFormatTag;
-    WORD  nChannels;
-    DWORD nSamplesPerSec;
-    DWORD nAvgBytesPerSec;
-    WORD  nBlockAlign;
-    WORD  wBitsPerSample;
-    DWORD data_id;
-    DWORD data_size;
-} WAVEHEADER;
 
 DWORD test_mp3(char *buf);
 

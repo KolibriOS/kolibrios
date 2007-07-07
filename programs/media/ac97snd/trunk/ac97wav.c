@@ -22,7 +22,10 @@
 #define MP3_ERROR_OUT_OF_BUFFER  5
 int m_last_error;
 
-void thread_proc();
+void _stdcall thread_proc(void *param);
+void _stdcall create_thread(void *proc, void *param, int stack_size);
+void _stdcall send_ipc(int dst, DWORD code);
+
 void touch(char *buf, int size);
 int mp3FindSync(byte* buf, int size, int* sync);
 int stream_read_raw(struct reader *rd,unsigned char *buf, int size);
@@ -41,8 +44,8 @@ CTRL_INFO info;
 FILEINFO   fileinfo;
 
 int m_vol;
-int l_vol=-500;
-int r_vol=-500;
+int l_vol=-700;     //-7db
+int r_vol=-700;
 int pan =0;
 
 DWORD status;
@@ -110,28 +113,32 @@ void debug_out_str(char* str)
 }
 
 int main(int argc, char *argv[])      //int argc, char *argv[])
-{ DWORD fmt;
-   char *thread_stack;
+{
+   DWORD fmt;
    DWORD r_bytes;
    int retval;
    int err;
    int ver;
     
    fname = argv[1];
-   //debug_out_str(fname); 
+   debug_out_str("\n\rPlay file ");
+   debug_out_str(fname); 
+   debug_out_str("\n\r");
     
    InitHeap(1024*1024);
    if(get_fileinfo(fname, &fileinfo)==FILE_NOT_FOUND)
+   {  debug_out_str("\n\rfile not found\n\r"); 
       return 0;
+   };
 
-   
    if(err = InitSound(&ver))
    {  
      debug_out_str("Sound service not installed\n\r"); 
      return 0;
    }
    
-   if( ver != SOUND_VERSION)
+   if( (SOUND_VERSION>(ver&0xFFFF)) ||
+       (SOUND_VERSION<(ver >> 16)))
    {  
      debug_out_str("Sound service version mismatch\n\r"); 
      return 0;
@@ -176,14 +183,13 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
    if (err = CreateBuffer(fmt,0, &hBuff))
    {
      debug_out_str("create buffer return error\n\r"); 
-     return 0;
+    ; return 0;
    }
        
    SetVolume(hBuff,l_vol,r_vol);
-   thread_stack = UserAlloc(4096);
-   thread_stack+=4092;
+   GetVolume(hBuff,&l_vol,&r_vol); 
 
-   CreateThread(thread_proc, thread_stack);
+   create_thread(thread_proc, 0, 4096);
 
    while(1)
    {  delay(10);
@@ -289,17 +295,6 @@ void play_mp3()
     else
       if(totalout < 8192)
         continue;
-/*       
-     _asm
-  {  push edx
-      push eax 
-      mov eax, 0xFF
-      mov edx, 0x400
-      out dx, al
-      pop eax
-      pop edx  
-  };  
-*/      
     outPtr = outbuf;      
     while (totalout >= 4096)
     { 
@@ -351,7 +346,7 @@ void snd_stop()
   StopBuffer(hBuff);
 };
 
-void thread_proc()
+void _stdcall thread_proc(void *param)
 {  int evnt;
    int pos;
    int key;

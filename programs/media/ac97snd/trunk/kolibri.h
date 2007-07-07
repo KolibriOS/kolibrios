@@ -4,6 +4,7 @@ extern "C"
 {
 #endif
 
+
 #define FONT0          0x00000000
 #define FONT1          0x10000000
 
@@ -15,6 +16,7 @@ extern "C"
 #define EV_REDRAW      1
 #define EV_KEY         2
 #define EV_BUTTON      3
+#define EV_IPC         7
 
 #define REL_SCREEN     0
 #define REL_WINDOW     1
@@ -22,9 +24,9 @@ extern "C"
 #define FILE_NOT_FOUND 5
 #define FILE_EOF       6
 
+
 typedef unsigned int DWORD;
 typedef unsigned short int WORD;
-typedef unsigned int size_t;
 
 typedef struct
 {  DWORD pci_cmd;
@@ -61,26 +63,37 @@ typedef struct
     DWORD    size_high; 
 } FILEINFO;
 
-void  _stdcall InitHeap(size_t heap_size);
-void* _stdcall UserAlloc(size_t size);
+void  _stdcall InitHeap(int heap_size);
+void* _stdcall UserAlloc(int size);
+int   _stdcall UserFree(void* p);
+ 
+void  _stdcall GetNotify(void *event);
 
 void _stdcall CreateThread(void *fn, char *p_stack);
+
 DWORD _stdcall GetMousePos(DWORD rel_type);
 
 void _stdcall debug_out_hex(DWORD val);
 void debug_out_str(char* str);
 
-int _stdcall get_fileinfo(char *name,FILEINFO* pinfo);
-int _stdcall read_file (char *name,char*buff,int offset,int count,int *reads);
+int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
+int _stdcall create_file(const char *name);
+int _stdcall read_file (const char *name,char*buff,DWORD offset, DWORD count,DWORD *reads);
+int _stdcall write_file(const char *name,char*buff,int offset,int count,int *writes);
 
-void exit();
+//void exit();
 int _stdcall get_key(int *key);
+int _stdcall remap_key(int key);
+
 int _cdecl get_button_id();
+
 void delay(int val);
 int wait_for_event(int time);
 int wait_for_event_infinite();
 void BeginDraw(void);
 void EndDraw(void);
+
+void _stdcall GetScreenSize(int *x, int*y);
 void _stdcall DrawWindow(int x,int y, int sx, int sy,int workcolor,int style,
                                int captioncolor,int windowtype,int bordercolor);
 void _stdcall debug_out(int ch);
