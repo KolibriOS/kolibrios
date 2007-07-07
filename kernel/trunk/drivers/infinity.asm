@@ -321,6 +321,8 @@ proc CreateBuffer stdcall, format:dword, size:dword
            test eax, PCM_RING
            jnz .test_ring
 ;staic
+           test eax, PCM_STATIC
+           jz .fail
            test eax, PCM_OUT+PCM_RING
            jnz .fail
            jmp .test_ok
@@ -754,7 +756,15 @@ proc ResetBuffer stdcall, str:dword, flags:dword
            mov [edx+STREAM.in_wp], edi
            mov [edx+STREAM.in_rp], edi
 
+           test [edx+STREAM.flags], PCM_STATIC
+           jnz .static
            mov [edx+STREAM.in_count], 0
+           jmp @F
+.static:
+           mov eax, [edx+STREAM.in_size]
+           mov [edx+STREAM.in_count], eax
+@@:
+
            mov eax, [edx+STREAM.in_size]
            sub eax, 128
            mov [edx+STREAM.in_free], eax
@@ -807,6 +817,8 @@ proc GetBufferPos stdcall, str:dword
            jnz .fail
 
            mov ebx, [edx+STREAM.in_rp]
+           sub ebx, [edx+STREAM.in_base]
+           sub ebx, 128
            xor eax, eax
            ret
 .fail:
@@ -967,7 +979,7 @@ proc play_buffer stdcall, str:dword, flags:dword
            ret
 endp
 
-; for static buffers only
+; for static and ring buffers only
 
 align 4
 proc stop_buffer stdcall, str:dword

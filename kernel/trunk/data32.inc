@@ -77,6 +77,7 @@ AMD_str        db "AuthenticAMD",0
 ;szInfinity     db 'INFINITY',0
 szHwMouse       db 'ATI2D',0
 szPS2MDriver    db 'PS2MOUSE',0
+szUSB           db 'USB',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0

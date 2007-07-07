@@ -343,19 +343,19 @@ proc START stdcall, state:dword
            in al, 0x21
            test ebx, ebx
            jz .skip
-           bts ax, bx
+           bts ax, bx                      ;mask old line
 .skip
-           bts ax, IRQ_LINE
+           bts ax, IRQ_LINE                ;mask new ine
            out 0x21, al
            mov al, ah
            out 0xA1, al
-
+                                           ;remap IRQ
            stdcall PciWrite8, 0, 0xF8, 0x61, IRQ_LINE
 
-           mov dx, 0x4d0
+           mov dx, 0x4d0                   ;8259 ELCR1
            in al, dx
            bts ax, IRQ_LINE
-           out dx, al
+           out dx, al                      ;set level-triggered mode
            mov [ctrl.int_line], IRQ_LINE
            popf
            mov esi, msgRemap
@@ -642,7 +642,6 @@ proc detect_controller
            je .found
            add edi, 12
            jmp @B
-
 .next:
            inc [devfn]
            cmp [devfn], 256
@@ -749,6 +748,8 @@ proc init_controller
            call dword2str
            call SysMsgBoardStr
 
+if 0
+
 ;;patch for some ugly BIOS
            cmp [ctrl.vendor], VID_INTEL
            jne .default
@@ -763,6 +764,8 @@ proc init_controller
            jnc @F
            xor eax, eax
            jmp @F
+end if
+
 .default:
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x3C
            and eax, 0xFF
@@ -1446,13 +1449,12 @@ msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
 ;msgNotify    db 'call notify',13,10,0
-   msgIRQ       db 'AC97 IRQ', 13,10,0
+msgIRQ       db 'AC97 IRQ', 13,10,0
 msgInitCtrl  db 'init controller',13,10,0
 ;msgInitCodec db 'init codec',13,10,0
 msgPrimBuff  db 'create primary buffer ...',0
 msgDone      db 'done',13,10,0
 msgRemap     db 'Remap IRQ',13,10,0
-msgIrqMap    db 'irq remap  ',0
 ;msgReg       db 'set service handler',13,10,0
 msgOk        db 'service installed',13,10,0
 msgCold      db 'cold reset',13,10,0
@@ -1469,6 +1471,7 @@ msgCtrlIsaIo db 'controller io base   ',0
 msgMixIsaIo  db 'codec io base        ',0
 msgCtrlMMIo  db 'controller mmio base ',0
 msgMixMMIo   db 'codec mmio base      ',0
+msgIrqMap    db 'AC97 irq map as      ',0
 
 section '.data' data readable writable align 16
 

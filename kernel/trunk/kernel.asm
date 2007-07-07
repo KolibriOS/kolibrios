@@ -610,6 +610,9 @@ no_lib_load:
 
         mov    esi,boot_devices
         call   boot_log
+
+        mov  [pci_access_enabled],1
+
         call   detect_devices
         stdcall load_driver, szPS2MDriver
 
@@ -630,7 +633,6 @@ no_lib_load:
         call  boot_log
         call  setmouse
 
-        mov  [pci_access_enabled],1
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -2960,7 +2962,7 @@ sys_drawwindow:
     cmp   edi,4   ; type V - skinned window not sized!		{not_sized_skin_window}
     jne   nosyswV
   draw_skin_window:
-  
+
     ; parameter for drawwindow_IV
     push  0
     mov   edi, [TASK_COUNT]
@@ -3003,7 +3005,7 @@ draw_window_caption:
         je      .draw_caption_style_3		;{for 3 and 4 style write caption}
         cmp     bl,4
         je      .draw_caption_style_3
-    
+
         jmp     .not_style_3
   .draw_caption_style_3:
 
@@ -3042,9 +3044,9 @@ draw_window_caption:
         je      .skinned
         cmp     al,4
         je      .skinned
-       
+
         jmp     .not_skinned
-  .skinned:		
+  .skinned:
         mov     ebp,[edi+window_data+WDATA.box.left-2]
         mov     bp,word[edi+window_data+WDATA.box.top]
         movzx   eax,word[edi+window_data+WDATA.box.width]
@@ -3201,8 +3203,8 @@ sys_set_window:
         je      set_APPDATA_wnd_caption
         cmp     cl,4								; {SPraid.simba}
         je      set_APPDATA_wnd_caption
-        
-        jmp     @f		
+
+        jmp     @f
     set_APPDATA_wnd_caption:
         mov     [edi+APPDATA.wnd_caption],esi
     @@: mov     esi,[esp+0]
