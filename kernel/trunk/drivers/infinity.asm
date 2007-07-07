@@ -322,13 +322,12 @@ proc CreateBuffer stdcall, format:dword, size:dword
            jnz .test_ring
 ;staic
            test eax, PCM_STATIC
-           jz .fail
-           test eax, PCM_OUT+PCM_RING
-           jnz .fail
+           jz .test_out                   ;use PCM_OUT as default format
            jmp .test_ok
 .test_out:
            test eax, PCM_RING+PCM_STATIC
            jnz .fail
+           or [format], PCM_OUT           ;force set
            jmp .test_ok
 .test_ring:
            test eax, PCM_OUT+PCM_STATIC
@@ -621,8 +620,8 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
 
            mov edx, [str]
            mov eax, [edx+STREAM.format]
-           test eax, PCM_STATIC+PCM_RING
-           jnz .fail
+           test eax, PCM_OUT
+           jz .fail
 
            cmp ax, PCM_ALL
            je .fail
@@ -786,8 +785,8 @@ align 4
 proc SetBufferPos stdcall, str:dword, pos:dword
 
            mov edx, [str]
-           test [edx+STREAM.format], PCM_OUT+PCM_RING
-           jnz .fail
+           test [edx+STREAM.format], PCM_STATIC
+           jz .fail
 
            mov [edx+STREAM.flags], SND_STOP
 
@@ -813,8 +812,8 @@ align 4
 proc GetBufferPos stdcall, str:dword
 
            mov edx, [str]
-           test [edx+STREAM.format], PCM_OUT+PCM_RING
-           jnz .fail
+           test [edx+STREAM.format], PCM_STATIC
+           jz .fail
 
            mov ebx, [edx+STREAM.in_rp]
            sub ebx, [edx+STREAM.in_base]
@@ -940,9 +939,6 @@ endp
 
 align 4
 proc play_buffer stdcall, str:dword, flags:dword
-           locals
-             fpu_state   rb 528
-           endl
 
            mov ebx, [str]
            mov eax, [ebx+STREAM.format]

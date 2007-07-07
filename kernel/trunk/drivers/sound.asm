@@ -750,7 +750,7 @@ proc init_controller
 
 if 0
 
-;;patch for some ugly BIOS
+;;patch for some ugly BIOS  ICH-ICH5 compatible
            cmp [ctrl.vendor], VID_INTEL
            jne .default
 

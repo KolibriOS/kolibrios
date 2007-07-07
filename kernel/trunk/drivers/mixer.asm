@@ -74,9 +74,7 @@ align 4
 proc update_stream
            locals
              stream_index  dd ?
-             ev_code       dd ?  ;EVENT
-             ev_offs       dd ?
-                           rd 4
+             event         rd 6
            endl
 
            mov [stream_index], 0
@@ -112,6 +110,7 @@ proc update_stream
            jmp .skip
 .copy:
            mov ebx, esi
+           mov esi, [ebx+STREAM.in_rp]
            mov edi, [ebx+STREAM.out_wp]
            cmp edi, [ebx+STREAM.out_top]
            jb @f
@@ -119,23 +118,58 @@ proc update_stream
            sub edi, 64*1024
            mov [ebx+STREAM.out_wp], edi
 @@:
-           mov esi, [ebx+STREAM.in_rp]
-           mov ecx, 16384/4
+           test [ebx+STREAM.format], PCM_RING
+           jnz .stream
+
+           mov ecx, [ebx+STREAM.in_count]
+           test ecx, ecx
+           jz .done
+
+           cmp ecx, 16384
+           jbe @F
+           mov ecx, 16386
+@@:
+           sub [ebx+STREAM.in_count], ecx
+.stream:
+           add [ebx+STREAM.in_free], ecx
+           add [ebx+STREAM.out_count], ecx
+
+           shr ecx, 2
            cld
            rep movsd
 
            mov [ebx+STREAM.out_wp], edi
-
            cmp esi, [ebx+STREAM.in_top]
            jb @f
 
-           sub esi, 0x10000
+           sub esi, [ebx+STREAM.in_size]
 @@:
            mov [ebx+STREAM.in_rp], esi
+           test [ebx+STREAM.format], PCM_RING
+           jz .done
 
+           sub esi, [ebx+STREAM.in_base]
+           sub esi, 128
+           lea edx, [event]
+
+           mov dword [edx], RT_INP_EMPTY
+           mov dword [edx+4], 0
+           mov dword [edx+8], ebx
+           mov dword [edx+12], esi
+
+           mov eax, [ebx+STREAM.notify_event]
            test eax, eax
            jz .l_end
+
+           mov ebx, [ebx+STREAM.notify_id]
+           xor ecx, ecx
+           call RaiseEvent   ;eax, ebx, ecx, edx
+           jmp .l_end
+.done:
            mov eax, [ebx+STREAM.notify_event]
+           test eax, eax
+           jz .l_end
+
            mov ebx, [ebx+STREAM.notify_id]
            mov ecx, EVENT_WATCHED
            xor edx, edx
@@ -151,7 +185,6 @@ align 4
 proc refill stdcall, str:dword
            locals
              r_size    rd 1
-             event     rd 6
            endl
 
            mov ebx, [str]
