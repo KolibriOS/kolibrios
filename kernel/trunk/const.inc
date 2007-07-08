@@ -284,6 +284,7 @@ FLOPPY_FAT          equ (OS_BASE+0x0282000)
 
 BgrAuxTable         equ (OS_BASE+0x0298000)
 ; unused?
+SB16Buffer          equ (OS_BASE+0x2A0000)
 SB16_Status         equ (OS_BASE+0x02B0000)
 
 BUTTON_INFO         equ (OS_BASE+0x02C0000)

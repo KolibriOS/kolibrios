@@ -21,7 +21,6 @@ SB16_load_music  equ   0xc0000000
 SB16_play_music  equ   0xc0000001
 DMAPage          equ   0x2A
 Rate             equ   44100
-SB16Buffer       equ   0x2A0000
 ;SB16_Status      equ   SB16Buffer+65536
 
 iglobal
