@@ -13,6 +13,7 @@ API_VERSION     equ 0  ;debug
 
 include '../proc32.inc'
 include '../imports.inc'
+include 'urb.inc'
 
 struc UHCI
 {
@@ -368,6 +369,42 @@ proc insert_td stdcall, td:dword, frame:dword
            mov [ebx+eax], edi
            mov ecx, [edi+TD.addr]
            mov [eax+edx], ecx
+           ret
+endp
+
+
+align 4
+proc usb_get_descriptor stdcall, dev:dword, type:dword, index:dword,\
+                                 buf:dword, size:dword
+
+           locals
+             count        dd ?
+           endl
+
+           mov esi, [buf]
+           mov ecx, [size]
+           xor eax, eax
+           cld
+           rep stosb
+
+           mov [count], 3
+@@:
+           mov eax, [type]
+           shl eax, 8
+           add eax, [index]
+           stdcall usb_control_msg, [dev],pipe,USB_REQ_GET_DESCRIPTOR,\
+                                    USB_DIR_IN, eax,0,[buf], [size],\
+                                    USB_CTRL_GET_TIMEOUT
+           test eax, eax
+           jz .next
+           cmp eax, -1
+           je .next
+           jmp. ok
+.next:
+           dec [count]
+           jnz @B
+           mov eax, -1
+.ok:
            ret
 endp
 

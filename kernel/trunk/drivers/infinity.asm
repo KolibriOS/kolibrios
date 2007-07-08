@@ -198,7 +198,7 @@ proc service_proc stdcall, ioctl:dword
 @@:
            cmp eax, SND_SETFORMAT
            jne @F
-           stdcall SetFormat,[ebx],[ebx+4]
+           stdcall SetFormat,edx,[ebx+4]
            ret
 @@:
            cmp eax, SND_GETFORMAT
@@ -213,17 +213,17 @@ proc service_proc stdcall, ioctl:dword
 @@:
            cmp eax, SND_RESET
            jne @F
-           stdcall ResetBuffer,[ebx],[ebx+4]
+           stdcall ResetBuffer,edx,[ebx+4]
            ret
 @@:
            cmp eax, SND_SETPOS
            jne @F
-           stdcall SetBufferPos,[ebx],[ebx+4]
+           stdcall SetBufferPos,edx,[ebx+4]
            ret
 @@:
            cmp eax, SND_GETPOS
            jne @F
-           stdcall GetBufferPos, [ebx]
+           stdcall GetBufferPos, edx
            mov edi, [ioctl]
            mov ecx, [edi+output]
            mov ecx, [ecx]
@@ -233,12 +233,12 @@ proc service_proc stdcall, ioctl:dword
            cmp eax, SND_SETBUFF
            jne @F
            mov eax, [ebx+4]
-           stdcall set_buffer, [ebx],eax,[ebx+8],[ebx+12]
+           stdcall set_buffer, edx,eax,[ebx+8],[ebx+12]
            ret
 @@:
            cmp eax, SND_SETVOLUME
            jne @F
-           stdcall SetBufferVol,[ebx],[ebx+4],[ebx+8]
+           stdcall SetBufferVol,edx,[ebx+4],[ebx+8]
            ret
 @@:
            cmp eax, SND_GETVOLUME
@@ -247,12 +247,12 @@ proc service_proc stdcall, ioctl:dword
            mov eax, [edi+output]
            mov ecx, [eax]
            mov eax, [eax+4]
-           stdcall GetBufferVol,[ebx],ecx,eax
+           stdcall GetBufferVol,edx,ecx,eax
            ret
 @@:
            cmp eax, SND_SETPAN
            jne @F
-           stdcall SetBufferPan,[ebx],[ebx+4]
+           stdcall SetBufferPan,edx,[ebx+4]
            ret
 @@:
            cmp eax, SND_GETPAN
@@ -268,19 +268,19 @@ proc service_proc stdcall, ioctl:dword
            jne @F
 
            mov eax, [ebx+4]
-           stdcall wave_out, [ebx],eax,[ebx+8]
+           stdcall wave_out, edx,eax,[ebx+8]
            ret
 @@:
            cmp eax, SND_PLAY
            jne @F
 
-           stdcall play_buffer, [ebx],[ebx+4]
+           stdcall play_buffer, edx,[ebx+4]
            ret
 @@:
            cmp eax, SND_STOP
            jne @F
 
-           stdcall stop_buffer, [ebx]
+           stdcall stop_buffer, edx
            ret
 @@:
            cmp eax, SND_GETBUFFSIZE
@@ -289,6 +289,18 @@ proc service_proc stdcall, ioctl:dword
            mov ecx, [edi+output]
            mov ecx, [ecx]
            mov [ecx], eax
+           xor eax, eax
+           ret
+@@:
+           cmp eax, SND_GETFREESPACE
+           jne @F
+
+           test [edx+STREAM.format], PCM_OUT
+           jz .fail
+
+           mov ebx, [edx+STREAM.in_free]
+           mov ecx, [edi+output]
+           mov [ecx], ebx
            xor eax, eax
            ret
 @@:

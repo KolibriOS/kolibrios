@@ -5,6 +5,10 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+AD_LOSEL   equ BIT5
+AD_HPSEL   equ BIT10
+
 align 4
 proc detect_codec
            locals
@@ -161,6 +165,14 @@ proc set_sample_rate stdcall, rate:dword
            stdcall codec_write, dword CODEC_PCM_FRONT_DACRATE_REG
            ret
 endp
+
+patch_AD:
+           stdcall codec_read, 0x76
+           or ax, BIT5+BIT10
+           stdcall codec_write, 0x76
+           ret
+
+
 
 align 16
 ac_unknown     db 'unknown manufacturer',13,10,0
