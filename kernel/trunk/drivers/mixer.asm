@@ -89,9 +89,6 @@ proc update_stream
 @@:
            mov [esi+STREAM.out_rp], eax
 
-           cmp word [esi+STREAM.format], PCM_2_16_48
-           je .copy
-
            cmp [esi+STREAM.out_count], 16384
            ja .skip
 
@@ -104,81 +101,9 @@ proc update_stream
            dec [play_count]
            jnz .l1
            ret
-
 .ring:
            stdcall refill_ring, esi
            jmp .skip
-.copy:
-           mov ebx, esi
-           mov esi, [ebx+STREAM.in_rp]
-           mov edi, [ebx+STREAM.out_wp]
-           cmp edi, [ebx+STREAM.out_top]
-           jb @f
-
-           sub edi, 64*1024
-           mov [ebx+STREAM.out_wp], edi
-@@:
-           test [ebx+STREAM.format], PCM_RING
-           jnz .stream
-
-           mov ecx, [ebx+STREAM.in_count]
-           test ecx, ecx
-           jz .done
-
-           cmp ecx, 16384
-           jbe @F
-           mov ecx, 16386
-@@:
-           sub [ebx+STREAM.in_count], ecx
-.stream:
-           add [ebx+STREAM.in_free], ecx
-           add [ebx+STREAM.out_count], ecx
-
-           shr ecx, 2
-           cld
-           rep movsd
-
-           mov [ebx+STREAM.out_wp], edi
-           cmp esi, [ebx+STREAM.in_top]
-           jb @f
-
-           sub esi, [ebx+STREAM.in_size]
-@@:
-           mov [ebx+STREAM.in_rp], esi
-           test [ebx+STREAM.format], PCM_RING
-           jz .done
-
-           sub esi, [ebx+STREAM.in_base]
-           sub esi, 128
-           lea edx, [event]
-
-           mov dword [edx], RT_INP_EMPTY
-           mov dword [edx+4], 0
-           mov dword [edx+8], ebx
-           mov dword [edx+12], esi
-
-           mov eax, [ebx+STREAM.notify_event]
-           test eax, eax
-           jz .l_end
-
-           mov ebx, [ebx+STREAM.notify_id]
-           xor ecx, ecx
-           call RaiseEvent   ;eax, ebx, ecx, edx
-           jmp .l_end
-.done:
-           mov eax, [ebx+STREAM.notify_event]
-           test eax, eax
-           jz .l_end
-
-           mov ebx, [ebx+STREAM.notify_id]
-           mov ecx, EVENT_WATCHED
-           xor edx, edx
-           call RaiseEvent     ;eax, ebx, ecx, edx
-.l_end:
-           inc [stream_index]
-           dec [play_count]
-           jnz .l1
-           ret
 endp
 
 align 4
@@ -489,8 +414,8 @@ proc copy_stream stdcall, dest:dword,src:dword,\
            shr ecx, 2
            mov esi, [src]
            mov edi, [dest]
+           cld
            rep movsd
-           mov eax, 16384
            ret
 endp
 

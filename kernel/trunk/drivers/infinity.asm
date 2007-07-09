@@ -647,7 +647,7 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
            jz .fail
 
            cmp esi, OS_BASE
-           ja .fail
+           jae .fail
 
            mov [state_saved], 0
 
@@ -717,8 +717,8 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
 @@:
            stdcall refill, edx
 .skip:
-           mov ebx, [str]
-           mov [ebx+STREAM.flags], SND_PLAY
+           mov edx, [str]
+           mov [edx+STREAM.flags], SND_PLAY
            cmp [eng_state], SND_PLAY
            je .main_loop
 
