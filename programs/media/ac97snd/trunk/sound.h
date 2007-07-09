@@ -7,7 +7,7 @@ extern "C"
 {
 #endif
 
-#define SOUND_VERSION 0x0100
+#define SOUND_VERSION 0x0101
 #define PCM_ALL       0
 
 #define PCM_OUT       0x08000000
@@ -70,6 +70,8 @@ extern "C"
 #define SND_SETPAN         14
 #define SND_GETPAN         15
 #define SND_GETBUFFSIZE    16
+#define SND_GETFREESPACE   17
+
 
 #define PLAY_SYNC     0x80000000
 
@@ -87,6 +89,7 @@ int _stdcall  ResetBuffer(SNDBUF hBuff, unsigned int flags);
 int _stdcall  SetBufferPos(SNDBUF hBuff, int offset);
 int _stdcall  GetBufferPos(SNDBUF hBuff, int *offset);
 int _stdcall  GetBufferSize(SNDBUF hBuff, int *size);
+int _stdcall  GetBufferFree(SNDBUF hBuff, int *free);
 
 int _stdcall  SetBuffer(SNDBUF hBuff,void* buff,
                         int offs, int size);

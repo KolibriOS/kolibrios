@@ -29,6 +29,7 @@ SND_GETVOLUME       equ 13
 SND_SETPAN          equ 14
 SND_GETPAN          equ 15
 SND_GETBUFFSIZE     equ 16
+SND_GETFREESPACE    equ 17
 
 DEV_SET_BUFF        equ  4
 DEV_NOTIFY          equ  5
