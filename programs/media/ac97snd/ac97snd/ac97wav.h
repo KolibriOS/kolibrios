@@ -18,6 +18,7 @@
 #define ST_PLAY  0x1
 #define ST_EXIT  0x2
 #define ST_STOP  0x4
+#define ST_TRACK 0x5
 
 
 DWORD test_mp3(char *buf);

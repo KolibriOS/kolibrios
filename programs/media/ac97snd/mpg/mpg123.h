@@ -85,7 +85,8 @@ struct bitstream_info
 extern struct bitstream_info bsi;
 
 struct reader
-{  char *hFile;
+{   
+    char *hFile;
     unsigned char *buffer;
     unsigned char *stream;
     int strpos;
@@ -96,6 +97,8 @@ struct reader
     int  (*head_read)(struct reader *,unsigned long *newhead);
     int  (*read_frame_body)(struct reader *,unsigned char *,int size);
  };
+ 
+int parse_new_id3(struct reader *rd, unsigned long newhead); 
 
 struct al_table 
 { short bits;

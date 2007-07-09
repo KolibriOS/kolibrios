@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<VisualStudioToolFile
+	Name="FASM"
+	Version="8,00"
+	>
+	<Rules>
+		<CustomBuildRule
+			Name="FASM"
+			DisplayName="FASM"
+			CommandLine="fasm.exe $(InputPath) $(ProjectDir)\Release\$(InputName).obj"
+			Outputs="Release\$(InputName).obj"
+			FileExtensions="*.asm"
+			ExecutionDescription="Assembling..."
+			>
+			<Properties>
+			</Properties>
+		</CustomBuildRule>
+	</Rules>
+</VisualStudioToolFile>

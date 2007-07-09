@@ -277,11 +277,18 @@ int read_frame(struct reader *rd, struct frame *fr)
 
 read_again:
 	
-	  if(!rd->head_read(rd,&newhead))
-			return FALSE;
+    if(!rd->head_read(rd,&newhead))
+      return FALSE;
 
     if(!decode_header(fr,newhead))
-   { rd->strpos-=3;
+    {
+      if((newhead & 0xffffff00) == 0x49443300)
+ 	  {
+ 		int id3length = 0;
+		id3length = parse_new_id3(rd, newhead);
+		goto read_again;
+	  };
+      rd->strpos-=3;
       rd->stream-=3;
       rd->strremain+=3;
       goto read_again;
@@ -887,3 +894,62 @@ static off_t get_fileinfo(struct reader *rds,char *buf)
 }
 
 #endif
+
+	#define syncsafe_to_long(buf,res) \
+	( \
+		(((buf)[0]|(buf)[1]|(buf)[2]|(buf)[3]) & 0x80) ? 0 : \
+		(res =  (((unsigned long) (buf)[0]) << 27) \
+		     | (((unsigned long) (buf)[1]) << 14) \
+		     | (((unsigned long) (buf)[2]) << 7) \
+		     |  ((unsigned long) (buf)[3]) \
+		,1) \
+	)
+
+int parse_new_id3(struct reader *rd, unsigned long header)
+{
+	#define UNSYNC_FLAG 128
+	#define EXTHEAD_FLAG 64
+	#define EXP_FLAG 32
+	#define FOOTER_FLAG 16
+	#define UNKNOWN_FLAGS 15 /* 00001111*/
+	unsigned char buf[6];
+	unsigned long length=0;
+	unsigned char flags = 0;
+	int ret = 1;
+	unsigned char* tagdata = NULL;
+	unsigned char major = header & 0xff;
+
+	if(major == 0xff) return -1;
+	
+	if (!rd->read_frame_body(rd,buf,6))
+   	  return 0;
+	if(buf[0] == 0xff) /* major version, will never be 0xff */
+	return -1;
+	
+	/* second new byte are some nice flags, if these are invalid skip the whole thing */
+	flags = buf[1];
+	/* use 4 bytes from buf to construct 28bit uint value and return 1; return 0 if bytes are not syncsafe */
+
+	if(!syncsafe_to_long(buf+2,length))
+	  return -1;
+
+
+    rd->strpos+=length;
+    rd->stream+=length;
+    rd->strremain-=length;
+
+#if 0	  
+	/* skip if unknown version/scary flags, parse otherwise */
+	if((flags & UNKNOWN_FLAGS) || (major > 4))
+	{
+		/* going to skip because there are unknown flags set */
+		if(!rds->skip_bytes(rds,length)) /* will not store data in backbuff! */
+
+        rd->strpos+=length;
+        rd->stream+=length;
+        rd->strremain-=length;
+		ret = 0;
+	};
+#endif	
+  return length;
+};

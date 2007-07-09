@@ -7,7 +7,7 @@ extern "C"
 {
 #endif
 
-#define SOUND_VERSION 0x0101
+#define SOUND_VERSION 0x0100
 #define PCM_ALL       0
 
 #define PCM_OUT       0x08000000

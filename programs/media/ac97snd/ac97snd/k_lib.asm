@@ -19,6 +19,9 @@ public _write_text@20
 public _debug_out@4
 public _debug_out_hex@4
 public _create_thread@12
+public _init_ipc@0
+public _recieve_ipc@0
+public _send_ipc@8 
 
 
 public _memset
@@ -493,3 +496,50 @@ __hexdigits db '0123456789ABCDEF'
 align 4
 fileio FILEIO
 
+
+align 4
+_init_ipc@0:
+           push ebx 
+           mov eax, 60
+           mov ebx, 1
+           mov ecx, ipc_buff
+           mov edx, (5*4+1024)
+           int 0x40
+           pop ebx
+           ret  
+
+align 4
+_recieve_ipc@0:
+           mov [ipc_buff.size], 8   
+           mov eax, ipc_buff.sender
+           ret
+align 4
+proc _send_ipc@8 stdcall, dst:dword, code:dword
+           push ebx
+           push esi
+           
+           mov eax, 60
+           mov ebx, 2
+           mov ecx, [dst]
+           lea edx, [code]
+           mov esi, 4
+           int 0x40
+           pop esi
+           pop ebx
+           ret
+endp
+
+;align 4
+;ipc_ctrl:
+;  .pid        dd ?
+;  .size       dd 4
+;  .msg        dd ?
+        
+align 4
+ipc_buff:
+  .lock       dd 0
+  .size       dd 8
+  .sender     dd ?
+  .msg_size   dd ?
+  .msg        dd ?
+  .data       rb 1024 
