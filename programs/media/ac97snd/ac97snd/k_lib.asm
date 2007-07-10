@@ -19,10 +19,6 @@ public _write_text@20
 public _debug_out@4
 public _debug_out_hex@4
 public _create_thread@12
-public _init_ipc@0
-public _recieve_ipc@0
-public _send_ipc@8 
-
 
 public _memset
 
@@ -397,95 +393,6 @@ toend:
 
         ret
 
-public _allmul
-
-_allmul:
-        mov eax, [esp+8]
-        mov ecx, [esp+16]
-        or ecx,eax
-        mov ecx, [esp+12]
-        jnz .hard
-        mov eax, [esp+4]
-        mul ecx
-        ret 16
-.hard:
-        push ebx
-        mul ecx
-        mov ebx,eax
-        mov eax, [esp+8]
-        mul dword [esp+20]
-        add ebx,eax
-        mov eax,[esp+8]
-        mul ecx
-        add edx,ebx
-        pop ebx
-        ret 16
-
-align 4
-_allshr:
-        cmp cl,64
-        jae .sign
-
-        cmp cl, 32
-        jae .MORE32
-        shrd eax,edx,cl
-        sar edx,cl
-        ret
-.MORE32:
-        mov     eax,edx
-        sar     edx,31
-        and     cl,31
-        sar     eax,cl
-        ret
-.sign:
-        sar     edx,31
-        mov     eax,edx
-        ret
-
-public __ftol2_sse
-
-align 4
-__ftol2_sse:
-           push ebp
-           mov ebp, esp
-           sub esp, 20
-           and esp, 0xFFFFFFF0
-           fld st0
-           fst dword [esp+18]
-           fistp qword [esp+10]
-           fild qword [esp+10]
-           mov edx, [esp+18]
-           mov eax, [esp+10]
-           test eax, eax
-           jz .QnaNZ
-
-.not_QnaNZ:
-           fsubp st1, st0
-           test edx, edx
-           jns .pos
-           fstp dword [esp]
-           mov ecx, [esp]
-           xor ecx, 0x80000000
-           add ecx, 0x7FFFFFFF
-           adc eax, 0
-           mov edx, [esp+14]
-           adc edx, 0
-           jmp .exit
-.pos:
-           fstp dword [esp]
-           mov ecx, [esp]
-           add ecx, 0x7FFFFFFF
-           sbb eax, 0
-           jmp .exit
-.QnaNZ:
-           mov edx, [esp+14]
-           test edx, 0x7FFFFFFF
-           jne .not_QnaNZ
-           fstp dword [esp+18]
-           fstp dword [esp+18]
-.exit:
-           leave
-           ret
 
 public __fltused
 __fltused    dd 0
@@ -497,49 +404,5 @@ align 4
 fileio FILEIO
 
 
-align 4
-_init_ipc@0:
-           push ebx 
-           mov eax, 60
-           mov ebx, 1
-           mov ecx, ipc_buff
-           mov edx, (5*4+1024)
-           int 0x40
-           pop ebx
-           ret  
 
-align 4
-_recieve_ipc@0:
-           mov [ipc_buff.size], 8   
-           mov eax, ipc_buff.sender
-           ret
-align 4
-proc _send_ipc@8 stdcall, dst:dword, code:dword
-           push ebx
-           push esi
-           
-           mov eax, 60
-           mov ebx, 2
-           mov ecx, [dst]
-           lea edx, [code]
-           mov esi, 4
-           int 0x40
-           pop esi
-           pop ebx
-           ret
-endp
 
-;align 4
-;ipc_ctrl:
-;  .pid        dd ?
-;  .size       dd 4
-;  .msg        dd ?
-        
-align 4
-ipc_buff:
-  .lock       dd 0
-  .size       dd 8
-  .sender     dd ?
-  .msg_size   dd ?
-  .msg        dd ?
-  .data       rb 1024 
