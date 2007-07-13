@@ -12,9 +12,24 @@ include 'imports.inc'
 
 API_VERSION     equ 0x01000100
 
-DEBUG	    equ 1
+DEBUG           equ 1
+DEBUG_IRQ       equ 0
 
-CPU_FREQ    equ  2000d	 ;cpu freq in MHz
+USE_COM_IRQ     equ 0    ;make irq 3 and irq 4 available for PCI devices
+IRQ_REMAP       equ 0
+IRQ_LINE        equ 0
+
+
+;irq 0,1,2,8,12,13 недоступны
+;                   FEDCBA9876543210
+VALID_IRQ       equ 1100111011111000b
+ATTCH_IRQ       equ 0000111010100000b
+
+if USE_COM_IRQ
+ATTCH_IRQ       equ 0000111010111000b
+end if
+
+CPU_FREQ        equ  2600d
 
 BIT0  EQU 0x00000001
 BIT1  EQU 0x00000002
@@ -65,13 +80,12 @@ RR		  equ  BIT1	 ; reset registers.  Nukes all regs
 
 CODEC_MASTER_VOL_REG            equ     0x02
 CODEC_AUX_VOL                   equ     0x04    ;
-CODEC_PCM_OUT_REG		equ	18h	; PCM output volume
-CODEC_EXT_AUDIO_REG		equ	28h	; extended audio
-CODEC_EXT_AUDIO_CTRL_REG	equ	2ah	; extended audio control
-CODEC_PCM_FRONT_DACRATE_REG	equ	2ch	; PCM out sample rate
-CODEC_PCM_SURND_DACRATE_REG	equ	2eh	; surround sound sample rate
-CODEC_PCM_LFE_DACRATE_REG	equ	30h	; LFE sample rate
-
+CODEC_PCM_OUT_REG            equ 0x18 ; PCM output volume
+CODEC_EXT_AUDIO_REG          equ 0x28 ; extended audio
+CODEC_EXT_AUDIO_CTRL_REG     equ 0x2a ; extended audio control
+CODEC_PCM_FRONT_DACRATE_REG  equ 0x2c ; PCM out sample rate
+CODEC_PCM_SURND_DACRATE_REG  equ 0x2e ; surround sound sample rate
+CODEC_PCM_LFE_DACRATE_REG    equ 0x30 ; LFE sample rate
 
 GLOB_CTRL         equ  0x2C        ;   Global Control
 CTRL_STAT         equ  0x30        ;   Global Status
@@ -251,9 +265,6 @@ end virtual
 
 EVENT_NOTIFY	      equ 0x00000200
 
-OS_BASE         equ 0x80000000
-SLOT_BASE          equ OS_BASE+0x0080000
-
 public START
 public service_proc
 public version
@@ -279,49 +290,78 @@ proc START stdcall, state:dword
            call SysMsgBoardStr
            mov  esi, [ctrl.ctrl_ids]
            call SysMsgBoardStr
+
      end if
 
            call init_controller
            test eax, eax
            jz .fail
 
-     if DEBUG
-           mov esi, msgInitCodec
-           call SysMsgBoardStr
-     end if
-
 	   call init_codec
            test eax, eax
            jz .fail
-
-     if DEBUG
-           mov esi, [codec.ac_vendor_ids]
-           call SysMsgBoardStr
-
-           mov esi, [codec.chip_ids]
-           call SysMsgBoardStr
-     end if
 
            call reset_controller
            call setup_codec
 
            mov esi, msgPrimBuff
            call SysMsgBoardStr
-
            call create_primary_buff
-
-           stdcall AttachIntHandler, [ctrl.int_line], ac97_irq
-
-           stdcall RegService, sz_sound_srv, service_proc
-
-           mov esi, msgOk
+           mov esi, msgDone
            call SysMsgBoardStr
+
+  if IRQ_REMAP
+           pushf
+           cli
+
+           mov ebx, [ctrl.int_line]
+           in al, 0xA1
+           mov ah, al
+           in al, 0x21
+           test ebx, ebx
+           jz .skip
+           bts ax, bx                      ;mask old line
+.skip
+           bts ax, IRQ_LINE                ;mask new ine
+           out 0x21, al
+           mov al, ah
+           out 0xA1, al
+                                           ;remap IRQ
+           stdcall PciWrite8, 0, 0xF8, 0x61, IRQ_LINE
+
+           mov dx, 0x4d0                   ;8259 ELCR1
+           in al, dx
+           bts ax, IRQ_LINE
+           out dx, al                      ;set level-triggered mode
+           mov [ctrl.int_line], IRQ_LINE
+           popf
+           mov esi, msgRemap
+           call SysMsgBoardStr
+  end if
+
+           mov eax, VALID_IRQ
+           mov ebx, [ctrl.int_line]
+           mov esi, msgInvIRQ
+           bt eax, ebx
+           jnc .fail_msg
+           mov eax, ATTCH_IRQ
+           mov esi, msgAttchIRQ
+           bt eax, ebx
+           jnc .fail_msg
+
+           stdcall AttachIntHandler, ebx, ac97_irq
+.reg:
+           stdcall RegService, sz_sound_srv, service_proc
            ret
 .fail:
    if DEBUG
            mov esi, msgFail
            call SysMsgBoardStr
    end if
+           xor eax, eax
+           ret
+.fail_msg:
+           call SysMsgBoardStr
            xor eax, eax
            ret
 .stop:
@@ -412,10 +452,10 @@ restore   out_size
 align 4
 proc ac97_irq
 
-;     if DEBUG
-;           mov esi, msgIRQ
-;           call SysMsgBoardStr
-;     end if
+     if DEBUG_IRQ
+           mov esi, msgIRQ
+           call SysMsgBoardStr
+     end if
 
            mov edx, PCM_OUT_CR_REG
            mov al, 0x10
@@ -484,18 +524,25 @@ proc create_primary_buff
 @@:
            mov [edi], eax
            mov [edi+4], ebx
+
            mov [edi+32], eax
            mov [edi+4+32], ebx
+
            mov [edi+64], eax
            mov [edi+4+64], ebx
+
            mov [edi+96], eax
            mov [edi+4+96], ebx
+
            mov [edi+128], eax
            mov [edi+4+128], ebx
+
            mov [edi+160], eax
            mov [edi+4+160], ebx
+
            mov [edi+192], eax
            mov [edi+4+192], ebx
+
            mov [edi+224], eax
            mov [edi+4+224], ebx
 
@@ -569,6 +616,7 @@ proc detect_controller
            jz .next
            cmp eax, -1
            je .next
+
            mov edi, devices
 @@:
            mov ebx, [edi]
@@ -579,7 +627,6 @@ proc detect_controller
            je .found
            add edi, 12
            jmp @B
-
 .next:
            inc [devfn]
            cmp [devfn], 256
@@ -626,22 +673,60 @@ proc init_controller
            shr ebx, 16
            mov [ctrl.pci_stat], ebx
 
+           mov esi, msgPciCmd
+           call SysMsgBoardStr
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgPciStat
+           call SysMsgBoardStr
+           mov eax, [ctrl.pci_stat]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgMixIsaIo
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x10
+
+           call dword2str
+           call SysMsgBoardStr
+
            and eax,0xFFFE
            mov [ctrl.codec_io_base], eax
 
+           mov esi, msgCtrlIsaIo
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x14
+
+           call dword2str
+           call SysMsgBoardStr
+
            and eax, 0xFFC0
            mov [ctrl.ctrl_io_base], eax
+
+           mov esi, msgMixMMIo
+           call SysMsgBoardStr
 
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x18
            mov [ctrl.codec_mem_base], eax
 
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgCtrlMMIo
+           call SysMsgBoardStr
+
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x1C
            mov [ctrl.ctrl_mem_base], eax
 
+           call dword2str
+           call SysMsgBoardStr
+.default:
            stdcall PciRead32, [ctrl.bus], [ctrl.devfn], dword 0x3C
            and eax, 0xFF
+@@:
            mov [ctrl.int_line], eax
 
            stdcall PciRead8, [ctrl.bus], [ctrl.devfn], dword 0x41
@@ -713,17 +798,21 @@ proc init_codec
 
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
-
+           push eax
            call dword2str
            call SysMsgBoardStr
+           pop eax
+           cmp eax, 0xFFFFFFFF
+           je .err
 
            test eax, CTRL_ST_CREADY
            jnz .ready
 
            call reset_codec
-           and eax, eax
+           test eax, eax
            jz .err
 
+.ready:
            xor edx, edx     ;ac_reg_0
            call [ctrl.codec_write16]
 
@@ -733,20 +822,27 @@ proc init_codec
 
            mov [counter], 200     ; total 200*5 ms = 1s
 .wait:
+           mov eax, 5000   ; wait 5 ms
+           call StallExec
+
            mov edx, CODEC_REG_POWERDOWN
            call [ctrl.codec_read16]
            and eax, 0x0F
            cmp eax, 0x0F
-           je .ready
+           jz .done
 
-           mov eax, 5000          ; wait 5 ms
-           call StallExec
            sub [counter] , 1
            jnz .wait
 .err:
            xor eax, eax        ; timeout error
            ret
-.ready:
+.done:
+           mov eax, 2      ;force set 16-bit 2-channel PCM
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_write32]
+           mov eax, 5000   ; wait 5 ms
+           call StallExec
+
            call detect_codec
 
            xor eax, eax
@@ -800,28 +896,23 @@ proc warm_reset
            mov eax, 100000    ; wait 100 ms
            call StallExec
 
-           mov edx, GLOB_CTRL
+           mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
-           test eax, 4
-           jz .ok
-           sub [counter], 1
+           test eax, CTRL_ST_CREADY
+           jnz .ok
+
+           dec [counter]
            jnz .wait
 
      if DEBUG
            mov esi, msgWRFail
            call SysMsgBoardStr
      end if
+.fail:
            stc
            ret
 .ok:
-           mov edx, CTRL_STAT
-           call [ctrl.ctrl_read32]
-           and eax, CTRL_ST_CREADY
-           jz .fail
            clc
-           ret
-.fail:
-           stc
            ret
 endp
 
@@ -831,10 +922,7 @@ proc cold_reset
              counter dd ?
             endl
 
-           mov edx, GLOB_CTRL
-           call [ctrl.ctrl_read32]
-           and eax, not 0x08
-           or eax, 0x02
+           mov eax, 0x02
            mov edx, GLOB_CTRL
            call [ctrl.ctrl_write32]
 
@@ -843,36 +931,58 @@ proc cold_reset
            call SysMsgBoardStr
      end if
 
-           mov [counter], 10    ; total 10*100 ms = 1s
+           mov eax, 400000     ; wait 400 ms
+           call StallExec
+
+           mov [counter], 16    ; total 20*100 ms = 2s
 .wait:
+
+           mov edx, CTRL_STAT
+           call [ctrl.ctrl_read32]
+           test eax, CTRL_ST_CREADY
+           jnz .ok
+
            mov eax, 100000    ; wait 100 ms
            call StallExec
 
-           mov edx, GLOB_CTRL
-           call [ctrl.ctrl_read32]
-           test eax, 4
-           jz .ok
-           sub [counter], 1
+           dec [counter]
            jnz .wait
 
      if DEBUG
            mov esi, msgCRFail
            call SysMsgBoardStr
      end if
+
 .fail:
            stc
            ret
 .ok:
+           mov esi, msgControl
+           call SysMsgBoardStr
+
+           mov edx, GLOB_CTRL
+           call [ctrl.ctrl_read32]
+           call dword2str
+           call SysMsgBoardStr
+
+           mov esi, msgStatus
+           call SysMsgBoardStr
+
            mov edx, CTRL_STAT
            call [ctrl.ctrl_read32]
-           and eax, CTRL_ST_CREADY
+           push eax
+           call dword2str
+           call SysMsgBoardStr
+           pop eax
+
+           test eax, CTRL_ST_CREADY
            jz .fail
            clc
            ret
 endp
 
 align 4
-proc play
+play:
            xor eax, eax
            mov [civ_val], eax
            mov edx, PCM_OUT_CIV_REG
@@ -886,11 +996,11 @@ proc play
            mov edx, PCM_OUT_CR_REG
            mov ax, 0x1D
            call [ctrl.ctrl_write8]
+           xor eax, eax
            ret
-endp
 
 align 4
-proc stop
+stop:
            mov edx, PCM_OUT_CR_REG
            mov ax, 0x0
            call [ctrl.ctrl_write8]
@@ -898,8 +1008,8 @@ proc stop
            mov ax, 0x1c
            mov edx, PCM_OUT_SR_REG
            call [ctrl.ctrl_write16]
+           xor eax, eax
            ret
-endp
 
 align 4
 proc get_dev_info stdcall, p_info:dword
@@ -933,7 +1043,6 @@ proc get_dev_info stdcall, p_info:dword
 
            mov ebx, [ctrl.pci_cmd]
            mov [CTRL_INFO.pci_cmd], ebx
-
            ret
 endp
 
@@ -998,7 +1107,6 @@ proc codec_write stdcall, ac_reg:dword
            ret
 endp
 
-
 align 4
 proc codec_check_ready
 
@@ -1010,13 +1118,10 @@ proc codec_check_ready
            xor eax, wax
            inc eax
            ret
-
-align 4
 .not_ready:
            xor eax, eax
            ret
 endp
-
 
 align 4
 proc check_semafore
@@ -1143,6 +1248,8 @@ dword2str:
       jnz @B
       ret
 
+hexletters   db '0123456789ABCDEF'
+hex_buff     db 8 dup(0),13,10,0
 
 include "codec.inc"
 
@@ -1159,26 +1266,34 @@ sz_sound_srv	    db 'SOUND',0
 
 msgInit      db 'detect hardware...',13,10,0
 msgFail      db 'device not found',13,10,0
+msgAttchIRQ  db 'IRQ line not supported', 13,10, 0
+msgInvIRQ    db 'IRQ line not assigned or invalid', 13,10, 0
 msgPlay      db 'start play', 13,10,0
 msgStop      db 'stop play',  13,10,0
-msgNotify    db 'call notify',13,10,0
+;msgNotify    db 'call notify',13,10,0
 msgIRQ       db 'AC97 IRQ', 13,10,0
 msgInitCtrl  db 'init controller',13,10,0
-msgInitCodec db 'init codec',13,10,0
-msgPrimBuff  db 'create primary buffer',13,10,0
-msgReg       db 'set service handler',13,10,0
+;msgInitCodec db 'init codec',13,10,0
+msgPrimBuff  db 'create primary buffer ...',0
+msgDone      db 'done',13,10,0
+msgRemap     db 'Remap IRQ',13,10,0
+;msgReg       db 'set service handler',13,10,0
 msgOk        db 'service installed',13,10,0
-msgCold      db 'cold resret',13,10,0
+msgCold      db 'cold reset',13,10,0
 msgWarm      db 'warm reset',13,10,0
 msgWRFail    db 'warm reset failed',13,10,0
 msgCRFail    db 'cold reset failed',13,10,0
 msgCFail     db 'codec not ready',13,10,0
+msgResetOk   db 'reset complete',13,10,0
 msgStatus    db 'global status   ',0
 msgControl   db 'global control  ',0
-
-hexletters   db '0123456789ABCDEF'
-hex_buff     db 8 dup(0),13,10,0
-
+msgPciCmd    db 'PCI command     ',0
+msgPciStat   db 'PCI status      ',0
+msgCtrlIsaIo db 'controller io base   ',0
+msgMixIsaIo  db 'codec io base        ',0
+msgCtrlMMIo  db 'controller mmio base ',0
+msgMixMMIo   db 'codec mmio base      ',0
+msgIrqMap    db 'AC97 irq map as      ',0
 
 section '.data' data readable writable align 16
 
