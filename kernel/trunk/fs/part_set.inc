@@ -7,10 +7,11 @@ $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;*************************************************************
-;* 29.04.2006 Elimination of hangup after the                *
-;*             expiration hd_wait_timeout -  Mario79         *
-;* 28.01.2006 find all Fat16/32 partition in all input point *
-;*            to MBR - Mario79                               *
+;* 12.07.2007 Check all 4 entry of MBR and EMBR
+;* 29.04.2006 Elimination of hangup after the
+;*             expiration hd_wait_timeout -  Mario79
+;* 28.01.2006 find all Fat16/32 partition in all input point
+;*            to MBR - Mario79
 ;*************************************************************
 
 uglobal
@@ -151,8 +152,17 @@ extended_already_set:
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   end_partition_chain
     cmp   dword [ebx+0x1be+0xc],0 ; skip over empty partition
-    jz    next_partition
-
+;    jz    next_partition
+    jnz    .next_primary_partition
+    cmp   dword [ebx+0x1be+0xc+16],0
+    jnz    next_primary_partition
+    cmp   dword [ebx+0x1be+0xc+16+16],0
+    jnz    next_primary_partition_1
+    cmp   dword [ebx+0x1be+0xc+16+16+16],0
+    jnz    next_primary_partition_2
+    jmp   next_partition
+    
+.next_primary_partition:
     push  eax
     mov   al,[ebx+0x1be+4]      ; get primary partition type
     call  scan_partition_types
