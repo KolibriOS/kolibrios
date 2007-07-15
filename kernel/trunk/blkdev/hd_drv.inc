@@ -9,20 +9,6 @@ $Revision$
 ; Low-level driver for HDD access
 ; DMA support by Mario79
 
-;**************************************************************************
-;
-;   0x600008  - first entry in cache list
-;
-;            +0   - lba sector
-;            +4   - state of cache sector
-;                   0 = empty
-;                   1 = used for read  ( same as in hd )
-;                   2 = used for write ( differs from hd )
-;
-;      +65536 - cache entries
-;
-;**************************************************************************
-
 align 4
 hd_read:
 ;-----------------------------------------------------------
@@ -32,8 +18,11 @@ hd_read:
         and     [hd_error], 0
     push  ecx esi edi           ; scan cache
 
-    mov   ecx,cache_max         ; entries in cache
-    mov   esi,HD_CACHE+8
+;    mov   ecx,cache_max         ; entries in cache
+;    mov   esi,HD_CACHE+8
+    call  calculate_cache
+    add   esi,8
+    
     mov   edi,1
 
   hdreadcache:
@@ -64,8 +53,12 @@ hd_read:
 .nodma:
         call    hd_read_pio
 @@:
+;    lea   esi,[edi*8+HD_CACHE]
+;    push  eax
+    call  calculate_cache_1
+    lea   esi,[edi*8+esi]
+;    pop   eax
 
-    lea   esi,[edi*8+HD_CACHE]
     mov   [esi],eax             ; sector number
     mov   dword [esi+4],1       ; hd read - mark as same as in hd
 
@@ -73,7 +66,12 @@ hd_read:
 
     mov   esi,edi
     shl   esi,9
-    add   esi,HD_CACHE+65536
+;    add   esi,HD_CACHE+65536
+    push  eax
+    call  calculate_cache_2
+    add   esi,eax
+    pop   eax
+    
     mov   edi,ebx
     mov   ecx,512/4
     cld
@@ -126,7 +124,12 @@ hd_read_pio:
     cli
     push  edi
     shl   edi,9
-    add   edi,HD_CACHE+65536
+;    add   edi,HD_CACHE+65536
+    push  eax
+    call  calculate_cache_2
+    add   edi,eax
+    pop   eax
+    
     mov   ecx,256
     mov   edx,[hdbase]
     cld
@@ -163,8 +166,11 @@ hd_write:
 
     ; check if the cache already has the sector and overwrite it
 
-    mov   ecx,cache_max
-    mov   esi,HD_CACHE+8
+;    mov   ecx,cache_max
+;    mov   esi,HD_CACHE+8
+    call  calculate_cache
+    add   esi,8
+    
     mov   edi,1
 
   hdwritecache:
@@ -189,7 +195,12 @@ hd_write:
     cmp   [hd_error],0
     jne   hd_write_access_denied
 
-    lea   esi,[edi*8+HD_CACHE]
+;    lea   esi,[edi*8+HD_CACHE]
+;    push  eax
+    call  calculate_cache_1
+    lea   esi,[edi*8+esi]
+;    pop   eax
+
     mov   [esi],eax             ; sector number
 
   yes_in_cache_write:
@@ -197,7 +208,12 @@ hd_write:
     mov   dword [esi+4],2       ; write - differs from hd
 
     shl   edi,9
-    add   edi,HD_CACHE+65536
+;    add   edi,HD_CACHE+65536
+    push  eax
+    call  calculate_cache_2
+    add   edi,eax
+    pop   eax
+    
     mov   esi,ebx
     mov   ecx,512/4
     cld
@@ -206,98 +222,15 @@ hd_write:
     pop   edi esi ecx
     ret
 
-
-write_cache:
-;-----------------------------------------------------------
-; write all changed sectors to disk
-;-----------------------------------------------------------
-    push  eax ecx edx esi edi
-
-    ; write difference ( 2 ) from cache to hd
-
-    mov   ecx,cache_max
-    mov   esi,HD_CACHE+8
-    mov   edi,1
-
-  write_cache_more:
-
-    cmp   dword [esi+4],2       ; if cache slot is not different
-    jne   .write_chain
-
-    mov   dword [esi+4],1       ; same as in hd
-    mov   eax,[esi]             ; eax = sector to write
-
-    cmp   eax,[PARTITION_START]
-    jb    danger
-    cmp   eax,[PARTITION_END]
-    ja    danger
-
-; DMA write is permitted only if [allow_dma_access]=1
-        cmp     [allow_dma_access], 2
-        jae     .nodma
-        cmp     [dma_hdd], 1
-        jnz     .nodma
-; Объединяем запись цепочки последовательных секторов в одно обращение к диску
-        cmp     ecx, 1
-        jz      .nonext
-        cmp     dword [esi+8+4], 2
-        jnz     .nonext
-        push    eax
-        inc     eax
-        cmp     eax, [esi+8]
-        pop     eax
-        jnz     .nonext
-        cmp     [cache_chain_started], 1
-        jz      @f
-        mov     [cache_chain_started], 1
-        mov     [cache_chain_size], 0
-        mov     [cache_chain_pos], edi
-        mov     [cache_chain_ptr], esi
-@@:
-        inc     [cache_chain_size]
-        cmp     [cache_chain_size], 64
-        jnz     .continue
-        jmp     .write_chain
-.nonext:
-        call    flush_cache_chain
-        mov     [cache_chain_size], 1
-        mov     [cache_chain_ptr], esi
-        call    write_cache_sector
-        jmp     .continue
-.nodma:
-        call    cache_write_pio
-.write_chain:
-        call    flush_cache_chain
-
-.continue:
-  danger:
-
-    add   esi,8
-    inc   edi
-    dec   ecx
-    jnz   write_cache_more
-        call    flush_cache_chain
- return_02:
-    pop   edi esi edx ecx eax
-    ret
-
-flush_cache_chain:
-        cmp     [cache_chain_started], 0
-        jz      @f
-        call    write_cache_chain
-        mov     [cache_chain_started], 0
-@@:
-        ret
-
 align 4
 cache_write_pio:
-    call  disable_ide_int
-
+;    call  disable_ide_int
+    
     call  wait_for_hd_idle
     cmp   [hd_error],0
     jne   hd_write_error
 
-;    cli
+    cli
     xor   eax,eax
     mov   edx,[hdbase]
     inc   edx
@@ -323,7 +256,7 @@ cache_write_pio:
     inc   edx
     mov   al,30h
     out   dx,al
-;    sti
+    sti
 
     call  wait_for_sector_buffer
 
@@ -332,73 +265,24 @@ cache_write_pio:
 
     push  ecx esi
 
-;    cli
+    cli
     mov   esi,edi
     shl   esi,9
-    add   esi,HD_CACHE+65536    ; esi = from memory position
+;    add   esi,HD_CACHE+65536    ; esi = from memory position
+    push  eax
+    call  calculate_cache_2
+    add   esi,eax
+    pop   eax
+    
     mov   ecx,256
     mov   edx,[hdbase]
     cld
     rep   outsw
-;    sti
+    sti
 
-    call  enable_ide_int
+;    call  enable_ide_int
     pop   esi ecx
 
-    ret
-
-align 4
-find_empty_slot:
-;-----------------------------------------------------------
-; find empty or read slot, flush cache if next 10% is used by write
-; output : edi = cache slot
-;-----------------------------------------------------------
-;    push  ecx esi
-
-  search_again:
-
-    mov   ecx,cache_max*10/100
-    mov   edi,[cache_search_start]
-
-  search_for_empty:
-
-    inc   edi
-    cmp   edi,cache_max
-    jbe   inside_cache
-    mov   edi,1
-
-  inside_cache:
-
-    cmp   dword [edi*8+HD_CACHE+4],2    ; get cache slot info
-    jb    found_slot                    ; it's empty or read
-    dec   ecx
-    jnz   search_for_empty
-
-    call  write_cache                   ; no empty slots found, write all
-    cmp   [hd_error],0
-    jne   found_slot_access_denied
-
-    jmp   search_again                  ; and start again
-
-  found_slot:
-
-    mov   [cache_search_start],edi
-  found_slot_access_denied:
-    ret
-
-align 4
-clear_hd_cache:
-
-    push  eax ecx edi
-    mov   edi, HD_CACHE
-    mov   ecx,16384
-    xor   eax,eax
-    cld
-    rep   stosd                 ; clear hd cache with 0
-    mov   [cache_search_start],eax
-    mov   [fat_in_cache],-1
-    mov   [fat_change],0
-    pop   edi ecx eax
     ret
 
 save_hd_wait_timeout:
@@ -684,7 +568,12 @@ hd_read_dma:
         push    ecx esi edi
         mov     esi, eax
         shl     edi, 9
-        add     edi, HD_CACHE+0x10000
+;        add     edi, HD_CACHE+0x10000
+        push  eax
+        call  calculate_cache_2
+        add   edi,eax
+        pop   eax
+        
         mov     ecx, 512/4
         cld
         rep     movsd
@@ -774,26 +663,27 @@ hd_read_dma:
         jmp     hd_read_dma
 
 align 4
-write_cache_chain:
-        push    esi
-        mov     eax, IDE_descriptor_table
-        mov     edx, [cache_chain_pos]
-        shl     edx, 9
-        add     edx, DMA_HD_MEM+0x10000
-        mov     [eax], edx
-        movzx   edx, [cache_chain_size]
-        shl     edx, 9
-        mov     [eax+4], dx
-        jmp     do_write_dma
 write_cache_sector:
+        mov     [cache_chain_size],1
+        mov     [cache_chain_pos],edi
+write_cache_chain:        
         push    esi
         mov     eax, IDE_descriptor_table
-        mov     edx, edi
-        shl     edx, 9
-        add     edx, DMA_HD_MEM+0x10000
-        mov     [eax], edx
-        mov     word [eax+4], 0x200
-do_write_dma:
+        mov     edx,eax
+        pusha
+        mov     esi,[cache_chain_pos]
+        shl     esi, 9
+        call    calculate_cache_2
+        add     esi,eax
+        mov     edi,OS_BASE+0x284000   ;HD_CACHE
+        mov     dword [edx], 0x284000  ;DMA_HD_MEM
+        movzx   ecx, [cache_chain_size]
+        shl     ecx, 9
+        mov     word [edx+4], cx
+        shr     ecx,2
+        cld
+        rep movsd
+        popa
         sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
         cmp     [hdbase], 0x1F0

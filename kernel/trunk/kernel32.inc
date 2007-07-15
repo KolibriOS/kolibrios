@@ -229,6 +229,9 @@ include "bus/pci/pci32.inc"
 include "blkdev/fdc.inc"
 include "blkdev/flp_drv.inc"
 
+; IDE cache
+include "blkdev/ide_cache.inc"
+
 ; HD drive controller
 include "blkdev/hd_drv.inc"
 

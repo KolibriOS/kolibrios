@@ -176,7 +176,8 @@
 ; 0x80280000 -> 281FFF   ramdisk fat
 ; 0x80282000 -> 283FFF   floppy  fat
 ;
-; 0x80284000 -> 297FFF   free (80 Kb)
+; 0x80284000 -> 28BFFF   HDD DMA AREA
+; 0x8028C000 -> 297FFF   free (48 Kb)
 ;
 ; 0x80298000 -> 29ffff   auxiliary table for background smoothing code
 ;

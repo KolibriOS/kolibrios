@@ -292,8 +292,8 @@ RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 IRQ_SAVE            equ (OS_BASE+0x02E0000)
 BOOT_VAR            equ (OS_BASE+0x02f0000)
 
-DMA_HD_MEM          equ 0x0300000
-HD_CACHE            equ (OS_BASE+DMA_HD_MEM)
+; DMA_HD_MEM          equ 0x0300000
+; HD_CACHE            equ (OS_BASE+DMA_HD_MEM)
 
 stack_data_start    equ (OS_BASE+0x0400000)
 eth_data_start      equ (OS_BASE+0x0400000)
