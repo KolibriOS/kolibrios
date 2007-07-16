@@ -16,7 +16,7 @@ use32
 
 macro align value { rb (value-1) - ($ + value-1) mod value }
 
-        org    OS_BASE+0x0428000
+        org    OS_BASE+0x0328000
 
 headerstart=$
 

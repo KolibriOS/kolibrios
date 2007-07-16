@@ -22,7 +22,7 @@ hd_read:
 ;    mov   esi,HD_CACHE+8
     call  calculate_cache
     add   esi,8
-    
+
     mov   edi,1
 
   hdreadcache:
@@ -71,7 +71,7 @@ hd_read:
     call  calculate_cache_2
     add   esi,eax
     pop   eax
-    
+
     mov   edi,ebx
     mov   ecx,512/4
     cld
@@ -129,7 +129,7 @@ hd_read_pio:
     call  calculate_cache_2
     add   edi,eax
     pop   eax
-    
+
     mov   ecx,256
     mov   edx,[hdbase]
     cld
@@ -170,7 +170,7 @@ hd_write:
 ;    mov   esi,HD_CACHE+8
     call  calculate_cache
     add   esi,8
-    
+
     mov   edi,1
 
   hdwritecache:
@@ -213,7 +213,7 @@ hd_write:
     call  calculate_cache_2
     add   edi,eax
     pop   eax
-    
+
     mov   esi,ebx
     mov   ecx,512/4
     cld
@@ -225,7 +225,7 @@ hd_write:
 align 4
 cache_write_pio:
 ;    call  disable_ide_int
-    
+
     call  wait_for_hd_idle
     cmp   [hd_error],0
     jne   hd_write_error
@@ -273,7 +273,7 @@ cache_write_pio:
     call  calculate_cache_2
     add   esi,eax
     pop   eax
-    
+
     mov   ecx,256
     mov   edx,[hdbase]
     cld
@@ -470,7 +470,7 @@ iglobal
 align 4
 ; note that IDE descriptor table must be 4-byte aligned and do not cross 4K boundary
 IDE_descriptor_table:
-        dd      0x284000
+        dd      IDE_DMA
         dw      0x2000
         dw      0x8000
 
@@ -564,7 +564,7 @@ hd_read_dma:
         mov     eax, [esp+4]
         sub     eax, [dma_cur_sector]
         shl     eax, 9
-        add     eax, OS_BASE+0x284000
+        add     eax, (OS_BASE+IDE_DMA)
         push    ecx esi edi
         mov     esi, eax
         shl     edi, 9
@@ -573,7 +573,7 @@ hd_read_dma:
         call  calculate_cache_2
         add   edi,eax
         pop   eax
-        
+
         mov     ecx, 512/4
         cld
         rep     movsd
@@ -583,7 +583,7 @@ hd_read_dma:
         ret
 .notread:
         mov     eax, IDE_descriptor_table
-        mov     dword [eax],  0x284000
+        mov     dword [eax],  IDE_DMA
         mov     word [eax+4], 0x2000
         sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
@@ -666,7 +666,7 @@ align 4
 write_cache_sector:
         mov     [cache_chain_size],1
         mov     [cache_chain_pos],edi
-write_cache_chain:        
+write_cache_chain:
         push    esi
         mov     eax, IDE_descriptor_table
         mov     edx,eax
@@ -675,8 +675,8 @@ write_cache_chain:
         shl     esi, 9
         call    calculate_cache_2
         add     esi,eax
-        mov     edi,OS_BASE+0x284000   ;HD_CACHE
-        mov     dword [edx], 0x284000  ;DMA_HD_MEM
+        mov     edi, (OS_BASE+IDE_DMA)
+        mov     dword [edx], IDE_DMA
         movzx   ecx, [cache_chain_size]
         shl     ecx, 9
         mov     word [edx+4], cx

@@ -282,6 +282,8 @@ RAMDISK             equ (OS_BASE+0x0100000)
 RAMDISK_FAT         equ (OS_BASE+0x0280000)
 FLOPPY_FAT          equ (OS_BASE+0x0282000)
 
+IDE_DMA             equ 0x284000
+
 BgrAuxTable         equ (OS_BASE+0x0298000)
 ; unused?
 SB16Buffer          equ (OS_BASE+0x2A0000)
@@ -292,30 +294,26 @@ RESERVED_PORTS      equ (OS_BASE+0x02D0000)
 IRQ_SAVE            equ (OS_BASE+0x02E0000)
 BOOT_VAR            equ (OS_BASE+0x02f0000)
 
-; DMA_HD_MEM          equ 0x0300000
-; HD_CACHE            equ (OS_BASE+DMA_HD_MEM)
+stack_data_start    equ (OS_BASE+0x0300000)
+eth_data_start      equ (OS_BASE+0x0300000)
+stack_data          equ (OS_BASE+0x0304000)
+stack_data_end      equ (OS_BASE+0x031ffff)
+resendQ             equ (OS_BASE+0x0320000)
+VMODE_BASE          equ (OS_BASE+0x0328000)
+skin_data           equ (OS_BASE+0x0330000)
+draw_data           equ (OS_BASE+0x0338000);
 
-stack_data_start    equ (OS_BASE+0x0400000)
-eth_data_start      equ (OS_BASE+0x0400000)
-stack_data          equ (OS_BASE+0x0404000)
-stack_data_end      equ (OS_BASE+0x041ffff)
-resendQ             equ (OS_BASE+0x0420000)
-VMODE_BASE          equ (OS_BASE+0x0428000)
-skin_data           equ (OS_BASE+0x0430000)
-draw_data           equ (OS_BASE+0x0438000);
+BgrDrawMode         equ (OS_BASE+0x033BFF4)
+BgrDataWidth        equ (OS_BASE+0x033BFF8)
+BgrDataHeight       equ (OS_BASE+0x033BFFC)
+WinMapAddress       equ (OS_BASE+0x033C000)
+display_data        equ (OS_BASE+0x033C000) ;1024*1280=0x140000
 
-virtual at              (OS_BASE+0x043BF80)
+virtual at              (OS_BASE+0x047CF80)
   tss  TSS
 end virtual
 
-BgrDrawMode         equ (OS_BASE+0x043EFF4)
-BgrDataWidth        equ (OS_BASE+0x043EFF8)
-BgrDataHeight       equ (OS_BASE+0x043EFFC)
-WinMapAddress       equ (OS_BASE+0x043F000)
-display_data        equ (OS_BASE+0x043F000)
-
-sys_pgmap           equ (OS_BASE+0x057F000)
-
+sys_pgmap           equ (OS_BASE+0x047F000)
 
 HEAP_BASE           equ (OS_BASE+0x0800000)
 HEAP_MIN_SIZE       equ 0x01000000

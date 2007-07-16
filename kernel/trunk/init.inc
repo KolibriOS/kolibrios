@@ -70,14 +70,6 @@ proc init_mem
            mov ebx, cr4
            or ebx, CR4_PSE
            mov eax, PG_LARGE+PG_SW
-
-;           bt [cpu_caps-OS_BASE], CAPS_PGE
-;           jnc @F
-
-;           or eax, PG_GLOBAL
-;           or ebx, CR4_PGE
-;
-;@@:
            mov cr4, ebx
            dec [pg_data.kernel_tables-OS_BASE]
 

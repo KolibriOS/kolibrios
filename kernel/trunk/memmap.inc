@@ -207,27 +207,27 @@
 ; 0x802E0000 -> 2EFFFF   irq data area
 ; 0x802F0000 -> 2FFFFF   low memory save
 ;
-; 0x80300000 -> 400000   hd cache
-
-; 0x80400000 -> 41FFFF   tcp memory       128 Kb
-; 0x80420000 -> 427FFF   tcp memory        32 Kb
+; 0x80300000 -> 31FFFF   tcp memory       128 Kb
+; 0x80320000 -> 327FFF   tcp memory        32 Kb
 ;
-; 0x80428000 -> 42FFFF   !vrr driver       32 Kb
+; 0x80328000 -> 32FFFF   !vrr driver       32 Kb
 
-; 0x80430000 -> 477FFF   skin data
+; 0x80330000 -> 377FFF   skin data
 
-; 0x80438000 -> 43AFFF draw data     - 256 entries
+; 0x80338000 -> 33AFFF draw data     - 256 entries
 ;         00   dword  draw limit - x start
 ;         04   dword  draw limit - y start
 ;         08   dword  draw limit - x end
 ;         0C   dword  draw limit - y end
 
-; 0x8043BF80 -> 43BFFF TSS            128 bytes
-; 0x8043C000 -> 43DFFF IO map for (8192*8)=65536 ports
+; 0x8033C000 -> 47BFFF   display info
 
-; 0x8043F000 -> 57EFFF   display info
-; 0x8057F000 -> 58FFFF   page map     max 128 Kb
+; 0x8047CF80 -> 47CFFF TSS            128 bytes
+; 0x8047D000 -> 47EFFF IO map for (8192*8)=65536 ports
+
+; 0x8047F000 -> 48FFFF   page map     max 128 Kb
 ;
+
 ; 0x80800000 ->       kernel heap
 ; 0x81FFFFFF          heap min limit
 ; 0xFDBFFFFF          heap max limit
