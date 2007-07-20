@@ -4,27 +4,25 @@
 ;<Lrz>  - Теплов Алексей  www.lrz.land.ru
 ;заголовок приложения
         include '..\..\..\..\macros.inc'
-;        include 'macros.inc'
         include 'editbox.inc'
 meos_app_start
 align 4
         use_edit_box procinfo,22,5
 ;Область кода
-code
-;start:                          ;Точка входа в программу
+code                            ;Точка входа в программу
         mcall   40,0x27         ;установить маску для ожидаемых событий
- ;система будет реагировать только на сообщение о перерисовке,нажата кнопка, определённая ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) и нажатие клавиши
+;система будет реагировать только на сообщение о перерисовке,нажата кнопка, определённая ранее, событие от мыши (что-то случилось - нажатие на кнопку мыши или перемещение; сбрасывается при прочтении) и нажатие клавиши
 red_win:
     call draw_window            ;первоначально необходимо нарисовать окно
 align 4
 still:                          ;основной обработчик 
         mcall   10              ;Ожидать события
-        cmp al,0x1    ;если изменилось положение окна
-        jz red_win
-        cmp al,0x2    ;если нажата клавиша то перейти
-        jz key
-        cmp al,0x3    ;если нажата кнопка то перейти
-        jz button
+        dec  eax
+        jz   red_win
+        dec  eax
+        jz   key
+        dec  eax
+        jz   button
         mouse_edit_boxes editboxes,editboxes_end
         jmp still    ;если ничего из перечисленного то снова в цикл
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -56,7 +54,7 @@ edit4 edit_box 16,5,70,0xffffff,0x6a9480,0,0,0,1,ed_buffer.4,ed_figure_only
 editboxes_end:
 data_of_code dd 0
 mouse_flag dd 0x0
-hed db   'EDITBOX optimization and retype <Lrz> date 14.05.2007',0
+hed db   'EDITBOX optimization and retype <Lrz> date 20.07.2007',0
 rb  256
 ed_buffer:
 ;.1: rb 514;256
