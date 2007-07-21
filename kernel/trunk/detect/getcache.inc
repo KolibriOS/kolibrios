@@ -358,6 +358,7 @@ calculate_for_hd:
     shl  ebx,9
     pop  eax
     sub  eax,ebx
+    dec  ecx
     ret
 
 calculate_for_cd:
@@ -371,6 +372,7 @@ calculate_for_cd:
     shl  ebx,11
     pop  eax
     sub  eax,ebx
+    dec  ecx
     ret
     
 clear_ide_cache:
