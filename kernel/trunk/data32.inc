@@ -306,6 +306,7 @@ hdbase            rd 1    ; for boot 0x1f0
 hdid              rd 1
 hdpos             rd 1    ; for boot 0x1
 fat32part         rd 1    ; for boot 0x1
+cdpos             rd 1
 
 sb16              rd 1
 
@@ -387,6 +388,7 @@ cache_ide3_appl_search_start  rd 1
 
 debug_step_pointer rd 1
 hdd_appl_data rb 1 ; 0 = system cache, 1 - application cache
+cd_appl_data rb 1 ; 0 = system cache, 1 - application cache
 
 lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled

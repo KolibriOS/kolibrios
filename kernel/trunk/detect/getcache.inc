@@ -18,13 +18,13 @@
     shl eax,3
 ;   translate pages in butes *4096
     shl eax,12
-;	check a upper size of the cache, no more than 1 Mb on the physical device
+;       check a upper size of the cache, no more than 1 Mb on the physical device
     cmp  eax,1024*1024
     jbe  @f
     mov  eax,1024*1024
     jmp  .continue
 @@:
-;	check a lower size of the cache, not less than 128 Kb on the physical device
+;       check a lower size of the cache, not less than 128 Kb on the physical device
     cmp  eax,128*1024
     jae  @f
     mov  eax,128*1024
@@ -44,30 +44,31 @@
     mov  [cache_ide3_search_start],eax
     mov  [cache_ide3_appl_search_start],eax
     mov  [hdd_appl_data],1  ;al
+    mov  [cd_appl_data],1
     
     mov  cl,[DRIVE_DATA+1]
     mov  ch,cl
     and  cl,11b
     cmp cl,0
-    je  .ide2
+    je	.ide2
     call get_cache_ide3
 .ide2:
     mov  cl,ch
     and  cl,1100b
     cmp cl,0
-    je  .ide1
+    je	.ide1
     call get_cache_ide2
 .ide1:
     mov  cl,ch
     and  cl,110000b
     cmp cl,0
-    je  .ide0
+    je	.ide0
     call get_cache_ide1
 .ide0:
     mov  cl,ch
     and  cl,11000000b
     cmp cl,0
-    je  end_get_cache
+    je	end_get_cache
     call get_cache_ide0
     jmp  end_get_cache
 
@@ -85,21 +86,21 @@ get_cache_ide0:
     mov  [cache_ide0_appl_data_size],eax
     add  ebx,edx
     mov  [cache_ide0_data_pointer],ebx
-    
+
     cmp cl,10000000b
-    je  .cd
+    je	.cd
     push ecx
     mov  eax,[cache_ide0_system_data_size]
     call calculate_for_hd
     add  eax,[cache_ide0_pointer]
     mov  [cache_ide0_system_data],eax
     mov  [cache_ide0_system_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide0_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     mov  eax,[cache_ide0_appl_data_size]
     call calculate_for_hd
     add  eax,[cache_ide0_data_pointer]
@@ -110,7 +111,7 @@ get_cache_ide0:
     mov   edi,[cache_ide0_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 .cd:
@@ -125,21 +126,21 @@ get_cache_ide0:
     mov   edi,[cache_ide0_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     mov  eax,[cache_ide0_appl_data_size]
     call calculate_for_cd
     add  eax,[cache_ide0_data_pointer]
     mov  [cache_ide0_appl_data],eax
     mov  [cache_ide0_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide0_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
-    
+
 get_cache_ide1:
     push  ecx
     stdcall kernel_alloc,[cache_ide1_size]
@@ -154,9 +155,9 @@ get_cache_ide1:
     mov  [cache_ide1_appl_data_size],eax
     add  ebx,edx
     mov  [cache_ide1_data_pointer],ebx
-    
+
     cmp cl,100000b
-    je  .cd
+    je	.cd
     push ecx
     mov  eax,[cache_ide1_system_data_size]
     call calculate_for_hd
@@ -174,12 +175,12 @@ get_cache_ide1:
     add  eax,[cache_ide1_data_pointer]
     mov  [cache_ide1_appl_data],eax
     mov  [cache_ide1_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide1_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 .cd:
@@ -200,12 +201,12 @@ get_cache_ide1:
     add  eax,[cache_ide1_data_pointer]
     mov  [cache_ide1_appl_data],eax
     mov  [cache_ide1_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide1_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 
@@ -223,9 +224,9 @@ get_cache_ide2:
     mov  [cache_ide2_appl_data_size],eax
     add  ebx,edx
     mov  [cache_ide2_data_pointer],ebx
-    
+
     cmp cl,1000b
-    je  .cd
+    je	.cd
     push ecx
     mov  eax,[cache_ide2_system_data_size]
     call calculate_for_hd
@@ -243,12 +244,12 @@ get_cache_ide2:
     add  eax,[cache_ide2_data_pointer]
     mov  [cache_ide2_appl_data],eax
     mov  [cache_ide2_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide2_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 .cd:
@@ -269,12 +270,12 @@ get_cache_ide2:
     add  eax,[cache_ide2_data_pointer]
     mov  [cache_ide2_appl_data],eax
     mov  [cache_ide2_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide2_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 
@@ -292,9 +293,9 @@ get_cache_ide3:
     mov  [cache_ide3_appl_data_size],eax
     add  ebx,edx
     mov  [cache_ide3_data_pointer],ebx
-    
+
     cmp cl,10b
-    je  .cd
+    je	.cd
     push ecx
     mov  eax,[cache_ide3_system_data_size]
     call calculate_for_hd
@@ -312,12 +313,12 @@ get_cache_ide3:
     add  eax,[cache_ide3_data_pointer]
     mov  [cache_ide3_appl_data],eax
     mov  [cache_ide3_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide3_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 .cd:
@@ -338,12 +339,12 @@ get_cache_ide3:
     add  eax,[cache_ide3_data_pointer]
     mov  [cache_ide3_appl_data],eax
     mov  [cache_ide3_appl_sad_size],ecx
-    
+
     push  edi
     mov   edi,[cache_ide3_data_pointer]
     call  clear_ide_cache
     pop   edi
-    
+
     pop  ecx
     ret
 
@@ -374,7 +375,7 @@ calculate_for_cd:
     sub  eax,ebx
     dec  ecx
     ret
-    
+
 clear_ide_cache:
     push   eax
     shl   ecx,1
@@ -383,7 +384,7 @@ clear_ide_cache:
     rep   stosd
     pop   eax
     ret
-    
+
 end_get_cache:
 ;    mov  [cache_ide0_pointer],HD_CACHE
 ;    mov  [cache_ide0_system_data],HD_CACHE+65536
