@@ -117,6 +117,8 @@ syslang    dd 1
 
 boot_y     dd 10
 
+pci_bios_entry  dd 0
+                dw pci_code_sel
 
 if __DEBUG__ eq 1
   include_debug_strings
@@ -163,6 +165,24 @@ app_data_l:
         db 0
         db drw3
         dw G32+D32+(new_app_base shr 16)+0xF;
+
+; ------------- PCI BIOS ------------------
+
+pci_code_32:
+        dw 0         ;lim  0-15
+        dw 0         ;base 0-15
+        db 0         ;base 16-23
+        db cpl0      ;type
+        db D32       ;lim 16-19+props
+        db 0         ;base 24-31
+
+pci_data_32:
+        dw 0         ;lim  0-15
+        dw 0         ;base 0-15
+        db 0         ;base 16-23
+        db dpl0      ;type
+        db D32       ;lim 16-19+props
+        db 0         ;base 24-31
 
 ; --------------- APM ---------------------
 apm_code_32:

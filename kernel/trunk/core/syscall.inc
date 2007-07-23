@@ -196,7 +196,7 @@ iglobal
       dd user_events             ; 54-User events
       dd sound_interface         ; 55-Sound interface
       dd undefined_syscall       ; 56-reserved
-      dd undefined_syscall       ; 57-reserved
+      dd sys_pcibios             ; 57-reserved
       dd file_system             ; 58-Common file system interface
       dd undefined_syscall       ; 59-reserved
       dd sys_IPC                 ; 60-Inter Process Communication

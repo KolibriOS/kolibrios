@@ -74,6 +74,8 @@ graph_data     equ  (3+graph_data_l-gdts)
 tss0           equ  (tss0_l-gdts)
 app_code       equ  (3+app_code_l-gdts)
 app_data       equ  (3+app_data_l-gdts)
+pci_code_sel   equ  (pci_code_32-gdts)
+pci_data_sel   equ  (pci_data_32-gdts)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -237,6 +239,7 @@ B32:
            call test_cpu
            bts [cpu_caps-OS_BASE], CAPS_TSC     ;force use rdtsc
 
+           call init_BIOS32
 ; MEMORY MODEL
            call mem_test
            call init_mem
@@ -255,7 +258,9 @@ B32:
            jmp pword os_code:high_code
 
 align 4
+bios32_entry    dd ?
 tmp_page_tabs   dd ?
+
 use16
 org $-0x10000
 include "boot/shutdown.inc" ; shutdown or restart

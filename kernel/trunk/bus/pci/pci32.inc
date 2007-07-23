@@ -1,23 +1,25 @@
 $Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                           ;;
+;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
-;;  PCI32.INC                                                ;;
-;;                                                           ;;
-;;  32 bit PCI driver code                                   ;;
-;;                                                           ;;
-;;  Version 0.2  December 21st, 2002                         ;;
-;;                                                           ;;
-;;  Author: Victor Prodan, victorprodan@yahoo.com            ;;
-;;    Credits:                                               ;;
-;;          Ralf Brown                                       ;;
-;;          Mike Hibbett, mikeh@oceanfree.net                ;;
-;;                                                           ;;
-;;  See file COPYING for details                             ;;
-;;                                                           ;;
+;;  PCI32.INC                                                   ;;
+;;                                                              ;;
+;;  32 bit PCI driver code                                      ;;
+;;                                                              ;;
+;;  Version 0.3  April 9, 2007                                  ;;
+;;  Version 0.2  December 21st, 2002                            ;;
+;;                                                              ;;
+;;  Author: Victor Prodan, victorprodan@yahoo.com               ;;
+;;          Mihailov Ilia, ghost.nsk@gmail.com                  ;;
+;;    Credits:                                                  ;;
+;;          Ralf Brown                                          ;;
+;;          Mike Hibbett, mikeh@oceanfree.net                   ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -108,6 +110,7 @@ pci_make_config_cmd:
 ;       read a register from the PCI config space into EAX/AX/AL
 ;       IN: ah=bus,device+func=bh,register address=bl
 ;           number of bytes to read (1,2,4) coded into AL, bits 0-1
+;           (0 - byte, 1 - word, 2 - dword)
 ;***************************************************************************
 
 align 4
@@ -238,6 +241,7 @@ pci_read_reg_err:
 ;       IN: ah=bus,device+func=bh,register address (dword aligned)=bl,
 ;           value to write in ecx
 ;           number of bytes to write (1,2,4) coded into AL, bits 0-1
+;           (0 - byte, 1 - word, 2 - dword)
 ;***************************************************************************
 
 align 4
@@ -361,3 +365,118 @@ pci_write_reg_err:
         xor     eax,eax
         dec     eax
         ret
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+
+; VendID (2), DevID (2), Revision = 0 (1), Class Code (3), FNum (1), Bus (1)
+pci_emu_dat:	times	30*10 db 0
+
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+align 4
+sys_pcibios:
+	cmp	[pci_access_enabled], 1
+        jne	.unsupported_func
+	mov	edi, [pci_bios_entry]
+	test	edi, edi
+	jz	.emulate_bios
+	xchg	ebx, eax
+	xchg	ecx, eax
+	xchg	edx, eax
+	xchg	esi, eax
+        mov     edi, eax
+
+        push ds
+        mov ax, pci_data_sel
+        mov ds, ax
+        mov eax, ebp
+        call pword [cs:pci_bios_entry]
+        pop ds
+
+	jmp	.return
+	;-=-=-=-=-=-=-=-=
+.emulate_bios:
+	cmp	ebp, 1			; PCI_FUNCTION_ID
+	jnz	.not_PCI_BIOS_PRESENT
+	mov	edx, 'PCI '
+	xor	ah, ah
+        mov     al, [OS_BASE+0x2F0000 + 0x9020]
+        mov     bx, [OS_BASE+0x2F0000 + 0x9022]
+        mov     cl, [OS_BASE+0x2F0000 + 0x9021]
+	jmp	.return
+
+.not_PCI_BIOS_PRESENT:
+	cmp	ebp, 2			; FIND_PCI_DEVICE
+	jne	.not_FIND_PCI_DEVICE
+	mov	esi, pci_emu_dat
+..nxt:	cmp	[esi], cx
+	jne	..no
+	cmp	[esi + 2], bx
+	jne	..no
+	dec	dx
+	jns	..no
+	mov	bx, [esi + 4]
+	xor	ah, ah
+	jmp	.return
+..no:	cmp	word[esi], 0
+	je	..dev_not_found
+	add	esi, 10
+	jmp	..nxt
+..dev_not_found:
+	mov	ah, 0x86		; DEVICE_NOT_FOUND
+	jmp	.return
+
+.not_FIND_PCI_DEVICE:
+	cmp	ebp, 3			; FIND_PCI_CLASS_CODE
+	jne	.not_FIND_PCI_CLASS_CODE
+	mov	esi, pci_emu_dat
+	shl	ebx, 8
+..nxt2:	cmp	[esi], ebx
+	jne	..no2
+	mov	bx, [esi]
+	xor	ah, ah
+	jmp	.return
+..no2:	cmp	dword[esi], 0
+	je	..dev_not_found2
+	add	esi, 10
+	jmp	..nxt2
+..dev_not_found2:
+	mov	ah, 0x86		; DEVICE_NOT_FOUND
+	jmp	.return
+
+.not_FIND_PCI_CLASS_CODE:
+	cmp	ebp, 8			; READ_CONFIG_*
+	jb	.not_READ_CONFIG
+	cmp	ebp, 0x0A
+	ja	.not_READ_CONFIG
+	mov	ebx, esi
+	mov	bh, al
+	mov	edx, ebp
+	mov	al, dl
+	call	pci_read_reg
+	mov	ecx, eax
+	xor	ah, ah			; SUCCESSFUL
+	jmp	.return
+.not_READ_CONFIG:
+	cmp	ebp, 0x0B		; WRITE_CONFIG_*
+	jb	.not_WRITE_CONFIG
+	cmp	ebp, 0x0D
+	ja	.not_WRITE_CONFIG
+	mov	ecx, ebx
+	mov	ebx, esi
+	mov	bh, al
+	mov	edx, ebp
+	inc	edx
+	mov	al, dl
+	call	pci_write_reg
+	xor	ah, ah			; SUCCESSFUL
+	jmp	.return
+.not_WRITE_CONFIG:
+.unsupported_func:
+	mov	ah, 0x81		; FUNC_NOT_SUPPORTED
+.return:mov	dword[esp + 8 ], edi
+	mov	dword[esp + 12], esi
+	mov	dword[esp + 24], ebx
+	mov	dword[esp + 28], edx
+	mov	dword[esp + 32], ecx
+	mov	dword[esp + 36], eax
+	ret
