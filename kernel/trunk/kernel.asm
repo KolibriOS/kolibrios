@@ -4986,10 +4986,10 @@ syscall_cdaudio:                        ; CD
         shr     eax, 1
         and     eax, 1
         inc     eax
-        mov     [ChannelNumber], eax
+        mov     [ChannelNumber], ax
         mov     eax, ebx
         and     eax, 1
-        mov     [DiskNumber], eax
+        mov     [DiskNumber], al
         call    reserve_cd_channel
         and     ebx, 3
         inc     ebx
