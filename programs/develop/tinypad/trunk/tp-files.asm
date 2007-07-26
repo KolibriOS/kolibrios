@@ -194,8 +194,8 @@ func load_file ;//////////////////////////////////////////////////////////////
 	mov	ecx,eax
 	cmp	[tab_bar.Items.Count],1
 	jne	@f
-	cmp	[cur_editor.FilePath],'/'
-	je	@f
+	cmp	[cur_editor.FilePath],0
+	jne	@f
 	cmp	[cur_editor.Modified],0
 	jne	@f
 	mov	ebp,cur_editor

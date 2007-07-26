@@ -19,6 +19,9 @@
 ;   - other bug-fixes and speed/size optimizations
 ;
 ; HISTORY:
+; 4.0.5 (mike.dld and Rus)
+;   bug-fixes:
+;     - a new tab is created when opening a file from folder of tinypad
 ; 4.0.4 (mike.dld)
 ;   bug-fixes:
 ;     - statusbar contained hint after dialog operation cancelled
