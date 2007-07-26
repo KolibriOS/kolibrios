@@ -320,8 +320,7 @@ GenericBox:
         jz      .redraw
         dec     eax
         jz      .key
-        or      eax, -1
-        int     40h
+        jmp     exit
 .redraw:
         push    ebx ebp
         call    draw_window
@@ -772,6 +771,10 @@ MenuDlgProc:
         jz      .pgdn
         cmp     al, 0x49
         jz      .pgup
+        cmp     al, 0x52
+        jz      .ins
+        cmp     al, 0x53
+        jz      .del
         mov     edx, [ebx+36]
 @@:
         cmp     dword [edx+4], 0
@@ -857,6 +860,28 @@ MenuDlgProc:
         ret     16
 .enter:
         mov     eax, [ebx+36]
+        ret     16
+.ins:
+        push    5
+        pop     edx
+        jmp     @f
+.del:
+        push    4
+        pop     edx
+@@:
+        mov     eax, [ebx+36]
+        cmp     byte [eax+8], '/'
+        jnz     @f
+        cmp     word [eax+9], 'cd'
+        jnz     @f
+        movzx   ecx, byte [eax+11]
+        sub     ecx, '0'
+        push    24
+        pop     eax
+        mov     ebx, edx
+        int     40h
+@@:
+        xor     eax, eax
         ret     16
 
 .line_prev:
@@ -1016,6 +1041,7 @@ dlgitemtemplate:
 ;       8 = элемент может иметь фокус ввода
 ;       10h: для кнопки = кнопка по умолчанию (Enter на не-кнопке)
 ;            для поля ввода = данные были модифицированы
+;       20h: для поля ввода = не отображать вводимые данные (показывать '*')
 .size = $
 end virtual
 ;       struct DLGDATA
@@ -1309,7 +1335,8 @@ draw_text:
 draw_text_esi:
         test    esi, esi
         jz      .ret
-        or      ecx, -1
+        push    -1
+        pop     ecx
 @@:
         inc     ecx
         cmp     byte [ecx+esi], 0
@@ -1372,6 +1399,14 @@ draw_text_esi:
         sub     esi, ecx
 .text_copy:
         jecxz   .ret
+; check for password editboxes
+        cmp     [ebx+dlgitemtemplate.type], 3
+        jnz     @f
+        test    [ebx+dlgitemtemplate.flags], 20h
+        jz      @f
+        mov     al, '*'
+        rep     stosw
+        jmp     .ret
 @@:
         lodsb
         stosw
@@ -1441,31 +1476,30 @@ SayNoMem:
         call    DialogBox
         ret
 
-; int __stdcall SayErr(const char* title, int x, int y,
-;                       int num_strings, const char* strings[],
-;                       int num_buttons, const char* buttons[]);
-; may be x=-1 and/or y=-1
+; int __stdcall SayErr(int num_strings, const char* strings[],
+;                      int num_buttons, const char* buttons[]);
 SayErr:
+        pop     eax
+        push    aError
+        push    eax
         push    2
         jmp     @f
 
-; int __stdcall Message(const char* title, int x, int y,
+; int __stdcall Message(const char* title,
 ;                       int num_strings, const char* strings[],
 ;                       int num_buttons, const char* buttons[]);
 Message:
         push    1
 @@:
-; [esp+4] = title
-; [esp+8] = x
-; [esp+12] = y
-; [esp+16] = num_strings
-; [esp+20] = strings
-; [esp+24] = num_buttons
-; [esp+28] = buttons
         pop     eax
+; [esp+4] = title
+; [esp+8] = num_strings
+; [esp+12] = strings
+; [esp+16] = num_buttons
+; [esp+20] = buttons
         pushad
-        mov     ecx, [esp+4+16]
-        add     ecx, [esp+4+24]
+        mov     ecx, [esp+32+8]
+        add     ecx, [esp+32+16]
         imul    ecx, dlgitemtemplate.size
         add     ecx, dlgtemplate.size+12
         call    xpgalloc
@@ -1479,13 +1513,12 @@ Message:
         mov     edi, eax
         mov     eax, [esp+28]
         stosd                           ; dlgtemplate.flags
-        mov     eax, [esp+32+8]
+        or      eax, -1
         stosd                           ; dlgtemplate.x
-        mov     eax, [esp+32+12]
         stosd                           ; dlgtemplate.y
 ; calculate width
-        mov     ecx, [esp+32+16]
-        mov     esi, [esp+32+20]
+        mov     ecx, [esp+32+8]
+        mov     esi, [esp+32+12]
         xor     edx, edx
 .calcwidth:
         lodsd
@@ -1500,8 +1533,8 @@ Message:
         mov     edx, eax
 @@:
         loop    .calcwidth
-        mov     ecx, [esp+32+24]
-        mov     esi, [esp+32+28]
+        mov     ecx, [esp+32+16]
+        mov     esi, [esp+32+20]
         xor     ebp, ebp
 .calcwidth2:
         lodsd
@@ -1527,7 +1560,7 @@ Message:
 @@:
         mov     eax, edx
         stosd                           ; dlgtemplate.width
-        mov     eax, [esp+32+16]
+        mov     eax, [esp+32+8]
         inc     eax
         stosd                           ; dlgtemplate.height
         mov     eax, 3
@@ -1540,12 +1573,12 @@ Message:
         stosd                           ; (ignored)
         stosd                           ; DlgProc
         stosd                           ; userdata
-        mov     eax, [esp+32+16]
-        add     eax, [esp+32+24]
+        mov     eax, [esp+32+8]
+        add     eax, [esp+32+16]
         stosd                           ; num_items
 ; fill strings
         xor     ecx, ecx
-        mov     esi, [esp+32+20]
+        mov     esi, [esp+32+12]
 @@:
         mov     eax, 1
         stosd                           ; dlgitemtemplate.type
@@ -1561,11 +1594,11 @@ Message:
         mov     eax, 1
         stosd                           ; dlgitemtemplate.flags
         inc     ecx
-        cmp     ecx, [esp+32+16]
+        cmp     ecx, [esp+32+8]
         jb      @b
 ; fill buttons
-        mov     ecx, [esp+32+24]
-        mov     esi, [esp+32+28]
+        mov     ecx, [esp+32+16]
+        mov     esi, [esp+32+20]
         sub     edx, ebp
         jc      .big
         shr     edx, 1
@@ -1596,7 +1629,7 @@ Message:
         mov     eax, [esi-4]
         stosd                           ; dlgitemtemplate.data
         mov     eax, 9
-        cmp     ecx, [esp+32+24]
+        cmp     ecx, [esp+32+16]
         jnz     @f
         or      al, 4
 @@:
@@ -1611,10 +1644,10 @@ Message:
         xor     edx, edx
         mov     ecx, dlgitemtemplate.size
         div     ecx
-        sub     eax, [esp+32+16]
+        sub     eax, [esp+32+8]
 @@:
         mov     [esp+28], eax
         mov     ecx, ebx
         call    pgfree
         popad
-        ret     28
+        ret     20

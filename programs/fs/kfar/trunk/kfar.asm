@@ -7,6 +7,9 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
+version equ '0.4'
+version_dword equ 0*10000h + 40
+
 include 'lang.inc'
 include 'font.inc'
 include 'sort.inc'
@@ -81,10 +84,18 @@ start:
         jz      exit
         cmp     [panel1_files], 0
         jz      exit
-        mov     [panel1_sortmode], 0    ; sort by name
-        mov     [panel2_sortmode], 0
-        push    2                       ; "средний" формат
-        pop     eax
+        xor     eax, eax
+        mov     [panel1_hPlugin], eax
+        mov     [panel1_parents], eax
+        mov     [panel1_parents_sz], eax
+        mov     [panel1_parents_alloc], eax
+        mov     [panel2_hPlugin], eax
+        mov     [panel2_parents], eax
+        mov     [panel2_parents_sz], eax
+        mov     [panel2_parents_alloc], eax
+        mov     [panel1_sortmode], al   ; sort by name
+        mov     [panel2_sortmode], al
+        mov     al, 2                   ; "средний" формат
         mov     [panel1_colmode], eax
         mov     [panel2_colmode], eax
         mov     [num_screens], 1
@@ -121,6 +132,28 @@ start:
         push    dword app_path
         call    [ini.get_int]
         mov     [bConfirmDeleteIncomplete], al
+        push    2
+        push    aLeftViewMode
+        push    aPanels
+        push    app_path
+        call    [ini.get_int]
+        cmp     eax, 1
+        jb      @f
+        cmp     eax, 4
+        ja      @f
+        mov     [panel1_colmode], eax
+@@:
+        push    2
+        push    aRightViewMode
+        push    aPanels
+        push    app_path
+        call    [ini.get_int]
+        cmp     eax, 1
+        jb      @f
+        cmp     eax, 4
+        ja      @f
+        mov     [panel2_colmode], eax
+@@:
         mov     ecx, 0x1000
         call    xpgalloc
         test    eax, eax
@@ -202,6 +235,11 @@ start:
 @@:
         loop    .l3
 .skip_shortcuts:
+; load plugins
+        push    enum_plugins_callback
+        push    aPlugins
+        push    app_path
+        call    [ini.enum_keys]
 .noini:
         mov     esi, def_left_dir
         mov     edi, panel1_dir
@@ -239,6 +277,86 @@ event:
         jz      key
 ; button - we have only one button, close
 exit:
+; close all screens
+@@:
+        mov     ecx, [num_screens]
+        mov     eax, [screens]
+        mov     ebp, [eax+ecx*8-4]
+        mov     eax, [eax+ecx*8-8]
+        push    ebp
+        call    [eax+screen_vtable.OnExit]
+        pop     ecx
+        call    pgfree
+        dec     [num_screens]
+        jnz     @b
+; unload all plugins
+        mov     ecx, [num_plugins]
+        imul    esi, ecx, PluginInfo.size
+        add     esi, [plugins]
+.unload:
+        dec     ecx
+        js      .unload_done
+        sub     esi, PluginInfo.size
+        push    ecx esi
+        call    [esi+PluginInfo.unload]
+        pop     esi ecx
+        jmp     .unload
+.unload_done:
+if 0    ; commented due to bug in libini
+        cmp     [ini.set_int], aIniSetInt
+        jz      .nosave
+        push    [panel1_colmode]
+        push    aLeftViewMode
+        push    aPanels
+        push    app_path
+        call    [ini.set_int]
+        push    [panel2_colmode]
+        push    aRightViewMode
+        push    aPanels
+        push    app_path
+        call    [ini.set_int]
+.nosave:
+end if
+if CHECK_FOR_LEAKS
+        mov     ecx, [panel1_files]
+        call    pgfree
+        mov     ecx, [panel2_files]
+        call    pgfree
+        mov     ecx, [screens]
+        call    pgfree
+        mov     ecx, [associations]
+        call    pgfree
+        mov     ecx, [console_data_ptr]
+        call    pgfree
+        mov     ecx, [MemForImage]
+        call    pgfree
+        mov     esi, FolderShortcuts
+        push    10
+        pop     ecx
+@@:
+        lodsd
+        test    eax, eax
+        jnz     @f
+        loop    @b
+        jmp     .nofreefs
+@@:
+        mov     ecx, eax
+        call    pgfree
+        mov     ecx, [plugins]
+        call    pgfree
+        mov     ecx, [panel1_parents]
+        call    pgfree
+        mov     ecx, [panel2_parents]
+        call    pgfree
+.nofreefs:
+        mov     eax, [numallocatedregions]
+        test    eax, eax
+        jz      @f
+        mov     edi, allocatedregions
+        int3
+        jmp     $
+@@:
+end if
         or      eax, -1
         int     40h
 redraw:
@@ -640,6 +758,182 @@ enum_associations_callback:
         xor     eax, eax
         ret     12
 
+enum_plugins_callback:
+; LongBool __stdcall callback(f_name,sec_name,key_name);
+; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name
+        push    nullstr
+        push    1024
+        push    saved_file_name
+        push    dword [esp+12+12]
+        push    dword [esp+16+8]
+        push    dword [esp+20+4]
+        call    [ini.get_str]
+        test    eax, eax
+        jnz     .ret
+        mov     esi, saved_file_name
+        cmp     byte [esi], '/'
+        jz      .absolute
+; convert path to absolute
+        mov     edi, execdata
+        push    esi
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     edi
+        mov     esi, app_path
+        push    esi
+        xor     ecx, ecx
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, '/'
+        jnz     @b
+        mov     ecx, esi
+        jmp     @b
+@@:
+        pop     esi
+        sub     ecx, esi
+        rep     movsb
+        mov     esi, execdata
+.z:
+        cmp     word [esi], '.'
+        jz      .ret
+        cmp     word [esi], './'
+        jnz     @f
+        add     esi, 2
+        jmp     .z
+@@:
+        cmp     word [esi], '..'
+        jnz     .c
+        cmp     byte [esi+2], 0
+        jz      .ret
+        cmp     byte [esi+2], '/'
+        jnz     .c
+        add     esi, 3
+@@:
+        dec     edi
+        cmp     edi, saved_file_name
+        jbe     .ret
+        cmp     byte [edi-1], '/'
+        jnz     @b
+        jmp     .z
+.c:
+        lodsb
+        stosb
+        test    al, al
+        jz      @f
+        cmp     edi, saved_file_name+1024
+        jb      .c
+        mov     esi, execdata
+        call    load_dll_and_import.big
+.ret:
+        mov     al, 1
+        ret     12
+@@:
+.absolute:
+; allocate space for plugin info
+        mov     eax, [num_plugins]
+        inc     eax
+        mov     [num_plugins], eax
+        imul    ecx, eax, PluginInfo.size
+        cmp     ecx, [alloc_plugins]
+        jbe     .norealloc
+        mov     edx, [plugins]
+        call    xpgrealloc
+        test    eax, eax
+        jnz     @f
+.dec_ret:
+        dec     [num_plugins]
+        jmp     .ret
+@@:
+        mov     [plugins], eax
+        lea     eax, [ecx+0xFFF]
+        and     eax, not 0xFFF
+        mov     [alloc_plugins], eax
+.norealloc:
+        mov     esi, [plugins]
+        lea     esi, [esi+ecx-PluginInfo.size]
+; load plugin DLL
+        or      ebp, -1
+        mov     eax, saved_file_name
+        call    load_dll_and_import.do
+        test    eax, eax
+        jnz     .dec_ret
+; find exported functions
+        mov     eax, aVersion
+        call    load_dll_and_import.find_exported_function
+        jnc     @f
+        xor     eax, eax
+@@:
+MIN_INTERFACE_VER = 1
+MAX_INTERFACE_VER = 1
+        cmp     eax, MIN_INTERFACE_VER
+        jae     @f
+        cmp     eax, MAX_INTERFACE_VER
+        jbe     @f
+        push    aIncompatibleVersion
+.cantload:
+        push    saved_file_name
+        push    aCannotLoadPlugin
+        mov     eax, esp
+        push    ContinueBtn
+        push    1
+        push    eax
+        push    3
+        call    SayErr
+        add     esp, 12
+        jmp     .dec_ret
+@@:
+        mov     edi, esi
+        mov     esi, plugin_exported
+.import:
+        lodsd
+        test    eax, eax
+        jz      .import_done
+        call    load_dll_and_import.find_exported_function
+        jnc     @f
+        mov     eax, [esi-4+plugin_exported_default-plugin_exported]
+@@:
+        stosd
+        jmp     .import
+.import_done:
+; initialize plugin
+        mov     eax, aPluginLoad
+        call    load_dll_and_import.find_exported_function
+        jc      .ok
+        push    kfar_info
+        call    eax
+        cmp     eax, 1
+        jb      .ok
+        ja      .dec_ret
+        push    aInitFailed
+        jmp     .cantload
+.ok:
+        mov     al, 1
+        ret     12
+
+plugin_unload_default:
+        ret
+
+OpenFilePlugin_default:
+GetFiles_default:
+        xor     eax, eax
+        ret     20
+
+ClosePlugin_default:
+        ret     4
+
+GetOpenPluginInfo_default:
+        ret     8
+
+SetFolder_default:
+open_default:
+        xor     eax, eax
+        ret     12
+
 new_screen:
 ; in: ecx=sizeof(screen data), edx->vtable
 ; out: ebp=pointer or NULL, eax!=0 if successful
@@ -967,6 +1261,152 @@ panels_OnKey:
         call    get_curfile_folder_entry
         test    byte [ecx], 10h
         jnz     .enter_folder
+; todo: add <Enter> handling on plugin panel
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jnz     .ret
+; generate full file name
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        mov     edi, execdata
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        cmp     edi, execdataend-1
+        jae     .bigfilename
+        jmp     @b
+@@:
+        lea     esi, [ecx+40]
+        mov     al, '/'
+        stosb
+@@:
+        lodsb
+        stosb
+        cmp     edi, execdataend
+        ja      .bigfilename
+        test    al, al
+        jnz     @b
+; try to open file and look for all plugins
+        push    O_READ
+        push    execdata
+        call    open
+        test    eax, eax
+        jz      .noplugins      ; if can't open, just try to execute
+        mov     esi, eax        ; save handle
+        push    filedata_buffer_size
+        push    filedata_buffer
+        push    esi
+        call    read
+        mov     edi, eax        ; save size of read data
+; test for Kolibri executable
+        cmp     eax, 24h
+        jb      .enter.noexec
+        cmp     dword [filedata_buffer], 'MENU'
+        jnz     @f
+        cmp     word [filedata_buffer+4], 'ET'
+        jnz     @f
+.close_run:
+        push    esi
+        call    close
+        jmp     .run_app
+@@:
+        cmp     dword [filedata_buffer], 'KPCK'
+        jnz     @f
+        cmp     dword [filedata_buffer+12], 0x26914601
+        jz      .close_run
+@@:
+.enter.noexec:
+        mov     ecx, [num_plugins]
+        mov     edx, [plugins]
+        sub     edx, PluginInfo.size
+.plugloop:
+        add     edx, PluginInfo.size
+        dec     ecx
+        js      .plugdone
+        pushad
+        push    edi
+        push    filedata_buffer
+        call    get_curfile_folder_entry
+        push    ecx
+        push    execdata
+        push    esi
+        call    [edx+PluginInfo.OpenFilePlugin]
+        mov     [esp+28], eax
+        popad
+        test    eax, eax
+        jz      .plugloop
+        cmp     eax, -1
+        jnz     .pluginok
+        push    esi
+        call    close
+        ret
+.pluginok:
+; save current directory and set root directory of hPlugin
+        mov     edi, eax        ; save handle
+        mov     esi, execdata
+@@:
+        lodsb
+        test    al, al
+        jnz     @b
+        sub     esi, execdata-9
+; allocate esi bytes in buffer 'parents'
+        mov     ecx, [ebp + panel1_parents_sz - panel1_data]
+        add     ecx, esi
+        cmp     ecx, [ebp + panel1_parents_alloc - panel1_data]
+        jbe     .enter.norealloc
+        push    edx
+        mov     edx, [ebp + panel1_parents - panel1_data]
+        call    xpgrealloc
+        pop     edx
+        test    eax, eax
+        jnz     @f
+        push    edi
+        call    [edx+PluginInfo.ClosePlugin]
+        ret
+@@:
+        mov     [ebp + panel1_parents - panel1_data], eax
+.enter.norealloc:
+        mov     [ebp + panel1_parents_sz - panel1_data], ecx
+; save current state to the end of buffer
+        sub     ecx, esi
+        add     ecx, [ebp + panel1_parents - panel1_data]
+        xchg    edx, [ebp + panel1_hPlugin - panel1_data]
+        mov     [ecx], edx
+        xchg    edi, [ebp + panel1_hFile - panel1_data]
+        mov     [ecx+4], edi
+        mov     byte [ecx+8], 0
+        lea     edi, [ecx+9]
+        lea     ecx, [esi-9]
+        mov     esi, execdata
+        rep     movsb
+        mov     word [ebp + panel1_dir - panel1_data], '/'
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        lea     ebx, [ebp + panel1_plugin_info - panel1_data]
+        and     dword [ebx], 0
+        push    ebp
+        push    ebx
+        push    [ebp + panel1_hFile - panel1_data]
+        call    [eax+PluginInfo.GetOpenPluginInfo]
+        pop     ebp
+        call    get_curfile_folder_entry
+        mov     esi, ecx
+        mov     edi, left_dotdot_entry
+        cmp     ebp, panel1_data
+        jz      @f
+        add     edi, right_dotdot_entry-left_dotdot_entry
+@@:
+        mov     ecx, 10
+        rep     movsd
+        mov     byte [edi-40], 10h      ; attributes: folder
+        mov     eax, '..'
+        stosd
+        jmp     .reread
+.plugdone:
+        push    esi
+        call    close
+.noplugins:
+; run program or association
+        call    get_curfile_folder_entry
         call    find_extension
         jc      .run_app
 .run_association:
@@ -996,27 +1436,6 @@ panels_OnKey:
         mov     [execptr], execdata
         and     [execparams], 0
 .dorun:
-        lea     esi, [ebp + panel1_dir - panel1_data]
-        mov     edi, execdata
-@@:
-        lodsb
-        test    al, al
-        jz      @f
-        stosb
-        cmp     edi, execdataend-1
-        jae     .bigfilename
-        jmp     @b
-@@:
-        lea     esi, [ecx+40]
-        mov     al, '/'
-        stosb
-@@:
-        lodsb
-        stosb
-        cmp     edi, execdataend
-        ja      .bigfilename
-        test    al, al
-        jnz     @b
 ; for fasm call - special handling, because
 ; 1) fasm command line convention is different : fasm infile,outfile[,path] rather than tinypad infile
 ; 2) fasm will probably create new file in directory, so we want to reload panel data
@@ -1096,9 +1515,6 @@ panels_OnKey:
         push    1
         push    eax
         push    2
-        push    -1
-        push    -1
-        push    dword aError
         call    SayErr
         pop     eax
         pop     eax
@@ -1133,9 +1549,6 @@ panels_OnKey:
         push    1
         push    eax
         push    1
-        push    -1
-        push    -1
-        push    dword aError
         call    SayErr
         pop     eax
         ret
@@ -1143,7 +1556,13 @@ panels_OnKey:
         mov     eax, aCmdLineTooBig
         jmp     .l2
 .bigfoldername2:
-        mov     byte [ecx], 0
+        mov     esi, prev_dir
+        lea     edi, [ebp + panel1_dir - panel1_data]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
 .bigfoldername:
         mov     eax, aFolderNameTooBig
         jmp     .l2
@@ -1167,7 +1586,6 @@ panels_OnKey:
         cmp     esi, edx
         pop     esi
         jae     .bigfoldername
-        mov     ecx, edi
         mov     al, '/'
         cmp     [edi-1], al
         jz      @f
@@ -1179,6 +1597,28 @@ panels_OnKey:
         stosb
         test    al, al
         jnz     @b
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        test    eax, eax
+        jz      .reread
+        push    ebp
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        push    esi
+        add     ecx, 40
+        push    ecx
+        push    [ebp + panel1_hFile - panel1_data]
+        call    [eax+PluginInfo.SetFolder]
+        pop     ebp
+        test    al, al
+        jnz     .reread
+        mov     esi, prev_dir
+        lea     edi, [ebp + panel1_dir - panel1_data]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+.retd:
+        ret
 .reread:
         call    read_folder
 .done_cmdbar:
@@ -1186,6 +1626,14 @@ panels_OnKey:
         jmp     .done_redraw
 .dotdot:
         lea     edi, [ebp + panel1_dir - panel1_data]
+        cmp     word [edi], '/'
+        jnz     .dotdot_noroot
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      .retd
+        call    close_plugin_panel
+        jmp     .dotdot
+.dotdot_noroot:
+        mov     edx, edi
         mov     al, 0
         or      ecx, -1
         repnz   scasb
@@ -1195,11 +1643,37 @@ panels_OnKey:
         repnz   scasb
         cld
         inc     edi
-        mov     byte [edi], 0
+        cmp     edi, edx
+        jnz     @f
         inc     edi
+@@:
+        push    dword [edi]
+        mov     byte [edi], 0
         push    edi
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        test    eax, eax
+        jz      .dotdot_native
+        push    ebp
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        push    esi
+        push    aDotDot
+        push    [ebp + panel1_hFile - panel1_data]
+        call    [eax+PluginInfo.SetFolder]
+        pop     ebp
+        test    al, al
+        jnz     .dotdot_native
+        pop     edi
+        pop     dword [edi]
+        ret
+.dotdot_native:
         call    read_folder
         pop     edi
+        pop     dword [edi]
+        push    edi
+        cmp     byte [edi], '/'
+        jnz     @f
+        inc     edi
+@@:
         mov     edx, [ebp + panel1_files - panel1_data]
         mov     ecx, [ebp + panel1_numfiles - panel1_data]
 .scanloop:
@@ -1228,6 +1702,8 @@ panels_OnKey:
         inc     edx
         mov     [ebp + panel1_start - panel1_data], edx
 .scandone:
+        pop     edi
+        mov     byte [edi], 0
         jmp     .done_cmdbar
 .ctrl_f39:
         sub     al, 0x3D
@@ -1356,6 +1832,10 @@ panels_OnKey:
 @@:
         mov     ecx, edx
         lea     edi, [ebp + panel1_dir - panel1_data]
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      .find_cur_drive_loop
+        mov     edi, [ebp + panel1_parents - panel1_data]
+        add     edi, 8
 .find_cur_drive_loop:
         push    edi
         lea     esi, [ecx+8]
@@ -1391,15 +1871,22 @@ panels_OnKey:
         push    [ebp + panel1_left - panel1_data]
         call    menu_centered_in
         cmp     eax, -1
-        jz      .ret2
-        lea     esi, [eax+8]
+        jnz     @f
+        mov     ecx, edx
+        call    pgfree
+        ret
+@@:
+        push    eax
+        call    close_plugin_panels
         lea     edi, [ebp + panel1_dir - panel1_data]
-        push    ecx esi edi
+        push    edi
         mov     esi, edi
         mov     edi, prev_dir
         mov     ecx, 1024/4
         rep     movsd
-        pop     edi esi ecx
+        pop     edi
+        pop     esi
+        add     esi, 8
 @@:
         lodsb
         stosb
@@ -1410,6 +1897,11 @@ panels_OnKey:
         call    read_folder
         jmp     .done_redraw
 .shift_f5:
+; todo: copy to plugin panel
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      @f
+        ret
+@@:
         mov     esi, ebp
         cmp     [ebp + panel1_selected_num - panel1_data], 0
         jnz     .f5_2
@@ -1429,9 +1921,23 @@ panels_OnKey:
         stosb
         jmp     @b
 .f5:
+; todo: copy to plugin panel
         mov     esi, ebp
         xor     esi, panel1_data xor panel2_data
+        cmp     [esi + panel1_hPlugin - panel1_data], 0
+        jz      .f5_2
+        ret
 .f5_2:
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     [source_hModule], eax
+        mov     eax, [ebp + panel1_hFile - panel1_data]
+        mov     [source_hPlugin], eax
+        mov     eax, left_dotdot_entry
+        cmp     ebp, panel1_data
+        jz      @f
+        add     eax, right_dotdot_entry-left_dotdot_entry
+@@:
+        mov     [default_attr], eax
         add     esi, panel1_dir - panel1_data
         mov     edi, CopyDestEditBuf
         mov     eax, CopyDestEditBuf.length
@@ -1699,9 +2205,6 @@ end if
         push    1
         push    eax
         push    2
-        push    -1
-        push    -1
-        push    aError
         call    SayErr
         pop     eax
         pop     eax
@@ -1767,6 +2270,9 @@ end if
         mov     [bDestIsFolder], dl
         mov     [copy_bSkipAll], 0
         mov     [copy_bSkipAll2], 0
+        mov     [copy_bSkipAll3], 0
+        test    [ebp + panel1_plugin_flags - panel1_data], 2
+        jnz     .copy_GetFiles
         cmp     [ebp + panel1_selected_num - panel1_data], 0
         jnz     .f5_selected3
         call    copy_file
@@ -1798,6 +2304,43 @@ end if
 .f5_selected_copycont:
         loop    .f5_selected_copyloop
 .f5_multiple_cancel:
+        jmp     .copydone
+.copy_GetFiles:
+        mov     ecx, [ebp + panel1_selected_num - panel1_data]
+        cmp     ecx, 1
+        adc     ecx, 0
+        shl     ecx, 2
+        call    xpgalloc
+        test    eax, eax
+        jnz     @f
+        ret
+@@:
+        push    ebp eax ; save
+        push    copy_AddDir     ; adddir
+        push    copy_AddFile    ; addfile
+        push    eax             ; items
+        shr     ecx, 2
+        push    ecx             ; NumItems
+        push    [ebp + panel1_hFile - panel1_data]
+        mov     edi, eax
+        call    get_curfile_folder_entry
+        mov     [edi], ecx
+        cmp     [ebp + panel1_selected_num - panel1_data], 0
+        jz      .cgf1
+        mov     esi, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+.cgf0:
+        lodsd
+        test    byte [eax+303], 1
+        jz      @f
+        stosd
+@@:
+        loop    .cgf0
+.cgf1:
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        call    [eax+PluginInfo.GetFiles]
+        pop     ecx ebp
+        call    pgfree
         jmp     .copydone
 
 .f3:
@@ -1849,8 +2392,6 @@ end if
         push    2
         push    eax
         push    2
-        push    -1
-        push    -1
         push    aDeleteCaption
         call    Message
         add     esp, 8
@@ -1871,6 +2412,11 @@ end if
 .f8_multiple_cancel:
         jmp     .copydone
 .f8:
+; todo: delete files from plugin panel
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      @f
+        ret
+@@:
         cmp     [ebp + panel1_selected_num - panel1_data], 0
         jnz     .f8_has_selected
         call    get_curfile_folder_entry
@@ -1901,8 +2447,6 @@ end if
         push    2
         push    eax
         push    2
-        push    -1
-        push    -1
         push    aDeleteCaption
         call    Message
         add     esp, 8
@@ -1975,6 +2519,11 @@ end if
 @@:
         jmp     .done_redraw
 .menu:
+; todo: context menu for plugin panel
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      @f
+        ret
+@@:
 ; display context menu
 ; ignore folders
         call    get_curfile_folder_entry
@@ -2253,8 +2802,10 @@ end if
         jnz     @f
         ret
 @@:
+        push    eax
+        call    close_plugin_panels
         lea     esi, [ebp + panel1_dir - panel1_data]
-        push    eax esi
+        push    esi
         mov     edi, prev_dir
 @@:
         lodsb
@@ -2383,6 +2934,113 @@ end if
 .galoopdone:
         jmp     .done_redraw
 
+@@:
+        call    close_plugin_panel
+close_plugin_panels:
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jnz     @b
+        ret
+
+close_plugin_panel:
+; close plugin and restore old directory
+        mov     esi, [ebp + panel1_parents - panel1_data]
+        add     esi, [ebp + panel1_parents_sz - panel1_data]
+@@:
+        dec     esi
+        cmp     byte [esi-1], 0
+        jnz     @b
+        push    esi
+        lea     edi, [ebp + panel1_dir - panel1_data]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     esi
+        sub     esi, 9
+        mov     edx, [esi]      ; hPlugin
+        mov     ebx, [esi+4]    ; hFile
+        sub     esi, [ebp + panel1_parents - panel1_data]
+        mov     [ebp + panel1_parents_sz - panel1_data], esi
+        xchg    edx, [ebp + panel1_hPlugin - panel1_data]
+        xchg    ebx, [ebp + panel1_hFile - panel1_data]
+        push    edx ebx
+        lea     ebx, [ebp + panel1_plugin_info - panel1_data]
+        and     dword [ebx], 0
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        test    eax, eax
+        jz      @f
+        push    ebp
+        push    ebx
+        push    [ebp + panel1_hFile - panel1_data]
+        call    [eax+PluginInfo.GetOpenPluginInfo]
+        pop     ebp
+@@:
+        pop     ebx edx
+
+close_handle_if_unused:
+; edx=hPlugin, ebx=hFile
+        push    ebp
+        xor     ecx, ecx
+@@:
+        mov     eax, [screens]
+        mov     ebp, [eax+ecx*8+4]
+        mov     eax, [eax+ecx*8]
+        call    [eax+screen_vtable.IsHandleUsed]
+        jz      .used
+        inc     ecx
+        cmp     ecx, [num_screens]
+        jb      @b
+        push    ebx
+        call    [edx+PluginInfo.ClosePlugin]
+.used:
+        pop     ebp
+        ret
+
+panels_IsHandleUsed:
+; edx=hPlugin, ebx=hFile
+        mov     ebp, panel1_data
+        call    .1
+        jz      .ret
+        mov     ebp, panel2_data
+
+.1:
+        cmp     edx, [ebp+panel1_hPlugin-panel1_data]
+        jnz     @f
+        cmp     ebx, [ebp+panel1_hFile-panel1_data]
+        jz      .ret
+@@:
+        mov     esi, [ebp + panel1_parents_sz - panel1_data]
+        test    esi, esi
+        jnz     @f
+        inc     esi
+.ret:
+        ret
+@@:
+        add     esi, [ebp + panel1_parents - panel1_data]
+@@:
+        dec     esi
+        cmp     byte [esi-1], 0
+        jnz     @b
+        sub     esi, 9
+        cmp     edx, [esi]      ; hPlugin
+        jnz     .no
+        mov     ebx, [esi+4]    ; hFile
+        jz      .ret
+.no:
+        cmp     esi, [ebp + panel1_parents - panel1_data]
+        jnz     @b
+        inc     esi
+        ret
+
+panels_OnExit:
+; close plugin panels
+        mov     ebp, panel1_data
+        call    close_plugin_panels
+        mov     ebp, panel2_data
+        call    close_plugin_panels
+        ret
+
 panels_OnRedraw:
         call    draw_cmdbar
         mov     ebp, panel1_data
@@ -2458,9 +3116,40 @@ else
 end if
         sub     ecx, 13
         mov     ebp, [active_panel]
-        lea     esi, [ebp + panel1_dir - panel1_data]
         push    3
         pop     edx
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      .native
+        mov     esi, [ebp + panel1_parents - panel1_data]
+        add     esi, [ebp + panel1_parents_sz - panel1_data]
+@@:
+        dec     esi
+        cmp     byte [esi-1], 0
+        jz      @f
+        cmp     byte [esi-1], '/'
+        jnz     @b
+@@:
+        push    ecx edi
+        shr     ecx, 1
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        loop    @b
+@@:
+        sub     edi, [esp]
+        sub     [esp+4], edi
+        add     [esp], edi
+        pop     edi ecx
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        cmp     byte [esi+1], 0
+        jnz     @f
+        inc     esi
+@@:
+        jmp     .main
+.native:
+        lea     esi, [ebp + panel1_dir - panel1_data]
 @@:
         lodsb
         stosb
@@ -2477,6 +3166,7 @@ end if
         dec     esi
         dec     edi
 @@:
+.main:
         push    esi
 @@:
         lodsb
@@ -2518,11 +3208,11 @@ end if
         jz      .nodir
         cmp     esi, [esp]
         jae     @b
+        mov     esi, [esp+4]
         mov     al, '/'
         stosb
         dec     ecx
         jz      .nodir
-        mov     esi, [esp+4]
 @@:
         cmp     esi, [esp+8]
         jb      .nodir
@@ -3058,6 +3748,44 @@ calc_colwidths:
         and     dword [edi], 0
         ret
 
+GetPanelTitle_default:
+        mov     edi, [esp+8]
+        mov     ecx, 1024
+        mov     esi, [esp+12]
+        test    esi, esi
+        jz      .nohost
+        mov     edx, esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        cmp     al, '/'
+        jnz     @b
+        mov     edx, esi
+        jmp     @b
+@@:
+        mov     esi, edx
+@@:
+        lodsb
+        stosb
+        test    al, al
+        loopnz  @b
+        dec     edi
+        inc     ecx
+.nohost:
+        mov     esi, [esp+16]
+        cmp     word [esi], '/'
+        jz      .nodir
+@@:
+        lodsb
+        stosb
+        test    al, al
+        loopnz  @b
+        dec     edi
+.nodir:
+        mov     byte [edi], 0
+        ret     10h
+
 draw_panel:
         mov     eax, [ebp + panel1_left - panel1_data]
         mov     edx, [ebp + panel1_top - panel1_data]
@@ -3182,6 +3910,24 @@ draw_panel:
         jnz     .columns_loop
 ; Заголовок панели (текущая папка)
         lea     esi, [ebp + panel1_dir - panel1_data]
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        test    eax, eax
+        jz      .native
+        push    ebp
+        push    esi
+        mov     esi, [ebp + panel1_parents - panel1_data]
+        add     esi, [ebp + panel1_parents_sz - panel1_data]
+@@:
+        dec     esi
+        cmp     byte [esi-1], 0
+        jnz     @b
+        push    esi
+        push    execdata
+        push    [ebp + panel1_hFile - panel1_data]
+        call    [eax+PluginInfo.GetPanelTitle]
+        pop     ebp
+        mov     esi, execdata
+.native:
         mov     edi, cur_header
         mov     ecx, [ebp + panel1_width - panel1_data]
         sub     ecx, 7
@@ -4038,10 +4784,30 @@ read_folder:
         mov     dword [ebp + panel1_selected_size - panel1_data], eax
         mov     dword [ebp + panel1_selected_size+4 - panel1_data], eax
 .retry:
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        test    eax, eax
+        jz      .native
+        mov     ecx, [dirinfo.size]
+        test    [ebp + panel1_plugin_flags - panel1_data], 1
+        jz      @f
+        dec     ecx     ; reserve one entry for '..'
+@@:
+        push    ebp
+        push    [dirinfo.dirdata]
+        push    ecx
+        push    0
+        push    [ebp + panel1_hFile - panel1_data]
+        call    [eax + PluginInfo.ReadFolder]
+        pop     ebp
+        mov     ebx, [dirinfo.dirdata]
+        mov     ebx, [ebx+4]
+        jmp     .read
+.native:
         push    70
         pop     eax
         mov     ebx, dirinfo
         int     40h
+.read:
         test    eax, eax
         jz      .ok
         cmp     eax, 6
@@ -4061,14 +4827,14 @@ read_folder:
         push    2
         push    eax
         push    3
-        push    -1
-        push    -1
-        push    dword aError
         call    SayErr
         add     esp, 5*4
         test    eax, eax
         jz      .retry
 .dont_notify:
+; If not on plugin panel, try to return to previous directory
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jnz     @f
         mov     esi, prev_dir
         cmp     byte [esi], 0
         jz      @f
@@ -4079,6 +4845,7 @@ read_folder:
         ret
 @@:
         mov     [bSilentFolderMode], 1  ; enter silent mode
+; Try to read parent folder
         mov     esi, [dirinfo.name]
         xor     edx, edx
 .up1:
@@ -4091,11 +4858,27 @@ read_folder:
         lea     edi, [esi-1]
         jmp     .up1
 .up1done:
+        cmp     [ebp + panel1_hPlugin - panel1_data], 0
+        jz      .4
+        cmp     edx, 1
+        ja      .up
+; чтение с панели плагина обломалось по полной
+; при этом мы уже в корне
+; делаем вид, что функция чтения вернула 0 элементов
+; (если нужен вход "..", он будет добавлен автоматически)
+        xor     ebx, ebx        ; 0 items read
+        mov     eax, [dirinfo.dirdata]
+        mov     [eax+8], ebx    ; 0 items total
+        jmp     .ok
+.4:
         cmp     edx, 2
         jbe     .noup
+.up:
         stosb
         jmp     read_folder
 .noup:
+; There is no parent folder, and we are not on plugin panel
+; Try to read ramdisk
         mov     esi, [dirinfo.name]
         mov     edi, esi
         lodsd
@@ -4142,16 +4925,16 @@ read_folder:
         mov     [prev_dir], 0
         jmp     read_folder
 .readdone:
-        and     [ebp + panel1_start - panel1_data], 0
-        and     [ebp + panel1_index - panel1_data], 0
-        and     [ebp + panel1_start - panel1_data], 0
+        xor     edx, edx
+        mov     [ebp + panel1_start - panel1_data], edx
+        mov     [ebp + panel1_index - panel1_data], edx
+        mov     [ebp + panel1_start - panel1_data], edx
         mov     edi, [ebp + panel1_files - panel1_data]
         mov     eax, [ebp + panel1_nfa - panel1_data]
         lea     eax, [edi + eax*4 + 32]
         mov     ecx, [eax-32+4]
         test    ecx, ecx
         jz      .loopdone
-        xor     edx, edx
 ; Игнорируем специальные входы, соответствующие папке '.' и метке тома
 .ptrinit:
         cmp     word [eax+40], '.'
@@ -4192,6 +4975,58 @@ read_folder:
 .dotdot:
 ; подсветка
 ;        call    insert_last_dot
+        call    highlight_init
+;        call    delete_last_dot
+.loopcont:
+        add     eax, 304
+        dec     ecx
+        jnz     .ptrinit
+.loopdone:
+        push    edi
+        sub     edi, [ebp + panel1_files - panel1_data]
+        shr     edi, 2
+        mov     [ebp + panel1_numfiles - panel1_data], edi
+        pop     edi
+        test    edx, edx
+        jnz     @f
+        test    [ebp + panel1_plugin_flags - panel1_data], 1
+        jz      @f
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        inc     [ebp + panel1_numfiles - panel1_data]
+        lea     esi, [edi-4]
+        std
+        rep     movsd
+        cld
+        mov     eax, left_dotdot_entry
+        cmp     ebp, panel1_data
+        jz      .zq
+        add     eax, right_dotdot_entry-left_dotdot_entry
+.zq:
+        stosd
+        call    highlight_init
+@@:
+; Сортировка
+sort_files:
+        movzx   eax, [ebp + panel1_sortmode - panel1_data]
+        mov     ebx, [compare_fns + eax*4]
+.mode:
+        mov     edx, [ebp + panel1_files - panel1_data]
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        jecxz   .skip
+        mov     eax, [edx]
+        cmp     word [eax+40], '..'
+        jnz     .nodotdot
+        cmp     byte [eax+42], 0
+        jnz     .nodotdot
+        dec     ecx
+        add     edx, 4
+.nodotdot:
+        call    sort
+.skip:
+        mov     [bSilentFolderMode], 0  ; leave silent mode
+        ret
+
+highlight_init:
         pushad
         mov     ebp, eax
         lea     esi, [ebp+40]
@@ -4256,35 +5091,7 @@ read_folder:
         mov     ah, [panel_selected_cursor_color]
         mov     [ebp+7], ah
 .doname:
-;        call    delete_last_dot
         popad
-.loopcont:
-        add     eax, 304
-        dec     ecx
-        jnz     .ptrinit
-.loopdone:
-        sub     edi, [ebp + panel1_files - panel1_data]
-        shr     edi, 2
-        mov     [ebp + panel1_numfiles - panel1_data], edi
-.done:
-; Сортировка
-sort_files:
-        movzx   eax, [ebp + panel1_sortmode - panel1_data]
-        mov     ebx, [compare_fns + eax*4]
-        mov     edx, [ebp + panel1_files - panel1_data]
-        mov     ecx, [ebp + panel1_numfiles - panel1_data]
-        jecxz   .skip
-        mov     eax, [edx]
-        cmp     word [eax+40], '..'
-        jnz     .nodotdot
-        cmp     byte [eax+42], 0
-        jnz     .nodotdot
-        dec     ecx
-        add     edx, 4
-.nodotdot:
-        call    sort
-.skip:
-        mov     [bSilentFolderMode], 0  ; leave silent mode
         ret
 
 compare_name:
@@ -4689,7 +5496,12 @@ compare_accessed_rev:
         stc
         ret
 
+ReadFolder_default:
+        mov     eax, 2
+        ret     10h
+
 if 0
+; Following subroutines work, but are slow
 match_mask:
 ; in: esi->name, edi->mask
 ; out: CF clear <=> match
@@ -5273,7 +6085,7 @@ find_extension:
         pop     esi
         ret
 
-header  db      'Kolibri Far 0.35',0
+header  db      'Kolibri Far ',version,0
 
 nomem_draw      db      'No memory for redraw.',0
 .size = $ - nomem_draw
@@ -5703,6 +6515,8 @@ screen_vtable:
         .OnKey          dd      ?
         .keybar         dd      ?
         .getname        dd      ?
+        .OnExit         dd      ?
+        .IsHandleUsed   dd      ?
 end virtual
 
 panels_vtable:
@@ -5710,12 +6524,16 @@ panels_vtable:
         dd      panels_OnKey
         dd      keybar_panels
         dd      panels_getname
+        dd      panels_OnExit
+        dd      panels_IsHandleUsed
 
 viewer_vtable:
         dd      viewer_OnRedraw
         dd      viewer_OnKey
         dd      keybar_viewer
         dd      viewer_getname
+        dd      viewer_OnExit
+        dd      viewer_IsHandleUsed
 
 ; additions to this table require changes in tools.inc::get_error_msg
 errors1:
@@ -6293,6 +7111,7 @@ DeleteErrorBtn:
 ContinueBtn:
         dd      aContinue
 
+aCannotOpenFile_ptr     dd      aCannotOpenFile
 if lang eq ru
 aDeleteCaption          db      'Удаление',0
 aConfirmDeleteText      db      'Вы хотите удалить',0
@@ -6354,6 +7173,7 @@ aSize                   db      6,'Размер'
 aDate                   db      4,'Дата'
 aTime                   db      5,'Время'
 aCannotLoadDLL          db      'Не могу загрузить DLL',0
+aCannotLoadPlugin       db      'Не могу загрузить плагин',0
 aInvalidDLL             db      'Файл не найден или имеет неверный формат',0
 aMissingExport          db      'Необходимая функция не найдена',0
 aInitFailed             db      'Ошибка при инициализации',0
@@ -6361,6 +7181,8 @@ aIncompatibleVersion    db      'Несовместимая версия',0
 aTables                 db      'Таблицы',0
 aSelect                 db      'Пометить',0
 aDeselect               db      'Снять',0
+aCannotOpenFile         db      'Ошибка при открытии файла',0
+aCannotSetFolder        db      'Не могу зайти в папку',0
 else
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete',0
@@ -6426,6 +7248,7 @@ aSize                   db      4,'Size'
 aDate                   db      4,'Date'
 aTime                   db      4,'Time'
 aCannotLoadDLL          db      'Cannot load DLL',0
+aCannotLoadPlugin       db      'Cannot load plugin',0
 aInvalidDLL             db      'File is not found or invalid',0
 aMissingExport          db      'Required function is not present',0
 aInitFailed             db      'Initialization failed',0
@@ -6433,11 +7256,15 @@ aIncompatibleVersion    db      'Incompatible version',0
 aTables                 db      'Tables',0
 aSelect                 db      'Select',0
 aDeselect               db      'Deselect',0
+aCannotOpenFile         db      'Cannot open the file',0
+aCannotSetFolder        db      'Cannot enter to folder',0
 end if
 
 aOk                     db      'OK',0
 aNoMemory               db      'No memory!'
 nullstr                 db      0
+aUntitled               db      'untitled',0
+aDotDot                 db      '..',0,0
 standard_dll_path:
 libini_name             db      '/sys/dll/'
 standard_dll_path_size = $ - standard_dll_path
@@ -6447,13 +7274,33 @@ aLibInit                db      'lib_init',0
 aVersion                db      'version',0
 aIniGetInt              db      'ini.get_int',0
 aIniGetStr              db      'ini.get_str',0
+aIniSetInt              db      'ini.set_int',0
 aIniEnumKeys            db      'ini.enum_keys',0
+aPluginLoad             db      'plugin_load',0
+aPluginUnload           db      'plugin_unload',0
+aGetattr                db      'getattr',0
+aOpen                   db      'open',0
+aRead                   db      'read',0
+aSetpos                 db      'setpos',0
+aClose                  db      'close',0
+aOpenFilePlugin         db      'OpenFilePlugin',0
+aClosePlugin            db      'ClosePlugin',0
+aReadFolder             db      'ReadFolder',0
+aSetFolder              db      'SetFolder',0
+aGetOpenPluginInfo      db      'GetOpenPluginInfo',0
+aGetPanelTitle          db      'GetPanelTitle',0
+aGetFiles               db      'GetFiles',0
 
 aConfirmations          db      'Confirmations',0
 aConfirmDelete          db      'Delete',0
 aConfirmDeleteIncomplete db     'DeleteIncomplete',0
 
+aPanels                 db      'Panels',0
+aLeftViewMode           db      'LeftViewMode',0
+aRightViewMode          db      'RightViewMode',0
+
 aAssociations           db      'Associations',0
+aPlugins                db      'Plugins',0
 aMenu                   db      'Menu',0
 aFolderShortcuts        db      'FolderShortcuts',0
 aShortcut               db      'Shortcut'
@@ -6464,7 +7311,85 @@ ini_import:
 ini.get_int     dd      aIniGetInt
 ini.get_str     dd      aIniGetStr
 ini.enum_keys   dd      aIniEnumKeys
+ini.set_int     dd      aIniSetInt
                 dd      0
+
+plugin_exported:
+        dd      aPluginUnload
+        dd      aGetattr
+        dd      aOpen
+        dd      aRead
+        dd      aSetpos
+        dd      aClose
+        dd      aOpenFilePlugin
+        dd      aClosePlugin
+        dd      aReadFolder
+        dd      aSetFolder
+        dd      aGetOpenPluginInfo
+        dd      aGetPanelTitle
+        dd      aGetFiles
+        dd      0
+plugin_exported_default:
+        dd      plugin_unload_default
+        dd      getattr_default
+        dd      open_default
+        dd      read
+        dd      setpos_default
+        dd      close
+        dd      OpenFilePlugin_default
+        dd      ClosePlugin_default
+        dd      ReadFolder_default
+        dd      SetFolder_default
+        dd      GetOpenPluginInfo_default
+        dd      GetPanelTitle_default
+        dd      GetFiles_default
+
+kfar_info:
+        dd      .size
+        dd      version_dword
+        dd      open
+        dd      read
+        dd      -1      ; write: to be implemented
+        dd      seek
+        dd      -1      ; flush: to be implemented
+        dd      filesize
+        dd      close
+        dd      xpgalloc
+        dd      xpgrealloc
+        dd      pgfree
+        dd      getfreemem
+        dd      libini_alloc
+        dd      libini_realloc
+        dd      libini_free
+        dd      menu
+        dd      menu_centered_in
+        dd      DialogBox
+        dd      SayErr
+        dd      Message
+        dd      cur_width
+.size = $ - kfar_info
+
+plugins         dd      0
+num_plugins     dd      0
+alloc_plugins   dd      0
+
+virtual at 0
+PluginInfo:
+.unload         dd      ?
+.getattr        dd      ?
+.open           dd      ?
+.read           dd      ?
+.setpos         dd      ?
+.close          dd      ?
+.OpenFilePlugin dd      ?
+.ClosePlugin    dd      ?
+.ReadFolder     dd      ?
+.SetFolder      dd      ?
+.GetOpenPluginInfo dd   ?
+.GetPanelTitle  dd      ?
+.GetFiles       dd      ?
+.size = $
+end virtual
 
 virtual at 0
 PanelMode:
@@ -6592,12 +7517,19 @@ panel1_sortmode db      ?
 panel1_nfa      dd      ?
 panel1_numfiles dd      ?
 panel1_files    dd      ?
-panel1_colmode  dd      ?
-panel1_colwidths rd     16+1
-panel1_total_num dd     ?
-panel1_total_size dq    ?
-panel1_selected_num dd ?
-panel1_selected_size dq ?
+panel1_hPlugin  dd      ?
+panel1_hFile    dd      ?
+panel1_parents          dd      ?
+panel1_parents_sz       dd      ?
+panel1_parents_alloc    dd      ?
+panel1_colmode          dd      ?
+panel1_colwidths        rd      16+1
+panel1_total_num        dd      ?
+panel1_total_size       dq      ?
+panel1_selected_num     dd      ?
+panel1_selected_size    dq      ?
+panel1_plugin_info:
+panel1_plugin_flags     dd      ?
 panel1_dir      rb      1024
 
 panel2_data:
@@ -6614,12 +7546,19 @@ panel2_sortmode db      ?
 panel2_nfa      dd      ?
 panel2_numfiles dd      ?
 panel2_files    dd      ?
-panel2_colmode  dd      ?
-panel2_colwidths rd     16+1
-panel2_total_num dd     ?
-panel2_total_size dq    ?
-panel2_selected_num  dd ?
-panel2_selected_size dq ?
+panel2_hPlugin  dd      ?
+panel2_hFile    dd      ?
+panel2_parents          dd      ?
+panel2_parents_sz       dd      ?
+panel2_parents_alloc    dd      ?
+panel2_colmode          dd      ?
+panel2_colwidths        rd      16+1
+panel2_total_num        dd      ?
+panel2_total_size       dq      ?
+panel2_selected_num     dd      ?
+panel2_selected_size    dq      ?
+panel2_plugin_info:
+panel2_plugin_flags     dd      ?
 panel2_dir      rb      1024
 
 ;console_data    rb      max_width*max_height*2
@@ -6670,6 +7609,10 @@ num_screens     dd      ?
 active_screen_vtable dd ?
 active_screen_data dd   ?
 
+default_attr    dd      ?
+left_dotdot_entry       rb      40+3    ; 40 bytes for attributes + '..'
+right_dotdot_entry      rb      40+3
+
 aConfirmDeleteTextBuf   rb      aConfirmDeleteTextMax + 1
 CopySourceTextBuf       rb      512
 CopyDestEditBuf         rb      12+512+1
@@ -6686,6 +7629,12 @@ layout          rb      128
 copy_buffer_size = 65536
 copy_buffer     rb      copy_buffer_size
 
+filedata_buffer_size = 1024
+filedata_buffer rb      filedata_buffer_size
+
+source_hModule  dd      ?
+source_hPlugin  dd      ?
+source_hFile    dd      ?
 ; data for directory delete
 ; If directory nested level is >1024, then its full name is too big,
 ; so we see the overflow when creating full name (we check for this!)
@@ -6701,6 +7650,7 @@ copy_dir_query_area = del_dir_query_area
 del_bSkipAll    db      ?       ; for directory errors
 label copy_bSkipAll byte at del_bSkipAll
 copy_bSkipAll2  db      ?       ; for file read/write errors
+copy_bSkipAll3  db      ?       ; for SetFolder errors
 
 bEndSlash       db      ?
 bDestIsFolder   db      ?
@@ -6708,7 +7658,7 @@ bNeedRestoreName db     ?
 
 ; stack
         align   4
-        rb      512
+        rb      32768
 stacktop:
 
 mem:

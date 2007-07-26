@@ -6,6 +6,9 @@ viewer_data:
         .buf_pos        dd      ?
         .buf_size       dd      ?
         .col            dq      ?
+        .hPlugin        dd      ?
+        .hFile          dd      ?
+        .hWorkFile      dd      ?
         .encoding       db      ?
         .bEofReached    db      ?
         .flags          db      ?       ; & 1: hex mode
@@ -13,6 +16,7 @@ viewer_data:
                                         ; & 4: big-endian unicode
                         rb      1
         .filename       rb      1024
+        .hostname       rb      1024
         .buf            rb      16384
         .size = $
 end virtual
@@ -34,6 +38,30 @@ view_file:
         jnz     @f
         ret
 @@:
+        mov     eax, dword [esi+panel1_hPlugin-panel1_dir]
+        mov     [ebp+viewer_data.hPlugin], eax
+        test    eax, eax
+        jz      .nocopyhostname
+        lea     edi, [ebp+viewer_data.hostname]
+        push    esi
+        mov     eax, dword [esi+panel1_parents-panel1_dir]
+        mov     esi, dword [esi+panel1_parents_sz-panel1_dir]
+        add     esi, eax
+@@:
+        dec     esi
+        cmp     byte [esi-1], 0
+        jz      @f
+        cmp     byte [esi-1], '/'
+        jnz     @b
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        pop     esi
+.nocopyhostname:
+        mov     eax, dword [esi+panel1_hFile-panel1_dir]
+        mov     [ebp+viewer_data.hFile], eax
         mov     [ebp+viewer_data.encoding], encodings.cp866
         mov     [ebp+viewer_data.flags], 0
         and     dword [ebp+viewer_data.col], 0
@@ -48,6 +76,8 @@ view_file:
         jmp     @b
 @@:
         lea     esi, [ecx+40]
+        cmp     byte [edi-1], '/'
+        jz      @f
         mov     al, '/'
         stosb
 @@:
@@ -60,9 +90,21 @@ view_file:
         mov     ebx, attrinfo
         mov     [ebx+21], eax
 .attr_retry:
+        mov     edx, [ebp+viewer_data.hPlugin]
+        test    edx, edx
+        jz      .attr_native
+        push    ebp
+        push    dword [ebx+16]
+        push    eax
+        push    [ebp+viewer_data.hFile]
+        call    [edx+PluginInfo.getattr]
+        pop     ebp
+        jmp     .attr_common
+.attr_native:
         push    70
         pop     eax
         int     40h
+.attr_common:
         test    eax, eax
         jz      @f
         lea     ebx, [ebp+viewer_data.filename]
@@ -75,14 +117,12 @@ view_file:
         push    2
         push    eax
         push    3
-        push    -1
-        push    -1
-        push    aError
         call    SayErr
         add     esp, 3*4
         mov     ebx, attrinfo
         test    eax, eax
         jz      .attr_retry
+        pop     eax
         jmp     delete_active_screen
 @@:
         mov     eax, dword [attrinfo.attr+32]
@@ -102,7 +142,40 @@ view_file:
         mov     [readinfo.data], eax
         mov     [ebp+viewer_data.buf_pos], eax
         pop     dword [readinfo.name]
+        mov     eax, [ebp+viewer_data.hPlugin]
+        test    eax, eax
+        jz      .retry
+        push    ebx ebp
+        push    O_READ
+        push    dword [readinfo.name]
+        push    [ebp+viewer_data.hFile]
+        call    [eax+PluginInfo.open]
+        pop     ebp ebx
+        mov     [ebp+viewer_data.hWorkFile], eax
+        test    eax, eax
+        jnz     .retry
+        push    ContinueBtn
+        push    1
+        push    aCannotOpenFile_ptr
+        push    1
+        call    SayErr
+        jmp     delete_active_screen
 .retry:
+        mov     eax, [ebp+viewer_data.hPlugin]
+        test    eax, eax
+        jz      .read_native
+        push    ebp
+        push    16384
+        push    [ebx+readinfo.data-readinfo]
+        push    [ebp+viewer_data.hWorkFile]
+        call    [eax+PluginInfo.read]
+        pop     ebp
+        cmp     eax, -1
+        jz      .readok         ; let's hope that plugin says error itself
+        mov     [ebp+viewer_data.buf_size], eax
+        mov     ebx, eax
+        jmp     .readok
+.read_native:
         push    70
         pop     eax
         int     40h
@@ -111,6 +184,7 @@ view_file:
         jz      .readok
         cmp     eax, 6
         jz      .readok
+.readerr:
         lea     ebx, [ebp+viewer_data.filename]
         push    ebx
         push    aCannotReadFile
@@ -121,9 +195,6 @@ view_file:
         push    2
         push    eax
         push    3
-        push    -1
-        push    -1
-        push    aError
         call    SayErr
         add     esp, 3*4
         mov     ebx, readinfo
@@ -194,6 +265,21 @@ viewer_get_next_char:
         mov     [readinfo.name], eax
 .readretry:
         mov     ebx, readinfo
+        mov     eax, [ebp+viewer_data.hPlugin]
+        test    eax, eax
+        jz      .native
+        push    ecx ebp
+        push    8192
+        push    [ebx+readinfo.data-readinfo]
+        push    [ebp+viewer_data.hWorkFile]
+        call    [eax+PluginInfo.read]
+        pop     ebp ecx
+        mov     ebx, eax
+        cmp     eax, -1
+        jnz     .readok
+        xor     ebx, ebx
+        jmp     .readok
+.native:
         push    70
         pop     eax
         int     40h
@@ -201,6 +287,7 @@ viewer_get_next_char:
         jz      .readok
         cmp     eax, 6
         jz      .readok
+.readerr:
         call    ask_retry_ignore
         jz      .readretry
 .readok:
@@ -976,16 +1063,7 @@ viewer_seek:
         mov     [ebx+16], eax
         lea     eax, [ebp+viewer_data.filename]
         mov     [ebx+21], eax
-        push    70
-        pop     eax
-        int     40h
-        test    eax, eax
-        jz      .readok
-        cmp     eax, 6
-        jz      .readok
-        call    ask_retry_ignore
-        jz      .doread
-.readok:
+        call    .q
         cmp     ebx, [readinfo.size]
         jnz     @f
         add     ebx, [ebp+viewer_data.buf_size]
@@ -1027,22 +1105,47 @@ viewer_seek:
         mov     [ebx+12], eax
         lea     eax, [ebp+viewer_data.filename]
         mov     [ebx+21], eax
+        call    .q
+        sub     ebx, [readinfo.size]
+        add     ebx, 16384
+        jmp     .ret
+
+.q:
+        mov     ebx, readinfo
+        mov     eax, [ebp+viewer_data.hPlugin]
+        test    eax, eax
+        jz      .native
+        push    ebp
+        push    dword [ebx+12]
+        push    dword [ebx+16]
+        push    [ebp+viewer_data.hWorkFile]
+        push    eax
+        push    dword [ebx+8]
+        push    dword [ebx+4]
+        push    [ebp+viewer_data.hWorkFile]
+        call    [eax+PluginInfo.setpos]
+        pop     eax
+        call    [eax+PluginInfo.read]
+        pop     ebp
+        mov     ebx, eax
+        cmp     eax, -1
+        jnz     @f
+        xor     ebx, ebx
 @@:
+        ret
+.native:
         push    70
         pop     eax
         int     40h
         test    eax, eax
-        jz      @f
+        jz      .readok
         cmp     eax, 6
-        jz      @f
+        jz      .readok
+.readerr:
         call    ask_retry_ignore
-        jnz     @f
-        mov     ebx, readinfo
-        jmp     @b
-@@:
-        sub     ebx, [readinfo.size]
-        add     ebx, 16384
-        jmp     .ret
+        jz      .q
+.readok:
+        ret
 
 ask_retry_ignore:
         push    esi
@@ -1056,9 +1159,6 @@ ask_retry_ignore:
         push    2
         push    eax
         push    3
-        push    -1
-        push    -1
-        push    aError
         call    SayErr
         add     esp, 3*4
         pop     esi
@@ -1268,12 +1368,33 @@ viewer_OnRedraw:
         call    viewer_draw_text
         ret
 
+viewer_OnExit:
+        mov     edx, [ebp+viewer_data.hPlugin]
+        test    edx, edx
+        jz      @f
+        and     [ebp+viewer_data.hPlugin], 0
+        push    edx ebp
+        push    [ebp+viewer_data.hWorkFile]
+        call    [edx+PluginInfo.close]
+        pop     ebp edx
+        mov     ebx, [ebp+viewer_data.hFile]
+        call    close_handle_if_unused
+@@:
+        ret
+
+viewer_IsHandleUsed:
+        cmp     edx, [ebp+viewer_data.hPlugin]
+        jnz     @f
+        cmp     ebx, [ebp+viewer_data.hFile]
+@@:
+        ret
+
 viewer_OnKey:
         mov     esi, viewer_ctrlkeys
         jmp     process_ctrl_keys
 .exit:
-        call    delete_active_screen
-        ret
+        call    viewer_OnExit
+        jmp     delete_active_screen
 .down:
         cmp     [ebp+viewer_data.bEofReached], 0
         jnz     .ret
@@ -1459,6 +1580,25 @@ else
         stosb
 end if
         sub     ecx, 13
+        cmp     [ebp+viewer_data.hPlugin], 0
+        jz      .native
+        lea     esi, [ebp+viewer_data.hostname]
+        push    ecx edi
+        shr     ecx, 1
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        loop    @b
+@@:
+        sub     edi, [esp]
+        sub     [esp+4], edi
+        add     [esp], edi
+        pop     edi ecx
+        lea     esi, [ebp+viewer_data.filename]
+        jmp     .main
+.native:
         lea     esi, [ebp+viewer_data.filename]
         push    3
         pop     edx
@@ -1466,10 +1606,13 @@ end if
         lodsb
         stosb
         dec     ecx
+        test    al, al
+        jz      .ret
         cmp     al, '/'
         jnz     @b
         dec     edx
         jnz     @b
+.main:
         push    esi
 @@:
         lodsb
@@ -1493,4 +1636,5 @@ end if
         stosb
         test    al, al
         jnz     @b
+.ret:
         ret

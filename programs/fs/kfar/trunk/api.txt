@@ -1,0 +1,137 @@
+Плагин представляет собой стандартную для Колибри динамическую библиотеку (формата COFF),
+экспортирующую следующие функции и переменные (некоторые функции могут отсутствовать).
+Функции могут разрушать любые регистры. kfar гарантирует сброшенный флаг направления DF
+при вызове экспортируемых функций и ожидает того же для callback-функций.
+
+int version;
+Версия интерфейса kfar, на которую рассчитан плагин. Сейчас должна быть 1.
+
+int __stdcall plugin_load(kfar_info* info);
+Вызывается при загрузке плагина.
+typedef struct
+{
+        int StructSize; // = sizeof(kfar_info)
+        int kfar_ver;   // 10000h*major + minor
+/* Все callback-функции сохраняют все регистры, за исключением eax. */
+/* Функции работы с файлами: */
+        void* open;     // HANDLE __stdcall open(const char* name, int mode);
+                        // mode - комбинация битовых флагов
+                        // O_READ = 1 - доступ для чтения
+                        // O_WRITE = 2 - доступ для записи
+                        // O_CREATE = 4 - если файл не существует, создать его
+                        // O_TRUNCATE = 8 - усечь файл до нулевой длины
+        void* read;     // unsigned __stdcall read(HANDLE hFile, void* buf, unsigned size);
+        void* write;    // ещё не реализовано
+        void* seek;     // void __stdcall seek(HANDLE hFile, int method, __int64 newpos);
+        void* flush;    // ещё не реализовано
+        void* filesize; // __int64 __stdcall filesize(HANDLE hFile);
+        void* close;    // void __stdcall close(HANDLE hFile);
+/* Функции работы с памятью (постранично): */
+        void* pgalloc;  // in: ecx=size, out: eax=pointer or NULL
+                        // при нехватке памяти сообщает пользователю и возвращает NULL
+        void* pgrealloc; // in: edx=pointer, ecx=new size, out: eax=pointer or NULL
+                        // при нехватке памяти сообщает пользователю и возвращает NULL
+        void* pgfree;   // in: ecx=pointer
+        void* getfreemem;       // unsigned __stdcall getfreemem(void);
+                                // возвращает размер свободной оперативной памяти в Кб
+        void* pgalloc2;         // void* __stdcall pgalloc2(unsigned size);
+        void* pgrealloc2;       // void* __stdcall pgrealloc2(void* pointer, unsigned size);
+        void* pgfree2;          // void __stdcall pgfree2(void* pointer);
+/* Функции работы с диалогами: */
+        void* menu;     // int __stdcall menu(void* variants, const char* title, unsigned flags);
+                        // variants указывает на текущий элемент в двусвязном списке
+        void* menu_centered_in; // int __stdcall menu_centered_in(unsigned left, unsigned top,
+                                // unsigned width, unsigned height,
+                                // void* variants, const char* title, unsigned flags);
+        void* DialogBox;        // int __stdcall DialogBox(DLGDATA* dlg);
+        void* SayErr;           // int __stdcall SayErr(int num_strings, const char** strings,
+                                //                      int num_buttons, const char** buttons);
+        void* Message;          // int __stdcall Message(const char* title,
+                                //                      int num_strings, const char** strings,
+                                //                      int num_buttons, const char** buttons);
+                                // may be x=-1 and/or y=-1
+        struct {unsigned width;unsigned height;}* cur_console_size;
+} kfar_info;
+Возвращаемое значение:
+0 = успешная инициализация
+1 = ошибка инициализации (kfar выдаст сообщение пользователю)
+2 = ошибка инициализации (kfar продолжит без сообщений)
+
+void __stdcall plugin_unload(void);
+Вызывается при выгрузке плагина (в процессе завершения работы kfar).
+
+HANDLE __stdcall OpenFilePlugin(HANDLE basefile, const char* name,
+        const void* attr, const void* data, int datasize);
+Открывает плагин, эмулирующий файловую систему на базе файла (например, архива).
+basefile - хэндл файла (к которому применимы функции read и seek из kfar_info)
+name - имя файла (во временном буфере)
+attr - указатель на структуру с атрибутами файла в формате системной функции 70.1
+data - буфер, содержащий данные из начала файла (может использоваться для определения типа файла)
+datasize - размер данных в data. В текущей реализации min(1024,размер файла)
+Если плагин обрабатывает переданный файл, то он должен вернуть новый описатель,
+который в дальнейшем будет использовать kfar для обращения к плагину. В этом случае
+плагин должен самостоятельно закрыть basefile функцией close из kfar_info (например,
+при закрытии описателя плагина в ClosePlugin или непосредственно в OpenFilePlugin,
+если basefile вообще впоследствии не нужен).
+Если плагин не обрабатывает переданный файл, должен возвращаться 0.
+Если операция прервана пользователем, должно возвращаться значение -1.
+
+void __stdcall ClosePlugin(HANDLE hPlugin);
+Закрывает созданный в OpenFilePlugin описатель.
+
+void __stdcall GetOpenPluginInfo(HANDLE hPlugin, OpenPluginInfo* Info);
+Получить информацию об открытом экземпляре плагина.
+typedef struct
+{
+        unsigned flags; // бит 0: добавлять элемент '..', если он отсутствует
+                        // бит 1: копирование обрабатывается функцией GetFiles
+} OpenPluginInfo;
+
+void __stdcall GetPanelTitle(HANDLE hPlugin, char title[1024],
+        const char* host_file, const char* curdir);
+Получить заголовок панели плагина. Параметр host_file совпадает с именем файла, переданным
+в OpenFilePlugin. Параметр curdir совпадает с текущей папкой, устанавливаемой в SetFolder.
+
+int __stdcall ReadFolder(HANDLE hPlugin, unsigned dirinfo_start,
+        unsigned dirinfo_size, void* dirdata);
+Читает текущую папку. hPlugin - возвращённый из OpenFilePlugin описатель.
+dirinfo_start - с какого файла читать, dirinfo_size - сколько файлов читать.
+Возвращаемое значение и возвращаемые в dirdata данные должны соответствовать функции 70.1.
+
+bool __stdcall SetFolder(HANDLE hPlugin, const char* relative_path, const char* absolute_path);
+Установить текущую папку. relative_path - относительный путь (".." или имя подпапки),
+absolute_path - абсолютный путь (папка эмулируемой плагином файловой системы).
+
+void __stdcall GetFiles(HANDLE hPlugin, int NumItems, void* items[], void* addfile, void* adddir);
+        bool __stdcall addfile(const char* name, void* bdfe_info, HANDLE hFile);
+        bool __stdcall adddir(const char* name, void* bdfe_info);
+Вызывается для копирования, если во флагах, возвращаемых GetOpenPluginInfo, установлен бит 1.
+Эту функцию рекомендуется реализовывать в случае, если стандартный рекурсивный обход папок
+неудобен.
+hPlugin - описатель, созданный в OpenFilePlugin.
+NumItems - число копируемых элементов.
+items - массив копируемых элементов, каждый из которых задаётся указателем на структуру BDFE.
+Специальный случай NumItems=-1, items=NULL означает "все файлы" (в текущей папке и подпапках).
+addfile, adddir - callback-функции kfar'а. Возврат false означает "прервать копирование".
+Параметр name должен задавать имя относительно текущей папки. Параметр bdfe_info -
+указатель на сокращённую (40 байт) запись в формате функции 70.5.
+Открытием и закрытием описателя hFile должен заниматься плагин. Функция addfile будет
+вызывать только функцию read.
+
+int __stdcall getattr(HANDLE hPlugin, const char* filename, void* info);
+Получить информацию о файле. Возвращаемое значение и данные в info должны соответствовать
+функции 70.5.
+
+HANDLE __stdcall open(HANDLE hPlugin, const char* filename, int mode);
+Открыть файл filename. Параметр mode зарезервирован и в текущей версии kfar всегда равен 1.
+
+unsigned __stdcall read(HANDLE hFile, void* buf, unsigned size);
+Чтение size байт в буфер buf из файла hFile, ранее открытого через open.
+kfar гарантирует, что size кратен 512 байт.
+Возвращаемое значение: число прочитанных байт, -1 при ошибке.
+
+void __stdcall setpos(HANDLE hFile, __int64 pos);
+Установить текущую позицию в файле hFile, ранее открытого через open, в pos.
+Гарантируется, что pos кратно 512 байт.
+
+void __stdcall close(HANDLE hFile);

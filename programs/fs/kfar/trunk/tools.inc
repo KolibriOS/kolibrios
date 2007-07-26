@@ -1,3 +1,12 @@
+CHECK_FOR_LEAKS = 0
+if CHECK_FOR_LEAKS
+uglobal
+allocatedregions rd 1024
+endg
+iglobal
+numallocatedregions dd 0
+endg
+end if
 pgalloc:
 ; in: ecx=size
 ; out: eax=pointer or NULL
@@ -7,12 +16,50 @@ pgalloc:
         push    12
         pop     ebx
         int     0x40
+if CHECK_FOR_LEAKS
+        test    eax, eax
+        jz      .no
+.b:
+        mov     ebx, [numallocatedregions]
+        cmp     ebx, 1024
+        jb      @f
+        int3
+        jmp     $
+@@:
+        mov     [allocatedregions+ebx*4], eax
+        inc     [numallocatedregions]
+.no:
+end if
         pop     ebx
         ret
 
 pgfree:
 ; in: ecx=pointer
 ; destroys eax
+if CHECK_FOR_LEAKS
+        jecxz   .no
+        mov     eax, [numallocatedregions]
+@@:
+        dec     eax
+        js      .a
+        cmp     [allocatedregions+eax*4], ecx
+        jnz     @b
+        jmp     @f
+.a:
+        int3
+        jmp     $
+@@:
+        dec     [numallocatedregions]
+@@:
+        cmp     eax, [numallocatedregions]
+        jae     @f
+        push    [allocatedregions+eax*4+4]
+        pop     [allocatedregions+eax*4]
+        inc     eax
+        jmp     @b
+@@:
+.no:
+end if
         push    ebx
         push    68
         pop     eax
@@ -31,6 +78,29 @@ pgrealloc:
         push    20
         pop     ebx
         int     0x40
+if CHECK_FOR_LEAKS
+        test    edx, edx
+        jz      pgalloc.b
+        test    eax, eax
+        jz      .no
+        cmp     eax, edx
+        jz      .no
+        xor     ebx, ebx
+@@:
+        cmp     ebx, [numallocatedregions]
+        jae     .a
+        cmp     [allocatedregions+ebx*4], edx
+        jz      @f
+        inc     ebx
+        jmp     @b
+@@:
+        mov     [allocatedregions+ebx*4], eax
+        jmp     .no
+.a:
+        int3
+        jmp     $
+.no:
+end if
         pop     ebx
         ret
 
@@ -51,6 +121,17 @@ xpgrealloc:
 ; out: eax=pointer or NULL
         call    pgrealloc
         jmp     xpgalloc.common
+
+getfreemem:
+; out: eax=size of free RAM in Kb
+        push    ebx
+        push    18
+        pop     eax
+        push    16
+        pop     ebx
+        int     0x40
+        pop     ebx
+        ret
 
 get_error_msg:
 ; in: eax=error code
@@ -85,6 +166,7 @@ get_error_msg:
         test    al, al
         jnz     @b
         pop     eax
+        dec     edi
         push    edx ecx
         test    eax, eax
         jns     @f
@@ -162,7 +244,8 @@ load_dll_and_import:
         pop     eax
         pop     esi
         jz      .do
-        push    eax
+.big:
+        push    esi
         mov     edi, aFileNameTooBig
 .sayerr:
         push    dword aCannotLoadDLL
@@ -173,9 +256,6 @@ load_dll_and_import:
         push    1
         push    eax
         push    3
-        push    -1
-        push    -1
-        push    dword aError
         call    SayErr
         add     esp, 16
         xor     eax, eax
@@ -192,9 +272,15 @@ load_dll_and_import:
         mov     edi, aInvalidDLL
         test    eax, eax
         jz      .sayerr
+        mov     edx, eax
+        cmp     ebp, -1
+        jnz     @f
+        pop     eax
+        xor     eax, eax
+        ret
+@@:
 ; initialize import
         mov     edi, aMissingExport
-        mov	edx, eax
 .import_loop:
         lodsd
         test    eax, eax
