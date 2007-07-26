@@ -4991,12 +4991,24 @@ syscall_cdaudio:                        ; CD
         and     eax, 1
         mov     [DiskNumber], eax
         call    reserve_cd_channel
+        and     ebx, 3
         inc     ebx
         mov     [cdpos], ebx
+        add     ebx, ebx
+        mov     cl, 8
+        sub     cl, bl
+        mov     al, [DRIVE_DATA+1]
+        shr     al, cl
+        test    al, 2
+        jz      .err
         ret
 .free:
         call    free_cd_channel
         and     [cd_status], 0
+        ret
+.err:
+        call    .free
+        pop     eax
         ret
 
 align 4
