@@ -4957,9 +4957,47 @@ align 4
 
 syscall_cdaudio:                        ; CD
 
+        cmp     eax, 4
+        jb      .audio
+        jz      .eject
+        cmp     eax, 5
+        jnz     .ret
+.load:
+        call    .reserve
+        call    LoadMedium
+        call    .free
+        ret
+.eject:
+        call    .reserve
+        call    clear_CD_cache
+        call    allow_medium_removal
+        call    EjectMedium
+        call    .free
+        ret
+.audio:
      call  sys_cd_audio
      mov   [esp+36],eax
+.ret:
      ret
+
+.reserve:
+        call    reserve_cd
+        mov     eax, ebx
+        shr     eax, 1
+        and     eax, 1
+        inc     eax
+        mov     [ChannelNumber], eax
+        mov     eax, ebx
+        and     eax, 1
+        mov     [DiskNumber], eax
+        call    reserve_cd_channel
+        inc     ebx
+        mov     [cdpos], ebx
+        ret
+.free:
+        call    free_cd_channel
+        and     [cd_status], 0
+        ret
 
 align 4
 

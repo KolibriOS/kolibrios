@@ -388,8 +388,6 @@ fs_RamdiskServices:
 	dd	0
 	dd	fs_RamdiskDelete
 	dd	fs_RamdiskCreateFolder
-	dd	fs_NotImplemented
-	dd	fs_NotImplemented
 fs_NumRamdiskServices = ($ - fs_RamdiskServices)/4
 
 fs_OnFloppy:
@@ -421,8 +419,6 @@ fs_FloppyServices:
 	dd	0
 	dd	fs_FloppyDelete
 	dd	fs_FloppyCreateFolder
-	dd	fs_NotImplemented
-	dd	fs_NotImplemented
 fs_NumFloppyServices = ($ - fs_FloppyServices)/4
 
 fs_OnHd0:
@@ -496,8 +492,6 @@ fs_HdServices:
 	dd	0
 	dd	fs_HdDelete
 	dd	fs_HdCreateFolder
-	dd	fs_NotImplemented
-	dd	fs_NotImplemented
 fs_NumHdServices = ($ - fs_HdServices)/4
 
 ;*******************************************************
@@ -579,8 +573,6 @@ fs_CdServices:
 	dd	0
 	dd	fs_NotImplemented
 	dd	fs_NotImplemented
-	dd  fs_EjectDeviceTray
-	dd  fs_LoadDeviceTray
 fs_NumCdServices = ($ - fs_CdServices)/4
 
 ;*******************************************************

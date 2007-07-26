@@ -55,49 +55,20 @@ still:
 
   button:
     mcall 17	    ; 17 - получить идентификатор нажатой кнопки
-    cmp   ah,2
-    jne   b3
-    mov   dword [load_tray.name],cd0
-    jmp   b5.1
-  b3:
-    cmp   ah,3
-    jne   b4
-    mov   dword [load_tray.name],cd1
-    jmp   b5.1
-  b4:
-    cmp   ah,4
-    jne   b5
-    mov   dword [load_tray.name],cd2
-    jmp   b5.1
-  b5:
-    cmp   ah,5
-    jne   b6
-    mov   dword [load_tray.name],cd3
-  .1:  
-     mcall 70, load_tray
-    jmp   red
+; кнопки 2,3,4,5 - load tray CD0/CD1/CD2/CD3
+        movzx   ecx, ah
+        sub     ecx, 2
+        cmp     ecx, 3
+        ja      b6
+        mcall 24,5
+        jmp     red
   b6:
-    cmp   ah,6
-    jne   b7
-    mov   dword [eject_tray.name],cd0
-    jmp   b9.1
-  b7:
-    cmp   ah,7
-    jne   b8
-    mov   dword [eject_tray.name],cd1
-    jmp   b9.1
-  b8:
-    cmp   ah,8
-    jne   b9
-    mov   dword [eject_tray.name],cd2
-    jmp   b9.1
-  b9:
-    cmp   ah,9
-    jne   b1
-    mov   dword [eject_tray.name],cd3
-  .1:  
-     mcall 70, eject_tray
-    jmp   red
+; кнопки 6,7,8,9 - eject tray CD0/CD1/CD2/CD3
+        sub     ecx, 4
+        cmp     ecx, 3
+        ja      b1
+        mcall 24,4
+        jmp     red
   b1:
     cmp   ah, 1     ; если НЕ нажата кнопка с номером 1,
     jne   still     ;  вернуться
@@ -160,27 +131,6 @@ header db ' ATAPI Device Tray Control',0
 text3 db 'eject   eject   eject   eject',0
 text2 db 'load    load    load    load',0
 text1 db '/cd0/   /cd1/   /cd2/   /cd3/',0
-cd0:  db '/cd0/1/',0
-cd1:  db '/cd1/1/',0
-cd2:  db '/cd2/1/',0
-cd3:  db '/cd3/1/',0
 ;---------------------------------------------------------------------
-load_tray:
-    .subfunction dd   11
-    .rezerv   dd   0
-    .rezerv1  dd   0
-    .rezerv2  dd   0
-    .rezerv3  dd   0
-    db 0
-    .name: dd cd0
-
-eject_tray:
-    .subfunction dd   10
-    .rezerv   dd   0
-    .rezerv1  dd   0
-    .rezerv2  dd   0
-    .rezerv3  dd   0
-    db 0
-    .name: dd cd0
     
 I_END:			 ; метка конца программы

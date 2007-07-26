@@ -489,17 +489,6 @@ fs_CdGetFileInfo:
 	pop	edi
 	xor	eax, eax
 	ret
-;----------------------------------------------------------------
-fs_EjectDeviceTray:
-    call  clear_CD_cache
-    call  allow_medium_removal
-    call  EjectMedium
-    ret
-;----------------------------------------------------------------
-fs_LoadDeviceTray:
-    call  LoadMedium
-    ret
-;----------------------------------------------------------------
 
 cd_find_lfn:
        mov   [cd_appl_data],0

@@ -1446,6 +1446,34 @@ Remarks:
     subfunction 3 of function 21.
 
 ======================================================================
+================ Function 24, subfunction 4 - eject tray of disk drive. ==============
+======================================================================
+Parameters:
+  * eax = 24 - function number
+  * ebx = 4 - subfunction number
+  * ecx = position of CD/DVD-drive (from 0=Primary Master to 3=Secondary Slave)
+Returned value:
+  * Nothing comes back.
+Remarks:
+  * The function is supported only for ATAPI devices (CD and DVD).
+  * At extract of a tray is made deblocking of handle mechanism of a tray.
+  * At extract of a tray the code makes clearing the cache of the appropriate device.
+  * An example of usage of the function is the application CD_tray.
+
+======================================================================
+============== Function 24, subfunction 5 - load tray of disk drive. =================
+======================================================================
+Parameters:
+  * eax = 24 - function number
+  * ebx = 5 - subfunction number
+  * ecx = position of CD/DVD-drive (from 0=Primary Master to 3=Secondary Slave)
+Returned value:
+  * Nothing comes back.
+Remarks:
+  * The function is supported only for ATAPI devices (CD and DVD).
+  * An example of usage of the function is the application CD_tray.
+
+======================================================================
 =================== Function 25 - set SBPro volume. ==================
 ======================================================================
 Parameters:
@@ -4077,7 +4105,7 @@ For CD-drives due to hardware limitations only subfunctions
 with code 2.
 At the first call subfunctions 0,1,5,7 to devices ATAPI (CD and DVD) the locking
 of handle mechanism of a tray is made. It is connected to algorithm of caching
-given obtained from a drive. Deblocking is made by call subfunction 10
+given obtained from a drive. Deblocking is made by call function 24.4
 to the appropriate device.
 
 ======================================================================
@@ -4432,64 +4460,6 @@ Remarks:
   * The function is not supported for CD (returns error code 2).
   * The parent folder must already exist.
   * If target folder already exists, function returns success (eax=0).
-
-======================================================================
-================ Function 70, subfunction 10 - eject tray of disk drive. ==============
-======================================================================
-Parameters:
-  * eax = 70 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 10 = subfunction number
-  * +4: dword: 0 (reserved)
-  * +8: dword: 0 (reserved)
-  * +12 = +0xC: dword: 0 (reserved)
-  * +16 = +0x10: dword: 0 (reserved)
-  * +20 = +0x14: ASCIIZ-name of folder, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with folder name
-Returned value:
-   * Nothing comes back.
-Remarks:
-   * The function is supported only for ATAPI devices (CD and DVD).
-   * At extract of a tray is made deblocking of handle mechanism of a tray.
-   * At extract of a tray the code makes clearing the cache of the appropriate device.
-   * The path is standard for 70 functions. For serviceability it is possible to be limited to paths:
-     db '/cd0/1/',0
-     db '/cd1/1/',0
-     db '/cd2/1/',0
-     db '/cd3/1/',0
-  * An example of usage of the function is the application CD_tray.
-
-======================================================================
-============== Function 70, subfunction 11 - load tray of disk drive. =================
-======================================================================
-Parameters:
-  * eax = 70 - function number
-  * ebx = pointer to the information structure
-Format of the information structure:
-  * +0: dword: 11 = subfunction number
-  * +4: dword: 0 (reserved)
-  * +8: dword: 0 (reserved)
-  * +12 = +0xC: dword: 0 (reserved)
-  * +16 = +0x10: dword: 0 (reserved)
-  * +20 = +0x14: ASCIIZ-name of folder, the rules of names forming are
-    given in the general description
-    or
-  * +20 = +0x14: db 0
-  * +21 = +0x15: dd pointer to ASCIIZ-string with folder name
-Returned value:
-   * Nothing comes back.
-Remarks:
-   * The function is supported only for ATAPI devices (CD and DVD).
-   * The path is standard for 70 functions. For serviceability it is possible to be limited to paths:
-     db '/cd0/1/',0
-     db '/cd1/1/',0
-     db '/cd2/1/',0
-     db '/cd3/1/',0
-  * An example of usage of the function is the application CD_tray.
 
 ======================================================================
 ========== Function 71, subfunction 1 - set window caption. ==========
