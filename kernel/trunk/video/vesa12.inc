@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
@@ -15,6 +14,8 @@ $Revision$
 ;;  See file COPYING for details                                ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
 
 
 ; A complete video driver should include the following types of function

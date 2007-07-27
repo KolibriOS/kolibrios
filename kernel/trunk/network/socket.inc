@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
@@ -29,6 +28,9 @@ $Revision$
 ;;   11.11.2006 - [Johnny_B] and [smb]                          ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 ;
 ;  Socket Descriptor + Buffer

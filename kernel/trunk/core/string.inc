@@ -1,10 +1,11 @@
-$Revision: 431 $
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;; Author: Kees J. Bot 1 Jan 1994                               ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision: 431 $
 
 
 ; size_t strncat(char *s1, const char *s2, size_t n)

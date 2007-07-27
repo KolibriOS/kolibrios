@@ -1,3 +1,7 @@
+
+$Revision: 0 $
+
+
 ;cache_ide0_pointer          dd 0
 ;cache_ide0_size             dd 0   ; not use
 ;cache_ide0_data_pointer     dd 0

@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
@@ -16,6 +15,9 @@ $Revision$
 ;;  Note: playnote.txt                                             ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 kontrOctave      dw  0x4742, 0x4342, 0x3F7C, 0x3BEC, 0x388F, 0x3562
                  dw  0x3264, 0x2F8F, 0x2CE4, 0x2A5F, 0x2802, 0x25BF

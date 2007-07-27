@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
@@ -11,6 +10,9 @@ $Revision$
 ;;  Copyright 2003 Ville Turjanmaa                              ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 align 4
 pr_mode_exit:

@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                  ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.     ;;
@@ -22,6 +21,10 @@ $Revision$
 ;;  See file COPYING for details                                    ;;
 ;;                                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
+
 ;macro PutStr X
 ;{
 ; local .__xyz1

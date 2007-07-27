@@ -11,6 +11,7 @@ macro $Revision a {
 
 $Revision$
 
+
 ; structure definition helper
 macro struct name, [arg]
  {

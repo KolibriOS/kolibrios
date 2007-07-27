@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                    ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.       ;;
@@ -25,6 +24,10 @@ $Revision$
 ;;    Revision Look up table and SIS635 Mac Address by Jarek Pelczar  ;;
 ;;                                                                    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
+
 ;********************************************************************
 ;   Interface
 ;      SIS900_reset

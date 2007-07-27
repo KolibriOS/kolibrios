@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
@@ -17,6 +16,9 @@ $Revision$
 ;;         Added a timer per socket to allow delays when        ;;
 ;;         rx window gets below 1KB                             ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 ; TCP TCB states
 TCB_LISTEN         equ        1

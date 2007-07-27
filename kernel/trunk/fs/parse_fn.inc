@@ -1,4 +1,3 @@
-$Revision$
 ;-------------------------------------------------------------------------
 ;
 ;  File path partial substitution (according to configuration)
@@ -7,6 +6,9 @@ $Revision$
 ;     SPraid
 ;
 ;-------------------------------------------------------------------------
+
+$Revision$
+
 
 iglobal
 ; pointer to memory for path replace table,

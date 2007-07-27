@@ -1,22 +1,24 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
+;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
-;; System service for filesystem call                                   ;;
-;; (C) 2004 Ville Turjanmaa, License: GPL                               ;;
-;; 29.04.2006 Elimination of hangup after the                           ;;
-;;            expiration hd_wait_timeout (for LBA) -  Mario79           ;;
+;; System service for filesystem call                           ;;
+;; (C) 2004 Ville Turjanmaa, License: GPL                       ;;
+;; 29.04.2006 Elimination of hangup after the                   ;;
+;;            expiration hd_wait_timeout (for LBA) -  Mario79   ;;
 ;; 15.01.2005 get file size/attr/date,                          ;;
 ;;            file_append (only for hd) - ATV                   ;;
-;; 23.11.2004 test if hd/partition is set - ATV                         ;;
-;; 18.11.2004 get_disk_info and more error codes - ATV                  ;;
-;; 08.11.2004 expand_pathz and rename (only for hd) - ATV               ;;
-;; 20.10.2004 Makedir/Removedir (only for hd) - ATV                     ;;
-;;                                                                      ;;
+;; 23.11.2004 test if hd/partition is set - ATV                 ;;
+;; 18.11.2004 get_disk_info and more error codes - ATV          ;;
+;; 08.11.2004 expand_pathz and rename (only for hd) - ATV       ;;
+;; 20.10.2004 Makedir/Removedir (only for hd) - ATV             ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 iglobal
 dir0:        db  'HARDDISK   '

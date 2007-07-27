@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
@@ -26,6 +25,9 @@ $Revision$
 ;;  See file COPYING for details                                   ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 	ETH_ALEN	       equ 6
 	ETH_HLEN	       equ (2 * ETH_ALEN + 2)

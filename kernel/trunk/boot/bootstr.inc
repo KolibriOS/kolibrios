@@ -1,3 +1,7 @@
+
+$Revision: 0 $
+
+
 ; boot data: common strings (for all languages)
 macro line_full_top {
           db       201

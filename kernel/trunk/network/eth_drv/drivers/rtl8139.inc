@@ -1,4 +1,3 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
@@ -30,6 +29,10 @@ $Revision$
 ;;  10.01.2007 Bugfix for l8139_transmit from Paolo Franchetti     ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
+
 	ETH_ALEN	       equ 6
 	ETH_HLEN	       equ (2 * ETH_ALEN + 2)
 	ETH_ZLEN	       equ 60 ; 60 + 4bytes auto payload for

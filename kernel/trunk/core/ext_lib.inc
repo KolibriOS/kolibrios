@@ -1,9 +1,12 @@
-$Revision$
 ;============================================================================
 ;
 ;   External kernel dependencies (libraries) loading
 ;
 ;============================================================================
+
+$Revision$
+
+
 macro library [name,fname]
 {
   forward

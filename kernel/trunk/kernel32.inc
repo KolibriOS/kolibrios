@@ -1,18 +1,20 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                            ;;
+;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
-;; KERNEL32.INC                                               ;;
-;;                                                            ;;
-;; Included 32 bit kernel files for MenuetOS                  ;;
-;;                                                            ;;
-;; This file is kept separate as it will be easier to         ;;
-;; maintain and compile with an automated SETUP program       ;;
-;; in the future.                                             ;;
-;;                                                            ;;
+;; KERNEL32.INC                                                 ;;
+;;                                                              ;;
+;; Included 32 bit kernel files for MenuetOS                    ;;
+;;                                                              ;;
+;; This file is kept separate as it will be easier to           ;;
+;; maintain and compile with an automated SETUP program         ;;
+;; in the future.                                               ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
+
 
 ;struc db [a] { common . db a
 ;  if ~used .

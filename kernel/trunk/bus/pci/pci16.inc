@@ -1,20 +1,21 @@
-$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                           ;;
+;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
-;;  PCI16.INC                                                ;;
-;;                                                           ;;
-;;  16 bit PCI driver code                                   ;;
-;;                                                           ;;
-;;  Version 0.2  December 21st, 2002                         ;;
-;;                                                           ;;
-;;  Author: Victor Prodan, victorprodan@yahoo.com            ;;
-;;                                                           ;;
-;;  See file COPYING for details                             ;;
-;;                                                           ;;
+;;  PCI16.INC                                                   ;;
+;;                                                              ;;
+;;  16 bit PCI driver code                                      ;;
+;;                                                              ;;
+;;  Version 0.2  December 21st, 2002                            ;;
+;;                                                              ;;
+;;  Author: Victor Prodan, victorprodan@yahoo.com               ;;
+;;                                                              ;;
+;;  See file COPYING for details                                ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+$Revision$
 
 
 init_pci_16:

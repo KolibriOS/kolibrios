@@ -1,9 +1,11 @@
-$Revision$
 ;======================================================================
 ;
 ;                           BOOT DATA
 ;
 ;======================================================================
+
+$Revision$
+
 
 d80x25_bottom:
 ;          db       186,' KolibriOS based on MenuetOS and comes with ABSOLUTELY '
