@@ -1,3 +1,4 @@
+$Revision$
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
@@ -20,8 +21,6 @@
 ;;  See file COPYING for details                                ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-$Revision$
 
 
 ;***************************************************************************
@@ -375,23 +374,23 @@ pci_emu_dat:	times	30*10 db 0
 ;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 align 4
 sys_pcibios:
-	cmp	[pci_access_enabled], 1
-        jne	.unsupported_func
-	mov	edi, [pci_bios_entry]
-	test	edi, edi
-	jz	.emulate_bios
 	xchg	ebx, eax
 	xchg	ecx, eax
 	xchg	edx, eax
 	xchg	esi, eax
-        mov     edi, eax
+        xchg    edi, eax
+	cmp	[pci_access_enabled], 1
+        jne	.unsupported_func
+        cmp     [pci_bios_entry], 0
+	jz	.emulate_bios
 
-        push ds
-        mov ax, pci_data_sel
-        mov ds, ax
-        mov eax, ebp
-        call pword [cs:pci_bios_entry]
-        pop ds
+        push    ds
+        mov     ax, pci_data_sel
+        mov     ds, ax
+        mov     eax, ebp
+        mov     ah, 0B1h
+        call    pword [cs:pci_bios_entry]
+        pop     ds
 
 	jmp	.return
 	;-=-=-=-=-=-=-=-=
@@ -399,85 +398,86 @@ sys_pcibios:
 	cmp	ebp, 1			; PCI_FUNCTION_ID
 	jnz	.not_PCI_BIOS_PRESENT
 	mov	edx, 'PCI '
-	xor	ah, ah
         mov     al, [OS_BASE+0x2F0000 + 0x9020]
         mov     bx, [OS_BASE+0x2F0000 + 0x9022]
         mov     cl, [OS_BASE+0x2F0000 + 0x9021]
-	jmp	.return
+        xor     ah, ah
+	jmp	.return_abcd
 
 .not_PCI_BIOS_PRESENT:
 	cmp	ebp, 2			; FIND_PCI_DEVICE
 	jne	.not_FIND_PCI_DEVICE
-	mov	esi, pci_emu_dat
-..nxt:	cmp	[esi], cx
+	mov	ebx, pci_emu_dat
+..nxt:	cmp	[ebx], dx
 	jne	..no
-	cmp	[esi + 2], bx
+	cmp	[ebx + 2], cx
 	jne	..no
-	dec	dx
+	dec	si
 	jns	..no
-	mov	bx, [esi + 4]
-	xor	ah, ah
-	jmp	.return
-..no:	cmp	word[esi], 0
+	mov	bx, [ebx + 4]
+	xor     ah, ah
+	jmp	.return_ab
+..no:	cmp	word[ebx], 0
 	je	..dev_not_found
-	add	esi, 10
+	add	ebx, 10
 	jmp	..nxt
 ..dev_not_found:
 	mov	ah, 0x86		; DEVICE_NOT_FOUND
-	jmp	.return
+	jmp	.return_a
 
 .not_FIND_PCI_DEVICE:
 	cmp	ebp, 3			; FIND_PCI_CLASS_CODE
 	jne	.not_FIND_PCI_CLASS_CODE
 	mov	esi, pci_emu_dat
-	shl	ebx, 8
-..nxt2:	cmp	[esi], ebx
+	shl	ecx, 8
+..nxt2:	cmp	[esi], ecx
 	jne	..no2
 	mov	bx, [esi]
-	xor	ah, ah
-	jmp	.return
+	xor     ah, ah
+	jmp	.return_ab
 ..no2:	cmp	dword[esi], 0
-	je	..dev_not_found2
+	je	..dev_not_found
 	add	esi, 10
 	jmp	..nxt2
-..dev_not_found2:
-	mov	ah, 0x86		; DEVICE_NOT_FOUND
-	jmp	.return
 
 .not_FIND_PCI_CLASS_CODE:
 	cmp	ebp, 8			; READ_CONFIG_*
 	jb	.not_READ_CONFIG
 	cmp	ebp, 0x0A
 	ja	.not_READ_CONFIG
-	mov	ebx, esi
-	mov	bh, al
-	mov	edx, ebp
-	mov	al, dl
+	mov     eax, ebp
+	mov     ah, bh
+	mov     edx, edi
+	mov     bh, bl
+	mov     bl, dl
 	call	pci_read_reg
 	mov	ecx, eax
 	xor	ah, ah			; SUCCESSFUL
-	jmp	.return
+	jmp	.return_abc
 .not_READ_CONFIG:
 	cmp	ebp, 0x0B		; WRITE_CONFIG_*
 	jb	.not_WRITE_CONFIG
 	cmp	ebp, 0x0D
 	ja	.not_WRITE_CONFIG
-	mov	ecx, ebx
-	mov	ebx, esi
-	mov	bh, al
-	mov	edx, ebp
-	inc	edx
-	mov	al, dl
+	lea     eax, [ebp+1]
+	mov     ah, bh
+	mov     edx, edi
+	mov     bh, bl
+	mov     bl, dl
 	call	pci_write_reg
 	xor	ah, ah			; SUCCESSFUL
-	jmp	.return
+	jmp	.return_abc
 .not_WRITE_CONFIG:
 .unsupported_func:
 	mov	ah, 0x81		; FUNC_NOT_SUPPORTED
 .return:mov	dword[esp + 8 ], edi
 	mov	dword[esp + 12], esi
-	mov	dword[esp + 24], ebx
+.return_abcd:
 	mov	dword[esp + 28], edx
+.return_abc:
 	mov	dword[esp + 32], ecx
+.return_ab:
+	mov	dword[esp + 24], ebx
+.return_a:
 	mov	dword[esp + 36], eax
 	ret
