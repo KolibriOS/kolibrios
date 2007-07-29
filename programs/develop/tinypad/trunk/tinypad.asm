@@ -22,6 +22,10 @@
 ; 4.0.5 (mike.dld and Rus)
 ;   bug-fixes:
 ;     - a new tab is created when opening a file from folder of tinypad
+;     - correct call save-dialog for saving new files or files from folder of tinypad
+;   new features:
+;     - added prompt to save file before closing
+;     - added close tab button
 ; 4.0.4 (mike.dld)
 ;   bug-fixes:
 ;     - statusbar contained hint after dialog operation cancelled
@@ -613,6 +617,7 @@ accel_table2 dd 	  \
   'HSG',btn.hscroll_down ,\
   'TBL',btn.tabctl_right ,\
   'TBG',btn.tabctl_left  ,\
+  177  , key.ctrl_f4	 ,\ ; close current tab button
   0
 
 accel_table2_botdlg dd	   \
@@ -621,6 +626,7 @@ accel_table2_botdlg dd	   \
   20002,btn.bot.opensave  ,\
   20003,btn.bot.find	  ,\
   20004,btn.bot.appearance,\
+  20007, btn.bot.no	  ,\
   21001,btn.bot.tabpos	  ,\
   0
 

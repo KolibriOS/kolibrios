@@ -197,7 +197,30 @@ func draw_main_menu ;/////////////////////////////////////////////////////////
 	jmp	@b
 
   .exit:
+	mov	eax, 8
+	mov	bx, word [mainwnd_pos.w]
+	sub	bx, 25
+	shl	ebx, 16
+	add	ebx, 12
+
+	mov	ecx, 3 * 65536 + 12
+	mov	edx, 177
+	mov	esi, 0x00bcbec6
+	int	0x40
+
+	;mov     eax, 4
+	shr	eax, 1
+	sub	ebx, -4 * 65536
+	mov	bx, 6
+	mov	ecx, 0
+	mov	edx, cross
+	mov	esi, 1
+	int	0x40
+
 	ret
+
+cross:
+	db	'X'
 endf
 
 ;-----------------------------------------------------------------------------

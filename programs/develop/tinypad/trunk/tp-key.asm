@@ -130,8 +130,14 @@ func key.ctrl_o ;///// ENTER OPEN FILENAME ///////////////////////////////////
 	mov	[bot_dlg_mode2],0
 
   .direct:
+	cmp	[bot_dlg_mode2], 2
+	je	.ask
 	mov	[s_status],s_enter_filename
+	jmp	.ask1
 
+   .ask:
+	mov	[s_status],s_ask_save
+  .ask1:
 	mov	[bot_mode],1
 	mov	[bot_dlg_height],16*2+4*2-1
 	mov	[bot_dlg_handler],osdlg_handler
@@ -148,8 +154,8 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
-	cmp	[cur_editor.FilePath],'/'
-	jne	key.shift_ctrl_s
+	cmp	[cur_editor.FilePath], 0
+	je	key.shift_ctrl_s
 	cmp	[cur_editor.Modified],0
 	je	.exit
 	call	save_file
@@ -1486,11 +1492,17 @@ endf
 ;-----------------------------------------------------------------------------
 func key.ctrl_f4 ;///// CLOSE CURRENT TAB ////////////////////////////////////
 ;-----------------------------------------------------------------------------
+	cmp	[cur_editor.Modified], 0
+	je	.close
+	mov	[bot_dlg_mode2], 2
+	jmp	key.ctrl_o.direct
+ .close:
 	mov	[do_not_draw],1
 	push	[tab_bar.Current.Ptr]
 	cmp	[tab_bar.Items.Count],1
 	jne	@f
-	call	create_tab
+	;call    create_tab
+	jmp	key.alt_x.close 	; close program
     @@: pop	ebp
 	call	delete_tab
 	dec	[do_not_draw]
@@ -1564,7 +1576,11 @@ func key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
 	mov	[f_info70+21],f_info.path
 	mcall	70,f_info70
 
+  .bgn_rp:
+	call	key.ctrl_f4
   .close:
+	cmp	[tab_bar.Items.Count],1
+	jne	.bgn_rp
 	mov	[main_closed],1
 	mcall	-1
 endf

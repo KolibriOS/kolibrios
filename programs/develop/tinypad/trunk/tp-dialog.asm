@@ -160,7 +160,15 @@ osdlg_handler:
 	push	20001 s_2cancel s_2cancel.size
 	call	define_3d_button
 
-	mov	ebp,tb_opensave
+	cmp	[bot_dlg_mode2], 2	; exit-save dialog
+	jne	@f
+
+	sub	ebx,(6*(s_2save_no.size+2)+3)*65536
+	mov	bx,6*(s_2save_no.size+2)
+	push	20007 s_2save_no s_2save_no.size
+	call	define_3d_button
+
+    @@: mov	ebp,tb_opensave
 	mov	eax,[p_info.client_box.width]
 	sub	eax,6*(s_2filename.size+1)+1
 	add	eax,6*(s_2filename.size+1)*65536
@@ -601,6 +609,15 @@ botdlg.button:
 	xor	eax,eax
 	mov	[bot_mode],al
 	mov	[bot_dlg_height],eax
+	call	drawwindow
+	ret
+
+  btn.bot.no:
+	call	key.ctrl_f4.close
+	xor	eax,eax
+	mov	[bot_mode],al
+	mov	[bot_dlg_height],eax
+	mov	[s_status],eax
 	call	drawwindow
 	ret
 

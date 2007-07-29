@@ -108,10 +108,10 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	rep	stosb
 
 	mov	esi,s_defname
-	mov	edi,cur_editor.FilePath
+	mov	edi,cur_editor.FilePath + 1
 	mov	ecx,s_defname.size
 	rep	movsb
-	mov	[cur_editor.FileName],0
+	mov	[cur_editor.FileName],1
 
 	mov	[cur_editor.Modified],0
 	mov	[cur_editor.AsmMode],0

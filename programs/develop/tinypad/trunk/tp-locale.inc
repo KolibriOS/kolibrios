@@ -174,6 +174,10 @@ lsz s_2save,\
   ru,'Сохранить',\
   en,'Save',\
   et,'Salvesta'
+lsz s_2save_no,\
+  ru,'Нет',\
+  en,'No',\
+  et,'No'
 lsz s_2find,\
   ru,'Найти',\
   en,'Find',\
@@ -201,6 +205,11 @@ lsz s_enter_filename,\
   ru,<'Введите имя файла',0>,\
   en,<'Enter filename',0>,\
   et,<'Sisesta failinimi',0>
+
+lsz s_ask_save,\
+  ru,<'Желаете сохранить?',0>,\
+  en,<'Would you like to save?',0>,\
+  et,<'Gradite conservare?',0>	; May be incorrect
 
 lsz s_enter_text_to_find,\
   ru,<'Введите текст для поиска',0>,\
