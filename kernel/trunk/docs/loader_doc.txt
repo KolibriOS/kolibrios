@@ -1,0 +1,62 @@
+;------------------------------------------
+; Указание загрузчиком системного каталога
+;------------------------------------------
+Перед передачей управления ядру могут быть установленны следующие регистры:
+CX='HA'
+DX='RD'
+Это указывает на то, что регистр BX указывает на системный раздел. Каталог /kolibri/ на
+этом разделе является системным, к нему можно обращаться как к /sys/
+
+Возможные значения регистра BL (указывает на устройство):
+'a' - Primary   Master
+'b' - Primary   Slave
+'c' - Secondary Master
+'d' - Secondary Slave
+'r' - RAM диск
+'m' - Приводы CD-ROM
+
+Возможные значения регистра BH (указывает на раздел):
+для BL='a','b','c','d','r' - указывает на наздел, где расположен системный каталог
+для BL='m',указывает на номер физического устройства, с которого надо начинать поиск системного каталога.
+
+примеры значений регистра BX:
+'a1' - /hd0/1/
+'a2' - /hd0/2/
+'b1' - /hd1/1/
+'d4' - /hd3/4/
+'m0' - поиск по сидюкам каталога kolibri
+'r1' - /rd/1/
+
+
+
+	
+;------------------------------------------ 
+; Note boot system directory
+;------------------------------------------ 
+The transfer of the kernel can be installed following registers:
+CX = 'HA'
+DX = 'RD'
+This indicates that the register BX points to a system partition. Catalog /kolibri/ in
+this section is system, it is treated as a /sys/
+
+Possible values register BL (indicates the device):
+'a' - Primary Master
+'b' - Primary Slave
+'c' - Secondary Master
+'d' - Secondary Slave
+'r' - RAM disc
+'m' - ROM drives
+
+Possible values register BH (indicating section):
+for BL = 'a', 'b', 'c', 'd', 'r' to denote nazdel where the system folder
+for BL = 'm', indicates the number of physical devices, which must begin a systematic search directory.
+
+Examples of register BX:
+'a1' - /hd0/1/
+'a2' - /hd0/2/
+'b1' - /hd1/1/
+'d4' - /hd3/4/
+'m0' - search directory sidyukam kolibri
+'r1' - /rd/1/
+
+Переведено Google
