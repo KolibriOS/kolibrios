@@ -477,6 +477,7 @@ IDE_descriptor_table:
         dw      0x8000
 
 dma_cur_sector  dd      not 40h
+dma_hdpos       dd      0
 irq14_func      dd      hdd_irq_null
 irq15_func      dd      hdd_irq_null
 endg
@@ -557,6 +558,9 @@ align 4
 hd_read_dma:
         push    eax
         push    edx
+        mov     edx,[dma_hdpos]
+        cmp     edx,[hdpos]
+        jne     .notread
         mov     edx, [dma_cur_sector]
         cmp     eax, edx
         jb      .notread
@@ -659,6 +663,8 @@ hd_read_dma:
 @@:
         cmp     [hd_error], 0
         jnz     hd_read_error
+        mov     eax,[hdpos]
+        mov     [dma_hdpos],eax
         pop     edx
         pop     eax
         mov     [dma_cur_sector], eax
