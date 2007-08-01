@@ -1517,8 +1517,6 @@ checkwindows:
 	je    no_fullscreen_restore
 	cmp   edx, 0x01000000
 	je    no_fullscreen_restore
-	cmp   edx, 0x04000000
-	je    no_fullscreen_restore
 
 	cmp   [reposition],1
 	je    no_window_sizing
@@ -1549,6 +1547,13 @@ checkwindows:
 	call	set_window_clientbox
 
       no_window_shade:
+
+	push edx
+	mov   edx, [edi + WDATA.cl_workarea]
+	and   edx, 0x0f000000
+	cmp   edx, 0x04000000
+	pop edx
+	je    no_fullscreen_restore
 
 	cmp   [do_resize],1		  ; fullscreen/restore ?
 	jne   no_fullscreen_restore

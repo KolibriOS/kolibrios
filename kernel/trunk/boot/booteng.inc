@@ -45,7 +45,8 @@ ask_dma   db      "Use DMA for HDD access? [1-yes, 2-only for reading, 3-no]: ",
 bdev      db      "Load ramdisk from [1-floppy; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-use preloaded ram-image from kernel restart;"
-          db      13,10,186,"4-create blank image]: ",0
+          db      13,10,186,"                    "
+          db      "4-create blank image]: ",0
 probetext db      13,10,13,10,186," Use standart graphics mode? [1-yes, "
           db      "2-probe bios (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0

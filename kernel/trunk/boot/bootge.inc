@@ -50,7 +50,8 @@ ask_dma   db      "Nutze DMA zum HDD Zugriff? [1-ja, 2-allein fur Lesen, 3-nein]
 bdev      db      "Lade die Ramdisk von [1-Diskette; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-benutze ein bereits geladenes Kernel image;"
-          db      13,10,186,"4-create blank image]: ",0
+          db      13,10,186,"                    "
+          db      "4-create blank image]: ",0
 probetext db      13,10,13,10,186," Nutze Standardgrafikmodi? [1-ja, "
           db      "2-BIOS Test (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
