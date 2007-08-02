@@ -25,15 +25,15 @@ red:
         push    dword [sc.work_graph]
         pop     [input_fn.focus_border_color]
         call    draw_window
-still:
-        mcall   10
-        cmp al,0x1    ;если изменилось положение окна
-        jz red
-        cmp al,0x2    ;если нажата клавиша то перейти
-        jz key
-        cmp al,0x3    ;если нажата кнопка то перейти
-        jz button
-        mouse_edit_box input_fn
+still:                          ;основной обработчик 
+        mcall   10              ;Ожидать события
+        dec  eax
+        jz   red
+        dec  eax
+        jz   key
+        dec  eax
+        jz   button
+        mouse_edit_box input_fn 
         jmp still    ;если ничего из перечисленного то снова в цикл
 key:
         mcall   2
