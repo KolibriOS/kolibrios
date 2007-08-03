@@ -287,10 +287,10 @@ irq1:
 	jb	.dowrite
 	cmp	ch, 83
 	ja	.dowrite
-	push	eax
+	;push    eax
 	movzx	eax, ch
 	mov	bl, [numlock_map + eax - 71]
-	pop	eax
+	;pop     eax
 
 ;.........................Part1 End.................................................
 
