@@ -25,7 +25,7 @@ version equ '1.2'
   dd     0x0         ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
-include '..\..\develop\editbox\editbox.inc'
+include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
 use_edit_box procinfo,22,5
 al equ eax      ; \ decrease kpack'ed size
 purge mov       ; /
@@ -278,6 +278,19 @@ error9  db 'Таблица FAT разрушена',0
 error10 db 'Доступ запрещен',0
 error11 db 'Ошибка устройства',0
 aUnknownError db 'Неизвестная ошибка',0
+else if lang eq et
+save    db 'Salvesta',0
+label1  db 'Vali №ks variantidest:',0
+label2  db 'Vїi sisesta teekond failinimeni:',0
+label3  db 'Kїik kataloogid peavad eksisteerima',0
+ok      db 'RAM-ketas salvestatud edukalt',0
+error3  db 'Tundmatu failis№steem',0
+error5  db 'Vigane teekond',0
+error8  db 'Ketas tфis',0
+error9  db 'FAT tabel vigane',0
+error10 db 'Juurdepффs keelatud',0
+error11 db 'Seadme viga',0
+aUnknownError db 'Tundmatu viga',0
 
 else
 save    db '  Save',0

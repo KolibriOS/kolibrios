@@ -46,7 +46,7 @@ bdev      db      "Paigalda mäluketas [1-diskett; 2-C:\kolibri.img (FAT32);"
           db      13,10,186,"                    "
           db      "3-kasuta eellaaditud mäluketast kerneli restardist;"
           db      13,10,186,"                    "
-          db      "4-create blank image]: ",0
+          db      "4-loo tühi pilt]: ",0
 probetext db      13,10,13,10,186," Kasuta standartset graafika reziimi? [1-jah, "
           db      "2-leia biosist (Vesa 3.0)]: ",0
 ;memokz256 db      13,10,186," RAM 256 Mb",0
@@ -84,17 +84,17 @@ mode9     db      "320x200, EGA/CGA 256 värvi",0
 mode10    db      "640x480, VGA 16 värvi",0
 probeno_msg db    " (standard reziim)",0
 probeok_msg db    " (kontrolli ebastandardseid reziime)",0
-dma_msg   db      " [b] Use DMA for HDD access:",0
+dma_msg   db      " [b] Kasuta DMA'd HDD juurdepääsuks:",0
 on_msg    db      " sees",13,10,0
 off_msg   db      " väljas",13,10,0
-readonly_msg db   " only for reading",13,10,0
+readonly_msg db   " ainult lugemiseks",13,10,0
 vrrm_msg  db      " [c] Kasuta VRR:",0
 preboot_device_msg db " [d] Disketi kujutis: ",0
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
 pdm1      db      "reaalne diskett",13,10,0
 pdm2      db      "C:\kolibri.img (FAT32)",13,10,0
 pdm3      db      "kasuta juba laaditud kujutist",13,10,0
-pdm4      db      "create blank image",13,10,0
+pdm4      db      "loo tühi pilt",13,10,0
 loading_msg db    "Laadin KolibriOS...",0
 save_quest db     "Jäta meelde praegused seaded? [y/n]: ",0
 loader_block_error db "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.",0

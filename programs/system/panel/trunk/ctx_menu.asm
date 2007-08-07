@@ -148,7 +148,7 @@ n_slot	rd	1
 lsz ctx_menu_text,\
   ru, "X Закрыть    Alt + F4",\
   en, "X Close      Alt + F4",\
-  et, "X Fine       Alt + F4"	   ; May be its not correct
+  et, "X Sulge      Alt + F4"	   ; Now correct
 
 ctx_menu_text_end:
 ctx_menu_PID	rd	1

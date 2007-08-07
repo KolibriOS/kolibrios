@@ -148,7 +148,7 @@ popup_res mm.Options,\
   et,'Automaatsed sulud'     ,'',AutoBrackets,\
   et,'Automaatsed taandread' ,'',AutoIndents ,\
   et,'Tark tabulatsioon'     ,'',SmartTabs   ,\
-  et,'Optimal fill on saving','',OptimalFill ,\
+  et,'Optimaalne tфitmine salvestamisel','',OptimalFill ,\
   et,'-'		     ,'',	     ,\
   et,'Rea numbrid'	     ,'',LineNumbers
 
@@ -177,7 +177,7 @@ lsz s_2save,\
 lsz s_2save_no,\
   ru,'Нет',\
   en,'No',\
-  et,'No'
+  et,'Ei'
 lsz s_2find,\
   ru,'Найти',\
   en,'Find',\
@@ -204,12 +204,12 @@ lsz s_tabpos,\
 lsz s_enter_filename,\
   ru,<'Введите имя файла',0>,\
   en,<'Enter filename',0>,\
-  et,<'Sisesta failinimi',0>
+  et,<'Sisesta faili nimi',0>
 
 lsz s_ask_save,\
   ru,<'Желаете сохранить?',0>,\
   en,<'Would you like to save?',0>,\
-  et,<'Gradite conservare?',0>	; May be incorrect
+  et,<'Kas soovite salvestada?',0>	; Now correct
 
 lsz s_enter_text_to_find,\
   ru,<'Введите текст для поиска',0>,\
