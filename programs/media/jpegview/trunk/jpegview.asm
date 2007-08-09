@@ -29,13 +29,20 @@
 ;                   5=light-blue,6=blue,7=salad,8=pink,9=yellow
 ;    version 0.17   17th June 2007
 ;                   diamond (background definition now uses shared memory)
+;    version 0.18   9th August 2007
+;                   Mario79
+;                   Open file with parameter in patch:
+;                   Size of parameter - 4 bytes. Parameter starts with the character "\",
+;                   the unused characters are filled by a blank (ASCII 20h).
+;                   '\T  /hd0/1/1.jpg' - set background, mode: tile
+;                   '\S  /hd0/1/1.jpg' - set background, mode: stretch
                   
                memsize=20000h
                org 0
  PARAMS     =    memsize - 1024
 
 appname equ 'Jpegview '
-version equ '0.17'
+version equ '0.18'
 
 use32
 
@@ -135,8 +142,19 @@ check_parameters:
     cmp     [PARAMS+2], byte "L"
     je      boot_set_background    
 @@:
-        cmp     byte [PARAMS], 1
-        jz      ipc_service
+    cmp     byte [PARAMS], "\"
+    jne     @f
+    cmp     [PARAMS+1], byte "S"
+    jne     .tile
+    mov     [drawing_mode],2
+    jmp     @f
+.tile:
+    cmp     [PARAMS+1], byte "T"
+    jne     @f
+    mov     [drawing_mode],1
+@@:
+    cmp     byte [PARAMS], 1
+    jz      ipc_service
     mov     edi, name_string       ; clear string with file name
     mov     al,  0
     mov     ecx, 100
@@ -145,18 +163,27 @@ check_parameters:
     mov     ecx, 100               ; calculate length of parameter string
     mov     edi, PARAMS
     repne   scasb
+    
     sub     edi, PARAMS
     mov     ecx, edi
-
     mov     esi, PARAMS            ; copy parameters to file name
     mov     edi, name_string
+    cmp     byte [PARAMS], "\"
+    jne     @f
+    add     esi,4
+    sub     ecx,4
+@@:
     cld
     rep     movsb
 
+    cmp     byte [PARAMS], "\"
+    je      boot_set_background.1      
+    
     jmp     START.l1       ; return to beggining of the progra
-
 ;******************************************************************************
 boot_set_background:
+    mov     [drawing_mode],2
+.1:
     mcall 18,16
     cmp   eax,1024*2
     jb    set_mono
@@ -253,7 +280,7 @@ set_as_bgr2:
     ; Stretch the image to fit
     mov     eax, 15
     mov     ebx, 4
-    mov     ecx, 2
+    mov     ecx, [drawing_mode]  ;2
     mcall
 
     mov     eax, 15
@@ -672,6 +699,7 @@ include 'jpeglib.asm'
 ; DATA AREA
 
 wcolor          dd  0x000000
+drawing_mode    dd  2
 title          db  appname,version,0
 setname          db  'SLIDESHOW'
 setnamelen:
