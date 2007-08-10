@@ -5775,12 +5775,16 @@ vmread_instruction:
 	mov	[extended_code],78h
 	lods	byte [esi]
 	call	get_size_operator
+	cmp	al,10h
+	je	vmread_nomem
 	cmp	al,'['
 	jne	invalid_operand
 	call	get_address
 	lods	byte [esi]
 	cmp	al,','
 	jne	invalid_operand
+	call	vmread_check_size
+	mov	[operand_size],0
 	lods	byte [esi]
 	call	get_size_operator
 	cmp	al,10h
@@ -5788,16 +5792,41 @@ vmread_instruction:
 	lods	byte [esi]
 	call	convert_register
 	mov	[postbyte_register],al
+	cmp	[operand_size],4
+	jne	invalid_operand_size
+	jmp	vmx_size_ok
+      vmread_nomem:
+	lods	byte [esi]
+	call	convert_register
+	push	eax
+	call	vmread_check_size
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	mov	[operand_size],0
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[postbyte_register],al
+	cmp	[operand_size],4
+	jne	invalid_operand_size
+	pop	ebx
+	mov	[base_code],0Fh
+	call	store_nomem_instruction
+	jmp	instruction_assembled
       vmread_check_size:
 	cmp	[code_type],64
 	je	vmread_long
 	cmp	[operand_size],4
-	je	vmx_size_ok
-	jmp	invalid_operand_size
+	jne	invalid_operand_size
+	ret
       vmread_long:
 	cmp	[operand_size],8
-	je	vmx_size_ok
-	jmp	invalid_operand_size
+	jne	invalid_operand_size
+	ret
 vmwrite_instruction:
 	mov	[extended_code],79h
 	lods	byte [esi]
@@ -5807,15 +5836,28 @@ vmwrite_instruction:
 	lods	byte [esi]
 	call	convert_register
 	mov	[postbyte_register],al
+	cmp	[operand_size],4
+	jne	invalid_operand_size
+	mov	[operand_size],0
 	lods	byte [esi]
 	cmp	al,','
 	jne	invalid_operand
 	lods	byte [esi]
 	call	get_size_operator
+	cmp	al,10h
+	je	vmwrite_nomem
 	cmp	al,'['
 	jne	invalid_operand
 	call	get_address
-	jmp	vmread_check_size
+	call	vmread_check_size
+	jmp	vmx_size_ok
+      vmwrite_nomem:
+	lods	byte [esi]
+	call	convert_register
+	mov	bl,al
+	mov	[base_code],0Fh
+	call	store_nomem_instruction
+	jmp	instruction_assembled
 simple_svm_instruction:
 	push	eax
 	mov	[base_code],0Fh

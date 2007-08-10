@@ -33,6 +33,8 @@ formatter:
 	lea	eax,[edi+9]
 	cmp	eax,[structures_buffer]
 	jae	out_of_memory
+	cmp	[file_extension],0
+	jne	extension_specified
 	cmp	[output_format],2
 	je	exe_extension
 	jb	bin_extension
@@ -93,6 +95,18 @@ formatter:
 	inc	edi
 	cmp	byte [edi],0
 	jne	adapt_case
+	jmp	extension_ok
+      extension_specified:
+	mov	al,'.'
+	stos	byte [edi]
+	mov	esi,[file_extension]
+      copy_extension:
+	lods	byte [esi]
+	stos	byte [edi]
+	test	al,al
+	jnz	copy_extension
+	dec	edi
+      extension_ok:
 	mov	esi,edi
 	lea	ecx,[esi+1]
 	sub	ecx,[free_additional_memory]
@@ -178,6 +192,15 @@ format_directive:
 	je	format_coff
 	cmp	al,5
 	je	format_elf
+      format_defined:
+	cmp	byte [esi],86h
+	jne	instruction_assembled
+	cmp	word [esi+1],'('
+	jne	invalid_argument
+	mov	eax,[esi+3]
+	add	esi,3+4
+	mov	[file_extension],esi
+	lea	esi,[esi+eax+1]
 	jmp	instruction_assembled
       format_prefix:
 	lods	byte [esi]
@@ -377,7 +400,7 @@ format_mz:
 	mov	word [edx+0Ch],0FFFFh
 	mov	word [edx+10h],1000h
 	mov	[code_type],16
-	jmp	instruction_assembled
+	jmp	format_defined
 mark_mz_relocation:
 	push	eax ebx
 	inc	[number_of_relocations]
@@ -1023,7 +1046,7 @@ format_pe:
 	jnc	wdm_flag_ok
 	or	word [edx+5Eh],2000h
       wdm_flag_ok:
-	jmp	instruction_assembled
+	jmp	format_defined
 pe_section:
 	call	close_pe_section
 	bts	[format_flags],5
@@ -1348,17 +1371,17 @@ pe_stack:
 	cmp	edx,[ecx+64h]
 	ja	value_out_of_range
 	jb	instruction_assembled
-	cmp	eax,[edx+60h]
+	cmp	eax,[ecx+60h]
 	ja	value_out_of_range
 	jmp	instruction_assembled
       default_pe64_stack_commit:
-	mov	dword [edx+68h],1000h
-	cmp	dword [edx+64h],0
+	mov	dword [ecx+68h],1000h
+	cmp	dword [ecx+64h],0
 	jne	instruction_assembled
-	mov	eax,[edx+60h]
+	mov	eax,[ecx+60h]
 	cmp	eax,1000h
 	ja	instruction_assembled
-	mov	dword [edx+68h],eax
+	mov	dword [ecx+68h],eax
 	jmp	instruction_assembled
 pe_heap:
 	lods	byte [esi]
@@ -1494,11 +1517,12 @@ make_pe_fixups:
       store_fixup:
 	jecxz	fixups_done
 	add	dword [ebx],2
-	mov	eax,[esi]
-	and	ax,0FFFh
-	mov	dl,[esi+4]
-	shl	dx,12
-	or	ax,dx
+	mov	ah,[esi+1]
+	and	ah,0Fh
+	mov	al,[esi+4]
+	shl	al,4
+	or	ah,al
+	mov	al,[esi]
 	stos	word [edi]
 	add	esi,5
 	loop	make_fixups
@@ -2174,10 +2198,10 @@ format_coff:
 	mov	[labels_type],2
 	mov	[code_type],32
 	test	[format_flags],8
-	jz	instruction_assembled
+	jz	format_defined
 	mov	[labels_type],4
 	mov	[code_type],64
-	jmp	instruction_assembled
+	jmp	format_defined
 coff_section:
 	call	close_coff_section
 	mov	ebx,[free_additional_memory]
@@ -2774,9 +2798,9 @@ format_elf:
 	mov	al,4
 	mov	[ebx+10h],eax
 	test	[format_flags],8
-	jz	instruction_assembled
+	jz	format_defined
 	mov	byte [ebx+10h],8
-	jmp	instruction_assembled
+	jmp	format_defined
       format_elf64:
 	mov	edx,edi
 	mov	ecx,40h shr 2
@@ -3513,7 +3537,7 @@ format_elf_exe:
 	mov	[org_registers],0
 	mov	[org_start],edi
 	mov	[symbols_stream],edi
-	jmp	instruction_assembled
+	jmp	format_defined
       format_elf64_exe:
 	add	esi,2
 	or	[format_flags],1
@@ -3573,7 +3597,7 @@ format_elf_exe:
 	mov	[org_registers],0
 	mov	[org_start],edi
 	mov	[symbols_stream],edi
-	jmp	instruction_assembled
+	jmp	format_defined
 elf_entry:
 	lods	byte [esi]
 	cmp	al,'('

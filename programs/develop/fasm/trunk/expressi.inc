@@ -1992,6 +1992,8 @@ get_address_value:
 	mov	[address_symbol],eax
 	mov	al,[edi+12]
 	mov	[value_type],al
+	cmp	al,6
+	je	plt_address
 	cmp	al,5
 	je	gotoff_address
 	ja	invalid_use_of_symbol
@@ -2002,6 +2004,7 @@ get_address_value:
 	shl	al,5
 	jmp	address_symbol_ok
       gotoff_address:
+      plt_address:
 	mov	al,40h
       address_symbol_ok:
 	mov	ah,[address_size]

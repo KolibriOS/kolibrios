@@ -159,10 +159,10 @@ parser:
       blocks_stack_ok:
 	xor	al,al
 	stos	byte [edi]
-	mov	eax,[error_line]
-	mov	[current_line],eax
-	cmp	[anonymous_forward],0
-	jne	invalid_value
+	;mov     eax,[error_line]
+	;mov     [current_line],eax
+	;cmp     [anonymous_forward],0
+	;jne     invalid_value
 	add	edi,0Fh
 	and	edi,not 0Fh
 	mov	[code_start],edi
@@ -1163,10 +1163,10 @@ get_label_id:
 	xor	ebx,ebx
 	ret
       anonymous_back:
-	add	esi,2
 	mov	eax,[anonymous_reverse]
 	or	eax,eax
-	jz	invalid_value
+	jz	new_anonymous
+	add	esi,2
 	jmp	anonymous_ok
       new_anonymous:
 	add	esi,2

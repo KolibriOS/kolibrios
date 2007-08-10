@@ -88,6 +88,7 @@ parenthesis_stack dd ?
 blocks_stack dd ?
 parsed_lines dd ?
 logical_value_parentheses dd ?
+file_extension dd ?
 
 next_pass_needed db ?
 macro_status db ?

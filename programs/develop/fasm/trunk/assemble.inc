@@ -31,6 +31,7 @@ assembler:
 	mov	[format_flags],eax
 	mov	[number_of_relocations],eax
 	mov	[undefined_data_end],eax
+	mov	[file_extension],eax
 	mov	[next_pass_needed],al
 	mov	[output_format],al
 	mov	[labels_type],al
