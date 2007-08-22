@@ -1019,6 +1019,35 @@ Returned value:
                  (reserved)
 
 ======================================================================
+====================== Function 18, subfunction 21 =====================
+=== Get number of the slot of process/thread at his identificator ====
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 21 - subfunction number
+  * ecx = PID/TID (process/thread identificator)
+Returned value:
+  * eax = number of the slot of process/thread, if it really present
+    or 0, if PID/TID is false
+
+======================================================================
+==================== Function 18, subfunction 22 =====================
+============= Minimize/restore window of process/thread ==============
+======================================================================
+Parameters:
+  * eax = 18 - function number
+  * ebx = 22 - subfunction number
+  * ecx = Operation type
+           0 - minimize (roll to panel) at number on slot thread
+           1 - minimize window at PID/TID identificator
+           2 - restore minimized window at slot number of thread
+           3 - restore minimized window at PID/TID identificator
+  * edx = Operation argument (Number of slot or a PID/TID)
+Returned value:
+  * eax = 0 - successfully ending
+    eax = -1 - error
+
+======================================================================
 ==================== Function 20 - MIDI interface. ===================
 ======================================================================
 

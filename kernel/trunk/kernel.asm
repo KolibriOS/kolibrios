@@ -2045,6 +2045,8 @@ sys_system_table:
                                         ;                 instead of slot
         dd      sysfn_mouse_acceleration; 19 = set/get mouse acceleration
         dd      sysfn_meminfo           ; 20 = get extended memory info
+        dd      sysfn_pid_to_slot       ; 21 = get slot number for pid
+        dd      sysfn_min_rest_window   ; 22 = minimize and restore any window
 sysfn_num = ($ - sys_system_table)/4
 endg
 
@@ -2287,6 +2289,47 @@ sysfn_getallmem:
      shr eax, 10
      mov  [esp+36],eax
      ret
+
+; // Alver, 2007-22-08 // {
+sysfn_pid_to_slot:
+     mov   eax, ebx
+     call  pid_to_slot
+     mov   [esp+36], eax
+     ret
+
+sysfn_min_rest_window:
+     pushad
+     mov   eax, ecx      ; ebx - operating
+     shr   ebx, 1
+     jnc    @f
+     call  pid_to_slot
+@@:
+     or    eax, eax      ; eax - number of slot
+     jz    .error
+     cmp   eax, 255         ; varify maximal slot number
+     ja    .error
+     xor   ecx, ecx
+     mov   cx, [WIN_STACK + eax*2]  ; ecx - window number
+     mov   eax, ecx
+     shr   ebx, 1
+     jc    .restore
+ ; .minimize:
+     call  minimize_window
+     jmp   .exit
+.restore:
+     call  restore_minimized_window
+.exit:
+     popad
+     xor   eax, eax
+     mov   [esp+36], eax
+     ret
+.error:
+     popad
+     xor   eax, eax
+     dec   eax
+     mov   [esp+36], eax
+     ret
+; } \\ Alver, 2007-22-08 \\
 
 uglobal
 ;// mike.dld, 2006-29-01 [
