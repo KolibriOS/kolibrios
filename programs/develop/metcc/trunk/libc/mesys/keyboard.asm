@@ -1,17 +1,29 @@
 format ELF
-include "public_stdcall.inc"
+
+include "proc32.inc"
+
 section '.text' executable
-public_stdcall _msys_get_key,0
+
+public _msys_get_key
+public _msys_set_keyboard_mode
+
+align 4
+proc _msys_get_key stdcall
+
   mov   eax,2
   int   0x40
   ret
-  
-public_stdcall _msys_set_keyboard_mode,4
-;arg1 - mode
+
+endp
+
+align 4
+proc _msys_set_keyboard_mode stdcall, mode:dword
+
   mov   edx,ebx
   mov   eax,66 
   xor   ebx,ebx
   inc   ebx
-  mov   ecx,[esp+4]
+  mov   ecx,[mode]
   mov   ebx,edx
-  ret   4
+  ret
+endp

@@ -1,23 +1,57 @@
-#include "stdio.h"
-int fwrite(const void* buffer,int size,int count,FILE* file)
+#include <stdio.h>
+#include <mesys.h>
+
+int fwrite(void *buffer,int size,int count,FILE* file)
 {
-	void* p;
-	if ((file->mode & 3==FILE_OPEN_READ) && (file->mode & FILE_OPEN_PLUS==0))
-		return 0;
+	dword res;
+	dword fullsize;
+
+	if ((file->mode & 3==FILE_OPEN_READ) && (file->mode & FILE_OPEN_PLUS==0))	return 0;
+
 	if (file->mode & 3==FILE_OPEN_APPEND)
 		file->filepos=file->filesize;
-        count=count*size;		
-	if (file->buffersize<file->filepos+count)
+        fullsize=count*size;		
+	
+	if ((file->filesize)<(file->filepos+fullsize))	file->filesize=file->filepos+fullsize;
+
+	if (file->mode & 3==FILE_OPEN_APPEND)
 	{
-		p=realloc(file->buffer,(file->filepos+count)+(file->filepos+count)<<1);
-		if (p==0)
-			return 0;
-		file->buffer=p;
-		file->buffersize=(file->filepos+count)+(file->filepos+count)<<1;
+		file->filepos==file->filesize;
+		res=_ksys_appendtofile(file->filename,file->filepos,fullsize,buffer);
+		if (res==0)
+		{
+			file->filepos+=fullsize;
+			fullsize=fullsize/size;
+			return(fullsize);
+		}
+		else return(0);
+	
 	}
-	if (file->filesize<file->filepos+count)
-		file->filesize=file->filepos+count;
-	memcpy(file->buffer+file->filepos,buffer,count);
-	file->filepos+=count;
-	return count;
+
+	if (file->mode & 3==FILE_OPEN_WRITE)
+	{
+		if (file->filepos==0)
+		{	//file mot craeted yet
+			res=_ksys_rewritefile(file->filename,fullsize,buffer);
+			if (res==0)
+			{
+				file->filepos+=fullsize;
+				fullsize=fullsize/count;
+				return(fullsize);
+			}
+			else return(0);
+		}
+		else
+		{	
+			res=_ksys_appendtofile(file->filename,file->filepos,fullsize,buffer);	
+			if (res==0)
+			{
+				file->filepos+=fullsize;
+				fullsize=fullsize/count;
+				return(fullsize);
+			}
+			else return(0);
+		}
+	}
+	else return(0);
 }

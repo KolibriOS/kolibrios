@@ -1,7 +1,15 @@
 format ELF
-include "public_stdcall.inc"
+
+include "proc32.inc"
+
 section '.text' executable
-public_stdcall _msys_get_system_clock,0
-  mov   eax,3
-  int   0x40
-  ret
+public _msys_get_system_clock
+
+align 4
+proc _msys_get_system_clock stdcall
+
+	mov   eax,3
+	int   0x40
+	ret
+
+endp
