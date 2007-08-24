@@ -1676,7 +1676,8 @@ void whitespace_test(void)
 {
     char *str;
 
-#if 1
+
+#if 1
     pri\
 ntf("whitspace:\n");
 #endif
@@ -1699,7 +1700,8 @@ ntf("min=%d\n", 4);
 ";
     printf("len1=%d str[0]=%d\n", strlen(str), str[0]);
 #endif
-    printf("len1=%d\n", strlen("a
+    printf("len1=%d\n", strlen("
+a
 "));
 #endif /* ACCEPT_CR_IN_STRINGS */
 }

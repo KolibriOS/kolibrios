@@ -96,12 +96,11 @@ void build_reloc(me_info* me)
 			Elf32_Sym* esym = ((Elf32_Sym *)symtab_section->data)+sym;
 			int sect=esym->st_shndx;
 			ss=findsection(me,sect);
-			if (ss==0)
-				ss=me->bss_sections;
+			if (ss==0) continue;
 			if (rel->r_offset>s->data_size)
 				continue;
 			if (type==R_386_PC32)
-				*(int*)(rel->r_offset+s->data)=ss->sh_addr+esym->st_value-rel->r_offset-s->sh_addr-4;
+				*(int*)(rel->r_offset+s->data)+=ss->sh_addr+esym->st_value-rel->r_offset-s->sh_addr;
 			else if (type==R_386_32)
 				*(int*)(rel->r_offset+s->data)+=ss->sh_addr+esym->st_value;
 		}
@@ -227,7 +226,6 @@ int tcc_output_me(TCCState* s1,const char *filename)
 	me.s1=s1;
 	relocate_common_syms();
 	assign_addresses(&me);
-	me.header.version=1;
 	me.header.entry_point=tcc_find_symbol_me(&me,"start");
 	me.header.params= tcc_find_symbol_me(&me,"__argv"); // <--
 	me.header.argv= tcc_find_symbol_me(&me,"__path"); // <--

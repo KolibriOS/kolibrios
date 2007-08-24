@@ -31,20 +31,21 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
-#include <errno.h>
+//#include <errno.h>
 #include <math.h>
 #include <unistd.h>
-#include <signal.h>
+//#include <signal.h>
 #include <fcntl.h>
 #include <setjmp.h>
 #include <time.h>
 #ifdef WIN32
 #include <sys/timeb.h>
 #endif
-#ifndef WIN32
+//#ifndef WIN32
+
 #include <sys/time.h>
-#include <sys/ucontext.h>
-#endif
+//#include <sys/ucontext.h>
+//#endif
 
 #endif /* !CONFIG_TCCBOOT */
 
@@ -73,6 +74,8 @@
 //#define TCC_TARGET_I386   /* i386 code generator */
 //#define TCC_TARGET_ARM    /* ARMv4 code generator */
 //#define TCC_TARGET_C67    /* TMS320C67xx code generator */
+//----------------------------------------------------------------
+#define TCC_TARGET_MEOS
 
 /* default target is I386 */
 #if !defined(TCC_TARGET_I386) && !defined(TCC_TARGET_ARM) && \
@@ -718,7 +721,7 @@ int __stdcall FreeConsole(void);
   #define strtoll (long long)strtol
 #endif
 #elif defined(TCC_UCLIBC) || defined(__FreeBSD__)
-/* currently incorrect */
+
 long double strtold(const char *nptr, char **endptr)
 {
     return (long double)strtod(nptr, endptr);
@@ -727,11 +730,19 @@ float strtof(const char *nptr, char **endptr)
 {
     return (float)strtod(nptr, endptr);
 }
+
 #else
+
 /* XXX: need to define this to use them in non ISOC99 context */
 extern float strtof (const char *__nptr, char **__endptr);
 extern long double strtold (const char *__nptr, char **__endptr);
+//extern long long strtoll(const char *__nptr, char **__endptr, int __base)
 #endif
+
+#define strtold (long double)strtod
+#define strtof (float)strtod
+#define strtoll (long long)strtol
+
 
 static char *pstrcpy(char *buf, int buf_size, const char *s);
 static char *pstrcat(char *buf, int buf_size, const char *s);
@@ -924,7 +935,7 @@ typedef struct TCCSyms {
 static TCCSyms tcc_syms[] = {
 #if !defined(CONFIG_TCCBOOT)
     TCCSYM(printf)
-    TCCSYM(fprintf)
+    TCCSYM(printf)
     TCCSYM(fopen)
     TCCSYM(fclose)
 #endif
@@ -944,14 +955,15 @@ void *resolve_sym(TCCState *s1, const char *symbol, int type)
 }
 
 #elif !defined(WIN32)
-
-#include <dlfcn.h>
+//-------------------------------------------------------------------------
+//#include <dlfcn.h>
 
 void *resolve_sym(TCCState *s1, const char *sym, int type)
 {
-    return dlsym(RTLD_DEFAULT, sym);
+    return(0);
+    //return dlsym(RTLD_DEFAULT, sym);
 }
-
+//-------------------------------------------------------------------------
 #endif
 
 /********************************************************/
@@ -1373,7 +1385,7 @@ void error1(TCCState *s1, int is_warning, const char *fmt, va_list ap)
 
     if (!s1->error_func) {
         /* default case: stderr */
-        fprintf(stderr, "%s\n", buf);
+        printf("%s\n", buf);
     } else {
         s1->error_func(s1->error_opaque, buf);
     }
@@ -1887,7 +1899,7 @@ static int handle_eob(void)
 }
 
 /* read next char from current input file and handle end of input buffer */
-static inline void inp(void)
+static inline void input(void)
 {
     ch = *(++(file->buf_ptr));
     /* end of buffer/file handling */
@@ -1899,16 +1911,16 @@ static inline void inp(void)
 static void handle_stray(void)
 {
     while (ch == '\\') {
-        inp();
+        input();
         if (ch == '\n') {
             file->line_num++;
-            inp();
+            input();
         } else if (ch == '\r') {
-            inp();
+            input();
             if (ch != '\n')
                 goto fail;
             file->line_num++;
-            inp();
+            input();
         } else {
         fail:
             error("stray '\\' in program");
@@ -1967,7 +1979,7 @@ static int handle_stray1(uint8_t *p)
    strings or comments */
 static void minp(void)
 {
-    inp();
+    input();
     if (ch == '\\') 
         handle_stray();
 }
@@ -2839,7 +2851,7 @@ static void preprocess(int is_bof)
             /* eat all spaces and comments after include */
             /* XXX: slightly incorrect */
             while (ch1 != '\n' && ch1 != CH_EOF)
-                inp();
+                input();
 #endif
         } else {
             /* computed #include : either we have only strings or
@@ -3363,7 +3375,7 @@ void parse_number(const char *p)
             }
             *q = '\0';
             t = toup(ch);
-            errno = 0;
+            //errno = 0;
             if (t == 'F') {
                 ch = *p++;
                 tok = TOK_CFLOAT;
@@ -5907,17 +5919,21 @@ static int type_size(CType *type, int *a)
 {
     Sym *s;
     int bt;
+    int size;
 
     bt = type->t & VT_BTYPE;
     if (bt == VT_STRUCT) {
         /* struct/union */
         s = type->ref;
         *a = s->r;
+
         return s->c;
     } else if (bt == VT_PTR) {
+
         if (type->t & VT_ARRAY) {
             s = type->ref;
-            return type_size(&s->type, a) * s->c;
+		size=type_size(&s->type, a) * s->c;
+            return size;//type_size(&s->type, a) * s->c;
         } else {
             *a = PTR_SIZE;
             return PTR_SIZE;
@@ -6581,9 +6597,13 @@ static void struct_decl(CType *type, int u)
                            bit field */
                         if (lbit_pos == 0) {
                             if (a == TOK_STRUCT) {
-                                c = (c + align - 1) & -align;
+				//17.09.2007
+                                //c = (c + align - 1) & -align;
                                 offset = c;
-                                c += size;
+                                //c += size;
+				if (size<=4) {c=c+size;}
+					else
+					{c=c+align;}
                             } else {
                                 offset = 0;
                                 if (size > c)
@@ -9349,7 +9369,7 @@ static void rt_printline(unsigned long wanted_pc)
     int incl_index, len, last_line_num, i;
     const char *str, *p;
 
-    fprintf(stderr, "0x%08lx:", wanted_pc);
+    printf("0x%08lx:", wanted_pc);
 
     func_name[0] = '\0';
     func_addr = 0;
@@ -9444,20 +9464,20 @@ static void rt_printline(unsigned long wanted_pc)
         }
     }
     /* did not find any info: */
-    fprintf(stderr, " ???\n");
+    printf(" ???\n");
     return;
  found:
     if (last_func_name[0] != '\0') {
-        fprintf(stderr, " %s()", last_func_name);
+        printf(" %s()", last_func_name);
     }
     if (incl_index > 0) {
-        fprintf(stderr, " (%s:%d", 
+        printf(" (%s:%d", 
                 incl_files[incl_index - 1], last_line_num);
         for(i = incl_index - 2; i >= 0; i--)
-            fprintf(stderr, ", included from %s", incl_files[i]);
-        fprintf(stderr, ")");
+            printf(", included from %s", incl_files[i]);
+        printf(")");
     }
-    fprintf(stderr, "\n");
+    printf("\n");
 }
 
 #if !defined(WIN32) && !defined(CONFIG_TCCBOOT)
@@ -9471,6 +9491,7 @@ static void rt_printline(unsigned long wanted_pc)
 #endif
 
 /* return the PC at frame level 'level'. Return non zero if not found */
+/*
 static int rt_get_caller_pc(unsigned long *paddr, 
                             ucontext_t *uc, int level)
 {
@@ -9495,7 +9516,7 @@ static int rt_get_caller_pc(unsigned long *paddr,
         fp = uc->uc_mcontext.gregs[REG_EBP];
 #endif
         for(i=1;i<level;i++) {
-            /* XXX: check address validity with program info */
+	// XXX: check address validity with program info 
             if (fp <= 0x1000 || fp >= 0xc0000000)
                 return -1;
             fp = ((unsigned long *)fp)[0];
@@ -9504,18 +9525,21 @@ static int rt_get_caller_pc(unsigned long *paddr,
         return 0;
     }
 }
+*/
 #else
 
 #warning add arch specific rt_get_caller_pc()
-
+/*
 static int rt_get_caller_pc(unsigned long *paddr,
                             ucontext_t *uc, int level)
 {
     return -1;
 }
+*/
 #endif
 
 /* emit a run time error at position 'pc' */
+/*
 void rt_error(ucontext_t *uc, const char *fmt, ...)
 {
     va_list ap;
@@ -9523,23 +9547,25 @@ void rt_error(ucontext_t *uc, const char *fmt, ...)
     int i;
 
     va_start(ap, fmt);
-    fprintf(stderr, "Runtime error: ");
-    vfprintf(stderr, fmt, ap);
-    fprintf(stderr, "\n");
+    printf("Runtime error: ");
+    //vfprintf(stderr, fmt, ap);
+    printf("\n");
     for(i=0;i<num_callers;i++) {
         if (rt_get_caller_pc(&pc, uc, i) < 0)
             break;
         if (i == 0)
-            fprintf(stderr, "at ");
+            printf("at ");
         else
-            fprintf(stderr, "by ");
+            printf("by ");
         rt_printline(pc);
     }
     exit(255);
     va_end(ap);
 }
 
+*/
 /* signal handler for fatal errors */
+/*
 static void sig_error(int signum, siginfo_t *siginf, void *puc)
 {
     ucontext_t *uc = puc;
@@ -9575,7 +9601,9 @@ static void sig_error(int signum, siginfo_t *siginf, void *puc)
     }
     exit(255);
 }
+*/
 #endif
+
 
 /* do all relocations (needed before using tcc_get_symbol()) */
 int tcc_relocate(TCCState *s1)
@@ -9636,17 +9664,17 @@ int tcc_run(TCCState *s1, int argc, char **argv)
 #if defined(WIN32) || defined(CONFIG_TCCBOOT)
         error("debug mode currently not available for Windows");
 #else        
-        struct sigaction sigact;
+        //struct sigaction sigact;
         /* install TCC signal handlers to print debug info on fatal
            runtime errors */
-        sigact.sa_flags = SA_SIGINFO | SA_RESETHAND;
-        sigact.sa_sigaction = sig_error;
-        sigemptyset(&sigact.sa_mask);
-        sigaction(SIGFPE, &sigact, NULL);
-        sigaction(SIGILL, &sigact, NULL);
-        sigaction(SIGSEGV, &sigact, NULL);
-        sigaction(SIGBUS, &sigact, NULL);
-        sigaction(SIGABRT, &sigact, NULL);
+        //sigact.sa_flags = SA_SIGINFO | SA_RESETHAND;
+        //sigact.sa_sigaction = sig_error;
+        //sigemptyset(&sigact.sa_mask);
+        //sigaction(SIGFPE, &sigact, NULL);
+        //sigaction(SIGILL, &sigact, NULL);
+        //sigaction(SIGSEGV, &sigact, NULL);
+        //sigaction(SIGBUS, &sigact, NULL);
+        //sigaction(SIGABRT, &sigact, NULL);
 #endif
     }
 
@@ -9743,6 +9771,7 @@ TCCState *tcc_new(void)
     }
 #else
 #ifdef TCC_TARGET_MEOS
+    tcc_add_library_path(s, ".//lib");
 #else
     tcc_add_library_path(s, "/usr/local/lib");
     tcc_add_library_path(s, "/usr/lib");
@@ -10041,6 +10070,10 @@ int tcc_set_output_type(TCCState *s, int output_type)
         tcc_add_sysinclude_path(s, "/usr/local/include");
         tcc_add_sysinclude_path(s, "/usr/include");
 #endif
+
+#if defined(TCC_TARGET_MEOS)
+        tcc_add_sysinclude_path(s, ".//include");
+#endif
         snprintf(buf, sizeof(buf), "%s/include", tcc_lib_path);
         tcc_add_sysinclude_path(s, buf);
 #ifdef TCC_TARGET_PE
@@ -10089,7 +10122,7 @@ int tcc_set_output_type(TCCState *s, int output_type)
 #endif
 #if defined(TCC_TARGET_MEOS)
     if (s->output_type != TCC_OUTPUT_OBJ)
-        tcc_add_file(s,".\\start.o");
+        tcc_add_file(s,".//start.o");
 #endif    
     return 0;
 }
@@ -10229,9 +10262,6 @@ void help(void)
            "  -r          relocatable output\n"
            "Debugger options:\n"
            "  -g          generate runtime debug info\n"
-#ifdef CONFIG_TCC_BCHECK
-           "  -b          compile with built-in memory and bounds checker (implies -g)\n"
-#endif
            "  -bt N       show N callers in stack traces\n"
            );
 }
@@ -10351,20 +10381,30 @@ static const char *outfile;
 int parse_args(TCCState *s, int argc, char **argv)
 {
     int optind;
+    int i;
     const TCCOption *popt;
     const char *optarg, *p1, *r1;
     char *r;
+    /*
+    printf("\n%d\n",argc);
 
+    for(i=0;i<argc;i++)
+	{
+		printf("\n parameter  %d = %s",i+1,argv[i]);
+	}
+    printf("\n");
+    */
     optind = 0;
     while (1) {
         if (optind >= argc) {
             if (nb_files == 0 && !print_search_dirs)
-                goto show_help;
+                  goto show_help;
             else
                 break;
         }
         r = argv[optind++];
         if (r[0] != '-') {
+	
             /* add a new file */
             dynarray_add((void ***)&files, &nb_files, r);
             if (!multiple_files) {
@@ -10378,7 +10418,7 @@ int parse_args(TCCState *s, int argc, char **argv)
             for(;;) {
                 p1 = popt->name;
                 if (p1 == NULL)
-                    error("invalid option -- '%s'", r);
+                    printf("\n invalid option -- '%s'", r);
                 r1 = r + 1;
                 for(;;) {
                     if (*p1 == '\0')
@@ -10396,7 +10436,7 @@ int parse_args(TCCState *s, int argc, char **argv)
                     optarg = r1;
                 } else {
                     if (optind >= argc)
-                        error("argument to '%s' is missing", r);
+                        printf("\n argument to '%s' is missing", r);
                     optarg = argv[optind++];
                 }
             } else {
@@ -10412,7 +10452,7 @@ int parse_args(TCCState *s, int argc, char **argv)
                 exit(1);
             case TCC_OPTION_I:
                 if (tcc_add_include_path(s, optarg) < 0)
-                    error("too many include paths");
+                    printf("\n too many include paths");
                 break;
             case TCC_OPTION_D:
                 {
@@ -10531,10 +10571,10 @@ int parse_args(TCCState *s, int argc, char **argv)
                         } else
 #endif
                         {
-                            error("target %s not found", p);
+                            printf("\n target %s not found", p);
                         }
                     } else {
-                        error("unsupported linker option '%s'", optarg);
+                        printf("\n unsupported linker option '%s'", optarg);
                     }
                 }
                 break;
@@ -10542,6 +10582,7 @@ int parse_args(TCCState *s, int argc, char **argv)
                 if (s->warn_unsupported) {
                 unsupported_option:
                     warning("unsupported option '%s'", r);
+		    printf("\n unsupported option '%s'", r);
                 }
                 break;
             }
@@ -10550,14 +10591,16 @@ int parse_args(TCCState *s, int argc, char **argv)
     return optind;
 }
 
-int main(int argc, char **argv)
+int app_main(int argc, char **argv)
 {
     int i;
     TCCState *s;
     int nb_objfiles, ret, optind;
     char objfilename[1024];
     int64_t start_time = 0;
+    int bug;
 
+    printf("\nTinyC compiler started.\n ");
 #ifdef WIN32
     /* on win32, we suppose the lib and includes are at the location
        of 'tcc.exe' */
@@ -10586,8 +10629,11 @@ int main(int argc, char **argv)
     nb_libraries = 0;
     reloc_output = 0;
     print_search_dirs = 0;
-
-    optind = parse_args(s, argc - 1, argv + 1) + 1;
+    printf("TinyC initializated.\n");
+    bug=argc;
+    if (bug==0) {bug==1;}
+    optind = parse_args(s, bug - 1, argv + 1) + 1;
+    printf("\n Arguments parsed.\n");
 
     if (print_search_dirs) {
         /* enough for Linux kernel */
@@ -10602,13 +10648,14 @@ int main(int argc, char **argv)
     if (outfile && output_type == TCC_OUTPUT_MEMORY)
         output_type = TCC_OUTPUT_EXE;
 
-    /* check -c consistency : only single file handled. XXX: checks file type */
+    /* check -c 
+consistency : only single file handled. XXX: checks file type */
     if (output_type == TCC_OUTPUT_OBJ && !reloc_output) {
         /* accepts only a single input file */
         if (nb_objfiles != 1)
-            error("cannot specify multiple files with -c");
+            printf("\n cannot specify multiple files with -c");
         if (nb_libraries != 0)
-            error("cannot specify libraries with -c");
+            printf("\n cannot specify libraries with -c");
     }
     
     if (output_type != TCC_OUTPUT_MEMORY) {
@@ -10702,6 +10749,7 @@ int main(int argc, char **argv)
         printf("memory: %d bytes, max = %d bytes\n", mem_cur_size, mem_max_size);
     }
 #endif
+    printf("\n TinyC finished work\n");
     return ret;
 }
 

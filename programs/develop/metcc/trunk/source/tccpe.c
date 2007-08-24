@@ -1083,7 +1083,7 @@ int pe_load_def_file(TCCState * s1, FILE * fp)
     int f = 0, sym_index;
     char *p, line[120], dllname[40];
     while (fgets(line, sizeof line, fp)) {
-	p = strchr(line, 0);
+	//p = strchr(line, 0);
 	while (p > line && p[-1] <= ' ')
 	    --p;
 	*p = 0;
@@ -1136,7 +1136,7 @@ void pe_guess_outfile(char *objfilename, int output_type)
 {
     char *ext = strrchr(objfilename, '.');
     if (NULL == ext)
-        ext = strchr(objfilename, 0);
+        //ext = strchr(objfilename, 0);
     if (output_type == TCC_OUTPUT_DLL)
         strcpy(ext, ".dll");
     else

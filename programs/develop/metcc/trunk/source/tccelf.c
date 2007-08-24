@@ -2224,7 +2224,7 @@ static int ld_next(TCCState *s1, char *name, int name_size)
     case '\v':
     case '\r':
     case '\n':
-        inp();
+        input();
         goto redo;
     case '/':
         minp();
@@ -2266,7 +2266,7 @@ static int ld_next(TCCState *s1, char *name, int name_size)
         break;
     default:
         c = ch;
-        inp();
+        input();
         break;
     }
 #if 0
