@@ -1,24 +1,37 @@
 #ifndef mesys_h
 #define mesys_h
+/*
 #ifdef GNUC
 #define stdcall __stdcall
 #define cdecl __cdecl
 #else
-#define stdcall __attribute__ ((__stdcall))
-#define cdecl  __attribute__ ((__cdecl))
+#define stdcall  ((__stdcall))
+#define cdecl    ((__cdecl))
 #endif
+*/
+//#ifdef GNUC
+//#define stdcall __stdcall
+//#else
+#define stdcall __attribute__ (( ))
+//#endif
 
-typedef unsigned long dword;
+typedef unsigned int dword;
 typedef unsigned char byte;
 typedef unsigned short word;
 
 extern void stdcall _msys_draw_window(int xcoord,int ycoord, int xsize,
-			       int ysize,int workcolor,int type,
-			       int captioncolor,int windowtype,int bordercolor);
-extern int  stdcall _msys_read_file(char* filename,int fileoffset,int size,void* data,
-                     int* filesize);
-extern int  stdcall _msys_write_file(char* filename,int fileoffset, int size, void* data);
-extern int  stdcall _msys_create_file(char* filename);
+                               int ysize,int workcolor,int type,
+                               int captioncolor,int windowtype,int bordercolor);
+
+//-----------------------------------------------------------------------------------
+//------------------------KolibriOS system acces to files----------------------------
+//-----------------------------------------------------------------------------------
+extern dword stdcall _ksys_get_filesize(char *filename);
+extern dword stdcall _ksys_readfile(char *filename,dword pos,dword blocksize,void *data);
+extern dword stdcall _ksys_rewritefile(char *filename,dword blocksize,void *data);
+extern dword stdcall _ksys_appendtofile(char *filename,dword pos,dword blocksize,void *data);
+//-----------------------------------------------------------------------------------
+
 extern void stdcall _msys_run_program(char* filename,char* parameters);
 extern void stdcall _msys_debug_out(int c);
 extern void debug_out_str(char* str);
@@ -100,9 +113,6 @@ extern void stdcall _msys_sound_speaker_play(void* data);
 extern void stdcall _msys_write_text(int x,int y,int color,char* text,int len);
 extern void* stdcall  _msys_start_thread(void (* func_ptr)(void),int stack_size,int* pid);
 extern void stdcall _msys_window_redraw(int status);
-extern void* malloc(int);
-extern void  free(void*);
-extern void* realloc(void*,int);
 
 extern dword* stdcall _msys_cofflib_load(char* name);
 extern char* stdcall _msys_cofflib_getproc(void* exp,char* sz_name);
