@@ -1,0 +1,159 @@
+
+HISTORY:
+
+4.0.5 (Rus, mike.dld)
+  bug-fixes:
+    - new tab is created when opening a file from Tinypad's home folder
+      (was opening in current tab if there was a new file, even modified)
+    - show "save file" dialog for new files or files from Tinypad's home folder
+  new features:
+    - prompt to save modified file before closing
+    - button to close current tab
+    - mouse scroll wheel support
+
+4.0.4 (mike.dld)
+  bug-fixes:
+    - statusbar contained hint after dialog operation cancelled
+    - small drawing fix for gutter and line saved/modified markers
+      (incorrect calculations)
+    - incorrect lines marking on Ctrl+V
+    - put filename of current tab into open/save dialog (noticed by Maxxxx32)
+  changes:
+    - editor and other modifications to ease parts placement changing,
+      including changes in look
+    - modified/saved colors now match those in MSVS
+    - function 70 for *all* file operations (including diamond's fixes)
+    - use memory manager instead of statically allocated region
+    - case-insensitive filenames input, to be able to open/save files with
+      non-latin chars in name (russian etc.)
+    - reduced flickering (changes checker)
+    - overall code cleanup
+  new features:
+    - recode tables between CP866, CP1251 and KOI8-R (suggested by Victor)
+    - tabbed interface, ability to open several files in one app instance
+      (thanks IRC guys for ideas and testing)
+    - make any tab default to compile it disregarding currently active tab
+    - configuration dialog (colors, tabs positioning)
+
+4.0.3 (mike.dld)
+  bug-fixes:
+    - 1-char selection if pressing <BS> out of real line length
+    - fault in `writepos`, added call to function 9
+    - main menu items weren't highlighted if popup opened and cursor
+      isn't in main menu item's area
+    - statusbar and textboxes drawing fixes (wrong colors)
+    - perform no redraw while pressing Shift, Ctrl, Alt keys
+    - data length from DOCPAK in string representation (fixed by diamond)
+    - compare file extension case-insensitively (fixed by diamond)
+  changes:
+    - function 70 instead of 58 for files loading/saving
+    - clientarea-relative drawing (less code)
+    - every line's dword is now splitted into 2 words;
+      low word - line block length, so max line length is 65535 now
+      high word - various flags. for now, only 2 of 16 bits are used:
+	if bit #0 is set, line was modified since file open
+	if bit #1 is set, line was saved after last modification
+      high word could also be further used for code collapsing and different
+	line marking features (breakpoints, errors, bookmarks, etc.)
+  new features:
+    - line markers for modified and saved lines
+    - status messages for various actions
+
+4.0.2 (mike.dld)
+  bug-fixes:
+    - program terminates if started with parameters (fine for DOCPAK)
+
+4.0.1 (mike.dld)
+  bug-fixes:
+    - unable to run program after exiting from main menu (Alt+X)
+  new features:
+    - integration with DOCPAK
+
+4.0 (mike.dld)
+  bug-fixes:
+    - main menu popups' "on show" was called only for first shown popup
+    - clear selection on left/right arrow keys
+  new features:
+    - "replace" dialog (w/o "skip", "replace all")
+    - line numbers display
+    - options (except "appearance" and "smart tabulation")
+    - options saving (colors, window position, "Options" popup triggers)
+
+4.0 beta 2 (mike.dld)
+  bug-fixes:
+    - unable to start if /rd/1/example.asm is missing (from Halyavin)
+    - clicking on menu items draws main window in popup (from Rohan)
+    - passed parameters aren't taken into account (from Mario79)
+    - background isn't erased if text lines < screen lines after
+      selection deletion (from Rohan)
+
+4.0 beta 1 (mike.dld)
+  menu bar and popup menu;
+    removed buttons from the top and input fields from the bottom since
+    now they're accesible through main/popup menu;
+  improved keyboard handling (using 66th function);
+    support for almost all FASMW keyboard shourtcuts;
+  added text selection ability, standard selection operations
+    (copy,cut,paste);
+  new integrated dialogs (open, save, find)
+  fix to collapse SPACEs into TABs only for *.asm and *.inc files
+
+3.78a (mike.dld)
+  fixed termination while typing in x positions higher than (line_length+10);
+  improved drawing on small heights
+    don't draw window while its height = 0 (Kolibri "minimize" support)
+
+3.78 (mike.dld)
+  now lines may be of ANY length;
+    optimized memory usage (less memory for internal file representation)
+      after loading file, it's internal size equals to its real size
+      plus 14 bytes for each line (4 bytes for line length
+	and 10 spaced to the end - to reduce data relocations count);
+    completely rewritten keyboard handling;
+    added horizontal scrollbar;
+  all line feed formats are supported: WIN(CRLF),*NIX(LF),MAC(CR);
+  etc.
+
+3.77 (mike.dld)
+  changed save_string to collapse SPACEs into TABs;
+  rewrote drawfile from scratch (speed++)
+    through some drawing improvements  needed
+    (some checkups to reduce flickering);
+  writepos (size--);
+  fixed drawing window while height < 100px, and for non-asm files;
+  several small fixes; speed/size optimizations
+
+3.76 (mike.dld)
+  changed loadfile/loadhdfile to expand TABs into SPACEs;
+  changed TAB,ENTER,DELETE,BSPACE keys behaviour (rewritten from scratch);
+  vertical scrollbar;
+  extra window resizing capabilities (added a couple of constants);
+  completely new text cursor management & moving text cursor with mouse;
+  improved search function, moving cursor to beginning of text found;
+  adjustable max line width (change LINE_WIDTH & recompile) // (obsolet)
+
+3.75a
+  fixed converting char to upper case in read_string
+
+3.75
+  rewrote save_file from scratch; bugfix in loadfile;
+
+3.74
+  optimisation
+
+3.73
+  completly new load_file function
+
+3.72
+  speed++
+
+3.71
+  error beep
+
+3.6,3.7:
+  many bugs fixed
+  simple toolbar
+  compile, run applications from TINYPAD, all fasm output is in debug board
+  TAB button
+  auto-indent
+  Ctrl+L - insert comment string

@@ -1,6 +1,47 @@
 @^ fix macro comment {
 ^@ fix }
 
+; -------------------------
+macro library [lname,fname]
+{
+  forward
+    dd __#lname#_library_table__,__#lname#_library_name__
+  common
+    dd 0
+  forward
+    align 4
+    __#lname#_library_name__ db fname,0
+}
+
+macro import lname,[name,sname]
+{
+  common
+    align 4
+    __#lname#_library_table__:
+  forward
+    if used name
+      name dd __#name#_import_name__
+    end if
+  common
+    dd 0
+  forward
+    if used name
+      align 4
+      __#name#_import_name__ db sname,0
+    end if
+}
+
+macro export [name,sname]
+{
+  forward
+    dd __#name#_export_name__,name
+  common
+    dd 0
+  forward
+    align 4
+    __#name#_export_name__ db sname,0
+}
+; -------------------------
 
 macro m2m dest,src {
  push src

@@ -1,6 +1,6 @@
 
 ;-----------------------------------------------------------------------------
-func draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
+proc draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 
 	mov	ebx,[cur_editor.Bounds.Left-2]
@@ -61,10 +61,10 @@ func draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_gutter ;///// DRAW EDITOR GUTTER (LEFT PANEL) ///////////////
+proc draw_editor_gutter ;///// DRAW EDITOR GUTTER (LEFT PANEL) ///////////////
 ;-----------------------------------------------------------------------------
 	cmp	[cur_editor.Gutter.Visible],0
 	je	.exit
@@ -121,10 +121,10 @@ func draw_editor_gutter ;///// DRAW EDITOR GUTTER (LEFT PANEL) ///////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_vscroll ;///// DRAW EDITOR VERTICAL SCROLL BAR //////////////
+proc draw_editor_vscroll ;///// DRAW EDITOR VERTICAL SCROLL BAR //////////////
 ;-----------------------------------------------------------------------------
 	mov	ebx,[cur_editor.Bounds.Right]
 	shl	ebx,16
@@ -230,10 +230,10 @@ func draw_editor_vscroll ;///// DRAW EDITOR VERTICAL SCROLL BAR //////////////
 	mcall	38,,,[cl_3d_inset]
 
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_hscroll ;///// DRAW EDITOR HORIZONTAL SCROLL BAR ////////////
+proc draw_editor_hscroll ;///// DRAW EDITOR HORIZONTAL SCROLL BAR ////////////
 ;-----------------------------------------------------------------------------
 	mov	ebx,[cur_editor.Bounds.Left-2]
 	mov	bx,SCRLW
@@ -338,10 +338,10 @@ func draw_editor_hscroll ;///// DRAW EDITOR HORIZONTAL SCROLL BAR ////////////
 	mcall	38,,,[cl_3d_inset]
 
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_text.part ;///// DRAW EDITOR TEXT (PARTLY) //////////////////
+proc draw_editor_text.part ;///// DRAW EDITOR TEXT (PARTLY) //////////////////
 ;-----------------------------------------------------------------------------
 ; EAX = start line
 ; EBX = end line
@@ -414,10 +414,10 @@ func draw_editor_text.part ;///// DRAW EDITOR TEXT (PARTLY) //////////////////
   .exit:
 	popad
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
+proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[cur_editor.Lines],0
 	jne	@f
@@ -808,10 +808,10 @@ func draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	popad
 	add	esp,4
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_text.get_next_part ;/////////////////////////////////////////
+proc draw_editor_text.get_next_part ;/////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; Input:
 ;  ECX = current letter
@@ -926,10 +926,10 @@ func draw_editor_text.get_next_part ;/////////////////////////////////////////
 	mov	ecx,[cur_line_len]
 	mov	eax,[color_tbl.text]
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_editor_caret ;///// DRAW EDITOR TEXT CARET /////////////////////////
+proc draw_editor_caret ;///// DRAW EDITOR TEXT CARET /////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[bot_mode],0
 	jne	@f
@@ -966,10 +966,10 @@ func draw_editor_caret ;///// DRAW EDITOR TEXT CARET /////////////////////////
 	loop	.lp8
     @@:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
+proc editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
 ;-----------------------------------------------------------------------------
 ; EAX = delta
 ;-----------------------------------------------------------------------------
@@ -979,12 +979,12 @@ func editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
 	mov	eax,[cur_editor.Lines]
 	mov	[cur_editor.Lines.Size],ebx
 	mov	ecx,eax
-	call	mem.ReAlloc
+	stdcall	mem.ReAlloc,eax,ebx
 	mov	[cur_editor.Lines],eax
 	sub	eax,ecx
 	pop	ecx ebx
 	ret
-endf
+endp
 
 REDRAW_TEXT	 = 00000001b
 REDRAW_HSCROLL	 = 00000010b
@@ -993,7 +993,7 @@ REDRAW_ONELINE	 = 00001000b
 REDRAW_TWOLINES  = 00010000b
 
 ;-----------------------------------------------------------------------------
-func editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
+proc editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
 ;-----------------------------------------------------------------------------
 	call	.check_cursor_visibility
   .direct:
@@ -1181,4 +1181,4 @@ func editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
 	pop	[cur_editor.SelStart.Y] [cur_editor.SelStart.X]
     @@: pop	ebx eax
 	ret
-endf
+endp

@@ -1,4 +1,4 @@
-func check_mouse_in_edit_area
+proc check_mouse_in_edit_area
 	mcall	37,1
 	mov	ebx,eax
 	and	ebx,0x0000FFFF
@@ -16,16 +16,24 @@ func check_mouse_in_edit_area
 	mov	ecx,__rc
 	call	pt_in_rect
 	ret
-endf
+endp
 
-func get_mouse_event
+proc get_mouse_event
 	mcall	37,2
 	and	al,3
 	mov	bl,[ecx]
 	cmp	[ecx],al
 	mov	[ecx],al
 	jne	@f
-	mov	eax,MEV_MOVE
+	mcall	37,7
+	or	eax,eax
+	jz	.mv
+	add	[ecx+6],ax
+	shr	eax,16
+	add	[ecx+4],ax
+	mov	eax,MEV_WHEEL
+	ret
+  .mv:	mov	eax,MEV_MOVE
 	ret
     @@: mov	bh,al
 	and	ebx,0x0101
@@ -43,9 +51,9 @@ func get_mouse_event
 	ret
     @@: mov	eax,MEV_RUP
 	ret
-endf
+endp
 
-mouse_ev dd mouse.l_down,mouse.l_up,mouse.r_down,mouse.r_up,mouse.move
+mouse_ev dd mouse.l_down,mouse.l_up,mouse.r_down,mouse.r_up,mouse.wheel,mouse.move
 
 mouse:
 	mov	ecx,mst
@@ -75,6 +83,19 @@ mouse:
 ;!!!        jne     still.skip_write
     @@: mov	[mev],al
 	jmp	[mouse_ev+eax*4-4]
+
+  .wheel:
+	movsx	eax,word[mst+4]
+	lea	eax,[eax*3]
+	add	[cur_editor.TopLeft.X],eax
+	movsx	eax,word[mst+6]
+	lea	eax,[eax*3]
+	add	[cur_editor.TopLeft.Y],eax
+	xor	eax,eax
+	mov	[mst+4],eax
+	call	check_bottom_right
+	call	draw_editor
+	jmp	still.skip_write
 
   .move:
 	mcall	37,1

@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-func flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
+proc flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
 ;-----------------------------------------------------------------------------
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
@@ -11,10 +11,10 @@ func flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
 	rep	movsd
 	pop	edi esi ecx
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func set_cur_tab ;///// SET SPECIFIED TAB CURRENT (FOCUS IT) /////////////////
+proc set_cur_tab ;///// SET SPECIFIED TAB CURRENT (FOCUS IT) /////////////////
 ;-----------------------------------------------------------------------------
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
@@ -30,10 +30,10 @@ func set_cur_tab ;///// SET SPECIFIED TAB CURRENT (FOCUS IT) /////////////////
 ;       call    update_caption
 	pop	edi esi ecx
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
+proc make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
 ;-----------------------------------------------------------------------------
 	call	flush_cur_tab
 	imul	eax,[tab_bar.Items.Left],sizeof.TABITEM
@@ -64,10 +64,10 @@ func make_tab_visible ;///// MAKE SPECIFIED TAB VISIBLE IF IT'S OFFSCREEN ////
 	div	ebx
     @@: mov	[tab_bar.Items.Left],eax
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
+proc create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	eax ecx esi edi
 
@@ -75,7 +75,7 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	imul	ebx,[tab_bar.Items.Count],sizeof.TABITEM
 	mov	eax,[tab_bar.Items]
 	mov	ecx,eax
-	call	mem.ReAlloc
+	stdcall mem.ReAlloc,eax,ebx
 	mov	[tab_bar.Items],eax
 	sub	ecx,eax
 	sub	[tab_bar.Current.Ptr],ecx
@@ -87,7 +87,7 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 
 	mov	eax,1024
 	mov	[cur_editor.Lines.Size],eax
-	call	mem.Alloc
+	stdcall mem.Alloc,eax
 	mov	[cur_editor.Lines],eax
 	mov	[cur_editor.Lines.Count],1
 	mov	[cur_editor.Columns.Count],1
@@ -131,10 +131,10 @@ func create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	mov	ebp,cur_tab
 	pop	edi esi ecx eax
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
+proc delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[tab_bar.Default.Ptr],0
 	je	@f
@@ -146,8 +146,7 @@ func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
   .lp1:
 	mov	[tab_bar.Default.Ptr],0
 
-    @@: mov	eax,[ebp+TABITEM.Editor.Lines]
-	call	mem.Free
+    @@: stdcall mem.Free,[ebp+TABITEM.Editor.Lines]
 	imul	ecx,[tab_bar.Items.Count],sizeof.TABITEM
 	add	ecx,[tab_bar.Items]
 	sub	ecx,ebp
@@ -164,7 +163,7 @@ func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 	push	ebx
 	mov	eax,[tab_bar.Items]
 	mov	ecx,eax
-	call	mem.ReAlloc
+	stdcall mem.ReAlloc,eax,ebx
 	mov	[tab_bar.Items],eax
 	sub	ecx,eax
 	sub	ebp,ecx
@@ -188,17 +187,16 @@ func delete_tab ;///// DELETE SPECIFIED TAB //////////////////////////////////
 	ret
 
   .no_tabs:
-	mov	eax,[tab_bar.Items]
-	call	mem.Free
+	stdcall mem.Free,[tab_bar.Items]
 	xor	eax,eax
 	mov	[tab_bar.Items],eax
 	mov	[tab_bar.Current.Ptr],eax
 	mov	[tab_bar.Default.Ptr],eax
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
+proc draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 ;-----------------------------------------------------------------------------
 
 	dec	[tab_bar.Items.Left]
@@ -374,7 +372,7 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	call	dword[esp+(8+4)+8+8]
 	mcall	13,,,[sc.work]
 	pop	ecx ebx
-	mov	edx,[color_tbl.text]
+	mov	edx,[sc.work_text];[color_tbl.text]
   .draw_tabs.inactive:
 
 	cmp	ebp,[tab_bar.Default.Ptr]
@@ -562,10 +560,10 @@ func draw_tabctl ;///// DRAW TAB CONTROL /////////////////////////////////////
 	movzx	ecx,cx
 	lea	edi,[edi+ecx+1]
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
+proc get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
@@ -586,10 +584,10 @@ func get_tab_size ;///// GET TAB WIDTH ///////////////////////////////////////
   .lp2: mov	ecx,TBARH-1
 	pop	eax
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func get_max_tab_width ;///// GET WIDTH OF LONGEST TAB ///////////////////////
+proc get_max_tab_width ;///// GET WIDTH OF LONGEST TAB ///////////////////////
 ;-----------------------------------------------------------------------------
 	push	ebx ecx ebp
 	mov	ecx,[tab_bar.Items.Count]
@@ -618,10 +616,10 @@ func get_max_tab_width ;///// GET WIDTH OF LONGEST TAB ///////////////////////
 	add	eax,13
     @@: pop	ebp ecx ebx
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func get_hidden_tabitems_number ;/////////////////////////////////////////////
+proc get_hidden_tabitems_number ;/////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	al,[tab_bar.Style]
 	dec	al
@@ -676,10 +674,10 @@ func get_hidden_tabitems_number ;/////////////////////////////////////////////
     @@: pop	ecx
 	mov	eax,ecx
 	ret	8
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func align_editor_in_tab ;///// ADJUST EDITOR POSITION TO FIT IN TAB /////////
+proc align_editor_in_tab ;///// ADJUST EDITOR POSITION TO FIT IN TAB /////////
 ;-----------------------------------------------------------------------------
 	m2m	[cur_editor.Bounds.Left],[tab_bar.Bounds.Left]
 	m2m	[cur_editor.Bounds.Top],[tab_bar.Bounds.Top]
@@ -720,4 +718,4 @@ func align_editor_in_tab ;///// ADJUST EDITOR POSITION TO FIT IN TAB /////////
   .tabs_on_right:
 	sub	[cur_editor.Bounds.Right],ebx
 	ret
-endf
+endp

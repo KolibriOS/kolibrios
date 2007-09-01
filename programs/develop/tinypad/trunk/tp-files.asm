@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-func save_file ;//////////////////////////////////////////////////////////////
+proc save_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	esi,tb_opensave.text
 	mov	edi,f_info.path
@@ -21,7 +21,7 @@ func save_file ;//////////////////////////////////////////////////////////////
 	mov	eax,[cur_editor.Lines.Count]
 	shl	eax,1
 	lea	eax,[eax+ebx+1024]
-	call	mem.Alloc
+	stdcall	mem.Alloc,eax
 	push	eax
 	mov	esi,[cur_editor.Lines]
 	mov	edi,eax
@@ -55,10 +55,10 @@ func save_file ;//////////////////////////////////////////////////////////////
   .exit.2:
 	stc
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func save_string ;////////////////////////////////////////////////////////////
+proc save_string ;////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	movzx	ecx,word[esi]
 	test	dword[esi],0x00010000
@@ -126,9 +126,9 @@ func save_string ;////////////////////////////////////////////////////////////
 	movzx	eax,word[esi-4]
 	add	esi,eax;[esi-4]
 	ret
-endf
+endp
 
-func set_status_fs_error
+proc set_status_fs_error
 	push	eax
 	mov	esi,s_fs_error
     @@: dec	eax
@@ -141,10 +141,10 @@ func set_status_fs_error
 	pop	eax
 	call	draw_statusbar
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func load_file ;//////////////////////////////////////////////////////////////
+proc load_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[tb_opensave.length],0
 	jne	@f
@@ -171,7 +171,7 @@ func load_file ;//////////////////////////////////////////////////////////////
 	mov	[f_info70+0],0
 	mov	eax,dword[file_info.Size]
 	mov	[f_info70+12],eax
-	call	mem.Alloc
+	stdcall	mem.Alloc,eax
 	mov	[f_info70+16],eax
 	mcall	70,f_info70
 
@@ -185,8 +185,7 @@ func load_file ;//////////////////////////////////////////////////////////////
 	cmp	ebx,6		 ;// ATV driver fix (6 instead of 5)
 	je	.file_found
 
-	mov	eax,[f_info70+16]
-	call	mem.Free
+	stdcall	mem.Free,[f_info70+16]
 	stc
 	ret
 
@@ -221,8 +220,7 @@ func load_file ;//////////////////////////////////////////////////////////////
 	call	flush_cur_tab
 	pop	edi esi ecx
 	call	load_from_memory
-	mov	eax,[f_info70+16]
-	call	mem.Free
+	stdcall	mem.Free,[f_info70+16]
 
 	xor	eax,eax
 	mov	[cur_editor.TopLeft.Y],eax
@@ -251,10 +249,10 @@ func load_file ;//////////////////////////////////////////////////////////////
 
 	clc
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func load_from_memory ;///////////////////////////////////////////////////////
+proc load_from_memory ;///////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; ECX = data length
 ; ESI = data pointer
@@ -265,9 +263,8 @@ func load_from_memory ;///////////////////////////////////////////////////////
 	lea	edx,[ebx+ecx]
 	imul	ebx,eax,14
 	add	ebx,edx
-	mov	eax,[ebp+EDITOR.Lines]
 	mov	[ebp+EDITOR.Lines.Size],ebx
-	call	mem.ReAlloc
+	stdcall	mem.ReAlloc,[ebp+EDITOR.Lines],ebx
 	mov	[ebp+EDITOR.Lines],eax
 
 	mov	[ebp+EDITOR.Columns.Count],0
@@ -335,4 +332,4 @@ func load_from_memory ;///////////////////////////////////////////////////////
 	mov	al,' '
 	rep	stosb
 	jmp	.next_char
-endf
+endp

@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
+proc drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 
 	cmp	[just_from_popup],1
@@ -10,9 +10,11 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	mcall	48,3,sc,sizeof.system_colors
 	call	calc_3d_colors
 
-	mcall	12,1
+	;mcall   12,1
+	invoke	gfx.open,TRUE
+	mov	[ctx],eax
 
-	m2m	[sc.work],dword[color_tbl.back]
+	;m2m     [sc.work],dword[color_tbl.back]
 
 	mov	edx,[sc.work]
 	add	edx,0x73000000
@@ -110,42 +112,52 @@ func drawwindow ;///// DRAW WINDOW ///////////////////////////////////////////
 	call	draw_editor
 	call	draw_tabctl
   .exit.2:
-	mcall	12,2
+	;mcall   12,2
+	invoke	gfx.close,[ctx]
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_bottom_dialog ;/////////////////////////////////////////////////////
+proc draw_bottom_dialog ;/////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[bot_dlg_height],0
 	je	.exit
 	pushad
-	mov	ebx,[p_info.client_box.width]
+	invoke	gfx.pen.color,[ctx],[cl_3d_inset]
 	mov	ecx,[bot_ofs]
 	dec	ecx
-	push	cx
-	shl	ecx,16
-	pop	cx
-	mcall	38,,,[cl_3d_inset]
-	mov	ecx,[bot_ofs-2]
-	mov	cx,word[bot_dlg_height]
-	dec	ecx
-	mov	ebx,[p_info.client_box.width]
-	inc	ebx
-	mcall	13,,,[cl_3d_normal]
+	invoke	gfx.line,[ctx],0,ecx,[p_info.client_box.width],ecx
+	invoke	gfx.brush.color,[ctx],[cl_3d_normal]
+	inc	ecx
+	mov	eax,ecx
+	add	eax,[bot_dlg_height]
+	invoke	gfx.fillrect,[ctx],0,ecx,[p_info.client_box.width],eax
+	;mov     ebx,[p_info.client_box.width]
+	;mov     ecx,[bot_ofs]
+	;dec     ecx
+	;push    cx
+	;shl     ecx,16
+	;pop     cx
+	;mcall   38,,,[cl_3d_inset]
+	;mov     ecx,[bot_ofs-2]
+	;mov     cx,word[bot_dlg_height]
+	;dec     ecx
+	;mov     ebx,[p_info.client_box.width]
+	;inc     ebx
+	;mcall   13,,,[cl_3d_normal]
 	mov	al,1
 	call	[bot_dlg_handler]
 	popad
 
   .exit:
 	ret
-endf
+endp
 
 mi_sel	 dd ?
 mi_cur	 dd -1
 
 ;-----------------------------------------------------------------------------
-func draw_main_menu ;/////////////////////////////////////////////////////////
+proc draw_main_menu ;/////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	ebx,[p_info.client_box.width]
 	inc	ebx
@@ -221,10 +233,10 @@ func draw_main_menu ;/////////////////////////////////////////////////////////
 
 cross:
 	db	'X'
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func draw_statusbar ;///// DRAW POSITION, MODIFIED STATE, HINT ///////////////
+proc draw_statusbar ;///// DRAW POSITION, MODIFIED STATE, HINT ///////////////
 ;-----------------------------------------------------------------------------
 	cmp	[do_not_draw],1  ; return if drawing is not permitted
 	jae	.exit
@@ -298,9 +310,9 @@ func draw_statusbar ;///// DRAW POSITION, MODIFIED STATE, HINT ///////////////
 
   .exit:
 	ret
-endf
+endp
 
-func draw_fillrect ; ebx,ecx,edx
+proc draw_fillrect ; ebx,ecx,edx
 	; ebx = <left,width>
 	; ecx = <top,height>
 	push	ebx ecx edx
@@ -310,9 +322,9 @@ func draw_fillrect ; ebx,ecx,edx
 	mcall	13,,,esi
 	pop	edx ecx ebx
 	ret
-endf
+endp
 
-func draw_framerect ; ebx,ecx,edx
+proc draw_framerect ; ebx,ecx,edx
 	; ebx = <left,width>
 	; ecx = <top,height>
 	push	ebx ecx
@@ -341,9 +353,9 @@ func draw_framerect ; ebx,ecx,edx
 
 	pop	ecx ebx
 	ret
-endf
+endp
 
-func draw_check
+proc draw_check
 	push	bx
 	shl	ebx,16
 	pop	bx
@@ -361,18 +373,18 @@ func draw_check
 	sub	ecx,0x00010001
 	mcall
 	ret
-endf
+endp
 
-func calc_middle
+proc calc_middle
 	shr	eax,1
 	shr	ebx,1
 	and	eax,0x007F7F7F
 	and	ebx,0x007F7F7F
 	add	eax,ebx
 	ret
-endf
+endp
 
-func calc_3d_colors
+proc calc_3d_colors
 	pushad
 	m2m	[cl_3d_normal],[sc.work]
 	m2m	[cl_3d_inset],[sc.work_graph]
@@ -399,9 +411,9 @@ func calc_3d_colors
 	mov	[cl_3d_grayed],eax
 	popad
 	ret
-endf
+endp
 
-func draw_3d_panel ; x,y,w,h
+proc draw_3d_panel ; x,y,w,h
 	push	eax ebx ecx edx
 	cmp	dword[esp+16+8],4
 	jl	.exit
@@ -447,4 +459,4 @@ func draw_3d_panel ; x,y,w,h
   .exit:
 	pop	edx ecx ebx eax
 	ret	4*4
-endf
+endp

@@ -6,7 +6,7 @@ tb.pos.x	db ?
 tb.sel.x	db ?
 tb.sel.selected db ?
 
-func textbox.get_width
+proc textbox.get_width
 	push	ebx edx
 	movzx	eax,[tbox.width]
 	add	eax,-6
@@ -19,9 +19,9 @@ func textbox.get_width
 	mov	eax,ebx
     @@: pop	edx ebx
 	ret
-endf
+endp
 
-func textbox.delete_selection
+proc textbox.delete_selection
 	cmp	[tb.sel.selected],0
 	je	.exit.2
 	pushad
@@ -49,9 +49,9 @@ func textbox.delete_selection
   .exit.2:
 	stc
 	ret
-endf
+endp
 
-func textbox.draw ; TBOX* ebp
+proc textbox.draw ; TBOX* ebp
 	call	textbox.get_width
 	movzx	ebx,[tbox.pos.x]
 	sub	bl,[tbox.ofs.x]
@@ -196,9 +196,9 @@ func textbox.draw ; TBOX* ebp
 	add	ebx,0x00010001
 	mcall
 	ret
-endf
+endp
 
-func textbox.key
+proc textbox.key
 	mov	ebp,[focused_tb]
 	mov	esi,accel_table_textbox
   .acc: cmp	ebx,[esi]
@@ -243,12 +243,12 @@ func textbox.key
 	call	textbox.draw
   .exit:
 	ret
-endf
+endp
 
 textbox.mouse:
 	ret
 
-func key.tb.bkspace
+proc key.tb.bkspace
 	call	textbox.delete_selection
 	jnc	@f
 
@@ -258,17 +258,17 @@ func key.tb.bkspace
 	jmp	key.tb.del.direct
 
     @@: ret
-endf
+endp
 
-func key.tb.home
+proc key.tb.home
 	xor	al,al
 	mov	[tbox.pos.x],al
 	mov	[tbox.sel.x],al
 	mov	[tbox.ofs.x],al
 	ret
-endf
+endp
 
-func key.tb.left
+proc key.tb.left
 	mov	al,[tbox.pos.x]
 	mov	[tbox.sel.x],al
 	dec	al
@@ -281,9 +281,9 @@ func key.tb.left
 	jge	@f
 	mov	[tbox.ofs.x],0
     @@: ret
-endf
+endp
 
-func key.tb.right
+proc key.tb.right
 	call	textbox.get_width
 	mov	bl,[tbox.pos.x]
 	mov	[tbox.sel.x],bl
@@ -297,9 +297,9 @@ func key.tb.right
 	jbe	@f
 	inc	[tbox.ofs.x]
     @@: ret
-endf
+endp
 
-func key.tb.end
+proc key.tb.end
 	call	textbox.get_width
 	movzx	ebx,[tbox.length]
 	mov	[tbox.pos.x],bl
@@ -309,9 +309,9 @@ func key.tb.end
 	xor	bl,bl
     @@: mov	[tbox.ofs.x],bl
 	ret
-endf
+endp
 
-func key.tb.del
+proc key.tb.del
 	call	textbox.delete_selection
 	jnc	@f
   .direct:
@@ -327,16 +327,16 @@ func key.tb.del
 	rep	movsb
 
     @@: ret
-endf
+endp
 
-func key.tb.shift_home
+proc key.tb.shift_home
 	xor	al,al
 	mov	[tbox.pos.x],al
 	mov	[tbox.ofs.x],al
 	ret
-endf
+endp
 
-func key.tb.shift_left
+proc key.tb.shift_left
 	mov	al,[tbox.pos.x]
 	dec	al
 	js	@f
@@ -347,9 +347,9 @@ func key.tb.shift_left
 	jge	@f
 	mov	[tbox.ofs.x],0
     @@: ret
-endf
+endp
 
-func key.tb.shift_right
+proc key.tb.shift_right
 	call	textbox.get_width
 	mov	bl,[tbox.pos.x]
 	inc	bl
@@ -361,9 +361,9 @@ func key.tb.shift_right
 	jbe	@f
 	inc	[tbox.ofs.x]
     @@: ret
-endf
+endp
 
-func key.tb.shift_end
+proc key.tb.shift_end
 	call	textbox.get_width
 	movzx	ebx,[tbox.length]
 	mov	[tbox.pos.x],bl
@@ -372,4 +372,4 @@ func key.tb.shift_end
 	xor	bl,bl
     @@: mov	[tbox.ofs.x],bl
 	ret
-endf
+endp

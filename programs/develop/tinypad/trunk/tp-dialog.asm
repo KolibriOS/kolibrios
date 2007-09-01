@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-func define_3d_button ;///////////////////////////////////////////////////////
+proc define_3d_button ;///////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 ; ebx = <x,width>
 ; ecx = <y,height>
@@ -26,7 +26,7 @@ func define_3d_button ;///////////////////////////////////////////////////////
 	mcall	4,,[sc.work_text],[esp+4*8+4*2],[esp+4*8+4*1]
 	popad
 	ret	4*3
-endf
+endp
 
 finddlg_handler:
 	cmp	al,1
@@ -641,7 +641,7 @@ botdlg.button:
 
 	movzx	eax,[tb_replace.length]
 	add	eax,10
-	call	mem.Alloc
+	stdcall	mem.Alloc,eax
 	mov	[copy_buf],eax
 
 	movzx	eax,[tb_replace.length]
@@ -661,8 +661,7 @@ botdlg.button:
 	call	key.ctrl_v
 	pop	[cur_editor.SelStart.X]
 
-	mov	eax,[copy_buf]
-	call	mem.Free
+	stdcall	mem.Free,[copy_buf]
 
 	pop	[copy_buf] [copy_count] [copy_size]
 

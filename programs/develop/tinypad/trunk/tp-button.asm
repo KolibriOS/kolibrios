@@ -101,7 +101,7 @@ button:
 	call	open_sysfuncs_txt
 	ret
 
-func search
+proc search
 	cld
 	mov	ecx,[cur_editor.Caret.Y]
 	mov	edx,ecx
@@ -179,4 +179,4 @@ func search
 	mov	[s_status],s_text_not_found
 	stc
 	ret
-endf
+endp

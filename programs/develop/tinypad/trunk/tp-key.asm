@@ -109,7 +109,7 @@ key:
 	jmp	key.tab.direct
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_a ;///// SELECT ALL DOCUMENT ///////////////////////////////////
+proc key.ctrl_a ;///// SELECT ALL DOCUMENT ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	xor	eax,eax
 	mov	[cur_editor.SelStart.X],eax
@@ -122,10 +122,10 @@ func key.ctrl_a ;///// SELECT ALL DOCUMENT ///////////////////////////////////
 	mov	[cur_editor.Caret.X],eax
 	call	draw_editor
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_o ;///// ENTER OPEN FILENAME ///////////////////////////////////
+proc key.ctrl_o ;///// ENTER OPEN FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	[bot_dlg_mode2],0
 
@@ -149,10 +149,10 @@ func key.ctrl_o ;///// ENTER OPEN FILENAME ///////////////////////////////////
 	mov	[tb_casesen],0;1
 	call	drawwindow
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
+proc key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[cur_editor.FilePath], 0
 	je	key.shift_ctrl_s
@@ -166,17 +166,17 @@ func key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
     key.shift_ctrl_s:
 	mov	[bot_dlg_mode2],1
 	jmp	key.ctrl_o.direct
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_n ;///// CREATE NEW FILE (TAB) /////////////////////////////////
+proc key.ctrl_n ;///// CREATE NEW FILE (TAB) /////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	create_tab
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_f ;///// ENTER KEYWORD TO FIND /////////////////////////////////
+proc key.ctrl_f ;///// ENTER KEYWORD TO FIND /////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	[bot_dlg_mode2],0
 	mov	[bot_dlg_height],16*2+4*2-1
@@ -202,18 +202,18 @@ func key.ctrl_f ;///// ENTER KEYWORD TO FIND /////////////////////////////////
 	mov	[tb_casesen],0
 	call	drawwindow
 	ret
-endf
+endp
 
-func key.ctrl_h
+proc key.ctrl_h
 	mov	[bot_dlg_mode2],1
 	mov	[bot_dlg_height],16*3+4*2+1
 
 	mov	[s_status],s_enter_text_to_replace
 
 	jmp	key.ctrl_f.direct
-endf
+endp
 
-func key.ctrl_g
+proc key.ctrl_g
 	ret
 @^
 	mov	[bot_dlg_mode2],0
@@ -230,10 +230,10 @@ func key.ctrl_g
 	call	drawwindow
 	ret
 ^@
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
+proc key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -323,10 +323,10 @@ func key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 	call	editor_check_for_changes
   .exit.2:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
+proc key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -412,28 +412,26 @@ func key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 	call	editor_check_for_changes
   .exit.2:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_x
+proc key.ctrl_x
 	cmp	[sel.selected],0
 	je	@f
 	call	key.ctrl_c
 	call	key.del
 	mov	[cur_editor.Modified],1
     @@: ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_c
+proc key.ctrl_c
 	mov	[copy_size],0
 	cmp	[sel.selected],0
 	je	.exit
 
 	call	get_selection_size
-	mov	ebx,eax
-	mov	eax,[copy_buf]
-	call	mem.ReAlloc
+	stdcall mem.ReAlloc,[copy_buf],eax
 	mov	[copy_buf],eax
 
 	cld
@@ -518,10 +516,10 @@ func key.ctrl_c
 	jecxz	@b
 	rep	stosb
 	jmp	@b
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_v
+proc key.ctrl_v
 	cmp	[copy_size],0
 	je	.exit
 
@@ -530,11 +528,10 @@ func key.ctrl_v
 	mov	eax,[copy_size]
 	call	editor_realloc_lines
 
-	mov	eax,[cur_editor.Lines]
 	mov	ebx,[cur_editor.Lines.Size]
 	add	ebx,[copy_size]
 	mov	[cur_editor.Lines.Size],ebx
-	call	mem.ReAlloc
+	stdcall mem.ReAlloc,[cur_editor.Lines],ebx
 	mov	[cur_editor.Lines],eax
 
 	mov	ecx,[cur_editor.Caret.Y]
@@ -635,10 +632,10 @@ func key.ctrl_v
 	mov	[cur_editor.Columns.Count],eax
     @@: pop	eax
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
+proc key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	eax,94
 	call	editor_realloc_lines
@@ -674,10 +671,10 @@ func key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
+proc key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	eax,[cur_editor.Caret.Y]
 	inc	eax
@@ -712,10 +709,10 @@ func key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
+proc key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -740,10 +737,10 @@ func key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
+proc key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -770,10 +767,10 @@ func key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.left ;///// GO TO PREVIOUS CHAR /////////////////////////////////////
+proc key.left ;///// GO TO PREVIOUS CHAR /////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -791,10 +788,10 @@ func key.left ;///// GO TO PREVIOUS CHAR /////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.right ;///// GO TO NEXT CHAR ////////////////////////////////////////
+proc key.right ;///// GO TO NEXT CHAR ////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -813,10 +810,10 @@ func key.right ;///// GO TO NEXT CHAR ////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.pgup ;///// GO TO PREVIOUS PAGE /////////////////////////////////////
+proc key.pgup ;///// GO TO PREVIOUS PAGE /////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -841,10 +838,10 @@ func key.pgup ;///// GO TO PREVIOUS PAGE /////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.pgdn ;///// GO TO NEXT PAGE /////////////////////////////////////////
+proc key.pgdn ;///// GO TO NEXT PAGE /////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -869,10 +866,10 @@ func key.pgdn ;///// GO TO NEXT PAGE /////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.home ;///// GO TO LINE START ////////////////////////////////////////
+proc key.home ;///// GO TO LINE START ////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -887,10 +884,10 @@ func key.home ;///// GO TO LINE START ////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.end ;///// GO TO LINE END ///////////////////////////////////////////
+proc key.end ;///// GO TO LINE END ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -908,10 +905,10 @@ func key.end ;///// GO TO LINE END ///////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_home ;///// GO TO PAGE START ///////////////////////////////////
+proc key.ctrl_home ;///// GO TO PAGE START ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -928,10 +925,10 @@ func key.ctrl_home ;///// GO TO PAGE START ///////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_end ;///// GO TO PAGE END //////////////////////////////////////
+proc key.ctrl_end ;///// GO TO PAGE END //////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -953,10 +950,10 @@ func key.ctrl_end ;///// GO TO PAGE END //////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_pgup ;///// GO TO DOCUMENT START ///////////////////////////////
+proc key.ctrl_pgup ;///// GO TO DOCUMENT START ///////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -973,10 +970,10 @@ func key.ctrl_pgup ;///// GO TO DOCUMENT START ///////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_pgdn ;///// GO TO DOCUMENT END /////////////////////////////////
+proc key.ctrl_pgdn ;///// GO TO DOCUMENT END /////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	clear_selection
 
@@ -997,10 +994,10 @@ func key.ctrl_pgdn ;///// GO TO DOCUMENT END /////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
+proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
 	jnc	.exit
@@ -1139,20 +1136,21 @@ func key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-  key.ins:
-;// ... toggle insert/overwrite mode here ...
+proc key.ins ;///// TOGGLE INSERT/OVERWRITE MODE /////////////////////////////
+;-----------------------------------------------------------------------------
 	xor	[ins_mode],1
 	mov	eax,[cur_editor.Caret.Y]
 	mov	ebx,eax
 	call	draw_editor_text.part
 	call	draw_editor_caret
 	ret
+endp
 
 ;-----------------------------------------------------------------------------
-func key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
+proc key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
 	jnc	key.del.exit
@@ -1212,10 +1210,10 @@ func key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 	dec	[cur_editor.Caret.Y]
 	cld
 	jmp	key.del.line_up
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.tab ;///// TABULATE /////////////////////////////////////////////////
+proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
 	mov	eax,[cur_editor.Caret.X]
@@ -1297,10 +1295,10 @@ func key.tab ;///// TABULATE /////////////////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
+proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	delete_selection
 
@@ -1432,10 +1430,10 @@ func key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_tab ;///// SWITCH TO NEXT TAB //////////////////////////////////
+proc key.ctrl_tab ;///// SWITCH TO NEXT TAB //////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[tab_bar.Items.Count],1
 	je	.exit
@@ -1459,10 +1457,10 @@ func key.ctrl_tab ;///// SWITCH TO NEXT TAB //////////////////////////////////
 	call	update_caption
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.shift_ctrl_tab ;///// SWITCH TO PREVIOUS TAB ////////////////////////
+proc key.shift_ctrl_tab ;///// SWITCH TO PREVIOUS TAB ////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[tab_bar.Items.Count],1
 	je	.exit
@@ -1487,10 +1485,10 @@ func key.shift_ctrl_tab ;///// SWITCH TO PREVIOUS TAB ////////////////////////
 	call	update_caption
   .exit:
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_f4 ;///// CLOSE CURRENT TAB ////////////////////////////////////
+proc key.ctrl_f4 ;///// CLOSE CURRENT TAB ////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	cmp	[cur_editor.Modified], 0
 	je	.close
@@ -1511,10 +1509,10 @@ func key.ctrl_f4 ;///// CLOSE CURRENT TAB ////////////////////////////////////
 	call	draw_tabctl
 	call	draw_statusbar
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.shift_f9 ;///// SET DEFAULT TAB /////////////////////////////////////
+proc key.shift_f9 ;///// SET DEFAULT TAB /////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	eax,[tab_bar.Current.Ptr]
 	cmp	eax,[tab_bar.Default.Ptr]
@@ -1529,34 +1527,34 @@ func key.shift_f9 ;///// SET DEFAULT TAB /////////////////////////////////////
 	call	draw_editor
     @@: call	draw_tabctl
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.f3 ;///// FIND NEXT MATCH ///////////////////////////////////////////
+proc key.f3 ;///// FIND NEXT MATCH ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	call	search
 	jc	@f
     @@: ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.f9 ;///// COMPILE AND RUN ///////////////////////////////////////////
+proc key.f9 ;///// COMPILE AND RUN ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	bl,1
 	call	start_fasm
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.ctrl_f9 ;///// COMPILE //////////////////////////////////////////////
+proc key.ctrl_f9 ;///// COMPILE //////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	bl,0
 	call	start_fasm
 	ret
-endf
+endp
 
 ;-----------------------------------------------------------------------------
-func key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
+proc key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	esi,self_path
 	mov	byte[esi+PATHL-1],0
@@ -1583,4 +1581,4 @@ func key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
 	jne	.bgn_rp
 	mov	[main_closed],1
 	mcall	-1
-endf
+endp
