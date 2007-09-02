@@ -935,6 +935,7 @@ osloop:
         call   stack_handler
         call   checkidle
         call   check_fdd_motor_status
+        call   check_ATAPI_device_event
         jmp    osloop
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                                                                    ;

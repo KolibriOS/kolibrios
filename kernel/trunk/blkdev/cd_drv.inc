@@ -11,12 +11,8 @@ $Revision$
 ;**********************************************************
 ;  Непосредственная работа с устройством СD (ATAPI)
 ;**********************************************************
-; Автор исходного текста  Кулаков Владимир Геннадьевич.
-; Адаптация и доработка Mario79
-
-;        Процедура для полного считывания всех
-;           данных из сектора компакт-диска
-; Автор текста программы Кулаков Владимир Геннадьевич.
+; Автор части исходного текста Кулаков Владимир Геннадьевич
+; Адаптация, доработка и разработка Mario79
 
 ; Максимальное количество повторений операции чтения
 MaxRetr equ 10
@@ -80,13 +76,6 @@ ReadCDWRetr:
     add   esi,8
     mov   edi,1
 .hdreadcache:
-;    push  esi
-;    mov   esi,[esi]
-;    call  test_mario79
-;    mov   esi,eax
-;    call  test_mario79
-;    pop   esi
-
 ;    cmp   dword [esi+4],0       ; empty
 ;    je    .nohdcache
     cmp   [esi],eax		; correct sector
@@ -111,11 +100,6 @@ ReadCDWRetr:
     mov   [CDDataBuf_pointer],ebx
     call  cd_calculate_cache_1
     lea   esi,[edi*8+esi]
-;    push  esi
-;    call  test_mario79
-;    mov   esi,eax
-;    call  test_mario79
-;    pop   esi
     mov   [esi],eax		; sector number
 ;    mov   dword [esi+4],1       ; hd read - mark as same as in hd
 .yeshdcache:
@@ -172,8 +156,6 @@ ReadCDWRetr_1:
 
 ;   Универсальные процедуры, обеспечивающие выполнение
 ;             пакетных команд в режиме PIO
-;
-; Автор текста программы Кулаков Владимир Геннадьевич.
 
 ; Максимально допустимое время ожидания реакции
 ; устройства на пакетную команду (в тиках)
@@ -384,6 +366,8 @@ SendPacketNoDatCommand:
 	mov	AX,word [PacketCommand+10]
 	out	DX,AX
 ;        sti
+    cmp [ignore_CD_eject_wait],1
+    je  @@End_9
 ; Ожидание подтверждения приема команды
 	mov	DX,[ATABasePortAddr]
 	add	DX,7   ;порт 1х7h
@@ -599,6 +583,10 @@ prevent_medium_removal:
     mov  [PacketCommand+4],byte 11b
 ; Подать команду
 	call SendPacketNoDatCommand
+	mov  eax,ATAPI_IDE0_lock
+	add  eax,[cdpos]
+	dec  eax
+	mov  [eax],byte 1
 	popa
 	ret
 
@@ -608,7 +596,7 @@ prevent_medium_removal:
 ;* перменные:                                    *
 ;* ChannelNumber - номер канала;                 *
 ;* DiskNumber - номер диска на канале.           *
-;*************************************************	
+;*************************************************
 allow_medium_removal:
 	pusha
 ; Очистить буфер пакетной команды
@@ -619,6 +607,10 @@ allow_medium_removal:
     mov  [PacketCommand+4],byte 00b
 ; Подать команду
 	call SendPacketNoDatCommand
+	mov  eax,ATAPI_IDE0_lock
+	add  eax,[cdpos]
+	dec  eax
+	mov  [eax],byte 0
 	popa
 	ret
 
@@ -665,24 +657,201 @@ EjectMedium:
 	ret
 
 ;*************************************************
+;* Проверить событие нажатия кнопки извлечения   *
+;*                     диска                     *
+;* Входные параметры передаются через глобальные *
+;* переменные:                                   *
+;* ChannelNumber - номер канала;                 *
+;* DiskNumber - номер диска на канале.           *
+;*************************************************
+check_ATAPI_device_event:
+	pusha
+    mov  eax,[timer_ticks]
+    sub  eax,[timer_ATAPI_check]
+    cmp  eax,100
+    jb	 .end_1
+    mov  al,[DRIVE_DATA+1]
+    and al,11b
+    cmp al,10b
+    jz	.ide3
+.ide2_1:
+    mov  al,[DRIVE_DATA+1]
+    and al,1100b
+    cmp al,1000b
+    jz	.ide2
+.ide1_1:
+    mov  al,[DRIVE_DATA+1]
+    and al,110000b
+    cmp al,100000b
+    jz	.ide1
+.ide0_1:
+    mov  al,[DRIVE_DATA+1]
+    and al,11000000b
+    cmp al,10000000b
+    jz	.ide0
+.end:
+
+    sti
+    mov  eax,[timer_ticks]
+    mov  [timer_ATAPI_check],eax
+.end_1:
+	popa
+	ret
+
+.ide3:
+    cli
+    cmp  [ATAPI_IDE3_lock],1
+    jne  .ide2_1
+    cmp  [IDE_Channel_2],0
+    jne  .ide1_1
+    cmp  [cd_status],0
+    jne  .end
+	mov  [IDE_Channel_2],1
+    call reserve_ok2
+	mov  [ChannelNumber],2
+	mov  [DiskNumber],1
+	mov	 [cdpos],4
+	call GetEvent_StatusNotification
+	cmp  [CDDataBuf+4],byte 1
+	je   .eject_ide3
+	call syscall_cdaudio.free
+    jmp  .ide2_1
+.eject_ide3:
+    call .eject
+	call syscall_cdaudio.free
+    jmp  .ide2_1
+
+.ide2:
+    cli
+    cmp  [ATAPI_IDE2_lock],1
+    jne  .ide1_1
+    cmp  [IDE_Channel_2],0
+    jne  .ide1_1
+    cmp  [cd_status],0
+    jne  .end
+	mov  [IDE_Channel_2],1
+    call  reserve_ok2
+	mov  [ChannelNumber],2
+	mov  [DiskNumber],0
+	mov	[cdpos],3
+	call GetEvent_StatusNotification
+	cmp  [CDDataBuf+4],byte 1
+	je   .eject_ide2
+	call syscall_cdaudio.free
+    jmp  .ide1_1
+.eject_ide2:
+    call .eject
+	call syscall_cdaudio.free
+    jmp  .ide1_1
+
+.ide1:
+    cli
+    cmp  [ATAPI_IDE1_lock],1
+    jne  .ide0_1
+    cmp  [IDE_Channel_1],0
+    jne  .end
+    cmp  [cd_status],0
+    jne  .end
+	mov  [IDE_Channel_1],1
+    call reserve_ok2
+	mov  [ChannelNumber],1
+	mov  [DiskNumber],1
+	mov	[cdpos],2
+	call GetEvent_StatusNotification
+	cmp  [CDDataBuf+4],byte 1
+	je   .eject_ide1
+	call syscall_cdaudio.free
+    jmp  .ide0_1
+.eject_ide1:
+    call .eject
+	call syscall_cdaudio.free
+    jmp  .ide0_1
+
+.ide0:
+    cli
+    cmp  [ATAPI_IDE0_lock],1
+    jne  .end
+    cmp  [IDE_Channel_1],0
+    jne  .end
+    cmp  [cd_status],0
+    jne  .end
+	mov  [IDE_Channel_1],1
+    call reserve_ok2
+	mov  [ChannelNumber],1
+	mov  [DiskNumber],0
+	mov	[cdpos],1
+	call GetEvent_StatusNotification
+	cmp  [CDDataBuf+4],byte 1
+	je   .eject_ide0
+	call syscall_cdaudio.free
+    jmp  .end
+.eject_ide0:
+    call .eject
+	call syscall_cdaudio.free
+    jmp  .end
+
+.eject:
+	call clear_CD_cache
+	call allow_medium_removal
+	mov  [ignore_CD_eject_wait],1
+	call EjectMedium
+	mov  [ignore_CD_eject_wait],0
+	ret
+
+timer_ATAPI_check dd 0
+ATAPI_IDE0_lock db 0
+ATAPI_IDE1_lock db 0
+ATAPI_IDE2_lock db 0
+ATAPI_IDE3_lock db 0
+ignore_CD_eject_wait db 0
+
+;*************************************************
+;* Получить сообщение о событии или состоянии    *
+;*                  устройства                   *
+;* Входные параметры передаются через глобальные *
+;* переменные:                                   *
+;* ChannelNumber - номер канала;                 *
+;* DiskNumber - номер диска на канале.           *
+;*************************************************
+GetEvent_StatusNotification:
+	pusha
+    mov  [CDDataBuf_pointer],CDDataBuf
+; Очистить буфер пакетной команды
+	call  clear_packet_buffer
+; Задать код команды
+	mov	[PacketCommand],word 4Ah
+	mov	[PacketCommand+1],byte 00000001b
+; Задать запрос класса сообщений
+	mov	[PacketCommand+4],byte 00010000b
+; Задать запрос класса сообщений
+	mov	[PacketCommand+7],byte 8
+	mov	[PacketCommand+8],byte 0
+; Подать команду
+;    mov [timer_ticks_enable],0
+	call	SendPacketDatCommand
+;    mov [timer_ticks_enable],1
+	popa
+	ret
+
+;*************************************************
 ;* ОПРЕДЕЛИТЬ ОБЩЕЕ КОЛИЧЕСТВО СЕКТОРОВ НА ДИСКЕ *
 ;* Входные параметры передаются через глобальные *
 ;* переменные:                                   *
 ;* ChannelNumber - номер канала;                 *
 ;* DiskNumber - номер диска на канале.           *
 ;*************************************************
-ReadCapacity:
-	pusha
-; Очистить буфер пакетной команды
-	call  clear_packet_buffer
-; Задать размер буфера в байтах
-	mov	[CDBlockSize],8
-; Сформировать команду READ CAPACITY
-	mov	[PacketCommand],word 25h
-; Подать команду
-	call	SendPacketDatCommand
-	popa
-	ret
+;ReadCapacity:
+;	pusha
+;; Очистить буфер пакетной команды
+;	call  clear_packet_buffer
+;; Задать размер буфера в байтах
+;	mov	[CDBlockSize],8
+;; Сформировать команду READ CAPACITY
+;	mov	[PacketCommand],word 25h
+;; Подать команду
+;	call	SendPacketDatCommand
+;	popa
+;	ret
 
 clear_packet_buffer:
 ; Очистить буфер пакетной команды
