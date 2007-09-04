@@ -114,8 +114,7 @@ begin
   while not Console^.FTerminate do
   begin
     Event := kos_getevent();
-    if Console^.FTerminate then
-      {Console^.ProcessMessage('[CONSOLE] Terminate...'#13#10)} else
+    if not Console^.FTerminate then
     case Event of
       SE_PAINT: Console^.Paint();
       SE_KEYBOARD: Console^.ProcessKeyboard(kos_getkey());
@@ -146,23 +145,21 @@ begin
   FOpened := False;
   FIPCBufferSize := SizeOf(TKosIPC) + IPC_SIZE;
   FIPCBuffer := GetMem(FIPCBufferSize);
-  {FIPCBufferSize := SizeOf(KonsoleIPCBuffer);
-  FIPCBuffer := @KonsoleIPCBuffer;}
   FIPCBuffer^.Lock := False;
   FIPCBuffer^.Size := 0;
   FThreadSlot := -1;
   FThreadID := BeginThread(TThreadFunc(@KonsoleThreadMain), @Self);
   if FThreadID <> 0 then
-    while not FOpened do kos_delay(1);
+    {XXX: может зависнуть}
+    while not FOpened do ThreadSwitch;
 end;
 
 destructor TKonsole.Done();
 begin
   FTerminate := True;
-  Self.Write(#0);
-  if FOpened then kos_delay(1);
-  if FOpened then kos_delay(10);
-  if FOpened then kos_delay(20);
+  if FOpened then begin Self.Write(#0); kos_delay(01); end;
+  if FOpened then begin Self.Write(#0); kos_delay(10); end;
+  if FOpened then begin Self.Write(#0); kos_delay(20); end;
   if FOpened then
   begin
     FOpened := False;
@@ -345,7 +342,7 @@ begin
   {XXX: возможна ситуация при которой сообщение не будет отправлено}
   if FOpened then
   begin
-    I := 20;
+    I := 100;
     while (kos_sendmsg(FThreadID, @Message[1], Length(Message)) = 2) and (I > 0) do
     begin
       Dec(I);

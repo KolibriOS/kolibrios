@@ -161,6 +161,22 @@ end;
 
 { Graphics }
 
+function kos_screensize(): TKosPoint; assembler; register;
+asm
+  pushl %eax
+  pushl %ecx
+  pushl %eax
+  movl  $14, %eax
+  int   $0x40
+  movswl %ax, %ecx
+  popl  %ebx
+  shrl  $16, %eax
+  movl  %ecx, TKosPoint.Y(%ebx)
+  movl  %eax, TKosPoint.X(%ebx)
+  popl  %ecx
+  popl  %eax
+end;
+
 procedure kos_begindraw(); assembler; register;
 asm
   pushl %ebx

@@ -26,6 +26,7 @@ procedure kos_maskevents(mask: DWord);
 procedure kos_setcaption(caption: PChar);
 
 { Graphics }
+function kos_screensize(): TKosPoint;
 procedure kos_begindraw();
 procedure kos_enddraw();
 procedure kos_putpixel(x, y: Word; color: DWord = $000000);
@@ -168,8 +169,6 @@ type
     path   : PChar;
   end;
 
-{var
-  KonsoleIPCBuffer: array[0..4096] of Byte;}
 
 type
   PKonsole = ^TKonsole;

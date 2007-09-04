@@ -146,10 +146,6 @@ type
     Stack: Pointer;
   end;
 
-procedure DoneThread;
-begin
-  SysReleaseThreadVars;
-end;
 
 procedure ThreadMain(ThreadInfo: PThreadInfo);
 var
@@ -291,45 +287,6 @@ begin
 end;
 
 
-
-{$ifndef HAS_MT_MEMORYMANAGER}
-var
-  HeapMutex: TRTLCriticalSection;
-
-procedure KosHeapMutexInit;
-begin
-  InitCriticalSection(HeapMutex);
-end;
-
-procedure KosHeapMutexDone;
-begin
-  DoneCriticalSection(HeapMutex);
-end;
-
-procedure KosHeapMutexLock;
-begin
-  EnterCriticalSection(HeapMutex);
-end;
-
-procedure KosHeapMutexUnlock;
-begin
-  LeaveCriticalSection(HeapMutex);
-end;
-
-const
-  KosMemoryMutexManager: TMemoryMutexManager = (
-    MutexInit: @KosHeapMutexInit;
-    MutexDone: @KosHeapMutexDone;
-    MutexLock: @KosHeapMutexLock;
-    MutexUnlock: @KosHeapMutexUnlock);
-
-procedure InitHeapMutexes;
-begin
-  SetMemoryMutexManager(KosMemoryMutexManager);
-end;
-{$endif HAS_MT_MEMORYMANAGER}
-
-
 var
   KosThreadManager: TThreadManager;
 
@@ -379,8 +336,5 @@ begin
     SemaphorePost          := @NoSemaphorePost;
   end;
   SetThreadManager(KosThreadManager);
-{$ifndef HAS_MT_MEMORYMANAGER}
-  InitHeapMutexes;
-{$endif HAS_MT_MEMORYMANAGER}
   ThreadID := GetCurrentThreadID;
 end;
