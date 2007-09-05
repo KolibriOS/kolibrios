@@ -648,9 +648,6 @@ proc init_heap
            or ecx, FREE_BLOCK
            mov [page_tabs+esi], ecx
            ret
-.exit:
-           xor eax, eax
-           ret
 endp
 
 align 4
@@ -670,30 +667,31 @@ l_0:
            mov ebx, esi
            shr ebx, 12
            mov eax, [page_tabs+ebx*4]
-           test eax, FREE_BLOCK
+           test al, FREE_BLOCK
            jz test_used
            and eax, 0xFFFFF000
            cmp eax, ecx    ;alloc_size
            jb  m_next
 	   jz  @f
 
-           mov edx, esi
-           add edx, ecx
-           sub eax, ecx;
-           or eax, FREE_BLOCK
+           lea edx, [esi+ecx]
+           sub eax, ecx
+           or al, FREE_BLOCK
            shr edx, 12
            mov [page_tabs+edx*4], eax
 @@:
            or ecx, USED_BLOCK
            mov [page_tabs+ebx*4], ecx
            shr ecx, 12
-           dec ecx
            inc ebx
+           dec ecx
+           jz  .no
 @@:
            mov dword [page_tabs+ebx*4], 2
            inc ebx
            dec ecx
            jnz @B
+.no:
 
            mov     edx, [current_slot]
            mov     ebx, [alloc_size]
@@ -702,17 +700,14 @@ l_0:
            add     ebx, [edx+APPDATA.mem_size]
            call    update_mem_size
 
-           mov eax, esi
-           add eax, 4096
+           lea eax, [esi+4096]
            ret
-m_next:
-           add esi, eax
-           jmp l_0
 test_used:
-           test eax, USED_BLOCK
+           test al, USED_BLOCK
            jz m_exit
 
            and eax, 0xFFFFF000
+m_next:
            add esi, eax
            jmp l_0
 m_exit:
@@ -728,26 +723,25 @@ proc user_free stdcall, base:dword
            jz .exit
 
            xor ebx, ebx
-           sub esi, 4096
            shr esi, 12
-           mov eax, [page_tabs+esi*4]
+           mov eax, [page_tabs+(esi-1)*4]
            test al, USED_BLOCK
-           jz .not_used
+           jz .cantfree
            test al, DONT_FREE_BLOCK
            jnz .cantfree
 
            and eax, not 4095
            mov ecx, eax
-           or eax, FREE_BLOCK
-           mov [page_tabs+esi*4], eax
-           inc esi
+           or al, FREE_BLOCK
+           mov [page_tabs+(esi-1)*4], eax
            sub ecx, 4096
-           shr ecx, 12
            mov ebx, ecx
+           shr ecx, 12
+           jz .released
 .release:
            xor eax, eax
            xchg eax, [page_tabs+esi*4]
-           test eax, 1
+           test al, 1
            jz @F
            call free_page
            mov eax, esi
@@ -757,7 +751,7 @@ proc user_free stdcall, base:dword
            inc esi
            dec ecx
            jnz .release
-.not_used:
+.released:
            mov edx, [current_slot]
            mov esi, dword [edx+APPDATA.heap_base]
            mov edi, dword [edx+APPDATA.heap_top]
@@ -783,13 +777,13 @@ user_normalize:
            shr edi, 12
 @@:
            mov eax, [page_tabs+esi*4]
-           test eax, USED_BLOCK
+           test al, USED_BLOCK
            jz .test_free
            shr eax, 12
            add esi, eax
            jmp @B
 .test_free:
-           test eax, FREE_BLOCK
+           test al, FREE_BLOCK
            jz .err
            mov edx, eax
            shr edx, 12
@@ -798,7 +792,7 @@ user_normalize:
            jae .exit
 
            mov ebx, [page_tabs+edx*4]
-           test ebx, USED_BLOCK
+           test bl, USED_BLOCK
            jz .next_free
 
            shr ebx, 12
@@ -806,7 +800,7 @@ user_normalize:
            mov esi, edx
            jmp @B
 .next_free:
-           test ebx, FREE_BLOCK
+           test bl, FREE_BLOCK
            jz .err
            and dword [page_tabs+edx*4], 0
            add eax, ebx
@@ -836,7 +830,7 @@ user_realloc:
         lea     ecx, [eax - 0x1000]
         shr     ecx, 12
         mov     edx, [page_tabs+ecx*4]
-        test    edx, USED_BLOCK
+        test    dl, USED_BLOCK
         jnz     @f
 ; attempt to realloc invalid pointer
 .ret0:
@@ -844,7 +838,7 @@ user_realloc:
         xor     eax, eax
         ret
 @@:
-        test    edx, DONT_FREE_BLOCK
+        test    dl, DONT_FREE_BLOCK
         jnz     .ret0
         add     ebx, 0x1FFF
         shr     edx, 12
@@ -938,11 +932,12 @@ user_realloc:
         cmp     edx, eax
         jae     .cant_inplace
         mov     eax, [page_tabs+edx*4]
+        test    al, FREE_BLOCK
+        jz      .cant_inplace
         shr     eax, 12
         add     eax, edx
-        cmp     eax, ebx
-        jb      .cant_inplace
         sub     eax, ebx
+        jb      .cant_inplace
         jz      @f
         shl     eax, 12
         or      al, FREE_BLOCK
@@ -1000,7 +995,7 @@ user_realloc:
         sub     eax, ebx
         jz      @f
         push    esi
-        add     esi, eax
+        add     esi, ebx
         shl     eax, 12
         or      al, FREE_BLOCK
         mov     [page_tabs+esi*4], eax
@@ -1020,6 +1015,9 @@ user_realloc:
         sub     edx, ecx
         mov     [page_tabs+ecx*4], eax
         inc     ecx
+        dec     ebx
+        dec     edx
+        jz      .no
 @@:
         xor     eax, eax
         xchg    eax, [page_tabs+ecx*4]
@@ -1027,11 +1025,12 @@ user_realloc:
 	mov     eax, ecx
 	shl     eax, 12
 	invlpg  [eax]
-        inc     ecx
         inc     esi
+        inc     ecx
         dec     ebx
         dec     edx
         jnz     @b
+.no:
         push    ebx
         mov     edx, [current_slot]
         shl     ebx, 12
