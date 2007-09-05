@@ -2271,11 +2271,17 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      ret
  .set_pointer_position:
      cmp  ebx,4  ; set mouse pointer position
-     jnz  .end
+     jnz  .set_mouse_button
      mov   [MOUSE_Y],cx    ;y
      ror   ecx,16
      mov   [MOUSE_X],cx    ;x
      rol   ecx,16
+     ret
+ .set_mouse_button:
+     cmp   ebx,5  ; set mouse button features
+     jnz  .end
+     mov   [BTN_DOWN],cl
+     mov   [mouse_active],1
  .end:
      ret
 

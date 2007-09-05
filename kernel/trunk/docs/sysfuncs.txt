@@ -977,6 +977,22 @@ Parameters:
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
 Returned value:
   * function does not return value
+
+-------- Subsubfunction 5 - emulation mouse button. --------
+Parameters:
+  * eax = 18 - function number
+  * ebx = 19 - subfunction number
+  * ecx = 5 - subsubfunction number
+  * edx = information about the emulated mouse buttons: 
+    * bit 0 is set = left button is pressed
+    * bit 1 is set = right button is pressed
+    * bit 2 is set = middle button is pressed
+    * bit 3 is set = 4th button is pressed
+    * bit 4 is set = 5th button is pressed
+    * other bits are cleared
+Returned value:
+  * function does not return value
+
 Remarks:
   * It is recommended to set speed of the mouse (in subsubfunction 1)
     from 1 up to 9. The installed value is not inspected by the kernel
