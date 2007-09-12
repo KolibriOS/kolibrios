@@ -639,6 +639,18 @@ parse_line_contents:
 	push	esi
 	movzx	ecx,byte [esi]
 	inc	esi
+	push	esi ecx
+	push	edi
+	call	get_symbol
+	pop	edi
+	jc	parse_public_label
+	cmp	al,1Dh
+	jne	parse_public_label
+	add	esp,12
+	stos	word [edi]
+	jmp	parse_public_directive
+      parse_public_label:
+	pop	ecx esi
 	mov	al,2
 	stos	byte [edi]
 	call	get_label_id

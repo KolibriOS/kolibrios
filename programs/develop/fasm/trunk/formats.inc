@@ -276,9 +276,19 @@ public_directive:
 	bt	[format_flags],0
 	jc	illegal_instruction
       public_allowed:
+	mov	[base_code],0C0h
+	lods	byte [esi]
+	cmp	al,2
+	je	public_label
+	cmp	al,1Dh
+	jne	invalid_argument
+	lods	byte [esi]
+	and	al,7
+	add	[base_code],al
 	lods	byte [esi]
 	cmp	al,2
 	jne	invalid_argument
+      public_label:
 	lods	dword [esi]
 	cmp	eax,0Fh
 	jb	invalid_use_of_symbol
@@ -304,7 +314,8 @@ public_directive:
 	mov	[ebx+4],esi
 	lods	dword [esi]
 	lea	esi,[esi+eax+1]
-	mov	byte [ebx],80h
+	mov	al,[base_code]
+	mov	[ebx],al
 	jmp	instruction_assembled
 extrn_directive:
 	mov	al,[output_format]
@@ -326,7 +337,7 @@ extrn_directive:
 	cmp	eax,[structures_buffer]
 	jae	out_of_memory
 	mov	[free_additional_memory],eax
-	mov	byte [edx],81h
+	mov	byte [edx],80h
 	mov	[edx+4],ebx
 	lods	byte [esi]
 	cmp	al,86h
@@ -2408,9 +2419,10 @@ coff_formatter:
 	mov	dl,[esi]
 	or	dl,dl
 	jz	enumerate_section
+	cmp	dl,0C0h
+	jae	enumerate_public
 	cmp	dl,80h
-	je	enumerate_public
-	ja	enumerate_extrn
+	jae	enumerate_extrn
 	add	esi,0Ch
 	jmp	enumerate_symbols
       enumerate_section:
@@ -2425,7 +2437,7 @@ coff_formatter:
       enumerate_public:
 	mov	edx,eax
 	shl	edx,8
-	mov	dl,80h
+	mov	dl,[esi]
 	mov	[esi],edx
 	mov	edx,[esi+8]
 	add	esi,10h
@@ -2433,14 +2445,16 @@ coff_formatter:
 	cmp	byte [edx+11],2
 	jne	enumerate_symbols
 	mov	edx,[edx+20]
-	cmp	byte [edx],81h
-	jne	enumerate_symbols
+	cmp	byte [edx],0C0h
+	jae	enumerate_symbols
+	cmp	byte [edx],80h
+	jb	enumerate_symbols
 	inc	eax
 	jmp	enumerate_symbols
       enumerate_extrn:
 	mov	edx,eax
 	shl	edx,8
-	mov	dl,81h
+	mov	dl,[esi]
 	mov	[esi],edx
 	add	esi,0Ch
 	inc	eax
@@ -2461,9 +2475,10 @@ coff_formatter:
 	mov	al,[ebx]
 	or	al,al
 	jz	skip_other_section
+	cmp	al,0C0h
+	jae	check_public_reference
 	cmp	al,80h
-	je	check_public_reference
-	ja	next_reference
+	jae	next_reference
 	cmp	edx,[ebx+8]
 	je	default_section_ok
       next_reference:
@@ -2500,8 +2515,8 @@ coff_formatter:
 	or	al,al
 	jz	section_found
 	add	esi,0Ch
-	cmp	al,80h
-	jne	find_section
+	cmp	al,0C0h
+	jb	find_section
 	add	esi,4
 	jmp	find_section
       section_found:
@@ -2545,7 +2560,8 @@ coff_formatter:
 	jz	section_relocations_done
 	cmp	al,80h
 	jb	add_relocation
-	ja	next_relocation
+	cmp	al,0C0h
+	jb	next_relocation
 	add	esi,10h
 	jmp	find_relocations
       add_relocation:
@@ -2622,9 +2638,10 @@ coff_formatter:
 	cmp	esi,[free_additional_memory]
 	je	symbols_table_ok
 	mov	al,[esi]
+	cmp	al,0C0h
+	jae	add_public_symbol
 	cmp	al,80h
-	je	add_public_symbol
-	ja	add_extrn_symbol
+	jae	add_extrn_symbol
 	or	al,al
 	jz	add_section_symbol
 	add	esi,0Ch
@@ -2666,7 +2683,7 @@ coff_formatter:
 	jne	invalid_use_of_symbol
       public_symbol_type_ok:
 	mov	ecx,[eax+20]
-	cmp	byte [ecx],81h
+	cmp	byte [ecx],80h
 	je	alias_symbol
 	cmp	byte [ecx],0
 	jne	invalid_use_of_symbol
@@ -2682,7 +2699,15 @@ coff_formatter:
       store_public_symbol:
 	mov	eax,[eax]
 	mov	[ebx+8],eax
-	mov	byte [ebx+10h],2
+	mov	al,2
+	cmp	byte [esi],0C0h
+	je	store_symbol_class
+	inc	al
+	cmp	byte [esi],0C1h
+	je	store_symbol_class
+	mov	al,105
+      store_symbol_class:
+	mov	byte [ebx+10h],al
 	add	esi,10h
 	add	ebx,12h
 	jmp	make_symbols_table
@@ -2971,8 +2996,8 @@ elf_formatter:
 	mov	al,[esi]
 	or	al,al
 	jz	first_section_found
-	cmp	al,80h
-	jne	skip_other_symbol
+	cmp	al,0C0h
+	jb	skip_other_symbol
 	add	esi,4
       skip_other_symbol:
 	add	esi,0Ch
@@ -2989,9 +3014,10 @@ elf_formatter:
 	mov	al,[esi]
 	or	al,al
 	jz	make_section_symbol
+	cmp	al,0C0h
+	jae	skip_public
 	cmp	al,80h
-	je	skip_public
-	ja	skip_extrn
+	jae	skip_extrn
 	or	byte [ebx+14h],40h
       skip_extrn:
 	add	esi,0Ch
@@ -3050,9 +3076,10 @@ elf_formatter:
 	mov	al,[esi]
 	or	al,al
 	jz	skip_section
+	cmp	al,0C0h
+	jae	make_public_symbol
 	cmp	al,80h
-	je	make_public_symbol
-	ja	make_extrn_symbol
+	jae	make_extrn_symbol
 	add	esi,0Ch
 	jmp	find_other_symbols
       skip_section:
@@ -3061,6 +3088,8 @@ elf_formatter:
       make_public_symbol:
 	mov	eax,[esi+0Ch]
 	mov	[current_line],eax
+	cmp	byte [esi],0C0h
+	jne	invalid_argument
 	mov	ebx,[esi+8]
 	test	byte [ebx+8],1
 	jz	undefined_symbol
@@ -3133,7 +3162,7 @@ elf_formatter:
 	inc	ecx
 	mov	eax,ecx
 	shl	eax,8
-	mov	al,80h
+	mov	al,0C0h
 	mov	[esi],eax
 	add	esi,10h
 	jmp	find_other_symbols
@@ -3173,7 +3202,7 @@ elf_formatter:
 	inc	ecx
 	mov	eax,ecx
 	shl	eax,8
-	mov	al,81h
+	mov	al,80h
 	mov	[esi],eax
 	add	esi,0Ch
 	jmp	find_other_symbols
@@ -3312,7 +3341,8 @@ elf_formatter:
 	jz	relocations_converted
 	cmp	al,80h
 	jb	make_relocation_entry
-	ja	relocation_entry_ok
+	cmp	al,0C0h
+	jb	relocation_entry_ok
 	add	esi,10h
 	jmp	convert_relocations
       make_relocation_entry:

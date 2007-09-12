@@ -579,7 +579,8 @@ get_fp_value:
 	pop	dword [edi+4]
 	pop	dword [edi]
 	pop	ecx
-	loop	fp_after_dot
+	dec	ecx
+	jnz	fp_after_dot
 	jmp	fp_done
       fp_exponent:
 	or	[fp_format],80h

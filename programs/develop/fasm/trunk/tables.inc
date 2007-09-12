@@ -333,6 +333,7 @@ symbols_6:
  db 'fixups',1Ah,5
  db 'import',1Ah,1
  db 'native',1Bh,1
+ db 'static',1Dh,1
 symbols_7:
  db 'console',1Bh,3
 symbols_8:
