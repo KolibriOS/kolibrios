@@ -20,6 +20,7 @@ asm
   movl  style, %edx
   decl  %ebx  {уменьшить ширину на 1}
   decl  %ecx  {уменьшить высоту на 1}
+  andl  $0xEFFFFFFF, %edx
   int   $0x40
   popl %edi
   popl %esi
@@ -588,6 +589,24 @@ asm
   movl  $5, (%ebx)
   int   $0x40
   popl  %ebx
+end;
+
+
+{ Sound }
+
+function kos_speak(notes: Pointer): Boolean; assembler; register;
+asm
+  pushl %esi
+  pushl %ebx
+  movl  $55, %esi
+  movl  %esi, %ebx
+  xchgl %eax, %esi
+  int   $0x40
+  {eax = 55 - ошибка}
+  andl  $1, %eax
+  popl  %ebx
+  popl  %esi
+  xorb  $1, %al
 end;
 
 

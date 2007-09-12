@@ -140,6 +140,10 @@ function kos_rewritefile(kosfile: PKosFile; var writed: Longint): DWord;
 function kos_writefile(kosfile: PKosFile; var writed: Longint): DWord;
 function kos_fileinfo(kosfile: PKosFile): DWord;
 
+{ Sound }
+
+function kos_speak(notes: Pointer): Boolean;
+
 { Work with hardware }
 function kos_readport(index: DWord): DWord;
 procedure kos_writeport(index, value: DWord);
