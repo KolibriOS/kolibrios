@@ -17,6 +17,7 @@ use32
                 dd      0x00000000              ; reserved=no extended header
    include 'lang.inc'
    include '..\..\..\macros.inc'
+   purge mov	; decrease kpack'ed size
    
 START:                          ; start of execution
     call draw_window            ; at first, draw the window
@@ -54,15 +55,13 @@ still:
 	
 	
 	; Fill the table with blanks
-	mov		edx, text + 160
+	mov		edi, text + 160
 doBlank:
 	mov		esi, blank
-	mov		edi, edx
 	mov		ecx, 40
 	rep		movsb
-	add		edx, 40
 
-	cmp		edx, text + 560
+	cmp		edi, text + 560
 	jne		doBlank
 	
 	pop		ecx					; The number of entries
@@ -302,30 +301,21 @@ button:                       	; button
     mov  eax,0xffffffff         ; close this program
     mcall
 
-    jmp  still
-
-
 
 writeDecimal:
 	pusha
 	and	eax, 0xff
-	mov	ecx, eax
 	mov	dl, 100
 	div	dl
-	mov	cl, ah
+	movzx	ecx, ah
 	add	al, '0'
 	mov	[ebx], al
 	inc	ebx
 	mov	eax, ecx
 	mov	dl, 10
 	div	dl
-	mov	cl, ah
-	add	al, '0'
-	mov	[ebx], al
-	inc	ebx
-	mov	al, ah
-	add	al, '0'
-	mov	[ebx], al
+	add	ax, '00'
+	mov	[ebx], ax
 	popa
 	ret
    
@@ -360,7 +350,7 @@ draw_window:
   newline:
     mcall
     add  ebx,16
-    add  edx,40
+    add  edx,esi
     cmp  [edx],byte 'x'
     jnz  newline
    
@@ -411,7 +401,7 @@ text:
     db ' xxx.xxx.xxx.xxx xxxxxxxxxxxx xxxx xxxx '
     db ' xxx.xxx.xxx.xxx xxxxxxxxxxxx xxxx xxxx '
     db ' xxx.xxx.xxx.xxx xxxxxxxxxxxx xxxx xxxx '
-    db 'x <- END MARKER, DONT DELETE            '
+    db 'x' ; <- END MARKER, DONT DELETE
 
  
 blank:
@@ -424,9 +414,3 @@ hextable db '0123456789ABCDEF'
 
 
 I_END:
-   
-   
-   
-   
-
-

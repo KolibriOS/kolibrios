@@ -25,12 +25,31 @@ SCREEN_Y equ 200
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
+;purge mov
 include 'ascl.inc'
 include 'ascgl.inc'
 
 START:
+init_sin_cos:
+	finit
+	fldz
+	xor edi,edi
+	mov ecx,512
+isc_make:
+	fld st0
+	fsincos
+	fmul [fixed_point_const]
+	fistp word [cos_table+edi]
+	fmul [fixed_point_const]
+	fistp word [sin_table+edi]
+
+	fadd [inc_angle]
+
+	add edi,2
+	loop isc_make
+	fstp st0
+red:
     call draw_window
-   	call init_sin_cos
 
 still:
     mov eax,11
@@ -76,9 +95,6 @@ main_loop:
 
      jmp still
 
-red:
-     call draw_window
-     jmp still
 key:
      mov eax,2
      mcall
@@ -124,46 +140,37 @@ df_draw:
 	mov ecx,3
 	mov edi,@@tx1 ;bp
 df_get_point:
-	xor bh,bh
-	mov bl,byte [esi]
-	shl bx,2
-	mov ax,word [object_translated+bx]
-	mov word [edi],ax
-	mov ax,word [object_translated+bx+2]
-	mov word [edi+2],ax
+	movzx	ebx, byte [esi]
+	movzx	eax, word [object_translated + ebx*4]
+	stosd
+	movzx	eax, word [object_translated + ebx*4 + 2]
+	stosd
 	inc esi
-	add edi,4
 	dec ecx
 	jnz df_get_point
 
-	mov ax,[@@ty1]
-	sub ax,[@@ty3]
-	mov bx,[@@tx2]
-	sub bx,[@@tx1]
-	imul bx
-	shl edx,16
-	mov dx,ax
-	push edx
-	mov ax,[@@tx1]
-	sub ax,[@@tx3]
-	mov bx,[@@ty2]
-	sub bx,[@@ty1]
-	imul bx
-	shl edx,16
-	mov dx,ax
+	mov eax,[@@ty1]
+	sub eax,[@@ty3]
+	mov ebx,[@@tx2]
+	sub ebx,[@@tx1]
+	imul ebx
+	push eax
+	mov eax,[@@tx1]
+	sub eax,[@@tx3]
+	mov ebx,[@@ty2]
+	sub ebx,[@@ty1]
+	imul ebx
 	pop ebx
-	sub ebx,edx
-	or ebx,ebx
+	sub ebx,eax
 	jge df_next
 
-	xor ah,ah
-	mov al,byte [si]
+	movzx	eax, byte [esi]
 	
- mov  [@@xcol],ax
+	mov  	[@@xcol], eax
 
 	call filled_triangle
 df_next:
-	inc si
+	inc esi
 	pop ecx
 	dec ecx
 	jnz df_draw
@@ -178,7 +185,7 @@ clear_screen_buffer:
  mov ebx,scrbuf
  mov ecx,SCREEN_X*65536+SCREEN_Y
  mov edx,5*65536+22
- mov ax,7
+ mov eax,7
  mcall
 
 ;White background
@@ -196,21 +203,22 @@ clear_screen_buffer:
 
 ;filled trangle procedure
 
-@@tx1  dw 0
-@@ty1  dw 0
-@@tx2  dw 0
-@@ty2  dw 0
-@@tx3  dw 0
-@@ty3  dw 0
-@@xcol dw 0
+align 4
+@@tx1  dd 0
+@@ty1  dd 0
+@@tx2  dd 0
+@@ty2  dd 0
+@@tx3  dd 0
+@@ty3  dd 0
+@@xcol dd 0
 
-@@dx12 dw 0
-@@dx13 dw 0
-@@dx23 dw 0
+@@dx12 dd 0
+@@dx13 dd 0
+@@dx23 dd 0
 
 filled_triangle:
 
- mov ax,[@@xcol]  ;trnsforming color
+ mov eax,[@@xcol]  ;trnsforming color
  mov bl,al        ;byte bbbggrrx
  mov dl,al        ;to 3 byte
  mov dh,al        ;bbbxxxxx ggxxxxxx rrxxxxxx
@@ -234,185 +242,175 @@ no_bitup:
  shl eax,8
  mov al,dl
  mov dword [@@rgb],eax
- mov eax,0 ; for 16 bit instructions
 
-	mov ax,[@@ty1]
-	cmp ax,[@@ty3]
+	mov eax,[@@ty1]
+	cmp eax,[@@ty3]
 	jb ft_check1
 
-	xchg ax,[@@ty3]
-	mov [@@ty1],ax
+	xchg eax,[@@ty3]
+	mov [@@ty1],eax
 
-	mov ax,[@@tx1]
-	xchg ax,[@@tx3]
-	mov [@@tx1],ax
+	mov eax,[@@tx1]
+	xchg eax,[@@tx3]
+	mov [@@tx1],eax
 ft_check1:
-	mov ax,[@@ty2]
-	cmp ax,[@@ty3]
+	mov eax,[@@ty2]
+	cmp eax,[@@ty3]
 	jb ft_check2
 
-	xchg ax,[@@ty3]
-	mov [@@ty2],ax
+	xchg eax,[@@ty3]
+	mov [@@ty2],eax
 
-	mov ax,[@@tx2]
-	xchg ax,[@@tx3]
-	mov [@@tx2],ax
+	mov eax,[@@tx2]
+	xchg eax,[@@tx3]
+	mov [@@tx2],eax
 ft_check2:
-	mov ax,[@@ty1]
-	cmp ax,[@@ty2]
+	mov eax,[@@ty1]
+	cmp eax,[@@ty2]
 	jb ft_check3
 
-	xchg ax,[@@ty2]
-	mov [@@ty1],ax
+	xchg eax,[@@ty2]
+	mov [@@ty1],eax
 
-	mov ax,[@@tx1]
-	xchg ax,[@@tx2]
-	mov [@@tx1],ax
+	mov eax,[@@tx1]
+	xchg eax,[@@tx2]
+	mov [@@tx1],eax
 ft_check3:
 
-	mov bx,[@@ty2]
-	sub bx,[@@ty1]
+	mov ebx,[@@ty2]
+	sub ebx,[@@ty1]
 	jnz ft_dx12_make
 
-	mov [@@dx12],word 0
+	mov [@@dx12],dword 0
 	jmp ft_dx12_done
 ft_dx12_make:
-	mov ax,[@@tx2]
-	sub ax,[@@tx1]
-	shl ax,7
-	cwd
-	idiv bx
-	mov [@@dx12],ax			; dx12 = (x2-x1)/(y2-y1)
+	mov eax,[@@tx2]
+	sub eax,[@@tx1]
+	shl eax,7
+	cdq
+	idiv ebx
+	mov [@@dx12],eax			; dx12 = (x2-x1)/(y2-y1)
 ft_dx12_done:
 
-	mov bx,[@@ty3]
-	sub bx,[@@ty1]
+	mov ebx,[@@ty3]
+	sub ebx,[@@ty1]
 	jnz ft_dx13_make
 
-	mov [@@dx13],word 0
+	mov [@@dx13],dword 0
 	jmp ft_dx13_done
 ft_dx13_make:
-	mov ax,[@@tx3]
-	sub ax,[@@tx1]
-	shl ax,7
-	cwd
-	idiv bx
-	mov [@@dx13],ax			; dx13 = (x3-x1)/(y3-y1)
+	mov eax,[@@tx3]
+	sub eax,[@@tx1]
+	shl eax,7
+	cdq
+	idiv ebx
+	mov [@@dx13],eax			; dx13 = (x3-x1)/(y3-y1)
 ft_dx13_done:
 
-	mov bx,[@@ty3]
-	sub bx,[@@ty2]
+	mov ebx,[@@ty3]
+	sub ebx,[@@ty2]
 	jnz ft_dx23_make
 
-	mov [@@dx23],word 0
+	mov [@@dx23],dword 0
 	jmp ft_dx23_done
 ft_dx23_make:
-	mov ax,[@@tx3]
-	sub ax,[@@tx2]
-	shl ax,7
-	cwd
-	idiv bx
-	mov [@@dx23],ax			; dx23 = (x3-x2)/(y3-y2)
+	mov eax,[@@tx3]
+	sub eax,[@@tx2]
+	shl eax,7
+	cdq
+	idiv ebx
+	mov [@@dx23],eax			; dx23 = (x3-x2)/(y3-y2)
 ft_dx23_done:
 
-	mov ax,[@@tx1]
-	shl ax,7
-	mov bx,ax
+	mov eax,[@@tx1]
+	shl eax,7
+	mov ebx,eax
 
-	mov cx,[@@ty1]
+	mov ecx,[@@ty1]
 ft_loop1:
 
  pushad
 
-	mov [@@ly],cx
-	mov dx,bx
-	shr dx,7
-	mov [@@lx2],dx
-	mov dx,ax
-	shr dx,7
-	mov [@@lx1],dx
-	mov ax,[@@xcol]
- mov [@@lcol],ax
+	mov [@@ly],ecx
+	mov edx,ebx
+	shr edx,7
+	mov [@@lx2],edx
+	mov edx,eax
+	shr edx,7
+	mov [@@lx1],edx
+	mov eax,[@@xcol]
+ mov [@@lcol],eax
  call horizontal_line
 
  popad
 
-	add ax,[@@dx13]
-	add bx,[@@dx12]
-	inc cx
-	cmp cx,[@@ty2]
+	add eax,[@@dx13]
+	add ebx,[@@dx12]
+	inc ecx
+	cmp ecx,[@@ty2]
 	jb ft_loop1
 
 	
-	mov bx,[@@tx2]
-	shl bx,7
-	mov cx,[@@ty2]
+	mov ebx,[@@tx2]
+	shl ebx,7
+	mov ecx,[@@ty2]
 ft_loop2:
 
  pushad
 
-	mov [@@ly],cx
-	mov dx,bx
-	shr dx,7
-	mov [@@lx2],dx
-	mov dx,ax
-	shr dx,7
-	mov [@@lx1],dx
- mov ax,[@@xcol]
- mov [@@lcol],ax
+	mov [@@ly],ecx
+	mov edx,ebx
+	shr edx,7
+	mov [@@lx2],edx
+	mov edx,eax
+	shr edx,7
+	mov [@@lx1],edx
+ mov eax,[@@xcol]
+ mov [@@lcol],eax
 	call horizontal_line
 
  popad
 
-	add ax,[@@dx13]
-	add bx,[@@dx23]
+	add eax,[@@dx13]
+	add ebx,[@@dx23]
 	inc ecx
-	cmp cx,[@@ty3]
+	cmp ecx,[@@ty3]
 	jb ft_loop2
 
 	ret
 
 ;horizontal line subproc
 
-@@lx1  dw 0
-@@lx2  dw 0
-@@ly   dw 0
-@@lcol dw 0
+align 4
+@@lx1  dd 0
+@@lx2  dd 0
+@@ly   dd 0
+@@lcol dd 0
 
 @@rgb  dd 0
 
 horizontal_line:
 
- mov ecx,0
- mov cx,[@@lx1]
- cmp cx,[@@lx2]
+ mov ecx,[@@lx1]
+ sub ecx,[@@lx2]
  ja  x12
  je  ext
 ; ret
- mov cx,[@@lx2]
- sub cx,[@@lx1]
+ neg ecx
  mov edi,3
  jmp xx
 x12:
- mov cx,[@@lx1]
- sub cx,[@@lx2]
  mov edi,-3
  jmp xx
 ext:
  mov ecx,-1 ;1
 ; sub ebp,3
 xx:
- mov eax,0
- mov ax,[@@ly]
+ mov eax,[@@ly]
  mov ebx,SCREEN_X ;320
  mul ebx
- mov ebp,0
- mov bp,[@@lx1] ;for correct 16 bit size
- add eax,ebp
- mov ebx,3
- mul ebx
- mov ebp,eax
- sub ebp,3   ;for delete  white dots
+ add eax,[@@lx1]
+ lea ebp,[eax*3-3]	; for delete white dots
  add ecx,2
 loo:
 
@@ -456,12 +454,11 @@ rotate_points:
 	mov edi,@@sin_x
 	mov edx,3
 rp_sin_cos:
-	mov bx,word [esi]
-	and bx,511
-	shl bx,1
-	mov ax,word [sin_table+bx]
+	mov ebx, [esi]
+	and ebx,511
+	mov ax,word [sin_table+ebx*2]
 	mov word [edi],ax
-	mov ax,word [cos_table+bx]
+	mov ax,word [cos_table+ebx*2]
 	mov word [edi+2],ax
 
 	add esi,2
@@ -591,8 +588,7 @@ y_n:
  mov [my],bx
  popad
 
- mov ebx,0  ;?
-	mov bx,word [esi+4]
+	movzx ebx,word [esi+4]
  mov ax,[my]
  cmp ax,0
  jng no_m
@@ -601,52 +597,24 @@ y_n:
 no_m:
  add bx,256  ; Z factor (zoom)
 
- mov eax,0  ;?
-	mov ax,word [esi]
-	shl ax,8
-	cwd
-	idiv bx; bx
-	add ax,(SCREEN_X/2) ;160         ;X factor (center X)
+ 	movsx eax,word [esi]
+	shl eax,8
+	cdq
+	idiv ebx
+	add eax,(SCREEN_X/2) ;160         ;X factor (center X)
 	stosw
 
- mov eax,0  ;?
-	mov ax,word [esi+2]
-	shl ax,8
-	cwd
-	idiv bx
-	add ax,(SCREEN_Y/2) ;100         ;Y factor (center Y)
+	movsx eax,word [esi+2]
+	shl eax,8
+	cdq
+	idiv ebx
+	add eax,(SCREEN_Y/2) ;100         ;Y factor (center Y)
 	stosw
 
 	add esi,6
 	dec ecx
 	jnz translate_points
 	ret
-
-init_sin_cos:
-	finit
-	fldz
-	fstp [temp]
-	xor edi,edi
-	mov ecx,512
-isc_make:
-	fld [temp]
-	fld st0
-	fld st0
-	fsin
-	fmul [fixed_point_const]
-	fistp word [sin_table+edi]
-	fcos
-	fmul [fixed_point_const]
-	fistp word [cos_table+edi]
-
-	fadd [inc_angle]
-	fstp [temp]
-
-	add edi,2
-	loop isc_make
-	ret
-
-temp dd 0
 
 fixed_point_const dd 16384.0
 inc_angle dd 0.01227184630309			; pi/256

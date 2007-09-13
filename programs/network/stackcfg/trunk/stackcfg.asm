@@ -26,8 +26,8 @@ include '..\..\..\macros.inc'
 
 START:                          ; start of execution
 
-    cmp     [PARAMS], byte 0
-    jne     check_parameters
+    cmp     [PARAMS], dword 'BOOT'
+    jz      boot_set_settings
 
 no_params:
 
@@ -45,7 +45,7 @@ still:
     jnz  button
 
   key:                          ; key
-    mov  al,2                  ; just read it and ignore
+;    mov  al,2                  ; just read it and ignore
     mcall
     jmp  still
 
@@ -55,74 +55,23 @@ still:
 
     shr  eax,8
 
-    cmp  eax,1                   ; button id=1 ?
+    dec  eax                     ; button id=1 ?
     jne  noclose
     or   eax,-1                 ; close this program
     mcall
   noclose:
 
-    cmp  eax,2
+    dec  eax  
     je   read_stack_setup
 
-    cmp  eax,3
+    dec  eax  
     jne  no_apply_stack_setup
     call apply_stack_setup
     jmp  still
 
 no_apply_stack_setup:
-    cmp  eax,11
-    jb   no_set_interface
-    cmp  eax,14
-    jg   no_set_interface
-    sub  eax,11
-    mov  [interface],eax
-    call draw_window
-    jmp  still
-   no_set_interface:
-
-    cmp  eax,21
-    jb   no_ip_sf
-    cmp  eax,22
-    jg   no_ip_sf
-    sub  eax,21
-    not  eax
-    and  eax,1
-    mov  [assigned],eax
-    call draw_window
-    jmp  still
-    no_ip_sf:
-
-    cmp  eax,7                ; GET IP
-    jne  no_read_ip
-    mov  [string_x],205
-    mov  [string_y],80
-    mov  [string_length],15
-    call read_string
-    mov   esi,string-1
-    mov   edi,ip_address
-    xor   eax,eax
-   ip1:
-    inc   esi
-    cmp   [esi],byte '0'
-    jb    ip2
-    cmp   [esi],byte '9'
-    jg    ip2
-    imul  eax,10
-    movzx ebx,byte [esi]
-    sub   ebx,48
-    add   eax,ebx
-    jmp   ip1
-   ip2:
-    mov   [edi],al
-    xor   eax,eax
-    inc   edi
-    cmp   edi,ip_address+3
-    jbe   ip1
-    call draw_window
-    jmp  still
-   no_read_ip:
-
-    cmp  eax,5                ; GET COM PORT
+    dec  eax                  ; GET COM PORT
+    dec  eax
     jne  no_read_comport
     mov  [string_x],272
     mov  [string_y],40
@@ -152,11 +101,10 @@ no_apply_stack_setup:
     sub  eax,48
     add  ebx,eax
     mov  [com_add],ebx
-    call draw_window
-    jmp  still
+    jmp  red
    no_read_comport:
 
-    cmp  eax,6                ; GET COM IRQ
+    dec  eax                  ; GET COM IRQ
     jne  no_read_comirq
     mov  [string_x],284
     mov  [string_y],50
@@ -169,11 +117,38 @@ no_apply_stack_setup:
    gci1:
     sub  eax,48
     mov  [com_irq],eax
-    call draw_window
-    jmp  still
+    jmp  red
     no_read_comirq:
 
-    cmp     eax, 8              ; set gateway ip
+    dec  eax                  ; GET IP
+    jne  no_read_ip
+    mov  [string_x],205
+    mov  [string_y],80
+    mov  [string_length],15
+    call read_string
+    mov   esi,string-1
+    mov   edi,ip_address
+   ip0:
+    xor   eax,eax
+   ip1:
+    inc   esi
+    cmp   [esi],byte '0'
+    jb    ip2
+    cmp   [esi],byte '9'
+    jg    ip2
+    imul  eax,10
+    movzx ebx,byte [esi]
+    sub   ebx,48
+    add   eax,ebx
+    jmp   ip1
+   ip2:
+    stosb
+    cmp   edi,ip_address+3
+    jbe   ip0
+    jmp   red
+   no_read_ip:
+    
+    dec     eax                 ; set gateway ip
     jne     no_set_gateway
 
     mov  [string_x],205
@@ -182,6 +157,7 @@ no_apply_stack_setup:
     call read_string
     mov   esi,string-1
     mov   edi,gateway_ip
+   gip0:
     xor   eax,eax
    gip1:
     inc   esi
@@ -195,17 +171,14 @@ no_apply_stack_setup:
     add   eax,ebx
     jmp   gip1
    gip2:
-    mov   [edi],al
-    xor   eax,eax
-    inc   edi
+    stosb
     cmp   edi,gateway_ip+3
-    jbe   gip1
-    call draw_window
-
-    jmp     still
+    jbe   gip0
+    jmp   red
 
   no_set_gateway:
-    cmp     eax, 9
+
+    dec     eax
     jne     no_set_subnet
 
     mov  [string_x],205
@@ -214,6 +187,7 @@ no_apply_stack_setup:
     call read_string
     mov   esi,string-1
     mov   edi,subnet_mask
+   sip0:
     xor   eax,eax
    sip1:
     inc   esi
@@ -227,17 +201,13 @@ no_apply_stack_setup:
     add   eax,ebx
     jmp   sip1
    sip2:
-    mov   [edi],al
-    xor   eax,eax
-    inc   edi
+    stosb
     cmp   edi,subnet_mask+3
-    jbe   sip1
-    call  draw_window
-
-    jmp     still
+    jbe   sip0
+    jmp   red
 
   no_set_subnet:
-    cmp     eax, 10
+    dec     eax
     jne     no_set_dns
 
     mov  [string_x],205
@@ -246,6 +216,7 @@ no_apply_stack_setup:
     call read_string
     mov   esi,string-1
     mov   edi,dns_ip
+   dip0:
     xor   eax,eax
    dip1:
     inc   esi
@@ -259,19 +230,30 @@ no_apply_stack_setup:
     add   eax,ebx
     jmp   dip1
    dip2:
-    mov   [edi],al
-    xor   eax,eax
-    inc   edi
+    stosb
     cmp   edi,dns_ip+3
-    jbe   dip1
-    call  draw_window
-
-    jmp     still
+    jbe   dip0
+    jmp   red
 
   no_set_dns:
+
+    dec  eax
+    jb   no_set_interface
+    cmp  eax,14-11
+    ja   no_set_interface
+    mov  [interface],eax
+    jmp  red
+   no_set_interface:
+
+    sub  eax,21-11
+    jb   no_ip_sf
+    cmp  eax,22-21
+    ja   no_ip_sf
+    xor  eax,1
+    mov  [assigned],eax
+    jmp  red
+    no_ip_sf:
     jmp  still
-
-
 
 read_stack_setup:
 
@@ -318,11 +300,7 @@ read_stack_setup:
     shr  eax,7
     and  eax,1
     mov  [assigned],eax
-
-    call draw_window
-
-    jmp  still
-
+    jmp  red
 
 apply_stack_setup:
 
@@ -363,7 +341,6 @@ apply_stack_setup:
     mcall
 
     ret
-    jmp  still
 
 
 string_length  dd    16
@@ -388,7 +365,7 @@ read_string:
     mcall
     cmp  eax,2
     jne  read_done
-    mov  eax,2
+;    mov  eax,2
     mcall
     shr  eax,8
     cmp  eax,13
@@ -418,11 +395,6 @@ read_string:
     jnz  f11
 
   read_done:
-
-    call print_text
-
-    ret
-
 
 print_text:
 
@@ -607,27 +579,27 @@ draw_window:
     mcall
     ;mov  eax,8                     ; BUTTON 6 : SET IRQ
     mov  ecx,49*65536+8
-    mov  edx,6
+    inc  edx
     mcall
     ;mov  eax,8                     ; BUTTON 7 : SET IP
     mov  ecx,79*65536+8
-    mov  edx,7
+    inc  edx
     mcall
 
     ;mov  eax,8                     ; BUTTON 8 : SET gateway IP
     mov  ebx,299*65536+8
     mov  ecx,89*65536+8
-    mov  edx,8
+    inc  edx
     mcall
 
     ;mov  eax,8                     ; BUTTON 9 : SET subnet
     mov  ecx,99*65536+8
-    mov  edx,9
+    inc  edx
     mcall
 
     ;mov  eax,8                     ; BUTTON 10 : SET dns ip
     mov  ecx,109*65536+8
-    mov  edx,10
+    inc  edx
     mcall
 
     mov  ebx,31*65536+40           ; draw info text with function 4
@@ -652,13 +624,6 @@ draw_window:
     mcall
 
     ret
-
-;******************************************************************************
-
-check_parameters:
-    cmp     [PARAMS], dword "BOOT" ; received BOOT parameter -> goto handler
-    je      boot_set_settings
-    jmp     no_params
 
 ;******************************************************************************
 
@@ -723,5 +688,3 @@ assigned    dd      0   ; get ip from server
 config      dd      0
 
 I_END:
-
-
