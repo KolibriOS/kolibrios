@@ -586,8 +586,8 @@ endp
 proc mem.Alloc,size ;/////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	ebx ecx
-	mov	eax,[size]
-	lea	ecx,[eax+4+4095]
+	mov	ecx,[size]
+	add	ecx,4+4095
 	and	ecx,not 4095
 	mcall	68,12
 	add	ecx,-4
@@ -597,7 +597,13 @@ proc mem.Alloc,size ;/////////////////////////////////////////////////////////
 	ret
 @^
 	push	ebx ecx
-	mcall	68,12,[size]
+	mov	eax,[size]
+	lea	ecx,[eax+4+4095]
+	and	ecx,not 4095
+	mcall	68,12
+	add	ecx,-4
+	mov	[eax],ecx
+	add	eax,4
 	pop	ecx ebx
 	ret
 ^@
@@ -606,6 +612,20 @@ endp
 ;-----------------------------------------------------------------------------
 proc mem.ReAlloc,mptr,size ;//////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
+@^
+	push	ebx ecx edx
+	mov	ecx,[size]
+	add	ecx,4+4095
+	and	ecx,not 4095
+	mov	edx,[mptr]
+	add	edx,-4
+	mcall	68,20
+	add	ecx,-4
+	mov	[eax],ecx
+	add	eax,4
+	pop	edx ecx ebx
+	ret
+^@
 	push	ebx ecx esi edi eax
 	mov	eax,[mptr]
 	mov	ebx,[size]
@@ -636,26 +656,22 @@ proc mem.ReAlloc,mptr,size ;//////////////////////////////////////////////////
   .exit:
 	pop	eax edi esi ecx ebx
 	ret
-@^
-	push	ebx ecx edx
-	mcall	68,20,[size],[mptr]
-	pop	edx ecx ebx
-	ret
-^@
 endp
 
 ;-----------------------------------------------------------------------------
 proc mem.Free,mptr ;//////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	ebx ecx
-	mov	eax,[mptr]
-	lea	ecx,[eax-4]
+	mov	ecx,[mptr]
+	add	ecx,-4
 	mcall	68,13
 	pop	ecx ebx
 	ret
 @^
 	push	ebx ecx
-	mcall	68,13,[mptr]
+	mov	eax,[mptr]
+	lea	ecx,[eax-4]
+	mcall	68,13
 	pop	ecx ebx
 	ret
 ^@
