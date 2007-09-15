@@ -587,74 +587,32 @@ proc mem.Alloc,size ;/////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	ebx ecx
 	mov	ecx,[size]
-	add	ecx,4+4095
-	and	ecx,not 4095
+	add	ecx,4
 	mcall	68,12
 	add	ecx,-4
 	mov	[eax],ecx
 	add	eax,4
 	pop	ecx ebx
 	ret
-@^
-	push	ebx ecx
-	mov	eax,[size]
-	lea	ecx,[eax+4+4095]
-	and	ecx,not 4095
-	mcall	68,12
-	add	ecx,-4
-	mov	[eax],ecx
-	add	eax,4
-	pop	ecx ebx
-	ret
-^@
 endp
 
 ;-----------------------------------------------------------------------------
 proc mem.ReAlloc,mptr,size ;//////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-@^
 	push	ebx ecx edx
 	mov	ecx,[size]
-	add	ecx,4+4095
-	and	ecx,not 4095
-	mov	edx,[mptr]
+	or	ecx,ecx
+	jz	@f
+	add	ecx,4
+    @@: mov	edx,[mptr]
+	or	edx,edx
+	jz	@f
 	add	edx,-4
-	mcall	68,20
+    @@: mcall	68,20
 	add	ecx,-4
 	mov	[eax],ecx
 	add	eax,4
 	pop	edx ecx ebx
-	ret
-^@
-	push	ebx ecx esi edi eax
-	mov	eax,[mptr]
-	mov	ebx,[size]
-	or	eax,eax
-	jz	@f
-	lea	ecx,[ebx+4+4095]
-	and	ecx,not 4095
-	add	ecx,-4
-	cmp	ecx,[eax-4]
-	je	.exit
-    @@: stdcall mem.Alloc,ebx
-	xchg	eax,[esp]
-	or	eax,eax
-	jz	.exit
-	mov	esi,eax
-	xchg	eax,[esp]
-	mov	edi,eax
-	mov	ecx,[esi-4]
-	cmp	ecx,[edi-4]
-	jbe	@f
-	mov	ecx,[edi-4]
-    @@: add	ecx,3
-	shr	ecx,2
-	cld
-	rep	movsd
-	xchg	eax,[esp]
-	stdcall mem.Free,eax
-  .exit:
-	pop	eax edi esi ecx ebx
 	ret
 endp
 
@@ -663,16 +621,10 @@ proc mem.Free,mptr ;//////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	ebx ecx
 	mov	ecx,[mptr]
+	or	ecx,ecx
+	jz	@f
 	add	ecx,-4
-	mcall	68,13
+    @@: mcall	68,13
 	pop	ecx ebx
 	ret
-@^
-	push	ebx ecx
-	mov	eax,[mptr]
-	lea	ecx,[eax-4]
-	mcall	68,13
-	pop	ecx ebx
-	ret
-^@
 endp
