@@ -34,29 +34,28 @@ NoTickWaitTime equ 0xfffff
 ReadCD:
 	pusha
 ; Задать размер сектора
-	mov	[CDBlockSize],2048 ;2352
+	mov	  [CDBlockSize],2048 ;2352
 ; Очистить буфер пакетной команды
 	call  clear_packet_buffer
 ; Сформировать пакетную команду для считывания
 ; сектора данных
 	; Задать код команды Read CD
-	mov	[PacketCommand],byte 0x28  ;0xBE
+	mov	  [PacketCommand],byte 0x28  ;0xBE
 	; Задать адрес сектора
-	mov	AX,word [CDSectorAddress+2]
-	xchg	AL,AH
-	mov	word [PacketCommand+2],AX
-	mov	AX,word [CDSectorAddress]
-	xchg	AL,AH
-	mov	word [PacketCommand+4],AX
+	mov   AX,word [CDSectorAddress+2]
+	xchg  AL,AH
+	mov   word [PacketCommand+2],AX
+	mov   AX,word [CDSectorAddress]
+	xchg  AL,AH
+	mov   word [PacketCommand+4],AX
 ;        mov   eax,[CDSectorAddress]
 ;        mov   [PacketCommand+2],eax
 	; Задать количество считываемых секторов
-	mov	[PacketCommand+8],byte 1
+	mov	  [PacketCommand+8],byte 1
 	; Задать считывание данных в полном объеме
 ;        mov     [PacketCommand+9],byte 0xF8
 ; Подать команду
-	call	SendPacketDatCommand
-;        call test_mario79
+	call  SendPacketDatCommand
 	popa
 	ret
 
@@ -97,6 +96,9 @@ ReadCDWRetr:
     pop   edi
 
     call  ReadCDWRetr_1
+    cmp   [DevErrorCode],0
+    jne   .exit
+
     mov   [CDDataBuf_pointer],ebx
     call  cd_calculate_cache_1
     lea   esi,[edi*8+esi]
@@ -113,6 +115,7 @@ ReadCDWRetr:
     mov   ecx,512   ;/4
     cld
     rep   movsd 		; move data
+.exit:
     popad
     ret
 
@@ -121,34 +124,34 @@ ReadCDWRetr_1:
 
 ; Цикл, пока команда не выполнена успешно или не
 ; исчерпано количество попыток
-	mov	ECX,MaxRetr
+	mov	  ECX,MaxRetr
 @@NextRetr:
 ; Подать команду
-	call	ReadCD
-	cmp	[DevErrorCode],0
-	je	@@End_4
+	call  ReadCD
+	cmp	  [DevErrorCode],0
+	je	  @@End_4
 
-	or		ecx,ecx 		;{SPraid.simba} (for cd load)
-	jz		@@End_4
-	dec	ecx
+	or    ecx,ecx 		;{SPraid.simba} (for cd load)
+	jz    @@End_4
+	dec   ecx
 
-	cmp    [timer_ticks_enable],0
-	jne	@f
-	mov	eax,NoTickWaitTime
+	cmp   [timer_ticks_enable],0
+	jne   @f
+	mov   eax,NoTickWaitTime
 .wait:
-	dec	eax
-	cmp	eax,0
-	je	@@NextRetr
-	jmp	.wait
+	dec   eax
+	cmp   eax,0
+	je    @@NextRetr
+	jmp	  .wait
 @@:
 ; Задержка на 2,5 секунды
-	mov	EAX,[timer_ticks]
-	add	EAX,250 ;50
-@@Wait:
-	call	change_task
-	cmp	EAX,[timer_ticks]
-	ja	@@Wait
-	loop	@@NextRetr
+;	mov	EAX,[timer_ticks]
+;	add	EAX,50	;250
+;@@Wait:
+;	call	change_task
+;	cmp	EAX,[timer_ticks]
+;	ja	@@Wait
+	loop  @@NextRetr
 @@End_4:
 	popad
 	ret
@@ -189,6 +192,7 @@ CDDataBuf_pointer dd 0
 ;****************************************************
 SendPacketDatCommand:
 	pushad
+	mov   [DevErrorCode],0
 ; Задать режим CHS
 	mov	[ATAAddressMode],0
 ; Послать ATA-команду передачи пакетной команды
@@ -301,7 +305,6 @@ SendPacketDatCommand:
 	jmp @@End_8
 @@Err6:
 	mov	[DevErrorCode],6
-
 @@End_8:
 	popad
 	ret
@@ -319,6 +322,7 @@ SendPacketDatCommand:
 ;***********************************************
 SendPacketNoDatCommand:
 	pushad
+    mov   [DevErrorCode],0
 ; Задать режим CHS
 	mov	[ATAAddressMode],0
 ; Послать ATA-команду передачи пакетной команды
@@ -367,7 +371,7 @@ SendPacketNoDatCommand:
 	out	DX,AX
 ;        sti
     cmp [ignore_CD_eject_wait],1
-    je  @@End_9
+    je	@@End_9
 ; Ожидание подтверждения приема команды
 	mov	DX,[ATABasePortAddr]
 	add	DX,7   ;порт 1х7h
@@ -419,6 +423,7 @@ SendPacketNoDatCommand:
 ;****************************************************
 SendCommandToHDD_1:
 	pushad
+    mov   [DevErrorCode],0
 ; Проверить значение кода режима
 	cmp	[ATAAddressMode],1
 	ja	@@Err2_4
@@ -815,21 +820,19 @@ ignore_CD_eject_wait db 0
 ;*************************************************
 GetEvent_StatusNotification:
 	pusha
-    mov  [CDDataBuf_pointer],CDDataBuf
+	mov	[CDDataBuf_pointer],CDDataBuf
 ; Очистить буфер пакетной команды
 	call  clear_packet_buffer
 ; Задать код команды
-	mov	[PacketCommand],word 4Ah
+	mov	[PacketCommand],byte 4Ah
 	mov	[PacketCommand+1],byte 00000001b
 ; Задать запрос класса сообщений
 	mov	[PacketCommand+4],byte 00010000b
-; Задать запрос класса сообщений
-	mov	[PacketCommand+7],byte 8
-	mov	[PacketCommand+8],byte 0
+; Размер выделенной области
+	mov	[PacketCommand+7],byte 8h
+	mov	[PacketCommand+8],byte 0h
 ; Подать команду
-;    mov [timer_ticks_enable],0
 	call	SendPacketDatCommand
-;    mov [timer_ticks_enable],1
 	popa
 	ret
 
@@ -841,17 +844,17 @@ GetEvent_StatusNotification:
 ;* DiskNumber - номер диска на канале.           *
 ;*************************************************
 ;ReadCapacity:
-;	pusha
+;       pusha
 ;; Очистить буфер пакетной команды
-;	call  clear_packet_buffer
+;       call  clear_packet_buffer
 ;; Задать размер буфера в байтах
-;	mov	[CDBlockSize],8
+;       mov     [CDBlockSize],8
 ;; Сформировать команду READ CAPACITY
-;	mov	[PacketCommand],word 25h
+;       mov     [PacketCommand],word 25h
 ;; Подать команду
-;	call	SendPacketDatCommand
-;	popa
-;	ret
+;       call    SendPacketDatCommand
+;       popa
+;       ret
 
 clear_packet_buffer:
 ; Очистить буфер пакетной команды
@@ -859,4 +862,3 @@ clear_packet_buffer:
 	mov	[PacketCommand+4],dword 0
 	mov	[PacketCommand+8],dword 0
 	ret
-

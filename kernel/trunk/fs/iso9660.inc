@@ -492,6 +492,7 @@ fs_CdGetFileInfo:
 	xor	eax, eax
 	ret
 
+;----------------------------------------------------------------
 cd_find_lfn:
        mov   [cd_appl_data],0
 ; in: esi+ebp -> name
@@ -501,6 +502,11 @@ cd_find_lfn:
 ; 16 сектор начало набора дескрипторов томов
 	mov  [CDSectorAddress],dword 15
        mov  [CDDataBuf_pointer],CDDataBuf
+       
+       call  WaitUnitReady
+       cmp   [DevErrorCode],0
+       jne   .access_denied
+       
        call  prevent_medium_removal
 .start:
 	inc  dword [CDSectorAddress]
