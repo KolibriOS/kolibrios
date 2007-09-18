@@ -209,30 +209,20 @@ proc draw_main_menu ;/////////////////////////////////////////////////////////
 	jmp	@b
 
   .exit:
-	mov	eax, 8
-	mov	bx, word [mainwnd_pos.w]
-	sub	bx, 25
-	shl	ebx, 16
-	add	ebx, 12
-
-	mov	ecx, 3 * 65536 + 12
-	mov	edx, 177
-	mov	esi, 0x00bcbec6
-	int	0x40
-
-	;mov     eax, 4
-	shr	eax, 1
-	sub	ebx, -4 * 65536
-	mov	bx, 6
-	mov	ecx, 0
-	mov	edx, cross
-	mov	esi, 1
-	int	0x40
+	mov	ebx,[mainwnd_pos.w]
+	add	ebx,-10-(ATOPH-6)-3
+	push	ebx 2 (ATOPH-6) (ATOPH-6)
+	call	draw_3d_panel
+	shl	ebx,16
+	add	ebx,ATOPH-6
+	mcall	8,,<2,ATOPH-6>,<0x4000,2>
+	and	ebx,0xFFFF0000
+	add	ebx,(ATOPH-8)/2*65536+(ATOPH-8)/2
+	mcall	4,,[sc.work_text],.cross,1
 
 	ret
 
-cross:
-	db	'X'
+.cross db 'x'
 endp
 
 ;-----------------------------------------------------------------------------

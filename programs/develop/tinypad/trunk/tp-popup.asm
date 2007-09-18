@@ -1,7 +1,7 @@
 
 ;POP_WIDTH   = (popup_text.max_title+popup_text.max_accel+6)*6
 POP_IHEIGHT = 16
-POP_SHEIGHT = 3
+POP_SHEIGHT = 2
 ;POP_HEIGHT  = popup_text.cnt_item*POP_IHEIGHT+popup_text.cnt_sep*4+4
 
 popup_thread_start:

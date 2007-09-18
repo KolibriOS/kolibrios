@@ -101,6 +101,7 @@ align 4
 
 accel_table2 dd 	  \
   1    ,key.alt_x	 ,\
+  2    ,key.ctrl_f4	 ,\
   'VSL',btn.vscroll_up	 ,\
   'VSG',btn.vscroll_down ,\
   'HSL',btn.hscroll_up	 ,\
@@ -117,6 +118,7 @@ accel_table2_botdlg dd	   \
   20002,btn.bot.opensave  ,\
   20003,btn.bot.find	  ,\
   20004,btn.bot.appearance,\
+  20007,btn.bot.no	  ,\
   21001,btn.bot.tabpos	  ,\
   0
 

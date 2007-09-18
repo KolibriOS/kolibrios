@@ -4,12 +4,14 @@ proc flush_cur_tab ;///// SAVE CURRENT TAB DATA TO CONTROL ///////////////////
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
 	push	ecx esi edi
-	mov	esi,cur_tab
 	mov	edi,[tab_bar.Current.Ptr]
+	or	edi,edi
+	jz	@f
+	mov	esi,cur_tab
 	mov	ecx,sizeof.TABITEM/4
 	cld
 	rep	movsd
-	pop	edi esi ecx
+    @@: pop	edi esi ecx
 	ret
 endp
 
@@ -19,10 +21,8 @@ proc set_cur_tab ;///// SET SPECIFIED TAB CURRENT (FOCUS IT) /////////////////
 ; EBP = TABITEM*
 ;-----------------------------------------------------------------------------
 	push	ecx esi edi
-	cmp	[tab_bar.Current.Ptr],0
-	je	@f
 	call	flush_cur_tab
-    @@: mov	esi,ebp
+	mov	esi,ebp
 	mov	edi,cur_tab
 	mov	ecx,sizeof.TABITEM/4
 	rep	movsd

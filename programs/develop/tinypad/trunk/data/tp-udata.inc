@@ -52,6 +52,7 @@ sel.selected  db ?
 in_sel	      db ?
 
 do_not_draw   db ?    ; draw top and bottom buttons?
+main_closing  db ?    ; main window closing?
 main_closed   db ?    ; main window closed?
 tb_casesen    db ?    ; focused textbox is case-sensitive?
 
@@ -94,12 +95,14 @@ mev  db ?
 mouse_captured	db ?
 just_from_popup db ?
 
-bot_mode db ?
+bot_mode  db ?
+bot_mode2 db ?
 
 align 4
 
 bot_dlg_height dd ?
-bot_dlg_mode2  db ?
+exit_tab_item  dd ?
+exit_tab_num   dd ?
 
 temp_buf dd ?
 copy_buf dd ?

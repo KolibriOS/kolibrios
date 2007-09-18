@@ -609,10 +609,12 @@ proc mem.ReAlloc,mptr,size ;//////////////////////////////////////////////////
 	jz	@f
 	add	edx,-4
     @@: mcall	68,20
+    	or	eax,eax
+    	jz	@f
 	add	ecx,-4
 	mov	[eax],ecx
 	add	eax,4
-	pop	edx ecx ebx
+    @@: pop	edx ecx ebx
 	ret
 endp
 

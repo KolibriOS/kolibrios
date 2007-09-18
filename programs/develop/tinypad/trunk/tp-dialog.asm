@@ -46,7 +46,7 @@ finddlg_handler:
 	add	ecx,(3+17)*65536+15
 
 	push	ecx
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	je	@f
 	add	ebx,18
 	mcall	4,,[sc.work_text],s_2replace,s_2replace.size+1
@@ -58,7 +58,7 @@ finddlg_handler:
 	shl	ebx,16
 
 	push	20003
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	jne	.draw.lp1
 	add	ebx,-(2+6*(s_2find.size+2))*65536+6*(s_2find.size+2)
 	push	s_2find s_2find.size
@@ -87,7 +87,7 @@ finddlg_handler:
 
 	pop	ecx
 
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	je	@f
 	mov	ebp,tb_replace
 	mov	eax,[p_info.client_box.width]
@@ -114,7 +114,7 @@ finddlg_handler:
 	ret
 
   ..tab:
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	je	@f
 	mov	eax,tb_replace
 	cmp	eax,[focused_tb]
@@ -145,7 +145,7 @@ osdlg_handler:
 	add	ecx,(2+18)*65536+15
 
 	push	20002
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	jne	.draw.lp1
 	add	ebx,-(2+6*(s_2open.size+2))*65536+6*(s_2open.size+2)
 	push	s_2open s_2open.size
@@ -160,7 +160,7 @@ osdlg_handler:
 	push	20001 s_2cancel s_2cancel.size
 	call	define_3d_button
 
-	cmp	[bot_dlg_mode2], 2	; exit-save dialog
+	cmp	[bot_mode2], 2	    ; exit-save dialog
 	jne	@f
 
 	sub	ebx,(6*(s_2save_no.size+2)+3)*65536
@@ -209,7 +209,7 @@ gotodlg_handler:
 	add	ecx,(2+18)*65536+15
 
 	push	20002
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	jne	.draw.lp1
 	add	ebx,-(2+6*(s_2open.size+2))*65536+6*(s_2open.size+2)
 	push	s_2open s_2open.size
@@ -590,13 +590,14 @@ botdlg.button:
   btn.bot.cancel:
 	xor	eax,eax
 	mov	[bot_mode],al
+	mov	[main_closing],al
 	mov	[bot_dlg_height],eax
 	mov	[s_status],eax
 	call	drawwindow
 	ret
 
   btn.bot.opensave:
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	je	.lp1
 	call	save_file
 	jnc	@f
@@ -613,12 +614,17 @@ botdlg.button:
 	ret
 
   btn.bot.no:
-	call	key.ctrl_f4.close
 	xor	eax,eax
 	mov	[bot_mode],al
 	mov	[bot_dlg_height],eax
 	mov	[s_status],eax
 	call	drawwindow
+	cmp	[main_closing],0
+	je	@f
+	add	[exit_tab_item],sizeof.TABITEM
+	jmp	key.alt_x.direct
+	ret
+    @@: call	key.ctrl_f4.close
 	ret
 
   btn.bot.find:
@@ -629,7 +635,7 @@ botdlg.button:
 	cld
 	rep	movsb
 
-	cmp	[bot_dlg_mode2],0
+	cmp	[bot_mode2],0
 	je	@f
 	call	search
 	jnc	.found
@@ -641,7 +647,7 @@ botdlg.button:
 
 	movzx	eax,[tb_replace.length]
 	add	eax,10
-	stdcall	mem.Alloc,eax
+	stdcall mem.Alloc,eax
 	mov	[copy_buf],eax
 
 	movzx	eax,[tb_replace.length]
@@ -661,7 +667,7 @@ botdlg.button:
 	call	key.ctrl_v
 	pop	[cur_editor.SelStart.X]
 
-	stdcall	mem.Free,[copy_buf]
+	stdcall mem.Free,[copy_buf]
 
 	pop	[copy_buf] [copy_count] [copy_size]
 

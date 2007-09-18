@@ -127,10 +127,10 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.ctrl_o ;///// ENTER OPEN FILENAME ///////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	[bot_dlg_mode2],0
+	mov	[bot_mode2],0
 
   .direct:
-	cmp	[bot_dlg_mode2], 2
+	cmp	[bot_mode2], 2
 	je	.ask
 	mov	[s_status],s_enter_filename
 	jmp	.ask1
@@ -164,7 +164,7 @@ proc key.ctrl_s ;///// ENTER SAVE FILENAME ///////////////////////////////////
 	ret
 
     key.shift_ctrl_s:
-	mov	[bot_dlg_mode2],1
+	mov	[bot_mode2],1
 	jmp	key.ctrl_o.direct
 endp
 
@@ -178,7 +178,7 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.ctrl_f ;///// ENTER KEYWORD TO FIND /////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	[bot_dlg_mode2],0
+	mov	[bot_mode2],0
 	mov	[bot_dlg_height],16*2+4*2-1
 
 	mov	[s_status],s_enter_text_to_find
@@ -205,7 +205,7 @@ proc key.ctrl_f ;///// ENTER KEYWORD TO FIND /////////////////////////////////
 endp
 
 proc key.ctrl_h
-	mov	[bot_dlg_mode2],1
+	mov	[bot_mode2],1
 	mov	[bot_dlg_height],16*3+4*2+1
 
 	mov	[s_status],s_enter_text_to_replace
@@ -216,7 +216,7 @@ endp
 proc key.ctrl_g
 	ret
 @^
-	mov	[bot_dlg_mode2],0
+	mov	[bot_mode2],0
 	mov	[bot_dlg_height],16*2+4*2-1
 
 	mov	[bot_mode],1
@@ -1490,9 +1490,9 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.ctrl_f4 ;///// CLOSE CURRENT TAB ////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	cmp	[cur_editor.Modified], 0
+	cmp	[cur_editor.Modified],0
 	je	.close
-	mov	[bot_dlg_mode2], 2
+	mov	[bot_mode2],2
 	jmp	key.ctrl_o.direct
  .close:
 	mov	[do_not_draw],1
@@ -1556,6 +1556,19 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
 ;-----------------------------------------------------------------------------
+	mov	[main_closing],1
+	mov	eax,[tab_bar.Items]
+	mov	[exit_tab_item],eax
+	mov	eax,[tab_bar.Items.Count]
+	mov	[exit_tab_num],eax
+  .direct:
+	call	try_to_close_tabs
+	or	eax,eax
+	jz	.close
+	mov	[bot_mode2],2
+	jmp	key.ctrl_o.direct
+
+  .close:
 	mov	esi,self_path
 	mov	byte[esi+PATHL-1],0
 	mov	edi,f_info.path
@@ -1574,11 +1587,30 @@ proc key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
 	mov	[f_info70+21],f_info.path
 	mcall	70,f_info70
 
-  .bgn_rp:
-	call	key.ctrl_f4
-  .close:
-	cmp	[tab_bar.Items.Count],1
-	jne	.bgn_rp
 	mov	[main_closed],1
 	mcall	-1
+endp
+
+;-----------------------------------------------------------------------------
+proc try_to_close_tabs ;///// FIND TABS TO BE SAVED BEFORE CLOSE /////////////
+;-----------------------------------------------------------------------------
+	push	ecx ebp
+	call	flush_cur_tab
+	mov	ebp,[exit_tab_item] ; [tab_bar.Items]
+	add	ebp,-sizeof.TABITEM
+    @@: dec	[exit_tab_num]
+	js	.ok
+	add	ebp,sizeof.TABITEM
+	mov	al,[ebp+TABITEM.Editor.Modified]
+	cmp	[ebp+TABITEM.Editor.Modified],0
+	je	@b
+	mov	[exit_tab_item],ebp
+	call	set_cur_tab
+	call	make_tab_visible
+	xor	eax,eax
+	inc	eax
+    @@: pop	ebp ecx
+	ret
+  .ok:	xor	eax,eax
+	jmp	@b
 endp

@@ -108,7 +108,7 @@ macro popup_res _name,[_lang,_title,_accel,_action]
       if (lang eq _lang) | (_lang eq @!)
 	if _title eq '-'
 	  db 1,'-'
-	  c2 = c2+1
+	  c2 = c2+2
 	else
 	  virtual at 0
 	    db _title
@@ -150,7 +150,7 @@ macro popup_res _name,[_lang,_title,_accel,_action]
 	m2 = -2
       end if
       store word (m1*6+m2*6+6*8) at _name+POPUP.width
-      store word (c1*POP_IHEIGHT+c2*POP_SHEIGHT+3) at _name+POPUP.height
+      store word (c1*POP_IHEIGHT+c2*POP_SHEIGHT+4) at _name+POPUP.height
       store dword (((m1+2)*6-1)*65536) at _name+POPUP.acc_ofs
     end if
 }

@@ -7,8 +7,8 @@ HISTORY:
       (was opening in current tab if there was a new file, even modified)
     - show "save file" dialog for new files or files from Tinypad's home folder
   new features:
-    - prompt to save modified file before closing
-    - button to close current tab
+    - prompt to save modified file before closing (+fixes)
+    - button to close current tab (+fixes)
     - mouse scroll wheel support
 
 4.0.4 (mike.dld)
