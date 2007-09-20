@@ -27,8 +27,8 @@ use32
   dd 0x01        ; header version
   dd START       ; program start
   dd program_end ; program image size
-  dd APP_MEMORY  ; required amount of memory
-  dd 0xDFFF0     ; stack
+  dd stacktop    ; required amount of memory
+  dd stacktop    ; stack
   dd params,0x0  ; parameters,icon
 
 include 'lang.inc'
@@ -593,3 +593,7 @@ max_handles = 8
 fileinfos rb (4+20+MAX_PATH)*max_handles
 fileinfos_end:
 pinfo process_information
+
+align 1000h
+rb 1000h
+stacktop:

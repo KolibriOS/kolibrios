@@ -58,15 +58,29 @@ filepos 	 dd 0x0
 ;   ~3/8 - additional memory
 ;   ~5/8 - main memory
 init_memory:
-	mov	[memory_start],0x100000
-	mov	[memory_end],0x100000+(APP_MEMORY-0x100000)/8*5
-	mov	[additional_memory],0x100000+(APP_MEMORY-0x100000)/8*5
-	mov	[additional_memory_end],APP_MEMORY
+	mcall	18, 16
+	cmp	eax, 0xFFFFFFFF shr 9
+	jbe	@f
+	mov	eax, 0xFFFFFFFF shr 9
+@@:
+	shl	eax, 9
+	lea	ecx, [eax+stacktop]
+	mcall	64, 1
+	mov	[memory_start], stacktop
+	mov	[additional_memory_end], ecx
+	sub	ecx, stacktop
+	shr	ecx, 3
+	lea	ecx, [ecx*5+stacktop]
+	mov	[memory_end],ecx
+	mov	[additional_memory],ecx
 	ret
 
 exit_program:
 	cmp	[_mode],NORMAL_MODE
-	je	still
+	jne	@f
+	mcall	64, 1, stacktop
+	jmp	still
+@@:
 	or	eax,-1
 	mcall
 
