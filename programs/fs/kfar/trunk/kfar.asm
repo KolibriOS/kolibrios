@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.4'
-version_dword equ 0*10000h + 40
+version equ '0.41'
+version_dword equ 0*10000h + 41
 
 include 'lang.inc'
 include 'font.inc'
@@ -868,12 +868,13 @@ enum_plugins_callback:
         jnc     @f
         xor     eax, eax
 @@:
-MIN_INTERFACE_VER = 1
-MAX_INTERFACE_VER = 1
+MIN_INTERFACE_VER = 2
+MAX_INTERFACE_VER = 2
         cmp     eax, MIN_INTERFACE_VER
-        jae     @f
+        jb      @f
         cmp     eax, MAX_INTERFACE_VER
-        jbe     @f
+        jbe     .version_ok
+@@:
         push    aIncompatibleVersion
 .cantload:
         push    saved_file_name
@@ -886,7 +887,7 @@ MAX_INTERFACE_VER = 1
         call    SayErr
         add     esp, 12
         jmp     .dec_ret
-@@:
+.version_ok:
         mov     edi, esi
         mov     esi, plugin_exported
 .import:
@@ -919,6 +920,8 @@ plugin_unload_default:
         ret
 
 OpenFilePlugin_default:
+        xor     eax, eax
+        ret     28
 GetFiles_default:
         xor     eax, eax
         ret     20
@@ -1324,11 +1327,13 @@ panels_OnKey:
         dec     ecx
         js      .plugdone
         pushad
+        push    execdata
+        push    [ebp+panel1_hFile-panel1_data]
+        push    [ebp+panel1_hPlugin-panel1_data]
         push    edi
         push    filedata_buffer
         call    get_curfile_folder_entry
         push    ecx
-        push    execdata
         push    esi
         call    [edx+PluginInfo.OpenFilePlugin]
         mov     [esp+28], eax
@@ -3930,7 +3935,10 @@ draw_panel:
 .native:
         mov     edi, cur_header
         mov     ecx, [ebp + panel1_width - panel1_data]
-        sub     ecx, 7
+        sub     ecx, 6
+        cmp     byte [esi], '/'
+        jnz     .copy_rest
+        dec     ecx
         movsb
 @@:
         lodsb
@@ -3940,6 +3948,7 @@ draw_panel:
         jz      .header_created
         cmp     al, '/'
         jnz     @b
+.copy_rest:
         mov     edx, esi
 @@:
         lodsb
@@ -7266,7 +7275,7 @@ nullstr                 db      0
 aUntitled               db      'untitled',0
 aDotDot                 db      '..',0,0
 standard_dll_path:
-libini_name             db      '/sys/dll/'
+libini_name             db      '/sys/lib/'
 standard_dll_path_size = $ - standard_dll_path
                         db      'libini.obj',0
 aStart                  db      'START',0
@@ -7348,9 +7357,11 @@ kfar_info:
         dd      .size
         dd      version_dword
         dd      open
+        dd      open2
         dd      read
         dd      -1      ; write: to be implemented
         dd      seek
+        dd      tell
         dd      -1      ; flush: to be implemented
         dd      filesize
         dd      close
@@ -7610,8 +7621,8 @@ active_screen_vtable dd ?
 active_screen_data dd   ?
 
 default_attr    dd      ?
-left_dotdot_entry       rb      40+3    ; 40 bytes for attributes + '..'
-right_dotdot_entry      rb      40+3
+left_dotdot_entry       rb      40+4    ; 40 bytes for attributes + '..'
+right_dotdot_entry      rb      40+4
 
 aConfirmDeleteTextBuf   rb      aConfirmDeleteTextMax + 1
 CopySourceTextBuf       rb      512

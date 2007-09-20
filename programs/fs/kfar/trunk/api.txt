@@ -4,7 +4,7 @@
 при вызове экспортируемых функций и ожидает того же для callback-функций.
 
 int version;
-Версия интерфейса kfar, на которую рассчитан плагин. Сейчас должна быть 1.
+Версия интерфейса kfar, на которую рассчитан плагин. Сейчас должна быть 2.
 
 int __stdcall plugin_load(kfar_info* info);
 Вызывается при загрузке плагина.
@@ -20,9 +20,14 @@ typedef struct
                         // O_WRITE = 2 - доступ для записи
                         // O_CREATE = 4 - если файл не существует, создать его
                         // O_TRUNCATE = 8 - усечь файл до нулевой длины
+        void* open2;    // HANDLE __stdcall open2(int plugin_id, HANDLE plugin_instance,
+                        //                      const char* name, int mode);
+                        // аналогично open, но открывает файл с панели плагина
+                        // open2(0,<anything>,name,mode) = open(name,mode)
         void* read;     // unsigned __stdcall read(HANDLE hFile, void* buf, unsigned size);
         void* write;    // ещё не реализовано
         void* seek;     // void __stdcall seek(HANDLE hFile, int method, __int64 newpos);
+        void* tell;     // __int64 __stdcall tell(HANDLE hFile);
         void* flush;    // ещё не реализовано
         void* filesize; // __int64 __stdcall filesize(HANDLE hFile);
         void* close;    // void __stdcall close(HANDLE hFile);
@@ -60,14 +65,21 @@ typedef struct
 void __stdcall plugin_unload(void);
 Вызывается при выгрузке плагина (в процессе завершения работы kfar).
 
-HANDLE __stdcall OpenFilePlugin(HANDLE basefile, const char* name,
-        const void* attr, const void* data, int datasize);
+HANDLE __stdcall OpenFilePlugin(HANDLE basefile,
+        const void* attr, const void* data, int datasize,
+        int baseplugin_id, HANDLE baseplugin_instance, const char* name);
 Открывает плагин, эмулирующий файловую систему на базе файла (например, архива).
+
 basefile - хэндл файла (к которому применимы функции read и seek из kfar_info)
-name - имя файла (во временном буфере)
 attr - указатель на структуру с атрибутами файла в формате системной функции 70.1
 data - буфер, содержащий данные из начала файла (может использоваться для определения типа файла)
 datasize - размер данных в data. В текущей реализации min(1024,размер файла)
+baseplugin_id - идентификатор плагина, на панели которого располагается открываемый файл;
+                0 в случае обычных панелей
+baseplugin_instance - хэндл, возвращённый из функции GetOpenPluginInfo плагина,
+                определяемого по baseplugin_id
+name - имя файла (во временном буфере) (полное имя относительно baseplugin)
+
 Если плагин обрабатывает переданный файл, то он должен вернуть новый описатель,
 который в дальнейшем будет использовать kfar для обращения к плагину. В этом случае
 плагин должен самостоятельно закрыть basefile функцией close из kfar_info (например,

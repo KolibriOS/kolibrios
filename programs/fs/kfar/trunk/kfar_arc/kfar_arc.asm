@@ -2,9 +2,9 @@
 ; project name:         KFar_Arc - plugin for KFar, which supports various archives
 ; target platform:      KolibriOS
 ; compiler:             FASM 1.67.14
-; version:              0.1
-; last update:          2007-07-11 (Jul 11, 2007)
-; minimal KFar version: 0.4
+; version:              0.11
+; last update:          2007-09-20 (Sep 20, 2007)
+; minimal KFar version: 0.41
 ; minimal kernel:       no limit
 ;
 ; author:               Diamond
@@ -30,6 +30,8 @@ include 'lzma.inc'              ; LZMA-decoder for *.7z
 include 'ppmd.inc'              ; PPMD-decoder for *.7z
 include '7zbranch.inc'          ; branch filters for *.7z
 include '7zaes.inc'             ; AES cryptor for *.7z
+include 'zip.inc'               ; *.zip
+include 'deflate.inc'           ; Deflate[64] decoder for *.7z and *.zip
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;; Interface for KFar ;;;;;;;;;;;;;;
@@ -39,9 +41,11 @@ kfar_info_struc:
 .lStructSize    dd      ?
 .kfar_ver       dd      ?
 .open           dd      ?
+.open2          dd      ?
 .read           dd      ?
 .write          dd      ?
 .seek           dd      ?
+.tell           dd      ?
 .flush          dd      ?
 .filesize       dd      ?
 .close          dd      ?
@@ -65,6 +69,10 @@ end virtual
 plugin_load:
         mov     eax, [esp+4]
         mov     [kfar_info], eax
+        push    [eax+kfar_info_struc.open2]
+        pop     [open2]
+        push    [eax+kfar_info_struc.filesize]
+        pop     [filesize]
         push    [eax+kfar_info_struc.read]
         pop     [read]
         push    [eax+kfar_info_struc.seek]
@@ -89,28 +97,48 @@ plugin_load:
         xor     eax, eax        ; success
         ret     4
 
-; HANDLE __stdcall OpenFilePlugin(HANDLE basefile, const char* name,
-;       const void* attr, const void* data, int datasize);
+; HANDLE __stdcall OpenFilePlugin(HANDLE basefile,
+;       const void* attr, const void* data, int datasize,
+;       int baseplugin_id, HANDLE baseplugin_instance, const char* name);
 ; This function is called when user presses Enter (or Ctrl+PgDn) on file.
 ; Plugin tests whether given file is of supported type
 ;   and if so, loads information and returns
 ;   handle to be used in subsequent calls to ReadFolder, SetFolder and so on.
 OpenFilePlugin:
         mov     [bPasswordDefined], 0
-        mov     esi, [esp+16]
+        mov     esi, [esp+12]
         mov     ebp, [esp+4]
 ; test for 7z archive
-        cmp     dword [esp+20], 20h     ; minimal size of 7z archive is 20h bytes
+        cmp     dword [esp+16], 20h     ; minimal size of 7z archive is 20h bytes
         jb      .no_7z
         cmp     word [esi], '7z'                ; signature, part 1
         jnz     .no_7z
         cmp     dword [esi+2], 0x1C27AFBC       ; signature, part 2
         jnz     .no_7z
         call    open_7z
-        ret     20
+        ret     28
 .no_7z:
+; test for zip archive
+        cmp     dword [esp+16], 22      ; minimal size of zip archive is 22 bytes
+        jb      .no_zip
+        cmp     word [esi], 0x4B50
+        jnz     .no_zip
+        cmp     word [esi+2], 0x0403
+        jz      .zip
+        cmp     word [esi+2], 0x0201
+        jz      .zip
+        cmp     word [esi+2], 0x0606
+        jz      .zip
+        cmp     word [esi+2], 0x0706
+        jz      .zip
+        cmp     word [esi+2], 0x0605
+        jnz     .no_zip
+.zip:
+        call    open_zip
+        ret     28
+.no_zip:
         xor     eax, eax
-        ret     20
+        ret     28
 
 ; Handle of plugin in kfar_arc is as follow:
 virtual at 0
@@ -121,6 +149,8 @@ handle_common:
 .root.subfiles          dd      ?
 .root.subfiles.end      dd      ?
 .root.NumSubItems       dd      ?
+.curdir                 dd      ?
+.NumFiles               dd      ?
 ; ... some plugin-specific data follows ...
 end virtual
 
@@ -141,6 +171,7 @@ file_common:
 .NumSubItems    dd      ?
 .next           dd      ?       ; next item in list of subfolders/files
 .prev           dd      ?       ; previous item in list of subfolders/files
+.stamp          dd      ?       ; stamp for GetFiles
 end virtual
 
 ; void __stdcall ClosePlugin(HANDLE hPlugin);
@@ -155,18 +186,132 @@ ClosePlugin:
 ; int __stdcall ReadFolder(HANDLE hPlugin,
 ;       unsigned dirinfo_start, unsigned dirinfo_size, void* dirdata);
 ReadFolder:
-        mov     eax, [esp+4]
-        mov     eax, [eax]
+; init header
+        mov     edi, [esp+16]
+        mov     ecx, 32/4
+        xor     eax, eax
+        rep     stosd
+        mov     byte [edi-32], 1        ; version
+        mov     ebp, [esp+4]
+; get current directory
+        lea     ebx, [ebp+handle_common.root.subfolders]
+        cmp     [ebp+handle_common.curdir], 0
+        jz      @f
+        mov     ebx, [ebp+handle_common.curdir]
+        add     ebx, file_common.subfolders
+@@:
+        mov     ecx, [ebx+16]
+        mov     [edi-24], ecx           ; number of files
+; edi points to BDFE
+        push    6               ; assume EOF
+        pop     eax
+        sub     ecx, [esp+8]
+        ja      @f
+        and     dword [edi-28], 0       ; number of files read
+        ret     10h
+@@:
+        cmp     ecx, [esp+12]
+        jb      @f
+        mov     ecx, [esp+12]
+        xor     eax, eax        ; OK
+@@:
+        mov     [edi-28], ecx
+        push    eax
+; copy files data
+        jecxz   .done
+; seek to required item
+        mov     eax, [esp+8+4]
+        mov     esi, [ebx]
+.0:
+        test    esi, esi
+        jnz     .1
+        mov     esi, [ebx+8]
+.1:
+        add     esi, ebp
         dec     eax
-        jmp     dword [ReadFolderTable+eax*4]
+        js      .2
+        mov     esi, [esi+file_common.next]
+        jmp     .0
+.2:
+.copy:
+        pushad
+        mov     eax, esi
+        mov     ecx, [ebp]
+        call    dword [getattrTable+(ecx-1)*4]
+        pop     edi esi
+        push    esi edi
+        add     edi, 40
+        mov     ecx, [esi+file_common.namelen]
+        mov     esi, [esi+file_common.name]
+        rep     movsb
+        mov     byte [edi], 0
+        popad
+        add     edi, 304
+        mov     esi, [esi+file_common.next]
+        test    esi, esi
+        jnz     @f
+        mov     esi, [ebx+8]
+@@:
+        add     esi, ebp
+        loop    .copy
+.done:
+        pop     eax
+        ret     10h
 
 ; bool __stdcall SetFolder(HANDLE hPlugin,
 ;       const char* relative_path, const char* absolute_path);
 SetFolder:
-        mov     eax, [esp+4]
-        mov     eax, [eax]
-        dec     eax
-        jmp     dword [SetFolderTable+eax*4]
+        mov     ebp, [esp+4]
+        mov     edx, [ebp+handle_common.curdir]
+        mov     esi, [esp+8]
+        cmp     dword [esi], '..'
+        jz      .toparent
+        xor     ecx, ecx
+@@:
+        inc     ecx
+        cmp     byte [esi+ecx], 0
+        jnz     @b
+        mov     ebx, [ebp+handle_common.root.subfolders]
+        test    edx, edx
+        jz      .scan
+        mov     ebx, [edx+file_common.subfolders]
+.scan:
+        test    ebx, ebx
+        jz      .err
+        add     ebx, ebp
+        cmp     [ebx+file_common.namelen], ecx
+        jnz     .cont
+        push    ecx esi
+        mov     edi, [ebx+file_common.name]
+        repz    cmpsb
+        pop     esi ecx
+        jz      .set
+.cont:
+        mov     ebx, [ebx+file_common.next]
+        jmp     .scan
+.toparent:
+        test    edx, edx
+        jz      .err
+        mov     ebx, [edx+file_common.parent]
+        test    ebx, ebx
+        jz      @f
+        add     ebx, ebp
+@@:
+.set:
+        mov     [ebp+handle_common.curdir], ebx
+        mov     al, 1
+        ret     12
+.err:
+        xor     eax, eax
+        ret     12
+
+iglobal
+cur_stamp dd 0
+endg
+
+uglobal
+tmp_bdfe        rb      304
+endg
 
 ; void __stdcall GetFiles(HANDLE hPlugin, int NumItems, void* items[],
 ;       void* addfile, void* adddir);
@@ -174,9 +319,153 @@ SetFolder:
 ;       bool __stdcall adddir(const char* name, void* bdfe_info);
 GetFiles:
         mov     ebp, [esp+4]
+        mov     ecx, [ebp+handle_common.NumFiles]
+        test    ecx, ecx
+        jz      .ret
+        mov     ebx, ebp
+        mov     eax, [ebx]
+        add     ebx, [basesizes+(eax-1)*8]
+        inc     [cur_stamp]
+.loop:
+        push    ecx
+        mov     esi, [ebx+file_common.fullname]
+        mov     edx, [ebp+handle_common.curdir]
+        test    edx, edx
+        jz      .incur
+        mov     eax, [cur_stamp]
+        mov     [edx+file_common.stamp], eax
+        mov     edi, [edx+file_common.fullname]
+        mov     ecx, [edx+file_common.namelen]
+        add     ecx, [edx+file_common.name]
+        sub     ecx, edi
+        repz    cmpsb
+        jnz     .cont
+.incur:
+        cmp     byte [esi], '/'
+        jnz     @f
+        inc     esi
+@@:
+        mov     ecx, [esp+12]   ; NumItems
+        mov     edx, [esp+16]   ; items
+        cmp     ecx, -1
+        jz      .ok
+.check:
+        sub     ecx, 1
+        js      .cont
+        push    esi
+        mov     edi, [edx]
+        add     edi, 40
+@@:
+        lodsb
+        scasb
+        jnz     @f
+        test    al, al
+        jz      .ok2
+        jmp     @b
+@@:
+        pop     esi
+        cmp     al, '/'
+        jnz     @f
+        cmp     byte [edi-1], 0
+        jz      .ok
+@@:
+        add     edx, 4
+        jmp     .check
+.ok2:
+        pop     esi
+.ok:
+; add all parents directories if needed
+.parloope:
+        mov     ecx, [ebx+file_common.parent]
+        jecxz   .pardone
+        add     ecx, ebp
+        mov     eax, [cur_stamp]
+        cmp     [ecx+file_common.stamp], eax
+        jz      .pardone
+.parloopi:
+        mov     edx, ecx
+        mov     ecx, [ecx+file_common.parent]
+        jecxz   @f
+        add     ecx, ebp
+        cmp     [ecx+file_common.stamp], eax
+        jnz     .parloopi
+@@:
+        mov     [edx+file_common.stamp], eax
+        push    esi
+        mov     eax, edx
+        mov     edi, tmp_bdfe
+        push    edi
+        sub     esi, [ebx+file_common.fullname]
+        add     esi, [edx+file_common.fullname]
+        push    esi
+        mov     ecx, [ebp]
+        call    dword [getattrTable+(ecx-1)*4]
+        mov     eax, [esp+16+20]
+        call    eax
+        pop     esi
+        test    al, al
+        jz      .forced_exit
+        jmp     .parloope
+.pardone:
+        cmp     [ebx+file_common.bIsDirectory], 0
+        jz      .addfile
+        mov     eax, [cur_stamp]
+        cmp     [ebx+file_common.stamp], eax
+        jz      .cont
+        mov     [ebx+file_common.stamp], eax
+        push    esi
+        mov     eax, ebx
+        mov     edi, tmp_bdfe
+        push    edi
+        push    esi
+        mov     ecx, [ebp]
+        call    dword [getattrTable+(ecx-1)*4]
+        mov     eax, [esp+16+20]
+        call    eax
+        pop     esi
+        test    al, al
+        jz      .forced_exit
+        jmp     .cont
+.addfile:
+        push    ebx esi ebp
+        push    11h
+        pop     edi
+        mov     eax, ebx
+        mov     ecx, [ebp]
+        call    dword [openTable+(ecx-1)*4]
+        pop     ebp esi ebx
+        test    eax, eax
+        jz      .cont
+        push    eax
+        push    eax
+        mov     edi, tmp_bdfe
+        push    edi
+        push    esi
+        mov     eax, ebx
+        mov     ecx, [ebp]
+        call    dword [getattrTable+(ecx-1)*4]
+        mov     eax, [esp+20+16]
+        call    eax
+        pop     ecx
+        push    eax ebp
+        push    ebx
+        push    ecx
+        call    myclose
+        pop     ebx
+        pop     ebp eax
+        test    al, al
+        jz      .forced_exit
+.cont:
         mov     eax, [ebp]
-        dec     eax
-        jmp     dword [GetFilesTable+eax*4]
+        add     ebx, [basesizes+(eax-1)*8+4]
+        pop     ecx
+        dec     ecx
+        jnz     .loop
+.ret:
+        ret     20
+.forced_exit:
+        pop     ecx
+        jmp     .ret
 
 ; void __stdcall GetOpenPluginInfo(HANDLE hPlugin, OpenPluginInfo* info);
 GetOpenPluginInfo:
@@ -882,7 +1171,7 @@ query_password:
 ; export table
 align 4
 EXPORTS:
-        dd      aVersion,       1
+        dd      aVersion,       2
         dd      aPluginLoad,    plugin_load
         dd      aOpenFilePlugin,OpenFilePlugin
         dd      aClosePlugin,   ClosePlugin
@@ -930,6 +1219,7 @@ aArchiveDataError db    'Ошибка в данных архива',0
 aArchiveDataErrorPass db 'Ошибка в данных архива или неверный пароль',0
 aChangePass     db      'Ввести пароль',0
 aNameTooLong    db      'Слишком длинное имя',0
+aCannotOpenFile db      'Не могу открыть файл',0
 else
 aContinue       db      'Continue',0
 aCancel         db      'Cancel',0
@@ -947,40 +1237,45 @@ aArchiveDataError db    'Error in archive data',0
 aArchiveDataErrorPass db 'Error in archive data or incorrect password',0
 aChangePass     db      'Enter password',0
 aNameTooLong    db      'Name is too long',0
+aCannotOpenFile db      'Cannot open file',0
 end if
 
-; kfar_arc supports [hmm... will support...] many archive types.
+; kfar_arc supports many archive types.
 ; OpenFilePlugin looks for supported archive signature and gives control
 ;   to concrete handler if found.
-; Other functions just determine type of opened archive and jumps to corresponding handler.
+; Other functions just determine type of opened archive and jump to corresponding handler.
 type_mem_stream = 0     ; memory stream - for file handles (returned from 'open')
 type_7z = 1
+type_zip = 2
 
 ; archive functions (types start from type_7z)
 align 4
 ClosePluginTable:
         dd      close_7z
-ReadFolderTable:
-        dd      ReadFolder_7z
-SetFolderTable:
-        dd      SetFolder_7z
-GetFilesTable:
-        dd      GetFiles_7z
+        dd      close_zip
 getattrTable:
         dd      getattr_7z
+        dd      getattr_zip
 openTable:
         dd      open_file_7z
+        dd      open_file_zip
+basesizes:
+        dd      handle_7z.basesize, file_in_7z.size
+        dd      handle_zip.basesize, file_in_zip.size
 
 ; file functions (types start from type_mem_stream)
 readTable:
         dd      read_mem_stream
         dd      read_7z
+        dd      read_zip
 setposTable:
         dd      setpos_mem_stream
         dd      setpos_7z
+        dd      setpos_zip
 closeTable:
         dd      close_mem_stream
         dd      close_file_7z
+        dd      close_file_zip
 
 ; pointers for SayErr and Message
 ContinueBtn     dd      aContinue
@@ -1045,6 +1340,8 @@ error_proc      dd      ?
 clear_proc      dd      ?
 
 ; import from kfar
+open2           dd      ?
+filesize        dd      ?
 read            dd      ?
 seek            dd      ?
 close           dd      ?

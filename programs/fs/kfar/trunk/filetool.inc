@@ -1008,7 +1008,7 @@ open:
         jnz     .ret0
 ; file does not exist
         test    [ecx+_FILE.mode], O_CREATE
-        jz      .ret0z
+        jz      .ret0
 .truncate:
         lea     ebx, [ecx+_FILE.fileinfo]
         mov     byte [ebx], 2
@@ -1038,6 +1038,82 @@ open:
         mov     [esp+28], ecx
         popad
         ret     8
+
+; HANDLE __stdcall open2(int plugin_id, HANDLE plugin_instance, const char* name, int mode);
+; Opens file on plugin panel
+open2:
+        cmp     dword [esp+4], 0
+        jnz     .plugin
+        pop     eax
+        add     esp, 8
+        push    eax
+        jmp     open
+.plugin:
+        pushad
+        mov     ecx, _FILE.size
+        call    xpgalloc
+        test    eax, eax
+        jz      .ret0z
+        mov     [esp+28], eax
+        mov     ecx, eax
+        mov     esi, [esp+44]
+        lea     edi, [eax+_FILE.finame]
+        lea     edx, [eax+_FILE.finame+1024]
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jz      @f
+        cmp     edi, edx
+        jb      @b
+.ret0:
+        call    pgfree
+.ret0z:
+        popad
+        xor     eax, eax
+        ret     8
+@@:
+        mov     edx, [esp+36]
+        mov     [ecx+_FILE.hPlugin], edx
+        mov     ebx, [esp+40]
+        mov     eax, [esp+48]
+        mov     [ecx+_FILE.mode], eax
+        push    ebx ecx
+        push    eax
+        lea     eax, [ecx+_FILE.finame]
+        push    eax
+        push    ebx
+        call    [edx+PluginInfo.open]
+        pop     ecx ebx
+        test    eax, eax
+        jz      .ret0
+        mov     [ecx+_FILE.hFile], eax
+        mov     edx, [esp+36]
+        push    ecx
+        lea     edi, [ecx+_FILE.fileinfo]
+        push    edi
+        xor     eax, eax
+        push    ecx
+        push    10
+        pop     ecx
+        rep     stosd
+        pop     ecx
+        lea     eax, [ecx+_FILE.finame]
+        push    eax
+        push    ebx
+        call    [edx+PluginInfo.getattr]
+        pop     ecx
+        xor     eax, eax
+        mov     dword [ecx+_FILE.pos], eax
+        mov     dword [ecx+_FILE.pos+4], eax
+        mov     dword [ecx+_FILE.bufpos], eax
+        mov     dword [ecx+_FILE.bufpos+4], eax
+        mov     [ecx+_FILE.bufsize], eax
+        mov     dword [ecx+_FILE.fioffset], eax
+        mov     dword [ecx+_FILE.fioffset+4], eax
+        mov     [esp+28], ecx
+        popad
+        ret     16
 
 ; unsigned __stdcall read(HANDLE hFile, void* buf, unsigned size);
 read:
@@ -1072,6 +1148,10 @@ read:
         add     [esp+28], ebx
         add     dword [ecx+_FILE.pos], ebx
         adc     dword [ecx+_FILE.pos+4], 0
+        test    dword [ecx+_FILE.pos], 2047
+        jnz     @f
+        and     [ecx+_FILE.bufsize], 0
+@@:
         sub     [esp+44], ebx
         jz      .ret
 .nobuf0:
@@ -1247,6 +1327,13 @@ setpos_default:
         push    dword [esp+16]
         call    seek
         ret     12
+
+; __int64 __stdcall tell(HANDLE hFile);
+tell:
+        mov     eax, [esp+4]
+        mov     edx, dword [eax+_FILE.pos+4]
+        mov     eax, dword [eax+_FILE.pos]
+        ret     4
 
 ; __int64 __stdcall filesize(HANDLE hFile);
 filesize:

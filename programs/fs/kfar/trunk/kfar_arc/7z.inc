@@ -19,6 +19,7 @@ file_in_7z:
 .NumSubItems    dd      ?
 .next           dd      ?       ; next item of list of subfolders or files
 .prev           dd      ?       ; previous item of list of subfolders or files
+.stamp          dd      ?
 .attr           dd      ?
 .FileCRC        dd      ?
 .startPos       dq      ?
@@ -37,7 +38,6 @@ file_in_7z:
 .bLastWriteTimeDefined  db      ?
 .bHasStream             db      ?
 .bAnti                  db      ?
-.stamp          dd      ?
 .size = $
 end virtual
 
@@ -830,7 +830,7 @@ open_7z:
         mov     esi, [inStream]
         mov     [eax+handle_7z.host], esi
         lea     edi, [eax+handle_7z.host_datetime]
-        mov     esi, [esp+16]
+        mov     esi, [esp+12]
         add     esi, 8
         mov     ecx, 6
         rep     movsd
@@ -2202,8 +2202,6 @@ fillBufFromInStream:
         push    0
         push    [inStream]
         call    [seek]
-        pop     eax
-        push    eax
         push    ecx
         push    edi
         push    [inStream]
@@ -2274,6 +2272,20 @@ _7z.GetCoder:
         cmp     dword [eax+9], 1
         jz      .ret
 @@:
+        inc     edx
+; Deflate decoder: method ID = [size=03] 04 01 08, NumInStreams = NumOutStreams = 1
+        cmp     dword [eax+4], 0x08010403
+        jnz     @f
+        cmp     dword [eax+8], 1
+        jz      .ret
+@@:
+        inc     edx
+; Deflate64 decoder: method ID = [size=03] 04 01 09, NumInStreams = NumOutStreams = 1
+        cmp     dword [eax+4], 0x09010403
+        jnz     @f
+        cmp     dword [eax+8], 1
+        jz      .ret
+@@:
         stc
 .ret:
         ret
@@ -2287,6 +2299,8 @@ label _7z.GetBufSizeTable dword
         dd      bcj_get_buf_size
         dd      bcj2_get_buf_size
         dd      aes7z_get_buf_size
+        dd      deflate_get_buf_size
+        dd      deflate_get_buf_size
 label _7z.InitTable dword
         dd      copy_init_decoder
         dd      lzma_init_decoder
@@ -2294,6 +2308,8 @@ label _7z.InitTable dword
         dd      bcj_init_decoder
         dd      bcj2_init_decoder
         dd      aes7z_init_decoder
+        dd      deflate_init_decoder
+        dd      deflate64_init_decoder
 endg
 
 copy_get_buf_size:
@@ -2343,164 +2359,6 @@ copy_fillBuf:
         popad
         ret
 
-; int __stdcall ReadFolder([esp+4] = HANDLE hPlugin,
-;       [esp+8] = unsigned dirinfo_start, [esp+12] = unsigned dirinfo_size,
-;       [esp+16] = void* dirdata);
-ReadFolder_7z:
-; init header
-        mov     edi, [esp+16]
-        mov     ecx, 32/4
-        xor     eax, eax
-        rep     stosd
-        mov     byte [edi-32], 1        ; version
-        mov     ebp, [esp+4]
-; get current directory
-        lea     ebx, [ebp+handle_7z.root.subfolders]
-        cmp     [ebp+handle_7z.curdir], 0
-        jz      @f
-        mov     ebx, [ebp+handle_7z.curdir]
-        add     ebx, file_in_7z.subfolders
-@@:
-        mov     ecx, [ebx+16]
-        mov     [edi-24], ecx           ; number of files
-; edi points to BDFE
-        push    6               ; assume EOF
-        pop     eax
-        sub     ecx, [esp+8]
-        ja      @f
-        and     dword [edi-28], 0       ; number of files read
-        ret     10h
-@@:
-        cmp     ecx, [esp+12]
-        jb      @f
-        mov     ecx, [esp+12]
-        xor     eax, eax        ; OK
-@@:
-        mov     [edi-28], ecx
-        push    eax
-; copy files data
-        test    ecx, ecx
-        jz      .done
-; seek to required item
-        mov     eax, [esp+8+4]
-        mov     esi, [ebx]
-.0:
-        test    esi, esi
-        jnz     .1
-        mov     esi, [ebx+8]
-.1:
-        add     esi, ebp
-        dec     eax
-        js      .2
-        mov     esi, [esi+file_in_7z.next]
-        jmp     .0
-.2:
-.copy:
-        cmp     [esi+file_in_7z.bPseudoFolder], 0
-        jnz     .pseudo
-        xor     eax, eax
-        cmp     [esi+file_in_7z.bAttrDefined], 0
-        jz      @f
-        mov     eax, [esi+file_in_7z.attr]
-@@:
-        stosd
-        xor     eax, eax
-        stosd
-        push    esi ecx
-        add     esi, file_in_7z.CreationTime
-        mov     ecx, 8
-        rep     movsd
-        pop     ecx esi
-        mov     edx, [esi+file_in_7z.name]
-        push    edi
-@@:
-        mov     al, [edx]
-        inc     edx
-        stosb
-        test    al, al
-        jnz     @b
-        pop     edi
-.cont:
-        add     edi, 264
-        mov     esi, [esi+file_in_7z.next]
-        test    esi, esi
-        jnz     @f
-        mov     esi, [ebx+8]
-@@:
-        add     esi, ebp
-        loop    .copy
-        jmp     .done
-.pseudo:
-        push    0x10            ; attributes: folder
-        pop     eax
-        stosd
-        xor     eax, eax
-        stosd
-        push    ecx esi
-        lea     esi, [ebp+handle_7z.host_datetime]
-        mov     ecx, 6
-        rep     movsd
-        pop     esi
-        stosd
-        stosd
-        push    edi esi
-        mov     ecx, [esi+file_in_7z.namelen]
-        mov     esi, [esi+file_in_7z.name]
-        rep     movsb
-        mov     byte [edi], 0
-        pop     esi edi ecx
-        jmp     .cont
-.done:
-        pop     eax
-        ret     10h
-
-; bool __stdcall SetFolder([esp+4] = HANDLE hPlugin,
-;       [esp+8] = const char* relative_path, [esp+12] = const char* absolute_path);
-SetFolder_7z:
-        mov     ebp, [esp+4]
-        mov     edx, [ebp+handle_7z.curdir]
-        mov     esi, [esp+8]
-        cmp     dword [esi], '..'
-        jz      .toparent
-        xor     ecx, ecx
-@@:
-        inc     ecx
-        cmp     byte [esi+ecx], 0
-        jnz     @b
-        mov     ebx, [ebp+handle_7z.root.subfolders]
-        test    edx, edx
-        jz      .scan
-        mov     ebx, [edx+file_in_7z.subfolders]
-.scan:
-        test    ebx, ebx
-        jz      .err
-        add     ebx, ebp
-        cmp     [ebx+file_in_7z.namelen], ecx
-        jnz     .cont
-        push    ecx esi
-        mov     edi, [ebx+file_in_7z.name]
-        repz    cmpsb
-        pop     esi ecx
-        jz      .set
-.cont:
-        mov     ebx, [ebx+file_in_7z.next]
-        jmp     .scan
-.toparent:
-        test    edx, edx
-        jz      .err
-        mov     ebx, [edx+file_in_7z.parent]
-        test    ebx, ebx
-        jz      @f
-        add     ebx, ebp
-@@:
-.set:
-        mov     [ebp+handle_7z.curdir], ebx
-        mov     al, 1
-        ret     12
-.err:
-        xor     eax, eax
-        ret     12
-
 ; ebp=hPlugin, eax->item, edi->info
 getattr_7z:
         cmp     [eax+file_in_7z.bPseudoFolder], 0
@@ -2514,23 +2372,17 @@ getattr_7z:
         rep     movsd
         ret
 .pseudo:
-        mov     esi, [eax+file_in_7z.name]
-        mov     ecx, [eax+file_in_7z.namelen]
         push    0x10    ; attributes: folder
         pop     eax
         stosd
         xor     eax, eax
         stosd
-        push    ecx esi
         lea     esi, [ebp+handle_7z.host_datetime]
         push    6
         pop     ecx
         rep     movsd
-        pop     esi ecx
         stosd
         stosd
-        rep     movsb
-        mov     byte [edi], 0
         ret
 
 virtual at 0
@@ -2986,153 +2838,3 @@ close_file_7z:
         call    free_handle
 .ret:
         ret     4
-
-iglobal
-cur_stamp dd 0
-endg
-
-uglobal
-tmp_bdfe        rb      304
-endg
-
-GetFiles_7z:
-        mov     ecx, [ebp+handle_7z.NumFiles]
-        test    ecx, ecx
-        jz      .ret
-        lea     ebx, [ebp+handle_7z.basesize]
-        inc     [cur_stamp]
-.loop:
-        push    ecx
-        mov     esi, [ebx+file_in_7z.fullname]
-        mov     edx, [ebp+handle_7z.curdir]
-        test    edx, edx
-        jz      .incur
-        mov     eax, [cur_stamp]
-        mov     [edx+file_in_7z.stamp], eax
-        mov     edi, [edx+file_in_7z.fullname]
-        mov     ecx, [edx+file_in_7z.namelen]
-        add     ecx, [edx+file_in_7z.name]
-        sub     ecx, edi
-        repz    cmpsb
-        jnz     .cont
-.incur:
-        cmp     byte [esi], '/'
-        jnz     @f
-        inc     esi
-@@:
-        mov     ecx, [esp+12]   ; NumItems
-        mov     edx, [esp+16]   ; items
-        cmp     ecx, -1
-        jz      .ok
-.check:
-        sub     ecx, 1
-        js      .cont
-        push    esi
-        mov     edi, [edx]
-        add     edi, 40
-@@:
-        lodsb
-        scasb
-        jnz     @f
-        test    al, al
-        jz      .ok2
-        jmp     @b
-@@:
-        pop     esi
-        cmp     al, '/'
-        jnz     @f
-        cmp     byte [edi-1], 0
-        jz      .ok
-@@:
-        add     edx, 4
-        jmp     .check
-.ok2:
-        pop     esi
-.ok:
-; add all parents directories if needed
-.parloope:
-        mov     ecx, [ebx+file_in_7z.parent]
-        jecxz   .pardone
-        add     ecx, ebp
-        mov     eax, [cur_stamp]
-        cmp     [ecx+file_in_7z.stamp], eax
-        jz      .pardone
-.parloopi:
-        mov     edx, ecx
-        mov     ecx, [ecx+file_in_7z.parent]
-        jecxz   @f
-        add     ecx, ebp
-        cmp     [ecx+file_in_7z.stamp], eax
-        jnz     .parloopi
-@@:
-        mov     [edx+file_in_7z.stamp], eax
-        push    esi
-        mov     eax, edx
-        mov     edi, tmp_bdfe
-        push    edi
-        sub     esi, [ebx+file_in_7z.fullname]
-        add     esi, [edx+file_in_7z.fullname]
-        push    esi
-        call    getattr_7z
-        mov     eax, [esp+16+20]
-        call    eax
-        pop     esi
-        test    al, al
-        jz      .forced_exit
-        jmp     .parloope
-.pardone:
-        cmp     [ebx+file_in_7z.bIsDirectory], 0
-        jz      .addfile
-        mov     eax, [cur_stamp]
-        cmp     [ebx+file_in_7z.stamp], eax
-        jz      .cont
-        mov     [ebx+file_in_7z.stamp], eax
-        push    esi
-        mov     eax, ebx
-        mov     edi, tmp_bdfe
-        push    edi
-        push    esi
-        call    getattr_7z
-        mov     eax, [esp+16+20]
-        call    eax
-        pop     esi
-        test    al, al
-        jz      .forced_exit
-        jmp     .cont
-.addfile:
-        push    ebx esi
-        push    11h
-        pop     edi
-        mov     eax, ebx
-        call    open_file_7z
-        pop     esi ebx
-        test    eax, eax
-        jz      .cont
-        push    eax
-        push    eax
-        mov     edi, tmp_bdfe
-        push    edi
-        push    esi
-        mov     eax, ebx
-        call    getattr_7z
-        mov     eax, [esp+20+16]
-        call    eax
-        pop     ecx
-        push    eax
-        push    ebx
-        push    ecx
-        call    myclose
-        pop     ebx
-        pop     eax
-        test    al, al
-        jz      .forced_exit
-.cont:
-        add     ebx, file_in_7z.size
-        pop     ecx
-        dec     ecx
-        jnz     .loop
-.ret:
-        ret     20
-.forced_exit:
-        pop     ecx
-        jmp     .ret
