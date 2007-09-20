@@ -23,7 +23,7 @@ soften_up	dd    1  ;  0 no         ; 1 yes
 soften_down	dd    0  ;  0 no         ; 1 yes
 minimize_left	dd    1
 minimize_right	dd    1
-icons_position	dd   95
+icons_position	dd    95
 menu_enable	dd    1
 setup_enable	dd    0
 graph_text	dd    1
@@ -93,7 +93,7 @@ begin_1:
    kill_active_application:
      mcall  18, 7
      mov    ecx,eax
-     
+
      ;//{SPraid.simba do not kill panel and icon
      push eax
      mov eax,9
@@ -361,6 +361,17 @@ START:
 	lea	edx,[ebx-PANEL_HEIGHT-1]
 	mcall	48,6
 
+; // Alver 26.08.2007 // {
+   mov  eax, 9                      ; info of process
+   mov  ebx, process_info_buffer
+   mov  ecx, -1
+   mcall
+   mov  ecx, dword [process_info_buffer+30]
+   mcall 18,21
+   mov  [this_slot], eax
+   mov  [max_slot], 255
+; } \\ Alver \\
+
     call set_variables
 
 start_after_minimize:
@@ -443,6 +454,15 @@ still:
     cmp  ah,102 	  ; minimize to right
     je	 right_button
 
+; // Alver 26.08.2007 // {
+    cmp  ah, 103
+    je	 clean_desktop              ; minimize all windows
+    cmp  ah, 104
+    je   restore_desktop            ; restore minimized windows
+    cmp  ah, 105
+    je   swap_minimized_desktop     ; minimize normal windows, and restore minimized windows
+; } \\ Alver \\
+
     cmp  ah,byte 1	  ; start/terminate menu
     jnz  noselect
     call menu_handler
@@ -518,8 +538,12 @@ still:
  noid20:
     cmp  ah,21
     jnz  noid21
-    cmp  [page_list],15
-    je	   @f
+; // Alver 25.08.2007 // {
+    cmp  [page_list], 99
+    jnc  @f
+  ;  cmp  [page_list],15
+  ;  je	   @f
+; } \\ Alver \\
     inc  [page_list]
     jmp  red
   @@:
@@ -539,7 +563,68 @@ still:
 
     jmp  still
 
+; // Alver 26.08.2007 //{
+restore_desktop:
+    mcall   9,process_info_buffer,-1
+    mov     [max_slot], eax
+    mov     ecx, 2
+    mov     edx, 2
+@@:
+    mcall   18, 22
+    inc     edx
+    cmp     edx, [max_slot]
+    jbe     @b
+    jmp  still
 
+swap_minimized_desktop:
+    xor  esi, esi
+    inc esi
+    jmp  min_swap_desktop
+clean_desktop:
+    xor esi,esi
+ min_swap_desktop:                 ; input esi 0 - min, <>0 swap
+     mov    ecx, 2                 ; Начальный номер слота процесса
+     mov    ebx, process_info_buffer
+
+.loop1:
+     cmp    ecx, [this_slot]
+     je     .loop1xx
+     mcall  9
+     mov    [max_slot], eax
+     mov    dx, word [process_info_buffer+50]
+     cmp    dx, 9                   ; Проверка свободен ли данный слот
+     jz     .loop1xx
+     mov    edx, dword [ebx+10]
+     cmp    dl, '@'
+     je     .loop1xx
+     cmp    dword [ebx+10], 'ICON'
+     jnz    @f
+     cmp    [ebx+42], dword 51
+     jnz    @f
+     cmp    [ebx+46], dword 51
+     jz     .loop1xx
+@@:
+     cmp    [ebx+10], dword '    '
+     jz     .loop1xx
+
+     pushad
+     mov    edx, ecx
+     xor    ecx, ecx
+     or     esi, esi
+     jz     @f
+     movzx  eax, byte [process_info_buffer+70]
+     and    eax, 2            ; mask minimize
+     jz     @f
+     mov    ecx, 2            ; restore
+@@:
+     mcall  18, 22
+     popad
+.loop1xx:
+     inc    ecx
+     cmp    ecx, [max_slot]
+     jbe    .loop1
+     jmp    still
+; } \\ Alver \\
 
 draw_running_applications:
 
@@ -610,7 +695,10 @@ redraw_window_tabs:
 
 	mov	eax, 13
 	imul	ebx, edi, 6*10*10000h
-	add	ebx, 6*10*10000h + 7*10000h + 54
+; // Alver 26.08.2007 // {
+;	add	ebx, 6*10*10000h + 7*10000h + 54
+	add	ebx, 12*10*10000h + 7*10000h + 54
+; } // Alver //
 	mov	ecx, 3*10000h + 14
 	xor	edx, edx
 	int	0x40
@@ -718,23 +806,35 @@ draw_application_buttons:
 
     shr  eax,16
 
-    cmp  eax,639
-    jne  now1
-    mov  [max_applications],7	;6
-  now1:
-    cmp  eax,799
-    jne  now2
-    mov  [max_applications],9 ;10    ;8
-  now2:
-    cmp  eax,1023
-    jne  now3
-    mov  [max_applications],12 ;13   ;8
-  now3:
-    cmp  eax,1279
-    jne  now4
-    mov  [max_applications],17 ;18    ;8
-  now4:
-    mov  edi,1
+; // Alver 25.08.2007 // {
+ ;   cmp  eax,639
+ ;   jne  now1
+ ;   mov  [max_applications],7	;6
+ ; now1:
+ ;   cmp  eax,799
+ ;   jne  now2
+ ;   mov  [max_applications],9 ;10    ;8
+ ; now2:
+ ;   cmp  eax,1023
+ ;   jne  now3
+ ;   mov  [max_applications],12 ;13   ;8
+ ; now3:
+ ;   cmp  eax,1279
+ ;   jne  now4
+ ;   mov  [max_applications],17 ;18    ;8
+ ; now4:
+ ;   mov  edi,1
+
+     sub  eax, 281
+     jnc  ._01
+     xor  eax, eax
+._01:
+     mov  bl, 60
+     div  bl
+     xor  ah, ah                       ; eax - количество умещаюшихся пиктов
+     mov  [max_applications], eax
+     mov  edi,1
+;  } \\ Alver \\
 
   nb:
 
@@ -742,7 +842,7 @@ draw_application_buttons:
     mov  ebx,edi
     shl  ebx,16
     imul ebx,6*10	     ;13
-    add  ebx,15*65536+10*6-1  ;13
+    add  ebx,75*65536+10*6-1 ; << Alver 25.08.2007 >> 15*65536+10*6-1  ;13
     mov  ecx,1*65536+17
     mov  edx,edi
     add  edx,51
@@ -1135,7 +1235,7 @@ draw_window:
     mov  edi, [wcolor]
 
     mov  [panel_x_pos], ebx
-    mov  [panel_y_pos], ecx	 ; ╧юър ўЄю Єръ.
+    mov  [panel_y_pos], ecx	 ; Пока что так.
 
     int  0x40
 
@@ -1269,11 +1369,45 @@ draw_window:
     popa
     ret
 
-
+; // Alver 26.08.2007 // {
+dr_button_clean:
+    mov  ecx, 3*65536+13
+    mcall 8
+    ret
+; } \\ Alver \\
 
 draw_menuet_icon:
 
     pusha
+
+; // Alver 26.08.2007 // {
+; Inserted code for drowing buttons 103, 104, 105 (Clean, Restore, Exchange windows)
+    mov  esi, dword [system_colours+24]    ; drawing buttons
+    and  esi, 0x00ffffff
+    mov  edx, 103
+    mov  ebx, 67*65536+13
+    call dr_button_clean
+    inc  edx
+    mov  ebx, 86*65536+13
+    call dr_button_clean
+    inc  edx
+    mov  ebx, 105*65536+13
+    call dr_button_clean
+    mov  ecx, dword [system_colours+28]
+    and  ecx, 0x00ffffff
+    xor  esi, esi
+    inc  esi
+    mov  edx, page_clean_but
+    mov  eax, 4
+    mov  ebx, 71*65536+6
+    int  0x40
+    inc  edx
+    mov  ebx, 90*65536+6
+    int  0x40
+    inc  edx
+    mov  ebx, 109*65536+6
+    int  0x40
+; } \\ Alver \\
 
     cmp  [menu_enable],1
     jne  no_menu
@@ -1658,7 +1792,7 @@ draw_info:    ; draw cpu usage, time, date
     mov  ecx,6 shl 16+10
     inc  edx	    ;button 21
     int  0x40
-    sub  ebx,18 shl 16
+    sub  ebx,24 shl 16  ; << Alver 25.08.2007 >> 18 shl 16
     inc  edx	    ;button 22
     int  0x40
 
@@ -1774,32 +1908,43 @@ dalshe:
     mov  bx,9
     mov  ecx,6 shl 16+11
     int  0x40
-    sub  ebx,18 shl 16
+; // Alver 25.08.2007 // {
+  ;  sub  ebx,18 shl 16
+  ;  int  0x40
+  ;  add  ebx,19 shl 16
+    sub  ebx,24 shl 16 ; 18 shl 16
     int  0x40
-    add  ebx,19 shl 16
+    add  ebx,25 shl 16 ; 19 shl 16
+; } \\ Alver \\
     sub  bx,2
     mov  ecx,7 shl 16+9
     mov  edx,0xffffff
     int  0x40
-    sub  ebx,18 shl 16
+; // Alver 25.08.2007 // {
+ ;   sub  ebx,18 shl 16
+    sub  ebx,24 shl 16
+; } \\ Alver \\
     int  0x40
 
     mov  eax,4
     mov  edx,page_a1
     mov  ebx,[maxx]
-    sub  ebx,133;150
+; // Alver 25.08.2007 // {
+   ; sub  ebx,133;150
+    sub  ebx, 139
+; } \\ Alver \\
     shl  ebx,16
     mov  bx,8
-    mov  esi,4
+    mov  esi,5     ;4
     int  0x40
     add  ebx,1 shl 16
     int  0x40
 
     mov  eax,47
-    mov  ebx,0x10100
+    mov  ebx,0x20000  ; 0x10100 (<Alver)
     mov  ecx,[page_list]
     mov  edx,[maxx]
-    sub  edx,124;141
+    sub  edx,130 ; 124 (<Alver);141
     shl  edx,16
     mov  dx,7
     mov  esi,0xffffff
@@ -2048,7 +2193,11 @@ small_draw dd 0x0
 ptime	dd 0x0
 maxx	dd 0x0
 text	db '0123456789'
-page_a1 db '<  >'
+; // Alver 25.08.2007 // {
+;page_a1 db '<  >'
+page_a1        db '<   >'
+page_clean_but db 25,24,18
+; } \\ Alver \\
 bte	dd 0xccddee
 
 wcolor	dd 0x506070
@@ -2114,11 +2263,14 @@ screen_size:
   .height dw ?
   .width  dw ?
 
+this_slot      dd 0           ; Slot of this process
+max_slot       dd 255
 system_colours rd 10
 app_list rd 50
 alt_tab_list	rd	256*2
 alt_tab_list_size dd	?
 process_info_buffer  rb 1024
+procinfo_for_detect  rb 1024
 tictable:
   rd 256
 

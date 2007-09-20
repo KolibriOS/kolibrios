@@ -7,7 +7,7 @@ detect_start:
 	int	0x40
 
    detect_still:
-	;mov     eax, 10        ; ╨рсюЄрхЄ эх ёютёхь ъюЁЁхъЄэю, яюўхьє їч.
+	;mov     eax, 10        ; Работает не совсем корректно, почему хз.
 	mov	eax, 23
 	mov	ebx, 4
 	int	0x40
@@ -15,11 +15,11 @@ detect_start:
 	;jne     detect_still
 
 	mov	eax, 37
-	mov	ebx, 2		; ╬яЁр°штрхь ъэюяъш ь√°ш
+	mov	ebx, 2		; Опрашиваем кнопки мыши
 	int	0x40
 
-	test	eax, ebx	; test    eax, 00000010b ╚эЄхЁхёєхЄ Єюы№ъю яЁртр  ъэюяър
-	jz	detect_still	; ═хЄ - ? ┬ючтЁр∙рхьё  т уыртэ√щ Ўшъы яюЄюър
+	test	eax, ebx	; test    eax, 00000010b Интересует только правая кнопка
+	jz	detect_still	; Нет - ? Возвращаемся в главный цикл потока
 
    mouse_btn_up:
 	mov	eax, 37
@@ -50,7 +50,10 @@ detect_start:
    detect_button:
 	mov	ebx, edx
 	imul	ebx, 6 * 10
-	add	ebx, 4
+; // Alver  26.08.2007 // {
+;	add	ebx, 4
+	add	ebx, 64
+; } \\ Alver \\
 
 	cmp	eax, ebx
 	jb	detect_still
@@ -74,6 +77,10 @@ detect_start:
 
 	mov	[n_slot], ecx
 
+	mov	eax, 9
+	mov	ebx, procinfo_for_detect
+	int	0x40
+
 	mov	eax, 51
 	mov	ebx, 1
 	mov	ecx, context_menu_start
@@ -89,8 +96,3 @@ detect_start:
 	jae	detect_still
 	inc	edx
 	jmp	detect_button
-
-
-
-
-

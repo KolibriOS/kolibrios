@@ -160,8 +160,13 @@ still:
     cmp  esi,eax
     jg   all_terminated
 
-    cmp  [I_END+10],dword '@ICO'
+    mov  eax,[I_END+10]
+    and  eax,not 20202020h
+    cmp  eax,'@ICO'
+    jz   @f
+    cmp  eax,'ICON'
     jne  newread
+   @@:
     mov  eax,51
     cmp  eax,[I_END+42]
     jne  newread
