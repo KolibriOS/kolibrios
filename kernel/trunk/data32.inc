@@ -284,10 +284,12 @@ scr_width         rd 1
 scr_height        rd 1
 
 create_cursor     rd 1
+select_hw_cursor  rd 1
 set_hw_cursor     rd 1
 hw_restore        rd 1
 
 def_cursor        rd 1
+current_cursor    rd 1
 hw_cursor         rd 1
 cur_def_interl    rd 1
 cur_saved_base    rd 1

@@ -98,7 +98,7 @@ mres:
 save_draw_mouse:
 
         cmp [set_hw_cursor], 0
-        jz @F
+        jz .no_hw_cursor
         pushad
 
         mov    [X_UNDER],ax
@@ -116,23 +116,31 @@ save_draw_mouse:
         shl edx, 8
         mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
 
+        cmp ecx, [current_cursor]
+        je .draw
+
         cmp [ecx+CURSOR.magic], 'CURS'
         jne .fail
+
+        push ecx
+        call [select_hw_cursor]
+        mov [current_cursor], ecx
+
 ;        cmp [ecx+CURSOR.size], CURSOR_SIZE
 ;        jne .fail
-        push ecx
-        call [set_hw_cursor]
+
+.draw:
+        stdcall [set_hw_cursor], ecx
         popad
         ret
 .fail:
         mov ecx, [def_cursor]
         mov [edx+SLOT_BASE+APPDATA.cursor], ecx
-        push ecx
-        call [set_hw_cursor]
+        stdcall [set_hw_cursor], ecx
         popad
         ret
 
-@@:
+.no_hw_cursor:
         pushad
         ; save & draw
         mov    [X_UNDER],ax
@@ -391,7 +399,7 @@ nodmp:
         ret
 
 proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
-    
+
     mov  eax,[BtnState]
     mov  [BTN_DOWN],eax
 
@@ -429,7 +437,7 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
 
     mov  eax,[VScroll]
     add  [MOUSE_SCROLL_V],ax
-    
+
     mov  eax,[HScroll]
     add  [MOUSE_SCROLL_H],ax
 

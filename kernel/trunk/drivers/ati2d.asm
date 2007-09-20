@@ -14,6 +14,8 @@ API_VERSION     equ 0x01000100
 
 DEBUG           equ 1
 
+STRIDE          equ 8
+
 VID_ATI         equ 0x1002
 
 LOAD_FROM_FILE  equ 0
@@ -60,22 +62,9 @@ end virtual
 
 CURSOR_SIZE     equ 32
 
-R8500       equ 0x514C  ;R200
-R9000       equ 0x4966  ;RV250
-R9200       equ 0x5961  ;RV280
-R9200SE     equ 0x5964  ;RV280
-R9500       equ 0x4144  ;R300
-R9500P      equ 0x4E45  ;R300
-R9550       equ 0x4153  ;RV350
-R9600       equ 0x4150  ;RV350
-R9600XT     equ 0x4152  ;RV360
-R9700P      equ 0x4E44  ;R300
-R9800       equ 0x4E49  ;R350
-R9800P      equ 0x4E48  ;R350
-R9800XT     equ 0x4E4A  ;R360
-
 OS_BASE         equ 0x80000000
 SLOT_BASE       equ (OS_BASE+0x0080000)
+LFB_BASE        equ 0xFE000000
 
 PG_SW        equ 0x003
 PG_NOCACHE   equ 0x018
@@ -94,16 +83,19 @@ virtual at 0
 end virtual
 
 ;MMIO                   equ 0F9000000h
-RD_RB3D_CNTL            equ 1c3ch
+RD_RB3D_CNTL               equ 1c3ch
 
 RD_MEM_CNTL                equ 0140h
 RD_CRTC_GEN_CNTL           equ 0050h
 RD_CRTC_CUR_EN             equ 10000h
 RD_DISPLAY_BASE_ADDR       equ 023ch
 RD_DEFAULT_OFFSET          equ 16e0h
+
 CUR_HORZ_VERT_OFF          equ 0268h
 CUR_HORZ_VERT_POSN         equ 0264h
 CUR_OFFSET                 equ 0260h
+
+
 RD_RB3D_CNTL               equ 1c3ch
 RD_RBBM_STATUS             equ 0e40h
 RD_RBBM_FIFOCNT_MASK       equ 007fh
@@ -179,7 +171,7 @@ section '.flat' code readable align 16
 proc START stdcall, state:dword
 
            cmp [state], 1
-           jne .exit
+           jne .restore
 
      if DEBUG
            mov esi, msgInit
@@ -190,9 +182,17 @@ proc START stdcall, state:dword
            test eax, eax
            jz .fail
 
-           call init_ati
-           test eax, eax
-           jz .fail
+           mov ebx, [SelectHwCursor]
+           mov ecx, [SetHwCursor]
+           mov edx, [HwCursorRestore]
+           mov esi, [HwCursorCreate]
+
+           mov [oldSelect], ebx
+           mov [oldSet], ecx
+           mov [oldRestore], edx
+           mov [oldCreate], esi
+
+           call eax
 
            or eax, -1
            mov [cursor_map], eax
@@ -204,21 +204,38 @@ proc START stdcall, state:dword
 
            stdcall RegService, sz_ati_srv, service_proc
            test eax, eax
-           jz .fail
-           mov dword [SetHwCursor], drvCursorPos ;enable hardware cursor
+           jz .restore
+
+           mov ebx, [fnSelect]
+           mov ecx, [fnSet]
+
+           mov [SelectHwCursor], ebx
+           mov [SetHwCursor], ecx
            mov dword [HwCursorRestore], drv_restore
            mov dword [HwCursorCreate], ati_cursor
+
            ret
+.restore:
+           mov eax, [oldSelect]
+           mov ebx, [oldSet]
+           mov ecx, [oldRestore]
+           mov edx, [oldCreate]
+
+           mov [SelectHwCursor], eax
+           mov [SetHwCursor], ebx
+           mov [HwCursorRestore], ecx
+           mov [HwCursorCreate], edx
+
+           xor eax, eax
+           ret
+
 .fail:
      if DEBUG
            mov esi, msgFail
            call SysMsgBoardStr
      end if
 
-.exit:
            xor eax, eax
-;           mov ebx, SetHwCursor
-;           mov dword [ebx], eax    ;force disable hardware cursor
            ret
 endp
 
@@ -286,9 +303,8 @@ proc detect_ati
 
            cmp eax, ebx
            je .found
-           add edi, 4
+           add edi, STRIDE
            jmp @B
-
 .next:
            inc [devfn]
            cmp [devfn], 256
@@ -301,8 +317,7 @@ proc detect_ati
            xor eax, eax
            ret
 .found:
-           xor eax, eax
-           inc eax
+           mov eax, [edi+4]
            ret
 .err:
            xor eax, eax
@@ -310,7 +325,7 @@ proc detect_ati
 endp
 
 align 4
-proc init_ati
+proc init_r200
 
            stdcall AllocKernelSpace, dword 0x10000
            test eax, eax
@@ -346,7 +361,11 @@ proc init_ati
            or eax, ebx
            mov [edi+0x50], eax
 
-           call drvShowCursor
+           call r200_ShowCursor
+
+           mov [fnSelect], r200_SelectCursor
+           mov [fnSet], r200_SetCursor
+
            xor eax, eax
            inc eax
 .fail:
@@ -354,11 +373,93 @@ proc init_ati
 endp
 
 align 4
+proc init_r500
+
+           stdcall AllocKernelSpace, dword 0x10000
+           test eax, eax
+           jz .fail
+
+           mov [ati_io], eax
+
+           stdcall PciRead32, [bus], [devfn], dword 0x18
+           and eax, 0xFFFF0000
+           mov esi, eax
+
+           mov edi, [ati_io]
+           mov edx, 16
+@@:
+           stdcall MapPage,edi,esi,PG_SW+PG_NOCACHE
+           add edi, 0x1000
+           add esi, 0x1000
+           dec edx
+           jnz @B
+
+           mov [fnSelect], r500_SelectCursor
+           mov [fnSet], r500_SetCursor
+
+           rdr eax, 0x6110
+           mov [r500_LFB], eax
+
+           wrr 0x6410, 0x001F001F
+           wrr 0x6400, dword (3 shl 8)
+
+           xor eax, eax
+           inc eax
+.fail:
+           ret
+endp
+
+
+align 4
 drv_restore:
            ret 8
 
+
 align 4
-drvShowCursor:
+proc r500_SelectCursor stdcall,hcursor:dword
+
+           mov esi, [hcursor]
+
+           mov edx, [esi+CURSOR.base]
+           sub edx, LFB_BASE
+           add edx, [r500_LFB]
+           wrr 0x6408, edx
+
+           mov eax, [esi+CURSOR.hot_x]
+           shl eax, 16
+           mov ax, word [esi+CURSOR.hot_y]
+           wrr 0x6418, eax
+           ret
+endp
+
+align 4
+proc r500_SetCursor stdcall, hcursor:dword, x:dword, y:dword
+           pushfd
+           cli
+
+           mov esi, [hcursor]
+           mov edi, [ati_io]
+
+           mov eax, [x]
+           shl eax, 16
+           mov ax, word [y]
+
+           mov [edi+0x6414], eax
+           or dword [edi+0x6400], 1
+
+           popfd
+           ret
+endp
+
+align 4
+r500_ShowCursor:
+
+           mov edi, [ati_io]
+           or dword [edi+0x6400], 1
+           ret
+
+align 4
+r200_ShowCursor:
            mov edi, [ati_io]
 
            mov eax, [edi+RD_CRTC_GEN_CNTL]
@@ -366,8 +467,15 @@ drvShowCursor:
            mov [edi+RD_CRTC_GEN_CNTL], eax
            ret
 
+
 align 4
-proc drvCursorPos stdcall, hcursor:dword, x:dword, y:dword
+proc r200_SelectCursor stdcall,hcursor:dword
+
+           ret
+endp
+
+align 4
+proc r200_SetCursor stdcall, hcursor:dword, x:dword, y:dword
            pushfd
            cli
 
@@ -816,6 +924,7 @@ proc engFlush
            ret
 endp
 
+
 align 4
 engWaitForFifo:
 cnt equ bp+8
@@ -857,6 +966,7 @@ proc engWaitForIdle
            call engFlush
            ret
 endp
+
 
 align 4
 proc engRestore
@@ -924,76 +1034,153 @@ proc engRestore
            ret
 endp
 
-align 4
-engSetupSolidFill:
-           push ebp
-           mov ebp, esp
-
-           push dword 3
-           call engWaitForFifo
-
-           wrr RD_DP_GUI_MASTER_CNTL, cmdSolidFill
-
-           mov eax, [ebp+8]
-           wrr RD_DP_BRUSH_FRGD_CLR,eax
-
-           mov edi, [ati_io]
-           mov dword [edi+RD_DP_CNTL],(RD_DST_X_LEFT_TO_RIGHT or RD_DST_Y_TOP_TO_BOTTOM)
-           leave
-           ret 4
 
 
 align 4
-drvSolidFill:
-;x:word,y:word,w:word,h:word,color:dword
-            push ebp
-            mov ebp, esp
-x equ ebp+8
-y equ ebp+12
-w equ ebp+16
-h equ ebp+20
-color equ ebp+24
+dword2str:
+      mov  esi, hex_buff
+      mov ecx, -8
+@@:
+      rol eax, 4
+      mov ebx, eax
+      and ebx, 0x0F
+      mov bl, [ebx+hexletters]
+      mov [8+esi+ecx], bl
+      inc ecx
+      jnz @B
+      ret
 
-           push dword [ebp+24]
-           call engSetupSolidFill
+hexletters   db '0123456789ABCDEF'
+hex_buff     db 8 dup(0),13,10,0
 
-           push dword 2
-           call engWaitForFifo
+R8500       equ 0x514C  ;R200
+R9000       equ 0x4966  ;RV250
+R9200       equ 0x5961  ;RV280
+R9200SE     equ 0x5964  ;RV280
+R9500       equ 0x4144  ;R300
+R9500P      equ 0x4E45  ;R300
+R9550       equ 0x4153  ;RV350
+R9600       equ 0x4150  ;RV350
+R9600XT     equ 0x4152  ;RV360
+R9700P      equ 0x4E44  ;R300
+R9800       equ 0x4E49  ;R350
+R9800P      equ 0x4E48  ;R350
+R9800XT     equ 0x4E4A  ;R360
 
-           mov edi, [ati_io]
-
-           mov eax, [y]
-           mov ebx, [x]
-           shl eax,16
-           or eax, ebx
-
-           mov ecx,  [w]
-           mov edx,  [h]
-           shl ecx,16
-           or ecx, edx
-           mov [edi+RD_DST_Y_X], eax
-           mov [edi+RD_DST_WIDTH_HEIGHT], ecx
-           call engFlush
-           leave
-           ret 20
 
 align 4
-devices dd (R8500   shl 16)+VID_ATI
-        dd (R9000   shl 16)+VID_ATI
-        dd (R9200   shl 16)+VID_ATI
-        dd (R9200SE shl 16)+VID_ATI
-        dd (R9500   shl 16)+VID_ATI
-        dd (R9500P  shl 16)+VID_ATI
-        dd (R9550   shl 16)+VID_ATI
-        dd (R9600   shl 16)+VID_ATI
-        dd (R9600XT shl 16)+VID_ATI
-        dd (R9700P  shl 16)+VID_ATI
-        dd (R9800   shl 16)+VID_ATI
-        dd (R9800P  shl 16)+VID_ATI
-        dd (R9800XT shl 16)+VID_ATI
+
+devices dd (R8500   shl 16)+VID_ATI, init_r200
+        dd (R9000   shl 16)+VID_ATI, init_r200
+        dd (R9200   shl 16)+VID_ATI, init_r200
+        dd (R9200SE shl 16)+VID_ATI, init_r200
+        dd (R9500   shl 16)+VID_ATI, init_r200
+        dd (R9500P  shl 16)+VID_ATI, init_r200
+        dd (R9550   shl 16)+VID_ATI, init_r200
+
+        dd (R9600   shl 16)+VID_ATI, init_r200
+        dd (R9600XT shl 16)+VID_ATI, init_r200
+        dd (0x4155  shl 16)+VID_ATI, init_r200   ;RV350    9600
+        dd (0x4151  shl 16)+VID_ATI, init_r200   ;RV350    9600
+        dd (0x4E51  shl 16)+VID_ATI, init_r200   ;RV350    9600
+
+        dd (R9700P  shl 16)+VID_ATI, init_r200
+
+        dd (0x4148  shl 16)+VID_ATI, init_r200   ;R350    9800
+        dd (R9800   shl 16)+VID_ATI, init_r200
+        dd (R9800P  shl 16)+VID_ATI, init_r200
+        dd (R9800XT shl 16)+VID_ATI, init_r200
+
+        dd (0x5B60  shl 16)+VID_ATI, init_r200   ;RV370    X300/X550
+        dd (0x5B63  shl 16)+VID_ATI, init_r200   ;RV370    X550
+        dd (0x5B62  shl 16)+VID_ATI, init_r200   ;RV380x   X600
+        dd (0x3E50  shl 16)+VID_ATI, init_r200   ;RV380    X600/X550
+
+        dd (0x5B4F  shl 16)+VID_ATI, init_r200   ;RV410    X700
+        dd (0x5B4D  shl 16)+VID_ATI, init_r200   ;RV410    X700
+        dd (0x5B4B  shl 16)+VID_ATI, init_r200   ;RV410    X700
+        dd (0x5B4C  shl 16)+VID_ATI, init_r200   ;RV410    X700
+
+        dd (0x4a49  shl 16)+VID_ATI, init_r200   ;R420     X800 PRO/GTO
+        dd (0x4a4B  shl 16)+VID_ATI, init_r200   ;R420     X800
+        dd (0x5549  shl 16)+VID_ATI, init_r200   ;R423     X800
+        dd (0x4a4A  shl 16)+VID_ATI, init_r200   ;R420     X800
+        dd (0x554F  shl 16)+VID_ATI, init_r200   ;R430     X800
+        dd (0x554D  shl 16)+VID_ATI, init_r200   ;R430     X800
+        dd (0x554E  shl 16)+VID_ATI, init_r200   ;R430     X800
+        dd (0x5D57  shl 16)+VID_ATI, init_r200   ;R423     X800 XT
+        dd (0x4A50  shl 16)+VID_ATI, init_r200   ;R420     X800 XT
+        dd (0x554A  shl 16)+VID_ATI, init_r200   ;R423     X800 XT
+        dd (0x5D4F  shl 16)+VID_ATI, init_r200   ;R423     X800/X850
+        dd (0x554B  shl 16)+VID_ATI, init_r200   ;R423     X800 GT
+
+        dd (0x4B4B  shl 16)+VID_ATI, init_r200   ;R481     X850
+        dd (0x4B49  shl 16)+VID_ATI, init_r200   ;R481     X850
+        dd (0x4B4C  shl 16)+VID_ATI, init_r200   ;R481     X850
+
+        dd (0x5D4D  shl 16)+VID_ATI, init_r200   ;R480     X850
+        dd (0x5D52  shl 16)+VID_ATI, init_r200   ;R480     X850
+
+        dd (0x791E  shl 16)+VID_ATI, init_r500   ;RS690   X1200
+
+        dd (0x7140  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+        dd (0x7142  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+        dd (0x7146  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+        dd (0x714D  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+        dd (0x714E  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+
+        dd (0x7183  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+        dd (0x7187  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+        dd (0x718F  shl 16)+VID_ATI, init_r500   ;RV515   X1300
+
+        dd (0x7143  shl 16)+VID_ATI, init_r500   ;RV515   X1550
+        dd (0x7147  shl 16)+VID_ATI, init_r500   ;RV515   X1550
+        dd (0x715F  shl 16)+VID_ATI, init_r500   ;RV515   X1550
+        dd (0x7193  shl 16)+VID_ATI, init_r500   ;RV515   X1550
+        dd (0x719F  shl 16)+VID_ATI, init_r500   ;RV515   X1550
+
+        dd (0x71C0  shl 16)+VID_ATI, init_r500   ;RV530   X1600
+        dd (0x71C1  shl 16)+VID_ATI, init_r500   ;RV535   X1650
+        dd (0x71C2  shl 16)+VID_ATI, init_r500   ;RV530   X1600
+        dd (0x71C3  shl 16)+VID_ATI, init_r500   ;RV535   X1600
+        dd (0x71C6  shl 16)+VID_ATI, init_r500   ;RV530   X1600
+        dd (0x71C7  shl 16)+VID_ATI, init_r500   ;RV534   X1650
+
+        dd (0x7181  shl 16)+VID_ATI, init_r500   ;RV515   X1600
+        dd (0x71CD  shl 16)+VID_ATI, init_r500   ;RV530   X1600
+
+        dd (0x7291  shl 16)+VID_ATI, init_r500   ;R580    X1650
+        dd (0x7293  shl 16)+VID_ATI, init_r500   ;R580    X1650
+
+        dd (0x7100  shl 16)+VID_ATI, init_r500   ;RV520   X1800
+        dd (0x7109  shl 16)+VID_ATI, init_r500   ;RV520   X1800
+        dd (0x710A  shl 16)+VID_ATI, init_r500   ;RV520   X1800 GTO
+
+        dd (0x7249  shl 16)+VID_ATI, init_r500   ;RV580   X1900
+        dd (0x724B  shl 16)+VID_ATI, init_r500   ;RV580   X1900 GT
+
+        dd (0x7240  shl 16)+VID_ATI, init_r500   ;RV580   X1950
+        dd (0x7244  shl 16)+VID_ATI, init_r500   ;RV580   X1950
+        dd (0x7248  shl 16)+VID_ATI, init_r500   ;RV580   X1950
+
+        dd (0x7288  shl 16)+VID_ATI, init_r500   ;R580    X1950 GT
+        dd (0x7280  shl 16)+VID_ATI, init_r500   ;R580    X1950 PRO
+
+        dd (0x94C3  shl 16)+VID_ATI, init_r500   ;RV610   HD 2400 PRO
+        dd (0x94C1  shl 16)+VID_ATI, init_r500   ;RV610   HD 2400 XT
+
+        dd (0x9589  shl 16)+VID_ATI, init_r500   ;RV630   HD 2600 PRO
+        dd (0x958A  shl 16)+VID_ATI, init_r500   ;RV630   HD 2600 X2
+        dd (0x9588  shl 16)+VID_ATI, init_r500   ;RV630   HD 2600 XT
+
+        dd (0x9403  shl 16)+VID_ATI, init_r500   ;R600    HD 2900 PRO
+        dd (0x9409  shl 16)+VID_ATI, init_r500   ;R600    HD 2900 XT
+
+
         dd 0    ;terminator
 
 version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
+
 
 sz_ati_srv   db 'HWCURSOR',0
 
@@ -1001,6 +1188,21 @@ msgInit      db 'detect hardware...',13,10,0
 msgPCI       db 'PCI accsess not supported',13,10,0
 msgFail      db 'device not found',13,10,0
 msg_neg      db 'neg ecx',13,10,0
+
+if 0
+msg6100      db '6100:  ',0
+msg6104      db '6104:  ',0
+msg6108      db '6108:  ',0
+msg6110      db '6110:  ',0
+msg6120      db '6120:  ',0
+msg6124      db '6124:  ',0
+msg6128      db '6128:  ',0
+msg612C      db '612C:  ',0
+msg6130      db '6130:  ',0
+msg6134      db '6134:  ',0
+msg6138      db '6138:  ',0
+end if
+
 buff         db 8 dup(0)
              db 13,10, 0
 
@@ -1011,6 +1213,15 @@ pCursor  db 4096 dup(?)
 cursor_map     rd 2
 cursor_start   rd 1
 cursor_end     rd 1
+
+fnSelect       rd 1
+fnSet          rd 1
+oldSelect      rd 1
+oldSet         rd 1
+oldRestore     rd 1
+oldCreate      rd 1
+
+r500_LFB       rd 1
 
 bus            dd ?
 devfn          dd ?

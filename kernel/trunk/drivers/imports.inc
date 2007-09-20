@@ -126,6 +126,10 @@ end if
 if used LoadCursor
   extrn LoadCursor
 end if
+
+if used SelectHwCursor
+  extrn SelectHwCursor
+end if
 if used SetHwCursor
   extrn SetHwCursor
 end if
