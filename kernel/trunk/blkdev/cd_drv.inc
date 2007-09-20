@@ -553,9 +553,19 @@ WaitUnitReady:
 ; Сформировать команду TEST UNIT READY
 	mov	[PacketCommand],word 00h
 ; ЦИКЛ ОЖИДАНИЯ ГОТОВНОСТИ УСТРОЙСТВА
+	mov	ecx,NoTickWaitTime
 @@SendCommand:
 	; Подать команду проверки готовности
 	call	SendPacketNoDatCommand
+	cmp	[timer_ticks_enable],0
+	jne	@f
+	cmp	[DevErrorCode],0
+	je	@@End_11
+	dec	ecx
+	cmp	ecx,0
+	je	.Error
+	jmp	@@SendCommand
+@@:
 	call	change_task
 	; Проверить код ошибки
 	cmp	[DevErrorCode],0
@@ -565,6 +575,7 @@ WaitUnitReady:
 	sub	EAX,[WURStartTime]
 	cmp	EAX,MaxCDWaitTime
 	jb	@@SendCommand
+.Error:
 	; Ошибка тайм-аута
 	mov	[DevErrorCode],1
 @@End_11:
