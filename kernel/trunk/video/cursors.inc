@@ -430,6 +430,11 @@ destroy_cursor:
            ret
 
 align 4
+select_cursor:
+
+           ret 4
+
+align 4
 proc init_cursors
            cmp [SCR_MODE],word 0x13
            jbe .fail
@@ -472,15 +477,19 @@ proc init_cursors
            cmp ebx, 32
            jne @F
 
+
+           mov dword [select_hw_cursor], select_cursor
            mov dword [set_hw_cursor], cursor_32
            mov dword [hw_restore], restore_32
            ret
 @@:
+           mov dword [select_hw_cursor], select_cursor
            mov dword [set_hw_cursor], cursor_24
            mov dword [hw_restore], restore_24
            ret
 .fail:
            xor eax, eax
+           mov dword [select_hw_cursor], eax
            mov dword [set_hw_cursor], eax
            mov dword [hw_restore], eax
            ret
