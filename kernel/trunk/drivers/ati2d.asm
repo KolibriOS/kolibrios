@@ -1053,6 +1053,7 @@ dword2str:
 hexletters   db '0123456789ABCDEF'
 hex_buff     db 8 dup(0),13,10,0
 
+R7000       equ 0x5159  ;R200
 R8500       equ 0x514C  ;R200
 R9000       equ 0x4966  ;RV250
 R9200       equ 0x5961  ;RV280
@@ -1070,7 +1071,9 @@ R9800XT     equ 0x4E4A  ;R360
 
 align 4
 
-devices dd (R8500   shl 16)+VID_ATI, init_r200
+devices:
+	dd (R7000   shl 16)+VID_ATI, init_r200 
+	dd (R8500   shl 16)+VID_ATI, init_r200
         dd (R9000   shl 16)+VID_ATI, init_r200
         dd (0x514D  shl 16)+VID_ATI, init_r200   ;R200     9100
 
