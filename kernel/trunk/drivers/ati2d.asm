@@ -1072,8 +1072,13 @@ align 4
 
 devices dd (R8500   shl 16)+VID_ATI, init_r200
         dd (R9000   shl 16)+VID_ATI, init_r200
+        dd (0x514D  shl 16)+VID_ATI, init_r200   ;R200     9100
+
         dd (R9200   shl 16)+VID_ATI, init_r200
         dd (R9200SE shl 16)+VID_ATI, init_r200
+
+        dd (0x5960  shl 16)+VID_ATI, init_r200   ;RV280    9250
+
         dd (R9500   shl 16)+VID_ATI, init_r200
         dd (R9500P  shl 16)+VID_ATI, init_r200
         dd (R9550   shl 16)+VID_ATI, init_r200
