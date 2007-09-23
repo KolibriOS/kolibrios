@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.7.0.0
+SYSTEM FUNCTIONS of OS Kolibri 0.7.1.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -22,13 +22,13 @@ Parameters:
       * Y=1 - only define window area, draw nothing
       * Y=2 - type II - variable-size window
       * Y=3 - skinned window
-      * Y=4 - skinned window with fixed sizes
-      * other possible values (from 4 up to 15) are reserved,
+      * Y=4 - skinned fixed-size window
+      * other possible values (from 5 up to 15) are reserved,
         function call with such Y is ignored
     * RR, GG, BB = accordingly red, green, blue components of a color
       of the working area of the window (are ignored for style Y=2)
     * X = DCBA (bits)
-      * A = 1 - window has caption; for style Y=3 caption string
+      * A = 1 - window has caption; for styles Y=3,4 caption string
                   must be passed in edi, for other styles use
                   subfunction 1 of function 71
       * B = 1 - coordinates of all graphics primitives are relative to
@@ -51,11 +51,11 @@ Remarks:
   * Position and sizes of the window are installed by the first
     call of this function and are ignored at subsequent; to change
     position and/or sizes of already created window use function 67.
-  * For windows with style Y=3 and caption (A=1) caption string is set
-    by the first call of this function and is ignored at subsequent
-    (strictly speaking, is ignored after a call to subfunction 2
-    of function 12 - end redraw); to change caption of already created
-    window use subfunction 1 of function 71.
+  * For windows with styles Y=3,4 and caption (A=1) caption string
+    is set by the first call of this function and is ignored
+    at subsequent (strictly speaking, is ignored after a call to
+    subfunction 2 of function 12 - end redraw); to change caption of
+    already created window use subfunction 1 of function 71.
   * If the window has appropriate styles, position and/or sizes can be
     changed by user. Current position and sizes can be obtained
     by function 9.
@@ -868,10 +868,10 @@ Structure of the buffer:
 db a,b,c,d for version a.b.c.d
 db UID_xxx: one of UID_NONE=0, UID_MENUET=1, UID_KOLIBRI=2
 dd REV - kernel SVN revision number
-For Kolibri 0.7.0.0 kernel:
+For Kolibri 0.7.1.0 kernel:
 db 0,7,0,0
 db 2
-dd 533
+dd 638
 
 ======================================================================
 ======= Function 18, subfunction 14 - wait for screen retrace. =======
@@ -978,21 +978,20 @@ Parameters:
 Returned value:
   * function does not return value
 
--------- Subsubfunction 5 - emulation mouse button. --------
+-------- Subsubfunction 5 - simulate state of mouse buttons. ---------
 Parameters:
   * eax = 18 - function number
   * ebx = 19 - subfunction number
   * ecx = 5 - subsubfunction number
-  * edx = information about the emulated mouse buttons: 
+  * edx = information about emulated state of mouse buttons:
+    (same as return value in subfunction 2 of function 37)
     * bit 0 is set = left button is pressed
     * bit 1 is set = right button is pressed
     * bit 2 is set = middle button is pressed
     * bit 3 is set = 4th button is pressed
     * bit 4 is set = 5th button is pressed
-    * other bits are cleared
 Returned value:
   * function does not return value
-
 Remarks:
   * It is recommended to set speed of the mouse (in subsubfunction 1)
     from 1 up to 9. The installed value is not inspected by the kernel
@@ -1035,33 +1034,37 @@ Returned value:
                  (reserved)
 
 ======================================================================
-====================== Function 18, subfunction 21 =====================
-=== Get number of the slot of process/thread at his identificator ====
+===================== Function 18, subfunction 21 ====================
+======== Get slot number of process/thread by the identifier. ========
 ======================================================================
 Parameters:
   * eax = 18 - function number
   * ebx = 21 - subfunction number
-  * ecx = PID/TID (process/thread identificator)
+  * ecx = identifer of process/thread (PID/TID)
 Returned value:
-  * eax = number of the slot of process/thread, if it really present
-    or 0, if PID/TID is false
+  * eax = 0 - error (invalid identifier)
+  * otherwise eax = slot number
 
 ======================================================================
-==================== Function 18, subfunction 22 =====================
-============= Minimize/restore window of process/thread ==============
+===================== Function 18, subfunction 22 ====================
+============== Operations with window of another thread. =============
 ======================================================================
 Parameters:
   * eax = 18 - function number
   * ebx = 22 - subfunction number
-  * ecx = Operation type
-           0 - minimize (roll to panel) at number on slot thread
-           1 - minimize window at PID/TID identificator
-           2 - restore minimized window at slot number of thread
-           3 - restore minimized window at PID/TID identificator
-  * edx = Operation argument (Number of slot or a PID/TID)
+  * ecx = operation type:
+    * 0 = minimize window of the thread with given slot number
+    * 1 = minimize window of the thread with given identifier
+    * 2 = restore window of the thread with given slot number
+    * 3 = restore window of the thread with given identifier
+  * edx = parameter (slot number or PID/TID)
 Returned value:
-  * eax = 0 - successfully ending
-    eax = -1 - error
+  * eax = 0 - success
+  * eax = -1 - error (invalid identifier)
+Remarks:
+  * The thread can minimize its window with subfunction 10.
+  * One can restore and activate window simultaneously with
+    subfunction 3 (which requires slot number).
 
 ======================================================================
 ==================== Function 20 - MIDI interface. ===================
@@ -1491,29 +1494,33 @@ Remarks:
     subfunction 3 of function 21.
 
 ======================================================================
-================ Function 24, subfunction 4 - eject tray of disk drive. ==============
+======= Function 24, subfunction 4 - eject tray of disk drive. =======
 ======================================================================
 Parameters:
   * eax = 24 - function number
   * ebx = 4 - subfunction number
-  * ecx = position of CD/DVD-drive (from 0=Primary Master to 3=Secondary Slave)
+  * ecx = position of CD/DVD-drive
+      (from 0=Primary Master to 3=Secondary Slave)
 Returned value:
-  * Nothing comes back.
+  * function does not return value
 Remarks:
   * The function is supported only for ATAPI devices (CD and DVD).
-  * At extract of a tray is made deblocking of handle mechanism of a tray.
-  * At extract of a tray the code makes clearing the cache of the appropriate device.
+  * When the tray is being ejected,
+    manual control of tray is unlocked.
+  * When the tray is being ejected, the code clears the cache for
+    corresponding device.
   * An example of usage of the function is the application CD_tray.
 
 ======================================================================
-============== Function 24, subfunction 5 - load tray of disk drive. =================
+======== Function 24, subfunction 5 - load tray of disk drive. =======
 ======================================================================
 Parameters:
   * eax = 24 - function number
   * ebx = 5 - subfunction number
-  * ecx = position of CD/DVD-drive (from 0=Primary Master to 3=Secondary Slave)
+  * ecx = position of CD/DVD-drive
+      (from 0=Primary Master to 3=Secondary Slave)
 Returned value:
-  * Nothing comes back.
+  * function does not return value
 Remarks:
   * The function is supported only for ATAPI devices (CD and DVD).
   * An example of usage of the function is the application CD_tray.
@@ -2964,6 +2971,24 @@ Remarks:
     of play.
 
 ======================================================================
+======================= Function 57 - PCI BIOS. ======================
+======================================================================
+Parameters:
+  * eax = 57 - function number
+  * ebp corresponds to al in PCI BIOS specification
+  * other registers are set according to PCI BIOS specification
+Returned value:
+  * CF is undefined
+  * other registers are set according to PCI BIOS specification
+Remarks:
+  * Many effects of this function can be also achieved with
+    corresponding subfunctions of function 62.
+  * The function calls PCI32 BIOS extension, documented e.g. in
+    http://alpha1.dyns.net/files/PCI/bios21.pdf.
+  * If BIOS does not support this extension, its behavior is emulated
+    (through kernel-mode analogues of subfunctions of function 62).
+
+======================================================================
 ================ Function 58 - work with file system. ================
 ======================================================================
 Parameters:
@@ -4148,10 +4173,10 @@ Available subfunctions:
 For CD-drives due to hardware limitations only subfunctions
 0,1,5 and 7 are available, other subfunctions return error
 with code 2.
-At the first call subfunctions 0,1,5,7 to devices ATAPI (CD and DVD) the locking
-of handle mechanism of a tray is made. It is connected to algorithm of caching
-given obtained from a drive. Deblocking is made by call function 24.4
-to the appropriate device.
+At the first call of subfunctions 0,1,5,7 to ATAPI devices
+(CD and DVD) the manual control of tray is locked due to caching
+drive data. Unlocking is made when subfunction 4 of function 24
+is called for corresponding device.
 
 ======================================================================
 === Function 70, subfunction 0 - read file with long names support. ==

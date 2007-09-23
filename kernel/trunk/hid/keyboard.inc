@@ -277,6 +277,8 @@ irq1:
 ;.........................Part1 Start.......Code by Rus, optimize by Ghost...................................
 	test  [kb_state], VKEY_NUMLOCK
 	jz     .dowrite
+        cmp     cl, 0xE0
+        jz      .dowrite
 
 	cmp	ch, 55
 	jnz	@f

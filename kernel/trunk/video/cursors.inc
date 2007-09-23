@@ -504,6 +504,8 @@ proc restore_24 stdcall, x:dword, y:dword
            mov edi, [cur_saved_base]
            mov edx, [cur_saved_h]
            mov ebx, [cur_saved_interl]
+           test edx, edx
+           jz  .ret
 
            mov esi, cur_saved_data
 @@:
@@ -513,6 +515,7 @@ proc restore_24 stdcall, x:dword, y:dword
            add edi, ebx
            dec edx
            jnz @B
+.ret:
            ret
 endp
 
@@ -525,6 +528,8 @@ proc restore_32 stdcall, x:dword, y:dword
            mov edi, [cur_saved_base]
            mov edx, [cur_saved_h]
            mov ebx, [cur_saved_interl]
+           test edx, edx
+           jz  .ret
 
            mov esi, cur_saved_data
 @@:
@@ -533,6 +538,7 @@ proc restore_32 stdcall, x:dword, y:dword
            add edi, ebx
            dec edx
            jnz @B
+.ret:
            ret
 endp
 
