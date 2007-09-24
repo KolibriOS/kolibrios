@@ -57,6 +57,9 @@ edit_ex
 pusha
         test    word ed_flags,ed_focus ; если не в фокусе, выходим
         je      .editbox_exit
+        test    word ed_flags,ed_mouse_on
+        jne     .editbox_exit
+
 ;Проверка нажат shift ?
         call    .check_shift
 ;----------------------------------------------------------
