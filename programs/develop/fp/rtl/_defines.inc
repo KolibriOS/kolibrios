@@ -5,5 +5,7 @@
 {$undef os2}
 {$undef linux}
 
-{$define EMULATOR}
+{$undef DISABLE_NO_THREAD_MANAGER}
 {$undef debug_mt}
+
+{$define EMULATOR}

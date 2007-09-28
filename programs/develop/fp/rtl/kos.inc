@@ -594,7 +594,7 @@ end;
 
 { Sound }
 
-function kos_speak(notes: Pointer): Boolean; assembler; register;
+function kos_speaker(notes: Pointer): Boolean; assembler; register;
 asm
   pushl %esi
   pushl %ebx

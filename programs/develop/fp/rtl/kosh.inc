@@ -142,7 +142,7 @@ function kos_fileinfo(kosfile: PKosFile): DWord;
 
 { Sound }
 
-function kos_speak(notes: Pointer): Boolean;
+function kos_speaker(notes: Pointer): Boolean;
 
 { Work with hardware }
 function kos_readport(index: DWord): DWord;

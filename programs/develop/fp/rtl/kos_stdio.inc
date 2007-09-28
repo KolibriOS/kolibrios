@@ -151,6 +151,7 @@ begin
   FThreadID := BeginThread(TThreadFunc(@KonsoleThreadMain), @Self);
   if FThreadID <> 0 then
     {XXX: может зависнуть}
+    {Во, так и есть в 2.2.0.}
     while not FOpened do ThreadSwitch;
 end;
 
