@@ -2,8 +2,8 @@
 ; project name:         KFar_Arc - plugin for KFar, which supports various archives
 ; target platform:      KolibriOS
 ; compiler:             FASM 1.67.14
-; version:              0.11
-; last update:          2007-09-20 (Sep 20, 2007)
+; version:              0.12
+; last update:          2007-10-06 (Oct 06, 2007)
 ; minimal KFar version: 0.41
 ; minimal kernel:       no limit
 ;
@@ -392,6 +392,11 @@ GetFiles:
 @@:
         mov     [edx+file_common.stamp], eax
         push    esi
+        mov     ecx, [edx+file_common.name]
+        add     ecx, [edx+file_common.namelen]
+        xor     eax, eax
+        xchg    al, [ecx]
+        push    eax ecx
         mov     eax, edx
         mov     edi, tmp_bdfe
         push    edi
@@ -400,8 +405,10 @@ GetFiles:
         push    esi
         mov     ecx, [ebp]
         call    dword [getattrTable+(ecx-1)*4]
-        mov     eax, [esp+16+20]
+        mov     eax, [esp+24+20]
         call    eax
+        pop     ecx edx
+        mov     [ecx], dl
         pop     esi
         test    al, al
         jz      .forced_exit
@@ -413,6 +420,11 @@ GetFiles:
         cmp     [ebx+file_common.stamp], eax
         jz      .cont
         mov     [ebx+file_common.stamp], eax
+        mov     ecx, [ebx+file_common.name]
+        add     ecx, [ebx+file_common.namelen]
+        xor     eax, eax
+        xchg    al, [ecx]
+        push    eax ecx
         push    esi
         mov     eax, ebx
         mov     edi, tmp_bdfe
@@ -420,8 +432,10 @@ GetFiles:
         push    esi
         mov     ecx, [ebp]
         call    dword [getattrTable+(ecx-1)*4]
-        mov     eax, [esp+16+20]
+        mov     eax, [esp+24+20]
         call    eax
+        pop     ecx edx
+        mov     [ecx], dl
         pop     esi
         test    al, al
         jz      .forced_exit
@@ -854,6 +868,9 @@ endg
         mov     [eax+file_common.bPseudoFolder], 1
 .newitem:
         mov     [eax+file_common.namelen], ecx
+; !!! in this case .fullname is not null-terminated !!!
+        mov     ecx, [edx+file_common.fullname]
+        mov     [eax+file_common.fullname], ecx
         pop     ecx
         pop     esi
 ; ecx = parent item, eax = current item

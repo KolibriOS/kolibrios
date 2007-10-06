@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.41'
-version_dword equ 0*10000h + 41
+version equ '0.42'
+version_dword equ 0*10000h + 42
 
 include 'lang.inc'
 include 'font.inc'
@@ -1882,7 +1882,9 @@ panels_OnKey:
         ret
 @@:
         push    eax
+        push    edx
         call    close_plugin_panels
+        pop     edx
         lea     edi, [ebp + panel1_dir - panel1_data]
         push    edi
         mov     esi, edi
