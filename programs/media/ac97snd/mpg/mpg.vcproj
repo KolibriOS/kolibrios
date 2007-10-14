@@ -14,7 +14,7 @@
 	</Platforms>
 	<ToolFiles>
 		<ToolFile
-			RelativePath="../fasm.rules"
+			RelativePath="..\..\..\VStudio 8\Common7\IDE\fasm.rules"
 		/>
 	</ToolFiles>
 	<Configurations>
@@ -229,6 +229,16 @@
 			<File
 				RelativePath=".\readers.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						EnableIntrinsicFunctions="true"
+						WholeProgramOptimization="true"
+						AssemblerOutput="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\tabinit.c"

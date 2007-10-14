@@ -14,7 +14,7 @@
 	</Platforms>
 	<ToolFiles>
 		<ToolFile
-			RelativePath="../fasm.rules"
+			RelativePath="..\..\..\VStudio 8\Common7\IDE\fasm.rules"
 		/>
 	</ToolFiles>
 	<Configurations>
@@ -141,7 +141,8 @@
 			<Tool
 				Name="VCCLCompilerTool"
 				Optimization="2"
-				EnableIntrinsicFunctions="true"
+				InlineFunctionExpansion="0"
+				EnableIntrinsicFunctions="false"
 				FavorSizeOrSpeed="1"
 				OmitFramePointers="true"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
@@ -166,7 +167,7 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="$(OutDir)\sound.lib $(OutDir)\mpg.lib"
+				AdditionalDependencies="$(OutDir)\sound.lib $(OutDir)\mpg.lib $(OutDir)\ufmod.obj"
 				LinkIncremental="1"
 				GenerateManifest="false"
 				IgnoreAllDefaultLibraries="true"
@@ -221,6 +222,17 @@
 			<File
 				RelativePath=".\ac97wav.c"
 				>
+				<FileConfiguration
+					Name="Release|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						Optimization="2"
+						InlineFunctionExpansion="0"
+						EnableIntrinsicFunctions="true"
+						FavorSizeOrSpeed="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\crt.c"

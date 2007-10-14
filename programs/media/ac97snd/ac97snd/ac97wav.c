@@ -18,7 +18,8 @@
 #include "ac97wav.h"
 #include "../mpg/mpg123.h"
 #include "../sound.h"
-
+#include "../ufmod-codec.h"                   /* uFMOD integration */
+void exit();                                  /* uFMOD integration */
 
 #define MP3_ERROR_OUT_OF_BUFFER  5
 int m_last_error;
@@ -30,6 +31,9 @@ void _stdcall send_ipc(int dst, DWORD code);
 void touch(char *buf, int size);
 int mp3FindSync(byte* buf, int size, int* sync);
 int stream_read_raw(struct reader *rd,unsigned char *buf, int size);
+
+int __cdecl _stricmp (const char * dst, const char * src);
+char *__cdecl strrchr (const char * string,int ch);
 
 char *fname;
 
@@ -43,6 +47,8 @@ SNDBUF hBuff;
 CTRL_INFO info;
 
 FILEINFO   fileinfo;
+const char *filename;
+const char *fileext;
 
 int m_vol;
 int l_vol=-700;     //-7db
@@ -62,14 +68,18 @@ int outsize;
 int outremain;
 int totalout;
 int done;
- 
-char header[] = "AC97 MP3 player";
-char buttons_text[]=" Play    Stop     <<      >>     Vol-    Vol+";
 
+char header[] = "AC97 MP3 player";
+char buttons_xm[]  = " Play    Stop                    Vol-    Vol+"; /* uFMOD integration */
+char buttons_wav[] = " Play    Stop     <<      >>     Vol-    Vol+"; /* uFMOD integration */
+char *buttons_text = buttons_wav;                                     /* uFMOD integration */
+
+void play_xm();                                                       /* uFMOD integration */
 void (*snd_play)();
 
 void draw_window()
 {
+	int len;                                                          /* uFMOD integration */
    BeginDraw();
 
    DrawWindow(100,100,299,72,0x404040,3,0,0,0);
@@ -85,19 +95,20 @@ void draw_window()
    draw_bar(7,41,286,11,0x404040);
 
    draw_bar(7,55,286,11,0x404040);
-   write_text(12,58,0x004000|FONT0, fname, strlen(fname));
-   write_text(11,57,0x00FF20|FONT0, fname, strlen(fname));
+	 len = strlen(filename);                                                /* uFMOD integration */
+	 if(len > 47) len = 47;                                              /* uFMOD integration */
+   write_text(11,57,0x00FF20|FONT0, filename, len);                        /* uFMOD integration */
 
-   write_text(8,8,0xFFFFFF|FONT0, header, strlen(header));
-   write_text(12,28,0x404040|FONT0,buttons_text,strlen(buttons_text));
-   write_text(11,27,0xA0FFA0|FONT0,buttons_text,strlen(buttons_text));
+   write_text(8,8,FONT0, header, sizeof(header)-1);                     /* uFMOD integration */
+   write_text(12,28,0x404040|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
+   write_text(11,27,0xA0FFA0|FONT0,buttons_text,sizeof(buttons_wav)-1); /* uFMOD integration */
 
    EndDraw();
 };
 
 void draw_progress_bar()
 {  DWORD x;
-   x = 287.0f * (float)(rd.filepos-rd.strremain)/(float)fileinfo.size;
+   x = (DWORD)(287.0f * (float)(rd.filepos-rd.strremain)/(float)fileinfo.size); /* uFMOD integration */
    if(x==0) return;
    draw_bar(7,41,x,11,0xA0A0A0);
    draw_bar(x+7,41,287-x,11,0x404040);
@@ -119,6 +130,7 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
    int retval;
    int err;
    int ver;
+   unsigned char *ttl, *cur;               /* uFMOD integration */
     
    fname = argv[1];
    debug_out_str("\n\rPlay file ");
@@ -157,28 +169,74 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
    
    create_reader(&rd, inpbuf, 0x10000);
    init_reader(&rd,fname);
-
-   fmt = test_wav((WAVEHEADER*)testbuff);
-   if (fmt != 0)
+   
+   filename = strrchr(fname,'/')+1;
+   if( !(fileext = strrchr(filename,'.')))
+     return 0;
+     
+   if(!_stricmp(fileext,".mp3"))
    {
-     snd_play = &play_wave;
-     set_reader(&rd, 44);
-     outbuf = UserAlloc(32*1024);
-     touch(outbuf, 32768);
-   }   
-   else  
-   { fmt = test_mp3(testbuff);
-     if(fmt ==0) return 0;
-     snd_play = &play_mp3;
-      
-     outremain = 0x40000 ;
-     outbuf = UserAlloc(outremain);
-     touch(outbuf, outremain);
-     make_decode_tables(32767);
-     init_layer2();
-     init_layer3(32);
-     fr.single = -1;
+			fmt = test_mp3(testbuff);              
+			if(!fmt)
+			{
+        debug_out_str("\n\rInvalid MP3 file");
+			  return 0;                     
+			};
+			snd_play = &play_mp3;                  
+			outremain = 0x40000;                   
+			outbuf = UserAlloc(outremain);         
+			touch(outbuf, outremain);              
+			make_decode_tables(32767);             
+			init_layer2();                         
+			init_layer3(32);                       
+			fr.single = -1;
+			goto play;                        
    };
+     
+   if(!_stricmp(fileext,".xm")) 
+   {
+	   if(uFMOD_LoadSong(fname))
+	   {       
+	      buttons_text = buttons_xm;               /* uFMOD integration */
+	      fmt = PCM_2_16_48;                       /* uFMOD integration */
+	      snd_play = &play_xm;                     /* uFMOD integration */
+	      ttl = uFMOD_GetTitle();                  /* uFMOD integration */
+	      cur = ttl;                               /* uFMOD integration */
+	      err = 0;                                 /* uFMOD integration */
+	      while(*cur && *cur++ != ' ') err++;      /* uFMOD integration */
+	      if(err){                                 /* uFMOD integration */
+	 	      cur = fname;                             /* uFMOD integration */
+			     while(*cur) cur++;                       /* uFMOD integration */
+			     *cur++ = ' ';                            /* uFMOD integration */
+			     *cur++ = '|';                            /* uFMOD integration */
+			     *cur++ = ' ';                            /* uFMOD integration */
+			     while(*ttl) *cur++ = *ttl++;             /* uFMOD integration */
+		    }
+		    goto play; 
+		 }   
+		 debug_out_str("\n\rInvalid XM file");
+     return 0;
+	 };
+	 
+	 if(!_stricmp(fileext, ".wav"))
+	 {
+     fmt = test_wav((WAVEHEADER*)testbuff);
+	   if(fmt)
+		 {                                   
+		   snd_play = &play_wave;            
+		   set_reader(&rd, 44);              
+		   outbuf = UserAlloc(32*1024);      
+		   touch(outbuf, 32768);
+		   goto play;                                  
+		 }
+     debug_out_str("\n\rInvalid WAV file");
+     return 0;
+	 };	
+
+   debug_out_str("\n\rUsupported file");
+   return 0;
+
+play:
 
    status = ST_PLAY;
    
@@ -206,6 +264,7 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
            continue;
 
          case ST_EXIT:
+           uFMOD_StopSong();          /* uFMOD integration */
            StopBuffer(hBuff);
            DestroyBuffer(hBuff);
            return 0;
@@ -217,7 +276,7 @@ int main(int argc, char *argv[])      //int argc, char *argv[])
 void touch(char *buf, int size)
 { int i;
    char a;
-    for ( i = 0;i < size; i+=4096)
+    for ( i = 0;i < size; i+=4096)     //alloc all pages
       a = buf[i]; 
 };
 
@@ -231,13 +290,20 @@ DWORD test_mp3(char *buf)
         if(!rd.head_read(&rd,&hdr))
                         return 0;
         if(!decode_header(&fr,hdr))
-        {  rd.strpos-=3;
-            rd.stream-=3;
-            rd.strremain+=3;
-            continue;
+        { 
+         if((hdr & 0xffffff00) == 0x49443300)
+ 	      {
+ 		    int id3length = 0;
+		    id3length = parse_new_id3(&rd, hdr);
+		    continue;
+	      };
+          rd.strpos-=3;
+          rd.stream-=3;
+          rd.strremain+=3;
+          continue;
         };
         break;
-          };
+    };
           
     first_sync = rd.filepos-rd.strremain-4;
           
@@ -245,7 +311,7 @@ DWORD test_mp3(char *buf)
     whdr.riff_format = 0x45564157;
     whdr.wFormatTag = 0x01;
     whdr.nSamplesPerSec = freqs[fr.sampling_frequency];
-    whdr.nChannels = 2; //mpginfo.channels;
+    whdr.nChannels = 2; 
     whdr.wBitsPerSample = 16;
     
     return test_wav(&whdr);
@@ -324,25 +390,34 @@ void play_mp3()
 };
 
 void play_wave()
-{  int retval;
+{  int count;
 
    set_reader(&rd,44); 
-   retval = 0;
    while(1)
    {
       if(status!=ST_PLAY)
         break;
 
-      if( !stream_read_raw(&rd,outbuf,32768))
-      {  done = 1;
-          break; 
-      }; 
-      WaveOut(hBuff,outbuf,32768);
+      if( count=stream_read_raw(&rd,outbuf,32768))
+      {
+        WaveOut(hBuff,outbuf,count);
+        continue;
+      }
+      done = 1;
+      break; 
    };
 
    if(status != ST_EXIT)
-    status =  ST_STOP;
+     status =  ST_STOP;
 };
+
+void play_xm(){                             /* uFMOD integration */
+	while(status == ST_PLAY){                 /* uFMOD integration */
+		uFMOD_WaveOut(hBuff);                   /* uFMOD integration */
+		delay(8);                               /* uFMOD integration */
+	}                                         /* uFMOD integration */
+	if(status != ST_EXIT) status = ST_STOP;   /* uFMOD integration */
+}                                           /* uFMOD integration */
 
 void snd_stop()
 {
@@ -519,7 +594,7 @@ void EndDraw()
 };
 
 ///*********
-void *memmove ( void * dst, void * src, int count)
+void *memmove ( void * dst, void * src, unsigned int count)  /* uFMOD integration */
 { void *ret;
   ret = dst;
 
@@ -555,6 +630,40 @@ void * __cdecl mem_cpy(void * dst,const void * src,size_t count)
       return(ret);
 }
 
+char * __cdecl strrchr (const char * string,int ch)
+{
+        char *start = (char *)string;
+
+        while (*string++)                       /* find end of string */
+                ;
+                                                /* search towards front */
+        while (--string != start && *string != (char)ch)
+                ;
+
+        if (*string == (char)ch)                /* char found ? */
+                return( (char *)string );
+
+        return(NULL);
+}
+
+int __cdecl _stricmp (const char * dst, const char * src)
+{
+    int f, l;
+
+    do
+    {
+        if ( ((f = (unsigned char)(*(dst++))) >= 'A') && (f <= 'Z') )
+            f -= 'A' - 'a';
+        if ( ((l = (unsigned char)(*(src++))) >= 'A') && (l <= 'Z') )
+            l -= 'A' - 'a';
+    }
+    while ( f && (f == l) );
+
+    return(f - l);
+}
+
+
+
 //   debug_out_str(formats[fmt]);
 //   debug_out_str("\x0D\x0A\x00");
 
@@ -584,6 +693,3 @@ void * __cdecl mem_cpy(void * dst,const void * src,size_t count)
 
 //   debug_out_hex(fmt);
 //   debug_out_str("\x0D\x0A\x00");
-
-
-

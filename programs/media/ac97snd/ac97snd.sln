@@ -1,22 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 9.00
 # Visual Studio 2005
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ac97snd", "ac97snd\ac97snd.vcproj", "{5146AAEE-C15C-47C5-A245-64050C820145}"
-	ProjectSection(ProjectDependencies) = postProject
-		{6BB005B0-3277-4C8C-950F-38E15A4E440C} = {6BB005B0-3277-4C8C-950F-38E15A4E440C}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mpg", "mpg\mpg.vcproj", "{6BB005B0-3277-4C8C-950F-38E15A4E440C}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ac97snd", "ac97snd\ac97snd.vcproj", "{5146AAEE-C15C-47C5-A245-64050C820145}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
 		Release|Win32 = Release|Win32
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{5146AAEE-C15C-47C5-A245-64050C820145}.Release|Win32.ActiveCfg = Release|Win32
-		{5146AAEE-C15C-47C5-A245-64050C820145}.Release|Win32.Build.0 = Release|Win32
+		{6BB005B0-3277-4C8C-950F-38E15A4E440C}.Debug|Win32.ActiveCfg = Debug|Win32
+		{6BB005B0-3277-4C8C-950F-38E15A4E440C}.Debug|Win32.Build.0 = Debug|Win32
 		{6BB005B0-3277-4C8C-950F-38E15A4E440C}.Release|Win32.ActiveCfg = Release|Win32
 		{6BB005B0-3277-4C8C-950F-38E15A4E440C}.Release|Win32.Build.0 = Release|Win32
+		{5146AAEE-C15C-47C5-A245-64050C820145}.Debug|Win32.ActiveCfg = Debug|Win32
+		{5146AAEE-C15C-47C5-A245-64050C820145}.Debug|Win32.Build.0 = Debug|Win32
+		{5146AAEE-C15C-47C5-A245-64050C820145}.Release|Win32.ActiveCfg = Release|Win32
+		{5146AAEE-C15C-47C5-A245-64050C820145}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

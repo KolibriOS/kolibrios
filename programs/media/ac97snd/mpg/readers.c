@@ -55,7 +55,7 @@ void set_synth_functions(struct frame *fr)
 }
 
 int __stdcall create_reader(struct reader *rd,byte *buffer, int buffsize)
-{  rd->head_read = stream_head_read;
+{   rd->head_read = stream_head_read;
     rd->read_frame_body = stream_read_raw; 
 
     rd->buffer = buffer;
@@ -78,50 +78,59 @@ int __stdcall init_reader(struct reader *rd, char *file)
     rd->filelen = fileinfo.size; 
     rd->strpos = 0;
     retval=read_file (file,rd->buffer,0,0x10000,&bytes);
-  
-    if (retval) return 0; 
-      
-    rd->strremain = bytes;
-    rd->filepos = bytes;
-    return 1; 
+
+    if( (retval==0)||(retval==6))
+    {
+      rd->strremain=bytes;
+      rd->filepos=bytes;
+      rd->strpos = 0;  
+      return 1;
+    };
+    return 0;  
 };
 
 static int fill_reader(struct reader *rd)
 {  int retval;
-    int bytes;
+   int bytes;
     
-    mem_cpy(rd->buffer,rd->stream,rd->strremain);
-    rd->stream = rd->buffer;
-   
-    retval=read_file (rd->hFile,rd->buffer+rd->strremain,rd->filepos,
-                             0x10000-rd->strremain,&bytes);
-    if (retval) return 0; 
-    if(!bytes) return 0;    
-    rd->strremain+=bytes;
-    rd->filepos+=bytes;
-    rd->strpos = 0;  
-    return 1;
+   if(rd->strremain > 0)
+     mem_cpy(rd->buffer,rd->stream,rd->strremain);
+
+   rd->stream = rd->buffer;
+   retval=read_file (rd->hFile,rd->buffer+rd->strremain,rd->filepos,
+                            0x10000-rd->strremain,&bytes);
+   if( (retval==0)||(retval==6))
+   {
+     rd->strremain+=bytes;
+     rd->filepos+=bytes;
+     rd->strpos = 0;  
+     return bytes;
+   };
+   return 0;  
 };
 
 int __stdcall set_reader(struct reader *rd, unsigned int filepos)
 {  int retval;
-    unsigned int bytes;
-    retval=read_file (rd->hFile,rd->buffer,filepos,0x10000,&bytes);
-    if (retval) return 0; 
-    rd->stream = rd->buffer; 
-    rd->strremain=bytes;
-    rd->filepos=filepos+bytes;
-    rd->strpos = 0;
+   unsigned int bytes;
+   retval=read_file (rd->hFile,rd->buffer,filepos,0x10000,&bytes);
+   if( (retval==0)||(retval==6))
+   {
+      rd->stream = rd->buffer; 
+      rd->strremain=bytes;
+      rd->filepos=filepos+bytes;
+      rd->strpos = 0;
  
-    fsizeold=0;
-    firsthead=0;
-    bsbufold = 0;
-    bsbuf = bsspace[1];
-    bsnum = 0;
-    ssize=0;
-    oldhead=0;   
-    memset(bsspace,0,sizeof(bsspace));    
-    return 1; 
+      fsizeold=0;
+      firsthead=0;
+      bsbufold = 0;
+      bsbuf = bsspace[1];
+      bsnum = 0;
+      ssize=0;
+      oldhead=0;   
+      memset(bsspace,0,sizeof(bsspace));
+      return 1; 
+   };
+   return 0; 
 };
     
 static int stream_head_read(struct reader *rd,unsigned long *newhead)
@@ -139,15 +148,20 @@ static int stream_head_read(struct reader *rd,unsigned long *newhead)
 
 int stream_read_raw(struct reader *rd,unsigned char *buf, int size)
 {
-    if(rd->strremain < size)
-         if( !fill_reader(rd))
-          return 0; 
- 
-    mem_cpy(buf,rd->stream,size);
-    rd->strpos+=size;
-    rd->stream+=size;
-    rd->strremain-=size;  
-    return 1;
+
+    if(rd->strremain < size) fill_reader(rd);
+
+    if(size > rd->strremain) size=rd->strremain;
+    
+    if(size>0)
+    { 
+      mem_cpy(buf,rd->stream,size);
+      rd->strpos+=size;
+      rd->stream+=size;
+      rd->strremain-=size;  
+      return size;
+    };
+    return 0;
 };
 
 void set_pointer(long backstep)
@@ -491,7 +505,7 @@ init_resync:
   /* read main data into memory */
 	/* 0 is error! */
 	
-	if(!rd->read_frame_body(rd,bsbuf,fr->framesize))
+	if(rd->read_frame_body(rd,bsbuf,fr->framesize) < fr->framesize)
 		return 0;
 	
 #if 0		
@@ -921,7 +935,7 @@ int parse_new_id3(struct reader *rd, unsigned long header)
 
 	if(major == 0xff) return -1;
 	
-	if (!rd->read_frame_body(rd,buf,6))
+	if (rd->read_frame_body(rd,buf,6)<6)
    	  return 0;
 	if(buf[0] == 0xff) /* major version, will never be 0xff */
 	return -1;
