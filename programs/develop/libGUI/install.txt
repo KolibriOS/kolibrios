@@ -1,0 +1,29 @@
+RUSSIAN
+
+Есть несколько способов установить libGUI.
+
+1) Установка из KolibriOS.
+
+Загрузите KolibriOS. При помощи файлового менеджера (KFAR или KFM на ваш выбор) зайдите в директорию /rd/1/lib/ и скопируйте туда libGUI.obj 
+Запустите программу RDSAVE. Если вы загрузились с жёсткого диска, то сохраните образ на жёсткий диск. По умолчанию подразумевается, что Вы
+загрузили KolibriOS из директории /hdx/1/kolibri/ , где x зависит от того, на каком IDE разъёме находиться ваш жёсткий диск. Значение x вы можете 
+посмотреть в файловом менеджере.Если вы загрузились с floppy диска, то нажмите соответствующую кнопку.
+Всё, установка закончена!
+
+2)Откройте образ KOLIBRI.IMG ,Это можно сделать при помощи программы WinImage или какой либо другой программы, работающей с img образами.
+Зайдите в образе в папку lib и скопируйте туда libGUI.obj . Сохраните образ.
+
+ENGLISH
+
+There are some ways to establish libGUI.
+
+1) Installation from KolibriOS.
+
+Load KolibriOS. By means of the file manager (KFAR or KFM on your choice) go in a directory/rd/1/lib/and copy there libGUI.obj 
+Start program RDSAVE. If you were loaded from a hard disk keep an image on a hard disk. By default it is meant, that you
+Have loaded KolibriOS from a directory/hdx/1/kolibri/where x depends on on what IDE a socket to be your hard disk. Value x you can 
+To look in the file manager. If you were loaded with floppy a disk press the appropriate button.
+Everything, installation is completed!
+
+2) Open image KOLIBRI.IMG, It can be made by means of program WinImage or what or other program working with img in the images.
+Go in an image in a folder lib and copy there libGUI.obj. Keep an image.
