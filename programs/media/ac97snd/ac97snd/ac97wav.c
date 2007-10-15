@@ -1,7 +1,7 @@
 //
 //   This file is part of the AC97 mp3 player.
-//   (C) copyright Serge 2006
-//   email: infinity_sound@mail.ru
+//   (C) copyright Serge 2006-2007 infinity_sound@mail.ru
+//   (C) copyright Quantum 2007    ufmod@users.sf.net
 //
 //   This program is free software; you can redistribute it and/or modify
 //   it under the terms of the GNU General Public License as published by
