@@ -293,7 +293,6 @@ get_FAT:
 
 get_free_FAT:
 ;-----------------------------------------------------------
-; input  : EAX = # cluster for start the searching
 ; output : if CARRY=0 EAX = # first cluster found free
 ;          if CARRY=1 disk full
 ; Note   : for more speed need to use fat_cache directly
@@ -301,10 +300,14 @@ get_free_FAT:
     push  ecx
     mov   ecx,[LAST_CLUSTER]    ; counter for full disk
     sub   ecx,2
+    mov   eax,[fatStartScan]
+    cmp   eax,2
+    jb    gff_reset
 
   gff_test:
     cmp   eax,[LAST_CLUSTER]    ; if above last cluster start at cluster 2
     jbe   gff_in_range
+  gff_reset:
     mov   eax,2
 
   gff_in_range:
@@ -328,6 +331,8 @@ get_free_FAT:
     ret
 
   gff_found:
+    lea   ecx,[eax+1]
+    mov   [fatStartScan],ecx
     pop   ecx
     clc
     ret
@@ -671,6 +676,8 @@ add_disk_free_space:
     jne   add_not_fs
 
     add   [ebx+0x1e8],ecx
+    mov   eax,[fatStartScan]
+    mov   [ebx+0x1ec],eax
     call  hd_write
 ;    cmp   [hd_error],0
 ;    jne   add_not_fs
@@ -1478,7 +1485,6 @@ fat_notroot_next_write:
         jmp     fat_notroot_next_sector
 fat_notroot_extend_dir:
         push    eax
-        mov     eax, [eax]
         call    get_free_FAT
         jnc     .found
         pop     eax
@@ -1941,7 +1947,6 @@ fs_HdRewrite:
         mov     esi, edx
         test    ecx, ecx
         jz      .done
-        mov     eax, 2
         call    get_free_FAT
         jc      .diskfull
         push    eax
@@ -2392,7 +2397,6 @@ hd_extend_file:
         jae     .extend_done
 ; add new cluster
         push    eax
-        mov     eax, edx
         call    get_free_FAT
         jc      .disk_full
         mov     edx, [fatEND]

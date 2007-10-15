@@ -49,6 +49,8 @@ fatBAD               dd 0x0FFFFFF7
 fatEND               dd 0x0FFFFFF8
 fatMASK              dd 0x0FFFFFFF
 
+fatStartScan         dd 2
+
 fs_dependent_data_end:
 file_system_data_size = $ - PARTITION_START
 if file_system_data_size > 96
@@ -423,6 +425,7 @@ boot_read_ok:
     inc   eax
     mov   [LAST_CLUSTER],eax
     dec   eax                   ; cluster count
+    mov   [fatStartScan],2
 
     ; limits by Microsoft Hardware White Paper v1.03
     cmp   eax,4085              ; 0xff5
@@ -436,6 +439,12 @@ fat32_partition:
     movzx eax,word [ebx+0x30]   ; fs info sector
     add   eax,[PARTITION_START]
     mov   [ADR_FSINFO],eax
+    call  hd_read
+    mov   eax,[ebx+0x1ec]
+    cmp   eax,-1
+    jz    @f
+    mov   [fatStartScan],eax
+@@:
 
     popad
 
