@@ -164,11 +164,11 @@ bg:
     mov  edi,0x40000
 
     cmp  al,12
-    jnz  bb1
+    jb   bb1
     inc  edi
   bb1:
     cmp  al,13
-    jnz  bb2
+    jb   bb2
     inc  edi
   bb2:
 
