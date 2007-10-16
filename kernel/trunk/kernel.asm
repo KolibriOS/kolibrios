@@ -1325,13 +1325,17 @@ display_number:
 ; edx = color
         xor     edi, edi
 display_number_force:
-
+     push  eax
+     and   eax,0x7fffffff
      cmp   eax,0xffff            ; length > 0 ?
+     pop   eax     
      jge   cont_displ
      ret
    cont_displ:
-
+     push  eax
+     and   eax,0x7fffffff
      cmp   eax,61*0x10000        ; length <= 60 ?
+     pop   eax  
      jb    cont_displ2
      ret
    cont_displ2:
@@ -1347,8 +1351,10 @@ display_number_force:
      cmp   ah,0                  ; DECIMAL
      jne   no_display_desnum
      shr   eax,16
-     and   eax,0x3f
+     and   eax,0x803f
+;     and   eax,0x3f
      push  eax
+     and   eax,0x3f
      mov   edi,esp
      add   edi,4+64-1
      mov   ecx,eax
@@ -1362,6 +1368,7 @@ display_number_force:
      dec   edi
      loop  d_desnum
      pop   eax
+     call  normalize_number
      call  draw_num_text
      add   esp,64
      popad
@@ -1371,8 +1378,10 @@ display_number_force:
      cmp   ah,0x01               ; HEXADECIMAL
      jne   no_display_hexnum
      shr   eax,16
-     and   eax,0x3f
+     and   eax,0x803f
+;     and   eax,0x3f
      push  eax
+     and   eax,0x3f
      mov   edi,esp
      add   edi,4+64-1
      mov   ecx,eax
@@ -1387,6 +1396,7 @@ display_number_force:
      dec   edi
      loop  d_hexnum
      pop   eax
+     call  normalize_number
      call  draw_num_text
      add   esp,64
      popad
@@ -1396,8 +1406,10 @@ display_number_force:
      cmp   ah,0x02               ; BINARY
      jne   no_display_binnum
      shr   eax,16
-     and   eax,0x3f
+     and   eax,0x803f
+;     and   eax,0x3f
      push  eax
+     and   eax,0x3f
      mov   edi,esp
      add   edi,4+64-1
      mov   ecx,eax
@@ -1411,6 +1423,7 @@ display_number_force:
      dec   edi
      loop  d_binnum
      pop   eax
+     call  normalize_number
      call  draw_num_text
      add   esp,64
      popad
@@ -1420,6 +1433,23 @@ display_number_force:
      add   esp,64
      popad
      ret
+
+normalize_number:
+     test  ah,0x80
+     jz   .continue
+     mov  ecx,48
+     and   eax,0x3f
+@@:
+     inc   edi
+     cmp   [edi],cl
+     jne   .continue
+     dec   eax
+     cmp   eax,1
+     jne   @r
+.continue:
+     and   eax,0x3f
+     ret
+
 
 
 draw_num_text:

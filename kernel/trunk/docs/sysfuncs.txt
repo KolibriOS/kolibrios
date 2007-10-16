@@ -2174,7 +2174,8 @@ Parameters:
     * bh = 1 - display in hexadecimal system
     * bh = 2 - display in binary system
     * bits 16-21 = how many digits to display
-    * bits 22-31 reserved and must be set to 0
+    * bits 22-30 reserved and must be set to 0
+    * bit 31 - set in 1, if the output of number without empty zero in high bits is required
   * ecx = number (if bl=0) or pointer (if bl=1)
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
   * esi = 0xX0RRGGBB:
