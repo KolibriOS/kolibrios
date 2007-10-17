@@ -799,6 +799,9 @@ no_load_vrr_m:
         cmp   eax,2                  ; continue if a process has been loaded
         je    first_app_found
 
+        mov     esi, boot_failed
+        call    boot_log
+
         mov   eax, 0xDEADBEEF        ; otherwise halt
         hlt
 

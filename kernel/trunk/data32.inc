@@ -59,6 +59,7 @@ keymap_alt:
   boot_tsc          db   'Reading TSC',0
   boot_pal_ega      db   'Setting EGA/CGA 320x200 palette',0
   boot_pal_vga      db   'Setting VGA 640x480 palette',0
+  boot_failed       db   'Failed to start first app',0
   boot_mtrr         db   'Setting MTRR',0
   boot_tasking      db   'All set - press ESC to start',0
 
