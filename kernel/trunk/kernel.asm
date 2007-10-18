@@ -1326,35 +1326,38 @@ display_number:
 ; ebx = number or pointer
 ; ecx = x shl 16 + y
 ; edx = color
-        xor     edi, edi
+	xor	edi, edi
 display_number_force:
      push  eax
-     and   eax,0x7fffffff
-     cmp   eax,0xffff            ; length > 0 ?
-     pop   eax     
+     and   eax,0x3fffffff
+     cmp   eax,0xffff		 ; length > 0 ?
+     pop   eax
      jge   cont_displ
      ret
    cont_displ:
      push  eax
-     and   eax,0x7fffffff
-     cmp   eax,61*0x10000        ; length <= 60 ?
-     pop   eax  
+     and   eax,0x3fffffff
+     cmp   eax,61*0x10000	 ; length <= 60 ?
+     pop   eax
      jb    cont_displ2
      ret
    cont_displ2:
 
      pushad
 
-     cmp   al,1                  ; ecx is a pointer ?
+     cmp   al,1 		 ; ecx is a pointer ?
      jne   displnl1
+     mov   ebp,ebx
+     add   ebp,4
+     mov   ebp,[ebp+std_application_base_address]
      mov   ebx,[ebx+std_application_base_address]
    displnl1:
      sub   esp,64
 
-     cmp   ah,0                  ; DECIMAL
+     cmp   ah,0 		 ; DECIMAL
      jne   no_display_desnum
      shr   eax,16
-     and   eax,0x803f
+     and   eax,0xC03f
 ;     and   eax,0x3f
      push  eax
      and   eax,0x3f
@@ -1365,6 +1368,7 @@ display_number_force:
      mov   ebx,10
    d_desnum:
      xor   edx,edx
+     call  division_64_bits
      div   ebx
      add   dl,48
      mov   [edi],dl
@@ -1378,10 +1382,10 @@ display_number_force:
      ret
    no_display_desnum:
 
-     cmp   ah,0x01               ; HEXADECIMAL
+     cmp   ah,0x01		 ; HEXADECIMAL
      jne   no_display_hexnum
      shr   eax,16
-     and   eax,0x803f
+     and   eax,0xC03f
 ;     and   eax,0x3f
      push  eax
      and   eax,0x3f
@@ -1392,6 +1396,7 @@ display_number_force:
      mov   ebx,16
    d_hexnum:
      xor   edx,edx
+     call  division_64_bits
      div   ebx
      add   edx,hexletters
      mov   dl,[edx]
@@ -1406,10 +1411,10 @@ display_number_force:
      ret
    no_display_hexnum:
 
-     cmp   ah,0x02               ; BINARY
+     cmp   ah,0x02		 ; BINARY
      jne   no_display_binnum
      shr   eax,16
-     and   eax,0x803f
+     and   eax,0xC03f
 ;     and   eax,0x3f
      push  eax
      and   eax,0x3f
@@ -1420,6 +1425,7 @@ display_number_force:
      mov   ebx,2
    d_binnum:
      xor   edx,edx
+     call  division_64_bits
      div   ebx
      add   dl,48
      mov   [edi],dl
@@ -1453,7 +1459,16 @@ normalize_number:
      and   eax,0x3f
      ret
 
-
+division_64_bits:
+     test  [esp+1+4],byte 0x40
+     jz   .continue
+     push  eax
+     mov   eax,ebp
+     div   ebx
+     mov   ebp,eax
+     pop   eax
+.continue:
+     ret
 
 draw_num_text:
 
