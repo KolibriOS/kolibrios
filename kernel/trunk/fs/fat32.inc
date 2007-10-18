@@ -676,8 +676,8 @@ add_disk_free_space:
     jne   add_not_fs
 
     add   [ebx+0x1e8],ecx
-    mov   eax,[fatStartScan]
-    mov   [ebx+0x1ec],eax
+    push  [fatStartScan]
+    pop   dword [ebx+0x1ec]
     call  hd_write
 ;    cmp   [hd_error],0
 ;    jne   add_not_fs
