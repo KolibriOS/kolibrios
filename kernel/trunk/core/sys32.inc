@@ -116,11 +116,10 @@ exc_c:
         jnz   .debug
         sti
 ; not debuggee => say error and terminate
-        add   esp, 0x20  ;28h
         movzx eax, bl
         mov   [error_interrupt], eax
         call  show_error_parameters
-
+	add   esp, 0x20
         mov   edx, [TASK_BASE]
         mov   [edx + TASKDATA.state], byte 4
 
@@ -147,79 +146,13 @@ exc_c:
         restore_ring3_context
         iretd
 
-writehex:
-      pusha
-
-      mov  edi, [write_error_to]
-      mov  esi, 8
-    @@:
-      mov  ecx, eax
-      and  ecx, 0xf
-
-      mov  cl,[ecx+hexletters]
-      mov  [edi],cl
-      dec  edi
-
-      shr  eax,4
-      dec  esi
-      jnz  @b
-
-      popa
-      ret
-
 iglobal
-  hexletters  db '0123456789ABCDEF'
-
-  error_interrupt         dd  -1
-
-  process_error  db 'K : Process - forced terminate INT: 00000000',13,10,0
-  process_pid    db 'K : Process - forced terminate PID: 00000000',13,10,0
-  process_eip    db 'K : Process - forced terminate EIP: 00000000',13,10,0
-  system_error   db 'K : Kernel error',13,10,0
+	hexletters	db '0123456789ABCDEF'
+	error_interrupt	dd  -1
 endg
 
-uglobal
-  write_error_to  dd  0x0
-endg
-
-;show_error_parameters:
-;
-;        mov    [write_error_to],process_pid+43
-;        mov    eax,[CURRENT_TASK]
-;        shl    eax, 5
-;        mov    eax,[CURRENT_TASK+TASKDATA.pid+eax]
-;        call   writehex
-;
-;        mov    [write_error_to],process_error+43
-;        mov    eax,[error_interrupt]
-;        call   writehex
-;
-;        cmp    dword [esp+4+4], os_code ; CS
-;        jnz    @f
-;        ;mov    esi,system_error
-;        ;call   sys_msg_board_str
-;        DEBUGF 1,"%s",system_error
-;      @@:
-;        mov    eax, [esp+4] ; EIP
-;
-;        mov    [write_error_to],process_eip+43
-;        call   writehex
-;
-;        ;mov    esi,process_error
-;        ;call   sys_msg_board_str
-;        DEBUGF 1,"%s",process_error
-;
-;        ;mov    esi,process_pid
-;        ;call   sys_msg_board_str
-;        DEBUGF 1,"%s",process_pid
-;
-;        ;mov    esi,process_eip
-;        ;call   sys_msg_board_str
-;        DEBUGF 1,"%s",process_eip
-;
-;        ret
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 show_error_parameters:
-diff16 '[esp]',0,$
     mov eax,[CURRENT_TASK]
     shl eax, 5
     DEBUGF  1, "K : Process - forced terminate PID: %x\n", [CURRENT_TASK + TASKDATA.pid + eax]
@@ -236,15 +169,12 @@ diff16 '[esp]',0,$
     mov edi, msg_sel_ker
     mov ebx, [esp - 16 + 0x20]
 @@:
-;    DEBUGF  1, "ESP : %x\nK : Flags : %x CS : %x (%s)\n", ebx, [esp + 12 + 0x20], eax, edi
-    DEBUGF  1, "ESP : %x\nK : Flags : %x CS : %x\n", ebx, [esp + 12 + 0x20], eax
-    ret 
-
+    DEBUGF  1, "ESP : %x\nK : Flags : %x CS : %x (%s)\n", ebx, [esp + 12 + 0x20], eax, edi
+    ret
+;-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 
 
 ; irq1  ->  hid/keyboard.inc
-
-
 macro irqh [num]
 {
   forward
