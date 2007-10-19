@@ -196,6 +196,7 @@ macro DEBUGH_N _sign,_num,_hex {
    if ~_hex eq eax
     mov eax,_hex
    end if
+   mov edx,8
   else if _hex in <ax,bx,cx,dx,si,di,bp,sp>
    if ~_hex eq ax
     movzx eax,_hex

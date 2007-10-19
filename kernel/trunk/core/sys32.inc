@@ -40,6 +40,10 @@ build_interrupt_table:
         ret
 
 iglobal
+
+  msg_sel_ker   db "kernel", 0
+  msg_sel_app   db "application", 0
+
   sys_int:
     dd e0,debug_exc,e2,e3
     dd e4,e5,e6,e7
@@ -178,42 +182,63 @@ uglobal
   write_error_to  dd  0x0
 endg
 
+;show_error_parameters:
+;
+;        mov    [write_error_to],process_pid+43
+;        mov    eax,[CURRENT_TASK]
+;        shl    eax, 5
+;        mov    eax,[CURRENT_TASK+TASKDATA.pid+eax]
+;        call   writehex
+;
+;        mov    [write_error_to],process_error+43
+;        mov    eax,[error_interrupt]
+;        call   writehex
+;
+;        cmp    dword [esp+4+4], os_code ; CS
+;        jnz    @f
+;        ;mov    esi,system_error
+;        ;call   sys_msg_board_str
+;        DEBUGF 1,"%s",system_error
+;      @@:
+;        mov    eax, [esp+4] ; EIP
+;
+;        mov    [write_error_to],process_eip+43
+;        call   writehex
+;
+;        ;mov    esi,process_error
+;        ;call   sys_msg_board_str
+;        DEBUGF 1,"%s",process_error
+;
+;        ;mov    esi,process_pid
+;        ;call   sys_msg_board_str
+;        DEBUGF 1,"%s",process_pid
+;
+;        ;mov    esi,process_eip
+;        ;call   sys_msg_board_str
+;        DEBUGF 1,"%s",process_eip
+;
+;        ret
 show_error_parameters:
+diff16 '[esp]',0,$
+    mov eax,[CURRENT_TASK]
+    shl eax, 5
+    DEBUGF  1, "K : Process - forced terminate PID: %x\n", [CURRENT_TASK + TASKDATA.pid + eax]
+    DEBUGF  1, "K : Exception : %x Error : xxxxxxxx\n", [error_interrupt]
+    DEBUGF  1, "K : EAX : %x EBX : %x ECX : %x\n", [esp + 0x20], [esp - 12 + 0x20], [esp - 4 + 0x20]
+    DEBUGF  1, "K : EDX : %x ESI : %x EDI : %x\n", [esp - 8 + 0x20], [esp - 24 + 0x20], [esp - 28 + 0x20]
+    DEBUGF  1, "K : EBP : %x EIP : %x ", [esp - 20 + 0x20], [esp + 4 + 0x20]
 
-        mov    [write_error_to],process_pid+43
-        mov    eax,[CURRENT_TASK]
-        shl    eax, 5
-        mov    eax,[CURRENT_TASK+TASKDATA.pid+eax]
-        call   writehex
-
-        mov    [write_error_to],process_error+43
-        mov    eax,[error_interrupt]
-        call   writehex
-
-        cmp    dword [esp+4+4], os_code ; CS
-        jnz    @f
-        ;mov    esi,system_error
-        ;call   sys_msg_board_str
-        DEBUGF 1,"%s",system_error
-      @@:
-        mov    eax, [esp+4] ; EIP
-
-        mov    [write_error_to],process_eip+43
-        call   writehex
-
-        ;mov    esi,process_error
-        ;call   sys_msg_board_str
-        DEBUGF 1,"%s",process_error
-
-        ;mov    esi,process_pid
-        ;call   sys_msg_board_str
-        DEBUGF 1,"%s",process_pid
-
-        ;mov    esi,process_eip
-        ;call   sys_msg_board_str
-        DEBUGF 1,"%s",process_eip
-
-        ret
+    mov eax, [esp + 8 + 0x20]
+    mov edi, msg_sel_app
+    mov ebx, [esp + 16 + 0x20]
+    cmp eax, app_code
+    je  @f
+    mov edi, msg_sel_ker
+    mov ebx, [esp - 16 + 0x20]
+@@:
+;    DEBUGF  1, "ESP : %x\nK : Flags : %x CS : %x (%s)\n", ebx, [esp + 12 + 0x20], eax, edi
+    DEBUGF  1, "ESP : %x\nK : Flags : %x CS : %x\n", ebx, [esp + 12 + 0x20], eax
+    ret 
 
 
 
@@ -853,4 +878,3 @@ build_scheduler:
   ;      call   boot_log
 
         ret
-
