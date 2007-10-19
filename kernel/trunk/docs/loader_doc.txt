@@ -1,7 +1,23 @@
+; (english text below)
+
+;------------------------------------------
+; Интерфейс сохранения параметров
+;------------------------------------------
+Если при передаче управления ядру загрузчик устанавливает AX='KL',
+то в DS:SI ядро ожидает дальнего указателя на следующую структуру:
+        db      версия структуры, должна быть 1
+        dw      флаги:
+                бит 0 установлен = присутствует образ рамдиска в памяти
+        dd      дальний указатель на процедуру сохранения параметров
+                может быть 0, если загрузчик не поддерживает
+Процедура сохранения параметров должна записать первый сектор ядра
+kernel.mnt назад на то место, откуда она его считала; возврат из
+процедуры осуществляется по retf.
+
 ;------------------------------------------
 ; Указание загрузчиком системного каталога
 ;------------------------------------------
-Перед передачей управления ядру могут быть установленны следующие регистры:
+Перед передачей управления ядру могут быть установлены следующие регистры:
 CX='HA'
 DX='RD'
 Это указывает на то, что регистр BX указывает на системный раздел. Каталог /kolibri/ на
@@ -16,7 +32,7 @@ DX='RD'
 'm' - Приводы CD-ROM
 
 Возможные значения регистра BH (указывает на раздел):
-для BL='a','b','c','d','r' - указывает на наздел, где расположен системный каталог
+для BL='a','b','c','d','r' - указывает на раздел, где расположен системный каталог
 для BL='m',указывает на номер физического устройства, с которого надо начинать поиск системного каталога.
 
 примеры значений регистра BX:
@@ -28,18 +44,30 @@ DX='RD'
 'r1' - /rd/1/
 
 
+;------------------------------------------
+; Interface for saving boot-screen settings
+;------------------------------------------
+If a loader sets AX='KL' when transferring control to the kernel,
+the kernel expects in DS:SI far pointer to the following structure:
+        db      structure version, must be 1
+        dw      flags
+                bit 0 set = ramdisk image in memory is present
+        dd      far pointer to save settings procedure
+                may be 0 if such procedure is not supported by loader
+Procedure for saving settings must write the first sector of the kernel
+kernel.mnt back to the place, from where it has been read; return from
+this procedure must be with retf.
 
-	
 ;------------------------------------------ 
-; Note boot system directory
+; System directory information from loader
 ;------------------------------------------ 
-The transfer of the kernel can be installed following registers:
+Before transfer of control to the kernel following registers can be set:
 CX = 'HA'
 DX = 'RD'
-This indicates that the register BX points to a system partition. Catalog /kolibri/ in
-this section is system, it is treated as a /sys/
+This indicates that the register BX identifies system partition. The folder /kolibri/ in
+this partition is system folder, it can be referenced as /sys/
 
-Possible values register BL (indicates the device):
+Possible values for register BL (indicates the device):
 'a' - Primary Master
 'b' - Primary Slave
 'c' - Secondary Master
@@ -47,8 +75,8 @@ Possible values register BL (indicates the device):
 'r' - RAM disc
 'm' - ROM drives
 
-Possible values register BH (indicating section):
-for BL = 'a', 'b', 'c', 'd', 'r' to denote nazdel where the system folder
+Possible values for register BH (indicates section):
+for BL = 'a', 'b', 'c', 'd', 'r' to denote partition where the system folder
 for BL = 'm', indicates the number of physical devices, which must begin a systematic search directory.
 
 Examples of register BX:
@@ -56,7 +84,5 @@ Examples of register BX:
 'a2' - /hd0/2/
 'b1' - /hd1/1/
 'd4' - /hd3/4/
-'m0' - search directory sidyukam kolibri
+'m0' - search directory 'kolibri' by all CD-ROMs
 'r1' - /rd/1/
-
-Переведено Google
