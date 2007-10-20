@@ -333,7 +333,7 @@ proc new_mem_resize stdcall, new_size:dword
            mov dword [app_page_tabs+edi*4], 2
            mov ebx, edi
            shl ebx, 12
-           invlpg [ebx+std_application_base_address]
+           invlpg [ebx]
            call free_page
 
 .next:     add edi, 1
