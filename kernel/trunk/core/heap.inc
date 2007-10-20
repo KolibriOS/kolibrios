@@ -269,6 +269,10 @@ align 4
 proc alloc_kernel_space stdcall, size:dword
            local block_ind:DWORD
 
+           push ebx
+           push esi
+           push edi
+
            mov eax, [size]
            add eax, 4095
            and eax, not 4095
@@ -356,6 +360,9 @@ proc alloc_kernel_space stdcall, size:dword
            mov ebx, [size]
            sub [heap_free], ebx
            and [heap_mutex], 0
+           pop edi
+           pop esi
+           pop ebx
            ret
 .m_eq_size:
            remove_from_list edi
@@ -376,16 +383,24 @@ proc alloc_kernel_space stdcall, size:dword
            mov ebx, [size]
            sub [heap_free], ebx
            and [heap_mutex], 0
+           pop edi
+           pop esi
+           pop ebx
            ret
 .error:
            xor eax, eax
            mov [heap_mutex], eax
+           pop edi
+           pop esi
+           pop ebx
            ret
 endp
 
 align 4
 proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
-
+           push ebx
+           push esi
+           push edi
            mov ebx, heap_mutex
            call wait_mutex    ;ebx
 
@@ -480,6 +495,9 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            xor eax, eax
            mov [heap_mutex], eax
            dec eax
+           pop edi
+           pop esi
+           pop ebx
            ret
 .insert:
            remove_from_used esi
@@ -499,10 +517,16 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            xor eax, eax
            mov [heap_mutex], eax
            dec eax
+           pop edi
+           pop esi
+           pop ebx
            ret
 .fail:
            xor eax, eax
            mov [heap_mutex], eax
+           pop edi
+           pop esi
+           pop ebx
            ret
 endp
 

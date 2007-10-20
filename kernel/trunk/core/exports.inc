@@ -93,17 +93,17 @@ kernel_export:
   dd szPciWrite8       , pci_write8
   dd szPciWrite16      , pci_write16
 
-  dd szAllocPage       , alloc_page
-  dd szAllocPages      , alloc_pages
+  dd szAllocPage       , alloc_page            ;stdcall
+  dd szAllocPages      , alloc_pages           ;stdcall
   dd szFreePage        , free_page
-  dd szMapPage         , map_page
+  dd szMapPage         , map_page              ;stdcall
   dd szMapSpace        , map_space
   dd szGetPgAddr       , get_pg_addr
   dd szCommitPages     , commit_pages          ;not implemented
   dd szReleasePages    , release_pages
 
-  dd szAllocKernelSpace, alloc_kernel_space
-  dd szFreeKernelSpace , free_kernel_space
+  dd szAllocKernelSpace, alloc_kernel_space    ;stdcall
+  dd szFreeKernelSpace , free_kernel_space     ;stdcall
   dd szKernelAlloc     , kernel_alloc
   dd szKernelFree      , kernel_free
   dd szUserAlloc       , user_alloc

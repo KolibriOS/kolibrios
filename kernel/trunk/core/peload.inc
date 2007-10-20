@@ -179,14 +179,6 @@ map_PE:
            jmp     .L24
 .L22:
 
-     push eax
-     push edx
-     mov edx, 0x400   ;bochs
-     mov al,0xff      ;bochs
-     out dx, al       ;bochs
-     pop edx
-     pop eax
-
            mov     ecx, [esp+16]
            add     ebx, [ecx+40]
 

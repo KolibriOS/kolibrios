@@ -13,6 +13,7 @@ proc alloc_page
 
            pushfd
            cli
+           push ebx
            mov ebx, [page_start]
            mov ecx, [page_end]
 .l1:
@@ -21,6 +22,7 @@ proc alloc_page
            add ebx,4
            cmp ebx, ecx
            jb .l1
+           pop ebx
            popfd
            xor eax,eax
            ret
@@ -31,6 +33,7 @@ proc alloc_page
            lea eax, [eax+ebx*8]
            shl eax, 12
            dec [pg_data.pages_free]
+           pop ebx
            popfd
            ret
 endp
@@ -38,6 +41,8 @@ endp
 align 4
 proc alloc_pages stdcall, count:dword
            pushfd
+           push ebx
+           push edi
            cli
            mov eax, [count]
            add eax, 7
@@ -59,13 +64,18 @@ proc alloc_pages stdcall, count:dword
            inc ecx
            cmp ecx,ebx
            jb .match
-.fail:     xor eax, eax
+.fail:
+           xor eax, eax
+           pop edi
+           pop ebx
            popfd
            ret
 .next:
            inc ecx
            cmp ecx, ebx
            jb .find
+           pop edi
+           pop ebx
            popfd
            xor eax, eax
            ret
@@ -81,6 +91,8 @@ proc alloc_pages stdcall, count:dword
            mov ebx, [count]
            shl ebx, 3
            sub [pg_data.pages_free], ebx
+           pop edi
+           pop ebx
            popfd
            ret
 endp
