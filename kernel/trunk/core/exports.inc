@@ -104,10 +104,10 @@ kernel_export:
 
   dd szAllocKernelSpace, alloc_kernel_space    ;stdcall
   dd szFreeKernelSpace , free_kernel_space     ;stdcall
-  dd szKernelAlloc     , kernel_alloc
-  dd szKernelFree      , kernel_free
-  dd szUserAlloc       , user_alloc
-  dd szUserFree        , user_free
+  dd szKernelAlloc     , kernel_alloc          ;stdcall
+  dd szKernelFree      , kernel_free           ;stdcall
+  dd szUserAlloc       , user_alloc            ;stdcall
+  dd szUserFree        , user_free             ;stdcall
   dd szKmalloc         , malloc
   dd szKfree           , free
   dd szCreateRingBuffer, create_ring_buffer
@@ -121,17 +121,18 @@ kernel_export:
   dd szDestroyEvent    , destroy_event
   dd szClearEvent      , clear_event
 
-  dd szLoadCursor      , load_cursor
-  dd szSelectHwCursor  , select_hw_cursor    ;indirect
-  dd szSetHwCursor     , set_hw_cursor       ;indirect
-  dd szHwCursorRestore , hw_restore          ;indirect
-  dd szHwCursorCreate  , create_cursor
+  dd szLoadCursor      , load_cursor           ;stdcall
+
+  dd szSelectHwCursor  , select_hw_cursor      ;import
+  dd szSetHwCursor     , set_hw_cursor         ;import
+  dd szHwCursorRestore , hw_restore            ;import
+  dd szHwCursorCreate  , create_cursor         ;import
 
   dd szSysMsgBoardStr  , sys_msg_board_str
   dd szGetCurrentTask  , get_curr_task
-  dd szLoadFile        , load_file
+  dd szLoadFile        , load_file             ;stdcall
   dd szSendEvent       , send_event
-  dd szSetMouseData    , set_mouse_data
+  dd szSetMouseData    , set_mouse_data        ;stdcall
   dd szSleep           , delay_ms
   dd szGetTimerTicks   , get_timer_ticks
 

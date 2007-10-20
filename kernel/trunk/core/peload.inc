@@ -29,7 +29,7 @@ endp
 
 
 align 4
-map_PE:
+map_PE:                    ;stdcall base:dword, image:dword
            cld
            push    ebp
            push    edi

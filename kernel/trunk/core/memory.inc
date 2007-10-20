@@ -1134,6 +1134,8 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
            test eax, eax
            jz .fail
 
+           push ebx
+
            mov [buf_ptr], eax
 
            mov ebx, [size]
@@ -1145,6 +1147,8 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 
            test eax, eax
            jz .mm_fail
+
+           push edi
 
            or eax, [flags]
            mov edi, [buf_ptr]
@@ -1164,10 +1168,13 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
            jnz @B
 
            mov eax, [buf_ptr]
+           pop edi
+           pop ebx
            ret
 .mm_fail:
            stdcall free_kernel_space, [buf_ptr]
            xor eax, eax
+           pop ebx
 .fail:
            ret
 endp

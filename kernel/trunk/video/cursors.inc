@@ -362,9 +362,13 @@ proc load_cursor stdcall, src:dword, flags:dword
 
            stdcall load_file, [src]
            test eax, eax
-           jz .exit
+           jz .fail
            mov [src], eax
 @@:
+           push ebx
+           push esi
+           push edi
+
            mov eax, [CURRENT_TASK]
            shl eax, 5
            mov eax, [CURRENT_TASK+eax+4]
@@ -372,11 +376,15 @@ proc load_cursor stdcall, src:dword, flags:dword
            mov ecx, [flags]
            call [create_cursor]    ;eax, ebx, ecx
            mov [handle], eax
-.fail:
+
            cmp word [flags], LOAD_FROM_FILE
            jne .exit
            stdcall kernel_free, [src]
 .exit:
+           pop edi
+           pop esi
+           pop ebx
+.fail:
            mov eax, [handle]
            ret
 endp

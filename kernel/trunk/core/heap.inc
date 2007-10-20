@@ -537,6 +537,9 @@ proc kernel_alloc stdcall, size:dword
              pages_count dd ?
            endl
 
+           push ebx
+           push edi
+
            mov eax, [size]
            add eax, 4095
            and eax, not 4095;
@@ -591,9 +594,13 @@ proc kernel_alloc stdcall, size:dword
            jnz @B
 .end:
            mov eax, [lin_addr]
+           pop edi
+           pop ebx
            ret
 .err:
            xor eax, eax
+           pop edi
+           pop ebx
            ret
 endp
 
@@ -665,7 +672,6 @@ proc init_heap
            mov [ebx+APPDATA.heap_top], eax
 
            sub eax, esi
-       ;    add esi, new_app_base
            shr esi, 10
            mov ecx, eax
            sub eax, 4096
@@ -676,6 +682,10 @@ endp
 
 align 4
 proc user_alloc stdcall, alloc_size:dword
+
+           push ebx
+           push esi
+           push edi
 
            mov ecx, [alloc_size]
            add ecx, (4095+4096)
@@ -725,6 +735,10 @@ l_0:
            call    update_mem_size
 
            lea eax, [esi+4096]
+
+           pop edi
+           pop esi
+           pop ebx
            ret
 test_used:
            test al, USED_BLOCK
@@ -736,15 +750,22 @@ m_next:
            jmp l_0
 m_exit:
            xor eax, eax
+           pop edi
+           pop esi
+           pop ebx
            ret
 endp
 
 align 4
 proc user_free stdcall, base:dword
 
+           push esi
+
            mov esi, [base]
            test esi, esi
            jz .exit
+
+           push ebx
 
            xor ebx, ebx
            shr esi, 12
@@ -776,6 +797,8 @@ proc user_free stdcall, base:dword
            dec ecx
            jnz .release
 .released:
+           push edi
+
            mov edx, [current_slot]
            mov esi, dword [edx+APPDATA.heap_base]
            mov edi, dword [edx+APPDATA.heap_top]
@@ -783,13 +806,20 @@ proc user_free stdcall, base:dword
            neg ebx
            call update_mem_size
            call user_normalize
+           pop edi
+           pop ebx
+           pop esi
            ret
 .exit:
            xor eax, eax
            inc eax
+           pop esi
            ret
 .cantfree:
            xor eax, eax
+           pop edi
+           pop ebx
+           pop esi
            ret
 endp
 

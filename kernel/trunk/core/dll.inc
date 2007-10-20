@@ -431,9 +431,7 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            xor eax, eax
            mov ebx, [file_name]
-    ;       sub ebx, new_app_base
            mov ecx, [info]
-    ;       sub ecx, new_app_base
 
            mov [cmd], 5
            mov [offset], eax
@@ -445,7 +443,6 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            mov eax, 70
            lea ebx, [cmd]
-     ;      sub ebx, new_app_base
            int 0x40
            ret
 endp
@@ -517,6 +514,10 @@ proc load_file stdcall, file_name:dword
              file2      dd ?
            endl
 
+           push ebx
+           push esi
+           push edi
+
            lea eax, [attr]
            stdcall get_fileinfo, [file_name], eax
            test eax, eax
@@ -561,12 +562,18 @@ proc load_file stdcall, file_name:dword
 @@:
            mov ebx, [file_size]
            pop eax
+           pop edi
+           pop esi
+           pop ebx
            ret
 .cleanup:
            stdcall kernel_free, [file]
 .fail:
            xor eax, eax
            xor ebx, ebx
+           pop edi
+           pop esi
+           pop ebx
            ret
 endp
 
