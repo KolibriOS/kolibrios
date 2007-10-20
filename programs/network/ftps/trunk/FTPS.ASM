@@ -20,7 +20,7 @@ use32
     dd      0x7FFF0                 ; esp = 0x7FFF0
     dd      0, 0                    ; no params, no path
 
-include '..\..\..\macros.inc'
+include 'macros.inc'
 ; Various states of client connection
 USER_NONE       equ 0   ; Awaiting a connection
 USER_CONNECTED  equ 1   ; User just connected, prompt given
@@ -66,7 +66,7 @@ still:
     ; If the socket closed by remote host, open it again.
     cmp     eax, 7
     je      con
-    
+
     ; If socket closed by Reset, open it again
     cmp     eax, 11
     je      con
@@ -180,7 +180,7 @@ draw_window:
     xor  eax,eax                   ; DRAW WINDOW
     mov  ebx,100*65536+491 + 8 +15
     mov  ecx,100*65536+270 + 20     ; 20 for status bar
-    mov  edx,0x13000000
+    mov  edx,0x14000000
     mov  edi,labelt
     mcall
 
@@ -434,17 +434,17 @@ outputStr:
     mcall
     pop     edx
     pop     esi
-    
+
     cmp     eax, 0
     je      os_exit
-    
-    ; The TCP/IP transmit queue is full; Wait a bit, then retry 
+
+    ; The TCP/IP transmit queue is full; Wait a bit, then retry
     pusha
     mov     eax,5
     mov     ebx,1                 ; Delay for up 100ms
     mcall
     popa
-    jmp     outputStr        
+    jmp     outputStr
 os_exit:
     ret
 
@@ -475,13 +475,13 @@ outputDataStr:
     cmp     eax, 0
     je      ods_exit
 
-    ; The TCP/IP transmit queue is full; Wait a bit, then retry 
+    ; The TCP/IP transmit queue is full; Wait a bit, then retry
     pusha
     mov     eax,5
     mov     ebx,20           ; Delay for upto 200ms
     mcall
     popa
-    jmp     outputDataStr        
+    jmp     outputDataStr
 ods_exit:
     ret
 
@@ -582,7 +582,7 @@ disconnect:
     mov     ecx,[CmdSocket]
     mcall
     ret
-    
+
 
 
 ;***************************************************************************
@@ -841,7 +841,7 @@ pps002:
 ;       The data connection is already open.
 ;
 ;   Inputs
-;       None 
+;       None
 ;
 ;   Outputs
 ;       None
@@ -1002,7 +1002,7 @@ sd_exit:
 ;       file descriptor
 ;
 ;   Inputs
-;       None 
+;       None
 ;
 ;   Outputs
 ;       None
@@ -1010,32 +1010,32 @@ sd_exit:
 ;***************************************************************************
 setupFilePath:
     mov     esi, buff + 4       ; Point to (1 before) first character of file
-    
+
     ; Skip any trailing spaces or / character
-sfp001:    
+sfp001:
     inc     esi
     cmp     [esi], byte ' '
     je      sfp001
     cmp     [esi], byte '/'
     je      sfp001
-    
+
     ; esi points to start of filename.
-    
-    
+
+
     ; Copy across the directory path '/'
     ; into the fileinfoblock
     mov     edi, filename
     mov     dword [edi], '/RD/'
     mov     word [edi+4], '1/'
     add     edi, 6
-    
+
     ; Copy across the filename
 sfp002:
     cld
     movsb
     cmp     [esi], byte 0x0d
     jne     sfp002
-    mov     [edi], byte 0        
+    mov     [edi], byte 0
     ret
 
 
@@ -1050,7 +1050,7 @@ sfp002:
 ;       The file to send is named in the buff string
 ;
 ;   Inputs
-;       None 
+;       None
 ;
 ;   Outputs
 ;       None
@@ -1065,7 +1065,7 @@ sendFile:
     and     dword [ebx+4], 0 ; first block
 
 sf002a:
-    ; now read the file..    
+    ; now read the file..
     mov     eax,70
     mcall
     test    eax, eax
@@ -1088,9 +1088,9 @@ sf002a:
     add     dword [ebx+4], edx
     jmp     sf002a
 
-sf_exit:   
+sf_exit:
     ret
-    
+
 
 ;***************************************************************************
 ;   Function
@@ -1101,7 +1101,7 @@ sf_exit:
 ;       The file to receive is named in the buff string
 ;
 ;   Inputs
-;       None 
+;       None
 ;
 ;   Outputs
 ;       None
@@ -1109,7 +1109,7 @@ sf_exit:
 ;***************************************************************************
 getFile:
     call    setupFilePath
-    
+
     ; init fileblock descriptor, for file write
     xor     eax, eax
     mov     [fsize], eax            ; Start filelength at 0
@@ -1117,7 +1117,7 @@ getFile:
     inc     eax
     inc     eax
     mov     [fileinfoblock], eax    ; write cmd
-    
+
     ; Read data from the socket until the socket closes
     ; loop
     ;   loop
@@ -1127,7 +1127,7 @@ getFile:
     ;   sleep 100ms
     ; until socket no longer connected
     ; write file to ram
-    
+
 gf000:
     mov     eax, 53
     mov     ebx, 2                  ; Get # of bytes in input queue
@@ -1135,20 +1135,20 @@ gf000:
     mcall
     test    eax, eax
     je      gf_sleep
-        
+
     mov     eax, 53
     mov     ebx, 3                  ; Get a byte from socket in bl
     mov     ecx, [DataSocket]
     mcall                    ; returned data in bl
-    
+
     mov     esi, text + 0x1300
     add     esi, dword [fsize]
     mov     [esi], bl
     inc     dword [fsize]
-        
+
     ; dummy, write to screen
-    ;call    printChar    
-    
+    ;call    printChar
+
     jmp     gf000
 
 gf_sleep:
@@ -1176,8 +1176,8 @@ gf001:
     mov     ebx,10              ; Delay for up 100ms
     mcall
     jmp     gf000               ; try for more data
-            
-    
+
+
 
 
 
@@ -1203,12 +1203,12 @@ cmdCWD:
     ; Only / is valid for the ramdisk
     cmp     [buff+5], byte 0x0d
     jne     ccwd_000
-    
+
     ; OK, show the directory name text
     mov     esi, chdir
     mov     edx, chdir_end - chdir
     jmp     ccwd_001
-    
+
 ccwd_000:
     ; Tell user there is no such directory
     mov     esi, noFileStr
@@ -1292,22 +1292,22 @@ cmdDELE:
     mcall
     pop     dword [ebx+16]
     pop     dword [ebx+12]
-    
+
     test    eax, eax
     jne     cmdDele_err
 
     mov     esi, delokStr
     mov     edx, delokStr_end - delokStr
     call    outputStr
-    
+
     jmp     cmdDele_exit
-       
-cmdDele_err:    
+
+cmdDele_err:
     mov     esi, noFileStr
     mov     edx, noFileStr_end - noFileStr
     call    outputStr
-    
-    
+
+
 cmdDele_exit:
     ret
 
@@ -1340,7 +1340,7 @@ cl001:
 
     ; send directory listing
     call    sendDir
-   
+
     ; Close port
     call    disconnectData
 
@@ -1376,7 +1376,7 @@ cr001:
 
     ; send data to remote user
     call    sendFile
-   
+
     ; Close port
     call    disconnectData
 
@@ -1418,7 +1418,7 @@ cs001:
 
     ; get data file from remote user
     call    getFile
-   
+
     mov     esi, endStr
     mov     edx, endStr_end - endStr
     call    outputStr
@@ -1612,7 +1612,7 @@ dirinfoblock:
 dirpath             db      '/sys',0
 
 fsize:              dd      0
-                    
+
 state               db  0
 buffptr             dd  0
 buff:               times 256 db 0  ; Could put this after iend

@@ -23,17 +23,17 @@ DEBUGGING_DISABLED          equ     0
 DEBUGGING_STATE             equ     DEBUGGING_DISABLED
 
 use32
- org	0x0
- db	'MENUET01'    ; header
- dd	0x01	      ; header version
- dd	START	      ; entry point
- dd	I_END	      ; image size
- dd	0x100000      ; required memory
- dd	0x100000      ; esp
- dd	0x0 , 0x0     ; I_Param , I_Path
+ org    0x0
+ db     'MENUET01'    ; header
+ dd     0x01          ; header version
+ dd     START         ; entry point
+ dd     I_END         ; image size
+ dd     0x100000      ; required memory
+ dd     0x100000      ; esp
+ dd     0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include 'macros.inc'
 ;include "DEBUG.INC"
 
 URLMAXLEN       equ     50  ; maximum length of url string
@@ -1392,11 +1392,11 @@ draw_window:
     mov     eax,0                     ; function 0 : define and draw window
     mov     ebx,50*65536+550          ; [x start] *65536 + [x size]
     mov     ecx,50*65536+400          ; [y start] *65536 + [y size]
-    mov     edx,0x13ffffff            ; color of work area RRGGBB,8->color gl
+    mov     edx,0x14ffffff            ; color of work area RRGGBB,8->color gl
     mov     edi,title                 ; WINDOW LABEL
     mcall
 
-                                   
+
     mov     esi, URLMAXLEN            ; URL
     mov     eax,4                     ; function 4 : write text to window
     mov     ebx,30*65536+38           ; [x start] *65536 + [y start]

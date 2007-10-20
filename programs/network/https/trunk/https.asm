@@ -19,17 +19,17 @@ version  equ  '0.6'
 
 use32
 
-		org	0x0
+                org     0x0
 
-		db	'MENUET01'		; 8 byte id
-		dd	0x01			; required os
-		dd	START			; program start
-		dd	I_END			; program image size
-		dd	0x400000		; required amount of memory
-		dd	0x20000
-		dd	0,0			; reserved=no extended header
+                db      'MENUET01'              ; 8 byte id
+                dd      0x01                    ; required os
+                dd      START                   ; program start
+                dd      I_END                   ; program image size
+                dd      0x400000                ; required amount of memory
+                dd      0x20000
+                dd      0,0                     ; reserved=no extended header
 
-include "..\..\..\MACROS.INC"
+include "MACROS.INC"
 
 ; 0x0+       - program image
 ; 0x1ffff    - stack
@@ -42,7 +42,7 @@ filel:
    dd 0
    dd 50000
    dd 0x20000
-   db	'/sys/board.htm',0
+   db   '/sys/board.htm',0
 
 files:
     dd 2
@@ -53,7 +53,7 @@ files:
     db '/sys/board.htm',0
 
 
-START:				; start of execution
+START:                          ; start of execution
 
     mov  eax,70
     mov  ebx,filel
@@ -81,7 +81,7 @@ START:				; start of execution
     mov  [last_status],-2
     call clear_input
 red:
-    call draw_window		; at first, draw the window
+    call draw_window            ; at first, draw the window
 
 still:
 
@@ -110,26 +110,26 @@ last_status   dd   0x0
 
 check_events:
 
-    cmp  eax,1			; redraw request ?
+    cmp  eax,1                  ; redraw request ?
     jz   red
-    cmp  eax,2			; key in buffer ?
+    cmp  eax,2                  ; key in buffer ?
     jz   key
-    cmp  eax,3			; button in buffer ?
+    cmp  eax,3                  ; button in buffer ?
     jz   button
 
     ret
 
-key:			       ; Keys are not valid at this part of the
-    mov  al,2		       ; loop. Just read it and ignore
+key:                           ; Keys are not valid at this part of the
+    mov  al,2                  ; loop. Just read it and ignore
     mcall
     ret
 
-button: 			; button
+button:                         ; button
 
-    mov  al,17 		; get id
+    mov  al,17          ; get id
     mcall
 
-    cmp  ah,1		; close
+    cmp  ah,1           ; close
     jnz  tst2
     mov  eax,53
     mov  ebx,8
@@ -146,9 +146,9 @@ button: 			; button
     mov  eax,53
     mov  ebx,5
     mov  ecx,80       ; local port # - http
-    mov  edx,0	    ; no remote port specified
-    mov  esi,0	    ; no remote ip specified
-    mov  edi,0	    ; PASSIVE open
+    mov  edx,0      ; no remote port specified
+    mov  esi,0      ; no remote ip specified
+    mov  edi,0      ; PASSIVE open
     mcall
     mov  [socket], eax
     mov  [posy],1
@@ -160,7 +160,7 @@ button: 			; button
     call check_status
     ret
   tst3:
-    cmp  ah,4			; button id=4 ?
+    cmp  ah,4                   ; button id=4 ?
     jnz  no4
     mov  [server_active],0
   close_socket:
@@ -181,9 +181,9 @@ button: 			; button
     mov  eax,53
     mov  ebx,5
     mov  ecx,80     ; local port # - http
-    mov  edx,0	    ; no remote port specified
-    mov  esi,0	    ; no remote ip specified
-    mov  edi,0	    ; PASSIVE open
+    mov  edx,0      ; no remote port specified
+    mov  esi,0      ; no remote ip specified
+    mov  edi,0      ; PASSIVE open
     mcall
     mov  [socket], eax
   no_re_open:
@@ -211,8 +211,8 @@ button: 			; button
     jmp  still
   no4:
 
-    cmp  ah,6			; read directory
-    je	 read_string
+    cmp  ah,6                   ; read directory
+    je   read_string
 
     ret
 
@@ -240,9 +240,9 @@ start_transmission:
   wait_for_data:
     call check_for_incoming_data
     cmp  [input_text+256+1],dword 'GET '
-    je	 data_received
+    je   data_received
     cmp  [input_text+256+1],dword 'POST'
-    je	 data_received
+    je   data_received
     mov  eax,5
     mov  ebx,1
     mcall
@@ -291,7 +291,7 @@ start_transmission:
     add  [filepos],edx
 
     cmp  [file_left],0
-    jg	 newblock
+    jg   newblock
 
   no_http_request:
 
@@ -363,14 +363,14 @@ send_header:
 
     pusha
 
-    mov   eax,53		  ; send response and file length
+    mov   eax,53                  ; send response and file length
     mov   ebx,7
     mov   ecx,[socket]
     mov   edx,h_len-html_header
     mov   esi,html_header
     mcall
 
-    mov   eax,53		  ; send file type
+    mov   eax,53                  ; send file type
     mov   ebx,7
     mov   ecx,[socket]
     mov   edx,[type_len]
@@ -380,13 +380,13 @@ send_header:
     popa
     ret
 
-fileinfo	dd 0
-		dd 0
-		dd 0
-		dd 512
-		dd 0x100000
-getf		db '/sys/'
-	     times 50 db 0
+fileinfo        dd 0
+                dd 0
+                dd 0
+                dd 512
+                dd 0x100000
+getf            db '/sys/'
+             times 50 db 0
 wanted_file: times 100 db 0
 
 getflen      dd  6
@@ -395,30 +395,30 @@ make_room:
 
    pusha
 
-   mov	edx,ecx
+   mov  edx,ecx
 
-   mov	esi,0x20000
-   add	esi,[board_size]
-   mov	edi,esi
-   add	edi,edx
-   mov	ecx,[board_size]
-   sub	ecx,board1-board
-   inc	ecx
+   mov  esi,0x20000
+   add  esi,[board_size]
+   mov  edi,esi
+   add  edi,edx
+   mov  ecx,[board_size]
+   sub  ecx,board1-board
+   inc  ecx
    std
-   rep	movsb
+   rep  movsb
    cld
 
    popa
    ret
 
 
-from_i	dd  0x0
+from_i  dd  0x0
 from_len dd 0x0
 
 message dd 0x0
 message_len dd 0x0
 
-read_file:			    ; start of execution
+read_file:                          ; start of execution
 
     mov  [fileinfo+16],eax
     shl ebx, 9
@@ -428,7 +428,7 @@ read_file:			    ; start of execution
     mov  [filename+40*2+6],dword 'UNK '
 
     cmp  [input_text+256+1],dword 'POST'
-    je	 yes_new_message
+    je   yes_new_message
 
     cmp  [input_text+256+11],dword 'oard'     ; server board message
     jne  no_server_message_2
@@ -454,7 +454,7 @@ read_file:			    ; start of execution
    newfroms:
     inc  esi
     cmp  esi,input_text+256*20
-    je	 no_server_message_2
+    je   no_server_message_2
     cmp  [esi],dword 'from'
     jne  newfroms
 
@@ -464,11 +464,11 @@ read_file:			    ; start of execution
     mov  edx,0
    name_new_len:
     cmp  [esi+edx],byte 13
-    je	 name_found_len
+    je   name_found_len
     cmp  [esi+edx],byte '&'
-    je	 name_found_len
+    je   name_found_len
     cmp  edx,1000
-    je	 name_found_len
+    je   name_found_len
     inc  edx
     jmp  name_new_len
 
@@ -480,7 +480,7 @@ read_file:			    ; start of execution
    newmessages:
     inc  esi
     cmp  esi,input_text+256*20
-    je	 no_server_message_2
+    je   no_server_message_2
     cmp  [esi],dword 'sage'
     jne  newmessages
 
@@ -491,11 +491,11 @@ read_file:			    ; start of execution
    new_len:
     inc  edx
     cmp  [esi+edx],byte ' '
-    je	 found_len
+    je   found_len
     cmp  [esi+edx],byte 13
     jbe  found_len
     cmp  edx,input_text+5000
-    je	 found_len
+    je   found_len
     jmp  new_len
    found_len:
     mov  [message_len],edx
@@ -552,14 +552,14 @@ read_file:			    ; start of execution
     call make_room
 
 
-    mov  esi,board1	     ; first part
+    mov  esi,board1          ; first part
     mov  edi,0x20000
     add  edi,board1-board
     mov  ecx,edx
     cld
     rep  movsb
 
-    mov  esi,[from_i]	       ; name
+    mov  esi,[from_i]          ; name
     mov  edi,0x20000
     add  edi,board1-board
     add  edi,board1e-board1
@@ -567,7 +567,7 @@ read_file:			    ; start of execution
     cld
     rep  movsb
 
-    mov  esi,board2	     ; middle part
+    mov  esi,board2          ; middle part
     mov  edi,0x20000
     add  edi,board1-board + board1e-board1
     add  edi,[from_len]
@@ -575,7 +575,7 @@ read_file:			    ; start of execution
     cld
     rep  movsb
 
-    mov  esi,[message]	     ; message
+    mov  esi,[message]       ; message
     mov  edi,0x20000
     add  edi,board1-board + board1e-board1 + board2e-board2
     add  edi,[from_len]
@@ -659,7 +659,7 @@ read_file:			    ; start of execution
     cld
   new_let:
     cmp  [esi],byte ' '
-    je	 no_new_let
+    je   no_new_let
     cmp  edi,wanted_file+30
     jge  no_new_let
     movsb
@@ -672,10 +672,10 @@ read_file:			    ; start of execution
     cmp  esi,input_text+256+6
     jne  no_index
     mov  edi,wanted_file
-    mov  [edi+0],dword	'inde'
-    mov  [edi+4],dword	'x.ht'
-    mov  [edi+8],byte	'm'
-    mov  [edi+9],byte	0
+    mov  [edi+0],dword  'inde'
+    mov  [edi+4],dword  'x.ht'
+    mov  [edi+8],byte   'm'
+    mov  [edi+9],byte   0
     add  edi,9
 
     mov  [file_type],htm
@@ -686,9 +686,9 @@ read_file:			    ; start of execution
   no_index:
 
     cmp  [edi-3],dword 'htm'+0
-    je	 htm_header
+    je   htm_header
     cmp  [edi-3],dword 'HTM'+0
-    je	 htm_header
+    je   htm_header
     jmp  no_htm_header
   htm_header:
     mov  [file_type],htm
@@ -698,9 +698,9 @@ read_file:			    ; start of execution
   no_htm_header:
 
     cmp  [edi-3],dword 'png'+0
-    je	 png_header
+    je   png_header
     cmp  [edi-3],dword 'PNG'+0
-    je	 png_header
+    je   png_header
     jmp  no_png_header
   png_header:
     mov  [file_type],png
@@ -710,9 +710,9 @@ read_file:			    ; start of execution
   no_png_header:
 
     cmp  [edi-3],dword 'gif'+0
-    je	 gif_header
+    je   gif_header
     cmp  [edi-3],dword 'GIF'+0
-    je	 gif_header
+    je   gif_header
     jmp  no_gif_header
   gif_header:
     mov  [file_type],gif
@@ -722,9 +722,9 @@ read_file:			    ; start of execution
   no_gif_header:
 
     cmp  [edi-3],dword 'jpg'+0
-    je	 jpg_header
+    je   jpg_header
     cmp  [edi-3],dword 'JPG'+0
-    je	 jpg_header
+    je   jpg_header
     jmp  no_jpg_header
   jpg_header:
     mov  [file_type],jpg
@@ -734,13 +734,13 @@ read_file:			    ; start of execution
   no_jpg_header:
 
     cmp  [edi-3],dword 'asm'+0
-    je	 txt_header
+    je   txt_header
     cmp  [edi-3],dword 'ASM'+0
-    je	 txt_header
+    je   txt_header
     cmp  [edi-3],dword 'txt'+0
-    je	 txt_header
+    je   txt_header
     cmp  [edi-3],dword 'TXT'+0
-    je	 txt_header
+    je   txt_header
     jmp  no_txt_header
   txt_header:
     mov  [file_type],txt
@@ -766,13 +766,13 @@ read_file:			    ; start of execution
     cld
     rep  movsb
 
-    mov  [fileinfo+12],dword 1	 ; file exists ?
+    mov  [fileinfo+12],dword 1   ; file exists ?
     mov  eax,70
     mov  ebx,fileinfo
     mcall
 
-    cmp  eax,0	       ; file not found - message
-    je	 file_found
+    cmp  eax,0         ; file not found - message
+    je   file_found
     mov  edi,et
     call set_time
     mov  edi,ed
@@ -988,7 +988,7 @@ check_status:
     mcall
 
     cmp  eax,[status]
-    je	 c_ret
+    je   c_ret
     mov  [status],eax
     add  al,48
     mov  [text+12],al
@@ -999,8 +999,8 @@ check_status:
     ret
 
 
-addr	   dd  0x0
-ya	   dd  0x0
+addr       dd  0x0
+ya         dd  0x0
 
 filename2:  times 100 db 32
 
@@ -1028,11 +1028,11 @@ read_string:
     mcall
     shr  eax,8
     cmp  eax,13
-    je	 read_done
+    je   read_done
     cmp  eax,8
     jnz  nobsl
     cmp  edi,[addr]
-    jz	 f11
+    jz   f11
     sub  edi,1
     mov  [edi],byte 32
     call print_text
@@ -1096,33 +1096,33 @@ print_text:
 
 draw_window:
 
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,1			   ; 1, start of draw
+    mov  eax,12                    ; function 12:tell os about windowdraw
+    mov  ebx,1                     ; 1, start of draw
     mcall
 
-				   ; DRAW WINDOW
-    mov  eax,0			   ; function 0 : define and draw window
-    mov  ebx,100*65536+480	   ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+215	   ; [y start] *65536 + [y size]
-    mov  edx,0x13ffffff 	   ; color of work area RRGGBB
-    mov  edi,title		   ; WINDOW LABEL
+                                   ; DRAW WINDOW
+    mov  eax,0                     ; function 0 : define and draw window
+    mov  ebx,100*65536+480         ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+215         ; [y start] *65536 + [y size]
+    mov  edx,0x14ffffff            ; color of work area RRGGBB
+    mov  edi,title                 ; WINDOW LABEL
     mcall
 
-    mov  eax,8			   ; function 8 : define and draw button
-    mov  ebx,(40)*65536+20	   ; [x start] *65536 + [x size]
-    mov  ecx,59*65536+9 	   ; [y start] *65536 + [y size]
-    mov  edx,2			   ; button id
-    mov  esi,0x66aa66		   ; button color RRGGBB
+    mov  eax,8                     ; function 8 : define and draw button
+    mov  ebx,(40)*65536+20         ; [x start] *65536 + [x size]
+    mov  ecx,59*65536+9            ; [y start] *65536 + [y size]
+    mov  edx,2                     ; button id
+    mov  esi,0x66aa66              ; button color RRGGBB
     mcall
 
-			   ; function 8 : define and draw button
-    mov  ebx,(40)*65536+20	   ; [x start] *65536 + [x size]
+                           ; function 8 : define and draw button
+    mov  ebx,(40)*65536+20         ; [x start] *65536 + [x size]
     mov  ecx,72*65536+9          ; [y start] *65536 + [y size]
-    mov  edx,4			   ; button id
-    mov  esi,0xaa6666		   ; button color RRGGBB
+    mov  edx,4                     ; button id
+    mov  esi,0xaa6666              ; button color RRGGBB
     mcall
 
-			   ; Enter directory
+                           ; Enter directory
     mov  ebx,(25)*65536+66
     mov  ecx,135*65536+15
     mov  edx,6
@@ -1143,8 +1143,8 @@ draw_window:
 
     call draw_data
 
-    mov  eax,12 		   ; function 12:tell os about windowdraw
-    mov  ebx,2			   ; 2, end of draw
+    mov  eax,12                    ; function 12:tell os about windowdraw
+    mov  ebx,2                     ; 2, end of draw
     mcall
 
     ret
@@ -1154,7 +1154,7 @@ draw_data:
 
     pusha
 
-    mov  ebx,25*65536+35	   ; draw info text with function 4
+    mov  ebx,25*65536+35           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,text
     mov  esi,35
@@ -1186,7 +1186,7 @@ draw_data:
     mov  [input_text+4],dword 'IVED'
     mov  [input_text+8],dword ':   '
 
-    mov  ebx,255*65536+35	    ; draw info text with function 4
+    mov  ebx,255*65536+35           ; draw info text with function 4
     mov  ecx,0x000000
     mov  edx,input_text
     mov  esi,35
@@ -1215,7 +1215,7 @@ draw_data:
 
 ; DATA AREA
 
-status	dd  0x0
+status  dd  0x0
 
 text:
     db 'TCB status: x                           '
@@ -1296,8 +1296,8 @@ unkl:
 
 title db   appname,version,0
 
-socket		dd  0x0
-server_active	db  0x0
+socket          dd  0x0
+server_active   db  0x0
 
 board:
 
@@ -1354,8 +1354,8 @@ db "</HTML>",13,10
 
 board_end:
 
-board_size	dd  0x0
-board_messages	dd  0x0
+board_size      dd  0x0
+board_messages  dd  0x0
 
 input_text:
 

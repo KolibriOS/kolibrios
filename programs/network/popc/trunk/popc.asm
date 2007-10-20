@@ -9,7 +9,7 @@
 ;;    Compile with FASM for Menuet                   ;;
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-include '..\..\..\macros.inc'
+include 'macros.inc'
 version equ '0.1'
 
 use32
@@ -811,7 +811,7 @@ draw_window:
     mov  eax,0                     ; draw window
     mov  ebx,5*65536+435
     mov  ecx,5*65536+232
-    mov  edx,0x13ffffff
+    mov  edx,0x14ffffff
     mov  edi,labelt
     mcall
 

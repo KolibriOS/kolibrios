@@ -6,20 +6,20 @@
 ;
 
 use32
- org	0x0
- db	'MENUET01'    ; header
- dd	0x01	      ; header version
- dd	START	      ; entry point
- dd	I_END	      ; image size
- dd	I_END+0x10000 ; required memory
- dd	I_END+0x10000 ; esp
- dd	0x0 , 0x0     ; I_Param , I_Path
+ org    0x0
+ db     'MENUET01'    ; header
+ dd     0x01          ; header version
+ dd     START         ; entry point
+ dd     I_END         ; image size
+ dd     I_END+0x10000 ; required memory
+ dd     I_END+0x10000 ; esp
+ dd     0x0 , 0x0     ; I_Param , I_Path
 
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include 'macros.inc'
 
-START:				; start of execution
+START:                          ; start of execution
 
     ; Clear the screen memory
     mov     eax, '    '
@@ -43,22 +43,22 @@ still:
     mov     [socket_status], eax
 
     cmp     eax, ebx
-    je	    waitev
+    je      waitev
 
 red:
     call    draw_window
 
 waitev:
-    mov  eax,23 		; wait here for event
+    mov  eax,23                 ; wait here for event
     mov  ebx,20
     mcall
 
-    cmp  eax,1			; redraw request ?
-    je	 red
-    cmp  eax,2			; key in buffer ?
-    je	 key
-    cmp  eax,3			; button in buffer ?
-    je	 button
+    cmp  eax,1                  ; redraw request ?
+    je   red
+    cmp  eax,2                  ; key in buffer ?
+    je   key
+    cmp  eax,3                  ; button in buffer ?
+    je   button
 
     ; any data from the socket?
 
@@ -105,11 +105,11 @@ handle_data:
 
     mov     al, [telnetstate]
     cmp     al, 0
-    je	    state0
+    je      state0
     cmp     al, 1
-    je	    state1
+    je      state1
     cmp     al, 2
-    je	    state2
+    je      state2
     jmp     hd001
 
 state0:
@@ -138,7 +138,7 @@ state2:
     ret
 
 hd001:
-    cmp  bl,13				; BEGINNING OF LINE
+    cmp  bl,13                          ; BEGINNING OF LINE
     jne  nobol
     mov  ecx,[pos]
     add  ecx,1
@@ -154,7 +154,7 @@ hd001:
     jmp  newdata
   nobol:
 
-    cmp  bl,10				  ; LINE DOWN
+    cmp  bl,10                            ; LINE DOWN
     jne  nolf
    addx1:
     add  [pos],dword 1
@@ -168,7 +168,7 @@ hd001:
     jmp  cm1
   nolf:
 
-    cmp  bl,8				 ; BACKSPACE
+    cmp  bl,8                            ; BACKSPACE
     jne  nobasp
     mov  eax,[pos]
     dec  eax
@@ -178,7 +178,7 @@ hd001:
     jmp  newdata
    nobasp:
 
-    cmp  bl,15				 ; CHARACTER
+    cmp  bl,15                           ; CHARACTER
     jbe  newdata
     mov  eax,[pos]
     mov  [eax+text],bl
@@ -188,7 +188,7 @@ hd001:
     mov  ebx,[scroll+4]
     imul ebx,80
     cmp  eax,ebx
-    jb	 noeaxz
+    jb   noeaxz
     mov  esi,text+80
     mov  edi,text
     mov  ecx,ebx
@@ -201,16 +201,16 @@ hd001:
   newdata:
     ret
 
-  key:				; KEY
-    mov  eax,2			; send to modem
+  key:                          ; KEY
+    mov  eax,2                  ; send to modem
     mcall
 
     mov     ebx, [socket_status]
-    cmp     ebx, 4		; connection open?
-    jne     still		; no, so ignore key
+    cmp     ebx, 4              ; connection open?
+    jne     still               ; no, so ignore key
 
     shr  eax,8
-    cmp  eax,178		; ARROW KEYS
+    cmp  eax,178                ; ARROW KEYS
     jne  noaup
     mov  al,'A'
     call arrow
@@ -240,10 +240,10 @@ hd001:
 
     jmp  still
 
-  button:			; BUTTON
+  button:                       ; BUTTON
     mov  eax,17
     mcall
-    cmp  ah,1			; CLOSE PROGRAM
+    cmp  ah,1                   ; CLOSE PROGRAM
     jne  noclose
 
     mov  eax,53
@@ -254,7 +254,7 @@ hd001:
      or   eax,-1
      mcall
   noclose:
-    cmp     ah, 2		; Set IP
+    cmp     ah, 2               ; Set IP
     jne     notip
 
     mov  [string_x], dword 78
@@ -267,9 +267,9 @@ hd001:
    ip1:
     inc   esi
     cmp   [esi],byte '0'
-    jb	  ip2
+    jb    ip2
     cmp   [esi],byte '9'
-    jg	  ip2
+    jg    ip2
     imul  eax,10
     movzx ebx,byte [esi]
     sub   ebx,48
@@ -287,7 +287,7 @@ hd001:
     jmp     still
 
 notip:
-    cmp     ah, 3		; set port
+    cmp     ah, 3               ; set port
     jne     notport
 
     mov  [string_x], dword 215
@@ -300,9 +300,9 @@ notip:
    ip11:
     inc   esi
     cmp   [esi],byte '0'
-    jb	  ip21
+    jb    ip21
     cmp   [esi],byte '9'
-    jg	  ip21
+    jg    ip21
     imul  eax,10
     movzx ebx,byte [esi]
     sub   ebx,48
@@ -318,24 +318,24 @@ notip:
     jmp     still
 
 notport:
-    cmp     ah, 4		; connect
+    cmp     ah, 4               ; connect
     jne     notcon
 
     mov     eax, [socket_status]
     cmp     eax, 4
-    je	   still
+    je     still
     call    connect
 
     jmp     still
 
 notcon:
-    cmp     ah,5		; disconnect
+    cmp     ah,5                ; disconnect
     jne     notdiscon
 
     call    disconnect
     jmp  still
 
-notdiscon:			; Echo Toggle
+notdiscon:                      ; Echo Toggle
     cmp     ah, 6
     jne     still
 
@@ -376,7 +376,7 @@ tm_000:
     pop     bx
     mov     al, [echo]
     cmp     al, 0
-    je	    tm_001
+    je      tm_001
 
     push    bx
     call    handle_data
@@ -409,17 +409,17 @@ disconnect:
 connect:
     pusha
 
- mov	 ecx, 1000  ; local port starting at 1000
+ mov     ecx, 1000  ; local port starting at 1000
 
 getlp:
- inc	 ecx
+ inc     ecx
  push ecx
- mov	 eax, 53
- mov	 ebx, 9
+ mov     eax, 53
+ mov     ebx, 9
  mcall
- pop	 ecx
- cmp	 eax, 0   ; is this local port in use?
- jz  getlp	; yes - so try next
+ pop     ecx
+ cmp     eax, 0   ; is this local port in use?
+ jz  getlp      ; yes - so try next
 
     mov     eax,53
     mov     ebx,5
@@ -431,7 +431,7 @@ getlp:
     shl     edx, 8
     mov     dl, [ip_address]
     mov     esi, edx
-    movzx   edx, word [port]	  ; telnet port id
+    movzx   edx, word [port]      ; telnet port id
     mov     edi,1      ; active open
     mcall
     mov     [socket], eax
@@ -455,10 +455,10 @@ draw_window:
     mov  ebx,1
     mcall
 
-    xor  eax,eax		     ; DRAW WINDOW
+    xor  eax,eax                     ; DRAW WINDOW
     mov  ebx,100*65536+491 + 8 +15
     mov  ecx,100*65536+270 + 20     ; 20 for status bar
-    mov  edx,0x13000000
+    mov  edx,0x14000000
     mov  edi,title
     mcall
 
@@ -469,14 +469,14 @@ draw_window:
     mov     edx, 0x00557799
     mcall
 
-    mov  eax,8			   ; BUTTON 2: SET IP
+    mov  eax,8                     ; BUTTON 2: SET IP
     mov  ebx,4*65536+70
     mov  ecx,273*65536+12
     mov     esi, 0x00557799
     mov  edx,2
     mcall
 
-    mov  eax,4			   ; Button text
+    mov  eax,4                     ; Button text
     mov  ebx,6*65536+276
     mov  ecx,0x00ffffff
     mov  edx,setipt
@@ -485,7 +485,7 @@ draw_window:
 
 
     mov  eax,47
-    mov  edi,ip_address 	    ; display IP address
+    mov  edi,ip_address             ; display IP address
     mov  edx,78*65536+276
     mov  esi,0x00ffffff
     mov  ebx,3*65536
@@ -495,16 +495,16 @@ draw_window:
     add  edx,6*4*65536
     inc  edi
     cmp  edi,ip_address+4
-    jb	 ipdisplay
+    jb   ipdisplay
 
-    mov  eax,8			   ; BUTTON 3: SET PORT
+    mov  eax,8                     ; BUTTON 3: SET PORT
     mov  ebx,173*65536+38
     mov  ecx,273*65536+12
     mov  edx,3
     mov     esi, 0x00557799
     mcall
 
-    mov  eax,4			   ; Button text
+    mov  eax,4                     ; Button text
     mov  ebx,178*65536+276
     mov  ecx,0x00ffffff
     mov  edx,setportt
@@ -512,21 +512,21 @@ draw_window:
     mcall
 
 
-    mov  edx,216*65536+276	     ; display port
+    mov  edx,216*65536+276           ; display port
     mov  esi,0x00ffffff
     mov  ebx,4*65536
     mov  eax,47
     movzx  ecx,word [port]
     mcall
 
-    mov  eax,8			   ; BUTTON 4: Connect
+    mov  eax,8                     ; BUTTON 4: Connect
     mov  ebx,250*65536+50
     mov  ecx,273*65536+12
     mov     esi, 0x00557799
     mov  edx,4
     mcall
 
-    mov  eax,4			   ; Button text
+    mov  eax,4                     ; Button text
     mov  ebx,255*65536+276
     mov  ecx,0x00ffffff
     mov  edx,cont
@@ -534,7 +534,7 @@ draw_window:
     mcall
 
 
-    mov  eax,8			   ; BUTTON 5: disconnect
+    mov  eax,8                     ; BUTTON 5: disconnect
     mov  ebx,303*65536+70
     mov  ecx,273*65536+12
     mov  edx,5
@@ -542,7 +542,7 @@ draw_window:
     mcall
 
 
-    mov  eax,4			   ; Button text
+    mov  eax,4                     ; Button text
     mov  ebx,307*65536+276
     mov  ecx,0x00ffffff
     mov  edx,dist
@@ -550,22 +550,22 @@ draw_window:
     mcall
 
 
-    mov  esi,contlen-contt	    ; display connected status
+    mov  esi,contlen-contt          ; display connected status
     mov     edx, contt
     mov     eax, [socket_status]
-    cmp     eax, 4		    ; 4 is connected
-    je	    pcon
+    cmp     eax, 4                  ; 4 is connected
+    je      pcon
     mov     esi,discontlen-discontt
     mov     edx, discontt
 pcon:
 
-    mov  eax,4			   ; status text
+    mov  eax,4                     ; status text
     mov  ebx,380*65536+276
     mov  ecx,0x00ffffff
     mcall
 
 
-    mov  eax,8			   ; BUTTON 6: echo
+    mov  eax,8                     ; BUTTON 6: echo
     mov  ebx,460*65536+50
     mov  ecx,273*65536+12
     mov  edx,6
@@ -581,7 +581,7 @@ pcon:
     mov  esi,echoolen-echoot
 
 peo:
-    mov  eax,4			   ; Button text
+    mov  eax,4                     ; Button text
     mov  ebx,463*65536+276
     mov  ecx,0x00ffffff
     mcall
@@ -622,7 +622,7 @@ draw_text:
     ; erase character
 
     pusha
-    mov     edx, 0		    ; bg colour
+    mov     edx, 0                  ; bg colour
     mov     ecx, ebx
     add     ecx, 26
     shl     ecx, 16
@@ -656,11 +656,11 @@ draw_text:
     add  esi,1
     add  eax,6
     cmp  eax,80*6
-    jb	 newletter
+    jb   newletter
     mov  eax,0
     add  ebx,10
     cmp  ebx,24*10
-    jb	 newletter
+    jb   newletter
 
     popa
     ret
@@ -686,11 +686,11 @@ read_string:
     mcall
     shr  eax,8
     cmp  eax,13
-    je	 read_done
+    je   read_done
     cmp  eax,8
     jnz  nobsl
     cmp  edi,string
-    jz	 f11
+    jz   f11
     sub  edi,1
     mov  [edi],byte '_'
     call print_text
@@ -699,7 +699,7 @@ read_string:
     cmp  eax,dword 31
     jbe  f11
     cmp  eax,dword 95
-    jb	 keyok
+    jb   keyok
     sub  eax,32
   keyok:
     mov  [edi],al
@@ -750,41 +750,41 @@ print_text:
 
 ; DATA AREA
 
-telnetrep	db 0xff,0xfc,0x00
-telnetstate	db 0
+telnetrep       db 0xff,0xfc,0x00
+telnetstate     db 0
 
 string_length  dd    16
 string_x       dd    200
 string_y       dd    60
 
-string	       db    '________________'
+string         db    '________________'
 
-tx_buff 	db  0, 10
-ip_address	db  001,002,003,004
-port		db  0,0
-echo		db  0
-socket		dd  0x0
-socket_status	dd  0x0
-pos		dd  80 * 1
-scroll		dd  1
-		dd  24
-wcolor		dd  0x000000
-title		db  'Telnet v0.1',0
-setipt		db  'IP Address:    .   .   .'
+tx_buff         db  0, 10
+ip_address      db  001,002,003,004
+port            db  0,0
+echo            db  0
+socket          dd  0x0
+socket_status   dd  0x0
+pos             dd  80 * 1
+scroll          dd  1
+                dd  24
+wcolor          dd  0x000000
+title           db  'Telnet v0.1',0
+setipt          db  'IP Address:    .   .   .'
 setiplen:
-setportt	db  'Port:'
+setportt        db  'Port:'
 setportlen:
-cont		db  'Connect'
+cont            db  'Connect'
 conlen:
-dist		db  'Disconnect'
+dist            db  'Disconnect'
 dislen:
-contt		db  'Connected'
+contt           db  'Connected'
 contlen:
-discontt	db  'Disconnected'
+discontt        db  'Disconnected'
 discontlen:
-echot	     db  'Echo On'
+echot        db  'Echo On'
 echolen:
-echoot	      db  'Echo Off'
+echoot        db  'Echo Off'
 echoolen:
 
 
