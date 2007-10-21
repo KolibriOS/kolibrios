@@ -817,7 +817,6 @@ proc user_free stdcall, base:dword
            ret
 .cantfree:
            xor eax, eax
-           pop edi
            pop ebx
            pop esi
            ret

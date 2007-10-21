@@ -514,7 +514,6 @@ proc load_file stdcall, file_name:dword
              file2      dd ?
            endl
 
-           push ebx
            push esi
            push edi
 
@@ -564,7 +563,6 @@ proc load_file stdcall, file_name:dword
            pop eax
            pop edi
            pop esi
-           pop ebx
            ret
 .cleanup:
            stdcall kernel_free, [file]
@@ -573,7 +571,6 @@ proc load_file stdcall, file_name:dword
            xor ebx, ebx
            pop edi
            pop esi
-           pop ebx
            ret
 endp
 

@@ -82,6 +82,7 @@ proc alloc_pages stdcall, count:dword
 .ok:
            sub ecx, edi
            inc ecx
+           push esi
            mov esi, edi
            xor eax, eax
            rep stosb
@@ -91,6 +92,7 @@ proc alloc_pages stdcall, count:dword
            mov ebx, [count]
            shl ebx, 3
            sub [pg_data.pages_free], ebx
+           pop esi
            pop edi
            pop ebx
            popfd

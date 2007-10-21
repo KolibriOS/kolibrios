@@ -130,7 +130,7 @@ kernel_export:
 
   dd szSysMsgBoardStr  , sys_msg_board_str
   dd szGetCurrentTask  , get_curr_task
-  dd szLoadFile        , load_file             ;stdcall
+  dd szLoadFile        , load_file             ;retval eax, ebx
   dd szSendEvent       , send_event
   dd szSetMouseData    , set_mouse_data        ;stdcall
   dd szSleep           , delay_ms
