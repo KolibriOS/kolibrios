@@ -2169,14 +2169,14 @@ Parameters:
   * eax = 47 - function number
   * ebx = parameters of conversion number to text:
     * bl = 0 - ecx contains number
-    * bl = 1 - ecx contains pointer to dword-number, or qword-number
+    * bl = 1 - ecx contains pointer to dword/qword-number
     * bh = 0 - display in decimal number system
     * bh = 1 - display in hexadecimal system
     * bh = 2 - display in binary system
     * bits 16-21 = how many digits to display
     * bits 22-29 reserved and must be set to 0
-    * bit 30 - set in 1, if the output of qword (64-bites) number
-    * bit 31 - set in 1, if the output of number without empty zero in high bits is required
+    * bit 30 set = display qword (64-bit) number (must be bl=1)
+    * bit 31 set = do not display leading zeroes of the number
   * ecx = number (if bl=0) or pointer (if bl=1)
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
   * esi = 0xX0RRGGBB:
@@ -4546,6 +4546,20 @@ Remarks:
   * String must be in the ASCIIZ-format. Disregarding real string
     length, no more than 255 characters are drawn.
   * Pass NULL in ecx to remove caption.
+
+======================================================================
+=============== Function 72 - send message to a window. ==============
+======================================================================
+
+- Subfunction 1 - send message with parameter to the active window. --
+Parameters:
+  * eax = 72 - function number
+  * ebx = 1 - subfunction number
+  * ecx = event code: 2 or 3
+  * edx = parameter: key code for ecx=2, button identifier for ecx=3
+Returned value:
+  * eax = 0 - success
+  * eax = 1 - buffer is full
 
 ======================================================================
 =============== Function -1 - terminate thread/process ===============

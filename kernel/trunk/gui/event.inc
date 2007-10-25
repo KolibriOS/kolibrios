@@ -493,6 +493,40 @@ eventoccur:
         mov     [esp+36], eax
         ret
 
+sys_sendwindowmsg:
+        dec     eax
+        jnz     .ret
+        cmp     ebx, 3
+        jz      .sendbtn
+        cmp     ebx, 2
+        jnz     .ret
+.sendkey:
+        pushf
+        cli
+        movzx   eax, byte [KEY_COUNT]
+        cmp     al, 120
+        jae     .overflow
+        inc     eax
+        mov     [KEY_COUNT], al
+        mov     [KEY_COUNT+eax], cl
+        jmp     .ok
+.overflow:
+        popf
+        mov     dword [esp+36], 1
+        ret
+.sendbtn:
+        pushf
+        cli
+        cmp     byte [BTN_COUNT], 0
+        jnz     .overflow
+        mov     byte [BTN_COUNT], 1
+        mov     [BTN_BUFF], ecx
+.ok:
+        popf
+        and     dword [esp+36], 0
+.ret:
+        ret
+
 get_event_for_app:
 
      pushad

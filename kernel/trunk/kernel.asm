@@ -1454,7 +1454,8 @@ normalize_number:
      jne   .continue
      dec   eax
      cmp   eax,1
-     jne   @r
+     ja    @r
+     mov   al,1
 .continue:
      and   eax,0x3f
      ret

@@ -213,6 +213,7 @@ iglobal
       dd sys_debug_services      ; 69-Debug
       dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_windowsettings  ; 71-Window settings
+      dd sys_sendwindowmsg       ; 72-Send window message
 
   times 255 - ( ($-servetable) /4 )  dd undefined_syscall
 

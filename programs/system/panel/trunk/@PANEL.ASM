@@ -91,35 +91,36 @@ begin_1:
      jmp   begin_1.ret
 
    kill_active_application:
-     mcall  18, 7
-     mov    ecx,eax
+;     mcall  18, 7
+;     mov    ecx,eax
+;
+;     ;//{SPraid.simba do not kill panel and icon
+;     push eax
+;     mov eax,9
+;     mov ebx, process_info_buffer
+;     int 0x40
+;     mov eax,process_info_buffer
+;     add eax,10
+;     mov ebx,[eax]
+;     cmp ebx,'ICON'
+;     je  no_kill
+;     cmp ebx,'@PAN'
+;     jne  kill_app
+;     add eax,4
+;     mov ebx,[eax]
+;     and ebx,0x0000FFFF
+;     cmp ebx,'EL'
+;     je  no_kill
+;   kill_app:  
+;     pop ecx
+;     mcall  18, 2
+;     jmp if_kill
+;   no_kill:
+;     pop eax
+;   if_kill:
+;     ;// }SPraid.simba
+        mcall 72,1,3,1
 
-     ;//{SPraid.simba do not kill panel and icon
-     push eax
-     mov eax,9
-     mov ebx, process_info_buffer
-     int 0x40
-     mov eax,process_info_buffer
-     add eax,10
-     mov ebx,[eax]
-     cmp ebx,'ICON'
-     je  no_kill
-     cmp ebx,'@PAN'
-     jne  kill_app
-     add eax,4
-     mov ebx,[eax]
-     and ebx,0x0000FFFF
-     cmp ebx,'EL'
-     je  no_kill
-   kill_app:  
-     pop ecx
-     mcall  18, 2
-     jmp if_kill
-   no_kill:
-     pop eax
-   if_kill:
-     ;// }SPraid.simba
-     
      jmp    begin_1.ret
 
    start_menu_application:
