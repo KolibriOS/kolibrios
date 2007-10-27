@@ -3899,8 +3899,9 @@ When debugger terminates, all debugged processes are killed.
 If debugger does not want this, it must previously detach by
 subfunction 3.
 
-All subfunctions are applicable only to processes/threads started
-from the current by function 70 with set debugging flag.
+All subfunctions except 4 and 5 are applicable only to
+processes/threads started from the current by function 70
+with set debugging flag.
 Debugging of multithreaded programs is not supported yet.
 The full list of subfunctions:
   * subfunction 0 - define data area for debug messages
@@ -3998,7 +3999,7 @@ Remarks:
   * If the process was suspended, it resumes execution.
 
 ======================================================================
-======== Function 69, subfunction 4 - suspend debugged thread. =======
+============= Function 69, subfunction 4 - suspend thread. ===========
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -4006,12 +4007,9 @@ Parameters:
   * ecx = thread identifier
 Returned value:
   * function does not return value
-Remarks:
-  * Process must be loaded for debugging (as is shown in
-    general description).
 
 ======================================================================
-======== Function 69, subfunction 5 - resume debugged thread. ========
+============= Function 69, subfunction 5 - resume thread. ============
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -4019,9 +4017,6 @@ Parameters:
   * ecx = thread identifier
 Returned value:
   * function does not return value
-Remarks:
-  * Process must be loaded for debugging (as is shown in
-    general description).
 
 ======================================================================
 = Fucntion 69, subfunction 6 - read from memory of debugged process. =

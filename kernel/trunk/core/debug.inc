@@ -79,8 +79,11 @@ debug_terminate:
 debug_suspend:
 ; in: ebx=pid
 ; destroys eax,ebx
-	call	get_debuggee_slot
-	jc	.ret
+        cli
+        mov     eax, ebx
+        call    pid_to_slot
+        test    eax, eax
+        jz      .ret
         mov     bl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
 	test	bl, bl
 	jz	.1
@@ -110,9 +113,12 @@ do_resume:
 debug_resume:
 ; in: ebx=pid
 ; destroys eax,ebx
-	call	get_debuggee_slot
-	jc	.ret
-	call	do_resume
+        cli
+        mov     eax, ebx
+        call    pid_to_slot
+        test    eax, eax
+        jz      .ret
+        call    do_resume
 .ret:	sti
 	ret
 
