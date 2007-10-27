@@ -136,6 +136,7 @@ begin
 end;
 
 {$i kos_stdio.inc}
+{-$i kos_term.inc}
 
 procedure SysInitStdIO;
 begin
@@ -186,13 +187,14 @@ begin
   SysResetFPU;
   StackLength := CheckInitialStkLen(InitialStkLen);
   StackBottom := Pointer(StackTop - StackLength);
-  InitHeap;
   kos_initheap();
+  InitHeap;
   SysInitExceptions;
   FPC_CpuCodeInit();
   InOutRes := 0;
   InitSystemThreads;
-  Konsole.Init();
+  if IsConsole then
+    Konsole.Init();
   SysInitStdIO;
   SetupCmdLine;
   InitVariantManager;

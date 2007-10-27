@@ -388,6 +388,17 @@ asm
   popl  %eax
 end;
 
+{ Work with system - Get system parameters }
+
+function kos_timecounter(): DWord; assembler; register;
+asm
+  pushl %ebx
+  movl  $26, %eax
+  movl  $9, %ebx
+  int   $0x40
+  popl  %ebx
+end;
+
 { Work with system - Internal system services }
 
 procedure kos_switchthread(); assembler; register;

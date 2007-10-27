@@ -1,4 +1,4 @@
-{}
+{-$codepage cp866}
 
 type
   TKosPoint = packed record
@@ -46,6 +46,9 @@ function kos_getthreadslot(tid: TThreadID): TThreadSlot;
 { Work with system - Set system parameters }
 procedure kos_enablepci();
 
+{ Work with system - Get system parameters }
+function kos_timecounter(): DWord;
+
 { Work with system - Internal system services }
 procedure kos_switchthread();
 function kos_initheap(): DWord;
@@ -67,7 +70,9 @@ type
     MemoryUsage: DWord;
     ThreadID: TThreadID;
     WindowRect: TKosRect;
-    Unknown0: array[1..1066] of Byte;
+    Reserved3: DWord;
+    ClientRect: TKosRect;
+    Reserved4: array[1..1046] of Byte;
   end;
 
   {Буфер IPC}
@@ -179,7 +184,7 @@ type
   TKonsole = object
   private
     FCaption: String;
-    FLines: array of String;
+    FLines: array of ShortString;
     FCursor: TKosPoint;
     FMaxLines: Word;
     FThreadID: TThreadID;
@@ -188,6 +193,7 @@ type
     FIPCBufferSize: DWord;
     FTerminate: Boolean;
     FOpened: Boolean;
+    FOnAir : Boolean;
     FKeyPressed: Word;
     function ReceiveMessage(var Message: ShortString): Boolean;
     procedure ProcessMessage(Message: ShortString);
@@ -195,6 +201,7 @@ type
     function GetRect(): TKosRect;
     function GetKeyPressed(): Word;
     procedure Paint(BottomRow: Boolean = False);
+    procedure Flush();
   public
     constructor Init(ACaption: String = '');
     destructor Done();
@@ -205,7 +212,59 @@ type
     property ThreadSlot: TThreadSlot read FThreadSlot; {JustForFun, must be hidden, do not use}
   end;
 
-  IStreamIO = interface
-    function Read(Size: DWord = 0): AnsiString;
-    procedure Write(Str: AnsiString; Error: Boolean = False);
+(*Разработка терминала в рамках RTL прекращена. Терминал будет выделен из кода
+  консольного приложения и должен быть реализован как отдельный сервис с
+  динамическим подключением, либо как отдельный модуль FreePascal со статическим
+  или динамическим подключением терминального функционала.
+
+  PTermKursor = ^TTermKursor;
+  TTermKursor = object
+  private
+    FVisible: Boolean;
+    procedure SetVisbile(Value: Boolean);
+  public
+    constructor Init;
+    procedure Repaint;
+    property Visible: Boolean read FVisible write SetVisbile;
   end;
+
+  PTermKIO = ^TTermKIO;
+  TTermKIO = object
+  private
+    FBuffer: Pointer;
+    FBufferScreen: Pointer;
+    FBufferSize : Longword;
+    FBufferWidth: Longword;
+    FBufferLines: Longword;
+    FIPCBuffer: PKosIPC;
+    FIPCBufferSize: Longword;
+    FCursor: TTermKursor;
+    FCaption: String;
+    FThreadID: TThreadID;
+    FThreadSlot: TThreadSlot;
+    FTerminate: Boolean;
+    FOpened: Boolean;
+    FWindowBounds: TKosRect;
+    FWindowStyle : Longword;
+    FClientBounds: TKosRect;
+    FMaxWidth : Longword;
+    FFirstLine: Longword;
+    FDefaultChar: Word;
+    FPalette: array[0..15] of Longword;
+    procedure MainLoop;
+    procedure ReallocBuffer(Size: Longword);
+    procedure ResizeBuffer(NewWidth, NewLines: Longword);
+    procedure FillDefaultChar(var X; Count: Longword);
+    function GetLine(Index: Longint): Pointer;
+    function PrevLine(Line: Pointer): Pointer;
+    {function ReceiveMessage(var Message: ShortString): Boolean;
+    procedure ProcessMessage(Message: ShortString);}
+    procedure ProcessKeyboard(Key: Word);
+    procedure DoPaint(const Bounds: TKosRect);
+    procedure DoResize;
+  public
+    constructor Init(ACaption: String = '');
+    destructor Done;
+    procedure Write(Message: ShortString);
+    property Cursor: TTermKursor read FCursor;
+  end;*)

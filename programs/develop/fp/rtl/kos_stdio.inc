@@ -2,6 +2,7 @@
 
 procedure OpenStdout(var f: TextRec); forward;
 procedure WriteStdout(var f: TextRec); forward;
+procedure FlushStdout(var f: TextRec); forward;
 procedure CloseStdout(var f: TextRec); forward;
 
 procedure OpenStdin(var f: TextRec); forward;
@@ -20,7 +21,7 @@ end;
 procedure OpenStdout(var f: TextRec);
 begin
   TextRec(f).InOutFunc := @WriteStdout;
-  TextRec(f).FlushFunc := @WriteStdout;
+  TextRec(f).FlushFunc := @FlushStdout;
   TextRec(f).CloseFunc := @CloseStdout;
 end;
 
@@ -32,6 +33,12 @@ begin
   SetLength(msg, f.bufpos);
   f.bufpos := 0;
   Konsole.Write(msg);
+end;
+
+procedure FlushStdout(var f: TextRec);
+begin
+  WriteStdout(f);
+  Konsole.Flush;
 end;
 
 procedure CloseStdout(var f: TextRec);
@@ -114,12 +121,14 @@ begin
   while not Console^.FTerminate do
   begin
     Event := kos_getevent();
+    Console^.FOnAir := True;
     if not Console^.FTerminate then
     case Event of
       SE_PAINT: Console^.Paint();
       SE_KEYBOARD: Console^.ProcessKeyboard(kos_getkey());
       SE_IPC: while Console^.ReceiveMessage(Message) do Console^.ProcessMessage(Message);
     end;
+    Console^.FOnAir := False;
   end;
   Console^.FOpened := False;
 end;
@@ -137,12 +146,13 @@ begin
     FCaption := StrPas(ThreadInfo.AppName);
   end;
   SetLength(FLines, 1);
-  FLines[0] := ' ';
+  FLines[0] := '';
   FCursor.X := 1;
   FCursor.Y := 0;
   FMaxLines := 150;
   FTerminate := False;
   FOpened := False;
+  FOnAir  := False;
   FIPCBufferSize := SizeOf(TKosIPC) + IPC_SIZE;
   FIPCBuffer := GetMem(FIPCBufferSize);
   FIPCBuffer^.Lock := False;
@@ -151,7 +161,6 @@ begin
   FThreadID := BeginThread(TThreadFunc(@KonsoleThreadMain), @Self);
   if FThreadID <> 0 then
     {XXX: может зависнуть}
-    {Во, так и есть в 2.2.0.}
     while not FOpened do ThreadSwitch;
 end;
 
@@ -164,10 +173,11 @@ begin
   if FOpened then
   begin
     FOpened := False;
+    FOnAir  := False;
     KillThread(FThreadID);
   end;
-  FreeMem(FIPCBuffer);
-  SetLength(FLines, 0);
+  {FreeMem(FIPCBuffer);
+  SetLength(FLines, 0);}
 end;
 
 function TKonsole.ReceiveMessage(var Message: ShortString): Boolean;
@@ -176,9 +186,10 @@ var
   PMsg: PKosMessage;
   Size: Longword;
 begin
+  FIPCBuffer^.Lock := True;
+
   if FIPCBuffer^.Size > 0 then
   begin
-    FIPCBuffer^.Lock := True;
     PMsg := Pointer(Longword(FIPCBuffer) + SizeOf(TKosIPC));
     {TODO: проверка PMsg^.SenderID}
     {Size := PMsg^.Size;
@@ -208,55 +219,77 @@ begin
 end;
 
 procedure TKonsole.ProcessMessage(Message: ShortString);
-{Вывести сообщение на консоль}
+{ Вывести сообщение на консоль }
 var
-  S: String;
-  LinesCount: Word;
-  CR, LF, W: Word;
-  BottomRow: Boolean = True;
-begin
-  if Length(Message) < 1 then Exit;
+  OnlyBottomLine: Boolean = True;
 
-  repeat
-    CR := Pos(#13, Message);
-    LF := Pos(#10, Message);
-    if (CR > 0) and ((CR < LF) or (LF <= 0)) then
-      W := CR else
-    if LF > 0 then
-      W := LF else
-      W := Length(Message) + 1;
-    if W > 0 then
+  procedure PutChar(C: Char);
+  var
+    LinesCount: Longint;
+    PLine: PShortString;
+    I: Longint;
+  begin
+    { перевод коретки на позицию влево }
+    if C = #8 then
     begin
-      if W > 1 then
+      if FCursor.X > 1 then
+        Dec(FCursor.X);
+    end else
+
+    { перевод коретки на следующую строку }
+    if C = #10 then
+    begin
+      OnlyBottomLine := False;
+      Inc(FCursor.Y);
+      LinesCount := Length(FLines);
+      while FCursor.Y >= FMaxLines do Dec(FCursor.Y, FMaxLines);
+      if FCursor.Y < LinesCount then FLines[FCursor.Y] := '';
+      while FCursor.Y >= LinesCount do
       begin
-        S := Copy(Message, 1, W - 1);
-        Delete(FLines[FCursor.Y], FCursor.X, Length(FLines[FCursor.Y]) - FCursor.X);
-        Insert(S, FLines[FCursor.Y], FCursor.X);
-        Inc(FCursor.X, Length(S));
+        SetLength(FLines, LinesCount + 1);
+        FLines[LinesCount] := '';
+        Inc(LinesCount);
       end;
-      Delete(Message, 1, W);
-      if W = CR then
-        {перевод коретки в начало строки}
-        FCursor.X := 1 else
-      if W = LF then
+    end else
+
+    { перевод коретки в начало строки }
+    if C = #13 then
+      FCursor.X := 1 else
+
+    { помещение символа в строку }
+    begin
+      if FCursor.X > 200 then
       begin
-        {перевод коретки на следующую строку}
-        BottomRow := False;
-        Inc(FCursor.Y);
-        LinesCount := Length(FLines);
-        while FCursor.Y >= FMaxLines do Dec(FCursor.Y, FMaxLines);
-        if FCursor.Y < LinesCount then FLines[FCursor.Y] := '';
-        while FCursor.Y >= LinesCount do
+        PutChar(#13);
+        PutChar(#10);
+      end;
+
+      { FIXME: Если в PascalMain только один Write/Ln, то зависон.
+        см. FPC_DO_EXIT, InternalExit }
+      PLine := @FLines[FCursor.Y];
+      I := Length(PLine^);
+      if FCursor.X > I then
+      begin
+        SetLength(PLine^, FCursor.X);
+        Inc(I);
+        while I < FCursor.X do
         begin
-          SetLength(FLines, LinesCount + 1);
-          FLines[LinesCount] := '';
-          Inc(LinesCount);
+          PLine^[I] := ' ';
+          Inc(I);
         end;
       end;
-    end;
-  until Length(Message) <= 0;
+      FLines[FCursor.Y][FCursor.X] := C;
 
-  Paint(BottomRow);
+      Inc(FCursor.X);
+    end;
+  end;
+
+var
+  I: Longint;
+begin
+  for I := 1 to Length(Message) do
+    PutChar(Message[I]);
+  Paint(OnlyBottomLine);
 end;
 
 procedure TKonsole.ProcessKeyboard(Key: Word);
@@ -350,4 +383,9 @@ begin
       ThreadSwitch;
     end;
   end;
+end;
+
+procedure TKonsole.Flush();
+begin
+  while FOnAir do ThreadSwitch;
 end;

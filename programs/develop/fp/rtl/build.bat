@@ -3,7 +3,8 @@
 set FPRTL={FreePascal RTL source code, example c:\fp\src\rtl}
 set INCS=-Fi%FPRTL%\inc;%FPRTL%\i386;%FPRTL%\objpas;%FPRTL%\objpas\sysutils;%FPRTL%\objpas\classes
 set UNTS=-Fu%FPRTL%\inc;%FPRTL%\i386;%FPRTL%\objpas
-set FPCARGS=-Twin32 -Se5 -Sg -n -O3pPENTIUM3 -CfSSE -di386 -FU..\units %INCS% %UNTS%
+set BUILDPATH=..\units
+set FPCARGS=-n -Twin32 -Sge5 -O3pPENTIUM3 -CfSSE -di386 -FU%BUILDPATH% %INCS% %UNTS%
 
 fpc system.pp -Us %FPCARGS%
 if errorlevel 1 goto error
