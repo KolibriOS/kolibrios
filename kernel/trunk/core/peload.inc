@@ -35,159 +35,175 @@ map_PE:                    ;stdcall base:dword, image:dword
            push    edi
            push    esi
            push    ebx
-           sub     esp, 28
+           sub     esp, 44
 
-           mov     edx, [esp+52]
-           mov     ebx, [esp+48]
-           mov     dword [esp+20], 0
-           add     edx, [edx+60]
+           mov     ebp, [esp+68]
+           mov     ebx, [esp+64]
+           mov     edx, ebp
+           mov     esi, ebp
+           add     edx, [ebp+60]
+           mov     edi, ebx
+           mov     [esp+32], edx
+
+           mov     ecx, [edx+84]
+           shr     ecx, 2
+           rep     movsd
+
            movzx   eax, word [edx+6]
-           mov     [esp+16], edx
-           mov      [esp+12], eax
+           mov     dword [esp+36], 0
+           mov     [esp+28], eax
            jmp     .L6
 .L7:
            mov     eax, [edx+264]
-           mov     ebp, [edx+260]
-           mov     esi, [esp+52]
+           test    eax, eax
+           je      .L8
+
+           mov     esi, ebp
+           mov     edi, ebx
            add     esi, [edx+268]
            mov     ecx, eax
-           lea     edi, [ebx+ebp]
+           add     edi, [edx+260]
 
-           shr ecx, 2
-           rep movsd
-
-           mov     ecx, [edx+256]
-           cmp     ecx, eax
-           jbe     .L8
-           sub     ecx, eax
-
-           xor eax, eax
-           rep stosb
+           shr     ecx, 2
+           rep     movsd
 
 .L8:
-           inc     dword [esp+20]
+           mov     ecx, [edx+256]
+           add     ecx, 4095
+           and     ecx, -4096
+           cmp     ecx, eax
+           jbe     .L10
+
+           sub     ecx, eax
+           add     eax, [edx+260]
+           lea     edi, [eax+ebx]
+
+           xor     eax, eax
+           rep     stosb
+
+.L10:
+           inc     dword [esp+36]
            add     edx, 40
 .L6:
-           mov     eax, [esp+12]
-           cmp     [esp+20], eax
+           mov     esi, [esp+28]
+           cmp     [esp+36], esi
            jne     .L7
 
-           mov     edx, [esp+16]
-           cmp     dword [edx+164], 0
-           je      .L11
+           mov     edi, [esp+32]
+           cmp     dword [edi+164], 0
+           je      .L13
 
+           mov     eax, [esp+32]
            mov     edi, ebx
            mov     ecx, ebx
-           sub     edi, [edx+52]
-           add     ecx, [edx+160]
-           mov     eax, edi
-           shr     eax, 16
-           mov     [esp+4], eax
-           jmp     .L13
-.L14:
-           lea     esi, [eax-8]
-           xor     ebp, ebp
-           shr     esi,1
+           sub     edi, [eax+52]
+           add     ecx, [eax+160]
+
+           mov     edx, edi
+           shr     edx, 16
+           mov     [esp+20], edx
            jmp     .L15
 .L16:
+           lea     esi, [eax-8]
+           xor     ebp, ebp
+           shr     esi, 1
+           jmp     .L17
+.L18:
            movzx   eax, word [ecx+8+ebp*2]
            mov     edx, eax
            shr     eax, 12
            and     edx, 4095
            add     edx, [ecx]
            cmp     ax, 2
-           je      .L19
+           je      .L21
 
            cmp     ax, 3
-           je      .L20
+           je      .L22
 
            dec     ax
-           jne     .L17
+           jne     .L19
 
-           mov     eax, [esp+4]
-           add     word [edx+ebx], ax
-.L19:
-           add     word [edx+ebx], di
-.L20:
+           mov     eax, [esp+20]
+           add     [edx+ebx], ax
+.L21:
+           add     [edx+ebx], di
+.L22:
            add     [edx+ebx], edi
-.L17:
+.L19:
            inc     ebp
-.L15:
+.L17:
            cmp     ebp, esi
-           jne     .L16
+           jne     .L18
+
            add     ecx, [ecx+4]
-.L13:
+.L15:
            mov     eax, [ecx+4]
            test    eax, eax
-           jne     .L14
-.L11:
-           mov     edx, [esp+16]
+           jne     .L16
+.L13:
+           mov     edx, [esp+32]
            cmp     dword [edx+132], 0
-           je      .L22
+           je      .L24
 
            mov     eax, ebx
            add     eax, [edx+128]
            lea     esi, [eax+20]
-.L24:
+.L26:
            cmp     dword [esi-16], 0
-           jne     .L25
+           jne     .L27
 
            cmp     dword [esi-8], 0
-           je      .L22
-.L25:
+           je      .L24
+.L27:
            mov     ecx, [esi-20]
            mov     ebp, ebx
-           add     ebp, [esi-4]
+           add     ebp,  [esi-4]
            add     ecx, ebx
-           mov     [esp+24], ecx
-.L27:
-           mov     edx, [esp+24]
-           mov     eax, [edx]
+           mov     [esp+40], ecx
+.L29:
+           mov     edi, [esp+40]
+           mov     eax, [edi]
            test    eax, eax
-           je      .L28
+           je      .L30
 
            test    eax, eax
-           js      .L28
+           js      .L30
 
            lea     eax, [eax+2+ebx]
            mov     edi, kernel_export
-           mov     dword [ebp], -1
-           mov     [esp+8], eax
-.L31:
+           mov     [ebp], dword -1
+           mov     [esp+24], eax
+.L33:
            push    ecx
            push    16
            push    dword [edi]
-           push    dword [esp+20]
+           push    dword [esp+36]
            call    strncmp
            pop     edx
            test    eax, eax
-           jne     .L32
-
+           jne     .L34
            mov     eax, [edi+4]
            mov     [ebp], eax
-           jmp     .L34
-.L32:
+           jmp     .L36
+.L34:
            add     edi, 8
            cmp     dword [edi], 0
-           jne     .L31
-.L34:
-           add     dword [esp+24], 4
+           jne     .L33
+.L36:
+           add     dword [esp+40], 4
            add     ebp, 4
-           jmp     .L27
-.L28:
+           jmp     .L29
+.L30:
            add     esi, 20
-           jmp     .L24
-.L22:
-
-           mov     ecx, [esp+16]
-           add     ebx, [ecx+40]
-
-           add     esp, 28
+           jmp     .L26
+.L24:
+           mov     eax, [esp+32]
+           add     ebx, [eax+40]
+           add     esp, 44
            mov     eax, ebx
-
            pop     ebx
            pop     esi
            pop     edi
            pop     ebp
-
            ret     8
+
