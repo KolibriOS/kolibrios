@@ -467,19 +467,19 @@ restore .event
 
 sys_getevent:
 
-     call   get_event_for_app
-     mov    [esp+36],eax
-     ret
+	call	get_event_for_app
+	mov	[esp + 32],eax
+	ret
 
 sys_waitforevent:
-        or      eax, 0xFFFFFFFF         ; infinite timeout
+        or      ebx, 0xFFFFFFFF         ; infinite timeout
         jmp     @f
 
 sys_wait_event_timeout:
-        add     eax, [timer_ticks]
+        add     ebx, [timer_ticks]
 @@:
-        mov     ebx, [current_slot]
-        mov     [ebx + APPDATA.wait_timeout], eax
+        mov     eax, [current_slot]
+        mov     [eax + APPDATA.wait_timeout], ebx
         call    get_event_for_app
         test    eax, eax
         jnz     eventoccur
@@ -490,7 +490,7 @@ sys_wait_event_timeout:
 
         mov     eax, [event_sched]
 eventoccur:
-        mov     [esp+36], eax
+        mov     [esp+32], eax
         ret
 
 sys_sendwindowmsg:

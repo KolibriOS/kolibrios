@@ -1034,15 +1034,7 @@ reserve_irqs_ports:
         mov  [irq_owner+4*14], 1   ; ide I
         mov  [irq_owner+4*15], 1   ; ide II
 
-;        movzx eax,byte [0xf604]        ; mouse irq
-;        dec   eax
-;        add   eax,mouseirqtable
-;        movzx eax,byte [eax]
-;        shl   eax,2
-;        mov   [irq_owner+eax],byte 1
-
-
-                                       ; RESERVE PORTS
+	; RESERVE PORTS
         mov   edi,1                    ; 0x00-0x2d
         mov   [RESERVED_PORTS],edi
         shl   edi,4
@@ -1070,26 +1062,6 @@ reserve_irqs_ports:
         mov   [RESERVED_PORTS+edi+0],dword 1
         mov   [RESERVED_PORTS+edi+4],dword 0xe5
         mov   [RESERVED_PORTS+edi+8],dword 0xff
-
-
-;        cmp   [0xf604],byte 2          ; com1 mouse -> 0x3f0-0x3ff
-;        jne   ripl1
-;        inc   dword [0x2d0000]
-;        mov   edi,[0x2d0000]
-;        shl   edi,4
-;        mov   [0x2d0000+edi+0],dword 1
-;        mov   [0x2d0000+edi+4],dword 0x3f0
-;        mov   [0x2d0000+edi+8],dword 0x3ff
-;      ripl1:
-;        cmp   [0xf604],byte 3          ; com2 mouse -> 0x2f0-0x2ff
-;        jne   ripl2
-;        inc   dword [0x2d0000]
-;        mov   edi,[0x2d0000]
-;        shl   edi,4
-;        mov   [0x2d0000+edi+0],dword 1
-;        mov   [0x2d0000+edi+4],dword 0x2f0
-;        mov   [0x2d0000+edi+8],dword 0x2ff
-;      ripl2:
 
         popad
         ret
@@ -1472,22 +1444,6 @@ division_64_bits:
      ret
 
 draw_num_text:
-
-     ; dtext
-     ;
-     ; eax x & y
-     ; ebx color
-     ; ecx start of text
-     ; edx length
-     ; edi 1 force
-
-;        mov     edi,[CURRENT_TASK]
-;        shl     edi,8
-;        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.top]
-;        rol     eax,16
-;        add     ax,word[edi+SLOT_BASE+APPDATA.wnd_clientbox.left]
-;        rol     eax,16
-
      mov   edx,eax
      mov   ecx,64+4
      sub   ecx,eax
@@ -1511,17 +1467,6 @@ draw_num_text:
         mov     esi, [esp+64+4+4]
         mov     edi, [esp+64+4]
      jmp   dtext
-
-read_string:
-
-    ; eax  read_area
-    ; ebx  color of letter
-    ; ecx  color of background
-    ; edx  number of letters to read
-    ; esi  [x start]*65536 + [y_start]
-
-    ret
-
 
 align 4
 
@@ -2408,51 +2353,23 @@ UID_MENUETOS=1   ;official
 UID_KOLIBRI=2    ;russian
 
 sys_cachetodiskette:
-;    pushad
-;    cmp  eax,1
-;    jne  no_write_all_of_ramdisk
-;    call fdc_writeramdisk
-;    popad
-;    ret
-;  no_write_all_of_ramdisk:
-;    cmp eax,2
-;    jne no_write_part_of_ramdisk
-;    call fdc_commitflush
-;    popad
-;    ret
-;  no_write_part_of_ramdisk:
-;    cmp  eax,3
-;    jne  no_set_fdc
-;    call fdc_set
-;    popad
-;    ret
-;  no_set_fdc:
-;    cmp  eax,4
-;    jne  no_get_fdc
-;    popad
-;    call fdc_get
-;    mov    [esp+36],ecx
-;    ret
-;  no_get_fdc:
-;    popad
-;    ret
-    cmp eax,1
-    jne no_floppy_a_save
-    mov   [flp_number],1
-    jmp save_image_on_floppy
-  no_floppy_a_save:
-    cmp eax,2
-    jne no_floppy_b_save
-    mov   [flp_number],2
-  save_image_on_floppy:
-    call save_image
-    mov  [esp+36],dword 0
-    cmp  [FDC_Status],0
-    je   yes_floppy_save
-  no_floppy_b_save:
-    mov [esp+36],dword 1
-  yes_floppy_save:
-    ret
+	cmp	ebx, 1
+	jne	.no_floppy_a_save
+	mov	[flp_number], 1
+	jmp	.save_image_on_floppy
+.no_floppy_a_save:
+	cmp	ebx, 2
+	jne	.no_floppy_b_save
+	mov	[flp_number], 2
+.save_image_on_floppy:
+	call	save_image
+	mov	[esp + 32], dword 0
+	cmp	[FDC_Status], 0
+	je	.yes_floppy_save
+.no_floppy_b_save:
+	mov	[esp + 32], dword 1
+.yes_floppy_save:
+	ret
 
 uglobal
 ;  bgrchanged  dd  0x0
@@ -2684,71 +2601,67 @@ sys_getbackground:
 align 4
 
 sys_getkey:
-    mov   [esp+36],dword 1
-; test main buffer
-    mov   ebx, [CURRENT_TASK]                          ; TOP OF WINDOW STACK
-    movzx ecx,word [WIN_STACK + ebx * 2]
-    mov   edx,[TASK_COUNT]
-    cmp   ecx,edx
-    jne   .finish
-    cmp   [KEY_COUNT],byte 0
-    je    .finish
-    movzx eax,byte [KEY_BUFF]
-    shl   eax,8
-    push  eax
-    dec   byte [KEY_COUNT]
-    and   byte [KEY_COUNT],127
-    movzx ecx,byte [KEY_COUNT]
-    add   ecx,2
- ;   mov   esi,0xf402
- ;   mov   edi,0xf401
- ;   cld
- ;  rep   movsb
-    mov   eax, KEY_BUFF+1
-    mov   ebx, KEY_BUFF
-    call  memmove
-    pop   eax
+	mov	[esp + 32],dword 1
+	; test main buffer
+	mov	ebx, [CURRENT_TASK]                          ; TOP OF WINDOW STACK
+	movzx	ecx, word [WIN_STACK + ebx * 2]
+	mov	edx, [TASK_COUNT]
+	cmp	ecx, edx
+	jne	.finish
+	cmp	[KEY_COUNT], byte 0
+	je	.finish
+	movzx	eax, byte [KEY_BUFF]
+	shl	eax, 8
+	push	eax
+	dec	byte [KEY_COUNT]
+	and	byte [KEY_COUNT], 127
+	movzx	ecx, byte [KEY_COUNT]
+	add	ecx, 2
+	mov	eax, KEY_BUFF + 1
+	mov	ebx, KEY_BUFF
+	call	memmove
+	pop	eax
 .ret_eax:
-    mov   [esp+36],eax
-    ret
- .finish:
+	mov	[esp + 32], eax
+	ret
+.finish:
 ; test hotkeys buffer
-        mov     ecx, hotkey_buffer
+	mov	ecx, hotkey_buffer
 @@:
-        cmp     [ecx], ebx
-        jz      .found
-        add     ecx, 8
-        cmp     ecx, hotkey_buffer+120*8
-        jb      @b
-        ret
+	cmp	[ecx], ebx
+	jz	.found
+	add	ecx, 8
+	cmp	ecx, hotkey_buffer + 120 * 8
+	jb	@b
+	ret
 .found:
-        mov     ax, [ecx+6]
-        shl     eax, 16
-        mov     ah, [ecx+4]
-        mov     al, 2
-        and     dword [ecx+4], 0
-        and     dword [ecx], 0
-        jmp     .ret_eax
+	mov	ax, [ecx + 6]
+	shl	eax, 16
+	mov	ah, [ecx + 4]
+	mov	al, 2
+	and	dword [ecx + 4], 0
+	and	dword [ecx], 0
+	jmp	.ret_eax
 
 align 4
 
 sys_getbutton:
 
-    mov   ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
-    mov   [esp+36],dword 1
-    movzx ecx, word [WIN_STACK + ebx * 2]
-    mov   edx, [TASK_COUNT] ; less than 256 processes
-    cmp   ecx,edx
-    jne   .exit
-    movzx eax,byte [BTN_COUNT]
-    test  eax,eax
-    jz    .exit
-    mov   eax,[BTN_BUFF]
-    shl   eax,8
-    mov   [BTN_COUNT],byte 0
-    mov   [esp+36],eax
- .exit:
-    ret
+	mov	ebx, [CURRENT_TASK]                         ; TOP OF WINDOW STACK
+	mov	[esp + 32], dword 1
+	movzx	ecx, word [WIN_STACK + ebx * 2]
+	mov	edx, [TASK_COUNT] ; less than 256 processes
+	cmp	ecx, edx
+	jne	.exit
+	movzx	eax, byte [BTN_COUNT]
+	test	eax, eax
+	jz	.exit
+	mov	eax, [BTN_BUFF]
+	shl	eax, 8
+	mov	[BTN_COUNT], byte 0
+	mov	[esp + 32], eax
+.exit:
+	ret
 
 
 align 4
@@ -2906,7 +2819,7 @@ sys_clock:
         movzx edx,al
         add   ecx,edx
         sti
-        mov   [esp+36],ecx
+	mov	[esp + 32], ecx
         ret
 
 
@@ -2915,7 +2828,6 @@ align 4
 sys_date:
 
         cli
-
   @@:   mov   al, 10
         out   0x70, al
         in    al, 0x71
@@ -2941,81 +2853,69 @@ sys_date:
         in      al,0x71
         mov     cl,al
         sti
-        mov     [esp+36],ecx
+        mov     [esp+32], ecx
         ret
 
 
 ; redraw status
 
 sys_redrawstat:
-
-    cmp  eax,1
-    jne  no_widgets_away
-
-    ; buttons away
-
-    mov   ecx,[CURRENT_TASK]
-
+	cmp	ebx, 1
+	jne	no_widgets_away
+	; buttons away
+	mov	ecx,[CURRENT_TASK]
   sys_newba2:
-
-    mov   edi,[BTN_ADDR]
-    cmp   [edi],dword 0  ; empty button list ?
-    je    end_of_buttons_away
-
-    movzx ebx,word [edi]
-    inc   ebx
-
-    mov   eax,edi
-
+	mov	edi,[BTN_ADDR]
+	cmp	[edi], dword 0  ; empty button list ?
+	je	end_of_buttons_away
+	movzx	ebx, word [edi]
+	inc	ebx
+	mov	eax,edi
   sys_newba:
+	dec	ebx
+	jz	end_of_buttons_away
 
-    dec   ebx
-    jz    end_of_buttons_away
+	add	eax, 0x10
+	cmp	cx, [eax]
+	jnz	sys_newba
 
-    add   eax,0x10
-    cmp   cx,[eax]
-    jnz   sys_newba
+	push	eax ebx ecx
+	mov	ecx,ebx
+	inc	ecx
+	shl	ecx, 4
+	mov	ebx, eax
+	add	eax, 0x10
+	call	memmove
+	dec	dword [edi]
+	pop	ecx ebx eax
 
-    push  eax ebx ecx
-    mov   ecx,ebx
-    inc   ecx
-    shl   ecx,4
-    mov   ebx,eax
-    add   eax,0x10
-    call  memmove
-    dec   dword [edi]
-    pop   ecx ebx eax
-
-    jmp   sys_newba2
+	jmp	sys_newba2
 
   end_of_buttons_away:
 
-    ret
+	ret
 
   no_widgets_away:
 
-    cmp   eax,2
-    jnz   srl1
+	cmp	ebx, 2
+	jnz	srl1
 
-    mov   edx,[TASK_BASE]      ; return whole screen draw area for this app
-    add   edx,draw_data-CURRENT_TASK
-    mov   [edx+RECT.left], 0
-    mov   [edx+RECT.top], 0
-    mov   eax,[ScreenWidth]
-    mov   [edx+RECT.right],eax
-    mov   eax,[ScreenHeight]
-    mov   [edx+RECT.bottom],eax
+	mov	edx, [TASK_BASE]      ; return whole screen draw area for this app
+	add	edx, draw_data - CURRENT_TASK
+	mov	[edx + RECT.left], 0
+	mov	[edx + RECT.top], 0
+	mov	eax, [ScreenWidth]
+	mov	[edx + RECT.right], eax
+	mov	eax, [ScreenHeight]
+	mov	[edx + RECT.bottom], eax
 
-    mov   edi,[TASK_BASE]
-    or    [edi-twdw+WDATA.fl_wdrawn], 1   ; no new position & buttons from app
-
-    call  sys_window_mouse
-
-    ret
+	mov	edi, [TASK_BASE]
+	or	[edi - twdw + WDATA.fl_wdrawn], 1   ; no new position & buttons from app
+	call	sys_window_mouse
+	ret
 
   srl1:
-
-    ret
+	ret
 
 
 sys_drawwindow:
@@ -3888,12 +3788,8 @@ delay_ms:     ; delay in 1/1000 sec
 
 
 set_app_param:
-        push edi
-
-        mov  edi,[TASK_BASE]
-        mov  [edi+TASKDATA.event_mask],eax
-
-        pop  edi
+        mov	edi, [TASK_BASE]
+        mov	[edi + TASKDATA.event_mask], ebx
         ret
 
 
@@ -4330,11 +4226,6 @@ drawbackground:
 align 4
 
 syscall_putimage:                       ; PutImage
-
-     mov   edx,ecx
-     mov   ecx,ebx
-     mov   ebx, eax
-
 sys_putimage:
      test  ecx,0x80008000
      jnz   .exit
@@ -4771,47 +4662,35 @@ sys_msg_board:
 ; eax=1 : write :  bl byte to write
 ; eax=2 :  read :  ebx=0 -> no data, ebx=1 -> data in al
 
-     mov  ecx,[msg_board_count]
-     cmp  eax, 1
-     jne  smbl1
+	mov	ecx, [msg_board_count]
+	cmp	eax, 1
+	jne	.smbl1
 
 
-     mov  [msg_board_data+ecx],bl
-     inc  ecx
-     and  ecx, 4095
-     mov  [msg_board_count], ecx
-     mov  [check_idle_semaphore], 5
-     ret
-   smbl1:
-
-     cmp   eax, 2
-     jne   smbl2
-     test  ecx, ecx
-     jz    smbl21
-;     mov   edi, msg_board_data
-;     mov   esi, msg_board_data+1
-;     movzx eax, byte [edi]
-     mov   eax, msg_board_data+1
-     mov   ebx, msg_board_data
-     movzx edx, byte [ebx]
-     call  memmove
-;     push  ecx
-;     shr   ecx, 2
-;     cld
-;     rep   movsd
-;     pop   ecx
-;     and   ecx, 3
-;     rep   movsb
-     dec   [msg_board_count]
-     mov   [esp+36], edx ;eax
-     mov   [esp+24], dword 1
-     ret
-   smbl21:
-     mov   [esp+36], ecx
-     mov   [esp+24], ecx
-
-   smbl2:
-     ret
+	mov	[msg_board_data+ecx],bl
+	inc	ecx
+	and	ecx, 4095
+	mov	[msg_board_count], ecx
+	mov	[check_idle_semaphore], 5
+	ret
+.smbl1:
+	cmp	eax, 2
+	jne	.smbl2
+	test	ecx, ecx
+	jz	.smbl21
+	mov	eax, msg_board_data+1
+	mov	ebx, msg_board_data
+	movzx	edx, byte [ebx]
+	call	memmove
+	dec	[msg_board_count]
+	mov	[esp + 36], edx ;eax
+	mov	[esp + 24], dword 1
+	ret
+.smbl21:
+	mov	[esp+36], ecx
+	mov	[esp+24], ecx
+.smbl2:
+	ret
 
 
 
@@ -5024,34 +4903,37 @@ align 4
 
 syscall_drawrect:                       ; DrawRect
 
-     mov   edi,ecx
-     and   edi,0x80FFFFFF
-     test  ax,ax
-     je    drectr
-     test  bx,bx
-     je    drectr
-     movzx ecx,ax
-     shr   eax,16
-     movzx edx,bx
-     shr   ebx,16
-        mov     esi,[current_slot]
-        add     eax,[esi+APPDATA.wnd_clientbox.left]
-        add     ebx,[esi+APPDATA.wnd_clientbox.top]
-     add   ecx,eax
-     add   edx,ebx
-     jmp   [drawbar]
-    drectr:
-     ret
+	mov	edi, edx ; color + gradient
+	and	edi, 0x80FFFFFF
+	test	bx, bx	; x.size
+	je	.drectr
+	test	cx, cx ; y.size
+	je	.drectr
+
+	mov	eax, ebx ; bad idea
+	mov	ebx, ecx
+
+	movzx	ecx, ax ; ecx - x.size
+	shr	eax, 16 ; eax - x.coord
+	movzx	edx, bx ; edx - y.size
+	shr	ebx, 16 ; ebx - y.coord
+	mov	esi, [current_slot]
+
+	add	eax, [esi + APPDATA.wnd_clientbox.left]
+	add	ebx, [esi + APPDATA.wnd_clientbox.top]
+	add	ecx, eax
+	add	edx, ebx
+	jmp	[drawbar]
+.drectr:
+	ret
 
 align 4
-
 syscall_getscreensize:                  ; GetScreenSize
-
-     movzx eax,word[ScreenWidth]
-     shl   eax,16
-     mov   ax,[ScreenHeight]
-     mov   [esp+36],eax
-     ret
+	mov	ax, [ScreenWidth]
+	shl	eax, 16
+	mov	ax, [ScreenHeight]
+	mov	[esp + 32], eax
+	ret
 
 align 4
 
@@ -5137,49 +5019,40 @@ syscall_writeramdiskfile:               ; WriteRamdiskFile
 align 4
 
 syscall_getpixel:                       ; GetPixel
-     mov   ecx,[ScreenWidth]
+     mov   ecx, [ScreenWidth]
      inc   ecx
-     xor   edx,edx
+     xor   edx, edx
+     mov   eax, ebx
      div   ecx
-     mov   ebx,edx
-     xchg  eax,ebx
-     call  dword [GETPIXEL]
-     mov   [esp+36],ecx
+     mov   ebx, edx
+     xchg  eax, ebx
+     call  dword [GETPIXEL] ; eax - x, ebx - y
+     mov   [esp + 32], ecx
      ret
 
-align 4
-
-syscall_readstring:                     ; ReadString
-
-     mov   edi,[TASK_BASE]
-     add   edi,TASKDATA.mem_start
-     add   eax,[edi]
-     call  read_string
-     mov   [esp+36],eax
-     ret
 
 align 4
 
 syscall_drawline:                       ; DrawLine
 
-     mov   edi,[TASK_BASE]
-     movzx edx,word[edi-twdw+WDATA.box.left]
-     mov   ebp,edx
-        mov     esi,[current_slot]
-        add     ebp,[esi+APPDATA.wnd_clientbox.left]
-        add     dx,word[esi+APPDATA.wnd_clientbox.left]
-     shl   edx,16
-     add   ebp,edx
-     movzx edx,word[edi-twdw+WDATA.box.top]
-     add   eax,ebp
-     mov   ebp,edx
-        add     ebp,[esi+APPDATA.wnd_clientbox.top]
-        add     dx,word[esi+APPDATA.wnd_clientbox.top]
-     shl   edx,16
-     xor   edi,edi
-     add   edx,ebp
-     add   ebx,edx
-     jmp   [draw_line]
+	mov	edi, [TASK_BASE]
+	movzx	edx, word[edi-twdw+WDATA.box.left]
+	mov	ebp, edx
+	mov	esi, [current_slot]
+	add	ebp, [esi+APPDATA.wnd_clientbox.left]
+	add	dx, word[esi+APPDATA.wnd_clientbox.left]
+	shl	edx, 16
+	add	ebp, edx
+	movzx	edx, word[edi-twdw+WDATA.box.top]
+	add	eax, ebp
+	mov	ebp, edx
+	add	ebp, [esi+APPDATA.wnd_clientbox.top]
+	add	dx, word[esi+APPDATA.wnd_clientbox.top]
+	shl	edx, 16
+	xor	edi, edi
+	add	edx, ebp
+	add	ebx, edx
+	jmp	[draw_line]
 
 align 4
 
@@ -5233,15 +5106,6 @@ socket:                                 ; Socket interface
 
      mov   [esp+36],eax
      mov   [esp+24],ebx
-     ret
-
-align 4
-
-user_events:                            ; User event times
-
-     mov   eax,0x12345678
-     mov   [esp+36],eax
-
      ret
 
 align 4
@@ -5321,8 +5185,7 @@ sys_apm:
 align 4
 
 undefined_syscall:                      ; Undefined system call
-
-     mov   [esp+36],dword -1
+     mov   [esp + 32], dword -1
      ret
 
 align 4
