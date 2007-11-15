@@ -28,6 +28,7 @@ kernel_export \
 	      PciRead8,\
 	      PciWrite8,\
 	      PciWrite16,\
+	      PciWrite32,\
 \
 	      AllocPage,\
 	      AllocPages,\
