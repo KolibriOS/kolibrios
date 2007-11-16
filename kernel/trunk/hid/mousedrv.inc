@@ -98,7 +98,7 @@ mres:
 save_draw_mouse:
 
         cmp [set_hw_cursor], 0
-        jz .no_hw_cursor
+        je .no_hw_cursor
         pushad
 
         mov    [X_UNDER],ax

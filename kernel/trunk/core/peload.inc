@@ -66,7 +66,6 @@ map_PE:                    ;stdcall base:dword, image:dword
 
            shr     ecx, 2
            rep     movsd
-
 .L8:
            mov     ecx, [edx+256]
            add     ecx, 4095
@@ -80,7 +79,6 @@ map_PE:                    ;stdcall base:dword, image:dword
 
            xor     eax, eax
            rep     stosb
-
 .L10:
            inc     dword [esp+36]
            add     edx, 40

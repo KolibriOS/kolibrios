@@ -18,6 +18,29 @@
 $Revision$
 
 
+TRIDENT       equ 0
+S3_VIDEO      equ 0
+INTEL_VIDEO   equ 0
+
+if TRIDENT
+  if S3_VIDEO or INTEL_VIDEO
+    stop
+  end if
+end if
+
+if S3_VIDEO
+  if TRIDENT or INTEL_VIDEO
+    stop
+  end if
+end if
+
+if INTEL_VIDEO
+  if S3_VIDEO or TRIDENT
+    stop
+  end if
+end if
+
+
 ; A complete video driver should include the following types of function
 ;
 ; Putpixel
@@ -35,167 +58,187 @@ $Revision$
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ; set_bank for Trident videocards, work on Trident 9440
 ; modified by Mario79
-;set_bank:
-;cli
-;cmp al,[BANK_RW]
-;je retsb
-;mov [BANK_RW],al
-;push dx
-;mov dx,3D8h
-;out  dx,al
-;pop dx
-;retsb:
-;sti
-;ret
 
+if TRIDENT
+set_bank:
+           pushfd
+           cli
+           cmp al,[BANK_RW]
+           je .retsb
+
+           mov [BANK_RW],al
+           push dx
+           mov dx,3D8h
+           out  dx,al
+           pop dx
+.retsb:
+           popfd
+           ret
+end if
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ; set_bank for S3 videocards, work on S3 ViRGE PCI (325)
 ; modified by kmeaw
+
+if S3_VIDEO
 set_bank:
-pushfd
-cli
-cmp al,[BANK_RW]
-je retsb
-mov [BANK_RW],al
-push ax
-push dx
-push cx
-mov cl, al
-mov dx, 0x3D4
-mov al, 0x38
-out dx, al     ;CR38 Register Lock 1 ;Note: Traditionally 48h is used to
-               ;unlock and 00h to lock
-inc dx
-mov al, 0x48
-out dx, al     ;3d5 -?
-dec dx
-mov al, 0x31
-out dx, al     ;CR31 Memory Configuration Register
+           pushfd
+           cli
+           cmp al,[BANK_RW]
+           je .retsb
+
+           mov [BANK_RW],al
+           push ax
+           push dx
+           push cx
+           mov cl, al
+           mov dx, 0x3D4
+           mov al, 0x38
+           out dx, al     ;CR38 Register Lock 1 ;Note: Traditionally 48h is used to
+                          ;unlock and 00h to lock
+           inc dx
+           mov al, 0x48
+           out dx, al     ;3d5 -?
+           dec dx
+           mov al, 0x31
+           out dx, al     ;CR31 Memory Configuration Register
 ;0  Enable Base Address Offset (CPUA BASE). Enables bank operation if set, ;disables if clear.
 ;4-5  Bit 16-17 of the Display Start Address. For the 801/5,928 see index 51h,
 ;for the 864/964 see index 69h.
 
-inc dx
-in al, dx
-dec dx
-mov ah, al
-mov al, 0x31
-out dx, ax
-mov al, ah
-or al, 9
-inc dx
-out dx, al
-dec dx
-mov al, 0x35
-out dx, al   ;CR35 CRT Register Lock
-inc dx
-in al, dx
-dec dx
-and al, 0xF0
-mov ch, cl
-and ch, 0x0F
-or ch, al
-mov al, 0x35
-out dx, al
-inc dx
-mov al, ch
-out dx, ax
-dec dx
-mov al, 0x51  ;Extended System Control 2 Register
-out dx, al
-inc dx
-in al, dx
-dec dx
-and al, 0xF3
-shr cl, 2
-and cl, 0x0C
-or cl, al
-mov al, 0x51
-out dx, al
-inc dx
-mov al, cl
-out dx, al
-dec dx
-mov al, 0x38
-out dx, al
-inc dx
-xor al, al
-out dx, al
-dec dx
-pop cx
-pop dx
-pop ax
-retsb:
-popfd
-ret
+           inc dx
+           in al, dx
+           dec dx
+           mov ah, al
+           mov al, 0x31
+           out dx, ax
+           mov al, ah
+           or al, 9
+           inc dx
+           out dx, al
+           dec dx
+           mov al, 0x35
+           out dx, al   ;CR35 CRT Register Lock
+           inc dx
+           in al, dx
+           dec dx
+           and al, 0xF0
+           mov ch, cl
+           and ch, 0x0F
+           or ch, al
+           mov al, 0x35
+           out dx, al
+           inc dx
+           mov al, ch
+           out dx, ax
+           dec dx
+           mov al, 0x51  ;Extended System Control 2 Register
+           out dx, al
+           inc dx
+           in al, dx
+           dec dx
+           and al, 0xF3
+           shr cl, 2
+           and cl, 0x0C
+           or cl, al
+           mov al, 0x51
+           out dx, al
+           inc dx
+           mov al, cl
+           out dx, al
+           dec dx
+           mov al, 0x38
+           out dx, al
+           inc dx
+           xor al, al
+           out dx, al
+           dec dx
+           pop cx
+           pop dx
+           pop ax
+.retsb:
+           popfd
+           ret
+end if
 
 ;Set bank function for Intel 810/815 chipsets
 ; *****Modified by Protopopius, Russia.*****
 ; ********* http://menuetos.hut.ru **************
 ; ************************************************
-;
-;set_bank:
-;cli
-;cmp al,[BANK_RW]
-;je retsb
-;mov [BANK_RW],al
-;push ax
-;push dx
-;mov dx,3CEh
-;mov ah,al            ; Save value for later use
-;mov al,10h           ; Index GR10 (Address Mapping)
-;out dx,al            ; Select GR10
-;inc dl
-;mov al,3             ; Set bits 0 and 1 (Enable linear page mapping)
-;out dx,al            ; Write value
-;dec dl
-;mov al,11h           ; Index GR11 (Page Selector)
-;out dx,al            ; Select GR11
-;inc dl
-;mov al,ah            ; Write address
-;out dx,al            ; Write the value
-;pop dx
-;pop ax
-;retsb:
-;sti
-;ret
+
+if INTEL_VIDEO
+
+set_bank:
+           pushfd
+           cli
+
+           cmp al,[BANK_RW]
+           je .retsb
+
+           mov [BANK_RW],al
+           push ax
+           push dx
+           mov dx,3CEh
+           mov ah,al            ; Save value for later use
+           mov al,10h           ; Index GR10 (Address Mapping)
+           out dx,al            ; Select GR10
+           inc dl
+           mov al,3             ; Set bits 0 and 1 (Enable linear page mapping)
+           out dx,al            ; Write value
+           dec dl
+           mov al,11h           ; Index GR11 (Page Selector)
+           out dx,al            ; Select GR11
+           inc dl
+           mov al,ah            ; Write address
+           out dx,al            ; Write the value
+           pop dx
+           pop ax
+.retsb:
+           popfd
+           ret
+end if
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!}
 
-;set_bank:
-;   cli
-;   cmp al,[BANK_RW]
-;   je retsb
-;   mov [BANK_RW],al
-;   push ax
-;   push dx
-;   mov ah,al
-;   mov dx,0x03D4
-;   mov al,0x39
-;   out dx,al
-;   inc dl
-;   mov al,0xA5
-;   out dx,al
-;   dec dl
-;   mov al,6Ah
-;   out dx,al
-;   inc dl
-;   mov al,ah
-;   out dx,al
-;   dec dl
-;   mov al,0x39
-;   out dx,al
-;   inc dl
-;   mov al,0x5A
-;   out dx,al
-;   dec dl
-;   pop dx
-;   pop ax
-;
-; retsb:
-;   ret
+if (TRIDENT or S3_VIDEO or INTEL_VIDEO)
+else
+set_bank:
+           pushfd
+           cli
 
+           cmp al,[BANK_RW]
+           je .retsb
+
+           mov [BANK_RW],al
+           push ax
+           push dx
+           mov ah,al
+           mov dx,0x03D4
+           mov al,0x39
+           out dx,al
+           inc dl
+           mov al,0xA5
+           out dx,al
+           dec dl
+           mov al,6Ah
+           out dx,al
+           inc dl
+           mov al,ah
+           out dx,al
+           dec dl
+           mov al,0x39
+           out dx,al
+           inc dl
+           mov al,0x5A
+           out dx,al
+           dec dl
+           pop dx
+           pop ax
+
+.retsb:
+           popfd
+           ret
+end if
 
 vesa12_drawbackground:
 
@@ -289,9 +332,8 @@ vesa12_drawbackground:
         mov   eax,[BytesPerScanLine]
         mov   ebx,edi
         mul   ebx
-        add   eax,esi
-        add   eax,esi
-        add   eax,esi
+        add   eax, esi
+        lea   eax, [VGABasePtr+eax+esi*2]
         cmp   [ScreenBPP],byte 24
         jz    v12bgl3
         add   eax,esi
@@ -301,7 +343,7 @@ vesa12_drawbackground:
         push ebx
         push eax
 
-        sub  eax,[LFBAddress]
+        sub  eax,VGABasePtr
 
         shr  eax,16
         call set_bank
@@ -372,7 +414,7 @@ vesa12_drawbar:
 
   dbpi2412:
 
-    add  eax,[LFBAddress]
+    add  eax,VGABasePtr
     mov  edi,eax
 
     ; x size
@@ -449,7 +491,7 @@ dbpi24bit12:
 
       xor  edx,edx
       mov  eax,edi
-      sub  eax,[LFBAddress]
+      sub  eax,VGABasePtr
       mov  ebx,3
       div  ebx
       add  eax,WinMapAddress
@@ -472,7 +514,7 @@ dbpi24bit12:
 
         push edi
         mov  eax,edi
-        sub  eax,[LFBAddress]
+        sub  eax,VGABasePtr
         shr  eax,16
         call set_bank
         and  edi,0xffff
@@ -541,7 +583,7 @@ dbpi24bit12:
     push ecx
 
       mov  eax,edi
-      sub  eax,[LFBAddress]
+      sub  eax,VGABasePtr
       shr  eax,2
       add  eax,WinMapAddress
       mov   ebx,[CURRENT_TASK]
@@ -563,7 +605,7 @@ dbpi24bit12:
 
         push edi
         mov  eax,edi
-        sub  eax,[LFBAddress]
+        sub  eax,VGABasePtr
         shr  eax,16
         call set_bank
         and  edi,0xffff
@@ -738,7 +780,7 @@ vesa12_putimage:
 
   pi2412:
 
-    add  eax,[LFBAddress]
+    add  eax,VGABasePtr
     mov  edi,eax
 
     ; x size
@@ -785,7 +827,7 @@ vesa12_putimage:
     push ebx
 
       mov  edx,edi
-      sub  edx,[LFBAddress]
+      sub  edx,VGABasePtr
       mov  ebx,3
       div  ebx
       add  edx,WinMapAddress
@@ -809,7 +851,7 @@ vesa12_putimage:
         push edi
         push eax
         mov  eax,edi
-        sub  eax,[LFBAddress]
+        sub  eax,VGABasePtr
         shr  eax,16
         call set_bank
         pop  eax
@@ -855,7 +897,7 @@ vesa12_putimage:
     push ebx
 
       mov  edx,edi
-      sub  edx,[LFBAddress]
+      sub  edx,VGABasePtr
       shr  edx,2
       add  edx,WinMapAddress
       mov   ebx,[CURRENT_TASK]
@@ -878,7 +920,7 @@ vesa12_putimage:
         push edi
         push eax
         mov  eax,edi
-        sub  eax,[LFBAddress]
+        sub  eax,VGABasePtr
         shr  eax,16
         call set_bank
         pop  eax

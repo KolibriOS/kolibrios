@@ -444,8 +444,12 @@ select_cursor:
 
 align 4
 proc init_cursors
+
            cmp [SCR_MODE],word 0x13
            jbe .fail
+
+           test word [SCR_MODE], 0x4000
+           jz .fail
 
            movzx eax, byte [ScreenBPP]
            mov ebx, [BytesPerScanLine]
