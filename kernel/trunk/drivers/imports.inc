@@ -65,6 +65,7 @@ kernel_export \
 	      HwCursorCreate,\
 \
 	      SysMsgBoardStr,\
+	      SysMsgBoardChar,\
 	      GetCurrentTask,\
 	      LoadFile,\
 	      SendEvent,\

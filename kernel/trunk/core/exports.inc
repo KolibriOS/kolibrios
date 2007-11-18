@@ -62,6 +62,7 @@ iglobal
   szHwCursorCreate    db 'HwCursorCreate', 0
 
   szSysMsgBoardStr    db 'SysMsgBoardStr', 0
+  szSysMsgBoardChar   db 'SysMsgBoardChar', 0
   szGetCurrentTask    db 'GetCurrentTask',0
   szLFBAddress	      db 'LFBAddress',0
   szLoadFile	      db 'LoadFile',0
@@ -131,6 +132,7 @@ kernel_export:
   dd szHwCursorCreate  , create_cursor	       ;import
 
   dd szSysMsgBoardStr  , sys_msg_board_str
+  dd szSysMsgBoardChar , sys_msg_board
   dd szGetCurrentTask  , get_curr_task
   dd szLoadFile        , load_file	       ;retval eax, ebx
   dd szSendEvent       , send_event
