@@ -182,6 +182,9 @@ edit_box:
 
       .no_keys_edit_box:
 
+      cmp [eax],dword 3
+      je exit_edit_box
+
       ;events of mouse for EditBox
 
       cmp [eax],dword 6

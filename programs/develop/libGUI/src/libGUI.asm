@@ -1,15 +1,16 @@
 ;**********************************************************************
 ; library of Graphics Universal Interface for Kolibri operation system
 ;
-; version 071001
+; version 071119
 ; 2007 year
 ;
 ;autors:
 ;
 ;andrew_programmer  polynki@mail.ru
 ;
-;menegement of controls : destroy_control, send_message
-;GUI components : button,scroller,Bookmark,text,image,number,progres bar
+;menegement of controls : destroy_control, send_message,move_component
+;                         resize_component,activate_trap_for_specialized_message
+;GUI components : button,scroller,Bookmark,text,image,number,progres_bar
 ;
 ;<Lrz> and Maxxxx32
 ;
@@ -24,6 +25,9 @@ public EXPORTS
 control_header_size = 44
 
 border_width        = 5
+
+activate_trap       = 01000000b
+deactivate_trap     = 10111111b
 
 section '.flat' code readable align 16
 
@@ -70,8 +74,11 @@ section '.flat' code readable align 16
      ;function for resize GUI component
      include 'resize_component.inc'
 
-     ;function for remove GUI component
-     include 'remove_component.inc'
+     ;function for move GUI component
+     include 'move_component.inc'
+
+     ;function for activate trap for specialized messages
+     include 'activate_trap.inc'
 
 align 16
 EXPORTS:
@@ -79,7 +86,8 @@ EXPORTS:
                    dd szSendMessage,send_message
                    dd szVersion,get_version
                    dd szResizeComponent,resize_component
-                   dd szRemoveComponent,remove_component
+                   dd szMoveComponent,move_component
+                   dd szActivateTrap,activate_trap_for_specialized_message
                    dd szcraeteButton,craete_button
                    dd szcraeteScroller,craete_scroller
                    dd szcraeteBookmark,craete_Bookmark
@@ -95,7 +103,8 @@ szDestroyControl    db 'DestroyControl',0
 szSendMessage       db 'SendMessage',0
 szVersion           db 'Version',0
 szResizeComponent   db 'ResizeComponent',0
-szRemoveComponent   db 'RemoveComponent',0
+szMoveComponent     db 'MoveComponent',0
+szActivateTrap      db 'ActivateTrapForSpecializedMessage',0
 szcraeteButton      db 'CraeteButton',0
 szcraeteScroller    db 'CraeteScroller',0
 szcraeteBookmark    db 'CraeteBookmark',0

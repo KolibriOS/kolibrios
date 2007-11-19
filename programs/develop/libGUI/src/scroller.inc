@@ -1,24 +1,25 @@
 
 ;scroller's flags
-sc_check_vertical                     = 1b
-sc_check_horizontal                   = 10b
-sc_check_init_child_buttons           = 100b
-sc_check_3D_type                      = 10000b
-sc_scroll_bar_move                    = 100000b
-sc_active                             = 1000000b
+sc_check_vertical                     = 00000001b
+sc_check_horizontal                   = 00000010b
+sc_check_init_child_buttons           = 00000100b
+sc_active                             = 00001000b
+sc_check_3D_type                      = 00010000b
+sc_scroll_bar_move                    = 00100000b
+
 sc_redraw                             = 10000000b
 sc_redraw_off                         = 01111111b
-sc_full_redraw                        = 11100000b
+sc_full_redraw                        = 10101000b
 sc_scroll_bar_move_off                = 11011111b
-sc_move_active_off                    = 10011111b
+sc_move_active_off                    = 11010111b
 
-sc_first_child_button_pressed         = 1b
+sc_first_child_button_pressed         = 00000001b
 sc_first_child_button_pressed_off     = 11111110b
-sc_second_child_button_pressed        = 10000b
+sc_second_child_button_pressed        = 00010000b
 sc_second_child_button_pressed_off    = 11101111b
 
 sc_control_data_size                  = 29
-sc_child_button_type                 = 10001000b
+sc_child_button_type                  = 10001000b
 
 ;****************************************************
 ;******************Crate Scroller*********************

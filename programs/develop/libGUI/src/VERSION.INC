@@ -11,6 +11,6 @@ align 4
 get_version:
 
         xor eax,eax
-        mov eax,dword 071014  ;07.10.13
+        mov eax,dword 071119  ;07.11.19
 
         ret

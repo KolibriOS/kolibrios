@@ -2,10 +2,10 @@
  nm_control_data_size          = 22
  nm_redraw_all                 = 10000000b
  nm_redraw_off                 = 01111111b
- nm_special_redraw_on          = 100b
- nm_special_redraw_off         = 11111011b
- nm_integer_type               = 10b
- nm_no_show_number             = 1b
+ ;nm_special_redraw_on          = 00000100b
+ ;nm_special_redraw_off         = 11111011b
+ nm_integer_type               = 00000010b
+ nm_no_show_number             = 00000001b
 
 ;****************************************************
 ;********************craete Number**********************
@@ -92,12 +92,12 @@ number:
 
       xor ebx,ebx
       mov bl,[Number.type]
-      and bl,nm_special_redraw_on
+      and bl,activate_trap
       test bl,bl
       jz no_special_message_for_number
 
         or [Number.type],nm_redraw_all
-        and [Number.type],nm_special_redraw_off
+        and [Number.type],deactivate_trap
 
       no_special_message_for_number:
 

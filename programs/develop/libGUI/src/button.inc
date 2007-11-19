@@ -1,16 +1,16 @@
 
 ;button's types
-bt_check_text_type                 = 1b
-bt_check_picture_type              = 10b
-bt_check_picture_text_type         = 100b
-bt_no_draw                         = 1000b
-bt_check_3D_type                   = 10000b
+bt_check_text_type                 = 00000001b
+bt_check_picture_type              = 00000010b
+bt_check_picture_text_type         = 00000100b
+bt_no_draw                         = 00001000b
+bt_check_3D_type                   = 00010000b
 bt_check_full_redraw               = 10000000b
-bt_full_redraw_off                 = 1111111b
+bt_full_redraw_off                 = 01111111b
 
 ;button's flags
-bt_crossing                        = 1b
-bt_crossing_pressing               = 11b
+bt_crossing                        = 00000001b
+bt_crossing_pressing               = 00000011b
 bt_crossing_pressing_off           = 11111100b
 
 bt_control_data_size               = 50

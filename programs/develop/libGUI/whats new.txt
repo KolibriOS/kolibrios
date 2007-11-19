@@ -1,0 +1,66 @@
+19.11.07
+
+RUSSIAN
+
+Функция RemoveComponent переименована в MoveComponent.
+Добавлена новая функция. 
+void ActivateTrapForSpecializedMessage(dword *control) - активировать ловушку для специализированных сообщений.
+
+ENGLISH
+
+Function RemoveComponent is renamed in MoveComponent.
+New function is added. 
+void ActivateTrapForSpecializedMessage (dword *control) - to activate a trap for the specialized messages.
+
+15.10.07
+
+RUSSIAN
+
+Вышла новая версия библиотеки libGUI.
+
+Что нового в этой версии:
+
+1) Передача параметров функциям библиотеки переписана на конвенцию stdcall.
+
+2)Теперь функции линкуются по именам.
+
+3)Теперь, если навести мышь на компонент и нажать левую кнопку мыши, то все сообщения от 
+мыши посылаются только этому компоненту.Если отпустить левую кнопку мыши, то сообщения от 
+мыши вновь становятся доступными для всех компонентов.
+
+4) В библиотеку добавлены новые функции.
+  int Version(void) - получить версию библиотеки. Версия возвращается в формате: год + месяц + день . Текущая 
+  библиотека имеет версию 071014.
+  void RemoveComponent(void *Control,int new_x,int new_y) - перемещает компонент в новые координаты.
+  void ResizeComponent(void *Control,int new_sizex,int new_sizey) - изменяет размер компонента.
+  Примеры использования этих функций смотрите в примере Bookmark.
+ 
+5)Добавлен пример работы с libGUI в языке программирования C. Этот пример является частью интерфейса написанного
+  мной для моей научной программы.
+
+ENGLISH
+
+14.10.07
+
+The new version of library libGUI has left.
+
+That new in this version:
+
+1) Transfer of parameters to functions of library is copied on the convention stdcall.
+
+2) Now functions link on names.
+
+3)Now, if to guide the mouse on a component and to press the left button of the mouse all 
+messages from the mouse are sent only to this component.If to release(let off) the left 
+button of the mouse messages from the mouse again become accessible to all components.
+
+4) In library new functions are added.
+  int Version (void) - to receive the version of library. The version comes back in a format: year + month + day. 
+  The current library has version 71014.
+  void RemoveComponent (void *Control, int new_x, int new_y) - moves a component to new coordinates.
+  void ResizeComponent (void *Control, int new_sizex, int new_sizey) - changes the size of a component.
+  Examples of use of these functions look in example Bookmark.
+ 
+5) The example of work with libGUI in programming language C is added. This example is a part of the interface 
+   written by me for my scientific program.
+

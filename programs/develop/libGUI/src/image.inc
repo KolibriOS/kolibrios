@@ -2,8 +2,8 @@
 im_control_data_size           = 26
 im_redraw_all                  = 10000000b
 im_redraw_all_off              = 01111111b
-im_special_redraw_on           = 1b
-im_special_redraw_off          = 11111110b
+;im_special_redraw_on           = 00000001b
+;im_special_redraw_off          = 11111110b
 
 ;****************************************************
 ;*******************craete Image**********************
@@ -87,11 +87,11 @@ image:
 
        xor eax,eax
        mov al,[Image.type]
-       and al,im_special_redraw_on
+       and al,activate_trap
        test al,al
        jz no_activate_redraw_image
 
-         and [Image.type],im_special_redraw_off
+         and [Image.type],deactivate_trap
          or [Image.type],im_redraw_all
        no_activate_redraw_image:
 

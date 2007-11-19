@@ -136,6 +136,9 @@ check_box:
       no_redraw_all_check_box:
 
 
+      cmp [eax],dword 3
+      je exit_check_box
+
       cmp [eax],dword 6
       jne no_mouse_check_box
 

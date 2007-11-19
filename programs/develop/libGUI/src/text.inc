@@ -1,9 +1,9 @@
 
 tx_control_data_size            = 22
-tx_no_show_text                 = 1b
+tx_no_show_text                 = 00000001b
 tx_redraw_all                   = 10000000b
 tx_redraw_all_off               = 01111111b
-tx_special_redraw_on            = 100b
+tx_special_redraw_on            = 00000100b
 tx_special_redraw_off           = 11111011b
 
 ;****************************************************

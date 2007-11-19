@@ -1,8 +1,8 @@
 ;****************************************************
-;***************Resize of GUI component**************
+;*****************move of GUI component**************
 ;****************************************************
 ;IN
-;ResizeComponent(dword Parend,dword Control,dword newx,dword newy)
+;MoveComponent(dword Parend,dword Control,dword newx,dword newy)
 ;newy
 ;newx
 ;Control
@@ -12,7 +12,7 @@
 
 align 4
 
-remove_component:
+move_component:
 
         mov ebx,[esp+4]  ;Control
         mov ecx,[esp+8]  ;new x

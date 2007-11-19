@@ -2,8 +2,8 @@
 pb_control_data_size              = 34
 pb_redraw_all                     = 10000000b
 pb_redraw_all_off                 = 01111111b
-pb_special_progress_on            = 1b
-pb_special_progress_off           = 11111110b
+;pb_special_progress_on            = 00000001b
+;pb_special_progress_off           = 11111110b
 
 ;****************************************************
 ;****************craete ProgressBar********************
@@ -109,7 +109,18 @@ progress_bar:
       cmp [eax],dword 3
       jne no_special_message_progress_bar
 
-         or [ProgressBar.type],pb_special_progress_on
+         xor eax,eax
+         mov al,[ProgressBar.type]
+         and al,activate_trap
+         test al,al
+         jz no_draw_progress_bar
+
+           and [ProgressBar.type],deactivate_trap
+
+           call draw_progress
+
+         no_draw_progress_bar:
+         jmp exit_progress_bar
 
       no_special_message_progress_bar:
 
@@ -127,17 +138,6 @@ progress_bar:
 
       no_draw_all_progress_bar:
 
-      xor eax,eax
-      mov al,[ProgressBar.type]
-      and al,pb_special_progress_on
-      test al,al
-      jz no_draw_progress_bar
-
-         and [ProgressBar.type],pb_special_progress_off
-
-         call draw_progress
-
-      no_draw_progress_bar:
 
       exit_progress_bar:
 

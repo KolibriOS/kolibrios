@@ -56,10 +56,10 @@ start:
         call _ksys_cofflib_getproc
         mov [resize_component],eax
 
-        push fnRemoveComponent
+        push fnMoveComponent
         push [myexport]
         call _ksys_cofflib_getproc
-        mov [remove_component],eax
+        mov [move_component],eax
 
         push fnCraeteButton
         push [myexport]
@@ -235,7 +235,7 @@ start:
 
         ;init bookmark
         mov ecx,[ColorsTable+8]
-        mov [Bookmark.type],byte 10000001b
+        mov [Bookmark.type],byte 10100001b
         mov [Bookmark.x],10
         mov [Bookmark.y],10
         mov [Bookmark.sizex],350
@@ -302,7 +302,7 @@ start:
         push 340;270
         push 120;250
         push ebx
-        call [remove_component]
+        call [move_component]
 
         ;send message 1 for redrawing ALL controls
         mov [Message],dword 1
@@ -540,7 +540,7 @@ text_for_text db 'Hello world from bookmark',0
 fnDestroyControl                     db 'DestroyControl',0
 fnSendMessage                        db 'SendMessage',0
 fnResizeComponent                    db 'ResizeComponent',0
-fnRemoveComponent                    db 'RemoveComponent',0
+fnMoveComponent                    db 'MoveComponent',0
 fnCraeteButton                       db 'CraeteButton',0
 fnCraeteScroller                     db 'CraeteScroller',0
 fnCraeteBookmark                     db 'CraeteBookmark',0
@@ -556,7 +556,7 @@ myexport                             dd 0
 destroy_control                       dd 0
 send_message                          dd 0
 resize_component                      dd 0
-remove_component                      dd 0
+move_component                        dd 0
 craete_button                         dd 0
 craete_scroller                       dd 0
 craete_bookmark                       dd 0

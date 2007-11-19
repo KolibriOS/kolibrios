@@ -51,6 +51,11 @@ start:
         call _ksys_cofflib_getproc
         mov [send_message],eax
 
+        push fnActivateTrapForSpecializedMessage
+        push [myexport]
+        call _ksys_cofflib_getproc
+        mov [activate_trap_for_specialized_message],eax
+
         push fnCraeteButton
         push [myexport]
         call _ksys_cofflib_getproc
@@ -125,8 +130,10 @@ still:
 
         mov ebx,[progress]
         mov eax,[PointerToControlForProgressBar]
-        mov [eax+44],byte 1b
         mov [eax+44+26],ebx
+
+        push eax
+        call [activate_trap_for_specialized_message]
 
         fld [progress_step]
         fld [progress]
@@ -139,8 +146,10 @@ still:
 
            mov [progress],0.02
            mov eax,[PointerToControlForProgressBar]
-           mov [eax+44],byte 10000001b
            mov [eax+44+26],dword 0.02
+
+           push eax
+           call [activate_trap_for_specialized_message]
 
            mov [Message],dword 1
            push Message
@@ -345,6 +354,7 @@ fnDestroyControl                     db 'DestroyControl',0
 fnSendMessage                        db 'SendMessage',0
 fnCraeteButton                       db 'CraeteButton',0
 fnCraeteProgressbar                  db 'CraeteProgressbar',0
+fnActivateTrapForSpecializedMessage  db 'ActivateTrapForSpecializedMessage',0
 
 myexport                             dd 0
 
@@ -353,6 +363,8 @@ send_message                         dd 0
 craete_button                        dd 0
 
 craete_progress_bar                  dd 0
+
+activate_trap_for_specialized_message dd 0
 
 PointerToControlForButtonExit        dd 0
 

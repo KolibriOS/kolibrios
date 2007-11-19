@@ -1,6 +1,6 @@
 
-zk_redraw_all_Bookmark       = 1000000b
-zk_redraw_all_Bookmark_off   = 10111111b
+zk_redraw_all_Bookmark       = 00100000b
+zk_redraw_all_Bookmark_off   = 11011111b
 zk_init_Bookmark             = 10000000b
 zk_init_Bookmark_off         = 01111111b
 zk_child_button_type         = 10001001b
@@ -1161,7 +1161,7 @@ SendMessageChildControlsOfBookmark:
 
            mov ebx,[eax]
            mov eax,ebx
-	
+
            mov ebx,[Bookmark.MessageForChildButton+12]
            test ebx,ebx
            jz bookmark_left_button_of_mouse_not_pressed
