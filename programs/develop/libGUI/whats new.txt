@@ -1,3 +1,13 @@
+28.11.07
+
+RUSSIAN
+
+Добавлена поддержка фонового цвета для control-а Text.
+
+ENGLISH
+
+Support of background color for control Text is added.
+
 19.11.07
 
 RUSSIAN

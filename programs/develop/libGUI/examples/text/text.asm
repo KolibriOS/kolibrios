@@ -96,8 +96,9 @@ start:
         ;******************Init Text*****************
         ;********************************************
 
-        mov [Text.type],byte 10000000b
+        mov [Text.type],byte 10000010b
         mov [Text.color],0xffffff
+        mov [Text.background_color],0xff
         mov [Text.x],5
         mov [Text.y],10
         mov [Text.length],36
@@ -356,6 +357,7 @@ struc TEXT
  .y                rd 1
  .length           rd 1
  .pointer          rd 1
+ .background_color rd 1
 }
 
 Button1             BUTTON

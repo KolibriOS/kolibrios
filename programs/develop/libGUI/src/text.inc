@@ -1,10 +1,11 @@
 
-tx_control_data_size            = 22
+tx_control_data_size            = 26
 tx_no_show_text                 = 00000001b
+tx_text_and_background          = 00000010b
 tx_redraw_all                   = 10000000b
 tx_redraw_all_off               = 01111111b
-tx_special_redraw_on            = 00000100b
-tx_special_redraw_off           = 11111011b
+;tx_special_redraw_on            = 00000100b
+;tx_special_redraw_off           = 11111011b
 
 ;****************************************************
 ;********************craete Text**********************
@@ -95,12 +96,12 @@ text:
 
       xor ebx,ebx
       mov bl,[Text.type]
-      and bl,tx_special_redraw_on
+      and bl,activate_trap
       test bl,bl
       jz no_special_message_for_text
 
         or [Text.type],tx_redraw_all
-        and [Text.type],tx_special_redraw_off
+        and [Text.type],deactivate_trap
 
       no_special_message_for_text:
 
@@ -127,20 +128,32 @@ text:
 
        and [Text.type],tx_redraw_all_off
 
+
        mov esi,dword Text
        mov edi,[PointerForText]
        add edi,control_header_size
        mov ecx,2
        rep movsb
 
+       mov ecx,[Text.color]
+
+       xor eax,eax
+       mov al,[Text.type]
+       and al,tx_text_and_background
+       test al,al
+       jz no_background_color
+
+           mov edi,[Text.background_color]
+           or  ecx,01000000000000000000000000000000b
+
+       no_background_color:
+
        mov eax,4
        mov ebx,[Text.x]
        shl ebx,16
        add ebx,[Text.y]
-       mov ecx,[Text.color]
        mov edx,[Text.pointer]
        mov esi,[Text.length]
-       mov edi,[pointer2+8]
        mcall
 
       no_redraw_text_:

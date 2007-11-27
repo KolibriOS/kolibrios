@@ -410,6 +410,7 @@ struc TEXT
  .y                             rd 1
  .length                        rd 1
  .pointer                       rd 1
+ .background_color              rd 1
 }
 
 struc NUMBER
@@ -544,3 +545,4 @@ pointer2                  rd 13
 IPC_table  process_information;               rb 1024
 colors_table1             rd 15
 colors_table2             rd 15
+
