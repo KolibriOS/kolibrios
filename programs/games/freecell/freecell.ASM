@@ -7,7 +7,8 @@
 ; e-mail:       gorsash@mail.ru
 
 
-include "..\..\macros.inc"
+include "macros.inc"
+include "lang.inc"
 meos_app_start
 
 code
@@ -18,34 +19,34 @@ code
     mov     eax, 10
     mcall
 
-    cmp     eax, 1	     ;   if event == 1
-    je	    redraw	     ;     jump to redraw handler
-    cmp     eax, 2	     ;   else if event == 2
-    je	    key 	     ;     jump to key handler
-    cmp     eax, 3	     ;   else if event == 3
-    je	    button	     ;     jump to button handler
+    cmp     eax, 1           ;   if event == 1
+    je      redraw           ;     jump to redraw handler
+    cmp     eax, 2           ;   else if event == 2
+    je      key              ;     jump to key handler
+    cmp     eax, 3           ;   else if event == 3
+    je      button           ;     jump to button handler
 
 
-    jmp     wait_event	;else return to the start of main cycle
+    jmp     wait_event  ;else return to the start of main cycle
 
 
-  redraw:		     ; redraw event handler
+  redraw:                    ; redraw event handler
     call    draw_window
     jmp     wait_event
 
 
-  key:			     ; key event handler
-    mov     eax, 2	     ;   get key code
+  key:                       ; key event handler
+    mov     eax, 2           ;   get key code
     mcall
 
     jmp     wait_event
 
-  button:		     ; button event handler
-    mov     eax, 17	     ;   get button identifier
+  button:                    ; button event handler
+    mov     eax, 17          ;   get button identifier
     mcall
 
     cmp     ah, 1
-    je	    exit_app	     ;   return if button id != 1
+    je      exit_app         ;   return if button id != 1
 
     cmp     ah, 1 + 8
     jbe     common_card      ;   if 1 < ah <= 9
@@ -57,21 +58,21 @@ code
     jbe     home_cell
 
     cmp     ah, 1 + 8 + 4 + 4 + 1
-    je	    new_game_button
+    je      new_game_button
 
     cmp     ah, 1 + 8 + 4 + 4 + 2
-    je	    exit_app
+    je      exit_app
 
 
     jmp     wait_event
 
 
   exit_app:
-    mov     eax, -1	     ;   exit application
+    mov     eax, -1          ;   exit application
     mcall
 
   common_card:
-    sub     ah, 2	     ;going from number of card to number of column
+    sub     ah, 2            ;going from number of card to number of column
     mov     [columnclicked], 0
     mov     byte [columnclicked], ah
     call    common_card_click
@@ -101,7 +102,7 @@ code
 ;                            common_card_click(columnclicked)
   common_card_click:
 
-			     ; counting code of card, that has been clicked
+                             ; counting code of card, that has been clicked
     mov    eax, [columnclicked]
     mov    [ncolumn], eax
     call   get_row_of_top_card_in_column
@@ -119,11 +120,11 @@ code
     call   get_sel_card_code_and_addr
 
     cmp    [selcardcode], 52
-    jb	    .something_selected
+    jb      .something_selected
 
 
     cmp    [cardclicked], 52
-    je	    .end
+    je      .end
 
     mov    [whereisselcard], scCommonCells
     mov    eax, [columnclicked]
@@ -135,7 +136,7 @@ code
     .something_selected:
 
 
-	     ; checking if selected and clicked cards are equivalent
+             ; checking if selected and clicked cards are equivalent
       mov     eax, [selcardcode]
       cmp     [cardclicked], eax
       jne     .not_same_card
@@ -165,7 +166,7 @@ code
 
       mov     eax, [cardclicked]
       mov     bl, 4
-      div     bl		     ; reminder in ah, quotient in al
+      div     bl                     ; reminder in ah, quotient in al
 
       mov     ebx, 0
       mov     bl, ah
@@ -175,7 +176,7 @@ code
       mov     cl, al
       mov     [clickedcardrange], ecx
 
-			     ; clickedcardrange must be = cardrange + 1
+                             ; clickedcardrange must be = cardrange + 1
       mov     eax, [cardrange]
       inc     eax
 
@@ -184,23 +185,23 @@ code
 
 
       cmp     [cardfamily], 1
-      ja	     .black_card
+      ja             .black_card
 
-			     ; if selected red card
+                             ; if selected red card
       cmp     [clickedcardfamily], 1
-      jbe     .end	       ; if clicked red card (range <= 1) then exit
+      jbe     .end             ; if clicked red card (range <= 1) then exit
 
       jmp     .valid_cards
 
     .black_card:
-			     ; if selected black card
+                             ; if selected black card
       cmp     [clickedcardfamily], 1
-      ja      .end	       ; if clicked black card then exit
+      ja      .end             ; if clicked black card then exit
 
       jmp     .valid_cards
 
     .valid_cards:
-		      ; moving card from its place on clicked card
+                      ; moving card from its place on clicked card
 
       mov     eax, [columnclicked]
       mov     [ncolumn], eax
@@ -251,7 +252,7 @@ code
   temp_cell_click:
     call   get_sel_card_code_and_addr
     cmp    [selcardcode], 52
-    jb	   .something_selected
+    jb     .something_selected
 
 
     mov    [whereisselcard], scTempCells
@@ -261,7 +262,7 @@ code
     jmp    .end
 
     .something_selected:
-			     ; checking if selected and clicked cards equivalent
+                             ; checking if selected and clicked cards equivalent
     mov     eax, [columnclicked]
     add     eax, tempcells
 
@@ -278,7 +279,7 @@ code
 
     .not_same_card:
 
-			     ;putting cards in temp cells
+                             ;putting cards in temp cells
 
     mov     eax, [columnclicked]
     add     eax, tempcells
@@ -289,9 +290,9 @@ code
 
 
     cmp     [cardclicked], 52
-    jb	   .end
-			     ; if nothing lay in this cell
-			     ; move selected card to temp cell
+    jb     .end
+                             ; if nothing lay in this cell
+                             ; move selected card to temp cell
     mov     eax, [columnclicked]
     add     eax, tempcells
     mov     bl, byte [selcardcode]
@@ -327,7 +328,7 @@ code
 
     mov     eax, [selcardcode]
     mov     bl, 4
-    div     bl		     ; reminder in ah, quotient in al
+    div     bl               ; reminder in ah, quotient in al
 
     mov     ebx, 0
     mov     bl, ah
@@ -339,11 +340,11 @@ code
 
 
     cmp     [cardclicked], 52
-    jb	   .not_blank
-			     ; if nothing lay in this cell
+    jb     .not_blank
+                             ; if nothing lay in this cell
     cmp     [cardrange], 0
     jne     .end
-			     ; move ace to home
+                             ; move ace to home
     mov     eax, [columnclicked]
     add     eax, homecells
     mov     bl, byte [selcardcode]
@@ -363,7 +364,7 @@ code
 
     mov     eax, [cardclicked]
     mov     bl, 4
-    div     bl		     ; reminder in ah, quotient in al
+    div     bl               ; reminder in ah, quotient in al
 
     mov     ebx, 0
     mov     bl, ah
@@ -380,8 +381,8 @@ code
     cmp     [cardrange], ecx
     jne     .end
 
-		      ; moving card from its place to home with replacing
-		      ; of old card in home
+                      ; moving card from its place to home with replacing
+                      ; of old card in home
     mov     eax, [columnclicked]
     add     eax, homecells
     mov     bl, byte [selcardcode]
@@ -454,7 +455,7 @@ code
 
     .increasing_j:
       inc   [j]
-			     ; j mod 52
+                             ; j mod 52
       mov   eax, [j]
       mov   edx, 0
       mov   ebx, 52
@@ -475,7 +476,7 @@ code
 
     .decreasing_j:
       dec   [j]
-			     ; i mod 32
+                             ; i mod 32
       mov   eax, [j]
       mov   edx, 0
       mov   ebx, 52
@@ -493,12 +494,12 @@ code
       jmp  .decreasing_j
 
     .found_card:
-			     ; putting card from pack
+                             ; putting card from pack
       mov   eax, cards
       add   eax, [i]
       mov   bl, byte [randomcard]
       mov   byte [eax], bl
-			     ; deleting card from pack
+                             ; deleting card from pack
       mov   eax, pack
       add   eax, [j]
       mov   byte [eax], 52
@@ -553,9 +554,9 @@ code
 
     .something_selected:
     cmp     [whereisselcard], scTempCells
-    je	    .temp_cells_selected
+    je      .temp_cells_selected
 
-			     ; common cells selected
+                             ; common cells selected
     mov     eax, [columnofselcard]
     mov     [ncolumn], eax
     call    get_row_of_top_card_in_column
@@ -563,7 +564,7 @@ code
 
     mov     eax, [topcardrow]; eax = topcardrow * 8  + columnofselcard
     mov     bl, 8
-    mul     bl			     ; result of multiplication in ax
+    mul     bl                       ; result of multiplication in ax
     add     eax, [columnofselcard]
     add     eax, cards
 
@@ -599,20 +600,20 @@ code
     mcall
 
 
-    mov     eax, 12	     ; start drawing
+    mov     eax, 12          ; start drawing
     mov     ebx, 1
     mcall
 
-    mov     eax, 0	     ; create and draw the window
+    mov     eax, 0           ; create and draw the window
     mov     ebx, 100 * 65536 + 8 * cardwidth + 10 + 7 * columnspace
     mov     ecx, 100 * 65536 + 500
     mov     edx, 0x13008000
     mov     edi, title
     mcall
 
-    mov     eax, 9	     ; getting window info
+    mov     eax, 9           ; getting window info
     mov     ebx, process_info
-    mov     ecx, -1	     ; we want to know info of our window
+    mov     ecx, -1          ; we want to know info of our window
     mcall
 
 
@@ -623,7 +624,7 @@ code
     mov     [WindowWidth], ax
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-	; draw top panel
+        ; draw top panel
 
     mov     eax, 13
     mov     ebx, 5
@@ -634,7 +635,7 @@ code
     mov     edx, [syscolors.work_graph]
     mcall
 
-			     ; draw button "new game"
+                             ; draw button "new game"
 
     mov     eax, 8
     mov     ebx, 5 shl 16 + 80
@@ -696,32 +697,32 @@ code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            draw temp buttons
 
-    mov     [j], 0	     ;counter that loops from 0 to 51
+    mov     [j], 0           ;counter that loops from 0 to 51
 
     draw_a_temp_card:
 
-			     ; code of card must be in ecx
+                             ; code of card must be in ecx
     mov     eax, tempcells
     add     eax, [j]
     xor     ecx, ecx
     mov     cl, byte [eax]   ; placing in cl value from memory
-			     ;  with address [tempcells + j] or
-			     ;  j-th element of array "tempcells"
+                             ;  with address [tempcells + j] or
+                             ;  j-th element of array "tempcells"
 
     mov     [cardcode], ecx
 
     mov     eax, [j]
     xor     edx, edx
     mov     ebx, 8
-    div     ebx 	     ; divsion by 8 (8 columns),
-			     ;   so in eax quotient - number of row
-			     ;   and in edx remainder -
-			     ;   number of column where lay card
+    div     ebx              ; divsion by 8 (8 columns),
+                             ;   so in eax quotient - number of row
+                             ;   and in edx remainder -
+                             ;   number of column where lay card
 
     mov     [row], eax
     mov     [column], edx
 
-    mov     eax, [process_info.box.width]	; width of window
+    mov     eax, [process_info.box.width]       ; width of window
     sub     eax, 10
     sub     eax, cardwidth
     mov     ebx, 7
@@ -740,7 +741,7 @@ code
     add     eax, 24 + topbuttonsbarheight
     mov     [ypos], eax
 
-			     ; checking, if this card selected
+                             ; checking, if this card selected
 
     mov     [negativedraw], 0
 
@@ -757,7 +758,7 @@ code
 
     call    draw_card
 
-			     ; define button on place of card
+                             ; define button on place of card
     mov     eax, 8
     mov     ebx, [xpos]
     shl     ebx, 16
@@ -767,44 +768,44 @@ code
     add     cx, cardheight - 1
     mov     edx, [column]
     add     edx, 01000000000000000000000000000000b + 2 + 8;  button id = column
-					   ; id = 1 reserved as close button
+                                           ; id = 1 reserved as close button
     mcall
 
 
     inc     [j]
     cmp     [j], 4
-    jb	    draw_a_temp_card
+    jb      draw_a_temp_card
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            draw home buttons
- mov	 [j], 0 	     ;counter that loops from 0 to 51
+ mov     [j], 0              ;counter that loops from 0 to 51
 
     draw_a_home_card:
 
 
-			     ; code of card must be in ecx
+                             ; code of card must be in ecx
     mov     eax, homecells
     add     eax, [j]
     xor     ecx, ecx
     mov     cl, byte [eax]   ; placing in cl value from memory
-			     ;  with address [tempcells + j] or
-			     ;  j-th element of array "tempcells"
+                             ;  with address [tempcells + j] or
+                             ;  j-th element of array "tempcells"
 
     mov     [cardcode], ecx
 
     mov     eax, [j]
     xor     edx, edx
     mov     ebx, 8
-    div     ebx 	     ; divsion by 8 (8 columns),
-			     ;  so in eax quotient - number of row
-			     ;  and in edx remainder -
-			     ;  number of column where lay card
+    div     ebx              ; divsion by 8 (8 columns),
+                             ;  so in eax quotient - number of row
+                             ;  and in edx remainder -
+                             ;  number of column where lay card
 
     mov     [row], eax
     mov     [column], edx
 
-    mov     eax, [process_info.box.width]	; width of window
+    mov     eax, [process_info.box.width]       ; width of window
     sub     eax, 10
     sub     eax, cardwidth
     mov     ebx, 7
@@ -827,7 +828,7 @@ code
 
     call    draw_card
 
-			     ; define button on place of card
+                             ; define button on place of card
 
     mov     eax, 8
     mov     ebx, [xpos]
@@ -839,30 +840,30 @@ code
     mov     edx, [column]
     add     edx, 01000000000000000000000000000000b + 2 + 8 + 4 ; button id
 
-			     ; id = 1 reserved as close button
+                             ; id = 1 reserved as close button
     mcall
 
 
     inc     [j]
     cmp     [j], 4
-    jb	     draw_a_home_card
+    jb       draw_a_home_card
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;                            draw common cards
 
-    mov     [j], 0	     ;counter that loops from 0 to 8 * 19
+    mov     [j], 0           ;counter that loops from 0 to 8 * 19
 
     draw_a_card:
 
 
-			     ; code of card must be in ecx
+                             ; code of card must be in ecx
     mov     eax, cards
     add     eax, [j]
     xor     ecx, ecx
     mov     cl, byte [eax]   ; placing in cl value from memory
-			     ;  with address [cards + j] or
-			     ;  j-th element of array "cards"
+                             ;  with address [cards + j] or
+                             ;  j-th element of array "cards"
 ;    cmp     ecx, 52          ; if code of card >= 52 then there is no card
 ;    jae     no_draw
 ;
@@ -876,15 +877,15 @@ code
     mov     eax, [j]
     xor     edx, edx
     mov     ebx, 8
-    div     ebx 	    ; divsion by 8 (8 columns),
-			    ;  so in eax quotient - number of row
-			    ;  and in edx remainder -
-			    ;  number of column where lay card
+    div     ebx             ; divsion by 8 (8 columns),
+                            ;  so in eax quotient - number of row
+                            ;  and in edx remainder -
+                            ;  number of column where lay card
 
     mov     [row], eax
     mov     [column], edx
 
-    mov     eax, [process_info.box.width]	; width of window
+    mov     eax, [process_info.box.width]       ; width of window
     sub     eax, 10
     sub     eax, cardwidth
     mov     ebx, 7
@@ -928,14 +929,14 @@ code
 
 
 
-			     ; now checking if it is top card in its column
-			     ; if it does, we'll define button on its place
+                             ; now checking if it is top card in its column
+                             ; if it does, we'll define button on its place
     mov     eax, [column]
     mov     [ncolumn], eax
     call    get_row_of_top_card_in_column
     mov     eax, [row]
     cmp     [topcardrow], eax
-    je	     .define_button
+    je       .define_button
 
     cmp     [topcardrow], 0
     jne     .no_define_button
@@ -954,7 +955,7 @@ code
     add     cx, cardheight - 1
     mov     edx, [column]
     add     edx, 01000000000000000000000000000000b + 2; button id = column + 2,
-			     ; id = 1 reserved as close button
+                             ; id = 1 reserved as close button
     mcall
 
 
@@ -962,14 +963,14 @@ code
 
     inc     [j]
     cmp     [j], 8 * 19
-    jb	     draw_a_card
+    jb       draw_a_card
 
 
 
  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-    mov     eax, 12	     ; finish drawing
+    mov     eax, 12          ; finish drawing
     mov     ebx, 2
     mcall
 
@@ -980,11 +981,11 @@ code
 ;            get_row_of_top_card_in_column(ncolumn): topcardrow
 
   get_row_of_top_card_in_column:
-			     ; number of column in ncolumn
-			     ; returns in topcardrow
+                             ; number of column in ncolumn
+                             ; returns in topcardrow
 
-    mov [i], 0		     ; i loops from 0 to 1, ... while card i * 8 + ncolumn
-			     ; is valid card (0 <= its code < 52)
+    mov [i], 0               ; i loops from 0 to 1, ... while card i * 8 + ncolumn
+                             ; is valid card (0 <= its code < 52)
 
     .cycle:
        xor  eax, eax
@@ -1043,7 +1044,7 @@ code
 
     mov     ecx, [sizeofimagetoinvert]
     cmp     [i], ecx
-    jb	    .inverting
+    jb      .inverting
 
     jmp   .later
 
@@ -1064,8 +1065,8 @@ code
 ; if negativedraw = 1 then card drawn in inverted colors
 
   draw_card: ; draws card with left top corner
-		    ; in point ([xpos],[ypos]),
-		    ; type of card in [cardcode]
+                    ; in point ([xpos],[ypos]),
+                    ; type of card in [cardcode]
 
     cmp     [cardcode], 52   ; if code of card >= 52 then there is no card
     jae     .no_draw_card
@@ -1073,18 +1074,18 @@ code
 
     cmp     [negativedraw], 1
     jne     .no_invert1
-			     ;doing if negativedraw
+                             ;doing if negativedraw
     mov     [bgcolor], $00000000
     mov     [blackcolor], $00FFFFFF
     mov     [redcolor], $0000FFFF
 
-	     ;inverting all images
+             ;inverting all images
     call invert_all_images
 
     jmp     .colors_selection_done
 
     .no_invert1:
-			     ;doing if not negativedraw
+                             ;doing if not negativedraw
     mov     [bgcolor], $00FFFFFF
     mov     [blackcolor], $00000000
     mov     [redcolor], $00FF0000
@@ -1095,7 +1096,7 @@ code
     mov     eax, 13
 
     mov     ebx, [xpos]      ; filling card with bgcolor
-			     ; (big background rectangle)
+                             ; (big background rectangle)
     mov     edx, [bgcolor]
     add     ebx, 2
     shl     ebx, 16
@@ -1178,10 +1179,10 @@ code
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-    mov    eax, 1	     ; drawing points
+    mov    eax, 1            ; drawing points
     mov    edx, [blackcolor] ; black color for all pixels
 
-    mov    ebx, [xpos]	     ; draw top left corner
+    mov    ebx, [xpos]       ; draw top left corner
     mov    ecx, [ypos]
     inc    ebx
     add    ecx, 4
@@ -1201,7 +1202,7 @@ code
     inc    ebx
     mcall
 
-    mov    ebx, [xpos]	     ;drawing top right corner
+    mov    ebx, [xpos]       ;drawing top right corner
     mov    ecx, [ypos]
     add    ebx, cardwidth - 2
     add    ecx, 4
@@ -1220,7 +1221,7 @@ code
 
     dec    ebx
     mcall
-			     ;drawing bottom left corner
+                             ;drawing bottom left corner
     mov    ebx, [xpos]
     mov    ecx, [ypos]
     inc    ebx
@@ -1240,7 +1241,7 @@ code
 
     inc    ebx
     mcall
-			     ;drawing bottom right corner
+                             ;drawing bottom right corner
     mov    ebx, [xpos]
     mov    ecx, [ypos]
     add    ebx, cardwidth - 2
@@ -1273,7 +1274,7 @@ code
     mov    [cardfamily], edx
     mov    [cardrange], eax
 
-		     ; counting position of small card image
+                     ; counting position of small card image
     mov eax, 7
     mov ecx, 8*65536+8
     mov edx, [xpos]
@@ -1285,16 +1286,16 @@ code
 
 
     cmp    [cardfamily], 0
-    je	   .heart
+    je     .heart
 
     cmp    [cardfamily], 1
-    je	   .diamond
+    je     .diamond
 
     cmp    [cardfamily], 2
-    je	   .club
+    je     .club
 
     cmp    [cardfamily], 3
-    je	   .spade
+    je     .spade
 
     .heart:
        mov esi, [redcolor]
@@ -1342,55 +1343,55 @@ code
 
     .selnumber:
 
-    mov    ebx, [xpos]	     ; counting position of text
-			     ; in ebx, same for all cards
+    mov    ebx, [xpos]       ; counting position of text
+                             ; in ebx, same for all cards
     add    ebx, radius
     shl    ebx, 16
-    mov    bx,	word [ypos]
-    add    bx,	radius
+    mov    bx,  word [ypos]
+    add    bx,  radius
 
 
     mov    ecx, [color]
 
 
     cmp    [cardrange], 0
-    je	   .ace
+    je     .ace
 
     cmp    [cardrange], 1
-    je	   .two
+    je     .two
 
     cmp    [cardrange], 2
-    je	   .three
+    je     .three
 
     cmp    [cardrange], 3
-    je	   .four
+    je     .four
 
     cmp    [cardrange], 4
-    je	   .five
+    je     .five
 
     cmp    [cardrange], 5
-    je	   .six
+    je     .six
 
     cmp    [cardrange], 6
-    je	   .seven
+    je     .seven
 
     cmp    [cardrange], 7
-    je	   .eight
+    je     .eight
 
     cmp    [cardrange], 8
-    je	   .nine
+    je     .nine
 
     cmp    [cardrange], 9
-    je	   .ten
+    je     .ten
 
     cmp    [cardrange], 10
-    je	   .jack
+    je     .jack
 
     cmp    [cardrange], 11
-    je	   .queen
+    je     .queen
 
     cmp    [cardrange], 12
-    je	   .king
+    je     .king
 
     ;      +-------+-------+-------+
     ;      |   3   |   2   |   3   |   ace   = 1
@@ -1633,7 +1634,7 @@ code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   draw_1:
-			     ;draw center image
+                             ;draw center image
       mov     ebx, [imageaddr]
       mov     ecx, 16 * 65536 + 16
       mov     edx, [xpos]
@@ -1649,7 +1650,7 @@ code
 
 
   draw_2:
-			     ;draw top image
+                             ;draw top image
       mov     ebx, [imageaddr]
       mov     ecx, 16 * 65536 + 16
       mov     edx, [xpos]
@@ -1659,7 +1660,7 @@ code
       add     dx, margin
       mov     eax, 7
       mcall
-			     ;draw bottom image
+                             ;draw bottom image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
       add     edx, cardwidth/2 - 8
@@ -1673,7 +1674,7 @@ code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   draw_3:
-			     ;draw top left image
+                             ;draw top left image
       mov     ebx, [imageaddr]
       mov     ecx, 16 * 65536 + 16
       mov     edx, [xpos]
@@ -1683,7 +1684,7 @@ code
       add     dx, margin
       mov     eax, 7
       mcall
-			     ;draw bottom left image
+                             ;draw bottom left image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
       add     edx, margin
@@ -1692,7 +1693,7 @@ code
       add     dx, cardheight - margin - 16
       mov     eax, 7
       mcall
-			     ;draw top right image
+                             ;draw top right image
       mov     ebx, [imageaddr]
       mov     edx, [xpos]
       add     edx, cardwidth - margin - 16
@@ -1701,7 +1702,7 @@ code
       add     dx, margin
       mov     eax, 7
       mcall
-			     ;draw bottom right image
+                             ;draw bottom right image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
       add     edx, cardwidth - margin - 16
@@ -1715,7 +1716,7 @@ code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   draw_4:
-			     ;draw center left image
+                             ;draw center left image
       mov     ebx, [imageaddr]
       mov     ecx, 16 * 65536 + 16
       mov     edx, [xpos]
@@ -1725,7 +1726,7 @@ code
       add     dx, cardheight/2 - 8
       mov     eax, 7
       mcall
-			     ;draw center right image
+                             ;draw center right image
       mov     edx, [xpos]
       add     edx, cardwidth - margin - 16
       shl     edx, 16
@@ -1738,7 +1739,7 @@ code
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
   draw_5:
-			     ;draw top left image
+                             ;draw top left image
       mov     ebx, [imageaddr]
       mov     ecx, 16 * 65536 + 16
       mov     edx, [xpos]
@@ -1748,7 +1749,7 @@ code
       add     dx, cardheight * 3 / 9
       mov     eax, 7
       mcall
-			     ;draw bottom left image
+                             ;draw bottom left image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
       add     edx, 16
@@ -1757,7 +1758,7 @@ code
       add     dx, cardheight * 5 / 9
       mov     eax, 7
       mcall
-			     ;draw top right image
+                             ;draw top right image
       mov     ebx, [imageaddr]
       mov     edx, [xpos]
       add     edx, cardwidth - margin - 16
@@ -1766,7 +1767,7 @@ code
       add     dx, cardheight * 3 / 9
       mov     eax, 7
       mcall
-			     ;draw bottom right image
+                             ;draw bottom right image
       mov     ebx, [imageflipaddr]
       mov     edx, [xpos]
       add     edx, cardwidth - margin - 16
@@ -1832,25 +1833,25 @@ code
     div  ebx
 
     cmp  edx, 0
-    je	 _0
+    je   _0
 
     cmp  edx, 1
-    je	 _1
+    je   _1
 
     cmp  edx, 2
-    je	 _2
+    je   _2
 
     cmp  edx, 3
-    je	 _3
+    je   _3
 
     cmp  edx, 4
-    je	 _4
+    je   _4
 
     cmp  edx, 5
-    je	 _5
+    je   _5
 
     cmp  edx, 6
-    je	 _6
+    je   _6
 
     jmp  _end
 
@@ -1916,20 +1917,20 @@ code
     mov  edx, eax
     shl  edx, 16
     mov  bx, 100
-    div  bx		      ; dx = randseed mod 100
+    div  bx                   ; dx = randseed mod 100
 
-    mov  ax, dx 	      ; ax = randseed mod 100
+    mov  ax, dx               ; ax = randseed mod 100
     mov  bx, 4
-    mul  bx		      ; dx:ax = (randseed mod 100) * 4
+    mul  bx                   ; dx:ax = (randseed mod 100) * 4
     and  eax, $0000FFFF
     shr  edx, 16
     and  edx, $FFFF0000
-    or	 eax, edx
+    or   eax, edx
 
     mov  eax, dword [a + eax] ; eax = dword[a + (randseed mod 100) * 4]
-			    ; ~ a[randseed mod 100]
+                            ; ~ a[randseed mod 100]
     mov  ebx, dword [a + 47 * 4]
-    mul  ebx		      ; eax = low(a[randseed mod 100] * a[47])
+    mul  ebx                  ; eax = low(a[randseed mod 100] * a[47])
 
     add  eax, [randseed]
     add  eax, $4AE783A
@@ -1941,12 +1942,12 @@ code
     div  ebx
     mov  eax, edx
     mov  ebx, 4
-    mul  ebx		      ; eax = (dword [a + 6 * 4] mod 100) * 4 ~ a[6] mod 100
+    mul  ebx                  ; eax = (dword [a + 6 * 4] mod 100) * 4 ~ a[6] mod 100
 
 
     mov  eax, dword [a + eax] ; eax = dword [a + (dword [a + 6 * 4] mod 100) * 4
 
-			    ; ~ a[a[6] mod 100]
+                            ; ~ a[a[6] mod 100]
     add  eax, [randseed]
     mov  [random_value], eax
 
@@ -1977,7 +1978,18 @@ code
 ;******************************************************************************
 
 ; <--- initialised data --->
-data
+if lang eq ru
+  title db 'Солитер',0
+
+  new_game: db "Новая игра"
+  new_game_len = $ - new_game
+
+  exit: db "Выход"
+  exit_len = $ - exit
+
+  s: db "10"
+
+else
   title db 'Freecell',0
 
   new_game: db "New game"
@@ -1987,26 +1999,26 @@ data
   exit_len = $ - exit
 
   s: db "10"
+end if
+
+  negativedraw db 0          ; for procedure draw_card
 
 
-  negativedraw db 0	     ; for procedure draw_card
+  spade          file 'SPADE.BMP': 54
+  spade_updown   file 'SPADEUD.BMP': 54
+  spade_small    file 'SPADESML.BMP': 54
 
+  club           file 'CLUB.BMP': 54
+  club_updown    file 'CLUBUD.BMP': 54
+  club_small     file 'CLUBSML.BMP': 54
 
-  spade 	 file 'SPADE.BMP': 54
-  spade_updown	 file 'SPADEUD.BMP': 54
-  spade_small	 file 'SPADESML.BMP': 54
-
-  club		 file 'CLUB.BMP': 54
-  club_updown	 file 'CLUBUD.BMP': 54
-  club_small	 file 'CLUBSML.BMP': 54
-
-  diamond	 file 'DIAM.BMP': 54
+  diamond        file 'DIAM.BMP': 54
   diamond_updown file 'DIAMUD.BMP': 54
   diamond_small  file 'DIAMSML.BMP': 54
 
-  heart 	 file 'HEART.BMP': 54
-  heart_updown	 file 'HEARTUD.BMP': 54
-  heart_small	 file 'HEARTSML.BMP': 54
+  heart          file 'HEART.BMP': 54
+  heart_updown   file 'HEARTUD.BMP': 54
+  heart_small    file 'HEARTSML.BMP': 54
 
 
   scNotSelected = 0
@@ -2015,10 +2027,10 @@ data
 
 
   whereisselcard  dd scNotSelected
-  columnofselcard dd 0	     ; if WhereIsSelCard = scGeneralCells
-			     ;    then this can be 0 .. 7,
-			     ; if scTempCells then - 0 .. 3
-			     ; if scNotSelected - no matter
+  columnofselcard dd 0       ; if WhereIsSelCard = scGeneralCells
+                             ;    then this can be 0 .. 7,
+                             ; if scTempCells then - 0 .. 3
+                             ; if scNotSelected - no matter
 
   tempcells: times 4 db 52;
   homecells: times 4 db 52 ; maximal card code is 51
@@ -2041,54 +2053,54 @@ udata
   redcolor rd 1
 
 
-  lastparam rd 1		  ;
+  lastparam rd 1                  ;
 
-  randomcard rd 1		 ; for new_game_click
+  randomcard rd 1                ; for new_game_click
 
-  columnclicked rd 1		 ; used in common_card_click, temp_cell_click,
-  cardclicked rd 1		 ;    home_cell_click
-  clickedcardrange rd 1 	 ;
-  clickedcardfamily rd 1	 ;
-
-
-  selcardcode rd 1		 ; for procedure get_sel_card_code_and_addr
-  selcardaddr rd 1		 ;
-
-  column rd 1			 ; for procedure draw_window
-  row rd 1			    ;
-
-  imagetoinvert rd 1		 ; for procedure invert_image_colors
-  sizeofimagetoinvert rd 1	 ;
-
-  ncolumn rd 1			 ; for procedure get_row_of_top_card_in_column
-  topcardrow rd 1		 ;
+  columnclicked rd 1             ; used in common_card_click, temp_cell_click,
+  cardclicked rd 1               ;    home_cell_click
+  clickedcardrange rd 1          ;
+  clickedcardfamily rd 1         ;
 
 
-  color rd 1			 ; for procedue draw_card
-  imageaddr rd 1		 ;
-  imageflipaddr rd 1		 ;
+  selcardcode rd 1               ; for procedure get_sel_card_code_and_addr
+  selcardaddr rd 1               ;
 
-  cardcode rd 1 		 ; used in differrent procedures
-  cardrange rd 1		 ; cardcode = cardrange * 4 + cardfamily
-  cardfamily rd 1		 ;
+  column rd 1                    ; for procedure draw_window
+  row rd 1                          ;
 
-  a: times 100 rd 1		 ; for function Random
-  range rd 1			 ;
-  random_value rd 1		 ;
-  randseed rd 1 		 ;
-  TimesCalled rb 1		 ;
+  imagetoinvert rd 1             ; for procedure invert_image_colors
+  sizeofimagetoinvert rd 1       ;
 
-  j rd 1			 ; number of card (in array cards) drawn now
-  i rd 1			 ; used in many procedures of 1-st level
+  ncolumn rd 1                   ; for procedure get_row_of_top_card_in_column
+  topcardrow rd 1                ;
+
+
+  color rd 1                     ; for procedue draw_card
+  imageaddr rd 1                 ;
+  imageflipaddr rd 1             ;
+
+  cardcode rd 1                  ; used in differrent procedures
+  cardrange rd 1                 ; cardcode = cardrange * 4 + cardfamily
+  cardfamily rd 1                ;
+
+  a: times 100 rd 1              ; for function Random
+  range rd 1                     ;
+  random_value rd 1              ;
+  randseed rd 1                  ;
+  TimesCalled rb 1               ;
+
+  j rd 1                         ; number of card (in array cards) drawn now
+  i rd 1                         ; used in many procedures of 1-st level
   k rd 1
 
   cardwidth = 80
   cardheight = 120
-  radius = 4			 ; not recommended to change
-  rowsize = 30			 ; distance between top poins
-				 ;of cards in neighboring rows
-  columnspace = 5		 ; minimal space between cards
-  margin = 14			    ; margin of every card
+  radius = 4                     ; not recommended to change
+  rowsize = 30                   ; distance between top poins
+                                 ;of cards in neighboring rows
+  columnspace = 5                ; minimal space between cards
+  margin = 14                       ; margin of every card
 
   topbuttonsbarheight = 20
 
