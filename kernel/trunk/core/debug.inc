@@ -82,7 +82,7 @@ debug_suspend:
         cli
         mov     eax, ebx
         call    pid_to_slot
-        test    eax, eax
+        shl     eax, 5
         jz      .ret
         mov     bl, [CURRENT_TASK+eax+TASKDATA.state] ; process state
 	test	bl, bl
@@ -116,7 +116,7 @@ debug_resume:
         cli
         mov     eax, ebx
         call    pid_to_slot
-        test    eax, eax
+        shl     eax, 5
         jz      .ret
         call    do_resume
 .ret:	sti
