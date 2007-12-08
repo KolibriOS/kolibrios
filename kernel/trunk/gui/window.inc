@@ -1544,6 +1544,13 @@ checkwindows:
 	mov	eax,[screen_workarea.bottom]
 	sub	eax,[screen_workarea.top]
     @@: mov	[edi+WDATA.box.height],eax
+        add     eax, [edi+WDATA.box.top]
+        cmp     eax, [ScreenHeight]
+        jbe     @f
+        mov     eax, [ScreenHeight]
+        sub     eax, [edi+WDATA.box.height]
+        mov     [edi+WDATA.box.top], eax
+    @@: call    check_window_position
 	call	set_window_clientbox
 
       no_window_shade:
