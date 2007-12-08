@@ -325,7 +325,6 @@ PngParse:
     add  esi,8
     cmp  dword[esi+4],'IHDR'
     rep_err e,52, 18
-    or   [Flags],PNG_MODE
     memcpy_esi PNG_info,13,8
     mov  eax,[PNG_info.Width]
     bswap eax
@@ -348,6 +347,7 @@ PngParse:
     add  esi,25
     cmp  byte[esi-5],0
     rep_err e,52,29
+    or   [Flags],PNG_MODE
   .nxt_sec:
     lodsd
     bswap eax ; eax - section size
