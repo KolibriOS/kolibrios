@@ -5203,12 +5203,12 @@ system_shutdown:          ; shut down the system
 yes_shutdown_param:
            cli
 
-           mov  eax, kernel_file ; load kernel.mnt to 0x8000:0
+           mov  eax, kernel_file ; load kernel.mnt to 0x7000:0
            push 12
            pop  esi
            xor  ebx,ebx
            or   ecx,-1
-           mov  edx, OS_BASE+0x80000
+           mov  edx, OS_BASE+0x70000
            call fileread
 
            mov  esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0

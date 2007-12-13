@@ -233,19 +233,25 @@ restart_kernel_4000:
         cli
 
         push    ds
-        pop    es
-        mov    cx, 0x8000
+        pop     es
+        mov     cx, 0x8000
         push    cx
-        mov    ds, cx
-        xor    si, si
-        xor    di, di
-        rep    movsw
-        push    0x9000
-        pop    ds
+        push    0x7000
+        pop     ds
+        xor     si, si
+        xor     di, di
+        rep     movsw
+        pop     cx
+        mov     ds, cx
         push    0x2000
-        pop    es
-        pop    cx
-        rep    movsw
+        pop     es
+        rep     movsw
+        push    0x9000
+        pop     ds
+        push    0x3000
+        pop     es
+        mov     cx, 0xE000/2
+        rep     movsw
 
         wbinvd  ; write and invalidate cache
 
