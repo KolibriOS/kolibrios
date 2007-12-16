@@ -137,4 +137,10 @@ image:
 
       exit_image:
 
+      mov edi,[PointerForImage]
+      add edi,control_header_size
+      mov esi,dword Image
+      mov ecx,im_control_data_size
+      rep movsb
+
       ret 8

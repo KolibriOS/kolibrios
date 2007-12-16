@@ -117,6 +117,11 @@ progress_bar:
 
            and [ProgressBar.type],deactivate_trap
 
+           cmp [ProgressBar.progress],dword 0.02
+           jae nofull_redraw
+                call draw_all_progress_bar
+           nofull_redraw:
+
            call draw_progress
 
          no_draw_progress_bar:
@@ -140,6 +145,12 @@ progress_bar:
 
 
       exit_progress_bar:
+
+      mov edi,[PointerForProgressBar]
+      add edi,control_header_size
+      mov esi,dword ProgressBar
+      mov ecx,pb_control_data_size
+      rep movsb
 
       ret 8
 

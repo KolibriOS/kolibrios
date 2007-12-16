@@ -160,4 +160,10 @@ text:
 
       exit_text:
 
+      mov edi,[PointerForText]
+      add edi,control_header_size
+      mov esi,dword Text
+      mov ecx,tx_control_data_size
+      rep movsb
+
       ret 8
