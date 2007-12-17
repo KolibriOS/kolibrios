@@ -103,25 +103,25 @@ iglobal
   align 4
   servetable:
 
-      dd sys_drawwindow          ; 0-DrawWindow
-      dd syscall_setpixel        ; 1-SetPixel
-      dd 0
-      dd 0
-      dd syscall_writetext       ; 4-WriteText
-      dd delay_hs                ; 5-DelayHs
-      dd syscall_openramdiskfile ; 6-OpenRamdiskFile
-      dd 0
-      dd sys_button              ; 8-DefineButton
-      dd sys_cpuusage            ; 9-GetProcessInfo
       dd 0
       dd 0
       dd 0
       dd 0
       dd 0
-      dd sys_background          ; 15-bgr
       dd 0
       dd 0
-      dd sys_system              ; 18-System Services
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
+      dd 0
       dd 0
       dd sys_midi                ; 20-ResetMidi and OutputMidi
       dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
@@ -183,25 +183,25 @@ iglobal
   align 4
   servetable2:
 
-      dd cross_order             ; 0-DrawWindow
-      dd cross_order             ; 1-SetPixel
+      dd sys_drawwindow          ; 0-DrawWindow
+      dd syscall_setpixel        ; 1-SetPixel
       dd sys_getkey              ; 2-GetKey
       dd sys_clock               ; 3-GetTime
-      dd cross_order             ; 4-WriteText
-      dd cross_order             ; 5-DelayHs
-      dd cross_order             ; 6-OpenRamdiskFile
+      dd syscall_writetext       ; 4-WriteText
+      dd delay_hs                ; 5-DelayHs
+      dd syscall_openramdiskfile ; 6-OpenRamdiskFile
       dd syscall_putimage        ; 7-PutImage
-      dd cross_order             ; 8-DefineButton
-      dd cross_order             ; 9-GetProcessInfo
+      dd sys_button              ; 8-DefineButton
+      dd sys_cpuusage            ; 9-GetProcessInfo
       dd sys_waitforevent        ; 10-WaitForEvent
       dd sys_getevent            ; 11-CheckForEvent
       dd sys_redrawstat          ; 12-BeginDraw and EndDraw
       dd syscall_drawrect        ; 13-DrawRect
       dd syscall_getscreensize   ; 14-GetScreenSize
-      dd cross_order             ; 15-bgr
+      dd sys_background          ; 15-bgr
       dd sys_cachetodiskette     ; 16-FlushFloppyCache
       dd sys_getbutton           ; 17-GetButton
-      dd cross_order             ; 18-System Services
+      dd sys_system              ; 18-System Services
       dd paleholder              ; 19-reserved
       dd cross_order             ; 20-ResetMidi and OutputMidi
       dd cross_order             ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.

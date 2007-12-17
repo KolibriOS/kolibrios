@@ -76,34 +76,34 @@ drawbuttonframes:
 	push  ecx
 	push  edx
 
-	shr   eax,16
 	shr   ebx,16
-	mov   edx,[TASK_BASE]
+	shr   ecx,16
+	mov   eax,[TASK_BASE]
 
-		add   eax,[edx-twdw + WDATA.box.left]
-		add   ebx,[edx-twdw + WDATA.box.top]
-	mov   cx,ax
-	mov   dx,bx
-	shl   eax,16
-	shl   ebx,16
-	mov   ax,cx
-	mov   bx,dx
-	add   ax,word [esp+12]
-	mov   esi,ebx
-	mov   edi,0
-	mov   ecx,[esp+0]
-	call  incecx
-	call  [draw_line]
+	add   ebx,[eax-twdw + WDATA.box.left]
+	add   ecx,[eax-twdw + WDATA.box.top]
+	mov     eax, ebx
+	shl     eax, 16
+	mov     ax, bx
+	add     ax, word [esp+8]
+	mov     ebx, ecx
+	shl     ebx, 16
+	mov     bx, cx
+	push    ebx
+	xor     edi, edi
+	mov     ecx, esi
+	call    incecx
+	call    [draw_line]
 
-	movzx edx,word [esp+8]
+	movzx edx,word [esp+4+4]
 	add   ebx,edx
 	shl   edx,16
 	add   ebx,edx
-	mov   ecx,[esp+0]
+	mov   ecx,esi
 	call  dececx
 	call  [draw_line]
 
-	mov   ebx,esi
+	pop     ebx
 	push  edx
 	mov   edx,eax
 	shr   edx,16
@@ -111,22 +111,19 @@ drawbuttonframes:
 	mov   edx,ebx
 	shr   edx,16
 	mov   bx,dx
-	mov   dx,[esp+8+4]
+	mov   dx,[esp+4+4]
 	add   bx,dx
 	pop   edx
-	mov   edi,0
-	mov   ecx,[esp+0]
+	mov   ecx,esi
 	call  incecx
 	call  [draw_line]
 
-	mov   esi,edx
-	mov   dx,[esp+12]
+	mov   dx,[esp+8]
 	add   ax,dx
 	shl   edx,16
 	add   eax,edx
 	add   ebx,1*65536
-	mov   edx,esi
-	mov   ecx,[esp+0]
+	mov   ecx,esi
 	call  dececx
 	call  [draw_line]
 
@@ -173,162 +170,129 @@ button_dececx:
 
 sys_button:
 
-	push	edi
-        mov     edi,[current_slot]
-	rol	eax,16
-        add     ax,word[edi+APPDATA.wnd_clientbox.left]
-	rol	eax,16
-	rol	ebx,16
-        add     bx,word[edi+APPDATA.wnd_clientbox.top]
-	rol	ebx,16
-	pop	edi
+        mov     eax, [current_slot]
+        rol     ebx, 16
+        add     bx, word [eax+APPDATA.wnd_clientbox.left]
+        rol     ebx, 16
+        rol     ecx, 16
+        add     cx, word [eax+APPDATA.wnd_clientbox.top]
+        rol     ecx, 16
 .forced:
 
-	test  ecx,0x80000000
-	jnz   remove_button
+        test    edx, 0x80000000
+        jnz     remove_button
 
-	push  esi
-	push  edi
-	push  eax ; <x,xs>
-	push  ebx ; <y,ys>
-	push  ecx ; <id>
-	push  edx
+        or      bx, bx
+        jle     noaddbutt
+        or      cx, cx
+        jle     noaddbutt
 
-	or    ax,ax
-	jle   noaddbutt
-	or    bx,bx
-	jle   noaddbutt
+        test    edx, 0x40000000
+        jnz     button_no_draw
 
-	test  ecx,0x40000000
-	jnz   button_no_draw
-
-	pushad			     ; button body
-	push  ebx
-	shr   eax,16
-	shr   ebx,16
-	mov   edx,[TASK_BASE]
-	mov   esi,[edx-twdw + WDATA.box.left]
-	mov   edi,[edx-twdw + WDATA.box.top]
-	add   eax,esi
-	add   ebx,edi
-	mov   cx,ax
-	mov   dx,bx
-	shl   eax,16
-	shl   ebx,16
-	mov   ax,cx
-	mov   bx,dx
-	movzx ecx,word [4+32+esp+12]
-	add   eax,ecx
-	mov   ecx,[4+32+esp+0]
-	cmp   [buttontype],dword 0
-	je    @f
-	call  incecx2
-       @@:
-	movzx edi,word [esp]
-
-	pop   edx
-	and   edx, 0xFFFF
+        pushad			     ; button body
+        movzx   edi, cx
+        shr     ebx, 16
+        shr     ecx, 16
+        mov     eax, [TASK_BASE]
+        add     ebx, [eax-twdw + WDATA.box.left]
+        add     ecx, [eax-twdw + WDATA.box.top]
+        mov     eax, ebx
+        shl     eax, 16
+        mov     ax, bx
+        add     ax, word [esp+16]
+        mov     ebx, ecx
+        shl     ebx, 16
+        mov     bx, cx
+        mov     ecx, esi
+        cmp     [buttontype], 0
+        je      @f
+        call    incecx2
+@@:
+        mov     edx, edi
 
 .newline:
-	call  button_dececx
-	push  edi
-	xor   edi, edi
-	call  [draw_line]
-	pop   edi
-	add   ebx,1*65536+1   ; [ y start | y end ]
-	dec   edx
-	jnz   .newline
-	popad
+        call    button_dececx
+        push    edi
+        xor     edi, edi
+        call    [draw_line]
+        pop     edi
+        add     ebx, 1*65536+1 ; [ y start | y end ]
+        dec     edx
+        jnz     .newline
+        popad
 
-	call  drawbuttonframes
+        call    drawbuttonframes
 
 button_no_draw:
 
-	and   ecx,0xffff
+        push    edi
+        mov     edi, [BTN_ADDR]
+        movzx   eax, word [edi]
+        cmp     eax, max_buttons
+        jge     noaddbutt
+        inc     eax
+        mov     [edi], ax
 
-	mov   edi,[BTN_ADDR]
-	movzx eax,word [edi]
-	cmp   eax,max_buttons
-	jge   noaddbutt
-	inc   eax
-	mov   [edi],ax
+        shl     eax, 4
+        add     edi, eax
 
-	shl   eax,4
-	add   eax,edi
+        mov     ax, [CURRENT_TASK]
+        stosw
+        mov     ax, dx
+        stosw               ; button id number: bits 0-15
+        mov     eax, ebx
+        rol     eax, 16
+        stosd               ; x start | x size
+        mov     eax, ecx
+        rol     eax, 16
+        stosd               ; y start | y size
+        mov     eax, edx
+        shr     eax, 16
+        stosw               ; button id number: bits 16-31
 
-	mov   bx,[CURRENT_TASK]
-	mov   [eax],bx
-
-	add   eax,2	    ; save button id number
-	mov   ebx,[esp+4]
-	mov   [eax],bx	    ; bits 0-15
-	shr   ebx,16
-	mov   [eax-2+0xc],bx; bits 16-31
-	add   eax,2	    ; x start
-	mov   bx,[esp+12+2]
-	mov   [eax],bx
-	add   eax,2	    ; x size
-	mov   bx,[esp+12+0]
-	mov   [eax],bx
-	add   eax,2	    ; y start
-	mov   bx,[esp+8+2]
-	mov   [eax],bx
-	add   eax,2	    ; y size
-	mov   bx,[esp+8+0]
-	mov   [eax],bx
+        pop     edi
 
 noaddbutt:
 
-	pop   edx
-	pop   ecx
-	pop   ebx
-	pop   eax
-	pop   edi
-	pop   esi
-
-	ret
+        ret
 
 
 remove_button:
 
-    and  ecx,0x7fffffff
+        and     edx, 0x7fffffff
 
 rnewba2:
 
-    mov   edi,[BTN_ADDR]
-    mov   eax,edi
-    movzx ebx,word [edi]
-    inc   bx
+        mov     edi, [BTN_ADDR]
+        mov     eax, edi
+        movzx   ebx, word [edi]
+        inc     ebx
 
 rnewba:
 
-    dec   bx
-    jz	  rnmba
+        dec     ebx
+        jz      rnmba
 
-    add   eax,0x10
+        add     eax, 0x10
 
-    mov   dx,[CURRENT_TASK]
-    cmp   dx,[eax]
-    jnz   rnewba
+        mov     cx, [CURRENT_TASK]
+        cmp     cx, [eax]
+        jnz     rnewba
+        cmp     dx, [eax+2]
+        jnz     rnewba
 
-    cmp   cx,[eax+2]
-    jnz   rnewba
-
-    pushad
-    mov   ecx,ebx
-    inc   ecx
-    shl   ecx,4
-    mov   ebx,eax
-    add   eax,0x10
-    call  memmove
-    dec   dword [edi]
-    popad
-
-    jmp   rnewba2
+        lea     ecx, [ebx+1]
+        shl     ecx, 4
+        mov     ebx, eax
+        add     eax, 0x10
+        call    memmove
+        dec     dword [edi]
+        jmp     rnewba2
 
 rnmba:
 
-    ret
+        ret
 
 find_pressed_button_frames:
 
@@ -618,11 +582,11 @@ checkbuttons:
     mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
 ;..................................... start 5/5 : modified by vhanla .............................
     ; check coordinates
-    jmp @f
+iglobal
     mx dw 0x0 ; keeps the x mouse's position when it was clicked
     my dw 0x0 ; keeps the y mouse's position when it was clicked
     bPressedMouseXY_B db 0x0
-    @@:
+endg
 
    pusha
   ; mouse x >= button x ?

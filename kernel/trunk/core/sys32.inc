@@ -760,8 +760,8 @@ term9:
     jnz  @f
     and  dword [ecx], 0
     pushad
-    xchg eax, ebx
-    mov  eax, 2
+    xchg eax, ecx
+    mov  ebx, 2
     call sys_system
     popad
 @@:

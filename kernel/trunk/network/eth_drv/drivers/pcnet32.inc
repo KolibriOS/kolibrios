@@ -32,10 +32,10 @@ $Revision$
 ; push esi
 ; mov esi,.__xyz1
 ; call sys_msg_board_str
-; push eax
-; mov eax,1
+; push ebx
+; mov ebx,1
 ; call delay_hs
-; pop eax
+; pop ebx
 ; jmp .__xyz2
 ;.__xyz1:
 ; db X

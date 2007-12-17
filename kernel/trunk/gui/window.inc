@@ -1333,7 +1333,7 @@ checkwindows:
 	mov   [WIN_TEMP_XY], esi
 
 	pushad		 ; wait for putimages to finish
-;        mov   eax,5
+;        mov   ebx,5
 ;        call  delay_hs
     mov   eax,[edi + WDATA.box.left]
 	mov   [npx],eax

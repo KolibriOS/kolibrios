@@ -70,10 +70,10 @@ debug_terminate:
 ; in: ebx=pid
 	call	get_debuggee_slot
 	jc	debug_detach.ret
-	mov	ebx, eax
-	shr	ebx, 5
+	mov	ecx, eax
+	shr	ecx, 5
 	push	2
-	pop	eax
+	pop	ebx
 	jmp	sys_system
 
 debug_suspend:
