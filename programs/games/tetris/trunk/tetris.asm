@@ -16,6 +16,7 @@
 ;
 ;
 ; Changelog:
+; 30.12.2007 - cleaning keybuffer before reading an key - Gluk
 ; 09.11.2005 - fix for work under MeosDebug & better random - Andrey Halyavin
 ; 23.09.2005 - fixed bug, when 011111111111111-like sequence interpreted
 ;              as _11111111111111 in check_full_line - Sergey Kuzmin aka Wildwest
@@ -167,14 +168,14 @@ adr400:         movzx edx,byte [current_block_color]
                 int 0x40
                 jmp still
 
-key:            mov  eax,2
+key:            mov  eax,2 ; Gluk
                 int  0x40
 				cmp eax,1
 				jne getkeyi
 				mov ah,dh
 				jmp adr32
 
-getkeyi:		mov dh,ah
+getkeyi:		mov dh,ah ; Gluk
 				jmp key
 
 adr32:          cmp ah,LEFT_KEY
