@@ -57,9 +57,8 @@ use32
                 dd      I_END+1024    ; reguired amount of memory
                 dd      I_END+1024    ; esp
                 dd      0x0,0x0       ; I_PARAM, I_ICON
-
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include 'macros.inc'
 
 
 START:                          ; start of execution
@@ -68,7 +67,7 @@ START:                          ; start of execution
     ; --  quickcode - start
 
     mov   eax,3
-    mcall
+    int   0x40
     mov   cl,16
     ror   eax,cl ; to make seconds more significant
     mov   [generator],eax
@@ -88,7 +87,7 @@ still:
 attesa:
 
     mov  eax,11                 ; get event
-    mcall
+    int  0x40
 
     cmp  eax,1                  ; redraw request ?
     jz   red
@@ -126,7 +125,7 @@ draw:           movzx edx,byte [current_block_color]
                 call  draw_block
                 mov   eax,5
                 movzx ebx,byte [delay]
-                mcall
+                int   0x40
                 jmp   still
 
 block_crash:    dec dword [current_block_y]
@@ -141,14 +140,14 @@ block_crash:    dec dword [current_block_y]
                 call check_crash
                 jz adr400
 aspetta:        mov eax,10
-                mcall
+                int 0x40
                 cmp eax,1
                 jne adr10000
                 call draw_window
 adr10000:       cmp eax,3
                 jne aspetta
 new_game:       mov eax,17
-                mcall
+                int 0x40
                 cmp ah,1
                 jnz adr401
                 jmp end_program
@@ -165,11 +164,18 @@ adr400:         movzx edx,byte [current_block_color]
                 call draw_block
                 mov eax,5
                 movzx ebx,byte [delay]
-                mcall
+                int 0x40
                 jmp still
 
 key:            mov  eax,2
-                mcall
+                int  0x40
+				cmp eax,1
+				jne getkeyi
+				mov ah,dh
+				jmp adr32
+
+getkeyi:		mov dh,ah
+				jmp key
 
 adr32:          cmp ah,LEFT_KEY
                 jne adr_30
@@ -211,7 +217,7 @@ adr62:          jmp scendi
 
 button:                       ; button
     mov  eax,17
-    mcall
+    int  0x40
     cmp  ah,1                   ; button id=1 ?
     jz  end_program
     cmp ah,2
@@ -222,7 +228,7 @@ button:                       ; button
 
 end_program:
     or   eax,-1                ; close this program
-    mcall
+    int  0x40
 
 go_new_game:
     jmp new_game
@@ -246,20 +252,20 @@ draw_window:
     mov  ebx,3
     mov  ecx,sc
     mov  edx,sizeof.system_colors
-    mcall
+    int  0x40
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,1                     ; 1, start of draw
-    mcall
+    int  0x40
 
                                  ; DRAW WINDOW
   xor  eax,eax                   ; function 0 : define and draw window
   mov  ebx,320*65536+(LEN_X-BORDER_LEFT-BORDER_RIGHT)*ADOBE_SIZE+X_LOCATION*2
   mov  ecx,25*65536+ (LEN_Y-BORDER_TOP-BORDER_BOTTOM)*ADOBE_SIZE+Y_LOCATION+30
   mov  edx,[sc.work]             ; color of work area RRGGBB
-  or   edx,0x14000000
-  mov  edi,title                ; WINDOW LABEL
-  mcall
+  or   edx,0x13000000
+  mov  edi,header                ; WINDOW LABEL
+  int  0x40
 
                                     
     mov eax,8
@@ -267,26 +273,26 @@ draw_window:
     mov ecx,378*65536+18
     mov edx,2
     mov esi,[sc.work_button]
-    mcall
+    int 0x40
 ;/////////////////////////////////////////////// Wildwest's  'Pause' button
     ;mov eax,8
     mov ebx,132*65536+102
     mov ecx,378*65536+18
     mov edx,3
     mov esi,[sc.work_button];
-    mcall
+    int 0x40
 
     mov  eax,4                      ; function 4 : write text to window
     mov  ebx,164*65536+384          ; [x start] *65536 + [y start]
     mov  ecx,[sc.work_button_text]  ; color of text RRGGBB
     or   ecx,0x90000000
     mov  edx,labe                   ; pointer to text
-    mcall
+    int  0x40
 ;///////////////////////////////////////////////
     ;mov eax,4
     mov ebx,49*65536+384
     mov edx,game_finished
-    mcall
+    int 0x40
     call draw_table
 
     movzx edx,byte [current_block_color]
@@ -298,13 +304,13 @@ draw_window:
     or   ecx,0x90000000    
     mov  edx,text
     mov  eax,4
-    mcall
+    int  0x40
 
     call write_score
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    mcall
+    int  0x40
 
     ret
 
@@ -440,12 +446,12 @@ x_draw:         push edi
               ;  pusha
               ;  mov eax,5
               ;  mov ebx,10
-              ;  mcall
+              ;  int 0x40
               ;  popa
                 mov eax,13
                 movzx edx,byte [esi]
                 mov edx,[color_table+edx*4]
-                mcall
+                int 0x40
                 call draw_frames
                 inc esi
                 add ebx,65536*ADOBE_SIZE
@@ -494,7 +500,7 @@ adr_122:        mov dword [TMP_0],4
 adr_121:        cmp byte [edi],0
                 je adr_120
 
-                mcall
+                int 040h
 
                 call draw_frames
 
@@ -518,14 +524,14 @@ draw_frames:
                  mov bx,1
                  add edx,0x282828
                  mov eax,13
-                 mcall
+                 int 0x40
                  popa
 
                  pusha
                  mov cx,1
                  add edx,0x282828
                  mov eax,13
-                 mcall
+                 int 0x40
                  popa
 
                  pusha
@@ -537,7 +543,7 @@ draw_frames:
                  shr  edx,1
                  and  edx,0x7f7f7f
                  mov  eax,13
-                 mcall
+                 int  0x40
                  popa
 
                  pusha
@@ -549,7 +555,7 @@ draw_frames:
                  shr  edx,1
                  and  edx,0x7f7f7f
                  mov  eax,13
-                 mcall
+                 int  0x40
                  popa
 
                  ret
@@ -619,7 +625,7 @@ random:         mov eax,[generator]
                 push ebx
                 mov eax,26
                 mov ebx,9
-                mcall
+                int 0x40
                 pop ebx
                 xor eax,0xdeadbeef
                 add eax,[generator]
@@ -650,7 +656,7 @@ write_score:
     mov  esi,[size_of_number_str]
     mov  edi,[sc.work]
     mov  eax,4
-    mcall
+    int  0x40
     ret
 
 ; DATA AREA
@@ -826,14 +832,14 @@ block_table:
 
 if lang eq ru
 
-  title         db 'íÖíêàë 1.61 - ëíêÖãäà à èêéÅÖã',0
+  header         db 'íÖíêàë 1.61 - ëíêÖãäà à èêéÅÖã',0
   labe           db 'èÄìáÄ',0
   text           db 'éÁ™®:',0
   game_finished: db 'çéÇÄü',0
 
 else
 
-  title         db 'TETRIS 1.61 - ARROWS & SPACE',0
+  header         db 'TETRIS 1.61 - ARROWS & SPACE',0
   labe           db 'PAUSE',0
   text           db 'Score:',0
   game_finished: db 'NEW GAME',0
