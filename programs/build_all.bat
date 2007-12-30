@@ -69,6 +69,7 @@ fasm system\kbd\trunk\kbd.ASM %BIN%\kbd
 fasm system\launcher\trunk\launcher.asm %BIN%\launcher
 fasm system\menu\trunk\menu.asm %BIN%\@menu
 fasm system\mgb\trunk\mgb.asm %BIN%\mgb
+fasm system\mousemul\trunk\mousemul.asm %BIN%\mousemul
 fasm system\PANEL\trunk\@PANEL.ASM %BIN%\@PANEL
 fasm system\pcidev\trunk\pcidev.asm %BIN%\pcidev
 fasm system\RB\trunk\@RB.ASM %BIN%\@RB
