@@ -2666,10 +2666,10 @@ coff_formatter:
 	mov	[current_line],eax
 	mov	eax,[esi+8]
 	test	byte [eax+8],1
-	jz	undefined_symbol
+	jz	undefined_coff_public
 	mov	cx,[current_pass]
 	cmp	cx,[eax+16]
-	jne	undefined_symbol
+	jne	undefined_coff_public
 	mov	cl,[eax+11]
 	or	cl,cl
 	jz	public_constant
@@ -2678,6 +2678,10 @@ coff_formatter:
 	cmp	cl,2
 	je	public_symbol_type_ok
 	jmp	invalid_use_of_symbol
+      undefined_coff_public:
+	mov	eax,[eax+24]
+	mov	[error_info],eax
+	jmp	undefined_symbol
       check_64bit_public_symbol:
 	cmp	cl,4
 	jne	invalid_use_of_symbol
@@ -3092,10 +3096,10 @@ elf_formatter:
 	jne	invalid_argument
 	mov	ebx,[esi+8]
 	test	byte [ebx+8],1
-	jz	undefined_symbol
+	jz	undefined_public
 	mov	ax,[current_pass]
 	cmp	ax,[ebx+16]
-	jne	undefined_symbol
+	jne	undefined_public
 	mov	dl,[ebx+11]
 	or	dl,dl
 	jz	public_absolute
@@ -3109,6 +3113,10 @@ elf_formatter:
 	jne	invalid_use_of_symbol
 	mov	dx,[eax+0Eh]
 	jmp	section_for_public_ok
+      undefined_public:
+	mov	eax,[ebx+24]
+	mov	[error_info],eax
+	jmp	undefined_symbol
       elf64_public:
 	cmp	dl,4
 	jne	invalid_use_of_symbol

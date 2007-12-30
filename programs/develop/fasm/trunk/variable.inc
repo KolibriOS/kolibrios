@@ -57,6 +57,7 @@ undefined_data_start dd ?
 undefined_data_end dd ?
 counter dd ?
 counter_limit dd ?
+error_info dd ?
 error_line dd ?
 error dd ?
 display_buffer dd ?
@@ -122,3 +123,4 @@ logical_value_wrapping db ?
 
 characters rb 100h
 converted rb 100h
+message rb 200h

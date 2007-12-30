@@ -956,7 +956,7 @@ calculate_expression:
 	cmp	ax,[ebx+16]
 	je	label_defined
 	test	byte [ebx+8],4
-	jnz	label_undefined
+	jnz	label_out_of_scope
 	test	byte [ebx+9],1
 	jz	label_defined
 	mov	eax,[ebx]
@@ -1053,7 +1053,22 @@ calculate_expression:
 	je	timestamp_label
 	cmp	eax,3
 	je	org_origin_label
+	mov	edx,invalid_value
+	jmp	error_undefined
+      label_out_of_scope:
+	mov	edx,symbol_out_of_scope
+	mov	eax,[ebx+24]
+	cmp	[error_line],0
+	jne	error_undefined
+	mov	[error_info],eax
+	jmp	error_undefined
       label_undefined:
+	mov	edx,undefined_symbol
+	cmp	[error_line],0
+	jne	error_undefined
+	mov	eax,[ebx+24]
+	mov	[error_info],eax
+      error_undefined:
 	cmp	[current_pass],1
 	ja	undefined_value
       force_next_pass:
@@ -1069,7 +1084,7 @@ calculate_expression:
 	jne	calculation_loop
 	mov	eax,[current_line]
 	mov	[error_line],eax
-	mov	[error],undefined_symbol
+	mov	[error],edx
 	jmp	calculation_loop
       calculate_add:
 	mov	ecx,[ebx+16]

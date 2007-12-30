@@ -544,6 +544,7 @@ include 'formats.inc'
 include 'x86_64.inc'
 include 'tables.inc'
 include 'symbdump.inc'
+include 'messages.inc'
 
 title db appname,VERSION_STRING,0
 
@@ -585,6 +586,8 @@ program_base dd ?
 buffer_address dd ?
 memory_setting dd ?
 start_time dd ?
+
+predefinitions rb 1000h
 
 dbgfilename     rb      MAX_PATH+4
 
