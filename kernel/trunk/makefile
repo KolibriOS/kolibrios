@@ -1,7 +1,7 @@
 FASM=fasm
 FLAGS=-m 65536
 languages=en|ru|ge|et
-drivers_src=sound sis infinity ati2d vmode
+drivers_src=sound sis infinity ensoniq ps2mouse uart ati2d vmode
 skins_src=default
 
 .PHONY: all kernel drivers skins clean
