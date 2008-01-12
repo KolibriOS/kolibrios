@@ -1,12 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2006-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;   (C) copyright Serge 2006
-;   email: infinity_sound@mail.ru
+; Serge 2006-2008
+; email: infinity_sound@mail.ru
 
 format MS COFF
 
@@ -27,8 +27,11 @@ include 'imports.inc'
 
 FORCE_MMX         equ 0  ;set to 1 to force use mmx or
 FORCE_MMX_128     equ 0  ;integer sse2 extensions
-                        ;and reduce driver size
+                         ;and reduce driver size
+
 ;USE_SSE          equ 0
+
+USE_SSE2_MIXER    equ 0  ;floating point mixer. Disabled by default
 
 DEBUG             equ 1
 
@@ -897,6 +900,7 @@ proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
            call .calc
 
            fistp word [edx+STREAM.l_amp]
+           fstp dword [edx+STREAM.l_amp_f]
            fstp st0
 
            fild word [r_vol]
@@ -904,6 +908,7 @@ proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
            call .calc
 
            fistp word [edx+STREAM.r_amp]
+           fstp dword [edx+STREAM.r_amp_f]
            fstp st0
 
            fnclex
@@ -923,6 +928,7 @@ proc set_vol_param stdcall, l_vol:dword,r_vol:dword,pan:dword
            fld1
            faddp st1, st0
            fscale
+           fld st0
            fimul dword [_32767]
            ret 0
 endp
@@ -1064,12 +1070,20 @@ do_mix_list:
 .add_buff:
            mov ecx, [ebx+STREAM.out_rp]
            mov [eax],ecx
+
+if USE_SSE2_MIXER
+           mov edi, dword [ebx+STREAM.l_amp_f]
+           mov [eax+4], edi
+           mov edi, dword [ebx+STREAM.r_amp_f]
+           mov [eax+8], edi
+else
            mov edi, dword [ebx+STREAM.l_amp]
            mov [eax+4], edi
+end if
            add [ebx+STREAM.out_rp], 512
            sub [ebx+STREAM.out_count], 512
 
-           add eax, 8
+           add eax, 12
            inc edx
 .next:
            mov ebx, [ebx+STREAM.str_fd]

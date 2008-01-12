@@ -1,12 +1,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2006-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;   (C) copyright Serge 2006-2007
-;   email: infinity_sound@mail.ru
+; Serge 2006-2008
+; email:  infinity_sound@mail.ru
 
 
 PLAY_SYNC      equ   0x80000000
@@ -111,7 +111,7 @@ struc STREAM
     .out_wp        dd ?
     .out_rp        dd ?
     .out_count     dd ?
-    .out_top       dd ?
+    .out_top       dd ?          ;16*4
 
     .r_size        dd ?
     .r_dt          dd ?
@@ -122,6 +122,8 @@ struc STREAM
     .l_amp         dw ?
     .r_amp         dw ?
     .pan           dd ?
+    .l_amp_f       dd ? ;float point left
+    .r_amp_f       dd ? ;float point right
 
     .in_base       dd ?
     .in_size       dd ?
@@ -135,7 +137,7 @@ struc STREAM
     .notify_id     dd ?
 }
 
-STREAM_SIZE    equ 34*4
+STREAM_SIZE    equ 36*4
 FD_OFFSET      equ 24
 
 virtual at 0

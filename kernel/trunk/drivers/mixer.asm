@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2006-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -9,10 +9,9 @@
 ;   email: infinity_sound@mail.ru
 
 
-
 align 4
 
-mix_list rq 32
+mix_list rd 32*3
 
 align 4
 proc new_mix stdcall, output:dword
@@ -252,6 +251,83 @@ proc refill_ring stdcall, str:dword
            ret
 endp
 
+if USE_SSE2_MIXER
+
+align 4
+proc mix_all stdcall, dest:dword, list:dword, count:dword
+
+           mov edi, [dest]
+           mov ebx, 32
+.mix:
+           mov edx, [list]
+           mov ecx, [count]
+
+           mov eax, [edx]
+
+           movdqa xmm1, [eax]
+           movss xmm2, [edx+4]
+           movss xmm3, [edx+8]
+
+           punpcklwd xmm0, xmm1
+           punpckhwd xmm1, xmm1
+
+           shufps xmm2, xmm3, 0
+           shufps xmm2, xmm2, 0x88
+
+           psrad xmm0, 16
+           psrad xmm1, 16
+           cvtdq2ps xmm0, xmm0     ;time to use all power
+           cvtdq2ps xmm1, xmm1     ;of the dark side
+           mulps xmm0, xmm2
+           mulps xmm1, xmm2
+
+.mix_loop:
+           add dword [edx], 16
+           add edx, 12
+           dec ecx
+           jz @F
+
+           mov eax, [edx]
+
+           movdqa xmm3, [eax]
+           movss xmm4, [edx+4]
+           movss xmm5, [edx+8]
+
+           punpcklwd xmm2, xmm3
+           punpckhwd xmm3, xmm3
+
+           shufps xmm4, xmm5, 0
+           shufps xmm4, xmm4, 0x88
+
+           psrad xmm2, 16
+           psrad xmm3, 16
+
+           cvtdq2ps xmm2, xmm2
+           cvtdq2ps xmm3, xmm3
+
+           mulps xmm2, xmm4
+           mulps xmm3, xmm4
+           addps xmm0, xmm2
+           addps xmm1, xmm3
+
+           jmp .mix_loop
+@@:
+           cvtps2dq xmm0, xmm0
+           cvtps2dq xmm1, xmm1
+           packssdw xmm0, xmm0
+           packssdw xmm1, xmm1
+           punpcklqdq xmm0, xmm1
+           movntdq [edi], xmm0
+
+           add edi, 16
+           dec ebx
+           jnz .mix
+
+           ret
+endp
+
+else                                    ; fixed point mmx version
+
 align 4
 proc mix_all stdcall, dest:dword, list:dword, count:dword
 
@@ -262,7 +338,9 @@ proc mix_all stdcall, dest:dword, list:dword, count:dword
            mov ecx, [count]
 
            mov eax, [edx]
+
            movq mm0, [eax]
+
            movd mm1, [edx+4]
            punpckldq mm1,mm1
            pmulhw mm0, mm1
@@ -270,7 +348,7 @@ proc mix_all stdcall, dest:dword, list:dword, count:dword
 
 .mix_loop:
            add dword [edx], 8
-           add edx, 8
+           add edx, 12
            dec ecx
            jz @F
 
@@ -290,6 +368,9 @@ proc mix_all stdcall, dest:dword, list:dword, count:dword
 
            ret
 endp
+
+end if
+
 
 align 4
 proc resample_1 stdcall, dest:dword,src:dword,\
