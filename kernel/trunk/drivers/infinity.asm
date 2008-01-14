@@ -1021,7 +1021,7 @@ proc stop_buffer stdcall, str:dword
            ret
 endp
 
-; parm
+; param
 ;  eax= mix_list
 
 align 4

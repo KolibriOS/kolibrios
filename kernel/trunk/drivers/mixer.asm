@@ -36,9 +36,17 @@ proc new_mix stdcall, output:dword
            test eax, eax
            je .done
 
+           cmp eax, 1
+           ja @F
+                                    ;use fast path
+           mov edi, [output]
+           lea edx, [mix_list]
+           call mix_fast
+           jmp .next
+@@:
            lea ebx, [mix_list]
            stdcall mix_all, [output], ebx, eax
-@@:
+.next:
            add [output], 512
            dec [main_count]
            jnz .mix
@@ -47,10 +55,6 @@ proc new_mix stdcall, output:dword
            and eax, -16
            call FpuRestore
            ret
-.copy:
-           lea eax, [mix_list]
-           stdcall copy_mem, [output], [eax]
-           jmp @B
 .done:
            mov ecx, [main_count]
            shl ecx, 7     ;ecx*= 512/4
@@ -276,8 +280,8 @@ proc mix_all stdcall, dest:dword, list:dword, count:dword
 
            psrad xmm0, 16
            psrad xmm1, 16
-           cvtdq2ps xmm0, xmm0     ;time to use all power
-           cvtdq2ps xmm1, xmm1     ;of the dark side
+           cvtdq2ps xmm0, xmm0
+           cvtdq2ps xmm1, xmm1
            mulps xmm0, xmm2
            mulps xmm1, xmm2
 
@@ -325,6 +329,48 @@ proc mix_all stdcall, dest:dword, list:dword, count:dword
 
            ret
 endp
+
+; param
+;  edi = dest
+;  edx = mix_list
+
+align 4
+mix_fast:
+
+           mov ebx, 32
+           mov eax, [edx]
+
+           movss xmm2, [edx+4]       ; vol Lf
+           movss xmm3, [edx+8]       ; vol Rf
+           shufps xmm2, xmm3, 0      ; Rf Rf Lf Lf
+           shufps xmm2, xmm2, 0x88   ; volume level  Rf Lf Rf Lf
+.mix:
+           movdqa xmm1, [eax]        ; R3w L3w  R2w L2w  R1w L1w  R0w L0w
+           add eax, 16   
+           punpcklwd xmm0, xmm1      ; R1w R1w  L1w L1W  R0w R0w  L0w L0w
+           punpckhwd xmm1, xmm1      ; R3w R3w  L3w L3w  R2w R2w  L2w L2w
+
+           psrad xmm0, 16            ; R1d L1d R0d L0d
+           psrad xmm1, 16            ; R3d L3d R2d L2d
+
+           cvtdq2ps xmm0, xmm0       ; time to use all power
+           cvtdq2ps xmm1, xmm1       ; of the dark side
+
+           mulps xmm0, xmm2          ; R1f' L1f' R0f' L0f'
+           mulps xmm1, xmm2          ; R3f' L3f' R2f' L2f'
+
+           cvtps2dq xmm0, xmm0       ; R1d' L1d' R0d' L0d'
+           cvtps2dq xmm1, xmm1       ; R3d' L3d' R2d' L2d'
+           packssdw xmm0, xmm0       ; R1w' L1w'  R0w' L0w'  R1w' L1w'  R0w' L0w'
+           packssdw xmm1, xmm1       ; R3w' L3w'  R2w' L2w'  R3w' L3w'  R2w' L2w'
+           punpcklqdq xmm0, xmm1     ; R3w' L3w'  R2w' L2w'  R1w' L1w'  R0w' L0w'
+           movntdq [edi], xmm0
+
+           add edi, 16
+           dec ebx
+           jnz .mix
+
+           ret
 
 else                                    ; fixed point mmx version
 
