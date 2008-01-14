@@ -2,7 +2,7 @@ INCLUDE = include
 LIBSFORBUILD = math
 LIBNAME = libck.a
 CC = gcc
-CFLAGS = -I$(INCLUDE) -nostdinc -DGNUC  -L./ -lm
+CFLAGS = -I$(INCLUDE) -m32 -nostdinc -nostdlib -DGNUC
 DIRS := stdio kolibrisys string stdlib memory math 
 
 ##############################################################

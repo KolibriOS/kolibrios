@@ -2,6 +2,8 @@
 #define stdlib_h
 #include "kolibrisys.h"
 
+#define	RAND_MAX	65535
+
 //#define isspace(c) ((c)==' ')
 #define abs(i) (((i)<0)?(-(i)):(i))
 
@@ -15,4 +17,8 @@ extern void itoa(int n,char* s);
 extern void* stdcall malloc(dword size);
 extern void  stdcall free(void *pointer);
 extern void* stdcall realloc(void* pointer,dword size);
+
+extern int rand (void);
+extern void srand (unsigned int seed);
+
 #endif
