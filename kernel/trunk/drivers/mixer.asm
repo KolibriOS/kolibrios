@@ -36,6 +36,8 @@ proc new_mix stdcall, output:dword
            test eax, eax
            je .done
 
+if USE_SSE2_MIXER
+
            cmp eax, 1
            ja @F
                                     ;use fast path
@@ -44,6 +46,17 @@ proc new_mix stdcall, output:dword
            call mix_fast
            jmp .next
 @@:
+           cmp eax, 2
+           ja @F
+
+           mov edi, [output]
+           lea edx, [mix_list]
+           call mix_fast_2_stream
+           jmp .next
+@@:
+
+end if
+
            lea ebx, [mix_list]
            stdcall mix_all, [output], ebx, eax
 .next:
@@ -346,7 +359,7 @@ mix_fast:
            shufps xmm2, xmm2, 0x88   ; volume level  Rf Lf Rf Lf
 .mix:
            movdqa xmm1, [eax]        ; R3w L3w  R2w L2w  R1w L1w  R0w L0w
-           add eax, 16   
+           add eax, 16
            punpcklwd xmm0, xmm1      ; R1w R1w  L1w L1W  R0w R0w  L0w L0w
            punpckhwd xmm1, xmm1      ; R3w R3w  L3w L3w  R2w R2w  L2w L2w
 
@@ -358,6 +371,72 @@ mix_fast:
 
            mulps xmm0, xmm2          ; R1f' L1f' R0f' L0f'
            mulps xmm1, xmm2          ; R3f' L3f' R2f' L2f'
+
+           cvtps2dq xmm0, xmm0       ; R1d' L1d' R0d' L0d'
+           cvtps2dq xmm1, xmm1       ; R3d' L3d' R2d' L2d'
+           packssdw xmm0, xmm0       ; R1w' L1w'  R0w' L0w'  R1w' L1w'  R0w' L0w'
+           packssdw xmm1, xmm1       ; R3w' L3w'  R2w' L2w'  R3w' L3w'  R2w' L2w'
+           punpcklqdq xmm0, xmm1     ; R3w' L3w'  R2w' L2w'  R1w' L1w'  R0w' L0w'
+           movntdq [edi], xmm0
+
+           add edi, 16
+           dec ebx
+           jnz .mix
+
+           ret
+
+align 4
+mix_fast_2_stream:
+
+           mov ebx, 32
+           mov eax, [edx]
+
+           movss xmm4, [edx+4]       ; vol Lf
+           movss xmm5, [edx+8]       ; vol Rf
+           mov ecx, [edx+12]
+
+           movss xmm6, [edx+16]      ; vol Lf
+           movss xmm7, [edx+20]      ; vol Rf
+
+           shufps xmm4, xmm5, 0      ; Rf Rf Lf Lf
+           shufps xmm4, xmm4, 0x88   ; volume level  Rf Lf Rf Lf
+
+           shufps xmm6, xmm7, 0      ; Rf Rf Lf Lf
+           shufps xmm6, xmm6, 0x88   ; volume level  Rf Lf Rf Lf
+
+.mix:
+           movdqa xmm1, [eax]        ; R3w L3w  R2w L2w  R1w L1w  R0w L0w
+           movdqa xmm3, [ecx]        ; R3w L3w  R2w L2w  R1w L1w  R0w L0w
+
+           add eax, 16
+           add ecx, 16
+
+           punpcklwd xmm0, xmm1      ; R1w R1w  L1w L1W  R0w R0w  L0w L0w
+           punpckhwd xmm1, xmm1      ; R3w R3w  L3w L3w  R2w R2w  L2w L2w
+
+           psrad xmm0, 16            ; R1d L1d R0d L0d
+           psrad xmm1, 16            ; R3d L3d R2d L2d
+
+           cvtdq2ps xmm0, xmm0       ; time to use all power
+           cvtdq2ps xmm1, xmm1       ; of the dark side
+
+           mulps xmm0, xmm4          ; R1f' L1f' R0f' L0f'
+           mulps xmm1, xmm4          ; R3f' L3f' R2f' L2f'
+
+           punpcklwd xmm2, xmm3      ; R1w R1w  L1w L1W  R0w R0w  L0w L0w
+           punpckhwd xmm3, xmm3      ; R3w R3w  L3w L3w  R2w R2w  L2w L2w
+
+           psrad xmm2, 16            ; R1d L1d R0d L0d
+           psrad xmm3, 16            ; R3d L3d R2d L2d
+
+           cvtdq2ps xmm2, xmm2       ; time to use all power
+           cvtdq2ps xmm3, xmm3       ; of the dark side
+
+           mulps xmm2, xmm6          ; R1f' L1f' R0f' L0f'
+           mulps xmm3, xmm6          ; R3f' L3f' R2f' L2f'
+
+           addps xmm0, xmm2
+           addps xmm1, xmm3
 
            cvtps2dq xmm0, xmm0       ; R1d' L1d' R0d' L0d'
            cvtps2dq xmm1, xmm1       ; R3d' L3d' R2d' L2d'
