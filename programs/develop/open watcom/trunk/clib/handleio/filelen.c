@@ -20,35 +20,23 @@
 *    ALL SUCH WARRANTIES, INCLUDING WITHOUT LIMITATION, ANY WARRANTIES OF
 *    MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, QUIET ENJOYMENT OR
 *    NON-INFRINGEMENT. Please see the License for the specific language
-*    governing rights and limitations under the License.*
+*    governing rights and limitations under the License.
+*
 *  ========================================================================
 *
-* Description:  low level lseek without file extend for Windows NT
+* Description:  Implements POSIX filelength() function and Watcom
+*               _filelength64().
 *
 ****************************************************************************/
 
 
 #include "variety.h"
+
+/* most includes should go after this line */
 #include <stdio.h>
 #include <unistd.h>
 #include "iomode.h"
 #include "rtcheck.h"
-#include "seterrno.h"
-#include "lseek.h"
-#include "handleio.h"
-
-/*
-    DWORD SetFilePointer(
-      HANDLE hFile,                // handle to file
-      LONG lDistanceToMove,        // bytes to move pointer
-      PLONG lpDistanceToMoveHigh,  // bytes to move pointer
-      DWORD dwMoveMethod           // starting point
-    );
- */
-
-#ifndef INVALID_SET_FILE_POINTER
-#define INVALID_SET_FILE_POINTER 0xFFFFFFFF
-#endif
 
 typedef struct 
 {
@@ -71,35 +59,15 @@ typedef struct
 
 int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
 
-_WCRTLINK long __lseek( int hid, long offset, int origin )
+_WCRTLINK long filelength( int handle )
 {
     __file_handle *fh;
-    long rc;
-    
-    __handle_check( hid, -1 );
-    fh = (__file_handle*) __getOSHandle( hid );
+    FILEINFO info;
 
-    switch(origin)
-    {
-      case SEEK_SET:
-        rc = offset;
-        break;
-      case SEEK_CUR:  
-        rc = fh->offset + offset;
-        break;
-      case SEEK_END:
-      {
-        FILEINFO info;
-        get_fileinfo(fh->name,&info);
-        rc = offset + info.size;
-        break;
-      }    
-      default:
-        return -1;
-    };
-    
-    fh->offset = rc;
+    __handle_check( handle, -1 );
+    fh = (__file_handle*) __getOSHandle( handle);
+    get_fileinfo(fh->name,&info);
 
-    return( rc );
+    return( info.size );
 }
 
