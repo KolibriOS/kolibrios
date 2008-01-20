@@ -16,12 +16,14 @@ DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword
 
-	 mov ebx, [irq]        ;irq num
+	 mov  ebx, [irq]	; irq num
 	 test ebx, ebx
-	 jz .err
-	 mov eax, [handler]
+	 jz  .err
+	 cmp  ebx, 15		; hidnplayr says: we only have 16 IRQ's
+	 jg  .err
+	 mov  eax, [handler]
 	 test eax, eax
-	 jz .err
+	 jz  .err
 	 mov [irq_tab+ebx*4], eax
 	 stdcall enable_irq, [irq]
 	 ret
