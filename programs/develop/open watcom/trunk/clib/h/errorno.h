@@ -30,6 +30,31 @@
 ****************************************************************************/
 
 
-#define _ERRNO              errno
+#if defined(__OS2__) || defined(__NT__)
+    #if defined(__SW_BM)
 
+        #include "thread.h"
 
+        #define _ERRNO  (__THREADDATAPTR->__errnoP)
+        #define _DOSERRNO       (__THREADDATAPTR->__doserrnoP)
+
+    #else
+
+        #define _ERRNO  errno
+        #define _DOSERRNO       _doserrno
+
+    #endif
+#else
+    // QNX errno is magically multithread aware
+    // What does NETWARE do?
+    #if !defined (_NETWARE_LIBC)
+    #define _ERRNO              errno
+    #else
+    extern int * ___errno(void);
+    #define _ERRNO              *___errno()     /* get LibC errno */
+    #endif
+
+    #ifndef __NETWARE__
+        #define _DOSERRNO               _doserrno
+    #endif
+#endif

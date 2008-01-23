@@ -14,7 +14,7 @@
 	</Platforms>
 	<ToolFiles>
 		<ToolFile
-			RelativePath="..\..\..\VStudio 8\Common7\IDE\fasm.rules"
+			RelativePath="..\fasm.rules"
 		/>
 	</ToolFiles>
 	<Configurations>

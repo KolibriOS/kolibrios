@@ -24,51 +24,18 @@
 *
 *  ========================================================================
 *
-* Description:  Macros for single source wide/narrow character code.
+* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
+*               DESCRIBE IT HERE!
 *
 ****************************************************************************/
 
 
-#ifndef _WIDECHAR_H_INCLUDED
-#define _WIDECHAR_H_INCLUDED
-
 #include "variety.h"
-#include <stdlib.h>             /* for wchar_t and _atouni */
+#include <sys/types.h>
+#include <unistd.h>
+#include "lseek.h"
 
-/*** Define some handy macros ***/
-#ifdef __WIDECHAR__
-    #define DIR_TYPE            struct _wdirent
-    #define CHAR_TYPE           wchar_t
-    #define UCHAR_TYPE          wchar_t
-    #define INTCHAR_TYPE        wint_t
-    #define INT_WC_TYPE         wchar_t
-    #define VOID_WC_TYPE        wchar_t
-    #define NULLCHAR            0
-    #define STRING(a)           L##a
-    #define _AToUni(p1,p2)      _atouni(p1,p2)
-    #define IS_ASCII(c)         ( (c & 0xff00) == 0 )
-    #define TO_ASCII(c)         ( c )
-    #define __F_NAME(n1,n2)     n2
-    #define UNICODE
-    #define _UNICODE
-    #define __UNICODE__
-#else
-    #define DIR_TYPE            struct dirent
-    #define CHAR_TYPE           char
-    #define UCHAR_TYPE          unsigned char
-    #define INTCHAR_TYPE        int
-    #define INT_WC_TYPE         int
-    #define VOID_WC_TYPE        void
-    #define NULLCHAR            '\0'
-    #define STRING(a)           a
-    #define _AToUni(p1,p2)      (p2)
-    #define IS_ASCII(c)         ( 1 )
-    #define TO_ASCII(c)         ( (unsigned char)c )
-    #define __F_NAME(n1,n2)     n1
-#endif
-#define CHARSIZE                (sizeof( CHAR_TYPE ))
-
-/* must be the larger of char and wchar_t */
-#define MAX_CHAR_TYPE           wchar_t
-
-#endif
+_WCRTLINK long int tell( int handle )
+{
+    return( __lseek( handle, 0L, SEEK_CUR ) );
+}

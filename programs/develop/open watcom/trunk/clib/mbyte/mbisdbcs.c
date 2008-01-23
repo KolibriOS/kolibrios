@@ -24,11 +24,14 @@
 *
 *  ========================================================================
 *
-* Description:  declaration for set commit mode function
+* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
+*               DESCRIBE IT HERE!
 *
 ****************************************************************************/
 
 
-/* see note in commode.c */
-_WCRTLINK extern void _WCI86FAR   __set_commode( void );
-#pragma aux __set_commode "*_";
+#include "variety.h"
+#include <mbstring.h>
+#include "rtinit.h"
+
+_WCRTLINKD int                  __IsDBCS;

@@ -24,17 +24,31 @@
 *
 *  ========================================================================
 *
-* Description:  Define values for language targets.
+* Description:  Implementation of isatty() for Win32.
 *
 ****************************************************************************/
 
 
-#ifndef __LANGENVD_H__
-#define __LANGENVD_H__
+#include "variety.h"
+#include <unistd.h>
+//#include <windows.h>
+//#include "defwin.h"
+#include "iomode.h"
+#include "fileacc.h"
 
-#define __TGT_SYS_X86       0   // All x86 systems to date
-#define __TGT_SYS_AXP_NT    1   // Win32 on DEC Alpha AXP
-#define __TGT_SYS_PPC_NT    2   // Win32 on IBM/Motorola PowerPC
-#define __TGT_SYS_MIPS      3   // MIPS RISC Architecture
+/*
+    DWORD GetFileType(
+      HANDLE hFile   // handle to file
+    );
+    Return value can be:
+    FILE_TYPE_CHAR  The specified file is a character file,
+                    typically an LPT device or a console
+ */
 
-#endif
+_WCRTLINK int isatty( int hid )
+{
+//    if( GetFileType( __getOSHandle( hid ) ) == FILE_TYPE_CHAR ) {
+//        return( 1 );
+//    }
+    return( 0 );
+}

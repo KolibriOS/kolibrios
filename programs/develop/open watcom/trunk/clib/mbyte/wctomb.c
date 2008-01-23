@@ -24,25 +24,38 @@
 *
 *  ========================================================================
 *
-* Description:  Routine to bring in real floating-point formatting code.
+* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
+*               DESCRIBE IT HERE!
 *
 ****************************************************************************/
 
 
 #include "variety.h"
-#include <stdio.h>
-#include "ftos.h"
-#include "farsupp.h"
+#include <mbstring.h>
+#include "farfunc.h"
 
-/* This routine will be called by cstart if "_fltused" is referenced. */
 
-void __setEFGfmt( void )
+
+/****
+***** Convert a wide character to a multibyte character.
+****/
+
+_WCRTLINK int _NEARFAR(wctomb,_fwctomb)( char _FFAR *ch, wchar_t wchar )
 {
-#ifdef __SW_BR
-    __EFG_printf = __get_EFG_Format();
-    __EFG_scanf  = __get__cnvs2d();                 /* 27-mar-90 */
-#else
-    __EFG_printf = _EFG_Format;
-    __EFG_scanf  = __cnvs2d;                        /* 27-mar-90 */
-#endif
+
+    /*** Catch special cases ***/
+    if( ch == 0 )  return( 0 );
+
+    /*** Convert the character ***/
+    if( wchar & 0xFF00 )
+    {
+      ch[0] = (wchar&0xFF00) >> 8;        /* store lead byte */
+      ch[1] = wchar & 0x00FF;             /* store trail byte */
+         return( 2 );                        /* return size in bytes */
+    }
+    else
+    {
+      ch[0] = wchar & 0x00FF;             /* store char byte */
+      return( 1 );                        /* return size in bytes */
+    }
 }

@@ -30,31 +30,41 @@
 ****************************************************************************/
 
 
-#if defined(__OS2__) || defined(__NT__)
-    #if defined(__SW_BM)
+#include "variety.h"
+#include <mbstring.h>
+#include "farfunc.h"
 
-        #include "thread.h"
 
-        #define _ERRNO  (__THREADDATAPTR->__errnoP)
-        #define _DOSERRNO       (__THREADDATAPTR->__doserrnoP)
 
-    #else
+/****
+***** Convert a multibyte character to a wide character.
+****/
 
-        #define _ERRNO  errno
-        #define _DOSERRNO       _doserrno
+_WCRTLINK int _NEARFAR(mbtowc,_fmbtowc)( wchar_t _FFAR *pwc, const char _FFAR *ch, size_t n )
+{
 
-    #endif
-#else
-    // QNX errno is magically multithread aware
-    // What does NETWARE do?
-    #if !defined (_NETWARE_LIBC)
-    #define _ERRNO              errno
-    #else
-    extern int * ___errno(void);
-    #define _ERRNO              *___errno()     /* get LibC errno */
-    #endif
+    /*** Catch special cases ***/
+    if( ch == NULL )  return( 0 );
+    if( n == 0 )  return( -1 );
+    if( *ch == '\0' ) {
+        if( pwc != NULL )  *pwc = L'\0';
+        return( 0 );
+    }
+    if( _ismbblead( ch[0] )  &&  ch[1] == '\0' )  return( -1 ); /* invalid */
 
-    #ifndef __NETWARE__
-        #define _DOSERRNO               _doserrno
-    #endif
-#endif
+    /*** Convert the character ***/
+        if( _ismbblead(*ch) && n>=2 ) {         /* lead byte present? */
+            if( pwc != NULL ) {
+                *pwc = (((wchar_t)ch[0])<<8) |  /* convert to lead:trail */
+                        (wchar_t)ch[1];
+            }
+            return( 2 );                        /* return char size */
+        } else if( !_ismbblead(*ch) ) {
+            if( pwc != NULL ) {
+                *pwc = (wchar_t)ch[0];          /* convert to 00:byte */
+            }
+            return( 1 );                        /* return char size */
+        } else {
+            return( -1 );                       /* n==1, but char 2 bytes */
+        }
+}
