@@ -41,34 +41,48 @@
 #include "initfini.h"
 #include "initarg.h"
 
-void _cdecl mf_init();
 void _stdcall InitHeap(int heap_size);
 int  __appcwdlen;
 char* __appcwd;
-
-_WCRTLINK void (*__process_fini)(unsigned,unsigned) = 0;
- 
-extern      void    __CommonInit( void );
-extern      int     wmain( int, wchar_t ** );
-extern      int     main( int, char ** );
 extern char *LpCmdLine;
 extern char *LpPgmName;
+
+_WCRTLINK void (*__process_fini)(unsigned,unsigned) = 0;
+
+#ifdef __SW_BR
+    _WCRTLINK extern    void    (*__process_fini)( unsigned, unsigned );
+    extern      void    __CommonInit( void );
+    extern      int     wmain( int, wchar_t ** );
+    extern      int     main( int, char ** );
+#else
+    extern      void            __NTMainInit( void *, void * );
+    #ifdef __WIDECHAR__
+        extern  void            __wCMain( void );
+        #if defined(_M_IX86)
+            #pragma aux __wCMain  "*"
+        #endif
+    #else
+        extern  void            __CMain( void );
+        #if defined(_M_IX86)
+            #pragma aux __CMain  "*"
+        #endif
+    #endif
+    extern      unsigned        __ThreadDataSize;
+#endif
 
 void __F_NAME(__NTMain,__wNTMain)( void )
 /***************************************/
 {
 
-   InitHeap(32*1024*1024);
-   //mf_init();
-
-
-   __process_fini = &__FiniRtns;
+   InitHeap(0);
+   
+    __process_fini = &__FiniRtns;
    __InitRtns( 255 );
    __CommonInit();
 
    __appcwdlen = strrchr(_LpPgmName, '/') - _LpPgmName + 1;
-   __appcwdlen = __appcwdlen > 512 ? 512 : __appcwdlen; 
-   __appcwd= (char*)malloc(__appcwdlen);    
+   __appcwdlen = __appcwdlen > 512 ? 512 : __appcwdlen;
+   __appcwd= (char*)malloc(__appcwdlen);
    strncpy(__appcwd, _LpPgmName, __appcwdlen);
    __appcwd[__appcwdlen] = 0;
    ___Argc = 2;
@@ -100,6 +114,6 @@ _WCRTLINK void __exit( unsigned ret_code )
     mov eax, -1
     int 0x40
   }
-} 
+}
 
 

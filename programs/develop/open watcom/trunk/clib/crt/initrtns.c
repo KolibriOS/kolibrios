@@ -153,7 +153,11 @@ static void callit( pfn *f ) {
 ;       eax==15  -> run init routines whose priority is <= 15
 ;
 */
-
+#if defined(M_I86)
+void _WCI86FAR __FInitRtns( unsigned limit ) {
+    __InitRtns( limit );
+}
+#endif
 void __InitRtns( unsigned limit ) {
     __type_rtp local_limit;
     struct rt_init _WCI86NEAR *pnext;
@@ -175,13 +179,11 @@ void __InitRtns( unsigned limit ) {
             working_limit = local_limit;
 
             // walk list of routines
-            while( pcur < (struct rt_init _WCI86NEAR*)&_End_XI )
-            {
+            while( pcur < (struct rt_init _WCI86NEAR*)&_End_XI ) {
                 // if this one hasn't been called
                 if( pcur->rtn_type != PDONE ) {
                     // if the priority is better than best so far
-                    if( pcur->priority <= working_limit )
-                    {
+                    if( pcur->priority <= working_limit ) {
                         // remember this one
                         pnext = pcur;
                         working_limit = pcur->priority;
@@ -224,9 +226,7 @@ void _WCI86FAR __FFiniRtns( unsigned min_limit, unsigned max_limit ) {
     __FiniRtns( min_limit, max_limit );
 }
 #endif
-
-void __FiniRtns( unsigned min_limit, unsigned max_limit )
-{
+void __FiniRtns( unsigned min_limit, unsigned max_limit ) {
     __type_rtp local_min_limit;
     __type_rtp local_max_limit;
     struct rt_init _WCI86NEAR *pnext;
