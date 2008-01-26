@@ -29,18 +29,5 @@
 *
 ****************************************************************************/
 
+#define __SIGNALTABLE       SignalTable
 
-#include "variety.h"
-//#include <signal.h>
-#include "rtdata.h"
-
-extern  void    __Init_FPE_handler();
-extern  void    __Fini_FPE_handler();
-
-void __GrabFP87( void )
-{
-    if( _RWD_FPE_handler_exit != __Fini_FPE_handler ) {
-        __Init_FPE_handler();
-        _RWD_FPE_handler_exit = __Fini_FPE_handler;
-    }
-}

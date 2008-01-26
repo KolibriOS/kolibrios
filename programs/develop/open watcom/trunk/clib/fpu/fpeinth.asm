@@ -40,9 +40,6 @@ include stword.inc
 include env387.inc
 include fstatus.inc
 
-ifndef  __NETWARE__
-        xref            __GETDS
-endif
         xref            __8087  ; indicate that NDP instructions are present
 
         modstart        fpeinth
@@ -55,28 +52,16 @@ endif
 TInf    db 00h,00h,00h,00h,00h,00h,00h,80h,0ffh,7fh
 F8Inf   db 0ffh,0ffh,0ffh,0ffh,0ffh,0ffh,0efh,7fh
 F4Inf   db 0ffh,0ffh,7fh,7fh
-        db      512 dup(0)
-FPEStk  label byte
-SaveSS  dw      0
-SaveESP dd      0
         enddata
 
-
-; Interrupt handler for 80x87 exceptions.
+; User handler for 80x87 exceptions.
 
 xdefp   __FPEHandler_
 defp    __FPEHandler_
-public "C",__FPEHandlerStart_
-__FPEHandlerStart_ label byte
-        push    EAX                     ; save reg
-        mov     AL,20h                  ; issue EOI to 8259 controller
-        out     20h,AL                  ; ...
-        out     0a0h,AL                 ; issue EOI to slave 8259
-        xor     AX,AX                   ; clear busy signal
-        out     0f0h,AL                 ; ...
-        pop     EAX                     ; restore regs
+
 public  __FPE2Handler_
-__FPE2Handler_ label byte
+__FPE2Handler_ label byte 
+
         push    EAX                     ; save regs
         push    EBX                     ; ...
         push    ECX                     ; ...
@@ -84,34 +69,22 @@ __FPE2Handler_ label byte
         push    ESI                     ; ...
         push    EDI                     ; ...
         push    EBP                     ; ...
-        push    DS                      ; ...
-        push    ES                      ; ...
         sub     ESP,ENV_SIZE            ; make room for environment information
         mov     EBP,ESP                 ; point to buffer for 80x87 environment
         fnstenv [EBP]                   ; get 80x87 environment
         fwait                           ; wait for 80x87
-        fdisi                           ; disable interrupts
-        sti                             ; enable CPU interrupts
-ifndef  __NETWARE__
-     ;   call    __GETDS                 ; load DS
-endif
-ifdef __NETWARE__
-      ;  push    SS                      ; load DS
-      ;  pop     DS                      ; ...
-endif
         mov     EDX,ENV_CW[EBP]         ; get control word
         not     EDX                     ; flip the mask bits
         mov     DH,0FFh                 ; turn on top byte
         and     EDX,ENV_SW[EBP]         ; get status word
-      ;  mov     ES,ENV_IP+4[EBP]        ; get intruction address
         mov     EDI,ENV_IP[EBP]         ; ...
-opcode: mov     BX,[EDI]                ; get opcode
+opcode:
+        mov     BX,[EDI]                ; get opcode
         inc     EDI                     ; point to next opcode
         cmp     BL,0d8h                 ; check if its the opcode
         jb      opcode                  ; ...
         cmp     BL,0dfh                 ; ...
         ja      opcode                  ; ...
-      ;  mov     ES,ENV_OP+4[EBP]        ; get pointer to operand
         mov     EDI,ENV_OP[EBP]         ; ...
         xchg    BL,BH                   ; get opcode in right position
         mov     CL,FPE_OK               ; assume exception to be ignored
@@ -154,22 +127,8 @@ opcode: mov     BX,[EDI]                ; get opcode
         _guess                          ; guess exception to be handled
           cmp   CL,FPE_OK               ; - check if exception allowed
           _quif e                       ; - quit if exception not allowed
-;         cmp   SaveSS,0                ; - check if already in handler
-;         _quif ne                      ; - quit if already in handler
-          push  _STACKLOW               ; - save old stack low
-          mov   SaveSS,SS               ; - save current stack pointer
-          mov   SaveESP,ESP             ; - ...
-          push  DS                      ; - get new stack pointer
-          pop   SS                      ; - ...
-          lea   ESP,FPEStk              ; - ...
-          lea   EAX,FPEStk-512          ; - set stack low variable
-          mov   _STACKLOW,EAX           ; - set stack low variable
           movzx EAX,CL                  ; - set floating point status
           call  __FPE_exception_        ; - call user's handler
-          mov   SS,SaveSS               ; - restore stack pointer
-          mov   ESP,SaveESP             ; - ...
-          pop   _STACKLOW               ; - restore old stacklow
-          mov   SaveSS,0                ; - indicate handler can be re-entered
         _endguess                       ; endguess
         fclex                           ; clear exceptions that may have
                                         ; occurred as a result of handling the
@@ -178,8 +137,6 @@ opcode: mov     BX,[EDI]                ; get opcode
         fldcw   word ptr ENV_CW[EBP]    ; enable interrupts
         fwait                           ; ...
         add     ESP,ENV_SIZE            ; clean up stack
-        pop     ES                      ; restore registers
-        pop     DS                      ; ...
         pop     EBP                     ; ...
         pop     EDI                     ; ...
         pop     ESI                     ; ...
@@ -187,11 +144,9 @@ opcode: mov     BX,[EDI]                ; get opcode
         pop     ECX                     ; ...
         pop     EBX                     ; ...
         pop     EAX                     ; ...
-        iretd                           ; return from interrupt handler
-public  "C",__FPEHandlerEnd_
-__FPEHandlerEnd_ label byte
-endproc __FPEHandler_
+        ret                             ; return from interrupt handler
 
+endproc __FPEHandler_
 
 ; Process invalid operation.
 
@@ -363,9 +318,9 @@ endproc Load
 Store   proc    near
         test    BH,04h
         _if     ne                      ; if double
-          fst   qword ptr ES:[EDI]      ; - store as double precision result
+          fst   qword ptr [EDI]         ; - store as double precision result
         _else                           ; else
-          fst   dword ptr ES:[EDI]      ; - store as single precision result
+          fst   dword ptr [EDI]         ; - store as single precision result
         _endif                          ; endif
         ret                             ; return
 endproc Store

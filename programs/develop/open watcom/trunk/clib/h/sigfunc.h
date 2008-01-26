@@ -24,23 +24,20 @@
 *
 *  ========================================================================
 *
-* Description:  WHEN YOU FIGURE OUT WHAT THIS FILE DOES, PLEASE
-*               DESCRIBE IT HERE!
+* Description:  typedef for external signal routines and
+*               prototypes for other signal internal function
 *
 ****************************************************************************/
 
+#include "extfunc.h"
 
-#include "variety.h"
-//#include <signal.h>
-#include "rtdata.h"
+typedef void (*__sigfpe_func)( int, int );
+#ifdef _M_IX86
+    #pragma aux (__outside_CLIB) __sig_func;
+    #pragma aux (__outside_CLIB) __sigfpe_func;
+#endif
 
-extern  void    __Init_FPE_handler();
-extern  void    __Fini_FPE_handler();
-
-void __GrabFP87( void )
-{
-    if( _RWD_FPE_handler_exit != __Fini_FPE_handler ) {
-        __Init_FPE_handler();
-        _RWD_FPE_handler_exit = __Fini_FPE_handler;
-    }
-}
+_WCRTLINK extern void __sigfpe_handler( int );
+extern  void    __sigabort( void );
+extern  void    __restore_FPE_handler( void );
+extern  void    __grab_FPE_handler( void );
