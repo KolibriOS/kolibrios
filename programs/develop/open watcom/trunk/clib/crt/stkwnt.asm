@@ -68,7 +68,7 @@ msg     db      "Stack Overflow!", 0dh, 0ah, 0
           _quif ae                      ; - ...
           sub   eax,esp                 ; - calculate new low point
           neg   eax                     ; - calc what new SP would be
-          cmp   eax,_STACKLOW           ; - quit if too much
+          cmp   eax,[_STACKLOW]         ; - quit if too much
           _quif   be                    ; - ...
           call  __GRO                   ; - return
           ret

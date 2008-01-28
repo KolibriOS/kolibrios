@@ -34,35 +34,8 @@
 #include "stacklow.h"
 #include "exitwmsg.h"
 
-#if defined(__AXP__) || defined(__PPC__)
-void _init_stk( void )
-{
-}
-
-_WCRTLINK unsigned __CHK( unsigned i )
-{
-    return( i );
-}
-
-_WCRTLINK void __GRO( unsigned i )
-{
-    i = i;
-}
-
-_WCRTLINK void __STKOVERFLOW( void )
-{
-    __fatal_runtime_error( "stack overflow", -1 );
-}
-#endif
 
 _WCRTLINK unsigned stackavail()
 {
-#if defined(__AXP__) || defined(__PPC__)
-    unsigned    _SP;
-
-    _SP = (unsigned)&_SP;
-    return( _SP - _RWD_stacklow );
-#else
     return( _SP() - _RWD_stacklow );
-#endif
 }
