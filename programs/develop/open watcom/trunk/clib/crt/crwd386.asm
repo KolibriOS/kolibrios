@@ -48,46 +48,32 @@ _TEXT ends
 _DATA   segment dword public 'DATA'
 
         assume  DS:DGROUP
+        
+        extrn ___cmdline : near
+        extrn ___pgmname : near
+
+_LpCmdLine   dd offset ___cmdline    ; pointer to raw command line
+_LpPgmName   dd offset ___pgmname    ; pointer to program name (for argv[0])
+
 
 ifndef __NETWARE__
 _dynend      dd 0               ; top of dynamic data area
 _curbrk      dd 0               ; top of usable memory
 endif
-ifndef __QNX__
-ifndef __LINUX__
-ifndef _NETWARE_LIBC
-_LpCmdLine   dd 0               ; pointer to raw command line
-_LpPgmName   dd 0               ; pointer to program name (for argv[0])
-endif
-ifdef __NT__
-_LpDllName   dd 0               ; pointer to dll name (for OS/2,WIN32)
-_LpwCmdLine  dd 0               ; pointer to widechar raw command line
-_LpwPgmName  dd 0               ; pointer to widechar program name (for argv[0])
-_LpwDllName  dd 0               ; pointer to widechar dll name (for OS/2,WIN32)
-endif
-ifdef __OS2__
-_LpDllName   dd 0               ; pointer to dll name (for OS/2,WIN32)
-_LpwCmdLine  dd 0               ; pointer to widechar raw command line
-_LpwPgmName  dd 0               ; pointer to widechar program name (for argv[0])
-_LpwDllName  dd 0               ; pointer to widechar dll name (for OS/2,WIN32)
-endif
-ifdef __DOS__
-_psp         dw 0,0             ; segment addr of program segment prefix
-__x386_stacklow label   dword
-endif
-endif
-endif
-_STACKLOW  dd 0                 ; lowest address in stack
-_STACKTOP  dd 0                 ; highest address in stack
+
+_STACKLOW    dd 0               ; lowest address in stack
+_STACKTOP    dd 0               ; highest address in stack
 __EFG_printf dd 0
 __EFG_scanf  dd 0
-__ASTACKSIZ dd 0                ; alternate stack size
-__ASTACKPTR dd 0                ; alternate stack pointer
+__ASTACKSIZ  dd 0               ; alternate stack size
+__ASTACKPTR  dd 0               ; alternate stack pointer
+
 ifndef __NETWARE__
 _cbyte     dd 0                 ; used by getch, getche
 _cbyte2    dd 0                 ; used by getch, getche
 _child     dd 0                 ; non-zero => a spawned process is running
 endif
+
 __no87     dw 0                 ; non-zero => "NO87" environment var present
 ifndef __NETWARE__
 ifdef __DOS__
@@ -141,10 +127,6 @@ ifndef _NETWARE_LIBC
         public  "C",_LpPgmName
 endif
 ifdef __NT__
-        public  "C",_LpDllName
-        public  "C",_LpwCmdLine
-        public  "C",_LpwPgmName
-        public  "C",_LpwDllName
         public  "C",_LpCmdLine
         public  "C",_LpPgmName
 endif

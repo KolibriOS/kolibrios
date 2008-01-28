@@ -37,13 +37,12 @@
 .386p
         assume  nothing
 
-        extrn   __NTMain        : near
-        extrn   ___begtext      : near
-        extrn   __LpCmdLine     : near
-        extrn   __LpPgmName     : near
+        extrn   __NTMain         : near
+        extrn   ___begtext       : near
         extrn   __STACKLOW       : near
         extrn   __STACKTOP       : near
-
+        extrn   ___stack_low     : near
+ 
 _TEXT   segment use32 word public 'CODE'
 
         public  _cstart_
@@ -55,13 +54,7 @@ _cstart_ proc near
 mainCRTStartup:
 
         mov dword ptr [__STACKTOP], esp
-        lea eax, [esp-40000h]
-        mov dword ptr[__STACKLOW], eax
-        
-        mov eax, dword ptr [ds:0x1c]
-        mov dword ptr [__LpCmdLine], eax
-        mov eax, dword ptr [ds:0x20] 
-        mov dword ptr [__LpPgmName], eax
+        mov dword ptr[__STACKLOW], offset ___stack_low
 
         jmp     __NTMain
         dd      ___begtext      ; reference module with segment definitions

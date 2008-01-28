@@ -35,10 +35,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <dos.h>
-//#include <windows.h>
+#include "kolibri.h"
 
-void* _stdcall UserAlloc(int size);
-
+void* user_alloc(unsigned size);
 
 extern  unsigned                _curbrk;
 extern  unsigned                _STACKTOP;
@@ -52,7 +51,7 @@ _WCRTLINK void _WCNEAR *sbrk( int increment )
     increment = ( increment + 0x0fff ) & ~0x0fff;
     //p = LocalAlloc( LMEM_FIXED, increment );
     //p = VirtualAlloc(NULL, increment, MEM_COMMIT,PAGE_EXECUTE_READWRITE);
-    p = UserAlloc(increment);
+    p = user_alloc(increment);
     if( p != NULL ) return( p );
      errno = ENOMEM;
   }

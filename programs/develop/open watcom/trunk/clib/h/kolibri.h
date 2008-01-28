@@ -23,6 +23,7 @@ extern "C"
 #define FILE_NOT_FOUND 5
 #define FILE_EOF       6
 
+#if 0
 
 typedef unsigned int DWORD;
 typedef unsigned short int WORD;
@@ -62,10 +63,6 @@ typedef struct
     DWORD    size_high; 
 } FILEINFO;
 
-void  _stdcall InitHeap(int heap_size);
-void* _stdcall UserAlloc(int size);
-int   _stdcall UserFree(void* p);
- 
 void  _stdcall GetNotify(void *event);
 
 void _stdcall CreateThread(void *fn, char *p_stack);
@@ -85,7 +82,8 @@ int _stdcall remap_key(int key);
 
 int _cdecl get_button_id();
 
-void delay(int val);
+//void delay(int val);
+
 int wait_for_event(int time);
 int wait_for_event_infinite();
 void BeginDraw(void);
@@ -98,6 +96,37 @@ void _stdcall debug_out(int ch);
 void _stdcall make_button(int x, int y, int xsize, int ysize, int id, int color);
 void _stdcall draw_bar(int x, int y, int xsize, int ysize, int color);
 void _stdcall write_text(int x,int y,int color,char* text,int len);
+
+#endif
+
+unsigned init_heap(void);
+
+#pragma aux init_heap =   \
+            "mov EAX, 68" \
+            "mov EBX, 11" \
+            "int 0x40"    \
+            value [EAX] \
+            modify [ EBX ];
+
+void *user_alloc(unsigned size);
+
+void *user_alloc(unsigned size);
+
+#pragma aux user_alloc = \
+            "mov EAX, 68" \
+            "mov EBX, 12" \
+            "int 0x40"    \
+            parm [ ECX ] value [EAX] \
+            modify [ EBX ];
+
+unsigned user_free(void *);
+
+#pragma aux user_free =   \
+            "mov EAX, 68" \
+            "mov EBX, 13" \
+            "int 0x40"    \
+            parm [ ECX ] value [EAX] \
+            modify [ EBX ];
 
 #ifdef __cplusplus
 extern "C"

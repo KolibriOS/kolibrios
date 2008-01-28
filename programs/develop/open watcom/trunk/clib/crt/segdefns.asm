@@ -40,16 +40,12 @@ include langenv.inc
 
         assume  nothing
 
+        extrn   _cstart_         : near
+        extrn   __STACKLOW       : near
+        extrn   __STACKTOP       : near
+
   
-if COMP_CFG_COFF
-DGROUP group _NULL,_AFTERNULL,CONST,_DATA,DATA,_BSS,STACK
-else
-ifdef __LINUX__
-DGROUP group _NULL,_AFTERNULL,CONST,_DATA,DATA,TIB,TI,TIE,XIB,XI,XIE,YIB,YI,YIE,_BSS
-else
-DGROUP group _NULL,_AFTERNULL,CONST,_DATA,DATA,_BSS,STACK,TIB,TI,TIE,XIB,XI,XIE,YIB,YI,YIE
-endif
-endif
+DGROUP group _NULL,_AFTERNULL,CONST,_DATA,DATA,TIB,TI,TIE,XIB,XI,XIE,YIB,YI,YIE,_IEND,_BSS,STACK,MEMSIZE
 
 ; this guarantees that no function pointer will equal NULL
 ; (WLINK will keep segment 'BEGTEXT' in front)
@@ -59,6 +55,16 @@ endif
 BEGTEXT segment use32 word public 'CODE'
         assume  cs:BEGTEXT
 forever label   near
+
+        db 'MENUET01'
+        dd 0x0001
+        dd offset _cstart_
+        dd offset ___iend
+        dd offset MEMSIZE
+        dd offset MEMSIZE
+        dd offset ___cmdline
+        dd offset ___pgmname
+        
         int     3h
         jmp     short forever
         ; NOTE that __begtext needs to be at offset 3
@@ -123,16 +129,30 @@ _DATA    ends
 DATA    segment word public 'DATA'
 DATA    ends
 
+_IEND   segment word public 'IEND'
+___iend  label byte
+_IEND   ends
+
 _BSS    segment word public 'BSS'
+
+        public ___cmdline
+        public ___pgmname
+        
+___cmdline   db 256 dup(?)          ; pointer to raw command line
+___pgmname   db 1024 dup (?)        ; pointer to program name (for argv[0])
+
 _BSS    ends
 
-ifndef __LINUX__
-STACK_SIZE      equ     4096h
-
 STACK   segment para stack 'STACK'
-        db      (STACK_SIZE) dup(?)
+
+___stack_low label byte
+        public ___stack_low
+
 STACK   ends
-endif
+
+MEMSIZE   segment para stack 'STACK'
+MEMSIZE   ends
+
 
 _TEXT   segment use32 word public 'CODE'
 _TEXT   ends

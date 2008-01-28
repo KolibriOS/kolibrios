@@ -291,3 +291,6 @@
 #endif
 
 #endif
+
+#undef _WCRTLINKD
+#define _WCRTLINKD        

@@ -29,7 +29,6 @@
 ****************************************************************************/
 
 
-//#include "dll.h"        // needs to be first
 #include "variety.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -45,9 +44,7 @@
 // #include "tinyio.h"
 #endif
 #if defined(__WINDOWS_286__) || defined(__NT__)
-void* _stdcall UserAlloc(int size);
-
-// #include "windows.h"
+ #include "kolibri.h"
 #endif
 #if defined(__OS2__)
 // #include <wos2.h>
@@ -404,7 +401,7 @@ static int __CreateNewNHeap( unsigned amount )
 #elif defined(__NT__)
 //    brk_value = (unsigned) VirtualAlloc( NULL, amount, MEM_COMMIT,
 //                                        PAGE_EXECUTE_READWRITE );
-      brk_value = (unsigned) UserAlloc (amount );
+      brk_value = (unsigned) user_alloc(amount );
       
     //brk_value = (unsigned) LocalAlloc( LMEM_FIXED, amount );
     if( brk_value == 0 ) {

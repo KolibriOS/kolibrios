@@ -36,12 +36,13 @@
 #include <string.h>
 #include <malloc.h>
 #include <windows.h>
-//#include "ntex.h"
+
+#include "kolibri.h"
+
 //#include "sigtab.h"
 #include "initfini.h"
 #include "initarg.h"
 
-void _stdcall InitHeap(int heap_size);
 int  __appcwdlen;
 char* __appcwd;
 extern char *LpCmdLine;
@@ -74,7 +75,7 @@ void __F_NAME(__NTMain,__wNTMain)( void )
 /***************************************/
 {
 
-   InitHeap(0);
+   init_heap();
    
     __process_fini = &__FiniRtns;
    __InitRtns( 255 );
@@ -105,6 +106,8 @@ void __F_NAME(__NTMain,__wNTMain)( void )
         #pragma aux __NTMain "*"
     #endif
 #endif
+
+#pragma aux __exit aborts;
 
 _WCRTLINK void __exit( unsigned ret_code )
 {

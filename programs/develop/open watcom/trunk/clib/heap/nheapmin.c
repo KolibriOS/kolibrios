@@ -29,7 +29,6 @@
 ****************************************************************************/
 
 
-//#include "dll.h"        // needs to be first
 #include "variety.h"
 #include <stddef.h>
 #include <stdlib.h>
@@ -40,8 +39,7 @@
 // #include "extender.h"
 #endif
 #if defined(__WINDOWS_286__) || defined(__NT__)
-int _stdcall UserFree(void* p);  
-// #include "windows.h"
+ #include "kolibri.h"
 #endif
 #if defined(__OS2__)
 // #include <wos2.h>
@@ -77,41 +75,6 @@ _WCRTLINK int _nheapmin( void )
     defined(__WINDOWS_386__) || \
     defined(__NT__)          || \
     defined(__CALL21__)
-static int __ReturnMemToSystem( mheapptr mhp )
-{
-        mheapptr pnext;
-
-        pnext = mhp->next;
-#if defined(__WARP__)
-        if( DosFreeMem( (PBYTE)mhp ) ) return( -1 );
-#elif defined(__NT__)
-        //if( LocalFree( (HLOCAL)mhp ) != NULL ) return( -1 );
-//        if (!VirtualFree(mhp, 0, MEM_RELEASE))
-//            return -1;
-        if(!UserFree(mhp))
-          return -1;
-             
-#elif defined(__WINDOWS_386__)
-        if( DPMIFree( (unsigned long)mhp ) != 0 ) return( -1 );
-#elif defined(__WINDOWS_286__)
-        if( LocalFree( (HLOCAL)mhp ) != NULL ) return( -1 );
-#elif defined(__CALL21__)
-        // No way to free storage under OSI
-        if( mhp ) return( -1 );
-#endif
-        if( __MiniHeapRover == mhp ) {  // Update rovers
-            if( pnext ) {
-                __MiniHeapRover = pnext;
-            } else {
-                __MiniHeapRover = __nheapbeg;
-                __LargestSizeB4MiniHeapRover = 0;
-            }
-        }
-        if( __MiniHeapFreeRover == mhp ) {
-            __MiniHeapFreeRover = 0;
-        }
-        return( 0 ); // success
-}
 
 static void __ReleaseMiniHeap( mheapptr mhp )
 {
@@ -120,7 +83,7 @@ static void __ReleaseMiniHeap( mheapptr mhp )
 
     pprev = mhp->prev;
     pnext = mhp->next;
-    if( __ReturnMemToSystem( mhp ) == 0 ) {
+    if( user_free( mhp ) == 1 ) {
         if( pprev == NULL ) {
             __nheapbeg = pnext;
         } else {
