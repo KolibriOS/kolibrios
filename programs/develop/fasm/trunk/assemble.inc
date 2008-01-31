@@ -331,10 +331,11 @@ assemble_line:
 	or	byte [ebx+8],1+2
 	jmp	instruction_assembled
       assemble_instruction:
-	mov	[operand_size],0
-	mov	[size_override],0
-	mov	[operand_prefix],0
-	mov	[rex_prefix],0
+;        mov     [operand_size],0
+;        mov     [size_override],0
+;        mov     [operand_prefix],0
+;        mov     [rex_prefix],0
+	mov	dword [operand_size],0
 	mov	[immediate_size],0
 	movzx	ebx,word [esi]
 	mov	al,[esi+2]

@@ -5022,9 +5022,13 @@ movdq2q_instruction:
 	call	store_nomem_instruction
 	jmp	instruction_assembled
 
+sse_ps_instruction_imm8:
+	mov	[immediate_size],8
 sse_ps_instruction:
 	mov	[mmx_size],16
 	jmp	sse_instruction
+sse_pd_instruction_imm8:
+	mov	[immediate_size],8
 sse_pd_instruction:
 	mov	[mmx_size],16
 	mov	[operand_prefix],66h
@@ -5086,8 +5090,12 @@ sse_instruction:
 	cmp	[operand_size],al
 	jne	invalid_operand_size
       sse_mem_size_ok:
-	cmp	[extended_code],0C6h
+	cmp	[immediate_size],8
 	je	mmx_imm8
+	cmp	[immediate_size],-1
+	jne	sse_ok
+	call	take_additional_xmm0
+      sse_ok:
 	call	store_instruction
 	jmp	instruction_assembled
       sse_xmmreg_xmmreg:
@@ -5103,10 +5111,29 @@ sse_instruction:
 	cmp	ah,16
 	jne	invalid_operand_size
 	mov	bl,al
-	cmp	[extended_code],0C6h
+	cmp	[immediate_size],8
 	je	mmx_nomem_imm8
+	cmp	[immediate_size],-1
+	jne	sse_nomem_ok
+	call	take_additional_xmm0
+      sse_nomem_ok:
 	call	store_nomem_instruction
 	jmp	instruction_assembled
+      take_additional_xmm0:
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_mmx_register
+	cmp	ah,16
+	jne	invalid_operand_size
+	test	al,al
+	jnz	invalid_operand
+	ret
+
 ps_dq_instruction:
 	mov	[postbyte_register],al
 	mov	[operand_prefix],66h
@@ -5584,6 +5611,26 @@ amd3dnow_instruction:
 	mov	al,byte [value]
 	stos	byte [edi]
 	jmp	instruction_assembled
+
+sse4_instruction_38_xmm0:
+	mov	[immediate_size],-1
+	jmp	sse4_instruction_38
+sse4_instruction_38_imm8:
+	mov	[immediate_size],8
+sse4_instruction_38:
+	mov	[operand_prefix],66h
+	mov	[base_code],0Fh
+	mov	[supplemental_code],al
+	mov	al,38h
+	jmp	sse_instruction
+sse4_instruction_3a_imm8:
+	mov	[immediate_size],8
+sse4_instruction_3a:
+	mov	[operand_prefix],66h
+	mov	[base_code],0Fh
+	mov	[supplemental_code],al
+	mov	al,3Ah
+	jmp	sse_instruction
 
 fxsave_instruction:
 	mov	[extended_code],0AEh
@@ -6063,7 +6110,13 @@ get_address:
 	mov	[address_high],edx
 	cdq
 	cmp	edx,[address_high]
-	jne	value_out_of_range
+	je	address_high_ok
+	cmp	[error_line],0
+	jne	address_high_ok
+	mov	ebx,[current_line]
+	mov	[error_line],ebx
+	mov	[error],value_out_of_range
+      address_high_ok:
 	mov	edx,eax
 	ror	ecx,16
 	mov	cl,[value_type]
