@@ -27,8 +27,15 @@ align 4
 
 craete_button:
 
-      mov ebx,[esp+4] ;parend
-      mov eax,[esp+8] ;control
+      push ebx
+      push ecx
+      push edx
+      push esi
+      push edi
+      push ebp
+
+      mov ebx,[esp+24+4] ;parend
+      mov eax,[esp+24+8] ;control
 
       mov [PointerToStructureForButton],eax
 
@@ -63,6 +70,13 @@ craete_button:
       mov [eax+28],edx
       mov [eax+32],esi
       mov [eax+36],edi
+
+      pop ebp
+      pop edi
+      pop esi
+      pop edx
+      pop ecx
+      pop ebx
 
       ret 8
 

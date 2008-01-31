@@ -33,8 +33,15 @@ align 4
 
 craete_scroller:
 
-      mov ebx,[esp+4]
-      mov eax,[esp+8]
+      push ebx
+      push ecx
+      push edx
+      push esi
+      push edi
+      push ebp
+
+      mov ebx,[esp+24+4]
+      mov eax,[esp+24+8]
 
       mov [PointerToStructureForScroller],eax
 
@@ -82,6 +89,13 @@ craete_scroller:
       mov [eax+28],edx
       mov [eax+32],esi
       mov [eax+36],edi
+
+      pop ebp
+      pop edi
+      pop esi
+      pop edx
+      pop ecx
+      pop ebx
 
       ret 8
 

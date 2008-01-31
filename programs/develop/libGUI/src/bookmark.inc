@@ -17,8 +17,15 @@ align 4
 
 craete_Bookmark:
 
-      mov ebx,[esp+4]
-      mov eax,[esp+8]
+      push ebx
+      push ecx
+      push edx
+      push esi
+      push edi
+      push ebp
+
+      mov ebx,[esp+24+4]
+      mov eax,[esp+24+8]
 
       mov [PointerToStructureForBookmark],eax
       mov [ParendForBookmark],ebx
@@ -415,6 +422,13 @@ craete_Bookmark:
 
       dec [Bookmark.counter1]
       jnz next_Bookmark_craete_childs
+
+      pop ebp
+      pop edi
+      pop esi
+      pop edx
+      pop ecx
+      pop ebx
 
       ret 8
 

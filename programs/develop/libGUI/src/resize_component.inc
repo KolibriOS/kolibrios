@@ -14,11 +14,21 @@ align 4
 
 resize_component:
 
-        mov ebx,[esp+4]  ;Control
-        mov ecx,[esp+8] ;new size x
-        mov edx,[esp+12] ;new size y
+        push ebx
+        push ecx
+        push edx
+        push ebp
+
+        mov ebx,[esp+16+4]  ;Control
+        mov ecx,[esp+16+8]  ;new size x
+        mov edx,[esp+16+12] ;new size y
 
         mov [ebx+32],ecx
         mov [ebx+36],edx
+
+        pop ebp
+        pop edx
+        pop ecx
+        pop ebx
 
         ret 12
