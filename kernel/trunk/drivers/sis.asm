@@ -587,7 +587,6 @@ proc create_primary_buff
            mov edx, GLOB_CTRL
            call [ctrl.ctrl_write32]
 
-
 	   ret
 endp
 
@@ -806,7 +805,7 @@ proc init_codec
            je .err
 
            test eax, CTRL_ST_CREADY
-           jnz .ready
+           jnz .done                    ;;;;;.ready
 
            call reset_codec
            test eax, eax
@@ -829,7 +828,7 @@ proc init_codec
            call [ctrl.codec_read16]
            and eax, 0x0F
            cmp eax, 0x0F
-           jz .done
+           je .done
 
            sub [counter] , 1
            jnz .wait
