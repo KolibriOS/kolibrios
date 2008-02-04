@@ -1,17 +1,6 @@
 
 $Revision: 0 $
 
-
-;cache_ide0_pointer          dd 0
-;cache_ide0_size             dd 0   ; not use
-;cache_ide0_data_pointer     dd 0
-;cache_ide0_system_data_size dd 0   ; not use
-;cache_ide0_appl_data_size   dd 0   ; not use
-;cache_ide0_system_data      dd 0
-;cache_ide0_appl_data        dd 0
-;cache_ide0_system_sad_size  dd 0
-;cache_ide0_appl_sad_size    dd 0
-
     pusha
 
     mov  eax,[pg_data.pages_free]
@@ -39,287 +28,97 @@ $Revision: 0 $
     mov  [cache_ide2_size],eax
     mov  [cache_ide3_size],eax
     xor  eax,eax
-    mov  [cache_ide0_search_start],eax
-    mov  [cache_ide0_appl_search_start],eax
-    mov  [cache_ide1_search_start],eax
-    mov  [cache_ide1_appl_search_start],eax
-    mov  [cache_ide2_search_start],eax
-    mov  [cache_ide2_appl_search_start],eax
-    mov  [cache_ide3_search_start],eax
-    mov  [cache_ide3_appl_search_start],eax
     mov  [hdd_appl_data],1  ;al
     mov  [cd_appl_data],1
     
-    mov  cl,[DRIVE_DATA+1]
-    mov  ch,cl
+    mov  ch,[DRIVE_DATA+1]
+    mov  cl,ch
     and  cl,11b
-    cmp cl,0
     je	.ide2
-    call get_cache_ide3
+    mov  esi,cache_ide3
+    call get_cache_ide
 .ide2:
     mov  cl,ch
-    and  cl,1100b
-    cmp cl,0
+    shr  cl,2
+    and  cl,11b
     je	.ide1
-    call get_cache_ide2
+    mov  esi,cache_ide2
+    call get_cache_ide
 .ide1:
     mov  cl,ch
-    and  cl,110000b
-    cmp cl,0
+    shr  cl,4
+    and  cl,11b
     je	.ide0
-    call get_cache_ide1
+    mov  esi,cache_ide1
+    call get_cache_ide
 .ide0:
     mov  cl,ch
-    and  cl,11000000b
-    cmp cl,0
-    je	end_get_cache
-    call get_cache_ide0
+    shr  cl,6
+    and  cl,11b
+    je	@f
+    mov  esi,cache_ide0
+    call get_cache_ide
+@@:
+    xor ecx,ecx
+    cmp [NumBiosDisks],ecx
+    jz  .endbd
+    mov esi,BiosDiskCaches
+.loopbd:
+    cmp byte [BiosDisksData+ecx*4+2],-1
+    jnz .contbd
+    mov eax,[cache_ide0_size]
+    mov [esi+cache_ide0_size-cache_ide0],eax
+    push ecx
+    mov  cl,1
+    call get_cache_ide
+    pop  ecx
+.contbd:
+    add  esi,cache_ide1-cache_ide0
+    inc  ecx
+    cmp  ecx,[NumBiosDisks]
+    jb   .loopbd
+.endbd:
     jmp  end_get_cache
 
-get_cache_ide0:
+get_cache_ide:
+    and  [esi+cache_ide0_search_start-cache_ide0],0
+    and  [esi+cache_ide0_appl_search_start-cache_ide0],0
     push  ecx
-    stdcall kernel_alloc,[cache_ide0_size]
-    mov [cache_ide0_pointer],eax
+    stdcall kernel_alloc,[esi+cache_ide0_size-cache_ide0]
+    mov [esi+cache_ide0_pointer-cache_ide0],eax
     pop   ecx
     mov  edx,eax
-    mov  eax,[cache_ide0_size]
+    mov  eax,[esi+cache_ide0_size-cache_ide0]
     shr  eax,3
-    mov  [cache_ide0_system_data_size],eax
+    mov  [esi+cache_ide0_system_data_size-cache_ide0],eax
     mov  ebx,eax
     imul eax,7
-    mov  [cache_ide0_appl_data_size],eax
+    mov  [esi+cache_ide0_appl_data_size-cache_ide0],eax
     add  ebx,edx
-    mov  [cache_ide0_data_pointer],ebx
-
-    cmp cl,10000000b
-    je	.cd
-    push ecx
-    mov  eax,[cache_ide0_system_data_size]
-    call calculate_for_hd
-    add  eax,[cache_ide0_pointer]
-    mov  [cache_ide0_system_data],eax
-    mov  [cache_ide0_system_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide0_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    mov  eax,[cache_ide0_appl_data_size]
-    call calculate_for_hd
-    add  eax,[cache_ide0_data_pointer]
-    mov  [cache_ide0_appl_data],eax
-    mov  [cache_ide0_appl_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide0_data_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    pop  ecx
-    ret
-.cd:
-    push ecx
-    mov  eax,[cache_ide0_system_data_size]
-    call calculate_for_cd
-    add  eax,[cache_ide0_pointer]
-    mov  [cache_ide0_system_data],eax
-    mov  [cache_ide0_system_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide0_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    mov  eax,[cache_ide0_appl_data_size]
-    call calculate_for_cd
-    add  eax,[cache_ide0_data_pointer]
-    mov  [cache_ide0_appl_data],eax
-    mov  [cache_ide0_appl_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide0_data_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    pop  ecx
-    ret
-
-get_cache_ide1:
-    push  ecx
-    stdcall kernel_alloc,[cache_ide1_size]
-    mov [cache_ide1_pointer],eax
-    pop   ecx
-    mov  edx,eax
-    mov  eax,[cache_ide1_size]
-    shr  eax,3
-    mov  [cache_ide1_system_data_size],eax
-    mov  ebx,eax
-    imul eax,7
-    mov  [cache_ide1_appl_data_size],eax
-    add  ebx,edx
-    mov  [cache_ide1_data_pointer],ebx
-
-    cmp cl,100000b
-    je	.cd
-    push ecx
-    mov  eax,[cache_ide1_system_data_size]
-    call calculate_for_hd
-    add  eax,[cache_ide1_pointer]
-    mov  [cache_ide1_system_data],eax
-    mov  [cache_ide1_system_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide1_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    mov  eax,[cache_ide1_appl_data_size]
-    call calculate_for_hd
-    add  eax,[cache_ide1_data_pointer]
-    mov  [cache_ide1_appl_data],eax
-    mov  [cache_ide1_appl_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide1_data_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    pop  ecx
-    ret
-.cd:
-    push ecx
-    mov  eax,[cache_ide1_system_data_size]
-    call calculate_for_cd
-    add  eax,[cache_ide1_pointer]
-    mov  [cache_ide1_system_data],eax
-    mov  [cache_ide1_system_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide1_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    mov  eax,[cache_ide1_appl_data_size]
-    call calculate_for_cd
-    add  eax,[cache_ide1_data_pointer]
-    mov  [cache_ide1_appl_data],eax
-    mov  [cache_ide1_appl_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide1_data_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    pop  ecx
-    ret
-
-get_cache_ide2:
-    push  ecx
-    stdcall kernel_alloc,[cache_ide2_size]
-    mov [cache_ide2_pointer],eax
-    pop   ecx
-    mov  edx,eax
-    mov  eax,[cache_ide2_size]
-    shr  eax,3
-    mov  [cache_ide2_system_data_size],eax
-    mov  ebx,eax
-    imul eax,7
-    mov  [cache_ide2_appl_data_size],eax
-    add  ebx,edx
-    mov  [cache_ide2_data_pointer],ebx
-
-    cmp cl,1000b
-    je	.cd
-    push ecx
-    mov  eax,[cache_ide2_system_data_size]
-    call calculate_for_hd
-    add  eax,[cache_ide2_pointer]
-    mov  [cache_ide2_system_data],eax
-    mov  [cache_ide2_system_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide2_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    mov  eax,[cache_ide2_appl_data_size]
-    call calculate_for_hd
-    add  eax,[cache_ide2_data_pointer]
-    mov  [cache_ide2_appl_data],eax
-    mov  [cache_ide2_appl_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide2_data_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    pop  ecx
-    ret
-.cd:
-    push ecx
-    mov  eax,[cache_ide2_system_data_size]
-    call calculate_for_cd
-    add  eax,[cache_ide2_pointer]
-    mov  [cache_ide2_system_data],eax
-    mov  [cache_ide2_system_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide2_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    mov  eax,[cache_ide2_appl_data_size]
-    call calculate_for_cd
-    add  eax,[cache_ide2_data_pointer]
-    mov  [cache_ide2_appl_data],eax
-    mov  [cache_ide2_appl_sad_size],ecx
-
-    push  edi
-    mov   edi,[cache_ide2_data_pointer]
-    call  clear_ide_cache
-    pop   edi
-
-    pop  ecx
-    ret
-
-get_cache_ide3:
-    push  ecx
-    stdcall kernel_alloc,[cache_ide3_size]
-    mov [cache_ide3_pointer],eax
-    pop   ecx
-    mov  edx,eax
-    mov  eax,[cache_ide3_size]
-    shr  eax,3
-    mov  [cache_ide3_system_data_size],eax
-    mov  ebx,eax
-    imul eax,7
-    mov  [cache_ide3_appl_data_size],eax
-    add  ebx,edx
-    mov  [cache_ide3_data_pointer],ebx
+    mov  [esi+cache_ide0_data_pointer-cache_ide0],ebx
 
     cmp cl,10b
     je	.cd
     push ecx
-    mov  eax,[cache_ide3_system_data_size]
+    mov  eax,[esi+cache_ide0_system_data_size-cache_ide0]
     call calculate_for_hd
-    add  eax,[cache_ide3_pointer]
-    mov  [cache_ide3_system_data],eax
-    mov  [cache_ide3_system_sad_size],ecx
+    add  eax,[esi+cache_ide0_pointer-cache_ide0]
+    mov  [esi+cache_ide0_system_data-cache_ide0],eax
+    mov  [esi+cache_ide0_system_sad_size-cache_ide0],ecx
 
     push  edi
-    mov   edi,[cache_ide3_pointer]
+    mov   edi,[esi+cache_ide0_pointer-cache_ide0]
     call  clear_ide_cache
     pop   edi
 
-    mov  eax,[cache_ide3_appl_data_size]
+    mov  eax,[esi+cache_ide0_appl_data_size-cache_ide0]
     call calculate_for_hd
-    add  eax,[cache_ide3_data_pointer]
-    mov  [cache_ide3_appl_data],eax
-    mov  [cache_ide3_appl_sad_size],ecx
+    add  eax,[esi+cache_ide0_data_pointer-cache_ide0]
+    mov  [esi+cache_ide0_appl_data-cache_ide0],eax
+    mov  [esi+cache_ide0_appl_sad_size-cache_ide0],ecx
 
     push  edi
-    mov   edi,[cache_ide3_data_pointer]
+    mov   edi,[esi+cache_ide0_data_pointer-cache_ide0]
     call  clear_ide_cache
     pop   edi
 
@@ -327,25 +126,25 @@ get_cache_ide3:
     ret
 .cd:
     push ecx
-    mov  eax,[cache_ide3_system_data_size]
+    mov  eax,[esi+cache_ide0_system_data_size-cache_ide0]
     call calculate_for_cd
-    add  eax,[cache_ide3_pointer]
-    mov  [cache_ide3_system_data],eax
-    mov  [cache_ide3_system_sad_size],ecx
+    add  eax,[esi+cache_ide0_pointer-cache_ide0]
+    mov  [esi+cache_ide0_system_data-cache_ide0],eax
+    mov  [esi+cache_ide0_system_sad_size-cache_ide0],ecx
 
     push  edi
-    mov   edi,[cache_ide3_pointer]
+    mov   edi,[esi+cache_ide0_pointer-cache_ide0]
     call  clear_ide_cache
     pop   edi
 
-    mov  eax,[cache_ide3_appl_data_size]
+    mov  eax,[esi+cache_ide0_appl_data_size-cache_ide0]
     call calculate_for_cd
-    add  eax,[cache_ide3_data_pointer]
-    mov  [cache_ide3_appl_data],eax
-    mov  [cache_ide3_appl_sad_size],ecx
+    add  eax,[esi+cache_ide0_data_pointer-cache_ide0]
+    mov  [esi+cache_ide0_appl_data-cache_ide0],eax
+    mov  [esi+cache_ide0_appl_sad_size-cache_ide0],ecx
 
     push  edi
-    mov   edi,[cache_ide3_data_pointer]
+    mov   edi,[esi+cache_ide0_data_pointer-cache_ide0]
     call  clear_ide_cache
     pop   edi
 

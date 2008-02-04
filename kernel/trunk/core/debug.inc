@@ -416,9 +416,11 @@ debugger_notify:
 	ret
 
 debug_exc:
+        test    byte [esp+8+2], 2
+        jnz     v86_debug_exc
 ; int 1 = #DB
-	save_ring3_context
-	cld
+        save_ring3_context
+        cld
         mov     ax, app_data ;os_data
 	mov	ds, ax
 	mov	es, ax

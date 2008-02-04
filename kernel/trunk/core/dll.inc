@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -16,20 +16,20 @@ DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword
 
-	 mov  ebx, [irq]	; irq num
-	 test ebx, ebx
-	 jz  .err
-	 cmp  ebx, 15		; hidnplayr says: we only have 16 IRQ's
-	 jg  .err
-	 mov  eax, [handler]
-	 test eax, eax
-	 jz  .err
-	 mov [irq_tab+ebx*4], eax
-	 stdcall enable_irq, [irq]
-	 ret
+         mov  ebx, [irq]        ;irq num
+         test ebx, ebx
+         jz   .err
+         cmp  ebx, 15           ; hidnplayr says: we only have 16 IRQ's
+         ja   .err
+         mov  eax, [handler]
+         test eax, eax
+         jz   .err
+         mov  [irq_tab+ebx*4], eax
+         stdcall enable_irq, [irq]
+         ret
 .err:
-	 xor eax, eax
-	 ret
+         xor eax, eax
+         ret
 endp
 
 align 4
@@ -139,6 +139,9 @@ align 16
 	   mov	 bx, app_data  ;os_data
 	   mov	 ds, bx
 	   mov	 es, bx
+
+           cmp   [v86_irqhooks+eax*8], 0
+           jnz   v86_irq
 
 	   mov ebx, [irq_tab+eax*4]
 	   test ebx, ebx

@@ -130,8 +130,9 @@ struc APPDATA
   .dbg_state       dd ?            ;+76
   .cur_dir         dd ?            ;+80
   .wait_timeout    dd ?            ;+84
+  .saved_esp0      dd ?            ;+88
 
-                   db 40 dup(?)    ;+88
+                   db 36 dup(?)    ;+92
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132
@@ -177,6 +178,7 @@ include "core/dll.inc"
 include "core/peload.inc"   ;
 include "core/exports.inc"
 include "core/string.inc"
+include "core/v86.inc"      ; virtual-8086 manager
 
 ; GUI stuff
 include "gui/window.inc"

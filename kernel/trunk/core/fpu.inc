@@ -179,7 +179,7 @@ e7:                        ;#NM exception handler
         iret
 
 iglobal
-  fpu_owner dd 1
+  fpu_owner dd 0
  endg
 
 reg_eip       equ ebp+4
@@ -190,6 +190,8 @@ reg_ss        equ ebp+20
 
 align 4
 except_16:           ;fpu native exceptions handler
+        test    byte [esp+8+2], 2
+        jnz     v86_except_16
            push ebp
            mov ebp, esp
 
@@ -234,6 +236,8 @@ except_16:           ;fpu native exceptions handler
 
 align 4
 except_19:          ;sse exceptions handler
+        test    byte [esp+8+2], 2
+        jnz     v86_except_19
            push ebp
            mov ebp, esp
 

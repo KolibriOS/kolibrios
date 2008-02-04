@@ -472,6 +472,9 @@ get_pg_addr:
 align 4
 proc page_fault_handler
 
+        test    byte [esp+12+2], 2
+        jnz     v86_page_fault
+
         .err_code equ ebp+32
         .err_addr equ ebp-4
 

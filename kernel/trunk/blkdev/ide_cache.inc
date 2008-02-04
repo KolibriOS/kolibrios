@@ -37,11 +37,14 @@ write_cache_more:
     jb	  danger
     cmp   eax,[PARTITION_END]
     ja	  danger
+        cmp     [hdpos], 0x80
+        jae     @f
 ; DMA write is permitted only if [allow_dma_access]=1
 	cmp	[allow_dma_access], 2
 	jae	.nodma
 	cmp	[dma_hdd], 1
 	jnz	.nodma
+@@:
 ; Объединяем запись цепочки последовательных секторов в одно обращение к диску
 	cmp	ecx, 1
 	jz	.nonext
@@ -60,7 +63,7 @@ write_cache_more:
 	mov	[cache_chain_ptr], esi
 @@:
 	inc	[cache_chain_size]
-	cmp	[cache_chain_size], 64
+	cmp	[cache_chain_size], 16
 	jnz	.continue
 	jmp	.write_chain
 .nonext:
@@ -174,6 +177,8 @@ calculate_cache:
     mov    esi,[cache_ide2_data_pointer]
     ret
 .ide3:
+    cmp    [hdpos],4
+    jne    .noide
     cmp    [hdd_appl_data],0
     jne    .ide3_appl_data
     mov    ecx,[cache_ide3_system_sad_size]
@@ -182,6 +187,31 @@ calculate_cache:
 .ide3_appl_data:
     mov    ecx,[cache_ide3_appl_sad_size]
     mov    esi,[cache_ide3_data_pointer]
+    ret
+.noide:
+    push   eax
+    mov    eax,[hdpos]
+    sub    eax,80h
+    cmp    byte [BiosDisksData+eax*4+2], -1
+    jz     @f
+    movzx  eax,byte [BiosDisksData+eax*4+2]
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,cache_ide0
+    jmp    .get
+@@:
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,BiosDiskCaches
+.get:
+    cmp    [hdd_appl_data],0
+    jne    .bd_appl_data
+    mov    ecx,[cache_ide0_system_sad_size-cache_ide0+eax]
+    mov    esi,[cache_ide0_pointer-cache_ide0+eax]
+    pop    eax
+    ret
+.bd_appl_data:
+    mov    ecx,[cache_ide0_appl_sad_size-cache_ide0+eax]
+    mov    esi,[cache_ide0_data_pointer-cache_ide0+eax]
+    pop    eax
     ret
 ;--------------------------------------------------------------------
 align 4
@@ -219,6 +249,8 @@ calculate_cache_1:
     mov    esi,[cache_ide2_data_pointer]
     ret
 .ide3:
+    cmp    [hdpos],4
+    jne    .noide
     cmp    [hdd_appl_data],0
     jne    .ide3_appl_data
     mov    esi,[cache_ide3_pointer]
@@ -226,6 +258,30 @@ calculate_cache_1:
 .ide3_appl_data:
     mov    esi,[cache_ide3_data_pointer]
     ret
+.noide:
+    push   eax
+    mov    eax,[hdpos]
+    sub    eax,80h
+    cmp    byte [BiosDisksData+eax*4+2], -1
+    jz     @f
+    movzx  eax,byte [BiosDisksData+eax*4+2]
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,cache_ide0
+    jmp    .get
+@@:
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,BiosDiskCaches
+.get:
+    cmp    [hdd_appl_data],0
+    jne    .bd_appl_data
+    mov    esi,[cache_ide0_pointer-cache_ide0+eax]
+    pop    eax
+    ret
+.bd_appl_data:
+    mov    esi,[cache_ide0_data_pointer-cache_ide0+eax]
+    pop    eax
+    ret
+
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_2:
@@ -262,12 +318,34 @@ calculate_cache_2:
     mov    eax,[cache_ide2_appl_data]
     ret
 .ide3:
+    cmp    [hdpos],4
+    jne    .noide
     cmp    [hdd_appl_data],0
     jne    .ide3_appl_data
     mov    eax,[cache_ide3_system_data]
     ret
 .ide3_appl_data:
     mov    eax,[cache_ide3_appl_data]
+    ret
+.noide:
+    mov    eax,[hdpos]
+    sub    eax,80h
+    cmp    byte [BiosDisksData+eax*4+2], -1
+    jz     @f
+    movzx  eax,byte [BiosDisksData+eax*4+2]
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,cache_ide0
+    jmp    .get
+@@:
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,BiosDiskCaches
+.get:
+    cmp    [hdd_appl_data],0
+    jne    .bd_appl_data
+    mov    eax,[cache_ide0_system_data-cache_ide0+eax]
+    ret
+.bd_appl_data:
+    mov    eax,[cache_ide0_appl_data-cache_ide0+eax]
     ret
 ;--------------------------------------------------------------------
 align 4
@@ -313,6 +391,8 @@ calculate_cache_3:
     mov    edi,[cache_ide2_appl_search_start]
     ret
 .ide3:
+    cmp    [hdpos],4
+    jne    .noide
     cmp    [hdd_appl_data],0
     jne    .ide3_appl_data
     mov    ecx,[cache_ide3_system_sad_size]
@@ -321,6 +401,31 @@ calculate_cache_3:
 .ide3_appl_data:
     mov    ecx,[cache_ide3_appl_sad_size]
     mov    edi,[cache_ide3_appl_search_start]
+    ret
+.noide:
+    push   eax
+    mov    eax,[hdpos]
+    sub    eax,80h
+    cmp    byte [BiosDisksData+eax*4+2], -1
+    jz     @f
+    movzx  eax,byte [BiosDisksData+eax*4+2]
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,cache_ide0
+    jmp    .get
+@@:
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,BiosDiskCaches
+.get:
+    cmp    [hdd_appl_data],0
+    jne    .bd_appl_data
+    mov    ecx,[cache_ide0_system_sad_size-cache_ide0+eax]
+    mov    edi,[cache_ide0_search_start-cache_ide0+eax]
+    pop    eax
+    ret
+.bd_appl_data:
+    mov    ecx,[cache_ide0_appl_sad_size-cache_ide0+eax]
+    mov    edi,[cache_ide0_appl_search_start-cache_ide0+eax]
+    pop    eax
     ret
 ;--------------------------------------------------------------------
 align 4
@@ -358,6 +463,8 @@ calculate_cache_4:
     cmp   edi,[cache_ide2_appl_sad_size]
     ret
 .ide3:
+    cmp    [hdpos],4
+    jne    .noide
     cmp    [hdd_appl_data],0
     jne    .ide3_appl_data
     cmp   edi,[cache_ide3_system_sad_size]
@@ -365,6 +472,30 @@ calculate_cache_4:
 .ide3_appl_data:
     cmp   edi,[cache_ide3_appl_sad_size]
     ret
+.noide:
+    push   eax
+    mov    eax,[hdpos]
+    sub    eax,80h
+    cmp    byte [BiosDisksData+eax*4+2], -1
+    jz     @f
+    movzx  eax,byte [BiosDisksData+eax*4+2]
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,cache_ide0
+    jmp    .get
+@@:
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,BiosDiskCaches
+.get:
+    cmp    [hdd_appl_data],0
+    jne    .bd_appl_data
+    cmp    edi,[cache_ide0_system_sad_size-cache_ide0+eax]
+    pop    eax
+    ret
+.bd_appl_data:
+    cmp    edi,[cache_ide0_appl_sad_size-cache_ide0+eax]
+    pop    eax
+    ret
+
 ;--------------------------------------------------------------------
 align 4
 calculate_cache_5:
@@ -401,12 +532,37 @@ calculate_cache_5:
     mov   [cache_ide2_appl_search_start],edi
     ret
 .ide3:
+    cmp    [hdpos],4
+    jne    .noide
     cmp    [hdd_appl_data],0
     jne    .ide3_appl_data
     mov   [cache_ide3_search_start],edi
     ret
 .ide3_appl_data:
     mov   [cache_ide3_appl_search_start],edi
+    ret
+.noide:
+    push   eax
+    mov    eax,[hdpos]
+    sub    eax,80h
+    cmp    byte [BiosDisksData+eax*4+2], -1
+    jz     @f
+    movzx  eax,byte [BiosDisksData+eax*4+2]
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,cache_ide0
+    jmp    .get
+@@:
+    imul   eax,cache_ide1-cache_ide0
+    add    eax,BiosDiskCaches
+.get:
+    cmp    [hdd_appl_data],0
+    jne    .bd_appl_data
+    mov    [cache_ide0_search_start-cache_ide0+eax],edi
+    pop    eax
+    ret
+.bd_appl_data:
+    mov    [cache_ide0_appl_search_start-cache_ide0+eax],edi
+    pop    eax
     ret
 
 ;--------------------------------------------------------------------

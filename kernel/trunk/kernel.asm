@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.
 ;; PROGRAMMING:
 ;; Ivan Poddubny
 ;; Marat Zakiyanov (Mario79)
@@ -132,6 +132,7 @@ end if
 
 include "boot/bootcode.inc"    ; 16 bit system boot code
 include "bus/pci/pci16.inc"
+include "detect/biosdisk.inc"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                      ;;
@@ -363,6 +364,11 @@ high_code:
         mov   ax,[BOOT_VAR+0x9001]        ; for other modes
         mov   [BytesPerScanLine],ax
 @@:
+        mov     esi, BOOT_VAR+0x9080
+        movzx   ecx, byte [esi-1]
+        mov     [NumBiosDisks], ecx
+        mov     edi, BiosDisksData
+        rep     movsd
 
 ; GRAPHICS ADDRESSES
 
@@ -505,6 +511,9 @@ high_code:
            add eax, ebx
            mov [ipc_ptab], eax
 
+           stdcall kernel_alloc, unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl (unpack.lc+unpack.lp))
+           mov [unpack.p], eax
+
            call init_events
            mov eax, srv.fd-SRV_FD_OFFSET
            mov [srv.fd], eax
@@ -537,6 +546,14 @@ high_code:
         stdcall kernel_alloc, [mem_BACKGROUND]
         mov [img_background], eax
 
+        mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
+
+; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
+
+        call  rerouteirqs
+
+; Initialize system V86 machine
+        call    init_sys_v86
 
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
@@ -600,15 +617,6 @@ no_lib_load:
         mov     edi, 1
         mov     eax, 0x00040000
         call    display_number_force
-
-; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
-
-        mov   esi,boot_irqs
-        call  boot_log
-        call  rerouteirqs
-
-        mov    esi,boot_tss
-        call   boot_log
 
 ; BUILD SCHEDULER
 
@@ -683,6 +691,7 @@ no_lib_load:
         mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
         add edi, 0x2000-512
         mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
+        mov dword [SLOT_BASE+256+APPDATA.saved_esp0], edi ; just for case
         mov dword [SLOT_BASE+256+APPDATA.io_map],\
                   (tss._io_map_0-OS_BASE+PG_MAP)
         mov dword [SLOT_BASE+256+APPDATA.io_map+4],\
@@ -2057,9 +2066,8 @@ sysfn_shutdown:         ; 18.1 = BOOT
   for_shutdown_parameter:
 
      mov  eax,[TASK_COUNT]
-     add  eax,2
-     mov  [shutdown_processes],eax
      mov  [SYS_SHUTDOWN],al
+     mov  [shutdown_processes],eax
      and  dword [esp+32], 0
      ret
   uglobal
@@ -2442,8 +2450,9 @@ draw_background_temp:
 ;    je    nosb31
 ;draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
-    mov   [REDRAW_BACKGROUND],byte 1
     mov    [background_defined], 1
+    call  force_redraw_background
+    mov    [REDRAW_BACKGROUND], byte 2
    nosb31:
     ret
   nosb3:
@@ -2551,6 +2560,17 @@ nosb6:
 nosb7:
     ret
 
+force_redraw_background:
+    mov   [draw_data+32 + RECT.left],dword 0
+    mov   [draw_data+32 + RECT.top],dword 0
+    push  eax ebx
+    mov   eax,[ScreenWidth]
+    mov   ebx,[ScreenHeight]
+    mov   [draw_data+32 + RECT.right],eax
+    mov   [draw_data+32 + RECT.bottom],ebx
+    pop   ebx eax
+    mov   byte [REDRAW_BACKGROUND], 1
+    ret
 
 align 4
 
@@ -3518,20 +3538,21 @@ mouse_not_active:
     jz    nobackgr
     cmp    [background_defined], 0
     jz    nobackgr
-;    mov   [REDRAW_BACKGROUND],byte 2
-;    call  change_task
+    cmp   [REDRAW_BACKGROUND], byte 2
+    jnz   no_set_bgr_event
     xor   edi, edi
     mov   ecx,  [TASK_COUNT]
 set_bgr_event:
     add   edi, 256
     or    [edi+SLOT_BASE+APPDATA.event_mask], 16
     loop  set_bgr_event
-    mov   [draw_data+32 + RECT.left],dword 0
-    mov   [draw_data+32 + RECT.top],dword 0
-    mov   eax,[ScreenWidth]
-    mov   ebx,[ScreenHeight]
-    mov   [draw_data+32 + RECT.right],eax
-    mov   [draw_data+32 + RECT.bottom],ebx
+no_set_bgr_event:
+;    mov   [draw_data+32 + RECT.left],dword 0
+;    mov   [draw_data+32 + RECT.top],dword 0
+;    mov   eax,[ScreenWidth]
+;    mov   ebx,[ScreenHeight]
+;    mov   [draw_data+32 + RECT.right],eax
+;    mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
     mov   [REDRAW_BACKGROUND],byte 0
     mov   [MOUSE_BACKGROUND],byte 0
@@ -3544,26 +3565,24 @@ nobackgr:
     je   noshutdown
 
     mov  edx,[shutdown_processes]
-    sub  dl,2
 
     cmp  [SYS_SHUTDOWN],dl
     jne  no_mark_system_shutdown
 
+    lea   ecx,[edx-1]
     mov   edx,OS_BASE+0x3040
-    movzx ecx,byte [SYS_SHUTDOWN]
-    add   ecx,5
+    jecxz @f
 markz:
     mov   [edx+TASKDATA.state],byte 3
     add   edx,0x20
     loop  markz
+@@:
 
   no_mark_system_shutdown:
 
     call [disable_mouse]
 
     dec  byte [SYS_SHUTDOWN]
-
-    cmp  [SYS_SHUTDOWN],byte 0
     je   system_shutdown
 
 noshutdown:
@@ -3584,9 +3603,7 @@ newct:
     inc   esi
     dec   eax
     jnz   newct
-
     ret
-
 
 ; redraw screen
 
@@ -3651,8 +3668,36 @@ redrawscreen:
 
         bgli:
 
-         cmp   edi,esi
-         jz    ricino
+         cmp   ecx,1
+         jnz   .az
+         mov   al,[REDRAW_BACKGROUND]
+         cmp   al,2
+         jz    newdw8
+         test  al,al
+         jz    .az
+         lea   eax,[edi+draw_data-window_data]
+         mov   ebx,[dlx]
+         cmp   ebx,[eax+RECT.left]
+         jae   @f
+         mov   [eax+RECT.left],ebx
+        @@:
+         mov   ebx,[dly]
+         cmp   ebx,[eax+RECT.top]
+         jae   @f
+         mov   [eax+RECT.top],ebx
+        @@:
+         mov   ebx,[dlxe]
+         cmp   ebx,[eax+RECT.right]
+         jbe   @f
+         mov   [eax+RECT.right],ebx
+        @@:
+         mov   ebx,[dlye]
+         cmp   ebx,[eax+RECT.bottom]
+         jbe   @f
+         mov   [eax+RECT.bottom],ebx
+        @@:
+         jmp   newdw8
+        .az:
 
          mov   eax,edi
          add   eax,draw_data-window_data
@@ -3668,11 +3713,9 @@ redrawscreen:
 
          sub   eax,draw_data-window_data
 
-         cmp   ecx,1
+         cmp   dword [esp],1
          jne   nobgrd
-         cmp   esi,1
-         je    newdw8
-         call  drawbackground
+         mov   byte [REDRAW_BACKGROUND], 1
 
        newdw8:
        nobgrd:
@@ -4613,6 +4656,48 @@ sys_msg_board_str:
      popad
      ret
 
+sys_msg_board_byte:
+; in: al = byte to display
+; out: nothing
+; destroys: nothing
+        pushad
+        mov     ecx, 2
+        shl     eax, 24
+        jmp     @f
+
+sys_msg_board_word:
+; in: ax = word to display
+; out: nothing
+; destroys: nothing
+        pushad
+        mov     ecx, 4
+        shl     eax, 16
+        jmp     @f
+
+sys_msg_board_dword:
+; in: eax = dword to display
+; out: nothing
+; destroys: nothing
+        pushad
+        mov     ecx, 8
+@@:
+        push    ecx
+        rol     eax, 4
+        push    eax
+        and     al, 0xF
+        cmp     al, 10
+        sbb     al, 69h
+        das
+        mov     bl, al
+        xor     eax, eax
+        inc     eax
+        call    sys_msg_board
+        pop     eax
+        pop     ecx
+        loop    @b
+        popad
+        ret
+
 uglobal
   msg_board_data: times 4096 db 0
   msg_board_count dd 0x0
@@ -5086,9 +5171,9 @@ read_from_hd:                           ; Read from hd - fn not in use
 
      ret
 
-align 4
 paleholder:
-	ret
+        ret
+
 
 ; --------------- APM ---------------------
 apm_entry    dp    0
@@ -5190,6 +5275,7 @@ yes_shutdown_param:
            out 0x21, al
            out 0xA1, al
 
+if 1
            mov  word [OS_BASE+0x467+0],pr_mode_exit
            mov  word [OS_BASE+0x467+2],0x1000
 
@@ -5200,8 +5286,123 @@ yes_shutdown_param:
 
            mov  al,0xFE
            out  0x64,al
+
            hlt
 
+else
+        cmp     byte [OS_BASE + 0x9030], 2
+        jnz     no_acpi_power_off
+
+; scan for RSDP
+; 1) The first 1 Kb of the Extended BIOS Data Area (EBDA).
+        movzx   eax, word [OS_BASE + 0x40E]
+        shl     eax, 4
+        jz      @f
+        mov     ecx, 1024/16
+        call    scan_rsdp
+        jnc     .rsdp_found
+@@:
+; 2) The BIOS read-only memory space between 0E0000h and 0FFFFFh.
+        mov     eax, 0xE0000
+        mov     ecx, 0x2000
+        call    scan_rsdp
+        jc      no_acpi_power_off
+.rsdp_found:
+        mov     esi, [eax+16]   ; esi contains physical address of the RSDT
+        mov     ebp, [ipc_tmp]
+        stdcall map_page, ebp, esi, PG_MAP
+        lea     eax, [esi+1000h]
+        lea     edx, [ebp+1000h]
+        stdcall map_page, edx, eax, PG_MAP
+        and     esi, 0xFFF
+        add     esi, ebp
+        cmp     dword [esi], 'RSDT'
+        jnz     no_acpi_power_off
+        mov     ecx, [esi+4]
+        sub     ecx, 24h
+        jbe     no_acpi_power_off
+        shr     ecx, 2
+        add     esi, 24h
+.scan_fadt:
+        lodsd
+        mov     ebx, eax
+        lea     eax, [ebp+2000h]
+        stdcall map_page, eax, ebx, PG_MAP
+        lea     eax, [ebp+3000h]
+        add     ebx, 0x1000
+        stdcall map_page, eax, ebx, PG_MAP
+        and     ebx, 0xFFF
+        lea     ebx, [ebx+ebp+2000h]
+        cmp     dword [ebx], 'FACP'
+        jz      .fadt_found
+        loop    .scan_fadt
+        jmp     no_acpi_power_off
+.fadt_found:
+; ebx is linear address of FADT
+        mov     edx, [ebx+48]
+        test    edx, edx
+        jz      .nosmi
+        mov     al, [ebx+52]
+        out     dx, al
+        mov     edx, [ebx+64]
+@@:
+        in      ax, dx
+        test    al, 1
+        jz      @b
+.nosmi:
+        mov     edx, [ebx+64]
+        in      ax, dx
+        and     ax, 203h
+        or      ax, 3C00h
+        out     dx, ax
+        mov     edx, [ebx+68]
+        test    edx, edx
+        jz      @f
+        in      ax, dx
+        and     ax, 203h
+        or      ax, 3C00h
+        out     dx, ax
+@@:
+        jmp     $
+
+
+no_acpi_power_off:
+           mov  word [OS_BASE+0x467+0],pr_mode_exit
+           mov  word [OS_BASE+0x467+2],0x1000
+
+           mov  al,0x0F
+           out  0x70,al
+           mov  al,0x05
+           out  0x71,al
+
+           mov  al,0xFE
+           out  0x64,al
+
+           hlt
+
+scan_rsdp:
+        add     eax, OS_BASE
+.s:
+        cmp     dword [eax], 'RSD '
+        jnz     .n
+        cmp     dword [eax+4], 'PTR '
+        jnz     .n
+        xor     edx, edx
+        xor     esi, esi
+@@:
+        add     dl, [eax+esi]
+        inc     esi
+        cmp     esi, 20
+        jnz     @b
+        test    dl, dl
+        jz      .ok
+.n:
+        add     eax, 10h
+        loop    .s
+        stc
+.ok:
+        ret
+end if
 
 include "data32.inc"
 

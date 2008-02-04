@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,6 +82,31 @@ $Revision$
       inc   [fat32part]
       jmp   search_partitions_ide3_1
 
+end_search_partitions_ide:
+        mov     [hdpos], 80h
+        mov     ecx, [NumBiosDisks]
+        test    ecx, ecx
+        jz      end_search_partitions
+start_search_partitions_bd:
+        push    ecx
+        mov     eax, [hdpos]
+        and     [BiosDiskPartitions+(eax-80h)*4], 0
+        mov     [fat32part], 1
+search_partitions_bd:
+        call    set_FAT32_variables
+        cmp     [problem_partition], 0
+        jne     end_search_partitions_bd
+        mov     eax, [hdpos]
+        inc     [BiosDiskPartitions+(eax-80h)*4]
+        call    partition_data_transfer
+        add     [transfer_adress], 100
+        inc     [fat32part]
+        jmp     search_partitions_bd
+end_search_partitions_bd:
+        pop     ecx
+        inc     [hdpos]
+        loop    start_search_partitions_bd
+        jmp     end_search_partitions
 
 partition_data_transfer:
      mov edi,[transfer_adress]
@@ -103,7 +128,7 @@ partition_data_transfer_1:
 ;     sti
      ret
 
- end_search_partitions_ide:
+ end_search_partitions:
 
 ;PARTITION_START      dd 0x3f
 ;PARTITION_END        dd 0

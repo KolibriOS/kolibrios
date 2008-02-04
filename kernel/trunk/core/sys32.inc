@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;                                                              ;;
@@ -100,13 +100,17 @@ macro exc_w_code [num]
       jmp exc_c
 }
 
-exc_wo_code 0, 1, 2, 3, 4, 5, 6, 9, 15, 18
+exc_wo_code 0, 2, 3, 4, 5, 6, 9, 15, 18
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
 exc_c:
         mov   ax, app_data  ;исключение
         mov   ds, ax        ;загрузим правильные значени
         mov   es, ax        ;в регистры
+
+; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
+        test    byte [esp+20h+8+2], 2
+        jnz     v86_exc_c
 
 ; test if debugging
         cli
@@ -245,6 +249,7 @@ p_irq14:
         mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
+        mov     byte [BOOT_VAR + 0x48E], 0xFF
         call    [irq14_func]
         call    ready_for_next_irq_1
         restore_ring3_context
@@ -254,6 +259,7 @@ p_irq15:
         mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
+        mov     byte [BOOT_VAR + 0x48E], 0xFF
         call    [irq15_func]
         call    ready_for_next_irq_1
         restore_ring3_context
@@ -294,6 +300,8 @@ irqD:
 
 
 irqhandler:
+        cmp     [v86_irqhooks+edi*8], 0
+        jnz     v86_irq2
 
      push   edi
 
@@ -443,7 +451,9 @@ terminate: ; terminate application
            shl esi, 8
            cmp [SLOT_BASE+esi+APPDATA.dir_table], 0
            jne @F
-           add esp, 4
+           pop    esi
+           shl    esi, 5
+           mov    [CURRENT_TASK+esi+TASKDATA.state], 9
            ret
 @@:
            ;mov    esi,process_terminating
@@ -458,6 +468,24 @@ terminate: ; terminate application
            jmp   @b
 term9:
            call  set_application_table_status
+
+; if the process is in V86 mode...
+        mov     eax, [.slot]
+        shl     eax, 8
+        mov     esi, [eax+SLOT_BASE+APPDATA.pl0_stack]
+        add     esi, RING0_STACK_SIZE
+        cmp     [eax+SLOT_BASE+APPDATA.saved_esp0], esi
+        jz      .nov86
+; ...it has page directory for V86 mode
+        mov     esi, [eax+SLOT_BASE+APPDATA.saved_esp0]
+        mov     ecx, [esi+4]
+        mov     [eax+SLOT_BASE+APPDATA.dir_table], ecx
+; ...and I/O permission map for V86 mode
+        mov     ecx, [esi+12]
+        mov     [eax+SLOT_BASE+APPDATA.io_map], ecx
+        mov     ecx, [esi+8]
+        mov     [eax+SLOT_BASE+APPDATA.io_map+4], ecx
+.nov86:
 
            mov esi, [.slot]
            shl esi,8

@@ -131,6 +131,10 @@ hd_in_cache db ?
 endg
 
 reserve_hd_channel:
+; BIOS disk accesses are protected with common mutex hd1_status
+; This must be modified when hd1_status will not be valid!
+        cmp     [hdpos], 0x80
+        jae     .ret
     cmp   [hdbase], 0x1F0
     jne   .IDE_Channel_2
 .IDE_Channel_1:
@@ -165,13 +169,18 @@ reserve_hd_channel:
         call    clear_hd_cache
 @@:
 	pop     eax
+.ret:
         ret
 
 free_hd_channel:
+; see comment at reserve_hd_channel
+        cmp     [hdpos], 0x80
+        jae     .ret
     cmp   [hdbase], 0x1F0
     jne   .IDE_Channel_2
 .IDE_Channel_1:
     mov [IDE_Channel_1],0
+.ret:
     ret
 .IDE_Channel_2:
     mov [IDE_Channel_2],0

@@ -41,7 +41,8 @@ vrrmprint db      "VRR verwenden? (Monitorfrequenz groesser als 60Hz"
 ;          db      " Waehle Port [1-3]: ",0
 ;no_com1   db      13,10,186, " Keine COM1 Maus",0
 ;no_com2   db      13,10,186, " Keine COM2 Maus",0         
-ask_dma   db      "Nutze DMA zum HDD Zugriff? [1-ja, 2-allein fur Lesen, 3-nein]: ",0
+;ask_dma   db      "Nutze DMA zum HDD Zugriff? [1-ja, 2-allein fur Lesen, 3-nein]: ",0
+ask_bd     db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
 ;gr_direct db      186," Benutze direct LFB? "
 ;          db      "[1-ja/2-nein] ? ",0
 ;mem_model db      13,10,186," Hauptspeicher [1-16 Mb / 2-32 Mb / "
@@ -89,10 +90,11 @@ mode9     db      "320x200, EGA/CGA 256 colors",0
 mode10    db      "640x480, VGA 16 colors",0
 probeno_msg db    " (Standard Modus)",0
 probeok_msg db    " (teste nicht-standard Modi)",0
-dma_msg   db      " [b] Nutze DMA zum HDD Aufschreiben:",0
+;dma_msg   db      " [b] Nutze DMA zum HDD Aufschreiben:",0
+usebd_msg db      " [b] Add disks visible by BIOS:",0
 on_msg    db      " an",13,10,0
 off_msg   db      " aus",13,10,0
-readonly_msg db   " fur Lesen",13,10,0
+;readonly_msg db   " fur Lesen",13,10,0
 vrrm_msg  db      " [c] Nutze VRR:",0
 preboot_device_msg db " [d] Diskettenimage: ",0
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3

@@ -995,6 +995,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [SLOT_BASE+APPDATA.cursor+ebx],ecx
            mov eax, [pl0_stack]
            mov [SLOT_BASE+APPDATA.pl0_stack+ebx],eax
+           add eax, RING0_STACK_SIZE
+           mov [SLOT_BASE+APPDATA.saved_esp0+ebx], eax
 
            push ebx
            stdcall kernel_alloc, 0x1000

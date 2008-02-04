@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -10,6 +10,7 @@ $Revision$
 
 ; Low-level driver for HDD access
 ; DMA support by Mario79
+; Access through BIOS by diamond
 
 align 4
 hd_read:
@@ -45,6 +46,9 @@ hd_read:
     call  find_empty_slot       ; ret in edi
     cmp   [hd_error],0
     jne   return_01
+; Read through BIOS?
+        cmp     [hdpos], 0x80
+        jae     .bios
 ; DMA read is permitted if [allow_dma_access]=1 or 2
         cmp     [allow_dma_access], 2
         ja      .nodma
@@ -54,6 +58,9 @@ hd_read:
         jmp     @f
 .nodma:
         call    hd_read_pio
+        jmp     @f
+.bios:
+        call    bd_read
 @@:
 ;    lea   esi,[edi*8+HD_CACHE]
 ;    push  eax
@@ -675,6 +682,8 @@ write_cache_sector:
         mov     [cache_chain_size],1
         mov     [cache_chain_pos],edi
 write_cache_chain:
+        cmp     [hdpos], 0x80
+        jae     bd_write_cache_chain
         push    esi
         mov     eax, IDE_descriptor_table
         mov     edx,eax
@@ -773,3 +782,144 @@ uglobal
 IDEContrRegsBaseAddr    dw      ?
 endg
 ; \end{Mario79}
+
+; \begin{diamond}
+uglobal
+bios_hdpos      dd      0       ; 0 is invalid value for [hdpos]
+bios_cur_sector dd      ?
+bios_read_len   dd      ?
+endg
+bd_read:
+        push    eax
+        push    edx
+        mov     edx, [bios_hdpos]
+        cmp     edx, [hdpos]
+        jne     .notread
+        mov     edx, [bios_cur_sector]
+        cmp     eax, edx
+        jb      .notread
+        add     edx, [bios_read_len]
+        dec     edx
+        cmp     eax, edx
+        ja      .notread
+        sub     eax, [bios_cur_sector]
+        shl     eax, 9
+        add     eax, (OS_BASE+0x9C000)
+        push    ecx esi edi
+        mov     esi, eax
+        shl     edi, 9
+;        add     edi, HD_CACHE+0x10000
+        push  eax
+        call  calculate_cache_2
+        add   edi,eax
+        pop   eax
+
+        mov     ecx, 512/4
+        cld
+        rep     movsd
+        pop     edi esi ecx
+        pop     edx
+        pop     eax
+        ret
+.notread:
+        push    ecx
+        mov     dl, 42h
+        mov     ecx, 16
+        call    int13_call
+        pop     ecx
+        test    eax, eax
+        jnz     .v86err
+        test    edx, edx
+        jz      .readerr
+        mov     [bios_read_len], edx
+        mov     edx, [hdpos]
+        mov     [bios_hdpos], edx
+        pop     edx
+        pop     eax
+        mov     [bios_cur_sector], eax
+        jmp     bd_read
+.readerr:
+.v86err:
+        mov     [hd_error], 1
+        jmp     hd_read_error
+
+bd_write_cache_chain:
+        pusha
+        mov     esi, [cache_chain_pos]
+        shl     esi, 9
+        call    calculate_cache_2
+        add     esi, eax
+        mov     edi, OS_BASE + 0x9C000
+        movzx   ecx, [cache_chain_size]
+        push    ecx
+        shl     ecx, 9-2
+        rep     movsd
+        pop     ecx
+        mov     dl, 43h
+        mov     eax, [cache_chain_ptr]
+        mov     eax, [eax]
+        call    int13_call
+        test    eax, eax
+        jnz     .v86err
+        cmp     edx, ecx
+        jnz     .writeerr
+        popa
+        ret
+.v86err:
+.writeerr:
+        popa
+        mov     [hd_error], 1
+        jmp     hd_write_error
+
+uglobal
+int13_regs_in   rb      v86_regs.size
+int13_regs_out  rb      v86_regs.size
+endg
+
+int13_call:
+; Because this code uses fixed addresses,
+; it can not be run simultaniously by many threads.
+; In current implementation it is protected by common mutex 'hd1_status'
+        mov     word [BOOT_VAR + 510h], 10h             ; packet length
+        mov     word [BOOT_VAR + 512h], cx              ; number of sectors
+        mov     dword [BOOT_VAR + 514h], 9C000000h      ; buffer 9C00:0000
+        mov     dword [BOOT_VAR + 518h], eax
+        and     dword [BOOT_VAR + 51Ch], 0
+        push    ebx ecx esi edi
+        mov     ebx, int13_regs_in
+        mov     edi, ebx
+        mov     ecx, v86_regs.size/4
+        xor     eax, eax
+        rep     stosd
+        mov     byte [ebx+v86_regs.eax+1], dl
+        mov     eax, [hdpos]
+        lea     eax, [BiosDisksData+(eax-80h)*4]
+        mov     dl, [eax]
+        mov     byte [ebx+v86_regs.edx], dl
+        movzx   edx, byte [eax+1]
+;        mov     dl, 5
+        test    edx, edx
+        jnz     .hasirq
+        dec     edx
+        jmp     @f
+.hasirq:
+        pushad
+        stdcall enable_irq, edx
+        popad
+@@:
+        mov     word [ebx+v86_regs.esi], 510h
+        mov     word [ebx+v86_regs.esp], 900h
+        mov     word [ebx+v86_regs.eip], 500h
+        mov     [ebx+v86_regs.eflags], 20200h
+        mov     esi, [sys_v86_machine]
+        mov     ecx, 0x502
+        call    v86_start
+        and     [bios_hdpos], 0
+        pop     edi esi ecx ebx
+        movzx   edx, byte [BOOT_VAR + 512h]
+        test    byte [int13_regs_out+v86_regs.eflags], 1
+        jnz     @f
+        mov     edx, ecx
+@@:
+        ret
+; \end{diamond}

@@ -104,6 +104,7 @@ iglobal
     db    0xd4                  ; Old Multiuser DOS secured: fat16 <32M
     db    0xd6                  ; Old Multiuser DOS secured: fat16 >32M
     db    0x07                  ; NTFS
+    db    0x27                  ; NTFS, hidden
   partition_types_end:
 
 
@@ -132,10 +133,11 @@ set_FAT32_variables:
     call  reserve_hd1
     call  reserve_hd_channel
 
+    pushad
+
     cmp   dword [hdpos],0
     je    problem_hd
 
-    pushad
     xor   ecx,ecx               ; partition count
     mov   edx,-1                ; flag for partition
     xor   eax,eax               ; read MBR
@@ -324,9 +326,9 @@ problem_fat_dec_count:          ; bootsector is missing or another problem
     dec   [partition_count]     ; remove it from partition_count
 
 problem_partition_or_fat:
+problem_hd:
     popad
 
-problem_hd:
     mov   [fs_type],0
     call  free_hd_channel
     mov   [hd1_status],0        ; free
@@ -368,8 +370,10 @@ hd_and_partition_ok:
 boot_read_ok:
 ;        mov     [hd_setup], 0
 ; if we are running on NTFS, check bootsector
-        cmp     [fs_type], 7
-        jz      ntfs_setup
+;        cmp     [fs_type], 7
+;        jz      ntfs_setup
+        call    ntfs_test_bootsec
+        jnc     ntfs_setup
 
     cmp   word [ebx+0x1fe],0xaa55 ; is it valid boot sector?
     jnz   problem_fat_dec_count

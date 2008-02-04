@@ -21,6 +21,8 @@
 ;    0x9040 - dword - entry point of APM BIOS
 ;    0x9044 -  word - version (BCD)
 ;    0x9046 -  word - flags
+;   0:907F     byte   number of BIOS hard disks
+;   0:9080     Nbytes BIOS hard disks
 ;
 ;   Runtime:
 ;
@@ -149,7 +151,10 @@
 ;         44 dword  io permission map page 0
 ;         48 dword  io permission map page 1
 ;         4c dword  debug state: 1= load debug registers
-;         50-7F     unused
+;         50 dword  current directory ptr
+;         54 dword  wait timeout
+;         58 dword  thread TSS._esp0 (= pl0 stack base + size except for V86)
+;         5C-7F     unused
 ;
 ;         80 dword  address of random shaped window area
 ;         84 byte   shape area scale

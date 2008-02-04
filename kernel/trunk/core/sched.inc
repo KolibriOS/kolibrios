@@ -225,9 +225,11 @@ do_change_task:
         je @F
         mov cr3, eax
 @@:
-        mov eax, [ebx+APPDATA.pl0_stack]
-        add eax, RING0_STACK_SIZE
-        mov [tss._esp0], eax
+        mov     eax, [ebx+APPDATA.saved_esp0]
+        mov     [tss._esp0], eax
+;        mov eax, [ebx+APPDATA.pl0_stack]
+;        add eax, RING0_STACK_SIZE
+;        mov [tss._esp0], eax
         mov ax, graph_data
         mov gs, ax
         mov ecx, cr0

@@ -25,6 +25,7 @@ preboot_device      db  0 ; boot device
                           ; (1-floppy 2-harddisk 3-kernel restart 4-format ram disk)
                           ;!!!! 0 - autodetect !!!!
 preboot_blogesc     db  1 ; start immediately after bootlog
+preboot_biosdisk    db  0 ; use V86 to access disks through BIOS (1-yes, 2-no)
 
       if $>0x200
 ERROR: prebooting parameters must fit in first sector!!!

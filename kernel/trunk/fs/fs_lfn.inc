@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -82,6 +82,12 @@ virtual_root_query:
 	db	'cd3',0
 ;**********************************************
 	dd	0
+
+fs_additional_handlers:
+        dd      biosdisk_handler, biosdisk_enum_root
+; add new handlers here
+        dd      0
+
 endg
 
 file_system_lfn:
@@ -141,7 +147,7 @@ file_system_lfn:
 	scasd
 	mov	cl, byte [edi]
 	test	cl, cl
-	jz	.notfound
+	jz	.notfound_try
 	inc	edi
 	push	esi
 @@:
@@ -158,6 +164,8 @@ file_system_lfn:
 	pop	eax
 ; directory /xxx
 .maindir:
+	mov	esi, [edi+4]
+.maindir_noesi:
 	cmp	dword [ebx], 1
 	jnz	.access_denied
 	xor	eax, eax
@@ -166,11 +174,12 @@ file_system_lfn:
     ;    add     edx, std_application_base_address
 	push	dword [ebx+4]	; first block
 	mov	ebx, [ebx+8]	; flags
-	mov	esi, [edi+4]
 ; ebx=flags, [esp]=first block, ebp=number of blocks, edx=return area, esi='Next' handler
 	mov	edi, edx
+	push    ecx
 	mov	ecx, 32/4
 	rep	stosd
+	pop     ecx
 	mov	byte [edx], 1	; version
 .maindir_loop:
 	call	esi
@@ -186,14 +195,17 @@ file_system_lfn:
 	push	eax
 	xor	eax, eax
 	add	edi, 8
+	push    ecx
 	mov	ecx, 40/4-2
 	rep	stosd
+	pop     ecx
 	pop	eax
 	push	eax edx
 ; convert number in eax to decimal UNICODE string
 	push	edi
+	push    ecx
 	push	-'0'
-	mov	cl, 10
+	mov	ecx, 10
 @@:
 	xor	edx, edx
 	div	ecx
@@ -212,6 +224,7 @@ file_system_lfn:
 	test	al, al
 	jnz	@b
 	mov	byte [edi-1], 0
+	pop     ecx
 	pop	edi
 ; UNICODE name length is 520 bytes, ANSI - 264
 	add	edi, 520
@@ -256,7 +269,7 @@ file_system_lfn:
 	mov	byte [edx], 1	; version
 .readroot_loop:
 	cmp	dword [esi], eax
-	jz	.readroot_done
+	jz	.readroot_done_static
 	call	dword [esi]
 	add	esi, 4
 	test	eax, eax
@@ -276,7 +289,7 @@ file_system_lfn:
 	js	.readroot_next
 	inc	dword [edx+4]
 	mov	dword [edi], 0x10	; attributes: folder
-	mov	dword [edi+4], 1	; name type: UNICODE
+	mov	dword [edi+4], ebx	; name type: UNICODE
 	add	edi, 8
 	mov	ecx, 40/4-2
 	rep	stosd
@@ -297,7 +310,54 @@ file_system_lfn:
 	jnz	.readroot_loop
 	sub	edi, 520-264
 	jmp	.readroot_loop
+.readroot_done_static:
+        mov     esi, fs_additional_handlers-8
+        sub     esp, 16
+.readroot_ah_loop:
+        add     esi, 8
+        cmp     dword [esi], 0
+        jz      .readroot_done
+        xor     eax, eax
+.readroot_ah_loop2:
+        push    edi
+        lea     edi, [esp+4]
+        call    dword [esi+4]
+        pop     edi
+        test    eax, eax
+        jz      .readroot_ah_loop
+        inc     dword [edx+8]
+        dec     dword [esp+16]
+        jns     .readroot_ah_loop2
+        dec     ebp
+        js      .readroot_ah_loop2
+        push    eax
+        xor     eax, eax
+        inc     dword [edx+4]
+        mov     dword [edi], 0x10       ; attributes: folder
+        mov     dword [edi+4], ebx
+        add     edi, 8
+        mov     ecx, 40/4-2
+        rep     stosd
+        push    esi edi
+        lea     esi, [esp+12]
+@@:
+        lodsb
+        stosb
+        test    bl, 1
+        jz      .ansi3
+        mov     byte [edi], 0
+        inc     edi
+.ansi3:
+        test    al, al
+        jnz     @b
+        pop     edi esi eax
+        add     edi, 520
+        test    bl, 1
+        jnz     .readroot_ah_loop2
+        sub     edi, 520-264
+        jmp     .readroot_ah_loop2
 .readroot_done:
+        add     esp, 16
 	pop	eax
 	mov	ebx, [edx+4]
 	xor	eax, eax
@@ -308,15 +368,31 @@ file_system_lfn:
 	mov	[image_of_eax], eax
 	mov	[image_of_ebx], ebx
 	ret
+.notfound_try:
+        mov     edi, fs_additional_handlers
+@@:
+        cmp     dword [edi], 0
+        jz      @f
+        call    dword [edi]
+        scasd
+        scasd
+        jmp     @b
 .notfound:
 	mov	dword [image_of_eax], ERROR_FILE_NOT_FOUND
 	and	dword [image_of_ebx], 0
 	ret
 
+.notfounda:
+        cmp     edi, esp
+        jnz     .notfound
+        add     esp, 8
+        jmp     .notfound
+
 .found1:
 	pop	eax
 	cmp	byte [esi], 0
 	jz	.maindir
+.found2:
 ; read partition number
 	xor	ecx, ecx
 	xor	eax, eax
@@ -328,12 +404,12 @@ file_system_lfn:
 	jz	.done1
 	sub	al, '0'
 	cmp	al, 9
-	ja	.notfound
+	ja	.notfounda
 	lea	ecx, [ecx*5]
 	lea	ecx, [ecx*2+eax]
 	jmp	@b
 .done1:
-	jecxz	.notfound
+	jecxz	.notfounda
 	test	al, al
 	jnz	@f
 	dec	esi
@@ -451,8 +527,9 @@ fs_OnHd:
 	pop	eax
 	mov	[hdpos], eax
 	cmp	ecx, 0x100
-	jae	.nf
+	jae	fs_OnHdAndBd.nf
 	cmp	cl, [DRIVE_DATA+1+eax]
+fs_OnHdAndBd:
 	jbe	@f
 .nf:
 	call	free_hd_channel
@@ -707,6 +784,145 @@ fs_NextCd:
 @@:
 	ret
 ;*******************************************************
+
+; Additional FS handlers.
+; This handler gets the control each time when fn 70 is called
+; with unknown item of root subdirectory.
+; in: esi -> name
+;     ebp = 0 or rest of name relative to esi
+; out: if the handler processes path, he must not return in file_system_lfn,
+;      but instead pop return address and return directly to the caller
+;      otherwise simply return
+
+; here we test for /bd<N>/... - BIOS disks
+biosdisk_handler:
+        cmp     [NumBiosDisks], 0
+        jz      .ret
+        mov     al, [esi]
+        or      al, 20h
+        cmp     al, 'b'
+        jnz     .ret
+        mov     al, [esi+1]
+        or      al, 20h
+        cmp     al, 'd'
+        jnz     .ret
+        push    esi
+        inc     esi
+        inc     esi
+        cmp     byte [esi], '0'
+        jb      .ret2
+        cmp     byte [esi], '9'
+        ja      .ret2
+        xor     edx, edx
+@@:
+        lodsb
+        test    al, al
+        jz      .ok
+        cmp     al, '/'
+        jz      .ok
+        sub     al, '0'
+        cmp     al, 9
+        ja      .ret2
+        lea     edx, [edx*5]
+        lea     edx, [edx*2+eax]
+        jmp     @b
+.ret2:
+        pop     esi
+.ret:
+        ret
+.ok:
+        cmp     al, '/'
+        jz      @f
+        dec     esi
+@@:
+        add     dl, 80h
+        xor     ecx, ecx
+@@:
+        cmp     dl, [BiosDisksData+ecx*4]
+        jz      .ok2
+        inc     ecx
+        cmp     ecx, [NumBiosDisks]
+        jb      @b
+        jmp     .ret2
+.ok2:
+        add     esp, 8
+        test    al, al
+        jnz     @f
+        mov     esi, fs_BdNext
+        jmp     file_system_lfn.maindir_noesi
+@@:
+        push    ecx
+        push    fs_OnBd
+        mov     edi, esp
+        jmp     file_system_lfn.found2
+
+fs_BdNext:
+        cmp     eax, [BiosDiskPartitions+ecx*4]
+	inc	eax
+	cmc
+	ret
+
+fs_OnBd:
+        pop     edx edx
+; edx = disk number, ecx = partition number
+; esi+ebp = name
+	call	reserve_hd1
+	add     edx, 0x80
+	mov     [hdpos], edx
+	cmp     ecx, [BiosDiskPartitions+(edx-0x80)*4]
+	jmp     fs_OnHdAndBd
+
+; This handler is called when virtual root is enumerated
+; and must return all items which can be handled by this.
+; It is called several times, first time with eax=0
+; in: eax = 0 for first call, previously returned value for subsequent calls
+; out: eax = 0 => no more items
+;      eax != 0 => buffer pointed to by edi contains name of item
+
+; here we enumerate existing BIOS disks /bd<N>
+biosdisk_enum_root:
+        cmp     eax, [NumBiosDisks]
+        jae     .end
+        push    eax
+        movzx   eax, byte [BiosDisksData+eax*4]
+        sub     al, 80h
+        push    eax
+        mov     al, 'b'
+        stosb
+        mov     al, 'd'
+        stosb
+        pop     eax
+        cmp     al, 10
+        jae     .big
+        add     al, '0'
+        stosb
+        mov     byte [edi], 0
+        pop     eax
+        inc     eax
+        ret
+.end:
+        xor     eax, eax
+        ret
+.big:
+        push    ecx
+        push    -'0'
+        mov     ecx, 10
+@@:
+        xor     edx, edx
+        div     ecx
+        push    edx
+        test    eax, eax
+        jnz     @b
+        xchg    eax, edx
+@@:
+        pop     eax
+        add     al, '0'
+        stosb
+        jnz     @b
+        pop     ecx
+        pop     eax
+        inc     eax
+        ret
 
 process_replace_file_name:
 	mov	ebp, [full_file_name_table]

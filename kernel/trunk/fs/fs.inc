@@ -365,13 +365,29 @@ choice_necessity_partition_1:
     xor   eax,eax
     mov   [hd_entries], eax    ; entries in hd cache
     mov   edx,DRIVE_DATA+2
+    cmp   ecx,0x80
+    jb    search_partition_array
+    mov   ecx,4
  search_partition_array:
     mov   bl,[edx]
     movzx ebx,bl
     add   eax,ebx
     inc   edx
     loop  search_partition_array
+    mov   ecx,[hdpos]
+    mov   edx,BiosDiskPartitions
+    sub   ecx,0x80
+    jb    .s
+    je    .f
+ @@:
+    mov   ebx,[edx]
+    add   edx,4
+    add   eax,ebx
+    loop  @b
+    jmp   .f
+ .s:
     sub   eax,ebx
+ .f:
     add   eax,[fat32part]
     dec   eax
     xor   edx,edx

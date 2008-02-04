@@ -363,6 +363,7 @@ img_background        rd 1
 mem_BACKGROUND        rd 1
 wraw_bacground_select rb 1
 
+cache_ide0:
 cache_ide0_pointer            rd 1
 cache_ide0_size               rd 1   ; not use
 cache_ide0_data_pointer       rd 1
@@ -375,6 +376,7 @@ cache_ide0_appl_sad_size      rd 1
 cache_ide0_search_start       rd 1
 cache_ide0_appl_search_start  rd 1
 
+cache_ide1:
 cache_ide1_pointer            rd 1
 cache_ide1_size               rd 1   ; not use
 cache_ide1_data_pointer       rd 1
@@ -387,6 +389,7 @@ cache_ide1_appl_sad_size      rd 1
 cache_ide1_search_start       rd 1
 cache_ide1_appl_search_start  rd 1
 
+cache_ide2:
 cache_ide2_pointer            rd 1
 cache_ide2_size               rd 1   ; not use
 cache_ide2_data_pointer       rd 1
@@ -399,6 +402,7 @@ cache_ide2_appl_sad_size      rd 1
 cache_ide2_search_start       rd 1
 cache_ide2_appl_search_start  rd 1
 
+cache_ide3:
 cache_ide3_pointer            rd 1
 cache_ide3_size               rd 1   ; not use
 cache_ide3_data_pointer       rd 1
@@ -418,6 +422,11 @@ cd_appl_data rb 1 ; 0 = system cache, 1 - application cache
 lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled
 timer_ticks_enable rb 1 	; for cd driver
+
+NumBiosDisks    rd 1
+BiosDisksData   rb 200h
+BiosDiskCaches  rb 80h*(cache_ide1-cache_ide0)
+BiosDiskPartitions rd 80h
 
 IncludeUGlobals
 

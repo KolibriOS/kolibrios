@@ -341,7 +341,7 @@ cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
-; b) preboot_dma  = use DMA access?
+; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
 ; c) preboot_vrrm = use VRR?
 ; d) preboot_device = from what boot?
         mov     di, preboot_graph
@@ -381,9 +381,11 @@ cfgmanager:
 @@:
         mov     [di], al
 .preboot_gr_end:
-; following 6 lines set variables to 1 if its current value is 0
+; following 8 lines set variables to 1 if its current value is 0
         cmp     [di+preboot_dma-preboot_graph], 1
         adc     [di+preboot_dma-preboot_graph], 0
+        cmp     [di+preboot_biosdisk-preboot_graph], 1
+        adc     [di+preboot_biosdisk-preboot_graph], 0
         cmp     [di+preboot_vrrm-preboot_graph], 1
         adc     [di+preboot_vrrm-preboot_graph], 0
         cmp     [di+preboot_device-preboot_graph], 1
@@ -438,16 +440,19 @@ cfgmanager:
 .c:
         mov     si, linef
         call    printplain
-        mov     si, dma_msg
-        call    print
-        cmp     [preboot_dma], 2
-        mov     si, on_msg
-        jb      @f
-        mov     si, off_msg
-        ja      @f
-        mov     si, readonly_msg
-@@:
-        call    printplain
+;        mov     si, dma_msg
+;        call    print
+;        cmp     [preboot_dma], 2
+;        mov     si, on_msg
+;        jb      @f
+;        mov     si, off_msg
+;        ja      @f
+;        mov     si, readonly_msg
+;@@:
+;        call    printplain
+        mov     si, usebd_msg
+        cmp     [preboot_biosdisk], 1
+        call    .say_on_off
         mov     si, vrrm_msg
         cmp     [preboot_vrrm], 1
         call    .say_on_off
@@ -530,11 +535,16 @@ cfgmanager:
         jmp    .d
 .change_b:
         _setcursor 15,0
-        mov     si, ask_dma
+;        mov     si, ask_dma
+;        call    print
+;        mov     bx, '13'
+;        call    getkey
+;        mov     [preboot_dma], al
+        mov     si, ask_bd
         call    print
-        mov     bx, '13'
+        mov     bx, '12'
         call    getkey
-        mov     [preboot_dma], al
+        mov     [preboot_biosdisk], al
         _setcursor 11,0
         jmp     .d
 .change_c:
@@ -817,6 +827,68 @@ bppl:
         xor     ax, ax            ; reset drive
         xor     dx, dx
         int     0x13
+; do we boot from CD-ROM?
+        mov     ah, 41h
+        mov     bx, 55AAh
+        xor     dx, dx
+        int     0x13
+        jc      .nocd
+        cmp     bx, 0AA55h
+        jnz     .nocd
+        mov     ah, 48h
+        push    ds
+        push    es
+        pop     ds
+        mov     si, 0xa000
+        mov     word [si], 30
+        int     0x13
+        pop     ds
+        jc      .nocd
+        push    ds
+        lds     si, [es:si+26]
+        test    byte [ds:si+10], 40h
+        pop     ds
+        jz      .nocd
+; yes - read all floppy by 18 sectors
+        mov     cx, 0x0001      ; startcyl,startsector
+.a1:
+        push    cx dx
+        mov     al, 18
+        mov     bx, 0xa000
+        call    boot_read_floppy
+        mov     si, movedesc
+        push    es
+        push    ds
+        pop     es
+        mov     cx, 256*18
+        mov     ah, 0x87
+        int     0x15
+        pop     es
+        pop     dx cx
+        test    ah, ah
+        jnz     sayerr_floppy
+        add     dword [si+8*3+2], 512*18
+        inc     dh
+        cmp     dh, 2
+        jnz     .a1
+        mov     dh, 0
+        inc     ch
+        cmp     ch, 80
+        jae     ok_sys_on_floppy
+        pusha
+        mov     al, ch
+        shr     ch, 2
+        add     al, ch
+        aam
+        xchg    al, ah
+        add     ax, '00'
+        mov     si, pros
+        mov     [si], ax
+        call    printplain
+        popa
+        jmp     .a1
+.nocd:
+; no - read only used sectors from floppy
 ; now load floppy image to memory
 ; at first load boot sector and first FAT table
         mov     cx, 0x0001      ; startcyl,startsector
@@ -1007,6 +1079,7 @@ sayerr_floppy:
 ;       readdone:
 ;        pop     ax
 
+ok_sys_on_floppy:
         mov     si, backspace2
         call    printplain
         mov     si, okt

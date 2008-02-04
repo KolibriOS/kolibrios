@@ -166,7 +166,7 @@ unpack:
 ; result=0;
 	mov	ecx, .Literal + (.LZMA_LIT_SIZE shl (.lc+.lp))
 	mov	eax, .kBitModelTotal/2
-	mov	edi, .p
+	mov	edi, [.p]
 	rep	stosd
 ; RangeDecoderInit
 ; rd->ExtraBytes = 0
@@ -187,7 +187,8 @@ unpack:
 	and	edx, .posStateMask
 	mov	eax, ebx
 	shl	eax, .kNumPosBitsMax+2
-	lea	eax, [.p + .IsMatch*4 + eax + edx*4]
+	lea	eax, [.IsMatch*4 + eax + edx*4]
+	add	eax, [.p]
 	call	.RangeDecoderBitDecode
 	jc	.1
 	movzx	eax, [.previousByte]
@@ -197,7 +198,8 @@ if .literalPosMask
 end if
 	shr	eax, 8-.lc
 	imul	eax, .LZMA_LIT_SIZE*4
-	add	eax, .p+.Literal*4
+	add	eax, .Literal*4
+	add	eax, [.p]
 	cmp	ebx, .kNumLitStates
 	jb	.literal
 	xor	edx, edx
@@ -220,15 +222,18 @@ end if
 @@:	sub	bl, al
 	jmp	.main_loop
 .1:
-	lea	eax, [.p + .IsRep*4 + ebx*4]
+	lea	eax, [.IsRep*4 + ebx*4]
+	add	eax, [.p]
 	call	.RangeDecoderBitDecode
 	jnc	.10
-	lea	eax, [.p + .IsRepG0*4 + ebx*4]
+	lea	eax, [.IsRepG0*4 + ebx*4]
+	add	eax, [.p]
 	call	.RangeDecoderBitDecode
 	jc	.111
 	mov	eax, ebx
 	shl	eax, .kNumPosBitsMax+2
-	lea	eax, [.p + .IsRep0Long*4 + eax + edx*4]
+	lea	eax, [.IsRep0Long*4 + eax + edx*4]
+	add	eax, [.p]
 	call	.RangeDecoderBitDecode
 	jc	.1101
 	cmp	bl, 7
@@ -241,12 +246,14 @@ end if
 	mov	[.previousByte], al
 	jmp	.main_loop
 .111:
-	lea	eax, [.p + .IsRepG1*4 + ebx*4]
+	lea	eax, [.IsRepG1*4 + ebx*4]
+	add	eax, [.p]
 	call	.RangeDecoderBitDecode
 	mov	eax, [.rep1]
 	jnc	.l3
 .l1:
-	lea	eax, [.p + .IsRepG2*4 + ebx*4]
+	lea	eax, [.IsRepG2*4 + ebx*4]
+	add	eax, [.p]
 	call	.RangeDecoderBitDecode
 	mov	eax, [.rep2]
 	jnc	.l2
@@ -258,7 +265,8 @@ end if
 	xchg	eax, [.rep0]
 	mov	[.rep1], eax
 .1101:
-	mov	eax, .p + .RepLencoder*4
+	mov	eax, .RepLencoder*4
+	add	eax, [.p]
 	call	.LzmaLenDecode
 	cmp	bl, 7
 	setc	bl
@@ -276,7 +284,8 @@ end if
 	adc	bl, bl
 	xor	bl, 3
 	add	bl, 7
-	mov	eax, .p + .Lencoder*4
+	mov	eax, .Lencoder*4
+	add	eax, [.p]
 	call	.LzmaLenDecode
 	mov	eax, .kNumLenToPosStates-1
 	cmp	eax, ecx
@@ -287,7 +296,8 @@ end if
 	mov	ecx, .kNumPosSlotBits
 	shl	eax, cl
 	shl	eax, 2
-	add	eax, .p+.PosSlot*4
+	add	eax, .PosSlot*4
+	add	eax, [.p]
 	call	.RangeDecoderBitTreeDecode
 	mov	[.rep0], ecx
 	cmp	ecx, .kStartPosModelIndex
@@ -305,7 +315,8 @@ end if
 	jae	.l5
 	sub	eax, edx
 	shl	eax, 2
-	add	eax, .p + (.SpecPos - 1)*4
+	add	eax, (.SpecPos - 1)*4
+	add	eax, [.p]
 	call	.RangeDecoderReverseBitTreeDecode
 	add	[.rep0], ecx
 	jmp	.l6
@@ -315,7 +326,8 @@ end if
 	mov	ecx, .kNumAlignBits
 	shl	eax, cl
 	add	[.rep0], eax
-	mov	eax, .p+.Align_*4
+	mov	eax, .Align_*4
+	add	eax, [.p]
 	call	.RangeDecoderReverseBitTreeDecode
 	add	[.rep0], ecx
 .l6:
@@ -503,7 +515,8 @@ end if
 
 uglobal
 align 4
-unpack.p	rd	unpack.LZMA_BASE_SIZE + (unpack.LZMA_LIT_SIZE shl (unpack.lc+unpack.lp))
+;unpack.p	rd	unpack.LZMA_BASE_SIZE + (unpack.LZMA_LIT_SIZE shl (unpack.lc+unpack.lp))
+unpack.p	dd	?
 unpack.code_	dd	?
 unpack.range	dd	?
 unpack.rep0	dd	?

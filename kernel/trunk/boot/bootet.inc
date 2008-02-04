@@ -36,7 +36,8 @@ vrrmprint db      "Kinnita VRR? (ekraani sagedus suurem kui 60Hz"
 ;          db      " Vali port [1-3]: ",0
 ;no_com1   db      13,10,186, " No COM1 mouse",0
 ;no_com2   db      13,10,186, " No COM2 mouse",0         
-ask_dma   db      "Use DMA for HDD access? [1-yes, 2-only for reading, 3-no]: ",0
+;ask_dma   db      "Use DMA for HDD access? [1-yes, 2-only for reading, 3-no]: ",0
+ask_bd     db      "Add disks visible by BIOS emulated in V86-mode? [1-yes, 2-no]: ",0
 ;gr_direct db      186," Use direct LFB writing? "
 ;          db      "[1-yes/2-no] ? ",0
 ;mem_model db      13,10,186," Motherboard memory [1-16 Mb / 2-32 Mb / "
@@ -84,10 +85,11 @@ mode9     db      "320x200, EGA/CGA 256 v‰rvi",0
 mode10    db      "640x480, VGA 16 v‰rvi",0
 probeno_msg db    " (standard reziim)",0
 probeok_msg db    " (kontrolli ebastandardseid reziime)",0
-dma_msg   db      " [b] Kasuta DMA'd HDD juurdep‰‰suks:",0
+;dma_msg   db      " [b] Kasuta DMA'd HDD juurdep‰‰suks:",0
+usebd_msg db      " [b] Add disks visible by BIOS:",0
 on_msg    db      " sees",13,10,0
 off_msg   db      " v‰ljas",13,10,0
-readonly_msg db   " ainult lugemiseks",13,10,0
+;readonly_msg db   " ainult lugemiseks",13,10,0
 vrrm_msg  db      " [c] Kasuta VRR:",0
 preboot_device_msg db " [d] Disketi kujutis: ",0
 preboot_device_msgs dw 0,pdm1,pdm2,pdm3
