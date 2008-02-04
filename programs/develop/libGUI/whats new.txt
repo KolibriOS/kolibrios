@@ -1,3 +1,10 @@
+4.02.08
+RUSSIAN
+Добавлено сохранение регистров после входа в функции: SendMessage() , DestroyControl().
+
+ENGLISH
+Save of registers after an entrance in function is added: SendMessage (), DestroyControl ().
+
 31.01.08
 RUSSIAN
 Добавлено сохранение регистров после входа в функции libGUI.

@@ -95,7 +95,15 @@ align 4
 
 destroy_control:
 
-      mov eax,[esp+4]
+      push eax
+      push ebx
+      push ecx
+      push edx
+      push esi
+      push edi
+      push ebp
+
+      mov eax,[esp+28+4]
 
       mov ebx,[eax+20] ;get parend for control
 
@@ -224,6 +232,14 @@ destroy_control:
         ;*******************************************************************
       exit_destroy_control:
 
+      pop ebp
+      pop edi
+      pop esi
+      pop edx
+      pop ecx
+      pop ebx
+      pop eax
+
       ret 4
 
 ;***********************************************************
@@ -239,12 +255,20 @@ align 4
 
 send_message:
 
+      push eax
+      push ebx
+      push ecx
+      push edx
+      push esi
+      push edi
+      push ebp
+
       ;get pointer to parend
-      mov eax,[esp+4]
+      mov eax,[esp+28+4]
       mov [Parend],eax
 
       ;get message
-      mov esi,[esp+8]
+      mov esi,[esp+28+8]
       mov edi,dword Message
       mov ecx,4
       rep movsd
@@ -437,6 +461,14 @@ send_message:
       no_mouse:
 
       exit_check_event_type:
+
+      pop ebp
+      pop edi
+      pop esi
+      pop edx
+      pop ecx
+      pop ebx
+      pop eax
 
       ret 8
 
