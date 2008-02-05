@@ -36,15 +36,13 @@
 #include "seterrno.h"
 #include "qread.h"
 #include <stdio.h>
+#include "kolibri.h"
 
 typedef struct 
 {
   char     *name;
   unsigned int offset;
 }__file_handle;
-
-
-int _stdcall read_file (const char *name,char *buff,unsigned offset, unsigned count,unsigned *reads);
 
 int __qread( int handle, void *buffer, unsigned len )
 {

@@ -46,29 +46,13 @@
 #include "openmode.h"
 #include "rtdata.h"
 #include "seterrno.h"
+#include "kolibri.h"
 
 extern unsigned __NFiles;
 extern char *__appcwd;
 extern int __appcwdlen;
 
 #if (defined(__WINDOWS__) || defined(__NT__))
-
-typedef struct
-{   DWORD    attr;
-    DWORD    flags;
-    DWORD    cr_time;
-    DWORD    cr_date;
-    DWORD    acc_time;
-    DWORD    acc_date;
-    DWORD    mod_time;
-    DWORD    mod_date;
-    DWORD    size;
-    DWORD    size_high; 
-} FILEINFO;
-
-int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
-int _stdcall create_file(const char *name);
-
 
 typedef struct 
 {

@@ -41,7 +41,7 @@
 #include "seterrno.h"
 #include "qwrite.h"
 #include "liballoc.h"
-
+#include "kolibri.h"
 
 /*
     Use caution when setting the file pointer in a multithreaded
@@ -51,27 +51,12 @@
     using a critical section object or a mutex object.
  */
 
-typedef struct
-{   DWORD    attr;
-    DWORD    flags;
-    DWORD    cr_time;
-    DWORD    cr_date;
-    DWORD    acc_time;
-    DWORD    acc_date;
-    DWORD    mod_time;
-    DWORD    mod_date;
-    DWORD    size;
-    DWORD    size_high; 
-} FILEINFO;
-
 typedef struct 
 {
   char     *name;
   unsigned int offset;
 }__file_handle;
 
-int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
-int _stdcall write_file(const char *name,const void *buff,unsigned offset,unsigned count,unsigned *writes);
 char* getfullpath(const char* path);
 
 int __qwrite( int handle, const void *buffer, unsigned len )
@@ -79,7 +64,6 @@ int __qwrite( int handle, const void *buffer, unsigned len )
     int             atomic;
     __file_handle   *fh;
     unsigned        len_written;
-    
 
     __handle_check( handle, -1 );
 

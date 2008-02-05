@@ -36,15 +36,7 @@
 #include "seterrno.h"
 #include "lseek.h"
 #include "handleio.h"
-
-/*
-    DWORD SetFilePointer(
-      HANDLE hFile,                // handle to file
-      LONG lDistanceToMove,        // bytes to move pointer
-      PLONG lpDistanceToMoveHigh,  // bytes to move pointer
-      DWORD dwMoveMethod           // starting point
-    );
- */
+#include "kolibri.h"
 
 #ifndef INVALID_SET_FILE_POINTER
 #define INVALID_SET_FILE_POINTER 0xFFFFFFFF
@@ -55,21 +47,6 @@ typedef struct
   char     *name;
   unsigned int offset;
 }__file_handle;
-
-typedef struct
-{   DWORD    attr;
-    DWORD    flags;
-    DWORD    cr_time;
-    DWORD    cr_date;
-    DWORD    acc_time;
-    DWORD    acc_date;
-    DWORD    mod_time;
-    DWORD    mod_date;
-    DWORD    size;
-    DWORD    size_high; 
-} FILEINFO;
-
-int _stdcall get_fileinfo(const char *name,FILEINFO* pinfo);
 
 _WCRTLINK long __lseek( int hid, long offset, int origin )
 {

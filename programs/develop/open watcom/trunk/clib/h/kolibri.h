@@ -99,7 +99,28 @@ void _stdcall write_text(int x,int y,int color,char* text,int len);
 
 #endif
 
+typedef struct
+{   unsigned    attr;
+    unsigned    flags;
+    unsigned    cr_time;
+    unsigned    cr_date;
+    unsigned    acc_time;
+    unsigned    acc_date;
+    unsigned    mod_time;
+    unsigned    mod_date;
+    unsigned    size;
+    unsigned    size_high; 
+} FILEINFO;
+
+
 unsigned init_heap(void);
+void *user_alloc(unsigned size);
+unsigned user_free(void *);
+
+int create_file(const char *name);
+int get_fileinfo(const char *name,FILEINFO* pinfo);
+int read_file (const char *name,void *buff, unsigned offset, unsigned count,unsigned *reads);
+int write_file(const char *name,const void *buff,unsigned offset,unsigned count,unsigned *writes);
 
 #pragma aux init_heap =   \
             "mov EAX, 68" \
@@ -108,10 +129,6 @@ unsigned init_heap(void);
             value [EAX] \
             modify [ EBX ];
 
-void *user_alloc(unsigned size);
-
-void *user_alloc(unsigned size);
-
 #pragma aux user_alloc = \
             "mov EAX, 68" \
             "mov EBX, 12" \
@@ -119,13 +136,83 @@ void *user_alloc(unsigned size);
             parm [ ECX ] value [EAX] \
             modify [ EBX ];
 
-unsigned user_free(void *);
-
 #pragma aux user_free =   \
             "mov EAX, 68" \
             "mov EBX, 13" \
             "int 0x40"    \
             parm [ ECX ] value [EAX] \
+            modify [ EBX ];
+
+#pragma aux create_file  = \
+            "push 0"           \
+            "push 0"           \ 
+            "mov [esp+1], eax" \
+            "push 0"           \
+            "push 0"           \
+            "push 0"           \
+            "push 0"           \
+            "push 2"           \
+            "mov ebx, esp"     \  
+            "mov eax, 70"      \
+            "int 0x40"         \
+            "add esp, 28"      \      
+            parm [EAX] value [EAX] \
+            modify [ EBX ];
+
+#pragma aux get_fileinfo  = \
+            "push 0"           \
+            "push 0"           \ 
+            "mov [esp+1], eax" \
+            "push ebx"         \
+            "push 0"           \
+            "push 0"           \
+            "push 0"           \
+            "push 5"           \
+            "mov ebx, esp"     \  
+            "mov eax, 70"      \
+            "int 0x40"         \
+            "add esp, 28"      \      
+            parm [EAX] [ebx] value [EAX] \
+            modify [ EBX ];
+
+#pragma aux read_file  = \
+            "push 0"           \
+            "push 0"           \ 
+            "mov [esp+1], eax" \
+            "push ebx"         \
+            "push edx"         \
+            "push 0"           \
+            "push ecx"         \
+            "push 0"           \
+            "mov ebx, esp"     \  
+            "mov eax, 70"      \
+            "int 0x40"         \
+            "test esi, esi"    \
+            "jz skip"          \
+            "mov [esi], ebx"   \
+     "skip:"                   \       
+            "add esp, 28"      \      
+            parm [EAX] [EBX] [ECX] [EDX] [ESI] value [EAX] \
+            modify [ EBX ];
+
+#pragma aux write_file  = \
+            "push 0"           \
+            "push 0"           \ 
+            "mov [esp+1], eax" \
+            "push ebx"         \
+            "push edx"         \
+            "push 0"           \
+            "push ecx"         \
+            "push 3"           \
+            "mov ebx, esp"     \  
+            "mov eax, 70"      \
+            "int 0x40"         \
+            "test esi, esi"    \
+            "jz skip"          \
+            "mov [esi], ebx"   \
+     "skip:"                   \       
+            "add esp, 28"      \      
+            parm [EAX] [EBX] [ECX] [EDX] [ESI] value [EAX] \
             modify [ EBX ];
 
 #ifdef __cplusplus
