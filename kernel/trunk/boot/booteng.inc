@@ -8,7 +8,7 @@ $Revision$
 
 
 d80x25_bottom:
-          db       186,' KolibriOS based on MenuetOS and comes with ABSOLUTELY '
+          db       186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '
           db       'NO WARRANTY            ',186
           db       186,' See file COPYING for details                          '
           db       '                       ',186
@@ -21,7 +21,7 @@ novesa    db      "Display: EGA/CGA",13,10,0
 s_vesa    db      "Version of VESA: "
   .ver    db      "?.?",13,10,0
 
-gr_mode   db      "You will choose a video of mode: ",13,10,0
+gr_mode   db      "Select a vedeomode: ",13,10,0
 ;s_bpp     db      13,10,186," Глубина цвета: "
 ;  .bpp    dw      "??"
 ;          db      13,10,0
@@ -50,7 +50,7 @@ prnotfnd  db      "Fatal - Videomode not found.",0
 not386    db      "Fatal - CPU 386+ required.",0
 btns      db      "Fatal - Can't determine color depth.",0
 fatalsel  db      "Fatal - Graphics mode not supported by hardware.",0
-pres_key  db      "Press any key to choose a new video of mode.",0
+pres_key  db      "Press any key to choose a new videomode.",0
 badsect   db      13,10,186," Fatal - Bad sector. Replace floppy.",0
 memmovefailed db  13,10,186," Fatal - Int 0x15 move failed.",0
 okt       db      " ... OK"
