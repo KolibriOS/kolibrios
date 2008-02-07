@@ -511,7 +511,9 @@ high_code:
            add eax, ebx
            mov [ipc_ptab], eax
 
-           stdcall kernel_alloc, unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl (unpack.lc+unpack.lp))
+           stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
+                                 (unpack.lc+unpack.lp)))*4
+
            mov [unpack.p], eax
 
            call init_events

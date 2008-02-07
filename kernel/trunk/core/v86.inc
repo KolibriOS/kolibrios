@@ -47,7 +47,7 @@ v86_create:
 ; first half (0x800 bytes) is page table for addresses 0 - 0x100000,
 ; second half is for V86-to-linear translation.
 ; Third and fourth are for I/O permission map.
-        push    4000h
+        push    8000h                  ;page block less 8Kb are discontinuous
         call    kernel_alloc
         test    eax, eax
         jz      .fail2
@@ -79,6 +79,12 @@ v86_create:
         mov     esi, (OS_BASE shr 20) + sys_pgdir
         mov     ecx, 0x80000000 shr 22
         rep     movsd
+
+        mov     eax, [ebx+V86_machine.pagedir]   ;root dir also is
+        call    get_pg_addr                      ;used as page table
+        or      al, PG_SW
+        mov [edi-4096+(page_tabs shr 20)], eax
+
         pop     esi
 ; now V86 specific: initialize known addresses in first Mb
         pop     eax edi
@@ -164,7 +170,7 @@ v86_set_page:
 ;     esi=handle
 ; out: eax=V86 address, para-aligned (0x10 multiple)
 ; destroys: nothing
-; недописана!!!
+; сан!!!
 ;v86_alloc:
 ;        push    ebx ecx edx edi
 ;        lea     ebx, [esi+V86_machine.mutex]
@@ -184,7 +190,7 @@ v86_set_page:
 ;        add     edx, ecx
 ;        cmp     dword [edx], 0          ; free block?
 ;        jnz     .n
-;        cmp     dword [edx+4], 
+;        cmp     dword [edx+4],
 ;        and     [esi+V86_machine.mutex], 0
 ;        pop     edi edx ecx ebx
 ;        ret
@@ -384,8 +390,8 @@ v86_exc_c:
         jnz     .nogp
 ; Otherwise we can safely access byte at CS:IP
 ; (because it is #GP, not #PF handler)
-; Если бы мы могли схлопотать исключение только из-за чтения байтов кода,
-; мы бы его уже схлопотали и это было бы не #GP
+; сли    хло склчен только - тен тов ,
+;    уже хлотал   ыло   #GP
         movzx   esi, word [esp+v86_regs.cs]
         shl     esi, 4
         add     esi, [esp+v86_regs.eip]
