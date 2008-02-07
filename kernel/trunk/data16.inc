@@ -21,20 +21,6 @@ kernel_restart_bootblock:
     dw    1    ; floppy image is in memory
     dd    0    ; cannot save parameters
 
-align 4
-; videomodes table
-gr_table:
-    dw      0x112+0100000000000000b ,  640 ,  480        ; 1
-    dw      0x115+0100000000000000b ,  800 ,  600        ; 2
-    dw      0x118+0100000000000000b , 1024 ,  768        ; 3
-    dw      0x11B+0100000000000000b , 1280 , 1024        ; 4
-    dw      0x112 ,  640 , 480                ; 5
-    dw      0x115 ,  800 , 600                ; 6
-    dw      0x118 , 1024 , 768                ; 7
-    dw      0x11B , 1280 ,1024                ; 8
-    dw    0x13, 640, 480                    ; 9
-    dw    0x12, 640, 480                    ; 0
-
 ; table for move to extended memory (int 15h, ah=87h)
 align 8
 movedesc:

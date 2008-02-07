@@ -105,6 +105,7 @@ sayerr_plain:
 ;
 ;=========================================================================
 
+include 'bootvesa.inc'                 ;Include source for boot vesa 
 
 start_of_code:
         cld
@@ -285,6 +286,23 @@ wait_loop:       ; variant 2
 ; wait until 8042 controller is ready
         loopnz  wait_loop
 
+;;;/diamond today   5.02.2008
+; set keyboard typematic rate & delay
+        mov     al, 0xf3
+        out     0x60, al
+        xor     cx, cx
+@@:
+        in      al, 64h
+        test    al, 2
+        loopnz  @b
+        mov     al, 0
+        out     0x60, al
+        xor     cx, cx
+@@:
+        in      al, 64h
+        test    al, 2
+        loopnz  @b
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; --------------- APM ---------------------
         and     word [es:0x9044], 0     ; ver = 0.0 (APM not found)
         mov     ax, 0x5300
@@ -321,78 +339,46 @@ wait_loop:       ; variant 2
 apm_end:
         _setcursor d80x25_top_num, 0
 
-; DISPLAY VESA INFORMATION
+;CHECK current of code
+        cmp     [cfgmanager.loader_block], -1
+        jz      noloaderblock
+        les     bx, [cfgmanager.loader_block]
+        cmp     byte [es:bx], 1
+        mov     si, loader_block_error
+        jnz     sayerr
 
-        mov     ax, 0x4f00
-        mov     di, 0xa000
-        int     0x10
-        cmp     ax, 0x004f
-        mov     si, novesa
-        jnz     @f
-        mov     ax, [es:di+4]
-        add     ax, '0'*256+'0'
-        mov     si, vervesa
-        mov     [si+vervesa_off], ah
-        mov     [si+vervesa_off+2], al
-@@:     call    print
+noloaderblock:
+; DISPLAY VESA INFORMATION
+         call    print_vesa_info
+         call    calc_vmodes_table
+         call    check_first_parm  ;check and enable cursor_pos
+
 
 ; \begin{diamond}[30.11.2005]
 cfgmanager:
 ; settings:
 ; a) preboot_graph = graphical mode
 ;    preboot_gprobe = probe this mode?
-; b) preboot_biosdisk  = use BIOS disks through V86 emulation?
+; b) preboot_dma  = use DMA access?
 ; c) preboot_vrrm = use VRR?
 ; d) preboot_device = from what boot?
-        mov     di, preboot_graph
-; check bootloader block
-        cmp     [.loader_block], -1
-        jz      .noloaderblock
-        les     bx, [.loader_block]
-        cmp     byte [es:bx], 1
-        mov     si, loader_block_error
-        jnz     sayerr
-        test    byte [es:bx+1], 1
-        jz      @f
-; image in memory present
-        cmp     [di+preboot_device-preboot_graph], 0
-        jnz     @f
-        mov     [di+preboot_device-preboot_graph], 3
-@@:
-.noloaderblock:
+
 ; determine default settings
         mov     [.bSettingsChanged], 0
-        cmp     byte [di], 0
-        jnz     .preboot_gr_end
-        mov     [di+preboot_gprobe-preboot_graph], 0
-        mov     al, [vervesa+vervesa_off]
-        cmp     al, 'x'
-        jz      .novesa
-        cmp     al, '1'
-        jz      .vesa12
-        mov     [di+preboot_gprobe-preboot_graph], 2
-        mov     al, 3
-        jmp     @f
-.vesa12:
-        mov     al, 7
-        jmp     @f
-.novesa:
-        mov     al, 10
-@@:
-        mov     [di], al
-.preboot_gr_end:
-; following 8 lines set variables to 1 if its current value is 0
-        cmp     [di+preboot_dma-preboot_graph], 1
-        adc     [di+preboot_dma-preboot_graph], 0
-        cmp     [di+preboot_biosdisk-preboot_graph], 1
-        adc     [di+preboot_biosdisk-preboot_graph], 0
-        cmp     [di+preboot_vrrm-preboot_graph], 1
-        adc     [di+preboot_vrrm-preboot_graph], 0
-        cmp     [di+preboot_device-preboot_graph], 1
-        adc     [di+preboot_device-preboot_graph], 0
+
+;.preboot_gr_end:
+; following 6 lines set variables to 1 if its current value is 0
+        cmp     byte[preboot_dma], 1
+        adc     byte[preboot_dma], 0
+        cmp     byte[preboot_vrrm], 1
+        adc     byte[preboot_vrrm], 0
+        cmp     byte[preboot_device], 1
+        adc     byte[preboot_device], 0
 ; notify user
+        _setcursor 5,2
+
         mov     si, linef
-        call    print
+        call    printplain
         mov     si, start_msg
         call    print
         mov     si, time_msg
@@ -408,48 +394,9 @@ cfgmanager:
         call    print
         mov     si, curvideo_msg
         call    print
-        mov     al, [preboot_graph]
-        cmp     al, 8
-        ja      .pnovesa
-        mov     dl, al
-        and     eax, 3
-        mov     si, [modes_msg+eax*2]
-        call    printplain
-        mov     si, modevesa20
-        cmp     dl, 4
-        jbe     @f
-        mov     si, modevesa12
-@@:
-        call    printplain
-        cmp     dl, 4
-        ja      .x
-        mov     si, probeno_msg
-        cmp     [preboot_gprobe], 2
-        jnz     @f
-        mov     si, probeok_msg
-@@:
-        call    printplain
-.x:
-        jmp     .c
-.pnovesa:
-        cmp     al, 9
-        mov     si, mode9
-        jz      @b
-        mov     si, mode10
-        jmp     @b
-.c:
-        mov     si, linef
-        call    printplain
-;        mov     si, dma_msg
-;        call    print
-;        cmp     [preboot_dma], 2
-;        mov     si, on_msg
-;        jb      @f
-;        mov     si, off_msg
-;        ja      @f
-;        mov     si, readonly_msg
-;@@:
-;        call    printplain
+
+            call    draw_current_vmode
+
         mov     si, usebd_msg
         cmp     [preboot_biosdisk], 1
         call    .say_on_off
@@ -468,18 +415,22 @@ cfgmanager:
         cli
         push    0
         pop     es
-        mov     eax, [es:8*4]
-        mov     [.oldtimer], eax
-        mov     eax, [.timer]
-        mov     [es:8*4], eax
+        push    dword [es:8*4]
+        pop     dword [.oldtimer]
+        push    dword [.timer]
+        pop     dword [es:8*4]    
+;        mov     eax, [es:8*4]
+;        mov     [.oldtimer], eax
+;        mov     eax, [.timer]
+;        mov     [es:8*4], eax
         sti
 ; wait for keypressed
-        mov     ah, 0
+        xor     ax,ax
         int     16h
         push    ax
 ; restore timer interrupt
-        push    0
-        pop     es
+;        push    0
+;        pop     es
         mov     eax, [.oldtimer]
         mov     [es:8*4], eax
         mov     [.timer], eax
@@ -508,31 +459,38 @@ cfgmanager:
         _setcursor 13,0
 .d:
         mov     [.bSettingsChanged], 1
-        mov     si, space_msg
-        call    printplain
-        _setcursor 15,0
-        mov     cx, 6
-@@:
-        call    printplain
-        loop    @b
+        call    clear_vmodes_table             ;clear vmodes_table
         jmp    .printcfg
 .change_a:
-        _setcursor 15,0
-        mov     si, gr_mode
-        call    printplain
-        mov     bx, '09'
-        call    getkey
-        mov     [preboot_graph], al
-        cmp     al, 4
-        ja      @f
-        mov     si, probetext
-        call    printplain
-        mov     bx, '12'
-        call    getkey
-        mov     [preboot_gprobe], al
-@@:
-        _setcursor 10,0
+.loops:
+        call    draw_vmodes_table
+
+        xor     ax,ax
+        int     0x16
+;        call    clear_table_cursor             ;clear current position of cursor
+
+        mov     si,word [cursor_pos]
+
+        cmp     ah,0x48;x,0x48E0               ; up
+        jne     .down
+        cmp     si,modes_table
+        jbe     .loops
+        sub     word [cursor_pos],size_of_step
+        jmp     .loops
+
+.down:  cmp     ah,0x50;x,0x50E0               ; down
+        jne     .enter
+        cmp     word[es:si+10],-1
+        je      .loops        
+        add     word [cursor_pos],size_of_step
+        jmp     .loops
+
+.enter: cmp     al,0x0D;x,0x1C0D               ; enter
+        jne     .loops
+        push    word [cursor_pos]
+        pop     word [preboot_graph]           ;save choose
         jmp    .d
+
 .change_b:
         _setcursor 15,0
 ;        mov     si, ask_dma
@@ -556,6 +514,7 @@ cfgmanager:
         mov     [preboot_vrrm], al
         _setcursor 12,0
         jmp     .d
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 .say_on_off:
         pushf
         call    print
@@ -687,115 +646,7 @@ end if
 
 ; ASK GRAPHICS MODE
 
-        movzx   ax, [preboot_graph]
-        push    0
-        pop     es
-; address is gr_table+6*(ax-1)
-        add     ax, ax
-        lea     si, [gr_table + eax + eax*2 - 6]
-        mov     bx, [si+0]
-        mov     cx, [si+2]
-        mov     dx, [si+4]
-        cmp     al, 9*2
-        mov     al, 32    ; BPP
-        jb      @f
-        mov     [es:0x9000], al
-        or      dword [es:0x9018], 0xFFFFFFFF; 0x800000
-@@:
-        mov     [es:0x9008], bx
-        mov     [es:0x900A], cx
-        mov     [es:0x900C], dx
-        test    bh, bh
-        jz      nov
-
-; USE DEFAULTS OR PROBE
-
-; bx - mode : cx - x size : dx - y size
-        cmp     [preboot_gprobe], 1
-        jz      noprobe
-
-        mov     bx, 0x100
-     newprobe:
-        inc     bx
-        cmp     bx, 0x17f
-        mov     si, prnotfnd
-        jz      invalid_video_mode
-
-     probemore:
-        push    cx
-        mov     ax, 0x4f01
-        mov     cx, bx
-        mov     di, 0xa000
-        int     0x10
-        pop     cx
-
-        test    byte [es:di], 80h    ; lfb?
-        jz      newprobe
-        cmp     [es:di+0x12], cx    ; x size?
-        jnz     newprobe
-        cmp     [es:di+0x14], dx    ; y size?
-        jnz     newprobe
-        cmp     byte [es:di+0x19], 32 ;24
-        jb      newprobe
-
-;       add     bx, 0100000000000000b
-        or      bh, 40h
-        mov     [es:0x9008], bx
-
-     noprobe:
-
-
-; FIND VESA 2.0 LFB & BPP
-
-        mov     ax, 0x4f01
-        mov     cx, bx
-        and     cx, 0xfff
-        mov     di, 0xa000
-        int     0x10
-        ; LFB
-        mov     eax, [es:di+0x28]
-        mov     [es:0x9018], eax
-        ; ---- vbe voodoo
-        BytesPerLine equ 0x10
-        mov     ax, [es:di+BytesPerLine]
-        mov     [es:0x9001], ax
-        ; BPP
-        mov     al, byte [es:di+0x19]
-        mov     [es:0x9000], al
-nov:
-        cmp     al, 24
-        mov     si, bt24
-        jz      bppl
-        cmp     al, 32
-        mov     si, bt32
-        jz      bppl
-        mov     si, btns
-invalid_video_mode:
-        call    print
-        _setcursor (d80x25_top_num+2), 0
-        mov     si, start_msg
-        call    print
-        jmp     cfgmanager.printcfg
-bppl:
-        call    print
-
-
-; FIND VESA 1.2 PM BANK SWITCH ADDRESS
-
-        push    es
-        mov     ax, 0x4f0A
-        xor     bx, bx
-        int     0x10
-        xor     eax, eax
-        mov     ax, es
-        shl     eax, 4
-        movzx   ebx, di
-        add     eax, ebx
-        mov     bx, [es:di]
-        add     eax, ebx
-        pop     es
-        mov     [es:0x9014], eax
-
+        call    set_vmode
 
 ; GRAPHICS ACCELERATION
 ; force yes
@@ -1109,7 +960,7 @@ setgr:
         int     0x10
         test    ah, ah
         mov     si, fatalsel
-        jnz     sayerr
+        jnz     v_mode_error
 ; set mode 0x12 graphics registers:
         cmp     bx, 0x12
         jne     gmok2
