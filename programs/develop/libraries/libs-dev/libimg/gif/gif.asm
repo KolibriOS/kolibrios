@@ -149,6 +149,8 @@ endl
 	or	eax, eax
 	jz	.error
 
+	xor	ecx, ecx
+	mov	eax, [edx + Image.Extended]
 	test	[ebx + gif.ImageDescriptor.Packed], gif.ID.Packed.LocalColorTableFlag
 	jz	@f
 	mov	cl, [ebx + gif.ImageDescriptor.Packed]
@@ -163,11 +165,12 @@ endl
 	or	eax, eax
 	jz	.error
 	mov	[edx + Image.Extended], eax
-	lea	esi, [ebx + sizeof.gif.ImageDescriptor]
-	lea	edi, [eax + sizeof.gif.Image]
+    @@: mov	esi, ebx
+	lea	edi, [eax + sizeof.gif.GraphicsControlExtension]
+	add	ecx, sizeof.gif.ImageDescriptor
 	rep	movsb
 
-    @@: mov	eax, [global_color_table]
+	mov	eax, [global_color_table]
 	test	[ebx + gif.ImageDescriptor.Packed], gif.ID.Packed.LocalColorTableFlag
 	jz	@f
 	lea	eax, [ebx + sizeof.gif.ImageDescriptor]
@@ -293,10 +296,10 @@ proc img.decode.gif._.process_extensions ;//////////////////////////////////////
 	jmp	.next_ext_block
 
   .next_ext_block:
-	mov	al, [ebx + gif.Block.Introducer]
+	mov	al, [esi + gif.Block.Introducer]
 	cmp	al, gif.Block.Introducer.EndOfData
 	jne	.exit
-	inc	ebx
+	inc	esi
 	jmp	.next_block
 
   .exit:
