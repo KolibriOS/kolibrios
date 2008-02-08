@@ -265,7 +265,7 @@ draw_window:
   mov  ebx,1
   int  0x40
 
-  mov  ebx,100*65536+300
+  mov  ebx,100*65536+320
   mov  ecx,100*65536+320
   mov  edx,0x035555DD
   mov  esi,0x805080d0

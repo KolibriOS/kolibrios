@@ -22,7 +22,7 @@ void main()
  draw_window();
  while(1)
  {
-	event=s_get_event();
+	event=get_event();
 	switch(event)
 	{
 		case 1: draw_window(); break;
