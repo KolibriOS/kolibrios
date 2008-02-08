@@ -1,3 +1,6 @@
+#ifndef __KLIB_H__
+#define __KLIB_H__
+
 /********* C library *********/
    
 get_event()
@@ -99,6 +102,8 @@ char *p_string; /* esp +8 */
 #endasm
 }
 
+
+
 // Button + Text
 buttonT(x1,y1,w,h,color,id,p_string, str_color)
 int x1,y1,w,h;  /* esp +28 +24 +20 +16 */
@@ -111,6 +116,7 @@ int str_color;
 	label(x1+4,y1+2,str_color,p_string);
 }
    
+// Button
 button(x1,y1,w,h,color,id)
 int x1,y1,w,h;  /* esp +28 +24 +20 +16 */
 int color,id;   /* esp +12 +8 */
@@ -132,6 +138,75 @@ int color,id;   /* esp +12 +8 */
   int  0x40
 #endasm
 }
+// CONTROLS:
+#define CheckBox	1
+
+/* CheckBox
+array[ ]:
+0	int type
+1	int id
+2	int x,
+3	int y,
+4	int color,
+5	int colorText
+6	int checked
+*/
+char cbt[2] = " ";
+checkbox(cb)
+int *cb;
+{    
+	if (cb[6] == 1) // cheked is set
+		cbt[0] = 'X';
+	else
+		cbt[0] = ' ';
+	
+	buttonT(cb[2], cb[3], 12,10,cb[4],cb[1],cbt,cb[5]);
+}
+
+eventControls(control,count,id)
+int* control;
+int count;
+int id;
+{
+	int i;
+	int *cont;
+	for (i=0; i<count; i++)
+	{
+		cont = control[i];
+		switch (cont[0])
+		{
+			case CheckBox:
+				if (cont[1]==id)
+				{
+					cont[6] = 1 - cont[6];
+					renderControls(control,count);
+					return 1;
+				}
+			break;
+		}
+	}
+	return 0;
+}
+
+renderControls(control, count)
+int* control;
+int count;
+{
+	int i;
+	int *cont;
+	
+	for (i=0; i<count; i++)
+	{
+		cont = control[i];
+		switch (cont[0])
+		{
+			case CheckBox:
+				checkbox(cont)
+			break;
+		}
+	}
+}
+
    
 s_quit()
 {
@@ -139,20 +214,8 @@ s_quit()
   mov  eax,-1
   int  0x40
 #endasm
-}
+}  
+
    
-/*
-   
- s_get_event()
- s_get_key()
- s_get_button()
- s_begin_draw()
- s_end_draw()
- s_draw_window(x1,y1,w,h,c_area,c_grab,c_fram)
- s_print_text(x,y,color,p_string)
- s_draw_button(x1,y1,w,h,color,id)
- s_quit()
-   
-*/
-   
-/*****************************/
+
+#endif

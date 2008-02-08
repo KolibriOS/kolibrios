@@ -1,10 +1,9 @@
-##############################
-#  SCC (simple c compiler)
-#  port of CCOMP to KolibriOS
-#
-######
-# contact: jacekm.pl@gmail.com
-##############################
+ ##############################
+#  SCC (simple c compiler)     #
+#  port of CCOMP to KolibriOS  #
+ ############################## 
+# contact: jacekm.pl@gmail.com #
+ ##############################
 
 KNOWN BUGS:
 	* only directiory /rd/1/ works
