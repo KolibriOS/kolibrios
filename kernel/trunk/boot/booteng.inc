@@ -21,7 +21,7 @@ novesa    db      "Display: EGA/CGA",13,10,0
 s_vesa    db      "Version of VESA: "
   .ver    db      "?.?",13,10,0
 
-gr_mode   db      "Select a vedeomode: ",13,10,0
+gr_mode   db      "Select a videomode: ",13,10,0
 ;s_bpp     db      13,10,186," Глубина цвета: "
 ;  .bpp    dw      "??"
 ;          db      13,10,0
