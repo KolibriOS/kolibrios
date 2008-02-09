@@ -201,7 +201,7 @@ int count;
 		switch (cont[0])
 		{
 			case CheckBox:
-				checkbox(cont)
+				checkbox(cont);
 			break;
 		}
 	}
