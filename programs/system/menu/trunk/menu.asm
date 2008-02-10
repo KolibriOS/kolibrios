@@ -361,10 +361,17 @@ thread_stack_not_full:
 
 
   close:
-    or	   eax, -1	  ; close this thread
-    mov  [edi + child], al    ; my child is not mine
-    mcall
-
+        movzx   ebx, [edi+parent]       ; parent id
+        shl     ebx, 4
+        add     ebx, menu_data          ; ebx = base of parent info
+        call    backconvert
+        cmp     [ebx + child], al       ; if i am the child of my parent...
+        jnz     @f
+        mov     [ebx + child], -1       ; ...my parent now has no children
+@@:
+        or      eax, -1                 ; close this thread
+        mov     [edi + child], al       ; my child is not mine
+        mcall
 
   backconvert:		  ; convert from pointer to process id
     mov  eax, edi
