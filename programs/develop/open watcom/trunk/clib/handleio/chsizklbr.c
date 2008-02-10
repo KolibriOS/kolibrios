@@ -31,11 +31,13 @@
 
 
 #include "variety.h"
+#include <windows.h>
+#include <unistd.h>
 #include "iomode.h"
+#include "fileacc.h"
 #include "rtcheck.h"
 #include "seterrno.h"
-#include "qread.h"
-#include <stdio.h>
+#include "lseek.h"
 #include "kolibri.h"
 
 typedef struct 
@@ -44,23 +46,37 @@ typedef struct
   unsigned int offset;
 }__file_handle;
 
-int __qread( int handle, void *buffer, unsigned len )
+_WCRTLINK int chsize( int hid, long size )
 {
-    int err;
-    
+    long        curOffset;
+    long        rc;
     __file_handle *fh;
-    unsigned amount_read=0;
+
+    __handle_check( hid, -1 );
+    fh = (__file_handle*) __getOSHandle( hid );
+
+    _AccessFileH( hid );
     
-    __handle_check( handle, -1 );
-    fh = (__file_handle*) __getOSHandle( handle );
+    curOffset = __lseek( hid, 0L, SEEK_CUR );     /* get current offset */
 
-    err = read_file(fh->name,buffer,fh->offset,len,&amount_read);
-    fh->offset+=amount_read;
-    if(err)
-      if ( amount_read == 0)
-        return (-1);   
-    return( amount_read );
-};
+    rc = set_file_size(fh->name, size);
+     
+    if(rc !=0 )
+    {
+      _ReleaseFileH( hid );
+      if(rc==8)
+        __set_errno( ENOSPC );
+      else
+        __set_errno( EACCES );
+      return -1;
+    };     
 
-
-
+    if( curOffset > size ) curOffset = size;
+    curOffset = __lseek( hid, curOffset, SEEK_SET );
+    _ReleaseFileH( hid );
+    if( curOffset == -1 ) {
+        __set_errno(ENOSPC);
+        return( -1 );
+    }
+    return( 0 );
+}

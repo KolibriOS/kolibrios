@@ -67,7 +67,11 @@ char* getfullpath(const char* path)
     int len=0, depth=0, i;
     char* buff;
     char c;
-    
+
+
+    buff = (char*)lib_malloc(strlen(path)+2);
+    strcpy(buff, path);
+
     if(*path == '/')
     {
       buff = (char*)lib_malloc(strlen(path)+1);
@@ -127,6 +131,7 @@ char* getfullpath(const char* path)
         };
     };
     buff[len]= '\0';
+    
     return buff;
 };
 
@@ -170,11 +175,20 @@ static HANDLE __openFileHandle(const CHAR_TYPE *name, int mode)
   int err;
   
   path = getfullpath(name);
+
+  err=get_fileinfo(path,&info);
   
-  if(err=get_fileinfo(path,&info))
+  if( mode & O_EXCL && mode & O_CREAT )
   {
-//    printf("failed getfileinfo %s\n\r", path);
-      
+     if( !err)
+     { 
+       __set_errno( EEXIST );
+       return (HANDLE)-1;
+     };  
+  } 
+
+  if(err)
+  {
     if(mode & O_CREAT)
       err=create_file(path);
       
@@ -184,9 +198,12 @@ static HANDLE __openFileHandle(const CHAR_TYPE *name, int mode)
       return (HANDLE)-1;
     };
   };
-  
+  if( mode & O_TRUNC )
+    set_file_size(path, 0);
+      
   if ( !(handle=(__file_handle*)lib_malloc(sizeof( __file_handle) )))
-  { lib_free(path);
+  {
+    lib_free(path);
     return (HANDLE)-1;
   };
   
@@ -211,8 +228,7 @@ static int __F_NAME(_sopen,__wsopen)( const CHAR_TYPE *name, int mode, int share
         return( -1 );
     }
 
-    rwmode = mode;
-
+    rwmode = mode & ( O_RDONLY | O_WRONLY | O_RDWR | O_NOINHERIT );
 
     /*** Open the file ***/
         
@@ -225,10 +241,10 @@ static int __F_NAME(_sopen,__wsopen)( const CHAR_TYPE *name, int mode, int share
     }
 
 // Now use the slot we got.
+
     __setOSHandle( hid, handle );   // JBS 99/11/01
 
     iomode_flags = 0;
-
 
     if( rwmode == O_RDWR )       iomode_flags |= _READ | _WRITE;
     else if( rwmode == O_RDONLY) iomode_flags |= _READ;

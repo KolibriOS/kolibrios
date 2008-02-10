@@ -99,18 +99,63 @@ void _stdcall write_text(int x,int y,int color,char* text,int len);
 
 #endif
 
+#pragma pack(push, 1)
+typedef struct
+{
+  char sec;
+  char min;
+  char hour;
+  char rsv;
+}detime_t; 
+#pragma pack(pop)
+
+#pragma pack(push, 1)
+typedef struct
+{
+  char  day;
+  char  month;
+  short year;
+}dedate_t; 
+#pragma pack(pop)
+
+#pragma pack(push, 1)
 typedef struct
 {   unsigned    attr;
     unsigned    flags;
-    unsigned    cr_time;
-    unsigned    cr_date;
-    unsigned    acc_time;
-    unsigned    acc_date;
-    unsigned    mod_time;
-    unsigned    mod_date;
+    union
+    {
+      detime_t  ctime;
+      unsigned  cr_time;
+    };
+    union
+    {
+      dedate_t  cdate;
+      unsigned  cr_date;
+    };
+    union
+    {
+      detime_t  atime;
+      unsigned  acc_time;
+    };
+    union
+    {
+      dedate_t  adate;
+      unsigned  acc_date;
+    };
+    union
+    {
+      detime_t  mtime;
+      unsigned  mod_time;
+    };
+    union
+    {
+      dedate_t  mdate;
+      unsigned  mod_date;
+    };
     unsigned    size;
     unsigned    size_high; 
 } FILEINFO;
+#pragma pack(pop)
 
 
 unsigned init_heap(void);
@@ -118,7 +163,8 @@ void *user_alloc(unsigned size);
 unsigned user_free(void *);
 
 int create_file(const char *name);
-int get_fileinfo(const char *name,FILEINFO* pinfo);
+int set_file_size(const char *name, unsigned size);
+int get_fileinfo(const char *name,FILEINFO *info);
 int read_file (const char *name,void *buff, unsigned offset, unsigned count,unsigned *reads);
 int write_file(const char *name,const void *buff,unsigned offset,unsigned count,unsigned *writes);
 
@@ -157,6 +203,22 @@ int write_file(const char *name,const void *buff,unsigned offset,unsigned count,
             "int 0x40"         \
             "add esp, 28"      \      
             parm [EAX] value [EAX] \
+            modify [ EBX ];
+
+#pragma aux set_file_size    = \
+            "push 0"           \
+            "push 0"           \ 
+            "mov [esp+1], eax" \
+            "push 0"           \
+            "push 0"           \
+            "push 0"           \
+            "push ebx"           \
+            "push 4"           \
+            "mov ebx, esp"     \  
+            "mov eax, 70"      \
+            "int 0x40"         \
+            "add esp, 28"      \      
+            parm [EAX] [EBX] value [EAX] \
             modify [ EBX ];
 
 #pragma aux get_fileinfo  = \

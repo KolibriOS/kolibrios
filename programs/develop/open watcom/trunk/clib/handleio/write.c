@@ -44,6 +44,7 @@
 #include "rtdata.h"
 #include "seterrno.h"
 #include "lseek.h"
+#include "kolibri.h"
 
 /*
     The _lwrite function writes data to the specified file.
@@ -142,8 +143,6 @@ typedef struct
   unsigned int offset;
 }__file_handle;
 
-int _stdcall write_file (const char *name,const void* buff,unsigned offset, unsigned count,unsigned *reads);
-
 static int os_write( int handle, const void *buffer, unsigned len, unsigned *amt )
 /********************************************************************************/
 {
@@ -154,11 +153,8 @@ static int os_write( int handle, const void *buffer, unsigned len, unsigned *amt
     
     fh = (__file_handle*) __getOSHandle( handle );
       
-    if(write_file(fh->name,buffer,fh->offset,len,amt))
-    {
-       rc = __set_errno_nt();
-    };
-
+    rc = write_file(fh->name,buffer,fh->offset,len,amt);
+    fh->offset+= *amt;
 
     if( *amt != len )
     {

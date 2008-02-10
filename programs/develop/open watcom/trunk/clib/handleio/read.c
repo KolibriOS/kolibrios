@@ -41,15 +41,13 @@
 #include "rtdata.h"
 #include "seterrno.h"
 #include "lseek.h"
+#include "kolibri.h"
 
 typedef struct 
 {
   char     *name;
   unsigned int offset;
 }__file_handle;
-
-
-int _stdcall read_file (const char *name,char *buff,unsigned offset, unsigned count,unsigned *reads);
 
 _WCRTLINK int read( int handle, void *buf, unsigned len )
 {
@@ -60,8 +58,11 @@ _WCRTLINK int read( int handle, void *buf, unsigned len )
     BOOL    rc;
     HANDLE  h;
     unsigned amount_read;
+    int err;
+    
     __file_handle *fh;
 
+    
     __handle_check( handle, -1 );
     __ChkTTYIOMode( handle );
     iomode_flags = __GetIOMode( handle );
@@ -82,13 +83,14 @@ _WCRTLINK int read( int handle, void *buf, unsigned len )
     if( iomode_flags & _BINARY )   /* if binary mode */
     {
 
-      if(read_file(fh->name,buffer,fh->offset,len,&amount_read))
-      {
-        if ( amount_read == 0)
-          return (-1);   
-      }
+      err=read_file(fh->name,buffer,fh->offset,len,&amount_read);
       fh->offset+=amount_read;
       total_len = amount_read;
+      
+      if(err)
+        if ( amount_read == 0)
+          return (-1);   
+      
     }
     else
     {
@@ -96,13 +98,12 @@ _WCRTLINK int read( int handle, void *buf, unsigned len )
         read_len = len;
         do
         {
-          if(read_file(fh->name,buffer,fh->offset,len,&amount_read))
-          {
-            if( amount_read == 0 )
-            {                    /* EOF */
-                break;
-            }
-          }  
+          err=read_file(fh->name,buffer,fh->offset,len,&amount_read);
+          fh->offset+=amount_read;
+            
+          if( amount_read == 0 )
+            break;                   /* EOF */
+            
           reduce_idx = 0;
           finish_idx = reduce_idx;
           for( ; reduce_idx < amount_read; ++reduce_idx )
