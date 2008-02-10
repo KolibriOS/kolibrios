@@ -9,9 +9,9 @@ $Revision$
 
 d80x25_bottom:
           db       186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '
-          db       'NO WARRANTY            ',186
-          db       186,' See file COPYING for details                          '
-          db       '                       ',186
+          db       'NO WARRANTY         ',186
+          db       186,' See file COPYING for details                             '
+          db       '                    ',186
           line_full_bottom
 d80x25_bottom_num = 3
 
@@ -95,3 +95,9 @@ _r1 db 186,'                   ³  320x200  EGA/CGA 256 colors  ³Û³',13,10,0
 _r2 db 186,'                   ³  640x480  VGA 16 colors       ³Û³',13,10,0
 _rs db 186,'                   ³  ????x????@??  SVGA VESA      ³Û³',13,10,0
 _bt db 186,'                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÙ',13,10,0
+
+remark1 db      "Default values were selected to match most of configurations, but not all.",0
+remark2 db      "If you have LCD-monitor, disable VRR in the item [c] - you do not need it.",0
+remark3 db      "If the system does not boot, try to disable the item [b].",0
+remarks dw      remark1, remark2, remark3
+num_remarks = 3

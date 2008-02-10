@@ -100,3 +100,9 @@ pdm4      db      "loo tühi pilt",13,10,0
 loading_msg db    "Laadin KolibriOS...",0
 save_quest db     "Jäta meelde praegused seaded? [y/n]: ",0
 loader_block_error db "Alglaaduri andmed vigased, ei saa jätkata. Peatatud.",0
+
+remark1 db      "Default values were selected to match most of configurations, but not all.",0
+remark2 db      "If you have LCD-monitor, disable VRR in the item [c] - you do not need it.",0
+remark3 db      "If the system does not boot, try to disable the item [b].",0
+remarks dw      remark1, remark2, remark3
+num_remarks = 3

@@ -367,13 +367,29 @@ cfgmanager:
         mov     [.bSettingsChanged], 0
 
 ;.preboot_gr_end:
+        mov     di, preboot_device
+; if image in memory is present and [preboot_device] is uninitialized,
+; set it to use this preloaded image
+        cmp     byte [di], 0
+        jnz     .preboot_device_inited
+        cmp     [.loader_block], -1
+        jz      @f
+        les     bx, [.loader_block]
+        test    byte [es:bx+1], 1
+        jz      @f
+        mov     byte [di], 3
+        jmp     .preboot_device_inited
+@@:
+; otherwise, set [preboot_device] to 1 (default value - boot from floppy)
+        mov     byte [di], 1
+.preboot_device_inited:
 ; following 6 lines set variables to 1 if its current value is 0
-        cmp     byte[preboot_dma], 1
-        adc     byte[preboot_dma], 0
-        cmp     byte[preboot_vrrm], 1
-        adc     byte[preboot_vrrm], 0
-        cmp     byte[preboot_device], 1
-        adc     byte[preboot_device], 0
+        cmp     byte [di+preboot_dma-preboot_device], 1
+        adc     byte [di+preboot_dma-preboot_device], 0
+        cmp     byte [di+preboot_biosdisk-preboot_device], 1
+        adc     byte [di+preboot_biosdisk-preboot_device], 0
+        cmp     byte [di+preboot_vrrm-preboot_device], 1
+        adc     byte [di+preboot_vrrm-preboot_device], 0
 ; notify user
         _setcursor 5,2
 
@@ -409,6 +425,30 @@ cfgmanager:
         and     eax, 7
         mov     si, [preboot_device_msgs+eax*2]
         call    printplain
+.show_remarks:
+; show remarks in gray color
+        mov     di, ((21-num_remarks)*80 + 2)*2
+        push    0xB800
+        pop     es
+        mov     cx, num_remarks
+        mov     si, remarks
+.write_remarks:
+        lodsw
+        push    si
+        xchg    ax, si
+        mov     ah, 1*16+7      ; background: blue (1), foreground: gray (7)
+        push    di
+.write_remark:
+        lodsb
+        test    al, al
+        jz      @f
+        stosw
+        jmp     .write_remark
+@@:
+        pop     di
+        pop     si
+        add     di, 80*2
+        loop    .write_remarks
 .wait:
         _setcursor 25,0         ; out of screen
 ; set timer interrupt handler
@@ -437,6 +477,21 @@ cfgmanager:
         _setcursor 7,0
         mov     si, space_msg
         call    printplain
+; clear remarks and restore normal attributes
+        push    es
+        mov     di, ((21-num_remarks)*80 + 2)*2
+        push    0xB800
+        pop     es
+        mov     cx, num_remarks
+        mov     ax, ' ' + (1*16 + 15)*100h
+@@:
+        push    cx
+        mov     cx, 76
+        rep     stosw
+        pop     cx
+        add     di, 4*2
+        loop    @b
+        pop     es
         pop     ax
 ; switch on key
         cmp     al, 13
@@ -449,7 +504,7 @@ cfgmanager:
         cmp     al, 'c'
         jz      .change_c
         cmp     al, 'd'
-        jnz     .wait
+        jnz     .show_remarks
         _setcursor 15,0
         mov     si, bdev
         call    print
