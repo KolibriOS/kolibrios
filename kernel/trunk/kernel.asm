@@ -557,6 +557,22 @@ high_code:
 ; Initialize system V86 machine
         call    init_sys_v86
 
+; TIMER SET TO 1/100 S
+
+        mov   al,0x34              ; set to 100Hz
+        out   0x43,al
+        mov   al,0x9b              ; lsb    1193180 / 1193
+        out   0x40,al
+        mov   al,0x2e              ; msb
+        out   0x40,al
+
+; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
+; they are used: when partitions are scanned, hd_read relies on timer
+        mov     al, 0xFE
+        out     0x21, al
+        mov     al, 0x3F
+        out     0xA1, al
+
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -600,7 +616,7 @@ no_lib_load:
 ; pop eax
 ; popad
 
-        stdcall read_file, char, FONT_I, 0, 2560
+        stdcall read_file, char, FONT_I, 0, 2304
         stdcall read_file, char2, FONT_II, 0, 2560
 
         mov   esi,boot_fonts
@@ -631,17 +647,6 @@ no_lib_load:
 
         call   detect_devices
         stdcall load_driver, szPS2MDriver
-
-; TIMER SET TO 1/100 S
-
-        mov   esi,boot_timer
-        call  boot_log
-        mov   al,0x34              ; set to 100Hz
-        out   0x43,al
-        mov   al,0x9b              ; lsb    1193180 / 1193
-        out   0x40,al
-        mov   al,0x2e              ; msb
-        out   0x40,al
 
 ; SET MOUSE
 
@@ -731,11 +736,13 @@ no_lib_load:
 
         mov   esi,boot_tsc
         call  boot_log
+        cli
         call  _rdtsc
         mov   ecx,eax
         mov   esi,250               ; wait 1/4 a second
         call  delay_ms
         call  _rdtsc
+        sti
         sub   eax,ecx
         shl   eax,2
         mov   [CPU_FREQ],eax          ; save tsc / sec
@@ -892,7 +899,7 @@ first_app_found:
 
         jmp osloop
 
-        jmp   $                      ; wait here for timer to take control
+;        jmp   $                      ; wait here for timer to take control
 
         ; Fly :)
 

@@ -62,6 +62,8 @@ hd_read:
 .bios:
         call    bd_read
 @@:
+        cmp     [hd_error], 0
+        jne     return_01
 ;    lea   esi,[edi*8+HD_CACHE]
 ;    push  eax
     call  calculate_cache_1
