@@ -542,14 +542,14 @@ cfgmanager:
 
 .pgup:  cmp     ah,0x49                 ; page up
         jne     .pgdn
-        sub     si, size_of_step*9
+        sub     si, size_of_step*long_v_table
         cmp     si, modes_table
         jae     @f
         mov     si, modes_table
 @@:
         mov     word [cursor_pos], si
         mov     si, word [home_cursor]
-        sub     si, size_of_step*9
+        sub     si, size_of_step*long_v_table
         cmp     si, modes_table
         jae     @f
         mov     si, modes_table
@@ -560,7 +560,7 @@ cfgmanager:
 .pgdn:  cmp     ah,0x51                 ; page down
         jne     .enter
         mov     ax, [end_cursor]
-        add     si, size_of_step*9
+        add     si, size_of_step*long_v_table
         cmp     si, ax
         jb      @f
         mov     si, ax
@@ -568,8 +568,8 @@ cfgmanager:
 @@:
         mov     word [cursor_pos], si
         mov     si, word [home_cursor]
-        sub     ax, size_of_step*9
-        add     si, size_of_step*9
+        sub     ax, size_of_step*long_v_table
+        add     si, size_of_step*long_v_table
         cmp     si, ax
         jb      @f
         mov     si, ax

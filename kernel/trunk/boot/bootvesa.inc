@@ -74,7 +74,8 @@ cursor_pos  dw 0         ;временное хранение курсора.
 home_cursor dw 0    ;current shows rows a table
 end_cursor  dw 0     ;end of position current shows rows a table
 long_v_table equ 9   ;long of visible video table
-size_of_step equ 10 
+size_of_step equ 10
+scroll_area_size equ (long_v_table-2)
 int2str:
         dec     bl
         jz      @f
@@ -523,7 +524,7 @@ draw_vmodes_table:
         stosb
         add     di, 80*2-1
         mov     al, 32
-        mov     cx, 7
+        mov     cx, scroll_area_size
 @@:
         stosb
         add     di, 80*2-1
@@ -542,24 +543,24 @@ draw_vmodes_table:
         cwd
         div     bx
         mov     di, ax
-        mov     ax, 7*9
+        mov     ax, scroll_area_size*long_v_table
         cwd
         div     si
         test    ax, ax
         jnz     @f
         inc     ax
 @@:
-        cmp     al, 7
+        cmp     al, scroll_area_size
         jb      @f
-        mov     al, 7
+        mov     al, scroll_area_size
 @@:
         mov     cx, ax
 ; cx = scroll height
 ; calculate scroll pos
         xor     bx, bx          ; initialize scroll pos
-        sub     al, 7+1
+        sub     al, scroll_area_size+1
         neg     al
-        sub     si, 9-1
+        sub     si, long_v_table-1
         jbe     .draw_scroll
         mul     di
         div     si
