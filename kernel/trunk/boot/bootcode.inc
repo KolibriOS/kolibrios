@@ -534,10 +534,47 @@ cfgmanager:
         jmp     .loops
 
 .down:  cmp     ah,0x50;x,0x50E0               ; down
-        jne     .enter
+        jne     .pgup
         cmp     word[es:si+10],-1
         je      .loops        
         add     word [cursor_pos],size_of_step
+        jmp     .loops
+
+.pgup:  cmp     ah,0x49                 ; page up
+        jne     .pgdn
+        sub     si, size_of_step*9
+        cmp     si, modes_table
+        jae     @f
+        mov     si, modes_table
+@@:
+        mov     word [cursor_pos], si
+        mov     si, word [home_cursor]
+        sub     si, size_of_step*9
+        cmp     si, modes_table
+        jae     @f
+        mov     si, modes_table
+@@:
+        mov     word [home_cursor], si
+        jmp     .loops
+
+.pgdn:  cmp     ah,0x51                 ; page down
+        jne     .enter
+        mov     ax, [end_cursor]
+        add     si, size_of_step*9
+        cmp     si, ax
+        jb      @f
+        mov     si, ax
+        sub     si, size_of_step
+@@:
+        mov     word [cursor_pos], si
+        mov     si, word [home_cursor]
+        sub     ax, size_of_step*9
+        add     si, size_of_step*9
+        cmp     si, ax
+        jb      @f
+        mov     si, ax
+@@:
+        mov     word [home_cursor], si
         jmp     .loops
 
 .enter: cmp     al,0x0D;x,0x1C0D               ; enter

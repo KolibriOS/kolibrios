@@ -172,9 +172,7 @@ calc_vmodes_table:
 ;        push    0
 ;        pop     es
 
-        mov     si,word[es:vi.VideoModePtr]
-        push    word[es:vi.VideoModePtr+2]
-        pop     fs
+        lfs     si, [es:vi.VideoModePtr]
 
         mov     bx,modes_table
 ;save no vesa mode of work 320x200, EGA/CGA 256 梥⮢ and 640x480, VGA 16 梥⮢
@@ -204,6 +202,9 @@ calc_vmodes_table:
         jz      @f
         test    [es:mi.ModeAttributes],10000000b   ;LFB ?
         jz      @f
+
+;        cmp     [es:mi.BitsPerPixel], 24
+;        jb      @f
 
         cmp     [es:mi.BitsPerPixel],16
         jne     .l0
@@ -512,6 +513,66 @@ draw_vmodes_table:
 .@@_end:
         mov     si,_bt
         call    printplain
+; show scroll
+        push    es
+        push    0xB800
+        pop     es
+; arrows
+        mov     di, (11*80+53)*2
+        mov     al, 30
+        stosb
+        add     di, 80*2-1
+        mov     al, 32
+        mov     cx, 7
+@@:
+        stosb
+        add     di, 80*2-1
+        loop    @b
+        mov     al, 31
+        stosb
+; calculate scroll size
+        mov     ax, [end_cursor]
+        sub     ax, modes_table
+        mov     bx, size_of_step
+        cwd
+        div     bx
+        mov     si, ax          ; si = size of list
+        mov     ax, [home_cursor]
+        sub     ax, modes_table
+        cwd
+        div     bx
+        mov     di, ax
+        mov     ax, 7*9
+        cwd
+        div     si
+        test    ax, ax
+        jnz     @f
+        inc     ax
+@@:
+        cmp     al, 7
+        jb      @f
+        mov     al, 7
+@@:
+        mov     cx, ax
+; cx = scroll height
+; calculate scroll pos
+        xor     bx, bx          ; initialize scroll pos
+        sub     al, 7+1
+        neg     al
+        sub     si, 9-1
+        jbe     .draw_scroll
+        mul     di
+        div     si
+        mov     bx, ax
+.draw_scroll:
+        mov     al, 0xDB
+        imul    di, bx, 80*2
+        add     di, (12*80+53)*2
+@@:
+        stosb
+        add     di, 80*2-1
+        loop    @b
+        pop     es
         ret
 .show_0x13:
         push    si
