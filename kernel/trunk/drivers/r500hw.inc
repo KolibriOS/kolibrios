@@ -1,0 +1,573 @@
+if 0
+
+ Copyright 2008  Serge
+
+ The below code is a rework from code in
+ xf86-video-radeonhd/src/r5xx_accel.c, xf86-video-radeonhd/src/r5xx_xaa.c
+
+ Copyright 2008  Luc Verhaegen <lverhaegen@novell.com>
+ Copyright 2008  Matthias Hopf <mhopf@novell.com>
+ Copyright 2008  Egbert Eich   <eich@novell.com>
+ Copyright 2008  Advanced Micro Devices, Inc.
+
+ Permission is hereby granted, free of charge, to any person obtaining a
+ copy of this software and associated documentation files (the "Software"),
+ to deal in the Software without restriction, including without limitation
+ the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ and/or sell copies of the Software, and to permit persons to whom the
+ Software is furnished to do so, subject to the following conditions:
+
+ The above copyright notice and this permission notice shall be included in
+ all copies or substantial portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.  IN NO EVENT SHALL
+ THE COPYRIGHT HOLDER(S) OR AUTHOR(S) BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ OTHER DEALINGS IN THE SOFTWARE.
+
+ The below code is a rework from code in xf86-video-ati/src/radeon_accel.c
+ The original license is included below, it has the messed up disclaimer and
+ an all rights reserved statement.
+
+
+
+ Copyright 2000 ATI Technologies Inc., Markham, Ontario, and
+                VA Linux Systems Inc., Fremont, California.
+
+ All Rights Reserved.
+
+ Permission is hereby granted, free of charge, to any person obtaining
+ a copy of this software and associated documentation files (the
+ "Software"), to deal in the Software without restriction, including
+ without limitation on the rights to use, copy, modify, merge,
+ publish, distribute, sublicense, and/or sell copies of the Software,
+ and to permit persons to whom the Software is furnished to do so,
+ subject to the following conditions:
+
+ The above copyright notice and this permission notice (including the
+ next paragraph) shall be included in all copies or substantial
+ portions of the Software.
+
+ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ NON-INFRINGEMENT.  IN NO EVENT SHALL ATI, VA LINUX SYSTEMS AND/OR
+ THEIR SUPPLIERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+ WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ DEALINGS IN THE SOFTWARE.
+
+ Authors:
+   Kevin E. Martin <martin@xfree86.org>
+   Rickard E. Faith <faith@valinux.com>
+   Alan Hourihane <alanh@fairlite.demon.co.uk>
+
+end if
+
+
+
+R5XX_DATATYPE_ARGB8888           equ  6
+
+R5XX_RB3D_CNTL                   equ  0x1c3c
+
+R5XX_RBBM_STATUS                 equ  0x0e40
+  R5XX_RBBM_FIFOCNT_MASK         equ  0x007f
+  R5XX_RBBM_ACTIVE               equ  (1 shl 31)
+
+R5XX_RBBM_SOFT_RESET             equ  0x00f0
+  R5XX_SOFT_RESET_CP             equ  (1 shl 0)
+  R5XX_SOFT_RESET_HI             equ  (1 shl 1)
+  R5XX_SOFT_RESET_SE             equ  (1 shl 2)
+  R5XX_SOFT_RESET_RE             equ  (1 shl 3)
+  R5XX_SOFT_RESET_PP             equ  (1 shl 4)
+  R5XX_SOFT_RESET_E2             equ  (1 shl 5)
+  R5XX_SOFT_RESET_RB             equ  (1 shl 6)
+  R5XX_SOFT_RESET_HDP            equ  (1 shl 7)
+
+R5XX_SRC_PITCH_OFFSET            equ  0x1428
+R5XX_DST_PITCH_OFFSET            equ  0x142c
+
+R5XX_DP_DATATYPE                 equ  0x16c4
+  R5XX_HOST_BIG_ENDIAN_EN        equ  (1 shl 29)
+
+R5XX_DP_CNTL                     equ  0x16c0
+  R5XX_DST_X_LEFT_TO_RIGHT       equ (1 shl  0)
+  R5XX_DST_Y_TOP_TO_BOTTOM       equ (1 shl  1)
+  R5XX_DP_DST_TILE_LINEAR        equ (0 shl  3)
+  R5XX_DP_DST_TILE_MACRO         equ (1 shl  3)
+  R5XX_DP_DST_TILE_MICRO         equ (2 shl  3)
+  R5XX_DP_DST_TILE_BOTH          equ (3 shl  3)
+
+
+R5XX_RB3D_DSTCACHE_CTLSTAT       equ  0x325C
+  R5XX_RB3D_DC_FLUSH             equ  (3 shl 0)
+  R5XX_RB3D_DC_FREE              equ  (3 shl 2)
+  R5XX_RB3D_DC_FLUSH_ALL         equ  0xf
+  R5XX_RB3D_DC_BUSY              equ  (1 shl 31)
+
+R5XX_SURFACE_CNTL                equ  0x0b00
+  R5XX_SURF_TRANSLATION_DIS      equ  (1 shl 8)
+  R5XX_NONSURF_AP0_SWP_16BPP     equ  (1 shl 20)
+  R5XX_NONSURF_AP0_SWP_32BPP     equ  (1 shl 21)
+  R5XX_NONSURF_AP1_SWP_16BPP     equ  (1 shl 22)
+  R5XX_NONSURF_AP1_SWP_32BPP     equ  (1 shl 23)
+
+R5XX_DEFAULT_SC_BOTTOM_RIGHT     equ  0x16e8
+  R5XX_DEFAULT_SC_RIGHT_MAX      equ  (0x1fff shl  0)
+  R5XX_DEFAULT_SC_BOTTOM_MAX     equ  (0x1fff shl 16)
+
+R5XX_SC_TOP_LEFT                 equ  0x16ec
+  R5XX_SC_BOTTOM_RIGHT           equ  0x16f0
+  R5XX_SC_SIGN_MASK_LO           equ  0x8000
+  R5XX_SC_SIGN_MASK_HI           equ  0x80000000
+
+R5XX_SRC_Y_X                     equ  0x1434
+R5XX_DST_Y_X                     equ  0x1438
+R5XX_DST_HEIGHT_WIDTH            equ  0x143c
+
+R5XX_DP_GUI_MASTER_CNTL          equ  0x146c
+R5XX_GMC_SRC_PITCH_OFFSET_CNTL   equ  (1 shl 0)
+R5XX_GMC_DST_PITCH_OFFSET_CNTL   equ  (1 shl 1)
+R5XX_GMC_SRC_CLIPPING            equ  (1 shl 2)
+R5XX_GMC_DST_CLIPPING            equ  (1    shl 3)
+R5XX_GMC_BRUSH_DATATYPE_MASK     equ  (0x0f shl 4)
+R5XX_GMC_BRUSH_8X8_MONO_FG_BG    equ  (0    shl 4)
+R5XX_GMC_BRUSH_8X8_MONO_FG_LA    equ  (1    shl 4)
+R5XX_GMC_BRUSH_1X8_MONO_FG_BG    equ  (4    shl 4)
+R5XX_GMC_BRUSH_1X8_MONO_FG_LA    equ  (5    shl 4)
+R5XX_GMC_BRUSH_32x1_MONO_FG_BG   equ  (6    shl 4)
+R5XX_GMC_BRUSH_32x1_MONO_FG_LA   equ  (7    shl 4)
+R5XX_GMC_BRUSH_32x32_MONO_FG_BG  equ  (8    shl 4)
+R5XX_GMC_BRUSH_32x32_MONO_FG_LA  equ  (9    shl 4)
+R5XX_GMC_BRUSH_8x8_COLOR         equ  (10   shl 4)
+R5XX_GMC_BRUSH_1X8_COLOR         equ  (12   shl 4)
+R5XX_GMC_BRUSH_SOLID_COLOR       equ  (13   shl 4)
+R5XX_GMC_BRUSH_NONE              equ  (15   shl 4)
+R5XX_GMC_DST_8BPP_CI             equ  (2    shl 8)
+R5XX_GMC_DST_15BPP               equ  (3    shl 8)
+R5XX_GMC_DST_16BPP               equ  (4    shl 8)
+R5XX_GMC_DST_24BPP               equ  (5    shl 8)
+R5XX_GMC_DST_32BPP               equ  (6    shl 8)
+R5XX_GMC_DST_8BPP_RGB            equ  (7    shl 8)
+R5XX_GMC_DST_Y8                  equ  (8    shl 8)
+R5XX_GMC_DST_RGB8                equ  (9    shl 8)
+R5XX_GMC_DST_VYUY                equ  (11   shl 8)
+R5XX_GMC_DST_YVYU                equ  (12   shl 8)
+R5XX_GMC_DST_AYUV444             equ  (14   shl 8)
+R5XX_GMC_DST_ARGB4444            equ  (15   shl 8)
+R5XX_GMC_DST_DATATYPE_MASK       equ  (0x0f shl 8)
+R5XX_GMC_DST_DATATYPE_SHIFT      equ  8
+R5XX_GMC_SRC_DATATYPE_MASK       equ  (3    shl 12)
+R5XX_GMC_SRC_DATATYPE_MONO_FG_BG equ  (0    shl 12)
+R5XX_GMC_SRC_DATATYPE_MONO_FG_LA equ  (1    shl 12)
+R5XX_GMC_SRC_DATATYPE_COLOR      equ  (3    shl 12)
+R5XX_GMC_BYTE_PIX_ORDER          equ  (1    shl 14)
+R5XX_GMC_BYTE_MSB_TO_LSB         equ  (0    shl 14)
+R5XX_GMC_BYTE_LSB_TO_MSB         equ  (1    shl 14)
+R5XX_GMC_CONVERSION_TEMP         equ  (1    shl 15)
+R5XX_GMC_CONVERSION_TEMP_6500    equ  (0    shl 15)
+R5XX_GMC_CONVERSION_TEMP_9300    equ  (1    shl 15)
+R5XX_GMC_ROP3_MASK               equ  (0xff shl 16)
+R5XX_DP_SRC_SOURCE_MASK          equ  (7    shl 24)
+R5XX_DP_SRC_SOURCE_MEMORY        equ  (2    shl 24)
+R5XX_DP_SRC_SOURCE_HOST_DATA     equ  (3    shl 24)
+R5XX_GMC_3D_FCN_EN               equ  (1    shl 27)
+R5XX_GMC_CLR_CMP_CNTL_DIS        equ  (1    shl 28)
+R5XX_GMC_AUX_CLIP_DIS            equ  (1    shl 29)
+R5XX_GMC_WR_MSK_DIS              equ  (1    shl 30)
+R5XX_GMC_LD_BRUSH_Y_X            equ  (1    shl 31)
+R5XX_ROP3_ZERO                   equ  0x00000000
+R5XX_ROP3_DSa                    equ  0x00880000
+R5XX_ROP3_SDna                   equ  0x00440000
+R5XX_ROP3_S                      equ  0x00cc0000
+R5XX_ROP3_DSna                   equ  0x00220000
+R5XX_ROP3_D                      equ  0x00aa0000
+R5XX_ROP3_DSx                    equ  0x00660000
+R5XX_ROP3_DSo                    equ  0x00ee0000
+R5XX_ROP3_DSon                   equ  0x00110000
+R5XX_ROP3_DSxn                   equ  0x00990000
+R5XX_ROP3_Dn                     equ  0x00550000
+R5XX_ROP3_SDno                   equ  0x00dd0000
+R5XX_ROP3_Sn                     equ  0x00330000
+R5XX_ROP3_DSno                   equ  0x00bb0000
+R5XX_ROP3_DSan                   equ  0x00770000
+R5XX_ROP3_ONE                    equ  0x00ff0000
+R5XX_ROP3_DPa                    equ  0x00a00000
+R5XX_ROP3_PDna                   equ  0x00500000
+R5XX_ROP3_P                      equ  0x00f00000
+R5XX_ROP3_DPna                   equ  0x000a0000
+R5XX_ROP3_D                      equ  0x00aa0000
+R5XX_ROP3_DPx                    equ  0x005a0000
+R5XX_ROP3_DPo                    equ  0x00fa0000
+R5XX_ROP3_DPon                   equ  0x00050000
+R5XX_ROP3_PDxn                   equ  0x00a50000
+R5XX_ROP3_PDno                   equ  0x00f50000
+R5XX_ROP3_Pn                     equ  0x000f0000
+R5XX_ROP3_DPno                   equ  0x00af0000
+R5XX_ROP3_DPan                   equ  0x005f0000
+
+R5XX_HOST_PATH_CNTL              equ  0x0130
+R5XX_HDP_SOFT_RESET              equ  (1 shl 26)
+R5XX_HDP_APER_CNTL               equ  (1 shl 23)
+
+R5XX_RB3D_DSTCACHE_MODE             equ  0x3258
+R5XX_RB3D_DC_CACHE_ENABLE           equ      (0)
+R5XX_RB3D_DC_2D_CACHE_DISABLE       equ      (1)
+R5XX_RB3D_DC_3D_CACHE_DISABLE       equ      (2)
+R5XX_RB3D_DC_CACHE_DISABLE          equ      (3)
+R5XX_RB3D_DC_2D_CACHE_LINESIZE_128  equ  (1 shl  2)
+R5XX_RB3D_DC_3D_CACHE_LINESIZE_128  equ  (2 shl  2)
+R5XX_RB3D_DC_2D_CACHE_AUTOFLUSH     equ  (1 shl  8)
+R5XX_RB3D_DC_3D_CACHE_AUTOFLUSH     equ  (2 shl  8)
+R200_RB3D_DC_2D_CACHE_AUTOFREE      equ  (1 shl 10)
+R200_RB3D_DC_3D_CACHE_AUTOFREE      equ  (2 shl 10)
+R5XX_RB3D_DC_FORCE_RMW              equ  (1 shl 16)
+R5XX_RB3D_DC_DISABLE_RI_FILL        equ  (1 shl 24)
+R5XX_RB3D_DC_DISABLE_RI_READ        equ  (1 shl 25)
+
+R5XX_BRUSH_Y_X                      equ  0x1474
+R5XX_DP_BRUSH_BKGD_CLR              equ  0x1478
+R5XX_DP_BRUSH_FRGD_CLR              equ  0x147c
+R5XX_BRUSH_DATA0                    equ  0x1480
+R5XX_BRUSH_DATA1                    equ  0x1484
+
+R5XX_DST_WIDTH_HEIGHT               equ  0x1598
+
+R5XX_DP_SRC_BKGD_CLR                equ  0x15dc
+R5XX_DP_SRC_FRGD_CLR                equ  0x15d8
+
+R5XX_DP_WRITE_MASK                  equ  0x16cc
+
+struc RHD
+{
+  .control           rd 1
+  .control_saved     rd 1
+  .datatype          rd 1
+  .surface_cntl      rd 1
+  .dst_pitch_offset  rd 1
+};
+
+R5XX_LOOP_COUNT equ 2000000
+
+align 4
+R5xxFIFOWaitLocal:
+
+           mov ecx, R5XX_LOOP_COUNT
+@@:
+           rdr ebx, R5XX_RBBM_STATUS
+           and ebx, R5XX_RBBM_FIFOCNT_MASK
+
+           cmp eax, ebx
+           jbe .done
+           loop @B
+
+           mov esi, msgR5xxFIFOWaitLocaltimeout
+           call SysMsgBoardStr
+           xor eax, eax
+           ret
+.done:
+           mov eax, 1
+           ret
+
+align 4
+R5xxFIFOWait:
+           call R5xxFIFOWaitLocal
+           test eax, eax
+           jz .reset
+
+           ret
+.reset:
+           call R5xx2DReset
+           call R5xx2DSetup
+
+           ret
+
+
+; Wait for the graphics engine to be completely idle: the FIFO has
+; drained, the Pixel Cache is flushed, and the engine is idle.  This is
+; a standard "sync" function that will make the hardware "quiescent".
+
+align 4
+R5xx2DIdleLocal:
+
+           mov ecx, R5XX_LOOP_COUNT
+@@:
+           rdr eax, R5XX_RBBM_STATUS
+           and eax, R5XX_RBBM_FIFOCNT_MASK
+           cmp eax, 0x40
+           je @F
+           loop @B
+
+           mov esi, msgR5xx2DIdleLocaltimeout
+           call SysMsgBoardStr
+           xor eax, eax
+           ret
+@@:
+           mov ecx, R5XX_LOOP_COUNT
+@@:
+           rdr eax, R5XX_RBBM_STATUS
+           test eax, R5XX_RBBM_ACTIVE
+           jz .done
+           loop @B
+
+           mov esi, msgR5xx2DIdleLocaltimeout
+           call SysMsgBoardStr
+           xor eax, eax
+           ret
+.done:
+           call R5xx2DFlush
+           ret
+
+align 4
+R5xx2DFlush:
+           rmask R5XX_RB3D_DSTCACHE_CTLSTAT, R5XX_RB3D_DC_FLUSH_ALL, R5XX_RB3D_DC_FLUSH_ALL
+
+           mov ecx, R5XX_LOOP_COUNT
+@@:
+           rdr eax, R5XX_RB3D_DSTCACHE_CTLSTAT
+           test eax, R5XX_RB3D_DC_BUSY
+           jz .done
+           loop @B
+.fail:
+           mov esi, msgR5xx2DFlushtimeout
+           call SysMsgBoardStr
+           xor eax, eax
+           ret
+.done:
+           mov eax, 1
+           ret
+
+align 4
+proc R5xx2DReset
+           locals
+             save    rd 1
+             tmp     rd 1
+           endl
+
+ ; The following RBBM_SOFT_RESET sequence can help un-wedge
+ ; an R300 after the command processor got stuck.
+
+           rdr eax, R5XX_RBBM_SOFT_RESET
+           mov [save], eax
+
+           or eax, R5XX_SOFT_RESET_CP or \
+                   R5XX_SOFT_RESET_HI or R5XX_SOFT_RESET_SE or \
+                   R5XX_SOFT_RESET_RE or R5XX_SOFT_RESET_PP or \
+                   R5XX_SOFT_RESET_E2 or R5XX_SOFT_RESET_RB
+           mov [tmp], eax
+
+;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, tmp);
+           wrr R5XX_RBBM_SOFT_RESET, eax
+
+;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
+           rdr ebx, R5XX_RBBM_SOFT_RESET
+           and eax, not (R5XX_SOFT_RESET_CP or R5XX_SOFT_RESET_HI or \
+                         R5XX_SOFT_RESET_SE or R5XX_SOFT_RESET_RE or \
+                         R5XX_SOFT_RESET_PP or R5XX_SOFT_RESET_E2 or \
+                         R5XX_SOFT_RESET_RB)
+;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, tmp);
+           wrr R5XX_RBBM_SOFT_RESET, eax
+;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
+           rdr ebx, R5XX_RBBM_SOFT_RESET
+;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, save);
+           mov eax, [save]
+           wrr R5XX_RBBM_SOFT_RESET, eax
+;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
+           rdr ebx, R5XX_RBBM_SOFT_RESET
+;    R5xx2DFlush(rhdPtr->scrnIndex);
+           call R5xx2DFlush
+
+; Soft resetting HDP thru RBBM_SOFT_RESET register can cause some
+; unexpected behaviour on some machines.  Here we use
+; R5XX_HOST_PATH_CNTL to reset it.
+
+;    save = RHDRegRead(rhdPtr, R5XX_HOST_PATH_CNTL);
+           rdr edx, R5XX_HOST_PATH_CNTL
+
+;    tmp = RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
+           rdr ebx, R5XX_RBBM_SOFT_RESET
+
+;    tmp |= R5XX_SOFT_RESET_CP | R5XX_SOFT_RESET_HI | R5XX_SOFT_RESET_E2;
+           or ebx, R5XX_SOFT_RESET_CP or R5XX_SOFT_RESET_HI or R5XX_SOFT_RESET_E2
+
+;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, tmp);
+           wrr R5XX_RBBM_SOFT_RESET, ebx
+
+;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
+           rdr eax, R5XX_RBBM_SOFT_RESET
+
+;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, 0);
+           wrr R5XX_RBBM_SOFT_RESET, 0
+
+;    tmp = RHDRegRead(rhdPtr, R5XX_RB3D_DSTCACHE_MODE);
+           rdr ebx, R5XX_RB3D_DSTCACHE_MODE
+
+;    RHDRegWrite(rhdPtr, R5XX_RB3D_DSTCACHE_MODE, tmp | (1 << 17)); /* FIXME */
+           or ebx, (1 shl 17)
+           wrr R5XX_RB3D_DSTCACHE_MODE, ebx
+
+;    RHDRegWrite(rhdPtr, R5XX_HOST_PATH_CNTL, save | R5XX_HDP_SOFT_RESET);
+           lea eax, [edx+R5XX_HDP_SOFT_RESET]
+           wrr R5XX_HOST_PATH_CNTL, eax
+
+;    RHDRegRead(rhdPtr, R5XX_HOST_PATH_CNTL);
+           rdr ebx, R5XX_HOST_PATH_CNTL
+
+;    RHDRegWrite(rhdPtr, R5XX_HOST_PATH_CNTL, save);
+           wrr R5XX_HOST_PATH_CNTL, edx
+
+           ret
+endp
+
+align 4
+R5xx2DSetup:
+
+; Setup engine location. This shouldn't be necessary since we
+; set them appropriately before any accel ops, but let's avoid
+; random bogus DMA in case we inadvertently trigger the engine
+; in the wrong place (happened).
+
+;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 2);
+           mov eax, 2
+           call R5xxFIFOWaitLocal
+
+;    RHDRegWrite(rhdPtr, R5XX_DST_PITCH_OFFSET, TwoDInfo->dst_pitch_offset);
+           mov eax, [rhd.dst_pitch_offset]
+           wrr R5XX_DST_PITCH_OFFSET, eax
+
+;    RHDRegWrite(rhdPtr, R5XX_SRC_PITCH_OFFSET, TwoDInfo->dst_pitch_offset);
+           wrr R5XX_SRC_PITCH_OFFSET, eax
+
+;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 1);
+           mov eax, 1
+           call R5xxFIFOWaitLocal
+
+;    RHDRegMask(rhdPtr, R5XX_DP_DATATYPE, 0, R5XX_HOST_BIG_ENDIAN_EN);
+           rmask R5XX_DP_DATATYPE, 0, R5XX_HOST_BIG_ENDIAN_EN
+
+;    RHDRegWrite(rhdPtr, R5XX_SURFACE_CNTL, TwoDInfo->surface_cntl);
+           mov eax, [rhd.surface_cntl]
+           wrr R5XX_SURFACE_CNTL, eax
+
+;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 1);
+           mov eax, 1
+           call R5xxFIFOWaitLocal
+
+;    RHDRegWrite(rhdPtr, R5XX_DEFAULT_SC_BOTTOM_RIGHT,
+;                R5XX_DEFAULT_SC_RIGHT_MAX | R5XX_DEFAULT_SC_BOTTOM_MAX);
+           wrr R5XX_DEFAULT_SC_BOTTOM_RIGHT,\
+               (R5XX_DEFAULT_SC_RIGHT_MAX or R5XX_DEFAULT_SC_BOTTOM_MAX)
+
+;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 1);
+           mov eax, 1
+           call R5xxFIFOWaitLocal
+
+;    RHDRegWrite(rhdPtr, R5XX_DP_GUI_MASTER_CNTL, TwoDInfo->control |
+;                R5XX_GMC_BRUSH_SOLID_COLOR | R5XX_GMC_SRC_DATATYPE_COLOR);
+           mov eax, [rhd.control]
+           or eax, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
+           wrr R5XX_DP_GUI_MASTER_CNTL, eax
+
+;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 5);
+           mov eax, 5
+           call R5xxFIFOWaitLocal
+
+;    RHDRegWrite(rhdPtr, R5XX_DP_BRUSH_FRGD_CLR, 0xFFFFFFFF);
+           wrr R5XX_DP_BRUSH_FRGD_CLR, 0xFFFFFFFF
+
+;    RHDRegWrite(rhdPtr, R5XX_DP_BRUSH_BKGD_CLR, 0x00000000);
+           wrr R5XX_DP_BRUSH_BKGD_CLR, 0x00000000
+
+;    RHDRegWrite(rhdPtr, R5XX_DP_SRC_FRGD_CLR, 0xFFFFFFFF);
+           wrr R5XX_DP_SRC_FRGD_CLR, 0xFFFFFFFF
+;    RHDRegWrite(rhdPtr, R5XX_DP_SRC_BKGD_CLR, 0x00000000);
+           wrr R5XX_DP_SRC_BKGD_CLR, 0x00000000
+;    RHDRegWrite(rhdPtr, R5XX_DP_WRITE_MASK, 0xFFFFFFFF);
+           wrr R5XX_DP_WRITE_MASK, 0xFFFFFFFF
+
+;    R5xx2DIdleLocal(rhdPtr->scrnIndex);
+           call R5xx2DIdleLocal
+           ret
+
+align 4
+R5xx2DPreInit:
+
+           mov [rhd.control], (R5XX_DATATYPE_ARGB8888 shl R5XX_GMC_DST_DATATYPE_SHIFT) or\
+                              R5XX_GMC_CLR_CMP_CNTL_DIS or R5XX_GMC_DST_PITCH_OFFSET_CNTL
+
+           mov [rhd.datatype], R5XX_DATATYPE_ARGB8888
+           mov [rhd.surface_cntl],0
+
+           mov eax, [r500_LFB]
+           shr eax, 10
+           or eax,  ((1024*4)/64) shl 22
+           mov [rhd.dst_pitch_offset], eax
+
+           ret
+
+align 4
+R5xx2DInit:
+
+           call R5xx2DPreInit
+           wrr R5XX_RB3D_CNTL, 0
+           call R5xx2DReset
+           call R5xx2DSetup
+           ret
+
+proc R5xxSetupForSolidFill stdcall,color:dword, rop:dword, planemask:dword
+
+           mov edx, [rop]
+           mov edx, [R5xxRops+4+edx*8]
+           or edx, [rhd.control]
+           or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
+
+; Save for later clipping */
+           mov [rhd.control_saved], edx
+
+           mov eax, 4
+           call R5xxFIFOWait
+
+;    RHDRegWrite(pScrn, R5XX_DP_GUI_MASTER_CNTL, control);
+           wrr R5XX_DP_GUI_MASTER_CNTL, edx
+
+;    RHDRegWrite(pScrn, R5XX_DP_BRUSH_FRGD_CLR, color);
+           mov eax, [color]
+           wrr R5XX_DP_BRUSH_FRGD_CLR, eax
+
+;    RHDRegWrite(pScrn, R5XX_DP_WRITE_MASK, planemask);
+           mov ebx, [planemask]
+           wrr R5XX_DP_WRITE_MASK, ebx
+
+;    RHDRegWrite(pScrn, R5XX_DP_CNTL,
+;                R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
+           wrr R5XX_DP_CNTL, (R5XX_DST_X_LEFT_TO_RIGHT or R5XX_DST_Y_TOP_TO_BOTTOM)
+
+           ret
+ endp
+
+align 4
+proc R5xxSolidFillRect stdcall, x:dword, y:dword, w:dword, h:dword
+
+           mov eax, 3
+           call R5xxFIFOWait
+
+           mov eax, [rhd.dst_pitch_offset]
+           wrr R5XX_DST_PITCH_OFFSET, eax
+
+           mov ebx, [y]
+           shl ebx, 16
+           mov bx, word [x]
+           wrr R5XX_DST_Y_X, ebx
+
+           mov ecx, [w]
+           shl ecx, 16
+           mov cx, word [h]
+           wrr R5XX_DST_WIDTH_HEIGHT, ecx
+
+           ret
+endp
+
+

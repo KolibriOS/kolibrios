@@ -10,6 +10,8 @@ format MS COFF
 include 'proc32.inc'
 include 'imports.inc'
 
+R500_HW2D       equ 0
+
 API_VERSION     equ 0x01000100
 
 DEBUG           equ 1
@@ -156,6 +158,14 @@ macro wrr dest, src
      mov dword [edi+dest], src
 }
 
+macro rmask dest, val, mask
+{
+     mov edi, [ati_io]
+     mov eax, [edi+dest]
+     and eax, not mask
+     or eax, (val and mask)
+     mov [edi+dest], eax
+}
 
 public START
 public service_proc
@@ -372,6 +382,10 @@ proc init_r200
            ret
 endp
 
+if R500_HW2D
+  include 'r500hw.inc'
+end if
+
 align 4
 proc init_r500
 
@@ -400,6 +414,9 @@ proc init_r500
            rdr eax, 0x6110
            mov [r500_LFB], eax
 
+if R500_HW2D
+           call R5xx2DInit
+end if
            wrr 0x6410, 0x001F001F
            wrr 0x6400, dword (3 shl 8)
 
@@ -446,6 +463,20 @@ proc r500_SetCursor stdcall, hcursor:dword, x:dword, y:dword
 
            mov [edi+0x6414], eax
            or dword [edi+0x6400], 1
+
+if 0
+           stdcall R5xxSetupForSolidFill, 0x80808080, 3, 0xFFFFFFFF
+           stdcall R5xxSolidFillRect, 100,100, 100,100
+
+           stdcall R5xxSetupForSolidFill, 0xFFFF0000, 3, 0xFFFFFFFF
+           stdcall R5xxSolidFillRect, 110,110, 80,80
+
+           stdcall R5xxSetupForSolidFill, 0xFF00FF00, 3, 0xFFFFFFFF
+           stdcall R5xxSolidFillRect, 120,120, 60,60
+
+           stdcall R5xxSetupForSolidFill, 0xFF0000FF, 3, 0xFFFFFFFF
+           stdcall R5xxSolidFillRect, 130,130, 40,40
+end if
 
            popfd
            ret
@@ -1191,6 +1222,27 @@ devices:
 
 version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
+if R500_HW2D
+
+align 16
+R5xxRops  dd R5XX_ROP3_ZERO, R5XX_ROP3_ZERO  ;GXclear
+          dd R5XX_ROP3_DSa,  R5XX_ROP3_DPa   ;Gxand
+          dd R5XX_ROP3_SDna, R5XX_ROP3_PDna  ;GXandReverse
+          dd R5XX_ROP3_S,    R5XX_ROP3_P     ;GXcopy
+          dd R5XX_ROP3_DSna, R5XX_ROP3_DPna  ;GXandInverted
+          dd R5XX_ROP3_D,    R5XX_ROP3_D     ;GXnoop
+          dd R5XX_ROP3_DSx,  R5XX_ROP3_DPx   ;GXxor
+          dd R5XX_ROP3_DSo,  R5XX_ROP3_DPo   ;GXor
+          dd R5XX_ROP3_DSon, R5XX_ROP3_DPon  ;GXnor
+          dd R5XX_ROP3_DSxn, R5XX_ROP3_PDxn  ;GXequiv
+          dd R5XX_ROP3_Dn,   R5XX_ROP3_Dn    ;GXinvert
+          dd R5XX_ROP3_SDno, R5XX_ROP3_PDno  ;GXorReverse
+          dd R5XX_ROP3_Sn,   R5XX_ROP3_Pn    ;GXcopyInverted
+          dd R5XX_ROP3_DSno, R5XX_ROP3_DPno  ;GXorInverted
+          dd R5XX_ROP3_DSan, R5XX_ROP3_DPan  ;GXnand
+          dd R5XX_ROP3_ONE,  R5XX_ROP3_ONE   ;GXset
+end if
+
 
 sz_ati_srv   db 'HWCURSOR',0
 
@@ -1198,6 +1250,16 @@ msgInit      db 'detect hardware...',13,10,0
 msgPCI       db 'PCI accsess not supported',13,10,0
 msgFail      db 'device not found',13,10,0
 msg_neg      db 'neg ecx',13,10,0
+
+if R500_HW2D
+
+msgR5xx2DFlushtimeout \
+             db 'R5xx2DFlush timeout error',13,10,0
+msgR5xxFIFOWaitLocaltimeout \
+             db 'R5xxFIFOWaitLocal timeout error', 13, 10,0
+msgR5xx2DIdleLocaltimeout \
+             db 'R5xx2DIdleLocal timeout error', 13,10,0
+end if
 
 if 0
 msg6100      db '6100:  ',0
@@ -1237,5 +1299,8 @@ bus            dd ?
 devfn          dd ?
 ati_io         dd ?
 
+if R500_HW2D
 
+rhd            RHD
 
+end if
