@@ -1030,9 +1030,13 @@ proc stop_all_services
 	   jne .next
 	   cmp [edx+SRV.size], SRV_SIZE
 	   jne .next
-	   mov ebx, [edx+SRV.entry]
+
+           mov ebx, [edx+SRV.entry]
 	   mov edx, [edx+SRV.fd]
-	   push edx
+           test ebx, ebx
+           jz .next
+
+           push edx
 	   stdcall ebx, dword -1
 	   pop edx
 	   jmp .next

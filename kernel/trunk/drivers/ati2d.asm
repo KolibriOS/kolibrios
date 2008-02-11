@@ -216,6 +216,14 @@ proc START stdcall, state:dword
            test eax, eax
            jz .restore
 
+if R500_HW2D
+           stdcall RegService, sz_HDraw_srv, r500_HDraw
+
+           mov ebx, START
+           and ebx, -4096
+           mov [eax+0x20], ebx
+           mov [eax+0x24], dword 0                       ;hack
+end if
            mov ebx, [fnSelect]
            mov ecx, [fnSet]
 
@@ -1252,6 +1260,8 @@ msgFail      db 'device not found',13,10,0
 msg_neg      db 'neg ecx',13,10,0
 
 if R500_HW2D
+
+sz_HDraw_srv db 'HDRAW',0
 
 msgR5xx2DFlushtimeout \
              db 'R5xx2DFlush timeout error',13,10,0

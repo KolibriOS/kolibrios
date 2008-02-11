@@ -33,7 +33,6 @@ if 0
  an all rights reserved statement.
 
 
-
  Copyright 2000 ATI Technologies Inc., Markham, Ontario, and
                 VA Linux Systems Inc., Fremont, California.
 
@@ -67,7 +66,7 @@ if 0
 
 end if
 
-
+D1GRPH_PITCH                     equ 0x6120
 
 R5XX_DATATYPE_ARGB8888           equ  6
 
@@ -123,10 +122,6 @@ R5XX_SC_TOP_LEFT                 equ  0x16ec
   R5XX_SC_BOTTOM_RIGHT           equ  0x16f0
   R5XX_SC_SIGN_MASK_LO           equ  0x8000
   R5XX_SC_SIGN_MASK_HI           equ  0x80000000
-
-R5XX_SRC_Y_X                     equ  0x1434
-R5XX_DST_Y_X                     equ  0x1438
-R5XX_DST_HEIGHT_WIDTH            equ  0x143c
 
 R5XX_DP_GUI_MASTER_CNTL          equ  0x146c
 R5XX_GMC_SRC_PITCH_OFFSET_CNTL   equ  (1 shl 0)
@@ -234,7 +229,17 @@ R5XX_DP_BRUSH_FRGD_CLR              equ  0x147c
 R5XX_BRUSH_DATA0                    equ  0x1480
 R5XX_BRUSH_DATA1                    equ  0x1484
 
+R5XX_SRC_Y_X                        equ  0x1434
+
+R5XX_DST_Y_X                        equ  0x1438
+R5XX_DST_HEIGHT_WIDTH               equ  0x143c
 R5XX_DST_WIDTH_HEIGHT               equ  0x1598
+
+R5XX_DST_LINE_START                 equ  0x1600
+R5XX_DST_LINE_END                   equ  0x1604
+R5XX_DST_LINE_PATCOUNT              equ  0x1608
+  R5XX_BRES_CNTL_SHIFT              equ  8
+
 
 R5XX_DP_SRC_BKGD_CLR                equ  0x15dc
 R5XX_DP_SRC_FRGD_CLR                equ  0x15d8
@@ -501,9 +506,14 @@ R5xx2DPreInit:
            mov [rhd.datatype], R5XX_DATATYPE_ARGB8888
            mov [rhd.surface_cntl],0
 
-           mov eax, [r500_LFB]
-           shr eax, 10
-           or eax,  ((1024*4)/64) shl 22
+           rdr eax, D1GRPH_PITCH
+           shl eax, 18
+
+           mov ebx, [r500_LFB]
+           shr ebx, 10
+           or eax, ebx
+
+;           or eax,  ((1024*4)/64) shl 22
            mov [rhd.dst_pitch_offset], eax
 
            ret
@@ -570,4 +580,172 @@ proc R5xxSolidFillRect stdcall, x:dword, y:dword, w:dword, h:dword
            ret
 endp
 
+handle     equ  IOCTL.handle
+io_code    equ  IOCTL.io_code
+input      equ  IOCTL.input
+inp_size   equ  IOCTL.inp_size
+output     equ  IOCTL.output
+out_size   equ  IOCTL.out_size
 
+SRV_GETVERSION  equ 0
+SOLID_FILL      equ 1
+LINE_2P         equ 2
+
+align 4
+proc r500_entry stdcall, state:dword
+
+.close:
+          ; call r500_close
+
+           xor eax, eax
+           ret
+endp
+
+align 4
+proc r500_HDraw stdcall, ioctl:dword
+
+           mov ebx, [ioctl]
+           mov eax, [ebx+io_code]
+           cmp eax, LINE_2P
+           ja .fail
+
+           cmp eax, SRV_GETVERSION
+           jne @F
+
+           mov eax, [ebx+output]
+           cmp [ebx+out_size], 4
+           jne .fail
+           mov [eax], dword API_VERSION
+           xor eax, eax
+           ret
+@@:
+           cmp eax, SOLID_FILL
+           jne @F
+
+           cmp [ebx+inp_size], 5
+           jne .fail
+
+           mov esi, [ebx+input]
+           call solid_fill
+           xor eax, eax
+           ret
+@@:
+           cmp eax, LINE_2P
+           jne @F
+
+           cmp [ebx+inp_size], 5
+           jne .fail
+
+           mov esi, [ebx+input]
+           call solid_line
+           xor eax, eax
+           ret
+@@:
+
+.fail:
+           or eax, -1
+           ret
+endp
+
+restore   handle
+restore   io_code
+restore   input
+restore   inp_size
+restore   output
+restore   out_size
+
+struc FILL
+{
+  .color  rd 1
+  .x      rd 1
+  .y      rd 1
+  .w      rd 1
+  .h      rd 1
+}
+
+virtual at 0
+  FILL FILL
+end virtual
+
+struc LINE2P
+{
+  .color  rd 1
+  .x1      rd 1
+  .y1      rd 1
+  .x2      rd 1
+  .y2      rd 1
+}
+
+virtual at 0
+  LINE2P LINE2P
+end virtual
+
+GXcopy  equ 3
+
+; esi= input params
+align 4
+solid_fill:
+
+           mov edx, [R5xxRops+4+GXcopy*8]
+           or edx, [rhd.control]
+           or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
+
+           mov eax, 7
+           call R5xxFIFOWait
+
+           wrr R5XX_DP_GUI_MASTER_CNTL, edx
+
+           mov eax, [esi+FILL.color]
+           wrr R5XX_DP_BRUSH_FRGD_CLR, eax
+
+           wrr R5XX_DP_WRITE_MASK, 0xFFFFFFFF
+
+           wrr R5XX_DP_CNTL, (R5XX_DST_X_LEFT_TO_RIGHT or R5XX_DST_Y_TOP_TO_BOTTOM)
+
+           mov eax, [rhd.dst_pitch_offset]
+           wrr R5XX_DST_PITCH_OFFSET, eax
+
+           mov ebx, [esi+FILL.y]
+           shl ebx, 16
+           mov bx, word [esi+FILL.x]
+           wrr R5XX_DST_Y_X, ebx
+
+           mov ecx, [esi+FILL.w]
+           shl ecx, 16
+           mov cx, word [esi+FILL.h]
+           wrr R5XX_DST_WIDTH_HEIGHT, ecx
+
+           ret
+
+align 4
+solid_line:
+
+           mov eax, 7
+           call R5xxFIFOWait
+
+           mov edx, [R5xxRops+4+GXcopy*8]
+           or edx, [rhd.control]
+           or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
+
+           wrr R5XX_DST_LINE_PATCOUNT, (0x55 shl R5XX_BRES_CNTL_SHIFT)
+           wrr R5XX_DP_GUI_MASTER_CNTL, edx
+
+           mov eax, [esi+FILL.color]
+           wrr R5XX_DP_BRUSH_FRGD_CLR, eax
+
+           wrr R5XX_DP_WRITE_MASK, 0xFFFFFFFF
+
+           mov eax, [rhd.dst_pitch_offset]
+           wrr R5XX_DST_PITCH_OFFSET, eax
+
+           mov ebx, [esi+LINE2P.y1]
+           shl ebx, 16
+           mov bx, word [esi+LINE2P.x1]
+           wrr R5XX_DST_LINE_START, ebx
+
+           mov ecx, [esi+LINE2P.y2]
+           shl ecx, 16
+           mov cx, word [esi+LINE2P.x2]
+           wrr R5XX_DST_LINE_END, ecx
+
+           ret
