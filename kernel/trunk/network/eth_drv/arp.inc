@@ -452,7 +452,9 @@ arp_handler:
     mov     bx, ETHER_ARP               ;type of protocol
     mov     ecx, 28                     ;data size
     mov     esi, ETH_FRAME.Data + ARP_PACKET             ;ptr to data
+    push    ebp
     call    dword [drvr_transmit]       ;transmit packet
+    pop     ebp
 
   .exit:
     ret
@@ -510,7 +512,9 @@ proc arp_request stdcall uses ebx esi edi,\
     mov     bx, ETHER_ARP          ; Type of packet
     mov     ecx, 28                ; size of packet
     lea     esi, [esp + ARP_PACKET]; pointer to packet data
+    push    ebp
     call    dword [drvr_transmit]  ; Call the drivers transmit function
+    pop     ebp
 
     add     esp, 28  ; free memory, allocated before for ARP_PACKET
 

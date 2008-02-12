@@ -454,11 +454,11 @@ SIS900_init_txd:
    ;********** initialize TX descriptor **************
    mov     [txd], dword 0       ;put link to next descriptor in link field
    mov     [txd+4],dword 0      ;clear status field
-   mov     [txd+8], dword txb   ;save address to buffer ptr field
+   mov     [txd+8], dword txb - OS_BASE   ;save address to buffer ptr field
    ;*************** load Transmit Descriptor Register ***************
    mov     dx, [io_addr]            ; base address
    add     dx, SIS900_txdp      ; TX Descriptor Pointer
-   mov     eax, txd                         ; First Descriptor
+   mov     eax, txd - OS_BASE               ; First Descriptor
    out     dx, eax                              ; move the pointer
    ret
 
@@ -486,12 +486,12 @@ SIS900_init_rxd_Loop:
     xor     ebx, ebx                        ;
 SIS900_init_rxd_Loop_0:                    ;
     imul    ebx, 12                         ;
-    add     ebx, rxd                        ;
+    add     ebx, rxd - OS_BASE              ;
     mov     [rxd+eax], ebx                                      ;save link to next descriptor
     mov     [rxd+eax+4],dword RX_BUFF_SZ        ;status bits init to buf size
     mov     ebx, ecx                                            ;find where the buf is located
     imul    ebx,RX_BUFF_SZ                  ;
-    add     ebx, rxb                        ;
+    add     ebx, rxb - OS_BASE              ;
     mov     [rxd+eax+8], ebx                            ;save buffer pointer
     inc     ecx                                                     ;next descriptor
     cmp     ecx, NUM_RX_DESC                ;
@@ -500,7 +500,7 @@ SIS900_init_rxd_Loop_0:                    ;
     ; descriptor*********
     mov     dx, [io_addr]
     add     dx, SIS900_rxdp
-    mov     eax, rxd
+    mov     eax, rxd - OS_BASE
     out     dx, eax
     ret
 
@@ -576,7 +576,7 @@ SIS900_set_rx_mode:
 SIS900_set_rx_mode_Loop:
    mov      eax, ecx
    shl      eax, 1
-   mov      [SIS900_mc_filter+eax], ebx
+   mov      [SIS900_mc_filter+eax], bx
    lea      edx,[ebp+SIS900_rfcr]           ; Receive Filter Control Reg offset
    mov      eax, 4                                          ;determine table entry
    add      al, cl
@@ -931,6 +931,7 @@ SIS900_poll_IS_packet:
    ; first copy dword-wise, divide size by 4
    shr      ecx, 2
    mov      esi, [rxd+eax+8]                            ; set source
+   add      esi, OS_BASE                        ; get linear address
    mov      edi, Ether_buffer               ; set destination
    cld                                                                          ; clear direction
    rep      movsd                                                       ; copy the dwords
@@ -986,6 +987,8 @@ if defined SIS900_DEBUG
 SIS900_Debug_Transmit_Packet db 'Transmitting Packet: ',13,10,0
 SIS900_Debug_Transmit_Packet_Err db 'Transmitting Packet Error: ',13,10,0
 end if
+str1 db 'Transmitting packet:',13,10,0
+str2 db ' ',0
 SIS900_transmit:
    mov          ebp, [io_addr]      ; Base Address
    ;******** Stop the transmitter ********
@@ -995,7 +998,7 @@ SIS900_transmit:
    out      dx, eax
    ;*******load Transmit Descriptor Register *******
    lea      edx,[ebp+SIS900_txdp]
-   mov      eax, txd
+   mov      eax, txd - OS_BASE
    out      dx, eax
    ;******* copy packet to descriptor*******
    push    esi
