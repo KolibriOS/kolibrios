@@ -67,6 +67,9 @@ if 0
 end if
 
 D1GRPH_PITCH                     equ 0x6120
+D1GRPH_X_END                     equ 0x6134
+D1GRPH_Y_END                     equ 0x6138
+
 
 R5XX_DATATYPE_ARGB8888           equ  6
 
@@ -364,64 +367,46 @@ proc R5xx2DReset
                    R5XX_SOFT_RESET_E2 or R5XX_SOFT_RESET_RB
            mov [tmp], eax
 
-;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, tmp);
            wrr R5XX_RBBM_SOFT_RESET, eax
 
-;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
            rdr ebx, R5XX_RBBM_SOFT_RESET
            and eax, not (R5XX_SOFT_RESET_CP or R5XX_SOFT_RESET_HI or \
                          R5XX_SOFT_RESET_SE or R5XX_SOFT_RESET_RE or \
                          R5XX_SOFT_RESET_PP or R5XX_SOFT_RESET_E2 or \
                          R5XX_SOFT_RESET_RB)
-;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, tmp);
            wrr R5XX_RBBM_SOFT_RESET, eax
-;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
            rdr ebx, R5XX_RBBM_SOFT_RESET
-;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, save);
            mov eax, [save]
            wrr R5XX_RBBM_SOFT_RESET, eax
-;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
            rdr ebx, R5XX_RBBM_SOFT_RESET
-;    R5xx2DFlush(rhdPtr->scrnIndex);
            call R5xx2DFlush
 
 ; Soft resetting HDP thru RBBM_SOFT_RESET register can cause some
 ; unexpected behaviour on some machines.  Here we use
 ; R5XX_HOST_PATH_CNTL to reset it.
 
-;    save = RHDRegRead(rhdPtr, R5XX_HOST_PATH_CNTL);
            rdr edx, R5XX_HOST_PATH_CNTL
 
-;    tmp = RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
            rdr ebx, R5XX_RBBM_SOFT_RESET
 
-;    tmp |= R5XX_SOFT_RESET_CP | R5XX_SOFT_RESET_HI | R5XX_SOFT_RESET_E2;
            or ebx, R5XX_SOFT_RESET_CP or R5XX_SOFT_RESET_HI or R5XX_SOFT_RESET_E2
 
-;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, tmp);
            wrr R5XX_RBBM_SOFT_RESET, ebx
 
-;    RHDRegRead(rhdPtr, R5XX_RBBM_SOFT_RESET);
            rdr eax, R5XX_RBBM_SOFT_RESET
 
-;    RHDRegWrite(rhdPtr, R5XX_RBBM_SOFT_RESET, 0);
            wrr R5XX_RBBM_SOFT_RESET, 0
 
-;    tmp = RHDRegRead(rhdPtr, R5XX_RB3D_DSTCACHE_MODE);
            rdr ebx, R5XX_RB3D_DSTCACHE_MODE
 
-;    RHDRegWrite(rhdPtr, R5XX_RB3D_DSTCACHE_MODE, tmp | (1 << 17)); /* FIXME */
            or ebx, (1 shl 17)
            wrr R5XX_RB3D_DSTCACHE_MODE, ebx
 
-;    RHDRegWrite(rhdPtr, R5XX_HOST_PATH_CNTL, save | R5XX_HDP_SOFT_RESET);
            lea eax, [edx+R5XX_HDP_SOFT_RESET]
            wrr R5XX_HOST_PATH_CNTL, eax
 
-;    RHDRegRead(rhdPtr, R5XX_HOST_PATH_CNTL);
            rdr ebx, R5XX_HOST_PATH_CNTL
 
-;    RHDRegWrite(rhdPtr, R5XX_HOST_PATH_CNTL, save);
            wrr R5XX_HOST_PATH_CNTL, edx
 
            ret
@@ -435,73 +420,55 @@ R5xx2DSetup:
 ; random bogus DMA in case we inadvertently trigger the engine
 ; in the wrong place (happened).
 
-;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 2);
            mov eax, 2
            call R5xxFIFOWaitLocal
 
-;    RHDRegWrite(rhdPtr, R5XX_DST_PITCH_OFFSET, TwoDInfo->dst_pitch_offset);
            mov eax, [rhd.dst_pitch_offset]
            wrr R5XX_DST_PITCH_OFFSET, eax
 
-;    RHDRegWrite(rhdPtr, R5XX_SRC_PITCH_OFFSET, TwoDInfo->dst_pitch_offset);
            wrr R5XX_SRC_PITCH_OFFSET, eax
 
-;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 1);
            mov eax, 1
            call R5xxFIFOWaitLocal
 
-;    RHDRegMask(rhdPtr, R5XX_DP_DATATYPE, 0, R5XX_HOST_BIG_ENDIAN_EN);
            rmask R5XX_DP_DATATYPE, 0, R5XX_HOST_BIG_ENDIAN_EN
 
-;    RHDRegWrite(rhdPtr, R5XX_SURFACE_CNTL, TwoDInfo->surface_cntl);
            mov eax, [rhd.surface_cntl]
            wrr R5XX_SURFACE_CNTL, eax
 
-;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 1);
            mov eax, 1
            call R5xxFIFOWaitLocal
 
-;    RHDRegWrite(rhdPtr, R5XX_DEFAULT_SC_BOTTOM_RIGHT,
-;                R5XX_DEFAULT_SC_RIGHT_MAX | R5XX_DEFAULT_SC_BOTTOM_MAX);
            wrr R5XX_DEFAULT_SC_BOTTOM_RIGHT,\
                (R5XX_DEFAULT_SC_RIGHT_MAX or R5XX_DEFAULT_SC_BOTTOM_MAX)
 
-;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 1);
            mov eax, 1
            call R5xxFIFOWaitLocal
 
-;    RHDRegWrite(rhdPtr, R5XX_DP_GUI_MASTER_CNTL, TwoDInfo->control |
-;                R5XX_GMC_BRUSH_SOLID_COLOR | R5XX_GMC_SRC_DATATYPE_COLOR);
            mov eax, [rhd.control]
            or eax, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
            wrr R5XX_DP_GUI_MASTER_CNTL, eax
 
-;    R5xxFIFOWaitLocal(rhdPtr->scrnIndex, 5);
            mov eax, 5
            call R5xxFIFOWaitLocal
 
-;    RHDRegWrite(rhdPtr, R5XX_DP_BRUSH_FRGD_CLR, 0xFFFFFFFF);
            wrr R5XX_DP_BRUSH_FRGD_CLR, 0xFFFFFFFF
 
-;    RHDRegWrite(rhdPtr, R5XX_DP_BRUSH_BKGD_CLR, 0x00000000);
            wrr R5XX_DP_BRUSH_BKGD_CLR, 0x00000000
 
-;    RHDRegWrite(rhdPtr, R5XX_DP_SRC_FRGD_CLR, 0xFFFFFFFF);
            wrr R5XX_DP_SRC_FRGD_CLR, 0xFFFFFFFF
-;    RHDRegWrite(rhdPtr, R5XX_DP_SRC_BKGD_CLR, 0x00000000);
            wrr R5XX_DP_SRC_BKGD_CLR, 0x00000000
-;    RHDRegWrite(rhdPtr, R5XX_DP_WRITE_MASK, 0xFFFFFFFF);
            wrr R5XX_DP_WRITE_MASK, 0xFFFFFFFF
 
-;    R5xx2DIdleLocal(rhdPtr->scrnIndex);
            call R5xx2DIdleLocal
            ret
 
 align 4
 R5xx2DPreInit:
 
-           mov [rhd.control], (R5XX_DATATYPE_ARGB8888 shl R5XX_GMC_DST_DATATYPE_SHIFT) or\
-                              R5XX_GMC_CLR_CMP_CNTL_DIS or R5XX_GMC_DST_PITCH_OFFSET_CNTL
+           mov [rhd.control],\
+               (R5XX_DATATYPE_ARGB8888 shl R5XX_GMC_DST_DATATYPE_SHIFT) or\
+                R5XX_GMC_CLR_CMP_CNTL_DIS or R5XX_GMC_DST_PITCH_OFFSET_CNTL
 
            mov [rhd.datatype], R5XX_DATATYPE_ARGB8888
            mov [rhd.surface_cntl],0
@@ -513,7 +480,6 @@ R5xx2DPreInit:
            shr ebx, 10
            or eax, ebx
 
-;           or eax,  ((1024*4)/64) shl 22
            mov [rhd.dst_pitch_offset], eax
 
            ret
@@ -525,6 +491,17 @@ R5xx2DInit:
            wrr R5XX_RB3D_CNTL, 0
            call R5xx2DReset
            call R5xx2DSetup
+
+           rdr eax, D1GRPH_X_END
+           rdr ebx, D1GRPH_Y_END
+           dec eax
+           dec ebx
+
+           mov [__xmin], 0         ;set clip
+           mov [__ymin], 0
+           mov [__xmax], eax
+           mov [__ymax], ebx
+
            ret
 
 proc R5xxSetupForSolidFill stdcall,color:dword, rop:dword, planemask:dword
@@ -540,19 +517,14 @@ proc R5xxSetupForSolidFill stdcall,color:dword, rop:dword, planemask:dword
            mov eax, 4
            call R5xxFIFOWait
 
-;    RHDRegWrite(pScrn, R5XX_DP_GUI_MASTER_CNTL, control);
            wrr R5XX_DP_GUI_MASTER_CNTL, edx
 
-;    RHDRegWrite(pScrn, R5XX_DP_BRUSH_FRGD_CLR, color);
            mov eax, [color]
            wrr R5XX_DP_BRUSH_FRGD_CLR, eax
 
-;    RHDRegWrite(pScrn, R5XX_DP_WRITE_MASK, planemask);
            mov ebx, [planemask]
            wrr R5XX_DP_WRITE_MASK, ebx
 
-;    RHDRegWrite(pScrn, R5XX_DP_CNTL,
-;                R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
            wrr R5XX_DP_CNTL, (R5XX_DST_X_LEFT_TO_RIGHT or R5XX_DST_Y_TOP_TO_BOTTOM)
 
            ret
@@ -686,6 +658,33 @@ GXcopy  equ 3
 align 4
 solid_fill:
 
+           mov ebx, [esi+FILL.x]
+           mov ecx, [esi+FILL.y]
+           mov eax, [esi+FILL.w]
+           mov edx, [esi+FILL.h]
+
+           lea eax, [eax+ebx-1]     ;x2
+           lea edx, [edx+ecx-1]     ;y2
+
+           push edx                 ;y2
+           push eax                 ;x2
+
+           mov eax, esp             ;&x2
+           lea ebx, [esp+4]         ;&y2
+
+           lea ecx, [esi+FILL.x]
+           lea edx, [esi+FILL.y]
+
+           push ebx                 ;&y2
+           push eax                 ;&x2
+           push edx                 ;&y1
+           push ecx                 ;&x1
+
+           call _BlockClip
+           add esp, 16
+           test eax, eax
+           jnz .exit
+
            mov edx, [R5xxRops+4+GXcopy*8]
            or edx, [rhd.control]
            or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
@@ -710,15 +709,40 @@ solid_fill:
            mov bx, word [esi+FILL.x]
            wrr R5XX_DST_Y_X, ebx
 
-           mov ecx, [esi+FILL.w]
-           shl ecx, 16
-           mov cx, word [esi+FILL.h]
-           wrr R5XX_DST_WIDTH_HEIGHT, ecx
+           mov ecx, [esp]               ;x2
+           sub ecx, [esi+FILL.x]
+           inc ecx                      ;w
 
+           mov eax, [esp+4]             ;y2
+           sub eax, [esi+FILL.y]
+           inc eax                      ;h
+
+;           mov ecx, [esi+FILL.w]
+           shl ecx, 16
+;           mov cx, word [esi+FILL.h]
+           mov cx, ax                        ;w|h
+           wrr R5XX_DST_WIDTH_HEIGHT, ecx
+.exit:
+           add esp, 8
            ret
 
 align 4
 solid_line:
+
+           lea eax, [esi+LINE2P.y2]
+           lea ebx, [esi+LINE2P.x2]
+           lea ecx, [esi+LINE2P.y1]
+           lea edx, [esi+LINE2P.x1]
+
+           push eax
+           push ebx
+           push ecx
+           push edx
+
+           call _LineClip
+           add esp, 16
+           test eax, eax
+           jnz .exit
 
            mov eax, 7
            call R5xxFIFOWait
@@ -747,5 +771,285 @@ solid_line:
            shl ecx, 16
            mov cx, word [esi+LINE2P.x2]
            wrr R5XX_DST_LINE_END, ecx
+.exit:
+           ret
 
+align 4
+__L1OutCode:
+           cmp     eax, [__xmin]
+           mov     ecx, edx
+           setl    dl
+           sal     edx, 3
+           cmp     eax, [__xmax]
+           jle     L9
+           or      edx, 4
+L9:
+           cmp     ecx, [__ymin]
+           jge     L11
+           or      edx, 1
+L11:
+           cmp     ecx, [__ymax]
+           jle     L13
+           or      edx, 2
+L13:
+           movzx   eax, dl
+           ret
+
+align 4
+_line_inter:
+           push    ebp
+           mov     ebp, edx
+           push    edi
+           push    esi
+           push    ebx
+           sub     esp, 4
+           mov     ebx, [eax]
+           mov     [esp], eax
+           mov     edx, [esp+24]
+           mov     edi, [ebp]
+           sub     ecx, ebx
+           mov     eax, ecx
+           sar     eax, 31
+           sub     edx, edi
+           mov     esi, eax
+           xor     esi, ecx
+           sub     esi, eax
+           mov     eax, [esp+28]
+           lea     ecx, [edx+edx]
+           sub     eax, ebx
+           cdq
+           xor     eax, edx
+           sub     eax, edx
+           imul    ecx, eax
+           test    ecx, ecx
+           jle     L17
+           add     ecx, esi
+           jmp     L19
+L17:
+           sub     ecx, esi
+L19:
+           lea     edx, [esi+esi]
+           mov     eax, ecx
+           mov     ebx, edx
+           cdq
+           idiv    ebx
+           lea     eax, [eax+edi]
+           mov     [ebp], eax
+           mov     eax, [esp]
+           mov     edx, [esp+28]
+           mov     [eax], edx
+           pop     eax
+           pop     ebx
+           pop     esi
+           pop     edi
+           pop     ebp
+           ret
+
+_LineClip:
+           push    ebp
+           push    edi
+           push    esi
+           push    ebx
+           mov     eax, [esp+24]
+           mov     ecx, [esp+20]
+           mov     ebp, [esp+28]
+           mov     edi, [esp+32]
+           mov     edx, [eax]
+           mov     eax, [ecx]
+           call    __L1OutCode
+           mov     edx, [edi]
+           mov     bl, al
+           mov     eax, [ebp]
+           call    __L1OutCode
+L48:
+           mov     esi, eax
+L47:
+           mov     eax, esi
+           and     al, bl
+           jne     L23
+           mov     edx, esi
+           cmp     bl, dl
+           je      L23
+           test    bl, bl
+           jne     L26
+           movsx   eax, dl
+           test    al, 1
+           je      L28
+           push    [__ymin]
+           mov     ecx, [esp+24]
+           push    dword [ecx]
+           jmp     L51
+L28:
+           test    al, 2
+           je      L31
+           push    [__ymax]
+           mov     edx, [esp+24]
+           push    dword [edx]
+L51:
+           mov     eax, [esp+32]
+           mov     edx, ebp
+           mov     ecx, [eax]
+           mov     eax, edi
+           jmp     L49
+L31:
+           test    al, 4
+           je      L33
+           push    [__xmax]
+           jmp     L52
+L33:
+           test    al, 8
+           je      L30
+           push    [__xmin]
+L52:
+           mov     edx, [esp+28]
+           push    dword [edx]
+           mov     edx, edi
+           mov     eax, [esp+28]
+           mov     ecx, [eax]
+           mov     eax, ebp
+L49:
+           call    _line_inter
+           pop     esi
+           pop     eax
+L30:
+           mov     edx, [edi]
+           mov     eax, [ebp]
+           call    __L1OutCode
+           jmp     L48
+L26:
+           movsx   eax, bl
+           test    al, 1
+           je      L36
+           push    [__ymin]
+           jmp     L53
+L36:
+           test    al, 2
+           je      L39
+           push    [__ymax]
+L53:
+           push    dword [ebp]
+           mov     ecx, [edi]
+           mov     edx, [esp+28]
+           mov     eax, [esp+32]
+           jmp     L50
+L39:
+           test    al, 4
+           je      L41
+           push    [__xmax]
+           jmp     L54
+L41:
+           test    al, 8
+           je      L38
+           push    [__xmin]
+L54:
+           push    dword [edi]
+           mov     ecx, [ebp]
+           mov     edx, [esp+32]
+           mov     eax, [esp+28]
+L50:
+           call    _line_inter
+           pop     edx
+           pop     ecx
+L38:
+           mov     ecx, [esp+24]
+           mov     edx, [ecx]
+           mov     ecx, [esp+20]
+           mov     eax, [ecx]
+           call    __L1OutCode
+           mov     bl, al
+           jmp     L47
+L23:
+           pop     ebx
+           movsx   eax, al
+           pop     esi
+           pop     edi
+           pop     ebp
+           ret
+
+align 4
+_block_inter:
+           test    cl, 1
+           push    ebx
+           mov     ebx, eax
+           je      L57
+           mov     eax, [__ymin]
+           jmp     L66
+L57:
+           test    cl, 2
+           je      L60
+           mov     eax, [__ymax]
+L66:
+           mov     [edx], eax
+           jmp     L65
+L60:
+           test    cl, 4
+           je      L62
+           mov     eax, [__xmax]
+           jmp     L67
+L62:
+           and     cl, 8
+           je      L65
+           mov     eax, [__xmin]
+L67:
+           mov     [ebx], eax
+L65:
+           pop     ebx
+           ret
+
+align 4
+_BlockClip:
+           push    ebp
+           push    edi
+           push    esi
+           push    ebx
+           mov     eax, [esp+24]
+           mov     ecx, [esp+20]
+           mov     ebp, [esp+28]
+           mov     edi, [esp+32]
+           mov     edx, [eax]
+           mov     eax, [ecx]
+           call    __L1OutCode
+           mov     edx, [edi]
+           mov     ebx, eax
+           mov     eax, [ebp]
+           call    __L1OutCode
+L80:
+           mov     esi, eax
+L79:
+           test    esi, ebx
+           jne     L70
+           cmp     ebx, esi
+           je      L72
+           test    ebx, ebx
+           jne     L74
+           mov     edx, edi
+           mov     eax, ebp
+           mov     ecx, esi
+           call    _block_inter
+           mov     edx, [edi]
+           mov     eax, [ebp]
+           call    __L1OutCode
+           jmp     L80
+L74:
+           mov     edx, [esp+24]
+           mov     ecx, ebx
+           mov     eax, [esp+20]
+           call    _block_inter
+           mov     eax, [esp+24]
+           mov     ecx, [esp+20]
+           mov     edx, [eax]
+           mov     eax, [ecx]
+           call    __L1OutCode
+           mov     ebx, eax
+           jmp     L79
+L72:
+           mov     esi, ebx
+L70:
+           mov     eax, esi
+           and     eax, ebx
+           pop     ebx
+           cwde
+           pop     esi
+           pop     edi
+           pop     ebp
            ret

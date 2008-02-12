@@ -1311,6 +1311,11 @@ ati_io         dd ?
 
 if R500_HW2D
 
+__xmin         rd 1
+__xmax         rd 1
+__ymin         rd 1
+__ymax         rd 1
+
 rhd            RHD
 
 end if
