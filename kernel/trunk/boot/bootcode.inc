@@ -346,6 +346,8 @@ apm_end:
         cmp     byte [es:bx], 1
         mov     si, loader_block_error
         jnz     sayerr
+        push    0
+        pop     es
 
 noloaderblock:
 ; DISPLAY VESA INFORMATION
