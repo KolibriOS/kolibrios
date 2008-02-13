@@ -573,6 +573,11 @@ proc r500_entry stdcall, state:dword
            ret
 endp
 
+CURRENT_TASK	    equ (OS_BASE+0x0003000)
+TASK_COUNT	    equ (OS_BASE+0x0003004)
+WIN_STACK 	    equ (OS_BASE+0x000C000)
+
+
 align 4
 proc r500_HDraw stdcall, ioctl:dword
 
@@ -591,6 +596,11 @@ proc r500_HDraw stdcall, ioctl:dword
            xor eax, eax
            ret
 @@:
+           mov edx, [CURRENT_TASK]
+           movzx edx, word [WIN_STACK+edx*2]
+           cmp edx, [TASK_COUNT]
+           jne .skip                                   ;skip if window inactive
+
            cmp eax, SOLID_FILL
            jne @F
 
@@ -599,6 +609,7 @@ proc r500_HDraw stdcall, ioctl:dword
 
            mov esi, [ebx+input]
            call solid_fill
+.skip:
            xor eax, eax
            ret
 @@:
@@ -689,6 +700,9 @@ solid_fill:
            or edx, [rhd.control]
            or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
 
+           pushfd
+           cli
+
            mov eax, 7
            call R5xxFIFOWait
 
@@ -709,19 +723,18 @@ solid_fill:
            mov bx, word [esi+FILL.x]
            wrr R5XX_DST_Y_X, ebx
 
-           mov ecx, [esp]               ;x2
+           mov ecx, [esp+4]             ;x2
            sub ecx, [esi+FILL.x]
            inc ecx                      ;w
 
-           mov eax, [esp+4]             ;y2
+           mov eax, [esp+8]             ;y2
            sub eax, [esi+FILL.y]
            inc eax                      ;h
 
-;           mov ecx, [esi+FILL.w]
            shl ecx, 16
-;           mov cx, word [esi+FILL.h]
            mov cx, ax                        ;w|h
            wrr R5XX_DST_WIDTH_HEIGHT, ecx
+           popfd
 .exit:
            add esp, 8
            ret
@@ -744,12 +757,15 @@ solid_line:
            test eax, eax
            jnz .exit
 
-           mov eax, 7
-           call R5xxFIFOWait
-
            mov edx, [R5xxRops+4+GXcopy*8]
            or edx, [rhd.control]
            or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
+
+           pushfd
+           cli
+
+           mov eax, 7
+           call R5xxFIFOWait
 
            wrr R5XX_DST_LINE_PATCOUNT, (0x55 shl R5XX_BRES_CNTL_SHIFT)
            wrr R5XX_DP_GUI_MASTER_CNTL, edx
@@ -771,6 +787,7 @@ solid_line:
            shl ecx, 16
            mov cx, word [esi+LINE2P.x2]
            wrr R5XX_DST_LINE_END, ecx
+           popfd
 .exit:
            ret
 
