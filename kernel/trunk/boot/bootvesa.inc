@@ -386,7 +386,9 @@ check_first_parm:
 .next_step:
         sub     ax,size_of_step*long_v_table
         cmp     ax,modes_table
-        jb      .zerro
+        jae     @f
+        mov     ax,modes_table
+@@:
 
         mov     word[home_cursor],ax
         push    word [preboot_graph]

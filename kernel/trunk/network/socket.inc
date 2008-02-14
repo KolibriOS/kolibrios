@@ -343,8 +343,10 @@ sot_exit:
 ;
 ;***************************************************************************
 socket_close:
-    Index2RealAddr ebx
     mov     eax, 0xFFFFFFFF	    ; assume this operation will fail..
+    cmp     ebx, NUM_SOCKETS
+    jae     sc_exit
+    Index2RealAddr ebx
     cmp     [ebx + SOCKET.Status], dword SOCK_EMPTY
     jz	    sc_exit
 
