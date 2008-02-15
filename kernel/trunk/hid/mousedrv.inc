@@ -322,18 +322,18 @@ yes_mouse_disable:
       movzx  eax, word [MOUSE_X]
       movzx  ebx, word [MOUSE_Y]
       mov  ecx,[edx+0]   ; mouse inside the area ?
-      add  eax,14
+      add  eax,10
       cmp  eax,ecx
       jb   no_mouse_disable
-      sub  eax,14
+      sub  eax,10
       add  ecx,[edx+8]
       cmp  eax,ecx
       jg   no_mouse_disable
       mov  ecx,[edx+4]
-      add  ebx,20
+      add  ebx,14
       cmp  ebx,ecx
       jb   no_mouse_disable
-      sub  ebx,20
+      sub  ebx,14
       add  ecx,[edx+12]
       cmp  ebx,ecx
       jg   no_mouse_disable

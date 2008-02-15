@@ -343,11 +343,29 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx,\
     stosd
     stosw
 
+
+    ; first, check destination IP to see if it is on 'this' network.
+    ; The test is:
+    ; if ( destIP & subnet_mask == stack_ip & subnet_mask )
+    ;   destination is local
+    ; else
+    ;  destination is remote, so pass to gateway
+
+    mov     eax, [Index]       ;eax=required IP
+    mov     esi, eax
+    and     esi, [subnet_mask]
+    mov     ecx, [stack_ip]
+    and     ecx, [subnet_mask]
+    cmp     esi, ecx
+    je      @f        ;if we and target IP are located in the same network
+    mov     eax, [gateway_ip]
+    mov     [Index], eax
+  @@:
+
     cmp     dword[NumARP], 0
     je      .ip_to_mac_send_request ;if ARP-table not contain an entries, we have to request IP.
                                     ;EAX will be containing a zero, it's equal to ARP_NO_ENTRY
 
-    mov     eax, [Index]       ;eax=required IP
     mov     ecx, dword[NumARP]
     imul    esi, ecx, ARP_ENTRY_SIZE  ;esi=current ARP-table size
 

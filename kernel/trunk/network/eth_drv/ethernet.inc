@@ -281,23 +281,6 @@ local MACAddress  dp  ?  ;allocate 6 bytes in the stack
     cmp     edx, 0xffffffff
     je	    .send		 ; If it is broadcast, just send
 
-    ; first, check destination IP to see if it is on 'this' network.
-    ; The test is:
-    ; if ( destIP & subnet_mask == stack_ip & subnet_mask )
-    ;   destination is local
-    ; else
-    ;  destination is remote, so pass to gateway
-
-    mov     eax, edx
-    and     eax, [subnet_mask]
-    mov     ecx, [stack_ip]
-    and     ecx, [subnet_mask]
-    cmp     eax, ecx
-    je      .local
-
-    mov     edx, [gateway_ip]
-  .local:
-
     lea     eax, [MACAddress]	 ;cause this is local variable
     stdcall arp_table_manager, ARP_TABLE_IP_TO_MAC, edx, eax ;opcode,IP,MAC_ptr - Get the MAC address.
 

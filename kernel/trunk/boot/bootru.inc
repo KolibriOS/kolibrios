@@ -10,7 +10,7 @@ $Revision$
 d80x25_bottom:
           db       186,' Kolibri OS основана на Menuet OS и не предоставляет '
           db       'никаких гарaнтий.        ',186
-          db       186,' Подробнее смотрите файл GNU.TXT                     '
+          db       186,' Подробнее смотрите в файле COPYING.TXT              '
           db       '                         ',186
           line_full_bottom
 d80x25_bottom_num = 3
