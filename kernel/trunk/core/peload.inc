@@ -1,9 +1,13 @@
 
+include 'export.inc'
+
 align 4
 
 proc load_PE stdcall, file_name:dword
            locals
              image  dd ?
+             entry  dd ?
+             base   dd ?
            endl
 
            stdcall load_file, [file_name]
@@ -18,190 +22,265 @@ proc load_PE stdcall, file_name:dword
            test eax, eax
            jz .cleanup
 
+           mov [base], eax
+
            stdcall map_PE, eax, [image]
-           ret
+
+           mov [entry], eax
+           test eax, eax
+           jnz .cleanup
+
+           stdcall kernel_free, [base]
 .cleanup:
-           stdcall kernel_free,[image]
+           stdcall kernel_free, [image]
+           mov eax, [entry]
+           ret
 .fail:
            xor eax, eax
            ret
 endp
 
+DWORD equ dword
+PTR   equ
 
 align 4
 map_PE:                    ;stdcall base:dword, image:dword
            cld
-           push    ebp
-           push    edi
-           push    esi
-           push    ebx
-           sub     esp, 44
+        push    ebp
+	push	edi
+	push	esi
+	push	ebx
+	sub	esp, 60
+	mov	ebx, DWORD PTR [esp+84]
+	mov	ebp, DWORD PTR [esp+80]
+	mov	edx, ebx
+	mov	esi, ebx
+	add	edx, DWORD PTR [ebx+60]
+	mov	edi, ebp
+	mov	DWORD PTR [esp+32], edx
+	mov	ecx, DWORD PTR [edx+84]
 
-           mov     ebp, [esp+68]
-           mov     ebx, [esp+64]
-           mov     edx, ebp
-           mov     esi, ebp
-           add     edx, [ebp+60]
-           mov     edi, ebx
-           mov     [esp+32], edx
+	shr ecx, 2
+	rep movsd
 
-           mov     ecx, [edx+84]
-           shr     ecx, 2
-           rep     movsd
+	movzx	eax, WORD PTR [edx+6]
+	mov	DWORD PTR [esp+36], 0
+	mov	DWORD PTR [esp+16], eax
+	jmp	L2
+L3:
+	mov	eax, DWORD PTR [edx+264]
+	test	eax, eax
+	je	L4
+	mov	esi, ebx
+	mov	edi, ebp
+	add	esi, DWORD PTR [edx+268]
+	mov	ecx, eax
+	add	edi, DWORD PTR [edx+260]
 
-           movzx   eax, word [edx+6]
-           mov     dword [esp+36], 0
-           mov     [esp+28], eax
-           jmp     .L6
-.L7:
-           mov     eax, [edx+264]
-           test    eax, eax
-           je      .L8
+	shr ecx, 2
+	rep movsd
 
-           mov     esi, ebp
-           mov     edi, ebx
-           add     esi, [edx+268]
-           mov     ecx, eax
-           add     edi, [edx+260]
+L4:
+	mov	ecx, DWORD PTR [edx+256]
+	add	ecx, 4095
+	and	ecx, -4096
+	cmp	ecx, eax
+	jbe	L6
+	sub	ecx, eax
+	add	eax, DWORD PTR [edx+260]
+	lea	edi, [eax+ebp]
 
-           shr     ecx, 2
-           rep     movsd
-.L8:
-           mov     ecx, [edx+256]
-           add     ecx, 4095
-           and     ecx, -4096
-           cmp     ecx, eax
-           jbe     .L10
+	xor eax, eax
+	rep stosb
 
-           sub     ecx, eax
-           add     eax, [edx+260]
-           lea     edi, [eax+ebx]
+L6:
+	inc	DWORD PTR [esp+36]
+	add	edx, 40
+L2:
+	mov	esi, DWORD PTR [esp+16]
+	cmp	DWORD PTR [esp+36], esi
+	jne	L3
+	mov	edi, DWORD PTR [esp+32]
+	cmp	DWORD PTR [edi+164], 0
+	je	L9
+	mov	esi, ebp
+	mov	ecx, ebp
+	sub	esi, DWORD PTR [edi+52]
+	add	ecx, DWORD PTR [edi+160]
+	mov	eax, esi
+	shr	eax, 16
+	mov	DWORD PTR [esp+12], eax
+	jmp	L11
+L12:
+	lea	ebx, [eax-8]
+	xor	edi, edi
+        shr     ebx,1
+	jmp	L13
+L14:
+	movzx	eax, WORD PTR [ecx+8+edi*2]
+	mov	edx, eax
+	shr	eax, 12
+	and	edx, 4095
+	add	edx, DWORD PTR [ecx]
+	cmp	ax, 2
+	je	L17
+	cmp	ax, 3
+	je	L18
+	dec	ax
+	jne	L15
+	mov	eax, DWORD PTR [esp+12]
+	add	WORD PTR [edx+ebp], ax
+L17:
+	add	WORD PTR [edx+ebp], si
+L18:
+	add	DWORD PTR [edx+ebp], esi
+L15:
+	inc	edi
+L13:
+	cmp	edi, ebx
+	jne	L14
+	add	ecx, DWORD PTR [ecx+4]
+L11:
+	mov	eax, DWORD PTR [ecx+4]
+	test	eax, eax
+	jne	L12
+L9:
+	mov	edx, DWORD PTR [esp+32]
+	cmp	DWORD PTR [edx+132], 0
+	je	L20
+	mov	eax, ebp
+	add	eax, DWORD PTR [edx+128]
+	mov	DWORD PTR [esp+40], 0
+	add	eax, 20
+	mov	DWORD PTR [esp+56], eax
+L22:
+	mov	ecx, DWORD PTR [esp+56]
+	cmp	DWORD PTR [ecx-16], 0
+	jne	L23
+	cmp	DWORD PTR [ecx-8], 0
+	je	L25
+L23:
+        mov     edi, DWORD PTR [__exports+32]
+        mov     esi, DWORD PTR [__exports+28]
+	mov	eax, DWORD PTR [esp+56]
+	mov	DWORD PTR [esp+20], edi
+	sub	edi, -2147483648
+	sub	esi, -2147483648
+	mov	DWORD PTR [esp+44], esi
+	mov	ecx, DWORD PTR [eax-4]
+	mov	DWORD PTR [esp+48], edi
+	mov	edx, DWORD PTR [eax-20]
+	mov	DWORD PTR [esp+52], 0
+	add	ecx, ebp
+	add	edx, ebp
+	mov	DWORD PTR [esp+24], edx
+	mov	DWORD PTR [esp+28], ecx
+L26:
+	mov	esi, DWORD PTR [esp+52]
+	mov	edi, DWORD PTR [esp+24]
+	mov	eax, DWORD PTR [edi+esi*4]
+	test	eax, eax
+	je	L27
+	test	eax, eax
+	js	L27
+	lea	edi, [ebp+eax]
+	mov	eax, DWORD PTR [esp+28]
+	mov	DWORD PTR [eax+esi*4], 0
+	lea	esi, [edi+2]
+	push	eax
+	push	32
+	movzx	eax, WORD PTR [edi]
+	mov	edx, DWORD PTR [esp+56]
+	mov	eax, DWORD PTR [edx+eax*4]
+	sub	eax, -2147483648
+	push	eax
+	push	esi
+	call	strncmp
+	pop	ebx
+	xor	ebx, ebx
+	test	eax, eax
+	jne	L32
+	jmp	L30
+L33:
+	push	ecx
+	push	32
+	mov	ecx, DWORD PTR [esp+28]
+	mov	eax, DWORD PTR [ecx-2147483648+ebx*4]
+	sub	eax, -2147483648
+	push	eax
+	push	esi
+	call	strncmp
+	pop	edx
+	test	eax, eax
+	jne	L34
+	mov	esi, DWORD PTR [esp+44]
+	mov	edx, DWORD PTR [esp+52]
+	mov	ecx, DWORD PTR [esp+28]
+	mov	eax, DWORD PTR [esi+ebx*4]
+	sub	eax, -2147483648
+	mov	DWORD PTR [ecx+edx*4], eax
+	jmp	L36
+L34:
+	inc	ebx
+L32:
+        cmp     ebx, DWORD PTR [__exports+24]
+	jb	L33
+L36:
+        cmp     ebx, DWORD PTR [__exports+24]
+	jne	L37
 
-           xor     eax, eax
-           rep     stosb
-.L10:
-           inc     dword [esp+36]
-           add     edx, 40
-.L6:
-           mov     esi, [esp+28]
-           cmp     [esp+36], esi
-           jne     .L7
+        mov     esi, msg_unresolved
+        call    sys_msg_board_str
+	lea	esi, [edi+2]
+        call    sys_msg_board_str
+        mov     esi, msg_CR
+        call    sys_msg_board_str
 
-           mov     edi, [esp+32]
-           cmp     dword [edi+164], 0
-           je      .L13
+	mov	DWORD PTR [esp+40], 1
+	jmp	L37
+L30:
+	movzx	eax, WORD PTR [edi]
+	mov	esi, DWORD PTR [esp+44]
+	mov	edi, DWORD PTR [esp+52]
+	mov	edx, DWORD PTR [esp+28]
+	mov	eax, DWORD PTR [esi+eax*4]
+	sub	eax, -2147483648
+	mov	DWORD PTR [edx+edi*4], eax
+L37:
+	inc	DWORD PTR [esp+52]
+	jmp	L26
+L27:
+	add	DWORD PTR [esp+56], 20
+	jmp	L22
+L25:
+	xor	eax, eax
+	cmp	DWORD PTR [esp+40], 0
+	jne	L40
+L20:
+	mov	ecx, DWORD PTR [esp+32]
+	mov	eax, ebp
+	add	eax, DWORD PTR [ecx+40]
+L40:
+	add	esp, 60
+	pop	ebx
+	pop	esi
+	pop	edi
+	pop	ebp
+        ret     8
 
-           mov     eax, [esp+32]
-           mov     edi, ebx
-           mov     ecx, ebx
-           sub     edi, [eax+52]
-           add     ecx, [eax+160]
+ align 16
+__exports:
+          export 'KERNEL',   \
+          alloc_kernel_space, 'AllocKernelSpace',   \      ; stdcall
+          free_kernel_space,  'FreeKernelSpace',    \      ; stdcall
+          kernel_alloc,       'KernelAlloc',        \      ; stdcall
+          kernel_free,        'KernelFree',         \      ; stdcall
+          pci_api,            'PciApi',             \
+          pci_read32,         'PciRead32',          \      ; stdcall
+          reg_service,        'RegService',         \
+          user_alloc,         'UserAlloc',          \      ; stdcall
+          user_free,          'UserFree',           \      ; stdcall
+          sys_msg_board_str,  'SysMsgBoardStr'
 
-           mov     edx, edi
-           shr     edx, 16
-           mov     [esp+20], edx
-           jmp     .L15
-.L16:
-           lea     esi, [eax-8]
-           xor     ebp, ebp
-           shr     esi, 1
-           jmp     .L17
-.L18:
-           movzx   eax, word [ecx+8+ebp*2]
-           mov     edx, eax
-           shr     eax, 12
-           and     edx, 4095
-           add     edx, [ecx]
-           cmp     ax, 2
-           je      .L21
 
-           cmp     ax, 3
-           je      .L22
-
-           dec     ax
-           jne     .L19
-
-           mov     eax, [esp+20]
-           add     [edx+ebx], ax
-.L21:
-           add     [edx+ebx], di
-.L22:
-           add     [edx+ebx], edi
-.L19:
-           inc     ebp
-.L17:
-           cmp     ebp, esi
-           jne     .L18
-
-           add     ecx, [ecx+4]
-.L15:
-           mov     eax, [ecx+4]
-           test    eax, eax
-           jne     .L16
-.L13:
-           mov     edx, [esp+32]
-           cmp     dword [edx+132], 0
-           je      .L24
-
-           mov     eax, ebx
-           add     eax, [edx+128]
-           lea     esi, [eax+20]
-.L26:
-           cmp     dword [esi-16], 0
-           jne     .L27
-
-           cmp     dword [esi-8], 0
-           je      .L24
-.L27:
-           mov     ecx, [esi-20]
-           mov     ebp, ebx
-           add     ebp,  [esi-4]
-           add     ecx, ebx
-           mov     [esp+40], ecx
-.L29:
-           mov     edi, [esp+40]
-           mov     eax, [edi]
-           test    eax, eax
-           je      .L30
-
-           test    eax, eax
-           js      .L30
-
-           lea     eax, [eax+2+ebx]
-           mov     edi, kernel_export
-           mov     [ebp], dword -1
-           mov     [esp+24], eax
-.L33:
-           push    ecx
-           push    16
-           push    dword [edi]
-           push    dword [esp+36]
-           call    strncmp
-           pop     edx
-           test    eax, eax
-           jne     .L34
-           mov     eax, [edi+4]
-           mov     [ebp], eax
-           jmp     .L36
-.L34:
-           add     edi, 8
-           cmp     dword [edi], 0
-           jne     .L33
-.L36:
-           add     dword [esp+40], 4
-           add     ebp, 4
-           jmp     .L29
-.L30:
-           add     esi, 20
-           jmp     .L26
-.L24:
-           mov     eax, [esp+32]
-           add     ebx, [eax+40]
-           add     esp, 44
-           mov     eax, ebx
-           pop     ebx
-           pop     esi
-           pop     edi
-           pop     ebp
-           ret     8
 

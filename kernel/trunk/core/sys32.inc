@@ -500,8 +500,6 @@ term9:
 
            push esi
            call [eax+APPOBJ.destroy]
-           ;mov  esi, msg_obj_destroy
-           ;call sys_msg_board_str
            DEBUGF 1,"%s",msg_obj_destroy
            pop esi
            jmp @B

@@ -183,6 +183,7 @@ endp
 
 align 4
 proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
+           push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -190,6 +191,7 @@ proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
+           pop ebx
 	   ret
 endp
 
@@ -349,26 +351,32 @@ proc get_service stdcall, sz_name:dword
 endp
 
 align 4
-reg_service:
-.sz_name equ esp+4
-.handler equ esp+8
-	   mov eax, [.sz_name]
-	   test eax, eax
-	   jz .fail
+proc reg_service stdcall, name:dword, handler:dword
 
-	   mov ebx, [.handler]
-	   test ebx, ebx
-	   jz .fail
+           xor eax, eax
 
+           cmp [name], eax
+           je .fail
+
+           cmp [handler], eax
+           je .fail
+
+           push ebx
 	   mov eax, SRV_SIZE
 	   call malloc		 ;call alloc_service
+           pop ebx
 	   test eax, eax
 	   jz .fail
 
+           push ebx
+           push esi
+           push edi
 	   mov edi, eax
-	   mov esi, [.sz_name]
+           mov esi, [name]
 	   mov ecx, 16/4
 	   rep movsd
+           pop edi
+           pop esi
 
 	   mov [eax+SRV.magic], ' SRV'
 	   mov [eax+SRV.size], SRV_SIZE
@@ -380,12 +388,14 @@ reg_service:
 	   mov [ebx+SRV.fd], eax
 	   mov [edx+SRV.bk], eax
 
-	   mov ecx, [.handler]
+           mov ecx, [handler]
 	   mov [eax+SRV.srv_proc], ecx
-	   ret 8
+           pop ebx
+           ret
 .fail:
 	   xor eax, eax
-	   ret 8
+           ret
+endp
 
 align 4
 proc get_proc stdcall, exp:dword, sz_name:dword

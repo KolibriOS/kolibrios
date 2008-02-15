@@ -1011,11 +1011,35 @@ new_services:
            ret
 @@:
            cmp     eax, 20
-           ja      .fail
+           ja      @F
            mov     eax, ecx
            call    user_realloc
            mov     [esp+36], eax
            ret
+@@:
+           cmp eax, 21
+           ja @f
+           cmp ebx, OS_BASE
+           jae .fail
+
+           stdcall load_PE, ebx
+
+           test eax, eax
+           jz @F
+
+           mov esi, eax
+           stdcall eax, DRV_ENTRY
+
+           test eax, eax
+           jz @F
+
+           mov [eax+SRV.entry], esi
+
+@@:
+           mov [esp+36], eax
+           ret
+
+
 .fail:
            xor eax, eax
            mov [esp+36], eax

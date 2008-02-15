@@ -599,22 +599,12 @@ include 'vmodeld.inc'
   cmp ax,'r1'		; if using not ram disk, then load librares and parameters {SPraid.simba}
   je  no_lib_load
 ; LOADING LIBRARES
-   stdcall dll.Load,@IMPORT				; loading librares for kernel (.obj files)
-   call load_file_parse_table			; prepare file parse table
-   call set_kernel_conf					; configure devices and gui
+   stdcall dll.Load,@IMPORT                 ; loading librares for kernel (.obj files)
+   call load_file_parse_table               ; prepare file parse table
+   call set_kernel_conf                     ; configure devices and gui
 no_lib_load:
 
 ; LOAD FONTS I and II
-
-
-; pushad
-; push eax
-; mov  eax,char
-; call file_system_lfn
-; mov  eax,char2
-; call file_system_lfn
-; pop eax
-; popad
 
         stdcall read_file, char, FONT_I, 0, 2304
         stdcall read_file, char2, FONT_II, 0, 2560
