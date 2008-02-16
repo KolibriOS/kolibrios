@@ -802,24 +802,12 @@ PG_NOCACHE       equ 0x018
 
 align 4
 proc set_ICH4
-           stdcall AllocKernelSpace, dword 0x2000
-           mov edi, eax
-           mov ebx, [ctrl.codec_mem_base]
-           and ebx, -4096
-           stdcall MapPage, edi,ebx,PG_SW+PG_NOCACHE
-           mov ebx, [ctrl.codec_mem_base]
-           and ebx, 4095
-           add ebx, edi
-           mov [ctrl.codec_mem_base], ebx
-           add edi, 0x1000
 
-           mov ebx, [ctrl.ctrl_mem_base]
-           and ebx, -4096
-           stdcall MapPage, edi, ebx,PG_SW+PG_NOCACHE
-           mov ebx, [ctrl.ctrl_mem_base]
-           and ebx, 4095
-           add ebx, edi
-           mov [ctrl.ctrl_mem_base], ebx
+           stdcall MapIoMem,[ctrl.codec_mem_base],0x1000,PG_SW+PG_NOCACHE
+           mov [ctrl.codec_mem_base], eax
+
+           stdcall MapIoMem,[ctrl.ctrl_mem_base],0x1000,PG_SW+PG_NOCACHE
+           mov [ctrl.ctrl_mem_base], eax
 
            mov [ctrl.codec_read16],  codec_mem_r16    ;virtual
            mov [ctrl.codec_write16], codec_mem_w16    ;virtual

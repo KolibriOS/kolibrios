@@ -35,6 +35,7 @@ kernel_export \
 	      FreePage,\
 	      MapPage,\
 	      MapSpace,\
+              MapIoMem,\
 	      GetPgAddr,\
 	      CommitPages,\
 	      ReleasePages,\

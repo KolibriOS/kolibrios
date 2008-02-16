@@ -275,6 +275,7 @@ __exports:
           free_kernel_space,  'FreeKernelSpace',    \      ; stdcall
           kernel_alloc,       'KernelAlloc',        \      ; stdcall
           kernel_free,        'KernelFree',         \      ; stdcall
+          map_io_mem,         'MapIoMem',           \      ; stdcall
           pci_api,            'PciApi',             \
           pci_read32,         'PciRead32',          \      ; stdcall
           reg_service,        'RegService',         \

@@ -143,6 +143,45 @@ proc free_page
            ret
 endp
 
+proc map_io_mem stdcall, base:dword, size:dword, flags:dword
+
+           push ebx
+           push edi
+           mov eax, [size]
+           add eax, 4095
+           and eax, -4096
+           mov [size], eax
+           stdcall alloc_kernel_space, eax
+           test eax, eax
+           jz .fail
+           push eax
+
+           mov edi, 0x1000
+           mov ebx, eax
+           mov ecx,[size]
+           mov edx, [base]
+           shr eax, 12
+           shr ecx, 12
+           and edx, -4096
+           or edx, [flags]
+@@:
+           mov [page_tabs+eax*4], edx
+           invlpg [ebx]
+           inc eax
+           add ebx, edi
+           add edx, edi
+           loop @B
+
+           pop eax
+           mov edx, [base]
+           and edx, 4095
+           add eax, edx
+.fail:
+           pop edi
+           pop ebx
+           ret
+endp
+
 ; param
 ;  eax= page base + page flags
 ;  ebx= liear address
@@ -150,7 +189,7 @@ endp
 
 align 4
 commit_pages:
-
+           push edi
            test ecx, ecx
            jz .fail
 
@@ -171,6 +210,7 @@ commit_pages:
            jnz @B
            mov [pg_data.pg_mutex],ecx
 .fail:
+           pop edi
            ret
 
 

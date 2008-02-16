@@ -344,27 +344,14 @@ endp
 
 align 4
 proc init_r200
-
-           stdcall AllocKernelSpace, dword 0x10000
+           stdcall PciRead32, [bus], [devfn], dword 0x18
+           stdcall MapIoMem,eax,0x10000,(PG_SW+PG_NOCACHE)
            test eax, eax
            jz .fail
 
            mov [ati_io], eax
+           mov edi, eax
 
-           stdcall PciRead32, [bus], [devfn], dword 0x18
-           and eax, 0xFFFF0000
-           mov esi, eax
-
-           mov edi, [ati_io]
-           mov edx, 16
-@@:
-           stdcall MapPage,edi,esi,PG_SW+PG_NOCACHE
-           add edi, 0x1000
-           add esi, 0x1000
-           dec edx
-           jnz @B
-
-           mov edi, [ati_io]
            mov dword [edi+RD_RB3D_CNTL], 0
            call engRestore
 
@@ -397,24 +384,12 @@ end if
 align 4
 proc init_r500
 
-           stdcall AllocKernelSpace, dword 0x10000
+           stdcall PciRead32, [bus], [devfn], dword 0x18
+           stdcall MapIoMem,eax,0x10000,(PG_SW+PG_NOCACHE)
            test eax, eax
            jz .fail
 
            mov [ati_io], eax
-
-           stdcall PciRead32, [bus], [devfn], dword 0x18
-           and eax, 0xFFFF0000
-           mov esi, eax
-
-           mov edi, [ati_io]
-           mov edx, 16
-@@:
-           stdcall MapPage,edi,esi,PG_SW+PG_NOCACHE
-           add edi, 0x1000
-           add esi, 0x1000
-           dec edx
-           jnz @B
 
            mov [fnSelect], r500_SelectCursor
            mov [fnSet], r500_SetCursor

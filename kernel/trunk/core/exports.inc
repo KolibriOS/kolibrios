@@ -33,6 +33,7 @@ iglobal
   szGetPgAddr	      db 'GetPgAddr',0
   szMapPage	      db 'MapPage',0
   szMapSpace	      db 'MapSpace',0
+  szMapIoMem          db 'MapIoMem',0
   szCommitPages       db 'CommitPages',0
   szReleasePages      db 'ReleasePages',0
 
@@ -101,6 +102,7 @@ kernel_export:
   dd szFreePage        , free_page
   dd szMapPage	       , map_page	       ;stdcall
   dd szMapSpace        , map_space
+  dd szMapIoMem        , map_io_mem            ;stdcall
   dd szGetPgAddr       , get_pg_addr
   dd szCommitPages     , commit_pages	       ;not implemented
   dd szReleasePages    , release_pages
