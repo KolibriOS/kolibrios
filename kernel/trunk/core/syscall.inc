@@ -145,7 +145,7 @@ iglobal
       dd sys_getbackground	 ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
       dd 0
-      dd	     ; 42-ReadIrqData
+      dd 0	     ; 42-ReadIrqData
       dd sys_outport		 ; 43-SendDeviceData
       dd sys_programirq 	 ; 44-ProgramIrqs
       dd reserve_free_irq	 ; 45-ReserveIrq and FreeIrq
