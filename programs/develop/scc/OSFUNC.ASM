@@ -11,7 +11,7 @@ include "macros.inc"
   ;param
   BAD	equ -1
   files equ 100
-  save_buffer 		equ 0x20000 ;32
+  save_buffer		equ 0x20000 ;32
   save_buffer_w 	equ 0x400000 ;32
   save_file_name	equ 0x20000
 
@@ -76,8 +76,8 @@ _OS_fopen:
 	mov ecx , [esp+4] ; file mode
     mov [file_mode],ecx
 ;B+ Copy file name
-  
-  
+
+
   mov  esi,[esp+8]
   mov  edi,[p_filename]
   mov  ecx,12
@@ -126,8 +126,8 @@ stosb
   dec  ecx
   jnz  .next_copy2
 .fill_space2:
-  mov  al,' '
-  cld
+  ;mov  al,' '
+  ;cld
 rep stosb
 
 .no_wri:
@@ -306,7 +306,7 @@ _OS_fclos:
 	; ebx = number of read bytes = file size
     ; save loaded file
     mov  [dest_info.bytes],ebx ; file size in bytes
-    
+
     mov  [dest_info.bytes+4], save_buffer_w
     ;mov eax, [p_filename];[w_file_name]
     ;mov [destination],eax
@@ -661,11 +661,11 @@ dest_info:		     ; DESTINATION FILEINFO
 	dd	0
 .bytes	dd	?
 	dd	save_buffer
-	db      0
+	db	0
 destination:
 	dd  save_file_name
-	;db	"EXAMPLE.ASM",0
-	
+	;db     "EXAMPLE.ASM",0
+
 
 
 w_file_name dd	save_file_name
