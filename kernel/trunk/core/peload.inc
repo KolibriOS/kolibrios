@@ -278,6 +278,7 @@ __exports:
           map_io_mem,         'MapIoMem',           \      ; stdcall
           pci_api,            'PciApi',             \
           pci_read32,         'PciRead32',          \      ; stdcall
+          pci_write32,        'PciWrite32',         \      ; stdcall
           reg_service,        'RegService',         \
           user_alloc,         'UserAlloc',          \      ; stdcall
           user_free,          'UserFree',           \      ; stdcall

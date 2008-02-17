@@ -247,6 +247,7 @@ endp
 
 align 4
 proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+           push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -255,6 +256,7 @@ proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
+           pop ebx
 	   ret
 endp
 
