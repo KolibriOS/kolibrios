@@ -275,10 +275,18 @@ __exports:
           free_kernel_space,  'FreeKernelSpace',    \      ; stdcall
           kernel_alloc,       'KernelAlloc',        \      ; stdcall
           kernel_free,        'KernelFree',         \      ; stdcall
+          malloc,             'Kmalloc',            \
+          free,               'Kfree',              \
           map_io_mem,         'MapIoMem',           \      ; stdcall
+\
           pci_api,            'PciApi',             \
+          pci_read8,          'PciRead8',           \      ; stdcall
+          pci_read16,         'PciRead16',          \      ; stdcall
           pci_read32,         'PciRead32',          \      ; stdcall
+          pci_write8,         'PciWrite8',          \      ; stdcall
+          pci_write16,        'PciWrite16',         \      ; stdcall
           pci_write32,        'PciWrite32',         \      ; stdcall
+\
           reg_service,        'RegService',         \
           user_alloc,         'UserAlloc',          \      ; stdcall
           user_free,          'UserFree',           \      ; stdcall

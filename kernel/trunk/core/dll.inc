@@ -197,6 +197,7 @@ endp
 
 align 4
 proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
+           push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -204,11 +205,13 @@ proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
+           pop ebx
 	   ret
 endp
 
 align 4
 proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
+           push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -216,11 +219,13 @@ proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
+           pop ebx
 	   ret
 endp
 
 align 4
 proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+           push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -229,11 +234,13 @@ proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
+           pop ebx
 	   ret
 endp
 
 align 4
 proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
+           push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -242,6 +249,7 @@ proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
+           pop ebx
 	   ret
 endp
 

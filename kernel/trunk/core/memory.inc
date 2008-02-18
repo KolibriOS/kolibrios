@@ -1057,8 +1057,8 @@ new_services:
            mov     [esp+36], eax
            ret
 @@:
-           cmp eax, 21
-           ja @f
+           cmp eax, 21                     ;for test purposes only
+           ja @f                           ;will be removed soon
            cmp ebx, OS_BASE
            jae .fail
 

@@ -983,7 +983,7 @@ malloc_large:
 align 4
 init_malloc:
 
-           stdcall kernel_alloc, 0x20000
+           stdcall kernel_alloc, 0x30000
 
            mov [mst.top], eax
            mov [mst.topsize], 128*1024
