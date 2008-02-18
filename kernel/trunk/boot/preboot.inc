@@ -17,7 +17,10 @@ display_modechg     db  0 ; display mode change for text, yes/no (0 or 2)
 
 display_atboot      db  0 ; show boot screen messages ( 2-no )
 
-preboot_graph       db  0 ; graph mode
+preboot_graph       dw  0 ; graph mode
+x_save              dw  0 ; x
+y_save              dw  0 ; y
+;pixel_save          dw  0 ; per to pixel
 preboot_gprobe      db  0 ; probe vesa3 videomodes (1-no, 2-yes)
 preboot_vrrm        db  0 ; use VRR_M (1-yes, 2- no)
 preboot_dma         db  0 ; use DMA for access to HDD (1-always, 2-only for read, 3-never)

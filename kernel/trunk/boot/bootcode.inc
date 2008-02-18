@@ -582,7 +582,13 @@ cfgmanager:
 .enter: cmp     al,0x0D;x,0x1C0D               ; enter
         jne     .loops
         push    word [cursor_pos]
-        pop     word [preboot_graph]           ;save choose
+        pop     bp
+        push    word [es:bp]
+        pop     word [x_save]
+        push    word [es:bp+2]
+        pop     word [y_save]
+        mov     word [preboot_graph],bp           ;save choose
+        
         jmp    .d
 
 .change_b:

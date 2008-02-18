@@ -363,19 +363,28 @@ check_first_parm:
         jz     .ok_found_mode
 
         mov     si,modes_table
+        jmp     .ok_found_mode
 
+
+
+.no_zero:
+        mov     ax,word [x_save]
+        mov     bx,word [y_save]
+        mov     si,modes_table
+        call    .loops
+        test    ax,ax
+        jz     .ok_found_mode
+
+;        cmp     ax,modes_table
+;        jb      .zerro           ;check on correct if bellow
+;        cmp     ax,word [end_cursor]
+;        ja      .zerro           ;check on correct if anymore
 
 .ok_found_mode:
         mov     word [home_cursor],si
 ;        mov     word [cursor_pos],si
         mov     word [preboot_graph],si
         mov     ax,si
-
-.no_zero:
-        cmp     ax,modes_table
-        jb      .zerro           ;check on correct if bellow
-        cmp     ax,word [end_cursor]
-        ja      .zerro           ;check on correct if anymore
 
         mov     ecx,long_v_table
 
@@ -414,7 +423,7 @@ check_first_parm:
 
 ;-----------------------------------------------------------------------------
 
-default_vmode:
+;default_vmode:
         
 ;-----------------------------------------------------------------------------
 draw_vmodes_table:
