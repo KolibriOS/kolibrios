@@ -1069,6 +1069,7 @@ hex_buff     db 8 dup(0),13,10,0
 
 R200M       equ 0x5a62  ;R300
 R7000       equ 0x5159  ;R200
+R750M       equ 0x4c57  ;M7 mobile rv200
 R8500       equ 0x514C  ;R200
 R9000       equ 0x4966  ;RV250
 R9200       equ 0x5961  ;RV280
@@ -1089,6 +1090,7 @@ align 4
 devices:
         dd (R200M   shl 16)+VID_ATI, init_r200   ;R300
         dd (R7000   shl 16)+VID_ATI, init_r200
+        dd (R750M   shl 16)+VID_ATI, init_r200   ;M7
         dd (R8500   shl 16)+VID_ATI, init_r200
         dd (R9000   shl 16)+VID_ATI, init_r200
         dd (0x514D  shl 16)+VID_ATI, init_r200   ;R200     9100

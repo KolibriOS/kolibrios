@@ -587,6 +587,8 @@ cfgmanager:
         pop     word [x_save]
         push    word [es:bp+2]
         pop     word [y_save]
+	push	word [es:bp+6]
+        pop     word [number_vm]
         mov     word [preboot_graph],bp           ;save choose
         
         jmp    .d

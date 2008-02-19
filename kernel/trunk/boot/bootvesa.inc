@@ -333,8 +333,8 @@ draw_current_vmode:
         ret        
 ;-----------------------------------------------------------------------------
 check_first_parm:
-        mov     ax,word [preboot_graph]
-        test    ax,ax
+        mov     si,word [preboot_graph]
+        test    si,si
         jnz      .no_zero        ;if no zero
 .zerro:
 ;        mov     ax,modes_table
@@ -368,6 +368,9 @@ check_first_parm:
 
 
 .no_zero:
+	mov	bp,word [number_vm]
+        cmp     bp,word [es:si+6]
+        jz      .ok_found_mode
         mov     ax,word [x_save]
         mov     bx,word [y_save]
         mov     si,modes_table
@@ -375,6 +378,7 @@ check_first_parm:
         test    ax,ax
         jz     .ok_found_mode
 
+	mov    si,modes_table
 ;        cmp     ax,modes_table
 ;        jb      .zerro           ;check on correct if bellow
 ;        cmp     ax,word [end_cursor]
