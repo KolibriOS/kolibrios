@@ -71,13 +71,11 @@ temp_3456:
 
 nbw:
         in   al,0x60
-        call pause_key
         cmp  al,6
         jae  nbw
         mov  bl,al
 nbw2:
         in   al,0x60
-        call pause_key
         cmp  al,bl
         je   nbw2
         cmp  al,240  ;ax,240
@@ -93,13 +91,7 @@ nbw31:
 
 nbw32:
 
-        dec  ax    ; 1 = write floppy
-        js   nbw
-        jnz  no_floppy_write
-        call floppy_write
-        jmp  temp_3456 ;nbw
-no_floppy_write:
-
+        dec  ax
         dec  ax    ; 2 = power off
         jnz  no_apm_off
         call APM_PowerOff
@@ -113,72 +105,8 @@ no_apm_off:
         mov  word[0x0072],0x1234
         jmp  0xF000:0xFFF0
 
-pause_key:
-        mov cx,100
-pause_key_1:
-        loop  pause_key_1
-        ret
 
 rdelay:
-        ret
-
-floppy_write:   ; write diskette image to physical floppy
-
-        cmp  [flm],byte 1
-        je   fwwritedone
-        mov  [flm],byte 1
-
-        xor    ax, ax        ; reset drive
-        xor    dx, dx
-        int     0x13
-
-        mov     cx,0x0001               ; startcyl,startsector
-        xor    dx, dx                    ; starthead,drive
-        mov    ax, 80*2               ; read no of sect
-
-fwwrites:
-        push    ax
-
-        ; move 1mb+ -> 0:a000
-
-         pusha
-        mov     si, fwmovedesc
-        mov     cx,256*18
-        mov     ah,0x87
-        push    ds
-        pop    es
-        int     0x15
-        add    dword [fwmovedesc+0x12], 512*18
-        popa
-
-        xor     si,si
-        mov    es,si
-fwnewwrite:
-        mov     bx,0xa000               ; es:bx -> data area
-        mov     ax,0x0300+18            ; read, no of sectors to read
-        int     0x13
-
-         test    ah, ah
-        jz      fwgoodwrite
-
-        inc    si
-        cmp     si,10
-        jnz     fwnewwrite
-
-; can't access diskette - return
-        pop    ax
-        ret
-
-fwgoodwrite:
-        inc     dh
-        cmp     dh,2
-        jnz     fwbb2
-        mov     dh,0
-        inc     ch
-fwbb2:
-        pop     ax
-        dec     ax
-        jnz     fwwrites
         ret
 
 APM_PowerOff:
@@ -220,7 +148,6 @@ APM_PowerOff:
         mov cx,3
         int 0x15
 ;!!!!!!!!!!!!!!!!!!!!!!!!
-fwwritedone:
         ret
 
 restart_kernel:

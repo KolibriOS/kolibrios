@@ -2026,7 +2026,7 @@ sys_end:
 iglobal
 align 4
 sys_system_table:
-	dd	sysfn_shutdown		; 1 = system shutdown
+	dd	0			; 1 = system shutdown
 	dd	sysfn_terminate 	; 2 = terminate thread
 	dd	sysfn_activate		; 3 = activate window
 	dd	sysfn_getidletime	; 4 = get idle time
@@ -2034,7 +2034,7 @@ sys_system_table:
 	dd	sysfn_saveramdisk	; 6 = save ramdisk
 	dd	sysfn_getactive 	; 7 = get active window
 	dd	sysfn_sound_flag	; 8 = get/set sound_flag
-	dd	sysfn_shutdown_param	; 9 = shutdown with parameter
+	dd	sysfn_shutdown		; 9 = shutdown with parameter
 	dd	sysfn_minimize		; 10 = minimize window
 	dd	sysfn_getdiskinfo	; 11 = get disk subsystem info
 	dd	sysfn_lastkey		; 12 = get last pressed key
@@ -2060,14 +2060,19 @@ sys_system:
 @@:
 	ret
 
-sysfn_shutdown: 	; 18.1 = BOOT
-     mov  [BOOT_VAR+0x9030],byte 0
-  for_shutdown_parameter:
+
+sysfn_shutdown:	         ; 18.9 = system shutdown
+     cmp  ecx,1
+     jl   exit_for_anyone
+     cmp  ecx,4
+     jg   exit_for_anyone
+     mov  [BOOT_VAR+0x9030],cl
 
      mov  eax,[TASK_COUNT]
      mov  [SYS_SHUTDOWN],al
      mov  [shutdown_processes],eax
      and  dword [esp+32], 0
+ exit_for_anyone:
      ret
   uglobal
    shutdown_processes: dd 0x0
@@ -2179,17 +2184,8 @@ sysfn_sound_flag:	; 18.8 = get/set sound_flag
  nosoundflag:
      ret
 
-sysfn_shutdown_param:	; 18.9 = system shutdown with param
-     cmp  ecx,1
-     jl   exit_for_anyone
-     cmp  ecx,4
-     jg   exit_for_anyone
-     mov  [BOOT_VAR+0x9030],cl
-     jmp  for_shutdown_parameter
-
 sysfn_minimize: 	; 18.10 = minimize window
      mov   [window_minimize],1
- exit_for_anyone:
      ret
 
 sysfn_getdiskinfo:	; 18.11 = get disk info table

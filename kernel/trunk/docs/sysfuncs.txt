@@ -624,20 +624,6 @@ Remarks:
     will return answer "buffer is empty".
 
 ======================================================================
-============ Function 18, subfunction 1 - system shutdown. ===========
-======================================================================
-Parameters:
-  * eax = 18 - function number
-  * ebx = 1 - subfunction number
-Returned value:
-  * function always return eax = 0 as tag of success
-Remarks:
-  * On the last step menu of exit from the system appears and waits
-    response of the user.
-  * See also subfunction 9, system shutdown with
-    the parameter to force the choice in the exit menu.
-
-======================================================================
 = Function 18, subfunction 2 - terminate process/thread by the slot. =
 ======================================================================
 Parameters:
@@ -744,15 +730,12 @@ Returned value:
   * function does not return value
 
 ======================================================================
-== Function 18, subfunction 9 - system shutdown with the parameter. ==
+============ Function 18, subfunction 9 - system shutdown. ===========
 ======================================================================
 Parameters:
   * eax = 18 - function number
   * ebx = 9 - subfunction number
   * ecx = parameter:
-    * 1 = on the last step of shutdown save ramdisk on a floppy and
-      then show the exit menu and request further operations
-      from the user
     * 2 = turn off computer
     * 3 = reboot computer
     * 4 = restart the kernel from the file 'kernel.mnt' on ramdisk
@@ -765,12 +748,6 @@ Remarks:
     changed in future versions of the kernel.
   * It is possible to use subfunction 1, that on the last step
     the user makes choice himself.
-  * It is not recommended to use value ecx=1 (to not irritate the user
-    with excessive questions); to save ramdisk on a floppy use
-    function 16 (which admits specification, on which floppy to
-    write), and to shutdown with the exit menu use already mentioned
-    subfunction 1.
-
 ======================================================================
 ===== Function 18, subfunction 10 - minimize application window. =====
 ======================================================================

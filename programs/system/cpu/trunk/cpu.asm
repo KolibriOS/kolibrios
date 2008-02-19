@@ -120,8 +120,8 @@ still_end:
     jmp  still_end
     
   reboot:    
-    mov  eax,18
-    mov  ebx,1
+    mov  eax,70
+    mov  ebx,sys_reboot
     int  0x40
 ;close program if we going to reboot
 
@@ -581,6 +581,14 @@ file_start: dd 7
 
 start_application: db '/sys/LAUNCHER',0
                    times 60 db 32
+
+sys_reboot:
+            dd 7
+            dd 0
+            dd 0
+            dd 0
+            dd 0
+            db '/sys/end',0
 
 if lang eq de
 text:
