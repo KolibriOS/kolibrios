@@ -141,7 +141,7 @@ iglobal
       dd 0
       dd 0
       dd readmousepos		 ; 37-GetMousePosition_ScreenRelative,.
-      dd syscall_drawline	 ; 38-DrawLine
+      dd 0			 ; 38-DrawLine
       dd sys_getbackground	 ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
       dd 0
@@ -221,7 +221,7 @@ iglobal
       dd syscall_getpixel	 ; 35-GetPixel
       dd undefined_syscall	 ; 36-reserved
       dd cross_order		 ; 37-GetMousePosition_ScreenRelative,.
-      dd cross_order		 ; 38-DrawLine
+      dd syscall_drawline	 ; 38-DrawLine
       dd cross_order		 ; 39-GetBackgroundSize,ReadBgrData,.
       dd set_app_param		 ; 40-WantEvents
       dd syscall_getirqowner	 ; 41-GetIrqOwner

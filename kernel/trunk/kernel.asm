@@ -5077,22 +5077,23 @@ align 4
 syscall_drawline:			; DrawLine
 
 	mov	edi, [TASK_BASE]
-	movzx	edx, word[edi-twdw+WDATA.box.left]
-	mov	ebp, edx
+	movzx	eax, word[edi-twdw+WDATA.box.left]
+	mov	ebp, eax
 	mov	esi, [current_slot]
 	add	ebp, [esi+APPDATA.wnd_clientbox.left]
-	add	dx, word[esi+APPDATA.wnd_clientbox.left]
-	shl	edx, 16
-	add	ebp, edx
-	movzx	edx, word[edi-twdw+WDATA.box.top]
+	add	ax, word[esi+APPDATA.wnd_clientbox.left]
+	add	ebp,ebx
+	shl	eax, 16
+	movzx	ebx, word[edi-twdw+WDATA.box.top]
 	add	eax, ebp
-	mov	ebp, edx
+	mov	ebp, ebx
 	add	ebp, [esi+APPDATA.wnd_clientbox.top]
-	add	dx, word[esi+APPDATA.wnd_clientbox.top]
-	shl	edx, 16
+	add	bx, word[esi+APPDATA.wnd_clientbox.top]
+	add     ebp, ecx
+	shl	ebx, 16
 	xor	edi, edi
-	add	edx, ebp
-	add	ebx, edx
+	add	ebx, ebp
+	mov	ecx, edx
 	jmp	[draw_line]
 
 align 4
