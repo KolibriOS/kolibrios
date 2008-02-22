@@ -114,17 +114,17 @@ mode_1024_768_32:
   dw 1024,768,32,60
 mode_1024_768_24:
   dw 1024,768,24,60
-mode_800_600_32
+mode_800_600_32:
   dw 800,600,32,60
-mode_800_600_24
+mode_800_600_24:
   dw 800,600,24,60
-mode_640_480_32
+mode_640_480_32:
   dw 640,480,32,60
-mode_640_480_24
+mode_640_480_24:
   dw 640,480,24,60
-mode_640_480_16
+mode_640_480_16:
   dw 640,480,16,60
-mode 320_240_8
+mode_320_240_8:
   dw 320,240,8,60
 
 ; mike.dld {
@@ -449,7 +449,7 @@ cd_appl_data rb 1 ; 0 = system cache, 1 - application cache
 
 lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
 pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled
-timer_ticks_enable rb 1 	; for cd driver
+timer_ticks_enable rb 1         ; for cd driver
 
 NumBiosDisks    rd 1
 BiosDisksData   rb 200h
