@@ -23,8 +23,8 @@ $Revision$
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
-;ScreenWidth             equ     0xfe00
-;ScreenHeight            equ     0xfe04
+;Screen_Max_X             equ     0xfe00
+;Screen_Max_Y            equ     0xfe04
 ;BytesPerScanLine        equ     0xfe08
 ;LFBAddress              equ     0xfe80
 ;ScreenBPP               equ     0xfbf1
@@ -172,7 +172,7 @@ vesa20_putimage:
      add     eax, [putimg.arg_0]
      mov     [putimg.line_increment], eax
 ; winmap new line increment
-     mov     eax, [ScreenWidth]
+     mov     eax, [Screen_Max_X]
      inc     eax
      sub     eax, [putimg.real_sx]
      mov     [putimg.winmap_newline], eax
@@ -197,7 +197,7 @@ vesa20_putimage:
      add     edx, [LFBAddress]
 ; pointer to pixel map
      mov     eax, [putimg.abs_cy]
-     imul    eax, [ScreenWidth]
+     imul    eax, [Screen_Max_X]
      add     eax, [putimg.abs_cy]
      add     eax, [putimg.abs_cx]
      add     eax, WinMapAddress
@@ -232,7 +232,7 @@ align   4
 ;     pop     edx ebp
      add     esi, [putimg.line_increment]
      add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
-     add     ebp, [putimg.winmap_newline] ;[ScreenWidth]
+     add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
 ;     inc     ebp
      dec     edi
      jnz     .new_line
@@ -265,7 +265,7 @@ align   4
 ;     pop     edx ebp
      add     esi, [putimg.line_increment]
      add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
-     add     ebp, [putimg.winmap_newline] ;[ScreenWidth]
+     add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
 ;     inc     ebp
      dec     edi
      jnz     .new_line
@@ -297,9 +297,9 @@ __sys_putpixel:
      pop   ecx
      jnz   .exit
 .forced:
-     cmp   [ScreenWidth], eax
+     cmp   [Screen_Max_X], eax
      jb    .exit
-     cmp   [ScreenHeight], ebx
+     cmp   [Screen_Max_Y], ebx
      jb    .exit
 .ok:
 ; check if negation
@@ -346,7 +346,7 @@ Vesa20_putpixel32:
 ;align 4
 calculate_edi:
      mov     edi, ebx
-     imul    edi, [ScreenWidth]
+     imul    edi, [Screen_Max_X]
      add     edi, ebx
      add     edi, eax
      ret
@@ -603,7 +603,7 @@ vesa20_drawbar:
 .end_y:
      mov     [drbar.real_sy], ebx
 ; line_inc_map
-     mov     eax, [ScreenWidth]
+     mov     eax, [Screen_Max_X]
      sub     eax, [drbar.real_sx]
      inc     eax
      mov     [drbar.line_inc_map], eax
@@ -626,7 +626,7 @@ vesa20_drawbar:
      add     edx, [LFBAddress]
 ; pointer to pixel map
      mov     eax, [drbar.abs_cy]
-     imul    eax, [ScreenWidth]
+     imul    eax, [Screen_Max_X]
      add     eax, [drbar.abs_cy]
      add     eax, [drbar.abs_cx]
      add     eax, WinMapAddress
@@ -726,7 +726,7 @@ align   4
 
 ;     xor edx,edx
 ;     mov eax,ebp
-;     mov ebx,[ScreenWidth] ; Screen_X_size
+;     mov ebx,[Screen_Max_X] ; Screen_X_size
 ;     inc ebx   ; +1
 ;     sub eax,WinMapAddress ; -AddrBuffer
 ;     div ebx ;
@@ -752,7 +752,7 @@ align   4
 ;        pusha
 
 ;        xor  edx,edx
-;        mov  ebx,[ScreenWidth]
+;        mov  ebx,[Screen_Max_X]
 ;        inc  ebx
 ;        sub  eax,WinMapAddress
 ;        div  ebx
@@ -864,23 +864,23 @@ vesa20_drawbackground_stretch:
         call    [disable_mouse]
         pushad
 ; Helper variables
-; calculate 2^32*(BgrDataWidth-1) mod (ScreenWidth-1)
+; calculate 2^32*(BgrDataWidth-1) mod (Screen_Max_X-1)
         mov     eax, [BgrDataWidth]
         dec     eax
         xor     edx, edx
-        div     dword [ScreenWidth]
+        div     dword [Screen_Max_X]
         push    eax     ; high
         xor     eax, eax
-        div     dword [ScreenWidth]
+        div     dword [Screen_Max_X]
         push    eax     ; low
 ; the same for height
         mov     eax, [BgrDataHeight]
         dec     eax
         xor     edx, edx
-        div     dword [ScreenHeight]
+        div     dword [Screen_Max_Y]
         push    eax     ; high
         xor     eax, eax
-        div     dword [ScreenHeight]
+        div     dword [Screen_Max_Y]
         push    eax     ; low
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
@@ -908,7 +908,7 @@ vesa20_drawbackground_stretch:
         mov     eax, ebx
         imul    ebx, dword [esp+12]
         mul     dword [esp+8]
-        add     edx, ebx        ; edx:eax = y * 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
+        add     edx, ebx        ; edx:eax = y * 2^32*(BgrDataHeight-1)/(Screen_Max_Y-1)
         mov     esi, edx
         imul    esi, [BgrDataWidth]
         push    edx
@@ -919,7 +919,7 @@ vesa20_drawbackground_stretch:
         mov     eax, [esp+12]
         mul     dword [esp+28]
         add     [esp], edx
-        pop     edx             ; edx:eax = x * 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
+        pop     edx             ; edx:eax = x * 2^32*(BgrDataWidth-1)/(Screen_Max_X-1)
         add     esi, edx
         lea     esi, [esi*3]
         add     esi, [img_background]
@@ -957,13 +957,13 @@ sdp3:
 ; esi = offset in current line, edi -> output
 ; ebp = offset in WinMapAddress
 ; dword [esp] = offset in bgr data
-; qword [esp+4] = x * 2^32 * (BgrDataWidth-1) / (ScreenWidth-1)
-; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (ScreenHeight-1)
+; qword [esp+4] = x * 2^32 * (BgrDataWidth-1) / (Screen_Max_X-1)
+; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (Screen_Max_Y-1)
 ; dword [esp+20] = x
 ; dword [esp+24] = y
 ; precalculated constants:
-; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
-; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
+; qword [esp+28] = 2^32*(BgrDataHeight-1)/(Screen_Max_Y-1)
+; qword [esp+36] = 2^32*(BgrDataWidth-1)/(Screen_Max_X-1)
 sdp3a:
         cmp     [ebp+WinMapAddress], byte 1
         jnz     snbgp
@@ -996,7 +996,7 @@ sdp4:
 ; advance edi, ebp to next scan line
         sub     eax, [draw_data+32+RECT.left]
         sub     ebp, eax
-        add     ebp, [ScreenWidth]
+        add     ebp, [Screen_Max_X]
         add     ebp, 1
         sub     edi, eax
         sub     edi, eax
@@ -1026,7 +1026,7 @@ sdp4:
         push    edi
         mov     esi, bgr_next_line
         mov     edi, bgr_cur_line
-        mov     ecx, [ScreenWidth]
+        mov     ecx, [Screen_Max_X]
         inc     ecx
         rep     movsd
         jmp     bgr_resmooth1

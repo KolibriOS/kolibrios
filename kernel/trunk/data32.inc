@@ -104,6 +104,28 @@ vmode          db  '/sys/drivers/VMODE.MDR',0
 vrr_m          db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
+align 4
+                     ;supported videomodes
+mode_1280_1024_32:
+  dw 1280,1024,32,60
+mode_1280_1024_24:
+  dw 1280,1024,24,60
+mode_1024_768_32:
+  dw 1024,768,32,60
+mode_1024_768_24:
+  dw 1024,768,24,60
+mode_800_600_32
+  dw 800,600,32,60
+mode_800_600_24
+  dw 800,600,24,60
+mode_640_480_32
+  dw 640,480,32,60
+mode_640_480_24
+  dw 640,480,24,60
+mode_640_480_16
+  dw 640,480,16,60
+mode 320_240_8
+  dw 320,240,8,60
 
 ; mike.dld {
 db 0

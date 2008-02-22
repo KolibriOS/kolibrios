@@ -179,7 +179,7 @@ pushad
 	inc   edx
 
 	; get WinMap start
-	mov   edi, [ScreenWidth] ; screen_sx
+        mov   edi, [Screen_Max_X] ; screen_sx
 	inc   edi
 	imul  edi, ebx
 	add   edi, eax
@@ -199,7 +199,7 @@ pushad
 
 	pop   edx
 	pop   ecx
-	add   edi, [ScreenWidth]
+        add   edi, [Screen_Max_X]
 	inc   edi
 	sub   edi, ecx
 	dec   edx
@@ -240,7 +240,7 @@ pushad
 
 	; get WinMap start  -> ebp
 	push  eax
-	mov   eax, [ScreenWidth] ; screen_sx
+        mov   eax, [Screen_Max_X] ; screen_sx
 	inc   eax
 	imul  eax, ebx
 	add   eax, [esp]
@@ -302,7 +302,7 @@ pushad
 	jb   .ff_new_x
 	sub  ebp, [ff_xsz]
 	add  ebp, [ff_x]
-	add  ebp, [ScreenWidth]  ; screen.x
+        add  ebp, [Screen_Max_X]  ; screen.x
 	inc  ebp
 	inc  ebx
 	cmp  ebx, [ff_ysz]
@@ -359,9 +359,9 @@ display_settings:
   redraw_screen_direct:
      mov  [dlx],dword 0
      mov  [dly],dword 0
-     mov  eax,[ScreenWidth]
+     mov  eax,[Screen_Max_X]
      mov  [dlxe],eax
-     mov  eax,[ScreenHeight]
+     mov  eax,[Screen_Max_Y]
      mov  [dlye],eax
      mov  eax,window_data
      call redrawscreen
@@ -437,10 +437,10 @@ display_settings:
 	movsx	ebx,word[esp+16]
 	cmp	eax,ebx
 	jge	.lp1
-	or	eax,eax;[ScreenWidth]
+        or      eax,eax;[Screen_Max_X]
 	jl	@f
 	mov	[screen_workarea.left],eax
-    @@: cmp	ebx,[ScreenWidth]
+    @@: cmp     ebx,[Screen_Max_X]
 	jg	.lp1
 	mov	[screen_workarea.right],ebx
   .lp1: movsx	eax,word[esp+24+2]
@@ -450,14 +450,14 @@ display_settings:
 	or	eax,eax;[0xFE04]
 	jl	@f
 	mov	[screen_workarea.top],eax
-    @@: cmp	ebx,[ScreenHeight]
+    @@: cmp     ebx,[Screen_Max_Y]
 	jg	.lp2
 	mov	[screen_workarea.bottom],ebx
   .lp2: call	repos_windows
 	mov	eax, 0
 	mov	ebx, 0
-	mov	ecx, [ScreenWidth]
-	mov	edx, [ScreenHeight]
+        mov     ecx, [Screen_Max_X]
+        mov     edx, [Screen_Max_Y]
     call    calculatescreen
 ;    jmp    redraw_screen_direct
     .exit:
@@ -483,8 +483,8 @@ display_settings:
         jnz     .ret
         xor     eax, eax
         xor     ebx, ebx
-        mov     ecx, [ScreenWidth]
-        mov     edx, [ScreenHeight]
+        mov     ecx, [Screen_Max_X]
+        mov     edx, [Screen_Max_Y]
         call    calculatescreen
 	jmp	redraw_screen_direct
 .ret:
@@ -526,7 +526,7 @@ repos_windows:
 	ret
   .lp2: mov	eax,[edi+WDATA.box.left]
 	add	eax,[edi+WDATA.box.width]
-    mov    ebx,[ScreenWidth]
+    mov    ebx,[Screen_Max_X]
 ;    inc    ebx
     cmp    eax,ebx
     jle    .lp4
@@ -538,7 +538,7 @@ repos_windows:
 	mov	[edi+WDATA.box.left],ebx
   .lp4: mov	eax,[edi+WDATA.box.top]
 	add	eax,[edi+WDATA.box.height]
-    mov    ebx,[ScreenHeight]
+    mov    ebx,[Screen_Max_Y]
 ;    inc    ebx
     cmp    eax,ebx
     jle    .lp6
@@ -569,7 +569,7 @@ check_window_position:
 
     mov   esi,ecx	      ; check x pos
     add   esi,eax
-    cmp   esi,[ScreenWidth]
+    cmp   esi,[Screen_Max_X]
     jbe   x_pos_ok
     mov   [edi+WDATA.box.left],dword 0
     xor   eax, eax
@@ -577,7 +577,7 @@ check_window_position:
 
     mov   esi,edx	      ; check y pos
     add   esi,ebx
-    cmp   esi,[ScreenHeight]
+    cmp   esi,[Screen_Max_Y]
     jbe   y_pos_ok
     mov   [edi+WDATA.box.top],dword 0
     mov   ebx,0
@@ -585,17 +585,17 @@ check_window_position:
 
     mov   esi,ecx	      ; check x size
     add   esi,eax
-    cmp   esi,[ScreenWidth]
+    cmp   esi,[Screen_Max_X]
     jbe   x_size_ok
-    mov   ecx,[ScreenWidth]
+    mov   ecx,[Screen_Max_X]
     mov   [edi+WDATA.box.width],ecx
   x_size_ok:
 
     mov   esi,edx	      ; check y size
     add   esi,ebx
-    cmp   esi,[ScreenHeight]
+    cmp   esi,[Screen_Max_Y]
     jbe   y_size_ok
-    mov   edx,[ScreenHeight]
+    mov   edx,[Screen_Max_Y]
     mov   [edi+WDATA.box.height],edx
   y_size_ok:
 
@@ -1276,7 +1276,7 @@ checkwindows:
 	je    .no_resize_2
 	cmp   edx, 0x01000000						;{test for resized}
 	je    .no_resize_2
-	cmp   edx, 0x04000000						;{test for resized}					
+	cmp   edx, 0x04000000						;{test for resized}
 	je    .no_resize_2
 ;	jb    .no_resize_2 ; not type 2 wnd
 
@@ -1391,8 +1391,8 @@ checkwindows:
 
 	call  drawwindowframes
 
-	mov   ax,[ScreenWidth]
-	mov   bx,[ScreenHeight]
+        mov   ax,[Screen_Max_X]
+        mov   bx,[Screen_Max_Y]
 
 	cmp   [do_resize_from_corner],1
 	je    no_new_position
@@ -1545,9 +1545,9 @@ checkwindows:
 	sub	eax,[screen_workarea.top]
     @@: mov	[edi+WDATA.box.height],eax
         add     eax, [edi+WDATA.box.top]
-        cmp     eax, [ScreenHeight]
+        cmp     eax, [Screen_Max_Y]
         jbe     @f
-        mov     eax, [ScreenHeight]
+        mov     eax, [Screen_Max_Y]
         sub     eax, [edi+WDATA.box.height]
         mov     [edi+WDATA.box.top], eax
     @@: call    check_window_position
@@ -1605,16 +1605,16 @@ checkwindows:
 
 	mov   eax,[edi+WDATA.box.top]		      ; check Y inside screen
 	add   eax,[edi+WDATA.box.height]
-	cmp   eax,[ScreenHeight]
+        cmp   eax,[Screen_Max_Y]
 	jbe   no_window_sizing
 	mov   eax,[edi+WDATA.box.left]		       ; check X inside screen
 	add   eax,[edi+WDATA.box.width]
-	cmp   eax,[ScreenWidth]
+        cmp   eax,[Screen_Max_X]
 	jbe   no_window_sizing
-	mov   eax,[ScreenWidth]
+        mov   eax,[Screen_Max_X]
 	sub   eax,[edi+WDATA.box.width]
 	mov   [edi+WDATA.box.left],eax
-	mov   eax,[ScreenHeight]
+        mov   eax,[Screen_Max_Y]
 	sub   eax,[edi+WDATA.box.height]
 	mov   [edi+WDATA.box.top],eax
 	call  set_window_clientbox

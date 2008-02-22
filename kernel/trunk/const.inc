@@ -250,8 +250,8 @@ MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 LFBAddress          equ (OS_BASE+0x000FE80)
 MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
 
-ScreenWidth         equ (OS_BASE+0x000FE00)
-ScreenHeight        equ (OS_BASE+0x000FE04)
+Screen_Max_X        equ (OS_BASE+0x000FE00)
+Screen_Max_Y        equ (OS_BASE+0x000FE04)
 BytesPerScanLine    equ (OS_BASE+0x000FE08)
 SCR_MODE            equ (OS_BASE+0x000FE0C)
 

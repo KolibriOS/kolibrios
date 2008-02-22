@@ -92,10 +92,10 @@ check_mouse_data_com:
         add     ax, [MOUSE_X]
 ; Курсор не должен выходить за левую или правую границу экрана
         js      .x1
-        cmp     ax, [ScreenWidth]
+        cmp     ax, [Screen_Max_X]
         jb      .x2
 ; Установить координату X по правой границе
-        mov     ax, [ScreenWidth]
+        mov     ax, [Screen_Max_X]
         jmp     .x2
 .x1:
 ; Установить координату X по левой границе
@@ -111,10 +111,10 @@ check_mouse_data_com:
         add     ax, [MOUSE_Y]
 ; Курсор не должен выходить за верхнюю или нижнюю границу экрана
         js      .y1
-        cmp     ax, [ScreenHeight]
+        cmp     ax, [Screen_Max_Y]
         jb      .y2
 ; Установить координату Y по нижней границе
-        mov     ax, [ScreenHeight]
+        mov     ax, [Screen_Max_Y]
         jmp     .y2
 .y1:
 ; Установить координату Y по верхней границе

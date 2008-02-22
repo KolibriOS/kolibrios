@@ -344,13 +344,16 @@ high_code:
 	mov	[allow_dma_access], al
 	mov   al,[BOOT_VAR+0x9000]	  ; bpp
 	mov   [ScreenBPP],al
+
+        xchg bx, bx
+
 	movzx eax,word [BOOT_VAR+0x900A]  ; X max
 	dec   eax
-	mov   [ScreenWidth],eax
+        mov   [Screen_Max_X],eax
 	mov   [screen_workarea.right],eax
 	movzx eax,word [BOOT_VAR+0x900C]  ; Y max
 	dec   eax
-	mov   [ScreenHeight],eax
+        mov   [Screen_Max_Y],eax
 	mov   [screen_workarea.bottom],eax
 	movzx eax,word [BOOT_VAR+0x9008]  ; screen mode
 	mov   [SCR_MODE],eax
@@ -1126,10 +1129,10 @@ set_variables:
 ;* mouse centered - start code- Mario79
 mouse_centered:
 	push  eax
-	mov   eax,[ScreenWidth]
+        mov   eax,[Screen_Max_X]
 	shr   eax,1
 	mov   [MOUSE_X],ax
-	mov   eax,[ScreenHeight]
+        mov   eax,[Screen_Max_Y]
 	shr   eax,1
 	mov   [MOUSE_Y],ax
 	pop   eax
@@ -2559,8 +2562,8 @@ force_redraw_background:
     mov   [draw_data+32 + RECT.left],dword 0
     mov   [draw_data+32 + RECT.top],dword 0
     push  eax ebx
-    mov   eax,[ScreenWidth]
-    mov   ebx,[ScreenHeight]
+    mov   eax,[Screen_Max_X]
+    mov   ebx,[Screen_Max_Y]
     mov   [draw_data+32 + RECT.right],eax
     mov   [draw_data+32 + RECT.bottom],ebx
     pop   ebx eax
@@ -2880,9 +2883,9 @@ sys_redrawstat:
 	add	edx, draw_data - CURRENT_TASK
 	mov	[edx + RECT.left], 0
 	mov	[edx + RECT.top], 0
-	mov	eax, [ScreenWidth]
+        mov     eax, [Screen_Max_X]
 	mov	[edx + RECT.right], eax
-	mov	eax, [ScreenHeight]
+        mov     eax, [Screen_Max_Y]
 	mov	[edx + RECT.bottom], eax
 
 	mov	edi, [TASK_BASE]
@@ -3483,7 +3486,7 @@ ret
 checkpixel:
 	push eax edx
 
-	mov  edx,[ScreenWidth]	   ; screen x size
+        mov  edx,[Screen_Max_X]     ; screen x size
 	inc  edx
 	imul edx, ebx
 	mov  dl, [eax+edx+display_data] ; lea eax, [...]
@@ -3544,8 +3547,8 @@ set_bgr_event:
 no_set_bgr_event:
 ;    mov   [draw_data+32 + RECT.left],dword 0
 ;    mov   [draw_data+32 + RECT.top],dword 0
-;    mov   eax,[ScreenWidth]
-;    mov   ebx,[ScreenHeight]
+;    mov   eax,[Screen_Max_X]
+;    mov   ebx,[Screen_Max_Y]
 ;    mov   [draw_data+32 + RECT.right],eax
 ;    mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
@@ -4856,9 +4859,9 @@ sys_gs: 			; direct screen access
 
      cmp  eax,1 		; resolution
      jne  no_gs1
-     mov  eax,[ScreenWidth]
+     mov  eax,[Screen_Max_X]
      shl  eax,16
-     mov  ax,[ScreenHeight]
+     mov  ax,[Screen_Max_Y]
      add  eax,0x00010001
      mov  [esp+36],eax
      ret
@@ -4970,9 +4973,9 @@ syscall_drawrect:			; DrawRect
 
 align 4
 syscall_getscreensize:			; GetScreenSize
-	mov	ax, [ScreenWidth]
+        mov     ax, [Screen_Max_X]
 	shl	eax, 16
-	mov	ax, [ScreenHeight]
+        mov     ax, [Screen_Max_Y]
 	mov	[esp + 32], eax
 	ret
 
@@ -5060,7 +5063,7 @@ syscall_writeramdiskfile:		; WriteRamdiskFile
 align 4
 
 syscall_getpixel:			; GetPixel
-     mov   ecx, [ScreenWidth]
+     mov   ecx, [Screen_Max_X]
      inc   ecx
      xor   edx, edx
      mov   eax, ebx

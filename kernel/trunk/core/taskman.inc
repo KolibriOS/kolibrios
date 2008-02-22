@@ -1063,9 +1063,9 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 
            mov    [ecx+0],dword 0
            mov    [ecx+4],dword 0
-           mov    eax,[ScreenWidth]
+           mov    eax,[Screen_Max_X]
            mov    [ecx+8],eax
-           mov    eax,[ScreenHeight]
+           mov    eax,[Screen_Max_Y]
            mov    [ecx+12],eax
 
            mov ebx, [pl0_stack]

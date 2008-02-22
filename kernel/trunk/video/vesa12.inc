@@ -290,14 +290,14 @@ vesa12_drawbackground:
         push  edx
 
         mul   dword [BgrDataWidth]
-        mov   ecx,[ScreenWidth]
+        mov   ecx,[Screen_Max_X]
         inc   ecx
         div   ecx
 
         push  eax
         mov   eax,ebx
         mul   dword [BgrDataHeight]
-        mov   ecx,[ScreenHeight]
+        mov   ecx,[Screen_Max_Y]
         inc   ecx
         div   ecx
         mov   ebx,eax
@@ -324,7 +324,7 @@ vesa12_drawbackground:
         pusha
         mov   esi,eax
         mov   edi,ebx
-        mov   eax,[ScreenWidth]
+        mov   eax,[Screen_Max_X]
         add   eax,1
         mul   ebx
         cmp   [eax+esi+WinMapAddress],byte 1
@@ -443,10 +443,10 @@ vesa12_drawbar:
     cmp  ecx,0
     jnz  dbcblimitlset12
     mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
-    cmp  ecx,[ScreenWidth]
+    cmp  ecx,[Screen_Max_X]
     jnz  dbcblimitlset12
     mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
-    cmp  ecx,[ScreenHeight]
+    cmp  ecx,[Screen_Max_Y]
     jnz  dbcblimitlset12
     pop  ecx
     pop  eax
@@ -799,10 +799,10 @@ vesa12_putimage:
     cmp  dword [eax+draw_data-CURRENT_TASK+RECT.top], 0
     jnz  dbcblimitlset212
     mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
-    cmp  ecx,[ScreenWidth]
+    cmp  ecx,[Screen_Max_X]
     jnz  dbcblimitlset212
     mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
-    cmp  ecx,[ScreenHeight]
+    cmp  ecx,[Screen_Max_Y]
     jnz  dbcblimitlset212
     pop  ecx
     push 0

@@ -61,6 +61,13 @@ virtual at 0
  BOX BOX
 end virtual
 
+struc DISPMODE {
+  .width   rw 1
+  .height  rw 1
+  .bpp     rw 1
+  .freq    rw 1
+}
+
 ; constants definition
 WSTATE_NORMAL    = 00000000b
 WSTATE_MAXIMIZED = 00000001b

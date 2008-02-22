@@ -108,7 +108,7 @@ save_draw_mouse:
         push eax
         push ebx
 
-        mov ecx, [ScreenWidth]
+        mov ecx, [Screen_Max_X]
         inc ecx
         mul ecx
 
@@ -292,7 +292,7 @@ __sys_disable_mouse:
       add  edx,window_data
       movzx  eax, word [MOUSE_X]
       movzx  ebx, word [MOUSE_Y]
-      mov  ecx,[ScreenWidth]
+      mov  ecx,[Screen_Max_X]
       inc  ecx
       imul  ecx,ebx
       add  ecx,eax
@@ -304,7 +304,7 @@ __sys_disable_mouse:
       movzx ebx, byte [ecx+16]
       cmp   eax,ebx
       je    yes_mouse_disable
-      mov   ebx,[ScreenWidth]
+      mov   ebx,[Screen_Max_X]
       inc   ebx
       imul  ebx,10
       add   ecx,ebx
@@ -411,9 +411,9 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
     mov  eax,0
     jmp  @@M2
 @@M1:
-    cmp  ax,[ScreenWidth]   ;ScreenLength
+    cmp  ax,[Screen_Max_X]   ;ScreenLength
     jl   @@M2
-    mov  ax,[ScreenWidth]   ;ScreenLength-1
+    mov  ax,[Screen_Max_X]   ;ScreenLength-1
 
 @@M2:
     mov  [MOUSE_X],ax     ;[XCoordinate]
@@ -428,9 +428,9 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
     mov  ax,0
     jmp  @@M4
 @@M3:
-    cmp  ax,[ScreenHeight]  ;ScreenHeigth
+    cmp  ax,[Screen_Max_Y]  ;ScreenHeigth
     jl   @@M4
-    mov  ax,[ScreenHeight] ;ScreenHeigth-1
+    mov  ax,[Screen_Max_Y] ;ScreenHeigth-1
 
 @@M4:
     mov  [MOUSE_Y],ax     ;[YCoordinate]

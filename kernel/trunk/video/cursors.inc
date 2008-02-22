@@ -478,8 +478,8 @@ proc init_cursors
            stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
            mov [def_cursor], eax
 
-           mov ecx, [ScreenWidth]
-           mov edx, [ScreenHeight]
+           mov ecx, [Screen_Max_X]
+           mov edx, [Screen_Max_Y]
            inc ecx
            inc edx
            mov [scr_width], ecx
