@@ -59,26 +59,29 @@ filepos 	 dd 0x0
 ;   ~5/8 - main memory
 init_memory:
 	mcall	18, 16
-	cmp	eax, 0xFFFFFFFF shr 9
+	cmp	ecx, 0x38000000 shr 9
 	jbe	@f
-	mov	eax, 0xFFFFFFFF shr 9
+	mov	ecx, 0x38000000 shr 9
 @@:
-	shl	eax, 9
-	lea	ecx, [eax+stacktop]
-	mcall	64, 1
-	mov	[memory_start], stacktop
-	mov	[additional_memory_end], ecx
-	sub	ecx, stacktop
+	shl	ecx, 9
+	mcall	68, 12
+	mov	[memory_start], eax
+	mov	[memblock], eax
+	push	eax
+	add	eax, ecx
+	mov	[additional_memory_end], eax
+	pop	eax
 	shr	ecx, 3
-	lea	ecx, [ecx*5+stacktop]
-	mov	[memory_end],ecx
-	mov	[additional_memory],ecx
+	add	eax, ecx
+	lea	eax, [ecx*4+eax]
+	mov	[memory_end],eax
+	mov	[additional_memory],eax
 	ret
 
 exit_program:
 	cmp	[_mode],NORMAL_MODE
 	jne	@f
-	mcall	64, 1, stacktop
+	mcall	68, 13, [memblock]
 	jmp	still
 @@:
 	or	eax,-1

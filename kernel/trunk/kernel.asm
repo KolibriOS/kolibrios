@@ -2029,7 +2029,7 @@ sys_end:
 iglobal
 align 4
 sys_system_table:
-	dd	0			; 1 = system shutdown
+	dd	exit_for_anyone         ; 1 = obsolete
 	dd	sysfn_terminate 	; 2 = terminate thread
 	dd	sysfn_activate		; 3 = activate window
 	dd	sysfn_getidletime	; 4 = get idle time

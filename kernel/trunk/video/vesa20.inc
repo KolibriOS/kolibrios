@@ -864,7 +864,7 @@ vesa20_drawbackground_stretch:
         call    [disable_mouse]
         pushad
 ; Helper variables
-; calculate 2^32*(BgrDataWidth-1) mod (Screen_Max_X-1)
+; calculate 2^32*(BgrDataWidth-1) mod (ScreenWidth-1)
         mov     eax, [BgrDataWidth]
         dec     eax
         xor     edx, edx
@@ -908,7 +908,7 @@ vesa20_drawbackground_stretch:
         mov     eax, ebx
         imul    ebx, dword [esp+12]
         mul     dword [esp+8]
-        add     edx, ebx        ; edx:eax = y * 2^32*(BgrDataHeight-1)/(Screen_Max_Y-1)
+        add     edx, ebx        ; edx:eax = y * 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
         mov     esi, edx
         imul    esi, [BgrDataWidth]
         push    edx
@@ -919,7 +919,7 @@ vesa20_drawbackground_stretch:
         mov     eax, [esp+12]
         mul     dword [esp+28]
         add     [esp], edx
-        pop     edx             ; edx:eax = x * 2^32*(BgrDataWidth-1)/(Screen_Max_X-1)
+        pop     edx             ; edx:eax = x * 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
         add     esi, edx
         lea     esi, [esi*3]
         add     esi, [img_background]
@@ -957,13 +957,13 @@ sdp3:
 ; esi = offset in current line, edi -> output
 ; ebp = offset in WinMapAddress
 ; dword [esp] = offset in bgr data
-; qword [esp+4] = x * 2^32 * (BgrDataWidth-1) / (Screen_Max_X-1)
-; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (Screen_Max_Y-1)
+; qword [esp+4] = x * 2^32 * (BgrDataWidth-1) / (ScreenWidth-1)
+; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (ScreenHeight-1)
 ; dword [esp+20] = x
 ; dword [esp+24] = y
 ; precalculated constants:
-; qword [esp+28] = 2^32*(BgrDataHeight-1)/(Screen_Max_Y-1)
-; qword [esp+36] = 2^32*(BgrDataWidth-1)/(Screen_Max_X-1)
+; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
+; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 sdp3a:
         cmp     [ebp+WinMapAddress], byte 1
         jnz     snbgp

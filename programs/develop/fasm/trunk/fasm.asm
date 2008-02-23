@@ -43,6 +43,11 @@ START:	    ; Start of execution
         mov     ecx, (fileinfos_end-fileinfos)/4
         or      eax, -1
         rep     stosd
+        push    68
+        pop     eax
+        push    11
+        pop     ebx
+        mcall
 
    cmp    [params],0
    jz	    red
@@ -586,6 +591,7 @@ program_base dd ?
 buffer_address dd ?
 memory_setting dd ?
 start_time dd ?
+memblock	dd	?
 
 predefinitions rb 1000h
 
