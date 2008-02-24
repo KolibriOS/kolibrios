@@ -228,7 +228,7 @@ init_BIOS32:
 	; здесь должна заполнятся pci_emu_dat
 .BIOS32_not_found:
 .end:
-
+           ret	
 
 align 4
 proc test_cpu
