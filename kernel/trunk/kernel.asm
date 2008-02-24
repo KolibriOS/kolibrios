@@ -5173,6 +5173,41 @@ read_from_hd:				; Read from hd - fn not in use
 paleholder:
 	ret
 
+align 4
+set_screen:
+        cmp eax, [Screen_Max_X]
+        jne .set
+
+        cmp edx, [Screen_Max_Y]
+        jne .set
+        ret
+.set:
+        pushfd
+        cli
+
+        mov [Screen_Max_X], eax
+        mov [Screen_Max_Y], edx
+
+        mov [screen_workarea.right],eax
+        mov [screen_workarea.bottom], edx
+        inc eax
+        shl eax, 2                      ;32 bpp
+        mov [BytesPerScanLine], eax
+        push ebx
+        push esi
+        push edi
+        call    repos_windows
+        mov     eax, 0
+        mov     ebx, 0
+        mov     ecx, [Screen_Max_X]
+        mov     edx, [Screen_Max_Y]
+        call    calculatescreen
+        pop edi
+        pop esi
+        pop ebx
+
+        popfd
+        ret
 
 ; --------------- APM ---------------------
 apm_entry    dp    0

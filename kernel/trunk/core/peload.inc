@@ -287,6 +287,7 @@ __exports:
           free,               'Kfree',              \
           map_io_mem,         'MapIoMem',           \      ; stdcall
 \
+          set_screen,         'SetScreen',          \
           pci_api,            'PciApi',             \
           pci_read8,          'PciRead8',           \      ; stdcall
           pci_read16,         'PciRead16',          \      ; stdcall
