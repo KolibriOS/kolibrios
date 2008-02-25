@@ -20,6 +20,7 @@ MaxRetr equ 10
 ; (в тиках)
 BSYWaitTime equ 1000  ;2
 NoTickWaitTime equ 0xfffff
+
 ;*************************************************
 ;*      ПОЛНОЕ ЧТЕНИЕ СЕКТОРА КОМПАКТ-ДИСКА      *
 ;* Считываются данные пользователя, информация   *
@@ -131,7 +132,7 @@ ReadCDWRetr_1:
 	cmp	  [DevErrorCode],0
 	je	  @@End_4
 
-	or    ecx,ecx 		;{SPraid.simba} (for cd load)
+	or    ecx,ecx		;{SPraid.simba} (for cd load)
 	jz    @@End_4
 	dec   ecx
 
@@ -145,12 +146,12 @@ ReadCDWRetr_1:
 	jmp	  .wait
 @@:
 ; Задержка на 2,5 секунды
-;	mov	EAX,[timer_ticks]
-;	add	EAX,50	;250
+;       mov     EAX,[timer_ticks]
+;       add     EAX,50  ;250
 ;@@Wait:
-;	call	change_task
-;	cmp	EAX,[timer_ticks]
-;	ja	@@Wait
+;       call    change_task
+;       cmp     EAX,[timer_ticks]
+;       ja      @@Wait
 	loop  @@NextRetr
 @@End_4:
 	popad
@@ -844,6 +845,31 @@ GetEvent_StatusNotification:
 	mov	[PacketCommand+8],byte 0h
 ; Подать команду
 	call	SendPacketDatCommand
+	popa
+	ret
+
+;*************************************************
+; прочитать информацию из TOC
+;* Входные параметры передаются через глобальные *
+;* переменные:                                   *
+;* ChannelNumber - номер канала;                 *
+;* DiskNumber - номер диска на канале.           *
+;*************************************************
+Read_TOC:
+	pusha
+	mov	[CDDataBuf_pointer],CDDataBuf
+; Очистить буфер пакетной команды
+	call  clear_packet_buffer
+; Сформировать пакетную команду для считывания
+; сектора данных
+	mov	  [PacketCommand],byte 0x43
+	; Задать формат
+	mov	  [PacketCommand+2],byte 1
+; Размер выделенной области
+	mov	[PacketCommand+7],byte 0xFF
+	mov	[PacketCommand+8],byte 0h
+; Подать команду
+	call  SendPacketDatCommand
 	popa
 	ret
 

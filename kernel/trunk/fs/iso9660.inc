@@ -494,25 +494,46 @@ fs_CdGetFileInfo:
 
 ;----------------------------------------------------------------
 cd_find_lfn:
-       mov   [cd_appl_data],0
+  mov	[cd_appl_data],0
 ; in: esi+ebp -> name
 ; out: CF=1 - file not found
-;      else CF=0 and [cd_current_pointer_of_input] direntry
+; else CF=0 and [cd_current_pointer_of_input] direntry
 	push eax esi
 ; 16 сектор начало набора дескрипторов томов
-	mov  [CDSectorAddress],dword 15
-       mov  [CDDataBuf_pointer],CDDataBuf
-       
-       call  WaitUnitReady
-       cmp   [DevErrorCode],0
-       jne   .access_denied
-       
-       call  prevent_medium_removal
+
+  call	WaitUnitReady
+  cmp	[DevErrorCode],0
+  jne	.access_denied
+
+  call	prevent_medium_removal
+; тестовое чтение
+  mov  [CDSectorAddress],dword 16
+  call	ReadCDWRetr    ;_1
+   cmp	 [DevErrorCode],0
+  jne	.access_denied
+
+; вычисление последней сессии
+  call WaitUnitReady
+  cmp	[DevErrorCode],0
+  jne	.access_denied
+  call Read_TOC
+  mov  ah,[CDDataBuf+4+4]
+  mov  al,[CDDataBuf+4+5]
+  shl  eax,16
+  mov  ah,[CDDataBuf+4+6]
+  mov  al,[CDDataBuf+4+7]
+  add  eax,15
+  mov  [CDSectorAddress],eax
+;  mov  [CDSectorAddress],dword 15
+  mov  [CDDataBuf_pointer],CDDataBuf
+
 .start:
 	inc  dword [CDSectorAddress]
-       call  ReadCDWRetr    ;_1
-       cmp   [DevErrorCode],0
-       jne   .access_denied
+  call	ReadCDWRetr    ;_1
+   cmp	 [DevErrorCode],0
+  jne	.access_denied
+
+.start_check:
 ; проверка на вшивость
 	cmp  [CDDataBuf+1],dword 'CD00'
 	jne  .access_denied
@@ -527,6 +548,7 @@ cd_find_lfn:
 ; сектор является дополнительным дескриптором тома?
 	cmp  [CDDataBuf+6],byte 0x1
 	jne  .start
+
 ; параметры root директрории
 	mov  eax,[CDDataBuf+0x9c+2] ; начало root директрории
 	mov  [CDSectorAddress],eax
