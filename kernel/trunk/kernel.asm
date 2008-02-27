@@ -345,15 +345,15 @@ high_code:
 	mov   al,[BOOT_VAR+0x9000]	  ; bpp
 	mov   [ScreenBPP],al
 
-        xchg bx, bx
+	xchg bx, bx
 
 	movzx eax,word [BOOT_VAR+0x900A]  ; X max
 	dec   eax
-        mov   [Screen_Max_X],eax
+	mov   [Screen_Max_X],eax
 	mov   [screen_workarea.right],eax
 	movzx eax,word [BOOT_VAR+0x900C]  ; Y max
 	dec   eax
-        mov   [Screen_Max_Y],eax
+	mov   [Screen_Max_Y],eax
 	mov   [screen_workarea.bottom],eax
 	movzx eax,word [BOOT_VAR+0x9008]  ; screen mode
 	mov   [SCR_MODE],eax
@@ -1129,10 +1129,10 @@ set_variables:
 ;* mouse centered - start code- Mario79
 mouse_centered:
 	push  eax
-        mov   eax,[Screen_Max_X]
+	mov   eax,[Screen_Max_X]
 	shr   eax,1
 	mov   [MOUSE_X],ax
-        mov   eax,[Screen_Max_Y]
+	mov   eax,[Screen_Max_Y]
 	shr   eax,1
 	mov   [MOUSE_Y],ax
 	pop   eax
@@ -2029,7 +2029,7 @@ sys_end:
 iglobal
 align 4
 sys_system_table:
-	dd	exit_for_anyone         ; 1 = obsolete
+	dd	exit_for_anyone 	; 1 = obsolete
 	dd	sysfn_terminate 	; 2 = terminate thread
 	dd	sysfn_activate		; 3 = activate window
 	dd	sysfn_getidletime	; 4 = get idle time
@@ -2064,7 +2064,7 @@ sys_system:
 	ret
 
 
-sysfn_shutdown:	         ; 18.9 = system shutdown
+sysfn_shutdown: 	 ; 18.9 = system shutdown
      cmp  ecx,1
      jl   exit_for_anyone
      cmp  ecx,4
@@ -2883,9 +2883,9 @@ sys_redrawstat:
 	add	edx, draw_data - CURRENT_TASK
 	mov	[edx + RECT.left], 0
 	mov	[edx + RECT.top], 0
-        mov     eax, [Screen_Max_X]
+	mov	eax, [Screen_Max_X]
 	mov	[edx + RECT.right], eax
-        mov     eax, [Screen_Max_Y]
+	mov	eax, [Screen_Max_Y]
 	mov	[edx + RECT.bottom], eax
 
 	mov	edi, [TASK_BASE]
@@ -3486,7 +3486,7 @@ ret
 checkpixel:
 	push eax edx
 
-        mov  edx,[Screen_Max_X]     ; screen x size
+	mov  edx,[Screen_Max_X]     ; screen x size
 	inc  edx
 	imul edx, ebx
 	mov  dl, [eax+edx+display_data] ; lea eax, [...]
@@ -3948,25 +3948,33 @@ get_irq_data:
   gidril1:
 
      shl   ebx,12
-     mov   ecx,1
-     lea   eax,[ebx + IRQ_SAVE + 0x10]
-     mov   edx,[eax - 0x10]
+     xor   ecx, ecx
+     inc   ecx
+     lea   eax,[ebx + IRQ_SAVE]
+     mov   edx,[eax]
      test  edx,edx
      jz    gid1
 
-     dec   dword [eax - 0x10]
-
-     movzx ebx,byte [eax]
-
-     mov   edi, eax
-     xchg  esi, eax
-     inc   esi
-
-     mov   ecx,4000 / 4
-     cld
-     rep   movsd
-;     xor   ecx,ecx     ; as result of 'rep' ecx=0
      dec   edx
+     mov   [eax], edx
+
+     mov   ecx, [eax + 0x4]
+
+     cmp   ecx, 4000
+     jb    @f
+
+     xor   ecx, ecx
+
+   @@:
+     inc   ecx
+     mov   [eax + 0x4], ecx
+     dec   ecx
+     add   eax, ecx
+
+     movzx ebx,byte [eax + 0x10]
+
+     xor   ecx, ecx
+
    gid1:
      mov   [esp+32],edx
      mov   [esp+28],ecx
@@ -4973,9 +4981,9 @@ syscall_drawrect:			; DrawRect
 
 align 4
 syscall_getscreensize:			; GetScreenSize
-        mov     ax, [Screen_Max_X]
+	mov	ax, [Screen_Max_X]
 	shl	eax, 16
-        mov     ax, [Screen_Max_Y]
+	mov	ax, [Screen_Max_Y]
 	mov	[esp + 32], eax
 	ret
 
@@ -5092,7 +5100,7 @@ syscall_drawline:			; DrawLine
 	mov	ebp, ebx
 	add	ebp, [esi+APPDATA.wnd_clientbox.top]
 	add	bx, word[esi+APPDATA.wnd_clientbox.top]
-	add     ebp, ecx
+	add	ebp, ecx
 	shl	ebx, 16
 	xor	edi, edi
 	add	ebx, ebp
@@ -5175,39 +5183,39 @@ paleholder:
 
 align 4
 set_screen:
-        cmp eax, [Screen_Max_X]
-        jne .set
+	cmp eax, [Screen_Max_X]
+	jne .set
 
-        cmp edx, [Screen_Max_Y]
-        jne .set
-        ret
+	cmp edx, [Screen_Max_Y]
+	jne .set
+	ret
 .set:
-        pushfd
-        cli
+	pushfd
+	cli
 
-        mov [Screen_Max_X], eax
-        mov [Screen_Max_Y], edx
+	mov [Screen_Max_X], eax
+	mov [Screen_Max_Y], edx
 
-        mov [screen_workarea.right],eax
-        mov [screen_workarea.bottom], edx
-        inc eax
-        shl eax, 2                      ;32 bpp
-        mov [BytesPerScanLine], eax
-        push ebx
-        push esi
-        push edi
-        call    repos_windows
-        mov     eax, 0
-        mov     ebx, 0
-        mov     ecx, [Screen_Max_X]
-        mov     edx, [Screen_Max_Y]
-        call    calculatescreen
-        pop edi
-        pop esi
-        pop ebx
+	mov [screen_workarea.right],eax
+	mov [screen_workarea.bottom], edx
+	inc eax
+	shl eax, 2			;32 bpp
+	mov [BytesPerScanLine], eax
+	push ebx
+	push esi
+	push edi
+	call	repos_windows
+	mov	eax, 0
+	mov	ebx, 0
+	mov	ecx, [Screen_Max_X]
+	mov	edx, [Screen_Max_Y]
+	call	calculatescreen
+	pop edi
+	pop esi
+	pop ebx
 
-        popfd
-        ret
+	popfd
+	ret
 
 ; --------------- APM ---------------------
 apm_entry    dp    0
