@@ -2010,26 +2010,45 @@ Returned value:
   * eax = -1 for incorrect ebx
 
 ======================================================================
-==================== Function 42 - read IRQ data. ====================
+==================== Function 42 - work with IRQ data. ===============
 ======================================================================
+
+------------------------ Reading data --------------------------------
+
 When an IRQ occurs, the system reads data from ports indicated
 earlier by function 44 and writes this data to
 internal buffer. This function reads out data from that buffer
-bytewise.
+to the buffer specified as parameter.
 Parameters:
   * eax = 42 - function number
-  * ebx = IRQ number, 0..15
-Returned value: (use value of ecx to distinguish)
+  * bl = IRQ number, 0..15
+  * bh = subfunction number, 0
+Other part of register ebx, must be zero.
+  * ecx = pointer to the receive buffer
+Returned value: (use value of eax to distinguish)
   * if the thread is not IRQ owner (or IRQ number is incorrect):
-    * ecx = 2
+    * eax = -1
   * if there is no data:
     * eax = 0
-    * ecx = 1
-    * ebx destroyed
   * if all is ok:
-    * eax = byte size of data, not yet read from buffer
-    * ecx = 0
-    * ebx = current byte
+    * eax = byte size of data, read from buffer
+
+See remarks below.
+
+------------------------ Get data size -------------------------------
+
+Parameters:
+  * eax = 42 - function number
+  * bl = IRQ number, 0..15
+  * bh = subfunction number, 0
+Other part of register ebx, must be zero.
+  * ecx = pointer to receive buffer
+Returned value: (use value of eax to distinguish)
+  * if the thread is not IRQ owner (or IRQ number is incorrect):
+    * eax = -1
+  * if all is ok:
+    * eax = byte size of data in buffer
+
 Remarks:
   * Previously the thread must reserve indicated IRQ for itself
     by function 45.

@@ -3933,52 +3933,67 @@ sys_programirq:
 align 4
 
 get_irq_data:
-     cmp   ebx,16
+     movzx esi, bh			 ; save number of subfunction, if bh = 1, return data size, otherwise, read data
+     xor   bh, bh
+     cmp   ebx, 16
      jae   .not_owner
-     mov   eax, [4 * ebx + irq_owner]
+     mov   edx, [4 * ebx + irq_owner]	 ; check for irq owner
 
-     mov   edi,[TASK_BASE]
+     mov   eax,[TASK_BASE]
 
-     cmp   eax,[edi+TASKDATA.pid]
+     cmp   edx,[eax+TASKDATA.pid]
      je    gidril1
 .not_owner:
-     mov   [esp+28],dword 2	; ecx=2
-     ret
+     xor   edx, edx
+     dec   edx
+     jmp   gid1
 
   gidril1:
 
-     shl   ebx,12
-     xor   ecx, ecx
-     inc   ecx
-     lea   eax,[ebx + IRQ_SAVE]
-     mov   edx,[eax]
-     test  edx,edx
+     shl   ebx, 12
+     lea   eax, [ebx + IRQ_SAVE]	 ; calculate address of the beginning of buffer + 0x0 - data size
+     mov   edx, [eax]			 ;                                              + 0x4 - data offset
+     dec   esi
+     jz    gid1
+     test  edx, edx			 ; check if buffer is empty
      jz    gid1
 
-     dec   edx
-     mov   [eax], edx
+     mov   ebx, [eax + 0x4]
+     mov   edi, ecx
 
-     mov   ecx, [eax + 0x4]
+     mov   ecx, 4000			 ; buffer size, used frequently
 
-     cmp   ecx, 4000
+     cmp   ebx, ecx			 ; check for the end of buffer, if end of buffer, begin cycle again
      jb    @f
 
-     xor   ecx, ecx
+     xor   ebx, ebx
 
    @@:
-     inc   ecx
-     mov   [eax + 0x4], ecx
-     dec   ecx
-     add   eax, ecx
 
-     movzx ebx,byte [eax + 0x10]
+     lea   esi, [ebx + edx]		 ; calculate data size and offset
+     cld
+     cmp   esi, ecx			 ; if greater than the buffer size, begin cycle again
+     jbe   @f
 
-     xor   ecx, ecx
+     sub   ecx, ebx
+     sub   edx, ecx
+
+     lea   esi, [eax + ebx + 0x10]
+     rep   movsb
+
+     xor   ebx, ebx
+   @@:
+     lea   esi, [eax + ebx + 0x10]
+     mov   ecx, edx
+     add   ebx, edx
+
+     rep   movsb
+     mov   edx, [eax]
+     mov   [eax], ecx			 ; set data size to zero
+     mov   [eax + 0x4], ebx		 ; set data offset
 
    gid1:
-     mov   [esp+32],edx
-     mov   [esp+28],ecx
-     mov   [esp+20],ebx
+     mov   [esp+32], edx		 ; eax
      ret
 
 
