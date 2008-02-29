@@ -8,18 +8,20 @@ uses
   LRLSprites,
   LRLLevels,
   LRLMainMenu,
-  {LRLHighScores,
-  LRLEditor,}
+  LRLHighScores,
+  {LRLEditor,}
   LRLIntroduction;
 
 const
-  Version: array [1..34] of char = 'Lode Runner LIVE. Version 1.0'#13#10#13#10'$';
+  Version: PChar = 'Lode Runner LIVE. Version 1.4b';
 
 
 procedure LRLInitialize;
 begin
-  kos_setkeyboardmode(0);
   ImagesInitialize;
+  KeyboardInitialize;
+  ScreenMode(1);
+  ScreenTitle := Version;
 end;
 
 
@@ -45,20 +47,21 @@ begin
   repeat
     LRLPlayLevel(cl);
     KeyboardFlush;
+
     if GameResult = 10 then
     begin
       Inc(LRLLives);
-      LRLScore := LRLScore + 10000 * longint(cl);
+      LRLScore := LRLScore + 10000 * Longint(cl);
       Inc(cl);
     end else
       Dec(LRLLives);
   until (LRLLives = 0) or (GameResult = 100);
 
-  {(GameResult <> 100) and LRLBestScore(LRLScore) then
+  if (GameResult <> 100) and LRLBestScore(LRLScore) then
   begin
     LRLInsertScore(LRLEnterName, LRLScore);
     LRLShowHighScores;
-  end;}
+  end;
 end;
 
 procedure LRLShell;
@@ -69,8 +72,8 @@ begin
   repeat
     LRLSelectItem(MenuSelection);
     if MenuSelection = 1 then LRLGameStart;
-    {if MenuSelection = 2 then LRLEditLevels;
-    if MenuSelection = 3 then LRLShowHighScores;}
+    {if MenuSelection = 2 then LRLEditLevels;}
+    if MenuSelection = 3 then LRLShowHighScores;
   until MenuSelection = 4;
 end;
 

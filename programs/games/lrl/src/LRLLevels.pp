@@ -91,13 +91,13 @@ const
 
 const
   KeyboardControls: array[1..21] of Word = (
-    $00B0, 1, 1,
-    $00B3, 1, 2,
-    $00B2, 1, 3,
-    $00B1, 1, 4,
-    $00B5, 1, 6,
-    $00B7, 1, 7,
-    $0037, 1, 5);
+    KEY_LEFT,  1, 1,
+    KEY_RIGHT, 1, 2,
+    KEY_UP,    1, 3,
+    KEY_DOWN,  1, 4,
+    KEY_GREY5, 1, 5,
+    KEY_END,   1, 6,
+    KEY_PGDN,  1, 7);
   ControlNumber = 7;
 
 
@@ -123,7 +123,7 @@ var
 procedure LRLLoadLevel(Number: Byte);
 procedure LRLUpdatePlayers;
 procedure LRLDrawOrnamental(x1, y1, x2, y2, ornament: Byte);
-function LRLPlayLevel(Number: Byte): Word;
+procedure LRLPlayLevel(Number: Byte);
 function LRLLevelCount: Word;
 procedure LRLDeleteLevel(Count: Word);
 procedure LRLInsertLevel(After: Word);
@@ -135,7 +135,7 @@ implementation
 
 const
   LevelFileName = 'LRL.LEV';
-  LevelFileHeader: String = 'Lode Runner Live Levels'#26;
+  LevelFileHeader: ShortString = 'Lode Runner Live Levels'#26;
 
   ERR_OPENFILE = 'Невозможно открыть файл уровней';
   ERR_BADFILE  = 'Неверный или поврежденный файл уровней';
@@ -166,6 +166,7 @@ begin
   GetMem(b, 480);
   if (Count = 0) or (Count > LRLLevelCount) then
     Exit;
+  FileMode := 2;
   AssignFile(LevelFile, LevelFileName);
   Reset(LevelFile, 1);
   Seek(LevelFile, Longint(25 + 520 * (Longint(Count) - 1)));
@@ -178,8 +179,8 @@ begin
   end;
   BlockWrite(LevelFile, b^, 40, k);
   for i := 1 to 16 do
-    for j := 1 to 30 do
-      DataBytePut(b^, (i - 1) * 30 + j - 1, LRLLevel.Field[j, i].Image + 47);
+  for j := 1 to 30 do
+    DataBytePut(b^, (i - 1) * 30 + j - 1, LRLLevel.Field[j, i].Image + 47);
   BlockWrite(LevelFile, b^, 480, k);
   Close(LevelFile);
   FreeMem(b, 480);
@@ -190,7 +191,7 @@ procedure LRLDeleteLevel(Count: Word);
 var
   Buffer: Pointer;
   LevelFile: File;
-  i, j: Integer;
+  j: Integer;
   l: Longint;
   k: Word;
 begin
@@ -198,6 +199,7 @@ begin
   j := LRLLevelCount;
   if (j < Count) or (j < 2) or (Count = 0) then
     Exit;
+  FileMode := 2;
   AssignFile(LevelFile, LevelFileName);
   Reset(LevelFile, 1);
   for l := Count + 1 to j do
@@ -221,7 +223,7 @@ procedure LRLInsertLevel(After: Word);
 var
   Buffer: Pointer;
   LevelFile: File;
-  i, j: Integer;
+  j: Integer;
   l: Longint;
   k: Word;
 begin
@@ -229,6 +231,7 @@ begin
   j := LRLLevelCount;
   if (After > j) or (After = 0) then
     Exit;
+  FileMode := 2;
   AssignFile(LevelFile, LevelFileName);
   Reset(LevelFile, 1);
   for l := j downto After + 1 do
@@ -254,7 +257,7 @@ procedure LRLLoadLevel(Number: Byte);
 var
   LevelFile: File;
   InBuffer: Pointer;
-  i, j, k, l, x, y: Word;
+  i, j, k: Word;
   a, b, c: Byte;
 begin
   TotalPrizes := 0;
@@ -445,18 +448,17 @@ begin
 end;
 
 
-{
-game result:
-1 - zamurovali
-2 - poimali
-10 - vse zdelano
-50 - no more levels
-60 - no human players
-100 - esc was pressed
-}
+{ GameResult:
+  1 - замуровали
+  2 - поймали
+  10 - все сделано
+  50 - нет больше уровней
+  60 - нет человеческих юнитов
+  100 - нажата Esc }
+
 procedure LRLUpdatePlayers;
 var
-  i, j, k: Integer;
+  i, k: Integer;
   spd: Word;
 begin
   for i := 1 to 10 do
@@ -508,21 +510,21 @@ begin
         if (i = 1) then
         begin
           if (TotalPrizes = 0) and (Position.y = 1) and
-            (LRLLevel.Field[Position.x, Position.y].Image = 2) then
+             (LRLLevel.Field[Position.x, Position.y].Image = 2) then
           begin
             EndOfGame  := True;
             GameResult := 10;
             Exit;
           end;
           for k := 2 to 10 do
-            if (LRLLevel.Player[k].Controller <> 0) then
-              if (LRLLevel.Player[k].Position.x = Position.x) and
-                (LRLLevel.Player[k].Position.y = Position.y) then
-              begin
-                EndOfGame  := True;
-                GameResult := 2;
-                Exit;
-              end;
+            if (LRLLevel.Player[k].Controller <> 0) and
+               (LRLLevel.Player[k].Position.x = Position.x) and
+               (LRLLevel.Player[k].Position.y = Position.y) then
+            begin
+              EndOfGame  := True;
+              GameResult := 2;
+              Exit;
+            end;
         end;
         if (LRLLevel.Field[Position.x, Position.y].Flags and 1 <> 0) then
         begin
@@ -703,12 +705,10 @@ begin
         begin
           if Position.yoffs < 1 then
           begin
-            if ((LRLLevel.Field[Position.x, Position.y].Image <> 2) or
-              (LRLLevel.Field[Position.x, Position.y].Flags and 16 <> 0)) or
-              ((LRLLevel.Field[Position.x, Position.y - 1].Flags and 4 = 0) and
-              ((LRLLevel.Field[Position.x, Position.y - 1].Image <> 2) or
-              (LRLLevel.Field[Position.x, Position.y - 1].Flags and 16 <> 0))) or
-              (Position.y < 2) then
+            if ((LRLLevel.Field[Position.x, Position.y].Image <> 2) or (LRLLevel.Field[Position.x, Position.y].Flags and 16 <> 0)) or
+               ((LRLLevel.Field[Position.x, Position.y - 1].Flags and 4 = 0) and
+                 ((LRLLevel.Field[Position.x, Position.y - 1].Image <> 2) or (LRLLevel.Field[Position.x, Position.y - 1].Flags and 16 <> 0))) or
+               (Position.y < 2) then
             begin
               Command := 10;
               Position.yoffs := 0;
@@ -975,7 +975,7 @@ end;
 
 procedure LRLComputerPlayer;
 var
-  k, l, m, f1, f2, i, j: Integer;
+  k, l, m, f1, f2, i: Integer;
 begin
   if ComputerTurn >= ComputerReaction then
   begin
@@ -1045,8 +1045,8 @@ begin
                   NewCommand := 2;
               end;
             end;
-          end
-          else
+          end else
+
           if (Position.y < LRLLevel.Player[1].Position.y) then
           begin
             if (((LRLLevel.Field[Position.x, Position.y + 1].Image = 2) and
@@ -1114,13 +1114,12 @@ begin
         end;
       end;
     end;
-  end
-  else
+  end else
     Inc(ComputerTurn);
 end;
 
 
-function LRLPlayLevel(Number: Byte): Word;
+procedure LRLPlayLevel(Number: Byte);
 var
   Keypress: Word;
   i: Word;
@@ -1181,14 +1180,15 @@ begin
         LRLLevel.Player[KeyboardControls[i * 3 + 2]].NewCommandWas := True;
       end;
 
-      if (Keypress = $50) or (Keypress = $70) then
+      if Keypress = KEY_P then
         Paused := True;
     end;
-  until (Keypress = $1B) or EndOfGame;
+  until (Keypress = KEY_ESC) or EndOfGame;
 
   if EndOfGame then
     LRLEndSequence else
     GameResult := 100;
 end;
+
 
 end.

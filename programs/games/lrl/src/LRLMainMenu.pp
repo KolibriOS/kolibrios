@@ -24,7 +24,7 @@ var
 
 procedure LoadData;
 var
-  size, j: Word;
+  j: Word;
   i: Integer;
 begin
   GetMem(MainScreen, 64004);
@@ -67,6 +67,7 @@ begin
   DataFill(p^, 768, 0, 0);
   Palette256Set(p^);
   FreeMem(p, 768);
+
   LoadData;
   NeedToFade := True;
   ImagePut(LRLScreen^, MainScreen^, 0, 0, 0, 0, 319, 199);
@@ -94,17 +95,17 @@ begin
 
     Keypress := ReadKey;
 
-    if (Keypress = $B1) and (Item < 4) then
+    if (Keypress = KEY_DOWN) and (Item < 4) then
     begin
       Inc(Item);
       RedrawAll := True;
-    end;
-    if (Keypress = $B2) and (Item > 1) then
+    end else
+    if (Keypress = KEY_UP) and (Item > 1) then
     begin
       Dec(Item);
       RedrawAll := True;
     end;
-  until Keypress = $0D;
+  until Keypress = KEY_ENTER;
 
   FadeClear;
   ImageClear(LRLScreen^);

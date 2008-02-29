@@ -86,7 +86,7 @@ procedure LoadImages;
 var
   InBuffer: Pointer;
   i, j, k, l, x, y: Word;
-  a, b, c:  Byte;
+  a:  Byte;
 begin
   GetMem(InBuffer, $FFF0);
 

@@ -1,0 +1,222 @@
+ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+   ÜÜ      ÜÜÜÜ  ÜÜÜÜÜ  ÜÜÜÜÜÜ    ÜÜÜÜÜ  ÜÜ  ÜÜ ÜÜ  ÜÜ ÜÜ  ÜÜ ÜÜÜÜÜÜ ÜÜÜÜÜ 
+   ÛÛ     ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ        ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ     ÛÛ  ÛÛ
+   ÛÛ     ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ        ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛÛÜÛÛ ÛÛÛÜÛÛ ÛÛ     ÛÛ  ÛÛ
+   ÛÛ     ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛßßß     ÛÛßßÛÜ ÛÛ  ÛÛ ÛÛ ßÛÛ ÛÛ ßÛÛ ÛÛßßß  ÛÛßßÛÜ
+   ÛÛ     ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ        ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ     ÛÛ  ÛÛ
+   ÛÛ     ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ        ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ  ÛÛ ÛÛ     ÛÛ  ÛÛ
+   ßßßßßß  ßßßß  ßßßßß  ßßßßßß    ßß  ßß  ßßßß  ßß  ßß ßß  ßß ßßßßßß ßß  ßß
+ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+                    ÄÄÄÄÄÍÍÍÍ  Û   Û Û Û Ûßß  ÍÍÍÍÄÄÄÄÄ 
+                  ÄÄÄÄÄÄÍÍÍÍÍ  Û   Û Û Û Ûß   ÍÍÍÍÍÄÄÄÄÄÄ
+ FREEWARE       ÄÄÄÄÄÄÄÍÍÍÍÍÍ  ÛÜÜ Û ßÜß ÛÜÜ  ÍÍÍÍÍÍÄÄÄÄÄÄÄ       version 1.0
+ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+                               USER'S MANUAL
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ DISCLAIMER AND LICENSING
+
+     Lode Runner Live version 1.0 is provided on "AS IS" basis without
+     warranty of any kind, either expressed or implied, including, but not
+     limited to, fitness for a particular purpose. In no event will
+     the authors or copyright holder be liable for any damages caused by the
+     use or inablility to use, of Lode Runner Live version 1.0.
+
+     Lode Runner Live version 1.0 is a FREEWARE program. It is illegal
+     to copy, distribute this program for any commercial profit except fee
+     for shipping and handling (no more than $2 USD). It is illegal to
+     inverse assemble this program in whole or partially.
+
+     Lode Runner Live version 1.0 can be included in PD-Disks, CD-ROMs,
+     shareware disks only with permission from the author. See last part for
+     details.
+
+     All trademarks, registered trademarks mentioned in this text belongs to
+     their respective owners and included only for informative purposes.
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ GETTING STARTED
+
+     GAME REQUIREMENTS:
+
+     Intel 80386 or higher processor,
+     VGA,
+     MS-DOS 4.0 or higher,
+     About 340k of conventional memory.
+
+     OPTION:
+
+     100%-compatible Microsoft mouse and driver installed.
+
+
+     To start the game, simply go to directory where you copy this game,
+     type LRL at DOS prompt (e.g. C:\GAMES\LRL>) and press ENTER.
+
+     If your current system configuration enough for this game,
+     game immediately starts.
+
+     On game start you see an intro. Press any key to enter to main menu.
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ MAIN MENU
+
+     After you bypass intro section you can see four menu options.
+     Current selected option lit.
+
+     START GAME
+     EDIT LEVELS
+     HIGH SCORES
+     EXIT TO DOS
+
+     Use arrow keys to select desired option and ENTER key to accept
+     selection.
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ START GAME
+
+     When you accept START GAME option from main menu, the game starts.
+
+     Green Runner is Your Runner. Your goal is to gather all the prizes
+     (gold-coloured boxes) and after that reach top of level to finish it.
+
+     Bottom part of screen shows your current status:
+
+     "Score:" keyword shows your game points. For each prize you receive
+     100 points multiplied by current level number. After you finish
+     level you receive 10000 points multiplied by finished level number.
+     If game is over and your point status is great enough you will be
+     prompted to enter your name (or handle) and after you type and press
+     ENTER, high scores will be shown with your entry.
+
+     "Lives:" keyword shows actual number of lives. If "Lives:" shows "1"
+     and you died then the game is over. After you finish level you
+     receive one life.
+
+     "Level:" keyword shows number of level you currently playing.
+
+     During gameplay you can use following keys:
+
+     "<" and ">" to fire left and right.
+     Arrow keys to move Runner.
+     "P" key to pause game.
+     ESC key to cancel game and return to main menu.
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ EDIT LEVELS
+
+     If you immediately returned to main menu then you don't have a
+     Microsoft-compatible mouse and driver installed.
+
+     If you have Microsoft-compatible mouse and driver installed then read
+     along.
+
+     All manipulations are done with mouse. Mouse cursor appears on screen
+     as a white arrow.
+
+     After you selected EDIT LEVELS from main menu and pressed ENTER, edit
+     screen will appear. It consists of three parts. First part is a
+     level-screen. It looks like an ordinary game. Second functional part
+     located in left-bottom part of screen. There you can see therteen
+     images. Third part is a button-pad and is located in right-bottom part
+     of screen.
+
+     You can use second part to select bricks or Runners to be put on
+     level-screen. Just move mouse cursor to desired image an press left
+     mouse button. To put selected image to level-screen move your mouse to
+     desired location on level-screen and press left mouse button. You can
+     draw on level-screen using current image not releasing left mouse
+     button.
+
+     Third functional part of screen is a button-pad. Buttons are:
+     
+     SAVE   INS    NEXT
+     DEL    REM    PREV
+
+     After you finished designing level you need to save your work. Using
+     mouse cursor, press and release SAVE button. Current level will be
+     written to disk. (Current level and overall level count shown in
+     left-top part of level-screen).
+
+     If you need to fully redraw current level, DEL button can be handy.
+     Press DEL button to remove all bricks and players from the
+     level-screen.
+
+     You can insert new level by pressing INS button. REM button fully
+     removes current level. NEXT and PREV buttons used to select level to
+     modify.
+
+     Right mouse button used to test current level. Press right mouse
+     button to execute test. During test all looks and functions like in
+     ordinary game, except you can't see "Score:" and "Lives:". If your
+     Runner died you immediately return to edit mode. You can also press
+     ESC key to cancel test.
+
+     USEFUL ADVICES:
+
+     Before any operation (NEXT, PREV, test) it is clever to SAVE your
+     work, other way all modifications will not be saved!
+
+     When designing level you must leave first and second lines of
+     level maximally clear. Because dead Enemy Runner randomly appears in
+     these lines. If all places in these lines are used (not clear) game
+     can hang!
+
+     Also you need to make first line of level reachable to Green Runner by
+     putting Stairs in right places.
+
+     Good luck at this point!
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ HIGH SCORES
+
+     By selecting HIGH SCORES from main menu you activate "High Scores"
+     screen. Press any key to return to main menu.
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ EXIT TO DOS
+
+     This option is so standard! No explanation.
+
+
+ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ GAME CONSISTENCE
+
+     Game packet must have following files:
+
+     LRL.EXE      - main executable file
+     LRL.IMG      - images data file
+     LRL.LEV      - levels data file
+     LRL.MAN      - text you are reading now
+
+     OPTION:
+
+     LRL.HSR      - file with high scores
+     FILE_ID.DIZ  - BBS description file
+
+
+ÚÂÂÂÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
+³³³³ CONTACTING THE AUTHOR
+
+     If you want to publish this game in any way contact author via E-mail:
+
+     ikomi@glas.apc.org
+
+     you can write in English (but preferably in Russian!)
+
+     for FidoNet-users: 2:5003/15.
+
+
+ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+      Lode Runner Live version 1.0 Copyright (c) 1995 Aleksey V. Vaneev
+ÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍÍ
+
+END OF TEXT.

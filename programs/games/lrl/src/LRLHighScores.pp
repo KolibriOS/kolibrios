@@ -1,19 +1,23 @@
 unit LRLHighScores;
 
+{$mode objfpc}
+{$i-}
+
 
 interface
 
 
 uses
-  LRLRoutines, LRLSprites, StrUnit;
+  SysUtils,
+  LRLRoutines, LRLSprites;
 
 
 procedure LRLLoadHighScores;
 procedure LRLShowHighScores;
-function LRLBestScore(Score: longint): boolean;
-procedure LRLInsertScore(Name: string; Score: longint);
+function LRLBestScore(Score: Longint): Boolean;
+procedure LRLInsertScore(Name: String; Score: Longint);
 procedure LRLSaveHighScores;
-function LRLEnterName: string;
+function LRLEnterName: String;
 
 
 implementation
@@ -21,114 +25,130 @@ implementation
 
 const
   HighsFileName = 'LRL.HSR';
-  HighsFileHeader: string[29] = 'Lode Runner Live High Scores'#26;
+  HighsFileHeader: String[29] = 'Lode Runner Live High Scores'#26;
 
 type
   TSupers = packed record
-    Name:  string[20];
-    Score: longint;
+    Name:  String[20];
+    Score: Longint;
   end;
 
 var
-  MainScreen: POINTER;
-  HighFrame:  POINTER;
+  MainScreen: Pointer;
+  HighFrame:  Pointer;
   HighTable:  array[1..5] of TSupers;
+
 
 procedure LoadData;
 var
-  j: word;
+  j: Word;
 begin
-  GETMEM(MainScreen, 64004);
-  GETMEM(HighFrame, 45000);
-  DFAFilePositionSet(ImageFile, LRLImagesFilePosition, DFASeekFromStart);
-  DFAFileRead(ImageFile, MainScreen^, 7940, j);
+  GetMem(MainScreen, 64004);
+  GetMem(HighFrame, 45000);
+  Seek(ImageFile, LRLImagesFilePosition);
+  BlockRead(ImageFile, MainScreen^, 7940, j);
   DecompressRepByte(MainScreen^, HighFrame^, 7940, j);
-  DFAFileRead(ImageFile, MainScreen^, 64004, j);
+  BlockRead(ImageFile, MainScreen^, 64004, j);
 end;
+
 
 procedure DisposeData;
 begin
-  FREEMEM(MainScreen, 64004);
-  FREEMEM(HighFrame, 45000);
+  FreeMem(MainScreen, 64004);
+  FreeMem(HighFrame, 45000);
 end;
+
 
 procedure LRLShowHighScores;
 var
-  p: POINTER;
-  i: integer;
-  s: string;
+  p: Pointer;
+  i: Integer;
+  s: String;
 begin
   LRLLoadHighScores;
-  GETMEM(p, 768);
+
+  GetMem(p, 768);
   DataFill(p^, 768, 0, 0);
   Palette256Set(p^);
-  FREEMEM(p, 768);
+  FreeMem(p, 768);
+
   LoadData;
   ImagePut(LRLScreen^, MainScreen^, 0, 0, 0, 0, 319, 199);
   ImagePut(LRLScreen^, HighFrame^, 6, 50, 0, 0, 319, 199);
+
   for i := 1 to 5 do
   begin
-    ImageStringGet(CHR(i + 48) + '. ' + HighTable[i].Name, LRLFont^, LRLFontBuffer^, 110);
+    ImageStringGet(Chr(i + 48) + '. ' + HighTable[i].Name, LRLFont^, LRLFontBuffer^, 110);
     ImagePut(LRLScreen^, LRLFontBuffer^, 55, 85 + i * 17, 8, 0, 319, 199);
-    STR(HighTable[i].Score, s);
+    Str(HighTable[i].Score, s);
     ImageStringGet(s, LRLFont^, LRLFontBuffer^, 46);
     ImagePut(LRLScreen^, LRLFontBuffer^, 260 - ImageSizex(LRLFontBuffer^), 85 + i * 17, 8, 0, 319, 199);
   end;
+
   ScreenApply(LRLScreen^);
   FadeTo(LRLMenuPalette);
-  READKEY;
+
+  ReadKey;
+
   FadeClear;
   ImageClear(LRLScreen^);
   ScreenApply(LRLScreen^);
+
   DisposeData;
 end;
 
+
 procedure LRLLoadHighScores;
 var
-  InFile: TDFAFileHandle;
-  i, j:  word;
-  high:  TSupers;
-  dummy: string[30];
+  InFile: File;
+  i, j:  Word;
+  Dummy: String[30];
 begin
-  high.Name := 'Lode Runner';
-  DFAFileOpen(InFile, HighsFileName, DFAAccessReadWrite);
-  if DFALastResult(InFile) <> 0 then
+  FileMode := 0;
+  AssignFile(InFile, HighsFileName);
+  Reset(InFile, 1);
+
+  if IOResult <> 0 then
   begin
-    DFAFileCreate(InFile, HighsFileName, DFAAttributeArchive);
-    DFAFileWrite(InFile, HighsFileHeader[1], 29, i);
     for i := 1 to 5 do
     begin
-      high.score := 60000 - i * 10000;
-      DFAFileWrite(InFile, high, SIZEOF(high), j);
+      HighTable[i].Name := 'Lode Runner';
+      HighTable[i].score := 60000 - i * 10000;
     end;
-  end;
-  DFAFilePositionSet(InFile, 0, DFASeekFromStart);
-  DFAFileRead(InFile, dummy[1], 29, j);
-  if (DFALastResult(InFile) <> 0) or
-    (not DataIdentical(dummy[1], HighsFileHeader[1], 29, 0, 0)) then
+    AssignFile(InFile, HighsFileName);
+    Rewrite(InFile, 1);
+    BlockWrite(InFile, HighsFileHeader[1], 29, i);
+    BlockWrite(InFile, HighTable, SizeOf(TSupers) * 5, j);
+  end else
   begin
-    WRITELN('Error: Invalid file with high scores! (try to remove LRL.HSR file)');
-    WRITELN('Ошибка: Неверный файл с рекордами! (попробуйте удалить файл LRL.HSR)');
-    Halt(1);
+    Seek(InFile, 0);
+    BlockRead(InFile, Dummy[1], 29, j);
+    if (IOResult <> 0) or (not DataIdentical(Dummy[1], HighsFileHeader[1], 29, 0, 0)) then
+  	  raise Exception.Create('Error: Invalid file with high scores! (try to remove LRL.HSR file)');
+    BlockRead(InFile, HighTable, SizeOf(TSupers) * 5, j);
   end;
-  DFAFileRead(InFile, HighTable, SIZEOF(TSupers) * 5, j);
-  DFAFileClose(InFile);
+
+  Close(InFile);
 end;
+
 
 procedure LRLSaveHighScores;
 var
-  InFile: TDFAFileHandle;
-  i, j: word;
+  InFile: File;
+  j: Word;
 begin
-  DFAFileOpen(InFile, HighsFileName, DFAAccessReadWrite);
-  DFAFilePositionSet(InFile, 29, DFASeekFromStart);
-  DFAFileWrite(InFile, HighTable, SIZEOF(TSupers) * 5, j);
-  DFAFileClose(InFile);
+  FileMode := 2;
+  AssignFile(InFile, HighsFileName);
+  Reset(InFile, 1);
+  Seek(InFile, 29);
+  BlockWrite(InFile, HighTable, SizeOf(TSupers) * 5, j);
+  Close(InFile);
 end;
 
-function LRLBestScore(Score: longint): boolean;
+
+function LRLBestScore(Score: Longint): Boolean;
 var
-  i: integer;
+  i: Integer;
 begin
   LRLBestScore := True;
   LRLLoadHighScores;
@@ -136,19 +156,20 @@ begin
   while True do
   begin
     if Score >= HighTable[i].Score then
-      EXIT;
+      Exit;
     Inc(i);
     if i > 5 then
     begin
       LRLBestScore := False;
-      EXIT;
+      Exit;
     end;
   end;
 end;
 
-procedure LRLInsertScore(Name: string; Score: longint);
+
+procedure LRLInsertScore(Name: String; Score: Longint);
 var
-  i, j: word;
+  i, j: Word;
 begin
   LRLLoadHighScores;
   i := 1;
@@ -164,29 +185,32 @@ begin
       HighTable[i].Name  := Name;
       HighTable[i].Score := Score;
       LRLSaveHighScores;
-      EXIT;
+      Exit;
     end;
     Inc(i);
     if i > 5 then
     begin
-      EXIT;
+      Exit;
     end;
   end;
 end;
 
-function LRLEnterName: string;
+
+function LRLEnterName: String;
 var
-  p: POINTER;
-  i: integer;
-  RedrawName: boolean;
-  Keypress: word;
-  Name: string;
+  p: Pointer;
+  RedrawName: Boolean;
+  Keypress: Word;
+  Name: String;
+  C: Char;
 begin
   Name := '';
-  GETMEM(p, 768);
+
+  GetMem(p, 768);
   DataFill(p^, 768, 0, 0);
   Palette256Set(p^);
-  FREEMEM(p, 768);
+  FreeMem(p, 768);
+
   ImageClear(LRLScreen^);
   ImagePut(LRLScreen^, LRLLogo^, 3, 3, 0, 0, 319, 199);
   ImageStringGet('Congratulations! You are in Top-Five!', LRLFont^, LRLFontBuffer^, 110);
@@ -199,6 +223,7 @@ begin
     1, 155, 0, 0, 319, 199);
   ScreenApply(LRLScreen^);
   FadeTo(LRLMenuPalette);
+
   RedrawName := True;
   repeat
     if RedrawName = True then
@@ -206,26 +231,31 @@ begin
       ImageFill(LRLFontBuffer^, 320, 20, 0);
       ImagePut(LRLScreen^, LRLFontBuffer^, 0, 140, 0, 0, 319, 199);
       ImageStringGet(Name, LRLFont^, LRLFontBuffer^, 100);
-      ImagePut(LRLScreen^, LRLFontBuffer^, 160 - ImageSizex(LRLFontBuffer^) shr
-        1, 140, 0, 0, 319, 199);
+      ImagePut(LRLScreen^, LRLFontBuffer^, 160 - ImageSizex(LRLFontBuffer^) shr 1, 140, 0, 0, 319, 199);
       ScreenApply(LRLScreen^);
       RedrawName := False;
     end;
-    Keypress := READKEY;
-    if (LO(Keypress) = 8) and (LENGTH(Name) > 0) then
+
+    Keypress := ReadKey;
+
+    if (Keypress = KEY_BACK) and (Length(Name) > 0) then
     begin
-      Name[0] := char(Ord(Name[0]) - 1);
+	  SetLength(Name, Length(Name) - 1);
       RedrawName := True;
     end;
-    if (LO(Keypress) > 31) and (LENGTH(Name) < 20) then
+
+    C := ScanToChar(Keypress);
+    if (C > #31) and (Length(Name) < 20) then
     begin
-      Name := Name + char(LO(Keypress));
+      Name := Name + C;
       RedrawName := True;
     end;
-  until LO(Keypress) = 13;
+
+  until Keypress = KEY_ENTER;
   FadeClear;
-  Name := StringTrimAll(Name, ' ');
-  if LENGTH(Name) = 0 then
+
+  Name := Trim(Name);
+  if Length(Name) = 0 then
     Name := 'Anonymous';
   LRLEnterName := Name;
 end;

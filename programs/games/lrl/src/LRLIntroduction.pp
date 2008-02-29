@@ -17,10 +17,10 @@ implementation
 
 const
   IntroText: array[1..14] of String = (
-    'Lode Runner LIVE. FREEWARE Version 1.0',
+    'Lode Runner LIVE. FREEWARE Version 1.4b',
     'KolibriOS port by bw (Vladimir V. Byrgazov)',
     'Copyright (c) 1995 Aleksey V. Vaneev',
-    'Copyright (c) 2007 bw',
+    'Copyright (c) 2008 bw',
     '',
     'Send comments to Aleksey V. Vaneev',
     '2:5003/15@FidoNet',
@@ -30,17 +30,13 @@ const
     'bw@handsdriver.net',
     '',
     '',
-    ''
-  );
+    '');
 
   SPACE40 = '                                        ';
 
 
 var
-  RefreshDelay: Word;
-  RefreshRemain: Word;
   TimeToRefresh: Boolean;
-  OldTimer: Pointer;
 
 
 procedure LRLIntro;
@@ -50,8 +46,6 @@ var
   k: Word;
   MainScreen: Pointer;
 begin
-  RefreshDelay  := 1;
-  RefreshRemain := 1;
   GetMem(MainScreen, 64004);
 
   Seek(ImageFile, LRLImagesFilePosition + 7940);
