@@ -23,6 +23,8 @@ function kos_getmousepos(): TKosPoint;
 function kos_getmousewinpos(): TKosPoint;
 function kos_getmousebuttons(): DWord;
 procedure kos_maskevents(mask: DWord);
+procedure kos_setkeyboardmode(mode: DWord);
+function  kos_getkeyboardmode(): DWord;
 procedure kos_setcaption(caption: PChar);
 
 { Graphics }

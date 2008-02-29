@@ -146,6 +146,28 @@ asm
   popl  %ebx
 end;
 
+procedure kos_setkeyboardmode(mode: DWord); assembler; register;
+asm
+  pushl %eax
+  pushl %ebx
+  movl  $66, %ecx
+  movl  $1,  %ebx
+  xchgl %eax, %ecx
+  int   $0x40
+  xchgl %eax, %ecx
+  popl  %ebx
+  popl  %eax
+end;
+
+function kos_getkeyboardmode(): DWord; assembler; register;
+asm
+  pushl %ebx
+  movl  $66, %eax
+  movl  $2,  %ebx
+  int   $0x40
+  popl  %ebx
+end;
+
 procedure kos_setcaption(caption: PChar); assembler; register;
 asm
   pushl %ecx

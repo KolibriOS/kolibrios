@@ -257,6 +257,8 @@ var
   i: Integer;
 begin
   ExeImage := TExeImage.Create(InputFile);
+
+{$ifdef debug}
   WriteHead('NT Header');
   WriteLn(Format('Size of Code: %d', [ExeImage.SizeOfCode]));
   WriteLn(Format('Size of Init Data: %d', [ExeImage.SizeOfInitializedData]));
@@ -267,6 +269,7 @@ begin
   WriteLn(Format('Image Size: %d; Header Size: %d', [ExeImage.ImageSize, ExeImage.HeaderSize]));
   WriteLn(Format('Stack Reserve Size: %d; Stack Commit Size: %d', [ExeImage.StackReserveSize, ExeImage.StackCommitSize]));
   WriteLn(Format('Heap Reserve Size: %d; Heap Comit Size: %d', [ExeImage.HeapReserveSize, ExeImage.HeapCommitSize]));
+{$endif}
 
   ImageBase := ExeImage.ImageBase;
   ImageSize := 0;
@@ -276,9 +279,12 @@ begin
   for i:=0 to ExeImage.Sections.Count-1 do
   with ExeImage.Sections[i] do
   begin
+
+{$ifdef debug}
     WriteHead(Format('Section %s (0x%x)', [Name, ObjectFlags]));
     WriteLn(Format('Section RVA/Size: 0x%x / %d', [SectionRVA, VirtualSize]));
     WriteLn(Format('Physical Offset/Size: 0x%x / %d', [PhysicalOffset, PhysicalSize]));
+{$endif}
 
     Size := ImageBase + SectionRVA;
     FileStream.Position := Size;
@@ -292,13 +298,6 @@ begin
       FileStream.Write(Buffer^, PhysicalSize);
       FreeMem(Buffer);
     end;
-    {if VirtualSize - PhysicalSize > 0 then
-    begin
-      GetMem(Buffer, VirtualSize - PhysicalSize);
-      FillByte(Buffer^, VirtualSize - PhysicalSize, 0);
-      FileStream.Write(Buffer^, VirtualSize - PhysicalSize);
-      FreeMem(Buffer);
-    end;}
   end;
 
   FillByte(KosHeader, SizeOf(KosHeader), 0);
