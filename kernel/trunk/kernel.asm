@@ -5045,29 +5045,6 @@ syscall_cdaudio:			; CD
 
 align 4
 
-syscall_delramdiskfile: 		; DelRamdiskFile
-
-     mov   edi,[TASK_BASE]
-     add   edi,TASKDATA.mem_start
-     add   eax,[edi]
-     call  filedelete
-     mov   [esp+36],eax
-     ret
-
-align 4
-
-syscall_writeramdiskfile:		; WriteRamdiskFile
-
-     mov   edi,[TASK_BASE]
-     add   edi,TASKDATA.mem_start
-     add   eax,[edi]
-     add   ebx,[edi]
-     call  filesave
-     mov   [esp+36],eax
-     ret
-
-align 4
-
 syscall_getpixel:			; GetPixel
      mov   ecx, [Screen_Max_X]
      inc   ecx

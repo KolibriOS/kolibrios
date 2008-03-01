@@ -10,35 +10,23 @@ $Revision$
 
 iglobal
   ;function pointers.
-  fdc_irq_func    dd fdc_null
+  fdc_irq_func	  dd fdc_null
 endg
 
 uglobal
-  dmasize         db 0x0
-  dmamode         db 0x0
+  dmasize	  db 0x0
+  dmamode	  db 0x0
 endg
 
-fdc_init:                               ;start with clean tracks.
-        mov edi,OS_BASE+0xD201
-        mov al,0
-        mov ecx,160
-        rep stosb
-ret
-
-fdc_filesave:                   ;ebx: cluster to be saved.
-        pusha                   ;returns immediately. does not trigger a write.
-        mov eax,ebx
-        add eax,31
-        mov bl,18
-        div bl
-        mov ah,0
-        add eax,OS_BASE+0xD201
-        mov [eax],byte 1                ;This track is now dirty.
-        popa
+fdc_init:				;start with clean tracks.
+	mov edi,OS_BASE+0xD201
+	mov al,0
+	mov ecx,160
+	rep stosb
 ret
 
 fdc_irq:
-        call [fdc_irq_func]
+	call [fdc_irq_func]
 fdc_null:
 ret
 

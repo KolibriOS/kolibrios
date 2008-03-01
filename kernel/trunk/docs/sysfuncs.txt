@@ -1751,56 +1751,6 @@ Remarks:
     bytes are copied and than terminating 0 is inserted.
 
 ======================================================================
-=============== Function 32 - delete file from ramdisk. ==============
-======================================================================
-Parameters:
-  * eax = 32 - function number
-  * ebx = pointer to the filename
-Returned value:
-  * eax = 0 - success; otherwise file system error code
-Remarks:
-  * This function is obsolete; function 58 allows to fulfill
-    the same operations with the extended possibilities.
-  * The current implementation returns only values 0(success) and
-    5(file not found).
-  * The filename must be either in the format 8+3 characters
-    (first 8 characters - name itself, last 3 - extension,
-    the short names and extensions are supplemented with spaces),
-    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
-    (name no more than 8 characters, dot, extension 3 characters
-    supplemented if necessary by spaces).
-    The filename must be written with capital letters. The terminating
-    character with code 0 is not necessary (not ASCIIZ-string).
-  * This function does not support folders on the ramdisk.
-
-======================================================================
-================ Function 33 - write file to ramdisk. ================
-======================================================================
-Parameters:
-  * eax = 33 - function number
-  * ebx = pointer to the filename
-  * ecx = pointer to data for writing
-  * edx = number of bytes for writing
-  * should be set esi=0
-Returned value:
-  * eax = 0 - success, otherwise file system error code
-Remarks:
-  * This function is obsolete; function 70 allows to fulfil
-    the same operations with extended possibilities.
-  * If esi contains non-zero value and selected file already exists,
-    one more file with the same name will be created.
-  * Otherwise file will be overwritten.
-  * The filename must be either in the format 8+3 characters
-    (first 8 characters - name itself, last 3 - extension,
-    the short names and extensions are supplemented with spaces),
-    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
-    (name no more than 8 characters, dot, extension 3 characters
-    supplemented if necessary by spaces).
-    The filename must be written with capital letters. The terminating
-    character with code 0 is not necessary (not ASCIIZ-string).
-  * This function does not support folders on the ramdisk.
-
-======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
 ======================================================================
 Parameters:

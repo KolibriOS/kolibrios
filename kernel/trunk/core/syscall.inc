@@ -135,8 +135,8 @@ iglobal
       dd 0
       dd sys_current_directory	 ; 30-Get/SetCurrentDirectory
       dd 0
-      dd syscall_delramdiskfile  ; 32-DelRamdiskFile
-      dd syscall_writeramdiskfile; 33-WriteRamdiskFile
+      dd 0
+      dd 0
       dd 0
       dd 0
       dd 0
@@ -215,8 +215,8 @@ iglobal
       dd sys_date		 ; 29-GetDate
       dd cross_order		 ; 30-Get/SetCurrentDirectory
       dd undefined_syscall	 ; 31-reserved
-      dd cross_order		 ; 32-DelRamdiskFile
-      dd cross_order		 ; 33-WriteRamdiskFile
+      dd undefined_syscall	 ; 32-reserved
+      dd undefined_syscall	 ; 33-reserved
       dd undefined_syscall	 ; 34-reserved
       dd syscall_getpixel	 ; 35-GetPixel
       dd undefined_syscall	 ; 36-reserved
