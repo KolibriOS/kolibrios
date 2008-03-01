@@ -853,9 +853,6 @@ first_app_found:
 
 ; START MULTITASKING
 
-	mov   esi,boot_tasking
-	call  boot_log
-
 ;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
@@ -914,21 +911,7 @@ boot_log:
 	 mov   [novesachecksum],1000
 	 call  checkVga_N13
 
-	 cmp   [preboot_blogesc+OS_BASE+0x10000],byte 1
-	 je    .bll2
-
-	 cmp   esi,boot_tasking
-	 jne   .bll2
-	 ; begin ealex 04.08.05
-;         in    al,0x61
-;         and   al,01111111b
-;         out   0x61,al
-	 ; end ealex 04.08.05
-.bll1:	 in    al,0x60	  ; wait for ESC key press
-	 cmp   al,129
-	 jne   .bll1
-
-.bll2:	 popad
+	 popad
 
 	 ret
 
