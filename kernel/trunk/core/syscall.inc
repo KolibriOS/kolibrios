@@ -145,10 +145,10 @@ iglobal
       dd sys_getbackground	 ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
       dd 0
-      dd 0	     ; 42-ReadIrqData
+      dd 0
       dd sys_outport		 ; 43-SendDeviceData
-      dd sys_programirq 	 ; 44-ProgramIrqs
-      dd reserve_free_irq	 ; 45-ReserveIrq and FreeIrq
+      dd 0
+      dd 0
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
       dd display_number 	 ; 47-WriteNum
       dd display_settings	 ; 48-SetRedrawType and SetButtonType
@@ -227,8 +227,8 @@ iglobal
       dd syscall_getirqowner	 ; 41-GetIrqOwner
       dd get_irq_data		 ; 42-ReadIrqData
       dd cross_order		 ; 43-SendDeviceData
-      dd cross_order		 ; 44-ProgramIrqs
-      dd cross_order		 ; 45-ReserveIrq and FreeIrq
+      dd sys_programirq 	 ; 44-ProgramIrqs
+      dd reserve_free_irq	 ; 45-ReserveIrq and FreeIrq
       dd cross_order		 ; 46-ReservePortArea and FreePortArea
       dd cross_order		 ; 47-WriteNum
       dd cross_order		 ; 48-SetRedrawType and SetButtonType

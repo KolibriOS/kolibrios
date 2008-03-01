@@ -3888,28 +3888,29 @@ align 4
 
 sys_programirq:
 
-    mov   edi,[TASK_BASE]
-    add   eax,[edi+TASKDATA.mem_start]
+    mov   eax, [TASK_BASE]
+    add   ebx, [eax + TASKDATA.mem_start]
 
-    cmp   ebx,16
+    cmp   ecx, 16
     jae   .not_owner
-    mov   edi,[TASK_BASE]
-    mov   edi,[edi+TASKDATA.pid]
-    cmp   edi,[irq_owner+ebx*4]
-    je	  spril1
+    mov   edi, [eax + TASKDATA.pid]
+    cmp   edi, [irq_owner + 4 * ecx]
+    je	  .spril1
 .not_owner:
-    mov   [esp+36],dword 1
-    ret
-  spril1:
+    xor   ecx, ecx
+    jmp   .end
+  .spril1:
 
-    mov   esi,eax
-    shl   ebx,6
-    add   ebx,irq00read
-    mov   edi,ebx
-    mov   ecx,16
+    shl   ecx, 6
+    mov   esi, ebx
+    lea   edi, [irq00read + ecx]
+    push  16
+    pop   ecx
+
     cld
     rep   movsd
-    mov   [esp+36],dword 0
+  .end:
+    mov   [esp+32], ecx
     ret
 
 
@@ -4173,35 +4174,34 @@ free_port_area:
 
 reserve_free_irq:
 
-     mov   ecx, 1
-     cmp   ebx, 16
-     jae   fril1
-     test  eax,eax
-     jz    reserve_irq
+     xor   esi, esi
+     inc   esi
+     cmp   ecx, 16
+     jae   ril1
 
-     lea   edi,[irq_owner+ebx*4]
-     mov   edx,[edi]
-     mov   eax,[TASK_BASE]
-     cmp   edx,[eax+TASKDATA.pid]
-     jne   fril1
-     dec   ecx
-     mov   [edi],ecx
-   fril1:
-     mov   [esp+36],ecx ; return in eax
-     ret
+     lea   ecx, [irq_owner + 4 * ecx]
+     mov   edx, [ecx]
+     mov   eax, [TASK_BASE]
+     mov   edi, [eax + TASKDATA.pid]
+     dec   ebx
+     jnz   reserve_irq
+
+     cmp   edx, edi
+     jne   ril1
+     dec   esi
+     mov   [ecx], esi
+
+     jmp   ril1
 
   reserve_irq:
 
-     lea   edi,[irq_owner+ebx*4]
-     cmp   dword [edi], 0
-     jnz   ril1
+     cmp   dword [ecx], 0
+     jne   ril1
 
-     mov   edx,[TASK_BASE]
-     mov   edx,[edx+TASKDATA.pid]
-     mov   [edi],edx
-     dec   ecx
+     mov   [ecx], edi
+     dec   esi
    ril1:
-     mov   [esp+36],ecx ; return in eax
+     mov   [esp+32], esi ; return in eax
      ret
 
 drawbackground:
