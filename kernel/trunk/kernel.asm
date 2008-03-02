@@ -853,6 +853,14 @@ first_app_found:
 
 ; START MULTITASKING
 
+if preboot_blogesc
+        mov     esi, boot_tasking
+        call    boot_log
+.bll1:  in      al, 0x60        ; wait for ESC key press
+        cmp     al, 129
+        jne     .bll1
+end if
+
 ;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S

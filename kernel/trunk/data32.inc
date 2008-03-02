@@ -67,6 +67,9 @@ keymap_alt:
   boot_pal_vga	    db	 'Setting VGA 640x480 palette',0
   boot_failed	    db	 'Failed to start first app',0
   boot_mtrr	    db	 'Setting MTRR',0
+if preboot_blogesc
+  boot_tasking      db   'All set - press ESC to start',0
+end if
 
 new_process_loading db 'K : New Process - loading',13,10,0
 new_process_running db 'K : New Process - done',13,10,0
