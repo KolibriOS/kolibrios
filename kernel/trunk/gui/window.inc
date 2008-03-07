@@ -562,42 +562,54 @@ check_window_position:
 
     pushad			     ; window inside screen ?
 
-    movzx eax,word [edi+WDATA.box.left]
-    movzx ebx,word [edi+WDATA.box.top]
-    movzx ecx,word [edi+WDATA.box.width]
-    movzx edx,word [edi+WDATA.box.height]
+    movsx eax,word [edi+WDATA.box.left]
+    movsx ebx,word [edi+WDATA.box.top]
+    movsx ecx,word [edi+WDATA.box.width]
+    movsx edx,word [edi+WDATA.box.height]
 
-    mov   esi,ecx	      ; check x pos
-    add   esi,eax
-    cmp   esi,[Screen_Max_X]
-    jbe   x_pos_ok
-    mov   [edi+WDATA.box.left],dword 0
-    xor   eax, eax
-  x_pos_ok:
-
-    mov   esi,edx	      ; check y pos
-    add   esi,ebx
-    cmp   esi,[Screen_Max_Y]
-    jbe   y_pos_ok
-    mov   [edi+WDATA.box.top],dword 0
-    mov   ebx,0
-  y_pos_ok:
-
-    mov   esi,ecx	      ; check x size
-    add   esi,eax
-    cmp   esi,[Screen_Max_X]
+    cmp   ecx,[Screen_Max_X]	      ; check x size
     jbe   x_size_ok
     mov   ecx,[Screen_Max_X]
     mov   [edi+WDATA.box.width],ecx
+
   x_size_ok:
 
-    mov   esi,edx	      ; check y size
-    add   esi,ebx
-    cmp   esi,[Screen_Max_Y]
+    cmp   edx,[Screen_Max_Y]	      ; check y size
     jbe   y_size_ok
     mov   edx,[Screen_Max_Y]
     mov   [edi+WDATA.box.height],edx
+
   y_size_ok:
+
+    cmp   eax,0	      ; check x pos
+    jnle  @f
+    xor   eax,eax
+    mov   [edi+WDATA.box.left],eax
+    jmp   x_pos_ok
+  @@:
+    add   eax,ecx
+    cmp   eax,[Screen_Max_X]
+    jbe   x_pos_ok
+    mov   eax,[Screen_Max_X]
+    sub   eax,ecx
+    mov   [edi+WDATA.box.left],eax
+
+  x_pos_ok:
+
+    cmp   ebx,0	      ; check x pos
+    jnle  @f
+    xor   ebx,ebx
+    mov   [edi+WDATA.box.top],ebx
+    jmp   y_pos_ok
+  @@:
+    add   ebx,edx
+    cmp   ebx,[Screen_Max_Y]
+    jbe   y_pos_ok
+    mov   ebx,[Screen_Max_Y]
+    sub   ebx,edx
+    mov   [edi+WDATA.box.top],ebx
+
+  y_pos_ok:
 
     popad
 
