@@ -68,7 +68,7 @@ keymap_alt:
   boot_failed	    db	 'Failed to start first app',0
   boot_mtrr	    db	 'Setting MTRR',0
 if preboot_blogesc
-  boot_tasking      db   'All set - press ESC to start',0
+  boot_tasking	    db	 'All set - press ESC to start',0
 end if
 
 new_process_loading db 'K : New Process - loading',13,10,0
@@ -88,6 +88,7 @@ AMD_str        db "AuthenticAMD",0
 ;szInfinity     db 'INFINITY',0
 szHwMouse	db 'ATI2D',0
 szPS2MDriver	db 'PS2MOUSE',0
+szCOM_MDriver	db 'COM_MOUSE',0
 szUSB		db 'USB',0
 
 szSTART        db 'START',0
@@ -385,8 +386,7 @@ hd_entries	  rd 1	   ;unused ? 0xfe10
 mouse_active	      rd 1
 mouse_pause	      rd 1
 MouseTickCounter      rd 1
-com1_mouse_detected   rb 1
-com2_mouse_detected   rb 1
+
 ;* end code - Mario79
 
 img_background	      rd 1

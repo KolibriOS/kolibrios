@@ -27,12 +27,12 @@ uglobal
 endg
 
 iglobal
-mouse_delay        dd 10
+mouse_delay	   dd 10
 mouse_speed_factor: dd 3
 mouse_timer_ticks  dd 0
 endg
 
-include 'm_com.inc'
+;include 'm_com.inc'
 
 
 ;test_mario79:
@@ -49,165 +49,165 @@ include 'm_com.inc'
 ;process_test_m79 db 'K : Process - test Mario79 error    00000000',13,10,0
 
 draw_mouse_under:
-        ; return old picture
+	; return old picture
 
-        cmp [set_hw_cursor], 0
-        jz @F
-        pushad
-        movzx  eax,word [X_UNDER]
-        movzx  ebx,word [Y_UNDER]
-        stdcall [hw_restore], eax, ebx
-        popad
-        ret
+	cmp [set_hw_cursor], 0
+	jz @F
+	pushad
+	movzx  eax,word [X_UNDER]
+	movzx  ebx,word [Y_UNDER]
+	stdcall [hw_restore], eax, ebx
+	popad
+	ret
 @@:
-        pushad
-        xor    ecx,ecx
-        xor    edx,edx
-        align  4
+	pushad
+	xor    ecx,ecx
+	xor    edx,edx
+	align  4
 mres:
-        movzx  eax,word [X_UNDER]
-        movzx  ebx,word [Y_UNDER]
-        add    eax,ecx
-        add    ebx,edx
-        push   ecx
-        push   edx
-        push   eax
-        push   ebx
-        mov    eax,edx
-        shl    eax,6
-        shl    ecx,2
-        add    eax,ecx
-        add    eax,mouseunder
-        mov    ecx,[eax]
-        pop    ebx
-        pop    eax
-        mov    edi, 1 ;force
-        call   [putpixel]
-        pop    edx
-        pop    ecx
-        inc    ecx
-        cmp    ecx, 16
-        jnz    mres
-        xor    ecx, ecx
-        inc    edx
-        cmp    edx, 24
-        jnz    mres
-        popad
-        ret
+	movzx  eax,word [X_UNDER]
+	movzx  ebx,word [Y_UNDER]
+	add    eax,ecx
+	add    ebx,edx
+	push   ecx
+	push   edx
+	push   eax
+	push   ebx
+	mov    eax,edx
+	shl    eax,6
+	shl    ecx,2
+	add    eax,ecx
+	add    eax,mouseunder
+	mov    ecx,[eax]
+	pop    ebx
+	pop    eax
+	mov    edi, 1 ;force
+	call   [putpixel]
+	pop    edx
+	pop    ecx
+	inc    ecx
+	cmp    ecx, 16
+	jnz    mres
+	xor    ecx, ecx
+	inc    edx
+	cmp    edx, 24
+	jnz    mres
+	popad
+	ret
 
 save_draw_mouse:
 
-        cmp [set_hw_cursor], 0
-        je .no_hw_cursor
-        pushad
+	cmp [set_hw_cursor], 0
+	je .no_hw_cursor
+	pushad
 
-        mov    [X_UNDER],ax
-        mov    [Y_UNDER],bx
-        movzx  eax,word [MOUSE_Y]
-        movzx  ebx,word [MOUSE_X]
-        push eax
-        push ebx
+	mov    [X_UNDER],ax
+	mov    [Y_UNDER],bx
+	movzx  eax,word [MOUSE_Y]
+	movzx  ebx,word [MOUSE_X]
+	push eax
+	push ebx
 
-        mov ecx, [Screen_Max_X]
-        inc ecx
-        mul ecx
+	mov ecx, [Screen_Max_X]
+	inc ecx
+	mul ecx
 
-        movzx edx, byte [display_data+ebx+eax]
-        shl edx, 8
-        mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
+	movzx edx, byte [display_data+ebx+eax]
+	shl edx, 8
+	mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
 
-        cmp ecx, [current_cursor]
-        je .draw
+	cmp ecx, [current_cursor]
+	je .draw
 
-        cmp [ecx+CURSOR.magic], 'CURS'
-        jne .fail
+	cmp [ecx+CURSOR.magic], 'CURS'
+	jne .fail
 
-        push ecx
-        call [select_hw_cursor]
-        mov [current_cursor], ecx
+	push ecx
+	call [select_hw_cursor]
+	mov [current_cursor], ecx
 
 ;        cmp [ecx+CURSOR.size], CURSOR_SIZE
 ;        jne .fail
 
 .draw:
-        stdcall [set_hw_cursor], ecx
-        popad
-        ret
+	stdcall [set_hw_cursor], ecx
+	popad
+	ret
 .fail:
-        mov ecx, [def_cursor]
-        mov [edx+SLOT_BASE+APPDATA.cursor], ecx
-        stdcall [set_hw_cursor], ecx
-        popad
-        ret
+	mov ecx, [def_cursor]
+	mov [edx+SLOT_BASE+APPDATA.cursor], ecx
+	stdcall [set_hw_cursor], ecx
+	popad
+	ret
 
 .no_hw_cursor:
-        pushad
-        ; save & draw
-        mov    [X_UNDER],ax
-        mov    [Y_UNDER],bx
-        push   eax
-        push   ebx
-        mov    ecx,0
-        mov    edx,0
-        align  4
+	pushad
+	; save & draw
+	mov    [X_UNDER],ax
+	mov    [Y_UNDER],bx
+	push   eax
+	push   ebx
+	mov    ecx,0
+	mov    edx,0
+	align  4
 drm:
-        push   eax
-        push   ebx
-        push   ecx
-        push   edx
-        ; helloworld
-        push  ecx
-        add    eax,ecx  ; save picture under mouse
-        add    ebx,edx
-        push   ecx
-        call   getpixel
-        mov    [COLOR_TEMP],ecx
-        pop    ecx
-        mov    eax,edx
-        shl    eax,6
-        shl    ecx,2
-        add    eax,ecx
-        add    eax,mouseunder
-        mov    ebx,[COLOR_TEMP]
-        mov    [eax],ebx
-        pop  ecx
-        mov    edi,edx       ; y cycle
-        shl    edi,4       ; *16 bytes per row
-        add    edi,ecx       ; x cycle
-        mov    esi, edi
-        add    edi, esi
-        add    edi, esi       ; *3
-        add    edi,[MOUSE_PICTURE]      ; we have our str address
-        mov    esi, edi
-        add    esi, 16*24*3
-        push   ecx
-        mov    ecx, [COLOR_TEMP]
-        call   combine_colors
-        mov    [MOUSE_COLOR_MEM], ecx
-        pop    ecx
-        pop    edx
-        pop    ecx
-        pop    ebx
-        pop    eax
-        add    eax,ecx       ; we have x coord+cycle
-        add    ebx,edx       ; and y coord+cycle
-        push   ecx
-        mov    ecx, [MOUSE_COLOR_MEM]
-        mov    edi, 1
-        call   [putpixel]
-        pop    ecx
-        mov    ebx,[esp+0]      ; pure y coord again
-        mov    eax,[esp+4]      ; and x
-        inc    ecx          ; +1 cycle
-        cmp    ecx,16       ; if more than 16
-        jnz    drm
-        xor    ecx, ecx
-        inc    edx
-        cmp    edx,24
-        jnz    drm
-        add   esp,8
-        popad
-        ret
+	push   eax
+	push   ebx
+	push   ecx
+	push   edx
+	; helloworld
+	push  ecx
+	add    eax,ecx	; save picture under mouse
+	add    ebx,edx
+	push   ecx
+	call   getpixel
+	mov    [COLOR_TEMP],ecx
+	pop    ecx
+	mov    eax,edx
+	shl    eax,6
+	shl    ecx,2
+	add    eax,ecx
+	add    eax,mouseunder
+	mov    ebx,[COLOR_TEMP]
+	mov    [eax],ebx
+	pop  ecx
+	mov    edi,edx	     ; y cycle
+	shl    edi,4	   ; *16 bytes per row
+	add    edi,ecx	     ; x cycle
+	mov    esi, edi
+	add    edi, esi
+	add    edi, esi       ; *3
+	add    edi,[MOUSE_PICTURE]	; we have our str address
+	mov    esi, edi
+	add    esi, 16*24*3
+	push   ecx
+	mov    ecx, [COLOR_TEMP]
+	call   combine_colors
+	mov    [MOUSE_COLOR_MEM], ecx
+	pop    ecx
+	pop    edx
+	pop    ecx
+	pop    ebx
+	pop    eax
+	add    eax,ecx	     ; we have x coord+cycle
+	add    ebx,edx	     ; and y coord+cycle
+	push   ecx
+	mov    ecx, [MOUSE_COLOR_MEM]
+	mov    edi, 1
+	call   [putpixel]
+	pop    ecx
+	mov    ebx,[esp+0]	; pure y coord again
+	mov    eax,[esp+4]	; and x
+	inc    ecx	    ; +1 cycle
+	cmp    ecx,16	    ; if more than 16
+	jnz    drm
+	xor    ecx, ecx
+	inc    edx
+	cmp    edx,24
+	jnz    drm
+	add   esp,8
+	popad
+	ret
 
 
 combine_colors:
@@ -223,7 +223,7 @@ combine_colors:
       push edx
       push ecx
       xor ecx, ecx
-         ; byte 2
+	 ; byte 2
       mov eax, 0xff
       sub al, [esi+0]
       mov ebx, [esp]
@@ -240,7 +240,7 @@ combine_colors:
       shr eax, 8
       add ecx, eax
       shl ecx, 8
-         ; byte 1
+	 ; byte 1
       mov eax, 0xff
       sub al, [esi+1]
       mov ebx, [esp]
@@ -257,7 +257,7 @@ combine_colors:
       shr eax, 8
       add ecx, eax
       shl ecx, 8
-         ; byte 2
+	 ; byte 2
       mov eax, 0xff
       sub al, [esi+2]
       mov ebx, [esp]
@@ -321,7 +321,7 @@ yes_mouse_disable:
       add  edx,window_data
       movzx  eax, word [MOUSE_X]
       movzx  ebx, word [MOUSE_Y]
-      mov  ecx,[edx+0]   ; mouse inside the area ?
+      mov  ecx,[edx+0]	 ; mouse inside the area ?
       add  eax,10
       cmp  eax,ecx
       jb   no_mouse_disable
@@ -350,53 +350,53 @@ no_mouse_disable:
       ret
 
 __sys_draw_pointer:
-        cmp   [mouse_pause],0
-        je    @f
-        ret
+	cmp   [mouse_pause],0
+	je    @f
+	ret
 @@:
-        push   eax
-        mov     eax,[timer_ticks]
-        sub     eax,[MouseTickCounter]
-        cmp     eax,1
-        ja      @f
-        pop    eax
-        ret
+	push   eax
+	mov	eax,[timer_ticks]
+	sub	eax,[MouseTickCounter]
+	cmp	eax,1
+	ja	@f
+	pop    eax
+	ret
 @@:
-        mov     eax,[timer_ticks]
-        mov     [MouseTickCounter],eax
-        pop     eax
-        pushad
-        cmp    dword [MOUSE_VISIBLE],dword 0  ; mouse visible ?
-        je     chms00
-        mov     [MOUSE_VISIBLE], dword 0
-        movzx  ebx,word [MOUSE_Y]
-        movzx  eax,word [MOUSE_X]
-        pushfd
-        cli
-        call   save_draw_mouse
-        popfd
+	mov	eax,[timer_ticks]
+	mov	[MouseTickCounter],eax
+	pop	eax
+	pushad
+	cmp    dword [MOUSE_VISIBLE],dword 0  ; mouse visible ?
+	je     chms00
+	mov	[MOUSE_VISIBLE], dword 0
+	movzx  ebx,word [MOUSE_Y]
+	movzx  eax,word [MOUSE_X]
+	pushfd
+	cli
+	call   save_draw_mouse
+	popfd
 nodmu2:
-        popad
-        ret
+	popad
+	ret
 chms00:
-        movzx  ecx,word [X_UNDER]
-        movzx  edx,word [Y_UNDER]
-        movzx  ebx,word [MOUSE_Y]
-        movzx  eax,word [MOUSE_X]
-        cmp    eax,ecx
-        jne    redrawmouse
-        cmp    ebx,edx
-        jne    redrawmouse
-        jmp    nodmp
+	movzx  ecx,word [X_UNDER]
+	movzx  edx,word [Y_UNDER]
+	movzx  ebx,word [MOUSE_Y]
+	movzx  eax,word [MOUSE_X]
+	cmp    eax,ecx
+	jne    redrawmouse
+	cmp    ebx,edx
+	jne    redrawmouse
+	jmp    nodmp
 redrawmouse:
-        pushfd
-        cli
-        call   draw_mouse_under
-        call   save_draw_mouse
-        popfd
+	pushfd
+	cli
+	call   draw_mouse_under
+	call   save_draw_mouse
+	popfd
 nodmp:
-        popad
-        ret
+	popad
+	ret
 
 proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScroll:dword, HScroll:dword
 
@@ -405,35 +405,35 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
 
     mov  eax,[XMoving]
     call mouse_acceleration
-    add  ax,[MOUSE_X]    ;[XCoordinate]
+    add  ax,[MOUSE_X]	 ;[XCoordinate]
     cmp  ax,0
     jge  @@M1
     mov  eax,0
     jmp  @@M2
 @@M1:
     cmp  ax,[Screen_Max_X]   ;ScreenLength
-    jl   @@M2
+    jl	 @@M2
     mov  ax,[Screen_Max_X]   ;ScreenLength-1
 
 @@M2:
-    mov  [MOUSE_X],ax     ;[XCoordinate]
+    mov  [MOUSE_X],ax	  ;[XCoordinate]
 
     mov  eax,[YMoving]
     neg  eax
     call mouse_acceleration
 
-    add  ax,[MOUSE_Y]   ;[YCoordinate]
+    add  ax,[MOUSE_Y]	;[YCoordinate]
     cmp  ax,0
     jge  @@M3
     mov  ax,0
     jmp  @@M4
 @@M3:
     cmp  ax,[Screen_Max_Y]  ;ScreenHeigth
-    jl   @@M4
+    jl	 @@M4
     mov  ax,[Screen_Max_Y] ;ScreenHeigth-1
 
 @@M4:
-    mov  [MOUSE_Y],ax     ;[YCoordinate]
+    mov  [MOUSE_Y],ax	  ;[YCoordinate]
 
     mov  eax,[VScroll]
     add  [MOUSE_SCROLL_V],ax
@@ -448,15 +448,15 @@ proc set_mouse_data stdcall, BtnState:dword, XMoving:dword, YMoving:dword, VScro
 endp
 
 mouse_acceleration:
-        push  eax
-        mov   eax,[timer_ticks]
-        sub   eax,[mouse_timer_ticks]
-        cmp   eax,[mouse_delay]
-        pop   eax
-        ja    @f
-        ;push  edx
-        imul  eax,[mouse_speed_factor]
-        ;pop   edx
+	push  eax
+	mov   eax,[timer_ticks]
+	sub   eax,[mouse_timer_ticks]
+	cmp   eax,[mouse_delay]
+	pop   eax
+	ja    @f
+	;push  edx
+	imul  eax,[mouse_speed_factor]
+	;pop   edx
 @@:
-        ret
+	ret
 

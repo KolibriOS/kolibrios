@@ -18,6 +18,8 @@ iglobal
   szAttachIntHandler  db 'AttachIntHandler',0
   szFpuSave	      db 'FpuSave',0
   szFpuRestore	      db 'FpuRestore',0
+  szReservePortArea   db 'ReservePortArea',0
+  szBoot_Log	      db 'Boot_Log',0
 
   szPciApi	      db 'PciApi', 0
   szPciRead32	      db 'PciRead32', 0
@@ -33,7 +35,7 @@ iglobal
   szGetPgAddr	      db 'GetPgAddr',0
   szMapPage	      db 'MapPage',0
   szMapSpace	      db 'MapSpace',0
-  szMapIoMem          db 'MapIoMem',0
+  szMapIoMem	      db 'MapIoMem',0
   szCommitPages       db 'CommitPages',0
   szReleasePages      db 'ReleasePages',0
 
@@ -88,6 +90,8 @@ kernel_export:
   dd szAttachIntHandler, attach_int_handler
   dd szFpuSave	       , fpu_save
   dd szFpuRestore      , fpu_restore
+  dd szReservePortArea , r_f_port_area
+  dd szBoot_Log        , boot_log
 
   dd szPciApi	       , pci_api
   dd szPciRead32       , pci_read32
@@ -102,7 +106,7 @@ kernel_export:
   dd szFreePage        , free_page
   dd szMapPage	       , map_page	       ;stdcall
   dd szMapSpace        , map_space
-  dd szMapIoMem        , map_io_mem            ;stdcall
+  dd szMapIoMem        , map_io_mem	       ;stdcall
   dd szGetPgAddr       , get_pg_addr
   dd szCommitPages     , commit_pages	       ;not implemented
   dd szReleasePages    , release_pages

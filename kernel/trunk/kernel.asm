@@ -58,7 +58,7 @@ include 'macros.inc'
 $Revision$
 
 
-USE_COM_IRQ equ 0      ;make irq 3 and irq 4 available for PCI devices
+USE_COM_IRQ equ 1      ;make irq 3 and irq 4 available for PCI devices
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -638,8 +638,9 @@ no_lib_load:
 
 	mov  [pci_access_enabled],1
 
-	call   detect_devices
+	;call   detect_devices
 	stdcall load_driver, szPS2MDriver
+	stdcall load_driver, szCOM_MDriver
 
 ; SET MOUSE
 
@@ -671,7 +672,7 @@ no_lib_load:
 
 	mov  esi,boot_setrports
 	call boot_log
-	call setirqreadports
+	;call setirqreadports
 
 ; SET UP OS TASK
 
@@ -854,11 +855,11 @@ first_app_found:
 ; START MULTITASKING
 
 if preboot_blogesc
-        mov     esi, boot_tasking
-        call    boot_log
-.bll1:  in      al, 0x60        ; wait for ESC key press
-        cmp     al, 129
-        jne     .bll1
+	mov	esi, boot_tasking
+	call	boot_log
+.bll1:	in	al, 0x60	; wait for ESC key press
+	cmp	al, 129
+	jne	.bll1
 end if
 
 ;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
@@ -1029,7 +1030,7 @@ reserve_irqs_ports:
 	pushad
 
 	mov  [irq_owner+4*0], 1    ; timer
-	mov  [irq_owner+4*1], 1    ; keyboard
+	;mov  [irq_owner+4*1], 1    ; keyboard
 	mov  [irq_owner+4*5], 1    ; sound blaster
 	mov  [irq_owner+4*6], 1    ; floppy diskette
 	mov  [irq_owner+4*13], 1   ; math co-pros
@@ -1068,20 +1069,14 @@ reserve_irqs_ports:
 	popad
 	ret
 
-iglobal
-mouseirqtable	db  12	  ; ps2
-		db  4	  ; com1
-		db  3	  ; com2
-endg
-
 setirqreadports:
 
 	mov   [irq12read+0],dword 0x60 + 0x01000000  ; read port 0x60 , byte
 	mov   [irq12read+4],dword 0		     ; end of port list
-	mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
-	mov   [irq04read+4],dword 0		     ; end of port list
-	mov   [irq03read+0],dword 0x2f8 + 0x01000000 ; read port 0x2f8 , byte
-	mov   [irq03read+4],dword 0		     ; end of port list
+	;mov   [irq04read+0],dword 0x3f8 + 0x01000000 ; read port 0x3f8 , byte
+	;mov   [irq04read+4],dword 0                  ; end of port list
+	;mov   [irq03read+0],dword 0x2f8 + 0x01000000 ; read port 0x2f8 , byte
+	;mov   [irq03read+4],dword 0                  ; end of port list
 
 	ret
 
@@ -1998,7 +1993,7 @@ sys_midi:
 
 detect_devices:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'detect/commouse.inc'
+;include 'detect/commouse.inc'
 ;include 'detect/ps2mouse.inc'
 ;include 'detect/dev_fd.inc'
 ;include 'detect/dev_hdcd.inc'
@@ -4187,10 +4182,12 @@ reserve_free_irq:
      cmp   ecx, 16
      jae   ril1
 
+     push  ecx
      lea   ecx, [irq_owner + 4 * ecx]
      mov   edx, [ecx]
      mov   eax, [TASK_BASE]
      mov   edi, [eax + TASKDATA.pid]
+     pop   eax
      dec   ebx
      jnz   reserve_irq
 
@@ -4206,11 +4203,37 @@ reserve_free_irq:
      cmp   dword [ecx], 0
      jne   ril1
 
+     mov   ebx, [f_irqs + 4 * eax]
+
+     stdcall attach_int_handler, eax, ebx
+
      mov   [ecx], edi
+
      dec   esi
    ril1:
      mov   [esp+32], esi ; return in eax
      ret
+
+iglobal
+f_irqs:
+     dd 0x0
+     dd 0x0
+     dd p_irq2
+     dd p_irq3
+     dd p_irq4
+     dd p_irq5
+     dd p_irq6
+     dd p_irq7
+     dd p_irq8
+     dd p_irq9
+     dd p_irq10
+     dd p_irq11
+     dd 0x0
+     dd 0x0
+     dd p_irq14
+     dd p_irq15
+
+endg
 
 drawbackground:
        inc   [mouse_pause]
@@ -4494,92 +4517,6 @@ setmouse:  ; set mousepicture -pointer
      mov     [MOUSE_PICTURE],dword mousepointer
 
      cli
-;     mov     bl,0xa8                 ; enable mouse cmd
-;     call    kb_cmd
-;     call    kb_read                 ; read status
-;     mov     bl,0x20                 ; get command byte
-;     call    kb_cmd
-;     call    kb_read
-;     or      al,3                    ; enable interrupt
-;     mov     bl,0x60                 ; write command
-;     push    eax
-;     call    kb_cmd
-;     pop     eax
-;     call    kb_write
-;     mov     bl,0xd4                 ; for mouse
-;     call    kb_cmd
-;     mov     al,0xf4                 ; enable mouse device
-;     call    kb_write
-;     call    kb_read           ; read status return
-
-     ; com1 mouse enable
-
-     mov   bx,0x3f8 ; combase
-
-     mov   dx,bx
-     add   dx,3
-     mov   al,0x80
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,1
-     mov   al,0
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,0
-     mov   al,0x30*2	; 0x30 / 4
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,3
-     mov   al,2 	; 3
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,4
-     mov   al,0xb
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,1
-     mov   al,1
-     out   dx,al
-
-
-     ; com2 mouse enable
-
-     mov   bx,0x2f8 ; combase
-
-     mov   dx,bx
-     add   dx,3
-     mov   al,0x80
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,1
-     mov   al,0
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,0
-     mov   al,0x30*2
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,3
-     mov   al,2
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,4
-     mov   al,0xb
-     out   dx,al
-
-     mov   dx,bx
-     add   dx,1
-     mov   al,1
-     out   dx,al
 
      ret
 

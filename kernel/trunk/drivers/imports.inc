@@ -21,6 +21,8 @@ kernel_export \
 	      AttachIntHandler,\
 	      FpuSave,\
 	      FpuRestore,\
+	      ReservePortArea,\
+	      Boot_Log,\
 \
 	      PciApi,\
 	      PciRead32,\
@@ -35,7 +37,7 @@ kernel_export \
 	      FreePage,\
 	      MapPage,\
 	      MapSpace,\
-              MapIoMem,\
+	      MapIoMem,\
 	      GetPgAddr,\
 	      CommitPages,\
 	      ReleasePages,\

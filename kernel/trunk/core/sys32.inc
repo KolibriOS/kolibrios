@@ -183,20 +183,12 @@ macro irqh [num]
 {
   forward
   p_irq#num :
-     save_ring3_context
      mov   edi, num
-     jmp   irq_c
+     jmp   irqhandler
 }
 
-irqh 2,5,7,8,9,10,11
+irqh 2,3,4,5,7,8,9,10,11
 
-irq_c:
-     mov   ax, app_data  ;os_data
-     mov   ds, ax
-     mov   es, ax
-     call  irqhandler
-     restore_ring3_context
-     iret
 
 p_irq6:
      save_ring3_context
@@ -208,41 +200,6 @@ p_irq6:
      restore_ring3_context
      iret
 
-p_irq3:
-     save_ring3_context
-     mov   ax, app_data  ;os_data
-     mov   ds, ax
-     mov   es, ax
-     cmp   [com2_mouse_detected],0
-     je    old_irq3_handler
-     mov   esi, com2_mouse
-     mov   dx, 2F8h	;[COMPortBaseAddr]
-     call  check_mouse_data_com
-     jmp   p_irq3_1
- old_irq3_handler:
-     mov   edi,3
-     call  irqhandler
-  p_irq3_1:
-     restore_ring3_context
-     iret
-
-p_irq4:
-     save_ring3_context
-     mov   ax, app_data  ;os_data
-     mov   ds, ax
-     mov   es, ax
-     cmp   [com1_mouse_detected],0
-     je    old_irq4_handler
-     mov   esi, com1_mouse
-     mov   dx, 3F8h	;[COMPortBaseAddr]
-     call  check_mouse_data_com
-     jmp   p_irq4_1
- old_irq4_handler:
-     mov   edi,4
-     call  irqhandler
-  p_irq4_1:
-     restore_ring3_context
-     iret
 
 p_irq14:
 	save_ring3_context
@@ -303,7 +260,6 @@ irqhandler:
 	cmp	[v86_irqhooks+edi*8], 0
 	jnz	v86_irq2
 
-     push   edi
 
      mov    esi,edi	     ; 1
      shl    esi,6	     ; 1
@@ -311,8 +267,6 @@ irqhandler:
      shl    edi,12	     ; 1
      add    edi,IRQ_SAVE
      mov    ecx,16
-
-     mov    [check_idle_semaphore],5
 
    irqnewread:
      dec    ecx
@@ -367,15 +321,6 @@ irqhandler:
    noirqword:
    irqfull:
    irqover:
-
-     mov    al,0x20	       ; ready for next irq
-     out    0x20,al
-
-     pop    ebx
-     cmp    ebx,7
-     jbe    noa0
-     out    0xa0,al
-   noa0:
 
      ret
 

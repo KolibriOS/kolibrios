@@ -16,20 +16,29 @@ DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword
 
-         mov  ebx, [irq]        ;irq num
-         test ebx, ebx
-         jz   .err
-         cmp  ebx, 15           ; hidnplayr says: we only have 16 IRQ's
-         ja   .err
-         mov  eax, [handler]
-         test eax, eax
-         jz   .err
-         mov  [irq_tab+ebx*4], eax
-         stdcall enable_irq, [irq]
-         ret
+	 mov  ebx, [irq]	;irq num
+	 test ebx, ebx
+	 jz   .err
+	 cmp  ebx, 15		; hidnplayr says: we only have 16 IRQ's
+	 ja   .err
+	 mov  eax, [handler]
+	 test eax, eax
+	 jz   .err
+	 cmp  [irq_owner + 4 * ebx], 0
+	 jne  .err
+	 mov  [irq_tab+ebx*4], eax
+
+	 ;push eax
+	 ;mov  eax, [TASK_BASE]
+	 ;mov  eax, [eax + TASKDATA.pid]
+	 mov  [irq_owner + 4 * ebx], 1
+	 ;pop  eax
+
+	 stdcall enable_irq, [irq]
+	 ret
 .err:
-         xor eax, eax
-         ret
+	 xor eax, eax
+	 ret
 endp
 
 align 4
@@ -59,89 +68,75 @@ align 16
 irq_serv:
 
 .irq_1:
-	   push eax
-	   mov eax, 1
+	   push 1
 	   jmp .main
 align 4
 .irq_2:
-	   push eax
-	   mov eax, 2
+	   push 2
 	   jmp .main
 align 4
 .irq_3:
-	   push eax
-	   mov eax, 3
+	   push 3
 	   jmp .main
 align 4
 .irq_4:
-	   push eax
-	   mov eax, 4
+	   push 4
 	   jmp .main
 align 4
 .irq_5:
-	   push eax
-	   mov eax, 5
+	   push 5
 	   jmp .main
 align 4
 .irq_6:
-	   push eax
-	   mov eax, 6
+	   push 6
 	   jmp .main
 align 4
 .irq_7:
-	   push eax
-	   mov eax, 7
+	   push 7
 	   jmp .main
 align 4
 .irq_8:
-	   push eax
-	   mov eax, 8
+	   push 8
 	   jmp .main
 align 4
 .irq_9:
-	   push eax
-	   mov eax, 9
+	   push 9
 	   jmp .main
 align 4
 .irq_10:
-	   push eax
-	   mov eax, 10
+	   push 10
 	   jmp .main
 align 4
 .irq_11:
-	   push eax
-	   mov eax, 11
+	   push 11
 	   jmp .main
 align 4
 .irq_12:
-	   push eax
-	   mov eax, 12
+	   push 12
 	   jmp .main
 align 4
 .irq_13:
-	   push eax
-	   mov eax, 13
+	   push 13
 	   jmp .main
 align 4
 .irq_14:
-	   push eax
-	   mov eax, 14
+	   push 14
 	   jmp .main
 align 4
 .irq_15:
-	   push eax
-	   mov eax, 15
+	   push 15
 	   jmp .main
 
 align 16
 .main:
 	   save_ring3_context
+	   mov	 eax, [esp + 32]
 	   mov	 bx, app_data  ;os_data
 	   mov	 ds, bx
 	   mov	 es, bx
 
-           cmp   [v86_irqhooks+eax*8], 0
-           jnz   v86_irq
+	   cmp	 [v86_irqhooks+eax*8], 0
+	   jnz	 v86_irq
 
 	   mov ebx, [irq_tab+eax*4]
 	   test ebx, ebx
@@ -151,16 +146,17 @@ align 16
 	   mov	[check_idle_semaphore],5
 
 .exit:
-	   restore_ring3_context
 
-	   cmp eax, 8
+	   cmp dword [esp + 32], 8
 	   mov al, 0x20
 	   jb @f
 	   out 0xa0, al
 @@:
 	   out 0x20, al
 
-	   pop eax
+	   restore_ring3_context
+	   add	 esp, 4
+
 	   iret
 
 align 4
@@ -183,7 +179,7 @@ endp
 
 align 4
 proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
-           push ebx
+	   push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -191,13 +187,13 @@ proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
 align 4
 proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
-           push ebx
+	   push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -205,13 +201,13 @@ proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
 align 4
 proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
-           push ebx
+	   push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -219,13 +215,13 @@ proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
 	   mov bh, byte [devfn]
 	   mov bl, byte [reg]
 	   call pci_read_reg
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
 align 4
 proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-           push ebx
+	   push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -234,13 +230,13 @@ proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
 align 4
 proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-           push ebx
+	   push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -249,13 +245,13 @@ proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
 align 4
 proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
-           push ebx
+	   push ebx
 	   xor eax, eax
 	   xor ebx, ebx
 	   mov ah, byte [bus]
@@ -264,7 +260,7 @@ proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 	   mov bl, byte [reg]
 	   mov ecx, [val]
 	   call pci_write_reg
-           pop ebx
+	   pop ebx
 	   ret
 endp
 
@@ -363,30 +359,30 @@ endp
 align 4
 proc reg_service stdcall, name:dword, handler:dword
 
-           xor eax, eax
+	   xor eax, eax
 
-           cmp [name], eax
-           je .fail
+	   cmp [name], eax
+	   je .fail
 
-           cmp [handler], eax
-           je .fail
+	   cmp [handler], eax
+	   je .fail
 
-           push ebx
+	   push ebx
 	   mov eax, SRV_SIZE
 	   call malloc		 ;call alloc_service
-           pop ebx
+	   pop ebx
 	   test eax, eax
 	   jz .fail
 
-           push ebx
-           push esi
-           push edi
+	   push ebx
+	   push esi
+	   push edi
 	   mov edi, eax
-           mov esi, [name]
+	   mov esi, [name]
 	   mov ecx, 16/4
 	   rep movsd
-           pop edi
-           pop esi
+	   pop edi
+	   pop esi
 
 	   mov [eax+SRV.magic], ' SRV'
 	   mov [eax+SRV.size], SRV_SIZE
@@ -398,13 +394,13 @@ proc reg_service stdcall, name:dword, handler:dword
 	   mov [ebx+SRV.fd], eax
 	   mov [edx+SRV.bk], eax
 
-           mov ecx, [handler]
+	   mov ecx, [handler]
 	   mov [eax+SRV.srv_proc], ecx
-           pop ebx
-           ret
+	   pop ebx
+	   ret
 .fail:
 	   xor eax, eax
-           ret
+	   ret
 endp
 
 align 4
@@ -1051,12 +1047,12 @@ proc stop_all_services
 	   cmp [edx+SRV.size], SRV_SIZE
 	   jne .next
 
-           mov ebx, [edx+SRV.entry]
+	   mov ebx, [edx+SRV.entry]
 	   mov edx, [edx+SRV.fd]
-           test ebx, ebx
-           jz .next
+	   test ebx, ebx
+	   jz .next
 
-           push edx
+	   push edx
 	   stdcall ebx, dword -1
 	   pop edx
 	   jmp .next
