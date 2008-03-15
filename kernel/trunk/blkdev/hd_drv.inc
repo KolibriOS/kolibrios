@@ -910,7 +910,8 @@ int13_call:
         popad
 @@:
         mov     word [ebx+v86_regs.esi], 510h
-        mov     word [ebx+v86_regs.esp], 900h
+        mov     word [ebx+v86_regs.ss], 9000h
+        mov     word [ebx+v86_regs.esp], 0C000h
         mov     word [ebx+v86_regs.eip], 500h
         mov     [ebx+v86_regs.eflags], 20200h
         mov     esi, [sys_v86_machine]

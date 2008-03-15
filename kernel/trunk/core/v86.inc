@@ -216,6 +216,8 @@ init_sys_v86:
         mov     byte [BOOT_VAR + 0x505], 0xF4
         mov     esi, eax
         mov     ebx, [eax+V86_machine.pagedir]
+        mov     dword [ebx+0x9B*4+0x1000], 0x9B000 or 111b
+        mov     dword [ebx+0x9B*4+0x1800], OS_BASE + 0x9B000
         mov     dword [ebx+0x9C*4+0x1000], 0x9C000 or 111b
         mov     dword [ebx+0x9C*4+0x1800], OS_BASE + 0x9C000
         mov     dword [ebx+0x9D*4+0x1000], 0x9D000 or 111b
@@ -549,6 +551,38 @@ v86_exc_c:
         inc     word [esp+v86_regs.eip]
         popad
         iretd
+.handle_pushfd:
+        cmp     word [esp+v86_regs.esp], 4
+        jae     @f
+        mov     bl, 12          ; #SS exception
+        jmp     .nogp
+@@:
+        movzx   edx, word [esp+v86_regs.ss]
+        shl     edx, 4
+        movzx   eax, word [esp+v86_regs.esp]
+        sub     eax, 4
+        add     edx, eax
+        mov     eax, edx
+        mov     esi, [esp+v86_regs.size+10h+4]
+        call    v86_get_lin_addr
+        cmp     eax, 0x1000
+        jae     @f
+        mov     bl, 14          ; #PF exception
+        jmp     .nogp
+@@:
+        lea     eax, [edx+3]
+        call    v86_get_lin_addr
+        cmp     eax, 0x1000
+        jae     @f
+        mov     bl, 14          ; #PF exception
+        jmp     .nogp
+@@:
+        sub     word [esp+v86_regs.esp], 4
+        movzx   eax, word [esp+v86_regs.eflags]
+        mov     [edx], eax
+        add     word [esp+v86_regs.eip], 2
+        popad
+        iretd
 .handle_popf:
         cmp     word [esp+v86_regs.esp], 0xFFFF
         jnz     @f
@@ -578,6 +612,37 @@ v86_exc_c:
         mov     word [esp+v86_regs.eflags], ax
         add     word [esp+v86_regs.esp], 2
         inc     word [esp+v86_regs.eip]
+        popad
+        iretd
+.handle_popfd:
+        cmp     word [esp+v86_regs.esp], 0x10000 - 4
+        jbe     @f
+        mov     bl, 12
+        jmp     .nogp
+@@:
+        movzx   edx, word [esp+v86_regs.ss]
+        shl     edx, 4
+        movzx   eax, word [esp+v86_regs.esp]
+        add     edx, eax
+        mov     eax, edx
+        mov     esi, [esp+v86_regs.size+10h+4]
+        call    v86_get_lin_addr
+        cmp     eax, 0x1000
+        jae     @f
+        mov     bl, 14
+        jmp     .nogp
+@@:
+        lea     eax, [edx+3]
+        call    v86_get_lin_addr
+        cmp     eax, 0x1000
+        jae     @f
+        mov     bl, 14
+        jmp     .nogp
+@@:
+        mov     eax, [edx]
+        mov     word [esp+v86_regs.eflags], ax
+        add     word [esp+v86_regs.esp], 4
+        add     word [esp+v86_regs.eip], 2
         popad
         iretd
 .handle_cli:
@@ -616,6 +681,10 @@ v86_exc_c:
         cmp     word [esp+v86_regs.eip], 0xFFFF
         jae     .nogp
         lodsb
+        cmp     al, 0x9C
+        jz      .handle_pushfd
+        cmp     al, 0x9D
+        jz      .handle_popfd
         cmp     al, 0xEF
         jz      .handle_out_dword
         cmp     al, 0xED
