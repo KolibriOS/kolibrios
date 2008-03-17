@@ -10,7 +10,7 @@ KNOWN BUGS:
 
 HISTORY:
 	* 0.5.4:
-		- output file extension is fixed
+		- output file extension was fixed
 	* 0.5.3:
 		- output dir fixed
 	* 0.5.2:
