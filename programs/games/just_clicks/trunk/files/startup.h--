@@ -1,0 +1,1046 @@
+/*-----------------18.02.02 23:55-------------------
+  Этот файл использует компилятор для генерации начального кода программы.
+ Файл должен находиться в директории вместе с остальными заголовочными файлами.
+ Включать этот файл в свою программу директивой ?include нельзя.
+ --------------------------------------------------*/
+
+:void CLEARPOSTAREA( (E)AX )
+{
+	(E)DI = # __startpostvar;
+	(E)CX = # __sizepostarea;
+	$rep $stosb
+}
+
+?ifdef __OBJ__
+#ifndef __FLAT__
+	?ifdef __argc
+		?define __SIZEBUFCOMSTR 128+80
+	?else
+		?ifdef __parsecommandline
+			?define __SIZEBUFCOMSTR 128
+		?endif
+	?endif
+	?ifdef __parsecommandline
+		word __numparam;
+		byte __bufcomstr[__SIZEBUFCOMSTR];
+	?endif
+	?ifdef __atexit
+		word __numatexit;
+		word __atexitproc[16];
+	?endif
+	#ifdef __environ
+		int environ;
+	#endif
+
+__startupproc()
+inline
+{
+	?ifdef __resizemem
+		AX=SS;
+		BX=ES;
+		AX-=BX;
+		BX=SP-1>>4+AX+1;
+		AH=0x4a;
+		$int 0x21
+	?endif
+	#ifdef __environ
+		environ=ESWORD[0x2C];
+	#endif
+	$CLD
+	?ifdef __parsecommandline
+		DI=#__bufcomstr;
+		DX=0;
+		?ifdef __argc
+			AH=0x30;
+			$int 0x21
+			IF(AL<3){
+				AX=0x20;
+				$stosw
+			}
+			ELSE{
+				$push DS
+				DS=ESWORD[0x2C];
+				SI=0;
+				do{
+					$lodsw
+					SI--;
+				}while(AX!=0);
+				$lodsw
+				$lodsb
+				ES=SS;
+				do{
+					$lodsb
+					$stosb
+				}while(AL!=0);
+				$pop DS
+			}
+			DX++;
+		?else
+			ES=SS;
+		?endif
+		SI=0x81;
+NEXTPAR:
+		BL=1;
+		do{
+			$lodsb
+		}while(AL==0x20);
+NEXTCHAR:
+		IF(AL!=13){
+			IF(AL!=0x20){
+				$stosb
+				$lodsb
+				DL+=BL;
+				BX=0;
+				GOTO NEXTCHAR;
+			}
+			AL=0;
+			$stosb
+			GOTO NEXTPAR;
+		}
+		ESWORD[#__numparam]=DX;
+		AX=0;
+		$stosw
+	?else
+		$push SS
+		$pop ES
+	?endif
+	$push SS
+	$pop DS
+	?ifdef __atexit
+		?ifndef __parsecommandline
+			AX=0;
+		?endif
+		__numatexit=AX;
+	?endif
+	main();
+	?ifdef __atexit
+__startexit:
+		$push AX
+		for(;;){
+			BX=__numatexit;
+			BX--;
+			IF(MINUSFLAG)BREAK;
+			__numatexit=BX;
+			BX+=BX;
+			$call NEAR __atexitproc[BX]
+		}
+		$pop AX
+	?endif
+	AH=0x4C;
+	$int 0x21
+}
+#endif //__FLAT__
+?else	//__OBJ__
+
+#ifdef __COM__
+//файл типа *.com
+	#ifdef __argc
+		#define __SIZEBUFCOMSTR 128+80
+	#else
+		#ifdef __parsecommandline
+			#define __SIZEBUFCOMSTR 128
+		#endif	//__parsecommandline
+	#endif	//__argc
+	#ifdef __parsecommandline
+		word __numparam;
+		byte __bufcomstr[__SIZEBUFCOMSTR];
+	#endif	//__parsecommandline
+	#ifdef __atexit
+		word __numatexit;
+		word __atexitproc[16];
+	#endif	//__atexit
+	#ifdef __environ
+		int environ;
+	#endif
+
+__startupproc()
+inline
+{
+	//инициализация com-symbios
+	#ifdef __comsymbios
+		#ifdef cpu==0
+			$push AX,BX,CX,DX,DI,SI,BP,ES;
+		#else
+			$pusha
+			$push ES
+		#endif
+		main();
+		BX=__STARTPTR;
+		DSWORD[BX]=__STARTVALW;
+		DSBYTE[BX+2]=__STARTVALB;
+		$pop ES
+		#ifdef cpu==0
+			$pop BP,SI,DI,DX,CX,BX,AX;
+		#else
+			$popa
+		#endif
+		goto __STARTPTR;
+		#undef __STARTPTR
+		#undef __STARTVALW
+		#undef __STARTVALB
+		#undef __comsymbios
+	#else
+	//остальные com-файлы
+		#ifdef __clearpost
+			@CLEARPOSTAREA(0);
+		#endif	//__clearpost
+		#ifdef __resizemem
+			$pop AX
+			$db 0xbc
+__stackval:
+			$dw 0
+			$push AX
+			AH=0x4a;
+			$db 0xbb
+__stackseg:
+			$dw 0
+			$int 0x21
+			$DB 0x73
+			#ifndef __resizemessage
+				#ifdef __ctrl_c
+					$DB 2
+				#else
+					$DB 1
+				#endif	//__ctrl_c
+			#else
+				#ifdef __ctrl_c
+					$DB 9
+				#else
+					$DB 8
+				#endif	//__ctrl_c
+				AH=9;
+				DX=__RESIZEMESSAGE;
+				$int 0x21
+			#endif	//__resizemessage
+			$ret
+		#endif	//__resizemem
+		#ifdef __ctrl_c
+			#ifndef __resizemem
+				GOTO SKIPIRET;
+			#endif	//__resizemem
+			$iret
+SKIPIRET:
+			$push DS
+			DS=0;
+			DSWORD[0x8c]=SKIPIRET-1;
+			DSWORD[0x8e]=CS;
+			$pop DS
+		#endif	//__ctrl_c
+		#ifdef __environ
+			environ=DSWORD[0x2C];
+		#endif
+		#ifdef __parsecommandline
+//			ES=SS;
+			DI=#__bufcomstr;
+			DX=0;
+			#ifdef __argc
+				AH=0x30;
+				$int 0x21
+				IF(AL<3){
+					AX=0x20;
+					$stosw
+				}
+				ELSE{
+					$push DS
+					DS=DSWORD[0x2C];
+					SI=0;
+					do{
+						$lodsw
+						SI--;
+					}while(AX!=0);
+					$lodsw
+					$lodsb
+					do{
+						$lodsb
+						$stosb
+					}while(AL!=0);
+					$pop DS
+				}
+				DX++;
+			#endif
+			SI=0x81;
+NEXTPAR:
+			BL=1;
+			do{
+				$lodsb
+			}while(AL==0x20);
+NEXTCHAR:
+			IF(AL!=13){
+				IF(AL!=0x20){
+					$stosb
+					$lodsb
+					DL+=BL;
+					BX=0;
+					GOTO NEXTCHAR;
+				}
+				AL=0;
+				$stosb
+				GOTO NEXTPAR;
+			}
+			__numparam=DX;
+			AX=0;
+			$stosw
+		#endif
+		#ifdef __atexit
+			#ifndef __parsecommandline
+				AX=0;
+			#endif
+			__numatexit=AX;
+			main();
+__startexit:
+			for(;;){
+				BX=__numatexit;
+				BX--;
+				IF(MINUSFLAG)BREAK;
+				__numatexit=BX;
+				BX+=BX;
+				$call NEAR __atexitproc[BX]
+			}
+			$ret
+		#else
+			#ifndef __nonejmptomain
+				#ifdef __shortjmp
+					GOTO main;
+				#else
+					goto main;
+				#endif
+			#endif
+		#endif
+	#endif	//__comsymbios
+}
+#endif	//__COM__
+
+//файл типа *.exe модель small
+?ifdef __EXE__
+	?ifdef __argc
+		?define __SIZEBUFCOMSTR 128+80
+	?else
+		?ifdef __parsecommandline
+			?define __SIZEBUFCOMSTR 128
+		?endif
+	?endif
+	?ifdef __parsecommandline
+		word __numparam;
+		byte __bufcomstr[__SIZEBUFCOMSTR];
+	?endif
+	?ifdef __atexit
+		word __numatexit;
+		word __atexitproc[16];
+	?endif
+	#ifdef __environ
+		int environ;
+	#endif
+
+__startupproc()
+inline
+{
+	$CLD
+	#ifdef __environ
+		environ=ESWORD[0x2C];
+	#endif
+	?ifdef __parsecommandline
+		DI=#__bufcomstr;
+		DX=0;
+		?ifdef __argc
+			AH=0x30;
+			$int 0x21
+			IF(AL<3){
+				AX=0x20;
+				$stosw
+			}
+			ELSE{
+				$push DS
+				DS=ESWORD[0x2C];
+				SI=0;
+				do{
+					$lodsw
+					SI--;
+				}while(AX!=0);
+				$lodsw
+				$lodsb
+				ES=SS;
+				do{
+					$lodsb
+					$stosb
+				}while(AL!=0);
+				$pop DS
+			}
+			DX++;
+		?else
+			ES=SS;
+		?endif
+		SI=0x81;
+NEXTPAR:
+		BL=1;
+		do{
+			$lodsb
+		}while(AL==0x20);
+NEXTCHAR:
+		IF(AL!=13){
+			IF(AL!=0x20){
+				$stosb
+				$lodsb
+				DL+=BL;
+				BX=0;
+				GOTO NEXTCHAR;
+			}
+			AL=0;
+			$stosb
+			GOTO NEXTPAR;
+		}
+		ESWORD[#__numparam]=DX;
+		AX=0;
+		$stosw
+	?else
+		$push SS
+		$pop ES
+	?endif
+	$push SS
+	$pop DS
+	#ifdef __clearpost
+		@CLEARPOSTAREA(0);
+	#endif	//__clearpost
+	?ifdef __atexit
+		?ifndef __parsecommandline
+			#ifndef __clearpost
+				AX=0;
+			#endif	//__clearpost
+		?endif
+		__numatexit=AX;
+	?endif
+	main();
+	?ifdef __atexit
+__startexit:
+		$push AX
+		for(;;){
+			BX=__numatexit;
+			BX--;
+			IF(MINUSFLAG)BREAK;
+			__numatexit=BX;
+			BX+=BX;
+			$call NEAR __atexitproc[BX]
+		}
+		$pop AX
+	?endif
+	AH=0x4C;
+	$int 0x21
+}
+?endif	//__EXE__
+
+//файл типа *.exe модель tiny
+?ifdef __TEXE__
+	?ifdef __argc
+		?define __SIZEBUFCOMSTR 128+80
+	?else
+		?ifdef __parsecommandline
+			?define __SIZEBUFCOMSTR 128
+		?endif
+	?endif
+	?ifdef __parsecommandline
+		word __numparam;
+		byte __bufcomstr[__SIZEBUFCOMSTR];
+	?endif
+	?ifdef __atexit
+		word __numatexit;
+		word __atexitproc[16];
+	?endif
+	#ifdef __environ
+		int environ;
+	#endif
+
+__startupproc()
+inline
+{
+	$cld
+	#ifdef __clearpost
+		@CLEARPOSTAREA(0);
+	#endif	//__clearpost
+	?ifdef __resizemem
+		#ifdef __clearpost
+			$push AX
+		#else
+			?ifdef cpu > 1
+				$push 0
+			?else
+				AX=0;
+				$push AX
+			?endif
+		#endif	//__clearpost
+	?endif
+	?ifdef __ctrl_c
+		GOTO SKIPIRET;
+		$iret
+SKIPIRET:
+		ES=0;
+		ESWORD[0x8c]=SKIPIRET-1;
+		ESWORD[0x8e]=CS;
+	?endif	//__ctrl_c
+	#ifdef __environ
+		environ=DSWORD[0x2C];
+	#endif
+	?ifdef __parsecommandline
+		ES=SS;
+		DI=#__bufcomstr;
+		DX=0;
+		?ifdef __argc
+			AH=0x30;
+			$int 0x21
+			IF(AL<3){
+				AX=0x20;
+				$stosw
+			}
+			ELSE{
+				$push DS
+				DS=DSWORD[0x2C];
+				SI=0;
+				do{
+					$lodsw
+					SI--;
+				}while(AX!=0);
+				$lodsw
+				$lodsb
+				do{
+					$lodsb
+					$stosb
+				}while(AL!=0);
+				$pop DS
+			}
+			DX++;
+		?endif
+		SI=0x81;
+NEXTPAR:
+		BL=1;
+		do{
+			$lodsb
+		}while(AL==0x20);
+NEXTCHAR:
+		IF(AL!=13){
+			IF(AL!=0x20){
+				$stosb
+				$lodsb
+				DL+=BL;
+				BX=0;
+				GOTO NEXTCHAR;
+			}
+			AL=0;
+			$stosb
+			GOTO NEXTPAR;
+		}
+		__numparam=DX;
+		AX=0;
+		$stosw
+	?endif
+	?ifdef __atexit
+		?ifndef __parsecommandline
+			AX=0;
+		?endif
+		__numatexit=AX;
+		main();
+__startexit:
+		$push AX
+		for(;;){
+			BX=__numatexit;
+			BX--;
+			IF(MINUSFLAG)BREAK;
+			__numatexit=BX;
+			BX+=BX;
+			$call NEAR __atexitproc[BX]
+		}
+		$pop AX
+		AH=0x4C;
+		$int 0x21
+	?else
+		?ifdef __shortjmp
+			GOTO main;
+		?else
+			goto main;
+		?endif
+	?endif
+}
+?endif	//__TEXE__
+#endif	//__OBJ__
+
+//файл типа *.exe модель DOS 32
+?ifdef __DOS32__
+	?ifdef __argc
+		?define __SIZEBUFCOMSTR 128+80
+	?else
+		?ifdef __parsecommandline
+			?define __SIZEBUFCOMSTR 128
+		?endif
+	?endif
+	?ifdef __parsecommandline
+		dword __numparam;
+		byte __bufcomstr[__SIZEBUFCOMSTR];
+	?endif
+	?ifdef __atexit
+		dword __numatexit;
+		dword __atexitproc[16];
+	?endif
+	#ifdef __environ
+		int environ;
+	#endif
+
+__startupproc()
+inline
+{
+	#ifdef __DPMIonly
+#code32 FALSE
+		#ifdef __OBJ__
+			#ifdef __resizemem
+				AX=SS;
+				BX=ES;
+				AX-=BX;
+				BX=SP-1>>4+AX+1;
+				AH=0x4a;
+				$int 0x21
+			#endif
+		#endif
+		$CLD
+		$push CS
+		$pop DS
+		AX=0x1687;
+		$INT 0x2F;
+		BL>>=1;
+		IF(!CARRYFLAG)||(AX)GOTO DPMI_ERROR;
+		$push ES,DI
+		EAX=CS;
+		BX=SS;
+		BX-=AX;
+		DSWORD[#__startupproc]=BX;
+		EAX=EAX*16;
+		DSDWORD[#GDT_CODE32+2]|=EAX;
+		BX=SI;
+		AH=0x48;
+		$INT 0x21;
+		ES=AX;
+		AX=1;
+		$call SSDWORD[ESP]
+		IF(CARRYFLAG){
+DPMI_ERROR:
+			?ifdef __resizemessage
+				AH=9;
+				DX=__RESIZEMESSAGE;
+				$int 0x21
+			?endif	//__resizemessage
+			AL=-1;
+			GOTO EXI;
+		}
+		ES=DS;
+		EDI=#GDT_CODE32;
+		SI=SP;
+		DX=2;
+		loop(DX){
+			AX=0;
+			CX=1;
+			$INT 0x31 //ALLOCATE LDT DESCRIPTOR
+			DSWORD[SI]=AX; // SAVE SELECTOR
+			BX><AX;
+			AX=0xC;
+			$INT 0x31 // SET DESCRIPTOR
+			DSBYTE[DI+5]=0xF2;
+			SI++;
+			SI++;
+		}
+		AX=DSWORD[SI-2];
+		DS=AX;
+		ES=AX;
+		SS=AX;
+		$push dword #RETR
+		$opsize
+		$retf
+RETR:
+#code32 TRUE
+		EAX=DSWORD[#__startupproc]<<4;
+		ESP+=EAX;
+		#ifdef __clearpost
+			@CLEARPOSTAREA(0);
+		#endif	//__clearpost
+		#ifdef __atexit
+			#ifndef __clearpost
+				EAX=0;
+			#endif	//__clearpost
+			__numatexit=EAX;
+		#endif
+		main();
+__startexit:
+		#ifdef __atexit
+			$push EAX
+			for(;;){
+				EBX=__numatexit;
+				EBX--;
+				IF(MINUSFLAG)BREAK;
+				__numatexit=EBX;
+				$call DSDWORD[#__atexitproc+EBX*4]
+			}
+			$pop EAX
+		#endif
+EXI:
+		AH=0x4C;
+		$int 0x21
+	#else //__DPMIonly
+		#ifdef __useDOS4GW
+			GOTO LABL1;
+			$db "WATCOM"
+LABL1:
+			#undef __useDOS4GW
+		#endif	//__useDOS4GW
+		#ifndef __nonejmptomain
+			AX=0x901;
+			$int 0x31
+			$CLD
+			#ifdef __environ
+				environ=ESWORD[0x2C];
+			#endif
+			#ifdef __parsecommandline
+				DS><ES;
+				EDI=#__bufcomstr;
+				EDX=0;
+				#ifdef __argc
+					$push DS
+					DS=DSWORD[0x2C];
+					ESI=0;
+					do{
+						$lodsw
+						ESI--;
+					}while(AX!=0);
+					ESI+=3;
+					do{
+						$lodsb
+						$stosb
+					}while(AL!=0);
+					EDX++;
+					$pop DS
+				#endif
+				ESI=0x81;
+				for(;;){
+					ECX=0;
+					BL=1;
+					do{
+						$lodsb
+					}while(AL==0x20);
+					IF(AL=='"'){
+						ECX++;
+						$lodsb
+					}
+LAB2:
+					IF(AL==13)BREAK;
+					IF(ECX==0){
+						IF(AL==' ')GOTO LAB4;
+					}
+					ELSE IF(AL=='"')GOTO LAB4;
+					$stosb
+					$lodsb
+					DL+=BL;
+					EBX=0;
+					GOTO LAB2;
+LAB4:
+					AL=0;
+					$stosb
+				}
+				EAX=0;
+				$stosw
+				DS=ES;
+				DSBYTE[#__numparam]=DL;
+			#endif
+			#ifdef __clearpost
+				@CLEARPOSTAREA(0);
+			#endif	//__clearpost
+			main();
+__startexit:
+			#ifdef __atexit
+				$push EAX
+				for(;;){
+					EBX=__numatexit;
+					EBX--;
+					IF(MINUSFLAG)BREAK;
+					__numatexit=EBX;
+					$call DSDWORD[#__atexitproc+EBX*4]
+				}
+				$pop EAX
+			#endif
+			AH=0x4C;
+			$int 0x21
+		#endif	//__nonejmptomain
+	#endif //__DPMIonly
+}
+
+#ifdef __DPMIonly
+word GDT_CODE32={-1,0,0xFA00,0xCF};
+#undef GDT_CODE32
+#undef __DPMIonly
+#endif
+
+#endif	//__DOS32__
+
+#ifdef __TLS__
+//файл типа *.exe под Windows
+	?ifndef __DLL__
+		dword hThisInst;
+		#ifdef __CONSOLE__
+			dword hStdOut;
+		#endif
+		?ifdef __parsecommandline
+			?define __SIZEBUFCOMSTR 256
+			dword __numparam;
+			byte __bufcomstr[__SIZEBUFCOMSTR];
+		?else
+			dword lpszArgs;
+		?endif
+		?ifdef __atexit
+			dword __numatexit;
+			dword __atexitproc[16];
+		?endif
+		#ifdef __environ
+			extern WINAPI "KERNEL32.dll"{
+				int GetEnvironmentStringsA();
+			}
+			int environ;
+		#endif
+
+		extern WINAPI "KERNEL32.dll"
+		{
+			dword GetModuleHandleA();
+			void  ExitProcess();
+			dword GetCommandLineA();
+			dword GetStdHandle();
+		}
+	?endif //__DLL__
+
+__startupproc()
+inline
+{
+	?ifdef __DLL__
+		EAX=1;
+		$ret 12
+	?else
+		#ifdef __clearpost
+			@CLEARPOSTAREA(0);
+			hThisInst=GetModuleHandleA(EAX);
+		#else
+			hThisInst=GetModuleHandleA(0);
+		#endif	//__clearpost
+		#ifdef __CONSOLE__
+			hStdOut=GetStdHandle(-11);
+		#endif
+		GetCommandLineA();
+		$cld
+		?ifdef __parsecommandline
+			EDI=#__bufcomstr;
+			EDX=0;
+			ESI><EAX;
+			for(;;){
+				ECX=0;
+				BL=1;
+				do{
+					$lodsb
+				}while(AL==0x20);
+				IF(AL=='"'){
+					ECX++;
+					$lodsb
+				}
+LAB2:
+				IF(AL==0)BREAK;
+				IF(ECX==0){
+					IF(AL==' ')GOTO LAB4;
+				}
+				ELSE IF(AL=='"')GOTO LAB4;
+				$stosb
+				$lodsb
+				DL+=BL;
+				EBX=0;
+				GOTO LAB2;
+LAB4:
+				AL=0;
+				$stosb
+			}
+			EAX=0;
+			$stosw
+			__numparam=EDX;
+		?else
+			lpszArgs=EAX;
+		?endif
+		#ifdef __environ;
+			environ=GetEnvironmentStringsA();
+		#endif
+		main();
+__startexit:
+		$push EAX
+		?ifdef __atexit
+			for(;;){
+				EBX=__numatexit;
+				EBX--;
+				IF(MINUSFLAG)BREAK;
+				__numatexit=EBX;
+				$call DSDWORD[#__atexitproc+EBX*4]
+			}
+		?endif
+ 		ExitProcess();
+	?endif
+}
+?endif	//__TLS__
+
+//генерация ROM
+?ifdef __ROM__
+	?ifdef __SMALL__
+		dword bakstack=0;
+	?endif
+
+__startupproc()
+inline
+{
+	$DW 0xAA55
+	$DB __ROMSIZE/512
+	?ifdef __SMALL__
+		ES=__DATASEG;
+		DI=0;
+		$cld
+		$cli
+		$db 0xB8	//mov ax,stackstart
+__stackval:
+		$dw 0
+		AX><SP;
+		$stosw
+		AX=SS;
+		$stosw
+		AX=ES;
+		SS=AX;
+		$sti
+		$db 0xBE	//mov si,startdata
+__startdata:
+		$dw 0
+		DS=CS;
+		$db 0xBE	//mov cx,sizedata/2
+__sizedata:
+		$dw 0
+		$rep $movsw
+	?else
+		AX=__DATASEG;
+	?endif
+	DS=AX;
+	main();
+	?ifdef __SMALL__
+		$cli
+		SP=DSWORD[0];
+		SS=DSWORD[2];
+		$sti
+	?endif
+	$retf
+	?undef __ROMSIZE
+	?undef __DATASEG
+}
+?endif
+
+//начальный код для драйверов устройств
+?ifdef __SYS__
+__startupproc()
+inline
+{
+	$DD 0xFFFFFFFF
+	$DW __SYSATRIB
+	$DD 0x210016;
+	$DB __SYSNAME
+	$DD 0
+	$DB 0x2e,0x8c,0x06,0x14,0x00,0x2e,0x89,0x1e,0x12,0x00,0xcb,0xfc,0x1e,0x06;
+	?ifdef cpu!=0
+		$pusha
+	?else
+		$push AX,BX,CX,DX,DI,SI
+	?endif
+	$push CS
+	$pop DS
+	?ifdef __SYSSTACK
+		$cli
+		$DW 0x2689
+		$DW #OLDSP
+		$DW 0x168c
+		$DW #OLDSP+2
+		SS=CS;
+		SP=#OLDSP+__SYSSTACK+4;
+		$sti
+	?endif
+	$db 0x8B,0x1E,0x12,0x00	//mov bx,[0x12]
+	$db 0x8E,0x06,0x14,0x00	//mov es,[0x14]
+	$DB 0x26,0x8a,0x47,0x02,0xd0,0xe0,0xb4,0x00;
+	DI=#__listcom;
+	$DB 0x01,0xc7,0xff,0x15,0x8b,0x1e,0x12,0x00,0x8e,0x06,0x14,0x00
+	$DB 0x0D,0x00,0x01	//or ax,0x100
+	$db 0x26,0x89,0x47,0x03	//mov es:[bx+3],ax
+	?ifdef __SYSSTACK
+		$cli
+		$DW 0x168e;
+		$DW #OLDSP+2
+		$DW 0x268b;
+		$DW #OLDSP
+		$sti
+	?endif
+	?ifdef cpu!=0
+		$popa
+	?else
+		$pop SI,DI,DX,CX,BX,AX
+	?endif
+	$pop ES,DS
+	$retf
+	?ifdef __SYSSTACK
+		?align
+OLDSP: $DD 0
+		$DB __SYSSTACK dup 0
+	?endif
+__listcom:
+	$DW __SYSNUMCOM dup 0
+}
+
+NONE()
+{
+	AX=0x100;
+	?undef __SYSATRIB
+	?undef __SYSNAME
+	?ifdef __SYSSTACK
+		?undef __SYSSTACK
+	?endif
+	?ifdef __SYSNUMCOM
+		?undef __SYSNUMCOM
+	?endif
+}
+?endif	//__SYS__
+
+//убрать ненужные константы
+?ifdef __argc
+	?undef __argc
+?endif
+
+?ifdef __resizemem
+	?undef __resizemem
+?endif
+
+?ifdef __ctrl_c
+	?undef __ctrl_c
+?endif
+
+?ifdef __parsecommandline
+	?undef __parsecommandline
+?endif
+
+?ifdef __atexit
+	?undef __atexit
+?endif
+
+?ifdef __shortjmp
+	?undef __sortjmp
+?endif
+
+?ifdef __nonejmptomain
+	?undef __nonejmptomain
+?endif
+
+#ifdef __environ
+	#undef __environ
+#endif
+
+#ifdef __clearpost
+	#undef __clearpost
+#endif
+
+#ifdef __SIZEBUFCOMSTR
+	#undef __SIZEBUFCOMSTR
+#endif

@@ -1,0 +1,34 @@
+#include "imgs\logo.cpp"
+
+void authors()
+{
+	WindowRedrawStatus(1);
+	_HH:
+	DefineAndDrawWindow(500,200,181,256,0x04,0x00EFEBEF,0,0,0);
+     DrawTitle("About Eolite");
+	DrawBar(5,0,172,50,0x8494C4); //голубое сзади
+	PutImage(#logo,85,85,48,7);
+		WriteText(38,100,0x80,0xBF40BF,"Eolite v0.84 beta2",0);
+		WriteText(68,120,0x80,0,"Authors:",0); 
+		WriteText(44,130,0x80,0,"Leency & Veliant",0); 
+		WriteText(50,140,0x80,0,"KolibriOS Team",0); 
+		WriteText(26,160,0x80,0,"Made using C-- in 2008",0);
+		WriteText(23,170,0x80,0,"Visit www.kolibrios.org",0);
+	DrawFlatButton(90,190,70,22,2,0x00D7D7D7);
+	WriteText(111,198,0x80,0,"Close",0);
+	WindowRedrawStatus(2);
+	loop()
+	{
+		switch(WaitEvent())
+		{
+			CASE evButton: ExitProcess();
+			CASE evReDraw:
+			GOTO _HH;
+			break;
+		}
+	}
+	ExitProcess();
+}
+
+
+
