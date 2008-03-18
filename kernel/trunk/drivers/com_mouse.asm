@@ -3,6 +3,8 @@
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved. ;;
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;                                                              ;;
+;; Includes source code by Kulakov Vladimir Gennadievich.       ;;
+;; Modified by Mario79 and Rus.                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;driver sceletone
@@ -66,7 +68,7 @@ end if
 	mov	al, 1
 	out	dx, al
 
-	stdcall AttachIntHandler, 4, irq4_handler
+	stdcall AttachIntHandler, 4, irq4_handler, dword 0
 if DEBUG
 	cmp	eax, 0
 	jne	.label1
@@ -99,7 +101,7 @@ end if
 	;mov     [com2_mouse_detected],1
 	;mov     [irq_owner+3*4], 1      ; IRQ3 owner is System
 
-	stdcall AttachIntHandler, 3, irq3_handler
+	stdcall AttachIntHandler, 3, irq3_handler, dword 0
 
 	mov	eax, 0
 	mov	ebx, 0x2F8
@@ -358,7 +360,7 @@ COMPortBaseAddr dw 3F8h
 
 version      dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
-my_service   db 'MY_SERVICE',0	;max 16 chars include zero
+my_service   db 'COM_Mouse',0  ;max 16 chars include zero
 
 if DEBUG
 msgInit 		     db   'Preved bugoga!',13,10,0

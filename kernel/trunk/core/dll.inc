@@ -14,7 +14,7 @@ DRV_CURRENT  equ  5  ;current drivers model version
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
 
 align 4
-proc attach_int_handler stdcall, irq:dword, handler:dword
+proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 
 	 mov  ebx, [irq]	;irq num
 	 test ebx, ebx
@@ -25,13 +25,23 @@ proc attach_int_handler stdcall, irq:dword, handler:dword
 	 test eax, eax
 	 jz   .err
 	 cmp  [irq_owner + 4 * ebx], 0
-	 jne  .err
+	 je   @f
+
+	 mov  ecx, [irq_rights + 4 * ebx]	  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
+	 test ecx, ecx
+	 jnz  .err
+
+      @@:
 	 mov  [irq_tab+ebx*4], eax
 
+	 mov  eax, [access_rights]
+	 mov  [irq_rights + 4 * ebx], eax
 	 ;push eax
 	 ;mov  eax, [TASK_BASE]
-	 ;mov  eax, [eax + TASKDATA.pid]
-	 mov  [irq_owner + 4 * ebx], 1
+	 ;mov  eax, [eax + TASKDATA.pid]          ; faster or smaller? :)
+	 call  get_pid
+
+	 mov  [irq_owner + 4 * ebx], eax
 	 ;pop  eax
 
 	 stdcall enable_irq, [irq]
@@ -39,6 +49,28 @@ proc attach_int_handler stdcall, irq:dword, handler:dword
 .err:
 	 xor eax, eax
 	 ret
+endp
+
+uglobal
+
+	irq_rights	 rd	 16
+
+endg
+
+proc get_int_handler stdcall, irq:dword
+
+	mov	eax, [irq]
+
+	cmp	[irq_rights + 4 * eax], dword 1
+	ja	.err
+
+	mov	eax, [irq_tab + 4 * eax]
+	ret
+
+     .err:
+	xor	eax, eax
+	ret
+
 endp
 
 align 4

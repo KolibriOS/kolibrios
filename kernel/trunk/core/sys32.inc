@@ -668,13 +668,18 @@ term9:
     shl   eax, 5
     mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   edi,irq_owner
-    mov   ecx,16
+    xor   ebx, ebx
+    xor   edx, edx
   newirqfree:
-    scasd
+    cmp   [edi + 4 * ebx], eax
     jne   nofreeirq
-    mov   [edi-4],dword 0
+    mov   [edi + 4 * ebx], edx				; remove irq reservation
+    mov   [irq_tab + 4 * ebx], edx			; remove irq handler
+    mov   [irq_rights + 4 * ebx], edx			; set access rights to full access
   nofreeirq:
-    loop   newirqfree
+    inc   ebx
+    cmp   ebx, 16
+    jb	  newirqfree
     popa
 
     pusha		      ; remove all port reservations

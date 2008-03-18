@@ -638,16 +638,6 @@ no_lib_load:
 
 	mov  [pci_access_enabled],1
 
-	;call   detect_devices
-	stdcall load_driver, szPS2MDriver
-	stdcall load_driver, szCOM_MDriver
-
-; SET MOUSE
-
-	mov   esi,boot_setmouse
-	call  boot_log
-	call  setmouse
-
 
 ; SET PRELIMINARY WINDOW STACK AND POSITIONS
 
@@ -747,6 +737,17 @@ no_lib_load:
 ; SET VARIABLES
 
 	call  set_variables
+
+; SET MOUSE
+
+	;call   detect_devices
+	stdcall load_driver, szPS2MDriver
+	stdcall load_driver, szCOM_MDriver
+
+	mov   esi,boot_setmouse
+	call  boot_log
+	call  setmouse
+
 
 ; STACK AND FDC
 
@@ -884,7 +885,7 @@ end if
 
 	loop  ready_for_irqs	     ; flush the queue
 
-	stdcall attach_int_handler, dword 1, irq1
+	stdcall attach_int_handler, dword 1, irq1, dword 0
 
 ;        mov    [dma_hdd],1
 	cmp	[IDEContrRegsBaseAddr], 0
@@ -4205,7 +4206,7 @@ reserve_free_irq:
 
      mov   ebx, [f_irqs + 4 * eax]
 
-     stdcall attach_int_handler, eax, ebx
+     stdcall attach_int_handler, eax, ebx, dword 0
 
      mov   [ecx], edi
 
@@ -5033,6 +5034,9 @@ syscall_getirqowner:			; GetIrqOwner
 
      cmp   ebx,16
      jae   .err
+
+     cmp   [irq_rights + 4 * ebx], dword 2
+     je    .err
 
      mov   eax,[4 * ebx + irq_owner]
      mov   [esp+32],eax
