@@ -9,17 +9,18 @@ uses
   LRLLevels,
   LRLMainMenu,
   LRLHighScores,
-  {LRLEditor,}
+  LRLEditor,
   LRLIntroduction;
 
 const
-  Version: PChar = 'Lode Runner LIVE. Version 1.4b';
+  Version: PChar = 'Lode Runner LIVE. Version 1.5';
 
 
 procedure LRLInitialize;
 begin
   ImagesInitialize;
   KeyboardInitialize;
+  MouseInitialize;
   ScreenMode(1);
   ScreenTitle := Version;
 end;
@@ -72,7 +73,7 @@ begin
   repeat
     LRLSelectItem(MenuSelection);
     if MenuSelection = 1 then LRLGameStart;
-    {if MenuSelection = 2 then LRLEditLevels;}
+    if MenuSelection = 2 then LRLEditLevels;
     if MenuSelection = 3 then LRLShowHighScores;
   until MenuSelection = 4;
 end;

@@ -94,6 +94,7 @@ asm
   movswl %ax, %ecx
   popl  %ebx
   shrl  $16, %eax
+  movswl %ax, %eax
   movl  %ecx, TKosPoint.Y(%ebx)
   movl  %eax, TKosPoint.X(%ebx)
   popl  %ecx
@@ -114,6 +115,7 @@ asm
   movswl %ax, %ecx
   popl  %ebx
   shrl  $16, %eax
+  movswl %ax, %eax
   movl  %ecx, TKosPoint.Y(%ebx)
   movl  %eax, TKosPoint.X(%ebx)
   popl  %ecx

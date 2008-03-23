@@ -17,7 +17,7 @@ implementation
 
 const
   IntroText: array[1..14] of String = (
-    'Lode Runner LIVE. FREEWARE Version 1.4b',
+    'Lode Runner LIVE. FREEWARE Version 1.5',
     'KolibriOS port by bw (Vladimir V. Byrgazov)',
     'Copyright (c) 1995 Aleksey V. Vaneev',
     'Copyright (c) 2008 bw',

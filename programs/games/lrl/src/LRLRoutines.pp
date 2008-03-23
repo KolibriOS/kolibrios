@@ -7,8 +7,8 @@ unit LRLRoutines;
 interface
 
 
-procedure ImagePut(var Screen, ImageBuffer; X, Y: Integer; Winx1, Winy1, Winx2, Winy2: Word);
-procedure ImagePutTransparent(var Screen, ImageBuffer; X, Y: Integer; Winx1, Winy1, Winx2, Winy2: Word);
+procedure ImagePut(var Screen, ImageBuffer; X, Y, WinX1, WinY1, WinX2, WinY2: Integer);
+procedure ImagePutTransparent(var Screen, ImageBuffer; X, Y, WinX1, WinY1, WinX2, WinY2: Integer);
 procedure ImageFill(var ImageBuffer; SizeX, SizeY: Word; Value: Byte);
 function  ImageSizeX(var ImageBuffer): Word;
 function  ImageSizeY(var ImageBuffer): Word;
@@ -17,11 +17,20 @@ procedure ScreenApply(var Buffer);
 procedure ImageClear(var Buffer);
 procedure ScreenMode(Mode: Integer);
 
+function ScanToChar(Code: Word): Char;
 procedure KeyboardInitialize;
 function Keypressed: Boolean;
 function ReadKey: Word;
 procedure KeyboardFlush;
-function ScanToChar(Code: Word): Char;
+
+procedure MouseInitialize;
+function MSMouseInArea(x1, y1, x2, y2: Integer): Boolean;
+function MSMouseDriverExist: Boolean;
+procedure MSMouseGetXY(var x, y: Integer);
+function MSMouseButtonStatusGet: Word;
+function MSMouseButtonWasPressed(Button: Word; var x, y: Integer): Boolean;
+function MSMouseButtonWasReleased(Button: Word; var x, y: Integer): Boolean;
+procedure MSMouseSetXY(x, y: Integer);
 
 procedure Palette256Set(var Palette256);
 procedure Palette256Get(var Palette256);
@@ -39,15 +48,9 @@ function SetInterrupt(Int: Byte; NewAddress: Pointer): Pointer;
 procedure FadeClear;
 procedure FadeTo(pal: Pointer);
 procedure DecompressRepByte(var InArray, OutArray; InArraySize: Word; var OutArraySize: Word);
-function MSMouseInArea(x1, y1, x2, y2: Integer): Boolean;
-function MSMouseDriverExist: Boolean;
-procedure MSMouseGetXY(var x, y: Integer);
-function MSMouseButtonStatusGet: Word;
-function MSMouseButtonWasPressed(Button: Word; var x, y: Integer): Boolean;
-function MSMouseButtonWasReleased(Button: Word; var x, y: Integer): Boolean;
-procedure MSMouseSetXY(x, y: Integer);
-function GetInterrupt(Int: Byte): Pointer;
 
+function GetInterrupt(Int: Byte): Pointer;
+procedure WaitForEvent(Timeout: DWord = 0);
 procedure AssignFile(var AFile: File; AFileName: String);
 function LastDosTick(): Longword;
 
@@ -292,9 +295,9 @@ begin
 end;
 
 
-procedure ImagePut(var Screen, ImageBuffer; X, Y: Integer; WinX1, WinY1, WinX2, WinY2: Word);
+procedure ImagePut(var Screen, ImageBuffer; X, Y, WinX1, WinY1, WinX2, WinY2: Integer);
 var
-  Width, Height: Word;
+  Width, Height: Longint;
   I, J, K: Integer;
   P: Pointer;
 begin
@@ -309,9 +312,9 @@ begin
       if X < WinX1 then
         J := WinX1 - X else
         J := 0;
-      K := Width - J;
-      if WinX1 + K - 1 > WinX2 then
-        K := WinX2 - WinX1 + 1;
+      if X + Width - 1 > WinX2 then
+        K := WinX2 - X - J + 1 else
+        K := Width - J;
       Move((P + J)^, (@Screen + I * BUFFER_WIDTH + X + J)^, K);
     end;
     Inc(P, Width);
@@ -319,9 +322,9 @@ begin
 end;
 
 
-procedure ImagePutTransparent(var Screen, ImageBuffer; X, Y: Integer; Winx1, Winy1, Winx2, Winy2: Word);
+procedure ImagePutTransparent(var Screen, ImageBuffer; X, Y, WinX1, WinY1, WinX2, WinY2: Integer);
 var
-  Width, Height: Word;
+  Width, Height: Longint;
   I, J, K, L: Integer;
   PI, PO: PByte;
 begin
@@ -337,9 +340,9 @@ begin
       if X < WinX1 then
         J := WinX1 - X else
         J := 0;
-      K := Width - J;
-      if WinX1 + K - 1 > WinX2 then
-        K := WinX2 - WinX1 + 1;
+      if X + Width - 1 > WinX2 then
+        K := WinX2 - X - J + 1 else
+        K := Width - J;
 
       Inc(PI, J);
       PO := @Screen + I * BUFFER_WIDTH + X + J;
@@ -478,6 +481,32 @@ end;
 
 
 
+function ScanToChar(Code: Word): Char;
+var
+  I: Word;
+begin
+  for I := Low(ScanToCharTable) to High(ScanToCharTable) do
+  with ScanToCharTable[I] do
+  if Scan = Code then
+  begin
+    if not CapsPressed then
+      if not ShiftDown then
+        Result := CL else
+        Result := CU
+    else
+      if not ShiftDown then
+        if not Caps then
+          Result := CL else
+          Result := CU
+      else
+        if not Caps then
+          Result := CL else
+          Result := CL;
+    Exit;
+  end;
+  Result := #0;
+end;
+
 procedure KeyboardInitialize;
 begin
   kos_setkeyboardmode(1);
@@ -569,31 +598,121 @@ procedure KeyboardFlush;
 begin
 end;
 
-function ScanToChar(Code: Word): Char;
-var
-  I: Word;
+procedure ProcessKeyboard;
 begin
-  for I := Low(ScanToCharTable) to High(ScanToCharTable) do
-  with ScanToCharTable[I] do
-  if Scan = Code then
-  begin
-    if not CapsPressed then
-      if not ShiftDown then
-        Result := CL else
-        Result := CU
-    else
-      if not ShiftDown then
-        if not Caps then
-          Result := CL else
-          Result := CU
-      else
-        if not Caps then
-          Result := CL else
-          Result := CL;
-    Exit;
-  end;
-  Result := #0;
+  LastKeyEvent := TranslateKey(kos_getkey());
 end;
+
+
+
+const
+  MK_LBUTTON = 1;
+  MK_RBUTTON = 2;
+  MK_MBUTTON = 4;
+  MouseButtonsCount = 3;
+
+var
+  MouseButtonsState   : DWord;
+  MouseButtonsPressed : array[1..MouseButtonsCount] of DWord;
+  MouseButtonsReleased: array[1..MouseButtonsCount] of DWord;
+
+
+procedure ProcessMouse;
+var
+  I: Longint;
+  Buttons, ButtonMask: DWord;
+  NowPressed, WasPressed: Boolean;
+begin
+  Buttons := kos_getmousebuttons();
+
+  for I := 1 to MouseButtonsCount do
+  begin
+    ButtonMask := 1 shl (I - 1);
+    NowPressed := (Buttons and ButtonMask) <> 0;
+    WasPressed := (MouseButtonsState and ButtonMask) <> 0;
+
+    if NowPressed and not WasPressed then Inc(MouseButtonsPressed[I]) else
+    if not NowPressed and WasPressed then Inc(MouseButtonsReleased[I]);
+  end;
+  
+  MouseButtonsState := Buttons;
+end;
+
+procedure MouseInitialize;
+var
+  I: Longint;
+begin
+  MouseButtonsState := kos_getmousebuttons();
+  for I := 1 to MouseButtonsCount do
+  begin
+    MouseButtonsPressed[I]  := 0;
+    MouseButtonsReleased[I] := 0;
+  end;
+  ProcessMouse;
+end;
+
+function MSMouseInArea(x1, y1, x2, y2: Integer): Boolean;
+var
+  X, Y: Integer;
+begin
+  MSMouseGetXY(X, Y);
+  Result := (X >= x1) and (X <= x2) and (Y >= y1) and (Y <= y2);
+end;
+
+function MSMouseDriverExist: Boolean;
+begin
+  Result := True;
+end;
+
+procedure MSMouseGetXY(var X, Y: Integer);
+var
+  WinPos: TKosPoint;
+begin
+  WinPos := kos_getmousewinpos();
+
+  X := Round(Double(WinPos.X) * BUFFER_WIDTH / ScreenWidth);
+  if X <  0            then X := 0 else
+  if X >= BUFFER_WIDTH then X := BUFFER_WIDTH - 1;
+
+  Y := Round(Double(WinPos.Y) * BUFFER_HEIGHT / ScreenHeight);
+  if Y <  0             then Y := 0 else
+  if Y >= BUFFER_HEIGHT then Y := BUFFER_HEIGHT - 1;
+end;
+
+function MSMouseButtonStatusGet: Word;
+begin
+  Result := Word(kos_getmousebuttons());
+end;
+
+function MSMouseButtonWasPressed(Button: Word; var x, y: Integer): Boolean;
+begin
+  Inc(Button);
+  if Button < MouseButtonsCount then
+  begin
+    Result := MouseButtonsPressed[Button] > 0;
+    MouseButtonsPressed[Button] := 0;
+  end else
+    Result := False;
+  MSMouseGetXY(x, y);
+end;
+
+function MSMouseButtonWasReleased(Button: Word; var x, y: Integer): Boolean;
+begin
+  Inc(Button);
+  if Button < MouseButtonsCount then
+  begin
+    Result := MouseButtonsReleased[Button] > 0;
+    MouseButtonsReleased[Button] := 0;
+  end else
+    Result := False;
+  MSMouseGetXY(x, y);
+end;
+
+procedure MSMouseSetXY(x, y: Integer);
+begin
+end;
+
+
 
 
 procedure Palette256Set(var Palette256);
@@ -812,49 +931,31 @@ begin
 end;
 
 
-function MSMouseInArea(x1, y1, x2, y2: Integer): Boolean;
-begin
-  Result := False;
-end;
-
-function MSMouseDriverExist: Boolean;
-begin
-  Result := True;
-end;
-
-procedure MSMouseGetXY(var x, y: Integer);
-begin
-end;
-
-function MSMouseButtonStatusGet: Word;
-begin
-  Result := 0;
-end;
-
-function MSMouseButtonWasPressed(Button: Word; var x, y: Integer): Boolean;
-begin
-  Result := False;
-end;
-
-function MSMouseButtonWasReleased(Button: Word; var x, y: Integer): Boolean;
-begin
-  Result := False;
-end;
-
-procedure MSMouseSetXY(x, y: Integer);
-begin
-end;
-
-
 function GetInterrupt(Int: Byte): Pointer;
 begin
   Result := nil;
 end;
 
+
+procedure WaitForEvent(Timeout: DWord = 0);
+var
+  Event: Word;
+begin
+  kos_maskevents(ME_PAINT or ME_KEYBOARD or ME_MOUSE);
+  Event := kos_waitevent(Timeout);
+  case Event of
+    SE_PAINT: Paint;
+    SE_KEYBOARD: ProcessKeyboard;
+    SE_MOUSE: ProcessMouse;
+  end;
+end;
+
+
 procedure AssignFile(var AFile: File; AFileName: String);
 begin
   Assign(AFile, IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0))) + AFileName);
 end;
+
 
 function LastDosTick(): Longword;
 begin
