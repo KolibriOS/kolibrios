@@ -145,7 +145,7 @@ endl
 	jne	.error
 	movzx	eax, [ebx + gif.ImageDescriptor.Width]
 	movzx	ecx, [ebx + gif.ImageDescriptor.Height]
-	stdcall img._resize_data, [img], eax, ecx
+	stdcall img._.resize_data, [img], eax, ecx
 	or	eax, eax
 	jz	.error
 

@@ -1020,7 +1020,7 @@ endl
 	or	eax, eax
 	jnz	.exit_error
 
-	stdcall ini._.skip_nonblanks, [f]
+	stdcall ini._.skip_nonblanks, [f_addr]
 	xor	eax, eax
 	xor	ebx, ebx
 	xor	edx, edx

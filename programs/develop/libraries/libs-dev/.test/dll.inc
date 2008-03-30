@@ -58,7 +58,10 @@ endp
 
 proc dll.GetProcAddress, exp:dword,sz_name:dword
 		mov	edx,[exp]
-  .next:	test	edx,edx
+		xor	eax,eax
+  .next:	or	edx,edx
+		jz	.end
+		cmp	dword[edx],0
 		jz	.end
 		stdcall strcmp,[edx],[sz_name]
 		test	eax,eax
