@@ -799,15 +799,15 @@ dp2:
         push    eax
         xor     edx, edx
         mov     eax, ebx
-        mov     ecx, [BgrDataHeight]
-        div     ecx             ; edx := y mod BgrDataHeight
-        sub     ecx, edx        ; ecx := BgrDataHeight - (y mod BgrDataHeight)
+        div     dword [BgrDataHeight]   ; edx := y mod BgrDataHeight
         pop     eax
         push    eax
+        mov     ecx, [BgrDataWidth]
         mov     esi, edx
-        imul    esi, [BgrDataWidth]             ; esi := (y mod BgrDataHeight) * BgrDataWidth
+        imul    esi, ecx                ; esi := (y mod BgrDataHeight) * BgrDataWidth
         xor     edx, edx
-        div     dword [BgrDataWidth]            ; edx := x mod BgrDataWidth
+        div     ecx             ; edx := x mod BgrDataWidth
+        sub     ecx, edx
         add     esi, edx        ; esi := (y mod BgrDataHeight)*BgrDataWidth + (x mod BgrDataWidth)
         pop     eax
         lea     esi, [esi*3]
