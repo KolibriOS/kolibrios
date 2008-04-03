@@ -844,12 +844,12 @@ end if
 ;        ret
 
 v86_irq:
-; push eax/pushad/jmp v86_irq
+; push irq/pushad/jmp v86_irq
 ; eax = irq
         mov     ebx, eax
         lea     esi, [esp+18h]
         lea     edi, [esi+4]
-        mov     ecx, 7
+        mov     ecx, 8
         std
         rep     movsd
         cld
