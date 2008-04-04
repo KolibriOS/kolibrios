@@ -183,12 +183,20 @@ macro irqh [num]
 {
   forward
   p_irq#num :
+     save_ring3_context
      mov   edi, num
-     jmp   irqhandler
+     jmp   irq_c
 }
 
 irqh 2,3,4,5,7,8,9,10,11
 
+irq_c:
+        mov     ax, app_data
+        mov     ds, ax
+        mov     es, ax
+        call    irqhandler
+        restore_ring3_context
+        iret
 
 p_irq6:
      save_ring3_context
