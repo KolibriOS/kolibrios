@@ -356,6 +356,9 @@ proc load_cursor stdcall, src:dword, flags:dword
            endl
 
            xor eax, eax
+           cmp [create_cursor], eax
+           je .fail2
+
            mov [handle], eax
            cmp word [flags], LOAD_FROM_FILE
            jne @F
@@ -386,6 +389,7 @@ proc load_cursor stdcall, src:dword, flags:dword
            pop ebx
 .fail:
            mov eax, [handle]
+.fail2:
            ret
 endp
 
