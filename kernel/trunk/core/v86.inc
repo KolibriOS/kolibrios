@@ -846,7 +846,7 @@ end if
 v86_irq:
 ; push irq/pushad/jmp v86_irq
 ; eax = irq
-        lea     esi, [esp+18h]
+        lea     esi, [esp+1Ch]
         lea     edi, [esi+4]
         mov     ecx, 8
         std
