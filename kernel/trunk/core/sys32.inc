@@ -53,7 +53,7 @@ iglobal
     dd except_16, e17,e18, except_19
     times 12 dd unknown_interrupt
 
-    dd	 irq0, irq_serv.irq_1, p_irq2
+    dd	 irq0, irq_serv.irq_1, irq_serv.irq_2
 if USE_COM_IRQ
     dd	 irq_serv.irq_3, irq_serv.irq_4
 else
@@ -183,20 +183,12 @@ macro irqh [num]
 {
   forward
   p_irq#num :
-     save_ring3_context
      mov   edi, num
-     jmp   irq_c
+     jmp   irqhandler
 }
 
 irqh 2,3,4,5,7,8,9,10,11
 
-irq_c:
-        mov     ax, app_data
-        mov     ds, ax
-        mov     es, ax
-        call    irqhandler
-        restore_ring3_context
-        iret
 
 p_irq6:
      save_ring3_context
@@ -265,9 +257,6 @@ irqD:
 
 
 irqhandler:
-	cmp	[v86_irqhooks+edi*8], 0
-	jnz	v86_irq2
-
 
      mov    esi,edi	     ; 1
      shl    esi,6	     ; 1

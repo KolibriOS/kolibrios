@@ -846,18 +846,13 @@ end if
 v86_irq:
 ; push irq/pushad/jmp v86_irq
 ; eax = irq
-        mov     ebx, eax
         lea     esi, [esp+18h]
         lea     edi, [esi+4]
         mov     ecx, 8
         std
         rep     movsd
         cld
-        mov     edi, ebx
-
-v86_irq2:
-; pushad/call v86_irq2
-; edi = irq
+        mov     edi, eax
         pop     eax
         mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
         mov     eax, [esi+V86_machine.pagedir]
