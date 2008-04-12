@@ -1,4 +1,4 @@
-{cp866}
+{utf8}
 unit System;
 
 {$i _defines.inc}
@@ -56,16 +56,16 @@ begin
   begin
     while Args^ <> #0 do
     begin
-      {Пропустить лидирующие пробелы}
+      {╨Я╤А╨╛╨┐╤Г╤Б╤В╨╕╤В╤М ╨╗╨╕╨┤╨╕╤А╤Г╤О╤Й╨╕╨╡ ╨┐╤А╨╛╨▒╨╡╨╗╤Л}
       while Args^ in [#1..#32] do Inc(Args);
       if Args^ = #0 then Break;
 
-      {Запомнить указатель на параметр}
+      {╨Ч╨░╨┐╨╛╨╝╨╜╨╕╤В╤М ╤Г╨║╨░╨╖╨░╤В╨╡╨╗╤М ╨╜╨░ ╨┐╨░╤А╨░╨╝╨╡╤В╤А}
       SetLength(Ptrs, Argc);
       Ptrs[Argc - 1] := Args;
       Inc(Argc);
 
-      {Пропустить текущий параметр}
+      {╨Я╤А╨╛╨┐╤Г╤Б╤В╨╕╤В╤М ╤В╨╡╨║╤Г╤Й╨╕╨╣ ╨┐╨░╤А╨░╨╝╨╡╤В╤А}
       InQuotes := False;
       while (Args^ <> #0) and (not (Args^ in [#1..#32]) or InQuotes) do
       begin
@@ -73,7 +73,7 @@ begin
         Inc(Args);
       end;
 
-      {Установить окончание параметра}
+      {╨г╤Б╤В╨░╨╜╨╛╨▓╨╕╤В╤М ╨╛╨║╨╛╨╜╤З╨░╨╜╨╕╨╡ ╨┐╨░╤А╨░╨╝╨╡╤В╤А╨░}
       if Args^ in [#1..#32] then
       begin
         Args^ := #0;
@@ -81,12 +81,12 @@ begin
       end;
     end;
   end;
-  Argv := GetMem(Argc * SizeOf(PChar));  {XXX: память не освобождается}
+  Argv := GetMem(Argc * SizeOf(PChar));  {XXX: ╨┐╨░╨╝╤П╤В╤М ╨╜╨╡ ╨╛╤Б╨▓╨╛╨▒╨╛╨╢╨┤╨░╨╡╤В╤Б╤П}
   Argv[0] :=  PKosHeader(0)^.path;
   for I := 1 to Argc - 1 do
   begin
     Argv[I] := Ptrs[I - 1];
-    {Исключить кавычки из строки}
+    {╨Ш╤Б╨║╨╗╤О╤З╨╕╤В╤М ╨║╨░╨▓╤Л╤З╨║╨╕ ╨╕╨╖ ╤Б╤В╤А╨╛╨║╨╕}
     Args := Argv[I];
     L := 0;
     while Args^ <> #0 do begin Inc(Args); Inc(L); end;
@@ -118,7 +118,7 @@ end;
 
 procedure Randomize;
 begin
-  randseed := 0; {GetTickCount()}
+  randseed := kos_timecounter();
 end;
 
 const
@@ -136,7 +136,6 @@ begin
 end;
 
 {$i kos_stdio.inc}
-{-$i kos_term.inc}
 
 procedure SysInitStdIO;
 begin
@@ -158,15 +157,15 @@ begin
   begin
     if ExitCode <> 0 then
     begin
-      {XXX: обязательное условие на однопоточный Konsole}
+      {XXX: ╨╛╨▒╤П╨╖╨░╤В╨╡╨╗╤М╨╜╨╛╨╡ ╤Г╤Б╨╗╨╛╨▓╨╕╨╡ ╨╜╨░ ╨╛╨┤╨╜╨╛╨┐╨╛╤В╨╛╤З╨╜╤Л╨╣ Konsole}
       Write(StdErr, '[Error #', ExitCode,', press any key]');
-      {ожидать нажатия клавиши}
+      {╨╛╨╢╨╕╨┤╨░╤В╤М ╨╜╨░╨╢╨░╤В╨╕╤П ╨║╨╗╨░╨▓╨╕╤И╨╕}
       Konsole.KeyPressed;
       while Konsole.KeyPressed = 0 do kos_delay(2);
-      {TODO: исправить косяк при перерисовке Konsole}
-      {это невозможно, так как куча освобождается еще до вызова этой процедуры}
-      {можно написать свой диспетчер памяти, но это сложно}
-      {а если в Konsole использовать выделение памяти напрямую через KosAPI?!}
+      {TODO: ╨╕╤Б╨┐╤А╨░╨▓╨╕╤В╤М ╨║╨╛╤Б╤П╨║ ╨┐╤А╨╕ ╨┐╨╡╤А╨╡╤А╨╕╤Б╨╛╨▓╨║╨╡ Konsole}
+      {╤Н╤В╨╛ ╨╜╨╡╨▓╨╛╨╖╨╝╨╛╨╢╨╜╨╛, ╤В╨░╨║ ╨║╨░╨║ ╨║╤Г╤З╨░ ╨╛╤Б╨▓╨╛╨▒╨╛╨╢╨┤╨░╨╡╤В╤Б╤П ╨╡╤Й╨╡ ╨┤╨╛ ╨▓╤Л╨╖╨╛╨▓╨░ ╤Н╤В╨╛╨╣ ╨┐╤А╨╛╤Ж╨╡╨┤╤Г╤А╤Л}
+      {╨╝╨╛╨╢╨╜╨╛ ╨╜╨░╨┐╨╕╤Б╨░╤В╤М ╤Б╨▓╨╛╨╣ ╨┤╨╕╤Б╨┐╨╡╤В╤З╨╡╤А ╨┐╨░╨╝╤П╤В╨╕, ╨╜╨╛ ╤Н╤В╨╛ ╤Б╨╗╨╛╨╢╨╜╨╛}
+      {╨░ ╨╡╤Б╨╗╨╕ ╨▓ Konsole ╨╕╤Б╨┐╨╛╨╗╤М╨╖╨╛╨▓╨░╤В╤М ╨▓╤Л╨┤╨╡╨╗╨╡╨╜╨╕╨╡ ╨┐╨░╨╝╤П╤В╨╕ ╨╜╨░╨┐╤А╤П╨╝╤Г╤О ╤З╨╡╤А╨╡╨╖ KosAPI?!}
     end;
     Close(StdErr);
     Close(StdOut);

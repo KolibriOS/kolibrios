@@ -1,12 +1,13 @@
+{utf8}
 unit sysutils;
 
 {$i _defines.inc}
+{$mode objfpc}
+{$h+}
 
 interface
 
-{$mode objfpc}
 { force ansistrings }
-{$h+}
 
 {$DEFINE HAS_SLEEP}
 {-$DEFINE HAS_OSERROR}
@@ -150,7 +151,7 @@ begin
     fsFromCurrent: Position := FilePos(FileRecordByHandle(Handle)^.F) + FOffset;
     fsFromEnd: Position := FileSize(FileRecordByHandle(Handle)^.F) + FOffset;
   end;
-  {TODO: �஢�ઠ ᮮ⢥��⢨� [0..filesize]}
+  {TODO: проверка соответствия [0..filesize]}
   Seek(FileRecordByHandle(Handle)^.F, Position);
   Result := Position;
 end;
@@ -175,15 +176,16 @@ function FileExists(const FileName: String): Boolean;
 var
   F: File;
 begin
+  {$i-}
   Assign(F, FileName);
-  try
-    Reset(F);
-    FileSize(F);
+  Reset(F);
+  if IOResult = 0 then
+  begin
     Result := True;
-  except
+    Close(F);
+  end else
     Result := False;
-  end;
-  Close(F);
+  {$i+}
 end;
 
 function DirectoryExists(const Directory: String): Boolean;

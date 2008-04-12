@@ -1,0 +1,67 @@
+#
+#   Makefile.fpc for Free Pascal KolibriOS RTL
+#
+
+[package]
+main=rtl
+
+[target]
+loaders=$(LOADERS)
+units=system objpas buildrtl
+#implicitunits=sysinitpas sysinitcyg sysinitgprof \
+#      ctypes strings \
+#      lineinfo lnfodwrf heaptrc matrix \
+#      windows winsock winsock2 initc cmem dynlibs signals \
+#      dos crt objects messages \
+#      rtlconsts sysconst sysutils math types \
+#      strutils dateutils varutils variants typinfo fgl classes \
+#      convutils stdconvs cpu mmx charset ucomplex getopts \
+#      winevent sockets printer \
+#      video mouse keyboard fmtbcd \
+#      winsysut sharemem
+
+#rsts=math varutils typinfo variants classes dateutils sysconst
+
+[require]
+nortl=y
+
+[install]
+fpcpackage=y
+
+[default]
+target=win32
+cpu=i386
+
+[compiler]
+unittargetdir=../units/rtl
+includedir=$(INC) $(PROCINC)
+sourcedir=$(INC) $(PROCINC)
+
+[prerules]
+RTL=$(FPCDIR)/rtl
+INC=$(RTL)/inc
+PROCINC=$(RTL)/$(CPU_TARGET)
+OBJPASDIR=$(RTL)/objpas
+
+[rules]
+.NOTPARALLEL:
+SYSTEMPPU=$(addsuffix $(PPUEXT),system)
+
+include $(INC)/makefile.inc
+SYSINCDEPS=$(addprefix $(INC)/,$(SYSINCNAMES))
+
+include $(PROCINC)/makefile.cpu
+SYSCPUDEPS=$(addprefix $(PROCINC)/,$(CPUINCNAMES))
+
+SYSDEPS=$(SYSINCDEPS) $(SYSCPUDEPS)
+
+# Unit specific rules
+
+system$(PPUEXT): system.pp $(SYSDEPS)
+	$(COMPILER) -Us -Sg system.pp
+
+objpas$(PPUEXT): $(OBJPASDIR)/objpas.pp $(INC)/except.inc system$(PPUEXT)
+	$(COMPILER) -I$(OBJPASDIR) $(OBJPASDIR)/objpas.pp
+
+buildrtl$(PPUEXT): buildrtl.pp system$(PPUEXT) objpas$(PPUEXT)
+	$(COMPILER) -Fi$(OBJPASDIR)/sysutils -Fi$(OBJPASDIR)/classes -Fu$(PROCINC) -I$(OBJPASDIR) -I$(INC) -Fu$(INC) -Fu$(OBJPASDIR) buildrtl

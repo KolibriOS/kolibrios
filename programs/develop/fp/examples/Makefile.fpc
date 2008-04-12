@@ -1,0 +1,42 @@
+[target]
+programs=example ray
+
+[default]
+target=win32
+cpu=i386
+
+[compiler]
+options=-dKOLIBRI
+unittargetdir=build
+targetdir=bin
+sourcedir=src
+
+[prerules]
+ifdef KFPCDIR
+override KFPCDIR:=$(subst \,/,$(KFPCDIR))
+ifeq ($(wildcard $(KFPCDIR)/bin),)
+override KFPCDIR=wrong
+endif
+else
+override KFPCDIR=wrong
+endif
+
+ifeq ($(KFPCDIR),wrong)
+$(error The KFPCDIR environment is wrong)
+endif
+
+#UNITSDIR:=$(wildcard $(FPCDIR)/units/$(CPU_TARGET)-kolibri)
+UNITSDIR:=$(wildcard $(KFPCDIR)/units)
+KOSEXT=.kex
+EXE2KEX=$(KFPCDIR)/bin/exe2kos
+
+[rules]
+ifneq ($(TARGET_PROGRAMS),)
+KOSFILES=$(addsuffix $(KOSEXT),$(TARGET_PROGRAMS))
+endif
+
+fpc_all: $(KOSFILES)
+
+%$(KOSEXT): %$(EXEEXT)
+	@$(EXE2KEX) $(COMPILER_TARGETDIR)/$^ $(COMPILER_TARGETDIR)/$@
+	@$(DEL) $(COMPILER_TARGETDIR)/$^

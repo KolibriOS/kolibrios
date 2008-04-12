@@ -152,5 +152,8 @@ begin
   end;
   
   if InOutRes <> 0 then
+  begin
     FreeMem(KosFile);
+    FileRec(f).Handle := DWord(-1);
+  end;
 end;
