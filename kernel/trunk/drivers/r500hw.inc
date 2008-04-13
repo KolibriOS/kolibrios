@@ -66,6 +66,57 @@ if 0
 
 end if
 
+RADEON_CP_ME_RAM_ADDR            equ 0x07d4
+RADEON_CP_ME_RAM_RADDR           equ 0x07d8
+RADEON_CP_ME_RAM_DATAH           equ 0x07dc
+RADEON_CP_ME_RAM_DATAL           equ 0x07e0
+
+RADEON_CP_RB_BASE                equ 0x0700
+RADEON_CP_RB_CNTL                equ 0x0704
+  RADEON_RB_NO_UPDATE            equ (1 shl 27)
+RADEON_CP_RB_RPTR_ADDR           equ 0x070c
+RADEON_CP_RB_RPTR                equ 0x0710
+RADEON_CP_RB_WPTR                equ 0x0714
+
+RADEON_CP_CSQ_CNTL               equ 0x0740
+  RADEON_CSQ_CNT_PRIMARY_MASK    equ (0xff shl 0)
+  RADEON_CSQ_PRIDIS_INDDIS       equ (0    shl 28)
+  RADEON_CSQ_PRIPIO_INDDIS       equ (1    shl 28)
+  RADEON_CSQ_PRIBM_INDDIS        equ (2    shl 28)
+  RADEON_CSQ_PRIPIO_INDBM        equ (3    shl 28)
+  RADEON_CSQ_PRIBM_INDBM         equ (4    shl 28)
+  RADEON_CSQ_PRIPIO_INDPIO       equ (15   shl 28)
+
+RADEON_CP_RB_WPTR_DELAY          equ 0x0718
+
+RADEON_SCRATCH_UMSK              equ 0x0770
+RADEON_SCRATCH_ADDR              equ 0x0774
+
+RADEON_ISYNC_CNTL                equ 0x1724
+  RADEON_ISYNC_ANY2D_IDLE3D      equ (1 shl 0)
+  RADEON_ISYNC_ANY3D_IDLE2D      equ (1 shl 1)
+  RADEON_ISYNC_TRIG2D_IDLE3D     equ (1 shl 2)
+  RADEON_ISYNC_TRIG3D_IDLE2D     equ (1 shl 3)
+  RADEON_ISYNC_WAIT_IDLEGUI      equ (1 shl 4)
+  RADEON_ISYNC_CPSCRATCH_IDLEGUI equ (1 shl 5)
+
+RADEON_AIC_CNTL                  equ 0x01d0
+  RADEON_PCIGART_TRANSLATE_EN    equ (1 shl 0)
+RADEON_AIC_STAT                  equ 0x01d4
+RADEON_AIC_PT_BASE               equ 0x01d8
+RADEON_AIC_LO_ADDR               equ 0x01dc
+RADEON_AIC_HI_ADDR               equ 0x01e0
+RADEON_AIC_TLB_ADDR              equ 0x01e4
+RADEON_AIC_TLB_DATA              equ 0x01e8
+
+RADEON_WAIT_UNTIL                equ 0x1720
+  RADEON_WAIT_CRTC_PFLIP         equ (1 shl 0)
+  RADEON_WAIT_2D_IDLE            equ (1 shl 14)
+  RADEON_WAIT_3D_IDLE            equ (1 shl 15)
+  RADEON_WAIT_2D_IDLECLEAN       equ (1 shl 16)
+  RADEON_WAIT_3D_IDLECLEAN       equ (1 shl 17)
+  RADEON_WAIT_HOST_IDLECLEAN     equ (1 shl 18)
+
 D1GRPH_PITCH                     equ 0x6120
 D1GRPH_X_END                     equ 0x6134
 D1GRPH_Y_END                     equ 0x6138
@@ -103,6 +154,11 @@ R5XX_DP_CNTL                     equ  0x16c0
   R5XX_DP_DST_TILE_MICRO         equ (2 shl  3)
   R5XX_DP_DST_TILE_BOTH          equ (3 shl  3)
 
+RADEON_RB3D_ZCACHE_CTLSTAT       equ 0x3254
+  RADEON_RB3D_ZC_FLUSH           equ (1 shl 0)
+  RADEON_RB3D_ZC_FREE            equ (1 shl 2)
+  RADEON_RB3D_ZC_FLUSH_ALL       equ 0x5
+  RADEON_RB3D_ZC_BUSY            equ (1 shl 31)
 
 R5XX_RB3D_DSTCACHE_CTLSTAT       equ  0x325C
   R5XX_RB3D_DC_FLUSH             equ  (3 shl 0)
@@ -249,6 +305,9 @@ R5XX_DP_SRC_FRGD_CLR                equ  0x15d8
 
 R5XX_DP_WRITE_MASK                  equ  0x16cc
 
+
+RADEON_CP_PACKET0                   equ 0x00000000
+
 struc RHD
 {
   .control           rd 1
@@ -256,9 +315,14 @@ struc RHD
   .datatype          rd 1
   .surface_cntl      rd 1
   .dst_pitch_offset  rd 1
+  .ring_base         rd 1
+  .ring_rp           rd 1
+  .ring_wp           rd 1
 };
 
 R5XX_LOOP_COUNT equ 2000000
+
+
 
 align 4
 R5xxFIFOWaitLocal:
@@ -484,13 +548,92 @@ R5xx2DPreInit:
 
            ret
 
+RADEON_BUS_CNTL            equ 0x0030
+  RADEON_BUS_MASTER_DIS    equ (1 shl 6)
+
+align 4
+R5xxCpInit:
+           stdcall CreateRingBuffer, 0x8000, PG_SW+PG_NOCACHE
+           test eax, eax
+           jz .fail
+
+           mov [rhd.ring_base], eax
+           call GetPgAddr
+
+           wrr RADEON_CP_RB_BASE, eax
+
+           wrr RADEON_CP_RB_WPTR_DELAY, 0
+
+           rdr ebx, RADEON_CP_RB_RPTR
+           wrr RADEON_CP_RB_WPTR, ebx
+
+           mov [rhd.ring_rp], ebx
+           mov [rhd.ring_wp], ebx
+
+           wrr RADEON_CP_RB_RPTR_ADDR, 0       ;ring buffer read pointer
+                                               ;no update
+
+           wrr RADEON_CP_RB_CNTL, RADEON_RB_NO_UPDATE + 12
+           wrr RADEON_SCRATCH_UMSK, 0          ;no scratch update
+
+           rdr ebx, RADEON_BUS_CNTL
+           and ebx, not RADEON_BUS_MASTER_DIS
+
+           wrr RADEON_BUS_CNTL, ebx
+
+         ;  wrr RADEON_LAST_FRAME_REG, 0
+         ;  wrr RADEON_LAST_DISPATCH_REG, 0
+         ;  wrr RADEON_LAST_CLEAR_REG, 0
+
+           call R5xx2DIdleLocal
+
+           wrr RADEON_ISYNC_CNTL, RADEON_ISYNC_ANY2D_IDLE3D + \
+                                  RADEON_ISYNC_ANY3D_IDLE2D + \
+                                  RADEON_ISYNC_WAIT_IDLEGUI + \
+                                  RADEON_ISYNC_CPSCRATCH_IDLEGUI
+.fail:
+           ret
+
+align 4
+load_microcode:
+
+           pushfd
+           cli
+
+           call R5xx2DIdleLocal
+
+           wrr RADEON_CP_ME_RAM_ADDR, 0
+
+           lea esi, [R520_cp_microcode]
+           mov ecx, 256
+@@:
+           mov eax, [esi]
+           mov ebx, [esi+4]
+           wrr RADEON_CP_ME_RAM_DATAH, ebx
+           wrr RADEON_CP_ME_RAM_DATAL, eax
+           add esi, 8
+           loop @B
+
+           popfd
+           ret
+
+
 align 4
 R5xx2DInit:
 
            call R5xx2DPreInit
            wrr R5XX_RB3D_CNTL, 0
+
            call R5xx2DReset
            call R5xx2DSetup
+
+           rdr eax, RADEON_AIC_CNTL                     ;disable GART
+           and eax, not RADEON_PCIGART_TRANSLATE_EN
+           wrr RADEON_AIC_CNTL, eax
+
+           call load_microcode
+
+           call R5xxCpInit
 
            rdr eax, D1GRPH_X_END
            rdr ebx, D1GRPH_Y_END
@@ -501,6 +644,14 @@ R5xx2DInit:
            mov [__ymin], 0
            mov [__xmax], eax
            mov [__ymax], ebx
+
+           wrr RADEON_CP_CSQ_CNTL, RADEON_CSQ_PRIBM_INDBM
+
+       ;    BEGIN_RING
+       ;    RADEON_PURGE_CACHE
+       ;    RADEON_PURGE_ZCACHE
+       ;    RADEON_WAIT_UNTIL_IDLE
+       ;    COMMIT_RING
 
            ret
 
@@ -665,6 +816,17 @@ end virtual
 
 GXcopy  equ 3
 
+RADEON_CP_PACKET3         equ 0xC0000000
+
+PAINT_MULTI               equ 0xC0009A00
+
+DST_PITCH_OFFSET_CNTL     equ (  1 shl  1)
+BRUSH_SOLID_COLOR         equ ( 13 shl  4)
+COLOR_ARGB                equ (  6 shl  8)
+SRC_DATATYPE_COLOR        equ (  3 shl 12)
+
+;RADEON_ROP3_P             equ
+
 ; esi= input params
 align 4
 solid_fill:
@@ -696,32 +858,30 @@ solid_fill:
            test eax, eax
            jnz .exit
 
-           mov edx, [R5xxRops+4+GXcopy*8]
-           or edx, [rhd.control]
-           or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
+           ;mov edx, [R5xxRops+4+GXcopy*8]
+           ;or edx, [rhd.control]
+           ;or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
 
            pushfd
            cli
 
-           mov eax, 7
-           call R5xxFIFOWait
 
-           wrr R5XX_DP_GUI_MASTER_CNTL, edx
+       BEGIN_RING
+         OUT_PACKET3 PAINT_MULTI, 4
+         OUT_RING (DST_PITCH_OFFSET_CNTL + \
+                     BRUSH_SOLID_COLOR     + \
+                     COLOR_ARGB            + \
+                     SRC_DATATYPE_COLOR    + \
+                     (1 shl 28)+(1 shl 30) + \
+                     R5XX_ROP3_P)
 
-           mov eax, [esi+FILL.color]
-           wrr R5XX_DP_BRUSH_FRGD_CLR, eax
-
-           wrr R5XX_DP_WRITE_MASK, 0xFFFFFFFF
-
-           wrr R5XX_DP_CNTL, (R5XX_DST_X_LEFT_TO_RIGHT or R5XX_DST_Y_TOP_TO_BOTTOM)
-
-           mov eax, [rhd.dst_pitch_offset]
-           wrr R5XX_DST_PITCH_OFFSET, eax
+         OUT_RING [rhd.dst_pitch_offset]
+         OUT_RING [esi+FILL.color]
 
            mov ebx, [esi+FILL.y]
            shl ebx, 16
            mov bx, word [esi+FILL.x]
-           wrr R5XX_DST_Y_X, ebx
+         OUT_RING ebx
 
            mov ecx, [esp+4]             ;x2
            sub ecx, [esi+FILL.x]
@@ -732,8 +892,44 @@ solid_fill:
            inc eax                      ;h
 
            shl ecx, 16
-           mov cx, ax                        ;w|h
-           wrr R5XX_DST_WIDTH_HEIGHT, ecx
+           mov cx, ax                   ;w|h
+
+         OUT_RING ecx
+       COMMIT_RING
+
+if 0
+;           mov eax, 7
+;           call R5xxFIFOWait
+
+;           wrr R5XX_DP_GUI_MASTER_CNTL, edx
+
+;           mov eax, [esi+FILL.color]
+;           wrr R5XX_DP_BRUSH_FRGD_CLR, eax
+
+;           wrr R5XX_DP_WRITE_MASK, 0xFFFFFFFF
+
+;           wrr R5XX_DP_CNTL, (R5XX_DST_X_LEFT_TO_RIGHT or R5XX_DST_Y_TOP_TO_BOTTOM)
+
+;           mov eax, [rhd.dst_pitch_offset]
+;           wrr R5XX_DST_PITCH_OFFSET, eax
+
+;           mov ebx, [esi+FILL.y]
+;           shl ebx, 16
+;           mov bx, word [esi+FILL.x]
+;           wrr R5XX_DST_Y_X, ebx
+
+;           mov ecx, [esp+4]             ;x2
+;           sub ecx, [esi+FILL.x]
+;           inc ecx                      ;w
+
+;           mov eax, [esp+8]             ;y2
+;           sub eax, [esi+FILL.y]
+;           inc eax                      ;h
+
+;           shl ecx, 16
+;           mov cx, ax                        ;w|h
+;           wrr R5XX_DST_WIDTH_HEIGHT, ecx
+end if
            popfd
 .exit:
            add esp, 8
