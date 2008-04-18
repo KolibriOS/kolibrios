@@ -279,27 +279,34 @@ L40:
  align 16
 __exports:
           export 'KERNEL',   \
-          alloc_kernel_space, 'AllocKernelSpace',   \      ; stdcall
-          free_kernel_space,  'FreeKernelSpace',    \      ; stdcall
-          kernel_alloc,       'KernelAlloc',        \      ; stdcall
-          kernel_free,        'KernelFree',         \      ; stdcall
-          malloc,             'Kmalloc',            \
-          free,               'Kfree',              \
-          map_io_mem,         'MapIoMem',           \      ; stdcall
+          alloc_kernel_space,    'AllocKernelSpace',   \      ; stdcall
+          create_kernel_object,  'CreateObject',       \
+          destroy_kernel_object, 'DestroyObject',      \
+          free_kernel_space,     'FreeKernelSpace',    \      ; stdcall
+          kernel_alloc,          'KernelAlloc',        \      ; stdcall
+          kernel_free,           'KernelFree',         \      ; stdcall
+          malloc,                'Kmalloc',            \
+          free,                  'Kfree',              \
+          map_io_mem,            'MapIoMem',           \      ; stdcall
 \
-          set_screen,         'SetScreen',          \
-          pci_api,            'PciApi',             \
-          pci_read8,          'PciRead8',           \      ; stdcall
-          pci_read16,         'PciRead16',          \      ; stdcall
-          pci_read32,         'PciRead32',          \      ; stdcall
-          pci_write8,         'PciWrite8',          \      ; stdcall
-          pci_write16,        'PciWrite16',         \      ; stdcall
-          pci_write32,        'PciWrite32',         \      ; stdcall
+          select_hw_cursor,      'SelectHwCursor',     \      ; stdcall
+          set_hw_cursor,         'SetHwCursor',        \      ; stdcall
+          hw_restore,            'HwCursorRestore',    \      ;
+          create_cursor,         'HwCursorCreate',     \      ;
 \
-          reg_service,        'RegService',         \
-          user_alloc,         'UserAlloc',          \      ; stdcall
-          user_free,          'UserFree',           \      ; stdcall
-          sys_msg_board_str,  'SysMsgBoardStr'
+          set_screen,            'SetScreen',          \
+          pci_api,               'PciApi',             \
+          pci_read8,             'PciRead8',           \      ; stdcall
+          pci_read16,            'PciRead16',          \      ; stdcall
+          pci_read32,            'PciRead32',          \      ; stdcall
+          pci_write8,            'PciWrite8',          \      ; stdcall
+          pci_write16,           'PciWrite16',         \      ; stdcall
+          pci_write32,           'PciWrite32',         \      ; stdcall
+\
+          reg_service,           'RegService',         \
+          user_alloc,            'UserAlloc',          \      ; stdcall
+          user_free,             'UserFree',           \      ; stdcall
+          sys_msg_board_str,     'SysMsgBoardStr'
 
 
 

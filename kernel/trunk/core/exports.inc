@@ -134,8 +134,8 @@ kernel_export:
 
   dd szLoadCursor      , load_cursor	       ;stdcall
 
-  dd szSelectHwCursor  , select_hw_cursor      ;import
-  dd szSetHwCursor     , set_hw_cursor	       ;import
+  dd szSelectHwCursor  , select_hw_cursor      ;import    stdcall
+  dd szSetHwCursor     , set_hw_cursor         ;import    stdcall
   dd szHwCursorRestore , hw_restore	       ;import
   dd szHwCursorCreate  , create_cursor	       ;import
 
