@@ -139,7 +139,7 @@ proc init_kernel_heap
            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
 
            mov ecx, [MEM_AMOUNT]
-           sub ecx, HEAP_BASE + 4096*MEM_BLOCK_SIZE
+           sub ecx, (HEAP_BASE - OS_BASE + 4096*MEM_BLOCK_SIZE)
            mov [heap_size], ecx
            mov [heap_free], ecx
            mov [ebx+block_size], ecx
