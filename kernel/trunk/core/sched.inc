@@ -232,11 +232,17 @@ do_change_task:
 ;        mov [tss._esp0], eax
         mov ax, graph_data
         mov gs, ax
-        mov ecx, cr0
-        or ecx, CR0_TS   ;set task switch flag
-        mov cr0, ecx
-        inc   [context_counter] ;noname & halyavin
 
+        mov eax, [CURRENT_TASK]
+        cmp eax, [fpu_owner]
+        clts                             ;clear a task switch flag
+        je @F
+                                         ;and set it again if the owner
+        mov ecx, cr0                     ;of a fpu has changed
+        or ecx, CR0_TS
+        mov cr0, ecx
+@@:
+        inc   [context_counter] ;noname & halyavin
         test [ebx+APPDATA.dbg_state], 1
         jnz @F
         ret
