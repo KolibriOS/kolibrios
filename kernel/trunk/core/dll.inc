@@ -12,6 +12,7 @@ DRV_COMPAT   equ  5  ;minimal required drivers version
 DRV_CURRENT  equ  5  ;current drivers model version
 
 DRV_VERSION equ (DRV_COMPAT shl 16) or DRV_CURRENT
+PID_KERNEL  equ 1    ;os_idle thread
 
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
@@ -39,9 +40,9 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 	 ;push eax
 	 ;mov  eax, [TASK_BASE]
 	 ;mov  eax, [eax + TASKDATA.pid]          ; faster or smaller? :)
-	 call  get_pid
+         ;call  get_pid
 
-	 mov  [irq_owner + 4 * ebx], eax
+         mov  [irq_owner + 4 * ebx], PID_KERNEL   ;eax
 	 ;pop  eax
 
 	 stdcall enable_irq, [irq]
