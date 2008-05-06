@@ -62,14 +62,16 @@ virtual at 0
   CURSOR CURSOR
 end virtual
 
-CURSOR_SIZE     equ 32
+CURSOR_SIZE      equ 32
 
-OS_BASE         equ 0x80000000
-SLOT_BASE       equ (OS_BASE+0x0080000)
-LFB_BASE        equ 0xFE000000
+OS_BASE          equ 0x80000000
+SLOT_BASE        equ (OS_BASE+0x0080000)
+LFB_BASE         equ 0xFE000000
 
-PG_SW        equ 0x003
-PG_NOCACHE   equ 0x018
+PG_SW            equ 0x003
+PG_NOCACHE       equ 0x018
+
+PCI_MEMORY_MASK  equ 0xfffffff0
 
 struc IOCTL
 {  .handle           dd ?
@@ -403,6 +405,7 @@ endp
 align 4
 proc init_r200
            stdcall PciRead32, [bus], [devfn], dword 0x18
+           and eax, PCI_MEMORY_MASK
            stdcall MapIoMem,eax,0x10000,(PG_SW+PG_NOCACHE)
            test eax, eax
            jz .fail
@@ -443,6 +446,7 @@ align 4
 proc init_r500
 
            stdcall PciRead32, [bus], [devfn], dword 0x18
+           and eax, PCI_MEMORY_MASK
            stdcall MapIoMem,eax,0x10000,(PG_SW+PG_NOCACHE)
            test eax, eax
            jz .fail
@@ -504,20 +508,6 @@ proc r500_SetCursor stdcall, hcursor:dword, x:dword, y:dword
 
            mov [edi+0x6414], eax
            or dword [edi+0x6400], 1
-
-if 0
-           stdcall R5xxSetupForSolidFill, 0x80808080, 3, 0xFFFFFFFF
-           stdcall R5xxSolidFillRect, 100,100, 100,100
-
-           stdcall R5xxSetupForSolidFill, 0xFFFF0000, 3, 0xFFFFFFFF
-           stdcall R5xxSolidFillRect, 110,110, 80,80
-
-           stdcall R5xxSetupForSolidFill, 0xFF00FF00, 3, 0xFFFFFFFF
-           stdcall R5xxSolidFillRect, 120,120, 60,60
-
-           stdcall R5xxSetupForSolidFill, 0xFF0000FF, 3, 0xFFFFFFFF
-           stdcall R5xxSolidFillRect, 130,130, 40,40
-end if
 
            popfd
            ret
