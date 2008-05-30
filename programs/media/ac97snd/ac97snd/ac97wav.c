@@ -429,7 +429,7 @@ void _stdcall thread_proc(void *param)
    int pos;
    int key;
    DWORD offset;
-   
+
   _asm
   {
     mov eax, 66
@@ -550,7 +550,8 @@ void _stdcall thread_proc(void *param)
 void delay (int val)
 {
   _asm
- {   mov   eax,5
+ {    
+      mov   eax,5
       mov   ebx, [val]
       int   0x40
   };  
@@ -559,7 +560,8 @@ void delay (int val)
 int wait_for_event(int time)
 { int retval;
   _asm
- {  mov  eax,23
+ {   
+     mov  eax,23
      mov  ebx,[time]
      int  0x40
      mov [retval], eax
@@ -570,7 +572,8 @@ int wait_for_event(int time)
 int wait_for_event_infinite()
 { int retval;
   _asm
-  {  mov  eax,10
+  {   
+      mov  eax,10
       int  0x40
       mov [retval], eax 
   };
@@ -579,7 +582,8 @@ int wait_for_event_infinite()
 
 void BeginDraw()
 {_asm
- { mov   eax,12
+ {  
+    mov   eax,12
     mov   ebx, 1
     int   0x40
   };  
@@ -587,7 +591,8 @@ void BeginDraw()
 
 void EndDraw()
 { _asm
- { mov   eax,12
+ {  
+    mov   eax,12
     mov   ebx, 2
     int   0x40
   };  

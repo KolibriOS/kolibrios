@@ -227,16 +227,24 @@
 					>
 					<Tool
 						Name="VCCLCompilerTool"
-						Optimization="2"
+						Optimization="3"
 						InlineFunctionExpansion="0"
 						EnableIntrinsicFunctions="true"
-						FavorSizeOrSpeed="1"
+						FavorSizeOrSpeed="0"
 					/>
 				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\crt.c"
 				>
+				<FileConfiguration
+					Name="Debug|Win32"
+					>
+					<Tool
+						Name="VCCLCompilerTool"
+						AssemblerOutput="1"
+					/>
+				</FileConfiguration>
 			</File>
 			<File
 				RelativePath=".\k_lib.asm"

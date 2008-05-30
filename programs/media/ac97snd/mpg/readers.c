@@ -97,6 +97,7 @@ static int fill_reader(struct reader *rd)
      mem_cpy(rd->buffer,rd->stream,rd->strremain);
 
    rd->stream = rd->buffer;
+   bytes= 0;   
    retval=read_file (rd->hFile,rd->buffer+rd->strremain,rd->filepos,
                             0x10000-rd->strremain,&bytes);
    if( (retval==0)||(retval==6))
@@ -106,7 +107,7 @@ static int fill_reader(struct reader *rd)
      rd->strpos = 0;  
      return bytes;
    };
-   return 0;  
+   return bytes;  
 };
 
 int __stdcall set_reader(struct reader *rd, unsigned int filepos)

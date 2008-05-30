@@ -33,7 +33,7 @@ public _debug_out_hex@4
 public _create_thread@12
 
 
-;public _memset
+public _memset
 
 struc FILEIO
 {   .cmd            dd ?
@@ -81,10 +81,12 @@ _GetScreenSize@8:
 
 align 4
 _create_thread@12:
-.thr_proc    equ esp+4
-.param       equ esp+8
-.stack_size  equ esp+12
+.thr_proc    equ esp+8
+.param       equ esp+12
+.stack_size  equ esp+16
 
+           push ebx
+           
            mov eax, 68
            mov ebx, 12
            mov ecx, [.stack_size]
@@ -104,9 +106,11 @@ _create_thread@12:
            mov ebx, 1
            mov ecx, [.thr_proc]
            int 0x40
+           pop ebx
            ret 12
 .fail:
            not eax
+           pop ebx
            ret 12
 align 4
 .exit_point:
@@ -418,13 +422,13 @@ _draw_bar@20:
 ;arg5 - color
   push  ebx ecx
   mov   eax,13
-  mov   ebx,[esp+8]
+  mov   ebx,[esp+12]
   shl   ebx,16
-  mov   bx,[esp+16]
-  mov   ecx,[esp+12]
+  mov   bx,[esp+20]
+  mov   ecx,[esp+16]
   shl   ecx,16
-  mov   cx,[esp+20]
-  mov   edx,[esp+24]
+  mov   cx,[esp+24]
+  mov   edx,[esp+28]
   int   0x40
   pop   ecx ebx
   ret   20
@@ -437,12 +441,12 @@ _write_text@20:
 ;arg5 - len
   push  ebx ecx esi
   mov   eax,4
-  mov   ebx,[esp+12]
+  mov   ebx,[esp+16]
   shl   ebx,16
-  mov   bx,[esp+16]
-  mov   ecx,[esp+20]
-  mov   edx,[esp+24]
-  mov   esi,[esp+28]
+  mov   bx,[esp+20]
+  mov   ecx,[esp+24]
+  mov   edx,[esp+28]
+  mov   esi,[esp+32]
   int   0x40
   pop   esi ecx ebx
   ret   20
