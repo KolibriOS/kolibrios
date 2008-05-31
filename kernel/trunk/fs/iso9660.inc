@@ -508,6 +508,7 @@ cd_find_lfn:
   call	prevent_medium_removal
 ; тестовое чтение
   mov  [CDSectorAddress],dword 16
+  mov  [CDDataBuf_pointer],CDDataBuf
   call	ReadCDWRetr    ;_1
    cmp	 [DevErrorCode],0
   jne	.access_denied
