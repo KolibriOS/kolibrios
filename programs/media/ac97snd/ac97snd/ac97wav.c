@@ -668,33 +668,3 @@ int __cdecl _stricmp (const char * dst, const char * src)
 }
 
 
-
-//   debug_out_str(formats[fmt]);
-//   debug_out_str("\x0D\x0A\x00");
-
-//   debug_out_str("pci cmd: ");
-//   debug_out_hex(info.pci_cmd);
-//   debug_out_str("\x0D\x0A\x00");
-
-//   debug_out_str("irq line: ");
-//   debug_out_hex(info.irq);
-//   debug_out_str("\x0D\x0A\x00");
-
-//   debug_out_str("global control: ");
-//   debug_out_hex(info.glob_cntrl);
-//   debug_out_str("\x0D\x0A\x00");
-
-//   debug_out_str("global status:  ");
-//   debug_out_hex(info.glob_sta);
-//   debug_out_str("\x0D\x0A\x00");
-
-
-  // call _print_volume
-
-//   debug_out_hex(whdr.nChannels);
-//   debug_out_str("\x0D\x0A\x00");
-//   debug_out_hex(whdr.nSamplesPerSec);
-//   debug_out_str("\x0D\x0A\x00");
-
-//   debug_out_hex(fmt);
-//   debug_out_str("\x0D\x0A\x00");

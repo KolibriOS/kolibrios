@@ -389,29 +389,29 @@ proc _DrawWindow@36 stdcall, x:dword, y:dword, sx:dword, sy:dword,\
 endp
 
 align 4
-_make_button@24:
-;arg1 - x
-;arg2 - y
-;arg3 - xsize
-;arg4 - ysize
-;arg5 - id
-;arg6 - color
+proc _make_button@24 stdcall,x:dword, y:dword, \
+                     xsize:dword, ysize:dword, \
+                     id:dword, color:dword   
 
-  push  ebx
-  push  ecx
-  push  esi
-  mov   ebx,[esp+12]
-  shl   ebx,16
-  mov   bx,[esp+20]
-  mov   ecx,[esp+16]
-  shl   ecx,16
-  mov   cx,[esp+24]
-  mov   edx,[esp+28]
-  mov   esi,[esp+32]
-  mov   eax,8
-  int   0x40
-  pop   esi ecx ebx
-  ret   24
+           push  ebx
+           push  esi
+           
+           mov   ebx,[x]
+           mov   ecx,[y]
+           shl   ebx,16
+           shl   ecx,16
+           mov   bx, word [xsize]
+           mov   cx, word [ysize]
+
+           mov   edx,[id]
+           mov   esi,[color]
+
+           mov   eax,8
+           int   0x40
+           pop   esi
+           pop   ebx
+           ret
+endp           
 
 align 4
 _draw_bar@20:
