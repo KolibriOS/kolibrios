@@ -1128,18 +1128,7 @@ Remarks:
 ======================================================================
 ====== Function 21, subfunction 4 - set Sound Blaster base port. =====
 ======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 4 - subfunction number
-  * ecx = number of the base port
-Returned value:
-  * eax = 0 - success
-  * eax = -1 - erratic port number
-Remarks:
-  * Number of the port must satisfy to conditions 0x100<=ecx<=0xFFFF.
-  * The installation of the base is necessary for
-    functions 25, 28, 55.
-  * To get base port use subfunction 4 of function 26.
+Removed
 
 ======================================================================
 ========== Function 21, subfunction 5 - set system language. =========
@@ -1204,16 +1193,7 @@ Remarks:
 ======================================================================
 ======== Function 21, subfunction 10 - set sound DMA channel. ========
 ======================================================================
-Parameters:
-  * eax = 21 - function number
-  * ebx = 10 - subfunction number
-  * ecx = number of channel (from 0 up to 3 inclusively)
-Returned value:
-  * eax = 0 - success
-  * eax = -1 - incorrect channel number
-Remarks:
-  * Number of DMA channel is used in subfunction 1 of function 55.
-  * To get sound DMA channel use subfunction 10 of function 26.
+Removed
 
 ======================================================================
  Function 21, subfunction 11 - enable/disable low-level access to HD. 
@@ -1505,22 +1485,7 @@ Remarks:
 ======================================================================
 =================== Function 25 - set SBPro volume. ==================
 ======================================================================
-Parameters:
-  * eax = 25 - function number
-  * ebx = what to set:
-    * 1 - set common volume
-    * 2 - set CD-audio volume
-  * cl = volume level: high 4 bits for the left column,
-    low 4 bits for the right one
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - SB base is not defined
-  * eax = 2 - incorrect subfunction
-Remarks:
-  * Previously SB base port must be defined by 
-    subfunction 4 of function 21.
-  * See also function 28 which sets
-    volume for the later standard SB16.
+Removed
 
 ======================================================================
 ======== Function 26, subfunction 1 - get MPU MIDI base port. ========
@@ -1584,14 +1549,7 @@ Remarks:
 ======================================================================
 ====== Function 26, subfunction 4 - get Sound Blaster base port. =====
 ======================================================================
-Parameters:
-  * eax = 26 - function number
-  * ebx = 4 - subfunction number
-Returned value:
-  * eax = base port number
-Remarks:
-  * Bae port is used by functions 25, 55.
-  * To set base port use subfunction 4 of function 21.
+Removed
 
 ======================================================================
 ========== Function 26, subfunction 5 - get system language. =========
@@ -1658,14 +1616,7 @@ Remarks:
 ======================================================================
 ======== Function 26, subfunction 10 - get sound DMA channel. ========
 ======================================================================
-Parameters:
-  * eax = 26 - function number
-  * ebx = 10 - subfunction number
-Returned value:
-  * eax = number of the channel (from 0 to 3 inclusive)
-Remarks:
-  * Number of the DMA channel is used by subfunction 1 of function 55.
-  * To set the sound DMA channel use subfunction 10 of function 21.
+Removed
 
 ======================================================================
 ===================== Function 26, subfunction 11 ====================
@@ -1697,20 +1648,7 @@ Remarks:
 ======================================================================
 =================== Function 28 - set SB16 volume. ===================
 ======================================================================
-Parameters:
-  * eax = 28 - function number
-  * ebx = what to install:
-    * 1 - install common volume
-    * 2 - install CD-audio volume
-  * cl = volume level (0=off, 0xFF=max)
-Returned value:
-  * eax = 0 - success
-  * eax = 1 - SB base is not defined
-  * eax = 2 - incorrect subfunction
-Remarks:
-  * Previously SB base port must be defined by
-    subfunction 4 of function 21.
-  * This function gives more variants for volume, that function 25.
+Removed
 
 ======================================================================
 =================== Function 29 - get system date. ===================

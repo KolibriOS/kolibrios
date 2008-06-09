@@ -15,7 +15,6 @@ $Revision$
 
 align 32
 irq0:
-   ;     pushfd
         pushad
         mov   ax, app_data  ;
         mov   ds, ax
@@ -42,7 +41,6 @@ irq0:
         mov   [DONT_SWITCH], byte 0
 
         popad
- ;       popfd
         iretd
 
 .change_task:
@@ -227,9 +225,6 @@ do_change_task:
 @@:
         mov     eax, [ebx+APPDATA.saved_esp0]
         mov     [tss._esp0], eax
-;        mov eax, [ebx+APPDATA.pl0_stack]
-;        add eax, RING0_STACK_SIZE
-;        mov [tss._esp0], eax
         mov ax, graph_data
         mov gs, ax
 

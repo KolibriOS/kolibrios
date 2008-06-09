@@ -128,10 +128,10 @@ iglobal
       dd sys_settime		 ; 22-setting date,time,clock and alarm-clock
       dd 0
       dd syscall_cdaudio	 ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd sys_sb16		 ; 25-SetSb16
+      dd 0                       ;
       dd sys_getsetup		 ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd 0
-      dd sys_sb16II		 ; 28-SetSb16
+      dd 0                       ;
       dd 0
       dd sys_current_directory	 ; 30-Get/SetCurrentDirectory
       dd 0
@@ -208,10 +208,10 @@ iglobal
       dd cross_order		 ; 22-setting date,time,clock and alarm-clock
       dd sys_wait_event_timeout  ; 23-TimeOutWaitForEvent
       dd cross_order		 ; 24-PlayCdTrack,StopCd and GetCdPlaylist
-      dd cross_order		 ; 25-SetSb16
+      dd undefined_syscall       ; 25-reserved
       dd cross_order		 ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd undefined_syscall	 ; 27-reserved
-      dd cross_order		 ; 28-SetSb16
+      dd undefined_syscall       ; 28-reserved
       dd sys_date		 ; 29-GetDate
       dd cross_order		 ; 30-Get/SetCurrentDirectory
       dd undefined_syscall	 ; 31-reserved
@@ -258,5 +258,5 @@ iglobal
       dd cross_order		 ; 72-Send window message
 	times 255 - ( ($-servetable2) /4 )  dd undefined_syscall
       dd sys_end		 ; -1-end application
-   
+
 endg

@@ -9,11 +9,11 @@
 
 format MS COFF
 
+DEBUG	    equ 1
+
 
 include 'proc32.inc'
 include 'imports.inc'
-
-DEBUG	    equ 1
 
 REMAP_IRQ   equ 0
 

@@ -6,8 +6,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 macro kernel_export [name]{
 forward
-;display `name,#13,#10
   if used name
+	if DEBUG
+	display 'uses: ',`name,#13,#10
+	end if
     extrn name
   end if
 }
@@ -19,6 +21,7 @@ kernel_export \
 	      GetService,\
 	      ServiceHandler,\
 	      AttachIntHandler,\
+	      GetIntHandler,\
 	      FpuSave,\
 	      FpuRestore,\
 	      ReservePortArea,\

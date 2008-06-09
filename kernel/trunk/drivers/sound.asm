@@ -7,13 +7,13 @@
 
 format MS COFF
 
+DEBUG		equ 1
 
 include 'proc32.inc'
 include 'imports.inc'
 
 API_VERSION	equ 0x01000100
 
-DEBUG		equ 1
 DEBUG_IRQ	equ 0
 
 USE_COM_IRQ	equ 0	 ;make irq 3 and irq 4 available for PCI devices

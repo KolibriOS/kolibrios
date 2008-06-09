@@ -90,6 +90,7 @@ szHwMouse	db 'ATI2D',0
 szPS2MDriver	db 'PS2MOUSE',0
 szCOM_MDriver	db 'COM_MOUSE',0
 szUSB		db 'USB',0
+szAtiHW         db '/rd/1/drivers/ati2d.drv',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
@@ -146,7 +147,6 @@ putpixel	dd __sys_putpixel
 
 align 4
 keyboard   dd 1
-sound_dma  dd 1
 syslang    dd 1
 
 boot_y	   dd 10
@@ -283,7 +283,9 @@ irq_tab 	  rd 16
 mem_block_map	  rb 512
 event_map	  rb 64
 mem_block_list	  rd 64
+large_block_list  rd 31
 mem_block_mask	  rd 2
+large_block_mask  rd 1
 
 mem_used.fd	  rd 1
 mem_used.bk	  rd 1
@@ -363,8 +365,6 @@ hdid		  rd 1
 hdpos		  rd 1	  ; for boot 0x1
 fat32part	  rd 1	  ; for boot 0x1
 cdpos		  rd 1
-
-sb16		  rd 1
 
 ;CPUID information
 cpu_vendor	  rd 3

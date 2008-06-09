@@ -18,15 +18,38 @@
 
 $Revision$
 
+align 4
+sound_interface:
 
-kontrOctave      dw  0x4742, 0x4342, 0x3F7C, 0x3BEC, 0x388F, 0x3562
-                 dw  0x3264, 0x2F8F, 0x2CE4, 0x2A5F, 0x2802, 0x25BF
-memAdrNote       dd  0
-pidProcessNote   dd  0
-slotProcessNote  dd  0
-count_timer_Note dd  1
-mem8253r42       dw  0
-countDelayNote   db  0
+           cmp   eax, edi                      ; this is subfunction #55 ?
+           jne  retFunc55                      ; if no then return.
+
+           cmp   byte [sound_flag],0
+           jne   retFunc55
+
+           movzx eax, byte [countDelayNote]
+           or    al, al                        ; player is busy ?
+           jnz  retFunc55                      ; return counter delay Note
+
+           mov   [memAdrNote],edx
+           call  get_pid
+           mov   [pidProcessNote],eax
+           xor   eax, eax                      ; Ok!  EAX = 0
+ retFunc55:
+           mov   [esp+36], eax                 ; return value EAX for application
+           ret
+
+iglobal
+align 4
+  kontrOctave      dw  0x4742, 0x4342, 0x3F7C, 0x3BEC, 0x388F, 0x3562
+                   dw  0x3264, 0x2F8F, 0x2CE4, 0x2A5F, 0x2802, 0x25BF
+  memAdrNote       dd  0
+  pidProcessNote   dd  0
+  slotProcessNote  dd  0
+  count_timer_Note dd  1
+  mem8253r42       dw  0
+  countDelayNote   db  0
+endg
 
 playNote:
 ;      jmp   NotPlayNotes

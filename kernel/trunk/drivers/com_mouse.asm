@@ -11,14 +11,12 @@
 
 format MS COFF
 
-API_VERSION	equ 5  ;debug
+DEBUG        equ 0
 
 include 'proc32.inc'
 include 'imports.inc'
 
-OS_BASE 	equ 0x80000000;
-new_app_base	equ 0x0
-PROC_BASE	equ OS_BASE+0x0080000
+API_VERSION	equ 5  ;debug
 
 struc IOCTL
 {  .handle	dd ?
@@ -36,7 +34,6 @@ end virtual
 public START
 public version
 
-DEBUG	     equ 0
 
 DRV_ENTRY    equ 1
 DRV_EXIT     equ -1

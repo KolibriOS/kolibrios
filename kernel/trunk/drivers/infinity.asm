@@ -10,6 +10,13 @@
 
 format MS COFF
 
+DEBUG             equ 1
+
+
+include 'proc32.inc'
+include 'main.inc'
+include 'imports.inc'
+
 
 CURRENT_API     equ   0x0101      ;1.01
 COMPATIBLE_API  equ   0x0100      ;1.00
@@ -18,13 +25,6 @@ API_VERSION     equ   (COMPATIBLE_API shl 16) or CURRENT_API
 SOUND_VERSION   equ   CURRENT_API
 
 
-include 'proc32.inc'
-
-;include 'system.inc'
-include 'main.inc'
-
-include 'imports.inc'
-
 FORCE_MMX         equ 0  ;set to 1 to force use mmx or
 FORCE_MMX_128     equ 0  ;integer sse2 extensions
                          ;and reduce driver size
@@ -32,9 +32,6 @@ FORCE_MMX_128     equ 0  ;integer sse2 extensions
 ;USE_SSE          equ 0
 
 USE_SSE2_MIXER    equ 0  ;floating point mixer. Disabled by default
-
-DEBUG             equ 1
-
 
 OS_BASE           equ 0x80000000
 
@@ -1209,7 +1206,7 @@ resampler_params:
      ;r_size    r_dt   resampler_func
      dd 0,0,0                                  ; 0  PCM_ALL
      dd 16384,      0, copy_stream    ; 1  PCM_2_16_48
-     dd 16384,      0, m16_stereo     ; 2  PCM_1_16_48
+     dd  8192,      0, m16_stereo     ; 2  PCM_1_16_48
 
      dd 16384,  30109, resample_2     ; 3  PCM_2_16_44
      dd  8192,  30109, resample_1     ; 4  PCM_1_16_44

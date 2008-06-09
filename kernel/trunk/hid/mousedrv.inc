@@ -114,29 +114,25 @@ save_draw_mouse:
 
 	movzx edx, byte [display_data+ebx+eax]
 	shl edx, 8
-	mov ecx, [edx+SLOT_BASE+APPDATA.cursor]
+        mov esi, [edx+SLOT_BASE+APPDATA.cursor]
 
-	cmp ecx, [current_cursor]
+        cmp esi, [current_cursor]
 	je .draw
 
-	cmp [ecx+CURSOR.magic], 'CURS'
-	jne .fail
+       ; cmp [esi+CURSOR.magic], 'CURS'
+       ; jne .fail
 
-	push ecx
+        push esi
 	call [select_hw_cursor]
-	mov [current_cursor], ecx
-
-;        cmp [ecx+CURSOR.size], CURSOR_SIZE
-;        jne .fail
-
+        mov [current_cursor], esi
 .draw:
-	stdcall [set_hw_cursor], ecx
+        stdcall [set_hw_cursor], esi
 	popad
 	ret
 .fail:
 	mov ecx, [def_cursor]
 	mov [edx+SLOT_BASE+APPDATA.cursor], ecx
-	stdcall [set_hw_cursor], ecx
+        stdcall [set_hw_cursor], ecx            ; stdcall: [esp]=ebx,eax
 	popad
 	ret
 

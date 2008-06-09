@@ -345,8 +345,6 @@ high_code:
 	mov   al,[BOOT_VAR+0x9000]	  ; bpp
 	mov   [ScreenBPP],al
 
-	xchg bx, bx
-
 	movzx eax,word [BOOT_VAR+0x900A]  ; X max
 	dec   eax
 	mov   [Screen_Max_X],eax
@@ -712,7 +710,7 @@ no_lib_load:
 	mov  [TASK_DATA+TASKDATA.mem_start], 0	; process base address
 
 	call init_cursors
-	mov eax, [def_cursor]
+        mov eax, [def_cursor]
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
@@ -1032,7 +1030,6 @@ reserve_irqs_ports:
 
 	mov  [irq_owner+4*0], 1    ; timer
 	;mov  [irq_owner+4*1], 1    ; keyboard
-	mov  [irq_owner+4*5], 1    ; sound blaster
 	mov  [irq_owner+4*6], 1    ; floppy diskette
 	mov  [irq_owner+4*13], 1   ; math co-pros
 	mov  [irq_owner+4*14], 1   ; ide I
@@ -1104,8 +1101,7 @@ set_variables:
 	mov   [MOUSE_X],eax
 	pop   eax
 
-	mov   byte [SB16_Status],0	      ; Minazzi Paolo
-	mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
+        mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
 
      ;!! IP 04.02.2005:
 	mov   [next_usage_update], 100
@@ -1182,106 +1178,6 @@ sys_outport:
     mov   [esp+36],dword 0
     mov   [esp+24],eax
     ret
-
-
-
-align 4
-sys_sb16:
-
-     cmp  word [sb16],word 0
-     jnz  sb16l1
-     mov  [esp+36],dword 1
-     ret
-   sb16l1:
-     mov  [esp+36],dword 0
-     cmp  eax,1    ; set volume - main
-     jnz  sb16l2
-     mov  dx,word [sb16]
-     add  dx,4
-     mov  al,0x22
-     out  dx,al
-     mov  esi,1
-     call delay_ms
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     ret
-   sb16l2:
-
-     cmp  eax,2    ; set volume - cd
-     jnz  sb16l3
-     mov  dx,word [sb16]
-     add  dx,4
-     mov  al,0x28
-     out  dx,al
-     mov  esi,1
-     call delay_ms
-     mov  eax,ebx
-     add  edx,1
-     out  dx,al
-     ret
-   sb16l3:
-      mov  [esp+36],dword 2
-      ret
-
-
-align 4
-
-sys_sb16II:
-
-     cmp  word [sb16],word 0
-     jnz  IIsb16l1
-     mov  [esp+36],dword 1
-     ret
-   IIsb16l1:
-
-     cmp  eax,1    ; set volume - main
-     jnz  IIsb16l2
-     ; L
-     mov  dx,word [sb16]
-     add  dx,4
-     mov  al,0x30
-     out  dx,al
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     ; R
-     mov  dx,word [sb16]
-     add  dx,4
-     mov  al,0x31
-     out  dx,al
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     mov  [esp+36],dword 0
-     ret
-   IIsb16l2:
-
-     cmp  eax,2    ; set volume - cd
-     jnz  IIsb16l3
-     ; L
-     mov  dx,word [sb16]
-     add  dx,4
-     mov  al,0x36
-     out  dx,al
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     ; R
-     mov  dx,word [sb16]
-     add  dx,4
-     mov  al,0x37
-     out  dx,al
-     mov  eax,ebx
-     inc  edx
-     out  dx,al
-     mov  [esp+36],dword 0
-     ret
-   IIsb16l3:
-
-     mov  [esp+36],dword 2
-     ret
-
 
 display_number:
 
@@ -1472,7 +1368,6 @@ sys_setup:
 ; 1=roland mpu midi base , base io address
 ; 2=keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
 ; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 4=sb16 base , base io address
 ; 5=system language, 1eng 2fi 3ger 4rus
 ; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
 ; 8=fat32 partition in hd
@@ -1543,7 +1438,7 @@ endg
      ret
    nsyse2:
      cmp  eax,3 		     ; CD
-     jnz  nsyse3
+     jnz  nsyse4
      test ebx,ebx
      jz   nosesl
      cmp  ebx, 4
@@ -1573,17 +1468,6 @@ endg
 
 cd_base db 0
 
-   nsyse3:
-
-     cmp  eax,4 		     ; SB
-     jnz  nsyse4
-     cmp  ebx,0x100
-     jb   nsyse4
-     mov  edx,65535
-     cmp  edx,ebx
-     jb   nsyse4
-     mov  word [sb16],bx
-     ret
    nsyse4:
 
      cmp  eax,5 		     ; SYSTEM LANGUAGE
@@ -1638,7 +1522,7 @@ iglobal
 hd_base db 0
 endg
 
-   nsyse7:
+nsyse7:
 
      cmp  eax,8 		     ; HD PARTITION
      jne  nsyse8
@@ -1652,24 +1536,16 @@ endg
      popa
     mov   [hd1_status],0	; free
      ret
-   nsyse8:
 
-     cmp  eax,10		     ; SOUND DMA CHANNEL
-     jne  no_set_sound_dma
-     cmp  ebx,3
-     ja   sys_setup_err
-     mov  [sound_dma],ebx
-     ret
-   no_set_sound_dma:
-
+nsyse8:
      cmp  eax,11		     ; ENABLE LBA READ
      jne  no_set_lba_read
      and  ebx,1
      mov  [lba_read_enabled],ebx
      ret
-   no_set_lba_read:
 
-     cmp  eax,12		     ; ENABLE PCI ACCESS
+no_set_lba_read:
+     cmp  eax,12                     ; ENABLE PCI ACCESS
      jne  no_set_pci_access
      and  ebx,1
      mov  [pci_access_enabled],ebx
@@ -1691,7 +1567,6 @@ sys_getsetup:
 ; 1=roland mpu midi base , base io address
 ; 2=keyboard   1, base kaybap 2, shift keymap, 9 country 1eng 2fi 3ger 4rus
 ; 3=cd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
-; 4=sb16 base , base io address
 ; 5=system language, 1eng 2fi 3ger 4rus
 ; 7=hd base    1, pri.master 2, pri slave 3 sec master, 4 sec slave
 ; 8=fat32 partition in hd
@@ -1702,7 +1577,7 @@ sys_getsetup:
      movzx eax,[midi_base]
      mov  [esp+36],eax
      ret
-   ngsyse1:
+ngsyse1:
 
      cmp  eax,2
      jne  ngsyse2
@@ -1715,7 +1590,7 @@ sys_getsetup:
      mov  ecx,128
      call memmove
      ret
-   kbnobaseret:
+kbnobaseret:
      cmp  ebx,2
      jnz  kbnoshiftret
      mov  edi,[TASK_BASE]
@@ -1725,7 +1600,7 @@ sys_getsetup:
      mov  ecx,128
      call memmove
      ret
-   kbnoshiftret:
+kbnoshiftret:
      cmp  ebx,3
      jne  kbnoaltret
      mov  edi,[TASK_BASE]
@@ -1735,70 +1610,56 @@ sys_getsetup:
      mov  ecx,128
      call memmove
      ret
-   kbnoaltret:
+kbnoaltret:
      cmp  ebx,9
      jnz  ngsyse2
      movzx eax,word [keyboard]
      mov  [esp+36],eax
      ret
-   ngsyse2:
+ngsyse2:
 
-     cmp  eax,3
-     jnz  ngsyse3
-     movzx eax,[cd_base]
-     mov  [esp+36],eax
-     ret
-   ngsyse3:
-
-     cmp  eax,4
-     jne  ngsyse4
-     mov  eax,[sb16]
-     mov  [esp+36],eax
-     ret
-   ngsyse4:
-
-     cmp  eax,5
-     jnz  ngsyse5
-     mov  eax,[syslang]
-     mov  [esp+36],eax
-     ret
-   ngsyse5:
+         cmp  eax,3
+         jnz  ngsyse3
+         movzx eax,[cd_base]
+         mov  [esp+36],eax
+         ret
+ngsyse3:
+         cmp  eax,5
+         jnz  ngsyse5
+         mov  eax,[syslang]
+         mov  [esp+36],eax
+         ret
+ngsyse5:
      cmp  eax,7
      jnz  ngsyse7
      movzx eax,[hd_base]
      mov  [esp+36],eax
      ret
-   ngsyse7:
+ngsyse7:
      cmp  eax,8
      jnz  ngsyse8
      mov eax,[fat32part]
      mov  [esp+36],eax
      ret
-   ngsyse8:
+ngsyse8:
      cmp  eax,9
      jne  ngsyse9
      mov  eax,[timer_ticks] ;[0xfdf0]
      mov  [esp+36],eax
      ret
-   ngsyse9:
-     cmp  eax,10
-     jnz  ngsyse10
-     mov eax,[sound_dma]
-     mov  [esp+36],eax
-     ret
-   ngsyse10:
+ngsyse9:
      cmp  eax,11
      jnz  ngsyse11
      mov eax,[lba_read_enabled]
      mov  [esp+36],eax
      ret
-   ngsyse11:
+ngsyse11:
      cmp  eax,12
      jnz  ngsyse12
      mov eax,[pci_access_enabled]
      mov  [esp+36],eax
      ret
-   ngsyse12:
+ngsyse12:
      mov  [esp+36],dword 1
      ret
 
@@ -2528,7 +2389,9 @@ nosb6:
 	and	dword [page_tabs+eax*4], 0
 	mov	edx, eax
 	shl	edx, 12
+        push eax
 	invlpg	[edx]
+        pop eax
 	inc	eax
 	loop	@b
 	pop	eax

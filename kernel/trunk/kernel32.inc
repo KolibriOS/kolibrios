@@ -207,7 +207,6 @@ include "fs/iso9660.inc"  ; read for iso9660 filesystem CD
 
 ; sound
 
-include "sound/sb16.inc"     ; playback for Sound Blaster 16
 include "sound/playnote.inc" ; player Note for Speaker PC
 
 ; display

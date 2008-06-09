@@ -9,6 +9,8 @@
 
 format MS COFF
 
+DEBUG        equ 1
+
 API_VERSION     equ 0  ;debug
 
 include 'proc32.inc'
@@ -34,8 +36,6 @@ end virtual
 public START
 public service_proc
 public version
-
-DEBUG        equ 1
 
 DRV_ENTRY    equ 1
 DRV_EXIT     equ -1

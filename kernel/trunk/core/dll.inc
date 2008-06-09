@@ -17,10 +17,10 @@ PID_KERNEL  equ 1    ;os_idle thread
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 
-	 mov  ebx, [irq]	;irq num
+         mov  ebx, [irq]                   ;irq num
 	 test ebx, ebx
 	 jz   .err
-	 cmp  ebx, 15		; hidnplayr says: we only have 16 IRQ's
+         cmp  ebx, 15                      ; hidnplayr says: we only have 16 IRQ's
 	 ja   .err
 	 mov  eax, [handler]
 	 test eax, eax
@@ -28,24 +28,20 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 	 cmp  [irq_owner + 4 * ebx], 0
 	 je   @f
 
-	 mov  ecx, [irq_rights + 4 * ebx]	  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
+         mov  ecx, [irq_rights + 4 * ebx]  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
 	 test ecx, ecx
 	 jnz  .err
 
-      @@:
+@@:
 	 mov  [irq_tab+ebx*4], eax
 
 	 mov  eax, [access_rights]
 	 mov  [irq_rights + 4 * ebx], eax
-	 ;push eax
-	 ;mov  eax, [TASK_BASE]
-	 ;mov  eax, [eax + TASKDATA.pid]          ; faster or smaller? :)
-         ;call  get_pid
 
-         mov  [irq_owner + 4 * ebx], PID_KERNEL   ;eax
-	 ;pop  eax
+         mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
 
 	 stdcall enable_irq, [irq]
+         mov eax, 1
 	 ret
 .err:
 	 xor eax, eax

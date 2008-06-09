@@ -7,14 +7,14 @@
 
 format MS COFF
 
+DEBUG           equ 1
+
 include 'proc32.inc'
 include 'imports.inc'
 
 R500_HW2D       equ 0
 
 API_VERSION     equ 0x01000100
-
-DEBUG           equ 1
 
 STRIDE          equ 8
 

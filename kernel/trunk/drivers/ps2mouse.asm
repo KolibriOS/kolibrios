@@ -1,5 +1,7 @@
 format MS COFF
 
+DEBUG       equ 0
+
 include 'proc32.inc'
 include 'imports.inc'
 
@@ -47,12 +49,12 @@ proc START stdcall, state:dword
 	  test eax,eax
 	  jnz  .stop_try
 	  mov  [MouseType],MT_3BScroll
-	  
+
 	  call try_mode_ID4
 	  test eax,eax
 	  jnz  .stop_try
 	  mov  [MouseType],MT_5BScroll
-	  
+
   .stop_try:
 
 	  mov  bl, 0x20        ; read command byte
@@ -81,7 +83,7 @@ proc START stdcall, state:dword
 
 	  mov  bl, 0xAE        ; enable keyboard interface
 	  call kbd_cmd
-	  
+
 	  stdcall AttachIntHandler, 12, irq_handler, dword 0
 	  stdcall RegService, my_service, service_proc
 		ret
