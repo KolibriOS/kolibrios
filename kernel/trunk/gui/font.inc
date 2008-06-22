@@ -7,6 +7,14 @@
 
 $Revision$
 
+; // Alver 22.06.2008 // {
+align 4
+dtext_asciiz_esi:                          ; for skins title out
+    push eax
+    xor eax, eax
+    inc eax
+    jmp    dtext.1
+; } \\ Alver \\
 
 align 4
 dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
@@ -19,6 +27,11 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         ; edx start of text
         ; edi 1 force
 
+; // Alver 22.06.2008 // {
+       push eax
+        xor     eax, eax
+.1:
+; } \\ Alver \\
         pushad
         call    [disable_mouse]
 
@@ -37,6 +50,12 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
 .test_asciiz:
         cmp     byte [edx], 0
         jz      .end
+; // Alver 22.06.2008 // {
+        cmp byte [esp+28], 1
+        jne   @f
+        dec     esi
+        js        .end
+; } \\ Alver \\
 @@:
         inc     edx
         pushad
@@ -109,4 +128,5 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         jmp     .loop
 .end:
         popad
+        pop  eax                ; << // Alver 22.06.2008 // <<
         ret

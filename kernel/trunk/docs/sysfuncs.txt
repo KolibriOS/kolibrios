@@ -613,10 +613,11 @@ Parameters:
   * eax = 17 - function number
 Returned value:
   * if the buffer is empty, function returns eax=1
-  * if the buffer is not empty, function returns al=0,
+  * if the buffer is not empty, function returns:
     high 24 bits of eax contain button identifier (in particular, ah
     contains low byte of the identifier; if all buttons have
-    the identifier less than 256, ah is enough to distinguish).
+    the identifier less than 256, ah is enough to distinguish),
+    and al contain 0 - if used left mouse button or bit of the used another mouse button
 Remarks:
   * "Buffer" keeps only one button, at pressing the new button the
     information about old is lost.

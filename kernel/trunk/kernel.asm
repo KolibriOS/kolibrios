@@ -2515,6 +2515,10 @@ sys_getbutton:
 	jz	.exit
 	mov	eax, [BTN_BUFF]
 	shl	eax, 8
+; // Alver 22.06.2008 // {
+        mov       al, byte [btn_down_determ]
+        and       al,0xFE                                       ; delete left button bit
+; } \\ Alver \\
 	mov	[BTN_COUNT], byte 0
 	mov	[esp + 32], eax
 .exit:
@@ -2925,7 +2929,10 @@ draw_window_caption:
 	mov	ecx,[common_colours+16];0x00FFFFFF
 	or	ecx, 0x80000000
 	xor	edi,edi
-	call	dtext
+; // Alver 22.06.2008 // {
+;	call	dtext
+        call dtext_asciiz_esi
+; } \\ Alver \\
 
     @@:
 ;--------------------------------------------------------------

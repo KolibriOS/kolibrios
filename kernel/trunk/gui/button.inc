@@ -563,6 +563,13 @@ checkbuttons:
     call negativebutton
 
     pushad
+; // Alver 22.06.2008 // {
+    push  eax
+    mov  al, byte [BTN_DOWN]
+    mov  byte [btn_down_determ], al
+    pop  eax
+; } \\ Alver \\
+
   cbwaitmouseup:
 
     call  checkidle
@@ -586,6 +593,7 @@ iglobal
     mx dw 0x0 ; keeps the x mouse's position when it was clicked
     my dw 0x0 ; keeps the y mouse's position when it was clicked
     bPressedMouseXY_B db 0x0
+    btn_down_determ     db 0x0        ; << // Alver 22.06.2008// <<
 endg
 
    pusha
