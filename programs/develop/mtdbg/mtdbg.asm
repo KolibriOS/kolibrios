@@ -1030,7 +1030,8 @@ draw_window:
 	call	draw_dump
 	call	draw_disasm
 ; end redraw
-	mov	al, 12
+	push	12
+	pop	eax
 	push	2
 	pop	ebx
 	mcall
@@ -3306,8 +3307,6 @@ disasm_loop1:
 
 cop0:
 clock:
-crepnz:
-crep:
 csegcs:
 csegds:
 cseges:
@@ -3356,8 +3355,6 @@ cmd1:
 	db	0xC9,5,'leave'
 	db	0xCC,4,'int3'
 	db	0xF0,4,'lock'
-	db	0xF2,5,'repnz'
-	db	0xF3,6,'rep(z)'
 	db	0xF5,3,'cmc'
 	db	0xF8,3,'clc'
 	db	0xF9,3,'stc'
@@ -3367,17 +3364,17 @@ cmd1:
 	db	0xFD,3,'std'
 cmd2:
 	db	0x05,7,'syscall'
+	db	0x06,4,'clts'
 	db	0x31,5,'rdtsc'
 	db	0x34,8,'sysenter'
 	db	0xA2,5,'cpuid'
 	db	0x77,4,'emms'
 endg
 	jmp	@f
-csysenter:
-csyscall:
 ccpuid:
 crdtsc:
 cemms:
+cop0_F:
 	mov	esi, cmd2
 @@:
 	cmp	al, [esi]
@@ -3418,13 +3415,7 @@ c66:
 	or	ch, 1
 	jmp	disasm_loop1
 
-center:
-caam:
 cxlat:
-ccmpxchg:
-cbsf:
-cbsr:
-ccmpxchg8b:
 cunk:
 cerr:
 	mov	eax, '???'
@@ -3435,6 +3426,162 @@ cerr:
 cF:
 	call	disasm_get_byte
 	jmp	dword [disasm_table_2 + eax*4]
+
+crep:
+	push	[disasm_cur_pos]
+	call	disasm_get_byte
+	cmp	al, 0x0F
+	jz	.sse
+	mov	dl, al
+	mov	eax, 'rep '
+	stosd
+	mov	al, dl
+@@:
+	and	eax, not 1
+	cmp	al, 0x66
+	jnz	@f
+	call	disasm_get_byte
+	mov	dl, al
+	jmp	@b
+@@:
+	cmp	al, 0xA6
+	jz	.repz
+	cmp	al, 0xAE
+	jz	.repz
+	cmp	al, 0xA4
+	jz	.prefix
+	cmp	al, 0xAA
+	jz	.prefix
+	cmp	al, 0xAC
+	jz	.prefix
+	cmp	al, 0x6C
+	jz	.prefix
+	cmp	al, 0x6E
+	jz	.prefix
+.noprefix:
+	pop	[disasm_cur_pos]
+	and	byte [edi-1], 0
+	ret
+.repz:
+	mov	byte [edi-1], 'z'
+	mov	al, ' '
+	stosb
+.prefix:
+	pop	[disasm_cur_pos]
+	jmp	disasm_loop1
+.sse:
+	pop	eax
+	call	disasm_get_byte
+iglobal
+rep_sse_cmds:
+	db	0x58,3,'add'
+	db	0xC2,3,'cmp'
+	db	0,0
+endg
+	mov	esi, rep_sse_cmds+1
+@@:
+	movzx	edx, byte [esi]
+	cmp	al, [esi-1]
+	jz	@f
+	lea	esi, [esi+edx+2]
+	cmp	byte [esi], 0
+	jnz	@b
+	sub	[disasm_cur_pos], 2
+	mov	eax, 'rep'
+	stosd
+	ret
+@@:
+	push	ecx
+	mov	ecx, edx
+	inc	esi
+	rep	movsb
+	pop	ecx
+	mov	al, 's'
+	stosb
+	jmp	rep_sse_final
+
+crepnz:
+	call	disasm_get_byte
+	cmp	al, 0x0F
+	jz	.sse
+	mov	dl, al
+	mov	eax, 'repn'
+	stosd
+	mov	al, 'z'
+	stosb
+	mov	al, ' '
+	stosb
+	movzx	eax, dl
+	cmp	al, 0x6C
+	jb	crep.noprefix
+	cmp	al, 0x6F
+	jbe	.prefix
+	cmp	al, 0xA4
+	jb	crep.noprefix
+	cmp	al, 0xA7
+	jbe	.prefix
+	cmp	al, 0xAA
+	jb	crep.noprefix
+	cmp	al, 0xAF
+	ja	crep.noprefix
+.prefix:
+	jmp	cop0
+.sse:
+	call	disasm_get_byte
+	mov	esi, rep_sse_cmds+1
+@@:
+	movzx	edx, byte [esi]
+	cmp	al, [esi-1]
+	jz	.found0
+	lea	esi, [esi+edx+2]
+	cmp	byte [esi], 0
+	jnz	@b
+	mov	esi, sse_cmds2+1
+@@:
+	movzx	edx, byte [esi]
+	cmp	al, [esi-1]
+	jz	.found1
+	lea	esi, [esi+edx+2]
+	cmp	byte [esi], 0
+	jnz	@b
+	sub	[disasm_cur_pos], 2
+	mov	eax, 'repn'
+	stosd
+	mov	al, 'z'
+	stosb
+	and	byte [edi], 0
+	ret
+.found0:
+	push	ecx
+	mov	ecx, edx
+	inc	esi
+	rep	movsb
+	pop	ecx
+	mov	al, 's'
+	stosb
+	mov	al, 'd'
+	jmp	rep_sse_final
+.found1:
+	push	ecx
+	mov	ecx, edx
+	inc	esi
+	rep	movsb
+	pop	ecx
+	mov	al, 'p'
+	stosb
+	mov	al, 's'
+rep_sse_final:
+	stosb
+	push	ecx
+	push	5
+	pop	ecx
+	sub	ecx, edx
+	adc	ecx, 1
+	mov	al, ' '
+	rep	stosb
+	pop	ecx
+	or	ch, 1
+	jmp	disasm_mmx1
 
 macro disasm_set_modew
 {
@@ -3838,9 +3985,26 @@ cpush22:
 	stosd
 	call	disasm_get_byte
 	movsx	eax, al
+@@:
 	call	disasm_write_num
 	and	byte [edi], 0
 	ret
+
+center:
+	mov	eax, 'ente'
+	stosd
+	mov	eax, 'r   '
+	stosd
+	xor	eax, eax
+	call	disasm_get_word
+	call	disasm_write_num
+	mov	al, ','
+	stosb
+	mov	al, ' '
+	stosb
+	xor	eax, eax
+	call	disasm_get_byte
+	jmp	@b
 
 cinc1:
 ; inc reg32
@@ -3984,6 +4148,23 @@ cshift1:
 	stosw
 	jmp	disasm_i8u
 
+caam:
+	mov	eax, 'aam '
+	jmp	@f
+caad:
+	mov	eax, 'aad '
+@@:
+	stosd
+	mov	eax, '    '
+	stosd
+	xor	eax, eax
+	call	disasm_get_byte
+	cmp	al, 10
+	jz	@f
+	call	disasm_write_num
+@@:
+	and	byte [edi], 0
+	ret
 
 cmov3:
 ; A0: mov al,[ofs32]
@@ -4117,6 +4298,25 @@ cop21:
 	and	byte [edi], 0
 	ret
 
+carpl:
+	xor	edx, edx
+	or	ch, 0C1h
+	mov	eax, 'arpl'
+	jmp	cop22.d2
+
+ccmpxchg:
+	xor	edx, edx
+	disasm_set_modew
+	or	ch, 40h
+	mov	eax, 'cmpx'
+	stosd
+	mov	eax, 'chg '
+	jmp	cop22.d1
+
+cbsf:
+cbsr:
+	or	ch, 80h
+
 cop22:
 	disasm_set_modew
 	or	ch, 40h
@@ -4126,6 +4326,12 @@ cop22:
 	jz	@f
 	mov	esi, 'imul'
 	cmp	al, 0xAF
+	jz	@f
+	mov	esi, 'bsf '
+	cmp	al, 0BCh
+	jz	@f
+	mov	esi, 'bsr '
+	cmp	al, 0BDh
 	jz	@f
 	mov	esi, 'mov '
 	cmp	al, 88h
@@ -4141,8 +4347,10 @@ cop22:
 	mov	esi, [disasm_op2cmds+eax*4]
 @@:
 	xchg	eax, esi
+.d2:
 	stosd
 	mov	eax, '    '
+.d1:
 	stosd
 	call	disasm_get_byte
 	dec	[disasm_cur_pos]
@@ -4153,6 +4361,10 @@ cop22:
 	cmp	dl, 0x86
 	jz	@f
 	cmp	dl, 0x87
+	jz	@f
+	cmp	dl, 0xBC
+	jz	@f
+	cmp	dl, 0xBD
 	jz	@f
 	test	dl, 2
 	jz	.d0
@@ -4172,6 +4384,14 @@ cop22:
 	call	disasm_write_reg
 	and	byte [edi], 0
 	ret
+
+cbound:
+	mov	edx, eax
+	mov	eax, 'boun'
+	stosd
+	mov	eax, 'd   '
+	or	ch, 0xC0
+	jmp	cop22.d1
 
 cop23:
 	disasm_set_modew
@@ -4332,8 +4552,51 @@ cjcc2:
 	stosd
 	mov	eax, '    '
 	stosd
+	test	ch, 1
+	jnz	@f
 	call	disasm_get_dword
 	jmp	disasm_rva
+@@:
+	call	disasm_get_word
+	add	eax, [disasm_cur_pos]
+	and	eax, 0xFFFF
+	call	disasm_write_num
+	and	byte [edi], 0
+	ret
+
+ccallf:
+	mov	eax, 'call'
+	stosd
+	mov	eax, '    '
+	stosd
+	mov	al, 'd'
+	test	ch, 1
+	jnz	@f
+	mov	al, 'p'
+@@:
+	stosb
+	mov	eax, 'word'
+	stosd
+	mov	al, ' '
+	stosb
+	test	ch, 1
+	jnz	.1
+	call	disasm_get_dword
+	jmp	.2
+.1:
+	xor	eax, eax
+	call	disasm_get_word
+.2:
+	push	eax
+	xor	eax, eax
+	call	disasm_get_word
+	call	disasm_write_num
+	mov	al, ':'
+	stosb
+	pop	eax
+	call	disasm_write_num
+	and	byte [edi], 0
+	ret
 
 iglobal
 op11codes	dd	'test',0,'not ','neg ','mul ','imul','div ','idiv'
@@ -4343,28 +4606,59 @@ cop1:
 	disasm_set_modew
 	xchg	eax, edx
 	call	disasm_get_byte
+	movzx	esi, al
 	dec	[disasm_cur_pos]
 	shr	al, 3
 	and	eax, 7
 	cmp	dl, 0xFE
 	jnz	@f
 	cmp	al, 1
-	ja	cunk
+	jbe	@f
+.0:
+	inc	[disasm_cur_pos]
+	jmp	cunk
 @@:
 	and	edx, 8
 	add	eax, edx
+	cmp	al, 11
+	jz	.callfar
+	cmp	al, 13
+	jz	.jmpfar
 	mov	eax, [op11codes+eax*4]
 	test	eax, eax
-	jz	cunk
+	jz	.0
 	cmp	eax, 'test'
 	jz	ctest
-@@:
+.2:
 	stosd
 	mov	eax, '    '
 	stosd
 	call	disasm_readrmop
 	and	byte [edi], 0
 	ret
+.callfar:
+	mov	eax, 'call'
+.1:
+	cmp	esi, 0xC0
+	jae	.0
+	stosd
+	mov	eax, '    '
+	stosd
+	mov	eax, 'far '
+	stosd
+	mov	al, 'd'
+	test	ch, 1
+	jnz	@f
+	mov	al, 'p'
+@@:
+	stosb
+	or	ch, 1
+	call	disasm_readrmop
+	and	byte [edi], 0
+	ret
+.jmpfar:
+	mov	eax, 'jmp '
+	jmp	.1
 
 cpop2:
 	or	ch, 80h
@@ -4373,7 +4667,7 @@ cpop2:
 	test	al, 00111000b
 	jnz	cunk
 	mov	eax, 'pop '
-	jmp	@b
+	jmp	cop1.2
 
 cloopnz:
 	mov	eax, 'loop'
@@ -4504,7 +4798,7 @@ ccbw:
 	jnz	@f
 	mov	eax, 'cwde'
 @@:	stosd
-	and	byte [edi+1], 0
+	and	byte [edi], 0
 	ret
 ccwd:
 	mov	eax, 'cwd '
@@ -4512,6 +4806,28 @@ ccwd:
 	jnz	@b
 	mov	eax, 'cdq '
 	jmp	@b
+
+ccmpxchg8b:
+	call	disasm_get_byte
+	cmp	al, 0xC0
+	jae	cerr
+	shr	al, 3
+	and	al, 7
+	cmp	al, 1
+	jnz	cerr
+	dec	[disasm_cur_pos]
+	mov	eax, 'cmpx'
+	stosd
+	mov	eax, 'chg8'
+	stosd
+	mov	al, 'b'
+	stosb
+	mov	al, ' '
+	stosb
+	or	ch, 40h
+	call	disasm_readrmop
+	and	byte [edi], 0
+	ret
 
 iglobal
 fpuD8	dd	'add ','mul ','com ','comp','sub ','subr','div ','divr'
@@ -5052,7 +5368,66 @@ disasm_mmx1:
 	mov	ax, ', '
 	stosw
 	call	disasm_readrmop
+	cmp	word [disasm_string], 'cm'
+	jz	.cmp
 	and	byte [edi], 0
+	ret
+.cmp:
+	call	disasm_get_byte
+	and	eax, 7
+	mov	dx, 'eq'
+	dec	eax
+	js	@f
+	mov	dx, 'lt'
+	jz	@f
+	mov	dh, 'e'
+	dec	eax
+	jnz	.no2
+@@:
+	xchg	dx, word [disasm_string+3]
+	mov	word [disasm_string+5], dx
+	and	byte [edi], 0
+	ret
+.no2:
+	dec	eax
+	jnz	@f
+	add	edi, 2
+	push	edi
+	lea	esi, [edi-3]
+	lea	ecx, [esi-(disasm_string+8)+2]
+	std
+	rep	movsb
+	cld
+	mov	cx, word [esi-3]
+	mov	dword [esi-3], 'unor'
+	mov	byte [esi+1], 'd'
+	mov	word [esi+2], cx
+	pop	edi
+	and	byte [edi+1], 0
+	ret
+@@:
+	mov	edx, 'neq'
+	dec	eax
+	jz	@f
+	mov	edx, 'nlt'
+	dec	eax
+	jz	@f
+	mov	edx, 'nle'
+	dec	eax
+	jz	@f
+	mov	edx, 'ord'
+@@:
+	push	edi
+	lea	esi, [edi-1]
+	lea	ecx, [esi-(disasm_string+8)+2]
+	std
+	rep	movsb
+	cld
+	mov	cx, word [esi-3]
+	mov	dword [esi-3], edx
+	mov	word [esi], cx
+	pop	edi
+	and	byte [edi+1], 0
 	ret
 
 cpsrlw:
@@ -5091,6 +5466,63 @@ cpsllq:
 	mov	eax, 'q   '
 	stosd
 	jmp	disasm_mmx1
+
+csse1:
+iglobal
+sse_cmds1:
+	db	0x2F,4,'comi'
+	db	0x54,3,'and'
+	db	0x55,4,'andn'
+	db	0x58,3,'add'
+	db	0xC2,3,'cmp'
+endg
+	mov	esi, sse_cmds1+1
+.1:
+@@:
+	movzx	edx, byte [esi]
+	cmp	al, [esi-1]
+	jz	@f
+	lea	esi, [esi+edx+2]
+	jmp	@b
+@@:
+	push	ecx
+	mov	ecx, edx
+	inc	esi
+	rep	movsb
+	pop	ecx
+	mov	al, 's'
+	cmp	byte [edi-1], 'i'
+	jz	@f
+	mov	al, 'p'
+@@:
+	stosb
+	mov	al, 'd'
+	test	ch, 1
+	jnz	@f
+	mov	al, 's'
+@@:
+	stosb
+	push	ecx
+	push	5
+	pop	ecx
+	sub	ecx, edx
+	adc	ecx, 1
+	mov	al, ' '
+	rep	stosb
+	pop	ecx
+	or	ch, 1		; force XMM reg
+	jmp	disasm_mmx1
+
+csse2:
+iglobal
+sse_cmds2:
+	db	0xD0,6,'addsub'
+	db	0,0
+endg
+	test	ch, 1
+	jz	cerr
+	mov	esi, sse_cmds2+1
+	jmp	csse1.1
 
 cpshift:
 	mov	dl, al
@@ -5149,13 +5581,35 @@ cpshift:
 	and	byte [edi], 0
 	ret
 
+iglobal
+grp15c1	dq	'fxsave  ','fxrstor ','ldmxcsr ','stmxcsr ',0,0,0,'clflush '
+endg
+cgrp15:
+	call	disasm_get_byte
+	cmp	al, 0xC0
+	jae	cunk
+	shr	al, 3
+	and	eax, 7
+	mov	edx, eax
+	mov	eax, dword [grp15c1+eax*8]
+	test	eax, eax
+	jz	cerr
+	dec	[disasm_cur_pos]
+	stosd
+	mov	eax, dword [grp15c1+4+edx*8]
+	stosd
+	or	ch, 40h
+	call	disasm_readrmop
+	and	byte [edi], 0
+	ret
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; DATA ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 caption_str db 'Kolibri Debugger',0
 caption_len = $ - caption_str
-begin_str db	'Kolibri Debugger, version 0.3',10
+begin_str db	'Kolibri Debugger, version 0.31',10
 	db	'Hint: type "help" for help, "quit" for quit'
 newline	db	10,0
 prompt	db	'> ',0
@@ -5475,21 +5929,21 @@ disasm_table_1:
 	dd	cdec1, cdec1, cdec1, cdec1, cdec1, cdec1, cdec1, cdec1
 	dd	cpush1,cpush1,cpush1,cpush1,cpush1,cpush1,cpush1,cpush1		; 5x
 	dd	cpop1, cpop1, cpop1, cpop1, cpop1, cpop1, cpop1, cpop1
-	dd	cop0,  cop0,  cunk,  cunk,  csegfs,cseggs,c66,   c67		; 6x
+	dd	cop0,  cop0,  cbound,carpl, csegfs,cseggs,c66,   c67		; 6x
 	dd	cpush21,cimul1,cpush22,cimul1,cunk,cunk,  cunk,  cunk
 	dd	cjcc1, cjcc1, cjcc1, cjcc1, cjcc1, cjcc1, cjcc1, cjcc1		; 7x
 	dd	cjcc1, cjcc1, cjcc1, cjcc1, cjcc1, cjcc1, cjcc1, cjcc1
 	dd	cop23, cop23, cop23, cop23, cop22, cop22, cop22, cop22		; 8x
 	dd	cop22, cop22, cop22, cop22, cunk,  cop22, cunk,  cpop2
 	dd	cop0,  cxchg1,cxchg1,cxchg1,cxchg1,cxchg1,cxchg1,cxchg1		; 9x
-	dd	ccbw,  ccwd,  cunk,  cop0,  cop0,  cop0,  cop0,  cop0
+	dd	ccbw,  ccwd,  ccallf,cop0,  cop0,  cop0,  cop0,  cop0
 	dd	cmov3, cmov3, cmov3, cmov3, cop0,  cop0,  cop0,  cop0		; Ax
 	dd	cop21, cop21, cop0,  cop0,  cop0,  cop0,  cop0,  cop0
 	dd	cmov11,cmov11,cmov11,cmov11,cmov11,cmov11,cmov11,cmov11		; Bx
 	dd	cmov12,cmov12,cmov12,cmov12,cmov12,cmov12,cmov12,cmov12
 	dd	cshift1,cshift1,cret2,cop0, cunk,  cunk,  cmov2, cmov2		; Cx
 	dd	center,cop0,  cunk,  cunk,  cop0,  cint,  cunk,  cunk
-	dd	cshift2,cshift2,cshift3,cshift3,caam,cunk,cunk,  cxlat		; Dx
+	dd	cshift2,cshift2,cshift3,cshift3,caam,caad,cunk,  cxlat		; Dx
 	dd	cD8,   cD9,   cDA,   cDB,   cDC,   cDD,   cDE,   cDF
 	dd	cloopnz,cloopz,cloop,cjcxz, cunk,  cunk,  cunk,  cunk		; Ex
 	dd	ccall1,cjmp1, cunk,  cjmp2, cunk,  cunk,  cunk,  cunk
@@ -5497,18 +5951,18 @@ disasm_table_1:
 	dd	cop0,  cop0,  cop0,  cop0,  cop0,  cop0,  cop1,  cop1
 
 disasm_table_2:
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  csyscall,cunk,cunk		; 0x
+	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cop0_F,cop0_F,cunk		; 0x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 1x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 2x
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
-	dd	cunk,  crdtsc,cunk,  cunk,  csysenter,cunk,cunk, cunk		; 3x
+	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  csse1
+	dd	cunk,  crdtsc,cunk,  cunk,  cop0_F,cunk,  cunk,  cunk		; 3x
 	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
 	dd	cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc		; 4x
 	dd	cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc,cmovcc
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk		; 5x
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
+	dd	cunk,  cunk,  cunk,  cunk,  csse1, csse1, cunk,  cunk		; 5x
+	dd	csse1, cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk
 	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn		; 6x
 	dd	cpcmn, cpcmn, cpcmn, cpcmn, cunk,  cunk,  cmovd1,cmovq1
 	dd	cunk,  cpshift,cpshift,cpshift,cpcmn,cpcmn,cpcmn,cemms		; 7x
@@ -5518,12 +5972,12 @@ disasm_table_2:
 	dd	csetcc,csetcc,csetcc,csetcc,csetcc,csetcc,csetcc,csetcc		; 9x
 	dd	csetcc,csetcc,csetcc,csetcc,csetcc,csetcc,csetcc,csetcc
 	dd	cunk,  cunk,  ccpuid,cbtx2, cshld, cshld, cunk,  cunk		; Ax
-	dd	cunk,  cunk,  cunk,  cbtx2, cshrd, cshrd, cunk,  cop22
+	dd	cunk,  cunk,  cunk,  cbtx2, cshrd, cshrd, cgrp15,cop22
 	dd	ccmpxchg,ccmpxchg,cunk,cbtx2,cunk, cunk,  cmovzx,cmovzx		; Bx
 	dd	cunk,  cunk,  cbtx1, cbtx2, cbsf,  cbsr,  cmovsx,cmovsx
-	dd	cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  cunk,  ccmpxchg8b	; Cx
+	dd	cunk,  cunk,  csse1, cunk,  cunk,  cunk,  cunk,  ccmpxchg8b	; Cx
 	dd	cbswap,cbswap,cbswap,cbswap,cbswap,cbswap,cbswap,cbswap
-	dd	cunk,  cpsrlw,cpsrlw,cpsrlq,cpcmn, cpcmn, cunk,  cunk		; Dx
+	dd	csse2, cpsrlw,cpsrlw,cpsrlq,cpcmn, cpcmn, cunk,  cunk		; Dx
 	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn
 	dd	cpcmn, cpsraw,cpsrad,cpcmn, cpcmn, cpcmn, cunk,  cunk		; Ex
 	dd	cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn, cpcmn
