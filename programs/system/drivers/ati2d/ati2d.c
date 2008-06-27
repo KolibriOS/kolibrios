@@ -138,14 +138,19 @@ int _stdcall srv_2d(ioctl_t *io)
           return DrawRect((draw_t*)inp);
         break;
 
+      case FILL_RECT:
+        if(io->inp_size==8)
+          return FillRect((fill_t*)inp);
+        break;
+
       case LINE_2P:
         if(io->inp_size==5)
           return Line2P((line2p_t*)inp);
         break;
 
-      case FILL_RECT:
-        if(io->inp_size==8)
-          return FillRect((fill_t*)inp);
+      case BLIT:
+        if(io->inp_size==6)
+          return Blit((blit_t*)inp);
         break;
 
     default:

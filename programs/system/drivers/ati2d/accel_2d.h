@@ -2,6 +2,8 @@
 #define FILL_RECT  1
 #define DRAW_RECT  2
 #define LINE_2P    3
+#define BLIT       4
+
 
 typedef unsigned int color_t;
 typedef unsigned int u32_t;
@@ -31,6 +33,16 @@ typedef struct
 
 typedef struct
 {
+  int src_x;
+  int src_y;
+  int dst_x;
+  int dst_y;
+  int w;
+  int h;
+}blit_t;
+
+typedef struct
+{
   int x0;
   int y0;
   int x1;
@@ -46,6 +58,7 @@ int FillRect(fill_t * fill);
 
 int Line2P(line2p_t *draw);
 
+int Blit(blit_t *blit);
 
 # define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
 #	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)
@@ -66,6 +79,8 @@ int Line2P(line2p_t *draw);
 #define RADEON_CP_PACKET3              0xC0000000
 
 # define RADEON_CNTL_PAINT             0x00009100
+# define RADEON_CNTL_BITBLT            0x00009200
+
 # define RADEON_CNTL_PAINT_POLYLINE    0x00009500
 # define RADEON_CNTL_PAINT_MULTI       0x00009A00
 

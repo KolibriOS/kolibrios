@@ -100,14 +100,6 @@ int FillRect(fill_t *fill)
          OUT_RING(fill->bmp0);
          OUT_RING(fill->bmp1);
 
-       //  OUT_RING(0xCCCC3333);
-       //  OUT_RING(0xCCCC3333);
-       //  OUT_RING(~0x11884422);
-       //  OUT_RING(~0x11884422);
-
-//         OUT_RING(0x88112244);
-//         OUT_RING(0x88112244);
-
          OUT_RING((y0<<16)|x0);
          OUT_RING((y1<<16)|x1);
      COMMIT_RING();
@@ -117,7 +109,51 @@ int FillRect(fill_t *fill)
   return 0;
 }
 
+int Blit(blit_t *blit)
+{
+  int x0, y0, x1, y1;
 
+  x0 = blit->src_x;
+  y0 = blit->src_y;
+
+  x1 = x0+blit->w-1;
+  y1 = y0+blit->h-1;
+
+
+  if( ! BlockClip( &x0, &y0, &x1, &y1))
+  {
+     u32 *ring, write;
+     int w, h;
+     u32 ifl;
+
+     w = x1-x0+1;
+     h = y1-y0+1;
+
+     ifl = safe_cli();
+
+     BEGIN_RING();
+       OUT_RING(CP_PACKET3(RADEON_CNTL_BITBLT, 5));
+
+       OUT_RING(RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
+                RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                RADEON_GMC_BRUSH_NONE             |
+                RADEON_GMC_DST_32BPP              |
+                RADEON_GMC_SRC_DATATYPE_COLOR     |
+                RADEON_DP_SRC_SOURCE_MEMORY       |
+                (1 << 28)+(1 << 30) | R5XX_ROP3_S);
+
+       OUT_RING(rhd.dst_pitch_offset);
+       OUT_RING(rhd.dst_pitch_offset);
+
+       OUT_RING((x0<<16)|y0);
+       OUT_RING((blit->dst_x<<16)|blit->dst_y);
+       OUT_RING((w<<16)|h);
+     COMMIT_RING();
+
+     safe_sti(ifl);
+  } ;
+  return 0;
+}
 
 int Line2P(line2p_t *draw)
 {
