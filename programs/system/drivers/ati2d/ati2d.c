@@ -20,6 +20,7 @@ void (__stdcall *old_restore)(int x, int y);
 cursor_t* (*old_create)(void);
 cursor_t* __create_cursor(void);
 
+static void Init3DEngine(RHDPtr rhdPtr);
 
 u32 __stdcall drvEntry(int action)
 {
@@ -64,6 +65,7 @@ u32 __stdcall drvEntry(int action)
 //  old_create = HwCursorCreate;
 
   R5xx2DInit();
+//  Init3DEngine(&rhd);
 
   //init_r500();
 
@@ -167,6 +169,7 @@ int _stdcall srv_2d(ioctl_t *io)
 
 #include "r500.inc"
 #include "accel_2d.inc"
+#include "accel_3d.inc"
 
 #define CLIP_TOP        1
 #define CLIP_BOTTOM     2

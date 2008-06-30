@@ -62,20 +62,23 @@ int Blit(blit_t *blit);
 
 # define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
 #	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)
-#	define RADEON_GMC_BRUSH_SOLID_COLOR	(13 << 4)
-#	define RADEON_GMC_BRUSH_NONE		(15 << 4)
-#	define RADEON_GMC_DST_16BPP		(4 << 8)
-#	define RADEON_GMC_DST_24BPP		(5 << 8)
-#	define RADEON_GMC_DST_32BPP		(6 << 8)
-#	define RADEON_GMC_DST_DATATYPE_SHIFT	8
-#	define RADEON_GMC_SRC_DATATYPE_COLOR	(3 << 12)
-#	define RADEON_DP_SRC_SOURCE_MEMORY	(2 << 24)
-#	define RADEON_DP_SRC_SOURCE_HOST_DATA	(3 << 24)
-#	define RADEON_GMC_CLR_CMP_CNTL_DIS	(1 << 28)
-#	define RADEON_GMC_WR_MSK_DIS		(1 << 30)
-#	define RADEON_ROP3_S			0x00cc0000
-# define RADEON_ROP3_P      0x00f00000
+# define RADEON_GMC_BRUSH_SOLID_COLOR     (13 << 4)
+# define RADEON_GMC_BRUSH_NONE            (15 << 4)
+# define RADEON_GMC_DST_16BPP             (4 << 8)
+# define RADEON_GMC_DST_24BPP             (5 << 8)
+# define RADEON_GMC_DST_32BPP             (6 << 8)
+# define RADEON_GMC_DST_DATATYPE_SHIFT     8
+# define RADEON_GMC_SRC_DATATYPE_COLOR    (3 << 12)
+# define RADEON_DP_SRC_SOURCE_MEMORY      (2 << 24)
+# define RADEON_DP_SRC_SOURCE_HOST_DATA   (3 << 24)
+# define RADEON_GMC_CLR_CMP_CNTL_DIS      (1 << 28)
+# define RADEON_GMC_WR_MSK_DIS            (1 << 30)
+# define RADEON_ROP3_S                 0x00cc0000
+# define RADEON_ROP3_P                 0x00f00000
 
+#define RADEON_CP_PACKET0              0x00000000
+#define RADEON_CP_PACKET1              0x40000000
+#define RADEON_CP_PACKET2              0x80000000
 #define RADEON_CP_PACKET3              0xC0000000
 
 # define RADEON_CNTL_PAINT             0x00009100
@@ -83,6 +86,15 @@ int Blit(blit_t *blit);
 
 # define RADEON_CNTL_PAINT_POLYLINE    0x00009500
 # define RADEON_CNTL_PAINT_MULTI       0x00009A00
+
+#define CP_PACKET0(reg, n)            \
+	(RADEON_CP_PACKET0 | ((n) << 16) | ((reg) >> 2))
+
+#define CP_PACKET1(reg0, reg1)            \
+	(RADEON_CP_PACKET1 | (((reg1) >> 2) << 11) | ((reg0) >> 2))
+
+#define CP_PACKET2()              \
+  (RADEON_CP_PACKET2)
 
 #define CP_PACKET3( pkt, n )            \
 	(RADEON_CP_PACKET3 | (pkt) | ((n) << 16))
@@ -92,8 +104,16 @@ int Blit(blit_t *blit);
   write = rhd.ring_wp;                  \
 } while (0)
 
+#define ADVANCE_RING()
+
 #define OUT_RING( x ) do {        \
 	ring[write++] = (x);						\
+} while (0)
+
+#define OUT_RING_REG(reg, val)            \
+do {									\
+    OUT_RING(CP_PACKET0(reg, 0));					\
+    OUT_RING(val);							\
 } while (0)
 
 #define DRM_MEMORYBARRIER()  __asm volatile("lock; addl $0,0(%%esp)" : : : "memory");

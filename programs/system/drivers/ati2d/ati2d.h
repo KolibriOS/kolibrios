@@ -125,6 +125,8 @@ typedef struct RHDRec
   u32               ring_rp;
   u32               ring_wp;
 
+  int               num_gb_pipes;
+  Bool              has_tcl;
 }RHD_t, *RHDPtr;
 
 extern RHD_t rhd;
