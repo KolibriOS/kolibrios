@@ -1,4 +1,6 @@
 
+#define R300_TEST
+
 #include "r5xx_regs.h"
 
 #define RADEON_BUS_CNTL                 0x0030
@@ -219,12 +221,41 @@ static void load_microcode()
 
   ifl = safe_cli();
 
-  R5xx2DIdleLocal();
   OUTREG(RADEON_CP_ME_RAM_ADDR,0);
-  for (i = 0; i < 256; i++)
+
+  R5xx2DIdleLocal();
+
+  switch(rhd.ChipSet)
   {
-    OUTREG(RADEON_CP_ME_RAM_DATAH, R520_cp_microcode[i][1]);
-    OUTREG(RADEON_CP_ME_RAM_DATAL, R520_cp_microcode[i][0]);
+    case RHD_R300:
+    case RHD_R350:
+    case RHD_RV350:
+    case RHD_RV370:
+    case RHD_RV380:
+      dbgprintf("Loading R300 microcode\n");
+      for (i = 0; i < 256; i++)
+      {
+        OUTREG(RADEON_CP_ME_RAM_DATAH, R300_cp_microcode[i][1]);
+        OUTREG(RADEON_CP_ME_RAM_DATAL, R300_cp_microcode[i][0]);
+      }
+      break;
+
+    case RHD_RV505:
+    case RHD_RV515:
+    case RHD_RV516:
+    case RHD_R520:
+    case RHD_RV530:
+    case RHD_RV535:
+    case RHD_RV550:
+    case RHD_RV560:
+    case RHD_RV570:
+    case RHD_R580:
+      dbgprintf("Loading R500 microcode\n");
+      for (i = 0; i < 256; i++)
+      {
+        OUTREG(RADEON_CP_ME_RAM_DATAH, R520_cp_microcode[i][1]);
+        OUTREG(RADEON_CP_ME_RAM_DATAL, R520_cp_microcode[i][0]);
+      }
   }
   safe_sti(ifl);
 };
@@ -234,8 +265,13 @@ void  R5xx2DInit()
 {
     u32 base;
 
+#ifdef R300_TEST
+    rhd.displayWidth  = 800;
+    rhd.displayHeight = 600;
+#else
     rhd.displayWidth  = INREG(D1GRPH_X_END);
     rhd.displayHeight = INREG(D1GRPH_Y_END);
+#endif
 
     rhd.__xmin = 0;
     rhd.__ymin = 0;

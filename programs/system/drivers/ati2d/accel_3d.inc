@@ -10,45 +10,6 @@
 #define IS_R300_3D 0
 #define IS_R500_3D 1
 
-typedef enum {
-    CHIP_FAMILY_UNKNOW,
-    CHIP_FAMILY_LEGACY,
-    CHIP_FAMILY_RADEON,
-    CHIP_FAMILY_RV100,
-    CHIP_FAMILY_RS100,    /* U1 (IGP320M) or A3 (IGP320)*/
-    CHIP_FAMILY_RV200,
-    CHIP_FAMILY_RS200,    /* U2 (IGP330M/340M/350M) or A4 (IGP330/340/345/350), RS250 (IGP 7000) */
-    CHIP_FAMILY_R200,
-    CHIP_FAMILY_RV250,
-    CHIP_FAMILY_RS300,    /* RS300/RS350 */
-    CHIP_FAMILY_RV280,
-    CHIP_FAMILY_R300,
-    CHIP_FAMILY_R350,
-    CHIP_FAMILY_RV350,
-    CHIP_FAMILY_RV380,    /* RV370/RV380/M22/M24 */
-    CHIP_FAMILY_R420,     /* R420/R423/M18 */
-    CHIP_FAMILY_RV410,    /* RV410, M26 */
-    CHIP_FAMILY_RS400,    /* xpress 200, 200m (RS400) Intel */
-    CHIP_FAMILY_RS480,    /* xpress 200, 200m (RS410/480/482/485) AMD */
-    CHIP_FAMILY_RV515,    /* rv515 */
-    CHIP_FAMILY_R520,    /* r520 */
-    CHIP_FAMILY_RV530,    /* rv530 */
-    CHIP_FAMILY_R580,    /* r580 */
-    CHIP_FAMILY_RV560,   /* rv560 */
-    CHIP_FAMILY_RV570,   /* rv570 */
-    CHIP_FAMILY_RS600,
-    CHIP_FAMILY_RS690,
-    CHIP_FAMILY_RS740,
-    CHIP_FAMILY_R600,    /* r600 */
-    CHIP_FAMILY_R630,
-    CHIP_FAMILY_RV610,
-    CHIP_FAMILY_RV630,
-    CHIP_FAMILY_RV670,
-    CHIP_FAMILY_RV620,
-    CHIP_FAMILY_RV635,
-    CHIP_FAMILY_RS780,
-    CHIP_FAMILY_LAST
-} RADEONChipFamily;
 
 static void Init3DEngine(RHDPtr rhdPtr)
 {
@@ -155,16 +116,16 @@ static void Init3DEngine(RHDPtr rhdPtr)
 			(5 << R300_PVS_NUM_CNTLRS_SHIFT) |
 			(5 << R300_VF_MAX_VTX_NUM_SHIFT));
 
-        if (rhdPtr->ChipSet == CHIP_FAMILY_RV515)
+        if (rhdPtr->ChipSet == RHD_FAMILY_RV515)
 	    vap_cntl |= (2 << R300_PVS_NUM_FPUS_SHIFT);
-        else if ((rhdPtr->ChipSet == CHIP_FAMILY_RV530) ||
-                 (rhdPtr->ChipSet == CHIP_FAMILY_RV560))
+        else if ((rhdPtr->ChipSet == RHD_FAMILY_RV530) ||
+                 (rhdPtr->ChipSet == RHD_FAMILY_RV560))
 	    vap_cntl |= (5 << R300_PVS_NUM_FPUS_SHIFT);
-        else if (rhdPtr->ChipSet == CHIP_FAMILY_R420)
+        else if (rhdPtr->ChipSet == RHD_FAMILY_R420)
 	    vap_cntl |= (6 << R300_PVS_NUM_FPUS_SHIFT);
-        else if ((rhdPtr->ChipSet == CHIP_FAMILY_R520) ||
-                 (rhdPtr->ChipSet == CHIP_FAMILY_R580) ||
-                 (rhdPtr->ChipSet == CHIP_FAMILY_RV570))
+        else if ((rhdPtr->ChipSet == RHD_FAMILY_R520) ||
+                 (rhdPtr->ChipSet == RHD_FAMILY_R580) ||
+                 (rhdPtr->ChipSet == RHD_FAMILY_RV570))
 	    vap_cntl |= (8 << R300_PVS_NUM_FPUS_SHIFT);
 	else
 	    vap_cntl |= (4 << R300_PVS_NUM_FPUS_SHIFT);
@@ -605,13 +566,13 @@ static void Init3DEngine(RHDPtr rhdPtr)
 	OUT_ACCEL_REG(R300_SC_CLIP_RULE, 0xAAAA);
 	OUT_ACCEL_REG(R300_SC_SCREENDOOR, 0xffffff);
 	FINISH_ACCEL();
-    } else if ((rhdPtr->ChipSet == CHIP_FAMILY_RV250) ||
-               (rhdPtr->ChipSet == CHIP_FAMILY_RV280) ||
-               (rhdPtr->ChipSet == CHIP_FAMILY_RS300) ||
-               (rhdPtr->ChipSet == CHIP_FAMILY_R200)) {
+    } else if ((rhdPtr->ChipSet == RHD_FAMILY_RV250) ||
+               (rhdPtr->ChipSet == RHD_FAMILY_RV280) ||
+               (rhdPtr->ChipSet == RHD_FAMILY_RS300) ||
+               (rhdPtr->ChipSet == RHD_FAMILY_R200)) {
 
 	BEGIN_ACCEL(7);
-        if (rhdPtr->ChipSet == CHIP_FAMILY_RS300) {
+        if (rhdPtr->ChipSet == RHD_FAMILY_RS300) {
 	    OUT_ACCEL_REG(R200_SE_VAP_CNTL_STATUS, RADEON_TCL_BYPASS);
 	} else {
 	    OUT_ACCEL_REG(R200_SE_VAP_CNTL_STATUS, 0);
@@ -639,8 +600,8 @@ static void Init3DEngine(RHDPtr rhdPtr)
 	FINISH_ACCEL();
     } else {
 	BEGIN_ACCEL(2);
-        if ((rhdPtr->ChipSet == CHIP_FAMILY_RADEON) ||
-            (rhdPtr->ChipSet == CHIP_FAMILY_RV200))
+        if ((rhdPtr->ChipSet == RHD_FAMILY_RADEON) ||
+            (rhdPtr->ChipSet == RHD_FAMILY_RV200))
 	    OUT_ACCEL_REG(RADEON_SE_CNTL_STATUS, 0);
 	else
 	    OUT_ACCEL_REG(RADEON_SE_CNTL_STATUS, RADEON_TCL_BYPASS);

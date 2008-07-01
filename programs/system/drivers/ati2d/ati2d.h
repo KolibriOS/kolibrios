@@ -3,6 +3,11 @@
 
 enum RHD_CHIPSETS {
     RHD_UNKNOWN = 0,
+    RHD_R300,
+    RHD_R350,
+    RHD_RV350,
+    RHD_RV370,
+    RHD_RV380,
     /* R500 */
     RHD_RV505,
     RHD_RV515,
@@ -43,11 +48,33 @@ enum RHD_CHIPSETS {
     RHD_M82,
     RHD_RV635,
     RHD_M86,
+    RHD_RS780,
     RHD_CHIP_END
 };
 
 enum RHD_FAMILIES {
     RHD_FAMILY_UNKNOWN = 0,
+
+    RHD_FAMILY_RADEON,
+
+    RHD_FAMILY_RV100,
+    RHD_FAMILY_RS100,    /* U1 (IGP320M) or A3 (IGP320)*/
+    RHD_FAMILY_RV200,
+    RHD_FAMILY_RS200,    /* U2 (IGP330M/340M/350M) or A4 (IGP330/340/345/350), RS250 (IGP 7000) */
+    RHD_FAMILY_R200,
+    RHD_FAMILY_RV250,
+    RHD_FAMILY_RS300,    /* RS300/RS350 */
+    RHD_FAMILY_RV280,
+
+    RHD_FAMILY_R300,
+    RHD_FAMILY_R350,
+    RHD_FAMILY_RV350,
+    RHD_FAMILY_RV380,    /* RV370/RV380/M22/M24 */
+    RHD_FAMILY_R420,     /* R420/R423/M18 */
+    RHD_FAMILY_RV410,    /* RV410, M26 */
+    RHD_FAMILY_RS400,    /* xpress 200, 200m (RS400) Intel */
+    RHD_FAMILY_RS480,    /* xpress 200, 200m (RS410/480/482/485) AMD */
+
     RHD_FAMILY_RV515,
     RHD_FAMILY_R520,
     RHD_FAMILY_RV530,
@@ -60,7 +87,8 @@ enum RHD_FAMILIES {
     RHD_FAMILY_RV630,
     RHD_FAMILY_RV670,
     RHD_FAMILY_RV620,
-    RHD_FAMILY_RV635
+    RHD_FAMILY_RV635,
+    RHD_FAMILY_RS780
 };
 
 #define RHD_FB_BAR         0
@@ -88,6 +116,8 @@ typedef struct RHDRec
   unsigned int      FbScanoutSize;
 
   enum RHD_CHIPSETS ChipSet;
+  enum RHD_FAMILIES ChipFamily;
+
   char              *ChipName;
 
   Bool              IsIGP;

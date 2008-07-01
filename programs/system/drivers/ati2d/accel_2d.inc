@@ -1,6 +1,8 @@
 
 #define BRUSH_MONO   (0<<4)
 
+#define R300_PIO
+
 int DrawRect(draw_t* draw)
 {
   int x0, y0, x1, y1;
@@ -25,6 +27,24 @@ int DrawRect(draw_t* draw)
 
      ifl = safe_cli();
 
+
+#ifdef R300_PIO
+
+     R5xxFIFOWait(7);
+
+     OUTREG(R5XX_DP_GUI_MASTER_CNTL, rhd.gui_control | R5XX_ROP3_P |
+                                     R5XX_GMC_BRUSH_SOLID_COLOR |
+                                     R5XX_GMC_SRC_DATATYPE_COLOR);
+
+     OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
+     OUTREG(R5XX_DP_WRITE_MASK, 0xFFFFFFFF);
+     OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
+     OUTREG(R5XX_DST_PITCH_OFFSET, rhd.dst_pitch_offset);
+     OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
+     OUTREG( R5XX_DST_WIDTH_HEIGHT,(w<<16)|h);
+
+#else
+
      BEGIN_RING();
        OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_MULTI, 4));
 
@@ -41,25 +61,8 @@ int DrawRect(draw_t* draw)
        OUT_RING((w<<16)|h);
      COMMIT_RING();
 
-/*
-#if 1
-
-#else
-
-     R5xxFIFOWait(7);
-
-     OUTREG(R5XX_DP_GUI_MASTER_CNTL, rhd.gui_control | R5XX_ROP3_P |
-                                     R5XX_GMC_BRUSH_SOLID_COLOR |
-                                     R5XX_GMC_SRC_DATATYPE_COLOR);
-
-     OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
-     OUTREG(R5XX_DP_WRITE_MASK, 0xFFFFFFFF);
-     OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
-     OUTREG(R5XX_DST_PITCH_OFFSET, rhd.dst_pitch_offset);
-     OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
-     OUTREG( R5XX_DST_WIDTH_HEIGHT,(w<<16)|h);
 #endif
-*/
+
      safe_sti(ifl);
   } ;
   return 0;
@@ -85,6 +88,10 @@ int FillRect(fill_t *fill)
 
      ifl = safe_cli();
 
+#ifdef R300_PIO
+
+#else
+
      BEGIN_RING();
        OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT, 7));
        OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL    |
@@ -103,6 +110,8 @@ int FillRect(fill_t *fill)
          OUT_RING((y0<<16)|x0);
          OUT_RING((y1<<16)|x1);
      COMMIT_RING();
+
+#endif
 
      safe_sti(ifl);
   };
@@ -131,6 +140,11 @@ int Blit(blit_t *blit)
 
      ifl = safe_cli();
 
+#ifdef R300_PIO
+
+
+#else
+
      BEGIN_RING();
        OUT_RING(CP_PACKET3(RADEON_CNTL_BITBLT, 5));
 
@@ -149,6 +163,8 @@ int Blit(blit_t *blit)
        OUT_RING((blit->dst_x<<16)|blit->dst_y);
        OUT_RING((w<<16)|h);
      COMMIT_RING();
+
+#endif
 
      safe_sti(ifl);
   } ;
