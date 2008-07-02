@@ -1,5 +1,5 @@
 
-#define R300_TEST
+//#define R300_TEST
 
 #include "r5xx_regs.h"
 
@@ -53,6 +53,70 @@
 #define R5XX_LOOP_COUNT 2000000
 
 #include "microcode.h"
+
+#define RADEON_CLOCK_CNTL_DATA              0x000c
+
+#define RADEON_CLOCK_CNTL_INDEX             0x0008
+#       define RADEON_PLL_WR_EN             (1 << 7)
+#       define RADEON_PLL_DIV_SEL           (3 << 8)
+#       define RADEON_PLL2_DIV_SEL_MASK     ~(3 << 8)
+
+#define RADEON_MCLK_CNTL                    0x0012 /* PLL */
+#       define RADEON_FORCEON_MCLKA         (1 << 16)
+#       define RADEON_FORCEON_MCLKB         (1 << 17)
+#       define RADEON_FORCEON_YCLKA         (1 << 18)
+#       define RADEON_FORCEON_YCLKB         (1 << 19)
+#       define RADEON_FORCEON_MC            (1 << 20)
+#       define RADEON_FORCEON_AIC           (1 << 21)
+#       define R300_DISABLE_MC_MCLKA        (1 << 21)
+#       define R300_DISABLE_MC_MCLKB        (1 << 21)
+
+
+void RADEONPllErrataAfterData()
+{
+
+    /* This function is required to workaround a hardware bug in some (all?)
+     * revisions of the R300.  This workaround should be called after every
+     * CLOCK_CNTL_INDEX register access.  If not, register reads afterward
+     * may not be correct.
+     */
+    if (rhd.ChipSet <= RHD_RV380)
+    {
+        u32_t save, tmp;
+
+	save = INREG(RADEON_CLOCK_CNTL_INDEX);
+	tmp = save & ~(0x3f | RADEON_PLL_WR_EN);
+	OUTREG(RADEON_CLOCK_CNTL_INDEX, tmp);
+	tmp = INREG(RADEON_CLOCK_CNTL_DATA);
+	OUTREG(RADEON_CLOCK_CNTL_INDEX, save);
+    }
+}
+
+
+/* Read PLL register */
+u32_t RADEONINPLL(int addr)
+{
+    u32_t       data;
+
+    OUTREG8(RADEON_CLOCK_CNTL_INDEX, addr & 0x3f);
+    //RADEONPllErrataAfterIndex();
+    data = INREG(RADEON_CLOCK_CNTL_DATA);
+    RADEONPllErrataAfterData();
+
+    return data;
+};
+
+/* Write PLL information */
+void RADEONOUTPLL(int addr, u32_t data)
+{
+    OUTREG8(RADEON_CLOCK_CNTL_INDEX, (((addr) & 0x3f) |
+				      RADEON_PLL_WR_EN));
+//    RADEONPllErrataAfterIndex(info);
+    OUTREG(RADEON_CLOCK_CNTL_DATA, data);
+    RADEONPllErrataAfterData();
+}
+
+
 
 static Bool
 R5xxFIFOWaitLocal(CARD32 required)             //R100-R500
@@ -120,6 +184,8 @@ static void
 R5xx2DReset()
 {
     CARD32 save, tmp;
+    u32_t       clock_cntl_index;
+    u32_t       mclk_cntl;
 
       /* The following RBBM_SOFT_RESET sequence can help un-wedge
        * an R300 after the command processor got stuck. */
@@ -143,6 +209,21 @@ R5xx2DReset()
 
     R5xx2DFlush();
 
+#if 0
+    clock_cntl_index = INREG(RADEON_CLOCK_CNTL_INDEX);
+    RADEONPllErrataAfterIndex(info);
+
+    mclk_cntl = RADEONINPLL(RADEON_MCLK_CNTL);
+
+    RADEONOUTPLL(RADEON_MCLK_CNTL, (mclk_cntl |
+			      RADEON_FORCEON_MCLKA |
+			      RADEON_FORCEON_MCLKB |
+			      RADEON_FORCEON_YCLKA |
+			      RADEON_FORCEON_YCLKB |
+			      RADEON_FORCEON_MC |
+			      RADEON_FORCEON_AIC));
+#endif
+
       /* Soft resetting HDP thru RBBM_SOFT_RESET register can cause some
        * unexpected behaviour on some machines.  Here we use
        * R5XX_HOST_PATH_CNTL to reset it. */
@@ -162,6 +243,12 @@ R5xx2DReset()
     OUTREG(R5XX_HOST_PATH_CNTL, save | R5XX_HDP_SOFT_RESET);
     INREG(R5XX_HOST_PATH_CNTL);
     OUTREG(R5XX_HOST_PATH_CNTL, save);
+
+#if 0
+    OUTREG(RADEON_CLOCK_CNTL_INDEX, clock_cntl_index);
+    RADEONPllErrataAfterIndex(info);
+    RADEONOUTPLL(RADEON_MCLK_CNTL, mclk_cntl);
+#endif
 }
 
 void

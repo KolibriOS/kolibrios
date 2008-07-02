@@ -3,10 +3,9 @@
 #define DRAW_RECT  2
 #define LINE_2P    3
 #define BLIT       4
-
+#define COMPIZ     5
 
 typedef unsigned int color_t;
-typedef unsigned int u32_t;
 
 typedef struct
 {
@@ -59,6 +58,10 @@ int FillRect(fill_t * fill);
 int Line2P(line2p_t *draw);
 
 int Blit(blit_t *blit);
+
+
+int RadeonComposite( blit_t *blit);
+
 
 # define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
 #	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)

@@ -1,5 +1,11 @@
+
 #include "pci.h"
 #include "rhd_regs.h"
+
+#define IS_R300_3D   0
+#define IS_R500_3D   1
+
+#define R300_PIO     0
 
 enum RHD_CHIPSETS {
     RHD_UNKNOWN = 0,
@@ -174,6 +180,15 @@ typedef struct {
     const char *	name;		/* token name */
 } SymTabRec, *SymTabPtr;
 
+
+
+extern inline void
+OUTREG8(CARD16 offset, u8 value)
+{
+  *(volatile CARD8 *)((CARD8 *)(rhd.MMIOBase + offset)) = value;
+}
+
+
 extern inline CARD32 INREG(CARD16 offset)
 {
   return *(volatile CARD32 *)((CARD8*)(rhd.MMIOBase + offset));
@@ -266,3 +281,92 @@ void __stdcall r500_SetCursor(cursor_t *cursor, int x, int y);
 void __stdcall r500_CursorRestore(int x, int y);
 
 void  R5xx2DInit();
+
+
+typedef struct {
+    u32_t x ;
+    u32_t y ;
+} xPointFixed;
+
+typedef u32_t   xFixed_16_16;
+
+typedef xFixed_16_16  xFixed;
+
+#define XFIXED_BITS 16
+
+#define xFixedToInt(f)  (int) ((f) >> XFIXED_BITS)
+#define IntToxFixed(i)  ((xFixed) (i) << XFIXED_BITS)
+
+#define xFixedToFloat(f) (((float) (f)) / 65536)
+
+#define PICT_FORMAT(bpp,type,a,r,g,b) (((bpp) << 24) |  \
+					 ((type) << 16) | \
+					 ((a) << 12) | \
+					 ((r) << 8) | \
+					 ((g) << 4) | \
+					 ((b)))
+
+#define PICT_FORMAT_A(f)  (((f) >> 12) & 0x0f)
+#define PICT_FORMAT_RGB(f)  (((f)      ) & 0xfff)
+
+#define PICT_TYPE_OTHER 0
+#define PICT_TYPE_A     1
+#define PICT_TYPE_ARGB	2
+#define PICT_TYPE_ABGR	3
+#define PICT_TYPE_COLOR	4
+#define PICT_TYPE_GRAY	5
+
+typedef enum _PictFormatShort {
+   PICT_a8r8g8b8 =	PICT_FORMAT(32,PICT_TYPE_ARGB,8,8,8,8),
+   PICT_x8r8g8b8 =	PICT_FORMAT(32,PICT_TYPE_ARGB,0,8,8,8),
+   PICT_a8b8g8r8 =	PICT_FORMAT(32,PICT_TYPE_ABGR,8,8,8,8),
+   PICT_x8b8g8r8 =	PICT_FORMAT(32,PICT_TYPE_ABGR,0,8,8,8),
+
+/* 24bpp formats */
+   PICT_r8g8b8 =	PICT_FORMAT(24,PICT_TYPE_ARGB,0,8,8,8),
+   PICT_b8g8r8 =	PICT_FORMAT(24,PICT_TYPE_ABGR,0,8,8,8),
+
+/* 16bpp formats */
+   PICT_r5g6b5 =	PICT_FORMAT(16,PICT_TYPE_ARGB,0,5,6,5),
+   PICT_b5g6r5 =	PICT_FORMAT(16,PICT_TYPE_ABGR,0,5,6,5),
+
+   PICT_a1r5g5b5 =	PICT_FORMAT(16,PICT_TYPE_ARGB,1,5,5,5),
+   PICT_x1r5g5b5 =	PICT_FORMAT(16,PICT_TYPE_ARGB,0,5,5,5),
+   PICT_a1b5g5r5 =	PICT_FORMAT(16,PICT_TYPE_ABGR,1,5,5,5),
+   PICT_x1b5g5r5 =	PICT_FORMAT(16,PICT_TYPE_ABGR,0,5,5,5),
+   PICT_a4r4g4b4 =	PICT_FORMAT(16,PICT_TYPE_ARGB,4,4,4,4),
+   PICT_x4r4g4b4 =	PICT_FORMAT(16,PICT_TYPE_ARGB,0,4,4,4),
+   PICT_a4b4g4r4 =	PICT_FORMAT(16,PICT_TYPE_ABGR,4,4,4,4),
+   PICT_x4b4g4r4 =	PICT_FORMAT(16,PICT_TYPE_ABGR,0,4,4,4),
+
+/* 8bpp formats */
+   PICT_a8 =		PICT_FORMAT(8,PICT_TYPE_A,8,0,0,0),
+   PICT_r3g3b2 =	PICT_FORMAT(8,PICT_TYPE_ARGB,0,3,3,2),
+   PICT_b2g3r3 =	PICT_FORMAT(8,PICT_TYPE_ABGR,0,3,3,2),
+   PICT_a2r2g2b2 =	PICT_FORMAT(8,PICT_TYPE_ARGB,2,2,2,2),
+   PICT_a2b2g2r2 =	PICT_FORMAT(8,PICT_TYPE_ABGR,2,2,2,2),
+
+   PICT_c8 =		PICT_FORMAT(8,PICT_TYPE_COLOR,0,0,0,0),
+   PICT_g8 =		PICT_FORMAT(8,PICT_TYPE_GRAY,0,0,0,0),
+
+   PICT_x4a4 =		PICT_FORMAT(8,PICT_TYPE_A,4,0,0,0),
+
+   PICT_x4c4 =		PICT_FORMAT(8,PICT_TYPE_COLOR,0,0,0,0),
+   PICT_x4g4 =		PICT_FORMAT(8,PICT_TYPE_GRAY,0,0,0,0),
+
+/* 4bpp formats */
+   PICT_a4 =		PICT_FORMAT(4,PICT_TYPE_A,4,0,0,0),
+   PICT_r1g2b1 =	PICT_FORMAT(4,PICT_TYPE_ARGB,0,1,2,1),
+   PICT_b1g2r1 =	PICT_FORMAT(4,PICT_TYPE_ABGR,0,1,2,1),
+   PICT_a1r1g1b1 =	PICT_FORMAT(4,PICT_TYPE_ARGB,1,1,1,1),
+   PICT_a1b1g1r1 =	PICT_FORMAT(4,PICT_TYPE_ABGR,1,1,1,1),
+
+   PICT_c4 =		PICT_FORMAT(4,PICT_TYPE_COLOR,0,0,0,0),
+   PICT_g4 =		PICT_FORMAT(4,PICT_TYPE_GRAY,0,0,0,0),
+
+/* 1bpp formats */
+   PICT_a1 =		PICT_FORMAT(1,PICT_TYPE_A,1,0,0,0),
+
+   PICT_g1 =		PICT_FORMAT(1,PICT_TYPE_GRAY,0,0,0,0),
+} PictFormatShort;
+

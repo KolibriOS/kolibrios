@@ -1,7 +1,6 @@
 
 #define BRUSH_MONO   (0<<4)
 
-#define R300_PIO
 
 int DrawRect(draw_t* draw)
 {
@@ -28,7 +27,7 @@ int DrawRect(draw_t* draw)
      ifl = safe_cli();
 
 
-#ifdef R300_PIO
+#if R300_PIO
 
      R5xxFIFOWait(7);
 
@@ -88,7 +87,7 @@ int FillRect(fill_t *fill)
 
      ifl = safe_cli();
 
-#ifdef R300_PIO
+#if R300_PIO
 
 #else
 
@@ -140,7 +139,7 @@ int Blit(blit_t *blit)
 
      ifl = safe_cli();
 
-#ifdef R300_PIO
+#if R300_PIO
 
 
 #else
@@ -189,22 +188,8 @@ int Line2P(line2p_t *draw)
 
     ifl = safe_cli();
 
-     BEGIN_RING();
-         OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_POLYLINE, 4));
-         OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
-                  RADEON_GMC_BRUSH_SOLID_COLOR      |
-                  RADEON_GMC_DST_32BPP              |
-                  RADEON_GMC_SRC_DATATYPE_COLOR     |
-                  (1 << 28)+(1 << 30) | R5XX_ROP3_P);
+#if R300_PIO
 
-         OUT_RING(rhd.dst_pitch_offset);
-         OUT_RING(draw->color);
-         OUT_RING((y0<<16)|x0);
-         OUT_RING((y1<<16)|x1);
-     COMMIT_RING();
-
-
-/*
      R5xxFIFOWait(7);
 
      OUTREG(R5XX_DP_GUI_MASTER_CNTL, rhd.gui_control | R5XX_ROP3_P |
@@ -219,7 +204,24 @@ int Line2P(line2p_t *draw)
 
      OUTREG(R5XX_DST_LINE_START,(y0<<16)|x0);
      OUTREG(R5XX_DST_LINE_END,(y1<<16)|x1);
-*/
+
+#else
+
+     BEGIN_RING();
+         OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_POLYLINE, 4));
+         OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                  RADEON_GMC_BRUSH_SOLID_COLOR      |
+                  RADEON_GMC_DST_32BPP              |
+                  RADEON_GMC_SRC_DATATYPE_COLOR     |
+                  (1 << 28)+(1 << 30) | R5XX_ROP3_P);
+
+         OUT_RING(rhd.dst_pitch_offset);
+         OUT_RING(draw->color);
+         OUT_RING((y0<<16)|x0);
+         OUT_RING((y1<<16)|x1);
+     COMMIT_RING();
+
+#endif
      safe_sti(ifl);
 
   };

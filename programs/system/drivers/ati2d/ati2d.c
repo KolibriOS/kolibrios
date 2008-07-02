@@ -65,7 +65,8 @@ u32 __stdcall drvEntry(int action)
 //  old_create = HwCursorCreate;
 
   R5xx2DInit();
-//  Init3DEngine(&rhd);
+  rhd.has_tcl = 1;
+  Init3DEngine(&rhd);
 
   //init_r500();
 
@@ -154,6 +155,12 @@ int _stdcall srv_2d(ioctl_t *io)
         if(io->inp_size==6)
           return Blit((blit_t*)inp);
         break;
+
+      case COMPIZ:
+        if(io->inp_size==6)
+          return RadeonComposite((blit_t*)inp);
+        break;
+
 
     default:
       return ERR_PARAM;
