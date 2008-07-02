@@ -7,8 +7,13 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.42'
-version_dword equ 0*10000h + 42
+version equ '0.5'
+version_dword equ 0*10000h + 50
+
+min_width = 54
+max_width = 255
+min_height = 8
+max_height = 255
 
 include 'lang.inc'
 include 'font.inc'
@@ -16,8 +21,12 @@ include 'sort.inc'
 include 'kglobals.inc'
 include 'dialogs.inc'
 include 'viewer.inc'
+include 'editor.inc'
 include 'tools.inc'
 include 'filetool.inc'
+
+cursor_normal_size = (font_height*15+50)/100
+cursor_big_size = font_height
 
 start:
         mov     edi, tolower_table
@@ -82,9 +91,9 @@ start:
         mov     [panel2_files], eax
         test    eax, eax
         jz      exit
-        cmp     [panel1_files], 0
-        jz      exit
         xor     eax, eax
+        cmp     [panel1_files], eax
+        jz      exit
         mov     [panel1_hPlugin], eax
         mov     [panel1_parents], eax
         mov     [panel1_parents_sz], eax
@@ -154,6 +163,24 @@ start:
         ja      @f
         mov     [panel2_colmode], eax
 @@:
+        push    nullstr
+        push    512
+        push    saved_file_name
+        push    aEolStyle
+        push    aEditor
+        push    app_path
+        call    [ini.get_str]
+        mov     cl, edit.eol_dos
+        mov     al, [saved_file_name]
+        or      al, 20h
+        cmp     al, 'd'
+        jz      @f
+        mov     cl, edit.eol_mac
+        cmp     al, 'm'
+        jz      @f
+        mov     cl, edit.eol_unix
+@@:
+        mov     [EditEOLStyle], cl
         mov     ecx, 0x1000
         call    xpgalloc
         test    eax, eax
@@ -240,6 +267,38 @@ start:
         push    aPlugins
         push    app_path
         call    [ini.enum_keys]
+; calculate info for editor
+        xor     ebx, ebx
+        mov     ecx, [num_plugins]
+        mov     esi, [plugins]
+@@:
+        dec     ecx
+        js      @f
+        mov     [esi+PluginInfo.EditInfoOffs], ebx
+        add     ebx, [esi+PluginInfo.EditInfoSize]
+        jnc     @f
+        sbb     ebx, ebx
+@@:
+; поскольку размер блока в редакторе ограничен, то и размер памяти, резервируемой для плагинов, ограничен
+; 512 - грубая верхняя оценка, гарантирующая работу редактора, реально плагины должны требовать меньше
+        cmp     ebx, 512
+        jb      @f
+        or      ebx, -1
+        mov     [EditPlugInfo], ebx     ; disable plugins for editor
+        push    ContinueBtn
+        push    1
+        push    EditConfigErr_ptr
+        push    2
+        call    SayErr
+@@:
+        add     ebx, 3
+        and     ebx, not 3
+        mov     [EditPlugInfo], ebx
+        add     ebx, editor_line.plugdata
+        imul    ebx, max_height
+        add     ebx, editor_data.basesize + 0xFFF
+        shr     ebx, 12
+        mov     [EditDataSize], ebx
 .noini:
         mov     esi, def_left_dir
         mov     edi, panel1_dir
@@ -404,14 +463,14 @@ redraw:
         cdq
         mov     esi, font_width
         div     esi
-        cmp     eax, 54
+        cmp     eax, min_width
         jae     @f
-        mov     al, 54
+        mov     al, min_width
         mov     ch, 1
 @@:
-        cmp     eax, 255
+        cmp     eax, max_width
         jbe     @f
-        mov     eax, 255
+        mov     eax, max_width
         mov     ch, 1
 @@:
         cmp     eax, [cur_width]
@@ -431,14 +490,14 @@ redraw:
         cdq
         mov     esi, font_height
         div     esi
-        cmp     eax, 8
+        cmp     eax, min_height
         jae     @f
-        mov     al, 8
+        mov     al, min_height
         mov     cl, 1
 @@:
-        cmp     eax, 255
+        cmp     eax, max_height
         jbe     @f
-        mov     eax, 255
+        mov     eax, max_height
         mov     cl, 1
 @@:
         mov     [fill_height], edx
@@ -475,6 +534,7 @@ redraw:
         call    draw_keybar
         mov     ebp, [active_screen_data]
         mov     eax, [active_screen_vtable]
+        mov     [cursor_size], cursor_normal_size
         call    dword [eax+screen_vtable.OnRedraw]
         jmp     event
 @@:
@@ -868,8 +928,8 @@ enum_plugins_callback:
         jnc     @f
         xor     eax, eax
 @@:
-MIN_INTERFACE_VER = 2
-MAX_INTERFACE_VER = 2
+MIN_INTERFACE_VER = 3
+MAX_INTERFACE_VER = 3
         cmp     eax, MIN_INTERFACE_VER
         jb      @f
         cmp     eax, MAX_INTERFACE_VER
@@ -1019,6 +1079,7 @@ change_screen:
         mov     [active_screen_vtable], eax
         mov     [active_screen_data], ebp
         call    draw_keybar
+        mov     [cursor_size], cursor_normal_size
         call    [eax+screen_vtable.OnRedraw]
         popa
         ret
@@ -1105,13 +1166,133 @@ F12:
         jmp     change_screen
 
 panels_OnKey:
+; restore screen hidden by quick search box
+        cmp     [bDisplayQuickSearch], 0
+        jz      @f
+        mov     [bDisplayQuickSearch], 0
+        push    0
+        push    QuickSearchDlg
+        call    HideDialogBox
+@@:
         mov     ebp, [active_panel]
         mov     ecx, [ebp + panel1_index - panel1_data]
         mov     edx, [ebp + panel1_start - panel1_data]
         mov     ebx, [ebp + panel1_colst - panel1_data]
         add     ebx, edx
         mov     esi, panels_ctrlkeys
-        jmp     process_ctrl_keys
+        call    process_ctrl_keys
+        jc      .nostdkey
+        mov     [bQuickSearchMode], 0
+        ret
+.leaveqsmode:
+        mov     [bQuickSearchMode], 0
+        call    draw_image
+        ret
+.keepqsmode:
+        push    QuickSearchDlg
+        call    ShowDialogBox
+        mov     [bDisplayQuickSearch], 1
+        ret
+.nostdkey:
+        cmp     [bQuickSearchMode], 0
+        jz      .noqsmode
+        test    al, al
+        js      .keepqsmode
+        cmp     al, 40h
+        jae     .leaveqsmode
+        cmp     al, 0Eh
+        jz      .qsbackspace
+        cmp     al, 1Ch
+        jz      .test_enter
+        movzx   eax, al
+        cmp     byte [scan2ascii+eax], 0
+        jz      .leaveqsmode
+        call    get_ascii_char
+        mov     ecx, dword [quick_search_buf + 4]
+        cmp     ecx, quicksearch_maxlen
+        jae     .keepqsmode
+        mov     byte [quick_search_buf + 12 + ecx], al
+        mov     byte [quick_search_buf + 12 + ecx + 1], 0
+        push    ecx
+        call    quick_find
+        pop     ecx
+        jnc     @f
+        mov     byte [quick_search_buf + 12 + ecx], 0
+        jmp     .keepqsmode
+@@:
+        inc     dword [quick_search_buf + 4]
+        sub     ecx, 16
+        jae     @f
+        xor     ecx, ecx
+@@:
+        mov     dword [quick_search_buf + 8], ecx
+        jmp     .keepqsmode
+.qsbackspace:
+        mov     ecx, dword [quick_search_buf + 4]
+        jecxz   .keepqsmode2
+        dec     ecx
+        mov     byte [quick_search_buf + 12 + ecx], 0
+        dec     dword [quick_search_buf + 4]
+.keepqsmode2:
+        jmp     .keepqsmode
+.test_enter:
+        test    [ctrlstate], 0Ch        ; LCtrl or RCtrl pressed?
+        jz      .keepqsmode2
+        test    [ctrlstate], 3          ; Shift pressed?
+        jnz     @f
+        call    quick_find_next
+        jmp     .keepqsmode2
+@@:
+        call    quick_find_prev
+        jmp     .keepqsmode2
+.noqsmode:
+; handle Alt+<key> combinations for quick search
+        test    [ctrlstate], 30h        ; LAlt or RAlt pressed?
+        jz      .noalt                  ; no => skip
+        test    [ctrlstate], 0Ch        ; LCtrl or RCtrl pressed?
+        jnz     .noalt                  ; yes => skip
+        cmp     al, 40h
+        jae     .noalt
+        movzx   eax, al
+        cmp     byte [scan2ascii+eax], 0
+        jz      .noalt
+        call    get_ascii_char
+        mov     edi, quick_search_buf + 12
+        mov     dword [edi-12], quicksearch_maxlen-1
+        mov     dword [edi-8], 1
+        and     dword [edi-4], 0
+        stosb
+        mov     byte [edi], 0
+        call    quick_find
+        jnc     @f
+        mov     byte [quick_search_buf + 12], 0
+        and     dword [quick_search_buf + 4], 0
+@@:
+        mov     ebx, QuickSearchDlg
+        mov     eax, [ebp + panel1_left - panel1_data]
+        add     eax, 10
+        mov     edx, [cur_width]
+        sub     edx, 21
+        cmp     eax, edx
+        jb      @f
+        mov     eax, edx
+@@:
+        mov     [ebx + dlgtemplate.x], eax
+        mov     eax, [ebp + panel1_top - panel1_data]
+        add     eax, [ebp + panel1_height - panel1_data]
+        mov     edx, [cur_height]
+        sub     edx, 2
+        cmp     eax, edx
+        jb      @f
+        mov     eax, edx
+@@:
+        mov     [ebx + dlgtemplate.y], eax
+        push    ebx
+        call    ShowDialogBox
+        mov     [bQuickSearchMode], 1
+        mov     [bDisplayQuickSearch], 1
+.find_letter_done:
+.noalt:
 .ret:
         ret
 .up:
@@ -1261,6 +1442,10 @@ panels_OnKey:
         mov     [ebp + panel1_start - panel1_data], eax
         jmp     .done_redraw
 .enter:
+        cmp     [bQuickSearchMode], 0
+        jz      @f
+        call    draw_image
+@@:
         call    get_curfile_folder_entry
         test    byte [ecx], 10h
         jnz     .enter_folder
@@ -1441,6 +1626,27 @@ panels_OnKey:
         mov     [execptr], execdata
         and     [execparams], 0
 .dorun:
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        mov     edi, execdata
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosb
+        cmp     edi, execdataend-1
+        jae     .bigfilename
+        jmp     @b
+@@:
+        lea     esi, [ecx+40]
+        mov     al, '/'
+        stosb
+@@:
+        lodsb
+        stosb
+        cmp     edi, execdataend
+        ja      .bigfilename
+        test    al, al
+        jnz     @b
 ; for fasm call - special handling, because
 ; 1) fasm command line convention is different : fasm infile,outfile[,path] rather than tinypad infile
 ; 2) fasm will probably create new file in directory, so we want to reload panel data
@@ -1935,16 +2141,6 @@ panels_OnKey:
         jz      .f5_2
         ret
 .f5_2:
-        mov     eax, [ebp + panel1_hPlugin - panel1_data]
-        mov     [source_hModule], eax
-        mov     eax, [ebp + panel1_hFile - panel1_data]
-        mov     [source_hPlugin], eax
-        mov     eax, left_dotdot_entry
-        cmp     ebp, panel1_data
-        jz      @f
-        add     eax, right_dotdot_entry-left_dotdot_entry
-@@:
-        mov     [default_attr], eax
         add     esi, panel1_dir - panel1_data
         mov     edi, CopyDestEditBuf
         mov     eax, CopyDestEditBuf.length
@@ -1965,6 +2161,16 @@ panels_OnKey:
         mov     al, '/'
         stosb
 .f5_common:
+        mov     eax, [ebp + panel1_hPlugin - panel1_data]
+        mov     [source_hModule], eax
+        mov     eax, [ebp + panel1_hFile - panel1_data]
+        mov     [source_hPlugin], eax
+        mov     eax, left_dotdot_entry
+        cmp     ebp, panel1_data
+        jz      @f
+        add     eax, right_dotdot_entry-left_dotdot_entry
+@@:
+        mov     [default_attr], eax
         mov     byte [edi], 0
         sub     edi, edx
         mov     [edx-8], edi
@@ -2354,6 +2560,9 @@ end if
         call    view_file
 .ret2:
         ret
+.f4:
+        call    edit_file
+        ret
 .f8_has_selected:
         mov     edi, saved_file_name+511
         mov     byte [edi], 0
@@ -2427,6 +2636,11 @@ end if
         cmp     [ebp + panel1_selected_num - panel1_data], 0
         jnz     .f8_has_selected
         call    get_curfile_folder_entry
+        cmp     word [ecx+40], '..'
+        jnz     @f
+        cmp     byte [ecx+42], 0
+        jz      .f8_not_allowed
+@@:
         cmp     [bConfirmDelete], 0
         jz      .f8_allowed
         lea     eax, [ecx+40]
@@ -2459,6 +2673,7 @@ end if
         add     esp, 8
         test    eax, eax
         jz      .f8_allowed
+.f8_not_allowed:
         ret
 .f8_allowed:
         mov     [del_bSkipAll], 0
@@ -3049,6 +3264,8 @@ panels_OnExit:
         ret
 
 panels_OnRedraw:
+        or      [cursor_x], -1
+        or      [cursor_y], -1
         call    draw_cmdbar
         mov     ebp, panel1_data
         call    calc_colwidths
@@ -3102,6 +3319,95 @@ get_curfile_name:
         call    get_curfile_folder_entry
         add     ecx, 40
         ret
+
+quick_find:
+        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        jz      .nof
+        mov     ecx, [ebp + panel1_index - panel1_data]
+.scanloop:
+        mov     edi, ecx
+        shl     edi, 2
+        add     edi, [ebp + panel1_files - panel1_data]
+        mov     edi, [edi]
+        add     edi, 40
+        mov     esi, quick_search_buf + 12
+@@:
+        lodsb
+        test    al, al
+        jz      .ok
+        call    match_symbol
+        jnz     .no
+        inc     edi
+        jmp     @b
+.no:
+        inc     ecx
+        cmp     ecx, [ebp + panel1_numfiles - panel1_data]
+        jb      @f
+        xor     ecx, ecx
+@@:
+        cmp     ecx, [ebp + panel1_index - panel1_data]
+        jnz     .scanloop
+.nof:
+        stc
+        ret
+.ok:
+        cmp     ecx, [ebp + panel1_index - panel1_data]
+        jz      .ret
+        mov     [ebp + panel1_index - panel1_data], ecx
+        mov     eax, [ebp + panel1_height - panel1_data]
+        shr     eax, 1
+        sub     ecx, eax
+        jae     @f
+        xor     ecx, ecx
+@@:
+        mov     eax, [ebp + panel1_numfiles - panel1_data]
+        sub     eax, [ebp + panel1_colst - panel1_data]
+        jnc     @f
+        xor     eax, eax
+        xor     ecx, ecx
+@@:
+        cmp     ecx, eax
+        jb      @f
+        mov     ecx, eax
+@@:
+        mov     [ebp + panel1_start - panel1_data], ecx
+        call    draw_panel
+.ret:
+        clc
+        ret
+
+quick_find_next:
+        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        jz      quick_find.nof
+        mov     ecx, [ebp + panel1_index - panel1_data]
+        jmp     quick_find.no
+
+quick_find_prev:
+        cmp     [ebp + panel1_numfiles - panel1_data], 0
+        jz      quick_find.nof
+        mov     ecx, [ebp + panel1_index - panel1_data]
+.scanloop:
+        dec     ecx
+        jns     @f
+        mov     ecx, [ebp + panel1_numfiles - panel1_data]
+        dec     ecx
+@@:
+        cmp     ecx, [ebp + panel1_index - panel1_data]
+        jz      quick_find.nof
+        mov     edi, ecx
+        shl     edi, 2
+        add     edi, [ebp + panel1_files - panel1_data]
+        mov     edi, [edi]
+        add     edi, 40
+        mov     esi, quick_search_buf + 12
+@@:
+        lodsb
+        test    al, al
+        jz      quick_find.ok
+        call    match_symbol
+        jnz     .scanloop
+        inc     edi
+        jmp     @b
 
 panels_getname:
 if lang eq ru
@@ -3336,6 +3642,7 @@ draw_image:
         mov     [MemForImage], eax
         mov     [bMemForImageValidData], byte 0
 .allocated:
+        push    ebp
         and     [max_x], 0
         or      [min_x], -1
         and     [max_y], 0
@@ -3464,14 +3771,14 @@ end if
         mov     edx, [cur_width]
         imul    edx, font_width
         neg     edx
-        mov     ecx, (font_height*15+50)/100
+        mov     ecx, [cursor_size]
 .cursor_loop:
         push    ecx
         mov     ecx, font_width
         add     eax, edx
         push    eax
 @@:
-;        add     byte [eax-1], 0x10
+;;        add     byte [eax-1], 0x10
         xor     byte [eax-1], 7
         sub     eax, 1
         loop    @b
@@ -3518,6 +3825,7 @@ end if
         pop     esi
         int     40h
 .nodraw:
+        pop     ebp
         ret
 
 get_console_ptr:
@@ -3636,6 +3944,11 @@ draw_keybar:
         mov     ah, [keybar_name_color]
         rep     stosw
 .done:
+        cmp     [bDisplayQuickSearch], 0
+        jz      @f
+        push    QuickSearchDlg
+        call    DrawDialogBox
+@@:
         popad
         ret
 
@@ -4452,17 +4765,36 @@ draw_name_column:
         cmp     ebp, panel1_data
         jnz     .ret2
 ; Число экранов
-        mov     eax, [num_screens]
-        dec     eax
+; calculate number of viewer and editor screens
+        xor     ebx, ebx
+        xor     edx, edx
+        mov     ecx, [num_screens]
+        mov     esi, [screens]
+.3:
+        lodsd
+        cmp     eax, viewer_vtable
+        jnz     @f
+        inc     ebx
+@@:
+        cmp     eax, editor_vtable
+        jnz     @f
+        inc     edx
+@@:
+        lodsd
+        loop    .3
+        mov     eax, ebx
+        mov     esi, edx
+        or      eax, edx
         jz      .ret2
-        push    eax
         xor     eax, eax
         xor     edx, edx
         call    get_console_ptr
-        mov     ah, [panel_nscreens_color]
         mov     al, '['
-        stosw
-        pop     eax
+        stosb
+        mov     al, [panel_nscreens_color]
+        stosb
+        xchg    eax, ebx
+.5:
         push    -'0'
 @@:
         xor     edx, edx
@@ -4474,10 +4806,21 @@ draw_name_column:
         pop     eax
         add     eax, '0'
         jz      @f
-        mov     ah, [panel_nscreens_color]
-        stosw
+        stosb
+        mov     al, bl
+        stosb
         jmp     @b
 @@:
+        test    esi, esi
+        jz      .4
+        mov     al, '+'
+        stosb
+        mov     al, bl
+        stosb
+        xor     eax, eax
+        xchg    eax, esi
+        jmp     .5
+.4:
         mov     al, ']'
         mov     ah, [panel_nscreens_color]
         stosw
@@ -6106,6 +6449,9 @@ def_right_dir   db      '/hd0/1',0
 
 bSilentFolderMode db    1
 
+bQuickSearchMode db     0
+bDisplayQuickSearch db  0
+
 if lang eq ru
 aFolder         db      'Папка'
 .size = $-aFolder
@@ -6471,6 +6817,177 @@ times 12 db     '      '
 times 12 db     '      '
 end if
 
+keybar_editor:
+if lang eq ru
+; без клавиш-модификаторов
+        db      'Помощь'
+        db      'Сохран'
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Просм '
+        db      'Поиск '
+keybar_cp2:
+        db      'cp1251'
+        db      '      '
+        db      'Выход '
+        db      'Модули'
+        db      'Экраны'
+; Shift
+        db      '      '
+        db      'Сохр.в'
+        db      '      '
+        db      'Редак.'
+        db      '      '
+        db      '      '
+        db      'Дальше'
+        db      'Таблиц'
+        db      '      '
+        db      'СхрВых'
+        db      '      '
+        db      '      '
+; Ctrl
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Замена'
+        db      '      '
+        db      '      '
+        db      'Позиц '
+        db      '      '
+        db      '      '
+; Ctrl+Shift
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+; Alt
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Печать'
+        db      '      '
+        db      '      '
+        db      'Строка'
+        db      'Видео '
+        db      '      '
+        db      'ИстПр '
+        db      '      '
+; Alt+Shift
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Конфиг'
+        db      '      '
+        db      '      '
+        db      '      '
+; Alt+Ctrl
+times 12 db     '      '
+; Alt+Ctrl+Shift
+times 12 db     '      '
+else
+; No modificators
+        db      'Help  '
+        db      'Save  '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'View  '
+        db      'Search'
+keybar_cp2:
+        db      'cp1251'
+        db      '      '
+        db      'Quit  '
+        db      'Plugin'
+        db      'Screen'
+; Shift
+        db      '      '
+        db      'SaveAs'
+        db      '      '
+        db      'Edit..'
+        db      '      '
+        db      '      '
+        db      'Next  '
+        db      'Table '
+        db      '      '
+        db      'SaveQ '
+        db      '      '
+        db      '      '
+; Ctrl
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Replac'
+        db      '      '
+        db      '      '
+        db      'GoFile'
+        db      '      '
+        db      '      '
+; Ctrl+Shift
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+; Alt
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Print '
+        db      '      '
+        db      '      '
+        db      'Goto  '
+        db      'Video '
+        db      '      '
+        db      'ViewHs'
+        db      '      '
+; Alt+Shift
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      '      '
+        db      'Config'
+        db      '      '
+        db      '      '
+        db      '      '
+; Alt+Ctrl
+times 12 db     '      '
+; Alt+Ctrl+Shift
+times 12 db     '      '
+end if
+
         align   4
 cur_width       dd      80
 cur_height      dd      25
@@ -6484,6 +7001,7 @@ console_data_ptr dd     0
 
 cursor_x        dd      -1
 cursor_y        dd      -1
+cursor_size     dd      cursor_normal_size
 cur_cursor_pos  dd      -1
 old_cursor_pos  dd      -1
 
@@ -6545,6 +7063,14 @@ viewer_vtable:
         dd      viewer_getname
         dd      viewer_OnExit
         dd      viewer_IsHandleUsed
+
+editor_vtable:
+        dd      editor_OnRedraw
+        dd      editor_OnKey
+        dd      keybar_editor
+        dd      editor_getname
+        dd      editor_OnExit
+        dd      editor_IsHandleUsed
 
 ; additions to this table require changes in tools.inc::get_error_msg
 errors1:
@@ -6632,7 +7158,8 @@ end if
         db      '&Unicode',0
 
 active_screen   dd      0
-tabsize         dd      8
+viewer_tabsize  dd      8
+editor_tabsize  dd      8
 
 ascii2scan:
         times 32 db 0
@@ -6648,6 +7175,11 @@ ascii2scan:
         times 48 db 0
         db      0x23,0x2E,0x31,0x12,0x1E,0x1A,0x11,0x2D,0x17,0x18,0x1B,0x1F,0x32,0x28,0x34,0x2C
         db      0x29,0x29,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00
+scan2ascii:
+        db      0,0,'1234567890-=',0,0
+        db      'qwertyuiop[]',0,0,'as'
+        db      'dfghjkl;',27h,'`',0,'\zxcv'
+        db      'bnm,./',0,0,0,' ',0,0,0,0,0,0
 
 ; Клавишные сочетания
 ; db scancode, reserved
@@ -6682,6 +7214,8 @@ panels_ctrlkeys:
         dd      panels_OnKey.enter
         dw      0x3D, 0
         dd      panels_OnKey.f3
+        dw      0x3E, 0
+        dd      panels_OnKey.f4
         dw      0x3F, 0
         dd      panels_OnKey.f5
         dw      0x3F, 1
@@ -6775,6 +7309,43 @@ viewer_ctrlkeys:
         dd      F12
         dw      0x43, 0x100
         dd      alt_f9
+        db      0
+
+editor_ctrlkeys:
+        dw      1, 0
+        dd      editor_OnKey.exit_confirm
+        dw      0x0E, 0
+        dd      editor_OnKey.backspace
+        dw      0x3C, 0
+        dd      editor_OnKey.f2
+        dw      0x43, 0x100
+        dd      alt_f9
+        dw      0x44, 0
+        dd      editor_OnKey.exit_confirm
+        dw      0x44, 1
+        dd      editor_OnKey.exit_save
+        dw      0x47, 0
+        dd      editor_OnKey.home
+        dw      0x48, 0
+        dd      editor_OnKey.up
+        dw      0x49, 0
+        dd      editor_OnKey.pgup
+        dw      0x4B, 0
+        dd      editor_OnKey.left
+        dw      0x4D, 0
+        dd      editor_OnKey.right
+        dw      0x4F, 0
+        dd      editor_OnKey.end
+        dw      0x50, 0
+        dd      editor_OnKey.down
+        dw      0x51, 0
+        dd      editor_OnKey.pgdn
+        dw      0x52, 0
+        dd      editor_OnKey.ins
+        dw      0x53, 0
+        dd      editor_OnKey.del
+        dw      0x58, 0
+        dd      F12
         db      0
 
 dirinfo:
@@ -6887,6 +7458,9 @@ cmdbar_prefix_color     db      7
 view_normal_color       db      1Bh
 view_status_color       db      30h
 view_arrows_color       db      1Eh
+; Редактор
+edit_normal_color       db      1Bh
+edit_status_color       db      30h
 
 ; Подсветка файлов
 highlight_num_groups    dd      10
@@ -6932,11 +7506,11 @@ highlight_group3:
 highlight_group4:
         db      0
         db      1Ah, 3Ah, 0, 0
-        db      '*.exe,*.com,*.bat,*.cmd',0
+        db      '*.exe,*.com,*.bat,*.cmd,*.kex',0
 highlight_group5:
         db      0
         db      1Ah, 3Ah, 0, 0
-        db      '*|*.*',0
+        db      '*|*.*,readme,makefile',0
 highlight_group6:
         db      0
         db      1Dh, 3Dh, 0, 0
@@ -6981,7 +7555,7 @@ nomem_dlgdata:
         dd      1
         dd      1
         dd      aError
-        rb      4
+        rb      8
         dd      0
         dd      0
         dd      2
@@ -7010,6 +7584,7 @@ copy_dlgdata:
 .border_color db ?
 .header_color db ?
         db      0
+        dd      ?
         dd      0
         dd      0
         dd      4
@@ -7052,7 +7627,7 @@ mkdir_dlgdata:
 .height dd      4
         dd      4, 2
         dd      aMkDirCaption
-        dd      ?
+        dd      ?, ?
         dd      0
         dd      0
         dd      4
@@ -7093,7 +7668,7 @@ mark_dlgdata:
         dd      37, 1
         dd      4, 2
 .title  dd      ?
-        dd      ?
+        dd      ?, ?
         dd      0, 0
         dd      1
 ; поле редактирования
@@ -7101,6 +7676,23 @@ mark_dlgdata:
         dd      1, 0, 35, 0
         dd      enter_string_buf
 .flags  dd      ?
+
+; диалог быстрого поиска в панели (Alt+буквы)
+QuickSearchDlg:
+        dd      5
+.x      dd      ?
+.y      dd      ?
+        dd      20, 1
+        dd      1, 1
+        dd      aSearch
+        dd      ?, ?
+        dd      0, 0
+        dd      1
+; поле редактирования
+        dd      3
+        dd      1, 0, 18, 0
+        dd      quick_search_buf
+        dd      1Ch
 
 RetryOrCancelBtn:
         dd      aRetry
@@ -7122,7 +7714,15 @@ DeleteErrorBtn:
 ContinueBtn:
         dd      aContinue
 
+EditorExitBtn:
+        dd      aSave
+        dd      aDontSave
+        dd      aContinueEdit
+
 aCannotOpenFile_ptr     dd      aCannotOpenFile
+EditConfigErr_ptr:
+        dd      aEditConfigErr1
+        dd      aEditConfigErr2
 if lang eq ru
 aDeleteCaption          db      'Удаление',0
 aConfirmDeleteText      db      'Вы хотите удалить',0
@@ -7194,6 +7794,18 @@ aSelect                 db      'Пометить',0
 aDeselect               db      'Снять',0
 aCannotOpenFile         db      'Ошибка при открытии файла',0
 aCannotSetFolder        db      'Не могу зайти в папку',0
+aSearch                 db      'Поиск',0
+aEditConfigErr1         db      'Ошибка в конфигурации плагинов для редактора.',0
+aEditConfigErr2         db      'Попробуйте убрать лишние плагины.',0
+aEditNoMemory           db      'Файл слишком велик для загрузки в редактор.',0
+aLine                   db      '  Строка'
+aCol                    db      '   Кол '
+aEditorTitle            db      'Редактор',0
+aFileModified           db      'Файл был изменён',0
+aSave                   db      'Сохранить',0
+aDontSave               db      'Не сохранять',0
+aContinueEdit           db      'Продолжить редактирование',0
+aCannotSaveToPlugin     db      'Сохранение файлов на панелях плагинов не поддерживается',0
 else
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete',0
@@ -7269,6 +7881,17 @@ aSelect                 db      'Select',0
 aDeselect               db      'Deselect',0
 aCannotOpenFile         db      'Cannot open the file',0
 aCannotSetFolder        db      'Cannot enter to folder',0
+aSearch                 db      'Search',0
+aEditConfigErr1         db      'Error in configuration of plugins for the editor.',0
+aEditConfigErr2         db      'Try to remove unnecessary plugins.',0
+aLine                   db      '    Line'
+aCol                    db      '   Col '
+aEditorTitle            db      'Editor',0
+aFileModified           db      'File has been modified',0
+aSave                   db      'Save',0
+aDontSave               db      'Do not save',0
+aContinueEdit           db      'Continue editing',0
+aCannotSaveToPlugin     db      'Saving is not supported for plugin panels',0
 end if
 
 aOk                     db      'OK',0
@@ -7301,6 +7924,7 @@ aSetFolder              db      'SetFolder',0
 aGetOpenPluginInfo      db      'GetOpenPluginInfo',0
 aGetPanelTitle          db      'GetPanelTitle',0
 aGetFiles               db      'GetFiles',0
+aEditInfoSize           db      'EditInfoSize',0
 
 aConfirmations          db      'Confirmations',0
 aConfirmDelete          db      'Delete',0
@@ -7309,6 +7933,9 @@ aConfirmDeleteIncomplete db     'DeleteIncomplete',0
 aPanels                 db      'Panels',0
 aLeftViewMode           db      'LeftViewMode',0
 aRightViewMode          db      'RightViewMode',0
+
+aEditor                 db      'Editor',0
+aEolStyle               db      'EOLStyle',0
 
 aAssociations           db      'Associations',0
 aPlugins                db      'Plugins',0
@@ -7339,6 +7966,7 @@ plugin_exported:
         dd      aGetOpenPluginInfo
         dd      aGetPanelTitle
         dd      aGetFiles
+        dd      aEditInfoSize
         dd      0
 plugin_exported_default:
         dd      plugin_unload_default
@@ -7354,6 +7982,7 @@ plugin_exported_default:
         dd      GetOpenPluginInfo_default
         dd      GetPanelTitle_default
         dd      GetFiles_default
+        dd      0       ; default value for EditInfoSize
 
 kfar_info:
         dd      .size
@@ -7386,6 +8015,9 @@ plugins         dd      0
 num_plugins     dd      0
 alloc_plugins   dd      0
 
+EditPlugInfo    dd      0
+EditEOLStyle    db      edit.eol_unix
+
 virtual at 0
 PluginInfo:
 .unload         dd      ?
@@ -7401,6 +8033,8 @@ PluginInfo:
 .GetOpenPluginInfo dd   ?
 .GetPanelTitle  dd      ?
 .GetFiles       dd      ?
+.EditInfoSize   dd      ?
+.EditInfoOffs   dd      ?
 .size = $
 end virtual
 
@@ -7576,7 +8210,11 @@ panel2_dir      rb      1024
 
 ;console_data    rb      max_width*max_height*2
 
-nomem_dlgsavearea       rb      (12+4)*(3+3)*2
+nomem_dlgsavearea       rb      8 + (12+4)*(3+3)*2
+
+quicksearch_savearea    rb      22*3*2
+quicksearch_maxlen = 64
+quick_search_buf        rb      12 + quicksearch_maxlen
 
 cur_header      rb      max_width
 tmp             dd      ?
@@ -7603,6 +8241,10 @@ last_column_index dd    ?
 
 scrpos          dq      ?
 viewer_right_side dq    ?
+
+EditDataSize    dd      ?
+EditBlockStart  dd      ?
+EditBlockSize   dd      ?
 
 saved_file_name:
 procinfo        rb      1024

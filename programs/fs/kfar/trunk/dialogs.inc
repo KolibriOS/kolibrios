@@ -8,6 +8,7 @@ dlgtemplate:
 ; бит 1: использовать стандартные цвета предупреждения/ошибки
 ; (если любой из этих битов установлен, поля main_color,border_color,header_color
 ;  игнорируются)
+; бит 2: не рисовать тень
 .flags          dd      ?
 .x              dd      ?
 .y              dd      ?
@@ -20,10 +21,137 @@ dlgtemplate:
 .border_color   db      ?
 .header_color   db      ?
                 db      ?       ; align
+.dataptr        dd      ?       ; used internally, ignored on input
 .size = $
 end virtual
 
 GenericBox:
+        push    [cursor_x]
+        push    [cursor_y]
+        push    dword [esp+8+8]
+        push    dword [esp+8+8]
+        call    ShowGenericBox
+        test    eax, eax
+        jz      @f
+        pop     [cursor_y]
+        pop     [cursor_x]
+        ret
+@@:
+        pushad
+; message loop
+.event:
+        push    10
+        pop     eax
+        int     40h
+        dec     eax
+        jz      .redraw
+        dec     eax
+        jz      .key
+        jmp     exit
+.redraw:
+        call    draw_window
+        jmp     .event
+.key:
+        mov     al, 2
+        int     40h
+        shr     eax, 8
+        cmp     al, 0xE0
+        jnz     @f
+        mov     [bWasE0], 1
+        jmp     .event
+@@:
+        xchg    ah, [bWasE0]
+        cmp     al, 0x1D
+        jz      .ctrl_down
+        cmp     al, 0x9D
+        jz      .ctrl_up
+        cmp     al, 0x2A
+        jz      .lshift_down
+        cmp     al, 0xAA
+        jz      .lshift_up
+        cmp     al, 0x36
+        jz      .rshift_down
+        cmp     al, 0xB6
+        jz      .rshift_up
+        cmp     al, 0x38
+        jz      .alt_down
+        cmp     al, 0xB8
+        jz      .alt_up
+        mov     ebx, [esp+24h+8]
+        mov     ecx, [esp+28h+8]
+        push    0
+        push    eax
+        push    2
+        push    ebx
+        call    ecx
+        test    eax, eax
+        jz      .event
+        mov     [esp+28], eax
+        jmp     .exit
+.ctrl_down:
+        test    ah, ah
+        jnz     .rctrl_down
+        or      [ctrlstate], 4
+        jmp     .event
+.rctrl_down:
+        or      [ctrlstate], 8
+        jmp     .event
+.ctrl_up:
+        test    ah, ah
+        jnz     .rctrl_up
+        and     [ctrlstate], not 4
+        jmp     .event
+.rctrl_up:
+        and     [ctrlstate], not 8
+        jmp     .event
+.lshift_down:
+        test    ah, ah
+        jnz     @f
+        or      [ctrlstate], 1
+@@:     jmp     .event
+.lshift_up:
+        test    ah, ah
+        jnz     @b
+        and     [ctrlstate], not 1
+        jmp     @b
+.rshift_down:
+        or      [ctrlstate], 2
+        jmp     .event
+.rshift_up:
+        and     [ctrlstate], not 2
+        jmp     .event
+.alt_down:
+        test    ah, ah
+        jnz     .ralt_down
+        or      [ctrlstate], 0x10
+        jmp     .event
+.ralt_down:
+        or      [ctrlstate], 0x20
+        jmp     .event
+.alt_up:
+        test    ah, ah
+        jnz     .ralt_up
+        and     [ctrlstate], not 0x10
+        jmp     .event
+.ralt_up:
+        and     [ctrlstate], not 0x20
+        jmp     .event
+.exit:
+        popad
+        push    eax
+        push    0
+        push    dword [esp+12+8]
+        call    HideGenericBox
+        pop     eax
+        pop     [cursor_y]
+        pop     [cursor_x]
+        pushad
+        call    draw_image
+        popad
+        ret     8
+
+; int __stdcall ShowGenericBox(DLGTEMPLATE* dlg, void* DlgProc);
+ShowGenericBox:
         pushad
         mov     ebx, [esp+20h+4]
 ; center window if required
@@ -86,7 +214,7 @@ GenericBox:
 @@:
 ; allocate memory for data under dialog
 ; for 'No memory' dialog use static data area
-        mov     ebp, nomem_dlgsavearea
+        mov     eax, nomem_dlgsavearea
         cmp     ebx, nomem_dlgdata
         jz      .allocated
         mov     eax, [ebx+dlgtemplate.width]
@@ -99,7 +227,7 @@ GenericBox:
         add     edx, [ebx+dlgtemplate.border_size_y]
         inc     edx
         mul     edx
-        lea     ecx, [eax*2]
+        lea     ecx, [eax*2+8]
         call    xpgalloc
         test    eax, eax
         jnz     @f
@@ -109,8 +237,11 @@ GenericBox:
         or      eax, -1
         ret     8
 @@:
-        mov     ebp, eax
 .allocated:
+        mov     [ebx+dlgtemplate.dataptr], eax
+        pop     dword [eax+4]
+        pop     dword [eax]
+        lea     ebp, [eax+8]
 ; save data
         mov     eax, [ebx+dlgtemplate.y]
         add     eax, [ebx+dlgtemplate.height]
@@ -131,12 +262,13 @@ GenericBox:
         push    eax
         call    save_console_data
 ; draw shadow
+        test    byte [ebx+dlgtemplate.flags], 4
+        jnz     .noshadow
         mov     eax, [ebx+dlgtemplate.x]
         sub     eax, [ebx+dlgtemplate.border_size_x]
         ja      @f
         xor     eax, eax
 @@:
-        push    eax     ; save real window left
         inc     eax
         inc     eax
         mov     edx, [ebx+dlgtemplate.y]
@@ -144,7 +276,6 @@ GenericBox:
         ja      @f
         xor     edx, edx
 @@:
-        push    edx     ; save real window top
         inc     edx
         call    get_console_ptr
         mov     ecx, [ebx+dlgtemplate.y]
@@ -185,9 +316,29 @@ GenericBox:
         add     edi, [cur_width]
         dec     edx
         jnz     .shadow_loop
+.noshadow:
+        popad
+        push    dword [esp+8]
+        push    dword [esp+8]
+        call    DrawGenericBox
+        xor     eax, eax
+        ret     8
+
+; void __stdcall DrawGenericBox(DLGDATA* dlg, void* DlgProc)
+DrawGenericBox:
+        pushad
+        mov     ebx, [esp+24h]
 ; draw area background
-        pop     edx
-        pop     eax
+        mov     eax, [ebx+dlgtemplate.x]
+        sub     eax, [ebx+dlgtemplate.border_size_x]
+        ja      @f
+        xor     eax, eax
+@@:
+        mov     edx, [ebx+dlgtemplate.y]
+        sub     edx, [ebx+dlgtemplate.border_size_y]
+        ja      @f
+        xor     edx, edx
+@@:
         call    get_console_ptr
         mov     ecx, [ebx+dlgtemplate.x]
         add     ecx, [ebx+dlgtemplate.width]
@@ -302,117 +453,24 @@ GenericBox:
         dec     edx
         jnz     @b
 ; send redraw message
-        mov     eax, [esp+28h+8]
-        push    ebx ebp
+        mov     eax, [esp+28h]
         push    0
         push    0
         push    1
         push    ebx
         call    eax
         call    draw_image
-        pop     ebp ebx
-; message loop
-.event:
-        push    10
-        pop     eax
-        int     40h
-        dec     eax
-        jz      .redraw
-        dec     eax
-        jz      .key
-        jmp     exit
-.redraw:
-        push    ebx ebp
-        call    draw_window
-        pop     ebp ebx
-        jmp     .event
-.key:
-        mov     al, 2
-        int     40h
-        shr     eax, 8
-        cmp     al, 0xE0
-        jnz     @f
-        mov     [bWasE0], 1
-        jmp     .event
-@@:
-        xchg    ah, [bWasE0]
-        cmp     al, 0x1D
-        jz      .ctrl_down
-        cmp     al, 0x9D
-        jz      .ctrl_up
-        cmp     al, 0x2A
-        jz      .lshift_down
-        cmp     al, 0xAA
-        jz      .lshift_up
-        cmp     al, 0x36
-        jz      .rshift_down
-        cmp     al, 0xB6
-        jz      .rshift_up
-        cmp     al, 0x38
-        jz      .alt_down
-        cmp     al, 0xB8
-        jz      .alt_up
-        mov     ecx, [esp+28h+8]
-        push    ebx ebp
-        push    0
-        push    eax
-        push    2
-        push    ebx
-        call    ecx
-        pop     ebp ebx
-        test    eax, eax
-        jz      .event
-        mov     [esp+8+28], eax
-        jmp     .exit
-.ctrl_down:
-        test    ah, ah
-        jnz     .rctrl_down
-        or      [ctrlstate], 4
-        jmp     .event
-.rctrl_down:
-        or      [ctrlstate], 8
-        jmp     .event
-.ctrl_up:
-        test    ah, ah
-        jnz     .rctrl_up
-        and     [ctrlstate], not 4
-        jmp     .event
-.rctrl_up:
-        and     [ctrlstate], not 8
-        jmp     .event
-.lshift_down:
-        test    ah, ah
-        jnz     @f
-        or      [ctrlstate], 1
-@@:     jmp     .event
-.lshift_up:
-        test    ah, ah
-        jnz     @b
-        and     [ctrlstate], not 1
-        jmp     @b
-.rshift_down:
-        or      [ctrlstate], 2
-        jmp     .event
-.rshift_up:
-        and     [ctrlstate], not 2
-        jmp     .event
-.alt_down:
-        test    ah, ah
-        jnz     .ralt_down
-        or      [ctrlstate], 0x10
-        jmp     .event
-.ralt_down:
-        or      [ctrlstate], 0x20
-        jmp     .event
-.alt_up:
-        test    ah, ah
-        jnz     .ralt_up
-        and     [ctrlstate], not 0x10
-        jmp     .event
-.ralt_up:
-        and     [ctrlstate], not 0x20
-        jmp     .event
-.exit:
+        popad
+        ret     8
+
+; void __stdcall HideGenericBox(DLGTEMPLATE* dlg, int bRedrawWindow);
+HideGenericBox:
+; void __stdcall HideDialogBox(DLGDATA* dlg, int bRedrawWindow);
+HideDialogBox:
+        pushad
+        mov     ebx, [esp+24h]
+        mov     ebp, [ebx+dlgtemplate.dataptr]
+        add     ebp, 8
 ; restore data
         mov     eax, [ebx+dlgtemplate.y]
         add     eax, [ebx+dlgtemplate.height]
@@ -433,16 +491,21 @@ GenericBox:
         push    eax
         call    restore_console_data
         call    draw_keybar
-        cmp     ebx, nomem_dlgdata
-        jz      @f
-        mov     ecx, ebp
-        call    pgfree
-@@:
+        lea     ecx, [ebp-8]
+        push    dword [ecx]
+        push    dword [ecx+4]
         pop     [ebx+dlgtemplate.y]
         pop     [ebx+dlgtemplate.x]
+        cmp     ebx, nomem_dlgdata
+        jz      @f
+        call    pgfree
+@@:
         or      [cursor_x], -1
         or      [cursor_y], -1
+        cmp     dword [esp+28h], 0
+        jz      @f
         call    draw_image
+@@:
         popad
         ret     8
 
@@ -555,13 +618,13 @@ menu:
 ;       void* variants, const char* title, unsigned flags);
 menu_centered_in:
         pushad
-        mov     ecx, 56
-; 36 bytes for dlgtemplate + additional:
-; +36: dd cur_variant
-; +40: dd num_variants
-; +44: dd begin_variant
-; +48: dd end_variant
-; +52: dd cur_variant_idx
+        mov     ecx, 60
+; 40 bytes for dlgtemplate + additional:
+; +40: dd cur_variant
+; +44: dd num_variants
+; +48: dd begin_variant
+; +52: dd end_variant
+; +56: dd cur_variant_idx
         call    xpgalloc
         test    eax, eax
         jnz     @f
@@ -584,16 +647,16 @@ menu_centered_in:
         xor     eax, eax
         xor     ecx, ecx
         mov     esi, [esp+20h+20]
-        mov     [ebx+36], esi
-        and     dword [ebx+52], 0
+        mov     [ebx+40], esi
+        and     dword [ebx+56], 0
 @@:
         cmp     dword [esi+4], 0
         jz      .find_width
         mov     esi, [esi+4]
-        inc     dword [ebx+52]
+        inc     dword [ebx+56]
         jmp     @b
 .find_width:
-        mov     [ebx+44], esi
+        mov     [ebx+48], esi
         add     esi, 8
         push    esi
         xor     edx, edx
@@ -628,7 +691,7 @@ menu_centered_in:
         sub     eax, [ebx+dlgtemplate.border_size_x]
         mov     [ebx+dlgtemplate.width], eax
         mov     [ebx+dlgtemplate.height], ecx
-        mov     [ebx+40], ecx
+        mov     [ebx+44], ecx
         sub     eax, [esp+20h+12]
         neg     eax
         sar     eax, 1
@@ -677,8 +740,8 @@ menu_centered_in:
         mov     [ebx+dlgtemplate.y], 3
 .small_height:
         mov     ecx, [ebx+dlgtemplate.height]
-        mov     eax, [ebx+36]
-        mov     [ebx+44], eax
+        mov     eax, [ebx+40]
+        mov     [ebx+48], eax
         dec     ecx
         jz      .skip
         push    ecx
@@ -688,13 +751,13 @@ menu_centered_in:
         mov     eax, [eax+4]
         loop    @b
 @@:
-        mov     [ebx+44], eax
+        mov     [ebx+48], eax
         pop     ecx
 .loop:
         mov     eax, [eax]
         loop    .loop
 .skip:
-        mov     [ebx+48], eax
+        mov     [ebx+52], eax
         mov     eax, [esp+20h+24]
         mov     [ebx+dlgtemplate.title], eax
         mov     al, [menu_normal_color]
@@ -723,25 +786,25 @@ MenuDlgProc:
         call    .dodraw
         ret     16
 .prev:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
         cmp     dword [eax+4], 0
         jz      .end
         call    .line_prev
 .posret:
-        mov     [ebx+36], eax
+        mov     [ebx+40], eax
 .redraw:
         call    .dodraw
         call    draw_image
         xor     eax, eax
         ret     16
 .next:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
         cmp     dword [eax], 0
         jz      .home
         call    .line_next
         jmp     .posret
 .pgdn:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
         mov     ecx, [ebx+dlgtemplate.height]
 .pgdnl:
         cmp     dword [eax], 0
@@ -775,7 +838,7 @@ MenuDlgProc:
         jz      .ins
         cmp     al, 0x53
         jz      .del
-        mov     edx, [ebx+36]
+        mov     edx, [ebx+40]
 @@:
         cmp     dword [edx+4], 0
         jz      @f
@@ -803,7 +866,7 @@ MenuDlgProc:
         xor     eax, eax
         ret     16
 .pgup:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
         mov     ecx, [ebx+dlgtemplate.height]
 .pgupl:
         cmp     dword [eax+4], 0
@@ -812,14 +875,14 @@ MenuDlgProc:
         loop    .pgupl
         jmp     .posret
 .home:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
 @@:
         cmp     dword [eax+4], 0
         jz      @f
         mov     eax, [eax+4]
         jmp     @b
 @@:
-        mov     [ebx+44], eax
+        mov     [ebx+48], eax
         push    eax
         mov     ecx, [ebx+dlgtemplate.height]
         dec     ecx
@@ -828,19 +891,19 @@ MenuDlgProc:
         mov     eax, [eax]
         loop    .h2
 .h1:
-        mov     [ebx+48], eax
+        mov     [ebx+52], eax
         pop     eax
-        and     dword [ebx+52], 0
+        and     dword [ebx+56], 0
         jmp     .posret
 .end:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
 @@:
         cmp     dword [eax], 0
         jz      @f
         mov     eax, [eax]
         jmp     @b
 @@:
-        mov     [ebx+48], eax
+        mov     [ebx+52], eax
         push    eax
         mov     ecx, [ebx+dlgtemplate.height]
         dec     ecx
@@ -849,17 +912,17 @@ MenuDlgProc:
         mov     eax, [eax+4]
         loop    .e2
 .e1:
-        mov     [ebx+44], eax
-        mov     eax, [ebx+40]
+        mov     [ebx+48], eax
+        mov     eax, [ebx+44]
         dec     eax
-        mov     [ebx+52], eax
+        mov     [ebx+56], eax
         pop     eax
         jmp     .posret
 .esc:
         or      eax, -1
         ret     16
 .enter:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
         ret     16
 .ins:
         push    5
@@ -869,7 +932,7 @@ MenuDlgProc:
         push    4
         pop     edx
 @@:
-        mov     eax, [ebx+36]
+        mov     eax, [ebx+40]
         cmp     byte [eax+8], '/'
         jnz     @f
         cmp     word [eax+9], 'cd'
@@ -885,41 +948,41 @@ MenuDlgProc:
         ret     16
 
 .line_prev:
-        cmp     eax, [ebx+44]
-        jnz     @f
-        mov     edx, [ebx+44]
-        mov     edx, [edx+4]
-        mov     [ebx+44], edx
-        mov     edx, [ebx+48]
-        mov     edx, [edx+4]
-        mov     [ebx+48], edx
-@@:
-        mov     eax, [eax+4]
-        dec     dword [ebx+52]
-        ret
-.line_next:
         cmp     eax, [ebx+48]
         jnz     @f
-        mov     edx, [ebx+44]
-        mov     edx, [edx]
-        mov     [ebx+44], edx
+        mov     edx, [ebx+48]
+        mov     edx, [edx+4]
+        mov     [ebx+48], edx
+        mov     edx, [ebx+52]
+        mov     edx, [edx+4]
+        mov     [ebx+52], edx
+@@:
+        mov     eax, [eax+4]
+        dec     dword [ebx+56]
+        ret
+.line_next:
+        cmp     eax, [ebx+52]
+        jnz     @f
         mov     edx, [ebx+48]
         mov     edx, [edx]
         mov     [ebx+48], edx
+        mov     edx, [ebx+52]
+        mov     edx, [edx]
+        mov     [ebx+52], edx
 @@:
         mov     eax, [eax]
-        inc     dword [ebx+52]
+        inc     dword [ebx+56]
         ret
 
 .dodraw:
         mov     eax, [ebx+dlgtemplate.x]
         mov     edx, [ebx+dlgtemplate.y]
         call    get_console_ptr
-        mov     esi, [ebx+44]
+        mov     esi, [ebx+48]
 .0:
         xor     edx, edx
         mov     ah, [menu_selected_color]
-        cmp     esi, [ebx+36]
+        cmp     esi, [ebx+40]
         jz      @f
         mov     ah, [menu_normal_color]
 @@:
@@ -947,7 +1010,7 @@ MenuDlgProc:
         mov     ah, [menu_selected_highlight_color]
         push    ecx
         mov     ecx, [esp+8]
-        cmp     ecx, [ebx+36]
+        cmp     ecx, [ebx+40]
         pop     ecx
         jz      .amp1
         mov     ah, [menu_highlight_color]
@@ -973,7 +1036,7 @@ MenuDlgProc:
         pop     esi edi
         add     edi, [cur_width]
         add     edi, [cur_width]
-        cmp     esi, [ebx+48]
+        cmp     esi, [ebx+52]
         jz      @f
         mov     esi, [esi]
         test    esi, esi
@@ -981,13 +1044,13 @@ MenuDlgProc:
 @@:
 ; Линейка прокрутки
         mov     ecx, [ebx+dlgtemplate.height]
-        cmp     ecx, [ebx+40]
+        cmp     ecx, [ebx+44]
         jz      .noscrollbar
         sub     ecx, 2
         jbe     .noscrollbar
-        mov     eax, [ebx+52]
+        mov     eax, [ebx+56]
         mul     ecx
-        div     dword [ebx+40]
+        div     dword [ebx+44]
         push    eax
         mov     eax, [ebx+dlgtemplate.x]
         add     eax, [ebx+dlgtemplate.width]
@@ -1013,6 +1076,25 @@ MenuDlgProc:
         mov     al, 0x1F
         stosw
 .noscrollbar:
+        ret
+
+get_ascii_char:
+; query keyboard layout
+        pushad
+        mov     al, [ctrlstate]
+        and     al, 3
+        xor     ecx, ecx
+        cmp     al, 1
+        sbb     ecx, -2
+        push    26
+        pop     eax
+        push    2
+        pop     ebx
+        mov     edx, layout
+        int     0x40
+        popad
+; translate scancode to ASCII
+        movzx   eax, byte [layout+eax]
         ret
 
 virtual at 0
@@ -1058,6 +1140,20 @@ DialogBox:
         push    ManagerDlgProc
         push    dword [esp+8]
         call    GenericBox
+        ret     4
+
+; int __stdcall ShowDialogBox(DLGDATA* dlg);
+ShowDialogBox:
+        push    ManagerDlgProc
+        push    dword [esp+8]
+        call    ShowGenericBox
+        ret     4
+
+; void __stdcall DrawDialogBox(DLGDATA* dlg);
+DrawDialogBox:
+        push    ManagerDlgProc
+        push    dword [esp+8]
+        call    DrawGenericBox
         ret     4
 
 ManagerDlgProc:
@@ -1255,21 +1351,8 @@ ManagerDlgProc:
 .editor_char:
         test    [ctrlstate], 0x3C
         jnz     .ret_draw
-; query keyboard layout
-        pushad
-        push    26
-        pop     eax
-        push    2
-        pop     ebx
-        xor     ecx, ecx
-        cmp     [ctrlstate], 1
-        sbb     ecx, -2
-        mov     edx, layout
-        int     0x40
-        popad
-; translate scancode to ASCII
         movzx   eax, al
-        movzx   eax, byte [layout+eax]
+        call    get_ascii_char
         push    eax
 ; insert entered symbol
         xor     eax, eax
@@ -1482,6 +1565,10 @@ SayErr:
         pop     eax
         push    aError
         push    eax
+; int __stdcall SayErrTitle(const char* title,
+;                       int num_strings, const char* strings[],
+;                       int num_buttons, const char* buttons[]);
+SayErrTitle:
         push    2
         jmp     @f
 
@@ -1570,6 +1657,7 @@ Message:
         mov     eax, [esp+32+4]
         stosd                           ; dlgtemplate.title
         xor     eax, eax
+        stosd                           ; (ignored)
         stosd                           ; (ignored)
         stosd                           ; DlgProc
         stosd                           ; userdata

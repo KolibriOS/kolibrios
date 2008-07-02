@@ -1,20 +1,21 @@
 virtual at 0
 viewer_data:
+        .hPlugin        dd      ?
+        .hFile          dd      ?
         .buf_start      dq      ?
         .cur_pos        dq      ?
         .filesize       dq      ?
         .buf_pos        dd      ?
         .buf_size       dd      ?
         .col            dq      ?
-        .hPlugin        dd      ?
-        .hFile          dd      ?
         .hWorkFile      dd      ?
         .encoding       db      ?
-        .bEofReached    db      ?
         .flags          db      ?       ; & 1: hex mode
                                         ; & 2: unwrap
                                         ; & 4: big-endian unicode
+        .bEofReached    db      ?
                         rb      1
+        align 200h
         .filename       rb      1024
         .hostname       rb      1024
         .buf            rb      16384
@@ -154,6 +155,7 @@ view_file:
         mov     [ebp+viewer_data.hWorkFile], eax
         test    eax, eax
         jnz     .retry
+..openerr_in_screen:
         push    ContinueBtn
         push    1
         push    aCannotOpenFile_ptr
@@ -212,6 +214,9 @@ view_file:
 @@:
         mov     [ebp+viewer_data.encoding], encodings.unicode
 .nounicode:
+viewer_OnRedraw:
+        or      [cursor_x], -1
+        or      [cursor_y], -1
         call    viewer_set_keybar
         call    viewer_draw_text
         ret
@@ -418,63 +423,35 @@ viewer_draw_text:
         xor     edx, edx
         call    get_console_ptr
         mov     ah, [view_status_color]
-        lea     esi, [ebp+viewer_data.filename]
-        mov     dl, 3
         mov     ecx, [cur_width]
         sub     ecx, 44
         cmp     ecx, 20
-        jae     .5
+        jae     @f
         mov     cl, 20
-.5:
-        lodsb
-        cmp     al, '/'
-        jnz     @f
-        dec     edx
-        jz      .6
 @@:
-        stosw
-        loop    .5
-.6:
-        dec     ecx
-        stosw
-        push    esi
-@@:
-        inc     esi
-        cmp     byte [esi-1], 0
-        jnz     @b
-        sub     esi, [esp]
-        dec     esi
-        cmp     ecx, esi
-        jae     .7
-        mov     al, '.'
-        stosw
-        stosw
-        stosw
-        sub     ecx, 3
-        sub     esi, ecx
-        add     [esp], esi
-.7:
-        pop     esi
-@@:
-        lodsb
-        test    al, al
-        jz      @f
-        dec     ecx
-        stosw
-        jmp     @b
-@@:
-        mov     al, ' '
-        add     ecx, 8
+        call    viewedit_draw_filename
+        add     ecx, 11
         rep     stosw
         movzx   esi, [ebp+viewer_data.encoding]
         lea     esi, [encodings.names+esi*8]
-        mov     cl, 8
+        push    edi esi
+        dec     edi
+        dec     edi
+        std
+        add     esi, 8
+@@:
+        dec     esi
+        cmp     byte [esi], ' '
+        jz      @b
 @@:
         lodsb
         stosw
-        loop    @b
+        cmp     esi, [esp]
+        jae     @b
+        cld
+        pop     esi edi
         mov     al, ' '
-        mov     cl, 8
+        mov     cl, 13
         rep     stosw
         std
         push    edi
@@ -700,7 +677,7 @@ end if
         push    edx
         mov     eax, ecx
         xor     edx, edx
-        div     [tabsize]
+        div     [viewer_tabsize]
         mov     ecx, edx
         pop     edx
         jmp     .1
@@ -716,7 +693,7 @@ end if
         push    edx
         push    ecx
         mov     eax, ecx
-        mov     ecx, [tabsize]
+        mov     ecx, [viewer_tabsize]
         xor     edx, edx
         div     ecx
         pop     eax
@@ -1001,6 +978,54 @@ end if
         adc     dword [scrpos+4], 0
         ret
 
+viewedit_draw_filename:
+        lea     esi, [ebp+viewer_data.filename]
+        xor     edx, edx
+        cmp     [ebp+viewer_data.hPlugin], edx
+        mov     dl, 3
+        jz      .5
+        mov     dl, 1
+.5:
+        lodsb
+        cmp     al, '/'
+        jnz     @f
+        dec     edx
+        jz      .6
+@@:
+        stosw
+        loop    .5
+.6:
+        dec     ecx
+        stosw
+        push    esi
+@@:
+        inc     esi
+        cmp     byte [esi-1], 0
+        jnz     @b
+        sub     esi, [esp]
+        dec     esi
+        cmp     ecx, esi
+        jae     .7
+        mov     al, '.'
+        stosw
+        stosw
+        stosw
+        sub     ecx, 3
+        sub     esi, ecx
+        add     [esp], esi
+.7:
+        pop     esi
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        dec     ecx
+        stosw
+        jmp     @b
+@@:
+        mov     al, ' '
+        ret
+
 viewer_seek_to_current:
         mov     eax, dword [ebp+viewer_data.cur_pos]
         mov     edx, dword [ebp+viewer_data.cur_pos+4]
@@ -1213,7 +1238,7 @@ viewer_next_newline:
 .tab:
         push    ecx
         mov     eax, ecx
-        mov     ecx, [tabsize]
+        mov     ecx, [viewer_tabsize]
         xor     edx, edx
         div     ecx
         sub     ecx, edx
@@ -1232,8 +1257,11 @@ viewer_next_newline:
         jnz     .2
         dec     [ebp+viewer_data.buf_pos]
 .2:
+        clc
 .ret:
+        pushf
         call    viewer_set_curpos
+        popf
         ret
 
 viewer_prev_newline:
@@ -1363,11 +1391,6 @@ end if
         movsw
         jmp     draw_keybar
 
-viewer_OnRedraw:
-        call    viewer_set_keybar
-        call    viewer_draw_text
-        ret
-
 viewer_OnExit:
         mov     edx, [ebp+viewer_data.hPlugin]
         test    edx, edx
@@ -1383,6 +1406,7 @@ viewer_OnExit:
         ret
 
 viewer_IsHandleUsed:
+editor_IsHandleUsed:
         cmp     edx, [ebp+viewer_data.hPlugin]
         jnz     @f
         cmp     ebx, [ebp+viewer_data.hFile]
@@ -1579,6 +1603,25 @@ else
         stosd
         stosb
 end if
+        jmp     viewedit_getname
+editor_getname:
+if lang eq ru
+        mov     eax, 'Реда'
+        stosd
+        mov     eax, 'ктор'
+        stosd
+        mov     eax, '    '
+        stosd
+        stosb
+else
+        mov     eax, 'Edit'
+        stosd
+        mov     eax, '    '
+        stosd
+        stosd
+        stosb
+end if
+viewedit_getname:
         sub     ecx, 13
         cmp     [ebp+viewer_data.hPlugin], 0
         jz      .native
