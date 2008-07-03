@@ -384,6 +384,16 @@ void  R5xx2DInit()
 
     dbgprintf("dst_pitch_offset %x \n", rhd.dst_pitch_offset);
 
+
+    scr_pixmap.width  = rhd.displayWidth;
+    scr_pixmap.height = rhd.displayHeight;
+    scr_pixmap.format = PICT_a8r8g8b8;
+    scr_pixmap.pitch = rhd.displayWidth * 4;
+    scr_pixmap.offset = rhd.FbIntAddress;
+    scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
+    scr_pixmap.raw = (void*)rhd.FbBase;
+
+
     MASKREG(R5XX_GB_TILE_CONFIG, 0, R5XX_ENABLE_TILING);
     OUTREG (R5XX_WAIT_UNTIL, R5XX_WAIT_2D_IDLECLEAN | R5XX_WAIT_3D_IDLECLEAN);
     MASKREG(R5XX_DST_PIPE_CONFIG, R5XX_PIPE_AUTO_CONFIG, R5XX_PIPE_AUTO_CONFIG);

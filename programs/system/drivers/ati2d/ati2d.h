@@ -175,6 +175,19 @@ typedef struct
   int ymax;
 }clip_t, *PTRclip;
 
+
+typedef struct
+{
+  u32_t width;
+  u32_t height;
+  u32_t format;
+  u32_t pitch;
+  u32_t offset;
+  u32_t pitch_offset;
+  u32_t *raw;
+}pixmap_t;
+
+
 typedef struct {
     int			token;		/* id of the token */
     const char *	name;		/* token name */

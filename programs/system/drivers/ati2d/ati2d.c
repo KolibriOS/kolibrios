@@ -7,7 +7,10 @@
 
 RHD_t rhd;
 
+pixmap_t scr_pixmap;
+
 static clip_t  clip;
+
 
 void STDCALL (*SelectHwCursor)(cursor_t*)__asm__("SelectHwCursor");
 void STDCALL (*SetHwCursor)(cursor_t*,int x,int y)__asm__("SetHwCursor");
@@ -161,6 +164,15 @@ int _stdcall srv_2d(ioctl_t *io)
           return RadeonComposite((blit_t*)inp);
         break;
 
+      case PIXMAP:
+        if(io->inp_size==5)
+          return CreatePixmap((new_pixmap_t*)inp);
+        break;
+
+      case PIXBLIT:
+        if(io->inp_size==8)
+          return PixBlit((pixblit_t*)inp);
+        break;
 
     default:
       return ERR_PARAM;

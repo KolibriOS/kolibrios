@@ -4,6 +4,8 @@
 #define LINE_2P    3
 #define BLIT       4
 #define COMPIZ     5
+#define PIXMAP     6
+#define PIXBLIT    7
 
 typedef unsigned int color_t;
 
@@ -49,6 +51,29 @@ typedef struct
   u32 color;
 }line2p_t;
 
+typedef struct
+{
+  u32_t pixmap;
+  u32_t format;
+  u32_t width;
+  u32_t height;
+  u32_t pitch;
+}new_pixmap_t;
+
+typedef struct
+{
+  pixmap_t  *dstpix;
+  int       dst_x;
+  int       dst_y;
+
+  pixmap_t  *srcpix;
+  int       src_x;
+  int       src_y;
+  int       w;
+  int       h;
+}pixblit_t;
+
+
 int LineClip( int *x1, int *y1, int *x2, int *y2 );
 int BlockClip( int *x1, int *y1, int *x2, int* y2);
 
@@ -59,9 +84,11 @@ int Line2P(line2p_t *draw);
 
 int Blit(blit_t *blit);
 
-
 int RadeonComposite( blit_t *blit);
 
+int CreatePixmap(new_pixmap_t *io);
+
+int PixBlit(pixblit_t* blit);
 
 # define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
 #	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)
