@@ -121,7 +121,7 @@ kernel_export:
   dd szUserFree        , user_free	       ;stdcall
   dd szKmalloc	       , malloc
   dd szKfree	       , free
-  dd szCreateRingBuffer, create_ring_buffer
+  dd szCreateRingBuffer, create_ring_buffer    ;stdcall
 
   dd szGetPid	       , get_pid
   dd szCreateObject    , create_kernel_object

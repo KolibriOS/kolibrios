@@ -388,7 +388,9 @@ endp
 align 4
 proc reg_service stdcall, name:dword, handler:dword
 
-	   xor eax, eax
+	   push ebx
+
+           xor eax, eax
 
 	   cmp [name], eax
 	   je .fail
@@ -396,14 +398,11 @@ proc reg_service stdcall, name:dword, handler:dword
 	   cmp [handler], eax
 	   je .fail
 
-	   push ebx
 	   mov eax, SRV_SIZE
 	   call malloc		 ;call alloc_service
-	   pop ebx
 	   test eax, eax
 	   jz .fail
 
-	   push ebx
 	   push esi
 	   push edi
 	   mov edi, eax
@@ -429,6 +428,7 @@ proc reg_service stdcall, name:dword, handler:dword
 	   ret
 .fail:
 	   xor eax, eax
+           pop ebx
 	   ret
 endp
 

@@ -126,12 +126,12 @@ proc free_page
 ;arg:  eax  page address
            pushfd
            cli
-           shr eax, 12              ;page index
-           bts dword [sys_pgmap], eax           ;that's all!
+           shr eax, 12                        ;page index
+           bts dword [sys_pgmap], eax         ;that's all!
            cmc
            adc [pg_data.pages_free], 0
            shr eax, 3
-           and eax, not 3           ;dword offset from page_map
+           and eax, not 3                     ;dword offset from page_map
            add eax, sys_pgmap
            cmp [page_start], eax
            ja @f
@@ -166,7 +166,9 @@ proc map_io_mem stdcall, base:dword, size:dword, flags:dword
            or edx, [flags]
 @@:
            mov [page_tabs+eax*4], edx
-           invlpg [ebx]
+          ; push eax
+          ; invlpg [ebx]
+          ; pop eax
            inc eax
            add ebx, edi
            add edx, edi
@@ -184,7 +186,7 @@ endp
 
 ; param
 ;  eax= page base + page flags
-;  ebx= liear address
+;  ebx= linear address
 ;  ecx= count
 
 align 4
@@ -202,7 +204,9 @@ commit_pages:
            shr ebx, 12
 @@:
            mov [page_tabs+ebx*4], eax
-           invlpg [edi]
+          ; push eax
+          ; invlpg [edi]
+          ; pop eax
            add edi, edx
            add eax, edx
            inc ebx
@@ -262,6 +266,32 @@ release_pages:
            and [pg_data.pg_mutex],0
            popad
            ret
+
+; param
+;  eax= base
+;  ecx= count
+
+align 4
+unmap_pages:
+
+           push edi
+
+           mov edi, eax
+           mov edx, eax
+
+           shr edi, 10
+           add edi, page_tabs
+
+           xor eax, eax
+@@:
+           stosd
+           invlpg [edx]
+           add edx, 0x1000
+           loop @b
+
+           pop edi
+           ret
+
 
 align 4
 proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
@@ -1086,6 +1116,27 @@ new_services:
            ret
 
 align 4
+proc load_pe_driver stdcall, file:dword
+
+           stdcall load_PE, [file]
+           test eax, eax
+           jz .fail
+
+           mov esi, eax
+           stdcall eax, DRV_ENTRY
+           test eax, eax
+           jz .fail
+
+           mov [eax+SRV.entry], esi
+           ret
+
+.fail:
+           xor eax, eax
+           ret
+endp
+
+
+align 4
 proc init_mtrr
 
            cmp [BOOT_VAR+0x901c],byte 2
@@ -1159,8 +1210,6 @@ proc set_mtrr stdcall, reg:dword,base:dword,size:dword,mem_type:dword
            ret
 endp
 
-
-
 align 4
 proc stall stdcall, delay:dword
            push ecx
@@ -1228,8 +1277,6 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 @@:
            mov [page_tabs+edi], eax
            mov [page_tabs+edi+edx], eax
-           invlpg [ebx]
-           invlpg [ebx+esi]
            add eax, 0x1000
            add ebx, 0x1000
            add edi, 4
@@ -1247,15 +1294,5 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 .fail:
            ret
 endp
-
-if 0
-     push eax
-     push edx
-     mov edx, 0x400   ;bochs
-     mov al,0xff      ;bochs
-     out dx, al       ;bochs
-     pop edx
-     pop eax
-end if
 
 

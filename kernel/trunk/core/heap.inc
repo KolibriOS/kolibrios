@@ -164,7 +164,7 @@ endp
 ;  ebx= descriptor index
 
 align 4
-get_block:
+get_small_block:
            mov ecx, eax
            shr ecx, 12
            dec ecx
@@ -211,7 +211,7 @@ get_block:
            ret
 
 align 4
-proc alloc_mem_block
+alloc_mem_block:
 
            mov ebx, [mem_block_start]
            mov ecx, [mem_block_end]
@@ -233,9 +233,8 @@ found:
            add eax, [mem_block_arr]
            dec [free_blocks]
            ret
-endp
-
-proc free_mem_block
+align 4
+free_mem_block:
            mov dword [eax], 0
            mov dword [eax+4], 0
            mov dword [eax+8], 0
@@ -263,7 +262,6 @@ proc free_mem_block
 .err:
            xor eax, eax
 	   ret
-endp
 
 align 4
 proc alloc_kernel_space stdcall, size:dword
@@ -284,7 +282,7 @@ proc alloc_kernel_space stdcall, size:dword
            cmp eax, [heap_free]
            ja .error
 
-           call get_block ; eax
+           call get_small_block ; eax
            test edi, edi
            jz .error
 

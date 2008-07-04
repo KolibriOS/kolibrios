@@ -212,8 +212,7 @@ else
 	   jna @F
 
 	   xor eax, eax
-      ;     add edi, new_app_base
-	   cld
+           cld
 	   rep stosb
 @@:
 end if
@@ -453,12 +452,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
 if GREEDY_KERNEL
 	   mov eax, 0x02
-.reserve:
-	   stosd
-	   invlpg [edx]
-	   add edx, 4096
-	   dec ecx
-	   jnz .reserve
+           rep stosd
 else
 
 .alloc:
@@ -507,6 +501,8 @@ proc destroy_page_table stdcall, pg_tab:dword
 	   mov eax, [esi]
 	   test eax, 1
 	   jz .next
+           test eax, 1 shl 9
+           jnz .next                      ;skip shared pages
 	   call free_page
 .next:
 	   add esi, 4
@@ -576,9 +572,8 @@ endp
 
 align 4
 get_pid:
-	   ;mov eax, [TASK_DATA]                ; I think it's the bug. (Rus)
 	   mov eax, [TASK_BASE]
-	   mov eax, [eax+4]
+           mov eax, [eax+TASKDATA.pid]
 	   ret
 
 pid_to_slot:

@@ -280,7 +280,9 @@ L40:
 __exports:
           export 'KERNEL',   \
           alloc_kernel_space,    'AllocKernelSpace',   \      ; stdcall
+          commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
           create_kernel_object,  'CreateObject',       \
+          create_ring_buffer,    'CreateRingBuffer',   \      ; stdcall
           destroy_kernel_object, 'DestroyObject',      \
           free_kernel_space,     'FreeKernelSpace',    \      ; stdcall
           kernel_alloc,          'KernelAlloc',        \      ; stdcall
@@ -288,6 +290,7 @@ __exports:
           malloc,                'Kmalloc',            \
           free,                  'Kfree',              \
           map_io_mem,            'MapIoMem',           \      ; stdcall
+          get_pg_addr,           'GetPgAddr',          \      ; eax
 \
           select_hw_cursor,      'SelectHwCursor',     \      ; stdcall
           set_hw_cursor,         'SetHwCursor',        \      ; stdcall
@@ -303,9 +306,10 @@ __exports:
           pci_write16,           'PciWrite16',         \      ; stdcall
           pci_write32,           'PciWrite32',         \      ; stdcall
 \
-          reg_service,           'RegService',         \
+          reg_service,           'RegService',         \      ; stdcall
           user_alloc,            'UserAlloc',          \      ; stdcall
           user_free,             'UserFree',           \      ; stdcall
+          unmap_pages,           'UnmapPages',         \      ; eax, ecx
           sys_msg_board_str,     'SysMsgBoardStr'
 
 

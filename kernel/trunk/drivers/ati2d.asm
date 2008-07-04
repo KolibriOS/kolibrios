@@ -178,7 +178,7 @@ macro OUT_PACKET0 reg, count
      inc edx
 }
 
-macro OUT_PACKET3 pkt, count                                              \
+macro OUT_PACKET3 pkt, count
 {
      mov eax, (RADEON_CP_PACKET3 or pkt or (count shl 16))
      mov [edi+edx*4], eax
