@@ -177,6 +177,11 @@ int _stdcall srv_2d(ioctl_t *io)
           return LockPixmap((userpixmap_t*)inp);
         break;
 
+      case PIXUNLOCK:
+        if(io->inp_size==6)
+          return UnlockPixmap((userpixmap_t*)inp);
+        break;
+
     default:
       return ERR_PARAM;
   };

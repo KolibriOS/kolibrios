@@ -57,6 +57,8 @@ u32_t __stdcall drvEntry(int)__asm__("_drvEntry");
 void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
 void*  STDCALL KernelAlloc(size_t size)__asm__("KernelAlloc");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
+int    STDCALL UserFree(void *mem)__asm__("UserFree");
+
 
 int KernelFree(void *);
 
@@ -89,6 +91,12 @@ static inline void CommitPages(void *mem, u32_t page, u32_t size)
     :
     :"a" (page), "b"(mem),"c"(size>>12)
     :"edx"
+  );
+  asm volatile (
+    ""
+    :
+    :
+    :"eax","ebx","ecx"
 	);
 
 
@@ -100,8 +108,15 @@ static inline void UnmapPages(void *mem, size_t size)
     "call *__imp__UnmapPages"
     :
     :"a" (mem), "c"(size>>12)
-    :"eax","ecx", "edx"
+    :"edx"
 	);
+  asm volatile (
+    ""
+    :
+    :
+    :"eax","ecx"
+	);
+
 }
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -202,5 +217,6 @@ static inline void safe_sti(u32 ipl)
 
 int _stdcall srv_cursor(ioctl_t *io);
 int _stdcall srv_2d(ioctl_t *io);
+
 
 

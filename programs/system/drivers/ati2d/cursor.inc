@@ -7,7 +7,7 @@ cursor_t *create_cursor(u32 pid, void *src, u32 flags)
 
   cursor_t *cursor = (cursor_t*)CreateObject(pid, 32);
 
-  if(cursor==0)
+  if(cursor==NULL)
     return 0;
   dbgprintf("create object at %x\n", cursor);
 
@@ -15,7 +15,7 @@ cursor_t *create_cursor(u32 pid, void *src, u32 flags)
   cursor->destroy = __destroy_cursor;
 
   img = rhd_mem_alloc(&rhd,RHD_MEM_FB,64*64*4);
-  if(img==0)
+  if(img==NULL)
     goto cleanup;
 
   dbgprintf("alloc video memory at %x size %x\n",img,64*64*4);

@@ -189,6 +189,7 @@ typedef struct
   void*   usermap;
 }pixmap_t;
 
+#define   PX_LOCK            1
 
 typedef struct {
     int			token;		/* id of the token */

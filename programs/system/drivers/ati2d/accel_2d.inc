@@ -305,14 +305,14 @@ int LockPixmap(userpixmap_t *io)
   else
     pixmap = io->pixmap;
 
-  if(pixmap->flags & 1 == 1 )
+  if( (pixmap->flags & 1) == PX_LOCK )
     return ERR_PARAM;
 
-  size = pixmap->pitch*pixmap->width;
+  size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
   if (usermap = UserAlloc(size))
   {
     CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
-    pixmap->flags |= 1;
+    pixmap->flags |= PX_LOCK;
     pixmap->usermap = usermap;
     io->usermap = usermap;
     io->pitch   = pixmap->pitch;
@@ -322,6 +322,33 @@ int LockPixmap(userpixmap_t *io)
   }
   else
     return ERR_PARAM;
+};
+
+int UnlockPixmap(userpixmap_t *io)
+{
+  pixmap_t *pixmap;
+  size_t    size;
+
+  dbgprintf("Unlock pixmap %x\n", io->pixmap);
+
+  if(io->pixmap == (pixmap_t*)-1)
+    return ERR_PARAM;
+  else
+    pixmap = io->pixmap;
+
+  if( (pixmap->flags & 1) != PX_LOCK )
+    return ERR_PARAM;
+
+  size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
+
+  UnmapPages(pixmap->usermap, size);
+  UserFree(pixmap->usermap);
+  pixmap->usermap =  NULL;
+  pixmap->flags  &= ~PX_LOCK;
+  io->usermap     =  NULL;
+  io->pitch       =  0;
+
+  return ERR_OK;
 };
 
 

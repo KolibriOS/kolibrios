@@ -7,7 +7,7 @@
 #define PIXMAP     6
 #define PIXBLIT    7
 #define PIXLOCK    8
-
+#define PIXUNLOCK  9
 
 typedef unsigned int color_t;
 
@@ -167,4 +167,5 @@ do {									\
 	/* read from PCI bus to ensure correct posting */		\
   INREG( RADEON_CP_RB_RPTR );                         \
 } while (0)
+
 
