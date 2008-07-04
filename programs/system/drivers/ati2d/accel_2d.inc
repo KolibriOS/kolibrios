@@ -6,6 +6,10 @@ int DrawRect(draw_t* draw)
 {
   int x0, y0, x1, y1;
 
+  pixmap_t *dstpixmap;
+
+  dstpixmap = (draw->dstpix == (void*)-1) ? &scr_pixmap : draw->dstpix ;
+
   x0 = draw->x;
   y0 = draw->y;
 
@@ -38,15 +42,14 @@ int DrawRect(draw_t* draw)
      OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
      OUTREG(R5XX_DP_WRITE_MASK, 0xFFFFFFFF);
      OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
-     OUTREG(R5XX_DST_PITCH_OFFSET, rhd.dst_pitch_offset);
+     OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
      OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
-     OUTREG( R5XX_DST_WIDTH_HEIGHT,(w<<16)|h);
+     OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|h);
 
 #else
 
      BEGIN_RING();
        OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_MULTI, 4));
-
 
        OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
                 RADEON_GMC_BRUSH_SOLID_COLOR      |
@@ -54,9 +57,9 @@ int DrawRect(draw_t* draw)
                 RADEON_GMC_SRC_DATATYPE_COLOR     |
                 (1 << 28)+(1 << 30) | R5XX_ROP3_P);
 
-       OUT_RING(rhd.dst_pitch_offset);
+       OUT_RING(dstpixmap->pitch_offset);
        OUT_RING(draw->color);
-       OUT_RING((y0<<16)|x0);
+       OUT_RING((x0<<16)|y0);
        OUT_RING((w<<16)|h);
      COMMIT_RING();
 
@@ -64,12 +67,15 @@ int DrawRect(draw_t* draw)
 
      safe_sti(ifl);
   } ;
-  return 0;
+  return ERR_OK;
 }
 
 int FillRect(fill_t *fill)
 {
+  pixmap_t *dstpixmap;
   int x0, y0, x1, y1;
+
+  dstpixmap = (fill->dstpix == (void*)-1) ? &scr_pixmap : fill->dstpix ;
 
   x0 = fill->x;
   y0 = fill->y;
@@ -99,7 +105,7 @@ int FillRect(fill_t *fill)
                 RADEON_GMC_SRC_DATATYPE_COLOR       |
                 (1 << 28)+(1 << 30) | R5XX_ROP3_P);
 
-         OUT_RING(rhd.dst_pitch_offset);
+         OUT_RING(dstpixmap->pitch_offset);
          OUT_RING(fill->bkcolor);
          OUT_RING(fill->fcolor);
 
@@ -114,7 +120,7 @@ int FillRect(fill_t *fill)
 
      safe_sti(ifl);
   };
-  return 0;
+  return ERR_OK;
 }
 
 int Blit(blit_t *blit)
@@ -167,7 +173,7 @@ int Blit(blit_t *blit)
 
      safe_sti(ifl);
   } ;
-  return 0;
+  return ERR_OK;
 }
 
 int Line2P(line2p_t *draw)
@@ -225,11 +231,11 @@ int Line2P(line2p_t *draw)
      safe_sti(ifl);
 
   };
-  return 0;
+  return ERR_OK;
 }
 
 
-int CreatePixmap(new_pixmap_t *io)
+int CreatePixmap(userpixmap_t *io)
 {
 
   pixmap_t *pixmap;
@@ -241,7 +247,7 @@ int CreatePixmap(new_pixmap_t *io)
       (io->height == 0)|| (io->height > 2048))
   {
      dbgprintf("Invalid pixmap size w:%d h:%d\n", io->width,io->height);
-     return 0;
+     return ERR_PARAM;
 
   };
 
@@ -252,37 +258,71 @@ int CreatePixmap(new_pixmap_t *io)
   if (! raw)
   {
     dbgprintf("Not enough memory for pixmap\n");
-    return 0;
+    return ERR_PARAM;
   };
 
   pixmap = malloc(sizeof(pixmap_t));
   if(!pixmap)
   {
     rhd_mem_free(&rhd, RHD_MEM_FB,raw);
-    return 0;
+    return ERR_PARAM;
   }
   else
   {
-    io->pixmap = (u32_t)pixmap;
-    io->format = PICT_a8r8g8b8;
-    io->pitch = pitch;
+    io->pixmap  = pixmap;
+    io->usermap = NULL;
+    io->format  = PICT_a8r8g8b8;
+    io->pitch   = 0;
 
-    pixmap->width  = io->width;
-    pixmap->height = io->height;
-    pixmap->format = PICT_a8r8g8b8;
-    pixmap->pitch = pitch;
-    pixmap->offset = (u32_t)raw-rhd.FbBase+rhd.FbIntAddress;
+    pixmap->width   = io->width;
+    pixmap->height  = io->height;
+    pixmap->format  = PICT_a8r8g8b8;
+    pixmap->flags   = 0;
+    pixmap->pitch   = pitch;
+    pixmap->offset  = (u32_t)raw+rhd.FbIntAddress;
     pixmap->pitch_offset =  ((pitch/64)<<22)| (pixmap->offset>>10);
-    pixmap->raw = raw;
+    pixmap->raw     = raw;
+    pixmap->usermap = NULL;
 
     dbgprintf("pixmap.pitch_offset: %x\n", pixmap->pitch_offset);
     dbgprintf("width: %d height: %d\n",pixmap->width,pixmap->height );
     dbgprintf("pixmap.offset: %x\n", pixmap->offset);
 
   }
-  return 1;
+  return ERR_OK;
 }
 
+int LockPixmap(userpixmap_t *io)
+{
+  pixmap_t *pixmap;
+  size_t    size;
+  void     *usermap;
+
+  dbgprintf("Lock pixmap %x\n", io->pixmap);
+
+  if(io->pixmap == (pixmap_t*)-1)
+    return ERR_PARAM;
+  else
+    pixmap = io->pixmap;
+
+  if(pixmap->flags & 1 == 1 )
+    return ERR_PARAM;
+
+  size = pixmap->pitch*pixmap->width;
+  if (usermap = UserAlloc(size))
+  {
+    CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
+    pixmap->flags |= 1;
+    pixmap->usermap = usermap;
+    io->usermap = usermap;
+    io->pitch   = pixmap->pitch;
+    dbgprintf("map at %x\n", io->usermap);
+
+    return ERR_OK;
+  }
+  else
+    return ERR_PARAM;
+};
 
 
 int PixBlit(pixblit_t *blit)
@@ -296,17 +336,17 @@ int PixBlit(pixblit_t *blit)
      pixmap_t *srcpixmap;
      pixmap_t *dstpixmap;
 
-     dbgprintf("Pixblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
+     //dbgprintf("Pixblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
 
      dstpixmap = (blit->dstpix == (void*)-1) ? &scr_pixmap : blit->dstpix ;
      srcpixmap = (blit->srcpix == (void*)-1) ? &scr_pixmap : blit->srcpix ;
 
-     dbgprintf("srcpixmap: %x dstpixmap: %x\n",srcpixmap, dstpixmap);
+     //dbgprintf("srcpixmap: %x dstpixmap: %x\n",srcpixmap, dstpixmap);
 
-     dbgprintf("dst.width: %d dst.height: %d\n", dstpixmap->width,dstpixmap->height);
-     dbgprintf("src.width: %d src.height: %d\n", srcpixmap->width,srcpixmap->height);
-     dbgprintf("srcpitch: %x dstpitch: %x\n",
-                srcpixmap->pitch_offset,dstpixmap->pitch_offset);
+     //dbgprintf("dst.width: %d dst.height: %d\n", dstpixmap->width,dstpixmap->height);
+     //dbgprintf("src.width: %d src.height: %d\n", srcpixmap->width,srcpixmap->height);
+     //dbgprintf("srcpitch: %x dstpitch: %x\n",
+     //           srcpixmap->pitch_offset,dstpixmap->pitch_offset);
 
      ifl = safe_cli();
 
@@ -325,16 +365,11 @@ int PixBlit(pixblit_t *blit)
        OUT_RING(srcpixmap->pitch_offset);
        OUT_RING(dstpixmap->pitch_offset);
 
-  //   x0 = blit->src_x;
-  //   y0 = blit->src_y;
-  //   w =  blit->w;
-  //   h =  blit->h;
-
        OUT_RING((blit->src_x<<16)|blit->src_y);
        OUT_RING((blit->dst_x<<16)|blit->dst_y);
        OUT_RING((blit->w<<16)|blit->h);
      COMMIT_RING();
 
      safe_sti(ifl);
-  return 0;
+  return ERR_OK;
 }

@@ -109,7 +109,7 @@ typedef struct RHDRec
   CARD32            MMIOMapSize;
   CARD32            videoRam;
 
-  CARD32            FbBase;            /* map base of fb   */
+//  CARD32            FbBase;            /* map base of fb   */
   CARD32            PhisBase;
   CARD32            FbIntAddress;      /* card internal address of FB */
   CARD32            FbMapSize;
@@ -178,13 +178,15 @@ typedef struct
 
 typedef struct
 {
-  u32_t width;
-  u32_t height;
-  u32_t format;
-  u32_t pitch;
-  u32_t offset;
-  u32_t pitch_offset;
-  u32_t *raw;
+  u32_t   width;
+  u32_t   height;
+  u32_t   format;
+  u32_t   flags;
+  u32_t   pitch_offset;
+  u32_t   pitch;
+  u32_t   offset;
+  void*   raw;
+  void*   usermap;
 }pixmap_t;
 
 

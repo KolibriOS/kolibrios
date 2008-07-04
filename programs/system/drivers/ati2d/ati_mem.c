@@ -162,7 +162,7 @@ static void free_block(struct mem_block *p)
 
 int rhdInitHeap(RHDPtr rhdPtr)
 {
-  int base = rhdPtr->FbBase + rhdPtr->FbFreeStart;
+  int base = rhdPtr->FbFreeStart;
 
   return init_heap(&rhdPtr->fb_heap, base, rhdPtr->FbFreeSize);
 };

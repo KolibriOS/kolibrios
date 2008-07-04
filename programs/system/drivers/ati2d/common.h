@@ -25,6 +25,7 @@ typedef unsigned int size_t;
 
 typedef struct { float hi, lo; } range;
 
+
 typedef struct
 {
   unsigned      handle;
@@ -37,7 +38,11 @@ typedef struct
 
 typedef int (_stdcall *srv_proc_t)(ioctl_t *);
 
-u32 __stdcall drvEntry(int)__asm__("_drvEntry");
+#define ERR_OK       0
+#define ERR_PARAM   -1
+
+
+u32_t __stdcall drvEntry(int)__asm__("_drvEntry");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -49,8 +54,10 @@ u32 __stdcall drvEntry(int)__asm__("_drvEntry");
 #define PG_SW       0x003
 #define PG_NOCACHE  0x018
 
-CARD32 STDCALL AllocKernelSpace(unsigned size)__asm__("AllocKernelSpace");
-void*  STDCALL KernelAlloc(unsigned size)__asm__("KernelAlloc");
+void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
+void*  STDCALL KernelAlloc(size_t size)__asm__("KernelAlloc");
+void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
+
 int KernelFree(void *);
 
 void* STDCALL CreateRingBuffer(size_t size, u32 map)__asm__("CreateRingBuffer");
@@ -62,9 +69,9 @@ u32 STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
 
 CARD32 STDCALL MapIoMem(CARD32 Base,CARD32 size,CARD32 flags)__asm__("MapIoMem");
 
-static inline u32 GetPgAddr(void *mem)
+static inline u32_t GetPgAddr(void *mem)
 {
-  u32 retval;
+  u32_t retval;
 
 	asm volatile (
     "call *__imp__GetPgAddr \n\t"
@@ -74,6 +81,28 @@ static inline u32 GetPgAddr(void *mem)
   return retval;
 }
 
+static inline void CommitPages(void *mem, u32_t page, u32_t size)
+{
+  size = (size+4095) & ~4095;
+	asm volatile (
+    "call *__imp__CommitPages"
+    :
+    :"a" (page), "b"(mem),"c"(size>>12)
+    :"edx"
+	);
+
+
+}
+static inline void UnmapPages(void *mem, size_t size)
+{
+  size = (size+4095) & ~4095;
+	asm volatile (
+    "call *__imp__UnmapPages"
+    :
+    :"a" (mem), "c"(size>>12)
+    :"eax","ecx", "edx"
+	);
+}
 ///////////////////////////////////////////////////////////////////////////////
 
 u32 PciApi(int cmd);

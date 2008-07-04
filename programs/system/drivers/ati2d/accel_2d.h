@@ -6,20 +6,26 @@
 #define COMPIZ     5
 #define PIXMAP     6
 #define PIXBLIT    7
+#define PIXLOCK    8
+
 
 typedef unsigned int color_t;
 
 typedef struct
 {
-  int x;
-  int y;
-  int w;
-  int h;
-  u32 color;
+  pixmap_t  *dstpix;
+
+  int     x;
+  int     y;
+  u32_t   w;
+  u32_t   h;
+  color_t color;
 }draw_t;
 
 typedef struct
 {
+  pixmap_t  *dstpix;
+
   int x;
   int y;
   int w;
@@ -53,24 +59,26 @@ typedef struct
 
 typedef struct
 {
-  u32_t pixmap;
-  u32_t format;
-  u32_t width;
-  u32_t height;
-  u32_t pitch;
-}new_pixmap_t;
+  pixmap_t  *pixmap;
+  void      *usermap;
+  u32_t      format;
+  u32_t      pitch;
+
+  u32_t      width;
+  u32_t      height;
+}userpixmap_t;
 
 typedef struct
 {
   pixmap_t  *dstpix;
-  int       dst_x;
-  int       dst_y;
+  int        dst_x;
+  int        dst_y;
 
   pixmap_t  *srcpix;
-  int       src_x;
-  int       src_y;
-  int       w;
-  int       h;
+  int        src_x;
+  int        src_y;
+  int        w;
+  int        h;
 }pixblit_t;
 
 
@@ -86,9 +94,11 @@ int Blit(blit_t *blit);
 
 int RadeonComposite( blit_t *blit);
 
-int CreatePixmap(new_pixmap_t *io);
+int CreatePixmap(userpixmap_t *io);
 
 int PixBlit(pixblit_t* blit);
+
+int LockPixmap(userpixmap_t *io);
 
 # define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
 #	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)

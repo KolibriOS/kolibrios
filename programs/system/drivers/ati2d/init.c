@@ -60,10 +60,10 @@ rhdMapFB(RHDPtr rhdPtr)
   rhdPtr->FbMapSize = 1 << rhdPtr->memsize[RHD_FB_BAR];
   rhdPtr->PhisBase = rhdPtr->memBase[RHD_FB_BAR];
 
-  rhdPtr->FbBase = MapIoMem(rhdPtr->PhisBase, rhdPtr->FbMapSize,PG_SW+PG_NOCACHE);
+ // rhdPtr->FbBase = MapIoMem(rhdPtr->PhisBase, rhdPtr->FbMapSize,PG_SW+PG_NOCACHE);
 
-  if (!rhdPtr->FbBase)
-    return FALSE;
+ //  if (!rhdPtr->FbBase)
+ //   return FALSE;
 
     /* These devices have an internal address reference, which some other
      * address registers in there also use. This can be different from the
@@ -80,7 +80,7 @@ rhdMapFB(RHDPtr rhdPtr)
     dbgprintf("PCI FB Address (BAR) is at "
               "0x%08X while card Internal Address is 0x%08X\n",
               (unsigned int) rhdPtr->PhisBase,rhdPtr->FbIntAddress);
-  dbgprintf("Mapped FB at %p (size 0x%08X)\n",rhdPtr->FbBase, rhdPtr->FbMapSize);
+ // dbgprintf("Mapped FB at %p (size 0x%08X)\n",rhdPtr->FbBase, rhdPtr->FbMapSize);
   return TRUE;
 }
 
@@ -108,8 +108,8 @@ Bool RHDPreInit()
 
   rhd.FbScanoutStart = 0;
   rhd.FbScanoutSize  = 8*1024*1024;
-  rhd.FbFreeStart    = 8*1024*1024;
-  rhd.FbFreeSize     = rhd.FbMapSize - 8*1024*1024;
+  rhd.FbFreeStart    = 10*1024*1024;
+  rhd.FbFreeSize     = rhd.FbMapSize - 10*1024*1024;
 
   rhdInitHeap(&rhd);
   return TRUE;

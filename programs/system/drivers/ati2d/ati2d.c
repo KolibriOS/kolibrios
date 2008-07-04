@@ -86,8 +86,6 @@ u32 __stdcall drvEntry(int action)
 };
 
 
-#define ERR_PARAM  -1
-
 #pragma pack (push,1)
 
 #pragma pack (pop)
@@ -140,12 +138,12 @@ int _stdcall srv_2d(ioctl_t *io)
       break;
 
       case DRAW_RECT:
-        if(io->inp_size==5)
+        if(io->inp_size==6)
           return DrawRect((draw_t*)inp);
         break;
 
       case FILL_RECT:
-        if(io->inp_size==8)
+        if(io->inp_size==9)
           return FillRect((fill_t*)inp);
         break;
 
@@ -165,13 +163,18 @@ int _stdcall srv_2d(ioctl_t *io)
         break;
 
       case PIXMAP:
-        if(io->inp_size==5)
-          return CreatePixmap((new_pixmap_t*)inp);
+        if(io->inp_size==6)
+          return CreatePixmap((userpixmap_t*)inp);
         break;
 
       case PIXBLIT:
         if(io->inp_size==8)
           return PixBlit((pixblit_t*)inp);
+        break;
+
+      case PIXLOCK:
+        if(io->inp_size==6)
+          return LockPixmap((userpixmap_t*)inp);
         break;
 
     default:
@@ -184,7 +187,7 @@ int _stdcall srv_2d(ioctl_t *io)
 #include "init.c"
 #include "pci.c"
 #include "ati_mem.c"
-#include "cursor.inc"
+//#include "cursor.inc"
 
 #include "r500.inc"
 #include "accel_2d.inc"

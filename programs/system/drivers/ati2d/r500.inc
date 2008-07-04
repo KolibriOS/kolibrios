@@ -388,10 +388,10 @@ void  R5xx2DInit()
     scr_pixmap.width  = rhd.displayWidth;
     scr_pixmap.height = rhd.displayHeight;
     scr_pixmap.format = PICT_a8r8g8b8;
-    scr_pixmap.pitch = rhd.displayWidth * 4;
+    scr_pixmap.pitch  = rhd.displayWidth * 4;
     scr_pixmap.offset = rhd.FbIntAddress;
     scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
-    scr_pixmap.raw = (void*)rhd.FbBase;
+    scr_pixmap.raw    = (void*)0;
 
 
     MASKREG(R5XX_GB_TILE_CONFIG, 0, R5XX_ENABLE_TILING);
