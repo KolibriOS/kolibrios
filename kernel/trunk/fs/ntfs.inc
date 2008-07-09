@@ -793,14 +793,17 @@ ntfs_read_attr:
         add     esp, 10h
         mov     eax, [ntfs_cur_tail]
         test    eax, eax
-        jz      .okret
+        jz      @f
         sub     eax, 0x200
         add     [ntfs_cur_read], eax
-        jmp     .okret
+@@:
+        clc
+        ret
 .errread2:
         pop     ecx
         add     esp, 10h
-        jmp     .errret
+        stc
+        ret
 .break:
         add     esp, 10h        ; CF=0
         mov     [ntfs_bCanContinue], 1
@@ -1032,6 +1035,8 @@ ntfs_find_lfn:
         push    eax
         mov     al, [edi]
         inc     edi
+        cmp     al, '/'
+        jz      .slash
         call    char_toupper
         cmp     al, [esp]
         pop     eax
@@ -1044,6 +1049,10 @@ ntfs_find_lfn:
         movzx   eax, word [esi+8]
         add     esi, eax
         jmp     .scanloopint
+.slash:
+        pop     eax
+        pop     edi
+        pop     esi
 .subnode:
         test    byte [esi+0Ch], 1
         jz      .notfound

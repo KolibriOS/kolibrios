@@ -806,7 +806,7 @@ bd_read:
         ja      .notread
         sub     eax, [bios_cur_sector]
         shl     eax, 9
-        add     eax, (OS_BASE+0x9C000)
+        add     eax, (OS_BASE+0x9A000)
         push    ecx esi edi
         mov     esi, eax
         shl     edi, 9
@@ -851,7 +851,7 @@ bd_write_cache_chain:
         shl     esi, 9
         call    calculate_cache_2
         add     esi, eax
-        mov     edi, OS_BASE + 0x9C000
+        mov     edi, OS_BASE + 0x9A000
         movzx   ecx, [cache_chain_size]
         push    ecx
         shl     ecx, 9-2
@@ -884,7 +884,7 @@ int13_call:
 ; In current implementation it is protected by common mutex 'hd1_status'
         mov     word [BOOT_VAR + 510h], 10h             ; packet length
         mov     word [BOOT_VAR + 512h], cx              ; number of sectors
-        mov     dword [BOOT_VAR + 514h], 9C000000h      ; buffer 9C00:0000
+        mov     dword [BOOT_VAR + 514h], 9A000000h      ; buffer 9A00:0000
         mov     dword [BOOT_VAR + 518h], eax
         and     dword [BOOT_VAR + 51Ch], 0
         push    ebx ecx esi edi
@@ -911,7 +911,7 @@ int13_call:
 @@:
         mov     word [ebx+v86_regs.esi], 510h
         mov     word [ebx+v86_regs.ss], 9000h
-        mov     word [ebx+v86_regs.esp], 0C000h
+        mov     word [ebx+v86_regs.esp], 0A000h
         mov     word [ebx+v86_regs.eip], 500h
         mov     [ebx+v86_regs.eflags], 20200h
         mov     esi, [sys_v86_machine]

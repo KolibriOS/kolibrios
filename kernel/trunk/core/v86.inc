@@ -89,19 +89,29 @@ v86_create:
 
         pop     esi
 ; now V86 specific: initialize known addresses in first Mb
-        pop     eax edi
+        pop     eax
 ; first page - BIOS data (shared between all machines!)
 ; physical address = 0x2f0000
 ; linear address = BOOT_VAR = OS_BASE + 0x2f0000
         mov     dword [eax], (BOOT_VAR - OS_BASE) or 111b
         mov     dword [eax+800h], BOOT_VAR
 ; page before 0xA0000 - Extended BIOS Data Area (shared between all machines!)
-; physical address = 0x9F000
-; linear address = 0x8009F000
-        mov     dword [eax+0x9E*4], 0x9E000 or 111b
-        mov     dword [eax+0x9E*4+800h], 0x9E000 + OS_BASE
-        mov     dword [eax+0x9F*4], 0x9F000 or 111b
-        mov     dword [eax+0x9F*4+800h], 0x9F000 + OS_BASE
+; physical address = 0x9C000
+; linear address = 0x8009C000
+; (I have seen one computer with EBDA segment = 0x9D80,
+; all other computers use less memory)
+        mov     ecx, 4
+        mov     edx, 0x9C000
+        push    eax
+        lea     edi, [eax+0x9C*4]
+@@:
+        lea     eax, [edx + OS_BASE]
+        mov     [edi+800h], eax
+        lea     eax, [edx + 111b]
+        stosd
+        loop    @b
+        pop     eax
+        pop     edi
 ; addresses 0xC0000 - 0xFFFFF - BIOS code (shared between all machines!)
 ; physical address = 0xC0000
 ; linear address = 0x800C0000
@@ -216,12 +226,13 @@ init_sys_v86:
         mov     byte [BOOT_VAR + 0x505], 0xF4
         mov     esi, eax
         mov     ebx, [eax+V86_machine.pagedir]
+; one page for stack, two pages for results (0x2000 bytes = 16 sectors)
+        mov     dword [ebx+0x99*4+0x1000], 0x99000 or 111b
+        mov     dword [ebx+0x99*4+0x1800], OS_BASE + 0x99000
+        mov     dword [ebx+0x9A*4+0x1000], 0x9A000 or 111b
+        mov     dword [ebx+0x9A*4+0x1800], OS_BASE + 0x9A000
         mov     dword [ebx+0x9B*4+0x1000], 0x9B000 or 111b
         mov     dword [ebx+0x9B*4+0x1800], OS_BASE + 0x9B000
-        mov     dword [ebx+0x9C*4+0x1000], 0x9C000 or 111b
-        mov     dword [ebx+0x9C*4+0x1800], OS_BASE + 0x9C000
-        mov     dword [ebx+0x9D*4+0x1000], 0x9D000 or 111b
-        mov     dword [ebx+0x9D*4+0x1800], OS_BASE + 0x9D000
 if ~DEBUG_SHOW_IO
 ; allow access to all ports
         mov     ecx, [esi+V86_machine.iopm]
