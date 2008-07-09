@@ -1159,8 +1159,14 @@ proc init_mtrr
            mov ecx, 0x2FF
            wrmsr                ;disable all MTRR
 
-           stdcall set_mtrr, dword 0,dword 0,[MEM_AMOUNT],MEM_WB
-           stdcall set_mtrr, dword 1,[LFBAddress],[LFBSize],MEM_WC
+           mov eax, [MEM_AMOUNT]
+; round eax up to next power of 2
+           dec eax
+           bsr ecx, eax
+           mov eax, 2
+           shl eax, cl
+           stdcall set_mtrr, edx,edx,eax,MEM_WB
+           stdcall set_mtrr, 1,[LFBAddress],[LFBSize],MEM_WC
            xor edx, edx
            xor eax, eax
            mov ecx, 0x204
