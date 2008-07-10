@@ -468,14 +468,14 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
   
   no_neg:
     fld    [tmp2]
-    fist   [integer]
-    fisub  [integer]
-    fldcw  [controlWord]
     cmp    byte [sign], 0     ; change fraction to positive
     je     no_neg2
     fchs
  
   no_neg2:
+    fadd   [smallValueForRounding]
+    fist   [integer]
+    fisub  [integer]
     mov    [res],0     ; convert 6 decimal numbers
     mov    edi,6
 
@@ -499,6 +499,7 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     jmp    newd
 
   real_done:
+    fldcw  [controlWord]
     mov    eax,[res]
     mov    [decimal],eax
     cmp    [integer],0x80000000
@@ -510,10 +511,10 @@ ftoa:                         ; fpu st0 -> [integer],[decimal]
     mov    [dsign],byte '+'
     cmp    [sign],byte 0      ; convert negative result
     je     no_negative
-    mov    eax,[integer]
-    not    eax
-    inc    eax
-    mov    [integer],eax
+;    mov    eax,[integer]
+;    not    eax
+;    inc    eax
+;    mov    [integer],eax
     mov    [dsign],byte '-'
   
   no_negative:
@@ -866,6 +867,7 @@ res           dd  0
 trans1        dq  0
 trans2        dq  0
 controlWord   dw  1
+smallValueForRounding dq 0.0000005 ; 1/2 from last significant digit
 multipl:      dd  10,16,2
 
 dsign:
