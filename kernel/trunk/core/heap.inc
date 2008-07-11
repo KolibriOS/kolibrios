@@ -949,8 +949,8 @@ user_realloc:
         lea     eax, [ecx+1]
         shl     eax, 12
         push    eax
-        add     ecx, ebx
-        add     edx, ecx
+        add     ecx, edx
+        lea     edx, [ecx+ebx]
         shl     ebx, 12
         jz      .ret
         push    esi
@@ -962,11 +962,12 @@ user_realloc:
         jae     .merge_done
         mov     eax, [page_tabs+edx*4]
         test    al, USED_BLOCK
-        jz      .merge_done
+        jnz     .merge_done
         and     dword [page_tabs+edx*4], 0
-        and     eax, not 0xFFF
-        add     ebx, eax
+        shr     eax, 12
         add     edx, eax
+        shl     eax, 12
+        add     ebx, eax
         jmp     @b
 .merge_done:
         pop     esi
