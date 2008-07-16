@@ -1,3 +1,5 @@
+diff16 'tp-tbox.asm',0,$
+
 virtual at ebp
   tbox TBOX
 end virtual

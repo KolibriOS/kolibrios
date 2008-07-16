@@ -1,3 +1,5 @@
+diff16 'tp-files.asm',0,$
+
 ;-----------------------------------------------------------------------------
 proc save_file ;//////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
@@ -21,7 +23,7 @@ proc save_file ;//////////////////////////////////////////////////////////////
 	mov	eax,[cur_editor.Lines.Count]
 	shl	eax,1
 	lea	eax,[eax+ebx+1024]
-	stdcall	mem.Alloc,eax
+	stdcall mem.Alloc,eax
 	push	eax
 	mov	esi,[cur_editor.Lines]
 	mov	edi,eax
@@ -171,7 +173,7 @@ proc load_file ;//////////////////////////////////////////////////////////////
 	mov	[f_info70+0],0
 	mov	eax,dword[file_info.Size]
 	mov	[f_info70+12],eax
-	stdcall	mem.Alloc,eax
+	stdcall mem.Alloc,eax
 	mov	[f_info70+16],eax
 	mcall	70,f_info70
 
@@ -185,7 +187,7 @@ proc load_file ;//////////////////////////////////////////////////////////////
 	cmp	ebx,6		 ;// ATV driver fix (6 instead of 5)
 	je	.file_found
 
-	stdcall	mem.Free,[f_info70+16]
+	stdcall mem.Free,[f_info70+16]
 	stc
 	ret
 
@@ -220,7 +222,7 @@ proc load_file ;//////////////////////////////////////////////////////////////
 	call	flush_cur_tab
 	pop	edi esi ecx
 	call	load_from_memory
-	stdcall	mem.Free,[f_info70+16]
+	stdcall mem.Free,[f_info70+16]
 
 	xor	eax,eax
 	mov	[cur_editor.TopLeft.Y],eax
@@ -264,7 +266,7 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 	imul	ebx,eax,14
 	add	ebx,edx
 	mov	[ebp+EDITOR.Lines.Size],ebx
-	stdcall	mem.ReAlloc,[ebp+EDITOR.Lines],ebx
+	stdcall mem.ReAlloc,[ebp+EDITOR.Lines],ebx
 	mov	[ebp+EDITOR.Lines],eax
 
 	mov	[ebp+EDITOR.Columns.Count],0

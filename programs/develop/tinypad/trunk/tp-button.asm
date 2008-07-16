@@ -1,3 +1,5 @@
+diff16 'tp-button.asm',0,$
+
 button:
 	mcall	17
 	cmp	al,0

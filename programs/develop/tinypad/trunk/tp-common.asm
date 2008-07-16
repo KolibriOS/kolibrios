@@ -1,3 +1,5 @@
+diff16 'tp-common.asm',0,$
+
 ;-----------------------------------------------------------------------------
 proc clear_selection ;////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
@@ -421,7 +423,7 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	add	edi,[sel.begin.x]
 	lea	esi,[esi+eax+4]
 	mov	ecx,[cur_editor.Lines]
-	add	ecx,[ecx-4]
+	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	sub	ecx,esi
 	cld
 	rep	movsb
@@ -447,7 +449,7 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	add	edi,[sel.begin.x]
 	lea	esi,[edi+ecx]
 	mov	ecx,[cur_editor.Lines]
-	add	ecx,[ecx-4]
+	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	sub	ecx,esi
 	cld
 	rep	movsb
@@ -465,7 +467,7 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	movzx	eax,word[esi]
 	lea	esi,[esi+eax+4]
 	mov	eax,[cur_editor.Lines]
-	add	eax,[eax-4]
+	add	eax,[cur_editor.Lines.Size] ;*** add eax,[eax-4]
 	sub	esi,eax
 	lea	eax,[esi+4096]
 	call	editor_realloc_lines
@@ -587,11 +589,11 @@ proc mem.Alloc,size ;/////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	push	ebx ecx
 	mov	ecx,[size]
-	add	ecx,4
+	;*** add ecx,4
 	mcall	68,12
-	add	ecx,-4
-	mov	[eax],ecx
-	add	eax,4
+	;*** add ecx,-4
+	;*** mov [eax],ecx
+	;*** add eax,4
 	pop	ecx ebx
 	ret
 endp
@@ -603,17 +605,17 @@ proc mem.ReAlloc,mptr,size ;//////////////////////////////////////////////////
 	mov	ecx,[size]
 	or	ecx,ecx
 	jz	@f
-	add	ecx,4
+	;*** add ecx,4
     @@: mov	edx,[mptr]
 	or	edx,edx
 	jz	@f
-	add	edx,-4
+	;*** add edx,-4
     @@: mcall	68,20
-    	or	eax,eax
-    	jz	@f
-	add	ecx,-4
-	mov	[eax],ecx
-	add	eax,4
+	or	eax,eax
+	jz	@f
+	;*** add ecx,-4
+	;*** mov [eax],ecx
+	;*** add eax,4
     @@: pop	edx ecx ebx
 	ret
 endp
@@ -625,7 +627,7 @@ proc mem.Free,mptr ;//////////////////////////////////////////////////////////
 	mov	ecx,[mptr]
 	or	ecx,ecx
 	jz	@f
-	add	ecx,-4
+	;*** add ecx,-4
     @@: mcall	68,13
 	pop	ecx ebx
 	ret

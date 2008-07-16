@@ -1,3 +1,5 @@
+diff16 'tp-mouse.asm',0,$
+
 proc check_mouse_in_edit_area
 	mcall	37,1
 	mov	ebx,eax

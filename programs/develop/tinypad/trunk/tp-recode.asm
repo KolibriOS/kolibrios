@@ -1,3 +1,5 @@
+diff16 'tp-recode.asm',0,$
+
 recode:
 
   .866.1251:

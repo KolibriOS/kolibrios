@@ -1,3 +1,4 @@
+diff16 'tp-editor.asm',0,$
 
 ;-----------------------------------------------------------------------------
 proc draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
@@ -979,7 +980,7 @@ proc editor_realloc_lines ;///// ADD $DELTA$ TO LINES SIZE ///////////////////
 	mov	eax,[cur_editor.Lines]
 	mov	[cur_editor.Lines.Size],ebx
 	mov	ecx,eax
-	stdcall	mem.ReAlloc,eax,ebx
+	stdcall mem.ReAlloc,eax,ebx
 	mov	[cur_editor.Lines],eax
 	sub	eax,ecx
 	pop	ecx ebx
@@ -999,6 +1000,11 @@ proc editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
   .direct:
 	xor	edx,edx
 
+	mov	ecx,[cur_editor.Caret.Y]
+	call	get_line_offset
+	call	get_real_length
+	mov	ecx,eax
+
 	mov	eax,[cur_editor.Lines.Count]
 	cmp	eax,[checker_ed.Lines.Count]
 	je	@f
@@ -1014,12 +1020,9 @@ proc editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
     @@: or	dl,dl
 	jnz	.redraw
 
-	mov	ecx,[cur_editor.Caret.Y]
-	call	get_line_offset
-	call	get_real_length
-	cmp	eax,[checker_ed_ll]
+	cmp	ecx,[checker_ed_ll]
 	je	@f
-	mov	[checker_ed_ll],eax
+	mov	[checker_ed_ll],ecx
 	or	dl,REDRAW_ONELINE
     @@:
 	mov	eax,[cur_editor.Caret.Y]
@@ -1107,6 +1110,7 @@ proc editor_check_for_changes ;///// EDITOR CHANGES CHECKER //////////////////
 	jmp	.exit
 
   .redraw:
+	mov	[checker_ed_ll],ecx
 	push	edx
 	call	draw_editor_gutter
 	call	draw_editor_text

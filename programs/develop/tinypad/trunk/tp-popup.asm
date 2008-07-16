@@ -1,3 +1,4 @@
+diff16 'tp-popup.asm',0,$
 
 ;POP_WIDTH   = (popup_text.max_title+popup_text.max_accel+6)*6
 POP_IHEIGHT = 16

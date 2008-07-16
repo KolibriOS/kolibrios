@@ -1,3 +1,5 @@
+diff16 'tp-key.asm',0,$
+
 key:
 	mov	ecx,1
 	mcall	66,3
@@ -544,7 +546,7 @@ proc key.ctrl_v
 	mov	ecx,[copy_size]
 	sub	ecx,4
 	mov	edi,[cur_editor.Lines]
-	add	edi,[edi-4]
+	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
 	mov	eax,esi
 	mov	esi,edi
@@ -691,7 +693,7 @@ proc key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 
 	dec	[cur_editor.Lines.Count]
 	mov	ecx,[cur_editor.Lines]
-	add	ecx,[ecx-4]
+	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	sub	ecx,esi
 	shr	ecx,2
 	cld
@@ -1079,7 +1081,7 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
     @@:
 	push	ecx
 	mov	edi,[cur_editor.Lines]
-	add	edi,[edi-4]
+	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
 	lea	esi,[edi+8]
 	sub	esi,ecx
@@ -1102,7 +1104,7 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	movzx	eax,word[esi-4]
 	add	esi,eax
 	mov	ecx,[cur_editor.Lines]
-	add	ecx,[ecx-4]
+	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	sub	ecx,esi
 	cld
     @@: rep	movsb
@@ -1127,7 +1129,7 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	movzx	eax,word[esi]
 	lea	esi,[esi+eax+4]
 	mov	eax,[cur_editor.Lines]
-	add	eax,[eax-4]
+	add	eax,[cur_editor.Lines.Size] ;*** add eax,[eax-4]
 	sub	esi,eax
 	lea	eax,[esi+4096]
 	call	editor_realloc_lines
@@ -1249,7 +1251,7 @@ proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 	pop	eax
 	pushad
 	mov	ecx,[cur_editor.Lines]
-	add	ecx,[ecx-4]
+	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	dec	ecx
 	mov	edi,ecx
 	add	ecx,-10+1
@@ -1392,7 +1394,7 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 
 	push	ecx
 	mov	edi,[cur_editor.Lines]
-	add	edi,[edi-4]
+	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
 	lea	esi,[edi+4]
 	sub	esi,ecx
@@ -1410,7 +1412,7 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	movzx	ecx,word[ebp]
 	add	esi,ecx
 	mov	ecx,[cur_editor.Lines]
-	add	ecx,[ecx-4]
+	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	sub	ecx,esi
 	cld
     @@: rep	movsb
