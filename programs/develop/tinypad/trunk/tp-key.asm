@@ -3,6 +3,7 @@ diff16 'tp-key.asm',0,$
 key:
 	mov	ecx,1
 	mcall	66,3
+	mov	[shi],eax
 	xor	ebx,ebx
 	test	al,0x03
 	jz	@f
@@ -13,12 +14,11 @@ key:
     @@: test	al,0x30
 	jz	@f
 	or	ebx,KM_ALT
-    @@: mov	[shi],ebx
+    @@: mov	edx,ebx
 	test	al,0x03
 	jz	@f
 	inc	cl
-    @@: mcall	26,2,,key1
-
+    @@:
 	mcall	2
 	cmp	al,0
 	jne	still.skip_write
@@ -34,11 +34,38 @@ key:
     @@:
 	mov	ah,[ext]
 	mov	[ext],0
-	or	eax,[shi]
 
-	test	al,0x80
+	mov	esi,numpad_table_off
+	test	[shi], 0x00000080 ; NumLock is on?
+	jz	.num
+	mov	esi,numpad_table_on
+  .num: cmp	eax,[esi]
+	jne	@f
+	mov	eax,[esi+4]
+	mov	ebx,eax
+	or	eax,edx
+	shr	ebx,8
+	or	ebx,0x0000FFFF
+	and	eax,ebx
+	mov	ecx,eax
+	shr	ecx,16
+	and	cl,1
+	inc	cl
+	jmp	.lp0
+    @@: add	esi,8
+	cmp	dword[esi],0
+	jne	.num
+
+	or	eax,edx
+
+  .lp0: test	al,0x80
 	jnz	still.skip_write
-	mov	[chr],al
+
+	push	eax
+	mcall	26,2,,key1
+	pop	eax
+
+	mov	[chr],eax
 
 	cmp	[bot_mode],0
 	je	@f
@@ -60,15 +87,15 @@ key:
 	call	editor_check_for_changes
 	jmp	still
     @@: add	esi,8
-	cmp	byte[esi],0
+	cmp	dword[esi],0
 	jne	.acc
 
-	test	dword[shi],KM_CTRLALT
+	test	[chr],KM_CTRLALT
 	jnz	still.skip_write
 
 	mov	[s_status],0
 
-	movzx	eax,[chr]
+	movzx	eax,byte[chr]
 	movzx	eax,[eax+key0]
 	or	al,al
 	jz	still.skip_write
@@ -303,7 +330,7 @@ proc key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 	inc	edx
 	mov	[cur_editor.Caret.Y],ebx
 	mov	[cur_editor.Caret.X],edx
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],ebx
 	mov	[cur_editor.SelStart.X],edx
@@ -389,7 +416,7 @@ proc key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
     @@:
 	mov	[cur_editor.Caret.Y],ebx
 	mov	[cur_editor.Caret.X],edx
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],ebx
 	mov	[cur_editor.SelStart.X],edx
@@ -731,7 +758,7 @@ proc key.up ;///// GO TO PREVIOUS LINE ///////////////////////////////////////
 	dec	ecx
 	jns	@f
 	xor	ecx,ecx
-    @@: test	byte[shi+2],0x01
+    @@: test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@: mov	[cur_editor.Caret.Y],eax
@@ -761,7 +788,7 @@ proc key.down ;///// GO TO NEXT LINE /////////////////////////////////////////
 	cmp	edx,[lines.scr]
 	jb	@f
 	inc	ecx
-    @@: test	byte[shi+2],0x01
+    @@: test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@: mov	[cur_editor.Caret.Y],eax
@@ -783,7 +810,7 @@ proc key.left ;///// GO TO PREVIOUS CHAR /////////////////////////////////////
 	dec	eax
 	jns	@f
 	inc	eax
-    @@: test	byte[shi+2],0x01
+    @@: test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.X],eax
     @@: mov	[cur_editor.Caret.X],eax
@@ -805,7 +832,7 @@ proc key.right ;///// GO TO NEXT CHAR ////////////////////////////////////////
 	cmp	eax,[cur_editor.Columns.Count]
 	jbe	@f
 	dec	eax
-    @@: test	byte[shi+2],0x01
+    @@: test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.X],eax
     @@: mov	[cur_editor.Caret.X],eax
@@ -832,7 +859,7 @@ proc key.pgup ;///// GO TO PREVIOUS PAGE /////////////////////////////////////
     @@: sub	ecx,edx
 	jns	@f
 	xor	ecx,ecx
-    @@: test	byte[shi+2],0x01
+    @@: test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@: mov	[cur_editor.Caret.Y],eax
@@ -860,7 +887,7 @@ proc key.pgdn ;///// GO TO NEXT PAGE /////////////////////////////////////////
 	jb	@f
 	mov	eax,[cur_editor.Lines.Count]
 	dec	eax
-    @@: test	byte[shi+2],0x01
+    @@: test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@: mov	[cur_editor.Caret.Y],eax
@@ -879,7 +906,7 @@ proc key.home ;///// GO TO LINE START ////////////////////////////////////////
      key.shift_home: ;///// GO TO LINE START, WITH SELECTION /////////////////
 ;-----------------------------------------------------------------------------
 	mov	[cur_editor.Caret.X],0
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.X],0
     @@:
@@ -900,7 +927,7 @@ proc key.end ;///// GO TO LINE END ///////////////////////////////////////////
 	call	get_line_offset
 	call	get_real_length
 	mov	[cur_editor.Caret.X],eax
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.X],eax
     @@:
@@ -919,7 +946,7 @@ proc key.ctrl_home ;///// GO TO PAGE START ///////////////////////////////////
 ;-----------------------------------------------------------------------------
 	mov	eax,[cur_editor.TopLeft.Y]
 	mov	ecx,eax
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@: mov	[cur_editor.Caret.Y],eax
@@ -944,7 +971,7 @@ proc key.ctrl_end ;///// GO TO PAGE END //////////////////////////////////////
 	mov	eax,[cur_editor.Lines.Count]
     @@: add	eax,ecx
 	dec	eax
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@: mov	[cur_editor.Caret.Y],eax
@@ -965,7 +992,7 @@ proc key.ctrl_pgup ;///// GO TO DOCUMENT START ///////////////////////////////
 	xor	eax,eax
 	mov	[cur_editor.TopLeft.Y],eax
 	mov	[cur_editor.Caret.Y],eax
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	mov	[cur_editor.SelStart.Y],eax
     @@:
@@ -989,7 +1016,7 @@ proc key.ctrl_pgdn ;///// GO TO DOCUMENT END /////////////////////////////////
 	xor	eax,eax
     @@: mov	[cur_editor.TopLeft.Y],eax
 	dec	[cur_editor.Caret.Y]
-	test	byte[shi+2],0x01
+	test	[chr],KM_SHIFT
 	jnz	@f
 	m2m	[cur_editor.SelStart.Y],[cur_editor.Caret.Y]
     @@:

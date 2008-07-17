@@ -211,12 +211,12 @@ proc textbox.key
 	cmp	byte[esi],0
 	jne	.acc
 
-	test	byte[shi+2],0x06
+	test	[chr],KM_CTRLALT
 	jnz	.exit
 	cmp	[tbox.length],255
 	je	.exit
 
-	movzx	eax,[chr]
+	movzx	eax,byte[chr]
 	movzx	eax,[eax+key0]
 	or	al,al
 	jz	.exit

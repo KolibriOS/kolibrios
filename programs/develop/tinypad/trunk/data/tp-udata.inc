@@ -67,8 +67,8 @@ s_search      rb PATHL+1
 
 s_title       rb PATHL+11  ; window caption
 
-chr db ?
 ext db ?
+chr dd ?
 shi dd ?
 
 align 4

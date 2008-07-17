@@ -6,10 +6,13 @@ HISTORY:
     - new tab is created when opening a file from Tinypad's home folder
       (was opening in current tab if there was a new file, even modified)
     - show "save file" dialog for new files or files from Tinypad's home folder
+    - line is redrawn after lining up a single char and then deleting it
+      (pressing Del twice) [#1]
   new features:
     - prompt to save modified file before closing (+fixes)
     - button to close current tab (+fixes)
     - mouse scroll wheel support
+    - numpad support
 
 4.0.4 (mike.dld)
   bug-fixes:

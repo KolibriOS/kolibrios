@@ -507,9 +507,9 @@ TPOSW = 10
 	;cmp     ebx,0x00000153
 	;jbe     .key.tb.2
 
-	test	dword[shi],KM_CTRLALT
+	test	[chr],KM_CTRLALT
 	jnz	.key.exit
-	movzx	eax,[chr]
+	movzx	eax,byte[chr]
 	movzx	eax,[eax+key0]
 	or	al,al
 	jz	.key.exit
