@@ -1,50 +1,52 @@
 ;   Picture browser by lisovin@26.ru
 ;   Modified by Ivan Poddubny - v.0.3
 ;   Modified by Diamond - v.0.4
+;   Modified by Mario79 - v.0.5  18.07.08 Dinamic Allocation Memory
 ;   Compile with FASM for Menuet
 
 ;******************************************************************************
     use32
     org    0x0
-    db     'MENUET01'              ; 8 byte id
-    dd     0x01                    ; header version
-    dd     START                   ; start of code
-    dd     IM_END                  ; size of image
-    dd     0x300000                ; memory for app
-    dd     0x300000                ; esp
-    dd     temp_area , 0x0         ; I_Param , I_Icon
+    db	   'MENUET01'		   ; 8 byte id
+    dd	   0x01 		   ; header version
+    dd	   START		   ; start of code
+    dd	   IM_END		   ; size of image
+    dd	   I_END ;0x300000                 ; memory for app
+    dd	   I_END ;0x300000                 ; esp
+    dd	   temp_area , 0x0	   ; I_Param , I_Icon
 
 include    'lang.inc'
 include    '..\..\..\macros.inc'
+;include    'macros.inc'
 ;******************************************************************************
 
-START:                          ; start of execution
-
+START:				; start of execution
+	mcall	68, 11
 ; check for parameters
-   cmp   dword [temp_area],'BOOT'
-   jne   .no_boot
+   cmp	 dword [temp_area],'BOOT'
+   jne	 .no_boot
    call  load_image
    call  convert
    call  background
-   or    eax,-1
+   or	 eax,-1
    mcall
  .no_boot:
 
-   cmp   byte [temp_area],0
-   jz    .no_param
-   mov   edi,string      ; clear string
-   mov   ecx,256/4       ;   length of a string
-   xor   eax,eax         ;   symbol <0>
-   rep   stosd
+   cmp	 byte [temp_area],0
+   jz	 .no_param
+   mov	 edi,string	 ; clear string
+   mov	 ecx,256/4	 ;   length of a string
+   xor	 eax,eax	 ;   symbol <0>
+   rep	 stosd
 
-   mov   edi,temp_area   ; look for <0> in temp_area
-   mov   esi,edi
-   mov   ecx,257         ;   strlen
+   mov	 edi,temp_area	 ; look for <0> in temp_area
+   mov	 esi,edi
+   mov	 ecx,257	 ;   strlen
    repne scasb
-        lea     ecx, [edi-temp_area]
+	lea	ecx, [edi-temp_area]
 
-   mov   edi,string
-   rep   movsb           ; copy string from temp_area to "string" (filename)
+   mov	 edi,string
+   rep	 movsb		 ; copy string from temp_area to "string" (filename)
 
    call  load_image
    call  convert
@@ -52,18 +54,18 @@ START:                          ; start of execution
  .no_param:
 
 
-   or  ecx,-1           ; get information about me
+   or  ecx,-1		; get information about me
    call getappinfo
 
-   mov  edx,[process_info+30] ; теперь в edx наш идентификатор
-   mov  ecx,eax
+   mov	edx,[process_info+30] ; теперь в edx наш идентификатор
+   mov	ecx,eax
 
   @@:
    call getappinfo
-   cmp  edx,[process_info+30]
-   je   @f  ; если наш PID совпал с PID рассматриваемого процесса, мы нашли себя
-   dec  ecx ; иначе смотрим следующий процесс
-   jne  @b  ; возвращаемся, если не все процессы рассмотрены
+   cmp	edx,[process_info+30]
+   je	@f  ; если наш PID совпал с PID рассматриваемого процесса, мы нашли себя
+   dec	ecx ; иначе смотрим следующий процесс
+   jne	@b  ; возвращаемся, если не все процессы рассмотрены
   @@:
 
 ; теперь в ecx номер процесса
@@ -74,58 +76,58 @@ draw_still:
 
 still:
 
-    mov  eax,10                 ; wait here for event
+    mov  eax,10 		; wait here for event
     mcall
 
-        dec     eax
-        jz      red
-        dec     eax
-        jnz     button
+	dec	eax
+	jz	red
+	dec	eax
+	jnz	button
 
-  key:                          ; key
+  key:				; key
     mov  al,2
     mcall
     mov  al,ah
     cmp  al,6
-    je   kfile
+    je	 kfile
     cmp  al,15
-    je   kopen
+    je	 kopen
     cmp  al,9
-    je   kinfo
+    je	 kinfo
     cmp  al,2
-    je   kbgrd
+    je	 kbgrd
     jmp  still
 
   red:
-        test    byte [status], 4
-        jz      draw_still
-        mov     al, 18
-        mov     ebx, 3
-        mov     ecx, [process]
-        mcall
-        and     byte [status], not 4
-        jmp     still
+	test	byte [status], 4
+	jz	draw_still
+	mov	al, 18
+	mov	ebx, 3
+	mov	ecx, [process]
+	mcall
+	and	byte [status], not 4
+	jmp	still
 
-  button:                       ; button
-    mov  eax,17                 ; get id
+  button:			; button
+    mov  eax,17 		; get id
     mcall
 
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jne  noclose
 
-    mov  eax,-1                 ; close this program
+    mov  eax,-1 		; close this program
     mcall
   noclose:
     cmp  ah,2
     jne  nofile
   kfile:
-        test    byte [status], 1
-        jnz     still
-        or      byte [status], 1
+	test	byte [status], 1
+	jnz	still
+	or	byte [status], 1
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread1
-    mov  edx,0x29fff0
+    mov  edx,thread   ;0x29fff0
     mcall
     jmp  still
   nofile:
@@ -135,8 +137,9 @@ still:
  kopen:
     mov ecx,-1
     call getappinfo
-    mov ebx,dword [I_END+42]
-    mov ecx,dword [I_END+46]
+    mov eax,[image_file]
+    mov ebx,dword [eax+42]
+    mov ecx,dword [eax+46]
     add ebx,10*65536-15
     add ecx,50*65536-55
     mov edx,0xffffff
@@ -146,7 +149,8 @@ still:
     call load_image
 
   open1:
-    cmp word [I_END],word 'BM'
+    mov eax,[image_file]
+    cmp [eax],word 'BM'
     jne  still
     call convert
     call drawimage
@@ -156,13 +160,13 @@ still:
     cmp  ah,4
     jne  noinfo
   kinfo:
-        test    byte [status], 2
-        jnz     still
-        or      byte [status], 2
+	test	byte [status], 2
+	jnz	still
+	or	byte [status], 2
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread2
-    mov  edx,0x2afff0
+    mov  edx,thread-512  ;0x2afff0
     mcall
     jmp  still
   noinfo:
@@ -171,13 +175,13 @@ still:
     cmp  ah,5
     jne  still
   kbgrd:
-        test    byte [status], 8
-        jnz     still
-        or      byte [status], 8
+	test	byte [status], 8
+	jnz	still
+	or	byte [status], 8
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread3
-    mov  edx,0x2bfff0
+    mov  edx,thread-512*2  ;0x2bfff0
     mcall
     jmp  still
     ;call background
@@ -190,14 +194,58 @@ still:
 
 
 load_image:
-        mov     eax, 70
-        mov     ebx, fileinfo
-        mcall
-    mov  eax,[I_END+18]
-    mov  ebx,[I_END+22]
-        test    ebx, ebx
-        jns     @f
-        neg     ebx
+	  mov	[fileinfo+0],dword 5
+	  mov	[fileinfo+12],dword 0
+	  mov	[fileinfo+16],dword process_info
+
+    cmp  [image_file],0
+    je	  @f
+    mov   ecx,[image_file]
+     mcall 68, 13,
+
+@@:
+	  mcall 70, fileinfo
+
+	  mov	[fileinfo+0],dword 0
+	  mov	[fileinfo+12],dword 512
+	  mov	[fileinfo+16],dword process_info+40
+
+	  mcall 70, fileinfo
+
+	  mov	ecx,[process_info+32]
+	  mov	[fileinfo+12],ecx
+
+    mov  eax,[process_info+40+28]
+
+	cmp	eax, 24
+	jz	.convert24
+	cmp	eax, 8
+	jz	.convert8
+	cmp	eax, 4
+	jz	.convert4
+     shl  ecx,2
+.convert4:
+     shl  ecx,1
+.convert8:
+     lea  ecx,[ecx*3]
+.convert24:
+     shl  ecx,1
+@@:
+
+	  mcall 68, 12
+
+
+	  mov	[fileinfo+16],eax
+	  mov	[image_file],eax
+
+	  mcall 70, fileinfo
+
+    mov  eax,[image_file]
+    mov  ebx,[eax+22]
+    mov  eax,[eax+18]
+	test	ebx, ebx
+	jns	@f
+	neg	ebx
 @@:
     add  eax,20
     cmp  eax,210
@@ -212,53 +260,48 @@ load_image:
     mov  [wnd_width],eax
     mov  [wnd_height],ebx
     test [bWasDraw],1
-    jz   @f
+    jz	 @f
     mov  esi,ebx
     mov  edx,eax
-    mov  ecx,-1
-    mov  ebx,-1
-    mov  eax,67
-    mcall
+    mcall 67,-1,-1
 @@:
     ret
 
 
   drawimage:
-    cmp  word [I_END],word 'BM'
+    mov  eax,[image_file]
+    cmp  [eax],word 'BM'
     jne  nodrawimage
-    mov  eax,7
-    mov  ebx,[soi]
-        mov     ecx, dword [I_END+18-2]
-        mov     cx, [I_END+22]
-        test    cx, cx
-        jns     @f
-        neg     cx
+	mov	ecx, dword [eax+18-2]
+	mov	cx, [eax+22]
+	test	cx, cx
+	jns	@f
+	neg	cx
 @@:
     mov  edx,10*65536+50
-    mcall
+    mcall 7,[soi]
   nodrawimage:
     ret
 
 ; УСТАНОВИТЬ ФОН
   background:
-    cmp  word [I_END],word 'BM'
+    mov  eax,[image_file]
+    cmp  [eax],word 'BM'
     jne  @f
-    mov  eax,15
-    mov  ebx,1
-    mov  ecx,[I_END+18] ; ширина
-    mov  edx,[I_END+22] ; высота
-    mcall
+    mov  ecx,[eax+18] ; ширина
+    mov  edx,[eax+22] ; высота
+    mcall 15,1
 
     mov  esi, ecx
     imul esi, edx
-        lea     esi, [esi+esi*2]
+	lea	esi, [esi+esi*2]
     mov  ebx,5
     mov  ecx,[soi]
     xor  edx,edx
 ;;;    mov  esi, ;640*480*3
     mcall
 
-    dec  ebx    ;tile/stretch
+    dec  ebx	;tile/stretch
     mov  ecx,dword [bgrmode]
     mcall
 
@@ -268,170 +311,182 @@ load_image:
     ret
 
 convert:
-        mov     ecx, I_END
-        add     ecx, [ecx+2]
-        mov     [soi], ecx
-        mov     ebp, [I_END+18]
-        lea     ebp, [ebp*3]    ; ebp = size of output scanline
-        mov     eax, [I_END+22]
-        dec     eax
-        mul     ebp
-        add     eax, ecx
-        mov     edi, eax        ; edi points to last scanline
-        mov     esi, I_END
-        add     esi, [esi+10]
-        mov     ebx, I_END+54
-        mov     edx, [I_END+22]
-        lea     eax, [ebp*2]
-        mov     [delta], eax
-        test    edx, edx
-        jz      .ret
-        jns     @f
-        neg     edx
-        and     [delta], 0
-        mov     edi, ecx
+	mov	ecx, [image_file]  ;I_END
+	add	ecx, [ecx+2]
+	mov	[soi], ecx
+	mov	eax,[image_file]
+	mov	ebp, [eax+18]
+	lea	ebp, [ebp*3]	; ebp = size of output scanline
+	mov	eax, [eax+22]
+	dec	eax
+	mul	ebp
+	add	eax, ecx
+	mov	edi, eax	; edi points to last scanline
+	mov	esi, [image_file]  ;I_END
+	add	esi, [esi+10]
+;        mov     ebx, I_END+54
+	mov	ebx,[image_file]
+	mov	edx, [ebx+22]
+	add	ebx,54
+	lea	eax, [ebp*2]
+	mov	[delta], eax
+	test	edx, edx
+	jz	.ret
+	jns	@f
+	neg	edx
+	and	[delta], 0
+	mov	edi, ecx
 @@:
-        movzx   eax, word [I_END+28]
-        cmp     eax, 24
-        jz      convert24
-        cmp     eax, 8
-        jz      convert8
-        cmp     eax, 4
-        jz      convert4
-        dec     eax
-        jz      convert1
+;        movzx   eax, word [I_END+28]
+	mov	eax,[image_file]
+	movzx	eax,word [eax+28]
+	cmp	eax, 24
+	jz	convert24
+	cmp	eax, 8
+	jz	convert8
+	cmp	eax, 4
+	jz	convert4
+	dec	eax
+	jz	convert1
 .ret:
-        ret
+	ret
 convert24:
-        mov     ecx, ebp
-        rep     movsb
-        sub     edi, [delta]
-        mov     eax, ebp
-        neg     eax
-        and     eax, 3
-        add     esi, eax
-        dec     edx
-        jnz     convert24
-        ret
+	mov	ecx, ebp
+	rep	movsb
+	sub	edi, [delta]
+	mov	eax, ebp
+	neg	eax
+	and	eax, 3
+	add	esi, eax
+	dec	edx
+	jnz	convert24
+	ret
 convert8:
-        push    edi
-        add     [esp], ebp
+	push	edi
+	add	[esp], ebp
 .loopi:
-        xor     eax, eax
-        lodsb
-        cmp     dword [I_END+30], 1
-        jnz     .nocompressed
+	xor	eax, eax
+	lodsb
+;        cmp     dword [I_END+30], 1
+	push	eax
+	mov	eax,[image_file]
+	cmp	dword [eax+30],1
+	pop	eax
+	jnz	.nocompressed
 .compressed:
-        mov     ecx, eax
-        jecxz   .special
-        lodsb
-        mov     eax, [ebx+eax*4]
+	mov	ecx, eax
+	jecxz	.special
+	lodsb
+	mov	eax, [ebx+eax*4]
 @@:
-        call    putpixel
-        loop    @b
-        jmp     .loopi
+	call	putpixel
+	loop	@b
+	jmp	.loopi
 .nocompressed:
-        mov     eax, [ebx+eax*4]
-        call    putpixel
+	mov	eax, [ebx+eax*4]
+	call	putpixel
 .loopicont:
-        cmp     edi, [esp]
-        jnz     .loopi
+	cmp	edi, [esp]
+	jnz	.loopi
 .next:
-        pop     edi
-        sub     edi, [delta]
-        mov     eax, ebp
-        and     eax, 3
-        add     esi, eax
-        dec     edx
-        jnz     convert8
-        ret
+	pop	edi
+	sub	edi, [delta]
+	mov	eax, ebp
+	and	eax, 3
+	add	esi, eax
+	dec	edx
+	jnz	convert8
+	ret
 .special:
-        lodsb
-        test    al, al
-        jz      .next
-        cmp     al, 2
-        jbe     .end
-        mov     ecx, eax
-        push    ecx
+	lodsb
+	test	al, al
+	jz	.next
+	cmp	al, 2
+	jbe	.end
+	mov	ecx, eax
+	push	ecx
 @@:
-        xor     eax, eax
-        lodsb
-        mov     eax, [ebx+eax*4]
-        call    putpixel
-        loop    @b
-        pop     ecx
-        and     ecx, 1
-        add     esi, ecx
-        jmp     .loopi
+	xor	eax, eax
+	lodsb
+	mov	eax, [ebx+eax*4]
+	call	putpixel
+	loop	@b
+	pop	ecx
+	and	ecx, 1
+	add	esi, ecx
+	jmp	.loopi
 .end:
-        pop     edi
-        ret
+	pop	edi
+	ret
 convert4:
-        push    edi
-        add     [esp], ebp
+	push	edi
+	add	[esp], ebp
 .loopi:
-        xor     eax, eax
-        lodsb
-        shr     eax, 4
-        mov     eax, [ebx+eax*4]
-        call    putpixel
-        cmp     edi, [esp]
-        jz      .loopidone
-        mov     al, [esi-1]
-        and     eax, 0xF
-        mov     eax, [ebx+eax*4]
-        stosd
-        dec     edi
-        cmp     edi, [esp]
-        jnz     .loopi
+	xor	eax, eax
+	lodsb
+	shr	eax, 4
+	mov	eax, [ebx+eax*4]
+	call	putpixel
+	cmp	edi, [esp]
+	jz	.loopidone
+	mov	al, [esi-1]
+	and	eax, 0xF
+	mov	eax, [ebx+eax*4]
+	stosd
+	dec	edi
+	cmp	edi, [esp]
+	jnz	.loopi
 .loopidone:
-        pop     edi
-        sub     edi, [delta]
-        call    align_input
-        dec     edx
-        jnz     convert4
-        ret
+	pop	edi
+	sub	edi, [delta]
+	call	align_input
+	dec	edx
+	jnz	convert4
+	ret
 convert1:
-        push    edi
-        add     [esp], ebp
+	push	edi
+	add	[esp], ebp
 .loopi:
-        lodsb
-        mov     ecx, 8
+	lodsb
+	mov	ecx, 8
 .loopii:
-        add     al, al
-        push    eax
-        setc    al
-        movzx   eax, al
-        mov     eax, [ebx+eax*4]
-        call    putpixel
-        pop     eax
-        cmp     edi, [esp]
-        loopnz  .loopii
-        jnz     .loopi
-        pop     edi
-        sub     edi, [delta]
-        call    align_input
-        dec     edx
-        jnz     convert1
-        ret
+	add	al, al
+	push	eax
+	setc	al
+	movzx	eax, al
+	mov	eax, [ebx+eax*4]
+	call	putpixel
+	pop	eax
+	cmp	edi, [esp]
+	loopnz	.loopii
+	jnz	.loopi
+	pop	edi
+	sub	edi, [delta]
+	call	align_input
+	dec	edx
+	jnz	convert1
+	ret
 
 align_input:
-        push    esi
-        sub     esi, I_END
-        sub     esi, [I_END+10]
-        neg     esi
-        and     esi, 3
-        add     [esp], esi
-        pop     esi
-        ret
+	push	esi
+	push	eax
+	mov	eax,[image_file]
+	sub	esi,eax    ;I_END
+	sub	esi,[eax+10]
+	pop	eax
+	neg	esi
+	and	esi, 3
+	add	[esp], esi
+	pop	esi
+	ret
 
 putpixel:
-        push    eax
-        stosw
-        shr     eax, 16
-        stosb
-        pop     eax
-        ret
+	push	eax
+	stosw
+	shr	eax, 16
+	stosb
+	pop	eax
+	ret
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -439,21 +494,21 @@ putpixel:
 
 
 draw_window:
-    or   [bWasDraw],1
+    or	 [bWasDraw],1
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     mcall
 
-                                   ; DRAW WINDOW
-    xor  eax,eax                   ; function 0 : define and draw window
+				   ; DRAW WINDOW
+    xor  eax,eax		   ; function 0 : define and draw window
 ;    mov  ebx,350                   ; [x start] *65536 + [x size]
 ;    mov  ecx,400                   ; [y start] *65536 + [y size]
-    mov  ebx,100*65536
-    mov  ecx,100*65536
+    mov  ebx,0*65536
+    mov  ecx,0*65536
     add  ebx,[wnd_width]
     add  ecx,[wnd_height]
-    mov  edx,0x03ffffff            ; color of work area RRGGBB,8->color gl
+    mov  edx,0x03ffffff 	   ; color of work area RRGGBB,8->color gl
     mcall
 
     mov  eax,8
@@ -466,14 +521,14 @@ draw_window:
     add  ebx,48*65536
     inc  edx
     cmp  edx,6
-    jb   newbutton
+    jb	 newbutton
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt                ; pointer to text beginning
-    mov  esi,12                    ; text length
+				   ; WINDOW LABEL
+    mov  eax,4			   ; function 4 : write text to window
+    mov  ebx,8*65536+8		   ; [x start] *65536 + [y start]
+    mov  ecx,0x10ddeeff 	   ; font 1 & color ( 0xF0RRGGBB )
+    mov  edx,labelt		   ; pointer to text beginning
+    mov  esi,12 		   ; text length
     mcall
 
     mov  ebx,14*65536+32
@@ -483,8 +538,8 @@ draw_window:
 
     call drawimage
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     mcall
 
     ret
@@ -493,38 +548,38 @@ draw_window:
 ; DATA AREA
 
 labelt:
-         db 'MeView v.0.4'
+	 db 'MeView v.0.4'
 
 lsz buttext,\
     en,   ' FILE   OPEN   INFO   BGRD',\
     ru,   ' ФАЙЛ  ОТКР   ИНФО   ФОН  ',\
     de,   'DATEI OEFNEN  INFO   HGRD'
 
-thread1:                        ; start of thread1
+thread1:			; start of thread1
 
      call draw_window1
 
 still1:
 
-    mov  eax,10                 ; wait here for event
+    mov  eax,10 		; wait here for event
     mcall
 
-    cmp  eax,1                  ; redraw request ?
-    je   thread1
-    cmp  eax,2                  ; key in buffer ?
-    je   key1
-    cmp  eax,3                  ; button in buffer ?
-    je   button1
+    cmp  eax,1			; redraw request ?
+    je	 thread1
+    cmp  eax,2			; key in buffer ?
+    je	 key1
+    cmp  eax,3			; button in buffer ?
+    je	 button1
 
     jmp  still1
 
-  key1:                         ; key
+  key1: 			; key
     mcall
     cmp  ah,179
     jne  noright
     mov  eax,[pos]
     cmp  eax,41
-    ja   still1
+    ja	 still1
     inc  eax
     mov  [pos],eax
     call drawstring
@@ -534,7 +589,7 @@ still1:
     jne  noleft
     mov  eax,[pos]
     test eax,eax
-    je   still1
+    je	 still1
     dec  eax
     mov  [pos],eax
     call drawstring
@@ -546,11 +601,11 @@ still1:
     call drawstring
     jmp  still1
   nodelet:
-    cmp  ah,8          ;zaboy
+    cmp  ah,8	       ;zaboy
     jne  noback
     mov  eax,[pos]
     test eax,eax
-    je   still1
+    je	 still1
     dec  eax
     mov  [pos],eax
     call shiftback
@@ -594,17 +649,17 @@ still1:
 
     jmp  still1
 
-  button1:                      ; button
-    mov  eax,17                 ; get id
+  button1:			; button
+    mov  eax,17 		; get id
     mcall
 
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jne  noclose1
     jmp  enter1
   close1:
     bts  dword [status],2
     btr  dword [status],0
-    mov  eax,-1                 ; close this program
+    mov  eax,-1 		; close this program
     mcall
   noclose1:
     cmp  ah,2
@@ -643,45 +698,45 @@ still1:
 draw_window1:
 
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     mcall
 
-                                   ; DRAW WINDOW
-    xor  eax,eax                   ; function 0 : define and draw window
-    mov  ebx,100*65536+300         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+80          ; [y start] *65536 + [y size]
-    mov  edx,0x03780078            ; color of work area RRGGBB,8->color gl
+				   ; DRAW WINDOW
+    xor  eax,eax		   ; function 0 : define and draw window
+    mov  ebx,100*65536+300	   ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+80	   ; [y start] *65536 + [y size]
+    mov  edx,0x03780078 	   ; color of work area RRGGBB,8->color gl
     mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt1               ; pointer to text beginning
-    mov  esi,labelt1.size          ; text length
+				   ; WINDOW LABEL
+    mov  eax,4			   ; function 4 : write text to window
+    mov  ebx,8*65536+8		   ; [x start] *65536 + [y start]
+    mov  ecx,0x10ddeeff 	   ; font 1 & color ( 0xF0RRGGBB )
+    mov  edx,labelt1		   ; pointer to text beginning
+    mov  esi,labelt1.size	   ; text length
     mcall
 
     call drawstring
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     mcall
 
     ret
 
  drawstring:
     pusha
-    mov  eax,8             ;invisible button
+    mov  eax,8		   ;invisible button
     mov  ebx,21*65536+258
     mov  ecx,40*65536+15
     mov  edx,0x60000002
     mcall
 
-    mov  eax,13             ;bar
+    mov  eax,13 	    ;bar
     mov  edx,0xe0e0e0
     mcall
-    push eax                ;cursor
+    push eax		    ;cursor
     mov  eax,6*65536
     mul  dword [pos]
     add  eax,21*65536+6
@@ -689,7 +744,7 @@ draw_window1:
     pop  eax
     mov  edx,0x6a73d0
     mcall
-    mov  eax,4              ;path
+    mov  eax,4		    ;path
     mov  ebx,21*65536+44
     xor  ecx,ecx
     mov  edx,string
@@ -703,38 +758,38 @@ draw_window1:
 ; DATA AREA
 
 lsz labelt1,\
-   en,  'File',\
-   ru,  'Файл',\
-   de,  'Datei'
+   en,	'File',\
+   ru,	'Файл',\
+   de,	'Datei'
 
-thread2:                          ; start of info thread
+thread2:			  ; start of info thread
 
      call draw_window2
 
 still2:
 
-    mov  eax,10                 ; wait here for event
+    mov  eax,10 		; wait here for event
     mcall
 
-    cmp  eax,1                  ; redraw request ?
-    je   thread2
-    cmp  eax,2                  ; key in buffer ?
-    je   close2
-    cmp  eax,3                  ; button in buffer ?
-    je   button2
+    cmp  eax,1			; redraw request ?
+    je	 thread2
+    cmp  eax,2			; key in buffer ?
+    je	 close2
+    cmp  eax,3			; button in buffer ?
+    je	 button2
 
     jmp  still2
 
-  button2:                       ; button
-    mov  eax,17                 ; get id
+  button2:			 ; button
+    mov  eax,17 		; get id
     mcall
 
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jne  noclose2
   close2:
     btr dword [status],1
     bts dword [status],2
-    mov  eax,-1                 ; close this program
+    mov  eax,-1 		; close this program
     mcall
   noclose2:
 
@@ -751,23 +806,23 @@ still2:
 draw_window2:
 
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     mcall
 
-                                   ; DRAW WINDOW
-    xor  eax,eax                   ; function 0 : define and draw window
-    mov  ebx,100*65536+330         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+90          ; [y start] *65536 + [y size]
-    mov  edx,0x03780078            ; color of work area RRGGBB,8->color gl
+				   ; DRAW WINDOW
+    xor  eax,eax		   ; function 0 : define and draw window
+    mov  ebx,100*65536+330	   ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+90	   ; [y start] *65536 + [y size]
+    mov  edx,0x03780078 	   ; color of work area RRGGBB,8->color gl
     mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt2               ; pointer to text beginning
-    mov  esi,labelt2.size          ; text length
+				   ; WINDOW LABEL
+    mov  eax,4			   ; function 4 : write text to window
+    mov  ebx,8*65536+8		   ; [x start] *65536 + [y start]
+    mov  ecx,0x10ddeeff 	   ; font 1 & color ( 0xF0RRGGBB )
+    mov  edx,labelt2		   ; pointer to text beginning
+    mov  esi,labelt2.size	   ; text length
     mcall
 
     mov  ebx,10*65536+30
@@ -786,24 +841,31 @@ draw_window2:
     mov  eax,47
     mov  edx,200*65536+40
     mov  esi,ecx
-    mov  ecx, [I_END+2]
+    mov  ecx,[image_file]
+    push ecx
+    mov  ecx, [ecx+2]
     call digitcorrect
     mcall
     add  edx,10
-    mov  ecx, [I_END+18]
+    pop  ecx
+    push ecx
+    mov  ecx, [ecx+18]
     call digitcorrect
     mcall
     add  edx,10
-    mov  ecx, [I_END+22]
+    pop  ecx
+    push ecx
+    mov  ecx, [ecx+22]
     call digitcorrect
     mcall
     add  edx,10
-    movzx ecx,word [I_END+28]
+    pop  ecx
+    movzx ecx,word [ecx+28]
     call digitcorrect
     mcall
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     mcall
 
     ret
@@ -812,19 +874,19 @@ draw_window2:
     xor  ebx,ebx
     mov  bh,6
     cmp  ecx,99999
-    ja   c_end
+    ja	 c_end
     dec  bh
     cmp  ecx,9999
-    ja   c_end
+    ja	 c_end
     dec  bh
     cmp  ecx,999
-    ja   c_end
+    ja	 c_end
     dec  bh
     cmp  ecx,99
-    ja   c_end
+    ja	 c_end
     dec  bh
     cmp  ecx,9
-    ja   c_end
+    ja	 c_end
     dec  bh
  c_end:
     bswap ebx
@@ -843,45 +905,45 @@ lsz fitext,\
      en, 'X SIZE        ',\
      en, 'Y SIZE        ',\
      en, 'BITS PER PIXEL',\
-                          \
+			  \
      ru, 'Размер файла  ',\
      ru, 'Ширина        ',\
      ru, 'Высота        ',\
      ru, 'Бит на пиксел ',\
-                          \
+			  \
      de, 'FATEIGROESSE  ',\
      de, 'X GROESSE     ',\
      de, 'Y GROESSE     ',\
      de, 'BITS PER PIXEL'
 
-thread3:                          ; start of bgrd thread
+thread3:			  ; start of bgrd thread
 
      call draw_window3
 
 still3:
 
-    mov  eax,10                 ; wait here for event
+    mov  eax,10 		; wait here for event
     mcall
 
-    cmp  eax,1                  ; redraw request ?
-    je   thread3
-    cmp  eax,2                  ; key in buffer ?
-    je   key3
-    cmp  eax,3                  ; button in buffer ?
-    je   button3
+    cmp  eax,1			; redraw request ?
+    je	 thread3
+    cmp  eax,2			; key in buffer ?
+    je	 key3
+    cmp  eax,3			; button in buffer ?
+    je	 button3
 
     jmp  still3
 
   key3:
     mcall
     cmp  ah,27
-    je   close3
+    je	 close3
     cmp  ah,13
-    je   kok
+    je	 kok
     cmp  ah,178 ;up
     jne  nofup
     cmp  dword [bgrmode],1
-    je   fdn
+    je	 fdn
   fup:
     dec dword [bgrmode]
     jmp  flagcont
@@ -889,22 +951,22 @@ still3:
     cmp  ah,177 ;down
     jne  still3
     cmp dword [bgrmode],2
-    je   fup
+    je	 fup
   fdn:
     inc dword [bgrmode]
     jmp  flagcont
 
 
-  button3:                       ; button
-    mov  eax,17                 ; get id
+  button3:			 ; button
+    mov  eax,17 		; get id
     mcall
 
-    cmp  ah,1                   ; button id=1 ?
+    cmp  ah,1			; button id=1 ?
     jne  noclose3
   close3:
     btr dword [status],3
     bts dword [status],2
-    mov  eax,-1                 ; close this program
+    mov  eax,-1 		; close this program
     mcall
   noclose3:
     cmp  ah,4
@@ -914,9 +976,9 @@ still3:
     jmp  close3
   nook:
     cmp  ah,2
-    jb   still3
+    jb	 still3
     cmp  ah,3
-    ja   still3
+    ja	 still3
     dec  ah
     mov byte [bgrmode],ah
    flagcont:
@@ -934,15 +996,15 @@ still3:
 draw_window3:
 
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,1			   ; 1, start of draw
     mcall
 
-                                   ; DRAW WINDOW
-    xor  eax,eax                   ; function 0 : define and draw window
-    mov  ebx,100*65536+200         ; [x start] *65536 + [x size]
-    mov  ecx,100*65536+100         ; [y start] *65536 + [y size]
-    mov  edx,0x03780078            ; color of work area RRGGBB,8->color gl
+				   ; DRAW WINDOW
+    xor  eax,eax		   ; function 0 : define and draw window
+    mov  ebx,100*65536+200	   ; [x start] *65536 + [x size]
+    mov  ecx,100*65536+100	   ; [y start] *65536 + [y size]
+    mov  edx,0x03780078 	   ; color of work area RRGGBB,8->color gl
     mcall
 
     mov  eax,8
@@ -952,12 +1014,12 @@ draw_window3:
     mov  esi,0xac0000
     mcall
 
-                                   ; WINDOW LABEL
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,8*65536+8             ; [x start] *65536 + [y start]
-    mov  ecx,0x10ddeeff            ; font 1 & color ( 0xF0RRGGBB )
-    mov  edx,labelt3               ; pointer to text beginning
-    mov  esi,labelt3.size          ; text length
+				   ; WINDOW LABEL
+    mov  eax,4			   ; function 4 : write text to window
+    mov  ebx,8*65536+8		   ; [x start] *65536 + [y start]
+    mov  ecx,0x10ddeeff 	   ; font 1 & color ( 0xF0RRGGBB )
+    mov  edx,labelt3		   ; pointer to text beginning
+    mov  esi,labelt3.size	   ; text length
     mcall
     add  ebx,38*65536+20
     mov  ecx,0xddeeff
@@ -979,8 +1041,8 @@ draw_window3:
 
     call drawflags
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
+    mov  eax,12 		   ; function 12:tell os about windowdraw
+    mov  ebx,2			   ; 2, end of draw
     mcall
 
     ret
@@ -1001,7 +1063,7 @@ draw_window3:
     mov  edx,vflag
     mov  esi,1
     cmp  dword [bgrmode],1
-    je   nodownflag
+    je	 nodownflag
     add  ebx,15
  nodownflag:
     mcall
@@ -1009,9 +1071,9 @@ draw_window3:
 
 
 ; DATA AREA
-status   dd 0  ;bit0=1 if file thread is created
-soi      dd 0
-delta   dd      0
+status	 dd 0  ;bit0=1 if file thread is created
+soi	 dd 0
+delta	dd	0
 process  dd 0
 
 bWasDraw db 0
@@ -1046,20 +1108,35 @@ lsz ok_btn,\
     ru, 'Ok',\
     de, 'Ok'
 
+image_file dd 0
+;image_file_size dd 0
+
 pos: dd 6
+
+;fileinfo:
+;     dd 0
+;     dd 0
+;     dd 0
+;     dd 0x290000-I_END
+;     dd I_END
+
 fileinfo:
+     dd 5
      dd 0
      dd 0
-     dd 0
-     dd 0x290000-I_END
-     dd I_END
+     dd 0		;x290000-I_END
+     dd process_info	;I_END
 string:
-        db      '/sys/bgr.bmp',0
+	db	'/sys/bgr.bmp',0
 
 IM_END:
-        rb      string+257-$
+	rb	string+257-$
 
 process_info:
 temp_area:
-rb 0x10000
+rb 1024*4
+rb 1024*2
+;rb 0x10000
+thread:
+rb 512
 I_END:
