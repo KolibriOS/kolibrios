@@ -8,6 +8,7 @@ HISTORY:
     - show "save file" dialog for new files or files from Tinypad's home folder
     - line is redrawn after lining up a single char and then deleting it
       (pressing Del twice) [#1]
+    - update tab/window title and highlighting mode after file save
   new features:
     - prompt to save modified file before closing (+fixes)
     - button to close current tab (+fixes)

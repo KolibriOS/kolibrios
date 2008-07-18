@@ -50,6 +50,8 @@ proc save_file ;//////////////////////////////////////////////////////////////
 	jnz	.exit.2
 
   .exit:
+	mov	ebp,cur_editor
+	call	update_tab_filename
 	mov	[cur_editor.Modified],0
 	clc
 	ret
@@ -204,23 +206,7 @@ proc load_file ;//////////////////////////////////////////////////////////////
     @@: inc	[do_not_draw]
 	call	create_tab
 	dec	[do_not_draw]
-  .lp1: push	ecx esi edi
-	mov	esi,tb_opensave.text
-	lea	edi,[ebp+TABITEM.Editor.FilePath]
-	movzx	ecx,[tb_opensave.length]
-	cld
-	rep	movsb
-	mov	byte[edi],0
-	lea	edi,[ebp+TABITEM.Editor.FilePath]
-	movzx	ecx,[tb_opensave.length]
-	inc	ecx
-    @@: dec	ecx
-	jz	@f
-	cmp	byte[edi+ecx-1],'/'
-	jne	@b
-    @@: mov	[ebp+TABITEM.Editor.FileName],ecx
-	call	flush_cur_tab
-	pop	edi esi ecx
+  .lp1: call	update_tab_filename
 	call	load_from_memory
 	stdcall mem.Free,[f_info70+16]
 
@@ -232,22 +218,6 @@ proc load_file ;//////////////////////////////////////////////////////////////
 	mov	[cur_editor.SelStart.X],eax
 	mov	[cur_editor.SelStart.Y],eax
 	mov	[cur_editor.Modified],al
-	mov	[cur_editor.AsmMode],al
-
-	lea	ebx,[cur_editor.FilePath]
-	mov	eax,ebx
-	call	strlen
-	mov	ecx,dword[ebx+eax-3]
-	or	ecx,0x202020
-	cmp	ecx,'asm'
-	jne	@f
-	inc	[cur_editor.AsmMode]
-	jmp	.nocol
-    @@: cmp	ecx,'inc'
-	jne	.nocol
-	inc	[cur_editor.AsmMode]
-    .nocol:
-	call	update_caption
 
 	clc
 	ret
@@ -334,4 +304,46 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 	mov	al,' '
 	rep	stosb
 	jmp	.next_char
+endp
+
+;-----------------------------------------------------------------------------
+proc update_tab_filename ;////////////////////////////////////////////////////
+;-----------------------------------------------------------------------------
+; EBP = TABITEM*
+;-----------------------------------------------------------------------------
+	push	ecx esi edi
+	inc	[do_not_draw]
+	mov	esi,tb_opensave.text
+	lea	edi,[ebp+TABITEM.Editor.FilePath]
+	movzx	ecx,[tb_opensave.length]
+	cld
+	rep	movsb
+	mov	byte[edi],0
+	lea	edi,[ebp+TABITEM.Editor.FilePath]
+	movzx	ecx,[tb_opensave.length]
+	inc	ecx
+    @@: dec	ecx
+	jz	@f
+	cmp	byte[edi+ecx-1],'/'
+	jne	@b
+    @@: mov	[ebp+TABITEM.Editor.FileName],ecx
+	call	flush_cur_tab
+	call	update_caption
+	dec	[do_not_draw]
+
+	mov	[cur_editor.AsmMode],0
+	movzx	ecx,[tb_opensave.length]
+	mov	ecx,dword[ecx+tb_opensave.text-3]
+	or	ecx,0x202020
+	cmp	ecx,'asm'
+	jne	@f
+	inc	[cur_editor.AsmMode]
+	jmp	.exit
+    @@: cmp	ecx,'inc'
+	jne	.exit
+	inc	[cur_editor.AsmMode]
+
+  .exit:
+	pop	edi esi ecx
+	ret
 endp

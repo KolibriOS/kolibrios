@@ -2,9 +2,9 @@
 ; project name:      TINYPAD
 ; compiler:          flat assembler 1.67.21
 ; memory to compile: 3.0/9.0 MBytes (without/with size optimizations)
-; version:           4.0.5
-; last update:       2007-09-18 (Sep 18, 2007)
-; minimal kernel:    revision #270 (svn://kolibrios.org/kernel/trunk)
+; version:           SVN (4.0.5)
+; last update:       2008-07-18 (Jul 18, 2008)
+; minimal kernel:    revision #823 (svn://kolibrios.org/kernel/trunk)
 ;-----------------------------------------------------------------------------
 ; originally by:     Ville Michael Turjanmaa >> villemt@aton.co.jyu.fi
 ; maintained by:     Mike Semenyako          >> mike.dld@gmail.com
@@ -34,7 +34,7 @@ include 'tinypad.inc'
 
 header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,self_path
 
-APP_VERSION equ '4.0.5'
+APP_VERSION equ 'SVN (4.0.5)'
 
 TRUE = 1
 FALSE = 0
@@ -448,6 +448,8 @@ include 'external/dll.inc'
 ;-----------------------------------------------------------------------------
 section @DATA ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
+
+;include_debug_strings
 
 include 'data/tp-idata.inc'
 
