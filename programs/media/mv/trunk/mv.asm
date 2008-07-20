@@ -1,7 +1,16 @@
 ;   Picture browser by lisovin@26.ru
 ;   Modified by Ivan Poddubny - v.0.3
 ;   Modified by Diamond - v.0.4
-;   Modified by Mario79 - v.0.5  18.07.08 Dinamic Allocation Memory
+;   Modified by Mario79:
+;      v.0.5  18.07.08 Dinamic Allocation Memory
+;      v.0.6  20.07.08
+;             1) Use Editbox (Author <Lrz>)
+;             2) Draw window without fill working area (C = 1)
+;             3) Open file with parameter in patch:
+;                Size of parameter - 4 bytes. Parameter starts with the character "\",
+;                the unused characters are filled by a blank (ASCII 20h).
+;                '\T  /hd0/1/1.jpg' - set background, mode: tile
+;                '\S  /hd0/1/1.jpg' - set background, mode: stretch
 ;   Compile with FASM for Menuet
 
 ;******************************************************************************
@@ -18,6 +27,8 @@
 include    'lang.inc'
 include    '..\..\..\macros.inc'
 ;include    'macros.inc'
+include    'EDITBOX.INC'
+use_edit_box procinfo
 ;******************************************************************************
 
 START:				; start of execution
@@ -25,21 +36,41 @@ START:				; start of execution
 ; check for parameters
    cmp	 dword [temp_area],'BOOT'
    jne	 .no_boot
+.background:
    call  load_image
    call  convert
+
    call  background
+.exit:
    or	 eax,-1
    mcall
  .no_boot:
 
    cmp	 byte [temp_area],0
    jz	 .no_param
+
+
    mov	 edi,string	 ; clear string
    mov	 ecx,256/4	 ;   length of a string
    xor	 eax,eax	 ;   symbol <0>
    rep	 stosd
 
+
    mov	 edi,temp_area	 ; look for <0> in temp_area
+
+   cmp	 [edi],byte "\"
+   jne	 .continue
+   cmp	 [edi+1],byte "T"
+   jne	 @f
+   mov	 [bgrmode],dword 1
+   jmp	 .continue_1
+@@:
+   cmp	 [edi+1],byte "S"
+   jne	 START.exit
+   mov	 [bgrmode],dword 2
+.continue_1:
+   add	 edi,4
+.continue:
    mov	 esi,edi
    mov	 ecx,257	 ;   strlen
    repne scasb
@@ -47,7 +78,8 @@ START:				; start of execution
 
    mov	 edi,string
    rep	 movsb		 ; copy string from temp_area to "string" (filename)
-
+   cmp	 [temp_area],byte "\"
+   je	 START.background
    call  load_image
    call  convert
 
@@ -194,6 +226,7 @@ still:
 
 
 load_image:
+
 	  mov	[fileinfo+0],dword 5
 	  mov	[fileinfo+12],dword 0
 	  mov	[fileinfo+16],dword process_info
@@ -247,12 +280,12 @@ load_image:
 	jns	@f
 	neg	ebx
 @@:
-    add  eax,20
+    add  eax,9	;20
     cmp  eax,210
     jae  @f
     mov  eax,210
 @@:
-    add  ebx,58
+    add  ebx,54     ;58
     cmp  ebx,56
     jae  @f
     mov  ebx,56
@@ -278,7 +311,7 @@ load_image:
 	jns	@f
 	neg	cx
 @@:
-    mov  edx,10*65536+50
+    mov  edx,5*65536+50
     mcall 7,[soi]
   nodrawimage:
     ret
@@ -488,6 +521,20 @@ putpixel:
 	pop	eax
 	ret
 
+;---------------------------------------------------------------------
+get_window_param:
+    mcall 9, procinfo, -1
+    mov   eax,[ebx+46]
+    mov   [window_high],eax
+    mov   eax,[ebx+42]
+    mov   [window_width],eax
+;    mov   eax,[ebx+70]
+;    mov   [window_status],eax
+    mcall 48,4
+    mov   [skin_high],eax
+    ret
+;---------------------------------------------------------------------
+
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
@@ -508,9 +555,48 @@ draw_window:
     mov  ecx,0*65536
     add  ebx,[wnd_width]
     add  ecx,[wnd_height]
-    mov  edx,0x03ffffff 	   ; color of work area RRGGBB,8->color gl
+    mov  edx,0x43ffffff 	   ; color of work area RRGGBB,8->color gl
     mcall
 
+    call get_window_param
+
+    mov   ebx,5
+    shl   ebx,16
+    add   ebx,[window_width]
+    sub   ebx,9
+    push  ebx
+    mov   ecx,[skin_high]
+    shl   ecx,16
+    add   ecx,50
+    sub   ecx,[skin_high]
+    mcall 13, , ,0xffffff
+    mov  eax,[image_file]
+    mov  ecx,[eax+22]
+    mov  ebx,[eax+18]
+    push ecx
+    add  ebx,5
+    mov  ax,bx
+    shl  ebx,16
+    add  ebx,[window_width]
+    sub  ebx,4
+    sub  bx,ax
+    cmp  bx,0
+    jb	 @f
+    add  ecx,50 shl 16
+    mcall 13, , ,0xffffff
+@@:
+    pop  ecx
+    pop  ebx
+    add  ecx,50
+    mov  ax,cx
+    shl  ecx,16
+    add  ecx,[window_high]
+    sub  cx,ax
+    sub  ecx,4
+    cmp  bx,0
+    jb	 @f
+    mcall 13, , ,0xffffff
+@@:
     mov  eax,8
     mov  ebx,10*65536+46
     mov  ecx,25*65536+20
@@ -557,7 +643,22 @@ lsz buttext,\
 
 thread1:			; start of thread1
 
-     call draw_window1
+	  mcall 40, 0x27
+
+    mov  esi,string
+@@:
+    cld
+    lodsb
+    test al,al
+    jne  @r
+    sub  esi,string
+    mov  eax,esi
+    dec  eax
+    mov edi, edit1
+    mov ed_size, eax
+    mov ed_pos, eax
+red1:
+    call draw_window1
 
 still1:
 
@@ -565,88 +666,21 @@ still1:
     mcall
 
     cmp  eax,1			; redraw request ?
-    je	 thread1
+    je	 red1
     cmp  eax,2			; key in buffer ?
     je	 key1
     cmp  eax,3			; button in buffer ?
     je	 button1
-
+	  mouse_edit_box name_editboxes
     jmp  still1
 
   key1: 			; key
-    mcall
-    cmp  ah,179
-    jne  noright
-    mov  eax,[pos]
-    cmp  eax,41
-    ja	 still1
-    inc  eax
-    mov  [pos],eax
-    call drawstring
-    jmp  still1
-  noright:
-    cmp  ah,176
-    jne  noleft
-    mov  eax,[pos]
-    test eax,eax
-    je	 still1
-    dec  eax
-    mov  [pos],eax
-    call drawstring
-    jmp  still1
-  noleft:
-    cmp  ah,182        ;del
-    jne  nodelet
-    call shiftback
-    call drawstring
-    jmp  still1
-  nodelet:
-    cmp  ah,8	       ;zaboy
-    jne  noback
-    mov  eax,[pos]
-    test eax,eax
-    je	 still1
-    dec  eax
-    mov  [pos],eax
-    call shiftback
-    call drawstring
-    jmp  still1
-  noback:
-    cmp  ah,13
-    jne  noenter
-  enter1:
-    mov  al,byte ' '
-    mov  edi,string
-    mov  ecx,43
-    cld
-    repne scasb
-    dec  edi
-    mov  byte [edi],0
-    jmp  close1
-  noenter:
-    cmp  ah,27
-    jne  noesc
-    jmp  enter1
-  noesc:
-    cmp  dword [pos],42
-    jae  still1
-
-    mov  edi,string
-    add  edi,42
-    mov  esi,edi
-    dec  esi
-    mov  ecx,42
-    sub  ecx,[pos]
-    std
-    rep  movsb
-
-    shr  eax,8
-    mov  esi,string
-    add  esi,[pos]
-    mov  byte [esi],al
-    inc  dword [pos]
-    call drawstring
-
+    mcall 2
+    cmp ah,13
+    je	close1
+    cmp ah,27
+    je	close1
+    key_edit_box name_editboxes
     jmp  still1
 
   button1:			; button
@@ -654,41 +688,14 @@ still1:
     mcall
 
     cmp  ah,1			; button id=1 ?
-    jne  noclose1
-    jmp  enter1
+    jne  still1
   close1:
     bts  dword [status],2
     btr  dword [status],0
     mov  eax,-1 		; close this program
     mcall
-  noclose1:
-    cmp  ah,2
-    jne  nosetcur
-    mov  eax,37
-    mov  ebx,1
-    mcall
-    shr  eax,16
-    sub  eax,21
-    xor  edx,edx
-    mov  ebx,6
-    div  ebx
-    mov  [pos],eax
-    call drawstring
-    jmp  still1
-  nosetcur:
-    jmp  still1
 
-
-  shiftback:
-    mov  edi,string
-    add  edi,[pos]
-    mov  esi,edi
-    inc  esi
-    mov  ecx,43
-    sub  ecx,[pos]
-    cld
-    rep movsb
-    ret
+    jmp  still1
 
 ;   *********************************************
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
@@ -717,7 +724,8 @@ draw_window1:
     mov  esi,labelt1.size	   ; text length
     mcall
 
-    call drawstring
+;    call drawstring
+	draw_edit_box name_editboxes
 
     mov  eax,12 		   ; function 12:tell os about windowdraw
     mov  ebx,2			   ; 2, end of draw
@@ -1113,13 +1121,17 @@ image_file dd 0
 
 pos: dd 6
 
-;fileinfo:
-;     dd 0
-;     dd 0
-;     dd 0
-;     dd 0x290000-I_END
-;     dd I_END
+window_high dd 0
+window_width dd 0
+skin_high dd 0
+;---------------------------------------------------------------------
+; for EDITBOX
+name_editboxes:
+edit1 edit_box 200,10,30,0xffffff,0xbbddff,0,0,0,255,string,ed_focus+ed_always_focus,0
+name_editboxes_end:
 
+mouse_flag: dd 0x0
+;---------------------------------------------------------------------
 fileinfo:
      dd 5
      dd 0
@@ -1132,8 +1144,9 @@ string:
 IM_END:
 	rb	string+257-$
 
-process_info:
 temp_area:
+procinfo:
+process_info:
 rb 1024*4
 rb 1024*2
 ;rb 0x10000
