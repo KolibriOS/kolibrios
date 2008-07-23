@@ -7,10 +7,20 @@
 ;             1) Use Editbox (Author <Lrz>)
 ;             2) Draw window without fill working area (C = 1)
 ;             3) Open file with parameter in patch:
-;                Size of parameter - 4 bytes. Parameter starts with the character "\",
-;                the unused characters are filled by a blank (ASCII 20h).
-;                '\T  /hd0/1/1.jpg' - set background, mode: tile
-;                '\S  /hd0/1/1.jpg' - set background, mode: stretch
+;                Size of parameter - 4 bytes. Parameter starts with the
+;                character "\", the unused characters are filled
+;                by a blank (ASCII 20h).
+;                '\T  /hd0/1/1.bmp' - set background, mode: tile
+;                '\S  /hd0/1/1.bmp' - set background, mode: stretch
+;      v.0.65  23.07.08
+;             1) Use new version Editbox (Thanks <Lrz>)
+;                (mouse correctly works in secondary thread)
+;             2) The memory used for storage of the file BMP
+;                after conversion in RAW comes back to OS.
+;             3) Usage of keys 1,2,3,4 for call of buttons of the application
+;                without the mouse, before the key were defined incorrectly.
+;             4) Deleting of the unnecessary procedure of clearing of
+;                a background of a picture at pressing the button "Open".
 ;   Compile with FASM for Menuet
 
 ;******************************************************************************
@@ -20,19 +30,21 @@
     dd	   0x01 		   ; header version
     dd	   START		   ; start of code
     dd	   IM_END		   ; size of image
-    dd	   I_END ;0x300000                 ; memory for app
-    dd	   I_END ;0x300000                 ; esp
+    dd	   I_END       ; memory for app
+    dd	   I_END       ; esp
     dd	   temp_area , 0x0	   ; I_Param , I_Icon
 
 include    'lang.inc'
 include    '..\..\..\macros.inc'
+include    '..\..\..\develop\examples\editbox\trunk\editbox.inc'
 ;include    'macros.inc'
-include    'EDITBOX.INC'
-use_edit_box procinfo
+;include    'EDITBOX.INC'
+use_edit_box
 ;******************************************************************************
 
 START:				; start of execution
 	mcall	68, 11
+	mcall	66, 1,1
 ; check for parameters
    cmp	 dword [temp_area],'BOOT'
    jne	 .no_boot
@@ -120,13 +132,13 @@ still:
     mov  al,2
     mcall
     mov  al,ah
-    cmp  al,6
+    cmp  al,130  ; 1
     je	 kfile
-    cmp  al,15
+    cmp  al,131  ; 2
     je	 kopen
-    cmp  al,9
+    cmp  al,132  ; 3
     je	 kinfo
-    cmp  al,2
+    cmp  al,133  ; 4
     je	 kbgrd
     jmp  still
 
@@ -169,14 +181,6 @@ still:
  kopen:
     mov ecx,-1
     call getappinfo
-    mov eax,[image_file]
-    mov ebx,dword [eax+42]
-    mov ecx,dword [eax+46]
-    add ebx,10*65536-15
-    add ecx,50*65536-55
-    mov edx,0xffffff
-    mov eax,13
-    mcall
 
     call load_image
 
@@ -185,8 +189,7 @@ still:
     cmp [eax],word 'BM'
     jne  still
     call convert
-    call drawimage
-    jmp  still
+    jmp  draw_still
   noopen:
 
     cmp  ah,4
@@ -198,7 +201,7 @@ still:
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread2
-    mov  edx,thread-512  ;0x2afff0
+    mov  edx,thread-512
     mcall
     jmp  still
   noinfo:
@@ -213,7 +216,7 @@ still:
     mov  eax,51
     mov  ebx,1
     mov  ecx,thread3
-    mov  edx,thread-512*2  ;0x2bfff0
+    mov  edx,thread-512*2
     mcall
     jmp  still
     ;call background
@@ -248,6 +251,12 @@ load_image:
 	  mov	ecx,[process_info+32]
 	  mov	[fileinfo+12],ecx
 
+	  mcall 68, 12
+
+
+	  mov	[fileinfo+16],eax
+	  mov	[image_file_1],eax
+
     mov  eax,[process_info+40+28]
 
 	cmp	eax, 24
@@ -262,16 +271,21 @@ load_image:
 .convert8:
      lea  ecx,[ecx*3]
 .convert24:
-     shl  ecx,1
-@@:
 
+;@@:
+
+    add   ecx,512
 	  mcall 68, 12
 
-
-	  mov	[fileinfo+16],eax
 	  mov	[image_file],eax
 
 	  mcall 70, fileinfo
+
+    mov   esi,[image_file_1]
+    mov   edi,[image_file]
+    mov   ecx,512/4
+    cld
+    rep  movsd
 
     mov  eax,[image_file]
     mov  ebx,[eax+22]
@@ -280,12 +294,12 @@ load_image:
 	jns	@f
 	neg	ebx
 @@:
-    add  eax,9	;20
+    add  eax,9
     cmp  eax,210
     jae  @f
     mov  eax,210
 @@:
-    add  ebx,54     ;58
+    add  ebx,54
     cmp  ebx,56
     jae  @f
     mov  ebx,56
@@ -344,10 +358,15 @@ load_image:
     ret
 
 convert:
-	mov	ecx, [image_file]  ;I_END
-	add	ecx, [ecx+2]
+    call  convert_1
+    mov   ecx,[image_file_1]
+    mcall 68, 13,
+    ret
+convert_1:
+	mov	ecx, [image_file]
+  add ecx,512
 	mov	[soi], ecx
-	mov	eax,[image_file]
+	mov	eax,[image_file_1]
 	mov	ebp, [eax+18]
 	lea	ebp, [ebp*3]	; ebp = size of output scanline
 	mov	eax, [eax+22]
@@ -355,10 +374,9 @@ convert:
 	mul	ebp
 	add	eax, ecx
 	mov	edi, eax	; edi points to last scanline
-	mov	esi, [image_file]  ;I_END
+	mov	esi, [image_file_1]
 	add	esi, [esi+10]
-;        mov     ebx, I_END+54
-	mov	ebx,[image_file]
+	mov	ebx,[image_file_1]
 	mov	edx, [ebx+22]
 	add	ebx,54
 	lea	eax, [ebp*2]
@@ -370,8 +388,7 @@ convert:
 	and	[delta], 0
 	mov	edi, ecx
 @@:
-;        movzx   eax, word [I_END+28]
-	mov	eax,[image_file]
+	mov	eax,[image_file_1]
 	movzx	eax,word [eax+28]
 	cmp	eax, 24
 	jz	convert24
@@ -400,9 +417,8 @@ convert8:
 .loopi:
 	xor	eax, eax
 	lodsb
-;        cmp     dword [I_END+30], 1
 	push	eax
-	mov	eax,[image_file]
+	mov	eax,[image_file_1]
 	cmp	dword [eax+30],1
 	pop	eax
 	jnz	.nocompressed
@@ -503,8 +519,8 @@ convert1:
 align_input:
 	push	esi
 	push	eax
-	mov	eax,[image_file]
-	sub	esi,eax    ;I_END
+	mov	eax,[image_file_1]
+	sub	esi,eax
 	sub	esi,[eax+10]
 	pop	eax
 	neg	esi
@@ -528,8 +544,6 @@ get_window_param:
     mov   [window_high],eax
     mov   eax,[ebx+42]
     mov   [window_width],eax
-;    mov   eax,[ebx+70]
-;    mov   [window_status],eax
     mcall 48,4
     mov   [skin_high],eax
     ret
@@ -555,6 +569,10 @@ draw_window:
     mov  ecx,0*65536
     add  ebx,[wnd_width]
     add  ecx,[wnd_height]
+    cmp  cx,55
+    ja	 @f
+    mov  cx,55
+@@:
     mov  edx,0x43ffffff 	   ; color of work area RRGGBB,8->color gl
     mcall
 
@@ -581,7 +599,7 @@ draw_window:
     sub  ebx,4
     sub  bx,ax
     cmp  bx,0
-    jb	 @f
+    jbe  @f
     add  ecx,50 shl 16
     mcall 13, , ,0xffffff
 @@:
@@ -593,8 +611,8 @@ draw_window:
     add  ecx,[window_high]
     sub  cx,ax
     sub  ecx,4
-    cmp  bx,0
-    jb	 @f
+    cmp  cx,0
+    jbe  @f
     mcall 13, , ,0xffffff
 @@:
     mov  eax,8
@@ -645,6 +663,9 @@ thread1:			; start of thread1
 
 	  mcall 40, 0x27
 
+   or  ecx,-1		; get information about me
+   call getappinfo
+
     mov  esi,string
 @@:
     cld
@@ -662,8 +683,7 @@ red1:
 
 still1:
 
-    mov  eax,10 		; wait here for event
-    mcall
+    mcall 10		; wait here for event
 
     cmp  eax,1			; redraw request ?
     je	 red1
@@ -671,6 +691,7 @@ still1:
     je	 key1
     cmp  eax,3			; button in buffer ?
     je	 button1
+
 	  mouse_edit_box name_editboxes
     jmp  still1
 
@@ -680,6 +701,7 @@ still1:
     je	close1
     cmp ah,27
     je	close1
+
     key_edit_box name_editboxes
     jmp  still1
 
@@ -1117,7 +1139,7 @@ lsz ok_btn,\
     de, 'Ok'
 
 image_file dd 0
-;image_file_size dd 0
+image_file_1 dd 0
 
 pos: dd 6
 
@@ -1136,8 +1158,8 @@ fileinfo:
      dd 5
      dd 0
      dd 0
-     dd 0		;x290000-I_END
-     dd process_info	;I_END
+     dd 0
+     dd process_info
 string:
 	db	'/sys/bgr.bmp',0
 
@@ -1149,7 +1171,6 @@ procinfo:
 process_info:
 rb 1024*4
 rb 1024*2
-;rb 0x10000
 thread:
 rb 512
 I_END:
