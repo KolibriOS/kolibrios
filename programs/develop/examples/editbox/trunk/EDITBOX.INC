@@ -2,7 +2,7 @@
 ;;;;;;;;;;;;;;;;;;
 include 'editbox.mac'    ;макрос который должен облегчить жизнь :) специально для editbox
 ;;;;;;;;;;;;;;;;;;
-macro use_edit_box procinfo,scr_h,scr_w
+macro use_edit_box 
 {
 edit_box:
 ed_width        equ [edi]               ;ширина компонента
@@ -16,18 +16,18 @@ ed_text_color   equ [edi+28]            ;цвет текста
 ed_max          equ [edi+32]                    ;кол-во символов которые можно максимально ввести
 ed_text         equ [edi+36]                    ;указатель на буфер
 ed_flags        equ [edi+40]            ;флаги
-ed_size equ [edi+42]                    ;кол-во символов
-ed_pos  equ [edi+46]                    ;позиция курсора
-ed_offset       equ [edi+50]            ;смещение
-cl_curs_x       equ [edi+54]            ;предыдущее координата курсора по х
-cl_curs_y       equ [edi+58]            ;предыдущее координата курсора по у
-ed_shift_pos    equ [edi+62]            ;положение курсора
-ed_shift_pos_old equ [edi+66]           ;старое положение курсора
+ed_size equ [edi+44]                    ;кол-во символов
+ed_pos  equ [edi+48]                    ;позиция курсора
+ed_offset       equ [edi+52]            ;смещение
+cl_curs_x       equ [edi+56]            ;предыдущее координата курсора по х
+cl_curs_y       equ [edi+60]            ;предыдущее координата курсора по у
+ed_shift_pos    equ [edi+64]            ;положение курсора
+ed_shift_pos_old equ [edi+68]           ;старое положение курсора
 ;==========================================================
 ;=== процедура прорисовки =================================
 ;==========================================================
 .draw:
-pusha
+pushad
 ;--- рисуем рамку ---
         call    .draw_border            ; Функция стабильна
 .draw_bg_cursor_text:
@@ -54,7 +54,7 @@ edit_ex
 ;=== обработка клавиатуры =================================
 ;==========================================================
 .key:
-pusha
+pushad
         test    word ed_flags,ed_focus ; если не в фокусе, выходим
         je      .editbox_exit
         test    word ed_flags,ed_mouse_on
@@ -91,7 +91,7 @@ use_work_key
 ;=== обработка мыши =======================================
 ;==========================================================
 .mouse:
-pusha
+pushad
 ;debug
 ;----------------------------------------------------------
 ;--- получаем состояние кнопок мыши -----------------------
@@ -117,13 +117,14 @@ pusha
         je      @f
         jmp     ._blur
 ;----------------------------------------------------------
-;--- получаем координаты мыши относительно 0 т.е всей области экрана
+;--- получаем координаты мыши относительно окна
 ;----------------------------------------------------------
-@@:     mcall   37,0
+@@:     mcall   37,1
+        
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Функция обработки  мышки получение координат и проверка их + выделения
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_work_mause scr_h,scr_w
+use_work_mouse
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Общие функции обработки 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -135,7 +136,7 @@ use_key_func
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Функции для работы с mouse
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_mouse_func scr_w
+use_mouse_func
 }
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Bit mask from editbox 
@@ -161,12 +162,8 @@ ed_mouse_on =          100000000b
 ed_mous_adn_b=         100011000b
 ed_mouse_on_off=1111111011111111b
 ed_height=14 ; высота
-macro draw_edit_boxes start,_end,use_f9,procinfo
+macro draw_edit_boxes start,_end
 {
-if use_f9 eq 
-else
-        mcall   9,procinfo,-1
-end if
         mov     edi,start
         mov     ecx,((_end-start)/ed_struc_size)
 @@:
@@ -194,7 +191,7 @@ macro key_edit_boxes start,end
         add     edi,ed_struc_size
         loop    @b
 }
-ed_struc_size=70
+ed_struc_size=72
 struc  edit_box width,left,top,color,shift_color,focus_border_color,\
        blur_border_color,text_color,max,text,flags,size,pos
 {
@@ -208,7 +205,7 @@ struc  edit_box width,left,top,color,shift_color,focus_border_color,\
 .text_color dd text_color
 .max dd max
 .text dd text
-.flags dw flags+0
+.flags dd flags+0
 .size dd size+0
 .pos dd pos+0
 .offset dd 0
@@ -245,12 +242,8 @@ macro edit_boxes_set_sys_color start,end,color_table
         loop    @b
 }
 
-macro draw_edit_box ed_ptr,use_f9,procinfo
+macro draw_edit_box ed_ptr
 {
-if use_f9 eq 
-else
-        mcall   9,procinfo,-1
-end if
         mov     edi,ed_ptr
         call    edit_box.draw
 }

@@ -111,13 +111,9 @@ still:                          ;основной обработчик
         jz   button
 
         push    dword edit1
-        push    22
-        push    5
         call    [edit_box_mouse]
 
         push    dword edit2
-        push    22
-        push    5
         call    [edit_box_mouse]
 
         push    dword check1

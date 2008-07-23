@@ -818,7 +818,7 @@ edit_ex
         jmp     .draw_cursor_text
 }
 
-macro use_mouse_func scr_w
+macro use_mouse_func
 {
 ;----------------------------------------------------------
 ;--- Обработка .mouse_wigwag
@@ -829,12 +829,10 @@ macro use_mouse_func scr_w
 ;;;;;;;;;;;;;;;;;;
 ;;процедура обработки положения выделенного текста, когда происходит выход за пределы editbox
 ;;;;;;;;;;;;;;;;;;
-        mov     ebx,dword [procinfo+34]
-        add     ebx,ed_left
-if scr_w eq 
-else
-        add     ebx,dword scr_w
-end if
+        test    ax,0x8000
+        jnz     .mleft
+
+        mov     ebx,ed_left
         cmp     eax,ebx
         jb      .mleft
 
@@ -893,6 +891,7 @@ end if
 ;       popa
 ;       ret
 .mleft:
+
         mov     eax,ed_pos
         cmp     eax,0                                        
         jbe      .mwigvag
@@ -919,7 +918,7 @@ end if
         jmp     .mdraw  
 }
 
-macro use_work_mause scr_h,scr_w
+macro use_work_mouse
 ;----------------------------------------------------------
 ;--- А не удерживаем ли мы клавишу мышки, перемещая курсор, во все разные стороны?
 ;----------------------------------------------------------
@@ -929,48 +928,36 @@ macro use_work_mause scr_h,scr_w
 ;----------------------------------------------------------
 ;--- проверяем, попадает ли курсор в edit box -------------
 ;----------------------------------------------------------
-        mov     ebx,dword [procinfo + 38]
-        add     ebx,ed_top
-if scr_h eq 
-else
-        add     ebx,scr_h
-end if
+
+        mov     ebx,ed_top
         cmp     ax,bx
         jl      ._blur;.mouse_end_no_focus
-
+        
         add     ebx,ed_height
         cmp     ax,bx
         jg      ._blur;.mouse_end_no_focus
 
         shr     eax,16
 
-        mov     ebx,dword [procinfo + 34]
-        add     ebx,ed_left
-if scr_w eq 
-else
-        add     ebx,scr_w
-end if
+        mov     ebx,ed_left
         cmp     ax,bx
         jl      ._blur;.mouse_end_no_focus
 
         add     ebx,ed_width
+
         cmp     ax,bx
-        jg      ._blur;.mouse_end_no_focus
+        jg      ._blur;.mouse_end_no_focus        
+
 ;--- изменяем позицию курсора ---
         push    eax
         mov     ebp,ed_color
         call    .clear_cursor
         pop     eax
 ._mvpos:
-        mov     ebx,dword [procinfo+ 34]
+      
         xor     edx,edx
         sub     eax,ed_left
-        sub     eax,ebx
-if scr_w eq 
-else
-        add     ebx,scr_w
-        sub     eax,2
-end if
+
         mov     ebx,6
         div     bx
         add     eax,ed_offset
@@ -1029,7 +1016,7 @@ end if
 ; Макрос выхода
 macro edit_ex
 {
-popa          
+popad          
 ret
 }
 macro debug

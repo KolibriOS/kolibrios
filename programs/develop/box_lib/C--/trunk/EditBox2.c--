@@ -3,7 +3,7 @@
 
 #pragma option A
 #codesize
-#include "..\..\lib\kolibri.h--"
+#include "..\lib\kolibri.h--"
 #include "use_library.h--"
 //////////////////////////////////////////////////////////////////
 //Bit mask from editbox 
@@ -62,7 +62,7 @@ byte id;
                 }       
 
 
-                edit_box_mouse stdcall (dword 0,0,#edit1);
+                edit_box_mouse stdcall (#edit1);
              
          }
                 

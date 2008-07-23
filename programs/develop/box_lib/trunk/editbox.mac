@@ -154,7 +154,7 @@ ret
 ; в общей битовой маррице состояния компонентов word ed_flags
 ;----------------------------------------------------------
 edit_box.check_offset:
-pusha
+pushad
         mov     ecx,ed_pos
         mov     ebx,ed_offset
         cmp     ebx,ecx
@@ -830,11 +830,10 @@ edit_box_mouse.mouse_wigwag:
 ;;;;;;;;;;;;;;;;;;
 ;;процедура обработки положения выделенного текста, когда происходит выход за пределы editbox
 ;;;;;;;;;;;;;;;;;;
-        mov     ebx,[procinfo.box.left]
-        add     ebx,ed_left
+        test    ax,0x8000
+        jnz     edit_box_mouse.mleft
 
-        add     ebx,dword [esp+20];scr_w
-
+        mov     ebx,ed_left
         cmp     eax,ebx
         jb      edit_box_mouse.mleft
 
@@ -920,8 +919,6 @@ edit_box_mouse.mright:
 }
 
 macro use_work_mouse
-;        pop     edx     ;scr_h
-;        pop     ebp     ;scr_w
 ;----------------------------------------------------------
 ;--- А не удерживаем ли мы клавишу мышки, перемещая курсор, во все разные стороны?
 ;----------------------------------------------------------
@@ -931,48 +928,41 @@ macro use_work_mouse
 ;----------------------------------------------------------
 ;--- проверяем, попадает ли курсор в edit box -------------
 ;----------------------------------------------------------
-        mov     ebx,[procinfo.box.top]
-        add     ebx,ed_top
-        add     ebx,dword [esp+24]         ;ecx scr_h
+        mov     ebx,ed_top
         cmp     ax,bx
         jl      edit_box_mouse._blur;.mouse_end_no_focus
-
+        
         add     ebx,ed_height
         cmp     ax,bx
         jg      edit_box_mouse._blur;.mouse_end_no_focus
 
         shr     eax,16
 
-        mov     ebx,[procinfo.box.left]
-        add     ebx,ed_left
-        add     ebx,dword [esp+20]         ;edx scr_w
-
+        mov     ebx,ed_left
         cmp     ax,bx
         jl      edit_box_mouse._blur;.mouse_end_no_focus
 
         add     ebx,ed_width
+
         cmp     ax,bx
-        jg      edit_box_mouse._blur;.mouse_end_no_focus
+        jg      edit_box_mouse._blur;.mouse_end_no_focus        
+
 ;--- изменяем позицию курсора ---
         push    eax
         mov     ebp,ed_color
         call    edit_box.clear_cursor
         pop     eax
 edit_box_mouse._mvpos:
-        mov     ebx,dword [procinfo.box.left]
         xor     edx,edx
         sub     eax,ed_left
-        sub     eax,ebx
-;
-        add     ebx,dword [esp+20] ; scr_w
-        sub     eax,2
-;
+
         mov     ebx,6
         div     bx
         add     eax,ed_offset
         cmp     eax,ed_size
         jna     edit_box_mouse._mshift
         mov     eax,ed_size
+
 edit_box_mouse._mshift:
 ;;;;;;;
 ;;Секция обработки shift и выделения по shift
@@ -1025,7 +1015,7 @@ edit_box_mouse.drc:   call    edit_box.draw_border
 ; Макрос выхода
 macro edit_ex
 {
-popa          
+popad          
 ret
 }
 macro debug

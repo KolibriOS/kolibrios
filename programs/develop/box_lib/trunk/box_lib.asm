@@ -30,12 +30,7 @@ cl_curs_y       equ [edi+60]            ;предыдущее координата курсора по у
 ed_shift_pos    equ [edi+64]            ;положение курсора
 ed_shift_pos_old equ [edi+68]           ;старое положение курсора
 .draw:
-        pusha
-        mov     eax,9
-        push    procinfo
-        pop     ebx
-        or      ecx,-1
-        mcall
+        pushad
 ;--- рисуем рамку ---
         mov     edi,dword [esp+36]
         call    .draw_border            ; Функция стабильна
@@ -59,14 +54,14 @@ ed_shift_pos_old equ [edi+68]           ;старое положение курсора
 ;Общий выход из editbox для всех функций и пост обработчиков
 ;;;;;;;;;;;;;;;;;;;;;;;;;;
 .editbox_exit:
-        popa
+        popad
         ret 4
 
 ;==========================================================
 ;=== обработка клавиатуры =================================
 ;==========================================================
 edit_box_key:
-pusha
+pushad
         mov     edi,dword [esp+36]
         test    word ed_flags,ed_focus ; если не в фокусе, выходим
         je      edit_box.editbox_exit
@@ -106,18 +101,7 @@ use_work_key
 ;==========================================================
 ;save for stdcall ebx,esi,edi,ebp
 edit_box_mouse:
-        pop     eax     ;opint to back
-        pop     edx     ;scr_w
-        pop     ecx     ;ebp     ;scr_h
-        push    eax
-
-;        pop     eax
-;        pop     edx     ;scr_w
-;        pop     ecx     ;scr_h
-;        push    eax     ;pointer to back
-pusha
-        mov     ebp,ecx
-
+pushad
         mov     edi,dword [esp+36]
 ;debug
 ;----------------------------------------------------------
@@ -146,7 +130,7 @@ pusha
 ;----------------------------------------------------------
 ;--- получаем координаты мыши относительно 0 т.е всей области экрана
 ;----------------------------------------------------------
-@@:     mcall   37,0
+@@:     mcall   37,1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Функция обработки  мышки получение координат и проверка их + выделения
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -162,7 +146,7 @@ use_key_func
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Функции для работы с mouse
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-use_mouse_func ;scr_w
+use_mouse_func 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Bit mask from editbox
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -548,4 +532,3 @@ szVersion_op           db 'version_op',0
 ;;;;;;;;;;;
 align 16
 mouse_flag dd 0x0
-procinfo process_information
