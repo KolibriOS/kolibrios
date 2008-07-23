@@ -77,7 +77,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         test    ecx, 0x40000000
         jz      .pixloop1cont
         push    ecx
-        mov     ecx, [esp+4+20h+1Ch]
+        mov     ecx, [esp+4+20h+20h]
         call    [putpixel]
         pop     ecx
 .pixloop1cont:
@@ -109,7 +109,7 @@ dtext:  ; Text String Output (rw by Johnny_B[john@kolibrios.org])
         test    ecx, 0x40000000
         jz      .pixloop2cont
         push    ecx
-        mov     ecx, [esp+12+20h+1Ch]
+        mov     ecx, [esp+12+20h+20h]
         call    [putpixel]
         pop     ecx
 .pixloop2cont:
