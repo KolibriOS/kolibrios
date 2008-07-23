@@ -182,6 +182,17 @@ int _stdcall srv_2d(ioctl_t *io)
           return UnlockPixmap((userpixmap_t*)inp);
         break;
 
+      case PIXDESTROY:
+        if(io->inp_size==6)
+          return DestroyPixmap((userpixmap_t*)inp);
+        break;
+
+     case  TRANSBLIT:
+        if(io->inp_size==8)
+          return TransBlit((pixblit_t*)inp);
+        break;
+
+
     default:
       return ERR_PARAM;
   };

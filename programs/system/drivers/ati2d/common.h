@@ -110,12 +110,7 @@ static inline void UnmapPages(void *mem, size_t size)
     :"a" (mem), "c"(size>>12)
     :"edx"
 	);
-  asm volatile (
-    ""
-    :
-    :
-    :"eax","ecx"
-	);
+  asm volatile ("":::"eax","ecx");
 
 }
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,8 +182,10 @@ __clear (void * dst, unsigned len)
     "rep stosb \n"
     :"=c"(tmp),"=D"(tmp)
     :"c"(len),"D"(dst)
-    :"memory","eax","cc"
+    :"eax"
   );
+  asm volatile ("":::"ecx","edi");
+
 };
 
 

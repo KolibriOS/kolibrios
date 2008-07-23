@@ -292,36 +292,62 @@ int CreatePixmap(userpixmap_t *io)
   return ERR_OK;
 }
 
+int DestroyPixmap( userpixmap_t *io)
+{
+   pixmap_t *pixmap;
+
+   dbgprintf("Destroy pixmap %x\n", io->pixmap);
+
+   if(io->pixmap == (pixmap_t*)-1)
+     return ERR_PARAM;
+   else
+     pixmap = io->pixmap;
+
+   if( (pixmap->flags & 1) == PX_LOCK )
+     UnlockPixmap(io);
+
+   UserFree(pixmap->usermap);
+   rhd_mem_free(&rhd,RHD_MEM_FB,pixmap->raw);
+   free(pixmap);
+
+   io->pixmap  = NULL;
+   io->usermap = NULL;
+   io->format  = 0;
+   io->pitch   = 0;
+
+   return ERR_OK;
+};
+
 int LockPixmap(userpixmap_t *io)
 {
-  pixmap_t *pixmap;
-  size_t    size;
-  void     *usermap;
+   pixmap_t *pixmap;
+   size_t    size;
+   void     *usermap;
 
-  dbgprintf("Lock pixmap %x\n", io->pixmap);
+   dbgprintf("Lock pixmap %x\n", io->pixmap);
 
-  if(io->pixmap == (pixmap_t*)-1)
-    return ERR_PARAM;
-  else
-    pixmap = io->pixmap;
+   if(io->pixmap == (pixmap_t*)-1)
+     return ERR_PARAM;
+   else
+     pixmap = io->pixmap;
 
-  if( (pixmap->flags & 1) == PX_LOCK )
-    return ERR_PARAM;
+   if( (pixmap->flags & 1) == PX_LOCK )
+     return ERR_PARAM;
 
-  size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
-  if (usermap = UserAlloc(size))
-  {
-    CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
-    pixmap->flags |= PX_LOCK;
-    pixmap->usermap = usermap;
-    io->usermap = usermap;
-    io->pitch   = pixmap->pitch;
-    dbgprintf("map at %x\n", io->usermap);
+   size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
+   if (usermap = UserAlloc(size))
+   {
+     CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
+     pixmap->flags |= PX_LOCK;
+     pixmap->usermap = usermap;
+     io->usermap = usermap;
+     io->pitch   = pixmap->pitch;
+     dbgprintf("map at %x\n", io->usermap);
 
-    return ERR_OK;
-  }
-  else
-    return ERR_PARAM;
+     return ERR_OK;
+   }
+   else
+     return ERR_PARAM;
 };
 
 int UnlockPixmap(userpixmap_t *io)
@@ -400,3 +426,57 @@ int PixBlit(pixblit_t *blit)
      safe_sti(ifl);
   return ERR_OK;
 }
+
+
+int TransBlit(pixblit_t *blit)
+{
+
+     u32 *ring, write;
+     int w, h;
+     u32 ifl;
+     int x0, y0;
+
+     pixmap_t *srcpixmap;
+     pixmap_t *dstpixmap;
+
+     dbgprintf("Transblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
+
+     dstpixmap = (blit->dstpix == (void*)-1) ? &scr_pixmap : blit->dstpix ;
+     srcpixmap = (blit->srcpix == (void*)-1) ? &scr_pixmap : blit->srcpix ;
+
+     //dbgprintf("srcpixmap: %x dstpixmap: %x\n",srcpixmap, dstpixmap);
+
+     //dbgprintf("dst.width: %d dst.height: %d\n", dstpixmap->width,dstpixmap->height);
+     //dbgprintf("src.width: %d src.height: %d\n", srcpixmap->width,srcpixmap->height);
+     //dbgprintf("srcpitch: %x dstpitch: %x\n",
+     //           srcpixmap->pitch_offset,dstpixmap->pitch_offset);
+
+     ifl = safe_cli();
+
+     BEGIN_RING();
+       OUT_RING(CP_PACKET3(RADEON_CNTL_TRANBLT, 8));
+
+       OUT_RING(RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
+                RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                RADEON_GMC_BRUSH_NONE             |
+                RADEON_GMC_DST_32BPP              |
+                RADEON_GMC_SRC_DATATYPE_COLOR     |
+                RADEON_DP_SRC_SOURCE_MEMORY       |
+                (1 << 30) | R5XX_ROP3_S);
+
+       OUT_RING(srcpixmap->pitch_offset);
+       OUT_RING(dstpixmap->pitch_offset);
+
+       OUT_RING((2<<24)+5);
+       OUT_RING(0xFF000000);
+       OUT_RING(0xFF000000);
+
+       OUT_RING((blit->src_x<<16)|blit->src_y);
+       OUT_RING((blit->dst_x<<16)|blit->dst_y);
+       OUT_RING((blit->w<<16)|blit->h);
+     COMMIT_RING();
+
+     safe_sti(ifl);
+  return ERR_OK;
+}
+

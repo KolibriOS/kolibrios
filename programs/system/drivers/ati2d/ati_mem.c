@@ -42,23 +42,23 @@
 struct mem_block {
 	struct mem_block *next;
 	struct mem_block *prev;
-	int start;
-	int size;
+  u32_t  start;
+  size_t size;
 };
 
 /* Initialize.  How to check for an uninitialized heap?
  */
 static int init_heap(struct mem_block **heap, int start, int size)
 {
-  struct mem_block *blocks = kmalloc(sizeof(*blocks));
+  struct mem_block *blocks = malloc(sizeof(*blocks));
 
 	if (!blocks)
     return -1; //-ENOMEM;
 
-  *heap = kmalloc(sizeof(**heap));
+  *heap = malloc(sizeof(**heap));
   if (!*heap)
   {
-    kfree(blocks);
+    free(blocks);
     return -1; //-ENOMEM;
 	}
 
@@ -68,6 +68,7 @@ static int init_heap(struct mem_block **heap, int start, int size)
 
   __clear(*heap,sizeof(**heap));
 	(*heap)->next = (*heap)->prev = blocks;
+  (*heap)->start |= USED_BLOCK;
 	return 0;
 }
 
@@ -90,7 +91,7 @@ static struct mem_block *split_block(struct mem_block *p, int size)
 	/* Maybe cut off the end of an existing block */
     if (size < p->size)
     {
-      struct mem_block *newblock = kmalloc(sizeof(*newblock));
+      struct mem_block *newblock = malloc(sizeof(*newblock));
       if (!newblock)
         goto out;
       newblock->start = p->start + size;
@@ -100,7 +101,7 @@ static struct mem_block *split_block(struct mem_block *p, int size)
       p->next->prev = newblock;
       p->next = newblock;
       p->size = size;
-      p->start|=1;
+      p->start|=USED_BLOCK;
     }
 
 out:
@@ -113,6 +114,7 @@ static struct mem_block *alloc_block(struct mem_block *heap, int size)
 
   list_for_each(p, heap)
   {
+
     if ( !(p->start & USED_BLOCK) && size <= p->size)
       return split_block(p, size);
 	}
@@ -128,7 +130,6 @@ static struct mem_block *find_block(struct mem_block *heap, int start)
 	list_for_each(p, heap)
     if ((p->start & ~USED_BLOCK) == start)
 			return p;
-
 	return NULL;
 }
 
@@ -147,7 +148,7 @@ static void free_block(struct mem_block *p)
 		p->size += q->size;
 		p->next = q->next;
 		p->next->prev = p;
-    kfree(q);
+    free(q);
 	}
 
   if ( !(p->prev->start & USED_BLOCK))
@@ -156,7 +157,7 @@ static void free_block(struct mem_block *p)
 		q->size += p->size;
 		q->next = p->next;
 		q->next->prev = q;
-    kfree(p);
+    free(p);
 	}
 }
 
@@ -172,7 +173,7 @@ void *rhd_mem_alloc(RHDPtr rhdPtr,int region, int size)
 	struct mem_block *block, **heap;
 
   heap = get_heap(rhdPtr, region);
-	if (!heap || !*heap)
+  if (!heap || !*heap)
     return NULL;
 
 	/* Make things easier on ourselves: all allocations at least
@@ -201,11 +202,24 @@ int rhd_mem_free(RHDPtr rhdPtr, int region, void *offset)
 	if (!block)
     return -1;
 
-  if ( !(block->start & 1))
+  if ( !(block->start & USED_BLOCK))
     return -1;
 
 	free_block(block);
 	return 0;
 }
 
+void dump_mem()
+{
+	struct mem_block *p;
+  struct mem_block **heap;
+
+  heap = &rhd.fb_heap;
+
+  list_for_each(p, *heap)
+  {
+    dbgprintf("block: %x  next: %x  prev: %x  start: %x  size:%x\n",
+              p,p->next,p->prev,p->start,p->size);
+	}
+}
 

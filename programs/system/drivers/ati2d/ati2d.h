@@ -386,3 +386,4 @@ typedef enum _PictFormatShort {
    PICT_g1 =		PICT_FORMAT(1,PICT_TYPE_GRAY,0,0,0,0),
 } PictFormatShort;
 
+void dump_mem();
