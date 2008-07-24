@@ -1,1 +1,1 @@
-__CPU_type fix p5 
+__CPU_type fix p6 

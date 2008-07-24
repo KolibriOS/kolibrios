@@ -1,3 +1,4 @@
+; 24.07.2008 <Lrz> обновлен Edit бокс
 ; 01.02.07 - обновлён editbox
 ; 31.01.07 - исправлена некорректная отрисовка при большом значении высоты скина
 ;            выравнивание снизу относительно рабочей области экрана
@@ -13,7 +14,7 @@ include '../../../macros.inc'
 include 'run.mac'
 include 'lang.inc'
         meos_app_start
-        use_edit_box procinfo,22,5
+        use_edit_box
         use_txt_button
         code
         cmp     [par],byte 0

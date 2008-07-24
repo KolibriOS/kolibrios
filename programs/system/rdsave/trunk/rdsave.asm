@@ -20,13 +20,13 @@ version equ '1.2'
   dd     0x01        ; версия заголовка (всегда 1)
   dd     START       ; адрес первой команды
   dd     I_END       ; размер программы
-  dd     0x2000      ; количество памяти
-  dd     0x2000      ; адрес вершины стэка
+  dd     I_END       ; количество памяти
+  dd     I_END       ; адрес вершины стэка
   dd     0x0         ; адрес буфера для параметров (не используется)
   dd     0x0         ; зарезервировано
 
 include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
-use_edit_box procinfo,22,5
+use_edit_box
 al equ eax      ; \ decrease kpack'ed size
 purge mov       ; /
 
@@ -170,7 +170,7 @@ draw_window:
    mov edi,title                        ; ЗАГОЛОВОК ОКНА
    mcall
 
-draw_edit_box editbox,use_f9,procinfo   ;рисование edit box'ов
+draw_edit_box editbox                   ;рисование edit box
 
    mov al,13                            ;отрисовка теней кнопок
    mov ebx,194 shl 16 + 60
@@ -316,12 +316,11 @@ path3   db '/hd0/1/kolibri.img',0
 path4   db '/hd0/1/kolibri/kolibri.img',0  ;для резервного сохранения
 
 ;---------------------------------------------------------------------
-I_END:                             ; метка конца программы
 
 rb 514
 
 sc     system_colors
 
-procinfo process_information
-
-
+align 4
+rb 0x100        ; for stack
+I_END:                             ; метка конца программы
