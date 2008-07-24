@@ -81,6 +81,8 @@ end virtual
 cursor_pos  dw 0         ;временное хранение курсора.
 home_cursor dw 0    ;current shows rows a table
 end_cursor  dw 0     ;end of position current shows rows a table
+scroll_start dw 0    ;start position of scroll bar
+scroll_end  dw 0     ;end position of scroll bar
 long_v_table equ 9   ;long of visible video table
 size_of_step equ 10
 scroll_area_size equ (long_v_table-2)
@@ -482,79 +484,8 @@ draw_vmodes_table:
 
 
 .ok:
-        mov     bp,long_v_table               ;show rows
-.@@_next_bit:
-        cmp     word [es:si+6],0x12
-        je      .show_0x12
-        cmp     word [es:si+6],0x13
-        je      .show_0x13
-
-        movzx   eax,word[es:si]
-        cmp     ax,-1
-        je      .@@_end
-        mov     di,_rs+23          
-        mov     ecx,10
-        mov     bl,4
-        call    int2str
-        movzx   eax,word[es:si+2]
-        inc     di
-        mov     bl,4
-        call    int2str
-
-        movzx   eax,word[es:si+8]
-        inc     di
-        mov     bl,2
-        call    int2str
-;clear cursor
-        mov     word[ds:_r1+21],'  '
-        mov     word[ds:_r1+50],'  '
-
-        mov     word[ds:_r2+21],'  '
-        mov     word[ds:_r2+45],'  '
-
-        mov     word[ds:_rs+21],'  '
-        mov     word[ds:_rs+46],'  '
-
-        cmp     si, word [cursor_pos]
-        jne     .next
-;draw   cursor
-        mov     word[ds:_rs+21],'>>'
-        mov     word[ds:_rs+46],'<<'
-        
-
-
-.next:
+; calculate scroll position
         push    si
-        mov     si,_rs
-.@@_sh:
-        call    printplain
-        pop     si
-        add     si,size_of_step
-
-        dec     bp
-        jnz     .@@_next_bit
-
-.@@_end:
-        mov     si,_bt
-        call    printplain
-; show scroll
-        push    es
-        push    0xB800
-        pop     es
-; arrows
-        mov     di, (11*80+53)*2
-        mov     al, 30
-        stosb
-        add     di, 80*2-1
-        mov     al, 32
-        mov     cx, scroll_area_size
-@@:
-        stosb
-        add     di, 80*2-1
-        loop    @b
-        mov     al, 31
-        stosb
-; calculate scroll size
         mov     ax, [end_cursor]
         sub     ax, modes_table
         mov     bx, size_of_step
@@ -584,19 +515,101 @@ draw_vmodes_table:
         sub     al, scroll_area_size+1
         neg     al
         sub     si, long_v_table-1
-        jbe     .draw_scroll
+        jbe     @f
         mul     di
         div     si
         mov     bx, ax
-.draw_scroll:
-        mov     al, 0xDB
-        imul    di, bx, 80*2
-        add     di, (12*80+53)*2
 @@:
-        stosb
-        add     di, 80*2-1
-        loop    @b
-        pop     es
+        inc     bx
+        imul    ax, bx, size_of_step
+        add     ax, [home_cursor]
+        mov     [scroll_start], ax
+        imul    cx, size_of_step
+        add     ax, cx
+        mov     [scroll_end], ax
+        pop     si
+        mov     bp,long_v_table               ;show rows
+.@@_next_bit:
+;clear cursor
+        mov     word[ds:_r1+21],'  '
+        mov     word[ds:_r1+50],'  '
+
+        mov     word[ds:_r2+21],'  '
+        mov     word[ds:_r2+45],'  '
+
+        mov     word[ds:_rs+21],'  '
+        mov     word[ds:_rs+46],'  '
+; draw string
+        cmp     word [es:si+6],0x12
+        je      .show_0x12
+        cmp     word [es:si+6],0x13
+        je      .show_0x13
+
+        movzx   eax,word[es:si]
+        cmp     ax,-1
+        je      .@@_end
+        mov     di,_rs+23          
+        mov     ecx,10
+        mov     bl,4
+        call    int2str
+        movzx   eax,word[es:si+2]
+        inc     di
+        mov     bl,4
+        call    int2str
+
+        movzx   eax,word[es:si+8]
+        inc     di
+        mov     bl,2
+        call    int2str
+
+        cmp     si, word [cursor_pos]
+        jne     .next
+;draw   cursor
+        mov     word[ds:_rs+21],'>>'
+        mov     word[ds:_rs+46],'<<'
+        
+
+
+.next:
+        push    si
+        mov     si,_rs
+.@@_sh:
+; add to the string pseudographics for scrollbar
+        pop     bx
+        push    bx
+        mov     byte [si+53], ' '
+        cmp     bx, [scroll_start]
+        jb      @f
+        cmp     bx, [scroll_end]
+        jae     @f
+        mov     byte [si+53], 0xDB ; filled bar
+@@:
+        push    bx
+        add     bx, size_of_step
+        cmp     bx, [end_cursor]
+        jnz     @f
+        mov     byte [si+53], 31 ; 'down arrow' symbol
+@@:
+        sub     bx, [home_cursor]
+        cmp     bx, size_of_step*long_v_table
+        jnz     @f
+        mov     byte [si+53], 31 ; 'down arrow' symbol
+@@:
+        pop     bx
+        cmp     bx, [home_cursor]
+        jnz     @f
+        mov     byte [si+53], 30 ; 'up arrow' symbol
+@@:
+        call    printplain
+        pop     si
+        add     si,size_of_step
+
+        dec     bp
+        jnz     .@@_next_bit
+
+.@@_end:
+        mov     si,_bt
+        call    printplain
         ret
 .show_0x13:
         push    si
