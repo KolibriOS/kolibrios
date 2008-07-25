@@ -54,28 +54,24 @@ file_info_debug:
 _ramdisk	 db '/RD/1/'
 filepos 	 dd 0x0
 
-; info by Privalov: starting from FASM 1.51
-;   ~3/8 - additional memory
-;   ~5/8 - main memory
+
 init_memory:
-	mcall	18, 16
-	cmp	ecx, 0x38000000 shr 9
-	jbe	@f
-	mov	ecx, 0x38000000 shr 9
-@@:
-	shl	ecx, 9
+
+        mov ecx, 16*1024*1024
+
+ allocate_memory:
+	mov	[memory_setting],ecx
 	mcall	68, 12
-	mov	[memory_start], eax
-	mov	[memblock], eax
-	push	eax
-	add	eax, ecx
-	mov	[additional_memory_end], eax
-	pop	eax
-	shr	ecx, 3
-	add	eax, ecx
-	lea	eax, [ecx*4+eax]
-	mov	[memory_end],eax
+	or	eax,eax
+	jz	out_of_memory
 	mov	[additional_memory],eax
+	add	eax,[memory_setting]
+	mov	[memory_end],eax
+	mov	eax,[memory_setting]
+	shr	eax,2
+	add	eax,[additional_memory]
+	mov	[additional_memory_end],eax
+	mov	[memory_start],eax
 	ret
 
 exit_program:
