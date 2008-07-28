@@ -13,6 +13,9 @@
 
 $Revision$
 
+sz_nosmap  db 'No BIOS memory table.     System halted.', 0
+
+sz_nopse   db 'Page size extensions not supported.      System halted.', 0
 
 d80x25_bottom:
           db       186,' Kolibri OS основана на Menuet OS и не предоставляет '
@@ -59,7 +62,7 @@ curvideo_msg db   " [a] Видеорежим: ",0
 
 
 mode0     db      "320x200, EGA/CGA 256 цветов",13,10,0
-mode9     db      "640x480, VGA 16 цветов",13,10,0  
+mode9     db      "640x480, VGA 16 цветов",13,10,0
 
 usebd_msg db      " [b] Добавить диски, видимые через BIOS:",0
 on_msg    db      " вкл",13,10,0

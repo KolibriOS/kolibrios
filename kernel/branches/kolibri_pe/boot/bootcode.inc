@@ -246,24 +246,55 @@ dfl1:
 
 ; TEST FOR 386+
 
-        mov     bx, 0x4000
-        pushf
-        pop     ax
-        mov     dx, ax
-        xor     ax, bx
-        push    ax
-        popf
-        pushf
-        pop     ax
-        and     ax, bx
-        and     dx, bx
-        cmp     ax, dx
-        jnz     cpugood
-        mov     si, not386
+           mov     bx, 0x4000
+           pushf
+           pop     ax
+           mov     dx, ax
+           xor     ax, bx
+           push    ax
+           popf
+           pushf
+           pop     ax
+           and     ax, bx
+           and     dx, bx
+           cmp     ax, dx
+
+           mov     si, not386
+           jz      sayerr
+
+           xor   eax, eax
+           cpuid
+           cmp   eax, 0
+           mov   si, sz_nopse
+           jbe   sayerr
+
+           mov   eax, 1
+           cpuid
+           bt    edx, 3
+           mov   si, sz_nopse
+           jnc   sayerr
+
+           xor ebx, ebx
+           mov es, bx
+
+           mov edi, 0x9104
+           mov ecx, 20
+           mov edx, 0x534D4150
+
+           mov [es:0x9100], ebx
+           mov eax, 0xe820
+           int 0x15
+           mov   si, sz_nosmap
+           jc sayerr
+
+           cmp eax, 0x534D4150
+           je cpugood
 sayerr:
-        call    print
-        jmp     $
-     cpugood:
+           call    print
+           jmp     $
+
+
+cpugood:
 
         push    0
         popf

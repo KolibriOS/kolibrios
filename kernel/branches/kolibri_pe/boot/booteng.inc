@@ -13,6 +13,9 @@
 
 $Revision$
 
+sz_nosmap  db 'No BIOS memory table.     System halted.', 0
+
+sz_nopse   db 'Page size extensions not supported.      System halted.', 0
 
 d80x25_bottom:
           db       186,' KolibriOS is based on MenuetOS and comes with ABSOLUTELY '

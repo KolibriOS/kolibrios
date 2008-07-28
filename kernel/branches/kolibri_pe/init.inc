@@ -12,40 +12,13 @@ MEM_WB     equ 6               ;write-back memory
 MEM_WC     equ 1               ;write combined memory
 MEM_UC     equ 0               ;uncached memory
 
-align 4
-proc mem_test
-
-           mov eax, cr0
-           and eax, not (CR0_CD+CR0_NW)
-           or eax, CR0_CD         ;disable caching
-           mov cr0, eax
-           wbinvd                 ;invalidate cache
-
-           xor edi, edi
-           mov ebx, 'TEST'
-@@:
-           add edi, 0x100000
-           xchg ebx, dword [edi]
-           cmp dword [edi], 'TEST'
-           xchg ebx, dword [edi]
-           je @b
-           mov [MEM_AMOUNT-OS_BASE], edi
-
-           and eax, not (CR0_CD+CR0_NW)  ;enable caching
-           mov cr0, eax
-           mov eax, edi
-           ret
-endp
 
 align 4
 proc init_mem
 
            mov ecx, [0x2F0000 + 0x9100]
-           test ecx, ecx
-           jz .nosmap
-
-           xor eax, eax
            mov esi, 0x2F0000 + 0x9104
+           xor eax, eax
 @@:
            cmp dword [esi+16], 1
            jne .next
@@ -58,13 +31,9 @@ proc init_mem
            add esi, 20
            loop @B
 
-           mov [MEM_AMOUNT-OS_BASE], eax
-           jmp @F
-.nosmap:
-	   call mem_test
+           and eax, -4096
 
-           mov eax, [MEM_AMOUNT-OS_BASE]
-@@:
+           mov [MEM_AMOUNT-OS_BASE], eax
            mov [pg_data.mem_amount-OS_BASE], eax
 
            shr eax, 12
