@@ -184,6 +184,20 @@ end virtual
 
 TSS_SIZE  equ (128+8192)
 
+HEAP_BASE           equ 0x80000000
+
+HEAP_MIN_SIZE       equ 0x01000000
+
+LFB_BASE            equ 0xDF000000
+
+page_tabs           equ 0xDF800000
+app_page_tabs       equ 0xDF800000
+
+OS_TEMP             equ 0xDFC00000
+
+kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
+master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
+
 OS_BASE             equ 0xE0000000
 
 window_data         equ OS_BASE
@@ -317,16 +331,6 @@ virtual at              (OS_BASE+0x047CF80)
 end virtual
 
 sys_pgmap           equ (OS_BASE+0x047F000)
-
-HEAP_BASE           equ (OS_BASE+0x0800000)
-HEAP_MIN_SIZE       equ 0x01000000
-
-page_tabs           equ 0xFDC00000
-app_page_tabs       equ 0xFDC00000
-kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
-master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
-
-LFB_BASE            equ 0xFE000000
 
 
 new_app_base        equ 0;

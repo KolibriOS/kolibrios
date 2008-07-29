@@ -215,7 +215,7 @@ B32:
 
 	   xor	 eax,eax
 	   mov	 edi,0x280000
-	   mov	 ecx,(HEAP_BASE-OS_BASE-0x280000) / 4
+           mov   ecx,(0x800000-0x280000) / 4
 	   cld
 	   rep	 stosd
 
@@ -242,20 +242,31 @@ B32:
 	   bts [cpu_caps-OS_BASE], CAPS_TSC	;force use rdtsc
 
 	   call init_BIOS32
-; MEMORY MODEL
 
-	   call init_mem
+           mov dword [sys_pgdir-OS_BASE], PG_LARGE+PG_SW
+           mov dword [sys_pgdir-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
 
-           call init_page_map
+           mov ecx, 32
+           lea edi, [sys_pgdir-OS_BASE+0xE00]
+           mov eax, PG_LARGE+PG_SW
+@@:
+           stosd
+           add eax, 4*1024*1024
+           loop @B
+
+           mov ebx, cr4
+           or ebx, CR4_PSE
+           and ebx, not CR4_PAE
+           mov cr4, ebx
 
 ; ENABLE PAGING
 
 	   mov eax, sys_pgdir-OS_BASE
-	   mov cr3, eax
+           mov ebx, cr0
+           or ebx,CR0_PG+CR0_WP
 
-	   mov eax,cr0
-	   or eax,CR0_PG+CR0_WP
-	   mov cr0,eax
+           mov cr3, eax
+           mov cr0, ebx
 
 	   lgdt [gdts]
 	   jmp pword os_code:high_code
@@ -276,6 +287,79 @@ include 'init.inc'
 
 org OS_BASE+$
 
+MEM_WB     equ 6               ;write-back memory
+MEM_WC     equ 1               ;write combined memory
+MEM_UC     equ 0               ;uncached memory
+
+align 4
+init_mem:
+
+           mov ecx, [BOOT_VAR + 0x9100]
+           mov esi, BOOT_VAR + 0x9104
+           xor eax, eax
+@@:
+           cmp dword [esi+16], 1
+           jne .next
+           mov edx, [esi+8]
+           cmp eax, [esi+8]
+           ja .next
+
+           mov eax, [esi+8]
+.next:
+           add esi, 20
+           loop @B
+
+           and eax, -4096
+
+           mov [MEM_AMOUNT], eax
+           mov [pg_data.mem_amount], eax
+
+           shr eax, 12
+           mov edx, eax
+           mov [pg_data.pages_count], eax
+           shr eax, 3
+           and eax, -4
+           mov [pg_data.pagemap_size], eax
+
+           ret
+
+align 4
+init_page_map:
+
+           mov edi, sys_pgmap
+           mov ecx, [pg_data.pagemap_size]
+           shr ecx, 2
+           or eax, -1
+           cld
+           rep stosd
+
+           mov ecx, 0x800000                        ;reserve 8 Mb
+           mov edx, [pg_data.pages_count]
+           shr ecx, 12
+           sub edx, ecx
+           mov [pg_data.pages_free], edx
+
+           mov edi, sys_pgmap
+           mov ebx, ecx
+           shr ecx, 5
+           xor eax, eax
+           rep stosd
+
+           not eax
+           mov ecx, ebx
+           and ecx, 31
+           shl eax, cl
+           mov [edi], eax
+           mov [page_start], edi;
+
+           mov ebx, sys_pgmap
+           add ebx, [pg_data.pagemap_size]
+           mov [page_end], ebx
+
+           mov [pg_data.pg_mutex], 0
+           ret
+
+
 align 4
 high_code:
 	   mov ax,os_stack
@@ -288,10 +372,12 @@ high_code:
 	   mov fs,bx
 	   mov gs,bx
 
+           mov dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
+
 	   bt [cpu_caps], CAPS_PGE
 	   jnc @F
 
-	   or dword [sys_pgdir+(OS_BASE shr 20)], PG_GLOBAL
+           or dword [sys_pgdir-OS_BASE+(OS_BASE shr 20)], PG_GLOBAL
 
 	   mov ebx, cr4
 	   or ebx, CR4_PGE
@@ -303,6 +389,14 @@ high_code:
 
 	   mov eax, cr3
 	   mov cr3, eax 	  ; flush TLB
+
+
+; MEMORY MODEL
+
+           call init_mem
+
+           call init_page_map
+
 
 ; SAVE REAL MODE VARIABLES
 	mov	ax, [BOOT_VAR + 0x9031]
@@ -455,7 +549,9 @@ high_code:
 	   lidt [idtreg]
 
 	   call init_kernel_heap
-	   stdcall kernel_alloc, RING0_STACK_SIZE+512
+
+           stdcall alloc_pages, (RING0_STACK_SIZE+512) shr 12
+           add eax, OS_BASE
 	   mov [os_stack_seg], eax
 
 	   lea esp, [eax+RING0_STACK_SIZE]
@@ -715,7 +811,7 @@ no_lib_load:
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
-        stdcall load_pe_driver, szAtiHW
+       ; stdcall load_pe_driver, szAtiHW
 
   ; READ TSC / SECOND
 
@@ -743,7 +839,7 @@ no_lib_load:
 
 	;call   detect_devices
 	stdcall load_driver, szPS2MDriver
-	stdcall load_driver, szCOM_MDriver
+       ; stdcall load_driver, szCOM_MDriver
 
 	mov   esi,boot_setmouse
 	call  boot_log
@@ -752,7 +848,7 @@ no_lib_load:
 
 ; STACK AND FDC
 
-	call  stack_init
+        call  stack_init
 	call  fdc_init
 
 ; PALETTE FOR 320x200 and 640x480 16 col
@@ -810,8 +906,6 @@ no_load_vrr_m:
 
 	mov	ebp, firstapp
 	call	fs_execute_from_sysdir
-
-
 
 	cmp   eax,2		     ; continue if a process has been loaded
 	je    first_app_found
@@ -943,7 +1037,7 @@ osloop:
 ;       call   check_window_move_request
 	call   checkmisc
 	call   checkVga_N13
-	call   stack_handler
+        call   stack_handler
 	call   checkidle
 	call   check_fdd_motor_status
 	call   check_ATAPI_device_event

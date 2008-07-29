@@ -578,20 +578,17 @@ term9:
 .nodebug:
     popad
 
-	   mov ebx, [.slot]
-	   shl ebx, 8
-	   push ebx
-	   mov ebx,[SLOT_BASE+ebx+APPDATA.pl0_stack]
-
-	   stdcall kernel_free, ebx
-
-	   pop ebx
-	   mov ebx,[SLOT_BASE+ebx+APPDATA.cur_dir]
-	   stdcall kernel_free, ebx
-
-	   mov edi, [.slot]
-	   shl edi,8
+           mov edi, [.slot]
+           shl edi, 8
 	   add edi,SLOT_BASE
+
+           mov eax,[edi+APPDATA.pl0_stack]
+           sub eax, OS_BASE
+           call free_page
+
+           mov eax,[edi+APPDATA.cur_dir]
+           sub eax, OS_BASE
+           call free_page
 
 	   mov eax, [edi+APPDATA.io_map]
 	   cmp eax, (tss._io_map_0-OS_BASE+PG_MAP)

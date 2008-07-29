@@ -89,7 +89,7 @@ macro remove_from_used op
 }
 
 align 4
-proc init_kernel_heap
+init_kernel_heap:
 
            mov ecx, 64/4
            mov edi, mem_block_list
@@ -102,59 +102,39 @@ proc init_kernel_heap
            not eax
            rep stosd
 
+           stdcall alloc_pages, dword 32
+           add eax, OS_BASE
+
            mov [mem_block_start], mem_block_map
            mov [mem_block_end], mem_block_map+512
-           mov [mem_block_arr], HEAP_BASE
+           mov [mem_block_arr], eax
 
-           mov eax, mem_used.fd-MEM_LIST_OFFSET
-           mov [mem_used.fd], eax
-           mov [mem_used.bk], eax
+           mov ebx, mem_used.fd-MEM_LIST_OFFSET
+           mov [mem_used.fd], ebx
+           mov [mem_used.bk], ebx
 
-           stdcall alloc_pages, dword 32
-           mov ecx, 32
-           mov edx, eax
-           mov edi, HEAP_BASE
-.l1:
-           stdcall map_page,edi,edx,PG_SW
-           add edi, 0x1000
-           add edx, 0x1000
-           dec ecx
-           jnz .l1
+           xor edx, edx
 
-           mov edi, HEAP_BASE
-           mov ebx, HEAP_BASE+MEM_BLOCK_SIZE
-           xor eax, eax
-           mov [edi+block_next], ebx
-           mov [edi+block_prev], eax
-           mov [edi+list_fd], eax
-           mov [edi+list_bk], eax
-           mov [edi+block_base], HEAP_BASE
-           mov [edi+block_size], 4096*MEM_BLOCK_SIZE
-           mov [edi+block_flags], USED_BLOCK
+           mov [eax+block_next], edx
+           mov [eax+block_prev], edx
+           mov [eax+list_fd], edx
+           mov [eax+list_bk], edx
+           mov [eax+block_base], HEAP_BASE
+           mov [eax+block_size], page_tabs-HEAP_BASE
+           mov [eax+block_flags], FREE_BLOCK
 
-           mov [ebx+block_next], eax
-           mov [ebx+block_prev], eax
-           mov [ebx+list_fd], eax
-           mov [ebx+list_bk], eax
-           mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
+           mov [heap_size], page_tabs-HEAP_BASE
+           mov [heap_free], page_tabs-HEAP_BASE
 
-           mov ecx, [MEM_AMOUNT]
-           sub ecx, (HEAP_BASE - OS_BASE + 4096*MEM_BLOCK_SIZE)
-           mov [heap_size], ecx
-           mov [heap_free], ecx
-           mov [ebx+block_size], ecx
-           mov [ebx+block_flags], FREE_BLOCK
-
-           mov [mem_block_mask], eax
+           mov [mem_block_mask], edx
            mov [mem_block_mask+4],0x80000000
 
-           mov [mem_block_list+63*4], ebx
-           mov byte [mem_block_map], 0xFC
+           mov [mem_block_list+63*4], eax
+           mov byte [mem_block_map], 0xFE
            and [heap_mutex], 0
-           mov [heap_blocks], 4095
-           mov [free_blocks], 4095
+           mov [heap_blocks], 4096
+           mov [free_blocks], 4096
            ret
-endp
 
 ; param
 ;  eax= required size
@@ -329,7 +309,7 @@ proc alloc_kernel_space stdcall, size:dword
            je .m_eq_size
 
            call alloc_mem_block
-           and eax, eax
+           test eax, eax
            jz .error
 
            mov esi, eax           ;esi - splitted block
@@ -340,7 +320,7 @@ proc alloc_kernel_space stdcall, size:dword
            mov [edi+block_prev], esi
            mov [esi+list_fd], 0
            mov [esi+list_bk], 0
-           and eax, eax
+           test eax, eax
            jz @f
            mov [eax+block_next], esi
 @@:

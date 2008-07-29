@@ -321,7 +321,8 @@ proc init_LFB
            cmp dword [LFBAddress], -1
            jne @f
            mov [BOOT_VAR+0x901c],byte 2
-           stdcall kernel_alloc, 0x280000
+           stdcall alloc_pages, 0x280000 shr 12
+           add eax, OS_BASE
            mov [LFBAddress], eax
            ret
 @@:
@@ -332,55 +333,20 @@ proc init_LFB
 @@:
            call init_mtrr
 
-           mov edx, LFB_BASE
-           mov esi, [LFBAddress]
-           mov edi, 0x00800000
-           mov dword [exp_lfb+4], edx
+           xchg bx, bx
 
-           shr edi, 12
-           mov [pg_count], edi
-           shr edi, 10
+           mov eax, [LFBAddress]
+           or eax, PG_LARGE+PG_UW
+           mov [sys_pgdir+(LFB_BASE shr 20)], eax
+           add eax, 0x00400000
+           mov [sys_pgdir+4+(LFB_BASE shr 20)], eax
 
-           bt [cpu_caps], CAPS_PSE
-           jnc .map_page_tables
-           or esi, PG_LARGE+PG_UW
-           mov edx, sys_pgdir+(LFB_BASE shr 20)
-@@:
-           mov [edx], esi
-           add edx, 4
-           add esi, 0x00400000
-           dec edi
-           jnz @B
+           mov dword [exp_lfb+4], LFB_BASE
 
            bt [cpu_caps], CAPS_PGE
            jnc @F
            or dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
 @@:
-           mov dword [LFBAddress], LFB_BASE
-           mov eax, cr3       ;flush TLB
-           mov cr3, eax
-           ret
-
-.map_page_tables:
-
-@@:
-           call alloc_page
-           stdcall map_page_table, edx, eax
-           add edx, 0x00400000
-           dec edi
-           jnz @B
-
-           mov eax, [LFBAddress]
-           mov edi, page_tabs + (LFB_BASE shr 10)
-           or eax, PG_UW
-           mov ecx, [pg_count]
-           cld
-@@:
-           stosd
-           add eax, 0x1000
-           dec ecx
-           jnz @B
-
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
            mov cr3, eax
@@ -563,29 +529,71 @@ proc page_fault_handler
 
            inc [pg_data.pages_faults]
 
-;           xchg bx,bx
-;           jmp .exit
-
            mov ebx, [.err_addr]
            mov eax, [.err_code]
 
-           cmp ebx, OS_BASE
+     ;      xchg bx, bx
+
+           cmp ebx, HEAP_BASE
            jb .user_space      ;страница в памяти приложения ;
 
-           cmp ebx, page_tabs
-           jb .kernel_space    ;страница в памяти ядра
+           cmp ebx, LFB_BASE
+           jb  .kernel_heap
 
-           cmp ebx, kernel_tabs
-           jb .alloc;.app_tabs ;таблицы страниц приложения ;
+           cmp ebx, page_tabs
+           jb .lfb
+
+           cmp ebx, OS_BASE
+           jb .core_tabs
+
+           jmp .core_tabs
+
+         ;  cmp ebx, kernel_tabs
+         ;  jb .alloc;.app_tabs ;таблицы страниц приложения ;
                                ;просто создадим одну
 
-           cmp ebx, LFB_BASE
-           jb .core_tabs       ;таблицы страниц ядра
-                               ;Ошибка
 .lfb:
-                               ;область LFB
-                               ;Ошибка
-           jmp .fail
+           shr ebx, 22
+           mov edx, [sys_pgdir + ebx*4]
+           mov [master_tab + ebx*4], edx
+           jmp .exit
+
+.core_tabs:
+
+           shr ebx, 12
+           and ebx, 0x3FF
+           mov edx, [master_tab + ebx*4]
+           test edx, PG_MAP
+           jz .check_ptab      ;таблица страниц не создана
+
+align 4
+.kernel_heap:
+
+           shr ebx, 22
+           mov edx, [master_tab + ebx*4]
+           test edx, PG_MAP
+           jz .check_ptab      ;таблица страниц не создана
+
+.check_ptab:
+           mov edx, [sys_pgdir + ebx*4]
+           test edx, PG_MAP
+           jnz @F
+
+           call alloc_page
+           test eax, eax
+           jz .fail
+
+           lea edx, [eax + PG_UW]
+           lea edi, [eax + OS_BASE]
+           mov ecx, 1024
+           xor eax, eax
+           cld
+           rep stosd
+
+           mov [sys_pgdir + ebx*4], edx
+@@:
+           mov [master_tab + ebx*4], edx
+           jmp .exit
 
 align 4
 .user_space:
@@ -596,7 +604,7 @@ align 4
            shr ebx, 12
            mov ecx, ebx
            shr ecx, 10
-           mov edx, [master_tab+ecx*4]
+           mov edx, [master_tab + ecx*4]
            test edx, PG_MAP
            jz .fail            ;таблица страниц не создана
                                ;неверный адрес в программе
@@ -676,7 +684,6 @@ align 4
 
 ;не обрабатываем. Ошибка
 
-.core_tabs:
 .fail:
            mov esp, ebp
            popad

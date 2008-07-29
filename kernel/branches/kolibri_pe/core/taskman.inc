@@ -138,8 +138,6 @@ proc fs_execute
 	   test eax, eax
 	   jz .err_hdr
 
-	   ;mov esi, new_process_loading
-	   ;call sys_msg_board_str       ; write message to message board
 	   DEBUGF 1,"%s",new_process_loading
 
 .wait_lock:
@@ -188,6 +186,7 @@ proc fs_execute
 	   stosb
 	   loop .copy_process_name_loop
 .copy_process_name_done:
+
 
 	   mov ebx, cr3
 	   mov [save_cr3], ebx
@@ -388,10 +387,9 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 	   test eax, eax
 	   jz .fail
 	   mov [dir_addr], eax
-	   stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
 
-	   mov edi, [tmp_task_pdir]
-	   mov ecx, (OS_BASE shr 20)/4
+           lea edi, [eax + OS_BASE]
+           mov ecx, (OS_BASE shr 20)/4
 	   xor eax, eax
 	   cld
 	   rep stosd
@@ -400,15 +398,15 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 	   mov esi, sys_pgdir+(OS_BASE shr 20)
 	   rep movsd
 
-	   mov eax, [dir_addr]
-	   or eax, PG_SW
-	   mov [edi-4096+(page_tabs shr 20)], eax
+           mov edi, [dir_addr]
+           lea eax, [edi+PG_SW]
+           mov [edi+OS_BASE+(page_tabs shr 20)], eax
 
-	   and eax, -4096
+           and eax, -4096
 	   call set_cr3
 
 	   mov edx, [app_tabs]
-	   mov edi, new_app_base
+           xor edi, edi
 @@:
 	   call alloc_page
 	   test eax, eax
@@ -419,9 +417,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 	   dec edx
 	   jnz @B
 
-	   mov edi, new_app_base
-	   shr edi, 10
-	   add edi, page_tabs
+           mov edi, page_tabs
 
 	   mov ecx, [app_tabs]
 	   shl ecx, 10
@@ -430,13 +426,11 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
 	   mov ecx, [img_pages]
 	   mov ebx, PG_UW
-	   mov edx, new_app_base
-	   mov esi, [img_base]
-	   mov edi, new_app_base
+           mov esi, [img_base]
 	   shr esi, 10
-	   shr edi, 10
 	   add esi, page_tabs
-	   add edi, page_tabs
+           xor edx, edx
+           mov edi, page_tabs
 .remap:
 	   lodsd
 	   or eax, ebx	    ; force user level r/w access
@@ -467,9 +461,7 @@ else
 end if
 
 .done:
-	   stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
-
-	   dec [pg_data.pg_mutex]
+           dec [pg_data.pg_mutex]
 	   mov eax, [dir_addr]
 	   ret
 .fail:
@@ -543,18 +535,21 @@ proc destroy_app_space stdcall, pg_dir:dword
 ;if there isn't threads then clear memory.
 
 	   mov eax, [pg_dir]
-	   and eax, not 0xFFF
-	   stdcall map_page,[tmp_task_pdir],eax,dword PG_SW
-	   mov esi, [tmp_task_pdir]
-	   mov edi, (OS_BASE shr 20)/4
+           and eax, -4096
+           add eax, OS_BASE
+           mov [tmp_task_pdir], eax
+           mov esi, eax
+           mov edi, (HEAP_BASE shr 20)/4
 .destroy:
 	   mov eax, [esi]
 	   test eax, 1
 	   jz .next
 	   and eax, not 0xFFF
-	   stdcall map_page,[tmp_task_ptab],eax,dword PG_SW
-	   stdcall destroy_page_table, [tmp_task_ptab]
-	   mov eax, [esi]
+           add eax, OS_BASE
+
+           stdcall destroy_page_table, eax
+
+           mov eax, [esi]
 	   call free_page
 .next:
 	   add esi, 4
@@ -564,8 +559,6 @@ proc destroy_app_space stdcall, pg_dir:dword
 	   mov eax, [pg_dir]
 	   call free_page
 .exit:
-	   stdcall map_page,[tmp_task_ptab],dword 0,dword PG_UNMAP
-	   stdcall map_page,[tmp_task_pdir],dword 0,dword PG_UNMAP
 	   dec [pg_data.pg_mutex]
 	   ret
 endp
@@ -951,7 +944,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	     pl0_stack dd ?
 	   endl
 
-	   stdcall kernel_alloc, RING0_STACK_SIZE+512
+           stdcall alloc_pages, (RING0_STACK_SIZE+512) shr 12
+           add eax, OS_BASE
 	   mov [pl0_stack], eax
 
 	   lea edi, [eax+RING0_STACK_SIZE]
@@ -994,9 +988,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	   add eax, RING0_STACK_SIZE
 	   mov [SLOT_BASE+APPDATA.saved_esp0+ebx], eax
 
-	   push ebx
-	   stdcall kernel_alloc, 0x1000
-	   pop ebx
+           call alloc_page
+           add eax, OS_BASE
 	   mov esi,[current_slot]
 	   mov esi,[esi+APPDATA.cur_dir]
 	   mov ecx,0x1000/4
