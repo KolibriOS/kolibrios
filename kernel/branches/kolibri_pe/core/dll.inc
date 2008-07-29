@@ -1040,14 +1040,15 @@ proc load_library stdcall, file_name:dword
 
 @@:
 	   mov edx, [coff]
-	   movzx ebx, [edx+CFH.nSections]
-	   mov edi, new_app_base
-	   lea eax, [edx+20]
-@@:
-	   add [eax+CFS.VirtualAddress], edi  ;patch user space offset
-	   add eax, COFF_SECTION_SIZE
-	   dec ebx
-	   jnz @B
+
+;           movzx ebx, [edx+CFH.nSections]
+;           xor edi, edi
+;           lea eax, [edx+20]
+;@@:
+;           add [eax+CFS.VirtualAddress], edi  ;patch user space offset
+;           add eax, COFF_SECTION_SIZE
+;           dec ebx
+;           jnz @B
 
 	   add edx, 20
 	   stdcall fix_coff_relocs, [coff], edx, [sym]

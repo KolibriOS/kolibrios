@@ -323,17 +323,14 @@ draw_data           equ (OS_BASE+0x0338000);
 BgrDrawMode         equ (OS_BASE+0x033BFF4)
 BgrDataWidth        equ (OS_BASE+0x033BFF8)
 BgrDataHeight       equ (OS_BASE+0x033BFFC)
-WinMapAddress       equ (OS_BASE+0x033C000)
-display_data        equ (OS_BASE+0x033C000) ;1024*1280=0x140000
 
-virtual at              (OS_BASE+0x047CF80)
+;display_data        equ (OS_BASE+0x033C000) ;1024*1280=0x140000
+
+virtual at              (OS_BASE+0x033CF80)
   tss  TSS
 end virtual
 
-sys_pgmap           equ (OS_BASE+0x047F000)
-
-
-new_app_base        equ 0;
+sys_pgmap           equ (OS_BASE+0x033F000)
 
 twdw                equ 0x3000   ;(CURRENT_TASK-window_data)
 

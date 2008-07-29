@@ -327,7 +327,9 @@ vesa12_drawbackground:
         mov   eax,[Screen_Max_X]
         add   eax,1
         mul   ebx
-        cmp   [eax+esi+WinMapAddress],byte 1
+        mov   ebx, [_display_data]
+        add   ebx, esi
+        cmp   [eax+ebx],byte 1
         jnz   v12nbgp
         mov   eax,[BytesPerScanLine]
         mov   ebx,edi
@@ -494,7 +496,7 @@ dbpi24bit12:
       sub  eax,VGABasePtr
       mov  ebx,3
       div  ebx
-      add  eax,WinMapAddress
+      add  eax, [_display_data]
       mov   ebx,[CURRENT_TASK]
       cld
 
@@ -585,7 +587,7 @@ dbpi24bit12:
       mov  eax,edi
       sub  eax,VGABasePtr
       shr  eax,2
-      add  eax,WinMapAddress
+      add  eax, [_display_data]
       mov   ebx,[CURRENT_TASK]
       cld
 
@@ -830,7 +832,7 @@ vesa12_putimage:
       sub  edx,VGABasePtr
       mov  ebx,3
       div  ebx
-      add  edx,WinMapAddress
+      add  edx,[_display_data]
       mov  ebx,[CURRENT_TASK]
       mov  bh,[esp+4*3]
 
@@ -899,7 +901,7 @@ vesa12_putimage:
       mov  edx,edi
       sub  edx,VGABasePtr
       shr  edx,2
-      add  edx,WinMapAddress
+      add  edx, [_display_data]
       mov   ebx,[CURRENT_TASK]
       mov   bh,[esp+4*3]
 

@@ -111,8 +111,8 @@ save_draw_mouse:
 	mov ecx, [Screen_Max_X]
 	inc ecx
 	mul ecx
-
-	movzx edx, byte [display_data+ebx+eax]
+        add eax, [_display_data]
+        movzx edx, byte [ebx+eax]
 	shl edx, 8
         mov esi, [edx+SLOT_BASE+APPDATA.cursor]
 
@@ -292,7 +292,7 @@ __sys_disable_mouse:
       inc  ecx
       imul  ecx,ebx
       add  ecx,eax
-      add  ecx, display_data
+      add  ecx, [_display_data]
       mov   eax, [CURRENT_TASK]
       movzx ebx, byte [ecx]
       cmp   eax,ebx

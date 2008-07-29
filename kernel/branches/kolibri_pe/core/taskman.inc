@@ -998,8 +998,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	   rep movsd
 
 	   shr ebx,3
-	   mov eax, new_app_base
-	   mov dword [CURRENT_TASK+ebx+0x10],eax
+           mov dword [CURRENT_TASK+ebx+0x10], 0
 
 .add_command_line:
 	   mov edx,[params]

@@ -609,6 +609,10 @@ high_code:
 	   add eax, ebx
 	   mov [ipc_ptab], eax
 
+           stdcall alloc_pages, (1280*1024)/4096
+           add eax, OS_BASE
+           mov [_display_data], eax
+
 	   stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
 				 (unpack.lc+unpack.lp)))*4
 
@@ -1315,8 +1319,8 @@ display_number_force:
      jne   displnl1
      mov   ebp,ebx
      add   ebp,4
-     mov   ebp,[ebp+std_application_base_address]
-     mov   ebx,[ebx+std_application_base_address]
+     mov   ebp,[ebp]
+     mov   ebx,[ebx]
    displnl1:
      sub   esp,64
 
@@ -2677,7 +2681,7 @@ sys_cpuusage:
 	cmp	ecx, 1 shl 5
 	je	.os_mem
 	mov	edx, [SLOT_BASE+ecx*8+APPDATA.mem_size]
-	mov	eax, std_application_base_address
+        xor eax, eax
 .os_mem:
 	stosd
 	lea	eax, [edx-1]
@@ -3444,9 +3448,13 @@ checkpixel:
 	push eax edx
 
 	mov  edx,[Screen_Max_X]     ; screen x size
-	inc  edx
+        mov  ecx, [_display_data]
+
+        inc  edx
 	imul edx, ebx
-	mov  dl, [eax+edx+display_data] ; lea eax, [...]
+
+        add edx, ecx
+        mov  dl, [eax+edx] ; lea eax, [...]
 
 	xor  ecx, ecx
 	mov  eax, [CURRENT_TASK]
@@ -3701,7 +3709,7 @@ calculatebackground:   ; background
 	cld
 	rep   stosd
 
-	mov   edi,display_data		    ; set os to use all pixels
+        mov   edi, [_display_data]              ; set os to use all pixels
 	mov   eax,0x01010101
 	mov   ecx,1280*1024 / 4
 	rep   stosd

@@ -191,14 +191,14 @@ app_code_l:
 	dw 0
 	db 0
 	db cpl3
-	dw G32+D32+(new_app_base shr 16)+0xF;
+        dw G32+D32+0xF;
 
 app_data_l:
 	dw 0xFFFF
 	dw 0
 	db 0
 	db drw3
-	dw G32+D32+(new_app_base shr 16)+0xF;
+        dw G32+D32+0xF;
 
 ; ------------- PCI BIOS ------------------
 
@@ -348,6 +348,8 @@ LFBSize 	  rd 1
 
 stall_mcs	  rd 1
 current_slot	  rd 1
+
+_display_data     rd 1
 
 ; status
 hd1_status		    rd 1  ; 0 - free : other - pid

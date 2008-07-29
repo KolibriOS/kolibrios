@@ -28,8 +28,6 @@ $Revision$
 ;BytesPerScanLine        equ     0xfe08
 ;LFBAddress              equ     0xfe80
 ;ScreenBPP               equ     0xfbf1
-;WinMapAddress           equ     0x460000
-
 
 
 ;*************************************************
@@ -200,7 +198,7 @@ vesa20_putimage:
      imul    eax, [Screen_Max_X]
      add     eax, [putimg.abs_cy]
      add     eax, [putimg.abs_cx]
-     add     eax, WinMapAddress
+     add     eax, [_display_data]
      xchg    eax, ebp
 ; get process number
      mov     ebx, [CURRENT_TASK]
@@ -629,7 +627,7 @@ vesa20_drawbar:
      imul    eax, [Screen_Max_X]
      add     eax, [drbar.abs_cy]
      add     eax, [drbar.abs_cx]
-     add     eax, WinMapAddress
+     add     eax, [_display_data]
      xchg    eax, ebp
 ; get process number
      mov     ebx, [CURRENT_TASK]
@@ -728,7 +726,7 @@ align   4
 ;     mov eax,ebp
 ;     mov ebx,[Screen_Max_X] ; Screen_X_size
 ;     inc ebx   ; +1
-;     sub eax,WinMapAddress ; -AddrBuffer
+;     sub eax,display_data ; -AddrBuffer
 ;     div ebx ;
 ;     mov ebx,eax ; ebx:=Y
 ;     mov eax,edx ; eax:=X
@@ -754,7 +752,7 @@ align   4
 ;        xor  edx,edx
 ;        mov  ebx,[Screen_Max_X]
 ;        inc  ebx
-;        sub  eax,WinMapAddress
+;        sub  eax,display_data
 ;        div  ebx
 ;        mov  ebx,eax
 ;        mov  eax,edx
@@ -778,7 +776,7 @@ vesa20_drawbackground_tiled:
         mov     ebx, [draw_data+32+RECT.top]    ; y start
 dp2:
         mov     ebp, [draw_data+32+RECT.left]   ; x start
-; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
+; 1) Calculate pointers in display_data (does pixel belong to OS thread?) [ebp]
 ;                       and LFB data (output for our function) [edi]
         mov     eax, [BytesPerScanLine]
         mul     ebx
@@ -794,7 +792,10 @@ dp2:
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
-; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
+
+        add ebp, [_display_data]
+
+; Now eax=x, ebx=y, edi->output, ebp=offset in display_data
 ; 2) Calculate offset in background memory block
         push    eax
         xor     edx, edx
@@ -820,9 +821,9 @@ dp2:
 ; ecx = deltax - number of pixels left in current tile block
 ; edx = 1
 ; esi -> bgr memory, edi -> output
-; ebp = offset in WinMapAddress
+; ebp = offset in display_data
 dp3:
-        cmp     [ebp+WinMapAddress], dl
+        cmp     [ebp], dl
         jnz     nbgp
         movsb
         movsb
@@ -885,7 +886,7 @@ vesa20_drawbackground_stretch:
 ; External loop for all y from start to end
         mov     ebx, [draw_data+32+RECT.top]    ; y start
         mov     ebp, [draw_data+32+RECT.left]   ; x start
-; 1) Calculate pointers in WinMapAddress (does pixel belong to OS thread?) [ebp]
+; 1) Calculate pointers in display_data (does pixel belong to OS thread?) [ebp]
 ;                       and LFB data (output for our function) [edi]
         mov     eax, [BytesPerScanLine]
         mul     ebx
@@ -901,7 +902,7 @@ vesa20_drawbackground_stretch:
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
-; Now eax=x, ebx=y, edi->output, ebp=offset in WinMapAddress
+; Now eax=x, ebx=y, edi->output, ebp=offset in display_data
         push    ebx
         push    eax
 ; 2) Calculate offset in background memory block
@@ -955,7 +956,7 @@ sdp3:
 ; 4) Loop through redraw rectangle and copy background data
 ; Registers meaning:
 ; esi = offset in current line, edi -> output
-; ebp = offset in WinMapAddress
+; ebp = offset in display_data
 ; dword [esp] = offset in bgr data
 ; qword [esp+4] = x * 2^32 * (BgrDataWidth-1) / (ScreenWidth-1)
 ; qword [esp+12] = y * 2^32 * (BgrDataHeight-1) / (ScreenHeight-1)
@@ -965,7 +966,8 @@ sdp3:
 ; qword [esp+28] = 2^32*(BgrDataHeight-1)/(ScreenHeight-1)
 ; qword [esp+36] = 2^32*(BgrDataWidth-1)/(ScreenWidth-1)
 sdp3a:
-        cmp     [ebp+WinMapAddress], byte 1
+        mov eax, [_display_data]
+        cmp     [ebp+eax], byte 1
         jnz     snbgp
         mov     eax, [bgr_cur_line+esi]
         test    ecx, ecx

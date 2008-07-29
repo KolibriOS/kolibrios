@@ -333,8 +333,6 @@ proc init_LFB
 @@:
            call init_mtrr
 
-           xchg bx, bx
-
            mov eax, [LFBAddress]
            or eax, PG_LARGE+PG_UW
            mov [sys_pgdir+(LFB_BASE shr 20)], eax
