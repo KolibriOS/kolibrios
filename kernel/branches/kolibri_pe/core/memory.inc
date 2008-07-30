@@ -1306,3 +1306,14 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 endp
 
 
+align 4
+_balloc:   ; gcc fastcall
+
+           mov eax, [_last_page]
+           add ecx, 4095
+           and ecx, -4096
+           add ecx, eax
+           mov [_last_page], ecx
+           add eax, OS_BASE
+           ret
+

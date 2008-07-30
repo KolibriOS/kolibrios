@@ -58,6 +58,8 @@ include 'macros.inc'
 $Revision$
 
 
+fastcall equ call
+
 USE_COM_IRQ equ 1      ;make irq 3 and irq 4 available for PCI devices
 
 include "proc32.inc"
@@ -320,7 +322,8 @@ init_mem:
            shr eax, 3
            and eax, -4
            mov [pg_data.pagemap_size], eax
-
+           mov ecx, eax
+           fastcall _balloc
            ret
 
 align 4
@@ -333,7 +336,9 @@ init_page_map:
            cld
            rep stosd
 
-           mov ecx, 0x800000                        ;reserve 8 Mb
+           xchg bx, bx
+
+           mov ecx, [_last_page]
            mov edx, [pg_data.pages_count]
            shr ecx, 12
            sub edx, ecx
@@ -394,6 +399,43 @@ high_code:
 ; MEMORY MODEL
 
            call init_mem
+
+           mov ecx, 1280*1024
+           fastcall _balloc
+           mov [_display_data], eax
+
+           mov ecx, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
+                    (unpack.lc+unpack.lp)))*4
+           fastcall _balloc
+           mov [unpack.p], eax
+
+           mov ecx, (RING0_STACK_SIZE+512)
+           fastcall _balloc
+           mov [os_stack_seg], eax
+
+	   lea esp, [eax+RING0_STACK_SIZE]
+
+	   mov [tss._ss0], os_stack
+	   mov [tss._esp0], esp
+	   mov [tss._esp], esp
+	   mov [tss._cs],os_code
+	   mov [tss._ss],os_stack
+	   mov [tss._ds],app_data
+	   mov [tss._es],app_data
+	   mov [tss._fs],app_data
+	   mov [tss._gs],app_data
+	   mov [tss._io],128
+;Add IO access table - bit array of permitted ports
+	   mov edi, tss._io_map_0
+	   xor eax, eax
+	   not eax
+	   mov ecx, 8192/4
+	   rep stosd		     ; access to 4096*8=65536 ports
+
+	   mov	ax,tss0
+	   ltr	ax
+
+           call init_kernel_heap     ; FIXME initialize heap after pager
 
            call init_page_map
 
@@ -548,37 +590,9 @@ high_code:
 	   call build_interrupt_table
 	   lidt [idtreg]
 
-	   call init_kernel_heap
-
-           stdcall alloc_pages, (RING0_STACK_SIZE+512) shr 12
-           add eax, OS_BASE
-	   mov [os_stack_seg], eax
-
-	   lea esp, [eax+RING0_STACK_SIZE]
-
-	   mov [tss._ss0], os_stack
-	   mov [tss._esp0], esp
-	   mov [tss._esp], esp
-	   mov [tss._cs],os_code
-	   mov [tss._ss],os_stack
-	   mov [tss._ds],app_data
-	   mov [tss._es],app_data
-	   mov [tss._fs],app_data
-	   mov [tss._gs],app_data
-	   mov [tss._io],128
-;Add IO access table - bit array of permitted ports
-	   mov edi, tss._io_map_0
-	   xor eax, eax
-	   not eax
-	   mov ecx, 8192/4
-	   rep stosd		     ; access to 4096*8=65536 ports
-
-	   mov	ax,tss0
-	   ltr	ax
-
-	   mov [LFBSize], 0x800000
+           mov [LFBSize], 0x800000
 	   call init_LFB
-	   call init_fpu
+           call init_fpu
 	   call init_malloc
 
 	   stdcall alloc_kernel_space, 0x51000
@@ -608,15 +622,6 @@ high_code:
 
 	   add eax, ebx
 	   mov [ipc_ptab], eax
-
-           stdcall alloc_pages, (1280*1024)/4096
-           add eax, OS_BASE
-           mov [_display_data], eax
-
-	   stdcall kernel_alloc, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
-				 (unpack.lc+unpack.lp)))*4
-
-	   mov [unpack.p], eax
 
 	   call init_events
 	   mov eax, srv.fd-SRV_FD_OFFSET
@@ -933,17 +938,10 @@ first_app_found:
 
 	; wait until 8042 is ready
 	xor ecx,ecx
-      @@:
+@@:
 	in     al,64h
 	and    al,00000010b
 	loopnz @b
-
-       ; mov   al, 0xED       ; svetodiody - only for testing!
-       ; call  kb_write
-       ; call  kb_read
-       ; mov   al, 111b
-       ; call  kb_write
-       ; call  kb_read
 
 	mov   al, 0xF3	     ; set repeat rate & delay
 	call  kb_write

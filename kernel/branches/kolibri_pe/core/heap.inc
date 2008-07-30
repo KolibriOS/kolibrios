@@ -102,8 +102,8 @@ init_kernel_heap:
            not eax
            rep stosd
 
-           stdcall alloc_pages, dword 32
-           add eax, OS_BASE
+           mov ecx, 128*1024
+           fastcall _balloc
 
            mov [mem_block_start], mem_block_map
            mov [mem_block_end], mem_block_map+512

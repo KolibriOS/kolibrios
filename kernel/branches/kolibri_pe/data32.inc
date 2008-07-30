@@ -109,7 +109,10 @@ vrr_m	       db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
 align 4
-		     ;supported videomodes
+
+_last_page     dd LAST_PAGE
+
+                     ;supported videomodes
 mode_1280_1024_32:
   dw 1280,1024,32,60
 mode_1280_1024_24:
