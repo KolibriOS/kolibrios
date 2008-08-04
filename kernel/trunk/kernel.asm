@@ -4200,6 +4200,12 @@ sys_putimage_palette:
 	mov	esi, putimage_init8bpp
 	jmp	sys_putimage_bpp
 @@:
+        cmp     esi, 16
+        jnz     @f
+        mov     ebp, putimage_get16bpp
+        mov     esi, putimage_init16bpp
+        jmp     sys_putimage_bpp
+@@:
 	cmp	esi, 24
 	jnz	@f
 	mov	ebp, putimage_get24bpp
@@ -4212,7 +4218,7 @@ sys_putimage_palette:
 	mov	esi, putimage_init32bpp
 	jmp	sys_putimage_bpp
 @@:
-	pop	ebp esi
+	pop	ebp esi ebp
 	ret
 
 putimage_init24bpp:
@@ -4239,6 +4245,27 @@ putimage_init32bpp:
 putimage_get32bpp:
 	lodsd
 	ret	4
+
+putimage_init16bpp:
+        add     eax, eax
+        ret
+putimage_get16bpp:
+; 0RRRRRGGGGGBBBBB -> 00000000RRRRR000GGGGG000BBBBB000
+        push    ecx edx
+        movzx   eax, word [esi]
+        add     esi, 2
+        mov     ecx, eax
+        mov     edx, eax
+        and     eax, 0x1F
+        and     ecx, 0x1F shl 5
+        and     edx, 0x1F shl 10
+        shl     eax, 3
+        shl     ecx, 6
+        shl     edx, 9
+        or      eax, ecx
+        or      eax, edx
+        pop     edx ecx
+        ret
 
 ; eax x beginning
 ; ebx y beginning
