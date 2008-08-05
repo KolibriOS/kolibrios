@@ -332,7 +332,7 @@ end virtual
 
 LAST_PAGE           equ 0x0340000
 
-sys_pgmap           equ (OS_BASE+LAST_PAGE)
+;sys_pgmap           equ (OS_BASE+LAST_PAGE)
 
 twdw                equ 0x3000   ;(CURRENT_TASK-window_data)
 

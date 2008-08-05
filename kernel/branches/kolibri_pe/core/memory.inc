@@ -9,97 +9,6 @@ $Revision$
 
 
 align 4
-proc alloc_page
-
-           pushfd
-           cli
-           push ebx
-           mov ebx, [page_start]
-           mov ecx, [page_end]
-.l1:
-           bsf eax,[ebx];
-           jnz .found
-           add ebx,4
-           cmp ebx, ecx
-           jb .l1
-           pop ebx
-           popfd
-           xor eax,eax
-           ret
-.found:
-           btr [ebx], eax
-           mov [page_start],ebx
-           sub ebx, sys_pgmap
-           lea eax, [eax+ebx*8]
-           shl eax, 12
-           dec [pg_data.pages_free]
-           pop ebx
-           popfd
-           ret
-endp
-
-align 4
-proc alloc_pages stdcall, count:dword
-           pushfd
-           push ebx
-           push edi
-           cli
-           mov eax, [count]
-           add eax, 7
-           shr eax, 3
-           mov [count], eax
-           cmp eax, [pg_data.pages_free]
-           ja .fail
-
-           mov ecx, [page_start]
-           mov ebx, [page_end]
-.find:
-           mov edx, [count]
-           mov edi, ecx
-.match:
-           cmp byte [ecx], 0xFF
-           jne .next
-           dec edx
-           jz .ok
-           inc ecx
-           cmp ecx,ebx
-           jb .match
-.fail:
-           xor eax, eax
-           pop edi
-           pop ebx
-           popfd
-           ret
-.next:
-           inc ecx
-           cmp ecx, ebx
-           jb .find
-           pop edi
-           pop ebx
-           popfd
-           xor eax, eax
-           ret
-.ok:
-           sub ecx, edi
-           inc ecx
-           push esi
-           mov esi, edi
-           xor eax, eax
-           rep stosb
-           sub esi, sys_pgmap
-           shl esi, 3+12
-           mov eax, esi
-           mov ebx, [count]
-           shl ebx, 3
-           sub [pg_data.pages_free], ebx
-           pop esi
-           pop edi
-           pop ebx
-           popfd
-           ret
-endp
-
-align 4
 proc map_page stdcall,lin_addr:dword,phis_addr:dword,flags:dword
            push ebx
            mov eax, [phis_addr]
@@ -123,23 +32,24 @@ map_space:    ;not implemented
 
 align 4
 proc free_page
+
 ;arg:  eax  page address
-           pushfd
-           cli
-           shr eax, 12                        ;page index
-           bts dword [sys_pgmap], eax         ;that's all!
-           cmc
-           adc [pg_data.pages_free], 0
-           shr eax, 3
-           and eax, not 3                     ;dword offset from page_map
-           add eax, sys_pgmap
-           cmp [page_start], eax
-           ja @f
-           popfd
-           ret
-@@:
-           mov [page_start], eax
-           popfd
+;           pushfd
+;           cli
+;           shr eax, 12                        ;page index
+;           bts dword [sys_pgmap], eax         ;that's all!
+;           cmc
+;           adc [pg_data.pages_free], 0
+;           shr eax, 3
+;           and eax, not 3                     ;dword offset from page_map
+;           add eax, sys_pgmap
+;           cmp [page_start], eax
+;           ja @f
+;           popfd
+;           ret
+;@@:
+;           mov [page_start], eax
+;           popfd
            ret
 endp
 
@@ -235,9 +145,9 @@ release_pages:
            shr esi, 10
            add esi, page_tabs
 
-           mov ebp, [pg_data.pages_free]
-           mov ebx, [page_start]
-           mov edx, sys_pgmap
+;           mov ebp, [pg_data.pages_free]
+;           mov ebx, [page_start]
+     ;      mov edx, sys_pgmap
 @@:
            xor eax, eax
            xchg eax, [esi]
@@ -245,20 +155,20 @@ release_pages:
            invlpg [edi]
            pop eax
 
-           test eax, 1
-           jz .next
+;           test eax, 1
+;           jz .next
 
-           shr eax, 12
-           bts [edx], eax
-           cmc
-           adc ebp, 0
-           shr eax, 3
-           and eax, -4
-           add eax, edx
-           cmp eax, ebx
-           jae .next
+;           shr eax, 12
+    ;       bts [edx], eax
+;           cmc
+;           adc ebp, 0
+;           shr eax, 3
+;           and eax, -4
+;           add eax, edx
+;           cmp eax, ebx
+;           jae .next
 
-           mov ebx, eax
+;           mov ebx, eax
 .next:
            add edi, 0x1000
            add esi, 4
@@ -530,7 +440,7 @@ proc page_fault_handler
            mov ebx, [.err_addr]
            mov eax, [.err_code]
 
-     ;      xchg bx, bx
+         ;  xchg bx, bx
 
            cmp ebx, HEAP_BASE
            jb .user_space      ;страница в памяти приложения ;
@@ -1308,12 +1218,14 @@ endp
 
 align 4
 _balloc:   ; gcc fastcall
+@balloc@4:
 
-           mov eax, [_last_page]
+
+           mov eax, [_pg_balloc]
            add ecx, 4095
            and ecx, -4096
            add ecx, eax
-           mov [_last_page], ecx
+           mov [_pg_balloc], ecx
            add eax, OS_BASE
            ret
 

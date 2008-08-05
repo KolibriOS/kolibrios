@@ -110,7 +110,7 @@ kernel_file    db  'KERNEL  MNT'
 
 align 4
 
-_last_page     dd LAST_PAGE
+_pg_balloc     dd LAST_PAGE
 
                      ;supported videomodes
 mode_1280_1024_32:
@@ -289,6 +289,8 @@ mem_block_list	  rd 64
 large_block_list  rd 31
 mem_block_mask	  rd 2
 large_block_mask  rd 1
+
+_z_core           rd 50
 
 mem_used.fd	  rd 1
 mem_used.bk	  rd 1

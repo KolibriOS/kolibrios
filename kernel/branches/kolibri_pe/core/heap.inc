@@ -577,7 +577,7 @@ proc kernel_alloc stdcall, size:dword
            push ebx
            stdcall alloc_pages, ebx
            pop ecx                   ; yes ecx!!!
-           and eax, eax
+           test eax, eax
            jz .err
 
            mov edi, eax

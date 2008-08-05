@@ -191,8 +191,8 @@ proc fs_execute
 	   mov ebx, cr3
 	   mov [save_cr3], ebx
 
-	   stdcall create_app_space,[hdr_mem],[file_base],[file_size]
-	   mov ecx, -30  ; no memory
+           stdcall create_app_space,[hdr_mem],[file_base],[file_size]
+           mov ecx, -30  ; no memory
 	   test eax, eax
 	   jz .failed
 
@@ -380,8 +380,8 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
      else
 	   lea eax, [eax+ebx+2]    ;all requested memory
      end if
-	   cmp eax, [pg_data.pages_free]
-	   ja .fail
+      ;     cmp eax, [pg_data.pages_free]
+      ;     ja .fail
 
 	   call alloc_page
 	   test eax, eax

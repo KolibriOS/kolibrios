@@ -293,76 +293,8 @@ MEM_WB     equ 6               ;write-back memory
 MEM_WC     equ 1               ;write combined memory
 MEM_UC     equ 0               ;uncached memory
 
-align 4
-init_mem:
 
-           mov ecx, [BOOT_VAR + 0x9100]
-           mov esi, BOOT_VAR + 0x9104
-           xor eax, eax
-@@:
-           cmp dword [esi+16], 1
-           jne .next
-           mov edx, [esi+8]
-           cmp eax, [esi+8]
-           ja .next
-
-           mov eax, [esi+8]
-.next:
-           add esi, 20
-           loop @B
-
-           and eax, -4096
-
-           mov [MEM_AMOUNT], eax
-           mov [pg_data.mem_amount], eax
-
-           shr eax, 12
-           mov edx, eax
-           mov [pg_data.pages_count], eax
-           shr eax, 3
-           and eax, -4
-           mov [pg_data.pagemap_size], eax
-           mov ecx, eax
-           fastcall _balloc
-           ret
-
-align 4
-init_page_map:
-
-           mov edi, sys_pgmap
-           mov ecx, [pg_data.pagemap_size]
-           shr ecx, 2
-           or eax, -1
-           cld
-           rep stosd
-
-           xchg bx, bx
-
-           mov ecx, [_last_page]
-           mov edx, [pg_data.pages_count]
-           shr ecx, 12
-           sub edx, ecx
-           mov [pg_data.pages_free], edx
-
-           mov edi, sys_pgmap
-           mov ebx, ecx
-           shr ecx, 5
-           xor eax, eax
-           rep stosd
-
-           not eax
-           mov ecx, ebx
-           and ecx, 31
-           shl eax, cl
-           mov [edi], eax
-           mov [page_start], edi;
-
-           mov ebx, sys_pgmap
-           add ebx, [pg_data.pagemap_size]
-           mov [page_end], ebx
-
-           mov [pg_data.pg_mutex], 0
-           ret
+include 'core/mm.asm'
 
 
 align 4
@@ -397,8 +329,6 @@ high_code:
 
 
 ; MEMORY MODEL
-
-           call init_mem
 
            mov ecx, 1280*1024
            fastcall _balloc
@@ -437,8 +367,8 @@ high_code:
 
            call init_kernel_heap     ; FIXME initialize heap after pager
 
-           call init_page_map
-
+           call _init_mm
+           mov [pg_data.pg_mutex], 0
 
 ; SAVE REAL MODE VARIABLES
 	mov	ax, [BOOT_VAR + 0x9031]
@@ -797,7 +727,7 @@ no_lib_load:
 	cld
 	rep movsd
 
-	mov dword [SLOT_BASE+256+APPDATA.fpu_handler], eax
+        mov dword [SLOT_BASE+256+APPDATA.fpu_handler], eax
 	mov dword [SLOT_BASE+256+APPDATA.sse_handler], eax
 
 	mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
@@ -815,7 +745,7 @@ no_lib_load:
 	mov  [TASK_DATA+TASKDATA.pid], 1	; process id number
 	mov  [TASK_DATA+TASKDATA.mem_start], 0	; process base address
 
-	call init_cursors
+        call init_cursors
         mov eax, [def_cursor]
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
