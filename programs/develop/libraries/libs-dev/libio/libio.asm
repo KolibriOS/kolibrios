@@ -17,6 +17,9 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
+;; 2008-08-06 (mike.dld)                                                                          ;;
+;;   changes:                                                                                     ;;
+;;     - split private procs into libio_p.asm, added comments                                     ;;
 ;; 2007-12-10 (mike.dld)                                                                          ;;
 ;;   changes:                                                                                     ;;
 ;;     - almost fully incompatible with previous version since return values were changed.        ;;
@@ -47,280 +50,18 @@ include 'libio_p.inc'
 
 section '.flat' code readable align 16
 
-mem.alloc   dd ?
-mem.free    dd ?
-mem.realloc dd ?
-dll.load    dd ?
-
-;;================================================================================================;;
-proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
-;;------------------------------------------------------------------------------------------------;;
-;? Library entry point (called after library load)                                                ;;
-;;------------------------------------------------------------------------------------------------;;
-;> eax = pointer to memory allocation routine                                                     ;;
-;> ebx = pointer to memory freeing routine                                                        ;;
-;> ecx = pointer to memory reallocation routine                                                   ;;
-;> edx = pointer to library loading routine                                                       ;;
-;;------------------------------------------------------------------------------------------------;;
-;< eax = 1 (fail) / 0 (ok) (library initialization result)                                        ;;
-;;================================================================================================;;
-	mov	[mem.alloc], eax
-	mov	[mem.free], ebx
-	mov	[mem.realloc], ecx
-	mov	[dll.load], edx
-	xor	eax, eax
-	ret
-endp
-
-;;================================================================================================;;
-proc file.aux.match_wildcard _str, _wcard ;///////////////////////////////////////////////////////;;
-;;------------------------------------------------------------------------------------------------;;
-;? Match string against wildcard                                                                  ;;
-;? Based on http://user.cs.tu-berlin.de/~schintke/references/wildcards/                           ;;
-;? 1997-2001 (c) Florian Schintke                                                                 ;;
-;;------------------------------------------------------------------------------------------------;;
-;> _str = pointer to string (filename in most cases)                                              ;;
-;> _wcard = pointer to string (mask expressed using wilcards (?, *, [..]))                        ;;
-;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true (match result)                                                              ;;
-;;================================================================================================;;
-	push	ecx edx esi edi
-	mov	dl, 1 ; fit
-	mov	esi, [_wcard]
-	mov	edi, [_str]
-  .loop_wildcard:
-	mov	al, [esi]
-	or	al, al
-	jz	.loop_wildcard_exit
-	or	dl, dl
-	jz	.loop_wildcard_exit
-	cmp	byte[edi], 0
-	je	.loop_wildcard_exit
-
-	cmp	al, '['
-	je	.process_set
-	cmp	al, '?'
-	je	.process_question
-	cmp	al, '*'
-	je	.process_asterisk
-
-	xor	dl, dl
-	cmp	[edi], al
-	jne	@f
-	inc	dl
-    @@: inc	edi
-
-  .loop_wildcard_next:
-	inc	esi
-	jmp	.loop_wildcard
-
-
-  .process_set:
-	inc	esi
-	xor	dl, dl ; fit
-	xor	dh, dh ; negation
-	mov	cl, 1  ; at_beginning
-	cmp	byte[esi], '^'
-	jne	.loop_set_wildcard
-	inc	dh
-	inc	esi
-
-    .loop_set_wildcard:
-	mov	al, [esi]
-	cmp	al, ']'
-	jne	@f
-	or	cl, cl
-	jz	.loop_set_wildcard_exit
-    @@: or	dl, dl
-	jnz	.loop_set_wildcard_fit
-	cmp	al, '-'
-	jne	.loop_set_wildcard_not_range
-	mov	ch, [esi - 1]
-	cmp	[esi + 1], ch
-	jbe	.loop_set_wildcard_not_range
-	cmp	byte[esi + 1], ']'
-	je	.loop_set_wildcard_not_range
-	or	cl, cl
-	jnz	.loop_set_wildcard_not_range
-	cmp	[edi], ch
-	jb	.loop_set_wildcard_fit
-	mov	ch, [esi + 1]
-	cmp	[edi], ch
-	ja	.loop_set_wildcard_fit
-	mov	dl, 1
-	inc	esi
-	jmp	.loop_set_wildcard_fit
-
-    .loop_set_wildcard_not_range:
-	cmp	[edi], al
-	jne	.loop_set_wildcard_fit
-	mov	dl, 1
-
-    .loop_set_wildcard_fit:
-	inc	esi
-	xor	cl, cl
-	jmp	.loop_set_wildcard
-
-    .loop_set_wildcard_exit:
-	or	dh, dh
-	jz	@f
-	xor	dl, 1
-    @@: or	dl, dl
-	jz	@f
-	inc	edi
-    @@:
-	jmp	.loop_wildcard_next
-
-  .process_question:
-	inc	edi
-	jmp	.loop_wildcard_next
-
-  .process_asterisk:
-	mov	dl, 1
-	inc	esi
-
-    .loop_asterisk_del_shit:
-	lodsb
-	cmp	byte[edi], 0
-	je	.loop_asterisk_del_shit_exit
-	cmp	al, '?'
-	jne	@f
-	inc	edi
-	jmp	.loop_asterisk_del_shit
-    @@: cmp	al, '*'
-	je	.loop_asterisk_del_shit
-
-    .loop_asterisk_del_shit_exit:
-
-    @@: cmp	al, '*'
-	jne	@f
-	lodsb
-	jmp	@b
-    @@:
-	dec	esi
-	cmp	byte[edi], 0
-	jne	.process_asterisk_skip_exit
-	xor	dl, dl
-	or	al, al
-	jnz	@f
-	inc	dl
-    @@: dec	esi
-	jmp	.loop_wildcard_next
-
-    .process_asterisk_skip_exit:
-	stdcall file.aux.match_wildcard, edi, esi
-	or	eax, eax
-	jnz	.process_asterisk_not_match
-
-    .loop_asterisk_match:
-	inc	edi
-
-    .loop_asterisk_char_match:
-	mov	al, [esi]
-	cmp	[edi], al
-	je	.loop_asterisk_char_match_exit
-	cmp	byte[esi], '['
-	je	.loop_asterisk_char_match_exit
-	cmp	byte[edi], 0
-	je	.loop_asterisk_char_match_exit
-	inc	edi
-	jmp	.loop_asterisk_char_match
-
-    .loop_asterisk_char_match_exit:
-	cmp	byte[edi], 0
-	je	@f
-	stdcall file.aux.match_wildcard, edi, esi
-	or	eax, eax
-	jnz	.loop_asterisk_match_exit
-	jmp	.loop_asterisk_match
-    @@:
-	xor	dl, dl
-
-    .loop_asterisk_match_exit:
-
-    .process_asterisk_not_match:
-	cmp	byte[esi], 0
-	jne	@f
-	cmp	byte[edi], 0
-	jne	@f
-	mov	dl, 1
-    @@:
-	dec	esi
-	jmp	.loop_wildcard_next
-
-  .loop_wildcard_exit:
-	or	dl, dl
-	jz	.exit
-    @@: cmp	byte[esi], '*'
-	jne	.exit
-	inc	esi
-	jmp	@b
-
-  .exit:
-	cmp	byte[esi], 0
-	je	@f
-	xor	dl, dl
-    @@: cmp	byte[edi], 0
-	je	@f
-	xor	dl, dl
-    @@:
-	movzx	eax, dl
-
-	pop	edi esi edx ecx
-	ret
-endp
-
-;;================================================================================================;;
-proc file.aux.find_matching_file _ffb ;///////////////////////////////////////////////////////////;;
-;;------------------------------------------------------------------------------------------------;;
-;? Find file with matching attributes (`FindFileBlock.Options.Attributes`) and mask               ;;
-;? (`FindFileBlock.Options.Mask`) starting from Nth (`FindFileBlock.InfoBlock.Position`) file in  ;;
-;? directory (`FindFileBlock.InfoBlock.FileName`)                                                 ;;
-;;------------------------------------------------------------------------------------------------;;
-;> _ffb = pointer to FindFileBlock                                                                ;;
-;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) / pointer to `FileInfo` with matched file data                                 ;;
-;;================================================================================================;;
-	push	ebx edx
-	mov	edx, [_ffb]
-  .loop_find:
-	lea	ebx, [edx + FindFileBlock.InfoBlock]
-	mcall	70
-	or	eax, eax
-	jnz	.loop_find_error
-	mov	eax, [edx + FindFileBlock.Info.Attributes]
-	and	eax, [edx + FindFileBlock.Options.Attributes]
-	jz	.loop_find_next
-	lea	eax, [edx + FindFileBlock.Info.FileName]
-	stdcall file.aux.match_wildcard, eax, [edx + FindFileBlock.Options.Mask]
-	or	eax, eax
-	jnz	.loop_find_exit
-
-  .loop_find_next:
-	inc	[edx + FindFileBlock.InfoBlock.Position]
-	jmp	.loop_find
-
-  .loop_find_error:
-	xor	eax, eax
-	pop	edx ebx
-	ret
-
-  .loop_find_exit:
-	lea	eax, [edx + FindFileBlock.Info]
-	pop	edx ebx
-	ret
-endp
+include 'libio_p.asm'
 
 ;;================================================================================================;;
 proc file.find_first _dir, _mask, _attr ;/////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Find first file with matching attributes and mask in specified directory                       ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _dir = pointer to string (directory path to search in)                                         ;;
-;> _mask = pointer to string (file mask, with use of wildcards)                                   ;;
-;> _attr = file attributes mask (combination of FA_* constants)                                   ;;
+;> _dir = directory path to search in <asciiz>                                                    ;;
+;> _mask = file mask, with use of wildcards <asciiz>                                              ;;
+;> _attr = file attributes mask (combination of FA_* constants) <dword>                           ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) / pointer to `FileInfo` with matched file data (acts as find descriptor)       ;;
+;< eax = 0 (error) / matched file data pointer (acts as find descriptor) <FileInfo*>              ;;
 ;;================================================================================================;;
 	push	ebx edx
 
@@ -341,7 +82,7 @@ proc file.find_first _dir, _mask, _attr ;///////////////////////////////////////
 	mov	eax, [_dir]
 	mov	[ebx + FileInfoBlock.FileName], eax
 
-	stdcall file.aux.find_matching_file, edx
+	stdcall libio._.find_matching_file, edx
 	pop	edx ebx
 	ret
 
@@ -356,14 +97,14 @@ proc file.find_next _findd ;////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Find next file matching criteria                                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _findd = find descriptor (see `file.find_first`)                                               ;;
+;> _findd = find descriptor (see `file.find_first`) <FileInfo*>                                   ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) / pointer to `FileInfo` with matched file data (acts as find descriptor)       ;;
+;< eax = 0 (error) / matched file data pointer (acts as find descriptor) <FileInfo*>              ;;
 ;;================================================================================================;;
 	mov	eax, [_findd]
 	add	eax, -sizeof.FileInfoHeader
 	inc	[eax + FindFileBlock.InfoBlock.Position]
-	stdcall file.aux.find_matching_file, eax
+	stdcall libio._.find_matching_file, eax
 	ret
 endp
 
@@ -372,7 +113,7 @@ proc file.find_close _findd ;///////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Close find descriptor and free memory                                                          ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _findd = find descriptor (see `file.find_first`)                                               ;;
+;> _findd = find descriptor (see `file.find_first`) <FileInfo*>                                   ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = result of memory freeing routine                                                         ;;
 ;;================================================================================================;;
@@ -387,9 +128,9 @@ proc file.size _name ;//////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Get file size                                                                                  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _name = path to file (full or relative)                                                        ;;
+;> _name = path to file (full or relative) <asciiz>                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / file size (in bytes, up to 2G)                                              ;;
+;< eax = -1 (error) / file size (in bytes, up to 2G) <dword>                                      ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -420,10 +161,16 @@ proc file.open _name, _mode ;///////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Open file                                                                                      ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _name = path to file (full or relative)                                                        ;;
-;> _mode = mode to open file in (combination of O_* constants)                                    ;;
+;> _name = path to file (full or relative) <asciiz>                                               ;;
+;> _mode = mode to open file in (combination of O_* constants) <dword>                            ;;
+;>   O_BINARY - don't change read/written data in any way (default)                               ;;
+;>   O_READ - open file for reading                                                               ;;
+;>   O_WRITE - open file for writing                                                              ;;
+;>   O_CREATE - create file if it doesn't exist, open otherwise                                   ;;
+;>   O_SHARE - allow simultaneous access by using different file descriptors (not implemented)    ;;
+;>   O_TEXT - replace newline chars with LF (overrides O_BINARY, not implemented)                 ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = 0 (error) / file descriptor                                                              ;;
+;< eax = 0 (error) / file descriptor <InternalFileInfo*>                                          ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -495,11 +242,11 @@ proc file.read _filed, _buf, _buflen ;//////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Read data from file                                                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
-;> _buf = pointer to buffer to put read data to                                                   ;;
-;> _buflen = buffer size (number of bytes to be read from file)                                   ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
+;> _buf = buffer to put read data to <byte*>                                                      ;;
+;> _buflen = buffer size (number of bytes to be read from file) <dword>                           ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / number of bytes read                                                        ;;
+;< eax = -1 (error) / number of bytes read <dword>                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -545,11 +292,11 @@ proc file.write _filed, _buf, _buflen ;/////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Write data to file                                                                             ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
-;> _buf = pointer to buffer to get write data from                                                ;;
-;> _buflen = buffer size (number of bytes to be written to file)                                  ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
+;> _buf = buffer to get write data from <byte*>                                                   ;;
+;> _buflen = buffer size (number of bytes to be written to file) <dword>                          ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / number of bytes written                                                     ;;
+;< eax = -1 (error) / number of bytes written <dword>                                             ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -599,14 +346,14 @@ proc file.seek _filed, _where, _origin ;////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Set file pointer position                                                                      ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
-;> _where = position in file (in bytes) counted from specified origin                             ;;
-;> _origin = origin from where to set the position (one of SEEK_* constants)                      ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
+;> _where = position in file (in bytes) counted from specified origin <dword>                     ;;
+;> _origin = origin from where to set the position (one of SEEK_* constants) <dword>              ;;
 ;>   SEEK_SET - from beginning of file                                                            ;;
 ;>   SEEK_CUR - from current pointer position                                                     ;;
 ;>   SEEK_END - from end of file                                                                  ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / 0                                                                           ;;
+;< eax = -1 (error) / 0 <dword>                                                                   ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -661,9 +408,9 @@ proc file.eof? _filed ;/////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Determine if file pointer is at the end of file                                                ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = false / true                                                                             ;;
+;< eax = false / true <dword>                                                                     ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -693,9 +440,9 @@ proc file.truncate _filed ;/////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Truncate file size to current file pointer position                                            ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / 0                                                                           ;;
+;< eax = -1 (error) / 0 <dword>                                                                   ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -742,9 +489,9 @@ proc file.tell _filed ;/////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Get current file pointer position                                                              ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / file pointer position                                                       ;;
+;< eax = -1 (error) / file pointer position <dword>                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -758,9 +505,9 @@ proc file.close _filed ;////////////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;? Close file                                                                                     ;;
 ;;------------------------------------------------------------------------------------------------;;
-;> _filed = file descriptor (see `file.open`)                                                     ;;
+;> _filed = file descriptor (see `file.open`) <InternalFileInfo*>                                 ;;
 ;;------------------------------------------------------------------------------------------------;;
-;< eax = -1 (error) / file pointer position                                                       ;;
+;< eax = -1 (error) / file pointer position <dword>                                               ;;
 ;;------------------------------------------------------------------------------------------------;;
 ;# call `file.err` to obtain extended error information                                           ;;
 ;;================================================================================================;;
@@ -786,7 +533,7 @@ align 16
 @EXPORT:
 
 export					      \
-	lib_init	, 'lib_init'	    , \
+	libio._.init	, 'lib_init'	    , \
 	0x00030003	, 'version'	    , \
 	file.find_first , 'file.find_first' , \
 	file.find_next	, 'file.find_next'  , \
