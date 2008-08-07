@@ -14,13 +14,15 @@ saverd_fileinfo:
         dd      0               ; (reserved)
         dd      0               ; (reserved)
         dd      1440*1024       ; size 1440 Kb
-        dd      RAMDISK
+        dd      0               ; [_rd_base]
         db      0
 .name:
         dd      ?
 endg
 sysfn_saveramdisk:      ; 18.6 = SAVE FLOPPY IMAGE (HD version only)
         call    restorefatchain
+        mov     eax, [_rd_base]
+        mov [saverd_fileinfo+4], eax
         mov     eax, saverd_fileinfo
         mov     [saverd_fileinfo.name], ecx
         pushad

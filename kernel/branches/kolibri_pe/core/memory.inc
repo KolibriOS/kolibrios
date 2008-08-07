@@ -1073,7 +1073,7 @@ proc init_mtrr
            mov ecx, 0x2FF
            wrmsr                ;disable all MTRR
 
-           mov eax, [MEM_AMOUNT]
+           mov eax, [_mem_amount]
 ; round eax up to next power of 2
            dec eax
            bsr ecx, eax

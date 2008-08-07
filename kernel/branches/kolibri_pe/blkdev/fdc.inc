@@ -40,7 +40,7 @@ save_image:
     mov    [FDD_Track],0      ; Цилиндр
     mov    [FDD_Head],0      ; Сторона
     mov    [FDD_Sector],1      ; Сектор
-    mov    esi,RAMDISK
+    mov    esi, [_rd_base]
     call   SeekTrack
 save_image_1:
     push   esi

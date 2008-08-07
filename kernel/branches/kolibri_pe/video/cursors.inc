@@ -468,14 +468,14 @@ proc init_cursors
 .init:
            mov [cur_def_interl], ebx
 
-           stdcall load_driver, szHwMouse
-           mov [hw_cursor], eax
-           test eax, eax
-           jz .sw_mouse
+        ;   stdcall load_driver, szHwMouse
+        ;   mov [hw_cursor], eax
+        ;   test eax, eax
+        ;   jz .sw_mouse
 
-           stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
-           mov [def_cursor], eax
-           ret
+        ;   stdcall load_cursor, def_arrow, dword LOAD_FROM_MEM
+        ;   mov [def_cursor], eax
+        ;   ret
 .sw_mouse:
            mov [create_cursor], vesa_cursor
 

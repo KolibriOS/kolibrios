@@ -262,7 +262,6 @@ ScreenBPP           equ (OS_BASE+0x000FBF1)
 MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
 
 LFBAddress          equ (OS_BASE+0x000FE80)
-MEM_AMOUNT          equ (OS_BASE+0x000FE8C)
 
 Screen_Max_X        equ (OS_BASE+0x000FE00)
 Screen_Max_Y        equ (OS_BASE+0x000FE04)
@@ -295,7 +294,7 @@ TMP_BUFF            equ (OS_BASE+0x0090000)
 
 VGABasePtr          equ (OS_BASE+0x00A0000)
 
-RAMDISK             equ (OS_BASE+0x0100000)
+;RAMDISK             equ (OS_BASE+0x0100000)
 RAMDISK_FAT         equ (OS_BASE+0x0280000)
 FLOPPY_FAT          equ (OS_BASE+0x0282000)
 

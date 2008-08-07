@@ -283,14 +283,22 @@ irq15read	  rd 16
 
 irq_tab 	  rd 16
 
+_z_core           rd 52
+
 mem_block_map	  rb 512
+
 event_map	  rb 64
 mem_block_list	  rd 64
 large_block_list  rd 31
 mem_block_mask	  rd 2
 large_block_mask  rd 1
 
-_z_core           rd 50
+_mem_amount       rd 1
+_rd_base          rd 1
+_rd_fat           rd 1 ;RAMDISK + 512
+_rd_fat_end       rd 1 ;RAMDISK + 512 + 4278
+_rd_root          rd 1 ;RAMDISK + 512*18 + 512
+_rd_root_end      rd 1 ;RAMDISK + 512*33
 
 mem_used.fd	  rd 1
 mem_used.bk	  rd 1

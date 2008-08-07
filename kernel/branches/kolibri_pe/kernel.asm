@@ -294,6 +294,7 @@ MEM_WC     equ 1               ;write combined memory
 MEM_UC     equ 0               ;uncached memory
 
 
+include 'printf.inc'
 include 'core/mm.asm'
 
 
@@ -327,6 +328,10 @@ high_code:
 	   mov eax, cr3
 	   mov cr3, eax 	  ; flush TLB
 
+
+           mov edx, 0x3fB
+           mov eax, 3
+           out dx, al
 
 ; MEMORY MODEL
 
@@ -619,18 +624,19 @@ include 'detect/disks.inc'
 ; READ RAMDISK IMAGE FROM HD
 
 ;!!!!!!!!!!!!!!!!!!!!!!!
-include 'boot/rdload.inc'
+;include 'boot/rdload.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!
 ;    mov    [dma_hdd],1
 ; CALCULATE FAT CHAIN FOR RAMDISK
 
+        mov [_rd_base],     OS_BASE+0x100000
+        mov [_rd_fat],      OS_BASE+0x100000 + 512
+        mov [_rd_fat_end],  OS_BASE+0x100000 + 512 + 4278
+        mov [_rd_root],     OS_BASE+0x100000 + 512*19
+        mov [_rd_root_end], OS_BASE+0x100000 + 512*33
+
 	call  calculatefatchain
 
-; LOAD VMODE DRIVER
-
-;!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeld.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!
 
   mov ax,[OS_BASE+0x10000+bx_from_load]
   cmp ax,'r1'		; if using not ram disk, then load librares and parameters {SPraid.simba}
@@ -657,7 +663,7 @@ no_lib_load:
 	or	ecx, (10+29*6) shl 16 ; "Determining amount of memory"
 	sub	ecx, 10
 	mov	edx, 0xFFFFFF
-	mov	ebx, [MEM_AMOUNT]
+        mov     ebx, [_mem_amount]
 	shr	ebx, 20
 	mov	edi, 1
 	mov	eax, 0x00040000
@@ -2166,7 +2172,7 @@ sysfn_getfreemem:
      ret
 
 sysfn_getallmem:
-     mov  eax,[MEM_AMOUNT]
+     mov  eax,[_mem_amount]
      shr eax, 10
      mov  [esp+32],eax
      ret
