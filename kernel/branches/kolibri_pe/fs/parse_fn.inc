@@ -40,7 +40,7 @@ proc Parser_params
 locals
   buff db 4 dup(?)		; for test cd
 endl
-  mov eax,[OS_BASE+0x10000+bx_from_load]
+  mov eax,[bx_from_load]
   mov ecx,sysdir_path
   mov [ecx-64],dword 'sys'
   cmp al,'r' ; if ram disk
@@ -69,7 +69,7 @@ endl
   cmp [edx],dword 'MENU'
   jne .next_cd
   jmp .ok
-  
+
 @@:
   sub al,49
   mov [ecx],dword 'HD?/'	; if hard disk

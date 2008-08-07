@@ -105,145 +105,154 @@ pci_data_sel   equ  (pci_data_32-gdts)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                  16 BIT ENTRY FROM BOOTSECTOR                        ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-use16
-		  org	0x0
-		  jmp	start_of_code
-
-version db    'Kolibri OS  version 0.7.1.0      ',13,10,13,10,0
-
-include "boot/bootstr.inc"     ; language-independent boot messages
-include "boot/preboot.inc"
-
-if lang eq en
-include "boot/booteng.inc"     ; english system boot messages
-else if lang eq ru
-include "boot/bootru.inc"      ; russian system boot messages
-include "boot/ru.inc"	       ; Russian font
-else if lang eq et
-include "boot/bootet.inc"      ; estonian system boot messages
-include "boot/et.inc"	       ; Estonian font
-else
-include "boot/bootge.inc"      ; german system boot messages
-end if
-
-include "boot/bootcode.inc"    ; 16 bit system boot code
-include "bus/pci/pci16.inc"
-include "detect/biosdisk.inc"
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                                      ;;
-;;                  SWITCH TO 32 BIT PROTECTED MODE                     ;;
-;;                                                                      ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-; CR0 Flags - Protected mode and Paging
-
-	mov ecx, CR0_PE
-
-; Enabling 32 bit protected mode
-
-	sidt	[cs:old_ints_h]
-
-	cli				; disable all irqs
-	cld
-	mov	al,255			; mask all irqs
-	out	0xa1,al
-	out	0x21,al
-   l.5: in	al, 0x64		; Enable A20
-	test	al, 2
-	jnz	l.5
-	mov	al, 0xD1
-	out	0x64, al
-   l.6: in	al, 0x64
-	test	al, 2
-	jnz	l.6
-	mov	al, 0xDF
-	out	0x60, al
-   l.7: in	al, 0x64
-	test	al, 2
-	jnz	l.7
-	mov	al, 0xFF
-	out	0x64, al
-
-	lgdt	[cs:tmp_gdt]		; Load GDT
-	mov	eax, cr0		; protected mode
-	or	eax, ecx
-	and	eax, 10011111b *65536*256 + 0xffffff ; caching enabled
-	mov	cr0, eax
-	jmp	pword os_code:B32	; jmp to enable 32 bit mode
-
-align 8
-tmp_gdt:
-
-	dw     23
-	dd     tmp_gdt+0x10000
-	dw     0
-
-	dw     0xffff
-	dw     0x0000
-	db     0x00
-	dw     11011111b *256 +10011010b
-	db     0x00
-
-	dw     0xffff
-	dw     0x0000
-	db     0x00
-	dw     11011111b *256 +10010010b
-	db     0x00
-
-include "data16.inc"
-
 use32
-org $+0x10000
+org 0x100000
 
-align 4
-B32:
-	   mov	 ax,os_stack	   ; Selector for os
-	   mov	 ds,ax
-	   mov	 es,ax
-	   mov	 fs,ax
-	   mov	 gs,ax
-	   mov	 ss,ax
-	   mov	 esp,0x3ec00	   ; Set stack
+mboot:
+  dd  0x1BADB002
+  dd  0x00010003
+  dd  -(0x1BADB002 + 0x00010003)
+  dd  mboot
+  dd  0x100000
+  dd  __edata - OS_BASE
+  dd  LAST_PAGE
+  dd  __start
+
+
+align 16
+__start:
+           cld
+
+           mov esp, __os_stack-OS_BASE
+           push 0
+           popf
+
+           cmp eax, 0x2BADB002
+           mov ecx, sz_invboot
+           jne .fault
+
+           bt dword [ebx], 3
+           mov ecx, sz_nomods
+           jnc .fault
+
+           bt dword [ebx], 6
+           mov ecx, sz_nommap
+           jnc .fault
+
+           mov [_boot_mbi-OS_BASE], ebx
+
+           xor eax, eax
+           cpuid
+           cmp eax, 0
+           mov ecx, sz_nopse
+           jbe .fault
+
+           mov eax, 1
+           cpuid
+           bt edx, 3
+           mov ecx, sz_nopse
+           jnc .fault
+
+; ENABLE PAGING
+
+           mov ecx, 32
+           mov edi, _sys_pdbr+(OS_BASE shr 20)-OS_BASE
+           mov eax, PG_LARGE+PG_SW
+@@:
+           stosd
+           add eax, 4*1024*1024
+           loop @B
+
+           mov dword [_sys_pdbr-OS_BASE],   PG_LARGE+PG_SW
+           mov dword [_sys_pdbr-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
+           mov dword [_sys_pdbr-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
+
+           mov ebx, cr4
+           or ebx, CR4_PSE
+           and ebx, not CR4_PAE
+           mov cr4, ebx
+
+           mov eax, _sys_pdbr-OS_BASE
+           mov ebx, cr0
+           or ebx,CR0_PG+CR0_WP
+
+           mov cr3, eax
+           mov cr0, ebx
+
+           mov ebx, [_boot_mbi]
+
+           mov edx, [ebx+20]
+           mov esi, [ebx+24]
+           mov ecx, LAST_PAGE
+           test edx, edx
+           jz .no_mods
+.scan_mod:
+           mov ecx, [esi+4]
+           add esi, 16
+           dec edx
+           jnz .scan_mod
+
+.no_mods:
+           add ecx, 4095
+           and ecx, not 4095
+
+           lgdt [gdts]
+           jmp pword os_code:high_code
+
+
+.fault:
+;           push ecx
+;           call _lcls
+;           call __bprintf
+_hlt:
+           hlt
+           jmp _hlt
+
+sz_invboot db 'Invalid multiboot loader magic value',0x0A
+           db 'Halted',0
+
+sz_nomods  db 'No modules loaded',0x0A
+           db 'Halted',0
+
+sz_nommap  db 'No memory table', 0x0A
+           db 'Halted',0
+
+sz_nopse   db 'Page size extensions not supported',0x0A
+           db 'Halted',0
+
+
 
 ; CLEAR 0x280000 - HEAP_BASE
 
-	   xor	 eax,eax
-	   mov	 edi,0x280000
-           mov   ecx,(0x800000-0x280000) / 4
-	   cld
-	   rep	 stosd
+       ;    xor   eax,eax
+       ;    mov   edi,0x280000
+       ;    mov   ecx,(0x800000-0x280000) / 4
+       ;    cld
+       ;    rep   stosd
 
-	   mov	 edi,0x40000
-	   mov	 ecx,(0x90000-0x40000)/4
-	   rep	 stosd
+       ;    mov   edi,0x40000
+       ;    mov   ecx,(0x90000-0x40000)/4
+       ;    rep   stosd
 
 ; CLEAR KERNEL UNDEFINED GLOBALS
-	   mov	 edi, endofcode-OS_BASE
-	   mov	 ecx, (uglobals_size/4)+4
-	   rep	 stosd
+       ;    mov   edi, endofcode-OS_BASE
+       ;    mov   ecx, (uglobals_size/4)+4
+       ;    rep   stosd
 
 ; SAVE & CLEAR 0-0xffff
 
-	   xor esi, esi
-	   mov	 edi,0x2F0000
-	   mov	 ecx,0x10000 / 4
-	   rep	 movsd
-	   xor edi, edi
-	   mov	 ecx,0x10000 / 4
-	   rep	 stosd
+       ;    xor esi, esi
+       ;    mov   edi,0x2F0000
+       ;    mov   ecx,0x10000 / 4
+       ;    rep   movsd
+       ;    xor edi, edi
+       ;    mov   ecx,0x10000 / 4
+       ;    rep   stosd
 
-	   call test_cpu
+        ;   call test_cpu
 	   bts [cpu_caps-OS_BASE], CAPS_TSC	;force use rdtsc
 
-	   call init_BIOS32
+        ;   call init_BIOS32
 
            mov dword [sys_pgdir-OS_BASE], PG_LARGE+PG_SW
            mov dword [sys_pgdir-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
@@ -261,7 +270,6 @@ B32:
            and ebx, not CR4_PAE
            mov cr4, ebx
 
-; ENABLE PAGING
 
 	   mov eax, sys_pgdir-OS_BASE
            mov ebx, cr0
@@ -277,15 +285,14 @@ align 4
 bios32_entry	dd ?
 tmp_page_tabs	dd ?
 
-use16
-org $-0x10000
-include "boot/shutdown.inc" ; shutdown or restart
-org $+0x10000
-use32
+;use16
+;org $-0x10000
+;include "boot/shutdown.inc" ; shutdown or restart
+;org $+0x10000
+;use32
 
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
-include 'init.inc'
 
 org OS_BASE+$
 
@@ -297,62 +304,150 @@ MEM_UC     equ 0               ;uncached memory
 include 'printf.inc'
 include 'core/mm.asm'
 
+include 'core/init.asm'
+
+align 4
+proc test_cpu
+           locals
+              cpu_type   dd ?
+              cpu_id     dd ?
+              cpu_Intel  dd ?
+              cpu_AMD    dd ?
+           endl
+
+           mov [cpu_type], 0
+           xor eax, eax
+           mov [cpu_caps], eax
+           mov [cpu_caps+4], eax
+
+           pushfd
+           pop eax
+           mov ecx, eax
+           xor eax, 0x40000
+           push eax
+           popfd
+           pushfd
+           pop eax
+           xor eax, ecx
+           mov [cpu_type], CPU_386
+           jz .end_cpuid
+           push ecx
+           popfd
+
+           mov [cpu_type], CPU_486
+           mov eax, ecx
+           xor eax, 0x200000
+           push eax
+           popfd
+           pushfd
+           pop eax
+           xor eax, ecx
+           je .end_cpuid
+           mov [cpu_id], 1
+
+           xor eax, eax
+           cpuid
+
+           mov [cpu_vendor], ebx
+           mov [cpu_vendor+4], edx
+           mov [cpu_vendor+8], ecx
+           cmp ebx, dword [intel_str]
+           jne .check_AMD
+           cmp edx, dword [intel_str+4]
+           jne .check_AMD
+           cmp ecx, dword [intel_str+8]
+           jne .check_AMD
+           mov [cpu_Intel], 1
+           cmp eax, 1
+           jl .end_cpuid
+           mov eax, 1
+           cpuid
+           mov [cpu_sign], eax
+           mov [cpu_info],  ebx
+           mov [cpu_caps],  edx
+           mov [cpu_caps+4],ecx
+
+           shr eax, 8
+           and eax, 0x0f
+           ret
+.end_cpuid:
+           mov eax, [cpu_type]
+           ret
+
+.check_AMD:
+           cmp ebx, dword [AMD_str]
+           jne .unknown
+           cmp edx, dword [AMD_str+4]
+           jne .unknown
+           cmp ecx, dword [AMD_str+8]
+           jne .unknown
+           mov [cpu_AMD], 1
+           cmp eax, 1
+           jl .unknown
+           mov eax, 1
+           cpuid
+           mov [cpu_sign], eax
+           mov [cpu_info],  ebx
+           mov [cpu_caps],  edx
+           mov [cpu_caps+4],ecx
+           shr eax, 8
+           and eax, 0x0f
+           ret
+.unknown:
+           mov eax, 1
+           cpuid
+           mov [cpu_sign], eax
+           mov [cpu_info],  ebx
+           mov [cpu_caps],  edx
+           mov [cpu_caps+4],ecx
+           shr eax, 8
+           and eax, 0x0f
+           ret
+endp
 
 align 4
 high_code:
 	   mov ax,os_stack
-	   mov bx,app_data
+           mov dx,app_data
 	   mov ss,ax
-	   add	esp, OS_BASE
+           mov esp, __os_stack
 
-	   mov ds,bx
-	   mov es,bx
-	   mov fs,bx
-	   mov gs,bx
+           mov ds, dx
+           mov es, dx
+           mov fs, dx
+           mov gs, dx
 
-           mov dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
+           push ecx
+           push ebx
 
-	   bt [cpu_caps], CAPS_PGE
-	   jnc @F
+         ;  mov dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
 
-           or dword [sys_pgdir-OS_BASE+(OS_BASE shr 20)], PG_GLOBAL
+         ;  bt [cpu_caps], CAPS_PGE
+         ;  jnc @F
 
-	   mov ebx, cr4
-	   or ebx, CR4_PGE
-	   mov cr4, ebx
+         ;  or dword [sys_pgdir-OS_BASE+(OS_BASE shr 20)], PG_GLOBAL
+
+         ;  mov ebx, cr4
+         ;  or ebx, CR4_PGE
+         ;  mov cr4, ebx
 @@:
-	   xor eax, eax
-	   mov dword [sys_pgdir], eax
-	   mov dword [sys_pgdir+4], eax
+         ;  xor eax, eax
+         ;  mov dword [sys_pgdir], eax
+         ;  mov dword [sys_pgdir+4], eax
 
-	   mov eax, cr3
-	   mov cr3, eax 	  ; flush TLB
-
+         ;  mov eax, cr3
+         ;  mov cr3, eax           ; flush TLB
 
            mov edx, 0x3fB
            mov eax, 3
            out dx, al
 
-; MEMORY MODEL
-
-           mov ecx, 1280*1024
-           fastcall _balloc
-           mov [_display_data], eax
-
-           mov ecx, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
-                    (unpack.lc+unpack.lp)))*4
-           fastcall _balloc
-           mov [unpack.p], eax
-
-           mov ecx, (RING0_STACK_SIZE+512)
-           fastcall _balloc
-           mov [os_stack_seg], eax
-
-	   lea esp, [eax+RING0_STACK_SIZE]
+           call test_cpu
+           call _init
 
 	   mov [tss._ss0], os_stack
-	   mov [tss._esp0], esp
-	   mov [tss._esp], esp
+           mov [tss._esp0], __os_stack
+           mov [tss._esp], __os_stack
 	   mov [tss._cs],os_code
 	   mov [tss._ss],os_stack
 	   mov [tss._ds],app_data
@@ -370,10 +465,26 @@ high_code:
 	   mov	ax,tss0
 	   ltr	ax
 
+           xchg bx, bx
+
+           mov ecx, 1280*1024
+           fastcall _balloc
+           mov [_display_data], eax
+
+           mov ecx, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
+                    (unpack.lc+unpack.lp)))*4
+           fastcall _balloc
+           mov [unpack.p], eax
+
+; MEMORY MODEL
+
            call init_kernel_heap     ; FIXME initialize heap after pager
 
            call _init_mm
            mov [pg_data.pg_mutex], 0
+
+           hlt
+
 
 ; SAVE REAL MODE VARIABLES
 	mov	ax, [BOOT_VAR + 0x9031]
@@ -629,23 +740,18 @@ include 'detect/disks.inc'
 ;    mov    [dma_hdd],1
 ; CALCULATE FAT CHAIN FOR RAMDISK
 
-        mov [_rd_base],     OS_BASE+0x100000
-        mov [_rd_fat],      OS_BASE+0x100000 + 512
-        mov [_rd_fat_end],  OS_BASE+0x100000 + 512 + 4278
-        mov [_rd_root],     OS_BASE+0x100000 + 512*19
-        mov [_rd_root_end], OS_BASE+0x100000 + 512*33
 
 	call  calculatefatchain
 
 
-  mov ax,[OS_BASE+0x10000+bx_from_load]
-  cmp ax,'r1'		; if using not ram disk, then load librares and parameters {SPraid.simba}
-  je  no_lib_load
+ ; mov ax,[OS_BASE+0x10000+bx_from_load]
+ ; cmp ax,'r1'           ; if using not ram disk, then load librares and parameters {SPraid.simba}
+ ; je  no_lib_load
 ; LOADING LIBRARES
-   stdcall dll.Load,@IMPORT		    ; loading librares for kernel (.obj files)
-   call load_file_parse_table		    ; prepare file parse table
-   call set_kernel_conf 		    ; configure devices and gui
-no_lib_load:
+;   stdcall dll.Load,@IMPORT                 ; loading librares for kernel (.obj files)
+;   call load_file_parse_table               ; prepare file parse table
+;   call set_kernel_conf                     ; configure devices and gui
+;no_lib_load:
 
 ; LOAD FONTS I and II
 
@@ -718,7 +824,7 @@ no_lib_load:
 
 	mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
 	mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
-	mov edi, [os_stack_seg]
+        mov edi,  __os_stack-8192+512
 	mov dword [SLOT_BASE+256+APPDATA.pl0_stack], edi
 	add edi, 0x2000-512
 	mov dword [SLOT_BASE+256+APPDATA.fpu_state], edi
@@ -828,11 +934,11 @@ no_lib_load:
 	   stdcall map_page,tss._io_map_1,\
 		   (tss._io_map_1-OS_BASE), PG_MAP
 
-  mov ax,[OS_BASE+0x10000+bx_from_load]
-  cmp ax,'r1'		; if not rused ram disk - load network configuration from files {SPraid.simba}
-  je  no_st_network
-	call set_network_conf
-  no_st_network:
+;  mov ax,[OS_BASE+0x10000+bx_from_load]
+;  cmp ax,'r1'           ; if not rused ram disk - load network configuration from files {SPraid.simba}
+;  je  no_st_network
+;        call set_network_conf
+;  no_st_network:
 
 ; LOAD FIRST APPLICATION
 	cli
@@ -891,13 +997,13 @@ first_app_found:
 
 ; START MULTITASKING
 
-if preboot_blogesc
-	mov	esi, boot_tasking
-	call	boot_log
-.bll1:	in	al, 0x60	; wait for ESC key press
-	cmp	al, 129
-	jne	.bll1
-end if
+;if preboot_blogesc
+;        mov     esi, boot_tasking
+;        call    boot_log
+;.bll1:  in      al, 0x60        ; wait for ESC key press
+;        cmp     al, 129
+;        jne     .bll1
+;end if
 
 ;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
@@ -5163,16 +5269,16 @@ yes_shutdown_param:
 	   mov	edx, OS_BASE+0x70000
 	   call fileread
 
-	   mov	esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
-	   mov	edi,OS_BASE+0x40000
-	   mov	ecx,1000
-	   rep	movsb
+   ;        mov  esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
+   ;        mov  edi,OS_BASE+0x40000
+   ;        mov  ecx,1000
+   ;        rep  movsb
 
-	   mov	esi,OS_BASE+0x2F0000	; restore 0x0 - 0xffff
-	   mov	edi, OS_BASE
-	   mov	ecx,0x10000/4
-	   cld
-	   rep movsd
+           mov  esi,OS_BASE+0x2F0000    ; restore 0x0 - 0xffff
+           mov  edi, OS_BASE
+           mov  ecx,0x10000/4
+           cld
+           rep movsd
 
 	   call restorefatchain
 
@@ -5181,8 +5287,8 @@ yes_shutdown_param:
 	   out 0xA1, al
 
 if 1
-	   mov	word [OS_BASE+0x467+0],pr_mode_exit
-	   mov	word [OS_BASE+0x467+2],0x1000
+       ;    mov  word [OS_BASE+0x467+0],pr_mode_exit
+       ;    mov  word [OS_BASE+0x467+2],0x1000
 
 	   mov	al,0x0F
 	   out	0x70,al
@@ -5315,4 +5421,8 @@ __REV__ = __REV
 
 uglobals_size = $ - endofcode
 diff16 "end of kernel code",0,$
+
+align 16
+
+__end:
 

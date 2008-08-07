@@ -67,9 +67,9 @@ keymap_alt:
   boot_pal_vga	    db	 'Setting VGA 640x480 palette',0
   boot_failed	    db	 'Failed to start first app',0
   boot_mtrr	    db	 'Setting MTRR',0
-if preboot_blogesc
-  boot_tasking	    db	 'All set - press ESC to start',0
-end if
+;if preboot_blogesc
+;  boot_tasking      db   'All set - press ESC to start',0
+;end if
 
 new_process_loading db 'K : New Process - loading',13,10,0
 new_process_running db 'K : New Process - done',13,10,0
@@ -133,6 +133,13 @@ mode_640_480_16:
   dw 640,480,16,60
 mode_320_240_8:
   dw 320,240,8,60
+
+
+bx_from_load:     dw 'r1'  ; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
+                           ; a,b,c,d - винчестеры, r - рам диск
+                           ; # диска... символ, а не байт. '1', а не 1
+
+
 
 ; mike.dld {
 db 0
@@ -256,6 +263,17 @@ endofcode:
 gdte:
 
 align 16
+
+__edata:  ;equ $-OS_BASE
+
+align 4096
+
+_sys_pdbr   rb 4096
+
+            rb 8192-512
+
+__os_stack  rb 512
+
 cur_saved_data	  rb 4096
 fpu_data:	  rb 512
 
@@ -293,6 +311,9 @@ large_block_list  rd 31
 mem_block_mask	  rd 2
 large_block_mask  rd 1
 
+
+_boot_mbi         rd 1
+
 _mem_amount       rd 1
 _rd_base          rd 1
 _rd_fat           rd 1 ;RAMDISK + 512
@@ -322,7 +343,6 @@ event_start	  rd 1
 event_end	  rd 1
 event_uid	  rd 1
 sys_page_map	  rd 1
-os_stack_seg	  rd 1
 
 srv.fd		  rd 1
 srv.bk		  rd 1

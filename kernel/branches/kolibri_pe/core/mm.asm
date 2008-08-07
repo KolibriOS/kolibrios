@@ -556,57 +556,27 @@ _zone_create:
 	ret
 
 _init_mm:
-	push	esi
-	xor	eax, eax
 	push	ebx
-	xor	esi, esi
-	sub	esp, 20
-        mov     ebx, DWORD PTR [_mem_counter]
-	test	ebx, ebx
-        jle     .L93
-	xor	ecx, ecx
-	xor	edx, edx
-        jmp     .L94
-.L95:
-	add	ecx, 1
-	add	edx, 20
-	cmp	ecx, ebx
-        je      .L103
-.L94:
-        cmp     DWORD PTR [_mem_table+edx+16], 1
-        jne     .L95
-        mov     eax, DWORD PTR [_mem_table+edx]
-        add     eax, DWORD PTR [_mem_table+edx+8]
-	and	eax, -4096
-	cmp	esi, eax
-        jae     .L95
-	add	ecx, 1
-	add	edx, 20
-	cmp	ecx, ebx
-	mov	esi, eax
-        jne     .L94
-.L103:
-	cmp	esi, 268435456
-	mov	eax, esi
-        ja      .L104
-	mov	esi, eax
-	shr	esi, 12
-.L93:
-        mov     DWORD PTR [_mem_amount], eax
-        mov [pg_data.mem_amount], eax
-        mov [pg_data.pages_count], esi
-
-        mov     DWORD PTR [esp+8], esi
+	sub	esp, 24
+        mov     eax, DWORD PTR [_mem_amount]
+        mov     DWORD PTR [esp], .LC3
+	mov	ebx, eax
+	shr	ebx, 12
+	mov	DWORD PTR [esp+8], ebx
 	mov	DWORD PTR [esp+4], eax
-        mov     DWORD PTR [esp], .LC1
-        call    _printf
-
-	mov	DWORD PTR [esp+8], esi
+	call	_printf
+        mov     eax, DWORD PTR [_pg_balloc]
+        mov     DWORD PTR [esp], .LC4
+	mov	DWORD PTR [esp+8], eax
+	lea	eax, [ebx+ebx*4]
+	sal	eax, 2
+	mov	DWORD PTR [esp+4], eax
+	call	_printf
+	mov	DWORD PTR [esp+8], ebx
 	mov	DWORD PTR [esp+4], 0
         mov     DWORD PTR [esp], _z_core
-
 	call	_zone_create
-	mov	DWORD PTR [esp+8], esi
+	mov	DWORD PTR [esp+8], ebx
 	mov	DWORD PTR [esp+4], 0
         mov     DWORD PTR [esp], _z_core
 	call	_zone_release
@@ -616,17 +586,14 @@ _init_mm:
 	shr	eax, 12
 	mov	DWORD PTR [esp+8], eax
 	call	_zone_reserve
-	add	esp, 20
+	add	esp, 24
 	pop	ebx
-	pop	esi
-	ret
-.L104:
-	mov	eax, 268435456
-	mov	esi, eax
-	shr	esi, 12
-        jmp     .L93
-.LC1:
-        db 'memory size = %x total pages =  %x',10,0
+        ret
+.LC3:
+        db "last page = %x total pages =  %x",10,0
+.LC4:
+        db "conf_size = %x  free mem start =%x",10,0
+
 
 _frame_free:
 	push	ebx
