@@ -99,8 +99,8 @@ szIMPORTS      db 'IMPORTS',0
 read_firstapp  db '/sys/'
 firstapp       db  'LAUNCHER',0
 
-char	db '/sys/FONTS/CHAR.MT',0
-char2	db '/sys/FONTS/CHAR2.MT',0
+char    db '/rd/1/FONTS/CHAR.MT',0
+char2   db '/rd/1/FONTS/CHAR2.MT',0
 
 bootpath       db  '/KOLIBRI    '
 bootpath2      db  0
@@ -135,9 +135,9 @@ mode_320_240_8:
   dw 320,240,8,60
 
 
-bx_from_load:     dw 'r1'  ; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
-                           ; a,b,c,d - винчестеры, r - рам диск
-                           ; # диска... символ, а не байт. '1', а не 1
+;bx_from_load:     dw 'r1'  ; структура для хранения параметров- откуда гашрузились, берется ниже из bx ; {SPraid}[13.03.2007]
+;                           ; a,b,c,d - винчестеры, r - рам диск
+;                           ; # диска... символ, а не байт. '1', а не 1
 
 
 
@@ -259,16 +259,21 @@ tss0_l:
 	db     (tss shr 16) and 0xFF
 	db     10001001b
 	dw     (tss shr 16) and 0xFF00
+
+code_16:
+        dw 0xFFFF
+        dw 0
+        db 1
+        db cpl0
+        dw 0
+
 endofcode:
 gdte:
-
-align 16
-
 __edata:  ;equ $-OS_BASE
 
 align 4096
 
-_sys_pdbr   rb 4096
+_sys_pdbr   rd 1024
 
             rb 8192-512
 

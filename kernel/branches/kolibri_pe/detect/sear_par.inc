@@ -23,6 +23,7 @@ $Revision$
       mov  [fat32part],1
  search_partitions_ide0_1:
       call  set_FAT32_variables
+
       cmp   [problem_partition],0
       jne   search_partitions_ide1
       inc   byte [DRIVE_DATA+2]

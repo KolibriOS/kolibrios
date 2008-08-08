@@ -11,5 +11,7 @@ $Revision$
 include 'dev_fd.inc'
 include 'dev_hdcd.inc'
 include 'getcache.inc'
-include 'sear_par.inc'
 
+;         jmp __12345
+include 'sear_par.inc'
+;__12345:

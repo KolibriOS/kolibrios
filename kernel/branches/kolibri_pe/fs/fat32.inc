@@ -106,11 +106,14 @@ endg
 
 reserve_hd1:
 
+    pushfd
     cli
-    cmp   [hd1_status],0
+
+    cmp   [hd1_status],0                          ;FIXME  use mutex
     je    reserve_ok1
 
-    sti
+    popfd
+
     call  change_task
     jmp   reserve_hd1
 
@@ -122,7 +125,7 @@ reserve_hd1:
     mov   eax,[eax+CURRENT_TASK+TASKDATA.pid]
     mov   [hd1_status],eax
     pop   eax
-    sti
+    popfd
     ret
 ;********************************************
 
@@ -138,26 +141,30 @@ reserve_hd_channel:
     cmp   [hdbase], 0x1F0
     jne   .IDE_Channel_2
 .IDE_Channel_1:
+    pushfd
     cli
     cmp   [IDE_Channel_1],0
     je    .reserve_ok_1
-    sti
+    popfd
     call  change_task
     jmp   .IDE_Channel_1
 .IDE_Channel_2:
+    pushfd
     cli
     cmp   [IDE_Channel_2],0
     je    .reserve_ok_2
-    sti
+    popfd
     call  change_task
     jmp   .IDE_Channel_2
 .reserve_ok_1:
         mov     [IDE_Channel_1], 1
+        popfd
         push    eax
         mov     al, 1
         jmp     @f
 .reserve_ok_2:
         mov     [IDE_Channel_2], 1
+        popfd
         push    eax
         mov     al, 3
 @@:

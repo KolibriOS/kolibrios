@@ -395,7 +395,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 	   rep stosd
 
            mov ecx, 1024-(OS_BASE shr 20)/4
-	   mov esi, sys_pgdir+(OS_BASE shr 20)
+           mov esi, _sys_pdbr+(OS_BASE shr 20)
 	   rep movsd
 
            mov edi, [dir_addr]

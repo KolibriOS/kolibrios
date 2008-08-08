@@ -20,6 +20,7 @@ $Revision$
 ;
 ;==========================================================================
 
+use16
 
 putchar:
 ; in: al=character
@@ -124,6 +125,11 @@ conv_abs_to_THS:
         mov     dl,0                            ; dl=0 (drive 0 (a:))
         pop     bx
         retn
+
+sayerr:
+        call    print
+        jmp     $
+
 ; needed variables
 BPB_SecPerTrk   dw      0                       ; sectors per track
 BPB_NumHeads    dw      0                       ; number of heads
@@ -147,34 +153,22 @@ FirstDataSector dw      0                       ; begin of data
 include 'bootvesa.inc'                 ;Include source for boot vesa
 
 start_of_code:
+
         cld
-; \begin{diamond}[02.12.2005]
-; if bootloader sets ax = 'KL', then ds:si points to loader block
-        cmp     ax, 'KL'
-        jnz     @f
-        mov     word [cs:cfgmanager.loader_block], si
-        mov     word [cs:cfgmanager.loader_block+2], ds
-@@:
-; \end{diamond}[02.12.2005]
 
-; if bootloader sets cx = 'HA' and dx = 'RD', then bx contains identifier of source hard disk
-; (see comment to bx_from_load)
-        cmp     cx, 'HA'
-        jnz     no_hd_load
-        cmp     dx,'RD'
-        jnz     no_hd_load
-        mov     word [cs:bx_from_load], bx              ; {SPraid}[13.03.2007]
-no_hd_load:
+        xor ecx, ecx
+        xor edx, edx
+        xor esi, esi
+        xor edi, edi
+        xor ebp, ebp
 
-; set up stack
-        mov     ax, 3000h
-        mov     ss, ax
-        mov     sp, 0EC00h
-; set up segment registers
-        push    cs
-        pop     ds
-        push    cs
-        pop     es
+        mov eax, 0x3000
+        mov ss, ax
+        mov esp, 0EC00h
+
+        mov ebx, 0x1000
+        mov ds, bx
+        mov es, bx
 
 ; set videomode
         mov     ax, 3
@@ -218,6 +212,7 @@ end if
         lodsb
         stosw
         loop    @b
+
 ; draw spaces
         mov     si, space_msg
         mov     dx, 25 - d80x25_top_num - d80x25_bottom_num
@@ -243,65 +238,9 @@ dfl1:
 
         _setcursor d80x25_top_num,0
 
-
-; TEST FOR 386+
-
-           mov     bx, 0x4000
-           pushf
-           pop     ax
-           mov     dx, ax
-           xor     ax, bx
-           push    ax
-           popf
-           pushf
-           pop     ax
-           and     ax, bx
-           and     dx, bx
-           cmp     ax, dx
-
-           mov     si, not386
-           jz      sayerr
-
-           xor   eax, eax
-           cpuid
-           cmp   eax, 0
-           mov   si, sz_nopse
-           jbe   sayerr
-
-           mov   eax, 1
-           cpuid
-           bt    edx, 3
-           mov   si, sz_nopse
-           jnc   sayerr
-
-           xor ebx, ebx
-           mov es, bx
-
-           mov edi, 0x9104
-           mov ecx, 20
-           mov edx, 0x534D4150
-
-           mov [es:0x9100], ebx
-           mov eax, 0xe820
-           int 0x15
-           mov   si, sz_nosmap
-           jc sayerr
-
-           cmp eax, 0x534D4150
-           je cpugood
-sayerr:
-           call    print
-           jmp     $
-
-
-cpugood:
-
         push    0
         popf
         sti
-
-; set up esp
-        movzx   esp, sp
 
         push    0
         pop     es
@@ -409,13 +348,6 @@ wait_loop:       ; variant 2
 apm_end:
         _setcursor d80x25_top_num, 0
 
-;CHECK current of code
-        cmp     [cfgmanager.loader_block], -1
-        jz      noloaderblock
-        les     bx, [cfgmanager.loader_block]
-        cmp     byte [es:bx], 1
-        mov     si, loader_block_error
-        jnz     sayerr
         push    0
         pop     es
 
@@ -424,7 +356,6 @@ noloaderblock:
          call    print_vesa_info
          call    calc_vmodes_table
          call    check_first_parm  ;check and enable cursor_pos
-
 
 ; \begin{diamond}[30.11.2005]
 cfgmanager:
@@ -829,368 +760,6 @@ end if
         mov     al, [preboot_dma]
         mov     [es:0x901F], al
 
-; VRR_M USE
-
-        mov     al,[preboot_vrrm]
-        mov     [es:0x9030], al
-        mov     [es:0x901E], byte 1
-
-; BOOT DEVICE
-
-        mov     al, [preboot_device]
-        dec     al
-        mov     [boot_dev], al
-
-; READ DISKETTE TO MEMORY
-
-;        cmp     [boot_dev],0
-        jne     no_sys_on_floppy
-        mov     si,diskload
-        call    print
-        xor     ax, ax            ; reset drive
-        xor     dx, dx
-        int     0x13
-; do we boot from CD-ROM?
-        mov     ah, 41h
-        mov     bx, 55AAh
-        xor     dx, dx
-        int     0x13
-        jc      .nocd
-        cmp     bx, 0AA55h
-        jnz     .nocd
-        mov     ah, 48h
-        push    ds
-        push    es
-        pop     ds
-        mov     si, 0xa000
-        mov     word [si], 30
-        int     0x13
-        pop     ds
-        jc      .nocd
-        push    ds
-        lds     si, [es:si+26]
-        test    byte [ds:si+10], 40h
-        pop     ds
-        jz      .nocd
-; yes - read all floppy by 18 sectors
-
-; TODO: !!!! read only first sector and set variables !!!!!
-; ...
-; TODO: !!! then read flippy image track by track
-
-        mov     cx, 0x0001      ; startcyl,startsector
-.a1:
-        push    cx dx
-        mov     al, 18
-        mov     bx, 0xa000
-        call    boot_read_floppy
-        mov     si, movedesc
-        push    es
-        push    ds
-        pop     es
-        mov     cx, 256*18
-        mov     ah, 0x87
-        int     0x15
-        pop     es
-        pop     dx cx
-        test    ah, ah
-        jnz     sayerr_floppy
-        add     dword [si+8*3+2], 512*18
-        inc     dh
-        cmp     dh, 2
-        jnz     .a1
-        mov     dh, 0
-        inc     ch
-        cmp     ch, 80
-        jae     ok_sys_on_floppy
-        pusha
-        mov     al, ch
-        shr     ch, 2
-        add     al, ch
-        aam
-        xchg    al, ah
-        add     ax, '00'
-        mov     si, pros
-        mov     [si], ax
-        call    printplain
-        popa
-        jmp     .a1
-.nocd:
-; no - read only used sectors from floppy
-; now load floppy image to memory
-; at first load boot sector and first FAT table
-
-; read only first sector and fill variables
-        mov     cx, 0x0001      ; first logical sector
-        xor     dx, dx          ; head = 0, drive = 0 (a:)
-        mov     al, 1           ; read one sector
-        mov     bx, 0xB000      ; es:bx -> data area
-        call    boot_read_floppy
-; fill the necessary parameters to work with a floppy
-        mov     ax, word [es:bx+24]
-        mov     word [BPB_SecPerTrk], ax
-        mov     ax, word [es:bx+26]
-        mov     word [BPB_NumHeads], ax
-        mov     ax, word [es:bx+22]
-        mov     word [BPB_FATSz16], ax
-        mov     ax, word [es:bx+17]
-        mov     word [BPB_RootEntCnt], ax
-        mov     ax, word [es:bx+11]
-        mov     word [BPB_BytsPerSec], ax
-        mov     ax, word [es:bx+14]
-        mov     word [BPB_RsvdSecCnt], ax
-        mov     ax, word [es:bx+19]
-        mov     word [BPB_TotSec16], ax
-        mov     al, byte [es:bx+13]
-        mov     byte [BPB_SecPerClus], al
-        mov     al, byte [es:bx+16]
-        mov     byte [BPB_NumFATs], al
-; count of clusters in FAT12 ((size_of_FAT*2)/3)
-        mov     ax, word [BPB_FATSz16]
-        mov     cx, word [BPB_BytsPerSec]
-        xor     dx, dx
-        mul     cx
-        shl     ax, 1
-        mov     cx, 3
-        div     cx              ; now ax - number of clusters in FAT12
-        mov     word [end_of_FAT], ax
-
-; load first FAT table
-        mov     cx, 0x0002      ; startcyl,startsector          ; TODO!!!!!
-        xor     dx, dx          ; starthead,drive
-        mov     al, byte [BPB_FATSz16]     ; no of sectors to read
-        add     bx, word [BPB_BytsPerSec]  ; es:bx -> data area
-        call    boot_read_floppy
-        mov     bx, 0xB000
-
-; and copy them to extended memory
-        mov     si, movedesc
-        mov     [si+8*2+3], bh          ; from
-
-        mov     ax, word [BPB_BytsPerSec]
-        shr     ax, 1                   ; words per sector
-        mov     cx, word [BPB_RsvdSecCnt]
-        add     cx, word [BPB_FATSz16]
-        mul     cx
-        push    ax                      ; save to stack count of words in boot+FAT
-        xchg    ax, cx
-
-        push    es
-        push    ds
-        pop     es
-        mov     ah, 0x87
-        int     0x15
-        pop     es
-        test    ah, ah
-        jz      @f
-sayerr_floppy:
-        mov     dx, 0x3f2
-        mov     al, 0
-        out     dx, al
-        mov     si, memmovefailed
-        jmp     sayerr_plain
-@@:
-        pop     ax                      ; restore from stack count of words in boot+FAT
-        shl     ax, 1                   ; make bytes count from count of words
-        and     eax, 0ffffh
-        add     dword [si+8*3+2], eax
-
-; copy first FAT to second copy
-; TODO: BPB_NumFATs !!!!!
-        add     bx, word [BPB_BytsPerSec]       ; !!! TODO: may be need multiply by BPB_RsvdSecCnt !!!
-        mov     byte [si+8*2+3], bh     ; bx - begin of FAT
-
-        mov     ax, word [BPB_BytsPerSec]
-        shr     ax, 1                   ; words per sector
-        mov     cx, word [BPB_FATSz16]
-        mul     cx
-        mov     cx, ax                  ; cx - count of words in FAT
-
-        push    es
-        push    ds
-        pop     es
-        mov     ah, 0x87
-        int     0x15
-        pop     es
-        test    ah, ah
-        jnz     sayerr_floppy
-
-        mov     ax, cx
-        shl     ax, 1
-        and     eax, 0ffffh             ; ax - count of bytes in FAT
-        add     dword [si+8*3+2], eax
-
-; reading RootDir
-; TODO: BPB_NumFATs
-        add     bx, ax
-        add     bx, 100h
-        and     bx, 0ff00h                      ; bx - place in buffer to write RootDir
-        push    bx
-
-        mov     bx, word [BPB_BytsPerSec]
-        shr     bx, 5                           ; divide bx by 32
-        mov     ax, word [BPB_RootEntCnt]
-        xor     dx, dx
-        div     bx
-        push    ax                              ; ax - count of RootDir sectors
-
-        mov     ax, word [BPB_FATSz16]
-        xor     cx, cx
-        mov     cl, byte [BPB_NumFATs]
-        mul     cx
-        add     ax, word [BPB_RsvdSecCnt]       ; ax - first sector of RootDir
-
-        mov     word [FirstDataSector], ax
-        pop     bx
-        push    bx
-        add     word [FirstDataSector], bx      ; Begin of data region of floppy
-
-; read RootDir
-        call    conv_abs_to_THS
-        pop     ax
-        pop     bx                              ; place in buffer to write
-        push    ax
-        call    boot_read_floppy                ; read RootDir into buffer
-; copy RootDir
-        mov     byte [si+8*2+3], bh             ; from buffer
-        pop     ax                              ; ax = count of RootDir sectors
-        mov     cx, word [BPB_BytsPerSec]
-        mul     cx
-        shr     ax, 1
-        mov     cx, ax                          ; count of words to copy
-        push    es
-        push    ds
-        pop     es
-        mov     ah, 0x87
-        int     0x15
-        pop     es
-
-        mov     ax, cx
-        shl     ax, 1
-        and     eax, 0ffffh             ; ax - count of bytes in RootDir
-        add     dword [si+8*3+2], eax   ; add count of bytes copied
-
-; Reading data clusters from floppy
-        mov     byte [si+8*2+3], bh
-        push    bx
-
-        mov     di, 2                   ; First data cluster
-.read_loop:
-        mov     bx, di
-        shr     bx, 1                   ; bx+di = di*1.5
-        jnc     .even
-        test    word [es:bx+di+0xB200], 0xFFF0  ; TODO: may not be 0xB200 !!!
-        jmp     @f
-.even:
-        test    word [es:bx+di+0xB200], 0xFFF   ; TODO: may not be 0xB200 !!!
-
-@@:
-        jz      .skip
-; read cluster di
-;.read:
-        ;conv cluster di to abs. sector ax
-        ; ax = (N-2) * BPB_SecPerClus + FirstDataSector
-        mov     ax, di
-        sub     ax, 2
-        xor     bx, bx
-        mov     bl, byte [BPB_SecPerClus]
-        mul     bx
-        add     ax, word [FirstDataSector]
-        call    conv_abs_to_THS
-        pop     bx
-        push    bx
-        mov     al, byte [BPB_SecPerClus]       ; number of sectors in cluster
-        call    boot_read_floppy
-        push    es
-        push    ds
-        pop     es
-        pusha
-;
-        mov     ax, word [BPB_BytsPerSec]
-        xor     cx, cx
-        mov     cl, byte [BPB_SecPerClus]
-        mul     cx
-        shr     ax, 1                           ; ax = (BPB_BytsPerSec * BPB_SecPerClus)/2
-        mov     cx, ax                          ; number of words to copy (count words in cluster)
-;
-        mov     ah, 0x87
-        int     0x15                            ; copy data
-        test    ah, ah
-        popa
-        pop     es
-        jnz     sayerr_floppy
-; skip cluster di
-.skip:
-        mov     ax, word [BPB_BytsPerSec]
-        xor     cx, cx
-        mov     cl, byte [BPB_SecPerClus]
-        mul     cx
-        and     eax, 0ffffh             ; ax - count of bytes in cluster
-        add     dword [si+8*3+2], eax
-
-        mov     ax, word [end_of_FAT]   ; max cluster number
-        pusha
-; draw percentage
-; total clusters: ax
-; read clusters: di
-        xchg    ax, di
-        mov     cx, 100
-        mul     cx
-        div     di
-        aam
-        xchg    al, ah
-        add     ax, '00'
-        mov     si, pros
-        cmp     [si], ax
-        jz      @f
-        mov     [si], ax
-        call    printplain
-@@:
-        popa
-        inc     di
-        cmp     di, word [end_of_FAT]   ; max number of cluster
-        jnz     .read_loop
-        pop     bx                      ; clear stack
-
-ok_sys_on_floppy:
-        mov     si, backspace2
-        call    printplain
-        mov     si, okt
-        call    printplain
-no_sys_on_floppy:
-        xor     ax, ax          ; reset drive
-        xor     dx, dx
-        int     0x13
-        mov     dx, 0x3f2       ; floppy motor off
-        mov     al, 0
-        out     dx, al
-
-
-; GET SMAP
-
-        xor ebx, ebx
-        mov es, bx
-
-        mov edi, 0x9104
-        mov ecx, 20
-        mov edx, 0x534D4150
-@@:
-        mov [es:0x9100], ebx
-        mov eax, 0xe820
-        int 0x15
-
-        jc .nosmap
-        cmp eax, 0x534D4150
-        jne .nosmap
-
-        test ebx, ebx
-        jz .nosmap
-
-        add edi, ecx
-        jmp @B
-
-.nosmap:
-
 ; SET GRAPHICS
 
         xor     ax, ax
@@ -1234,3 +803,4 @@ setgr:
 gmok2:
         push    ds
         pop     es
+

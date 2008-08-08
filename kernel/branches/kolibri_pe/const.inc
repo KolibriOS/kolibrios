@@ -198,6 +198,7 @@ OS_TEMP             equ 0xDFC00000
 kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
+LOAD_BASE           equ 0x00100000
 OS_BASE             equ 0xE0000000
 
 window_data         equ OS_BASE
@@ -283,7 +284,7 @@ TMP_STACK_TOP       equ 0x006CC00
 FONT_II             equ (OS_BASE+0x006DC00)
 FONT_I              equ (OS_BASE+0x006E600)
 
-sys_pgdir           equ (OS_BASE+0x006F000)
+;sys_pgdir           equ (OS_BASE+0x006F000)
 
 DRIVE_DATA          equ (OS_BASE+0x0070000)
 

@@ -13,10 +13,6 @@
 
 $Revision$
 
-sz_nosmap  db 'No BIOS memory table.     System halted.', 0
-
-sz_nopse   db 'Page size extensions not supported.      System halted.', 0
-
 d80x25_bottom:
           db       186,' Kolibri OS основана на Menuet OS и не предоставляет '
           db       'никаких гарaнтий.        ',186

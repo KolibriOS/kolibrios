@@ -891,6 +891,7 @@ rd_find_lfn:
 ;
 ;--------------------------------------------------------------
 fs_RamdiskRead:
+
 	cmp	byte [esi], 0
 	jnz	@f
 	or	ebx, -1

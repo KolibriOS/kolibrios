@@ -245,15 +245,15 @@ proc init_LFB
 
            mov eax, [LFBAddress]
            or eax, PG_LARGE+PG_UW
-           mov [sys_pgdir+(LFB_BASE shr 20)], eax
+           mov [_sys_pdbr+(LFB_BASE shr 20)], eax
            add eax, 0x00400000
-           mov [sys_pgdir+4+(LFB_BASE shr 20)], eax
+           mov [_sys_pdbr+4+(LFB_BASE shr 20)], eax
 
            mov dword [exp_lfb+4], LFB_BASE
 
            bt [cpu_caps], CAPS_PGE
            jnc @F
-           or dword [sys_pgdir+(LFB_BASE shr 20)], PG_GLOBAL
+           or dword [_sys_pdbr+(LFB_BASE shr 20)], PG_GLOBAL
 @@:
            mov dword [LFBAddress], LFB_BASE
            mov eax, cr3       ;flush TLB
@@ -462,7 +462,7 @@ proc page_fault_handler
 
 .lfb:
            shr ebx, 22
-           mov edx, [sys_pgdir + ebx*4]
+           mov edx, [_sys_pdbr + ebx*4]
            mov [master_tab + ebx*4], edx
            jmp .exit
 
@@ -483,7 +483,7 @@ align 4
            jz .check_ptab      ;таблица страниц не создана
 
 .check_ptab:
-           mov edx, [sys_pgdir + ebx*4]
+           mov edx, [_sys_pdbr + ebx*4]
            test edx, PG_MAP
            jnz @F
 
@@ -498,7 +498,7 @@ align 4
            cld
            rep stosd
 
-           mov [sys_pgdir + ebx*4], edx
+           mov [_sys_pdbr + ebx*4], edx
 @@:
            mov [master_tab + ebx*4], edx
            jmp .exit

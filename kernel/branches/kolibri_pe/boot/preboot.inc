@@ -31,8 +31,8 @@ preboot_device	    db	0 ; boot device
 preboot_blogesc = 0       ; start immediately after bootlog
 preboot_biosdisk    db	2 ; use V86 to access disks through BIOS (1-yes, 2-no)
 
-      if $>0x200
-ERROR: prebooting parameters must fit in first sector!!!
-      end if
+;      if $>0x200
+;ERROR: prebooting parameters must fit in first sector!!!
+;      end if
 hdsysimage	    db	'KOLIBRI IMG' ; load from
 image_save	    db	'KOLIBRI IMG' ; save to

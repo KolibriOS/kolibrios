@@ -118,7 +118,6 @@ mboot:
   dd  LAST_PAGE
   dd  __start
 
-
 align 16
 __start:
            cld
@@ -165,7 +164,7 @@ __start:
 
            mov dword [_sys_pdbr-OS_BASE],   PG_LARGE+PG_SW
            mov dword [_sys_pdbr-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
-           mov dword [_sys_pdbr-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
+           mov dword [_sys_pdbr-OS_BASE+(page_tabs shr 20)], _sys_pdbr+PG_SW-OS_BASE
 
            mov ebx, cr4
            or ebx, CR4_PSE
@@ -220,6 +219,57 @@ sz_nommap  db 'No memory table', 0x0A
 sz_nopse   db 'Page size extensions not supported',0x0A
            db 'Halted',0
 
+org $-0x100000
+
+align 4
+
+_enter_bootscreen:
+
+use16
+           mov eax, cr0
+           and eax, not 0x80000001
+           mov cr0, eax
+           jmp far 0x1000:start_of_code
+
+version db    'Kolibri OS  version 0.7.1.0      ',13,10,13,10,0
+
+include "boot/bootstr.inc"     ; language-independent boot messages
+include "boot/preboot.inc"
+
+if lang eq en
+include "boot/booteng.inc"     ; english system boot messages
+else if lang eq ru
+include "boot/bootru.inc"      ; russian system boot messages
+include "boot/ru.inc"	       ; Russian font
+else if lang eq et
+include "boot/bootet.inc"      ; estonian system boot messages
+include "boot/et.inc"	       ; Estonian font
+else
+include "boot/bootge.inc"      ; german system boot messages
+end if
+
+include "data16.inc"
+
+include "boot/bootcode.inc"    ; 16 bit system boot code
+include "bus/pci/pci16.inc"
+include "detect/biosdisk.inc"
+
+;include "boot/shutdown.inc" ; shutdown or restart
+
+           cli
+
+           mov eax, cr0
+           or eax, 0x80000001
+           mov cr0, eax
+
+           jmp pword os_code:__setvars
+
+org $+0x100000
+
+align 4
+_leave_bootscreen:
+
+use32
 
 
 ; CLEAR 0x280000 - HEAP_BASE
@@ -239,60 +289,47 @@ sz_nopse   db 'Page size extensions not supported',0x0A
        ;    mov   ecx, (uglobals_size/4)+4
        ;    rep   stosd
 
-; SAVE & CLEAR 0-0xffff
-
-       ;    xor esi, esi
-       ;    mov   edi,0x2F0000
-       ;    mov   ecx,0x10000 / 4
-       ;    rep   movsd
-       ;    xor edi, edi
-       ;    mov   ecx,0x10000 / 4
-       ;    rep   stosd
 
         ;   call test_cpu
 	   bts [cpu_caps-OS_BASE], CAPS_TSC	;force use rdtsc
 
         ;   call init_BIOS32
 
-           mov dword [sys_pgdir-OS_BASE], PG_LARGE+PG_SW
-           mov dword [sys_pgdir-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
+       ;    mov dword [sys_pgdir-OS_BASE], PG_LARGE+PG_SW
+       ;    mov dword [sys_pgdir-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
 
-           mov ecx, 32
-           lea edi, [sys_pgdir-OS_BASE+0xE00]
-           mov eax, PG_LARGE+PG_SW
-@@:
-           stosd
-           add eax, 4*1024*1024
-           loop @B
+       ;    mov ecx, 32
+       ;    lea edi, [sys_pgdir-OS_BASE+0xE00]
+       ;    mov eax, PG_LARGE+PG_SW
+;@@:
+;           stosd
+;           add eax, 4*1024*1024
+;           loop @B
 
-           mov ebx, cr4
-           or ebx, CR4_PSE
-           and ebx, not CR4_PAE
-           mov cr4, ebx
+;           mov ebx, cr4
+;           or ebx, CR4_PSE
+;           and ebx, not CR4_PAE
+;           mov cr4, ebx
 
 
-	   mov eax, sys_pgdir-OS_BASE
-           mov ebx, cr0
-           or ebx,CR0_PG+CR0_WP
+;           mov eax, sys_pgdir-OS_BASE
+;           mov ebx, cr0
+;           or ebx,CR0_PG+CR0_WP
 
-           mov cr3, eax
-           mov cr0, ebx
+;           mov cr3, eax
+;           mov cr0, ebx
 
-	   lgdt [gdts]
-	   jmp pword os_code:high_code
+;           lgdt [gdts]
+;           jmp pword os_code:high_code
 
 align 4
 bios32_entry	dd ?
 tmp_page_tabs	dd ?
 
-;use16
-;org $-0x10000
-;include "boot/shutdown.inc" ; shutdown or restart
-;org $+0x10000
-;use32
 
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
+
 
 org OS_BASE+$
 
@@ -465,8 +502,6 @@ high_code:
 	   mov	ax,tss0
 	   ltr	ax
 
-           xchg bx, bx
-
            mov ecx, 1280*1024
            fastcall _balloc
            mov [_display_data], eax
@@ -483,8 +518,36 @@ high_code:
            call _init_mm
            mov [pg_data.pg_mutex], 0
 
-           hlt
+           mov esi, 0x100000
+           mov ecx, (_leave_bootscreen-0x100000)/4
+           mov edi, 0x10000
+           cld
+           rep movsd
 
+           jmp far 0x60:_enter_bootscreen;
+
+align 4
+__setvars:
+           mov ax,os_stack
+           mov dx,app_data
+	   mov ss,ax
+           mov esp, __os_stack
+
+           mov ds, dx
+           mov es, dx
+           mov fs, dx
+           mov gs, dx
+
+; SAVE & CLEAR 0-0xffff
+
+           xor esi, esi
+           mov   edi,0x2F0000
+           mov   ecx,0x10000 / 4
+           rep   movsd
+           xor edi, edi
+           xor eax, eax
+           mov   ecx,0x10000 / 4
+           rep   stosd
 
 ; SAVE REAL MODE VARIABLES
 	mov	ax, [BOOT_VAR + 0x9031]
@@ -492,7 +555,7 @@ high_code:
 ; --------------- APM ---------------------
 
 ; init selectors
-    mov ebx,	[BOOT_VAR+0x9040]	       ; offset of APM entry point
+    mov ebx,    [BOOT_VAR +0x9040]              ; offset of APM entry point
     movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
 				      ; protected-mode 32-bit code segment
     movzx ecx, word [BOOT_VAR+0x9052] ; real-mode segment base address of
@@ -545,6 +608,7 @@ high_code:
 	je    @f
 	cmp   [SCR_MODE],word 0x12	    ; VGA 640x480
 	je    @f
+
 	mov   ax,[BOOT_VAR+0x9001]	  ; for other modes
 	mov   [BytesPerScanLine],ax
 @@:
@@ -701,7 +765,7 @@ high_code:
 	stdcall kernel_alloc, [mem_BACKGROUND]
 	mov [img_background], eax
 
-	mov	[SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
+        mov     [SLOT_BASE + 256 + APPDATA.dir_table], _sys_pdbr - OS_BASE
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
@@ -740,7 +804,6 @@ include 'detect/disks.inc'
 ;    mov    [dma_hdd],1
 ; CALCULATE FAT CHAIN FOR RAMDISK
 
-
 	call  calculatefatchain
 
 
@@ -756,7 +819,7 @@ include 'detect/disks.inc'
 ; LOAD FONTS I and II
 
 	stdcall read_file, char, FONT_I, 0, 2304
-	stdcall read_file, char2, FONT_II, 0, 2560
+        stdcall read_file, char2, FONT_II, 0, 2560
 
 	mov   esi,boot_fonts
 	call  boot_log
@@ -868,13 +931,13 @@ include 'detect/disks.inc'
 
 	mov   esi,boot_tsc
 	call  boot_log
-	cli
+
 	call  _rdtsc
 	mov   ecx,eax
 	mov   esi,250		    ; wait 1/4 a second
 	call  delay_ms
 	call  _rdtsc
-	sti
+
 	sub   eax,ecx
 	shl   eax,2
 	mov   [CPU_FREQ],eax	      ; save tsc / sec
@@ -941,7 +1004,6 @@ include 'detect/disks.inc'
 ;  no_st_network:
 
 ; LOAD FIRST APPLICATION
-	cli
 
 	cmp   byte [BOOT_VAR+0x9030],1
 	jne   no_load_vrr_m
@@ -1012,8 +1074,7 @@ first_app_found:
 	mov   esi,boot_allirqs
 	call  boot_log
 
-	cli			     ;guarantee forbidance of interrupts.
-	mov   al,0		     ; unmask all irq's
+        mov   al,0                   ; unmask all irq's
 	out   0xA1,al
 	out   0x21,al
 
@@ -1033,8 +1094,6 @@ first_app_found:
 	cmp	[IDEContrRegsBaseAddr], 0
 	setnz	[dma_hdd]
 	mov [timer_ticks_enable],1		; for cd driver
-
-;        stdcall init_uart_service, DRV_ENTRY
 
 	sti
 	call change_task
@@ -1058,7 +1117,8 @@ boot_log:
 	 mov   ecx,0x80ffffff	; ASCIIZ string with white color
 	 mov   edx,esi
 	 mov   edi,1
-	 call  dtext
+
+         call  dtext
 
 	 mov   [novesachecksum],1000
 	 call  checkVga_N13
@@ -2113,10 +2173,11 @@ sysfn_terminate2:
     test   eax,eax
     jz	   .not_found
     mov    ecx,eax
+    pushfd
     cli
     call   sysfn_terminate
     mov    [application_table_status],0
-    sti
+    popfd
     and    dword [esp+32],0
     ret
 .not_found:
@@ -4579,8 +4640,6 @@ _rdtsc:
 
 rerouteirqs:
 
-	cli
-
 	mov	al,0x11 	;  icw4, edge triggered
 	out	0x20,al
 	call	pic_delay
@@ -4623,8 +4682,6 @@ picl1:	call	pic_delay
 	call	pic_delay
 	out	0x21,al
 	call	pic_delay
-
-	cli
 
 	ret
 

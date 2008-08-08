@@ -78,7 +78,7 @@ v86_create:
 ; thx to Serge, system is located at high addresses
         add     edi, (OS_BASE shr 20) - 4
         push    esi
-        mov     esi, (OS_BASE shr 20) + sys_pgdir
+        mov     esi, (OS_BASE shr 20) + _sys_pdbr
         mov     ecx, 0x80000000 shr 22
         rep     movsd
 
@@ -202,7 +202,7 @@ v86_set_page:
 ;        add     edx, ecx
 ;        cmp     dword [edx], 0          ; free block?
 ;        jnz     .n
-;        cmp     dword [edx+4], 
+;        cmp     dword [edx+4],
 ;        and     [esi+V86_machine.mutex], 0
 ;        pop     edi edx ecx ebx
 ;        ret

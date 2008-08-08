@@ -218,7 +218,10 @@ SendCommandToHDD:
         test    AL,08h
         jnz     @@WaitHDReady
 ; «агрузить команду в регистры контроллера
+
+        pushfd
         cli
+
         mov     DX,[ATABasePortAddr]
         inc     DX      ;регистр "особенностей"
         mov     AL,[ATAFeatures]
@@ -250,7 +253,9 @@ SendCommandToHDD:
         mov     AL,[ATACommand]
         inc     DX      ;регистр команд
         out     DX,AL
-        sti
+
+        popfd
+
 ; —бросить признак ошибки
         mov     [DevErrorCode],0
         jmp @@End_2
