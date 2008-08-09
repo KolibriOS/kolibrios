@@ -7,8 +7,12 @@
 
 format MS COFF
 
+DEBUG           equ 1
+
 include 'proc32.inc'
 include 'imports.inc'
+
+
 
 API_VERSION	  equ 0
 UART_VERSION	  equ API_VERSION

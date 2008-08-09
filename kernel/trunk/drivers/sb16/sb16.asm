@@ -37,7 +37,6 @@ include 'sb16.inc'
 
 ;-------------------------------------------------------------------------------
 proc START stdcall, state:dword
-
 	   cmp	[state], 1
 	   jne	.stop
 .entry:
@@ -53,15 +52,16 @@ end if
 
 if DEBUG
 	   movzx eax,al 	 ;major version
+	   mov esi,sb_DSP_description
 	   dec eax
 	   jz  .sb_say_about_found_dsp
-	   mov dword[sb_DSP_description],'2.x '
+	   mov dword[esi],'2.x '
 	   dec eax
 	   jz  .sb_say_about_found_dsp
-	   mov dword[sb_DSP_description],'Pro '
+	   mov dword[esi],'Pro '
 	   dec eax
 	   jz  .sb_say_about_found_dsp
-	   mov dword[sb_DSP_description],'16  '
+	   mov dword[esi],'16  '
 .sb_say_about_found_dsp:
 	   mov esi,msgDSPFound
 	   call SysMsgBoardStr
@@ -69,7 +69,7 @@ end if
 	   xor	eax,eax
 	   mov	ebx,[sb_base_port]
 	   lea	ecx,[ebx+0xF]
-	   call ReservePortArea  ;these ports must be mine!
+	   call ReservePortArea  ;these ports must be my!
 if DEBUG
 	   dec	eax
 	   jnz	@f
@@ -147,6 +147,8 @@ end if
 
 	   call sb_set_dma	 ;is it really needed here? Paranoia.
 	   call sb_play
+	   xor	eax,eax 	  ;set maximum volume
+	   call sb_set_master_vol
 	   xor	eax,eax
 	   ret
 ;@@:                             ;all this commented stuff in service proc
@@ -172,29 +174,34 @@ end if
 if DEBUG
 	   call SysMsgBoardNum
 end if
+	   xor	eax,eax
 	   ret
 @@:
-;           cmp  eax,DEV_SET_MASTERVOL
-;           jne  @F
-;if DEBUG
-;           mov  esi,msgSetVol
-;           call SysMsgBoardStr
-;end if
-;           mov  eax,[edi+input]
-;           mov  eax,[eax]
-;           mov  [sb_master_vol],eax
-;           ret
-;@@:
-;           cmp  eax,DEV_GET_MASTERVOL
-;           jne  @F
-;if DEBUG
-;           mov  esi,msgGetVol
-;           call SysMsgBoardStr
-;end if
-;           mov  eax,[edi+output]
-;           mov  edx,[sb_master_vol]
-;           mov  [eax],edx
-;           ret
+	   cmp	eax,DEV_SET_MASTERVOL ;Serge asked me to unlock
+	   jne	@F ;DEV_SET(GET)_MASTERVOL, although mixer doesn't use it.
+	   ;It doesn't use it _in current version_ - but in the future...
+
+if DEBUG
+	   mov	esi,msgSetVol
+	   call SysMsgBoardStr
+end if
+	   mov	eax,[edi+input]
+	   mov	eax,[eax]
+	   call sb_set_master_vol
+	   xor	eax,eax
+	   ret
+@@:
+	   cmp	eax,DEV_GET_MASTERVOL
+	   jne	@F
+if DEBUG
+	   mov	esi,msgGetVol
+	   call SysMsgBoardStr
+end if
+	   mov	eax,[edi+output]
+	   mov	edx,[sb_master_vol]
+	   mov	[eax],edx
+	   xor	eax,eax
+	   ret
 
 .fail:
 	   or eax, -1
@@ -222,18 +229,22 @@ pre_fill_data:
 	   test eax,eax
 	   jns	.fill_second_half
 
-           stdcall [callback],SB16Buffer0 ;for 32k buffer
-;           stdcall [callback],SB16Buffer0 ;for 64k buffer
-;           stdcall [callback],SB16Buffer1 ;for 64k buffer
-
+if sb_buffer_size eq small_buffer
+	   stdcall [callback],SB16Buffer0 ;for 32k buffer
+else if sb_buffer_size eq full_buffer
+	   stdcall [callback],SB16Buffer0 ;for 64k buffer
+	   stdcall [callback],SB16Buffer1 ;for 64k buffer
+end if
 	   xor	eax,eax
 	   ret
 
 .fill_second_half:
-           stdcall [callback],SB16Buffer1 ;for 32k buffer
-;           stdcall [callback],SB16Buffer2 ;for 64k buffer
-;           stdcall [callback],SB16Buffer3 ;for 64k buffer
-
+if sb_buffer_size eq small_buffer
+	   stdcall [callback],SB16Buffer1 ;for 32k buffer
+else if sb_buffer_size eq full_buffer
+	   stdcall [callback],SB16Buffer2 ;for 64k buffer
+	   stdcall [callback],SB16Buffer3 ;for 64k buffer
+end if
 	   xor	eax,eax
 	   ret
 endp
@@ -291,6 +302,7 @@ end if
 	   div	dl
 	   ror	eax,16
 	   xor	ah,ah
+	   mov	[sb_DSP_version_int],eax ;for internal usage
 if DEBUG
 	   add	[sb_DSP_version],eax
 end if
@@ -302,7 +314,7 @@ end if
 endp
 ;-------------------------------------------------------------------------------
 if DEBUG
-proc SysMsgBoardNum
+proc SysMsgBoardNum ;warning: destroys eax,ebx,ecx,esi
 	   mov	ebx,eax
 	   mov	ecx,8
 	   mov	esi,(number_to_out+1)
@@ -323,25 +335,16 @@ proc SysMsgBoardNum
 endp
 end if
 ;all initialized data place here
-
 align 4
 version       dd (5 shl 16) or (API_VERSION and 0xFFFF)
 
-sb_base_port: dd 200h
-
-;pTempBuf      dd 0
-
-callback      dd 0
-
-int_flip_flop dd 0
+sb_base_port: dd 200h ;don't ask me why - see the code&docs
 
 sound_dma     dd sb_dma_num
 
 ;note that 4th DMA channel doesn't exist, it is used for cascade
 ;plugging the first DMA controler to the second
 dma_table     db 0x87,0x83,0x81,0x82,0xFF,0x8B,0x89,0x8A
-
-;sb_master_vol dd 0
 
 my_service    db 'SOUND',0  ;max 16 chars include zero
 
@@ -360,8 +363,8 @@ msgSucAtchIRQ db 'succesfully attached IRQ',(sb_irq_num+'0')
 	      db ' as hardcoded',13,10,0
 msgErrRsrvPorts db 'failed to reserve needed ports.',13,10
 	      db 'Driver may work unstable',13,10,0
-;msgSetVol     db 'DEV_SET_MASTERVOL call came',13,10,0
-;msgGetVol     db 'DEV_GET_MASTERVOL call came',13,10,0
+msgSetVol     db 'DEV_SET_MASTERVOL call came',13,10,0
+msgGetVol     db 'DEV_GET_MASTERVOL call came',13,10,0
 msgErrDMAsetup db 'failed to setup DMA - bad channel',13,10,0
 ;-------------------------------------------------------------------------------
 msgDSPFound   db 'DSP found at port 2'
@@ -371,5 +374,16 @@ sb_DSP_version: db '0.00 - SB'
 sb_DSP_description: db 32,32,32,32,13,10,0
 ;-------------------------------------------------------------------------------
 end if
-;section '.data' data readable writable align 16
+
+section '.data' data readable writable align 16
 ;all uninitialized data place here
+
+;pTempBuf          rd 1
+
+callback	   rd 1
+
+int_flip_flop	   rd 1
+
+sb_master_vol	   rd 1
+
+sb_DSP_version_int rd 1
