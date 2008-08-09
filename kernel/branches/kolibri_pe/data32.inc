@@ -269,7 +269,11 @@ code_16:
 
 endofcode:
 gdte:
-__edata:  ;equ $-OS_BASE
+edata:  ;equ $-OS_BASE
+
+section '.bss' code readable align 4096
+
+org edata
 
 align 4096
 

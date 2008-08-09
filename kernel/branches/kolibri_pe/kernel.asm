@@ -1,3 +1,6 @@
+
+format MS COFF
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.
@@ -104,9 +107,16 @@ pci_data_sel   equ  (pci_data_32-gdts)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+section '.flat' code readable align 16
+
+public __start
+
+extrn  __edata
 
 use32
-org 0x100000
+org 0x001001E0
+
+align 4
 
 mboot:
   dd  0x1BADB002
@@ -114,7 +124,7 @@ mboot:
   dd  -(0x1BADB002 + 0x00010003)
   dd  mboot
   dd  0x100000
-  dd  __edata - OS_BASE
+  dd  __edata;         ;__edata - OS_BASE
   dd  LAST_PAGE
   dd  __start
 
@@ -5476,10 +5486,7 @@ include "data32.inc"
 
 __REV__ = __REV
 
-uglobals_size = $ - endofcode
-diff16 "end of kernel code",0,$
+;uglobals_size = $ - endofcode
+;diff16 "end of kernel code",0,$
 
-align 16
-
-__end:
 
