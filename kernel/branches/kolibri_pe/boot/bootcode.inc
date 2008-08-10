@@ -32,9 +32,9 @@ putchar:
 print:
 ; in: si->string
         mov     al, 186
-        call    putchar
+        call    word putchar
         mov     al, ' '
-        call    putchar
+        call    word putchar
 
 printplain:
 ; in: si->string

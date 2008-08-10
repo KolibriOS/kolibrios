@@ -9,7 +9,14 @@ SECTIONS
   . = SIZEOF_HEADERS;
   . = ALIGN(32);
 
-  .flat . + __image_base__ :
+  .boot . + __image_base__ :
+  {
+     *(.boot)
+     *(.init)
+     . = ALIGN(4096);
+  }
+
+  .flat :
   {
      *(.flat)
   }

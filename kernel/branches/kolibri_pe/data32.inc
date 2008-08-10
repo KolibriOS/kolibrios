@@ -171,10 +171,10 @@ end if
 IncludeIGlobals
 
 align 16
-gdts:
+_gdts:
 
-	dw     gdte-$-1
-	dd     gdts
+        dw     0x67; gdte-$-1
+        dd     _gdts
 	dw     0
 
 ; Attention! Do not change the order of the first four selectors. They are used in Fast System Call

@@ -40,7 +40,7 @@ proc Parser_params
 locals
   buff db 4 dup(?)		; for test cd
 endl
-  mov eax,[bx_from_load+OS_BASE+LOAD_BASE]
+  mov eax,[_bx_from_load+OS_BASE+BOOT_BASE]
   mov ecx,sysdir_path
   mov [ecx-64],dword 'sys'
   cmp al,'r' ; if ram disk

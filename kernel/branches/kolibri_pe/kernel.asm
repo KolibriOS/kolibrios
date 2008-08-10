@@ -74,14 +74,14 @@ max_processes	 equ   255
 tss_step	 equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
 
 
-os_stack       equ  (os_data_l-gdts)	; GDTs
-os_code        equ  (os_code_l-gdts)
-graph_data     equ  (3+graph_data_l-gdts)
-tss0	       equ  (tss0_l-gdts)
-app_code       equ  (3+app_code_l-gdts)
-app_data       equ  (3+app_data_l-gdts)
-pci_code_sel   equ  (pci_code_32-gdts)
-pci_data_sel   equ  (pci_data_32-gdts)
+os_stack       equ  (os_data_l-_gdts)    ; GDTs
+os_code        equ  (os_code_l-_gdts)
+graph_data     equ  (3+graph_data_l-_gdts)
+tss0           equ  (tss0_l-_gdts)
+app_code       equ  (3+app_code_l-_gdts)
+app_data       equ  (3+app_data_l-_gdts)
+pci_code_sel   equ  (pci_code_32-_gdts)
+pci_data_sel   equ  (pci_data_32-_gdts)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -107,177 +107,28 @@ pci_data_sel   equ  (pci_data_32-gdts)
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+
+public __os_stack
+public _boot_mbi
+public _sys_pdbr
+public _gdts
+public _high_code
+
+public __setvars
+
+extrn _enter_bootscreen
+extrn _leave_bootscreen
+
+extrn _bx_from_load
+
 section '.flat' code readable align 16
 
-public __start
-
-extrn  __edata
-
 use32
-org 0x001001E0
+
+org 0xE0102000
+
 
 align 4
-
-mboot:
-  dd  0x1BADB002
-  dd  0x00010003
-  dd  -(0x1BADB002 + 0x00010003)
-  dd  mboot
-  dd  0x100000
-  dd  __edata;         ;__edata - OS_BASE
-  dd  LAST_PAGE
-  dd  __start
-
-align 16
-__start:
-           cld
-
-           mov esp, __os_stack-OS_BASE
-           push 0
-           popf
-
-           cmp eax, 0x2BADB002
-           mov ecx, sz_invboot
-           jne .fault
-
-           bt dword [ebx], 3
-           mov ecx, sz_nomods
-           jnc .fault
-
-           bt dword [ebx], 6
-           mov ecx, sz_nommap
-           jnc .fault
-
-           mov [_boot_mbi-OS_BASE], ebx
-
-           xor eax, eax
-           cpuid
-           cmp eax, 0
-           mov ecx, sz_nopse
-           jbe .fault
-
-           mov eax, 1
-           cpuid
-           bt edx, 3
-           mov ecx, sz_nopse
-           jnc .fault
-
-; ENABLE PAGING
-
-           mov ecx, 32
-           mov edi, _sys_pdbr+(OS_BASE shr 20)-OS_BASE
-           mov eax, PG_LARGE+PG_SW
-@@:
-           stosd
-           add eax, 4*1024*1024
-           loop @B
-
-           mov dword [_sys_pdbr-OS_BASE],   PG_LARGE+PG_SW
-           mov dword [_sys_pdbr-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
-           mov dword [_sys_pdbr-OS_BASE+(page_tabs shr 20)], _sys_pdbr+PG_SW-OS_BASE
-
-           mov ebx, cr4
-           or ebx, CR4_PSE
-           and ebx, not CR4_PAE
-           mov cr4, ebx
-
-           mov eax, _sys_pdbr-OS_BASE
-           mov ebx, cr0
-           or ebx,CR0_PG+CR0_WP
-
-           mov cr3, eax
-           mov cr0, ebx
-
-           mov ebx, [_boot_mbi]
-
-           mov edx, [ebx+20]
-           mov esi, [ebx+24]
-           mov ecx, LAST_PAGE
-           test edx, edx
-           jz .no_mods
-.scan_mod:
-           mov ecx, [esi+4]
-           add esi, 16
-           dec edx
-           jnz .scan_mod
-
-.no_mods:
-           add ecx, 4095
-           and ecx, not 4095
-
-           lgdt [gdts]
-           jmp pword os_code:high_code
-
-
-.fault:
-;           push ecx
-;           call _lcls
-;           call __bprintf
-_hlt:
-           hlt
-           jmp _hlt
-
-sz_invboot db 'Invalid multiboot loader magic value',0x0A
-           db 'Halted',0
-
-sz_nomods  db 'No modules loaded',0x0A
-           db 'Halted',0
-
-sz_nommap  db 'No memory table', 0x0A
-           db 'Halted',0
-
-sz_nopse   db 'Page size extensions not supported',0x0A
-           db 'Halted',0
-
-org $-0x100000
-
-align 4
-
-_enter_bootscreen:
-
-use16
-           mov eax, cr0
-           and eax, not 0x80000001
-           mov cr0, eax
-           jmp far 0x1000:start_of_code
-
-version db    'Kolibri OS  version 0.7.1.0      ',13,10,13,10,0
-
-include "boot/bootstr.inc"     ; language-independent boot messages
-include "boot/preboot.inc"
-
-if lang eq en
-include "boot/booteng.inc"     ; english system boot messages
-else if lang eq ru
-include "boot/bootru.inc"      ; russian system boot messages
-include "boot/ru.inc"	       ; Russian font
-else if lang eq et
-include "boot/bootet.inc"      ; estonian system boot messages
-include "boot/et.inc"	       ; Estonian font
-else
-include "boot/bootge.inc"      ; german system boot messages
-end if
-
-include "data16.inc"
-
-include "boot/bootcode.inc"    ; 16 bit system boot code
-include "bus/pci/pci16.inc"
-include "detect/biosdisk.inc"
-
-;include "boot/shutdown.inc" ; shutdown or restart
-
-           cli
-
-           mov eax, cr0
-           or eax, 0x80000001
-           mov cr0, eax
-
-           jmp pword os_code:__setvars
-
-org $+0x100000
-
-align 4
-_leave_bootscreen:
 
 use32
 
@@ -340,8 +191,6 @@ tmp_page_tabs	dd ?
 __DEBUG__ fix 1
 __DEBUG_LEVEL__ fix 1
 
-
-org OS_BASE+$
 
 MEM_WB     equ 6               ;write-back memory
 MEM_WC     equ 1               ;write combined memory
@@ -453,7 +302,7 @@ proc test_cpu
 endp
 
 align 4
-high_code:
+_high_code:
 	   mov ax,os_stack
            mov dx,app_data
 	   mov ss,ax
@@ -464,10 +313,9 @@ high_code:
            mov fs, dx
            mov gs, dx
 
-           push ecx
-           push ebx
+;           push ecx
+;           push ebx
 
-         ;  mov dword [sys_pgdir-OS_BASE+(page_tabs shr 20)], sys_pgdir+PG_SW-OS_BASE
 
          ;  bt [cpu_caps], CAPS_PGE
          ;  jnc @F
@@ -478,10 +326,6 @@ high_code:
          ;  or ebx, CR4_PGE
          ;  mov cr4, ebx
 @@:
-         ;  xor eax, eax
-         ;  mov dword [sys_pgdir], eax
-         ;  mov dword [sys_pgdir+4], eax
-
          ;  mov eax, cr3
          ;  mov cr3, eax           ; flush TLB
 
@@ -528,13 +372,14 @@ high_code:
            call _init_mm
            mov [pg_data.pg_mutex], 0
 
-           mov esi, 0x100000
-           mov ecx, (_leave_bootscreen-0x100000)/4
-           mov edi, 0x10000
+           mov esi, _enter_bootscreen
+           mov ecx, _leave_bootscreen
+           shr ecx, 2
+           mov edi, BOOT_BASE
            cld
            rep movsd
 
-           jmp far 0x60:_enter_bootscreen;
+           jmp far 0x60:0x00000;
 
 align 4
 __setvars:
@@ -589,7 +434,7 @@ __setvars:
     mov    [dword apm_data_16 + 4], dl
 
     mov    dword[apm_entry], ebx
-    mov    word [apm_entry + 4], apm_code_32 - gdts
+    mov    word [apm_entry + 4], apm_code_32 - _gdts
 
     mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
@@ -803,6 +648,8 @@ __setvars:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+           xchg bx, bx
 
   call Parser_params
 

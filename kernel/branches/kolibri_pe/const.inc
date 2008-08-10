@@ -198,6 +198,7 @@ OS_TEMP             equ 0xDFC00000
 kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
+BOOT_BASE           equ 0x00010000
 LOAD_BASE           equ 0x00100000
 OS_BASE             equ 0xE0000000
 

@@ -1,48 +1,37 @@
-FASM=fasm
-FLAGS=-m 65536
-languages=en|ru|ge|et
-drivers_src=sound sis infinity ensoniq ps2mouse uart ati2d vmode
-skins_src=default
 
-.PHONY: all kernel drivers skins clean
+CC = gcc
+FASM = fasm.exe
 
-all: kernel drivers skins
+INCLUDE = include
 
-kernel: check_lang
-	@echo "*** building kernel with language '$(lang)' ..."
-	@mkdir -p bin
-	@echo "lang fix $(lang)" > lang.inc
-	@echo "--- building 'bin/kernel.mnt' ..."
-	@$(FASM) $(FLAGS) kernel.asm bin/kernel.mnt
-	@rm -f lang.inc
+CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf -masm=intel
+LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
-drivers:
-	@echo "*** building drivers ..."
-	@mkdir -p bin/drivers
-	@cd drivers; for f in $(drivers_src); do \
-	  echo "--- building 'bin/drivers/$${f}.obj' ..."; \
-	  $(FASM) $(FLAGS) $${f}.asm ../bin/drivers/$${f}.obj; \
-	done
-	@mv bin/drivers/vmode.obj bin/drivers/vmode.mdr
 
-skins:
-	@echo "*** building skins ..."
-	@mkdir -p bin/skins
-	@cd skin; for f in $(skins_src); do \
-	  echo "--- building 'bin/skins/$${f}.skn' ..."; \
-	  $(FASM) $(FLAGS) $${f}.asm ../bin/skins/$${f}.skn; \
-	done
+KERNEL_SRC:=			\
+		kernel.asm	\
+		boot/boot.asm	\
+		boot/init.asm
+	   	
 
-check_lang:
-	@case "$(lang)" in \
-	  $(languages)) \
-	    ;; \
-	  *) \
-	    echo "*** error: language is incorrect or not specified"; \
-	    exit 1; \
-	    ;; \
-	esac
+KERNEL_OBJS = $(patsubst %.s, bin/%.obj, $(patsubst %.asm, bin/%.obj,\
+            $(patsubst %.c, bin/%.obj, $(KERNEL_SRC))))
 
-clean:
-	rm -rf bin
-	rm -f lang.inc
+
+all: kernel.gz
+
+kernel.gz :kernel.mnt
+	7z a -tgzip kernel.gz kernel.mnt   
+
+kernel.mnt: $(KERNEL_OBJS) Makefile ld.x
+	ld $(LDFLAGS) -T ld.x -o $@ $(KERNEL_OBJS) 
+	
+bin/%.obj: %.asm
+	$(FASM) $< $@
+
+bin/%.obj : core/%.c
+	$(CC) $(CFLAGS) -o $@ -c $<
+
+all: $(SUBDIRS)
+
+.PHONY: all
