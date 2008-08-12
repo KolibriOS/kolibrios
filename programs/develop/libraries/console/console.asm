@@ -1,5 +1,5 @@
 ; Функции работы с консолью для программ КолибриОС
-; diamond, 2006, 2007
+; diamond, 2006-2008
 
 
 format MS COFF
@@ -1139,16 +1139,21 @@ con_getch2:
 
 ; void __stdcall con_gets(char* str, int n);
 con_gets:
+        pop     eax
+        push    0
+        push    eax
+; void __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
+con_gets2:
         pushad
-        mov     esi, [esp+20h+4]        ; str
-        mov     ebx, [esp+20h+8]        ; n
+        mov     esi, [esp+20h+8]        ; str
+        mov     ebx, [esp+20h+12]       ; n
         sub     ebx, 1
         jle     .ret
         mov     byte [esi], 0
         xor     ecx, ecx                ; длина уже введённой строки
         call    con.get_data_ptr
 .loop:
-        call    con_getch
+        call    con_getch2
         test    al, al
         jz      .extended
         cmp     al, 8
@@ -1157,6 +1162,8 @@ con_gets:
         jz      .esc
         cmp     al, 13
         jz      .enter
+        cmp     al, 9
+        jz      .tab
         inc     ecx
         mov     dl, al
         call    con.write_char_ex
@@ -1183,6 +1190,7 @@ con_gets:
         call    con.update_screen
         cmp     ecx, ebx
         jb      .loop
+.ret_us:
         mov     edx, [con.cur_x]
 @@:
         lodsb
@@ -1218,7 +1226,7 @@ con_gets:
         xor     ecx, ecx
 @@:
         mov     byte [esi], 0
-        cmp     esi, [esp+20h+4]
+        cmp     esi, [esp+20h+8]
         jbe     .update_screen_and_loop
         mov     al, 8
         call    con.write_special_char
@@ -1234,7 +1242,7 @@ con_gets:
         lodsb
         call    con.write_char_ex
 .backspace:
-        cmp     esi, [esp+20h+4]
+        cmp     esi, [esp+20h+8]
         jbe     .loop
         push    esi
         mov     edx, [con.cur_x]
@@ -1298,8 +1306,11 @@ con_gets:
         call    con.write_special_char
         call    con.update_screen
         jmp     .ret
+.tab:
+        mov     al, 0
+        mov     ah, 0xF
 .extended:
-        call    con_getch
+        xchg    al, ah
         cmp     al, 0x4B
         jz      .left
         cmp     al, 0x4D
@@ -1310,9 +1321,107 @@ con_gets:
         jz      .end
         cmp     al, 0x53
         jz      .delete
+; give control to callback function
+        cmp     dword [esp+20h+4], 0
+        jz      .loop
+; remember length of text before and length of text after
+; and advance cursor to the end of line
+        push    ecx
+        push    eax
+        lea     edx, [esi+1]
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        call    con.write_char_ex
+        jmp     @b
+@@:
+        sub     esi, edx
+        pop     eax
+        push    esi
+        dec     edx
+        sub     edx, [esp+28h+8]
+        push    edx
+        push    esp             ; ppos
+        mov     ecx, [esp+30h+4]
+        lea     edx, [esp+30h+12]
+        push    edx             ; pn
+        lea     edx, [esp+34h+8]
+        push    edx             ; pstr
+        push    eax             ; keycode
+        call    ecx
+        call    con.get_data_ptr
+        dec     eax
+        js      .callback_nochange
+        jz      .callback_del
+        dec     eax
+        jz      .callback_output
+; callback returned 2 - exit
+        add     esp, 12
+        jmp     .ret
+.callback_nochange:
+; callback returned 0 - string was not changed, only restore cursor position
+        pop     esi
+        pop     ecx
+        test    ecx, ecx
+        jz      .cncs
+@@:
+        mov     al, 8
+        call    con.write_special_char
+        loop    @b
+.cncs:
+        pop     ecx
+        add     esi, [esp+20h+8]
+        jmp     .callback_done
+.callback_del:
+; callback returned 1 - string was changed, delete old string and output new
+        mov     ecx, [esp+8]
+        test    ecx, ecx
+        jz      .cds
+@@:
+        mov     al, 8
+        call    con.write_special_char
+        mov     al, ' '
+        call    con.write_char_ex
+        mov     al, 8
+        call    con.write_special_char
+        loop    @b
+.cds:
+.callback_output:
+; callback returned 2 - string was changed, output new string
+        pop     edx
+        pop     esi
+        pop     ecx
+        mov     esi, [esp+20h+8]
+        xor     ecx, ecx
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        call    con.write_char_ex
+        inc     ecx
+        jmp     @b
+@@:
+        dec     esi
+        push    ecx
+        sub     ecx, edx
+        jz      .cos
+@@:
+        mov     al, 8
+        call    con.write_special_char
+        dec     esi
+        loop    @b
+.cos:
+        pop     ecx
+.callback_done:
+        call    con.update_screen
+        mov     ebx, [esp+20h+12]
+        dec     ebx
+        cmp     ecx, ebx
+        jae     .ret_us
         jmp     .loop
 .left:
-        cmp     esi, [esp+20h+4]
+        cmp     esi, [esp+20h+8]
         jbe     .loop
         dec     esi
         mov     al, 8
@@ -1325,7 +1434,7 @@ con_gets:
         call    con.write_char_ex
         jmp     .update_screen_and_loop
 .home:
-        cmp     esi, [esp+20h+4]
+        cmp     esi, [esp+20h+8]
         jz      .update_screen_and_loop
         dec     esi
         mov     al, 8
@@ -1342,7 +1451,7 @@ con_gets:
         jmp     .update_screen_and_loop
 .ret:
         popad
-        ret     8
+        ret     12
 
 con.update_screen:
         push    eax
@@ -2018,7 +2127,7 @@ con.vscroll_pt      dd    -1
 align 16
 EXPORTS:
         dd      szStart,                START
-        dd      szVersion,              0x00020003
+        dd      szVersion,              0x00020004
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
         dd      szcon_printf,           con_printf
@@ -2029,6 +2138,7 @@ EXPORTS:
         dd      szcon_getch,            con_getch
         dd      szcon_getch2,           con_getch2
         dd      szcon_gets,             con_gets
+        dd      szcon_gets2,            con_gets2
         dd      szcon_get_font_height,  con_get_font_height
         dd      szcon_get_cursor_height,con_get_cursor_height
         dd      szcon_set_cursor_height,con_set_cursor_height
@@ -2061,6 +2171,7 @@ szcon_kbhit             db 'con_kbhit',0
 szcon_getch             db 'con_getch',0
 szcon_getch2            db 'con_getch2',0
 szcon_gets              db 'con_gets',0
+szcon_gets2             db 'con_gets2',0
 szcon_get_font_height   db 'con_get_font_height',0
 szcon_get_cursor_height db 'con_get_cursor_height',0
 szcon_set_cursor_height db 'con_set_cursor_height',0
