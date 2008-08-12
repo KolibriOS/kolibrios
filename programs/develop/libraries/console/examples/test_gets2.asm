@@ -31,10 +31,10 @@ start:
 ; yes! Now do some work (gets2() demo in this case).
 
         push    caption
-        push    -1
-        push    -1
-        push    -1
-        push    -1
+        push    25
+        push    80
+        push    25
+        push    80
         call    [con_init]
 
 ; C-equivalent of the following code:

@@ -809,9 +809,94 @@ con.write_special_char:
 .not_digit:
         mov     [con_esc], 0
         mov     [con_sci], 0    ; in any case, leave Esc mode
+        cmp     al, 'J'
+        jz      .cls
+        cmp     al, 'H'
+        jz      .setcursor
+        cmp     al, 'f'
+        jz      .setcursor
         cmp     al, 'm'
         jz      .set_attr
+        cmp     al, 'A'
+        jz      .cursor_up
+        cmp     al, 'B'
+        jz      .cursor_down
+        cmp     al, 'C'
+        jz      .cursor_right
+        cmp     al, 'D'
+        jz      .cursor_left
         ret     ; simply skip unknown sequences
+.cls:
+        push    ecx
+        and     [con.cur_x], 0
+        and     [con.cur_y], 0
+        mov     edi, [con.data]
+        push    edi
+        mov     ecx, [con.scr_width]
+        imul    ecx, [con.scr_height]
+        mov     ax, 0720h
+        rep     stosw
+        pop     edi ecx
+.nosetcursor:
+        ret
+.setcursor:
+        cmp     [con_esc_attr_n], 2
+        jnz     .nosetcursor
+        mov     eax, [con_esc_attrs]
+        cmp     eax, [con.scr_width]
+        jae     @f
+        mov     [con.cur_x], eax
+@@:
+        mov     eax, [con_esc_attrs+4]
+        cmp     eax, [con.scr_height+4]
+        jae     @f
+        mov     [con.cur_y], eax
+.j_get_data:
+        jmp     con.get_data_ptr
+.cursor_up:
+        cmp     [con_esc_attr_n], 1
+        jnz     .nosetcursor
+        mov     eax, [con.cur_y]
+        sub     eax, [con_esc_attrs]
+        jnc     @f
+        xor     eax, eax
+@@:
+        mov     [con.cur_y], eax
+        jmp     .j_get_data
+.cursor_down:
+        cmp     [con_esc_attr_n], 1
+        jnz     .nosetcursor
+        mov     eax, [con.cur_y]
+        add     eax, [con_esc_attrs]
+        cmp     eax, [con.scr_height]
+        jb      @f
+        mov     eax, [con.scr_height]
+        dec     eax
+@@:
+        mov     [con.cur_y], eax
+        jmp     .j_get_data
+.cursor_right:
+        cmp     [con_esc_attr_n], 1
+        jnz     .nosetcursor
+        mov     eax, [con.cur_x]
+        add     eax, [con_esc_attrs]
+        cmp     eax, [con.scr_width]
+        jb      @f
+        mov     eax, [con.scr_width]
+        dec     eax
+@@:
+        mov     [con.cur_x], eax
+        jmp     .j_get_data
+.cursor_left:
+        cmp     [con_esc_attr_n], 1
+        jnz     .nosetcursor
+        mov     eax, [con.cur_x]
+        sub     eax, [con_esc_attrs]
+        jnc     @f
+        xor     eax, eax
+@@:
+        mov     [con.cur_x], eax
+        jmp     .j_get_data
 .set_attr:
         push    eax ecx edx
         xor     ecx, ecx
@@ -1452,6 +1537,43 @@ con_gets2:
 .ret:
         popad
         ret     12
+
+; void __stdcall con_cls();
+con_cls:
+        push    edi
+        call    con.write_special_char.cls
+        pop     edi
+        call    con.update_screen
+        ret
+
+; void __stdcall con_get_cursor_pos(int* px, int* py);
+con_get_cursor_pos:
+        push    eax ecx
+        mov     eax, [esp+12]
+        mov     ecx, [con.cur_x]
+        mov     [eax], ecx
+        mov     eax, [esp+16]
+        mov     ecx, [con.cur_y]
+        mov     [eax], ecx
+        pop     ecx eax
+        ret     8
+
+; void __stdcall con_set_cursor_pos(int px, int py);
+con_set_cursor_pos:
+        push    eax
+        mov     eax, [esp+8]
+        cmp     eax, [con.scr_width]
+        jae     @f
+        mov     [con.cur_x], eax
+@@:
+        mov     eax, [esp+12]
+        cmp     eax, [con.scr_height]
+        jae     @f
+        mov     [con.cur_y], eax
+@@:
+        pop     eax
+        call    con.update_screen
+        ret     8
 
 con.update_screen:
         push    eax
@@ -2127,7 +2249,7 @@ con.vscroll_pt      dd    -1
 align 16
 EXPORTS:
         dd      szStart,                START
-        dd      szVersion,              0x00020004
+        dd      szVersion,              0x00020005
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
         dd      szcon_printf,           con_printf
@@ -2142,6 +2264,9 @@ EXPORTS:
         dd      szcon_get_font_height,  con_get_font_height
         dd      szcon_get_cursor_height,con_get_cursor_height
         dd      szcon_set_cursor_height,con_set_cursor_height
+        dd      szcon_cls,              con_cls
+        dd      szcon_get_cursor_pos,   con_get_cursor_pos
+        dd      szcon_set_cursor_pos,   con_set_cursor_pos
         dd      0
 
 con_flags       dd      7
@@ -2175,6 +2300,9 @@ szcon_gets2             db 'con_gets2',0
 szcon_get_font_height   db 'con_get_font_height',0
 szcon_get_cursor_height db 'con_get_cursor_height',0
 szcon_set_cursor_height db 'con_set_cursor_height',0
+szcon_cls               db 'con_cls',0
+szcon_get_cursor_pos    db 'con_get_cursor_pos',0
+szcon_set_cursor_pos    db 'con_set_cursor_pos',0
 
 con.thread_err      db 'Cannot create console thread!',13,10,0
 con.nomem_err       db 'Not enough memory!',13,10,0
