@@ -17,16 +17,16 @@ macro export dllname,[label,string]
    forward
     count = count+1
    common
-    dd 0,0,0, (module-OS_BASE) , 1
-    dd count,count,(addresses-OS_BASE),(names-OS_BASE),(ordinal-OS_BASE)
+    dd 0,0,0, (module+(0x100000000-OS_BASE)) , 1
+    dd count,count,(addresses+(0x100000000-OS_BASE)),(names+(0x100000000-OS_BASE)),(ordinal+(0x100000000-OS_BASE))
     addresses:
    forward
-    dd (label-OS_BASE)
+    dd (label+(0x100000000-OS_BASE))
    common
     names:
    forward
     local name
-    dd (name-OS_BASE)
+    dd (name+(0x100000000-OS_BASE))
    common
     ordinal: count = 0
    forward

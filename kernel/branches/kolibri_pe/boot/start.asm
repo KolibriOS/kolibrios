@@ -17,7 +17,7 @@ extrn  _sys_pdbr
 extrn  _gdts
 extrn  __edata
 
-section '.init' code readable align 16
+section '.start' code readable align 16
 
 use32
 

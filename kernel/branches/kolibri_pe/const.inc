@@ -214,7 +214,7 @@ mouseunder          equ (OS_BASE+0x0006900)
 CDDataBuf           equ (OS_BASE+0x0007000)
 FLOPPY_BUFF         equ (OS_BASE+0x0008000)
 ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
-idts                equ (OS_BASE+0x000B100)
+
 WIN_STACK           equ (OS_BASE+0x000C000)
 WIN_POS             equ (OS_BASE+0x000C400)
 FDD_BUFF            equ (OS_BASE+0x000D000)

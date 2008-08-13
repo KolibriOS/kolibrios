@@ -12,15 +12,15 @@ SECTIONS
   .boot . + __image_base__ :
   {
      *(.boot)
-     *(.init)
+     *(.start)
      . = ALIGN(4096);
   }
 
-  .flat :
+  .flat . + 0xE0000000:
   {
-     *(.flat)
+     *(.flat) *(.text) *(.rdata) *(.data)
   }
-  __edata = .;
+  __edata = . - 0xE0000000;
 
   .bss  ALIGN(4096) :
   {

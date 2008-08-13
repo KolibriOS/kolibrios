@@ -103,8 +103,8 @@ kernel_export:
   dd szPciWrite16      , pci_write16
   dd szPciWrite32      , pci_write32
 
-  dd szAllocPage       , alloc_page	       ;stdcall
-  dd szAllocPages      , alloc_pages	       ;stdcall
+  dd szAllocPage       , _alloc_page            ;stdcall
+  dd szAllocPages      , _alloc_pages          ;stdcall
   dd szFreePage        , free_page
   dd szMapPage	       , map_page	       ;stdcall
   dd szMapSpace        , map_space

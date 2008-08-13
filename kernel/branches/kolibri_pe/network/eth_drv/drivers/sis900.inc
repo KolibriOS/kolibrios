@@ -458,7 +458,7 @@ SIS900_init_txd:
    ;*************** load Transmit Descriptor Register ***************
    mov     dx, [io_addr]            ; base address
    add     dx, SIS900_txdp      ; TX Descriptor Pointer
-   mov     eax, txd - OS_BASE               ; First Descriptor
+   mov     eax, txd + (0x100000000-OS_BASE)           ; First Descriptor
    out     dx, eax                              ; move the pointer
    ret
 
@@ -484,9 +484,9 @@ SIS900_init_rxd_Loop:
     cmp     ebx, NUM_RX_DESC                ;
     jne     SIS900_init_rxd_Loop_0          ;
     xor     ebx, ebx                        ;
-SIS900_init_rxd_Loop_0:                    ;
+SIS900_init_rxd_Loop_0:                     ;
     imul    ebx, 12                         ;
-    add     ebx, rxd - OS_BASE              ;
+    add     ebx, rxd + (0x100000000-OS_BASE);
     mov     [rxd+eax], ebx                                      ;save link to next descriptor
     mov     [rxd+eax+4],dword RX_BUFF_SZ        ;status bits init to buf size
     mov     ebx, ecx                                            ;find where the buf is located
@@ -500,7 +500,7 @@ SIS900_init_rxd_Loop_0:                    ;
     ; descriptor*********
     mov     dx, [io_addr]
     add     dx, SIS900_rxdp
-    mov     eax, rxd - OS_BASE
+    mov     eax, rxd + (0x100000000-OS_BASE)
     out     dx, eax
     ret
 
@@ -998,7 +998,7 @@ SIS900_transmit:
    out      dx, eax
    ;*******load Transmit Descriptor Register *******
    lea      edx,[ebp+SIS900_txdp]
-   mov      eax, txd - OS_BASE
+   mov      eax, txd + (0x100000000-OS_BASE)
    out      dx, eax
    ;******* copy packet to descriptor*******
    push    esi

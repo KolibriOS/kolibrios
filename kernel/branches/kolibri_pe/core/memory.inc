@@ -231,7 +231,7 @@ proc init_LFB
            cmp dword [LFBAddress], -1
            jne @f
            mov [BOOT_VAR+0x901c],byte 2
-           stdcall alloc_pages, 0x280000 shr 12
+           stdcall _alloc_pages, 0x280000 shr 12
            add eax, OS_BASE
            mov [LFBAddress], eax
            ret
@@ -325,7 +325,7 @@ proc new_mem_resize stdcall, new_size:dword
            xchg esi, edi
 
 @@:
-           call alloc_page
+           call _alloc_page
            test eax, eax
            jz .exit
 
@@ -347,7 +347,7 @@ proc new_mem_resize stdcall, new_size:dword
            pop edi
            pop esi
 @@:
-           call alloc_page
+           call _alloc_page
            test eax, eax
            jz .exit
            stdcall map_page,esi,eax,dword PG_UW
@@ -477,17 +477,21 @@ proc page_fault_handler
 align 4
 .kernel_heap:
 
+           mov ecx, ebx
            shr ebx, 22
            mov edx, [master_tab + ebx*4]
            test edx, PG_MAP
            jz .check_ptab      ;таблица страниц не создана
+
+           shr ecx, 12
+           mov eax, [page_tabs+ecx*4]
 
 .check_ptab:
            mov edx, [_sys_pdbr + ebx*4]
            test edx, PG_MAP
            jnz @F
 
-           call alloc_page
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -522,7 +526,7 @@ align 4
            jz .fail            ;адрес не зарезервирован для ;
                                ;использования. Ошибка
 .alloc:
-           call alloc_page
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -566,7 +570,7 @@ align 4
 ; io permission map
 ; copy-on-write protection
 
-           call alloc_page
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -1180,7 +1184,7 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
            shr ebx, 12
            push ebx
 
-           stdcall alloc_pages, ebx
+           stdcall _alloc_pages, ebx
            pop ecx
 
            test eax, eax

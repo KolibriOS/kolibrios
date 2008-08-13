@@ -13,36 +13,46 @@
 
 $Revision$
 
-
 align 4
-idtreg:
-     dw   8*0x41-1
-     dd   idts+8
+_init_idt:
+           push edi
+           push esi
+           mov edi, idts
+           mov dword [idtreg+2], edi
 
-build_interrupt_table:
+           mov esi, sys_int
+           mov ecx, 0x40
+@@:
+           lodsd
+           mov [edi],   ax                ; lower part of offset
+           mov [edi+2], word os_code      ; segment selector
+           mov ax, word 10001110b shl 8   ; type: interrupt gate
+           mov [edi+4], eax
+           add edi, 8
+           loop @b
 
-	mov    edi, idts+8
-	mov    esi, sys_int
-	mov    ecx, 0x40
-     @@:
-	lodsd
-	mov    [edi],	ax	     ; lower part of offset
-	mov    [edi+2], word os_code ; segment selector
-	mov	ax, word 10001110b shl 8	; type: interrupt gate
-	mov	[edi+4], eax
-	add    edi, 8
-	loop	@b
+           mov eax, i40
+           mov ecx, i40
+           and eax, 0x0000FFFF
+           and ecx, 0xFFFF0000
+           or eax, os_code shl 16
+           or ecx, (11101111b shl 8)
+           mov [edi], eax
+           mov [edi+4], ecx
 
-	;mov    edi,8*0x40+idts+8
-	mov	dword [edi], (i40 and 0xFFFF) or (os_code shl 16)
-	mov	dword [edi+4], (11101111b shl 8) or (i40 and 0xFFFF0000)
-						; type: trap gate
-	ret
+           lidt [idtreg]
+           pop esi
+           pop edi
+           ret
+
+
 
 iglobal
 
   msg_sel_ker	db "kernel", 0
   msg_sel_app	db "application", 0
+
+align 4
 
   sys_int:
     dd e0,debug_exc,e2,e3
@@ -66,6 +76,11 @@ end if
     times 16 dd unknown_interrupt
 
     dd	 i40
+
+idtreg:
+     dw   8*0x41-1
+     dd   idts
+
 endg
 
 macro save_ring3_context

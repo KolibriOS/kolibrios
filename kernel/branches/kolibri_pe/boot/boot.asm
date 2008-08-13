@@ -12,6 +12,11 @@ include "../proc32.inc"
 include "../kglobals.inc"
 include "../lang.inc"
 
+CR0_PE         equ    0x00000001   ;protected mode
+CR0_WP         equ    0x00010000   ;write protect
+CR0_PG         equ    0x80000000   ;paging
+
+
 public _enter_bootscreen
 public _leave_bootscreen
 
@@ -60,7 +65,7 @@ include "../detect/biosdisk.inc"
            cli
 
            mov eax, cr0
-           or eax, 0x80000001
+           or eax, CR0_PG+CR0_WP+CR0_PE
            mov cr0, eax
 
            jmp pword 0x08:__setvars

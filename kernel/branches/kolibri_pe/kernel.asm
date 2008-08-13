@@ -114,78 +114,50 @@ public _sys_pdbr
 public _gdts
 public _high_code
 
+public __hlt
+public _panic_printf
+public _printf
+public _pg_balloc
+public _mem_amount
+public @balloc@4
+
 public __setvars
 
 extrn _enter_bootscreen
 extrn _leave_bootscreen
 
+extrn _init
+extrn _init_mm
+
+public _rd_base
+public _rd_fat
+public _rd_fat_end
+public _rd_root
+public _rd_root_end
+
+extrn _alloc_pages
+extrn _alloc_page
+
 extrn _bx_from_load
 
-section '.flat' code readable align 16
+section '.flat' code readable align 4096
 
 use32
-
-org 0xE0102000
-
 
 align 4
 
 use32
 
-
-; CLEAR 0x280000 - HEAP_BASE
-
-       ;    xor   eax,eax
-       ;    mov   edi,0x280000
-       ;    mov   ecx,(0x800000-0x280000) / 4
-       ;    cld
-       ;    rep   stosd
-
-       ;    mov   edi,0x40000
-       ;    mov   ecx,(0x90000-0x40000)/4
-       ;    rep   stosd
-
-; CLEAR KERNEL UNDEFINED GLOBALS
-       ;    mov   edi, endofcode-OS_BASE
-       ;    mov   ecx, (uglobals_size/4)+4
-       ;    rep   stosd
-
-
         ;   call test_cpu
-	   bts [cpu_caps-OS_BASE], CAPS_TSC	;force use rdtsc
+        ;   bts [cpu_caps-OS_BASE], CAPS_TSC     ;force use rdtsc
 
         ;   call init_BIOS32
 
-       ;    mov dword [sys_pgdir-OS_BASE], PG_LARGE+PG_SW
-       ;    mov dword [sys_pgdir-OS_BASE+4], PG_LARGE+PG_SW+4*1024*1024
-
-       ;    mov ecx, 32
-       ;    lea edi, [sys_pgdir-OS_BASE+0xE00]
-       ;    mov eax, PG_LARGE+PG_SW
-;@@:
-;           stosd
-;           add eax, 4*1024*1024
-;           loop @B
-
-;           mov ebx, cr4
-;           or ebx, CR4_PSE
-;           and ebx, not CR4_PAE
-;           mov cr4, ebx
-
-
-;           mov eax, sys_pgdir-OS_BASE
-;           mov ebx, cr0
-;           or ebx,CR0_PG+CR0_WP
-
-;           mov cr3, eax
-;           mov cr0, ebx
-
-;           lgdt [gdts]
 ;           jmp pword os_code:high_code
 
 align 4
-bios32_entry	dd ?
-tmp_page_tabs	dd ?
+;bios32_entry    dd ?
+;tmp_page_tabs   dd ?
 
 
 __DEBUG__ fix 1
@@ -197,10 +169,20 @@ MEM_WC     equ 1               ;write combined memory
 MEM_UC     equ 0               ;uncached memory
 
 
-include 'printf.inc'
-include 'core/mm.asm'
+__hlt:
+           cli
+@@:
+           hlt
+           jmp @B
 
-include 'core/init.asm'
+align 4
+_panic_printf:
+
+           mov dword [esp], __hlt
+           jmp _printf
+
+align 4
+include 'printf.inc'
 
 align 4
 proc test_cpu
@@ -303,6 +285,7 @@ endp
 
 align 4
 _high_code:
+
 	   mov ax,os_stack
            mov dx,app_data
 	   mov ss,ax
@@ -312,9 +295,6 @@ _high_code:
            mov es, dx
            mov fs, dx
            mov gs, dx
-
-;           push ecx
-;           push ebx
 
 
          ;  bt [cpu_caps], CAPS_PGE
@@ -549,16 +529,14 @@ __setvars:
 	   wrmsr
 .noSYSCALL:
 ; -----------------------------------------
-
 ; LOAD IDT
 
-	   call build_interrupt_table
-	   lidt [idtreg]
+           call _init_idt
 
            mov [LFBSize], 0x800000
 	   call init_LFB
            call init_fpu
-	   call init_malloc
+           call init_malloc
 
 	   stdcall alloc_kernel_space, 0x51000
 	   mov [default_io_map], eax
@@ -620,7 +598,7 @@ __setvars:
 	stdcall kernel_alloc, [mem_BACKGROUND]
 	mov [img_background], eax
 
-        mov     [SLOT_BASE + 256 + APPDATA.dir_table], _sys_pdbr - OS_BASE
+        mov     [SLOT_BASE + 256 + APPDATA.dir_table], _sys_pdbr + (0x100000000-OS_BASE)
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
@@ -648,8 +626,6 @@ __setvars:
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
 include 'detect/disks.inc'
 ;!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-           xchg bx, bx
 
   call Parser_params
 

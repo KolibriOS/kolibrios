@@ -383,7 +383,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
       ;     cmp eax, [pg_data.pages_free]
       ;     ja .fail
 
-	   call alloc_page
+           call _alloc_page
 	   test eax, eax
 	   jz .fail
 	   mov [dir_addr], eax
@@ -408,7 +408,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 	   mov edx, [app_tabs]
            xor edi, edi
 @@:
-	   call alloc_page
+           call _alloc_page
 	   test eax, eax
 	   jz .fail
 
@@ -450,7 +450,7 @@ if GREEDY_KERNEL
 else
 
 .alloc:
-	   call alloc_page
+           call _alloc_page
 	   test eax, eax
 	   jz .fail
 
@@ -944,7 +944,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	     pl0_stack dd ?
 	   endl
 
-           stdcall alloc_pages, (RING0_STACK_SIZE+512) shr 12
+           stdcall _alloc_pages, (RING0_STACK_SIZE+512) shr 12
            add eax, OS_BASE
 	   mov [pl0_stack], eax
 
@@ -988,7 +988,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	   add eax, RING0_STACK_SIZE
 	   mov [SLOT_BASE+APPDATA.saved_esp0+ebx], eax
 
-           call alloc_page
+           call _alloc_page
            add eax, OS_BASE
 	   mov esi,[current_slot]
 	   mov esi,[esi+APPDATA.cur_dir]

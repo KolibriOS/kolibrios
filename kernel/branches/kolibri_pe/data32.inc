@@ -269,11 +269,8 @@ code_16:
 
 endofcode:
 gdte:
-edata:  ;equ $-OS_BASE
 
-section '.bss' code readable align 4096
-
-org edata
+section '.bss' data writeable align 4096
 
 align 4096
 
@@ -285,6 +282,9 @@ __os_stack  rb 512
 
 cur_saved_data	  rb 4096
 fpu_data:	  rb 512
+
+
+idts              rq 0x41
 
 ; device irq owners
 irq_owner	  rd 16 ; process id
