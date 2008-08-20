@@ -123,8 +123,10 @@ public @balloc@4
 
 public __setvars
 
+extrn _16bit_start
+extrn _16bit_end
+
 extrn _enter_bootscreen
-extrn _leave_bootscreen
 
 extrn _init
 extrn _init_mm
@@ -352,14 +354,16 @@ _high_code:
            call _init_mm
            mov [pg_data.pg_mutex], 0
 
-           mov esi, _enter_bootscreen
-           mov ecx, _leave_bootscreen
+           mov esi, _16bit_start
+           mov ecx, _16bit_end
            shr ecx, 2
-           mov edi, BOOT_BASE
+           mov edi, _16BIT_BASE
            cld
            rep movsd
 
-           jmp far 0x60:0x00000;
+           xchg bx, bx
+
+           jmp far 0x60:_enter_bootscreen;
 
 align 4
 __setvars:
@@ -376,7 +380,7 @@ __setvars:
 ; SAVE & CLEAR 0-0xffff
 
            xor esi, esi
-           mov   edi,0x2F0000
+           mov   edi,0x1F0000
            mov   ecx,0x10000 / 4
            rep   movsd
            xor edi, edi
@@ -5164,7 +5168,7 @@ yes_shutdown_param:
    ;        mov  ecx,1000
    ;        rep  movsb
 
-           mov  esi,OS_BASE+0x2F0000    ; restore 0x0 - 0xffff
+           mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
            mov  edi, OS_BASE
            mov  ecx,0x10000/4
            cld

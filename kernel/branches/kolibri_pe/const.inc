@@ -198,7 +198,7 @@ OS_TEMP             equ 0xDFC00000
 kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
-BOOT_BASE           equ 0x00010000
+_16BIT_BASE         equ 0x00010000
 LOAD_BASE           equ 0x00100000
 OS_BASE             equ 0xE0000000
 
@@ -297,41 +297,42 @@ TMP_BUFF            equ (OS_BASE+0x0090000)
 VGABasePtr          equ (OS_BASE+0x00A0000)
 
 ;RAMDISK             equ (OS_BASE+0x0100000)
-RAMDISK_FAT         equ (OS_BASE+0x0280000)
-FLOPPY_FAT          equ (OS_BASE+0x0282000)
 
-IDE_DMA             equ 0x284000
+RAMDISK_FAT         equ (OS_BASE+0x0180000)
+FLOPPY_FAT          equ (OS_BASE+0x0182000)
 
-BgrAuxTable         equ (OS_BASE+0x0298000)
+IDE_DMA             equ 0x184000
+
+BgrAuxTable         equ (OS_BASE+0x0198000)
 ; unused?
-SB16Buffer          equ (OS_BASE+0x2A0000)
-SB16_Status         equ (OS_BASE+0x02B0000)
+SB16Buffer          equ (OS_BASE+0x01A0000)
+SB16_Status         equ (OS_BASE+0x01B0000)
 
-BUTTON_INFO         equ (OS_BASE+0x02C0000)
-RESERVED_PORTS      equ (OS_BASE+0x02D0000)
-IRQ_SAVE            equ (OS_BASE+0x02E0000)
-BOOT_VAR            equ (OS_BASE+0x02f0000)
+BUTTON_INFO         equ (OS_BASE+0x01C0000)
+RESERVED_PORTS      equ (OS_BASE+0x01D0000)
+IRQ_SAVE            equ (OS_BASE+0x01E0000)
+BOOT_VAR            equ (OS_BASE+0x01f0000)
 
-stack_data_start    equ (OS_BASE+0x0300000)
-eth_data_start      equ (OS_BASE+0x0300000)
-stack_data          equ (OS_BASE+0x0304000)
-stack_data_end      equ (OS_BASE+0x031ffff)
-resendQ             equ (OS_BASE+0x0320000)
-VMODE_BASE          equ (OS_BASE+0x0328000)
-skin_data           equ (OS_BASE+0x0330000)
-draw_data           equ (OS_BASE+0x0338000);
+stack_data_start    equ (OS_BASE+0x0200000)
+eth_data_start      equ (OS_BASE+0x0200000)
+stack_data          equ (OS_BASE+0x0204000)
+stack_data_end      equ (OS_BASE+0x021ffff)
+resendQ             equ (OS_BASE+0x0220000)
+VMODE_BASE          equ (OS_BASE+0x0228000)
+skin_data           equ (OS_BASE+0x0230000)
+draw_data           equ (OS_BASE+0x0238000);
 
-BgrDrawMode         equ (OS_BASE+0x033BFF4)
-BgrDataWidth        equ (OS_BASE+0x033BFF8)
-BgrDataHeight       equ (OS_BASE+0x033BFFC)
+BgrDrawMode         equ (OS_BASE+0x023BFF4)
+BgrDataWidth        equ (OS_BASE+0x023BFF8)
+BgrDataHeight       equ (OS_BASE+0x023BFFC)
 
-;display_data       equ (OS_BASE+0x033C000) ;1024*1280=0x140000
+;display_data       equ (OS_BASE+0x023C000) ;1024*1280=0x140000
 
-virtual at              (OS_BASE+0x033CF80)
+virtual at              (OS_BASE+0x023CF80)
   tss  TSS
 end virtual
 
-LAST_PAGE           equ 0x0340000
+LAST_PAGE           equ 0x0240000
 
 ;sys_pgmap           equ (OS_BASE+LAST_PAGE)
 

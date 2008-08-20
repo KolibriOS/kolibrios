@@ -91,8 +91,8 @@ v86_create:
 ; now V86 specific: initialize known addresses in first Mb
         pop     eax
 ; first page - BIOS data (shared between all machines!)
-; physical address = 0x2f0000
-; linear address = BOOT_VAR = OS_BASE + 0x2f0000
+; physical address = 0x1f0000
+; linear address = BOOT_VAR = OS_BASE + 0x1f0000
         mov     dword [eax], (BOOT_VAR - OS_BASE) or 111b
         mov     dword [eax+800h], BOOT_VAR
 ; page before 0xA0000 - Extended BIOS Data Area (shared between all machines!)

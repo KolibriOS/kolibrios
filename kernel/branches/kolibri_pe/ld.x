@@ -26,6 +26,7 @@ SECTIONS
   {
     *(.bss) *(COMMON)
   }
+  __kernel_end = . - 0xE0000000;
 
   /DISCARD/ :
   {

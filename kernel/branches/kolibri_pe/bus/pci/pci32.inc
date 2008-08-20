@@ -398,9 +398,9 @@ sys_pcibios:
 	cmp	ebp, 1			; PCI_FUNCTION_ID
 	jnz	.not_PCI_BIOS_PRESENT
 	mov	edx, 'PCI '
-        mov     al, [OS_BASE+0x2F0000 + 0x9020]
-        mov     bx, [OS_BASE+0x2F0000 + 0x9022]
-        mov     cl, [OS_BASE+0x2F0000 + 0x9021]
+        mov     al, [BOOT_VAR + 0x9020]
+        mov     bx, [BOOT_VAR + 0x9022]
+        mov     cl, [BOOT_VAR + 0x9021]
         xor     ah, ah
 	jmp	.return_abcd
 

@@ -33,7 +33,7 @@ FORCE_MMX_128     equ 0  ;integer sse2 extensions
 
 USE_SSE2_MIXER    equ 0  ;floating point mixer. Disabled by default
 
-OS_BASE           equ 0x80000000
+OS_BASE           equ 0xE0000000
 
 CAPS_SSE2         equ 26
 PG_SW             equ 0x003

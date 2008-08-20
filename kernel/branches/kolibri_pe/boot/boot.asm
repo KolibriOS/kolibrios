@@ -16,9 +16,10 @@ CR0_PE         equ    0x00000001   ;protected mode
 CR0_WP         equ    0x00010000   ;write protect
 CR0_PG         equ    0x80000000   ;paging
 
+public _16bit_start
+public _16bit_end
 
 public _enter_bootscreen
-public _leave_bootscreen
 
 public _bx_from_load
 
@@ -26,12 +27,14 @@ extrn __setvars
 
 section '.boot' code readable align 16
 
-
-_enter_bootscreen:
+_16bit_start:
 
 org 0
 
 use16
+
+_enter_bootscreen:
+
            mov eax, cr0
            and eax, not 0x80000001
            mov cr0, eax
@@ -71,4 +74,32 @@ include "../detect/biosdisk.inc"
            jmp pword 0x08:__setvars
 
 align 4
-_leave_bootscreen:
+_enter_16bit:
+           mov eax, cr0
+           and eax, not 0x80000001
+           mov cr0, eax
+           jmp far 0x1000:@F
+
+align 4
+_leave_16bit:
+
+           cli
+           mov eax, cr0
+           or eax, CR0_PG+CR0_WP+CR0_PE
+           mov cr0, eax
+           hlt
+
+align 4
+@@:
+           mov eax, 0x3000
+           mov ss, ax
+           mov esp, 0xEC00
+
+           mov ebx, 0x1000
+           mov ds, bx
+           mov es, bx
+           cli
+           hlt
+
+align 4
+_16bit_end:
