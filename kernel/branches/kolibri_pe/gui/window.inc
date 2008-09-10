@@ -562,10 +562,10 @@ check_window_position:
 
     pushad			     ; window inside screen ?
 
-    movsx eax,word [edi+WDATA.box.left]
-    movsx ebx,word [edi+WDATA.box.top]
-    movsx ecx,word [edi+WDATA.box.width]
-    movsx edx,word [edi+WDATA.box.height]
+    mov   eax, [edi+WDATA.box.left]
+    mov   ebx, [edi+WDATA.box.top]
+    mov   ecx, [edi+WDATA.box.width]
+    mov   edx, [edi+WDATA.box.height]
 
     cmp   ecx,[Screen_Max_X]	      ; check x size
     jbe   x_size_ok

@@ -175,7 +175,39 @@ show_error_parameters:
     mov eax,[CURRENT_TASK]
     shl eax, 5
     DEBUGF  1, "K : Process - forced terminate PID: %x\n", [CURRENT_TASK + TASKDATA.pid + eax]
-    DEBUGF  1, "K : Exception : %x Error : xxxxxxxx\n", [error_interrupt]
+    mov eax, [error_interrupt]
+    cmp al, 0x08
+    jne @f
+    DEBUGF  1, "K : Double fault\n"
+    jmp defined_error
+@@:
+    cmp al, 0x0a
+    jne @f
+    DEBUGF  1, "K : Invalid TSS\n"
+    jmp defined_error
+@@:
+    cmp al, 0x0b
+    jne @f
+    DEBUGF  1, "K : Segment not present\n"
+    jmp defined_error
+@@:
+    cmp al, 0x0c
+    jne @f
+    DEBUGF  1, "K : Stack fault\n"
+    jmp defined_error
+@@:
+    cmp al, 0x0d
+    jne @f
+    DEBUGF  1, "K : General protection fault\n"
+    jmp defined_error
+@@:
+    cmp al, 0x0e
+    jne @f
+    DEBUGF  1, "K : Page fault\n"
+    jmp defined_error
+@@:
+    DEBUGF  1, "K : Undefined Exception\n"
+defined_error:
     DEBUGF  1, "K : EAX : %x EBX : %x ECX : %x\n", [esp + 0x20], [esp - 12 + 0x20], [esp - 4 + 0x20]
     DEBUGF  1, "K : EDX : %x ESI : %x EDI : %x\n", [esp - 8 + 0x20], [esp - 24 + 0x20], [esp - 28 + 0x20]
     DEBUGF  1, "K : EBP : %x EIP : %x ", [esp - 20 + 0x20], [esp + 4 + 0x20]

@@ -43,7 +43,7 @@ end if
 	 mov al,((sb_buffer_size-1) and 0xff)
 	 out dx,al
 
-         mov al,((sb_buffer_size-1) shr 8) ;it is the same
+	 mov al,((sb_buffer_size-1) shr 8) ;it is the same
 	 out dx,al
 
 	 mov eax,ebx ;unmask DMA channel
@@ -129,8 +129,8 @@ proc sb_play
 	mov  edx,[sb_base_port]
 	add  dl,0xC
 	sb_out 0xD1 ;turn speaker on
-;        sb_out 0x48 ;set DSP transfer size  ;for older cards
-
+;        sb_out 0x48 ;set DSP transfer size  ;for older cards, not supported
+;                                            ;in this version
 ;        mov  ax,32767 ;(64k)/2-1
 ;@@:                 ;out the low byte...
 ;        in   al,dx
@@ -162,7 +162,7 @@ proc sb_play
 ;              ||  ||||
 ;              ---------reserved
 ;wSize is a number of 16bit samples less 1. For auto-init mode each half
-;buffer is (64k)/2 bytes long and, obviously, contains ((64k)/2)/2 bytes
+;buffer is (64k)/2 bytes long and, obviously, contains ((64k)/2)/2 samples
 	sb_out (((sb_buffer_size/2/2)-1) and 0xFF) ;wSize.LowByte
 	sb_out (((sb_buffer_size/2/2)-1) shr 8)    ;wSize.HighByte
 	ret
@@ -192,6 +192,7 @@ end if
 	out  dx,al
 	ret
 endp
+
 ;-------------------------------------------------------------------------------
 ;       set the rate for playing, enable stereo
 ;-------------------------------------------------------------------------------
@@ -204,7 +205,8 @@ proc sb_setup
 	sb_out 41h  ;set sound rate, this can only SB16
 	sb_out (sb_out_rate shr 8)    ;first high byte (MSB)
 	sb_out (sb_out_rate and 0xff) ;then low byte (LSB)
-;        mov  al,0xE
+
+;        mov  al,0xE  ;for older cards, not supported in this version
 ;        sub  dl,(0xC-4) ;talk to SB's mixer
 ;        out  dx,al      ;select this register of the mixer
 ;        mov  ecx,6      ;wait for the chip
@@ -237,3 +239,59 @@ proc sb_setup
 ;        loop @b
 	ret
 endp
+
+;-------------------------------------------------------------------------------
+;       set master volume of SB mixer, note, not only SB16 but SBPro and older
+;       this is the first step to more full support for hardware
+;-------------------------------------------------------------------------------
+;in: eax in range [-10000;0] - master volume for _both_ channels
+;note that x*3*17/2000 and x*3/2000*17 are not the same numbers,
+;because we count in integers
+proc sb_set_master_vol
+	mov  [sb_master_vol],eax
+	add  eax,10000 ;SB sound level rise from 0 to MAX_LEVEL
+	lea  eax,[eax+eax*2] ;*3
+	mov  ebx,2000  ;divisor
+	xor  edx,edx
+	cmp  byte[sb_DSP_version_int],4
+	jae  @f       ;SBPro's MAX_LEVEL is 15, but we *11 because
+		      ;volume byte looks like that: 0xLR, where L - left
+		      ;channel volume, R - right, 0<=R,L<=15
+	div  ebx
+	imul eax,17
+	mov  edx,[sb_base_port]
+	push eax      ;here for optimisation
+	add  dl,4
+	mov  al,0x22  ;write mixer register 0x22
+	out  dx,al
+	in   al,dx    ;wait for the chip ;6
+	in   al,dx    ;wait for the chip ;5
+	in   al,dx    ;wait for the chip ;4
+	in   al,dx    ;wait for the chip ;3
+	in   al,dx    ;wait for the chip ;2
+	in   al,dx    ;wait for the chip ;1
+	pop  eax			 ;go!
+	inc  edx
+	out  dx,al
+	ret
+@@:		      ;SB16's MAX_LEVEL is 255
+	imul eax,17
+	div  ebx
+	mov  edx,[sb_base_port]
+	push eax      ;here for optimisation
+	add  dl,4
+	mov  al,0x30  ;left speaker
+	out  dx,al
+	pop  eax      ;<--+
+	inc  edx      ;   \/
+	push eax      ;here for optimisation
+	out  dx,al    ;write
+	dec  edx
+	mov  al,0x31  ;right speaker
+	out  dx,al
+	pop  eax
+	inc  edx
+	out  dx,al    ;write
+	ret
+endp
+;-------------------------------------------------------------------------------

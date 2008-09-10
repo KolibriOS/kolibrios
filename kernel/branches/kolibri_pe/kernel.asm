@@ -3061,12 +3061,14 @@ sys_set_window:
     add   eax,100
     mov   [new_window_starting],eax
 
-    mov   word[edi+WDATA.box.width],bx
-    mov   word[edi+WDATA.box.height],cx
+    movsx eax,bx
+    mov   [edi+WDATA.box.width],eax
+    movsx eax,cx
+    mov   [edi+WDATA.box.height],eax
     sar   ebx,16
     sar   ecx,16
-    mov   word[edi+WDATA.box.left],bx
-    mov   word[edi+WDATA.box.top],cx
+    mov   [edi+WDATA.box.left],ebx
+    mov   [edi+WDATA.box.top],ecx
 
     call  check_window_position
 
