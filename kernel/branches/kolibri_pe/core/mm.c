@@ -30,12 +30,11 @@ static void  __fastcall buddy_system_free(zone_t *z, link_t *block);
 static void zone_mark_unavailable(zone_t *zone, index_t frame_idx);
 
 static addr_t __fastcall zone_alloc(zone_t *zone, u32_t order);
+void __fastcall zone_free(zone_t *zone, pfn_t frame_idx);
 
 size_t buddy_conf_size(int max_order);
 
 static inline void frame_initialize(frame_t *frame);
-
-static inline u32_t fnzb(u32_t arg);
 
 void init_mm();
 
@@ -211,16 +210,6 @@ static inline void frame_initialize(frame_t *frame)
 	frame->buddy_order = 0;
 }
 
-static inline count_t fnzb(u32_t arg)
-{
-  int n;
-  asm volatile ("xor %0, %0 \n\t"
-                "bsr %0, %1"
-                :"=r" (n)
-                :"r"(arg)
-                );
-	return n;
-}
 
 static link_t *buddy_find_block(zone_t *zone, link_t *child,
     u32_t order)
@@ -502,6 +491,7 @@ static __fastcall pfn_t zone_frame_alloc(zone_t *zone, u32_t order)
 
 	/* get frame address */
 	v = make_frame_index(zone, frame);
+
 	return v;
 }
 
@@ -518,6 +508,17 @@ void __fastcall frame_set_parent(pfn_t pfn, void *data)
   spinlock_unlock(&z_core.lock);
 }
 
+void* __fastcall frame_get_parent(pfn_t pfn)
+{
+//	zone_t *zone = find_zone_and_lock(pfn, &hint);
+	void *res;
+
+  spinlock_lock(&z_core.lock);
+    res = zone_get_frame(&z_core, pfn)->parent;
+  spinlock_unlock(&z_core.lock);
+
+	return res;
+}
 
 static inline int to_order(count_t arg)
 {
@@ -548,7 +549,7 @@ addr_t __fastcall zone_alloc(zone_t *zone, u32_t order)
    return (v << FRAME_WIDTH);
 }
 
-addr_t  core_alloc(u32_t order)   //__cdecl __dllexport
+addr_t  __fastcall core_alloc(u32_t order)        //export
 {
    eflags_t efl;
    pfn_t v;
@@ -562,7 +563,18 @@ addr_t  core_alloc(u32_t order)   //__cdecl __dllexport
    return (v << FRAME_WIDTH);
 };
 
-addr_t alloc_page()                             //obsolete
+void __fastcall core_free(addr_t frame)            //export
+{
+   eflags_t efl;
+
+   efl = safe_cli();
+     spinlock_lock(&z_core.lock);
+       zone_free(&z_core, frame>>12);
+     spinlock_unlock(&z_core.lock);
+   safe_sti(efl);
+}
+
+addr_t alloc_page()                                //obsolete
 {
    eflags_t efl;
    u32_t    edx;
@@ -619,17 +631,6 @@ void __fastcall zone_free(zone_t *zone, pfn_t frame_idx)
 	}
 }
 
-void core_free(addr_t frame)            //export
-{
-   eflags_t efl;
-
-   efl = safe_cli();
-     spinlock_lock(&z_core.lock);
-       zone_free(&z_core, frame>>12);
-     spinlock_unlock(&z_core.lock);
-   safe_sti(efl);
-}
-
 void frame_free(addr_t frame)           //export
 {
    eflags_t efl;
@@ -640,5 +641,10 @@ void frame_free(addr_t frame)           //export
        zone_free(&z_core, frame>>12);
      spinlock_unlock(&z_core.lock);
   safe_sti(efl);
+}
+
+count_t get_free_mem()
+{
+   return z_core.free_count;
 }
 

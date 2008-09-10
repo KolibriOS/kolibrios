@@ -123,6 +123,12 @@ public @balloc@4
 
 public __setvars
 
+public _rd_base
+public _rd_fat
+public _rd_fat_end
+public _rd_root
+public _rd_root_end
+
 extrn _16bit_start
 extrn _16bit_end
 
@@ -131,14 +137,21 @@ extrn _enter_bootscreen
 extrn _init
 extrn _init_mm
 
-public _rd_base
-public _rd_fat
-public _rd_fat_end
-public _rd_root
-public _rd_root_end
+extrn @init_heap@8
+extrn @find_large_md@4
+extrn @find_small_md@4
+extrn @phis_alloc@4
+extrn @mem_alloc@8
 
+extrn _alloc_kernel_space@4
+
+extrn _slab_cache_init
 extrn _alloc_pages
 extrn _alloc_page
+
+extrn _get_free_mem
+
+alloc_kernel_space equ _alloc_kernel_space@4
 
 extrn _bx_from_load
 
@@ -349,10 +362,14 @@ _high_code:
 
 ; MEMORY MODEL
 
-           call init_kernel_heap     ; FIXME initialize heap after pager
-
            call _init_mm
            mov [pg_data.pg_mutex], 0
+
+           call _slab_cache_init
+
+           mov ecx, 0x80000000
+           mov edx, 0x40000000
+           call @init_heap@8
 
            mov esi, _16bit_start
            mov ecx, _16bit_end
@@ -360,8 +377,6 @@ _high_code:
            mov edi, _16BIT_BASE
            cld
            rep movsd
-
-           xchg bx, bx
 
            jmp far 0x60:_enter_bootscreen;
 
@@ -379,8 +394,9 @@ __setvars:
 
 ; SAVE & CLEAR 0-0xffff
 
+           cld
            xor esi, esi
-           mov   edi,0x1F0000
+           mov   edi,BOOT_VAR
            mov   ecx,0x10000 / 4
            rep   movsd
            xor edi, edi
@@ -388,13 +404,22 @@ __setvars:
            mov   ecx,0x10000 / 4
            rep   stosd
 
+           mov edi, SLOT_BASE
+           mov   ecx,0x10000 / 4
+           rep   stosd
+
+           mov dword [_sys_pdbr], eax
+           mov dword [_sys_pdbr+4], eax
+           mov eax, cr3
+           mov cr3, eax
+
 ; SAVE REAL MODE VARIABLES
 	mov	ax, [BOOT_VAR + 0x9031]
 	mov	[IDEContrRegsBaseAddr], ax
 ; --------------- APM ---------------------
 
 ; init selectors
-    mov ebx,    [BOOT_VAR +0x9040]              ; offset of APM entry point
+    mov ebx,    [BOOT_VAR +0x9040]    ; offset of APM entry point
     movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
 				      ; protected-mode 32-bit code segment
     movzx ecx, word [BOOT_VAR+0x9052] ; real-mode segment base address of
@@ -788,7 +813,6 @@ include 'detect/disks.inc'
 
 ; SET MOUSE
 
-	;call   detect_devices
 	stdcall load_driver, szPS2MDriver
        ; stdcall load_driver, szCOM_MDriver
 
@@ -829,10 +853,10 @@ include 'detect/disks.inc'
 	   add esi, 0x1000
 	   stdcall map_page,esi,(tss._io_map_1-OS_BASE), PG_MAP
 
-	   stdcall map_page,tss._io_map_0,\
-		   (tss._io_map_0-OS_BASE), PG_MAP
-	   stdcall map_page,tss._io_map_1,\
-		   (tss._io_map_1-OS_BASE), PG_MAP
+         ;  stdcall map_page,tss._io_map_0,\
+         ;          (tss._io_map_0-OS_BASE), PG_MAP
+         ;  stdcall map_page,tss._io_map_1,\
+         ;          (tss._io_map_1-OS_BASE), PG_MAP
 
 ;  mov ax,[OS_BASE+0x10000+bx_from_load]
 ;  cmp ax,'r1'           ; if not rused ram disk - load network configuration from files {SPraid.simba}
@@ -841,17 +865,6 @@ include 'detect/disks.inc'
 ;  no_st_network:
 
 ; LOAD FIRST APPLICATION
-
-	cmp   byte [BOOT_VAR+0x9030],1
-	jne   no_load_vrr_m
-
-	mov	ebp, vrr_m
-	call	fs_execute_from_sysdir
-
-	cmp   eax,2		     ; if vrr_m app found (PID=2)
-	je    first_app_found
-
-no_load_vrr_m:
 
 
 	mov	ebp, firstapp
@@ -1125,13 +1138,13 @@ endg
 
 set_variables:
 
-	mov   ecx,0x100 		      ; flush port 0x60
+        mov   ecx,0x100                          ; flush port 0x60
 .fl60:	in    al,0x60
 	loop  .fl60
-	mov   [MOUSE_BUFF_COUNT],byte 0 		; mouse buffer
-	mov   [KEY_COUNT],byte 0		 ; keyboard buffer
-	mov   [BTN_COUNT],byte 0		 ; button buffer
-;        mov   [MOUSE_X],dword 100*65536+100    ; mouse x/y
+        mov   [MOUSE_BUFF_COUNT],byte 0          ; mouse buffer
+        mov   [KEY_COUNT],byte 0                 ; keyboard buffer
+        mov   [BTN_COUNT],byte 0                 ; button buffer
+;        mov   [MOUSE_X],dword 100*65536+100     ; mouse x/y
 
 	push  eax
 	mov   ax,[BOOT_VAR+0x900c]
@@ -1142,11 +1155,11 @@ set_variables:
 	mov   [MOUSE_X],eax
 	pop   eax
 
-        mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
+        mov   [BTN_ADDR],dword BUTTON_INFO       ; address of button list
 
      ;!! IP 04.02.2005:
 	mov   [next_usage_update], 100
-	mov   byte [DONT_SWITCH], 0 ; change task if possible
+        mov   byte [DONT_SWITCH], 0              ; change task if possible
 
 	ret
 
@@ -1893,18 +1906,6 @@ sys_midi:
 
      ret
 
-
-detect_devices:
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-;include 'detect/commouse.inc'
-;include 'detect/ps2mouse.inc'
-;include 'detect/dev_fd.inc'
-;include 'detect/dev_hdcd.inc'
-;include 'detect/sear_par.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    ret
-
-
 sys_end:
 
      mov   eax,[TASK_BASE]
@@ -2170,7 +2171,7 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
      ret
 
 sysfn_getfreemem:
-     mov eax, [pg_data.pages_free]
+     call _get_free_mem
      shl eax, 2
      mov [esp+32],eax
      ret

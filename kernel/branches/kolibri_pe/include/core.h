@@ -46,3 +46,43 @@ static inline void safe_sti(eflags_t efl)
     : : "r" (efl)
 	);
 }
+
+static inline count_t fnzb(u32_t arg)
+{
+  count_t n;
+  asm volatile ("xor %0, %0 \n\t"
+                "bsr %0, %1"
+                :"=&r" (n)
+                :"r"(arg)
+                );
+	return n;
+}
+
+static inline count_t _bsf(u32_t arg)
+{
+  count_t n;
+  asm volatile ("xor %0, %0 \n\t"
+                "bsf %0, %1"
+                :"=&r" (n)
+                :"r"(arg)
+                );
+	return n;
+}
+
+static inline void _bts(u32_t *data, count_t val)
+{
+  asm volatile ("bts %0, %1 \n\t"
+                :
+                :"g"(data), "r"(val)
+                :"cc"
+                );
+}
+
+static inline void _btr(u32_t *data, count_t val)
+{
+  asm volatile ("btr %0, %1 \n\t"
+                :
+                :"g"(data), "r"(val)
+                :"cc"
+                );
+}

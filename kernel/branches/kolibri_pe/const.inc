@@ -544,8 +544,6 @@ struc MEM_STATE
 struc PG_DATA
 { .mem_amount        dd ?
   .vesa_mem          dd ?
-  .pages_count       dd ?
-  .pages_free        dd ?
   .pages_faults      dd ?
   .pagemap_size      dd ?
   .kernel_pages      dd ?

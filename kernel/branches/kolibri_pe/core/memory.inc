@@ -174,7 +174,7 @@ release_pages:
            add esi, 4
            dec ecx
            jnz @B
-           mov [pg_data.pages_free], ebp
+         ;  mov [pg_data.pages_free], ebp
            and [pg_data.pg_mutex],0
            popad
            ret
@@ -901,12 +901,13 @@ sysfn_meminfo:
            cmp ebx, OS_BASE
            jae .fail
 
-           mov eax, [pg_data.pages_count]
+           mov eax, [_mem_amount]
+           shr eax, 12
            mov [ebx], eax
            shl eax, 12
            mov [esp+36], eax
-           mov ecx, [pg_data.pages_free]
-           mov [ebx+4], ecx
+           call _get_free_mem
+           mov [ebx+4], eax
            mov edx, [pg_data.pages_faults]
            mov [ebx+8], edx
            mov esi, [heap_size]

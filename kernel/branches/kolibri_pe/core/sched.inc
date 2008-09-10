@@ -213,10 +213,10 @@ do_change_task:
 
 ; set thread io map
 
-        mov ecx, [ebx+APPDATA.io_map]
-        mov edx, [ebx+APPDATA.io_map+4]
-        mov dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], ecx
-        mov dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], edx
+     ;   mov ecx, [ebx+APPDATA.io_map]
+     ;   mov edx, [ebx+APPDATA.io_map+4]
+     ;   mov dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], ecx
+     ;   mov dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], edx
 
         mov eax, [ebx+APPDATA.dir_table]
         cmp eax, [esi+APPDATA.dir_table]

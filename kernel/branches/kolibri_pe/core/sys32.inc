@@ -468,7 +468,7 @@ term9:
 	   mov eax, [.slot]
 	   shl eax, 8
 	   mov eax,[SLOT_BASE+eax+APPDATA.dir_table]
-	   stdcall destroy_app_space, eax
+       ;    stdcall destroy_app_space, eax
 
 	   mov esi, [.slot]
 	   cmp [fpu_owner],esi	 ; if user fpu last -> fpu user = 1

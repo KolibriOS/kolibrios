@@ -9,7 +9,8 @@ $Revision$
 
     pusha
 
-    mov  eax,[pg_data.pages_free]
+    call _get_free_mem
+
 ;   1/32
     shr eax,5
 ;   round off up to 8 pages
@@ -36,7 +37,7 @@ $Revision$
     xor  eax,eax
     mov  [hdd_appl_data],1  ;al
     mov  [cd_appl_data],1
-    
+
     mov  ch,[DRIVE_DATA+1]
     mov  cl,ch
     and  cl,11b

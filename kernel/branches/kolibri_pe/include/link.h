@@ -5,6 +5,9 @@ typedef struct link
   struct link *next;
 }link_t;
 
+#define LIST_INITIALIZE(name) \
+	link_t name = { .prev = &name, .next = &name }
+
 #define list_get_instance(link, type, member) \
   ((type *)(((u8_t *)(link)) - ((u8_t *)&(((type *)NULL)->member))))
 
@@ -48,3 +51,10 @@ static inline void list_prepend(link_t *link, link_t *head)
 	head->next = link;
 }
 
+static inline list_insert(link_t *old, link_t *new)
+{
+   new->prev = old->prev;
+   new->next = old;
+   new->prev->next = new;
+   old->prev = new;
+}

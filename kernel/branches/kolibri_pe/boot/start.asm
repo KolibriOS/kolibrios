@@ -69,7 +69,7 @@ __start:
 
 ; ENABLE PAGING
 
-           mov ecx, 32
+           mov ecx, 64
            mov edi, _sys_pdbr+(OS_BASE shr 20)+(0x100000000-OS_BASE)
            mov eax, PG_LARGE+PG_SW
 @@:
