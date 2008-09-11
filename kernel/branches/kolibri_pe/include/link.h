@@ -51,7 +51,7 @@ static inline void list_prepend(link_t *link, link_t *head)
 	head->next = link;
 }
 
-static inline list_insert(link_t *old, link_t *new)
+static inline list_insert(link_t *new, link_t *old)
 {
    new->prev = old->prev;
    new->next = old;

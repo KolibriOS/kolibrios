@@ -55,10 +55,10 @@ void init_mm()
    size_t  core_size;
 
    pages = mem_amount >> FRAME_WIDTH;
-   printf("last page = %x total pages =  %x\n",mem_amount, pages);
+ //  printf("last page = %x total pages =  %x\n",mem_amount, pages);
 
    conf_size = pages*sizeof(frame_t);
-   printf("conf_size = %x  free mem start =%x\n",conf_size, pg_balloc);
+//   printf("conf_size = %x  free mem start =%x\n",conf_size, pg_balloc);
 
    zone_create(&z_core, 0, pages);
 
@@ -153,7 +153,7 @@ static void zone_reserve(zone_t *z, pfn_t base, count_t count)
   if(top > z->base+z->count)
      top = z->base+z->count;
 
-  printf("zone reserve base %x top %x\n", base, top);
+//  printf("zone reserve base %x top %x\n", base, top);
 
   for (i = base; i < top; i++)
     zone_mark_unavailable(z, i - z->base);
@@ -174,7 +174,7 @@ static void zone_release(zone_t *z, pfn_t base, count_t count)
   if(top > z->base+z->count)
      top = z->base+z->count;
 
-  printf("zone release base %x top %x\n", base, top);
+ // printf("zone release base %x top %x\n", base, top);
 
   for (i = base; i < top; i++) {
     z->frames[i-z->base].refcount = 0;
@@ -586,6 +586,9 @@ addr_t alloc_page()                                //obsolete
        v = zone_frame_alloc(&z_core, 0);
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
+
+   //printf("alloc_page: %x\n", v << FRAME_WIDTH);
+
    restore_edx(edx);
    return (v << FRAME_WIDTH);
 };
@@ -604,6 +607,9 @@ addr_t __stdcall alloc_pages(count_t count)     //obsolete
        v = zone_frame_alloc(&z_core, to_order(count));
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
+
+   //printf("alloc_pages: %x count %x\n", v << FRAME_WIDTH, count);
+
    restore_edx(edx);
 
    return (v << FRAME_WIDTH);

@@ -31,27 +31,9 @@ map_space:    ;not implemented
 
 
 align 4
-proc free_page
+free_page:
 
-;arg:  eax  page address
-;           pushfd
-;           cli
-;           shr eax, 12                        ;page index
-;           bts dword [sys_pgmap], eax         ;that's all!
-;           cmc
-;           adc [pg_data.pages_free], 0
-;           shr eax, 3
-;           and eax, not 3                     ;dword offset from page_map
-;           add eax, sys_pgmap
-;           cmp [page_start], eax
-;           ja @f
-;           popfd
-;           ret
-;@@:
-;           mov [page_start], eax
-;           popfd
            ret
-endp
 
 proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
@@ -145,36 +127,17 @@ release_pages:
            shr esi, 10
            add esi, page_tabs
 
-;           mov ebp, [pg_data.pages_free]
-;           mov ebx, [page_start]
-     ;      mov edx, sys_pgmap
 @@:
            xor eax, eax
            xchg eax, [esi]
            push eax
            invlpg [edi]
            pop eax
-
-;           test eax, 1
-;           jz .next
-
-;           shr eax, 12
-    ;       bts [edx], eax
-;           cmc
-;           adc ebp, 0
-;           shr eax, 3
-;           and eax, -4
-;           add eax, edx
-;           cmp eax, ebx
-;           jae .next
-
-;           mov ebx, eax
 .next:
            add edi, 0x1000
            add esi, 4
            dec ecx
            jnz @B
-         ;  mov [pg_data.pages_free], ebp
            and [pg_data.pg_mutex],0
            popad
            ret
@@ -440,8 +403,6 @@ proc page_fault_handler
            mov ebx, [.err_addr]
            mov eax, [.err_code]
 
-         ;  xchg bx, bx
-
            cmp ebx, HEAP_BASE
            jb .user_space      ;страница в памяти приложения ;
 
@@ -451,14 +412,18 @@ proc page_fault_handler
            cmp ebx, page_tabs
            jb .lfb
 
-           cmp ebx, OS_BASE
-           jb .core_tabs
+           cmp ebx, heap_tabs
+           jb .user_tabs
 
-           jmp .core_tabs
+           cmp ebx, OS_BASE
+           jb .heap_tab
+
 
          ;  cmp ebx, kernel_tabs
          ;  jb .alloc;.app_tabs ;таблицы страниц приложения ;
                                ;просто создадим одну
+
+
 
 .lfb:
            shr ebx, 22
@@ -466,25 +431,47 @@ proc page_fault_handler
            mov [master_tab + ebx*4], edx
            jmp .exit
 
-.core_tabs:
+.user_tabs:
+           shr ebx, 12
+           and ebx, 0x3FF
+           mov edx, [master_tab + ebx*4]
+           test edx, PG_MAP
+           jnz .fail
 
+           call _alloc_page
+           test eax, eax
+           jz .fail
+
+           lea edx, [eax + PG_UW]
+           lea edi, [eax + OS_BASE]
+           mov ecx, 1024
+           xor eax, eax
+           cld
+           rep stosd
+
+           mov [master_tab + ebx*4], edx
+           jmp .exit
+
+.heap_tab:
            shr ebx, 12
            and ebx, 0x3FF
            mov edx, [master_tab + ebx*4]
            test edx, PG_MAP
            jz .check_ptab      ;таблица страниц не создана
 
+           jmp .fail
+
+
 align 4
 .kernel_heap:
 
-           mov ecx, ebx
            shr ebx, 22
            mov edx, [master_tab + ebx*4]
            test edx, PG_MAP
            jz .check_ptab      ;таблица страниц не создана
 
-           shr ecx, 12
-           mov eax, [page_tabs+ecx*4]
+
+           jmp .fail
 
 .check_ptab:
            mov edx, [_sys_pdbr + ebx*4]

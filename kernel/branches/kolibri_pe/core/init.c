@@ -36,14 +36,14 @@ void init()
      module_t *mod;
      int i;
 
-     printf ("mods_count = %d, mods_addr = 0x%x\n",
-             (u32_t) boot_mbi->mods_count, (u32_t) boot_mbi->mods_addr);
+   //  printf ("mods_count = %d, mods_addr = 0x%x\n",
+   //          (u32_t) boot_mbi->mods_count, (u32_t) boot_mbi->mods_addr);
      for (i = 0, mod = (module_t *) boot_mbi->mods_addr;
           i < boot_mbi->mods_count;i++, mod++)
      {
         pg_balloc = mod->mod_end;
-        printf (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
-              (u32_t) mod->mod_start,(u32_t) mod->mod_end, (char *) mod->string);
+    //    printf (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
+    //          (u32_t) mod->mod_start,(u32_t) mod->mod_end, (char *) mod->string);
      };
      mod--;
      rd_base     = mod->mod_start+OS_BASE;
@@ -51,7 +51,7 @@ void init()
      rd_fat_end  = rd_base + 512 + 4278;
      rd_root     = rd_base + 512*19;
      rd_root_end = rd_base + 512*33;
-     printf(" rd_base = %x\n", rd_base);
+   //  printf(" rd_base = %x\n", rd_base);
    }
 
    if (CHECK_FLAG (boot_mbi->flags, 6))
@@ -59,8 +59,8 @@ void init()
       memory_map_t *mmap;
       u32_t page;
 
-      printf ("mmap_addr = 0x%x, mmap_length = 0x%x\n",
-        (unsigned) boot_mbi->mmap_addr, (unsigned) boot_mbi->mmap_length);
+    //  printf ("mmap_addr = 0x%x, mmap_length = 0x%x\n",
+    //    (unsigned) boot_mbi->mmap_addr, (unsigned) boot_mbi->mmap_length);
 
       for (mmap = (memory_map_t *) boot_mbi->mmap_addr;
           (u32_t) mmap < boot_mbi->mmap_addr + boot_mbi->mmap_length;
@@ -68,7 +68,7 @@ void init()
 				    + mmap->size + sizeof (mmap->size)))
       {
          u32_t page;
-
+        /*
          printf (" size = 0x%x, base_addr = 0x%x%x,"
                  " length = 0x%x%x, type = 0x%x\n",
                  (unsigned) mmap->size,
@@ -77,7 +77,7 @@ void init()
                  (unsigned) mmap->length_high,
                  (unsigned) mmap->length_low,
                  (unsigned) mmap->type);
-
+          */
          if( mmap->type != 1)
            continue;
          page = (mmap->base_addr_low+mmap->length_low)&(~4095);

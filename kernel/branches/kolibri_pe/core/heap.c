@@ -110,7 +110,7 @@ md_t* __fastcall find_large_md(size_t size)
      md_t *new_md = (md_t*)slab_alloc(md_slab,0);
 
      link_initialize(&new_md->link);
-     list_insert(&md->adj, &new_md->adj);
+     list_insert(&new_md->adj, &md->adj);
 
      new_md->base = md->base;
      new_md->size = size;
@@ -144,19 +144,34 @@ md_t* __fastcall find_small_md(size_t size)
    idx0 = (size>>12) - 1 < 32 ? (size>>12) - 1 : 31;
    mask = sheap.availmask & ( -1<<idx0 );
 
+   //printf("smask %x size %x idx0 %x mask %x\n",sheap.availmask, size, idx0, mask);
+
    if(mask)
    {
+     md_t *tmp;
+
      idx0 = _bsf(mask);
 
      ASSERT( !list_empty(&sheap.list[idx0]))
 
-     md = (md_t*)sheap.list[idx0].next;
+     tmp = (md_t*)sheap.list[idx0].next;
 
-     list_remove((link_t*)md);
-     if(list_empty(&sheap.list[idx0]))
-       _reset_smask(idx0);
-   }
-   else
+     while((link_t*)tmp != &sheap.list[idx0])
+     {
+       if(tmp->size >= size)
+       {
+         //printf("remove tmp %x\n", tmp);
+         list_remove((link_t*)tmp);
+         if(list_empty(&sheap.list[idx0]))
+           _reset_smask(idx0);
+         md = tmp;
+         break;
+       };
+       tmp = (md_t*)tmp->link.next;
+     };
+   };
+
+   if( !md)
    {
      md_t *lmd;
      lmd = find_large_md((size+0x3FFFFF)&~0x3FFFFF);
@@ -181,7 +196,7 @@ md_t* __fastcall find_small_md(size_t size)
      md_t *new_md = (md_t*)slab_alloc(md_slab,0);
 
      link_initialize(&new_md->link);
-     list_insert(&md->adj, &new_md->adj);
+     list_insert(&new_md->adj, &md->adj);
 
      new_md->base = md->base;
      new_md->size = size;
@@ -191,9 +206,30 @@ md_t* __fastcall find_small_md(size_t size)
      md->base+= size;
      md->size-= size;
 
-     idx1 = (md->size>>22) - 1 < 32 ? (md->size>>22) - 1 : 31;
+     idx1 = (md->size>>12) - 1 < 32 ? (md->size>>12) - 1 : 31;
 
-     list_prepend(&md->link, &sheap.list[idx1]);
+     //printf("insert md %x, base %x size %x idx %x\n", md,md->base, md->size,idx1);
+
+     if( idx1 < 31)
+       list_prepend(&md->link, &sheap.list[idx1]);
+     else
+     {
+       if( list_empty(&sheap.list[31]))
+         list_prepend(&md->link, &sheap.list[31]);
+       else
+       {
+         md_t *tmp = (md_t*)sheap.list[31].next;
+
+         while((link_t*)tmp != &sheap.list[31])
+         {
+           if(md->base < tmp->base)
+             break;
+           tmp = (md_t*)tmp->link.next;
+         }
+         list_insert(&md->link, &tmp->link);
+       };
+     };
+
      _set_smask(idx1);
 
      safe_sti(efl);
@@ -282,6 +318,8 @@ void* __stdcall alloc_kernel_space(size_t size)
    size = (size+4095)&~4095;
 
    md = find_small_md(size);
+
+  // printf("alloc_kernel_space: %x size %x\n\n",md->base, size);
    if( md )
      return (void*)md->base;
    return NULL;

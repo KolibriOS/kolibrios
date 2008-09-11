@@ -356,66 +356,77 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
 	   mov eax, [app_size]
 	   add eax, 4095
-	   and eax, NOT(4095)
+           and eax, not 4095
 	   mov [app_size], eax
 	   mov ebx, eax
 	   shr eax, 12
 	   mov [app_pages], eax
 
 	   add ebx, 0x3FFFFF
-	   and ebx, NOT(0x3FFFFF)
+           and ebx, not 0x3FFFFF
 	   shr ebx, 22
 	   mov [app_tabs], ebx
 
 	   mov ecx, [img_size]
 	   add ecx, 4095
-	   and ecx, NOT(4095)
+           and ecx, not 4095
 
 	   mov [img_size], ecx
 	   shr ecx, 12
 	   mov [img_pages], ecx
 
-     if GREEDY_KERNEL
-	   lea eax, [ecx+ebx+2]    ;only image size
-     else
-	   lea eax, [eax+ebx+2]    ;all requested memory
-     end if
+;     if GREEDY_KERNEL
+;           lea eax, [ecx+ebx+2]    ;only image size
+;     else
+;           lea eax, [eax+ebx+2]    ;all requested memory
+;     end if
       ;     cmp eax, [pg_data.pages_free]
       ;     ja .fail
 
            call _alloc_page
 	   test eax, eax
-	   jz .fail
 	   mov [dir_addr], eax
+	   jz .fail
 
-           lea edi, [eax + OS_BASE]
-           mov ecx, (OS_BASE shr 20)/4
-	   xor eax, eax
-	   cld
-	   rep stosd
+           ;lea edi, [eax + OS_BASE]
+           ;mov ecx, (OS_BASE shr 20)/4
+           ;xor eax, eax
+           ;cld
+           ;rep stosd
 
-           mov ecx, 1024-(OS_BASE shr 20)/4
-           mov esi, _sys_pdbr+(OS_BASE shr 20)
-	   rep movsd
+           ;mov ecx, 1024-(OS_BASE shr 20)/4
+           ;mov esi, _sys_pdbr+(OS_BASE shr 20)
+           ;rep movsd
+
+           lea edi, [eax+OS_BASE]
+           mov ecx, 512
+           xor eax, eax
+           cld
+           rep stosd
+
+           mov ecx, 512
+           mov esi, _sys_pdbr+(HEAP_BASE shr 20)
+           rep movsd
 
            mov edi, [dir_addr]
            lea eax, [edi+PG_SW]
            mov [edi+OS_BASE+(page_tabs shr 20)], eax
 
-           and eax, -4096
+           mov eax, edi
 	   call set_cr3
 
-	   mov edx, [app_tabs]
-           xor edi, edi
+
+           mov edx, [app_tabs]
+           mov edi, master_tab
 @@:
            call _alloc_page
 	   test eax, eax
 	   jz .fail
 
-	   stdcall map_page_table, edi, eax
-	   add edi, 0x00400000
-	   dec edx
-	   jnz @B
+           or eax, PG_UW
+           stosd
+           dec edx
+           jnz @B
 
            mov edi, page_tabs
 

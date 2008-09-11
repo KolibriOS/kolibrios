@@ -195,6 +195,7 @@ app_page_tabs       equ 0xDF800000
 
 OS_TEMP             equ 0xDFC00000
 
+heap_tabs           equ (page_tabs+ (HEAP_BASE shr 10))
 kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
 master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 
@@ -280,7 +281,7 @@ MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
 DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
 DONT_SWITCH         equ (OS_BASE+0x000FFFF)
 
-TMP_STACK_TOP       equ 0x006CC00
+;TMP_STACK_TOP       equ 0x006CC00
 
 FONT_II             equ (OS_BASE+0x006DC00)
 FONT_I              equ (OS_BASE+0x006E600)
@@ -295,8 +296,6 @@ SLOT_BASE           equ (OS_BASE+0x0080000)
 TMP_BUFF            equ (OS_BASE+0x0090000)
 
 VGABasePtr          equ (OS_BASE+0x00A0000)
-
-;RAMDISK             equ (OS_BASE+0x0100000)
 
 RAMDISK_FAT         equ (OS_BASE+0x0180000)
 FLOPPY_FAT          equ (OS_BASE+0x0182000)

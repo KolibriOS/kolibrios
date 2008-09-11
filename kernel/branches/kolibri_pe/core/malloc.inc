@@ -986,8 +986,8 @@ init_malloc:
            stdcall kernel_alloc, 0x40000
 
            mov [mst.top], eax
-           mov [mst.topsize], 128*1024
-           mov dword [eax+4], (128*1024) or 1
+           mov [mst.topsize], 256*1024
+           mov dword [eax+4], (256*1024) or 1
            mov eax, mst.smallbins
 @@:
            mov [eax+8], eax

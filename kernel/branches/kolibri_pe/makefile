@@ -15,7 +15,8 @@ KERNEL_SRC:=				\
 		core/heap.inc		\
 		core/taskman.inc	\
 		core/sys32.inc		\
-		core/dll.inc
+		core/dll.inc		\
+		data32.inc
 
 PE_SRC:=			\
 		init.c		\
