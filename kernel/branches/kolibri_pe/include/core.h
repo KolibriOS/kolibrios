@@ -18,11 +18,18 @@ extern void panic_printf(char *fmt, ...) __attribute__((noreturn));
 		if (!(expr)) { \
 			panic("assertion failed (%s), caller=%p\n", #expr, CALLER); \
 		}
+
+#define DBG(format,...) printf(format,##__VA_ARGS__)
+
 #else
+
 #	define panic(format, ...) \
 		panic_printf("Kernel panic: " format, ##__VA_ARGS__);
 
 # define ASSERT(expr)
+
+# define DBG(format,...)
+
 #endif
 
 

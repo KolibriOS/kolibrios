@@ -24,11 +24,11 @@ void init()
    u32_t   last_page = 0;
 
    if (CHECK_FLAG (boot_mbi->flags, 1))
-     printf ("boot_device = 0x%x\n", (unsigned) boot_mbi->boot_device);
+     DBG ("boot_device = 0x%x\n", (unsigned) boot_mbi->boot_device);
 
   /* Is the command line passed?  */
    if (CHECK_FLAG (boot_mbi->flags, 2))
-     printf ("cmdline = %s\n", (char *) boot_mbi->cmdline);
+     DBG ("cmdline = %s\n", (char *) boot_mbi->cmdline);
 
   /* Are mods_* valid?  */
    if (CHECK_FLAG (boot_mbi->flags, 3))
@@ -36,14 +36,14 @@ void init()
      module_t *mod;
      int i;
 
-   //  printf ("mods_count = %d, mods_addr = 0x%x\n",
-   //          (u32_t) boot_mbi->mods_count, (u32_t) boot_mbi->mods_addr);
+     DBG ("mods_count = %d, mods_addr = 0x%x\n",
+         (u32_t) boot_mbi->mods_count, (u32_t) boot_mbi->mods_addr);
      for (i = 0, mod = (module_t *) boot_mbi->mods_addr;
           i < boot_mbi->mods_count;i++, mod++)
      {
         pg_balloc = mod->mod_end;
-    //    printf (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
-    //          (u32_t) mod->mod_start,(u32_t) mod->mod_end, (char *) mod->string);
+        DBG (" mod_start = 0x%x, mod_end = 0x%x, string = %s\n",
+            (u32_t) mod->mod_start,(u32_t) mod->mod_end, (char *) mod->string);
      };
      mod--;
      rd_base     = mod->mod_start+OS_BASE;
@@ -59,8 +59,8 @@ void init()
       memory_map_t *mmap;
       u32_t page;
 
-    //  printf ("mmap_addr = 0x%x, mmap_length = 0x%x\n",
-    //    (unsigned) boot_mbi->mmap_addr, (unsigned) boot_mbi->mmap_length);
+      DBG("mmap_addr = 0x%x, mmap_length = 0x%x\n",
+         (unsigned) boot_mbi->mmap_addr, (unsigned) boot_mbi->mmap_length);
 
       for (mmap = (memory_map_t *) boot_mbi->mmap_addr;
           (u32_t) mmap < boot_mbi->mmap_addr + boot_mbi->mmap_length;
@@ -68,16 +68,16 @@ void init()
 				    + mmap->size + sizeof (mmap->size)))
       {
          u32_t page;
-        /*
-         printf (" size = 0x%x, base_addr = 0x%x%x,"
-                 " length = 0x%x%x, type = 0x%x\n",
-                 (unsigned) mmap->size,
-                 (unsigned) mmap->base_addr_high,
-                 (unsigned) mmap->base_addr_low,
-                 (unsigned) mmap->length_high,
-                 (unsigned) mmap->length_low,
-                 (unsigned) mmap->type);
-          */
+
+         DBG (" size = 0x%x, base_addr = 0x%x%x,"
+              " length = 0x%x%x, type = 0x%x\n",
+             (unsigned) mmap->size,
+             (unsigned) mmap->base_addr_high,
+             (unsigned) mmap->base_addr_low,
+             (unsigned) mmap->length_high,
+             (unsigned) mmap->length_low,
+             (unsigned) mmap->type);
+
          if( mmap->type != 1)
            continue;
          page = (mmap->base_addr_low+mmap->length_low)&(~4095);

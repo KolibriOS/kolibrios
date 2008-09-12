@@ -49,8 +49,8 @@ int __fastcall init_heap(addr_t base, size_t size)
 
    ASSERT(base != 0);
    ASSERT(size != 0)
-   ASSERT(base & 0x3FFFFF == 0);
-   ASSERT(size & 0x3FFFFF == 0);
+   ASSERT((base & 0x3FFFFF) == 0);
+   ASSERT((size & 0x3FFFFF) == 0);
 
    for (i = 0; i < 32; i++)
    {
@@ -84,18 +84,36 @@ md_t* __fastcall find_large_md(size_t size)
    count_t idx0;
    u32_t mask;
 
-   ASSERT(size & 0x3FFFFF == 0);
+   ASSERT((size & 0x3FFFFF) == 0);
 
    idx0 = (size>>22) - 1 < 32 ? (size>>22) - 1 : 31;
    mask = lheap.availmask & ( -1<<idx0 );
 
    if(mask)
    {
-     idx0 = _bsf(mask);
+     if(idx0 == 31)
+     {
+        md_t *tmp = (md_t*)lheap.list[31].next;
+        while((link_t*)tmp != &lheap.list[31])
+        {
+          if(tmp->size >= size)
+          {
+            DBG("remove large tmp %x\n", tmp);
 
-     ASSERT( !list_empty(&lheap.list[idx0]))
+            md = tmp;
+            break;
+          };
+        };
+        tmp = (md_t*)tmp->link.next;
+     }
+     else
+     {
+       idx0 = _bsf(mask);
 
-     md = (md_t*)lheap.list[idx0].next;
+       ASSERT( !list_empty(&lheap.list[idx0]))
+
+       md = (md_t*)lheap.list[idx0].next;
+     };
    }
    else
      return NULL;
@@ -137,44 +155,53 @@ md_t* __fastcall find_small_md(size_t size)
    count_t idx0;
    u32_t mask;
 
-   ASSERT(size & 0xFFF == 0);
+   ASSERT((size & 0xFFF) == 0);
 
    efl = safe_cli();
 
    idx0 = (size>>12) - 1 < 32 ? (size>>12) - 1 : 31;
    mask = sheap.availmask & ( -1<<idx0 );
 
-   //printf("smask %x size %x idx0 %x mask %x\n",sheap.availmask, size, idx0, mask);
+   DBG("smask %x size %x idx0 %x mask %x\n",sheap.availmask, size, idx0, mask);
 
    if(mask)
    {
-     md_t *tmp;
-
-     idx0 = _bsf(mask);
-
-     ASSERT( !list_empty(&sheap.list[idx0]))
-
-     tmp = (md_t*)sheap.list[idx0].next;
-
-     while((link_t*)tmp != &sheap.list[idx0])
+     if(idx0 == 31)
      {
-       if(tmp->size >= size)
-       {
-         //printf("remove tmp %x\n", tmp);
-         list_remove((link_t*)tmp);
-         if(list_empty(&sheap.list[idx0]))
-           _reset_smask(idx0);
-         md = tmp;
-         break;
-       };
-       tmp = (md_t*)tmp->link.next;
-     };
+        md_t *tmp = (md_t*)sheap.list[31].next;
+        while((link_t*)tmp != &sheap.list[31])
+        {
+          if(tmp->size >= size)
+          {
+             md = tmp;
+             break;
+          };
+          tmp = (md_t*)tmp->link.next;
+        };
+     }
+     else
+     {
+       idx0 = _bsf(mask);
+       ASSERT( !list_empty(&sheap.list[idx0]))
+       md = (md_t*)sheap.list[idx0].next;
+     }
    };
 
-   if( !md)
+   if(md)
+   {
+     DBG("remove md %x\n", md);
+
+     list_remove((link_t*)md);
+     if(list_empty(&sheap.list[idx0]))
+       _reset_smask(idx0);
+   }
+   else
    {
      md_t *lmd;
      lmd = find_large_md((size+0x3FFFFF)&~0x3FFFFF);
+
+     DBG("get large md %x\n", lmd);
+
      if( !lmd)
      {
        safe_sti(efl);
@@ -208,7 +235,7 @@ md_t* __fastcall find_small_md(size_t size)
 
      idx1 = (md->size>>12) - 1 < 32 ? (md->size>>12) - 1 : 31;
 
-     //printf("insert md %x, base %x size %x idx %x\n", md,md->base, md->size,idx1);
+     DBG("insert md %x, base %x size %x idx %x\n", md,md->base, md->size,idx1);
 
      if( idx1 < 31)
        list_prepend(&md->link, &sheap.list[idx1]);
@@ -302,7 +329,7 @@ void* __fastcall mem_alloc(size_t size, u32_t flags)
    if( md )
    {
      phm = phis_alloc(size>>12);
-     map_phm(md->base, phm, flags);
+     map_phm(md->base , phm, flags);
      return (void*)md->base;
    }
    return NULL;
@@ -319,7 +346,8 @@ void* __stdcall alloc_kernel_space(size_t size)
 
    md = find_small_md(size);
 
-  // printf("alloc_kernel_space: %x size %x\n\n",md->base, size);
+   DBG("alloc_kernel_space: %x size %x\n\n",md->base, size);
+
    if( md )
      return (void*)md->base;
    return NULL;

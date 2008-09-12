@@ -461,17 +461,16 @@ proc page_fault_handler
 
            jmp .fail
 
-
 align 4
 .kernel_heap:
 
            shr ebx, 22
            mov edx, [master_tab + ebx*4]
+
            test edx, PG_MAP
            jz .check_ptab      ;таблица страниц не создана
 
-
-           jmp .fail
+           jmp .exit
 
 .check_ptab:
            mov edx, [_sys_pdbr + ebx*4]

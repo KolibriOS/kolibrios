@@ -26,7 +26,22 @@ PE_SRC:=			\
 		spinlock.c	\
 		boot/boot.asm	\
 		boot/start.asm
+
+#include <types.h>
+#include <core.h>
+#include <spinlock.h>
+#include <link.h>
+#include <mm.h>
+#include <slab.h>
 	   	
+H_SRC:=					\
+		include/types.h		\
+		include/atomic.h	\
+		include/spinlock.h	\
+		include/link.h		\
+		include/core.h		\
+		include/mm.h		\
+		include/slab.h
 
 PE_OBJS = $(patsubst %.s, bin/%.obj, $(patsubst %.asm, bin/%.obj,\
             $(patsubst %.c, bin/%.obj, $(PE_SRC))))
@@ -40,7 +55,7 @@ kernel.gz :kernel.mnt
 kernel.mnt: kernel.obj $(PE_OBJS) Makefile ld.x
 	ld $(LDFLAGS) -T ld.x -o $@ kernel.obj $(PE_OBJS) 
 
-bin/%.obj : core/%.c Makefile
+bin/%.obj : core/%.c $(H_SRC) Makefile
 	$(CC) $(CFLAGS) -o $@ $<
 	
 bin/%.obj: %.asm

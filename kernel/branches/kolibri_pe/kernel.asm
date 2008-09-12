@@ -2321,6 +2321,7 @@ nosb1:
 
     cmp   ebx,2 			   ; SET PIXEL
     jnz   nosb2
+
     mov ebx, [mem_BACKGROUND]
     add ebx, 4095
     and ebx, -4096
@@ -2486,6 +2487,7 @@ nogb1:
 
     cmp   eax,2 				 ; PIXEL
     jnz   nogb2
+
     mov ecx, [mem_BACKGROUND]
     add ecx, 4095
     and ecx, -4096
@@ -2500,6 +2502,7 @@ nogb1:
     mov   [esp+36],eax
 @@:
     ret
+
   nogb2:
 
     cmp   eax,4 				 ; TILED / STRETCHED
