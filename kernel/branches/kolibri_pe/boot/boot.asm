@@ -20,6 +20,7 @@ public _16bit_start
 public _16bit_end
 
 public _enter_bootscreen
+public _poweroff
 
 public _bx_from_load
 
@@ -63,7 +64,6 @@ include "bootcode.inc"    ; 16 bit system boot code
 include "../bus/pci/pci16.inc"
 include "../detect/biosdisk.inc"
 
-;include "boot/shutdown.inc" ; shutdown or restart
 
            cli
 
@@ -73,23 +73,28 @@ include "../detect/biosdisk.inc"
 
            jmp pword 0x08:__setvars
 
+
+;align 4
+;_leave_16bit:
+;
+;           cli
+;           mov eax, cr0
+;           or eax, CR0_PG+CR0_WP+CR0_PE
+;           mov cr0, eax
+;           hlt
+
 align 4
-_enter_16bit:
+rmode_idt:
+           dw 0x400
+           dd 0
+           dw 0
+
+align 4
+_poweroff:
            mov eax, cr0
            and eax, not 0x80000001
            mov cr0, eax
            jmp far 0x1000:@F
-
-align 4
-_leave_16bit:
-
-           cli
-           mov eax, cr0
-           or eax, CR0_PG+CR0_WP+CR0_PE
-           mov cr0, eax
-           hlt
-
-align 4
 @@:
            mov eax, 0x3000
            mov ss, ax
@@ -98,8 +103,51 @@ align 4
            mov ebx, 0x1000
            mov ds, bx
            mov es, bx
-           cli
-           hlt
+
+           lidt [rmode_idt]
+
+APM_PowerOff:
+           mov     ax, 5304h
+           xor     bx, bx
+           int     15h
+;!!!!!!!!!!!!!!!!!!!!!!!!
+           mov ax,0x5300
+           xor bx,bx
+           int 0x15
+           push ax
+
+           mov ax,0x5301
+           xor bx,bx
+           int 0x15
+
+           mov ax,0x5308
+           mov bx,1
+           mov cx,bx
+           int 0x15
+
+           mov ax,0x530E
+           xor bx,bx
+           pop cx
+           int 0x15
+
+           mov ax,0x530D
+           mov bx,1
+           mov cx,bx
+           int 0x15
+
+           mov ax,0x530F
+           mov bx,1
+           mov cx,bx
+           int 0x15
+
+           mov ax,0x5307
+           mov bx,1
+           mov cx,3
+           int 0x15
+;!!!!!!!!!!!!!!!!!!!!!!!!
+
+           jmp $
+
 
 align 4
 _16bit_end:

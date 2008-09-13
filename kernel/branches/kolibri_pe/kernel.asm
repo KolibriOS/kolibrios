@@ -129,10 +129,14 @@ public _rd_fat_end
 public _rd_root
 public _rd_root_end
 
+
+extrn __edata
+
 extrn _16bit_start
 extrn _16bit_end
 
 extrn _enter_bootscreen
+extrn _poweroff
 
 extrn _init
 extrn _init_mm
@@ -213,31 +217,6 @@ proc test_cpu
            mov [cpu_caps], eax
            mov [cpu_caps+4], eax
 
-           pushfd
-           pop eax
-           mov ecx, eax
-           xor eax, 0x40000
-           push eax
-           popfd
-           pushfd
-           pop eax
-           xor eax, ecx
-           mov [cpu_type], CPU_386
-           jz .end_cpuid
-           push ecx
-           popfd
-
-           mov [cpu_type], CPU_486
-           mov eax, ecx
-           xor eax, 0x200000
-           push eax
-           popfd
-           pushfd
-           pop eax
-           xor eax, ecx
-           je .end_cpuid
-           mov [cpu_id], 1
-
            xor eax, eax
            cpuid
 
@@ -299,6 +278,9 @@ proc test_cpu
 endp
 
 align 4
+_copy_pg_balloc  dd 0
+
+
 _high_code:
 
 	   mov ax,os_stack
@@ -331,6 +313,9 @@ _high_code:
            call test_cpu
            call _init
 
+           mov eax, [_pg_balloc]
+           mov [_copy_pg_balloc], eax
+
 	   mov [tss._ss0], os_stack
            mov [tss._esp0], __os_stack
            mov [tss._esp], __os_stack
@@ -350,6 +335,8 @@ _high_code:
 
 	   mov	ax,tss0
 	   ltr	ax
+
+__core_restart:
 
            mov ecx, 1280*1024
            fastcall _balloc
@@ -5171,127 +5158,76 @@ system_shutdown:	  ; shut down the system
 	   call sys_cd_audio
 
 yes_shutdown_param:
+
 	   cli
 
-	   mov	eax, kernel_file ; load kernel.mnt to 0x7000:0
-	   push 12
-	   pop	esi
-	   xor	ebx,ebx
-	   or	ecx,-1
-	   mov	edx, OS_BASE+0x70000
-	   call fileread
+           cmp byte [BOOT_VAR+0x9030], 3
+           je _sys_reboot
 
-   ;        mov  esi, restart_kernel_4000+OS_BASE+0x10000 ; move kernel re-starter to 0x4000:0
-   ;        mov  edi,OS_BASE+0x40000
-   ;        mov  ecx,1000
-   ;        rep  movsb
+           cmp byte [BOOT_VAR+0x9030], 4
+           je _sys_restart
 
+           cld
            mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
            mov  edi, OS_BASE
            mov  ecx,0x10000/4
-           cld
            rep movsd
 
-	   call restorefatchain
+           mov esi, _16bit_start + OS_BASE
+           mov ecx, _16bit_end
+           shr ecx, 2
+           mov edi, _16BIT_BASE + OS_BASE
+           rep movsd
 
-	   mov al, 0xFF
-	   out 0x21, al
-	   out 0xA1, al
+           mov dword [_sys_pdbr],   PG_LARGE+PG_SW
+           mov eax, _sys_pdbr + (0x100000000-OS_BASE)
+           mov cr3, eax
 
-if 1
-       ;    mov  word [OS_BASE+0x467+0],pr_mode_exit
-       ;    mov  word [OS_BASE+0x467+2],0x1000
-
-	   mov	al,0x0F
-	   out	0x70,al
-	   mov	al,0x05
-	   out	0x71,al
-
-	   mov	al,0xFE
-	   out	0x64,al
-
-	   hlt
-
-else
-	cmp	byte [OS_BASE + 0x9030], 2
-	jnz	no_acpi_power_off
-
-; scan for RSDP
-; 1) The first 1 Kb of the Extended BIOS Data Area (EBDA).
-	movzx	eax, word [OS_BASE + 0x40E]
-	shl	eax, 4
-	jz	@f
-	mov	ecx, 1024/16
-	call	scan_rsdp
-	jnc	.rsdp_found
-@@:
-; 2) The BIOS read-only memory space between 0E0000h and 0FFFFFh.
-	mov	eax, 0xE0000
-	mov	ecx, 0x2000
-	call	scan_rsdp
-	jc	no_acpi_power_off
-.rsdp_found:
-	mov	esi, [eax+16]	; esi contains physical address of the RSDT
-	mov	ebp, [ipc_tmp]
-	stdcall map_page, ebp, esi, PG_MAP
-	lea	eax, [esi+1000h]
-	lea	edx, [ebp+1000h]
-	stdcall map_page, edx, eax, PG_MAP
-	and	esi, 0xFFF
-	add	esi, ebp
-	cmp	dword [esi], 'RSDT'
-	jnz	no_acpi_power_off
-	mov	ecx, [esi+4]
-	sub	ecx, 24h
-	jbe	no_acpi_power_off
-	shr	ecx, 2
-	add	esi, 24h
-.scan_fadt:
-	lodsd
-	mov	ebx, eax
-	lea	eax, [ebp+2000h]
-	stdcall map_page, eax, ebx, PG_MAP
-	lea	eax, [ebp+3000h]
-	add	ebx, 0x1000
-	stdcall map_page, eax, ebx, PG_MAP
-	and	ebx, 0xFFF
-	lea	ebx, [ebx+ebp+2000h]
-	cmp	dword [ebx], 'FACP'
-	jz	.fadt_found
-	loop	.scan_fadt
-	jmp	no_acpi_power_off
-.fadt_found:
-; ebx is linear address of FADT
-	mov	edx, [ebx+48]
-	test	edx, edx
-	jz	.nosmi
-	mov	al, [ebx+52]
-	out	dx, al
-	mov	edx, [ebx+64]
-@@:
-	in	ax, dx
-	test	al, 1
-	jz	@b
-.nosmi:
-	mov	edx, [ebx+64]
-	in	ax, dx
-	and	ax, 203h
-	or	ax, 3C00h
-	out	dx, ax
-	mov	edx, [ebx+68]
-	test	edx, edx
-	jz	@f
-	in	ax, dx
-	and	ax, 203h
-	or	ax, 3C00h
-	out	dx, ax
-@@:
-	jmp	$
+           jmp far 0x60:_poweroff;
 
 
-no_acpi_power_off:
-	   mov	word [OS_BASE+0x467+0],pr_mode_exit
-	   mov	word [OS_BASE+0x467+2],0x1000
+_sys_restart:
+
+           mov ax,os_stack
+           mov dx,app_data
+	   mov ss,ax
+           mov esp, __os_stack
+
+           mov ds, dx
+           mov es, dx
+           mov fs, dx
+           mov gs, dx
+
+           call restorefatchain
+
+           cld
+           mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
+           mov  edi, OS_BASE
+           mov  ecx,0x10000/4
+           rep movsd
+
+           mov eax, [_copy_pg_balloc]
+           mov [_pg_balloc], eax
+
+           mov dword [_sys_pdbr],   PG_LARGE+PG_SW
+           mov eax, _sys_pdbr + (0x100000000-OS_BASE)
+           mov cr3, eax
+
+           mov ecx, LAST_PAGE
+           mov edi, cur_saved_data
+           sub edi, OS_BASE
+           sub ecx, edi
+           shr ecx, 2
+           xor eax, eax
+           rep stosd
+
+           call test_cpu
+
+   ;        jmp __core_restart
+
+_sys_reboot:
+           mov  word [OS_BASE+0x467+0],0xFFF0
+           mov  word [OS_BASE+0x467+2],0xF000
 
 	   mov	al,0x0F
 	   out	0x70,al
@@ -5302,30 +5238,6 @@ no_acpi_power_off:
 	   out	0x64,al
 
 	   hlt
-
-scan_rsdp:
-	add	eax, OS_BASE
-.s:
-	cmp	dword [eax], 'RSD '
-	jnz	.n
-	cmp	dword [eax+4], 'PTR '
-	jnz	.n
-	xor	edx, edx
-	xor	esi, esi
-@@:
-	add	dl, [eax+esi]
-	inc	esi
-	cmp	esi, 20
-	jnz	@b
-	test	dl, dl
-	jz	.ok
-.n:
-	add	eax, 10h
-	loop	.s
-	stc
-.ok:
-	ret
-end if
 
 include "data32.inc"
 
