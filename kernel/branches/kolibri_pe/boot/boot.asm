@@ -4,7 +4,7 @@ format MS COFF
 
 include '../macros.inc'
 
-$Revision: 849 $
+$Revision$
 
 __REV__ = __REV
 

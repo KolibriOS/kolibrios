@@ -6,17 +6,24 @@ INCLUDE = include/
 
 DEFS = -DUSE_SMP -DCONFIG_DEBUG
 
-CFLAGS = -c -O2  -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf -masm=intel
+CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf -masm=intel
 LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
 KERNEL_SRC:=				\
 		kernel.asm		\
+		data32.inc		\
 		core/memory.inc		\
 		core/heap.inc		\
+		core/malloc.inc		\
 		core/taskman.inc	\
+		core/v86.inc		\
 		core/sys32.inc		\
 		core/dll.inc		\
-		data32.inc
+		core/exports.inc	\
+		fs/ntfs.inc		\
+		gui/event.inc		\
+		video/cursors.inc
+
 
 PE_SRC:=			\
 		init.c		\

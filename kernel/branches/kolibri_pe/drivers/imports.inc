@@ -36,7 +36,6 @@ kernel_export \
 	      PciWrite32,\
 \
 	      AllocPage,\
-	      AllocPages,\
 	      FreePage,\
 	      MapPage,\
 	      MapSpace,\
@@ -45,9 +44,8 @@ kernel_export \
 	      CommitPages,\
 	      ReleasePages,\
 \
-	      AllocKernelSpace,\
 	      FreeKernelSpace,\
-	      KernelAlloc,\
+              HeapAlloc,\
 	      KernelFree,\
 	      UserAlloc,\
 	      UserFree,\

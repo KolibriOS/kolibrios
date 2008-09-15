@@ -29,13 +29,17 @@ typedef struct
 }phismem_t;
 
 
-# define PA2KA(x) (((addr_t) (x)) + OS_BASE)
-# define KA2PA(x) (((addr_t) (x)) - OS_BASE)
+#define PG_MAP        1
+
 
 #define PAGE_SIZE    4096
 #define FRAME_WIDTH  12
 
 #define BUDDY_SYSTEM_INNER_BLOCK  0xff
+
+
+# define PA2KA(x) (((addr_t) (x)) + OS_BASE)
+# define KA2PA(x) (((addr_t) (x)) - OS_BASE)
 
 static inline count_t SIZE2FRAMES(size_t size)
 {
@@ -66,3 +70,5 @@ void frame_free(pfn_t frame);
 
 void __fastcall frame_set_parent(pfn_t pfn, void *data);
 void* __fastcall frame_get_parent(pfn_t pfn);
+
+void* __fastcall heap_alloc(size_t size, u32_t flags) ;

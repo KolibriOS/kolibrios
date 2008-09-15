@@ -8,7 +8,7 @@
 $Revision$
 
 
-ntfs_test_bootsec: 
+ntfs_test_bootsec:
 ; in: ebx->buffer, edx=size of partition
 ; out: CF set <=> invalid
 ; 1. Name=='NTFS    '
@@ -133,14 +133,15 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov     eax, 1
         shl     eax, cl
 .4:
+        mov ecx, [ntfs_data.frs_size]
         mov     [ntfs_data.iab_size], eax
 ; allocate space for buffers
-        add     eax, [ntfs_data.frs_size]
-        push    eax
-        call    kernel_alloc
+        add     ecx, eax
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
-        jz      problem_fat_dec_count
         mov     [ntfs_data.frs_buffer], eax
+        jz      problem_fat_dec_count
         add     eax, [ntfs_data.frs_size]
         mov     [ntfs_data.iab_buffer], eax
 ; read $MFT disposition
@@ -177,10 +178,9 @@ ntfs_setup:             ; CODE XREF: part_set.inc
 .mftok:
 ; read $MFT table retrieval information
 ; start with one page, increase if not enough (when MFT too fragmented)
-        push    ebx
-        push    0x1000
-        call    kernel_alloc
-        pop     ebx
+        mov ecx, 0x1000
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jz      .fail_free_frs
         mov     [ntfs_data.mft_retrieval], eax
@@ -225,11 +225,12 @@ ntfs_setup:             ; CODE XREF: part_set.inc
 ; if they will be needed, they will be loaded later
 
         mov     [ntfs_data.cur_index_size], 0x1000/0x200
-        push    0x1000
-        call    kernel_alloc
+        mov ecx, 0x1000
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
-        jz      .fail_free_mft
         mov     [ntfs_data.cur_index_buf], eax
+        jz      .fail_free_mft
 
         popad
         call    free_hd_channel
@@ -241,11 +242,12 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov     eax, [ntfs_data.mft_retrieval_size]
         cmp     eax, [ntfs_data.mft_retrieval_alloc]
         jnz     .ok
-        add     eax, 0x1000/8
-        mov     [ntfs_data.mft_retrieval_alloc], eax
-        shl     eax, 3
-        push    eax
-        call    kernel_alloc
+
+        lea ecx, [eax+0x1000/8]
+        mov     [ntfs_data.mft_retrieval_alloc], ecx
+        shl     ecx, 3
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jnz     @f
         popad
@@ -980,10 +982,10 @@ ntfs_find_lfn:
         push    eax
         push    [ntfs_data.cur_index_buf]
         call    kernel_free
-        pop     eax
-        mov     [ntfs_data.cur_index_size], eax
-        push    eax
-        call    kernel_alloc
+        pop     ecx
+        mov     [ntfs_data.cur_index_size], ecx
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jnz     @f
         and     [ntfs_data.cur_index_size], 0
@@ -998,12 +1000,13 @@ ntfs_find_lfn:
         shr     ebp, 9
         cmp     ebp, [ntfs_data.cur_index_size]
         jbe     .ok2
-        push    esi ebp
-        push    ebp
-        call    kernel_alloc
-        pop     ebp esi
+
+        mov ecx, ebp
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jz      .stc_ret
+
         mov     edi, eax
         mov     ecx, [ntfs_data.cur_index_size]
         shl     ecx, 9-2
@@ -1326,10 +1329,10 @@ ntfs_HdReadFolder:
         push    eax
         push    [ntfs_data.cur_index_buf]
         call    kernel_free
-        pop     eax
-        mov     [ntfs_data.cur_index_size], eax
-        push    eax
-        call    kernel_alloc
+        pop     ecx
+        mov     [ntfs_data.cur_index_size], ecx
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jnz     @f
         and     [ntfs_data.cur_index_size], 0
@@ -1349,12 +1352,13 @@ ntfs_HdReadFolder:
         shr     ebp, 9
         cmp     ebp, [ntfs_data.cur_index_size]
         jbe     .ok2
-        push    esi ebp
-        push    ebp
-        call    kernel_alloc
-        pop     ebp esi
+
+        mov ecx, ebp
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jz      .nomem
+
         mov     edi, eax
         mov     ecx, [ntfs_data.cur_index_size]
         shl     ecx, 9-2

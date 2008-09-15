@@ -49,10 +49,11 @@ v86_create:
 ; first half (0x800 bytes) is page table for addresses 0 - 0x100000,
 ; second half is for V86-to-linear translation.
 ; Third and fourth are for I/O permission map.
-        push    8000h           ; blocks less than 8 pages are discontinuous
-        call    kernel_alloc
+        mov     ecx, 2
+        call    @core_alloc@4
         test    eax, eax
         jz      .fail2
+        add     eax, OS_BASE
         mov     [ebx+V86_machine.pagedir], eax
         push    edi eax
         mov     edi, eax

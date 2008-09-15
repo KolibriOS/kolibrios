@@ -10,7 +10,11 @@ $Revision$
 
 align 4
 init_events:
-           stdcall kernel_alloc, 512*EVENT_SIZE
+
+           mov ecx, 512*EVENT_SIZE
+           mov edx, PG_SW
+           call @mem_alloc@8
+
            mov [events], eax
            xor eax, eax
            mov [event_uid], eax

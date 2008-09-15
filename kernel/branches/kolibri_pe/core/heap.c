@@ -335,10 +335,7 @@ void* __fastcall mem_alloc(size_t size, u32_t flags)
    return NULL;
 };
 
-void* __stdcall alloc_kernel_space(size_t size); //__asm__("alloc_kernel_space");
-
-
-void* __stdcall alloc_kernel_space(size_t size)
+void * __fastcall heap_alloc(size_t size, u32_t flags)
 {
    md_t *md;
 
@@ -346,16 +343,36 @@ void* __stdcall alloc_kernel_space(size_t size)
 
    md = find_small_md(size);
 
-   DBG("alloc_kernel_space: %x size %x\n\n",md->base, size);
-
    if( md )
-     return (void*)md->base;
-   return NULL;
-}
+   {
+     if( flags & PG_MAP )
+     {
+       count_t tmp = size >> 12;
+       addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
 
-//void* __stdcall kernel_alloc(size_t size)
-//{
-//
-//   return NULL;
-//}
-//*/
+       while(tmp)
+       {
+         u32_t  order;
+         addr_t frame;
+         size_t size;
+
+         asm volatile ("bsr %0, %1":"=&r"(order):"r"(tmp):"cc");
+         asm volatile ("btr %0, %1" :"=r"(tmp):"r"(order):"cc");
+
+         frame = core_alloc(order) | flags;
+
+         size = (1 << order);
+         while(size--)
+         {
+           *pte++ = frame;
+           frame+= 4096;
+         };
+       };
+     };
+     DBG("alloc_heap: %x size %x\n\n",md->base, size);
+     return (void*)md->base;
+   };
+   return NULL;
+};
+
+

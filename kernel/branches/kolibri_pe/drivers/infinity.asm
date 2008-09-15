@@ -81,7 +81,9 @@ proc START stdcall, state:dword
            jz .fail
            mov [hSound], eax
 
-           stdcall KernelAlloc, 16*512
+           mov ecx,  16*512
+           mov edx, PG_SW
+           call HeapAlloc
            test eax, eax
            jz .out_of_mem
            mov [mix_buff], eax
@@ -325,7 +327,6 @@ proc CreateBuffer stdcall, format:dword, size:dword
            locals
              str         dd ?
              ring_size   dd ?
-             ring_pages  dd ?
            endl
 
            mov eax, [format]
@@ -402,8 +403,6 @@ proc CreateBuffer stdcall, format:dword, size:dword
 .waveout:
            mov [ring_size], ebx
            mov eax, ebx
-           shr ebx, 12
-           mov [ring_pages], ebx
 
            stdcall CreateRingBuffer, eax, PG_SW
 
@@ -426,7 +425,8 @@ proc CreateBuffer stdcall, format:dword, size:dword
            mov ecx, [size]
            add ecx, 128          ;resampler required
            mov [eax+STREAM.in_size], ecx
-           stdcall KernelAlloc, ecx
+           mov edx, PG_SW
+           call HeapAlloc
 
            mov edi, [str]
            mov [edi+STREAM.in_base], eax
@@ -440,7 +440,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
            mov [edi+STREAM.in_top], eax
 
 .out_buff:
-           stdcall AllocKernelSpace, dword 128*1024
+           stdcall CreateRingBuffer, 64*1024, PG_SW
 
            mov edi, [str]
            mov [edi+STREAM.out_base], eax
@@ -450,21 +450,6 @@ proc CreateBuffer stdcall, format:dword, size:dword
            add eax, 64*1024
            mov [edi+STREAM.out_top], eax
 
-           stdcall AllocPages, dword 64/4
-           mov edi, [str]
-           mov ebx, [edi+STREAM.out_base]
-           mov ecx, 16
-           or eax, PG_SW
-           push eax
-           push ebx
-           call CommitPages ;eax, ebx, ecx
-           mov ecx, 16
-           pop ebx
-           pop eax
-           add ebx, 64*1024
-           call CommitPages    ;double mapped
-
-           mov edi, [str]
            mov ecx, [edi+STREAM.in_top]
            mov edi, [edi+STREAM.in_base]
            sub ecx, edi

@@ -84,20 +84,23 @@ endl
 endp
 
 proc load_file_parse_table
-  stdcall kernel_alloc,0x1000
-  mov [tmp_file_name_table],eax
-  mov edi,eax
-  mov esi,sysdir_name
-  mov ecx,128/4
-  rep movsd
 
-  invoke ini.enum_keys,conf_fname,conf_path_sect,get_every_key
+           xor eac, ecx
+           call @core_alloc@4
+           add eax, OS_BASE
+           mov [tmp_file_name_table],eax
+           mov edi,eax
+           mov esi,sysdir_name
+           mov ecx,128/4
+           rep movsd
 
-  mov eax,[tmp_file_name_table]
-  mov [full_file_name_table],eax
-  mov eax,[tmp_file_name_size]
-  mov [full_file_name_table.size],eax
-  ret
+           invoke ini.enum_keys,conf_fname,conf_path_sect,get_every_key
+
+           mov eax,[tmp_file_name_table]
+           mov [full_file_name_table],eax
+           mov eax,[tmp_file_name_size]
+           mov [full_file_name_table.size],eax
+           ret
 endp
 
 uglobal

@@ -37,42 +37,37 @@ free_page:
 
 proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
-           push ebx
            push edi
-           mov eax, [size]
-           add eax, 4095
-           and eax, -4096
-           mov [size], eax
-           stdcall alloc_kernel_space, eax
+
+           mov ecx, [size]
+           add ecx, 4095
+           and ecx, -4096
+           mov [size], ecx
+           xor edx, edx
+           call @mem_alloc@8
            test eax, eax
            jz .fail
-           push eax
 
-           mov edi, 0x1000
-           mov ebx, eax
-           mov ecx,[size]
-           mov edx, [base]
-           shr eax, 12
+           mov edx, eax
+           mov edi, eax
+           shr edi, 10
+           add edi, page_tabs
+
+           mov ecx, [size]
            shr ecx, 12
-           and edx, -4096
-           or edx, [flags]
+           mov eax, [base]
+           and eax, -4096
+           or eax, [flags]
 @@:
-           mov [page_tabs+eax*4], edx
-          ; push eax
-          ; invlpg [ebx]
-          ; pop eax
-           inc eax
-           add ebx, edi
-           add edx, edi
+           stosd
+           add eax, 0x1000
            loop @B
 
-           pop eax
-           mov edx, [base]
-           and edx, 4095
+           mov eax, [base]
+           and eax, 4095
            add eax, edx
 .fail:
            pop edi
-           pop ebx
            ret
 endp
 
@@ -194,8 +189,9 @@ proc init_LFB
            cmp dword [LFBAddress], -1
            jne @f
            mov [BOOT_VAR+0x901c],byte 2
-           stdcall _alloc_pages, 0x280000 shr 12
-           add eax, OS_BASE
+           mov ecx, 0x280000
+           mov edx, PG_SW
+           call @mem_alloc@8
            mov [LFBAddress], eax
            ret
 @@:
@@ -477,7 +473,8 @@ align 4
            test edx, PG_MAP
            jnz @F
 
-           call _alloc_page
+           xor ecx, ecx
+           call @core_alloc@4
            test eax, eax
            jz .fail
 
@@ -789,11 +786,12 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov ecx, [ipc_tmp]
            cmp esi, 0x40000-0x1000 ; size of [ipc_tmp] minus one page
            jbe @f
-           push eax esi edi
-           add esi,0x1000
-           stdcall alloc_kernel_space,esi
+           push eax
+           lea ecx, [esi+0x1000]
+           xor edx, edx
+           call @mem_alloc@8
            mov ecx, eax
-           pop edi esi eax
+           pop eax
 @@:
            mov [used_buf], ecx
            stdcall map_mem, ecx, [SLOT_BASE+eax+0xB8],\
@@ -820,7 +818,6 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
            mov [edi+4], ecx
            add edi, 8
            mov esi, [msg_addr]
-       ;    add esi, new_app_base
            cld
            rep movsb
 
@@ -1154,54 +1151,50 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
              buf_ptr  dd ?
            endl
 
-           mov eax, [size]
+           mov ecx, [size]
+           test ecx, 4095
+           jnz .fail
+
+           add ecx, ecx
+           xor edx, edx
+           call @mem_alloc@8
            test eax, eax
-           jz .fail
-
-           add eax, eax
-           stdcall alloc_kernel_space, eax
-           test eax, eax
-           jz .fail
-
-           push ebx
-
            mov [buf_ptr], eax
+           jz .fail
 
-           mov ebx, [size]
-           shr ebx, 12
            push ebx
 
-           stdcall _alloc_pages, ebx
-           pop ecx
+           xor ecx, ecx
+           mov edx, [size]
+           shr edx, 12
+           mov ebx, edx
+           dec edx
+           bsr ecx, edx
+           inc ecx
 
+           call @core_alloc@4
            test eax, eax
            jz .mm_fail
 
-           push edi
-
-           or eax, [flags]
-           mov edi, [buf_ptr]
-           mov ebx, [buf_ptr]
-           mov edx, ecx
-           shl edx, 2
-           shr edi, 10
+           or eax,  [flags]
+           mov edx, [buf_ptr]
+           lea ecx, [ebx*4]
+           shr edx, 10
 @@:
-           mov [page_tabs+edi], eax
-           mov [page_tabs+edi+edx], eax
+           mov [page_tabs+edx], eax
+           mov [page_tabs+edx+ecx], eax
            add eax, 0x1000
-           add ebx, 0x1000
-           add edi, 4
-           dec ecx
+           add edx, 4
+           dec ebx
            jnz @B
 
            mov eax, [buf_ptr]
-           pop edi
            pop ebx
            ret
 .mm_fail:
-           stdcall free_kernel_space, [buf_ptr]
-           xor eax, eax
+           ;stdcall free_kernel_space, [buf_ptr]
            pop ebx
+           xor eax, eax
 .fail:
            ret
 endp

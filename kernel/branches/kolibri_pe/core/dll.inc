@@ -585,12 +585,15 @@ proc load_file stdcall, file_name:dword
 	   test eax, eax
 	   jnz .fail
 
-	   mov eax, [file_size]
-	   cmp eax, 1024*1024*16
+           mov ecx, [file_size]
+           cmp ecx, 1024*1024*16
 	   ja .fail
 
-	   stdcall kernel_alloc, [file_size]
+           mov edx, PG_SW
+           call @mem_alloc@8
 	   mov [file], eax
+           test eax, eax
+           jz .fail
 
 	   stdcall read_file, [file_name], eax, dword 0, [file_size]
 	   cmp ebx, [file_size]
@@ -599,10 +602,11 @@ proc load_file stdcall, file_name:dword
 	   mov eax, [file]
 	   cmp dword [eax], 0x4B43504B
 	   jne .exit
-	   mov ebx, [eax+4]
-	   mov [file_size], ebx
-	   stdcall kernel_alloc, ebx
 
+           mov ecx, [eax+4]
+           mov [file_size], ecx
+           mov edx, PG_SW
+           call @mem_alloc@8
 	   test eax, eax
 	   jz .cleanup
 
@@ -824,20 +828,20 @@ proc load_driver stdcall, driver_name:dword
 
 	   mov [coff], eax
 
-	   movzx ecx, [eax+CFH.nSections]
-	   xor ebx, ebx
-
+           movzx ebx, [eax+CFH.nSections]
 	   lea edx, [eax+20]
+           xor ecx, ecx
 @@:
-	   add ebx, [edx+CFS.SizeOfRawData]
-	   add ebx, 15
-	   and ebx, not 15
+           add ecx, [edx+CFS.SizeOfRawData]
+           add ecx, 15
+           and ecx, not 15
 	   add edx, COFF_SECTION_SIZE
-	   dec ecx
+           dec ebx
 	   jnz @B
-	   mov [img_size], ebx
 
-	   stdcall kernel_alloc, ebx
+           mov [img_size], ecx
+           mov edx, PG_SW
+           call @mem_alloc@8
 	   test eax, eax
 	   jz .fail
 	   mov [img_base], eax

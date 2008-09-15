@@ -91,7 +91,9 @@ get_cache_ide:
     and  [esi+cache_ide0_search_start-cache_ide0],0
     and  [esi+cache_ide0_appl_search_start-cache_ide0],0
     push  ecx
-    stdcall kernel_alloc,[esi+cache_ide0_size-cache_ide0]
+    mov ecx, [esi+cache_ide0_size-cache_ide0]
+    mov edx, PG_SW
+    call @mem_alloc@8
     mov [esi+cache_ide0_pointer-cache_ide0],eax
     pop   ecx
     mov  edx,eax

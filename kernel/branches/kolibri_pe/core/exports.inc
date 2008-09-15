@@ -31,7 +31,6 @@ iglobal
   szPciWrite32	      db 'PciWrite32',0
 
   szAllocPage	      db 'AllocPage',0
-  szAllocPages	      db 'AllocPages',0
   szFreePage	      db 'FreePage',0
   szGetPgAddr	      db 'GetPgAddr',0
   szMapPage	      db 'MapPage',0
@@ -42,7 +41,7 @@ iglobal
 
   szAllocKernelSpace  db 'AllocKernelSpace',0
   szFreeKernelSpace   db 'FreeKernelSpace',0
-  szKernelAlloc       db 'KernelAlloc',0
+  szHeapAlloc         db 'HeapAlloc',0
   szKernelFree	      db 'KernelFree',0
   szUserAlloc	      db 'UserAlloc',0
   szUserFree	      db 'UserFree',0
@@ -103,8 +102,7 @@ kernel_export:
   dd szPciWrite16      , pci_write16
   dd szPciWrite32      , pci_write32
 
-  dd szAllocPage       , _alloc_page            ;stdcall
-  dd szAllocPages      , _alloc_pages          ;stdcall
+  dd szAllocPage       , _alloc_page           ;stdcall
   dd szFreePage        , free_page
   dd szMapPage	       , map_page	       ;stdcall
   dd szMapSpace        , map_space
@@ -113,9 +111,8 @@ kernel_export:
   dd szCommitPages     , commit_pages	       ;not implemented
   dd szReleasePages    , release_pages
 
-  dd szAllocKernelSpace, alloc_kernel_space    ;stdcall
   dd szFreeKernelSpace , free_kernel_space     ;stdcall
-  dd szKernelAlloc     , kernel_alloc	       ;stdcall
+  dd szHeapAlloc       , @heap_alloc@8         ;fastcall
   dd szKernelFree      , kernel_free	       ;stdcall
   dd szUserAlloc       , user_alloc	       ;stdcall
   dd szUserFree        , user_free	       ;stdcall

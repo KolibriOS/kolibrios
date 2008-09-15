@@ -313,12 +313,13 @@ vesa_cursor:
            mov [eax+CURSOR.hot_x], ebx
            mov [eax+CURSOR.hot_y], ebx
 
-           stdcall kernel_alloc, 0x1000
+           mov edi, eax
+           mov ecx, 0x1000
+           mov edx, PG_SW
+           call @mem_alloc@8
            test eax, eax
-           jz .fail
-
-           mov edi, [.hcursor]
            mov [edi+CURSOR.base], eax
+           jz .fail
 
            mov esi, [.src]
            mov ebx, [.flags]

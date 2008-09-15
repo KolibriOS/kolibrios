@@ -955,7 +955,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	     pl0_stack dd ?
 	   endl
 
-           stdcall _alloc_pages, (RING0_STACK_SIZE+512) shr 12
+           mov ecx, 1            ;(RING0_STACK_SIZE+512) shr 12
+           call @core_alloc@4
            add eax, OS_BASE
 	   mov [pl0_stack], eax
 

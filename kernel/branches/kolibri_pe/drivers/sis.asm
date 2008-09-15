@@ -32,6 +32,8 @@ end if
 
 CPU_FREQ	equ  2600d
 
+PG_SW           equ 0x003
+
 BIT0  EQU 0x00000001
 BIT1  EQU 0x00000002
 BIT2  EQU 0x00000004
@@ -507,8 +509,10 @@ endp
 align 4
 proc create_primary_buff
 
-	   stdcall KernelAlloc, 0x10000
-	   mov [ctrl.buffer], eax
+           mov ecx, 0x10000
+           mov edx, PG_SW
+           call HeapAlloc
+           mov [ctrl.buffer], eax
 
 	   mov edi, eax
 	   mov ecx, 0x10000/4

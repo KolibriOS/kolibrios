@@ -141,23 +141,26 @@ extrn _poweroff
 extrn _init
 extrn _init_mm
 
+extrn @core_alloc@4
+
 extrn @init_heap@8
 extrn @find_large_md@4
 extrn @find_small_md@4
 extrn @phis_alloc@4
 extrn @mem_alloc@8
 
-extrn _alloc_kernel_space@4
+extrn @heap_alloc@8
 
 extrn _slab_cache_init
-extrn _alloc_pages
 extrn _alloc_page
 
 extrn _get_free_mem
 
-alloc_kernel_space equ _alloc_kernel_space@4
-
 extrn _bx_from_load
+
+
+@mem_alloc@8         equ @heap_alloc@8
+
 
 section '.flat' code readable align 4096
 
@@ -555,7 +558,9 @@ __setvars:
            call init_fpu
            call init_malloc
 
-	   stdcall alloc_kernel_space, 0x51000
+           mov ecx, 0x51000
+           xor edx, edx
+           call @mem_alloc@8
 	   mov [default_io_map], eax
 
 	   add eax, 0x2000
@@ -611,8 +616,10 @@ __setvars:
 	mov   [BgrDrawMode],eax
 	mov   [BgrDataWidth],eax
 	mov   [BgrDataHeight],eax
+        mov ecx, 4095
+        mov edx, PG_SW
 	mov    [mem_BACKGROUND],4095
-	stdcall kernel_alloc, [mem_BACKGROUND]
+        call @mem_alloc@8
 	mov [img_background], eax
 
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], _sys_pdbr + (0x100000000-OS_BASE)
@@ -2290,10 +2297,11 @@ sys_background:
 @@:
     mov  eax,[BgrDataWidth]
     imul eax,[BgrDataHeight]
-    lea  eax,[eax*3]
-    mov  [mem_BACKGROUND],eax
+    lea  ecx,[eax*3]
+    mov  [mem_BACKGROUND],ecx
 ; get memory for new background
-    stdcall kernel_alloc, eax
+    mov edx, PG_SW
+    stdcall @mem_alloc@8
     test eax, eax
     jz .exit_mem
     mov [img_background], eax

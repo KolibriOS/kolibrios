@@ -559,7 +559,7 @@ addr_t  __fastcall core_alloc(u32_t order)        //export
        v = zone_frame_alloc(&z_core, order);
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
-
+   DBG("core alloc: %x, size %x\n", v << FRAME_WIDTH, (1<<order)<<12);
    return (v << FRAME_WIDTH);
 };
 
@@ -592,29 +592,6 @@ addr_t alloc_page()                                //obsolete
    restore_edx(edx);
    return (v << FRAME_WIDTH);
 };
-
-addr_t __stdcall alloc_pages(count_t count)     //obsolete
-{
-   eflags_t efl;
-   u32_t edx;
-   pfn_t v;
-
-   count = (count+7)&~7;
-
-   edx = save_edx();
-   efl = safe_cli();
-     spinlock_lock(&z_core.lock);
-       v = zone_frame_alloc(&z_core, to_order(count));
-     spinlock_unlock(&z_core.lock);
-   safe_sti(efl);
-
-   DBG("alloc_pages: %x count %x\n", v << FRAME_WIDTH, count);
-
-   restore_edx(edx);
-
-   return (v << FRAME_WIDTH);
-};
-
 
 void __fastcall zone_free(zone_t *zone, pfn_t frame_idx)
 {

@@ -24,13 +24,13 @@ proc load_PE stdcall, file_name:dword
 
            mov [image], eax
 
-           mov edx, [eax+60]
-
-           stdcall kernel_alloc, [eax+80+edx]
+           mov ebx, [eax+60]
+           mov ecx, [eax+80+edx]
+           mov edx, PG_SW
+           call @mem_alloc@8
            test eax, eax
-           jz .cleanup
-
            mov [base], eax
+           jz .cleanup
 
            stdcall map_PE, eax, [image]
 
@@ -279,13 +279,11 @@ L40:
  align 16
 __exports:
           export 'KERNEL',   \
-          alloc_kernel_space,    'AllocKernelSpace',   \      ; stdcall
           commit_pages,          'CommitPages',        \      ; eax, ebx, ecx
           create_kernel_object,  'CreateObject',       \
           create_ring_buffer,    'CreateRingBuffer',   \      ; stdcall
           destroy_kernel_object, 'DestroyObject',      \
           free_kernel_space,     'FreeKernelSpace',    \      ; stdcall
-          kernel_alloc,          'KernelAlloc',        \      ; stdcall
           kernel_free,           'KernelFree',         \      ; stdcall
           malloc,                'Kmalloc',            \
           free,                  'Kfree',              \
