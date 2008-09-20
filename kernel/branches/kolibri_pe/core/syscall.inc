@@ -33,7 +33,7 @@ align 16
 i40:
 	pushad
 	cld
-	and	eax, 0xff
+	movzx	eax, al
 	call	dword [servetable2 + eax * 4]
 	popad
 	iretd
@@ -54,7 +54,7 @@ sysenter_entry:
 	pushad
 	cld
 
-	and	eax, 0xff
+	movzx	eax, al
 	call	dword [servetable2 + eax * 4]
 
 	popad
@@ -87,7 +87,7 @@ syscall_entry:
 	pushad
 	cld
 
-	and	eax, 0xff
+	movzx	eax, al
 	call	dword [servetable2 + eax * 4]
 
 	popad
