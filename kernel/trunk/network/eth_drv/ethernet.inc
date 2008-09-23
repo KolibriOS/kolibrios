@@ -201,7 +201,22 @@ dd  0x70161039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
 ;dd  0x08001516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
 ;dd  0x08911516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
 
-dd 0x006610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, 0 ; nVidia Corporation nForce2 Ethernet Controller
+dd 0x006610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; nVidia Corporation nForce2 Ethernet Controller
+dd 0x01c310de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x00D610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested 
+dd 0x008610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x008c10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x00e610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x00df10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x005610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x005710de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x003710de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x003810de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x026810de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x026910de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x037210de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x037310de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+
 
 rb PCICARDS_ENTRY_SIZE	; end of list marker, do not remove
 endg
