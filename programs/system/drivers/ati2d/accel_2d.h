@@ -1,13 +1,16 @@
 
-#define FILL_RECT  1
-#define DRAW_RECT  2
-#define LINE_2P    3
-#define BLIT       4
-#define COMPIZ     5
-#define PIXMAP     6
-#define PIXBLIT    7
-#define PIXLOCK    8
-#define PIXUNLOCK  9
+#define FILL_RECT    1
+#define DRAW_RECT    2
+#define LINE_2P      3
+#define BLIT         4
+#define COMPIZ       5
+#define PIXMAP       6
+#define PIXBLIT      7
+#define PIXLOCK      8
+#define PIXUNLOCK    9
+#define PIXDESTROY  10
+#define TRANSBLIT   11
+
 
 typedef unsigned int color_t;
 
@@ -95,10 +98,12 @@ int Blit(blit_t *blit);
 int RadeonComposite( blit_t *blit);
 
 int CreatePixmap(userpixmap_t *io);
+int DestroyPixmap(userpixmap_t *io);
+int LockPixmap(userpixmap_t *io);
+int UnlockPixmap(userpixmap_t *io);
 
 int PixBlit(pixblit_t* blit);
 
-int LockPixmap(userpixmap_t *io);
 
 # define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
 #	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)
@@ -123,6 +128,8 @@ int LockPixmap(userpixmap_t *io);
 
 # define RADEON_CNTL_PAINT             0x00009100
 # define RADEON_CNTL_BITBLT            0x00009200
+# define RADEON_CNTL_TRANBLT           0x00009C00
+
 
 # define RADEON_CNTL_PAINT_POLYLINE    0x00009500
 # define RADEON_CNTL_PAINT_MULTI       0x00009A00

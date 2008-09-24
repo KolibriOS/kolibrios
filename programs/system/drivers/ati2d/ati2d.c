@@ -69,7 +69,7 @@ u32 __stdcall drvEntry(int action)
 
   R5xx2DInit();
   rhd.has_tcl = 1;
-  Init3DEngine(&rhd);
+//  Init3DEngine(&rhd);
 
   //init_r500();
 

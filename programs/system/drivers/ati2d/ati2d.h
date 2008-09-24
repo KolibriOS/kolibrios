@@ -5,7 +5,7 @@
 #define IS_R300_3D   0
 #define IS_R500_3D   1
 
-#define R300_PIO     0
+#define R300_PIO     1
 
 enum RHD_CHIPSETS {
     RHD_UNKNOWN = 0,

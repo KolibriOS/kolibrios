@@ -143,6 +143,8 @@ void free(void*);
 #define kmalloc malloc
 #define kfree   free
 
+#define xcalloc calloc
+
 ///////////////////////////////////////////////////////////////////////////////
 
 int memcmp(const void *s1, const void *s2, size_t n);

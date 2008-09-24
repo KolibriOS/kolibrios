@@ -196,16 +196,20 @@ int Line2P(line2p_t *draw)
 
 #if R300_PIO
 
-     R5xxFIFOWait(7);
+     R5xxFIFOWait(6);
 
-     OUTREG(R5XX_DP_GUI_MASTER_CNTL, rhd.gui_control | R5XX_ROP3_P |
-                                     R5XX_GMC_BRUSH_SOLID_COLOR |
-                                     R5XX_GMC_SRC_DATATYPE_COLOR);
+     OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+            rhd.gui_control             |
+            R5XX_GMC_BRUSH_SOLID_COLOR  |
+            R5XX_GMC_SRC_DATATYPE_COLOR |
+            R5XX_GMC_CLR_CMP_CNTL_DIS   |
+            R5XX_GMC_WR_MSK_DIS         |
+            R5XX_ROP3_P
+            );
 
      OUTREG(R5XX_DST_LINE_PATCOUNT, 0x55 << R5XX_BRES_CNTL_SHIFT);
 
      OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
-     OUTREG(R5XX_DP_WRITE_MASK, 0xFFFFFFFF);
      OUTREG(R5XX_DST_PITCH_OFFSET, rhd.dst_pitch_offset);
 
      OUTREG(R5XX_DST_LINE_START,(y0<<16)|x0);
@@ -219,7 +223,9 @@ int Line2P(line2p_t *draw)
                   RADEON_GMC_BRUSH_SOLID_COLOR      |
                   RADEON_GMC_DST_32BPP              |
                   RADEON_GMC_SRC_DATATYPE_COLOR     |
-                  (1 << 28)+(1 << 30) | R5XX_ROP3_P);
+                  R5XX_GMC_CLR_CMP_CNTL_DIS         |
+                  R5XX_GMC_WR_MSK_DIS               |
+                  R5XX_ROP3_P);
 
          OUT_RING(rhd.dst_pitch_offset);
          OUT_RING(draw->color);
@@ -365,6 +371,14 @@ int UnlockPixmap(userpixmap_t *io)
   if( (pixmap->flags & 1) != PX_LOCK )
     return ERR_PARAM;
 
+/*   Sanity checks  */
+
+  if( (pixmap->usermap == 0)||
+      ((u32_t)pixmap->usermap >= 0x80000000) ||
+      ((u32_t)pixmap->usermap & 4095)
+    )
+    return ERR_PARAM;
+
   size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
 
   UnmapPages(pixmap->usermap, size);
@@ -403,6 +417,32 @@ int PixBlit(pixblit_t *blit)
 
      ifl = safe_cli();
 
+#if R300_PIO
+
+     R5xxFIFOWait(7);
+
+     OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+            RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
+            RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+            RADEON_GMC_BRUSH_NONE             |
+            RADEON_GMC_DST_32BPP              |
+            RADEON_GMC_SRC_DATATYPE_COLOR     |
+            RADEON_DP_SRC_SOURCE_MEMORY       |
+            R5XX_GMC_CLR_CMP_CNTL_DIS         |
+            R5XX_GMC_WR_MSK_DIS               |
+            R5XX_ROP3_S
+           );
+
+     OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
+
+     OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
+     OUTREG(R5XX_SRC_PITCH_OFFSET, srcpixmap->pitch_offset);
+
+     OUTREG(R5XX_SRC_Y_X,(blit->src_y<<16)|blit->src_x);
+     OUTREG(R5XX_DST_Y_X,(blit->dst_y<<16)|blit->dst_x);
+     OUTREG(R5XX_DST_HEIGHT_WIDTH,(blit->h<<16)|blit->w);
+
+#else
 
      BEGIN_RING();
        OUT_RING(CP_PACKET3(RADEON_CNTL_BITBLT, 5));
@@ -413,7 +453,10 @@ int PixBlit(pixblit_t *blit)
                 RADEON_GMC_DST_32BPP              |
                 RADEON_GMC_SRC_DATATYPE_COLOR     |
                 RADEON_DP_SRC_SOURCE_MEMORY       |
-                (1 << 28)+(1 << 30) | R5XX_ROP3_S);
+                R5XX_GMC_CLR_CMP_CNTL_DIS         |
+                R5XX_GMC_WR_MSK_DIS               |
+                R5XX_ROP3_S
+               );
 
        OUT_RING(srcpixmap->pitch_offset);
        OUT_RING(dstpixmap->pitch_offset);
@@ -422,6 +465,8 @@ int PixBlit(pixblit_t *blit)
        OUT_RING((blit->dst_x<<16)|blit->dst_y);
        OUT_RING((blit->w<<16)|blit->h);
      COMMIT_RING();
+
+#endif
 
      safe_sti(ifl);
   return ERR_OK;
@@ -439,7 +484,7 @@ int TransBlit(pixblit_t *blit)
      pixmap_t *srcpixmap;
      pixmap_t *dstpixmap;
 
-     dbgprintf("Transblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
+    // dbgprintf("Transblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
 
      dstpixmap = (blit->dstpix == (void*)-1) ? &scr_pixmap : blit->dstpix ;
      srcpixmap = (blit->srcpix == (void*)-1) ? &scr_pixmap : blit->srcpix ;
@@ -453,6 +498,36 @@ int TransBlit(pixblit_t *blit)
 
      ifl = safe_cli();
 
+#if R300_PIO
+
+     R5xxFIFOWait(10);
+
+     OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+            RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
+            RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+            RADEON_GMC_BRUSH_NONE             |
+            RADEON_GMC_DST_32BPP              |
+            RADEON_GMC_SRC_DATATYPE_COLOR     |
+            RADEON_DP_SRC_SOURCE_MEMORY       |
+            R5XX_GMC_WR_MSK_DIS               |
+            R5XX_ROP3_S
+           );
+
+     OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
+
+     OUTREG(R5XX_CLR_CMP_CLR_SRC, 0xFF000000);
+     OUTREG(R5XX_CLR_CMP_MASK, R5XX_CLR_CMP_MSK);
+     OUTREG(R5XX_CLR_CMP_CNTL, R5XX_SRC_CMP_EQ_COLOR | R5XX_CLR_CMP_SRC_SOURCE);
+
+     OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
+     OUTREG(R5XX_SRC_PITCH_OFFSET, srcpixmap->pitch_offset);
+
+     OUTREG(R5XX_SRC_Y_X,(blit->src_y<<16)|blit->src_x);
+     OUTREG(R5XX_DST_Y_X,(blit->dst_y<<16)|blit->dst_x);
+     OUTREG(R5XX_DST_HEIGHT_WIDTH,(blit->h<<16)|blit->w);
+
+#else
+
      BEGIN_RING();
        OUT_RING(CP_PACKET3(RADEON_CNTL_TRANBLT, 8));
 
@@ -462,19 +537,24 @@ int TransBlit(pixblit_t *blit)
                 RADEON_GMC_DST_32BPP              |
                 RADEON_GMC_SRC_DATATYPE_COLOR     |
                 RADEON_DP_SRC_SOURCE_MEMORY       |
-                (1 << 30) | R5XX_ROP3_S);
+                R5XX_GMC_WR_MSK_DIS               |
+                R5XX_ROP3_S
+               );
 
        OUT_RING(srcpixmap->pitch_offset);
        OUT_RING(dstpixmap->pitch_offset);
 
-       OUT_RING((2<<24)+5);
+       OUT_RING(R5XX_CLR_CMP_SRC_SOURCE | R5XX_SRC_CMP_EQ_COLOR);
        OUT_RING(0xFF000000);
        OUT_RING(0xFF000000);
 
        OUT_RING((blit->src_x<<16)|blit->src_y);
        OUT_RING((blit->dst_x<<16)|blit->dst_y);
        OUT_RING((blit->w<<16)|blit->h);
+
      COMMIT_RING();
+
+#endif
 
      safe_sti(ifl);
   return ERR_OK;

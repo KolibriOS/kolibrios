@@ -1,5 +1,5 @@
 
-//#define R300_TEST
+#define R300_TEST
 
 #include "r5xx_regs.h"
 
@@ -353,8 +353,8 @@ void  R5xx2DInit()
     u32 base;
 
 #ifdef R300_TEST
-    rhd.displayWidth  = 800;
-    rhd.displayHeight = 600;
+    rhd.displayWidth  = 1024;
+    rhd.displayHeight = 768;
 #else
     rhd.displayWidth  = INREG(D1GRPH_X_END);
     rhd.displayHeight = INREG(D1GRPH_Y_END);
@@ -407,7 +407,7 @@ void  R5xx2DInit()
 
     MASKREG( RADEON_AIC_CNTL,0, RADEON_PCIGART_TRANSLATE_EN);
 
-    load_microcode();
+  //  load_microcode();
 
     rhd.ring_base = CreateRingBuffer(0x8000, PG_SW | PG_NOCACHE);
     dbgprintf("create cp ring buffer %x\n", rhd.ring_base);
