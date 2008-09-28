@@ -154,6 +154,7 @@ dd  0x816810ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x816910ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x011616ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x43001186, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
+dd  0x816710ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 
 dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0

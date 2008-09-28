@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
 ;; Copyright (C) KolibriOS team 2004-2007. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
@@ -339,7 +339,7 @@ rtl8169_txb rb NUM_TX_DESC * RX_BUF_SIZE
 
 ; Define the RX Descriptor
 align 256
-rtl8169_rx_ring rb NUM_RX_DESC * sizeof.rtl8169_TxDesc
+rtl8169_rx_ring rb NUM_RX_DESC * sizeof.rtl8169_RxDesc
 
 ; Create a static buffer of size RX_BUF_SZ for each
 ; RX Descriptor   All descriptors point to a
@@ -716,21 +716,21 @@ endp
 
 proc RTL8169_WRITE_GMII_REG,RegAddr:byte,value:dword
 
-	DEBUGF	1,"K : RTL8169_WRITE_GMII_REG: 0x%x 0x%x\n",[RegAddr]:2,[value]
+;;;	DEBUGF	1,"K : RTL8169_WRITE_GMII_REG: 0x%x 0x%x\n",[RegAddr]:2,[value]
 
 	movzx	eax,[RegAddr]
 	shl	eax,16
 	or	eax,[value]
 	or	eax,0x80000000
 	RTL_W32 RTL8169_REG_PHYAR,eax
-	stdcall udelay,1000
+	stdcall udelay,1	;;;1000
 
 	mov	ecx,2000
 	; Check if the RTL8169 has completed writing to the specified MII register
     @@: RTL_R32 RTL8169_REG_PHYAR
 	test	eax,0x80000000
 	jz	.exit
-	stdcall udelay,100
+	stdcall udelay,1	;;;100
 	loop	@b
   .exit:
 	ret
@@ -738,21 +738,21 @@ endp
 
 proc RTL8169_READ_GMII_REG,RegAddr:byte
 
-	DEBUGF	1,"K : RTL8169_READ_GMII_REG: 0x%x\n",[RegAddr]:2
+;;;	DEBUGF	1,"K : RTL8169_READ_GMII_REG: 0x%x\n",[RegAddr]:2
 
 	push	ecx
 	movzx	eax,[RegAddr]
 	shl	eax,16
 ;       or      eax,0x0
 	RTL_W32 RTL8169_REG_PHYAR,eax
-	stdcall udelay,1000
+	stdcall udelay,1	;;;1000
 
 	mov	ecx,2000
 	; Check if the RTL8169 has completed retrieving data from the specified MII register
     @@: RTL_R32 RTL8169_REG_PHYAR
 	test	eax,0x80000000
 	jnz	.exit
-	stdcall udelay,100
+	stdcall udelay,1	;;;100
 	loop	@b
 
 	or	eax,-1
@@ -820,6 +820,7 @@ proc rtl8169_init_ring
 	mov	ecx,NUM_RX_DESC
     @@: mov	[esi],eax
 	mov	[edi+rtl8169_RxDesc.buf_addr],eax
+	sub	[edi+rtl8169_RxDesc.buf_addr],OS_BASE				; shurf 28.09.2008
 	mov	[edi+rtl8169_RxDesc.status],RTL8169_DSB_OWNbit or RX_BUF_SIZE
 	add	esi,4
 	add	edi,sizeof.rtl8169_RxDesc
@@ -879,8 +880,14 @@ proc rtl8169_hw_start
 	RTL_W16 0xE2,0x0000
 
 	MOV	[rtl8169_tpc.cur_rx],0
-	RTL_W32 RTL8169_REG_TxDescStartAddr,[rtl8169_tpc.TxDescArray]
-	RTL_W32 RTL8169_REG_RxDescStartAddr,[rtl8169_tpc.RxDescArray]
+	push	eax								; shurf 28.09.2008
+	mov	eax, [rtl8169_tpc.TxDescArray]					; shurf 28.09.2008
+	sub	eax, OS_BASE							; shurf 28.09.2008
+	RTL_W32 RTL8169_REG_TxDescStartAddr,eax ;[rtl8169_tpc.TxDescArray]	; shurf 28.09.2008
+	mov	eax, [rtl8169_tpc.RxDescArray]					; shurf 28.09.2008
+	sub	eax, OS_BASE							; shurf 28.09.2008
+	RTL_W32 RTL8169_REG_RxDescStartAddr,eax ;[rtl8169_tpc.RxDescArray]	; shurf 28.09.2008
+	pop	eax								; shurf 28.09.2008
 	RTL_W8	RTL8169_REG_Cfg9346,RTL8169_CFG_9346_Lock
 	stdcall udelay,10
 	RTL_W32 RTL8169_REG_RxMissed,0
@@ -1087,6 +1094,7 @@ proc rtl8169_transmit
 	add	eax,[rtl8169_tpc.TxDescArray]
 	xchg	eax,ebx
 	mov	[ebx + rtl8169_TxDesc.buf_addr],eax
+	sub	[ebx + rtl8169_TxDesc.buf_addr],OS_BASE					; shurf 28.09.2008
 
 	mov	eax,ecx
 	cmp	eax,ETH_ZLEN
@@ -1190,6 +1198,7 @@ proc rtl8169_poll
     @@: mov	[ebx + rtl8169_RxDesc.status],eax
 
 	mov	[ebx + rtl8169_RxDesc.buf_addr],edx
+	sub	[ebx + rtl8169_RxDesc.buf_addr],OS_BASE					; shurf 28.09.2008
 	jmp	@f
   .else:
 	DEBUGF	1,"K : rtl8169_poll: Rx Error\n"
