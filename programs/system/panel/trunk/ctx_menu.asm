@@ -1,4 +1,4 @@
-  context_menu_start:
+context_menu_start:
 
     mov        eax, 40
     mov        ebx, 00100111b
@@ -50,6 +50,7 @@
   ctx_menu_button:
     mov        eax, 17
     int        0x40
+
     cmp        ah, 1
 ; // Alver 26.08.2007 // {
 ;    jne        ctx_menu_still
@@ -104,6 +105,7 @@
     jmp        ctx_menu_still
 
   ctx_menu_exit:
+
     xor        eax, eax
     dec        eax		; mov        eax, -1
     int        0x40

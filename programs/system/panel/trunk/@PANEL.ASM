@@ -15,7 +15,8 @@ use32
   dd   0x0,0x0	    ; param, icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include 'macros.inc'
+include 'moi.inc'   ;раскладки клавиатуры
 
 width		dd  305
 buttons 	dd    1  ;  0 no frames  ; 1 frames
@@ -32,6 +33,7 @@ icons		dd    1  ;  0 defaults   ; 1 activate
 
 PANEL_HEIGHT = 18
 
+
 handle_key:
 
     mcall 18, 7
@@ -42,6 +44,25 @@ handle_key:
 	jnz	begin_1.ret
 	mov	ebx, exec_fileinfo
 	shr	eax, 8
+	cmp	al, 0
+	je	prod
+	mov	[key_r],al
+	sub	[key_r],2
+	cmp	al, 2
+	jz	alter
+	cmp	al, 3
+	jz	alter
+	cmp	al, 4
+	jz	alter
+	cmp	al, 5
+	jz	alter
+	cmp	al, 6
+	jz	alter
+	cmp	al, 7
+	jz	alter
+	cmp	al, 8
+	jz	alter
+prod:
 	cmp	al, 15
 	jz	alt_tab_pressed
 	cmp	al, 88
@@ -62,7 +83,9 @@ handle_key:
 	jz	alt_tab_released
 @@:
 ; this is hotkey Ctrl+Shift ;or LShift+RShift
-	mov	ebx, setup_exec
+
+	 jmp	 karu
+;        mov     ebx, setup_exec
 ;        test    ah, 001100b
 ;        jz      change_sys_lang
 change_key_lang:
@@ -111,7 +134,7 @@ begin_1:
 ;     and ebx,0x0000FFFF
 ;     cmp ebx,'EL'
 ;     je  no_kill
-;   kill_app:  
+;   kill_app:
 ;     pop ecx
 ;     mcall  18, 2
 ;     jmp if_kill
@@ -119,7 +142,7 @@ begin_1:
 ;     pop eax
 ;   if_kill:
 ;     ;// }SPraid.simba
-        mcall 72,1,3,1
+	mcall 72,1,3,1
 
      jmp    begin_1.ret
 
@@ -311,21 +334,31 @@ calendarmusic:	db 0x85,0x37,0x85,0x48,0
 
 
 START:
-	mov	eax, 51
-	mov	ebx, 1
-	mov	ecx, detect_start
-	mov	edx, detect_stack
-	int	0x40
+;       mov     eax, 51
+;       mov     ebx, 1
+;       mov     ecx, detect_start
+;       mov     edx, detect_stack
+;       int     0x40
 	mcall 66,4,0,2		; LShift+RShift
 	mcall 66, , ,11h	; Ctrl+Shift
 	mcall 66,,88,110h	; Alt+Ctrl+F12
+	mcall 66,,91,0h 	; LWin
+	mcall 66,,92,0h 	; RWin
 	mcall 66,,91,100h	; Alt+LWin
 	mcall 66,,92		; Alt+RWin
 	mcall 66,,62		; Alt+F4
 	mcall 66,,71		; Alt+Home
 	mcall 66,,72		; Alt+Up
 	mcall 66,,15		; Alt+Tab
+	mcall 66,,2		; Alt+1
+	mcall 66,,3		; Alt+2
+	mcall 66,,4		; Alt+3
+	mcall 66,,5		; Alt+4
+	mcall 66,,6		; Alt+5
+	mcall 66,,7		; Alt+6
+	mcall 66,,8		; Alt+7
 	mcall 66,,,101h 	; Alt+Shift+Tab
+
     mcall 18, 8, 1
     test eax, eax
     jne  @f
@@ -357,20 +390,27 @@ START:
 	mcall	14
 	mov	[screen_size],eax
 
-	mcall	48,5
+	;mcall  48,5            ; barsuk {
+	mov	eax, 14
+	int	0x40
 	mov	ecx,eax
-	lea	edx,[ebx-PANEL_HEIGHT-1]
+;eax = [xsize]*65536 + [ysize], где
+	shr	ecx, 16
+	and	eax, 0xFFFF
+	lea	edx,[eax-PANEL_HEIGHT-1]
+				; barsuk }
+
 	mcall	48,6
 
 ; // Alver 26.08.2007 // {
-   mov  eax, 9                      ; info of process
-   mov  ebx, process_info_buffer
-   mov  ecx, -1
+   mov	eax, 9			    ; info of process
+   mov	ebx, process_info_buffer
+   mov	ecx, -1
    mcall
-   mov  ecx, dword [process_info_buffer+30]
+   mov	ecx, dword [process_info_buffer+30]
    mcall 18,21
-   mov  [this_slot], eax
-   mov  [max_slot], 255
+   mov	[this_slot], eax
+   mov	[max_slot], 255
 ; } \\ Alver \\
 
     call set_variables
@@ -384,6 +424,8 @@ start_after_minimize:
     mov  eax, 23
     mov  ebx, 30
     int  0x40
+    call    load_ini
+    call    fir_lng
 
 still:
 ;     mcall  13,<390,70>,<3,11>,0xffffff
@@ -392,6 +434,40 @@ still:
 
     call draw_info
     call draw_running_applications
+
+	mov	eax, 18 			; check if active window changed
+	mov	ebx, 7				; barsuk
+	int	0x40
+	cmp	eax, [last_active_window]
+	jz	@f
+
+; need_window_tab:
+; in: ebx->process info
+; out: ZF set <=> do not draw
+
+	mov	ebx, [last_active_window]
+	mov	[prev_active_window], ebx
+	mov	[last_active_window], eax
+
+	mov	ecx, eax
+	mov	eax, 9
+	mov	ebx, process_info_buffer
+	int	0x40
+
+	call	need_window_tab
+	jnz	.need_repaint
+
+	mov	eax, 9
+	mov	ebx, process_info_buffer
+	mov	ecx, [prev_active_window]
+	int	0x40
+	call	need_window_tab
+	jz	@f
+
+.need_repaint:
+	mov	dword [active_window_changed], 1
+
+@@:
 
     mov  eax, 23
     mov  ebx, 20
@@ -402,9 +478,17 @@ still:
     cmp  eax,3		; button ?
     jz	 button
 	call	handle_key
+
+	cmp  dword [active_window_changed], 0
+	jnz   red_active
+
 	jmp	still
 
+  red_active:		; barsuk
+
   red:			 ; redraw window
+
+	mov	dword [active_window_changed], 0
 
 	mcall	14
 	movzx	ecx,ax
@@ -421,6 +505,7 @@ still:
 	mcall	67,0,,,PANEL_HEIGHT
 
   .lp1:
+
     call draw_window
     call draw_info
     jmp  still
@@ -428,6 +513,9 @@ still:
   button:		 ; button
     mov  eax,17
     int  0x40
+
+    cmp  al, 0			; barsuk
+    jnz  right_mouse
 
     cmp  ah,50
     jb	 no_activate
@@ -446,6 +534,51 @@ still:
 ;    je   still
     mcall 55,eax, , ,activatemusic
     jmp  still
+
+right_mouse:			; barsuk
+
+    cmp  ah,50
+    jb	 still
+    cmp  ah,70
+    jg	 still
+
+    movzx ecx,byte ah
+    sub  ecx,52
+
+    cmp  ecx, [app_tab_count]
+    jge  still
+
+    shl  ecx,2
+
+    mov  eax, 37
+    mov  ebx, 0
+    int  0x40
+    mov  ebx, eax
+    shr  eax, 16
+    mov  [x_coord], ax
+    and  ebx, 0xFFFF
+    mov  [y_coord], bx
+
+    mov  eax, 9
+    mov  ecx,[app_list+ecx]	; ecx->selected app.slot
+    mov  [n_slot], ecx
+    mov  ebx, procinfo_for_detect
+    int  0x40
+
+;    cmp  dword [procinfo_for_detect+process_information.slot_state],9
+;    jz   still
+
+	mov	eax, 51
+	mov	ebx, 1
+	mov	ecx, context_menu_start
+	mov	edx, ctx_menu_stack
+	int	0x40
+
+	mov	[ctx_menu_PID], eax
+
+    jmp  still
+
+
   no_activate:
 
 
@@ -457,11 +590,11 @@ still:
 
 ; // Alver 26.08.2007 // {
     cmp  ah, 103
-    je	 clean_desktop              ; minimize all windows
+    je	 clean_desktop		    ; minimize all windows
     cmp  ah, 104
-    je   restore_desktop            ; restore minimized windows
+    je	 restore_desktop	    ; restore minimized windows
     cmp  ah, 105
-    je   swap_minimized_desktop     ; minimize normal windows, and restore minimized windows
+    je	 swap_minimized_desktop     ; minimize normal windows, and restore minimized windows
 ; } \\ Alver \\
 
     cmp  ah,byte 1	  ; start/terminate menu
@@ -543,7 +676,7 @@ still:
     cmp  [page_list], 99
     jnc  @f
   ;  cmp  [page_list],15
-  ;  je	   @f
+  ;  je    @f
 ; } \\ Alver \\
     inc  [page_list]
     jmp  red
@@ -583,8 +716,8 @@ swap_minimized_desktop:
     jmp  min_swap_desktop
 clean_desktop:
     xor esi,esi
- min_swap_desktop:                 ; input esi 0 - min, <>0 swap
-     mov    ecx, 2                 ; Начальный номер слота процесса
+ min_swap_desktop:		   ; input esi 0 - min, <>0 swap
+     mov    ecx, 2		   ; Начальный номер слота процесса
      mov    ebx, process_info_buffer
 
 .loop1:
@@ -593,7 +726,7 @@ clean_desktop:
      mcall  9
      mov    [max_slot], eax
      mov    dx, word [process_info_buffer+50]
-     cmp    dx, 9                   ; Проверка свободен ли данный слот
+     cmp    dx, 9		    ; Проверка свободен ли данный слот
      jz     .loop1xx
      mov    edx, dword [ebx+10]
      cmp    dl, '@'
@@ -614,9 +747,9 @@ clean_desktop:
      or     esi, esi
      jz     @f
      movzx  eax, byte [process_info_buffer+70]
-     and    eax, 2            ; mask minimize
+     and    eax, 2	      ; mask minimize
      jz     @f
-     mov    ecx, 2            ; restore
+     mov    ecx, 2	      ; restore
 @@:
      mcall  18, 22
      popad
@@ -684,6 +817,13 @@ need_window_tab:
 redraw_window_tabs:
 	xor	edi, edi
 	mov	[contrast], 0
+
+	push	ebp			; barsuk {
+	mov	eax, 18
+	mov	ebx, 7
+	int	0x40
+	mov	ebp, eax		; barsuk }
+
 .loop:
 	mov	ecx, [app_list+edi*4]
 	cmp	ecx, -1
@@ -697,11 +837,13 @@ redraw_window_tabs:
 	mov	eax, 13
 	imul	ebx, edi, 6*10*10000h
 ; // Alver 26.08.2007 // {
-;	add	ebx, 6*10*10000h + 7*10000h + 54
+;       add     ebx, 6*10*10000h + 7*10000h + 54
 	add	ebx, 12*10*10000h + 7*10000h + 54
 ; } // Alver //
 	mov	ecx, 3*10000h + 14
-	xor	edx, edx
+
+;       xor     edx, edx
+	mov	edx, 0x383838		; barsuk
 	int	0x40
 	sub	ebx, 10000h + 53
 	mov	ecx, 4*10000h + 12
@@ -716,20 +858,12 @@ redraw_window_tabs:
 	mov	ecx, 5*10000h + 10
 	int	0x40
 
-	mov	edx, 0x88FF
-	xor	[contrast], 1
-	jz	@f
-	mov	dh, 0x55
+	mov	edx, [wcolor]	; barsuk
+	cmp	ebp, [esp]	; [esp]=saved ecx=active slot number
+	jnz	@f
+	mov	edx, [system_colours.work_button]
 @@:
 	pop	ecx
-	mov	esi, [current_alt_tab_app]
-	cmp	esi, -1
-	jz	@f
-	cmp	ecx, [alt_tab_list+esi*8]
-	jnz	@f
-;        xor     edx, 0xFFFFFF
-	mov	edx, 0xFF8000
-@@:
 	sub	ebx, 55*10000h - 53
 	mov	ecx, 4*10000h + 12
 	int	0x40
@@ -741,15 +875,17 @@ redraw_window_tabs:
 
 	mov	eax, 4
 	sub	ebx, 51*10000h - 6
-	mov	ecx, 0xffffff	;[wcolor]
+	mov	ecx, [system_colours.work_button_text]	;0xffffff
 	mov	edx, 0x8000+10
 	mov	esi, 11
 	int	0x40
 
+.nodraw:
 	inc	edi
 	cmp	edi, [max_applications]
 	jb	.loop
 .done:
+	pop	ebp
 	ret
 
 calculate_applications:
@@ -792,6 +928,8 @@ calculate_applications:
     cmp  eax,ecx
     jge  cnewpr
 
+    mov  [app_tab_count], edi	; barsuk
+
     ret
 
 
@@ -810,7 +948,7 @@ draw_application_buttons:
 ; // Alver 25.08.2007 // {
  ;   cmp  eax,639
  ;   jne  now1
- ;   mov  [max_applications],7	;6
+ ;   mov  [max_applications],7  ;6
  ; now1:
  ;   cmp  eax,799
  ;   jne  now2
@@ -832,7 +970,7 @@ draw_application_buttons:
 ._01:
      mov  bl, 60
      div  bl
-     xor  ah, ah                       ; eax - количество умещаюшихся пиктов
+     xor  ah, ah		       ; eax - количество умещаюшихся пиктов
      mov  [max_applications], eax
      mov  edi,1
 ;  } \\ Alver \\
@@ -1244,7 +1382,7 @@ draw_window:
     mov  ecx,0*65536+0
     mov  edx,[wcolor]
     add  edx,0x161616
-  newline:
+  newline_:			; debug.inc has macros with the same name
     sub  edx,0x040404
     mov  eax,38
     cmp  [soften_up],1
@@ -1269,7 +1407,7 @@ draw_window:
 
     add  ecx,1*65536+1
     cmp  cx,5
-    jb	 newline
+    jb	 newline_
 
     cmp   [soften_middle],1
     jne   no_sm
@@ -1435,7 +1573,8 @@ draw_menuet_icon:
     mov  eax,13
     mov  ebx,12 shl 16+44  ;51
     mov  ecx,1 shl 16+17
-    xor  edx,edx
+;    xor  edx,edx
+    mov edx, 0x383838
     int  0x40
 ;    mov  ebx,63 shl 16+1
     mov  ebx,56 shl 16+1
@@ -1793,7 +1932,7 @@ draw_info:    ; draw cpu usage, time, date
     mov  ecx,6 shl 16+10
     inc  edx	    ;button 21
     int  0x40
-    sub  ebx,24 shl 16  ; << Alver 25.08.2007 >> 18 shl 16
+    sub  ebx,24 shl 16	; << Alver 25.08.2007 >> 18 shl 16
     inc  edx	    ;button 22
     int  0x40
 
@@ -1936,7 +2075,7 @@ dalshe:
 ; } \\ Alver \\
     shl  ebx,16
     mov  bx,8
-    mov  esi,5     ;4
+    mov  esi,5	   ;4
     int  0x40
     add  ebx,1 shl 16
     int  0x40
@@ -2127,7 +2266,7 @@ no_bug:
     popad
     ret
 
-include 'detect.asm'
+;;;include 'detect.asm'
 include 'ctx_menu.asm'
 
 ; DATA
@@ -2156,11 +2295,11 @@ m_icon:
 lsz m_text,\
   ru, "МЕНЮ",\
   en, "MENU",\
-  et, "MEN▄▄"
+  et, "MEN--"
 
 mi_text   db   'WAVETETRBGRDGPL '
 
-flag_text db 'EnFiGeRuFrEt'
+flag_text db 'EnFiGeRuFrEtUa'
 
 type_lang db 0
 ;music_type db 1
@@ -2264,9 +2403,9 @@ screen_size:
   .height dw ?
   .width  dw ?
 
-this_slot      dd 0           ; Slot of this process
+this_slot      dd 0	      ; Slot of this process
 max_slot       dd 255
-system_colours rd 10
+system_colours	system_colors ; rd 10
 app_list rd 50
 alt_tab_list	rd	256*2
 alt_tab_list_size dd	?
@@ -2282,4 +2421,10 @@ ctx_menu_stack:
 
 panel_x_pos	rd	1
 panel_y_pos	rd	1
+
+last_active_window	dd	0
+prev_active_window	dd	0
+active_window_changed	dd	0
+app_tab_count		dd	0
+
 image:
