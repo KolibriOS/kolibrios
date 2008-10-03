@@ -1226,6 +1226,7 @@ stfw2_notlocal:
 
     ; Only delete the socket if we received the FIN
 
+    mov     edx, [sktAddr]
     mov     bl, [edx + 33]
     and     bl, 0x01
     cmp     bl, 0x01
