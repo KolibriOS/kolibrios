@@ -7,13 +7,13 @@
   use32
   org     0x0
 
-  db      'MENUET00'   ; 8 byte id
-  dd      38           ; required os
-  dd      START        ; program start
-  dd      I_END        ; program image size
-  dd      0x1000       ; required amount of memory
-  dd      0x1000       ; esp
-  dd      0x00000000   ; reserved=no extended header
+  db     'MENUET01'              ; 8 byte id
+  dd     0x01                    ; header version
+  dd     START                   ; start of code
+  dd     I_END                   ; size of image
+  dd     0x1000                  ; memory for app
+  dd     0x1000                  ; esp
+  dd     0x0,0x0                 ; I_Param , I_Icon
 
 include 'lang.inc'
 include '..\..\..\..\macros.inc'

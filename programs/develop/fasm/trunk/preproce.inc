@@ -805,6 +805,11 @@ get_preprocessor_symbol:
 	ret
 add_preprocessor_symbol:
 	push	edi esi
+
+	mov	edi,preprocessor_directives
+	call	get_directive
+	jnc	reserved_word_used_as_symbol
+
 	call	calculate_hash
 	mov	ebp,eax
 	and	ebp,3FFh
@@ -1655,8 +1660,7 @@ use_instant_macro:
 	cmp	dword [edi+4],0
 	jne	value_out_of_range
 	mov	eax,[edi]
-	or	eax,eax
-	jz	instant_macro_done
+
 	cmp	eax,80000000h
 	jae	value_out_of_range
 	push	[free_additional_memory]
@@ -1708,9 +1712,12 @@ use_instant_macro:
 	jmp	add_rept_counter
       rept_counters_ok:
 	dec	esi
+	cmp	[counter_limit],0
+	je	instant_macro_finish
       instant_macro_parameters_ok:
 	xor	eax,eax
 	call	process_macro
+      instant_macro_finish:
 	pop	[counter_limit]
 	pop	[macro_symbols]
 	pop	[free_additional_memory]

@@ -601,7 +601,6 @@ write_mz_header:
 	inc	si
 	or	ax,ax
 	jnz	mz_size_ok
-	mov	ax,200h
 	dec	si
       mz_size_ok:
 	mov	[edx+2],ax		; number of bytes in last page
@@ -705,6 +704,10 @@ make_stub:
 	dec	ecx
 	shl	ecx,9
 	movzx	edx,word [esi+2]
+	test	edx,edx
+	jnz	stub_header_size_ok
+	mov	dx,200h
+     stub_header_size_ok:
 	add	ecx,edx
 	mov	edx,edi
 	sub	ecx,eax

@@ -1,26 +1,28 @@
-AA-SYSXTREE-004-/sys/SYSXTREE                 -                              *
-AB-COPY    -008-/sys/COPY2                    -                              *
-AC-RDSAVE  -020-/sys/RDSAVE                   -                              *
-BB-CALC    -006-/sys/CALC                     -                              *
-CA-TINYPAD -011-/sys/TINYPAD                  -                              *
-CB-KFM     -007-/sys/KFM                      -                              *
-JA-VRR     -009-/sys/VRR                      -                              *
-II-C4      -005-/sys/GAMES/C4                 -                              *
-JI-MINE    -017-/sys/GAMES/MINE               -                              *
-IH-TETRIS  -021-/sys/GAMES/TETRIS             -                              *
-JH-MBLOCKS -013-/sys/GAMES/MBLOCKS            -                              *
-HI-PONG    -026-/sys/GAMES/PONG3              -                              *
-GI-15      -000-/sys/GAMES/15                 -                              *
-HH-LIFE2   -015-/sys/DEMOS/LIFE2              -                              *
-BA-FASM    -012-/sys/DEVELOP/FASM             -                              *
-JB-ANIMAGE -018-/sys/ANIMAGE                  -                              *
-CC-CMD     -023-/sys/CMD                      -                              *
-IA-BOARD   -022-/sys/DEVELOP/BOARD            -                              *
-JC-DOCPACK -010-/sys/DOCPAK                   -                              *
-BC-KFAR    -027-/sys/KFAR                     -                              *
-HA-MTDBG   -029-/sys/DEVELOP/MTDBG            -                              *
-AH-PIPES   -030-/sys/GAMES/PIPES              -                              *
-AI-FARA    -031-/sys/GAMES/FARA               -                              *
-BI-ARC-II  -014-/sys/GAMES/ARCANII            -                              *
-BH-XONIX   -024-/sys/GAMES/XONIX              -                              *
-GH-CHECKERS-002-/sys/GAMES/CHECKERS           -                              *
+AA-EOLITE  -002-/SYS/File Managers/EOLITE     -                              *
+AB-COPY    -006-/SYS/COPY2                    -                              *
+AC-RDSAVE  -017-/SYS/RDSAVE                   -                              *
+BB-CALC    -004-/SYS/CALC                     -                              *
+CA-TINYPAD -009-/SYS/TINYPAD                  -                              *
+CB-KFM     -005-/SYS/File Managers/KFM        -                              *
+JA-VRR     -007-/SYS/VRR                      -                              *
+II-CLICKS  -003-/SYS/GAMES/CLICKS             -                              *
+JI-MINE    -014-/SYS/GAMES/MINE               -                              *
+IH-TETRIS  -018-/SYS/GAMES/TETRIS             -                              *
+JH-MBLOCKS -011-/SYS/GAMES/MBLOCKS            -                              *
+HI-CHECKERS-001-/SYS/GAMES/CHECKERS           -                              *
+GI-15      -000-/SYS/GAMES/15                 -                              *
+HH-LIFE2   -013-/SYS/DEMOS/LIFE2              -                              *
+BA-FASM    -010-/SYS/DEVELOP/FASM             -                              *
+JB-ANIMAGE -015-/SYS/ANIMAGE                  -                              *
+CC-CMD     -020-/SYS/CMD                      -                              *
+IA-BOARD   -019-/SYS/DEVELOP/BOARD            -                              *
+JC-DOCPACK -008-/SYS/DOCPAK                   -                              *
+BC-KFAR    -024-/SYS/File Managers/KFAR       -                              *
+HA-MTDBG   -025-/SYS/DEVELOP/MTDBG            -                              *
+AH-PIPES   -026-/SYS/GAMES/PIPES              -                              *
+AI-FARA    -027-/SYS/GAMES/FARA               -                              *
+BI-ARC-II  -012-/SYS/GAMES/ARCANII            -                              *
+BH-XONIX   -021-/SYS/GAMES/XONIX              -                              *
+GH-INVADERS-029-/SYS/GAMES/INVADERS           -                              *
+CI-LODERUN -030-/SYS/GAMES/LRL_PK             -                              *
+CH-KOSILKA -023-/SYS/GAMES/KOSILKA            -                              *

@@ -1,8 +1,7 @@
-AA-/sys/icons/FS.ICO             -/sys/KFAR                     -FAR       *
+AA-/sys/icons/FS.ICO             -/sys/File Managers/KFAR       -FAR       *
 BA-/sys/icons/FASM.ICO           -/sys/develop/FASM             -Fasm      *
 CA-/sys/icons/WRITE.ICO          -/sys/TINYPAD                  -Tinypad   *
 AB-/sys/icons/FLOPPY.ICO         -/sys/RDSAVE                   -RDsave    *
 BB-/sys/icons/CALC.ICO           -/sys/CALC                     -Calc      *
-HA-/sys/icons/BUG.ICO            -/sys/develop/MTDBG            -Debuger   *
-IA-/sys/icons/BOARD.ICO          -/sys/develop/BOARD            -Board     *
-JA-/sys/icons/VRR.ICO            -/sys/VRR                      -VRR       *
+IA-/sys/icons/BUG.ICO            -/sys/develop/MTDBG            -Debuger   *
+JA-/sys/icons/BOARD.ICO          -/sys/develop/BOARD            -Board     *

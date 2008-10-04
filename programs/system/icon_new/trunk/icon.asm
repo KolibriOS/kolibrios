@@ -21,178 +21,244 @@ use32
 ;          +0     +4      +8          +38          +68
 
 include  '..\..\..\macros.inc'
+
 ;__DEBUG__ fix 1
 ;__DEBUG_LEVEL__ fix 1
 ;include  'debug-fdo.inc'
-flipdelay = 7
+
+flipdelay = 5
 
 START:           ; start of execution
 
-    cmp  [I_PARAM],byte 0
-    jne  nohalt
-    or   eax,-1
-    mcall
-  nohalt:
+    cmp   [I_PARAM],byte 0
+    jne   nohalt
+    mcall -1
+  
+ nohalt:
+    mov   eax,[I_PARAM+0]
+    sub   eax,0x01010101
+    mov   [xpos],eax
+    mov   eax,[I_PARAM+4]
+    sub   eax,0x01010101
+    mov   [ypos],eax
 
-    mov  eax,[I_PARAM+0]
-    sub  eax,0x01010101
-    mov  [xpos],eax
-    mov  eax,[I_PARAM+4]
-    sub  eax,0x01010101
-    mov  [ypos],eax
-
-    mov  esi,I_PARAM+8
-    mov  edi,fname
-    mov  ecx,30
+    mov   esi,I_PARAM+8
+    mov   edi,fname
+    mov   ecx,30
     cld
-    rep  movsb
-    call fill_paths
+    rep   movsb
+    call  fill_paths
     
 ;DEBUGF 1,"fname: '%s'\n",fname
 
-    mov  esi,I_PARAM+8+30
-    mov  edi,start_file
-    mov  ecx,30
-    rep  movsb
-    call fill_paths
-
-    mov  esi,I_PARAM+8+30+30
-    mov  edi,labelt
-    mov  ecx,10
+    mov   esi,I_PARAM+8+30
+    mov   edi,start_file
+    mov   ecx,30
     cld
-    rep  movsb
+    rep   movsb
+    call  fill_paths
 
-    mov  eax,40          ; get also event background change
-    mov  ebx,10101b
-    mcall
+    mov   esi,I_PARAM+8+30+30
+    mov   edi,labelt
+    mov   ecx,10
+    cld
+    rep   movsb
 
+    mcall 40,110001b
 
-    call get_bg
+    mcall 37,4,hand,1
+    mov   ecx,eax
+    mcall 37,5
 
-  red:           ; redraw
-    call draw_window
+red:
+    call  get_bg
+    call  draw_window
 
 still:
 
-    mov  eax,10          ; wait here for event
-    mcall
+    mcall  10          ; wait here for event
 
-    cmp  eax,1          ; redraw request ?
-    jz  red
-    cmp  eax,3          ; button in buffer ?
-    jz  button
+    cmp   eax,1          ; redraw request ?
+    jz    red
+    cmp   eax,6
+    jz    mouse
 
-  check:
-    call get_bg
-    call draw_icon
+    call  get_bg
+    call  draw_icon
     mcall 5,80
-    jmp  still
+    jmp   still
 
-  button:          ; button
-    mov  al,17          ; get id
-    mcall
 
-    mov  eax,70
-    mov  ebx,finfo_start
-    mcall
+  mouse:
 
-    call flip_icon
+    mcall 9,process,-1
+    xor   ebx,ebx
+    mov   bx,[process.window_stack_position]
+    cmp   eax,ebx              ;check is this process is active
+    jne   still
 
-    jmp  still
+    cmp   [mouse_pressed],1
+    je    @f
+
+    mcall 37,2
+    test  eax,1
+    jz    still
+
+    mov   [icon_moved],0
+
+    mcall 37,0
+    mov   ebx,eax
+    shr   eax,16             ;   eax= abs x
+    and   ebx,0xffff         ;   ebx= abs y
+
+    mov   [xmouse_old],eax   ; saving mouse coordinates
+    mov   [ymouse_old],ebx
+
+    cmp   eax,[process.box.left]    ; check is mouse in icon area
+    jl    still
+    sub   eax,[process.box.left]
+    cmp   eax,[process.box.width]
+    ja    still
+
+    cmp   ebx,[process.box.top]
+    jl    still
+    sub   ebx,[process.box.top]
+    cmp   ebx,[process.box.height]
+    ja    still
+
+    mov   [xmouse_rel],eax   ; saving relative coordinates
+    mov   [ymouse_rel],ebx
+
+    mov   [mouse_pressed],1
+
+    jmp   still
+
+  @@:
+    mcall 37,2
+    test  eax,1
+    jnz   @F
+
+    mov   [mouse_pressed],0
+
+  @@:
+    mcall 37,0
+    mov   ecx,eax
+    shr   eax,16             ;   eax= abs x
+    and   ecx,0xffff         ;   ecx= abs y
+    push  eax ecx
+
+    cmp   [icon_moved],1
+    je    move
+
+    add   eax,2
+    cmp   eax,[xmouse_old]
+    jle   move
+    sub   eax,4
+    cmp   eax,[xmouse_old]
+    jae   move
+
+    add   ecx,2
+    cmp   ecx,[ymouse_old]
+    jle   move
+    sub   ecx,4
+    cmp   ecx,[ymouse_old]
+    jae   move
+
+    cmp   [mouse_pressed],1
+    je    still
+
+    mcall 70,finfo_start
+    call  flip_icon
+    jmp   still
+
+ move:
+    mov   [icon_moved],1
+    pop   ecx ebx
+    sub   ebx,[xmouse_rel]   ;   ebx=new_x
+    sub   ecx,[ymouse_rel]   ;   ecx=new_y
+    mov   [xpos],ebx
+    mov   [ypos],ecx
+
+    mcall 67,,,-1,-1    ;   move
+
+    jmp   still
+
+fill_paths:
+     dec   edi
+     mov   ecx,30
+     std
+     mov   al,' '
+     repe  scasb
+     cld
+     mov   byte[edi+2],0
+     ret
 
 flip_icon:
 
-     mov  eax,1
-     call flip
-     mov  eax,2
-     call flip
-     mov  eax,3
-     call flip
-     mov  eax,4
-     call flip
-     mov  eax,5
-     call flip
-     mov  eax,4
-     call flip
-     mov  eax,3
-     call flip
-     mov  eax,2
-     call flip
-     mov  eax,1
-     call flip
-     mov  eax,0
-     call flip
+     mov   eax,1
+     call  flip
+     inc   eax
+     call  flip
+     inc   eax
+     call  flip
+     inc   eax
+     call  flip
+     inc   eax
+     call  flip
+     dec   eax
+     call  flip
+     dec   eax
+     call  flip
+     dec   eax
+     call  flip
+     dec   eax
+     call  flip
+     xor   eax,eax
+     call  flip
 
      ret
 
 flip:
-     mov  [iconstate],eax
-     call get_bg
-     call draw_icon
-     mov  eax,5
-     mov  ebx,flipdelay
-     mcall
+     push  eax
+     mov   [iconstate],eax
+     call  get_bg
+     call  draw_icon
+     mcall 5,flipdelay
+     pop   eax
      ret
 
-fill_paths:
-     dec  edi
-     mov  ecx,30
-     std
-     mov  al,' '
-     repe scasb
-     cld
-     mov  byte[edi+2],0
-     ret
 
 draw_window:
 
-    mov  eax,12      ; function 12:tell os about windowdraw
-    mov  ebx,1      ; 1, start of draw
-    mcall
+     mcall 12,1             ; function 12,1 - tell os about start of draw window
 
-       ; DRAW WINDOW
-    xor  eax,eax            ; function 0 : define and draw window
-    mov  ebx,[xpos-2]
-    mov  ecx,[ypos-2]
-    add  ebx,[yw]           ; [x start] *65536 + [x size]
-    add  ecx,67             ; [y start] *65536 + [y size]
-    mov  edx,0x01000000     ; color of work area RRGGBB,8->color gl
-    mcall
+     xor   eax,eax          ; function 0 : define and draw window
+     mov   ebx,[xpos-2]
+     add   ebx,51           ; [x start] *65536 + [x size]
+     mov   ecx,[ypos-2]
+     add   ecx,67           ; [y start] *65536 + [y size]
+     mov   edx,0x01000000
+     mov   esi,0x01000000
+     mcall
 
-    mov  eax,8      ; button
-    mov  ebx,51
-    mov  ecx,67
-    mov  edx,0x60000001
-    mcall
+     call  draw_icon
 
-    call draw_icon
+     mcall 12,2             ; function 12,2 - tell os about end of draw window
 
-    mov  eax,12
-    mov  ebx,2
-    mcall
-
-    ret
+     ret
 
 get_bg:
 
-    mov  eax,14
-    mcall
-    add  eax,0x00010001
+    mcall 61,1
     mov  [scrxy],eax
 
-    mov  eax,39        ; get background type
-    mov  ebx,4
-    mcall
+    mcall 39,4             ; get background type
     mov  [bgrdrawtype],eax
 
-    mov  eax,39        ; get background size
-    mov  ebx,1
-    mcall
+    mcall 39,1             ; get background size
     mov  [bgrxy],eax
 
-    mov  eax,70
-    mov  ebx,finfo
-    mcall
+    mcall 70,finfo
 
     mov  [itype],0
     cmp  word[I_END+256],'BM'
@@ -200,7 +266,7 @@ get_bg:
     inc  [itype]
   @@:
 
-    mov  ebx,[yw]     
+    mov  ebx,51     
     xor  ecx,ecx            ; 10608 = 52*68*3 - bg image
     mov  esi,I_END+256+9662 ; 9662 - icon file image
     mov  edi,51*3
@@ -211,7 +277,7 @@ get_bg:
 
   yesbpix:
 
-    cmp   [bgrdrawtype],dword 2
+    cmp   [bgrdrawtype],2
     jne   nostretch
 
     mov   eax,[ypos]
@@ -240,7 +306,7 @@ get_bg:
 
   nostretch:
 
-    cmp   [bgrdrawtype],dword 1
+    cmp   [bgrdrawtype],1
     jne   notiled
 
     mov  eax,[ypos]
@@ -266,11 +332,7 @@ get_bg:
   notiled:
 
     lea  ecx,[eax+eax*2]
-
-    mov  eax,39
-    mov  ebx,2
-
-    mcall
+    mcall 39,2
 
   nobpix:
 
@@ -284,7 +346,7 @@ get_bg:
 
     dec  ebx
     jge  newb
-    mov  ebx,[yw]
+    mov  ebx,51
 
     add  esi,52*3
     mov  edi,51*3
@@ -406,11 +468,7 @@ get_bg:
     ret
 
 draw_picture:
-    mov  eax,7
-    mov  ebx,I_END+256+9662
-    mov  ecx,52 shl 16 + 68
-    xor  edx,edx
-    mcall
+    mcall 7,I_END+256+9662,52 shl 16+68,0
     ret
 
 draw_icon:
@@ -438,14 +496,14 @@ draw_text:
     shl   ecx,16
     add   ebx,ecx
 
-; replaced - delete commented lines below if you like that style
-    mov   eax,4          ; white text
-
+; black shade of text
+; uncomment lines below if you like that style
+    
     xor   ecx,ecx
     mov   edx,labelt
     mov   esi,labellen-labelt
-    add   ebx,1 shl 16      ;*65536+1
-    mcall
+    add   ebx,1 shl 16
+    mcall 4
     inc   ebx
     mcall
     add   ebx,1 shl 16
@@ -454,23 +512,22 @@ draw_text:
     mcall
     sub   ebx,1 shl 16
     mcall
-    sub   ebx,1 shl 16 +1
+    sub   ebx,1*65536+1
     mcall
-    sub   ebx,1 shl 16 + 1
+    sub   ebx,1*65536+1
     mcall
-    add   ebx,1 shl 16 - 1
+    add   ebx,1*65536-1
     mcall
     inc   ebx
-    mov   ecx,0xffffff
+    or    ecx,0xffffff
     mcall
 
-    ;xor   ecx,ecx        ; black shade of text
+    ;xor   ecx,ecx        
     ;mov   edx,labelt
     ;mov   esi,labellen-labelt
-    ;add   ebx,1*65536+1
-    ;mcall
+    ;mcall 4
     ;sub   ebx,1*65536+1
-    ;mov   ecx,0xffffff
+    ;or    ecx,0xffffff
     ;mcall
 
     ret
@@ -480,17 +537,16 @@ draw_text:
 
 itype       db 0
 
-align 4
-
 tl          dd  2
-yw          dd  51
 
-xpos        dd  15
-ypos        dd  185
 
 bgrxy       dd  0x0
 scrxy       dd  0x0
 bgrdrawtype dd  0x0
+
+hand file 'hand.cur'
+
+icon_moved  dd 0
 
 iconstate   dd 0
 
@@ -530,7 +586,23 @@ labellen:
 
 pixl dd ?
 
+xpos        dd  ?
+ypos        dd  ?
+
+mouse_pressed  dd ?
+
+xmouse_rel  dd ?
+ymouse_rel  dd ?
+
+xmouse_old  dd ?
+ymouse_old  dd ?
+processes   dd ?
+pid         dd ?
+
+process     process_information
+
 ;include_debug_strings
+
 I_PARAM:
 
 I_END:

@@ -30,8 +30,7 @@ START:                          ; start of execution
 
 still:
 
-    mov  eax,10                 ; wait here for event
-    mcall
+    mcall 10                    ; wait here for event
 
     dec  eax                    ; redraw request ?
     jz   red
@@ -39,8 +38,7 @@ still:
     jz   key
 
   button:                       ; button
-    mov  al,17                  ; get id
-    mcall
+    mcall 17                    ; get id
 
     shr  eax,8
 
@@ -123,8 +121,7 @@ still:
     sub  ebx,eax
     imul ebx,70
     push ebx
-    mov  eax,14
-    mcall
+    mcall 14
     pop  ebx
     shr  eax,16
     sub  eax,51+15
@@ -559,12 +556,9 @@ read_string:
 
 draw_window:
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    mcall
+    mcall 12,1                     ; function 12,1 - tell os about start of draw window
 
-                                   ; DRAW WINDOW
-    xor  eax,eax
+    xor  eax,eax                   ; DRAW WINDOW
     mov  ebx,210*65536+300
     mov  ecx,30*65536+390
     mov  edx,0x33ffffff
@@ -680,9 +674,7 @@ draw_window:
 
     call print_strings
 
-    mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,2                     ; 2, end of draw
-    mcall
+    mcall 12,2                  ; function 12,2 - tell os about end of draw window
 
     ret
 
@@ -701,7 +693,6 @@ icon_table:
 icons_reserved:
 
     times 10  db  '          '
-
 
 text:
     db 0,0,0,0,         'Click on icon position to edit      '

@@ -3355,15 +3355,15 @@ conditional_jump:
 loop_instruction_16bit:
 	cmp	[code_type],64
 	je	illegal_instruction
-	mov	dl,al
-	call	address_16bit_prefix
-	mov	al,dl
+	cmp	[code_type],16
+	je	loop_instruction
+	mov	[operand_prefix],67h
 	jmp	loop_instruction
 loop_instruction_32bit:
-	mov	dl,al
-	call	address_32bit_prefix
-	mov	al,dl
-	jmp	loop_instruction
+	cmp	[code_type],32
+	je	loop_instruction
+	mov	[operand_prefix],67h
+      jmp     loop_instruction
 loop_instruction_64bit:
 	cmp	[code_type],64
 	jne	illegal_instruction
@@ -3400,12 +3400,22 @@ loop_instruction:
 	mov	byte [edi],66h
 	inc	edi
       loop_jump_32bit_prefix_ok:
+	call	loop_counter_size
 	call	calculate_jump_offset
 	cdq
       make_loop_jump:
 	call	check_for_short_jump
 	jc	conditional_jump_short
 	jmp	jump_out_of_range
+      loop_counter_size:
+	cmp	[operand_prefix],0
+	je	loop_counter_size_ok
+	push	eax
+	mov	al,[operand_prefix]
+	stos	byte [edi]
+	pop	eax
+      loop_counter_size_ok:
+	ret
       loop_jump_64bit:
 	cmp	[code_type],64
 	jne	invalid_operand_size
@@ -3423,6 +3433,7 @@ loop_instruction:
 	mov	byte [edi],66h
 	inc	edi
       loop_jump_16bit_prefix_ok:
+	call	loop_counter_size
 	call	calculate_jump_offset
 	cwde
 	cdq
@@ -4885,6 +4896,8 @@ movq_instruction:
 	jmp	instruction_assembled
       movq_mmreg_mmreg:
 	call	convert_mmx_register
+	cmp	ah,[mmx_size]
+	jne	invalid_operand_size
 	mov	bl,al
 	call	store_nomem_instruction
 	jmp	instruction_assembled
@@ -5839,8 +5852,7 @@ vmread_instruction:
 	lods	byte [esi]
 	call	convert_register
 	mov	[postbyte_register],al
-	cmp	[operand_size],4
-	jne	invalid_operand_size
+	call	vmread_check_size
 	jmp	vmx_size_ok
       vmread_nomem:
 	lods	byte [esi]
@@ -5858,8 +5870,7 @@ vmread_instruction:
 	lods	byte [esi]
 	call	convert_register
 	mov	[postbyte_register],al
-	cmp	[operand_size],4
-	jne	invalid_operand_size
+	call	vmread_check_size
 	pop	ebx
 	mov	[base_code],0Fh
 	call	store_nomem_instruction
@@ -5883,8 +5894,7 @@ vmwrite_instruction:
 	lods	byte [esi]
 	call	convert_register
 	mov	[postbyte_register],al
-	cmp	[operand_size],4
-	jne	invalid_operand_size
+	call	vmread_check_size
 	mov	[operand_size],0
 	lods	byte [esi]
 	cmp	al,','
@@ -6447,7 +6457,13 @@ store_instruction:
 	mov	eax,edx
 	cdq
 	cmp	edx,[address_high]
-	jne	value_out_of_range
+	je	address_32bit_value_ok
+	cmp	[error_line],0
+	jne	address_32bit_value_ok
+	mov	edx,[current_line]
+	mov	[error_line],edx
+	mov	[error],value_out_of_range
+      address_32bit_value_ok:
 	mov	edx,eax
 	jmp	store_address_32bit_value
       sib_address_8bit_value:
