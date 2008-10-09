@@ -5,6 +5,10 @@ if 0
  The below code is a rework from code in
  xf86-video-radeonhd/src/r5xx_accel.c, xf86-video-radeonhd/src/r5xx_xaa.c
 
+ git://anongit.freedesktop.org/git/nouveau/xf86-video-radeonhd
+ git://anongit.freedesktop.org/git/xorg/driver/xf86-video-ati
+
+
  Copyright 2008  Luc Verhaegen <lverhaegen@novell.com>
  Copyright 2008  Matthias Hopf <mhopf@novell.com>
  Copyright 2008  Egbert Eich   <eich@novell.com>
@@ -662,7 +666,7 @@ proc R5xxSetupForSolidFill stdcall,color:dword, rop:dword, planemask:dword
            or edx, [rhd.control]
            or edx, (R5XX_GMC_BRUSH_SOLID_COLOR or R5XX_GMC_SRC_DATATYPE_COLOR)
 
-; Save for later clipping */
+; Save for later clipping
            mov [rhd.control_saved], edx
 
            mov eax, 4
