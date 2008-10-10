@@ -2273,21 +2273,27 @@ sys_background:
   sbgrr:
     ret
 
-  nosb1:
+nosb1:
 
     cmp   ebx,2 			   ; SET PIXEL
     jnz   nosb2
-    cmp   ecx,[mem_BACKGROUND]
-    jae   nosb2
+
+    mov ebx, [mem_BACKGROUND]
+    add ebx, 4095
+    and ebx, -4096
+    sub ebx, 4
+    cmp   ecx, ebx
+    ja   @F
+
     mov   eax,[img_background]
     mov   ebx,[eax+ecx]
     and   ebx,0xFF000000 ;255*256*256*256
     and   edx,0x00FFFFFF ;255*256*256+255*256+255
     add   edx,ebx
     mov   [eax+ecx],edx
-;    mov   [bgrchanged],1
+@@:
     ret
-  nosb2:
+nosb2:
 
     cmp   ebx,3 			   ; DRAW BACKGROUND
     jnz   nosb3
@@ -2431,19 +2437,25 @@ sys_getbackground:
     mov   ax,[BgrDataHeight]
     mov   [esp+36],eax
     ret
-  nogb1:
+
+nogb1:
 
     cmp   eax,2 				 ; PIXEL
     jnz   nogb2
-;    mov   edx,0x160000-16
-;    cmp   edx,ebx
-;    jbe   nogb2
-;    mov   eax, [ebx+IMG_BACKGROUND]
+
+    mov ecx, [mem_BACKGROUND]
+    add ecx, 4095
+    and ecx, -4096
+    sub ecx, 4
+    cmp ebx, ecx
+    ja  @F
+
     mov   eax,[img_background]
     mov   eax,[ebx+eax]
 
     and   eax, 0xFFFFFF
     mov   [esp+36],eax
+@@:
     ret
   nogb2:
 
