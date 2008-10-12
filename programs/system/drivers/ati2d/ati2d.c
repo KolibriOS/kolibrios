@@ -2,16 +2,18 @@
 //ld -T ld.x -s --shared --image-base 0 --file-alignment 32 -o test.exe test.obj core.lib
 
 #include "common.h"
+
 #include "ati2d.h"
 #include "accel_2d.h"
 
 RHD_t rhd;
 
-pixmap_t scr_pixmap;
-
 static clip_t  clip;
 
+static local_pixmap_t scr_pixmap;
 
+
+/*
 void STDCALL (*SelectHwCursor)(cursor_t*)__asm__("SelectHwCursor");
 void STDCALL (*SetHwCursor)(cursor_t*,int x,int y)__asm__("SetHwCursor");
 void STDCALL (*HwCursorRestore)(int x, int y)__asm("HwCursorRestore");
@@ -22,6 +24,7 @@ void (__stdcall *old_set)(cursor_t*,int x,int y);
 void (__stdcall *old_restore)(int x, int y);
 cursor_t* (*old_create)(void);
 cursor_t* __create_cursor(void);
+*/
 
 static void Init3DEngine(RHDPtr rhdPtr);
 
@@ -86,14 +89,11 @@ u32 __stdcall drvEntry(int action)
 };
 
 
-#pragma pack (push,1)
-
-#pragma pack (pop)
-
 #define API_VERSION     0x01000100
 
 #define SRV_GETVERSION  0
 
+/*
 int _stdcall srv_cursor(ioctl_t *io)
 {
   u32 *inp;
@@ -117,7 +117,7 @@ int _stdcall srv_cursor(ioctl_t *io)
   };
   return ERR_PARAM;
 }
-
+*/
 
 int _stdcall srv_2d(ioctl_t *io)
 {
@@ -146,10 +146,10 @@ int _stdcall srv_2d(ioctl_t *io)
         if(io->inp_size==9)
           return FillRect((fill_t*)inp);
         break;
-
+/*
       case LINE_2P:
-        if(io->inp_size==5)
-          return Line2P((line2p_t*)inp);
+        if(io->inp_size==6)
+          return Line2P((draw_t*)inp);
         break;
 
       case BLIT:
@@ -161,10 +161,10 @@ int _stdcall srv_2d(ioctl_t *io)
         if(io->inp_size==6)
           return RadeonComposite((blit_t*)inp);
         break;
-
-      case PIXMAP:
-        if(io->inp_size==6)
-          return CreatePixmap((userpixmap_t*)inp);
+*/
+      case PX_CREATE:
+        if(io->inp_size==7)
+          return CreatePixmap((pixmap_t*)inp);
         break;
 
       case PIXBLIT:
@@ -172,19 +172,19 @@ int _stdcall srv_2d(ioctl_t *io)
           return PixBlit((pixblit_t*)inp);
         break;
 
-      case PIXLOCK:
-        if(io->inp_size==6)
-          return LockPixmap((userpixmap_t*)inp);
-        break;
+//      case PIXLOCK:
+//        if(io->inp_size==6)
+//          return LockPixmap((userpixmap_t*)inp);
+//        break;
 
-      case PIXUNLOCK:
-        if(io->inp_size==6)
-          return UnlockPixmap((userpixmap_t*)inp);
-        break;
+//      case PIXUNLOCK:
+//        if(io->inp_size==6)
+//          return UnlockPixmap((userpixmap_t*)inp);
+//        break;
 
       case PIXDESTROY:
         if(io->inp_size==6)
-          return DestroyPixmap((userpixmap_t*)inp);
+          return DestroyPixmap((pixmap_t*)inp);
         break;
 
      case  TRANSBLIT:
@@ -206,214 +206,9 @@ int _stdcall srv_2d(ioctl_t *io)
 //#include "cursor.inc"
 
 #include "r500.inc"
+
+#include "clip.inc"
 #include "accel_2d.inc"
 #include "accel_3d.inc"
 
-#define CLIP_TOP        1
-#define CLIP_BOTTOM     2
-#define CLIP_RIGHT      4
-#define CLIP_LEFT       8
 
-
-char _L1OutCode( int x, int y )
-/*=================================
-
-    Verify that a point is inside or outside the active viewport.   */
-{
-    char            flag;
-
-    flag = 0;
-    if( x < clip.xmin ) {
-        flag |= CLIP_LEFT;
-    } else if( x > clip.xmax ) {
-        flag |= CLIP_RIGHT;
-    }
-    if( y < clip.ymin ) {
-        flag |= CLIP_TOP;
-    } else if( y > clip.ymax ) {
-        flag |= CLIP_BOTTOM;
-    }
-    return( flag );
-}
-
-
-static void line_inter( int * x1, int* y1, int x2, int y2, int x )
-/*===========================================================================
-
-    Find the intersection of a line with a boundary of the viewport.
-    (x1, y1) is outside and ( x2, y2 ) is inside the viewport.
-    NOTE : the signs of denom and ( x - *x1 ) cancel out during division
-           so make both of them positive before rounding.   */
-{
-    int            numer;
-    int            denom;
-
-    denom = abs( x2 - *x1 );
-    numer = 2L * (long)( y2 - *y1 ) * abs( x - *x1 );
-    if( numer > 0 ) {
-        numer += denom;                     /* round to closest pixel   */
-    } else {
-        numer -= denom;
-    }
-    *y1 += numer / ( denom << 1 );
-    *x1 = x;
-}
-
-
-int LineClip( int *x1, int *y1, int *x2, int *y2 )
-/*=============================================================
-
-    Clips the line with end points (x1,y1) and (x2,y2) to the active
-    viewport using the Cohen-Sutherland clipping algorithm. Return the
-    clipped coordinates and a decision drawing flag.    */
-{
-    char            flag1;
-    char            flag2;
-
-    flag1 = _L1OutCode( *x1, *y1 );
-    flag2 = _L1OutCode( *x2, *y2 );
-    for( ;; ) {
-        if( flag1 & flag2 ) break;                  /* trivially outside    */
-        if( flag1 == flag2 ) break;                 /* completely inside    */
-        if( flag1 == 0 ) {                          /* first point inside   */
-            if( flag2 & CLIP_TOP ) {
-                line_inter( y2, x2, *y1, *x1, clip.ymin );
-            } else if( flag2 & CLIP_BOTTOM ) {
-                line_inter( y2, x2, *y1, *x1, clip.ymax );
-            } else if( flag2 & CLIP_RIGHT ) {
-                line_inter( x2, y2, *x1, *y1, clip.xmax );
-            } else if( flag2 & CLIP_LEFT ) {
-                line_inter( x2, y2, *x1, *y1, clip.xmin );
-            }
-            flag2 = _L1OutCode( *x2, *y2 );
-        } else {                                    /* second point inside  */
-            if( flag1 & CLIP_TOP ) {
-                line_inter( y1, x1, *y2, *x2, clip.ymin );
-            } else if( flag1 & CLIP_BOTTOM ) {
-                line_inter( y1, x1, *y2, *x2, clip.ymax );
-            } else if( flag1 & CLIP_RIGHT ) {
-                line_inter( x1, y1, *x2, *y2, clip.xmax );
-            } else if( flag1 & CLIP_LEFT ) {
-                line_inter( x1, y1, *x2, *y2, clip.xmin );
-            }
-            flag1 = _L1OutCode( *x1, *y1 );
-        }
-    }
-    return( flag1 & flag2 );
-}
-
-
-static void block_inter( int *x, int *y, int flag )
-/*======================================================
-
-    Find the intersection of a block with a boundary of the viewport.   */
-{
-    if( flag & CLIP_TOP ) {
-        *y = clip.ymin;
-    } else if( flag & CLIP_BOTTOM ) {
-        *y = clip.ymax;
-    } else if( flag & CLIP_RIGHT ) {
-        *x = clip.xmax;
-    } else if( flag & CLIP_LEFT ) {
-        *x = clip.xmin;
-    }
-}
-
-
-int BlockClip( int *x1, int *y1, int *x2, int* y2 )
-/*==============================================================
-
-    Clip a block with opposite corners (x1,y1) and (x2,y2) to the
-    active viewport based on the Cohen-Sutherland algorithm for line
-    clipping. Return the clipped coordinates and a decision drawing
-    flag ( 0 draw : 1 don't draw ). */
-{
-    char            flag1;
-    char            flag2;
-
-    flag1 = _L1OutCode( *x1, *y1 );
-    flag2 = _L1OutCode( *x2, *y2 );
-    for( ;; ) {
-        if( flag1 & flag2 ) break;                  /* trivially outside    */
-        if( flag1 == flag2 ) break;                 /* completely inside    */
-        if( flag1 == 0 ) {
-            block_inter( x2, y2, flag2 );
-            flag2 = _L1OutCode( *x2, *y2 );
-        } else {
-            block_inter( x1, y1, flag1 );
-            flag1 = _L1OutCode( *x1, *y1 );
-        }
-    }
-    return( flag1 & flag2 );
-}
-
-#if 0
-typedef struct
-{
-   int left;
-   int top;
-   int right;
-   int bottom;
-}rect_t;
-
-typedef struct _window
-{
-   struct _window *fd;
-   struct _window *bk;
-
-   rect_t pos;
-   int width;
-   int height;
-
-   int level;
-}win_t, *WINPTR;
-
-
-WINPTR top    = NULL;
-WINPTR bottom = NULL;
-
-WINPTR alloc_window()
-{
-    WINPTR pwin = malloc(sizeof(win_t));
-
-    return pwin;
-};
-
-
-WINPTR create_win(int l, int t, int w, int h, int level)
-{
-   WINPTR pwin = alloc_window();
-
-   pwin->pos.left   = l;
-   pwin->pos.top    = t;
-   pwin->pos.right  = l+w-1;
-   pwin->pos.bottom = t+h-1;
-   pwin->width      = w;
-   pwin->height     = h;
-
-   pwin->level      = level;
-
-   return pwin;
-};
-
-void insert_window(WINPTR pwin)
-{
-   WINPTR p = top;
-
-   if(p)
-   {
-     if(pwin->level <= p->level)
-     {
-        pwin->fd = p;
-        pwin->bk = p->bk;
-        pwin->bk->fd = pwin;
-        p->bk = pwin;
-     }
-     else
-       p = p->fd;
-   }
-   else
-     top = pwin;
-}
-
-#endif
