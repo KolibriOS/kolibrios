@@ -59,7 +59,7 @@ static void Init3DEngine(RHDPtr rhdPtr)
     u32_t gb_tile_config, su_reg_dest, vap_cntl;
    // ACCEL_PREAMBLE();
 
-    u32 *ring, write;
+    u32_t *ring, write;
 
    // info->texW[0] = info->texH[0] = info->texW[1] = info->texH[1] = 1;
 
@@ -1098,7 +1098,7 @@ static void RadeonCompositeTile(int srcX, int srcY,
     xPointFixed srcTopLeft, srcTopRight, srcBottomLeft, srcBottomRight;
     xPointFixed maskTopLeft, maskTopRight, maskBottomLeft, maskBottomRight;
 
-    u32 *ring, write;
+    u32_t *ring, write;
 
 
  //   ACCEL_PREAMBLE();

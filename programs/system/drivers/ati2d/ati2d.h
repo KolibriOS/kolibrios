@@ -1,4 +1,13 @@
 
+typedef void *pointer;
+
+typedef unsigned int   Bool;
+
+typedef unsigned int memType;
+
+typedef struct { float hi, lo; } range;
+
+
 #include "pci.h"
 #include "rhd_regs.h"
 
@@ -105,17 +114,17 @@ enum RHD_FAMILIES {
 
 typedef struct RHDRec
 {
-  CARD32            MMIOBase;
-  CARD32            MMIOMapSize;
-  CARD32            videoRam;
+  u32_t            MMIOBase;
+  u32_t            MMIOMapSize;
+  u32_t            videoRam;
 
 //  CARD32            FbBase;            /* map base of fb   */
-  CARD32            PhisBase;
-  CARD32            FbIntAddress;      /* card internal address of FB */
-  CARD32            FbMapSize;
+  u32_t            PhisBase;
+  u32_t            FbIntAddress;      /* card internal address of FB */
+  u32_t            FbMapSize;
 
-  CARD32            FbFreeStart;
-  CARD32            FbFreeSize;
+  u32_t            FbFreeStart;
+  u32_t            FbFreeSize;
 
   /* visible part of the framebuffer */
   unsigned int      FbScanoutStart;
@@ -128,38 +137,38 @@ typedef struct RHDRec
 
   Bool              IsIGP;
 
-  CARD32            bus;
-  CARD32            devfn;
+  u32_t            bus;
+  u32_t            devfn;
 
   PCITAG            PciTag;
-  CARD16            PciDeviceID;
+  u16_t            PciDeviceID;
 
-  CARD16            subvendor_id;
-  CARD16            subdevice_id;
+  u16_t            subvendor_id;
+  u16_t            subdevice_id;
 
-  CARD32            memBase[6];
-  CARD32            ioBase[6];
-  CARD32            memtype[6];
-  CARD32            memsize[6];
+  u32_t            memBase[6];
+  u32_t            ioBase[6];
+  u32_t            memtype[6];
+  u32_t            memsize[6];
 
   struct mem_block  *fb_heap;
   struct mem_block  *gart_heap;
 
-  CARD32            displayWidth;
-  CARD32            displayHeight;
+  u32_t            displayWidth;
+  u32_t            displayHeight;
 
-  CARD32            __xmin;
-  CARD32            __ymin;
-  CARD32            __xmax;
-  CARD32            __ymax;
+  int            __xmin;
+  int            __ymin;
+  int            __xmax;
+  int            __ymax;
 
-  CARD32            gui_control;
-  CARD32            dst_pitch_offset;
-  CARD32            surface_cntl;
+  u32_t            gui_control;
+  u32_t            dst_pitch_offset;
+  u32_t            surface_cntl;
 
-  u32               *ring_base;
-  u32               ring_rp;
-  u32               ring_wp;
+  u32_t             *ring_base;
+  u32_t             ring_rp;
+  u32_t             ring_wp;
 
   int               num_gb_pipes;
   Bool              has_tcl;
@@ -253,34 +262,34 @@ typedef struct {
 
 
 extern inline void
-OUTREG8(CARD16 offset, u8 value)
+OUTREG8(u16_t offset, u8_t value)
 {
-  *(volatile CARD8 *)((CARD8 *)(rhd.MMIOBase + offset)) = value;
+  *(volatile u8_t *)((u8_t *)(rhd.MMIOBase + offset)) = value;
 }
 
 
-extern inline CARD32 INREG(CARD16 offset)
+extern inline u32_t INREG(u16_t offset)
 {
-  return *(volatile CARD32 *)((CARD8*)(rhd.MMIOBase + offset));
+  return *(volatile u32_t *)((u8_t*)(rhd.MMIOBase + offset));
 }
 
 //#define INREG(offset) *(volatile CARD32 *)((CARD8*)(rhd.MMIOBase + (offset)))
 
 extern inline void
-OUTREG(CARD16 offset, CARD32 value)
+OUTREG(u16_t offset, u32_t value)
 {
-  *(volatile CARD32 *)((CARD8 *)(rhd.MMIOBase + offset)) = value;
+  *(volatile u32_t *)((u8_t *)(rhd.MMIOBase + offset)) = value;
 }
 
-extern inline CARD32 _RHDRegRead(RHDPtr rhdPtr, CARD16 offset)
+extern inline u32_t _RHDRegRead(RHDPtr rhdPtr, u16_t offset)
 {
-  return *(volatile CARD32 *)((CARD8*)(rhdPtr->MMIOBase + offset));
+  return *(volatile u32_t *)((u8_t*)(rhdPtr->MMIOBase + offset));
 }
 
 extern inline void
-MASKREG(CARD16 offset, CARD32 value, CARD32 mask)
+MASKREG(u16_t offset, u32_t value, u32_t mask)
 {
-  CARD32 tmp;
+  u32_t tmp;
 
   tmp = INREG(offset);
   tmp &= ~mask;
@@ -289,15 +298,15 @@ MASKREG(CARD16 offset, CARD32 value, CARD32 mask)
 };
 
 extern inline void
-_RHDRegWrite(RHDPtr rhdPtr, CARD16 offset, CARD32 value)
+_RHDRegWrite(RHDPtr rhdPtr, u16_t offset, u32_t value)
 {
-  *(volatile CARD32 *)((CARD8 *)(rhdPtr->MMIOBase + offset)) = value;
+  *(volatile u32_t *)((u8_t *)(rhdPtr->MMIOBase + offset)) = value;
 }
 
 extern inline void
-_RHDRegMask(RHDPtr rhdPtr, CARD16 offset, CARD32 value, CARD32 mask)
+_RHDRegMask(RHDPtr rhdPtr, u16_t offset, u32_t value, u32_t mask)
 {
-  CARD32 tmp;
+  u32_t tmp;
 
   tmp = _RHDRegRead(rhdPtr, offset);
   tmp &= ~mask;
@@ -325,15 +334,15 @@ int rhdInitHeap(RHDPtr rhdPtr);
 #pragma pack (push,1)
 typedef struct s_cursor
 {
-   u32   magic;                           // 'CURS'
+   u32_t   magic;                           // 'CURS'
    void  (*destroy)(struct s_cursor*);    // destructor
-   u32   fd;                              // next object in list
-   u32   bk;                              // prev object in list
-   u32   pid;                             // owner id
+   u32_t   fd;                              // next object in list
+   u32_t   bk;                              // prev object in list
+   u32_t   pid;                             // owner id
 
    void *base;                            // allocated memory
-   u32   hot_x;                           // hotspot coords
-   u32   hot_y;
+   u32_t   hot_x;                           // hotspot coords
+   u32_t   hot_y;
 }cursor_t;
 #pragma pack (pop)
 
@@ -341,7 +350,7 @@ typedef struct s_cursor
 #define LOAD_FROM_MEM    1
 #define LOAD_INDIRECT    2
 
-cursor_t *create_cursor(u32 pid, void *src, u32 flags);
+cursor_t *create_cursor(u32_t pid, void *src, u32_t flags);
 void __stdcall copy_cursor(void *img, void *src);
 void destroy_cursor(cursor_t *cursor);
 void __destroy_cursor(cursor_t *cursor);                // wrap

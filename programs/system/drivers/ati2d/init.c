@@ -4,7 +4,7 @@ static Bool
 rhdMapMMIO(RHDPtr rhdPtr)
 {
   rhdPtr->MMIOMapSize = 1 << rhdPtr->memsize[RHD_MMIO_BAR];
-  rhdPtr->MMIOBase = MapIoMem(rhdPtr->memBase[RHD_MMIO_BAR],
+  rhdPtr->MMIOBase = MapIoMem((void*)rhdPtr->memBase[RHD_MMIO_BAR],
                           rhdPtr->MMIOMapSize,PG_SW+PG_NOCACHE);
   if( rhdPtr->MMIOBase==0)
     return 0;
@@ -15,17 +15,16 @@ rhdMapMMIO(RHDPtr rhdPtr)
 
 #define RADEON_NB_TOM             0x15c
 
-static CARD32
-rhdGetVideoRamSize(RHDPtr rhdPtr)
+static size_t rhdGetVideoRamSize(RHDPtr rhdPtr)
 {
-  CARD32 RamSize, BARSize;
+  size_t RamSize, BARSize;
 
   if (rhdPtr->ChipSet == RHD_RS690)
     RamSize = (_RHDRegRead(rhdPtr, R5XX_CONFIG_MEMSIZE))>>10;
   else
     if (rhdPtr->IsIGP)
     {
-      CARD32 tom = _RHDRegRead(rhdPtr, RADEON_NB_TOM);
+      u32_t tom = _RHDRegRead(rhdPtr, RADEON_NB_TOM);
       RamSize = (((tom >> 16) - (tom & 0xffff) + 1) << 6);
       _RHDRegWrite(rhdPtr,R5XX_CONFIG_MEMSIZE, RamSize<<10);
     }
@@ -118,9 +117,9 @@ error1:
   return FALSE;
 };
 
-int KernelFree(void *p)
-{
-
-  return 0;
-}
+//int KernelFree(void *p)
+//{
+//
+//  return 0;
+//}
 

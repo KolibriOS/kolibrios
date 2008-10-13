@@ -1,15 +1,15 @@
 
-#define FILL_RECT    1
-#define DRAW_RECT    2
-#define LINE_2P      3
-#define BLIT         4
-#define COMPIZ       5
-#define PX_CREATE    6
-#define PIXBLIT      7
-#define PIXLOCK      8
-#define PIXUNLOCK    9
-#define PIXDESTROY  10
-#define TRANSBLIT   11
+#define PX_CREATE              1
+#define PX_DESTROY             2
+#define PX_DRAW_RECT           3
+#define PX_FILL_RECT           4
+#define PX_LINE                5
+#define PX_BLIT                6
+#define PX_BLIT_TRANSPARENT    7
+#define PX_BLIT_ALPHA          8
+
+//#define BLIT         4
+//#define COMPIZ       5
 
 
 typedef unsigned int color_t;

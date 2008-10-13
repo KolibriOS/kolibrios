@@ -3,8 +3,8 @@
 #pragma pack(push, 1)
 typedef struct
 {
-  CARD16 device;
-  CARD16 ChipSet;
+     u16_t device;
+     u16_t ChipSet;
 }PciChipset_t;
 #pragma pack(pop)
 
@@ -75,5 +75,5 @@ pciTag(int busnum, int devnum, int funcnum)
 	return(PCI_MAKE_TAG(busnum,devnum,funcnum));
 }
 
-const PciChipset_t *PciDevMatch(CARD16 dev,const PciChipset_t *list);
-CARD32 pciGetBaseSize(int bus, int devfn, int index, Bool destructive, Bool *min);
+const PciChipset_t *PciDevMatch(u16_t dev,const PciChipset_t *list);
+u32_t pciGetBaseSize(int bus, int devfn, int index, Bool destructive, Bool *min);

@@ -1,5 +1,5 @@
 
-static const u32 R300_cp_microcode[][2]={
+static const u32_t R300_cp_microcode[][2]={
     { 0x4200e000, 0000000000 },
     { 0x4000e000, 0000000000 },
     { 0x000000ae, 0x00000008 },
@@ -258,7 +258,7 @@ static const u32 R300_cp_microcode[][2]={
     { 0000000000, 0000000000 },
 };
 
-static const u32 R520_cp_microcode[][2]={
+static const u32_t R520_cp_microcode[][2]={
     { 0x4200e000, 0000000000 },
     { 0x4000e000, 0000000000 },
     { 0x00000099, 0x00000008 },

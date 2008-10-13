@@ -1,4 +1,72 @@
 
+int Line(draw_t *draw)
+{
+     local_pixmap_t *dstpixmap;
+     clip_t clip;
+     int x0, y0, x1, y1;
+
+     dstpixmap = (draw->dstpix == (void*)-1) ? &scr_pixmap : draw->dstpix ;
+
+     x0 = draw->x0;
+     y0 = draw->y0;
+
+     x1 = draw->x1;
+     y1 = draw->y1;
+
+     clip.xmin = 0;
+     clip.ymin = 0;
+     clip.xmax = dstpixmap->width-1;
+     clip.ymax = dstpixmap->height-1;
+
+     if ( !LineClip(&clip, &x0, &y0, &x1, &y1 ))
+     {
+        u32_t efl;
+        u32_t *ring, write;
+
+        efl = safe_cli();
+
+#if R300_PIO
+
+        R5xxFIFOWait(6);
+
+        OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+               rhd.gui_control             |
+               R5XX_GMC_BRUSH_SOLID_COLOR  |
+               R5XX_GMC_SRC_DATATYPE_COLOR |
+               R5XX_GMC_CLR_CMP_CNTL_DIS   |
+               R5XX_GMC_WR_MSK_DIS         |
+               R5XX_ROP3_P
+              );
+
+        OUTREG(R5XX_DST_LINE_PATCOUNT, 0x55 << R5XX_BRES_CNTL_SHIFT);
+
+        OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
+        OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
+
+        OUTREG(R5XX_DST_LINE_START,(y0<<16)|x0);
+        OUTREG(R5XX_DST_LINE_END,(y1<<16)|x1);
+#else
+       BEGIN_RING();
+         OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_POLYLINE, 4));
+         OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                  RADEON_GMC_BRUSH_SOLID_COLOR      |
+                  RADEON_GMC_DST_32BPP              |
+                  RADEON_GMC_SRC_DATATYPE_COLOR     |
+                  R5XX_GMC_CLR_CMP_CNTL_DIS         |
+                  R5XX_GMC_WR_MSK_DIS               |
+                  R5XX_ROP3_P);
+
+         OUT_RING(dstpixmap->pitch_offset);
+         OUT_RING(draw->color);
+         OUT_RING((y0<<16)|x0);
+         OUT_RING((y1<<16)|x1);
+       COMMIT_RING();
+
+#endif
+        safe_sti(efl);
+     };
+     return ERR_OK;
+}
 
 int DrawRect(draw_t* draw)
 {
@@ -215,170 +283,8 @@ int Blit(blit_t *blit)
   return ERR_OK;
 }
 
-int Line2P(draw_t *draw)
-{
-  local_pixmap_t *dstpixmap;
-  int x0, y0, x1, y1;
-
-  dstpixmap = (draw->dstpix == (void*)-1) ? &scr_pixmap : draw->dstpix ;
-
-  x0 = draw->x0;
-  y0 = draw->y0;
-
-  x1 = draw->x1;
-  y1 = draw->y1;
-
-  if ( !LineClip(&clip, &x0, &y0, &x1, &y1 ))
-  {
-    u32 efl;
-    u32 *ring, write;
-
-    efl = safe_cli();
-
-#if R300_PIO
-
-     R5xxFIFOWait(6);
-
-     OUTREG(R5XX_DP_GUI_MASTER_CNTL,
-            rhd.gui_control             |
-            R5XX_GMC_BRUSH_SOLID_COLOR  |
-            R5XX_GMC_SRC_DATATYPE_COLOR |
-            R5XX_GMC_CLR_CMP_CNTL_DIS   |
-            R5XX_GMC_WR_MSK_DIS         |
-            R5XX_ROP3_P
-            );
-
-     OUTREG(R5XX_DST_LINE_PATCOUNT, 0x55 << R5XX_BRES_CNTL_SHIFT);
-
-     OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
-     OUTREG(R5XX_DST_PITCH_OFFSET, rhd.dst_pitch_offset);
-
-     OUTREG(R5XX_DST_LINE_START,(y0<<16)|x0);
-     OUTREG(R5XX_DST_LINE_END,(y1<<16)|x1);
-
-#else
-
-     BEGIN_RING();
-         OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_POLYLINE, 4));
-         OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
-                  RADEON_GMC_BRUSH_SOLID_COLOR      |
-                  RADEON_GMC_DST_32BPP              |
-                  RADEON_GMC_SRC_DATATYPE_COLOR     |
-                  R5XX_GMC_CLR_CMP_CNTL_DIS         |
-                  R5XX_GMC_WR_MSK_DIS               |
-                  R5XX_ROP3_P);
-
-         OUT_RING(rhd.dst_pitch_offset);
-         OUT_RING(draw->color);
-         OUT_RING((y0<<16)|x0);
-         OUT_RING((y1<<16)|x1);
-     COMMIT_RING();
-
-#endif
-     safe_sti(efl);
-
-  };
-  return ERR_OK;
-}
 #endif
 
-int CreatePixmap(pixmap_t *io)
-{
-     local_pixmap_t *pixmap;
-
-     unsigned pitch;
-     size_t size;
-
-     void *local;
-
-     if( (io->width == 0) || (io->width > 2048)||
-         (io->height == 0)|| (io->height > 2048))
-     {
-        dbgprintf("Invalid pixmap size w:%d h:%d\n", io->width,io->height);
-        return ERR_PARAM;
-     };
-
-     pitch = ((io->width+15)&~15)*4;
-     size = pitch*io->height;
-
-     dbgprintf("pitch = %d\n", pitch);
-
-     local = rhd_mem_alloc(&rhd,RHD_MEM_FB,size) ;
-     if ( !local)
-     {
-        dbgprintf("Not enough memory for pixmap\n");
-        return ERR_PARAM;
-     };
-
-     pixmap = malloc(sizeof(local_pixmap_t));
-     if(!pixmap)
-     {
-        rhd_mem_free(&rhd, RHD_MEM_FB,local);
-        return ERR_PARAM;
-     }
-     else
-     {
-        void *mapped;
-
-        size = (size+4095) & ~ 4095;
-
-        if (mapped = UserAlloc(size))
-        {
-           CommitPages(mapped, ((u32_t)local+rhd.PhisBase)|7|(1<<9), size);
-
-           io->mapped = mapped;
-           io->pitch   = pitch;
-           io->handle  = (u32_t)pixmap;
-
-           pixmap->width   = io->width;
-           pixmap->height  = io->height;
-           pixmap->format  = PICT_a8r8g8b8;
-           pixmap->flags   = io->flags;
-           pixmap->pitch   = pitch;
-           pixmap->mapped  = mapped;
-           pixmap->pitch_offset =  ((pitch/64)<<22)| (((u32_t)local+rhd.FbIntAddress)>>10);
-           pixmap->local   = local;
-
-           dbgprintf("pixmap.pitch_offset: %x\n", pixmap->pitch_offset);
-           dbgprintf("width: %d height: %d\n",pixmap->width,pixmap->height );
-           dbgprintf("map at %x\n", pixmap->mapped);
-
-           return ERR_OK;
-        };
-        rhd_mem_free(&rhd, RHD_MEM_FB,local);
-        free(pixmap);
-     };
-     return ERR_PARAM;
-};
-
-
-int DestroyPixmap( pixmap_t *io )
-{
-     local_pixmap_t *pixmap;
-     size_t size;
-
-     dbgprintf("Destroy pixmap %x\n", io->handle);
-
-     if(io->handle == -1)
-        return ERR_PARAM;
-     else
-        pixmap = (local_pixmap_t*)io->handle;
-
-     size = (pixmap->pitch*pixmap->height+4095) & ~ 4095;
-
-     UnmapPages(pixmap->mapped, size);
-     UserFree(pixmap->mapped);
-
-     rhd_mem_free(&rhd,RHD_MEM_FB,pixmap->local);
-     free(pixmap);
-
-     io->format  = 0;
-     io->pitch   = 0;
-     io->mapped  = NULL;
-     io->handle  = 0;
-
-     return ERR_OK;
-};
 
 #if 0
 

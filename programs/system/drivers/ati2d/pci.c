@@ -315,26 +315,26 @@ xf86TokenToString(SymTabPtr table, int token)
 RHDPtr FindPciDevice()
 {
   const PciChipset_t *dev;
-  u32 bus, last_bus;
+  u32_t bus, last_bus;
 
   if( (last_bus = PciApi(1))==-1)
     return 0;
 
   for(bus=0;bus<=last_bus;bus++)
   {
-    u32 devfn;
+    u32_t devfn;
 
     for(devfn=0;devfn<256;devfn++)
     {
-      u32 id;
+      u32_t id;
       id = PciRead32(bus,devfn, 0);
 
-      if( (CARD16)id != VENDOR_ATI)
+      if( (u16_t)id != VENDOR_ATI)
         continue;
 
       if( (dev=PciDevMatch(id>>16,RHDPCIchipsets))!=NULL)
       {
-        CARD32 reg2C;
+        u32_t reg2C;
         int i;
 
         rhd.PciDeviceID = (id>>16);
@@ -352,7 +352,7 @@ RHDPtr FindPciDevice()
 
         for (i = 0; i < 6; i++)
         {
-          CARD32 base;
+          u32_t base;
           Bool validSize;
 
           base = PciRead32(bus,devfn, PCI_MAP_REG_START + (i << 2));
@@ -360,12 +360,12 @@ RHDPtr FindPciDevice()
           {
             if (base & PCI_MAP_IO)
             {
-              rhd.ioBase[i] = (CARD32)PCIGETIO(base);
+              rhd.ioBase[i] = (u32_t)PCIGETIO(base);
               rhd.memtype[i]   = base & PCI_MAP_IO_ATTR_MASK;
             }
             else
             {
-              rhd.memBase[i] = (CARD32)PCIGETMEMORY(base);
+              rhd.memBase[i] = (u32_t)PCIGETMEMORY(base);
               rhd.memtype[i] = base & PCI_MAP_MEMORY_ATTR_MASK;
             }
           }
@@ -380,7 +380,7 @@ RHDPtr FindPciDevice()
   return NULL;
 }
 
-const PciChipset_t *PciDevMatch(CARD16 dev,const PciChipset_t *list)
+const PciChipset_t *PciDevMatch(u16_t dev,const PciChipset_t *list)
 {
   while(list->device)
   {
@@ -392,13 +392,13 @@ const PciChipset_t *PciDevMatch(CARD16 dev,const PciChipset_t *list)
 }
 
 
-CARD32 pciGetBaseSize(int bus, int devfn, int index, Bool destructive, Bool *min)
+u32_t pciGetBaseSize(int bus, int devfn, int index, Bool destructive, Bool *min)
 {
   int offset;
-  CARD32 addr1;
-  CARD32 addr2;
-  CARD32 mask1;
-  CARD32 mask2;
+  u32_t addr1;
+  u32_t addr2;
+  u32_t mask1;
+  u32_t mask2;
   int bits = 0;
 
   /*

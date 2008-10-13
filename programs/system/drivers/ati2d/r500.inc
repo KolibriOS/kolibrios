@@ -119,7 +119,7 @@ void RADEONOUTPLL(int addr, u32_t data)
 
 
 static Bool
-R5xxFIFOWaitLocal(CARD32 required)             //R100-R500
+R5xxFIFOWaitLocal(u32_t required)             //R100-R500
 {
   int i;
 
@@ -183,7 +183,7 @@ R5xx2DIdleLocal()                                //R100-R500
 static void
 R5xx2DReset()
 {
-    CARD32 save, tmp;
+    u32_t save, tmp;
     u32_t       clock_cntl_index;
     u32_t       mclk_cntl;
 
@@ -285,7 +285,7 @@ R5xx2DSetup()
     R5xx2DIdleLocal();
 }
 
-void R5xxFIFOWait(CARD32 required)
+void R5xxFIFOWait(u32_t required)
 {
     if (!R5xxFIFOWaitLocal(required)) {
       R5xx2DReset();
@@ -303,7 +303,7 @@ void R5xx2DIdle()
 
 static void load_microcode()
 {
-  u32 ifl;
+  u32_t ifl;
   int i;
 
   ifl = safe_cli();
@@ -350,7 +350,7 @@ static void load_microcode()
 
 void  R5xx2DInit()
 {
-    u32 base;
+    u32_t base;
 
 #ifdef R300_TEST
     rhd.displayWidth  = 1024;

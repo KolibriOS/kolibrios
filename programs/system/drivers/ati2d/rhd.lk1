@@ -1,5 +1,6 @@
 IMP
     _KernelAlloc       core.KernelAlloc,
+    _KernelFree        core.KernelFree,
     _UserAlloc         core.UserAlloc,
     _UserFree          core.UserFree,
     _CommitPages       core.CommitPages,
@@ -21,10 +22,5 @@ IMP
 
 
 FIL ati2d.obj,
-    helper.obj,
-    dbg.obj,
-    malloc.obj,
-    memset.obj,
-    string.obj,
     vsprintf.obj,
     icompute.obj
