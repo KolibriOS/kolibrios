@@ -351,14 +351,14 @@ static void load_microcode()
 void  R5xx2DInit()
 {
     u32_t base;
+    int screensize;
+    int screenpitch;
 
-#ifdef R300_TEST
-    rhd.displayWidth  = 1024;
-    rhd.displayHeight = 768;
-#else
-    rhd.displayWidth  = INREG(D1GRPH_X_END);
-    rhd.displayHeight = INREG(D1GRPH_Y_END);
-#endif
+    screensize = GetScreenSize();
+    screenpitch = GetScreenPitch();
+
+    rhd.displayWidth  = screensize >> 16;
+    rhd.displayHeight = screensize & 0xFFFF;
 
     rhd.__xmin = 0;
     rhd.__ymin = 0;
@@ -379,7 +379,7 @@ void  R5xx2DInit()
     dbgprintf("gui_control %x \n", rhd.gui_control);
 
     rhd.surface_cntl = 0;
-    rhd.dst_pitch_offset = (((rhd.displayWidth * 4) / 64) << 22) |
+    rhd.dst_pitch_offset = ((screenpitch / 64) << 22) |
                             ((rhd.FbIntAddress + rhd.FbScanoutStart) >> 10);
 
     dbgprintf("dst_pitch_offset %x \n", rhd.dst_pitch_offset);
@@ -388,7 +388,7 @@ void  R5xx2DInit()
     scr_pixmap.width  = rhd.displayWidth;
     scr_pixmap.height = rhd.displayHeight;
     scr_pixmap.format = PICT_a8r8g8b8;
-    scr_pixmap.pitch  = rhd.displayWidth * 4;
+    scr_pixmap.pitch  = screenpitch;
     scr_pixmap.local  = (void*)rhd.FbIntAddress;
     scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
     scr_pixmap.mapped = (void*)0;
@@ -437,9 +437,6 @@ void  R5xx2DInit()
 
     OUTREG(RADEON_CP_CSQ_CNTL, RADEON_CSQ_PRIBM_INDBM);    // run
 
-
- //   OUTREG(D1CUR_SIZE, (31<<16)|31);
- //   OUTREG(D1CUR_CONTROL, 0x300);
 }
 
 

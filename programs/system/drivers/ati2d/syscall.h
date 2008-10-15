@@ -71,6 +71,36 @@ int dbgprintf(const char* format, ...);
 
 ///////////////////////////////////////////////////////////////////////////////
 
+extern inline int GetScreenSize()
+{
+  int retval;
+
+  asm("int $0x40"
+      :"=a"(retval)
+      :"a"(61), "b"(1));
+  return retval;
+}
+
+extern inline int GetScreenBpp()
+{
+  int retval;
+
+  asm("int $0x40"
+      :"=a"(retval)
+      :"a"(61), "b"(2));
+  return retval;
+}
+
+extern inline int GetScreenPitch()
+{
+  int retval;
+
+  asm("int $0x40"
+      :"=a"(retval)
+      :"a"(61), "b"(3));
+  return retval;
+}
+
 extern inline u32_t GetPgAddr(void *mem)
 {
      u32_t retval;

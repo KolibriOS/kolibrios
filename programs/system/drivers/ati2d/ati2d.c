@@ -35,6 +35,11 @@ u32_t __stdcall drvEntry(int action)
      printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
      return 0;
   }
+  if( GetScreenBpp() != 32)
+  {
+     printf("32 bpp dispaly mode required !\nExit\t");
+     return 0;
+  }
 
   if((rhdPtr=FindPciDevice())==NULL)
   {
@@ -106,7 +111,7 @@ int _stdcall srv_2d(ioctl_t *io)
         break;
 
       case PX_DRAW_RECT:
-        if(io->inp_size==6)
+        if(io->inp_size==7)
           return DrawRect((draw_t*)inp);
         break;
 

@@ -70,7 +70,7 @@ int Line(draw_t *draw)
 
 int DrawRect(draw_t* draw)
 {
-     int x0, y0, x1, y1;
+     int x0, y0, x1, y1, xend, yend;
 
      local_pixmap_t *dstpixmap;
      clip_t dst_clip;
@@ -80,8 +80,8 @@ int DrawRect(draw_t* draw)
      x0 = draw->x0;
      y0 = draw->y0;
 
-     x1 = x0+draw->w-1;
-     y1 = y0+draw->h-1;
+     x1 = xend = x0 + draw->w - 1;
+     y1 = yend = y0 + draw->h - 1;
 
      dst_clip.xmin = 0;
      dst_clip.ymin = 0;
@@ -98,8 +98,8 @@ int DrawRect(draw_t* draw)
         u32_t ifl;
         int w, h;
 
-        w = x1-x0+1;
-        h = y1-y0+1;
+        w = x1 - x0 + 1;
+        h = y1 - y0 + 1;
 
         ifl = safe_cli();
 
@@ -119,8 +119,45 @@ int DrawRect(draw_t* draw)
         OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
         OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
         OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
-        OUTREG(R5XX_DST_Y_X,(draw->y0<<16)|draw->x0);
+        OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
         OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|h);
+
+        if( draw->color != draw->border)
+        {
+           OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->border);
+
+           if( y0 == draw->y0)
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|1);
+              y0++;
+              h--;
+           }
+           if( y1 == yend )
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y1<<16)|x0);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|1);
+              h--;
+           }
+           if( x0 == draw->x0)
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(1<<16)|h);
+           }
+           if( x1 == xend)
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y0<<16)|x1);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(1<<16)|h);
+           }
+        };
 #else
       BEGIN_RING();
         OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_MULTI, 4));

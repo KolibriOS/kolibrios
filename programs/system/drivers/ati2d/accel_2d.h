@@ -95,6 +95,7 @@ typedef struct
     };
   };
   color_t color;
+  color_t border;
 }draw_t;
 
 typedef struct
