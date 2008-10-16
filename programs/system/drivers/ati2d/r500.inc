@@ -409,33 +409,33 @@ void  R5xx2DInit()
 
   //  load_microcode();
 
-    rhd.ring_base = CreateRingBuffer(0x8000, PG_SW | PG_NOCACHE);
-    dbgprintf("create cp ring buffer %x\n", rhd.ring_base);
-    base = GetPgAddr(rhd.ring_base);
+ //   rhd.ring_base = CreateRingBuffer(0x8000, PG_SW | PG_NOCACHE);
+ //   dbgprintf("create cp ring buffer %x\n", rhd.ring_base);
+ //   base = GetPgAddr(rhd.ring_base);
 
-    OUTREG(RADEON_CP_RB_BASE, base);
-    dbgprintf("ring base %x\n", base);
+ //   OUTREG(RADEON_CP_RB_BASE, base);
+ //   dbgprintf("ring base %x\n", base);
 
-    OUTREG(RADEON_CP_RB_WPTR_DELAY, 0);
+ //   OUTREG(RADEON_CP_RB_WPTR_DELAY, 0);
 
-    rhd.ring_rp = rhd.ring_wp = INREG(RADEON_CP_RB_RPTR);
-    OUTREG(RADEON_CP_RB_WPTR,rhd.ring_rp);
+ //   rhd.ring_rp = rhd.ring_wp = INREG(RADEON_CP_RB_RPTR);
+ //   OUTREG(RADEON_CP_RB_WPTR,rhd.ring_rp);
 
-    OUTREG(RADEON_CP_RB_RPTR_ADDR, 0); // ring buffer read pointer no update
+ //   OUTREG(RADEON_CP_RB_RPTR_ADDR, 0); // ring buffer read pointer no update
 
-    OUTREG(RADEON_CP_RB_CNTL, RADEON_RB_NO_UPDATE | 12);
-    OUTREG(RADEON_SCRATCH_UMSK, 0);          // no scratch update
+ //   OUTREG(RADEON_CP_RB_CNTL, RADEON_RB_NO_UPDATE | 12);
+ //   OUTREG(RADEON_SCRATCH_UMSK, 0);          // no scratch update
 
-    MASKREG(RADEON_BUS_CNTL,0,RADEON_BUS_MASTER_DIS);
+ //   MASKREG(RADEON_BUS_CNTL,0,RADEON_BUS_MASTER_DIS);
 
-    R5xx2DIdleLocal();
+ //   R5xx2DIdleLocal();
 
-    OUTREG(RADEON_ISYNC_CNTL, RADEON_ISYNC_ANY2D_IDLE3D |
-                              RADEON_ISYNC_ANY3D_IDLE2D |
-                              RADEON_ISYNC_WAIT_IDLEGUI |
-                              RADEON_ISYNC_CPSCRATCH_IDLEGUI);
+ //   OUTREG(RADEON_ISYNC_CNTL, RADEON_ISYNC_ANY2D_IDLE3D |
+ //                             RADEON_ISYNC_ANY3D_IDLE2D |
+ //                             RADEON_ISYNC_WAIT_IDLEGUI |
+ //                             RADEON_ISYNC_CPSCRATCH_IDLEGUI);
 
-    OUTREG(RADEON_CP_CSQ_CNTL, RADEON_CSQ_PRIBM_INDBM);    // run
+ //   OUTREG(RADEON_CP_CSQ_CNTL, RADEON_CSQ_PRIBM_INDBM);    // run
 
 }
 

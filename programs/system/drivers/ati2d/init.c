@@ -117,9 +117,5 @@ error1:
   return FALSE;
 };
 
-//int KernelFree(void *p)
-//{
-//
-//  return 0;
-//}
+
 

@@ -1,5 +1,64 @@
 
-int Line(draw_t *draw)
+
+int ClearPixmap(io_clear_t *io)
+{
+     u32_t ifl;
+     u32_t *ring, write;
+
+     local_pixmap_t *dstpixmap;
+
+     dstpixmap = (io->dstpix == (void*)-1) ? &scr_pixmap : io->dstpix ;
+
+     ifl = safe_cli();
+
+#if R300_PIO
+
+     R5xxFIFOWait(6);
+
+     OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+            RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+            RADEON_GMC_BRUSH_SOLID_COLOR      |
+            RADEON_GMC_DST_32BPP              |
+            RADEON_GMC_SRC_DATATYPE_COLOR     |
+            R5XX_GMC_CLR_CMP_CNTL_DIS         |
+            R5XX_GMC_WR_MSK_DIS               |
+            R5XX_ROP3_P
+           );
+
+     OUTREG(R5XX_DP_BRUSH_FRGD_CLR, io->color);
+     OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
+     OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
+     OUTREG(R5XX_DST_Y_X, 0);
+     OUTREG(R5XX_DST_WIDTH_HEIGHT,(dstpixmap->width<<16)|dstpixmap->height);
+
+#else
+      BEGIN_RING();
+        OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT_MULTI, 4));
+
+        OUT_RING(RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                 RADEON_GMC_BRUSH_SOLID_COLOR      |
+                 RADEON_GMC_DST_32BPP              |
+                 RADEON_GMC_SRC_DATATYPE_COLOR     |
+                 R5XX_GMC_CLR_CMP_CNTL_DIS         |
+                 R5XX_GMC_WR_MSK_DIS               |
+                 R5XX_ROP3_P
+                );
+
+        OUT_RING(dstpixmap->pitch_offset);
+        OUT_RING(io->color);
+        OUT_RING( 0 );
+        OUT_RING((dstpixmap->width<<16)|dstpixmap->height);
+      COMMIT_RING();
+
+#endif
+
+     safe_sti(ifl);
+
+     return ERR_OK;
+}
+
+
+int Line(io_draw_t *draw)
 {
      local_pixmap_t *dstpixmap;
      clip_t clip;
@@ -30,11 +89,12 @@ int Line(draw_t *draw)
         R5xxFIFOWait(6);
 
         OUTREG(R5XX_DP_GUI_MASTER_CNTL,
-               rhd.gui_control             |
-               R5XX_GMC_BRUSH_SOLID_COLOR  |
-               R5XX_GMC_SRC_DATATYPE_COLOR |
-               R5XX_GMC_CLR_CMP_CNTL_DIS   |
-               R5XX_GMC_WR_MSK_DIS         |
+               RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+               RADEON_GMC_BRUSH_SOLID_COLOR      |
+               RADEON_GMC_DST_32BPP              |
+               RADEON_GMC_SRC_DATATYPE_COLOR     |
+               R5XX_GMC_CLR_CMP_CNTL_DIS         |
+               R5XX_GMC_WR_MSK_DIS               |
                R5XX_ROP3_P
               );
 
@@ -68,7 +128,7 @@ int Line(draw_t *draw)
      return ERR_OK;
 }
 
-int DrawRect(draw_t* draw)
+int DrawRect(io_draw_t* draw)
 {
      int x0, y0, x1, y1, xend, yend;
 
@@ -108,12 +168,13 @@ int DrawRect(draw_t* draw)
         R5xxFIFOWait(6);
 
         OUTREG(R5XX_DP_GUI_MASTER_CNTL,
-               rhd.gui_control              |
-               R5XX_ROP3_P                  |
-               R5XX_GMC_BRUSH_SOLID_COLOR   |
-               R5XX_GMC_SRC_DATATYPE_COLOR  |
-               R5XX_GMC_CLR_CMP_CNTL_DIS    |
-               R5XX_GMC_WR_MSK_DIS
+               RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+               RADEON_GMC_BRUSH_SOLID_COLOR      |
+               RADEON_GMC_DST_32BPP              |
+               RADEON_GMC_SRC_DATATYPE_COLOR     |
+               R5XX_GMC_CLR_CMP_CNTL_DIS         |
+               R5XX_GMC_WR_MSK_DIS               |
+               R5XX_ROP3_P
               );
 
         OUTREG(R5XX_DP_BRUSH_FRGD_CLR, draw->color);
@@ -182,19 +243,19 @@ int DrawRect(draw_t* draw)
      return ERR_OK;
 }
 
-int FillRect(fill_t *fill)
+int FillRect(io_fill_t *fill)
 {
      local_pixmap_t *dstpixmap;
      clip_t dst_clip;
-     int x0, y0, x1, y1;
+     int x0, y0, x1, y1, xend, yend;
 
      dstpixmap = (fill->dstpix == (void*)-1) ? &scr_pixmap : fill->dstpix ;
 
      x0 = fill->x;
      y0 = fill->y;
 
-     x1 = x0+fill->w-1;
-     y1 = y0+fill->h-1;
+     xend = x1 = x0 + fill->w - 1;
+     yend = y1 = y0 + fill->h - 1;
 
      dst_clip.xmin = 0;
      dst_clip.ymin = 0;
@@ -211,8 +272,8 @@ int FillRect(fill_t *fill)
 
 #if R300_PIO
 
-        int w = x1-x0+1;
-        int h = y1-y0+1;
+        int w = x1 - x0 + 1;
+        int h = y1 - y0 + 1;
 
         R5xxFIFOWait(9);
 
@@ -237,6 +298,57 @@ int FillRect(fill_t *fill)
 
         OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
         OUTREG(R5XX_DST_HEIGHT_WIDTH,(h<<16)|w);
+
+        if( (fill->border & 0xFF000000) != 0)
+        {
+           R5xxFIFOWait(2);
+
+           OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+                  RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                  RADEON_GMC_BRUSH_SOLID_COLOR      |
+                  RADEON_GMC_DST_32BPP              |
+                  RADEON_GMC_SRC_DATATYPE_COLOR     |
+                  R5XX_GMC_CLR_CMP_CNTL_DIS         |
+                  R5XX_GMC_WR_MSK_DIS               |
+                  R5XX_ROP3_P
+                 );
+
+           OUTREG(R5XX_DP_BRUSH_FRGD_CLR, fill->border);
+
+           if( y0 == fill->y)
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|1);
+              y0++;
+              h--;
+           }
+           if( y1 == yend )
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y1<<16)|x0);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|1);
+              h--;
+           }
+           if( x0 == fill->x)
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(1<<16)|h);
+           }
+           if( x1 == xend)
+           {
+              R5xxFIFOWait(2);
+
+              OUTREG(R5XX_DST_Y_X,(y0<<16)|x1);
+              OUTREG(R5XX_DST_WIDTH_HEIGHT,(1<<16)|h);
+           }
+        };
+
+
 #else
       BEGIN_RING();
         OUT_RING(CP_PACKET3(RADEON_CNTL_PAINT, 7));
@@ -266,135 +378,9 @@ int FillRect(fill_t *fill)
      return ERR_OK;
 };
 
-#if 0
-int Blit(blit_t *blit)
-{
-  int x0, y0, x1, y1;
-
-  x0 = blit->src_x;
-  y0 = blit->src_y;
-
-  x1 = x0+blit->w-1;
-  y1 = y0+blit->h-1;
 
 
-  if( ! BlockClip(&clip, &x0, &y0, &x1, &y1))
-  {
-     u32 *ring, write;
-     int w, h;
-     u32 ifl;
-
-     w = x1-x0+1;
-     h = y1-y0+1;
-
-     ifl = safe_cli();
-
-#if R300_PIO
-
-
-#else
-
-     BEGIN_RING();
-       OUT_RING(CP_PACKET3(RADEON_CNTL_BITBLT, 5));
-
-       OUT_RING(RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
-                RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
-                RADEON_GMC_BRUSH_NONE             |
-                RADEON_GMC_DST_32BPP              |
-                RADEON_GMC_SRC_DATATYPE_COLOR     |
-                RADEON_DP_SRC_SOURCE_MEMORY       |
-                (1 << 28)+(1 << 30) | R5XX_ROP3_S);
-
-       OUT_RING(rhd.dst_pitch_offset);
-       OUT_RING(rhd.dst_pitch_offset);
-
-       OUT_RING((x0<<16)|y0);
-       OUT_RING((blit->dst_x<<16)|blit->dst_y);
-       OUT_RING((w<<16)|h);
-     COMMIT_RING();
-
-#endif
-
-     safe_sti(ifl);
-  } ;
-  return ERR_OK;
-}
-
-#endif
-
-
-#if 0
-
-int LockPixmap(userpixmap_t *io)
-{
-   pixmap_t *pixmap;
-   size_t    size;
-   void     *usermap;
-
-   dbgprintf("Lock pixmap %x\n", io->pixmap);
-
-   if(io->pixmap == (pixmap_t*)-1)
-     return ERR_PARAM;
-   else
-     pixmap = io->pixmap;
-
-   if( (pixmap->flags & 1) == PX_LOCK )
-     return ERR_PARAM;
-
-   size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
-   if (usermap = UserAlloc(size))
-   {
-     CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
-     pixmap->flags |= PX_LOCK;
-     pixmap->usermap = usermap;
-     io->usermap = usermap;
-     io->pitch   = pixmap->pitch;
-     dbgprintf("map at %x\n", io->usermap);
-
-     return ERR_OK;
-   }
-   else
-     return ERR_PARAM;
-};
-
-int UnlockPixmap(userpixmap_t *io)
-{
-  pixmap_t *pixmap;
-  size_t    size;
-
-  dbgprintf("Unlock pixmap %x\n", io->pixmap);
-
-  if(io->pixmap == (pixmap_t*)-1)
-    return ERR_PARAM;
-  else
-    pixmap = io->pixmap;
-
-  if( (pixmap->flags & 1) != PX_LOCK )
-    return ERR_PARAM;
-
-/*   Sanity checks  */
-
-  if( (pixmap->usermap == 0)||
-      ((u32_t)pixmap->usermap >= 0x80000000) ||
-      ((u32_t)pixmap->usermap & 4095)
-    )
-    return ERR_PARAM;
-
-  size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
-
-  UnmapPages(pixmap->usermap, size);
-  UserFree(pixmap->usermap);
-  pixmap->usermap =  NULL;
-  pixmap->flags  &= ~PX_LOCK;
-  io->usermap     =  NULL;
-  io->pitch       =  0;
-
-  return ERR_OK;
-};
-
-#endif
-
-int PixBlit(pixblit_t *blit)
+int Blit(io_blit_t *blit)
 {
      clip_t src_clip, dst_clip;
 
@@ -487,7 +473,7 @@ int PixBlit(pixblit_t *blit)
 };
 
 
-int TransBlit(pixblit_t *blit)
+int BlitTransparent(io_blit_t *blit)
 {
      clip_t src_clip, dst_clip;
 
@@ -586,3 +572,74 @@ int TransBlit(pixblit_t *blit)
      return ERR_OK;
 }
 
+
+#if 0
+
+int LockPixmap(userpixmap_t *io)
+{
+   pixmap_t *pixmap;
+   size_t    size;
+   void     *usermap;
+
+   dbgprintf("Lock pixmap %x\n", io->pixmap);
+
+   if(io->pixmap == (pixmap_t*)-1)
+     return ERR_PARAM;
+   else
+     pixmap = io->pixmap;
+
+   if( (pixmap->flags & 1) == PX_LOCK )
+     return ERR_PARAM;
+
+   size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
+   if (usermap = UserAlloc(size))
+   {
+     CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
+     pixmap->flags |= PX_LOCK;
+     pixmap->usermap = usermap;
+     io->usermap = usermap;
+     io->pitch   = pixmap->pitch;
+     dbgprintf("map at %x\n", io->usermap);
+
+     return ERR_OK;
+   }
+   else
+     return ERR_PARAM;
+};
+
+int UnlockPixmap(userpixmap_t *io)
+{
+  pixmap_t *pixmap;
+  size_t    size;
+
+  dbgprintf("Unlock pixmap %x\n", io->pixmap);
+
+  if(io->pixmap == (pixmap_t*)-1)
+    return ERR_PARAM;
+  else
+    pixmap = io->pixmap;
+
+  if( (pixmap->flags & 1) != PX_LOCK )
+    return ERR_PARAM;
+
+/*   Sanity checks  */
+
+  if( (pixmap->usermap == 0)||
+      ((u32_t)pixmap->usermap >= 0x80000000) ||
+      ((u32_t)pixmap->usermap & 4095)
+    )
+    return ERR_PARAM;
+
+  size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
+
+  UnmapPages(pixmap->usermap, size);
+  UserFree(pixmap->usermap);
+  pixmap->usermap =  NULL;
+  pixmap->flags  &= ~PX_LOCK;
+  io->usermap     =  NULL;
+  io->pitch       =  0;
+
+  return ERR_OK;
+};
+
+#endif

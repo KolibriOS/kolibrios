@@ -36,7 +36,7 @@ $(ATI2D): $(ATI_OBJ) $(SRC_DEP) $(HFILES) Makefile
 	wlink name ati2d.dll SYS nt_dll lib libdrv op offset=0 op nod op maxe=25 op el op STUB=stub.exe op START=_drvEntry @rhd.lk1
 	kpack.exe ati2d.dll ati2d.drv
 
-ati2d.obj : ati2d.c $(SRC_DEP) $(HFILES)
+ati2d.obj : ati2d.c $(SRC_DEP) $(HFILES) Makefile
 	$(CC) $(CFLAGS) -o ati2d.obj ati2d.c
 
 curhelp.obj : curhelp.asm

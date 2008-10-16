@@ -1174,6 +1174,7 @@ static void RadeonCompositeTile(int srcX, int srcY,
 #undef VTX_OUT
 #undef VTX_OUT_MASK
 
+#if 0
 
 int RadeonComposite( blit_t *blit)
 {
@@ -1235,3 +1236,4 @@ int RadeonComposite( blit_t *blit)
 #endif
 }
 
+#endif

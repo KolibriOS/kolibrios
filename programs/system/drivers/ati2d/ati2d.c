@@ -30,14 +30,14 @@ u32_t __stdcall drvEntry(int action)
   if(action != 1)
     return 0;
 
-  if(!dbg_open("/hd0/2/ati2d.log"))
+  if(!dbg_open("/rd/1/drivers/ati2d.log"))
   {
      printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
      return 0;
   }
   if( GetScreenBpp() != 32)
   {
-     printf("32 bpp dispaly mode required !\nExit\t");
+     dbgprintf("32 bpp dispaly mode required !\nExit\t");
      return 0;
   }
 
@@ -82,7 +82,7 @@ u32_t __stdcall drvEntry(int action)
 #define SRV_GETVERSION  0
 
 
-int _stdcall srv_2d(ioctl_t *io)
+int __stdcall srv_2d(ioctl_t *io)
 {
   u32_t *inp;
   u32_t *outp;
@@ -110,36 +110,37 @@ int _stdcall srv_2d(ioctl_t *io)
           return DestroyPixmap((pixmap_t*)inp);
         break;
 
+      case PX_CLEAR:
+        if(io->inp_size==2)
+          return ClearPixmap((io_clear_t*)inp);
+        break;
+
       case PX_DRAW_RECT:
         if(io->inp_size==7)
-          return DrawRect((draw_t*)inp);
+          return DrawRect((io_draw_t*)inp);
         break;
 
       case PX_FILL_RECT:
-        if(io->inp_size==9)
-          return FillRect((fill_t*)inp);
+        if(io->inp_size==10)
+          return FillRect((io_fill_t*)inp);
         break;
 
       case PX_BLIT:
         if(io->inp_size==8)
-          return PixBlit((pixblit_t*)inp);
+          return Blit((io_blit_t*)inp);
         break;
 
      case  PX_BLIT_TRANSPARENT:
-        if(io->inp_size==8)
-          return TransBlit((pixblit_t*)inp);
+        if(io->inp_size==9)
+          return BlitTransparent((io_blit_t*)inp);
         break;
 
       case PX_LINE:
         if(io->inp_size==6)
-          return Line((draw_t*)inp);
+          return Line((io_draw_t*)inp);
         break;
 
 /*
-      case BLIT:
-        if(io->inp_size==6)
-          return Blit((blit_t*)inp);
-        break;
 
       case COMPIZ:
         if(io->inp_size==6)
@@ -157,13 +158,12 @@ int _stdcall srv_2d(ioctl_t *io)
 #include "init.c"
 #include "pci.c"
 #include "ati_mem.c"
-//#include "cursor.inc"
 
 #include "r500.inc"
 
 #include "clip.inc"
 #include "pixmap.inc"
 #include "accel_2d.inc"
-#include "accel_3d.inc"
+//#include "accel_3d.inc"
 
 

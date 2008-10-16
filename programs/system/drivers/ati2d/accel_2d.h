@@ -1,15 +1,14 @@
 
 #define PX_CREATE              1
 #define PX_DESTROY             2
-#define PX_DRAW_RECT           3
-#define PX_FILL_RECT           4
-#define PX_LINE                5
-#define PX_BLIT                6
-#define PX_BLIT_TRANSPARENT    7
-#define PX_BLIT_ALPHA          8
+#define PX_CLEAR               3
+#define PX_DRAW_RECT           4
+#define PX_FILL_RECT           5
+#define PX_LINE                6
+#define PX_BLIT                7
+#define PX_BLIT_TRANSPARENT    8
+#define PX_BLIT_ALPHA          9
 
-//#define BLIT         4
-//#define COMPIZ       5
 
 
 typedef unsigned int color_t;
@@ -65,12 +64,15 @@ typedef struct
   void      *local;
 }local_pixmap_t;
 
-//int CreatePixmap(userpixmap_t *io);
-//int DestroyPixmap(userpixmap_t *io);
-//int LockPixmap(userpixmap_t *io);
-//int UnlockPixmap(userpixmap_t *io);
 
 #define   PX_LOCK            1
+
+typedef struct
+{
+  local_pixmap_t  *dstpix;
+
+  color_t color;
+}io_clear_t;
 
 typedef struct
 {
@@ -96,7 +98,7 @@ typedef struct
   };
   color_t color;
   color_t border;
-}draw_t;
+}io_draw_t;
 
 typedef struct
 {
@@ -112,17 +114,8 @@ typedef struct
 
   u32_t   bmp0;
   u32_t   bmp1;
-}fill_t;
-
-typedef struct
-{
-  int src_x;
-  int src_y;
-  int dst_x;
-  int dst_y;
-  int w;
-  int h;
-}blit_t;
+  color_t border;
+}io_fill_t;
 
 typedef struct
 {
@@ -135,20 +128,26 @@ typedef struct
   int        src_y;
   int        w;
   int        h;
-}pixblit_t;
+
+  color_t    key;
+}io_blit_t;
 
 
-int Line2P(draw_t *draw);
+int CreatePixmap(pixmap_t *io);
 
-int DrawRect(draw_t * draw);
-int FillRect(fill_t * fill);
+int DestroyPixmap(pixmap_t *io);
 
-int Blit(blit_t *blit);
+int ClearPixmap(io_clear_t *io);
 
-int RadeonComposite( blit_t *blit);
+int Line(io_draw_t *draw);
 
+int DrawRect(io_draw_t * draw);
 
-int PixBlit(pixblit_t* blit);
+int FillRect(io_fill_t * fill);
+
+int Blit(io_blit_t* blit);
+
+int BlitTransparent(io_blit_t* blit);
 
 
 
