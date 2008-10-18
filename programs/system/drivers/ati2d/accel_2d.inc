@@ -204,14 +204,14 @@ int DrawRect(io_draw_t* draw)
               OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|1);
               h--;
            }
-           if( x0 == draw->x0)
+           if( (h > 0) && (x0 == draw->x0))
            {
               R5xxFIFOWait(2);
 
               OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
               OUTREG(R5XX_DST_WIDTH_HEIGHT,(1<<16)|h);
            }
-           if( x1 == xend)
+           if( (h > 0) && (x1 == xend))
            {
               R5xxFIFOWait(2);
 
@@ -332,14 +332,14 @@ int FillRect(io_fill_t *fill)
               OUTREG(R5XX_DST_WIDTH_HEIGHT,(w<<16)|1);
               h--;
            }
-           if( x0 == fill->x)
+           if( (h > 0) && (x0 == fill->x))
            {
               R5xxFIFOWait(2);
 
               OUTREG(R5XX_DST_Y_X,(y0<<16)|x0);
               OUTREG(R5XX_DST_WIDTH_HEIGHT,(1<<16)|h);
            }
-           if( x1 == xend)
+           if( (h > 0) && (x1 == xend))
            {
               R5xxFIFOWait(2);
 
