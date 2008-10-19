@@ -11,9 +11,9 @@ typedef  unsigned int size_t;
 typedef  unsigned int count_t;
 typedef  unsigned int eflags_t;
 
-typedef  int bool;
+typedef  unsigned int Bool;
 
-#define  TRUE  (bool)1
-#define  FALSE (bool)0
+#define  TRUE  (Bool)1
+#define  FALSE (Bool)0
 
 

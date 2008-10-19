@@ -41,7 +41,7 @@ int CreatePixmap(pixmap_t *io)
 
         if (mapped = UserAlloc(size))
         {
-           CommitPages(mapped, ((u32_t)local+rhd.PhisBase)|7|(1<<9), size);
+           CommitPages(mapped, ((u32_t)local+rhd.LinearAddr)|7|(1<<9), size);
 
            io->mapped = mapped;
            io->pitch   = pitch;
@@ -53,7 +53,7 @@ int CreatePixmap(pixmap_t *io)
            pixmap->flags   = io->flags;
            pixmap->pitch   = pitch;
            pixmap->mapped  = mapped;
-           pixmap->pitch_offset =  ((pitch/64)<<22)| (((u32_t)local+rhd.FbIntAddress)>>10);
+           pixmap->pitch_offset =  ((pitch/64)<<22)| (((u32_t)local+rhd.fbLocation)>>10);
            pixmap->local   = local;
 
            dbgprintf("pixmap.pitch_offset: %x\n", pixmap->pitch_offset);

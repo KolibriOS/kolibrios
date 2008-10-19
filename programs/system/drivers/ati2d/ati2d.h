@@ -1,110 +1,128 @@
 
 typedef void *pointer;
 
-typedef unsigned int   Bool;
 
 typedef unsigned int memType;
 
 typedef struct { float hi, lo; } range;
 
 
-#include "pci.h"
-#include "rhd_regs.h"
-
-#define IS_R300_3D   0
-#define IS_R500_3D   1
-
 #define R300_PIO     1
 
-enum RHD_CHIPSETS {
-    RHD_UNKNOWN = 0,
-    RHD_R300,
-    RHD_R350,
-    RHD_RV350,
-    RHD_RV370,
-    RHD_RV380,
-    /* R500 */
-    RHD_RV505,
-    RHD_RV515,
-    RHD_RV516,
-    RHD_R520,
-    RHD_RV530,
-    RHD_RV535,
-    RHD_RV550,
-    RHD_RV560,
-    RHD_RV570,
-    RHD_R580,
-    /* R500 Mobility */
-    RHD_M52,
-    RHD_M54,
-    RHD_M56,
-    RHD_M58,
-    RHD_M62,
-    RHD_M64,
-    RHD_M66,
-    RHD_M68,
-    RHD_M71,
-    /* R500 integrated */
-    RHD_RS600,
-    RHD_RS690,
-    RHD_RS740,
-    /* R600 */
-    RHD_R600,
-    RHD_RV610,
-    RHD_RV630,
-    /* R600 Mobility */
-    RHD_M72,
-    RHD_M74,
-    RHD_M76,
-    /* RV670 came into existence after RV6x0 and M7x */
-    RHD_RV670,
-    RHD_R680,
-    RHD_RV620,
-    RHD_M82,
-    RHD_RV635,
-    RHD_M86,
-    RHD_RS780,
-    RHD_CHIP_END
-};
+#define PCI_CMD_STAT_REG        0x04
 
-enum RHD_FAMILIES {
-    RHD_FAMILY_UNKNOWN = 0,
+typedef enum
+{
+    CHIP_FAMILY_UNKNOW,
+    CHIP_FAMILY_LEGACY,
+    CHIP_FAMILY_RADEON,
+    CHIP_FAMILY_RV100,
+    CHIP_FAMILY_RS100,    /* U1 (IGP320M) or A3 (IGP320)*/
+    CHIP_FAMILY_RV200,
+    CHIP_FAMILY_RS200,    /* U2 (IGP330M/340M/350M) or A4 (IGP330/340/345/350), RS250 (IGP 7000) */
+    CHIP_FAMILY_R200,
+    CHIP_FAMILY_RV250,
+    CHIP_FAMILY_RS300,    /* RS300/RS350 */
+    CHIP_FAMILY_RV280,
+    CHIP_FAMILY_R300,
+    CHIP_FAMILY_R350,
+    CHIP_FAMILY_RV350,
+    CHIP_FAMILY_RV380,    /* RV370/RV380/M22/M24 */
+    CHIP_FAMILY_R420,     /* R420/R423/M18 */
+    CHIP_FAMILY_RV410,    /* RV410, M26 */
+    CHIP_FAMILY_RS400,    /* xpress 200, 200m (RS400) Intel */
+    CHIP_FAMILY_RS480,    /* xpress 200, 200m (RS410/480/482/485) AMD */
+    CHIP_FAMILY_RV515,    /* rv515 */
+    CHIP_FAMILY_R520,     /* r520 */
+    CHIP_FAMILY_RV530,    /* rv530 */
+    CHIP_FAMILY_R580,     /* r580 */
+    CHIP_FAMILY_RV560,    /* rv560 */
+    CHIP_FAMILY_RV570,    /* rv570 */
+    CHIP_FAMILY_RS600,
+    CHIP_FAMILY_RS690,
+    CHIP_FAMILY_RS740,
+    CHIP_FAMILY_R600,     /* r600 */
+    CHIP_FAMILY_R630,
+    CHIP_FAMILY_RV610,
+    CHIP_FAMILY_RV630,
+    CHIP_FAMILY_RV670,
+    CHIP_FAMILY_RV620,
+    CHIP_FAMILY_RV635,
+    CHIP_FAMILY_RS780,
+    CHIP_FAMILY_RV770,
+    CHIP_FAMILY_LAST
+} RADEONChipFamily;
 
-    RHD_FAMILY_RADEON,
+#define IS_RV100_VARIANT ((rhdPtr->ChipFamily == CHIP_FAMILY_RV100)  ||  \
+        (rhdPtr->ChipFamily == CHIP_FAMILY_RV200)  ||  \
+        (rhdPtr->ChipFamily == CHIP_FAMILY_RS100)  ||  \
+        (rhdPtr->ChipFamily == CHIP_FAMILY_RS200)  ||  \
+        (rhdPtr->ChipFamily == CHIP_FAMILY_RV250)  ||  \
+        (rhdPtr->ChipFamily == CHIP_FAMILY_RV280)  ||  \
+        (rhdPtr->ChipFamily == CHIP_FAMILY_RS300))
 
-    RHD_FAMILY_RV100,
-    RHD_FAMILY_RS100,    /* U1 (IGP320M) or A3 (IGP320)*/
-    RHD_FAMILY_RV200,
-    RHD_FAMILY_RS200,    /* U2 (IGP330M/340M/350M) or A4 (IGP330/340/345/350), RS250 (IGP 7000) */
-    RHD_FAMILY_R200,
-    RHD_FAMILY_RV250,
-    RHD_FAMILY_RS300,    /* RS300/RS350 */
-    RHD_FAMILY_RV280,
 
-    RHD_FAMILY_R300,
-    RHD_FAMILY_R350,
-    RHD_FAMILY_RV350,
-    RHD_FAMILY_RV380,    /* RV370/RV380/M22/M24 */
-    RHD_FAMILY_R420,     /* R420/R423/M18 */
-    RHD_FAMILY_RV410,    /* RV410, M26 */
-    RHD_FAMILY_RS400,    /* xpress 200, 200m (RS400) Intel */
-    RHD_FAMILY_RS480,    /* xpress 200, 200m (RS410/480/482/485) AMD */
+#define IS_R300_VARIANT ((info->ChipFamily == CHIP_FAMILY_R300)  ||  \
+        (info->ChipFamily == CHIP_FAMILY_RV350) ||  \
+        (info->ChipFamily == CHIP_FAMILY_R350)  ||  \
+        (info->ChipFamily == CHIP_FAMILY_RV380) ||  \
+        (info->ChipFamily == CHIP_FAMILY_R420)  ||  \
+        (info->ChipFamily == CHIP_FAMILY_RV410) ||  \
+        (info->ChipFamily == CHIP_FAMILY_RS400) ||  \
+        (info->ChipFamily == CHIP_FAMILY_RS480))
 
-    RHD_FAMILY_RV515,
-    RHD_FAMILY_R520,
-    RHD_FAMILY_RV530,
-    RHD_FAMILY_RV560,
-    RHD_FAMILY_RV570,
-    RHD_FAMILY_R580,
-    RHD_FAMILY_RS690,
-    RHD_FAMILY_R600,
-    RHD_FAMILY_RV610,
-    RHD_FAMILY_RV630,
-    RHD_FAMILY_RV670,
-    RHD_FAMILY_RV620,
-    RHD_FAMILY_RV635,
-    RHD_FAMILY_RS780
-};
+#define IS_AVIVO_VARIANT ((info->ChipFamily >= CHIP_FAMILY_RV515))
+
+#define IS_DCE3_VARIANT ((info->ChipFamily >= CHIP_FAMILY_RV620))
+
+#define IS_R500_3D ((info->ChipFamily == CHIP_FAMILY_RV515)  ||  \
+	(info->ChipFamily == CHIP_FAMILY_R520)   ||  \
+	(info->ChipFamily == CHIP_FAMILY_RV530)  ||  \
+	(info->ChipFamily == CHIP_FAMILY_R580)   ||  \
+	(info->ChipFamily == CHIP_FAMILY_RV560)  ||  \
+	(info->ChipFamily == CHIP_FAMILY_RV570))
+
+#define IS_R300_3D ((info->ChipFamily == CHIP_FAMILY_R300)  ||  \
+	(info->ChipFamily == CHIP_FAMILY_RV350) ||  \
+	(info->ChipFamily == CHIP_FAMILY_R350)  ||  \
+	(info->ChipFamily == CHIP_FAMILY_RV380) ||  \
+	(info->ChipFamily == CHIP_FAMILY_R420)  ||  \
+	(info->ChipFamily == CHIP_FAMILY_RV410) ||  \
+	(info->ChipFamily == CHIP_FAMILY_RS690) ||  \
+	(info->ChipFamily == CHIP_FAMILY_RS600) ||  \
+	(info->ChipFamily == CHIP_FAMILY_RS740) ||  \
+	(info->ChipFamily == CHIP_FAMILY_RS400) ||  \
+	(info->ChipFamily == CHIP_FAMILY_RS480))
+
+
+
+typedef enum {
+	CARD_PCI,
+	CARD_AGP,
+	CARD_PCIE
+} RADEONCardType;
+
+/*
+ * Errata workarounds
+ */
+typedef enum {
+       CHIP_ERRATA_R300_CG             = 0x00000001,
+       CHIP_ERRATA_PLL_DUMMYREADS      = 0x00000002,
+       CHIP_ERRATA_PLL_DELAY           = 0x00000004
+} RADEONErrata;
+
+typedef struct
+{
+    u32_t pci_device_id;
+    RADEONChipFamily chip_family;
+    int mobility;
+    int igp;
+    int nocrtc2;
+    int nointtvout;
+    int singledac;
+} RADEONCardInfo;
+
+
 
 #define RHD_FB_BAR         0
 #define RHD_MMIO_BAR       2
@@ -116,35 +134,53 @@ typedef struct RHDRec
 {
   u32_t            MMIOBase;
   u32_t            MMIOMapSize;
-  u32_t            videoRam;
 
 //  CARD32            FbBase;            /* map base of fb   */
-  u32_t            PhisBase;
-  u32_t            FbIntAddress;      /* card internal address of FB */
-  u32_t            FbMapSize;
+ // u32_t            PhisBase;
+ // u32_t            FbIntAddress;       /* card internal address of FB */
+ // u32_t            FbMapSize;
 
   u32_t            FbFreeStart;
   u32_t            FbFreeSize;
 
   /* visible part of the framebuffer */
-  unsigned int      FbScanoutStart;
-  unsigned int      FbScanoutSize;
+//  unsigned int      FbScanoutStart;
+//  unsigned int      FbScanoutSize;
 
-  enum RHD_CHIPSETS ChipSet;
-  enum RHD_FAMILIES ChipFamily;
+  u32_t            LinearAddr;           /* Frame buffer physical address     */
 
-  char              *ChipName;
+  u32_t            fbLocation;
+  u32_t            mc_fb_location;
+  u32_t            mc_agp_location;
+  u32_t            mc_agp_location_hi;
 
-  Bool              IsIGP;
+  u32_t            videoRam;
+
+  u32_t            MemCntl;
+  u32_t            BusCntl;
+  unsigned long    FbMapSize;            /* Size of frame buffer, in bytes    */
+  unsigned long    FbSecureSize;         /* Size of secured fb area at end of
+                                            framebuffer */
+
+
+  RADEONChipFamily ChipFamily;
+  RADEONErrata     ChipErrata;
+
+  char             *chipset;
+
+  int              IsIGP;
+  int              IsMobility;
 
   u32_t            bus;
   u32_t            devfn;
 
-  PCITAG            PciTag;
+  PCITAG           PciTag;
   u16_t            PciDeviceID;
 
   u16_t            subvendor_id;
   u16_t            subdevice_id;
+
+  RADEONCardType   cardType;            /* Current card is a PCI card */
 
   u32_t            memBase[6];
   u32_t            ioBase[6];
@@ -157,21 +193,24 @@ typedef struct RHDRec
   u32_t            displayWidth;
   u32_t            displayHeight;
 
-  int            __xmin;
-  int            __ymin;
-  int            __xmax;
-  int            __ymax;
+  int              __xmin;
+  int              __ymin;
+  int              __xmax;
+  int              __ymax;
 
   u32_t            gui_control;
   u32_t            dst_pitch_offset;
   u32_t            surface_cntl;
 
-  u32_t             *ring_base;
-  u32_t             ring_rp;
-  u32_t             ring_wp;
+  u32_t            *ring_base;
+  u32_t            ring_rp;
+  u32_t            ring_wp;
 
-  int               num_gb_pipes;
-  Bool              has_tcl;
+  int              RamWidth;
+  Bool             IsDDR;
+
+  int              num_gb_pipes;
+  int              has_tcl;
 }RHD_t, *RHDPtr;
 
 extern RHD_t rhd;
@@ -273,13 +312,12 @@ extern inline u32_t INREG(u16_t offset)
   return *(volatile u32_t *)((u8_t*)(rhd.MMIOBase + offset));
 }
 
-//#define INREG(offset) *(volatile CARD32 *)((CARD8*)(rhd.MMIOBase + (offset)))
 
-extern inline void
-OUTREG(u16_t offset, u32_t value)
+extern inline void OUTREG(u16_t offset, u32_t value)
 {
   *(volatile u32_t *)((u8_t *)(rhd.MMIOBase + offset)) = value;
 }
+
 
 extern inline u32_t _RHDRegRead(RHDPtr rhdPtr, u16_t offset)
 {
@@ -313,8 +351,6 @@ _RHDRegMask(RHDPtr rhdPtr, u16_t offset, u32_t value, u32_t mask)
   tmp |= (value & mask);
   _RHDRegWrite(rhdPtr, offset, tmp);
 };
-
-enum RHD_FAMILIES RHDFamily(enum RHD_CHIPSETS chipset);
 
 #define RHDRegRead(ptr, offset) _RHDRegRead((ptr)->rhdPtr, (offset))
 #define RHDRegWrite(ptr, offset, value) _RHDRegWrite((ptr)->rhdPtr, (offset), (value))

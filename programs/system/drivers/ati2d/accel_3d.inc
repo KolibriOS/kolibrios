@@ -1,5 +1,4 @@
 
-#include "radeon_reg.h"
 
 #define BEGIN_ACCEL(n)          BEGIN_RING(2*(n))
 //#define FINISH_ACCEL()          ADVANCE_RING()

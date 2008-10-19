@@ -80,7 +80,7 @@ void RADEONPllErrataAfterData()
      * CLOCK_CNTL_INDEX register access.  If not, register reads afterward
      * may not be correct.
      */
-    if (rhd.ChipSet <= RHD_RV380)
+    if (rhd.ChipFamily <= CHIP_FAMILY_RV380)
     {
         u32_t save, tmp;
 
@@ -312,13 +312,11 @@ static void load_microcode()
 
   R5xx2DIdleLocal();
 
-  switch(rhd.ChipSet)
+  switch(rhd.ChipFamily)
   {
-    case RHD_R300:
-    case RHD_R350:
-    case RHD_RV350:
-    case RHD_RV370:
-    case RHD_RV380:
+    case CHIP_FAMILY_R300:
+    case CHIP_FAMILY_R350:
+    case CHIP_FAMILY_RV350:
       dbgprintf("Loading R300 microcode\n");
       for (i = 0; i < 256; i++)
       {
@@ -326,7 +324,7 @@ static void load_microcode()
         OUTREG(RADEON_CP_ME_RAM_DATAL, R300_cp_microcode[i][0]);
       }
       break;
-
+/*
     case RHD_RV505:
     case RHD_RV515:
     case RHD_RV516:
@@ -343,6 +341,7 @@ static void load_microcode()
         OUTREG(RADEON_CP_ME_RAM_DATAH, R520_cp_microcode[i][1]);
         OUTREG(RADEON_CP_ME_RAM_DATAL, R520_cp_microcode[i][0]);
       }
+*/
   }
   safe_sti(ifl);
 };
@@ -379,8 +378,7 @@ void  R5xx2DInit()
     dbgprintf("gui_control %x \n", rhd.gui_control);
 
     rhd.surface_cntl = 0;
-    rhd.dst_pitch_offset = ((screenpitch / 64) << 22) |
-                            ((rhd.FbIntAddress + rhd.FbScanoutStart) >> 10);
+    rhd.dst_pitch_offset = ((screenpitch / 64) << 22) | (rhd.fbLocation >> 10);
 
     dbgprintf("dst_pitch_offset %x \n", rhd.dst_pitch_offset);
 
@@ -389,7 +387,7 @@ void  R5xx2DInit()
     scr_pixmap.height = rhd.displayHeight;
     scr_pixmap.format = PICT_a8r8g8b8;
     scr_pixmap.pitch  = screenpitch;
-    scr_pixmap.local  = (void*)rhd.FbIntAddress;
+    scr_pixmap.local  = (void*)rhd.fbLocation;
     scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
     scr_pixmap.mapped = (void*)0;
 

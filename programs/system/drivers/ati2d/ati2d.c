@@ -5,7 +5,11 @@
 #include <malloc.h>
 #include <memory.h>
 
+#include "pci.h"
+
 #include "syscall.h"
+
+#include "radeon_reg.h"
 
 #include "ati2d.h"
 #include "accel_2d.h"

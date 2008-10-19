@@ -141,6 +141,24 @@ macro TransparentBlit dstpix, dstx, dsty, srcpix, srcx, srcy, w, h, key
            add esp, 9*4
 }
 
+macro fix_cwd  path
+{
+          pushd path
+
+          push '/'
+          push path
+          call _strrchr
+
+          mov byte [eax], 0
+
+          mov eax, 30
+          mov ebx, 1
+          mov ecx, [esp+8]
+          int 0x40
+
+          add esp, 12
+}
+
 szPxlib              db  '/rd/1/lib/pixlib.obj',0
 
 szStart              db  'START',0
@@ -257,4 +275,31 @@ load_pxlib:
            xor eax, eax
            ret
 
-
+align 4
+_strrchr:
+	push	ebp
+	mov	ebp, esp
+	push	edi
+        mov     edi, [8+ebp]
+        mov     ecx, -1
+        xor     al, al
+        cld
+        repne
+        scasb
+        not     ecx
+        dec     edi
+        mov     al, [12+ebp]
+        std
+        repne
+        scasb
+        cld
+        jne     .failure
+        lea     eax, [edi+1]
+        pop     edi
+        pop     ebp
+        ret
+.failure:
+        xor     eax, eax
+        pop     edi
+        pop     ebp
+        ret
