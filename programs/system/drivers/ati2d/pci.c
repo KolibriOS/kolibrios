@@ -71,9 +71,10 @@ RHDPtr FindPciDevice()
         rhd.devfn = devfn;
         rhd.PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
 
-        rhd.ChipFamily = dev->chip_family;
+        rhd.ChipFamily  = dev->chip_family;
         rhd.IsMobility  = dev->mobility;
         rhd.IsIGP       = dev->igp;
+        rhd.HasCRTC2    = !dev->nocrtc2;
 
         reg2C = PciRead32(bus,devfn, 0x2C);
 

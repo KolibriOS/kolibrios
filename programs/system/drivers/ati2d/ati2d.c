@@ -1,4 +1,8 @@
 
+
+#define R300_PIO     0       /* now we have cp */
+
+
 #include "types.h"
 
 #include <stdio.h>
@@ -14,7 +18,7 @@
 #include "ati2d.h"
 #include "accel_2d.h"
 
-RHD_t rhd;
+RHD_t rhd __attribute__ ((aligned (128)));    /* reduce cache lock */
 
 static clip_t  clip;
 
@@ -163,6 +167,7 @@ int __stdcall srv_2d(ioctl_t *io)
 #include "pci.c"
 #include "ati_mem.c"
 
+#include "init_cp.c"
 #include "r500.inc"
 
 #include "clip.inc"

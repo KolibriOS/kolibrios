@@ -11,14 +11,11 @@ IMP
     _GetPgAddr         core.GetPgAddr,
     _CreateRingBuffer  core.CreateRingBuffer,
     _PciApi            core.PciApi,
+    _PciRead8          core.PciRead8,
     _PciRead32         core.PciRead32,
     _PciWrite32        core.PciWrite32,
     _RegService        core.RegService,
-    _SysMsgBoardStr    core.SysMsgBoardStr,
-    _SelectHwCursor    core.SelectHwCursor,
-    _SetHwCursor       core.SetHwCursor,
-    _HwCursorCreate    core.HwCursorCreate,
-    _HwCursorRestore   core.HwCursorRestore
+    _SysMsgBoardStr    core.SysMsgBoardStr
 
 
 FIL ati2d.obj,

@@ -7,7 +7,6 @@ typedef unsigned int memType;
 typedef struct { float hi, lo; } range;
 
 
-#define R300_PIO     1
 
 #define PCI_CMD_STAT_REG        0x04
 
@@ -123,12 +122,22 @@ typedef struct
 } RADEONCardInfo;
 
 
-
 #define RHD_FB_BAR         0
 #define RHD_MMIO_BAR       2
 
 #define RHD_MEM_GART       1
 #define RHD_MEM_FB         2
+
+#define RADEON_DEFAULT_GART_SIZE         8       /* MB (must be 2^n and > 4MB) */
+#define R300_DEFAULT_GART_SIZE           32      /* MB (for R300 and above) */
+#define RADEON_DEFAULT_RING_SIZE         1       /* MB (must be page aligned) */
+#define RADEON_DEFAULT_BUFFER_SIZE       2       /* MB (must be page aligned) */
+#define RADEON_DEFAULT_GART_TEX_SIZE     1       /* MB (must be page aligned) */
+
+#define RADEON_DEFAULT_CP_TIMEOUT        100000  /* usecs */
+
+#define RADEON_DEFAULT_PCI_APER_SIZE     32      /* in MB */
+
 
 typedef struct RHDRec
 {
@@ -168,8 +177,9 @@ typedef struct RHDRec
 
   char             *chipset;
 
-  int              IsIGP;
-  int              IsMobility;
+  Bool              IsIGP;
+  Bool              IsMobility;
+  Bool              HasCRTC2;
 
   u32_t            bus;
   u32_t            devfn;
@@ -193,6 +203,19 @@ typedef struct RHDRec
   u32_t            displayWidth;
   u32_t            displayHeight;
 
+  u32_t            gartSize;
+
+  u32_t*           ringBase;
+  u32_t            ring_rp;
+  u32_t            ring_wp;
+  u32_t            ringSize;
+  u32_t            ring_avail;
+
+  u32_t            bufSize;
+  u32_t            gartTexSize;
+  u32_t            pciAperSize;
+  u32_t            CPusecTimeout;
+
   int              __xmin;
   int              __ymin;
   int              __xmax;
@@ -202,15 +225,24 @@ typedef struct RHDRec
   u32_t            dst_pitch_offset;
   u32_t            surface_cntl;
 
-  u32_t            *ring_base;
-  u32_t            ring_rp;
-  u32_t            ring_wp;
 
-  int              RamWidth;
+  volatile u32_t   host_rp   __attribute__ ((aligned (128)));
+
+  volatile u32_t   scratch0  __attribute__ ((aligned (128)));
+  volatile u32_t   scratch1;
+  volatile u32_t   scratch2;
+  volatile u32_t   scratch3;
+  volatile u32_t   scratch4;
+  volatile u32_t   scratch5;
+  volatile u32_t   scratch6;
+  volatile u32_t   scratch7;
+
+  int              RamWidth  __attribute__ ((aligned (128)));
   Bool             IsDDR;
 
   int              num_gb_pipes;
   int              has_tcl;
+
 }RHD_t, *RHDPtr;
 
 extern RHD_t rhd;
@@ -251,44 +283,55 @@ extern RHD_t rhd;
 # define RADEON_CNTL_PAINT_MULTI       0x00009A00
 
 #define CP_PACKET0(reg, n)            \
-	(RADEON_CP_PACKET0 | ((n) << 16) | ((reg) >> 2))
+    (RADEON_CP_PACKET0 | ((n - 1 ) << 16) | ((reg) >> 2))
 
 #define CP_PACKET1(reg0, reg1)            \
 	(RADEON_CP_PACKET1 | (((reg1) >> 2) << 11) | ((reg0) >> 2))
 
-#define CP_PACKET2()              \
+#define CP_PACKET2()                     \
   (RADEON_CP_PACKET2)
 
-#define CP_PACKET3( pkt, n )            \
+#define CP_PACKET3( pkt, n )             \
 	(RADEON_CP_PACKET3 | (pkt) | ((n) << 16))
 
-#define BEGIN_RING( n ) do {            \
-  ring = rhd.ring_base;                 \
-  write = rhd.ring_wp;                  \
-} while (0)
+
+#define BEGIN_RING( req ) do {                                     \
+     int avail = rhd.ring_rp-rhd.ring_wp;                          \
+     if (avail <=0 ) avail+= 0x4000;                                \
+     if( (req)+128 > avail)                                        \
+     {                                                             \
+        rhd.ring_rp = INREG(RADEON_CP_RB_RPTR);                    \
+        avail = rhd.ring_rp-rhd.ring_wp;                           \
+        if (avail <= 0) avail+= 0x4000;                             \
+        if( (req)+128 > avail){                                    \
+           safe_sti(ifl);                                          \
+           return 0;                                               \
+        };                                                         \
+     }                                                             \
+     ring = &rhd.ringBase[rhd.ring_wp];                            \
+}while(0);
 
 #define ADVANCE_RING()
 
-#define OUT_RING( x ) do {        \
-	ring[write++] = (x);						\
-} while (0)
+#define OUT_RING( x )        *ring++ = (x)
 
-#define OUT_RING_REG(reg, val)            \
-do {									\
-    OUT_RING(CP_PACKET0(reg, 0));					\
-    OUT_RING(val);							\
+#define CP_REG(reg, val)                 \
+do {                                     \
+    ring[0]  = CP_PACKET0((reg), 1);     \
+    ring[1]  = (val);                    \
+    ring+=  2;                           \
 } while (0)
 
 #define DRM_MEMORYBARRIER()  __asm volatile("lock; addl $0,0(%%esp)" : : : "memory");
 
-#define COMMIT_RING() do {                            \
-  rhd.ring_wp = write & 0x1FFF;                       \
-  /* Flush writes to ring */                          \
-  DRM_MEMORYBARRIER();                                \
-  /*GET_RING_HEAD( dev_priv );          */            \
-  OUTREG( RADEON_CP_RB_WPTR, rhd.ring_wp);            \
-	/* read from PCI bus to ensure correct posting */		\
-  INREG( RADEON_CP_RB_RPTR );                         \
+#define COMMIT_RING() do {                             \
+  rhd.ring_wp = (ring - rhd.ringBase) & 0x3FFF;        \
+  /* Flush writes to ring */                           \
+    DRM_MEMORYBARRIER();                               \
+  /*GET_RING_HEAD( dev_priv );          */             \
+  OUTREG( RADEON_CP_RB_WPTR, rhd.ring_wp);             \
+    /* read from PCI bus to ensure correct posting */  \
+/*  INREG( RADEON_CP_RB_RPTR );    */                  \
 } while (0)
 
 
@@ -318,6 +361,9 @@ extern inline void OUTREG(u16_t offset, u32_t value)
   *(volatile u32_t *)((u8_t *)(rhd.MMIOBase + offset)) = value;
 }
 
+//#define OUTREG( offset, value) \
+//  *(volatile u32_t *)((u8_t *)(rhd.MMIOBase + (u32_t)(offset))) = (u32_t)value
+
 
 extern inline u32_t _RHDRegRead(RHDPtr rhdPtr, u16_t offset)
 {
@@ -334,6 +380,12 @@ MASKREG(u16_t offset, u32_t value, u32_t mask)
   tmp |= (value & mask);
   OUTREG(offset, tmp);
 };
+
+
+#define INPLL( addr) RADEONINPLL( addr)
+
+#define OUTPLL( addr, val) RADEONOUTPLL( addr, val)
+
 
 extern inline void
 _RHDRegWrite(RHDPtr rhdPtr, u16_t offset, u32_t value)
