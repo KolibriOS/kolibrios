@@ -172,8 +172,8 @@ L23:
         mov     esi, DWORD PTR [__exports+28]
 	mov	eax, DWORD PTR [esp+56]
 	mov	DWORD PTR [esp+20], edi
-	sub	edi, -2147483648
-	sub	esi, -2147483648
+        add     edi, OS_BASE
+        add     esi, OS_BASE
 	mov	DWORD PTR [esp+44], esi
 	mov	ecx, DWORD PTR [eax-4]
 	mov	DWORD PTR [esp+48], edi
@@ -200,7 +200,7 @@ L26:
 	movzx	eax, WORD PTR [edi]
 	mov	edx, DWORD PTR [esp+56]
 	mov	eax, DWORD PTR [edx+eax*4]
-	sub	eax, -2147483648
+        add     eax, OS_BASE
 	push	eax
 	push	esi
 	call	strncmp
@@ -213,8 +213,8 @@ L33:
 	push	ecx
 	push	32
 	mov	ecx, DWORD PTR [esp+28]
-	mov	eax, DWORD PTR [ecx-2147483648+ebx*4]
-	sub	eax, -2147483648
+        mov     eax, DWORD PTR [ecx+OS_BASE+ebx*4]
+        add     eax, OS_BASE
 	push	eax
 	push	esi
 	call	strncmp
@@ -225,7 +225,7 @@ L33:
 	mov	edx, DWORD PTR [esp+52]
 	mov	ecx, DWORD PTR [esp+28]
 	mov	eax, DWORD PTR [esi+ebx*4]
-	sub	eax, -2147483648
+        add     eax, OS_BASE
 	mov	DWORD PTR [ecx+edx*4], eax
 	jmp	L36
 L34:
@@ -252,7 +252,7 @@ L30:
 	mov	edi, DWORD PTR [esp+52]
 	mov	edx, DWORD PTR [esp+28]
 	mov	eax, DWORD PTR [esi+eax*4]
-	sub	eax, -2147483648
+        add     eax, OS_BASE
 	mov	DWORD PTR [edx+edi*4], eax
 L37:
 	inc	DWORD PTR [esp+52]
