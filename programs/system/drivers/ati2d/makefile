@@ -9,11 +9,14 @@ HFILES:=     ati2d.h      	\
              pci.h        	\
              accel_2d.h   	\
              r5xx_regs.h 	\
-             microcode.h
+             radeon_microcode.h
 
 SRC_DEP:=    init.c    		\
              pci.c              \
              ati_mem.c       	\
+	     init_cp.c		\
+             init_3d.inc        \
+             blend.inc          \
              r500.inc           \
              pixmap.inc		\
              accel_2d.inc  	\

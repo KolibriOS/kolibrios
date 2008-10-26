@@ -805,6 +805,7 @@ static u32_t RADEONGetBlendCntl(int op, u32_t dst_format)
     return sblend | dblend;
 }
 
+
 static Bool R300PrepareComposite(int op, int srcX, int srcY,
                                 int dstX, int dstY,
                                 int w, int h)
@@ -1064,27 +1065,6 @@ static Bool R300PrepareComposite(int op, int srcX, int srcY,
 
 
 
-#define VTX_COUNT 4
-
-static __inline__ u32_t F_TO_DW(float val)
-{
-    union {
-	float f;
-        u32_t l;
-    } tmp;
-    tmp.f = val;
-    return tmp.l;
-}
-
-#define OUT_RING_F(x) OUT_RING(F_TO_DW(x))
-
-#define VTX_OUT(_dstX, _dstY, _srcX, _srcY)     \
-do {								\
-    OUT_RING_F(_dstX);						\
-    OUT_RING_F(_dstY);						\
-    OUT_RING_F(_srcX);						\
-    OUT_RING_F(_srcY);						\
-} while (0)
 
 
 

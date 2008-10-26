@@ -24,64 +24,61 @@ static clip_t  clip;
 
 static local_pixmap_t scr_pixmap;
 
-static void Init3DEngine(RHDPtr rhdPtr);
+int Init3DEngine(RHDPtr info);
 
 int __stdcall srv_2d(ioctl_t *io);
 
 u32_t __stdcall drvEntry(int action)
 {
-  RHDPtr rhdPtr;
-  u32_t retval;
+    RHDPtr rhdPtr;
+    u32_t retval;
 
-  int i;
+    int i;
 
-  if(action != 1)
-    return 0;
+    if(action != 1)
+        return 0;
 
-  if(!dbg_open("/rd/1/drivers/ati2d.log"))
-  {
-     printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
-     return 0;
-  }
-  if( GetScreenBpp() != 32)
-  {
-     dbgprintf("32 bpp dispaly mode required !\nExit\t");
-     return 0;
-  }
+    if(!dbg_open("/rd/1/drivers/ati2d.log"))
+    {
+        printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
+        return 0;
+    }
+    if( GetScreenBpp() != 32)
+    {
+        dbgprintf("32 bpp dispaly mode required !\nExit\t");
+        return 0;
+    }
 
-  if((rhdPtr=FindPciDevice())==NULL)
-  {
-    dbgprintf("Device not found\n");
-    return 0;
-  };
+    if((rhdPtr=FindPciDevice())==NULL)
+    {
+        dbgprintf("Device not found\n");
+        return 0;
+    };
 
-  for(i=0;i<6;i++)
-  {
-    if(rhd.memBase[i])
-      dbgprintf("Memory base_%d 0x%x size 0x%x\n",
-                i,rhd.memBase[i],(1<<rhd.memsize[i]));
-  };
-  for(i=0;i<6;i++)
-  {
-    if(rhd.ioBase[i])
-      dbgprintf("Io base_%d 0x%x size 0x%x\n",
-                i,rhd.ioBase[i],(1<<rhd.memsize[i]));
-  };
-  if(!RHDPreInit())
-    return 0;
+    for(i=0;i<6;i++)
+    {
+        if(rhd.memBase[i])
+           dbgprintf("Memory base_%d 0x%x size 0x%x\n",
+                     i,rhd.memBase[i],(1<<rhd.memsize[i]));
+    };
+    for(i=0;i<6;i++)
+    {
+      if(rhd.ioBase[i])
+        dbgprintf("Io base_%d 0x%x size 0x%x\n",
+                  i,rhd.ioBase[i],(1<<rhd.memsize[i]));
+    };
+    if(!RHDPreInit())
+        return 0;
 
-  R5xx2DInit();
-  rhd.has_tcl = 1;
+    R5xx2DInit();
 
-//  Init3DEngine(&rhd);
-
-  //init_r500();
+    Init3DEngine(&rhd);
 
 
-  retval = RegService("HDRAW", srv_2d);
-  dbgprintf("reg service %s as: %x\n", "HDRAW", retval);
+    retval = RegService("HDRAW", srv_2d);
+    dbgprintf("reg service %s as: %x\n", "HDRAW", retval);
 
-  return retval;
+    return retval;
 };
 
 
@@ -133,6 +130,11 @@ int __stdcall srv_2d(ioctl_t *io)
           return FillRect((io_fill_t*)inp);
         break;
 
+      case PX_LINE:
+        if(io->inp_size==6)
+          return Line((io_draw_t*)inp);
+        break;
+
       case PX_BLIT:
         if(io->inp_size==8)
           return Blit((io_blit_t*)inp);
@@ -143,18 +145,10 @@ int __stdcall srv_2d(ioctl_t *io)
           return BlitTransparent((io_blit_t*)inp);
         break;
 
-      case PX_LINE:
-        if(io->inp_size==6)
-          return Line((io_draw_t*)inp);
+      case PX_BLIT_ALPHA:
+        if(io->inp_size==8)
+          return RadeonComposite((io_blit_t*)inp);
         break;
-
-/*
-
-      case COMPIZ:
-        if(io->inp_size==6)
-          return RadeonComposite((blit_t*)inp);
-        break;
-*/
 
     default:
       return ERR_PARAM;
@@ -173,6 +167,7 @@ int __stdcall srv_2d(ioctl_t *io)
 #include "clip.inc"
 #include "pixmap.inc"
 #include "accel_2d.inc"
-//#include "accel_3d.inc"
+#include "init_3d.inc"
+#include "blend.inc"
 
 

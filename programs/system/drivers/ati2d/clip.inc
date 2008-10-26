@@ -170,7 +170,7 @@ int blit_clip(clip_t *dst_clip,int *dst_x,int *dst_y,
          *src_y += dy0 - *dst_y;
 
          *dst_x = dx0;
-         *dst_y = dx0;
+         *dst_y = dy0;
 
          return 0;
       };

@@ -3,52 +3,6 @@
 
 #include "r5xx_regs.h"
 
-#define RADEON_BUS_CNTL                 0x0030
-#	define RADEON_BUS_MASTER_DIS		(1 << 6)
-
-
-#define RADEON_SCRATCH_UMSK             0x0770
-#define RADEON_SCRATCH_ADDR		0x0774
-
-#define RADEON_CP_ME_RAM_ADDR           0x07d4
-#define RADEON_CP_ME_RAM_RADDR		0x07d8
-#define RADEON_CP_ME_RAM_DATAH		0x07dc
-#define RADEON_CP_ME_RAM_DATAL		0x07e0
-
-#define RADEON_AIC_CNTL                 0x01d0
-#define RADEON_PCIGART_TRANSLATE_EN      (1 << 0)
-
-
-#define RADEON_CP_RB_BASE               0x0700
-#define RADEON_CP_RB_CNTL		0x0704
-#	define RADEON_BUF_SWAP_32BIT		(2 << 16)
-#	define RADEON_RB_NO_UPDATE		(1 << 27)
-#define RADEON_CP_RB_RPTR_ADDR		0x070c
-#define RADEON_CP_RB_RPTR		0x0710
-#define RADEON_CP_RB_WPTR		0x0714
-
-#define RADEON_CP_RB_WPTR_DELAY		0x0718
-#	define RADEON_PRE_WRITE_TIMER_SHIFT	0
-#	define RADEON_PRE_WRITE_LIMIT_SHIFT	23
-
-#define RADEON_CP_IB_BASE		0x0738
-
-#define RADEON_CP_CSQ_CNTL		0x0740
-#	define RADEON_CSQ_CNT_PRIMARY_MASK	(0xff << 0)
-#	define RADEON_CSQ_PRIDIS_INDDIS		(0 << 28)
-#	define RADEON_CSQ_PRIPIO_INDDIS		(1 << 28)
-#	define RADEON_CSQ_PRIBM_INDDIS		(2 << 28)
-#	define RADEON_CSQ_PRIPIO_INDBM		(3 << 28)
-#	define RADEON_CSQ_PRIBM_INDBM		(4 << 28)
-#	define RADEON_CSQ_PRIPIO_INDPIO		(15 << 28)
-
-#define RADEON_ISYNC_CNTL               0x1724
-#	define RADEON_ISYNC_ANY2D_IDLE3D	(1 << 0)
-#	define RADEON_ISYNC_ANY3D_IDLE2D	(1 << 1)
-#	define RADEON_ISYNC_TRIG2D_IDLE3D	(1 << 2)
-#	define RADEON_ISYNC_TRIG3D_IDLE2D	(1 << 3)
-#	define RADEON_ISYNC_WAIT_IDLEGUI	(1 << 4)
-#	define RADEON_ISYNC_CPSCRATCH_IDLEGUI	(1 << 5)
 
 #define R5XX_LOOP_COUNT 2000000
 
@@ -210,7 +164,6 @@ void  R5xx2DInit()
     dbgprintf("gui_control %x \n", rhd.gui_control);
 
     rhd.surface_cntl = 0;
-//    rhd.dst_pitch_offset = ((screenpitch / 64) << 22) | (rhd.fbLocation >> 10);
 
     rhd.dst_pitch_offset = (((rhd.displayWidth * 4 / 64)<< 22) |
                                (rhd.fbLocation  >> 10));
@@ -221,7 +174,7 @@ void  R5xx2DInit()
     scr_pixmap.width  = rhd.displayWidth;
     scr_pixmap.height = rhd.displayHeight;
     scr_pixmap.format = PICT_a8r8g8b8;
-    scr_pixmap.pitch  = screenpitch;
+    scr_pixmap.pitch  = rhd.displayWidth * 4     ;//screenpitch;
     scr_pixmap.local  = (void*)rhd.fbLocation;
     scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
     scr_pixmap.mapped = (void*)0;

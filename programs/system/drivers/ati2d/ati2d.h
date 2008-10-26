@@ -297,12 +297,12 @@ extern RHD_t rhd;
 
 #define BEGIN_RING( req ) do {                                     \
      int avail = rhd.ring_rp-rhd.ring_wp;                          \
-     if (avail <=0 ) avail+= 0x4000;                                \
+     if (avail <=0 ) avail+= 0x4000;                               \
      if( (req)+128 > avail)                                        \
      {                                                             \
         rhd.ring_rp = INREG(RADEON_CP_RB_RPTR);                    \
         avail = rhd.ring_rp-rhd.ring_wp;                           \
-        if (avail <= 0) avail+= 0x4000;                             \
+        if (avail <= 0) avail+= 0x4000;                            \
         if( (req)+128 > avail){                                    \
            safe_sti(ifl);                                          \
            return 0;                                               \
@@ -322,7 +322,7 @@ do {                                     \
     ring+=  2;                           \
 } while (0)
 
-#define DRM_MEMORYBARRIER()  __asm volatile("lock; addl $0,0(%%esp)" : : : "memory");
+#define DRM_MEMORYBARRIER()  __asm__ volatile("lock; addl $0,0(%%esp)" : : : "memory");
 
 #define COMMIT_RING() do {                             \
   rhd.ring_wp = (ring - rhd.ringBase) & 0x3FFF;        \
@@ -334,6 +334,10 @@ do {                                     \
 /*  INREG( RADEON_CP_RB_RPTR );    */                  \
 } while (0)
 
+#define BEGIN_ACCEL(n)          BEGIN_RING(2*(n))
+#define FINISH_ACCEL()          COMMIT_RING()
+
+#define OUT_ACCEL_REG(reg, val) CP_REG((reg), (val))
 
 
 typedef struct {

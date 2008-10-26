@@ -226,6 +226,7 @@ static void radeon_write_mc_fb_agp_location(RHDPtr info, int mask, u32_t fb_loc,
     }
 }
 
+#if !R300_PIO
 
 static void RADEONUpdateMemMapRegisters(RHDPtr info)
 {
@@ -444,6 +445,9 @@ static void RADEONUpdateMemMapRegisters(RHDPtr info)
      };
 };
 
+#endif
+
+
 
 static void RADEONInitMemoryMap(RHDPtr info)
 {
@@ -550,7 +554,12 @@ static void RADEONInitMemoryMap(RHDPtr info)
       dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
       dbgprintf("  FB_LOCATION   : 0x%08x\n", (unsigned)info->fbLocation);
 
+#if !R300_PIO
+
       RADEONUpdateMemMapRegisters(info);
+
+#endif
+
 }
 
 static void RADEONGetVRamType(RHDPtr info)

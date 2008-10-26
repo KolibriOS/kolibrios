@@ -303,7 +303,7 @@ void init_ring_buffer(RHDPtr info)
 
      OUTREG(RADEON_CP_RB_WPTR,rhd.ring_rp);
 
-     tmp = (((u32_t)&rhd.host_rp) & 4095) + GetPgAddr(&rhd.host_rp);
+     tmp = (((u32_t)&rhd.host_rp) & 4095) + GetPgAddr((void*)&rhd.host_rp);
 
      OUTREG(RADEON_CP_RB_RPTR_ADDR, tmp); // ring buffer read pointer
 
@@ -318,7 +318,7 @@ void init_ring_buffer(RHDPtr info)
 	 * with PCI GART as well as (whatever kind of) AGP GART
 	 */
 
-     tmp = (((u32_t)&rhd.scratch0) & 4095) + GetPgAddr(&rhd.scratch0);
+     tmp = (((u32_t)&rhd.scratch0) & 4095) + GetPgAddr((void*)&rhd.scratch0);
      OUTREG(RADEON_SCRATCH_ADDR, tmp);
 
      OUTREG(RADEON_SCRATCH_UMSK, 0x0);
@@ -482,7 +482,6 @@ static int radeon_cp_start(RHDPtr info)
     safe_sti(ifl);
 
     radeon_do_wait_for_idle();
-    dbgprintf("run cp  RPTR= %d\n", INREG(RADEON_CP_RB_RPTR) );
 };
 
 
@@ -498,7 +497,6 @@ Bool init_cp(RHDPtr info)
      init_pipes(&rhd);
 
      rhd.ring_rp = rhd.ring_wp = INREG(RADEON_CP_RB_RPTR);
-     dbgprintf("ring wp= %x\n",rhd.ring_wp);
      OUTREG(RADEON_CP_RB_WPTR, rhd.ring_rp);
 
      radeon_cp_start(&rhd);

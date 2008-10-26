@@ -54,7 +54,7 @@ int CreatePixmap(pixmap_t *io)
            pixmap->pitch   = pitch;
            pixmap->mapped  = mapped;
            pixmap->pitch_offset =  ((pitch/64)<<22)| (((u32_t)local+rhd.fbLocation)>>10);
-           pixmap->local   = local;
+           pixmap->local   = local+rhd.fbLocation;
 
            dbgprintf("pixmap.pitch_offset: %x\n", pixmap->pitch_offset);
            dbgprintf("width: %d height: %d\n",pixmap->width,pixmap->height );
@@ -86,7 +86,7 @@ int DestroyPixmap( pixmap_t *io )
      UnmapPages(pixmap->mapped, size);
      UserFree(pixmap->mapped);
 
-     rhd_mem_free(&rhd,RHD_MEM_FB,pixmap->local);
+     rhd_mem_free(&rhd,RHD_MEM_FB,pixmap->local-rhd.fbLocation);
      free(pixmap);
 
      io->format  = 0;
