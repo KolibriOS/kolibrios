@@ -37,8 +37,8 @@ static inline eflags_t safe_cli(void)
 {
   eflags_t tmp;
 	asm volatile (
-    "pushf\n\t"
-    "pop %0\n\t"
+    "pushfl\n\t"
+    "popl %0\n\t"
 		"cli\n"
     : "=r" (tmp)
 	);
@@ -48,8 +48,8 @@ static inline eflags_t safe_cli(void)
 static inline void safe_sti(eflags_t efl)
 {
 	asm volatile (
-    "push %0\n\t"
-		"popf\n"
+    "pushl %0\n\t"
+    "popfl\n"
     : : "r" (efl)
 	);
 }
@@ -57,8 +57,8 @@ static inline void safe_sti(eflags_t efl)
 static inline count_t fnzb(u32_t arg)
 {
   count_t n;
-  asm volatile ("xor %0, %0 \n\t"
-                "bsr %0, %1"
+  asm volatile ("xorl %0, %0 \n\t"
+                "bsr %1, %0"
                 :"=&r" (n)
                 :"r"(arg)
                 );
@@ -68,8 +68,8 @@ static inline count_t fnzb(u32_t arg)
 static inline count_t _bsf(u32_t arg)
 {
   count_t n;
-  asm volatile ("xor %0, %0 \n\t"
-                "bsf %0, %1"
+  asm volatile ("xorl %0, %0 \n\t"
+                "bsf %1, %0"
                 :"=&r" (n)
                 :"r"(arg)
                 );

@@ -20,8 +20,6 @@ static slab_t *slab_create();
 
 static slab_cache_t * slab_cache_alloc();
 
-void slab_free(slab_cache_t *cache, void *obj);
-
 
 /**
  * Allocate frames for slab space and initialize
@@ -313,22 +311,22 @@ static count_t slab_obj_destroy(slab_cache_t *cache, void *obj,
 /** Return object to cache, use slab if known  */
 static void _slab_free(slab_cache_t *cache, void *obj, slab_t *slab)
 {
-//	ipl_t ipl;
+   eflags_t efl;
 
-//	ipl = interrupts_disable();
+   efl = safe_cli();
 
 //	if ((cache->flags & SLAB_CACHE_NOMAGAZINE) \
-	    || magazine_obj_put(cache, obj)) {
+//      || magazine_obj_put(cache, obj)) {
 
 		slab_obj_destroy(cache, obj, slab);
 
 //	}
-//	interrupts_restore(ipl);
-//	atomic_dec(&cache->allocated_objs);
+  safe_sti(efl);
+  atomic_dec(&cache->allocated_objs);
 }
 
 /** Return slab object to cache */
-void slab_free(slab_cache_t *cache, void *obj)
+void __fastcall slab_free(slab_cache_t *cache, void *obj)
 {
 	_slab_free(cache, obj, NULL);
 }

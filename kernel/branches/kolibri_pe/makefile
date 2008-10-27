@@ -6,7 +6,7 @@ INCLUDE = include/
 
 DEFS = -DUSE_SMP -DCONFIG_DEBUG
 
-CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf -masm=intel
+CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf
 LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
 KERNEL_SRC:=				\

@@ -36,17 +36,17 @@ typedef struct atomic {
 
 static inline void atomic_inc(atomic_t *val) {
 #ifdef USE_SMP
-  asm volatile ("lock inc %0\n" : "+m" (val->count));
+  asm volatile ("lock incl %0\n" : "+m" (val->count));
 #else
-  asm volatile ("inc %0\n" : "+m" (val->count));
+  asm volatile ("incl %0\n" : "+m" (val->count));
 #endif /* USE_SMP */
 }
 
 static inline void atomic_dec(atomic_t *val) {
 #ifdef USE_SMP
-  asm volatile ("lock dec %0\n" : "+m" (val->count));
+  asm volatile ("lock decl %0\n" : "+m" (val->count));
 #else
-  asm volatile ("dec %0\n" : "+m" (val->count));
+  asm volatile ("decl %0\n" : "+m" (val->count));
 #endif /* USE_SMP */
 }
 
@@ -98,22 +98,20 @@ static inline void atomic_lock_arch(atomic_t *val)
   u32_t tmp;
 
 //  preemption_disable();
-	asm volatile (
-    "0:\n"
-    "pause\n\t" /* Pentium 4's HT love this instruction */
-    "mov %1, [%0]\n\t"
-    "test %1, %1\n\t"
-    "jnz 0b\n\t"       /* lightweight looping on locked spinlock */
 
-    "inc %1\n\t"      /* now use the atomic operation */
-    "xchg [%0], %1\n\t"
-    "test %1, %1\n\t"
-    "jnz 0b\n\t"
-    : "+m" (val->count), "=r"(tmp)
-	);
-	/*
-	 * Prevent critical section code from bleeding out this way up.
-	 */
+    asm volatile (
+		"0:\n"
+		"pause\n" /* Pentium 4's HT love this instruction */
+		"mov %0, %1\n"
+		"testl %1, %1\n"
+		"jnz 0b\n"       /* lightweight looping on locked spinlock */
+
+		"incl %1\n"      /* now use the atomic operation */
+		"xchgl %0, %1\n"
+		"testl %1, %1\n"
+		"jnz 0b\n"
+    : "+m" (val->count), "=&r"(tmp)
+  );
  // CS_ENTER_BARRIER();
 }
 

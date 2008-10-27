@@ -147,9 +147,9 @@ extrn @init_heap@8
 extrn @find_large_md@4
 extrn @find_small_md@4
 extrn @phis_alloc@4
-extrn @mem_alloc@8
 
-extrn @heap_alloc@8
+extrn @mem_alloc@8
+extrn @mem_free@4
 
 extrn _slab_cache_init
 extrn _alloc_page
@@ -157,9 +157,6 @@ extrn _alloc_page
 extrn _get_free_mem
 
 extrn _bx_from_load
-
-
-@mem_alloc@8         equ @heap_alloc@8
 
 
 section '.flat' code readable align 4096

@@ -78,3 +78,5 @@ slab_cache_t * slab_cache_create(
          int flags);
 
 void* __fastcall slab_alloc(slab_cache_t *cache, int flags);
+void  __fastcall slab_free(slab_cache_t *cache, void *obj);
+

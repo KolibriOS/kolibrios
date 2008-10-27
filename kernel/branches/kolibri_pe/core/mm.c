@@ -16,7 +16,7 @@ zone_t z_core;
 static inline u32_t save_edx(void)
 {
   u32_t val;
-  asm volatile ("mov %0, edx":"=r"(val));
+  asm volatile ("movl %%edx, %0":"=r"(val));
   return val;
 };
 
@@ -524,9 +524,9 @@ static inline int to_order(count_t arg)
 {
   int n;
   asm volatile (
-                "xor eax, eax \n\t"
-                "bsr eax, edx \n\t"
-                "inc eax"
+                "xorl %eax, %eax \n\t"
+                "bsr %edx, %eax \n\t"
+                "incl %eax"
                 :"=a" (n)
                 :"d"(arg)
                 );

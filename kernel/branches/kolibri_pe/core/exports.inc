@@ -112,7 +112,7 @@ kernel_export:
   dd szReleasePages    , release_pages
 
   dd szFreeKernelSpace , free_kernel_space     ;stdcall
-  dd szHeapAlloc       , @heap_alloc@8         ;fastcall
+  dd szHeapAlloc       , @mem_alloc@8          ;fastcall
   dd szKernelFree      , kernel_free	       ;stdcall
   dd szUserAlloc       , user_alloc	       ;stdcall
   dd szUserFree        , user_free	       ;stdcall
