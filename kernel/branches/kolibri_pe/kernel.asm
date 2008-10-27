@@ -142,6 +142,7 @@ extrn _init
 extrn _init_mm
 
 extrn @core_alloc@4
+extrn @core_free@4
 
 extrn @init_heap@8
 extrn @find_large_md@4
@@ -2280,7 +2281,10 @@ sys_background:
 
     pushad
 ; return memory for old background
-    stdcall kernel_free, [img_background]
+
+    mov ecx, [img_background]
+    call @mem_free@4
+
 ; calculate RAW size
     xor  eax,eax
     inc  eax

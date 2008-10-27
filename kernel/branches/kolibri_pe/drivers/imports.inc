@@ -44,14 +44,14 @@ kernel_export \
 	      CommitPages,\
 	      ReleasePages,\
 \
-	      FreeKernelSpace,\
-              HeapAlloc,\
-	      KernelFree,\
-	      UserAlloc,\
-	      UserFree,\
-	      Kmalloc,\
-	      Kfree,\
-	      CreateRingBuffer,\
+          FreeKernelSpace,  \
+          MemAlloc,         \
+          MemFree,          \
+          UserAlloc,        \
+          UserFree,         \
+          Kmalloc,          \
+          Kfree,            \
+          CreateRingBuffer, \
 \
 	      GetPid,\
 	      CreateObject,\

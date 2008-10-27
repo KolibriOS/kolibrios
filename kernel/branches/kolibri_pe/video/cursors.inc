@@ -366,8 +366,8 @@ proc load_cursor stdcall, src:dword, flags:dword
 
            stdcall load_file, [src]
            test eax, eax
-           jz .fail
            mov [src], eax
+           jz .fail
 @@:
            push ebx
            push esi
@@ -383,7 +383,9 @@ proc load_cursor stdcall, src:dword, flags:dword
 
            cmp word [flags], LOAD_FROM_FILE
            jne .exit
-           stdcall kernel_free, [src]
+
+           mov ecx, [src]
+           call @mem_free@4
 .exit:
            pop edi
            pop esi
@@ -436,7 +438,8 @@ align 4
 destroy_cursor:
 
            push eax
-           stdcall kernel_free, [eax+CURSOR.base]
+           mov ecx, [eax+CURSOR.base]
+           call @mem_free@4
            pop eax
 
            call destroy_kernel_object

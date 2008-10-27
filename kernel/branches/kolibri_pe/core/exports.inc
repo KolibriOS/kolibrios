@@ -9,20 +9,20 @@ $Revision$
 
 
 iglobal
-  szKernel	      db 'KERNEL', 0
-  szVersion	      db 'version',0
+  szKernel            db 'KERNEL', 0
+  szVersion           db 'version',0
 
   szRegService	      db 'RegService',0
   szGetService	      db 'GetService',0
   szServiceHandler    db 'ServiceHandler',0
   szAttachIntHandler  db 'AttachIntHandler',0
   szGetIntHandler     db 'GetIntHandler', 0
-  szFpuSave	      db 'FpuSave',0
+  szFpuSave           db 'FpuSave',0
   szFpuRestore	      db 'FpuRestore',0
   szReservePortArea   db 'ReservePortArea',0
   szBoot_Log	      db 'Boot_Log',0
 
-  szPciApi	      db 'PciApi', 0
+  szPciApi            db 'PciApi', 0
   szPciRead32	      db 'PciRead32', 0
   szPciRead16	      db 'PciRead16', 0
   szPciRead8	      db 'PciRead8', 0
@@ -33,7 +33,7 @@ iglobal
   szAllocPage	      db 'AllocPage',0
   szFreePage	      db 'FreePage',0
   szGetPgAddr	      db 'GetPgAddr',0
-  szMapPage	      db 'MapPage',0
+  szMapPage           db 'MapPage',0
   szMapSpace	      db 'MapSpace',0
   szMapIoMem	      db 'MapIoMem',0
   szCommitPages       db 'CommitPages',0
@@ -41,15 +41,15 @@ iglobal
 
   szAllocKernelSpace  db 'AllocKernelSpace',0
   szFreeKernelSpace   db 'FreeKernelSpace',0
-  szHeapAlloc         db 'HeapAlloc',0
-  szKernelFree	      db 'KernelFree',0
+  szMemAlloc          db 'MemAlloc',0
+  szMemFree           db 'MemFree',0
   szUserAlloc	      db 'UserAlloc',0
   szUserFree	      db 'UserFree',0
-  szKmalloc	      db 'Kmalloc',0
-  szKfree	      db 'Kfree',0
+  szKmalloc           db 'Kmalloc',0
+  szKfree             db 'Kfree',0
   szCreateRingBuffer  db 'CreateRingBuffer',0
 
-  szGetPid	      db 'GetPid',0
+  szGetPid            db 'GetPid',0
   szCreateObject      db 'CreateObject',0
   szDestroyObject     db 'DestroyObject',0
   szCreateEvent       db 'CreateEvent',0
@@ -71,15 +71,15 @@ iglobal
   szLoadFile	      db 'LoadFile',0
   szSendEvent	      db 'SendEvent',0
   szSetMouseData      db 'SetMouseData',0
-  szSleep	      db 'Sleep',0
+  szSleep             db 'Sleep',0
   szGetTimerTicks     db 'GetTimerTicks',0
 
-  szStrncat	      db 'strncat',0
-  szStrncpy	      db 'strncpy',0
-  szstrncmp	      db 'strncmp',0
-  szStrnlen	      db 'strnlen',0
-  szStrchr	      db 'strchr',0
-  szStrrchr	      db 'strrchr',0
+  szStrncat           db 'strncat',0
+  szStrncpy           db 'strncpy',0
+  szstrncmp           db 'strncmp',0
+  szStrnlen           db 'strnlen',0
+  szStrchr            db 'strchr',0
+  szStrrchr           db 'strrchr',0
 
 
 align 16
@@ -104,18 +104,18 @@ kernel_export:
 
   dd szAllocPage       , _alloc_page           ;stdcall
   dd szFreePage        , free_page
-  dd szMapPage	       , map_page	       ;stdcall
+  dd szMapPage         , map_page              ;stdcall
   dd szMapSpace        , map_space
-  dd szMapIoMem        , map_io_mem	       ;stdcall
+  dd szMapIoMem        , map_io_mem            ;stdcall
   dd szGetPgAddr       , get_pg_addr
   dd szCommitPages     , commit_pages	       ;not implemented
   dd szReleasePages    , release_pages
 
   dd szFreeKernelSpace , free_kernel_space     ;stdcall
-  dd szHeapAlloc       , @mem_alloc@8          ;fastcall
-  dd szKernelFree      , kernel_free	       ;stdcall
-  dd szUserAlloc       , user_alloc	       ;stdcall
-  dd szUserFree        , user_free	       ;stdcall
+  dd szMemAlloc        , @mem_alloc@8          ;fastcall
+  dd szMemFree         , @mem_free@4           ;fastcall
+  dd szUserAlloc       , user_alloc            ;stdcall
+  dd szUserFree        , user_free             ;stdcall
   dd szKmalloc	       , malloc
   dd szKfree	       , free
   dd szCreateRingBuffer, create_ring_buffer    ;stdcall

@@ -8,35 +8,11 @@
 $Revision$
 
 
-struc MEM_BLOCK
-{  .next_block  dd ?
-   .prev_block  dd ? ;+4
-   .list_fd     dd ? ;+8
-   .list_bk     dd ? ;+12
-   .base        dd ? ;+16
-   .size        dd ? ;+20
-   .flags       dd ? ;+24
-   .handle      dd ? ;+28
-}
 
 MEM_LIST_OFFSET equ  8
 FREE_BLOCK      equ  4
 USED_BLOCK      equ  8
 DONT_FREE_BLOCK equ  10h
-
-virtual at 0
-  MEM_BLOCK MEM_BLOCK
-end virtual
-
-MEM_BLOCK_SIZE equ 8*4
-
-block_next   equ MEM_BLOCK.next_block
-block_prev   equ MEM_BLOCK.prev_block
-list_fd      equ MEM_BLOCK.list_fd
-list_bk      equ MEM_BLOCK.list_bk
-block_base   equ MEM_BLOCK.base
-block_size   equ MEM_BLOCK.size
-block_flags  equ MEM_BLOCK.flags
 
 
 align 4
@@ -45,21 +21,6 @@ proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
            ret
 endp
 
-
-align 4
-proc kernel_free stdcall, base:dword
-
-           ret
-endp
-
-
-
-restore block_next
-restore block_prev
-restore block_list
-restore block_base
-restore block_size
-restore block_flags
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 

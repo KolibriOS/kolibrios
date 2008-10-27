@@ -83,7 +83,7 @@ proc START stdcall, state:dword
 
            mov ecx,  16*512
            mov edx, PG_SW
-           call HeapAlloc
+           call MemAlloc
            test eax, eax
            jz .out_of_mem
            mov [mix_buff], eax
@@ -426,7 +426,7 @@ proc CreateBuffer stdcall, format:dword, size:dword
            add ecx, 128          ;resampler required
            mov [eax+STREAM.in_size], ecx
            mov edx, PG_SW
-           call HeapAlloc
+           call MemAlloc
 
            mov edi, [str]
            mov [edi+STREAM.in_base], eax
@@ -513,9 +513,11 @@ DestroyBuffer:
            mov [ecx+STREAM.str_fd], ebx
            popf
 
-           stdcall KernelFree, [eax+STREAM.in_base]
+           mov ecx, [eax+STREAM.in_base]
+           call MemFree
            mov eax, [.handle]
-           stdcall KernelFree, [eax+STREAM.out_base]
+           mov ecx, [eax+STREAM.out_base]
+           call MemFree
 
            pop eax               ;restore stack
            call DestroyObject    ;eax= stream

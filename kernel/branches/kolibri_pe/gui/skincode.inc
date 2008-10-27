@@ -27,7 +27,9 @@ read_skin_file:
         mov     esi, eax
         mov     edi, skin_data
         rep     movsd
-        stdcall kernel_free, eax
+
+        mov ecx, eax
+        call @mem_free@4
 
         call    parse_skin_data
         xor     eax, eax
@@ -37,9 +39,10 @@ read_skin_file:
         inc     eax
         ret
 .noskin:
-        stdcall kernel_free, eax
-        push    2
-        pop     eax
+        mov ecx, eax
+        call @mem_free@4
+
+        mov eax, 2
         ret
 
 struct SKIN_HEADER

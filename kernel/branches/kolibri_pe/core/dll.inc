@@ -558,7 +558,7 @@ endp
 ;  ebx= size of file
 ;
 ; warging
-;  You mast call kernel_free() to delete each file
+;  You mast call mem_free() to delete each file
 ;  loaded by the load_file() function
 
 align 4
@@ -622,7 +622,7 @@ proc load_file stdcall, file_name:dword
 .exit:
            push eax
            lea edi, [eax+ebx]     ;cleanup remain space
-           mov ecx, 4096      ;from file end
+           mov ecx, 4096          ;from file end
            and ebx, 4095
            jz  @f
            sub ecx, ebx
@@ -636,7 +636,8 @@ proc load_file stdcall, file_name:dword
            pop esi
            ret
 .cleanup:
-           stdcall kernel_free, [file]
+           mov ecx, [file]
+           call @mem_free@4
 .fail:
            xor eax, eax
            xor ebx, ebx
@@ -826,11 +827,9 @@ proc load_driver stdcall, driver_name:dword
            mov     dword [edi], '.obj'
            mov     byte [edi+4], 0
            stdcall load_file, edx
-
+           mov [coff], eax
            test eax, eax
            jz .exit
-
-           mov [coff], eax
 
            movzx ebx, [eax+CFH.nSections]
            lea edx, [eax+20]
@@ -847,6 +846,7 @@ proc load_driver stdcall, driver_name:dword
            mov edx, PG_SW
            call @mem_alloc@8
            test eax, eax
+           mov [img_base], eax
            jz .fail
 
            mov [img_base], eax
@@ -923,14 +923,16 @@ proc load_driver stdcall, driver_name:dword
            stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szSTART
            mov [start], eax
 
-           stdcall kernel_free, [coff]
+           mov ecx, [coff]
+           call @mem_free@4
 
            mov ebx, [start]
            stdcall ebx, DRV_ENTRY
            test eax, eax
            jnz .ok
 
-           stdcall kernel_free, [img_base]
+           mov ecx, [img_base]
+           call @mem_free@4
            xor eax, eax
            ret
 .ok:
@@ -961,9 +963,11 @@ proc load_driver stdcall, driver_name:dword
            mov esi, msg_CR
            call sys_msg_board_str
 .cleanup:
-           stdcall kernel_free,[img_base]
+           mov ecx, [img_base]
+           call @mem_free@4
 .fail:
-           stdcall kernel_free, [coff]
+           mov ecx, [coff]
+           call @mem_free@4
 .exit:
            xor eax, eax
            ret
@@ -1065,7 +1069,9 @@ proc load_library stdcall, file_name:dword
            stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szEXPORTS
            mov [exports], eax
 
-           stdcall kernel_free, [coff]
+           mov ecx, [coff]
+           call @mem_free@4
+
            mov eax, [exports]
            ret
 .fail:

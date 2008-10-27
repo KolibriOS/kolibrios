@@ -168,12 +168,12 @@ ntfs_setup:             ; CODE XREF: part_set.inc
 @@:
 ; $MFT and $MFTMirr invalid!
 .fail_free_frs:
-        push    [ntfs_data.frs_buffer]
-        call    kernel_free
+        mov ecx, [ntfs_data.frs_buffer]
+        call    @mem_free@4
         jmp     problem_fat_dec_count
 .fail_free_mft:
-        push    [ntfs_data.mft_retrieval]
-        call    kernel_free
+        mov ecx, [ntfs_data.mft_retrieval]
+        call    @mem_free@4
         jmp     .fail_free_frs
 .mftok:
 ; read $MFT table retrieval information
@@ -259,9 +259,9 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov     ecx, [ntfs_data.mft_retrieval_size]
         add     ecx, ecx
         rep     movsd
-        push    [ntfs_data.mft_retrieval]
+        mov ecx, [ntfs_data.mft_retrieval]
         mov     [ntfs_data.mft_retrieval], eax
-        call    kernel_free
+        call    @mem_free@4
         mov     eax, [ntfs_data.mft_retrieval_size]
 .ok:
         shl     eax, 3
@@ -980,8 +980,8 @@ ntfs_find_lfn:
 @@:
 ; reallocate
         push    eax
-        push    [ntfs_data.cur_index_buf]
-        call    kernel_free
+        mov ecx,  [ntfs_data.cur_index_buf]
+        call    @mem_free@4
         pop     ecx
         mov     [ntfs_data.cur_index_size], ecx
         mov edx, PG_SW
@@ -1013,10 +1013,10 @@ ntfs_find_lfn:
         rep     movsd
         mov     esi, eax
         mov     [ntfs_data.cur_index_size], ebp
-        push    esi ebp
-        push    [ntfs_data.cur_index_buf]
-        call    kernel_free
-        pop     ebp esi
+
+        mov ecx, [ntfs_data.cur_index_buf]
+        call    @mem_free@4
+
         mov     [ntfs_data.cur_index_buf], esi
 .ok2:
         add     esi, 10h
@@ -1327,8 +1327,8 @@ ntfs_HdReadFolder:
 @@:
 ; reallocate
         push    eax
-        push    [ntfs_data.cur_index_buf]
-        call    kernel_free
+        mov ecx, [ntfs_data.cur_index_buf]
+        call    @mem_free@4
         pop     ecx
         mov     [ntfs_data.cur_index_size], ecx
         mov edx, PG_SW
@@ -1365,10 +1365,10 @@ ntfs_HdReadFolder:
         rep     movsd
         mov     esi, eax
         mov     [ntfs_data.cur_index_size], ebp
-        push    esi ebp
-        push    [ntfs_data.cur_index_buf]
-        call    kernel_free
-        pop     ebp esi
+
+        mov ecx, [ntfs_data.cur_index_buf]
+        call    @mem_free@4
+
         mov     [ntfs_data.cur_index_buf], esi
 .ok2:
         add     esi, 10h

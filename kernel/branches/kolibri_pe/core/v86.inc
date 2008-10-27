@@ -72,7 +72,7 @@ v86_create:
         mov     edi, eax
         add     eax, 1000h
         push    eax
-        call    get_pg_addr
+        sub eax, OS_BASE
         or      al, PG_UW
         stosd
 ; ...and also copy system page tables
@@ -143,7 +143,11 @@ v86_create:
 ; destroys: eax, ebx, ecx, edx (due to free)
 v86_destroy:
         push    eax
-        stdcall kernel_free, [eax+V86_machine.pagedir]
+
+        mov ecx, [eax+V86_machine.pagedir]
+        sub ecx, OS_BASE
+        call @core_free@4
+
         pop     eax
         jmp     free
 

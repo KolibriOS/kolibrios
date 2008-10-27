@@ -533,7 +533,7 @@ proc create_primary_buff
 
            mov ecx, 0x10000
            mov edx, PG_SW
-           call HeapAlloc
+           call MemAlloc
 	   mov [ctrl.buffer], eax
 
 	   mov edi, eax

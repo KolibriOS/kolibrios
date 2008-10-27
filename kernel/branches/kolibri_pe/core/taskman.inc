@@ -235,7 +235,8 @@ end if
            call set_cr3
 .err:
 .err_hdr:
-           stdcall kernel_free,[file_base]
+           mov ecx, [file_base]
+           call @mem_free@4
 .err_file:
            xor eax, eax
            mov [application_table_status],eax
