@@ -29,12 +29,6 @@ map_space:    ;not implemented
 
            ret
 
-
-align 4
-free_page:
-
-           ret
-
 proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
            push edi
@@ -246,18 +240,16 @@ proc new_mem_resize stdcall, new_size:dword
            shr edi, 12
            shr esi, 12
 @@:
-           mov eax, [app_page_tabs+edi*4]
-           test eax, 1
+           mov ecx, [app_page_tabs+edi*4]
+           test ecx, 1
            jz .next
            mov dword [app_page_tabs+edi*4], 2
            mov ebx, edi
            shl ebx, 12
-           push eax
            invlpg [ebx]
-           pop eax
-           call free_page
-
-.next:     add edi, 1
+           call @core_free@4
+.next:
+           add edi, 1
            cmp edi, esi
            jb @B
 

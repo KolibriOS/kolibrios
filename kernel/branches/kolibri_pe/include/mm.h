@@ -71,4 +71,4 @@ void frame_free(pfn_t frame);
 void __fastcall frame_set_parent(pfn_t pfn, void *data);
 void* __fastcall frame_get_parent(pfn_t pfn);
 
-void* __fastcall heap_alloc(size_t size, u32_t flags) ;
+void* __fastcall mem_alloc(size_t size, u32_t flags) ;

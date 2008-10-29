@@ -30,6 +30,13 @@ extern void panic_printf(char *fmt, ...) __attribute__((noreturn));
 
 # define DBG(format,...)
 
+# define PANIC(expr)   \
+      if (!(expr)) {   \
+         panic_printf("Kernel panic in %s() at %s:%u: " \
+                      "assertion failed (%s)",__func__ ,__FILE__,__LINE__, \
+                       #expr); \
+      };
+
 #endif
 
 

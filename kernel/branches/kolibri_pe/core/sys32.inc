@@ -500,7 +500,7 @@ term9:
 	   mov eax, [.slot]
 	   shl eax, 8
 	   mov eax,[SLOT_BASE+eax+APPDATA.dir_table]
-       ;    stdcall destroy_app_space, eax
+       stdcall destroy_app_space, eax
 
 	   mov esi, [.slot]
 	   cmp [fpu_owner],esi	 ; if user fpu last -> fpu user = 1
@@ -629,23 +629,23 @@ term9:
            shl edi, 8
 	   add edi,SLOT_BASE
 
-           mov eax,[edi+APPDATA.pl0_stack]
-           sub eax, OS_BASE
-           call free_page
+           mov ecx,[edi+APPDATA.pl0_stack]
+           sub ecx, OS_BASE
+           call @core_free@4
 
-           mov eax,[edi+APPDATA.cur_dir]
-           sub eax, OS_BASE
-           call free_page
+           mov ecx,[edi+APPDATA.cur_dir]
+           sub ecx, OS_BASE
+           call @core_free@4
 
-	   mov eax, [edi+APPDATA.io_map]
-	   cmp eax, (tss._io_map_0-OS_BASE+PG_MAP)
+           mov ecx, [edi+APPDATA.io_map]
+           cmp ecx, (tss._io_map_0-OS_BASE+PG_MAP)
 	   je @F
-	   call free_page
+           call @core_free@4
 @@:
-	   mov eax, [edi+APPDATA.io_map+4]
-	   cmp eax, (tss._io_map_1-OS_BASE+PG_MAP)
+           mov ecx, [edi+APPDATA.io_map+4]
+           cmp ecx, (tss._io_map_1-OS_BASE+PG_MAP)
 	   je @F
-	   call free_page
+           call @core_free@4
 @@:
 	   mov eax, 0x20202020
 	   stosd

@@ -149,30 +149,31 @@ proc user_free stdcall, base:dword
            test al, DONT_FREE_BLOCK
            jnz .cantfree
 
+           push edi
+
            and eax, not 4095
-           mov ecx, eax
+           mov edi, eax
            or al, FREE_BLOCK
            mov [page_tabs+(esi-1)*4], eax
-           sub ecx, 4096
-           mov ebx, ecx
-           shr ecx, 12
+           sub edi, 4096
+           mov ebx, edi
+           shr edi, 12
            jz .released
 .release:
-           xor eax, eax
-           xchg eax, [page_tabs+esi*4]
-           test al, 1
+           xor ecx, ecx
+           xchg ecx, [page_tabs+esi*4]
+           test cl, 1
            jz @F
-           call free_page
+
+           call @core_free@4
            mov eax, esi
            shl eax, 12
            invlpg [eax]
 @@:
            inc esi
-           dec ecx
+           dec edi
            jnz .release
 .released:
-           push edi
-
            mov edx, [current_slot]
            mov esi, dword [edx+APPDATA.heap_base]
            mov edi, dword [edx+APPDATA.heap_top]
@@ -276,20 +277,28 @@ user_realloc:
         cmp     edx, ebx
         jb      .realloc_add
 ; release part of allocated memory
+
+        push ecx
 .loop:
         cmp     edx, ebx
         jz      .release_done
         dec     edx
-        xor     eax, eax
-        xchg    eax, [page_tabs+edx*4]
+        xor     ecx, ecx
+        xchg    ecx, [page_tabs+edx*4]
         test    al, 1
         jz      .loop
-        call    free_page
+
+        push edx
+        call    @core_free@4
+        pop edx
         mov     eax, edx
         shl     eax, 12
         invlpg  [eax]
         jmp     .loop
 .release_done:
+
+        pop ecx
+
         sub     ebx, ecx
         cmp     ebx, 1
         jnz     .nofreeall

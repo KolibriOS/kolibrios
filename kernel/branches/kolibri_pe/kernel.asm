@@ -146,7 +146,6 @@ extrn @core_free@4
 
 extrn @init_heap@8
 extrn @find_large_md@4
-extrn @find_small_md@4
 extrn @phis_alloc@4
 
 extrn @mem_alloc@8
@@ -2397,11 +2396,6 @@ draw_background_temp:
 	add	ecx, 0xFFF
 	shr	ecx, 12
 .z:
-	mov	eax, [page_tabs+ebx*4]
-	test	al, 1
-	jz	@f
-	call	free_page
-@@:
 	mov	eax, [page_tabs+esi*4]
 	or	al, PG_UW
 	mov	[page_tabs+ebx*4], eax

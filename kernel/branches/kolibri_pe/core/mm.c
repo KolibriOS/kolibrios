@@ -549,7 +549,7 @@ addr_t __fastcall zone_alloc(zone_t *zone, u32_t order)
    return (v << FRAME_WIDTH);
 }
 
-addr_t  __fastcall core_alloc(u32_t order)        //export
+addr_t  __fastcall core_alloc(u32_t order)
 {
    eflags_t efl;
    pfn_t v;
@@ -559,11 +559,14 @@ addr_t  __fastcall core_alloc(u32_t order)        //export
        v = zone_frame_alloc(&z_core, order);
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
-   DBG("core alloc: %x, size %x\n", v << FRAME_WIDTH, (1<<order)<<12);
+
+   DBG("core alloc: %x, size %x   remain  %d\n", v << FRAME_WIDTH,
+        ((1<<order)<<12), z_core.free_count);
+
    return (v << FRAME_WIDTH);
 };
 
-void __fastcall core_free(addr_t frame)            //export
+void __fastcall core_free(addr_t frame)
 {
    eflags_t efl;
 
@@ -572,6 +575,9 @@ void __fastcall core_free(addr_t frame)            //export
        zone_free(&z_core, frame>>12);
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
+
+   DBG("core free %x  remain %d\n", frame, z_core.free_count);
+
 }
 
 addr_t alloc_page()                                //obsolete
@@ -587,7 +593,7 @@ addr_t alloc_page()                                //obsolete
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
 
-   DBG("alloc_page: %x\n", v << FRAME_WIDTH);
+   DBG("alloc_page: %x   remain  %d\n", v << FRAME_WIDTH, z_core.free_count);
 
    restore_edx(edx);
    return (v << FRAME_WIDTH);
@@ -605,7 +611,8 @@ void __fastcall zone_free(zone_t *zone, pfn_t frame_idx)
 
   ASSERT(frame->refcount);
 
-	if (!--frame->refcount) {
+    if (!--frame->refcount)
+    {
 		buddy_system_free(zone, &frame->buddy_link);
 
 		/* Update zone information. */

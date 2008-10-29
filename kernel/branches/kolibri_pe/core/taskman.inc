@@ -200,8 +200,6 @@ proc fs_execute
            mov   eax,[hdr_mem]
            mov   [ebx+APPDATA.mem_size],eax
 
-if GREEDY_KERNEL
-else
            mov ecx, [hdr_mem]
            mov edi, [file_size]
            add edi, 4095
@@ -213,11 +211,9 @@ else
                cld
            rep stosb
 @@:
-end if
+           mov ecx, [file_base]
+           call @mem_free@4
 
-; release only virtual space, not phisical memory
-
-           stdcall free_kernel_space, [file_base]   ;
            lea eax, [hdr_cmdline]
            lea ebx, [cmdline]
            lea ecx, [filename]
@@ -375,14 +371,6 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            shr ecx, 12
            mov [img_pages], ecx
 
-;     if GREEDY_KERNEL
-;           lea eax, [ecx+ebx+2]    ;only image size
-;     else
-;           lea eax, [eax+ebx+2]    ;all requested memory
-;     end if
-      ;     cmp eax, [pg_data.pages_free]
-      ;     ja .fail
-
            call _alloc_page
            test eax, eax
            mov [dir_addr], eax
@@ -434,41 +422,24 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            xor eax, eax
            rep stosd
 
-           mov ecx, [img_pages]
-           mov ebx, PG_UW
-               mov esi, [img_base]
-           shr esi, 10
-           add esi, page_tabs
-           xor edx, edx
-           mov edi, page_tabs
-.remap:
-           lodsd
-           or eax, ebx      ; force user level r/w access
-           stosd
-           add edx, 0x1000
-           dec [app_pages]
-           dec ecx
-           jnz .remap
-
            mov ecx, [app_pages]
-           test ecx, ecx
-           jz .done
-
-if GREEDY_KERNEL
-           mov eax, 0x02
-           rep stosd
-else
-
+           xor ebx, ebx
 .alloc:
-           call _alloc_page
+           xor ecx, ecx
+           call @core_alloc@4
            test eax, eax
            jz .fail
 
-           stdcall map_page,edx,eax,dword PG_UW
-           add edx, 0x1000
+           stdcall map_page,ebx,eax,dword PG_UW
+           add ebx, 0x1000
            dec [app_pages]
            jnz .alloc
-end if
+
+           mov ecx, [img_size]                 ; FIXME remap md
+           mov esi, [img_base]
+           xor edi, edi
+
+           rep movsb
 
 .done:
            dec [pg_data.pg_mutex]
@@ -495,24 +466,26 @@ set_cr3:
 align 4
 proc destroy_page_table stdcall, pg_tab:dword
 
+           push ebx
            push esi
 
            mov esi, [pg_tab]
-           mov ecx, 1024
+           mov ebx, 1024
 .free:
-           mov eax, [esi]
-           test eax, 1
+           mov ecx, [esi]
+           test ecx, 1
            jz .next
 
-           test eax, 1 shl 9
+           test ecx, 1 shl 9
            jnz .next                      ;skip shared pages
 
-           call free_page
+           call @core_free@4
 .next:
            add esi, 4
-           dec ecx
+           dec ebx
            jnz .free
            pop esi
+           pop ebx
            ret
 endp
 
@@ -563,15 +536,15 @@ proc destroy_app_space stdcall, pg_dir:dword
 
            stdcall destroy_page_table, eax
 
-           mov eax, [esi]
-           call free_page
+           mov ecx, [esi]
+           call @core_free@4
 .next:
            add esi, 4
            dec edi
            jnz .destroy
 
-           mov eax, [pg_dir]
-           call free_page
+           mov ecx, [pg_dir]
+           call @core_free@4
 .exit:
            dec [pg_data.pg_mutex]
            ret
@@ -744,7 +717,6 @@ proc read_process_memory
 	   mov eax, [slot]
 	   shl	eax,8
 	   mov ebx, [offset]
-     ;      add ebx, new_app_base
 	   push ecx
 	   stdcall map_memEx, [proc_mem_map],\
 			      [SLOT_BASE+eax+0xB8],\
