@@ -162,23 +162,23 @@ static void zone_reserve(zone_t *z, pfn_t base, count_t count)
 
 static void zone_release(zone_t *z, pfn_t base, count_t count)
 {
-  int i;
-  pfn_t top = base+count;
+    int i;
+    pfn_t top = base+count;
 
-  if( (base+count < z->base)||(base > z->base+z->count))
-    return;
+    if( (base+count < z->base)||(base > z->base+z->count))
+        return;
 
-  if(base < z->base)
-    base = z->base;
+    if(base < z->base)
+        base = z->base;
 
-  if(top > z->base+z->count)
-     top = z->base+z->count;
+    if(top > z->base+z->count)
+        top = z->base+z->count;
 
-  DBG("zone release base %x top %x\n", base, top);
+    DBG("zone release base %x top %x\n", base, top);
 
-  for (i = base; i < top; i++) {
-    z->frames[i-z->base].refcount = 0;
-    buddy_system_free(z, &z->frames[i-z->base].buddy_link);
+    for (i = base; i < top; i++) {
+        z->frames[i-z->base].refcount = 0;
+        buddy_system_free(z, &z->frames[i-z->base].buddy_link);
     }
 };
 
@@ -260,12 +260,12 @@ static link_t *buddy_coalesce(zone_t *z, link_t *block_1,
 }
 
 static inline void buddy_mark_busy(zone_t *z, link_t * block) {
-  frame_t * frame = (frame_t*)block;
+    frame_t * frame = (frame_t*)block;
 	frame->refcount = 1;
 }
 
 static inline void buddy_mark_available(zone_t *z, link_t *block) {
-  frame_t *frame = (frame_t*)block;
+    frame_t *frame = (frame_t*)block;
 	frame->refcount = 0;
 }
 
@@ -281,15 +281,15 @@ static link_t *find_buddy(zone_t *zone, link_t *block)
 {
 	frame_t *frame;
 	index_t index;
-  u32_t is_left, is_right;
+    u32_t is_left, is_right;
 
-  frame = (frame_t*)block;
-  ASSERT(IS_BUDDY_ORDER_OK(frame_index_abs(zone, frame),frame->buddy_order));
+    frame = (frame_t*)block;
+    ASSERT(IS_BUDDY_ORDER_OK(frame_index_abs(zone, frame),frame->buddy_order));
 
 	is_left = IS_BUDDY_LEFT_BLOCK_ABS(zone, frame);
 	is_right = IS_BUDDY_RIGHT_BLOCK_ABS(zone, frame);
 
-  ASSERT(is_left ^ is_right);
+    ASSERT(is_left ^ is_right);
 	if (is_left) {
 		index = (frame_index(zone, frame)) + (1 << frame->buddy_order);
 	} else { 	/* if (is_right) */
@@ -309,56 +309,56 @@ static link_t *find_buddy(zone_t *zone, link_t *block)
 static link_t* __fastcall buddy_system_alloc_block(zone_t *z, link_t *block)
 {
 	link_t *left,*right, *tmp;
-  u32_t order;
+    u32_t order;
 
-  left = buddy_find_block(z, block, BUDDY_SYSTEM_INNER_BLOCK);
-  ASSERT(left);
+    left = buddy_find_block(z, block, BUDDY_SYSTEM_INNER_BLOCK);
+    ASSERT(left);
 	list_remove(left);
 	while (1) {
-    if (! buddy_get_order(z,left)) {
-      buddy_mark_busy(z, left);
+        if (! buddy_get_order(z,left)) {
+            buddy_mark_busy(z, left);
 			return left;
 		}
 
-    order = buddy_get_order(z, left);
+        order = buddy_get_order(z, left);
 
-    right = buddy_bisect(z, left);
-    buddy_set_order(z, left, order-1);
-    buddy_set_order(z, right, order-1);
+        right = buddy_bisect(z, left);
+        buddy_set_order(z, left, order-1);
+        buddy_set_order(z, right, order-1);
 
-    tmp = buddy_find_block(z, block, BUDDY_SYSTEM_INNER_BLOCK);
+        tmp = buddy_find_block(z, block, BUDDY_SYSTEM_INNER_BLOCK);
 
-		if (tmp == right) {
-			right = left;
-			left = tmp;
-		}
-    ASSERT(tmp == left);
-    buddy_mark_busy(z, left);
-    buddy_system_free(z, right);
-    buddy_mark_available(z, left);
+        if (tmp == right) {
+            right = left;
+            left = tmp;
+        }
+        ASSERT(tmp == left);
+        buddy_mark_busy(z, left);
+        buddy_system_free(z, right);
+        buddy_mark_available(z, left);
 	}
 }
 
 static void __fastcall buddy_system_free(zone_t *z, link_t *block)
 {
-	link_t *buddy, *hlp;
-  u8_t i;
+    link_t *buddy, *hlp;
+    u8_t i;
 
-	/*
+    /*
 	 * Determine block's order.
 	 */
-  i = buddy_get_order(z, block);
+    i = buddy_get_order(z, block);
 
-  ASSERT(i <= z->max_order);
+    ASSERT(i <= z->max_order);
 
-  if (i != z->max_order) {
+    if (i != z->max_order) {
 		/*
 		 * See if there is any buddy in the list of order i.
 		 */
-    buddy = find_buddy(z, block);
+        buddy = find_buddy(z, block);
 		if (buddy) {
 
-      ASSERT(buddy_get_order(z, buddy) == i);
+            ASSERT(buddy_get_order(z, buddy) == i);
 			/*
 			 * Remove buddy from the list of order i.
 			 */
@@ -367,37 +367,35 @@ static void __fastcall buddy_system_free(zone_t *z, link_t *block)
 			/*
 			 * Invalidate order of both block and buddy.
 			 */
-      buddy_set_order(z, block, BUDDY_SYSTEM_INNER_BLOCK);
-      buddy_set_order(z, buddy, BUDDY_SYSTEM_INNER_BLOCK);
+            buddy_set_order(z, block, BUDDY_SYSTEM_INNER_BLOCK);
+            buddy_set_order(z, buddy, BUDDY_SYSTEM_INNER_BLOCK);
 
 			/*
 			 * Coalesce block and buddy into one block.
 			 */
-      hlp = buddy_coalesce(z, block, buddy);
+            hlp = buddy_coalesce(z, block, buddy);
 
 			/*
 			 * Set order of the coalesced block to i + 1.
 			 */
-      buddy_set_order(z, hlp, i + 1);
+            buddy_set_order(z, hlp, i + 1);
 
 			/*
 			 * Recursively add the coalesced block to the list of order i + 1.
 			 */
-      buddy_system_free(z, hlp);
+            buddy_system_free(z, hlp);
 			return;
 		}
 	}
-
 	/*
 	 * Insert block into the list of order i.
 	 */
-  list_append(block, &z->order[i]);
-
+    list_append(block, &z->order[i]);
 }
 
 static inline frame_t * zone_get_frame(zone_t *zone, index_t frame_idx)
 {
-  ASSERT(frame_idx < zone->count);
+    ASSERT(frame_idx < zone->count);
 	return &zone->frames[frame_idx];
 }
 
@@ -409,8 +407,8 @@ static void zone_mark_unavailable(zone_t *zone, index_t frame_idx)
 	frame = zone_get_frame(zone, frame_idx);
 	if (frame->refcount)
 		return;
-  link = buddy_system_alloc_block(zone, &frame->buddy_link);
-  ASSERT(link);
+    link = buddy_system_alloc_block(zone, &frame->buddy_link);
+    ASSERT(link);
 	zone->free_count--;
 }
 
@@ -418,7 +416,7 @@ static link_t* __fastcall buddy_system_alloc(zone_t *z, u32_t i)
 {
 	link_t *res, *hlp;
 
-  ASSERT(i <= z->max_order);
+    ASSERT(i <= z->max_order);
 
 	/*
 	 * If the list of order i is not empty,
@@ -480,7 +478,7 @@ static __fastcall pfn_t zone_frame_alloc(zone_t *zone, u32_t order)
 	/* Allocate frames from zone buddy system */
 	tmp = buddy_system_alloc(zone, order);
 
-  ASSERT(tmp);
+    ASSERT(tmp);
 
 	/* Update zone information. */
 	zone->free_count -= (1 << order);
@@ -602,14 +600,14 @@ addr_t alloc_page()                                //obsolete
 void __fastcall zone_free(zone_t *zone, pfn_t frame_idx)
 {
 	frame_t *frame;
-  u32_t order;
+    u32_t order;
 
 	frame = &zone->frames[frame_idx];
 
 	/* remember frame order */
 	order = frame->buddy_order;
 
-  ASSERT(frame->refcount);
+    ASSERT(frame->refcount);
 
     if (!--frame->refcount)
     {

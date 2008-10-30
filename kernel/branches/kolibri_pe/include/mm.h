@@ -22,14 +22,25 @@ typedef struct {
 	int flags;
 } zone_t;
 
+
 typedef struct
 {
-   count_t count;
-   addr_t  frames[18];
-}phismem_t;
+    link_t  link;
+    link_t  adj;
+    addr_t  base;
+    size_t  size;
+    void   *parent;
+    u32_t   state;
+}md_t;
 
 
 #define PG_MAP        1
+#define PG_WRITE      2
+#define PG_USER       4
+
+#define PG_SW         3
+#define PG_UW         7
+
 
 
 #define PAGE_SIZE    4096
@@ -60,15 +71,19 @@ static inline pfn_t ADDR2PFN(addr_t addr)
 
 void init_mm();
 
-addr_t __fastcall core_alloc(u32_t order);
-void __fastcall core_free(addr_t frame);
-
-pfn_t alloc_page() __attribute__ ((deprecated));
-pfn_t __stdcall alloc_pages(count_t count) __asm__ ("_alloc_pages") __attribute__ ((deprecated));
+void* __fastcall frame_get_parent(pfn_t pfn);
+void  __fastcall frame_set_parent(pfn_t pfn, void *data);
 
 void frame_free(pfn_t frame);
 
-void __fastcall frame_set_parent(pfn_t pfn, void *data);
-void* __fastcall frame_get_parent(pfn_t pfn);
 
-void* __fastcall mem_alloc(size_t size, u32_t flags) ;
+addr_t __fastcall core_alloc(u32_t order);
+void   __fastcall core_free(addr_t frame);
+
+pfn_t alloc_page() __attribute__ ((deprecated));
+
+
+md_t* __fastcall md_alloc(size_t size, u32_t flags);
+void* __fastcall mem_alloc(size_t size, u32_t flags);
+void  __fastcall mem_free(void *mem);
+

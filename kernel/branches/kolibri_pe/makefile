@@ -6,7 +6,7 @@ INCLUDE = include/
 
 DEFS = -DUSE_SMP -DCONFIG_DEBUG
 
-CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf
+CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin
 LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
 KERNEL_SRC:=				\
@@ -30,6 +30,7 @@ PE_SRC:=			\
 		mm.c		\
 		slab.c		\
 		heap.c		\
+		dll.c		\
 		spinlock.c	\
 		boot/boot.asm	\
 		boot/start.asm

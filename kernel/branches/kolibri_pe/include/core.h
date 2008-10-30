@@ -92,7 +92,7 @@ static inline void _bts(u32_t *data, count_t val)
                 );
 }
 
-static inline void _btr(u32_t *data, count_t val)
+extern inline void _btr(u32_t *data, count_t val)
 {
   asm volatile ("btr %0, %1 \n\t"
                 :
@@ -100,3 +100,22 @@ static inline void _btr(u32_t *data, count_t val)
                 :"cc"
                 );
 }
+
+extern inline void* load_file(const char *path, size_t *size)
+{
+     void* retval;
+     size_t tmp;
+
+     __asm__ __volatile__ (
+     "pushl %%eax           \n\t"
+     "call _load_file@4     \n\t"
+     :"=eax" (retval), "=ebx"(tmp)
+     :"a" (path) );
+
+     if(size)
+        *size = tmp;
+     return retval;
+};
+
+
+//extern __fastcall void* load_file(const char *path, size_t *size);

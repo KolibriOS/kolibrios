@@ -57,6 +57,7 @@ proc strncat stdcall, s1:dword, s2:dword, n:dword
 endp
 
 align 4
+_strncmp@12:
 proc strncmp stdcall, s1:dword, s2:dword, n:dword
 
            push esi

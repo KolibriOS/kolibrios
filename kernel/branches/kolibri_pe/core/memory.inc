@@ -243,6 +243,7 @@ proc new_mem_resize stdcall, new_size:dword
            mov ecx, [app_page_tabs+edi*4]
            test ecx, 1
            jz .next
+
            mov dword [app_page_tabs+edi*4], 2
            mov ebx, edi
            shl ebx, 12
@@ -986,49 +987,15 @@ new_services:
            cmp ebx, OS_BASE
            jae .fail
 
-           stdcall load_PE, ebx
-
-           test eax, eax
-           jz @F
-
-           mov esi, eax
-           stdcall eax, DRV_ENTRY
-
-           test eax, eax
-           jz @F
-
-           mov [eax+SRV.entry], esi
-
-@@:
+           mov ecx, ebx
+           call @load_pe_driver@4
            mov [esp+36], eax
            ret
-
 
 .fail:
            xor eax, eax
            mov [esp+36], eax
            ret
-
-align 4
-proc load_pe_driver stdcall, file:dword
-
-           stdcall load_PE, [file]
-           test eax, eax
-           jz .fail
-
-           mov esi, eax
-           stdcall eax, DRV_ENTRY
-           test eax, eax
-           jz .fail
-
-           mov [eax+SRV.entry], esi
-           ret
-
-.fail:
-           xor eax, eax
-           ret
-endp
-
 
 align 4
 proc init_mtrr

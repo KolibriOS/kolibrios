@@ -132,13 +132,13 @@ kernel_export:
 
   dd szSelectHwCursor  , select_hw_cursor      ;import    stdcall
   dd szSetHwCursor     , set_hw_cursor         ;import    stdcall
-  dd szHwCursorRestore , hw_restore	       ;import
+  dd szHwCursorRestore , hw_restore            ;import
   dd szHwCursorCreate  , create_cursor	       ;import
 
   dd szSysMsgBoardStr  , sys_msg_board_str
   dd szSysMsgBoardChar , sys_msg_board
   dd szGetCurrentTask  , get_curr_task
-  dd szLoadFile        , load_file	       ;retval eax, ebx
+  dd szLoadFile        , load_file             ;retval eax, ebx
   dd szSendEvent       , send_event
   dd szSetMouseData    , set_mouse_data        ;stdcall
   dd szSleep	       , delay_ms

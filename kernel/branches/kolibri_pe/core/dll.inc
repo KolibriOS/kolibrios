@@ -562,6 +562,7 @@ endp
 ;  loaded by the load_file() function
 
 align 4
+_load_file@4:
 proc load_file stdcall, file_name:dword
            locals
              attr   dd ?

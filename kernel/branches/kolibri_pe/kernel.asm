@@ -129,6 +129,11 @@ public _rd_fat_end
 public _rd_root
 public _rd_root_end
 
+public _load_file@4
+
+public _kernel_exports
+
+public _strncmp@12
 
 extrn __edata
 
@@ -146,10 +151,12 @@ extrn @core_free@4
 
 extrn @init_heap@8
 extrn @find_large_md@4
-extrn @phis_alloc@4
 
 extrn @mem_alloc@8
 extrn @mem_free@4
+
+extrn @load_pe@4
+extrn @load_pe_driver@4
 
 extrn _slab_cache_init
 extrn _alloc_page
@@ -779,7 +786,8 @@ include 'detect/disks.inc'
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
-       ; stdcall load_pe_driver, szAtiHW
+        ;mov ecx, szAtiHW
+        ;call @load_pe_driver@4
 
   ; READ TSC / SECOND
 

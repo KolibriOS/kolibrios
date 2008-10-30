@@ -208,7 +208,7 @@ proc fs_execute
            jna @F
 
            xor eax, eax
-               cld
+           cld
            rep stosb
 @@:
            mov ecx, [file_base]
@@ -416,7 +416,6 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            jnz @B
 
            mov edi, page_tabs
-
            mov ecx, [app_tabs]
            shl ecx, 10
            xor eax, eax
@@ -623,7 +622,6 @@ check_process_region:
 
      mov  eax,1
      ret
-
 
 ;    call MEM_Get_Linear_Address
 ;    push ebx

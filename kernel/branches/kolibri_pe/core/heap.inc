@@ -146,6 +146,7 @@ proc user_free stdcall, base:dword
            mov eax, [page_tabs+(esi-1)*4]
            test al, USED_BLOCK
            jz .cantfree
+
            test al, DONT_FREE_BLOCK
            jnz .cantfree
 
@@ -159,6 +160,7 @@ proc user_free stdcall, base:dword
            mov ebx, edi
            shr edi, 12
            jz .released
+
 .release:
            xor ecx, ecx
            xchg ecx, [page_tabs+esi*4]

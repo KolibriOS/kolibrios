@@ -8,18 +8,9 @@
 
 #define page_tabs 0xDF800000
 
-typedef struct
-{
-   link_t link;
-   link_t adj;
-   addr_t base;
-   size_t size;
-    void   *parent;
-   u32_t  state;
-}md_t;
 
-#define   MD_FREE    1
-#define   MD_USED    2
+#define  MD_FREE    1
+#define  MD_USED    2
 
 typedef struct {
     u32_t  av_mapped;
@@ -63,36 +54,35 @@ static inline void _reset_savu(count_t idx)
 
 int __fastcall init_heap(addr_t base, size_t size)
 {
-   md_t *md;
-   u32_t i;
+    md_t *md;
+    u32_t i;
 
-   ASSERT(base != 0);
-   ASSERT(size != 0)
-   ASSERT((base & 0x3FFFFF) == 0);
-   ASSERT((size & 0x3FFFFF) == 0);
+    ASSERT(base != 0);
+    ASSERT(size != 0)
+    ASSERT((base & 0x3FFFFF) == 0);
+    ASSERT((size & 0x3FFFFF) == 0);
 
-   for (i = 0; i < 32; i++)
-   {
+    for (i = 0; i < 32; i++)
+    {
         list_initialize(&lheap.mapped[i]);
         list_initialize(&lheap.unmapped[i]);
 
         list_initialize(&sheap.mapped[i]);
         list_initialize(&sheap.unmapped[i]);
-   };
+    };
 
-   list_initialize(&lheap.used);
-   list_initialize(&sheap.used);
+    list_initialize(&lheap.used);
+    list_initialize(&sheap.used);
 
+    md_slab = slab_cache_create(sizeof(md_t), 32,NULL,NULL,SLAB_CACHE_MAGDEFERRED);
 
-   md_slab = slab_cache_create(sizeof(md_t), 32,NULL,NULL,SLAB_CACHE_MAGDEFERRED);
+    md = (md_t*)slab_alloc(md_slab,0);
 
-   md = (md_t*)slab_alloc(md_slab,0);
-
-   list_initialize(&md->adj);
-   md->base = base;
-   md->size = size;
-   md->parent = NULL;
-   md->state = MD_FREE;
+    list_initialize(&md->adj);
+    md->base = base;
+    md->size = size;
+    md->parent = NULL;
+    md->state = MD_FREE;
 
     list_prepend(&md->link, &lheap.unmapped[31]);
     lheap.av_mapped    = 0x00000000;
@@ -100,82 +90,82 @@ int __fastcall init_heap(addr_t base, size_t size)
     sheap.av_mapped    = 0x00000000;
     sheap.av_unmapped  = 0x00000000;
 
-   return 1;
+    return 1;
 };
 
 md_t* __fastcall find_large_md(size_t size)
 {
-   md_t *md = NULL;
+    md_t *md = NULL;
 
-   count_t idx0;
-   u32_t mask;
+    count_t idx0;
+    u32_t mask;
 
-   ASSERT((size & 0x3FFFFF) == 0);
+    ASSERT((size & 0x3FFFFF) == 0);
 
-   idx0 = (size>>22) - 1 < 32 ? (size>>22) - 1 : 31;
+    idx0 = (size>>22) - 1 < 32 ? (size>>22) - 1 : 31;
     mask = lheap.av_unmapped & ( -1<<idx0 );
 
-   if(mask)
-   {
-     if(idx0 == 31)
-     {
+    if(mask)
+    {
+        if(idx0 == 31)
+        {
             md_t *tmp = (md_t*)lheap.unmapped[31].next;
             while((link_t*)tmp != &lheap.unmapped[31])
-        {
-          if(tmp->size >= size)
-          {
-            DBG("remove large tmp %x\n", tmp);
+            {
+                if(tmp->size >= size)
+                {
+                    DBG("remove large tmp %x\n", tmp);
 
-            md = tmp;
-            break;
-          };
-        };
-        tmp = (md_t*)tmp->link.next;
-     }
-     else
-     {
-       idx0 = _bsf(mask);
+                    md = tmp;
+                    break;
+                };
+            };
+            tmp = (md_t*)tmp->link.next;
+        }
+        else
+        {
+            idx0 = _bsf(mask);
 
             ASSERT( !list_empty(&lheap.unmapped[idx0]))
 
             md = (md_t*)lheap.unmapped[idx0].next;
-     };
-   }
-   else
-     return NULL;
+        };
+    }
+    else
+        return NULL;
 
-   ASSERT(md->state == MD_FREE);
+    ASSERT(md->state == MD_FREE);
 
-   list_remove((link_t*)md);
+    list_remove((link_t*)md);
     if(list_empty(&lheap.unmapped[idx0]))
         _reset_lavu(idx0);
 
-   if(md->size > size)
-   {
-     count_t idx1;
-     md_t *new_md = (md_t*)slab_alloc(md_slab,0);         /* FIXME check */
+    if(md->size > size)
+    {
+        count_t idx1;
+        md_t *new_md = (md_t*)slab_alloc(md_slab,0);         /* FIXME check */
 
-     link_initialize(&new_md->link);
-     list_insert(&new_md->adj, &md->adj);
+        link_initialize(&new_md->link);
+        list_insert(&new_md->adj, &md->adj);
 
-     new_md->base = md->base;
-     new_md->size = size;
+        new_md->base   = md->base;
+        new_md->size   = size;
         new_md->parent = NULL;
-     new_md->state = MD_USED;
+        new_md->state  = MD_USED;
 
-     md->base+= size;
-     md->size-= size;
+        md->base+= size;
+        md->size-= size;
 
-     idx1 = (md->size>>22) - 1 < 32 ? (md->size>>22) - 1 : 31;
+        idx1 = (md->size>>22) - 1 < 32 ? (md->size>>22) - 1 : 31;
 
         list_prepend(&md->link, &lheap.unmapped[idx1]);
         _set_lavu(idx1);
 
-     return new_md;
-   };
-   md->state = MD_USED;
+        return new_md;
+    };
+    md->state = MD_USED;
 
-   return md;
+    return md;
 }
 
 md_t* __fastcall find_unmapped_md(size_t size)
@@ -564,7 +554,7 @@ void __fastcall free_mapped_md(md_t *md)
         fd = (md_t*)md->adj.next;
 
         if(fd->state == MD_FREE)
-   {
+        {
             idx = (fd->size>>12) - 1 < 32 ? (fd->size>>12) - 1 : 31;
 
             list_remove((link_t*)fd);
@@ -590,7 +580,7 @@ void __fastcall free_mapped_md(md_t *md)
             slab_free(md_slab, md);
             md = fd;
         };
-   };
+    };
 
     md->state = MD_FREE;
 
@@ -605,15 +595,15 @@ void __fastcall free_mapped_md(md_t *md)
         if( list_empty(&sheap.mapped[31]))
             list_prepend(&md->link, &sheap.mapped[31]);
         else
-   {
+        {
             md_t *tmp = (md_t*)sheap.mapped[31].next;
 
             while((link_t*)tmp != &sheap.mapped[31])
-     {
+            {
                 if(md->base < tmp->base)
                     break;
                 tmp = (md_t*)tmp->link.next;
-   }
+            }
             list_insert(&md->link, &tmp->link);
         };
     };
@@ -622,15 +612,11 @@ void __fastcall free_mapped_md(md_t *md)
 };
 
 
-void * __fastcall mem_alloc(size_t size, u32_t flags)
+md_t* __fastcall  md_alloc(size_t size, u32_t flags)
 {
     eflags_t efl;
 
     md_t *md;
-
-    DBG("\nmem_alloc: %x bytes\n", size);
-
-    ASSERT(size != 0);
 
     size = (size+4095)&~4095;
 
@@ -640,6 +626,9 @@ void * __fastcall mem_alloc(size_t size, u32_t flags)
 
         if( !md )
             return NULL;
+
+        ASSERT(md->state == MD_USED);
+        ASSERT(md->parent != NULL);
 
         md_t *lmd = (md_t*)md->parent;
 
@@ -655,44 +644,63 @@ void * __fastcall mem_alloc(size_t size, u32_t flags)
         addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
 
         while(tmp--)
-                {
-                    *pte++ = frame;
-                    frame+= 4096;
-                };
+        {
+            *pte++ = frame;
+            frame+= 4096;
+        };
     }
     else
+    {
         md = find_unmapped_md(size);
+        if( !md )
+            return NULL;
+
+        ASSERT(md->parent != NULL);
+        ASSERT(md->state == MD_USED);
+    }
+
+    return md;
+};
+
+
+void * __fastcall mem_alloc(size_t size, u32_t flags)
+{
+    eflags_t efl;
+
+    md_t *md;
+
+    DBG("\nmem_alloc: %x bytes\n", size);
+
+    ASSERT(size != 0);
+
+    md = md_alloc(size, flags);
 
     if( !md )
         return NULL;
 
-    ASSERT(md->parent != NULL);
-    ASSERT(md->state == MD_USED);
+    efl = safe_cli();
+    spinlock_lock(&sheap.lock);
 
+    if( list_empty(&sheap.used) )
+        list_prepend(&md->link, &sheap.used);
+    else
+    {
+        md_t *tmp = (md_t*)sheap.used.next;
 
-        efl = safe_cli();
-        spinlock_lock(&sheap.lock);
-
-        if( list_empty(&sheap.used) )
-            list_prepend(&md->link, &sheap.used);
-        else
+        while((link_t*)tmp != &sheap.used)
         {
-            md_t *tmp = (md_t*)sheap.used.next;
+            if(md->base < tmp->base)
+                break;
+            tmp = (md_t*)tmp->link.next;
+        }
+        list_insert(&md->link, &tmp->link);
+    };
 
-            while((link_t*)tmp != &sheap.used)
-            {
-                if(md->base < tmp->base)
-                    break;
-                tmp = (md_t*)tmp->link.next;
-            }
-            list_insert(&md->link, &tmp->link);
-        };
+    spinlock_unlock(&sheap.lock);
+    safe_sti(efl);
 
-        spinlock_unlock(&sheap.lock);
-        safe_sti(efl);
-
-        DBG("allocate: %x size %x\n\n",md->base, size);
-        return (void*)md->base;
+    DBG("allocate: %x size %x\n\n",md->base, size);
+    return (void*)md->base;
 };
 
 void __fastcall mem_free(void *mem)
@@ -738,17 +746,17 @@ void __fastcall mem_free(void *mem)
 
         if(lmd->parent != 0)
         {
-        count_t tmp  = md->size >> 12;
-        addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
+            count_t tmp  = md->size >> 12;
+            addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
 
-        while(tmp--)
-        {
-            *pte++ = 0;
-            asm volatile (
-                "invlpg (%0)"
+            while(tmp--)
+            {
+                *pte++ = 0;
+                asm volatile (
+                    "invlpg (%0)"
                     ::"r" (mem) );
-            mem+= 4096;
-        };
+                mem+= 4096;
+            };
 
             free_mapped_md( md );
         }
