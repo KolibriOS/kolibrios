@@ -345,37 +345,44 @@ free_blocks	  rd 1
 
 mst MEM_STATE
 
-page_start	  rd 1
-page_end	  rd 1
-events		  rd 1
-event_start	  rd 1
-event_end	  rd 1
-event_uid	  rd 1
-sys_page_map	  rd 1
+page_start        rd 1
+page_end          rd 1
+events            rd 1
+event_start       rd 1
+event_end         rd 1
+event_uid         rd 1
+sys_page_map      rd 1
 
-srv.fd		  rd 1
-srv.bk		  rd 1
+srv.fd            rd 1
+srv.bk            rd 1
 
-scr_width	  rd 1
-scr_height	  rd 1
+scr_width         rd 1
+scr_height        rd 1
 
+_HwCursorCreate:
 create_cursor	  rd 1
-select_hw_cursor  rd 1
-set_hw_cursor	  rd 1
-hw_restore	  rd 1
 
-def_cursor	  rd 1
+_SelectHwCursor:
+select_hw_cursor  rd 1
+
+_SetHwCursor:
+set_hw_cursor	  rd 1
+
+_HwCursorRestore:
+hw_restore        rd 1
+
+def_cursor        rd 1
 current_cursor	  rd 1
-hw_cursor	  rd 1
+hw_cursor         rd 1
 cur_def_interl	  rd 1
 cur_saved_base	  rd 1
 cur_saved_interl  rd 1
-cur_saved_w	  rd 1
-cur_saved_h	  rd 1
+cur_saved_w       rd 1
+cur_saved_h       rd 1
 
-ipc_tmp 	  rd 1
-ipc_pdir	  rd 1
-ipc_ptab	  rd 1
+ipc_tmp           rd 1
+ipc_pdir          rd 1
+ipc_ptab          rd 1
 
 proc_mem_map	  rd 1
 proc_mem_pdir	  rd 1

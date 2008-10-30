@@ -1,6 +1,7 @@
 
-#define OS_BASE 0xE0000000
-
+#define OS_BASE     0xE0000000
+#define IMAGE_BASE  0xE0100000
+#define LOAD_BASE   0x00100000
 
 void printf (const char *format, ...);
 

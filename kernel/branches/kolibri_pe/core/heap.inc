@@ -15,12 +15,6 @@ USED_BLOCK      equ  8
 DONT_FREE_BLOCK equ  10h
 
 
-align 4
-proc free_kernel_space stdcall uses ebx ecx edx esi edi, base:dword
-
-           ret
-endp
-
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 
@@ -55,6 +49,7 @@ proc init_heap
 endp
 
 align 4
+_UserAlloc:
 proc user_alloc stdcall, alloc_size:dword
 
            push ebx
@@ -131,6 +126,7 @@ m_exit:
 endp
 
 align 4
+_UserFree:
 proc user_free stdcall, base:dword
 
            push esi

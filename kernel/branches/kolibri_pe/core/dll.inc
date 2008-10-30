@@ -208,6 +208,7 @@ proc get_notify stdcall, p_ev:dword
 endp
 
 align 4
+_PciRead32:
 proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
             push ebx
             xor eax, eax
@@ -222,6 +223,7 @@ proc pci_read32 stdcall, bus:dword, devfn:dword, reg:dword
 endp
 
 align 4
+_PciRead16:
 proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
             push ebx
             xor eax, eax
@@ -236,6 +238,7 @@ proc pci_read16 stdcall, bus:dword, devfn:dword, reg:dword
 endp
 
 align 4
+_PciRead8:
 proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
            push ebx
            xor eax, eax
@@ -250,6 +253,7 @@ proc pci_read8 stdcall, bus:dword, devfn:dword, reg:dword
 endp
 
 align 4
+_PciWrite8:
 proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
            push ebx
            xor eax, eax
@@ -265,6 +269,7 @@ proc pci_write8 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 endp
 
 align 4
+_PciWrite16:
 proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
            push ebx
            xor eax, eax
@@ -280,6 +285,7 @@ proc pci_write16 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
 endp
 
 align 4
+_PciWrite32:
 proc pci_write32 stdcall, bus:dword, devfn:dword, reg:dword, val:dword
            push ebx
            xor eax, eax
@@ -387,6 +393,7 @@ proc get_service stdcall, sz_name:dword
 endp
 
 align 4
+_RegService:
 proc reg_service stdcall, name:dword, handler:dword
 
            push ebx
@@ -562,6 +569,7 @@ endp
 ;  loaded by the load_file() function
 
 align 4
+_LoadFile:
 _load_file@4:
 proc load_file stdcall, file_name:dword
            locals
@@ -1110,6 +1118,7 @@ endp
 ;  ebx= pid
 
 align 4
+_CreateObject:
 create_kernel_object:
 
            push ebx
@@ -1138,6 +1147,7 @@ create_kernel_object:
 ;  eax= object
 
 align 4
+_DestroyObject:
 destroy_kernel_object:
 
            pushfd

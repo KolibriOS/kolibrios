@@ -35,13 +35,7 @@ PE_SRC:=			\
 		boot/boot.asm	\
 		boot/start.asm
 
-#include <types.h>
-#include <core.h>
-#include <spinlock.h>
-#include <link.h>
-#include <mm.h>
-#include <slab.h>
-	   	
+   	
 H_SRC:=					\
 		include/types.h		\
 		include/atomic.h	\
@@ -60,14 +54,17 @@ all: kernel.gz
 kernel.gz :kernel.mnt
 	7z a -tgzip kernel.gz kernel.mnt   
 
-kernel.mnt: kernel.obj $(PE_OBJS) Makefile ld.x
-	ld $(LDFLAGS) -T ld.x -o $@ kernel.obj $(PE_OBJS) 
+kernel.mnt: kernel.obj bin/export.obj $(PE_OBJS) Makefile ld.x
+	ld $(LDFLAGS) -T ld.x -o $@ kernel.obj bin/export.obj $(PE_OBJS)
 
 bin/%.obj : core/%.c $(H_SRC) Makefile
 	$(CC) $(CFLAGS) -o $@ $<
 	
 bin/%.obj: %.asm
 	$(FASM) $< $@
+
+bin/export.obj: core/export.asm
+	as  -o $@ $< 
 
 kernel.obj: $(KERNEL_SRC)
 	$(FASM) kernel.asm

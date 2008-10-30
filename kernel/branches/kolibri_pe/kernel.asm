@@ -131,9 +131,43 @@ public _rd_root_end
 
 public _load_file@4
 
-public _kernel_exports
-
 public _strncmp@12
+
+public _LoadFile            ; stdcall export
+
+public _CreateObject        ;         export
+public _DestroyObject       ;         export
+
+public _CreateRingBuffer    ; stdcall export
+public _CommitPages         ;         export
+public _GetPgAddr           ;         export
+public _MapIoMem            ; stdcall export
+public _UnmapPages          ;         export
+
+public _Kmalloc             ;         export
+public _Kfree               ;         export
+public _UserAlloc           ; stdcall export
+public _UserFree            ; stdcall export
+
+public _RegService          ; stdcall export
+public _SysMsgBoardStr      ;         export
+public _SetScreen           ;         export    FIXME  make fastcall
+
+
+public _PciApi              ;         export
+public _PciRead8            ; stdcall export
+public _PciRead16           ; stdcall export
+public _PciRead32           ; stdcall export
+public _PciWrite8           ; stdcall export
+public _PciWrite16          ; stdcall export
+public _PciWrite32          ; stdcall export
+
+
+public _SelectHwCursor      ; stdcall export
+public _SetHwCursor         ; stdcall export
+public _HwCursorRestore     ;         export
+public _HwCursorCreate      ;         export
+
 
 extrn __edata
 
@@ -152,8 +186,11 @@ extrn @core_free@4
 extrn @init_heap@8
 extrn @find_large_md@4
 
-extrn @mem_alloc@8
-extrn @mem_free@4
+extrn _MemAlloc
+extrn _MemFree
+
+@mem_alloc@8        equ  _MemAlloc
+@mem_free@4         equ  _MemFree
 
 extrn @load_pe@4
 extrn @load_pe_driver@4
@@ -4545,6 +4582,8 @@ pic_delay:
 pdl1:	ret
 
 
+align 4
+_SysMsgBoardStr:
 sys_msg_board_str:
 
      pushad
@@ -5060,7 +5099,9 @@ read_from_hd:				; Read from hd - fn not in use
 paleholder:
 	ret
 
+
 align 4
+_SetScreen:
 set_screen:
 	cmp eax, [Screen_Max_X]
 	jne .set

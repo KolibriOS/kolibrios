@@ -182,7 +182,6 @@ include "core/heap.inc"     ; kernel and app heap
 include "core/malloc.inc"   ; small kernel heap
 include "core/taskman.inc"
 include "core/dll.inc"
-include "core/peload.inc"   ;
 include "core/exports.inc"
 include "core/string.inc"
 include "core/v86.inc"      ; virtual-8086 manager

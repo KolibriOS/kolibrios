@@ -20,6 +20,9 @@ $Revision$
 ;  esi= nb
 ;  ebx= idx
 ;
+
+align 4
+_Kmalloc:
 malloc:
            push esi
 
@@ -197,6 +200,7 @@ malloc:
 ;  eax= mem
 
 align 4
+_Kfree:
 free:
            push edi
            mov edi, eax

@@ -202,6 +202,7 @@ master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
 _16BIT_BASE         equ 0x00010000
 LOAD_BASE           equ 0x00100000
 OS_BASE             equ 0xE0000000
+IMAGE_BASE          equ (OS_BASE+LOAD_BASE)
 
 window_data         equ OS_BASE
 

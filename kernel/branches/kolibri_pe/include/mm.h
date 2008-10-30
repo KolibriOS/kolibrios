@@ -83,7 +83,11 @@ void   __fastcall core_free(addr_t frame);
 pfn_t alloc_page() __attribute__ ((deprecated));
 
 
-md_t* __fastcall md_alloc(size_t size, u32_t flags);
-void* __fastcall mem_alloc(size_t size, u32_t flags);
-void  __fastcall mem_free(void *mem);
+#define __export __attribute__ ((dllexport))
+
+
+md_t* __fastcall md_alloc(size_t size, u32_t flags) ;
+
+void* __fastcall __export mem_alloc(size_t size, u32_t flags) asm ("MemAlloc");
+void  __fastcall __export mem_free(void *mem) asm ("MemFree");
 

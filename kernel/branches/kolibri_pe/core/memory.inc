@@ -29,6 +29,8 @@ map_space:    ;not implemented
 
            ret
 
+align 4
+_MapIoMem:
 proc map_io_mem stdcall, base:dword, size:dword, flags:dword
 
            push edi
@@ -71,6 +73,7 @@ endp
 ;  ecx= count
 
 align 4
+_CommitPages:
 commit_pages:
            push edi
            test ecx, ecx
@@ -136,6 +139,7 @@ release_pages:
 ;  ecx= count
 
 align 4
+_UnmapPages:
 unmap_pages:
 
            push edi
@@ -362,6 +366,7 @@ update_mem_size:
 ;  eax= phisical page address
 
 align 4
+_GetPgAddr:
 get_pg_addr:
            shr eax, 12
            mov eax, [page_tabs+eax*4]
@@ -860,10 +865,11 @@ proc sys_ipc_send stdcall, PID:dword, msg_addr:dword, msg_size:dword
 .buffer_overflow:
            push 3
 .ret:
-           mov eax, [used_buf]
-           cmp eax, [ipc_tmp]
+           mov ecx, [used_buf]
+           cmp ecx, [ipc_tmp]
            jz @f
-           stdcall free_kernel_space,eax
+
+           call @mem_free@4
 @@:
            pop eax
            popf
@@ -1105,6 +1111,7 @@ proc stall stdcall, delay:dword
 endp
 
 align 4
+_CreateRingBuffer:
 proc create_ring_buffer stdcall, size:dword, flags:dword
            locals
              buf_ptr  dd ?
@@ -1151,7 +1158,8 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
            pop ebx
            ret
 .mm_fail:
-           ;stdcall free_kernel_space, [buf_ptr]
+           mov ecx, [buf_ptr]
+           call @mem_free@4
            pop ebx
            xor eax, eax
 .fail:

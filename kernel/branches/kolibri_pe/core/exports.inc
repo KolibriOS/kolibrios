@@ -110,7 +110,6 @@ kernel_export:
   dd szCommitPages     , commit_pages	       ;not implemented
   dd szReleasePages    , release_pages
 
-  dd szFreeKernelSpace , free_kernel_space     ;stdcall
   dd szMemAlloc        , @mem_alloc@8          ;fastcall
   dd szMemFree         , @mem_free@4           ;fastcall
   dd szUserAlloc       , user_alloc            ;stdcall
