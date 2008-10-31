@@ -109,6 +109,7 @@ v86_create:
         mov     [edi+800h], eax
         lea     eax, [edx + 111b]
         stosd
+        add     edx, 0x1000
         loop    @b
         pop     eax
         pop     edi
