@@ -3,24 +3,24 @@
 
 
 	.section .drectve
-        .ascii " -export:CreateImage"
-        .ascii " -export:LoadFile"
+        .ascii " -export:CreateImage"          # cdecl
+        .ascii " -export:LoadFile"             # stdcall
 
-        .ascii " -export:Kmalloc"              #
-        .ascii " -export:Kfree"                #
+        .ascii " -export:Kmalloc"              # eax               FIXME
+        .ascii " -export:Kfree"                # eax               FIXME
 
         .ascii " -export:UserAlloc"            # stdcall
         .ascii " -export:UserFree"             # stdcall
 
+        .ascii " -export:GetPgAddr"            # eax               FIXME
         .ascii " -export:MapIoMem"             # stdcall
-        .ascii " -export:GetPgAddr"            # eax
-        .ascii " -export:CreateObject"         #
-        .ascii " -export:DestroyObject"        #
         .ascii " -export:CreateRingBuffer"     # stdcall
-        .ascii " -export:CommitPages"          # eax, ebx, ecx
+        .ascii " -export:CommitPages"          # eax, ebx, ecx     FIXME
+        .ascii " -export:UnmapPages"           # eax, ecx          FIXME
+        .ascii " -export:CreateObject"         # eax, ebx          FIXME
+        .ascii " -export:DestroyObject"        # eax
 
         .ascii " -export:RegService"           # stdcall
-        .ascii " -export:UnmapPages"           # eax, ecx
         .ascii " -export:SysMsgBoardStr"       #
         .ascii " -export:SetScreen"            #
 

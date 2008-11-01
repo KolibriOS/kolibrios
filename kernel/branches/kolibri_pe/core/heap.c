@@ -110,7 +110,7 @@ md_t* __fastcall find_large_md(size_t size)
         if(idx0 == 31)
         {
             md_t *tmp = (md_t*)lheap.unmapped[31].next;
-            while((link_t*)tmp != &lheap.unmapped[31])
+            while(&tmp->link != &lheap.unmapped[31])
             {
                 if(tmp->size >= size)
                 {
@@ -193,7 +193,7 @@ md_t* __fastcall find_unmapped_md(size_t size)
             ASSERT( !list_empty(&sheap.unmapped[31]));
 
             md_t *tmp = (md_t*)sheap.unmapped[31].next;
-            while((link_t*)tmp != &sheap.unmapped[31])
+            while( &tmp->link != &sheap.unmapped[31])
             {
                 if(tmp->size >= size)
                 {
@@ -283,7 +283,7 @@ md_t* __fastcall find_unmapped_md(size_t size)
             {
                 md_t *tmp = (md_t*)sheap.unmapped[31].next;
 
-                while((link_t*)tmp != &sheap.unmapped[31])
+                while( &tmp->link != &sheap.unmapped[31])
                 {
                     if(md->base < tmp->base)
                         break;
@@ -333,7 +333,7 @@ md_t* __fastcall find_mapped_md(size_t size)
             ASSERT( !list_empty(&sheap.mapped[31]));
 
             md_t *tmp = (md_t*)sheap.mapped[31].next;
-            while((link_t*)tmp != &sheap.mapped[31])
+            while( &tmp->link != &sheap.mapped[31])
             {
                 if(tmp->size >= size)
                 {
@@ -437,7 +437,7 @@ md_t* __fastcall find_mapped_md(size_t size)
             {
                 md_t *tmp = (md_t*)sheap.mapped[31].next;
 
-                while((link_t*)tmp != &sheap.mapped[31])
+                while( &tmp->link != &sheap.mapped[31])
                 {
                     if(md->base < tmp->base)
                         break;
@@ -521,7 +521,7 @@ void __fastcall free_unmapped_md(md_t *md)
         {
             md_t *tmp = (md_t*)sheap.unmapped[31].next;
 
-            while((link_t*)tmp != &sheap.unmapped[31])
+            while( &tmp->link != &sheap.unmapped[31])
             {
                 if(md->base < tmp->base)
                     break;
@@ -598,7 +598,7 @@ void __fastcall free_mapped_md(md_t *md)
         {
             md_t *tmp = (md_t*)sheap.mapped[31].next;
 
-            while((link_t*)tmp != &sheap.mapped[31])
+            while( &tmp->link != &sheap.mapped[31])
             {
                 if(md->base < tmp->base)
                     break;
@@ -663,6 +663,44 @@ md_t* __fastcall  md_alloc(size_t size, u32_t flags)
 };
 
 
+void __fastcall md_free(md_t *md)
+{
+
+    if( md )
+    {
+        md_t *lmd;
+
+        DBG("free md: %x base: %x size: %x\n",md, md->base, md->size);
+
+        ASSERT(md->state == MD_USED);
+
+        list_remove((link_t*)md);
+
+        lmd = (md_t*)md->parent;
+
+        ASSERT(lmd != 0);
+
+        if(lmd->parent != 0)
+        {
+            addr_t   mem = md->base;
+            addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
+            count_t  tmp  = md->size >> 12;
+
+            while(tmp--)
+            {
+                *pte++ = 0;
+                asm volatile ( "invlpg (%0)" ::"r" (mem) );
+                mem+= 4096;
+            };
+            free_mapped_md( md );
+        }
+        else
+            free_unmapped_md( md );
+    }
+
+    return;
+};
+
 void * __fastcall mem_alloc(size_t size, u32_t flags)
 {
     eflags_t efl;
@@ -687,7 +725,7 @@ void * __fastcall mem_alloc(size_t size, u32_t flags)
     {
         md_t *tmp = (md_t*)sheap.used.next;
 
-        while((link_t*)tmp != &sheap.used)
+        while( &tmp->link != &sheap.used)
         {
             if(md->base < tmp->base)
                 break;
@@ -720,7 +758,7 @@ void __fastcall mem_free(void *mem)
 
     tmp = (md_t*)sheap.used.next;
 
-    while((link_t*)tmp != &sheap.used)
+    while( &tmp->link != &sheap.used)
     {
         if( tmp->base == (addr_t)mem )
         {
@@ -732,36 +770,8 @@ void __fastcall mem_free(void *mem)
 
     if( md )
     {
-        md_t *lmd;
+        md_free( md );
 
-        DBG("\tmd: %x base: %x size: %x\n",md, md->base, md->size);
-
-        ASSERT(md->state == MD_USED);
-
-        list_remove((link_t*)md);
-
-        lmd = (md_t*)md->parent;
-
-        ASSERT(lmd != 0);
-
-        if(lmd->parent != 0)
-        {
-            count_t tmp  = md->size >> 12;
-            addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
-
-            while(tmp--)
-            {
-                *pte++ = 0;
-                asm volatile (
-                    "invlpg (%0)"
-                    ::"r" (mem) );
-                mem+= 4096;
-            };
-
-            free_mapped_md( md );
-        }
-        else
-            free_unmapped_md( md );
     }
     else
         DBG("\tERROR: invalid base address: %x\n", mem);

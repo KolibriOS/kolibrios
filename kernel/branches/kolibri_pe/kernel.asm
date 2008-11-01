@@ -179,11 +179,12 @@ extrn _poweroff
 
 extrn _init
 extrn _init_mm
+extrn @init_heap@8
+extrn _init_core_dll
 
 extrn @core_alloc@4
 extrn @core_free@4
 
-extrn @init_heap@8
 extrn @find_large_md@4
 
 extrn _MemAlloc
@@ -401,6 +402,8 @@ __core_restart:
            mov ecx, 0x80000000
            mov edx, 0x40000000
            call @init_heap@8
+
+           call _init_core_dll
 
            mov esi, _16bit_start
            mov ecx, _16bit_end

@@ -30,6 +30,7 @@ PE_SRC:=			\
 		mm.c		\
 		slab.c		\
 		heap.c		\
+		pe.c		\
 		dll.c		\
 		spinlock.c	\
 		boot/boot.asm	\
