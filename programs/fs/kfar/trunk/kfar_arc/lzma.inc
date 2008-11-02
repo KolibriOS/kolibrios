@@ -132,14 +132,22 @@ end virtual
 	lea	eax, [ebp + eax + .p+.Literal*4]
 	cmp	ebx, .kNumLitStates
 	jb	.literal
-	xor	edx, edx
+	mov	edx, edi
 	sub	edx, [ebp+.rep0]
-	mov	dl, [edi + edx]
+	cmp	edx, [ebp+streamInfo.bufPtr]
+	jb	.before_buf
+@@:
+	mov	dl, [edx]
 	call	.LzmaLiteralDecodeMatch
-	jmp	@f
+	jmp	.got_byte
+.before_buf:
+	add	edx, [ebp+streamInfo.bufSize]
+	cmp	edx, [ebp+streamInfo.bufPtr]
+	jb	return.err
+	jmp	@b
 .literal:
 	call	.LzmaLiteralDecode
-@@:
+.got_byte:
 	mov	[ebp+.previousByte], al
 	stosb
 	mov	al, bl
@@ -167,9 +175,15 @@ end virtual
 	cmp	bl, 7
 	setae	bl
 	lea	ebx, [9 + ebx + ebx]
-	xor	edx, edx
+	mov	edx, edi
 	sub	edx, [ebp+.rep0]
-	mov	al, [edi + edx]
+	cmp	edx, [ebp+streamInfo.bufPtr]
+	jae	@f
+	add	edx, [ebp+streamInfo.bufSize]
+	cmp	edx, [ebp+streamInfo.bufPtr]
+	jb	return.err
+@@:
+	mov	al, [edx]
 	stosb
 	mov	[ebp+.previousByte], al
 	jmp	.main_loop

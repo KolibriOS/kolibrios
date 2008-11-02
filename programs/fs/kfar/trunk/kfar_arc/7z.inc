@@ -1834,7 +1834,7 @@ _7z.decode:
         mov     esi, [.pStreams]
         mov     eax, [esi+eax*4]
         call    fillBuf
-        mov     ecx, [eax+streamInfo.bufSize]
+        mov     ecx, [eax+streamInfo.bufDataLen]
         mov     esi, [eax+streamInfo.bufPtr]
         mov     edi, [.outBufferPtr]
         add     edi, [.outBufferRead]
