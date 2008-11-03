@@ -1,0 +1,129 @@
+#include "imgs\logo.cpp"
+
+/*void authors()
+{
+	_HH:
+	WindowRedrawStatus(1);
+	DefineAndDrawWindow(500,200,181,256,0x04,0x10EFEBEF,0,0,"About Eolite");
+     //DrawTitle("About Eolite");
+	DrawBar(5,0,172,50,0x8494C4); //голубое сзади
+	PutImage(#logo,85,85,48,7);
+		WriteText(32,100,0x80,0xBF40BF,"Eolite v0.96.4 beta7",0);
+		WriteText(68,120,0x80,0,"Authors:",0); 
+		WriteText(44,130,0x80,0,"Leency & Veliant",0); 
+		WriteText(50,140,0x80,0,"KolibriOS Team",0); 
+		WriteText(26,160,0x80,0,"Made using C-- in 2008",0);
+		WriteText(23,170,0x80,0,"Visit www.kolibrios.org",0);
+	DrawFlatButton(90,190,70,22,2,0x00D7D7D7, "Close");
+	WindowRedrawStatus(2);
+	loop()
+	{
+		SWITCH(WaitEvent())
+		{
+			CASE evButton: ExitProcess();
+			CASE evKey: IF (GetKey()==27) ExitProcess(); break;
+			CASE evReDraw: GOTO _HH;
+			BREAK;
+		}
+	}
+	ExitProcess();
+}*/
+
+
+void authors()
+{
+	loop()
+	{
+		switch(WaitEvent())
+		{
+			CASE evButton: ExitProcess();
+			CASE evKey: IF (GetKey()==27) ExitProcess(); break;
+			CASE evReDraw:
+				WindowRedrawStatus(1);
+				DefineAndDrawWindow(500,200,181,256,0x04,0x10EFEBEF,0,0,"About Eolite");
+			    //DrawTitle("About Eolite");
+				DrawBar(5,0,172,50,0x8494C4); //голубое сзади
+				PutImage(#logo,85,85,48,7);
+				WriteText(32,100,0x80,0xBF40BF,"Eolite v0.96.7 beta7",0);
+				WriteText(68,120,0x80,0,"Authors:",0); 
+				WriteText(44,130,0x80,0,"Leency & Veliant",0); 
+				WriteText(50,140,0x80,0,"KolibriOS Team",0); 
+				WriteText(26,160,0x80,0,"Made using C-- in 2008",0);
+				WriteText(23,170,0x80,0,"Visit www.kolibrios.org",0);
+				DrawFlatButton(90,190,70,22,2,0x00D7D7D7, "Close");
+				WindowRedrawStatus(2);
+		}
+	}
+	//ExitProcess();
+}
+
+
+dword ConvertSize(dword bytes)
+{
+	byte size_prefix[7], temp[3];
+	IF (bytes>=1073741824) copystr(" Gb",#temp);
+	ELSE IF (bytes>=1048576) copystr(" Mb",#temp);
+	ELSE IF (bytes>=1024) copystr(" Kb",#temp);
+	ELSE copystr(" b ",#temp);
+	WHILE (bytes>1023) bytes/=1024;
+	copystr(IntToStr(bytes),#size_prefix);
+	copystr(#temp,#size_prefix+strlen(#size_prefix));
+	EAX=#size_prefix;
+}
+
+
+void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
+{                                        
+	int i= a;
+	IF (a >= b) return;
+	FOR (j = a; j <= b; j++)
+	{
+		IF (ESDWORD[file_mas[j]*304 + buf+72-8] <= ESDWORD[file_mas[b]*304 + buf+72-8])
+		{ file_mas[i] >< file_mas[j];   i++;}
+	}
+	Sort_by_Size (a, i-2);
+	Sort_by_Size (i, b);
+}
+
+
+void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
+{                                        
+	int i = a;
+	IF (a >= b) return;
+	FOR (j = a; j <= b; j++)
+		IF (strcmp(file_mas[j]*304 + buf+72, file_mas[b]*304 + buf+72)<=0) { file_mas[i] >< file_mas[j];   i++;}
+	Sort_by_Name(a, i-2);
+	Sort_by_Name(i, b);
+}
+
+
+int partition1(dword a, b) 
+{
+	dword i = a; byte filename1[256], filename2[256]; int n;
+	for (j = a; j <= b; j++)
+	{
+	    //
+		copystr(file_mas[j]*304 + buf+72, #filename1);
+		copystr(file_mas[b]*304 + buf+72, #filename2);
+		n=strlen(#filename1)-1;
+		WHILE (filename1[n]<>'.') && (n>0) n--;
+		IF (n) copystr(#filename1+n+1, #filename1);
+		n=strlen(#filename2)-1;
+		WHILE (filename2[n]<>'.') && (n>0) n--;
+		IF (n) copystr(#filename2+n+1, #filename2);
+		//
+		n=strcmp(#filename1, #filename2);
+		IF (n<0) { file_mas[i] >< file_mas[j];   i++;} 
+		IF (n==0) && (strcmp(file_mas[j]*304 + buf+72, file_mas[b]*304 + buf+72)<=0) { file_mas[i] >< file_mas[j];   i++;}
+	}
+	EAX = i-1;
+}
+ 
+void Sort_by_Type(dword a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
+{                                        
+	int c;
+	IF (a >= b) RETURN;
+	c = partition1(a, b);
+	Sort_by_Type(a, c-1);
+	Sort_by_Type(c+1, b);
+}
