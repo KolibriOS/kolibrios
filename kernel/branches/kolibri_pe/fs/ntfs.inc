@@ -140,8 +140,8 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov edx, PG_SW
         call    @mem_alloc@8
         test    eax, eax
-        mov     [ntfs_data.frs_buffer], eax
         jz      problem_fat_dec_count
+        mov     [ntfs_data.frs_buffer], eax
         add     eax, [ntfs_data.frs_size]
         mov     [ntfs_data.iab_buffer], eax
 ; read $MFT disposition
@@ -229,8 +229,8 @@ ntfs_setup:             ; CODE XREF: part_set.inc
         mov edx, PG_SW
         call    @mem_alloc@8
         test    eax, eax
-        mov     [ntfs_data.cur_index_buf], eax
         jz      .fail_free_mft
+        mov     [ntfs_data.cur_index_buf], eax
 
         popad
         call    free_hd_channel

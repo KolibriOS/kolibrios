@@ -326,8 +326,6 @@ BgrDrawMode         equ (OS_BASE+0x023BFF4)
 BgrDataWidth        equ (OS_BASE+0x023BFF8)
 BgrDataHeight       equ (OS_BASE+0x023BFFC)
 
-;display_data       equ (OS_BASE+0x023C000) ;1024*1280=0x140000
-
 virtual at              (OS_BASE+0x023CF80)
   tss  TSS
 end virtual

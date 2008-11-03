@@ -368,11 +368,18 @@ update_mem_size:
 align 4
 _GetPgAddr:
 get_pg_addr:
+
+           cmp eax, OS_BASE
+           jae @F
+
            shr eax, 12
            mov eax, [page_tabs+eax*4]
            and eax, 0xFFFFF000
            ret
-
+@@:
+           sub eax, OS_BASE
+           and eax, 0xFFFFF000
+           ret
 
 align 4
 proc page_fault_handler

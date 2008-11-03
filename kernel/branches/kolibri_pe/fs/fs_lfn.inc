@@ -104,6 +104,9 @@ file_system_lfn:
 ; 8 : delete file
 ; 9 : create directory
 
+    cmp dword [eax], 7
+    je .do_exec
+
 ; parse file name
 	xchg	ebx, eax
 	lea	esi, [ebx+20]
@@ -129,14 +132,6 @@ file_system_lfn:
 	jz	.rootdir
 	call	process_replace_file_name
 .parse_normal:
-	cmp dword [ebx], 7
-	jne @F
-	mov edx, [ebx+4]
-	mov ebx, [ebx+8]
-	call fs_execute  ; esi+ebp, ebx, edx
-	mov [image_of_eax], eax
-	ret
-@@:
 	mov	edi, rootdirs-8
 	xor	ecx, ecx
 	push	esi
@@ -424,6 +419,23 @@ file_system_lfn:
 ; now [edi] contains handler address, ecx - partition number,
 ; esi points to ASCIIZ string - rest of name
 	jmp	dword [edi]
+
+.do_exec:
+          lea ebx, [eax+20]
+          cmp byte [ebx],0
+          jnz @F
+
+          mov ebx, [ebx+1]
+@@:
+          push  dword [eax+4]
+          push  dword [eax+8]
+          push  ebx
+
+          call _sys_exec
+          mov [image_of_eax], eax
+          add esp, 12
+
+          ret
 
 ; handlers for devices
 ; in: ecx = 0 => query virtual directory /xxx

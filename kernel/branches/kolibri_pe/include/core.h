@@ -3,6 +3,11 @@
 #define IMAGE_BASE  0xE0100000
 #define LOAD_BASE   0x00100000
 
+
+#define page_tabs 0xDF800000
+
+
+
 void printf (const char *format, ...);
 
 #define CALLER ((addr_t) __builtin_return_address(0))

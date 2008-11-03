@@ -131,6 +131,11 @@ public _rd_root_end
 
 public _load_file@4
 
+public mnt_exec
+
+public _new_app_space
+public pe_app_param
+
 public _strncmp@12
 
 public _LoadFile            ; stdcall export
@@ -193,7 +198,9 @@ extrn _MemFree
 @mem_alloc@8        equ  _MemAlloc
 @mem_free@4         equ  _MemFree
 
-extrn @load_pe@4
+extrn  _sys_exec
+
+;extrn @load_pe@4
 extrn @load_pe_driver@4
 
 extrn _slab_cache_init
@@ -203,6 +210,7 @@ extrn _get_free_mem
 
 extrn _bx_from_load
 
+extrn _sys_app_entry
 
 section '.flat' code readable align 4096
 
@@ -374,7 +382,7 @@ _high_code:
 ;Add IO access table - bit array of permitted ports
 	   mov edi, tss._io_map_0
 	   xor eax, eax
-	   not eax
+       ;    not eax
 	   mov ecx, 8192/4
 	   rep stosd		     ; access to 4096*8=65536 ports
 
@@ -826,8 +834,8 @@ include 'detect/disks.inc'
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
-        ;mov ecx, szAtiHW
-        ;call @load_pe_driver@4
+      ;  mov ecx, szAtiHW
+      ;  call @load_pe_driver@4
 
   ; READ TSC / SECOND
 
@@ -888,7 +896,7 @@ include 'detect/disks.inc'
 
 ;protect io permission map
 
-	   mov esi, [default_io_map]
+         ;  mov esi, [default_io_map]
          ;  stdcall map_page,esi,(tss._io_map_0-OS_BASE), PG_MAP
          ;  add esi, 0x1000
          ;  stdcall map_page,esi,(tss._io_map_1-OS_BASE), PG_MAP
@@ -907,8 +915,11 @@ include 'detect/disks.inc'
 ; LOAD FIRST APPLICATION
 
 
-	mov	ebp, firstapp
-	call	fs_execute_from_sysdir
+        push 0
+        push 0
+        push read_firstapp
+        call _sys_exec
+        add esp, 12
 
 	cmp   eax,2		     ; continue if a process has been loaded
 	je    first_app_found
@@ -3459,7 +3470,7 @@ checkpixel:
 	ret
 
 iglobal
-  cpustring db 'CPU',0
+  cpustring db '/sys/CPU',0
 endg
 
 uglobal
@@ -3474,8 +3485,11 @@ checkmisc:
     cmp   [ctrl_alt_del], 1
     jne   nocpustart
 
-	mov	ebp, cpustring
-	call	fs_execute_from_sysdir
+        push 0
+        push 0
+        push cpustring
+        call _sys_exec
+        add esp, 12
 
     mov   [ctrl_alt_del], 0
 

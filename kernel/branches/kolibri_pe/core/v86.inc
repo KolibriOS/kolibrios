@@ -49,11 +49,12 @@ v86_create:
 ; first half (0x800 bytes) is page table for addresses 0 - 0x100000,
 ; second half is for V86-to-linear translation.
 ; Third and fourth are for I/O permission map.
-        mov     ecx, 2
-        call    @core_alloc@4
+
+        mov ecx, 0x4000
+        mov edx, PG_SW
+        call    @mem_alloc@8
         test    eax, eax
         jz      .fail2
-        add     eax, OS_BASE
         mov     [ebx+V86_machine.pagedir], eax
         push    edi eax
         mov     edi, eax
@@ -72,14 +73,14 @@ v86_create:
         mov     edi, eax
         add     eax, 1000h
         push    eax
-        sub eax, OS_BASE
+        call    get_pg_addr
         or      al, PG_UW
         stosd
 ; ...and also copy system page tables
 ; thx to Serge, system is located at high addresses
-        add     edi, (OS_BASE shr 20) - 4
+        add     edi, (HEAP_BASE shr 20) - 4
         push    esi
-        mov     esi, (OS_BASE shr 20) + _sys_pdbr
+        mov     esi, (HEAP_BASE shr 20) + _sys_pdbr
         mov     ecx, 0x80000000 shr 22
         rep     movsd
 
@@ -110,6 +111,7 @@ v86_create:
         mov     [edi+800h], eax
         lea     eax, [edx + 111b]
         stosd
+        add     edx, 0x1000
         loop    @b
         pop     eax
         pop     edi
@@ -145,8 +147,7 @@ v86_destroy:
         push    eax
 
         mov ecx, [eax+V86_machine.pagedir]
-        sub ecx, OS_BASE
-        call @core_free@4
+        call @mem_free@4
 
         pop     eax
         jmp     free
@@ -300,10 +301,10 @@ v86_start:
         push    dword [ecx+APPDATA.io_map]
         push    dword [ecx+APPDATA.io_map+4]
         mov     dword [ecx+APPDATA.io_map], eax
-        mov     dword [page_tabs + (tss._io_map_0 shr 10)], eax
+    ;    mov     dword [page_tabs + (tss._io_map_0 shr 10)], eax
         add     eax, 0x1000
         mov     dword [ecx+APPDATA.io_map+4], eax
-        mov     dword [page_tabs + (tss._io_map_1 shr 10)], eax
+    ;    mov     dword [page_tabs + (tss._io_map_1 shr 10)], eax
 
         push    [ecx+APPDATA.dir_table]
         push    [ecx+APPDATA.saved_esp0]
@@ -820,10 +821,10 @@ end if
         mov     [SLOT_BASE+ecx+APPDATA.dir_table], eax
         pop     ebx
         mov     dword [SLOT_BASE+ecx+APPDATA.io_map+4], ebx
-        mov     dword [page_tabs + (tss._io_map_1 shr 10)], ebx
+      ;  mov     dword [page_tabs + (tss._io_map_1 shr 10)], ebx
         pop     ebx
         mov     dword [SLOT_BASE+ecx+APPDATA.io_map], ebx
-        mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
+      ;  mov     dword [page_tabs + (tss._io_map_0 shr 10)], ebx
         mov     cr3, eax
 ;        mov     [irq_tab+5*4], 0
         sti
