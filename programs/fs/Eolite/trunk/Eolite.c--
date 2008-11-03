@@ -1,0 +1,723 @@
+//Leency & Veliant -=- KolibriOS Team -=- 2008
+
+#codesize   
+#include "lib\kolibri.h--"
+#include "lib\memory.h--"
+#include "lib\edit_box_lib.h--"
+#include "include\run_file.h--"  
+#include "include\icons_f.h--"
+#include "imgs\toolbar_new.cpp"
+#include "imgs\left_p.cpp"
+
+//локализация и настройки
+byte header[27] = "Eolite File Manager v0.96.7";
+#define videlenie 0x94AECE; //цвет выделенного элемента из списка файлов
+int toolbar_buttons_x[6]={14,51,90,139,172,208};
+//
+dword but_num=0, kolichestvo=0, curbtn=0, za_kadrom=0;
+byte cut_active, rename_active, del_active;
+byte show_actions=1, show_preview=0, sort_num=1, isdir;
+dword razm_scrl; //для скрола
+byte path[256]="/rd/1/", edit_path[256], PathHistory[2560], temp[256]; //для путей
+byte file_path[256], file_name[256]; //для файлов
+byte copyfile[256],copy_name[256]; //копирование
+dword i; //для циклов
+dword file_mas[6898]; //список файлов
+dword temp_int;
+dword stak[100]=0; //окно About 
+
+edit_box edit1= {250,252,17,0xffffff,0x94AECE,0xD3DDEB,0xffffff,0,248,#edit_path,64,6,6};
+edit_box edit2= {250,218,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,64,6,6};
+
+proc_info	Form;
+
+struct {
+	int	func;
+	int	pos;
+	int	rezerv;
+	int	sizefile;
+	int	buffer;
+	char rezerv2;
+	int	stroka;
+}open_file_70;
+dword buf=0, off; //для текста и буфера
+dword devbuf=0, dev_num;
+#include "include\LVabout.c--"
+
+
+void main()   
+byte pressed, key, id; 
+mouse m;
+{
+		devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
+		open_file_70.func = 1;
+		open_file_70.pos = 0;
+		open_file_70.rezerv = 0;
+		open_file_70.sizefile = 10;
+		open_file_70.buffer = devbuf;
+		open_file_70.rezerv2 = 0;
+		open_file_70.stroka = "/";
+		$mov eax,70
+		$mov ebx,#open_file_70.func
+		$int 0x40
+		dev_num=EBX;
+	load_dll(); //подгружает либу с едит_боксом                               
+	IF (param[0]<>'') {copystr(#param,#edit_path); Goto_edit_path();}
+	Open_Dir(#path,2);
+	SetEventMask(); 
+	loop()
+	{
+		switch(WaitEvent())
+		{
+			CASE evMouse:
+					id = 0;
+					IF (del_active==1) break;
+					m.get();
+					//
+					IF (vert==65535) IF (curbtn==0) FileList_ReDraw(-3); ELSE FileList_ReDraw(-1);
+					IF (vert==1) IF (curbtn==but_num-1) FileList_ReDraw(3); ELSE FileList_ReDraw(1);
+					//выделение используя ПКМ
+					//IF (m.pkm==1) && (m.x>197) && (m.x<Form.width-22) && (m.y-skin_width>56)
+					//	IF (m.y-skin_width-56/18<>curbtn) FileList_ReDraw(m.y-skin_width-56/18-curbtn);
+					//скролл
+					IF (m.y>Form.width) || (57+razm_scrl>m.y) m.y=57+razm_scrl; //если курсор над окном
+					IF (m.lkm==0) pressed=0; ELSE
+					IF (m.x>=Form.width-21) && (m.x<=Form.width-6) pressed=1;
+					IF (pressed==1)
+					{
+						temp_int=za_kadrom; //сохраняем старое количество
+						za_kadrom = m.y -57-razm_scrl * kolichestvo / onTop(22,57);
+						IF (but_num+za_kadrom>kolichestvo) za_kadrom=kolichestvo-but_num;
+						IF (temp_int<>za_kadrom) List_ReDraw(); //чтоб лишний раз не перерисовывать
+					}
+					break;  
+//Button pressed-----------------------------------------------------------------------------
+			case evButton:
+				IF (edit1.flags<>64) {edit1.flags=64; edit_box_draw stdcall(#edit1);} //сбрасываем выделение при нажатии на батон
+				id=GetButtonID();
+				IF (id==1) ExitProcess();
+				IF (del_active==1) {IF (id==301) || (id==302) Del_File(302-id); break;}
+				switch(id) 
+				{
+					CASE 21: GoBack(); break;//Назад
+					CASE 23: IF (strcmp(#path,"/")<>0) Dir_Up(); break;//up!
+					CASE 24: key=24; //cut
+					CASE 25: goto CTRLC_MARK; //copy
+					CASE 26: Paste(); break;//paste
+					CASE 27: Goto_edit_path(); break; //goto edit_path
+					CASE 31...33: //sort
+							IF (sort_num==id-30) break;
+							IF(sort_num==1)DrawBar(onLeft(197,163)/2+215,45,6,9,0xE4DFE1);
+							IF(sort_num==2)DrawBar(onLeft(110,0),45,6,9,0xE4DFE1);
+							IF(sort_num==3)DrawBar(onLeft(39,0),45,6,9,0xE4DFE1);
+							sort_num=id-30;
+							Open_Dir(#path,1);
+							break; 
+					case 30: //about
+						EAX = 51; EBX = 1;
+						ECX = #authors; EDX = #stak;
+						$int 40h;	
+						break;
+					case 50: //стрелка вверх на скроле
+						FileList_ReDraw(-1);
+						BREAK;
+					case 51: //стрелка вниз на скроле
+						FileList_ReDraw(1);
+						BREAK;
+					case 78: //preview
+						IF (show_preview==1) show_preview=0; ELSE show_preview=1;
+						Preview();
+						BREAK;
+					case 77: //actions
+						IF (show_actions==1) show_actions=0; ELSE show_actions=1;
+						Actions();	Preview(); 
+						BREAK;
+					case 80: goto REN_MARK; //rename
+					case 81: Del_Form(); BREAK;//Delete file
+				}
+				if (id>200) //кнопки из списка файлов
+				{
+					IF (curbtn!=id-201) {FileList_ReDraw(id-201-curbtn); break;}
+					else OPEN_MARK:
+					if (!isdir) Run_File(#file_path); else
+					if (strcmp(za_kadrom+curbtn+1*304 + buf+72,"..")==0) Dir_Up(); else
+					{	OPEN_DEV:
+							copystr(#file_path, #path);
+							copystr("/", #path+strlen(#path));
+							DrawBar(197,curbtn*18+57,onLeft(22,197),18,0xFFFFFF); //закрашиваем старое выделение
+							za_kadrom=curbtn=0;
+							Open_Dir(#path,1);
+					}
+					break;
+				}
+				if (id>=100) && (id<130) //подключённые носители информации
+				{   DEVICE_MARK:
+					copystr(id-100*304+ devbuf+72, #path);
+					IF (strcmp(#path,"rd")==0) copystr("/rd/1",#file_path);
+					ELSE  {
+						copystr("/", #file_path);
+						copystr(#path, #file_path+strlen(#file_path));
+						}
+					GOTO OPEN_DEV;
+				}
+				break;
+//Key pressed-----------------------------------------------------------------------------
+			case evKey:
+				key = GetKey();
+				IF (del_active==1)
+					{
+					IF (key==013) Del_File(true);
+					IF (key==027) Del_File(false);
+				 	break;
+				 	}
+				IF (edit1.flags<>64) || (edit2.flags<>64) SWITCH (key) { CASE 8: CASE 180...182: CASE 051...056: goto EDIT_KEY_MARK; } //1..10 и ноум/енд в едитбоксах
+				switch (key)
+				{
+						case 209...217: id=key-109; IF(dev_num>id-100)GOTO DEVICE_MARK; break;
+						case 8: GoBack(); break; //Назад
+						case 014: MoveSize(80,80,OLD,OLD); Run_Program("/sys/File Managers/Eolite", #path); break; //новое окно
+						case 024:  //Ctrl+X cut
+						case 089: //Ctrl+Ins copy
+						case 003: //Ctrl+C copy
+								CTRLC_MARK:
+								IF (isdir) break; //папки пока что копировать не умеем
+								copystr(#file_name,#copy_name);
+								copystr(#file_path,#copyfile); //вычисляем какой файл копировать
+								IF (key==24) cut_active=1; ELSE cut_active=0; 
+								break;
+						case 022: Paste(); break;//Ctrl+V paste
+						case 027: //Esc
+								IF (rename_active==1) Line_ReDraw(videlenie, 100);
+								break;
+						case 013:	//Enter
+								IF (rename_active==1) {Line_ReDraw(videlenie, curbtn); break;}
+								IF (strcmp(#path,#edit_path)<>0) Goto_edit_path();
+								ELSE GOTO OPEN_MARK;
+								break; 
+						case 56:  //IF (rename_active==1) break;//up
+						case 178: //up
+								FileList_ReDraw(-1);
+								break;
+						case 177: //down
+								FileList_ReDraw(1);
+								break;
+						case 180: //home
+								FileList_ReDraw(-za_kadrom-curbtn);
+								break;
+						case 181: //end
+								FileList_ReDraw(kolichestvo-za_kadrom-curbtn+but_num);
+								break;
+						case 183: //Page Down
+								FileList_ReDraw(but_num-1);
+								break;
+						case 184: //Page Up
+								FileList_ReDraw(-but_num+1);
+								break;
+						case 051: //Нажата F2
+									REN_MARK:
+									IF (isdir==1) break; //папки пока что копировать не умеем
+										edit2.flags=66; //делаем компонент активным
+										DeleteButton(curbtn+201); //это чтоб можно было выделять мышью
+										edit2.width=onLeft(24,217);
+										edit2.top=curbtn*18+59+skin_width;
+										edit2.size=strlen(#file_name); edit2.pos=strlen(#file_name);
+										edit_box_draw  stdcall (#edit2);
+										DrawBar(218,curbtn*18+58,edit2.width+1,1,0xFFFFCC); //полоса желтая сверху для одинаковости
+										rename_active=1;
+									BREAK;
+						case 052: //Нажата F3
+								IF (isdir==false) Run_Program("/sys/tinypad", #file_path); BREAK;
+						case 054: Open_Dir(#path,1); BREAK; //перерисовать окно F5
+						case 182: Del_Form(); BREAK; //delete file
+						default:  EDIT_KEY_MARK:
+								EAX=key <<8;
+								IF (rename_active==0) edit_box_key stdcall (#edit1); ELSE edit_box_key stdcall (#edit2);
+				}                         
+				break;
+				case evReDraw:	draw_window();	BREAK;
+		}
+		IF (rename_active==0) edit_box_mouse stdcall(#edit1); ELSE edit_box_mouse stdcall(#edit2);
+	}
+	free(buf); //free memory
+	ExitProcess();
+}
+
+
+inline fastcall void draw_window()
+{
+	WindowRedrawStatus(1);
+	skin_width = GetSkinWidth(); 
+	DefineAndDrawWindow(100,100,600,410,0x43,0x10E4DFE1,0,0,#header); //DrawTitle(#header);
+	Form.getme();
+	IF (Form.height==skin_width+3) {WindowRedrawStatus(2); return;} //это зачёт!
+	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
+	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
+	//toolbar buttons
+	PutImage(#toolbar,246,39,5,0);
+	FOR (j=0; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,0xE4DFE1);
+	//полоса адреса
+	DrawBar(251,0,onLeft(251,60),12,0xE4DFE1); //фон над полосой адреса
+	edit1.width=Form.width-314;
+	edit1.top=13+skin_width;
+	KEdit();
+	DrawRegion(251,12,onLeft(61,251),16,0x94AECE);	//ободок
+	DrawBar(251,29,onLeft(251,60),10,0xE4DFE1); //фон под полосой адреса
+	DefineButton(onLeft(34,0),6,27,28,30+BT_HIDE+BT_NOFRAME,0xE4DFE1); //about
+	DefineButton(onLeft(61,0),12,18,16,27+BT_HIDE,0xE4DFE1); //кнопка перехода
+	PutImage(#goto_about,56,40,onLeft(60,0),0);
+	//прямоугольники внутри
+	DrawRegion(6,40,Form.width-12,Form.height-skin_width-46,0x94AECE); //синий ободок
+	DrawRegion(5,39,Form.width-10,Form.height-skin_width-44,0xE4DFE1); //фон
+    Devices(); //панель слева на синем фоне
+	//Buttons
+	DrawFlatButton(197,40,onLeft(197,163),16,31,0xE4DFE1,"File");
+	DrawFlatButton(onLeft(163,0),40,73,16,32,0xE4DFE1,"Type");
+	DrawFlatButton(onLeft(90,0),40,68,16,33,0xE4DFE1,"Size");
+	IF (sort_num==1) WriteText(onLeft(197,163)/2+197+18,45,0x80,0x4E78AC,"\x19",0);
+		ELSE IF (sort_num==2) WriteText(onLeft(110,0),45,0x80,0x4E78AC,"\x19",0);
+		ELSE WriteText(onLeft(39,0),45,0x80,0x4E78AC,"\x19",0);
+	//прокрутка
+	DrawFlatButton(onLeft(22,0),40,16,16,50,0xE4DFE1,"\x18");		//прокрутка вверх
+	DrawFlatButton(onLeft(22,0),onTop(22,0),16,16,51,0xE4DFE1,"\x19");//прокрутка вниз
+	DrawBar(onLeft(22,0),57,1,onTop(22,57),0x94AECE); 			//линия слева от прокрутки  
+		but_num=onTop(6,57)/18;
+		IF (but_num>100) but_num=1; ELSE IF (kolichestvo<but_num) but_num=kolichestvo;
+		FOR (j=0;j<but_num;j++) DefineButton(197,j+1*18+39,onLeft(22,197),18,201+j+BT_HIDE+BT_NOFRAME,0xFFFFFF); //новые кнопки
+		List_ReDraw();
+	IF (del_active==1) Del_Form();
+	WindowRedrawStatus(2);
+}
+
+
+void KEdit()
+{
+	edit1.size=strlen(#edit_path); edit1.pos=strlen(#edit_path);
+	edit_box_draw  stdcall (#edit1);
+}
+
+
+inline fastcall void TVScroll() { //Прокрутка
+	dword on_y = za_kadrom * onTop(22,57) / kolichestvo +57;
+	razm_scrl=onTop(22,57) * but_num - but_num / kolichestvo;		
+	IF (razm_scrl<20) razm_scrl = 20; //устанавливаем минимальный размер скролла
+	IF (razm_scrl>onTop(22,57)-on_y+56) || (za_kadrom+but_num>=kolichestvo) on_y=onTop(23+razm_scrl,0); //для большого списка 
+	DrawFlatButton(onLeft(22,0),on_y,16,razm_scrl,0,0xE4DFE1,"");//ползунок
+	DrawBar(onLeft(21,0),57,15,on_y-57,0xCED0D0);//поле до ползунка
+	DrawBar(onLeft(21,0),on_y+razm_scrl+1,15,onTop(22,57)-razm_scrl-on_y+56,0xCED0D0); //поле после ползунка
+}
+
+
+void FileList_ReDraw(int curbtn_)
+{
+	if (curbtn_<=0) //вверх
+	{
+		IF (za_kadrom==0) && (curbtn==0) return;
+		IF (-curbtn_-1<curbtn)
+		{
+			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
+			curbtn+=curbtn_;
+			Line_ReDraw(videlenie, curbtn); //выделение
+			return;
+		}
+		ELSE
+		{
+			IF (-curbtn_<za_kadrom) za_kadrom+=curbtn_; ELSE za_kadrom=0;
+			curbtn=0;
+			List_ReDraw();
+			return;
+		}
+	}
+	else  //вниз
+	{
+		IF (za_kadrom==kolichestvo-but_num) && (curbtn==but_num-1) return;
+		IF (but_num-curbtn>curbtn_)
+		{
+			Line_ReDraw(0xFFFFFF, curbtn); //белая полоса
+			curbtn+=curbtn_;
+			Line_ReDraw(videlenie, curbtn); //выделение
+			return;
+		}
+		ELSE
+		{
+			IF(but_num+za_kadrom+curbtn_>=kolichestvo) za_kadrom=kolichestvo-but_num;  ELSE za_kadrom+=curbtn_+curbtn-but_num+1;
+			curbtn=but_num;
+			List_ReDraw();
+		}
+	}
+}
+
+
+void List_ReDraw()
+{
+	IF (kolichestvo-za_kadrom<but_num) //если мы в конце списка файлов развернём окно появяться пустяе белые кнопки
+	{ za_kadrom=kolichestvo-but_num; DrawBar(197,curbtn*18+57,onLeft(22,197),18,0xFFFFFF); curbtn=but_num-1; } 
+		ELSE IF (curbtn>but_num-1) curbtn=but_num-1; //это если выделение после схлопывания окна за кадром
+	//
+	FOR (j=0; j<but_num; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(videlenie, curbtn);
+		temp_int=but_num-1*18+75;
+		DrawBar(197,temp_int,onLeft(22,197),onTop(temp_int,6),0xFFFFFF); //заливка белым доконца
+		DrawBar(onLeft(163,0),temp_int,1,onTop(temp_int,6),0xE4DFE1); //полоса серая вертикальная 1
+		DrawBar(onLeft(90,0),temp_int,1,onTop(temp_int,6),0xE4DFE1); //полоса серая вертикальная 2
+	TVScroll();
+}
+
+
+void Line_ReDraw(dword color, filenum){
+	dword y, size;
+	if (rename_active==1)
+	{
+		rename_active=0;
+		edit2.flags=64;
+		DefineButton(197,curbtn+1*18+39,onLeft(22,197),18,curbtn+201+BT_HIDE+BT_NOFRAME,0xFFFFFF);
+		IF (filenum==100) filenum=curbtn; ELSE
+		{
+			copystr(#path,#temp);
+			copystr(#file_name,#temp+strlen(#temp));
+			IF (strcmp(#file_path,#temp)<>0) && (strlen(#file_name)>0)
+				{ CopyFile(#file_path,#temp);	Del_File(true); }
+		}
+	}
+	DrawBar(197,filenum*18+57,onLeft(22,197),18,color); //полоса белая или выделения
+	//
+	y= filenum*18+85; //положение текста по Y
+	IF (strcmp(".",buf+72)<>0) off=file_mas[filenum+za_kadrom]*304 + buf+72; ELSE off=file_mas[filenum+za_kadrom+1]*304 + buf+72;
+	temp_int = onLeft(220,160)/6;
+	IF (strlen(off)<temp_int) temp_int = strlen(off);  //длинна названия файла
+		WriteText(220,y-22,0,0,off,temp_int);  //имя файла
+	size=ESDWORD[off-8];
+	EAX=ESDWORD[off-40];
+	$shr eax,4
+	$and eax,1
+	IF (color==videlenie) isdir=EAX; //надо обьединить с тем шо снизу
+	IF (!EAX)
+	{
+		temp_int = Put_icon(off+strlen(off)-4, y);
+		WriteText(7-strlen(ConvertSize(size))*6+onLeft(75,0),y-22,0x80,0,ConvertSize(size),0);
+	} ELSE IF (strcmp("..",off)==0) temp_int=Put_icon("    ", y); ELSE temp_int=Put_icon("<DIR>", y);
+	IF (color==videlenie)
+	{
+		IconFairing(temp_int, y, videlenie); //закрашиваем иконку
+		copystr(#path,#file_path);
+		copystr(off,#file_name);
+		copystr(off,#file_path+strlen(#file_path)); //итак, file_path=файлу, т.к. по-умолчанию это прога
+	}
+	DrawBar(onLeft(163,0),filenum*18+57,1,18,0xE4DFE1); //полоса серая вертикальная 1
+	DrawBar(onLeft(90,0),filenum*18+57,1,18,0xE4DFE1); //полоса серая вертикальная 2
+	//Preview();
+}
+
+
+void Open_Dir(dword path_,redraw){
+  IF (buf) free(buf);
+	//open_file_70.func = 1;    //а нафига, они сверху есть...
+	//open_file_70.pos = 0;
+	//open_file_70.rezerv = 0;
+	open_file_70.sizefile = 6898;
+	buf = malloc(2097152);
+	open_file_70.buffer = buf;
+	//open_file_70.rezerv2 = 0;
+	open_file_70.stroka = path_;
+	$mov eax,70
+	$mov ebx,#open_file_70.func
+	$int 0x40
+	kolichestvo=EBX;
+	//
+	if (kolichestvo<>-1) && (redraw>0)
+	{
+		FOR (j=0;j<kolichestvo;j++) {off=j*304+buf+72; IF(strcmp(path_,"/")<>0) ChangeCase(off);} //регистр
+		FOR (j=0;j<but_num;j++) DeleteButton(201+j); //удаляем старые
+		but_num=onTop(6,57)/18;
+		IF (strcmp(".",buf+72)==0) kolichestvo--; //фильтруем элемент "."
+		//IF (strcmp(".",buf+72)==0) copystr(304+buf+72,buf);
+		IF (but_num>100) but_num=1; ELSE//эта странная строчка для того если размеры окна слишком маленькие
+		IF (kolichestvo<but_num) but_num=kolichestvo;
+		FOR (j=0;j<but_num;j++) DefineButton(197,j*18+57,onLeft(22,197),18,201+j+BT_HIDE+BT_NOFRAME,0xFFFFFF); //новые кнопы
+		FoldesGoUp();
+		IF (redraw==1) List_ReDraw();
+		copystr(path_,#edit_path);
+		KEdit();
+		copystr("|",#PathHistory+strlen(#PathHistory));
+		copystr(#path,#PathHistory+strlen(#PathHistory));
+	}
+}
+
+
+
+void FoldesGoUp()
+{
+	dword k=0, l=0; off=buf+72;
+	IF (strcmp(#path,"/rd/1/")==0) || (strcmp(#path,"/fd/1/")==0) kolichestvo--; 
+	IF (strcmp(".",buf+72)<>0) && (strlen(#path)>6) kolichestvo--; //фак! это бред! хз как оно работает
+	FOR (i=0;i<=kolichestvo;i++)  //а папки всё выше и выше...
+	{
+		EAX=ESDWORD[off-40];
+		$shr eax,4
+		$and eax,1
+		IF (EAX) {file_mas[k]=i; k++;}
+			ELSE {file_mas[kolichestvo-l]=i; l++;}
+		off += 304;
+	}
+	//k=0; l=kolichestvo;
+	switch(sort_num)
+	{
+		CASE 1: //упорядочиваем файлы по имени
+			WriteText(onLeft(197,163)/2+215,45,0x80,0x4E78AC,"\x19",0);
+			IF (strcmp(#path,"/")==0) break;
+			IF (strcmp("..",buf+72+304)<>0) Sort_by_Name(k,kolichestvo-1); ELSE Sort_by_Name(k,kolichestvo);
+			break;
+		case 2: //упорядочиваем файлы по типу
+			WriteText(onLeft(110,0),45,0x80,0x4E78AC,"\x19",0);
+			IF (strcmp("..",buf+72+304)<>0) Sort_by_Type(k, kolichestvo-1); ELSE Sort_by_Type(k, kolichestvo);
+			break;
+		case 3:
+			WriteText(onLeft(39,0),45,0x80,0x4E78AC,"\x19",0);
+			IF (strcmp("..",buf+72+304)<>0) Sort_by_Size(k,kolichestvo-1); ELSE Sort_by_Size(k,kolichestvo);
+			BREAK;
+	}
+	IF (strcmp(#path,"/")<>0) IF (strcmp("..",304+buf+72)<>0) Sort_by_Name(0,k-1); ELSE Sort_by_Name(2,k-1); //иногда имя папки начинается с !,&...
+	IF (strcmp(".",buf+72)<>0) && (strlen(#path)>6) kolichestvo++;
+}
+
+
+dword onLeft(dword right,left) {return Form.width-right-left;}
+dword onTop(dword down,up) {return Form.height-skin_width-down-up;}
+
+
+void Del_Form()
+{
+	IF (isdir==true) return; //папки пока что удалять не умеем
+	temp_int=Form.width-200+197/2;
+	//типа окно
+	FOR (i=5;i<11;i++) DeleteButton(201+i); //удаляем кнопки под формой
+	DrawFlatButton(temp_int,160,200,80,0,0xE4DFE1, ""); //форма
+	WriteText(temp_int+19,175,0x80,0,"Do you really want to delete",28);
+	IF (strlen(#file_name)<28) 
+		{
+			WriteText(strlen(#file_name)*6+temp_int+20,190,0x80,0,"?",1);
+			WriteText(temp_int+20,190,0x80,0,#file_name,24); //пишем имя
+		}
+	ELSE
+		{
+			WriteText(164+temp_int,190,0x80,0,"...?",4);
+			WriteText(temp_int+20,190,0,0,#file_name,24); //пишем имя
+		}
+	//кнопочки
+	DrawFlatButton(temp_int+20,208,70,20,301,0xFFB6B5,"Yes");
+	DrawFlatButton(temp_int+111,208,70,20,302,0xC6DFC6,"No");
+	del_active=1;
+}
+	
+void Del_File(byte dodel)
+{
+  IF (dodel==true){
+	run_file_70.func = 8;
+	run_file_70.flag = 0;
+	run_file_70.param= 0;
+	run_file_70.rez1 = 0;
+	run_file_70.rez2 = 0;
+	run_file_70.rezerv2 = 0;
+	run_file_70.stroka = #file_path;
+	$mov eax,70
+	$mov ebx,#run_file_70.func
+	$int 0x40}
+	 del_active=0;
+	 DeleteButton(301); DeleteButton(302); //удаляем кнопочки Yes/No
+	 Open_Dir(#path,1);
+}
+
+
+void Paste()
+{
+	IF (strcmp(#copyfile,"")==0) return; //отмена, еши ещё ничё не скопировали
+	copystr(#path,#temp);
+	copystr(#copy_name,#temp+strlen(#temp));
+	if (strcmp(#copyfile,#temp)==0) //если мы копируем и вставляем в одной и той же папке
+		{
+			copystr(#path,#temp);
+			copystr("new_",#temp+strlen(#temp));
+			copystr(#copy_name,#temp+strlen(#temp));
+		}
+	CopyFile(#copyfile,#temp);
+	IF (cut_active==1) //если мы выбрали вырезать
+		{
+			copystr(#copyfile,#file_path);
+			Del_File(true);
+			copyfile='';
+			cut_active=0;
+		}
+	Open_Dir(#path,1);
+}
+
+
+void Tip(int y, dword caption, id, arrow)
+{
+	DrawBar(22,y,160,17,0xE4DFE1); //серое сверху
+	WriteText(30,y+5,0x80,0,caption,0);		//text Goto:
+	IF (id<>0) DefineButton(164,y+1,16,16,id+BT_HIDE+BT_NOFRAME,0xE4DFE1); //кнопа для стрелки
+	WriteText(170,y+5,0x80,0,arrow,0); //стрелка вниз
+	DrawBar(22,y+17,160,1,0x94AECE);		//подчёркивание
+}
+
+
+void Devices()
+{          
+	byte dev_icon; dword drive_name[30]; char dev_name[4];
+	DrawBar(7,41,190,15,0x00699C);		//синий прямоугольник - сверху
+	DrawBar(7,56,15,onTop(21,41),0x00699C);	//синий прямоугольник - слева       
+	DrawBar(182,56,15,onTop(21,41),0x00699C);	//синий прямоугольник - справа
+	//список дисков
+	Tip(56, "Goto:", 0, "");
+	DrawBar(22,74,160,dev_num*16+1,0xFFFFFF);	//белое
+	for (i=0;i<dev_num;i++)
+	{
+		DefineButton(22,i*16+74,159,16,100+i+BT_HIDE,0xE4DFE1); //создаём кнопки, а потом выводим названия дисков
+		copystr("Unknown drive",#drive_name); //изначально неизвесный носитель
+		dev_icon=3; //по-умолчанию устройство выглядит как жестяк
+		copystr(i*304+ devbuf+72, #dev_name);
+		IF (dev_name[0]=='f')  { copystr("Floppy disk /",#drive_name); dev_icon=2; }
+		IF (dev_name[0]=='h')  { copystr("Hard disk drive /",#drive_name);}
+		IF (dev_name[0]=='b')  { copystr("SATA disk drive /",#drive_name);}
+		IF (dev_name[0]=='c')  {copystr("CD-drive /",#drive_name); dev_icon=1;}
+		copystr(#dev_name,#drive_name+strlen(#drive_name));
+		copystr("/",#drive_name+strlen(#drive_name));
+		IF (dev_name[0]=='r')  { copystr("RAM-disk /rd/1/",#drive_name); dev_icon=0; }
+	  WriteText(45,i*16+79,0x80,0,#drive_name,0);
+	  PutImage(dev_icon*14*13*3+#devices,14,13,26,i*16+76);
+      }
+	Actions();  //функции файлов и папок
+	Preview();
+}
+
+void Actions()
+{
+	DrawBar(22,dev_num*16+75,160,15,0x00699C); //синий прямоугольник - под девайсами
+	if (show_actions==1)
+	{
+		Tip(dev_num*16+90, "Actions", 77, "\x19");
+		DrawBar(22,dev_num*16+108,160,51,0xFFFFFF); //белое
+		PutImage(#factions,16,44,26,dev_num*16+113); //пиктограмки
+		//rename file 
+		DefineButton(22,dev_num*16+108,159,16,80+BT_HIDE,0xE4DFE1);
+		WriteText(47,dev_num*16+113,0x80,0,"Rename file <F2>",0);
+		//delete file
+		DefineButton(22,dev_num*16+125,159,16,81+BT_HIDE,0xE4DFE1);
+		WriteText(47,dev_num*16+130,0x80,0,"Delete file <Del>",0);
+		//create folder
+		DefineButton(22,dev_num*16+142,159,16,82+BT_HIDE,0xE4DFE1);
+		WriteText(47,dev_num*16+147,0x80,0,"Create folder <F6>",0);
+		DrawBar(22,dev_num*16+159,160,15,0x00699C); //синее после Actions
+	}
+	ELSE
+	{
+	DeleteButton(80);	DeleteButton(81);	DeleteButton(82);
+	Tip(dev_num*16+90, "Actions", 77, "\x18");
+	DrawBar(22,dev_num*16+108,160,51,0x00699C); //синее
+	}
+}
+
+
+/*void Dir_Up()
+{
+	byte temp_[256];
+	i=strlen(#path)-1;
+	path[i]=0x00;
+	do i--; while (path[i]<>'/'); copystr(#path+i+1,#temp_); 
+	path[i+1]=0x00;
+	ChangeCase(#temp_);
+	za_kadrom=curbtn=0; //вверх списка
+   	Open_Dir(#path,2);
+	FOR (i=kolichestvo; i>0; i--;)	IF(strcmp(file_mas[i]*304+buf+72,#temp_)==0) BREAK;
+	//
+	IF (i<kolichestvo-but_num) {IF (strcmp(".",buf+72)<>0) za_kadrom=i; ELSE za_kadrom=i-1;}
+		ELSE {za_kadrom=kolichestvo-but_num; curbtn=i-kolichestvo+but_num;}
+	List_ReDraw();
+}*/
+
+/*void Dir_Up()
+{
+	i=strlen(#path)-1;
+	do i--; while (path[i]<>'/');
+	path[i+1]=0x00;
+	za_kadrom=0; curbtn=0; //вверх списка
+   	Open_Dir(#path,1);
+}*/
+
+//баг - если сверху, то сверху,а не снизу
+void Dir_Up()
+{
+	byte temp_[256];
+	i=strlen(#path)-1;
+	path[i]=0x00;
+	do i--; while (path[i]<>'/'); copystr(#path+i+1,#temp_); 
+	path[i+1]=0x00;
+	ChangeCase(#temp_);
+	za_kadrom=curbtn=0; //вверх списка
+   	Open_Dir(#path,2);
+	FOR (i=kolichestvo; i>0; i--;)	IF(strcmp(file_mas[i]*304+buf+72,#temp_)==0) BREAK;
+	//
+	if (i>kolichestvo-but_num)
+	{
+		za_kadrom=kolichestvo-but_num;
+		IF (strcmp(".",buf+72)<>0) curbtn=i-kolichestvo+but_num; ELSE curbtn=i-kolichestvo+but_num-1;
+	}
+	ELSE IF (strcmp(".",buf+72)<>0) FileList_ReDraw(i); ELSE FileList_ReDraw(i-1);
+	List_ReDraw();
+}
+
+
+void Preview()
+{
+	dword top_pr=dev_num*16+123;
+	top_pr+=show_actions*51; //ничинаем ниже, если Акшнс видимы
+	DeleteButton(78);
+	if (show_preview==1)
+	{
+		Tip(top_pr,"Preview",78,"\x19");
+		DrawBar(22,top_pr+18,160,100,0xFFFFFF); //белое
+		//WriteText(30,top_pr+30,0x80,0,"kolichestvo:",0); WriteText(105,top_pr+30,0x80,0,IntToStr(kolichestvo),0); 
+		//WriteText(30,top_pr+40,0x80,0,"but_num:",0);	 WriteText(105,top_pr+40,0x80,0,IntToStr(but_num),0);
+		//WriteText(30,top_pr+50,0x80,0,"curbtn",0);		 WriteText(105,top_pr+50,0x80,0,IntToStr(curbtn),0);
+		//WriteText(30,top_pr+60,0x80,0,"ra_kadrom:",0);	 WriteText(105,top_pr+60,0x80,0,IntToStr(za_kadrom),0);
+		//WriteText(30,top_pr+70,0x80,0,#file_path,0);
+		//WriteText(30,top_pr+80,0x80,0,#file_name,0);
+		WriteText(30,top_pr+60,0x80,0,"Not realized... Yet.",0);
+		//WriteText(30,top_pr+70,0x80,0,"Nable, I'm waiting (:",0);
+		DrawBar(22,top_pr+118,160,onTop(top_pr+118,6),0x00699C); //синее
+	} 
+	ELSE  {
+		Tip(top_pr,"Preview",78,"\x18");
+		DrawBar(22,top_pr+18,160,onTop(top_pr+18,6),0x00699C); //синее
+		}
+}
+
+
+void Goto_edit_path()
+{
+	IF (strcmp(#path,#edit_path)==0) return; //проверка не в этой ли мы папке
+ 	IF (strcmp(#edit_path+strlen(#edit_path)-1,"/")<>0) copystr("/",#edit_path+strlen(#edit_path)); //если нет, + "/"
+	Open_Dir(#edit_path,0); //проверяем если файлы в папке, так мы узнаём существует ли она
+	IF (kolichestvo==-1) KEdit(); ELSE //просто очищаем полосу адреса
+		{za_kadrom=curbtn=0; copystr(#edit_path,#path);}//наверх списка
+	Open_Dir(#path,1);
+}
+
+
+inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем то, что осталось
+{
+	//char old_dir[256]='';
+	i=strlen(#PathHistory)-2;
+	//
+	//WHILE (PathHistory[i]<>'/') { copystr(#PathHistory[i],#old_dir); i--; };
+	//old_dir[strlen(#old_dir)-1]=0x00;
+	//DrawTitle(#old_dir);   
+	//
+	WHILE (PathHistory[i]<>'|') { i--; };
+	IF (i>0) PathHistory[i]=0x00;
+	WHILE (PathHistory[i]<>'|')	{ copystr(#PathHistory[i],#path); i--;	}
+	IF (i>0) PathHistory[i]=0x00;
+	za_kadrom=curbtn=0; Open_Dir(#path,1);
+	//FOR (i=0; i<kolichestvo; i++;) IF (strcmp(file_mas[i]*304+buf+72,#old_dir)==0) {curbtn=3; za_kadrom=i-3; Open_Dir(#path,1); return;}
+}
+
+
+stop:
