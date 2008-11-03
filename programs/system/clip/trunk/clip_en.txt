@@ -1,0 +1,141 @@
+Global clipboard for Kolibri. Notes for developers.
+
+General info
+Clipboard is implemented using daemon process and IPC messages. 
+To test, run @clip (the daemon process) and cliptest and debug board
+or test2 (several instances).
+
+1. @clip daemon and its commands
+
+Process @clip creates no windows, but only listens for IPC messages.
+Daemon supports 16 (MAX_FORMAT) buffers for different data types and up to
+16,7 Mb (MAX_SIZE) data in each buffer (memory is allocated from heap).
+Data format ID is a number from 0 to 65534. Value 65535 is reserved.
+
+When the daemon is started it terminates all other @clip instances.
+Format of daemon's commands is following:
+
+[ Cmd: word | Format: word | Reserved: Dword | Data: ...]
+
+where Cmd is command id,
+Format is data format id,
+Reserved is unused (should be zero),
+and Data is command-specific data.
+
+Following commands are implemented:
+
+1. Set Size. Define required size for buffer. This command causes daemon to
+enlarge (if needed) its IPC buffer (there is currently no way to decrease
+size of the buffer).
+Data parameter: Dword with size of the data.
+Command length: 12 bytes.
+
+2. Set. Data transfer. This command copies data to daemon's memory. 
+Data parameter: data to be copied.
+Command length: 8 + (data size) bytes.
+
+3. Get Size. Get size of data with specified format id. This command causes
+daemon to send in reply an IPC message telling the size of the data in the buffer.
+If the buffer contains no data, 0 is returned.
+Command length: 8 bytes.
+
+4. Get. Get the data with specified format id from the buffer. This command
+causes daemon to send in reply an IPC message of required size with the data
+from the buffer. If the buffer contains no data, no message is sent.
+Command length: 8 bytes.
+
+5. Delete. Clear the buffer for specified format id. If 0xFFFF is specified,
+all buffers are cleared.
+Command length: 8 bytes.
+
+Source: @clip.asm. Uncomment the line:
+;define DEBUG TRUE 
+and comment the next one to enable output on debug board. This is useful
+for bugtracking.
+DEFAULT_SIZE is initial IPC buffer size
+MAX_SIZE is upper limit of IPC buffer size
+MAX_FORMAT is number of formats daemon can store as the same time
+(if more formats are copied, daemon will crash).
+DELAY is pause between sending attepmts, 1/100 seconds.
+ATTEMPT is number of sending attempts if target process is not ready. 
+ 
+
+2. clip.inc: function set for high-level communication with @clip.
+Reading and writing is implemeted.
+
+Usage example: cliptest.asm (writes to debug board) and test2.asm.
+
+Following values should be defined:
+DEFAULT_MASK = 7	; Default event mask for current thread
+
+SEND_DELAY = 10		; pause between sending attempts
+
+RECV_DELAY = 100	; how much to wait for the answer
+			; 1/100 secs
+
+ATTEMPT = 5		; number of sending attempts
+
+Clip.inc contains the following functions:
+
+clipboard_init() - search of process @clip. May be called several times.
+Returns 1 if successful and 0 if failed.
+
+clipboard_write(esi points to CLIP_BUFFER,
+ax (word) - data format id) - copies data to buffer. 
+Uses 1-th and 2-nd commands. 
+Returns 1 if successful and 0 if failed.
+
+clipboard_read(esi points to CLIP_BUFFER,
+ax (word) - data format id) - retrieves data from buffer. 
+Uses 3-rd and 4-th commands. 
+Returns 1 if successful, -1 if not enough data in receive buffer (which is
+left unchanged in this case) and 0 if failed.
+If eax = 1 or -1, edx contains real size of data in the buffer.
+
+Warning. If the application uses incoming IPC messages for other
+purposes, process daemon's messages manually, because getting a different
+format message will be ignored by clipboard_read.
+
+There are 2 low-level functions which may be called after clipboard_init:
+_ipc_send (esi points to a common buffer, edx - byte count).
+Sends an IPC message to daemon. The difference between this function and
+function 60/2 is that _ipc_send makes several attempts if daemon is 
+unaccessible, with pause of SEND_DELAY/100 seconds.
+Returns 1 if successful and 0 if failed.
+
+_ipc_recv(esi points to CLIP_BUFFER (см. далее),
+edx = default event mask).
+Waits for an IPC message for RECV_DELAY/100 seconds. 
+If successful, result is stored in esi.
+Returns 1 if successful and 0 if failed.
+
+Format of buffer for clipboard:
+CLIP_BUFFER
+(+0)	.size	dd	?	; size of the buffer itself(N)
+				; if you need to send less bytes that N
+				; temporarily write the required size here
+
+(+4)	.sys1	dd	?	; \  clip.inc uses these fields
+				;  - for internal values. You should not
+(+8)	.sys2	dd	?       ; /  modify them
+
+(+12)	.data	db	N dup(?); buffer itself
+
+Good luck in programming and debugging!
+
+; barsuk, 21.08.2008
+
+
+
+
+@CLIP version 0.2.
+
+A capability of inserting text to applications not using @clip is added.
+Function 72/1 is used to insert the text. 
+Only applications, using ascii mode for input are supported.
+
+To insert text press ctrl-alt-v hot key. 
+The text should be copied to 1-st buffer from @clip-compatible 
+application (example: test2).
+
+; 08.09.2008
