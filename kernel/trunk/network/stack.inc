@@ -134,7 +134,6 @@ resendBuffer	    equ     resendQ + ( 8 * NUMRESENDENTRIES ) ; for TCP
 
 
 uglobal
-net_sockets_mutex dd 0
 net_sockets rd 2
 endg
 
@@ -177,6 +176,9 @@ stack_init:
 	_memset_dw	stack_data_start, 0, 0x20000/4
 	;_memset_dw      resendQ, 0xFFFFFFFF, NUMRESENDENTRIES   ; XTODO: validate size
 	_memset_dw	resendQ, 0xFFFFFFFF, NUMRESENDENTRIES * 2
+
+	mov	[net_sockets], 0
+	mov	[net_sockets + 4], 0
 
 	; Queries initialization
 	call	queueInit

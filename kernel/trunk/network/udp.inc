@@ -84,8 +84,6 @@ proc udp_rx stdcall
 	mov	ax, [edx + 20 + UDP_PACKET.DestinationPort]   ; get the local port from
 				       ; the IP packet's UDP header
 
-	mov	ebx, net_sockets_mutex
-	call	wait_mutex
 	mov	ebx, net_sockets
 
   .next_socket:

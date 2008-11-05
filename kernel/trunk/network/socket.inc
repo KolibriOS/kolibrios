@@ -84,6 +84,8 @@ $Revision$
 ; so, define struct
 struc SOCKET
 {
+   .PrevPtr		    dd	 ?
+   .NextPtr		    dd	 ?
    .Status		    dd	 ?  ;+00 - Status ( of this buffer )
    .PID 		    dd	 ?  ;+04 - Application Process ID
    .LocalIP		    dd	 ?  ;+08 - Local IP Address
@@ -105,8 +107,6 @@ struc SOCKET
    .SEG_LEN		    dd	 ?  ;+64 - Segment length
    .SEG_WND		    dd	 ?  ;+68 - Segment window
    .wndsizeTimer	    dd	 ?  ;+72 - Retransmit queue # NOW WINDOW SIZE TIMER
-   .PrevPtr		    dd	 ?
-   .NextPtr		    dd	 ?
    .rxData		    dd	 ?  ;+76 - receive data buffer here
 }
 
