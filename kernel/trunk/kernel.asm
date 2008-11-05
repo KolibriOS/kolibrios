@@ -895,6 +895,8 @@ end if
 	sti
 	call change_task
 
+	call	draw_background_temp
+
 	jmp osloop
 
 ;        jmp   $                      ; wait here for timer to take control
