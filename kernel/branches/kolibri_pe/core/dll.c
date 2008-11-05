@@ -7,12 +7,55 @@
 #include <slab.h>
 #include <pe.h>
 
+#pragma pack(push,4)
+typedef struct
+{
+  char     app_name[16];
+  addr_t   fpu_state;                       /*      +16       */
+  count_t  ev_count;                        /*      +20       */
+  addr_t   fpu_handler;                     /*      +24       */
+  addr_t   sse_handler;                     /*      +28       */
+  addr_t   pl0_stack;                       /*      +32       */
+
+  addr_t   heap_base;                       /*      +36       */
+  addr_t   heap_top;                        /*      +40       */
+  addr_t   cursor;                          /*      +44       */
+  addr_t   fd_ev;                           /*      +48       */
+  addr_t   bk_ev;                           /*      +52       */
+  addr_t   fd_obj;                          /*      +56       */
+  addr_t   bk_obj;                          /*      +60       */
+  addr_t   saved_esp;                       /*      +64       */
+  addr_t   io_map[2];                       /*      +68       */
+
+  u32_t    dbg_state;                       /*      +76       */
+  char    *cur_dir;                         /*      +80       */
+  count_t  wait_timeout;                    /*      +84       */
+  addr_t   saved_esp0;                      /*      +88       */
+
+  link_t   dll_list;                        /*      +92       */
+
+  u32_t    reserved0[7];                    /*      +100   db 28 dup(?)  */
+
+  addr_t   wnd_shape;                       /*      +128      */
+  u32_t    wnd_shape_scale;                 /*      +132      */
+  u32_t    reserved1;                       /*      +136      */
+  size_t   mem_size;                        /*      +140      */
+}appdata_t;
+#pragma pack(pop)
+
+
+extern appdata_t *current_slot;
+
+bool link_pe(addr_t img_base);
+
 int __stdcall strncmp(const char *s1, const char *s2, size_t n);
 
 extern int __stdcall mnt_exec(void *raw, size_t raw_size, char *path,
               char *cmdline, u32_t flags) asm ("mnt_exec");
 
-static dll_t core_dll;
+dll_t core_dll;
+
+slab_cache_t *dll_slab;
 
 static char* strupr(char *str )
 {
@@ -84,6 +127,8 @@ void init_core_dll()
                         nt->OptionalHeader.DataDirectory[0].VirtualAddress);
     core_dll.img_name = strupr(MakePtr(char*, LOAD_BASE, exp->Name));
 
+    dll_slab = slab_cache_create(sizeof(dll_t), 16,NULL,NULL,SLAB_CACHE_MAGDEFERRED);
+
     DBG("%s base %x size %x sections %d exports %x\n",
         core_dll.img_name, core_dll.img_base,
         core_dll.img_size, nt->FileHeader.NumberOfSections,
@@ -91,9 +136,9 @@ void init_core_dll()
 };
 
 
-dll_t * find_dll(const char *name)
+dll_t * find_dll(link_t *list, const char *name)
 {
-    dll_t* dll = &core_dll;
+    dll_t* dll = (dll_t*)list;
 
     do
     {
@@ -102,7 +147,7 @@ dll_t * find_dll(const char *name)
 
         dll = (dll_t*)dll->link.next;
 
-    }while(&dll->link !=  &core_dll.link);
+    }while(&dll->link !=  list);
 
     return NULL;
 };
@@ -183,15 +228,20 @@ typedef struct
 }exec_stack_t;
 
 
-addr_t new_app_space(void);
+addr_t __fastcall pe_app_space(size_t size);
 
 int __stdcall pe_app_param(char *path, void *raw, addr_t ex_pg_dir,
-                          addr_t ex_stack_page) asm ("pe_app_param");
+                          exec_stack_t *ex_stack) asm ("pe_app_param");
 
 int sys_exec(char *path, char *cmdline, u32_t flags)
 {
+    PIMAGE_DOS_HEADER     dos;
+    PIMAGE_NT_HEADERS32   nt;
+
+    size_t   img_size;
+    count_t  img_pages;
+    count_t  img_tabs;
     addr_t        ex_pg_dir;
-    addr_t        ex_stack_tab;
     addr_t        ex_stack_page;
     addr_t        ex_pl0_stack;
 
@@ -257,22 +307,23 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
         return -30;
     }
 
-    ex_pg_dir      = new_app_space();
-
-    if( !ex_pg_dir )
+    ex_stack_page  = core_alloc(0);                    /* 2^0 = 1 page   */
+    if( ! ex_stack_page )
     {
         mem_free(raw);
         return -30;                                    /* FIXME          */
     };
 
-    ex_stack_tab   = ex_pg_dir + 4096;
-    ex_pl0_stack   = ex_pg_dir + 4096 * 2;
+    dos = (PIMAGE_DOS_HEADER)raw;
+    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
-    ex_stack_page  = core_alloc(0);                    /* 2^0 = 1 page   */
+    img_size  =  nt->OptionalHeader.SizeOfImage;
 
-    if( ! ex_stack_page )
+    ex_pg_dir      = pe_app_space(img_size);
+
+    if( !ex_pg_dir )
     {
-        core_free(ex_stack_tab);
+        core_free(ex_stack_page);
         mem_free(raw);
         return -30;                                    /* FIXME          */
     };
@@ -284,8 +335,6 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
     :"c"(1024),"D"(ex_stack_page + OS_BASE)
     :"eax","cc");
 
-    ((u32_t*)(ex_stack_tab+OS_BASE))[1023] = ex_stack_page | 7;
-
     ex_stack = (exec_stack_t*)(ex_stack_page + OS_BASE
                                + PAGE_SIZE - stack_size);
     ex_stack->argc = 2;
@@ -293,7 +342,7 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
     ex_path = MakePtr(char*, ex_stack, sizeof(exec_stack_t)+AUX_COUNT*sizeof(auxv_t));
 
     memcpy(ex_path, path, pathsize);
-    ex_stack->path = (char*)(((addr_t)ex_path & 0xFFF) + 0x7FCFF000);  /* top of stack */
+    ex_stack->path = (char*)(((addr_t)ex_path & 0xFFF) + 0x7FFFF000);  /* top of stack */
 
     if( cmdline )
     {
@@ -310,51 +359,56 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
     DBG("create stack at %x\n\tpath %x\n\tcmdline %x\n",
          ex_stack, ex_stack->path, ex_stack->cmdline);
 
-    pe_app_param(path, raw, ex_pg_dir, ex_stack_page);
+    pe_app_param(path, raw, ex_pg_dir, ex_stack);
     return 0;
 };
 
 #define  master_tab    (page_tabs+ (page_tabs>>10))
 
-void sys_app_entry(addr_t raw, addr_t ex_stack)
+typedef struct
+{
+    u32_t edi;
+    u32_t esi;
+    u32_t ebp;
+    u32_t esp;
+    u32_t ebx;
+    u32_t edx;
+    u32_t ecx;
+    u32_t eax;
+    u32_t eip;
+    u32_t cs;
+    u32_t eflags;
+    u32_t pe_sp;
+    u32_t pe_ss;
+}thr_stack_t;
+
+#define EFL_IF      0x0200
+#define EFL_IOPL1   0x1000
+#define EFL_IOPL2   0x2000
+#define EFL_IOPL3   0x3000
+
+void sys_app_entry(addr_t raw, thr_stack_t *thr_stack, exec_stack_t *ex_stack)
 {
     PIMAGE_DOS_HEADER     dos;
     PIMAGE_NT_HEADERS32   nt;
 
     size_t   img_size;
     count_t  img_pages;
-    count_t  img_tabs;
     count_t  i;
     u32_t    tmp;
 
     __asm__ __volatile__ ("sti");
-
-    DBG("pe_app_entry: raw %x esp %x\n", raw, ex_stack);
 
     dos = (PIMAGE_DOS_HEADER)raw;
     nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
     img_size  =  nt->OptionalHeader.SizeOfImage;
 
+    current_slot->mem_size  = img_size;
+
+    list_initialize(&current_slot->dll_list);
+
     img_pages = img_size >> 12;
-    img_tabs  = ((img_size + 0x3FFFFF) & ~0x3FFFFF) >> 22;
-
-    DBG("app pages %d app tabs %d\n", img_pages, img_tabs);
-
-    for(i = 0; i < img_tabs; i++)
-    {
-        addr_t tab = core_alloc(0);
-        ((u32_t*)master_tab)[i] = tab|7;                            /*   FIXME     */
-    }
-
-    ((u32_t*)master_tab)[0x7FC/4] = (ex_stack & 0xFFFFF000)|7;                                /*   FIXME     */
-
-    __asm__ __volatile__ (
-    "xorl %%eax, %%eax      \n\t"
-    "rep stosl"
-    :"=c"(tmp),"=D"(tmp)
-    :"c"(img_tabs<<10),"D"(page_tabs)
-    :"eax","cc");
 
     for(i = 0; i < img_pages; i++)
     {
@@ -362,17 +416,256 @@ void sys_app_entry(addr_t raw, addr_t ex_stack)
         ((u32_t*)page_tabs)[i] = page | 7;                          /*   FIXME     */
     }
 
+    addr_t stack_page = ((addr_t)ex_stack-OS_BASE) & ~4095;
+    ((u32_t*)page_tabs)[0x7FFFF000>>12] = stack_page | 7;
+
     create_image(0, raw);
 
-    __asm__ __volatile__ (
-    "xchgw %bx, %bx");
+    init_user_heap();
+
+    if (! link_pe(0))
+    {
+        DBG("\nunresolved imports\nexit\n");
+        __asm__ __volatile__ (
+        "int $0x40"::"a"(-1));
+    };
+
+//    __asm__ __volatile__ (
+//    "xchgw %bx, %bx");
 
     addr_t entry = nt->OptionalHeader.AddressOfEntryPoint +
                    nt->OptionalHeader.ImageBase;
 
-  //  __asm__ __volatile__ (
-  //  "call %0":: "r" (entry));
-
-    while(1);
+    thr_stack->edi = 0;
+    thr_stack->esi = 0;
+    thr_stack->ebp = 0;
+    thr_stack->ebx = 0;
+    thr_stack->edx = 0;
+    thr_stack->ecx = 0;
+    thr_stack->eax = 0;
+    thr_stack->eip = entry;
+    thr_stack->cs  = 0x1b;
+    thr_stack->eflags = EFL_IOPL3 | EFL_IF;
+    thr_stack->pe_sp = 0x7FFFF000 + ((u32_t)ex_stack & 0xFFF);
+    thr_stack->pe_ss = 0x23;
 
 };
+
+void* __stdcall user_alloc(size_t size) asm("user_alloc");
+void  __stdcall user_free(void *mem) asm("user_free");
+
+dll_t* __fastcall load_dll(const char *path)
+{
+    PIMAGE_DOS_HEADER        dos;
+    PIMAGE_NT_HEADERS32      nt;
+    PIMAGE_EXPORT_DIRECTORY  exp;
+
+    md_t    *img_md;
+
+    size_t   img_size;
+    addr_t   img_base;
+    count_t  img_pages;
+
+    size_t   raw_size = 0;
+    void    *raw;
+
+    DBG("\nload dll %s", path);
+
+    raw = load_file(path, &raw_size);
+
+    DBG("  raw = %x\n", raw);
+
+    if( ! raw)
+    {
+        DBG("file not found: %s\n", path);
+        return NULL;
+    };
+
+    if( ! validate_pe(raw, raw_size) )
+    {
+        DBG("invalid pe file %s\n", path);
+        mem_free(raw);
+        return NULL;
+    }
+
+    dos = (PIMAGE_DOS_HEADER)raw;
+    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
+
+    img_size  =  nt->OptionalHeader.SizeOfImage;
+
+    img_base = (addr_t)user_alloc(img_size);
+    if( !img_base)
+    {
+        mem_free(raw);
+        return NULL;
+    };
+
+    dll_t *dll = (dll_t*)slab_alloc(dll_slab,0);         /* FIXME check */
+    if( !dll)
+    {
+        mem_free(raw);
+        user_free((void*)img_base);
+        return NULL;
+    };
+
+    create_image(img_base, (addr_t)raw);
+
+    mem_free(raw);
+
+    dos = (PIMAGE_DOS_HEADER)img_base;
+    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
+    exp =  MakePtr(PIMAGE_EXPORT_DIRECTORY,img_base,
+                   nt->OptionalHeader.DataDirectory[0].VirtualAddress);
+
+    dll->img_base = img_base;
+    dll->img_size = nt->OptionalHeader.SizeOfImage;
+    dll->img_md   = NULL;
+
+    dll->img_hdr  = nt;
+    dll->img_sec  = MakePtr(PIMAGE_SECTION_HEADER,nt, sizeof(IMAGE_NT_HEADERS32));
+    dll->img_exp  = MakePtr(PIMAGE_EXPORT_DIRECTORY,img_base,
+                            nt->OptionalHeader.DataDirectory[0].VirtualAddress);
+    dll->img_name = strupr(MakePtr(char*, img_base, exp->Name));
+
+    list_insert(&current_slot->dll_list, &dll->link);
+
+    return dll;
+};
+
+bool link_pe(addr_t img_base)
+{
+    PIMAGE_DOS_HEADER     dos;
+    PIMAGE_NT_HEADERS32   nt;
+    char path[128];
+
+    int warn = 0;
+
+/* assumed that image is valid */
+
+    dos = (PIMAGE_DOS_HEADER)img_base;
+    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
+
+    if(nt->OptionalHeader.DataDirectory[1].Size)
+    {
+        PIMAGE_IMPORT_DESCRIPTOR imp;
+
+        imp = MakePtr(PIMAGE_IMPORT_DESCRIPTOR, img_base,
+                      nt->OptionalHeader.DataDirectory[1].VirtualAddress);
+
+        while ( 1 )
+        {
+            PIMAGE_THUNK_DATA32     thunk;
+
+            PIMAGE_DOS_HEADER       expdos;
+            PIMAGE_NT_HEADERS32     expnt;
+            PIMAGE_EXPORT_DIRECTORY exp;
+
+            u32_t   *iat;
+            char    *libname;
+            addr_t  *functions;
+            u16_t   *ordinals;
+            char   **funcname;
+
+            dll_t   *exp_dll;
+
+            if ( (imp->TimeDateStamp==0 ) && (imp->Name==0) )
+                break;
+
+            libname=MakePtr(char*,imp->Name, img_base);
+
+            DBG("import from %s\n",libname);
+
+            exp_dll = find_dll(&current_slot->dll_list, libname);
+            if(exp_dll != NULL)
+            {
+                DBG("find %s\n", exp_dll->img_name);
+            }
+            else
+            {
+                int len = strlen(libname)+1;
+
+                memcpy(path, "/sys/lib/",9);
+                memcpy(&path[9],libname,len);
+
+                exp_dll = load_dll(path);
+                if( !exp_dll)
+                {
+                    DBG("can't load %s\n", path);
+                    return false;
+                };
+            }
+
+            exp = exp_dll->img_exp;
+
+            functions = MakePtr(DWORD*,exp->AddressOfFunctions,exp_dll->img_base);
+            ordinals = MakePtr(WORD*,  exp->AddressOfNameOrdinals,exp_dll->img_base);
+            funcname = MakePtr(char**, exp->AddressOfNames,exp_dll->img_base);
+
+            thunk = MakePtr(PIMAGE_THUNK_DATA32,
+                            imp->Characteristics, img_base);
+            iat= MakePtr(DWORD*,imp->FirstThunk, img_base);
+
+            while ( 1 ) // Loop forever (or until we break out)
+            {
+                PIMAGE_IMPORT_BY_NAME ord;
+                addr_t addr;
+
+                if ( thunk->u1.AddressOfData == 0 )
+                    break;
+
+                if ( thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG )
+                {
+        //  printf("  %4u\n", thunk->u1.Ordinal & 0xFFFF);
+                    break;
+                }
+                else
+                {
+                    ord = MakePtr(PIMAGE_IMPORT_BY_NAME,
+                                  thunk->u1.AddressOfData, img_base);
+                    *iat=0;
+
+                    DBG("import %s", ord->Name);
+
+                    if(strncmp(ord->Name,
+                       MakePtr(char*,funcname[ord->Hint],exp_dll->img_base),32))
+                    {
+                        int ind;
+                        char **names=funcname;
+
+                        for(names = funcname,ind = 0;
+                            ind < exp->NumberOfNames; names++,ind++)
+                        {
+                            if(!strncmp(ord->Name,MakePtr(char*,*names,exp_dll->img_base),32))
+                            {
+                                u16_t ordinal;
+                                ordinal = ordinals[ind];
+                                DBG(" \t\tat %x\n", functions[ordinal] + exp_dll->img_base);
+                                *iat = functions[ordinal] + exp_dll->img_base;
+                                break;
+                            };
+                        };
+                        if(ind == exp->NumberOfNames)
+                        {
+                            DBG(" unresolved import %s\n",ord->Name);
+                            warn=1;
+                        };
+                    }
+                    else
+                    {
+                        DBG(" \tat %x\n", functions[ord->Hint] + exp_dll->img_base);
+                        *iat = functions[ord->Hint] + exp_dll->img_base;
+                    };
+                };
+                thunk++;            // Advance to next thunk
+                iat++;
+            }
+            imp++;  // advance to next IMAGE_IMPORT_DESCRIPTOR
+        };
+    };
+
+    if ( !warn )
+        return true;
+    else
+        return false;
+}
+

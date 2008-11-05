@@ -64,9 +64,9 @@ end virtual
 
 CURSOR_SIZE      equ 32
 
-OS_BASE          equ 0x80000000
+OS_BASE          equ 0xE0000000
 SLOT_BASE        equ (OS_BASE+0x0080000)
-LFB_BASE         equ 0xFE000000
+LFB_BASE         equ 0xDF000000
 
 PG_SW            equ 0x003
 PG_NOCACHE       equ 0x018

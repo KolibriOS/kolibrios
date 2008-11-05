@@ -568,13 +568,15 @@ void __fastcall core_free(addr_t frame)
 {
    eflags_t efl;
 
+   DBG("core free %x", frame);
+
    efl = safe_cli();
      spinlock_lock(&z_core.lock);
        zone_free(&z_core, frame>>12);
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
 
-   DBG("core free %x  remain %d\n", frame, z_core.free_count);
+   DBG("  remain %d\n", z_core.free_count);
 
 }
 

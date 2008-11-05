@@ -328,7 +328,7 @@ bool link_image(addr_t img_base)
 
             DBG("import from %s\n",libname);
 
-            exp_dll = find_dll(libname);
+            exp_dll = find_dll(&core_dll.link, libname);
             if(exp_dll != NULL)
             {
                 DBG("find %s\n", exp_dll->img_name);
@@ -381,8 +381,10 @@ bool link_image(addr_t img_base)
                         {
                             if(!strncmp(ord->Name,MakePtr(char*,*names,exp_dll->img_base),32))
                             {
-                                DBG(" \tat %x\n", functions[ind] + exp_dll->img_base);
-                                *iat = functions[ind] + exp_dll->img_base;
+                                u16_t ordinal;
+                                ordinal = ordinals[ind];
+                                DBG(" \t\tat %x\n", functions[ordinal] + exp_dll->img_base);
+                                *iat = functions[ordinal] + exp_dll->img_base;
                                 break;
                             };
                         };

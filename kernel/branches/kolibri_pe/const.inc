@@ -354,6 +354,11 @@ REG_ESI             equ (RING0_STACK_SIZE-48)
 REG_EDI             equ (RING0_STACK_SIZE-52)
 REG_RET             equ (RING0_STACK_SIZE-56)  ;irq0.return
 
+REG_USTACK          equ (RING0_STACK_SIZE-56)
+REG_CSTACK          equ (RING0_STACK_SIZE-60)
+REG_RAW             equ (RING0_STACK_SIZE-64)
+REG_RESTART         equ (RING0_STACK_SIZE-68)
+REG_ENTRY           equ (RING0_STACK_SIZE-72)
 
 PG_UNMAP            equ 0x000
 PG_MAP              equ 0x001

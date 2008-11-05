@@ -10,8 +10,8 @@ CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin
 LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
 KERNEL_SRC:=				\
-		kernel.asm		\
-		data32.inc		\
+		kernel.asm		    \
+		data32.inc		    \
 		core/memory.inc		\
 		core/heap.inc		\
 		core/malloc.inc		\
@@ -20,8 +20,10 @@ KERNEL_SRC:=				\
 		core/sys32.inc		\
 		core/dll.inc		\
 		core/exports.inc	\
-		fs/ntfs.inc		\
+		fs/ntfs.inc		    \
+		gui/window.inc		\
 		gui/event.inc		\
+		video/vesa20.inc	\
 		video/cursors.inc
 
 

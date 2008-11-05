@@ -188,11 +188,12 @@ typedef struct
     u32_t   img_map[8];                  /* mapped treads */
 }dll_t;
 
+extern dll_t core_dll;
 
 #define MakePtr( cast, ptr, addValue ) (cast)( (addr_t)(ptr) + (addr_t)(addValue) )
 
 
-dll_t * find_dll(const char *name);
+dll_t * find_dll(link_t *list, const char *name);
 
 
 md_t* __fastcall load_image(const char *path);

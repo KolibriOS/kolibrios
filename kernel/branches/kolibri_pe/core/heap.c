@@ -74,7 +74,7 @@ int __fastcall init_heap(addr_t base, size_t size)
     list_initialize(&lheap.used);
     list_initialize(&sheap.used);
 
-    md_slab = slab_cache_create(sizeof(md_t), 32,NULL,NULL,SLAB_CACHE_MAGDEFERRED);
+    md_slab = slab_cache_create(sizeof(md_t), 16,NULL,NULL,SLAB_CACHE_MAGDEFERRED);
 
     md = (md_t*)slab_alloc(md_slab,0);
 

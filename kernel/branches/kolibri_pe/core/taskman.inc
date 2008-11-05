@@ -110,7 +110,7 @@ test_app_header:
 	   xor eax, eax
 	   ret
 
-
+align 4
 proc mnt_exec stdcall file_base:dword, file_size:dword, \
                       path:dword, cmd_line:dword, flags:dword
 
@@ -280,11 +280,12 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
 endp
 
 align 4
-proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack_page:dword
+proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
 
            locals
              slot        dd ?
              slot_base   dd ?
+             pl0_stack   dd ?
            endl
 
            push ebx
@@ -309,8 +310,7 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack_page:
            _clear_ 256     ;clean extended information about process
 
 ; write application name
-           lea eax, [path]
-           stdcall strrchr,  eax, '/'  ; now eax points to name without path
+           stdcall strrchr,  [path], '/'  ; now eax points to name without path
            lea esi, [eax+1]
            test eax, eax
            jnz @F
@@ -335,7 +335,11 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack_page:
            ;mov   eax,[hdr_mem]
            ;mov   [ebx+APPDATA.mem_size],eax
 
-           lea edi, [eax+OS_BASE+8192]
+
+           mov ecx, 1
+           call @core_alloc@4
+           lea edi, [eax+OS_BASE]
+           mov [pl0_stack], edi
 
            mov [ebx+APPDATA.pl0_stack], edi
            add edi, RING0_STACK_SIZE
@@ -372,13 +376,12 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack_page:
 
            xor ecx, ecx
            call @core_alloc@4
+           lea edi, [eax+OS_BASE]         ; FIXME
 
-           add eax, OS_BASE                              ;FIXME
            mov esi,[current_slot]
            mov esi,[esi+APPDATA.cur_dir]
            mov ecx,0x1000/4
-           mov edi,eax
-           mov [ebx+APPDATA.cur_dir],eax
+           mov [ebx+APPDATA.cur_dir],edi
            rep movsd
 
            mov ebx, [slot]
@@ -409,22 +412,26 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack_page:
            mov    eax,[Screen_Max_Y]
            mov    [ecx+12],eax
 
-           mov ebx, [ex_pg_dir]
-           add ebx, OS_BASE+8192-16
+           mov ebx, [pl0_stack]
 
-           mov [ebx],  dword _sys_app_entry
            mov eax,   [raw]
-           mov edx,   [ex_stack_page]
-           mov [ebx+8], eax
-           mov [ebx+12], edx
+           lea ecx, [ebx+REG_EDI]
+           mov edx,   [ex_stack]
+
+           mov [ebx+REG_ENTRY],   dword  _sys_app_entry
+           mov [ebx+REG_RESTART], dword _pe_restart
+           mov [ebx+REG_RAW], eax
+           mov [ebx+REG_CSTACK], ecx
+           mov [ebx+REG_USTACK], edx
+
+           lea ebx, [ebx+REG_ENTRY]
 
            mov ecx, [slot]
            shl ecx, 5
            mov [ecx*8+SLOT_BASE+APPDATA.saved_esp], ebx
-           xor  ebx, ebx    ; process state - running
-           mov  [CURRENT_TASK+ecx+TASKDATA.state], bl
+           mov  [CURRENT_TASK+ecx+TASKDATA.state], 0
 
-       ;    DEBUGF 1,"%s",new_process_running
+           DEBUGF 1,"%s",new_process_running
 .err:
            mov [application_table_status], 0 ;unlock application_table_status mutex
            mov eax,[process_number]  ;set result
@@ -435,6 +442,13 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack_page:
 
 	   ret
 endp
+
+align 4
+_pe_restart:
+           xchg bx, bx
+           add esp, 12
+           popad
+           iretd
 
 
 align 4
@@ -590,17 +604,23 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            ret
 endp
 
+;addr_t __fastcall pe_app_space(size_t size);
 align 4
-_new_app_space:
-           mov ecx, 2
+@pe_app_space@4:
+           sub esp, 16
+
+           mov [esp+4],  ebx
+           mov [esp+8],  esi
+           mov [esp+12], edi
+
+           lea ebx, [ecx+0x3FFFFF]
+
+           xor ecx, ecx
            call @core_alloc@4
            test eax, eax
+           mov [esp], eax
            jz .fail
 
-           push esi
-           push edi
-
-           mov edx, eax
            mov ecx, 512
            lea edi, [eax + OS_BASE]
            xor eax, eax
@@ -611,21 +631,50 @@ _new_app_space:
            mov esi, _sys_pdbr+(HEAP_BASE shr 20)
            rep movsd
 
-           lea eax, [edx+PG_SW]
-           mov [edx+OS_BASE+(page_tabs shr 20)], eax
+           mov esi, [esp]
+           shr ebx, 22
+.new_ptab:
+           xor ecx, ecx
+           call @core_alloc@4
+           test eax, eax
+           jz .fail
 
-           add eax, 4096
-           mov [edx+OS_BASE+0x7FC], eax
+           lea edi, [eax+OS_BASE]
+           or eax, PG_UW
+           mov [esi+OS_BASE], eax
 
-           lea edi, [edx+OS_BASE+8192]
-           mov ecx, 2048
+           mov ecx, 1024
            xor eax, eax
            rep stosd
 
-           mov eax, edx
+           add esi, 4
+           dec ebx
+           jnz .new_ptab
+
+           xor ecx, ecx
+           call @core_alloc@4
+           test eax, eax
+           jz .fail
+
+           lea edi, [eax+OS_BASE]
+           or eax, PG_UW
+
+           mov ebx, [esp]
+           lea edx, [ebx+PG_SW]
+           mov [ebx+OS_BASE+(0x7FC00000 shr 20)], eax
+           mov [ebx+OS_BASE+(page_tabs shr 20)], edx
+
+           mov ecx, 1024
+           xor eax, eax
+           rep stosd
+
+           mov eax, ebx
 .fail:
-           pop edi
-           pop esi
+           mov ebx, [esp+4]
+           mov esi, [esp+8]
+           mov edi, [esp+12]
+
+           add esp, 16
            ret
 
 align 4

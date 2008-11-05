@@ -18,10 +18,11 @@ DONT_FREE_BLOCK equ  10h
 
 ;;;;;;;;;;;;;;      USER     ;;;;;;;;;;;;;;;;;
 
-HEAP_TOP  equ 0x5FC00000
+HEAP_TOP  equ 0x7FC00000
 
 align 4
-proc init_heap
+_init_user_heap:
+init_heap:
 
            mov ebx,[current_slot]
            mov eax, [ebx+APPDATA.heap_top]
@@ -46,7 +47,6 @@ proc init_heap
            or ecx, FREE_BLOCK
            mov [page_tabs+esi], ecx
            ret
-endp
 
 align 4
 _UserAlloc:

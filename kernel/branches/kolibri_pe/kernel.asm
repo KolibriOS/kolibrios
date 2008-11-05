@@ -129,13 +129,18 @@ public _rd_fat_end
 public _rd_root
 public _rd_root_end
 
+public _current_slot
+
 public _load_file@4
 
 public mnt_exec
 
-public _new_app_space
+public @pe_app_space@4
 public pe_app_param
+public _init_user_heap
 
+public user_alloc
+public user_free
 public _strncmp@12
 
 public _LoadFile            ; stdcall export

@@ -6,18 +6,18 @@ BYTE  equ byte
 PTR   equ
 
 _putc:
-	mov	ecx, DWORD PTR [esp+4]
+        mov ecx, DWORD PTR [esp+4]
 .L13:
-	mov	edx, 1021
-	in al, dx
-	test	al, 96
-        je      .L13
-	mov	dl, -8
-	mov	eax, ecx
-	out dx, al
-	cmp	ecx, 10
-        jne     .L7
-	mov	cl, 13
+        mov edx, 0x3FD
+        in al, dx
+        test al, 96
+        je  .L13
+        mov dl, -8
+        mov eax, ecx
+        out dx, al
+        cmp ecx, 10
+        jne .L7
+        mov cl, 13
         jmp     .L13
 .L7:
         ret

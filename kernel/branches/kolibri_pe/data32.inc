@@ -97,7 +97,7 @@ szEXPORTS      db 'EXPORTS',0
 szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'
-firstapp       db  'LAUNCHER',0
+firstapp       db  '@DESKTOP',0
 
 char    db '/rd/1/FONTS/CHAR.MT',0
 char2   db '/rd/1/FONTS/CHAR2.MT',0
@@ -393,9 +393,11 @@ tmp_task_ptab	  rd 1
 
 default_io_map	  rd 1
 
-LFBSize 	  rd 1
+LFBSize           rd 1       ;8Mb hardcoded
 
 stall_mcs	  rd 1
+
+_current_slot:
 current_slot	  rd 1
 
 _display_data     rd 1

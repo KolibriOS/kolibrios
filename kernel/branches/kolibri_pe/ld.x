@@ -25,7 +25,7 @@ SECTIONS
   {
     *(.edata)
     _code_end = .;
-    . = ALIGN(4096);
+    . = ALIGN(16);
   }
 
   __edata = . - 0xE0000000;
