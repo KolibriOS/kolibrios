@@ -37,7 +37,7 @@ $Revision$
 
 uglobal
 StackCounters:
-  dumped_rx_count:    dd  0
+  dumped_rx_count     dd  0
   arp_tx_count:       dd  0
   arp_rx_count:       dd  0
   ip_rx_count:	      dd  0
@@ -46,9 +46,9 @@ endg
 
 ; socket buffers
 SOCKETBUFFSIZE	   equ	      4096  ; state + config + buffer.
-SOCKETHEADERSIZE   equ	      76    ; thus 4096 - SOCKETHEADERSIZE bytes data
+SOCKETHEADERSIZE   equ	      76+8+8  ; thus 4096 - SOCKETHEADERSIZE bytes data
 
-NUM_SOCKETS	   equ	      16    ; Number of open sockets supported. Was 20
+;NUM_SOCKETS        equ        16    ; Number of open sockets supported. Was 20
 
 ; IPBUFF status values
 BUFF_EMPTY	   equ	   0
@@ -59,6 +59,7 @@ BUFF_TX_FULL	   equ	   3
 NUM_IPBUFFERS	   equ	   20	 ; buffers allocated for TX/RX
 
 NUMQUEUES	   equ	      4
+
 EMPTY_QUEUE	   equ	      0
 IPIN_QUEUE	   equ	      1
 IPOUT_QUEUE	   equ	      2
@@ -94,7 +95,7 @@ ethernet_active      equ   stack_data + 9
 ; TODO :: empty memory area
 
 ; Address of selected socket
-sktAddr 	     equ   stack_data + 32
+;sktAddr              equ   stack_data + 32
 ; Parameter to checksum routine - data ptr
 checkAdd1	     equ   stack_data + 36
 ; Parameter to checksum routine - 2nd data ptr
@@ -110,8 +111,8 @@ checkResult	     equ   stack_data + 48
 pseudoHeader	     equ   stack_data + 50
 
 ; receive and transmit IP buffer allocation
-sockets 	     equ   stack_data + 62
-Next_free2	     equ   sockets + (SOCKETBUFFSIZE * NUM_SOCKETS)
+;sockets              equ   stack_data + 62
+Next_free2 equ stack_data + 62;Next_free2           equ   sockets + (SOCKETBUFFSIZE * NUM_SOCKETS)
 ; 1560 byte buffer for rx / tx ethernet packets
 Ether_buffer	     equ   Next_free2
 Next_free3	     equ   Ether_buffer + 1518
@@ -128,8 +129,14 @@ last_1hsTick	     equ   queueList + ( 2 * NUMQUEUEENTRIES )
 
 
 ;resendQ             equ     0x770000
-resendBuffer	    equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP
+;resendBuffer        equ     resendQ + ( 4 * NUMRESENDENTRIES ) ; for TCP        ; XTODO: validate size
+resendBuffer	    equ     resendQ + ( 8 * NUMRESENDENTRIES ) ; for TCP
 
+
+uglobal
+net_sockets_mutex dd 0
+net_sockets rd 2
+endg
 
 ; simple macro for memory set operation
 macro _memset_dw adr,value,amount
@@ -151,9 +158,6 @@ macro _memset_dw adr,value,amount
 include "queue.inc"
 include "eth_drv/ethernet.inc"
 include "ip.inc"
-include "icmp.inc"
-include "tcp.inc"
-include "udp.inc"
 include "socket.inc"
 
 ;***************************************************************************
@@ -171,7 +175,8 @@ include "socket.inc"
 stack_init:
 	; Init two address spaces with default values
 	_memset_dw	stack_data_start, 0, 0x20000/4
-	_memset_dw	resendQ, 0xFFFFFFFF, NUMRESENDENTRIES
+	;_memset_dw      resendQ, 0xFFFFFFFF, NUMRESENDENTRIES   ; XTODO: validate size
+	_memset_dw	resendQ, 0xFFFFFFFF, NUMRESENDENTRIES * 2
 
 	; Queries initialization
 	call	queueInit
@@ -931,13 +936,11 @@ stack_get_packet:
     pop     edx
 
     push    eax 		    ; save address of IP data
-
     ; Get the address of the callers data
     mov     edi,[TASK_BASE]
     add     edi,TASKDATA.mem_start
     add     edx,[edi]
     mov     edi, edx
-
     pop     eax
 
     mov     ecx, 1500		; should get the actual number of bytes to write

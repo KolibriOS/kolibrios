@@ -204,7 +204,7 @@ dd  0x70161039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
 
 dd 0x006610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; nVidia Corporation nForce2 Ethernet Controller
 dd 0x01c310de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
-dd 0x00D610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested 
+dd 0x00D610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
 dd 0x008610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
 dd 0x008c10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
 dd 0x00e610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
@@ -353,6 +353,9 @@ endp
 ;      All registers may be destroyed
 ;
 ;***************************************************************************
+uglobal
+  ether_IP_handler_cnt dd ?
+endg
 ether_IP_handler:
     mov     eax, EMPTY_QUEUE
     call    dequeue
@@ -375,6 +378,9 @@ ether_IP_handler:
 			      ; data across - worse case
     cld
     rep     movsd
+
+;        inc     [ether_IP_handler_cnt]
+;        DEBUGF  1, "K : ether_IP_handler (%u)\n", [ether_IP_handler_cnt]
 
     ; And finally, place the buffer in the IPRX queue
     pop     ebx
@@ -462,16 +468,18 @@ eth_rx:
     cmp     ax, ETHER_ARP
     je	    .is_arp		     ; It is ARP
 
+    DEBUGF  1,"K : eth_rx - dumped (%u)\n", ax
+    inc     [dumped_rx_count]
     jmp     .exit		; If not IP or ARP, ignore
 
   .is_ip:
-    DEBUGF  1,"K : eth_rx - IP packet\n"
+;    DEBUGF  1,"K : eth_rx - IP packet\n"
     inc     dword [ip_rx_count]
     call    ether_IP_handler
     jmp     .exit
 
   .is_arp:
-    DEBUGF  1,"K : eth_rx - ARP packet\n"
+;    DEBUGF  1,"K : eth_rx - ARP packet\n"
     ; At this point, the packet is still in the Ether_buffer
     call    arp_handler
 

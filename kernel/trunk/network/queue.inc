@@ -43,18 +43,19 @@ $Revision$
 ;       all other registers preserved
 ;        This always works, so no error returned
 ;***************************************************************************
+uglobal
+  freeBuff_cnt dd ?
+endg
 freeBuff:
+;        inc     [freeBuff_cnt]
+;        DEBUGF  1, "K : freeBuff (%u)\n", [freeBuff_cnt]
     push    ebx
     push    ecx
-    mov     ebx, EMPTY_QUEUE
-    shl     ebx, 1
-    add     ebx, queues
+    mov     ebx, queues + EMPTY_QUEUE * 2
     cli     ; Ensure that another process does not interfer
-    movzx   ecx, word [ebx]
+    mov     cx, [ebx]
     mov     [ebx], ax
-    shl     eax, 1
-    add     eax, queueList
-    mov     [eax], cx
+    mov     [queueList + eax * 2], cx
     sti
     pop     ecx
     pop     ebx
@@ -78,7 +79,7 @@ queueSize:
     add     ebx, queues
     movzx   ecx, word [ebx]
     cmp     cx, NO_BUFFER
-    je      qs_exit
+    je	    qs_exit
 
 qs_001:
     inc     eax
@@ -86,7 +87,7 @@ qs_001:
     add     ecx, queueList
     movzx   ecx, word [ecx]
     cmp     cx, NO_BUFFER
-    je      qs_exit
+    je	    qs_exit
     jmp     qs_001
 
 qs_exit:
@@ -105,15 +106,20 @@ qs_exit:
 ;       all other registers preserved
 ;        This always works, so no error returned
 ;***************************************************************************
+uglobal
+  queue_cnt dd ?
+endg
 queue:
+;        inc     [queue_cnt]
+;        DEBUGF  1, "K : queue (%u)\n", [queue_cnt]
     push    ebx
     shl     ebx, 1
-    add     ebx, queueList        ; eax now holds address of queue entry
+    add     ebx, queueList	  ; eax now holds address of queue entry
     mov     [ebx], word NO_BUFFER    ; This buffer will be the last
 
     cli
     shl     eax, 1
-    add     eax, queues            ; eax now holds address of queue
+    add     eax, queues 	   ; eax now holds address of queue
     movzx   ebx, word [eax]
 
     cmp     bx, NO_BUFFER
@@ -155,18 +161,23 @@ qu_exit:
 ;       all other registers preserved
 ;
 ;***************************************************************************
+uglobal
+  dequeue_cnt dd ?
+endg
 dequeue:
     push    ebx
     shl     eax, 1
-    add     eax, queues            ; eax now holds address of queue
+    add     eax, queues 	   ; eax now holds address of queue
     mov     ebx, eax
     cli
     movzx   eax, word [eax]
     cmp     ax, NO_BUFFER
-    je      dq_exit
+    je	    dq_exit
+;        inc     [dequeue_cnt]
+;        DEBUGF  1, "K : dequeue (%u)\n", [dequeue_cnt]
     push    eax
     shl     eax, 1
-    add     eax, queueList        ; eax now holds address of queue entry
+    add     eax, queueList	  ; eax now holds address of queue entry
     mov     ax, [eax]
     mov     [ebx], ax
     pop     eax

@@ -524,20 +524,20 @@ endp
 ; Also adjust PCI latency timer to a reasonable value, 32.
 proc adjust_pci_device
 
-	DEBUGF	1,"K : adjust_pci_device\n"
+;        DEBUGF  1,"K : adjust_pci_device\n"
 
 	stdcall pci_read_config_word,PCI_COMMAND
 	mov	bx,ax
 	or	bx,PCI_COMMAND_MASTER or PCI_COMMAND_IO
 	cmp	ax,bx
 	je	@f
-	DEBUGF	1,"K : adjust_pci_device: The PCI BIOS has not enabled this device!\nK :   Updating PCI command %x->%x. pci_bus %x pci_device_fn %x\n",ax,bx,[pci_bus]:2,[pci_dev]:2
+;        DEBUGF  1,"K : adjust_pci_device: The PCI BIOS has not enabled this device!\nK :   Updating PCI command %x->%x. pci_bus %x pci_device_fn %x\n",ax,bx,[pci_bus]:2,[pci_dev]:2
 	stdcall pci_write_config_word,PCI_COMMAND,ebx
     @@:
 	stdcall pci_read_config_byte,PCI_LATENCY_TIMER
 	cmp	al,32
 	jae	@f
-	DEBUGF	1,"K : adjust_pci_device: PCI latency timer (CFLT) is unreasonably low at %d.\nK :   Setting to 32 clocks.\n",al
+;        DEBUGF  1,"K : adjust_pci_device: PCI latency timer (CFLT) is unreasonably low at %d.\nK :   Setting to 32 clocks.\n",al
 	stdcall pci_write_config_byte,PCI_LATENCY_TIMER,32
     @@:
 	ret
@@ -559,7 +559,7 @@ proc pci_bar_start,index:dword
 	stdcall pci_read_config_dword,eax
 	or	eax,eax
 	jz	.not64
-	DEBUGF	1,"K : pci_bar_start: Unhandled 64bit BAR\n"
+;        DEBUGF  1,"K : pci_bar_start: Unhandled 64bit BAR\n"
 	add	esp,4
 	or	eax,-1
 	ret
@@ -572,7 +572,7 @@ endp
 
 proc rtl8169_init_board
 
-	DEBUGF	1,"K : rtl8169_init_board\n"
+;        DEBUGF  1,"K : rtl8169_init_board\n"
 
 	call	adjust_pci_device
 
@@ -592,7 +592,7 @@ proc rtl8169_init_board
 	; identify config method
 	RTL_R32 RTL8169_REG_TxConfig
 	and	eax,0x7c800000
-	DEBUGF	1,"K : rtl8169_init_board: TxConfig & 0x7c800000 = 0x%x\n",eax
+;        DEBUGF  1,"K : rtl8169_init_board: TxConfig & 0x7c800000 = 0x%x\n",eax
 	mov	esi,mac_info-8
     @@: add	esi,8
 	mov	ecx,eax
@@ -625,9 +625,9 @@ proc rtl8169_init_board
 	jmp	.match
     @@:
 	; if unknown chip, assume array element #0, original RTL-8169 in this case
-	DEBUGF	1,"K : rtl8169_init_board: PCI device: unknown chip version, assuming RTL-8169\n"
+;        DEBUGF  1,"K : rtl8169_init_board: PCI device: unknown chip version, assuming RTL-8169\n"
 	RTL_R32 RTL8169_REG_TxConfig
-	DEBUGF	1,"K : rtl8169_init_board: PCI device: TxConfig = 0x%x\n",eax
+;        DEBUGF  1,"K : rtl8169_init_board: PCI device: TxConfig = 0x%x\n",eax
 
 	mov	[rtl8169_tpc.chipset],0
 
@@ -642,7 +642,7 @@ endp
 
 proc rtl8169_hw_PHY_config
 
-	DEBUGF	1,"K : rtl8169_hw_PHY_config: priv.mcfg=%d, priv.pcfg=%d\n",[rtl8169_tpc.mcfg],[rtl8169_tpc.pcfg]
+;        DEBUGF  1,"K : rtl8169_hw_PHY_config: priv.mcfg=%d, priv.pcfg=%d\n",[rtl8169_tpc.mcfg],[rtl8169_tpc.pcfg]
 
 ;       DBG_PRINT("priv->mcfg=%d, priv->pcfg=%d\n", tpc->mcfg, tpc->pcfg);
 
@@ -705,7 +705,7 @@ proc rtl8169_hw_PHY_config
 	jmp	.exit
   .not_2_or_3:
 ;       DBG_PRINT("tpc->mcfg=%d. Discard hw PHY config.\n", tpc->mcfg);
-	DEBUGF	1,"K :   tpc.mcfg=%d, discard hw PHY config\n",[rtl8169_tpc.mcfg]
+;        DEBUGF  1,"K :   tpc.mcfg=%d, discard hw PHY config\n",[rtl8169_tpc.mcfg]
   .exit:
 	ret
 endp
@@ -716,7 +716,7 @@ endp
 
 proc RTL8169_WRITE_GMII_REG,RegAddr:byte,value:dword
 
-;;;	DEBUGF	1,"K : RTL8169_WRITE_GMII_REG: 0x%x 0x%x\n",[RegAddr]:2,[value]
+;;;     DEBUGF  1,"K : RTL8169_WRITE_GMII_REG: 0x%x 0x%x\n",[RegAddr]:2,[value]
 
 	movzx	eax,[RegAddr]
 	shl	eax,16
@@ -738,7 +738,7 @@ endp
 
 proc RTL8169_READ_GMII_REG,RegAddr:byte
 
-;;;	DEBUGF	1,"K : RTL8169_READ_GMII_REG: 0x%x\n",[RegAddr]:2
+;;;     DEBUGF  1,"K : RTL8169_READ_GMII_REG: 0x%x\n",[RegAddr]:2
 
 	push	ecx
 	movzx	eax,[RegAddr]
@@ -767,7 +767,7 @@ endp
 
 proc rtl8169_set_rx_mode
 
-	DEBUGF	1,"K : rtl8169_set_rx_mode\n"
+;        DEBUGF  1,"K : rtl8169_set_rx_mode\n"
 
 	; IFF_ALLMULTI
 	; Too many to filter perfectly -- accept all multicasts
@@ -785,7 +785,7 @@ endp
 
 proc rtl8169_init_ring
 
-	DEBUGF	1,"K : rtl8169_init_ring\n"
+;        DEBUGF  1,"K : rtl8169_init_ring\n"
 
 	xor	eax,eax
 	mov	[rtl8169_tpc.cur_rx],eax
@@ -834,7 +834,7 @@ endp
 
 proc rtl8169_hw_start
 
-	DEBUGF	1,"K : rtl8169_hw_start\n"
+;        DEBUGF  1,"K : rtl8169_hw_start\n"
 
 	; Soft reset the chip
 	RTL_W8	RTL8169_REG_ChipCmd,RTL8169_CMD_Reset
@@ -883,10 +883,10 @@ proc rtl8169_hw_start
 	push	eax								; shurf 28.09.2008
 	mov	eax, [rtl8169_tpc.TxDescArray]					; shurf 28.09.2008
 	sub	eax, OS_BASE							; shurf 28.09.2008
-	RTL_W32 RTL8169_REG_TxDescStartAddr,eax ;[rtl8169_tpc.TxDescArray]	; shurf 28.09.2008
+	RTL_W32 RTL8169_REG_TxDescStartAddr,eax ;[rtl8169_tpc.TxDescArray]      ; shurf 28.09.2008
 	mov	eax, [rtl8169_tpc.RxDescArray]					; shurf 28.09.2008
 	sub	eax, OS_BASE							; shurf 28.09.2008
-	RTL_W32 RTL8169_REG_RxDescStartAddr,eax ;[rtl8169_tpc.RxDescArray]	; shurf 28.09.2008
+	RTL_W32 RTL8169_REG_RxDescStartAddr,eax ;[rtl8169_tpc.RxDescArray]      ; shurf 28.09.2008
 	pop	eax								; shurf 28.09.2008
 	RTL_W8	RTL8169_REG_Cfg9346,RTL8169_CFG_9346_Lock
 	stdcall udelay,10
@@ -920,7 +920,7 @@ endp
 ;***************************************************************************
 proc rtl8169_probe
 
-	DEBUGF	1,"K : rtl8169_probe: 0x%x : 0x%x 0x%x\n",[io_addr]:8,[pci_bus]:2,[pci_dev]:2
+;        DEBUGF  1,"K : rtl8169_probe: 0x%x : 0x%x 0x%x\n",[io_addr]:8,[pci_bus]:2,[pci_dev]:2
 
 	call	rtl8169_init_board
 
@@ -935,7 +935,7 @@ proc rtl8169_probe
 	inc	ebx
 	loop	@b
 
-	DEBUGF	1,"K : rtl8169_probe: MAC = %x-%x-%x-%x-%x-%x\n",[node_addr+0]:2,[node_addr+1]:2,[node_addr+2]:2,[node_addr+3]:2,[node_addr+4]:2,[node_addr+5]:2
+;        DEBUGF  1,"K : rtl8169_probe: MAC = %x-%x-%x-%x-%x-%x\n",[node_addr+0]:2,[node_addr+1]:2,[node_addr+2]:2,[node_addr+3]:2,[node_addr+4]:2,[node_addr+5]:2
 
 	; Config PHY
 	stdcall rtl8169_hw_PHY_config
@@ -995,7 +995,7 @@ endp
 ;***************************************************************************
 proc rtl8169_reset
 
-	DEBUGF	1,"K : rtl8169_reset: 0x%x : 0x%x 0x%x\n",[io_addr]:8,[pci_bus]:2,[pci_dev]:2
+;        DEBUGF  1,"K : rtl8169_reset: 0x%x : 0x%x 0x%x\n",[io_addr]:8,[pci_bus]:2,[pci_dev]:2
 
 	mov	[rtl8169_tpc.TxDescArrays],rtl8169_tx_ring
 	; Tx Desscriptor needs 256 bytes alignment
@@ -1040,7 +1040,7 @@ endp
 ;***************************************************************************
 proc rtl8169_transmit
 
-	DEBUGF	1,"K : rtl8169_transmit\n" ;: 0x%x : 0x%x 0x%x 0x%x 0x%x\n",[io_addr]:8,edi,bx,ecx,esi
+;        DEBUGF  1,"K : rtl8169_transmit\n" ;: 0x%x : 0x%x 0x%x 0x%x 0x%x\n",[io_addr]:8,edi,bx,ecx,esi
 
 	push	ecx edx esi
 	mov	eax,MAX_ETH_FRAME_SIZE
@@ -1094,7 +1094,7 @@ proc rtl8169_transmit
 	add	eax,[rtl8169_tpc.TxDescArray]
 	xchg	eax,ebx
 	mov	[ebx + rtl8169_TxDesc.buf_addr],eax
-	sub	[ebx + rtl8169_TxDesc.buf_addr],OS_BASE					; shurf 28.09.2008
+	sub	[ebx + rtl8169_TxDesc.buf_addr],OS_BASE 				; shurf 28.09.2008
 
 	mov	eax,ecx
 	cmp	eax,ETH_ZLEN
@@ -1118,7 +1118,7 @@ proc rtl8169_transmit
 	jnz	@f
 	stdcall udelay,10
 	loop	@b
-	DEBUGF	1,"K : rtl8169_transmit: TX Time Out\n"
+;        DEBUGF  1,"K : rtl8169_transmit: TX Time Out\n"
     @@:
 
 	ret
@@ -1176,7 +1176,7 @@ proc rtl8169_poll
 	add	eax,-4
 	mov	[eth_rx_data_len],ax
 
-	DEBUGF	1,"K : rtl8169_poll: data length = %u\n",ax
+;        DEBUGF  1,"K : rtl8169_poll: data length = %u\n",ax
 
 	push	eax
 	mov	ecx,eax
@@ -1198,10 +1198,10 @@ proc rtl8169_poll
     @@: mov	[ebx + rtl8169_RxDesc.status],eax
 
 	mov	[ebx + rtl8169_RxDesc.buf_addr],edx
-	sub	[ebx + rtl8169_RxDesc.buf_addr],OS_BASE					; shurf 28.09.2008
+	sub	[ebx + rtl8169_RxDesc.buf_addr],OS_BASE 				; shurf 28.09.2008
 	jmp	@f
   .else:
-	DEBUGF	1,"K : rtl8169_poll: Rx Error\n"
+;        DEBUGF  1,"K : rtl8169_poll: Rx Error\n"
 	; FIXME: shouldn't I reset the status on an error
     @@:
 	inc	[rtl8169_tpc.cur_rx]
