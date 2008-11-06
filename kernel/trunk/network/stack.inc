@@ -174,8 +174,7 @@ include "socket.inc"
 stack_init:
 	; Init two address spaces with default values
 	_memset_dw	stack_data_start, 0, 0x20000/4
-	;_memset_dw      resendQ, 0xFFFFFFFF, NUMRESENDENTRIES   ; XTODO: validate size
-	_memset_dw	resendQ, 0xFFFFFFFF, NUMRESENDENTRIES * 2
+	_memset_dw	resendQ, 0, NUMRESENDENTRIES * 2
 
 	mov	[net_sockets], 0
 	mov	[net_sockets + 4], 0
