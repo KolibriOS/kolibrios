@@ -4313,7 +4313,7 @@ putimage_get1bpp:
 	push	edx
 	mov	edx, [esp+8]
 	mov	al, [edx]
-	adc	al, al
+	add	al, al
 	jnz	@f
 	lodsb
 	adc	al, al
