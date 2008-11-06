@@ -878,6 +878,14 @@ vesa12_putimage:
 
     add  edi,[BytesPerScanLine]
     add  esi,[esp+32]
+    cmp  ebp,putimage_get1bpp
+    jz   .correct
+    cmp  ebp,putimage_get4bpp
+    jnz  @f
+.correct:
+    mov  eax,[esp+20]
+    mov  byte[eax],80h
+@@:
     dec  ebx
     jnz  newpi12
 
@@ -943,6 +951,14 @@ vesa12_putimage:
      pop  edi
 
     add   edi,[BytesPerScanLine]
+    cmp   ebp,putimage_get1bpp
+    jz    .correct
+    cmp   ebp,putimage_get4bpp
+    jnz   @f
+.correct:
+    mov   eax,[esp+20]
+    mov   byte[eax],80h
+@@:
     dec   ebx
     jnz   newpi3212
 

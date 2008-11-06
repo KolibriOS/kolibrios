@@ -165,7 +165,8 @@ vesa20_putimage:
      mov     [putimg.real_sy], ebx
 ; line increment
      mov     eax, [putimg.image_sx]
-     sub     eax, [putimg.real_sx]
+     mov     ecx, [putimg.real_sx]
+     sub     eax, ecx
 ;;     imul    eax, [putimg.source_bpp]
 ;     lea     eax, [eax + eax * 2]
      call    esi
@@ -178,7 +179,6 @@ vesa20_putimage:
      mov     [putimg.winmap_newline], eax
 ; screen new line increment
      mov     eax, [BytesPerScanLine]
-     mov     ecx, [putimg.real_sx]
      movzx   ebx, byte [ScreenBPP]
      shr     ebx, 3
      imul    ecx, ebx
@@ -234,6 +234,14 @@ align   4
      add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
      add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
 ;     inc     ebp
+     cmp     [putimg.ebp], putimage_get1bpp
+     jz      .correct
+     cmp     [putimg.ebp], putimage_get4bpp
+     jnz     @f
+.correct:
+     mov     eax, [putimg.edi]
+     mov     byte [eax], 80h
+@@:
      dec     edi
      jnz     .new_line
 .finish:
@@ -267,6 +275,14 @@ align   4
      add     edx, [putimg.screen_newline] ;[BytesPerScanLine]
      add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
 ;     inc     ebp
+     cmp     [putimg.ebp], putimage_get1bpp
+     jz      .correct
+     cmp     [putimg.ebp], putimage_get4bpp
+     jnz     @f
+.correct:
+     mov     eax, [putimg.edi]
+     mov     byte [eax], 80h
+@@:
      dec     edi
      jnz     .new_line
 .finish:
