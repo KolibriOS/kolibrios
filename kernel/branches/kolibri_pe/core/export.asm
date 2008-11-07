@@ -3,7 +3,7 @@
 
 
 	.section .drectve
-        .ascii " -export:CreateImage"          # cdecl
+#       .ascii " -export:CreateImage"          # cdecl
         .ascii " -export:LoadFile"             # stdcall
 
         .ascii " -export:Kmalloc"              # eax               FIXME

@@ -432,10 +432,11 @@ file_system_lfn:
           push  ebx
 
           call _sys_exec
-          mov [image_of_eax], eax
           add esp, 12
-
+          mov [image_of_eax], eax
           ret
+
+
 
 ; handlers for devices
 ; in: ecx = 0 => query virtual directory /xxx

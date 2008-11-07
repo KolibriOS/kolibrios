@@ -104,6 +104,7 @@ include "drivers/3c59x.inc"
 include "drivers/sis900.inc"
 include "drivers/pcnet32.inc"
 include "drivers/rtl8169.inc"
+include "drivers/forcedeth.inc"
 
 ; PCICards
 ; ========
@@ -153,6 +154,7 @@ dd  0x816810ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x816910ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x011616ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 dd  0x43001186, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
+dd  0x816710ec, rtl8169_probe, rtl8169_reset, rtl8169_poll, rtl8169_transmit, 0
 
 dd  0x590010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
 dd  0x592010b7, e3c59x_probe, e3c59x_reset, e3c59x_poll, e3c59x_transmit, 0
@@ -199,6 +201,23 @@ dd  0x20011022, pcnet32_probe, pcnet32_reset, pcnet32_poll, pcnet32_xmit, 0
 dd  0x70161039, SIS900_probe, SIS900_reset, SIS900_poll, SIS900_transmit, 0
 ;dd  0x08001516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
 ;dd  0x08911516, mtd80x_probe, mtd80x_reset, mtd80x_poll, mtd80x_transmit, mtd80x_cable
+
+dd 0x006610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; nVidia Corporation nForce2 Ethernet Controller
+dd 0x01c310de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x00D610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x008610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x008c10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x00e610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x00df10de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x005610de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x005710de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x003710de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x003810de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x026810de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x026910de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x037210de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+dd 0x037310de, forcedeth_probe, forcedeth_reset, forcedeth_poll, forcedeth_transmit, forcedeth_cable ; not tested
+
 
 rb PCICARDS_ENTRY_SIZE	; end of list marker, do not remove
 endg
@@ -334,6 +353,9 @@ endp
 ;      All registers may be destroyed
 ;
 ;***************************************************************************
+uglobal
+  ether_IP_handler_cnt dd ?
+endg
 ether_IP_handler:
     mov     eax, EMPTY_QUEUE
     call    dequeue
@@ -356,6 +378,9 @@ ether_IP_handler:
 			      ; data across - worse case
     cld
     rep     movsd
+
+;        inc     [ether_IP_handler_cnt]
+;        DEBUGF  1, "K : ether_IP_handler (%u)\n", [ether_IP_handler_cnt]
 
     ; And finally, place the buffer in the IPRX queue
     pop     ebx
@@ -443,16 +468,18 @@ eth_rx:
     cmp     ax, ETHER_ARP
     je	    .is_arp		     ; It is ARP
 
+    DEBUGF  1,"K : eth_rx - dumped (%u)\n", ax
+    inc     [dumped_rx_count]
     jmp     .exit		; If not IP or ARP, ignore
 
   .is_ip:
-    DEBUGF  1,"K : eth_rx - IP packet\n"
+;    DEBUGF  1,"K : eth_rx - IP packet\n"
     inc     dword [ip_rx_count]
     call    ether_IP_handler
     jmp     .exit
 
   .is_arp:
-    DEBUGF  1,"K : eth_rx - ARP packet\n"
+;    DEBUGF  1,"K : eth_rx - ARP packet\n"
     ; At this point, the packet is still in the Ether_buffer
     call    arp_handler
 

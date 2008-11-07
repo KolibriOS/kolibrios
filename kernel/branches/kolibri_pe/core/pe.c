@@ -40,7 +40,6 @@ static inline void sec_clear(addr_t dst, size_t len)
 
 int __stdcall strncmp(const char *s1, const char *s2, size_t n);
 
-void __export create_image(addr_t img_base, addr_t raw) asm ("CreateImage");
 bool link_image(addr_t img_base);
 
 md_t* __fastcall load_image(const char *path);
@@ -59,7 +58,7 @@ void* __fastcall load_pe(const char *path)
 };
 */
 
-bool validate_pe(void *raw, size_t raw_size)
+bool validate_pe(void *raw, size_t raw_size, bool is_exec)
 {
     PIMAGE_DOS_HEADER     dos;
     PIMAGE_NT_HEADERS32   nt;
@@ -80,7 +79,16 @@ bool validate_pe(void *raw, size_t raw_size)
     if(nt->Signature != IMAGE_NT_SIGNATURE)
         return false;
 
+    if(nt->FileHeader.Machine != IMAGE_FILE_MACHINE_I386)
+        return false;
+
+    if(is_exec && (nt->FileHeader.Characteristics & IMAGE_FILE_DLL))
+        return false;
+
     if(nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR32_MAGIC)
+        return false;
+
+    if( is_exec && nt->OptionalHeader.ImageBase != 0)
         return false;
 
     if(nt->OptionalHeader.SectionAlignment < PAGE_SIZE)
@@ -127,7 +135,7 @@ md_t* __fastcall load_image(const char *path)
         return NULL;
     };
 
-    if( ! validate_pe(raw, raw_size) )
+    if( ! validate_pe(raw, raw_size, false) )
 	{
         DBG("invalid pe file %s\n", path);
         mem_free(raw);
@@ -150,7 +158,7 @@ md_t* __fastcall load_image(const char *path)
 
     img_base = img_md->base;
 
-    create_image(img_base, (addr_t)raw);
+    create_image(img_base, (addr_t)raw, true);
 
     mem_free(raw);
 
@@ -190,7 +198,7 @@ addr_t get_proc_addr(addr_t module, char *name)
 */
 
 
-void create_image(addr_t img_base, addr_t raw)
+void create_image(addr_t img_base, addr_t raw, bool force_clear)
 {
     PIMAGE_DOS_HEADER     dos;
     PIMAGE_NT_HEADERS32   nt;
@@ -223,13 +231,16 @@ void create_image(addr_t img_base, addr_t raw)
         if(img_sec->SizeOfRawData)
             sec_copy(dest_ptr, src_ptr, img_sec->SizeOfRawData);
 
+        if(force_clear)
+        {
         sec_size = (img_sec->Misc.VirtualSize + sec_align -1) & -sec_align;
 
         if(sec_size > img_sec->SizeOfRawData)
             sec_clear(dest_ptr + img_sec->SizeOfRawData,
                       sec_size - img_sec->SizeOfRawData);
+        };
         img_sec++;
-    }
+    };
 
     if(nt->OptionalHeader.DataDirectory[5].Size)
     {

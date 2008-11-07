@@ -46,6 +46,7 @@ H_SRC:=					\
 		include/link.h		\
 		include/core.h		\
 		include/mm.h		\
+		include/pe.h		\
 		include/slab.h
 
 PE_OBJS = $(patsubst %.s, bin/%.obj, $(patsubst %.asm, bin/%.obj,\

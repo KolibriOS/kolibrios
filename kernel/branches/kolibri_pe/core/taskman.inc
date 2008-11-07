@@ -146,11 +146,12 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
            test al, al
            jnz @b
 
+           lea edi, [cmdline]
+           mov dword [edi],0
            mov esi, [cmd_line]
            test esi, esi
            jz .no_cmdline
 
-           lea edi, [cmdline]
            lea ecx, [edi+255]
            mov [edi+252], dword 0
 @@:
@@ -226,8 +227,8 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
 
            mov ecx, [hdr_mem]
            mov edi, [file_size]
-           add edi, 4095
-           and edi, not 4095
+         ;  add edi, 4095
+         ;  and edi, not 4095
            sub ecx, edi
            jna @F
 
@@ -246,8 +247,8 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
            mov eax, [save_cr3]
            call set_cr3
 
-           mov [application_table_status], 0 ;unlock application_table_status mutex
            mov eax,[process_number]  ;set result
+           mov [application_table_status], 0 ;unlock application_table_status mutex
 
            pop edi
            pop esi
@@ -433,8 +434,8 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
 
            DEBUGF 1,"%s",new_process_running
 .err:
-           mov [application_table_status], 0 ;unlock application_table_status mutex
            mov eax,[process_number]  ;set result
+           mov [application_table_status], 0 ;unlock application_table_status mutex
 
            pop edi
            pop esi

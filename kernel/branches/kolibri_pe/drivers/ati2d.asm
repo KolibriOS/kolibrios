@@ -1195,61 +1195,185 @@ devices:
         dd (0x5D4D  shl 16)+VID_ATI, init_r200   ;R480     X850
         dd (0x5D52  shl 16)+VID_ATI, init_r200   ;R480     X850
 
-        dd (0x791E  shl 16)+VID_ATI, init_r500   ;RS690   X1200
-
-        dd (0x7140  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-        dd (0x7142  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-        dd (0x7146  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-        dd (0x714D  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-        dd (0x714E  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-
-        dd (0x7183  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-        dd (0x7187  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-        dd (0x718F  shl 16)+VID_ATI, init_r500   ;RV515   X1300
-
-        dd (0x7143  shl 16)+VID_ATI, init_r500   ;RV515   X1550
-        dd (0x7147  shl 16)+VID_ATI, init_r500   ;RV515   X1550
-        dd (0x715F  shl 16)+VID_ATI, init_r500   ;RV515   X1550
-        dd (0x7193  shl 16)+VID_ATI, init_r500   ;RV515   X1550
-        dd (0x719F  shl 16)+VID_ATI, init_r500   ;RV515   X1550
-
-        dd (0x71C0  shl 16)+VID_ATI, init_r500   ;RV530   X1600
-        dd (0x71C1  shl 16)+VID_ATI, init_r500   ;RV535   X1650
-        dd (0x71C2  shl 16)+VID_ATI, init_r500   ;RV530   X1600
-        dd (0x71C3  shl 16)+VID_ATI, init_r500   ;RV535   X1600
-        dd (0x71C6  shl 16)+VID_ATI, init_r500   ;RV530   X1600
-        dd (0x71C7  shl 16)+VID_ATI, init_r500   ;RV534   X1650
-
-        dd (0x7181  shl 16)+VID_ATI, init_r500   ;RV515   X1600
-        dd (0x71CD  shl 16)+VID_ATI, init_r500   ;RV530   X1600
-
-        dd (0x7291  shl 16)+VID_ATI, init_r500   ;R580    X1650
-        dd (0x7293  shl 16)+VID_ATI, init_r500   ;R580    X1650
-
-        dd (0x7100  shl 16)+VID_ATI, init_r500   ;RV520   X1800
-        dd (0x7109  shl 16)+VID_ATI, init_r500   ;RV520   X1800
-        dd (0x710A  shl 16)+VID_ATI, init_r500   ;RV520   X1800 GTO
-
-        dd (0x7249  shl 16)+VID_ATI, init_r500   ;RV580   X1900
-        dd (0x724B  shl 16)+VID_ATI, init_r500   ;RV580   X1900 GT
-
-        dd (0x7240  shl 16)+VID_ATI, init_r500   ;RV580   X1950
-        dd (0x7244  shl 16)+VID_ATI, init_r500   ;RV580   X1950
-        dd (0x7248  shl 16)+VID_ATI, init_r500   ;RV580   X1950
-
-        dd (0x7288  shl 16)+VID_ATI, init_r500   ;R580    X1950 GT
-        dd (0x7280  shl 16)+VID_ATI, init_r500   ;R580    X1950 PRO
-
-        dd (0x94C3  shl 16)+VID_ATI, init_r500   ;RV610   HD 2400 PRO
-        dd (0x94C1  shl 16)+VID_ATI, init_r500   ;RV610   HD 2400 XT
-
-        dd (0x9589  shl 16)+VID_ATI, init_r500   ;RV630   HD 2600 PRO
-        dd (0x958A  shl 16)+VID_ATI, init_r500   ;RV630   HD 2600 X2
-        dd (0x9588  shl 16)+VID_ATI, init_r500   ;RV630   HD 2600 XT
-
-        dd (0x9403  shl 16)+VID_ATI, init_r500   ;R600    HD 2900 PRO
-        dd (0x9409  shl 16)+VID_ATI, init_r500   ;R600    HD 2900 XT
-
+        dd (0x7100  shl 16)+VID_ATI, init_r500   ;Radeon X1800
+        dd (0x7101  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1800 XT
+        dd (0x7102  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1800
+        dd (0x7103  shl 16)+VID_ATI, init_r500   ;Mobility FireGL V7200
+        dd (0x7104  shl 16)+VID_ATI, init_r500   ;FireGL V7200
+        dd (0x7105  shl 16)+VID_ATI, init_r500   ;FireGL V5300
+        dd (0x7106  shl 16)+VID_ATI, init_r500   ;Mobility FireGL V7100
+        dd (0x7108  shl 16)+VID_ATI, init_r500   ;Radeon X1800
+        dd (0x7109  shl 16)+VID_ATI, init_r500   ;Radeon X1800
+        dd (0x710A  shl 16)+VID_ATI, init_r500   ;Radeon X1800
+        dd (0x710B  shl 16)+VID_ATI, init_r500   ;Radeon X1800
+        dd (0x710C  shl 16)+VID_ATI, init_r500   ;Radeon X1800
+        dd (0x710E  shl 16)+VID_ATI, init_r500   ;FireGL V7300
+        dd (0x710F  shl 16)+VID_ATI, init_r500   ;FireGL V7350
+        dd (0x7140  shl 16)+VID_ATI, init_r500   ;Radeon X1600/X1550
+        dd (0x7141  shl 16)+VID_ATI, init_r500   ;RV505
+        dd (0x7142  shl 16)+VID_ATI, init_r500   ;Radeon X1300/X1550
+        dd (0x7143  shl 16)+VID_ATI, init_r500   ;Radeon X1550
+        dd (0x7144  shl 16)+VID_ATI, init_r500   ;M54-GL
+        dd (0x7145  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1400
+        dd (0x7146  shl 16)+VID_ATI, init_r500   ;Radeon X1300/X1550
+        dd (0x7147  shl 16)+VID_ATI, init_r500   ;Radeon X1550 64-bit
+        dd (0x7149  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1300
+        dd (0x714A  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1300
+        dd (0x714B  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1300
+        dd (0x714C  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1300
+        dd (0x714D  shl 16)+VID_ATI, init_r500   ;Radeon X1300
+        dd (0x714E  shl 16)+VID_ATI, init_r500   ;Radeon X1300
+        dd (0x714F  shl 16)+VID_ATI, init_r500   ;RV505
+        dd (0x7151  shl 16)+VID_ATI, init_r500   ;RV505
+        dd (0x7152  shl 16)+VID_ATI, init_r500   ;FireGL V3300
+        dd (0x7153  shl 16)+VID_ATI, init_r500   ;FireGL V3350
+        dd (0x715E  shl 16)+VID_ATI, init_r500   ;Radeon X1300
+        dd (0x715F  shl 16)+VID_ATI, init_r500   ;Radeon X1550 64-bit
+        dd (0x7180  shl 16)+VID_ATI, init_r500   ;Radeon X1300/X1550
+        dd (0x7181  shl 16)+VID_ATI, init_r500   ;Radeon X1600
+        dd (0x7183  shl 16)+VID_ATI, init_r500   ;Radeon X1300/X1550
+        dd (0x7186  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1450
+        dd (0x7187  shl 16)+VID_ATI, init_r500   ;Radeon X1300/X1550
+        dd (0x7188  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X2300
+        dd (0x718A  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X2300
+        dd (0x718B  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1350
+        dd (0x718C  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1350
+        dd (0x718D  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1450
+        dd (0x718F  shl 16)+VID_ATI, init_r500   ;Radeon X1300
+        dd (0x7193  shl 16)+VID_ATI, init_r500   ;Radeon X1550
+        dd (0x7196  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1350
+        dd (0x719B  shl 16)+VID_ATI, init_r500   ;FireMV 2250
+        dd (0x719F  shl 16)+VID_ATI, init_r500   ;Radeon X1550 64-bit
+        dd (0x71C0  shl 16)+VID_ATI, init_r500   ;Radeon X1600
+        dd (0x71C1  shl 16)+VID_ATI, init_r500   ;Radeon X1650
+        dd (0x71C2  shl 16)+VID_ATI, init_r500   ;Radeon X1600
+        dd (0x71C3  shl 16)+VID_ATI, init_r500   ;Radeon X1600
+        dd (0x71C4  shl 16)+VID_ATI, init_r500   ;Mobility FireGL V5200
+        dd (0x71C5  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1600
+        dd (0x71C6  shl 16)+VID_ATI, init_r500   ;Radeon X1650
+        dd (0x71C7  shl 16)+VID_ATI, init_r500   ;Radeon X1650
+        dd (0x71CD  shl 16)+VID_ATI, init_r500   ;Radeon X1600
+        dd (0x71CE  shl 16)+VID_ATI, init_r500   ;Radeon X1300 XT/X1600 Pro
+        dd (0x71D2  shl 16)+VID_ATI, init_r500   ;FireGL V3400
+        dd (0x71D4  shl 16)+VID_ATI, init_r500   ;Mobility FireGL V5250
+        dd (0x71D5  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1700
+        dd (0x71D6  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1700 XT
+        dd (0x71DA  shl 16)+VID_ATI, init_r500   ;FireGL V5200
+        dd (0x71DE  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1700
+        dd (0x7200  shl 16)+VID_ATI, init_r500   ;Radeon X2300HD
+        dd (0x7210  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 2300
+        dd (0x7211  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 2300
+        dd (0x7240  shl 16)+VID_ATI, init_r500   ;Radeon X1950
+        dd (0x7243  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x7244  shl 16)+VID_ATI, init_r500   ;Radeon X1950
+        dd (0x7245  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x7246  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x7247  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x7248  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x7249  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x724A  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x724B  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x724C  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x724D  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x724E  shl 16)+VID_ATI, init_r500   ;AMD Stream Processor
+        dd (0x724F  shl 16)+VID_ATI, init_r500   ;Radeon X1900
+        dd (0x7280  shl 16)+VID_ATI, init_r500   ;Radeon X1950
+        dd (0x7281  shl 16)+VID_ATI, init_r500   ;RV560
+        dd (0x7283  shl 16)+VID_ATI, init_r500   ;RV560
+        dd (0x7284  shl 16)+VID_ATI, init_r500   ;Mobility Radeon X1900
+        dd (0x7287  shl 16)+VID_ATI, init_r500   ;RV560
+        dd (0x7288  shl 16)+VID_ATI, init_r500   ;Radeon X1950 GT
+        dd (0x7289  shl 16)+VID_ATI, init_r500   ;RV570
+        dd (0x728B  shl 16)+VID_ATI, init_r500   ;RV570
+        dd (0x728C  shl 16)+VID_ATI, init_r500   ;ATI FireGL V7400
+        dd (0x7290  shl 16)+VID_ATI, init_r500   ;RV560
+        dd (0x7291  shl 16)+VID_ATI, init_r500   ;Radeon X1650
+        dd (0x7293  shl 16)+VID_ATI, init_r500   ;Radeon X1650
+        dd (0x7297  shl 16)+VID_ATI, init_r500   ;RV560
+        dd (0x791E  shl 16)+VID_ATI, init_r500   ;Radeon X1200
+        dd (0x791F  shl 16)+VID_ATI, init_r500   ;Radeon X1200
+        dd (0x793F  shl 16)+VID_ATI, init_r500   ;Radeon Xpress 1200
+        dd (0x7941  shl 16)+VID_ATI, init_r500   ;Radeon Xpress 1200
+        dd (0x7942  shl 16)+VID_ATI, init_r500   ;Radeon Xpress 1200 (M)
+        dd (0x796C  shl 16)+VID_ATI, init_r500   ;RS740
+        dd (0x796D  shl 16)+VID_ATI, init_r500   ;RS740M
+        dd (0x796E  shl 16)+VID_ATI, init_r500   ;ATI Radeon 2100 RS740
+        dd (0x796F  shl 16)+VID_ATI, init_r500   ;RS740M
+        dd (0x9400  shl 16)+VID_ATI, init_r500   ;Radeon HD 2900 XT
+        dd (0x9401  shl 16)+VID_ATI, init_r500   ;Radeon HD 2900 XT
+        dd (0x9402  shl 16)+VID_ATI, init_r500   ;Radeon HD 2900 XT
+        dd (0x9403  shl 16)+VID_ATI, init_r500   ;Radeon HD 2900 Pro
+        dd (0x9405  shl 16)+VID_ATI, init_r500   ;Radeon HD 2900 GT
+        dd (0x940A  shl 16)+VID_ATI, init_r500   ;FireGL V8650
+        dd (0x940B  shl 16)+VID_ATI, init_r500   ;FireGL V8600
+        dd (0x940F  shl 16)+VID_ATI, init_r500   ;FireGL V7600
+        dd (0x94C0  shl 16)+VID_ATI, init_r500   ;RV610
+        dd (0x94C1  shl 16)+VID_ATI, init_r500   ;Radeon HD 2400 XT
+        dd (0x94C3  shl 16)+VID_ATI, init_r500   ;Radeon HD 2400 Pro
+        dd (0x94C4  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 2400 PRO AGP
+        dd (0x94C5  shl 16)+VID_ATI, init_r500   ;FireGL V4000
+        dd (0x94C6  shl 16)+VID_ATI, init_r500   ;RV610
+        dd (0x94C7  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 2350
+        dd (0x94C8  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 2400 XT
+        dd (0x94C9  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 2400
+        dd (0x94CB  shl 16)+VID_ATI, init_r500   ;ATI RADEON E2400
+        dd (0x94CC  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 2400
+        dd (0x9500  shl 16)+VID_ATI, init_r500   ;RV670
+        dd (0x9501  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD3870
+        dd (0x9504  shl 16)+VID_ATI, init_r500   ;ATI Mobility Radeon HD 3850
+        dd (0x9505  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD3850
+        dd (0x9506  shl 16)+VID_ATI, init_r500   ;ATI Mobility Radeon HD 3850 X2
+        dd (0x9507  shl 16)+VID_ATI, init_r500   ;RV670
+        dd (0x9508  shl 16)+VID_ATI, init_r500   ;ATI Mobility Radeon HD 3870
+        dd (0x9509  shl 16)+VID_ATI, init_r500   ;ATI Mobility Radeon HD 3870 X2
+        dd (0x950F  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD3870 X2
+        dd (0x9511  shl 16)+VID_ATI, init_r500   ;ATI FireGL V7700
+        dd (0x9515  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3850 AGP
+        dd (0x9517  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3960
+        dd (0x9519  shl 16)+VID_ATI, init_r500   ;FireStream 9170
+        dd (0x9580  shl 16)+VID_ATI, init_r500   ;RV630
+        dd (0x9581  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 2600
+        dd (0x9583  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 2600 XT
+        dd (0x9586  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 2600 XT AGP
+        dd (0x9587  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 2600 Pro AGP
+        dd (0x9588  shl 16)+VID_ATI, init_r500   ;Radeon HD 2600 XT
+        dd (0x9589  shl 16)+VID_ATI, init_r500   ;Radeon HD 2600 Pro
+        dd (0x958A  shl 16)+VID_ATI, init_r500   ;Gemini RV630
+        dd (0x958B  shl 16)+VID_ATI, init_r500   ;Gemini ATI Mobility Radeon HD 2600 XT
+        dd (0x958C  shl 16)+VID_ATI, init_r500   ;FireGL V5600
+        dd (0x958D  shl 16)+VID_ATI, init_r500   ;FireGL V3600
+        dd (0x958E  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 2600 LE
+        dd (0x958F  shl 16)+VID_ATI, init_r500   ;ATI Mobility FireGL Graphics Processor
+        dd (0x9590  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3600 Series
+        dd (0x9591  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 3650
+        dd (0x9593  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 3670
+        dd (0x9595  shl 16)+VID_ATI, init_r500   ;Mobility FireGL V5700
+        dd (0x9596  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3650 AGP
+        dd (0x9597  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3600 Series
+        dd (0x9598  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3670
+        dd (0x9599  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3600 Series
+        dd (0x959B  shl 16)+VID_ATI, init_r500   ;Mobility FireGL Graphics Processor
+        dd (0x95C0  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3470
+        dd (0x95C2  shl 16)+VID_ATI, init_r500   ;ATI Mobility Radeon HD 3430 (M82)
+        dd (0x95C4  shl 16)+VID_ATI, init_r500   ;Mobility Radeon HD 3400 Series (M82)
+        dd (0x95C5  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3450
+        dd (0x95C7  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3430
+        dd (0x95CC  shl 16)+VID_ATI, init_r500   ;Fire PRO Professional Graphics ASIC
+        dd (0x95CD  shl 16)+VID_ATI, init_r500   ;ATI FireMV 2450
+        dd (0x95CE  shl 16)+VID_ATI, init_r500   ;ATI FireMV 2260
+        dd (0x95CF  shl 16)+VID_ATI, init_r500   ;ATI FireMV 2260
+        dd (0x9610  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3200 Graphics
+        dd (0x9611  shl 16)+VID_ATI, init_r500   ;ATI Radeon 3100 Graphics
+        dd (0x9612  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3200 Graphics
+        dd (0x9613  shl 16)+VID_ATI, init_r500   ;ATI Radeon 3100 Graphics
+        dd (0x9614  shl 16)+VID_ATI, init_r500   ;ATI Radeon HD 3300 Graphics
+        dd (0x9440  shl 16)+VID_ATI, init_r500   ;ATI Radeon 4800 Series
+        dd (0x9441  shl 16)+VID_ATI, init_r500   ;ATI Radeon 4870 X2
+        dd (0x9442  shl 16)+VID_ATI, init_r500   ;ATI Radeon 4800 Series
+        dd (0x9444  shl 16)+VID_ATI, init_r500   ;Everest ATI FirePro Graphics Accelerator
+        dd (0x9446  shl 16)+VID_ATI, init_r500   ;K2 ATI FirePro Graphics Accelerator
+        dd (0x944E  shl 16)+VID_ATI, init_r500   ;RV770
+        dd (0x9456  shl 16)+VID_ATI, init_r500   ;Denali ATI FirePro Graphics
 
         dd 0    ;terminator
 

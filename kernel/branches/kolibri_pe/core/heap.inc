@@ -32,20 +32,20 @@ init_heap:
            sub eax, 4096
            ret
 @@:
-           mov esi, [ebx+APPDATA.mem_size]
-           add esi, 4095
-           and esi, not 4095
-           mov [ebx+APPDATA.mem_size], esi
+           mov edx, [ebx+APPDATA.mem_size]
+           add edx, 4095
+           and edx, not 4095
+           mov [ebx+APPDATA.mem_size], edx
            mov eax, HEAP_TOP
-           mov [ebx+APPDATA.heap_base], esi
+           mov [ebx+APPDATA.heap_base], edx
            mov [ebx+APPDATA.heap_top], eax
 
-           sub eax, esi
-           shr esi, 10
+           sub eax, edx
+           shr edx, 10
            mov ecx, eax
            sub eax, 4096
            or ecx, FREE_BLOCK
-           mov [page_tabs+esi], ecx
+           mov [page_tabs+edx], ecx
            ret
 
 align 4

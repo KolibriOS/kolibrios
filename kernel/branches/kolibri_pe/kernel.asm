@@ -4314,12 +4314,42 @@ sys_putimage_palette:
 	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
 	rol	edx, 16
 .forced:
+	cmp	esi, 1
+	jnz	@f
+	push	edi
+	mov	eax, [edi+4]
+	sub	eax, [edi]
+	push	eax
+	push	dword [edi]
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_mono_image
+	add	esp, 12
+	pop	edi
+	ret
+@@:
+	cmp	esi, 4
+	jnz	@f
+	push	edi
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_4bit_image
+	pop	eax
+	pop	edi
+	ret
+@@:
 	push	ebp esi ebp
 	cmp	esi, 8
 	jnz	@f
 	mov	ebp, putimage_get8bpp
 	mov	esi, putimage_init8bpp
 	jmp	sys_putimage_bpp
+@@:
+        cmp     esi, 15
+        jnz     @f
+        mov     ebp, putimage_get15bpp
+        mov     esi, putimage_init15bpp
+        jmp     sys_putimage_bpp
 @@:
         cmp     esi, 16
         jnz     @f
@@ -4342,15 +4372,28 @@ sys_putimage_palette:
 	pop	ebp esi ebp
 	ret
 
+put_mono_image:
+	push	ebp esi ebp
+	mov	ebp, putimage_get1bpp
+	mov	esi, putimage_init1bpp
+	jmp	sys_putimage_bpp
+put_4bit_image:
+	push	ebp esi ebp
+	mov	ebp, putimage_get4bpp
+	mov	esi, putimage_init4bpp
+	jmp	sys_putimage_bpp
+
 putimage_init24bpp:
 	lea	eax, [eax*3]
 putimage_init8bpp:
 	ret
 
+align 16
 putimage_get24bpp:
 	mov	eax, [esi]
 	add	esi, 3
 	ret	4
+align 16
 putimage_get8bpp:
 	movzx	eax, byte [esi]
 	push	edx
@@ -4360,17 +4403,79 @@ putimage_get8bpp:
 	inc	esi
 	ret	4
 
+putimage_init1bpp:
+	add	eax, ecx
+	push	ecx
+	add	eax, 7
+	add	ecx, 7
+	shr	eax, 3
+	shr	ecx, 3
+	sub	eax, ecx
+	pop	ecx
+	ret
+align 16
+putimage_get1bpp:
+	push	edx
+	mov	edx, [esp+8]
+	mov	al, [edx]
+	add	al, al
+	jnz	@f
+	lodsb
+	adc	al, al
+@@:
+	mov	[edx], al
+	sbb	eax, eax
+	and	eax, [edx+8]
+	add	eax, [edx+4]
+	pop	edx
+	ret	4
+
+putimage_init4bpp:
+	add	eax, ecx
+	push	ecx
+	add	ecx, 1
+	add	eax, 1
+	shr	ecx, 1
+	shr	eax, 1
+	sub	eax, ecx
+	pop	ecx
+	ret
+align 16
+putimage_get4bpp:
+	push	edx
+	mov	edx, [esp+8]
+	add	byte [edx], 80h
+	jc	@f
+	movzx	eax, byte [edx+1]
+	mov	edx, [edx+4]
+	and	eax, 0x0F
+	mov	eax, [edx+eax*4]
+	pop	edx
+	ret	4
+@@:
+	movzx	eax, byte [esi]
+	add	esi, 1
+	mov	[edx+1], al
+	shr	eax, 4
+	mov	edx, [edx+4]
+	mov	eax, [edx+eax*4]
+	pop	edx
+	ret	4
+
 putimage_init32bpp:
 	shl	eax, 2
 	ret
+align 16
 putimage_get32bpp:
 	lodsd
 	ret	4
 
+putimage_init15bpp:
 putimage_init16bpp:
         add     eax, eax
         ret
-putimage_get16bpp:
+align 16
+putimage_get15bpp:
 ; 0RRRRRGGGGGBBBBB -> 00000000RRRRR000GGGGG000BBBBB000
         push    ecx edx
         movzx   eax, word [esi]
@@ -4386,7 +4491,26 @@ putimage_get16bpp:
         or      eax, ecx
         or      eax, edx
         pop     edx ecx
-        ret
+        ret     4
+
+align 16
+putimage_get16bpp:
+; RRRRRGGGGGGBBBBB -> 00000000RRRRR000GGGGGG00BBBBB000
+        push    ecx edx
+        movzx   eax, word [esi]
+        add     esi, 2
+        mov     ecx, eax
+        mov     edx, eax
+        and     eax, 0x1F
+        and     ecx, 0x3F shl 5
+        and     edx, 0x1F shl 11
+        shl     eax, 3
+        shl     ecx, 5
+        shl     edx, 8
+        or      eax, ecx
+        or      eax, edx
+        pop     edx ecx
+        ret     4
 
 ; eax x beginning
 ; ebx y beginning

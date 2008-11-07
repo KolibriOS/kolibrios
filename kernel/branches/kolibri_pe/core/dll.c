@@ -277,17 +277,21 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
           ( raw[1] == 0x30305445) ) )
 
     {
-        DBG("leagacy Kolibri application\n");
+        DBG("leagacy Kolibri application");
         int tmp =  mnt_exec(raw, raw_size, path, cmdline, flags);
+        DBG("  pid %x\n",tmp);
         return tmp;
     }
 
-    if( ! validate_pe(raw, raw_size) )
+    if( ! validate_pe(raw, raw_size, true) )
     {
         DBG("invalid executable file %s\n", path);
         mem_free(raw);
         return -31;
     }
+
+    dos = (PIMAGE_DOS_HEADER)raw;
+    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
     pathsize = strlen(path)+1;
 
@@ -359,8 +363,7 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
     DBG("create stack at %x\n\tpath %x\n\tcmdline %x\n",
          ex_stack, ex_stack->path, ex_stack->cmdline);
 
-    pe_app_param(path, raw, ex_pg_dir, ex_stack);
-    return 0;
+    return pe_app_param(path, raw, ex_pg_dir, ex_stack);
 };
 
 #define  master_tab    (page_tabs+ (page_tabs>>10))
@@ -394,6 +397,10 @@ void sys_app_entry(addr_t raw, thr_stack_t *thr_stack, exec_stack_t *ex_stack)
 
     size_t   img_size;
     count_t  img_pages;
+    size_t   stack_size;
+    addr_t   img_stack;
+    addr_t  *pte;
+
     count_t  i;
     u32_t    tmp;
 
@@ -408,18 +415,26 @@ void sys_app_entry(addr_t raw, thr_stack_t *thr_stack, exec_stack_t *ex_stack)
 
     list_initialize(&current_slot->dll_list);
 
+    pte = (addr_t*)page_tabs;
     img_pages = img_size >> 12;
 
-    for(i = 0; i < img_pages; i++)
-    {
-        addr_t page = core_alloc(0);
-        ((u32_t*)page_tabs)[i] = page | 7;                          /*   FIXME     */
-    }
+    stack_size = (nt->OptionalHeader.SizeOfStackReserve + 4095) & ~4095;
+    img_stack = 0x7FFFF000 - stack_size;
+    stack_size>>= 12;
+
+    while (img_pages--)
+        *pte++ = 2;
+
+    pte = &((addr_t*)page_tabs)[img_stack>>12];
+
+    while(stack_size--)
+        *pte++ = 0x02;
 
     addr_t stack_page = ((addr_t)ex_stack-OS_BASE) & ~4095;
-    ((u32_t*)page_tabs)[0x7FFFF000>>12] = stack_page | 7;
 
-    create_image(0, raw);
+    *pte = stack_page | 7;
+
+    create_image(0, raw, false);
 
     init_user_heap();
 
@@ -430,8 +445,9 @@ void sys_app_entry(addr_t raw, thr_stack_t *thr_stack, exec_stack_t *ex_stack)
         "int $0x40"::"a"(-1));
     };
 
-//    __asm__ __volatile__ (
-//    "xchgw %bx, %bx");
+
+ //   __asm__ __volatile__ (
+ //   "xchgw %bx, %bx");
 
     addr_t entry = nt->OptionalHeader.AddressOfEntryPoint +
                    nt->OptionalHeader.ImageBase;
@@ -481,7 +497,7 @@ dll_t* __fastcall load_dll(const char *path)
         return NULL;
     };
 
-    if( ! validate_pe(raw, raw_size) )
+    if( ! validate_pe(raw, raw_size, false) )
     {
         DBG("invalid pe file %s\n", path);
         mem_free(raw);
@@ -508,7 +524,7 @@ dll_t* __fastcall load_dll(const char *path)
         return NULL;
     };
 
-    create_image(img_base, (addr_t)raw);
+    create_image(img_base, (addr_t)raw, false);
 
     mem_free(raw);
 
@@ -609,22 +625,24 @@ bool link_pe(addr_t img_base)
             {
                 PIMAGE_IMPORT_BY_NAME ord;
                 addr_t addr;
+                *iat=0;
 
                 if ( thunk->u1.AddressOfData == 0 )
                     break;
 
                 if ( thunk->u1.Ordinal & IMAGE_ORDINAL_FLAG )
                 {
-        //  printf("  %4u\n", thunk->u1.Ordinal & 0xFFFF);
+                   u16_t ordinal;
+                   ordinal = thunk->u1.Ordinal & 0xFFFF;
+                   *iat = functions[ordinal-exp->Base] + exp_dll->img_base;
                     break;
                 }
                 else
                 {
                     ord = MakePtr(PIMAGE_IMPORT_BY_NAME,
                                   thunk->u1.AddressOfData, img_base);
-                    *iat=0;
 
-                    DBG("import %s", ord->Name);
+                    DBG("import %s ", ord->Name);
 
                     if(strncmp(ord->Name,
                        MakePtr(char*,funcname[ord->Hint],exp_dll->img_base),32))
@@ -639,7 +657,7 @@ bool link_pe(addr_t img_base)
                             {
                                 u16_t ordinal;
                                 ordinal = ordinals[ind];
-                                DBG(" \t\tat %x\n", functions[ordinal] + exp_dll->img_base);
+                                DBG("ordinal %d\t\tat %x\n", ordinal, functions[ordinal] + exp_dll->img_base);
                                 *iat = functions[ordinal] + exp_dll->img_base;
                                 break;
                             };

@@ -46,6 +46,10 @@ typedef struct _IMAGE_FILE_HEADER
     WORD    Characteristics;
 } IMAGE_FILE_HEADER, *PIMAGE_FILE_HEADER;
 
+#define IMAGE_FILE_DLL              0x2000
+
+#define IMAGE_FILE_MACHINE_I386     0x014c   /* Intel 386 or later processors
+                                                and compatible processors */
 typedef struct _IMAGE_DATA_DIRECTORY {
     DWORD   VirtualAddress;
     DWORD   Size;
@@ -192,12 +196,13 @@ extern dll_t core_dll;
 
 #define MakePtr( cast, ptr, addValue ) (cast)( (addr_t)(ptr) + (addr_t)(addValue) )
 
+bool validate_pe(void *raw, size_t raw_size, bool is_exec);
 
 dll_t * find_dll(link_t *list, const char *name);
 
 
 md_t* __fastcall load_image(const char *path);
 
-void __export create_image(addr_t img_base, addr_t image) asm ("CreateImage");
+void create_image(addr_t img_base, addr_t raw, bool force_clear) asm ("CreateImage");
 
 

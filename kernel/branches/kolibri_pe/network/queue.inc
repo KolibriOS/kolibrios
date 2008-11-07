@@ -43,18 +43,19 @@ $Revision$
 ;       all other registers preserved
 ;        This always works, so no error returned
 ;***************************************************************************
+uglobal
+  freeBuff_cnt dd ?
+endg
 freeBuff:
+;        inc     [freeBuff_cnt]
+;        DEBUGF  1, "K : freeBuff (%u)\n", [freeBuff_cnt]
     push    ebx
     push    ecx
-    mov     ebx, EMPTY_QUEUE
-    shl     ebx, 1
-    add     ebx, queues
+    mov     ebx, queues + EMPTY_QUEUE * 2
     cli     ; Ensure that another process does not interfer
-    movzx   ecx, word [ebx]
+    mov     cx, [ebx]
     mov     [ebx], ax
-    shl     eax, 1
-    add     eax, queueList
-    mov     [eax], cx
+    mov     [queueList + eax * 2], cx
     sti
     pop     ecx
     pop     ebx
@@ -105,7 +106,12 @@ qs_exit:
 ;       all other registers preserved
 ;        This always works, so no error returned
 ;***************************************************************************
+uglobal
+  queue_cnt dd ?
+endg
 queue:
+;        inc     [queue_cnt]
+;        DEBUGF  1, "K : queue (%u)\n", [queue_cnt]
     push    ebx
     shl     ebx, 1
     add     ebx, queueList        ; eax now holds address of queue entry
@@ -155,6 +161,9 @@ qu_exit:
 ;       all other registers preserved
 ;
 ;***************************************************************************
+uglobal
+  dequeue_cnt dd ?
+endg
 dequeue:
     push    ebx
     shl     eax, 1
@@ -164,6 +173,8 @@ dequeue:
     movzx   eax, word [eax]
     cmp     ax, NO_BUFFER
     je      dq_exit
+;        inc     [dequeue_cnt]
+;        DEBUGF  1, "K : dequeue (%u)\n", [dequeue_cnt]
     push    eax
     shl     eax, 1
     add     eax, queueList        ; eax now holds address of queue entry
