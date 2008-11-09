@@ -102,7 +102,7 @@ proc udp_rx stdcall
 	je	@f
 
 	mov	eax, [edx + IP_PACKET.SourceAddress]	; get the Source address from the IP packet
-	cmp	[ebx + SOCKET.RemoteIP], ebx
+	cmp	[ebx + SOCKET.RemoteIP], eax
 	jne	.exit		   ; Quit if the source IP is not valid
 
     @@: ; OK - we have a valid UDP packet for this socket.

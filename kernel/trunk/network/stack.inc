@@ -46,7 +46,7 @@ endg
 
 ; socket buffers
 SOCKETBUFFSIZE	   equ	      4096  ; state + config + buffer.
-SOCKETHEADERSIZE   equ	      76+8+8  ; thus 4096 - SOCKETHEADERSIZE bytes data
+SOCKETHEADERSIZE   equ	      SOCKET.rxData ; thus 4096 - SOCKETHEADERSIZE bytes data
 
 ;NUM_SOCKETS        equ        16    ; Number of open sockets supported. Was 20
 

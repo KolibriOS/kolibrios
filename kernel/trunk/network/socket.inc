@@ -608,7 +608,6 @@ proc socket_poll stdcall
 	ret
 
   .error:
-	;or      eax, -1
 	xor	eax, eax
 	ret
 endp
@@ -633,7 +632,6 @@ proc socket_status stdcall
 	ret
 
   .error:
-	;or      eax, -1
 	xor	eax, eax
 	ret
 endp
@@ -665,24 +663,24 @@ proc socket_read stdcall
 	jz	.error
 
 	dec	eax
-	mov	esi, ebx	    ; esi is address of socket
+	mov	esi, ebx				; esi is address of socket
 	mov	[ebx + SOCKET.rxDataCount], eax 	; store new count
-	;movzx   ebx, byte[ebx + SOCKET.rxData]  ; get the byte
-	movzx	ebx, byte[ebx + SOCKETHEADERSIZE]  ; get the byte
-	add	esi, SOCKETHEADERSIZE
-	mov	edi, esi
-	inc	esi
+	movzx	ebx, byte[ebx + SOCKET.rxData]		; get the byte
 
-	mov	ecx, (SOCKETBUFFSIZE - SOCKETHEADERSIZE) / 4
-	lea	edi, [ebx + SOCKETHEADERSIZE]
+	mov	ecx, SOCKETBUFFSIZE - SOCKET.rxData - 1
+	lea	edi, [esi + SOCKET.rxData]
 	lea	esi, [edi + 1]
 	cld
+	push	ecx
+	shr	ecx, 2
 	rep	movsd
+	pop	ecx
+	and	ecx, 3
+	rep	movsb
 
 	ret
 
   .error:
-	;or      eax, -1
 	xor	eax, eax
 	xor	ebx, ebx
 	ret
@@ -723,7 +721,7 @@ proc socket_read_packet stdcall
 	call	.start_copy				   ; copy to the application
 
 	mov	esi, ebx				   ; now we're going to copy the remaining bytes to the beginning
-	add	esi, SOCKETHEADERSIZE			   ; we dont need to copy the header
+	add	esi, SOCKET.rxData			   ; we dont need to copy the header
 	mov	edi, esi				   ; edi is where we're going to copy to
 	add	esi, edx				   ; esi is from where we copy
 	pop	ecx					   ; count of bytes we have left
@@ -739,7 +737,6 @@ proc socket_read_packet stdcall
 	ret						   ; at last, exit
 
   .error:
-	;or      eax, -1
 	xor	eax, eax
 	ret
 
@@ -752,7 +749,7 @@ proc socket_read_packet stdcall
   .start_copy:
 	mov	edi, ecx
 	mov	esi, ebx
-	add	esi, SOCKETHEADERSIZE			   ; we dont need to copy the header
+	add	esi, SOCKET.rxData			   ; we dont need to copy the header
 	mov	ecx, eax				   ; eax is count of bytes
 	push	ecx
 	shr	ecx, 2					   ; divide eax by 4
