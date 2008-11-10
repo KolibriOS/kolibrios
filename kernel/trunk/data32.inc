@@ -94,6 +94,8 @@ szAtiHW 	db '/rd/1/drivers/ati2d.drv',0
 
 szSTART        db 'START',0
 szEXPORTS      db 'EXPORTS',0
+sz_EXPORTS     db '_EXPORTS',0
+
 szIMPORTS      db 'IMPORTS',0
 
 read_firstapp  db '/sys/'

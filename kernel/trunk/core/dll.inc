@@ -653,7 +653,7 @@ proc get_proc_ex stdcall, proc_name:dword, imports:dword
 	   jz .next_table
 
 	   push edx
-	   stdcall strncmp, eax, [proc_name], 16
+       stdcall strncmp, eax, [proc_name], 256
 	   pop edx
 	   test eax, eax
 	   jz .ok
@@ -1011,7 +1011,6 @@ proc load_library stdcall, file_name:dword
 	   jmp .next
 .copy:
 	   add esi, edx
-    ;       add edi, new_app_base
 	   mov ecx, [eax+CFS.SizeOfRawData]
 	   cld
 	   rep movsb
@@ -1054,6 +1053,11 @@ proc load_library stdcall, file_name:dword
 
 	   mov ebx, [coff]
 	   stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],szEXPORTS
+       test eax, eax
+       jnz @F
+
+	   mov ebx, [coff]
+       stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],sz_EXPORTS
 	   mov [exports], eax
 
 	   stdcall kernel_free, [coff]
