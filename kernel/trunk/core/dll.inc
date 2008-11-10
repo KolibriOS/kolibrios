@@ -1058,6 +1058,7 @@ proc load_library stdcall, file_name:dword
 
 	   mov ebx, [coff]
        stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],sz_EXPORTS
+@@:
 	   mov [exports], eax
 
 	   stdcall kernel_free, [coff]
