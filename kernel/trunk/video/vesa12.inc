@@ -880,6 +880,8 @@ vesa12_putimage:
     add  esi,[esp+32]
     cmp  ebp,putimage_get1bpp
     jz   .correct
+    cmp  ebp,putimage_get2bpp
+    jz   .correct
     cmp  ebp,putimage_get4bpp
     jnz  @f
 .correct:
@@ -952,6 +954,8 @@ vesa12_putimage:
 
     add   edi,[BytesPerScanLine]
     cmp   ebp,putimage_get1bpp
+    jz    .correct
+    cmp   ebp,putimage_get2bpp
     jz    .correct
     cmp   ebp,putimage_get4bpp
     jnz   @f

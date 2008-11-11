@@ -4209,36 +4209,46 @@ sys_putimage_palette:
 	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
 	rol	edx, 16
 .forced:
-	cmp	esi, 1
-	jnz	@f
-	push	edi
-	mov	eax, [edi+4]
-	sub	eax, [edi]
-	push	eax
-	push	dword [edi]
-	push	0ffffff80h
-	mov	edi, esp
-	call	put_mono_image
-	add	esp, 12
-	pop	edi
-	ret
+        cmp     esi, 1
+        jnz     @f
+        push    edi
+        mov     eax, [edi+4]
+        sub     eax, [edi]
+        push    eax
+        push    dword [edi]
+        push    0ffffff80h
+        mov     edi, esp
+        call    put_mono_image
+        add     esp, 12
+        pop     edi
+        ret
 @@:
-	cmp	esi, 4
-	jnz	@f
-	push	edi
-	push	0ffffff80h
-	mov	edi, esp
-	call	put_4bit_image
-	pop	eax
-	pop	edi
-	ret
+        cmp     esi, 2
+        jnz     @f
+        push    edi
+        push    0ffffff80h
+        mov     edi, esp
+        call    put_2bit_image
+        pop     eax
+        pop     edi
+        ret
 @@:
-	push	ebp esi ebp
-	cmp	esi, 8
-	jnz	@f
-	mov	ebp, putimage_get8bpp
-	mov	esi, putimage_init8bpp
-	jmp	sys_putimage_bpp
+        cmp     esi, 4
+        jnz     @f
+        push    edi
+        push    0ffffff80h
+        mov     edi, esp
+        call    put_4bit_image
+        pop     eax
+        pop     edi
+        ret
+@@:
+        push    ebp esi ebp
+        cmp     esi, 8
+        jnz     @f
+        mov     ebp, putimage_get8bpp
+        mov     esi, putimage_init8bpp
+        jmp     sys_putimage_bpp
 @@:
         cmp     esi, 15
         jnz     @f
@@ -4268,15 +4278,20 @@ sys_putimage_palette:
 	ret
 
 put_mono_image:
-	push	ebp esi ebp
-	mov	ebp, putimage_get1bpp
-	mov	esi, putimage_init1bpp
-	jmp	sys_putimage_bpp
+        push    ebp esi ebp
+        mov     ebp, putimage_get1bpp
+        mov     esi, putimage_init1bpp
+        jmp     sys_putimage_bpp
+put_2bit_image:
+        push    ebp esi ebp
+        mov     ebp, putimage_get2bpp
+        mov     esi, putimage_init2bpp
+        jmp     sys_putimage_bpp
 put_4bit_image:
-	push	ebp esi ebp
-	mov	ebp, putimage_get4bpp
-	mov	esi, putimage_init4bpp
-	jmp	sys_putimage_bpp
+        push    ebp esi ebp
+        mov     ebp, putimage_get4bpp
+        mov     esi, putimage_init4bpp
+        jmp     sys_putimage_bpp
 
 putimage_init24bpp:
 	lea	eax, [eax*3]
@@ -4324,6 +4339,38 @@ putimage_get1bpp:
 	add	eax, [edx+4]
 	pop	edx
 	ret	4
+
+putimage_init2bpp:
+        add     eax, ecx
+        push    ecx
+        add     ecx, 3
+        add     eax, 3
+        shr     ecx, 2
+        shr     eax, 2
+        sub     eax, ecx
+        pop     ecx
+        ret
+align 16
+putimage_get2bpp:
+        push    edx
+        mov     edx, [esp+8]
+        mov     al, [edx]
+        mov     ah, al
+        shr     al, 6
+        shl     ah, 2
+        jnz     .nonewbyte
+        lodsb
+        mov     ah, al
+        shr     al, 6
+        shl     ah, 2
+        add     ah, 1
+.nonewbyte:
+        mov     [edx], ah
+        mov     edx, [edx+4]
+        movzx   eax, al
+        mov     eax, [edx+eax*4]
+        pop     edx
+        ret     4
 
 putimage_init4bpp:
 	add	eax, ecx

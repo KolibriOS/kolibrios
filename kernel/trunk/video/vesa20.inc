@@ -236,6 +236,8 @@ align   4
 ;     inc     ebp
      cmp     [putimg.ebp], putimage_get1bpp
      jz      .correct
+     cmp     [putimg.ebp], putimage_get2bpp
+     jz      .correct
      cmp     [putimg.ebp], putimage_get4bpp
      jnz     @f
 .correct:
@@ -276,6 +278,8 @@ align   4
      add     ebp, [putimg.winmap_newline] ;[Screen_Max_X]
 ;     inc     ebp
      cmp     [putimg.ebp], putimage_get1bpp
+     jz      .correct
+     cmp     [putimg.ebp], putimage_get2bpp
      jz      .correct
      cmp     [putimg.ebp], putimage_get4bpp
      jnz     @f
