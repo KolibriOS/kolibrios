@@ -176,7 +176,7 @@ proc libini._.unload_block _f ;/////////////////////////////////////////////////
 	mov	ebx, [_f]
 	mov	eax, [ebx + IniFile.pos]
 	add	eax, -ini.BLOCK_SIZE
-	invoke	file.seek, [ebx + IniFile.fh], SEEK_SET, eax
+	invoke	file.seek, [ebx + IniFile.fh], eax, SEEK_SET
 	stdcall libini._.preload_block, ebx
 	add	esi, eax ; ini.BLOCK_SIZE
 	mov	[ebx + IniFile.cnt], 0
@@ -228,7 +228,7 @@ proc libini._.reload_block _f ;/////////////////////////////////////////////////
 	mov	ebx, [_f]
 	push	[ebx + IniFile.bsize]
 	push	esi [ebx + IniFile.cnt]
-	invoke	file.seek, [ebx + IniFile.fh], SEEK_SET, [ebx + IniFile.pos]
+	invoke	file.seek, [ebx + IniFile.fh], [ebx + IniFile.pos], SEEK_SET
 	stdcall libini._.preload_block, ebx
 	pop	[ebx + IniFile.cnt] esi
 	pop	eax
@@ -276,8 +276,8 @@ endl
 ;       push    eax
 	sub	eax, ecx
 ;       dec     eax
-	invoke	file.seek, ebx, SEEK_SET, eax
-    @@: invoke	file.seek, ebx, SEEK_CUR, [_delta]
+	invoke	file.seek, ebx, eax, SEEK_SET
+    @@: invoke	file.seek, ebx, [_delta], SEEK_CUR
 	invoke	file.eof?, ebx
 	or	eax, eax
 	jnz	.done
@@ -285,14 +285,14 @@ endl
 	mov	ecx, eax
 	mov	eax, [_delta]
 	neg	eax
-	sub	eax,ecx;ini.BLOCK_SIZE
-	invoke	file.seek,ebx,SEEK_CUR,eax
-	invoke	file.write,ebx,[buf],ecx;ini.BLOCK_SIZE
+	sub	eax, ecx;ini.BLOCK_SIZE
+	invoke	file.seek, ebx, eax, SEEK_CUR
+	invoke	file.write, ebx, [buf], ecx;ini.BLOCK_SIZE
 	jmp	@b
   .done:
 	mov	eax, [_delta]
 	neg	eax
-	invoke	file.seek, ebx, SEEK_CUR, eax
+	invoke	file.seek, ebx, eax, SEEK_CUR
 	invoke	file.seteof, ebx
 ;       pop     eax
 ;       invoke  file.seek, ebx, SEEK_SET;, eax
@@ -317,7 +317,7 @@ endl
 	sub	eax, ecx
 	lea	edx, [eax - 1]
 	push	edx
-    @@: invoke	file.seek, ebx, SEEK_SET, edx
+    @@: invoke	file.seek, ebx, edx, SEEK_SET
 	invoke	file.eof?, ebx
 	or	eax, eax
 	jnz	@f
@@ -328,12 +328,12 @@ endl
 	add	edx, -ini.BLOCK_SIZE
 	cmp	edx, [esp]
 	jl	@f
-	invoke	file.seek, ebx, SEEK_SET, edx
+	invoke	file.seek, ebx, edx, SEEK_SET
 	invoke	file.read, ebx, [buf], ini.BLOCK_SIZE
 	mov	ecx, eax
 	mov	eax, [_delta]
 	sub	eax, ecx
-	invoke	file.seek, ebx, SEEK_CUR, eax
+	invoke	file.seek, ebx, eax, SEEK_CUR
 	invoke	file.write, ebx, [buf], ecx
 	jmp	@b
     @@:
@@ -372,8 +372,8 @@ proc libini._.get_value_length _f ;/////////////////////////////////////////////
 	sub	eax, edx
 	mov	[esp + 4 * 3], eax
 
-;       pop     eax
-	invoke	file.seek, [ebx + IniFile.fh], SEEK_SET;, eax
+	pop	eax
+	invoke	file.seek, [ebx + IniFile.fh], eax, SEEK_SET
 	stdcall libini._.preload_block, [_f]
 	pop	[ebx + IniFile.cnt] esi
 	pop	eax edx ecx ebx
@@ -442,7 +442,7 @@ proc libini._.find_section _f, _sec_name ;//////////////////////////////////////
 	push	ebx edi
 
 	mov	ecx, [_f]
-	invoke	file.seek, [ecx + IniFile.fh], SEEK_SET, 0
+	invoke	file.seek, [ecx + IniFile.fh], 0, SEEK_SET
 	stdcall libini._.preload_block, [_f]
 
   .next_section:

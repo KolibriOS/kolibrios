@@ -137,6 +137,7 @@ START:
 	or	eax,eax
 	jnz	exit
 
+@^ ; commenting out, file.aux.match_wildcard is no longer exported
 	mov	esi,_str1 + 4
 	mov	edi,_str2 + 4
 	mov	ecx,_str3
@@ -152,6 +153,7 @@ START:
 	add	ecx,4
 	cmp	dword[esi-4],0
 	jnz	@b
+^@
 
 	invoke	ini.set_int,s_ini,s_sec,s_key1,100
 	invoke	ini.set_int,s_ini,s_sec,s_key2,101
@@ -382,7 +384,7 @@ import	libini, \
 	ini.enum_keys,'ini.enum_keys'
 
 import	libio, \
-	file.aux.match_wildcard,'file.aux.match_wildcard',\
+\;      file.aux.match_wildcard,'file.aux.match_wildcard',\
 	file.find_first,'file.find_first',\
 	file.find_next,'file.find_next',\
 	file.find_close,'file.find_close',\

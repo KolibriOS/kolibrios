@@ -102,7 +102,7 @@ endl
 	lea	ebx, [f]
 	mov	[f_addr], ebx
 
-	invoke	file.seek, [f.fh], SEEK_SET, 0
+	invoke	file.seek, [f.fh], 0, SEEK_SET
 	stdcall libini._.preload_block, [f_addr]
 
   .next_section:
@@ -382,7 +382,6 @@ endl
 	jnz	.create_key
 
   .modify_key:
-
 	stdcall libini._.get_value_length, [f_addr]
 	sub	eax, [_buf_len]
 	stdcall libini._.shift_content, [f_addr], eax
@@ -391,7 +390,7 @@ endl
 	invoke	file.tell, [f.fh]
 	sub	eax, [f.cnt]
 ;       dec     eax
-	invoke	file.seek, [f.fh], SEEK_SET, eax
+	invoke	file.seek, [f.fh], eax, SEEK_SET
 	invoke	file.write, [f.fh], [_buffer], [_buf_len]
 
 	pop	edi esi ebx
