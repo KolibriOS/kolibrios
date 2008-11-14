@@ -274,7 +274,7 @@ end virtual
 .repmovsbr:
         mov     eax, [ebp+.rep0]
         cmp     eax, [ebp+.dictSize]
-        jae     return.err
+        ja      return.err
 	mov	esi, edi
 	sub	esi, eax
         mov     eax, [ebp+streamInfo.bufPtr]
@@ -282,6 +282,7 @@ end virtual
         ja      .repmovsb0
 	mov	eax, [ebp+.outEnd]
         sub     eax, edi
+        jz      .done1
         push    ecx
         cmp     ecx, eax
         jb      @f
@@ -291,6 +292,7 @@ end virtual
 	rep	movsb
         pop     ecx
         jz      .repmovsb1
+.done1:
         pop     [ebp+.inPtr]
 	mov	[ebp+.state], ebx
         mov     [ebp+.ecx], ecx
@@ -299,8 +301,8 @@ end virtual
         ret
 .repmovsb0:
 	mov	edx, [ebp+.dictSize]
-	cmp	edx, [ebp+streamInfo.bufSize]
-	jnz	return.err
+;	cmp	edx, [ebp+streamInfo.bufSize]
+;	jnz	return.err
         add     esi, edx
         push    ecx
         cmp     ecx, eax
@@ -309,6 +311,7 @@ end virtual
 @@:
 	mov	eax, [ebp+.outEnd]
 	sub	eax, edi
+	jz      .done2
 	cmp	ecx, eax
 	jb	@f
 	mov	ecx, eax
@@ -322,6 +325,9 @@ end virtual
         mov     al, [edi-1]
         mov     [ebp+.previousByte], al
         jmp     .main_loop
+.done2:
+	pop	ecx
+	jmp	.done1
 .main_loop_done:
 	mov	[ebp+.state], ebx
         mov     [ebp+.continue], .main_loop
