@@ -150,15 +150,15 @@ local buffer_number dd ?
 
 	mov	eax, [ebx + IP_PACKET.DestinationAddress]
 	cmp	eax, 0xffffffff
-	;je      @f
-	;mov     ecx, [stack_ip]
-	;and     eax, [subnet_mask]
-	;and     ecx, [subnet_mask]
-	;cmp     eax, ecx
-	;jne     .dump.2
-	;mov     eax, [ebx + IP_PACKET.DestinationAddress]
-	;or      eax, [subnet_mask]
-	;cmp     eax, 0xffffffff
+	je	@f
+	mov	ecx, [stack_ip]
+	and	eax, [subnet_mask]
+	and	ecx, [subnet_mask]
+	cmp	eax, ecx
+	jne	.dump.2
+	mov	eax, [ebx + IP_PACKET.DestinationAddress]
+	or	eax, [subnet_mask]
+	cmp	eax, 0xffffffff
 	jne	.dump.2
 
   @@:
@@ -223,7 +223,7 @@ local buffer_number dd ?
 	jmp	.dump.x
 
   .dump.4:
-	DEBUGF	1, "K : ip_rx - dumped (ihl: %u)\n", [ebx + IP_PACKET.TimeToLive]
+	DEBUGF	1, "K : ip_rx - dumped (ttl: %u)\n", [ebx + IP_PACKET.TimeToLive]
 	jmp	.dump.x
 
   .dump.5:

@@ -7,8 +7,6 @@
 ;;                                                              ;;
 ;;  Address Resolution Protocol                                 ;;
 ;;                                                              ;;
-;;  Last revision: 10.11.2006                                   ;;
-;;                                                              ;;
 ;;  This file contains the following:                           ;;
 ;;   arp_table_manager - Manages an ARPTable                    ;;
 ;;   arp_request - Sends an ARP request on the ethernet         ;;

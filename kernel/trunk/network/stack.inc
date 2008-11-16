@@ -7,8 +7,6 @@
 ;;                                                              ;;
 ;;  TCP/IP stack for Menuet OS                                  ;;
 ;;                                                              ;;
-;;  Version 0.7  4th July 2004                                  ;;
-;;                                                              ;;
 ;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
 ;;                                                              ;;
 ;;  See file COPYING for details                                ;;
