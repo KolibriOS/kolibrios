@@ -1707,6 +1707,22 @@ Remarks:
     the current videomode, use function 61.
 
 ======================================================================
+=============== Function 36 - read screen area. ===============
+======================================================================
+Paramters:
+  * eax = 36 - function number
+  * ebx = pointer on the previously allocated area of memory,
+             where will be placed the image in the format BBGGRRBBGGRR...
+  * ecx = [size on axis x]*65536 + [size on axis y]
+  * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
+Returned value:
+  * function does not return value
+Remarks:
+  * Coordinates of the image are coordinates of the upper left corner
+    of the image relative to the window.
+  * Size of the image in bytes is 3*xsize*ysize.
+
+======================================================================
 =================== Function 37 - work with mouse. ===================
 ======================================================================
 

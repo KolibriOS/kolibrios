@@ -5087,6 +5087,60 @@ syscall_getpixel:			; GetPixel
      mov   [esp + 32], ecx
      ret
 
+align 4
+
+syscall_getarea:
+;eax = 36
+;ebx = pointer to bufer for img BBGGRRBBGGRR... 
+;ecx = [size x]*65536 + [size y] 
+;edx = [start x]*65536 + [start y] 
+     pushad
+     mov   edi,ebx
+     mov   eax,edx
+     shr   eax,16
+     mov   ebx,edx
+     and   ebx,0xffff
+     ; eax - x, ebx - y
+     mov   edx,ecx
+     
+     shr   ecx,16
+     and   edx,0xffff
+     mov   esi,ecx
+     ; ecx - size x, edx - size y
+.start_y:
+     push  ecx
+.start_x:
+     push  eax ebx ecx edx  esi edi
+     add   eax,ecx
+     add   ebx,edx
+     call  dword [GETPIXEL] ; eax - x, ebx - y
+     pop   edi esi
+     
+     mov   eax,ecx
+     pop   edx  ecx
+     
+     push  ecx  edx
+
+     dec   edx
+     lea   edx,[edx*3]
+     imul  edx,esi
+     dec   ecx
+     lea   ecx,[ecx*3]
+     add   edx,ecx
+     add   edx,edi
+     mov   [edx],ax
+     shr   eax,16
+     mov   [edx+2],al
+
+     pop   edx ecx ebx eax 
+     
+     dec   ecx
+     jnz   .start_x
+     pop   ecx
+     dec   edx
+     jnz   .start_y
+     popad
+     ret
 
 align 4
 

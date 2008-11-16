@@ -219,7 +219,7 @@ iglobal
       dd undefined_syscall	 ; 33-reserved
       dd undefined_syscall	 ; 34-reserved
       dd syscall_getpixel	 ; 35-GetPixel
-      dd undefined_syscall	 ; 36-reserved
+      dd syscall_getarea   ; 36-GetArea
       dd cross_order		 ; 37-GetMousePosition_ScreenRelative,.
       dd syscall_drawline	 ; 38-DrawLine
       dd cross_order		 ; 39-GetBackgroundSize,ReadBgrData,.
