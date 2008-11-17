@@ -241,7 +241,9 @@ release_pages:
 @@:
            xor eax, eax
            xchg eax, [esi]
+           push eax
            invlpg [edi]
+           pop eax
 
            test eax, 1
            jz .next
@@ -417,7 +419,9 @@ proc new_mem_resize stdcall, new_size:dword
            mov dword [app_page_tabs+edi*4], 2
            mov ebx, edi
            shl ebx, 12
+           push eax
            invlpg [ebx]
+           pop eax
            call free_page
 
 .next:     add edi, 1
@@ -1283,6 +1287,8 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 @@:
            mov [page_tabs+edi], eax
            mov [page_tabs+edi+edx], eax
+           invlpg [ebx]
+           invlpg [ebx+0x10000]
            add eax, 0x1000
            add ebx, 0x1000
            add edi, 4
@@ -1302,3 +1308,182 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 endp
 
 
+
+if 0
+
+; under constuction
+
+
+shmem_list:
+    .bk       dd shmem_list
+    .fd       dd shmem_list
+
+
+shmem
+    .bk         dd ?
+    .fd         dd ?
+    .base       dd ?
+    .size       dd ?
+    .access     dd ?
+    .refcount   dd ?
+    .name       rb 32
+
+
+align 4
+proc shmem_open stdcall name:dword, size:dword, access:dword
+           locals
+              mapped    dd ?
+              shm       dd ?
+              pages     dd ?
+           endl
+
+           push esi
+           push edi
+
+           mov [mapped], 0
+
+           mov eax, [name]
+           test eax, eax
+           jz .exit
+
+           pushfd                      ;mutex required
+           cli
+
+           mov ebx, [shmem_list.fd]
+@@:
+           cmp ebx, shmem_list
+           je .not_found
+
+           lea edx, [edx+24] ; link , base, size
+           stdcall strncmp, edx, eax, 32
+           test eax, eax
+           je .found
+
+           mov ebx, [ebx+4]
+           jmp @B
+.found:                               ;check access rights
+           mov eax, [access]
+           test eax, SHM_CREATE
+           mov ecx, [ebx+8]
+           jnz .fail_exist
+
+           and eax, ACC_MASK
+           and ecx, ACC_MASK
+           cmp eax, ecx
+           jne .fail_acc
+
+           stdcall user_alloc, [ebx+12]
+           test eax, eax
+           mov [mapped], eax
+           jz .fail_mem
+
+           mov eax, [ebx+4]
+           mov ecx, [ebx+12]
+           shr ecx, 12
+           mov ebx, [mapped]
+           call commit_pages
+.exit:
+           mov eax, [mapped]
+           pop edi
+           pop esi
+           ret
+
+.not_found:
+           mov eax, [access]
+           test eax, SHM_CREATE
+           mov ebx, E_NOTFOUND
+           jz .exit
+
+;create shmem
+           mov ecx, [size]
+           test ecx, ecx
+           mov ebx, E_PARAM
+           jz .exit
+
+           add ecx, 4095
+           and ecx, -4096
+           mov [size], ecx
+           stdcall user_alloc, ecx
+           test eax, eax
+           mov [mapped], eax
+           mov ebx, E_NOMEM
+           jz .exit
+
+           mov eax, 24+32
+           call malloc
+           test eax, eax
+           mov [shm], eax
+           mov ebx, E_NOMEM
+           jz .exit                ;FIXME cleanup
+
+           mov [eax+24+28], dword 0
+           lea edx, [eax+24]
+           stdcall strncpy, edx, [name], 31
+
+           mov eax, [size]
+           shr eax, 12
+           mov esi, eax
+           stdcall alloc_pages, eax
+           test eax, eax
+           mov [pages], eax
+           mov ebx, E_NOMEM
+           jz .exit                ;FIXME cleanup
+
+           mov edi, eax
+           add edi, [size]
+           and esi,  7
+           add esi, -8
+           jz @F
+
+;release unused pages
+
+.release:
+           mov eax, edi
+           add edi, 4096
+           call free_page
+           dec esi
+           jnz .release
+
+           mov eax, [ebx+4]
+           mov ecx, [ebx+12]
+           shr ecx, 12
+           mov ebx, [mapped]
+           call commit_pages
+
+           mov eax, [access]
+           and eax, ACC_MASK
+           or eax,  [pages]
+           mov ebx, [mapped]
+           mov ecx, [size]
+           shr ecx, 12
+           call commit_pages
+
+           mov edx, [shm]
+           mov ecx, [pages]
+           mov [edx+8], ecx
+           mov ecx, [size]
+           mov [edx+12], ecx
+
+    ;       mov [edx], shmem
+    ;       mov [edx+4], [shmem.fd]
+    ;       mov [shmem.fd.bk], edx
+    ;       mov [shmem.fd], edx
+
+           xor ebx, ebx
+           jmp .exit
+
+.fail_exist:
+           mov ebx, E_EXIST
+           xor eax, eax
+           ret
+.fail_access:
+           mov ebx, E_ACCESS
+           xor eax, eax
+           ret
+.fail_mem:
+           mov ebx, E_NOMEM
+           xor eax, eax
+           ret
+endp
+
+end if

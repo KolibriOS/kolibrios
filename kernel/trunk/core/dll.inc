@@ -18,34 +18,34 @@ align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 
          mov  ebx, [irq]                   ;irq num
-	 test ebx, ebx
-	 jz   .err
+         test ebx, ebx
+         jz   .err
          cmp  ebx, 15                      ; hidnplayr says: we only have 16 IRQ's
-	 ja   .err
-	 mov  eax, [handler]
-	 test eax, eax
-	 jz   .err
-	 cmp  [irq_owner + 4 * ebx], 0
-	 je   @f
+         ja   .err
+         mov  eax, [handler]
+         test eax, eax
+         jz   .err
+         cmp  [irq_owner + 4 * ebx], 0
+         je   @f
 
          mov  ecx, [irq_rights + 4 * ebx]  ; Rights : 0 - full access, 1 - read only, 2 - forbidden
-	 test ecx, ecx
-	 jnz  .err
+         test ecx, ecx
+         jnz  .err
 
 @@:
-	 mov  [irq_tab+ebx*4], eax
+         mov  [irq_tab+ebx*4], eax
 
-	 mov  eax, [access_rights]
-	 mov  [irq_rights + 4 * ebx], eax
+         mov  eax, [access_rights]
+         mov  [irq_rights + 4 * ebx], eax
 
          mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
 
-	 stdcall enable_irq, [irq]
+         stdcall enable_irq, [irq]
          mov eax, 1
-	 ret
+         ret
 .err:
-	 xor eax, eax
-	 ret
+         xor eax, eax
+         ret
 endp
 
 uglobal
@@ -1056,11 +1056,10 @@ proc load_library stdcall, file_name:dword
        test eax, eax
        jnz @F
 
-	   mov ebx, [coff]
+       mov ebx, [coff]
        stdcall get_coff_sym,[sym],[ebx+CFH.nSymbols],sz_EXPORTS
 @@:
-	   mov [exports], eax
-
+       mov [exports], eax
 	   stdcall kernel_free, [coff]
 	   mov eax, [exports]
 	   ret

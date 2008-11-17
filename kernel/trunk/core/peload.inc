@@ -310,7 +310,9 @@ __exports:
           user_alloc,            'UserAlloc',          \      ; stdcall
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
-          sys_msg_board_str,     'SysMsgBoardStr'
+          sys_msg_board_str,     'SysMsgBoardStr',     \
+          delay_hs,              'Delay',              \      ; ebx
+          set_mouse_data,        'SetMouseData'
 
 
 

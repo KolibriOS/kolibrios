@@ -890,8 +890,6 @@ end if
 	setnz	[dma_hdd]
 	mov [timer_ticks_enable],1		; for cd driver
 
-;        stdcall init_uart_service, DRV_ENTRY
-
 	sti
 	call change_task
 

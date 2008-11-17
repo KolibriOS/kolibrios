@@ -72,7 +72,7 @@ iglobal
   szLoadFile	      db 'LoadFile',0
   szSendEvent	      db 'SendEvent',0
   szSetMouseData      db 'SetMouseData',0
-  szSleep	      db 'Sleep',0
+  szSleep             db 'Sleep',0
   szGetTimerTicks     db 'GetTimerTicks',0
 
   szStrncat	      db 'strncat',0
@@ -103,27 +103,27 @@ kernel_export:
   dd szPciWrite16      , pci_write16
   dd szPciWrite32      , pci_write32
 
-  dd szAllocPage       , alloc_page	       ;stdcall
-  dd szAllocPages      , alloc_pages	       ;stdcall
+  dd szAllocPage       , alloc_page            ;stdcall
+  dd szAllocPages      , alloc_pages           ;stdcall
   dd szFreePage        , free_page
-  dd szMapPage	       , map_page	       ;stdcall
+  dd szMapPage         , map_page              ;stdcall
   dd szMapSpace        , map_space
-  dd szMapIoMem        , map_io_mem	       ;stdcall
+  dd szMapIoMem        , map_io_mem            ;stdcall
   dd szGetPgAddr       , get_pg_addr
-  dd szCommitPages     , commit_pages	       ;not implemented
+  dd szCommitPages     , commit_pages          ;not implemented
   dd szReleasePages    , release_pages
 
   dd szAllocKernelSpace, alloc_kernel_space    ;stdcall
   dd szFreeKernelSpace , free_kernel_space     ;stdcall
-  dd szKernelAlloc     , kernel_alloc	       ;stdcall
-  dd szKernelFree      , kernel_free	       ;stdcall
-  dd szUserAlloc       , user_alloc	       ;stdcall
-  dd szUserFree        , user_free	       ;stdcall
-  dd szKmalloc	       , malloc
-  dd szKfree	       , free
+  dd szKernelAlloc     , kernel_alloc          ;stdcall
+  dd szKernelFree      , kernel_free           ;stdcall
+  dd szUserAlloc       , user_alloc            ;stdcall
+  dd szUserFree        , user_free             ;stdcall
+  dd szKmalloc         , malloc
+  dd szKfree           , free
   dd szCreateRingBuffer, create_ring_buffer    ;stdcall
 
-  dd szGetPid	       , get_pid
+  dd szGetPid          , get_pid
   dd szCreateObject    , create_kernel_object
   dd szDestroyObject   , destroy_kernel_object
   dd szCreateEvent     , create_event
@@ -132,17 +132,17 @@ kernel_export:
   dd szDestroyEvent    , destroy_event
   dd szClearEvent      , clear_event
 
-  dd szLoadCursor      , load_cursor	       ;stdcall
+  dd szLoadCursor      , load_cursor           ;stdcall
 
   dd szSelectHwCursor  , select_hw_cursor      ;import    stdcall
   dd szSetHwCursor     , set_hw_cursor         ;import    stdcall
-  dd szHwCursorRestore , hw_restore	       ;import
-  dd szHwCursorCreate  , create_cursor	       ;import
+  dd szHwCursorRestore , hw_restore            ;import
+  dd szHwCursorCreate  , create_cursor         ;import
 
   dd szSysMsgBoardStr  , sys_msg_board_str
   dd szSysMsgBoardChar , sys_msg_board
   dd szGetCurrentTask  , get_curr_task
-  dd szLoadFile        , load_file	       ;retval eax, ebx
+  dd szLoadFile        , load_file             ;retval eax, ebx
   dd szSendEvent       , send_event
   dd szSetMouseData    , set_mouse_data        ;stdcall
   dd szSleep	       , delay_ms
