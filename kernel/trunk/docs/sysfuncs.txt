@@ -1719,7 +1719,7 @@ Returned value:
   * function does not return value
 Remarks:
   * Coordinates of the image are coordinates of the upper left corner
-    of the image relative to the window.
+    of the image relative to the screen.
   * Size of the image in bytes is 3*xsize*ysize.
 
 ======================================================================
