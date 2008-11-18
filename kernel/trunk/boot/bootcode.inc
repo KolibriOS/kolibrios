@@ -900,12 +900,8 @@ end if
         mov     word [BPB_SecPerTrk], ax
         mov     ax, word [es:bx+26]
         mov     word [BPB_NumHeads], ax
-        mov     ax, word [es:bx+22]
-        mov     word [BPB_FATSz16], ax
         mov     ax, word [es:bx+17]
         mov     word [BPB_RootEntCnt], ax
-        mov     ax, word [es:bx+11]
-        mov     word [BPB_BytsPerSec], ax
         mov     ax, word [es:bx+14]
         mov     word [BPB_RsvdSecCnt], ax
         mov     ax, word [es:bx+19]
@@ -914,9 +910,16 @@ end if
         mov     byte [BPB_SecPerClus], al
         mov     al, byte [es:bx+16]
         mov     byte [BPB_NumFATs], al
+;<Lrz> 18.11.2008
+        mov     ax, word [es:bx+22]
+        mov     word [BPB_FATSz16], ax
+        mov     cx, word [es:bx+11]
+        mov     word [BPB_BytsPerSec], cx
+
 ; count of clusters in FAT12 ((size_of_FAT*2)/3)
-        mov     ax, word [BPB_FATSz16]
-        mov     cx, word [BPB_BytsPerSec]
+;        mov     ax, word [BPB_FATSz16]
+;        mov     cx, word [BPB_BytsPerSec]
+;end <Lrz> 18.11.2008
         xor     dx, dx
         mul     cx
         shl     ax, 1
