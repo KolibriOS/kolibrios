@@ -3,8 +3,8 @@
 ; target platform:      KolibriOS
 ; compiler:             FASM 1.67.14
 ; version:              0.14
-; last update:          2008-11-15 (Nov 15, 2008)
-; minimal KFar version: 0.41
+; last update:          2008-11-19 (Nov 19, 2008)
+; minimal KFar version: 0.43
 ; minimal kernel:       no limit
 ;
 ; author:               Diamond
@@ -1188,7 +1188,7 @@ query_password:
 ; export table
 align 4
 EXPORTS:
-        dd      aVersion,       2
+        dd      aVersion,       3
         dd      aPluginLoad,    plugin_load
         dd      aOpenFilePlugin,OpenFilePlugin
         dd      aClosePlugin,   ClosePlugin
@@ -1319,6 +1319,7 @@ password_dlg:
         dd      4, 2    ; border size
         dd      aEnterPasswordTitle     ; title
         dd      ?       ; colors (will be set by KFar)
+        dd      0       ; used internally by dialog manager, ignored
         dd      0, 0    ; reserved for DlgProc
         dd      2       ; 2 controls
 ; the string "enter password"
