@@ -5093,6 +5093,20 @@ syscall_getarea:
 ;ecx = [size x]*65536 + [size y] 
 ;edx = [start x]*65536 + [start y] 
      pushad
+	 inc   [mouse_pause]
+; Check of use of the hardware cursor.
+      cmp  [disable_mouse],__sys_disable_mouse
+	  jne  @f
+; Since the test for the coordinates of the mouse should not be used,
+; then use the call [disable_mouse] is not possible!
+      cmp  dword [MOUSE_VISIBLE],dword 0
+      jne  @f
+      pushf
+      cli
+      call draw_mouse_under
+      popf
+      mov  [MOUSE_VISIBLE],dword 1
+@@:
      mov   edi,ebx
      mov   eax,edx
      shr   eax,16
@@ -5105,38 +5119,48 @@ syscall_getarea:
      and   edx,0xffff
      mov   esi,ecx
      ; ecx - size x, edx - size y
-.start_y:
-     push  ecx
-.start_x:
-     push  eax ebx ecx edx  esi edi
-     add   eax,ecx
+	 
+	 mov   ebp,edx
+	 dec   ebp
+     lea   ebp,[ebp*3]
+	 
+	 imul  ebp,esi
+	 
+	 mov   esi,ecx
+	 dec   esi
+	 lea   esi,[esi*3]
+	 
+     add   ebp,esi
+     add   ebp,edi
+
      add   ebx,edx
+	 
+.start_y:
+     push  ecx edx
+.start_x:
+     push  eax ebx ecx
+     add   eax,ecx
+
      call  dword [GETPIXEL] ; eax - x, ebx - y
-     pop   edi esi
      
-     mov   eax,ecx
-     pop   edx  ecx
-     
-     push  ecx  edx
+     mov   [ebp],cx
+     shr   ecx,16
+     mov   [ebp+2],cl
 
-     dec   edx
-     lea   edx,[edx*3]
-     imul  edx,esi
-     dec   ecx
-     lea   ecx,[ecx*3]
-     add   edx,ecx
-     add   edx,edi
-     mov   [edx],ax
-     shr   eax,16
-     mov   [edx+2],al
-
-     pop   edx ecx ebx eax 
-     
+     pop   ecx ebx eax 
+     sub   ebp,3
      dec   ecx
      jnz   .start_x
-     pop   ecx
+	 pop   edx ecx
+	 dec   ebx
      dec   edx
      jnz   .start_y
+     dec	[mouse_pause]
+; Check of use of the hardware cursor.
+      cmp  [disable_mouse],__sys_disable_mouse
+	  jne  @f
+	 call  [draw_pointer]
+@@:
      popad
      ret
 
