@@ -126,14 +126,14 @@ endg
 
 checkVga_N13:
 
-        cmp    [SCR_MODE],dword 0x13
+        cmp    [scr_mode], 0x13
         jne   @f
 
 ;      cnvl:
         pushad
         cmp   [EGA_counter],1
         je   novesal
-        mov    ecx,[MOUSE_X]
+        mov    ecx, dword [MOUSE_X]
         cmp    ecx,[novesachecksum]
         jne    novesal
         popad
@@ -201,7 +201,7 @@ checkVga_N13:
 
 VGA_drawbackground:
 ; draw all
-        cmp    [SCR_MODE],dword 0x12
+        cmp    [scr_mode], 0x12
         jne     .end
         pushad
         mov    esi,[LFBAddress]
@@ -377,7 +377,7 @@ VGA_putpixel:
 VGA__putimage:
 ; ecx = size [x|y]
 ; edx = coordinates [x|y]
-        cmp    [SCR_MODE],dword 0x12
+        cmp    [scr_mode], 0x12
         jne     @f
          pushad
          rol  edx,16
@@ -397,7 +397,7 @@ VGA_draw_bar:
 ; ebx   cy
 ; ecx   xe
 ; edx   ye
-        cmp    [SCR_MODE],dword 0x12
+        cmp    [scr_mode], 0x12
         jne     @f
          pushad
          sub   ecx,eax

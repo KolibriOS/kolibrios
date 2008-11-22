@@ -629,8 +629,8 @@ sys_window_mouse:
     cmp   [new_window_starting],eax
     jb	  swml1
 
-    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
-    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
+    mov   [mouse_background], 0  ; no mouse background
+    mov   [dont_draw_mouse],  0  ; draw mouse
 
     mov   [new_window_starting],eax
 
@@ -926,7 +926,7 @@ windowactivate:
       movzx   eax, word [WIN_STACK+eax*2] ; ax <- position in window stack
 
 	xor   esi, esi	      ; drop others
-      waloop:
+waloop:
 	cmp   esi, dword [TASK_COUNT]
 	jae   wacont
 	inc   esi
@@ -938,17 +938,17 @@ windowactivate:
 	mov   [edi], bx
       @@:
 	jmp   waloop
-      wacont:
+wacont:
 			    ; set to no 1
 	pop   esi	    ;   esi = pointer at 0xC400
 
-      movzx   eax, word [esi]
+    movzx   eax, word [esi]
 	mov   bx, [TASK_COUNT]	; number of processes
 	mov   [WIN_STACK+eax*2], bx	; this is the last (and the upper)
 
 	; update on screen -window stack
 	xor   esi, esi
-      waloop2:
+waloop2:
 	mov   edi, [TASK_COUNT]
 	cmp   esi, edi
 	jae   wacont2
@@ -956,11 +956,11 @@ windowactivate:
 	movzx ebx, word [esi*2 + WIN_STACK]
 	mov   [ebx*2 + WIN_POS], si
 	jmp   waloop2
-      wacont2:
-	mov   [KEY_COUNT], byte 0	      ; empty keyboard buffer
-	mov   [BTN_COUNT], byte 0	      ; empty button buffer
-	mov   [MOUSE_SCROLL_H], word 0  ; zero mouse z-index
-	mov   [MOUSE_SCROLL_V], word 0  ; zero mouse z-index
+wacont2:
+    mov   [KEY_COUNT],  0         ; empty keyboard buffer
+    mov   [BTN_COUNT],  0             ; empty button buffer
+    mov   [mouse_scroll_h],  0        ; zero mouse z-index
+    mov   [mouse_scroll_v],  0        ; zero mouse z-index
 	popad
 	ret
 
@@ -1056,7 +1056,6 @@ waredraw:     ; if redraw necessary at activate
 	jz    .do_not_draw
 
 	popad
-	mov   [MOUSE_DOWN], byte 1     ; do draw mouse
 	call  windowactivate
 
 	; update screen info
@@ -1081,7 +1080,6 @@ waredraw:     ; if redraw necessary at activate
 	popad
 
     mov   [edi + WDATA.fl_redraw], 1  ; redraw flag for app
-    mov   [MOUSE_DOWN],byte 0		  ; mouse down checks
 
 	ret
 
@@ -1090,9 +1088,8 @@ waredraw:     ; if redraw necessary at activate
 	popad
 
 	call  windowactivate
-	mov   [MOUSE_DOWN],byte 0  ; mouse down checks
-	mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
-	mov   [DONT_DRAW_MOUSE],byte 0	; draw mouse
+    mov   [mouse_background], 0  ; no mouse background
+    mov   [dont_draw_mouse],  0  ; draw mouse
 	ret
 
 
@@ -1159,7 +1156,7 @@ restore_minimized_window:
 	add   edx, [edi+WDATA.box.height]
 	call  calculatescreen
 .done:
-	mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
+    mov   [mouse_background], 0 ; no mouse under
 .skip_redrawings:
 	popfd
 	ret
@@ -1189,7 +1186,7 @@ checkwindows:
   .continue:
   .no_minimizing:
 
-	cmp   [BTN_DOWN],byte 0    ; mouse buttons pressed ?
+    cmp  byte [btn_down],   0    ; mouse buttons pressed ?
 	jne  .mouse_buttons_pressed
 ;..................................... start 1/4 : modified by vhanla .................
 	mov [bPressedMouseXY_W],0
@@ -1206,7 +1203,7 @@ checkwindows:
 	inc   esi
 
 ;..................................... start 3/4 : modified by vhanla .................
-	push ax
+	push eax
 	cmp [bPressedMouseXY_W],0
 	jnz @f
 	mov [bPressedMouseXY_W],1
@@ -1215,7 +1212,7 @@ checkwindows:
 	mov ax,[MOUSE_Y]
 	mov [my],ax
 	@@:
-	pop ax
+	pop eax
 ;..................................... end 3/4 : modified by vhanla ...................
 
       cwloop:
@@ -1236,7 +1233,7 @@ checkwindows:
 	jnz	cwloop
 
 ;..................................... start 4/4 : modified by vhanla .................
-       movzx  eax, word [mx]; movzx eax,word[MOUSE_X]
+       movzx  eax, word [mx]; movzx eax,word[mouse_x]
        movzx  ebx, word [my]; movzx ebx,word[MOUSE_Y]
 ;..................................... endt 4/4 : modified by vhanla ..................
 	cmp   ecx, eax
@@ -1321,7 +1318,7 @@ checkwindows:
 	mov   [latest_window_touch], ecx
 	mov   [latest_window_touch_delta], edx
 
-	mov   cl, [BTN_DOWN]	 ; save for shade check
+    mov   cl, byte  [btn_down]     ; save for shade check
 	mov   [do_resize], cl
      no_emulation_righ_button:
     mov   ecx, [edi + WDATA.box.left]
@@ -1341,7 +1338,7 @@ checkwindows:
 	sub   eax, ecx
 	sub   ebx, edx
 
-	mov   esi, [MOUSE_X]
+    mov   esi, dword [MOUSE_X]
 	mov   [WIN_TEMP_XY], esi
 
 	pushad		 ; wait for putimages to finish
@@ -1369,19 +1366,18 @@ checkwindows:
 	call  drawwindowframes
 
 	mov   [reposition],0
-	mov   [MOUSE_DOWN],byte 1   ; no reaction to mouse up/down
 
 	; move window
 
       newchm:
 
-	mov   [DONT_DRAW_MOUSE],byte 1
+    mov   [dont_draw_mouse],  1
 
 	call  checkidle
 
 	call  checkVga_N13
 
-	mov   [MOUSE_BACKGROUND],byte 0
+    mov   [mouse_background], 0
 
 	call  [draw_pointer]
 
@@ -1390,7 +1386,7 @@ checkwindows:
 	popad
 
 	mov   esi,[WIN_TEMP_XY]
-	cmp   esi,[MOUSE_X]
+    cmp   esi, dword [MOUSE_X]
 	je    cwb
 
 	mov   cx,[MOUSE_X]
@@ -1403,8 +1399,8 @@ checkwindows:
 
 	call  drawwindowframes
 
-        mov   ax,[Screen_Max_X]
-        mov   bx,[Screen_Max_Y]
+        mov   ax, word [Screen_Max_X]
+        mov   bx, word [Screen_Max_Y]
 
 	cmp   [do_resize_from_corner],1
 	je    no_new_position
@@ -1477,14 +1473,14 @@ checkwindows:
 	pop   ax
 	call  drawwindowframes
 
-	mov   esi,[MOUSE_X]
+    mov   esi, dword [MOUSE_X]
 	mov   [WIN_TEMP_XY],esi
 
       cwb:
-	cmp   [BTN_DOWN],byte 0
+    cmp  byte [btn_down], 0
 	jne   newchm
 				     ; new position done
-	mov	[DONT_DRAW_MOUSE],byte 1
+    mov [dont_draw_mouse], 1
 	mov	cl,0
 	test	[edi+WDATA.fl_wstate],WSTATE_MAXIMIZED
 	jnz	@f
@@ -1637,7 +1633,7 @@ checkwindows:
 	cmp   [reposition],0
 	je    retwm
 
-	mov   [DONT_DRAW_MOUSE],byte 1 ; no mouse
+    mov   [dont_draw_mouse], 1 ; no mouse
 
 
 	push  eax ebx ecx edx
@@ -1666,7 +1662,7 @@ checkwindows:
 
 	mov   ecx,100	      ; wait to avoid mouse residuals
       waitre2:
-	mov   [DONT_DRAW_MOUSE],byte 1
+    mov   [dont_draw_mouse], 1
 	call  checkidle
 	cmp	[edi+WDATA.fl_redraw],0
 	jz    retwm
@@ -1674,9 +1670,8 @@ checkwindows:
 
       retwm:
 
-	mov   [DONT_DRAW_MOUSE],byte 0 ; mouse pointer
-	mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
-	mov   [MOUSE_DOWN],byte 0 ; react to mouse up/down
+    mov   [dont_draw_mouse],  0 ; mouse pointer
+    mov   [mouse_background], 0 ; no mouse under
 
 	mov    esi,window_moved
 	call   sys_msg_board_str

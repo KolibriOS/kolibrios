@@ -507,13 +507,13 @@ sys_sendwindowmsg:
 .sendkey:
         pushf
         cli
-        movzx   eax, byte [KEY_COUNT]
-        cmp     al, 120
-        jae     .overflow
-        inc     eax
-        mov     [KEY_COUNT], al
-        mov     [KEY_COUNT+eax], cl
-        jmp     .ok
+        mov  eax, [KEY_COUNT]
+        cmp  eax, 120
+        jae  .overflow
+        inc  eax
+        mov  [KEY_COUNT], eax
+        mov  [KEY_BUFF+eax-1], cl
+        jmp  .ok
 .overflow:
         popf
         mov     dword [esp+36], 1
@@ -521,9 +521,9 @@ sys_sendwindowmsg:
 .sendbtn:
         pushf
         cli
-        cmp     byte [BTN_COUNT], 0
+        cmp     [BTN_COUNT], 0
         jnz     .overflow
-        mov     byte [BTN_COUNT], 1
+        mov     [BTN_COUNT], 1
         mov     [BTN_BUFF], ecx
 .ok:
         popf
@@ -554,7 +554,7 @@ get_event_for_app:
      mov   eax, [TASK_COUNT]
      cmp   eax,edx
      jne   no_eventoccur2x
-     cmp   [KEY_COUNT],byte 0
+     cmp   [KEY_COUNT], 0
      je    no_eventoccur2x
    eventoccur2:
      popad
@@ -573,7 +573,7 @@ get_event_for_app:
      ;mov   edi,[TASK_BASE]              ; BUTTON IN BUFFER
      test  [edi+TASKDATA.event_mask],dword 4
      jz    no_eventoccur3
-     cmp   [BTN_COUNT],byte 0
+     cmp   [BTN_COUNT], 0
      je    no_eventoccur3
      mov   ecx, [CURRENT_TASK]
      movzx edx, word [WIN_STACK+ecx*2]
@@ -589,7 +589,7 @@ get_event_for_app:
 
     no_event_1:
      mov   [window_minimize],1
-     mov   [BTN_COUNT],byte 0
+     mov   [BTN_COUNT], 0
      xor   eax, eax
      ret
 
@@ -613,7 +613,7 @@ no_mouse_event:
      ;mov   edi,[TASK_BASE]              ; DESKTOP BACKGROUND REDRAW
      test  [edi+TASKDATA.event_mask], 16
      jz    no_eventoccur5
-;     cmp   [REDRAW_BACKGROUND],byte 2
+;     cmp   [redraw_background], 2
 ;     jnz   no_eventoccur5
      test  [eax+APPDATA.event_mask], 16
      jz    no_eventoccur5

@@ -8,10 +8,13 @@
 $Revision$
 
 
-dpl0    equ  10010000b     ; data read       dpl0
+dpl0    equ  10010000b      ; data read       dpl0
 drw0    equ  10010010b      ; data read/write dpl0
+drw1    equ  10110010b      ; data read/write dpl1
 drw3    equ  11110010b      ; data read/write dpl3
+
 cpl0    equ  10011010b      ; code read dpl0
+cpl1    equ  10111010b      ; code read dpl1
 cpl3    equ  11111010b      ; code read dpl3
 
 D32     equ  01000000b      ; 32bit segment
@@ -20,11 +23,11 @@ G32     equ  10000000b      ; page gran
 
 ;;;;;;;;;;;;cpu_caps flags;;;;;;;;;;;;;;;;
 
-CPU_386        equ 3
-CPU_486        equ 4
-CPU_PENTIUM    equ 5
-CPU_P6         equ 6
-CPU_PENTIUM4   equ 0x0F
+CPU_386        equ     3
+CPU_486        equ     4
+CPU_PENTIUM    equ     5
+CPU_P6         equ     6
+CPU_PENTIUM4   equ  0x0F
 
 CAPS_FPU       equ    00 ;on-chip x87 floating point unit
 CAPS_VME       equ    01 ;virtual-mode enhancements
@@ -188,16 +191,17 @@ HEAP_BASE           equ 0x80000000
 
 HEAP_MIN_SIZE       equ 0x01000000
 
-LFB_BASE            equ 0xDF000000
-
-page_tabs           equ 0xDF800000
-app_page_tabs       equ 0xDF800000
-
-OS_TEMP             equ 0xDFC00000
+page_tabs           equ 0xDDC00000
+app_page_tabs       equ 0xDDC00000
 
 heap_tabs           equ (page_tabs+ (HEAP_BASE shr 10))
-kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))   ;0xFDE00000
-master_tab          equ (page_tabs+ (page_tabs shr 10)) ;0xFDFF70000
+kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))
+master_tab          equ (page_tabs+ (page_tabs shr 10))
+
+LFB_BASE            equ 0xDE000000
+SHADOWFB            equ 0   ;0xDE800000
+
+TEXT_BASE           equ 0xDFC00000
 
 _16BIT_BASE         equ 0x00010000
 LOAD_BASE           equ 0x00100000
@@ -221,80 +225,9 @@ WIN_STACK           equ (OS_BASE+0x000C000)
 WIN_POS             equ (OS_BASE+0x000C400)
 FDD_BUFF            equ (OS_BASE+0x000D000)
 
-;unused ? only one reference
-ENABLE_TASKSWITCH   equ (OS_BASE+0x000E000)
-
-PUTPIXEL            equ (OS_BASE+0x000E020)
-GETPIXEL            equ (OS_BASE+0x000E024)
-
-;unused ? only one reference
-BANK_SWITCH         equ (OS_BASE+0x000E030)
-
-;unused ? store mousepointer
-MOUSE_PICTURE       equ (OS_BASE+0x000F200)
-
-MOUSE_VISIBLE       equ (OS_BASE+0x000F204)
-WIN_TEMP_XY         equ (OS_BASE+0x000F300)
-KEY_COUNT           equ (OS_BASE+0x000F400)
-KEY_BUFF            equ (OS_BASE+0x000F401)
-
-BTN_COUNT           equ (OS_BASE+0x000F500)
-BTN_BUFF            equ (OS_BASE+0x000F501)
-
-CPU_FREQ            equ (OS_BASE+0x000F600)
-
-;unused ? no active references
-MOUSE_PORT          equ (OS_BASE+0x000F604)
-
-;unused
-PS2_CHUNK           equ (OS_BASE+0x000FB00)
-
-MOUSE_SCROLL_H      equ (OS_BASE+0x000FB08)
-MOUSE_X             equ (OS_BASE+0x000FB0A)
-MOUSE_Y             equ (OS_BASE+0x000FB0C)
-MOUSE_SCROLL_V      equ (OS_BASE+0x000FB0E)
-
-MOUSE_COLOR_MEM     equ (OS_BASE+0x000FB10)
-COLOR_TEMP          equ (OS_BASE+0x000FB30)
-BTN_DOWN            equ (OS_BASE+0x000FB40)
-MOUSE_DOWN          equ (OS_BASE+0x000FB44)
-X_UNDER             equ (OS_BASE+0x000FB4A)
-Y_UNDER             equ (OS_BASE+0x000FB4C)
-ScreenBPP           equ (OS_BASE+0x000FBF1)
-
-;unused ? only one reference
-MOUSE_BUFF_COUNT    equ (OS_BASE+0x000FCFF)
-
-LFBAddress          equ (OS_BASE+0x000FE80)
-
-Screen_Max_X        equ (OS_BASE+0x000FE00)
-Screen_Max_Y        equ (OS_BASE+0x000FE04)
-BytesPerScanLine    equ (OS_BASE+0x000FE08)
-SCR_MODE            equ (OS_BASE+0x000FE0C)
-
-BTN_ADDR            equ (OS_BASE+0x000FE88)
-SYS_SHUTDOWN        equ (OS_BASE+0x000FF00)
-TASK_ACTIVATE       equ (OS_BASE+0x000FF01)
-
-REDRAW_BACKGROUND   equ (OS_BASE+0x000FFF0)
-BANK_RW             equ (OS_BASE+0x000FFF2)
-MOUSE_BACKGROUND    equ (OS_BASE+0x000FFF4)
-DONT_DRAW_MOUSE     equ (OS_BASE+0x000FFF5)
-DONT_SWITCH         equ (OS_BASE+0x000FFFF)
-
-;TMP_STACK_TOP       equ 0x006CC00
-
-FONT_II             equ (OS_BASE+0x006DC00)
-FONT_I              equ (OS_BASE+0x006E600)
-
-;sys_pgdir           equ (OS_BASE+0x006F000)
-
 DRIVE_DATA          equ (OS_BASE+0x0070000)
 
 SLOT_BASE           equ (OS_BASE+0x0080000)
-
-;unused
-TMP_BUFF            equ (OS_BASE+0x0090000)
 
 VGABasePtr          equ (OS_BASE+0x00A0000)
 
@@ -377,7 +310,6 @@ BOOT_SCANLINE       equ 0x9001    ;word   scanline length
 BOOT_VESA_MODE      equ 0x9008    ;word   vesa video mode
 ;;BOOT_X_RES          equ 0x900A    ;word   X res
 ;;BOOT_Y_RES          equ 0x900C    ;word   Y res
-;;BOOT_MOUSE_PORT     equ 0x9010    ;byte   mouse port  - not used
 BOOT_BANK_SW        equ 0x9014    ;dword  Vesa 1.2 pm bank switch
 BOOT_LFB            equ 0x9018    ;dword  Vesa 2.0 LFB address
 BOOT_MTRR           equ 0x901C    ;byte   0 or 1 : enable MTRR graphics acceleration
@@ -657,4 +589,38 @@ end virtual
 virtual at 0
   CSYM COFF_SYM
 end virtual
+
+struc THR
+{
+  .edi            rd 1     ;   0x00
+  .esi            rd 1     ;   0x04
+  .ebp            rd 1     ;   0x08
+                  rd 1     ;   0x0C    ;esp
+  .ebx            rd 1     ;   0x10
+  .edx            rd 1     ;   0x14
+  .ecx            rd 1     ;   0x18
+  .eax            rd 1     ;   0x1C
+  .retaddr        rd 1     ;   0x20    ;или код ошибки
+  .eip            rd 1     ;   0x24
+  .cs             rd 1     ;   0x28
+  .eflags         rd 1     ;   0x2C
+  .esp            rd 1     ;   0x30
+  .ss             rd 1     ;   0x34
+
+  .pl0_stack:
+
+  .tid            rd 1     ;       ; number of this process (for fast access)
+  .slot           rd 1     ;       ; number of this process (for fast access)
+  .pdir           rd 1     ;       ;
+  .thr_flags      rd 1     ;       ; process is runnable only if zero
+  .ticks_left     rd 1     ;       ; number of scheduling ticks left
+  .quantum_size   rd 1     ;       ; quantum size in ticks
+  .user_time      rd 1     ;       ; user time in ticks
+  .sys_time       rd 1     ;       ; sys time in ticks
+}
+
+virtual at 0
+  THR  THR
+end virtual
+
 

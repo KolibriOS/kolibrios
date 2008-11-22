@@ -571,7 +571,7 @@ proc r200_SetCursor stdcall, hcursor:dword, x:dword, y:dword
 
            shl edx, 8
            add edx, [esi+CURSOR.base]
-           sub edx, LFBAddress
+           sub edx, LFB_BASE
            wrr CUR_OFFSET, edx
            popfd
            ret
@@ -602,7 +602,7 @@ proc video_alloc
            lea eax,[eax+ebx*8]
 
            shl eax,14
-           add eax, LFBAddress+CURSOR_IMAGE_OFFSET
+           add eax, LFB_BASE+CURSOR_IMAGE_OFFSET
            ret
 endp
 
@@ -610,7 +610,7 @@ align 4
 video_free:
            pushfd
            cli
-           sub eax, LFBAddress+CURSOR_IMAGE_OFFSET
+           sub eax, LFB_BASE+CURSOR_IMAGE_OFFSET
            shr eax, 14
            mov ebx, cursor_map
            bts [ebx], eax

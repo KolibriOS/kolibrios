@@ -366,7 +366,6 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
     return pe_app_param(path, raw, ex_pg_dir, ex_stack);
 };
 
-#define  master_tab    (page_tabs+ (page_tabs>>10))
 
 typedef struct
 {
@@ -384,11 +383,6 @@ typedef struct
     u32_t pe_sp;
     u32_t pe_ss;
 }thr_stack_t;
-
-#define EFL_IF      0x0200
-#define EFL_IOPL1   0x1000
-#define EFL_IOPL2   0x2000
-#define EFL_IOPL3   0x3000
 
 void sys_app_entry(addr_t raw, thr_stack_t *thr_stack, exec_stack_t *ex_stack)
 {

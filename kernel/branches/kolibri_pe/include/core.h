@@ -4,8 +4,20 @@
 #define LOAD_BASE   0x00100000
 
 
-#define page_tabs 0xDF800000
+#define page_tabs   0xDDC00000
 
+#define master_tab      (page_tabs+(page_tabs>>10))
+
+#define sel_tss         0x08
+
+#define sel_os_stack    0x10
+#define sel_os_code     0x18
+
+#define sel_app_code    0x23
+#define sel_app_data    0x2B
+
+#define sel_srv_code    0x31
+#define sel_srv_stack   0x39
 
 
 void printf (const char *format, ...);
@@ -53,8 +65,7 @@ static inline eflags_t safe_cli(void)
     "pushfl\n\t"
     "popl %0\n\t"
 		"cli\n"
-    : "=r" (tmp)
-	);
+    : "=r" (tmp));
   return tmp;
 }
 
@@ -70,41 +81,35 @@ static inline void safe_sti(eflags_t efl)
 static inline count_t fnzb(u32_t arg)
 {
   count_t n;
-  asm volatile ("xorl %0, %0 \n\t"
+    asm volatile (
+    "xorl %0, %0 \n\t"
                 "bsr %1, %0"
-                :"=&r" (n)
-                :"r"(arg)
-                );
+    :"=&r"(n) :"r"(arg) );
 	return n;
 }
 
 static inline count_t _bsf(u32_t arg)
 {
   count_t n;
-  asm volatile ("xorl %0, %0 \n\t"
+    asm volatile (
+    "xorl %0, %0 \n\t"
                 "bsf %1, %0"
-                :"=&r" (n)
-                :"r"(arg)
-                );
+    :"=&r" (n) :"r"(arg));
 	return n;
 }
 
 static inline void _bts(u32_t *data, count_t val)
 {
-  asm volatile ("bts %0, %1 \n\t"
-                :
-                :"g"(data), "r"(val)
-                :"cc"
-                );
+    asm volatile (
+    "bts %0, %1 \n\t"
+    ::"g"(data), "r"(val):"cc");
 }
 
 extern inline void _btr(u32_t *data, count_t val)
 {
-  asm volatile ("btr %0, %1 \n\t"
-                :
-                :"g"(data), "r"(val)
-                :"cc"
-                );
+    asm volatile (
+    "btr %0, %1 \n\t"
+    ::"g"(data), "r"(val):"cc");
 }
 
 extern inline void* load_file(const char *path, size_t *size)
@@ -124,4 +129,63 @@ extern inline void* load_file(const char *path, size_t *size)
 };
 
 
+/*                            reemain part
+  saved_box       BOX
+  ipc_start       dd ?
+  ipc_size    dd ?
+  event_mask      dd ?
+  debugger_slot   dd ?
+          dd ?
+  keyboard_mode   db ?
+          db 3   dup(?)
+  dir_table       dd ?
+  dbg_event_mem   dd ?
+  dbg_regs:
+  dbg_regs.dr0    dd ?
+  dbg_regs.dr1    dd ?
+  dbg_regs.dr2    dd ?
+  dbg_regs.dr3    dd ?
+  dbg_regs.dr7    dd ?
+  wnd_caption     dd ?
+  wnd_clientbox   BOX
+*/
+
 //extern __fastcall void* load_file(const char *path, size_t *size);
+
+
+typedef struct
+{
+    u32_t    edi;
+    u32_t    esi;
+    u32_t    ebp;
+    u32_t    tmp;                    // esp
+    u32_t    ebx;
+    u32_t    edx;
+    u32_t    ecx;
+    u32_t    eax;
+    addr_t   retaddr;
+    addr_t   eip;
+    u32_t    cs;
+    u32_t    eflags;
+    addr_t   esp;
+    u32_t    ss;                    // 14*4
+
+    u32_t    tid;                   // thread id
+    u32_t    slot;                  // thread slot
+
+    addr_t   pdir;                  //
+
+    u32_t    thr_flags;             // process is runnable only if zero
+
+    int      ticks_left;            // number of scheduling ticks left */
+    int      quantum_size;          // quantum size in ticks */
+
+    u32_t    user_time;             // user time in ticks
+    u32_t    sys_time;              // sys time in ticks
+
+}thr_t;
+
+#define EFL_IF      0x0200
+#define EFL_IOPL1   0x1000
+#define EFL_IOPL2   0x2000
+#define EFL_IOPL3   0x3000

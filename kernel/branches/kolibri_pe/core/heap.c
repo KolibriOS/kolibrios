@@ -6,8 +6,6 @@
 #include <mm.h>
 #include <slab.h>
 
-#define page_tabs 0xDF800000
-
 
 #define  MD_FREE    1
 #define  MD_USED    2

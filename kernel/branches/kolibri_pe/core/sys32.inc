@@ -14,7 +14,7 @@
 $Revision$
 
 align 4
-_init_idt:
+init_idt:
            push edi
            push esi
            mov edi, idts
@@ -25,27 +25,34 @@ _init_idt:
 @@:
            lodsd
            mov [edi],   ax                ; lower part of offset
-           mov [edi+2], word os_code      ; segment selector
+           mov [edi+2], word sel_os_code  ; segment selector
            mov ax, word 10001110b shl 8   ; type: interrupt gate
            mov [edi+4], eax
            add edi, 8
            loop @b
 
-           mov eax, i40
-           mov ecx, i40
+           mov eax, _i40
+           mov ecx, _i40
            and eax, 0x0000FFFF
            and ecx, 0xFFFF0000
-           or eax, os_code shl 16
+           or eax, sel_app_code shl 16
            or ecx, (11101111b shl 8)
            mov [edi], eax
            mov [edi+4], ecx
+
+           mov eax, i41
+           mov ecx, i41
+           and eax, 0x0000FFFF
+           and ecx, 0xFFFF0000
+           or eax, sel_os_code shl 16
+           or ecx, (11101111b shl 8)
+           mov [edi+8], eax
+           mov [edi+12], ecx
 
            lidt [idtreg]
            pop esi
            pop edi
            ret
-
-
 
 iglobal
 
@@ -75,10 +82,10 @@ end if
 
     times 16 dd unknown_interrupt
 
-    dd	 i40
+    dd   i41
 
 idtreg:
-     dw   8*0x41-1
+     dw   8*0x42-1
      dd   idts
 
 endg
@@ -118,10 +125,11 @@ macro exc_w_code [num]
 exc_wo_code 0, 2, 3, 4, 5, 6, 9, 15, 18
 exc_w_code 8, 10, 11, 12, 13, 14, 17
 
+align 4
 exc_c:
-	mov   ax, app_data  ;исключение
-	mov   ds, ax	    ;загрузим правильные значени
-	mov   es, ax	    ;в регистры
+    mov   ax, sel_app_data  ;исключение
+    mov   ds, ax            ;загрузим правильные значения'
+    mov   es, ax            ;в регистры
 
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
 	test	byte [esp+20h+8+2], 2
@@ -215,7 +223,7 @@ defined_error:
     mov eax, [esp + 8 + 0x20]
     mov edi, msg_sel_app
     mov ebx, [esp + 16 + 0x20]
-    cmp eax, app_code
+    cmp eax, sel_app_code
     je	@f
     mov edi, msg_sel_ker
     mov ebx, [esp - 16 + 0x20]
@@ -239,7 +247,7 @@ irqh 2,3,4,5,7,8,9,10,11
 
 p_irq6:
      save_ring3_context
-     mov   ax, app_data  ;os_data
+     mov   ax, sel_app_data
      mov   ds, ax
      mov   es, ax
      call  fdc_irq
@@ -250,7 +258,7 @@ p_irq6:
 
 p_irq14:
 	save_ring3_context
-	mov	ax, app_data  ;os_data
+    mov ax, sel_app_data
 	mov	ds, ax
 	mov	es, ax
 	mov	byte [BOOT_VAR + 0x48E], 0xFF
@@ -260,7 +268,7 @@ p_irq14:
 	iret
 p_irq15:
 	save_ring3_context
-	mov	ax, app_data  ;os_data
+    mov ax, sel_app_data
 	mov	ds, ax
 	mov	es, ax
 	mov	byte [BOOT_VAR + 0x48E], 0xFF
@@ -284,7 +292,7 @@ ready_for_next_irq_1:
 
 irqD:
      save_ring3_context
-     mov   ax, app_data  ;os_data
+     mov   ax, sel_app_data
      mov   ds, ax
      mov   es, ax
 
@@ -518,8 +526,8 @@ term9:
 	   frstor [eax]
 @@:
 
-    mov   [KEY_COUNT],byte 0	       ; empty keyboard buffer
-    mov   [BTN_COUNT],byte 0	       ; empty button buffer
+    mov   [KEY_COUNT], 0           ; empty keyboard buffer
+    mov   [BTN_COUNT], 0           ; empty button buffer
 
 
 ; remove defined hotkeys
@@ -558,7 +566,7 @@ term9:
 
     mov   ecx,esi		  ; remove buttons
   bnewba2:
-    mov   edi,[BTN_ADDR]
+    mov   edi,[btn_addr]
     mov   eax,edi
     cld
     movzx ebx,word [edi]
@@ -804,8 +812,8 @@ term9:
     xor   esi, esi
     call  redrawscreen
 
-    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
-    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
+    mov   [mouse_background], 0  ; no mouse background
+    mov   [dont_draw_mouse], 0  ; draw mouse
 
     mov   [application_table_status],0
     ;mov   esi,process_terminated

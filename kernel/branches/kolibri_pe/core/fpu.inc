@@ -145,7 +145,7 @@ align 4
 e7:                        ;#NM exception handler
         save_ring3_context
         clts
-        mov ax, app_data  ;
+        mov ax, sel_app_data
         mov ds, ax
         mov es, ax
 

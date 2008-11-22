@@ -16,7 +16,7 @@ $Revision$
 align 32
 irq0:
         pushad
-        mov   ax, app_data  ;
+        mov   ax, sel_app_data
         mov   ds, ax
         mov   es, ax
 
@@ -31,14 +31,14 @@ irq0:
         mov   [next_usage_update],eax
         call  updatecputimes
 .nocounter:
-        cmp   [DONT_SWITCH], byte 1
+        cmp   [dont_switch], 1
         jne   .change_task
 
         mov   al,0x20   ; send End Of Interrupt signal
         mov   dx,0x20
         out   dx,al
 
-        mov   [DONT_SWITCH], byte 0
+        mov   [dont_switch], 0
 
         popad
         iretd
@@ -95,7 +95,7 @@ end if
         test  eax, eax    ; the same task -> skip switch
         jnz    .return
 @@:
-        mov   [DONT_SWITCH],byte 1
+        mov   [dont_switch], 1
         call  do_change_task
 
 .return:
@@ -225,7 +225,7 @@ do_change_task:
 @@:
         mov     eax, [ebx+APPDATA.saved_esp0]
         mov     [tss._esp0], eax
-        mov ax, graph_data
+        mov ax, sel_graph_data
         mov gs, ax
 
         mov eax, [CURRENT_TASK]

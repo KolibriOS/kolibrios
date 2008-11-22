@@ -81,8 +81,6 @@ msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR	       db  13,10,0
 
-intel_str      db "GenuineIntel",0
-AMD_str        db "AuthenticAMD",0
 
 ;szSound        db 'SOUND',0
 ;szInfinity     db 'INFINITY',0
@@ -108,9 +106,6 @@ vmode	       db  '/sys/drivers/VMODE.MDR',0
 vrr_m	       db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
-align 4
-
-_pg_balloc     dd LAST_PAGE
 
                      ;supported videomodes
 mode_1280_1024_32:
@@ -162,7 +157,7 @@ syslang    dd 1
 boot_y	   dd 10
 
 pci_bios_entry	dd 0
-		dw pci_code_sel
+           dw sel_pci_code
 
 if __DEBUG__ eq 1
   include_debug_strings
@@ -173,42 +168,61 @@ IncludeIGlobals
 align 16
 _gdts:
 
-        dw     0x67; gdte-$-1
-        dd     _gdts
+    dw     (gdte - _gdts -1)
+    dd     _gdts
 	dw     0
+
+tss_l:
+	dw     TSS_SIZE-1
+	dw     tss and 0xFFFF
+	db     (tss shr 16) and 0xFF
+	db     10001001b
+	dw     (tss shr 16) and 0xFF00
 
 ; Attention! Do not change the order of the first four selectors. They are used in Fast System Call
 ; must be : os_code, os_data, app_code, app_data, ....
 
-int_code_l:
-os_code_l:
+os_code_l:                            ;0x10
 	dw     0xffff
 	dw     0x0000
 	db     0x00
 	dw     11011111b *256 +10011010b
 	db     0x00
 
-int_data_l:
-os_data_l:
+os_stacK_l:                           ;0x18
 	dw     0xffff
 	dw     0x0000
 	db     0x00
 	dw     11011111b *256 +10010010b
 	db     0x00
 
-app_code_l:
-	dw 0xFFFF
-	dw 0
-	db 0
-	db cpl3
-        dw G32+D32+0xF;
+app_code_l:                           ;0x20
+    dw     0xFFFF
+    dw     0
+    db     0
+    db     cpl3
+    dw     G32+D32+0xF;
 
-app_data_l:
-	dw 0xFFFF
-	dw 0
-	db 0
-	db drw3
-        dw G32+D32+0xF;
+app_data_l:                           ;0x28
+    dw     0xFFFF
+    dw     0
+    db     0
+    db     drw3
+    dw     G32+D32+0xF;
+
+srv_code_l:                           ;0x30
+    dw     0xFFFF
+    dw     0
+    db     0
+    db     cpl1
+    dw     G32+D32+0xF;
+
+srv_stack_l:                          ;0x38
+    dw     0xFFFF
+    dw     0
+    db     0
+    db     drw1
+    dw     G32+D32+0xF;
 
 ; ------------- PCI BIOS ------------------
 
@@ -253,19 +267,13 @@ graph_data_l:
 	db     0x00
 	dw     11010000b *256 +11110010b
 	db     0x00
-tss0_l:
-	dw     TSS_SIZE-1
-	dw     tss and 0xFFFF
-	db     (tss shr 16) and 0xFF
-	db     10001001b
-	dw     (tss shr 16) and 0xFF00
 
-code_16:
-        dw 0xFFFF
-        dw 0
-        db 1
-        db cpl0
-        dw 0
+code_16_l:
+    dw 0xFFFF
+    dw 0
+    db 1
+    db cpl0
+    dw 0
 
 endofcode:
 gdte:
@@ -274,17 +282,14 @@ section '.bss' data writeable align 4096
 
 align 4096
 
-_sys_pdbr   rd 1024
-
-            rb 8192-512
-
-__os_stack  rb 512
-
-cur_saved_data	  rb 4096
-fpu_data:	  rb 512
+_sys_pdbr       rd 1024
 
 
-idts              rq 0x41
+cur_saved_data  rb 4096
+
+fpu_data:       rb 512
+
+idts              rq 0x42
 
 ; device irq owners
 irq_owner	  rd 16 ; process id
@@ -310,11 +315,14 @@ irq15read	  rd 16
 
 irq_tab 	  rd 16
 
+FONT_I        rb 2304    ;16*144
+FONT_II       rb 2560    ;16*160
+
 _z_core           rd 52
 
 mem_block_map	  rb 512
 
-event_map	  rb 64
+event_map         rb 64
 mem_block_list	  rd 64
 large_block_list  rd 31
 mem_block_mask	  rd 2
@@ -330,18 +338,11 @@ _rd_fat_end       rd 1 ;RAMDISK + 512 + 4278
 _rd_root          rd 1 ;RAMDISK + 512*18 + 512
 _rd_root_end      rd 1 ;RAMDISK + 512*33
 
-mem_used.fd	  rd 1
-mem_used.bk	  rd 1
-
-mem_block_arr	  rd 1
-mem_block_start   rd 1
-mem_block_end	  rd 1
-
-heap_mutex	  rd 1
-heap_size	  rd 1
-heap_free	  rd 1
-heap_blocks	  rd 1
-free_blocks	  rd 1
+heap_mutex        rd 1
+heap_size         rd 1
+heap_free         rd 1
+heap_blocks       rd 1
+free_blocks       rd 1
 
 mst MEM_STATE
 
@@ -393,51 +394,98 @@ tmp_task_ptab	  rd 1
 
 default_io_map	  rd 1
 
-LFBSize           rd 1       ;8Mb hardcoded
 
-stall_mcs	  rd 1
+stall_mcs         rd 1
 
 _current_slot:
 current_slot	  rd 1
 
 _display_data     rd 1
 
+_current_thread   rd 1
+_k_reenter        rd 1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+scr_mode          rd 1
+
+LFBAddress        rd 1
+LFBSize           rd 1       ;8Mb hardcoded
+ScreenBPP         rd 1
+BytesPerScanLine  rd 1
+
+put_pixel         rd 1
+get_pixel         rd 1
+
+Screen_Max_X      rd 1
+Screen_Max_Y      rd 1
+
+btn_addr          rd 1
+
+redraw_background rd 1
+mouse_background  rd 1
+dont_draw_mouse   rd 1
+
+MOUSE_VISIBLE     rd 1
+WIN_TEMP_XY       rd 1
+MOUSE_X           rw 1
+MOUSE_Y           rw 1
+mouse_scroll_v    rd 1
+mouse_scroll_h    rd 1
+
+BTN_COUNT         rd 1
+BTN_BUFF          rd 1
+
+KEY_COUNT         rd 1
+KEY_BUFF          rb 128
+
+
+mouse_color_mem   rd 1
+color_temp        rd 1
+btn_down          rd 1
+x_under           rd 1
+y_under           rd 1
+
+dont_switch       rd 1
+
+sys_shutdown      rd 1
+
+bank_rw           rd 1
+
+CPU_FREQ          rd 1
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; status
 hd1_status		    rd 1  ; 0 - free : other - pid
 application_table_status    rd 1  ; 0 - free : other - pid
 
 ; device addresses
-mididp		  rd 1
-midisp		  rd 1
+mididp            rd 1
+midisp            rd 1
 
-cdbase		  rd 1
-cdid		  rd 1
+cdbase            rd 1
+cdid              rd 1
 
-hdbase		  rd 1	  ; for boot 0x1f0
-hdid		  rd 1
-hdpos		  rd 1	  ; for boot 0x1
-fat32part	  rd 1	  ; for boot 0x1
-cdpos		  rd 1
-
-;CPUID information
-cpu_vendor	  rd 3
-cpu_sign	  rd 1
-cpu_info	  rd 1
-cpu_caps	  rd 4
+hdbase            rd 1    ; for boot 0x1f0
+hdid              rd 1
+hdpos             rd 1    ; for boot 0x1
+fat32part         rd 1    ; for boot 0x1
+cdpos             rd 1
 
 
-pg_data 	  PG_DATA
-heap_test	  rd 1
 
-buttontype	  rd 1
+pg_data           PG_DATA
+heap_test         rd 1
+
+buttontype        rd 1
 windowtypechanged rd 1
 
-hd_entries	  rd 1	   ;unused ? 0xfe10
+hd_entries        rd 1     ;unused ? 0xfe10
 
 ;* start code - Mario79
 
 mouse_active	      rd 1
-mouse_pause	      rd 1
+mouse_pause           rd 1
 MouseTickCounter      rd 1
 
 ;* end code - Mario79
@@ -447,8 +495,8 @@ mem_BACKGROUND	      rd 1
 wraw_bacground_select rb 1
 
 cache_ide0:
-cache_ide0_pointer	      rd 1
-cache_ide0_size 	      rd 1   ; not use
+cache_ide0_pointer            rd 1
+cache_ide0_size               rd 1   ; not use
 cache_ide0_data_pointer       rd 1
 cache_ide0_system_data_size   rd 1   ; not use
 cache_ide0_appl_data_size     rd 1   ; not use
@@ -460,8 +508,8 @@ cache_ide0_search_start       rd 1
 cache_ide0_appl_search_start  rd 1
 
 cache_ide1:
-cache_ide1_pointer	      rd 1
-cache_ide1_size 	      rd 1   ; not use
+cache_ide1_pointer            rd 1
+cache_ide1_size               rd 1   ; not use
 cache_ide1_data_pointer       rd 1
 cache_ide1_system_data_size   rd 1   ; not use
 cache_ide1_appl_data_size     rd 1   ; not use
@@ -473,8 +521,8 @@ cache_ide1_search_start       rd 1
 cache_ide1_appl_search_start  rd 1
 
 cache_ide2:
-cache_ide2_pointer	      rd 1
-cache_ide2_size 	      rd 1   ; not use
+cache_ide2_pointer            rd 1
+cache_ide2_size               rd 1   ; not use
 cache_ide2_data_pointer       rd 1
 cache_ide2_system_data_size   rd 1   ; not use
 cache_ide2_appl_data_size     rd 1   ; not use
@@ -486,8 +534,8 @@ cache_ide2_search_start       rd 1
 cache_ide2_appl_search_start  rd 1
 
 cache_ide3:
-cache_ide3_pointer	      rd 1
-cache_ide3_size 	      rd 1   ; not use
+cache_ide3_pointer            rd 1
+cache_ide3_size               rd 1   ; not use
 cache_ide3_data_pointer       rd 1
 cache_ide3_system_data_size   rd 1   ; not use
 cache_ide3_appl_data_size     rd 1   ; not use
@@ -498,18 +546,21 @@ cache_ide3_appl_sad_size      rd 1
 cache_ide3_search_start       rd 1
 cache_ide3_appl_search_start  rd 1
 
-debug_step_pointer rd 1
-hdd_appl_data rb 1 ; 0 = system cache, 1 - application cache
-cd_appl_data rb 1 ; 0 = system cache, 1 - application cache
+debug_step_pointer            rd 1
 
-lba_read_enabled      rd 1  ; 0 = disabled , 1 = enabled
-pci_access_enabled    rd 1  ; 0 = disabled , 1 = enabled
-timer_ticks_enable rb 1 	; for cd driver
+hdd_appl_data                 rb 1 ; 0 = system cache, 1 - application cache
+cd_appl_data                  rb 1 ; 0 = system cache, 1 - application cache
 
-NumBiosDisks	rd 1
-BiosDisksData	rb 200h
-BiosDiskCaches	rb 80h*(cache_ide1-cache_ide0)
-BiosDiskPartitions rd 80h
+align 4
+lba_read_enabled              rd 1  ; 0 = disabled , 1 = enabled
+pci_access_enabled            rd 1  ; 0 = disabled , 1 = enabled
+timer_ticks_enable            rb 1     ; for cd driver
+
+align 4
+NumBiosDisks                  rd 1
+BiosDisksData                 rb 200h
+BiosDiskCaches                rb 80h*(cache_ide1-cache_ide0)
+BiosDiskPartitions            rd 80h
 
 IncludeUGlobals
 

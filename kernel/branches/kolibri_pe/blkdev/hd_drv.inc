@@ -525,7 +525,7 @@ hdd_irq14:
 ;        mov     [dma_slot_ptr], eax
 ;        mov     [CURRENT_TASK], ebx
 ;        mov     [TASK_BASE], edi
-;        mov     byte [DONT_SWITCH], 1
+;        mov     [dont_switch], 1
 ;        call    do_change_task
 .noswitch:
         popad
@@ -556,7 +556,7 @@ hdd_irq15:
 ;        mov     [dma_slot_ptr], eax
 ;        mov     [CURRENT_TASK], ebx
 ;        mov     [TASK_BASE], edi
-;        mov     byte [DONT_SWITCH], 1
+;        mov     [dont_switch], 1
 ;        call    do_change_task
 .noswitch:
         popad

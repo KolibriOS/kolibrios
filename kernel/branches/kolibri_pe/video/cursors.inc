@@ -453,13 +453,13 @@ select_cursor:
 align 4
 proc init_cursors
 
-           cmp [SCR_MODE],word 0x13
+           cmp [scr_mode], 0x13
            jbe .fail
 
-           test word [SCR_MODE], 0x4000
+           test [scr_mode], 0x4000
            jz .fail
 
-           movzx eax, byte [ScreenBPP]
+           mov eax, [ScreenBPP]
            mov ebx, [BytesPerScanLine]
            cmp eax, 32
            jne @F
@@ -493,7 +493,7 @@ proc init_cursors
            mov [scr_width], ecx
            mov [scr_height], edx
 
-           movzx ebx, byte [ScreenBPP]
+           mov ebx, [ScreenBPP]
            cmp ebx, 32
            jne @F
 
@@ -598,8 +598,7 @@ proc cursor_24 stdcall, hcursor:dword, x:dword, y:dword
            mov [_dy], edi
 
            mul ebx
-           lea esi, [ecx+ecx*2]
-           add esi, [LFBAddress]
+           lea esi, [LFB_BASE+ecx+ecx*2]
            add esi, eax
            mov [cur_saved_base],esi
 
@@ -710,8 +709,7 @@ proc cursor_32 stdcall, hcursor:dword, x:dword, y:dword
            mov [_dy], edi
 
            mul ebx
-           lea esi, [eax+ecx*4]
-           add esi, [LFBAddress]
+           lea esi, [LFB_BASE+eax+ecx*4]
            mov [cur_saved_base],esi
 
            mov edi, [scr_width]

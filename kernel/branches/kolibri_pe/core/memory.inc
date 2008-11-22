@@ -178,46 +178,6 @@ proc map_page_table stdcall, lin_addr:dword, phis_addr:dword
            ret
 endp
 
-align 4
-proc init_LFB
-           locals
-             pg_count dd ?
-           endl
-
-           cmp dword [LFBAddress], -1
-           jne @f
-           mov [BOOT_VAR+0x901c],byte 2
-           mov ecx, 0x280000
-           mov edx, PG_SW
-           call @mem_alloc@8
-           mov [LFBAddress], eax
-           ret
-@@:
-           test [SCR_MODE],word 0100000000000000b
-           jnz @f
-           mov [BOOT_VAR+0x901c],byte 2
-           ret
-@@:
-           call init_mtrr
-
-           mov eax, [LFBAddress]
-           or eax, PG_LARGE+PG_UW
-           mov [_sys_pdbr+(LFB_BASE shr 20)], eax
-           add eax, 0x00400000
-           mov [_sys_pdbr+4+(LFB_BASE shr 20)], eax
-
-           mov dword [exp_lfb+4], LFB_BASE
-
-           bt [cpu_caps], CAPS_PGE
-           jnc @F
-           or dword [_sys_pdbr+(LFB_BASE shr 20)], PG_GLOBAL
-@@:
-           mov dword [LFBAddress], LFB_BASE
-           mov eax, cr3       ;flush TLB
-           mov cr3, eax
-
-           ret
-endp
 
 align 4
 proc new_mem_resize stdcall, new_size:dword
@@ -395,7 +355,7 @@ proc page_fault_handler
            mov eax, cr2
            push eax
 
-           mov ax, app_data
+           mov ax, sel_app_data
            mov ds, ax
            mov es, ax
 
@@ -407,24 +367,21 @@ proc page_fault_handler
            cmp ebx, HEAP_BASE
            jb .user_space      ;страница в памяти приложения ;
 
-           cmp ebx, LFB_BASE
-           jb  .kernel_heap
-
            cmp ebx, page_tabs
-           jb .lfb
+           jb  .kernel_heap
 
            cmp ebx, heap_tabs
            jb .user_tabs
 
-           cmp ebx, OS_BASE
+           cmp ebx, LFB_BASE
            jb .heap_tab
 
+           cmp ebx, OS_BASE
+           jb .lfb
 
          ;  cmp ebx, kernel_tabs
          ;  jb .alloc;.app_tabs ;таблицы страниц приложения ;
                                ;просто создадим одну
-
-
 
 .lfb:
            shr ebx, 22
@@ -996,7 +953,7 @@ new_services:
            ret
 @@:
            cmp eax, 21                     ;for test purposes only
-           ja @f                           ;will be removed soon
+           ja .fail                        ;will be removed soon
            cmp ebx, OS_BASE
            jae .fail
 
@@ -1177,7 +1134,6 @@ endp
 align 4
 _balloc:   ; gcc fastcall
 @balloc@4:
-
 
            mov eax, [_pg_balloc]
            add ecx, 4095

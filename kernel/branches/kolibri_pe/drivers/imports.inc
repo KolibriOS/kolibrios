@@ -82,6 +82,6 @@ kernel_export \
 	      strncmp,\
 	      strnlen,\
 	      strchr,\
-	      strrchr,\
-\
-	      LFBAddress
+          strrchr
+
+

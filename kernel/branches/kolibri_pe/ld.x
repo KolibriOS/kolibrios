@@ -16,9 +16,15 @@ SECTIONS
      . = ALIGN(4096);
   }
 
-  .flat . + 0xE0000000:
+  .text . + 0xDFC00000:
   {
-     *(.flat) *(.text) *(.rdata) *(.data)
+     *(.text) *(.rdata)
+     . = ALIGN(4096);
+  }
+
+  .flat . + 0x00400000:
+  {
+     *(.flat)  *(.data)
   }
 
   .edata ALIGN(32):

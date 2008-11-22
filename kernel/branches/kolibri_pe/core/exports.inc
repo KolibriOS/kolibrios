@@ -67,8 +67,7 @@ iglobal
   szSysMsgBoardStr    db 'SysMsgBoardStr', 0
   szSysMsgBoardChar   db 'SysMsgBoardChar', 0
   szGetCurrentTask    db 'GetCurrentTask',0
-  szLFBAddress	      db 'LFBAddress',0
-  szLoadFile	      db 'LoadFile',0
+  szLoadFile          db 'LoadFile',0
   szSendEvent	      db 'SendEvent',0
   szSetMouseData      db 'SetMouseData',0
   szSleep             db 'Sleep',0
@@ -150,9 +149,7 @@ kernel_export:
   dd szStrchr	       , strchr
   dd szStrrchr	       , strrchr
 
-exp_lfb:
-  dd szLFBAddress      , 0
-  dd 0			    ;terminator, must be zero
+  dd 0              ;terminator, must be zero
 
 endg
 

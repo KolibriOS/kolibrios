@@ -227,7 +227,7 @@ sys_button:
 button_no_draw:
 
         push    edi
-        mov     edi, [BTN_ADDR]
+        mov     edi, [btn_addr]
         movzx   eax, word [edi]
         cmp     eax, max_buttons
         jge     noaddbutt
@@ -264,7 +264,7 @@ remove_button:
 
 rnewba2:
 
-        mov     edi, [BTN_ADDR]
+        mov     edi, [btn_addr]
         mov     eax, edi
         movzx   ebx, word [edi]
         inc     ebx
@@ -429,7 +429,7 @@ negativebutton:
 
 checkbuttons:
 
-    cmp   [BTN_DOWN],byte 0    ; mouse buttons pressed
+    cmp   byte [btn_down], 0           ; mouse buttons pressed
     jnz   @f
 ;..................................... start 1/5 : modified by vhanla .............................
     mov [bPressedMouseXY_B],0
@@ -439,7 +439,7 @@ checkbuttons:
     pushad
 
     xor    esi, esi
-    mov    edi, [BTN_ADDR]
+    mov    edi, [btn_addr]
     movzx  edx, word [edi]
     test   edx, edx
     jne    @f
@@ -449,7 +449,7 @@ checkbuttons:
   @@:
 ;..................................... start 2/5 : modified by vhanla .............................
   ;here i catch the coordinates when the mouse's button is clicked
-   push ax
+   push eax
    cmp [bPressedMouseXY_B],0;FALSE
    jnz @f
    mov [bPressedMouseXY_B],1;TRUE - it was already clicked
@@ -458,7 +458,7 @@ checkbuttons:
    mov ax,[MOUSE_Y]
    mov [my],ax
    @@:
-   pop	ax
+   pop  eax
    ;and it is only refreshed after the mouse's button release
 ;..................................... end 2/5 : modified by vhanla .............................
 
@@ -520,7 +520,7 @@ checkbuttons:
     movzx edx,word [eax+4]     ; button x start
     add   edx,ecx
 ;..................................... start 3/5 : modified by vhanla .............................
-    mov   cx,[mx]   ;mov cx,[MOUSE_X]
+    mov   cx,[mx]   ;mov cx,[mouse_x]
 ;..................................... end 3/5 : modified by vhanla .............................
     cmp   edx,ecx
     jg	  buttonnewcheck
@@ -555,17 +555,16 @@ checkbuttons:
 
     mov   bx,[eax+0xc]	   ; button id : bits 16-31
     shl   ebx,16
-    mov   bx,[eax+2]	   ; button id : bits 00-16
+    mov   bx,[eax+2]                    ; button id : bits 00-16
     push  ebx
 
-    mov   [MOUSE_DOWN],byte 1  ; no mouse down checks
     call find_pressed_button_frames
     call negativebutton
 
     pushad
 ; // Alver 22.06.2008 // {
     push  eax
-    mov  al, byte [BTN_DOWN]
+    mov  al, byte [btn_down]
     mov  byte [btn_down_determ], al
     pop  eax
 ; } \\ Alver \\
@@ -580,13 +579,13 @@ checkbuttons:
     call  stack_handler
     popad
 
-    cmp   [BTN_DOWN],byte 0  ; mouse buttons pressed ?
+    cmp  byte [btn_down], 0      ; mouse buttons pressed ?
     jnz   cbwaitmouseup
     popad
 
     call  negativebutton
-    mov   [MOUSE_BACKGROUND],byte 0  ; no mouse background
-    mov   [DONT_DRAW_MOUSE],byte 0  ; draw mouse
+    mov   [mouse_background], 0  ; no mouse background
+    mov   [dont_draw_mouse],  0  ; draw mouse
 ;..................................... start 5/5 : modified by vhanla .............................
     ; check coordinates
 iglobal
@@ -629,16 +628,15 @@ endg
    cmp	 ecx,edx
    jg	no_on_button
    popa
-   mov	 [BTN_COUNT],byte 1 ; no of buttons in buffer
+   mov   [BTN_COUNT], 1 ; no of buttons in buffer
    pop	 ebx
    mov	 [BTN_BUFF],ebx   ; lets put the button id in buffer
    push  ebx
    pusha
    jmp yes_on_button
 no_on_button:
-   mov	 [BTN_COUNT],byte 0 ; no of buttons in buffer
+   mov   [BTN_COUNT], 0     ; no of buttons in buffer
 yes_on_button:
-   mov	 [MOUSE_DOWN],byte 0 ; mouse down -> do not draw
    popa
    pop ebx
    popa

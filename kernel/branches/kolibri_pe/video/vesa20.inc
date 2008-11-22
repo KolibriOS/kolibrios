@@ -23,12 +23,6 @@ $Revision$
 ; If you're planning to write your own video driver I suggest
 ; you replace the VESA12.INC file and see those instructions.
 
-;Screen_Max_X             equ     0xfe00
-;Screen_Max_Y            equ     0xfe04
-;BytesPerScanLine        equ     0xfe08
-;LFBAddress              equ     0xfe80
-;ScreenBPP               equ     0xfbf1
-
 
 ;*************************************************
 ; getpixel
@@ -42,7 +36,7 @@ $Revision$
 
 getpixel:
      push    eax ebx edx edi
-     call    dword [GETPIXEL]
+     call    [get_pixel]
      pop     edi edx ebx eax
      ret
 
@@ -52,16 +46,22 @@ Vesa20_getpixel24:
      imul    ebx, [BytesPerScanLine]    ; ebx = y * y multiplier
      lea     edi, [eax+eax*2] ; edi = x*3
      add     edi, ebx         ; edi = x*3+(y*y multiplier)
-     add     edi, [LFBAddress]    ; ebx = where pixel is in memory
-     mov     ecx, [edi]
+if SHADOWFB
+     mov     ecx, [SHADOWFB+edi]
+else
+     mov     ecx, [LFB_BASE+edi]
+end if
      and     ecx, 0xffffff
      ret
 
 Vesa20_getpixel32:
      imul    ebx, [BytesPerScanLine]    ; ebx = y * y multiplier
      lea     edi, [ebx+eax*4] ; edi = x*4+(y*y multiplier)
-     add     edi, [LFBAddress]    ; ebx = where pixel is in memory
-     mov     ecx, [edi]
+if SHADOWFB
+     mov     ecx, [SHADOWFB+edi]
+else
+     mov     ecx, [LFB_BASE+edi]
+end if
      and     ecx, 0xffffff
      ret
 
@@ -177,7 +177,7 @@ vesa20_putimage:
      mov     [putimg.winmap_newline], eax
 ; screen new line increment
      mov     eax, [BytesPerScanLine]
-     movzx   ebx, byte [ScreenBPP]
+     mov     ebx, [ScreenBPP]
      shr     ebx, 3
      imul    ecx, ebx
      sub     eax, ecx
@@ -188,11 +188,10 @@ vesa20_putimage:
      mov     edx, [putimg.abs_cy]
      imul    edx, [BytesPerScanLine]
      mov     eax, [putimg.abs_cx]
-     movzx   ebx, byte [ScreenBPP]
+     mov     ebx, [ScreenBPP]
      shr     ebx, 3
      imul    eax, ebx
      add     edx, eax
-     add     edx, [LFBAddress]
 ; pointer to pixel map
      mov     eax, [putimg.abs_cy]
      imul    eax, [Screen_Max_X]
@@ -218,9 +217,15 @@ align   4
      cmp     [ebp], bl
      jne     .skip
 ;     mov     eax, [esi]        ; eax = RRBBGGRR
-     mov     [edx], ax
+if SHADOWFB
+     mov     [SHADOWFB+edx], ax
+end if
+     mov     [LFB_BASE+edx], ax
      shr     eax, 16
-     mov     [edx+2], al
+if SHADOWFB
+     mov     [SHADOWFB+edx+2], al
+end if
+     mov     [LFB_BASE+edx+2], al
 .skip:
 ;     add     esi, 3 ;[putimg.source_bpp]
      add     edx, 3
@@ -261,7 +266,10 @@ align   4
      cmp     [ebp], bl
      jne     .skip
 ;     mov     eax, [esi]        ; ecx = RRBBGGRR
-     mov     [edx], eax
+if SHADOWFB
+     mov     [SHADOWFB+edx], eax
+end if
+     mov     [LFB_BASE+edx], eax
 .skip:
 ;     add     esi, [putimg.source_bpp]
      add     edx, 4
@@ -324,7 +332,7 @@ __sys_putpixel:
      mov   [esp+32-8],ecx
 .noneg:
 ; OK to set pixel
-     call  dword [PUTPIXEL]    ; call the real put_pixel function
+     call  [put_pixel]    ; call the real put_pixel function
 .exit:
      popad
      ret
@@ -336,11 +344,15 @@ Vesa20_putpixel24:
      imul    ebx, [BytesPerScanLine]     ; ebx = y * y multiplier
      lea     edi, [eax+eax*2]  ; edi = x*3
      mov     eax, [esp+32-8+4]
-     add     edi, [LFBAddress]
-     add     edi, ebx          ; ebx = where to put pixel in memory
-     mov     [edi], ax
+if SHADOWFB
+     mov     [SHADOWFB+ebx+edi], ax
+end if
+     mov     [LFB_BASE+ebx+edi], ax
      shr     eax, 16
-     mov     [edi+2], al
+if SHADOWFB
+     mov     [SHADOWFB+ebx+edi+2], al
+end if
+     mov     [LFB_BASE+ebx+edi+2], al
      ret
 
 
@@ -351,8 +363,10 @@ Vesa20_putpixel32:
      imul    ebx, [BytesPerScanLine]     ; ebx = y * y multiplier
      lea     edi, [ebx+eax*4]  ; edi = x*4+(y*y multiplier)
      mov     eax, [esp+32-8+4] ; eax = color
-     add     edi, [LFBAddress]     ; ebx = where to put pixel in memory
-     mov     [edi], eax
+if SHADOWFB
+     mov     [SHADOWFB+edi], eax
+end if
+     mov     [LFB_BASE+edi], eax
      ret
 
 ;*************************************************
@@ -623,7 +637,7 @@ vesa20_drawbar:
      mov     [drbar.line_inc_map], eax
 ; line_inc_scr
      mov     eax, [drbar.real_sx]
-     movzx   ebx, byte [ScreenBPP]
+     mov     ebx, [ScreenBPP]
      shr     ebx, 3
      imul    eax, ebx
      neg     eax
@@ -633,11 +647,10 @@ vesa20_drawbar:
      mov     edx, [drbar.abs_cy]
      imul    edx, [BytesPerScanLine]
      mov     eax, [drbar.abs_cx]
-;     movzx   ebx, byte [ScreenBPP]
+;     mov    ebx, [ScreenBPP]
 ;     shr     ebx, 3
      imul    eax, ebx
      add     edx, eax
-     add     edx, [LFBAddress]
 ; pointer to pixel map
      mov     eax, [drbar.abs_cy]
      imul    eax, [Screen_Max_X]
@@ -668,8 +681,12 @@ align   4
 .new_x:
      cmp     byte [ebp], bl
      jne     .skip
-     mov     [edx], bh
-     mov     [edx + 1], ax
+if SHADOWFB
+     mov     [SHADOWFB+edx], bh
+     mov     [SHADOWFB+edx + 1], ax
+end if
+     mov     [LFB_BASE+edx], bh
+     mov     [LFB_BASE+edx + 1], ax
 .skip:
 ; add pixel
      add     edx, 3
@@ -704,7 +721,10 @@ align   4
 .new_x:
      cmp     byte [ebp], bl
      jne     .skip
-     mov     [edx], eax
+if SHADOWFB
+     mov     [SHADOWFB+edx], eax
+end if
+     mov     [LFB_BASE+edx], eax
 .skip:
 ; add pixel
      add     edx, 4
@@ -731,59 +751,6 @@ align   4
      mov     [EGA_counter],1
      ret
 
-;voodoodbcplimit:
-
-; ebp:=(y+Ywin)*(ScreenXSize+1)+(x+Xwin)+AddrBuffer
-
-
-;     pusha
-
-;     xor edx,edx
-;     mov eax,ebp
-;     mov ebx,[Screen_Max_X] ; Screen_X_size
-;     inc ebx   ; +1
-;     sub eax,display_data ; -AddrBuffer
-;     div ebx ;
-;     mov ebx,eax ; ebx:=Y
-;     mov eax,edx ; eax:=X
-;     call cplimit
-
-;     test ecx,ecx
-;     jne  dbcpl12
-;     popa
-;     clc
-;     ret
-;   dbcpl12:
-;     popa
-;     stc
-;     ret
-
-
-
-
-;dbcplimit:
-
-;        pusha
-
-;        xor  edx,edx
-;        mov  ebx,[Screen_Max_X]
-;        inc  ebx
-;        sub  eax,display_data
-;        div  ebx
-;        mov  ebx,eax
-;        mov  eax,edx
-;        call cplimit
-
-;        test ecx,ecx
-;        jne  dbcpl1
-;        popa
-;        clc
-;        ret
-;     dbcpl1:
-;        popa
-;        stc
-;        ret
-
 
 vesa20_drawbackground_tiled:
         call    [disable_mouse]
@@ -800,11 +767,11 @@ dp2:
         add     ebp, eax
         add     ebp, eax
         add     ebp, eax
-        cmp     [ScreenBPP], byte 24    ; 24 or 32 bpp ? - x size
+        cmp     byte [ScreenBPP], 24    ; 24 or 32 bpp ? - x size
         jz      @f
         add     ebp, eax
 @@:
-        add     ebp, [LFBAddress]
+       ; add     ebp, LFB_BASE
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
@@ -849,7 +816,7 @@ nbgp:
         add     esi, 3
         add     edi, 3
 @@:
-        cmp     [ScreenBPP], byte 25    ; 24 or 32 bpp?
+        cmp     byte [ScreenBPP], 25    ; 24 or 32 bpp?
         sbb     edi, -1         ; +1 for 32 bpp
 ; I do not use 'inc eax' because this is slightly slower then 'add eax,1'
         add     ebp, edx
@@ -910,11 +877,10 @@ vesa20_drawbackground_stretch:
         add     ebp, eax
         add     ebp, eax
         add     ebp, eax
-        cmp     [ScreenBPP], byte 24    ; 24 or 32 bpp ? - x size
+        cmp     byte [ScreenBPP], 24    ; 24 or 32 bpp ? - x size
         jz      @f
         add     ebp, eax
 @@:
-        add     ebp, [LFBAddress]
 ; ebp:=Y*BytesPerScanLine+X*BytesPerPixel+AddrLFB
         call    calculate_edi
         xchg    edi, ebp
@@ -991,11 +957,17 @@ sdp3a:
         mov     ebx, [bgr_next_line+esi]
         call    [overlapping_of_points_ptr]
 .novert:
-        mov     [edi], ax
+if SHADOWFB
+        mov     [SHADOWFB+edi], ax
+end if
+        mov     [LFB_BASE+edi], ax
         shr     eax, 16
-        mov     [edi+2], al
+if SHADOWFB
+        mov     [SHADOWFB+edi+2], al
+end if
+        mov     [LFB_BASE+edi+2], al
 snbgp:
-        cmp     [ScreenBPP], byte 25
+        cmp     byte [ScreenBPP], 25
         sbb     edi, -4
         add     ebp, 1
         mov     eax, [esp+20]
@@ -1019,7 +991,7 @@ sdp4:
         sub     edi, eax
         sub     edi, eax
         sub     edi, eax
-        cmp     [ScreenBPP], byte 24
+        cmp     byte [ScreenBPP], 24
         jz      @f
         sub     edi, eax
 @@:

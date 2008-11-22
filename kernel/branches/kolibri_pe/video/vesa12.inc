@@ -63,10 +63,10 @@ if TRIDENT
 set_bank:
            pushfd
            cli
-           cmp al,[BANK_RW]
+           cmp al, byte [bank_rw]
            je .retsb
 
-           mov [BANK_RW],al
+           mov byte [bank_rw],al
            push dx
            mov dx,3D8h
            out  dx,al
@@ -84,10 +84,10 @@ if S3_VIDEO
 set_bank:
            pushfd
            cli
-           cmp al,[BANK_RW]
+           cmp al, byte [bank_rw]
            je .retsb
 
-           mov [BANK_RW],al
+           mov byte [bank_rw],al
            push ax
            push dx
            push cx
@@ -172,10 +172,10 @@ set_bank:
            pushfd
            cli
 
-           cmp al,[BANK_RW]
+           cmp al, byte [bank_rw]
            je .retsb
 
-           mov [BANK_RW],al
+           mov byte [bank_rw],al
            push ax
            push dx
            mov dx,3CEh
@@ -206,10 +206,10 @@ set_bank:
            pushfd
            cli
 
-           cmp al,[BANK_RW]
+           cmp al, byte [bank_rw]
            je .retsb
 
-           mov [BANK_RW],al
+           mov byte [bank_rw],al
            push ax
            push dx
            mov ah,al
@@ -336,7 +336,7 @@ vesa12_drawbackground:
         mul   ebx
         add   eax, esi
         lea   eax, [VGABasePtr+eax+esi*2]
-        cmp   [ScreenBPP],byte 24
+        cmp   byte [ScreenBPP], 24
         jz    v12bgl3
         add   eax,esi
 
@@ -410,7 +410,7 @@ vesa12_drawbar:
     add  eax,ecx         ; x
     add  eax,ecx
     add  eax,ecx
-    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ? - x start
+    cmp  byte [ScreenBPP], 24     ; 24 or 32 bpp ? - x start
     jz   dbpi2412
     add  eax,ecx
 
@@ -425,7 +425,7 @@ vesa12_drawbar:
     mov  ecx,eax
     add  ecx,eax
     add  ecx,eax
-    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ? - x size
+    cmp  byte [ScreenBPP], 24     ; 24 or 32 bpp ? - x size
     jz   dbpi24312
     add  ecx,eax
 
@@ -463,7 +463,7 @@ vesa12_drawbar:
 
   dbcblimitlno12:
 
-    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ?
+    cmp  byte [ScreenBPP], 24     ; 24 or 32 bpp ?
     jz   dbpi24bit12
     jmp  dbpi32bit12
 
@@ -776,7 +776,7 @@ vesa12_putimage:
     add   eax,ecx         ; x
     add   eax,ecx
     add   eax,ecx
-    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ? - x start
+    cmp  byte [ScreenBPP], 24     ; 24 or 32 bpp ? - x start
     jz   pi2412
     add  eax,ecx
 
@@ -817,7 +817,7 @@ vesa12_putimage:
 
   dbcblimitlno212:
 
-    cmp  [ScreenBPP],byte 24     ; 24 or 32 bpp ?
+    cmp  byte [ScreenBPP], 24     ; 24 or 32 bpp ?
     jnz  pi32bit12
 
   pi24bit12:
@@ -974,7 +974,7 @@ vesa12_putimage:
 vesa12_read_screen_pixel:
 
      and   eax,0x3FFFFF
-     cmp   [ScreenBPP],byte 24      ; 24 or 32 bpp ?
+     cmp   byte [ScreenBPP], 24      ; 24 or 32 bpp ?
      jz    v12rsp24
      mov   edi,eax
      shl   edi,2

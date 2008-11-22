@@ -19,7 +19,7 @@ extern multiboot_info_t *boot_mbi;
 /* Check if the bit BIT in FLAGS is set.  */
 #define CHECK_FLAG(flags,bit)	((flags) & (1 << (bit)))
 
-void init()
+void parse_mbi()
 {
    u32_t   last_page = 0;
 

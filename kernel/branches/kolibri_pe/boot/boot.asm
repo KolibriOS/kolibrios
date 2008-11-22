@@ -24,7 +24,7 @@ public _poweroff
 
 public _bx_from_load
 
-extrn __setvars
+extrn core_init
 
 section '.boot' code readable align 16
 
@@ -64,24 +64,13 @@ include "bootcode.inc"    ; 16 bit system boot code
 include "../bus/pci/pci16.inc"
 include "../detect/biosdisk.inc"
 
-
            cli
 
            mov eax, cr0
            or eax, CR0_PG+CR0_WP+CR0_PE
            mov cr0, eax
 
-           jmp pword 0x08:__setvars
-
-
-;align 4
-;_leave_16bit:
-;
-;           cli
-;           mov eax, cr0
-;           or eax, CR0_PG+CR0_WP+CR0_PE
-;           mov cr0, eax
-;           hlt
+           jmp pword 0x10:core_init
 
 align 4
 rmode_idt:

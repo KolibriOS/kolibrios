@@ -421,7 +421,7 @@ debug_exc:
 ; int 1 = #DB
         save_ring3_context
         cld
-        mov     ax, app_data ;os_data
+        mov     ax, sel_app_data
 	mov	ds, ax
 	mov	es, ax
 	mov	eax, dr6

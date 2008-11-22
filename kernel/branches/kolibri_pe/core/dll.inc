@@ -159,7 +159,7 @@ align 16
 .main:
            save_ring3_context
            mov   eax, [esp + 32]
-           mov   bx, app_data  ;os_data
+           mov   bx, sel_app_data
            mov   ds, bx
            mov   es, bx
 
@@ -514,7 +514,7 @@ proc get_fileinfo stdcall, file_name:dword, info:dword
 
            mov eax, 70
            lea ebx, [cmd]
-           int 0x40
+           int 0x41
            ret
 endp
 

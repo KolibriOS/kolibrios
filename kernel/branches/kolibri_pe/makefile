@@ -28,13 +28,16 @@ KERNEL_SRC:=				\
 
 
 PE_SRC:=			\
-		init.c		\
+		init.asm		\
+		mbi.c			\
 		mm.c		\
 		slab.c		\
 		heap.c		\
 		pe.c		\
 		dll.c		\
 		spinlock.c	\
+		thread.c		\
+		syscall.asm		\
 		boot/boot.asm	\
 		boot/start.asm
 
@@ -63,6 +66,9 @@ kernel.mnt: kernel.obj bin/export.obj $(PE_OBJS) Makefile ld.x
 
 bin/%.obj : core/%.c $(H_SRC) Makefile
 	$(CC) $(CFLAGS) -o $@ $<
+
+bin/%.obj: core/%.asm Makefile
+	$(FASM) $< $@
 	
 bin/%.obj: %.asm
 	$(FASM) $< $@

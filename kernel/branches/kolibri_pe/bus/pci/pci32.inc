@@ -385,7 +385,7 @@ sys_pcibios:
 	jz	.emulate_bios
 
         push    ds
-        mov     ax, pci_data_sel
+         mov     ax, sel_pci_data
         mov     ds, ax
         mov     eax, ebp
         mov     ah, 0B1h

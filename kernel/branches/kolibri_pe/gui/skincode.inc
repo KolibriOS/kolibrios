@@ -379,7 +379,7 @@ drawwindow_IV:
         jne   no_skin_add_button
 
 ;* close button
-        mov   edi,[BTN_ADDR]
+        mov   edi,[btn_addr]
         movzx eax,word [edi]
         cmp   eax,1000
         jge   no_skin_add_button
@@ -418,7 +418,7 @@ drawwindow_IV:
         mov   [eax],bx
 
 ;* minimize button
-        mov   edi,[BTN_ADDR]
+        mov   edi,[btn_addr]
         movzx eax,word [edi]
         cmp   eax,1000
         jge   no_skin_add_button

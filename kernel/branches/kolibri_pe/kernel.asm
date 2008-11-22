@@ -73,16 +73,23 @@ include "const.inc"
 max_processes	 equ   255
 tss_step	 equ   (128+8192) ; tss & i/o - 65535 ports, * 256=557056*4
 
+sel_tss         equ  (tss_l - _gdts)           ;0x08
 
-os_stack       equ  (os_data_l-_gdts)    ; GDTs
-os_code        equ  (os_code_l-_gdts)
-graph_data     equ  (3+graph_data_l-_gdts)
-tss0           equ  (tss0_l-_gdts)
-app_code       equ  (3+app_code_l-_gdts)
-app_data       equ  (3+app_data_l-_gdts)
-pci_code_sel   equ  (pci_code_32-_gdts)
-pci_data_sel   equ  (pci_data_32-_gdts)
+sel_os_code     equ  (os_code_l  - _gdts)      ;0x10
+sel_os_stack    equ  (os_stacK_l - _gdts)      ;0x18
 
+sel_app_code    equ  (app_code_l - _gdts +3)   ;0x23
+sel_app_data    equ  (app_data_l - _gdts +3)   ;0x2B
+
+sel_srv_code    equ  (srv_code_l - _gdts +1)   ;0x31
+sel_srv_stack   equ  (srv_stack_l- _gdts +1)   ;0x39
+
+sel_pci_code    equ  (pci_code_32-_gdts)       ;0x40
+sel_pci_data    equ  (pci_data_32-_gdts)       ;0x48
+
+sel_graph_data  equ  (graph_data_l-_gdts +3)
+
+sel_code_16     equ  (code_16_l - _gdts)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -108,11 +115,9 @@ pci_data_sel   equ  (pci_data_32-_gdts)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-public __os_stack
 public _boot_mbi
 public _sys_pdbr
 public _gdts
-public _high_code
 
 public __hlt
 public _panic_printf
@@ -121,7 +126,7 @@ public _pg_balloc
 public _mem_amount
 public @balloc@4
 
-public __setvars
+public system_init
 
 public _rd_base
 public _rd_fat
@@ -130,6 +135,8 @@ public _rd_root
 public _rd_root_end
 
 public _current_slot
+public _current_thread
+public _k_reenter
 
 public _load_file@4
 
@@ -141,6 +148,7 @@ public _init_user_heap
 
 public user_alloc
 public user_free
+
 public _strncmp@12
 
 public _LoadFile            ; stdcall export
@@ -163,7 +171,6 @@ public _RegService          ; stdcall export
 public _SysMsgBoardStr      ;         export
 public _SetScreen           ;         export    FIXME  make fastcall
 
-
 public _PciApi              ;         export
 public _PciRead8            ; stdcall export
 public _PciRead16           ; stdcall export
@@ -172,25 +179,35 @@ public _PciWrite8           ; stdcall export
 public _PciWrite16          ; stdcall export
 public _PciWrite32          ; stdcall export
 
-
 public _SelectHwCursor      ; stdcall export
 public _SetHwCursor         ; stdcall export
 public _HwCursorRestore     ;         export
 public _HwCursorCreate      ;         export
 
+public init_idt
+public init_fpu
+public init_malloc
+public init_mtrr
+
+public sysenter_entry
+public syscall_entry
+
+public scr_mode
+public LFBAddress
+public LFBSize
+
 
 extrn __edata
+
+extrn __os_stack
+
+extrn _pg_balloc
 
 extrn _16bit_start
 extrn _16bit_end
 
-extrn _enter_bootscreen
-extrn _poweroff
 
-extrn _init
-extrn _init_mm
-extrn @init_heap@8
-extrn _init_core_dll
+extrn _poweroff
 
 extrn @core_alloc@4
 extrn @core_free@4
@@ -203,12 +220,12 @@ extrn _MemFree
 @mem_alloc@8        equ  _MemAlloc
 @mem_free@4         equ  _MemFree
 
+extrn  @create_systhread@4
 extrn  _sys_exec
 
 ;extrn @load_pe@4
 extrn @load_pe_driver@4
 
-extrn _slab_cache_init
 extrn _alloc_page
 
 extrn _get_free_mem
@@ -216,6 +233,17 @@ extrn _get_free_mem
 extrn _bx_from_load
 
 extrn _sys_app_entry
+
+extrn _i40
+
+extrn test_cpu
+
+extrn cpu_vendor
+extrn cpu_sign
+extrn cpu_info
+extrn cpu_caps:dword
+
+
 
 section '.flat' code readable align 4096
 
@@ -261,211 +289,10 @@ _panic_printf:
 align 4
 include 'printf.inc'
 
-align 4
-proc test_cpu
-           locals
-              cpu_type   dd ?
-              cpu_id     dd ?
-              cpu_Intel  dd ?
-              cpu_AMD    dd ?
-           endl
-
-           mov [cpu_type], 0
-           xor eax, eax
-           mov [cpu_caps], eax
-           mov [cpu_caps+4], eax
-
-           xor eax, eax
-           cpuid
-
-           mov [cpu_vendor], ebx
-           mov [cpu_vendor+4], edx
-           mov [cpu_vendor+8], ecx
-           cmp ebx, dword [intel_str]
-           jne .check_AMD
-           cmp edx, dword [intel_str+4]
-           jne .check_AMD
-           cmp ecx, dword [intel_str+8]
-           jne .check_AMD
-           mov [cpu_Intel], 1
-           cmp eax, 1
-           jl .end_cpuid
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-
-           shr eax, 8
-           and eax, 0x0f
-           ret
-.end_cpuid:
-           mov eax, [cpu_type]
-           ret
-
-.check_AMD:
-           cmp ebx, dword [AMD_str]
-           jne .unknown
-           cmp edx, dword [AMD_str+4]
-           jne .unknown
-           cmp ecx, dword [AMD_str+8]
-           jne .unknown
-           mov [cpu_AMD], 1
-           cmp eax, 1
-           jl .unknown
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-           shr eax, 8
-           and eax, 0x0f
-           ret
-.unknown:
-           mov eax, 1
-           cpuid
-           mov [cpu_sign], eax
-           mov [cpu_info],  ebx
-           mov [cpu_caps],  edx
-           mov [cpu_caps+4],ecx
-           shr eax, 8
-           and eax, 0x0f
-           ret
-endp
-
-align 4
-_copy_pg_balloc  dd 0
-
-
-_high_code:
-
-	   mov ax,os_stack
-           mov dx,app_data
-	   mov ss,ax
-           mov esp, __os_stack
-
-           mov ds, dx
-           mov es, dx
-           mov fs, dx
-           mov gs, dx
-
-
-         ;  bt [cpu_caps], CAPS_PGE
-         ;  jnc @F
-
-         ;  or dword [sys_pgdir-OS_BASE+(OS_BASE shr 20)], PG_GLOBAL
-
-         ;  mov ebx, cr4
-         ;  or ebx, CR4_PGE
-         ;  mov cr4, ebx
-@@:
-         ;  mov eax, cr3
-         ;  mov cr3, eax           ; flush TLB
-
-           mov edx, 0x3fB
-           mov eax, 3
-           out dx, al
-
-           call test_cpu
-           call _init
-
-           mov eax, [_pg_balloc]
-           mov [_copy_pg_balloc], eax
-
-	   mov [tss._ss0], os_stack
-           mov [tss._esp0], __os_stack
-           mov [tss._esp], __os_stack
-	   mov [tss._cs],os_code
-	   mov [tss._ss],os_stack
-	   mov [tss._ds],app_data
-	   mov [tss._es],app_data
-	   mov [tss._fs],app_data
-	   mov [tss._gs],app_data
-	   mov [tss._io],128
-;Add IO access table - bit array of permitted ports
-	   mov edi, tss._io_map_0
-	   xor eax, eax
-       ;    not eax
-	   mov ecx, 8192/4
-	   rep stosd		     ; access to 4096*8=65536 ports
-
-	   mov	ax,tss0
-	   ltr	ax
-
-__core_restart:
-
-           mov ecx, 1280*1024
-           fastcall _balloc
-           mov [_display_data], eax
-
-           mov ecx, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
-                    (unpack.lc+unpack.lp)))*4
-           fastcall _balloc
-           mov [unpack.p], eax
-
-; MEMORY MODEL
-
-           call _init_mm
-           mov [pg_data.pg_mutex], 0
-
-           call _slab_cache_init
-
-           mov ecx, 0x80000000
-           mov edx, 0x40000000
-           call @init_heap@8
-
-           call _init_core_dll
-
-           mov esi, _16bit_start
-           mov ecx, _16bit_end
-           shr ecx, 2
-           mov edi, _16BIT_BASE
-           cld
-           rep movsd
-
-           jmp far 0x60:_enter_bootscreen;
-
-align 4
-__setvars:
-           mov ax,os_stack
-           mov dx,app_data
-	   mov ss,ax
-           mov esp, __os_stack
-
-           mov ds, dx
-           mov es, dx
-           mov fs, dx
-           mov gs, dx
-
-; SAVE & CLEAR 0-0xffff
-
-           cld
-           xor esi, esi
-           mov   edi,BOOT_VAR
-           mov   ecx,0x10000 / 4
-           rep   movsd
-
-           xor edi, edi
-           xor eax, eax
-           mov   ecx,0x10000 / 4
-           rep   stosd
-
-           mov edi, 0x40000
-           mov ecx, (0x90000-0x40000)/4
-           rep stosd
-
-           mov dword [_sys_pdbr], eax
-           mov dword [_sys_pdbr+4], eax
-           mov eax, cr3
-           mov cr3, eax
-
-; SAVE REAL MODE VARIABLES
-	mov	ax, [BOOT_VAR + 0x9031]
-	mov	[IDEContrRegsBaseAddr], ax
 ; --------------- APM ---------------------
 
+align 4
+init_apm:
 ; init selectors
     mov ebx,    [BOOT_VAR +0x9040]    ; offset of APM entry point
     movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
@@ -495,198 +322,163 @@ __setvars:
 
     mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
     mov    [apm_vf], eax
-; -----------------------------------------
-;        movzx eax,byte [BOOT_VAR+0x9010]  ; mouse port
-;        mov   [0xF604],byte 1  ;al
-	mov	al, [BOOT_VAR+0x901F]	; DMA access
-	mov	[allow_dma_access], al
-	mov   al,[BOOT_VAR+0x9000]	  ; bpp
-	mov   [ScreenBPP],al
+    ret
 
-	movzx eax,word [BOOT_VAR+0x900A]  ; X max
-	dec   eax
-	mov   [Screen_Max_X],eax
-	mov   [screen_workarea.right],eax
-	movzx eax,word [BOOT_VAR+0x900C]  ; Y max
-	dec   eax
-	mov   [Screen_Max_Y],eax
-	mov   [screen_workarea.bottom],eax
-	movzx eax,word [BOOT_VAR+0x9008]  ; screen mode
-	mov   [SCR_MODE],eax
-	mov   eax,[BOOT_VAR+0x9014]	  ; Vesa 1.2 bnk sw add
-	mov   [BANK_SWITCH],eax
-	mov   [BytesPerScanLine],word 640*4	    ; Bytes PerScanLine
-	cmp   [SCR_MODE],word 0x13	    ; 320x200
-	je    @f
-	cmp   [SCR_MODE],word 0x12	    ; VGA 640x480
-	je    @f
+align 16
+system_init:
 
-	mov   ax,[BOOT_VAR+0x9001]	  ; for other modes
-	mov   [BytesPerScanLine],ax
+           mov [pg_data.pg_mutex], 0
+
+           call init_apm
+
+; SAVE REAL MODE VARIABLES
+        mov   ax, [BOOT_VAR + 0x9031]
+        mov   [IDEContrRegsBaseAddr], ax
+
+        mov   al, [BOOT_VAR+0x901F]       ; DMA access
+        mov   [allow_dma_access], al
+
+        movzx eax, byte [BOOT_VAR+0x9000]    ; bpp
+        mov   [ScreenBPP], eax
+
+        movzx eax,word [BOOT_VAR+0x900A]  ; X max
+        dec   eax
+        mov   [Screen_Max_X],eax
+        mov   [screen_workarea.right],eax
+        movzx eax,word [BOOT_VAR+0x900C]  ; Y max
+        dec   eax
+        mov   [Screen_Max_Y],eax
+        mov   [screen_workarea.bottom],eax
+        mov   [BytesPerScanLine], 640*4
+        cmp   [scr_mode], 0x13      ; 320x200
+        je    @f
+        cmp   [scr_mode], 0x12      ; VGA 640x480
+        je    @f
+
+        movzx   eax, word [BOOT_VAR+0x9001]    ; for other modes
+        mov   [BytesPerScanLine], eax
 @@:
-	mov	esi, BOOT_VAR+0x9080
-	movzx	ecx, byte [esi-1]
-	mov	[NumBiosDisks], ecx
-	mov	edi, BiosDisksData
-	rep	movsd
+        mov esi, BOOT_VAR+0x9080
+        movzx   ecx, byte [esi-1]
+        mov [NumBiosDisks], ecx
+        mov edi, BiosDisksData
+        rep movsd
 
 ; GRAPHICS ADDRESSES
 
-	mov	byte [BOOT_VAR+0x901e],0x0
-	mov	eax,[BOOT_VAR+0x9018]
-	mov	[LFBAddress],eax
+        mov byte [BOOT_VAR+0x901e],0x0
 
-	cmp	[SCR_MODE],word 0100000000000000b
-	jge	setvesa20
-	cmp	[SCR_MODE],word 0x13
-	je	v20ga32
-	mov	[PUTPIXEL],dword Vesa12_putpixel24  ; Vesa 1.2
-	mov	[GETPIXEL],dword Vesa12_getpixel24
-	cmp	[ScreenBPP],byte 24
-	jz	ga24
-	mov	[PUTPIXEL],dword Vesa12_putpixel32
-	mov	[GETPIXEL],dword Vesa12_getpixel32
-      ga24:
-	jmp	v20ga24
-      setvesa20:
-	mov	[PUTPIXEL],dword Vesa20_putpixel24  ; Vesa 2.0
-	mov	[GETPIXEL],dword Vesa20_getpixel24
-	cmp	[ScreenBPP],byte 24
-	jz	v20ga24
-      v20ga32:
-	mov	[PUTPIXEL],dword Vesa20_putpixel32
-	mov	[GETPIXEL],dword Vesa20_getpixel32
-      v20ga24:
-	cmp	[SCR_MODE],word 0x12		    ; 16 C VGA 640x480
-	jne	no_mode_0x12
-	mov	[PUTPIXEL],dword VGA_putpixel
-	mov	[GETPIXEL],dword Vesa20_getpixel32
-      no_mode_0x12:
+        cmp [scr_mode], 0100000000000000b
+        jge setvesa20
+        cmp [scr_mode], 0x13
+        je  v20ga32
+        mov [put_pixel], Vesa12_putpixel24  ; Vesa 1.2
+        mov [get_pixel],dword Vesa12_getpixel24
+        cmp byte [ScreenBPP], 24
+        jz  ga24
+        mov [put_pixel], Vesa12_putpixel32
+        mov [get_pixel],dword Vesa12_getpixel32
+ga24:
+        jmp v20ga24
+setvesa20:
+        mov [put_pixel], Vesa20_putpixel24  ; Vesa 2.0
+        mov [get_pixel],dword Vesa20_getpixel24
+        cmp byte [ScreenBPP], 24
+        jz  v20ga24
+v20ga32:
+        mov [put_pixel], Vesa20_putpixel32
+        mov [get_pixel],dword Vesa20_getpixel32
+v20ga24:
+        cmp [scr_mode], 0x12            ; 16 C VGA 640x480
+        jne no_mode_0x12
+        mov [put_pixel], VGA_putpixel
+        mov [get_pixel],dword Vesa20_getpixel32
+no_mode_0x12:
 
-; -------- Fast System Call init ----------
-; Intel SYSENTER/SYSEXIT (AMD CPU support it too)
-	   bt [cpu_caps], CAPS_SEP
-	   jnc .SEnP   ; SysEnter not Present
-	   xor edx, edx
-	   mov ecx, MSR_SYSENTER_CS
-	   mov eax, os_code
-	   wrmsr
-	   mov ecx, MSR_SYSENTER_ESP
-;           mov eax, sysenter_stack ; Check it
-	   xor	   eax, eax
-	   wrmsr
-	   mov ecx, MSR_SYSENTER_EIP
-	   mov eax, sysenter_entry
-	   wrmsr
-.SEnP:
-; AMD SYSCALL/SYSRET
-	   cmp byte[cpu_vendor], 'A'
-	   jne .noSYSCALL
-	   mov eax, 0x80000001
-	   cpuid
-	   test edx, 0x800  ; bit_11 - SYSCALL/SYSRET support
-	   jz .noSYSCALL
-	   mov ecx, MSR_AMD_EFER
-	   rdmsr
-	   or eax, 1   ; bit_0 - System Call Extension (SCE)
-	   wrmsr
+           mov ecx, 1280*1024
+           mov edx, PG_SW
+           call @mem_alloc@8
+           mov [_display_data], eax
 
-	; !!!! It`s dirty hack, fix it !!!
-	; Bits of EDX :
-	; Bit 31–16 During the SYSRET instruction, this field is copied into the CS register
-	;  and the contents of this field, plus 8, are copied into the SS register.
-	; Bit 15–0 During the SYSCALL instruction, this field is copied into the CS register
-	;  and the contents of this field, plus 8, are copied into the SS register.
+           mov ecx, (unpack.LZMA_BASE_SIZE+(unpack.LZMA_LIT_SIZE shl \
+                    (unpack.lc+unpack.lp)))*4
+           mov edx, PG_SW
+           call @mem_alloc@8
+           mov [unpack.p], eax
 
-	; mov   edx, (os_code + 16) * 65536 + os_code
-	   mov edx, 0x1B0008
+;Set base of graphic segment to linear address of LFB
 
-	   mov eax, syscall_entry
-	   mov ecx, MSR_AMD_STAR
-	   wrmsr
-.noSYSCALL:
-; -----------------------------------------
-; LOAD IDT
-
-           call _init_idt
-
-           mov [LFBSize], 0x800000
-	   call init_LFB
-           call init_fpu
-           call init_malloc
+           mov eax, LFB_BASE
+           mov [graph_data_l+2],ax
+           shr eax,16
+           mov [graph_data_l+4],al
+           mov [graph_data_l+7],ah
 
            mov ecx, 0x51000
            xor edx, edx
            call @mem_alloc@8
-	   mov [default_io_map], eax
+           mov [default_io_map], eax
 
-	   add eax, 0x2000
-	   mov [ipc_tmp], eax
-	   mov ebx, 0x1000
+           add eax, 0x2000
+           mov [ipc_tmp], eax
+           mov ebx, 0x1000
 
-	   add eax, 0x40000
-	   mov [proc_mem_map], eax
+           add eax, 0x40000
+           mov [proc_mem_map], eax
 
-	   add eax, 0x8000
-	   mov [proc_mem_pdir], eax
+           add eax, 0x8000
+           mov [proc_mem_pdir], eax
 
-	   add eax, ebx
-	   mov [proc_mem_tab], eax
+           add eax, ebx
+           mov [proc_mem_tab], eax
 
-	   add eax, ebx
-	   mov [tmp_task_pdir], eax
+           add eax, ebx
+           mov [tmp_task_pdir], eax
 
-	   add eax, ebx
-	   mov [tmp_task_ptab], eax
+           add eax, ebx
+           mov [tmp_task_ptab], eax
 
-	   add eax, ebx
-	   mov [ipc_pdir], eax
+           add eax, ebx
+           mov [ipc_pdir], eax
 
-	   add eax, ebx
-	   mov [ipc_ptab], eax
+           add eax, ebx
+           mov [ipc_ptab], eax
 
-	   call init_events
-	   mov eax, srv.fd-SRV_FD_OFFSET
-	   mov [srv.fd], eax
-	   mov [srv.bk], eax
+           call init_events
+           mov eax, srv.fd-SRV_FD_OFFSET
+           mov [srv.fd], eax
+           mov [srv.bk], eax
 
-	   mov edi, irq_tab
-	   xor eax, eax
-	   mov ecx, 16
-	   rep stosd
+           mov edi, irq_tab
+           xor eax, eax
+           mov ecx, 16
+           rep stosd
 
-;Set base of graphic segment to linear address of LFB
-	mov	eax,[LFBAddress]	  ; set for gs
-	mov	[graph_data_l+2],ax
-	shr	eax,16
-	mov	[graph_data_l+4],al
-	mov	[graph_data_l+7],ah
-
-	mov [CURRENT_TASK],dword 1
-	mov [TASK_COUNT],dword 1
-	mov [TASK_BASE],dword TASK_DATA
-	mov [current_slot], SLOT_BASE+256
+           mov [CURRENT_TASK],dword 1
+           mov [TASK_COUNT],dword 1
+           mov [TASK_BASE],dword TASK_DATA
+           mov [current_slot], SLOT_BASE+256
 
 ; set background
-	xor  eax,eax
-	inc  eax
-	mov   [BgrDrawMode],eax
-	mov   [BgrDataWidth],eax
-	mov   [BgrDataHeight],eax
-        mov ecx, 4095
-        mov edx, PG_SW
-	mov    [mem_BACKGROUND],4095
-        call @mem_alloc@8
-	mov [img_background], eax
+           xor  eax,eax
+           inc  eax
+           mov   [BgrDrawMode],eax
+           mov   [BgrDataWidth],eax
+           mov   [BgrDataHeight],eax
+           mov ecx, 4095
+           mov edx, PG_SW
+           mov    [mem_BACKGROUND],4095
+           call @mem_alloc@8
+           mov [img_background], eax
 
-        mov     [SLOT_BASE + 256 + APPDATA.dir_table], _sys_pdbr + (0x100000000-OS_BASE)
+           mov     [SLOT_BASE + 256 + APPDATA.dir_table], _sys_pdbr + (0x100000000-OS_BASE)
 
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
-	call  rerouteirqs
+           call  rerouteirqs
 
 ; Initialize system V86 machine
-        call    init_sys_v86
+           call    init_sys_v86
 
 ; TIMER SET TO 1/100 S
 
@@ -869,11 +661,6 @@ include 'detect/disks.inc'
 	stdcall load_driver, szPS2MDriver
        ; stdcall load_driver, szCOM_MDriver
 
-	mov   esi,boot_setmouse
-	call  boot_log
-	call  setmouse
-
-
 ; STACK AND FDC
 
         call  stack_init
@@ -881,14 +668,14 @@ include 'detect/disks.inc'
 
 ; PALETTE FOR 320x200 and 640x480 16 col
 
-	cmp   [SCR_MODE],word 0x12
+    cmp   [scr_mode], 0x12
 	jne   no_pal_vga
 	mov   esi,boot_pal_vga
 	call  boot_log
 	call  paletteVGA
       no_pal_vga:
 
-	cmp   [SCR_MODE],word 0x13
+    cmp   [scr_mode], 0x13
 	jne   no_pal_ega
 	mov   esi,boot_pal_ega
 	call  boot_log
@@ -918,7 +705,6 @@ include 'detect/disks.inc'
 ;  no_st_network:
 
 ; LOAD FIRST APPLICATION
-
 
         push 0
         push 0
@@ -972,8 +758,6 @@ first_app_found:
 ;        cmp     al, 129
 ;        jne     .bll1
 ;end if
-
-;       mov   [ENABLE_TASKSWITCH],byte 1        ; multitasking enabled
 
 ; UNMASK ALL IRQ'S
 
@@ -1195,27 +979,27 @@ endg
 set_variables:
 
         mov   ecx,0x100                          ; flush port 0x60
-.fl60:	in    al,0x60
-	loop  .fl60
-        mov   [MOUSE_BUFF_COUNT],byte 0          ; mouse buffer
-        mov   [KEY_COUNT],byte 0                 ; keyboard buffer
-        mov   [BTN_COUNT],byte 0                 ; button buffer
-;        mov   [MOUSE_X],dword 100*65536+100     ; mouse x/y
+.fl60:
+        in    al,0x60
+        loop  .fl60
 
-	push  eax
-	mov   ax,[BOOT_VAR+0x900c]
-	shr   ax,1
-	shl   eax,16
-	mov   ax,[BOOT_VAR+0x900A]
-	shr   ax,1
-	mov   [MOUSE_X],eax
-	pop   eax
+        mov   [KEY_COUNT], 0             ; keyboard buffer
+        mov   [BTN_COUNT], 0                 ; button buffer
 
-        mov   [BTN_ADDR],dword BUTTON_INFO       ; address of button list
+        push  eax
+        mov   ax,[BOOT_VAR+0x900c]
+        shr   ax,1
+        shl   eax,16
+        mov   ax,[BOOT_VAR+0x900A]
+        shr   ax,1
+        mov   dword [MOUSE_X], eax
+        pop   eax
+
+        mov   [btn_addr], BUTTON_INFO       ; address of button list
 
      ;!! IP 04.02.2005:
-	mov   [next_usage_update], 100
-        mov   byte [DONT_SWITCH], 0              ; change task if possible
+        mov   [next_usage_update], 100
+        mov   [dont_switch], 0              ; change task if possible
 
 	ret
 
@@ -1801,13 +1585,13 @@ readmousepos:
 	   ja msset
 	   jmp [mousefn+eax*4]
 msscreen:
-	   mov	eax,[MOUSE_X]
+       mov  eax, dword [MOUSE_X]
 	   shl	eax,16
 	   mov	ax,[MOUSE_Y]
 	   mov	[esp+36],eax
 	   ret
 mswin:
-	   mov	eax,[MOUSE_X]
+       mov  eax, dword [MOUSE_X]
 	   shl	eax,16
 	   mov	ax,[MOUSE_Y]
 	   mov	esi,[TASK_BASE]
@@ -1825,7 +1609,7 @@ mswin:
 	   mov	[esp+36],eax
 	   ret
 msbutton:
-	   movzx eax,byte [BTN_DOWN]
+       movzx eax,byte [btn_down]
 	   mov	[esp+36],eax
 	   ret
 msz:
@@ -1833,12 +1617,12 @@ msz:
 	   movzx edi, word [WIN_POS + edi*2]
 	   cmp	 edi, [CURRENT_TASK]
 	   jne	 @f
-	   mov	 ax,[MOUSE_SCROLL_H]
+       mov   eax,[mouse_scroll_h]
 	   shl	 eax,16
-	   mov	 ax,[MOUSE_SCROLL_V]
+       mov   ax, word [mouse_scroll_v]
 	   mov	 [esp+36],eax
-	   mov	 [MOUSE_SCROLL_H],word 0
-	   mov	 [MOUSE_SCROLL_V],word 0
+       mov   [mouse_scroll_h], 0
+       mov   [mouse_scroll_v], 0
 	   ret
        @@:
 	   mov	[esp+36],dword 0
@@ -2018,7 +1802,7 @@ sysfn_shutdown: 	 ; 18.9 = system shutdown
      mov  [BOOT_VAR+0x9030],cl
 
      mov  eax,[TASK_COUNT]
-     mov  [SYS_SHUTDOWN],al
+     mov  [sys_shutdown], eax
      mov  [shutdown_processes],eax
      and  dword [esp+32], 0
  exit_for_anyone:
@@ -2221,7 +2005,7 @@ sysfn_mouse_acceleration: ; 18.19 = set/get mouse features
  .set_mouse_button:
      cmp   ecx,5  ; set mouse button features
      jnz  .end
-     mov   [BTN_DOWN],dl
+     mov  byte [btn_down],dl
      mov   [mouse_active],1
  .end:
      ret
@@ -2408,7 +2192,7 @@ draw_background_temp:
 ;    mov   [bgrchanged],1 ;0
     mov    [background_defined], 1
     call  force_redraw_background
-    mov    [REDRAW_BACKGROUND], byte 2
+    mov    [redraw_background], 2
    nosb31:
     ret
   nosb3:
@@ -2522,7 +2306,7 @@ force_redraw_background:
     mov   [draw_data+32 + RECT.right],eax
     mov   [draw_data+32 + RECT.bottom],ebx
     pop   ebx eax
-    mov   byte [REDRAW_BACKGROUND], 1
+    mov   [redraw_background], 1
     ret
 
 align 4
@@ -2577,14 +2361,14 @@ sys_getkey:
 	mov	edx, [TASK_COUNT]
 	cmp	ecx, edx
 	jne	.finish
-	cmp	[KEY_COUNT], byte 0
+    cmp [KEY_COUNT], 0
 	je	.finish
 	movzx	eax, byte [KEY_BUFF]
 	shl	eax, 8
 	push	eax
-	dec	byte [KEY_COUNT]
-	and	byte [KEY_COUNT], 127
-	movzx	ecx, byte [KEY_COUNT]
+    dec [KEY_COUNT]
+    and [KEY_COUNT], 127
+    mov ecx, [KEY_COUNT]
 	add	ecx, 2
 	mov	eax, KEY_BUFF + 1
 	mov	ebx, KEY_BUFF
@@ -2622,16 +2406,16 @@ sys_getbutton:
 	mov	edx, [TASK_COUNT] ; less than 256 processes
 	cmp	ecx, edx
 	jne	.exit
-	movzx	eax, byte [BTN_COUNT]
-	test	eax, eax
+    mov   eax, [BTN_COUNT]
+    test  eax, eax
 	jz	.exit
 	mov	eax, [BTN_BUFF]
 	shl	eax, 8
 ; // Alver 22.06.2008 // {
         mov       al, byte [btn_down_determ]
-        and       al,0xFE                                       ; delete left button bit
+        and       al,0xFE                          ; delete left button bit
 ; } \\ Alver \\
-	mov	[BTN_COUNT], byte 0
+    mov [BTN_COUNT], 0
 	mov	[esp + 32], eax
 .exit:
 	ret
@@ -2810,7 +2594,7 @@ sys_redrawstat:
 	; buttons away
 	mov	ecx,[CURRENT_TASK]
   sys_newba2:
-	mov	edi,[BTN_ADDR]
+    mov edi,[btn_addr]
 	cmp	[edi], dword 0	; empty button list ?
 	je	end_of_buttons_away
 	movzx	ebx, word [edi]
@@ -3187,8 +2971,8 @@ sys_set_window:
     add   edx, ebx
     call  calculatescreen
 
-    mov   [KEY_COUNT],byte 0	       ; empty keyboard buffer
-    mov   [BTN_COUNT],byte 0	       ; empty button buffer
+    mov   [KEY_COUNT], 0           ; empty keyboard buffer
+    mov   [BTN_COUNT], 0           ; empty button buffer
 
   newd:
     mov   [edi+WDATA.fl_redraw],byte 0	 ; no redraw
@@ -3316,9 +3100,8 @@ sys_window_move:
 	xor   esi,esi
 	call  redrawscreen
 
-	mov   [DONT_DRAW_MOUSE],byte 0 ; mouse pointer
-	mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
-	mov   [MOUSE_DOWN],byte 0 ; react to mouse up/down
+    mov   [dont_draw_mouse], 0   ; mouse pointer
+    mov   [mouse_background], 0  ; no mouse under
 
 	call  [draw_pointer]
 
@@ -3487,8 +3270,8 @@ align 4
 
 checkmisc:
 
-    cmp   [ctrl_alt_del], 1
-    jne   nocpustart
+        cmp   [ctrl_alt_del], 1
+        jne   nocpustart
 
         push 0
         push 0
@@ -3496,7 +3279,7 @@ checkmisc:
         call _sys_exec
         add esp, 12
 
-    mov   [ctrl_alt_del], 0
+        mov   [ctrl_alt_del], 0
 
 nocpustart:
     cmp   [mouse_active], 1
@@ -3510,11 +3293,11 @@ set_mouse_event:
     loop  set_mouse_event
 
 mouse_not_active:
-    cmp   [REDRAW_BACKGROUND],byte 0		   ; background update ?
+    cmp   [redraw_background], 0           ; background update ?
     jz	  nobackgr
     cmp    [background_defined], 0
     jz	  nobackgr
-    cmp   [REDRAW_BACKGROUND], byte 2
+    cmp   [redraw_background], 2
     jnz   no_set_bgr_event
     xor   edi, edi
     mov   ecx,	[TASK_COUNT]
@@ -3530,19 +3313,19 @@ no_set_bgr_event:
 ;    mov   [draw_data+32 + RECT.right],eax
 ;    mov   [draw_data+32 + RECT.bottom],ebx
     call  drawbackground
-    mov   [REDRAW_BACKGROUND],byte 0
-    mov   [MOUSE_BACKGROUND],byte 0
+    mov   [redraw_background], 0
+    mov   [redraw_background], 0
 
 nobackgr:
 
     ; system shutdown request
 
-    cmp  [SYS_SHUTDOWN],byte 0
+    cmp  [sys_shutdown], 0
     je	 noshutdown
 
     mov  edx,[shutdown_processes]
 
-    cmp  [SYS_SHUTDOWN],dl
+    cmp  [sys_shutdown], edx
     jne  no_mark_system_shutdown
 
     lea   ecx,[edx-1]
@@ -3558,7 +3341,7 @@ markz:
 
     call [disable_mouse]
 
-    dec  byte [SYS_SHUTDOWN]
+    dec  [sys_shutdown]
     je	 system_shutdown
 
 noshutdown:
@@ -3646,7 +3429,7 @@ redrawscreen:
 
 	 cmp   ecx,1
 	 jnz   .az
-	 mov   al,[REDRAW_BACKGROUND]
+     mov   al, byte [redraw_background]
 	 cmp   al,2
 	 jz    newdw8
 	 test  al,al
@@ -3691,7 +3474,7 @@ redrawscreen:
 
 	 cmp   dword [esp],1
 	 jne   nobgrd
-	 mov   byte [REDRAW_BACKGROUND], 1
+     mov   [redraw_background], 1
 
        newdw8:
        nobgrd:
@@ -3727,7 +3510,7 @@ calculatebackground:   ; background
 	mov   ecx,1280*1024 / 4
 	rep   stosd
 
-	mov   byte [REDRAW_BACKGROUND], 0	       ; do not draw background!
+    mov   [redraw_background], 0          ; do not draw background!
 
 	ret
 
@@ -4229,12 +4012,12 @@ endg
 
 drawbackground:
        inc   [mouse_pause]
-       cmp   [SCR_MODE],word 0x12
+       cmp   [scr_mode], 0x12
        je   dbrv20
      dbrv12:
-       cmp  [SCR_MODE],word 0100000000000000b
+       cmp  [scr_mode], 0100000000000000b
        jge  dbrv20
-       cmp  [SCR_MODE],word 0x13
+       cmp  [scr_mode], 0x13
        je   dbrv20
        call  vesa12_drawbackground
        dec   [mouse_pause]
@@ -4278,12 +4061,12 @@ sys_putimage:
 sys_putimage_bpp:
 ;        call    [disable_mouse] ; this will be done in xxx_putimage
 ;        mov     eax, vga_putimage
-	cmp	[SCR_MODE], word 0x12
+    cmp [scr_mode], 0x12
 	jz	@f   ;.doit
 	mov	eax, vesa12_putimage
-	cmp	[SCR_MODE], word 0100000000000000b
+    cmp [scr_mode], 0100000000000000b
 	jae	@f
-	cmp	[SCR_MODE], word 0x13
+    cmp [scr_mode], 0x13
 	jnz	.doit
 @@:
 	mov	eax, vesa20_putimage
@@ -4527,12 +4310,12 @@ __sys_drawbar:
   .forced:
     inc   [mouse_pause]
 ;        call    [disable_mouse]
-    cmp   [SCR_MODE],word 0x12
+    cmp   [scr_mode], 0x12
     je	 dbv20
    sdbv20:
-    cmp  [SCR_MODE],word 0100000000000000b
+    cmp  [scr_mode], 0100000000000000b
     jge  dbv20
-    cmp  [SCR_MODE],word 0x13
+    cmp  [scr_mode], 0x13
     je	 dbv20
     call vesa12_drawbar
     dec   [mouse_pause]
@@ -4654,16 +4437,6 @@ kb_cmd:
 	ret
 
 
-setmouse:  ; set mousepicture -pointer
-	   ; ps2 mouse enable
-
-     mov     [MOUSE_PICTURE],dword mousepointer
-
-     cli
-
-     ret
-
-
 _rdtsc:
      bt [cpu_caps], CAPS_TSC
      jnc ret_rdtsc
@@ -4678,55 +4451,30 @@ rerouteirqs:
 
 	mov	al,0x11 	;  icw4, edge triggered
 	out	0x20,al
-	call	pic_delay
 	out	0xA0,al
-	call	pic_delay
 
 	mov	al,0x20 	;  generate 0x20 +
 	out	0x21,al
-	call	pic_delay
 	mov	al,0x28 	;  generate 0x28 +
 	out	0xA1,al
-	call	pic_delay
 
 	mov	al,0x04 	;  slave at irq2
 	out	0x21,al
-	call	pic_delay
 	mov	al,0x02 	;  at irq9
 	out	0xA1,al
-	call	pic_delay
 
 	mov	al,0x01 	;  8086 mode
 	out	0x21,al
-	call	pic_delay
 	out	0xA1,al
-	call	pic_delay
 
 	mov	al,255		; mask all irq's
 	out	0xA1,al
-	call	pic_delay
 	out	0x21,al
-	call	pic_delay
-
-	mov	ecx,0x1000
-	cld
-picl1:	call	pic_delay
-	loop	picl1
 
 	mov	al,255		; mask all irq's
 	out	0xA1,al
-	call	pic_delay
 	out	0x21,al
-	call	pic_delay
-
 	ret
-
-
-pic_delay:
-
-	jmp	pdl1
-pdl1:	ret
-
 
 align 4
 _SysMsgBoardStr:
@@ -4953,7 +4701,7 @@ sys_gs: 			; direct screen access
      jne  no_gs1
      mov  eax,[Screen_Max_X]
      shl  eax,16
-     mov  ax,[Screen_Max_Y]
+     mov  ax, word [Screen_Max_Y]
      add  eax,0x00010001
      mov  [esp+36],eax
      ret
@@ -4961,7 +4709,7 @@ sys_gs: 			; direct screen access
 
      cmp   eax,2		; bits per pixel
      jne   no_gs2
-     movzx eax,byte [ScreenBPP]
+     mov   eax, [ScreenBPP]
      mov   [esp+36],eax
      ret
    no_gs2:
@@ -5065,9 +4813,9 @@ syscall_drawrect:			; DrawRect
 
 align 4
 syscall_getscreensize:			; GetScreenSize
-	mov	ax, [Screen_Max_X]
+    mov eax, [Screen_Max_X]
 	shl	eax, 16
-	mov	ax, [Screen_Max_Y]
+    mov ax, word [Screen_Max_Y]
 	mov	[esp + 32], eax
 	ret
 
@@ -5139,7 +4887,7 @@ syscall_getpixel:			; GetPixel
      div   ecx
      mov   ebx, edx
      xchg  eax, ebx
-     call  dword [GETPIXEL] ; eax - x, ebx - y
+     call  dword [get_pixel] ; eax - x, ebx - y
      mov   [esp + 32], ecx
      ret
 
@@ -5381,14 +5129,15 @@ yes_shutdown_param:
            mov eax, _sys_pdbr + (0x100000000-OS_BASE)
            mov cr3, eax
 
-           jmp far 0x60:_poweroff;
+           jmp far sel_code_16:_poweroff;
 
+align 4
 
 _sys_restart:
 
-           mov ax,os_stack
-           mov dx,app_data
-	   mov ss,ax
+           mov ax, sel_os_stack
+           mov dx, sel_app_data
+           mov ss, ax
            mov esp, __os_stack
 
            mov ds, dx
@@ -5404,7 +5153,7 @@ _sys_restart:
            mov  ecx,0x10000/4
            rep movsd
 
-           mov eax, [_copy_pg_balloc]
+         ;  mov eax, [_copy_pg_balloc]
            mov [_pg_balloc], eax
 
            mov dword [_sys_pdbr],   PG_LARGE+PG_SW

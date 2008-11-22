@@ -9,7 +9,7 @@ include "../const.inc"
 
 public __start
 
-extrn  _high_code
+extrn  high_code
 extrn  __os_stack
 extrn  _boot_mbi
 extrn  _sys_pdbr
@@ -70,8 +70,9 @@ __start:
 ; ENABLE PAGING
 
            mov ecx, 64
-           mov edi, _sys_pdbr+(OS_BASE shr 20)+(0x100000000-OS_BASE)
            mov eax, PG_LARGE+PG_SW
+           mov edi, _sys_pdbr+(OS_BASE shr 20)+(0x100000000-OS_BASE)
+           mov [edi-4], dword (PG_LARGE+PG_USER)
 @@:
            stosd
            add eax, 4*1024*1024
@@ -110,8 +111,8 @@ __start:
            add ecx, 4095
            and ecx, not 4095
 
-           lgdt [_gdts+(0x100000000-OS_BASE)]
-           jmp pword 0x08:_high_code
+           lgdt [_gdts]     ;+(0x100000000-OS_BASE)]
+           jmp pword 0x10:high_code
 
 
 .fault:

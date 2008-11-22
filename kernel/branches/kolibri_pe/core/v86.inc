@@ -392,7 +392,7 @@ v86_irqerr      db      'V86 : IRQ already hooked',13,10,0
 endg
 
 v86_exc_c:
-        mov     ax, app_data
+        mov     ax, sel_app_data
         mov     ds, ax
         mov     es, ax
 ; Did we all that we have wanted to do?
