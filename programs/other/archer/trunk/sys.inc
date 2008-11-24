@@ -184,7 +184,8 @@ thread:
     mov  ecx,[PNG_info.Height]
     add  ecx,30
     mcall 0,,,0x3808080
-    mcall 4,<5,7>,0x10f0f0f0,filename,255
+    ;mcall 4,<5,7>,0x10f0f0f0,filename,255
+    mcall 71,1,filename,255 ;by Leency
     mov  ecx,[PNG_info.Width]
     shl  ecx,16
     add  ecx,[PNG_info.Height]
