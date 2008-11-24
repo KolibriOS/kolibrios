@@ -1,0 +1,209 @@
+/*
+   Memory Blocks for KolibriOS v1.02
+             L&V Edition
+
+	»де€ и дизайн: Leency
+	–еализовано: Veliant и Leency
+          Compile with C--
+		       2008
+*/
+#codesize
+#include "kolibri.h--"
+#include "icons.txt"
+#define strok 6		//количество блоков по вертикали
+#define stolbcov 10	//количество блоков по горизонтали
+
+char button_r[20] = "НЃҐ†п ®£а†(F2) Сз•в:"; //нова€ игра
+char button_e[20] = "New  game (F2)Count:";
+
+byte bitstat[60], bitpict[60];
+dword butonsx[60], butonsy[60];
+dword firstbit, secondbit;
+int i, count, lang;
+
+void main()
+{
+	byte id;
+	init();
+	loop()
+	{
+		switch (WaitEvent())
+		{
+			CASE evButton:
+				id = GetButtonID();
+				SWITCH (id)
+				{
+					CASE 1:
+						ExitProcess();
+					CASE 5:
+						init();
+						break;
+					CASE 6:
+						FOR (i=0;i<20;i++) button_r[i]><button_e[i];
+						IF (!lang) lang=1; ELSE	lang=0;
+						Draw_Panel();
+						break;
+					default:
+						if (bitstat[id-100] == 0)
+						{
+							if (firstbit <> 0x0BAD)
+							{
+								if (secondbit <> 0x0BAD)
+								{
+									IF (bitpict[firstbit-100] == bitpict[secondbit-100])
+										bitstat[firstbit-100] = bitstat[secondbit-100] = 2;
+									ELSE
+										bitstat[firstbit-100] = bitstat[secondbit-100] = 0;
+									ReDraw_Game_Button(firstbit - 100);
+									ReDraw_Game_Button(secondbit - 100);
+									secondbit = 0x0BAD;
+									firstbit = id;
+									bitstat[id-100] = 1;
+									ReDraw_Game_Button(id - 100);
+									count++;
+								}
+								ELSE IF (firstbit<>id)
+								{
+									secondbit = id;
+									bitstat[id-100] = 1;
+									ReDraw_Game_Button(id - 100);
+									count++;
+								}
+							}
+							ELSE
+							{
+								firstbit = id;
+								bitstat[id-100] = 1;
+								ReDraw_Game_Button(id - 100);
+								count++;
+							}
+						}
+						Draw_Count();
+				}
+				break;
+			case evKey:
+				IF (GetKey()==51) init();
+				BREAK;
+			case evReDraw:
+				WindowRedrawStatus(1);
+				DefineAndDrawWindow(100, 100, 434, 291 + GetSkinWidth(), 0x34, 0x10C0C0C0, 0, 0, "Memory Blocks L&V Edition");
+				Draw_Panel();
+				Draw_Game_Pole();
+				WindowRedrawStatus(2);
+		}
+	}
+}
+
+
+void init()
+{
+	byte off;
+	$mov	edi, #bitstat
+	$mov	ecx, 60
+	$xor	al, al
+	$rep	$stosb			//стираем старые даннvе о нажатых кнопках
+
+	$mov	edi, #bitpict
+	$mov	ecx, 60
+	$xor	al, al
+	$rep	$stosb			//стираем старые данные о картинках
+
+	count = 0;
+	firstbit = secondbit = 0x0BAD;
+	FOR (i = 0; i < 30; i++)
+	{
+		do off = random(60); while (bitpict[off] != 0);
+		bitpict[off] = i;
+		do off = random(60); while (bitpict[off] != 0);
+		bitpict[off] = i;
+	}
+	Draw_Game_Pole();
+	Draw_Panel();
+}
+
+void ReDraw_Game_Button(int id)
+{
+	DefineButton(butonsx[id], butonsy[id], 38, 38, 100 + id + BT_HIDE, 0xEFEBEF);	//делаем новую
+	switch (bitstat[id])
+	{
+		CASE 0:
+			Draw_Block(butonsx[id], butonsy[id]);
+			break;
+		CASE 1:
+			Draw_Pressed_Block(butonsx[id], butonsy[id]);
+			PutImage(bitpict[id]*32*32+#data,32,32,butonsx[id]+3,butonsy[id]+3, #palitra);
+			BREAK;
+		CASE 2:
+			Draw_Open_Block(butonsx[id], butonsy[id]);
+			PutImage(bitpict[id]*32*32+#data,32,32,butonsx[id]+3,butonsy[id]+3, #palitra);
+			BREAK;
+	}
+}
+  
+void Draw_Game_Pole()
+{
+	byte j;
+	FOR (j = 0; j < stolbcov; j++)	FOR (i = 0; i < strok; i++)
+	{
+			butonsx[j*strok+i] = j * 42 + 4;		//сохран€ем координаты чтоб не считать в дальнейшем
+			butonsy[j*strok+i] = i * 42 + 4;
+			ReDraw_Game_Button(j*strok + i);		//рисуем поле
+	}
+}
+
+void Draw_Block(dword x, y)
+{
+	DrawRegion(x, y, 38, 38, 0x0094AECE);//рамка
+	DrawBar(x+1, y+1, 37, 1, 0xFFFFFF); //белые линии
+	DrawBar(x+1, y+2, 1, 35, 0xFFFFFF);
+	DrawBar(x+1, y+37, 37, 1, 0xDEDEDE); //серые линии
+	DrawBar(x+37, y+2, 1, 35, 0xDEDEDE);
+	DrawBar(x + 2, y + 2, 35, 35, 0x00BDC7D6);//фон
+}
+
+void Draw_Open_Block(dword x, y)
+{
+	DrawRegion(x, y, 38, 38, 0x0094AECE);//рамка
+	DrawBar(x + 1, y + 1, 37, 37, 0x00EFEBEF);//фон
+}
+
+void Draw_Pressed_Block(dword x, y)
+{
+	DrawRegion(x, y, 38, 38, 0x0094AECE);//рамка
+	DrawRegion(x + 1, y + 1, 36, 36, 0x0094DB00);//рамка зелена€
+	DrawRegion(x + 2, y + 2, 34, 34, 0x0094DB00);//рамка зелена€
+	DrawBar(x + 3, y + 3, 33, 33, 0x00EFEBEF);//фон
+}
+
+
+void Draw_Panel()
+{
+	DrawBar(0, 255, 425, 32, 0xEBE7DB);//фон панели
+	DrawBar(0, 255, 425, 1, 0x94AECE); //линии
+	DrawBar(0, 256, 425, 1, 0xFFFFFF); //линии
+	//кнопки
+	DrawFlatButton(9, 260, 107, 23, 5, 0xEFEBEF);//нова€ игра
+	WriteText(22,268,0x00,0,#button_r,14);
+	WriteText(150, 268, 0x80, 0x00, #button_r+14, 0); //надпись "—чет"
+	DrawFlatButton(215, 260, 23, 23, 6, 0xEFEBEF); //€зык
+	IF (!lang) 
+		WriteText(221,268,0x80,0,"EN",0);
+	ELSE
+		WriteText(221,268,0x80,0,"RU",0);
+	Draw_Count();
+ 	//пр€моугольники справа
+	DrawBar(400 , 265, 2, 2, 0xBDCBDE);
+	DrawBar(398 , 270, 6, 6, 0xBDCBDE);
+	DrawBar(406 , 275, 6, 6, 0xBDCBDE);
+	DrawBar(407 , 262, 9, 8, 0xD6D7CE);
+}
+
+
+void Draw_Count()
+{
+	DrawBar(190,268,18,7,0xEBE7DB);  //цвет панели
+	WriteNumber(190, 268, 0x80, 0x00, 3, count);
+}
+
+
+stop:
