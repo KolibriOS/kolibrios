@@ -5,14 +5,13 @@
 #include "lib\memory.h--"
 #include "lib\edit_box_lib.h--"
 #include "include\run_file.h--"  
-#include "include\icons_f.h--"
-#include "imgs\toolbar_new.cpp"
+#include "imgs\toolbar.txt"
 #include "imgs\left_p.cpp"
 
 //локализация и настройки
-byte header[27] = "Eolite File Manager v0.96.7";
+byte header[27] = "Eolite File Manager v0.97";
 #define videlenie 0x94AECE; //цвет выделенного элемента из списка файлов
-int toolbar_buttons_x[6]={14,51,90,139,172,208};
+byte toolbar_buttons_x[6]={14,51,90,139,172,208};
 //
 dword but_num=0, kolichestvo=0, curbtn=0, za_kadrom=0;
 byte cut_active, rename_active, del_active;
@@ -23,48 +22,39 @@ byte file_path[256], file_name[256]; //для файлов
 byte copyfile[256],copy_name[256]; //копирование
 dword i; //для циклов
 dword file_mas[6898]; //список файлов
-dword temp_int;
+int temp_int, j;
 dword stak[100]=0; //окно About 
 
 edit_box edit1= {250,252,17,0xffffff,0x94AECE,0xD3DDEB,0xffffff,0,248,#edit_path,64,6,6};
 edit_box edit2= {250,218,80,0xFFFFCC,0x94AECE,0xFFFFCC,0xffffff,0,248,#file_name,64,6,6};
 
 proc_info	Form;
-
-struct {
-	int	func;
-	int	pos;
-	int	rezerv;
-	int	sizefile;
-	int	buffer;
-	char rezerv2;
-	int	stroka;
-}open_file_70;
+f70 open_dir_70;
 dword buf=0, off; //для текста и буфера
 dword devbuf=0, dev_num;
 #include "include\LVabout.c--"
-
+#include "include\icons_f.h--"
 
 void main()   
 byte pressed, key, id; 
 mouse m;
 {
 		devbuf= malloc(3112); //буфер где-то на 10 девайсов в левой панели
-		open_file_70.func = 1;
-		open_file_70.pos = 0;
-		open_file_70.rezerv = 0;
-		open_file_70.sizefile = 10;
-		open_file_70.buffer = devbuf;
-		open_file_70.rezerv2 = 0;
-		open_file_70.stroka = "/";
+		open_dir_70.func = 1;
+		open_dir_70.param1 = 0;
+		open_dir_70.param2 = 0;
+		open_dir_70.param3 = 10;
+		open_dir_70.param4 = devbuf;
+		open_dir_70.rezerv = 0;
+		open_dir_70.name = "/";
 		$mov eax,70
-		$mov ebx,#open_file_70.func
+		$mov ebx,#open_dir_70.func
 		$int 0x40
 		dev_num=EBX;
 	load_dll(); //подгружает либу с едит_боксом                               
 	IF (param[0]<>'') {copystr(#param,#edit_path); Goto_edit_path();}
 	Open_Dir(#path,2);
-	SetEventMask(); 
+	//SetEventMask(100111b); 
 	loop()
 	{
 		switch(WaitEvent())
@@ -95,7 +85,7 @@ mouse m;
 			case evButton:
 				IF (edit1.flags<>64) {edit1.flags=64; edit_box_draw stdcall(#edit1);} //сбрасываем выделение при нажатии на батон
 				id=GetButtonID();
-				IF (id==1) ExitProcess();
+				IF (id==1) {IF(buf)free(buf); ExitProcess();}
 				IF (del_active==1) {IF (id==301) || (id==302) Del_File(302-id); break;}
 				switch(id) 
 				{
@@ -170,7 +160,8 @@ mouse m;
 					IF (key==027) Del_File(false);
 				 	break;
 				 	}
-				IF (edit1.flags<>64) || (edit2.flags<>64) SWITCH (key) { CASE 8: CASE 180...182: CASE 051...056: goto EDIT_KEY_MARK; } //1..10 и ноум/енд в едитбоксах
+				IF (edit1.flags<>64) && (key<>13) {EAX=key<<8; edit_box_key stdcall (#edit1); break;} 
+                IF (edit2.flags<>64) && (key<>13) && (key<>27) {EAX=key<<8; edit_box_key stdcall (#edit2); break;}
 				switch (key)
 				{
 						case 209...217: id=key-109; IF(dev_num>id-100)GOTO DEVICE_MARK; break;
@@ -224,14 +215,20 @@ mouse m;
 										edit_box_draw  stdcall (#edit2);
 										DrawBar(218,curbtn*18+58,edit2.width+1,1,0xFFFFCC); //полоса желтая сверху для одинаковости
 										rename_active=1;
-									BREAK;
+									break;
 						case 052: //Нажата F3
-								IF (isdir==false) Run_Program("/sys/tinypad", #file_path); BREAK;
-						case 054: Open_Dir(#path,1); BREAK; //перерисовать окно F5
-						case 182: Del_Form(); BREAK; //delete file
-						default:  EDIT_KEY_MARK:
-								EAX=key <<8;
-								IF (rename_active==0) edit_box_key stdcall (#edit1); ELSE edit_box_key stdcall (#edit2);
+								IF (isdir==false) Run_Program("/sys/tinypad", #file_path); break;
+						case 054: Open_Dir(#path,1); break; //перерисовать окно F5
+						case 182: Del_Form(); break; //delete file
+						default:    
+								IF (strcmp("..",buf+72+304)<>0) temp_int=0; ELSE temp_int=1;
+								for (i=curbtn+za_kadrom+1; i<kolichestvo; i++)
+								{
+									copystr(file_mas[i+temp_int]*304+buf+72,#temp);
+									AL=DSBYTE[#temp]; 
+									IF(AL>='A')&&(AL<='Z')DSBYTE[#temp]=AL|0x20;
+									IF (temp[0]==key) {FileList_ReDraw(i-curbtn-za_kadrom); break;}
+								}
 				}                         
 				break;
 				case evReDraw:	draw_window();	BREAK;
@@ -247,13 +244,13 @@ inline fastcall void draw_window()
 {
 	WindowRedrawStatus(1);
 	skin_width = GetSkinWidth(); 
-	DefineAndDrawWindow(100,100,600,410,0x43,0x10E4DFE1,0,0,#header); //DrawTitle(#header);
+	DefineAndDrawWindow(100,100,600,410,0x43,0x10E4DFE1,0,0,#header);
 	Form.getme();
 	IF (Form.height==skin_width+3) {WindowRedrawStatus(2); return;} //это зачёт!
 	  IF (Form.height<280) MoveSize(OLD,OLD,OLD,280);
 	  IF (Form.width<480) MoveSize(OLD,OLD,480,OLD);
 	//toolbar buttons
-	PutImage(#toolbar,246,39,5,0);
+	PutPaletteImage(#toolbar,246,39,5,0,#toolbar_pal);
 	FOR (j=0; j<6; j++) DefineButton(toolbar_buttons_x[j],5,31,29,21+j+BT_HIDE,0xE4DFE1);
 	//полоса адреса
 	DrawBar(251,0,onLeft(251,60),12,0xE4DFE1); //фон над полосой адреса
@@ -279,10 +276,13 @@ inline fastcall void draw_window()
 	//прокрутка
 	DrawFlatButton(onLeft(22,0),40,16,16,50,0xE4DFE1,"\x18");		//прокрутка вверх
 	DrawFlatButton(onLeft(22,0),onTop(22,0),16,16,51,0xE4DFE1,"\x19");//прокрутка вниз
+	//
+	//DrawBar(197,57,onLeft(22,197),onTop(57,6),0xFFFFFF); //заливка белым
+	//
 	DrawBar(onLeft(22,0),57,1,onTop(22,57),0x94AECE); 			//линия слева от прокрутки  
 		but_num=onTop(6,57)/18;
 		IF (but_num>100) but_num=1; ELSE IF (kolichestvo<but_num) but_num=kolichestvo;
-		FOR (j=0;j<but_num;j++) DefineButton(197,j+1*18+39,onLeft(22,197),18,201+j+BT_HIDE+BT_NOFRAME,0xFFFFFF); //новые кнопки
+		FOR (j=0;j<but_num;j++) DefineButton(197,j*18+57,onLeft(22,197),18,201+j+BT_HIDE+BT_NOFRAME,0xFFFFFF); //новые кнопки
 		List_ReDraw();
 	IF (del_active==1) Del_Form();
 	WindowRedrawStatus(2);
@@ -354,21 +354,34 @@ void List_ReDraw()
 		ELSE IF (curbtn>but_num-1) curbtn=but_num-1; //это если выделение после схлопывания окна за кадром
 	//
 	FOR (j=0; j<but_num; j++) IF (curbtn<>j) Line_ReDraw(0xFFFFFF, j); ELSE Line_ReDraw(videlenie, curbtn);
-		temp_int=but_num-1*18+75;
+		temp_int=but_num*18+57;
 		DrawBar(197,temp_int,onLeft(22,197),onTop(temp_int,6),0xFFFFFF); //заливка белым доконца
 		DrawBar(onLeft(163,0),temp_int,1,onTop(temp_int,6),0xE4DFE1); //полоса серая вертикальная 1
 		DrawBar(onLeft(90,0),temp_int,1,onTop(temp_int,6),0xE4DFE1); //полоса серая вертикальная 2
 	TVScroll();
 }
 
+/*void List_ReDraw()
+{
+	int i;
+	for (j=0; j<5; j++;) for (i=0; i<6; i++;) 
+	{
+		PutImage(#def_file,48,48,i*64+197,j*64+57);
+		off=file_mas[i+j+za_kadrom]*304 + buf+72;
+		DrawBar(i*64+197,j*64+57+50,10*6,9,0xFFFFFF); //заливка белым
+		WriteText(i*64+197,j*64+57+50,0,0,off,10);
+	}
+	TVScroll();
+}*/
+
 
 void Line_ReDraw(dword color, filenum){
-	dword y, size;
+	dword y=filenum*18+57; //положение текста по Y;
 	if (rename_active==1)
 	{
 		rename_active=0;
 		edit2.flags=64;
-		DefineButton(197,curbtn+1*18+39,onLeft(22,197),18,curbtn+201+BT_HIDE+BT_NOFRAME,0xFFFFFF);
+		DefineButton(197,curbtn*18+57,onLeft(22,197),18,curbtn+201+BT_HIDE+BT_NOFRAME,0xFFFFFF);
 		IF (filenum==100) filenum=curbtn; ELSE
 		{
 			copystr(#path,#temp);
@@ -377,48 +390,46 @@ void Line_ReDraw(dword color, filenum){
 				{ CopyFile(#file_path,#temp);	Del_File(true); }
 		}
 	}
-	DrawBar(197,filenum*18+57,onLeft(22,197),18,color); //полоса белая или выделения
+	//да, я не спорю что изврат, но перерисовка зато маленькая
+	DrawBar(197,y,3,18,color);
+	DrawBar(200,y,16,2,color);
+	DrawBar(197+19,y,onLeft(22+19,197),18,color);
+	DrawBar(200,y+17,16,1,color);
 	//
-	y= filenum*18+85; //положение текста по Y
 	IF (strcmp(".",buf+72)<>0) off=file_mas[filenum+za_kadrom]*304 + buf+72; ELSE off=file_mas[filenum+za_kadrom+1]*304 + buf+72;
-	temp_int = onLeft(220,160)/6;
-	IF (strlen(off)<temp_int) temp_int = strlen(off);  //длинна названия файла
-		WriteText(220,y-22,0,0,off,temp_int);  //имя файла
-	size=ESDWORD[off-8];
 	EAX=ESDWORD[off-40];
 	$shr eax,4
 	$and eax,1
 	IF (color==videlenie) isdir=EAX; //надо обьединить с тем шо снизу
-	IF (!EAX)
+	if (!EAX)
 	{
-		temp_int = Put_icon(off+strlen(off)-4, y);
-		WriteText(7-strlen(ConvertSize(size))*6+onLeft(75,0),y-22,0x80,0,ConvertSize(size),0);
-	} ELSE IF (strcmp("..",off)==0) temp_int=Put_icon("    ", y); ELSE temp_int=Put_icon("<DIR>", y);
+		temp_int = Put_icon(off+strlen(off)-4, y+2);
+		WriteText(7-strlen(ConvertSize(ESDWORD[off-8]))*6+onLeft(75,0),y+6,0x80,0,ConvertSize(ESDWORD[off-8]),0); //size
+	} ELSE IF (strcmp("..",off)==0) temp_int=Put_icon("..", y+2); ELSE temp_int=Put_icon("<DIR>", y+2);
 	IF (color==videlenie)
 	{
-		IconFairing(temp_int, y, videlenie); //закрашиваем иконку
+		IconFairing(temp_int, y+2, videlenie); //закрашиваем иконку
 		copystr(#path,#file_path);
 		copystr(off,#file_name);
 		copystr(off,#file_path+strlen(#file_path)); //итак, file_path=файлу, т.к. по-умолчанию это прога
 	}
-	DrawBar(onLeft(163,0),filenum*18+57,1,18,0xE4DFE1); //полоса серая вертикальная 1
-	DrawBar(onLeft(90,0),filenum*18+57,1,18,0xE4DFE1); //полоса серая вертикальная 2
+	temp_int = onLeft(220,160)/6;
+	IF (strlen(off)<temp_int) temp_int = strlen(off);  //длинна названия файла
+		WriteText(220,y+6,0,0,off,temp_int);  //имя файла
+	DrawBar(onLeft(163,0),y,1,18,0xE4DFE1); //полоса серая вертикальная 1
+	DrawBar(onLeft(90,0),y,1,18,0xE4DFE1); //полоса серая вертикальная 2
 	//Preview();
 }
 
 
 void Open_Dir(dword path_,redraw){
   IF (buf) free(buf);
-	//open_file_70.func = 1;    //а нафига, они сверху есть...
-	//open_file_70.pos = 0;
-	//open_file_70.rezerv = 0;
-	open_file_70.sizefile = 6898;
+	open_dir_70.param3 = 6898; //filenum
 	buf = malloc(2097152);
-	open_file_70.buffer = buf;
-	//open_file_70.rezerv2 = 0;
-	open_file_70.stroka = path_;
+	open_dir_70.param4 = buf;
+	open_dir_70.name = path_;
 	$mov eax,70
-	$mov ebx,#open_file_70.func
+	$mov ebx,#open_dir_70.func
 	$int 0x40
 	kolichestvo=EBX;
 	//
@@ -448,13 +459,13 @@ void FoldesGoUp()
 	dword k=0, l=0; off=buf+72;
 	IF (strcmp(#path,"/rd/1/")==0) || (strcmp(#path,"/fd/1/")==0) kolichestvo--; 
 	IF (strcmp(".",buf+72)<>0) && (strlen(#path)>6) kolichestvo--; //фак! это бред! хз как оно работает
-	FOR (i=0;i<=kolichestvo;i++)  //а папки всё выше и выше...
+	FOR (j=0;j<=kolichestvo;j++)  //а папки вверх, файлы вниз
 	{
 		EAX=ESDWORD[off-40];
 		$shr eax,4
 		$and eax,1
-		IF (EAX) {file_mas[k]=i; k++;}
-			ELSE {file_mas[kolichestvo-l]=i; l++;}
+		IF (EAX) {file_mas[k]=j; k++;}
+			ELSE {file_mas[kolichestvo-l]=j; l++;}
 		off += 304;
 	}
 	//k=0; l=kolichestvo;
@@ -506,19 +517,20 @@ void Del_Form()
 	DrawFlatButton(temp_int+111,208,70,20,302,0xC6DFC6,"No");
 	del_active=1;
 }
-	
+
+f70 del_file_70;	
 void Del_File(byte dodel)
-{
+{    
   IF (dodel==true){
-	run_file_70.func = 8;
-	run_file_70.flag = 0;
-	run_file_70.param= 0;
-	run_file_70.rez1 = 0;
-	run_file_70.rez2 = 0;
-	run_file_70.rezerv2 = 0;
-	run_file_70.stroka = #file_path;
+	del_file_70.func = 8;
+	del_file_70.param1 = 0;
+	del_file_70.param2 = 0;
+	del_file_70.param3 = 0;
+	del_file_70.param4 = 0;
+	del_file_70.rezerv = 0;
+	del_file_70.name = #file_path;
 	$mov eax,70
-	$mov ebx,#run_file_70.func
+	$mov ebx,#del_file_70.func
 	$int 0x40}
 	 del_active=0;
 	 DeleteButton(301); DeleteButton(302); //удаляем кнопочки Yes/No
@@ -583,10 +595,11 @@ void Devices()
 		IF (dev_name[0]=='r')  { copystr("RAM-disk /rd/1/",#drive_name); dev_icon=0; }
 	  WriteText(45,i*16+79,0x80,0,#drive_name,0);
 	  PutImage(dev_icon*14*13*3+#devices,14,13,26,i*16+76);
-      }
+	}
 	Actions();  //функции файлов и папок
 	Preview();
 }
+
 
 void Actions()
 {
@@ -616,33 +629,6 @@ void Actions()
 }
 
 
-/*void Dir_Up()
-{
-	byte temp_[256];
-	i=strlen(#path)-1;
-	path[i]=0x00;
-	do i--; while (path[i]<>'/'); copystr(#path+i+1,#temp_); 
-	path[i+1]=0x00;
-	ChangeCase(#temp_);
-	za_kadrom=curbtn=0; //вверх списка
-   	Open_Dir(#path,2);
-	FOR (i=kolichestvo; i>0; i--;)	IF(strcmp(file_mas[i]*304+buf+72,#temp_)==0) BREAK;
-	//
-	IF (i<kolichestvo-but_num) {IF (strcmp(".",buf+72)<>0) za_kadrom=i; ELSE za_kadrom=i-1;}
-		ELSE {za_kadrom=kolichestvo-but_num; curbtn=i-kolichestvo+but_num;}
-	List_ReDraw();
-}*/
-
-/*void Dir_Up()
-{
-	i=strlen(#path)-1;
-	do i--; while (path[i]<>'/');
-	path[i+1]=0x00;
-	za_kadrom=0; curbtn=0; //вверх списка
-   	Open_Dir(#path,1);
-}*/
-
-//баг - если сверху, то сверху,а не снизу
 void Dir_Up()
 {
 	byte temp_[256];
@@ -668,7 +654,7 @@ void Dir_Up()
 void Preview()
 {
 	dword top_pr=dev_num*16+123;
-	top_pr+=show_actions*51; //ничинаем ниже, если Акшнс видимы
+	top_pr+=show_actions*51; //начинаем ниже, если Экшнс видимы
 	DeleteButton(78);
 	if (show_preview==1)
 	{
@@ -680,8 +666,8 @@ void Preview()
 		//WriteText(30,top_pr+60,0x80,0,"ra_kadrom:",0);	 WriteText(105,top_pr+60,0x80,0,IntToStr(za_kadrom),0);
 		//WriteText(30,top_pr+70,0x80,0,#file_path,0);
 		//WriteText(30,top_pr+80,0x80,0,#file_name,0);
-		WriteText(30,top_pr+60,0x80,0,"Not realized... Yet.",0);
-		//WriteText(30,top_pr+70,0x80,0,"Nable, I'm waiting (:",0);
+		WriteText(30,top_pr+60,0x80,0,"Not realized... I think",0);
+		WriteText(30,top_pr+70,0x80,0,"it will be realired soon.",0);
 		DrawBar(22,top_pr+118,160,onTop(top_pr+118,6),0x00699C); //синее
 	} 
 	ELSE  {

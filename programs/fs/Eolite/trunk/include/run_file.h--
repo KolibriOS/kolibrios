@@ -1,28 +1,17 @@
-#include "imgs\icons.cpp"
-
-struct {
-     int     func;
-     int     flag;
-     int     param;
-     int     rez1;
-     int     rez2;
-     char rezerv2;
-     int     stroka;
-}run_file_70;
-
+f70 run_file_70;
 
 ///////////////////////////
 //   Запуск программы    //
 ///////////////////////////
 void Run_Program(dword run_path, run_param)
-{
+{    
     run_file_70.func = 7;
-    run_file_70.flag = 0;
-    run_file_70.param= run_param;
-    run_file_70.rez1 = 0;
-    run_file_70.rez2 = 0;
-    run_file_70.rezerv2 = 0;
-    run_file_70.stroka = run_path;
+    run_file_70.param1 = 0;
+    run_file_70.param2 = run_param;
+    run_file_70.param3 = 0;
+    run_file_70.param4 = 0;
+    run_file_70.rezerv = 0;
+    run_file_70.name = run_path;
     $mov eax,70
     $mov ebx,#run_file_70.func
     $int 0x40 
@@ -50,43 +39,46 @@ void Run_File(dword fpath)
 	Run_Program(fpath, "");
 }*/
 
-///////////////////////////
-//     Запуск файла      //
-///////////////////////////
+
 void Run_File(dword fpath)
 {
 	dword extension[4], fparam[256];
 	copystr(fpath,#fparam); //по-умолчанию прога и параметр равны, если окажется что это файл, парам - сбросим
 	copystr(fpath+strlen(fpath)-4,#extension); //узнаём расширение файла с каким работаем
 	//тут мы это расширение сравнимаем, и, если оно асоциируется с прогой, прога - это fpath
-		IF (strcmp(#extension,".skn")==0) copystr("desktop",fpath);
-		IF (strcmp(#extension,".avi")==0) copystr("/sys/kvid",fpath);
-		IF (strcmp(#extension,".htm")==0) copystr("/sys/network/HTMLv",fpath);
-		IF (strcmp(#extension,"html")==0) copystr("/sys/network/HTMLv",fpath);
+		IF (!strcmp(#extension,".skn")) copystr("desktop",fpath);
+		IF (!strcmp(#extension,".avi")) copystr("/sys/kvid",fpath);
+		IF (!strcmp(#extension,".mpg")) copystr("/sys/kvid",fpath);
+		IF (!strcmp(#extension,".htm")) copystr("/sys/network/HTMLv",fpath);
+		IF (!strcmp(#extension,"html")) copystr("/sys/network/HTMLv",fpath);
 		//IF (strcmp(#extension,".htm")==0) || (strcmp(#extension,"html")==0) copystr("/hd0/2/Programs/QIP/Users/419114984/RcvdFiles/313257308_Veliant/browser/HTMLv",fpath);
-		IF (strcmp(#extension,".3ds")==0) copystr("/sys/demos/3d/view3ds",fpath);
-		IF (strcmp(#extension,".lif")==0) copystr("/sys/demos/life2",fpath);
-		IF (strcmp(#extension,".cvs")==0) copystr("graph",fpath);
+		IF (!strcmp(#extension,".3ds")) copystr("/sys/demos/3d/view3ds",fpath);
+		IF (!strcmp(#extension,".lif")) copystr("/sys/demos/life2",fpath);
+		IF (!strcmp(#extension,".cvs")) copystr("graph",fpath);
+		IF (!strcmp(#extension,".nes")) copystr("/sys/games/fce",fpath);
 		//audio
-		IF (strcmp(#extension,".mp3")==0) copystr("AC97SND",fpath);
-		IF (strcmp(#extension,".wav")==0) copystr("AC97SND",fpath);
-		IF (strcmp(#extension,".mid")==0) copystr("MIDAMP",fpath);
-		IF (strcmp(#extension,"midi")==0) copystr("MIDAMP",fpath);
+		IF (!strcmp(#extension,".mp3")) copystr("AC97SND",fpath);
+		IF (!strcmp(#extension,".wav")) copystr("AC97SND",fpath);
+		IF (!strcmp(#extension,".mid")) copystr("MIDAMP",fpath);
+		IF (!strcmp(#extension,"midi")) copystr("MIDAMP",fpath);
 		//text
-		IF (strcmp(#extension,".rtf")==0) copystr("RtfRead",fpath);
-		IF (strcmp(#extension,".txt")==0) copystr("TinyPad",fpath);
-		IF (strcmp(#extension,".inc")==0) copystr("TinyPad",fpath);
-		IF (strcmp(#extension,".ini")==0) copystr("TinyPad",fpath);
-		IF (strcmp(#extension,".dat")==0) copystr("TinyPad",fpath);
-		IF (strcmp(#extension,".asm")==0) copystr("TinyPad",fpath); //AsmMenu1,AsmMenu2
+		IF (!strcmp(#extension,".rtf")) copystr("RtfRead",fpath);
+		IF (!strcmp(#extension,".txt")) copystr("TinyPad",fpath);
+		IF (!strcmp(#extension,".inc")) copystr("TinyPad",fpath);
+		IF (!strcmp(#extension,".ini")) copystr("TinyPad",fpath);
+		IF (!strcmp(#extension,".dat")) copystr("TinyPad",fpath);
+		IF (!strcmp(#extension,".asm")) copystr("TinyPad",fpath);
+		IF (!strcmp(#extension,".cpp")) copystr("TinyPad",fpath);
 		//изображения
-		IF (strcmp(#extension,".gif")==0) copystr("MV",fpath); //GifView,MenuAnimage
-		IF (strcmp(#extension,".bmp")==0) copystr("MV",fpath); //BmpMenu1,MenuAnimage
-		IF (strcmp(#extension,".tga")==0) copystr("MV",fpath);
-		IF (strcmp(#extension,".pcx")==0) copystr("MV",fpath);
-		IF (strcmp(#extension,".png")==0) copystr("@rcher",fpath);
-		IF (strcmp(#extension,".jpg")==0) copystr("JpegView",fpath);
-		IF (strcmp(#extension,"jpeg")==0) copystr("JpegView",fpath);
-	IF (strcmp(fpath,#fparam)==0) copystr("",#fparam); //если fpath не изменился, то это таки, наверное, прога, параметров нет.
+		IF (!strcmp(#extension,".gif")) copystr("MV",fpath); //GifView,MenuAnimage
+		IF (!strcmp(#extension,".bmp")) copystr("MV",fpath); //BmpMenu1,MenuAnimage
+		IF (!strcmp(#extension,".tga")) copystr("MV",fpath);
+		IF (!strcmp(#extension,".pcx")) copystr("MV",fpath);
+		IF (!strcmp(#extension,".cur")) copystr("MV",fpath);
+		IF (!strcmp(#extension,".ico")) copystr("MV",fpath);
+		IF (!strcmp(#extension,".png")) copystr("@rcher",fpath);
+		IF (!strcmp(#extension,".jpg")) copystr("JpegView",fpath);
+		IF (!strcmp(#extension,"jpeg")) copystr("JpegView",fpath);
+	IF (!strcmp(fpath,#fparam)) fparam=''; //если fpath не изменился, то это таки, наверное, прога, параметров нет.
 	Run_Program(fpath, #fparam); //запуск!
 }

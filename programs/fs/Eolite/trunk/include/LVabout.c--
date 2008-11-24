@@ -1,34 +1,4 @@
-#include "imgs\logo.cpp"
-
-/*void authors()
-{
-	_HH:
-	WindowRedrawStatus(1);
-	DefineAndDrawWindow(500,200,181,256,0x04,0x10EFEBEF,0,0,"About Eolite");
-     //DrawTitle("About Eolite");
-	DrawBar(5,0,172,50,0x8494C4); //голубое сзади
-	PutImage(#logo,85,85,48,7);
-		WriteText(32,100,0x80,0xBF40BF,"Eolite v0.96.4 beta7",0);
-		WriteText(68,120,0x80,0,"Authors:",0); 
-		WriteText(44,130,0x80,0,"Leency & Veliant",0); 
-		WriteText(50,140,0x80,0,"KolibriOS Team",0); 
-		WriteText(26,160,0x80,0,"Made using C-- in 2008",0);
-		WriteText(23,170,0x80,0,"Visit www.kolibrios.org",0);
-	DrawFlatButton(90,190,70,22,2,0x00D7D7D7, "Close");
-	WindowRedrawStatus(2);
-	loop()
-	{
-		SWITCH(WaitEvent())
-		{
-			CASE evButton: ExitProcess();
-			CASE evKey: IF (GetKey()==27) ExitProcess(); break;
-			CASE evReDraw: GOTO _HH;
-			BREAK;
-		}
-	}
-	ExitProcess();
-}*/
-
+#include "imgs\logo.txt"
 
 void authors()
 {
@@ -41,20 +11,19 @@ void authors()
 			CASE evReDraw:
 				WindowRedrawStatus(1);
 				DefineAndDrawWindow(500,200,181,256,0x04,0x10EFEBEF,0,0,"About Eolite");
-			    //DrawTitle("About Eolite");
 				DrawBar(5,0,172,50,0x8494C4); //голубое сзади
-				PutImage(#logo,85,85,48,7);
-				WriteText(32,100,0x80,0xBF40BF,"Eolite v0.96.7 beta7",0);
+				//PutImage(#logo,85,85,48,7);
+				PutPaletteImage(#logo,85,85,48,7,#logo_pal);
+				WriteText(38,100,0x80,0xBF40BF,"Eolite v0.97 beta7",0);
 				WriteText(68,120,0x80,0,"Authors:",0); 
 				WriteText(44,130,0x80,0,"Leency & Veliant",0); 
 				WriteText(50,140,0x80,0,"KolibriOS Team",0); 
 				WriteText(26,160,0x80,0,"Made using C-- in 2008",0);
 				WriteText(23,170,0x80,0,"Visit www.kolibrios.org",0);
-				DrawFlatButton(90,190,70,22,2,0x00D7D7D7, "Close");
+				DrawFlatButton(90,190,70,22,2,0xE4DFE1, "Close");
 				WindowRedrawStatus(2);
 		}
 	}
-	//ExitProcess();
 }
 
 
@@ -127,3 +96,5 @@ void Sort_by_Type(dword a, b)   // для первого вызова: a = 0, b = <элементов в м
 	Sort_by_Type(a, c-1);
 	Sort_by_Type(c+1, b);
 }
+
+

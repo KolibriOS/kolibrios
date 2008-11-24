@@ -11,12 +11,11 @@ dword  alloc_mem    = 0x00100000;
 dword  x86esp_reg   = 0x00100000;   // 0x0007fff0; 
 dword  I_Param      = #param;
 dword  I_Icon       = 0x0;
-dword	skin_width;
-
+dword  skin_width;
 char param[256]="";
 
 //Events
-#define evMouse	6
+#define evMouse		6
 #define evButton	3
 #define evKey		2
 #define evReDraw	1
@@ -121,10 +120,11 @@ inline fastcall dword WaitEvent(){
  $int 0x40
 }
 
-inline fastcall void ExitProcess(){
- EAX = -1;              // close this program
- $int 0x40
-}
+/*inline fastcall void SetEventMask(dword EBX){
+	$mov eax,40
+	//$mov ebx,100111b
+	$int 0x40
+}*/
 
 inline fastcall word GetKey(){
  EAX = 2;              // just read this key from buffer
@@ -138,166 +138,64 @@ inline fastcall word GetButtonID(){
  EAX = EAX >> 8;
 }
 
+inline fastcall void ExitProcess(){
+ EAX = -1;            // close this program
+ $int 0x40
+}
 
-inline fastcall void DrawTitle(dword ECX)
+/*void Pause(dword EBX)
+{					//Пауза, в сотых долях секунды EBX = value
+	$mov eax, 5
+	$int 0x40
+}*/
+
+//------------------------------------------------------------------------------
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword
+	mainAreaColor,byte headerType,dword headerColor,EDI)
 {
+	EBX = x << 16 + sizeX;
+	ECX = y << 16 + sizeY;
+	EDX = mainAreaType << 24 | mainAreaColor;
+	ESI = headerType << 24 | headerColor;
+	$xor eax,eax
+	$int 0x40
+}
+
+inline fastcall void DrawTitle(dword ECX){
 	EAX = 71;
 	EBX = 1;
 	$int 0x40;
 }
 
-inline fastcall dword GetSkinWidth()
-{
+
+inline fastcall void WindowRedrawStatus(dword EBX){
+	EAX = 12;              //tell os about windowdraw
+	$int 0x40
+}
+
+inline fastcall dword GetSkinWidth(){
 	EAX = 48;
 	EBX = 4;
 	$int 0x40
 }
 
-
-inline fastcall void DeleteButton(dword EDX)
-{
-	EAX = 8;
-	EDX = EDX + BT_DEL;
-	$int 0x40;
+inline fastcall dword MoveSize(dword EBX,ECX,EDX,ESI){
+	EAX = 67;
+	$int 0x40
 }
 
+//------------------------------------------------------------------------------
 
-inline fastcall dword strlen(dword EDI)
-{
-#speed
+inline fastcall dword strlen(dword EDI){
 	ECX=EAX=0;
 	ECX--;
 	$REPNE $SCASB
-	EAX=EAX-2-ECX;
-#codesize
+	EAX-=2+ECX;
 }
 
 
-inline fastcall int strcmp(dword EAX,EBX)
+inline fastcall copystr(dword ESI,EDI)
 {
-#speed
-	ESI=EAX;
-	EBX--;
-TOP:
-	EBX++;
-	$LODSB
-	$CMP AL,0
-	$JE HERE
-	$CMP DSBYTE[EBX],AL
-	$JE TOP
-HERE:
-	AL-=DSBYTE[EBX];
-	return AL;
-#codesize
-}
-
-
-inline fastcall dword ChangeCase(dword EDX)
-{
-#speed
-	AL=DSBYTE[EDX];
-	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
-	EDX++;
-	do{
-		AL=DSBYTE[EDX];
-		IF(AL>='A')&&(AL<='Z')DSBYTE[EDX]=AL|0x20;
-		EDX++;
-	}while(AL!=0);
-#codesize
-}
-
-
-inline fastcall void WindowRedrawStatus(dword EBX)
-{
-	EAX = 12;              // function 12:tell os about windowdraw
-	$int 0x40
-}
-
-
-void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword mainAreaColour,byte headerType,dword headerColour,EDI)
-{
-	EBX = x << 16 + sizeX;
-	ECX = y << 16 + sizeY;
-	EDX = mainAreaType << 24 | mainAreaColour;
-	ESI = headerType << 24 | headerColour;
-	$xor eax,eax
-	$int 0x40
-}
-
-
-inline fastcall void SetEventMask(dword EBX,ECX,EDX) //Coded by Leency :D
-{
-	$mov eax,40
-	$mov ebx,100111b
-	$int 0x40
-}
-
-void DefineButton(dword x,y,w,h,EDX,ESI)
-{
-	EAX = 8;
-	EBX = x<<16+w;
-	ECX = skin_width+y<<16+h;
-	$int 0x40
-}
-
-void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
-{
-	EAX = 4;
-	EBX = x<<16+skin_width+y;
-	ECX = fontType<<24+color;
-	$int 0x40;
-}
-
-inline fastcall void PutPixel(dword EBX,ECX,EDX)
-{
-  EAX=1;
-  $int 0x40
-}
-
-void DrawBar(dword x,y,w,h,EDX)
-{
-#speed
-	EAX = 13;
-	EBX = x<<16+w;
-	ECX = skin_width+y<<16+h;
- 	$int 0x40
-#codesize
-}
-
-void DrawRegion(dword x,y,width,height,color1)
-{
-	DrawBar(x,y,width,1,color1); //полоса гор сверху
-	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
-	DrawBar(x,y,1,height,color1); //полоса верху слева
-	DrawBar(x+width,y,1,height+1,color1); //полоса верху справа
-}
-
-void DrawFlatButton(dword x,y,width,height,id,color,text)
-{
-	DrawRegion(x,y,width,height,0x94AECE);
-	DrawBar(x+1,y+1,width-1,1,0xFFFFFF); //полоса гор белая
-	DrawBar(x+1,y+height-1,width-2,1,0xC7C7C7); //венм верв
-	DrawBar(x+1,y+1,1,height-1,0xFFFFFF); //полоса верв белап
-	DrawBar(x+width-1,y+2,1,height-2,0xC7C7C7); //венм верв
-	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
-	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //определпем кнопкг
-	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
-}
-
-
-void PutImage(dword EBX,w,h,x,y)
-{
-	EAX = 7;
-	ECX = w<<16+h;
-	EDX = x<<16+y+skin_width;
-	$int 0x40
-}
-
-
-void copystr(dword s,d)
-{
-	$mov esi,s
-	$mov edi,d
 	$cld
 l1:
 	$lodsb
@@ -307,7 +205,6 @@ l1:
 }
 
 
-int	 j=0;
 char buffer[11]="";
 inline fastcall dword IntToStr(dword ESI)
 {
@@ -337,12 +234,117 @@ f3:
 }
 
 
-inline fastcall dword MoveSize(dword EBX,ECX,EDX,ESI)
+inline fastcall int strcmp(dword EAX,EBX)
 {
-	EAX = 67;
+	#speed
+	ESI=EAX;
+	EBX--;
+TOP:
+	EBX++;
+	$LODSB
+	$CMP AL,0
+	$JE HERE
+	$CMP DSBYTE[EBX],AL
+	$JE TOP
+HERE:
+	AL-=DSBYTE[EBX];
+	return AL;
+	#codesize
+}
+
+
+inline fastcall dword ChangeCase(dword EDX)
+{
+	#speed
+	AL=DSBYTE[EDX];
+	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
+	EDX++;
+	do{
+		AL=DSBYTE[EDX];
+		IF(AL>='A')&&(AL<='Z')DSBYTE[EDX]=AL|0x20;
+		EDX++;
+	}while(AL!=0);
+	#codesize
+}
+
+//------------------------------------------------------------------------------
+inline fastcall void PutPixel(dword EBX,ECX,EDX){
+  EAX=1;
+  ECX+=skin_width;
+  $int 0x40
+}
+
+void DefineButton(dword x,y,w,h,EDX,ESI){
+	EAX = 8;
+	EBX = x<<16+w;
+	ECX = skin_width+y<<16+h;
 	$int 0x40
 }
 
+inline fastcall void DeleteButton(dword EDX)
+{
+	EAX = 8;
+	EDX += BT_DEL;
+	$int 0x40;
+}
+
+void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
+{
+	EAX = 4;
+	EBX = x<<16+skin_width+y;
+	ECX = fontType<<24+color;
+	$int 0x40;
+}
+
+void DrawBar(dword x,y,w,h,EDX)
+{
+	#speed
+	EAX = 13;
+	EBX = x<<16+w;
+	ECX = skin_width+y<<16+h;
+ 	$int 0x40
+	#codesize
+}
+
+void DrawRegion(dword x,y,width,height,color1)
+{
+	DrawBar(x,y,width,1,color1); //полоса гор сверху
+	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
+	DrawBar(x,y,1,height,color1); //полоса верху слева
+	DrawBar(x+width,y,1,height+1,color1); //полоса верху справа
+}
+
+void DrawFlatButton(dword x,y,width,height,id,color,text)
+{
+	DrawRegion(x,y,width,height,0x94AECE);
+	DrawBar(x+1,y+1,width-1,1,0xFFFFFF); //полоса гор белая
+	DrawBar(x+1,y+height-1,width-2,1,0xC7C7C7); //венм верв
+	DrawBar(x+1,y+1,1,height-1,0xFFFFFF); //полоса верв белап
+	DrawBar(x+width-1,y+2,1,height-2,0xC7C7C7); //венм верв
+	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
+	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //кнопка
+	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
+}
+
+void PutImage(dword EBX,w,h,x,y)
+{
+	EAX = 7;
+	ECX = w<<16+h;
+	EDX = x<<16+y+skin_width;
+	$int 0x40
+}
+
+void PutPaletteImage(dword EBX,w,h,x,y, EDI)
+{
+	EAX = 65;
+	ECX = w<<16+h;
+	EDX = x<<16+y+skin_width;
+	ESI = 8;
+	EBP = 0;
+	$int 0x40
+}  
+
+//------------------------------------------------------------------------------
 
 f70	CopyFile_f;
 BDVK CopyFile_atr;
@@ -360,7 +362,7 @@ inline fastcall dword CopyFile(dword EBX,ECX)
 	$mov	ebx, #CopyFile_f
 	$int	0x40
 	
-	if (EAX == 0)
+	if (!EAX)
 	{	
 		cBufer = malloc(CopyFile_atr.sizelo);	
 		CopyFile_f.func = 0;
@@ -374,7 +376,7 @@ inline fastcall dword CopyFile(dword EBX,ECX)
 		$mov	ebx, #CopyFile_f
 		$int	0x40
 	
-		IF (EAX == 0)
+		IF (!EAX)
 		{
 			CopyFile_f.func = 2;
 			CopyFile_f.param1 = 0;
