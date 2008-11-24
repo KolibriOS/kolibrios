@@ -1,0 +1,162 @@
+#startaddress 0
+#code32 TRUE
+
+char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
+dword  os_version   = 0x00000001;
+dword  start_addr   = #main;
+dword  final_addr   = #stop+32;
+dword  alloc_mem    = 0x00100000;
+dword  x86esp_reg   = 0x0007fff0;
+dword  I_Param      = 0x0;
+dword  I_Icon       = 0x0;
+
+//Events
+#define evButton  3
+#define evKey     2
+#define evReDraw  1
+
+//Button options
+#define BT_DEL		0x80000000
+#define BT_HIDE		0x40000000
+#define BT_NOFRAME	0x20000000
+
+
+//------------------------------------------------------------------------------
+inline fastcall dword WaitEvent(){
+ EAX = 10;
+ $int 0x40
+}
+
+inline fastcall void ExitProcess(){
+ EAX = -1;
+ $int 0x40
+}
+
+
+inline fastcall word GetKey(){
+ EAX = 2;
+ $int  0x40
+ EAX = EAX >> 8;
+}
+
+
+inline fastcall word GetButtonID(){
+ EAX = 17;
+ $int  0x40
+ EAX = EAX >> 8;
+}
+
+//------------------------------------------------------------------------------
+
+
+void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword
+	mainAreaColor,byte headerType,dword headerColor,EDI)
+{
+	EBX = x << 16 + sizeX;
+	ECX = y << 16 + sizeY;
+	EDX = mainAreaType << 24 | mainAreaColor;
+	ESI = headerType << 24 | headerColor;
+	$xor eax,eax
+	$int 0x40
+}
+
+void WindowRedrawStatus(dword EBX)
+{
+	EAX = 12;
+	$int 0x40
+}
+
+
+inline fastcall dword GetSkinWidth(){
+	EAX = 48;
+	EBX = 4;
+	$int 0x40
+}
+
+
+void DefineButton(dword x,y,w,h,EDX,ESI){
+	EAX = 8;
+	EBX = x<<16+w;
+	ECX = y<<16+h;
+	$int 0x40
+}
+
+
+void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
+{
+	EAX = 4;
+	EBX = x<<16+y;
+	ECX = fontType<<24+color;
+	$int 0x40;
+}
+
+
+void DrawBar(dword x,y,w,h,EDX)
+{
+	EAX = 13;
+	EBX = x<<16+w;
+	ECX = y<<16+h;
+ 	$int 0x40
+}
+
+
+void DrawRegion(dword x,y,width,height,color1)
+{
+	DrawBar(x,y,width,1,color1); //полоса гор сверху
+	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
+	DrawBar(x,y,1,height,color1); //полоса верт слева
+	DrawBar(x+width,y,1,height+1,color1); //полоса верт справа
+}
+
+void DrawFlatButton(dword x,y,width,height,id,color)
+{
+	DrawRegion(x,y,width,height,0x94AECE);
+	DrawBar(x+1,y+1,width-1,1,0xFFFFFF); //полоса гор белая
+	DrawBar(x+1,y+height-1,width-2,1,0xC7C7C7); //тень верт
+	DrawBar(x+1,y+1,1,height-1,0xFFFFFF); //полоса верт белая
+	DrawBar(x+width-1,y+2,1,height-2,0xC7C7C7); //тень верт
+	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
+	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //определяем кнопку
+}
+
+
+void PutImage(dword EBX,w,h,x,y, EDI)
+{
+	EAX = 65;
+	ECX = w<<16+h;
+	EDX = x<<16+y;
+	ESI = 8;
+	EBP = 0;
+	$int 0x40
+}   
+
+void WriteNumber(dword x,y,byte fontType, dword color, count, ECX)
+{
+	EAX = 47;
+	EBX = count<<16;
+	EDX = x<<16+y;
+	ESI = fontType<<24+color;
+	$int 0x40;
+}  
+
+
+dword generator;  // random number generator - для генерации случайных чисел
+:int random(int max)
+// get pseudo-random number - получить псевдослучайное число
+{
+  $rdtsc        // eax & edx
+  $xor eax,edx
+  $not eax
+
+  EBX = generator;
+  $ror ebx,3
+  $xor ebx,0xdeadbeef
+  EBX += EAX;
+  generator = EBX;
+  
+  EAX += EBX;
+  EAX = EAX % max;
+}       
+
+
+
