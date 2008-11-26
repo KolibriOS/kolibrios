@@ -5112,6 +5112,8 @@ syscall_getarea:
      shr   eax,16
      mov   ebx,edx
      and   ebx,0xffff
+     dec   eax
+	   dec   ebx
      ; eax - x, ebx - y
      mov   edx,ecx
      
