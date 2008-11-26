@@ -1,0 +1,186 @@
+//stuff for loading images via MeView via IPC by Nable. 2008
+//Last changed 13.11.2008
+
+inline fastcall void registerIPCbuffer(dword ECX, dword EDX)
+//ecx - pointer to buffer, edx - buffer size
+{
+   EAX=60;
+   EBX=1;
+   $int 0x40
+}
+
+inline fastcall void build_param_string(dword ESI, dword EDI)
+//first parameter - pointer to filename string, second - pointer to
+//the output area for commandline for MeView
+proc_info _p_info;
+{
+   _p_info.GetInfo(SelfInfo);
+   EBX = _p_info.ID;
+   EAX = 'NCPI';  //'IPCN' in reversed byte order
+   $STOSD
+   ECX = 8;
+
+___NEW_SYMBOL_OF_PID:
+   $ROL  EBX,4
+
+   EAX =  EBX;
+   EAX &= 0xF;
+   EAX += '0';
+
+   $CMP  AL,'9'
+   $JBE  ___NEW_SYMBOL_OF_PID_PRINT
+   $ADD  AL,7			    //('A'-'0'-10)
+___NEW_SYMBOL_OF_PID_PRINT:
+   $STOSB
+   $LOOP ___NEW_SYMBOL_OF_PID
+
+___NEW_SYMBOL_OF_PATH_COPY:
+   $LODSB
+   $STOSB
+   $OR	 AL,AL
+   $JNE  ___NEW_SYMBOL_OF_PATH_COPY
+}
+
+char _Path2MeView[]="/sys/mv";
+
+inline int RunMV(char* parameters)
+f70 _run_struct;
+{
+   _run_struct.func   = 7;
+   _run_struct.param1 = 0;
+   _run_struct.param2 = parameters;
+   _run_struct.param3 = 
+   _run_struct.param4 = 
+   _run_struct.rezerv = 0;
+   _run_struct.name   = #_Path2MeView;
+
+   EAX=70;
+   EBX=#_run_struct;
+   $int 0x40
+   //EAX (return code) will contain positive PID of new process or negative error code.
+}
+
+
+int loadimage_viaIPC(char* file_name_to_load, int initial_values)
+//really it must be IMAGE_INFO* initial_values, but compiler rejected
+//this, so I had to use 'int initial_values'
+char param_string[255];
+unsigned int _FrameCountTemp;
+int temp0; //scratch variable
+int came_size; //sizeof data that came. It's used to shrink unneeded IPC data
+//added by Nable 13.11.2008 3.36am (begin)
+int MVsPID; //no comments
+int MVsSlot; //no comments
+proc_info _p_info; //this structure will be used to test if MV is alive
+//added by Nable 13.11.2008 3.36am (end)
+{
+   int pIPCbuffer = malloc(64); //IPC buffer for the first message can be
+			    //rather small but >= 8+8+24
+
+   /*Here you can add error checking code, i.e. if(!pIPCbuffer)
+   { ErrorExit("OUT OF MEMORY!"); }; */
+
+   registerIPCbuffer(pIPCbuffer,64);
+   DSDWORD[pIPCbuffer+4]=8; //at +4 in IPC buffer is a relative pointer to free place
+
+   build_param_string(file_name_to_load, #param_string);
+
+   DSDWORD[pIPCbuffer]=0; //unlock the buffer
+
+   SetEventMask(01000000b); // 1 << (evIPC-1)
+//13.11.2008 3.45am Nable's fixes (begin1)
+	MVsPID = RunMV(#param_string); //you can use here your function but don't forget
+	//about parameters (param_string).
+	MVsSlot = PIDtoSlot(MVsPID);
+
+	WHILE(!(WaitEventTimeout(100))){
+		//we have only one event - evIPC so return value may be 0 or evIPC but if received 0 it can mean
+		//either MV terminated silently or it just hasn't done the work and we should wait. Test for it
+			_p_info.GetInfo(MVsSlot);
+			IF((_p_info.status_slot > 2)||(_p_info.ID != MVsPID)) return 0;
+	}
+//13.11.2008 4.26am Nable's fixes ( end1)  
+
+//else we got the message. Process it.
+   DSDWORD[pIPCbuffer] |= -1; //lock the buffer
+
+   //the first dword of the message is frame count
+   _FrameCountTemp = DSDWORD[pIPCbuffer+16]; //note that data of the first
+   //message is located at offset 16 in IPC buffer;
+
+   IF(_FrameCountTemp <= 1)  //see docs
+    {
+     ESI = pIPCbuffer+16+12;
+     EDI = initial_values; //offset of CurrentImage structure
+
+     //Left and top corner's coords (not used in many cases but who knows?)
+     $MOVSD
+     //Width and height
+     $MOVSD
+     //bpp
+     $LODSD
+     $movzx eax,ax
+     CurrentImage.BitsPerPixel = EAX;
+    }
+   //see docs
+   came_size = DSDWORD[pIPCbuffer+24]; //amount of useful data
+   temp0 = came_size + 4096; //+4096 - some reserve
+   realloc(temp0+4096, pIPCbuffer); //+4096 - some reserve
+   registerIPCbuffer(pIPCbuffer, temp0); //re-register IPC buffer with a new size
+
+   DSDWORD[pIPCbuffer+4]=8; //delete first message, at +4 in IPC buffer is a
+   //relative pointer to free place
+
+   DSDWORD[pIPCbuffer]=0; //unlock the buffer to receive second msg
+
+//13.11.2008 4.26am Nable's fixes ( begin2)  
+	WHILE(!(WaitEventTimeout(100))){
+		//we have only one event - evIPC so return value may be 0 or evIPC but if received 0 it can mean
+		//either MV terminated silently or it just hasn't done the work and we should wait. Test for it
+			_p_info.GetInfo(MVsSlot);
+			IF((_p_info.status_slot > 2)||(_p_info.ID != MVsPID)) return 0;
+	}
+//13.11.2008 4.26am Nable's fixes ( end2)  
+
+//if we are here, then we received the second message. if FrameCount==1 then
+//it's a pure image data (if BitsPerPixel==15, 16, 24 or 32) or
+//(dword)sizeof(palette[]) then palette[] and then the image.
+//Parse it as you like, here's my way:
+
+   registerIPCbuffer(pIPCbuffer, 0); // there are no function 'unregister
+   //IPC buffer' in Kolibri - so I have to use 'dark power'
+
+   //shrink unneeded IPC data
+   ECX = came_size;
+   $SHR ECX,2
+   ECX++; //ECX = number of useful dwords
+   EDI = pIPCbuffer;
+   ESI = EDI + 16;
+   $CLD
+   $REP $MOVSD
+
+   //now we must interpret second message
+   EDI = initial_values;
+   IF(_FrameCountTemp <= 1)
+    {
+     IF(DSDWORD[EDI+24] > 8) //CurrentImage.BitsPerPixel
+      {
+       DSDWORD[EDI+20] = 0; //CurrentImage.pPalette=0
+       DSDWORD[EDI+16] = pIPCbuffer; //CurrentImage.StartOfImage=pIPCbuffer
+      }
+     ELSE
+      {
+       EAX = pIPCbuffer + 4;
+       DSDWORD[EDI+20] = EAX; //CurrentImage.pPalette=EAX
+       EAX += DSDWORD[EAX-4];
+       DSDWORD[EDI+16] = EAX; //CurrentImage.StartOfImage = EAX;
+      };
+    }
+   ELSE
+    {
+     GetNthImageInfo(pIPCbuffer,EDI,0);
+    };
+
+   EBX = _FrameCountTemp;
+   return pIPCbuffer;
+}

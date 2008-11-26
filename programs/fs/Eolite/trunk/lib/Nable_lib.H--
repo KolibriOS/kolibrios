@@ -1,0 +1,119 @@
+/*-------------------------------------------------------------------------------
+C-- base library for Kolibri, Nable's variant.
+-------------------------------------------------------------------------------*/
+
+inline fastcall dword WaitEventTimeout(dword EBX){
+ EAX = 23;              // wait here for event
+ $int 0x40
+}
+
+//-------------------------------------------------------------------------------
+struct IMAGE_INFO{
+   word  Left,Top,Width,Height; //+0, +2, +4, +6
+   dword Delay,Displacement,StartOfImage; //+8, +12, +16
+   dword pPalette,BitsPerPixel; //+20, +24
+};
+
+IMAGE_INFO	CurrentImage;
+
+//-------------------------------------------------------------------------------
+fastcall int GetNthImageInfo(dword ESI, EDI, ECX)
+//esi - pointer to structure with multiple images
+//edi - pointer to structure of type IMG_INFO
+//ecx - CurrentFrameNum
+//returns 0 if error
+int pCurrentImage;
+{
+   pCurrentImage = EDI;
+   EAX = 0;
+   EBX = ESI;
+   $jecxz _END_LOOP
+_1:
+   $TEST ESI,ESI
+   $JE	__EXIT
+
+   //MOV ESI,[ESI] - c-- refused to compile it
+   $DB 8Bh
+   $DB 36h
+
+   $ADD ESI,EBX
+   $loop _1
+_END_LOOP:
+   $LODSD
+   //left and top
+   $MOVSD
+   //width and height
+   $MOVSD
+   //delay
+   $MOVSD
+   //displacement
+   $MOVSD
+
+   EDI = pCurrentImage;
+
+   $LODSD
+   $TEST EAX,EAX
+   $JS _NO_PALETTE
+   $ADD EAX,EBX
+
+   //Stay calm, this pervertion is only because of uncomplete
+   //pointers' support in C--
+
+   //CurrentImage.pPalette=ESI;
+   DSDWORD[EDI+20] = ESI;
+
+   //CurrentImage.StartOfImage=EAX;
+   DSDWORD[EDI+16] = EAX;
+
+   //CurrentImage.BitsPerPixel=8;
+   DSDWORD[EDI+24] = 8;
+   GOTO __EXIT;
+
+_NO_PALETTE:
+   $NEG EAX
+   //CurrentImage.BitsPerPixel=EAX;
+   DSDWORD[EDI+24] = EAX;
+
+   //CurrentImage.pPalette=0;
+   DSDWORD[EDI+20] = 0;
+
+   //CurrentImage.StartOfImage=ESI;
+   DSDWORD[EDI+16] = ESI;
+__EXIT:
+}
+
+//As a parameter you should send PID of needed slot
+//return value will be 0 if not found
+inline fastcall int PIDtoSlot(dword EDX)
+{
+	proc_info _p_info;
+	EBX=#_p_info; //pointer to the structure
+	ECX=2;//slot 1 is system
+	WHILE(ECX<256){
+		EAX=9;
+		$INT 0x40
+		IF(_p_info.ID == EDX) return ECX;
+		ECX++;
+	}
+	return 0;
+}
+
+
+void fastcall DrawImage(dword EBX, EDX)
+{
+   $PUSHAD
+   EAX = 65;
+   EBP = 0;
+   EDI = DSDWORD[EBX+20];
+   ESI = DSDWORD[EBX+24];
+   $ROR EDX,16
+   EDX += DSDWORD[EBX];
+   $ROR EDX,16
+   ECX = DSDWORD[EBX+4];
+   $ROR ECX,16
+   EBX = DSDWORD[EBX+16];
+   $INT 0x40
+   $POPAD
+}
+
+
