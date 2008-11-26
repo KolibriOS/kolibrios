@@ -1,55 +1,36 @@
-void IconFairing(dword filenum, y, videlenie)
+void IconFairing(int filenum, y)
 {
-	if (filenum<5) //файлик
-		{
-		DrawBar(200,y,2,15,videlenie);
-		DrawBar(214,y,2,15,videlenie);
-		DrawBar(210,y,4,1,videlenie);//ле
-		DrawBar(211,y+1,3,1,videlenie);//сен
-		DrawBar(212,y+2,2,1,videlenie);//ка
-		DrawBar(213,y+3,1,1,videlenie);//
-		}
-	if (filenum==16) || (filenum==17) //папка
-		{
-		DrawBar(200,y,1,15,videlenie); //слева линия
-		DrawBar(208,y,8,2,videlenie); //сверху справа линия
-		IF (filenum==17) DrawBar(211,y+1,1,1,0x1A7B17); //зелёная точка стрелки
-		DrawBar(201,y+13,15,2,videlenie); //снизу линия
-		//.точки
-		PutPixel(201,y,videlenie); //сверху слева точка
-		PutPixel(207,y,videlenie); //сверху справа точка
-		PutPixel(215,y+2,videlenie); //какая разница где
-		PutPixel(201,y+12,videlenie); //слева снизу точка
-		PutPixel(215,y+12,videlenie); //справа снизу точка
-		}
-	IF (filenum==13) PutPixel(215,y,videlenie); //skin
-	IF (filenum==20) //картридж
-		{
-		DrawBar(200,y,16,2,videlenie);
-		DrawBar(200,y+11,1,2,videlenie);
-		DrawBar(215,y+11,1,2,videlenie);
-		DrawBar(200,y+13,16,2,videlenie);
-		}
-	IF (filenum==14) //video
-		{DrawBar(200,y,1,15,videlenie); DrawBar(215,y,1,15,videlenie);}
-	IF (filenum==21) //дискета
-		{ PutPixel(200,y,videlenie); PutPixel(215,y,videlenie); }
-	IF (filenum==19) //изображение
-		DrawBar(200,y+14,16,1,videlenie);
-	if (filenum==22) //библиотека
-		{
-			DrawBar(200,y,16,1,videlenie); //сверху слева
-			DrawBar(200,y+1,3,1,videlenie);
-			DrawBar(200,y+2,2,1,videlenie);
-			PutPixel(200,y+3,videlenie);
-			//
-			PutPixel(215,y+11,videlenie); //справа справа
-			DrawBar(214,y+12,2,1,videlenie); 
-			DrawBar(213,y+13,3,1,videlenie);
-			DrawBar(212,y+14,4,1,videlenie);
-		}
-	if (filenum==15) //архив
-		{
+	switch(filenum)
+	{
+		case 0...4: //файлик
+			DrawBar(200,y,2,15,videlenie);
+			DrawBar(214,y,2,15,videlenie);
+			DrawBar(210,y,4,1,videlenie);
+			DrawBar(211,y+1,3,1,videlenie);
+			DrawBar(212,y+2,2,1,videlenie);
+			PutPixel(213,y+3,videlenie);
+			return;
+		case 16...17: //папка
+			DrawBar(200,y,1,15,videlenie);
+			DrawBar(208,y,8,2,videlenie);
+			IF (filenum==17) PutPixel(211,y+1,0x1A7B17); //зелёная точка стрелки
+			DrawBar(201,y+13,15,2,videlenie);
+			PutPixel(201,y,videlenie); //.точки
+			PutPixel(207,y,videlenie);
+			PutPixel(215,y+2,videlenie);
+			PutPixel(201,y+12,videlenie);
+			PutPixel(215,y+12,videlenie);
+			return;
+		case 13: //skin
+			PutPixel(215,y,videlenie); 
+			return;
+		case 11: //asm
+			DrawBar(201,y,1,15,videlenie);
+		case 14: //video
+			DrawBar(200,y,1,15,videlenie);
+			DrawBar(215,y,1,15,videlenie);
+			return;
+		case 15: //архив
 			PutPixel(200,y,videlenie); //справа справа
 			DrawBar(213,y,3,1,videlenie);
 			DrawBar(214,y+1,2,1,videlenie);
@@ -58,8 +39,33 @@ void IconFairing(dword filenum, y, videlenie)
 			DrawBar(200,y+12,2,1,videlenie);
 			DrawBar(200,y+13,3,1,videlenie);
 			DrawBar(200,y+14,4,1,videlenie);
-		}
+			return;
+		case 19: //изображение
+			DrawBar(200,y+14,16,1,videlenie);
+			return;
+		case 20: //картридж
+			DrawBar(200,y,16,2,videlenie);
+			DrawBar(200,y+11,1,2,videlenie);
+			DrawBar(215,y+11,1,2,videlenie);
+			DrawBar(200,y+13,16,2,videlenie);
+			return;
+		case 21: //дискета
+			PutPixel(200,y,videlenie);
+			PutPixel(215,y,videlenie);
+			return;
+		case 22: //библиотека
+			DrawBar(200,y,16,1,videlenie); //сверху слева
+			DrawBar(200,y+1,3,1,videlenie);
+			DrawBar(200,y+2,2,1,videlenie);
+			PutPixel(200,y+3,videlenie);
+			PutPixel(215,y+11,videlenie); //справа справа
+			DrawBar(214,y+12,2,1,videlenie); 
+			DrawBar(213,y+13,3,1,videlenie);
+			DrawBar(212,y+14,4,1,videlenie);
+			return;
+	}
 }
+
 
 #include "imgs\icons.txt"
 dword Put_icon(dword extension, yy)

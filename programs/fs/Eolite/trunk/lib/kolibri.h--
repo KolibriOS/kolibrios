@@ -19,7 +19,6 @@ char param[256]="";
 #define evButton	3
 #define evKey		2
 #define evReDraw	1
-#define evNet		8
 
 //Button options
 #define BT_DEL		0x80000000
@@ -34,7 +33,7 @@ char param[256]="";
 
 int vert;
 struct mouse{
- dword x,y,lkm,pkm;
+ int x,y,lkm,pkm;
  void get();
 };
 
@@ -47,7 +46,7 @@ void mouse::get()
 	$shr	eax, 16
 	$and	ebx,0x0000FFFF
 	x = EAX;
-	y = EBX;
+	y = EBX-skin_width;
 	EAX = 37;
 	EBX = 2;
 	$int	0x40
@@ -67,17 +66,6 @@ void mouse::get()
 	vert = EBX;
 }
 
-
-//---------------------------------------------------------------------------
-struct f70{
-	dword	func;
-	dword	param1;
-	dword	param2;
-	dword	param3;
-	dword	param4;
-	char	rezerv;
-	dword	name;
-};
 //---------------------------------------------------------------------------
 struct BDVK{
 	dword	attr;
@@ -103,15 +91,15 @@ struct proc_info{
 	word	status_slot,rezerv3;
 	dword	work_left,work_top,work_width,work_height;
 	char	status_window;
-	void	getme();
+	void	GetInfo(dword ECX);
+#define SelfInfo -1
 };
 
-void proc_info::getme()
+void proc_info::GetInfo(dword ECX)
 {
 	EAX = 9;
 	EBX = #use_cpu;
-	ECX = -1;
-	$int	0x40
+	$int  0x40
 }
 //-------------------------------------------------------------------------------
 
@@ -120,11 +108,11 @@ inline fastcall dword WaitEvent(){
  $int 0x40
 }
 
-/*inline fastcall void SetEventMask(dword EBX){
-	$mov eax,40
-	//$mov ebx,100111b
-	$int 0x40
-}*/
+/*inline fastcall void SetEventMask(dword EBX)
+{
+ EAX = 40;
+ $int 0x40
+} */
 
 inline fastcall word GetKey(){
  EAX = 2;              // just read this key from buffer
@@ -143,11 +131,10 @@ inline fastcall void ExitProcess(){
  $int 0x40
 }
 
-/*void Pause(dword EBX)
-{					//Пауза, в сотых долях секунды EBX = value
-	$mov eax, 5
+void Pause(dword EBX){				
+	$mov eax, 5       //Пауза, в сотых долях секунды
 	$int 0x40
-}*/
+}
 
 //------------------------------------------------------------------------------
 void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword
@@ -344,51 +331,3 @@ void PutPaletteImage(dword EBX,w,h,x,y, EDI)
 	$int 0x40
 }  
 
-//------------------------------------------------------------------------------
-
-f70	CopyFile_f;
-BDVK CopyFile_atr;
-inline fastcall dword CopyFile(dword EBX,ECX)
-{
-	dword s=EBX, d=ECX, cBufer=0;
-	CopyFile_f.func = 5;
-	CopyFile_f.param1 = 0;
-	CopyFile_f.param2 = 0;
-	CopyFile_f.param3 = 0;
-	CopyFile_f.param4 = #CopyFile_atr;
-	CopyFile_f.rezerv = 0;
-	CopyFile_f.name = s;
-	$mov	eax, 70
-	$mov	ebx, #CopyFile_f
-	$int	0x40
-	
-	if (!EAX)
-	{	
-		cBufer = malloc(CopyFile_atr.sizelo);	
-		CopyFile_f.func = 0;
-		CopyFile_f.param1 = 0;
-		CopyFile_f.param2 = 0;
-		CopyFile_f.param3 = CopyFile_atr.sizelo;
-		CopyFile_f.param4 = cBufer;
-		CopyFile_f.rezerv = 0;
-		CopyFile_f.name = s;
-		$mov	eax, 70
-		$mov	ebx, #CopyFile_f
-		$int	0x40
-	
-		IF (!EAX)
-		{
-			CopyFile_f.func = 2;
-			CopyFile_f.param1 = 0;
-			CopyFile_f.param2 = 0;
-			CopyFile_f.param3 = CopyFile_atr.sizelo;
-			CopyFile_f.param4 = cBufer;
-			CopyFile_f.rezerv = 0;
-			CopyFile_f.name = d;
-			$mov	eax, 70
-			$mov	ebx, #CopyFile_f
-			$int	0x40
-		}
-	}
-
-}
