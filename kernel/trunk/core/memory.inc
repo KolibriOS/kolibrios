@@ -1009,51 +1009,61 @@ sysfn_meminfo:
            ret
 
 align 4
-new_services:
+f68call:
+           dd f68.11
+           dd f68.12
+           dd f68.13
+           dd f68.14
+           dd f68.15
+           dd f68.16
+           dd f68.17
+           dd f68.18
+           dd f68.19
+           dd f68.20
+           dd f68.21
+           dd f68.22
+
+
+align 4
+f68:
 
            cmp  eax,4
            jle  sys_sheduler
 
            cmp eax, 11
            jb .fail
-           ja @f
 
+           cmp eax, 22
+           ja .fail
+
+           jmp dword [f68call+eax*4-11*4]
+
+.11:
            call init_heap
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 12
-           ja @f
+.12:
 
            stdcall user_alloc, ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 13
-           ja @f
+.13:
            stdcall user_free, ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 14
-           ja @f
+.14:
            cmp ebx, OS_BASE
            jae .fail
            stdcall get_event_ex, ebx, ecx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 15
-           ja @f
+.15:
            mov ecx, [current_slot]
            mov eax, [ecx+APPDATA.fpu_handler]
            mov [ecx+APPDATA.fpu_handler], ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 16
-           ja @f
-
+.16:
            test ebx, ebx
            jz .fail
            cmp ebx, OS_BASE
@@ -1061,38 +1071,28 @@ new_services:
            stdcall get_service, ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 17
-           ja @f
+.17:
            call srv_handlerEx   ;ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 18
-           ja @f
+.18:
            mov ecx, [current_slot]
            mov eax, [ecx+APPDATA.sse_handler]
            mov [ecx+APPDATA.sse_handler], ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp eax, 19
-           ja @f
+.19:
            cmp ebx, OS_BASE
            jae .fail
            stdcall load_library, ebx
            mov [esp+36], eax
            ret
-@@:
-           cmp     eax, 20
-           ja      @F
+.20:
            mov     eax, ecx
            call    user_realloc
            mov     [esp+36], eax
            ret
-@@:
-           cmp eax, 21                     ;for test purposes only
-           ja @f                           ;will be removed soon
+.21:
            cmp ebx, OS_BASE
            jae .fail
 
@@ -1112,7 +1112,14 @@ new_services:
 @@:
            mov [esp+36], eax
            ret
+.22:
+           cmp ebx, OS_BASE
+           jae .fail
 
+           stdcall shmem_open, ebx, ecx, edx
+           mov [esp+28], edx
+           mov [esp+36], eax
+           ret
 
 .fail:
            xor eax, eax
@@ -1309,181 +1316,3 @@ endp
 
 
 
-if 0
-
-; under constuction
-
-
-shmem_list:
-    .bk       dd shmem_list
-    .fd       dd shmem_list
-
-
-shmem
-    .bk         dd ?
-    .fd         dd ?
-    .base       dd ?
-    .size       dd ?
-    .access     dd ?
-    .refcount   dd ?
-    .name       rb 32
-
-
-align 4
-proc shmem_open stdcall name:dword, size:dword, access:dword
-           locals
-              mapped    dd ?
-              shm       dd ?
-              pages     dd ?
-           endl
-
-           push esi
-           push edi
-
-           mov [mapped], 0
-
-           mov eax, [name]
-           test eax, eax
-           jz .exit
-
-           pushfd                      ;mutex required
-           cli
-
-           mov ebx, [shmem_list.fd]
-@@:
-           cmp ebx, shmem_list
-           je .not_found
-
-           lea edx, [edx+24] ; link , base, size
-           stdcall strncmp, edx, eax, 32
-           test eax, eax
-           je .found
-
-           mov ebx, [ebx+4]
-           jmp @B
-.found:                               ;check access rights
-           mov eax, [access]
-           test eax, SHM_CREATE
-           mov ecx, [ebx+8]
-           jnz .fail_exist
-
-           and eax, ACC_MASK
-           and ecx, ACC_MASK
-           cmp eax, ecx
-           jne .fail_acc
-
-           stdcall user_alloc, [ebx+12]
-           test eax, eax
-           mov [mapped], eax
-           jz .fail_mem
-
-           mov eax, [ebx+4]
-           mov ecx, [ebx+12]
-           shr ecx, 12
-           mov ebx, [mapped]
-           call commit_pages
-.exit:
-           mov eax, [mapped]
-           pop edi
-           pop esi
-           ret
-
-.not_found:
-           mov eax, [access]
-           test eax, SHM_CREATE
-           mov ebx, E_NOTFOUND
-           jz .exit
-
-;create shmem
-           mov ecx, [size]
-           test ecx, ecx
-           mov ebx, E_PARAM
-           jz .exit
-
-           add ecx, 4095
-           and ecx, -4096
-           mov [size], ecx
-           stdcall user_alloc, ecx
-           test eax, eax
-           mov [mapped], eax
-           mov ebx, E_NOMEM
-           jz .exit
-
-           mov eax, 24+32
-           call malloc
-           test eax, eax
-           mov [shm], eax
-           mov ebx, E_NOMEM
-           jz .exit                ;FIXME cleanup
-
-           mov [eax+24+28], dword 0
-           lea edx, [eax+24]
-           stdcall strncpy, edx, [name], 31
-
-           mov eax, [size]
-           shr eax, 12
-           mov esi, eax
-           stdcall alloc_pages, eax
-           test eax, eax
-           mov [pages], eax
-           mov ebx, E_NOMEM
-           jz .exit                ;FIXME cleanup
-
-           mov edi, eax
-           add edi, [size]
-           and esi,  7
-           add esi, -8
-           jz @F
-
-;release unused pages
-
-.release:
-           mov eax, edi
-           add edi, 4096
-           call free_page
-           dec esi
-           jnz .release
-
-           mov eax, [ebx+4]
-           mov ecx, [ebx+12]
-           shr ecx, 12
-           mov ebx, [mapped]
-           call commit_pages
-
-           mov eax, [access]
-           and eax, ACC_MASK
-           or eax,  [pages]
-           mov ebx, [mapped]
-           mov ecx, [size]
-           shr ecx, 12
-           call commit_pages
-
-           mov edx, [shm]
-           mov ecx, [pages]
-           mov [edx+8], ecx
-           mov ecx, [size]
-           mov [edx+12], ecx
-
-    ;       mov [edx], shmem
-    ;       mov [edx+4], [shmem.fd]
-    ;       mov [shmem.fd.bk], edx
-    ;       mov [shmem.fd], edx
-
-           xor ebx, ebx
-           jmp .exit
-
-.fail_exist:
-           mov ebx, E_EXIST
-           xor eax, eax
-           ret
-.fail_access:
-           mov ebx, E_ACCESS
-           xor eax, eax
-           ret
-.fail_mem:
-           mov ebx, E_NOMEM
-           xor eax, eax
-           ret
-endp
-
-end if

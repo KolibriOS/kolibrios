@@ -123,13 +123,13 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd sys_midi		 ; 20-ResetMidi and OutputMidi
-      dd sys_setup		 ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
-      dd sys_settime		 ; 22-setting date,time,clock and alarm-clock
+      dd sys_midi                ; 20-ResetMidi and OutputMidi
+      dd sys_setup               ; 21-SetMidiBase,SetKeymap,SetShiftKeymap,.
+      dd sys_settime             ; 22-setting date,time,clock and alarm-clock
       dd 0
-      dd syscall_cdaudio	 ; 24-PlayCdTrack,StopCd and GetCdPlaylist
+      dd syscall_cdaudio         ; 24-PlayCdTrack,StopCd and GetCdPlaylist
       dd 0                       ;
-      dd sys_getsetup		 ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
+      dd sys_getsetup            ; 26-GetMidiBase,GetKeymap,GetShiftKeymap,.
       dd 0
       dd 0                       ;
       dd 0
@@ -140,42 +140,42 @@ iglobal
       dd 0
       dd 0
       dd 0
-      dd readmousepos		 ; 37-GetMousePosition_ScreenRelative,.
-      dd 0			 ; 38-DrawLine
-      dd sys_getbackground	 ; 39-GetBackgroundSize,ReadBgrData,.
+      dd readmousepos            ; 37-GetMousePosition_ScreenRelative,.
+      dd 0                       ; 38-DrawLine
+      dd sys_getbackground       ; 39-GetBackgroundSize,ReadBgrData,.
       dd 0
       dd 0
       dd 0
-      dd sys_outport		 ; 43-SendDeviceData
+      dd sys_outport             ; 43-SendDeviceData
       dd 0
       dd 0
       dd syscall_reserveportarea ; 46-ReservePortArea and FreePortArea
-      dd display_number 	 ; 47-WriteNum
-      dd display_settings	 ; 48-SetRedrawType and SetButtonType
-      dd sys_apm		 ; 49-Advanced Power Management (APM)
+      dd display_number          ; 47-WriteNum
+      dd display_settings        ; 48-SetRedrawType and SetButtonType
+      dd sys_apm                 ; 49-Advanced Power Management (APM)
       dd random_shaped_window	 ; 50-Window shape & scale
-      dd syscall_threads	 ; 51-Threads
-      dd stack_driver_stat	 ; 52-Stack driver status
-      dd socket 		 ; 53-Socket interface
+      dd syscall_threads         ; 51-Threads
+      dd stack_driver_stat       ; 52-Stack driver status
+      dd socket                  ; 53-Socket interface
       dd 0
-      dd sound_interface	 ; 55-Sound interface
+      dd sound_interface         ; 55-Sound interface
       dd 0
-      dd sys_pcibios		 ; 57-PCI BIOS32
-      dd file_system		 ; 58-Common file system interface
+      dd sys_pcibios             ; 57-PCI BIOS32
+      dd file_system             ; 58-Common file system interface
       dd 0
-      dd sys_IPC             ; 60-Inter Process Communication
-      dd sys_gs              ; 61-Direct graphics access
-      dd sys_pci             ; 62-PCI functions
-      dd sys_msg_board		 ; 63-System message board
+      dd sys_IPC                 ; 60-Inter Process Communication
+      dd sys_gs                  ; 61-Direct graphics access
+      dd sys_pci                 ; 62-PCI functions
+      dd sys_msg_board           ; 63-System message board
       dd sys_resize_app_memory	 ; 64-Resize application memory usage
       dd syscall_putimage_palette; 65-PutImagePalette
-      dd sys_process_def	 ; 66-Process definitions - keyboard
-      dd sys_window_move	 ; 67-Window move or resize
-      dd new_services		 ; 68-Some internal services
-      dd sys_debug_services	 ; 69-Debug
-      dd file_system_lfn	 ; 70-Common file system interface, version 2
+      dd sys_process_def         ; 66-Process definitions - keyboard
+      dd sys_window_move         ; 67-Window move or resize
+      dd f68                     ; 68-Some internal services
+      dd sys_debug_services      ; 69-Debug
+      dd file_system_lfn         ; 70-Common file system interface, version 2
       dd syscall_windowsettings  ; 71-Window settings
-      dd sys_sendwindowmsg	 ; 72-Send window message
+      dd sys_sendwindowmsg       ; 72-Send window message
 
   ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
   ;; NEW SYSTEM FUNCTIONS TABLE ;;

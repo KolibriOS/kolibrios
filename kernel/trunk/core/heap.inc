@@ -704,7 +704,7 @@ l_0:
            and eax, 0xFFFFF000
            cmp eax, ecx    ;alloc_size
            jb  m_next
-	   jz  @f
+           jz  @f
 
            lea edx, [esi+ecx]
            sub eax, ecx
@@ -786,6 +786,8 @@ proc user_free stdcall, base:dword
            xchg eax, [page_tabs+esi*4]
            test al, 1
            jz @F
+           test eax, PG_SHARED
+           jnz @F
            call free_page
            mov eax, esi
            shl eax, 12
@@ -1074,9 +1076,9 @@ user_realloc:
         xor     eax, eax
         xchg    eax, [page_tabs+ecx*4]
         mov     [page_tabs+esi*4], eax
-	mov     eax, ecx
-	shl     eax, 12
-	invlpg  [eax]
+        mov     eax, ecx
+        shl     eax, 12
+        invlpg  [eax]
         inc     esi
         inc     ecx
         dec     ebx
@@ -1133,3 +1135,253 @@ proc alloc_service
 endp
 
 end if
+
+
+;;;;;;;;;;;;;;      SHARED      ;;;;;;;;;;;;;;;;;
+
+
+; param
+;  eax= shm_map object
+
+align 4
+destroy_smap:
+
+           pushfd
+           cli
+
+           push ebx
+           mov ebx, eax
+
+           mov eax, [eax+SHMAP.base]
+           test eax, eax
+           jz @F
+
+           stdcall user_free, eax
+@@:
+           mov eax, [ebx+SHMAP.parent]
+           test eax, eax
+           jz @F
+
+           lock dec [eax+SHMEM.refcount]
+@@:
+           mov eax, ebx
+           call destroy_kernel_object
+
+           pop ebx
+           popfd
+
+           ret
+
+E_NOTFOUND      equ  5
+E_ACCESS        equ 10
+E_NOMEM         equ 30
+E_PARAM         equ 33
+
+SHM_READ        equ 0
+SHM_WRITE       equ 1
+
+SHM_ACCESS_MASK equ 3
+
+SHM_OPEN        equ (0 shl 2)
+SHM_OPEN_ALWAYS equ (1 shl 2)
+SHM_CREATE      equ (2 shl 2)
+
+SHM_OPEN_MASK   equ (3 shl 2)
+
+align 4
+proc shmem_open stdcall name:dword, size:dword, access:dword
+           locals
+              action         dd ?
+              owner_access   dd ?
+              mapped         dd ?
+           endl
+
+           push ebx
+           push esi
+           push edi
+
+           mov [mapped], 0
+           mov [owner_access], 0
+
+           pushfd                      ;mutex required
+           cli
+
+           mov eax, [access]
+           and eax, SHM_OPEN_MASK
+           mov [action], eax
+
+           mov eax, [name]
+           test eax, eax
+           mov edx, E_PARAM
+           jz .exit
+
+           mov esi, [shmem_list.fd]
+align 4
+@@:
+           cmp esi, shmem_list
+           je .not_found
+
+           lea edx, [esi+SHMEM.name] ; link , base, size
+           stdcall strncmp, edx, eax, 32
+           test eax, eax
+           je .found
+
+           mov esi, [esi+SHMEM.fd]
+           jmp @B
+
+.not_found:
+           mov eax, [action]
+
+           cmp eax, SHM_OPEN
+           mov edx, E_NOTFOUND
+           je .exit
+
+           cmp eax, SHM_CREATE
+           mov edx, E_PARAM
+           je .create_shm
+
+           cmp eax, SHM_OPEN_ALWAYS
+           jne .exit
+
+.create_shm:
+
+           mov ecx, [size]
+           test ecx, ecx
+           jz .exit
+
+           add ecx, 4095
+           and ecx, -4096
+           mov [size], ecx
+
+           mov eax, SHMEM.sizeof
+           call malloc
+           test eax, eax
+           mov esi, eax
+           mov edx, E_NOMEM
+           jz .exit
+
+           stdcall kernel_alloc, [size]
+           test eax, eax
+           mov [mapped], eax
+           mov edx, E_NOMEM
+           jz .cleanup
+
+           mov ecx, [size]
+           mov edx, [access]
+           and edx, SHM_ACCESS_MASK
+
+           mov [esi+SHMEM.base], eax
+           mov [esi+SHMEM.size], ecx
+           mov [esi+SHMEM.access], edx
+           mov [esi+SHMEM.refcount], 0
+           mov [esi+SHMEM.name+28], 0
+
+           lea eax, [esi+SHMEM.name]
+           stdcall strncpy, eax, [name], 31
+
+           mov eax, [shmem_list.fd]
+           mov [esi+SHMEM.bk], shmem_list
+           mov [esi+SHMEM.fd], eax
+
+           mov [eax+SHMEM.bk], esi
+           mov [shmem_list.fd], esi
+
+           mov [action], SHM_OPEN
+           mov [owner_access], SHM_WRITE
+
+.found:
+           mov eax, [action]
+
+           cmp eax, SHM_CREATE
+           mov edx, E_ACCESS
+           je .exit
+
+           cmp eax, SHM_OPEN
+           mov edx, E_PARAM
+           je .create_map
+
+           cmp eax, SHM_OPEN_ALWAYS
+           jne .exit
+
+.create_map:
+
+           mov eax, [access]
+           and eax, SHM_ACCESS_MASK
+           cmp eax, [esi+SHMEM.access]
+           mov [access], eax
+           mov edx, E_ACCESS
+           ja .exit
+
+           mov ebx, [CURRENT_TASK]
+           shl ebx, 5
+           mov ebx, [CURRENT_TASK+ebx+4]
+           mov eax, SHMAP.sizeof
+
+           call create_kernel_object
+           test eax, eax
+           mov edi, eax
+           mov edx, E_NOMEM
+           jz .exit
+
+           mov [edi+SHMAP.magic], 'SMEM'
+           mov [edi+SHMAP.destroy], destroy_smap
+           mov [edi+SHMAP.base], 0
+           mov [edi+SHMAP.parent], 0
+
+           stdcall user_alloc, [esi+SHMEM.size]
+           test eax, eax
+           mov [mapped], eax
+           mov edx, E_NOMEM
+           jz .cleanup2
+
+           lock inc [esi+SHMEM.refcount]
+           mov [edi+SHMAP.base], eax
+           mov [edi+SHMAP.parent], esi
+
+           mov ecx, [esi+SHMEM.size]
+           mov [size], ecx
+
+           shr ecx, 12
+           shr eax, 10
+
+           mov esi, [esi+SHMEM.base]
+           shr esi, 10
+           lea edi, [page_tabs+eax]
+           add esi, page_tabs
+
+           mov edx, [access]
+           or edx, [owner_access]
+           shl edx, 1
+           or edx, PG_USER+PG_SHARED
+@@:
+           lodsd
+           and eax, 0xFFFFF000
+           or eax, edx
+           stosd
+           loop @B
+
+           xor edx, edx
+
+           cmp [owner_access], 0
+           jne .exit
+
+           mov edx, [size]
+.exit:
+           mov eax, [mapped]
+
+           popfd
+           pop edi
+           pop esi
+           pop ebx
+           ret
+
+.cleanup:
+           mov eax, esi
+           call free
+           jmp .exit
+
+.cleanup2:
+           mov eax, edi
+           call destroy_smap
+           jmp .exit
+endp

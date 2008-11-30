@@ -362,6 +362,8 @@ PG_NOCACHE          equ 0x018
 PG_LARGE            equ 0x080
 PG_GLOBAL           equ 0x100
 
+PG_SHARED           equ 0x200
+
 ;;;;;;;;;;;boot time variables
 
 ;BOOT_BPP            equ 0x9000    ;byte   bits per pixel
@@ -472,6 +474,40 @@ EVENT_SIZE  equ 52
 
 virtual at 0
   EVENT EVENT
+end virtual
+
+
+struc SHMEM
+{
+    .bk         dd ?
+    .fd         dd ?    ;+4
+    .base       dd ?    ;+8
+    .size       dd ?    ;+12
+    .access     dd ?    ;+16
+    .refcount   dd ?    ;+20
+    .name       rb 32   ;+24
+    .sizeof:
+}
+
+struc SHMAP
+{
+   .magic       dd ?   ; SMEM
+   .destroy     dd ?   ;internal destructor
+   .fd          dd ?   ;next object in list
+   .bk          dd ?   ;prev object in list
+   .pid         dd ?   ;owner id
+
+   .base        dd ?   ;mapped base
+   .parent      dd ?   ;SHMEM
+   .sizeof:
+}
+
+virtual at 0
+  SHMEM SHMEM
+end virtual
+
+virtual at 0
+  SHMAP SHMAP
 end virtual
 
 

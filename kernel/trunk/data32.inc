@@ -110,8 +110,15 @@ vmode	       db  '/sys/drivers/VMODE.MDR',0
 vrr_m	       db  'VRR_M',0
 kernel_file    db  'KERNEL  MNT'
 
+
 align 4
-		     ;supported videomodes
+
+shmem_list:
+ .bk           dd shmem_list
+ .fd           dd shmem_list
+
+; supported videomodes
+
 mode_1280_1024_32:
   dw 1280,1024,32,60
 mode_1280_1024_24:
@@ -283,35 +290,36 @@ irq15read	  rd 16
 irq_tab 	  rd 16
 
 mem_block_map	  rb 512
-event_map	  rb 64
+event_map         rb 64
 mem_block_list	  rd 64
 large_block_list  rd 31
 mem_block_mask	  rd 2
 large_block_mask  rd 1
 
-mem_used.fd	  rd 1
-mem_used.bk	  rd 1
+mem_used.fd       rd 1
+mem_used.bk       rd 1
 
 mem_block_arr	  rd 1
 mem_block_start   rd 1
 mem_block_end	  rd 1
 
-heap_mutex	  rd 1
-heap_size	  rd 1
-heap_free	  rd 1
-heap_blocks	  rd 1
-free_blocks	  rd 1
+heap_mutex        rd 1
+heap_size         rd 1
+heap_free         rd 1
+heap_blocks       rd 1
+free_blocks       rd 1
 
 mst MEM_STATE
 
-page_start	  rd 1
-page_end	  rd 1
-events		  rd 1
-event_start	  rd 1
-event_end	  rd 1
-event_uid	  rd 1
+page_start        rd 1
+page_end          rd 1
+events            rd 1
+event_start       rd 1
+event_end         rd 1
+event_uid         rd 1
 sys_page_map	  rd 1
 os_stack_seg	  rd 1
+
 
 srv.fd		  rd 1
 srv.bk		  rd 1
