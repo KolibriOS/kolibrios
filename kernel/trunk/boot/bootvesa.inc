@@ -646,10 +646,10 @@ clear_vmodes_table:
         mov     cx,70
         mov     bp,12
 .loop_start:
-        rep     stosw
+        rep     stosw            ;очистка области экрана 
         mov     cx,70
         add     di,20
-        dec     bp               ; уменьшить DX,
+        dec     bp               ;уменьшение bp, в bp счетчик
         jns        .loop_start       
         pop     es
         popa
