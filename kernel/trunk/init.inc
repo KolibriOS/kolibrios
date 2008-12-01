@@ -239,8 +239,8 @@ proc test_cpu
               cpu_AMD    dd ?
            endl
 
-           mov [cpu_type], 0
            xor eax, eax
+           mov [cpu_type], eax
            mov [cpu_caps-OS_BASE], eax
            mov [cpu_caps+4-OS_BASE], eax
 
