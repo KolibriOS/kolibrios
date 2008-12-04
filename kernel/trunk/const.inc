@@ -477,7 +477,7 @@ virtual at 0
 end virtual
 
 
-struc SHMEM
+struc SMEM
 {
     .bk         dd ?
     .fd         dd ?    ;+4
@@ -489,25 +489,25 @@ struc SHMEM
     .sizeof:
 }
 
-struc SHMAP
+struc SMAP
 {
-   .magic       dd ?   ; SMEM
+   .magic       dd ?   ; SMAP
    .destroy     dd ?   ;internal destructor
    .fd          dd ?   ;next object in list
    .bk          dd ?   ;prev object in list
    .pid         dd ?   ;owner id
 
    .base        dd ?   ;mapped base
-   .parent      dd ?   ;SHMEM
+   .parent      dd ?   ;SMEM
    .sizeof:
 }
 
 virtual at 0
-  SHMEM SHMEM
+  SMEM SMEM
 end virtual
 
 virtual at 0
-  SHMAP SHMAP
+  SMAP SMAP
 end virtual
 
 

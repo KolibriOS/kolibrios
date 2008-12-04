@@ -1022,6 +1022,7 @@ f68call:
            dd f68.20
            dd f68.21
            dd f68.22
+           dd f68.23
 
 
 align 4
@@ -1033,7 +1034,7 @@ f68:
            cmp eax, 11
            jb .fail
 
-           cmp eax, 22
+           cmp eax, 23
            ja .fail
 
            jmp dword [f68call+eax*4-11*4]
@@ -1118,6 +1119,14 @@ f68:
 
            stdcall shmem_open, ebx, ecx, edx
            mov [esp+28], edx
+           mov [esp+36], eax
+           ret
+
+.23:
+           cmp ebx, OS_BASE
+           jae .fail
+
+           stdcall shmem_close, ebx
            mov [esp+36], eax
            ret
 

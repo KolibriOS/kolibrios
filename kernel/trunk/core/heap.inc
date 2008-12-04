@@ -1152,17 +1152,17 @@ destroy_smap:
            push ebx
            mov ebx, eax
 
-           mov eax, [eax+SHMAP.base]
+           mov eax, [eax+SMAP.base]
            test eax, eax
            jz @F
 
            stdcall user_free, eax
 @@:
-           mov eax, [ebx+SHMAP.parent]
+           mov eax, [ebx+SMAP.parent]
            test eax, eax
            jz @F
 
-           lock dec [eax+SHMEM.refcount]
+           lock dec [eax+SMEM.refcount]
 @@:
            mov eax, ebx
            call destroy_kernel_object
@@ -1221,12 +1221,12 @@ align 4
            cmp esi, shmem_list
            je .not_found
 
-           lea edx, [esi+SHMEM.name] ; link , base, size
+           lea edx, [esi+SMEM.name] ; link , base, size
            stdcall strncmp, edx, eax, 32
            test eax, eax
            je .found
 
-           mov esi, [esi+SHMEM.fd]
+           mov esi, [esi+SMEM.fd]
            jmp @B
 
 .not_found:
@@ -1253,7 +1253,7 @@ align 4
            and ecx, -4096
            mov [size], ecx
 
-           mov eax, SHMEM.sizeof
+           mov eax, SMEM.sizeof
            call malloc
            test eax, eax
            mov esi, eax
@@ -1270,20 +1270,20 @@ align 4
            mov edx, [access]
            and edx, SHM_ACCESS_MASK
 
-           mov [esi+SHMEM.base], eax
-           mov [esi+SHMEM.size], ecx
-           mov [esi+SHMEM.access], edx
-           mov [esi+SHMEM.refcount], 0
-           mov [esi+SHMEM.name+28], 0
+           mov [esi+SMEM.base], eax
+           mov [esi+SMEM.size], ecx
+           mov [esi+SMEM.access], edx
+           mov [esi+SMEM.refcount], 0
+           mov [esi+SMEM.name+28], 0
 
-           lea eax, [esi+SHMEM.name]
+           lea eax, [esi+SMEM.name]
            stdcall strncpy, eax, [name], 31
 
            mov eax, [shmem_list.fd]
-           mov [esi+SHMEM.bk], shmem_list
-           mov [esi+SHMEM.fd], eax
+           mov [esi+SMEM.bk], shmem_list
+           mov [esi+SMEM.fd], eax
 
-           mov [eax+SHMEM.bk], esi
+           mov [eax+SMEM.bk], esi
            mov [shmem_list.fd], esi
 
            mov [action], SHM_OPEN
@@ -1307,7 +1307,7 @@ align 4
 
            mov eax, [access]
            and eax, SHM_ACCESS_MASK
-           cmp eax, [esi+SHMEM.access]
+           cmp eax, [esi+SMEM.access]
            mov [access], eax
            mov edx, E_ACCESS
            ja .exit
@@ -1315,7 +1315,7 @@ align 4
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
            mov ebx, [CURRENT_TASK+ebx+4]
-           mov eax, SHMAP.sizeof
+           mov eax, SMAP.sizeof
 
            call create_kernel_object
            test eax, eax
@@ -1323,28 +1323,28 @@ align 4
            mov edx, E_NOMEM
            jz .exit
 
-           mov [edi+SHMAP.magic], 'SMEM'
-           mov [edi+SHMAP.destroy], destroy_smap
-           mov [edi+SHMAP.base], 0
-           mov [edi+SHMAP.parent], 0
+           mov [edi+SMAP.magic], 'SMAP'
+           mov [edi+SMAP.destroy], destroy_smap
+           mov [edi+SMAP.base], 0
+           mov [edi+SMAP.parent], 0
 
-           stdcall user_alloc, [esi+SHMEM.size]
+           stdcall user_alloc, [esi+SMEM.size]
            test eax, eax
            mov [mapped], eax
            mov edx, E_NOMEM
            jz .cleanup2
 
-           lock inc [esi+SHMEM.refcount]
-           mov [edi+SHMAP.base], eax
-           mov [edi+SHMAP.parent], esi
+           lock inc [esi+SMEM.refcount]
+           mov [edi+SMAP.base], eax
+           mov [edi+SMAP.parent], esi
 
-           mov ecx, [esi+SHMEM.size]
+           mov ecx, [esi+SMEM.size]
            mov [size], ecx
 
            shr ecx, 12
            shr eax, 10
 
-           mov esi, [esi+SHMEM.base]
+           mov esi, [esi+SMEM.base]
            shr esi, 10
            lea edi, [page_tabs+eax]
            add esi, page_tabs
@@ -1384,4 +1384,45 @@ align 4
            mov eax, edi
            call destroy_smap
            jmp .exit
+endp
+
+align 4
+proc shmem_close stdcall, name:dword
+
+           mov eax, [name]
+           test eax, eax
+           jz .fail
+
+           push esi
+           push edi
+
+           mov esi, [current_slot]
+           add esi, APP_OBJ_OFFSET
+.next:
+           mov eax, [esi+APPOBJ.fd]
+           test eax, eax
+           jz @F
+
+           cmp eax, esi
+           mov esi, eax
+           je @F
+
+           cmp [eax+SMAP.magic], 'SMAP'
+           jne .next
+
+           mov edi, [eax+SMAP.parent]
+           test edi, edi
+           jz .next
+
+           lea eax, [edi+SMEM.name]
+           stdcall strncmp, [name], edi, 32
+           test eax, eax
+           jne .next
+
+           call [esi+APPOBJ.destroy]
+@@:
+           pop edi
+           pop esi
+.fail:
+           ret
 endp
