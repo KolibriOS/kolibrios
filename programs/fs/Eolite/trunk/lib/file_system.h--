@@ -8,6 +8,41 @@ struct f70{
 	dword	name;
 };
 
+////////////////////////////
+//     Прочитать файл     //
+////////////////////////////
+f70 read_file_70;
+void ReadFile(dword pos, file_size, read_buffer, file_path)
+{    
+	read_file_70.func = 0;
+	read_file_70.param1 = pos;
+	read_file_70.param2 = 0;
+	read_file_70.param3 = file_size;
+	read_file_70.param4 = read_buffer;
+	read_file_70.rezerv = 0;
+	read_file_70.name = file_path;
+	$mov eax,70
+	$mov ebx,#read_file_70.func
+	$int 0x40
+}    
+
+///////////////////////////
+//    Прочитать папку    //
+///////////////////////////
+f70 read_dir_70;
+void ReadDir(dword file_count, read_buffer, read_dir_path)
+{    
+	read_dir_70.func = 1;
+	read_dir_70.param1 = 0;
+	read_dir_70.param2 = 0;
+	read_dir_70.param3 = file_count;
+	read_dir_70.param4 = read_buffer;
+	read_dir_70.rezerv = 0;
+	read_dir_70.name = read_dir_path;
+	$mov eax,70
+	$mov ebx,#read_dir_70.func
+	$int 0x40
+}  
 
 ///////////////////////////
 //   Запуск программы    //
@@ -61,24 +96,6 @@ void DeleleFile(dword del_file_path)
 	$mov eax,70
 	$mov ebx,#del_file_70.func
 	$int 0x40
-}   
-
-///////////////////////////
-//    Прочитать папку    //
-///////////////////////////
-f70 read_dir_70;
-void ReadDir(dword file_count, read_buffer, read_dir_path)
-{    
-	read_dir_70.func = 1;
-	read_dir_70.param1 = 
-	read_dir_70.param2 = 
-	read_dir_70.rezerv = 0;
-	read_dir_70.param3 = file_count;
-	read_dir_70.param4 = read_buffer;
-	read_dir_70.name = read_dir_path;
-	$mov eax,70
-	$mov ebx,#read_dir_70.func
-	$int 0x40
 }  
 
 ///////////////////////////
@@ -103,16 +120,7 @@ inline fastcall dword CopyFile(dword EBX,ECX)
 	if (!EAX)
 	{	
 		cBufer = malloc(CopyFile_atr.sizelo);	
-		CopyFile_f.func = 0;
-		CopyFile_f.param1 = 0;
-		CopyFile_f.param2 = 0;
-		CopyFile_f.param3 = CopyFile_atr.sizelo;
-		CopyFile_f.param4 = cBufer;
-		CopyFile_f.rezerv = 0;
-		CopyFile_f.name = s;
-		$mov eax, 70
-		$mov ebx, #CopyFile_f
-		$int 0x40
+		ReadFile(dword 0, CopyFile_atr.sizelo, cBufer, s);
 	
 		IF (!EAX)
 		{

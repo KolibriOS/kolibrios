@@ -108,11 +108,11 @@ inline fastcall dword WaitEvent(){
  $int 0x40
 }
 
-/*inline fastcall void SetEventMask(dword EBX)
+inline fastcall void SetEventMask(dword EBX)
 {
  EAX = 40;
  $int 0x40
-} */
+}
 
 inline fastcall word GetKey(){
  EAX = 2;              // just read this key from buffer
@@ -331,3 +331,25 @@ void PutPaletteImage(dword EBX,w,h,x,y, EDI)
 	$int 0x40
 }  
 
+//------------------------------------------------------------------------------
+inline fastcall dword WriteDebug(dword EDX)
+{
+	$push ebx
+	$push ecx
+	$mov eax, 63
+	$mov ebx, 1
+next_char:
+	$mov ecx, DSDWORD[edx]
+	$or	 cl, cl
+	$jz  done
+	$int 0x40
+	$inc edx
+	$jmp next_char
+done:
+	$mov cl, 13
+	$int 0x40
+	$mov cl, 10
+	$int 0x40
+	$pop ecx
+	$pop ebx
+}
