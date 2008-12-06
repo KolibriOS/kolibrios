@@ -1024,10 +1024,8 @@ f68call:
            dd f68.22
            dd f68.23
 
-
 align 4
 f68:
-
            cmp  eax,4
            jle  sys_sheduler
 
@@ -1038,13 +1036,11 @@ f68:
            ja .fail
 
            jmp dword [f68call+eax*4-11*4]
-
 .11:
            call init_heap
            mov [esp+36], eax
            ret
 .12:
-
            stdcall user_alloc, ebx
            mov [esp+36], eax
            ret

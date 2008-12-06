@@ -1149,25 +1149,32 @@ destroy_smap:
            pushfd
            cli
 
-           push ebx
-           mov ebx, eax
+           push esi
+           push edi
 
-           mov eax, [eax+SMAP.base]
-           test eax, eax
-           jz @F
+           mov edi, eax
+           mov esi, [eax+SMAP.parent]
+           test esi, esi
+           jz .done
 
-           stdcall user_free, eax
-@@:
-           mov eax, [ebx+SMAP.parent]
-           test eax, eax
-           jz @F
+           lock dec [esi+SMEM.refcount]
+           jnz .done
 
-           lock dec [eax+SMEM.refcount]
-@@:
-           mov eax, ebx
+           mov ecx, [esi+SMEM.bk]
+           mov edx, [esi+SMEM.fd]
+
+           mov [ecx+SMEM.fd], edx
+           mov [edx+SMEM.bk], ecx
+
+           stdcall kernel_free, [esi+SMEM.base]
+           mov eax, esi
+           call free
+.done:
+           mov eax, edi
            call destroy_kernel_object
 
-           pop ebx
+           pop edi
+           pop esi
            popfd
 
            ret
@@ -1395,6 +1402,8 @@ proc shmem_close stdcall, name:dword
 
            push esi
            push edi
+           pushfd
+           cli
 
            mov esi, [current_slot]
            add esi, APP_OBJ_OFFSET
@@ -1419,8 +1428,11 @@ proc shmem_close stdcall, name:dword
            test eax, eax
            jne .next
 
+           stdcall user_free, [esi+SMAP.base]
+
            call [esi+APPOBJ.destroy]
 @@:
+           popfd
            pop edi
            pop esi
 .fail:
