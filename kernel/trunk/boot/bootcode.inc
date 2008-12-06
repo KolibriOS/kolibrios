@@ -394,7 +394,6 @@ noloaderblock:
          call    calc_vmodes_table
          call    check_first_parm  ;check and enable cursor_pos
 
-
 ; \begin{diamond}[30.11.2005]
 cfgmanager:
 ; settings:
@@ -446,6 +445,7 @@ cfgmanager:
         mov     word [.timer], .newtimer
         mov     word [.timer+2], cs
 .printcfg:
+
         _setcursor 9,0
         mov     si, current_cfg_msg
         call    print
@@ -515,6 +515,7 @@ cfgmanager:
         mov     eax, [.oldtimer]
         mov     [es:8*4], eax
         mov     [.timer], eax
+
         _setcursor 7,0
         mov     si, space_msg
         call    printplain
@@ -767,11 +768,12 @@ end if
         jnz     .waityn
         call    putchar
         mov     byte [space_msg+80], 186
+
         pop     eax
         push    cs
         push    .cont
         push    eax
-        retf
+        retf                          ;call back
 .loadc:
         pop     eax
 .cont:
