@@ -215,17 +215,17 @@ calc_vmodes_table:
         test    [es:mi.ModeAttributes],10000000b   ;LFB ?
         jz      @f
 
-;        cmp     [es:mi.BitsPerPixel], 24
-;        jb      @f
+        cmp     [es:mi.BitsPerPixel], 24	;It show only videomodes to have support 24 and 32 bpp
+        jb      @f
 
-        cmp     [es:mi.BitsPerPixel],16
-        jne     .l0
-        cmp     [es:mi.GreenMaskSize],5
-        jne     .l0
-        mov     [es:mi.BitsPerPixel],15
+;        cmp     [es:mi.BitsPerPixel],16
+;        jne     .l0
+;        cmp     [es:mi.GreenMaskSize],5
+;        jne     .l0
+;        mov     [es:mi.BitsPerPixel],15
 
 
-  .l0:
+.l0:
         cmp     [es:mi.XRes],640
         jb      @f
         cmp     [es:mi.YRes],480
@@ -244,7 +244,7 @@ calc_vmodes_table:
         jb      .lp1
 
         or      cx,0x4000  ; use LFB
-  .lp1: mov     [es:bx+6],cx               ; +6 : mode number
+.lp1:	mov     [es:bx+6],cx               ; +6 : mode number
         movzx   ax,byte [es:mi.BitsPerPixel]
         mov     word [es:bx+8],ax               ; +8 : bits per pixel
         add     bx,size_of_step                 ; size of record 
