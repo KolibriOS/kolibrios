@@ -168,8 +168,8 @@ draw_window:
     get_sys_colors 1,0
 
     xor  eax,eax                     
-    mov  ebx,50*65536+280
-    mov  ecx,50*65536+260
+    mov  ebx,100*65536+280
+    mov  ecx,90*65536+260
     mov  edx,[sc.work]
     or   edx,0x33000000
     mov  edi,title             ; Draw Window Label Text
