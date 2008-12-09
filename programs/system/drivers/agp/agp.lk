@@ -13,6 +13,7 @@ IMP
     _CreateRingBuffer  core.CreateRingBuffer,
     _PciApi            core.PciApi,
     _PciRead8          core.PciRead8,
+    _PciRead16         core.PciRead16,
     _PciRead32         core.PciRead32,
     _PciWrite8         core.PciWrite8,
     _PciWrite16        core.PciWrite16,

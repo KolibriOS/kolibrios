@@ -7,7 +7,8 @@ LDRHD  = -shared -T ld.x -s --file-alignment 32
 HFILES:=     syscall.h    	\
              pci.h        	\
 
-SRC_DEP:=    detect.inc
+SRC_DEP:=    pci.inc		\
+             detect.inc
 
 AGP_SRC:=    agp.c     
 

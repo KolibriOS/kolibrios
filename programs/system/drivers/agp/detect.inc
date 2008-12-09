@@ -103,15 +103,14 @@ int FindPciDevice()
             if( (dev = agp_dev_match(pciId, agp_dev_table))!=NULL)
             {
                 dbgprintf("detect agp host %x\n",dev->id);
-                agp_dev.PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
-                dbgprintf("fetch size = %x\n", intel_8xx_fetch_size());
-                agp_generic_create_gatt_table(&agp_dev);
-                intel_845_configure(&agp_dev);
-                return 1;
+
+                PCITAG PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
+
+                return init_bridge(PciTag);
             };
-
-
         };
     };
     return 0;
 };
+
+
