@@ -76,7 +76,7 @@ void __F_NAME(__NTMain,__wNTMain)( void )
 {
 
    init_heap();
-   
+
     __process_fini = &__FiniRtns;
    __InitRtns( 255 );
    __CommonInit();
@@ -86,9 +86,12 @@ void __F_NAME(__NTMain,__wNTMain)( void )
    __appcwd= (char*)malloc(__appcwdlen);
    strncpy(__appcwd, _LpPgmName, __appcwdlen);
    __appcwd[__appcwdlen] = 0;
-   ___Argc = 2;
    ___Argv[0] = _LpPgmName;
-   ___Argv[1] = _LpCmdLine;
+   if( *_LpCmdLine != 0)
+   {
+      ___Argc = 2;
+      ___Argv[1] = _LpCmdLine;
+   } else ___Argc = 1;
 
    #ifdef __WIDECHAR__
       exit( wmain( ___wArgc, ___wArgv ) );
