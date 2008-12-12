@@ -4,11 +4,13 @@ FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
 LDRHD  = -shared -T ld.x -s --file-alignment 32
 
-HFILES:=     syscall.h    	\
+HFILES:=     agp.h		\
+             syscall.h    	\
              pci.h        	\
 
 SRC_DEP:=    pci.inc		\
-             detect.inc
+             detect.inc		\
+	     isoch.inc
 
 AGP_SRC:=    agp.c     
 
