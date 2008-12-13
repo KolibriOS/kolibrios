@@ -200,7 +200,7 @@ dw_continue:
     mov  eax,0      ; function 0 : define and draw window
     mov  ebx,100*65536+400    ; [x start] *65536 + [x size]
     mov  ecx,100*65536+200    ; [y start] *65536 + [y size]
-    mov  edx,0x130020C0;0x00000040 ; color of work area RRGGBB,8->color glide
+    mov  edx,0x140020C0;0x00000040 ; color of work area RRGGBB,8->color glide
     mov  edi,title
     mcall
    
