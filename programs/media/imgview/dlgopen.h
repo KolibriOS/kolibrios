@@ -1,0 +1,1 @@
+char* DialogOpenFile(void (*draw)());
