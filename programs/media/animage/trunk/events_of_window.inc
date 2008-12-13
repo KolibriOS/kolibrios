@@ -75,12 +75,19 @@ drawwin:
 	mov edi,panel_text
 	call print_panel_text
 
-	mov eax,10
-	mov ebx,5
-	mov ecx,0xffffff
-	mov edx,name_of_program
-	mov esi,34
-	call print_text
+	;>>>>>>Leency
+	;mov eax,10
+	;mov ebx,5
+	;mov ecx,0xffffff
+	;mov edx,name_of_program
+	;mov esi,34
+	;call print_text
+
+	mov eax,71
+	mov ebx,1
+	mov ecx,name_of_program
+	int 40h
+	;Leency<<<<<<<
 
 	mov eax,12
 	mov ebx,2
