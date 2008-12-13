@@ -1,0 +1,22 @@
+IMP
+    _KernelAlloc       core.KernelAlloc,
+    _KernelFree        core.KernelFree,
+    _UserAlloc         core.UserAlloc,
+    _UserFree          core.UserFree,
+    _MapIoMem          core.MapIoMem,
+    _GetPgAddr         core.GetPgAddr,
+    _PciApi            core.PciApi,
+    _PciRead8          core.PciRead8,
+    _PciRead16         core.PciRead16,
+    _PciRead32         core.PciRead32,
+    _PciWrite16        core.PciWrite16,
+    _PciWrite32        core.PciWrite32,
+    _RegService        core.RegService,
+    _SysMsgBoardStr    core.SysMsgBoardStr,
+    _Delay             core.Delay,
+    _SetMouseData      core.SetMouseData
+
+
+FIL usb.obj,
+    vsprintf.obj,
+    icompute.obj

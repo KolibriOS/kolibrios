@@ -91,7 +91,7 @@ typedef enum
 	(info->ChipFamily == CHIP_FAMILY_RS600) ||  \
 	(info->ChipFamily == CHIP_FAMILY_RS740) ||  \
 	(info->ChipFamily == CHIP_FAMILY_RS400) ||  \
-	(info->ChipFamily == CHIP_FAMILY_RS480))
+    (info->ChipFamily == CHIP_FAMILY_RS480))
 
 
 

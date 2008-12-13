@@ -146,7 +146,7 @@ int __stdcall srv_2d(ioctl_t *io)
         break;
 
       case PX_BLIT_ALPHA:
-        if(io->inp_size==8)
+        if(io->inp_size==9)
           return RadeonComposite((io_blit_t*)inp);
         break;
 

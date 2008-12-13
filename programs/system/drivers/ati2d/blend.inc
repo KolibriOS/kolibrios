@@ -34,6 +34,63 @@ static struct blendinfo RadeonBlendOp[] = {
     {0, 0, RADEON_SRC_BLEND_GL_ONE                 | RADEON_DST_BLEND_GL_ONE},
 };
 
+static Bool R200PrepareComposite(local_pixmap_t *dstpix, int dstX, int dstY,
+                                 local_pixmap_t *srcpix, int srcX, int srcY,
+                                 int w, int h, int alpha)
+{
+    u32_t tex_size = 0, txformat, blend_cntl;
+    int dst_pitch;
+
+    if ((w > 2048) || (h > 2048))
+        return FALSE;
+
+    txformat = RADEON_TXFORMAT_ARGB8888      |
+               RADEON_TXFORMAT_ALPHA_IN_MAP  |
+               RADEON_TXFORMAT_NON_POWER2;
+
+    blend_cntl = RADEON_SRC_BLEND_GL_SRC_ALPHA |
+                 RADEON_DST_BLEND_GL_ONE_MINUS_SRC_ALPHA;
+
+    tex_size = ((h - 1) << 16) | (w - 1);
+    {
+        u32_t *ring;
+        u32_t ifl  = safe_cli();
+
+        BEGIN_ACCEL(168);
+        OUT_ACCEL_REG(R200_PP_TXFORMAT_0, txformat);
+        OUT_ACCEL_REG(R200_PP_TXFORMAT_X_0, 0);
+        OUT_ACCEL_REG(R200_PP_TXSIZE_0, tex_size);
+        OUT_ACCEL_REG(R200_PP_TXPITCH_0, srcpix->pitch - 32);
+        OUT_ACCEL_REG(R200_PP_TXOFFSET_0, (u32_t)srcpix->local);
+        OUT_ACCEL_REG(R200_PP_TXFILTER_0, R200_MAG_FILTER_NEAREST |
+				      R200_MIN_FILTER_NEAREST |
+				      R200_CLAMP_S_WRAP |
+				      R200_CLAMP_T_WRAP);
+
+        OUT_ACCEL_REG(RADEON_RB3D_CNTL, RADEON_COLOR_FORMAT_ARGB8888 |
+                                        RADEON_ALPHA_BLEND_ENABLE);
+        OUT_ACCEL_REG(RADEON_PP_CNTL, RADEON_TEX_0_ENABLE |
+                                      RADEON_TEX_BLEND_0_ENABLE);
+        OUT_ACCEL_REG(R200_PP_TFACTOR_0, alpha << 24);
+        OUT_ACCEL_REG(R200_PP_TXCBLEND_0, R200_TXC_ARG_A_TFACTOR_COLOR |
+                                          R200_TXC_ARG_B_R0_ALPHA);
+        OUT_ACCEL_REG(R200_PP_TXCBLEND2_0,R200_TXC_OUTPUT_REG_R0);
+        OUT_ACCEL_REG(R200_PP_TXABLEND_0, R200_TXA_ARG_A_TFACTOR_ALPHA |
+                                          R200_TXA_ARG_B_R0_ALPHA);
+        OUT_ACCEL_REG(R200_PP_TXABLEND2_0, R200_TXA_OUTPUT_REG_R0);
+        OUT_ACCEL_REG(R200_SE_VTX_FMT_0, 0);
+        OUT_ACCEL_REG(R200_SE_VTX_FMT_1, (2 << R200_VTX_TEX0_COMP_CNT_SHIFT));
+        OUT_ACCEL_REG(RADEON_RB3D_BLENDCNTL, blend_cntl);
+
+        OUT_ACCEL_REG(RADEON_RB3D_COLORPITCH, dstpix->pitch >> 2);
+        OUT_ACCEL_REG(RADEON_RB3D_COLOROFFSET, (u32_t)dstpix->local);
+
+        COMMIT_RING();
+        safe_sti(ifl);
+    };
+
+    return TRUE;
+}
 
 static Bool R300TextureSetup(RHDPtr info,local_pixmap_t *srcpix, int w, int h, int unit)
 {
@@ -67,7 +124,7 @@ static Bool R300TextureSetup(RHDPtr info,local_pixmap_t *srcpix, int w, int h, i
 
     //txformat1 = R300TexFormats[i].card_fmt;
 
-    txformat1 = R300_TX_FORMAT_A8R8G8B8;// R300_EASY_TX_FORMAT(X, Y, Z, W, W8Z8Y8X8);
+    txformat1 = R300_TX_FORMAT_A8R8G8B8;
 
     txformat0 = ((((w - 1) & 0x7ff) << R300_TXWIDTH_SHIFT) |
 		 (((h - 1) & 0x7ff) << R300_TXHEIGHT_SHIFT));
@@ -253,12 +310,14 @@ Bool R300PrepareComposite(local_pixmap_t *dstpix, int dstX, int dstY,
      * - Xv
      * Here we select the offset of the vertex program we want to use
      */
+    if (info->has_tcl) {
 	    OUT_ACCEL_REG(R300_VAP_PVS_CODE_CNTL_0,
-			  ((3 << R300_PVS_FIRST_INST_SHIFT) |
-			   (4 << R300_PVS_XYZW_VALID_INST_SHIFT) |
-			   (4 << R300_PVS_LAST_INST_SHIFT)));
+                     ((3 << R300_PVS_FIRST_INST_SHIFT) |
+                      (4 << R300_PVS_XYZW_VALID_INST_SHIFT) |
+                      (4 << R300_PVS_LAST_INST_SHIFT)));
 	    OUT_ACCEL_REG(R300_VAP_PVS_CODE_CNTL_1,
-			  (4 << R300_PVS_LAST_VTX_SRC_INST_SHIFT));
+                      (4 << R300_PVS_LAST_VTX_SRC_INST_SHIFT));
+    }
 
     /* Position and one or two sets of 2 texture coordinates */
     OUT_ACCEL_REG(R300_VAP_OUT_VTX_FMT_0, R300_VTX_POS_PRESENT);   //VTX_COLOR_0_PRESENT
@@ -274,6 +333,111 @@ Bool R300PrepareComposite(local_pixmap_t *dstpix, int dstX, int dstY,
     /* setup pixel shader */
     if (IS_R300_3D)
     {
+        u32_t output_fmt;
+        int src_color, src_alpha;
+        int mask_color, mask_alpha;
+
+	    src_color = R300_ALU_RGB_SRC0_RGB;
+
+	    src_alpha = R300_ALU_ALPHA_SRC0_A;
+
+	    mask_color = R300_ALU_RGB_1_0;
+	    mask_alpha = R300_ALU_ALPHA_1_0;
+
+	/* shader output swizzling */
+        output_fmt = (R300_OUT_FMT_C4_8 |
+                      R300_OUT_FMT_C0_SEL_BLUE |
+                      R300_OUT_FMT_C1_SEL_GREEN |
+                      R300_OUT_FMT_C2_SEL_RED |
+                      R300_OUT_FMT_C3_SEL_ALPHA);
+
+
+	/* setup the rasterizer, load FS */
+	BEGIN_ACCEL(10);
+	    /* 2 components: 2 for tex0 */
+	    OUT_ACCEL_REG(R300_RS_COUNT,
+                      ((2 << R300_RS_COUNT_IT_COUNT_SHIFT) |
+                        R300_RS_COUNT_HIRES_EN));
+
+	    OUT_ACCEL_REG(R300_RS_INST_COUNT, R300_INST_COUNT_RS(0) | R300_TX_OFFSET_RS(6));
+
+	    OUT_ACCEL_REG(R300_US_CODE_OFFSET, (R300_ALU_CODE_OFFSET(0) |
+                        R300_ALU_CODE_SIZE(0)   |
+						R300_TEX_CODE_OFFSET(0) |
+						R300_TEX_CODE_SIZE(0)));
+
+	    OUT_ACCEL_REG(R300_US_CODE_ADDR_3,
+			  (R300_ALU_START(0) |
+               R300_ALU_SIZE(0)  |
+			   R300_TEX_START(0) |
+               R300_TEX_SIZE(0)  |
+			   R300_RGBA_OUT));
+
+        OUT_ACCEL_REG(R300_US_PIXSIZE, 1); /* highest temp used */
+	/* shader output swizzling */
+        OUT_ACCEL_REG(R300_US_OUT_FMT_0, output_fmt);
+
+	/* tex inst for src texture is pre-loaded in RADEONInit3DEngine() */
+	/* tex inst for mask texture is pre-loaded in RADEONInit3DEngine() */
+
+	/* RGB inst
+	 * temp addresses for texture inputs
+	 * ALU_RGB_ADDR0 is src tex (temp 0)
+	 * ALU_RGB_ADDR1 is mask tex (temp 1)
+	 * R300_ALU_RGB_OMASK - output components to write
+	 * R300_ALU_RGB_TARGET_A - render target
+	 */
+        OUT_ACCEL_REG(R300_US_ALU_RGB_ADDR(0),
+                     (R300_ALU_RGB_ADDR0(0) |
+                      R300_ALU_RGB_ADDR1(1) |
+                      R300_ALU_RGB_ADDR2(0) |
+                      R300_ALU_RGB_ADDRD(0) |
+                      R300_ALU_RGB_OMASK((R300_ALU_RGB_MASK_R |
+                                          R300_ALU_RGB_MASK_G |
+                                          R300_ALU_RGB_MASK_B)) |
+                      R300_ALU_RGB_TARGET_A));
+	/* RGB inst
+	 * ALU operation
+	 */
+	OUT_ACCEL_REG(R300_US_ALU_RGB_INST(0),
+                 (R300_ALU_RGB_SEL_A(src_color) |
+                  R300_ALU_RGB_MOD_A(R300_ALU_RGB_MOD_NOP) |
+                  R300_ALU_RGB_SEL_B(mask_color) |
+                  R300_ALU_RGB_MOD_B(R300_ALU_RGB_MOD_NOP) |
+                  R300_ALU_RGB_SEL_C(R300_ALU_RGB_0_0) |
+                  R300_ALU_RGB_MOD_C(R300_ALU_RGB_MOD_NOP) |
+                  R300_ALU_RGB_OP(R300_ALU_RGB_OP_MAD) |
+                  R300_ALU_RGB_OMOD(R300_ALU_RGB_OMOD_NONE) |
+                  R300_ALU_RGB_CLAMP));
+	/* Alpha inst
+	 * temp addresses for texture inputs
+	 * ALU_ALPHA_ADDR0 is src tex (0)
+	 * ALU_ALPHA_ADDR1 is mask tex (1)
+	 * R300_ALU_ALPHA_OMASK - output components to write
+	 * R300_ALU_ALPHA_TARGET_A - render target
+	 */
+	OUT_ACCEL_REG(R300_US_ALU_ALPHA_ADDR(0),
+                 (R300_ALU_ALPHA_ADDR0(0) |
+                  R300_ALU_ALPHA_ADDR1(1) |
+                  R300_ALU_ALPHA_ADDR2(0) |
+                  R300_ALU_ALPHA_ADDRD(0) |
+                  R300_ALU_ALPHA_OMASK(R300_ALU_ALPHA_MASK_A) |
+                  R300_ALU_ALPHA_TARGET_A |
+                  R300_ALU_ALPHA_OMASK_W(R300_ALU_ALPHA_MASK_NONE)));
+	/* Alpha inst
+	 * ALU operation
+	 */
+	OUT_ACCEL_REG(R300_US_ALU_ALPHA_INST(0),
+                 (R300_ALU_ALPHA_SEL_A(src_alpha) |
+                  R300_ALU_ALPHA_MOD_A(R300_ALU_ALPHA_MOD_NOP) |
+                  R300_ALU_ALPHA_SEL_B(mask_alpha) |
+                  R300_ALU_ALPHA_MOD_B(R300_ALU_ALPHA_MOD_NOP) |
+                  R300_ALU_ALPHA_SEL_C(R300_ALU_ALPHA_0_0) |
+                  R300_ALU_ALPHA_MOD_C(R300_ALU_ALPHA_MOD_NOP) |
+                  R300_ALU_ALPHA_OP(R300_ALU_ALPHA_OP_MAD) |
+                  R300_ALU_ALPHA_OMOD(R300_ALU_ALPHA_OMOD_NONE) |
+                  R300_ALU_ALPHA_CLAMP));
+    FINISH_ACCEL();
     }
     else
     {
@@ -287,8 +451,8 @@ Bool R300PrepareComposite(local_pixmap_t *dstpix, int dstX, int dstY,
 //                         R500_ALU_RGB_B_SWIZ_A_0);
 //        else
 	    src_color = (R500_ALU_RGB_R_SWIZ_A_R |
-			 R500_ALU_RGB_G_SWIZ_A_G |
-			 R500_ALU_RGB_B_SWIZ_A_B);
+                     R500_ALU_RGB_G_SWIZ_A_G |
+                     R500_ALU_RGB_B_SWIZ_A_B);
 
 //        if (PICT_FORMAT_A(PICT_a8r8g8b8) == 0)
 //            src_alpha = R500_ALPHA_SWIZ_A_1;
@@ -445,16 +609,16 @@ static __inline__ u32_t F_TO_DW(float val)
 #define OUT_RING_F(x) OUT_RING(F_TO_DW(x))
 
 #define VTX_OUT(_dstX, _dstY, _srcX, _srcY)     \
-do {								\
-    OUT_RING_F(_dstX);						\
-    OUT_RING_F(_dstY);						\
-    OUT_RING_F(_srcX);						\
-    OUT_RING_F(_srcY);						\
+do {                                            \
+    OUT_RING_F(_dstX);                          \
+    OUT_RING_F(_dstY);                          \
+    OUT_RING_F(_srcX);                          \
+    OUT_RING_F(_srcY);                          \
 } while (0)
 
 
 
-static int RadeonCompositeTile(int srcX, int srcY,
+static int R300CompositeTile(int srcX, int srcY,
                                 int dstX, int dstY,
                                 int w, int h)
 {
@@ -532,7 +696,7 @@ static int RadeonCompositeTile(int srcX, int srcY,
           /* flushing is pipelined, free/finish is not */
       OUT_ACCEL_REG(R300_RB3D_DSTCACHE_CTLSTAT, R300_DC_FLUSH_3D);
 
-      OUT_ACCEL_REG(RADEON_WAIT_UNTIL, RADEON_WAIT_3D_IDLECLEAN);
+ //     OUT_ACCEL_REG(RADEON_WAIT_UNTIL, RADEON_WAIT_3D_IDLECLEAN);
 
     COMMIT_RING();
 
@@ -540,6 +704,59 @@ static int RadeonCompositeTile(int srcX, int srcY,
 
  //   LEAVE_DRAW(0);
 }
+
+
+static int R200CompositeTile(int srcX, int srcY,
+                             int dstX, int dstY,
+                             int w, int h)
+{
+    xPointFixed srcTopLeft, srcTopRight, srcBottomLeft, srcBottomRight;
+    xPointFixed maskTopLeft, maskTopRight, maskBottomLeft, maskBottomRight;
+
+    srcTopLeft.x     = IntToxFixed(srcX);
+    srcTopLeft.y     = IntToxFixed(srcY);
+    srcTopRight.x    = IntToxFixed(srcX + w);
+    srcTopRight.y    = IntToxFixed(srcY);
+    srcBottomLeft.x  = IntToxFixed(srcX);
+    srcBottomLeft.y  = IntToxFixed(srcY + h);
+    srcBottomRight.x = IntToxFixed(srcX + w);
+    srcBottomRight.y = IntToxFixed(srcY + h);
+
+    {
+        u32_t *ring;
+        u32_t  ifl = safe_cli();
+
+        BEGIN_RING(4 + 4 * VTX_COUNT);
+
+        OUT_RING(CP_PACKET3(R200_CP_PACKET3_3D_DRAW_IMMD_2, 4 * VTX_COUNT));
+        OUT_RING(RADEON_CP_VC_CNTL_PRIM_TYPE_TRI_FAN |
+                 RADEON_CP_VC_CNTL_PRIM_WALK_RING |
+                (4 << RADEON_CP_VC_CNTL_NUM_SHIFT));
+
+
+        VTX_OUT((float)dstX, (float)dstY,
+              xFixedToFloat(srcTopLeft.x) / w,      // info->texW[0],
+              xFixedToFloat(srcTopLeft.y) / h);     // info->texH[0]);
+
+        VTX_OUT((float)dstX, (float)(dstY + h),
+              xFixedToFloat(srcBottomLeft.x) / w,   // info->texW[0],
+              xFixedToFloat(srcBottomLeft.y) / h);  // info->texH[0]);
+
+        VTX_OUT((float)(dstX + w), (float)(dstY + h),
+              xFixedToFloat(srcBottomRight.x) / w,  // info->texW[0],
+              xFixedToFloat(srcBottomRight.y) / h); // info->texH[0]);
+
+        VTX_OUT((float)(dstX + w), (float)dstY,
+              xFixedToFloat(srcTopRight.x) / w,     // info->texW[0],
+              xFixedToFloat(srcTopRight.y) / h);    // info->texH[0]);
+
+        OUT_ACCEL_REG(RADEON_WAIT_UNTIL, RADEON_WAIT_3D_IDLECLEAN);
+
+        COMMIT_RING();
+        safe_sti(ifl);
+    };
+};
+
 #undef VTX_OUT
 #undef VTX_OUT_MASK
 
@@ -576,24 +793,45 @@ int RadeonComposite( io_blit_t *blit)
                 );
 
         OUT_RING(srcpixmap->pitch_offset);
-        OUT_RING(blit->key);
+        OUT_RING(blit->alpha<<24);
         OUT_RING( 0 );
         OUT_RING((srcpixmap->width<<16)|srcpixmap->height);
 
         COMMIT_RING();
 
+        RHDPtr info = &rhd;
+
+        if( IS_R300_3D || IS_R500_3D )
+        {
+            R300PrepareComposite(dstpixmap, blit->dst_x, blit->dst_y,
+                                 srcpixmap, blit->src_x, blit->src_y,
+                                 blit->w, blit->h, 3);
+
+//    if (!need_src_tile_x && !need_src_tile_y) {
+            R300CompositeTile( blit->src_x, blit->src_y,
+                               blit->dst_x, blit->dst_y,
+                               blit->w, blit->h);
+        }
+        else if ((info->ChipFamily == CHIP_FAMILY_RV250) ||
+                 (info->ChipFamily == CHIP_FAMILY_RV280) ||
+                 (info->ChipFamily == CHIP_FAMILY_RS300) ||
+                 (info->ChipFamily == CHIP_FAMILY_R200))
+        {
+            R200PrepareComposite(dstpixmap, blit->dst_x, blit->dst_y,
+                                 srcpixmap, blit->src_x, blit->src_y,
+                                 blit->w, blit->h, blit->alpha);
+            R200CompositeTile( blit->src_x, blit->src_y,
+                               blit->dst_x, blit->dst_y,
+                               blit->w, blit->h);
+        };
+
+
         safe_sti(ifl);
     };
 
-    R300PrepareComposite(dstpixmap, blit->dst_x, blit->dst_y,
-                         srcpixmap, blit->src_x, blit->src_y,
-                         blit->w, blit->h, 3);
 
-//    if (!need_src_tile_x && !need_src_tile_y) {
-        RadeonCompositeTile( blit->src_x, blit->src_y,
-                             blit->dst_x, blit->dst_y,
-                             blit->w, blit->h);
-        return 0;
+
+       return 0;
   //  }
 
     /* Tiling logic borrowed from exaFillRegionTiled */

@@ -11,8 +11,6 @@ int Init3DEngine(RHDPtr info)
 
     ifl = safe_cli();
 
-
-
     if (IS_R300_3D || IS_R500_3D) {
 
 	BEGIN_ACCEL(3);
@@ -617,11 +615,10 @@ int Init3DEngine(RHDPtr info)
             OUT_ACCEL_REG(RADEON_SE_CNTL_STATUS, 0);
         else
             OUT_ACCEL_REG(RADEON_SE_CNTL_STATUS, RADEON_TCL_BYPASS);
-	OUT_ACCEL_REG(RADEON_SE_COORD_FMT,
-	    RADEON_VTX_XY_PRE_MULT_1_OVER_W0 |
-                                           RADEON_VTX_ST0_NONPARAMETRIC |
-                                           RADEON_VTX_ST1_NONPARAMETRIC |
-                                           RADEON_TEX1_W_ROUTING_USE_W0);
+    OUT_ACCEL_REG(RADEON_SE_COORD_FMT, RADEON_VTX_XY_PRE_MULT_1_OVER_W0 |
+                                       RADEON_VTX_ST0_NONPARAMETRIC     |
+                                       RADEON_VTX_ST1_NONPARAMETRIC     |
+                                       RADEON_TEX1_W_ROUTING_USE_W0);
 	FINISH_ACCEL();
 
 	BEGIN_ACCEL(5);

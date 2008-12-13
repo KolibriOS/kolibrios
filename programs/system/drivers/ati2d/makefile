@@ -4,11 +4,14 @@ FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
 LDRHD  = -shared -T ld.x -s --file-alignment 32
 
-HFILES:=     ati2d.h      	\
-             syscall.h    	\
-             pci.h        	\
-             accel_2d.h   	\
-             r5xx_regs.h 	\
+INCLUDES = -I ../include
+
+HFILES:=     ../include/types.h		\
+             ../include/syscall.h	\
+             ati2d.h      		\
+             pci.h        		\
+             accel_2d.h   		\
+             r5xx_regs.h 		\
              radeon_microcode.h
 
 SRC_DEP:=    init.c    		\
@@ -40,7 +43,7 @@ $(ATI2D): $(ATI_OBJ) $(SRC_DEP) $(HFILES) Makefile
 	kpack.exe ati2d.dll ati2d.drv
 
 ati2d.obj : ati2d.c $(SRC_DEP) $(HFILES) Makefile
-	$(CC) $(CFLAGS) -o ati2d.obj ati2d.c
+	$(CC) $(INCLUDES) $(CFLAGS) -o ati2d.obj ati2d.c
 
 curhelp.obj : curhelp.asm
 	$(FASM) curhelp.asm

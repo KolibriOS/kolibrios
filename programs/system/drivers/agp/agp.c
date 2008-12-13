@@ -500,8 +500,6 @@ void agp_device_command(u32_t bridge_agpstat, int agp_v3)
 }
 
 
-
-
 void agp_generic_enable(u32_t requested_mode)
 {
     u32_t bridge_agpstat, temp;

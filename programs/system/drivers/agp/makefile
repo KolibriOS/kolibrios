@@ -4,9 +4,12 @@ FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
 LDRHD  = -shared -T ld.x -s --file-alignment 32
 
-HFILES:=     agp.h		\
-             syscall.h    	\
-             pci.h        	\
+INCLUDES = -I ../include
+
+HFILES:=     ../include/types.h		\
+             ../include/syscall.h	\
+             agp.h			\
+             pci.h        		\
 
 SRC_DEP:=    pci.inc		\
              detect.inc		\
@@ -24,7 +27,7 @@ $(AGP): agp.obj $(SRC_DEP) $(HFILES) Makefile
 	kpack.exe agp.dll agp.drv
 
 agp.obj : agp.c $(SRC_DEP) $(HFILES) Makefile
-	$(CC) $(CFLAGS) -o agp.obj agp.c
+	$(CC) $(INCLUDES) $(CFLAGS) -o agp.obj agp.c
 
 
 

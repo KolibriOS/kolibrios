@@ -129,7 +129,10 @@ typedef struct
   int        w;
   int        h;
 
-  color_t    key;
+  union {
+    color_t    key;
+    color_t    alpha;
+  };
 }io_blit_t;
 
 

@@ -201,9 +201,6 @@ typedef struct
   u32_t sign  :1;
 }src_t;
 
-int parse_vs();
-int parse_mov();
-int parse_dcl();
 
 int parse_vs(const u32_t *stream);
 
