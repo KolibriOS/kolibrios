@@ -866,6 +866,7 @@ v86_irq:
         cld
         mov     edi, eax
         pop     eax
+v86_irq2:
         mov     esi, [v86_irqhooks+edi*8]       ; get VM handle
         mov     eax, [esi+V86_machine.pagedir]
         call    get_pg_addr

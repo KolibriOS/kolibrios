@@ -238,7 +238,10 @@ p_irq14:
 	mov	ax, app_data  ;os_data
 	mov	ds, ax
 	mov	es, ax
-	mov	byte [BOOT_VAR + 0x48E], 0xFF
+	mov	edi, 14
+	cmp	[v86_irqhooks+edi*8], 0
+	jnz	v86_irq2
+;	mov	byte [BOOT_VAR + 0x48E], 0xFF
 	call	[irq14_func]
 	call	ready_for_next_irq_1
 	restore_ring3_context
@@ -248,7 +251,10 @@ p_irq15:
 	mov	ax, app_data  ;os_data
 	mov	ds, ax
 	mov	es, ax
-	mov	byte [BOOT_VAR + 0x48E], 0xFF
+	mov	edi, 15
+	cmp	[v86_irqhooks+edi*8], 0
+	jnz	v86_irq2
+;	mov	byte [BOOT_VAR + 0x48E], 0xFF
 	call	[irq15_func]
 	call	ready_for_next_irq_1
 	restore_ring3_context
