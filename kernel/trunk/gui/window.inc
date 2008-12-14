@@ -22,7 +22,7 @@ get_rolledup_height: ; edi = window draw_data pointer
 	mov	al,[edi+WDATA.fl_wstyle]
 	and	al,0x0F
 	cmp	al,0x03
-	jne	@f
+	jb	@f
 	mov	eax,[_skinh]
 	add	eax,3
 	ret
