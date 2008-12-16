@@ -226,7 +226,6 @@ sys_button:
 
 button_no_draw:
 
-        push    edi
         mov     edi, [BTN_ADDR]
         movzx   eax, word [edi]
         cmp     eax, max_buttons
@@ -250,8 +249,6 @@ button_no_draw:
         mov     eax, edx
         shr     eax, 16
         stosw               ; button id number: bits 16-31
-
-        pop     edi
 
 noaddbutt:
 
