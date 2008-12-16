@@ -90,7 +90,12 @@ draw_window:
     mov  ecx,WINDOW_Y*65536+30+SCREEN_Y 			  ; [y start] *65536 + [y size]
     mov  edx,0x04000000 					  ; color of work area RRGGBB,8->color gl
     mov  esi,0x805080d0 					  ; color of grab bar  RRGGBB,8->color gl
-    mov  edi,0x005080d0 					  ; color of frames    RRGGBB
+    mov  edi,0x005080d0						  ; color of frames    RRGGBB
+    int  0x40
+
+    mov  eax,71
+    mov  ebx,1
+    mov  ecx,header
     int  0x40
 
     call [drawroutine]
@@ -106,3 +111,5 @@ ret
 
 save_highscores:
 ret
+
+header          db 'Invaders',0
