@@ -19,10 +19,8 @@
 
 *******************************************************************************/
 
-void draw_window()
-// Процедура отрисовки окна
+void draw_window() // Процедура отрисовки окна
 {
-
   sys_window_redraw(1);
   sys_get_colors(#colors, 40);
 
@@ -30,38 +28,23 @@ void draw_window()
   EBX = xpos << 16 + xsize;
   ECX = ypos << 16 + ysize;
   sys_draw_window(EBX, ECX, 0x14CCCCCC, colors.w_grab | 0x80000000, "MineSweeper");
- 
+
    // <NEW GAME> BUTTON (911)
   EBX = xsize / 2 - 10;
   EBX = EBX << 16 + 20;
   sys_draw_button(EBX, 25<<16+20, 911, clLightGray);
 
-  // <MAIN> BUTTON (1000)
-//  EBX = ncx * XPX; EBX += XST << 16;
-//  ECX = ncy * YPX; ECX += YST << 16;
-//  sys_draw_button(EBX, ECX, 1000, 0x60000000);
-
   // <CHANGE MODE> BUTTON (1001)
   sys_draw_button(10<<16+7, 23<<16+7, 1001, 0x118811);
 
   // <USER FIELD> BUTTON (1002)
-//  sys_draw_button(20<<16+7, ECX, EDX+1, 0xddbb44);
-
-  // <OPTIONS> BUTTON (1003)
-  // sys_draw_button();
-
-  // <SCORES> BUTTON (1004)
-  // sys_draw_button();
-
-  // <ABOUT> BUTTON (1005)
-  // sys_draw_button();
-
-  sys_window_redraw(2);
+  //sys_draw_button(20<<16+7, ECX, EDX+1, 0xddbb44);
 
   draw_time();     // draw timer
   draw_minesi();   // draw mines
   draw_squares();  // draw field
 
+  sys_window_redraw(2);
 }
 
 dword num_colors[8]=
@@ -89,8 +72,8 @@ void draw_square(int x, y)
    yt = YPX * y + YST;
    yb = yt + YPX - 1;
 
-   EBX = xl << 16 + xr - xl;
-   ECX = yt << 16 + yb - yt;
+   EBX = xl+1 << 16 + xr - xl-1;
+   ECX = yt+1 << 16 + yb - yt-1;
    $inc ebx
    $inc ecx
    sys_draw_bar(EBX, ECX, clLightGray);  // рисует закрашенный прямоугольник
@@ -113,7 +96,7 @@ void draw_square(int x, y)
 
       IF (get_mark(x,y))
       {
-        EBX = xl + 5; EBX <<= 16; EBX += yt + 4;
+        EBX = xl + 5 << 16 + yt + 4;
         sys_write_text(EBX, tcolor, #tchar, 1);
         EBX += 0x00010000;
         /*  Второй раз - регистры сохраняются  */
@@ -135,7 +118,7 @@ void draw_square(int x, y)
           tchar = tval + '0';
           tcolor = num_colors[tval-1];
         }
-        EBX = xl + 5; EBX <<= 16; EBX += yt + 5;
+        EBX = xl + 5 << 16 + yt + 5;
         sys_write_text(EBX, tcolor, #tchar, 1);
         EBX += 0x00010000;
         sys_write_text(EBX, ECX, EDX, ESI);
@@ -150,8 +133,7 @@ void draw_square(int x, y)
 void draw_time()
 {
   sys_draw_bar(XST<<16+25, 31<<16+10, 0xCCCCCC);
-  EBX = 0x00030000;
-  sys_write_number(EBX, time, XST<<16+32, 0x10ff0000);
+  sys_write_number(0x00030000, time, XST<<16+32, 0x10ff0000);
 }
 
 
@@ -164,8 +146,7 @@ void draw_minesi()
   sys_draw_bar(EBX, 31<<16+10, 0xCCCCCC);
   $POP EDX
   EDX <<= 16; EDX += 32;
-  EBX = 0x00030000;
-  sys_write_number(EBX, cmines, EDX, 0x10ff0000);
+  sys_write_number(0x00030000, cmines, EDX, 0x10ff0000);
 }
 
 
@@ -174,7 +155,7 @@ void draw_squares()
 {
   int x,y;
 
-  FOR (x=0; x < ncx; x++)
-    FOR (y=0; y < ncy; y++)
+  FOR (y=0; y < ncy; y++)
+    FOR (x=0; x < ncx; x++)
       draw_square(x, y);
 }
