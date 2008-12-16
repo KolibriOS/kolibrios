@@ -1,0 +1,26 @@
+====Leency====
+
+v0.51 (16/12/2008)
+- fixed one small bug with changing window mode
+
+
+=====Ivan Poddubny=====
+
+v0.5 (2004)
+- stable version
+
+v0.3a (11/08/2003)
+ - fixed a bug on old kernels
+
+v0.3 (09/08/2003)
+ - fixed some bugs
+ - new timer
+ - better random number generator
+ - user can't blow up after first mouse click
+ - uses system colors
+
+v0.2 (29/06/2003)
+ - fixed a lot of bugs
+
+v0.1 (22/06/2003)
+ - first public version

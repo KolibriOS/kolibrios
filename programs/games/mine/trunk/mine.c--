@@ -22,7 +22,7 @@
 ? pragma option LST    // generate ASM listing file - создать ассемблерный листинг
 ? warning    TRUE      // включить режим вывода предупреждений
 ? jumptomain NONE
-? include "msys.h--"     // MenuetOS system functions - системные функции MenuetOS
+? include "kos_sys.h--"     // MenuetOS system functions - системные функции MenuetOS
 //? define DEBUG 1
 
 ? print "\nЪДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДДї"
@@ -97,10 +97,10 @@ inline void fastcall mouse_disable()
 }
 
 
-? include "timer.h--"  // timer functions
-? include "draw.h--"   // drawing functions
-? include "access.h--" // get & set functions
-? include "random.h--" // random number generator
+# include "timer.h--"  // timer functions
+# include "draw.h--"   // drawing functions
+# include "access.h--" // get & set functions
+# include "random.h--" // random number generator
 //? include "uf.h--"     // user field window
 
 
@@ -377,10 +377,10 @@ int open_near_squares(int x, y)
         open_square(a, b);
       }
     }
-    return suma;
+    RETURN suma;
   }
   ELSE
-    return 0;
+    RETURN 0;
 }  // open_near_squares
 
 
@@ -430,7 +430,6 @@ void end_game()
 
 void main()
 {
-  //sys_delay(5);   // for old kernel only!
   new_game();
   draw_window();
 
@@ -463,12 +462,8 @@ void main()
           EAX = mode; EAX++; EAX = EAX%3; EAX++; mode = AL;
 
           new_game();
-          EBX = ECX = -1;
-          EDX = xsize;
-          ESI = ysize;
-          EAX = 67;
-          $int 0x40
-          continue;
+          window_move_size(OLD,OLD,xsize,ysize);
+          CONTINUE;
         }
 //        ELSE IF (EAX == 1002)
 //        {
@@ -476,11 +471,11 @@ void main()
 //        }
         ELSE IF (EAX == 1)           // close window
           sys_exit_process();
-        continue;
+        CONTINUE;
 
       case evMouse:
         IF (!mouse_en) // is mouse enabled ?
-          continue;
+          CONTINUE;
         do_mouse();
         // wait for mouse release - ждать отпускания кнопки
         WHILE (sys_read_mouse(2) == mouse_status)

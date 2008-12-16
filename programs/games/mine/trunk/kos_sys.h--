@@ -1,5 +1,5 @@
 /*
-    Sphinx C-- header file for MenuetOS applications.
+    Sphinx C-- header file for KolibriOS applications.
     Based on msys.h-- written by Alexey Sugonyaev and modified by Barry Kauler.
     This file is rewritten by Ivan Poddubny.
 
@@ -30,7 +30,9 @@
 #define evButton	3
 #define evMouse		6
 #define evIPC		7
-#define evStack         8
+#define evStack     8
+
+#define OLD -1
 
 struct FileInfo
 {
@@ -896,7 +898,7 @@ inline fastcall void sys_get_colors(dword ECX,EDX)
   $int 0x40
 }
 
-inline fastcall dword sys_get_skin_height(dword)
+inline fastcall dword sys_get_skin_height()
 {
   EAX = 48;
   EBX = 4;
@@ -1106,6 +1108,12 @@ inline fastcall dword sys_debug_read_char(dword EBX)
   EAX = 63;
   EBX = 2;
   $int 0x40
+}
+
+
+inline fastcall dword window_move_size(dword EBX,ECX,EDX,ESI){
+	EAX = 67;
+	$int 0x40
 }
 
 
