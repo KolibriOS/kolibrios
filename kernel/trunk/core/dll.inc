@@ -115,10 +115,10 @@ align 4
 .irq_5:
 	   push 5
 	   jmp .main
-align 4
-.irq_6:
-	   push 6
-	   jmp .main
+; align 4
+; .irq_6:
+;	   push 6
+;	   jmp .main
 align 4
 .irq_7:
 	   push 7
@@ -143,18 +143,18 @@ align 4
 .irq_12:
 	   push 12
 	   jmp .main
-align 4
-.irq_13:
-	   push 13
-	   jmp .main
-align 4
-.irq_14:
-	   push 14
-	   jmp .main
-align 4
-.irq_15:
-	   push 15
-	   jmp .main
+; align 4
+; .irq_13:
+;	   push 13
+;	   jmp .main
+; align 4
+; .irq_14:
+;	   push 14
+;	   jmp .main
+; align 4
+; .irq_15:
+;	   push 15
+;	   jmp .main
 
 align 16
 .main:
