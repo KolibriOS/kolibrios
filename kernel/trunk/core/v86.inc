@@ -479,14 +479,18 @@ v86_exc_c:
 @@:
         sub     word [esp+4+v86_regs.esp], 6
         mov     eax, [esp+4+v86_regs.eip]
+        cmp     byte [esp+1], 0
+        jnz     @f
         inc     eax
         inc     eax
+@@:
         mov     word [edx], ax
         mov     eax, [esp+4+v86_regs.cs]
         mov     word [edx+2], ax
         mov     eax, [esp+4+v86_regs.eflags]
         mov     word [edx+4], ax
         pop     eax
+        mov     ah, 0
         mov     cx, [eax*4]
         mov     word [esp+v86_regs.eip], cx
         mov     cx, [eax*4+2]
@@ -876,6 +880,7 @@ v86_irq2:
         jnz     .notcurrent
         lea     eax, [edi+8]
         cmp     al, 10h
+        mov     ah, 1
         jb      @f
         add     al, 60h
 @@:
