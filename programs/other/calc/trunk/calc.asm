@@ -653,6 +653,12 @@ draw_window:
     mov  ebx,1
     mcall
                                    
+    mov  eax,48
+    mov  ebx,3
+    mov  ecx,sc
+    mov  edx,sizeof.system_colors
+    mcall
+
     xor  eax,eax                     
     mov  ebx,200 shl 16+255        
     mov  ecx,200 shl 16+180
