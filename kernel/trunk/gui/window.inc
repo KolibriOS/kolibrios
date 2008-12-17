@@ -1198,24 +1198,22 @@ checkwindows:
 	ret
     .mouse_buttons_pressed:
 ;..................................... start 2/4 : modified by vhanla .................
-	jmp @f
+uglobal
 	bPressedMouseXY_W db 0x0
-	@@:
+endg
 ;..................................... end 2/4 : modified by vhanla ...................
 	mov   esi,[TASK_COUNT]
 	inc   esi
 
 ;..................................... start 3/4 : modified by vhanla .................
-	push ax
 	cmp [bPressedMouseXY_W],0
-	jnz @f
+	jnz cwloop.exit
 	mov [bPressedMouseXY_W],1
 	mov ax,[MOUSE_X]
 	mov [mx],ax
 	mov ax,[MOUSE_Y]
 	mov [my],ax
 	@@:
-	pop ax
 ;..................................... end 3/4 : modified by vhanla ...................
 
       cwloop:
