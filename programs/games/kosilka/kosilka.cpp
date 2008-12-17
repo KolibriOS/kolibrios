@@ -55,7 +55,7 @@ short int status=0; //Где 0 - приветствие
 bool gamestarted=false; //Блокировка игровых клавиш. Если false - играть нельзя
 
 bool drawgraphics=true; //Рисовать ли детальную графику (или ограничиться аскетичной)
-bool drawanimation=true; //Анимировать ли
+bool drawanimation=false; //Анимировать ли
 bool skinned=false;
 int grassLeft();  //Сообщим о наличии функции Grass Left
 
@@ -518,7 +518,8 @@ void draw_window(void){ //Перерисовка окна
 	if (w_redraw)
 	{
 		kos_WindowRedrawStatus(1); //Начало перерисовки
-		kos_DefineAndDrawWindow(50,50,640,506,0x74,0xEEEEEE,0,0,(Dword)windowTitle);
+		//kos_DefineAndDrawWindow(50,50,640,506,0x74,0xEEEEEE,0,0,(Dword)windowTitle);
+		kos_DefineAndDrawWindow(50,50,640,506-22+kos_GetSkinWidth(),0x74,0xEEEEEE,0,0,(Dword)windowTitle);
 	}
 	w_redraw=false;
 

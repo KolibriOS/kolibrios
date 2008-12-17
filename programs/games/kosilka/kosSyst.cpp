@@ -700,6 +700,17 @@ void kos_DisplayNumberToWindow(
 	}
 }
 
+
+Dword kos_GetSkinWidth()
+{
+	__asm{
+		mov eax, 48
+		mov ebx, 4
+		int 0x40
+	}
+}
+
+
 // функция 70 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
 {

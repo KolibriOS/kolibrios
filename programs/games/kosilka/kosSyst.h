@@ -192,6 +192,8 @@ void kos_DisplayNumberToWindow(
    eNumberBase nBase = nbDecimal,
    bool valueIsPointer = false
    );
+// функция 48.4 получить высоту скина
+Dword kos_GetSkinWidth();
 // функция 58 доступ к файловой системе
 Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
 // функция 63
