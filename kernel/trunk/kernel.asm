@@ -3784,6 +3784,7 @@ sys_programirq:
     je	  .spril1
 .not_owner:
     xor   ecx, ecx
+    inc   ecx
     jmp   .end
   .spril1:
 
