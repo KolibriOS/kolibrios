@@ -35,12 +35,6 @@ include '..\..\..\macros.inc'
 
 START:
 
-    mov  eax,48
-    mov  ebx,3
-    mov  ecx,sc
-    mov  edx,sizeof.system_colors
-    mcall
-
  red:
     call draw_window
 
