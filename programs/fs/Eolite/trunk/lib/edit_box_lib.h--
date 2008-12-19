@@ -28,7 +28,7 @@ text_color, max, text, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, sh
 
 
 
-int load_dll(EAX)
+int load_editbox_lib(EAX)
 {
 //set mask 
         $mov    eax,40

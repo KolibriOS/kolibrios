@@ -46,7 +46,7 @@ void mouse::get()
 	$shr	eax, 16
 	$and	ebx,0x0000FFFF
 	x = EAX;
-	y = EBX-skin_width;
+	y = EBX;
 	EAX = 37;
 	EBX = 2;
 	$int	0x40
@@ -66,21 +66,6 @@ void mouse::get()
 	vert = EBX;
 }
 
-//---------------------------------------------------------------------------
-struct BDVK{
-	dword	attr;
-	byte	type_name;
-	byte	rez1, rez2, rez3;
-	dword	timecreate;
-	dword	datecreate;
-	dword	timelastaccess;
-	dword	datelastaccess;
-	dword	timelastedit;
-	dword	datelastedit;
-	dword	sizelo;
-	dword	sizehi;
-	char	name[518];
-};
 //---------------------------------------------------------------------------
 struct proc_info{
 	dword	use_cpu;
@@ -145,6 +130,13 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword
 	EDX = mainAreaType << 24 | mainAreaColor;
 	ESI = headerType << 24 | headerColor;
 	$xor eax,eax
+	$int 0x40
+}
+
+inline fastcall dword CreateThread(dword ECX,EDX)
+{
+	EAX = 51;
+	EBX = 1;
 	$int 0x40
 }
 
@@ -221,50 +213,88 @@ f3:
 }
 
 
-inline fastcall int strcmp(dword EAX,EBX)
+inline fastcall int strcmp(ESI, EDI)
 {
-	#speed
-	ESI=EAX;
-	EBX--;
-TOP:
-	EBX++;
-	$LODSB
-	$CMP AL,0
-	$JE HERE
-	$CMP DSBYTE[EBX],AL
-	$JE TOP
-HERE:
-	AL-=DSBYTE[EBX];
-	return AL;
-	#codesize
+	loop()
+	{
+		IF (DSBYTE[ESI]<DSBYTE[EDI]) RETURN -1;
+		IF (DSBYTE[ESI]>DSBYTE[EDI]) RETURN 1;
+		IF (DSBYTE[ESI]=='\0') RETURN 0;
+		ESI++;
+		EDI++;
+	}
+}
+
+
+inline fastcall unsigned int find_symbol(ESI,BL)
+{
+	int jj=0, last=-1;
+	do{
+		jj++;
+		$lodsb
+		IF(AL==BL) last=jj;
+	} while(AL!=0);
+	return last;
+}
+
+
+inline fastcall memmov( EDI, ESI, ECX)
+{
+  asm {
+    MOV EAX, ECX
+    CMP EDI, ESI
+    JG L1
+    JE L2
+    SAR ECX, 2
+    JS L2
+    REP MOVSD
+    MOV ECX, EAX
+    AND ECX, 3
+    REP MOVSB
+    JMP SHORT L2
+L1: LEA ESI, DSDWORD[ ESI+ECX-4]
+    LEA EDI, DSDWORD[ EDI+ECX-4]
+    SAR ECX, 2
+    JS L2
+    STD
+    REP MOVSD
+    MOV ECX, EAX
+    AND ECX, 3
+    ADD ESI, 3
+    ADD EDI, 3
+    REP MOVSB
+    CLD
+L2:
+  }
 }
 
 
 inline fastcall dword ChangeCase(dword EDX)
 {
-	#speed
 	AL=DSBYTE[EDX];
 	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;
-	EDX++;
+	IF (AL>=160) && (AL<=175) DSBYTE[EDX] = AL - 32;	//р-я
+	IF (AL>=224) && (AL<=239) DSBYTE[EDX] = AL - 80;	//р-я
 	do{
-		AL=DSBYTE[EDX];
-		IF(AL>='A')&&(AL<='Z')DSBYTE[EDX]=AL|0x20;
 		EDX++;
+		AL=DSBYTE[EDX];
+		IF(AL>='A')&&(AL<='Z'){DSBYTE[EDX]=AL|0x20; continue;}
+		IF(AL>='А')&&(AL<='П')DSBYTE[EDX]=AL|0x20; //а-п
+		IF (AL>=144) && (AL<=159) DSBYTE[EDX] = AL + 80;	//р-я
 	}while(AL!=0);
-	#codesize
 }
+
 
 //------------------------------------------------------------------------------
 inline fastcall void PutPixel(dword EBX,ECX,EDX){
   EAX=1;
-  ECX+=skin_width;
   $int 0x40
 }
 
 void DefineButton(dword x,y,w,h,EDX,ESI){
 	EAX = 8;
 	EBX = x<<16+w;
-	ECX = skin_width+y<<16+h;
+	ECX = y<<16+h;
 	$int 0x40
 }
 
@@ -278,7 +308,7 @@ inline fastcall void DeleteButton(dword EDX)
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
 	EAX = 4;
-	EBX = x<<16+skin_width+y;
+	EBX = x<<16+y;
 	ECX = fontType<<24+color;
 	$int 0x40;
 }
@@ -288,26 +318,23 @@ void DrawBar(dword x,y,w,h,EDX)
 	#speed
 	EAX = 13;
 	EBX = x<<16+w;
-	ECX = skin_width+y<<16+h;
+	ECX = y<<16+h;
  	$int 0x40
 	#codesize
 }
 
-void DrawRegion(dword x,y,width,height,color1)
+void DrawRegion_3D(dword x,y,width,height,color1,color2)
 {
-	DrawBar(x,y,width,1,color1); //полоса гор сверху
-	DrawBar(x,y+height,width,1,color1); //полоса гор снизу
-	DrawBar(x,y,1,height,color1); //полоса верху слева
-	DrawBar(x+width,y,1,height+1,color1); //полоса верху справа
+	DrawBar(x,y,width+1,1,color1); //полоса гор сверху
+	DrawBar(x,y+1,1,height-1,color1); //полоса слева
+	DrawBar(x+width,y+1,1,height,color2); //полоса справа
+	DrawBar(x,y+height,width,1,color2); //полоса гор снизу
 }
 
 void DrawFlatButton(dword x,y,width,height,id,color,text)
 {
-	DrawRegion(x,y,width,height,0x94AECE);
-	DrawBar(x+1,y+1,width-1,1,0xFFFFFF); //полоса гор белая
-	DrawBar(x+1,y+height-1,width-2,1,0xC7C7C7); //венм верв
-	DrawBar(x+1,y+1,1,height-1,0xFFFFFF); //полоса верв белап
-	DrawBar(x+width-1,y+2,1,height-2,0xC7C7C7); //венм верв
+	DrawRegion_3D(x,y,width,height,0x94AECE,0x94AECE);
+	DrawRegion_3D(x+1,y+1,width-2,height-2,0xFFFFFF,0xC7C7C7);
 	DrawBar(x+2,y+2,width-3,height-3,color); //заливка
 	IF (id<>0)	DefineButton(x,y,width,height,id+BT_HIDE,0xEFEBEF); //кнопка
 	WriteText(-strlen(text)*6+width/2+x+1,height/2-3+y,0x80,0,text,0);
@@ -317,7 +344,7 @@ void PutImage(dword EBX,w,h,x,y)
 {
 	EAX = 7;
 	ECX = w<<16+h;
-	EDX = x<<16+y+skin_width;
+	EDX = x<<16+y;
 	$int 0x40
 }
 
@@ -325,7 +352,7 @@ void PutPaletteImage(dword EBX,w,h,x,y, EDI)
 {
 	EAX = 65;
 	ECX = w<<16+h;
-	EDX = x<<16+y+skin_width;
+	EDX = x<<16+y;
 	ESI = 8;
 	EBP = 0;
 	$int 0x40

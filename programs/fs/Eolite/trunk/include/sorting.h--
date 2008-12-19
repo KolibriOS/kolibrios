@@ -1,44 +1,4 @@
-#include "imgs\logo.txt"
-
-void authors()
-{    
-	loop()
-	{
-		switch(WaitEvent())
-		{
-			CASE evButton: ExitProcess();
-			CASE evKey: IF (GetKey()==27) ExitProcess(); break;
-			CASE evReDraw:
-				WindowRedrawStatus(1);
-				DefineAndDrawWindow(500,200,181,256,0x04,0x10EFEBEF,0,0,"About Eolite");
-				DrawBar(5,0,172,50,0x8494C4); //голубое сзади
-				PutPaletteImage(#logo,85,85,48,7,#logo_pal);
-				WriteText(32,100,0x80,0xBF40BF,"Eolite v0.97.2 beta7",0);
-				WriteText(60,120,0x80,0,"Developers:",0); 
-				WriteText(44,130,0x80,0,"Leency & Veliant",0); 
-				WriteText(35,140,0x80,0,"Lrz, Diamond, Nable",0);
-				WriteText(26,160,0x80,0,"Made using C-- in 2008",0);
-				WriteText(23,170,0x80,0,"Visit www.kolibrios.org",0);
-				DrawFlatButton(90,190,70,22,2,0xE4DFE1, "Close");
-				WindowRedrawStatus(2);
-		}
-	}
-}
-
-
-dword ConvertSize(dword bytes)
-{
-	char size_prefix[7], temp[3];
-	IF (bytes>=1073741824) copystr(" Gb",#temp);
-	ELSE IF (bytes>=1048576) copystr(" Mb",#temp);
-	ELSE IF (bytes>=1024) copystr(" Kb",#temp);
-	ELSE copystr(" b ",#temp);
-	WHILE (bytes>1023) bytes/=1024;
-	copystr(IntToStr(bytes),#size_prefix);
-	copystr(#temp,#size_prefix+strlen(#size_prefix));
-	EAX=#size_prefix;
-}
-
+//Быстрая сортировка. Leency 2008. GPL license.
 
 void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
 {                                        
