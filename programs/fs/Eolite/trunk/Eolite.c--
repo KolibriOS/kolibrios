@@ -1,7 +1,6 @@
 //Leency & Veliant -=- KolibriOS Team -=- 2008
 
 //строка 258, кейап!
-//возможно, баг в KEdit
 //find_symbol надо читать с конца
 //DrawBar(sort_num[1],45,6,9,0xE4DFE1);
 //Open_Dir нахрен испаганен ифами, сделать дефайлы или ещё что-то, потому что пока это выглядит некрасиво
@@ -191,7 +190,7 @@ int pressed_y;
 					IF (key==027) Del_File(false);
 				 	break;
 				 	}
-				IF (edit1.flags<>64) && (key<>13) {EAX=key<<8; edit_box_key stdcall (#edit1); break;} 
+				IF (edit1.flags<>64) && IF (edit1.flags<>0) && (key<>13) {EAX=key<<8; edit_box_key stdcall (#edit1); break;} 
                 IF (edit2.flags<>64) && (key<>13) && (key<>27) {EAX=key<<8; edit_box_key stdcall (#edit2); break;}
 				switch (key)
 				{
@@ -398,7 +397,7 @@ void List_ReDraw()
 
 
 void Line_ReDraw(dword color, filenum){
-	dword y;//положение текста по Y;
+	dword text_col, y;//положение текста по Y;
 	if (rename_active==1) //всё это полный пипец, и надо вынести в отдельную процедуру
 	{
 		rename_active=0;
@@ -424,10 +423,13 @@ void Line_ReDraw(dword color, filenum){
 	//да, я не спорю что изврат, но перерисовка зато маленькая
 	DrawBar(192,y,3,18,color); DrawBar(195,y,16,2,color); 
 	DrawBar(192+19,y,onLeft(46,192),18,color); DrawBar(195,y+17,16,1,color);
-	//
 	off=file_mas[filenum+za_kadrom]*304 + buf+72;
-	EAX=ESDWORD[off-40];
-	$shr eax,4
+	//
+	EBX=EAX=ESDWORD[off-40];
+	$shr ebx,2 //файл скрытый?
+	$and ebx,1
+	IF (!EBX) text_col=0; ELSE text_col=0xA6A6B7;
+	$shr eax,4 //это папка?
 	$and eax,1
 	IF (color==videlenie) isdir=EAX;
 	if (!EAX)
@@ -441,6 +443,8 @@ void Line_ReDraw(dword color, filenum){
 		copystr(off,#file_name);
 		copystr(#path,#file_path);
 		copystr(#file_name,#file_path+strlen(#file_path)); //полный путь к файлу
+		Preview();
+		IF (text_col==0xA6A6B7) text_col=0xFFFFFF;
 		/*IF (show_preview) && (!isdir)
 		{
 			GetImage(#file_path);
@@ -449,12 +453,11 @@ void Line_ReDraw(dword color, filenum){
 			IF (pLoadedImage<>0) DrawImage(#CurrentImage, 22*65536+j+skin_width+18);
 		}*/
 	}
-	temp_int = onLeft(215,160)/6;
+	temp_int = onLeft(215,165)/6;
 	IF (strlen(off)<temp_int) temp_int = strlen(off);  //длинна названия файла
-		WriteText(215,y+6,0,0,off,temp_int);  //имя файла
+		WriteText(215,y+6,0,text_col,off,temp_int);  //имя файла
 	DrawBar(onLeft(168,0),y,1,18,0xE4DFE1); //полоса серая вертикальная 1
 	DrawBar(onLeft(95,0),y,1,18,0xE4DFE1); //полоса серая вертикальная 2
-	//Preview();
 }
 
 
@@ -666,7 +669,7 @@ void Preview()
 		WriteText(30,top_pr+50,0x80,0,"curbtn",0);		 WriteText(105,top_pr+50,0x80,0,IntToStr(curbtn),0);
 		WriteText(30,top_pr+60,0x80,0,"ra_kadrom:",0);	 WriteText(105,top_pr+60,0x80,0,IntToStr(za_kadrom),0);
 		WriteText(30,top_pr+70,0x80,0,#file_path,0);
-		WriteText(30,top_pr+80,0x80,0,#file_name,0);
+		WriteText(30,top_pr+80,0x80,0,IntToStr(edit1.flags),0); WriteText(30,top_pr+90,0x80,0,IntToStr(edit2.flags),0);
 	} 
 	ELSE
 	{
@@ -713,12 +716,22 @@ void Dir_Up()
 }
 
 
-inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем то, что осталось
+/*inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем то, что осталось
 {
 	i=strlen(#PathHistory)-1;
 	PathHistory[i]=0x00;
 	copystr(#PathHistory+find_symbol(#PathHistory,'/'),#temp); //папка в которой были
 	HistoryPath(go_back);
+	SelectFile(#temp);
+}*/
+
+inline fastcall void GoBack()   //вначале удаляем текущий путь, а потом копируем то, что осталось
+{
+	i=strlen(#PathHistory)-1;
+	IF (i<7) return;
+	PathHistory[i]=0x00;
+	copystr(#PathHistory+find_symbol(#PathHistory,'/'),#temp); //папка в которой были
+	HistoryPath(go_back); 
 	SelectFile(#temp);
 }
 
