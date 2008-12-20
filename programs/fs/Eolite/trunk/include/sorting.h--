@@ -25,7 +25,7 @@ void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 }
 
 
-int partition1(dword a, b) 
+/*int partition1(dword a, b) 
 {
 	dword i = a; byte filename1[256], filename2[256]; int n;
 	for (j = a; j <= b; j++)
@@ -43,6 +43,29 @@ int partition1(dword a, b)
 		n=strcmp(#filename1, #filename2);
 		IF (n<0) { file_mas[i] >< file_mas[j];   i++;} 
 		IF (n==0) && (strcmp(file_mas[j]*304 + buf+72, file_mas[b]*304 + buf+72)<=0) { file_mas[i] >< file_mas[j];   i++;}
+	}
+	EAX = i-1;
+}*/
+
+int partition1(dword a, b) 
+{
+	dword i = a; byte filename1[256], filename2[256]; int n;
+	dword offset=buf+72;
+	for (j = a; j <= b; j++)
+	{
+	    //
+		copystr(file_mas[j]*304 + offset, #filename1);
+		copystr(file_mas[b]*304 + offset, #filename2);
+		n=strlen(#filename1)-1;
+		WHILE (filename1[n]<>'.') && (n>0) n--;
+		IF (n) copystr(#filename1+n+1, #filename1);
+		n=strlen(#filename2)-1;
+		WHILE (filename2[n]<>'.') && (n>0) n--;
+		IF (n) copystr(#filename2+n+1, #filename2);
+		//
+		n=strcmp(#filename1, #filename2);
+		IF (n<0) { file_mas[i] >< file_mas[j];   i++;} 
+		IF (n==0) && (strcmp(file_mas[j]*304 + offset, file_mas[b]*304 + offset)<=0) { file_mas[i] >< file_mas[j];   i++;}
 	}
 	EAX = i-1;
 }

@@ -3,7 +3,7 @@
 #startaddress 0
 #code32 TRUE
 
-char   os_name[8]   = {'M','E','N','U','E','T','0','1'};
+byte   os_name[8]   = {'M','E','N','U','E','T','0','1'};
 dword  os_version   = 0x00000001;
 dword  start_addr   = #main;
 dword  final_addr   = #stop+32;
@@ -31,9 +31,8 @@ char param[256]="";
 
 
 
-int vert;
 struct mouse{
- int x,y,lkm,pkm;
+ int x,y,lkm,pkm,hor,vert;
  void get();
 };
 
@@ -166,8 +165,8 @@ inline fastcall dword MoveSize(dword EBX,ECX,EDX,ESI){
 //------------------------------------------------------------------------------
 
 inline fastcall dword strlen(dword EDI){
-	ECX=EAX=0;
-	ECX--;
+	EAX=0;
+	ECX=-1;
 	$REPNE $SCASB
 	EAX-=2+ECX;
 }

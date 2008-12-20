@@ -1,5 +1,8 @@
 #include "imgs\logo.txt"
 
+?define add_new_path 1
+?define go_back 2
+
 /*
 //IPC
 #include "lib\Nable_lib.h--"
@@ -38,7 +41,7 @@ void authors()
 			DefineAndDrawWindow(500,200,181,256,0x34,0x10EFEBEF,0,0,"About Eolite");
 			DrawBar(0,0,172,50,0x8494C4); //голубое сзади
 			PutPaletteImage(#logo,85,85,48,7,#logo_pal);
-			WriteText(33,100,0x80,0xBF40BF,"Eolite v0.98.2 RC1",0);
+			WriteText(33,100,0x80,0xBF40BF,"Eolite v0.98.3 RC1",0);
 			WriteText(55,120,0x80,0,"Developers:",0); 
 			WriteText(39,130,0x80,0,"Leency & Veliant",0); 
 			WriteText(30,140,0x80,0,"Diamond, Lrz, Nable",0);
@@ -46,6 +49,24 @@ void authors()
 			WriteText(18,170,0x80,0,"Visit www.kolibrios.org",0);
 			DrawFlatButton(85,190,70,22,0,0xE4DFE1, "Close");
 			WindowRedrawStatus(2);
+	}
+}
+
+
+void HistoryPath(byte action)
+{
+	IF (action==add_new_path)
+	{
+		IF (strcmp(#PathHistory+find_symbol(#PathHistory,'|'),#path)==0) return;
+		copystr("|",#PathHistory+strlen(#PathHistory));
+		copystr(#path,#PathHistory+strlen(#PathHistory));
+	}
+	IF (action==go_back)
+	{
+		WHILE (PathHistory[i]<>'|') { i--; };
+		IF (i>0) PathHistory[i]=0x00;
+		WHILE (PathHistory[i]<>'|')	{ copystr(#PathHistory[i],#path); i--;	}
+		IF (i>0) PathHistory[i]=0x00;
 	}
 }
 
