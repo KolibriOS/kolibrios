@@ -17,6 +17,8 @@ PID_KERNEL  equ 1    ;os_idle thread
 align 4
 proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
 
+         push ebx
+
          mov  ebx, [irq]                   ;irq num
          test ebx, ebx
          jz   .err
@@ -41,9 +43,11 @@ proc attach_int_handler stdcall, irq:dword, handler:dword, access_rights:dword
          mov  [irq_owner + 4 * ebx], PID_KERNEL  ; all handlers belong to a kernel
 
          stdcall enable_irq, [irq]
+         pop ebx
          mov eax, 1
          ret
 .err:
+         pop ebx
          xor eax, eax
          ret
 endp

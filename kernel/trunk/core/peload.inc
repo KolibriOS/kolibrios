@@ -287,6 +287,7 @@ __exports:
           free_kernel_space,     'FreeKernelSpace',    \      ; stdcall
           kernel_alloc,          'KernelAlloc',        \      ; stdcall
           kernel_free,           'KernelFree',         \      ; stdcall
+          alloc_pages,           'AllocPages',         \      ; stdcall
           malloc,                'Kmalloc',            \
           free,                  'Kfree',              \
           map_io_mem,            'MapIoMem',           \      ; stdcall
@@ -307,6 +308,7 @@ __exports:
           pci_write32,           'PciWrite32',         \      ; stdcall
 \
           reg_service,           'RegService',         \      ; stdcall
+          attach_int_handler,    'AttachIntHandler',   \      ; stdcall
           user_alloc,            'UserAlloc',          \      ; stdcall
           user_free,             'UserFree',           \      ; stdcall
           unmap_pages,           'UnmapPages',         \      ; eax, ecx
