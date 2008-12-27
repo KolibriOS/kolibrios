@@ -121,7 +121,7 @@ v86_create:
         mov     edx, ecx
         shl     edx, 12
         push    edx
-        or      edx, 101b
+        or      edx, 111b
         mov     [eax+ecx*4], edx
         pop     edx
         add     edx, OS_BASE
