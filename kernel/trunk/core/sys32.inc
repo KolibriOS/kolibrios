@@ -223,14 +223,17 @@ irqh 2,3,4,5,7,8,9,10,11
 
 
 p_irq6:
-     save_ring3_context
-     mov   ax, app_data  ;os_data
-     mov   ds, ax
-     mov   es, ax
-     call  fdc_irq
-     call  ready_for_next_irq
-     restore_ring3_context
-     iret
+        save_ring3_context
+        mov     ax, app_data  ;os_data
+        mov     ds, ax
+        mov     es, ax
+        mov     edi, 14
+        cmp     [v86_irqhooks+edi*8], 0
+        jnz     v86_irq2
+        call    fdc_irq
+        call    ready_for_next_irq
+        restore_ring3_context
+        iret
 
 
 p_irq14:
