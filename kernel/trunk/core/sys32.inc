@@ -227,7 +227,7 @@ p_irq6:
         mov     ax, app_data  ;os_data
         mov     ds, ax
         mov     es, ax
-        mov     edi, 14
+        mov     edi, 6
         cmp     [v86_irqhooks+edi*8], 0
         jnz     v86_irq2
         call    fdc_irq
