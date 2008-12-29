@@ -1207,7 +1207,7 @@ endg
 
 ;..................................... start 3/4 : modified by vhanla .................
 	cmp [bPressedMouseXY_W],0
-	jnz cwloop.exit
+	jnz @f
 	mov [bPressedMouseXY_W],1
 	mov ax,[MOUSE_X]
 	mov [mx],ax
