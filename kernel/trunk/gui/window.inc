@@ -1206,8 +1206,12 @@ endg
 	inc   esi
 
 ;..................................... start 3/4 : modified by vhanla .................
-	cmp [bPressedMouseXY_W],0
-	jnz @f
+	cmp [bPressedMouseXY_W],1
+	jb  .first
+	ja  @f
+	inc [bPressedMouseXY_W]
+	jmp @f
+.first:
 	mov [bPressedMouseXY_W],1
 	mov ax,[MOUSE_X]
 	mov [mx],ax
@@ -1253,6 +1257,9 @@ endg
 	mov   ebx, [TASK_COUNT]
 	cmp   eax, ebx	    ; is this window active?
 	jz    .move_resize_window
+
+	cmp   [bPressedMouseXY_W], 1
+	ja    .exit
 
 	; eax = position in windowing stack
 	; redraw must ?
