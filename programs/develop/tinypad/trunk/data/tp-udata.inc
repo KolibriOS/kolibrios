@@ -1,6 +1,4 @@
 
-self_path rb PATHL
-
 app_start:
 	   dd ?,?
  .params   dd ?
@@ -106,3 +104,29 @@ exit_tab_num   dd ?
 
 temp_buf dd ?
 copy_buf dd ?
+
+label color_tbl dword
+  .text       dd ?
+  .back       dd ?
+  .text.sel   dd ?
+  .back.sel   dd ?
+  .symbol     dd ?
+  .number     dd ?
+  .string     dd ?
+  .comment    dd ?
+  .line.moded dd ?
+  .line.saved dd ?
+
+tabs_pos  db ?
+secure_sel db ?
+auto_braces db ?
+auto_indent db ?
+smart_tab db ?
+optim_save db ?
+line_nums db ?
+
+mainwnd_pos:
+  .x dd ?
+  .y dd ?
+  .w dd ?
+  .h dd ?

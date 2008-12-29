@@ -48,6 +48,14 @@ struct EDITOR
 		 db ?
 ends
 
+struct EDITOR_LINE_DATA
+  Size	dd ?
+  Flags dw ?
+ends
+
+EDITOR_LINE_FLAG_MOFIFIED = 0x0001
+EDITOR_LINE_FLAG_SAVED	  = 0x0002
+
 struct TABITEM
   Editor EDITOR
 ends
@@ -200,15 +208,6 @@ macro menubar_res _name,[_lang,_title,_popup,_onshow]
       .width	 = x-7
     end if
 }
-
-;// OPTIONS
-
-OPTS_SECURESEL	= 00000001b
-OPTS_AUTOBRACES = 00000010b
-OPTS_AUTOINDENT = 00000100b
-OPTS_SMARTTAB	= 00001000b
-OPTS_OPTIMSAVE	= 00010000b
-OPTS_LINENUMS	= 00100000b
 
 ;// MOUSE EVENTS
 

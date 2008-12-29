@@ -9,6 +9,10 @@ HISTORY:
     - line is redrawn after lining up a single char and then deleting it
       (pressing Del twice) [#1]
     - update tab/window title and highlighting mode after file save
+    - allocate 1024 bytes in case file not found (avoid crash)
+  changes:
+    - max line length changed back to 4GB, each line overhead is 6 bytes now
+    - settings are stored in INI file (using libini), allowing binary to be compressed
   new features:
     - prompt to save modified file before closing (+fixes)
     - button to close current tab (+fixes)
@@ -53,7 +57,7 @@ HISTORY:
     - function 70 instead of 58 for files loading/saving
     - clientarea-relative drawing (less code)
     - every line's dword is now splitted into 2 words;
-      low word - line block length, so max line length is 65535 now
+      low word - line block length, so max line length is 64KB now
       high word - various flags. for now, only 2 of 16 bits are used:
 	if bit #0 is set, line was modified since file open
 	if bit #1 is set, line was saved after last modification

@@ -260,23 +260,23 @@ onshow:
 	;mov     word[mm.Options+0],0
 	mov	byte[mm.Options+5],0
 	or	byte[mm.Options+2],0x02
-	test	[options],OPTS_SECURESEL
+	test	[secure_sel],1
 	jnz	@f
 	and	byte[mm.Options+2],0xFD
     @@: or	byte[mm.Options+3],0x02
-	test	[options],OPTS_AUTOBRACES
+	test	[auto_braces],1
 	jnz	@f
 	and	byte[mm.Options+3],0xFD
     @@: or	byte[mm.Options+4],0x02
-	test	[options],OPTS_AUTOINDENT
+	test	[auto_indent],1
 	jnz	@f
 	and	byte[mm.Options+4],0xFD
     @@: or	byte[mm.Options+6],0x02
-	test	[options],OPTS_OPTIMSAVE
+	test	[optim_save],1
 	jnz	@f
 	and	byte[mm.Options+6],0xFD
     @@: or	byte[mm.Options+8],0x02
-	test	[options],OPTS_LINENUMS
+	test	[line_nums],1
 	jnz	@f
 	and	byte[mm.Options+8],0xFD
     @@: ret

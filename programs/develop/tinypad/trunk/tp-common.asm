@@ -70,8 +70,8 @@ endp
 ;-----------------------------------------------------------------------------
 proc get_real_length ;////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	movzx	eax,word[esi]
-    @@: cmp	byte[esi+eax+4-1],' '
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+    @@: cmp	byte[esi+eax+sizeof.EDITOR_LINE_DATA-1],' '
 	jne	@f
 	dec	eax
 	jnz	@b
@@ -90,8 +90,8 @@ proc get_line_offset ;////////////////////////////////////////////////////////
 	mov	esi,[cur_editor.Lines]
     @@: dec	ecx
 	js	.exit
-	movzx	eax,word[esi]
-	lea	esi,[esi+eax+4]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	lea	esi,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	jmp	@b
   .exit:
 	pop	ecx eax
@@ -358,22 +358,22 @@ proc line_add_spaces ;////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
 	xor	eax,eax
 	pushad
-	movzx	edx,word[esi]
+	mov	edx,[esi+EDITOR_LINE_DATA.Size]
 	cmp	ecx,edx
 	jbe	.exit
 	sub	ecx,edx
-	lea	eax,[ecx+4]
+	lea	eax,[ecx+sizeof.EDITOR_LINE_DATA]
 	call	editor_realloc_lines
 	mov	[esp+4*7],eax
 	add	esi,eax
 	push	ecx
 	mov	edi,[cur_editor.Lines]
-	add	edi,[edi-4]
+	add	edi,[cur_editor.Lines.Size] ; !!! CHECK THIS!!! add edi,[edi-4]
 	dec	edi
 	mov	eax,esi
 	mov	esi,edi
 	sub	esi,ecx
-	lea	ecx,[eax+4]
+	lea	ecx,[eax+sizeof.EDITOR_LINE_DATA]
 	add	ecx,edx
 	push	ecx
 	neg	ecx
@@ -381,7 +381,7 @@ proc line_add_spaces ;////////////////////////////////////////////////////////
 	std
 	rep	movsb
 	pop	edi ecx
-	add	[eax],cx
+	add	[eax+EDITOR_LINE_DATA.Size],ecx
 	mov	al,' '
 	cld
 	rep	stosb
@@ -403,25 +403,25 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	cmp	ecx,[sel.end.y]
 	je	.single_line
 	call	get_line_offset
-	and	dword[esi],not 0x00020000
-	or	dword[esi],0x00010000
+	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	mov	ecx,[sel.begin.x]
 	call	line_add_spaces
 	add	esi,eax
-	lea	edi,[esi+4]
+	lea	edi,[esi+sizeof.EDITOR_LINE_DATA]
 	mov	ecx,[sel.end.y]
 	call	get_line_offset
 	call	get_real_length
 	cmp	eax,[sel.end.x]
 	jbe	@f
 	mov	eax,[sel.end.x]
-    @@: movzx	ecx,word[esi]
+    @@: mov	ecx,[esi+EDITOR_LINE_DATA.Size]
 	sub	ecx,eax
 	mov	ebx,[sel.begin.x]
 	add	ebx,ecx
-	mov	[edi-4],bx
+	mov	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],ebx
 	add	edi,[sel.begin.x]
-	lea	esi,[esi+eax+4]
+	lea	esi,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	mov	ecx,[cur_editor.Lines]
 	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
 	sub	ecx,esi
@@ -434,8 +434,8 @@ proc delete_selection ;///////////////////////////////////////////////////////
 
   .single_line:
 	call	get_line_offset
-	and	dword[esi],not 0x00020000
-	or	dword[esi],0x00010000
+	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	call	get_real_length
 	cmp	eax,[sel.begin.x]
 	jbe	.exit
@@ -444,8 +444,8 @@ proc delete_selection ;///////////////////////////////////////////////////////
 	jbe	@f
 	mov	ecx,eax
     @@: sub	ecx,[sel.begin.x]
-	sub	[esi],cx
-	lea	edi,[esi+4]
+	sub	[esi+EDITOR_LINE_DATA.Size],ecx
+	lea	edi,[esi+sizeof.EDITOR_LINE_DATA]
 	add	edi,[sel.begin.x]
 	lea	esi,[edi+ecx]
 	mov	ecx,[cur_editor.Lines]
@@ -464,8 +464,8 @@ proc delete_selection ;///////////////////////////////////////////////////////
 
 	mov	ecx,[cur_editor.Lines.Count]
 	call	get_line_offset
-	movzx	eax,word[esi]
-	lea	esi,[esi+eax+4]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	lea	esi,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	mov	eax,[cur_editor.Lines]
 	add	eax,[cur_editor.Lines.Size] ;*** add eax,[eax-4]
 	sub	esi,eax

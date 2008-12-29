@@ -101,9 +101,9 @@ proc create_tab ;///// ADD TAB TO THE END ////////////////////////////////////
 	mov	[cur_editor.SelStart.X],eax
 	mov	[cur_editor.SelStart.Y],eax
 	mov	edi,[cur_editor.Lines]
-	add	edi,4
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,10
-	mov	[edi-4],ecx
+	mov	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],ecx
 	mov	[edi+10],eax
 	mov	al,' '
 	cld

@@ -350,8 +350,9 @@ optsdlg_handler:
 	jmp	.draw_color.2
 
   .draw_editor:
-	push	dword[options] [tab_bar.Current.Ptr]
-	mov	[options],0
+	;push    dword[options] [tab_bar.Current.Ptr]
+	push	[tab_bar.Current.Ptr]
+	;mov     [options],0
 	mov	ebp,optsdlg_editor
 	call	set_cur_tab
 
@@ -366,8 +367,9 @@ optsdlg_handler:
 	call	draw_editor
 	call	.xchg_colors
 
-	pop	ebp eax
-	mov	[options],al
+	;pop     ebp eax
+	pop	ebp
+	;mov     [options],al
 	call	set_cur_tab
 	ret
 
@@ -383,7 +385,7 @@ optsdlg_handler:
 	dec	ecx
 	mcall	8,,,0x40000000+21001
 	mov	esi,[cl_3d_normal]
-	mov	al,[tab_pos]
+	mov	al,[tabs_pos]
 
 TPOSH = 6
 TPOSW = 10
@@ -687,16 +689,18 @@ botdlg.button:
 	mov	[bot_mode],al
 	mov	[bot_dlg_height],eax
 	call	optsdlg_handler.xchg_colors
-	mov	al,[tab_pos]
+	mov	al,[tabs_pos]
 	mov	[tab_bar.Style],al
+
+	stdcall save_settings
 	call	drawwindow
 	ret
 
 tabpos_round db 4,3,1,2
 
   btn.bot.tabpos:
-	movzx	eax,[tab_pos]
+	movzx	eax,[tabs_pos]
 	mov	al,[tabpos_round+eax-1]
-	mov	[tab_pos],al
+	mov	[tabs_pos],al
     @@: call	optsdlg_handler.draw_tabpos
 	ret

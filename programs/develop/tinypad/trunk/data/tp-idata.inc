@@ -3,22 +3,38 @@ vscrl_capt dd -1
 hscrl_capt dd -1
 body_capt  dd -1
 
+ins_mode db 1
+
 s_status dd 0
 
-sz app_fasm    ,'/RD/1/DEVELOP/FASM',0
-sz app_board   ,'/RD/1/BOARD',0
-sz app_tinypad ,'/RD/1/TINYPAD',0
-sz app_docpak  ,'/RD/1/DOCPAK',0
+sz app_fasm    ,'/rd/1/develop/fasm',0
+sz app_board   ,'/rd/1/board',0
+sz app_tinypad ,'/rd/1/tinypad',0
+sz app_docpak  ,'/rd/1/docpak',0
 
 sz sysfuncs_param,'g',0
 
 include 'tp-tables.inc'
 include 'tp-locale.inc'
 
+macro editor_lines [str, flags]
+{
+  common
+    local size
+  forward
+    virtual at 0
+      db str
+      size = $
+    end virtual
+    dd size
+    dw flags
+    db str
+  common
+    dd 0
+}
+
 ;// options dialog data [
 label optsdlg_editor at $-EDITOR.Bounds
-; rb PATHL     ; FilePath       db PATHL dup(?)
-; dd 0         ; FileName       dd ?
   dd ?,?,?,?   ; Bounds         RECT
   dd @f        ; Lines          dd ?
   dd ?	       ; Lines.Size     dd ?
@@ -35,25 +51,16 @@ label optsdlg_editor at $-EDITOR.Bounds
   db 0	       ; Modified       db ?
 
 @@:
-  dd 0x00000000+1
-  db ' '
-  dd 0x00010000+9
-  db ' org 100h'
-  dd 0x00000000+1
-  db ' '
-  dd 0x00000000+20
-  db ' mov ah,09h  ; write'
-  dd 0x00000000+12
-  db ' mov dx,text'
-  dd 0x00000000+8
-  db ' int 21h'
-  dd 0x00030000+8
-  db ' int 20h'
-  dd 0x00000000+1
-  db ' '
-  dd 0x00000000+21
-  db ' text db "Hello!",24h'
-  dd 0
+editor_lines \
+  ' ',			   0, \
+  ' org 100h',		   EDITOR_LINE_FLAG_MOFIFIED, \
+  ' ',			   0, \
+  ' mov ah,09h  ; write',  0, \
+  ' mov dx,text',	   0, \
+  ' int 21h',		   0, \
+  ' int 20h',		   EDITOR_LINE_FLAG_MOFIFIED + EDITOR_LINE_FLAG_SAVED, \
+  ' ',			   0, \
+  ' text db "Hello!",24h', 0
 
 optsdlg_editor_parts:	; left,top,right,bottom,type
   db 0, 12, 13, 29, 22
@@ -77,10 +84,33 @@ optsdlg_editor_parts:	; left,top,right,bottom,type
 ;// ]
 
 sz symbols_ex,';?.%"',"'"
-sz symbols   ,'#&*\:/<>|{}()[]=+-, '
+sz symbols,'#&*\:/<>|{}()[]=+-, '
 
-sz ini_sec_window   ,'Window',0
-sz ini_window_top   ,'Top',0
-sz ini_window_left  ,'Left',0
-sz ini_window_right ,'Right',0
-sz ini_window_bottom,'Bottom',0
+; INI file section/key names
+
+sz ini_sec_window,INI_SEC_PREFIX,'window',0
+sz ini_window_top,'top',0
+sz ini_window_left,'left',0
+sz ini_window_width,'width',0
+sz ini_window_height,'height',0
+
+sz ini_sec_colors,INI_SEC_PREFIX,'colors',0
+sz ini_colors_text,'text',0
+sz ini_colors_back,'back',0
+sz ini_colors_text_sel,'text_sel',0
+sz ini_colors_back_sel,'back_sel',0
+sz ini_colors_symbol,'symbol',0
+sz ini_colors_number,'number',0
+sz ini_colors_string,'string',0
+sz ini_colors_comment,'comment',0
+sz ini_colors_line_moded,'line_moded',0
+sz ini_colors_line_saved,'line_saved',0
+
+sz ini_sec_options,INI_SEC_PREFIX,'options',0
+sz ini_options_tabs_pos,'tabs_pos',0
+sz ini_options_secure_sel,'secure_sel',0
+sz ini_options_auto_braces,'auto_braces',0
+sz ini_options_auto_indent,'auto_indent',0
+sz ini_options_smart_tab,'smart_tab',0
+sz ini_options_optim_save,'optim_save',0
+sz ini_options_line_nums,'line_nums',0

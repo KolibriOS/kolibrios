@@ -78,7 +78,7 @@ key:
 	mov	esi,accel_table_main
   .acc: cmp	eax,[esi]
 	jne	@f
-	test	[options],OPTS_SECURESEL
+	test	[secure_sel],1
 	jz	.lp1
 	m2m	[cur_editor.SelStart.X],[cur_editor.Caret.X]
 	m2m	[cur_editor.SelStart.Y],[cur_editor.Caret.Y]
@@ -102,14 +102,14 @@ key:
 	movzx	eax,[eax+key1]
 	push	eax
 
-	test	[options],OPTS_SECURESEL
+	test	[secure_sel],1
 	jz	.lp2
 	m2m	[cur_editor.SelStart.X],[cur_editor.Caret.X]
 	m2m	[cur_editor.SelStart.Y],[cur_editor.Caret.Y]
 	jmp	.put
   .lp2: call	delete_selection
 
-	test	[options],OPTS_AUTOBRACES
+	test	[auto_braces],1
 	jz	.put
 	cmp	al,'['
 	jne	@f
@@ -274,12 +274,12 @@ proc key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 	cld
 	mov	ecx,ebx
 	call	get_line_offset
-  .lp1: cmp	dx,[esi]
+  .lp1: cmp	edx,[esi+EDITOR_LINE_DATA.Size]
 	jle	@f
-	movzx	edx,word[esi]
+	mov	edx,[esi+EDITOR_LINE_DATA.Size]
     @@: dec	edx
 	jl	.nx1
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	add	esi,edx
 	mov	ecx,edx
     @@: push	ecx
@@ -297,18 +297,18 @@ proc key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 	js	.exit.2
 	mov	ecx,ebx
 	call	get_line_offset
-	movzx	edx,word[esi]
+	mov	edx,[esi+EDITOR_LINE_DATA.Size]
 	dec	edx
 	jmp	.lp1
     @@:
 	mov	ecx,ebx
 	call	get_line_offset
-  .lp2: cmp	dx,[esi]
+  .lp2: cmp	edx,[esi+EDITOR_LINE_DATA.Size]
 	jle	@f
-	movzx	edx,word[esi]
+	mov	edx,[esi+EDITOR_LINE_DATA.Size]
     @@: or	edx,edx
 	jl	.nx2
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	add	esi,edx
     @@: mov	edi,symbols_ex
 	mov	ecx,symbols_ex.size+symbols.size
@@ -323,7 +323,7 @@ proc key.ctrl_left ;///// GO TO PREVIOUS WORD ////////////////////////////////
 	js	.exit.2
 	mov	ecx,ebx
 	call	get_line_offset
-	movzx	edx,word[esi]
+	mov	edx,[esi+EDITOR_LINE_DATA.Size]
 	dec	edx
 	jmp	.lp2
     @@:
@@ -367,10 +367,10 @@ proc key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 	cld
   .lp1: mov	ecx,ebx
 	call	get_line_offset
-	movzx	ecx,word[esi]
+	mov	ecx,[esi+EDITOR_LINE_DATA.Size]
 	cmp	edx,ecx
 	jge	.nx1
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	add	esi,edx
 	sub	ecx,edx
     @@: push	ecx
@@ -392,10 +392,10 @@ proc key.ctrl_right ;///// GO TO NEXT WORD ///////////////////////////////////
 
   .lp2: mov	ecx,ebx
 	call	get_line_offset
-	movzx	ecx,word[esi]
+	mov	ecx,[esi+EDITOR_LINE_DATA.Size]
 	cmp	edx,ecx
 	jge	.nx2
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	add	esi,edx
 	sub	ecx,edx
     @@: push	ecx
@@ -477,8 +477,9 @@ proc key.ctrl_c
 	jge	@f
 	xor	eax,eax
     @@: add	esi,[sel.begin.x]
-	add	esi,4
-	stosd
+	add	esi,sizeof.EDITOR_LINE_DATA
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,eax
 	jecxz	@f
 	rep	movsb
@@ -494,13 +495,14 @@ proc key.ctrl_c
 	rep	movsb
 	mov	ecx,[sel.end.y]
     @@: call	get_line_offset
-	movzx	eax,word[esi]
-	add	esi,4
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	add	esi,sizeof.EDITOR_LINE_DATA
 	cmp	eax,[sel.end.x]
 	jle	@f
 	mov	eax,[sel.end.x]
     @@: mov	ebx,edi
-	stosd
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,eax
 	jecxz	@f
 	rep	movsb
@@ -524,19 +526,20 @@ proc key.ctrl_c
 	mov	eax,[sel.end.x]
 	sub	eax,[sel.begin.x]
 	mov	edi,[copy_buf]
-	stosd
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	ecx,[sel.begin.y]
 	call	get_line_offset
 	mov	ebx,[sel.begin.x]
 	mov	ecx,[sel.end.x]
-	cmp	ebx,[esi]
+	cmp	ebx,[esi+EDITOR_LINE_DATA.Size]
 	jge	.add_spaces
-	cmp	ecx,[esi]
+	cmp	ecx,[esi+EDITOR_LINE_DATA.Size]
 	jle	.lp1
-	mov	ecx,[esi]
+	mov	ecx,[esi+EDITOR_LINE_DATA.Size]
   .lp1: sub	ecx,[sel.begin.x]
 	sub	eax,ecx
-	lea	esi,[esi+ebx+4]
+	lea	esi,[esi+ebx+sizeof.EDITOR_LINE_DATA]
 	rep	movsb
 
   .add_spaces:
@@ -565,20 +568,20 @@ proc key.ctrl_v
 
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
-	pushd	[esi] esi
+	pushd	[esi+EDITOR_LINE_DATA.Size] esi
 	mov	ecx,[cur_editor.Caret.X]
 	call	line_add_spaces
 	add	[esp],eax
 	add	esi,eax
 	mov	ecx,[copy_size]
-	sub	ecx,4
+	sub	ecx,sizeof.EDITOR_LINE_DATA
 	mov	edi,[cur_editor.Lines]
 	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
 	mov	eax,esi
 	mov	esi,edi
 	sub	esi,ecx
-	lea	ecx,[eax+4]
+	lea	ecx,[eax+sizeof.EDITOR_LINE_DATA]
 	add	ecx,[cur_editor.Caret.X]
 	neg	ecx
 	lea	ecx,[esi+ecx+1]
@@ -591,30 +594,32 @@ proc key.ctrl_v
 
 	cld
 	pop	edi
-	add	edi,4
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	esi,[copy_buf]
-	lodsd
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	add	esi,sizeof.EDITOR_LINE_DATA
 
 	mov	ebx,[cur_editor.Caret.X]
 	add	eax,ebx
-	mov	[edi-4],ax
-	mov	byte[edi-4+2],0x0001
+	mov	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],eax
+	mov	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	sub	eax,ebx
 	call	.check_columns
 	add	edi,ebx
     @@: push	ecx
 	mov	ecx,eax
 	rep	movsb
-	lodsd
-	and	eax,0x0000FFFF
-	stosd
-	mov	byte[edi-4+2],0x0001
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	add	esi,sizeof.EDITOR_LINE_DATA
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	mov	[edi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
+	add	edi,sizeof.EDITOR_LINE_DATA
 	pop	ecx
 	loop	@b
 
 	pop	ecx
 	sub	ecx,ebx
-	add	[edi-4],cx
+	add	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],ecx
 	call	.check_columns
 	mov	ecx,eax
 	rep	movsb
@@ -633,12 +638,13 @@ proc key.ctrl_v
   .single_line:
 	cld
 	pop	edi
-	add	edi,4
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	esi,[copy_buf]
-	lodsd
-	add	[edi-4],ax
-	and	dword[edi-4],not 0x00020000
-	or	dword[edi-4],0x00010000
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	add	esi,sizeof.EDITOR_LINE_DATA
+	add	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],eax
+	and	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	call	.check_columns
 	add	edi,[cur_editor.Caret.X]
 	add	esp,4
@@ -655,7 +661,7 @@ proc key.ctrl_v
 
   .check_columns:
 	push	eax
-	movzx	eax,word[edi-4]
+	mov	eax,[edi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size]
 	cmp	eax,[cur_editor.Columns.Count]
 	jbe	@f
 	mov	[cur_editor.Columns.Count],eax
@@ -666,7 +672,7 @@ endp
 ;-----------------------------------------------------------------------------
 proc key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	mov	eax,94
+	mov	eax,90+sizeof.EDITOR_LINE_DATA
 	call	editor_realloc_lines
 
 	mov	ecx,[cur_editor.Caret.Y]
@@ -675,14 +681,14 @@ proc key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 
 	mov	ecx,[cur_editor.Lines.Count]
 	call	get_line_offset
-	lea	edi,[esi+90+4]
-	lea	ecx,[esi+4]
+	lea	edi,[esi+90+sizeof.EDITOR_LINE_DATA]
+	lea	ecx,[esi+sizeof.EDITOR_LINE_DATA]
 	sub	ecx,ebx
 	std
 	rep	movsb
 
-	lea	edi,[ebx+5]
-	mov	word[ebx],90
+	lea	edi,[ebx+sizeof.EDITOR_LINE_DATA+1]
+	mov	[ebx+EDITOR_LINE_DATA.Size],90
 	mov	al,ASEPC
 	mov	ecx,79
 	cld
@@ -690,7 +696,7 @@ proc key.ctrl_d ;///// INSERT SEPARATOR //////////////////////////////////////
 	mov	al,' '
 	mov	ecx,10
 	rep	stosb
-	mov	byte[ebx+4],';'
+	mov	byte[ebx+sizeof.EDITOR_LINE_DATA],';'
 
 	inc	[cur_editor.Lines.Count]
 	inc	[cur_editor.Caret.Y]
@@ -713,9 +719,8 @@ proc key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
 	mov	edi,esi
-	lodsd
-	and	eax,0x0000FFFF
-	add	esi,eax
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	lea	esi,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	push	eax
 
 	dec	[cur_editor.Lines.Count]
@@ -727,7 +732,7 @@ proc key.ctrl_y ;///// DELETE CURRENT LINE ///////////////////////////////////
 	rep	movsd
 
 	pop	eax
-	add	eax,4
+	add	eax,sizeof.EDITOR_LINE_DATA
 	neg	eax
 	call	editor_realloc_lines
 
@@ -1033,9 +1038,9 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
-	and	dword[esi],not 0x00020000
-	or	dword[esi],0x00010000
-	lea	ebx,[esi+4]
+	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
+	lea	ebx,[esi+sizeof.EDITOR_LINE_DATA]
 	mov	ebp,esi
 
 	call	get_real_length
@@ -1047,7 +1052,7 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	jae	.line_up
 	lea	edi,[ebx+ecx]
 	neg	ecx
-	movzx	eax,word[ebp]
+	mov	eax,[ebp+EDITOR_LINE_DATA.Size]
 	add	ecx,eax;[ebp]
 	repe	scasb
 	je	.line_up
@@ -1057,7 +1062,7 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	add	edi,ecx
 	lea	esi,[edi+1]
 	neg	ecx
-	movzx	eax,word[ebp]
+	mov	eax,[ebp+EDITOR_LINE_DATA.Size]
 	add	ecx,eax;[ebp]
 	dec	ecx
 	rep	movsb
@@ -1074,27 +1079,27 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	cmp	eax,[cur_editor.Caret.Y]
 	je	.exit
 	mov	edi,[temp_buf]
-	add	edi,4
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	esi,ebx
 	mov	ecx,[cur_editor.Caret.X]
 	rep	movsb
 	mov	ecx,[cur_editor.Caret.X]
 	mov	eax,[temp_buf]
-	mov	[eax],ecx
-	cmp	cx,[ebp]
+	mov	[eax+EDITOR_LINE_DATA.Size],ecx
+	cmp	ecx,[ebp+EDITOR_LINE_DATA.Size]
 	jbe	@f
-	movzx	eax,word[ebp]
+	mov	eax,[ebp+EDITOR_LINE_DATA.Size]
 	sub	ecx,eax
 	sub	edi,ecx
 	mov	al,' '
 	rep	stosb
-    @@: lea	esi,[ebx+4]
-	movzx	eax,word[ebp]
+    @@: lea	esi,[ebx+sizeof.EDITOR_LINE_DATA]
+	mov	eax,[ebp+EDITOR_LINE_DATA.Size]
 	add	esi,eax
-	movzx	ecx,word[esi-4]
+	mov	ecx,[esi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size]
 	mov	eax,[temp_buf]
-	add	[eax],ecx
-	or	dword[eax],0x00010000
+	add	[eax+EDITOR_LINE_DATA.Size],ecx
+	or	[eax+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	rep	movsb
 
 	mov	ecx,edi
@@ -1110,14 +1115,13 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	mov	edi,[cur_editor.Lines]
 	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
-	lea	esi,[edi+8]
+	lea	esi,[edi+sizeof.EDITOR_LINE_DATA*2] ; !!! CHECK THIS !!!
 	sub	esi,ecx
-	movzx	eax,word[ebp]
+	mov	eax,[ebp+EDITOR_LINE_DATA.Size]
 	add	esi,eax
-	movzx	eax,word[ebp]
-	movzx	eax,word[ebp+eax+4]
+	mov	eax,[ebp+eax+sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size]
 	add	esi,eax
-	lea	ecx,[esi-4]
+	lea	ecx,[esi-sizeof.EDITOR_LINE_DATA]
 	sub	ecx,ebp
 	std
 	cmp	esi,edi
@@ -1125,10 +1129,10 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 	jz	.lp1
 	mov	edi,ebp
 	add	edi,[esp]
-	lea	esi,[ebp+8]
-	movzx	eax,word[esi-8]
+	lea	esi,[ebp+sizeof.EDITOR_LINE_DATA*2] ; !!! CHECK THIS !!!
+	mov	eax,[esi-sizeof.EDITOR_LINE_DATA*2+EDITOR_LINE_DATA.Size] ; !!! CHECK THIS !!!
 	add	esi,eax
-	movzx	eax,word[esi-4]
+	mov	eax,[esi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size] ; !!! CHECK THIS !!!
 	add	esi,eax
 	mov	ecx,[cur_editor.Lines]
 	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
@@ -1153,8 +1157,8 @@ proc key.del ;///// DELETE NEXT CHAR OR SELECTION ////////////////////////////
 
 	mov	ecx,[cur_editor.Lines.Count]
 	call	get_line_offset
-	movzx	eax,word[esi]
-	lea	esi,[esi+eax+4]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	lea	esi,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	mov	eax,[cur_editor.Lines]
 	add	eax,[cur_editor.Lines.Size] ;*** add eax,[eax-4]
 	sub	esi,eax
@@ -1191,8 +1195,8 @@ proc key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 	dec	[cur_editor.Caret.X]
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
-	and	dword[esi],not 0x00020000
-	or	dword[esi],0x00010000
+	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 
 	mov	ebx,eax
 	call	get_real_length
@@ -1202,10 +1206,10 @@ proc key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
 	mov	[cur_editor.Modified],1
 	ret
 
-    @@: lea	edi,[esi+4+ebx]
+    @@: lea	edi,[esi+sizeof.EDITOR_LINE_DATA+ebx]
 	mov	ecx,ebx
 	neg	ecx
-	movzx	eax,word[esi]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
 	add	ecx,eax
 	dec	ecx
 	lea	esi,[edi+1]
@@ -1225,12 +1229,12 @@ proc key.bkspace ;///// DELETE PREVIOUS CHAR OR SELECTION ////////////////////
     @@: mov	ecx,[cur_editor.Caret.Y]
 	dec	ecx
 	call	get_line_offset
-	and	dword[esi],not 0x00020000
-	or	dword[esi],0x00010000
+	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 
 	mov	ebp,esi
-	lea	ebx,[esi+4]
-	movzx	ecx,word[ebp]
+	lea	ebx,[esi+sizeof.EDITOR_LINE_DATA]
+	mov	ecx,[ebp+EDITOR_LINE_DATA.Size]
     @@: cmp	byte[ebx+ecx-1],' '
 	jne	@f
 	dec	ecx
@@ -1258,8 +1262,8 @@ proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 	pop	eax
 	mov	ecx,[cur_editor.Caret.Y]
 	call	get_line_offset
-	and	dword[esi],not 0x00020000
-	or	dword[esi],0x00010000
+	and	[esi+EDITOR_LINE_DATA.Flags],not EDITOR_LINE_FLAG_SAVED
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 
 	xchg	eax,ecx
 
@@ -1267,7 +1271,7 @@ proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 	cmp	eax,[cur_editor.Caret.X]
 	jae	@f
 	mov	eax,[cur_editor.Caret.X]
-    @@: movzx	edx,word[esi]
+    @@: mov	edx,[esi+EDITOR_LINE_DATA.Size]
 	sub	edx,eax
 	cmp	ecx,edx
 	jl	@f
@@ -1282,8 +1286,8 @@ proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 	dec	ecx
 	mov	edi,ecx
 	add	ecx,-10+1
-	movzx	eax,word[esi]
-	lea	eax,[esi+eax+4]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	lea	eax,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	sub	ecx,eax
 	lea	esi,[edi-10]
 	std
@@ -1292,11 +1296,11 @@ proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 	mov	al,' '
 	rep	stosb
 	popad
-	add	word[esi],10
+	add	[esi+EDITOR_LINE_DATA.Size],10
 	jmp	@b
-    @@: lea	ebx,[esi+4]
+    @@: lea	ebx,[esi+sizeof.EDITOR_LINE_DATA]
 	push	ecx
-	movzx	edi,word[esi]
+	mov	edi,[esi+EDITOR_LINE_DATA.Size]
 	lea	edi,[ebx+edi-1]
 	mov	esi,edi
 	sub	esi,ecx
@@ -1310,7 +1314,7 @@ proc key.tab ;///// TABULATE /////////////////////////////////////////////////
 	rep	stosb
 	cld
 	pop	[cur_editor.Caret.X]
-	lea	esi,[ebx-4]
+	lea	esi,[ebx-sizeof.EDITOR_LINE_DATA]
 	call	get_real_length
 	cmp	eax,[cur_editor.Caret.X]
 	jae	@f
@@ -1338,9 +1342,9 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	call	get_line_offset
 
 	mov	ebx,[cur_editor.Caret.X]
-	cmp	bx,[esi]
+	cmp	ebx,[esi+EDITOR_LINE_DATA.Size]
 	jb	@f
-	movzx	ebx,word[esi]
+	mov	ebx,[esi+EDITOR_LINE_DATA.Size]
 	dec	ebx
 	jns	@f
 	xor	ebx,ebx
@@ -1352,24 +1356,25 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	lea	ecx,[ebx+1]
     @@: dec	ecx
 	jz	@f
-	cmp	byte[esi+ecx+4-1],' '
+	cmp	byte[esi+ecx+sizeof.EDITOR_LINE_DATA-1],' '
 	je	@b
     @@: lea	eax,[ecx+10]
-	or	eax,0x00010000
-	stosd
+	mov	[edi+EDITOR_LINE_DATA.Size],eax
+	mov	[edi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
+	add	edi,sizeof.EDITOR_LINE_DATA
 	jecxz	@f
 	push	esi
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	rep	movsb
 	pop	esi
     @@: mov	al,' '
 	mov	ecx,10
 	rep	stosb
 
-	movzx	ecx,word[esi]
+	mov	ecx,[esi+EDITOR_LINE_DATA.Size]
 	sub	ecx,ebx
 	add	esi,ebx
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	inc	ecx
     @@: dec	ecx
 	jz	@f
@@ -1380,24 +1385,24 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	jne	.lp1
 	inc	esi
 	loop	@b
-  .lp1: test	[options],OPTS_AUTOINDENT
+  .lp1: test	[auto_indent],1
 	jz	.lp2
 	push	edi ecx
-	movzx	ecx,word[ebp]
-	lea	edi,[ebp+4]
+	mov	ecx,[ebp+EDITOR_LINE_DATA.Size]
+	lea	edi,[ebp+sizeof.EDITOR_LINE_DATA]
 	mov	al,' '
 	repe	scasb
 	mov	eax,ecx
 	pop	ecx edi
 	je	.lp2
 	neg	eax
-	movzx	edx,word[ebp]
+	mov	edx,[ebp+EDITOR_LINE_DATA.Size]
 	add	eax,edx;[ebp]
 	dec	eax
 	jmp	@f
   .lp2: xor	eax,eax
     @@: mov	edx,edi
-	add	edi,4
+	add	edi,sizeof.EDITOR_LINE_DATA
 	mov	[cur_editor.Caret.X],eax
 	jecxz	@f
 	push	ecx
@@ -1411,10 +1416,10 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	mov	al,' '
 	rep	stosb
 
-	lea	eax,[edi-4]
+	lea	eax,[edi-sizeof.EDITOR_LINE_DATA]
 	sub	eax,edx
-	or	eax,0x00010000
-	mov	[edx],eax
+	mov	[edx+EDITOR_LINE_DATA.Size],eax
+	mov	[edx+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 
 	mov	ecx,edi
 	sub	ecx,[temp_buf]
@@ -1423,20 +1428,20 @@ proc key.return ;///// CARRIAGE RETURN ///////////////////////////////////////
 	mov	edi,[cur_editor.Lines]
 	add	edi,[cur_editor.Lines.Size] ;*** add edi,[edi-4]
 	dec	edi
-	lea	esi,[edi+4]
+	lea	esi,[edi+sizeof.EDITOR_LINE_DATA]
 	sub	esi,ecx
-	movzx	ecx,word[ebp]
+	mov	ecx,[ebp+EDITOR_LINE_DATA.Size]
 	add	esi,ecx
-	lea	ecx,[esi-4]
+	lea	ecx,[esi-sizeof.EDITOR_LINE_DATA]
 	sub	ecx,ebp
 	std
 	cmp	esi,edi
 	jb	@f
 	je	.lp3
-	lea	esi,[ebp+4]
+	lea	esi,[ebp+sizeof.EDITOR_LINE_DATA]
 	mov	eax,[esp]
-	lea	edi,[esi+eax-4]
-	movzx	ecx,word[ebp]
+	lea	edi,[esi+eax-sizeof.EDITOR_LINE_DATA]
+	mov	ecx,[ebp+EDITOR_LINE_DATA.Size]
 	add	esi,ecx
 	mov	ecx,[cur_editor.Lines]
 	add	ecx,[cur_editor.Lines.Size] ;*** add ecx,[ecx-4]
@@ -1593,29 +1598,13 @@ proc key.alt_x ;///// EXIT PROGRAM ///////////////////////////////////////////
   .direct:
 	call	try_to_close_tabs
 	or	eax,eax
-	jz	.close
+	jz	@f
 	mov	[bot_mode2],2
 	jmp	key.ctrl_o.direct
 
+    @@: stdcall save_settings
+
   .close:
-	mov	esi,self_path
-	mov	byte[esi+PATHL-1],0
-	mov	edi,f_info.path
-	cld
-    @@: lodsb
-	stosb
-	or	al,al
-	jnz	@b
-
-	mov	[f_info70+0],2
-	mov	[f_info70+4],0
-	mov	[f_info70+8],0
-	mov	[f_info70+12],TINYPAD_END
-	mov	[f_info70+16],0
-	mov	byte[f_info70+20],0
-	mov	[f_info70+21],f_info.path
-	mcall	70,f_info70
-
 	mov	[main_closed],1
 	mcall	-1
 endp

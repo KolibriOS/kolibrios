@@ -32,7 +32,7 @@ include 'tinypad.inc'
 
 ;purge mov,add,sub            ;  SPEED
 
-header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,self_path
+header '01',1,@CODE,TINYPAD_END,STATIC_MEM_END,MAIN_STACK,@PARAMS,ini_path
 
 APP_VERSION equ 'SVN (4.0.5)'
 
@@ -43,6 +43,8 @@ FALSE = 0
 ;define __DEBUG__ 1
 ;define __DEBUG_LEVEL__ 1
 ;include 'debug-fdo.inc'
+
+; compiled-in options
 
 ASEPC = '-'  ; separator character (char)
 ATOPH = 19   ; menu bar height (pixels)
@@ -56,58 +58,17 @@ LCHGW = 3    ; changed/saved marker width (pixels)
 STATH = 16   ; status bar height (pixels)
 TBARH = 18   ; tab bar height (pixels)
 
-;-----------------------------------------------------------------------------
-section @OPTIONS ;::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
-;-----------------------------------------------------------------------------
-
-label color_tbl dword
-  .text:       RGB(  0,  0,  0)
-  .back:       RGB(255,255,255)
-  .text.sel:   RGB(255,255,255)
-  .back.sel:   RGB( 10, 36,106)
-  .symbol:     RGB( 48, 48,240)
-  .number:     RGB(  0,144,  0)
-  .string:     RGB(176,  0,  0)
-  .comment:    RGB(128,128,128)
-  .line.moded: RGB(255,238, 98)
-  .line.saved: RGB(108,226,108)
-
-ins_mode db 1
-tab_pos  db 2
-
-options  db OPTS_AUTOINDENT+OPTS_OPTIMSAVE+OPTS_SMARTTAB
-
-mainwnd_pos:
-  .x dd 250
-  .y dd 75
-  .w dd 6*80+6+SCRLW+5	;- 220
-  .h dd 402		;- 220
+INI_SEC_PREFIX equ ''
 
 ;-----------------------------------------------------------------------------
 section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
-
-;       fninit
-
-;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_left,50
-;       mov     [mainwnd_pos.x],eax
-;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_top,50
-;       mov     [mainwnd_pos.y],eax
-;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_right,350
-;       sub     eax,[mainwnd_pos.x]
-;       mov     [mainwnd_pos.w],eax
-;       stdcall ini.get_int,finfo_ini,ini_sec_window,ini_window_bottom,450
-;       sub     eax,[mainwnd_pos.y]
-;       mov     [mainwnd_pos.h],eax
 
 	cld
 	mov	edi,@UDATA
 	mov	ecx,@PARAMS-@UDATA
 	mov	al,0
 	rep	stosb
-
-	mov	al,[tab_pos]
-	mov	[tab_bar.Style],al
 
 	mcall	68,11
 	or	eax,eax
@@ -116,6 +77,15 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 	stdcall dll.Load,@IMPORT
 	or	eax,eax
 	jnz	key.alt_x.close
+
+	mov	edi,ini_path
+	xor	al,al
+	mov	ecx,PATHL
+	repne	scasb
+	mov	dword[edi-1],'.ini'
+	mov	byte[edi+3],0
+
+	stdcall load_settings
 
 	stdcall mem.Alloc,65536
 	mov	[temp_buf],eax
@@ -208,6 +178,10 @@ section @CODE ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
     @@:
 	mov	[s_status],0
 	dec	[do_not_draw]
+
+	mov	al,[tabs_pos]
+	mov	[tab_bar.Style],al
+
 	mcall	66,1,1
 	mcall	40,00100111b
 red:
@@ -293,6 +267,100 @@ proc get_event ctx ;//////////////////////////////////////////////////////////
 
   .debug:
 	mov	eax,EV_DEBUG
+	ret
+endp
+
+;-----------------------------------------------------------------------------
+proc load_settings ;//////////////////////////////////////////////////////////
+;-----------------------------------------------------------------------------
+	pushad
+
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_tabs_pos,2
+	mov	[tabs_pos],al
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_secure_sel,0
+	mov	[secure_sel],al
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_auto_braces,0
+	mov	[auto_braces],al
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_auto_indent,1
+	mov	[auto_indent],al
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_smart_tab,1
+	mov	[smart_tab],al
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_optim_save,1
+	mov	[optim_save],al
+	invoke	ini.get_int,ini_path,ini_sec_options,ini_options_line_nums,0
+	mov	[line_nums],al
+
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_text,0x00000000
+	mov	[color_tbl.text],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_back,0x00ffffff
+	mov	[color_tbl.back],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_text_sel,0x00ffffff
+	mov	[color_tbl.text.sel],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_back_sel,0x000a246a
+	mov	[color_tbl.back.sel],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_symbol,0x003030f0
+	mov	[color_tbl.symbol],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_number,0x00009000
+	mov	[color_tbl.number],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_string,0x00b00000
+	mov	[color_tbl.string],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_comment,0x00808080
+	mov	[color_tbl.comment],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_line_moded,0x00ffee62
+	mov	[color_tbl.line.moded],eax
+	invoke	ini.get_color,ini_path,ini_sec_colors,ini_colors_line_saved,0x006ce26c
+	mov	[color_tbl.line.saved],eax
+
+	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_left,250
+	mov	[mainwnd_pos.x],eax
+	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_top,75
+	mov	[mainwnd_pos.y],eax
+	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_width,6*80+6+SCRLW+5
+	mov	[mainwnd_pos.w],eax
+	invoke	ini.get_int,ini_path,ini_sec_window,ini_window_height,402
+	mov	[mainwnd_pos.h],eax
+
+	popad
+	ret
+endp
+
+;-----------------------------------------------------------------------------
+proc save_settings ;//////////////////////////////////////////////////////////
+;-----------------------------------------------------------------------------
+	pushad
+
+	movzx	eax,[tabs_pos]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_tabs_pos,eax
+	movzx	eax,[secure_sel]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_secure_sel,eax
+	movzx	eax,[auto_braces]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_auto_braces,eax
+	movzx	eax,[auto_indent]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_auto_indent,eax
+	movzx	eax,[smart_tab]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_smart_tab,eax
+	movzx	eax,[optim_save]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_optim_save,eax
+	movzx	eax,[line_nums]
+	invoke	ini.set_int,ini_path,ini_sec_options,ini_options_line_nums,eax
+
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_text,[color_tbl.text]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_back,[color_tbl.back]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_text_sel,[color_tbl.text.sel]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_back_sel,[color_tbl.back.sel]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_symbol,[color_tbl.symbol]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_number,[color_tbl.number]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_string,[color_tbl.string]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_comment,[color_tbl.comment]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_line_moded,[color_tbl.line.moded]
+	invoke	ini.set_color,ini_path,ini_sec_colors,ini_colors_line_saved,[color_tbl.line.saved]
+
+	invoke	ini.set_int,ini_path,ini_sec_window,ini_window_left,[mainwnd_pos.x]
+	invoke	ini.set_int,ini_path,ini_sec_window,ini_window_top,[mainwnd_pos.y]
+	invoke	ini.set_int,ini_path,ini_sec_window,ini_window_width,[mainwnd_pos.w]
+	invoke	ini.set_int,ini_path,ini_sec_window,ini_window_height,[mainwnd_pos.h]
+
+	popad
 	ret
 endp
 
@@ -408,22 +476,19 @@ set_opt:
 	ret
 
   .line_numbers:
-	mov	al,OPTS_LINENUMS
-	jmp	.main
+	xor	[line_nums],1
+	ret
   .optimal_fill:
-	mov	al,OPTS_OPTIMSAVE
-	jmp	.main
+	xor	[optim_save],1
+	ret
   .auto_indents:
-	mov	al,OPTS_AUTOINDENT
-	jmp	.main
+	xor	[auto_indent],1
+	ret
   .auto_braces:
-	mov	al,OPTS_AUTOBRACES
-	jmp	.main
+	xor	[auto_braces],1
+	ret
   .secure_sel:
-	mov	al,OPTS_SECURESEL
-
-  .main:
-	xor	[options],al
+	xor	[secure_sel],1
 	ret
 
 ;-----------------------------------------------------------------------------
@@ -456,8 +521,6 @@ include 'data/tp-idata.inc'
 ;-----------------------------------------------------------------------------
 section @IMPORT ;:::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::
 ;-----------------------------------------------------------------------------
-;align 16
-;@IMPORT:
 
 library \
 	libini,'libini.obj',\
@@ -465,10 +528,12 @@ library \
 	libgfx,'libgfx.obj'
 
 import	libini, \
-	ini.get_str,'ini.get_str',\
-	ini.set_str,'ini.set_str',\
-	ini.get_int,'ini.get_int',\
-	ini.set_int,'ini.set_int'
+	ini.get_str  ,'ini.get_str',\
+	ini.set_str  ,'ini.set_str',\
+	ini.get_int  ,'ini.get_int',\
+	ini.set_int  ,'ini.set_int',\
+	ini.get_color,'ini.get_color',\
+	ini.set_color,'ini.set_color'
 
 import	libio, \
 	file.find_first,'file.find_first',\
@@ -519,6 +584,8 @@ fasm_parameters:
 p_info	process_information
 p_info2 process_information
 sc	system_colors
+
+ini_path rb PATHL
 
 rb 1024*4
 MAIN_STACK:

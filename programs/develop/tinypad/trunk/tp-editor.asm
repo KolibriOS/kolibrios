@@ -16,7 +16,7 @@ proc draw_editor ;///// DRAW EDITOR //////////////////////////////////////////
 	call	draw_framerect
 
 	mov	[cur_editor.Gutter.Visible],0
-	test	[options],OPTS_LINENUMS
+	test	[line_nums],1
 	jnz	@f
 	xor	eax,eax
 	jmp	.lp1
@@ -574,14 +574,12 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
   .lp6:
 	mcall	13
 
-	lodsd
-
 	pushad
 	mov	edx,[color_tbl.back]
-	test	eax,0x00010000
+	test	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	jz	@f
 	mov	edx,[color_tbl.line.moded]
-	test	eax,0x00020000
+	test	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_SAVED
 	jz	@f
 	mov	edx,[color_tbl.line.saved]
     @@: mov	ebx,[left_ofs]
@@ -593,8 +591,9 @@ proc draw_editor_text ;///// DRAW EDITOR TEXT ////////////////////////////////
 	popad
 
 	xor	ecx,ecx
-	and	eax,0x0000FFFF
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
 	mov	[cur_line_len],eax
+	add	esi,sizeof.EDITOR_LINE_DATA
 
 	or	eax,eax
 	ja	.next_block

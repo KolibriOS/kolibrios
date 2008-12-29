@@ -17,8 +17,8 @@ proc save_file ;//////////////////////////////////////////////////////////////
 	mov	ecx,[cur_editor.Lines.Count]
     @@: call	get_real_length
 	add	ebx,eax
-	movzx	eax,word[esi]
-	lea	esi,[esi+eax+4]
+	mov	eax,[esi+EDITOR_LINE_DATA.Size]
+	lea	esi,[esi+eax+sizeof.EDITOR_LINE_DATA]
 	loop	@b
 	mov	eax,[cur_editor.Lines.Count]
 	shl	eax,1
@@ -30,7 +30,7 @@ proc save_file ;//////////////////////////////////////////////////////////////
 
   .new_string:
 	call	save_string
-	cmp	dword[esi],0
+	cmp	dword[esi+EDITOR_LINE_DATA.Size],0
 	jne	.new_string
 	pop	eax
 	sub	edi,eax
@@ -64,11 +64,11 @@ endp
 ;-----------------------------------------------------------------------------
 proc save_string ;////////////////////////////////////////////////////////////
 ;-----------------------------------------------------------------------------
-	movzx	ecx,word[esi]
-	test	dword[esi],0x00010000
+	mov	ecx,[esi+EDITOR_LINE_DATA.Size]
+	test	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_MOFIFIED
 	jz	@f
-	or	dword[esi],0x00020000
-    @@: add	esi,4
+	or	[esi+EDITOR_LINE_DATA.Flags],EDITOR_LINE_FLAG_SAVED
+    @@: add	esi,sizeof.EDITOR_LINE_DATA
 
     @@: cmp	byte[esi+ecx-1],' '
 	jne	@f
@@ -81,7 +81,7 @@ proc save_string ;////////////////////////////////////////////////////////////
   .next_char:
 	mov	al,[esi+ebx]
 	inc	ebx
-	test	[options],OPTS_OPTIMSAVE
+	test	[optim_save],1
 	jz	.put
 	test	ah,00000001b
 	jnz	.char
@@ -127,8 +127,7 @@ proc save_string ;////////////////////////////////////////////////////////////
   .endcopy:
 	mov	eax,0x0A0D
 	stosw
-	movzx	eax,word[esi-4]
-	add	esi,eax;[esi-4]
+	add	esi,[esi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size]
 	ret
 endp
 
@@ -174,7 +173,10 @@ proc load_file ;//////////////////////////////////////////////////////////////
 	mcall	70,f_info70
 	mov	[f_info70+0],0
 	mov	eax,dword[file_info.Size]
-	mov	[f_info70+12],eax
+	or	eax, eax
+	jnz	@f
+	mov	eax, 1024
+    @@: mov	[f_info70+12],eax
 	stdcall mem.Alloc,eax
 	mov	[f_info70+16],eax
 	mcall	70,f_info70
@@ -233,7 +235,7 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 	call	get_lines_in_file
 	mov	[ebp+EDITOR.Lines.Count],eax
 	lea	edx,[ebx+ecx]
-	imul	ebx,eax,14
+	imul	ebx,eax,16
 	add	ebx,edx
 	mov	[ebp+EDITOR.Lines.Size],ebx
 	stdcall mem.ReAlloc,[ebp+EDITOR.Lines],ebx
@@ -245,7 +247,7 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 
   .next_line:
 	mov	ebx,edi
-	add	edi,4
+	add	edi,sizeof.EDITOR_LINE_DATA
   .next_char:
 	or	edx,edx
 	jle	.exit
@@ -266,10 +268,10 @@ proc load_from_memory ;///////////////////////////////////////////////////////
 	mov	ecx,10
 	mov	al,' '
 	rep	stosb
-	lea	eax,[edi-4]
+	lea	eax,[edi-sizeof.EDITOR_LINE_DATA]
 	sub	eax,ebx
-	mov	[ebx],eax
-	mov	dword[ebx+eax+4],0
+	mov	[ebx+EDITOR_LINE_DATA.Size],eax
+	mov	[ebx+eax+sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size],0
 	sub	eax,10
 	jnz	@f
 	inc	eax
@@ -286,16 +288,16 @@ proc load_from_memory ;///////////////////////////////////////////////////////
   .LF:	mov	ecx,10
 	mov	al,' '
 	rep	stosb
-	lea	eax,[edi-4]
+	lea	eax,[edi-sizeof.EDITOR_LINE_DATA]
 	sub	eax,ebx
-	mov	[ebx],eax
+	mov	[ebx+EDITOR_LINE_DATA.Size],eax
 	add	eax,-10
 	cmp	eax,[ebp+EDITOR.Columns.Count]
 	jbe	.next_line
 	mov	[ebp+EDITOR.Columns.Count],eax
 	jmp	.next_line
 
-  .TB:	lea	eax,[edi-4]
+  .TB:	lea	eax,[edi-sizeof.EDITOR_LINE_DATA]
 	sub	eax,ebx
 	mov	ecx,eax
 	add	ecx,ATABW

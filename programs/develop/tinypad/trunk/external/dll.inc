@@ -15,8 +15,6 @@ proc dll.Load, import_table:dword
 		or	eax,eax
 		jz	.fail
 		stdcall dll.Link,eax,edx
-		or	eax,eax
-		jz	.fail
 		stdcall dll.Init,[eax+4]
 		pop	esi
 		add	esi,8
@@ -60,8 +58,10 @@ endp
 
 proc dll.GetProcAddress, exp:dword,sz_name:dword
 		mov	edx,[exp]
-  .next:	xor	eax,eax
-		test	edx,edx
+		xor	eax,eax
+  .next:	or	edx,edx
+		jz	.end
+		cmp	dword[edx],0
 		jz	.end
 		stdcall strcmp,[edx],[sz_name]
 		test	eax,eax
@@ -88,5 +88,6 @@ proc strcmp, str1:dword,str2:dword
 		ret
 endp
 
-s_libdir db '/rd/1/lib/'
-s_libdir.fname rb 32
+s_libdir:
+  db '/sys/lib/'
+  .fname rb 32

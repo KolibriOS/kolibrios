@@ -1,25 +1,35 @@
-;-----------------------------------------------------------------------------
-; Copyright (c) 2006-2007, mike.dld
-;-----------------------------------------------------------------------------
-; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-; IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-; FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-; AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-; LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-; DEALINGS IN THE SOFTWARE.
-;-----------------------------------------------------------------------------
+;;================================================================================================;;
+;;//// libio.inc //// (c) mike.dld, 2007-2008 ////////////////////////////////////////////////////;;
+;;================================================================================================;;
+;;                                                                                                ;;
+;; This file is part of Common development libraries (Libs-Dev).                                  ;;
+;;                                                                                                ;;
+;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
+;; General Public License as published by the Free Software Foundation, either version 3 of the   ;;
+;; License, or (at your option) any later version.                                                ;;
+;;                                                                                                ;;
+;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
+;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
+;; General Public License for more details.                                                       ;;
+;;                                                                                                ;;
+;; You should have received a copy of the GNU General Public License along with Libs-Dev. If not, ;;
+;; see <http://www.gnu.org/licenses/>.                                                            ;;
+;;                                                                                                ;;
+;;================================================================================================;;
 
+
+O_BINARY = 00000000b
 O_READ	 = 00000001b
 O_WRITE  = 00000010b
 O_CREATE = 00000100b
 O_SHARE  = 00001000b
+O_TEXT	 = 00010000b
 
 SEEK_SET = 0
 SEEK_CUR = 1
 SEEK_END = 2
 
-struct DateTime
+struct FileDateTime
   union
     time    dd ?
     struct
@@ -58,22 +68,32 @@ ends
 struct FileInfoA
   Attributes   dd ?
   Flags        dd ?
-  DateCreate   DateTime
-  DateAccess   DateTime
-  DateModify   DateTime
-  FileSize     dd ?
-  FileSizeHigh dd ?
-  FileName     rb 264
+  DateCreate   FileDateTime
+  DateAccess   FileDateTime
+  DateModify   FileDateTime
+  union
+    FileSize   dq ?
+    struct
+      FileSizeLow  dd ?
+      FileSizeHigh dd ?
+    ends
+  ends
+  FileName     rb 252
 ends
 
 struct FileInfoW
   Attributes   dd ?
   Flags        dd ?
-  DateCreate   DateTime
-  DateAccess   DateTime
-  DateModify   DateTime
-  FileSize     dd ?
-  FileSizeHigh dd ?
+  DateCreate   FileDateTime
+  DateAccess   FileDateTime
+  DateModify   FileDateTime
+  union
+    FileSize   dq ?
+    struct
+      FileSizeLow  dd ?
+      FileSizeHigh dd ?
+    ends
+  ends
   FileName     rw 260
 ends
 
@@ -89,3 +109,4 @@ FA_SYSTEM   = 00000100b
 FA_LABEL    = 00001000b
 FA_FOLDER   = 00010000b
 FA_ARCHIVED = 00100000b
+FA_ANY	    = 00111111b
