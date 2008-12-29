@@ -700,7 +700,7 @@ align 16
 
 export						  \
 	libini._.init	  , 'lib_init'		, \
-	0x00040005	  , 'version'		, \
+	0x00040006	  , 'version'		, \
 	ini.enum_sections , 'ini.enum_sections' , \
 	ini.enum_keys	  , 'ini.enum_keys'	, \
 	ini.get_str	  , 'ini.get_str'	, \
