@@ -17,6 +17,9 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
+;; 2008-12-29 (mike.dld)                                                                          ;;
+;;   bug-fixes:                                                                                   ;;
+;;     - unnecessary 'stosb' in ini.get_str was causing problems                                  ;;
 ;; 2008-08-06 (mike.dld)                                                                          ;;
 ;;   changes:                                                                                     ;;
 ;;     - split private procs into libini_p.asm, added comments                                    ;;
@@ -306,31 +309,22 @@ endl
 	jnz	.exit_error
 
 	stdcall libini._.low.read_value, [f_addr], [_buffer], [_buf_len]
-;       mov     edi, [_buffer]
-;   @@: dec     [_buf_len]
-;       jz      @f
-;       stdcall ini.aux.get_char, [f_addr]
-;       or      al, al
-;       jz      @f
-;       cmp     al, 13
-;       je      @f
-;       cmp     al, 10
-;       je      @f
-;       stosb
-;       jmp     @b
     @@: invoke	file.close, [f.fh]
 	invoke	mem.free, [f.buf]
 	xor	eax, eax
-	stosb
 	pop	edi esi ebx
 	ret
 
   .exit_error:
 	invoke	file.close, [f.fh]
 	invoke	mem.free, [f.buf]
-	mov	esi, [_def_val]
 	mov	edi, [_buffer]
+	mov	esi, [_def_val]
+	xor	al, al
+	or	esi, esi
+	jz	.exit_error.2
     @@: lodsb
+  .exit_error.2:
 	stosb
 	or	al, al
 	jnz	@b
@@ -572,6 +566,98 @@ endl
 	ret
 endp
 
+;;================================================================================================;;
+proc ini.get_color _f_name, _sec_name, _key_name, _def_val ;//////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Read color                                                                                     ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _def_val = default value to return if no key, section or file found <dword>                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = [_def_val] (error) / found key value <dword>                                             ;;
+;;================================================================================================;;
+locals
+  buf rb 14
+endl
+
+	push	ebx esi edi
+
+	lea	esi, [buf]
+	stdcall ini.get_str, [_f_name], [_sec_name], [_key_name], esi, 14, 0
+	cmp	byte[esi],0
+	je	.exit_error
+
+	xor	ebx, ebx
+	stdcall libini._.str_to_int
+	movzx	ebx, al
+	shl	ebx, 16
+	lodsb
+	cmp	al, ','
+	jne	@f
+	stdcall libini._.str_to_int
+	mov	bh, al
+	lodsb
+	cmp	al, ','
+	jne	@f
+	stdcall libini._.str_to_int
+	mov	bl, al
+
+    @@: mov	eax, ebx
+
+	pop	edi esi ebx
+	ret
+
+  .exit_error:
+	mov	eax, [_def_val]
+	pop	edi esi ebx
+	ret
+endp
+
+;;================================================================================================;;
+proc ini.set_color _f_name, _sec_name, _key_name, _val ;//////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? Write color                                                                                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;> _f_name = ini filename <asciiz>                                                                ;;
+;> _sec_name = section name <asciiz>                                                              ;;
+;> _key_name = key name <asciiz>                                                                  ;;
+;> _val = value <dword>                                                                           ;;
+;;------------------------------------------------------------------------------------------------;;
+;< eax = -1 (error) / 0                                                                           ;;
+;;================================================================================================;;
+locals
+  buf rb 16
+endl
+
+	push	ecx edx edi
+
+	lea	edi, [buf]
+	mov	ecx, 10
+	mov	ebx, [_val]
+	mov	eax, ebx
+	shr	eax, 16
+	and	eax, 0x0ff
+	stdcall libini._.int_to_str
+	mov	byte[edi], ','
+	inc	edi
+	movzx	eax, bh
+	stdcall libini._.int_to_str
+	mov	byte[edi], ','
+	inc	edi
+	movzx	eax, bl
+	stdcall libini._.int_to_str
+
+	lea	eax, [buf]
+	sub	edi, eax
+
+	stdcall ini.set_str, [_f_name], [_sec_name], [_key_name], eax, edi
+
+	pop	edi edx ecx
+	ret
+endp
+
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;
@@ -619,5 +705,7 @@ export						  \
 	ini.enum_keys	  , 'ini.enum_keys'	, \
 	ini.get_str	  , 'ini.get_str'	, \
 	ini.get_int	  , 'ini.get_int'	, \
+	ini.get_color	  , 'ini.get_color'	, \
 	ini.set_str	  , 'ini.set_str'	, \
-	ini.set_int	  , 'ini.set_int'
+	ini.set_int	  , 'ini.set_int'	, \
+	ini.set_color	  , 'ini.set_color'
