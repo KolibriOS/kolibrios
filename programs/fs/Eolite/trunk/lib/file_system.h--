@@ -4,15 +4,13 @@
 #define graph "graph"
 #define htmlv "/sys/network/HTMLv"
 #define jpegview "jpegview"
-#define kvid "/sys/kvid"
 #define life2 "/sys/demos/life2"
 #define midamp "/sys/multimedia/midamp"
-//#define mv "MV"
-#define mv "/sys/multimedia/imgview"
+#define mv "MV"
+//#define mv "/sys/multimedia/imgview"
 #define pngview "/sys/multimedia/pngview"
-#define rtfread "RtfRead"
 #define tinypad "TinyPad"
-#define view3ds "/sys/demos/3d/view3ds"
+
 
 struct f70{
 	dword	func;
@@ -150,7 +148,7 @@ inline fastcall dword CopyFile(dword EBX,ECX)
 	
 	if (!EAX)
 	{	
-		cBufer = malloc(CopyFile_atr.sizelo);	
+		cBufer = malloc(2*CopyFile_atr.sizelo);	
 		ReadFile(dword 0, CopyFile_atr.sizelo, cBufer, s);
 	
 		IF (!EAX)
@@ -170,38 +168,4 @@ inline fastcall dword CopyFile(dword EBX,ECX)
 
 }
 
-void Run_File(dword fpath)
-{
-	dword extension[4], fparam[256]; byte needrun;
-	needrun = 1; //если 1 то нужно запускать, если 0 то не надо
-	copystr(fpath,#fparam); //по-умолчанию прога и параметр равны, если окажется что это файл, парам - сбросим
-	copystr(fpath+strlen(fpath)-4,#extension); //узнаём расширение файла с каким работаем
-	//тут мы это расширение сравнимаем, и, если оно асоциируется с прогой, прога - это fpath
-	IF (!strcmp(#extension,".skn")) copystr("desktop",fpath);
-	IF (!strcmp(#extension,".avi")) || (!strcmp(#extension,".mpg")) copystr(kvid,fpath);
-	IF (!strcmp(#extension,".htm")) || (!strcmp(#extension,"html")) copystr(htmlv,fpath);
-	IF (!strcmp(#extension,".3ds")) copystr(view3ds,fpath);
-	IF (!strcmp(#extension,".lif")) copystr(life2,fpath);
-	IF (!strcmp(#extension,".cvs")) copystr(graph,fpath);
-	IF (!strcmp(#extension,".nes")) copystr(fce,fpath);
-	//audio
-	IF (!strcmp(#extension,".mp3")) || (!strcmp(#extension,".wav")) copystr(ac97snd,fpath);
-	IF (!strcmp(#extension,".mid")) || (!strcmp(#extension,"midi")) copystr(midamp,fpath);
-	//text
-	IF (!strcmp(#extension,".rtf")) copystr(rtfread,fpath);
-	IF (!strcmp(#extension,".txt")) || (!strcmp(#extension,".inc")) ||
-	   (!strcmp(#extension,".ini")) || (!strcmp(#extension,".dat")) ||
-	   (!strcmp(#extension,".asm")) || (!strcmp(#extension,".cpp")) copystr(tinypad,fpath);
-	//изображения
-	IF (!strcmp(#extension,".gif")) || (!strcmp(#extension,".bmp")) ||
-	   (!strcmp(#extension,".tga")) || (!strcmp(#extension,".pcx")) ||
-	   (!strcmp(#extension,".cur")) || (!strcmp(#extension,".ico")) copystr(mv,fpath);
-	IF (!strcmp(#extension,".png")) copystr(pngview,fpath);
-	IF (!strcmp(#extension,".jpg")) || (!strcmp(#extension,"jpeg")) copystr(jpegview,fpath);
 
-	IF (!strcmp(#extension,".sys")) || (!strcmp(#extension,".drv")) ||
-	   (!strcmp(#extension,".obj")) needrun=0; // эти файлы не для запуска
-
-	IF (!strcmp(fpath,#fparam)) fparam=''; //если fpath не изменился, то это таки, наверное, прога, параметров нет.
-	IF (needrun == 1) RunProgram(fpath, #fparam); //запуск!
-}

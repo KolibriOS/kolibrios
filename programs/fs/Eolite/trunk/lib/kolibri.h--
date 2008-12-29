@@ -11,7 +11,6 @@ dword  alloc_mem    = 0x00100000;
 dword  x86esp_reg   = 0x00100000;   // 0x0007fff0; 
 dword  I_Param      = #param;
 dword  I_Icon       = 0x0;
-dword  skin_width;
 char param[256]="";
 
 //Events
@@ -115,7 +114,7 @@ inline fastcall void ExitProcess(){
  $int 0x40
 }
 
-void Pause(dword EBX){				
+inline fastcall void Pause(dword EBX){				
 	$mov eax, 5       //Пауза, в сотых долях секунды
 	$int 0x40
 }
@@ -132,7 +131,7 @@ void DefineAndDrawWindow(dword x,y,sizeX,sizeY,byte mainAreaType,dword
 	$int 0x40
 }
 
-inline fastcall dword CreateThread(dword ECX,EDX)
+inline fastcall void CreateThread(dword ECX,EDX)
 {
 	EAX = 51;
 	EBX = 1;
@@ -157,7 +156,7 @@ inline fastcall dword GetSkinWidth(){
 	$int 0x40
 }
 
-inline fastcall dword MoveSize(dword EBX,ECX,EDX,ESI){
+inline fastcall void MoveSize(dword EBX,ECX,EDX,ESI){
 	EAX = 67;
 	$int 0x40
 }
@@ -180,6 +179,13 @@ l1:
 	$stosb
 	$test al,al
 	$jnz l1
+}
+
+
+byte fastcall TestBit(EAX, CL)
+{
+	$shr eax,cl
+	$and eax,1
 }
 
 
@@ -209,6 +215,22 @@ f3:
      $jnz     f3
      $mov     eax, #buffer
      $ret
+}
+
+
+dword StrToCol(char* htmlcolor)
+{
+  dword j=1, color=0; char ch=0x00;
+  IF (ESBYTE[htmlcolor]<>'#') RETURN;
+  FOR (;j<7;j++)
+  {
+    ch=ESBYTE[htmlcolor+j];
+    IF ((ch>='0') && (ch<='9')) ch -= '0';
+    IF ((ch>='A') && (ch<='F')) ch -= 'A'-10;
+    IF ((ch>='a') && (ch<='f')) ch -= 'a'-10;
+    color = color*0x10 + ch;
+  }
+  EAX=color;
 }
 
 
@@ -268,7 +290,7 @@ L2:
 }
 
 
-inline fastcall dword ChangeCase(dword EDX)
+inline fastcall ChangeCase(dword EDX)
 {
 	AL=DSBYTE[EDX];
 	IF(AL>='a')&&(AL<='z')DSBYTE[EDX]=AL&0x5f;

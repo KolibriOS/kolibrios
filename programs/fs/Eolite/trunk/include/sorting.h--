@@ -5,10 +5,8 @@ void Sort_by_Size(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 	int i= a;
 	IF (a >= b) return;
 	FOR (j = a; j <= b; j++)
-	{
-		IF (ESDWORD[file_mas[j]*304 + buf+72-8] <= ESDWORD[file_mas[b]*304 + buf+72-8])
+		IF (ESDWORD[file_mas[j]*304 + buf+64] <= ESDWORD[file_mas[b]*304 + buf+64])
 		{ file_mas[i] >< file_mas[j];   i++;}
-	}
 	Sort_by_Size (a, i-2);
 	Sort_by_Size (i, b);
 }
@@ -24,33 +22,11 @@ void Sort_by_Name(int a, b)   // для первого вызова: a = 0, b = <элементов в мас
 	Sort_by_Name(i, b);
 }
 
-
-/*int partition1(dword a, b) 
-{
-	dword i = a; byte filename1[256], filename2[256]; int n;
-	for (j = a; j <= b; j++)
-	{
-	    //
-		copystr(file_mas[j]*304 + buf+72, #filename1);
-		copystr(file_mas[b]*304 + buf+72, #filename2);
-		n=strlen(#filename1)-1;
-		WHILE (filename1[n]<>'.') && (n>0) n--;
-		IF (n) copystr(#filename1+n+1, #filename1);
-		n=strlen(#filename2)-1;
-		WHILE (filename2[n]<>'.') && (n>0) n--;
-		IF (n) copystr(#filename2+n+1, #filename2);
-		//
-		n=strcmp(#filename1, #filename2);
-		IF (n<0) { file_mas[i] >< file_mas[j];   i++;} 
-		IF (n==0) && (strcmp(file_mas[j]*304 + buf+72, file_mas[b]*304 + buf+72)<=0) { file_mas[i] >< file_mas[j];   i++;}
-	}
-	EAX = i-1;
-}*/
-
-int partition1(dword a, b) 
-{
-	dword i = a; byte filename1[256], filename2[256]; int n;
-	dword offset=buf+72;
+ 
+void Sort_by_Type(int a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
+{                                        
+	int i=a; dword offset=buf+72;  byte filename1[256], filename2[256]; int n;
+	IF (a >= b) return;
 	for (j = a; j <= b; j++)
 	{
 	    //
@@ -67,16 +43,9 @@ int partition1(dword a, b)
 		IF (n<0) { file_mas[i] >< file_mas[j];   i++;} 
 		IF (n==0) && (strcmp(file_mas[j]*304 + offset, file_mas[b]*304 + offset)<=0) { file_mas[i] >< file_mas[j];   i++;}
 	}
-	EAX = i-1;
+	Sort_by_Type(a, i-2);
+	Sort_by_Type(i, b);
 }
- 
-void Sort_by_Type(dword a, b)   // для первого вызова: a = 0, b = <элементов в массиве> - 1
-{                                        
-	int c;
-	IF (a >= b) RETURN;
-	c = partition1(a, b);
-	Sort_by_Type(a, c-1);
-	Sort_by_Type(c+1, b);
-}
+
 
 

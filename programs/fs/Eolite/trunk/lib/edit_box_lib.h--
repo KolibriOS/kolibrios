@@ -2,7 +2,7 @@
 dword edit_box_draw = #aEdit_box_draw;
 dword edit_box_key  = #aEdit_box_key;
 dword edit_box_mouse = #aEdit_box_mouse;
-dword version_ed     = #aVersion_ed;
+
 
 dword  am__ = 0x0;
 dword  bm__ = 0x0;
@@ -10,15 +10,7 @@ dword  bm__ = 0x0;
 char aEdit_box_draw[9]  = "edit_box\0";
 char aEdit_box_key[13] = "edit_box_key\0";
 char aEdit_box_mouse[15] = "edit_box_mouse\0";
-char aVersion_ed[11] = "version_ed\0";
 
-char aCheck_box_draw  [15] = "check_box_draw\0";
-char aCheck_box_mouse [16] = "check_box_mouse\0";
-char aVersion_ch      [11] = "version_ch\0";
-
-char aOption_box_draw [16] = "option_box_draw\0";
-char aOption_box_mouse[17] = "option_box_mouse\0";
-char aVersion_op      [11] = "version_op\0" ;
 
 
 struct edit_box{
@@ -27,8 +19,7 @@ text_color, max, text, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, sh
 };
 
 
-
-int load_editbox_lib(EAX)
+int fastcall load_editbox_lib(EAX)
 {
 //set mask 
         $mov    eax,40

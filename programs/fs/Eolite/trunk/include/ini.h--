@@ -1,0 +1,66 @@
+//INI parser in C--, GPL licence.
+//Copyright 2008 by Leency
+
+#define COMMENT	0
+#define SECTION	1
+#define PARAM	2
+#define OPTION	3
+
+void GetIni(dword inipath)
+{
+	byte section[32]='', parametr[32]='', option[256]='', InfType=0;
+	word bukva[1];
+	dword buff, fsize, tj;
+	//читаем файл
+	buff = malloc(1048576);
+	ReadFile(0, 1048576, buff, inipath);
+	IF (EAX<>6) {WriteDebug("INI-file not found. Defaults will be used."); goto INI_END;}
+	fsize=EBX;
+	//парсим его
+	for (tj=0; tj<fsize; tj++;) 
+	{   
+		bukva = ESBYTE[buff+tj];
+		switch (bukva)
+		{
+			case ';':
+				InfType=COMMENT;
+				break;				
+			case '[':
+				InfType=SECTION;
+				section='';
+				break;
+			case ']':
+				InfType=PARAM;
+				break;
+			case '=':
+				InfType=OPTION;
+				break;
+			case 0x0a:
+			case 0x0d:
+				InfType=PARAM;
+				//IF (strcmp(#parametr,"select_color")==0) videlenie=StrToCol(#option);
+				IF (parametr) && (!strcmp(#file_name+find_symbol(#file_name,'.'),#parametr)) {RunProgram(#option,#file_path); return;}
+				parametr=option='';
+				break;
+			default:
+				IF (InfType==SECTION) copystr(#bukva,#section+strlen(#section));
+				IF (InfType==PARAM) copystr(#bukva,#parametr+strlen(#parametr));
+				IF (InfType==OPTION) copystr(#bukva,#option+strlen(#option));
+		}
+	}
+	INI_END: 
+	IF (file_path) RunProgram(#file_path,''); 
+}
+
+
+/*inline fastcall void OpenFile(ESI)
+{
+	byte ext_n_progs="ext|tinypad|ext2|Eolite|"; //=ESI
+	byte str;
+	do{
+		$lodsb
+		IF(AL=='|') str='';
+		copystr(ESBYTE[AL],str);
+	} while(AL!=0);
+	//RunProgram(fpath, #fparam); //запуск!	
+}*/
