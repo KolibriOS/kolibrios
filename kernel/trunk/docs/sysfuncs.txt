@@ -3770,6 +3770,43 @@ Remarks:
     the new and old sizes.
 
 ======================================================================
+======= Function 68, subfunction 22 - open memory block. =======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 22 - subfunction number
+  * ecx = pointer to already allocated block (max 32 symbols)
+  * edx = block's size in bytes for SHM_CREATE and SHM_OPEN_ALWAYS
+  * esi = flags for opening and getting access
+          SHM_OPEN        = 0x00
+          SHM_OPEN_ALWAYS = 0x04
+          SHM_CREATE      = 0x08
+          SHM_READ        = 0x00
+          SHM_WRITE       = 0x01
+Returned value:
+  * eax = pointer to the readed block, 0 = error
+  * edx = if SHM_CREATE, SHM_OPEN, or SHM_OPEN_ALWAYS active
+Error codes:
+  * E_NOTFOUND =  5
+  * E_ACCESS   = 10
+  * E_NOMEM    = 30
+  * E_PARAM    = 33
+Remarks:
+  * 
+  * 
+
+======================================================================
+======= Function 68, subfunction 22 - close memory block. =======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 23 - subfunction number
+  * ecx = pointer to already allocated block (max 32 symbols)
+
+Returned value:
+  * not defined
+
+======================================================================
 ====================== Fucntion 69 - debugging. ======================
 ======================================================================
 A process can load other process as debugged by set of corresponding
