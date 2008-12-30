@@ -661,13 +661,21 @@ preprocess_line:
 	mov	edx,[struc_name]
 	movzx	eax,byte [edx-1]
 	add	edx,eax
+	push	edi
+	lea	esi,[edi-1]
+	mov	ecx,edi
+	sub	ecx,edx
+	std
+	rep	movs byte [edi],[esi]
+	cld
+	pop	edi
+	inc	edi
 	mov	al,3Ah
 	mov	[edx],al
 	inc	al
-	xchg	al,[edx+1]
-	dec	al
-	mov	[edx+2],al
+	mov	[edx+1],al
 	pop	esi edx
+	inc	esi
 	jmp	use_macro
       preprocess_label:
 	dec	esi
@@ -805,11 +813,15 @@ get_preprocessor_symbol:
 	ret
 add_preprocessor_symbol:
 	push	edi esi
-
+	cmp	ch,11b
+	je	preprocessor_symbol_name_ok
+	push	ecx
+	movzx	ecx,cl
 	mov	edi,preprocessor_directives
 	call	get_directive
 	jnc	reserved_word_used_as_symbol
-
+	pop	ecx
+      preprocessor_symbol_name_ok:
 	call	calculate_hash
 	mov	ebp,eax
 	and	ebp,3FFh
@@ -2039,14 +2051,13 @@ process_macro:
 	stos	dword [edi]
 	jmp	macro_line_header_ok
       instant_macro_line_header:
-	mov	edx,[macro_line]
-	mov	eax,[edx]
+	mov	eax,[macro_line]
+	add	eax,16+1
 	stos	dword [edi]
-	mov	eax,[edx+4]
+	mov	eax,ecx
 	stos	dword [edi]
-	mov	eax,[edx+8]
+	mov	eax,[macro_line]
 	stos	dword [edi]
-	mov	eax,[edx+12]
 	stos	dword [edi]
       macro_line_header_ok:
 	or	[macro_status],20h

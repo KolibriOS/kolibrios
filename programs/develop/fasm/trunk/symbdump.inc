@@ -2,22 +2,22 @@ symbol_dump:
 
 	push	edi
 	mov	edx,[memory_end]
-      dump_symbols:
+      symb_dump:
 	cmp	edx,[labels_list]
 	jbe	symbols_dumped
 	sub	edx,LABEL_STRUCTURE_SIZE
 	cmp	dword [edx+24],0
-	je	dump_symbols	; do not dump anonymous symbols
+	je	symb_dump	; do not dump anonymous symbols
 	test	byte [edx+8],1
-	jz	dump_symbols	; do not dump symbols that didn't get defined
+	jz	symb_dump	; do not dump symbols that didn't get defined
 	mov	ax,[current_pass]
 	cmp	ax,[edx+16]
-	jne	dump_symbols
+	jne	symb_dump
 	test	byte [edx+8],4 or 2
-	jnz	dump_symbols	; do not dump assembly-time variables
+	jnz	symb_dump	; do not dump assembly-time variables
 				; do not dump variables defined with '='
 	cmp	word [edx+12], 0
-	jnz	dump_symbols	; do not dump register-based variables
+	jnz	symb_dump	; do not dump register-based variables
 
 	mov	al, '0'
 	stosb
@@ -73,7 +73,7 @@ symbol_dump:
 	mov	ax,0A0Dh
 	stosw
 
-	jmp	dump_symbols
+	jmp	symb_dump
 
       symbols_dumped:
 	mov	edx,dbgfilename

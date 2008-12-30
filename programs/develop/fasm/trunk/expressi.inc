@@ -893,40 +893,33 @@ calculate_expression:
       expression_value_ok:
 	ret
       get_byte_number:
-	mov	word [edi+8],0
-	mov	byte [edi+12],0
 	xor	eax,eax
 	lods	byte [esi]
 	stos	dword [edi]
 	xor	al,al
 	stos	dword [edi]
+      got_number:
+	mov	word [edi-8+8],0
+	mov	byte [edi-8+12],0
+	mov	dword [edi-8+16],0
 	add	edi,0Ch
 	jmp	calculation_loop
       get_word_number:
-	mov	word [edi+8],0
-	mov	byte [edi+12],0
 	xor	eax,eax
 	lods	word [esi]
 	stos	dword [edi]
 	xor	ax,ax
 	stos	dword [edi]
-	add	edi,0Ch
-	jmp	calculation_loop
+	jmp	got_number
       get_dword_number:
-	mov	word [edi+8],0
-	mov	byte [edi+12],0
 	movs	dword [edi],[esi]
 	xor	eax,eax
 	stos	dword [edi]
-	add	edi,0Ch
-	jmp	calculation_loop
+	jmp	got_number
       get_qword_number:
-	mov	word [edi+8],0
-	mov	byte [edi+12],0
 	movs	dword [edi],[esi]
 	movs	dword [edi],[esi]
-	add	edi,0Ch
-	jmp	calculation_loop
+	jmp	got_number
       get_register:
 	mov	byte [edi+9],0
 	mov	byte [edi+12],0
@@ -934,6 +927,7 @@ calculate_expression:
 	mov	[edi+8],al
 	mov	byte [edi+10],1
 	xor	eax,eax
+	mov	[edi+16],eax
 	stos	dword [edi]
 	stos	dword [edi]
 	add	edi,0Ch
@@ -1525,6 +1519,8 @@ calculate_expression:
 	jne	invalid_expression
 	cmp	[output_format],5
 	je	calculate_gotoff
+	cmp	[output_format],4
+	je	calculate_coff_rva
 	cmp	[output_format],3
 	jne	invalid_expression
 	test	[format_flags],8
@@ -1575,6 +1571,7 @@ calculate_expression:
       calculate_gotoff:
 	test	[format_flags],8+1
 	jnz	invalid_expression
+      calculate_coff_rva:
 	mov	dl,5
 	cmp	byte [edi+12],2
 	je	change_value_type
@@ -1607,7 +1604,7 @@ calculate_expression:
 	cmp	byte [edi+12],dh
 	jne	incorrect_change_of_value_type
 	mov	eax,[edi+16]
-	cmp	byte [eax],81h
+	cmp	byte [eax],80h
 	jne	incorrect_change_of_value_type
 	jmp	change_value_type
       div_64:
@@ -2009,9 +2006,9 @@ get_address_value:
 	mov	al,[edi+12]
 	mov	[value_type],al
 	cmp	al,6
-	je	plt_address
+	je	special_address_type_32bit
 	cmp	al,5
-	je	gotoff_address
+	je	special_address_type_32bit
 	ja	invalid_use_of_symbol
 	test	al,1
 	jnz	invalid_use_of_symbol
@@ -2019,8 +2016,7 @@ get_address_value:
 	jz	address_size_ok
 	shl	al,5
 	jmp	address_symbol_ok
-      gotoff_address:
-      plt_address:
+      special_address_type_32bit:
 	mov	al,40h
       address_symbol_ok:
 	mov	ah,[address_size]
@@ -2032,7 +2028,10 @@ get_address_value:
 	je	address_size_ok
 	cmp	ax,0804h
 	jne	address_sizes_do_not_agree
+	cmp	[value_type],2
+	ja	value_type_correction_ok
 	mov	[value_type],2
+      value_type_correction_ok:
 	mov	eax,[edi]
 	cdq
 	cmp	edx,[edi+4]
@@ -2180,13 +2179,13 @@ calculate_relative_offset:
 	je	relative_offset_ok
 	test	bl,1
 	jnz	invalid_use_of_symbol
+	mov	ecx,[address_symbol]
+	mov	[symbol_identifier],ecx
 	cmp	bl,6
 	je	plt_relative_offset
 	cmp	bl,[labels_type]
 	jne	invalid_use_of_symbol
 	mov	[value_type],0
-	mov	ecx,[address_symbol]
-	mov	[symbol_identifier],ecx
 	cmp	ecx,[org_symbol]
 	je	relative_offset_ok
 	mov	[value_type],3

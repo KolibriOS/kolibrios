@@ -4845,6 +4845,7 @@ movq_instruction:
 	call	get_size_operator
 	cmp	al,10h
 	jne	invalid_operand
+	mov	[operand_size],0
 	lods	byte [esi]
 	call	convert_mmx_register
 	mov	[postbyte_register],al

@@ -24,6 +24,8 @@ parser:
 	jae	out_of_memory
 	cmp	byte [esi+16],0
 	je	empty_line
+	cmp	byte [esi+16],3Bh
+	je	empty_line
 	mov	al,0Fh
 	stos	byte [edi]
 	mov	eax,esi
@@ -121,32 +123,15 @@ parser:
 	jz	parse_next_line
 	cmp	al,':'
 	je	invalid_name
-	cmp	al,3Bh
-	je	skip_preprocessed_symbol
 	dec	esi
+	cmp	al,3Bh
+	je	skip_rest_of_line
 	call	parse_argument
 	jmp	parse_next_line
-      skip_preprocessed_symbol:
-	lods	byte [esi]
-	movzx	eax,al
-	add	esi,eax
-      skip_next:
-	lods	byte [esi]
-	or	al,al
-	jz	parse_next_line
-	cmp	al,1Ah
-	je	skip_preprocessed_symbol
-	cmp	al,3Bh
-	je	skip_preprocessed_symbol
-	cmp	al,22h
-	je	skip_preprocessed_string
-	jmp	skip_next
-      skip_preprocessed_string:
-	lods	dword [esi]
-	add	esi,eax
-	jmp	skip_next
       empty_line:
-	add	esi,17
+	add	esi,16
+      skip_rest_of_line:
+	call	skip_foreign_line
       parse_next_line:
 	cmp	esi,[source_start]
 	jb	parser_loop
@@ -159,10 +144,6 @@ parser:
       blocks_stack_ok:
 	xor	al,al
 	stos	byte [edi]
-	;mov     eax,[error_line]
-	;mov     [current_line],eax
-	;cmp     [anonymous_forward],0
-	;jne     invalid_value
 	add	edi,0Fh
 	and	edi,not 0Fh
 	mov	[code_start],edi
@@ -914,7 +895,6 @@ parse_line_contents:
 	jmp	expression
       contents_parsed:
 	cmp	[parenthesis_stack],0
-;        jne     invalid_expression
 	je	contents_ok
 	dec	[parenthesis_stack]
 	add	esp,8

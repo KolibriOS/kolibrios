@@ -15,6 +15,7 @@ stack_limit dd ?
 
 input_file dd ?
 output_file dd ?
+symbols_file dd ?
 
 passes_limit dw ?
 
@@ -51,8 +52,8 @@ label_leaf dd ?
 hash_tree dd ?
 org_origin dq ?
 org_registers dd ?
-org_start dd ?
 org_symbol dd ?
+org_start dd ?
 undefined_data_start dd ?
 undefined_data_end dd ?
 counter dd ?
@@ -91,6 +92,10 @@ parsed_lines dd ?
 logical_value_parentheses dd ?
 file_extension dd ?
 
+labels_type db ?
+code_type db ?
+virtual_data db ?
+
 operand_size db ?
 size_override db ?
 operand_prefix db ?
@@ -113,14 +118,11 @@ compare_type db ?
 logical_value_wrapping db ?
 next_pass_needed db ?
 macro_status db ?
-output_format db ?
-code_type db ?
-labels_type db ?
 segment_register db ?
 prefixed_instruction db ?
-virtual_data db ?
 fp_sign db ?
 fp_format db ?
+output_format db ?
 
 characters rb 100h
 converted rb 100h

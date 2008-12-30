@@ -198,6 +198,8 @@ symbols_3:
  db 'ecx',10h,41h
  db 'edi',10h,47h
  db 'edx',10h,42h
+ db 'efi',1Bh,10
+ db 'eip',10h,0F4h
  db 'elf',18h,50h
  db 'esi',10h,46h
  db 'esp',10h,44h
@@ -231,6 +233,7 @@ symbols_3:
  db 'rcx',10h,81h
  db 'rdi',10h,87h
  db 'rdx',10h,82h
+ db 'rip',10h,0F8h
  db 'rsi',10h,86h
  db 'rsp',10h,84h
  db 'sil',10h,16h
@@ -336,6 +339,7 @@ symbols_6:
  db 'static',1Dh,1
 symbols_7:
  db 'console',1Bh,3
+ db 'efiboot',1Bh,11
 symbols_8:
  db 'linkinfo',19h,9
  db 'readable',19h,30
@@ -345,6 +349,7 @@ symbols_9:
  db 'shareable',19h,28
  db 'writeable',19h,31
 symbols_10:
+ db 'efiruntime',1Bh,12
  db 'executable',19h,29
  db 'linkremove',19h,11
 symbols_11:

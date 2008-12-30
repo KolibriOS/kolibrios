@@ -418,7 +418,7 @@ display_user_messages:
 ;    pop    [textxy]
 ;    add    [textxy], 7 shl 16 +53
 	mov	[displayed_count],0
-	call	flush_display_buffer
+	call	show_display_buffer
 	cmp	[displayed_count],1
 	jb	line_break_ok
 	je	make_line_break

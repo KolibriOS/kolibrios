@@ -153,6 +153,27 @@ assemble_line:
 	lods	dword [esi]
 	mov	[current_line],eax
 	mov	[prefixed_instruction],0
+	cmp	[symbols_file],0
+	je	continue_line
+	mov	ebx,[display_buffer]
+	mov	dword [ebx-4],1
+	mov	dword [ebx-8],1Ch
+	sub	ebx,8+1Ch
+	cmp	ebx,edi
+	jbe	out_of_memory
+	mov	[display_buffer],ebx
+	mov	[ebx],eax
+	mov	[ebx+4],edi
+	mov	eax,dword [org_origin]
+	mov	edx,dword [org_origin+4]
+	mov	ecx,[org_registers]
+	mov	[ebx+8],eax
+	mov	[ebx+8+4],edx
+	mov	[ebx+10h],ecx
+	mov	edx,[org_symbol]
+	mov	eax,dword [labels_type]
+	mov	[ebx+14h],edx
+	mov	[ebx+18h],eax
       continue_line:
 	cmp	byte [esi],0Fh
 	je	line_assembled
@@ -728,10 +749,14 @@ display_directive:
 	mov	ecx,eax
 	push	edi
 	mov	edi,[display_buffer]
-	sub	edi,4
+	sub	edi,8
 	sub	edi,eax
+	cmp	edi,[esp]
+	jbe	out_of_memory
 	mov	[display_buffer],edi
 	rep	movs byte [edi],[esi]
+	stos	dword [edi]
+	xor	eax,eax
 	stos	dword [edi]
 	pop	edi
 	inc	esi
@@ -740,10 +765,12 @@ display_directive:
 	call	get_byte_value
 	push	edi
 	mov	edi,[display_buffer]
-	sub	edi,4+1
+	sub	edi,8+1
 	mov	[display_buffer],edi
 	stos	byte [edi]
 	mov	eax,1
+	stos	dword [edi]
+	dec	eax
 	stos	dword [edi]
 	pop	edi
       display_next:
@@ -754,7 +781,7 @@ display_directive:
 	je	display_directive
 	dec	esi
 	jmp	instruction_assembled
-flush_display_buffer:
+show_display_buffer:
 	mov	eax,[display_buffer]
 	or	eax,eax
 	jz	display_done
@@ -762,18 +789,21 @@ flush_display_buffer:
 	cmp	esi,eax
 	je	display_done
       display_messages:
-	sub	esi,4
+	sub	esi,8
+	mov	eax,[esi+4]
 	mov	ecx,[esi]
 	sub	esi,ecx
+	test	eax,eax
+	jnz	skip_internal_message
 	push	esi
 	call	display_block
 	pop	esi
+      skip_internal_message:
 	cmp	esi,[display_buffer]
 	jne	display_messages
-	mov	eax,[labels_list]
-	mov	[display_buffer],eax
       display_done:
 	ret
+
 times_directive:
 	lods	byte [esi]
 	cmp	al,'('
