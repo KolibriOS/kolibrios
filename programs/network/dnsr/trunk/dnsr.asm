@@ -11,9 +11,9 @@
 
 ; Enabling debugging puts the received response to the
 ; debug board
-DEBUGGING_ENABLED           equ     1
-DEBUGGING_DISABLED          equ     0
-DEBUGGING_STATE             equ     DEBUGGING_DISABLED
+DEBUGGING_ENABLED	    equ     1
+DEBUGGING_DISABLED	    equ     0
+DEBUGGING_STATE 	    equ     DEBUGGING_DISABLED
 
 
 use32
@@ -27,41 +27,41 @@ use32
  dd	0x0 , 0x0     ; I_Param , I_Path
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
+include 'macros.inc'
 
-START:                                      ; start of execution
-    mov     eax,40                          ; Report events
-    mov     ebx,10000111b                   ; Stack 8 + defaults
+START:					    ; start of execution
+    mov     eax,40			    ; Report events
+    mov     ebx,10000111b		    ; Stack 8 + defaults
     int     0x40
 
     mov     dword [prompt], p1
     mov     dword [promptlen], p1len - p1   ; 'waiting for command'
 
 red:
-    call    draw_window                     ; at first, draw the window
+    call    draw_window 		    ; at first, draw the window
 
 still:
-    mov     eax,10                          ; wait here for event
+    mov     eax,10			    ; wait here for event
     mcall
 
-    cmp     eax,1                           ; redraw request ?
-    jz      red
-    cmp     eax,2                           ; key in buffer ?
-    jz      key
-    cmp     eax,3                           ; button in buffer ?
-    jz      button
+    cmp     eax,1			    ; redraw request ?
+    jz	    red
+    cmp     eax,2			    ; key in buffer ?
+    jz	    key
+    cmp     eax,3			    ; button in buffer ?
+    jz	    button
 
     jmp     still
-key:                            ; Keys are not valid at this part of the
-    mov     eax,2               ; loop. Just read it and ignore
+key:				; Keys are not valid at this part of the
+    mov     eax,2		; loop. Just read it and ignore
     mcall
     jmp     still
 
-button:                         ; button
-    mov     eax,17              ; get id
+button: 			; button
+    mov     eax,17		; get id
     mcall
 
-    cmp     ah,1                ; button id=1 ?
+    cmp     ah,1		; button id=1 ?
     jnz     noclose
 
     ; close socket before exiting
@@ -70,18 +70,18 @@ button:                         ; button
     mov     ecx, [socketNum]
     mcall
 
-    mov     eax,0xffffffff      ; close this program
+    mov     eax,0xffffffff	; close this program
     mcall
 
 noclose:
-    cmp     ah,3                ; Resolve address?
+    cmp     ah,3		; Resolve address?
     jnz     noresolve
 
     mov     dword [prompt], p5
     mov     dword [promptlen], p5len - p5   ; display 'Resolving'
     call    draw_window
 
-    call    translateData       ; Convert domain & DNS IP address
+    call    translateData	; Convert domain & DNS IP address
 
     call    resolveDomain
 
@@ -90,9 +90,9 @@ noclose:
 
 noresolve:
     cmp     ah,4
-    jz      f1                  ; Enter domain name
+    jz	    f1			; Enter domain name
     cmp     ah,5
-    jz      f2                  ; enter DNS Server IP
+    jz	    f2			; enter DNS Server IP
     jmp     still
 
 
@@ -119,7 +119,7 @@ f11:
     mov     eax,10
     mcall
     cmp     eax,2
-    jz      fbu
+    jz	    fbu
     jmp     still
 
 fbu:
@@ -129,7 +129,7 @@ fbu:
     cmp     eax,8
     jnz     nobs
     cmp     edi,[addr]
-    jz      f11
+    jz	    f11
     sub     edi,1
     mov     [edi],byte ' '
     call    print_text
@@ -139,7 +139,7 @@ nobs:
     cmp     eax,dword 31
     jbe     f11
     cmp     eax,dword 95
-    jb      keyok
+    jb	    keyok
     sub     eax,32
 
 keyok:
@@ -211,9 +211,9 @@ td003:
     add     dl, al
     lodsb
     cmp     al, '.'
-    je      ipNext
+    je	    ipNext
     cmp     al, ' '
-    je      ipNext
+    je	    ipNext
     mov     dh, al
     sub     dh, '0'
     mov     al, 10
@@ -222,9 +222,9 @@ td003:
     mov     dl, al
     lodsb
     cmp     al, '.'
-    je      ipNext
+    je	    ipNext
     cmp     al, ' '
-    je      ipNext
+    je	    ipNext
     mov     dh, al
     sub     dh, '0'
     mov     al, 10
@@ -250,10 +250,10 @@ ipNext:
     mov     [dnsMsg+8], eax
 
     ; domain name goes in at dnsMsg+12
-    mov     esi, dnsMsg + 12        ; location of label length
-    mov     edi, dnsMsg + 13        ; label start
+    mov     esi, dnsMsg + 12	    ; location of label length
+    mov     edi, dnsMsg + 13	    ; label start
     mov     edx, query
-    mov     ecx, 12                  ; total string length so far
+    mov     ecx, 12		     ; total string length so far
 
 td002:
     mov     [esi], byte 0
@@ -262,9 +262,9 @@ td002:
 td0021:
     mov     al, [edx]
     cmp     al, ' '
-    je      td001                   ; we have finished the string translation
-    cmp     al, '.'                 ; we have finished the label
-    je      td004
+    je	    td001		    ; we have finished the string translation
+    cmp     al, '.'		    ; we have finished the label
+    je	    td004
 
     inc     byte [esi]
     inc     ecx
@@ -309,16 +309,16 @@ td001:
 ;***************************************************************************
 resolveDomain:
     ; Get a free port number
- mov     ecx, 1000  ; local port starting at 1000
+ mov	 ecx, 1000  ; local port starting at 1000
 getlp:
- inc     ecx
+ inc	 ecx
  push ecx
- mov     eax, 53
- mov     ebx, 9
+ mov	 eax, 53
+ mov	 ebx, 9
  mcall
- pop     ecx
- cmp     eax, 0   ; is this local port in use?
- jz  getlp      ; yes - so try next
+ pop	 ecx
+ cmp	 eax, 0   ; is this local port in use?
+ jz  getlp	; yes - so try next
 
     ; First, open socket
     mov     eax, 53
@@ -348,15 +348,15 @@ getlp:
     ; or data from remote
 
 ctr001:
-    mov     eax,10                 ; wait here for event
+    mov     eax,10		   ; wait here for event
     mcall
 
-    cmp     eax,1                  ; redraw request ?
-    je      ctr003
-    cmp     eax,2                  ; key in buffer ?
-    je      ctr004
-    cmp     eax,3                  ; button in buffer ?
-    je      ctr005
+    cmp     eax,1		   ; redraw request ?
+    je	    ctr003
+    cmp     eax,2		   ; key in buffer ?
+    je	    ctr004
+    cmp     eax,3		   ; button in buffer ?
+    je	    ctr005
 
 
     ; Any data in the UDP receive buffer?
@@ -366,14 +366,14 @@ ctr001:
     mcall
 
     cmp     eax, 0
-    je      ctr001
+    je	    ctr001
 
     ; we have data - this will be the response
 ctr002:
     mov     eax, 53
     mov     ebx, 3
     mov     ecx, [socketNum]
-    mcall                ; read byte - block (high byte)
+    mcall		 ; read byte - block (high byte)
 
     ; Store the data in the response buffer
     mov     eax, [dnsMsgLen]
@@ -388,10 +388,10 @@ end if
     mov     eax, 53
     mov     ebx, 2
     mov     ecx, [socketNum]
-    mcall                ; any more data?
+    mcall		 ; any more data?
 
     cmp     eax, 0
-    jne     ctr002              ; yes, so get it
+    jne     ctr002		; yes, so get it
 
     ; close socket
     mov     eax, 53
@@ -431,22 +431,22 @@ end if
     ; Is there ( at least 1 ) answer?
     mov     ax, [esi+6]
     cmp     ax, 0x00
-    je      ctr002a
+    je	    ctr002a
 
     ; Header validated. Scan through and get my answer
 
-    add     esi, 12             ; Skip to the question field
+    add     esi, 12		; Skip to the question field
 
     ; Skip through the question field
     call    skipName
-    add     esi, 4              ; skip past the questions qtype, qclass
+    add     esi, 4		; skip past the questions qtype, qclass
 
 ctr002z:
     ; Now at the answer. There may be several answers,
     ; find the right one ( TYPE = 0x0001 )
     call    skipName
     mov     ax, [esi]
-    cmp     ax, 0x0100          ; Is this the IP address answer?
+    cmp     ax, 0x0100		; Is this the IP address answer?
     jne     ctr002c
 
     ; Yes! Point esi to the first byte of the IP address
@@ -454,10 +454,10 @@ ctr002z:
 
     mov     eax, [esi]
     mov     [hostIP], eax
-    jmp     ctr002a             ; And exit...
+    jmp     ctr002a		; And exit...
 
 
-ctr002c:                        ; Skip through the answer, move to the next
+ctr002c:			; Skip through the answer, move to the next
     add     esi, 8
     movzx   eax, byte [esi+1]
     mov     ah, [esi]
@@ -467,28 +467,28 @@ ctr002c:                        ; Skip through the answer, move to the next
     ; Have we reached the end of the msg?
     ; This is an error condition, should not happen
     cmp     esi, [dnsMsgLen]
-    jl      ctr002z             ; Check next answer
-    jmp     ctr002a             ; abort
+    jl	    ctr002z		; Check next answer
+    jmp     ctr002a		; abort
 
 
 ctr002a:
-    mov     dword [prompt], p4  ; Display IP address
+    mov     dword [prompt], p4	; Display IP address
     mov     dword [promptlen], p4len - p4
     call    draw_window
 
     jmp     ctr001
 
-ctr003:                         ; redraw
+ctr003: 			; redraw
     call    draw_window
     jmp     ctr001
 
-ctr004:                         ; key
-    mov     eax,2               ; just read it and ignore
+ctr004: 			; key
+    mov     eax,2		; just read it and ignore
     mcall
     jmp     ctr001
 
-ctr005:                         ; button
-    mov     eax,17              ; get id
+ctr005: 			; button
+    mov     eax,17		; get id
     mcall
 
     ; close socket
@@ -503,7 +503,7 @@ ctr005:                         ; button
     mov     dword [prompt], p1
     mov     dword [promptlen], p1len - p1   ; 'waiting for command'
 
-    call    draw_window                     ; at first, draw the window
+    call    draw_window 		    ; at first, draw the window
 
     ret
 
@@ -522,10 +522,10 @@ ctr005:                         ; button
 skipName:
     mov     al, [esi]
     cmp     al, 0
-    je      sn_exit
+    je	    sn_exit
     and     al, 0xc0
     cmp     al, 0xc0
-    je      sn001
+    je	    sn001
 
     movzx   eax, byte [esi]
     inc     eax
@@ -533,7 +533,7 @@ skipName:
     jmp     skipName
 
 sn001:
-    add     esi, 2                          ; A pointer is always at the end
+    add     esi, 2			    ; A pointer is always at the end
     ret
 
 sn_exit:
@@ -547,18 +547,18 @@ sn_exit:
 
 
 draw_window:
-    mov     eax,12                    ; function 12:tell os about windowdraw
-    mov     ebx,1                     ; 1, start of draw
+    mov     eax,12		      ; function 12:tell os about windowdraw
+    mov     ebx,1		      ; 1, start of draw
     mcall
-                                      ; DRAW WINDOW
-    mov     eax,0                     ; function 0 : define and draw window
-    mov     ebx,100*65536+300         ; [x start] *65536 + [x size]
-    mov     ecx,100*65536+140         ; [y start] *65536 + [y size]
-    mov     edx,0x14224466            ; color of work area RRGGBB
-    mov     edi,title                 ; WINDOW LABEL;
+				      ; DRAW WINDOW
+    mov     eax,0		      ; function 0 : define and draw window
+    mov     ebx,100*65536+300	      ; [x start] *65536 + [x size]
+    mov     ecx,100*65536+140	      ; [y start] *65536 + [y size]
+    mov     edx,0x14224466	      ; color of work area RRGGBB
+    mov     edi,title		      ; WINDOW LABEL;
     mcall
-                                      
-    mov     eax,8                     ; Resolve
+
+    mov     eax,8		      ; Resolve
     mov     ebx,20*65536+190
     mov     ecx,79*65536+15
     mov     edx,3
@@ -602,7 +602,7 @@ draw_window:
     ; Re-draw the screen text
     cld
     mov     eax,4
-    mov     ebx,25*65536+35           ; draw info text with function 4
+    mov     ebx,25*65536+35	      ; draw info text with function 4
     mov     ecx,0xffffff
     mov     edx,text
     mov     esi,40
@@ -617,7 +617,7 @@ newline:
     ; Write the host IP, if we have one
     mov     eax, [hostIP]
     cmp     eax, 0
-    je      dw001
+    je	    dw001
 
     ; We have an IP address... display it
     mov     edi,hostIP
@@ -632,11 +632,11 @@ ipdisplay:
     add     edx,6*4*65536
     inc     edi
     cmp     edi,hostIP+4
-    jb      ipdisplay
+    jb	    ipdisplay
 
 dw001:
-    mov     eax,12                    ; function 12:tell os about windowdraw
-    mov     ebx,2                     ; 2, end of draw
+    mov     eax,12		      ; function 12:tell os about windowdraw
+    mov     ebx,2		      ; 2, end of draw
     mcall
 
     ret
@@ -692,7 +692,7 @@ ds1:
 ind: dw 0
 ; This is used for translating hex to ASCII for display or output
 hexchars db '0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'
-IP_STR              db  'xx',0
+IP_STR		    db	'xx',0
 
 
 debug_print_rx_ip:
@@ -721,10 +721,21 @@ end if
 
 ; DATA AREA
 
-addr            dd  0x0
-ya              dd  0x0
+addr		dd  0x0
+ya		dd  0x0
 
 text:
+
+    if lang eq ru
+    db 'Имя хоста  : xxxxxxxxxxxxxxx            '
+    db 'DNS сервер : xxx.xxx.xxx.xxx            '
+    db '                                        '
+    db '       Получить адрес                   '
+    db '                                        '
+    db '                                        '
+    db 'x <- END MARKER, DONT DELETE            '
+
+    else
     db 'Host name  : xxxxxxxxxxxxxxx            '
     db 'DNS server : xxx.xxx.xxx.xxx            '
     db '                                        '
@@ -732,31 +743,43 @@ text:
     db '                                        '
     db '                                        '
     db 'x <- END MARKER, DONT DELETE            '
+    end if
 
+if lang eq ru
+title	 db   'DNS Клиент',0
 
-title    db   'DNS Client',0
+else
+title	 db   'DNS Client',0
+end if
 
 
 prompt: dd 0
 promptlen: dd 0
 
 
-p1:             db 'Waiting for Command        '
+if lang eq ru
+p1:		db 'Жду команды                '
 p1len:
 
-p4:             db 'IP Address:    .   .   .   '
+
+else
+p1:		db 'Waiting for Command        '
+p1len:
+end if
+
+p4:		db 'IP Address:    .   .   .   '
 p4len:
 
-p5:             db 'Resolving...               '
+p5:		db 'Resolving...               '
 p5len:
 
 
-dnsServer       db  '194.145.128.1              ' ; iolfree.ie DNS
-query           db  'WWW.MENUETOS.NET           '
+dnsServer	db  '194.145.128.1              ' ; iolfree.ie DNS
+query		db  'WWW.MENUETOS.NET           '
 
-hostIP:         dd 0
-dnsIP:          dd 0
-dnsMsgLen:      dd 0
-socketNum:      dd 0xFFFF
+hostIP: 	dd 0
+dnsIP:		dd 0
+dnsMsgLen:	dd 0
+socketNum:	dd 0xFFFF
 dnsMsg:
 I_END:
