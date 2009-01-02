@@ -1,8 +1,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved. ;;
 ;; Copyright (C) MenuetOS 2000-2004 Ville Mikael Turjanmaa      ;;
 ;; Distributed under terms of the GNU General Public License    ;;
+;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision$
@@ -1207,17 +1208,16 @@ endg
 
 ;..................................... start 3/4 : modified by vhanla .................
 	cmp [bPressedMouseXY_W],1
-	jb  .first
 	ja  @f
 	inc [bPressedMouseXY_W]
-	jmp @f
-.first:
-	mov [bPressedMouseXY_W],1
-	mov ax,[MOUSE_X]
-	mov [mx],ax
-	mov ax,[MOUSE_Y]
-	mov [my],ax
-	@@:
+	jnc @f
+	;mov ax,[MOUSE_X]
+	;mov [mx],ax
+	;mov ax,[MOUSE_Y]
+	;mov [my],ax
+	mov eax,dword[MOUSE_X]
+	mov dword[mx],eax
+      @@:
 ;..................................... end 3/4 : modified by vhanla ...................
 
       cwloop:
@@ -1259,12 +1259,13 @@ endg
 	jz    .move_resize_window
 
 	cmp   [bPressedMouseXY_W], 1
-	ja    .exit
+	ja    .exit_popa
 
 	; eax = position in windowing stack
 	; redraw must ?
 	lea   esi, [WIN_POS + esi * 2]
 	call  waredraw
+      .exit_popa:
 	add   esp, 32
 
       .exit:
