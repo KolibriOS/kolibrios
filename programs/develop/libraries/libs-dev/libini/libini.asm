@@ -20,6 +20,8 @@
 ;; 2008-12-29 (mike.dld)                                                                          ;;
 ;;   bug-fixes:                                                                                   ;;
 ;;     - unnecessary 'stosb' in ini.get_str was causing problems                                  ;;
+;;   new features:                                                                                ;;
+;;     - new functions: ini.get_color and ini.set_color                                           ;;
 ;; 2008-08-06 (mike.dld)                                                                          ;;
 ;;   changes:                                                                                     ;;
 ;;     - split private procs into libini_p.asm, added comments                                    ;;
