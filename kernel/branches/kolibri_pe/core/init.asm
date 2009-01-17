@@ -218,25 +218,8 @@ core_init:
 
 ; SAVE & CLEAR 0-0xffff
 
-           cld
-           xor esi, esi
-           mov   edi,BOOT_VAR
-           mov   ecx,0x10000 / 4
-           rep   movsd
-
-           xor edi, edi
-           xor eax, eax
-           mov   ecx,0x10000 / 4
-           rep   stosd
-
-           mov edi, 0x40000
-           mov ecx, (0x90000-0x40000)/4
-           rep stosd
-
            mov dword [_sys_pdbr], eax
            mov dword [_sys_pdbr+4], eax
-
-           xchg bx, bx
 
            movzx eax,word [BOOT_VAR+0x9008]  ; screen mode
            mov   [scr_mode],eax
@@ -255,8 +238,6 @@ if 0
            call @create_systhread@4
 
            mov [_current_thread], eax
-
-           xchg bx, bx
 
            mov ebx, [eax+THR.pdir]
            mov ecx, cr3

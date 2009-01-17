@@ -574,6 +574,7 @@ align 4
 ; ecx   xe
 ; edx   ye
 ; edi   color
+_vesa20_drawbar:
 vesa20_drawbar:
      pushad
      call    [disable_mouse]

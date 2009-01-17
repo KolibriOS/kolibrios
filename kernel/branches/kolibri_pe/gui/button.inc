@@ -584,8 +584,6 @@ checkbuttons:
     popad
 
     call  negativebutton
-    mov   [mouse_background], 0  ; no mouse background
-    mov   [dont_draw_mouse],  0  ; draw mouse
 ;..................................... start 5/5 : modified by vhanla .............................
     ; check coordinates
 iglobal

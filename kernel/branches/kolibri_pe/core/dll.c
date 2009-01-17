@@ -454,10 +454,10 @@ void sys_app_entry(addr_t raw, thr_stack_t *thr_stack, exec_stack_t *ex_stack)
     thr_stack->ecx = 0;
     thr_stack->eax = 0;
     thr_stack->eip = entry;
-    thr_stack->cs  = 0x1b;
+    thr_stack->cs  = sel_app_code;
     thr_stack->eflags = EFL_IOPL3 | EFL_IF;
     thr_stack->pe_sp = 0x7FFFF000 + ((u32_t)ex_stack & 0xFFF);
-    thr_stack->pe_ss = 0x23;
+    thr_stack->pe_ss = sel_app_data;
 
 };
 
@@ -585,12 +585,11 @@ bool link_pe(addr_t img_base)
 
             DBG("import from %s\n",libname);
 
-            exp_dll = find_dll(&current_slot->dll_list, libname);
-            if(exp_dll != NULL)
+            exp_dll = find_dll(&core_dll.link, libname);
+            if(exp_dll == NULL)
             {
-                DBG("find %s\n", exp_dll->img_name);
-            }
-            else
+            exp_dll = find_dll(&current_slot->dll_list, libname);
+                if(exp_dll == NULL)
             {
                 int len = strlen(libname)+1;
 
@@ -604,6 +603,8 @@ bool link_pe(addr_t img_base)
                     return false;
                 };
             }
+            };
+            DBG("find %s\n", exp_dll->img_name);
 
             exp = exp_dll->img_exp;
 

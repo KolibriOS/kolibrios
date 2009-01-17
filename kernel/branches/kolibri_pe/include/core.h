@@ -189,3 +189,54 @@ typedef struct
 #define EFL_IOPL1   0x1000
 #define EFL_IOPL2   0x2000
 #define EFL_IOPL3   0x3000
+
+typedef struct
+{
+  u32_t      handle;
+  u32_t      io_code;
+  void       *input;
+  int        inp_size;
+  void       *output;
+  int        out_size;
+}ioctl_t;
+
+
+typedef struct
+{
+    u32_t code;
+    union
+    {
+        struct                          /* window event    */
+        {
+            u32_t   win;                /* window handle   */
+            u32_t   val1;
+            u32_t   val2;
+            u16_t   x;                  /* cursor x        */
+            u16_t   y;                  /* cursor y        */
+            u32_t   unused;
+        }__attribute__ ((packed));
+
+        struct                          /* realtime io     */
+        {
+            u32_t   sender;             /* service handler */
+            u32_t   stream;             /* io stream id, if present  */
+            addr_t  offset;
+            size_t  size;
+        };
+
+        struct                          /* ipc event       */
+        {
+            u32_t   sender;
+            u32_t   io_code;
+            addr_t *input;
+            size_t  inp_size;
+            addr_t *output;
+            size_t  out_size;
+        };
+    };
+}event_t;
+
+
+
+
+

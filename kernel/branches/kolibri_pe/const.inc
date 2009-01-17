@@ -208,68 +208,35 @@ LOAD_BASE           equ 0x00100000
 OS_BASE             equ 0xE0000000
 IMAGE_BASE          equ (OS_BASE+LOAD_BASE)
 
-window_data         equ OS_BASE
+BOOT_VAR            equ OS_BASE
 
-CURRENT_TASK        equ (OS_BASE+0x0003000)
-TASK_COUNT          equ (OS_BASE+0x0003004)
-TASK_BASE           equ (OS_BASE+0x0003010)
-TASK_DATA           equ (OS_BASE+0x0003020)
-TASK_EVENT          equ (OS_BASE+0x0003020)
+SB16Buffer          equ (OS_BASE+0x10000)
 
-mouseunder          equ (OS_BASE+0x0006900)
-CDDataBuf           equ (OS_BASE+0x0007000)
-FLOPPY_BUFF         equ (OS_BASE+0x0008000)
-ACTIVE_PROC_STACK   equ (OS_BASE+0x000A400) ;unused
+TASK_COUNT          equ (CURRENT_TASK+0x04)
+TASK_BASE           equ (CURRENT_TASK+0x10)
+TASK_DATA           equ (CURRENT_TASK+0x20)
+TASK_EVENT          equ (CURRENT_TASK+0x20)
 
-WIN_STACK           equ (OS_BASE+0x000C000)
-WIN_POS             equ (OS_BASE+0x000C400)
 FDD_BUFF            equ (OS_BASE+0x000D000)
-
-DRIVE_DATA          equ (OS_BASE+0x0070000)
-
-SLOT_BASE           equ (OS_BASE+0x0080000)
 
 VGABasePtr          equ (OS_BASE+0x00A0000)
 
-RAMDISK_FAT         equ (OS_BASE+0x0180000)
-FLOPPY_FAT          equ (OS_BASE+0x0182000)
+IRQ_SAVE            equ (OS_BASE+0x0190000)
 
-IDE_DMA             equ 0x184000
+stack_data_start    equ (OS_BASE+0x01A0000)
+eth_data_start      equ (OS_BASE+0x01A0000)
+stack_data          equ (OS_BASE+0x01A4000)
+stack_data_end      equ (OS_BASE+0x01Bffff)
+resendQ             equ (OS_BASE+0x01C0000)
 
-BgrAuxTable         equ (OS_BASE+0x0198000)
-; unused?
-SB16Buffer          equ (OS_BASE+0x01A0000)
-SB16_Status         equ (OS_BASE+0x01B0000)
-
-BUTTON_INFO         equ (OS_BASE+0x01C0000)
-RESERVED_PORTS      equ (OS_BASE+0x01D0000)
-IRQ_SAVE            equ (OS_BASE+0x01E0000)
-BOOT_VAR            equ (OS_BASE+0x01f0000)
-
-stack_data_start    equ (OS_BASE+0x0200000)
-eth_data_start      equ (OS_BASE+0x0200000)
-stack_data          equ (OS_BASE+0x0204000)
-stack_data_end      equ (OS_BASE+0x021ffff)
-resendQ             equ (OS_BASE+0x0220000)
-VMODE_BASE          equ (OS_BASE+0x0228000)
-skin_data           equ (OS_BASE+0x0230000)
-draw_data           equ (OS_BASE+0x0238000);
-
-BgrDrawMode         equ (OS_BASE+0x023BFF4)
-BgrDataWidth        equ (OS_BASE+0x023BFF8)
-BgrDataHeight       equ (OS_BASE+0x023BFFC)
-
-virtual at              (OS_BASE+0x023CF80)
+virtual at              (OS_BASE+0x01C8F80)
   tss  TSS
 end virtual
 
-LAST_PAGE           equ 0x0240000
+LAST_PAGE           equ 0x01CB000
 
-;sys_pgmap           equ (OS_BASE+LAST_PAGE)
+twdw                equ (CURRENT_TASK-window_data)
 
-twdw                equ 0x3000   ;(CURRENT_TASK-window_data)
-
-std_application_base_address   equ new_app_base
 RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
 
 REG_SS              equ (RING0_STACK_SIZE-4)
@@ -302,6 +269,8 @@ PG_UW               equ 0x007
 PG_NOCACHE          equ 0x018
 PG_LARGE            equ 0x080
 PG_GLOBAL           equ 0x100
+
+PG_SHARED           equ 0x200
 
 ;;;;;;;;;;;boot time variables
 
@@ -486,14 +455,6 @@ struc PG_DATA
   .sys_page_dir      dd ?
   .pg_mutex          dd ?
 }
-
-;struc LIB
-;{ .lib_name         rb 16
-;  .lib_base         dd ?
-;  .lib_start        dd ?
-;  .export           dd ?
-;  .import           dd ?
-;}
 
 struc SRV
 { .srv_name          rb 16           ;ASCIIZ string

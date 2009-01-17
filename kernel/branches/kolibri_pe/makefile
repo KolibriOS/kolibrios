@@ -6,11 +6,12 @@ INCLUDE = include/
 
 DEFS = -DUSE_SMP -DCONFIG_DEBUG
 
-CFLAGS = -c -O2 -I $(INCLUDE) -fomit-frame-pointer -fno-builtin
+CFLAGS = -c -O2 -DCONFIG_DEBUG -I $(INCLUDE) -fomit-frame-pointer -fno-builtin
 LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
 KERNEL_SRC:=				\
 		kernel.asm		    \
+		const.inc		\
 		data32.inc		    \
 		core/memory.inc		\
 		core/heap.inc		\
@@ -18,13 +19,15 @@ KERNEL_SRC:=				\
 		core/taskman.inc	\
 		core/v86.inc		\
 		core/sys32.inc		\
+		core/syscall.inc	\
 		core/dll.inc		\
 		core/exports.inc	\
 		fs/ntfs.inc		    \
 		gui/window.inc		\
 		gui/event.inc		\
 		video/vesa20.inc	\
-		video/cursors.inc
+		video/cursors.inc	\
+		hid/mousedrv.inc
 
 
 PE_SRC:=			\

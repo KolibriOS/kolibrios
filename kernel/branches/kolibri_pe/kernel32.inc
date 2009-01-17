@@ -219,13 +219,6 @@ include "video/cursors.inc"  ; cursors functions
 
 include "network/stack.inc"
 
-;include "drivers/uart.inc"
-
-
-; Mouse pointer
-
-include "gui/mouse.inc"
-
 ; Window skinning
 
 include "gui/skincode.inc"

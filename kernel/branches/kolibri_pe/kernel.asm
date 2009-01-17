@@ -134,6 +134,7 @@ public _rd_fat_end
 public _rd_root
 public _rd_root_end
 
+public _current_task
 public _current_slot
 public _current_thread
 public _k_reenter
@@ -195,6 +196,11 @@ public syscall_entry
 public scr_mode
 public LFBAddress
 public LFBSize
+
+public _screen_width
+public _screen_height
+
+public _vesa20_drawbar
 
 
 extrn __edata
@@ -294,12 +300,12 @@ include 'printf.inc'
 align 4
 init_apm:
 ; init selectors
-    mov ebx,    [BOOT_VAR +0x9040]    ; offset of APM entry point
-    movzx eax, word [BOOT_VAR+0x9050] ; real-mode segment base address of
+    mov ebx,    [OS_BASE +0x9040]    ; offset of APM entry point
+    movzx eax, word [OS_BASE+0x9050] ; real-mode segment base address of
 				      ; protected-mode 32-bit code segment
-    movzx ecx, word [BOOT_VAR+0x9052] ; real-mode segment base address of
+    movzx ecx, word [OS_BASE+0x9052] ; real-mode segment base address of
 				      ; protected-mode 16-bit code segment
-    movzx edx, word [BOOT_VAR+0x9054] ; real-mode segment base address of
+    movzx edx, word [OS_BASE+0x9054] ; real-mode segment base address of
 				      ; protected-mode 16-bit data segment
 
     shl    eax, 4
@@ -320,7 +326,7 @@ init_apm:
     mov    dword[apm_entry], ebx
     mov    word [apm_entry + 4], apm_code_32 - _gdts
 
-    mov    eax, [BOOT_VAR + 0x9044]    ; version & flags
+    mov    eax, [OS_BASE + 0x9044]    ; version & flags
     mov    [apm_vf], eax
     ret
 
@@ -332,33 +338,35 @@ system_init:
            call init_apm
 
 ; SAVE REAL MODE VARIABLES
-        mov   ax, [BOOT_VAR + 0x9031]
+        mov   ax, [OS_BASE + 0x9031]
         mov   [IDEContrRegsBaseAddr], ax
 
-        mov   al, [BOOT_VAR+0x901F]       ; DMA access
+        mov   al, [OS_BASE+0x901F]       ; DMA access
         mov   [allow_dma_access], al
 
-        movzx eax, byte [BOOT_VAR+0x9000]    ; bpp
+        movzx eax, byte [OS_BASE+0x9000]    ; bpp
         mov   [ScreenBPP], eax
 
-        movzx eax,word [BOOT_VAR+0x900A]  ; X max
+        movzx eax,word [OS_BASE+0x900A]  ; X max
+        movzx ebx,word [OS_BASE+0x900C]  ; Y max
+        mov   [_screen_width],  eax
+        mov   [_screen_height], ebx
         dec   eax
+        dec   ebx
         mov   [Screen_Max_X],eax
         mov   [screen_workarea.right],eax
-        movzx eax,word [BOOT_VAR+0x900C]  ; Y max
-        dec   eax
-        mov   [Screen_Max_Y],eax
-        mov   [screen_workarea.bottom],eax
+        mov   [Screen_Max_Y],ebx
+        mov   [screen_workarea.bottom],ebx
         mov   [BytesPerScanLine], 640*4
         cmp   [scr_mode], 0x13      ; 320x200
         je    @f
         cmp   [scr_mode], 0x12      ; VGA 640x480
         je    @f
 
-        movzx   eax, word [BOOT_VAR+0x9001]    ; for other modes
+        movzx   eax, word [OS_BASE+0x9001]    ; for other modes
         mov   [BytesPerScanLine], eax
 @@:
-        mov esi, BOOT_VAR+0x9080
+        mov esi, OS_BASE+0x9080
         movzx   ecx, byte [esi-1]
         mov [NumBiosDisks], ecx
         mov edi, BiosDisksData
@@ -366,7 +374,7 @@ system_init:
 
 ; GRAPHICS ADDRESSES
 
-        mov byte [BOOT_VAR+0x901e],0x0
+        mov byte [OS_BASE+0x901e],0x0
 
         cmp [scr_mode], 0100000000000000b
         jge setvesa20
@@ -987,10 +995,10 @@ set_variables:
         mov   [BTN_COUNT], 0                 ; button buffer
 
         push  eax
-        mov   ax,[BOOT_VAR+0x900c]
+        mov   ax,[OS_BASE+0x900c]
         shr   ax,1
         shl   eax,16
-        mov   ax,[BOOT_VAR+0x900A]
+        mov   ax,[OS_BASE+0x900A]
         shr   ax,1
         mov   dword [MOUSE_X], eax
         pop   eax
@@ -1446,10 +1454,6 @@ no_set_lba_read:
      ret
    no_set_pci_access:
 
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-include 'vmodeint.inc'
-;!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 sys_setup_err:
      mov  [esp+36],dword -1
      ret
@@ -1799,7 +1803,7 @@ sysfn_shutdown: 	 ; 18.9 = system shutdown
      jl   exit_for_anyone
      cmp  ecx,4
      jg   exit_for_anyone
-     mov  [BOOT_VAR+0x9030],cl
+     mov  [OS_BASE+0x9030],cl
 
      mov  eax,[TASK_COUNT]
      mov  [sys_shutdown], eax
@@ -1925,17 +1929,17 @@ sysfn_minimize: 	; 18.10 = minimize window
 sysfn_getdiskinfo:	; 18.11 = get disk info table
      cmp  ecx,1
      jnz  full_table
-  small_table:
+small_table:
      call for_all_tables
      mov ecx,10
      cld
      rep movsb
      ret
-   for_all_tables:
+for_all_tables:
      mov edi,edx
      mov esi,DRIVE_DATA
      ret
-  full_table:
+full_table:
      cmp  ecx,2
      jnz  exit_for_anyone
      call for_all_tables
@@ -2317,7 +2321,7 @@ sys_getbackground:
     jnz   nogb1
     mov   eax,[BgrDataWidth]
     shl   eax,16
-    mov   ax,[BgrDataHeight]
+    mov   ax, word [BgrDataHeight]
     mov   [esp+36],eax
     ret
 
@@ -2593,14 +2597,14 @@ sys_redrawstat:
 	jne	no_widgets_away
 	; buttons away
 	mov	ecx,[CURRENT_TASK]
-  sys_newba2:
+sys_newba2:
     mov edi,[btn_addr]
 	cmp	[edi], dword 0	; empty button list ?
 	je	end_of_buttons_away
 	movzx	ebx, word [edi]
 	inc	ebx
 	mov	eax,edi
-  sys_newba:
+sys_newba:
 	dec	ebx
 	jz	end_of_buttons_away
 
@@ -2630,17 +2634,16 @@ sys_redrawstat:
 	jnz	srl1
 
 	mov	edx, [TASK_BASE]      ; return whole screen draw area for this app
-	add	edx, draw_data - CURRENT_TASK
-	mov	[edx + RECT.left], 0
-	mov	[edx + RECT.top], 0
+    sub edx, CURRENT_TASK
+    mov [edx +draw_data + RECT.left], 0
+    mov [edx +draw_data+ RECT.top], 0
 	mov	eax, [Screen_Max_X]
-	mov	[edx + RECT.right], eax
+    mov [edx +draw_data+ RECT.right], eax
 	mov	eax, [Screen_Max_Y]
-	mov	[edx + RECT.bottom], eax
+    mov [edx +draw_data+ RECT.bottom], eax
 
 	mov	edi, [TASK_BASE]
 	or	[edi - twdw + WDATA.fl_wdrawn], 1   ; no new position & buttons from app
-	call	sys_window_mouse
 	ret
 
   srl1:
@@ -2664,7 +2667,7 @@ sys_drawwindow:
     ;call   [draw_pointer]
     ;ret
     jmp   draw_window_caption.2
-  nosyswI:
+nosyswI:
 
     cmp   al,1	  ; type II   - only reserve area, no draw
     jne   nosyswII
@@ -2672,7 +2675,6 @@ sys_drawwindow:
     call  [disable_mouse]
     call  sys_set_window
     call  [disable_mouse]
-    call  sys_window_mouse
     dec   [mouse_pause]
     call   [draw_pointer]
     ret
@@ -2695,7 +2697,7 @@ sys_drawwindow:
     je	  draw_skin_window
     cmp   al,4	  ; type V - skinned window not sized! {not_sized_skin_window}
     jne   nosyswV
-  draw_skin_window:
+draw_skin_window:
 
     inc   [mouse_pause]
     call  [disable_mouse]
@@ -2910,10 +2912,6 @@ sys_set_window:
     test  [edi+WDATA.fl_wdrawn],1
     jnz   newd
 
-    mov   eax,[timer_ticks] ;[0xfdf0]
-    add   eax,100
-    mov   [new_window_starting],eax
-
     movsx eax,bx
     mov   [edi+WDATA.box.width],eax
     movsx eax,cx
@@ -2945,7 +2943,7 @@ sys_set_window:
 	je	set_APPDATA_wnd_caption
 
 	jmp	@f
-    set_APPDATA_wnd_caption:
+set_APPDATA_wnd_caption:
 	mov	[edi+APPDATA.wnd_caption],eax
     @@: mov	esi,[esp+0]
 
@@ -2974,7 +2972,7 @@ sys_set_window:
     mov   [KEY_COUNT], 0           ; empty keyboard buffer
     mov   [BTN_COUNT], 0           ; empty button buffer
 
-  newd:
+newd:
     mov   [edi+WDATA.fl_redraw],byte 0	 ; no redraw
     mov   edx,edi
 
@@ -3100,14 +3098,11 @@ sys_window_move:
 	xor   esi,esi
 	call  redrawscreen
 
-    mov   [dont_draw_mouse], 0   ; mouse pointer
-    mov   [mouse_background], 0  ; no mouse under
-
 	call  [draw_pointer]
 
 	mov   [window_move_pr],0
 
-      .window_move_return:
+.window_move_return:
 
 	ret
 
@@ -3425,41 +3420,41 @@ redrawscreen:
 	 cmp   ecx,eax
 	 jb    ricino
 
-	bgli:
+bgli:
 
 	 cmp   ecx,1
-	 jnz   .az
+     jnz   .az
      mov   al, byte [redraw_background]
 	 cmp   al,2
 	 jz    newdw8
 	 test  al,al
 	 jz    .az
-	 lea   eax,[edi+draw_data-window_data]
+     lea   eax,[edi+draw_data+(0x100000000-OS_BASE)]
 	 mov   ebx,[dlx]
 	 cmp   ebx,[eax+RECT.left]
 	 jae   @f
 	 mov   [eax+RECT.left],ebx
-	@@:
+@@:
 	 mov   ebx,[dly]
 	 cmp   ebx,[eax+RECT.top]
 	 jae   @f
 	 mov   [eax+RECT.top],ebx
-	@@:
+@@:
 	 mov   ebx,[dlxe]
 	 cmp   ebx,[eax+RECT.right]
 	 jbe   @f
 	 mov   [eax+RECT.right],ebx
-	@@:
+@@:
 	 mov   ebx,[dlye]
 	 cmp   ebx,[eax+RECT.bottom]
 	 jbe   @f
 	 mov   [eax+RECT.bottom],ebx
-	@@:
+@@:
 	 jmp   newdw8
-	.az:
+.az:
 
 	 mov   eax,edi
-	 add   eax,draw_data-window_data
+     add   eax, draw_data+(0x100000000-OS_BASE)
 
 	 mov   ebx,[dlx]	  ; set limits
 	 mov   [eax + RECT.left], ebx
@@ -3470,20 +3465,20 @@ redrawscreen:
 	 mov   ebx,[dlye]
 	 mov   [eax + RECT.bottom], ebx
 
-	 sub   eax,draw_data-window_data
+     sub   eax,draw_data+(0x100000000-OS_BASE)
 
 	 cmp   dword [esp],1
 	 jne   nobgrd
      mov   [redraw_background], 1
 
-       newdw8:
-       nobgrd:
+newdw8:
+nobgrd:
 
 	 mov   [eax + WDATA.fl_redraw],byte 1	 ; mark as redraw
 
-       ricino:
+ricino:
 
-       not_this_task:
+not_this_task:
 
 	 pop   ecx
 
@@ -3710,7 +3705,7 @@ get_irq_data:
      dec   edx
      jmp   gid1
 
-  gidril1:
+gidril1:
 
      shl   ebx, 12
      lea   eax, [ebx + IRQ_SAVE]	 ; calculate address of the beginning of buffer + 0x0 - data size
@@ -4046,15 +4041,15 @@ sys_putimage:
      jz    .exit
      test  ecx,0xFFFF0000
      jnz   @f
-  .exit:
+.exit:
      ret
- @@:
+@@:
 	mov	edi,[current_slot]
 	add	dx,word[edi+APPDATA.wnd_clientbox.top]
 	rol	edx,16
 	add	dx,word[edi+APPDATA.wnd_clientbox.left]
 	rol	edx,16
-  .forced:
+.forced:
 	push	ebp esi 0
 	mov	ebp, putimage_get24bpp
 	mov	esi, putimage_init24bpp
@@ -5094,7 +5089,7 @@ undefined_syscall:			; Undefined system call
 align 4
 system_shutdown:	  ; shut down the system
 
-	   cmp byte [BOOT_VAR+0x9030], 1
+       cmp byte [OS_BASE+0x9030], 1
 	   jne @F
 	   ret
 @@:
@@ -5107,10 +5102,10 @@ yes_shutdown_param:
 
 	   cli
 
-           cmp byte [BOOT_VAR+0x9030], 3
+           cmp byte [OS_BASE+0x9030], 3
            je _sys_reboot
 
-           cmp byte [BOOT_VAR+0x9030], 4
+           cmp byte [OS_BASE+0x9030], 4
            je _sys_restart
 
            cld
@@ -5148,10 +5143,6 @@ _sys_restart:
            call restorefatchain
 
            cld
-           mov  esi, BOOT_VAR    ; restore 0x0 - 0xffff
-           mov  edi, OS_BASE
-           mov  ecx,0x10000/4
-           rep movsd
 
          ;  mov eax, [_copy_pg_balloc]
            mov [_pg_balloc], eax

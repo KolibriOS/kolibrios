@@ -14,7 +14,7 @@ $Revision$
 ; Автор части исходного текста Кулаков Владимир Геннадьевич
 ; Адаптация, доработка и разработка Mario79
 
-; Максимальное количество повторений операции чтения
+; Максимальное количество повторений операции чтени
 MaxRetr equ 10
 ; Предельное время ожидания готовности к приему команды
 ; (в тиках)
@@ -38,7 +38,7 @@ ReadCD:
 	mov	  [CDBlockSize],2048 ;2352
 ; Очистить буфер пакетной команды
 	call  clear_packet_buffer
-; Сформировать пакетную команду для считывания
+; Сформировать пакетную команду для считывани
 ; сектора данных
 	; Задать код команды Read CD
 	mov	  [PacketCommand],byte 0x28  ;0xBE
@@ -168,7 +168,6 @@ MaxCDWaitTime equ 1000 ;200 ;10 секунд
 ; Область памяти для формирования пакетной команды
 PacketCommand:	 rb 12	;DB 12 DUP (?)
 ; Область памяти для приема данных от дисковода
-;CDDataBuf       DB 4096 DUP (0)
 ; Размер принимаемого блока данных в байтах
 CDBlockSize	DW ?
 ; Адрес считываемого сектора данных
@@ -177,7 +176,7 @@ CDSectorAddress: DD ?
 TickCounter_1 DD 0
 ; Время начала ожидания готовности устройства
 WURStartTime DD 0
-; указатель буфера для считывания
+; указатель буфера для считывани
 CDDataBuf_pointer dd 0
 
 ;****************************************************
@@ -342,7 +341,7 @@ SendPacketNoDatCommand:
 	add	DX,7   ;порт 1х7h
 @@WaitDevice0_1:
 	call	change_task
-	; Проверить время ожидания
+	; Проверить время ожидани
 	mov	EAX,[timer_ticks]
 	sub	EAX,[TickCounter_1]
 	cmp	EAX,BSYWaitTime
@@ -464,12 +463,12 @@ SendCommandToHDD_1:
 	jmp    .test
 @@:
 	call	change_task
-	; Проверить время ожидания
+	; Проверить время ожидани
 	mov	eax,[timer_ticks]
 	sub	eax,[TickCounter_1]
 	cmp	eax,BSYWaitTime ;300    ;ожидать 3 сек.
 	ja	@@Err1_4   ;ошибка тайм-аута
-	; Прочитать регистр состояния
+	; Прочитать регистр состояни
 .test:
 	in	AL,DX
 	; Проверить состояние сигнала BSY
@@ -645,7 +644,7 @@ LoadMedium:
 ; Сформировать команду START/STOP UNIT
 	; Задать код команды
 	mov	[PacketCommand],word 1Bh
-	; Задать операцию загрузки носителя
+	; Задать операцию загрузки носител
 	mov	[PacketCommand+4],word 00000011b
 ; Подать команду
 	call	SendPacketNoDatCommand
@@ -666,7 +665,7 @@ EjectMedium:
 ; Сформировать команду START/STOP UNIT
 	; Задать код команды
 	mov	[PacketCommand],word 1Bh
-	; Задать операцию извлечения носителя
+	; Задать операцию извлечения носител
 	mov	[PacketCommand+4],word 00000010b
 ; Подать команду
 	call	SendPacketNoDatCommand

@@ -438,16 +438,17 @@ vesa12_drawbar:
     push eax
     push ecx
     mov  eax,[TASK_BASE]
-    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.left]
+    sub  eax, CURRENT_TASK
+    mov  ecx,[eax+draw_data+RECT.left]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.top]
+    mov  ecx,[eax+draw_data+RECT.top]
     cmp  ecx,0
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
+    mov  ecx,[eax+draw_data+RECT.right]
     cmp  ecx,[Screen_Max_X]
     jnz  dbcblimitlset12
-    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
+    mov  ecx,[eax+draw_data+RECT.bottom]
     cmp  ecx,[Screen_Max_Y]
     jnz  dbcblimitlset12
     pop  ecx
@@ -796,14 +797,15 @@ vesa12_putimage:
 
     push  ecx
     mov  eax,[TASK_BASE]
-    cmp  dword [eax+draw_data-CURRENT_TASK+RECT.left], 0
+    sub eax, CURRENT_TASK
+    cmp  dword [eax+draw_data+RECT.left], 0
     jnz  dbcblimitlset212
-    cmp  dword [eax+draw_data-CURRENT_TASK+RECT.top], 0
+    cmp  dword [eax+draw_data+RECT.top], 0
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.right]
+    mov  ecx,[eax+draw_data+RECT.right]
     cmp  ecx,[Screen_Max_X]
     jnz  dbcblimitlset212
-    mov  ecx,[eax+draw_data-CURRENT_TASK+RECT.bottom]
+    mov  ecx,[eax+draw_data+RECT.bottom]
     cmp  ecx,[Screen_Max_Y]
     jnz  dbcblimitlset212
     pop  ecx

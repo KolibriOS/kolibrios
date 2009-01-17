@@ -478,10 +478,10 @@ wait_for_sector_dma_ide1:
         ret
 
 iglobal
-align 4
+align 8
 ; note that IDE descriptor table must be 4-byte aligned and do not cross 4K boundary
 IDE_descriptor_table:
-        dd      IDE_DMA
+        dd      IDE_DMA+(0x100000000-OS_BASE)
         dw      0x2000
         dw      0x8000
 
@@ -579,7 +579,7 @@ hd_read_dma:
         mov     eax, [esp+4]
         sub     eax, [dma_cur_sector]
         shl     eax, 9
-        add     eax, (OS_BASE+IDE_DMA)
+        add     eax, IDE_DMA
         push    ecx esi edi
         mov     esi, eax
         shl     edi, 9
@@ -598,7 +598,7 @@ hd_read_dma:
         ret
 .notread:
         mov     eax, IDE_descriptor_table
-        mov     dword [eax],  IDE_DMA
+        mov     dword [eax],  IDE_DMA+(0x100000000-OS_BASE)
         mov     word [eax+4], 0x2000
         sub     eax, OS_BASE
         mov     dx, [IDEContrRegsBaseAddr]
@@ -694,8 +694,8 @@ write_cache_chain:
         shl     esi, 9
         call    calculate_cache_2
         add     esi,eax
-        mov     edi, (OS_BASE+IDE_DMA)
-        mov     dword [edx], IDE_DMA
+        mov     edi, IDE_DMA
+        mov     dword [edx], IDE_DMA+(0x100000000-OS_BASE)
         movzx   ecx, [cache_chain_size]
         shl     ecx, 9
         mov     word [edx+4], cx

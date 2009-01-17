@@ -14,7 +14,7 @@ typedef  u32_t count_t;
 typedef  u32_t size_t;
 typedef  u32_t index_t;
 typedef  u32_t eflags_t;
-
+typedef  u32_t color_t;
 
 typedef  int bool;
 

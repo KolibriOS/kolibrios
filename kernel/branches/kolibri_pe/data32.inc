@@ -282,14 +282,50 @@ section '.bss' data writeable align 4096
 
 align 4096
 
-_sys_pdbr       rd 1024
+SLOT_BASE:
+                rb 64*1024
+DRIVE_DATA:
+                rb 64*1024
+RESERVED_PORTS:
+                rb 64*1024
+FLOPPY_BUFF:
+                rb 16*1024
 
+BUTTON_INFO:
+                rb 16*1024
+BgrAuxTable:
+                rb 32*1024
+skin_data:
+                rb 32*1024
+
+IDE_DMA:        rb 32*1024
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+window_data:
+                rb 8192
+
+CURRENT_TASK:
+_current_task:
+                rb 8192
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+draw_data:
+                rb 4096
+CDDataBuf:
+                rb 4096
 
 cur_saved_data  rb 4096
 
-fpu_data:       rb 512
+_sys_pdbr       rd 1024
 
-idts              rq 0x42
+
+fpu_data:
+                rb 512
+
+WIN_STACK:
+                rb 0x400
+WIN_POS:
+                rb 0x800
+
+idts            rq 0x42
 
 ; device irq owners
 irq_owner	  rd 16 ; process id
@@ -317,6 +353,9 @@ irq_tab 	  rd 16
 
 FONT_I        rb 2304    ;16*144
 FONT_II       rb 2560    ;16*160
+
+RAMDISK_FAT:  rb 2856*2 +16 ;16*357
+FLOPPY_FAT:   rb 2856*2 +16
 
 _z_core           rd 52
 
@@ -357,9 +396,6 @@ sys_page_map      rd 1
 srv.fd            rd 1
 srv.bk            rd 1
 
-scr_width         rd 1
-scr_height        rd 1
-
 _HwCursorCreate:
 create_cursor	  rd 1
 
@@ -375,11 +411,15 @@ hw_restore        rd 1
 def_cursor        rd 1
 current_cursor	  rd 1
 hw_cursor         rd 1
-cur_def_interl	  rd 1
 cur_saved_base	  rd 1
-cur_saved_interl  rd 1
-cur_saved_w       rd 1
-cur_saved_h       rd 1
+
+cur.lock          rd 1   ;1 - lock update, 2- hide
+cur.left          rd 1   ;cursor clip box
+cur.top           rd 1
+cur.right         rd 1
+cur.bottom        rd 1
+cur.w             rd 1
+cur.h             rd 1
 
 ipc_tmp           rd 1
 ipc_pdir          rd 1
@@ -417,14 +457,18 @@ BytesPerScanLine  rd 1
 put_pixel         rd 1
 get_pixel         rd 1
 
+_screen_width     rd 1
+_screen_height    rd 1
+
 Screen_Max_X      rd 1
 Screen_Max_Y      rd 1
 
 btn_addr          rd 1
 
 redraw_background rd 1
-mouse_background  rd 1
-dont_draw_mouse   rd 1
+BgrDrawMode       rd 1
+BgrDataWidth      rd 1
+BgrDataHeight     rd 1
 
 MOUSE_VISIBLE     rd 1
 WIN_TEMP_XY       rd 1
@@ -439,9 +483,6 @@ BTN_BUFF          rd 1
 KEY_COUNT         rd 1
 KEY_BUFF          rb 128
 
-
-mouse_color_mem   rd 1
-color_temp        rd 1
 btn_down          rd 1
 x_under           rd 1
 y_under           rd 1

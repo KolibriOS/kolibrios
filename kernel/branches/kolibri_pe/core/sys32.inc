@@ -592,26 +592,25 @@ term9:
     pusha     ; save window coordinates for window restoring
     cld
     shl   esi,5
-    add   esi,window_data
-    mov   eax,[esi+WDATA.box.left]
+    mov   eax,[window_data+esi+WDATA.box.left]
     mov   [dlx],eax
-    add   eax,[esi+WDATA.box.width]
+    add   eax,[window_data+esi+WDATA.box.width]
     mov   [dlxe],eax
-    mov   eax,[esi+WDATA.box.top]
+    mov   eax,[window_data+esi+WDATA.box.top]
     mov   [dly],eax
-    add   eax,[esi+WDATA.box.height]
+    add   eax,[window_data+esi+WDATA.box.height]
     mov   [dlye],eax
 
     xor   eax, eax
-    mov   [esi+WDATA.box.left],eax
-    mov   [esi+WDATA.box.width],eax
-    mov   [esi+WDATA.box.top],eax
-    mov   [esi+WDATA.box.height],eax
-    mov   [esi+WDATA.cl_workarea],eax
-    mov   [esi+WDATA.cl_titlebar],eax
-    mov   [esi+WDATA.cl_frames],eax
-    mov   dword [esi+WDATA.reserved],eax ; clear all flags: wstate, redraw, wdrawn
-    lea   edi, [esi-window_data+draw_data]
+    mov   [window_data+esi+WDATA.box.left],eax
+    mov   [window_data+esi+WDATA.box.width],eax
+    mov   [window_data+esi+WDATA.box.top],eax
+    mov   [window_data+esi+WDATA.box.height],eax
+    mov   [window_data+esi+WDATA.cl_workarea],eax
+    mov   [window_data+esi+WDATA.cl_titlebar],eax
+    mov   [window_data+esi+WDATA.cl_frames],eax
+    mov   dword [window_data+esi+WDATA.reserved],eax ; clear all flags: wstate, redraw, wdrawn
+    lea   edi, [esi+draw_data]
     mov   ecx,32/4
     rep   stosd
     popa
@@ -811,9 +810,6 @@ term9:
     xor   eax, eax
     xor   esi, esi
     call  redrawscreen
-
-    mov   [mouse_background], 0  ; no mouse background
-    mov   [dont_draw_mouse], 0  ; draw mouse
 
     mov   [application_table_status],0
     ;mov   esi,process_terminated

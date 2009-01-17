@@ -10,8 +10,6 @@ $Revision$
 
 include "skindata.inc"
 
-;skin_data = 0x00778000
-
 read_skin_file:
         stdcall load_file, ebx
         test    eax, eax
@@ -213,7 +211,7 @@ parse_skin_data:
         ret
 
 sys_putimage_with_check:
-	or	ebx,ebx
+        test  ebx,ebx
 	jz	@f
         call    sys_putimage.forced
     @@: ret
@@ -257,7 +255,7 @@ drawwindow_IV_caption:
         mov     edx,[ebp+SKIN_DATA.base.left]
         sub     edx,[ebp+SKIN_DATA.base.width]
         shl     edx,16
-  .baseskinloop:
+.baseskinloop:
         shr     edx,16
         add     edx,[ebp+SKIN_DATA.base.width]
         shl     edx,16
@@ -268,7 +266,7 @@ drawwindow_IV_caption:
 
         dec     eax
         jnz     .baseskinloop
-  .non_base:
+.non_base:
 
         mov     esi,[esp+4]
         mov     edx,[esi+WDATA.box.width]
@@ -317,7 +315,7 @@ drawwindow_IV:
         or      [edi+WDATA.fl_wdrawn], 4
         call  draw_rectangle
         mov   ecx,3
-      _dw3l:
+_dw3l:
         add   eax,1*65536-1
         add   ebx,1*65536-1
         test  ax,ax
@@ -353,7 +351,7 @@ drawwindow_IV:
         mov     al,[esp+32+4+4]
         call    drawwindow_IV_caption
 
-    draw_clientbar:
+draw_clientbar:
 
         mov   esi,[esp]
 
@@ -373,7 +371,7 @@ drawwindow_IV:
 	test  edi,0x40000000
 	jnz   _noinside2
         call  [drawbar]
-      _noinside2:
+_noinside2:
 
         cmp   dword[skin_data],'SKIN'
         jne   no_skin_add_button
@@ -402,7 +400,7 @@ drawwindow_IV:
         mov   ebx,[esp]
         mov   ebx,[ebx+WDATA.box.width]
         inc   ebx
-      _bCx_at_right:
+_bCx_at_right:
         add   ebx,[skin_btn_close.left]
         mov   [eax],bx
         add   eax,2         ; x size
@@ -441,7 +439,7 @@ drawwindow_IV:
         mov   ebx,[esp]
         mov   ebx,[ebx+WDATA.box.width]
         inc   ebx
-      _bMx_at_right:
+_bMx_at_right:
         add   ebx,[skin_btn_minimize.left]
         mov   [eax],bx
         add   eax,2         ; x size
@@ -456,7 +454,7 @@ drawwindow_IV:
         dec   ebx
         mov   [eax],bx
 
-      no_skin_add_button:
+no_skin_add_button:
         pop     edi
         and     [edi+WDATA.fl_wdrawn], not 4
         test    [edi+WDATA.fl_wdrawn], 2

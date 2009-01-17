@@ -6,10 +6,8 @@ use_cli_sti  equ 1 ;driver become more stable (theoretically)
 API_VERSION	equ 0  ;debug
 
 OS_BASE         equ 0xE0000000
-new_app_base	equ 0x0
-PROC_BASE	equ (OS_BASE+0x080000)
-SB16Buffer      equ (OS_BASE+0x1A0000)
-SB16_Status     equ (OS_BASE+0x1B0000)
+;PROC_BASE   equ (OS_BASE+0x080000)
+SB16Buffer      equ (OS_BASE+0x10000)
 DMAPage 	equ ((SB16Buffer-OS_BASE) shr 16)
 
 SB16Buffer0	equ SB16Buffer

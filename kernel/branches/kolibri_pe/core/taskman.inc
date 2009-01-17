@@ -432,7 +432,7 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
            mov [ecx*8+SLOT_BASE+APPDATA.saved_esp], ebx
            mov  [CURRENT_TASK+ecx+TASKDATA.state], 0
 
-           DEBUGF 1,"%s",new_process_running
+        ;   DEBUGF 1,"%s",new_process_running
 .err:
            mov eax,[process_number]  ;set result
            mov [application_table_status], 0 ;unlock application_table_status mutex
@@ -446,7 +446,6 @@ endp
 
 align 4
 _pe_restart:
-           xchg bx, bx
            add esp, 12
            popad
            iretd

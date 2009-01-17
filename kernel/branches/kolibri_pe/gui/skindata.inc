@@ -54,6 +54,8 @@ skin_udata:
   skin_btn_close    SKIN_BUTTON
   skin_btn_minimize SKIN_BUTTON
 
+public _skin_active
+_skin_active:
   skin_active       SKIN_DATA
   skin_inactive     SKIN_DATA
 
