@@ -123,7 +123,7 @@ edit_file:
 	mov	[ebp + editor_data.memsize], ebx
 	mov	al, [EditEOLStyle]
 	mov	[ebp + editor_data.eol], al
-	mov	eax, [esi + panel1_hPlugin - panel1_data]
+	mov	eax, dword [esi + panel1_hPlugin - panel1_dir]
 	mov	[ebp + editor_data.hPlugin], eax
 	test	eax, eax
 	jz	.nocopyhostname
@@ -196,6 +196,7 @@ edit_file:
 	push	dword [ebx+21]
 	push	[ebp + editor_data.hFile]
 	call	[edx + PluginInfo.open]
+	mov	[esp+1Ch], eax
 	popad
 	test	eax, eax
 	jz	..openerr_in_screen
@@ -210,6 +211,7 @@ edit_file:
 	push	[readinfo.data]
 	push	ebx
 	call	[edx + PluginInfo.read]
+	mov	[esp+1Ch], eax
 	popad
 	cmp	eax, -1
 	jnz	.readok
@@ -259,7 +261,7 @@ edit_file:
 	jnz	.readdone
 @@:
 	push	eax ebx
-	mov	ebx, [ebx+16]
+	mov	ebx, [readinfo.data]
 .loadloop:
 	mov	ecx, [EditBlockSize]
 	cmp	eax, ecx
@@ -1977,7 +1979,7 @@ editor_OnKey:
 
 .left:
 	call	editor_cursor_left
-	jc	.redraw_status
+	jnc	.redraw_status
 	jmp	editor_draw_text
 .ret3:
 	ret
@@ -2156,6 +2158,204 @@ editor_OnKey:
 .del1:
 	jmp	editor_draw_text
 
+.f7:
+	call	find_in_file_dlg
+	jz	.shift_f7
+.f7.ret:
+	ret
+.shift_f7:
+; search string SearchString in file starting from current cursor position
+	mov	ebx, SearchString
+	xor	eax, eax
+	cmp	byte [ebx], al
+	jz	.f7.ret
+	mov	esi, tolower_table
+	test	[find_in_file_dlgdata.flags_case], 10h
+	jz	@f
+	mov	esi, identical_table
+@@:
+	test	[find_in_file_dlgdata.flags_whole], 10h
+	setnz	al
+	push	eax
+	push	dword [ebp+editor_data.encoding]; always cp866 for now
+				; needs to be revisited after Unicode support in editor
+	call	search_string_pre
+	mov	esi, [ebp + editor_data.cur_block]
+	add	esi, ebp
+	mov	ebx, [ebp + editor_data.cur_offs]
+	call	editor_normalize_offs
+	jnc	.f7.notfound
+	xor	edi, edi
+	push	ebx esi
+	push	edi
+	push	edi
+	test	[find_in_file_dlgdata.flags_whole], 10h
+	jnz	@f
+	movzx	eax, byte [esi+ebx]
+	jmp	.search_loop_next
+@@:
+	mov	edi, edx
+.search_loop:
+; edx -> FSM, ecx = last state, esi:ebx -> current data,
+; edi = current state
+; [esp] = row, [esp+4] = delta in lines
+; get current symbol
+	movzx	eax, byte [esi+ebx]
+; calculate next state
+	movzx	edi, byte [edi+eax]
+; done?
+	cmp	edi, ecx
+	jz	.f7.found
+.search_loop_next:
+; no; proceed to next symbol
+	add	ebx, 1
+	shl	edi, 8
+	add	dword [esp], 1
+	add	edi, edx
+	cmp	ebx, [esi + edit_block_header.limit]
+	jae	.f7.nextblock
+.f7.nonextblock:
+	cmp	al, 10
+	jz	.f7.newline
+	cmp	al, 13
+	jnz	.search_loop
+	cmp	byte [esi+ebx], 10
+	jnz	.f7.newline
+	call	editor_step_forward
+	jnc	.f7.notfound_pop
+.f7.newline:
+	mov	dword [esp], 0
+	add	dword [esp+4], 1
+	mov	dword [esp+8], esi
+	mov	dword [esp+12], ebx
+	jmp	.search_loop
+.f7.nextblock:
+	call	editor_normalize_offs
+	jc	.f7.nonextblock
+.f7.notfound_pop:
+; last chance - if we are looking for a whole word, EOF is ok for last symbol
+	test	[find_in_file_dlgdata.flags_whole], 10h
+	jz	@f
+	mov	esi, [ebp + editor_data.last_block]
+	add	esi, ebp
+	mov	ebx, [esi + edit_block_header.limit]
+	movzx	edi, byte [edi+' ']
+	cmp	edi, ecx
+	jz	.f7.found
+@@:
+	add	esp, 10h
+.f7.notfound:
+	jmp	search_failed
+.f7.found:
+	or	[ebp + editor_data.cur_delta], -1
+	sub	ebx, ecx
+	inc	ebx
+	test	[find_in_file_dlgdata.flags_whole], 10h
+	jz	@f
+	inc	ebx
+@@:
+	cmp	ebx, [EditBlockStart]
+	jge	@f
+	sub	ebx, [EditBlockStart]
+	mov	esi, [esi + edit_block_header.prev]
+	add	esi, ebp
+	add	ebx, [esi + edit_block_header.limit]
+	jmp	@b
+@@:
+	sub	esi, ebp
+	mov	[ebp + editor_data.cur_block], esi
+	add	esi, ebp
+	mov	[ebp + editor_data.cur_offs], ebx
+	push	ecx
+	mov	ecx, edx
+	call	pgfree
+	pop	ecx
+	pop	eax
+	pop	edi
+; esi:ebx -> last symbol of match, eax = row, edi = delta in lines
+	pop	esi ebx
+	test	[find_in_file_dlgdata.flags_whole], 10h
+	jz	@f
+	dec	ecx
+@@:
+	push	ebx esi
+	sub	eax, ecx
+	lea	edx, [eax+1]
+	mov	eax, [ebp + editor_data.curcol]
+	add	eax, [ebp + editor_data.cursor_x]
+	test	edi, edi
+	jz	@f
+	xor	eax, eax
+@@:
+	test	edx, edx
+	jz	.f7.foundpos1
+.f7.findpos1:
+	cmp	byte [ebx+esi], 9
+	jz	.f7.findpos1.tab
+	inc	eax
+	call	editor_step_forward
+	dec	edx
+	jnz	.f7.findpos1
+	jmp	.f7.foundpos1
+.f7.findpos1.tab:
+	push	edx eax
+	xor	edx, edx
+	div	[editor_tabsize]
+	pop	eax
+	sub	edx, [editor_tabsize]
+	sub	eax, edx
+	call	editor_step_forward
+	pop	edx
+	dec	edx
+	jnz	.f7.findpos1
+.f7.foundpos1:
+	pop	esi ebx
+	push	eax
+	cmp	eax, [ebp + editor_data.curcol]
+	jb	.f7.scrollleft
+	sub	eax, [ebp + editor_data.curcol]
+	sub	eax, [cur_width]
+	jb	.f7.xset
+	inc	eax
+	inc	edx
+	add	[ebp + editor_data.curcol], eax
+	jmp	.f7.xset
+.f7.scrollleft:
+	inc	edx
+	mov	[ebp + editor_data.curcol], eax
+.f7.xset:
+	pop	eax
+	push	edx
+	sub	eax, [ebp + editor_data.curcol]
+	mov	[ebp + editor_data.cursor_x], eax
+	mov	[cursor_x], eax
+	add	edi, [ebp + editor_data.cursor_y]
+	push	edi
+	inc	edi
+	cmp	edi, [cur_height]
+	pop	edi
+	jae	.f7.newview
+	mov	[ebp + editor_data.cursor_y], edi
+	mov	[cursor_y], edi
+	jmp	.f7.yset
+.f7.newview:
+	dec	edi
+	mov	[ebp + editor_data.linedata_start + editor_line.block], esi
+	mov	[ebp + editor_data.linedata_start + editor_line.offs], bx
+	add	[ebp + editor_data.curline], edi
+	xor	eax, eax
+	inc	eax
+	mov	[ebp + editor_data.cursor_y], eax
+	mov	[cursor_y], eax
+	call	editor_init_lines
+	call	editor_test_cursor_y
+	inc	dword [esp]
+.f7.yset:
+	pop	eax
+	test	eax, eax
+	jz	.redraw_status
+	jmp	editor_draw_text
+
 editor_cursor_left:
 	cmp	[ebp + editor_data.cur_delta], -1
 	jz	.in_text
@@ -2291,4 +2491,32 @@ editor_OnExit:
 	mov	ebx, [ebp+editor_data.hFile]
 	call	close_handle_if_unused
 @@:
+	ret
+
+find_in_file_dlg:
+        mov     ebx, find_in_file_dlgdata
+        mov     eax, [cur_width]
+        sub     eax, 12
+        mov     [ebx + dlgtemplate.width], eax
+        dec     eax
+        dec     eax
+        mov     [ebx - find_in_file_dlgdata + find_in_file_dlgdata.width2], eax
+        shr     eax, 1
+        dec     eax
+        dec     eax
+        mov     [ebx - find_in_file_dlgdata + find_in_file_dlgdata.search_x2], eax
+        sub     eax, aSearchBLength-1
+        mov     [ebx - find_in_file_dlgdata + find_in_file_dlgdata.search_x1], eax
+        add     eax, aSearchBLength+3
+        mov     [ebx - find_in_file_dlgdata + find_in_file_dlgdata.cnl_x1], eax
+        add     eax, aCancelBLength - 1
+        mov     [ebx - find_in_file_dlgdata + find_in_file_dlgdata.cnl_x2], eax
+        mov     byte [ebx - find_in_file_dlgdata + find_in_file_dlgdata.flags0], 0xC
+        and     byte [ebx - find_in_file_dlgdata + find_in_file_dlgdata.flags1], not 4
+        and     byte [ebx - find_in_file_dlgdata + find_in_file_dlgdata.flags2], not 4
+	and	byte [ebx - find_in_file_dlgdata + find_in_file_dlgdata.flags_case], not 4
+	and	byte [ebx - find_in_file_dlgdata + find_in_file_dlgdata.flags_whole], not 4
+        push    ebx
+        call    DialogBox
+	cmp	eax, find_in_file_dlgdata.search_btn
 	ret

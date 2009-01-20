@@ -40,6 +40,7 @@ GenericBox:
         pushad
 ; message loop
 .event:
+;        call    get_event
         push    10
         pop     eax
         int     40h
@@ -264,6 +265,16 @@ ShowGenericBox:
 ; draw shadow
         test    byte [ebx+dlgtemplate.flags], 4
         jnz     .noshadow
+        call    draw_dialog_shadow
+.noshadow:
+        popad
+        push    dword [esp+8]
+        push    dword [esp+8]
+        call    DrawGenericBox
+        xor     eax, eax
+        ret     8
+
+draw_dialog_shadow:
         mov     eax, [ebx+dlgtemplate.x]
         sub     eax, [ebx+dlgtemplate.border_size_x]
         ja      @f
@@ -316,13 +327,7 @@ ShowGenericBox:
         add     edi, [cur_width]
         dec     edx
         jnz     .shadow_loop
-.noshadow:
-        popad
-        push    dword [esp+8]
-        push    dword [esp+8]
-        call    DrawGenericBox
-        xor     eax, eax
-        ret     8
+        ret
 
 ; void __stdcall DrawGenericBox(DLGDATA* dlg, void* DlgProc)
 DrawGenericBox:
@@ -648,9 +653,9 @@ menu_centered_in:
         xor     ecx, ecx
         mov     esi, [esp+20h+20]
         mov     [ebx+40], esi
-        and     dword [ebx+56], 0
+        mov     dword [ebx+56], eax
 @@:
-        cmp     dword [esi+4], 0
+        cmp     dword [esi+4], eax
         jz      .find_width
         mov     esi, [esi+4]
         inc     dword [ebx+56]
@@ -1103,6 +1108,9 @@ dlgitemtemplate:
 ;       1 = статический текст
 ;       2 = кнопка
 ;       3 = поле редактирования
+;       4 = горизонтальный разделитель
+;       5 = флажок
+;       6 = список
 .type           dd      ?
 .x1             dd      ?
 .y1             dd      ?
@@ -1110,9 +1118,14 @@ dlgitemtemplate:
 .y2             dd      ?
 ; Данные:
 ; для текста: const char* data - ASCIIZ-строка
-; для кнопки: const char* data - заголовок
+; для кнопки и флажка: const char* data - заголовок
 ; для редактора: struct {unsigned maxlength; unsigned pos; unsigned start;
 ;                        char data[maxlength+1];}* data;
+; для списка: struct {listitem* curitemptr; unsigned numitems;
+;               listitem *head; unsigned curitem;}* data;
+; head = указатель на первый отображаемый элемент,
+; curitemptr = указатель на выделенный элемент, curitem = его индекс в списке (от 0)
+; (где struct listitem {listitem* next; listitem* prev; char text[];};)
 .data           dd      ?
 .flags          dd      ?
 ; Флаги:
@@ -1123,6 +1136,7 @@ dlgitemtemplate:
 ;       8 = элемент может иметь фокус ввода
 ;       10h: для кнопки = кнопка по умолчанию (Enter на не-кнопке)
 ;            для поля ввода = данные были модифицированы
+;            для флажка = флажок установлен
 ;       20h: для поля ввода = не отображать вводимые данные (показывать '*')
 .size = $
 end virtual
@@ -1191,10 +1205,17 @@ ManagerDlgProc:
         jz      .up
         cmp     al, 0x50
         jz      .down
-        jecxz   @f
+        jecxz   .nobtns2
         cmp     [ebx+dlgitemtemplate.type], 3
         jz      .key_edit
+        cmp     [ebx+dlgitemtemplate.type], 5
+        jnz     @f
+        cmp     al, 0x39
+        jnz     @f
+        xor     [ebx+dlgitemtemplate.flags], 10h
+        jmp     .ret_draw
 @@:
+.nobtns2:
         cmp     al, 0x4B
         jz      .left
         cmp     al, 0x4D
@@ -1386,25 +1407,28 @@ ManagerDlgProc:
 .draw_loop:
         push    ecx
         mov     eax, [ebx+dlgitemtemplate.type]
-        dec     eax
-        jz      .draw_text
-        dec     eax
-        jz      .draw_button
-        dec     eax
-        jnz     .draw_loop_continue
-        call    draw_editbox
-        jmp     .draw_loop_continue
-.draw_button:
-        call    draw_button
-        jmp     .draw_loop_continue
-.draw_text:
-        call    draw_static_text
+        cmp     eax, draw_functions_num
+        jae     .draw_loop_continue
+        call    [draw_functions + eax*4]
 .draw_loop_continue:
         pop     ecx
         add     ebx, dlgitemtemplate.size
         loop    .draw_loop
 .done_draw:
         ret
+
+iglobal
+align 4
+label draw_functions dword
+        dd      ManagerDlgProc.done_draw
+        dd      draw_static_text
+        dd      draw_button
+        dd      draw_editbox
+        dd      draw_h_separator
+        dd      draw_checkbox
+        dd      draw_listbox
+draw_functions_num = ($ - draw_functions) / 4
+endg
 
 draw_static_text:
 ; рисуем статический текст
@@ -1417,7 +1441,8 @@ draw_text:
         mov     esi, [ebx+dlgitemtemplate.data]
 draw_text_esi:
         test    esi, esi
-        jz      .ret
+        jz      .ret2
+        push    eax
         push    -1
         pop     ecx
 @@:
@@ -1425,7 +1450,6 @@ draw_text_esi:
         cmp     byte [ecx+esi], 0
         jnz     @b
 ; в ecx длина строки
-        push    eax
         xor     eax, eax
         mov     edx, [ebx+dlgitemtemplate.x2]
         sub     edx, [ebx+dlgitemtemplate.x1]
@@ -1451,12 +1475,8 @@ draw_text_esi:
 .text_draw:
         push    ecx
         push    eax
-        mov     eax, [ebx+dlgitemtemplate.x1]
-        add     eax, [ebp+dlgtemplate.x]
         push    edx
-        mov     edx, [ebx+dlgitemtemplate.y1]
-        add     edx, [ebp+dlgtemplate.y]
-        call    get_console_ptr
+        call    dlgitem_get_console_ptr
         pop     edx
         pop     ecx
         mov     ah, [esp+5]
@@ -1508,6 +1528,7 @@ draw_text_esi:
         pop     eax
         mov     al, ' '
         rep     stosw
+.ret2:
         ret
 
 draw_button:
@@ -1551,12 +1572,328 @@ draw_editbox:
         add     esi, 12
         jmp     draw_text_esi
 
+dlgitem_get_console_ptr:
+        mov     eax, [ebx+dlgitemtemplate.x1]
+        mov     edx, [ebx+dlgitemtemplate.y1]
+        mov     ecx, eax
+        add     eax, [ebp+dlgtemplate.x]
+        add     edx, [ebp+dlgtemplate.y]
+        jmp     get_console_ptr
+
+draw_h_separator:
+; рисуем горизонтальный разделитель
+        call    dlgitem_get_console_ptr
+.scan:
+        mov     al, 0xC7
+        test    ecx, ecx
+        js      @f
+        mov     al, 0xB6
+        cmp     ecx, [ebp+dlgtemplate.width]
+        jz      @f
+        mov     al, 0xC4
+@@:
+        stosb
+        jz      .done
+        inc     ecx
+        inc     edi
+        cmp     ecx, [ebx+dlgitemtemplate.x2]
+        jb      .scan
+.done:
+        ret
+
+draw_checkbox:
+; рисуем флажок
+        call    dlgitem_get_console_ptr
+        test    byte [ebx+dlgitemtemplate.flags], 4
+        jz      @f
+        inc     eax
+        mov     [cursor_x], eax
+        mov     [cursor_y], edx
+@@:
+        mov     ah, [dialog_main_color]
+        test    byte [ebp+dlgtemplate.flags], 2
+        jz      @f
+        mov     ah, [warning_main_color]
+@@:
+        mov     al, '['
+        stosw
+        mov     al, 'x'
+        test    byte [ebx+dlgitemtemplate.flags], 10h
+        jnz     @f
+        mov     al, ' '
+@@:
+        stosw
+        mov     al, ']'
+        stosw
+        mov     al, ' '
+        stosw
+        mov     ecx, [ebx+dlgitemtemplate.x2]
+        sub     ecx, [ebx+dlgitemtemplate.x1]
+        jb      .ret
+        sub     ecx, 3
+        jbe     .ret
+        mov     esi, [ebx+dlgitemtemplate.data]
+@@:
+        lodsb
+        test    al, al
+        jz      .ret
+        stosw
+        loop    @b
+.ret:
+        ret
+
+draw_listbox:
+; рисуем список
+        call    dlgitem_get_console_ptr
+        mov     edx, [ebx+dlgitemtemplate.data]
+        mov     esi, [edx+8]
+        mov     eax, [ebx+dlgitemtemplate.y2]
+        sub     eax, [ebx+dlgitemtemplate.y1]
+        push    eax
+        push    eax
+.0:
+        test    esi, esi
+        jz      .listdone
+        push    esi edi
+        push    edx
+        or      edx, -1
+        mov     ecx, [ebx+dlgitemtemplate.x2]
+        sub     ecx, [ebx+dlgitemtemplate.x1]
+        inc     ecx
+        xor     eax, eax
+@@:
+        inc     edx
+        cmp     byte [esi+8+edx], al
+        jnz     @b
+@@:
+        cmp     ecx, edx
+        jae     .text_draw
+        mov     al, byte [ebx+dlgitemtemplate.flags]
+        and     al, 3
+        jz      .text_align_left
+        cmp     al, 1
+        jz      .text_align_center
+; текст выровнен вправо
+        mov     eax, edx
+        sub     eax, ecx
+        jmp     .text_draw
+.text_align_center:
+        mov     eax, edx
+        sub     eax, ecx
+        shr     eax, 1
+        jmp     .text_draw
+.text_align_left:
+;        xor     eax, eax
+.text_draw:
+        pop     edx
+        cmp     esi, [edx]
+        lea     esi, [esi+8+eax]
+        mov     ah, [dialog_selected_list_color]
+        jz      @f
+        mov     ah, [dialog_list_color]
+@@:
+        jecxz   .next
+@@:
+        lodsb
+        test    al, al
+        jz      @f
+        stosw
+        loop    @b
+@@:
+        mov     al, ' '
+        rep     stosw
+.next:
+        pop     edi esi
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        mov     esi, [esi]
+        dec     dword [esp]
+        jns     .0
+.listdone:
+        pop     eax
+; Линейка прокрутки
+        pop     ecx
+        inc     ecx
+        mov     esi, [edx+4]
+        cmp     ecx, esi
+        jae     .noscrollbar
+        sub     ecx, 2
+        jbe     .noscrollbar
+        mov     eax, [edx+12]
+        mul     ecx
+        div     esi
+        push    eax
+        mov     eax, [ebx+dlgitemtemplate.x2]
+        add     eax, [ebp+dlgtemplate.x]
+        mov     edx, [ebx+dlgitemtemplate.y1]
+        add     edx, [ebp+dlgtemplate.y]
+        call    get_console_ptr
+        pop     edx
+        inc     edx
+        mov     al, 0x1E
+        mov     ah, [dialog_scroll_list_color]
+        mov     [edi], ax
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+.2:
+        mov     al, 0xB1
+        dec     edx
+        jz      @f
+        mov     al, 0xB0
+@@:
+        mov     [edi], ax
+        add     edi, [cur_width]
+        add     edi, [cur_width]
+        loop    .2
+        mov     al, 0x1F
+        stosw
+.noscrollbar:
+        ret
+
+listbox_key:
+        mov     edx, [ebx+dlgitemtemplate.data]
+        cmp     al, 0x48
+        jz      .prev
+        cmp     al, 0x50
+        jz      .next
+        cmp     al, 0x47
+        jz      .home
+        cmp     al, 0x4F
+        jz      .end
+        cmp     al, 0x51
+        jz      .pgdn
+        cmp     al, 0x49
+        jz      .pgup
+        ret
+.next:
+        call    .calc_last_line
+        mov     eax, [edx]
+        cmp     dword [eax], 0
+        jz      @f
+        call    .line_next
+@@:
+        mov     [edx], eax
+        ret
+.pgdn:
+        call    .calc_last_line
+        mov     eax, [edx]
+        mov     ecx, [ebx+dlgitemtemplate.y2]
+        sub     ecx, [ebx+dlgitemtemplate.y1]
+.pgdnl:
+        cmp     dword [eax], 0
+        jz      @f
+        call    .line_next
+        loop    .pgdnl
+@@:
+        mov     [edx], eax
+        ret
+.prev:
+        mov     eax, [edx]
+        cmp     dword [eax+4], 0
+        jz      @f
+        call    .line_prev
+@@:
+        mov     [edx], eax
+        ret
+.pgup:
+        mov     eax, [edx]
+        mov     ecx, [ebx+dlgitemtemplate.y2]
+        sub     ecx, [ebx+dlgitemtemplate.y1]
+;        inc     ecx
+.pgupl:
+        cmp     dword [eax+4], 0
+        jz      @f
+        call    .line_prev
+        loop    .pgupl
+@@:
+        mov     [edx], eax
+        ret
+.home:
+        mov     eax, [edx]
+@@:
+        cmp     dword [eax+4], 0
+        jz      @f
+        mov     eax, [eax+4]
+        jmp     @b
+@@:
+        mov     [edx], eax
+        mov     [edx+8], eax
+        and     dword [edx+12], 0
+        ret
+.end:
+        mov     eax, [edx]
+@@:
+        cmp     dword [eax], 0
+        jz      @f
+        mov     eax, [eax]
+        jmp     @b
+@@:
+        mov     [edx], eax
+        mov     ecx, [ebx+dlgitemtemplate.y2]
+        sub     ecx, [ebx+dlgitemtemplate.y1]
+        jz      .e1
+.e2:
+        mov     eax, [eax+4]
+        loop    .e2
+.e1:
+        mov     [edx+8], eax
+        mov     eax, [edx+4]
+        dec     eax
+        mov     [edx+12], eax
+        ret
+
+.line_prev:
+        cmp     eax, [edx+8]
+        mov     eax, [eax+4]
+        jnz     @f
+        mov     [edx+8], eax
+@@:
+        dec     dword [edx+12]
+        ret
+.calc_last_line:
+        mov     esi, [edx+8]
+        mov     ecx, [ebx+dlgitemtemplate.y2]
+        sub     ecx, [ebx+dlgitemtemplate.y1]
+        jz      .clldone
+@@:
+        mov     esi, [esi]
+        test    esi, esi
+        jz      @f
+        loop    @b
+.clldone:
+        ret
+.line_next:
+        cmp     eax, esi
+        mov     eax, [eax]
+        jnz     @f
+        push    eax
+        mov     eax, [edx+8]
+        mov     eax, [eax]
+        mov     [edx+8], eax
+        pop     eax
+        mov     esi, eax
+@@:
+        inc     dword [edx+12]
+        ret
+
 ; void __stdcall SayNoMem(void);
 SayNoMem:
         or      dword [nomem_dlgdata+4], -1
         or      dword [nomem_dlgdata+8], -1
         push    nomem_dlgdata
         call    DialogBox
+        ret
+
+; int __stdcall ConfirmCancel(void);
+; return value: 0 = the user is sure, nonzero = the user wants to continue
+ConfirmCancel:
+        push    YesOrNoBtn
+        push    2
+        push    ConfirmCancelMsg
+        push    1
+        push    aCancelled
+        call    SayErrTitle
+        test    eax, eax
         ret
 
 ; int __stdcall SayErr(int num_strings, const char* strings[],

@@ -15,6 +15,8 @@ viewer_data:
                                         ; & 4: big-endian unicode
         .bEofReached    db      ?
                         rb      1
+        .selected_start dq      ?
+        .selected_len   dq      ?
         align 200h
         .filename       rb      1024
         .hostname       rb      1024
@@ -23,22 +25,30 @@ viewer_data:
 end virtual
 
 view_file:
-        mov     eax, [ebp + panel1_files - panel1_data]
-        mov     ecx, [eax+ecx*4]
-        test    byte [ecx], 10h
-        jz      .file
-        ret
-.file:
-        lea     esi, [ebp + panel1_dir - panel1_data]
-        push    ecx
+        push    eax ecx
         mov     ecx, viewer_data.size
         mov     edx, viewer_vtable
         call    new_screen
         pop     ecx
         test    eax, eax
+        pop     eax
         jnz     @f
         ret
 @@:
+        test    eax, eax
+        jz      .frompanel
+        and     dword [ebp+viewer_data.hPlugin], 0
+        and     dword [ebp+viewer_data.hFile], 0
+        mov     byte [ebp+viewer_data.hostname], 0
+        lea     edi, [ebp+viewer_data.filename]
+        push    edi
+@@:
+        lodsb
+        stosb
+        test    al, al
+        jnz     @b
+        jmp     .namecopied
+.frompanel:
         mov     eax, dword [esi+panel1_hPlugin-panel1_dir]
         mov     [ebp+viewer_data.hPlugin], eax
         test    eax, eax
@@ -63,10 +73,6 @@ view_file:
 .nocopyhostname:
         mov     eax, dword [esi+panel1_hFile-panel1_dir]
         mov     [ebp+viewer_data.hFile], eax
-        mov     [ebp+viewer_data.encoding], encodings.cp866
-        mov     [ebp+viewer_data.flags], 0
-        and     dword [ebp+viewer_data.col], 0
-        and     dword [ebp+viewer_data.col+4], 0
         lea     edi, [ebp+viewer_data.filename]
         push    edi
 @@:
@@ -86,6 +92,13 @@ view_file:
         stosb
         test    al, al
         jnz     @b
+.namecopied:
+        xor     eax, eax
+        mov     [ebp+viewer_data.encoding], al ;encodings.cp866 = 0
+        mov     [ebp+viewer_data.flags], al
+        mov     dword [ebp+viewer_data.col], eax
+        mov     dword [ebp+viewer_data.col+4], eax
+        call    viewer_clear_selection
         pop     eax
         push    eax
         mov     ebx, attrinfo
@@ -221,8 +234,7 @@ viewer_OnRedraw:
         call    viewer_draw_text
         ret
 
-viewer_get_next_char:
-        pusha
+viewer_skip_unicode_marker:
         cmp     [ebp+viewer_data.encoding], encodings.unicode
         jnz     @f
         cmp     [bForHex], 0
@@ -241,15 +253,9 @@ viewer_get_next_char:
 .skip:
         add     [ebp+viewer_data.buf_pos], 2
 @@:
-        mov     eax, [ebp+viewer_data.buf_pos]
-        lea     ecx, [ebp+viewer_data.buf]
-        add     ecx, [ebp+viewer_data.buf_size]
-        cmp     eax, ecx
-        jb      .buffered
-        mov     al, ' '
-        sub     ecx, ebp
-        cmp     ecx, viewer_data.buf + 16384
-        jb      .err
+        ret
+
+viewer_load_next:
         mov     eax, dword [ebp+viewer_data.buf_start]
         add     eax, 8192
         mov     dword [ebp+viewer_data.buf_start], eax
@@ -300,7 +306,22 @@ viewer_get_next_char:
         add     ebx, 16384-8192
         mov     [ebp+viewer_data.buf_size], ebx
         mov     eax, [ebp+viewer_data.buf_pos]
-        cmp     ecx, 16384-8192
+        cmp     ebx, 16384-8192
+        ret
+
+viewer_get_next_char:
+        pusha
+        call    viewer_skip_unicode_marker
+        mov     eax, [ebp+viewer_data.buf_pos]
+        lea     ecx, [ebp+viewer_data.buf]
+        add     ecx, [ebp+viewer_data.buf_size]
+        cmp     eax, ecx
+        jb      .buffered
+        mov     al, ' '
+        sub     ecx, ebp
+        cmp     ecx, viewer_data.buf + 16384
+        jb      .err
+        call    viewer_load_next
         jnz     .buffered
 .err:
         stc
@@ -406,6 +427,13 @@ uni2ansi_char:
 .rus2:
 ; 0x440-0x44F -> 0xE0-0xEF
         add     al, 0xA0
+        ret
+
+viewer_clear_selection:
+        and     dword [ebp+viewer_data.selected_start], 0
+        and     dword [ebp+viewer_data.selected_start+4], 0
+        and     dword [ebp+viewer_data.selected_len], 0
+        and     dword [ebp+viewer_data.selected_len+4], 0
         ret
 
 fld_uint64:
@@ -698,6 +726,7 @@ end if
         div     ecx
         pop     eax
         sub     ecx, edx
+        pop     edx
         add     eax, ecx
         test    [ebp+viewer_data.flags], 2
         jnz     @f
@@ -713,7 +742,6 @@ end if
         call    .write_char
         loop    @b
         pop     ecx
-        pop     edx
         jmp     .1
 .done:
         setc    [ebp+viewer_data.bEofReached]
@@ -971,6 +999,24 @@ end if
 .do:
         mov     al, [esp]
         mov     ah, [view_normal_color]
+        push    edx
+        mov     ecx, [ebp+viewer_data.buf_pos]
+        sub     ecx, ebp
+        sub     ecx, viewer_data.buf + 1
+        xor     edx, edx
+        add     ecx, dword [ebp+viewer_data.buf_start]
+        adc     edx, dword [ebp+viewer_data.buf_start+4]
+        sub     ecx, dword [ebp+viewer_data.selected_start]
+        sbb     edx, dword [ebp+viewer_data.selected_start+4]
+        cmp     edx, dword [ebp+viewer_data.selected_len+4]
+        ja      .color_ok
+        jb      @f
+        cmp     ecx, dword [ebp+viewer_data.selected_len]
+        jae     .color_ok
+@@:
+        mov     ah, [view_selected_color]
+.color_ok:
+        pop     edx
         stosw
 .skip:
         pop     eax ecx
@@ -1585,6 +1631,179 @@ viewer_OnKey:
         adc     dword [ebp+viewer_data.cur_pos+4], 0
         and     dword [ebp+viewer_data.cur_pos], not 1
         jmp     .done_redraw_keybar
+.f7:
+        call    viewer_clear_selection
+        call    find_in_file_dlg
+        jz      .shift_f7
+.ret2:
+        ret
+.shift_f7:
+; search string SearchString in file starting from current position
+        cmp     byte [SearchString], 0
+        jz      .ret2
+        mov     eax, dword [ebp+viewer_data.selected_start]
+        mov     edx, dword [ebp+viewer_data.selected_start+4]
+        inc     eax
+        jnz     @f
+        inc     edx
+@@:
+        cmp     dword [ebp+viewer_data.selected_len], 0
+        jnz     @f
+        cmp     dword [ebp+viewer_data.selected_len+4], 0
+        jnz     @f
+        mov     eax, dword [ebp+viewer_data.cur_pos]
+        mov     edx, dword [ebp+viewer_data.cur_pos+4]
+@@:
+        call    viewer_clear_selection
+        call    viewer_seek
+        call    viewer_skip_unicode_marker
+        mov     esi, tolower_table
+        test    [find_in_file_dlgdata.flags_case], 10h
+        jz      @f
+        mov     esi, identical_table
+@@:
+        mov     ebx, SearchString
+ 	test	[find_in_file_dlgdata.flags_whole], 10h
+	setnz	al
+	push	eax
+        push    dword [ebp+viewer_data.encoding]
+        call    search_string_pre
+        mov     esi, [ebp+viewer_data.buf_pos]
+        lea     ebx, [ebp+viewer_data.buf]
+        add     ebx, [ebp+viewer_data.buf_size]
+        mov     edi, edx
+        cmp     esi, ebx
+        jb      @f
+        sub     ebx, ebp
+        cmp     ebx, viewer_data.buf + 16384
+        jnz     .f7.notfound
+        pusha
+        call    viewer_load_next
+        popa
+        jz      .f7.notfound
+        mov     esi, [ebp+viewer_data.buf_pos]
+        lea     ebx, [ebp+viewer_data.buf]
+        add     ebx, [ebp+viewer_data.buf_size]
+@@:
+        test    [find_in_file_dlgdata.flags_whole], 10h
+        jz      .search_loop
+        cmp     dword [ebp+viewer_data.buf_start], 0
+        jnz     @f
+        cmp     dword [ebp+viewer_data.buf_start+4], 0
+        jnz     @f
+        lea     eax, [ebp+viewer_data.buf]
+        cmp     [ebp+viewer_data.buf_pos], eax
+        jz      .f7.startspace
+@@:
+        xor     eax, eax
+        call    viewer_get_prev_char
+        inc     esi
+        cmp     [isspace_table+eax], 0
+        jz      .search_loop
+.f7.startspace:
+        add     edi, 256
+.search_loop:
+; edx -> FSM, ecx = last state, edi = current state,
+; esi = buf_pos, ebx = end of buffer
+; get current symbol
+        movzx   eax, byte [esi]
+; calculate next state
+        movzx   edi, byte [edi+eax]
+; done?
+        cmp     edi, ecx
+        jz      .f7.found
+.search_loop_next:
+; no; proceed to next symbol
+        shl     edi, 8
+        add     esi, 1
+        add     edi, edx
+        cmp     esi, ebx
+        jb      .search_loop
+        sub     ebx, ebp
+        cmp     ebx, viewer_data.buf + 16384
+        jnz     .f7.notfound
+        mov     [ebp+viewer_data.buf_pos], esi
+        pusha
+        call    viewer_load_next
+        popa
+        jz      .f7.notfoundt
+        mov     esi, [ebp+viewer_data.buf_pos]
+        lea     ebx, [ebp+viewer_data.buf]
+        add     ebx, [ebp+viewer_data.buf_size]
+        jmp     .search_loop
+.f7.notfoundt:
+; last chance - if we are looking for a whole word, EOF is ok for last symbol
+        test    [find_in_file_dlgdata.flags_whole], 10h
+        jz      .f7.notfound
+        movzx   edi, byte [edi+' ']
+        inc     esi
+        cmp     edi, ecx
+        jz      .f7.found
+.f7.notfound:
+        call    search_failed
+        jmp     .done_redraw
+.f7.found:
+        push    ecx
+        mov     ecx, edx
+        call    pgfree
+        mov     [ebp+viewer_data.buf_pos], esi
+        call    viewer_set_curpos
+        pop     ecx
+        mov     dword [ebp+viewer_data.selected_len], ecx
+        and     dword [ebp+viewer_data.selected_len+4], 0
+        dec     ecx
+        sub     eax, ecx
+        sbb     edx, 0
+        mov     dword [ebp+viewer_data.selected_start], eax
+        mov     dword [ebp+viewer_data.selected_start+4], edx
+        inc     eax
+        jnz     @f
+        inc     edx
+@@:
+        test    [find_in_file_dlgdata.flags_whole], 10h
+        jz      @f
+        sub     dword [ebp+viewer_data.selected_len], 2
+        sbb     dword [ebp+viewer_data.selected_len+4], 0
+        mov     dword [ebp+viewer_data.selected_start], eax
+        mov     dword [ebp+viewer_data.selected_start+4], edx
+        inc     eax
+        jnz     @f
+        inc     edx
+@@:
+        mov     dword [ebp+viewer_data.cur_pos], eax
+        mov     dword [ebp+viewer_data.cur_pos+4], edx
+        call    viewer_seek
+        call    viewer_prev_newline
+        jmp     .done_redraw
+
+search_failed:
+	mov	ecx, edx
+	call	pgfree
+	mov	eax, SearchString-1
+	push	dword [eax-3]
+	push	eax
+	mov	byte [eax], '"'
+@@:
+	inc	eax
+	cmp	byte [eax], 0
+	jnz	@b
+	mov	word [eax], '"'
+	xchg	eax, [esp]
+	push	eax
+	push	aStringNotFound
+	mov	eax, esp
+	push	ContinueBtn
+	push	1
+	push	eax
+	push	2
+	push	aSearch
+	call	SayErrTitle
+	pop	eax
+	pop	eax
+	pop	ecx
+	mov	byte [ecx], 0
+	pop	dword [eax-3]
+	ret
 
 viewer_getname:
 if lang eq ru

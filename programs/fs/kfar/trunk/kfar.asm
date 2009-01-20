@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.5'
-version_dword equ 0*10000h + 50
+version equ '0.6'
+version_dword equ 0*10000h + 60
 
 min_width = 54
 max_width = 255
@@ -20,6 +20,7 @@ include 'font.inc'
 include 'sort.inc'
 include 'kglobals.inc'
 include 'dialogs.inc'
+include 'search.inc'
 include 'viewer.inc'
 include 'editor.inc'
 include 'tools.inc'
@@ -29,10 +30,14 @@ cursor_normal_size = (font_height*15+50)/100
 cursor_big_size = font_height
 
 start:
-        mov     edi, tolower_table
-        push    'A'
-        pop     ecx
+        mov     edi, identical_table
+        mov     ecx, 0x100
         xor     eax, eax
+@@:
+        stosb
+        inc     eax
+        loop    @b
+        mov     cl, 'A'
 @@:
         stosb
         inc     eax
@@ -68,6 +73,41 @@ start:
         inc     eax
         loop    @b
         mov     byte [edi-256+'Ё'], 'ё'
+        mov     cl, 'A'
+        inc     eax
+        rep     stosb
+        mov     cl, 'Z'-'A'+1
+        dec     eax
+        rep     stosb
+        mov     cl, 'a'-'Z'-1
+        inc     eax
+        rep     stosb
+        mov     byte [edi-'a'+'_'], 0
+        mov     cl, 'z'-'a'+1
+        dec     eax
+        rep     stosb
+        mov     cl, 'А'-'z'-1
+        inc     eax
+        rep     stosb
+        mov     cl, 'п'-'А'+1
+        dec     eax
+        rep     stosb
+        mov     cl, 'р'-'п'-1
+        inc     eax
+        rep     stosb
+        mov     cl, 'ё'-'р'+1
+        dec     eax
+        rep     stosb
+        mov     cl, 256-'ё'-1
+        inc     eax
+        rep     stosb
+        mov     edi, SearchStringEditBuf
+        mov     eax, SearchStringEditBuf.length
+        stosd
+        xor     eax, eax
+        stosd
+        stosd
+        stosb
         push    68
         pop     eax
         push    11
@@ -116,6 +156,7 @@ start:
         mov     ecx, panels_vtable
         mov     [eax], ecx
         mov     [active_screen_vtable], ecx
+        mov     [active_screen_keybar], keybar_panels
 ; load libini.obj and kfar.ini
         mov     eax, libini_name
         mov     esi, ini_import
@@ -294,12 +335,13 @@ start:
         add     ebx, 3
         and     ebx, not 3
         mov     [EditPlugInfo], ebx
-        add     ebx, editor_line.plugdata
-        imul    ebx, max_height
-        add     ebx, editor_data.basesize + 0xFFF
-        shr     ebx, 12
-        mov     [EditDataSize], ebx
 .noini:
+        mov     eax, [EditPlugInfo]
+        add     eax, editor_line.plugdata
+        imul    eax, max_height
+        add     eax, editor_data.basesize + 0xFFF
+        shr     eax, 12
+        mov     [EditDataSize], eax
         mov     esi, def_left_dir
         mov     edi, panel1_dir
 @@:
@@ -327,9 +369,7 @@ start:
         call    read_folder
         call    draw_panel
 event:
-        push    10
-        pop     eax
-        int     40h
+        call    get_event
         dec     eax
         jz      redraw
         dec     eax
@@ -418,6 +458,33 @@ if CHECK_FOR_LEAKS
 end if
         or      eax, -1
         int     40h
+
+get_event:
+        push    ebx
+        mov     ebx, [idle_interval]
+        cmp     ebx, -1
+        jz      .infinite
+        push    23
+        pop     eax
+        int     40h
+        pop     ebx
+        test    eax, eax
+        jnz     .ret
+        mov     ebp, [active_screen_data]
+        mov     eax, [active_screen_vtable]
+        mov     eax, [eax+screen_vtable.OnIdle]
+        test    eax, eax
+        jz      get_event
+        call    eax
+        jmp     get_event
+.infinite:
+        pop     ebx
+        push    10
+        pop     eax
+        int     40h
+.ret:
+        ret
+
 redraw:
 ; query kbd state from OS
         mov     al, 66
@@ -1034,6 +1101,12 @@ new_screen:
         mov     [active_screen], eax
         mov     [active_screen_vtable], edx
         mov     [active_screen_data], ebp
+        or      [idle_interval], -1
+        mov     edx, [edx+screen_vtable.keybar]
+        test    edx, edx
+        jz      @f
+        mov     [active_screen_keybar], edx
+@@:
         jmp     draw_keybar
 
 next_screen:
@@ -1068,16 +1141,29 @@ delete_active_screen:
 .norealloc:
         pop     ecx
         call    pgfree
-        and     [active_screen], 0
+        dec     [active_screen]
 
 change_screen:
         pusha
+        or      [idle_interval], -1
         mov     eax, [active_screen]
         mov     esi, [screens]
         mov     ebp, [esi+eax*8+4]
         mov     eax, [esi+eax*8]
+        push    eax ebp
+        mov     eax, [eax+screen_vtable.OnActivate]
+        test    eax, eax
+        jz      @f
+        call    eax
+@@:
+        pop     ebp eax
         mov     [active_screen_vtable], eax
         mov     [active_screen_data], ebp
+        mov     edx, [eax+screen_vtable.keybar]
+        test    edx, edx
+        jz      @f
+        mov     [active_screen_keybar], edx
+@@:
         call    draw_keybar
         mov     [cursor_size], cursor_normal_size
         call    [eax+screen_vtable.OnRedraw]
@@ -2557,6 +2643,12 @@ end if
         jmp     .copydone
 
 .f3:
+        mov     eax, [ebp + panel1_files - panel1_data]
+        mov     ecx, [eax+ecx*4]
+        test    byte [ecx], 10h
+        jnz     .ret2
+        lea     esi, [ebp + panel1_dir - panel1_data]
+        xor     eax, eax
         call    view_file
 .ret2:
         ret
@@ -2694,6 +2786,7 @@ end if
         stosb
         test    al, al
         jnz     @b
+.ctrl_r.doread:
         push    [ebp + panel1_start - panel1_data]
         call    read_folder
         pop     [ebp + panel1_start - panel1_data]
@@ -3855,8 +3948,7 @@ draw_keybar:
         or      al, 4
 @@:
         imul    eax, 6*12
-        mov     esi, [active_screen_vtable]
-        mov     esi, [esi+screen_vtable.keybar]
+        mov     esi, [active_screen_keybar]
         add     esi, eax
         xor     ecx, ecx
         inc     ecx
@@ -7005,6 +7097,8 @@ cursor_size     dd      cursor_normal_size
 cur_cursor_pos  dd      -1
 old_cursor_pos  dd      -1
 
+idle_interval   dd      -1
+
 active_panel    dd      panel1_data
 
 associations    dd      0
@@ -7041,6 +7135,8 @@ ctrlkey_tests_num = 5
 virtual at 0
 screen_vtable:
         .OnRedraw       dd      ?
+        .OnActivate     dd      ?
+        .OnIdle         dd      ?
         .OnKey          dd      ?
         .keybar         dd      ?
         .getname        dd      ?
@@ -7050,6 +7146,8 @@ end virtual
 
 panels_vtable:
         dd      panels_OnRedraw
+        dd      0
+        dd      0
         dd      panels_OnKey
         dd      keybar_panels
         dd      panels_getname
@@ -7058,6 +7156,8 @@ panels_vtable:
 
 viewer_vtable:
         dd      viewer_OnRedraw
+        dd      0
+        dd      0
         dd      viewer_OnKey
         dd      keybar_viewer
         dd      viewer_getname
@@ -7066,11 +7166,23 @@ viewer_vtable:
 
 editor_vtable:
         dd      editor_OnRedraw
+        dd      0
+        dd      0
         dd      editor_OnKey
         dd      keybar_editor
         dd      editor_getname
         dd      editor_OnExit
         dd      editor_IsHandleUsed
+
+filesearch_vtable:
+        dd      filesearch_OnRedraw
+        dd      filesearch_OnActivate
+        dd      filesearch_OnIdle
+        dd      filesearch_OnKey
+        dd      0
+        dd      filesearch_getname
+        dd      filesearch_OnExit
+        dd      filesearch_IsHandleUsed
 
 ; additions to this table require changes in tools.inc::get_error_msg
 errors1:
@@ -7222,6 +7334,8 @@ panels_ctrlkeys:
         dd      panels_OnKey.shift_f5
         dw      0x41, 0
         dd      panels_OnKey.f7
+        dw      0x41, 0x100
+        dd      panels_OnKey.alt_f7
         dw      0x42, 0
         dd      panels_OnKey.f8
         dw      0x43, 0x100
@@ -7295,6 +7409,10 @@ viewer_ctrlkeys:
         dd      viewer_OnKey.exit
         dw      0x3E, 0
         dd      viewer_OnKey.f4
+        dw      0x41, 0
+        dd      viewer_OnKey.f7
+        dw      0x41, 1
+        dd      viewer_OnKey.shift_f7
         dw      0x42, 0
         dd      viewer_OnKey.f8
         dw      0x42, 1
@@ -7318,6 +7436,10 @@ editor_ctrlkeys:
         dd      editor_OnKey.backspace
         dw      0x3C, 0
         dd      editor_OnKey.f2
+        dw      0x41, 0
+        dd      editor_OnKey.f7
+        dw      0x41, 1
+        dd      editor_OnKey.shift_f7
         dw      0x43, 0x100
         dd      alt_f9
         dw      0x44, 0
@@ -7429,6 +7551,9 @@ dialog_edit_color       db      30h
 dialog_unmodified_edit_color db 38h
 dialog_normal_btn_color db      70h
 dialog_selected_btn_color db    30h
+dialog_list_color       db      70h
+dialog_selected_list_color db   0Fh
+dialog_scroll_list_color db     70h
 ; Предупреждения и ошибки
 warning_colors:
 ; !!! должны быть те же поля и в том же порядке, что и для обычных диалогов !!!
@@ -7439,6 +7564,9 @@ warning_edit_color      db      30h
 warning_unmodified_edit_color db 38h
 warning_normal_btn_color db     4Fh
 warning_selected_btn_color db   70h
+warning_list_color      db      3Fh
+warning_selected_list_color db  70h
+warning_scroll_list_color db    3Fh
 ; Меню
 menu_normal_color       db      3Fh
 menu_selected_color     db      0Fh
@@ -7456,6 +7584,7 @@ cmdbar_normal_color     db      7
 cmdbar_prefix_color     db      7
 ; Просмотрщик
 view_normal_color       db      1Bh
+view_selected_color     db      30h
 view_status_color       db      30h
 view_arrows_color       db      1Eh
 ; Редактор
@@ -7694,6 +7823,237 @@ QuickSearchDlg:
         dd      quick_search_buf
         dd      1Ch
 
+; диалог поиска в файле для просмотрщика и редактора
+find_in_file_dlgdata:
+        dd      1
+.x      dd      -1
+.y      dd      -1
+.width  dd      ?
+.height dd      7
+        dd      4, 2
+        dd      aSearch
+        dd      ?, ?
+        dd      0, 0
+        dd      8
+; Строка "Искать"
+        dd      1
+        dd      1,0,aSearchForLen,0
+        dd      aSearchFor
+        dd      0
+; поле редактирования с текстом для поиска
+        dd      3
+        dd      1,1
+.width2 dd      ?
+        dd      1
+        dd      SearchStringEditBuf
+.flags0 dd      0xC
+; горизонтальный разделитель
+        dd      4
+        dd      -1,2
+        dd      -1,2
+        dd      0
+        dd      0
+; флажок "Учитывать регистр"
+        dd      5
+        dd      1,3
+        dd      -1,3
+        dd      aCaseSensitive
+.flags_case dd  18h     ; default: search is case sensitive
+; флажок "Только целые слова"
+        dd      5
+        dd      1,4
+        dd      -1,4
+        dd      aWholeWords
+.flags_whole dd 8       ; default: do NOT search whole words only
+; горизонтальный разделитель
+        dd      4
+        dd      -1,5
+        dd      -1,5
+        dd      0
+        dd      0
+; кнопка "Искать"
+.search_btn:
+        dd      2
+.search_x1 dd   ?
+        dd      6
+.search_x2 dd   ?
+        dd      6
+        dd      aSearchB
+.flags1 dd      18h
+; кнопка "отменить"
+        dd      2
+.cnl_x1 dd      ?
+        dd      6
+.cnl_x2 dd      ?
+        dd      6
+        dd      aCancelB
+.flags2 dd      8
+
+; первый диалог поиска в файлах (запрос)
+filesearch_query_template:
+        dd      1
+.x      dd      ?
+.y      dd      ?
+.width  dd      ?
+.height dd      9
+        dd      4, 2
+        dd      aFileSearch
+        dd      ?
+        dd      0
+        dd      0, 0
+        dd      10
+; строка-приглашение для ввода маски
+        dd      1
+        dd      1,0,aFileMasksLen,0
+        dd      aFileMasks
+        dd      0
+; поле ввода для маски
+        dd      3
+        dd      1, 1
+.width2 dd      ?
+        dd      1
+.editptr1 dd    ?
+        dd      0xC
+; строка-приглашение для текста поиска
+        dd      1
+        dd      1,2,aContainingTextLen,2
+        dd      aContainingText
+        dd      0
+; поле ввода для текста поиска
+        dd      3
+        dd      1, 3
+.width3 dd      ?
+        dd      3
+.editptr2 dd    ?
+        dd      8
+; горизонтальный разделитель
+        dd      4
+        dd      -1,4
+        dd      -1,4
+        dd      0
+        dd      0
+; флажок "Учитывать регистр"
+        dd      5
+        dd      1,5
+        dd      -1,5
+        dd      aCaseSensitive
+.flags_case dd  ?       ; will be initialized from find_in_file_dlgdata
+; флажок "Только целые слова"
+        dd      5
+        dd      1,6
+        dd      -1,6
+        dd      aWholeWords
+.flags_whole dd ?       ; will be initialized from find_in_file_dlgdata
+; горизонтальный разделитель
+        dd      4
+        dd      -1,7
+        dd      -1,7
+        dd      0
+        dd      0
+; кнопка "Искать"
+.search_btn:
+        dd      2
+.search_x1 dd   ?
+        dd      8
+.search_x2 dd   ?
+        dd      8
+        dd      aSearchB
+        dd      18h
+; кнопка "отменить"
+        dd      2
+.cnl_x1 dd      ?
+        dd      8
+.cnl_x2 dd      ?
+        dd      8
+        dd      aCancelB
+        dd      8
+.size = $ - filesearch_query_template
+
+; второй диалог поиска в файлах (сканирование)
+filesearch_search_template:
+        dd      1
+.x      dd      ?
+.y      dd      ?
+.width  dd      ?
+.height dd      ?
+        dd      4, 2
+.caption dd     ?
+        dd      ?
+        dd      0
+        dd      0, 0
+        dd      9
+; список найденных файлов
+        dd      6
+        dd      0, 0
+.width1 dd      ?
+.height1 dd     ?
+.data1  dd      ?
+        dd      0
+; горизонтальный разделитель
+        dd      4
+        dd      -1
+.y2     dd      ?
+        dd      -1
+        dd      ?
+        dd      0, 0
+; строка "Поиск <string> в:" либо "Поиск закончен..."
+        dd      1
+        dd      1
+.y3     dd      ?
+.width3 dd      ?
+        dd      ?
+.data3  dd      ?
+        dd      0
+; строка с текущей папкой
+        dd      1
+.x4     dd      ?
+.y4     dd      ?
+.width4 dd      ?
+        dd      ?
+.data4  dd      ?
+        dd      0
+; горизонтальный разделитель
+        dd      4
+        dd      -1
+.y5     dd      ?
+        dd      -1
+        dd      ?
+        dd      0, 0
+; кнопки
+.btn1:
+        dd      2
+.btn1x1 dd      ?
+.btn1y  dd      ?
+.btn1x2 dd      ?
+        dd      ?
+        dd      aNewSearch
+        dd      8
+.btn2:
+        dd      2
+.btn2x1 dd      ?
+.btn2y  dd      ?
+.btn2x2 dd      ?
+        dd      ?
+        dd      aGoto
+        dd      1Ch
+.btn3:
+        dd      2
+.btn3x1 dd      ?
+.btn3y  dd      ?
+.btn3x2 dd      ?
+        dd      ?
+        dd      aView
+        dd      8
+.btn4:
+        dd      2
+.btn4x1 dd      ?
+.btn4y  dd      ?
+.btn4x2 dd      ?
+        dd      ?
+        dd      aCancelB2
+        dd      8
+.size = $ - filesearch_search_template
+
 RetryOrCancelBtn:
         dd      aRetry
         dd      a_Cancel
@@ -7708,18 +8068,23 @@ DeleteOrCancelBtn:
         dd      a_Cancel
 DeleteErrorBtn:
         dd      aRetry
+SkipOrCancelBtn:
         dd      aSkip
         dd      aSkipAll
         dd      a_Cancel
 ContinueBtn:
         dd      aContinue
-
 EditorExitBtn:
         dd      aSave
         dd      aDontSave
         dd      aContinueEdit
+YesOrNoBtn:
+        dd      aYes
+        dd      aNo
 
 aCannotOpenFile_ptr     dd      aCannotOpenFile
+aCannotCreateThread_ptr dd      aCannotCreateThread
+ConfirmCancelMsg        dd      aConfirmCancel
 EditConfigErr_ptr:
         dd      aEditConfigErr1
         dd      aEditConfigErr2
@@ -7731,6 +8096,8 @@ aConfirmDeleteTextMax = $ - aConfirmDeleteText - 2
 aDeleteFile             db      ' файл',0
 aCancelB                db      '[ Отменить ]',0
 aCancelBLength = $ - aCancelB - 1
+aCancelB2               db      '[ Отмена ]',0
+aCancelB2Length = $ - aCancelB2 - 1
 aCopyCaption            db      'Копирование',0
 aCopy                   db      '[ Копировать ]',0
 aCopyLength = $ - aCopy - 1
@@ -7745,6 +8112,8 @@ a_Cancel                db      'Отменить',0
 a_Delete                db      'Удалить',0
 aSkip                   db      'Пропустить',0
 aSkipAll                db      'Пропустить все',0
+aYes                    db      'Да',0
+aNo                     db      'Нет',0
 error0msg               db      'Странно... Нет ошибки',0
 error1msg               db      'Странно... Не определена база и/или раздел жёсткого диска',0
 error2msg               db      'Функция не поддерживается для данной файловой системы',0
@@ -7793,8 +8162,32 @@ aTables                 db      'Таблицы',0
 aSelect                 db      'Пометить',0
 aDeselect               db      'Снять',0
 aCannotOpenFile         db      'Ошибка при открытии файла',0
+aCannotCreateThread     db      'Ошибка при создании потока',0
 aCannotSetFolder        db      'Не могу зайти в папку',0
 aSearch                 db      'Поиск',0
+aSearchB                db      '[ Искать ]',0
+aSearchBLength = $ - aSearchB - 1
+aSearchFor              db      'Искать',0
+aSearchForLen = $ - aSearchFor - 1
+aCaseSensitive          db      'Учитывать регистр',0
+aWholeWords             db      'Только целые слова',0
+aReverseSearch          db      'Обратный поиск',0
+aStringNotFound         db      'Строка не найдена',0
+aFileSearch             db      'Поиск файла',0
+aFileMasks              db      'Одна или несколько масок файлов:',0
+aFileMasksLen = $ - aFileMasks - 1
+aContainingText         db      'Содержащих текст:',0
+aContainingTextLen = $ - aContainingText - 1
+aSearchingIn            db      'Поиск "" в:',0
+aSearchingInLen = $ - aSearchingIn - 1
+aSearchDone             db      'Поиск закончен. Найдено ? файл(ов)',0
+aSearchDoneLen = $ - aSearchDone - 1
+aNewSearch              db      '[ Новый поиск ]',0
+aNewSearchLen = $ - aNewSearch - 1
+aGoto                   db      '[ Перейти ]',0
+aGotoLen = $ - aGoto - 1
+aView                   db      '[ Смотреть ]',0
+aViewLen = $ - aView - 1
 aEditConfigErr1         db      'Ошибка в конфигурации плагинов для редактора.',0
 aEditConfigErr2         db      'Попробуйте убрать лишние плагины.',0
 aEditNoMemory           db      'Файл слишком велик для загрузки в редактор.',0
@@ -7806,6 +8199,9 @@ aSave                   db      'Сохранить',0
 aDontSave               db      'Не сохранять',0
 aContinueEdit           db      'Продолжить редактирование',0
 aCannotSaveToPlugin     db      'Сохранение файлов на панелях плагинов не поддерживается',0
+aCannotSearchOnPlugin   db      'Поиск на панелях плагинов не поддерживается',0
+aCancelled              db      'Действие было прервано',0
+aConfirmCancel          db      'Вы действительно хотите отменить действие?',0
 else
 aDeleteCaption          db      'Delete',0
 aConfirmDeleteText      db      'Do you wish to delete',0
@@ -7832,6 +8228,8 @@ a_Cancel                db      'Cancel',0
 a_Delete                db      'Delete',0
 aSkip                   db      'Skip',0
 aSkipAll                db      'Skip all',0
+aYes                    db      'Yes',0
+aNo                     db      'No',0
 error0msg               db      'Strange... No error',0
 error1msg               db      'Strange... Hard disk base and/or partition not defined',0
 error2msg               db      'The file system does not support this function',0
@@ -7880,8 +8278,30 @@ aTables                 db      'Tables',0
 aSelect                 db      'Select',0
 aDeselect               db      'Deselect',0
 aCannotOpenFile         db      'Cannot open the file',0
-aCannotSetFolder        db      'Cannot enter to folder',0
+aCannotCreateThread     db      'Cannot create a thread',0
+aCannotSetFolder        db      'Cannot enter to the folder',0
 aSearch                 db      'Search',0
+aSearchB                db      '[ Search ]',0
+aSearchBLength = $ - aSearchB - 1
+aSearchFor              db      'Search for',0
+aSearchForLen = $ - aSearch - 1
+aCaseSensitive          db      'Case sensitive',0
+aWholeWords             db      'Whole words',0
+aReverseSearch          db      'Reverse search',0
+aStringNotFound         db      'Could not find the string',0
+aFileSearch             db      'Find file',0
+aFileMasks              db      'A file mask or several file masks:',0
+aContainingText         db      'Containing text:',0
+aSearchingIn            db      'Searching "" in:',0
+aSearchingInLen = $ - aSearchingIn - 1
+aSearchDone             db      'Search done. Found ? file(s)',0
+aSearchDoneLen = $ - aSearchDone - 1
+aNewSearch              db      '[ New search ]',0
+aNewSearchLen = $ - aNewSearch - 1
+aGoto                   db      '[ Go to ]',0
+aGotoLen = $ - aGoto - 1
+aView                   db      '[ View ]',0
+aViewLen = $ - aView - 1
 aEditConfigErr1         db      'Error in configuration of plugins for the editor.',0
 aEditConfigErr2         db      'Try to remove unnecessary plugins.',0
 aLine                   db      '    Line'
@@ -7892,6 +8312,8 @@ aSave                   db      'Save',0
 aDontSave               db      'Do not save',0
 aContinueEdit           db      'Continue editing',0
 aCannotSaveToPlugin     db      'Saving is not supported for plugin panels',0
+aCancelled              db      'Operation has been interrupted',0
+aConfirmCancel          db      'Do you really want to cancel it?',0
 end if
 
 aOk                     db      'OK',0
@@ -8263,6 +8685,7 @@ screens         dd      ?
 num_screens     dd      ?
 active_screen_vtable dd ?
 active_screen_data dd   ?
+active_screen_keybar dd ?
 
 default_attr    dd      ?
 left_dotdot_entry       rb      40+4    ; 40 bytes for attributes + '..'
@@ -8273,12 +8696,20 @@ CopySourceTextBuf       rb      512
 CopyDestEditBuf         rb      12+512+1
 .length = $ - CopyDestEditBuf - 13
 
+SearchStringEditBuf     rb      12
+SearchString            rb      253+1
+SearchStringEditBuf.length = $ - SearchString - 1
+                        db      ?       ; used for output (string -> "string")
+
 enter_string_buf        rb      12+512+1
 
 bMemForImageValidData   db      ?
 
 align 4
+identical_table rb      256
 tolower_table   rb      256
+isspace_table   rb      256
+composite_table rb      256
 layout          rb      128
 
 copy_buffer_size = 65536
