@@ -573,16 +573,18 @@ draw_register:
 	mov	eax, esi
 	mov	esi, ecx
 ; color
-	mov	ecx, 808080h
+	mov	ecx, 40808080h
 	cmp	[debuggee_pid], 0
 	jz	.cd
 	cmp	[bSuspended], 0
 	jz	.cd
-	xor	ecx, ecx
+	mov	ecx, 40000000h
+	push	edi
 	mov	edi, [eax]
 	cmp	dword [eax+oldcontext-context], edi
+	pop	edi
 	jz	.cd
-	mov	ecx, 0x00AA00
+	mov	ecx, 0x4000AA00
 .cd:
 	push	4
 	pop	eax
@@ -609,32 +611,34 @@ draw_flag:
 .on:
 	and	byte [edx], not 20h
 .onoff:
-	mov	ecx, 808080h
+	mov	ecx, 40808080h
 	cmp	[debuggee_pid], 0
 	jz	.doit
 	cmp	[bSuspended], 0
 	jz	.doit
-	xor	ecx, ecx
+	mov	ecx, 40000000h
 	bt	[_eflags], edi
 	lahf
 	bt	dword [_eflags + oldcontext - context], edi
 	rcl	ah, 1
 	test	ah, 3
 	jp	.doit
-	mov	ecx, 0x00AA00
+	mov	ecx, 0x4000AA00
 .doit:
 	mov	ah, 0
+	mov	edi, 0xFFFFFF
 	mcall
 	ret
 
-redraw_registers:
+draw_registers:
 	push	13
 	pop	eax
 	mov	edx, 0xFFFFFF
 	mov	ebx, data_x_pos*10000h + data_x_size
 	mov	ecx, registers_y_pos*10000h + registers_y_size
 	mcall
-draw_registers:
+redraw_registers:
+	mov	edi, 0xFFFFFF
 	mov	esi, _eax
 	push	4
 	pop	ecx
@@ -684,25 +688,26 @@ draw_registers:
 	jnz	@b
 	ret
 
-redraw_dump:
+draw_dump:
 	push	13
 	pop	eax
 	mov	edx, 0xFFFFFF
 	mov	ebx, data_x_pos*10000h + data_x_size
 	mov	ecx, dump_y_pos*10000h + dump_y_size
 	mcall
-draw_dump:
+redraw_dump:
 ; addresses
 	mov	al, 47
 	mov	ebx, 80100h
 	mov	edx, data_x_pos*10000h + dump_y_pos
 	mov	ecx, [dumppos]
-	mov	esi, 808080h
+	mov	edi, 0xFFFFFF
+	mov	esi, 40808080h
 	cmp	[debuggee_pid], 0
 	jz	@f
 	cmp	[bSuspended], 0
 	jz	@f
-	xor	esi, esi
+	mov	esi, 40000000h
 @@:
 	mcall
 	add	ecx, 10h
@@ -710,44 +715,48 @@ draw_dump:
 	cmp	dl, dump_y_pos + dump_y_size
 	jb	@b
 ; hex dump of data
-	mov	ebx, 20101h
 	mov	ecx, dumpdata
 	push	ecx
-	xor	edi, edi
+	xor	ebx, ebx
 	mov	edx, (data_x_pos+12*6)*10000h + dump_y_pos
-	cmp	[dumpread], edi
+	cmp	[dumpread], ebx
 	jz	.hexdumpdone1
 .hexdumploop1:
+	push	ebx
+	mov	ebx, 20101h
 	mcall
+	pop	ebx
 	add	edx, 3*6*10000h
 	inc	ecx
-	inc	edi
-	test	edi, 15
+	inc	ebx
+	test	bl, 15
 	jz	.16
-	test	edi, 7
+	test	bl, 7
 	jnz	@f
 	add	edx, 2*6*10000h - 10 + 6*(3*10h+2)*10000h
 .16:
 	add	edx, 10 - 6*(3*10h+2)*10000h
 @@:
-	cmp	edi, [dumpread]
+	cmp	ebx, [dumpread]
 	jb	.hexdumploop1
 .hexdumpdone1:
 	mov	al, 4
 	mov	ecx, esi
-	mov	ebx, edx
+	xchg	ebx, edx
 	push	2
 	pop	esi
-	mov	edx, aQuests
 .hexdumploop2:
-	cmp	edi, dump_height*10h
+	cmp	edx, dump_height*10h
 	jae	.hexdumpdone2
+	push	edx
+	mov	edx, aQuests
 	mcall
+	pop	edx
 	add	ebx, 3*6*10000h
-	inc	edi
-	test	edi, 15
+	inc	edx
+	test	dl, 15
 	jz	.16x
-	test	edi, 7
+	test	dl, 7
 	jnz	.hexdumploop2
 	add	ebx, 2*6*10000h - 10 + 6*(3*10h+2)*10000h
 .16x:
@@ -772,8 +781,8 @@ draw_dump:
 	jb	@b
 ; ASCII data
 	mov	ebx, (data_x_pos+(12+3*10h+2+2)*6)*10000h + dump_y_pos
-	mov	edi, dump_height*10h
 	pop	edx
+	push	dump_height*10h
 .asciiloop:
 	push	edx
 	cmp	byte [edx], 20h
@@ -784,22 +793,23 @@ draw_dump:
 	pop	edx
 	inc	edx
 	add	ebx, 6*10000h
-	dec	edi
+	dec	dword [esp]
 	jz	.asciidone
-	test	edi, 15
+	test	byte [esp], 15
 	jnz	.asciiloop
 	add	ebx, 10 - 6*10h*10000h
 	jmp	.asciiloop
 .asciidone:
+	pop	ecx
 	ret
 
 redraw_disasm:
-	push	13
-	pop	eax
-	mov	edx, 0xFFFFFF
-	mov	ebx, data_x_pos*10000h + data_x_size
-	mov	ecx, (disasm_y_pos-1)*10000h + (disasm_y_size+1)
-	mcall
+;	push	13
+;	pop	eax
+;	mov	edx, 0xFFFFFF
+;	mov	ebx, data_x_pos*10000h + data_x_size
+;	mov	ecx, (disasm_y_pos-1)*10000h + (disasm_y_size+1)
+;	mcall
 draw_disasm:
 	mov	eax, [disasm_start_pos]
 	mov	[disasm_cur_pos], eax
@@ -817,11 +827,24 @@ draw_disasm:
 	jnz	@b
 	mov	byte [esi-1], ':'
 	sub	esi, edx
-	xor	ecx, ecx
+	mov	ecx, 40000000h
+	mov	edi, 0xFFFFFF
 	push	4
 	pop	eax
 	mcall
 	mov	byte [esi+edx-1], 0
+	lea	esi, [esi*3]
+	movzx	ecx, bx
+	shr	ebx, 16
+	lea	ebx, [ebx+esi*2]
+	shl	ecx, 16
+	mov	cl, 10
+	imul	ebx, 10001h
+	sub	bx, data_x_pos+data_x_size
+	neg	bx
+	mov	al, 13
+	mov	edx, edi
+	mcall
 	inc	[disasm_cur_str]
 	cmp	[disasm_cur_str], disasm_height
 	jae	.loopend
@@ -831,6 +854,7 @@ draw_disasm:
 	pop	ebp
 	jc	.loopend
 	xor	esi, esi	; default color: black
+	mov	edx, 0xFFFFFF	; default background: white
 	mov	ebx, data_x_pos*10000h + data_x_size
 	mov	ecx, [disasm_cur_str]
 	imul	ecx, 10*10000h
@@ -840,22 +864,18 @@ draw_disasm:
 	call	find_enabled_breakpoint
 	popad
 	jnz	.nored
-	push	13
-	pop	eax
-	mov	edx, 0xFF0000
-	mcall
+	mov	edx, 0xFF0000	; use background: red
 .nored:
 	mov	eax, [_eip]
 	cmp	eax, ebp
 	jnz	.noblue
-	push	13
-	pop	eax
-	mov	edx, 0x0000FF
-	mcall
+	mov	edx, 0x0000FF	; use background: blue
 	mov	esi, 0xFFFFFF	; on blue bgr, use white color
 .noblue:
-	push	47
+	push	13
 	pop	eax
+	mcall
+	mov	al, 47
 	mov	ebx, 80100h
 	mov	edx, [disasm_cur_str]
 	imul	edx, 10
@@ -865,7 +885,7 @@ draw_disasm:
 	mov	al, 4
 	lea	ebx, [edx+8*6*10000h]
 	mov	ecx, esi
-	push	1
+	push	2
 	pop	esi
 	mov	edx, aColon
 	mcall
@@ -873,12 +893,12 @@ draw_disasm:
 	pop	edi
 	lea	edx, [ebx+2*6*10000h]
 	mov	esi, ecx
-	mov	al, 47
-	mov	ebx, 20101h
 	mov	ecx, ebp
 	sub	ecx, [disasm_start_pos]
 	add	ecx, disasm_buffer
 .drawhex:
+	mov	al, 47
+	mov	ebx, 20101h
 	mcall
 	add	edx, 6*3*10000h
 	inc	ecx
@@ -919,6 +939,20 @@ draw_disasm:
 	cmp	[disasm_cur_str], disasm_height
 	jb	.loop
 .loopend:
+	mov	ecx, disasm_height
+	sub	ecx, [disasm_cur_str]
+	jz	@f
+	imul	ecx, 10
+	mov	eax, disasm_y_pos + disasm_y_size
+	sub	eax, ecx
+	shl	eax, 16
+	add	ecx, eax
+	push	13
+	pop	eax
+	mov	ebx, data_x_pos*65536 + data_x_size
+	mov	edx, 0xFFFFFF
+	mcall
+@@:
 	ret
 
 update_disasm_eip:
@@ -978,8 +1012,44 @@ draw_window:
 	xor	eax, eax
 	mov	ebx, wnd_x_size
 	mov	ecx, wnd_y_size
-	mov	edx, 14FFFFFFh
+	mov	edx, 54FFFFFFh
 	mov	edi, caption_str
+	mcall
+; clear unused areas
+	mov	al, 48
+	push	4
+	pop	ebx
+	mcall
+	cmp	eax, title_y_pos
+	jb	@f
+	push	registers_y_pos
+	pop	eax
+@@:
+	push	registers_y_pos
+	pop	ecx
+	push	eax
+	sub	ecx, eax
+	shl	eax, 16
+	add	ecx, eax
+	mov	ebx, 5*10000h + (wnd_x_size-9)
+	push	13
+	pop	eax
+	mcall
+	mov	ecx, (registers_y_pos+registers_y_size)*10000h + (dump_y_pos-registers_y_pos-registers_y_size)
+	mcall
+	mov	ecx, (dump_y_pos+dump_y_size)*10000h + (disasm_y_pos-dump_y_pos-dump_y_size)
+	mcall
+	mov	ecx, (disasm_y_pos+disasm_y_size)*10000h + (messages_y_pos-disasm_y_pos-disasm_y_size)
+	mcall
+	mov	ecx, (messages_y_pos+messages_y_size)*10000h + (wnd_y_size-messages_y_pos-messages_y_size-4)
+	mcall
+	mov	ebx, 5*10000h + (data_x_pos-5)
+	pop	ecx
+	imul	ecx, 10001h
+	sub	cx, wnd_y_size-4
+	neg	cx
+	mcall
+	mov	ebx, (data_x_pos+data_x_size)*10000h + (wnd_x_size-data_x_pos-data_x_size-4)
 	mcall
 ; messages frame
 	mov	al, 38
@@ -1025,10 +1095,10 @@ draw_window:
 	mcall
 	mov	ecx, (disasm_y_pos-4)*10001h
 	mcall
-	call	draw_title
+	call	redraw_title
 	call	draw_registers
 	call	draw_dump
-	call	draw_disasm
+	call	redraw_disasm
 ; end redraw
 	push	12
 	pop	eax
@@ -5609,7 +5679,7 @@ cgrp15:
 
 caption_str db 'Kolibri Debugger',0
 caption_len = $ - caption_str
-begin_str db	'Kolibri Debugger, version 0.31',10
+begin_str db	'Kolibri Debugger, version 0.32',10
 	db	'Hint: type "help" for help, "quit" for quit'
 newline	db	10,0
 prompt	db	'> ',0
@@ -5878,6 +5948,7 @@ aPaused		db	'Paused'
 aPoint		db	0x1C
 aMinus		db	'-'
 aColon		db	':'
+aSpace		db	' '
 aQuests		db	'??'
 aDots		db	'...'
 aParseError	db	'Parse error',10,0
