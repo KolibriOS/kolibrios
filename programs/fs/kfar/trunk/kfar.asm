@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.6'
-version_dword equ 0*10000h + 60
+version equ '0.61'
+version_dword equ 0*10000h + 61
 
 min_width = 54
 max_width = 255
@@ -160,8 +160,8 @@ start:
 ; load libini.obj and kfar.ini
         mov     eax, libini_name
         mov     esi, ini_import
-        push    3
-        pop     ebp     ; we use version 3 of libini
+        push    6
+        pop     ebp     ; we use version 6 of libini
         call    load_dll_and_import
         test    eax, eax
         jnz     .noini
@@ -401,7 +401,7 @@ exit:
         pop     esi ecx
         jmp     .unload
 .unload_done:
-if 0    ; commented due to bug in libini
+;if 0    ; commented due to bug in libini
         cmp     [ini.set_int], aIniSetInt
         jz      .nosave
         push    [panel1_colmode]
@@ -415,7 +415,7 @@ if 0    ; commented due to bug in libini
         push    app_path
         call    [ini.set_int]
 .nosave:
-end if
+;end if
 if CHECK_FOR_LEAKS
         mov     ecx, [panel1_files]
         call    pgfree
@@ -815,8 +815,8 @@ ctrlkey_test4:
         ret
 
 enum_associations_callback:
-; LongBool __stdcall callback(f_name,sec_name,key_name);
-; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name
+; LongBool __stdcall callback(f_name,sec_name,key_name,key_value);
+; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name, [esp+16] = key_value
         mov     esi, [esp+12]
         mov     edi, esi
 @@:
@@ -824,16 +824,7 @@ enum_associations_callback:
         test    al, al
         jnz     @b
         sub     esi, edi        ; esi = size of key name
-        push    nullstr
-        push    1024
-        push    saved_file_name
-        push    edi
-        push    dword [esp+16+8]
-        push    dword [esp+20+4]
-        call    [ini.get_str]
-        test    eax, eax
-        jnz     .ret
-        mov     eax, saved_file_name
+        mov     eax, [esp+16]
 @@:
         inc     esi
         inc     eax
@@ -870,7 +861,7 @@ enum_associations_callback:
         stosb
         test    al, al
         jnz     @b
-        mov     esi, saved_file_name
+        mov     esi, [esp+16]
 @@:
         lodsb
         stosb
@@ -878,37 +869,30 @@ enum_associations_callback:
         jnz     @b
 .ret:
         mov     al, 1
-        ret     12
+        ret     16
 .err:
         mov     ecx, edx
         call    pgfree
         xor     eax, eax
-        ret     12
+        ret     16
 
 enum_plugins_callback:
-; LongBool __stdcall callback(f_name,sec_name,key_name);
-; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name
-        push    nullstr
-        push    1024
-        push    saved_file_name
-        push    dword [esp+12+12]
-        push    dword [esp+16+8]
-        push    dword [esp+20+4]
-        call    [ini.get_str]
-        test    eax, eax
-        jnz     .ret
-        mov     esi, saved_file_name
+; LongBool __stdcall callback(f_name,sec_name,key_name,key_value);
+; [esp+4] = f_name, [esp+8] = sec_name, [esp+12] = key_name, [esp+16] = key_value
+        mov     esi, [esp+16]
         cmp     byte [esi], '/'
         jz      .absolute
 ; convert path to absolute
         mov     edi, execdata
-        push    esi
 @@:
+        cmp     edi, execdata+1024
+        jae     .overflow
         lodsb
         stosb
         test    al, al
         jnz     @b
-        pop     edi
+        mov     edi, saved_file_name
+        mov     [esp+16], edi
         mov     esi, app_path
         push    esi
         xor     ecx, ecx
@@ -923,6 +907,11 @@ enum_plugins_callback:
 @@:
         pop     esi
         sub     ecx, esi
+        push    edi
+        add     edi, ecx
+        cmp     edi, saved_file_name+1024
+        pop     edi
+        ja      .overflow
         rep     movsb
         mov     esi, execdata
 .z:
@@ -948,18 +937,20 @@ enum_plugins_callback:
         jnz     @b
         jmp     .z
 .c:
+        cmp     edi, saved_file_name+1024
+        jae     .overflow
         lodsb
         stosb
         test    al, al
-        jz      @f
-        cmp     edi, saved_file_name+1024
-        jb      .c
+        jnz     .c
+        jmp     .absolute
+.overflow:
         mov     esi, execdata
+        mov     byte [esi+1023], 0
         call    load_dll_and_import.big
 .ret:
         mov     al, 1
         ret     12
-@@:
 .absolute:
 ; allocate space for plugin info
         mov     eax, [num_plugins]
@@ -985,7 +976,7 @@ enum_plugins_callback:
         lea     esi, [esi+ecx-PluginInfo.size]
 ; load plugin DLL
         or      ebp, -1
-        mov     eax, saved_file_name
+        mov     eax, [esp+16]
         call    load_dll_and_import.do
         test    eax, eax
         jnz     .dec_ret
@@ -1004,7 +995,7 @@ MAX_INTERFACE_VER = 3
 @@:
         push    aIncompatibleVersion
 .cantload:
-        push    saved_file_name
+        push    dword [esp+4+16]
         push    aCannotLoadPlugin
         mov     eax, esp
         push    ContinueBtn
@@ -1041,7 +1032,7 @@ MAX_INTERFACE_VER = 3
         jmp     .cantload
 .ok:
         mov     al, 1
-        ret     12
+        ret     16
 
 plugin_unload_default:
         ret
@@ -6384,13 +6375,13 @@ match_single_mask_rev_lowercase:
         mov     al, [esi]
         cmp     al, '*'
         jz      .asterisk
-        cmp     al, '?'
-        jz      .quest
-        cmp     al, ']'
-        jz      .list
         dec     edi
         cmp     edi, edx
         jb      .done_fail
+        cmp     al, '?'
+        jz      .mask_symbol
+        cmp     al, ']'
+        jz      .list_check
         cmp     al, [edi]
         jz      .mask_symbol
 .done_fail:
@@ -6404,15 +6395,6 @@ match_single_mask_rev_lowercase:
         clc
         pop     eax edi esi
         ret
-.quest:
-        dec     edi
-        cmp     edi, edx
-        jb      .done_fail
-        jmp     .mask_symbol
-.list:
-        dec     edi
-        cmp     edi, edx
-        jb      .done_fail
 .list_check:
         dec     esi
         cmp     esi, ecx
@@ -6450,6 +6432,7 @@ match_single_mask_rev_lowercase:
         cmp     edi, edx
         jz      .done_fail
         dec     esi
+        dec     edi
         jmp     .asterisk
 @@:
         cmp     byte [esi-1], ']'
@@ -6458,14 +6441,12 @@ match_single_mask_rev_lowercase:
 .asterisk_normal:
         mov     al, [esi-1]
 @@:
+        dec     edi
         cmp     edi, edx
-        jz      .done_fail
+        jb      .done_fail
         cmp     al, [edi]
-        jz      @f
-        dec     edi
-        jmp     @b
+        jnz     @b
 @@:
-        dec     edi
         dec     esi
         call    match_single_mask_rev_lowercase
         jnc     .done_succ
