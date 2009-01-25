@@ -1,19 +1,19 @@
 ;;================================================================================================;;
-;;//// libimg.asm //// (c) mike.dld, 2007-2008 ///////////////////////////////////////////////////;;
+;;//// libimg.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
-;; General Public License as published by the Free Software Foundation, either version 3 of the   ;;
-;; License, or (at your option) any later version.                                                ;;
+;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
+;; of the License, or (at your option) any later version.                                         ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
-;; General Public License for more details.                                                       ;;
+;; Lesser General Public License for more details.                                                ;;
 ;;                                                                                                ;;
-;; You should have received a copy of the GNU General Public License along with Libs-Dev. If not, ;;
-;; see <http://www.gnu.org/licenses/>.                                                            ;;
+;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
+;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
@@ -25,7 +25,7 @@ public @EXPORT as 'EXPORTS'
 include '../../../../struct.inc'
 include '../../../../proc32.inc'
 include '../../../../macros.inc'
-purge section,mov;add,sub
+purge section,mov,add,sub
 
 include 'libimg.inc'
 
@@ -33,6 +33,7 @@ section '.flat' code readable align 16
 
 include 'bmp/bmp.asm'
 include 'gif/gif.asm'
+include 'jpeg/jpeg.asm'
 
 mem.alloc   dd ?
 mem.free    dd ?
@@ -55,6 +56,8 @@ proc lib_init ;/////////////////////////////////////////////////////////////////
 	mov	[mem.free], ebx
 	mov	[mem.realloc], ecx
 	mov	[dll.load], edx
+
+	call	img.initialize.jpeg
 
   .ok:	xor	eax,eax
 	ret
@@ -162,6 +165,14 @@ proc img.to_rgb _img ;//////////////////////////////////////////////////////////
 	stosd
 	mov	eax, [esi + Image.Height]
 	stosd
+	mov	eax, [esi + Image.Type]
+	dec	eax
+	jz	.bpp8
+	dec	eax
+	jz	.bpp24
+	dec	eax
+	jnz	.error_pop
+; 32 BPP -> 24 BPP
 	mov	esi, [esi + Image.Data]
 
     @@: dec	ecx
@@ -173,6 +184,37 @@ proc img.to_rgb _img ;//////////////////////////////////////////////////////////
     @@: pop	eax
 	pop	edi esi
 	ret
+
+.bpp24:
+; 24 BPP -> 24 BPP
+	lea	ecx, [ecx*3 + 3]
+	mov	esi, [esi + Image.Data]
+	shr	ecx, 2
+	rep	movsd
+	pop	eax
+	pop	edi esi
+	ret
+
+.bpp8:
+; 8 BPP -> 24 BPP
+	push	ebx
+	mov	ebx, [esi + Image.Palette]
+	mov	esi, [esi + Image.Data]
+@@:
+	movzx	eax, byte [esi]
+	add	esi, 1
+	mov	eax, [ebx + eax*4]
+	mov	[edi], eax
+	add	edi, 3
+	sub	ecx, 1
+	jnz	@b
+	pop	ebx
+	pop	eax
+	pop	edi esi
+	ret
+
+  .error_pop:
+  	pop	eax
 
   .error:
 	xor	eax, eax
@@ -196,7 +238,7 @@ proc img.decode _data, _length ;////////////////////////////////////////////////
 	jnz	@f
 	add	ebx, sizeof.FormatsTableEntry
 	cmp	dword[ebx], 0
-	jnz	@f
+	jnz	@b
 	jmp	.error
     @@: stdcall [ebx + FormatsTableEntry.Decode], [_data], [_length]
 
@@ -219,7 +261,7 @@ proc img.encode _img, _p_length ;///////////////////////////////////////////////
 endp
 
 ;;================================================================================================;;
-proc img.create _width, _height ;/////////////////////////////////////////////////////////////////;;
+proc img.create _width, _height, _type ;//////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? --- TBD ---                                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -233,6 +275,9 @@ proc img.create _width, _height ;///////////////////////////////////////////////
 	or	eax, eax
 	jz	.error
 
+	mov	ecx, [_type]
+	mov	[eax + Image.Type], ecx
+
 	push	eax
 
 	stdcall img._.resize_data, eax, [_width], [_height]
@@ -240,7 +285,7 @@ proc img.create _width, _height ;///////////////////////////////////////////////
 	jz	.error.2
 
 	pop	eax
-	ret
+	jmp	.ret
 
   .error.2:
 ;       pop     eax
@@ -248,6 +293,7 @@ proc img.create _width, _height ;///////////////////////////////////////////////
 	xor	eax, eax
 
   .error:
+  .ret:
 	pop	ecx
 	ret
 endp
@@ -348,18 +394,16 @@ locals
   scanline_len dd ?
 endl
 
-	push	esi edi
-	stdcall img._.validate, [_img]
+	push	ebx esi edi
+	mov	ebx, [_img]
+	stdcall img._.validate, ebx
 	or	eax, eax
 	jnz	.error
 
-	mov	esi, [_img]
-	mov	ecx, [esi + Image.Height]
-	mov	eax, [esi + Image.Width]
-	shl	eax, 2
+	mov	ecx, [ebx + Image.Height]
+	mov	eax, [ebx + Image.Width]
+	call	img._.get_scanline_len
 	mov	[scanline_len], eax
-
-	push	esi
 
 	test	[_flip_kind], FLIP_VERTICAL
 	jz	.dont_flip_vert
@@ -367,20 +411,34 @@ endl
 	imul	eax, ecx
 	sub	eax, [scanline_len]
 	shr	ecx, 1
-	mov	esi, [esi + Image.Data]
+	mov	esi, [ebx + Image.Data]
 	lea	edi, [esi + eax]
 	
   .next_line_vert:
 	push	ecx
 
 	mov	ecx, [scanline_len]
+	push	ecx
 	shr	ecx, 2
-    @@: lodsd
+    @@: mov	eax, [esi]
 	xchg	eax, [edi]
-	mov	[esi - 4], eax
+	mov	[esi], eax
+	add	esi, 4
 	add	edi, 4
+	sub	ecx, 1
+	jnz	@b
+	pop	ecx
+	and	ecx, 3
+	jz	.cont_line_vert
+    @@:
+	mov	al, [esi]
+	xchg	al, [edi]
+	mov	[esi], al
+	add	esi, 1
+	add	edi, 1
 	dec	ecx
 	jnz	@b
+    .cont_line_vert:
 
 	pop	ecx
 	mov	eax, [scanline_len]
@@ -391,15 +449,21 @@ endl
 
   .dont_flip_vert:
 
-	pop	esi
-
 	test	[_flip_kind], FLIP_HORIZONTAL
 	jz	.exit
 
-	mov	ecx, [esi + Image.Height]
-	mov	esi, [esi + Image.Data]
-	lea	edi, [esi - 4]
-	add	edi, [scanline_len]
+	mov	ecx, [ebx + Image.Height]
+	mov	eax, [ebx + Image.Type]
+	mov	esi, [ebx + Image.Data]
+	mov	edi, [scanline_len]
+	add	edi, esi
+
+	dec	eax
+	jz	.bpp8.2
+	dec	eax
+	jz	.bpp24.2
+
+	sub	edi, 4
 
   .next_line_horz:
 	push	ecx esi edi
@@ -411,7 +475,7 @@ endl
 	mov	[esi], eax
 	add	esi, 4
 	add	edi, -4
-	dec	ecx
+	sub	ecx, 1
 	jnz	@b
 
 	pop	edi esi ecx
@@ -419,16 +483,71 @@ endl
 	add	edi, [scanline_len]
 	dec	ecx
 	jnz	.next_line_horz
+	jmp	.exit
+
+.bpp8.2:
+	dec	edi
+  .next_line_horz8:
+	push	ecx esi edi
+
+	mov	ecx, [scanline_len]
+	shr	ecx, 1
+    @@: mov	al, [esi]
+	mov	dl, [edi]
+	mov	[edi], al
+	mov	[esi], dl
+	add	esi, 1
+	sub	edi, 1
+	sub	ecx, 1
+	jnz	@b
+
+	pop	edi esi ecx
+	add	esi, [scanline_len]
+	add	edi, [scanline_len]
+	dec	ecx
+	jnz	.next_line_horz8
+	jmp	.exit
+
+.bpp24.2:
+	sub	edi, 3
+  .next_line_horz32:
+	push	ecx esi edi
+
+	mov	ecx, [ebx + Image.Width]
+	shr	ecx, 1
+    @@:
+	mov	al, [esi]
+	mov	dl, [edi]
+	mov	[edi], al
+	mov	[esi], dl
+	mov	al, [esi+1]
+	mov	dl, [edi+1]
+	mov	[edi+1], al
+	mov	[esi+1], dl
+	mov	al, [esi+2]
+	mov	dl, [edi+2]
+	mov	[edi+2], al
+	mov	[esi+2], dl
+	add	esi, 3
+	sub	edi, 3
+	sub	ecx, 1
+	jnz	@b
+
+	pop	edi esi ecx
+	add	esi, [scanline_len]
+	add	edi, [scanline_len]
+	dec	ecx
+	jnz	.next_line_horz32
 
   .exit:
 	xor	eax, eax
 	inc	eax
-	pop	edi esi
+	pop	edi esi ebx
 	ret
 
   .error:
 	xor	eax, eax
-	pop	edi esi
+	pop	edi esi ebx
 	ret
 endp
 
@@ -453,7 +572,8 @@ endl
 	mov	[line_buffer], 0
 
 	push	ebx esi edi
-	stdcall img._.validate, [_img]
+	mov	ebx, [_img]
+	stdcall img._.validate, ebx
 	or	eax, eax
 	jnz	.error
 
@@ -466,10 +586,9 @@ endl
 	jmp	.exit
 
   .rotate_ccw_low:
-	mov	ebx, [_img]
 	mov	eax, [ebx + Image.Height]
 	mov	[scanline_pixels_new], eax
-	shl	eax, 2
+	call	img._.get_scanline_len
 	mov	[scanline_len_new], eax
 
 	invoke	mem.alloc, eax
@@ -477,8 +596,9 @@ endl
 	jz	.error
 	mov	[line_buffer], eax
 
-	mov	ecx, [ebx + Image.Width]
-	lea	eax, [ecx * 4]
+	mov	eax, [ebx + Image.Width]
+	mov	ecx, eax
+	call	img._.get_scanline_len
 	mov	[scanline_len_old], eax
 
 	mov	eax, [scanline_len_new]
@@ -486,9 +606,14 @@ endl
 	add	eax, [ebx + Image.Data]
 	mov	[pixels_ptr], eax
 
+	cmp	[ebx + Image.Type], Image.bpp8
+	jz	.rotate_ccw8
+	cmp	[ebx + Image.Type], Image.bpp24
+	jz	.rotate_ccw24
+
   .next_column_ccw_low:
 	dec	ecx
-	jz	.exchange_dims
+	js	.exchange_dims
 	push	ecx
 
 	mov	edx, [scanline_len_old]
@@ -524,11 +649,109 @@ endl
 	pop	ecx
 	jmp	.next_column_ccw_low
 
+.rotate_ccw8:
+  .next_column_ccw_low8:
+	dec	ecx
+	js	.exchange_dims
+	push	ecx
+
+	mov	edx, [scanline_len_old]
+	add	[scanline_len_old], -1
+
+	mov	ecx, [scanline_pixels_new]
+	mov	esi, [ebx + Image.Data]
+	mov	edi, [line_buffer]
+    @@: mov	al, [esi]
+	mov	[edi], al
+	add	esi, edx
+	add	edi, 1
+	sub	ecx, 1
+	jnz	@b
+
+	mov	eax, [scanline_pixels_new]
+	mov	edi, [ebx + Image.Data]
+	lea	esi, [edi + 1]
+	mov	edx, [scanline_len_old]
+    @@: mov	ecx, edx
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, edx
+	and	ecx, 3
+	rep	movsb
+	add	esi, 1
+	sub	eax, 1
+	jnz	@b
+
+	mov	eax, [scanline_len_new]
+	sub	[pixels_ptr], eax
+	mov	ecx, [scanline_pixels_new]
+	mov	esi, [line_buffer]
+	mov	edi, [pixels_ptr]
+	mov	edx, ecx
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, edx
+	and	ecx, 3
+	rep	movsb
+
+	pop	ecx
+	jmp	.next_column_ccw_low8
+
+.rotate_ccw24:
+  .next_column_ccw_low24:
+	dec	ecx
+	js	.exchange_dims
+	push	ecx
+
+	mov	edx, [scanline_len_old]
+	add	[scanline_len_old], -3
+
+	mov	ecx, [scanline_pixels_new]
+	mov	esi, [ebx + Image.Data]
+	mov	edi, [line_buffer]
+    @@: mov	al, [esi]
+	mov	[edi], al
+	mov	al, [esi+1]
+	mov	[edi+1], al
+	mov	al, [esi+2]
+	mov	[edi+2], al
+	add	esi, edx
+	add	edi, 3
+	sub	ecx, 1
+	jnz	@b
+
+	mov	eax, [scanline_pixels_new]
+	mov	edi, [ebx + Image.Data]
+	lea	esi, [edi + 3]
+	mov	edx, [scanline_len_old]
+    @@: mov	ecx, edx
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, edx
+	and	ecx, 3
+	rep	movsb
+	add	esi, 3
+	sub	eax, 1
+	jnz	@b
+
+	mov	eax, [scanline_len_new]
+	sub	[pixels_ptr], eax
+	mov	ecx, eax
+	mov	esi, [line_buffer]
+	mov	edi, [pixels_ptr]
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, eax
+	and	ecx, 3
+	rep	movsb
+
+	pop	ecx
+	jmp	.next_column_ccw_low24
+
   .rotate_cw_low:
-	mov	ebx, [_img]
 	mov	eax, [ebx + Image.Height]
 	mov	[scanline_pixels_new], eax
-	shl	eax, 2
+	call	img._.get_scanline_len
 	mov	[scanline_len_new], eax
 
 	invoke	mem.alloc, eax
@@ -536,14 +759,20 @@ endl
 	jz	.error
 	mov	[line_buffer], eax
 
-	mov	ecx, [ebx + Image.Width]
-	lea	eax, [ecx * 4]
+	mov	eax, [ebx + Image.Width]
+	mov	ecx, eax
+	call	img._.get_scanline_len
 	mov	[scanline_len_old], eax
 
 	mov	eax, [scanline_len_new]
 	imul	eax, ecx
 	add	eax, [ebx + Image.Data]
 	mov	[pixels_ptr], eax
+
+	cmp	[ebx + Image.Type], Image.bpp8
+	jz	.rotate_cw8
+	cmp	[ebx + Image.Type], Image.bpp24
+	jz	.rotate_cw24
 
   .next_column_cw_low:
 	dec	ecx
@@ -585,6 +814,110 @@ endl
 
 	pop	ecx
 	jmp	.next_column_cw_low
+
+.rotate_cw8:
+  .next_column_cw_low8:
+	dec	ecx
+	js	.exchange_dims
+	push	ecx
+
+	mov	edx, [scanline_len_old]
+	add	[scanline_len_old], -1
+
+	mov	ecx, [scanline_pixels_new]
+	mov	esi, [pixels_ptr]
+	add	esi, -1
+	mov	edi, [line_buffer]
+    @@: mov	al, [esi]
+	mov	[edi], al
+	sub	esi, edx
+	add	edi, 1
+	sub	ecx, 1
+	jnz	@b
+
+	mov	eax, [scanline_pixels_new]
+	dec	eax
+	mov	edi, [ebx + Image.Data]
+	add	edi, [scanline_len_old]
+	lea	esi, [edi + 1]
+	mov	edx, [scanline_len_old]
+    @@: mov	ecx, edx
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, edx
+	and	ecx, 3
+	rep	movsb
+	add	esi, 1
+	sub	eax, 1
+	jnz	@b
+
+	mov	eax, [scanline_len_new]
+	sub	[pixels_ptr], eax
+	mov	ecx, eax
+	mov	esi, [line_buffer]
+	mov	edi, [pixels_ptr]
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, eax
+	and	ecx, 3
+	rep	movsb
+
+	pop	ecx
+	jmp	.next_column_cw_low8
+
+.rotate_cw24:
+  .next_column_cw_low24:
+	dec	ecx
+	js	.exchange_dims
+	push	ecx
+
+	mov	edx, [scanline_len_old]
+	add	[scanline_len_old], -3
+
+	mov	ecx, [scanline_pixels_new]
+	mov	esi, [pixels_ptr]
+	add	esi, -3
+	mov	edi, [line_buffer]
+    @@: mov	al, [esi]
+	mov	[edi], al
+	mov	al, [esi+1]
+	mov	[edi+1], al
+	mov	al, [esi+2]
+	mov	[edi+2], al
+	sub	esi, edx
+	add	edi, 3
+	sub	ecx, 1
+	jnz	@b
+
+	mov	eax, [scanline_pixels_new]
+	dec	eax
+	mov	edi, [ebx + Image.Data]
+	add	edi, [scanline_len_old]
+	lea	esi, [edi + 3]
+	mov	edx, [scanline_len_old]
+    @@: mov	ecx, edx
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, edx
+	and	ecx, 3
+	rep	movsb
+	add	esi, 3
+	sub	eax, 1
+	jnz	@b
+
+	mov	eax, [scanline_len_new]
+	sub	[pixels_ptr], eax
+	mov	ecx, eax
+	mov	esi, [line_buffer]
+	mov	edi, [pixels_ptr]
+	shr	ecx, 2
+	rep	movsd
+	mov	ecx, eax
+	and	ecx, 3
+	rep	movsb
+
+	pop	ecx
+	jmp	.next_column_cw_low24
 
   .flip:
 	jmp	.exit
@@ -640,6 +973,17 @@ proc img._.new ;////////////////////////////////////////////////////////////////
 ;< eax = 0 / pointer to image                                                                     ;;
 ;;================================================================================================;;
 	invoke	mem.alloc, sizeof.Image
+	test	eax, eax
+	jz	@f
+	push	ecx
+	xor	ecx, ecx
+	mov	[eax + Image.Data], ecx
+	mov	[eax + Image.Type], ecx
+	mov	[eax + Image.Extended], ecx
+	mov	[eax + Image.Previous], ecx
+	mov	[eax + Image.Next], ecx
+	pop	ecx
+@@:
 	ret
 endp
 
@@ -674,11 +1018,35 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	push	ebx
+	push	ebx esi
 	mov	ebx, [_img]
 	mov	eax, [_height]
+; our memory is limited, [_width]*[_height] must not overflow
+; image with width or height greater than 65535 is most likely bogus
+	cmp	word [_width+2], 0
+	jnz	.error
+	cmp	word [_height+2], 0
+	jnz	.error
 	imul	eax, [_width]
+	test	eax, eax
+	jz	.error
+; do not allow images which require too many memory
+	cmp	eax, 4000000h
+	jae	.error
+	cmp	[ebx + Image.Type], Image.bpp8
+	jz	.bpp8
+	cmp	[ebx + Image.Type], Image.bpp24
+	jz	.bpp24
+.bpp32:
 	shl	eax, 2
+	jmp	@f
+.bpp24:
+	lea	eax, [eax*3]
+	jmp	@f
+.bpp8:
+	add	eax, 256*4	; for palette
+@@:
+	mov	esi, eax
 	invoke	mem.realloc, [ebx + Image.Data], eax
 	or	eax, eax
 	jz	.error
@@ -688,11 +1056,39 @@ proc img._.resize_data _img, _width, _height ;//////////////////////////////////
 	pop	[ebx + Image.Width]
 	push	[_height]
 	pop	[ebx + Image.Height]
+	cmp	[ebx + Image.Type], Image.bpp8
+	jnz	.ret
+	lea	esi, [eax + esi - 256*4]
+	mov	[ebx + Image.Palette], esi
+	jmp	.ret
 
   .error:
-	pop	ebx
+	xor	eax, eax
+  .ret:
+	pop	esi ebx
 	ret
 endp
+
+;;================================================================================================;;
+img._.get_scanline_len: ;/////////////////////////////////////////////////////////////////////////;;
+;;------------------------------------------------------------------------------------------------;;
+;? --- TBD ---                                                                                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;> --- TBD ---                                                                                    ;;
+;;------------------------------------------------------------------------------------------------;;
+;< --- TBD ---                                                                                    ;;
+;;================================================================================================;;
+	cmp	[ebx + Image.Type], Image.bpp8
+	jz	.bpp8.1
+	cmp	[ebx + Image.Type], Image.bpp24
+	jz	.bpp24.1
+	shl	eax, 2
+	jmp	@f
+.bpp24.1:
+	lea	eax, [eax*3]
+.bpp8.1:
+@@:
+	ret
 
 
 ;;================================================================================================;;
@@ -710,7 +1106,7 @@ img._.formats_table:
 ; .cur dd img.is.cur, img.decode.cur, img.encode.cur
   .gif dd img.is.gif, img.decode.gif, img.encode.gif
 ; .png dd img.is.png, img.decode.png, img.encode.png
-; .jpg dd img.is.jpg, img.decode.jpg, img.encode.jpg
+  .jpg dd img.is.jpg, img.decode.jpg, img.encode.jpg
        dd 0
 
 
@@ -723,7 +1119,7 @@ img._.formats_table:
 ;;================================================================================================;;
 
 
-align 16
+align 4
 @EXPORT:
 
 export					      \
@@ -744,3 +1140,12 @@ export					      \
 	img.unlock_bits , 'img.unlock_bits' , \
 	img.flip	, 'img.flip'	    , \
 	img.rotate	, 'img.rotate'
+
+section '.data' data readable writable align 16
+; uninitialized data - global constant tables
+
+; data for YCbCr -> RGB translation
+color_table_1		rd	256
+color_table_2		rd	256
+color_table_3		rd	256
+color_table_4		rd	256

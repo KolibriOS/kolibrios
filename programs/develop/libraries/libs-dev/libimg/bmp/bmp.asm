@@ -1,19 +1,19 @@
 ;;================================================================================================;;
-;;//// bmp.asm //// (c) mike.dld, 2007-2008 //////////////////////////////////////////////////////;;
+;;//// bmp.asm //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ///////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
-;; General Public License as published by the Free Software Foundation, either version 3 of the   ;;
-;; License, or (at your option) any later version.                                                ;;
+;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
+;; of the License, or (at your option) any later version.                                         ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
-;; General Public License for more details.                                                       ;;
+;; Lesser General Public License for more details.                                                ;;
 ;;                                                                                                ;;
-;; You should have received a copy of the GNU General Public License along with Libs-Dev. If not, ;;
-;; see <http://www.gnu.org/licenses/>.                                                            ;;
+;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
+;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
@@ -28,7 +28,8 @@
 include 'bmp.inc'
 
 ;;================================================================================================;;
-proc img.is.bmp _data, _length ;//////////////////////////////////////////////////////////////////;;
+;;proc img.is.bmp _data, _length ;////////////////////////////////////////////////////////////////;;
+img.is.bmp:
 ;;------------------------------------------------------------------------------------------------;;
 ;? Determine if raw data could be decoded (is in BMP format)                                      ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -37,21 +38,23 @@ proc img.is.bmp _data, _length ;////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< eax = false / true                                                                             ;;
 ;;================================================================================================;;
-	cmp	[_length], 2
+; test 1 (length of data): data must contain FileHeader and required fields from InfoHeader
+	cmp	dword [esp+8], sizeof.bmp.FileHeader + 12
 	jb	.nope
-	mov	eax, [_data]
-	cmp	word[eax], 'BM'
+; test 2: signature
+	mov	eax, [esp+4]
+	cmp	word [eax], 'BM'
 	je	.yep
 
   .nope:
 	xor	eax, eax
-	ret
+	ret	8
 
   .yep:
-	xor	eax,eax
+	xor	eax, eax
 	inc	eax
-	ret
-endp
+	ret	8
+;endp
 
 ;;================================================================================================;;
 proc img.decode.bmp _data, _length ;//////////////////////////////////////////////////////////////;;
@@ -65,13 +68,15 @@ proc img.decode.bmp _data, _length ;////////////////////////////////////////////
 ;;================================================================================================;;
 locals
   img dd ?
+  bTopDown db ?
 endl
 
-	push	ebx
+	push	ebx esi edi
 
-	stdcall img.is.bmp, [_data], [_length]
-	or	eax, eax
-	jz	.error
+; img.is.bmp has been already called by img.decode
+;	stdcall img.is.bmp, [_data], [_length]
+;	or	eax, eax
+;	jz	.error
 
 	mov	ebx, [_data]
 ;       cmp     [ebx + bmp.Header.info.Compression], bmp.BI_RGB
@@ -79,8 +84,60 @@ endl
 ;       mov     eax, [ebx + bmp.Header.file.Size]
 ;       cmp     eax, [_length]
 ;       jne     .error
+;   @@:
 
-    @@: stdcall img.create, [ebx + bmp.Header.info.Width], [ebx + bmp.Header.info.Height]
+	mov	eax, [ebx + bmp.Header.info.Size]
+; sanity check: file length must be greater than size of headers
+	add	eax, sizeof.bmp.FileHeader
+	cmp	[_length], eax
+	jbe	.error
+
+	mov	[bTopDown], 0
+
+	cmp	eax, sizeof.bmp.FileHeader + 12
+	jz	.old1
+	cmp	eax, sizeof.bmp.FileHeader + 40
+	jz	.normal
+	cmp	eax, sizeof.bmp.FileHeader + 56
+	jnz	.error
+; convert images with <= 8 bpp to 8bpp, other - to 32 bpp
+.normal:
+	xor	eax, eax
+	inc	eax	; Image.bpp8
+	cmp	[ebx + bmp.Header.info.BitCount], 8
+	jbe	@f
+	mov	al, Image.bpp32
+@@:
+	push	eax
+	mov	eax, [ebx + bmp.Header.info.Height]
+	test	eax, eax
+	jns	@f
+	inc	[bTopDown]
+	neg	eax
+@@:
+	pushd	eax
+	pushd	[ebx + bmp.Header.info.Width]
+	jmp	.create
+.old1:
+	xor	eax, eax
+	inc	eax	; Image.bpp8
+	cmp	[ebx + bmp.Header.info.OldBitCount], 8
+	jbe	@f
+	mov	al, Image.bpp32
+@@:
+	push	eax
+	movsx	eax, [ebx + bmp.Header.info.OldHeight]
+	test	eax, eax
+	jns	@f
+	inc	[bTopDown]
+	neg	eax
+@@:
+	push	eax
+	movzx	eax, [ebx + bmp.Header.info.OldWidth]
+	push	eax
+.create:
+	call	img.create
+
 	or	eax, eax
 	jz	.error
 	mov	[img], eax
@@ -88,52 +145,87 @@ endl
 
 	invoke	mem.alloc, sizeof.bmp.Image
 	or	eax, eax
-	jz	.error
+	jz	.error.free
 	mov	[edx + Image.Extended], eax
-	mov	esi, ebx
-	add	esi, sizeof.bmp.FileHeader
+	push	eax
 	mov	edi, eax
-	mov	ecx, sizeof.bmp.InfoHeader
+	mov	ecx, sizeof.bmp.Image/4
+	xor	eax, eax
+	rep	stosd
+	pop	edi
+	lea	esi, [ebx + sizeof.bmp.FileHeader]
+	pushd	[ebx + bmp.FileHeader.OffBits]
+	mov	ecx, [esi + bmp.InfoHeader.Size]
+	cmp	ecx, 12
+	jz	.old2
 	rep	movsb
+	jmp	.decode
+.old2:
+	movsd	; Size
+	movzx	eax, word [esi]	; OldWidth -> Width
+	stosd
+	movsx	eax, word [esi+2]	; OldHeight -> Height
+	stosd
+	lodsd	; skip OldWidth+OldHeight
+	movsd	; Planes+BitCount
+.decode:
 
-	mov	eax, [ebx + bmp.Header.info.Compression]
+	pop	eax
+	mov	esi, [_length]
+	sub	esi, eax
+	jbe	.error.free
+
+	mov	eax, [edx + Image.Extended]
+	mov	eax, [eax + bmp.Image.info.Compression]
 	cmp	eax, bmp.BI_RGB
 	jne	@f
 	stdcall ._.rgb
 	jmp	.decoded
     @@: cmp	eax, bmp.BI_RLE8
 	jne	@f
+	cmp	[ebx + bmp.Header.info.BitCount], 8
+	jnz	.error.free
 	stdcall ._.rle
 	jmp	.decoded
     @@: cmp	eax, bmp.BI_RLE4
 	jne	@f
+	cmp	[ebx + bmp.Header.info.BitCount], 4
+	jnz	.error.free
 	stdcall ._.rle
 	jmp	.decoded
     @@: cmp	eax, bmp.BI_BITFIELDS
-	jne	@f
+	jne	.error.free
 	stdcall ._.bitfields
 	jmp	.decoded
-    @@: cmp	eax, bmp.BI_JPEG
-	jne	@f
-	stdcall ._.jpeg
-	jmp	.decoded
-    @@: cmp	eax, bmp.BI_PNG
-	jne	.error
-	stdcall ._.png
+; BI_JPEG and BI_PNG constants are not valid values for BMP file,
+; they are intended for WinAPI
+;    @@: cmp	eax, bmp.BI_JPEG
+;	jne	@f
+;	stdcall ._.jpeg
+;	jmp	.decoded
+;    @@: cmp	eax, bmp.BI_PNG
+;	jne	.error
+;	stdcall ._.png
 
   .decoded:
 	or	eax, eax
 	jz	@f
+  .error.free:
 	stdcall img.destroy, [img]
 	jmp	.error
-	
-    @@: stdcall img.flip, [img], FLIP_VERTICAL
+
+    @@:
+	cmp	[bTopDown], 0
+	jnz	@f
+	stdcall img.flip, [img], FLIP_VERTICAL
+    @@:
 	mov	eax, [img]
+	pop	edi esi ebx
 	ret
 
   .error:
 	xor	eax, eax
-	pop	ebx
+	pop	edi esi ebx
 	ret
 endp
 
@@ -175,7 +267,7 @@ proc img.decode.bmp._.rgb ;/////////////////////////////////////////////////////
 	mov	[ecx + bmp.Image.info.AlphaMask], 0
 	mov	edi, [edx + Image.Data]
 
-	movzx	eax, [ebx + bmp.Header.info.BitCount]
+	movzx	eax, [ecx + bmp.Image.info.BitCount]
 	cmp	eax, 32
 	je	.32bpp
 	cmp	eax, 24
@@ -202,13 +294,19 @@ img.decode.bmp._.rgb.32bpp:
 ;;------------------------------------------------------------------------------------------------;;
 
 img.decode.bmp._.rgb.24bpp:
+	mov	eax, [edx + Image.Width]
+	lea	eax, [eax*3 + 3]
+	and	eax, not 3
+	mov	ecx, [edx + Image.Height]
+	imul	eax, ecx
+	cmp	esi, eax
+	jb	img.decode.bmp._.rgb.error
 	mov	esi, ebx
 	add	esi, [ebx + bmp.Header.file.OffBits]
-	mov	ecx, [ebx + bmp.Header.info.Height]
 
   .next_line:
-	push	ecx
-	mov	ecx, [ebx + bmp.Header.info.Width]
+	push	ecx edx
+	mov	ecx, [edx + Image.Width]
 	xor	edx, edx
 
   .next_line_pixel:
@@ -220,7 +318,7 @@ img.decode.bmp._.rgb.24bpp:
 
 	and	edx, 0x03
 	add	esi, edx
-	pop	ecx
+	pop	edx ecx
 	dec	ecx
 	jnz	.next_line
 
@@ -238,22 +336,19 @@ img.decode.bmp._.rgb.16bpp:
 ;;------------------------------------------------------------------------------------------------;;
 
 img.decode.bmp._.rgb.8bpp:
-	mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
-	mov	ecx, [ebx + bmp.Header.info.Height]
+	mov	eax, [edx + Image.Width]
+	add	eax, 3
+	call	img.decode.bmp._.rgb.prepare_palette
+	jc	img.decode.bmp._.rgb.error
 
   .next_line:
 	push	ecx
-	mov	ecx, [ebx + bmp.Header.info.Width]
-
-  .next_line_dword:
-	lodsb
-	and	eax, 0x000000FF
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-	stosd
-	dec	ecx
-	jnz	.next_line_dword
-
+	mov	ecx, [edx + Image.Width]
+	mov	eax, ecx
+	neg	eax
+	and	eax, 3
+	rep	movsb
+	add	esi, eax
 	pop	ecx
 	dec	ecx
 	jnz	.next_line
@@ -263,13 +358,15 @@ img.decode.bmp._.rgb.8bpp:
 ;;------------------------------------------------------------------------------------------------;;
 
 img.decode.bmp._.rgb.4bpp:
-	mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
-	mov	ecx, [ebx + bmp.Header.info.Height]
+	mov	eax, [edx + Image.Width]
+	add	eax, 7
+	shr	eax, 1
+	call	img.decode.bmp._.rgb.prepare_palette
+	jc	img.decode.bmp._.rgb.error
 
   .next_line:
-	push	ecx
-	mov	ecx, [ebx + bmp.Header.info.Width]
+	push	ecx edx
+	mov	ecx, [edx + Image.Width]
 
   .next_line_dword:
 	push	ecx
@@ -281,9 +378,8 @@ img.decode.bmp._.rgb.4bpp:
   .next_pixel:
 	rol	edx, 4
 	mov	al, dl
-	and	eax, 0x0000000F
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-	stosd
+	and	al, 0x0000000F
+	stosb
 	dec	dword[esp]
 	jz	@f
 	dec	ecx
@@ -293,7 +389,7 @@ img.decode.bmp._.rgb.4bpp:
 	or	ecx, ecx
 	jnz	.next_line_dword
 
-	pop	ecx
+	pop	edx ecx
 	dec	ecx
 	jnz	.next_line
 
@@ -302,13 +398,15 @@ img.decode.bmp._.rgb.4bpp:
 ;;------------------------------------------------------------------------------------------------;;
 
 img.decode.bmp._.rgb.1bpp:
-	mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
-	mov	ecx, [ebx + bmp.Header.info.Height]
+	mov	eax, [edx + Image.Width]
+	add	eax, 31
+	shr	eax, 3
+	call	img.decode.bmp._.rgb.prepare_palette
+	jc	img.decode.bmp._.rgb.error
 
   .next_line:
-	push	ecx
-	mov	ecx, [ebx + bmp.Header.info.Width]
+	push	ecx edx
+	mov	ecx, [edx + Image.Width]
 
   .next_line_dword:
 	push	ecx
@@ -320,9 +418,8 @@ img.decode.bmp._.rgb.1bpp:
   .next_pixel:
 	rol	edx, 1
 	mov	al, dl
-	and	eax, 0x00000001
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-	stosd
+	and	al, 0x00000001
+	stosb
 	dec	dword[esp]
 	jz	@f
 	dec	ecx
@@ -332,7 +429,7 @@ img.decode.bmp._.rgb.1bpp:
 	or	ecx, ecx
 	jnz	.next_line_dword
 
-	pop	ecx
+	pop	edx ecx
 	dec	ecx
 	jnz	.next_line
 
@@ -346,6 +443,48 @@ img.decode.bmp._.rgb.1bpp:
 
   img.decode.bmp._.rgb.error:
 	or	eax, -1
+	ret
+
+img.decode.bmp._.rgb.prepare_palette:
+	and	eax, not 3
+	mov	ecx, [edx + Image.Height]
+	imul	eax, ecx
+	cmp	esi, eax
+	jb	.ret
+	mov	esi, [ebx + bmp.Header.info.Size]
+	add	esi, sizeof.bmp.FileHeader
+	jc	.ret
+	mov	eax, [ebx + bmp.Header.file.OffBits]
+	sub	eax, esi
+	jc	.ret
+	push	edi
+	mov	edi, [edx + Image.Palette]
+	push	ecx
+	mov	ecx, 256
+	cmp	esi, sizeof.bmp.FileHeader + 12
+	jz	.old
+	shr	eax, 2
+	add	esi, ebx
+	cmp	ecx, eax
+	jb	@f
+	mov	ecx, eax
+@@:
+	rep	movsd
+	jmp	.common
+.old:
+	movsd
+	dec	esi
+	sub	eax, 3
+	jbe	@f
+	sub	ecx, 1
+	jnz	.old
+@@:
+.common:
+	pop	ecx
+	pop	edi
+	mov	esi, ebx
+	add	esi, [ebx + bmp.Header.file.OffBits]
+.ret:
 	ret
 endp
 
@@ -365,9 +504,8 @@ locals
   marker_y	dd ?
   abs_mode_addr dd ?
   enc_mode_addr dd ?
+  height	dd ?
 endl
-
-	mov	edi, [edx + Image.Data]
 
 	mov	[abs_mode_addr], .absolute_mode.rle8
 	mov	[enc_mode_addr], .encoded_mode.rle8
@@ -375,17 +513,26 @@ endl
 	jne	@f
 	mov	[abs_mode_addr], .absolute_mode.rle4
 	mov	[enc_mode_addr], .encoded_mode.rle4
+    @@:
 
-    @@: mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
+	push	esi
+	xor	eax, eax	; do not check file size in .prepare_palette
+	call	img.decode.bmp._.rgb.prepare_palette
+	pop	ecx	; ecx = rest bytes in file
+	jc	.error
+
 	mov	eax, [edx + Image.Width]
-	shl	eax, 2
 	mov	[scanline_len], eax
+	mov	eax, [edx + Image.Height]
+	mov	[height], eax
 	xor	eax, eax
 	mov	[marker_x], eax
 	mov	[marker_y], eax
+	mov	edi, [edx + Image.Data]
 
   .next_run:
+	sub	ecx, 1
+	jc	.eof
 	xor	eax, eax
 	lodsb
 	or	al, al
@@ -393,6 +540,8 @@ endl
 	jmp	[enc_mode_addr]
 
   .escape_mode:
+	sub	ecx, 1
+	jc	.eof
 	lodsb
 	cmp	al, 0
 	je	.end_of_scanline
@@ -403,29 +552,30 @@ endl
 	jmp	[abs_mode_addr]
 
   .end_of_scanline: ; 0
-	mov	eax, [marker_x]
-	shl	eax, 2
-	neg	eax
-	add	eax, [scanline_len]
-	add	edi, eax
+	sub	edi, [marker_x]
+	add	edi, [scanline_len]
 	mov	[marker_x], 0
-	inc	[marker_y]
-	jmp	.next_run
+	mov	eax, [marker_y]
+	inc	eax
+	mov	[marker_y], eax
+	cmp	eax, [height]
+	jb	.next_run
+	jmp	.exit
 
   .offset_marker: ; 2: dx, dy
+	sub	ecx, 2
+	jc	.eof
 	lodsb
 	mov	edx, [marker_x]
 	add	edx, eax
-	cmp	edx, [ebx + bmp.Header.info.Width]
+	cmp	edx, [scanline_len]
 	jae	.exit
 	mov	[marker_x], edx
-	shl	eax, 2
 	add	edi, eax
 	lodsb
-	and	eax, 0x0FF
 	mov	edx, [marker_y]
 	add	edx, eax
-	cmp	edx, [ebx + bmp.Header.info.Height]
+	cmp	edx, [height]
 	jae	.exit
 	mov	[marker_y], edx
 	imul	eax, [scanline_len]
@@ -433,90 +583,112 @@ endl
 	jmp	.next_run
 
   .encoded_mode.rle8: ; N: b1 * N
-	mov	edx, eax
+	call	.fix_marker
+	sub	ecx, 1
+	jc	.eof
 	lodsb
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-    @@: dec	edx
-	js	.fix_marker
-	stosd
-	inc	[marker_x]
-	jmp	@b
+	push	ecx
+	mov	ecx, edx
+	rep	stosb
+	pop	ecx
+	jmp	.check_eoi
 
   .absolute_mode.rle8: ; N: b1 .. bN
-	mov	edx, eax
-	push	eax
-    @@: dec	edx
-	js	@f
-	lodsb
-	and	eax, 0x0FF
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-	stosd
-	inc	[marker_x]
-	jmp	@b
-    @@: pop	eax
-	test	eax, 1
-	jz	.fix_marker
+	call	.fix_marker
+	cmp	ecx, edx
+	jae	@f
+	mov	edx, ecx
+    @@:
+	push	ecx
+	mov	ecx, edx
+	rep	movsb
+	pop	ecx
+	sub	ecx, edx
+	jz	.eof
+	test	edx, 1
+	jz	.check_eoi
+	sub	ecx, 1
+	jc	.eof
 	inc	esi
-	jmp	.fix_marker
+  .check_eoi:
+	mov	eax, [marker_y]
+	cmp	eax, [height]
+	jb	.next_run
+	jmp	.exit
 
   .encoded_mode.rle4: ; N: b1 * N
-	mov	edx, eax
-	lodsb
+	call	.fix_marker
+	sub	ecx, 1
+	jc	.eof
+	movzx	eax, byte [esi]
+	inc	esi
+	push	ecx
 	mov	ecx, eax
+	and	eax, 0xF
 	shr	ecx, 4
-	mov	ecx, [ebx + ecx * 4 + bmp.Header.info.Palette]
-	and	eax, 0x00F
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-    @@: dec	edx
-	js	.fix_marker
-	test	edx, 1
-	jz	.odd
-	mov	[edi], ecx
-	add	edi, 4
-	inc	[marker_x]
-	jmp	@b
-    .odd:
-	stosd
-	inc	[marker_x]
-	jmp	@b
-
-  .absolute_mode.rle4: ; N: b1 .. bN
-	mov	edx, eax
-	push	eax
-    @@: dec	edx
-	js	@f
-	lodsb
-	and	eax, 0x0FF
-	mov	ecx, eax
-	shr	eax, 4
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-	stosd
-	inc	[marker_x]
+    @@:
 	dec	edx
 	js	@f
-	mov	eax, ecx
-	and	eax, 0x00F
-	mov	eax, [ebx + eax * 4 + bmp.Header.info.Palette]
-	stosd
-	inc	[marker_x]
+	mov	[edi], cl
+	dec	edx
+	js	@f
+	mov	[edi+1], al
+	add	edi, 2
 	jmp	@b
-    @@: pop	eax
+    @@:
+	pop	ecx
+	jmp	.check_eoi
+
+  .absolute_mode.rle4: ; N: b1 .. bN
+	call	.fix_marker
+	lea	eax, [edx+1]
+	shr	eax, 1
+	cmp	ecx, eax
+	jbe	@f
+	lea	edx, [ecx*2]
+    @@:
+	push	ecx edx
+    @@: dec	edx
+	js	@f
+	lodsb
+	mov	cl, al
+	shr	al, 4
+	and	cl, 0xF
+	stosb
+	dec	edx
+	js	@f
+	mov	[edi], cl
+	inc	edi
+	jmp	@b
+    @@: pop	eax ecx
 	and	eax, 0x03
-	jz	.fix_marker
-	cmp	eax, 3
-	je	.fix_marker
+	jp	.check_eoi
+	sub	ecx, 1
+	jc	.eof
 	inc	esi
-	jmp	.fix_marker
+	jmp	.check_eoi
 
   .fix_marker:
-	mov	eax, [marker_x]
-    @@: sub	eax, [ebx + bmp.Header.info.Width]
-	jle	.next_run
+	mov	edx, eax
+	add	eax, [marker_x]
 	mov	[marker_x], eax
-	inc	[marker_y]
-	jmp	@b
+    @@:
+	sub	eax, [scanline_len]
+	jle	@f
+	mov	[marker_x], eax
+	push	eax
+	mov	eax, [marker_y]
+	inc	eax
+	mov	[marker_y], eax
+	cmp	eax, [height]
+	pop	eax
+	jb	@b
+	sub	edx, eax
+    @@:
+        retn
 
   .exit:
+  .eof:
 	xor	eax, eax
 	ret
 
@@ -542,8 +714,23 @@ locals
   delta   dd ?
 endl
 
-	push	esi edi
-	mov	esi, [edx + Image.Extended]
+	push	edi
+
+	mov	[delta], 4
+	mov	eax, [edx + Image.Extended]
+	cmp	[eax + bmp.Image.info.BitCount], 32
+	je	@f
+	cmp	[eax + bmp.Image.info.BitCount], 16
+	jne	.error
+	mov	[delta], 2
+    @@:
+	mov	ecx, [edx + Image.Width]
+	imul	ecx, [edx + Image.Height]
+	imul	ecx, [delta]
+	cmp	esi, ecx
+	jb	.error
+
+	mov	esi, eax
 
 	mov	ecx, [esi + bmp.Image.info.RedMask]
 	call	.calc_shift
@@ -577,17 +764,9 @@ endl
 	mov	esi, ebx
 	add	esi, [ebx + bmp.Header.file.OffBits]
 
-	mov	[delta], 4
-	movzx	eax, [ebx + bmp.Header.info.BitCount]
-	cmp	eax, 32
-	je	@f
-	cmp	eax, 16
-	jne	.error
-	mov	[delta], 2
-
 ;;------------------------------------------------------------------------------------------------;;
 
-    @@: mov	ecx, [edx + Image.Height]
+	mov	ecx, [edx + Image.Height]
 
   .next_line:
 	push	ecx
@@ -642,12 +821,12 @@ endl
 
   .exit:
 	xor	eax, eax
-	pop	edi esi
+	pop	edi
 	ret
 
   .error:
 	or	eax, -1
-	pop	edi esi
+	pop	edi
 	ret
 	
 .calc_shift:
@@ -678,6 +857,7 @@ endl
 	retn
 endp
 
+if 0
 ;;================================================================================================;;
 proc img.decode.bmp._.jpeg ;//////////////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -705,7 +885,7 @@ proc img.decode.bmp._.png ;/////////////////////////////////////////////////////
 	xor	eax, eax
 	ret
 endp
-
+end if
 
 ;;================================================================================================;;
 ;;////////////////////////////////////////////////////////////////////////////////////////////////;;

@@ -1,19 +1,19 @@
 ;;================================================================================================;;
-;;//// libimg.inc //// (c) mike.dld, 2007-2008 ///////////////////////////////////////////////////;;
+;;//// libimg.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
-;; General Public License as published by the Free Software Foundation, either version 3 of the   ;;
-;; License, or (at your option) any later version.                                                ;;
+;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
+;; of the License, or (at your option) any later version.                                         ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
-;; General Public License for more details.                                                       ;;
+;; Lesser General Public License for more details.                                                ;;
 ;;                                                                                                ;;
-;; You should have received a copy of the GNU General Public License along with Libs-Dev. If not, ;;
-;; see <http://www.gnu.org/licenses/>.                                                            ;;
+;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
+;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
@@ -30,9 +30,15 @@ struct Image
   Height   dd ?
   Next	   dd ?
   Previous dd ?
+  Type     dd ? ; one of Image.bppN
   Data	   dd ?
+  Palette  dd ? ; used iff Type eq Image.bpp8
   Extended dd ?
 ends
+
+Image.bpp8 = 1
+Image.bpp24 = 2
+Image.bpp32 = 3
 
 FLIP_VERTICAL	= 0x01
 FLIP_HORIZONTAL = 0x02

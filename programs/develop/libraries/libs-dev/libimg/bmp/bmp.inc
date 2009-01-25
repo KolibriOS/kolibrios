@@ -1,19 +1,19 @@
 ;;================================================================================================;;
-;;//// bmp.inc //// (c) mike.dld, 2007-2008 //////////////////////////////////////////////////////;;
+;;//// bmp.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ///////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
-;; General Public License as published by the Free Software Foundation, either version 3 of the   ;;
-;; License, or (at your option) any later version.                                                ;;
+;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
+;; of the License, or (at your option) any later version.                                         ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
-;; General Public License for more details.                                                       ;;
+;; Lesser General Public License for more details.                                                ;;
 ;;                                                                                                ;;
-;; You should have received a copy of the GNU General Public License along with Libs-Dev. If not, ;;
-;; see <http://www.gnu.org/licenses/>.                                                            ;;
+;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
+;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 
@@ -28,10 +28,20 @@ ends
 struct bmp.InfoHeader
 ; v2 (Windows 2.x)
   Size		 dd ? ; Size of this header in bytes
-  Width 	 dd ? ; Image width in pixels
-  Height	 dd ? ; Image height in pixels
-  Planes	 dw ? ; Number of color planes
-  BitCount	 dw ? ; Number of bits per pixel
+  union
+    struct ; new format
+      Width 	 dd ? ; Image width in pixels
+      Height	 dd ? ; Image height in pixels
+      Planes	 dw ? ; Number of color planes
+      BitCount	 dw ? ; Number of bits per pixel
+    ends
+    struct ; old format
+      OldWidth   dw ? ; Image width in pixels as word
+      OldHeight  dw ? ; Image height in pixels as word
+      OldPlanes  dw ? ; Number of color planes
+      OldBitCount dw ? ; Number of bits per pixel
+    ends
+  ends
 ; v3 (Windows 3.x)
   Compression	 dd ? ; Compression method used
   SizeImage	 dd ? ; Size of bitmap in bytes

@@ -7,15 +7,15 @@
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is free software: you can redistribute it and/or modify it under the terms of the GNU ;;
-;; General Public License as published by the Free Software Foundation, either version 3 of the   ;;
-;; License, or (at your option) any later version.                                                ;;
+;; Lesser General Public License as published by the Free Software Foundation, either version 2.1 ;;
+;; of the License, or (at your option) any later version.                                         ;;
 ;;                                                                                                ;;
 ;; Libs-Dev is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without  ;;
 ;; even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU  ;;
-;; General Public License for more details.                                                       ;;
+;; Lesser General Public License for more details.                                                ;;
 ;;                                                                                                ;;
-;; You should have received a copy of the GNU General Public License along with Libs-Dev. If not, ;;
-;; see <http://www.gnu.org/licenses/>.                                                            ;;
+;; You should have received a copy of the GNU Lesser General Public License along with Libs-Dev.  ;;
+;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
@@ -84,20 +84,18 @@ proc img.decode.gif _data, _length ;////////////////////////////////////////////
 locals
   img		     dd ?
   global_color_table dd ?
+  global_color_table_size dd ?
 endl
 
 	push	ebx
 
-	stdcall img.is.gif, [_data], [_length]
-	or	eax, eax
-	jz	.error
+; img.is.gif is called by caller (img.decode)
+;	stdcall img.is.gif, [_data], [_length]
+;	or	eax, eax
+;	jz	.error
 
+	mov	[global_color_table_size], 0
 	mov	ebx, [_data]
-;       cmp     [ebx + bmp.Header.info.Compression], bmp.BI_RGB
-;       je      @f
-;       mov     eax, [ebx + bmp.Header.file.Size]
-;       cmp     eax, [_length]
-;       jne     .error
 
 	test	[ebx + gif.Header.lsd.Packed], gif.LSD.Packed.GlobalColorTableFlag
 	jz	@f
@@ -106,9 +104,9 @@ endl
 	mov	cl, [ebx + gif.Header.lsd.Packed]
 	and	cl, gif.LSD.Packed.SizeOfGlobalColorTableMask
 	shr	cl, gif.LSD.Packed.SizeOfGlobalColorTableShift
-	inc	cl
-	mov	eax, 1
+	mov	eax, 2
 	shl	eax, cl
+	mov	[global_color_table_size], eax
 	lea	eax, [eax * 3]
 	add	ebx, eax
     @@: add	ebx, sizeof.gif.Header
@@ -130,11 +128,15 @@ endl
 	jz	.error
 	mov	edx, [img]
 	mov	[eax + Image.Previous], edx
+	test	edx, edx
+	jz	@f
+	mov	[edx + Image.Next], eax
+@@:
 	mov	[img], eax
 	mov	edx, eax
+	mov	[eax + Image.Type], Image.bpp8
 
-	mov	ecx, sizeof.gif.Image
-	invoke	mem.alloc, ecx
+	invoke	mem.alloc, sizeof.gif.Image
 	or	eax, eax
 	jz	.error
 	mov	[edx + Image.Extended], eax
@@ -149,33 +151,34 @@ endl
 	or	eax, eax
 	jz	.error
 
-	xor	ecx, ecx
-	mov	eax, [edx + Image.Extended]
+	mov	esi, ebx
+	mov	edi, [edx + Image.Extended]
+	mov	ecx, sizeof.gif.ImageDescriptor
+	rep	movsb
+
+	mov	edi, [edx + Image.Palette]
+	mov	esi, [global_color_table]
+	mov	ecx, [global_color_table_size]
 	test	[ebx + gif.ImageDescriptor.Packed], gif.ID.Packed.LocalColorTableFlag
 	jz	@f
+	lea	esi, [ebx + sizeof.gif.ImageDescriptor]
 	mov	cl, [ebx + gif.ImageDescriptor.Packed]
 	and	cl, gif.ID.Packed.SizeOfLocalColorTableMask
 	shr	cl, gif.ID.Packed.SizeOfLocalColorTableShift
-	inc	cl
-	mov	eax, 1
+	mov	eax, 2
 	shl	eax, cl
-	lea	ecx, [eax * sizeof.gif.RgbTriplet]
-	lea	eax, [ecx + sizeof.gif.Image]
-	invoke	mem.realloc, [edx + Image.Extended], eax
-	or	eax, eax
-	jz	.error
-	mov	[edx + Image.Extended], eax
-    @@: mov	esi, ebx
-	lea	edi, [eax + sizeof.gif.GraphicsControlExtension]
-	add	ecx, sizeof.gif.ImageDescriptor
-	rep	movsb
-
-	mov	eax, [global_color_table]
-	test	[ebx + gif.ImageDescriptor.Packed], gif.ID.Packed.LocalColorTableFlag
-	jz	@f
-	lea	eax, [ebx + sizeof.gif.ImageDescriptor]
-    @@: mov	ebx, esi
-	stdcall ._.process_image, eax
+	mov	ecx, eax
+	lea	eax, [eax*3]
+	add	ebx, eax
+@@:
+	lodsd
+	dec	esi
+	bswap	eax
+	shr	eax, 8
+	stosd
+	loop	@b
+	add	ebx, sizeof.gif.ImageDescriptor
+	stdcall ._.process_image
 
   .decoded:
 	or	eax, eax
@@ -187,6 +190,11 @@ endl
 	ret
 
   .error:
+	mov	eax, [img]
+	test	eax, eax
+	jz	@f
+	stdcall	img.destroy, eax
+@@:
 	xor	eax, eax
 	pop	ebx
 	ret
@@ -309,7 +317,7 @@ proc img.decode.gif._.process_extensions ;//////////////////////////////////////
 endp
 
 ;;================================================================================================;;
-proc img.decode.gif._.process_image _color_table ;////////////////////////////////////////////////;;
+proc img.decode.gif._.process_image ;/////////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? --- TBD ---                                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -342,8 +350,6 @@ endl
 	mov	[width], ecx
 	mov	eax, [edx + Image.Height]
 	imul	eax, ecx
-;       lea     eax, [eax * 3]
-	shl	eax, 2
 	mov	[img_end], eax
 	inc	eax
 	mov	[row_end], eax
@@ -351,8 +357,6 @@ endl
 	mov	eax, [edx + Image.Extended]
 	test	[eax + gif.Image.info.Packed], gif.ID.Packed.InterleaceFlag
 	jz	@f
-;       lea     ecx, [ecx * 3]
-	shl	ecx, 2
 	mov	[row_end], ecx
 
     @@: mov	esi, ebx
@@ -502,21 +506,11 @@ img.decode.gif._.process_image.output:
 
   .loop2:
 	pop	ax
-
-	lea	esi, [eax * 3]
-	add	esi, [_color_table]
-
-	mov	esi, [esi]
-	bswap	esi
-	shr	esi, 8
-	mov	[edi], esi
-	add	edi, 4
+	stosb
 
 	cmp	edi, [row_end]
 	jb	.norowend
 	mov	eax, [width]
-;       lea     eax, [eax * 3]
-	shl	eax, 2
 	push	eax
 	sub	edi, eax
 	add	eax, eax
