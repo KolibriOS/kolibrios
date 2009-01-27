@@ -50,7 +50,7 @@ int CreatePixmap(pixmap_t *io)
            pixmap->width   = io->width;
            pixmap->height  = io->height;
            pixmap->format  = PICT_a8r8g8b8;
-           pixmap->flags   = io->flags;
+           pixmap->flags   = PX_MEM_LOCAL; //io->flags;
            pixmap->pitch   = pitch;
            pixmap->mapped  = mapped;
            pixmap->pitch_offset =  ((pitch/64)<<22)| (((u32_t)local+rhd.fbLocation)>>10);

@@ -1,6 +1,11 @@
 
 
-#define R300_PIO     0       /* now we have cp */
+#define R300_PIO        1
+
+
+#define API_VERSION     0x01000100
+
+#define SRV_GETVERSION  0
 
 
 #include "types.h"
@@ -72,19 +77,17 @@ u32_t __stdcall drvEntry(int action)
 
     R5xx2DInit();
 
+#if !R300_PIO
+
     Init3DEngine(&rhd);
 
+#endif
 
     retval = RegService("HDRAW", srv_2d);
     dbgprintf("reg service %s as: %x\n", "HDRAW", retval);
 
     return retval;
 };
-
-
-#define API_VERSION     0x01000100
-
-#define SRV_GETVERSION  0
 
 
 int __stdcall srv_2d(ioctl_t *io)

@@ -64,8 +64,14 @@ typedef struct
   void      *local;
 }local_pixmap_t;
 
+#define  PX_MEM_SYSTEM    0
+#define  PX_MEM_LOCAL     1
+#define  PX_MEM_GART      2
 
-#define   PX_LOCK            1
+#define  PX_MEM_MASK      3
+
+
+#define   PX_LOCK         1
 
 typedef struct
 {

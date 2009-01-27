@@ -635,7 +635,6 @@ int Init3DEngine(RHDPtr info)
 	FINISH_ACCEL();
     }
 
-
     safe_sti(ifl);
 
 }

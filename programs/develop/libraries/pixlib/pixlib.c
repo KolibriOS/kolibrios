@@ -1,4 +1,6 @@
 
+//#define KOLIBRI_PE
+
 #include "types.h"
 #include "system.h"
 
@@ -64,9 +66,9 @@ int __stdcall start(int state)
      scrn_pixmap.width   = scrnsize >> 16;
      scrn_pixmap.height  = scrnsize & 0xFFFF;
      scrn_pixmap.format  = PICT_a8r8g8b8;
-     scrn_pixmap.flags   = 0;
+     scrn_pixmap.flags   = PX_MEM_LOCAL;
      scrn_pixmap.pitch   = scrnpitch;
-     scrn_pixmap.mapped  = (void*)0xFE000000;
+     scrn_pixmap.mapped  = (void*)LFB_BASE;
 
      br_slab.available = 256;
      br_slab.start = brushes;
@@ -129,6 +131,7 @@ char szDrawRect[]        = "DrawRect";
 char szFillRect[]        = "FillRect";
 char szBlit[]            = "Blit";
 char szTransparentBlit[] = "TransparentBlit";
+char szBlitAlpha[]       = "BlitAlpha";
 
 
 export_t EXPORTS[] __asm__("EXPORTS") =
@@ -155,6 +158,7 @@ export_t EXPORTS[] __asm__("EXPORTS") =
            { szFillRect,        FillRect        },
            { szBlit,            Blit            },
            { szTransparentBlit, TransparentBlit },
+           { szBlitAlpha,       BlitAlpha       },
 
            { NULL, NULL },
          };

@@ -34,83 +34,81 @@ const RADEONCardInfo *RadeonDevMatch(u16_t dev,const RADEONCardInfo *list)
 
 RHDPtr FindPciDevice()
 {
-  const RADEONCardInfo *dev;
-  u32_t bus, last_bus;
+    const RADEONCardInfo *dev;
+    u32_t bus, last_bus;
 
-  if( (last_bus = PciApi(1))==-1)
-    return 0;
+    if( (last_bus = PciApi(1))==-1)
+        return 0;
 
-  for(bus=0;bus<=last_bus;bus++)
-  {
-    u32_t devfn;
-
-    for(devfn=0;devfn<256;devfn++)
+    for(bus=0;bus<=last_bus;bus++)
     {
-      u32_t id;
-      id = PciRead32(bus,devfn, 0);
+        u32_t devfn;
 
-      if( (u16_t)id != VENDOR_ATI)
-        continue;
-
-      rhd.PciDeviceID = (id>>16);
-
-      if( (dev = RadeonDevMatch(rhd.PciDeviceID, RADEONCards))!=NULL)
-      {
-        u32_t reg2C;
-        int i;
-
-        rhd.chipset = (char*)xf86TokenToString(RADEONChipsets, rhd.PciDeviceID);
-        if (!rhd.chipset)
+        for(devfn=0;devfn<256;devfn++)
         {
-           dbgprintf("ChipID 0x%04x is not recognized\n", rhd.PciDeviceID);
-           return FALSE;
-        }
-        dbgprintf("Chipset: \"%s\" (ChipID = 0x%04x)\n",rhd.chipset,rhd.PciDeviceID);
+            u32_t id;
+            id = PciRead32(bus,devfn, 0);
 
-        rhd.bus = bus;
-        rhd.devfn = devfn;
-        rhd.PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
+            if( (u16_t)id != VENDOR_ATI)
+                continue;
 
-        rhd.ChipFamily  = dev->chip_family;
-        rhd.IsMobility  = dev->mobility;
-        rhd.IsIGP       = dev->igp;
-        rhd.HasCRTC2    = !dev->nocrtc2;
+            rhd.PciDeviceID = (id>>16);
 
-        reg2C = PciRead32(bus,devfn, 0x2C);
-
-        rhd.subvendor_id = reg2C & 0xFFFF;;
-        rhd.subdevice_id = reg2C >> 16;
-
-        if (rhd.ChipFamily >= CHIP_FAMILY_R600)
-           dbgprintf("R600 unsupported yet.\nExit\n");
-
-
-        for (i = 0; i < 6; i++)
-        {
-          u32_t base;
-          Bool validSize;
-
-          base = PciRead32(bus,devfn, PCI_MAP_REG_START + (i << 2));
-          if(base)
-          {
-            if (base & PCI_MAP_IO)
+            if( (dev = RadeonDevMatch(rhd.PciDeviceID, RADEONCards))!=NULL)
             {
-              rhd.ioBase[i] = (u32_t)PCIGETIO(base);
-              rhd.memtype[i]   = base & PCI_MAP_IO_ATTR_MASK;
+                u32_t reg2C;
+                int i;
+
+                rhd.chipset = (char*)xf86TokenToString(RADEONChipsets, rhd.PciDeviceID);
+                if (!rhd.chipset){
+                    dbgprintf("ChipID 0x%04x is not recognized\n", rhd.PciDeviceID);
+                    return FALSE;
+                }
+                dbgprintf("Chipset: \"%s\" (ChipID = 0x%04x)\n",
+                           rhd.chipset,rhd.PciDeviceID);
+
+                rhd.bus = bus;
+                rhd.devfn = devfn;
+                rhd.PciTag = pciTag(bus,(devfn>>3)&0x1F,devfn&0x7);
+
+                rhd.ChipFamily  = dev->chip_family;
+                rhd.IsMobility  = dev->mobility;
+                rhd.IsIGP       = dev->igp;
+                rhd.HasCRTC2    = !dev->nocrtc2;
+
+                reg2C = PciRead32(bus,devfn, 0x2C);
+
+                rhd.subvendor_id = reg2C & 0xFFFF;;
+                rhd.subdevice_id = reg2C >> 16;
+
+                if (rhd.ChipFamily >= CHIP_FAMILY_R600)
+                    dbgprintf("R600 unsupported yet.\nExit\n");
+
+
+                for (i = 0; i < 6; i++)
+                {
+                    u32_t base;
+                    Bool validSize;
+
+                    base = PciRead32(bus,devfn, PCI_MAP_REG_START + (i << 2));
+                    if(base)
+                    {
+                        if (base & PCI_MAP_IO){
+                            rhd.ioBase[i] = (u32_t)PCIGETIO(base);
+                            rhd.memtype[i]   = base & PCI_MAP_IO_ATTR_MASK;
+                        }
+                        else{
+                            rhd.memBase[i] = (u32_t)PCIGETMEMORY(base);
+                            rhd.memtype[i] = base & PCI_MAP_MEMORY_ATTR_MASK;
+                        }
+                    }
+                    rhd.memsize[i] = pciGetBaseSize(bus,devfn, i, TRUE, &validSize);
+                }
+                return &rhd;
             }
-            else
-            {
-              rhd.memBase[i] = (u32_t)PCIGETMEMORY(base);
-              rhd.memtype[i] = base & PCI_MAP_MEMORY_ATTR_MASK;
-            }
-          }
-          rhd.memsize[i] = pciGetBaseSize(bus,devfn, i, TRUE, &validSize);
         }
-        return &rhd;
-      }
     };
-  };
-  return NULL;
+    return NULL;
 }
 
 

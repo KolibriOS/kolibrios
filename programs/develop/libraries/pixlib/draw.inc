@@ -558,29 +558,29 @@ int Blit(pixmap_t *dst_pixmap, int dst_x, int dst_y,
          int width, int height)
 {
 
-     clip_t src_clip, dst_clip;
+    clip_t src_clip, dst_clip;
 
-     if( ( width <= 0 ) || ( height<=0 ) )
+    if( ( width <= 0 ) || ( height<=0 ) )
         return ERR_PARAM;
 
-/*   if "hardware acceleration present" and
-     "destinastion is primary screen or local videomemory"  and
-     "source is primary screen or local videomemory"
+/*  if "hardware acceleration present" and
+    "destinastion is primary screen or local videomemory"
 */
-     if( (srv_hw2d != 0) &&
-         ( (dst_pixmap == (void*)-1) ||
-           ( (dst_pixmap->flags & PX_MEM_MASK)==PX_MEM_LOCAL) )  &&
+    if( (srv_hw2d != 0) &&
+        ( (dst_pixmap == (void*)-1) ||
+           ( (dst_pixmap->flags & PX_MEM_MASK)==PX_MEM_LOCAL) ) /* &&
          ( (src_pixmap == (void*)-1) ||
-           ( (src_pixmap->flags & PX_MEM_MASK)==PX_MEM_LOCAL) ) )
-     {
+           ( (src_pixmap->flags & PX_MEM_MASK)==PX_MEM_LOCAL) ) */ )
+    {
         ioctl_t io;
         pxblit_t *blit = (pxblit_t*)&dst_pixmap;
 
         if((int)dst_pixmap != -1)
-        blit->dst_pixmap = (pixmap_t*)dst_pixmap->handle;
+            blit->dst_pixmap = (pixmap_t*)dst_pixmap->handle;
 
-        if((int)src_pixmap != -1)
-           blit->src_pixmap = (pixmap_t*)src_pixmap->handle;
+        if( (int)src_pixmap != -1 &&
+            (src_pixmap->flags & PX_MEM_MASK) != PX_MEM_SYSTEM)
+            blit->src_pixmap = (pixmap_t*)src_pixmap->handle;
 
         io.handle   = srv_hw2d;
         io.io_code  = PX_BLIT;
@@ -590,83 +590,83 @@ int Blit(pixmap_t *dst_pixmap, int dst_x, int dst_y,
         io.out_size = 0;
 
         return call_service(&io);
-     }
+    }
 
-     dst_pixmap = (dst_pixmap == (void*)-1) ? &scrn_pixmap : dst_pixmap ;
-     src_pixmap = (src_pixmap == (void*)-1) ? &scrn_pixmap : src_pixmap ;
+    dst_pixmap = (dst_pixmap == (void*)-1) ? &scrn_pixmap : dst_pixmap ;
+    src_pixmap = (src_pixmap == (void*)-1) ? &scrn_pixmap : src_pixmap ;
 
-     src_clip.xmin = 0;
-     src_clip.ymin = 0;
-     src_clip.xmax = src_pixmap->width-1;
-     src_clip.ymax = src_pixmap->height-1;
+    src_clip.xmin = 0;
+    src_clip.ymin = 0;
+    src_clip.xmax = src_pixmap->width-1;
+    src_clip.ymax = src_pixmap->height-1;
 
-     dst_clip.xmin = 0;
-     dst_clip.ymin = 0;
-     dst_clip.xmax = dst_pixmap->width-1;
-     dst_clip.ymax = dst_pixmap->height-1;
+    dst_clip.xmin = 0;
+    dst_clip.ymin = 0;
+    dst_clip.xmax = dst_pixmap->width-1;
+    dst_clip.ymax = dst_pixmap->height-1;
 
-     if( !blit_clip(&dst_clip, &dst_x, &dst_y,
-                    &src_clip, &src_x, &src_y,
-                    &width, &height) )
-     {
+    if( !blit_clip(&dst_clip, &dst_x, &dst_y,
+                   &src_clip, &src_x, &src_y,
+                   &width, &height) )
+    {
         color_t *src_addr = &((color_t*)(src_pixmap->mapped))[src_pixmap->pitch*src_y/4+src_x];
         color_t *dst_addr = &((color_t*)(dst_pixmap->mapped))[dst_pixmap->pitch*dst_y/4+dst_x];
 
         while( height-- )
         {
-           int w = width;
-           color_t *tmp_src = src_addr;
-           color_t *tmp_dst = dst_addr;
+            int w = width;
+            color_t *tmp_src = src_addr;
+            color_t *tmp_dst = dst_addr;
 
-           src_addr += src_pixmap->pitch/4;
-           dst_addr += dst_pixmap->pitch/4;
+            src_addr += src_pixmap->pitch/4;
+            dst_addr += dst_pixmap->pitch/4;
 
-           while( w >= 8)
-           {
-              __asm__ __volatile__ (
-              "movq     (%0),   %%mm0\n"
-              "movq    8(%0),   %%mm1\n"
-              "movq   16(%0),   %%mm2\n"
-              "movq   24(%0),   %%mm3\n"
-              "movq   %%mm0,    (%1)\n"
-              "movq   %%mm1,   8(%1)\n"
-              "movq   %%mm2,  16(%1)\n"
-              "movq   %%mm3,  24(%1)\n"
-               :: "r" (tmp_src), "r" (tmp_dst)
-               : "memory", "%mm0", "%mm1", "%mm2", "%mm3");
-              w -= 8;
-              tmp_src += 8;
-              tmp_dst += 8;
-           };
-           if( w >= 4 )
-           {
-              __asm__ __volatile__ (
-              "movq     (%0),   %%mm0\n"
-              "movq    8(%0),   %%mm1\n"
-              "movq   %%mm0,    (%1)\n"
-              "movq   %%mm1,   8(%1)\n"
-              :: "r" (tmp_src), "r" (tmp_dst)
-              : "memory", "%mm0", "%mm1");
-              w -= 4;
-              tmp_src += 4;
-              tmp_dst += 4;
-           };
-           if( w >= 2 )
-           {
-              __asm__ __volatile__ (
-              "movq     (%0),   %%mm0\n"
-              "movq   %%mm0,    (%1)\n"
-              :: "r" (tmp_src), "r" (tmp_dst)
-              : "memory", "%mm0");
-              w -= 2;
-              tmp_src += 2;
-              tmp_dst += 2;
-           };
-           if( w )
-              *tmp_dst = *tmp_src;
+            while( w >= 8)
+            {
+                __asm__ __volatile__ (
+                "movq     (%0),   %%mm0\n"
+                "movq    8(%0),   %%mm1\n"
+                "movq   16(%0),   %%mm2\n"
+                "movq   24(%0),   %%mm3\n"
+                "movq   %%mm0,    (%1)\n"
+                "movq   %%mm1,   8(%1)\n"
+                "movq   %%mm2,  16(%1)\n"
+                "movq   %%mm3,  24(%1)\n"
+                :: "r" (tmp_src), "r" (tmp_dst)
+                : "memory", "%mm0", "%mm1", "%mm2", "%mm3");
+                w -= 8;
+                tmp_src += 8;
+                tmp_dst += 8;
+            };
+            if( w >= 4 )
+            {
+                __asm__ __volatile__ (
+                "movq     (%0),   %%mm0\n"
+                "movq    8(%0),   %%mm1\n"
+                "movq   %%mm0,    (%1)\n"
+                "movq   %%mm1,   8(%1)\n"
+                :: "r" (tmp_src), "r" (tmp_dst)
+                : "memory", "%mm0", "%mm1");
+                w -= 4;
+                tmp_src += 4;
+                tmp_dst += 4;
+            };
+            if( w >= 2 )
+            {
+                __asm__ __volatile__ (
+                "movq     (%0),   %%mm0\n"
+                "movq   %%mm0,    (%1)\n"
+                :: "r" (tmp_src), "r" (tmp_dst)
+                : "memory", "%mm0");
+                w -= 2;
+                tmp_src += 2;
+                tmp_dst += 2;
+            };
+            if( w )
+                *tmp_dst = *tmp_src;
         };
-     };
-     return ERR_OK;
+    };
+    return ERR_OK;
 };
 
 int TransparentBlit(pixmap_t *dst_pixmap, int dst_x, int dst_y,
@@ -705,6 +705,9 @@ int TransparentBlit(pixmap_t *dst_pixmap, int dst_x, int dst_y,
         return call_service(&io);
      };
 
+     dst_pixmap = (dst_pixmap == (void*)-1) ? &scrn_pixmap : dst_pixmap ;
+     src_pixmap = (src_pixmap == (void*)-1) ? &scrn_pixmap : src_pixmap ;
+
      src_clip.xmin = 0;
      src_clip.ymin = 0;
      src_clip.xmax = src_pixmap->width-1;
@@ -722,8 +725,6 @@ int TransparentBlit(pixmap_t *dst_pixmap, int dst_x, int dst_y,
      {
         __m64 clr_key;
 
-        dst_pixmap = (dst_pixmap == (void*)-1) ? &scrn_pixmap : dst_pixmap ;
-        src_pixmap = (src_pixmap == (void*)-1) ? &scrn_pixmap : src_pixmap ;
 
         color_t *src_addr = &((color_t*)(src_pixmap->mapped))[src_pixmap->pitch*src_y/4+src_x];
         color_t *dst_addr = &((color_t*)(dst_pixmap->mapped))[dst_pixmap->pitch*dst_y/4+dst_x];
@@ -766,4 +767,106 @@ int TransparentBlit(pixmap_t *dst_pixmap, int dst_x, int dst_y,
      return ERR_OK;
 }
 
+unsigned long long m_0080 = 0x0080008000800080ULL;
 
+int BlitAlpha(pixmap_t *dst_pixmap, int dst_x, int dst_y,
+              pixmap_t *src_pixmap, int src_x, int src_y,
+              int width, int height, u32_t alpha)
+{
+     clip_t src_clip, dst_clip;
+
+     if( (srv_hw2d != 0) &&
+         ( (dst_pixmap == (void*)-1) ||
+           ( (dst_pixmap->flags & PX_MEM_MASK)==PX_MEM_LOCAL) )  &&
+         ( (src_pixmap == (void*)-1) ||
+           ( (src_pixmap->flags & PX_MEM_MASK)==PX_MEM_LOCAL) ) )
+     {
+        ioctl_t io;
+        pxblit_t *blit = (pxblit_t*)&dst_pixmap;
+
+        if((int)dst_pixmap != -1)
+           blit->dst_pixmap = (pixmap_t*)dst_pixmap->handle;
+
+        if((int)src_pixmap != -1)
+           blit->src_pixmap = (pixmap_t*)src_pixmap->handle;
+
+        io.handle   = srv_hw2d;
+        io.io_code  = PX_BLIT_ALPHA;
+        io.input    = blit;
+        io.inp_size = 9;
+        io.output   = NULL;
+        io.out_size = 0;
+
+        return call_service(&io);
+     };
+
+     dst_pixmap = (dst_pixmap == (void*)-1) ? &scrn_pixmap : dst_pixmap ;
+     src_pixmap = (src_pixmap == (void*)-1) ? &scrn_pixmap : src_pixmap ;
+
+     src_clip.xmin = 0;
+     src_clip.ymin = 0;
+     src_clip.xmax = src_pixmap->width-1;
+     src_clip.ymax = src_pixmap->height-1;
+
+     dst_clip.xmin = 0;
+     dst_clip.ymin = 0;
+     dst_clip.xmax = dst_pixmap->width-1;
+     dst_clip.ymax = dst_pixmap->height-1;
+
+
+     if( !blit_clip(&dst_clip, &dst_x, &dst_y,
+                    &src_clip, &src_x, &src_y,
+                    &width, &height) )
+     {
+        __m64 m_alpha;
+        __m64 m_one_alpha;
+
+        color_t *src_addr = &((color_t*)(src_pixmap->mapped))[src_pixmap->pitch*src_y/4+src_x];
+        color_t *dst_addr = &((color_t*)(dst_pixmap->mapped))[dst_pixmap->pitch*dst_y/4+dst_x];
+
+        m_alpha = _mm_cvtsi32_si64((alpha << 16) | alpha);
+        m_alpha = _mm_unpacklo_pi32(m_alpha, m_alpha);
+        m_one_alpha = _mm_subs_pu16((__m64)0x00FF00FF00FF00FFULL, m_alpha);
+
+        while( height-- )
+        {
+           int w = width;
+           color_t *tmp_src = src_addr;
+           color_t *tmp_dst = dst_addr;
+
+           src_addr += src_pixmap->pitch/4;
+           dst_addr += dst_pixmap->pitch/4;
+
+           while( w-- )
+           {
+              __asm__ __volatile__ (
+              "movd (%0), %%mm0               \n\t"
+              "pxor    %%mm1, %%mm1           \n\t"
+              "punpcklbw  %%mm1, %%mm0        \n\t"
+              "pmullw  %[clr_key], %%mm0       \n\t"
+       //       "paddw   %[m_0080], %%mm0       \n\t"
+
+              "movd (%1), %%mm2               \n\t"
+              "punpcklbw  %%mm1, %%mm2        \n\t"
+              "pmullw  %[m_one_alpha], %%mm2  \n\t"
+       //       "paddw   %[m_0080], %%mm2       \n\t"
+
+              "paddw   %%mm2, %%mm0           \n\t"
+              "psrlw   $8, %%mm0              \n\t"
+              "packuswb %%mm0, %%mm0          \n\t"
+              "movd    %%mm0, (%1)"
+              :: "r" (tmp_src),
+                 "r" (tmp_dst),
+              [clr_key] "y" (m_alpha),
+              [m_one_alpha] "y" (m_one_alpha)
+              :"memory","mm0", "mm1", "mm2");
+
+              tmp_src++;
+              tmp_dst++;
+           };
+//           if( w && (*tmp_src != alpha) )
+//              *tmp_dst = *tmp_src;
+        };
+     };
+     return ERR_OK;
+}

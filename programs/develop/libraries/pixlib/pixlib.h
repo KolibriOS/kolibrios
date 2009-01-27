@@ -151,6 +151,7 @@ typedef struct
   int        src_y;
   int        w;
   int        h;
+  color_t    key;
 }pxblit_t;
 
 #define PX_CREATE              1

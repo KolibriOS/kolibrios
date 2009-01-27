@@ -39,8 +39,8 @@ R5xx2DFlush()
                 R5XX_DSTCACHE_FLUSH_ALL, R5XX_DSTCACHE_FLUSH_ALL);
 
     for (i = 0; i < R5XX_LOOP_COUNT; i++)
-      if (!(INREG(R5XX_DSTCACHE_CTLSTAT) & R5XX_DSTCACHE_BUSY))
-        return TRUE;
+        if (!(INREG(R5XX_DSTCACHE_CTLSTAT) & R5XX_DSTCACHE_BUSY))
+            return TRUE;
 
     dbgprintf("%s: Timeout 0x%08x.\n", __func__,
          (unsigned int)INREG(R5XX_DSTCACHE_CTLSTAT));
@@ -54,24 +54,23 @@ R5xx2DIdleLocal()                                //R100-R500
 
       /* wait for fifo to clear */
     for (i = 0; i < R5XX_LOOP_COUNT; i++)
-      if (64 == (INREG(R5XX_RBBM_STATUS) & R5XX_RBBM_FIFOCNT_MASK))
-        break;
+        if (64 == (INREG(R5XX_RBBM_STATUS) & R5XX_RBBM_FIFOCNT_MASK))
+            break;
 
     if (i == R5XX_LOOP_COUNT) {
-      dbgprintf("%s: FIFO Timeout 0x%08X.\n", __func__,INREG(R5XX_RBBM_STATUS));
-      return FALSE;
+        dbgprintf("%s: FIFO Timeout 0x%08X.\n", __func__,INREG(R5XX_RBBM_STATUS));
+        return FALSE;
     }
 
       /* wait for engine to go idle */
     for (i = 0; i < R5XX_LOOP_COUNT; i++) {
-      if (!(INREG(R5XX_RBBM_STATUS) & R5XX_RBBM_ACTIVE)) {
-        R5xx2DFlush();
-        return TRUE;
-      }
+        if (!(INREG(R5XX_RBBM_STATUS) & R5XX_RBBM_ACTIVE)) {
+            R5xx2DFlush();
+            return TRUE;
+        }
     }
     dbgprintf("%s: Idle Timeout 0x%08X.\n", __func__,INREG(R5XX_RBBM_STATUS));
     return FALSE;
-
 }
 
 
@@ -174,6 +173,7 @@ void  R5xx2DInit()
     scr_pixmap.width  = rhd.displayWidth;
     scr_pixmap.height = rhd.displayHeight;
     scr_pixmap.format = PICT_a8r8g8b8;
+    scr_pixmap.flags  = PX_MEM_LOCAL;
     scr_pixmap.pitch  = rhd.displayWidth * 4     ;//screenpitch;
     scr_pixmap.local  = (void*)rhd.fbLocation;
     scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
@@ -188,9 +188,10 @@ void  R5xx2DInit()
 
     OUTREG(R5XX_SURFACE_CNTL, rhd.surface_cntl);
 
-#if R300_PIO
-#else
+#if !R300_PIO
+
     init_cp(&rhd);
+
 #endif
 
     R5xx2DSetup();

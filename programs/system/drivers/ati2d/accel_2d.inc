@@ -567,42 +567,139 @@ int FillRect(io_fill_t *fill)
 };
 
 
+#define ADDRREG(addr)  ((volatile u32_t *)(rhd.MMIOBase + (addr)))
+
+
+static int blit_host(u32_t dstpitch, int dstx, int dsty,
+                     u32_t  src, int srcx, int srcy,
+                     int w, int h, int srcpitch)
+{
+    u32_t     ifl;
+    color_t  *src_addr;
+
+    ifl = safe_cli();
+
+#if R300_PIO
+
+    R5xxFIFOWait(5);
+
+    OUTREG(R5XX_DP_GUI_MASTER_CNTL,
+               RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+//               RADEON_GMC_DST_CLIPPING           |
+               RADEON_GMC_BRUSH_NONE             |
+               RADEON_GMC_DST_32BPP              |
+               RADEON_GMC_SRC_DATATYPE_COLOR     |
+               RADEON_DP_SRC_SOURCE_HOST_DATA    |
+          //     RADEON_GMC_BYTE_MSB_TO_LSB        |
+               R5XX_GMC_CLR_CMP_CNTL_DIS         |
+               R5XX_GMC_WR_MSK_DIS               |
+               R5XX_ROP3_S
+              );
+
+    OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT |
+                         R5XX_DST_Y_TOP_TO_BOTTOM);
+
+    OUTREG(R5XX_DST_PITCH_OFFSET, dstpitch);
+
+//        OUTREG(RADEON_SC_TOP_LEFT, (y << 16) | ((x+skipleft) & 0xffff));
+//        OUTREG(RADEON_SC_BOTTOM_RIGHT,  ((y+h) << 16) | ((x+w) & 0xffff));
+
+    OUTREG(RADEON_DST_Y_X, (dsty << 16) | (dstx & 0xffff));
+    OUTREG(RADEON_DST_HEIGHT_WIDTH, (h << 16) | w);
+
+
+    src_addr = &((color_t*)src)[srcpitch*srcy/4+srcx];
+
+    while ( h-- )
+    {
+        color_t *tmp_src = src_addr;
+        src_addr += srcpitch/4;
+
+        int left = w;
+
+        while( left )
+        {
+            volatile u32_t *d;
+
+            if( left > 8 )
+            {
+                int i;
+
+                R5xxFIFOWait(8);
+                d = ADDRREG(RADEON_HOST_DATA0);
+
+				/* Unrolling doesn't improve performance */
+                for ( i = 0; i < 8; i++)
+                    *d++ = *tmp_src++;
+                left -= 8;
+            }
+            else
+            {
+                R5xxFIFOWait(left);
+
+                if( h )
+                    d = ADDRREG(RADEON_HOST_DATA7) - (left - 1);
+                else
+                    d = ADDRREG(RADEON_HOST_DATA_LAST) - (left - 1);
+
+                for ( ; left; --left)
+                    *d++ = *tmp_src++;
+                left = 0;
+            };
+        };
+    };
+
+#endif
+
+    safe_sti(ifl);
+
+    return ERR_OK;
+}
+
 
 int Blit(io_blit_t *blit)
 {
-     clip_t src_clip, dst_clip;
+    clip_t src_clip, dst_clip;
 
-     local_pixmap_t *srcpixmap;
-     local_pixmap_t *dstpixmap;
+    local_pixmap_t *srcpixmap;
+    local_pixmap_t *dstpixmap;
 
-     //dbgprintf("Pixblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
+    //dbgprintf("Pixblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
 
-     dstpixmap = (blit->dstpix == (void*)-1) ? &scr_pixmap : blit->dstpix ;
-     srcpixmap = (blit->srcpix == (void*)-1) ? &scr_pixmap : blit->srcpix ;
+    dstpixmap = (blit->dstpix == (void*)-1) ? &scr_pixmap : blit->dstpix ;
+    srcpixmap = (blit->srcpix == (void*)-1) ? &scr_pixmap : blit->srcpix ;
 
-     //dbgprintf("srcpixmap: %x dstpixmap: %x\n",srcpixmap, dstpixmap);
+    //dbgprintf("srcpixmap: %x dstpixmap: %x\n",srcpixmap, dstpixmap);
 
-     //dbgprintf("dst.width: %d dst.height: %d\n", dstpixmap->width,dstpixmap->height);
-     //dbgprintf("src.width: %d src.height: %d\n", srcpixmap->width,srcpixmap->height);
-     //dbgprintf("srcpitch: %x dstpitch: %x\n",
-     //           srcpixmap->pitch_offset,dstpixmap->pitch_offset);
+    //dbgprintf("dst.width: %d dst.height: %d\n", dstpixmap->width,dstpixmap->height);
+    //dbgprintf("src.width: %d src.height: %d\n", srcpixmap->width,srcpixmap->height);
+    //dbgprintf("srcpitch: %x dstpitch: %x\n",
+    //           srcpixmap->pitch_offset,dstpixmap->pitch_offset);
 
-     src_clip.xmin = 0;
-     src_clip.ymin = 0;
-     src_clip.xmax = srcpixmap->width-1;
-     src_clip.ymax = srcpixmap->height-1;
+    src_clip.xmin = 0;
+    src_clip.ymin = 0;
+    src_clip.xmax = srcpixmap->width-1;
+    src_clip.ymax = srcpixmap->height-1;
 
-     dst_clip.xmin = 0;
-     dst_clip.ymin = 0;
-     dst_clip.xmax = dstpixmap->width-1;
-     dst_clip.ymax = dstpixmap->height-1;
+    dst_clip.xmin = 0;
+    dst_clip.ymin = 0;
+    dst_clip.xmax = dstpixmap->width-1;
+    dst_clip.ymax = dstpixmap->height-1;
 
-     if( !blit_clip(&dst_clip, &blit->dst_x, &blit->dst_y,
-                    &src_clip, &blit->src_x, &blit->src_y,
-                    &blit->w, &blit->h) )
-     {
+    if( !blit_clip(&dst_clip, &blit->dst_x, &blit->dst_y,
+                   &src_clip, &blit->src_x, &blit->src_y,
+                   &blit->w, &blit->h) )
+    {
         u32_t *ring, write;
         u32_t ifl;
+
+        if( (srcpixmap->flags & PX_MEM_MASK)==PX_MEM_SYSTEM)
+            return blit_host(dstpixmap->pitch_offset,
+                             blit->dst_x, blit->dst_y,
+                             srcpixmap->mapped,
+                             blit->src_x, blit->src_y,
+                             blit->w, blit->h,
+                             srcpixmap->pitch);
 
         ifl = safe_cli();
 
@@ -632,31 +729,31 @@ int Blit(io_blit_t *blit)
         OUTREG(R5XX_DST_HEIGHT_WIDTH,(blit->h<<16)|blit->w);
 
 #else
-        BEGIN_RING(7);
+    BEGIN_RING(7);
 
-          OUT_RING(CP_PACKET3(RADEON_CNTL_BITBLT, 5));
+        OUT_RING(CP_PACKET3(RADEON_CNTL_BITBLT, 5));
 
-          OUT_RING(RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
-                   RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
-                   RADEON_GMC_BRUSH_NONE             |
-                   RADEON_GMC_DST_32BPP              |
-                   RADEON_GMC_SRC_DATATYPE_COLOR     |
-                   RADEON_DP_SRC_SOURCE_MEMORY       |
-                   R5XX_GMC_CLR_CMP_CNTL_DIS         |
-                   R5XX_GMC_WR_MSK_DIS               |
-                   R5XX_ROP3_S
-                  );
+        OUT_RING(RADEON_GMC_SRC_PITCH_OFFSET_CNTL  |
+                 RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
+                 RADEON_GMC_BRUSH_NONE             |
+                 RADEON_GMC_DST_32BPP              |
+                 RADEON_GMC_SRC_DATATYPE_COLOR     |
+                 RADEON_DP_SRC_SOURCE_MEMORY       |
+                 R5XX_GMC_CLR_CMP_CNTL_DIS         |
+                 R5XX_GMC_WR_MSK_DIS               |
+                 R5XX_ROP3_S
+                );
 
-          OUT_RING(srcpixmap->pitch_offset);
-          OUT_RING(dstpixmap->pitch_offset);
+        OUT_RING(srcpixmap->pitch_offset);
+        OUT_RING(dstpixmap->pitch_offset);
 
-          OUT_RING((blit->src_x<<16)|blit->src_y);
-          OUT_RING((blit->dst_x<<16)|blit->dst_y);
-          OUT_RING((blit->w<<16)|blit->h);
-        COMMIT_RING();
+        OUT_RING((blit->src_x<<16)|blit->src_y);
+        OUT_RING((blit->dst_x<<16)|blit->dst_y);
+        OUT_RING((blit->w<<16)|blit->h);
+    COMMIT_RING();
 
 #endif
-       safe_sti(ifl);
+        safe_sti(ifl);
      };
      return ERR_OK;
 };

@@ -22,8 +22,7 @@ SRC_DEP:=    init.c    		\
              blend.inc          \
              r500.inc           \
              pixmap.inc		\
-             accel_2d.inc  	\
-             accel_3d.inc
+             accel_2d.inc
 
 ATI_SRC:=    ati2d.c     
 

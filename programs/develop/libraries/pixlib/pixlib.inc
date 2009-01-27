@@ -126,6 +126,21 @@ macro Blit dstpix, dstx, dsty, srcpix, srcx, srcy, w, h
            add esp, 8*4
 }
 
+macro BlitAlpha dstpix, dstx, dsty, srcpix, srcx, srcy, w, h, alpha
+{
+           pushd alpha
+           pushd h
+           pushd w
+           pushd srcy
+           pushd srcx
+           pushd srcpix
+           pushd dsty
+           pushd dstx
+           pushd dstpix
+           call [imp_BlitAlpha]
+           add esp, 9*4
+}
+
 macro TransparentBlit dstpix, dstx, dsty, srcpix, srcx, srcy, w, h, key
 {
            pushd key
@@ -139,6 +154,25 @@ macro TransparentBlit dstpix, dstx, dsty, srcpix, srcx, srcy, w, h, key
            pushd dstpix
            call [imp_TransparentBlit]
            add esp, 9*4
+}
+
+
+macro fix_cwd  path
+{
+          pushd path
+
+          push '/'
+          push path
+          call _strrchr
+
+          mov byte [eax], 0
+
+          mov eax, 30
+          mov ebx, 1
+          mov ecx, [esp+8]
+          int 0x40
+
+          add esp, 12
 }
 
 szPxlib              db  '/rd/1/lib/pixlib.obj',0
@@ -162,6 +196,7 @@ szDrawRect           db  'DrawRect',0
 szFillRect           db  'FillRect',0
 szBlit               db  'Blit',0
 szTransparentBlit    db  'TransparentBlit',0
+szBlitAlpha          db  'BlitAlpha',0
 
 align 4
 
@@ -186,6 +221,7 @@ imp_DrawRect         dd  szDrawRect
 imp_FillRect         dd  szFillRect
 imp_Blit             dd  szBlit
 imp_TransparentBlit  dd  szTransparentBlit
+imp_BlitAlpha        dd  szBlitAlpha
 
                      dd  0
 
@@ -257,4 +293,31 @@ load_pxlib:
            xor eax, eax
            ret
 
-
+align 4
+_strrchr:
+	push	ebp
+	mov	ebp, esp
+	push	edi
+        mov     edi, [8+ebp]
+        mov     ecx, -1
+        xor     al, al
+        cld
+        repne
+        scasb
+        not     ecx
+        dec     edi
+        mov     al, [12+ebp]
+        std
+        repne
+        scasb
+        cld
+        jne     .failure
+        lea     eax, [edi+1]
+        pop     edi
+        pop     ebp
+        ret
+.failure:
+        xor     eax, eax
+        pop     edi
+        pop     ebp
+        ret

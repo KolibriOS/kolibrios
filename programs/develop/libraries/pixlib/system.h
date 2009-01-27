@@ -18,6 +18,12 @@ typedef struct
 
 ///////////////////////////////////////////////////////////////////////////////
 
+#ifdef KOLIBRI_PE
+  #define  LFB_BASE   0xDF000000
+#else
+  #define  LFB_BASE   0xFE000000
+#endif
+
 
 void usleep(u32_t delay);
 

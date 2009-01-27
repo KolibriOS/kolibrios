@@ -19,25 +19,25 @@ unsigned INMC(RHDPtr info, int addr)
 
     if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
        (info->ChipFamily == CHIP_FAMILY_RS740)) {
-       OUTREG(RS690_MC_INDEX, (addr & RS690_MC_INDEX_MASK));
-       data = INREG(RS690_MC_DATA);
+        OUTREG(RS690_MC_INDEX, (addr & RS690_MC_INDEX_MASK));
+        data = INREG(RS690_MC_DATA);
     } else if (info->ChipFamily == CHIP_FAMILY_RS600) {
-       OUTREG(RS600_MC_INDEX, (addr & RS600_MC_INDEX_MASK));
-       data = INREG(RS600_MC_DATA);
+        OUTREG(RS600_MC_INDEX, (addr & RS600_MC_INDEX_MASK));
+        data = INREG(RS600_MC_DATA);
     } else if (IS_AVIVO_VARIANT) {
-       OUTREG(AVIVO_MC_INDEX, (addr & 0xff) | 0x7f0000);
-       (void)INREG(AVIVO_MC_INDEX);
-       data = INREG(AVIVO_MC_DATA);
+        OUTREG(AVIVO_MC_INDEX, (addr & 0xff) | 0x7f0000);
+        (void)INREG(AVIVO_MC_INDEX);
+        data = INREG(AVIVO_MC_DATA);
 
-       OUTREG(AVIVO_MC_INDEX, 0);
-       (void)INREG(AVIVO_MC_INDEX);
+        OUTREG(AVIVO_MC_INDEX, 0);
+        (void)INREG(AVIVO_MC_INDEX);
     } else {
-       OUTREG(R300_MC_IND_INDEX, addr & 0x3f);
-       (void)INREG(R300_MC_IND_INDEX);
-       data = INREG(R300_MC_IND_DATA);
+        OUTREG(R300_MC_IND_INDEX, addr & 0x3f);
+        (void)INREG(R300_MC_IND_INDEX);
+        data = INREG(R300_MC_IND_DATA);
 
-       OUTREG(R300_MC_IND_INDEX, 0);
-       (void)INREG(R300_MC_IND_INDEX);
+        OUTREG(R300_MC_IND_INDEX, 0);
+        (void)INREG(R300_MC_IND_INDEX);
     }
 
     return data;
@@ -46,65 +46,65 @@ unsigned INMC(RHDPtr info, int addr)
      /* Write MC information */
 void OUTMC(RHDPtr info, int addr, u32_t data)
 {
-     if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
-         (info->ChipFamily == CHIP_FAMILY_RS740)) {
+    if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+        (info->ChipFamily == CHIP_FAMILY_RS740)) {
         OUTREG(RS690_MC_INDEX, ((addr & RS690_MC_INDEX_MASK) | RS690_MC_INDEX_WR_EN));
-        OUTREG(RS690_MC_DATA, data);
+         OUTREG(RS690_MC_DATA, data);
         OUTREG(RS690_MC_INDEX, RS690_MC_INDEX_WR_ACK);
-     }
-     else if (info->ChipFamily == CHIP_FAMILY_RS600) {
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RS600) {
         OUTREG(RS600_MC_INDEX, ((addr & RS600_MC_INDEX_MASK) | RS600_MC_INDEX_WR_EN));
         OUTREG(RS600_MC_DATA, data);
         OUTREG(RS600_MC_INDEX, RS600_MC_INDEX_WR_ACK);
-     }
-     else if (IS_AVIVO_VARIANT) {
+    }
+    else if (IS_AVIVO_VARIANT) {
         OUTREG(AVIVO_MC_INDEX, (addr & 0xff) | 0xff0000);
         (void)INREG(AVIVO_MC_INDEX);
         OUTREG(AVIVO_MC_DATA, data);
         OUTREG(AVIVO_MC_INDEX, 0);
         (void)INREG(AVIVO_MC_INDEX);
-     }
-     else {
+    }
+    else {
         OUTREG(R300_MC_IND_INDEX, (((addr) & 0x3f) | R300_MC_IND_WR_EN));
         (void)INREG(R300_MC_IND_INDEX);
         OUTREG(R300_MC_IND_DATA, data);
         OUTREG(R300_MC_IND_INDEX, 0);
         (void)INREG(R300_MC_IND_INDEX);
-     }
+    }
 }
 
 static Bool avivo_get_mc_idle(RHDPtr info)
 {
 
-     if (info->ChipFamily >= CHIP_FAMILY_R600) {
+    if (info->ChipFamily >= CHIP_FAMILY_R600) {
 	/* no idea where this is on r600 yet */
         return TRUE;
-     }
-     else if (info->ChipFamily == CHIP_FAMILY_RV515) {
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RV515) {
         if (INMC(info, RV515_MC_STATUS) & RV515_MC_STATUS_IDLE)
-           return TRUE;
+            return TRUE;
         else
-           return FALSE;
-     }
-     else if (info->ChipFamily == CHIP_FAMILY_RS600)
-     {
+            return FALSE;
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RS600)
+    {
         if (INMC(info, RS600_MC_STATUS) & RS600_MC_STATUS_IDLE)
-           return TRUE;
+            return TRUE;
         else
-           return FALSE;
-     }
-     else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
-	       (info->ChipFamily == CHIP_FAMILY_RS740)) {
+            return FALSE;
+    }
+    else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+          (info->ChipFamily == CHIP_FAMILY_RS740)) {
         if (INMC(info, RS690_MC_STATUS) & RS690_MC_STATUS_IDLE)
-           return TRUE;
+            return TRUE;
         else
-           return FALSE;
+            return FALSE;
     }
     else {
-       if (INMC(info, R520_MC_STATUS) & R520_MC_STATUS_IDLE)
-           return TRUE;
-       else
-           return FALSE;
+        if (INMC(info, R520_MC_STATUS) & R520_MC_STATUS_IDLE)
+            return TRUE;
+        else
+            return FALSE;
     }
 }
 
@@ -448,115 +448,115 @@ static void RADEONUpdateMemMapRegisters(RHDPtr info)
 #endif
 
 
-
 static void RADEONInitMemoryMap(RHDPtr info)
 {
-     u32_t       mem_size;
-     u32_t       aper_size;
+    u32_t       mem_size;
+    u32_t       aper_size;
 
-     radeon_read_mc_fb_agp_location(info, LOC_FB | LOC_AGP, &info->mc_fb_location,
-                    &info->mc_agp_location, &info->mc_agp_location_hi);
+    radeon_read_mc_fb_agp_location(info, LOC_FB | LOC_AGP, &info->mc_fb_location,
+                   &info->mc_agp_location, &info->mc_agp_location_hi);
 
-      dbgprintf("  MC_FB_LOCATION   : 0x%08x\n", (unsigned)info->mc_fb_location);
-      dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
+    dbgprintf("  MC_FB_LOCATION   : 0x%08x\n", (unsigned)info->mc_fb_location);
+    dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
 
 
-     /* We shouldn't use info->videoRam here which might have been clipped
-      * but the real video RAM instead
-      */
-     if (info->ChipFamily >= CHIP_FAMILY_R600){
+    /* We shouldn't use info->videoRam here which might have been clipped
+     * but the real video RAM instead
+     */
+    if (info->ChipFamily >= CHIP_FAMILY_R600){
         mem_size = INREG(R600_CONFIG_MEMSIZE);
         aper_size = INREG(R600_CONFIG_APER_SIZE);
-     }
-     else {
+    }
+    else {
         mem_size = INREG(RADEON_CONFIG_MEMSIZE);
         aper_size = INREG(RADEON_CONFIG_APER_SIZE);
-     }
+    }
 
-     if (mem_size == 0)
+    if (mem_size == 0)
         mem_size = 0x800000;
 
-     /* Fix for RN50, M6, M7 with 8/16/32(??) MBs of VRAM -
-        Novell bug 204882 + along with lots of ubuntu ones */
-     if (aper_size > mem_size)
+    /* Fix for RN50, M6, M7 with 8/16/32(??) MBs of VRAM -
+       Novell bug 204882 + along with lots of ubuntu ones */
+    if (aper_size > mem_size)
         mem_size = aper_size;
 
 
-     if ( (info->ChipFamily != CHIP_FAMILY_RS600) &&
-          (info->ChipFamily != CHIP_FAMILY_RS690) &&
-          (info->ChipFamily != CHIP_FAMILY_RS740)) {
+    if ( (info->ChipFamily != CHIP_FAMILY_RS600) &&
+         (info->ChipFamily != CHIP_FAMILY_RS690) &&
+         (info->ChipFamily != CHIP_FAMILY_RS740))
+    {
         if (info->IsIGP)
-           info->mc_fb_location = INREG(RADEON_NB_TOM);
+          info->mc_fb_location = INREG(RADEON_NB_TOM);
         else
         {
-           u32_t aper0_base;
+            u32_t aper0_base;
 
-           if (info->ChipFamily >= CHIP_FAMILY_R600) {
-              aper0_base = INREG(R600_CONFIG_F0_BASE);
-           }
-           else {
-              aper0_base = INREG(RADEON_CONFIG_APER_0_BASE);
-           }
-           dbgprintf("aper0 base %x\n", aper0_base );
+            if (info->ChipFamily >= CHIP_FAMILY_R600) {
+                aper0_base = INREG(R600_CONFIG_F0_BASE);
+            }
+            else {
+                aper0_base = INREG(RADEON_CONFIG_APER_0_BASE);
+            }
+            dbgprintf("aper0 base %x\n", aper0_base );
 
-         /* Recent chips have an "issue" with the memory controller, the
-          * location must be aligned to the size. We just align it down,
-          * too bad if we walk over the top of system memory, we don't
-          * use DMA without a remapped anyway.
-          * Affected chips are rv280, all r3xx, and all r4xx, but not IGP
-          */
-           if ( info->ChipFamily == CHIP_FAMILY_RV280 ||
-                info->ChipFamily == CHIP_FAMILY_R300 ||
-                info->ChipFamily == CHIP_FAMILY_R350 ||
-                info->ChipFamily == CHIP_FAMILY_RV350 ||
-                info->ChipFamily == CHIP_FAMILY_RV380 ||
-                info->ChipFamily == CHIP_FAMILY_R420 ||
-                info->ChipFamily == CHIP_FAMILY_RV410)
-              aper0_base &= ~(mem_size - 1);
+        /* Recent chips have an "issue" with the memory controller, the
+         * location must be aligned to the size. We just align it down,
+         * too bad if we walk over the top of system memory, we don't
+         * use DMA without a remapped anyway.
+         * Affected chips are rv280, all r3xx, and all r4xx, but not IGP
+         */
+            if ( info->ChipFamily == CHIP_FAMILY_RV280 ||
+                 info->ChipFamily == CHIP_FAMILY_R300 ||
+                 info->ChipFamily == CHIP_FAMILY_R350 ||
+                 info->ChipFamily == CHIP_FAMILY_RV350 ||
+                 info->ChipFamily == CHIP_FAMILY_RV380 ||
+                 info->ChipFamily == CHIP_FAMILY_R420 ||
+                 info->ChipFamily == CHIP_FAMILY_RV410)
+                aper0_base &= ~(mem_size - 1);
 
-           if ( info->ChipFamily >= CHIP_FAMILY_R600) {
-              info->mc_fb_location = (aper0_base >> 24) |
-              (((aper0_base + mem_size - 1) & 0xff000000U) >> 8);
-              dbgprintf("mc fb loc is %08x\n", (unsigned int)info->mc_fb_location);
-           }
-           else {
-              info->mc_fb_location = (aper0_base >> 16) |
-              ((aper0_base + mem_size - 1) & 0xffff0000U);
-              dbgprintf("mc fb loc is %08x\n", (unsigned int)info->mc_fb_location);
-           }
+            if ( info->ChipFamily >= CHIP_FAMILY_R600) {
+                 info->mc_fb_location = (aper0_base >> 24) |
+                 (((aper0_base + mem_size - 1) & 0xff000000U) >> 8);
+                dbgprintf("mc fb loc is %08x\n", (unsigned int)info->mc_fb_location);
+            }
+            else {
+                info->mc_fb_location = (aper0_base >> 16) |
+                ((aper0_base + mem_size - 1) & 0xffff0000U);
+                dbgprintf("mc fb loc is %08x\n", (unsigned int)info->mc_fb_location);
+            }
         }
-     }
-     if (info->ChipFamily >= CHIP_FAMILY_R600) {
+    }
+    if (info->ChipFamily >= CHIP_FAMILY_R600) {
         info->fbLocation = (info->mc_fb_location & 0xffff) << 24;
-     }
-     else {
+    }
+    else {
         info->fbLocation = (info->mc_fb_location & 0xffff) << 16;
-     }
-     /* Just disable the damn AGP apertures for now, it may be
-      * re-enabled later by the DRM
-      */
+    }
+    /* Just disable the damn AGP apertures for now, it may be
+     * re-enabled later by the DRM
+     */
 
-//     if (IS_AVIVO_VARIANT) {
-//        if (info->ChipFamily >= CHIP_FAMILY_R600) {
-//           OUTREG(R600_HDP_NONSURFACE_BASE, (info->mc_fb_location << 16) & 0xff0000);
-//        }
-//        else {
-//           OUTREG(AVIVO_HDP_FB_LOCATION, info->mc_fb_location);
-//        }
-//        info->mc_agp_location = 0x003f0000;
-//     }
-//     else
-//         info->mc_agp_location = 0xffffffc0;
+//    if (IS_AVIVO_VARIANT) {
+//       if (info->ChipFamily >= CHIP_FAMILY_R600) {
+//          OUTREG(R600_HDP_NONSURFACE_BASE, (info->mc_fb_location << 16) & 0xff0000);
+//       }
+//       else {
+//          OUTREG(AVIVO_HDP_FB_LOCATION, info->mc_fb_location);
+//       }
+//       info->mc_agp_location = 0x003f0000;
+//    }
+//    else
+//        info->mc_agp_location = 0xffffffc0;
 
-      dbgprintf("RADEONInitMemoryMap() : \n");
-      dbgprintf("  mem_size         : 0x%08x\n", (u32_t)mem_size);
-      dbgprintf("  MC_FB_LOCATION   : 0x%08x\n", (unsigned)info->mc_fb_location);
-      dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
-      dbgprintf("  FB_LOCATION   : 0x%08x\n", (unsigned)info->fbLocation);
+    dbgprintf("RADEONInitMemoryMap() : \n");
+    dbgprintf("  mem_size         : 0x%08x\n", (u32_t)mem_size);
+    dbgprintf("  MC_FB_LOCATION   : 0x%08x\n", (unsigned)info->mc_fb_location);
+    dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
+    dbgprintf("  FB_LOCATION   : 0x%08x\n", (unsigned)info->fbLocation);
 
 #if !R300_PIO
 
-      RADEONUpdateMemMapRegisters(info);
+    RADEONUpdateMemMapRegisters(info);
 
 #endif
 
@@ -813,31 +813,31 @@ static Bool RADEONPreInitVRAM(RHDPtr info)
 
 static Bool RADEONPreInitChipType(RHDPtr rhdPtr)
 {
-     u32_t cmd_stat;
+    u32_t cmd_stat;
 
-     rhdPtr->ChipErrata = 0;
+    rhdPtr->ChipErrata = 0;
 
-     if ( (rhdPtr->ChipFamily == CHIP_FAMILY_R300) &&
-          ((_RHDRegRead(rhdPtr,RADEON_CONFIG_CNTL) & RADEON_CFG_ATI_REV_ID_MASK)
-           == RADEON_CFG_ATI_REV_A11))
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_R300) &&
+         ((_RHDRegRead(rhdPtr,RADEON_CONFIG_CNTL) & RADEON_CFG_ATI_REV_ID_MASK)
+          == RADEON_CFG_ATI_REV_A11))
         rhdPtr->ChipErrata |= CHIP_ERRATA_R300_CG;
 
-     if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RV200) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) )
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RV200) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) )
         rhdPtr->ChipErrata |= CHIP_ERRATA_PLL_DUMMYREADS;
 
-     if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RV100) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS100) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) )
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RV100) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS100) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) )
         rhdPtr->ChipErrata |= CHIP_ERRATA_PLL_DELAY;
 
-     rhdPtr->cardType = CARD_PCI;
+    rhdPtr->cardType = CARD_PCI;
 
 
-     cmd_stat = pciReadLong(rhdPtr->PciTag, PCI_CMD_STAT_REG);
+    cmd_stat = pciReadLong(rhdPtr->PciTag, PCI_CMD_STAT_REG);
 
-     if (cmd_stat & RADEON_CAP_LIST)
-     {
+    if (cmd_stat & RADEON_CAP_LIST)
+    {
         u32_t cap_ptr, cap_id;
 
         cap_ptr = pciReadLong(rhdPtr->PciTag, RADEON_CAPABILITIES_PTR_PCI_CONFIG);
@@ -845,42 +845,42 @@ static Bool RADEONPreInitChipType(RHDPtr rhdPtr)
 
         while(cap_ptr != RADEON_CAP_ID_NULL)
         {
-           cap_id = pciReadLong(rhdPtr->PciTag, cap_ptr);
-           if ((cap_id & 0xff)== RADEON_CAP_ID_AGP) {
-              rhdPtr->cardType = CARD_AGP;
-              break;
-           }
-           if ((cap_id & 0xff)== RADEON_CAP_ID_EXP) {
-              rhdPtr->cardType = CARD_PCIE;
-              break;
-           }
-           cap_ptr = (cap_id >> 8) & RADEON_CAP_PTR_MASK;
+            cap_id = pciReadLong(rhdPtr->PciTag, cap_ptr);
+            if ((cap_id & 0xff)== RADEON_CAP_ID_AGP) {
+                 rhdPtr->cardType = CARD_AGP;
+                break;
+            }
+            if ((cap_id & 0xff)== RADEON_CAP_ID_EXP) {
+                rhdPtr->cardType = CARD_PCIE;
+                break;
+            }
+            cap_ptr = (cap_id >> 8) & RADEON_CAP_PTR_MASK;
         }
-     }
+    }
 
-     dbgprintf("%s card detected\n",(rhdPtr->cardType==CARD_PCI) ? "PCI" :
-               (rhdPtr->cardType==CARD_PCIE) ? "PCIE" : "AGP");
+    dbgprintf("%s card detected\n",(rhdPtr->cardType==CARD_PCI) ? "PCI" :
+              (rhdPtr->cardType==CARD_PCIE) ? "PCIE" : "AGP");
 
     /* treat PCIE IGP cards as PCI  */
-     if (rhdPtr->cardType == CARD_PCIE && rhdPtr->IsIGP)
-         rhdPtr->cardType = CARD_PCI;
+    if (rhdPtr->cardType == CARD_PCIE && rhdPtr->IsIGP)
+        rhdPtr->cardType = CARD_PCI;
 
-     if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RS100) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS300) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS400) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS480) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS600) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS690) ||
-          (rhdPtr->ChipFamily == CHIP_FAMILY_RS740))
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RS100) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS300) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS400) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS480) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS600) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS690) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS740))
         rhdPtr->has_tcl = FALSE;
-     else {
+    else {
         rhdPtr->has_tcl = TRUE;
-     }
+    }
 
-     rhdPtr->LinearAddr = rhdPtr->memBase[RHD_FB_BAR];
+    rhdPtr->LinearAddr = rhdPtr->memBase[RHD_FB_BAR];
 
-     return TRUE;
+    return TRUE;
 }
 
 #if 0
@@ -958,29 +958,29 @@ Bool RHDPreInit()
     RHDPtr info;
 
     /* We need access to IO space already */
-     if ( !rhdMapMMIO(&rhd) ) {
+    if ( !rhdMapMMIO(&rhd) ) {
         dbgprintf("Failed to map MMIO.\n");
         return FALSE;
-     };
+    };
 
 
-     if( !RADEONPreInitChipType(&rhd))
-        return FALSE;
+    if( !RADEONPreInitChipType(&rhd))
+       return FALSE;
 
-     if (!RADEONPreInitVRAM(&rhd))
-        return FALSE;
+    if (!RADEONPreInitVRAM(&rhd))
+       return FALSE;
 
-     RADEONInitMemoryMap(&rhd);
+    RADEONInitMemoryMap(&rhd);
 
-     if (!rhd.videoRam)
-     {
-        dbgprintf("No Video RAM detected.\n");
-        goto error1;
-     }
-     dbgprintf("VideoRAM: %d kByte\n",rhd.videoRam);
+    if (!rhd.videoRam)
+    {
+       dbgprintf("No Video RAM detected.\n");
+       goto error1;
+    }
+    dbgprintf("VideoRAM: %d kByte\n",rhd.videoRam);
 
  //    rhd.FbFreeStart = 0;
-     rhd.FbFreeSize = rhd.videoRam << 10;
+    rhd.FbFreeSize = rhd.videoRam << 10;
 
  // if( !rhdMapFB(&rhd))
 //    return FALSE;
@@ -988,19 +988,131 @@ Bool RHDPreInit()
 //  rhd.FbScanoutStart = 0;
 //  rhd.FbScanoutSize  = 8*1024*1024;
 
-  rhd.FbFreeStart    = 10*1024*1024;
-  rhd.FbFreeSize     = rhd.FbMapSize - rhd.FbFreeStart - rhd.FbSecureSize;
+    rhd.FbFreeStart    = 10*1024*1024;
+    rhd.FbFreeSize     = rhd.FbMapSize - rhd.FbFreeStart - rhd.FbSecureSize;
 
-  rhdInitHeap(&rhd);
+    rhdInitHeap(&rhd);
 
-     info = &rhd;
+    info = &rhd;
 
-
-   return TRUE;
+    return TRUE;
 
 error1:
-  return FALSE;
+
+    return FALSE;
 };
 
+static void RADEONPllErrataAfterIndex()
+{
+    if (!(rhd.ChipErrata & CHIP_ERRATA_PLL_DUMMYREADS))
+       return;
+
+    /* This workaround is necessary on rv200 and RS200 or PLL
+     * reads may return garbage (among others...)
+     */
+    (void)INREG(RADEON_CLOCK_CNTL_DATA);
+    (void)INREG(RADEON_CRTC_GEN_CNTL);
+}
+
+
+static void RADEONPllErrataAfterData()
+{
+
+    /* This function is required to workaround a hardware bug in some (all?)
+     * revisions of the R300.  This workaround should be called after every
+     * CLOCK_CNTL_INDEX register access.  If not, register reads afterward
+     * may not be correct.
+     */
+    if (rhd.ChipFamily <= CHIP_FAMILY_RV380)
+    {
+        u32_t save, tmp;
+
+	save = INREG(RADEON_CLOCK_CNTL_INDEX);
+	tmp = save & ~(0x3f | RADEON_PLL_WR_EN);
+	OUTREG(RADEON_CLOCK_CNTL_INDEX, tmp);
+	tmp = INREG(RADEON_CLOCK_CNTL_DATA);
+	OUTREG(RADEON_CLOCK_CNTL_INDEX, save);
+    }
+}
+
+
+/* Read PLL register */
+static u32_t RADEONINPLL(int addr)
+{
+    u32_t       data;
+
+    OUTREG8(RADEON_CLOCK_CNTL_INDEX, addr & 0x3f);
+    RADEONPllErrataAfterIndex();
+    data = INREG(RADEON_CLOCK_CNTL_DATA);
+    RADEONPllErrataAfterData();
+
+    return data;
+};
+
+/* Write PLL information */
+static void RADEONOUTPLL(int addr, u32_t data)
+{
+    OUTREG8(RADEON_CLOCK_CNTL_INDEX, (((addr) & 0x3f) |
+				      RADEON_PLL_WR_EN));
+    RADEONPllErrataAfterIndex();
+    OUTREG(RADEON_CLOCK_CNTL_DATA, data);
+    RADEONPllErrataAfterData();
+}
+
+static void init_pipes(RHDPtr info)
+{
+    u32_t gb_tile_config = 0;
+
+    if ( (info->ChipFamily == CHIP_FAMILY_RV410) ||
+         (info->ChipFamily == CHIP_FAMILY_R420)  ||
+         (info->ChipFamily == CHIP_FAMILY_RS600) ||
+         (info->ChipFamily == CHIP_FAMILY_RS690) ||
+         (info->ChipFamily == CHIP_FAMILY_RS740) ||
+         (info->ChipFamily == CHIP_FAMILY_RS400) ||
+         (info->ChipFamily == CHIP_FAMILY_RS480) || IS_R500_3D)
+    {
+        u32_t gb_pipe_sel = INREG(R400_GB_PIPE_SELECT);
+
+        info->num_gb_pipes = ((gb_pipe_sel >> 12) & 0x3) + 1;
+        if (IS_R500_3D)
+            OUTPLL(R500_DYN_SCLK_PWMEM_PIPE, (1 | ((gb_pipe_sel >> 8) & 0xf) << 4));
+    }
+    else
+    {
+        if ((info->ChipFamily == CHIP_FAMILY_R300) ||
+           (info->ChipFamily == CHIP_FAMILY_R350))
+        {
+        /* R3xx chips */
+            info->num_gb_pipes = 2;
+        }
+        else {
+        /* RV3xx chips */
+            info->num_gb_pipes = 1;
+        }
+    }
+
+    if (IS_R300_3D || IS_R500_3D)
+    {
+
+        dbgprintf("num quad-pipes is %d\n", info->num_gb_pipes);
+
+        switch(info->num_gb_pipes) {
+            case 2: gb_tile_config |= R300_PIPE_COUNT_R300; break;
+            case 3: gb_tile_config |= R300_PIPE_COUNT_R420_3P; break;
+            case 4: gb_tile_config |= R300_PIPE_COUNT_R420; break;
+            default:
+                case 1: gb_tile_config |= R300_PIPE_COUNT_RV350; break;
+        }
+
+        OUTREG(R300_GB_TILE_CONFIG, gb_tile_config);
+        OUTREG(RADEON_WAIT_UNTIL, RADEON_WAIT_2D_IDLECLEAN | RADEON_WAIT_3D_IDLECLEAN);
+        OUTREG(R300_DST_PIPE_CONFIG, INREG(R300_DST_PIPE_CONFIG) | R300_PIPE_AUTO_CONFIG);
+        OUTREG(R300_RB2D_DSTCACHE_MODE, (INREG(R300_RB2D_DSTCACHE_MODE) |
+                                       R300_DC_AUTOFLUSH_ENABLE |
+                                       R300_DC_DC_DISABLE_IGNORE_PE));
+    }
+    else
+        OUTREG(RADEON_RB3D_CNTL, 0);
+};
 
 

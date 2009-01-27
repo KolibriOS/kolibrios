@@ -20,65 +20,9 @@
 
 
 #define RADEON_IDLE_RETRY      16 /* Fall out of idle loops after this count */
-#define RADEON_TIMEOUT    2000000 /* Fall out of wait loops after this count */
+#define RADEON_TIMEOUT    4000000 /* Fall out of wait loops after this count */
 
 
-void RADEONPllErrataAfterIndex()
-{
-    if (!(rhd.ChipErrata & CHIP_ERRATA_PLL_DUMMYREADS))
-       return;
-
-    /* This workaround is necessary on rv200 and RS200 or PLL
-     * reads may return garbage (among others...)
-     */
-    (void)INREG(RADEON_CLOCK_CNTL_DATA);
-    (void)INREG(RADEON_CRTC_GEN_CNTL);
-}
-
-
-void RADEONPllErrataAfterData()
-{
-
-    /* This function is required to workaround a hardware bug in some (all?)
-     * revisions of the R300.  This workaround should be called after every
-     * CLOCK_CNTL_INDEX register access.  If not, register reads afterward
-     * may not be correct.
-     */
-    if (rhd.ChipFamily <= CHIP_FAMILY_RV380)
-    {
-        u32_t save, tmp;
-
-	save = INREG(RADEON_CLOCK_CNTL_INDEX);
-	tmp = save & ~(0x3f | RADEON_PLL_WR_EN);
-	OUTREG(RADEON_CLOCK_CNTL_INDEX, tmp);
-	tmp = INREG(RADEON_CLOCK_CNTL_DATA);
-	OUTREG(RADEON_CLOCK_CNTL_INDEX, save);
-    }
-}
-
-
-/* Read PLL register */
-u32_t RADEONINPLL(int addr)
-{
-    u32_t       data;
-
-    OUTREG8(RADEON_CLOCK_CNTL_INDEX, addr & 0x3f);
-    RADEONPllErrataAfterIndex();
-    data = INREG(RADEON_CLOCK_CNTL_DATA);
-    RADEONPllErrataAfterData();
-
-    return data;
-};
-
-/* Write PLL information */
-void RADEONOUTPLL(int addr, u32_t data)
-{
-    OUTREG8(RADEON_CLOCK_CNTL_INDEX, (((addr) & 0x3f) |
-				      RADEON_PLL_WR_EN));
-    RADEONPllErrataAfterIndex();
-    OUTREG(RADEON_CLOCK_CNTL_DATA, data);
-    RADEONPllErrataAfterData();
-}
 
 void RADEONEngineFlush(RHDPtr info)
 {
@@ -148,61 +92,6 @@ static int radeon_do_wait_for_idle()
 }
 
 
-static void init_pipes(RHDPtr info)
-{
-     u32_t gb_tile_config = 0;
-
-     if ( (info->ChipFamily == CHIP_FAMILY_RV410) ||
-          (info->ChipFamily == CHIP_FAMILY_R420)  ||
-          (info->ChipFamily == CHIP_FAMILY_RS600) ||
-          (info->ChipFamily == CHIP_FAMILY_RS690) ||
-          (info->ChipFamily == CHIP_FAMILY_RS740) ||
-          (info->ChipFamily == CHIP_FAMILY_RS400) ||
-          (info->ChipFamily == CHIP_FAMILY_RS480) || IS_R500_3D)
-     {
-         u32_t gb_pipe_sel = INREG(R400_GB_PIPE_SELECT);
-
-         info->num_gb_pipes = ((gb_pipe_sel >> 12) & 0x3) + 1;
-         if (IS_R500_3D)
-            OUTPLL(R500_DYN_SCLK_PWMEM_PIPE, (1 | ((gb_pipe_sel >> 8) & 0xf) << 4));
-     }
-     else
-     {
-        if ((info->ChipFamily == CHIP_FAMILY_R300) ||
-            (info->ChipFamily == CHIP_FAMILY_R350))
-        {
-         /* R3xx chips */
-            info->num_gb_pipes = 2;
-        }
-        else {
-         /* RV3xx chips */
-           info->num_gb_pipes = 1;
-        }
-     }
-
-     if (IS_R300_3D || IS_R500_3D)
-     {
-
-        dbgprintf("num quad-pipes is %d\n", info->num_gb_pipes);
-
-        switch(info->num_gb_pipes) {
-           case 2: gb_tile_config |= R300_PIPE_COUNT_R300; break;
-           case 3: gb_tile_config |= R300_PIPE_COUNT_R420_3P; break;
-           case 4: gb_tile_config |= R300_PIPE_COUNT_R420; break;
-           default:
-           case 1: gb_tile_config |= R300_PIPE_COUNT_RV350; break;
-        }
-
-        OUTREG(R300_GB_TILE_CONFIG, gb_tile_config);
-        OUTREG(RADEON_WAIT_UNTIL, RADEON_WAIT_2D_IDLECLEAN | RADEON_WAIT_3D_IDLECLEAN);
-        OUTREG(R300_DST_PIPE_CONFIG, INREG(R300_DST_PIPE_CONFIG) | R300_PIPE_AUTO_CONFIG);
-        OUTREG(R300_RB2D_DSTCACHE_MODE, (INREG(R300_RB2D_DSTCACHE_MODE) |
-                                        R300_DC_AUTOFLUSH_ENABLE |
-                                        R300_DC_DC_DISABLE_IGNORE_PE));
-    }
-    else
-       OUTREG(RADEON_RB3D_CNTL, 0);
-};
 
 /* ================================================================
  * CP control, initialization
@@ -357,10 +246,10 @@ void init_ring_buffer(RHDPtr info)
 
 void radeon_engine_reset(RHDPtr info)
 {
-     u32_t  clock_cntl_index;
-     u32_t  mclk_cntl;
-     u32_t  rbbm_soft_reset;
-     u32_t  host_path_cntl;
+    u32_t  clock_cntl_index;
+    u32_t  mclk_cntl;
+    u32_t  rbbm_soft_reset;
+    u32_t  host_path_cntl;
 
     if (info->ChipFamily <= CHIP_FAMILY_RV410)
     {
@@ -501,6 +390,7 @@ Bool init_cp(RHDPtr info)
 
      radeon_cp_start(&rhd);
 
+    return TRUE;
 };
 
 
