@@ -8,12 +8,10 @@ dword  alloc_mem    = 0x00100000;
 dword  x86esp_reg   = 0x0007fff0;
 dword  I_Param      = 0x0;
 dword  I_Icon       = 0x0;
-dword  skin_width;
 
 #define evButton  3
 #define evKey     2
 #define evReDraw  1
-#define evNet	  8
 
 #define BT_DEL		0x80000000
 #define BT_HIDE		0x40000000
@@ -86,14 +84,14 @@ void DefineButton(dword x,y,w,h,EDX,ESI)
 {
  	EAX = 8;
 	EBX = x<<16+w;
-	ECX = skin_width+y<<16+h;
+	ECX = y<<16+h;
  	$int 0x40
 }
 
 void WriteText(dword x,y,byte fontType, dword color, EDX, ESI)
 {
 	EAX = 4;
-	EBX = x<<16+skin_width+y;
+	EBX = x<<16+y;
 	ECX = fontType<<24+color;
 	$int 0x40;
 }
@@ -103,7 +101,7 @@ void DrawBar(dword x,y,w,h,EDX)
 {
 	EAX = 13;
 	EBX = x<<16+w;
-	ECX = skin_width+y<<16+h;
+	ECX = y<<16+h;
  	$int 0x40
 }
 
@@ -129,13 +127,11 @@ void DrawFlatButton(dword x,y,width,height,id,color,text)
 }
 
 
-void PutImage(dword buf,w,h,x,y)
+void PutImage(dword EBX,w,h,x,y)
 {
-	EDI=buf;
 	EAX = 7;
-	EBX = buf;
 	ECX = w<<16+h;
-	EDX = x<<16+y+skin_width;
+	EDX = x<<16+y;
 	$int 0x40
 }
 
@@ -152,31 +148,17 @@ l1:
 	$jnz l1
 }
 
-
-char	buffer[11]="";
-inline fastcall dword IntToStr(dword ESI)
+void WriteNumber(dword x,y,byte fontType, ESI, ECX)
 {
-     $mov     edi, #buffer
-     $mov     ecx, 10
-     $test     esi, esi
-     $jns     f1
-     $mov     al, '-'
-     $stosb
-     $neg     esi
-f1:
-     $mov     eax, esi
-     $push     -'0'
-f2:
-     $xor     edx, edx
-     $div     ecx
-     $push     edx
-     $test     eax, eax
-     $jnz     f2
-f3:
-     $pop     eax
-     $add     al, '0'
-     $stosb
-     $jnz     f3
-     $mov     eax, #buffer
-     $ret
-}
+	EAX = 47;
+	EBX = 2<<16;
+	/*ecx = 0
+	while(eax>10)
+	{
+		ecx ++;
+		eax /= 10;
+	}*/
+	EDX = x<<16+y;
+	ESI = fontType<<24+ESI;
+	$int 0x40;
+}  

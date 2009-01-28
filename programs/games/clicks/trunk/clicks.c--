@@ -1,5 +1,5 @@
 /*
-Just Clicks v0.75
+Just Clicks v0.76
 Copyright (C) 2008 Leency
 Clickomania v0.3
 Copyright (C) 2005 Александр Мушиков aka Olaf
@@ -25,34 +25,29 @@ struct
 }matrix[64];
 
 
+void check_n_destroy(byte ID, ID1)
+{
+	IF (matrix[ID1].color == matrix[ID].color) && (matrix[ID1].mark!=1)
+	{
+		matrix[ID1].mark=1;
+		destroy_button(ID1);
+	}
+}
+
 
 void destroy_button(byte ID)
 {
-	IF (matrix[ID-8].color == matrix[ID].color) && (matrix[ID-8].mark!=1)
-	{
-		matrix[ID-8].mark=1;
-		destroy_button(ID-8);
-	}
-	IF (matrix[ID+8].color == matrix[ID].color) && (matrix[ID+8].mark!=1)
-	{
-		matrix[ID+8].mark=1;
-		destroy_button(ID+8);
-	}
-	IF (ID!=0)&&(ID!=8)&&(ID!=16)&&(ID!=24)&&(ID!=32)&&(ID!=40)&&(ID!=48)&&(ID!=56)
-    && (matrix[ID-1].color == matrix[ID].color) && (matrix[ID-1].mark!=1)
-	{
-		matrix[ID-1].mark=1;
-		destroy_button(ID-1);
-    }
-	IF (ID!=7)&&(ID!=15)&&(ID!=23)&&(ID!=31)&&(ID!=39)&&(ID!=47)&&(ID!=55)&&(ID!=63)
-	&& (matrix[ID+1].color == matrix[ID].color) && (matrix[ID+1].mark!=1)
-	{
-		matrix[ID+1].mark=1;
-		destroy_button(ID+1);
-	}
+	check_n_destroy(ID, ID-8);
+	check_n_destroy(ID, ID+8);
+		IF (ID!=0)&&(ID!=8)&&(ID!=16)&&(ID!=24)&&(ID!=32)&&(ID!=40)&&(ID!=48)&&(ID!=56)
+	check_n_destroy(ID, ID-1);
+		IF (ID!=7)&&(ID!=15)&&(ID!=23)&&(ID!=31)&&(ID!=39)&&(ID!=47)&&(ID!=55)&&(ID!=63)
+	check_n_destroy(ID, ID+1);
+
 	IF (matrix[ID].x<XX) {XX=matrix[ID].x;  IF (matrix[ID].y>YY) YY=matrix[ID].y;}
 	IF (matrix[ID].y>YY) {YY=matrix[ID].y;  IF (matrix[ID].x<XX) XX=matrix[ID].x;}
 }
+
 
 void shift_bars(byte AA, BB)
 byte id_curr,id_next,bz;
@@ -128,22 +123,22 @@ void ReDraw_Blocks(byte newgame)
 			matrix[num].y=i;
 			IF (matrix[num].mark==0)
 				{
-				DefineButton(j*21+5,y-22, 20, 20, num+BT_HIDE, 0);
-				PutImage(matrix[num].color-1*1323+#img,21,21,j*21+5,y-22);
-				}	ELSE DrawBar(j*21+5,y-22,21,21, 0xB2B4BF);
+				DefineButton(j*21,y-22, 20, 20, num+BT_HIDE, 0);
+				PutImage(matrix[num].color-1*1323+#img,21,21,j*21,y-22);
+				}	ELSE DrawBar(j*21,y-22,21,21, 0xB2B4BF);
 			num++;
 		}
 		y=y+21;
 	}
-	DrawBar(95,178,71,8,0xE4DFE1);
-	IF (check_for_end()==1) WriteText(95,178,0x80,0,"Результат:",10);
-	ELSE WriteText(101,178,0x80,0,"Осталось:",10);
+	DrawBar(90,178,71,8,0xE4DFE1);
+	IF (check_for_end()==1) WriteText(90,178,0x80,0,"Результат:",10);
+	ELSE WriteText(96,178,0x80,0,"Осталось:",10);
 	FOR (i=0;i<8;i++) FOR (j=0;j<8;j++) IF (matrix[j*8+i].mark==0) count_blocks++;
-	WriteText(155,178,0x80,0,IntToStr(count_blocks),0);
+	WriteNumber(150,178,0x80,0,count_blocks);
 	//
 	if (check_for_end()==1) && (count_blocks<8)
 	{
-		DrawFlatButton(26,42,125,62,0,0xE4DFE1,"");
+		DrawFlatButton(21,42,125,62,0,0xE4DFE1,"");
 		IF (count_blocks==0) copystr(" Лучше всех!", #temp);  
 		IF (count_blocks==1) copystr("  Прекрасно", #temp);
 		IF (count_blocks==2) copystr("Очень хорошо!", #temp);
@@ -152,46 +147,48 @@ void ReDraw_Blocks(byte newgame)
 			copystr("   Неплохо", #temp);
 			count_blocks=3;
 		}
-		PutImage(count_blocks*42*37*3+#cups,42,37,68,48);
-		WriteText(51,91,0x80,0x0,#temp,0);
+		PutImage(count_blocks*42*37*3+#cups,42,37,63,48);
+		WriteText(46,91,0x80,0x0,#temp,0);
 	}
 }
 
 
 void main()
-{	byte id;
+{	byte id, skin_width;
 	randomize();
 	ReDraw_Blocks(1);
 	loop()
 	{
 		switch(WaitEvent())
 		{
-			CASE evKey: IF (GetKey()==051) ReDraw_Blocks(1); break; //New game
+			CASE evKey:
+				IF (GetKey()==051) ReDraw_Blocks(1); //New game
+				break;
 			CASE evButton:
 				id=GetButtonID();
 				IF (id==255) ExitProcess();
-				IF (id==254) {ReDraw_Blocks(1); break;} //New game
-				IF (id<65) IF (check_for_end()<>1)
-					{ 	//if Button
-     					destroy_button(id);
-						IF (XX!=9)
-						{
-							shift_bars(XX,YY);
-							IF (YY == 7) {move_it();move_it();}
-							XX=9;
-							YY=0;
-							ReDraw_Blocks(0);
-						}
-					 	break;
-					}    
+				IF (id==254) ReDraw_Blocks(1); //New game
+				IF (id<65) //Color Button
+				{ 	
+     				destroy_button(id);
+					IF (XX!=9)
+					{
+						shift_bars(XX,YY);
+						IF (YY==7) {move_it();move_it();}
+						XX=9;
+						YY=0;
+						ReDraw_Blocks(0);
+					}
+				}    
+				break;
 			case evReDraw:
 				WindowRedrawStatus(1);
 				skin_width = GetSkinWidth();
-				DefineAndDrawWindow(400,276,177,201+skin_width,0x44,0x10B2B4BF,0,0,"Just Clicks v0.75");
-				//DefineButton(155,2-skin_width,18,18,255+BT_HIDE+BT_NOFRAME,0x0866CC00);
-				DrawBar(5,168,168,29,0xE4DFE1);
+				DefineAndDrawWindow(400,276,177,201+skin_width,0x74,0x10B2B4BF,0,0,"Just Clicks v0.76");
+				DefineButton(150,2-skin_width,18,18,255+BT_HIDE+BT_NOFRAME,0x0866CC00);
+				DrawBar(0,168,168,29,0xE4DFE1);
 				//DrawFlatButton(9,172,84,19,254,0xE4DFE1,"New game (F2)");
-				DrawFlatButton(9,172,80,19,254,0xE4DFE1,"Заново (F2)");
+				DrawFlatButton(4,172,80,19,254,0xE4DFE1,"Заново (F2)");
 				ReDraw_Blocks(0);
 				WindowRedrawStatus(2);
 		}
