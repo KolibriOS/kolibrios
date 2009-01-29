@@ -35,7 +35,7 @@ bool skin_available=false;
 bool w_redraw=true;
 
 const char windowTitle[]="КЃб®Ђ™† §Ђп КЃЂ®°а®";
-const char version[]="В•аб®п 1.1";
+const char version[]="В•аб®п 1.11";
 int levelcount=7; //„исло уровней
 
 char gamearea[20][20]; // арта
@@ -55,7 +55,7 @@ short int status=0; //√де 0 - приветствие
 bool gamestarted=false; //Ѕлокировка игровых клавиш. ≈сли false - играть нельз€
 
 bool drawgraphics=true; //–исовать ли детальную графику (или ограничитьс€ аскетичной)
-bool drawanimation=false; //јнимировать ли
+bool drawanimation=true; //јнимировать ли
 bool skinned=false;
 int grassLeft();  //—ообщим о наличии функции Grass Left
 
@@ -595,7 +595,7 @@ void draw_window(void){ //ѕерерисовка окна
 
 
 
-		kos_WriteTextToWindow(536, 440,0x80, 0xFFFFFF ,(char*)version,0);
+		kos_WriteTextToWindow(533, 440,0x80, 0xFFFFFF ,(char*)version,0);
 	}
 	if (status==2){
 	   kos_DrawBar(10,150,610,200,0x528B4C);	

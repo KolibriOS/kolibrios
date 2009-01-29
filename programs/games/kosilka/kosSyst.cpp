@@ -410,9 +410,21 @@ bool kos_GetKey( Byte &keyCode )
 	Dword result;
 
 	//
-	__asm{
-		mov eax, 2
-		int 0x40
+	__asm
+	{
+		push edx
+getkey:
+		mov  eax,2 ; Gluk
+		int  0x40
+		cmp eax,1
+		jne getkeyi
+		mov ah,dh
+		jmp getkeyii
+getkeyi:
+		mov dh,ah ; Gluk
+		jmp getkey
+getkeyii:
+		pop edx
 		mov result, eax
 	}
 	//
