@@ -108,10 +108,10 @@ proc search
 	mov	ecx,[cur_editor.Caret.Y]
 	mov	edx,ecx
 	call	get_line_offset
-	cmp	word[esi],0
+	cmp	[esi+EDITOR_LINE_DATA.Size],0
 	je	.exit
 	call	get_real_length
-	add	esi,4
+	add	esi,sizeof.EDITOR_LINE_DATA
 	or	eax,eax
 	jz	.end_line.2
 	mov	ecx,eax
@@ -156,7 +156,7 @@ proc search
 	mov	[cur_editor.Caret.Y],edx
 	mov	[cur_editor.SelStart.Y],edx
 	mov	ecx,edx
-	lea	eax,[esi-4]
+	lea	eax,[esi-sizeof.EDITOR_LINE_DATA]
 	call	get_line_offset
 	sub	eax,esi
 	mov	[cur_editor.SelStart.X],eax
@@ -169,12 +169,13 @@ proc search
   .end_line:
 	pop	esi
   .end_line.2:
-	movzx	eax,word[esi-4]
+	mov	eax,[esi-sizeof.EDITOR_LINE_DATA+EDITOR_LINE_DATA.Size]
 	add	esi,eax
 	inc	edx
 	call	get_real_length
 	mov	ecx,eax
 	lodsd
+	add	esi,2
 	or	eax,eax
 	jnz	.next_line
   .exit:

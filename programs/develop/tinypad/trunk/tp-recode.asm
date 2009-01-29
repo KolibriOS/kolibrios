@@ -27,8 +27,8 @@ recode:
 	xor	eax,eax
   .lp0: dec	ecx
 	js	.exit
-	movzx	edx,word[esi]
-	add	esi,4
+	mov	edx,[esi+EDITOR_LINE_DATA.Size]
+	add	esi,sizeof.EDITOR_LINE_DATA
     @@: dec	edx
 	js	.lp0
 	lodsb
