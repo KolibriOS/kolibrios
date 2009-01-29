@@ -83,7 +83,7 @@ begin
     ImagePut(LRLScreen^, LRLFontBuffer^, 25 - ImageSizex(LRLFontBuffer^) div 2, 0, 0, 0, 319, 199);
   end;
 
-  ImagePutTransparent(LRLScreen^, LRLMousePointer^, MouseX, MouseY, 0, 0, 319, 199);
+  {ImagePutTransparent(LRLScreen^, LRLMousePointer^, MouseX, MouseY, 0, 0, 319, 199);}
 end;
 
 

@@ -1,7 +1,8 @@
-unit LRLRoutines;
-
+{$codepage utf8}
 {$mode objfpc}
 {$asmmode intel}
+
+unit LRLRoutines;
 
 
 interface
@@ -86,6 +87,7 @@ const
   KEY_LBRACKET = $1A00;
   KEY_RBRACKET = $1B00;
   KEY_ENTER = $1C00;
+  KEY_CTRL  = $1D00;
 
   KEY_A     = $1E00;
   KEY_S     = $1F00;
@@ -200,7 +202,7 @@ var
   LastKeyEvent: Word = $FFFF;
   LastKeyUp  : Boolean = True;
   LastKeyDown: Boolean = False;
-  AltDown    : Boolean = False;
+  CtrlDown   : Boolean = False;
   ShiftDown  : Boolean = False;
   LShiftDown : Boolean = False;
   RShiftDown : Boolean = False;
@@ -272,7 +274,7 @@ var
 begin
   if (ScreenWidth = BUFFER_WIDTH) and (ScreenHeight = BUFFER_HEIGHT) then
   begin
-    {Ø•‡•≠Æ· Æ§®≠ ¢ Æ§®≠}
+    {–ø–µ—Ä–µ–Ω–æ—Å –æ–¥–∏–Ω –≤ –æ–¥–∏–Ω}
     B := @ScreenPalBuffer;
     C := ScreenRGBBuffer;
     for I := 0 to BUFFER_HEIGHT - 1 do
@@ -284,7 +286,7 @@ begin
     end;
   end else
   begin
-    {¨†·Ë‚†°®‡Æ¢†≠®•}
+    {–º–∞—Å—à—Ç–∞–±–∏—Ä–æ–≤–∞–Ω–∏–µ}
     XStep := (BUFFER_WIDTH shl 16) div ScreenWidth;
     YStep := (BUFFER_HEIGHT shl 16) div ScreenHeight;
     Horizontal;
@@ -330,7 +332,7 @@ var
 begin
   Width  := PWord(@ImageBuffer)[0];
   Height := PWord(@ImageBuffer)[1];
-  
+
   PI := @ImageBuffer + 4;
 
   for I := Y to Y + Height - 1 do
@@ -390,7 +392,7 @@ begin
   Height := PWord(@FontData + 2)^;
   Table  := PWord(@FontData + 4);
 
-  { ‡†·Á•‚ §´®≠Î ·‚‡Æ™® }
+  { —Ä–∞—Å—á–µ—Ç –¥–ª–∏–Ω—ã —Å—Ç—Ä–æ–∫–∏ }
   Width := 0;
   for I := 1 to Length(Source) do
   begin
@@ -401,7 +403,7 @@ begin
   PWord(@Buffer)^     := Width;
   PWord(@Buffer + 2)^ := Height;
 
-  { ¢Î¢Æ§ ·‚‡Æ™® }
+  { –≤—ã–≤–æ–¥ —Å—Ç—Ä–æ–∫–∏ }
   X := 0;
   for I := 1 to Length(Source) do
   begin
@@ -534,10 +536,10 @@ begin
   LastKeyUp   := not LastKeyDown;
   if LastKeyUp then Dec(Result, KEY_UP_BASE);
 
-  if Result = KEY_ALT then
+  if Result = KEY_CTRL then
   begin
-    AltDown := LastKeyDown;
-    Result  := $FFFF;
+    CtrlDown := LastKeyDown;
+    Result   := $FFFF;
   end else
 
   if Result = KEY_LSHIFT then
@@ -554,7 +556,7 @@ begin
     Result     := $FFFF;
   end else
 
-  if AltDown then
+  if CtrlDown then
   case Result of
     KEY_1: begin Result := $FFFF; if LastKeyDown then ScreenMode(1); end;
     KEY_2: begin Result := $FFFF; if LastKeyDown then ScreenMode(2); end;
@@ -634,7 +636,7 @@ begin
     if NowPressed and not WasPressed then Inc(MouseButtonsPressed[I]) else
     if not NowPressed and WasPressed then Inc(MouseButtonsReleased[I]);
   end;
-  
+
   MouseButtonsState := Buttons;
 end;
 
