@@ -22,14 +22,55 @@ use32
 	       dd     PARAMS , 0x0	      ; I_Param , I_Icon
 
 include 'lang.inc'
-include 'macros.inc'
+include '../../../macros.inc'
 
 START:				; start of execution
 
-    cmp     [PARAMS], dword 'BOOT'
-    jz	    boot_set_settings
+read_stack_setup:
 
-no_params:
+    mov  eax,52
+    mov  ebx,0
+    mcall
+    mov  [config],eax
+
+    mov  eax,52
+    mov  ebx,1
+    mcall
+    mov  dword [ip_address],eax
+
+    mov  eax,52
+    mov  ebx,9
+    mcall
+    mov  dword [gateway_ip],eax
+
+    mov  eax,52
+    mov  ebx,10
+    mcall
+    mov  dword [subnet_mask],eax
+
+    mov  eax,52
+    mov  ebx,13
+    mcall
+    mov  dword [dns_ip],eax
+
+    mov  eax,[config]	; unwrap com IRQ
+    shr  eax,8
+    and  eax,0xf
+    mov  [com_irq],eax
+
+    mov  eax,[config]	; unwrap com PORT
+    shr  eax,16
+    and  eax,0xfff
+    mov  [com_add],eax
+
+    mov  eax,[config]	; unwrap IRQ
+    and  eax,0xf
+    mov  [interface],eax
+
+    mov  eax,[config]	; unwrap com PORT
+    shr  eax,7
+    and  eax,1
+    mov  [assigned],eax
 
   red:
     call draw_window		; at first, draw the window
@@ -254,53 +295,6 @@ no_apply_stack_setup:
     jmp  red
     no_ip_sf:
     jmp  still
-
-read_stack_setup:
-
-    mov  eax,52
-    mov  ebx,0
-    mcall
-    mov  [config],eax
-
-    mov  eax,52
-    mov  ebx,1
-    mcall
-    mov  dword [ip_address],eax
-
-    mov  eax,52
-    mov  ebx,9
-    mcall
-    mov  dword [gateway_ip],eax
-
-    mov  eax,52
-    mov  ebx,10
-    mcall
-    mov  dword [subnet_mask],eax
-
-    mov  eax,52
-    mov  ebx,13
-    mcall
-    mov  dword [dns_ip],eax
-
-    mov  eax,[config]	; unwrap com IRQ
-    shr  eax,8
-    and  eax,0xf
-    mov  [com_irq],eax
-
-    mov  eax,[config]	; unwrap com PORT
-    shr  eax,16
-    and  eax,0xfff
-    mov  [com_add],eax
-
-    mov  eax,[config]	; unwrap IRQ
-    and  eax,0xf
-    mov  [interface],eax
-
-    mov  eax,[config]	; unwrap com PORT
-    shr  eax,7
-    and  eax,1
-    mov  [assigned],eax
-    jmp  red
 
 apply_stack_setup:
 
@@ -625,31 +619,6 @@ draw_window:
 
     ret
 
-;******************************************************************************
-
-boot_set_settings:
-
-    mov  eax,52
-    mov  ebx,0
-    mcall
-    mov  [config],eax
-
-    shr  eax,8		; unwrap com IRQ
-    and  eax,0xf
-    mov  [com_irq],eax
-
-    mov  eax,[config]	; unwrap com PORT
-    shr  eax,16
-    and  eax,0xfff
-    mov  [com_add],eax
-
-    call apply_stack_setup
-
-    mov  eax,-1 		; close this program
-    mcall
-
-;******************************************************************************
-
 
 ; DATA AREA
 
@@ -660,12 +629,26 @@ text:
     db '   Slip            Прерывание модема:    0x   <   '
     db '   PPP                                            '
     db '   Драйвер пакетов    IP server назначенный       '
-    db '                      Фикс.      .   .   .    <   '
+    db '   (Ethernet)         Фикс.      .   .   .    <   '
     db '                      Шлюз:      .   .   .    <   '
     db '                      Подсеть:   .   .   .    <   '
     db '                      DNS IP:    .   .   .    <   '
     db '                                                  '
     db 'w            Читать     Применить                 '
+
+elseif lang eq nl
+title	   db  'Netwerk configuratie',0
+text:
+    db '   Niet actief      Modem Com Poort:   0x     <   '
+    db '   Slip             Modem Com Irq:       0x   <   '
+    db '   PPP                                            '
+    db '   Pakket Driver      Door IP-server toegekend    '
+    db '   (Ethernet)         Vast IP:   .   .   .    <   '
+    db '                      Gateway:   .   .   .    <   '
+    db '                      Subnet:    .   .   .    <   '
+    db '                      DNS IP:    .   .   .    <   '
+    db '                                                  '
+    db 'w            Vernieuw   Toepassen                 '
 
 else
 title	   db  'Stack configuration',0
@@ -674,7 +657,7 @@ text:
     db '   Slip             Modem Com Irq:       0x   <   '
     db '   PPP                                            '
     db '   Packet Driver      IP server assigned          '
-    db '                      Fixed:     .   .   .    <   '
+    db '   (Ethernet)         Fixed:     .   .   .    <   '
     db '                      Gateway:   .   .   .    <   '
     db '                      Subnet:    .   .   .    <   '
     db '                      DNS IP:    .   .   .    <   '
@@ -687,19 +670,18 @@ xx: db 'x' ;<- END MARKER, DONT DELETE
 button_color dd  0x2254b9
 
 
-;ENTER YOUR SETTINGS HERE:
 
-ip_address  db	010,005,004,175
-gateway_ip  db	010,005,000,001
-subnet_mask db	255,255,000,000
-dns_ip	    db	213,184,238,006
+ip_address  dd ?
+gateway_ip  dd ?
+subnet_mask dd ?
+dns_ip	    dd ?
 
 
-com_irq     dd	    0	; irq for slip/ppp
-com_add     dd	    0	; com port address for slip/ppp
-interface   dd	    3	; not active,slip,ppp,packet driver
-assigned    dd	    0	; get ip from server
+com_irq     dd	    ?	; irq for slip/ppp
+com_add     dd	    ?	; com port address for slip/ppp
+interface   dd	    ?	; not active,slip,ppp,packet driver
+assigned    dd	    ?	; get ip from server
 
-config	    dd	    0
+config	    dd	    ?
 
 I_END:
