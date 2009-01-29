@@ -1,7 +1,7 @@
 ;
 ; ETH.INC
 ;
-; made by hidnplayr (hidnplayr@gmail.com) for KolibriOS
+; made by hidnplayr (hidnplayr@kolibrios.org) for KolibriOS
 ;
 ; The given code before every macro is only a simple example
 ;
@@ -10,7 +10,7 @@
 ;
 ; v1.0: august 2006  original release
 ; v1.1: december 2006 bugfixes and improvements
-; v1.2: februari 2007 more bugfixes and improvements
+; v1.2: february 2007 more bugfixes and improvements
 
 macro mov arg1,arg2 {
     if arg1 eq arg2
@@ -339,51 +339,12 @@ macro eth.wait_for_data socket,TIMEOUT,abort {
 }
 
 
-; The function 'resolve' resolves the address in edx and puts the resulting IP in eax.
-; When the input is an IP-adress, the function will output this IP in eax.
-; If something goes wrong, the result in eax should be 0
-;
-; example:
-;
-; resolve query1,IP,PORT
-; resolve '192.168.0.1',IP,PORT
-; resolve query2,IP,PORT
-;
-; query1 db 'www.google.com',0
-; query2 db '49.78.84.45',0
-; IP     dd ?
-; PORT   dd ?
 
-macro resolve query,result {
-
-if    query eqtype 0
- mov   edx,query
-else
- local ..string, ..label
- jmp   ..label
- ..string db query,0
- ..label:
- mov   edx,..string
-end   if
-
-call  __resolve
-
-mov   result,eax
-
-}
-
-if used __resolve
-
-__resolve:
-
-if __DEBUG__ eq 1
-DEBUGF 1,'DNS: Resolving started\n'
-end if
+Ip2dword:
+    push    edx
 
     ; This code validates if the query is an IP containing 4 numbers and 3 dots
 
-
-    push    edx 	      ; push edx (query address) onto stack
     xor     al, al	      ; make al (dot count) zero
 
    @@:
@@ -408,7 +369,7 @@ end if
 
    @@:			      ; we reach this when end of query reached
     cmp     al,3	      ; check if there where 3 dots
-    jnz     no_IP	      ; if not, jump to no_IP (this is where the DNS will take over)
+    jnz     no_IP	      ; if not, jump to no_IP
 
     ; The following code will convert this IP into a dword and output it in eax
     ; If there is also a port number specified, this will be returned in ebx, otherwise ebx is -1
@@ -438,188 +399,14 @@ end if
     add     edx, ebx
 
     bswap   edx 	      ; we want little endian order
-    mov     eax, edx
 
     ret
-
 
 no_IP:
-
     pop     edx
-
-    ; The query is not an IP address, we will send the query to a DNS server and hope for answer ;)
-if __DEBUG__ eq 1
-    DEBUGF 1,'DNS: The query is no ip, Building request string from:%u\n',edx
-end if
-
-    ; Build the request string
-    mov     eax, 0x00010100
-    mov     [dnsMsg], eax
-    mov     eax, 0x00000100
-    mov     [dnsMsg+4], eax
-    mov     eax, 0x00000000
-    mov     [dnsMsg+8], eax
-
-    ; domain name goes in at dnsMsg+12
-    mov     esi, dnsMsg + 12			 ; location of label length
-    mov     edi, dnsMsg + 13			 ; label start
-    mov     ecx, 12				 ; total string length so far
-
-td002:
-    mov     [esi], byte 0
-    inc     ecx
-
-td0021:
-    mov     al, [edx]
-
-    cmp     al, 0
-    je	    td001				 ; we have finished the string translation
-
-    cmp     al, '.'
-    je	    td004				 ; we have finished the label
-
-    inc     byte [esi]
-    inc     ecx
-    mov     [edi], al
-    inc     edi
-    inc     edx
-    jmp     td0021
-
-td004:
-    mov     esi, edi
-    inc     edi
-    inc     edx
-    jmp     td002
-
-    ; write label len + label text
-td001:
-    mov     [edi], byte 0
-    inc     ecx
-    inc     edi
-    mov     [edi], dword 0x01000100
-    add     ecx, 4
-
-    mov     [dnsMsgLen], ecx			 ; We'll need the length of the message when we send it
-    ; Now, lets send this and wait for an answer
-
-    eth.search_port 1024,edx			 ; Find a free port starting from 1025 and store in edx
-    eth.get_DNS esi				 ; Read DNS IP from stack into esi
-    eth.open_udp edx,53,esi,[socketNum] 	     ; First, open socket
-if __DEBUG__ eq 1
-    DEBUGF 1,'DNS: Socket opened: %u (port %u)\n',[socketNum],ecx
-end if
-    eth.write_udp [socketNum],[dnsMsgLen],dnsMsg     ; Write to socket ( request DNS lookup )
-if __DEBUG__ eq 1
-    DEBUGF 1,'DNS: Data written, length:%u offset:%u\n',[dnsMsgLen],dnsMsg
-    DEBUGF 1,'DNS: Waiting for data: (timeout is %us)\n',TIMEOUT
-end if
-    eth.wait_for_data [socketNum],TIMEOUT,abort  ; Now, we wait for data from remote
-    eth.read_data dword[socketNum],dnsMsg,dword[dnsMsgLen],dnsMsg+BUFFER      ; Read the data into the buffer
-if __DEBUG__ eq 1
-    DEBUGF 1,'Data received, offset:%u buffer size:%u length:%u\n',dnsMsg,BUFFER,esi-dnsMsg
-end if
-    eth.close_udp [socketNum]			     ; We're done, close the socket
-if __DEBUG__ eq 1
-    DEBUGF 1,'Closed Socket\n'
-end if
-
-    ; Now parse the message to get the host IP. Man, this is complicated. It's described in RFC 1035
-    ; 1) Validate that we have an answer with > 0 responses
-    ; 2) Find the answer record with TYPE 0001 ( host IP )
-    ; 3) Finally, copy the IP address to the display
-    ; Note: The response is in dnsMsg, the end of the buffer is pointed to by [dnsMsgLen]
-
-    mov     esi, dnsMsg
-
-    mov     al, [esi+2] 			 ; Is this a response to my question?
-    and     al, 0x80
-    cmp     al, 0x80
-    jne     abort
-if __DEBUG__ eq 1
-    DEBUGF 1,'DNS: It was a response to my question\n'
-end if
-
-    mov     al, [esi+3] 			 ; Were there any errors?
-    and     al, 0x0F
-    cmp     al, 0x00
-    jne     abort
-
-if __DEBUG__ eq 1
-    DEBUGF 1,'DNS: There were no errors\n'
-end if
-
-    mov     ax, [esi+6] 			 ; Is there ( at least 1 ) answer?
-    cmp     ax, 0x00
-    je	    abort
-
-    ; Header validated. Scan through and get my answer
-    add     esi, 12				 ; Skip to the question field
-    call    skipName				 ; Skip through the question field
-    add     esi, 4				 ; skip past the questions qtype, qclass
-
-ctr002z:
-    ; Now at the answer. There may be several answers, find the right one ( TYPE = 0x0001 )
-    call    skipName
-    mov     ax, [esi]
-    cmp     ax, 0x0100				 ; Is this the IP address answer?
-    jne     ctr002c
-    add     esi, 10				 ; Yes! Point eax to the first byte of the IP address
-    mov     eax,[esi]
+    xor     edx, edx
 
     ret
-
-
-ctr002c:					 ; Skip through the answer, move to the next
-    add     esi, 8
-    movzx   eax, byte [esi+1]
-    mov     ah, [esi]
-    add     esi, eax
-    add     esi, 2
-
-    cmp     esi, [dnsMsgLen]			 ; Have we reached the end of the msg? This is an error condition, should not happen
-    jl	    ctr002z				 ; Check next answer
-
-abort:
-if __DEBUG__ eq 1
-    DEBUGF 1,'DNS: Something went wrong, aborting\n'
-end if
-    xor     eax,eax
-
-    ret
-
-
-skipName:
-    ; Increment esi to the first byte past the name field
-    ; Names may use compressed labels. Normally do.
-    ; RFC 1035 page 30 gives details
-    mov     al, [esi]
-    cmp     al, 0
-    je	    sn_exit
-    and     al, 0xc0
-    cmp     al, 0xc0
-    je	    sn001
-
-    movzx   eax, byte [esi]
-    inc     eax
-    add     esi, eax
-    jmp     skipName
-
-sn001:
-    add     esi, 2				 ; A pointer is always at the end
-    ret
-
-sn_exit:
-    inc     esi
-    ret
-
-dnsMsgLen:	dd 0
-socketNum:	dd 0xFFFF
-
-if ~defined dnsMsg
-dnsMsg: 	rb BUFFER
-end if
-
-end if
 
 
 

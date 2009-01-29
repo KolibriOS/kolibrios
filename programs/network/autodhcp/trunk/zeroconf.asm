@@ -1,9 +1,9 @@
-; Automated dhcp client
-; v 1.3
+; Zero-config
+; v 1.4
 ;
-; with thanks to authors of DHCP client for menuetos: Mike Hibbet
+; DHCP code is based on that by Mike Hibbet (DHCP client for menuetos)
 ;
-; by HidnPlayr & Derpenguin
+; Written by HidnPlayr & Derpenguin
 
 use32
 	       org    0x0
@@ -14,7 +14,7 @@ use32
 	       dd     IM_END		    ; size of image
 	       dd     I_END		    ; memory for app
 	       dd     I_END		    ; esp
-	       dd     0x0 , 0x0 	    ; I_Param , I_Icon
+	       dd     0x0 , path	     ; I_Param , I_Icon
 
 ; CONFIGURATION
 
@@ -41,25 +41,25 @@ RATE_LIMIT_INTERVAL equ 60		    ; seconds (delay between successive attempts)
 
 DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
 
-include '..\..\..\macros.inc'
+include '../../../proc32.inc'
+include '../../../macros.inc'
 include 'eth.inc'
 include 'debug-fdo.inc'
 include 'dhcp.inc'
-include 'events.inc'
-include 'common.inc'
-
+include 'dll.inc'
 
 START:					    ; start of execution
 
-    set_event_mask	event_network
+    mcall 40, 0
+
     eth.set_network_drv 0x00000383
 
-    DEBUGF  1,"Stack Initialized.\n"
+    DEBUGF  1,"Zero-config service:\n"
 
     eth.status eax			    ; Read the Stack status
     test    eax,eax			    ; if eax is zero, no driver was found
     jnz     @f
-    DEBUGF  1,"No Card detected\n"
+    DEBUGF  1,"No Card found!\n"
     jmp     close
 
    @@:
@@ -68,15 +68,65 @@ START:					    ; start of execution
     eth.check_cable eax
     test    al,al
     jnz     @f
-    DEBUGF  1,"Ethernet Cable not connected\n"
-    wait 500				    ; loop until cable is connected (check every 5 sec)
+    DEBUGF  1,"Cable disconnected!\n"
+    mcall   5, 500			    ; loop until cable is connected (check every 5 sec)
     jmp     @r
 
    @@:
-    DEBUGF  1,"Ethernet Cable status: %d\n",al
-
     eth.read_mac MAC
-    DEBUGF  1,"MAC address: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
+    DEBUGF  1,"MAC: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
+
+    cld
+    mov     edi, path	   ; Calculate the length of zero-terminated string
+    xor     al , al
+    mov     ecx, 1024
+    repnz   scas byte[es:edi]
+    dec     edi
+
+    mov     esi, filename
+    mov     ecx, 5
+    rep     movsb
+
+    mcall 64,1,I_END_2
+    mcall 68,11
+
+    stdcall dll.Load,@IMPORT
+    or	    eax,eax
+    jnz     skip_ini
+
+
+    invoke ini.get_str, path, str_ipconfig, str_type, inibuf, 16, 0
+
+    mov  eax,dword[inibuf]
+
+    cmp  eax,'stat'
+    jne  skip_ini
+
+    invoke ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
+    mov    edx, inibuf
+    call   Ip2dword
+    eth.set_IP edx
+
+    invoke ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
+    mov    edx, inibuf
+    call   Ip2dword
+    eth.set_GATEWAY edx
+
+    invoke ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
+    mov    edx, inibuf
+    call   Ip2dword
+    eth.set_DNS edx
+
+    invoke ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
+    mov    edx, inibuf
+    call   Ip2dword
+    eth.set_SUBNET edx
+
+
+    mcall  -1
+
+
+skip_ini:
 
     eth.check_port 68,eax		    ; Check if port 68 is available
     cmp     eax,1
@@ -87,23 +137,28 @@ START:					    ; start of execution
 
    @@:
     eth.open_udp 68,67,-1,[socketNum]	    ; open socket (local,remote,ip,socket)
-    DEBUGF  1,"Socket opened: %d\n",eax
 					    ; Setup the first msg we will send
     mov     byte [dhcpMsgType], 0x01	    ; DHCP discover
     mov     dword [dhcpLease], esi	    ; esi is still -1 (-1 = forever)
 
-    get_time_counter eax
+    mcall   26, 9
     imul    eax,100
     mov     [currTime],eax
 
 buildRequest:				    ; Creates a DHCP request packet.
-    xor     eax,eax			    ; Clear dhcpMsg to all zeros
-    mov     edi,dhcpMsg
+    stdcall mem.Alloc, BUFFER
+    mov     [dhcpMsg], eax
+    test    eax,eax
+    jz	    apipa
+
+
+    mov     edi, eax
     mov     ecx,BUFFER
+    xor     eax,eax
     cld
     rep     stosb
 
-    mov     edx, dhcpMsg
+    mov     edx,[dhcpMsg]
 
     mov     [edx], byte 0x01		    ; Boot request
     mov     [edx+1], byte 0x01		    ; Ethernet
@@ -147,9 +202,9 @@ request_options:
     mov     [dhcpMsgLen], dword 268
 
 send_request:
-    eth.write_udp [socketNum],[dhcpMsgLen],dhcpMsg ; write to socket ( send broadcast request )
+    eth.write_udp [socketNum],[dhcpMsgLen],[dhcpMsg] ; write to socket ( send broadcast request )
 
-    mov     eax, dhcpMsg		    ; Setup the DHCP buffer to receive response
+    mov     eax, [dhcpMsg]		      ; Setup the DHCP buffer to receive response
     mov     [dhcpMsgLen], eax		    ; Used as a pointer to the data
 
     mov     eax,23			    ; wait here for event (data from remote)
@@ -167,7 +222,7 @@ send_request:
 
 
 read_data:				    ; we have data - this will be the response
-    eth.read_packet [socketNum], dhcpMsg, BUFFER
+    eth.read_packet [socketNum], [dhcpMsg], BUFFER
     mov     [dhcpMsgLen], eax
     eth.close_udp [socketNum]
 
@@ -219,7 +274,7 @@ request:
 ;***************************************************************************
 parseResponse:
     DEBUGF  1,"Data received, parsing response\n"
-    mov     edx, dhcpMsg
+    mov     edx, [dhcpMsg]
 
     pusha
     eth.set_IP [edx+16]
@@ -313,6 +368,9 @@ pr_exit:
     jmp close
 
 apipa:
+    stdcall mem.Free, [dhcpMsg]
+
+link_local:
     call random
     mov  ecx,0xfea9			    ; IP 169.254.0.0 link local net, see RFC3927
     mov  cx,ax
@@ -322,7 +380,7 @@ apipa:
     eth.set_GATEWAY 0x0
     eth.set_DNS 0x0
 
-    wait PROBE_WAIT*100
+    mcall 5, PROBE_WAIT*100
 
     xor esi,esi
    probe_loop:
@@ -340,7 +398,7 @@ apipa:
 
     movzx ebx,al
     DEBUGF  1,"Waiting %u0ms\n",ebx
-    wait  ebx
+    mcall 5
 
     DEBUGF  1,"Sending Probe\n"
 ;    eth.ARP_PROBE MAC
@@ -353,7 +411,7 @@ apipa:
 ; IP within this time, we should create another adress, that have to be done later
 
     DEBUGF  1,"Waiting %us\n",ANNOUNCE_WAIT
-    wait ANNOUNCE_WAIT*100
+    mcall 5, ANNOUNCE_WAIT*100
     xor   esi,esi
    announce_loop:
 
@@ -365,17 +423,16 @@ apipa:
     je	  @f
 
     DEBUGF  1,"Waiting %us\n",ANNOUNCE_INTERVAL
-    wait  ANNOUNCE_INTERVAL*100
+    mcall 5, ANNOUNCE_INTERVAL*100
     jmp   announce_loop
    @@:
     ; we should, instead of closing, detect ARP conflicts and detect if cable keeps connected ;)
 
 close:
-    DEBUGF  1,"Exiting\n"
-    exit				    ; at last, exit
+    mcall -1
 
 
-random:
+random:  ; Pseudo random actually
 
     mov   eax,[generator]
     add   eax,-43ab45b5h
@@ -390,22 +447,52 @@ ret
 
 ; DATA AREA
 
+align 16
+@IMPORT:
+
+library \
+	libini,'libini.obj'
+
+import	libini, \
+	ini.get_str,'ini.get_str',\
+	ini.set_str,'ini.set_str',\
+	ini.get_int,'ini.get_int',\
+	ini.set_int,'ini.set_int',\
+	ini.enum_sections,'ini.enum_sections',\
+	ini.enum_keys,'ini.enum_keys'
+
 include_debug_strings
+
+filename db '.ini',0
+str_ip db 'ip',0
+str_subnet db 'subnet',0
+str_gateway db 'gateway',0
+str_dns db 'dns',0
+str_ipconfig db 'ipconfig',0
+str_type db 'type',0
+
 
 IM_END:
 
-dhcpClientIP	dd  0
-dhcpMsgType	db  0
-dhcpLease	dd  0
-dhcpServerIP	dd  0
+inibuf		rb 16
 
-dhcpMsgLen	dd  0
-socketNum	dd  0
+dhcpClientIP	dd  ?
+dhcpMsgType	db  ?
+dhcpLease	dd  ?
+dhcpServerIP	dd  ?
 
-MAC		rb  6
-currTime	dd  0
-renewTime	dd  0
-generator	dd  0
+dhcpMsgLen	dd  ?
+socketNum	dd  ?
 
-dhcpMsg 	rb  BUFFER
+MAC		dp  ?
+currTime	dd  ?
+renewTime	dd  ?
+generator	dd  ?
+
+dhcpMsg 	dd  ?
+
+I_END_2:
+
+path		rb  1024+5
+
 I_END:
