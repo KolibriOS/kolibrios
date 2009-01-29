@@ -87,7 +87,6 @@ START:					    ; start of execution
     mov     ecx, 5
     rep     movsb
 
-    mcall 64,1,I_END_2
     mcall 68,11
 
     stdcall dll.Load,@IMPORT
@@ -454,12 +453,7 @@ library \
 	libini,'libini.obj'
 
 import	libini, \
-	ini.get_str,'ini.get_str',\
-	ini.set_str,'ini.set_str',\
-	ini.get_int,'ini.get_int',\
-	ini.set_int,'ini.set_int',\
-	ini.enum_sections,'ini.enum_sections',\
-	ini.enum_keys,'ini.enum_keys'
+	ini.get_str,'ini.get_str'
 
 include_debug_strings
 
