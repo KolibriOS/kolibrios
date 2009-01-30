@@ -26,31 +26,32 @@ START:                           ; start of execution
 ;   mov  ebx, 10
 ;   mcall
 
-   mcall 18,15
+;   mcall 18,15
 
    mov  eax, 70               ; load AUTORUN.DAT
    mov  ebx, autorun_dat_info
    mcall
+   add  ebx, file_data
+   mov  [fileend], ebx
 
-   call get_number
-   mov  [number_of_files], eax
-;dps "NUMBER OF FILES: "
-;dpd eax
-;dps <13,10>
-   call next_line
-
+; this cycle does not contain an obvious exit condition,
+; but auxiliary procedures (like "get_string") will exit
+; at EOF
  start_program:
-;dps <"STARTING A PROGRAM",13,10>
+   call skip_spaces
+   cmp  al,'#'
+   jz   skip_this_string
    call clear_strings
    mov  edi, program
    call get_string
    mov  edi, parameters
    call get_string
    call get_number
+;dps <"STARTING A PROGRAM",13,10>
    call run_program
+ skip_this_string:
    call next_line
-   dec  [number_of_files]
-   jnz  start_program
+   jmp  start_program
 
  exit:
    or   eax, -1
@@ -62,10 +63,34 @@ START:                           ; start of execution
    mcall 70, start_info
    pop  ebx
 
+; if delay is negative, wait for termination
+;   of the spawned process
+   test ebx, ebx
+   js   must_wait_for_termination
+; otherwise, simply wait
    mov  eax, 5
    mcall
- ret
-
+   ret
+ must_wait_for_termination:
+   mov  esi, eax  ; save slot for the future
+; get process slot
+   mov  ecx, eax
+   mcall 18, 21
+; if an error has occured, exit
+   test eax, eax
+   jz   child_exited
+   mov  ecx, eax
+; wait
+ wait_for_termination:
+   mcall 5, 1
+   mov  ebx, processinfo
+   mcall 9
+   cmp  word [ebx+50], 9 ; the slot was freed?
+   jz   child_exited
+   cmp  dword [ebx+30], esi ; the slot is still occupied by our child?
+   jz   wait_for_termination
+ child_exited:
+   ret
 
  clear_strings:   ; clears buffers
    pushad
@@ -91,6 +116,8 @@ START:                           ; start of execution
 ;dps <13,10>
    add  esi, file_data
   .start:
+   cmp  esi, [fileend]
+   jae  exit
    lodsb
    cmp  al, ' '
    je   .finish
@@ -108,8 +135,18 @@ START:                           ; start of execution
    mov  esi, [position]
    add  esi, file_data
    xor  eax, eax
+   cmp  byte [esi], '-'
+   jnz  @f
+   inc  eax
+   inc  esi
+   inc  [position]
+@@:
+   push eax
+   xor  eax, eax
    xor  ebx, ebx
   .start:
+   cmp  esi, [fileend]
+   jae  .finish
    lodsb
    sub  al, '0'
    cmp  al, 9
@@ -119,17 +156,24 @@ START:                           ; start of execution
    inc  [position]
    jmp  .start
   .finish:
+   pop  eax
+   dec  eax
+   jnz  @f
+   neg  ebx
+@@:
    mov  eax, ebx
    pop  esi ebx
  ret
 
 
  skip_spaces:
-   pushad
+   push esi
    xor  eax, eax
    mov  esi, [position]
    add  esi, file_data
   .start:
+   cmp  esi, [fileend]
+   jae  .finish
    lodsb
    cmp  al, ' '
    jne  .finish
@@ -141,33 +185,33 @@ START:                           ; start of execution
 ;mov edx, tmp
 ;call debug_outstr
 ;dps <13,10>
-   popad
+   pop  esi
  ret
 
 
  next_line:
-   pushad
    mov  esi, [position]
    add  esi, file_data
   .start:
+   cmp  esi, [fileend]
+   jae  exit
    lodsb
    cmp  al, 13
+   je   .finish
+   cmp  al, 10
    je   .finish
    inc  [position]
    jmp  .start
   .finish:
-   add  [position], 2
-   inc  esi
+   inc  [position]
+   cmp  esi, [fileend]
+   jae  exit
    lodsb
-   cmp  al, '#'
-   je   .skipline
    cmp  al, 13
-   jne  .donotskip
-  .skipline:
-   call next_line
-  .donotskip:
-   popad
- ret
+   je   .finish
+   cmp  al, 10
+   je   .finish
+   ret
 
 
 
@@ -195,6 +239,7 @@ I_END:
  program           rb 61 ; 60 + [0] char
  parameters        rb 61
 
- number_of_files   dd ?
+ processinfo       rb 1024
+ fileend           dd ?
 
  file_data         rb 16*512
