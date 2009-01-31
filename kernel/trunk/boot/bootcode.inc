@@ -423,13 +423,16 @@ cfgmanager:
 ; otherwise, set [preboot_device] to 1 (default value - boot from floppy)
         mov     byte [di], 1
 .preboot_device_inited:
-; following 6 lines set variables to 1 if its current value is 0
+; following 4 lines set variables to 1 if its current value is 0
         cmp     byte [di+preboot_dma-preboot_device], 1
         adc     byte [di+preboot_dma-preboot_device], 0
         cmp     byte [di+preboot_biosdisk-preboot_device], 1
         adc     byte [di+preboot_biosdisk-preboot_device], 0
-        cmp     byte [di+preboot_vrrm-preboot_device], 1
-        adc     byte [di+preboot_vrrm-preboot_device], 0
+; default value for VRR is OFF
+        cmp     byte [di+preboot_vrrm-preboot_device], 0
+        jnz	@f
+        mov	byte [di+preboot_vrrm-preboot_device], 2
+@@:
 ; notify user
         _setcursor 5,2
 

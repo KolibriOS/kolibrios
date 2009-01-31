@@ -1,4 +1,4 @@
-SYSTEM FUNCTIONS of OS Kolibri 0.7.1.0
+SYSTEM FUNCTIONS of OS Kolibri 0.7.5.0
 
 Number of the function is located in the register eax.
 The call of the system function is executed by "int 0x40" command.
@@ -219,9 +219,6 @@ Remarks:
     and does not make any operations at all. If it is really required
     to transfer control to the next process (to complete a current
     time slice), use subfunction 1 of function 68.
-  * At current implementation there will be an immediate return from
-    the function, if the addition of ebx with current value of
-    time counter will call 32-bit overflow.
 
 ======================================================================
 ============== Function 6 - read the file from ramdisk. ==============
@@ -613,16 +610,20 @@ Parameters:
   * eax = 17 - function number
 Returned value:
   * if the buffer is empty, function returns eax=1
-  * if the buffer is not empty, function returns:
-    high 24 bits of eax contain button identifier (in particular, ah
-    contains low byte of the identifier; if all buttons have
-    the identifier less than 256, ah is enough to distinguish),
-    and al contain 0 - if used left mouse button or bit of the used another mouse button
+  * if the buffer is not empty:
+    * high 24 bits of eax contain button identifier (in particular,
+      ah contains low byte of the identifier; if all buttons have
+      the identifier less than 256, ah is enough to distinguish)
+    * al = 0 - the button was pressed with left mouse button
+    * al = bit corresponding to used mouse button otherwise
 Remarks:
   * "Buffer" keeps only one button, at pressing the new button the
     information about old is lost.
   * The call of this function by an application with inactive window
     will return answer "buffer is empty".
+  * Returned value for al corresponds to the state of mouse buttons
+    as in subfunction 2 of function 37 at the beginning
+    of button press, excluding lower bit, which is cleared.
 
 ======================================================================
 = Function 18, subfunction 2 - terminate process/thread by the slot. =
@@ -731,7 +732,7 @@ Returned value:
   * function does not return value
 
 ======================================================================
-============ Function 18, subfunction 9 - system shutdown. ===========
+== Function 18, subfunction 9 - system shutdown with the parameter. ==
 ======================================================================
 Parameters:
   * eax = 18 - function number
@@ -747,8 +748,7 @@ Returned value:
 Remarks:
   * Do not rely on returned value by incorrect call, it can be
     changed in future versions of the kernel.
-  * It is possible to use subfunction 1, that on the last step
-    the user makes choice himself.
+
 ======================================================================
 ===== Function 18, subfunction 10 - minimize application window. =====
 ======================================================================
@@ -1127,11 +1127,6 @@ Remarks:
   * To get CD base use subfunction 3 of function 26.
 
 ======================================================================
-====== Function 21, subfunction 4 - set Sound Blaster base port. =====
-======================================================================
-Removed
-
-======================================================================
 ========== Function 21, subfunction 5 - set system language. =========
 ======================================================================
 Parameters:
@@ -1190,11 +1185,6 @@ Remarks:
   * To get the number of partitions of a hard disk use 
     subfunction 11 of function 18.
   * It is also necessary to define used HD base by subfunction 7.
-
-======================================================================
-======== Function 21, subfunction 10 - set sound DMA channel. ========
-======================================================================
-Removed
 
 ======================================================================
  Function 21, subfunction 11 - enable/disable low-level access to HD. 
@@ -1484,11 +1474,6 @@ Remarks:
   * An example of usage of the function is the application CD_tray.
 
 ======================================================================
-=================== Function 25 - set SBPro volume. ==================
-======================================================================
-Removed
-
-======================================================================
 ======== Function 26, subfunction 1 - get MPU MIDI base port. ========
 ======================================================================
 Parameters:
@@ -1546,11 +1531,6 @@ Returned value:
 Remarks:
   * CD base is used by function 24.
   * To set CD base use subfunction 3 of function 21.
-
-======================================================================
-====== Function 26, subfunction 4 - get Sound Blaster base port. =====
-======================================================================
-Removed
 
 ======================================================================
 ========== Function 26, subfunction 5 - get system language. =========
@@ -1615,11 +1595,6 @@ Remarks:
   * To get system time use function 3.
 
 ======================================================================
-======== Function 26, subfunction 10 - get sound DMA channel. ========
-======================================================================
-Removed
-
-======================================================================
 ===================== Function 26, subfunction 11 ====================
 ========== Find out whether low-level HD access is enabled. ==========
 ======================================================================
@@ -1645,11 +1620,6 @@ Remarks:
   * Is used by operations with PCI bus (function 62).
   * The current implementation uses only low bit of ecx.
   * To set the current state use subfunction 12 of function 21.
-
-======================================================================
-=================== Function 28 - set SB16 volume. ===================
-======================================================================
-Removed
 
 ======================================================================
 =================== Function 29 - get system date. ===================
@@ -1690,6 +1660,56 @@ Remarks:
     bytes are copied and than terminating 0 is inserted.
 
 ======================================================================
+=============== Function 32 - delete file from ramdisk. ==============
+======================================================================
+Parameters:
+  * eax = 32 - function number
+  * ebx = pointer to the filename
+Returned value:
+  * eax = 0 - success; otherwise file system error code
+Remarks:
+  * This function is obsolete; function 58 allows to fulfill
+    the same operations with the extended possibilities.
+  * The current implementation returns only values 0(success) and
+    5(file not found).
+  * The filename must be either in the format 8+3 characters
+    (first 8 characters - name itself, last 3 - extension,
+    the short names and extensions are supplemented with spaces),
+    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
+    (name no more than 8 characters, dot, extension 3 characters
+    supplemented if necessary by spaces).
+    The filename must be written with capital letters. The terminating
+    character with code 0 is not necessary (not ASCIIZ-string).
+  * This function does not support folders on the ramdisk.
+
+======================================================================
+================ Function 33 - write file to ramdisk. ================
+======================================================================
+Parameters:
+  * eax = 33 - function number
+  * ebx = pointer to the filename
+  * ecx = pointer to data for writing
+  * edx = number of bytes for writing
+  * should be set esi=0
+Returned value:
+  * eax = 0 - success, otherwise file system error code
+Remarks:
+  * This function is obsolete; function 70 allows to fulfil
+    the same operations with extended possibilities.
+  * If esi contains non-zero value and selected file already exists,
+    one more file with the same name will be created.
+  * Otherwise file will be overwritten.
+  * The filename must be either in the format 8+3 characters
+    (first 8 characters - name itself, last 3 - extension,
+    the short names and extensions are supplemented with spaces),
+    or in the format 8.3 characters "FILE.EXT"/"FILE.EX "
+    (name no more than 8 characters, dot, extension 3 characters
+    supplemented if necessary by spaces).
+    The filename must be written with capital letters. The terminating
+    character with code 0 is not necessary (not ASCIIZ-string).
+  * This function does not support folders on the ramdisk.
+
+======================================================================
 ======= Function 35 - read the color of a pixel on the screen. =======
 ======================================================================
 Parameters:
@@ -1707,12 +1727,12 @@ Remarks:
     the current videomode, use function 61.
 
 ======================================================================
-=============== Function 36 - read screen area. ===============
+=================== Function 36 - read screen area. ==================
 ======================================================================
 Paramters:
   * eax = 36 - function number
-  * ebx = pointer on the previously allocated area of memory,
-             where will be placed the image in the format BBGGRRBBGGRR...
+  * ebx = pointer to the previously allocated memory area,
+        where will be placed the image in the format BBGGRRBBGGRR...
   * ecx = [size on axis x]*65536 + [size on axis y]
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
 Returned value:
@@ -1915,45 +1935,36 @@ Returned value:
   * eax = -1 for incorrect ebx
 
 ======================================================================
-==================== Function 42 - work with IRQ data. ===============
+================== Function 42 - work with IRQ data. =================
 ======================================================================
-
------------------------- Reading data --------------------------------
-
 When an IRQ occurs, the system reads data from ports indicated
 earlier by function 44 and writes this data to
-internal buffer. This function reads out data from that buffer
-to the buffer specified as parameter.
+internal buffer. This function reads out data from that buffer.
+
+--------------------- Subfunction 0 - read data ----------------------
 Parameters:
   * eax = 42 - function number
   * bl = IRQ number, 0..15
-  * bh = subfunction number, 0
-Other part of register ebx, must be zero.
-  * ecx = pointer to the receive buffer
+  * bh = 0 - subfunction number
+  * rest of ebx must be zeroed
+  * ecx = pointer to a buffer with size not less than 4000 bytes
 Returned value: (use value of eax to distinguish)
-  * if the thread is not IRQ owner (or IRQ number is incorrect):
-    * eax = -1
-  * if there is no data:
-    * eax = 0
+  * if the thread is not IRQ owner
+    (or IRQ number is incorrect): eax = -1
+  * if there is no data: eax = 0
   * if all is ok:
-    * eax = byte size of data, read from buffer
+    eax = size of data read (in bytes)
 
-See remarks below.
-
------------------------- Get data size -------------------------------
-
+------------- Subfunction 1 - get size of data in buffer -------------
 Parameters:
   * eax = 42 - function number
   * bl = IRQ number, 0..15
-  * bh = subfunction number, 0
-Other part of register ebx, must be zero.
-  * ecx = pointer to receive buffer
-Returned value: (use value of eax to distinguish)
-  * if the thread is not IRQ owner (or IRQ number is incorrect):
-    * eax = -1
-  * if all is ok:
-    * eax = byte size of data in buffer
-
+  * bh = 0 - subfunction number
+  * rest of ebx must be zeroed
+Returned value:
+  * if the thread is not IRQ owner
+    (or IRQ number is incorrect): eax = -1
+  * otherwise eax = size of data in buffer
 Remarks:
   * Previously the thread must reserve indicated IRQ for itself
     by function 45.
@@ -2578,9 +2589,6 @@ Remarks:
     sockets of a thread at termination. In particular, one should not
     kill a thread with many opened sockets - there will be an outflow
     of resources.
-  * The current implementation does no checks on correctness
-    (function returns error only if thread tries to close not opened
-    socket with correct handle).
 
 ======================================================================
 ============== Function 53, subfunction 2 - poll socket. =============
@@ -2590,10 +2598,8 @@ Parameters:
   * ebx = 2 - subfunction number
   * ecx = socket handle
 Returned value:
-  * eax = number of read bytes
+  * eax = number of read bytes, 0 for incorrect handle
   * ebx destroyed
-Remarks:
-  * There is no checks for correctness.
 
 ======================================================================
 ========= Function 53, subfunction 3 - read byte from socket. ========
@@ -2603,12 +2609,10 @@ Parameters:
   * ebx = 3 - subfunction number
   * ecx = socket handle
 Returned value:
-  * if there is no read data: eax=0, bl=0,
+  * if there is no read data or handle is incorrect: eax=0, bl=0,
     other bytes of ebx are destroyed
   * if there are read data: eax=number of rest bytes
     (possibly 0), bl=read byte, other bytes of ebx are destroyed
-Remarks:
-  * There is no checks for correctness.
 
 ======================================================================
 ========== Function 53, subfunction 4 - write to UDP-socket. =========
@@ -2620,13 +2624,10 @@ Parameters:
   * edx = number of bytes to write
   * esi = pointer to data to write
 Returned value:
-  * eax = 0xffffffff - invalid handle
-  * eax = 0xffff - not enough memory
+  * eax = 0xffffffff - error (invalid handle or not enough memory)
   * eax = 0 - success
   * ebx destroyed
 Remarks:
-  * Check on validity of handle is minimal - only not very incorrect
-    not opened handles are eliminated.
   * Number of bytes to write must not exceed 1500-28, though
     the appropriate check is not made.
 
@@ -2654,7 +2655,7 @@ Parameters:
   * ebx = 6 - subfunction number
   * ecx = socket handle
 Returned value:
-  * eax = socket status: one of
+  * eax = 0 for incorrect handle or socket status: one of
   * TCB_LISTEN = 1
   * TCB_SYN_SENT = 2
   * TCB_SYN_RECEIVED = 3
@@ -2666,9 +2667,7 @@ Returned value:
   * TCB_LAST_ASK = 9
   * TCB_TIME_WAIT = 10
   * TCB_CLOSED = 11
-  * ebx destroys
-Remarks:
-  * There is no checks for correctness.
+  * ebx destroyed
 
 ======================================================================
 ========== Function 53, subfunction 7 - write to TCP-socket. =========
@@ -2680,13 +2679,10 @@ Parameters:
   * edx = number of bytes to write
   * esi = pointer to data to write
 Returned value:
-  * eax = 0xffffffff - error
-  * eax = 0xffff - not enough memory
+  * eax = 0xffffffff - error (invalid handle or not enough memory)
   * eax = 0 - success
   * ebx destroyed
 Remarks:
-  * Check on validity of handle is minimal - only not very incorrect
-    not opened handles are eliminated.
   * Number of bytes to write must not exceed 1500-40, though
     the appropriate check is not made.
 
@@ -2698,20 +2694,15 @@ Parameters:
   * ebx = 8 - subfunction number
   * ecx = socket handle
 Returned value:
-  * eax = -1 - invalid handle
-  * eax = 0xffff - not enough memory for socket close packet
+  * eax = -1 - error (invalid handle or
+    not enough memory for socket close packet)
   * eax = 0 - success
-  * in many cases eax is destroyed (the result of function 'queue'
-    is returned) - probably this is bug, which will be corrected
   * ebx destroyed
 Remarks:
   * The current implementation does not close automatically all
     sockets of a thread at termination. In particular, one should not
     kill a thread with many opened sockets - there will be an outflow
     of resources.
-  * The current implementation does no checks on correctness
-    (function returns error only if thread tries to close not opened
-    socket with correct handle).
 
 ======================================================================
 === Function 53, subfunction 9 - check whether local port is free. ===
@@ -2752,10 +2743,8 @@ Paramters:
   * esi = number of bytes to read;
   * esi = 0 - read all data (maximum 4096 bytes)
 Returned value:
-  * eax = number of bytes read
+  * eax = number of bytes read (0 for incorrect handle)
   * ebx destroyed
-Remakrs:
-  * There is no check on handle correctness.
 
 ======================================================================
 = Function 53, subfunction 255 - debug information of network driver. 
@@ -2787,58 +2776,6 @@ Possible values for ecx:
   * 4: total number of dumped received packets
   * 5: total number of received ARP-packets
   * 6: status of packet driver, 0=inactive, nonzero=active
-
-======================================================================
-========== Function 55, subfunction 0 - load data for SB16. ==========
-======================================================================
-Parameters:
-  * eax = 55 - function number
-  * ebx = 0 - subfunction number
-  * ecx = pointer to data (is copied 64 kilobytes, is used as much as
-    set by subfunction 2)
-Returned value:
-  * function does not return value
-Remarks:
-  * Format and size of data are set by subfunction 2.
-
-======================================================================
-======== Function 55, subfunction 1 - begin play data on SB16. =======
-======================================================================
-Parameters:
-  * eax = 55 - function number
-  * ebx = 1 - subfunction number
-Returned value:
-  * function does not return value
-Remarks:
-  * Previously data must be loaded by subfunction 0 and
-    their format must be defined by subfunction 2.
-  * Function returns control, when playing of data began; after that
-    play goes independently from application (and does not use
-    processor time at all).
-  * Previously must be defined SB16 base port
-    (by subfunction 4 of function 21) and DMA channel
-    (by subfunction 10 of function 21).
-
-======================================================================
-======== Function 55, subfunction 2 - set format of SB16 data. =======
-======================================================================
-Parameters:
-  * eax = 55 - function number
-  * ebx = 2 - subfunction number
-  * ecx = 0 - set digit capacity
-    * edx = 1 - 8bit mono
-    * edx = 2 - 8bit stereo
-  * ecx = 1 - set data size
-    * edx = size in bytes
-  * ecx = 2 - set play frequency
-    * edx = frequency
-Returned value:
-  * function does not return value
-Remarks:
-  * When the system boots, it sets following default parameters:
-    digit capacity - 8bit mono, size - 64 Kb, frequency - 44100 Hz.
-    Nevertheless it is recommended to set necessary values obviously
-    as they could be reset by some application.
 
 ======================================================================
  Function 55, subfunction 55 - begin to play data on built-in speaker. 
@@ -3391,19 +3328,36 @@ Parameters:
   * ebx = pointer to the image
   * ecx = [size on axis x]*65536 + [size on axis y]
   * edx = [coordinate on axis x]*65536 + [coordinate on axis y]
-  * esi = number of bits per pixel, must be 8, 24 or 32
-  * edi = pointer to palette (256 colors 0x00RRGGBB);
-          ignored when esi = 24 and 32
+  * esi = number of bits per pixel, must be 1,2,4,8,15,16,24 or 32
+  * edi = pointer to palette (2 to the power esi colors 0x00RRGGBB);
+          ignored when esi > 8
   * ebp = offset of next row data relative to previous row data
 Returned value:
   * function does not return value
 Remarks:
   * Coordinates of the image are coordinates of the upper left corner
     of the image relative to the window.
-  * Size of the image in bytes is xsize*ysize.
-  * Each byte of image is index in the palette.
-  * If the image uses less than 256 colors, palette size may be
-    less than 256 too.
+  * Format of image with 1 bit per pixel: each byte of image
+    (possibly excluding last bytes in rows), contains information on
+    the color of 8 pixels, MSB corresponds to first pixel.
+  * Format of image with 2 bits per pixel: each byte of image
+    (possibly excluding last bytes in rows), contains information on
+    the color of 4 pixels, two MSBs correspond to first pixel.
+  * Format of image with 4 bits per pixel: each byte of image
+    excluding last bytes in rows (if width is odd) contains
+    information on the color of 2 pixels, high-order tetrad
+    corresponds to first pixel.
+  * Format of image with 8 bits per pixel: each byte of image is
+    index in the palette.
+  * Format of image with 15 bits per pixel: the color of each pixel
+    is coded as (bit representation) 0RRRRRGGGGGBBBBB - 5 bits per
+    each color.
+  * Format of image with 16 bits per pixel: the color of each pixel
+    is coded as RRRRRGGGGGGBBBBB (5+6+5).
+  * Format of image with 24 bits per pixel: the color of each pixel
+    is coded as 3 bytes - sequentially blue, green, red components.
+  * Format of image with 32 bits per pixel: similar to 24, but
+    one additional ignored byte is present.
   * The call to function 7 is equivalent to call to this function
     with esi=24, ebp=0.
 
@@ -3770,43 +3724,6 @@ Remarks:
     the new and old sizes.
 
 ======================================================================
-======= Function 68, subfunction 22 - open memory block. =======
-======================================================================
-Parameters:
-  * eax = 68 - function number
-  * ebx = 22 - subfunction number
-  * ecx = pointer to already allocated block (max 32 symbols)
-  * edx = block's size in bytes for SHM_CREATE and SHM_OPEN_ALWAYS
-  * esi = flags for opening and getting access
-          SHM_OPEN        = 0x00
-          SHM_OPEN_ALWAYS = 0x04
-          SHM_CREATE      = 0x08
-          SHM_READ        = 0x00
-          SHM_WRITE       = 0x01
-Returned value:
-  * eax = pointer to the readed block, 0 = error
-  * edx = if SHM_CREATE, SHM_OPEN, or SHM_OPEN_ALWAYS active
-Error codes:
-  * E_NOTFOUND =  5
-  * E_ACCESS   = 10
-  * E_NOMEM    = 30
-  * E_PARAM    = 33
-Remarks:
-  * 
-  * 
-
-======================================================================
-======= Function 68, subfunction 22 - close memory block. =======
-======================================================================
-Parameters:
-  * eax = 68 - function number
-  * ebx = 23 - subfunction number
-  * ecx = pointer to already allocated block (max 32 symbols)
-
-Returned value:
-  * not defined
-
-======================================================================
 ====================== Fucntion 69 - debugging. ======================
 ======================================================================
 A process can load other process as debugged by set of corresponding
@@ -3837,9 +3754,8 @@ When debugger terminates, all debugged processes are killed.
 If debugger does not want this, it must previously detach by
 subfunction 3.
 
-All subfunctions except 4 and 5 are applicable only to
-processes/threads started from the current by function 70
-with set debugging flag.
+All subfunctions are applicable only to processes/threads started
+from the current by function 70 with set debugging flag.
 Debugging of multithreaded programs is not supported yet.
 The full list of subfunctions:
   * subfunction 0 - define data area for debug messages
@@ -3937,7 +3853,7 @@ Remarks:
   * If the process was suspended, it resumes execution.
 
 ======================================================================
-============= Function 69, subfunction 4 - suspend thread. ===========
+======== Function 69, subfunction 4 - suspend debugged thread. =======
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -3945,9 +3861,12 @@ Parameters:
   * ecx = thread identifier
 Returned value:
   * function does not return value
+Remarks:
+  * Process must be loaded for debugging (as is shown in
+    general description).
 
 ======================================================================
-============= Function 69, subfunction 5 - resume thread. ============
+======== Function 69, subfunction 5 - resume debugged thread. ========
 ======================================================================
 Parameters:
   * eax = 69 - function number
@@ -3955,6 +3874,9 @@ Parameters:
   * ecx = thread identifier
 Returned value:
   * function does not return value
+Remarks:
+  * Process must be loaded for debugging (as is shown in
+    general description).
 
 ======================================================================
 = Fucntion 69, subfunction 6 - read from memory of debugged process. =

@@ -810,6 +810,8 @@ proc load_driver stdcall, driver_name:dword
 	   mov	   dword [edx+8], 'vers'
 	   mov	   byte [edx+12], '/'
 	   mov	   esi, [driver_name]
+.redo:
+           lea     edx, [file_name]
 	   lea	   edi, [edx+13]
 	   mov	   ecx, 16
 @@:
@@ -926,6 +928,15 @@ proc load_driver stdcall, driver_name:dword
 	   jnz .ok
 
 	   stdcall kernel_free, [img_base]
+           cmp     dword [file_name+13], 'SOUN'
+           jnz     @f
+           cmp     dword [file_name+17], 'D.ob'
+           jnz     @f
+           cmp     word [file_name+21], 'j'
+           jnz     @f
+           mov     esi, aSis
+           jmp     .redo
+@@:
 	   xor eax, eax
 	   ret
 .ok:

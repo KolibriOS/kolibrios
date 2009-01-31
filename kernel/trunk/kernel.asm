@@ -113,7 +113,7 @@ use16
 		  org	0x0
 		  jmp	start_of_code
 
-version db    'Kolibri OS  version 0.7.1.0      ',13,10,13,10,0
+version db    'Kolibri OS  version 0.7.5.0      ',13,10,13,10,0
 
 include "boot/bootstr.inc"     ; language-independent boot messages
 include "boot/preboot.inc"
@@ -2186,7 +2186,7 @@ endg
 
 iglobal
 version_inf:
-  db 0,7,1,0  ; version 0.7.1.0
+  db 0,7,5,0  ; version 0.7.5.0
   db UID_KOLIBRI
   dd __REV__
 version_end:
@@ -4297,7 +4297,9 @@ putimage_init8bpp:
 
 align 16
 putimage_get24bpp:
-	mov	eax, [esi]
+	movzx	eax, byte [esi+2]
+	shl	eax, 16
+	mov	ax, [esi]
 	add	esi, 3
 	ret	4
 align 16

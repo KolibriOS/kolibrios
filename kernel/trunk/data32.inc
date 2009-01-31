@@ -80,6 +80,7 @@ msg_module     db 'in module ',0
 msg_version    db 'incompatible driver version',13,10,0
 msg_www        db 'please visit www.kolibrios.org',13,10,0
 msg_CR	       db  13,10,0
+aSis           db 'SIS',0
 
 intel_str      db "GenuineIntel",0
 AMD_str        db "AuthenticAMD",0
