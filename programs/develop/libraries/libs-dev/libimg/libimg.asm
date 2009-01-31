@@ -218,11 +218,15 @@ proc img._.do_rgb ;/////////////////////////////////////////////////////////////
 ; 32 BPP -> 24 BPP
 	mov	esi, [esi + Image.Data]
 
-    @@: dec	ecx
-	js	@f
-	movsd
-	dec	edi
-	jmp	@b
+    @@:
+	mov	eax, [esi]
+	mov	[edi], ax
+	shr	eax, 16
+	mov	[edi+2], al
+	add	esi, 4
+	add	edi, 3
+	sub	ecx, 1
+	jnz	@b
 
     @@:
 	ret
@@ -244,7 +248,9 @@ proc img._.do_rgb ;/////////////////////////////////////////////////////////////
 	movzx	eax, byte [esi]
 	add	esi, 1
 	mov	eax, [ebx + eax*4]
-	mov	[edi], eax
+	mov	[edi], ax
+	shr	eax, 16
+	mov	[edi+2], al
 	add	edi, 3
 	sub	ecx, 1
 	jnz	@b
@@ -1154,7 +1160,7 @@ align 4
 
 export					      \
 	lib_init	, 'lib_init'	    , \
-	0x00010002	, 'version'	    , \
+	0x00010003	, 'version'	    , \
 	img.is_img	, 'img.is_img'	    , \
 	img.info	, 'img.info'	    , \
 	img.from_file	, 'img.from_file'   , \
