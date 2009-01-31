@@ -465,12 +465,19 @@ no_more_data:
  je  cfr002
    
  ; Write the file
- mov  eax, 33
- mov  ebx, source
- mov  edx, [filesize]
- mov  ecx, I_END + 512
- mov  esi, 0
- mcall
+	mov	ebx, writeinfo
+	lea	esi, [ebx + 20]
+@@:
+	lodsb
+	test	al, al
+	jnz	@b
+@@:
+	dec	esi
+	cmp	byte [esi-1], ' '
+	jnz	@b
+	mov	byte [esi], 0
+	mcall	70, writeinfo
+	mov	byte [esi], ' '
    
  jmp  cfrexit
    
@@ -887,8 +894,16 @@ draw_window:
    
    
 ; DATA AREA
-   
-source	     db  'KERNEL.ASM     '
+; file name: source
+; file data: I_END + 512
+; file size: [filesize]
+writeinfo:
+	dd	2
+	dd	0
+	dd	0
+filesize dd	0	 ; The number of bytes written / left to write
+	dd	I_END + 512
+source	     db  'KERNEL.ASM     ',0
 destination  db  '192.168.1.23   '
    
    
@@ -900,7 +915,6 @@ addr  dd  0x0
 ya    dd  0x0
    
 fileposition dd 0 ; Points to the current point in the file
-filesize  dd 0 ; The number of bytes written / left to write
 fileblocksize dw 0 ; The number of bytes to send in this frame
    
 text:

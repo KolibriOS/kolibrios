@@ -388,13 +388,7 @@ still:
   jmp  end_Go
  _savefile:
   ;save file
-  mov  ebx,filename
-  mov  ecx,0x10000
-  mov  edx,[sizefile]
-  xor  esi,esi
-  dec  edx
-  mov  eax,33
-  mcall
+  mcall 70,writeinfo
  end_Go:
   call CtrlHome
   jmp  still
@@ -1240,7 +1234,15 @@ about_window:
   ret
 
 ; DATA AREA
-sizefile dd 0
+writeinfo:
+	dd	2
+	dd	0
+	dd	0
+sizefile dd	0
+	dd	0x10000
+	db	0
+	dd	filename
+
 current  dd 0 ;current offset relative begin file. Uses as offset for patch.
 ;Coordinates left hi-level menu buttons
 ;Uses into low-level menu output.
