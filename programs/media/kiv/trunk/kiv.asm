@@ -25,6 +25,8 @@ START:
 	or	eax, eax
 	jnz	exit
 
+	invoke	sort.START, 1
+
 	mov	ecx, 1	; for 15.4: 1 = tile
 	cmp	word [@PARAMS], '\T'
 	jz	set_bgr
@@ -48,24 +50,9 @@ set_bgr:
 	mcall	15, 4
 	mov	eax, @PARAMS + 4
 	call	load_image
-	jc	exit_bgr
+	jc	exit
 
-	mov	esi, [image]
-	mov	ecx, [esi + Image.Width]
-	mov	edx, [esi + Image.Height]
-	mcall	15, 1
-
-	mcall	15, 6
-	test	eax, eax
-	jz	exit_bgr
-
-	push	eax
-	invoke	img.to_rgb2, esi, eax
-	pop	ecx
-	mcall	15, 7
-
-exit_bgr:
-	mcall	15, 3
+	call	set_as_bgr
 	jmp	exit
 
 params_given:
@@ -148,14 +135,36 @@ still:
 	mov	edi, @PARAMS
 	mov	ecx, 512/4
 	rep	movsd
-	invoke	img.destroy
 	mov	byte [edi-1], 0
+	invoke	img.destroy
+	call	free_directory
 	jmp	red
     .restore_old:
 	pop	[image]
 	jmp	still
 
-    @@: cmp	eax, 1
+	; set background
+    @@:
+	cmp	eax, 'bgr'
+	jne	@f
+
+	call	set_as_bgr
+	jmp	still
+
+    @@:
+
+	cmp	eax, 'bck'
+	jnz	@f
+	call	prev_image
+	jmp	still
+    @@:
+	cmp	eax, 'fwd'
+	jnz	@f
+	call	next_image
+	jmp	still
+    @@:
+
+	cmp	eax, 1
 	jne	still
 
   exit:
@@ -225,9 +234,9 @@ update_image_sizes:
 	pushf
 	mov	edx, [eax + Image.Width]
 	add	edx, 19
-	cmp	edx, 50 + 25*5
+	cmp	edx, 40 + 25*9
 	jae	@f
-	mov	edx, 50 + 25*5
+	mov	edx, 40 + 25*9
 @@:
 	mov	[wnd_width], edx
 	mov	esi, [eax + Image.Height]
@@ -241,10 +250,268 @@ update_image_sizes:
 .no_resize:
 	ret
 
-draw_window:
-	invoke	gfx.open, TRUE
-	mov	[ctx], eax
+set_as_bgr:
+	mov	esi, [image]
+	mov	ecx, [esi + Image.Width]
+	mov	edx, [esi + Image.Height]
+	mcall	15, 1
 
+	mcall	15, 6
+	test	eax, eax
+	jz	@f
+
+	push	eax
+	invoke	img.to_rgb2, esi, eax
+	pop	ecx
+	mcall	15, 7
+
+@@:
+	mcall	15, 3
+	ret
+
+prev_image:
+	call	load_directory
+	cmp	[directory_ptr], 0
+	jz	.ret
+	mov	ebx, [directory_ptr]
+	mov	eax, [cur_file_idx]
+	cmp	eax, -1
+	jnz	@f
+	mov	eax, [ebx+4]
+@@:
+	push	[image]
+.scanloop:
+	dec	eax
+	jns	@f
+	mov	eax, [ebx+4]
+	dec	eax
+	cmp	[cur_file_idx], -1
+	jz	.notfound
+@@:
+	cmp	eax, [cur_file_idx]
+	jz	.notfound
+	push	eax
+	imul	esi, eax, 304
+	add	esi, [directory_ptr]
+	add	esi, 32 + 40
+	mov	edi, curdir
+@@:
+	inc	edi
+	cmp	byte [edi-1], 0
+	jnz	@b
+	mov	byte [edi-1], '/'
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jnz	@b
+	mov	eax, curdir
+	call	load_image
+	pop	eax
+	jc	.scanloop
+	mov	[cur_file_idx], eax
+	invoke	img.destroy
+	mov	esi, curdir
+	mov	edi, @PARAMS
+	mov	ecx, 512/4
+	rep	movsd
+	mov	byte [edi-1], 0
+.ret:
+	ret
+.notfound:
+	pop	[image]
+	ret
+
+next_image:
+	call	load_directory
+	cmp	[directory_ptr], 0
+	jz	.ret
+	mov	ebx, [directory_ptr]
+	mov	eax, [cur_file_idx]
+	push	[image]
+.scanloop:
+	inc	eax
+	cmp	eax, [ebx+4]
+	jb	@f
+	xor	eax, eax
+	cmp	[cur_file_idx], -1
+	jz	.notfound
+@@:
+	cmp	eax, [cur_file_idx]
+	jz	.notfound
+	push	eax ebx
+	imul	esi, eax, 304
+	add	esi, [directory_ptr]
+	add	esi, 32 + 40
+	mov	edi, curdir
+@@:
+	inc	edi
+	cmp	byte [edi-1], 0
+	jnz	@b
+	mov	byte [edi-1], '/'
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jnz	@b
+	mov	eax, curdir
+	call	load_image
+	pop	ebx eax
+	jc	.scanloop
+	mov	[cur_file_idx], eax
+	invoke	img.destroy
+	mov	esi, curdir
+	push	esi
+	mov	edi, @PARAMS
+	mov	ecx, 512/4
+	rep	movsd
+	mov	byte [edi-1], 0
+	pop	esi
+@@:
+	lodsb
+	test	al, al
+	jnz	@b
+@@:
+	dec	esi
+	cmp	byte [esi], '/'
+	jnz	@b
+	mov	byte [esi], 0
+.ret:
+	ret
+.notfound:
+	pop	[image]
+	ret
+
+load_directory:
+	cmp	[directory_ptr], 0
+	jnz	.ret
+	mov	esi, @PARAMS
+	mov	ecx, esi
+@@:
+	lodsb
+	test	al, al
+	jnz	@b
+@@:
+	dec	esi
+	cmp	byte [esi], '/'
+	jnz	@b
+	mov	[last_name_component], esi
+	sub	esi, ecx
+	xchg	ecx, esi
+	mov	edi, curdir
+	rep	movsb
+	mov	byte [edi], 0
+	mcall	68, 12, 0x1000
+	test	eax, eax
+	jz	.ret
+	mov	ebx, readdir_fileinfo
+	mov	dword [ebx+12], (0x1000 - 32) / 304
+	mov	dword [ebx+16], eax
+	mcall	70
+	cmp	eax, 6
+	jz	.dirok
+	test	eax, eax
+	jnz	free_directory
+	mov	edx, [directory_ptr]
+	mov	ecx, [edx+8]
+	mov	[readblocks], ecx
+	imul	ecx, 304
+	add	ecx, 32
+	mcall	68, 20
+	test	eax, eax
+	jz	free_directory
+	mov	[directory_ptr], eax
+	mcall	70, readdir_fileinfo
+.dirok:
+	cmp	ebx, 0
+	jle	free_directory
+	mov	eax, [directory_ptr]
+	add	eax, 32
+	mov	edi, eax
+	push	0
+.dirskip:
+	push	eax
+	test	byte [eax], 18h
+	jnz	.nocopy
+	lea	esi, [eax+40]
+	mov	ecx, esi
+@@:
+	lodsb
+	test	al, al
+	jnz	@b
+@@:
+	dec	esi
+	cmp	esi, ecx
+	jb	.noext
+	cmp	byte [esi], '.'
+	jnz	@b
+	inc	esi
+	mov	ecx, [esi]
+	or	ecx, 0x202020
+	cmp	ecx, 'jpg'
+	jz	.copy
+	cmp	ecx, 'bmp'
+	jz	.copy
+	cmp	ecx, 'gif'
+	jz	.copy
+	cmp	ecx, 'png'
+	jz	.copy
+	cmp	ecx, 'jpe'
+	jz	.copy
+	cmp	ecx, 'jpeg'
+	jz	@f
+	cmp	ecx, 'jpeG'
+	jnz	.nocopy
+@@:
+	cmp	byte [esi+4], 0
+	jnz	.nocopy
+.copy:
+	mov	esi, [esp]
+	mov	ecx, 304 / 4
+	rep	movsd
+	inc	dword [esp+4]
+.nocopy:
+.noext:
+	pop	eax
+	add	eax, 304
+	dec	ebx
+	jnz	.dirskip
+	mov	eax, [directory_ptr]
+	pop	ebx
+	mov	[eax+4], ebx
+	test	ebx, ebx
+	jz	free_directory
+	push	0	; sort mode
+	push	ebx
+	add	eax, 32
+	push	eax
+	call	[SortDir]
+	xor	eax, eax
+	mov	edi, [directory_ptr]
+	add	edi, 32 + 40
+.scan:
+	mov	esi, [last_name_component]
+	inc	esi
+	push	edi
+	invoke	strcmpi
+	pop	edi
+	jz	.found
+	inc	eax
+	add	edi, 304
+	dec	ebx
+	jnz	.scan
+	or	eax, -1
+.found:
+	mov	[cur_file_idx], eax
+.ret:
+	ret
+
+free_directory:
+	mcall	68, 13, [directory_ptr]
+	and	[directory_ptr], 0
+	ret
+
+draw_window:
 	mcall	48, 4
 	mov	ebp, eax	; save skin height
 	add	eax, [wnd_height]
@@ -255,12 +522,11 @@ draw_window:
 
 	mcall	9, procinfo, -1
 
-	mov	ebx, [procinfo + 42]
-	sub	ebx, 9
+	mov	ebx, [procinfo + 62]
+	inc	ebx
 	mcall	13, , <0, 35>, 0xFFFFFF
-	mov	ecx, [procinfo + 46]
-	sub	ecx, ebp
-	sub	ecx, 9
+	mov	ecx, [procinfo + 66]
+	sub	ecx, 4
 	shl	ecx, 16
 	mov	cl, 5
 	mcall
@@ -284,31 +550,55 @@ draw_window:
 	add	ebx, esi
 	mcall
 
-	invoke	gfx.pen.color, [ctx], 0x007F7F7F
-	mov	eax, [procinfo + 42]
-	sub	eax, 10
-	invoke	gfx.line, [ctx], 0, 30, eax, 30
-
-	xor	ebp, ebp
+	mov	ebx, [procinfo + 62]
+	push	ebx
+	mcall	38, , <30, 30>, 0x007F7F7F
+	mcall	, <5 + 25 * 1, 5 + 25 * 1>, <0, 30>
+	mcall	, <10 + 25 * 3, 10 + 25 * 3>
+	mcall	, <15 + 25 * 4, 15 + 25 * 4>
+	pop	ebx
+	sub	ebx, 25 * 5 + 10
+	push	ebx
+	imul	ebx, 10001h
+	mcall
 
 	mcall	8, <5 + 25 * 0, 20>, <5, 20>, 'opn'+40000000h
-	mcall	65, openbtn, <20, 20>, <5 + 25 * 0, 5>, 4, palette
+	mcall	, <10 + 25 * 1, 20>, , 'bck'+40000000h
+	mcall	, <10 + 25 * 2, 20>, , 'fwd'+40000000h
+	mcall	, <15 + 25 * 3, 20>, , 'bgr'+40000000h
+	pop	ebx
+	add	ebx, 5
+	shl	ebx, 16
+	mov	bl, 20
+	mcall	, , , 'flh'+40000000h
+	add	ebx, 25 * 65536
+	mcall	, , , 'flv'+40000000h
+	add	ebx, 30 * 65536
+	mcall	, , , 'rtr'+40000000h
+	add	ebx, 25 * 65536
+	mcall	, , , 'rtl'+40000000h
+	add	ebx, 25 * 65536
+	mcall	, , , 'flb'+40000000h
 
-	invoke	gfx.line, [ctx], 5 + 25 * 1, 0, 5 + 25 * 1, 30
+	mov	ebp, (numimages-1)*20
 
-	mcall	8, <10 + 25 * 1, 20>, <5, 20>, 'flh'+40000000h
-	mcall	65, fliphorzbtn, <20, 20>, <10 + 25 * 1, 5>, 4, palette
-	mcall	8, <10 + 25 * 2, 20>, <5, 20>, 'flv'+40000000h
-	mcall	65, flipvertbtn, <20, 20>, <10 + 25 * 2, 5>, 4, palette
-
-	invoke	gfx.line, [ctx], 10 + 25 * 3, 0, 10 + 25 * 3, 30
-
-	mcall	8, <15 + 25 * 3, 20>, <5, 20>, 'rtr'+40000000h
-	mcall	65, rotcwbtn, <20, 20>, <15 + 25 * 3, 5>, 4, palette
-	mcall	8, <15 + 25 * 4, 20>, <5, 20>, 'rtl'+40000000h
-	mcall	65, rotccwbtn, <20, 20>, <15 + 25 * 4, 5>, 4, palette
-	mcall	8, <15 + 25 * 5, 20>, <5, 20>, 'flb'+40000000h
-	mcall	65, rot180btn, <20, 20>, <15 + 25 * 5, 5>, 4, palette
+	mcall	65, buttons+openbtn*20, <20, 20>, <5 + 25 * 0, 5>, 8, palette
+	mcall	, buttons+backbtn*20, , <10 + 25 * 1, 5>
+	mcall	, buttons+forwardbtn*20, , <10 + 25 * 2, 5>
+	mcall	, buttons+bgrbtn*20, , <15 + 25 * 3, 5>
+	mov	edx, [procinfo + 62]
+	sub	edx, 25 * 5 + 4
+	shl	edx, 16
+	mov	dl, 5
+	mcall	, buttons+fliphorzbtn*20
+	add	edx, 25 * 65536
+	mcall	, buttons+flipvertbtn*20
+	add	edx, 30 * 65536
+	mcall	, buttons+rotcwbtn*20
+	add	edx, 25 * 65536
+	mcall	, buttons+rotccwbtn*20
+	add	edx, 25 * 65536
+	mcall	, buttons+rot180btn*20
 
 	mov	ebx, [image]
 	mov	ecx, [ebx + Image.Width]
@@ -328,7 +618,6 @@ draw_window:
 	xor	ebp, ebp
 	mcall	65
 
-	invoke	gfx.close, [ctx]
 	ret
 
 ; void* __stdcall mem.Alloc(unsigned size);
@@ -563,7 +852,8 @@ align 4
 library 			\
 	libio  , 'libio.obj'  , \
 	libgfx , 'libgfx.obj' , \
-	libimg , 'libimg.obj'
+	libimg , 'libimg.obj' , \
+	sort   , 'sort.obj'
 
 import	libio			  , \
 	libio.init , 'lib_init'   , \
@@ -588,43 +878,39 @@ import	libimg			   , \
 	img.rotate  , 'img.rotate' , \
 	img.destroy , 'img.destroy'
 
+import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
+
 ;-----------------------------------------------------------------------------
 
-palette:
-	dd	0x000000, 0x800000, 0x008000, 0x808000
-	dd	0x000080, 0x800080, 0x008080, 0x808080
-	dd	0xC0C0C0, 0xFF0000, 0x00FF00, 0xFFFF00
-	dd	0x0000FF, 0xFF00FF, 0x00FFFF, 0xFFFFFF
+virtual at 0
+file 'kivicons.bmp':0xA,4
+load offbits dword from 0
+end virtual
+numimages = 9
+openbtn = 0
+backbtn = 1
+forwardbtn = 2
+bgrbtn = 3
+fliphorzbtn = 4
+flipvertbtn = 5
+rotcwbtn = 6
+rotccwbtn = 7
+rot180btn = 8
 
-macro loadbtn filename
-{
-repeat 20
-file filename:76h+(%-1)*12,10
-end repeat
+palette:
+	file 'kivicons.bmp':0x36,offbits-0x36
+buttons:
+	file 'kivicons.bmp':offbits
 repeat 10
 y = % - 1
 z = 20 - %
-repeat 10
-load a byte from $ - 20*10 + y*10 + (%-1)
-load b byte from $ - 20*10 + z*10 + (%-1)
-store byte a at $ - 20*10 + z*10 + (%-1)
-store byte b at $ - 20*10 + y*10 + (%-1)
+repeat numimages*5
+load a dword from $ - numimages*20*20 + numimages*20*y + (%-1)*4
+load b dword from $ - numimages*20*20 + numimages*20*z + (%-1)*4
+store dword a at $ - numimages*20*20 + numimages*20*z + (%-1)*4
+store dword b at $ - numimages*20*20 + numimages*20*y + (%-1)*4
 end repeat
 end repeat
-}
-
-openbtn:
-	loadbtn 'open.bmp'
-fliphorzbtn:
-	loadbtn 'fliphorz.bmp'
-flipvertbtn:
-	loadbtn 'flipvert.bmp'
-rotcwbtn:
-	loadbtn 'rotcw.bmp'
-rotccwbtn:
-	loadbtn 'rotccw.bmp'
-rot180btn:
-	loadbtn 'rot180.bmp'
 
 ; DATA AREA
 get_loops   dd 0
@@ -644,16 +930,28 @@ run_fileinfo:
 ;run_filepath
  db '/sys/SYSXTREE',0
 
+readdir_fileinfo:
+	dd	1
+	dd	0
+	dd	0
+readblocks dd	0
+directory_ptr	dd	0
+
 ;-----------------------------------------------------------------------------
 
 I_END:
 
+curdir		rb	1024
+
+align 4
 img_data     dd ?
 img_data_len dd ?
 fh	     dd ?
 image	     dd ?
 wnd_width	dd	?
 wnd_height	dd	?
+last_name_component	dd	?
+cur_file_idx	dd	?
 
 ctx dd ?
 
