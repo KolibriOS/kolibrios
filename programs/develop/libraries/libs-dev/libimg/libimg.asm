@@ -34,6 +34,7 @@ section '.flat' code readable align 16
 include 'bmp/bmp.asm'
 include 'gif/gif.asm'
 include 'jpeg/jpeg.asm'
+include 'png/png.asm'
 
 mem.alloc   dd ?
 mem.free    dd ?
@@ -1134,7 +1135,7 @@ img._.formats_table:
 ; .ico dd img.is.ico, img.decode.ico, img.encode.ico
 ; .cur dd img.is.cur, img.decode.cur, img.encode.cur
   .gif dd img.is.gif, img.decode.gif, img.encode.gif
-; .png dd img.is.png, img.decode.png, img.encode.png
+  .png dd img.is.png, img.decode.png, img.encode.png
   .jpg dd img.is.jpg, img.decode.jpg, img.encode.jpg
        dd 0
 
@@ -1170,6 +1171,18 @@ export					      \
 	img.unlock_bits , 'img.unlock_bits' , \
 	img.flip	, 'img.flip'	    , \
 	img.rotate	, 'img.rotate'
+
+; import from deflate unpacker
+; is initialized only when PNG loading is requested
+align 4
+@IMPORT:
+
+library kfar_arc, '../File Managers/kfar_arc.obj'
+import	kfar_arc, \
+	deflate_unpack2, 'deflate_unpack2'
+
+; mutex for unpacker loading
+deflate_loader_mutex	dd	0
 
 section '.data' data readable writable align 16
 ; uninitialized data - global constant tables
