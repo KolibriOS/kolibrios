@@ -54,6 +54,7 @@ struct SOCKET
   .SEG_LEN	  dd ? ; segment length
   .SEG_WND	  dd ? ; segment window
   .wndsizeTimer   dd ? ; window size timer
+  .lock           dd ? ; lock mutex
   .rxData	  dd ? ; receive data buffer here
 ends
 
@@ -600,15 +601,18 @@ proc socket_read stdcall
 	or	eax, eax
 	jz	.error
 
+	lea	ebx, [eax + SOCKET.lock]
+	call	wait_mutex
+
 	mov	ebx, eax
 	mov	eax, [ebx + SOCKET.rxDataCount] 	; get count of bytes
 	test	eax, eax
-	jz	.error
+	jz	.error_release
 
 	dec	eax
 	mov	esi, ebx				; esi is address of socket
 	mov	[ebx + SOCKET.rxDataCount], eax 	; store new count
-	movzx	ebx, byte[ebx + SOCKET.rxData]		; get the byte
+	movzx	eax, byte[ebx + SOCKET.rxData]		; get the byte
 
 	mov	ecx, SOCKETBUFFSIZE - SOCKET.rxData - 1
 	lea	edi, [esi + SOCKET.rxData]
@@ -621,8 +625,13 @@ proc socket_read stdcall
 	and	ecx, 3
 	rep	movsb
 
+	mov	[ebx + SOCKET.lock], 0
+	mov	ebx, eax
+
 	ret
 
+  .error_release:
+	mov	[ebx + SOCKET.lock], 0
   .error:
 	xor	ebx, ebx
 	ret
@@ -644,6 +653,9 @@ proc socket_read_packet stdcall
 	stdcall net_socket_num_to_addr, ebx		   ; get real socket address
 	or	eax, eax
 	jz	.error
+
+	lea	ebx, [eax + SOCKET.lock]
+	call	wait_mutex
 
 	mov	ebx, eax
 	mov	eax, [ebx + SOCKET.rxDataCount] 	   ; get count of bytes
@@ -675,6 +687,7 @@ proc socket_read_packet stdcall
 	rep	movsb					   ; copy remaining bytes
 
   .exit:
+	mov	[ebx + SOCKET.lock], 0
 	ret						   ; at last, exit
 
   .error:
@@ -685,6 +698,7 @@ proc socket_read_packet stdcall
 	xor	esi, esi
 	mov	[ebx + SOCKET.rxDataCount], esi 	   ; store new count (zero)
 	call	.start_copy
+	mov	[ebx + SOCKET.lock], 0
 	ret
 
   .start_copy:

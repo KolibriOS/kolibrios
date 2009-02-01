@@ -921,7 +921,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	movzx	ecx, [edx + IP_PACKET.TotalLength]
 	xchg	cl, ch
 	sub	ecx, 40 		   ; Discard 40 bytes of header
-	jnz	.data			   ; Read data, if any
+	ja	.data			   ; Read data, if any
 
 	; If we had received a fin, we need to ACK it.
 	cmp	[ebx + SOCKET.TCBState], TCB_CLOSE_WAIT
@@ -929,14 +929,19 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	jmp	.exit
 
   .data:
+	push	ebx
+	add	ebx, SOCKET.lock
+	call	wait_mutex
+	pop	ebx
+
 	push	ecx
+	push	[ebx + SOCKET.PID]	; get socket owner PID
+	mov	eax, [ebx + SOCKET.rxDataCount]
+	add	eax, ecx
+	cmp	eax, SOCKETBUFFSIZE - SOCKETHEADERSIZE
+	ja	.overflow
 
-	add	[ebx + SOCKET.rxDataCount], ecx      ; increment the count of bytes in buffer
-
-	mov	eax, [ebx + SOCKET.PID]       ; get socket owner PID
-	push	eax
-
-	mov	eax, [ebx + SOCKET.rxDataCount]      ; get # of bytes already in buffer
+	mov	[ebx + SOCKET.rxDataCount], eax      ; increment the count of bytes in buffer
 
 	; point to the location to store the data
 	lea	edi, [ebx + eax + SOCKETHEADERSIZE]
@@ -947,6 +952,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 
 	cld
 	rep	movsb	       ; copy the data across
+	mov	[ebx + SOCKET.lock], 0	; release mutex
 
 	; flag an event to the application
 	pop	eax
@@ -1000,6 +1006,12 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	call	queue
 
   .exit:
+	ret
+  .overflow:
+	; no place in buffer
+	; so simply restore stack and exit
+	pop	eax ecx
+	mov	[ebx + SOCKET.lock], 0
 	ret
 endp
 
