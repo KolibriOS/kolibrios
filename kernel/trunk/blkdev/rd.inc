@@ -856,6 +856,10 @@ rd_find_lfn:
 	mov	[esp+8], eax
 	mov	dword [esp+4], ramdisk_notroot_first
 	mov	dword [esp], ramdisk_notroot_next
+	test	eax, eax
+	jnz	.loop
+	mov	dword [esp+4], ramdisk_root_first
+	mov	dword [esp], ramdisk_notroot_next
 	jmp	.loop
 .notfound:
 	add	esp, 12
