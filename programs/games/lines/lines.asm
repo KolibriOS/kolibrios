@@ -8,7 +8,7 @@ use32
     dd	0x4000
     dd	0x0,0x0
 
-include '..\..\macros.inc'
+include 'macros.inc'
 include 'lang.inc'
 include 'draw_window.inc'
 include 'ball_operations.inc'
@@ -31,15 +31,14 @@ new_game:
 	mov	[score], 0
 	mov	[countAllBall], 0
 	mov	[current], 0
-	mov	ecx, 5
 	@@:
-	   push	ecx
 	   mov	ebx, 7
 	   call	random
 	   inc	dl
 	   call	add_new_ball
-	   pop	ecx
-	   loop @B
+	   call test_new_ball
+	   cmp  [countAllBall], 5
+	   jb   @b
 	call generate_new___new_color
 
 START:
@@ -199,11 +198,12 @@ add_new_ball:	;в dl - цвет шарика
 	mov	edx, ebp
 	or	byte [eax], dl
 	inc	[countAllBall]
+	;получим ID кнопки
+	sub	eax, lineBall-2
+	mov	[dest], eax
 	ret
 
 test_new_ball:
-	;получим ID кнопки
-	sub	eax, lineBall-2
 	call	paint_ball
 
 	call	find_line
@@ -221,12 +221,12 @@ test_new_ball:
 	ret
 
 if lang eq ru
-	szTitle  db 'Цветные линии v 0.2',0
+	szTitle  db 'Цветные линии v 0.3',0
 	szNewGame db 'F2 - новая игра',0
 	szRecord db 'Рекорд',0
 	szScore  db 'Очки',0
 else
-	szTitle  db 'Color lines v 0.2',0
+	szTitle  db 'Color lines v 0.3',0
 	szNewGame db 'F2 - new game',0
 	szRecord db 'Record',0
 	szScore  db 'Score',0
