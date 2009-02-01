@@ -2,8 +2,8 @@
 ; project name:         KFar_Arc - plugin for KFar, which supports various archives
 ; target platform:      KolibriOS
 ; compiler:             FASM 1.67.14
-; version:              0.14
-; last update:          2008-11-19 (Nov 19, 2008)
+; version:              0.15
+; last update:          2009-02-01 (Feb 01, 2009)
 ; minimal KFar version: 0.43
 ; minimal kernel:       no limit
 ;
@@ -420,12 +420,12 @@ GetFiles:
         cmp     [ebx+file_common.stamp], eax
         jz      .cont
         mov     [ebx+file_common.stamp], eax
+        push    esi
         mov     ecx, [ebx+file_common.name]
         add     ecx, [ebx+file_common.namelen]
         xor     eax, eax
         xchg    al, [ecx]
         push    eax ecx
-        push    esi
         mov     eax, ebx
         mov     edi, tmp_bdfe
         push    edi
@@ -1182,6 +1182,169 @@ query_password:
         ret
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;; API for other programs ;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; void* __stdcall deflate_unpack(void* packed_data, unsigned* pLength)
+deflate_unpack:
+	push	dword [esp+8]
+        push    esp
+        push    deflate_unpack_cb
+        call    deflate_unpack2
+        ret     8
+
+deflate_unpack_cb:
+        mov     edx, [esp+4]
+        push    edx
+        mov     edx, [edx+12]
+        mov     edx, [edx]
+        mov     eax, [esp+8+4]
+        mov     [eax], edx
+        pop     edx
+        xor     eax, eax
+        xchg    eax, [edx+8]
+        ret     8
+
+; void* __stdcall deflate_unpack2(void* get_next_chunk, void* parameter, unsigned* pUnpackedLength)
+;	void* __stdcall get_next_chunk(void* parameter, unsigned* pLength)
+deflate_unpack2:
+        pusha
+        mov     ecx, 0x11000
+        call    mypgalloc
+        test    eax, eax
+        jz      .ret
+        or      dword [eax+streamInfo.fullSize], -1
+        or      dword [eax+streamInfo.fullSize+4], -1
+        and     dword [eax+streamInfo.bufSize], 0
+        mov     dword [eax+streamInfo.fillBuf], .fillBuf
+        mov     edx, [esp+32+4]
+        mov     [eax+streamInfo.size], edx
+        mov     edx, [esp+32+8]
+        mov     [eax+streamInfo.size+4], edx
+        mov     [eax+streamInfo.size+8+deflate_decoder.inStream], eax
+        add     eax, streamInfo.size+8
+        lea     edi, [eax+deflate_decoder.size]
+        mov     [eax+streamInfo.bufPtr], edi
+        mov     ebp, eax
+        call    deflate_init_decoder
+        xor     edx, edx
+        mov     ecx, 10000h
+.loop:
+        push    @f
+        pushad
+        mov     [_esp], esp
+        mov     [_ebp], ebp
+        mov     [error_proc], .error
+        mov     ecx, 10000h
+        jmp     [eax+streamInfo.fillBuf]
+@@:
+        push    68
+        pop     eax
+        push    20
+        pop     ebx
+        int     0x40
+        test    eax, eax
+        jz      .nomem
+        mov     edx, eax
+        mov     eax, ebp
+        mov     esi, edi
+        push    edi
+        lea     edi, [edx+ecx-0x10000]
+        push    ecx
+        mov     ecx, 0x10000/4
+        rep     movsd
+        pop     ecx
+        pop     edi
+        add     ecx, 0x10000
+        jmp     .loop
+.error:
+        pop     eax
+        push    edi
+        popad
+        pop     eax
+        mov     eax, ebp
+        lea     esi, [eax+deflate_decoder.size]
+        sub     ecx, 0x10000
+        sub     edi, esi
+        add     ecx, edi
+        mov     eax, [esp+32+12]
+        test    eax, eax
+        jz      @f
+        mov     [eax], ecx
+@@:
+        test    ecx, ecx
+        jnz     @f
+        inc     ecx
+@@:
+        push    68
+        pop     eax
+        push    20
+        pop     ebx
+        int     0x40
+        test    eax, eax
+        jz      .nomem
+        sub     ecx, edi
+        mov     edx, edi
+        lea     edi, [eax+ecx]
+        mov     ecx, edx
+        shr     ecx, 2
+        rep     movsd
+        mov     ecx, edx
+        and     ecx, 3
+        rep     movsb
+        push    eax
+        push    68
+        pop     eax
+        push    13
+        pop     ebx
+        lea     ecx, [ebp-streamInfo.size-8]
+        int     40h
+        pop     eax
+        jmp     .ret
+.nomem:
+        push    68
+        pop     eax
+        push    13
+        pop     ebx
+        test    edx, edx
+        jz      @f
+        mov     ecx, edx
+        push    eax
+        int     0x40
+        pop     eax
+@@:
+        lea     ecx, [ebp-streamInfo.size-8]
+        int     0x40
+        xor     eax, eax
+.ret:
+        mov     [esp+28], eax
+        popa
+        ret     12
+.fillBuf:
+        push    eax
+        push    eax
+        push    esp
+        push    dword [eax+streamInfo.size+4]
+        call    dword [eax+streamInfo.size]
+        pop     edx
+        pop     ebp
+        mov     [ebp+streamInfo.bufPtr], eax
+        and     [ebp+streamInfo.bufDataLen], 0
+        test    eax, eax
+        jz      @f
+        mov     [ebp+streamInfo.bufDataLen], edx
+@@:
+        popad
+        ret
+
+mypgalloc:
+        push    68
+        pop     eax
+        push    12
+        pop     ebx
+        int     0x40
+        ret
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;; Initialized data ;;;;;;;;;;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -1201,6 +1364,8 @@ EXPORTS:
         dd      aRead,          myread
         dd      aSetpos,        mysetpos
         dd      aClose,         myclose
+        dd      aDeflateUnpack, deflate_unpack
+        dd      aDeflateUnpack2,deflate_unpack2
         dd      0
 
 ; exported names
@@ -1217,6 +1382,8 @@ aOpen           db      'open',0
 aRead           db      'read',0
 aSetpos         db      'setpos',0
 aClose          db      'close',0
+aDeflateUnpack  db      'deflate_unpack',0
+aDeflateUnpack2 db      'deflate_unpack2',0
 
 ; common strings
 if lang eq ru
