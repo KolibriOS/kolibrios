@@ -679,6 +679,8 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
            mov [edx+STREAM.out_rp], eax
            mov [edx+STREAM.out_count], 0
 .fill:
+           cli
+
            mov ecx, [edx+STREAM.in_free]
            test ecx, ecx
            jz .wait
@@ -716,7 +718,9 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
            mov [state_saved], 1
 @@:
            stdcall refill, edx
+
 .skip:
+           sti
            mov edx, [str]
            mov [edx+STREAM.flags], SND_PLAY
            cmp [eng_state], SND_PLAY
@@ -726,6 +730,7 @@ proc wave_out stdcall, str:dword,src:dword,size:dword
            mov [eng_state], SND_PLAY
            jmp .main_loop
 .wait:
+           sti
            mov edx, [str]
            mov eax, [edx+STREAM.notify_event]
            mov ebx, [edx+STREAM.notify_id]
