@@ -569,7 +569,9 @@ high_code:
 
 ; Enable timer IRQ (IRQ0) and hard drives IRQs (IRQ14, IRQ15)
 ; they are used: when partitions are scanned, hd_read relies on timer
-	mov	al, 0xFE
+; Also enable IRQ2, because in some configurations
+; IRQs from slave controller are not delivered until IRQ2 on master is enabled
+	mov	al, 0xFA
 	out	0x21, al
 	mov	al, 0x3F
 	out	0xA1, al
