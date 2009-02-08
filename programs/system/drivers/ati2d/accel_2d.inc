@@ -572,41 +572,49 @@ int FillRect(io_fill_t *fill)
 
 static int blit_host(u32_t dstpitch, int dstx, int dsty,
                      u32_t  src, int srcx, int srcy,
-                     int w, int h, int srcpitch)
+                     int w, int h, int srcpitch, Bool trans, color_t key)
 {
     u32_t     ifl;
+    u32_t     dp_cntl;
     color_t  *src_addr;
 
     ifl = safe_cli();
 
 #if R300_PIO
 
-    R5xxFIFOWait(5);
-
-    OUTREG(R5XX_DP_GUI_MASTER_CNTL,
-               RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
-//               RADEON_GMC_DST_CLIPPING           |
+    dp_cntl =  RADEON_GMC_DST_PITCH_OFFSET_CNTL  |
                RADEON_GMC_BRUSH_NONE             |
                RADEON_GMC_DST_32BPP              |
                RADEON_GMC_SRC_DATATYPE_COLOR     |
                RADEON_DP_SRC_SOURCE_HOST_DATA    |
-          //     RADEON_GMC_BYTE_MSB_TO_LSB        |
-               R5XX_GMC_CLR_CMP_CNTL_DIS         |
                R5XX_GMC_WR_MSK_DIS               |
-               R5XX_ROP3_S
-              );
+               R5XX_ROP3_S;
+
+    if( trans == FALSE )
+    {
+        dp_cntl|= R5XX_GMC_CLR_CMP_CNTL_DIS;
+        R5xxFIFOWait(5);
+    }
+    else
+        R5xxFIFOWait(8);
+
+    OUTREG(R5XX_DP_GUI_MASTER_CNTL, dp_cntl);
 
     OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT |
                          R5XX_DST_Y_TOP_TO_BOTTOM);
 
     OUTREG(R5XX_DST_PITCH_OFFSET, dstpitch);
 
-//        OUTREG(RADEON_SC_TOP_LEFT, (y << 16) | ((x+skipleft) & 0xffff));
-//        OUTREG(RADEON_SC_BOTTOM_RIGHT,  ((y+h) << 16) | ((x+w) & 0xffff));
+    if( trans )
+    {
+        OUTREG(R5XX_CLR_CMP_CLR_SRC, key);
+        OUTREG(R5XX_CLR_CMP_MASK, R5XX_CLR_CMP_MSK);
+        OUTREG(R5XX_CLR_CMP_CNTL, R5XX_SRC_CMP_EQ_COLOR |
+                                  R5XX_CLR_CMP_SRC_SOURCE);
+    };
 
     OUTREG(RADEON_DST_Y_X, (dsty << 16) | (dstx & 0xffff));
     OUTREG(RADEON_DST_HEIGHT_WIDTH, (h << 16) | w);
-
 
     src_addr = &((color_t*)src)[srcpitch*srcy/4+srcx];
 
@@ -664,17 +672,10 @@ int Blit(io_blit_t *blit)
     local_pixmap_t *srcpixmap;
     local_pixmap_t *dstpixmap;
 
-    //dbgprintf("Pixblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
+    u32_t  srcpitchoffset;
 
     dstpixmap = (blit->dstpix == (void*)-1) ? &scr_pixmap : blit->dstpix ;
     srcpixmap = (blit->srcpix == (void*)-1) ? &scr_pixmap : blit->srcpix ;
-
-    //dbgprintf("srcpixmap: %x dstpixmap: %x\n",srcpixmap, dstpixmap);
-
-    //dbgprintf("dst.width: %d dst.height: %d\n", dstpixmap->width,dstpixmap->height);
-    //dbgprintf("src.width: %d src.height: %d\n", srcpixmap->width,srcpixmap->height);
-    //dbgprintf("srcpitch: %x dstpitch: %x\n",
-    //           srcpixmap->pitch_offset,dstpixmap->pitch_offset);
 
     src_clip.xmin = 0;
     src_clip.ymin = 0;
@@ -692,14 +693,21 @@ int Blit(io_blit_t *blit)
     {
         u32_t *ring, write;
         u32_t ifl;
-
+/*
         if( (srcpixmap->flags & PX_MEM_MASK)==PX_MEM_SYSTEM)
             return blit_host(dstpixmap->pitch_offset,
                              blit->dst_x, blit->dst_y,
                              srcpixmap->mapped,
                              blit->src_x, blit->src_y,
                              blit->w, blit->h,
-                             srcpixmap->pitch);
+                             srcpixmap->pitch,
+                             FALSE, 0 );
+*/
+
+        if( (srcpixmap->flags & PX_MEM_MASK)==PX_MEM_SYSTEM)
+            srcpitchoffset =  bind_pixmap(srcpixmap);
+        else
+            srcpitchoffset = srcpixmap->pitch_offset;
 
         ifl = safe_cli();
 
@@ -722,7 +730,7 @@ int Blit(io_blit_t *blit)
         OUTREG(R5XX_DP_CNTL, R5XX_DST_X_LEFT_TO_RIGHT | R5XX_DST_Y_TOP_TO_BOTTOM);
 
         OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
-        OUTREG(R5XX_SRC_PITCH_OFFSET, srcpixmap->pitch_offset);
+        OUTREG(R5XX_SRC_PITCH_OFFSET, srcpitchoffset);
 
         OUTREG(R5XX_SRC_Y_X,(blit->src_y<<16)|blit->src_x);
         OUTREG(R5XX_DST_Y_X,(blit->dst_y<<16)|blit->dst_x);
@@ -744,7 +752,7 @@ int Blit(io_blit_t *blit)
                  R5XX_ROP3_S
                 );
 
-        OUT_RING(srcpixmap->pitch_offset);
+        OUT_RING(srcpitchoffset);
         OUT_RING(dstpixmap->pitch_offset);
 
         OUT_RING((blit->src_x<<16)|blit->src_y);
@@ -754,9 +762,13 @@ int Blit(io_blit_t *blit)
 
 #endif
         safe_sti(ifl);
+
+       if( (srcpixmap->flags & PX_MEM_MASK)==PX_MEM_SYSTEM)
+            R5xx2DIdleLocal();
      };
      return ERR_OK;
 };
+
 
 
 int BlitTransparent(io_blit_t *blit)
@@ -765,6 +777,8 @@ int BlitTransparent(io_blit_t *blit)
 
      local_pixmap_t *srcpixmap;
      local_pixmap_t *dstpixmap;
+
+     u32_t  srcpitchoffset;
 
     // dbgprintf("Transblit src: %x dst: %x\n",blit->srcpix, blit->dstpix);
 
@@ -792,8 +806,13 @@ int BlitTransparent(io_blit_t *blit)
                     &blit->w, &blit->h) )
      {
         u32_t *ring, write;
+        u32_t  ifl;
 
-        u32_t ifl;
+
+        if( (srcpixmap->flags & PX_MEM_MASK)==PX_MEM_SYSTEM)
+            srcpitchoffset =  bind_pixmap(srcpixmap);
+        else
+            srcpitchoffset = srcpixmap->pitch_offset;
 
         ifl = safe_cli();
 
@@ -819,7 +838,7 @@ int BlitTransparent(io_blit_t *blit)
         OUTREG(R5XX_CLR_CMP_CNTL, R5XX_SRC_CMP_EQ_COLOR | R5XX_CLR_CMP_SRC_SOURCE);
 
         OUTREG(R5XX_DST_PITCH_OFFSET, dstpixmap->pitch_offset);
-        OUTREG(R5XX_SRC_PITCH_OFFSET, srcpixmap->pitch_offset);
+        OUTREG(R5XX_SRC_PITCH_OFFSET, srcpitchoffset);
 
         OUTREG(R5XX_SRC_Y_X,(blit->src_y<<16)|blit->src_x);
         OUTREG(R5XX_DST_Y_X,(blit->dst_y<<16)|blit->dst_x);
@@ -841,7 +860,7 @@ int BlitTransparent(io_blit_t *blit)
                    R5XX_ROP3_S
                   );
 
-          OUT_RING(srcpixmap->pitch_offset);
+          OUT_RING(srcpitchoffset);
           OUT_RING(dstpixmap->pitch_offset);
 
           OUT_RING(R5XX_CLR_CMP_SRC_SOURCE | R5XX_SRC_CMP_EQ_COLOR);
@@ -857,78 +876,13 @@ int BlitTransparent(io_blit_t *blit)
 #endif
 
        safe_sti(ifl);
+
+       if( (srcpixmap->flags & PX_MEM_MASK)==PX_MEM_SYSTEM)
+            R5xx2DIdleLocal();
+
      };
      return ERR_OK;
 }
 
 
-#if 0
 
-int LockPixmap(userpixmap_t *io)
-{
-   pixmap_t *pixmap;
-   size_t    size;
-   void     *usermap;
-
-   dbgprintf("Lock pixmap %x\n", io->pixmap);
-
-   if(io->pixmap == (pixmap_t*)-1)
-     return ERR_PARAM;
-   else
-     pixmap = io->pixmap;
-
-   if( (pixmap->flags & 1) == PX_LOCK )
-     return ERR_PARAM;
-
-   size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
-   if (usermap = UserAlloc(size))
-   {
-     CommitPages(usermap, ((u32_t)pixmap->raw+rhd.PhisBase)|7|(1<<9), size);
-     pixmap->flags |= PX_LOCK;
-     pixmap->usermap = usermap;
-     io->usermap = usermap;
-     io->pitch   = pixmap->pitch;
-     dbgprintf("map at %x\n", io->usermap);
-
-     return ERR_OK;
-   }
-   else
-     return ERR_PARAM;
-};
-
-int UnlockPixmap(userpixmap_t *io)
-{
-  pixmap_t *pixmap;
-  size_t    size;
-
-  dbgprintf("Unlock pixmap %x\n", io->pixmap);
-
-  if(io->pixmap == (pixmap_t*)-1)
-    return ERR_PARAM;
-  else
-    pixmap = io->pixmap;
-
-  if( (pixmap->flags & 1) != PX_LOCK )
-    return ERR_PARAM;
-
-/*   Sanity checks  */
-
-  if( (pixmap->usermap == 0)||
-      ((u32_t)pixmap->usermap >= 0x80000000) ||
-      ((u32_t)pixmap->usermap & 4095)
-    )
-    return ERR_PARAM;
-
-  size = (pixmap->pitch*pixmap->width+4095) & ~ 4095;
-
-  UnmapPages(pixmap->usermap, size);
-  UserFree(pixmap->usermap);
-  pixmap->usermap =  NULL;
-  pixmap->flags  &= ~PX_LOCK;
-  io->usermap     =  NULL;
-  io->pitch       =  0;
-
-  return ERR_OK;
-};
-
-#endif

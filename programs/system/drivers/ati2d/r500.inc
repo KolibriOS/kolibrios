@@ -175,9 +175,9 @@ void  R5xx2DInit()
     scr_pixmap.format = PICT_a8r8g8b8;
     scr_pixmap.flags  = PX_MEM_LOCAL;
     scr_pixmap.pitch  = rhd.displayWidth * 4     ;//screenpitch;
-    scr_pixmap.local  = (void*)rhd.fbLocation;
+    scr_pixmap.local  = rhd.fbLocation;
     scr_pixmap.pitch_offset =  rhd.dst_pitch_offset;
-    scr_pixmap.mapped = (void*)0;
+    scr_pixmap.mapped = 0;
 
     R5xxFIFOWaitLocal(2);
     OUTREG(R5XX_DST_PITCH_OFFSET,rhd.dst_pitch_offset);

@@ -20,7 +20,8 @@
 
 #include "radeon_reg.h"
 
-#include "ati2d.h"
+#include "atihw.h"
+
 #include "accel_2d.h"
 
 RHD_t rhd __attribute__ ((aligned (128)));    /* reduce cache lock */
@@ -29,7 +30,6 @@ static clip_t  clip;
 
 static local_pixmap_t scr_pixmap;
 
-int Init3DEngine(RHDPtr info);
 
 int __stdcall srv_2d(ioctl_t *io);
 
@@ -43,7 +43,7 @@ u32_t __stdcall drvEntry(int action)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/rd/1/drivers/ati2d.log"))
+    if(!dbg_open("/bd0/2/ati2d.log"))
     {
         printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
         return 0;
@@ -63,14 +63,14 @@ u32_t __stdcall drvEntry(int action)
     for(i=0;i<6;i++)
     {
         if(rhd.memBase[i])
-           dbgprintf("Memory base_%d 0x%x size 0x%x\n",
-                     i,rhd.memBase[i],(1<<rhd.memsize[i]));
+            dbgprintf("Memory base_%d 0x%x size 0x%x\n",
+                      i,rhd.memBase[i],(1<<rhd.memsize[i]));
     };
     for(i=0;i<6;i++)
     {
-      if(rhd.ioBase[i])
-        dbgprintf("Io base_%d 0x%x size 0x%x\n",
-                  i,rhd.ioBase[i],(1<<rhd.memsize[i]));
+        if(rhd.ioBase[i])
+            dbgprintf("Io base_%d 0x%x size 0x%x\n",
+                      i,rhd.ioBase[i],(1<<rhd.memsize[i]));
     };
     if(!RHDPreInit())
         return 0;
@@ -92,70 +92,74 @@ u32_t __stdcall drvEntry(int action)
 
 int __stdcall srv_2d(ioctl_t *io)
 {
-  u32_t *inp;
-  u32_t *outp;
+    u32_t *inp;
+    u32_t *outp;
 
-  inp = io->input;
-  outp = io->output;
+    inp = io->input;
+    outp = io->output;
 
-  switch(io->io_code)
-  {
-    case SRV_GETVERSION:
-      if(io->out_size==4)
-      {
-        *outp = API_VERSION;
-        return 0;
-      }
-      break;
+    switch(io->io_code)
+    {
+        case SRV_GETVERSION:
+            if(io->out_size==4)
+            {
+                *outp = API_VERSION;
+                return 0;
+            }
+            break;
 
-      case PX_CREATE:
-        if(io->inp_size==7)
-          return CreatePixmap((pixmap_t*)inp);
-        break;
+        case PX_CREATE:
+            if(io->inp_size==7)
+                return CreatePixmap((pixmap_t*)inp);
+            break;
 
-      case PX_DESTROY:
-        if(io->inp_size==7)
-          return DestroyPixmap((pixmap_t*)inp);
-        break;
+        case PX_DESTROY:
+            if(io->inp_size==7)
+                return DestroyPixmap((pixmap_t*)inp);
+            break;
 
-      case PX_CLEAR:
-        if(io->inp_size==2)
-          return ClearPixmap((io_clear_t*)inp);
-        break;
+        case PX_CLEAR:
+            if(io->inp_size==2)
+                return ClearPixmap((io_clear_t*)inp);
+            break;
 
-      case PX_DRAW_RECT:
-        if(io->inp_size==7)
-          return DrawRect((io_draw_t*)inp);
-        break;
+        case PX_DRAW_RECT:
+            if(io->inp_size==7)
+                return DrawRect((io_draw_t*)inp);
+            break;
 
-      case PX_FILL_RECT:
-        if(io->inp_size==10)
-          return FillRect((io_fill_t*)inp);
-        break;
+        case PX_FILL_RECT:
+            if(io->inp_size==10)
+                return FillRect((io_fill_t*)inp);
+            break;
 
-      case PX_LINE:
-        if(io->inp_size==6)
-          return Line((io_draw_t*)inp);
-        break;
+        case PX_LINE:
+            if(io->inp_size==6)
+                return Line((io_draw_t*)inp);
+            break;
 
-      case PX_BLIT:
-        if(io->inp_size==8)
-          return Blit((io_blit_t*)inp);
-        break;
+        case PX_BLIT:
+            if(io->inp_size==8)
+                return Blit((io_blit_t*)inp);
+            break;
 
-     case  PX_BLIT_TRANSPARENT:
-        if(io->inp_size==9)
-          return BlitTransparent((io_blit_t*)inp);
-        break;
+        case  PX_BLIT_TRANSPARENT:
+            if(io->inp_size==9)
+                return BlitTransparent((io_blit_t*)inp);
+            break;
 
-      case PX_BLIT_ALPHA:
-        if(io->inp_size==9)
-          return RadeonComposite((io_blit_t*)inp);
-        break;
+#if !R300_PIO
 
-    default:
-      return ERR_PARAM;
+        case PX_BLIT_ALPHA:
+            if(io->inp_size==9)
+                return RadeonComposite((io_blit_t*)inp);
+            break;
+#endif
+
+        default:
+            return ERR_PARAM;
   };
+
   return ERR_PARAM;
 }
 
@@ -165,12 +169,18 @@ int __stdcall srv_2d(ioctl_t *io)
 #include "ati_mem.c"
 
 #include "init_cp.c"
+
 #include "r500.inc"
 
 #include "clip.inc"
 #include "pixmap.inc"
 #include "accel_2d.inc"
+
+#if !R300_PIO
+
 #include "init_3d.inc"
 #include "blend.inc"
+
+#endif
 
 

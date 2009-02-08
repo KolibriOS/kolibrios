@@ -67,6 +67,9 @@ typedef struct
 #define PCI_DFN_FROM_TAG(tag)  (((tag) & 0x0000ff00u) >> 8)
 
 
+#define PCI_CMD_STAT_REG        0x04
+
+
 typedef unsigned int PCITAG;
 
 extern inline PCITAG

@@ -1,14 +1,10 @@
 
 typedef void *pointer;
 
-
 typedef unsigned int memType;
 
 typedef struct { float hi, lo; } range;
 
-
-
-#define PCI_CMD_STAT_REG        0x04
 
 typedef enum
 {
@@ -94,7 +90,6 @@ typedef enum
     (info->ChipFamily == CHIP_FAMILY_RS480))
 
 
-
 typedef enum {
 	CARD_PCI,
 	CARD_AGP,
@@ -138,39 +133,34 @@ typedef struct
 
 #define RADEON_DEFAULT_PCI_APER_SIZE     32      /* in MB */
 
+#define RADEON_PCIGART_TABLE_SIZE      (32*1024)
 
 typedef struct RHDRec
 {
-  u32_t            MMIOBase;
-  u32_t            MMIOMapSize;
+  addr_t           MMIOBase;
+  size_t           MMIOMapSize;
 
-//  CARD32            FbBase;            /* map base of fb   */
- // u32_t            PhisBase;
- // u32_t            FbIntAddress;       /* card internal address of FB */
- // u32_t            FbMapSize;
+  addr_t           FbFreeStart;
+  addr_t           FbFreeSize;
 
-  u32_t            FbFreeStart;
-  u32_t            FbFreeSize;
-
-  /* visible part of the framebuffer */
+ /* visible part of the framebuffer */
 //  unsigned int      FbScanoutStart;
 //  unsigned int      FbScanoutSize;
 
-  u32_t            LinearAddr;           /* Frame buffer physical address     */
+//  u32_t            LinearAddr;           /* Frame buffer physical address     */
 
-  u32_t            fbLocation;
+  addr_t           fbLocation;           /* Frame buffer physical address */
   u32_t            mc_fb_location;
   u32_t            mc_agp_location;
   u32_t            mc_agp_location_hi;
 
-  u32_t            videoRam;
+  size_t           videoRam;
 
   u32_t            MemCntl;
   u32_t            BusCntl;
   unsigned long    FbMapSize;            /* Size of frame buffer, in bytes    */
   unsigned long    FbSecureSize;         /* Size of secured fb area at end of
                                             framebuffer */
-
 
   RADEONChipFamily ChipFamily;
   RADEONErrata     ChipErrata;
@@ -203,7 +193,10 @@ typedef struct RHDRec
   u32_t            displayWidth;
   u32_t            displayHeight;
 
-  u32_t            gartSize;
+  u32_t           *gart_table;
+  addr_t           gart_table_dma;
+  addr_t           gart_vm_start;
+  size_t           gart_size;
 
   u32_t*           ringBase;
   u32_t            ring_rp;
@@ -212,7 +205,6 @@ typedef struct RHDRec
   u32_t            ring_avail;
 
   u32_t            bufSize;
-  u32_t            gartTexSize;
   u32_t            pciAperSize;
   u32_t            CPusecTimeout;
 
@@ -248,39 +240,6 @@ typedef struct RHDRec
 extern RHD_t rhd;
 
 
-
-#define R5XX_DP_BRUSH_BKGD_CLR            0x1478
-#define R5XX_DP_BRUSH_FRGD_CLR            0x147c
-#define R5XX_BRUSH_DATA0                  0x1480
-#define R5XX_BRUSH_DATA1                  0x1484
-
-# define RADEON_GMC_SRC_PITCH_OFFSET_CNTL (1 << 0)
-#	define RADEON_GMC_DST_PITCH_OFFSET_CNTL	(1 << 1)
-# define RADEON_GMC_BRUSH_SOLID_COLOR     (13 << 4)
-# define RADEON_GMC_BRUSH_NONE            (15 << 4)
-# define RADEON_GMC_DST_16BPP             (4 << 8)
-# define RADEON_GMC_DST_24BPP             (5 << 8)
-# define RADEON_GMC_DST_32BPP             (6 << 8)
-# define RADEON_GMC_DST_DATATYPE_SHIFT     8
-# define RADEON_GMC_SRC_DATATYPE_COLOR    (3 << 12)
-# define RADEON_DP_SRC_SOURCE_MEMORY      (2 << 24)
-# define RADEON_DP_SRC_SOURCE_HOST_DATA   (3 << 24)
-# define RADEON_GMC_CLR_CMP_CNTL_DIS      (1 << 28)
-# define RADEON_GMC_WR_MSK_DIS            (1 << 30)
-# define RADEON_ROP3_S                 0x00cc0000
-# define RADEON_ROP3_P                 0x00f00000
-
-#define RADEON_CP_PACKET0              0x00000000
-#define RADEON_CP_PACKET1              0x40000000
-#define RADEON_CP_PACKET2              0x80000000
-#define RADEON_CP_PACKET3              0xC0000000
-
-# define RADEON_CNTL_PAINT             0x00009100
-# define RADEON_CNTL_BITBLT            0x00009200
-# define RADEON_CNTL_TRANBLT           0x00009C00
-
-# define RADEON_CNTL_PAINT_POLYLINE    0x00009500
-# define RADEON_CNTL_PAINT_MULTI       0x00009A00
 
 #define CP_PACKET0(reg, n)            \
     (RADEON_CP_PACKET0 | ((n - 1 ) << 16) | ((reg) >> 2))
@@ -413,10 +372,7 @@ _RHDRegMask(RHDPtr rhdPtr, u16_t offset, u32_t value, u32_t mask)
 #define RHDRegMask(ptr, offset, value, mask) _RHDRegMask((ptr)->rhdPtr, (offset), (value), (mask))
 
 
-RHDPtr FindPciDevice();
 
-Bool RHDPreInit();
-int rhdInitHeap(RHDPtr rhdPtr);
 
 #define RHDFUNC(ptr)
 
@@ -451,7 +407,6 @@ void __stdcall r500_SelectCursor(cursor_t *cursor);
 void __stdcall r500_SetCursor(cursor_t *cursor, int x, int y);
 void __stdcall r500_CursorRestore(int x, int y);
 
-void  R5xx2DInit();
 
 
 typedef struct {
@@ -542,3 +497,19 @@ typedef enum _PictFormatShort {
 } PictFormatShort;
 
 void dump_mem();
+
+
+
+RHDPtr  FindPciDevice();
+
+Bool    RHDPreInit();
+
+void    R5xx2DInit();
+
+int     Init3DEngine(RHDPtr info);
+
+void    init_gart(RHDPtr info);
+
+int     rhdInitHeap(RHDPtr rhdPtr);
+
+

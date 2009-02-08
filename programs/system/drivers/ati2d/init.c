@@ -3,7 +3,7 @@
 static Bool rhdMapMMIO(RHDPtr rhdPtr)
 {
      rhdPtr->MMIOMapSize = 1 << rhdPtr->memsize[RHD_MMIO_BAR];
-     rhdPtr->MMIOBase = MapIoMem((void*)rhdPtr->memBase[RHD_MMIO_BAR],
+     rhdPtr->MMIOBase = MapIoMem(rhdPtr->memBase[RHD_MMIO_BAR],
                                  rhdPtr->MMIOMapSize,PG_SW+PG_NOCACHE);
      if( rhdPtr->MMIOBase==0)
         return 0;
@@ -108,61 +108,74 @@ static Bool avivo_get_mc_idle(RHDPtr info)
     }
 }
 
-#define LOC_FB 0x1
-#define LOC_AGP 0x2
+#define LOC_FB    0x1
+#define LOC_AGP   0x2
 
 static void radeon_read_mc_fb_agp_location(RHDPtr info, int mask,
                                 u32_t *fb_loc, u32_t *agp_loc, u32_t *agp_loc_hi)
 {
 
-    if (info->ChipFamily >= CHIP_FAMILY_RV770) {
-       if (mask & LOC_FB)
-	    *fb_loc = INREG(R700_MC_VM_FB_LOCATION);
-	if (mask & LOC_AGP) {
-	    *agp_loc = INREG(R600_MC_VM_AGP_BOT);
-	    *agp_loc_hi = INREG(R600_MC_VM_AGP_TOP);
-	}
-    } else if (info->ChipFamily >= CHIP_FAMILY_R600) {
-	if (mask & LOC_FB)
-	    *fb_loc = INREG(R600_MC_VM_FB_LOCATION);
-	if (mask & LOC_AGP) {
-	    *agp_loc = INREG(R600_MC_VM_AGP_BOT);
-	    *agp_loc_hi = INREG(R600_MC_VM_AGP_TOP);
-	}
-    } else if (info->ChipFamily == CHIP_FAMILY_RV515) {
-	if (mask & LOC_FB)
-        *fb_loc = INMC(info, RV515_MC_FB_LOCATION);
-	if (mask & LOC_AGP) {
-        *agp_loc = INMC(info, RV515_MC_AGP_LOCATION);
-	    *agp_loc_hi = 0;
-	}
-    } else if (info->ChipFamily == CHIP_FAMILY_RS600) {
-	if (mask & LOC_FB)
-        *fb_loc = INMC(info, RS600_MC_FB_LOCATION);
-	if (mask & LOC_AGP) {
-	    *agp_loc = 0;//INMC(pScrn, RS600_MC_AGP_LOCATION);
-	    *agp_loc_hi = 0;
-	}
-    } else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
-	       (info->ChipFamily == CHIP_FAMILY_RS740)) {
-	if (mask & LOC_FB)
-        *fb_loc = INMC(info, RS690_MC_FB_LOCATION);
-	if (mask & LOC_AGP) {
-        *agp_loc = INMC(info, RS690_MC_AGP_LOCATION);
-	    *agp_loc_hi = 0;
-	}
-    } else if (info->ChipFamily >= CHIP_FAMILY_R520) {
-	if (mask & LOC_FB)
-        *fb_loc = INMC(info, R520_MC_FB_LOCATION);
-	if (mask & LOC_AGP) {
-        *agp_loc = INMC(info, R520_MC_AGP_LOCATION);
-	    *agp_loc_hi = 0;
-	}
-    } else {
-	if (mask & LOC_FB)
-	    *fb_loc = INREG(RADEON_MC_FB_LOCATION);
-	if (mask & LOC_AGP)
-	    *agp_loc = INREG(RADEON_MC_AGP_LOCATION);
+    if (info->ChipFamily >= CHIP_FAMILY_RV770)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INREG(R700_MC_VM_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INREG(R600_MC_VM_AGP_BOT);
+            *agp_loc_hi = INREG(R600_MC_VM_AGP_TOP);
+        }
+    }
+    else if (info->ChipFamily >= CHIP_FAMILY_R600)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INREG(R600_MC_VM_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INREG(R600_MC_VM_AGP_BOT);
+            *agp_loc_hi = INREG(R600_MC_VM_AGP_TOP);
+        }
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RV515)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, RV515_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INMC(info, RV515_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RS600)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, RS600_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = 0;//INMC(pScrn, RS600_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+             (info->ChipFamily == CHIP_FAMILY_RS740))
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, RS690_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INMC(info, RS690_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else if (info->ChipFamily >= CHIP_FAMILY_R520)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, R520_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INMC(info, R520_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INREG(RADEON_MC_FB_LOCATION);
+        if (mask & LOC_AGP)
+            *agp_loc = INREG(RADEON_MC_AGP_LOCATION);
     }
 }
 
@@ -226,7 +239,6 @@ static void radeon_write_mc_fb_agp_location(RHDPtr info, int mask, u32_t fb_loc,
     }
 }
 
-#if !R300_PIO
 
 static void RADEONUpdateMemMapRegisters(RHDPtr info)
 {
@@ -259,7 +271,7 @@ static void RADEONUpdateMemMapRegisters(RHDPtr info)
 
            tmp = INREG(AVIVO_D2CRTC_CONTROL);
 
-           usleep(10000);
+           usleep(1000);
            timeout = 0;
            while (!(avivo_get_mc_idle(info)))
            {
@@ -272,7 +284,7 @@ static void RADEONUpdateMemMapRegisters(RHDPtr info)
                 * to maybe hit the disk and continue trying to setup despite
                 * the MC being non-idle
                 */
-                 usleep(2000000);
+                 usleep(20000);
               }
               usleep(10);
            }
@@ -386,7 +398,7 @@ static void RADEONUpdateMemMapRegisters(RHDPtr info)
            OUTREG(RADEON_OV0_SCALE_CNTL, ov0_scale_cntl );
 
 
- igp_no_mcfb:
+igp_no_mcfb:
            radeon_write_mc_fb_agp_location(info, LOC_AGP, 0,
                         info->mc_agp_location, 0);
 	    /* Make sure map fully reached the chip */
@@ -444,8 +456,6 @@ static void RADEONUpdateMemMapRegisters(RHDPtr info)
         dbgprintf("Memory map updated.\n");
      };
 };
-
-#endif
 
 
 static void RADEONInitMemoryMap(RHDPtr info)
@@ -536,17 +546,17 @@ static void RADEONInitMemoryMap(RHDPtr info)
      * re-enabled later by the DRM
      */
 
-//    if (IS_AVIVO_VARIANT) {
-//       if (info->ChipFamily >= CHIP_FAMILY_R600) {
-//          OUTREG(R600_HDP_NONSURFACE_BASE, (info->mc_fb_location << 16) & 0xff0000);
-//       }
-//       else {
-//          OUTREG(AVIVO_HDP_FB_LOCATION, info->mc_fb_location);
-//       }
-//       info->mc_agp_location = 0x003f0000;
-//    }
-//    else
-//        info->mc_agp_location = 0xffffffc0;
+    if (IS_AVIVO_VARIANT) {
+       if (info->ChipFamily >= CHIP_FAMILY_R600) {
+          OUTREG(R600_HDP_NONSURFACE_BASE, (info->mc_fb_location << 16) & 0xff0000);
+       }
+       else {
+          OUTREG(AVIVO_HDP_FB_LOCATION, info->mc_fb_location);
+       }
+       info->mc_agp_location =  0x003f0000;
+    }
+    else
+        info->mc_agp_location = 0xffffffc0;
 
     dbgprintf("RADEONInitMemoryMap() : \n");
     dbgprintf("  mem_size         : 0x%08x\n", (u32_t)mem_size);
@@ -554,11 +564,9 @@ static void RADEONInitMemoryMap(RHDPtr info)
     dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
     dbgprintf("  FB_LOCATION   : 0x%08x\n", (unsigned)info->fbLocation);
 
-#if !R300_PIO
 
     RADEONUpdateMemMapRegisters(info);
 
-#endif
 
 }
 
@@ -788,11 +796,11 @@ static Bool RADEONPreInitVRAM(RHDPtr info)
      info->videoRam  &= ~1023;
      info->FbMapSize  = info->videoRam * 1024;
 
-     info->gartSize      = RADEON_DEFAULT_GART_SIZE;
+    // info->gartSize      = RADEON_DEFAULT_GART_SIZE;
      info->ringSize      = RADEON_DEFAULT_RING_SIZE;
      info->bufSize       = RADEON_DEFAULT_BUFFER_SIZE;
 
-     info->gartTexSize   = info->gartSize - (info->ringSize + info->bufSize);
+   //  info->gartTexSize   = info->gartSize - (info->ringSize + info->bufSize);
 
      info->pciAperSize   = RADEON_DEFAULT_PCI_APER_SIZE;
      info->CPusecTimeout = RADEON_DEFAULT_CP_TIMEOUT;
@@ -878,7 +886,7 @@ static Bool RADEONPreInitChipType(RHDPtr rhdPtr)
         rhdPtr->has_tcl = TRUE;
     }
 
-    rhdPtr->LinearAddr = rhdPtr->memBase[RHD_FB_BAR];
+  //  rhdPtr->LinearAddr = rhdPtr->memBase[RHD_FB_BAR];
 
     return TRUE;
 }
@@ -979,14 +987,9 @@ Bool RHDPreInit()
     }
     dbgprintf("VideoRAM: %d kByte\n",rhd.videoRam);
 
- //    rhd.FbFreeStart = 0;
+    init_gart(&rhd);
+
     rhd.FbFreeSize = rhd.videoRam << 10;
-
- // if( !rhdMapFB(&rhd))
-//    return FALSE;
-
-//  rhd.FbScanoutStart = 0;
-//  rhd.FbScanoutSize  = 8*1024*1024;
 
     rhd.FbFreeStart    = 10*1024*1024;
     rhd.FbFreeSize     = rhd.FbMapSize - rhd.FbFreeStart - rhd.FbSecureSize;
@@ -1115,4 +1118,143 @@ static void init_pipes(RHDPtr info)
         OUTREG(RADEON_RB3D_CNTL, 0);
 };
 
+#define RADEON_AIC_PT_BASE      0x01d8
+#define RADEON_AIC_LO_ADDR		0x01dc
+#define RADEON_AIC_HI_ADDR		0x01e0
+#define RADEON_AIC_TLB_ADDR		0x01e4
+#define RADEON_AIC_TLB_DATA		0x01e8
 
+#define RADEON_PCIE_INDEX               0x0030
+#define RADEON_PCIE_DATA                0x0034
+#define RADEON_PCIE_TX_GART_CNTL        0x10
+#	define RADEON_PCIE_TX_GART_EN		(1 << 0)
+#	define RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_PASS_THRU (0 << 1)
+#	define RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_CLAMP_LO  (1 << 1)
+#	define RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD   (3 << 1)
+#	define RADEON_PCIE_TX_GART_MODE_32_128_CACHE	(0 << 3)
+#	define RADEON_PCIE_TX_GART_MODE_8_4_128_CACHE	(1 << 3)
+#	define RADEON_PCIE_TX_GART_CHK_RW_VALID_EN      (1 << 5)
+#	define RADEON_PCIE_TX_GART_INVALIDATE_TLB	(1 << 8)
+#define RADEON_PCIE_TX_DISCARD_RD_ADDR_LO 0x11
+#define RADEON_PCIE_TX_DISCARD_RD_ADDR_HI 0x12
+#define RADEON_PCIE_TX_GART_BASE          0x13
+#define RADEON_PCIE_TX_GART_START_LO      0x14
+#define RADEON_PCIE_TX_GART_START_HI      0x15
+#define RADEON_PCIE_TX_GART_END_LO        0x16
+#define RADEON_PCIE_TX_GART_END_HI        0x17
+
+
+#define RADEON_WRITE8(offset, val)       \
+    *(volatile u8_t*)((addr_t)rhd.MMIOBase + (offset)) = val
+
+#define RADEON_WRITE_PCIE( addr, val )        \
+do {                                          \
+    RADEON_WRITE8( RADEON_PCIE_INDEX,         \
+            ((addr) & 0xff));                 \
+    OUTREG( RADEON_PCIE_DATA, (val) );        \
+} while (0)
+
+static u32_t RADEON_READ_PCIE(int addr)
+{
+	RADEON_WRITE8(RADEON_PCIE_INDEX, addr & 0xff);
+    return INREG(RADEON_PCIE_DATA);
+}
+
+static void radeon_set_pciegart(RHDPtr info, int on)
+{
+    u32_t tmp = RADEON_READ_PCIE(RADEON_PCIE_TX_GART_CNTL);
+    if (on)
+    {
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_LO,
+                  info->gart_vm_start);
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_BASE,
+                  info->gart_table_dma);
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_START_LO,
+                  info->gart_vm_start);
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_END_LO,
+                  info->gart_vm_start + info->gart_size - 1);
+
+//        radeon_write_agp_location(dev_priv, 0xffffffc0); /* ?? */
+        OUTREG(RADEON_AGP_COMMAND, 0);    /* clear AGP_COMMAND */
+
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_CNTL,
+				  RADEON_PCIE_TX_GART_EN);
+	} else {
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_CNTL,
+				  tmp & ~RADEON_PCIE_TX_GART_EN);
+	}
+}
+
+
+static void radeon_set_pcigart(RHDPtr info, int on)
+{
+    u32_t tmp;
+
+    tmp = INREG(RADEON_AIC_CNTL);
+
+    if( on )
+    {
+        OUTREG(RADEON_AIC_CNTL, tmp | RADEON_PCIGART_TRANSLATE_EN);
+
+		/* set PCI GART page-table base address
+		 */
+        OUTREG(RADEON_AIC_PT_BASE, info->gart_table_dma);
+
+		/* set address range for PCI address translate
+		 */
+        OUTREG(RADEON_AIC_LO_ADDR, info->gart_vm_start);
+        OUTREG(RADEON_AIC_HI_ADDR, info->gart_vm_start
+               + info->gart_size - 1);
+
+		/* Turn off AGP aperture -- is this required for PCI GART?
+		 */
+//        radeon_write_agp_location(dev_priv, 0xffffffc0);
+        OUTREG(RADEON_AGP_COMMAND, 0);    /* clear AGP_COMMAND */
+    }
+    else  OUTREG(RADEON_AIC_CNTL, tmp & ~RADEON_PCIGART_TRANSLATE_EN);
+
+}
+
+
+void init_gart(RHDPtr info)
+{
+    u32_t   *pci_gart;
+    count_t  pages;
+
+    info->gart_size  = 16*1024*1024;
+
+    info->gart_vm_start = info->fbLocation + (info->videoRam << 10);
+
+//    info->gart_vm_start = info->fbLocation - info->gart_size;
+
+//    info->gart_table = (u32_t*)KernelAlloc( RADEON_PCIGART_TABLE_SIZE );
+
+//    if ( ! info->gart_table) {
+//        dbgprintf("cannot allocate PCI GART page!\n");
+//        return;
+//    }
+
+//    info->gart_table_dma = GetPgAddr(info->gart_table);
+
+    info->gart_table_dma = info->gart_vm_start - RADEON_PCIGART_TABLE_SIZE;
+
+    info->gart_table = (u32_t*)MapIoMem(info->gart_table_dma,
+                                        RADEON_PCIGART_TABLE_SIZE,
+                                        PG_SW | PG_NOCACHE);
+
+    pci_gart = info->gart_table;
+
+    memset(pci_gart, 0, RADEON_PCIGART_TABLE_SIZE);
+
+    __asm__ __volatile(
+    "wbinvd"
+    :::"memory");
+
+    radeon_set_pciegart(info, 1);
+
+      dbgprintf("gart size 0x%x\n", info->gart_size);
+    dbgprintf("gart base 0x%x\n", info->gart_vm_start);
+    dbgprintf("gart table 0x%x\n", info->gart_table);
+    dbgprintf("gart table dma 0x%x\n", info->gart_table_dma);
+
+}

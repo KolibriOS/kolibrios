@@ -49,10 +49,13 @@ void* STDCALL CreateRingBuffer(size_t size, u32_t map)__asm__("CreateRingBuffer"
 
 u32_t STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
 
+int   STDCALL AttachIntHandler(int irq, void *handler, u32_t access) __asm__("AttachIntHandler");
+
+
 //void *CreateObject(u32 pid, size_t size);
 //void *DestroyObject(void *obj);
 
-addr_t STDCALL MapIoMem(void* base,size_t size,u32_t flags)__asm__("MapIoMem");
+addr_t STDCALL MapIoMem(addr_t base, size_t size, u32_t flags)__asm__("MapIoMem");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -270,6 +273,14 @@ extern inline void out32(const u16_t port, const u32_t val)
     __asm__ __volatile__
     ("outl  %1, %0\n" : : "dN"(port), "a"(val));
 }
+
+extern inline u8_t in8(const u16_t port)
+{
+    u8_t tmp;
+    __asm__ __volatile__
+    ("inb %1, %0\n" : "=a"(tmp) : "dN"(port));
+    return tmp;
+};
 
 extern inline u16_t in16(const u16_t port)
 {

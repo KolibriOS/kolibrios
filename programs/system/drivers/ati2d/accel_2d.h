@@ -40,28 +40,28 @@ int BlockClip( clip_t *clip, int *x1, int *y1, int *x2, int* y2 );
 
 typedef struct
 {
-  unsigned  width;
-  unsigned  height;
-  u32_t     format;
-  u32_t     flags;
-  unsigned  pitch;
+  unsigned   width;
+  unsigned   height;
+  u32_t      format;
+  u32_t      flags;
+  size_t     pitch;
   void      *mapped;
+
   u32_t     handle;
 }pixmap_t;
 
 
 typedef struct
 {
-  unsigned  width;
-  unsigned  height;
-  u32_t     format;
-  u32_t     flags;
-
-  unsigned  pitch;
+  unsigned   width;
+  unsigned   height;
+  u32_t      format;
+  u32_t      flags;
+  size_t     pitch;
   void      *mapped;
 
   unsigned  pitch_offset;
-  void      *local;
+  addr_t    local;
 }local_pixmap_t;
 
 #define  PX_MEM_SYSTEM    0
@@ -70,8 +70,7 @@ typedef struct
 
 #define  PX_MEM_MASK      3
 
-
-#define   PX_LOCK         1
+#define  PX_LOCK          1
 
 typedef struct
 {
@@ -140,6 +139,9 @@ typedef struct
     color_t    alpha;
   };
 }io_blit_t;
+
+
+static addr_t bind_pixmap(local_pixmap_t *pixmap);
 
 
 int CreatePixmap(pixmap_t *io);

@@ -8,7 +8,7 @@ INCLUDES = -I ../include
 
 HFILES:=     ../include/types.h		\
              ../include/syscall.h	\
-             ati2d.h      		\
+             atihw.h      		\
              pci.h        		\
              accel_2d.h   		\
              r5xx_regs.h 		\

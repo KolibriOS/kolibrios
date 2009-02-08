@@ -43,7 +43,7 @@ struct mem_block
 {
   struct mem_block *next;
   struct mem_block *prev;
-  u32_t             start;
+  addr_t            start;
   size_t            size;
 };
 
@@ -168,13 +168,13 @@ int rhdInitHeap(RHDPtr rhdPtr)
     return init_heap(&rhdPtr->fb_heap, base, rhdPtr->FbFreeSize);
 };
 
-void *rhd_mem_alloc(RHDPtr rhdPtr,int region, int size)
+addr_t  rhd_mem_alloc(RHDPtr rhdPtr,int region, int size)
 {
 	struct mem_block *block, **heap;
 
     heap = get_heap(rhdPtr, region);
     if (!heap || !*heap)
-        return NULL;
+        return 0;
 
 	/* Make things easier on ourselves: all allocations at least
 	 * 4k aligned.
@@ -185,12 +185,12 @@ void *rhd_mem_alloc(RHDPtr rhdPtr,int region, int size)
     block = alloc_block(*heap, size);
 
 	if (!block)
-        return NULL;
+        return 0;
 
-    return (void*)(block->start & ~USED_BLOCK);
+    return (block->start & ~USED_BLOCK);
 }
 
-int rhd_mem_free(RHDPtr rhdPtr, int region, void *offset)
+int rhd_mem_free(RHDPtr rhdPtr, int region, addr_t offset)
 {
 	struct mem_block *block, **heap;
 
