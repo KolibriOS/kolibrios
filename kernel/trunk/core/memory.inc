@@ -1168,40 +1168,51 @@ proc init_mtrr
 
            mov ecx, 0x2FF
            rdmsr                ;
+; has BIOS already initialized MTRRs?
+           test ah, 8
+           jnz .skip_init
+; rarely needed, so mainly placeholder
+; main memory - cached
            push eax
-
-           xor edx, edx
-           xor eax, eax
-           mov ecx, 0x2FF
-           wrmsr                ;disable all MTRR
 
            mov eax, [MEM_AMOUNT]
 ; round eax up to next power of 2
            dec eax
            bsr ecx, eax
-           mov eax, 2
-           shl eax, cl
-           stdcall set_mtrr, edx,edx,eax,MEM_WB
-           stdcall set_mtrr, 1,[LFBAddress],[LFBSize],MEM_WC
+           mov ebx, 2
+           shl ebx, cl
+           dec ebx
+; base of memory range = 0, type of memory range = MEM_WB
            xor edx, edx
-           xor eax, eax
-           mov ecx, 0x204
-           mov ebx, 6
-@@:
-           wrmsr                ;disable unused MTRR
+           mov eax, MEM_WB
+           mov ecx, 0x200
+           wrmsr
+; mask of memory range = 0xFFFFFFFFF - (size - 1), ebx = size - 1
+           mov eax, 0xFFFFFFFF
+           mov edx, 0x0000000F
+           sub eax, ebx
+           sbb edx, 0
+           or eax, 0x800
            inc ecx
            wrmsr
+; clear unused MTRRs
+           xor eax, eax
+           xor edx, edx
+@@:
+           wrmsr
            inc ecx
-           dec ebx
-           jnz @b
+           cmp ecx, 0x210
+           jb @b
+; enable MTRRs
+           pop eax
+           or ah, 8
+           and al, 0xF0 ; default memtype = UC
+           mov ecx, 0x2FF
+           wrmsr
+.skip_init:
+           stdcall set_mtrr, [LFBAddress],[LFBSize],MEM_WC
 
            wbinvd               ;again invalidate
-
-           pop eax
-           or eax, 0x800        ;set default memtype to UC
-           and al, 0xF0
-           mov ecx, 0x2FF
-           wrmsr                ;and enable MTRR
 
            mov eax, cr0
            and eax, not 0x60000000
@@ -1211,13 +1222,29 @@ proc init_mtrr
 endp
 
 align 4
-proc set_mtrr stdcall, reg:dword,base:dword,size:dword,mem_type:dword
-
+proc set_mtrr stdcall, base:dword,size:dword,mem_type:dword
+; find unused register
+           mov ecx, 0x201
+@@:
+           rdmsr
+           dec ecx
+           test ah, 8
+           jz .found
+           rdmsr
+           mov al, 0 ; clear memory type field
+           cmp eax, [base]
+           jz .ret
+           add ecx, 3
+           cmp ecx, 0x210
+           jb @b
+; no free registers, ignore the call
+.ret:
+           ret
+.found:
+; found, write values
            xor edx, edx
            mov eax, [base]
            or eax, [mem_type]
-           mov ecx, [reg]
-           lea ecx, [0x200+ecx*2]
            wrmsr
 
            mov ebx, [size]
