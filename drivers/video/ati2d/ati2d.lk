@@ -1,0 +1,26 @@
+IMP
+    _KernelAlloc       core.KernelAlloc,
+    _KernelFree        core.KernelFree,
+    _UserAlloc         core.UserAlloc,
+    _UserFree          core.UserFree,
+    _AllocPages        core.AllocPages,
+    _CommitPages       core.CommitPages,
+    _UnmapPages        core.UnmapPages,
+    _MapIoMem          core.MapIoMem,
+    _GetPgAddr         core.GetPgAddr,
+    _CreateRingBuffer  core.CreateRingBuffer,
+    _PciApi            core.PciApi,
+    _PciRead8          core.PciRead8,
+    _PciRead16         core.PciRead16,
+    _PciRead32         core.PciRead32,
+    _PciWrite32        core.PciWrite32,
+    _RegService        core.RegService,
+    _WaitMutex         core.WaitMutex,
+    _Delay             core.Delay,
+    _ChangeTask        core.ChangeTask,
+    _SysMsgBoardStr    core.SysMsgBoardStr
+
+
+FIL ati2d.obj,
+    vsprintf.obj,
+    icompute.obj

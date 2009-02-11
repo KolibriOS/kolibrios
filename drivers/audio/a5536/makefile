@@ -4,12 +4,12 @@ FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
 LDRHD  = -shared -T ld.x -s --file-alignment 32
 
-INCLUDES = -I ../include
+INCLUDES = -I ../../include
 
-HFILES:=     ../include/types.h		\
-             ../include/syscall.h	\
-             geode.h			\
-             pci.h
+HFILES:=     ../../include/types.h	\
+             ../../include/syscall.h	\
+             ../../include/pci.h	\
+             geode.h			
 
 SRC_DEP:=    
 GEODE_SRC:=    amd_geode.h     

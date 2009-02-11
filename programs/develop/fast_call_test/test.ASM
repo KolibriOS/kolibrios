@@ -35,7 +35,7 @@ test1:	mov	eax, 1
 	
 	mov	ebx, 0x100000
 	align	32
-.nxt:	mcall	19		; функция пустышка
+.nxt:  ;mcall   19              ; функция пустышка
 				; портятся ecx, edx
 	dec	ebx
 	jnz	.nxt
@@ -43,11 +43,8 @@ test1:	mov	eax, 1
 	xor	eax, eax
 	cpuid
 	rdtsc
-	cmp	eax, [old_tsc]
-	jnb	@f
-	dec	edx
-@@:	sub	eax, [old_tsc]
-	sub	edx, [old_tsc + 4]
+        sub     eax, [old_tsc]
+        sbb     edx, [old_tsc + 4]
 	debug_print_hex edx
 	debug_print_hex eax
 .end:	print	' <- Fast call (SYSENTER)'
@@ -74,7 +71,7 @@ test2:	xor	eax, eax
 	
 	mov	ebx, 0x100000
 	align	32
-.nxt:	mcall	19		; функция пустышка
+.nxt:   ;mcall   19              ; функция пустышка
 	
 	dec	ebx
 	jnz	.nxt
@@ -82,16 +79,14 @@ test2:	xor	eax, eax
 	xor	eax, eax
 	cpuid
 	rdtsc
-	cmp	eax, [old_tsc]
-	jnb	@f
-	dec	edx
-@@:	sub	eax, [old_tsc]
-	sub	edx, [old_tsc + 4]
+
+        sub     eax, [old_tsc]
+        sbb     edx, [old_tsc + 4]
 	debug_print_hex edx
 	debug_print_hex eax
 .end:	print	' <- Fast call (SYSCALL)'
 	;----------------------------------------------
-	; через шлюз прерывания
+	; через шлюз прерывани
 	__CPU_type	equ	p5
 	xor	eax, eax
 	cpuid
@@ -101,18 +96,16 @@ test2:	xor	eax, eax
 	
 test3:	mov	ebx, 0x100000
 	align	32
-.nxt:	mcall	19		; функция пустышка
+.nxt:   ;mcall   19              ; функция пустышка
 	dec	ebx
 	jnz	.nxt
 	
 	xor	eax, eax
 	cpuid
 	rdtsc
-	cmp	eax, [old_tsc]
-	jnb	@f
-	dec	edx
-@@:	sub	eax, [old_tsc]
-	sub	edx, [old_tsc + 4]
+
+        sub     eax, [old_tsc]
+        sbb     edx, [old_tsc + 4]
 	debug_print_hex edx
 	debug_print_hex eax
 	print	' <- Interrupt'

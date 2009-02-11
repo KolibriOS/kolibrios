@@ -1,0 +1,1269 @@
+
+
+static Bool rhdMapMMIO(RHDPtr rhdPtr)
+{
+     rhdPtr->MMIOMapSize = 1 << rhdPtr->memsize[RHD_MMIO_BAR];
+     rhdPtr->MMIOBase = MapIoMem(rhdPtr->memBase[RHD_MMIO_BAR],
+                                 rhdPtr->MMIOMapSize,PG_SW+PG_NOCACHE);
+     if( rhdPtr->MMIOBase==0)
+        return 0;
+
+     DBG(dbgprintf("Mapped IO at %x (size %x)\n", rhdPtr->MMIOBase, rhdPtr->MMIOMapSize));
+     return 1;
+}
+
+/* Read MC register */
+unsigned INMC(RHDPtr info, int addr)
+{
+    u32_t       data;
+
+    if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+       (info->ChipFamily == CHIP_FAMILY_RS740)) {
+        OUTREG(RS690_MC_INDEX, (addr & RS690_MC_INDEX_MASK));
+        data = INREG(RS690_MC_DATA);
+    } else if (info->ChipFamily == CHIP_FAMILY_RS600) {
+        OUTREG(RS600_MC_INDEX, (addr & RS600_MC_INDEX_MASK));
+        data = INREG(RS600_MC_DATA);
+    } else if (IS_AVIVO_VARIANT) {
+        OUTREG(AVIVO_MC_INDEX, (addr & 0xff) | 0x7f0000);
+        (void)INREG(AVIVO_MC_INDEX);
+        data = INREG(AVIVO_MC_DATA);
+
+        OUTREG(AVIVO_MC_INDEX, 0);
+        (void)INREG(AVIVO_MC_INDEX);
+    } else {
+        OUTREG(R300_MC_IND_INDEX, addr & 0x3f);
+        (void)INREG(R300_MC_IND_INDEX);
+        data = INREG(R300_MC_IND_DATA);
+
+        OUTREG(R300_MC_IND_INDEX, 0);
+        (void)INREG(R300_MC_IND_INDEX);
+    }
+
+    return data;
+}
+
+     /* Write MC information */
+void OUTMC(RHDPtr info, int addr, u32_t data)
+{
+    if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+        (info->ChipFamily == CHIP_FAMILY_RS740)) {
+        OUTREG(RS690_MC_INDEX, ((addr & RS690_MC_INDEX_MASK) | RS690_MC_INDEX_WR_EN));
+         OUTREG(RS690_MC_DATA, data);
+        OUTREG(RS690_MC_INDEX, RS690_MC_INDEX_WR_ACK);
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RS600) {
+        OUTREG(RS600_MC_INDEX, ((addr & RS600_MC_INDEX_MASK) | RS600_MC_INDEX_WR_EN));
+        OUTREG(RS600_MC_DATA, data);
+        OUTREG(RS600_MC_INDEX, RS600_MC_INDEX_WR_ACK);
+    }
+    else if (IS_AVIVO_VARIANT) {
+        OUTREG(AVIVO_MC_INDEX, (addr & 0xff) | 0xff0000);
+        (void)INREG(AVIVO_MC_INDEX);
+        OUTREG(AVIVO_MC_DATA, data);
+        OUTREG(AVIVO_MC_INDEX, 0);
+        (void)INREG(AVIVO_MC_INDEX);
+    }
+    else {
+        OUTREG(R300_MC_IND_INDEX, (((addr) & 0x3f) | R300_MC_IND_WR_EN));
+        (void)INREG(R300_MC_IND_INDEX);
+        OUTREG(R300_MC_IND_DATA, data);
+        OUTREG(R300_MC_IND_INDEX, 0);
+        (void)INREG(R300_MC_IND_INDEX);
+    }
+}
+
+static Bool avivo_get_mc_idle(RHDPtr info)
+{
+
+    if (info->ChipFamily >= CHIP_FAMILY_R600) {
+	/* no idea where this is on r600 yet */
+        return TRUE;
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RV515) {
+        if (INMC(info, RV515_MC_STATUS) & RV515_MC_STATUS_IDLE)
+            return TRUE;
+        else
+            return FALSE;
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RS600)
+    {
+        if (INMC(info, RS600_MC_STATUS) & RS600_MC_STATUS_IDLE)
+            return TRUE;
+        else
+            return FALSE;
+    }
+    else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+          (info->ChipFamily == CHIP_FAMILY_RS740)) {
+        if (INMC(info, RS690_MC_STATUS) & RS690_MC_STATUS_IDLE)
+            return TRUE;
+        else
+            return FALSE;
+    }
+    else {
+        if (INMC(info, R520_MC_STATUS) & R520_MC_STATUS_IDLE)
+            return TRUE;
+        else
+            return FALSE;
+    }
+}
+
+#define LOC_FB    0x1
+#define LOC_AGP   0x2
+
+static void radeon_read_mc_fb_agp_location(RHDPtr info, int mask,
+                                u32_t *fb_loc, u32_t *agp_loc, u32_t *agp_loc_hi)
+{
+
+    if (info->ChipFamily >= CHIP_FAMILY_RV770)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INREG(R700_MC_VM_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INREG(R600_MC_VM_AGP_BOT);
+            *agp_loc_hi = INREG(R600_MC_VM_AGP_TOP);
+        }
+    }
+    else if (info->ChipFamily >= CHIP_FAMILY_R600)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INREG(R600_MC_VM_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INREG(R600_MC_VM_AGP_BOT);
+            *agp_loc_hi = INREG(R600_MC_VM_AGP_TOP);
+        }
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RV515)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, RV515_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INMC(info, RV515_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else if (info->ChipFamily == CHIP_FAMILY_RS600)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, RS600_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = 0;//INMC(pScrn, RS600_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+             (info->ChipFamily == CHIP_FAMILY_RS740))
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, RS690_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INMC(info, RS690_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else if (info->ChipFamily >= CHIP_FAMILY_R520)
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INMC(info, R520_MC_FB_LOCATION);
+        if (mask & LOC_AGP) {
+            *agp_loc = INMC(info, R520_MC_AGP_LOCATION);
+            *agp_loc_hi = 0;
+        }
+    }
+    else
+    {
+        if (mask & LOC_FB)
+            *fb_loc = INREG(RADEON_MC_FB_LOCATION);
+        if (mask & LOC_AGP)
+            *agp_loc = INREG(RADEON_MC_AGP_LOCATION);
+    }
+}
+
+static void radeon_write_mc_fb_agp_location(RHDPtr info, int mask, u32_t fb_loc,
+                      u32_t agp_loc, u32_t agp_loc_hi)
+{
+
+     if (info->ChipFamily >= CHIP_FAMILY_RV770) {
+        if (mask & LOC_FB)
+           OUTREG(R700_MC_VM_FB_LOCATION, fb_loc);
+        if (mask & LOC_AGP) {
+           OUTREG(R600_MC_VM_AGP_BOT, agp_loc);
+           OUTREG(R600_MC_VM_AGP_TOP, agp_loc_hi);
+        }
+     }
+     else if (info->ChipFamily >= CHIP_FAMILY_R600)
+     {
+        if (mask & LOC_FB)
+           OUTREG(R600_MC_VM_FB_LOCATION, fb_loc);
+        if (mask & LOC_AGP) {
+           OUTREG(R600_MC_VM_AGP_BOT, agp_loc);
+           OUTREG(R600_MC_VM_AGP_TOP, agp_loc_hi);
+        }
+     }
+     else if (info->ChipFamily == CHIP_FAMILY_RV515)
+     {
+        if (mask & LOC_FB)
+           OUTMC(info, RV515_MC_FB_LOCATION, fb_loc);
+        if (mask & LOC_AGP)
+           OUTMC(info, RV515_MC_AGP_LOCATION, agp_loc);
+           (void)INMC(info, RV515_MC_AGP_LOCATION);
+     }
+     else if (info->ChipFamily == CHIP_FAMILY_RS600)
+     {
+     if (mask & LOC_FB)
+        OUTMC(info, RS600_MC_FB_LOCATION, fb_loc);
+	/*	if (mask & LOC_AGP)
+		OUTMC(pScrn, RS600_MC_AGP_LOCATION, agp_loc);*/
+     }
+     else if ((info->ChipFamily == CHIP_FAMILY_RS690) ||
+              (info->ChipFamily == CHIP_FAMILY_RS740))
+     {
+        if (mask & LOC_FB)
+           OUTMC(info, RS690_MC_FB_LOCATION, fb_loc);
+        if (mask & LOC_AGP)
+           OUTMC(info, RS690_MC_AGP_LOCATION, agp_loc);
+     }
+     else if (info->ChipFamily >= CHIP_FAMILY_R520)
+     {
+        if (mask & LOC_FB)
+           OUTMC(info, R520_MC_FB_LOCATION, fb_loc);
+        if (mask & LOC_AGP)
+           OUTMC(info, R520_MC_AGP_LOCATION, agp_loc);
+           (void)INMC(info, R520_MC_FB_LOCATION);
+     }
+     else {
+        if (mask & LOC_FB)
+           OUTREG(RADEON_MC_FB_LOCATION, fb_loc);
+        if (mask & LOC_AGP)
+           OUTREG(RADEON_MC_AGP_LOCATION, agp_loc);
+    }
+}
+
+
+static void RADEONUpdateMemMapRegisters(RHDPtr info)
+{
+     u32_t timeout;
+
+     u32_t mc_fb_loc, mc_agp_loc, mc_agp_loc_hi;
+
+     radeon_read_mc_fb_agp_location(info, LOC_FB | LOC_AGP, &mc_fb_loc,
+				   &mc_agp_loc, &mc_agp_loc_hi);
+
+     if (IS_AVIVO_VARIANT)
+     {
+
+        if (mc_fb_loc  != info->mc_fb_location  ||
+            mc_agp_loc != info->mc_agp_location)
+        {
+           u32_t d1crtc, d2crtc;
+           u32_t tmp;
+//           RADEONWaitForIdleMMIO(pScrn);
+
+           OUTREG(AVIVO_D1VGA_CONTROL, INREG(AVIVO_D1VGA_CONTROL) & ~AVIVO_DVGA_CONTROL_MODE_ENABLE);
+           OUTREG(AVIVO_D2VGA_CONTROL, INREG(AVIVO_D2VGA_CONTROL) & ~AVIVO_DVGA_CONTROL_MODE_ENABLE);
+
+           /* Stop display & memory access */
+           d1crtc = INREG(AVIVO_D1CRTC_CONTROL);
+           OUTREG(AVIVO_D1CRTC_CONTROL, d1crtc & ~AVIVO_CRTC_EN);
+
+           d2crtc = INREG(AVIVO_D2CRTC_CONTROL);
+           OUTREG(AVIVO_D2CRTC_CONTROL, d2crtc & ~AVIVO_CRTC_EN);
+
+           tmp = INREG(AVIVO_D2CRTC_CONTROL);
+
+           usleep(1000);
+           timeout = 0;
+           while (!(avivo_get_mc_idle(info)))
+           {
+              if (++timeout > 1000000)
+              {
+                 dbgprintf("Timeout trying to update memory controller settings !\n");
+                 dbgprintf("You will probably crash now ... \n");
+               /* Nothing we can do except maybe try to kill the server,
+                * let's wait 2 seconds to leave the above message a chance
+                * to maybe hit the disk and continue trying to setup despite
+                * the MC being non-idle
+                */
+                 usleep(20000);
+              }
+              usleep(10);
+           }
+
+           radeon_write_mc_fb_agp_location(info, LOC_FB | LOC_AGP,
+                           info->mc_fb_location,
+                           info->mc_agp_location,
+                           info->mc_agp_location_hi);
+
+           if (info->ChipFamily < CHIP_FAMILY_R600) {
+              OUTREG(AVIVO_HDP_FB_LOCATION, info->mc_fb_location);
+           }
+           else {
+              OUTREG(R600_HDP_NONSURFACE_BASE, (info->mc_fb_location << 16) & 0xff0000);
+           }
+
+           OUTREG(AVIVO_D1CRTC_CONTROL, d1crtc );
+
+           OUTREG(AVIVO_D2CRTC_CONTROL, d2crtc );
+
+           tmp = INREG(AVIVO_D2CRTC_CONTROL);
+
+           /* Reset the engine and HDP */
+//           RADEONEngineReset(pScrn);
+       }
+     }
+     else
+     {
+
+	/* Write memory mapping registers only if their value change
+	 * since we must ensure no access is done while they are
+	 * reprogrammed
+	 */
+        if ( mc_fb_loc != info->mc_fb_location   ||
+             mc_agp_loc != info->mc_agp_location)
+        {
+           u32_t crtc_ext_cntl, crtc_gen_cntl, crtc2_gen_cntl=0, ov0_scale_cntl;
+           u32_t old_mc_status, status_idle;
+
+           dbgprintf("  Map Changed ! Applying ...\n");
+
+	    /* Make sure engine is idle. We assume the CCE is stopped
+	     * at this point
+	     */
+   //        RADEONWaitForIdleMMIO(info);
+
+           if (info->IsIGP)
+              goto igp_no_mcfb;
+
+	    /* Capture MC_STATUS in case things go wrong ... */
+           old_mc_status = INREG(RADEON_MC_STATUS);
+
+	    /* Stop display & memory access */
+           ov0_scale_cntl = INREG(RADEON_OV0_SCALE_CNTL);
+           OUTREG(RADEON_OV0_SCALE_CNTL, ov0_scale_cntl & ~RADEON_SCALER_ENABLE);
+           crtc_ext_cntl = INREG(RADEON_CRTC_EXT_CNTL);
+           OUTREG(RADEON_CRTC_EXT_CNTL, crtc_ext_cntl | RADEON_CRTC_DISPLAY_DIS);
+           crtc_gen_cntl = INREG(RADEON_CRTC_GEN_CNTL);
+//           RADEONWaitForVerticalSync(pScrn);
+           OUTREG(RADEON_CRTC_GEN_CNTL,
+                 (crtc_gen_cntl  & ~(RADEON_CRTC_CUR_EN | RADEON_CRTC_ICON_EN))
+                 | RADEON_CRTC_DISP_REQ_EN_B | RADEON_CRTC_EXT_DISP_EN);
+
+           if (info->HasCRTC2)
+           {
+              crtc2_gen_cntl = INREG(RADEON_CRTC2_GEN_CNTL);
+//              RADEONWaitForVerticalSync2(pScrn);
+              OUTREG(RADEON_CRTC2_GEN_CNTL, (crtc2_gen_cntl
+                     & ~(RADEON_CRTC2_CUR_EN | RADEON_CRTC2_ICON_EN))
+                    | RADEON_CRTC2_DISP_REQ_EN_B);
+           }
+
+	    /* Make sure the chip settles down (paranoid !) */
+           usleep(1000);
+
+	    /* Wait for MC idle */
+           if (IS_R300_VARIANT)
+              status_idle = R300_MC_IDLE;
+           else
+              status_idle = RADEON_MC_IDLE;
+
+           timeout = 0;
+           while (!(INREG(RADEON_MC_STATUS) & status_idle))
+           {
+              if (++timeout > 1000000)
+              {
+                 dbgprintf("Timeout trying to update memory controller settings !\n");
+                 dbgprintf("MC_STATUS = 0x%08x (on entry = 0x%08x)\n",
+                           INREG(RADEON_MC_STATUS), old_mc_status);
+                 dbgprintf("You will probably crash now ... \n");
+		    /* Nothing we can do except maybe try to kill the server,
+		     * let's wait 2 seconds to leave the above message a chance
+		     * to maybe hit the disk and continue trying to setup despite
+		     * the MC being non-idle
+		     */
+                 usleep(20000);
+              }
+              usleep(10);
+           }
+
+	    /* Update maps, first clearing out AGP to make sure we don't get
+	     * a temporary overlap
+	     */
+           OUTREG(RADEON_MC_AGP_LOCATION, 0xfffffffc);
+           OUTREG(RADEON_MC_FB_LOCATION, info->mc_fb_location);
+           radeon_write_mc_fb_agp_location(info, LOC_FB | LOC_AGP, info->mc_fb_location,
+                           0xfffffffc, 0);
+
+           OUTREG(RADEON_CRTC_GEN_CNTL,crtc_gen_cntl );
+           OUTREG(RADEON_CRTC_EXT_CNTL, crtc_ext_cntl);
+           OUTREG(RADEON_OV0_SCALE_CNTL, ov0_scale_cntl );
+
+
+igp_no_mcfb:
+           radeon_write_mc_fb_agp_location(info, LOC_AGP, 0,
+                        info->mc_agp_location, 0);
+	    /* Make sure map fully reached the chip */
+           (void)INREG(RADEON_MC_FB_LOCATION);
+
+           dbgprintf("  Map applied, resetting engine ...\n");
+
+	    /* Reset the engine and HDP */
+//        RADEONEngineReset(pScrn);
+
+	    /* Make sure we have sane offsets before re-enabling the CRTCs, disable
+	     * stereo, clear offsets, and wait for offsets to catch up with hw
+	     */
+
+           OUTREG(RADEON_CRTC_OFFSET_CNTL, RADEON_CRTC_OFFSET_FLIP_CNTL);
+           OUTREG(RADEON_CRTC_OFFSET, 0);
+           OUTREG(RADEON_CUR_OFFSET, 0);
+           timeout = 0;
+           while(INREG(RADEON_CRTC_OFFSET) & RADEON_CRTC_OFFSET__GUI_TRIG_OFFSET)
+           {
+              if (timeout++ > 1000000) {
+                 dbgprintf("Timeout waiting for CRTC offset to update !\n");
+                 break;
+              }
+              usleep(1000);
+           }
+           if (info->HasCRTC2)
+           {
+              OUTREG(RADEON_CRTC2_OFFSET_CNTL, RADEON_CRTC2_OFFSET_FLIP_CNTL);
+              OUTREG(RADEON_CRTC2_OFFSET, 0);
+              OUTREG(RADEON_CUR2_OFFSET, 0);
+              timeout = 0;
+              while(INREG(RADEON_CRTC2_OFFSET) & RADEON_CRTC2_OFFSET__GUI_TRIG_OFFSET)
+              {
+                 if (timeout++ > 1000000) {
+                    dbgprintf("Timeout waiting for CRTC2 offset to update !\n");
+                    break;
+                 }
+                 usleep(1000);
+              }
+           }
+        }
+
+        dbgprintf("Updating display base addresses...\n");
+
+        OUTREG(RADEON_DISPLAY_BASE_ADDR, info->fbLocation);
+        if (info->HasCRTC2)
+           OUTREG(RADEON_DISPLAY2_BASE_ADDR, info->fbLocation);
+        OUTREG(RADEON_OV0_BASE_ADDR, info->fbLocation);
+        (void)INREG(RADEON_OV0_BASE_ADDR);
+
+	/* More paranoia delays, wait 100ms */
+        usleep(1000);
+
+        dbgprintf("Memory map updated.\n");
+     };
+};
+
+
+static void RADEONInitMemoryMap(RHDPtr info)
+{
+    u32_t       mem_size;
+    u32_t       aper_size;
+
+    radeon_read_mc_fb_agp_location(info, LOC_FB | LOC_AGP, &info->mc_fb_location,
+                   &info->mc_agp_location, &info->mc_agp_location_hi);
+
+    dbgprintf("  MC_FB_LOCATION   : 0x%08x\n", (unsigned)info->mc_fb_location);
+    dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
+
+
+    /* We shouldn't use info->videoRam here which might have been clipped
+     * but the real video RAM instead
+     */
+    if (info->ChipFamily >= CHIP_FAMILY_R600){
+        mem_size = INREG(R600_CONFIG_MEMSIZE);
+        aper_size = INREG(R600_CONFIG_APER_SIZE);
+    }
+    else {
+        mem_size = INREG(RADEON_CONFIG_MEMSIZE);
+        aper_size = INREG(RADEON_CONFIG_APER_SIZE);
+    }
+
+    if (mem_size == 0)
+        mem_size = 0x800000;
+
+    /* Fix for RN50, M6, M7 with 8/16/32(??) MBs of VRAM -
+       Novell bug 204882 + along with lots of ubuntu ones */
+    if (aper_size > mem_size)
+        mem_size = aper_size;
+
+
+    if ( (info->ChipFamily != CHIP_FAMILY_RS600) &&
+         (info->ChipFamily != CHIP_FAMILY_RS690) &&
+         (info->ChipFamily != CHIP_FAMILY_RS740))
+    {
+        if (info->IsIGP)
+          info->mc_fb_location = INREG(RADEON_NB_TOM);
+        else
+        {
+            u32_t aper0_base;
+
+            if (info->ChipFamily >= CHIP_FAMILY_R600) {
+                aper0_base = INREG(R600_CONFIG_F0_BASE);
+            }
+            else {
+                aper0_base = INREG(RADEON_CONFIG_APER_0_BASE);
+            }
+            dbgprintf("aper0 base %x\n", aper0_base );
+
+        /* Recent chips have an "issue" with the memory controller, the
+         * location must be aligned to the size. We just align it down,
+         * too bad if we walk over the top of system memory, we don't
+         * use DMA without a remapped anyway.
+         * Affected chips are rv280, all r3xx, and all r4xx, but not IGP
+         */
+            if ( info->ChipFamily == CHIP_FAMILY_RV280 ||
+                 info->ChipFamily == CHIP_FAMILY_R300 ||
+                 info->ChipFamily == CHIP_FAMILY_R350 ||
+                 info->ChipFamily == CHIP_FAMILY_RV350 ||
+                 info->ChipFamily == CHIP_FAMILY_RV380 ||
+                 info->ChipFamily == CHIP_FAMILY_R420 ||
+                 info->ChipFamily == CHIP_FAMILY_RV410)
+                aper0_base &= ~(mem_size - 1);
+
+            if ( info->ChipFamily >= CHIP_FAMILY_R600) {
+                 info->mc_fb_location = (aper0_base >> 24) |
+                 (((aper0_base + mem_size - 1) & 0xff000000U) >> 8);
+                dbgprintf("mc fb loc is %08x\n", (unsigned int)info->mc_fb_location);
+            }
+            else {
+                info->mc_fb_location = (aper0_base >> 16) |
+                ((aper0_base + mem_size - 1) & 0xffff0000U);
+                dbgprintf("mc fb loc is %08x\n", (unsigned int)info->mc_fb_location);
+            }
+        }
+    }
+    if (info->ChipFamily >= CHIP_FAMILY_R600) {
+        info->fbLocation = (info->mc_fb_location & 0xffff) << 24;
+    }
+    else {
+        info->fbLocation = (info->mc_fb_location & 0xffff) << 16;
+    }
+    /* Just disable the damn AGP apertures for now, it may be
+     * re-enabled later by the DRM
+     */
+
+    if (IS_AVIVO_VARIANT) {
+       if (info->ChipFamily >= CHIP_FAMILY_R600) {
+          OUTREG(R600_HDP_NONSURFACE_BASE, (info->mc_fb_location << 16) & 0xff0000);
+       }
+       else {
+          OUTREG(AVIVO_HDP_FB_LOCATION, info->mc_fb_location);
+       }
+       info->mc_agp_location =  0x003f0000;
+    }
+    else
+        info->mc_agp_location = 0xffffffc0;
+
+    dbgprintf("RADEONInitMemoryMap() : \n");
+    dbgprintf("  mem_size         : 0x%08x\n", (u32_t)mem_size);
+    dbgprintf("  MC_FB_LOCATION   : 0x%08x\n", (unsigned)info->mc_fb_location);
+    dbgprintf("  MC_AGP_LOCATION  : 0x%08x\n", (unsigned)info->mc_agp_location);
+    dbgprintf("  FB_LOCATION   : 0x%08x\n", (unsigned)info->fbLocation);
+
+
+    RADEONUpdateMemMapRegisters(info);
+
+
+}
+
+static void RADEONGetVRamType(RHDPtr info)
+{
+     u32_t tmp;
+
+     if (info->IsIGP || (info->ChipFamily >= CHIP_FAMILY_R300))
+        info->IsDDR = TRUE;
+     else if (INREG(RADEON_MEM_SDRAM_MODE_REG) & RADEON_MEM_CFG_TYPE_DDR)
+        info->IsDDR = TRUE;
+     else
+        info->IsDDR = FALSE;
+
+     if ( (info->ChipFamily >= CHIP_FAMILY_R600) &&
+          (info->ChipFamily <= CHIP_FAMILY_RV635))
+     {
+        int chansize;
+        /* r6xx */
+        tmp = INREG(R600_RAMCFG);
+        if (tmp & R600_CHANSIZE_OVERRIDE)
+            chansize = 16;
+        else if (tmp & R600_CHANSIZE)
+            chansize = 64;
+        else
+            chansize = 32;
+        if (info->ChipFamily == CHIP_FAMILY_R600)
+            info->RamWidth = 8 * chansize;
+        else if (info->ChipFamily == CHIP_FAMILY_RV670)
+            info->RamWidth = 4 * chansize;
+        else if ((info->ChipFamily == CHIP_FAMILY_RV610) ||
+             (info->ChipFamily == CHIP_FAMILY_RV620))
+            info->RamWidth = chansize;
+        else if ((info->ChipFamily == CHIP_FAMILY_RV630) ||
+             (info->ChipFamily == CHIP_FAMILY_RV635))
+            info->RamWidth = 2 * chansize;
+     }
+     else if (info->ChipFamily == CHIP_FAMILY_RV515) {
+     /* rv515/rv550 */
+        tmp = INMC(info, RV515_MC_CNTL);
+        tmp &= RV515_MEM_NUM_CHANNELS_MASK;
+        switch (tmp) {
+           case 0: info->RamWidth = 64; break;
+           case 1: info->RamWidth = 128; break;
+           default: info->RamWidth = 128; break;
+        }
+     }
+     else if ((info->ChipFamily >= CHIP_FAMILY_R520) &&
+              (info->ChipFamily <= CHIP_FAMILY_RV570)){
+     /* r520/rv530/rv560/rv570/r580 */
+        tmp = INMC(info, R520_MC_CNTL0);
+        switch ((tmp & R520_MEM_NUM_CHANNELS_MASK) >> R520_MEM_NUM_CHANNELS_SHIFT) {
+           case 0: info->RamWidth = 32; break;
+           case 1: info->RamWidth = 64; break;
+           case 2: info->RamWidth = 128; break;
+           case 3: info->RamWidth = 256; break;
+           default: info->RamWidth = 64; break;
+        }
+        if (tmp & R520_MC_CHANNEL_SIZE) {
+           info->RamWidth *= 2;
+        }
+     }
+     else if ((info->ChipFamily >= CHIP_FAMILY_R300) &&
+              (info->ChipFamily <= CHIP_FAMILY_RV410)) {
+     /* r3xx, r4xx */
+        tmp = INREG(RADEON_MEM_CNTL);
+        tmp &= R300_MEM_NUM_CHANNELS_MASK;
+        switch (tmp) {
+           case 0: info->RamWidth = 64; break;
+           case 1: info->RamWidth = 128; break;
+           case 2: info->RamWidth = 256; break;
+           default: info->RamWidth = 128; break;
+        }
+     }
+     else if ((info->ChipFamily == CHIP_FAMILY_RV100) ||
+              (info->ChipFamily == CHIP_FAMILY_RS100) ||
+              (info->ChipFamily == CHIP_FAMILY_RS200)){
+     tmp = INREG(RADEON_MEM_CNTL);
+     if (tmp & RV100_HALF_MODE)
+        info->RamWidth = 32;
+     else
+        info->RamWidth = 64;
+
+     if (!info->HasCRTC2) {
+          info->RamWidth /= 4;
+          info->IsDDR = TRUE;
+     }
+     }
+     else if (info->ChipFamily <= CHIP_FAMILY_RV280) {
+        tmp = INREG(RADEON_MEM_CNTL);
+     if (tmp & RADEON_MEM_NUM_CHANNELS_MASK)
+        info->RamWidth = 128;
+     else
+        info->RamWidth = 64;
+     } else {
+     /* newer IGPs */
+        info->RamWidth = 128;
+     }
+
+     /* This may not be correct, as some cards can have half of channel disabled
+      * ToDo: identify these cases
+      */
+}
+
+/*
+ * Depending on card genertation, chipset bugs, etc... the amount of vram
+ * accessible to the CPU can vary. This function is our best shot at figuring
+ * it out. Returns a value in KB.
+ */
+static u32_t RADEONGetAccessibleVRAM(RHDPtr info)
+{
+    u32_t       aper_size;
+    unsigned char  byte;
+
+    if (info->ChipFamily >= CHIP_FAMILY_R600)
+       aper_size = INREG(R600_CONFIG_APER_SIZE) / 1024;
+    else
+       aper_size = INREG(RADEON_CONFIG_APER_SIZE) / 1024;
+
+
+    /* Set HDP_APER_CNTL only on cards that are known not to be broken,
+     * that is has the 2nd generation multifunction PCI interface
+     */
+    if (info->ChipFamily == CHIP_FAMILY_RV280 ||
+        info->ChipFamily == CHIP_FAMILY_RV350 ||
+        info->ChipFamily == CHIP_FAMILY_RV380 ||
+        info->ChipFamily == CHIP_FAMILY_R420  ||
+        info->ChipFamily == CHIP_FAMILY_RV410 ||
+        IS_AVIVO_VARIANT) {
+        MASKREG (RADEON_HOST_PATH_CNTL, RADEON_HDP_APER_CNTL,
+		     ~RADEON_HDP_APER_CNTL);
+        dbgprintf("Generation 2 PCI interface, using max accessible memory\n");
+	    return aper_size * 2;
+    }
+
+    /* Older cards have all sorts of funny issues to deal with. First
+     * check if it's a multifunction card by reading the PCI config
+     * header type... Limit those to one aperture size
+     */
+    byte = pciReadByte(info->PciTag, 0xe);
+    if (byte & 0x80) {
+       dbgprintf("Generation 1 PCI interface in multifunction mode, "
+                 "accessible memory limited to one aperture\n");
+       return aper_size;
+    }
+
+    /* Single function older card. We read HDP_APER_CNTL to see how the BIOS
+     * have set it up. We don't write this as it's broken on some ASICs but
+     * we expect the BIOS to have done the right thing (might be too optimistic...)
+     */
+    if (INREG(RADEON_HOST_PATH_CNTL) & RADEON_HDP_APER_CNTL)
+       return aper_size * 2;
+
+    return aper_size;
+}
+
+int RADEONDRIGetPciAperTableSize(RHDPtr info)
+{
+    int ret_size;
+    int num_pages;
+
+    num_pages = (info->pciAperSize * 1024 * 1024) / 4096;
+
+    ret_size = num_pages * sizeof(unsigned int);
+
+    return ret_size;
+}
+
+static Bool RADEONPreInitVRAM(RHDPtr info)
+{
+     u32_t accessible, bar_size;
+
+     if ((!IS_AVIVO_VARIANT) && info->IsIGP)
+     {
+        u32_t tom = INREG(RADEON_NB_TOM);
+
+        info->videoRam = (((tom >> 16) -
+                 (tom & 0xffff) + 1) << 6);
+
+        OUTREG(RADEON_CONFIG_MEMSIZE, info->videoRam * 1024);
+     }
+     else
+     {
+        if (info->ChipFamily >= CHIP_FAMILY_R600)
+           info->videoRam = INREG(R600_CONFIG_MEMSIZE) / 1024;
+        else
+        {
+         /* Read VRAM size from card */
+           info->videoRam      = INREG(RADEON_CONFIG_MEMSIZE) / 1024;
+
+         /* Some production boards of m6 will return 0 if it's 8 MB */
+           if (info->videoRam == 0)
+           {
+              info->videoRam = 8192;
+              OUTREG(RADEON_CONFIG_MEMSIZE, 0x800000);
+           }
+        }
+     }
+
+     RADEONGetVRamType(info);
+
+     /* Get accessible memory */
+     accessible = RADEONGetAccessibleVRAM(info);
+
+     /* Crop it to the size of the PCI BAR */
+//     bar_size = PCI_REGION_SIZE(info->PciInfo, 0) / 1024;
+
+     bar_size = 1 << (info->memsize[RHD_FB_BAR] - 10);
+
+     if (bar_size == 0)
+        bar_size = 0x20000;
+     if (accessible > bar_size)
+        accessible = bar_size;
+
+     dbgprintf("Detected total video RAM=%dK width=%dbit,"
+                "accessible=%uK (PCI BAR=%uK)\n",
+                info->videoRam, info->RamWidth,
+                (unsigned)accessible, (unsigned)bar_size);
+
+     if (info->videoRam > accessible)
+        info->videoRam = accessible;
+
+     if (!IS_AVIVO_VARIANT)
+        info->MemCntl            = INREG(RADEON_SDRAM_MODE_REG);
+        info->BusCntl            = INREG(RADEON_BUS_CNTL);
+
+     info->videoRam  &= ~1023;
+     info->FbMapSize  = info->videoRam * 1024;
+
+    // info->gartSize      = RADEON_DEFAULT_GART_SIZE;
+     info->ringSize      = RADEON_DEFAULT_RING_SIZE;
+     info->bufSize       = RADEON_DEFAULT_BUFFER_SIZE;
+
+   //  info->gartTexSize   = info->gartSize - (info->ringSize + info->bufSize);
+
+     info->pciAperSize   = RADEON_DEFAULT_PCI_APER_SIZE;
+     info->CPusecTimeout = RADEON_DEFAULT_CP_TIMEOUT;
+
+
+
+     /* if the card is PCI Express reserve the last 32k for the gart table */
+
+ //    if (info->cardType == CARD_PCIE )
+ //     /* work out the size of pcie aperture */
+ //       info->FbSecureSize = RADEONDRIGetPciAperTableSize(info);
+ //    else
+ //       info->FbSecureSize = 0;
+
+     return TRUE;
+}
+
+
+static Bool RADEONPreInitChipType(RHDPtr rhdPtr)
+{
+    u32_t cmd_stat;
+
+    rhdPtr->ChipErrata = 0;
+
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_R300) &&
+         ((_RHDRegRead(rhdPtr,RADEON_CONFIG_CNTL) & RADEON_CFG_ATI_REV_ID_MASK)
+          == RADEON_CFG_ATI_REV_A11))
+        rhdPtr->ChipErrata |= CHIP_ERRATA_R300_CG;
+
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RV200) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) )
+        rhdPtr->ChipErrata |= CHIP_ERRATA_PLL_DUMMYREADS;
+
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RV100) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS100) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) )
+        rhdPtr->ChipErrata |= CHIP_ERRATA_PLL_DELAY;
+
+    rhdPtr->cardType = CARD_PCI;
+
+
+    cmd_stat = pciReadLong(rhdPtr->PciTag, PCI_CMD_STAT_REG);
+
+    if (cmd_stat & RADEON_CAP_LIST)
+    {
+        u32_t cap_ptr, cap_id;
+
+        cap_ptr = pciReadLong(rhdPtr->PciTag, RADEON_CAPABILITIES_PTR_PCI_CONFIG);
+        cap_ptr &= RADEON_CAP_PTR_MASK;
+
+        while(cap_ptr != RADEON_CAP_ID_NULL)
+        {
+            cap_id = pciReadLong(rhdPtr->PciTag, cap_ptr);
+            if ((cap_id & 0xff)== RADEON_CAP_ID_AGP) {
+                 rhdPtr->cardType = CARD_AGP;
+                break;
+            }
+            if ((cap_id & 0xff)== RADEON_CAP_ID_EXP) {
+                rhdPtr->cardType = CARD_PCIE;
+                break;
+            }
+            cap_ptr = (cap_id >> 8) & RADEON_CAP_PTR_MASK;
+        }
+    }
+
+    dbgprintf("%s card detected\n",(rhdPtr->cardType==CARD_PCI) ? "PCI" :
+              (rhdPtr->cardType==CARD_PCIE) ? "PCIE" : "AGP");
+
+    /* treat PCIE IGP cards as PCI  */
+    if (rhdPtr->cardType == CARD_PCIE && rhdPtr->IsIGP)
+        rhdPtr->cardType = CARD_PCI;
+
+    if ( (rhdPtr->ChipFamily == CHIP_FAMILY_RS100) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS200) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS300) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS400) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS480) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS600) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS690) ||
+         (rhdPtr->ChipFamily == CHIP_FAMILY_RS740))
+        rhdPtr->has_tcl = FALSE;
+    else {
+        rhdPtr->has_tcl = TRUE;
+    }
+
+  //  rhdPtr->LinearAddr = rhdPtr->memBase[RHD_FB_BAR];
+
+    return TRUE;
+}
+
+#if 0
+static Bool RADEONSetAgpMode(RADEONInfoPtr info, ScreenPtr pScreen)
+{
+    unsigned char *RADEONMMIO = info->MMIO;
+//    unsigned long mode   = drmAgpGetMode(info->dri->drmFD); /* Default mode */
+//    unsigned int  vendor = drmAgpVendorId(info->dri->drmFD);
+//    unsigned int  device = drmAgpDeviceId(info->dri->drmFD);
+    /* ignore agp 3.0 mode bit from the chip as it's buggy on some cards with
+       pcie-agp rialto bridge chip - use the one from bridge which must match */
+    uint32_t agp_status = (INREG(RADEON_AGP_STATUS) ); // & RADEON_AGP_MODE_MASK;
+    Bool is_v3 = (agp_status & RADEON_AGPv3_MODE);
+    unsigned int defaultMode;
+
+    if (is_v3) {
+       defaultMode = (agp_status & RADEON_AGPv3_8X_MODE) ? 8 : 4;
+    } else {
+	if (agp_status & RADEON_AGP_4X_MODE) defaultMode = 4;
+	else if (agp_status & RADEON_AGP_2X_MODE) defaultMode = 2;
+	else defaultMode = 1;
+    }
+
+   // agpMode = defaultMode;
+
+    dbgprintf(pScreen->myNum, from, "Using AGP %dx\n", dbgprintf);
+
+    mode &= ~RADEON_AGP_MODE_MASK;
+    if (is_v3) {
+	/* only set one mode bit for AGPv3 */
+    switch (defaultMode) {
+	case 8:          mode |= RADEON_AGPv3_8X_MODE; break;
+	case 4: default: mode |= RADEON_AGPv3_4X_MODE;
+	}
+	/*TODO: need to take care of other bits valid for v3 mode
+	 *      currently these bits are not used in all tested cards.
+	 */
+    } else {
+    switch (defaultMode) {
+	case 4:          mode |= RADEON_AGP_4X_MODE;
+	case 2:          mode |= RADEON_AGP_2X_MODE;
+	case 1: default: mode |= RADEON_AGP_1X_MODE;
+	}
+    }
+
+    /* AGP Fast Writes.
+     * TODO: take into account that certain agp modes don't support fast
+     * writes at all */
+    mode &= ~RADEON_AGP_FW_MODE; /* Disable per default */
+
+    dbgprintf("AGP Mode 0x%08lx\n", mode);
+
+    if (drmAgpEnable(info->dri->drmFD, mode) < 0) {
+	xf86DrvMsg(pScreen->myNum, X_ERROR, "[agp] AGP not enabled\n");
+	drmAgpRelease(info->dri->drmFD);
+	return FALSE;
+    }
+
+    /* Workaround for some hardware bugs */
+    if (info->ChipFamily < CHIP_FAMILY_R200)
+        OUTREG(RADEON_AGP_CNTL, INREG(RADEON_AGP_CNTL) | 0x000e0000);
+
+				/* Modify the mode if the default mode
+				 * is not appropriate for this
+				 * particular combination of graphics
+				 * card and AGP chipset.
+				 */
+
+    return TRUE;
+}
+#endif
+
+Bool RHDPreInit()
+{
+    RHDPtr info;
+
+    /* We need access to IO space already */
+    if ( !rhdMapMMIO(&rhd) ) {
+        dbgprintf("Failed to map MMIO.\n");
+        return FALSE;
+    };
+
+    if( !RADEONPreInitChipType(&rhd))
+       return FALSE;
+
+    if (!RADEONPreInitVRAM(&rhd))
+       return FALSE;
+
+    RADEONInitMemoryMap(&rhd);
+
+    if (!rhd.videoRam)
+    {
+       dbgprintf("No Video RAM detected.\n");
+       goto error1;
+    }
+    dbgprintf("VideoRAM: %d kByte\n",rhd.videoRam);
+
+ /* setup the raster pipes */
+    init_pipes(&rhd);
+
+    init_gart(&rhd);
+
+    rhd.FbFreeSize = rhd.videoRam << 10;
+
+    rhd.FbFreeStart    = 10*1024*1024;
+    rhd.FbFreeSize     = rhd.FbMapSize - rhd.FbFreeStart - rhd.FbSecureSize;
+
+    rhdInitHeap(&rhd);
+
+    info = &rhd;
+
+    return TRUE;
+
+error1:
+
+    return FALSE;
+};
+
+static void RADEONPllErrataAfterIndex()
+{
+    if (!(rhd.ChipErrata & CHIP_ERRATA_PLL_DUMMYREADS))
+       return;
+
+    /* This workaround is necessary on rv200 and RS200 or PLL
+     * reads may return garbage (among others...)
+     */
+    (void)INREG(RADEON_CLOCK_CNTL_DATA);
+    (void)INREG(RADEON_CRTC_GEN_CNTL);
+}
+
+
+static void RADEONPllErrataAfterData()
+{
+
+    /* This function is required to workaround a hardware bug in some (all?)
+     * revisions of the R300.  This workaround should be called after every
+     * CLOCK_CNTL_INDEX register access.  If not, register reads afterward
+     * may not be correct.
+     */
+    if (rhd.ChipFamily <= CHIP_FAMILY_RV380)
+    {
+        u32_t save, tmp;
+
+	save = INREG(RADEON_CLOCK_CNTL_INDEX);
+	tmp = save & ~(0x3f | RADEON_PLL_WR_EN);
+	OUTREG(RADEON_CLOCK_CNTL_INDEX, tmp);
+	tmp = INREG(RADEON_CLOCK_CNTL_DATA);
+	OUTREG(RADEON_CLOCK_CNTL_INDEX, save);
+    }
+}
+
+
+/* Read PLL register */
+static u32_t RADEONINPLL(int addr)
+{
+    u32_t       data;
+
+    OUTREG8(RADEON_CLOCK_CNTL_INDEX, addr & 0x3f);
+    RADEONPllErrataAfterIndex();
+    data = INREG(RADEON_CLOCK_CNTL_DATA);
+    RADEONPllErrataAfterData();
+
+    return data;
+};
+
+/* Write PLL information */
+static void RADEONOUTPLL(int addr, u32_t data)
+{
+    OUTREG8(RADEON_CLOCK_CNTL_INDEX, (((addr) & 0x3f) |
+				      RADEON_PLL_WR_EN));
+    RADEONPllErrataAfterIndex();
+    OUTREG(RADEON_CLOCK_CNTL_DATA, data);
+    RADEONPllErrataAfterData();
+}
+
+static void init_pipes(RHDPtr info)
+{
+    u32_t gb_tile_config = 0;
+
+    if ( (info->ChipFamily == CHIP_FAMILY_RV410) ||
+         (info->ChipFamily == CHIP_FAMILY_R420)  ||
+         (info->ChipFamily == CHIP_FAMILY_RS600) ||
+         (info->ChipFamily == CHIP_FAMILY_RS690) ||
+         (info->ChipFamily == CHIP_FAMILY_RS740) ||
+         (info->ChipFamily == CHIP_FAMILY_RS400) ||
+         (info->ChipFamily == CHIP_FAMILY_RS480) || IS_R500_3D)
+    {
+        u32_t gb_pipe_sel = INREG(R400_GB_PIPE_SELECT);
+
+        info->num_gb_pipes = ((gb_pipe_sel >> 12) & 0x3) + 1;
+        if (IS_R500_3D)
+            OUTPLL(R500_DYN_SCLK_PWMEM_PIPE, (1 | ((gb_pipe_sel >> 8) & 0xf) << 4));
+    }
+    else
+    {
+        if ((info->ChipFamily == CHIP_FAMILY_R300) ||
+           (info->ChipFamily == CHIP_FAMILY_R350))
+        {
+        /* R3xx chips */
+            info->num_gb_pipes = 2;
+        }
+        else {
+        /* RV3xx chips */
+            info->num_gb_pipes = 1;
+        }
+    }
+
+    if (IS_R300_3D || IS_R500_3D)
+    {
+
+        dbgprintf("num quad-pipes is %d\n", info->num_gb_pipes);
+
+        switch(info->num_gb_pipes) {
+            case 2: gb_tile_config |= R300_PIPE_COUNT_R300; break;
+            case 3: gb_tile_config |= R300_PIPE_COUNT_R420_3P; break;
+            case 4: gb_tile_config |= R300_PIPE_COUNT_R420; break;
+            default:
+                case 1: gb_tile_config |= R300_PIPE_COUNT_RV350; break;
+        }
+
+        OUTREG(R300_GB_TILE_CONFIG, gb_tile_config);
+        OUTREG(RADEON_WAIT_UNTIL, RADEON_WAIT_2D_IDLECLEAN | RADEON_WAIT_3D_IDLECLEAN);
+        OUTREG(R300_DST_PIPE_CONFIG, INREG(R300_DST_PIPE_CONFIG) | R300_PIPE_AUTO_CONFIG);
+        OUTREG(R300_RB2D_DSTCACHE_MODE, (INREG(R300_RB2D_DSTCACHE_MODE) |
+                                       R300_DC_AUTOFLUSH_ENABLE |
+                                       R300_DC_DC_DISABLE_IGNORE_PE));
+    }
+    else
+        OUTREG(RADEON_RB3D_CNTL, 0);
+};
+
+#define RADEON_AIC_PT_BASE      0x01d8
+#define RADEON_AIC_LO_ADDR		0x01dc
+#define RADEON_AIC_HI_ADDR		0x01e0
+#define RADEON_AIC_TLB_ADDR		0x01e4
+#define RADEON_AIC_TLB_DATA		0x01e8
+
+#define RADEON_PCIE_INDEX               0x0030
+#define RADEON_PCIE_DATA                0x0034
+#define RADEON_PCIE_TX_GART_CNTL        0x10
+#	define RADEON_PCIE_TX_GART_EN		(1 << 0)
+#	define RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_PASS_THRU (0 << 1)
+#	define RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_CLAMP_LO  (1 << 1)
+#	define RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD   (3 << 1)
+#	define RADEON_PCIE_TX_GART_MODE_32_128_CACHE	(0 << 3)
+#	define RADEON_PCIE_TX_GART_MODE_8_4_128_CACHE	(1 << 3)
+#	define RADEON_PCIE_TX_GART_CHK_RW_VALID_EN      (1 << 5)
+#	define RADEON_PCIE_TX_GART_INVALIDATE_TLB	(1 << 8)
+#define RADEON_PCIE_TX_DISCARD_RD_ADDR_LO 0x11
+#define RADEON_PCIE_TX_DISCARD_RD_ADDR_HI 0x12
+#define RADEON_PCIE_TX_GART_BASE          0x13
+#define RADEON_PCIE_TX_GART_START_LO      0x14
+#define RADEON_PCIE_TX_GART_START_HI      0x15
+#define RADEON_PCIE_TX_GART_END_LO        0x16
+#define RADEON_PCIE_TX_GART_END_HI        0x17
+
+
+#define RADEON_WRITE8(offset, val)       \
+    *(volatile u8_t*)((addr_t)rhd.MMIOBase + (offset)) = val
+
+#define RADEON_WRITE_PCIE( addr, val )        \
+do {                                          \
+    RADEON_WRITE8( RADEON_PCIE_INDEX,         \
+            ((addr) & 0xff));                 \
+    OUTREG( RADEON_PCIE_DATA, (val) );        \
+} while (0)
+
+static u32_t RADEON_READ_PCIE(int addr)
+{
+	RADEON_WRITE8(RADEON_PCIE_INDEX, addr & 0xff);
+    return INREG(RADEON_PCIE_DATA);
+}
+
+static void radeon_set_pciegart(RHDPtr info, int on)
+{
+    u32_t tmp = RADEON_READ_PCIE(RADEON_PCIE_TX_GART_CNTL);
+    if (on)
+    {
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_LO,
+                  info->gart_vm_start);
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_BASE,
+                  info->gart_table_dma);
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_START_LO,
+                  info->gart_vm_start);
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_END_LO,
+                  info->gart_vm_start + info->gart_size - 1);
+
+//        radeon_write_agp_location(dev_priv, 0xffffffc0); /* ?? */
+        OUTREG(RADEON_AGP_COMMAND, 0);    /* clear AGP_COMMAND */
+
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_CNTL,
+				  RADEON_PCIE_TX_GART_EN);
+	} else {
+		RADEON_WRITE_PCIE(RADEON_PCIE_TX_GART_CNTL,
+				  tmp & ~RADEON_PCIE_TX_GART_EN);
+	}
+}
+
+
+static void radeon_set_pcigart(RHDPtr info, int on)
+{
+    u32_t tmp;
+
+    tmp = INREG(RADEON_AIC_CNTL);
+
+    if( on )
+    {
+        OUTREG(RADEON_AIC_CNTL, tmp | RADEON_PCIGART_TRANSLATE_EN);
+
+		/* set PCI GART page-table base address
+		 */
+        OUTREG(RADEON_AIC_PT_BASE, info->gart_table_dma);
+
+		/* set address range for PCI address translate
+		 */
+        OUTREG(RADEON_AIC_LO_ADDR, info->gart_vm_start);
+        OUTREG(RADEON_AIC_HI_ADDR, info->gart_vm_start
+               + info->gart_size - 1);
+
+		/* Turn off AGP aperture -- is this required for PCI GART?
+		 */
+//        radeon_write_agp_location(dev_priv, 0xffffffc0);
+        OUTREG(RADEON_AGP_COMMAND, 0);    /* clear AGP_COMMAND */
+    }
+    else  OUTREG(RADEON_AIC_CNTL, tmp & ~RADEON_PCIGART_TRANSLATE_EN);
+
+}
+
+
+void init_gart(RHDPtr info)
+{
+    u32_t   *pci_gart;
+    count_t  pages;
+
+    info->gart_size  = 16*1024*1024;
+
+    info->gart_vm_start = info->fbLocation + (info->videoRam << 10);
+
+
+    if( info->gart_type == RADEON_IS_PCIE)
+        info->gart_table_dma = info->gart_vm_start
+                               - RADEON_PCIGART_TABLE_SIZE;
+    else
+        info->gart_table_dma = AllocPages(RADEON_PCIGART_TABLE_SIZE >> 12);
+
+    if ( ! info->gart_table_dma) {
+        dbgprintf("cannot allocate PCI GART page!\n");
+        return;
+    }
+
+    info->gart_table = (u32_t*)MapIoMem(info->gart_table_dma,
+                                        RADEON_PCIGART_TABLE_SIZE,
+                                        PG_SW | PG_NOCACHE);
+
+    if ( ! info->gart_table) {
+        dbgprintf("cannot map PCI GART page!\n");
+        return;
+    }
+
+    pci_gart = info->gart_table;
+
+    memset(pci_gart, 0, RADEON_PCIGART_TABLE_SIZE);
+
+    __asm__ __volatile(
+    "wbinvd"
+    :::"memory");
+
+    if( info->gart_type == RADEON_IS_PCIE)
+        radeon_set_pciegart(info, 1);
+    else
+        radeon_set_pcigart(info, 1);
+
+    dbgprintf("gart size 0x%x\n", info->gart_size);
+    dbgprintf("gart base 0x%x\n", info->gart_vm_start);
+    dbgprintf("gart table 0x%x\n", info->gart_table);
+    dbgprintf("gart table dma 0x%x\n", info->gart_table_dma);
+
+}

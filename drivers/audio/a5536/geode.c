@@ -9,6 +9,8 @@
 
 #include "geode.h"
 
+#define DEBUG
+
 #ifdef DEBUG
   #define DBG(format,...) dbgprintf(format,##__VA_ARGS__)
 #else
@@ -308,9 +310,16 @@ Bool init_device()
        return FALSE;
     }
 
+    u16_t id7c, id7e;
+
+    id7c = snd_hw_CodecRead(AD1819A_VENDORID1);
+    id7e = snd_hw_CodecRead(AD1819A_VENDORID2);
+
+    dbgprintf("codec id 0x7C %x  0x7E %x\n", id7c, id7e);
+
     /*Check which codec is being used */
-    if (snd_hw_CodecRead(AD1819A_VENDORID1) == 0x4144 &&
-        snd_hw_CodecRead(AD1819A_VENDORID2) == 0x5303)
+    if ( (id7c == 0x4144) &&
+         (id7e == 0x5303) )
     {
         geode.fAD1819A = TRUE;
         /*  Enable non-48kHz sample rates. */
@@ -322,16 +331,16 @@ Bool init_device()
     else
     {
         geode.fAD1819A = FALSE;
-        snd_hw_CodecWrite (EXT_AUDIO_CTRL_STAT,
+        snd_hw_CodecWrite(EXT_AUDIO_CTRL_STAT,
         (snd_hw_CodecRead(EXT_AUDIO_CTRL_STAT) | 0x0001));
         /* set the VRA bit to ON*/
     }
 
     /* set default volume*/
-    snd_hw_CodecWrite( MASTER_VOLUME,       0x0B0B);
-    snd_hw_CodecWrite( PCM_OUT_VOL,         0x0808);
+    snd_hw_CodecWrite( MASTER_VOLUME,       0x0909);
+    snd_hw_CodecWrite( PCM_OUT_VOL,         0x0606);
     snd_hw_CodecWrite( PC_BEEP_VOLUME,      0x0000);
-    snd_hw_CodecWrite( PHONE_VOLUME,        0x8000);
+    snd_hw_CodecWrite( PHONE_VOLUME,        0x0606);
     snd_hw_CodecWrite( MIC_VOLUME,          0x8048);
     snd_hw_CodecWrite( LINE_IN_VOLUME,      0x0808);
     snd_hw_CodecWrite( CD_VOLUME,           0x8000);

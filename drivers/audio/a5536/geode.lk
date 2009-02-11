@@ -1,0 +1,23 @@
+IMP
+    _KernelAlloc       core.KernelAlloc,
+    _KernelFree        core.KernelFree,
+    _CommitPages       core.CommitPages,
+    _MapIoMem          core.MapIoMem,
+    _GetPgAddr         core.GetPgAddr,
+    _CreateRingBuffer  core.CreateRingBuffer,
+    _PciApi            core.PciApi,
+    _PciRead8          core.PciRead8,
+    _PciRead16         core.PciRead16,
+    _PciRead32         core.PciRead32,
+    _PciWrite8         core.PciWrite8,
+    _PciWrite16        core.PciWrite16,
+    _PciWrite32        core.PciWrite32,
+    _RegService        core.RegService,
+    _AttachIntHandler  core.AttachIntHandler,
+    _SysMsgBoardStr    core.SysMsgBoardStr,
+    _Delay             core.Delay
+
+
+FIL geode.obj,
+    vsprintf.obj,
+    icompute.obj
