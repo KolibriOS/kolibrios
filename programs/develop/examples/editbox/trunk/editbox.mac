@@ -587,23 +587,52 @@ else
         jz      .insert
 end if
 }
-macro use_key_no_process  up,down,esc
+macro use_key_no_process  up,down,esc,enter,tab,numl,capsl,scrolll
 {
 if up eq 
 else
         cmp     ah,177
-        jz      .editbox_exit
+        jz      edit_box.editbox_exit
 end if
 if down eq 
 else
         cmp     ah,178
-        jz      .editbox_exit
+        jz      edit_box.editbox_exit
 end if
 if esc eq 
 else
         cmp     ah,27   ;ESC - клавиша ))
-        jz      .editbox_exit
+        jz      edit_box.editbox_exit
 end if
+if enter eq 
+else
+        cmp     ah,13   ;ENTER - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+if tab eq 
+else
+        cmp     ah,9   ;TAB - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+
+if numl eq 
+else
+        cmp     ah,4   ;Num Lock - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+
+if capsl eq 
+else
+        cmp     ah,2   ;Caps Lock - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+
+if scrolll eq 
+else
+        cmp     ah,1   ;Scroll Lock - клавиша ))
+        jz      edit_box.editbox_exit
+end if
+
 }
 
 macro use_key_figures_only
