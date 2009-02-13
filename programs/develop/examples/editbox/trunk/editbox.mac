@@ -542,7 +542,7 @@ edit_ex
 ;;;;;;;;;;;;;;;;;;
 .check_shift:
 pusha   ;сохраним все регистры
-        mcall   66,3,1
+        mcall   66,3
         test    al,0x03
         je      @f
         or      word ed_flags,ed_shift   ;установим флаг
