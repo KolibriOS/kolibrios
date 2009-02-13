@@ -1,0 +1,50 @@
+..\lib\kolibri.h--(43)> Warning! ECX has been used by compiler.
+..\lib\kolibri.h--(63)> Warning! ESI has been used by compiler.
+..\lib\kolibri.h--(64)> Warning! Register ESI already initialized.
+..\lib\kolibri.h--(72)> Warning! ESI has been used by compiler.
+..\lib\kolibri.h--(73)> Warning! Register ESI already initialized.
+..\lib\kolibri.h--(126)> Warning! EBX has been used by compiler.
+..\lib\kolibri.h--(435)> Warning! Expansion variable.
+..\lib\kolibri.h--(435)> Warning! ECX has been used by compiler.
+..\lib\kolibri.h--(444)> Warning! Register EBX same as EDI.
+..\lib\kolibri.h--(439)> Warning! Local variable 'i' possible not used.
+..\lib\kolibri.h--(439)> Warning! Local variable 'r' possible not used.
+..\lib\kolibri.h--(439)> Warning! Local variable 'g' possible not used.
+..\lib\kolibri.h--(439)> Warning! Local variable 'b' possible not used.
+EditBox2.c--(42)> Warning! Missing parameter in function .
+EditBox2.c--(52)> Warning! Register AL already initialized.
+EditBox2.c--(52)> Warning! Register AL already initialized.
+EditBox2.c--(55)> Warning! Short operator 'CASE' may be used.
+EditBox2.c--(60)> Warning! Short operator 'CASE' may be used.
+EditBox2.c--(47)> Warning! Short operator 'SWITCH' may be used.
+EditBox2.c--(53)> Warning! Short operator 'BREAK' may be used.
+EditBox2.c--(58)> Warning! Short operator 'BREAK' may be used.
+..\lib\kolibri.h--(288)> Warning! Register EAX same as ECX.
+..\lib\kolibri.h--(4)> Warning! Variable 'os_name' possible not used.
+..\lib\kolibri.h--(5)> Warning! Variable 'os_version' possible not used.
+..\lib\kolibri.h--(6)> Warning! Variable 'start_addr' possible not used.
+..\lib\kolibri.h--(9)> Warning! Variable 'x86esp_reg' possible not used.
+use_library.h--(5)> Warning! Variable 'version_ed' possible not used.
+..\lib\kolibri.h--(464)> Warning! Variable 'pos' possible not used.
+..\lib\kolibri.h--(464)> Warning! Variable 'razr' possible not used.
+..\lib\kolibri.h--(7)> Warning! Variable 'final_addr' possible not used.
+..\lib\kolibri.h--(464)> Warning! Variable 'j' possible not used.
+..\lib\kolibri.h--(8)> Warning! Variable 'alloc_mem' possible not used.
+..\lib\kolibri.h--(451)> Warning! Function 'copystr' possible not used.
+..\lib\kolibri.h--(464)> Warning! Variable 'backup' possible not used.
+..\lib\kolibri.h--(464)> Warning! Variable 'chislo' possible not used.
+..\lib\kolibri.h--(465)> Warning! Variable 'buffer' possible not used.
+use_library.h--(29)> Warning! Variable 'bm__' possible not used.
+use_library.h--(28)> Warning! Variable 'am__' possible not used.
+use_library.h--(42)> Warning! Variable 'aVersion_op' possible not used.
+use_library.h--(38)> Warning! Variable 'aVersion_ch' possible not used.
+use_library.h--(40)> Warning! Variable 'aOption_box_draw' possible not used.
+use_library.h--(41)> Warning! Variable 'aOption_box_mouse' possible not used.
+use_library.h--(36)> Warning! Variable 'aCheck_box_draw' possible not used.
+use_library.h--(37)> Warning! Variable 'aCheck_box_mouse' possible not used.
+..\lib\kolibri.h--(10)> Warning! Variable 'I_Param' possible not used.
+..\lib\kolibri.h--(439)> Warning! Function 'PutImage' possible not used.
+EditBox2.c--(13)> Warning! Variable 'NULL' possible not used.
+..\lib\kolibri.h--(11)> Warning! Variable 'I_Icon' possible not used.
+..\lib\kolibri.h--(510)> Warning! Structure 'CopyFile_f' possible not used.
+..\lib\kolibri.h--(511)> Warning! Structure 'CopyFile_atr' possible not used.

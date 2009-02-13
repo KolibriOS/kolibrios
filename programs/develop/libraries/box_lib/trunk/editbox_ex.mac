@@ -1,0 +1,77 @@
+ed_struc_size=72
+struc  edit_box width,left,top,color,shift_color,focus_border_color,\
+       blur_border_color,text_color,max,text,flags,size,pos
+{
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;Bit mask from editbox 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+ed_figure_only= 1000000000000000b   ;одни символы 
+ed_always_focus= 100000000000000b
+ed_focus=                     10b   ;фокус приложения
+ed_shift_on=                1000b   ;если не установлен -значит впервые нажат shift,если был установлен, значит мы уже что - то делали удерживая shift
+ed_shift_on_off=1111111111110111b
+ed_shift=                    100b   ;включается при нажатии на shift т.е. если нажимаю
+ed_shift_off=   1111111111111011b
+ed_shift_bac=              10000b   ;бит для очистки выделеного shift т.е. при установке говорит что есть выделение
+ed_shift_bac_cl=1111111111101111b   ;очистка при удалении выделения
+ed_shift_cl=    1111111111100011b
+ed_shift_mcl=   1111111111111011b
+ed_left_fl=               100000b
+ed_right_fl=    1111111111011111b
+ed_offset_fl=            1000000b
+ed_offset_cl=   1111111110111111b
+ed_insert=              10000000b
+ed_insert_cl=   1111111101111111b
+ed_mouse_on =          100000000b
+ed_mous_adn_b=         100011000b
+ed_mouse_on_off=1111111011111111b
+ed_height=14 ; высота
+
+.width dd width
+.left dd left
+.top dd top
+.color dd color
+.shift_color dd shift_color
+.focus_border_color dd focus_border_color
+.blur_border_color dd blur_border_color
+.text_color dd text_color
+.max dd max
+.text dd text
+.flags dd flags+0
+.size dd size+0
+.pos dd pos+0
+.offset dd 0
+.cl_curs_x dd 0
+.cl_curs_y dd 0
+.shift   dd 0
+.shift_old   dd 0
+}
+struc check_box left,top,ch_text_margin,ch_size,color,border_color,text_color,text,ch_text_length,flags
+{        ;структура параметров для чек бокса
+ch_flag_en=10b
+.left: dw left      ;+0        ;положение по х
+.top: dw top        ;положение по у
+.ch_text_margin:  dd ch_text_margin ;расстояние от прямоугольника чек бокса до надписи
+.ch_size: dd ch_size ;размер квадрата чек бокса, для примера 12
+.color: dd color    ;цвет внутри чекбокса
+.border_color: dd border_color ;цвет рамки
+.text_color: dd text_color     ;цвет надписи
+.text: dd text                 ;адрес в коде программы где расположен текст
+.ch_text_length: dd ch_text_length ;длинна строки с символами
+.flags: dd flags+0   ; флаги        
+}
+struc option_box point_gr,left,top,op_text_margin,op_size,color,border_color,text_color,text,op_text_length,flags
+{        ;структура параметров для чек бокса
+op_flag_en=10b
+.option_group: dd point_gr
+.left: dw left      ;+0        ;положение по х
+.top: dw top        ;положение по у
+.ch_text_margin:  dd op_text_margin ;расстояние от прямоугольника чек бокса до надписи
+.ch_size: dd op_size ;размер квадрата чек бокса, для примера 12
+.color: dd color    ;цвет внутри чекбокса
+.border_color: dd border_color ;цвет рамки
+.text_color: dd text_color     ;цвет надписи
+.text: dd text                 ;адрес в коде программы где расположен текст
+.ch_text_length: dd op_text_length ;длинна строки с символами
+.flags: dd flags+0   ; флаги        
+}

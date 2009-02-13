@@ -1,0 +1,112 @@
+//BOX_LIB
+dword edit_box_draw = #aEdit_box_draw;
+dword edit_box_key  = #aEdit_box_key;
+dword edit_box_mouse = #aEdit_box_mouse;
+dword version_ed     = #aVersion_ed;
+
+//dword
+//dword
+//dword
+
+//dword
+//dword
+//dword
+
+//$edit_box_draw   dword      aEdit_box_draw
+//$edit_box_key    dword      aEdit_box_key
+//$edit_box_mouse  dword      aEdit_box_mouse
+//$version_ed      dword      aVersion_ed
+
+//$check_box_draw  dword      aCheck_box_draw
+//$check_box_mouse dword      aCheck_box_mouse
+//$version_ch      dword      aVersion_ch
+
+//$option_box_draw  dword      aOption_box_draw
+//$option_box_mouse dword      aOption_box_mouse
+//$version_op       dword      aVersion_op
+
+dword  am__ = 0x0;
+dword  bm__ = 0x0;
+
+char aEdit_box_draw[9]  = "edit_box\0";
+char aEdit_box_key[13] = "edit_box_key\0";
+char aEdit_box_mouse[15] = "edit_box_mouse\0";
+char aVersion_ed[11] = "version_ed\0";
+
+char aCheck_box_draw  [15] = "check_box_draw\0";
+char aCheck_box_mouse [16] = "check_box_mouse\0";
+char aVersion_ch      [11] = "version_ch\0";
+
+char aOption_box_draw [16] = "option_box_draw\0";
+char aOption_box_mouse[17] = "option_box_mouse\0";
+char aVersion_op      [11] = "version_op\0" ;
+
+
+struct edit_box{
+dword width, left, top, color, shift_color, focus_border_color, blur_border_color,
+text_color, max, text, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
+};
+
+//void Edit_box_draw(dword edit_b)
+//{
+
+//        $ PUSH    dword edit_b
+//        $ CALL    dword [edit_box_draw] 
+//}
+
+//struct load_dll{
+// dword way_of_ini, myimport;
+// void get();
+//};
+
+int load_dll(EAX)
+{
+//set mask 
+        $mov    eax,40
+        $mov    ebx,0x27
+        $int    0x40
+// load DLL
+        $mov     eax, 68
+        $mov     ebx, 19
+        ECX=#way_of_ini;
+        $int     0x40
+        $test    eax, eax
+        $jz      exit
+
+// initialize import
+        $mov     edx,eax
+        ESI=#edit_box_draw;
+import_loop:
+        $lodsd
+        $test    eax,eax
+        $jz      import_done
+        $push    edx
+import_find:
+        $mov     ebx,DSDWORD[EDX]
+        $test    ebx, ebx
+        $jz      exit
+        $push    eax
+nex1:
+        $mov     cl,DSBYTE[EAX];
+        $cmp     cl,DSBYTE[EBX];
+        $jnz     import_find_next
+        $test    cl,cl
+        $jz      import_found
+        $inc     eax
+        $inc     ebx
+        $jmp     nex1
+import_find_next:
+        $pop     eax
+        $add     edx, 8
+        $jmp     import_find
+import_found:
+        $pop     eax
+        $mov     eax,DSDWORD[edx+4]
+        $mov     DSDWORD[esi-4],eax
+        $pop     edx
+        $jmp     import_loop
+import_done:
+        return 0;
+exit:
+        return -1;
+}
