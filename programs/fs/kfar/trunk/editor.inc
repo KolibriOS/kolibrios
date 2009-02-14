@@ -202,6 +202,8 @@ edit_file:
 	jz	..openerr_in_screen
 	mov	ebx, eax
 @@:
+	mov	ecx, [EditBlockSize]	; bytes rest in the current block
+	add	edi, [EditBlockStart]
 .readloop:
 	mov	edx, [ebp + editor_data.hPlugin]
 	test	edx, edx
@@ -255,31 +257,27 @@ edit_file:
 ; eax = number of bytes read
 	test	eax, eax
 	jnz	@f
-	mov	ecx, edi
-	sub	ecx, ebp
-	cmp	ecx, [ebp + editor_data.first_block]
+	push	edi
+	sub	edi, ebp
+	cmp	edi, [ebp + editor_data.first_block]
+	pop	edi
 	jnz	.readdone
 @@:
 	push	eax ebx
 	mov	ebx, [readinfo.data]
 .loadloop:
-	mov	ecx, [EditBlockSize]
-	cmp	eax, ecx
-	ja	@f
-	mov	ecx, eax
-@@:
-	sub	eax, ecx
+	test	ecx, ecx
+	jnz	.hasplace
 	push	eax
 	dec	esi
 	jns	.hasblock
-	push	ecx
 	add	[ebp + editor_data.memsize], 8
 	add	esi, 8
 	mov	ecx, [ebp + editor_data.memsize]
 	cmp	ecx, 80000000h shr 12
 	jb	@f
 .nomemory2:
-	pop	ecx eax ebx eax
+	pop	eax ebx eax
 	call	.nomemory
 	jmp	.readfailed
 @@:
@@ -289,20 +287,20 @@ edit_file:
 	call	xpgrealloc
 	test	eax, eax
 	jz	.nomemory2
-	mov	ebp, eax
 	add	edi, eax
-	pop	ecx
+	xchg	ebp, eax
 .hasblock:
+	push	edi
+	and	edi, not 0xFFF
 	lea	eax, [edi + 0x1000]
-	push	eax
 	sub	eax, ebp
 	stosd	; edit_block_header.next
 	sub	eax, 0x2000
 	stosd	; edit_block_header.prev
-	mov	eax, [EditBlockStart]
-	add	eax, ecx
+	pop	eax
+	sub	eax, edi
+	add	eax, 8
 	stosd	; edit_block_header.limit
-	push	ecx
 	mov	ecx, [EditPlugInfo]
 	inc	ecx
 	jz	@f
@@ -310,49 +308,103 @@ edit_file:
 @@:
 	xor	eax, eax
 	rep	stosb	; info for plugins: zeroed
-	pop	ecx
-	push	esi edi ecx
+	add	edi, 0x1000
+	mov	ecx, [EditBlockSize]
+	pop	eax
+.hasplace:
+	push	ecx
+	cmp	eax, ecx
+	ja	@f
+	mov	ecx, eax
+@@:
+	push	ecx
+	push	eax
+	push	esi edi
 	mov	esi, ebx
-	add	ecx, 3
+	mov	edx, ecx
 	shr	ecx, 2
 	rep	movsd
+	mov	ecx, edx
+	and	ecx, 3
+	rep	movsb
 	mov	ebx, esi
-	pop	ecx edi
+	mov	ecx, edx
+	pop	esi
 ; calculate number of lines in this block
-	mov	esi, edi
-	xor	edx, edx
 	test	ecx, ecx
 	jz	.4
+	mov	al, [esi - 1]
+	mov	edx, esi
+	sub	edx, [EditBlockStart]
+	test	edx, 0xFFF
+	jnz	.0
+	mov	al, 0
+	sub	edx, ebp
+	cmp	edx, [ebp + editor_data.first_block]
+	jz	.0
+	sub	edx, 1000h
+	add	edx, ebp
+	add	edx, [edx + edit_block_header.limit]
+	mov	al, [edx - 1]
+.0:
+	xor	edx, edx
+	cmp	al, 13
+	jnz	.1
+	mov	dl, 10
 .1:
-	lodsb
+	mov	al, [esi]
+	add	esi, 1
 	cmp	al, 13
 	jz	@f
 	cmp	al, 10
 	jz	@f
 	mov	dl, 0
-	jmp	.3
+	sub	ecx, 1
+	jnz	.1
+	jmp	.4
 @@:
 	cmp	al, dl
 	mov	dl, 0
 	jz	.3
-	inc	[ebp + editor_data.numlines]
+	add	[ebp + editor_data.numlines], 1
 	cmp	al, 10
 	jz	.3
 	mov	dl, 10
 .3:
-	loop	.1
+	sub	ecx, 1
+	jnz	.1
 .4:
 	pop	esi
-	pop	edi
 	pop	eax
-	test	eax, eax
+	pop	ecx
+	sub	[esp], ecx
+	sub	eax, ecx
+	pop	ecx
 	jnz	.loadloop
 	pop	ebx eax
 	cmp	eax, 16384
 	jz	.readloop
 .readdone:
+	push	edi
+	and	edi, not 0xFFF
 	xor	eax, eax
-	mov	ecx, edi
+	stosd	; editor_block_header.next
+	lea	eax, [edi - 4 - 0x1000]
+	sub	eax, ebp
+	stosd	; editor_block_header.prev
+	pop	eax
+	sub	eax, edi
+	add	eax, 8
+	stosd	; editor_block_header.limit
+	mov	ecx, [EditPlugInfo]
+	inc	ecx
+	jz	@f
+	dec	ecx
+@@:
+	xor	eax, eax
+	rep	stosb
+	and	edi, not 0xFFF
+	lea	ecx, [edi + 0x1000]
 	sub	ecx, ebp
 	mov	edx, ecx
 	shr	ecx, 12
@@ -363,15 +415,13 @@ edit_file:
 	mov	[ebp + editor_data.freeblocks], edx
 	push	edi
 .addfree:
+	add	edi, 1000h
 	add	edx, 1000h
 	mov	[edi], edx
-	add	edi, 1000h
 	loop	.addfree
-	mov	[edi-1000h], eax
+	mov	[edi], eax
 	pop	edi
 .nofree:
-	sub	edi, 1000h
-	mov	[edi + edit_block_header.next], eax
 	sub	edi, ebp
 	mov	[ebp + editor_data.last_block], edi
 	mov	ecx, [EditDataSize]

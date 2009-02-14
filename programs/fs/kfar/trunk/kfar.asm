@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.61'
-version_dword equ 0*10000h + 61
+version equ '0.62'
+version_dword equ 0*10000h + 62
 
 min_width = 54
 max_width = 255
@@ -8195,6 +8195,8 @@ aCancel                 db      ' Cancel ',0
 aCancelLength = $ - aCancel - 1
 aCancelB                db      '[ Cancel ]',0
 aCancelBLength = $ - aCancelB - 1
+aCancelB2 = aCancelB
+aCancelB2Length = $ - aCancelB2 - 1
 aCopyCaption            db      'Copy',0
 aCopy                   db      '[ Copy ]',0
 aCopyLength = $ - aCopy - 1
@@ -8272,7 +8274,9 @@ aReverseSearch          db      'Reverse search',0
 aStringNotFound         db      'Could not find the string',0
 aFileSearch             db      'Find file',0
 aFileMasks              db      'A file mask or several file masks:',0
+aFileMasksLen = $ - aFileMasks - 1
 aContainingText         db      'Containing text:',0
+aContainingTextLen = $ - aContainingText - 1
 aSearchingIn            db      'Searching "" in:',0
 aSearchingInLen = $ - aSearchingIn - 1
 aSearchDone             db      'Search done. Found ? file(s)',0
@@ -8285,6 +8289,7 @@ aView                   db      '[ View ]',0
 aViewLen = $ - aView - 1
 aEditConfigErr1         db      'Error in configuration of plugins for the editor.',0
 aEditConfigErr2         db      'Try to remove unnecessary plugins.',0
+aEditNoMemory           db      'The file is too big for the editor.',0
 aLine                   db      '    Line'
 aCol                    db      '   Col '
 aEditorTitle            db      'Editor',0
@@ -8293,6 +8298,7 @@ aSave                   db      'Save',0
 aDontSave               db      'Do not save',0
 aContinueEdit           db      'Continue editing',0
 aCannotSaveToPlugin     db      'Saving is not supported for plugin panels',0
+aCannotSearchOnPlugin   db      'The search on plugin panels is not supported yet',0
 aCancelled              db      'Operation has been interrupted',0
 aConfirmCancel          db      'Do you really want to cancel it?',0
 end if
