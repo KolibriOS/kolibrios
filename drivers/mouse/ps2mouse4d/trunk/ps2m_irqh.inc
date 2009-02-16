@@ -4,7 +4,7 @@
 
 proc irq_handler
 
-        call    Wait8042BufferEmpty  ;clear buffer
+;        call    Wait8042BufferEmpty  ;clear buffer
         in      al,0x60              ;get scan-code
 
         cmp     [mouse_byte],0
@@ -123,13 +123,13 @@ endp
 ;* ZF is set - good ending,                    *
 ;* ZF is cleared - time-out error.             *
 ;***********************************************
-Wait8042BufferEmpty:
-        push ecx
-        xor  ecx,ecx
-      @@:
-        in     al,64h
-        test   al,00000010b
-        loopnz @b
-        pop    ecx
-
-        ret
+;Wait8042BufferEmpty:
+;        push ecx
+;        xor  ecx,ecx
+;      @@:
+;        in     al,64h
+;        test   al,00000010b
+;        loopnz @b
+;        pop    ecx
+;
+;        ret
