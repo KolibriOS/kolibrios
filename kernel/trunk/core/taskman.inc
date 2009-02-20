@@ -140,7 +140,6 @@ proc fs_execute
 
 	   ;mov esi, new_process_loading
 	   ;call sys_msg_board_str       ; write message to message board
-	   DEBUGF 1,"%s",new_process_loading
 
 .wait_lock:
 	   cmp [application_table_status],0
@@ -850,7 +849,6 @@ proc new_sys_threads
 
 	   ;mov    esi,new_process_loading
 	   ;call   sys_msg_board_str
-	   DEBUGF 1,"%s",new_process_loading
 .wait_lock:
 	   cmp [application_table_status],0
 	   je .get_lock
@@ -905,7 +903,6 @@ proc new_sys_threads
 
 	   ;mov    esi,new_process_running
 	   ;call   sys_msg_board_str     ;output information about succefull startup
-	   DEBUGF 1,"%s",new_process_running
 
 	   mov	  [application_table_status],0 ;unlock application_table_status mutex
 	   mov	  eax,[process_number]	;set result
@@ -1104,7 +1101,6 @@ proc set_app_params stdcall,slot:dword, params:dword,\
 	   mov	[CURRENT_TASK+ebx+TASKDATA.state], cl
 	   ;mov    esi,new_process_running
 	   ;call   sys_msg_board_str     ;output information about succefull startup
-	   DEBUGF 1,"%s",new_process_running
 	   ret
 endp
 

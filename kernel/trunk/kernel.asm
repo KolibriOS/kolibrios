@@ -730,9 +730,26 @@ no_lib_load:
 	sub   eax,ecx
 	shl   eax,2
 	mov   [CPU_FREQ],eax	      ; save tsc / sec
-	mov ebx, 1000000
-	div ebx
-	mov [stall_mcs], eax
+;	mov ebx, 1000000
+;	div ebx
+; вообще-то производительность в данном конкретном месте
+; совершенно некритична, но чтобы заткнуть любителей
+; оптимизирующих компиляторов ЯВУ...
+	mov	edx, 2251799814
+	mul	edx
+	shr	edx, 19
+	mov [stall_mcs], edx
+; PRINT CPU FREQUENCY
+	mov	esi, boot_cpufreq
+	call	boot_log
+
+	mov	ebx, edx
+	movzx	ecx, word [boot_y]
+	add	ecx, (10+17*6) shl 16 - 10 ; 'CPU frequency is '
+	mov	edx, 0xFFFFFF
+	mov	edi, 1
+	mov	eax, 0x00040000
+	call	display_number_force
 
 ; SET VARIABLES
 

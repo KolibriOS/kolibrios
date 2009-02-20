@@ -421,8 +421,8 @@ sys_threads:
 jmp new_sys_threads
 
 iglobal
-  process_terminating	db 'K : Process - terminating',13,10,0
-  process_terminated	db 'K : Process - done',13,10,0
+;  process_terminating	db 'K : Process - terminating',13,10,0
+;  process_terminated	db 'K : Process - done',13,10,0
   msg_obj_destroy	db 'K : destroy app object',13,10,0
 endg
 
@@ -445,7 +445,6 @@ terminate: ; terminate application
 @@:
 	   ;mov    esi,process_terminating
 	   ;call   sys_msg_board_str
-	   DEBUGF 1,"%s",process_terminating
 @@:
 	   cli
 	   cmp	 [application_table_status],0
@@ -805,7 +804,6 @@ term9:
     mov   [application_table_status],0
     ;mov   esi,process_terminated
     ;call  sys_msg_board_str
-    DEBUGF 1,"%s",process_terminated
     add esp, 4
     ret
 restore .slot

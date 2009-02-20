@@ -63,6 +63,7 @@ keymap_alt:
   boot_setostask    db	 'Setting OS task',0
   boot_allirqs	    db	 'Unmasking all IRQs',0
   boot_tsc	    db	 'Reading TSC',0
+  boot_cpufreq      db   'CPU frequency is ','    ',' MHz',0
   boot_pal_ega	    db	 'Setting EGA/CGA 320x200 palette',0
   boot_pal_vga	    db	 'Setting VGA 640x480 palette',0
   boot_failed	    db	 'Failed to start first app',0
@@ -71,8 +72,8 @@ if preboot_blogesc
   boot_tasking	    db	 'All set - press ESC to start',0
 end if
 
-new_process_loading db 'K : New Process - loading',13,10,0
-new_process_running db 'K : New Process - done',13,10,0
+;new_process_loading db 'K : New Process - loading',13,10,0
+;new_process_running db 'K : New Process - done',13,10,0
 start_not_enough_memory db 'K : New Process - not enough memory',13,10,0
 
 msg_unresolved db 'unresolved ',0

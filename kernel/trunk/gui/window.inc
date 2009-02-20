@@ -1166,10 +1166,10 @@ restore_minimized_window:
 	ret
 
 
-iglobal
-  window_moving   db 'K : Window - move/resize',13,10,0
-  window_moved	  db 'K : Window - done',13,10,0
-endg
+;iglobal
+;  window_moving   db 'K : Window - move/resize',13,10,0
+;  window_moved	  db 'K : Window - done',13,10,0
+;endg
 
 ; check window touch
 align 4
@@ -1316,10 +1316,10 @@ endg
 
      .continue:
 
-	push  esi
-	mov   esi, window_moving
-	call  sys_msg_board_str
-	pop   esi
+;	push  esi
+;	mov   esi, window_moving
+;	call  sys_msg_board_str
+;	pop   esi
 
 	mov   ecx, [timer_ticks]     ; double-click ?
 	mov   edx, ecx
@@ -1684,8 +1684,8 @@ endg
 	mov   [MOUSE_BACKGROUND],byte 0 ; no mouse under
 	mov   [MOUSE_DOWN],byte 0 ; react to mouse up/down
 
-	mov    esi,window_moved
-	call   sys_msg_board_str
+;	mov    esi,window_moved
+;	call   sys_msg_board_str
 
 	popad
 
