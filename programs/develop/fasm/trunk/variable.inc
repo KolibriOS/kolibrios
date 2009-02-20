@@ -1,6 +1,6 @@
 
 ; flat assembler core variables
-; Copyright (c) 1999-2007, Tomasz Grysztar.
+; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 
 ; Variables which have to be set up by interface:
@@ -100,6 +100,7 @@ operand_size db ?
 size_override db ?
 operand_prefix db ?
 rex_prefix db ?
+opcode_prefix db ?
 base_code db ?
 extended_code db ?
 supplemental_code db ?

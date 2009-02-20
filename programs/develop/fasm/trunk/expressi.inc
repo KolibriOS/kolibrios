@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2007, Tomasz Grysztar.
+; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 
 convert_expression:
@@ -206,6 +206,8 @@ get_number:
       get_dec_digit:
 	cmp	esi,ebx
 	ja	number_ok
+	cmp	byte [esi],27h
+	je	next_dec_digit
 	xor	edx,edx
 	mov	eax,[edi]
 	shld	edx,eax,2
@@ -234,6 +236,7 @@ get_number:
 	add	[edi],eax
 	adc	dword [edi+4],0
 	jc	dec_out_of_range
+      next_dec_digit:
 	inc	esi
 	jmp	get_dec_digit
       dec_out_of_range:
@@ -255,6 +258,8 @@ get_number:
 	cmp	esi,[number_start]
 	jb	number_ok
 	movzx	eax,byte [esi]
+	cmp	al,27h
+	je	bin_digit_skip
 	sub	al,30h
 	cmp	al,1
 	ja	bad_number
@@ -279,6 +284,9 @@ get_number:
 	jz	get_bin_digit
 	or	ebp,-1
 	jmp	get_bin_digit
+      bin_digit_skip:
+	dec	esi
+	jmp	get_bin_digit
       pascal_hex_number:
 	cmp	cl,1
 	je	bad_number
@@ -288,6 +296,8 @@ get_number:
 	cmp	esi,[number_start]
 	jb	number_ok
 	movzx	eax,byte [esi]
+	cmp	al,27h
+	je	hex_digit_skip
 	cmp	al,'x'
 	je	hex_number_ok
 	cmp	al,'$'
@@ -326,12 +336,17 @@ get_number:
 	jz	get_hex_digit
 	or	ebp,-1
 	jmp	get_hex_digit
+      hex_digit_skip:
+	dec	esi
+	jmp	get_hex_digit
       get_oct_number:
 	xor	bl,bl
       get_oct_digit:
 	cmp	esi,[number_start]
 	jb	number_ok
 	movzx	eax,byte [esi]
+	cmp	al,27h
+	je	oct_digit_skip
 	sub	al,30h
 	cmp	al,7
 	ja	bad_number
@@ -357,6 +372,9 @@ get_number:
 	sub	cl,32
 	shl	eax,cl
 	or	dword [edi+4],eax
+	jmp	get_oct_digit
+      oct_digit_skip:
+	dec	esi
 	jmp	get_oct_digit
       oct_out_of_range:
 	or	al,al
@@ -1736,8 +1754,25 @@ calculate_expression:
 	shr	eax,1
       fp_dword_ok:
 	add	bx,7Fh
-	cmp	bx,100h
-	jae	value_out_of_range
+	cmp	bx,0FFh
+	jge	value_out_of_range
+	cmp	bx,0
+	jg	fp_dword_exp_ok
+	or	eax,1 shl 23
+	mov	cx,bx
+	neg	cx
+	inc	cx
+	cmp	cx,23
+	ja	value_out_of_range
+	xor	bx,bx
+	shr	eax,cl
+	jnc	fp_dword_exp_ok
+	inc	eax
+	test	eax,1 shl 23
+	jz	fp_dword_exp_ok
+	and	eax,1 shl 23 - 1
+	inc	bx
+      fp_dword_exp_ok:
 	shl	ebx,23
 	or	eax,ebx
       fp_dword_store:
@@ -1773,8 +1808,37 @@ calculate_expression:
 	rcr	eax,1
       fp_qword_ok:
 	add	bx,3FFh
-	cmp	bx,800h
-	jae	value_out_of_range
+	cmp	bx,7FFh
+	jge	value_out_of_range
+	cmp	bx,0
+	jg	fp_qword_exp_ok
+	or	edx,1 shl 20
+	mov	cx,bx
+	neg	cx
+	inc	cx
+	cmp	cx,52
+	ja	value_out_of_range
+	cmp	cx,32
+	jbe	fp_qword_small_shift
+	sub	cx,32
+	mov	eax,edx
+	xor	edx,edx
+	shr	eax,cl
+	jmp	fp_qword_shift_done
+      fp_qword_small_shift:
+	mov	ebx,edx
+	shr	edx,cl
+	shrd	eax,ebx,cl
+      fp_qword_shift_done:
+	mov	bx,0
+	jnc	fp_qword_exp_ok
+	add	eax,1
+	adc	edx,0
+	test	edx,1 shl 20
+	jz	fp_qword_exp_ok
+	and	edx,1 shl 20 - 1
+	inc	bx
+      fp_qword_exp_ok:
 	shl	ebx,20
 	or	edx,ebx
       fp_qword_store:

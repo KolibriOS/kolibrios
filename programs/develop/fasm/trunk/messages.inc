@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2007, Tomasz Grysztar.
+; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 
 _out_of_memory db 'out of memory',0
@@ -48,4 +48,4 @@ _section_not_aligned_enough db 'section is not aligned enough',0
 _setting_already_specified db 'setting already specified',0
 _data_already_defined db 'data already defined',0
 _too_many_repeats db 'too many repeats',0
- 
+_invoked_error db 'error directive invoked in source file',0

@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2007, Tomasz Grysztar.
+; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 
 include_variable db 'INCLUDE',0
@@ -451,6 +451,8 @@ instructions_3:
  dw single_operand_instruction-assembler
  db 'end',0
  dw end_directive-assembler
+ db 'err',0
+ dw err_directive-assembler
  db 'fld',0
  dw fld_instruction-assembler
  db 'fst',2
@@ -841,6 +843,8 @@ instructions_5:
  dw simple_instruction_16bit-assembler
  db 'cpuid',0A2h
  dw simple_extended_instruction-assembler
+ db 'crc32',0
+ dw crc32_instruction-assembler
  db 'divpd',5Eh
  dw sse_pd_instruction-assembler
  db 'divps',5Eh
@@ -855,6 +859,8 @@ instructions_5:
  dw entry_directive-assembler
  db 'extrn',0
  dw extrn_directive-assembler
+ db 'extrq',0
+ dw extrq_instruction-assembler
  db 'f2xm1',110000b
  dw simple_fpu_instruction-assembler
  db 'faddp',0
@@ -1290,6 +1296,10 @@ instructions_6:
  dw fnsave_instruction-assembler
  db 'frstpm',0E5h
  dw fninit_instruction-assembler
+ db 'fsaved',6
+ dw fsave_instruction_32bit-assembler
+ db 'fsavew',6
+ dw fsave_instruction_16bit-assembler
  db 'fscale',111101b
  dw simple_fpu_instruction-assembler
  db 'fsetpm',0E4h
@@ -1366,7 +1376,13 @@ instructions_6:
  dw basic_mmx_instruction-assembler
  db 'paddsw',0EDh
  dw basic_mmx_instruction-assembler
- db 'pextrw',0C5h
+ db 'pextrb',14h
+ dw pextrb_instruction-assembler
+ db 'pextrd',16h
+ dw pextrd_instruction-assembler
+ db 'pextrq',16h
+ dw pextrq_instruction-assembler
+ db 'pextrw',15h
  dw pextrw_instruction-assembler
  db 'pfnacc',8Ah
  dw amd3dnow_instruction-assembler
@@ -1380,6 +1396,12 @@ instructions_6:
  dw ssse3_instruction-assembler
  db 'phsubw',5
  dw ssse3_instruction-assembler
+ db 'pinsrb',20h
+ dw pinsrb_instruction-assembler
+ db 'pinsrd',22h
+ dw pinsrd_instruction-assembler
+ db 'pinsrq',22h
+ dw pinsrq_instruction-assembler
  db 'pinsrw',0C4h
  dw pinsrw_instruction-assembler
  db 'pmaxsb',3Ch
@@ -1414,6 +1436,8 @@ instructions_6:
  dw sse4_instruction_38-assembler
  db 'pmullw',0D5h
  dw basic_mmx_instruction-assembler
+ db 'popcnt',0B8h
+ dw popcnt_instruction-assembler
  db 'psadbw',0F6h
  dw basic_mmx_instruction-assembler
  db 'pshufb',0
@@ -1555,12 +1579,28 @@ instructions_7:
  dw simple_fpu_instruction-assembler
  db 'fincstp',110111b
  dw simple_fpu_instruction-assembler
+ db 'fldenvd',4
+ dw fldenv_instruction_32bit-assembler
+ db 'fldenvw',4
+ dw fldenv_instruction_32bit-assembler
+ db 'fnsaved',6
+ dw fnsave_instruction_32bit-assembler
+ db 'fnsavew',6
+ dw fnsave_instruction_16bit-assembler
  db 'fnstenv',6
  dw fldenv_instruction-assembler
  db 'frndint',111100b
  dw simple_fpu_instruction-assembler
+ db 'frstord',4
+ dw fnsave_instruction_32bit-assembler
+ db 'frstorw',4
+ dw fnsave_instruction_16bit-assembler
  db 'fsincos',111011b
  dw simple_fpu_instruction-assembler
+ db 'fstenvd',6
+ dw fstenv_instruction_32bit-assembler
+ db 'fstenvw',6
+ dw fstenv_instruction_16bit-assembler
  db 'fucomip',0E8h
  dw fcomip_instruction-assembler
  db 'fucompp',0
@@ -1571,6 +1611,8 @@ instructions_7:
  dw simple_fpu_instruction-assembler
  db 'fyl2xp1',111001b
  dw simple_fpu_instruction-assembler
+ db 'insertq',0
+ dw insertq_instruction-assembler
  db 'invlpga',0DFh
  dw invlpga_instruction-assembler
  db 'ldmxcsr',10b
@@ -1603,6 +1645,10 @@ instructions_7:
  dw movntdq_instruction-assembler
  db 'movntps',2Bh
  dw movntps_instruction-assembler
+ db 'movntsd',2Bh
+ dw movntsd_instruction-assembler
+ db 'movntss',2Bh
+ dw movntss_instruction-assembler
  db 'movq2dq',0
  dw movq2dq_instruction-assembler
  db 'mpsadbw',42h
@@ -1778,12 +1824,20 @@ instructions_8:
  dw cvtss2si_instruction-assembler
  db 'fcmovnbe',0D0h
  dw fcomi_instruction-assembler
+ db 'fnstenvd',6
+ dw fldenv_instruction_32bit-assembler
+ db 'fnstenvw',6
+ dw fldenv_instruction_16bit-assembler
+ db 'insertps',0
+ dw insertps_instruction-assembler
  db 'maskmovq',0
  dw maskmovq_instruction-assembler
  db 'movmskpd',0
  dw movmskpd_instruction-assembler
  db 'movmskps',0
  dw movmskps_instruction-assembler
+ db 'movntdqa',0
+ dw movntdqa_instruction-assembler
  db 'movshdup',16h
  dw cvtdq2pd_instruction-assembler
  db 'movsldup',12h
@@ -1805,7 +1859,31 @@ instructions_8:
  db 'pfrsqit1',0A7h
  dw amd3dnow_instruction-assembler
  db 'pmovmskb',0D7h
- dw pextrw_instruction-assembler
+ dw pmovmskb_instruction-assembler
+ db 'pmovsxbd',21h
+ dw pmovsxbd_instruction-assembler
+ db 'pmovsxbq',22h
+ dw pmovsxbq_instruction-assembler
+ db 'pmovsxbw',20h
+ dw pmovsxbw_instruction-assembler
+ db 'pmovsxdq',25h
+ dw pmovsxdq_instruction-assembler
+ db 'pmovsxwd',23h
+ dw pmovsxwd_instruction-assembler
+ db 'pmovsxwq',24h
+ dw pmovsxwq_instruction-assembler
+ db 'pmovzxbd',31h
+ dw pmovsxbd_instruction-assembler
+ db 'pmovzxbq',32h
+ dw pmovsxbq_instruction-assembler
+ db 'pmovzxbw',30h
+ dw pmovsxbw_instruction-assembler
+ db 'pmovzxdq',35h
+ dw pmovsxdq_instruction-assembler
+ db 'pmovzxwd',33h
+ dw pmovsxwd_instruction-assembler
+ db 'pmovzxwq',34h
+ dw pmovsxwq_instruction-assembler
  db 'pmulhrsw',0Bh
  dw ssse3_instruction-assembler
  db 'prefetch',0
@@ -1841,6 +1919,8 @@ instructions_9:
  dw cvtsd2si_instruction-assembler
  db 'cvttss2si',2Ch
  dw cvtss2si_instruction-assembler
+ db 'extractps',0
+ dw extractps_instruction-assembler
  db 'pcmpestri',61h
  dw sse4_instruction_3a_imm8-assembler
  db 'pcmpestrm',60h

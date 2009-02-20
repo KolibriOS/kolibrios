@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2007, Tomasz Grysztar.
+; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 
 assembler:
@@ -357,6 +357,7 @@ assemble_line:
 ;        mov     [operand_prefix],0
 ;        mov     [rex_prefix],0
 	mov	dword [operand_size],0
+	mov	[opcode_prefix],0
 	mov	[immediate_size],0
 	movzx	ebx,word [esi]
 	mov	al,[esi+2]
@@ -1587,8 +1588,41 @@ data_twords:
 	stos	dword [edi]
 	mov	ax,[esi+8]
 	add	ax,3FFFh
-	cmp	ax,8000h
+	jo	value_out_of_range
+	cmp	ax,7FFFh
+	jge	value_out_of_range
+	cmp	ax,0
+	jg	tword_exp_ok
+	mov	cx,ax
+	neg	cx
+	inc	cx
+	cmp	cx,64
 	jae	value_out_of_range
+	cmp	cx,32
+	ja	large_shift
+	mov	eax,[esi]
+	mov	edx,[esi+4]
+	mov	ebx,edx
+	shr	edx,cl
+	shrd	eax,ebx,cl
+	jmp	tword_mantissa_shift_done
+      large_shift:
+	sub	cx,32
+	xor	edx,edx
+	mov	eax,[esi+4]
+	shr	eax,cl
+      tword_mantissa_shift_done:
+	jnc	store_shifted_mantissa
+	add	eax,1
+	adc	edx,0
+      store_shifted_mantissa:
+	mov	[edi-8],eax
+	mov	[edi-4],edx
+	xor	ax,ax
+	test	edx,1 shl 31
+	jz	tword_exp_ok
+	inc	ax
+      tword_exp_ok:
 	mov	bl,[esi+11]
 	shl	bx,15
 	or	ax,bx
@@ -1989,3 +2023,10 @@ align_directive:
       nops_stosw_ok:
 	rep	stos dword [edi]
 	jmp	reserved_data
+err_directive:
+	mov	al,[esi]
+	cmp	al,0Fh
+	je	invoked_error
+	or	al,al
+	jz	invoked_error
+	jmp	extra_characters_on_line

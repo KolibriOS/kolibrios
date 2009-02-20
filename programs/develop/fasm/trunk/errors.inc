@@ -1,6 +1,6 @@
 
 ; flat assembler core
-; Copyright (c) 1999-2007, Tomasz Grysztar.
+; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 
 out_of_memory:
@@ -168,4 +168,7 @@ data_already_defined:
 	jmp	assembler_error
 too_many_repeats:
 	push	_too_many_repeats
+	jmp	assembler_error
+invoked_error:
+	push	_invoked_error
 	jmp	assembler_error
