@@ -233,6 +233,7 @@ free_img_data:
 update_image_sizes:
 	pushf
 	mov	edx, [eax + Image.Width]
+	mov	[draw_width], edx
 	add	edx, 19
 	cmp	edx, 40 + 25*9
 	jae	@f
@@ -240,6 +241,7 @@ update_image_sizes:
 @@:
 	mov	[wnd_width], edx
 	mov	esi, [eax + Image.Height]
+	mov	[draw_height], esi
 	add	esi, 44
 	mov	[wnd_height], esi
 	popf
@@ -290,7 +292,7 @@ prev_image:
 @@:
 	cmp	eax, [cur_file_idx]
 	jz	.notfound
-	push	eax
+	push	eax ebx
 	imul	esi, eax, 304
 	add	esi, [directory_ptr]
 	add	esi, 32 + 40
@@ -307,15 +309,28 @@ prev_image:
 	jnz	@b
 	mov	eax, curdir
 	call	load_image
-	pop	eax
-	jc	.scanloop
-	mov	[cur_file_idx], eax
-	invoke	img.destroy
+	pushf
 	mov	esi, curdir
+	push	esi
 	mov	edi, @PARAMS
 	mov	ecx, 512/4
 	rep	movsd
 	mov	byte [edi-1], 0
+	pop	esi
+@@:
+	lodsb
+	test	al, al
+	jnz	@b
+@@:
+	dec	esi
+	cmp	byte [esi], '/'
+	jnz	@b
+	mov	byte [esi], 0
+	popf
+	pop	ebx eax
+	jc	.scanloop
+	mov	[cur_file_idx], eax
+	invoke	img.destroy
 .ret:
 	ret
 .notfound:
@@ -356,10 +371,7 @@ next_image:
 	jnz	@b
 	mov	eax, curdir
 	call	load_image
-	pop	ebx eax
-	jc	.scanloop
-	mov	[cur_file_idx], eax
-	invoke	img.destroy
+	pushf
 	mov	esi, curdir
 	push	esi
 	mov	edi, @PARAMS
@@ -376,6 +388,11 @@ next_image:
 	cmp	byte [esi], '/'
 	jnz	@b
 	mov	byte [esi], 0
+	popf
+	pop	ebx eax
+	jc	.scanloop
+	mov	[cur_file_idx], eax
+	invoke	img.destroy
 .ret:
 	ret
 .notfound:
@@ -512,6 +529,34 @@ free_directory:
 	ret
 
 draw_window:
+	cmp	[bFirstDraw], 0
+	jz	.posok
+	or	ecx, -1
+	mcall	9, procinfo
+
+	cmp	dword [ebx + 66], 0
+	jle	.noredraw
+
+	mov	edx, ecx
+	mov	esi, ecx
+	cmp	dword [ebx + 42], 40 + 25 * 9
+	jae	@f
+	mov	edx, 40 + 25 * 9
+@@:
+	cmp	dword [ebx + 46], 70
+	jae	@f
+	mov	esi, 70
+@@:
+	mov	eax, edx
+	and	eax, esi
+	cmp	eax, -1
+	jz	@f
+	mov	ebx, ecx
+	mcall	67
+@@:
+
+.posok:
+	mcall	12, 1
 	mcall	48, 4
 	mov	ebp, eax	; save skin height
 	add	eax, [wnd_height]
@@ -521,34 +566,37 @@ draw_window:
 	mcall	0, , , 0x73FFFFFF, , s_header
 
 	mcall	9, procinfo, -1
-
+	mov	[bFirstDraw], 1
 	mov	ebx, [procinfo + 62]
 	inc	ebx
 	mcall	13, , <0, 35>, 0xFFFFFF
 	mov	ecx, [procinfo + 66]
-	sub	ecx, 4
-	shl	ecx, 16
-	mov	cl, 5
-	mcall
-	mov	cl, 35
-	ror	ecx, 16
-	sub	cx, 35
-	mov	ebx, 5
-	mcall
-; 5 pixels for indentation, [image.Width] pixels for image
-; client_width - 5 - [image.Width] pixels must be white
-	mov	ebx, [image]
-	mov	esi, [procinfo + 62]
-	inc	esi
+	inc	ecx
+	mov	esi, [draw_height]
+	add	esi, 35
+	sub	ecx, esi
+	jbe	@f
 	push	esi
-	mov	ebx, [ebx + Image.Width]
-	sub	esi, 5
-	sub	esi, ebx
-	pop	ebx
+	shl	esi, 16
+	add	ecx, esi
+	pop	esi
+	mcall
+	xor	ecx, ecx
+@@:
+	add	ecx, esi
+	add	ecx, 35*10000h - 35
+	__mov	ebx, 0, 5
+	mcall
+	mov	esi, [draw_width]
+	add	esi, ebx
+	mov	ebx, [procinfo+62]
+	inc	ebx
 	sub	ebx, esi
-	shl	ebx, 16
+	jbe	@f
+	shl	esi, 16
 	add	ebx, esi
 	mcall
+@@:
 
 	mov	ebx, [procinfo + 62]
 	push	ebx
@@ -601,23 +649,43 @@ draw_window:
 	mcall	, buttons+rot180btn*20
 
 	mov	ebx, [image]
-	mov	ecx, [ebx + Image.Width]
+	mov	ecx, [procinfo+62]
+	sub	ecx, 4
+	mov	ebp, [ebx + Image.Width]
+	cmp	ecx, ebp
+	jb	@f
+	mov	ecx, ebp
+@@:
+	sub	ebp, ecx
+	mov	edx, [procinfo+66]
+	sub	edx, 34
+	cmp	edx, [ebx + Image.Height]
+	jb	@f
+	mov	edx, [ebx + Image.Height]
+@@:
 	shl	ecx, 16
-	add	ecx, [ebx + Image.Height]
+	add	ecx, edx
 	__mov	edx, 5, 35
 	mov	esi, 8
 	cmp	[ebx + Image.Type], Image.bpp8
-	jz	@f
-	mov	esi, 24
+	jz	.bpp8
 	cmp	[ebx + Image.Type], Image.bpp24
-	jz	@f
+	jz	.bpp24
 	mov	esi, 32
+	shl	ebp, 2
+	jmp	@f
+.bpp24:
+	mov	esi, 24
+	lea	ebp, [ebp*3]
+.bpp8:
 @@:
 	mov	edi, [ebx + Image.Palette]
 	mov	ebx, [ebx + Image.Data]
-	xor	ebp, ebp
 	mcall	65
 
+	mcall	12, 2
+
+.noredraw:
 	ret
 
 ; void* __stdcall mem.Alloc(unsigned size);
@@ -880,6 +948,7 @@ import	libimg			   , \
 
 import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 
+bFirstDraw	db	0
 ;-----------------------------------------------------------------------------
 
 virtual at 0
@@ -950,6 +1019,8 @@ fh	     dd ?
 image	     dd ?
 wnd_width	dd	?
 wnd_height	dd	?
+draw_width	dd	?
+draw_height	dd	?
 last_name_component	dd	?
 cur_file_idx	dd	?
 
