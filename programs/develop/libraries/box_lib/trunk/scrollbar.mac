@@ -5,14 +5,14 @@
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
-;     * Redistributions of source code must retain the above copyright
-;       notice, this list of conditions and the following disclaimer.
-;     * Redistributions in binary form must reproduce the above copyright
-;       notice, this list of conditions and the following disclaimer in the
-;       documentation and/or other materials provided with the distribution.
-;     * Neither the name of the <organization> nor the
-;       names of its contributors may be used to endorse or promote products
-;       derived from this software without specific prior written permission.
+;	 * Redistributions of source code must retain the above copyright
+;	   notice, this list of conditions and the following disclaimer.
+;	 * Redistributions in binary form must reproduce the above copyright
+;	   notice, this list of conditions and the following disclaimer in the
+;	   documentation and/or other materials provided with the distribution.
+;	 * Neither the name of the <organization> nor the
+;	   names of its contributors may be used to endorse or promote products
+;	   derived from this software without specific prior written permission.
 ;
 ; THIS SOFTWARE IS PROVIDED BY Mario79 ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -87,7 +87,7 @@ macro draw_down_arrow_vertical
 	mov   edx,sb_line_col
 	sub   ebx,4 shl 16
 	mov   bx,7
-    sub   ecx,2 shl 16
+	sub   ecx,2 shl 16
 	mov   cx,1
 	mov   eax,13
 	int   0x40
@@ -123,7 +123,7 @@ macro draw_runner_center_vertical
 	add   ecx,edx
 	mov   edx,sb_line_col
 	sub   ecx,8 shl 16
-    sub   ebx,5 shl 16
+	sub   ebx,5 shl 16
 	mov   bx,10
 	add   ecx,4 shl 16
 	mov   cx,1
@@ -255,32 +255,33 @@ macro draw_runner_center_horizontal
 macro use_scroll_bar
 {
 scroll_bar:
-sb_size_x	equ [edi]
-sb_start_x	equ [edi+2]
-sb_size_y	equ [edi+4]
-sb_start_y	equ [edi+6]
-sb_btn_high    equ [edi+8]
-sb_type	  equ [edi+12]
-sb_max_area    equ [edi+16]
-sb_cur_area    equ [edi+20]
-sb_position    equ [edi+24]
-sb_bckg_col    equ [edi+28]
-sb_frnt_col    equ [edi+32]
-sb_line_col    equ [edi+36]
-sb_redraw	equ [edi+40]
-sb_delta	 equ [edi+44]
-sb_delta2	equ [edi+46]
-sb_r_size_x    equ [edi+48]
-sb_r_start_x   equ [edi+50]
-sb_r_size_y    equ [edi+52]
-sb_r_start_y   equ [edi+54]
-sb_m_pos	 equ [edi+56]
-sb_m_pos_2	equ [edi+60]
-sb_m_keys	equ [edi+64]
-sb_run_size    equ [edi+68]
-sb_position2   equ [edi+72]
-sb_work_size   equ [edi+76]
-sb_all_redraw  equ [edi+80]
+sb_size_x		equ [edi]
+sb_start_x		equ [edi+2]
+sb_size_y		equ [edi+4]
+sb_start_y		equ [edi+6]
+sb_btn_high		equ [edi+8]
+sb_type			equ [edi+12]
+sb_max_area		equ [edi+16]
+sb_cur_area		equ [edi+20]
+sb_position		equ [edi+24]
+sb_bckg_col		equ [edi+28]
+sb_frnt_col		equ [edi+32]
+sb_line_col		equ [edi+36]
+sb_redraw		equ [edi+40]
+sb_delta		equ [edi+44]
+sb_delta2		equ [edi+46]
+sb_r_size_x		equ [edi+48]
+sb_r_start_x	equ [edi+50]
+sb_r_size_y		equ [edi+52]
+sb_r_start_y	equ [edi+54]
+sb_m_pos		equ [edi+56]
+sb_m_pos_2		equ [edi+60]
+sb_m_keys		equ [edi+64]
+sb_run_size		equ [edi+68]
+sb_position2	equ [edi+72]
+sb_work_size	equ [edi+76]
+sb_all_redraw	equ [edi+80]
+sb_ar_offset	equ [edi+84]
 }
 ;*****************************************************************************
 ;*****************************************************************************
@@ -293,7 +294,8 @@ scroll_bar_vertical:
 .draw:
 	pusha
 	mov   edi,dword [esp+36]
-	mov   sb_all_redraw,dword 1
+;	mov   sb_all_redraw,dword 1
+	mov   sb_delta,word 0
 	call  .draw_1
 	mov   sb_all_redraw,dword 0
 scroll_bar_exit
@@ -310,7 +312,7 @@ scroll_bar_exit
 	mov   eax,sb_work_size   ;sb_max_area
 	mov   ebx,sb_max_area
 	cmp   ebx,sb_cur_area
-	ja    @f
+	ja	@f
 
 	jmp   .no_size
 
@@ -326,12 +328,12 @@ scroll_bar_exit
 	mov   sb_run_size,eax
 ;*********************************
 	cmp   sb_delta,word 1
-	je    .@@_3
+	je	.@@_3
 	mov   eax,sb_work_size
 	sub   eax,sb_run_size
 	mov   ebx,sb_max_area
 	cmp   ebx,sb_cur_area
-	ja    @f
+	ja	@f
 	xor   eax,eax
 	jmp   .@@_1
 @@:
@@ -419,7 +421,7 @@ draw_up_arrow_vertical
 	test  cx,0x8000
 	jnz   @f
 	mov   edx,sb_bckg_col
-	int   0x40    ; top interval
+	int   0x40	; top interval
 @@:
 ;********************************* 
 	shr   ecx,16
@@ -428,7 +430,7 @@ draw_up_arrow_vertical
 	shl   ecx,16
 	inc   ecx
 	mov   edx,sb_line_col
-	int   0x40    ; runner - top extreme line
+	int   0x40	; runner - top extreme line
 	
 	add   ecx,1 shl 16
 	mov   cx,0
@@ -510,16 +512,16 @@ draw_down_arrow_vertical
 ;*****************************************************************************
 .mouse:
 	pusha
-	mov     edi,dword [esp+36]
+	mov	 edi,dword [esp+36]
 	mcall 37,1
 	mov   sb_m_pos,eax
 	cmp   sb_m_pos_2,dword 0
 	jne   @f
 	
-	mov   sb_m_pos_2,eax    
+	mov   sb_m_pos_2,eax	
 @@:
 	mcall 37,2
-	mov   sb_m_keys,eax    
+	mov   sb_m_keys,eax	
 
 	cmp   sb_m_keys,eax
 	je	  @f
@@ -537,7 +539,7 @@ draw_down_arrow_vertical
 	jne	 @f   ;.continue_2
 	mov   eax,sb_m_pos
 	mov   sb_m_pos_2,eax
-	jmp   .correct_1    ;.exit_sb	
+	jmp   .correct_1	;.exit_sb	
 @@:
 	mov   sb_delta,word 1
 
@@ -556,56 +558,56 @@ draw_down_arrow_vertical
 
 	mov   cx,sb_start_y
 	cmp   ax,cx
-	jb    .exit_sb
+	jb	.exit_sb
 	
 	cmp   sb_delta2,word 0
-	je    @f
+	je	@f
 	push  ecx
 	add   cx,sb_btn_high
 	cmp   ax,cx
 	pop   ecx
-	jb    .exit_sb
+	jb	.exit_sb
 	
 @@:
 	add   cx,sb_size_y
 	cmp   ax,cx
-	ja    .exit_sb
+	ja	.exit_sb
 
 	cmp   sb_delta2,word 0
-	je    @f
+	je	@f
 	sub   cx,sb_btn_high
 	cmp   ax,cx
-	ja    .exit_sb
+	ja	.exit_sb
 	
 @@:
 	cmp   sb_delta2,word 1
-	je    @f
+	je	@f
 	
 	cmp   sb_m_keys,dword 0
-	je    .exit_sb
-    
+	je	.exit_sb
+	
 	mov   cx,sb_start_x
 	cmp   bx,cx
-	jb    .exit_sb
+	jb	.exit_sb
 	
 	add   cx,sb_size_x
 	cmp   bx,cx
-	ja    .exit_sb
+	ja	.exit_sb
 
 	mov   cx,sb_r_start_y
 	cmp   ax,cx
-	jb    .no_runner
+	jb	.no_runner
 	
 	add   cx,sb_r_size_y
 	cmp   ax,cx
-	ja    .no_runner
+	ja	.no_runner
 
 	mov   sb_delta2,word 1	
 @@:
 	push  eax
 	mov   ax,sb_m_pos
 	cmp   ax,sb_m_pos_2
-	je    .correct  ;.exit_sb    
+	je	.correct  ;.exit_sb	
 	
 	shl   eax,16
 	shr   eax,16
@@ -663,22 +665,26 @@ draw_down_arrow_vertical
 	mov   cx,sb_start_y
 	add   cx,sb_btn_high   ;15
 	cmp   sb_delta,word 1
-	je    .scroll_sb
+	je	.scroll_sb
 	
 	cmp   ax,cx
-	ja    .scroll_sb
+	ja	.scroll_sb
 	
 	cmp   sb_m_keys,dword 0
 	je   .exit_sb
 	
-	cmp   sb_position,dword 0
-;	je    .exit_sb
-	je   @f
+	mov   eax,sb_ar_offset
+	cmp   sb_position,eax  ;dword 0
+;	je	.exit_sb
+	jbe   @f
 	
-	dec   dword sb_position
+;	dec   dword sb_position
+	sub   sb_position,eax
 	jmp   .all_sb
 @@:
-	mov   sb_position2,dword 0
+	xor   eax,eax
+	mov   sb_position,eax ;dword 0
+	mov   sb_position2,eax ;dword 0
 	jmp   .all_sb
 ;*****************************************************************************
 .scroll_sb:
@@ -686,10 +692,10 @@ draw_down_arrow_vertical
 	sub   cx,sb_btn_high
 	sub   cx,sb_btn_high
 	cmp   sb_delta,word 1
-	je    @f
+	je	@f
 	
 	cmp   ax,cx
-	ja    .down_sb
+	ja	.down_sb
 	
 @@:
 	mov   ebx,sb_btn_high   ;16  ;15
@@ -702,7 +708,7 @@ draw_down_arrow_vertical
 	mov   ebx,sb_run_size
 ;*****************************************************************************	
 	cmp   sb_delta,word 1
-	je    .continue
+	je	.continue
 	
 @@:
 	mov   edx,eax
@@ -739,7 +745,7 @@ draw_down_arrow_vertical
 
 	mov   eax,sb_max_area
 	cmp   eax,sb_cur_area
-	ja    @f
+	ja	@f
 
 	xor   eax,eax
 	inc   eax
@@ -753,7 +759,7 @@ draw_down_arrow_vertical
 	div   ecx
 	shl   edx,1
 	cmp   edx,ecx
-	jb    @f
+	jb	@f
 	
 	inc   eax
 	
@@ -762,10 +768,10 @@ draw_down_arrow_vertical
 	shr   eax,10
 	
 	cmp   sb_position,eax
-	je    .exit_sb
+	je	.exit_sb
 	
 	cmp   eax,0
-	ja    @f
+	ja	@f
 	
 	xor   eax,eax
 	
@@ -784,14 +790,20 @@ draw_down_arrow_vertical
 	je   .exit_sb
 	
 	mov   eax,sb_max_area
+	mov   ebx,sb_ar_offset
 	sub   eax,sb_cur_area
+	push  eax
+	sub   eax,ebx
 	cmp   sb_position,eax
+	pop   eax
 ;	jae   .exit_sb
 	jae   @f
 	
-	inc   dword sb_position
+;	inc   dword sb_position
+	add   sb_position,ebx
 	jmp   .all_sb
 @@:
+	mov   sb_position,eax
 	xor   eax,eax
 	mov   ax,sb_size_y
 	sub   eax,sb_btn_high
@@ -799,7 +811,7 @@ draw_down_arrow_vertical
 	sub   eax,sb_run_size
 	mov   sb_position2,eax
 	jmp   .all_sb	
-.exit_sb:    
+.exit_sb:	
 scroll_bar_exit
 }
 
@@ -814,7 +826,8 @@ scroll_bar_horizontal:
 .draw:
 	pusha
 	mov   edi,dword [esp+36]
-	mov   sb_all_redraw,dword 1
+;	mov   sb_all_redraw,dword 1
+	mov   sb_delta,word 0
 	call  .draw_1
 	mov   sb_all_redraw,dword 0
 scroll_bar_exit
@@ -831,7 +844,7 @@ scroll_bar_exit
 	mov   eax,sb_work_size   ;sb_max_area
 	mov   ebx,sb_max_area
 	cmp   ebx,sb_cur_area
-	ja    @f
+	ja	@f
 
 	jmp   .no_size
 
@@ -847,12 +860,12 @@ scroll_bar_exit
 	mov   sb_run_size,eax
 ;*********************************
 	cmp   sb_delta,word 1
-	je    .@@_3
+	je	.@@_3
 	mov   eax,sb_work_size
 	sub   eax,sb_run_size
 	mov   ebx,sb_max_area
 	cmp   ebx,sb_cur_area
-	ja    @f
+	ja	@f
 	xor   eax,eax
 	jmp   .@@_1
 @@:
@@ -940,7 +953,7 @@ draw_up_arrow_horizontal
 	test  bx,0x8000
 	jnz   @f
 	mov   edx,sb_bckg_col
-	int   0x40    ; left interval
+	int   0x40	; left interval
 @@:
 ;********************************* 
 	shr   ebx,16
@@ -949,7 +962,7 @@ draw_up_arrow_horizontal
 	shl   ebx,16
 	inc   ebx
 	mov   edx,sb_line_col
-	int   0x40    ; runner - left extreme line
+	int   0x40	; runner - left extreme line
 	
 	add   ebx,1 shl 16
 	mov   bx,0
@@ -996,7 +1009,7 @@ draw_runner_center_horizontal
 	mov   eax,13
 	cmp  sb_all_redraw,dword 0
 	je   @f
-	int   0x40    ; bottom button - top line
+	int   0x40	; bottom button - top line
 @@:
 	push  ebx
 	add   ebx,1 shl 16
@@ -1029,16 +1042,16 @@ draw_down_arrow_horizontal
 ;*****************************************************************************
 .mouse:
 	pusha
-	mov     edi,dword [esp+36]
+	mov	 edi,dword [esp+36]
 	mcall 37,1
 	mov   sb_m_pos,eax
 	cmp   sb_m_pos_2,dword 0
 	jne   @f
 	
-	mov   sb_m_pos_2,eax    
+	mov   sb_m_pos_2,eax	
 @@:
 	mcall 37,2
-	mov   sb_m_keys,eax    
+	mov   sb_m_keys,eax	
 
 	cmp   sb_m_keys,eax
 	je	  @f
@@ -1056,7 +1069,7 @@ draw_down_arrow_horizontal
 	jne	 @f   ;.continue_2
 	mov   eax,sb_m_pos
 	mov   sb_m_pos_2,eax
-	jmp   .correct_1    ;.exit_sb
+	jmp   .correct_1	;.exit_sb
 @@:
 	mov   sb_delta,word 1
 
@@ -1075,49 +1088,49 @@ draw_down_arrow_horizontal
 
 	mov   cx,sb_start_x   ;y
 	cmp   ax,cx
-	jb    .exit_sb
+	jb	.exit_sb
 	
 	cmp   sb_delta2,word 0
-	je    @f
+	je	@f
 	push  ecx
 	add   cx,sb_btn_high
 	cmp   ax,cx
 	pop   ecx
-	jb    .exit_sb
+	jb	.exit_sb
 	
 @@:
-	add   cx,sb_size_x    ;y
+	add   cx,sb_size_x	;y
 	cmp   ax,cx
-	ja    .exit_sb
+	ja	.exit_sb
 
 	cmp   sb_delta2,word 0
-	je    @f
+	je	@f
 	sub   cx,sb_btn_high
 	cmp   ax,cx
-	ja    .exit_sb
+	ja	.exit_sb
 	
 @@:
 	cmp   sb_delta2,word 1
-	je    @f
+	je	@f
 	
 	cmp   sb_m_keys,dword 0
-	je    .exit_sb
-    
+	je	.exit_sb
+	
 	mov   cx,sb_start_y   ;x
 	cmp   bx,cx
-	jb    .exit_sb
+	jb	.exit_sb
 	
-	add   cx,sb_size_y    ;x
+	add   cx,sb_size_y	;x
 	cmp   bx,cx
-	ja    .exit_sb
+	ja	.exit_sb
 	
 	mov   cx,sb_r_start_x
 	cmp   ax,cx
-	jb    .no_runner
+	jb	.no_runner
 	
 	add   cx,sb_r_size_x
 	cmp   ax,cx
-	ja    .no_runner
+	ja	.no_runner
 
 	mov   sb_delta2,word 1
 @@:
@@ -1127,7 +1140,7 @@ draw_down_arrow_horizontal
 	shr   eax,16
 	shr   ebx,16
 	cmp   eax,ebx
-	je    .correct  ;.exit_sb    
+	je	.correct  ;.exit_sb	
 	
 ;	shl   eax,16
 ;	shr   eax,16
@@ -1141,7 +1154,7 @@ draw_down_arrow_horizontal
 	mov   ebx,eax
 	add   sb_position2,ebx
 	xor   eax,eax
-	mov   ax,sb_size_x    ;y
+	mov   ax,sb_size_x	;y
 	sub   eax,sb_btn_high
 	sub   eax,sb_btn_high
 	sub   eax,sb_run_size
@@ -1185,22 +1198,26 @@ draw_down_arrow_horizontal
 	mov   cx,sb_start_x   ;y
 	add   cx,sb_btn_high   ;15
 	cmp   sb_delta,word 1
-	je    .scroll_sb
+	je	.scroll_sb
 	
 	cmp   ax,cx
-	ja    .scroll_sb
+	ja	.scroll_sb
 	
 	cmp   sb_m_keys,dword 0
 	je   .exit_sb
 	
-	cmp   sb_position,dword 0
-;	je    .exit_sb
-	je   @f
+	mov   eax,sb_ar_offset
+	cmp   sb_position,eax  ;dword 0
+;	je	.exit_sb
+	jbe   @f
 	
-	dec   dword sb_position
+;	dec   dword sb_position
+	sub   sb_position,eax
 	jmp   .all_sb
 @@:
-	mov   sb_position2,dword 0
+	xor   eax,eax
+	mov   sb_position,eax ;dword 0
+	mov   sb_position2,eax  ;dword 0
 	jmp   .all_sb
 ;*****************************************************************************
 .scroll_sb:
@@ -1208,10 +1225,10 @@ draw_down_arrow_horizontal
 	sub   cx,sb_btn_high
 	sub   cx,sb_btn_high
 	cmp   sb_delta,word 1
-	je    @f
+	je	@f
 	
 	cmp   ax,cx
-	ja    .down_sb
+	ja	.down_sb
 	
 @@:
 	mov   ebx,sb_btn_high   ;16  ;15
@@ -1224,7 +1241,7 @@ draw_down_arrow_horizontal
 	mov   ebx,sb_run_size
 ;*****************************************************************************	
 	cmp   sb_delta,word 1
-	je    .continue
+	je	.continue
 	
 @@:
 	mov   edx,eax
@@ -1261,7 +1278,7 @@ draw_down_arrow_horizontal
 
 	mov   eax,sb_max_area
 	cmp   eax,sb_cur_area
-	ja    @f
+	ja	@f
 
 	xor   eax,eax
 	inc   eax
@@ -1275,7 +1292,7 @@ draw_down_arrow_horizontal
 	div   ecx
 	shl   edx,1
 	cmp   edx,ecx
-	jb    @f
+	jb	@f
 	
 	inc   eax
 	
@@ -1284,10 +1301,10 @@ draw_down_arrow_horizontal
 	shr   eax,10
 	
 	cmp   sb_position,eax
-	je    .exit_sb
+	je	.exit_sb
 	
 	cmp   eax,0
-	ja    @f
+	ja	@f
 	
 	xor   eax,eax
 	
@@ -1306,14 +1323,20 @@ draw_down_arrow_horizontal
 	je   .exit_sb
 	
 	mov   eax,sb_max_area
+	mov   ebx,sb_ar_offset
 	sub   eax,sb_cur_area
+	push  eax
+	sub   eax,ebx
 	cmp   sb_position,eax
+	pop   eax
 ;	jae   .exit_sb
 	jae   @f
 	
-	inc   dword sb_position
+;	inc   dword sb_position
+	add   sb_position,ebx
 	jmp   .all_sb
 @@:
+	mov   sb_position,eax
 	xor   eax,eax
 	mov   ax,sb_size_x
 	sub   eax,sb_btn_high
