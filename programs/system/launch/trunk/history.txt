@@ -1,0 +1,25 @@
+==================== Русский ====================
+0.1.3 - 20.02.2009 - vkos
+	+ Запуск с параметрами
+0.1.2.1 - 20.02.2009 - vkos
+	* Исправлен вызов printf
+0.1.2 - 15.02.2009 - vkos
+	* Более подробные сообщения
+0.1.1 - 14.02.2009 - vkos
+	+ Реализован вывод в консоль
+	* Удалён импорт libio, т.к. она пока не нужна
+0.1 - 13.02.2009 - vkos
+	+ Реализовано чтение конфигурации и запуск программы (без аргументов)
+
+==================== English ====================
+0.1.3 - 20.02.2009 - vkos
+	+ Launching with arguments
+0.1.2.1 - 20.02.2009 - vkos
+	* Calling of printf is fixed
+0.1.2 - 15.02.2009 - vkos
+	* More text in messages
+0.1.1 - 14.02.2009 - vkos
+	+ Implemented console output
+	* Importing libio is deleted because we don't need it now
+0.1 - 13.02.2009 - vkos
+	+ Implemented: reading configuration and running programme
