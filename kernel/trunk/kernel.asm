@@ -17,6 +17,7 @@
 ;; Sergey Semyonov (Serge)
 ;; Johnny_B
 ;; SPraid (simba)
+;; Hidnplayr
 ;;
 ;; Data in this file was originally part of MenuetOS project which is
 ;; distributed under the terms of GNU GPL. It is modified and redistributed as
@@ -58,7 +59,10 @@ include 'macros.inc'
 $Revision$
 
 
-USE_COM_IRQ equ 1      ;make irq 3 and irq 4 available for PCI devices
+USE_COM_IRQ	equ 1	   ; make irq 3 and irq 4 available for PCI devices
+
+; Enabling the next line will enable serial output console
+;debug_com_base  equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 is com4, no irq's are used
 
 include "proc32.inc"
 include "kglobals.inc"
@@ -712,7 +716,7 @@ no_lib_load:
 	mov  [TASK_DATA+TASKDATA.mem_start], 0	; process base address
 
 	call init_cursors
-        mov eax, [def_cursor]
+	mov eax, [def_cursor]
 	mov [SLOT_BASE+APPDATA.cursor],eax
 	mov [SLOT_BASE+APPDATA.cursor+256],eax
 
@@ -730,8 +734,8 @@ no_lib_load:
 	sub   eax,ecx
 	shl   eax,2
 	mov   [CPU_FREQ],eax	      ; save tsc / sec
-;	mov ebx, 1000000
-;	div ebx
+;       mov ebx, 1000000
+;       div ebx
 ; вообще-то производительность в данном конкретном месте
 ; совершенно некритична, но чтобы заткнуть любителей
 ; оптимизирующих компиляторов ЯВУ...
@@ -869,6 +873,48 @@ first_app_found:
      ;// mike.dld [
 	call  set_lights
      ;// mike.dld ]
+
+
+; Setup serial output console (if enabled)
+
+if defined debug_com_base
+
+	; enable Divisor latch
+
+	mov	dx, debug_com_base+3
+	mov	al, 1 shl 7
+	out	dx, al
+
+	; Set speed to 115200 baud (max speed)
+
+	mov	dx, debug_com_base
+	mov	al, 0x01
+	out	dx, al
+
+	mov	dx, debug_com_base+1
+	mov	al, 0x00
+	out	dx, al
+
+	; No parity, 8bits words, one stop bit, dlab bit back to 0
+
+	mov	dx, debug_com_base+3
+	mov	al, 3
+	out	dx, al
+
+	; disable interrupts
+
+	mov	dx, debug_com_base+1
+	mov	al, 0
+	out	dx, al
+
+	; clear +  enable fifo (64 bits)
+
+	mov	dx, debug_com_base+2
+	mov	al, 0x7 + 1 shl 5
+	out	dx, al
+
+
+end if
 
 ; START MULTITASKING
 
@@ -1118,7 +1164,7 @@ set_variables:
 	mov   [MOUSE_X],eax
 	pop   eax
 
-        mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
+	mov   [BTN_ADDR],dword BUTTON_INFO    ; address of button list
 
      ;!! IP 04.02.2005:
 	mov   [next_usage_update], 100
@@ -1562,7 +1608,7 @@ nsyse8:
      ret
 
 no_set_lba_read:
-     cmp  eax,12                     ; ENABLE PCI ACCESS
+     cmp  eax,12		     ; ENABLE PCI ACCESS
      jne  no_set_pci_access
      and  ebx,1
      mov  [pci_access_enabled],ebx
@@ -1635,17 +1681,17 @@ kbnoaltret:
      ret
 ngsyse2:
 
-         cmp  eax,3
-         jnz  ngsyse3
-         movzx eax,[cd_base]
-         mov  [esp+36],eax
-         ret
+	 cmp  eax,3
+	 jnz  ngsyse3
+	 movzx eax,[cd_base]
+	 mov  [esp+36],eax
+	 ret
 ngsyse3:
-         cmp  eax,5
-         jnz  ngsyse5
-         mov  eax,[syslang]
-         mov  [esp+36],eax
-         ret
+	 cmp  eax,5
+	 jnz  ngsyse5
+	 mov  eax,[syslang]
+	 mov  [esp+36],eax
+	 ret
 ngsyse5:
      cmp  eax,7
      jnz  ngsyse7
@@ -2300,7 +2346,7 @@ nosb1:
     and ebx, -4096
     sub ebx, 4
     cmp   ecx, ebx
-    ja   @F
+    ja	 @F
 
     mov   eax,[img_background]
     mov   ebx,[eax+ecx]
@@ -2412,9 +2458,9 @@ nosb6:
 	and	dword [page_tabs+eax*4], 0
 	mov	edx, eax
 	shl	edx, 12
-        push eax
+	push eax
 	invlpg	[edx]
-        pop eax
+	pop eax
 	inc	eax
 	loop	@b
 	pop	eax
@@ -2465,7 +2511,7 @@ nogb1:
     and ecx, -4096
     sub ecx, 4
     cmp ebx, ecx
-    ja  @F
+    ja	@F
 
     mov   eax,[img_background]
     mov   eax,[ebx+eax]
@@ -2545,8 +2591,8 @@ sys_getbutton:
 	mov	eax, [BTN_BUFF]
 	shl	eax, 8
 ; // Alver 22.06.2008 // {
-        mov       al, byte [btn_down_determ]
-        and       al,0xFE                                       ; delete left button bit
+	mov	  al, byte [btn_down_determ]
+	and	  al,0xFE					; delete left button bit
 ; } \\ Alver \\
 	mov	[BTN_COUNT], byte 0
 	mov	[esp + 32], eax
@@ -2959,8 +3005,8 @@ draw_window_caption:
 	or	ecx, 0x80000000
 	xor	edi,edi
 ; // Alver 22.06.2008 // {
-;	call	dtext
-        call dtext_asciiz_esi
+;       call    dtext
+	call dtext_asciiz_esi
 ; } \\ Alver \\
 
     @@:
@@ -4225,58 +4271,58 @@ sys_putimage_palette:
 	add	dx, word [eax+SLOT_BASE+APPDATA.wnd_clientbox.left]
 	rol	edx, 16
 .forced:
-        cmp     esi, 1
-        jnz     @f
-        push    edi
-        mov     eax, [edi+4]
-        sub     eax, [edi]
-        push    eax
-        push    dword [edi]
-        push    0ffffff80h
-        mov     edi, esp
-        call    put_mono_image
-        add     esp, 12
-        pop     edi
-        ret
+	cmp	esi, 1
+	jnz	@f
+	push	edi
+	mov	eax, [edi+4]
+	sub	eax, [edi]
+	push	eax
+	push	dword [edi]
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_mono_image
+	add	esp, 12
+	pop	edi
+	ret
 @@:
-        cmp     esi, 2
-        jnz     @f
-        push    edi
-        push    0ffffff80h
-        mov     edi, esp
-        call    put_2bit_image
-        pop     eax
-        pop     edi
-        ret
+	cmp	esi, 2
+	jnz	@f
+	push	edi
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_2bit_image
+	pop	eax
+	pop	edi
+	ret
 @@:
-        cmp     esi, 4
-        jnz     @f
-        push    edi
-        push    0ffffff80h
-        mov     edi, esp
-        call    put_4bit_image
-        pop     eax
-        pop     edi
-        ret
+	cmp	esi, 4
+	jnz	@f
+	push	edi
+	push	0ffffff80h
+	mov	edi, esp
+	call	put_4bit_image
+	pop	eax
+	pop	edi
+	ret
 @@:
-        push    ebp esi ebp
-        cmp     esi, 8
-        jnz     @f
-        mov     ebp, putimage_get8bpp
-        mov     esi, putimage_init8bpp
-        jmp     sys_putimage_bpp
+	push	ebp esi ebp
+	cmp	esi, 8
+	jnz	@f
+	mov	ebp, putimage_get8bpp
+	mov	esi, putimage_init8bpp
+	jmp	sys_putimage_bpp
 @@:
-        cmp     esi, 15
-        jnz     @f
-        mov     ebp, putimage_get15bpp
-        mov     esi, putimage_init15bpp
-        jmp     sys_putimage_bpp
+	cmp	esi, 15
+	jnz	@f
+	mov	ebp, putimage_get15bpp
+	mov	esi, putimage_init15bpp
+	jmp	sys_putimage_bpp
 @@:
-        cmp     esi, 16
-        jnz     @f
-        mov     ebp, putimage_get16bpp
-        mov     esi, putimage_init16bpp
-        jmp     sys_putimage_bpp
+	cmp	esi, 16
+	jnz	@f
+	mov	ebp, putimage_get16bpp
+	mov	esi, putimage_init16bpp
+	jmp	sys_putimage_bpp
 @@:
 	cmp	esi, 24
 	jnz	@f
@@ -4294,20 +4340,20 @@ sys_putimage_palette:
 	ret
 
 put_mono_image:
-        push    ebp esi ebp
-        mov     ebp, putimage_get1bpp
-        mov     esi, putimage_init1bpp
-        jmp     sys_putimage_bpp
+	push	ebp esi ebp
+	mov	ebp, putimage_get1bpp
+	mov	esi, putimage_init1bpp
+	jmp	sys_putimage_bpp
 put_2bit_image:
-        push    ebp esi ebp
-        mov     ebp, putimage_get2bpp
-        mov     esi, putimage_init2bpp
-        jmp     sys_putimage_bpp
+	push	ebp esi ebp
+	mov	ebp, putimage_get2bpp
+	mov	esi, putimage_init2bpp
+	jmp	sys_putimage_bpp
 put_4bit_image:
-        push    ebp esi ebp
-        mov     ebp, putimage_get4bpp
-        mov     esi, putimage_init4bpp
-        jmp     sys_putimage_bpp
+	push	ebp esi ebp
+	mov	ebp, putimage_get4bpp
+	mov	esi, putimage_init4bpp
+	jmp	sys_putimage_bpp
 
 putimage_init24bpp:
 	lea	eax, [eax*3]
@@ -4359,36 +4405,36 @@ putimage_get1bpp:
 	ret	4
 
 putimage_init2bpp:
-        add     eax, ecx
-        push    ecx
-        add     ecx, 3
-        add     eax, 3
-        shr     ecx, 2
-        shr     eax, 2
-        sub     eax, ecx
-        pop     ecx
-        ret
+	add	eax, ecx
+	push	ecx
+	add	ecx, 3
+	add	eax, 3
+	shr	ecx, 2
+	shr	eax, 2
+	sub	eax, ecx
+	pop	ecx
+	ret
 align 16
 putimage_get2bpp:
-        push    edx
-        mov     edx, [esp+8]
-        mov     al, [edx]
-        mov     ah, al
-        shr     al, 6
-        shl     ah, 2
-        jnz     .nonewbyte
-        lodsb
-        mov     ah, al
-        shr     al, 6
-        shl     ah, 2
-        add     ah, 1
+	push	edx
+	mov	edx, [esp+8]
+	mov	al, [edx]
+	mov	ah, al
+	shr	al, 6
+	shl	ah, 2
+	jnz	.nonewbyte
+	lodsb
+	mov	ah, al
+	shr	al, 6
+	shl	ah, 2
+	add	ah, 1
 .nonewbyte:
-        mov     [edx], ah
-        mov     edx, [edx+4]
-        movzx   eax, al
-        mov     eax, [edx+eax*4]
-        pop     edx
-        ret     4
+	mov	[edx], ah
+	mov	edx, [edx+4]
+	movzx	eax, al
+	mov	eax, [edx+eax*4]
+	pop	edx
+	ret	4
 
 putimage_init4bpp:
 	add	eax, ecx
@@ -4432,45 +4478,45 @@ putimage_get32bpp:
 
 putimage_init15bpp:
 putimage_init16bpp:
-        add     eax, eax
-        ret
+	add	eax, eax
+	ret
 align 16
 putimage_get15bpp:
 ; 0RRRRRGGGGGBBBBB -> 00000000RRRRR000GGGGG000BBBBB000
-        push    ecx edx
-        movzx   eax, word [esi]
-        add     esi, 2
-        mov     ecx, eax
-        mov     edx, eax
-        and     eax, 0x1F
-        and     ecx, 0x1F shl 5
-        and     edx, 0x1F shl 10
-        shl     eax, 3
-        shl     ecx, 6
-        shl     edx, 9
-        or      eax, ecx
-        or      eax, edx
-        pop     edx ecx
-        ret     4
+	push	ecx edx
+	movzx	eax, word [esi]
+	add	esi, 2
+	mov	ecx, eax
+	mov	edx, eax
+	and	eax, 0x1F
+	and	ecx, 0x1F shl 5
+	and	edx, 0x1F shl 10
+	shl	eax, 3
+	shl	ecx, 6
+	shl	edx, 9
+	or	eax, ecx
+	or	eax, edx
+	pop	edx ecx
+	ret	4
 
 align 16
 putimage_get16bpp:
 ; RRRRRGGGGGGBBBBB -> 00000000RRRRR000GGGGGG00BBBBB000
-        push    ecx edx
-        movzx   eax, word [esi]
-        add     esi, 2
-        mov     ecx, eax
-        mov     edx, eax
-        and     eax, 0x1F
-        and     ecx, 0x3F shl 5
-        and     edx, 0x1F shl 11
-        shl     eax, 3
-        shl     ecx, 5
-        shl     edx, 8
-        or      eax, ecx
-        or      eax, edx
-        pop     edx ecx
-        ret     4
+	push	ecx edx
+	movzx	eax, word [esi]
+	add	esi, 2
+	mov	ecx, eax
+	mov	edx, eax
+	and	eax, 0x1F
+	and	ecx, 0x3F shl 5
+	and	edx, 0x1F shl 11
+	shl	eax, 3
+	shl	ecx, 5
+	shl	edx, 8
+	or	eax, ecx
+	or	eax, edx
+	pop	edx ecx
+	ret	4
 
 ; eax x beginning
 ; ebx y beginning
@@ -4763,6 +4809,23 @@ sys_msg_board:
 	cmp	eax, 1
 	jne	.smbl1
 
+if defined debug_com_base
+
+	push	dx ax
+
+       @@:				; Wait for empty transmit register  (yes, this slows down system..)
+	mov	dx, debug_com_base+5
+	in	al, dx
+	test	al, 1 shl 5
+	jz	@r
+
+	mov	dx, debug_com_base	; Output the byte
+	mov	al, bl
+	out	dx, al
+
+	pop	ax dx
+
+end if
 
 	mov	[msg_board_data+ecx],bl
 	inc	ecx
@@ -5133,7 +5196,7 @@ syscall_getarea:
      mov   ebx,edx
      and   ebx,0xffff
      dec   eax
-	   dec   ebx
+	   dec	 ebx
      ; eax - x, ebx - y
      mov   edx,ecx
      
