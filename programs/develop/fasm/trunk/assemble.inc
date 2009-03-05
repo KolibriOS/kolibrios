@@ -1641,6 +1641,8 @@ data_twords:
       complex_tword:
 	call	get_word_value
 	push	eax
+	cmp	byte [esi],':'
+	jne	invalid_operand
 	inc	esi
 	lods	byte [esi]
 	cmp	al,'('
