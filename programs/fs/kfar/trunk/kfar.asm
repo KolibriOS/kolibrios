@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.63'
-version_dword equ 0*10000h + 63
+version equ '0.64'
+version_dword equ 0*10000h + 64
 
 min_width = 54
 max_width = 255
@@ -978,7 +978,7 @@ enum_plugins_callback:
         call    load_dll_and_import.big
 .ret:
         mov     al, 1
-        ret     12
+        ret     16
 .absolute:
 ; allocate space for plugin info
         mov     eax, [num_plugins]
