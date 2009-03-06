@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.62'
-version_dword equ 0*10000h + 62
+version equ '0.63'
+version_dword equ 0*10000h + 63
 
 min_width = 54
 max_width = 255
@@ -203,6 +203,24 @@ start:
         cmp     eax, 4
         ja      @f
         mov     [panel2_colmode], eax
+@@:
+        push    0
+        push    aLeftSortMode
+        push    aPanels
+        push    app_path
+        call    [ini.get_int]
+        cmp     eax, 14
+        jae     @f
+        mov     [panel1_sortmode], al
+@@:
+        push    0
+        push    aRightSortMode
+        push    aPanels
+        push    app_path
+        call    [ini.get_int]
+        cmp     eax, 14
+        jae     @f
+        mov     [panel2_sortmode], al
 @@:
         push    nullstr
         push    512
@@ -401,7 +419,6 @@ exit:
         pop     esi ecx
         jmp     .unload
 .unload_done:
-;if 0    ; commented due to bug in libini
         cmp     [ini.set_int], aIniSetInt
         jz      .nosave
         push    [panel1_colmode]
@@ -414,8 +431,19 @@ exit:
         push    aPanels
         push    app_path
         call    [ini.set_int]
+        movzx   eax, [panel1_sortmode]
+        push    eax
+        push    aLeftSortMode
+        push    aPanels
+        push    app_path
+        call    [ini.set_int]
+        movzx   eax, [panel2_sortmode]
+        push    eax
+        push    aRightSortMode
+        push    aPanels
+        push    app_path
+        call    [ini.set_int]
 .nosave:
-;end if
 if CHECK_FOR_LEAKS
         mov     ecx, [panel1_files]
         call    pgfree
@@ -8342,6 +8370,8 @@ aConfirmDeleteIncomplete db     'DeleteIncomplete',0
 aPanels                 db      'Panels',0
 aLeftViewMode           db      'LeftViewMode',0
 aRightViewMode          db      'RightViewMode',0
+aLeftSortMode           db      'LeftSortMode',0
+aRightSortMode          db      'RightSortMode',0
 
 aEditor                 db      'Editor',0
 aEolStyle               db      'EOLStyle',0

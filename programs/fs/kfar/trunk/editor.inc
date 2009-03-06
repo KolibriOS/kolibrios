@@ -1393,10 +1393,10 @@ editor_reserve_space:
 	pop	edx ecx
 	test	eax, eax
 	jz	.nomem
-	add	[ebp + editor_data.memsize], ecx
 	sub	eax, ebp
 	add	ebp, eax
 	add	esi, eax
+	add	[ebp + editor_data.memsize], ecx
 	push	ecx
 	mov	ecx, max_height
 	lea	edi, [ebp + editor_data.linedata_start]
