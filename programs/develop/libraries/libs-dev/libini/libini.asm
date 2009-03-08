@@ -17,6 +17,12 @@
 ;;                                                                                                ;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
+;; 2009-03-08 (mike.dld)                                                                          ;;
+;;   bug-fixes:                                                                                   ;;
+;;     - moved buffer bound check in libini._.low.read_value up (reported by Insolor)             ;;
+;;   new features:                                                                                ;;
+;;     - comments support (char is ini.COMMENT_CHAR, defaults to ';')                             ;;
+;;       inline comments are not supported                                                        ;;
 ;; 2008-12-29 (mike.dld)                                                                          ;;
 ;;   bug-fixes:                                                                                   ;;
 ;;     - unnecessary 'stosb' in ini.get_str was causing problems                                  ;;
@@ -117,8 +123,6 @@ endl
 
 	stdcall libini._.get_char, [f_addr]
 	stdcall libini._.skip_spaces, [f_addr]
-;       inc     esi
-;       dec     [f.cnt]
 	mov	edi, [sec_buf]
     @@: stdcall libini._.get_char, [f_addr]
 	cmp	al, ']'
@@ -385,7 +389,6 @@ endl
   .modify_key.ex:
 	invoke	file.tell, [f.fh]
 	sub	eax, [f.cnt]
-;       dec     eax
 	invoke	file.seek, [f.fh], eax, SEEK_SET
 	invoke	file.write, [f.fh], [_buffer], [_buf_len]
 
@@ -399,8 +402,6 @@ endl
 	push	edi
 
   .create_key.ex:
-;       mov     word[edi], 0x0A0D
-;       add     edi,2
 	mov	esi, [_key_name]
 	call	libini._.string_copy
 	mov	byte[edi], '='
@@ -427,13 +428,9 @@ endl
 	push	edi
 
 	mov	esi, [_sec_name]
-;       mov     dword[edi], 0x0A0D + ('[' shl 16)
-;       add     edi, 3
 	mov	byte[edi], '['
 	inc	edi
 	call	libini._.string_copy
-;       mov     byte[edi], ']'
-;       inc     edi
 	mov	dword[edi], ']' + (0x0A0D shl 8)
 	add	edi, 3
 
@@ -485,7 +482,7 @@ endl
 	or	eax, eax
 	jnz	.exit_error
 
-	stdcall libini._.skip_nonblanks, [f_addr]
+	stdcall libini._.skip_spaces, [f_addr]
 	xor	eax, eax
 	xor	ebx, ebx
 	xor	edx, edx
@@ -702,7 +699,7 @@ align 16
 
 export						  \
 	libini._.init	  , 'lib_init'		, \
-	0x00040006	  , 'version'		, \
+	0x00040007	  , 'version'		, \
 	ini.enum_sections , 'ini.enum_sections' , \
 	ini.enum_keys	  , 'ini.enum_keys'	, \
 	ini.get_str	  , 'ini.get_str'	, \

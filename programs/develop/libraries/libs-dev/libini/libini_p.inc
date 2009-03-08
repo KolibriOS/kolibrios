@@ -23,6 +23,8 @@ ini.MAX_VALUE_LEN = 4096
 ini.MEM_SIZE	  = 4096
 ini.BLOCK_SIZE	  = ini.MEM_SIZE / 2
 
+ini.COMMENT_CHAR  = ';'
+
 struct IniFile
   fh	dd ?
   buf	dd ?

@@ -74,8 +74,6 @@ endp
 s_key1 db "LeftViewMode",0
 s_key2 db "RightViewMode",0
 
-s_null db "",0
-
 macro wildcard_test_data label1, label2, label3, [str1, str2, res]
 {
   common
@@ -170,10 +168,10 @@ START:
 	mov	dword[buf],'103'
 	invoke	ini.set_str,s_ini,s_sec,s_key2,buf,3
 
-	invoke	ini.get_str,s_ini,s_sec,s_key1,buf,1024,s_null
+	invoke	ini.get_str,s_ini,s_sec,s_key1,buf,1024,0
 	cmp	dword[buf],'102'
 	jne	exit
-	invoke	ini.get_str,s_ini,s_sec,s_key2,buf,1024,s_null
+	invoke	ini.get_str,s_ini,s_sec,s_key2,buf,1024,0
 	cmp	dword[buf],'103'
 	jne	exit
 

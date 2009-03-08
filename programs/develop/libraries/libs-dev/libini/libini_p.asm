@@ -60,12 +60,6 @@ proc libini._.unget_char _f ;///////////////////////////////////////////////////
 ;;------------------------------------------------------------------------------------------------;;
 ;< --- TBD ---                                                                                    ;;
 ;;================================================================================================;;
-	;push    ecx
-	;mov     ecx,[f]
-	;inc     [ecx+INIFILE.cnt]
-	;dec     esi
-	;pop     ecx
-	;ret
 	push	eax ecx
 	mov	ecx, [_f]
 	inc	[ecx + IniFile.cnt]
@@ -74,8 +68,7 @@ proc libini._.unget_char _f ;///////////////////////////////////////////////////
 	cmp	[ecx + IniFile.cnt], eax
 	jle	@f
 	stdcall libini._.unload_block, [_f]
-    @@: ;mov     al,[esi-1]
-	pop	ecx eax
+    @@: pop	ecx eax
 	ret
 endp
 
@@ -116,8 +109,11 @@ proc libini._.skip_nonblanks _f ;///////////////////////////////////////////////
 	je	@b
 	cmp	al, 9
 	je	@b
+	cmp	al, ini.COMMENT_CHAR
+	jne	@f
+	stdcall libini._.skip_line, [_f]
+	jmp	@b
     @@: stdcall libini._.unget_char, [_f]
-	;inc     [ecx+INIFILE.cnt]
 	ret
 endp
 
@@ -137,7 +133,6 @@ proc libini._.skip_spaces _f ;//////////////////////////////////////////////////
 	cmp	al, 9
 	je	@b
     @@: stdcall libini._.unget_char, [_f]
-	;inc     [ecx+INIFILE.cnt]
 	ret
 endp
 
@@ -159,7 +154,6 @@ proc libini._.skip_line _f ;////////////////////////////////////////////////////
 	cmp	al, 10
 	jne	@b
     @@: stdcall libini._.unget_char, [_f]
-	;inc     [ecx+INIFILE.cnt]
 	ret
 endp
 
@@ -178,7 +172,7 @@ proc libini._.unload_block _f ;/////////////////////////////////////////////////
 	add	eax, -ini.BLOCK_SIZE
 	invoke	file.seek, [ebx + IniFile.fh], eax, SEEK_SET
 	stdcall libini._.preload_block, ebx
-	add	esi, eax ; ini.BLOCK_SIZE
+	add	esi, eax
 	mov	[ebx + IniFile.cnt], 0
 	pop	ecx ebx eax
 	ret
@@ -208,8 +202,7 @@ proc libini._.preload_block _f ;////////////////////////////////////////////////
 	mov	esi,[ebx + IniFile.buf]
 	cmp	eax,ini.BLOCK_SIZE
 	jl	@f
-	;dec     eax
-    @@: mov	[ebx + IniFile.cnt], eax;ini.BLOCK_SIZE-1
+    @@: mov	[ebx + IniFile.cnt], eax
 	mov	[ebx + IniFile.bsize], eax
 	pop	ecx ebx eax
 	ret
@@ -273,9 +266,7 @@ endl
 	mov	ecx, [ebx + IniFile.cnt]
 	mov	ebx, [ebx + IniFile.fh]
 	invoke	file.tell, ebx
-;       push    eax
 	sub	eax, ecx
-;       dec     eax
 	invoke	file.seek, ebx, eax, SEEK_SET
     @@: invoke	file.seek, ebx, [_delta], SEEK_CUR
 	invoke	file.eof?, ebx
@@ -285,17 +276,15 @@ endl
 	mov	ecx, eax
 	mov	eax, [_delta]
 	neg	eax
-	sub	eax, ecx;ini.BLOCK_SIZE
+	sub	eax, ecx
 	invoke	file.seek, ebx, eax, SEEK_CUR
-	invoke	file.write, ebx, [buf], ecx;ini.BLOCK_SIZE
+	invoke	file.write, ebx, [buf], ecx
 	jmp	@b
   .done:
 	mov	eax, [_delta]
 	neg	eax
 	invoke	file.seek, ebx, eax, SEEK_CUR
 	invoke	file.seteof, ebx
-;       pop     eax
-;       invoke  file.seek, ebx, SEEK_SET;, eax
 	stdcall libini._.reload_block, [_f]
 	invoke	mem.free, [buf]
 	pop	ecx ebx
@@ -313,7 +302,6 @@ endl
 	mov	ecx, [ebx + IniFile.cnt]
 	mov	ebx, [ebx + IniFile.fh]
 	invoke	file.tell, ebx
-;       push    eax
 	sub	eax, ecx
 	lea	edx, [eax - 1]
 	push	edx
@@ -339,11 +327,6 @@ endl
     @@:
   .skip.2:
 	add	esp, 4
-;       mov     eax,[delta]
-;       neg     eax
-;       invoke  file.seek,ebx,SEEK_CUR,eax
-;       pop     eax
-;       invoke  file.seek,ebx,SEEK_SET;,eax
 	stdcall libini._.reload_block, [_f]
 	invoke	mem.free, [buf]
 	pop	ecx ebx
@@ -451,8 +434,6 @@ proc libini._.find_section _f, _sec_name ;//////////////////////////////////////
 	jnz	.exit_error
 
 	stdcall libini._.get_char, [_f]
-;       inc     esi
-;       dec     [ecx + IniFile.cnt]
 	stdcall libini._.skip_spaces, [_f]
 	mov	edi, [_sec_name]
     @@: stdcall libini._.get_char, [_f]
@@ -564,12 +545,13 @@ proc libini._.low.read_value _f_addr, _buffer, _buf_len ;///////////////////////
     @@: stdcall libini._.unget_char, [_f_addr]
 	mov	byte[edi], 0
 	dec	edi
-    @@: cmp	byte[edi], 32
+    @@: cmp	edi, [_buffer]
+	jb	@f
+	cmp	byte[edi], 32
 	ja	@f
 	mov	byte[edi], 0
 	dec	edi
-	cmp	edi, [_buffer]
-	jae	@b
+	jmp	@b
     @@: pop	eax edi
 	ret
 endp
