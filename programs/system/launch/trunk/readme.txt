@@ -1,5 +1,5 @@
 ==================== Русский ====================
-Версия: 0.1.3
+Версия: 0.1.4
 Launch - программа для запуска приложения из директорий поиска.
 При запуске читает файл launch.cfg в /sys/etc, затем в директории запуска.
 После этого смотрит параметры командной строки. Приоритет параметров - по
@@ -13,7 +13,7 @@ debug.level - уровень отладки (0 - только сообщение удачно/неудачно, 1 - выводит
 для вывода в консоль нужна изменённая библиотека console.obj!
 
 ==================== English ====================
-Version: 0.1.3
+Version: 0.1.4
 Launch is a programme that launches applications from search dirictories.
 On the start it reads file launch.cfg in /sys/etc and in current dirictory.
 Than it reads command line arguments. Priority of arguments is as reading.
