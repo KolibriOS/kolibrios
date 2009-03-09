@@ -18,7 +18,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 APP_NAME fix 'Launch'
-APP_VERSION fix '0.1.3'
+APP_VERSION fix '0.1.4'
 
 use32
 org 0x0
@@ -163,13 +163,21 @@ parse_args:
 	mov ecx, -1
 	mov edi, args
 	mov al, ' '
+	xor bl, bl
 	;cld
 	repe scasb
 
 	push edi
 
 	mov ecx, -1
-	repne scasb
+@@:
+	scasb
+	je @f
+	xchg al, bl
+	dec edi
+	scasb
+	jne @b
+@@:
 	mov dword [prog_args], edi
 
 	pop edi
