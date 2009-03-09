@@ -448,9 +448,11 @@ menu_bar_exit
 	 mov   dx,m_start_x1
 	 mov   eax,m_procinfo
 	 add   dx,[eax+34]
+	 add   dx,[eax+54]
 	 shl   edx,16
 	 mov   dx,m_start_y1
 	 add   dx,[eax+38]
+	 add   dx,[eax+58]
 	 
      mcall 36, m_buf_adress
 	 ret
