@@ -4110,7 +4110,7 @@ dump_symbols:
 	xor	eax,eax
       base_symbol_for_label_ok:
 	mov	[edx+20],eax
-	add	edx,32
+	add	edx,LABEL_STRUCTURE_SIZE
 	jmp	prepare_labels_dump
       labels_dump_ok:
 	mov	eax,edi
