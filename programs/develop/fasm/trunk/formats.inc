@@ -46,12 +46,17 @@ formatter:
 	jne	no_extension
 	cmp	[subsystem],1
 	je	sys_extension
+	cmp	[subsystem],10
+	jae	efi_extension
 	bt	[format_flags],8
 	jnc	exe_extension
 	mov	eax,'.dll'
 	jmp	make_extension
       sys_extension:
 	mov	eax,'.sys'
+	jmp	make_extension
+      efi_extension:
+	mov	eax,'.efi'
 	jmp	make_extension
       bin_extension:
 	mov	eax,'.bin'
@@ -4129,7 +4134,7 @@ dump_symbols:
 	add	eax,ecx
 	mov	[ebx-38h+28h],eax
 	mov	eax,[number_of_sections]
-	shl	eax,3
+	shl	eax,2
 	mov	[ebx-38h+34h],eax
 	mov	esi,[memory_start]
       prepare_preprocessed_source:

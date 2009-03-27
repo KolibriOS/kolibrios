@@ -5411,6 +5411,7 @@ sse4_instruction_38:
 	mov	[base_code],0Fh
 	mov	[supplemental_code],al
 	mov	al,38h
+	mov	[mmx_size],16
 	jmp	sse_instruction
 sse4_instruction_3a_imm8:
 	mov	[immediate_size],8
@@ -5419,6 +5420,7 @@ sse4_instruction_3a:
 	mov	[base_code],0Fh
 	mov	[supplemental_code],al
 	mov	al,3Ah
+	mov	[mmx_size],16
 	jmp	sse_instruction
 extractps_instruction:
 	mov	[opcode_prefix],66h
