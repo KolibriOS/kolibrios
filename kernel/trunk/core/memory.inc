@@ -1051,7 +1051,8 @@ f68:
 .14:
            cmp ebx, OS_BASE
            jae .fail
-           stdcall get_event_ex, ebx, ecx
+           mov edi,ebx
+           call get_event_ex
            mov [esp+36], eax
            ret
 .15:

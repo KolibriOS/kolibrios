@@ -15,321 +15,229 @@ $Revision$
 
 align 32
 irq0:
-	pushad
-	mov   ax, app_data  ;
-	mov   ds, ax
-	mov   es, ax
-
-;       cmp     dword[CURRENT_TASK], 1
-;       jnz     @f
-;       mov     eax, [esp + 32]
-;       cmp     eax, idle_loop + 1
-;       jz      @f
-;       DEBUGF  1, "K : OOOPS! EAX = 0x%x\n", eax
-;   @@:
-
-	inc   dword [timer_ticks]
-
-	mov   eax, [timer_ticks]
-	call  playNote		 ; <<<--- Speaker driver
-
-	cmp   eax,[next_usage_update]
-	jb    .nocounter
-	add   eax,100
-	mov   [next_usage_update],eax
-	call  updatecputimes
-.nocounter:
-	cmp   [DONT_SWITCH], byte 1
-	jne   .change_task
-
-	mov   al,0x20	; send End Of Interrupt signal
-	mov   dx,0x20
-	out   dx,al
-
-	mov   [DONT_SWITCH], byte 0
-
-	popad
-	iretd
-
-.change_task:
-	call  update_counters
-
-	call  find_next_task
-	mov   ecx, eax
-
-	mov   al,0x20	; send End Of Interrupt signal
-	mov   dx,0x20
-	out   dx,al
-
-	test  ecx, ecx	; if there is only one running process
-	jnz   .return
-
-	call  do_change_task
-
-.return:
-	popad
- ;       popfd
-	iretd
-
+        pushad
+        Mov     ds, ax, app_data
+        mov     es, ax
+        inc     [timer_ticks]
+        mov     eax, [timer_ticks]
+        call    playNote       ; <<<--- Speaker driver
+        sub     eax,[next_usage_update]
+        cmp     eax,100
+        jb      .nocounter
+        add     [next_usage_update],100
+        call    updatecputimes
+  .nocounter:
+        mov     al,0x20  ; send End Of Interrupt signal
+        out     0x20,al
+        btr     dword[DONT_SWITCH], 0
+        jc      .return
+        call    find_next_task
+        jz      .return  ; if there is only one running process
+        call    do_change_task
+  .return:
+        popad
+        iretd
 
 align 4
 change_task:
-
-	pushfd
-	cli
-	pushad
-
-	call  update_counters
-
+        pushfd
+        cli
+        pushad
 if 0
-
-; \begin{Mario79}
-	cmp	[dma_task_switched], 1
-	jne	.find_next_task
-	mov	[dma_task_switched], 0
-	mov	ebx, [dma_process]
-	cmp	[CURRENT_TASK], ebx
-	je	.return
-	mov	edi, [dma_slot_ptr]
-	mov	[CURRENT_TASK], ebx
-	mov	[TASK_BASE], edi
-	jmp	@f
+; \begin{Mario79} ; <- must be refractoried, if used...
+        cmp     [dma_task_switched], 1
+        jne     .find_next_task
+        mov     [dma_task_switched], 0
+        mov     ebx, [dma_process]
+        cmp     [CURRENT_TASK], ebx
+        je      .return
+        mov     edi, [dma_slot_ptr]
+        mov     [CURRENT_TASK], ebx
+        mov     [TASK_BASE], edi
+        jmp     @f
 .find_next_task:
 ; \end{Mario79}
-
 end if
-
-	call  find_next_task
-	test  eax, eax	  ; the same task -> skip switch
-	jnz    .return
-@@:
-	mov   [DONT_SWITCH],byte 1
-	call  do_change_task
-
-.return:
-	popad
-	popfd
-	ret
-
+        call    find_next_task
+        jz      .return  ; the same task -> skip switch
+  @@:   mov     byte[DONT_SWITCH], 1
+        call    do_change_task
+  .return:
+        popad
+        popfd
+        ret
 
 uglobal
-   align 4
-   far_jump:
-    .offs dd ?
-    .sel  dw ?
-   context_counter     dd ? ;noname & halyavin
-   next_usage_update   dd ?
-   timer_ticks	       dd ?
-   prev_slot	       dd ?
-   event_sched	       dd ?
+align 4
+;  far_jump:
+;   .offs dd ?
+;   .sel  dw ?
+   context_counter     dd 0 ;noname & halyavin
+   next_usage_update   dd 0
+   timer_ticks         dd 0
+;  prev_slot           dd ?
+;  event_sched         dd ?
 endg
 
-
+align 4
 update_counters:
-	mov   edi, [TASK_BASE]
-	mov   ebx, [edi+TASKDATA.counter_add] ; time stamp counter add
-	rdtsc
-	sub   eax, ebx
-	add   eax, [edi+TASKDATA.counter_sum] ; counter sum
-	mov   [edi+TASKDATA.counter_sum], eax
-ret
-
-
-; Find next task to execute
-; result: ebx = number of the selected task
-;         eax = 1  if the task is the same
-;         edi = address of the data for the task in ebx
-;         [0x3000] = ebx and [0x3010] = edi
-;         corrupts other regs
-find_next_task:
-	mov   ebx, [CURRENT_TASK]
-	mov   edi, [TASK_BASE]
-	mov   [prev_slot], ebx
-
-.waiting_for_termination:
-.waiting_for_reuse:
-.waiting_for_event:
-.suspended:
-	cmp   ebx, [TASK_COUNT]
-	jb    @f
-	mov   edi, CURRENT_TASK
-	xor   ebx, ebx
-@@:
-
-	add   edi,0x20
-	inc   ebx
-
-	mov   al, byte [edi+TASKDATA.state]
-	test  al, al
-	jz    .found
-	cmp   al, 1
-	jz    .suspended
-	cmp   al, 2
-	jz    .suspended
-	cmp   al, 3
-	je    .waiting_for_termination
-	cmp   al, 4
-	je    .waiting_for_termination
-	cmp   al, 9
-	je    .waiting_for_reuse
-
-	mov   [CURRENT_TASK],ebx
-	mov   [TASK_BASE],edi
-
-	cmp   al, 5
-	jne   .noevents
-	call  get_event_for_app
-	test  eax, eax
-	jnz   @f
-	mov   eax, ebx
-	shl   eax, 8
-	mov   eax, [SLOT_BASE + APPDATA.wait_timeout + eax]
-	cmp   eax, [timer_ticks]
-	jae   .waiting_for_event
-	xor   eax, eax
-@@:
-	mov   [event_sched], eax
-	mov   [edi+TASKDATA.state], byte 0
-.noevents:
-.found:
-	mov   [CURRENT_TASK],ebx
-	mov   [TASK_BASE],edi
-	rdtsc			  ;call  _rdtsc
-	mov   [edi+TASKDATA.counter_add],eax
-
-	mov esi, [prev_slot]
-	xor   eax, eax
-	cmp   ebx, esi
-	sete  al
-ret
-
-; param
-;  ebx = incoming task
-;  esi = outcomig task
-
-do_change_task:
-
-	shl ebx, 8
-	add ebx, SLOT_BASE
-	mov [current_slot], ebx
-
-	shl esi, 8
-	add esi, SLOT_BASE
-
-	mov [esi+APPDATA.saved_esp], esp
-	mov esp, [ebx+APPDATA.saved_esp]
-
-; set thread io map
-
-	mov ecx, [ebx+APPDATA.io_map]
-	mov edx, [ebx+APPDATA.io_map+4]
-	mov dword [page_tabs+((tss._io_map_0 and -4096) shr 10)], ecx
-	mov dword [page_tabs+((tss._io_map_1 and -4096) shr 10)], edx
-
-	mov eax, [ebx+APPDATA.dir_table]
-	cmp eax, [esi+APPDATA.dir_table]
-	je @F
-	mov cr3, eax
-@@:
-	mov	eax, [ebx+APPDATA.saved_esp0]
-	mov	[tss._esp0], eax
-	mov ax, graph_data
-	mov gs, ax
-
-	mov eax, [CURRENT_TASK]
-	cmp eax, [fpu_owner]
-	clts				 ;clear a task switch flag
-	je @F
-					 ;and set it again if the owner
-	mov ecx, cr0			 ;of a fpu has changed
-	or ecx, CR0_TS
-	mov cr0, ecx
-@@:
-	inc   [context_counter] ;noname & halyavin
-	test [ebx+APPDATA.dbg_state], 1
-	jnz @F
-	ret
-@@:
-	mov eax, [ebx+APPDATA.dbg_regs.dr0]
-	mov dr0, eax
-	mov eax, [ebx+APPDATA.dbg_regs.dr1]
-	mov dr1, eax
-	mov eax, [ebx+APPDATA.dbg_regs.dr2]
-	mov dr2, eax
-	mov eax, [ebx+APPDATA.dbg_regs.dr3]
-	mov dr3, eax
-	xor eax, eax
-	mov dr6, eax
-	mov eax, [ebx+APPDATA.dbg_regs.dr7]
-	mov dr7, eax
-	ret
-
+        mov     edi, [TASK_BASE]
+        rdtsc
+        sub     eax, [edi+TASKDATA.counter_add] ; time stamp counter add
+        add     [edi+TASKDATA.counter_sum], eax ; counter sum
+        ret
 align 4
 updatecputimes:
+        xor     eax,eax
+        xchg    eax,[idleuse]
+        mov     [idleusesec],eax
+        mov     ecx, [TASK_COUNT]
+        mov     edi, TASK_DATA
+  .newupdate:
+        xor     eax,eax
+        xchg    eax,[edi+TASKDATA.counter_sum]
+        mov     [edi+TASKDATA.cpu_usage],eax
+        add     edi,0x20
+        loop    .newupdate
+        ret
 
-	mov  eax,[idleuse]
-	mov  [idleusesec],eax
-	mov  [idleuse],dword 0
-	mov  ecx, [TASK_COUNT]
-	mov  edi, TASK_DATA
-.newupdate:
-	mov  ebx,[edi+TASKDATA.counter_sum]
-	mov  [edi+TASKDATA.cpu_usage],ebx
-	mov  [edi+TASKDATA.counter_sum],dword 0
-	add  edi,0x20
-	dec  ecx
-	jnz  .newupdate
+align 4
+find_next_task:
+;info:
+;   Find next task to execute
+;retval:
+;   ebx = address of the APPDATA for the selected task (slot-base)
+;   esi = previous slot-base ([current_slot] at the begin)
+;   edi = address of the TASKDATA for the selected task
+;   ZF  = 1  if the task is the same
+;warning:
+;   [CURRENT_TASK] = bh , [TASK_BASE] = edi -- as result
+;   [current_slot] is not set to new value (ebx)!!!
+;scratched: eax,ecx
+        call    update_counters ; edi := [TASK_BASE]
+        Mov     esi, ebx, [current_slot]
+  .loop:
+        cmp     bh,[TASK_COUNT]
+        jb      @f
+        xor     bh, bh
+        mov     edi,CURRENT_TASK
+  @@:   inc     bh       ; ebx += APPDATA.size
+        add     edi,0x20 ; edi += TASKDATA.size
+        mov     al, [edi+TASKDATA.state]
+        test    al, al
+        jz      .found   ; state == 0
+        cmp     al, 5
+        jne     .loop    ; state == 1,2,3,4,9
+      ; state == 5
+        pushad  ; more freedom for [APPDATA.wait_test]
+        call    [ebx+APPDATA.wait_test]
+        mov     [esp+28],eax
+        popad
+        or      eax,eax
+        jnz     @f
+      ; testing for timeout
+        mov     ecx, [timer_ticks]
+        sub     ecx, [ebx+APPDATA.wait_begin]
+        cmp     ecx, [ebx+APPDATA.wait_timeout]
+        jb      .loop
+  @@:   mov     [ebx+APPDATA.wait_param], eax  ; retval for wait
+        mov     [edi+TASKDATA.state], 0
+  .found:
+        mov     [CURRENT_TASK],bh
+        mov     [TASK_BASE],edi
+        rdtsc   ;call  _rdtsc
+        mov     [edi+TASKDATA.counter_add],eax ; for next using update_counters
+        cmp     ebx, esi ;esi - previous slot-base
+        ret
+;TODO: Надо бы убрать использование do_change_task из V86...
+; и после этого перенести обработку TASKDATA.counter_add/sum в do_change_task
 
-	ret
+align 4
+do_change_task:
+;param:
+;   ebx = address of the APPDATA for incoming task (new)
+;warning:
+;   [CURRENT_TASK] and [TASK_BASE] must be changed before (e.g. in find_next_task)
+;   [current_slot] is the outcoming (old), and set here to a new value (ebx)
+;scratched: eax,ecx,esi
+        mov     esi,ebx
+        xchg    esi,[current_slot]
+      ; set new stack after saving old
+        mov     [esi+APPDATA.saved_esp], esp
+        mov     esp, [ebx+APPDATA.saved_esp]
+      ; set new thread io-map
+        Mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)],eax,[ebx+APPDATA.io_map]
+        Mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)],eax,[ebx+APPDATA.io_map+4]
+      ; set new thread memory-map
+        mov     ecx, APPDATA.dir_table
+        mov     eax, [ebx+ecx]      ;offset>0x7F
+        cmp     eax, [esi+ecx]      ;offset>0x7F
+        je      @f
+        mov     cr3, eax
+  @@: ; set tss.esp0
+        Mov     [tss._esp0],eax,[ebx+APPDATA.saved_esp0]
+      ; set gs selector unconditionally
+        Mov     gs,ax,graph_data
+      ; set CR0.TS
+        cmp     bh, byte[fpu_owner] ;bh == incoming task (new)
+        clts                        ;clear a task switch flag
+        je      @f
+        mov     eax, cr0            ;and set it again if the owner
+        or      eax, CR0_TS         ;of a fpu has changed
+        mov     cr0, eax
+  @@: ; set context_counter (only for user pleasure ???)
+        inc     [context_counter]   ;noname & halyavin
+      ; set debug-registers, if it's necessary
+        test    byte[ebx+APPDATA.dbg_state], 1
+        jz      @f
+        xor     eax, eax
+        mov     dr6, eax
+        lea     esi,[ebx+ecx+APPDATA.dbg_regs-APPDATA.dir_table] ;offset>0x7F
+        cld
+  macro lodsReg [reg] {
+        lodsd
+        mov     reg,eax
+  }     lodsReg dr0, dr1, dr2, dr3, dr7
+  purge lodsReg
+  @@:   ret
+;end.
 
 if 0
-
-
 struc TIMER
 {
   .next      dd ?
   .exp_time  dd ?
   .func      dd ?
-  .arg	     dd ?
+  .arg       dd ?
 }
 
-
-
-
-
-
-
-
-
-MAX_PROIRITY	     0	 ; highest, used for kernel tasks
-MAX_USER_PRIORITY    0	 ; highest priority for user processes
-USER_PRIORITY	     7	 ; default (should correspond to nice 0)
-MIN_USER_PRIORITY   14	 ; minimum priority for user processes
-IDLE_PRIORITY	    15	 ; lowest, only IDLE process goes here
-NR_SCHED_QUEUES     16	 ; MUST equal IDLE_PRIORYTY + 1
+MAX_PROIRITY         0   ; highest, used for kernel tasks
+MAX_USER_PRIORITY    0   ; highest priority for user processes
+USER_PRIORITY        7   ; default (should correspond to nice 0)
+MIN_USER_PRIORITY   14   ; minimum priority for user processes
+IDLE_PRIORITY       15   ; lowest, only IDLE process goes here
+NR_SCHED_QUEUES     16   ; MUST equal IDLE_PRIORYTY + 1
 
 rdy_head   rd 16
-
 
 align 4
 pick_task:
 
-	   xor eax, eax
-.pick:
-	   mov ebx, [rdy_head+eax*4]
-	   test ebx, ebx
-	   jz .next
+       xor eax, eax
+  .pick:
+       mov ebx, [rdy_head+eax*4]
+       test ebx, ebx
+       jz .next
 
-	   mov [next_task], ebx
-	   test [ebx+flags.billable]
-	   jz @F
-	   mov [bill_task], ebx
-@@:
-	   ret
-.next:
-	   inc eax
-	   jmp .pick
-
+       mov [next_task], ebx
+       test [ebx+flags.billable]
+       jz @F
+       mov [bill_task], ebx
+  @@:
+       ret
+  .next:
+       inc eax
+       jmp .pick
 
 ; param
 ;  eax= task
@@ -338,51 +246,48 @@ pick_task:
 ;  eax= task
 ;  ebx= queue
 ;  ecx= front if 1 or back if 0
-
 align 4
 shed:
-	   cmp [eax+.tics_left], 0 ;signed compare
-	   mov ebx, [eax+.priority]
-	   setg ecx
-	   jg @F
+       cmp [eax+.tics_left], 0 ;signed compare
+       mov ebx, [eax+.priority]
+       setg ecx
+       jg @F
 
-	   mov edx, [eax+.tics_quantum]
-	   mov [eax+.ticks_left], edx
-	   cmp ebx, (IDLE_PRIORITY-1)
-	   je @F
-	   inc ebx
-@@:
-	   ret
+       mov edx, [eax+.tics_quantum]
+       mov [eax+.ticks_left], edx
+       cmp ebx, (IDLE_PRIORITY-1)
+       je @F
+       inc ebx
+  @@:
+       ret
 
 ; param
 ;  eax= task
-
 align 4
 enqueue:
-	  call shed  ;eax
-	  cmp [rdy_head+ebx*4],0
-	  jnz @F
+      call shed  ;eax
+      cmp [rdy_head+ebx*4],0
+      jnz @F
 
-	  mov [rdy_head+ebx*4], eax
-	  mov [rdy_tail+ebx*4], eax
-	  mov [eax+.next_ready], 0
-	  jmp .pick
-@@:
-	  test ecx, ecx
-	  jz .back
+      mov [rdy_head+ebx*4], eax
+      mov [rdy_tail+ebx*4], eax
+      mov [eax+.next_ready], 0
+      jmp .pick
+  @@:
+      test ecx, ecx
+      jz .back
 
-	  mov ecx, [rdy_head+ebx*4]
-	  mov [eax+.next_ready], ecx
-	  mov [rdy_head+ebx*4], eax
-	  jmp .pick
-.back:
-	  mov ecx, [rdy_tail+ebx*4]
-	  mov [ecx+.next_ready], eax
-	  mov [rdy_tail+ebx*4], eax
-	  mov [eax+.next_ready], 0
-.pick:
-	  call pick_proc     ;select next task
-	  ret
+      mov ecx, [rdy_head+ebx*4]
+      mov [eax+.next_ready], ecx
+      mov [rdy_head+ebx*4], eax
+      jmp .pick
+  .back:
+      mov ecx, [rdy_tail+ebx*4]
+      mov [ecx+.next_ready], eax
+      mov [rdy_tail+ebx*4], eax
+      mov [eax+.next_ready], 0
+  .pick:
+      call pick_proc     ;select next task
+      ret
 
 end if
-
