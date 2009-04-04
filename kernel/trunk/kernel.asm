@@ -454,8 +454,8 @@ high_code:
 
 ; LOAD IDT
 
-           call build_interrupt_table
-           lidt [idtreg]
+           call build_interrupt_table ;lidt is executed
+          ;lidt [idtreg]
 
            call init_kernel_heap
            stdcall kernel_alloc, RING0_STACK_SIZE+512
@@ -1296,6 +1296,7 @@ display_number_force:
      xor   edx,edx
      call  division_64_bits
      div   ebx
+   hexletters = __fdo_hexdigits
      add   edx,hexletters
      mov   dl,[edx]
      mov   [edi],dl

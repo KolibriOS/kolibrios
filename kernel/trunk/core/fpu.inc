@@ -142,7 +142,7 @@ fpu_restore:
            ret
 
 align 4
-e7:                        ;#NM exception handler
+except_7:                  ;#NM exception handler
         save_ring3_context
         clts
         mov ax, app_data  ;
@@ -180,7 +180,7 @@ e7:                        ;#NM exception handler
 
 iglobal
   fpu_owner dd 0
- endg
+endg
 
 reg_eip       equ ebp+4
 reg_cs        equ ebp+8
@@ -188,8 +188,8 @@ reg_eflags    equ ebp+12
 reg_esp       equ ebp+16
 reg_ss        equ ebp+20
 
-align 4
-except_16:           ;fpu native exceptions handler
+align 4    ;not used now
+proc except_16       ;fpu native exceptions handler
         test    byte [esp+8+2], 2
         jnz     v86_except_16
            push ebp
@@ -233,9 +233,10 @@ except_16:           ;fpu native exceptions handler
 
            mov bl, 16
            jmp exc_c
+endp
 
-align 4
-except_19:          ;sse exceptions handler
+align 4    ;not used now
+proc except_19      ;sse exceptions handler
         test    byte [esp+8+2], 2
         jnz     v86_except_19
            push ebp
@@ -278,6 +279,7 @@ except_19:          ;sse exceptions handler
 
            mov bl, 19
            jmp exc_c
+endp
 
 restore reg_eip
 restore reg_cs

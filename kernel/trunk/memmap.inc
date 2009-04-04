@@ -70,9 +70,9 @@
 ;
 ;   A400  ->   B0FF   free
 
-;   B100  ->   B2FF   IDT
+;   B100  ->   B307   IDT for int_0x00..int_0x40
 
-;   B300  ->   BFFF   free
+;   B308  ->   BFFF   free
 
 ;   C000  ->   C3FF   window stack C000 no of windows - all in words
 ;   C402  ->   C7FF   window position in stack

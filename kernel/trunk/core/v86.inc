@@ -203,7 +203,7 @@ v86_set_page:
 ;        add     edx, ecx
 ;        cmp     dword [edx], 0          ; free block?
 ;        jnz     .n
-;        cmp     dword [edx+4], 
+;        cmp     dword [edx+4],
 ;        and     [esi+V86_machine.mutex], 0
 ;        pop     edi edx ecx ebx
 ;        ret
@@ -351,47 +351,27 @@ endg
 ; a protected-mode interrupt handler (typically the general-protection
 ; exception handler, which in turn calls the virtual 8086-mode monitor).
 
-v86_debug_exc:
-        pushad
-        xor     eax, eax
-        mov     dr6, eax
-        mov     bl, 1
-        jmp     v86_exc_c
-
-v86_page_fault:
-        add     esp, 4
-        pushad
-        mov     bl, 14
-        jmp     v86_exc_c
-
-v86_except_16:
-        pushad
-        mov     bl, 16
-        jmp     v86_exc_c
-v86_except_19:
-        pushad
-        mov     bl, 19
-
 iglobal
-v86_exc_str1    db      'V86 : unexpected exception ',0
-v86_exc_str2    db      ' at ',0
-v86_exc_str3    db      ':',0
-v86_exc_str4    db      13,10,'V86 : faulted code:',0
-v86_exc_str5    db      ' (unavailable)',0
-v86_newline     db      13,10,0
-v86_io_str1     db      'V86 : access to disabled i/o port ',0
-v86_io_byte     db      ' (byte)',13,10,0
-v86_io_word     db      ' (word)',13,10,0
-v86_io_dword    db      ' (dword)',13,10,0
-v86_irqerr      db      'V86 : IRQ already hooked',13,10,0
+  v86_exc_str1  db      'V86 : unexpected exception ',0
+  v86_exc_str2  db      ' at ',0
+  v86_exc_str3  db      ':',0
+  v86_exc_str4  db      13,10,'V86 : faulted code:',0
+  v86_exc_str5  db      ' (unavailable)',0
+  v86_newline   db      13,10,0
+  v86_io_str1   db      'V86 : access to disabled i/o port ',0
+  v86_io_byte   db      ' (byte)',13,10,0
+  v86_io_word   db      ' (word)',13,10,0
+  v86_io_dword  db      ' (dword)',13,10,0
+  v86_irqerr    db      'V86 : IRQ already hooked',13,10,0
 endg
 
 v86_exc_c:
-        mov     ax, app_data
-        mov     ds, ax
-        mov     es, ax
 ; Did we all that we have wanted to do?
-        mov     eax, [esp+v86_regs.size+10h+18h]
+        cmp     bl,1
+        jne     @f
+        xor     eax, eax
+        mov     dr6, eax
+  @@:   mov     eax, [esp+v86_regs.size+10h+18h]
         cmp     word [esp+v86_regs.eip], ax
         jnz     @f
         shr     eax, 16
