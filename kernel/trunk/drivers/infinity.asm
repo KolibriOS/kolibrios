@@ -478,8 +478,8 @@ proc CreateBuffer stdcall, format:dword, size:dword
            mov ecx, (64*1024)/4
            rep stosd
 
-           xor edx, edx
-           mov ebx, MANUAL_DESTROY
+           xor esi, esi
+           mov ecx, MANUAL_DESTROY
            call CreateEvent
 
            mov ebx, [str]
@@ -1304,9 +1304,3 @@ str.bk        rd 1
 mix_2_core    rd 1
 mix_3_core    rd 1
 mix_4_core    rd 1
-
-
-
-
-
-

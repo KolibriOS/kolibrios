@@ -190,9 +190,9 @@ proc refill stdcall, str:dword
            jz .exit
 
            mov ebx, [ebx+STREAM.notify_id]
-           mov ecx, EVENT_WATCHED
-           xor edx, edx
-           call RaiseEvent   ;eax, ebx, ecx, edx
+           mov edx, EVENT_WATCHED
+           xor esi, esi
+           call RaiseEvent   ;eax, ebx, edx, esi
 .exit:
            ret
 endp
@@ -250,20 +250,20 @@ proc refill_ring stdcall, str:dword
 
            sub eax, [ebx+STREAM.in_base]
            sub eax, 128
-           lea edx, [event]
+           lea esi, [event]
 
-           mov dword [edx], RT_INP_EMPTY
-           mov dword [edx+4], 0
-           mov dword [edx+8], ebx
-           mov dword [edx+12], eax
+           mov dword [esi], RT_INP_EMPTY
+           mov dword [esi+4], 0
+           mov dword [esi+8], ebx
+           mov dword [esi+12], eax
 
            mov eax, [ebx+STREAM.notify_event]
            test eax, eax
            jz .exit
 
            mov ebx, [ebx+STREAM.notify_id]
-           xor ecx, ecx
-           call RaiseEvent   ;eax, ebx, ecx, edx
+           xor edx, edx
+           call RaiseEvent   ;eax, ebx, edx, esi
 .exit:
            ret
 endp
@@ -1260,4 +1260,3 @@ proc new_mix stdcall, output:dword
 endp
 
 end if
-
