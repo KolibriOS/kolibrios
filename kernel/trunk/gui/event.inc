@@ -100,6 +100,8 @@ RemoveEventTo:                                     ;; INTERNAL use !!! don't use
 ;scratched: ebx,ecx
         mov     ecx,eax              ; ecx=eax=Self,      ebx=NewLeft
         xchg    ecx,[ebx+EVENT.fd]   ; NewLeft.fd=Self,   ecx=NewRight
+        cmp     eax,ecx              ; стоп, себе думаю...
+        je      .break               ; - а не дурак ли я?
         mov     [ecx+EVENT.bk],eax   ; NewRight.bk=Self
         xchg    ebx,[eax+EVENT.bk]   ; Self.bk=NewLeft,   ebx=OldLeft
         xchg    ecx,[eax+EVENT.fd]   ; Self.fd=NewRight,  ecx=OldRight
