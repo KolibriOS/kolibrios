@@ -73,14 +73,15 @@ set_event:                                         ;; INTERNAL use !!! don't use
 ;   eax - event (=0 => fail)
 ;   edx - uid
 ;scratched: ebx,ecx,esi,edi
-        mov     eax,[event_start]
-        cmp     eax,FreeEvents
+        mov     eax,FreeEvents
+        cmp     eax,[eax+EVENT.fd]
         jne     @f  ; not empty ???
         pushad
         call    init_events
         popad
         jz      RemoveEventTo.break ; POPF+RET
-  @@:   mov     [eax+EVENT.magic],'EVNT'
+  @@:   mov     eax,[eax+EVENT.fd]
+        mov     [eax+EVENT.magic],'EVNT'
         mov     [eax+EVENT.destroy],destroy_event.internal
         mov     [eax+EVENT.state],ecx
         mov     [eax+EVENT.pid],edx
@@ -121,7 +122,7 @@ NotDummyTest:                                      ;; INTERNAL use (not returned
         pop     edi
         pushfd
         cli
-        call    pid_to_slot ; seved all registers (eax - retval)
+        call    pid_to_slot ; saved all registers (eax - retval)
         shl     eax,8
         jz      RemoveEventTo.break ; POPF+RET
         jmp     edi ; штатный возврат
@@ -263,7 +264,7 @@ wait_event:                                        ;; EXPORT use
 ;scratched: ecx,edx,esi
         call    DummyTest
         mov     ecx,eax              ; wait_param
-        mov     edx, get_event_alone
+        mov     edx, get_event_alone ; wait_test
         call    Wait_events          ; timeout ignored
         jmp     wait_finish
 
@@ -281,7 +282,7 @@ get_event_ex:                                      ;; f68:14
 ;retval:
 ;   eax - собственно EVENT (будем называть это его хэндлом)
 ;scratched: ebx,ecx,edx,esi,edi
-        mov     edx, get_event_queue
+        mov     edx, get_event_queue ; wait_test
         call    Wait_events          ; timeout ignored
         lea     esi,[eax+EVENT.code]
         mov     ecx,EVENT.codesize/4
@@ -291,7 +292,7 @@ get_event_ex:                                      ;; f68:14
 wait_finish:
         test    byte[eax+EVENT.state+3], MANUAL_RESET shr 24
         jnz     get_event_queue.ret  ; RET
-        and     byte[ebx+EVENT.state+3], not((EVENT_SIGNALED+EVENT_WATCHED)shr 24)
+        and     byte[eax+EVENT.state+3], not((EVENT_SIGNALED+EVENT_WATCHED)shr 24)
         test    byte[eax+EVENT.state+3], MANUAL_DESTROY shr 24
         jz      destroy_event.internal
         mov     ebx,[current_slot]
@@ -399,8 +400,8 @@ align 4
 sys_waitforevent:                                  ;; f10
         or      ebx,-1 ; infinite timeout
 sys_wait_event_timeout:                            ;; f23
-        mov     edx,get_event_for_app
-        call    Wait_events_ex
+        mov     edx,get_event_for_app ; wait_test
+        call    Wait_events_ex        ; ebx - timeout
         mov     [esp+32],eax
         ret
 
