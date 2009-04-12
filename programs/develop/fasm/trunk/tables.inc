@@ -1714,9 +1714,9 @@ instructions_7:
  db 'roundps',8
  dw sse4_instruction_3a_imm8-assembler
  db 'roundsd',0Bh
- dw sse4_instruction_3a_imm8-assembler
+ dw sse4_sd_instruction_3a_imm8-assembler
  db 'roundss',0Ah
- dw sse4_instruction_3a_imm8-assembler
+ dw sse4_ss_instruction_3a_imm8-assembler
  db 'rsqrtps',52h
  dw sse_ps_instruction-assembler
  db 'rsqrtss',52h

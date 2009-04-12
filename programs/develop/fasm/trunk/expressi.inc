@@ -1014,11 +1014,8 @@ calculate_expression:
 	jne	operand_sizes_do_not_match
 	jmp	calculation_loop
       current_offset_label:
-	mov	al,[labels_type]
-	mov	[edi+12],al
-	mov	eax,[org_symbol]
-	mov	[edi+16],eax
 	mov	eax,[current_offset]
+      make_current_offset_label:
 	xor	edx,edx
 	sub	eax,dword [org_origin]
 	sbb	edx,dword [org_origin+4]
@@ -1027,24 +1024,15 @@ calculate_expression:
 	stos	dword [edi]
 	mov	eax,[org_registers]
 	stos	dword [edi]
+	mov	al,[labels_type]
+	mov	[edi-12+12],al
+	mov	eax,[org_symbol]
+	mov	[edi-12+16],eax
 	add	edi,8
 	jmp	calculation_loop
       org_origin_label:
-	mov	al,[labels_type]
-	mov	[edi+12],al
-	mov	eax,[org_symbol]
-	mov	[edi+16],eax
 	mov	eax,[org_start]
-	xor	edx,edx
-	sub	eax,dword [org_origin]
-	sbb	edx,dword [org_origin+4]
-	stos	dword [edi]
-	mov	eax,edx
-	stos	dword [edi]
-	mov	eax,[org_registers]
-	stos	dword [edi]
-	add	edi,8
-	jmp	calculation_loop
+	jmp	make_current_offset_label
       counter_label:
 	mov	eax,[counter]
       make_dword_label_value:

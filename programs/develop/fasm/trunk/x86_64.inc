@@ -4821,12 +4821,12 @@ movdq2q_instruction:
 	jmp	nomem_instruction_ready
 
 sse_ps_instruction_imm8:
-	mov	[immediate_size],8
+	mov	[immediate_size],1
 sse_ps_instruction:
 	mov	[mmx_size],16
 	jmp	sse_instruction
 sse_pd_instruction_imm8:
-	mov	[immediate_size],8
+	mov	[immediate_size],1
 sse_pd_instruction:
 	mov	[mmx_size],16
 	mov	[opcode_prefix],66h
@@ -4888,7 +4888,7 @@ sse_instruction:
 	cmp	[operand_size],al
 	jne	invalid_operand_size
       sse_mem_size_ok:
-	cmp	[immediate_size],8
+	cmp	[immediate_size],1
 	je	mmx_imm8
 	cmp	[immediate_size],-1
 	jne	sse_ok
@@ -4908,7 +4908,7 @@ sse_instruction:
 	cmp	ah,16
 	jne	invalid_operand_size
 	mov	bl,al
-	cmp	[immediate_size],8
+	cmp	[immediate_size],1
 	je	mmx_nomem_imm8
 	cmp	[immediate_size],-1
 	jne	sse_nomem_ok
@@ -5405,22 +5405,31 @@ sse4_instruction_38_xmm0:
 	mov	[immediate_size],-1
 	jmp	sse4_instruction_38
 sse4_instruction_38_imm8:
-	mov	[immediate_size],8
+	mov	[immediate_size],1
 sse4_instruction_38:
+	mov	[mmx_size],16
 	mov	[opcode_prefix],66h
 	mov	[base_code],0Fh
 	mov	[supplemental_code],al
 	mov	al,38h
-	mov	[mmx_size],16
 	jmp	sse_instruction
+sse4_ss_instruction_3a_imm8:
+	mov	[immediate_size],1
+	mov	[mmx_size],4
+	jmp	sse4_instruction_3a_setup
+sse4_sd_instruction_3a_imm8:
+	mov	[immediate_size],1
+	mov	[mmx_size],8
+	jmp	sse4_instruction_3a_setup
 sse4_instruction_3a_imm8:
-	mov	[immediate_size],8
+	mov	[immediate_size],1
 sse4_instruction_3a:
+	mov	[mmx_size],16
+      sse4_instruction_3a_setup:
 	mov	[opcode_prefix],66h
 	mov	[base_code],0Fh
 	mov	[supplemental_code],al
 	mov	al,3Ah
-	mov	[mmx_size],16
 	jmp	sse_instruction
 extractps_instruction:
 	mov	[opcode_prefix],66h
