@@ -9,94 +9,14 @@ use32                ; транслятор, использующий 32 разрядных команды
     dd mem                  ; Объем используемой памяти, для стека отведем 0х100 байт и выровним на грницу 4 байта
     dd mem                  ; расположим позицию стека в области памяти, сразу за телом программы. Вершина стека в диапазоне памяти, указанном выше
     dd 0x0              ; указатель на строку с параметрами.
-    dd way_of_ini
+    dd cur_dir_path
 include 'macros.inc'
 include 'editbox_ex.mac'
+include 'load_lib.mac'
 start:
-;Get way for ini file.
-        mov     edi,way_of_ini
-        mov     ecx,1024
-        xor     eax,eax
-        cld
-        repne   scasb
-        test    ecx,ecx
-        jz      @f
-
-        mov     esi,1024
-        sub     esi,ecx
-        mov     ecx,esi
-        std
-        mov     al,'/'
-        repne   scasb
-        test    ecx,ecx
-        jz      next_way
-        add     edi,2
-@@:
-        mov     esi,ini_file
-        cld
-
-@@:     lodsb
-        test    al,al
-        jz      @f
-        stosb
-        jmp     @b
-
-@@:     xor     eax,eax
-        stosb
-
-; load DLL
-        mov     ecx,way_of_ini
-        mov     eax, 68
-        mov     ebx, 19
-        mcall
-        test    eax, eax
-        jz      next_way
-        jmp     import_init_
-next_way:
-        mov     ecx,ini_file
-        mov     eax, 68
-        mov     ebx, 19
-        mcall
-        test    eax, eax
-        jz      exit
-
-
-
-import_init_:
-; initialize import
-        mov     edx, eax
-        mov     esi,myimport
-import_loop:
-        lodsd
-        test    eax, eax
-        jz      import_done
-        push    edx
-import_find:
-        mov     ebx, [edx]
-        test    ebx, ebx
-        jz      exit;import_not_found
-        push    eax
-@@:
-        mov     cl, [eax]
-        cmp     cl, [ebx]
-        jnz     import_find_next
-        test    cl, cl
-        jz      import_found
-        inc     eax
-        inc     ebx
-        jmp     @b
-import_find_next:
-        pop     eax
-        add     edx, 8
-        jmp     import_find
-import_found:
-        pop     eax
-        mov     eax, [edx+4]
-        mov     [esi-4], eax
-        pop     edx
-        jmp     import_loop
-import_done:
-
+;universal load library/librarys
+load_library  library_name, cur_dir_path, library_path, system_path, \
+err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
         mcall   40,0x27         ;установить маску для ожидаемых событий
 red_win:
     call draw_window            ;первоначально необходимо нарисовать окно
@@ -150,7 +70,7 @@ key:
 align 4
 draw_window:            ;рисование окна приложения
         mcall   12,1
-        mcall   0,(50*65536+390),(30*65536+200),0xb3AABBCC,0x805080DD,hed
+        mcall   0,(50*65536+390),(30*65536+200),0x33AABBCC,0x805080DD,hed
 
         push    dword edit1
         call    [edit_box_draw]
@@ -174,7 +94,13 @@ draw_window:            ;рисование окна приложения
     ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные
-ini_file db '/sys/lib/box_lib.obj',0
+system_path      db '/sys/lib/box_lib.obj',0
+library_name     db 'box_lib.obj',0
+err_message_found_lib   db 'Sorry I cannot found library box_lib.obj',0
+head_f_i:
+head_f_l        db 'System error',0
+err_message_import      db 'Error on load import library box_lib.obj',0
+
 myimport:   
 
 edit_box_draw   dd      aEdit_box_draw
@@ -239,7 +165,9 @@ op_text:                ; Сопровождающий текст для чек боксов
 .3 db 'Option_Box #3'
 .e3:
 ed_buffer       rb 100
-way_of_ini      rb 1024
+;-----------------------
+cur_dir_path    rb 4096
+library_path    rb 4096
 i_end:
 rb 1024
 mem:
