@@ -4,775 +4,481 @@
 #include <spinlock.h>
 #include <link.h>
 #include <mm.h>
-#include <slab.h>
+
+#define PG_DEMAND   0x400
+
+#define HF_WIDTH    16
+#define HF_SIZE     (1 << HF_WIDTH)
+
+#define BUDDY_SYSTEM_INNER_BLOCK  0xff
+
+static zone_t z_heap;
+
+static link_t  shared_mmap;
 
 
-#define  MD_FREE    1
-#define  MD_USED    2
+#define heap_index( frame ) \
+	  (index_t)( (frame) - z_heap.frames)
 
-typedef struct {
-    u32_t  av_mapped;
-    u32_t  av_unmapped;
-
-    link_t mapped[32];
-    link_t unmapped[32];
-
-    link_t used;
-
-    SPINLOCK_DECLARE(lock);   /**< this lock protects everything below */
-}heap_t;
+#define heap_index_abs( frame ) \
+	  (index_t)( (frame) - z_heap.frames)
 
 
-slab_cache_t *md_slab;
-slab_cache_t *phm_slab;
-
-
-heap_t        lheap;
-heap_t        sheap;
-
-
-static inline void _set_lavu(count_t idx)
-{ asm volatile ("bts %0, _lheap+4"::"r"(idx):"cc"); }
-
-static inline void _reset_lavu(count_t idx)
-{ asm volatile ("btr %0, _lheap+4"::"r"(idx):"cc"); }
-
-static inline void _set_savm(count_t idx)
-{ asm volatile ("bts %0, _sheap"::"r"(idx):"cc"); }
-
-static inline void _reset_savm(count_t idx)
-{ asm volatile ("btr %0, _sheap"::"r"(idx):"cc"); }
-
-static inline void _set_savu(count_t idx)
-{ asm volatile ("bts %0, _sheap+4"::"r"(idx):"cc"); }
-
-static inline void _reset_savu(count_t idx)
-{ asm volatile ("btr %0, _sheap+4"::"r"(idx):"cc"); }
-
-
-int __fastcall init_heap(addr_t base, size_t size)
+static __inline void frame_initialize(frame_t *frame)
 {
-    md_t *md;
-    u32_t i;
-
-    ASSERT(base != 0);
-    ASSERT(size != 0)
-    ASSERT((base & 0x3FFFFF) == 0);
-    ASSERT((size & 0x3FFFFF) == 0);
-
-    for (i = 0; i < 32; i++)
-    {
-        list_initialize(&lheap.mapped[i]);
-        list_initialize(&lheap.unmapped[i]);
-
-        list_initialize(&sheap.mapped[i]);
-        list_initialize(&sheap.unmapped[i]);
-    };
-
-    list_initialize(&lheap.used);
-    list_initialize(&sheap.used);
-
-    md_slab = slab_cache_create(sizeof(md_t), 16,NULL,NULL,SLAB_CACHE_MAGDEFERRED);
-
-    md = (md_t*)slab_alloc(md_slab,0);
-
-    list_initialize(&md->adj);
-    md->base = base;
-    md->size = size;
-    md->parent = NULL;
-    md->state = MD_FREE;
-
-    list_prepend(&md->link, &lheap.unmapped[31]);
-    lheap.av_mapped    = 0x00000000;
-    lheap.av_unmapped  = 0x80000000;
-    sheap.av_mapped    = 0x00000000;
-    sheap.av_unmapped  = 0x00000000;
-
-    return 1;
-};
-
-md_t* __fastcall find_large_md(size_t size)
-{
-    md_t *md = NULL;
-
-    count_t idx0;
-    u32_t mask;
-
-    ASSERT((size & 0x3FFFFF) == 0);
-
-    idx0 = (size>>22) - 1 < 32 ? (size>>22) - 1 : 31;
-    mask = lheap.av_unmapped & ( -1<<idx0 );
-
-    if(mask)
-    {
-        if(idx0 == 31)
-        {
-            md_t *tmp = (md_t*)lheap.unmapped[31].next;
-            while(&tmp->link != &lheap.unmapped[31])
-            {
-                if(tmp->size >= size)
-                {
-                    DBG("remove large tmp %x\n", tmp);
-
-                    md = tmp;
-                    break;
-                };
-            };
-            tmp = (md_t*)tmp->link.next;
-        }
-        else
-        {
-            idx0 = _bsf(mask);
-
-            ASSERT( !list_empty(&lheap.unmapped[idx0]))
-
-            md = (md_t*)lheap.unmapped[idx0].next;
-        };
-    }
-    else
-        return NULL;
-
-    ASSERT(md->state == MD_FREE);
-
-    list_remove((link_t*)md);
-    if(list_empty(&lheap.unmapped[idx0]))
-        _reset_lavu(idx0);
-
-    if(md->size > size)
-    {
-        count_t idx1;
-        md_t *new_md = (md_t*)slab_alloc(md_slab,0);         /* FIXME check */
-
-        link_initialize(&new_md->link);
-        list_insert(&new_md->adj, &md->adj);
-
-        new_md->base   = md->base;
-        new_md->size   = size;
-        new_md->parent = NULL;
-        new_md->state  = MD_USED;
-
-        md->base+= size;
-        md->size-= size;
-
-        idx1 = (md->size>>22) - 1 < 32 ? (md->size>>22) - 1 : 31;
-
-        list_prepend(&md->link, &lheap.unmapped[idx1]);
-        _set_lavu(idx1);
-
-        return new_md;
-    };
-    md->state = MD_USED;
-
-    return md;
+	frame->refcount = 1;
+	frame->buddy_order = 0;
 }
 
-md_t* __fastcall find_unmapped_md(size_t size)
+#define buddy_get_order( block) \
+    ((frame_t*)(block))->buddy_order
+
+
+#define buddy_set_order( block, order) \
+     ((frame_t*)(block))->buddy_order = (order)
+
+#define buddy_mark_busy( block ) \
+    ((frame_t*)(block))->refcount = 1
+
+
+static __inline link_t * buddy_bisect(link_t *block)
 {
-    eflags_t efl;
+    frame_t *frame_l, *frame_r;
 
-    md_t *md = NULL;
+    frame_l = (frame_t*)block;
+	frame_r = (frame_l + (1 << (frame_l->buddy_order - 1)));
 
-    count_t idx0;
-    u32_t mask;
+	return &frame_r->buddy_link;
+}
 
-    ASSERT((size & 0xFFF) == 0);
+static __inline link_t *buddy_coalesce(link_t *block_1, link_t *block_2)
+{
+	frame_t *frame1, *frame2;
 
-    efl = safe_cli();
+    frame1 = (frame_t*)block_1;
+    frame2 = (frame_t*)block_2;
 
-    idx0 = (size>>12) - 1 < 32 ? (size>>12) - 1 : 31;
-    mask = sheap.av_unmapped & ( -1<<idx0 );
+	return frame1 < frame2 ? block_1 : block_2;
+}
 
-    DBG("smask %x size %x idx0 %x mask %x\n",sheap.av_unmapped, size, idx0, mask);
 
-    if(mask)
-    {
-        if(idx0 == 31)
-        {
-            ASSERT( !list_empty(&sheap.unmapped[31]));
+#define IS_BUDDY_LEFT_BLOCK_ABS(frame)  \
+  (((heap_index_abs((frame)) >> (frame)->buddy_order) & 0x1) == 0)
 
-            md_t *tmp = (md_t*)sheap.unmapped[31].next;
-            while( &tmp->link != &sheap.unmapped[31])
-            {
-                if(tmp->size >= size)
-                {
-                    md = tmp;
-                    break;
-                };
-                tmp = (md_t*)tmp->link.next;
-            };
-        }
-        else
-        {
-            idx0 = _bsf(mask);
+#define IS_BUDDY_RIGHT_BLOCK_ABS(frame) \
+	(((heap_index_abs((frame)) >> (frame)->buddy_order) & 0x1) == 1)
 
-            ASSERT( !list_empty(&sheap.unmapped[idx0]));
 
-            md = (md_t*)sheap.unmapped[idx0].next;
-        }
-    };
+static link_t *find_buddy(link_t *block)
+{
+	frame_t *frame;
+	index_t index;
+    u32_t is_left, is_right;
 
-    if(md)
-    {
-        DBG("remove md %x\n", md);
+    frame = (frame_t*)block;
+ //   ASSERT(IS_BUDDY_ORDER_OK(frame_index_abs(zone, frame),frame->buddy_order));
 
-        ASSERT(md->state==MD_FREE);
-        ASSERT(md->parent != NULL);
+	is_left = IS_BUDDY_LEFT_BLOCK_ABS( frame);
+	is_right = IS_BUDDY_RIGHT_BLOCK_ABS( frame);
 
-        list_remove((link_t*)md);
-        if(list_empty(&sheap.unmapped[idx0]))
-            _reset_savu(idx0);
+ //   ASSERT(is_left ^ is_right);
+
+    if (is_left) {
+        index = (heap_index(frame)) + (1 << frame->buddy_order);
     }
-    else
-    {
-        md_t *lmd;
-        lmd = find_large_md((size+0x3FFFFF)&~0x3FFFFF);
-
-        DBG("get large md %x\n", lmd);
-
-        if( !lmd)
-        {
-            safe_sti(efl);
-            return NULL;
-        };
-
-        ASSERT(lmd->size != 0);
-        ASSERT(lmd->base != 0);
-        ASSERT((lmd->base & 0x3FFFFF) == 0);
-        ASSERT(lmd->parent == NULL);
-
-        md = (md_t*)slab_alloc(md_slab,0);    /* FIXME check */
-
-        link_initialize(&md->link);
-        list_initialize(&md->adj);
-        md->base = lmd->base;
-        md->size = lmd->size;
-        md->parent  = lmd;
-        md->state = MD_USED;
+    else {    /* if (is_right) */
+        index = (heap_index(frame)) - (1 << frame->buddy_order);
     };
 
-    if(md->size > size)
+
+	if ( index < z_heap.count)
+	{
+		if (z_heap.frames[index].buddy_order == frame->buddy_order &&
+		    z_heap.frames[index].refcount == 0) {
+			return &z_heap.frames[index].buddy_link;
+		}
+	}
+
+	return NULL;
+}
+
+
+static void buddy_system_free(link_t *block)
+{
+    link_t *buddy, *hlp;
+    u32_t i;
+
+    /*
+	 * Determine block's order.
+	 */
+    i = buddy_get_order(block);
+
+    ASSERT(i <= z_heap.max_order);
+
+    if (i != z_heap.max_order)
     {
-        count_t idx1;
-        md_t *new_md = (md_t*)slab_alloc(md_slab,0);    /* FIXME check */
+		/*
+		 * See if there is any buddy in the list of order i.
+		 */
+        buddy = find_buddy( block );
+		if (buddy)
+		{
 
-        link_initialize(&new_md->link);
-        list_insert(&new_md->adj, &md->adj);
+            ASSERT(buddy_get_order(buddy) == i);
+			/*
+			 * Remove buddy from the list of order i.
+			 */
+			list_remove(buddy);
 
-        new_md->base = md->base;
-        new_md->size = size;
-        new_md->parent = md->parent;
-        new_md->state = MD_USED;
+			/*
+			 * Invalidate order of both block and buddy.
+			 */
+            buddy_set_order(block, BUDDY_SYSTEM_INNER_BLOCK);
+            buddy_set_order(buddy, BUDDY_SYSTEM_INNER_BLOCK);
 
-        md->base+= size;
-        md->size-= size;
-        md->state = MD_FREE;
+			/*
+			 * Coalesce block and buddy into one block.
+			 */
+            hlp = buddy_coalesce( block, buddy );
 
-        idx1 = (md->size>>12) - 1 < 32 ? (md->size>>12) - 1 : 31;
+			/*
+			 * Set order of the coalesced block to i + 1.
+			 */
+            buddy_set_order(hlp, i + 1);
 
-        DBG("insert md %x, base %x size %x idx %x\n", md,md->base, md->size,idx1);
+			/*
+			 * Recursively add the coalesced block to the list of order i + 1.
+			 */
+            buddy_system_free( hlp );
+			return;
+		}
+	}
+	/*
+	 * Insert block into the list of order i.
+	 */
+    list_append(block, &z_heap.order[i]);
+}
 
-        if( idx1 < 31)
-          list_prepend(&md->link, &sheap.unmapped[idx1]);
-        else
+
+static link_t* buddy_system_alloc( u32_t i)
+{
+	link_t *res, *hlp;
+
+    ASSERT(i <= z_heap.max_order);
+
+	/*
+	 * If the list of order i is not empty,
+	 * the request can be immediatelly satisfied.
+	 */
+	if (!list_empty(&z_heap.order[i])) {
+		res = z_heap.order[i].next;
+		list_remove(res);
+		buddy_mark_busy(res);
+		return res;
+	}
+	/*
+	 * If order i is already the maximal order,
+	 * the request cannot be satisfied.
+	 */
+	if (i == z_heap.max_order)
+		return NULL;
+
+	/*
+	 * Try to recursively satisfy the request from higher order lists.
+	 */
+	hlp = buddy_system_alloc( i + 1 );
+
+	/*
+	 * The request could not be satisfied
+	 * from higher order lists.
+	 */
+	if (!hlp)
+		return NULL;
+
+	res = hlp;
+
+	/*
+	 * Bisect the block and set order of both of its parts to i.
+	 */
+	hlp = buddy_bisect( res );
+
+	buddy_set_order(res, i);
+	buddy_set_order(hlp, i);
+
+	/*
+	 * Return the other half to buddy system. Mark the first part
+	 * full, so that it won't coalesce again.
+	 */
+	buddy_mark_busy(res);
+	buddy_system_free( hlp );
+
+	return res;
+}
+
+
+int __fastcall init_heap(addr_t start, size_t size)
+{
+	count_t i;
+    count_t count;
+
+    count = size >> HF_WIDTH;
+
+    ASSERT( start != 0);
+    ASSERT( count != 0);
+
+    spinlock_initialize(&z_heap.lock);
+
+    z_heap.base = start >> HF_WIDTH;
+	z_heap.count = count;
+	z_heap.free_count = count;
+	z_heap.busy_count = 0;
+
+    z_heap.max_order = fnzb(count);
+
+    DBG("create heap zone: base %x count %x\n", start, count);
+
+    ASSERT(z_heap.max_order < BUDDY_SYSTEM_INNER_BLOCK);
+
+    for (i = 0; i <= z_heap.max_order; i++)
+        list_initialize(&z_heap.order[i]);
+
+
+    DBG("count %d frame_t %d page_size %d\n",
+               count, sizeof(frame_t), PAGE_SIZE);
+
+    z_heap.frames = (frame_t *)PA2KA(frame_alloc( (count*sizeof(frame_t)) >> PAGE_WIDTH ));
+
+
+    if( z_heap.frames == 0 )
+        return 0;
+
+
+	for (i = 0; i < count; i++) {
+		z_heap.frames[i].buddy_order=0;
+		z_heap.frames[i].parent = NULL;
+		z_heap.frames[i].refcount=1;
+	}
+
+    for (i = 0; i < count; i++)
+    {
+        z_heap.frames[i].refcount = 0;
+        buddy_system_free(&z_heap.frames[i].buddy_link);
+    }
+
+    list_initialize(&shared_mmap);
+
+	return 1;
+}
+
+addr_t  __fastcall mem_alloc(size_t size, u32_t flags)
+{
+    eflags_t  efl;
+    addr_t    heap = 0;
+
+    count_t   order;
+    frame_t  *frame;
+    index_t   v;
+    int i;
+    mmap_t   *map;
+    count_t   pages;
+
+ //   __asm__ __volatile__ ("xchgw %bx, %bx");
+
+    size = (size + 4095) & ~4095;
+
+    pages = size >> PAGE_WIDTH;
+
+//    map = (mmap_t*)malloc( sizeof(mmap_t) +
+//                           sizeof(addr_t) * pages);
+
+    map = (mmap_t*)PA2KA(frame_alloc( (sizeof(mmap_t) +
+                           sizeof(addr_t) * pages) >> PAGE_WIDTH));
+
+    map->size = size;
+
+    if ( map )
+    {
+        order = size >> HF_WIDTH;
+
+        if( order )
+            order = fnzb(order - 1) + 1;
+
+        efl = safe_cli();
+
+        spinlock_lock(&z_heap.lock);
+
+        frame = (frame_t*)buddy_system_alloc(order);
+
+        ASSERT( frame );
+
+        if( frame )
         {
-            if( list_empty(&sheap.unmapped[31]))
-                list_prepend(&md->link, &sheap.unmapped[31]);
-            else
+            addr_t  page = 0;
+            addr_t  mem;
+
+            z_heap.free_count -= (1 << order);
+            z_heap.busy_count += (1 << order);
+
+/* get frame address */
+
+            v = z_heap.base + (index_t)(frame - z_heap.frames);
+
+            heap = v << HF_WIDTH;
+
+            map->base = heap;
+
+            for(i = 0; i < (1 << order); i++)
+                frame[i].parent = map;
+
+            spinlock_unlock(&z_heap.lock);
+
+            safe_sti(efl);
+
+
+            addr_t  *pte = &((addr_t*)page_tabs)[heap >> PAGE_WIDTH];
+            addr_t  *mpte = &map->pte[0];
+
+#if 0
+            if( flags & PG_MAP )
+                page = PG_DEMAND | (flags & 0xFFF);
+
+            mem = heap;
+            while(pages--)
             {
-                md_t *tmp = (md_t*)sheap.unmapped[31].next;
+                *pte++  = 0; //page;
+                *mpte++ = page;
 
-                while( &tmp->link != &sheap.unmapped[31])
-                {
-                    if(md->base < tmp->base)
-                        break;
-                    tmp = (md_t*)tmp->link.next;
-                }
-                list_insert(&md->link, &tmp->link);
+                asm volatile ( "invlpg (%0)" ::"r" (mem) );
+                mem+=  4096;
             };
-        };
+#else
+            mem = heap;
 
-        _set_savu(idx1);
+            while(pages--)
+            {
+                if( flags & PG_MAP )
+                    page = alloc_page();
+
+                page |= flags & 0xFFF;
+
+                *pte++  = 0;
+                *mpte++ = page;
+
+                asm volatile ( "invlpg (%0)" ::"r" (mem) );
+                mem+=  4096;
+            };
+#endif
+
+            DBG("%s %x size %d order %d\n", __FUNCTION__, heap, size, order);
+
+            return heap;
+        }
+
+        spinlock_unlock(&z_heap.lock);
 
         safe_sti(efl);
 
-        return new_md;
+        frame_free( KA2PA(map) );
     };
 
-    md->state = MD_USED;
-
-    safe_sti(efl);
-
-    return md;
+    return 0;
 }
 
-md_t* __fastcall find_mapped_md(size_t size)
+void __fastcall mem_free(addr_t addr)
 {
-    eflags_t efl;
+    eflags_t     efl;
+    frame_t     *frame;
+    count_t      idx;
 
-    md_t *md = NULL;
+    idx = (addr >> HF_WIDTH);
 
-    count_t idx0;
-    u32_t mask;
-
-    ASSERT((size & 0xFFF) == 0);
+    if( (idx < z_heap.base) ||
+        (idx >= z_heap.base+z_heap.count)) {
+        DBG("invalid address %x\n", addr);
+        return;
+    }
 
     efl = safe_cli();
 
-    idx0 = (size>>12) - 1 < 32 ? (size>>12) - 1 : 31;
-    mask = sheap.av_mapped & ( -1<<idx0 );
+    frame = &z_heap.frames[idx-z_heap.base];
 
-    DBG("small av_mapped %x size %x idx0 %x mask %x\n",sheap.av_mapped, size,
-         idx0, mask);
+    u32_t order = frame->buddy_order;
 
-    if(mask)
+    DBG("%s %x order %d\n", __FUNCTION__, addr, order);
+
+    ASSERT(frame->refcount);
+
+    spinlock_lock(&z_heap.lock);
+
+    if (!--frame->refcount)
     {
-        if(idx0 == 31)
-        {
-            ASSERT( !list_empty(&sheap.mapped[31]));
+        mmap_t  *map;
+        count_t  i;
 
-            md_t *tmp = (md_t*)sheap.mapped[31].next;
-            while( &tmp->link != &sheap.mapped[31])
+        map = frame->parent;
+
+        for(i = 0; i < (1 << order); i++)
+                frame[i].parent = NULL;
+
+        buddy_system_free(&frame->buddy_link);
+
+		/* Update zone information. */
+        z_heap.free_count += (1 << order);
+        z_heap.busy_count -= (1 << order);
+
+        spinlock_unlock(&z_heap.lock);
+        safe_sti(efl);
+
+        for( i = 0; i < (map->size >> PAGE_WIDTH); i++)
+            frame_free(map->pte[i]);
+
+        frame_free( KA2PA(map) );
+    }
+    else
+    {
+        spinlock_unlock(&z_heap.lock);
+        safe_sti(efl);
+    };
+};
+
+
+void __fastcall heap_fault(addr_t faddr, u32_t code)
+{
+    index_t   idx;
+    frame_t  *frame;
+    mmap_t   *map;
+
+    idx = faddr >> HF_WIDTH;
+
+    frame = &z_heap.frames[idx-z_heap.base];
+
+    map = frame->parent;
+
+    ASSERT( faddr >= map->base);
+
+    if( faddr < map->base + map->size)
+    {
+        addr_t page;
+
+        idx = (faddr - map->base) >> PAGE_WIDTH;
+
+        page = map->pte[idx];
+
+        if( page != 0)
+        {
+#if 0
+            if( page & PG_DEMAND)
             {
-                if(tmp->size >= size)
-                {
-                    md = tmp;
-                    break;
-                };
-                tmp = (md_t*)tmp->link.next;
+                page &= ~PG_DEMAND;
+                page = alloc_page() | (page & 0xFFF);
+
+                map->pte[idx] = page;
             };
-        }
-        else
-        {
-            idx0 = _bsf(mask);
-
-            ASSERT( !list_empty(&sheap.mapped[idx0]));
-
-            md = (md_t*)sheap.mapped[idx0].next;
-        }
-    };
-
-    if(md)
-    {
-        DBG("remove md %x\n", md);
-
-        ASSERT(md->state==MD_FREE);
-
-        list_remove((link_t*)md);
-        if(list_empty(&sheap.mapped[idx0]))
-            _reset_savm(idx0);
-    }
-    else
-    {
-        md_t    *lmd;
-        addr_t  frame;
-        addr_t  *pte;
-        int i;
-
-        lmd = find_large_md((size+0x3FFFFF)&~0x3FFFFF);
-
-        DBG("get large md %x\n", lmd);
-
-        if( !lmd)
-        {
-            safe_sti(efl);
-            return NULL;
-        };
-
-        ASSERT(lmd->size != 0);
-        ASSERT(lmd->base != 0);
-        ASSERT((lmd->base & 0x3FFFFF) == 0);
-        ASSERT(lmd->parent == NULL);
-
-        frame = core_alloc(10);                        /* FIXME check */
-
-        lmd->parent = (void*)frame;
-
-        pte = &((addr_t*)page_tabs)[lmd->base>>12];    /* FIXME remove */
-
-        for(i = 0; i<1024; i++)
-        {
-           *pte++ = frame;
-           frame+= 4096;
-        }
-
-        md = (md_t*)slab_alloc(md_slab,0);             /* FIXME check */
-
-        link_initialize(&md->link);
-        list_initialize(&md->adj);
-        md->base = lmd->base;
-        md->size = lmd->size;
-        md->parent  = lmd;
-        md->state = MD_USED;
-    };
-
-    if(md->size > size)
-    {
-        count_t idx1;
-        md_t *new_md = (md_t*)slab_alloc(md_slab,0);    /* FIXME check */
-
-        link_initialize(&new_md->link);
-        list_insert(&new_md->adj, &md->adj);
-
-        new_md->base = md->base;
-        new_md->size = size;
-        new_md->parent = md->parent;
-
-        md->base+= size;
-        md->size-= size;
-        md->state = MD_FREE;
-
-        idx1 = (md->size>>12) - 1 < 32 ? (md->size>>12) - 1 : 31;
-
-        DBG("insert md %x, base %x size %x idx %x\n", md,md->base, md->size,idx1);
-
-        if( idx1 < 31)
-          list_prepend(&md->link, &sheap.mapped[idx1]);
-        else
-        {
-            if( list_empty(&sheap.mapped[31]))
-                list_prepend(&md->link, &sheap.mapped[31]);
-            else
-            {
-                md_t *tmp = (md_t*)sheap.mapped[31].next;
-
-                while( &tmp->link != &sheap.mapped[31])
-                {
-                    if(md->base < tmp->base)
-                        break;
-                    tmp = (md_t*)tmp->link.next;
-                }
-                list_insert(&md->link, &tmp->link);
-            };
-        };
-
-        _set_savm(idx1);
-
-        md = new_md;
-    };
-
-    md->state = MD_USED;
-
-    safe_sti(efl);
-
-    return md;
-}
-
-void __fastcall free_unmapped_md(md_t *md)
-{
-    eflags_t  efl ;
-    md_t     *fd;
-    md_t     *bk;
-    count_t   idx;
-
-    ASSERT(md->parent != NULL);
-
-    efl = safe_cli();
-    spinlock_lock(&sheap.lock);
-
-    if( !list_empty(&md->adj))
-    {
-        bk = (md_t*)md->adj.prev;
-        fd = (md_t*)md->adj.next;
-
-        if(fd->state == MD_FREE)
-        {
-            idx = (fd->size>>12) - 1 < 32 ? (fd->size>>12) - 1 : 31;
-
-            list_remove((link_t*)fd);
-            if(list_empty(&sheap.unmapped[idx]))
-                _reset_savu(idx);
-
-            md->size+= fd->size;
-            md->adj.next = fd->adj.next;
-            md->adj.next->prev = (link_t*)md;
-            slab_free(md_slab, fd);
-        };
-        if(bk->state == MD_FREE)
-        {
-            idx = (bk->size>>12) - 1 < 32 ? (bk->size>>12) - 1 : 31;
-
-            list_remove((link_t*)bk);
-            if(list_empty(&sheap.unmapped[idx]))
-                _reset_savu(idx);
-
-            bk->size+= md->size;
-            bk->adj.next = md->adj.next;
-            bk->adj.next->prev = (link_t*)bk;
-            slab_free(md_slab, md);
-            md = fd;
+#endif
+            ((addr_t*)page_tabs)[faddr >> PAGE_WIDTH] = page;
         };
     };
-
-    md->state = MD_FREE;
-
-    idx = (md->size>>12) - 1 < 32 ? (md->size>>12) - 1 : 31;
-
-    _set_savu(idx);
-
-    if( idx < 31)
-        list_prepend(&md->link, &sheap.unmapped[idx]);
-    else
-    {
-        if( list_empty(&sheap.unmapped[31]))
-            list_prepend(&md->link, &sheap.unmapped[31]);
-        else
-        {
-            md_t *tmp = (md_t*)sheap.unmapped[31].next;
-
-            while( &tmp->link != &sheap.unmapped[31])
-            {
-                if(md->base < tmp->base)
-                    break;
-                tmp = (md_t*)tmp->link.next;
-            }
-            list_insert(&md->link, &tmp->link);
-        };
-    };
-    spinlock_unlock(&sheap.lock);
-    safe_sti(efl);
-
 };
 
-void __fastcall free_mapped_md(md_t *md)
-{
-    eflags_t  efl ;
-    md_t     *fd;
-    md_t     *bk;
-    count_t   idx;
+//#include "mmap.inc"
 
-    ASSERT(md->parent != NULL);
-    ASSERT( ((md_t*)(md->parent))->parent != NULL);
-
-    efl = safe_cli();
-    spinlock_lock(&sheap.lock);
-
-    if( !list_empty(&md->adj))
-    {
-        bk = (md_t*)md->adj.prev;
-        fd = (md_t*)md->adj.next;
-
-        if(fd->state == MD_FREE)
-        {
-            idx = (fd->size>>12) - 1 < 32 ? (fd->size>>12) - 1 : 31;
-
-            list_remove((link_t*)fd);
-            if(list_empty(&sheap.mapped[idx]))
-                _reset_savm(idx);
-
-            md->size+= fd->size;
-            md->adj.next = fd->adj.next;
-            md->adj.next->prev = (link_t*)md;
-            slab_free(md_slab, fd);
-        };
-        if(bk->state == MD_FREE)
-        {
-            idx = (bk->size>>12) - 1 < 32 ? (bk->size>>12) - 1 : 31;
-
-            list_remove((link_t*)bk);
-            if(list_empty(&sheap.mapped[idx]))
-                _reset_savm(idx);
-
-            bk->size+= md->size;
-            bk->adj.next = md->adj.next;
-            bk->adj.next->prev = (link_t*)bk;
-            slab_free(md_slab, md);
-            md = fd;
-        };
-    };
-
-    md->state = MD_FREE;
-
-    idx = (md->size>>12) - 1 < 32 ? (md->size>>12) - 1 : 31;
-
-    _set_savm(idx);
-
-    if( idx < 31)
-        list_prepend(&md->link, &sheap.mapped[idx]);
-    else
-    {
-        if( list_empty(&sheap.mapped[31]))
-            list_prepend(&md->link, &sheap.mapped[31]);
-        else
-        {
-            md_t *tmp = (md_t*)sheap.mapped[31].next;
-
-            while( &tmp->link != &sheap.mapped[31])
-            {
-                if(md->base < tmp->base)
-                    break;
-                tmp = (md_t*)tmp->link.next;
-            }
-            list_insert(&md->link, &tmp->link);
-        };
-    };
-    spinlock_unlock(&sheap.lock);
-    safe_sti(efl);
-};
-
-
-md_t* __fastcall  md_alloc(size_t size, u32_t flags)
-{
-    eflags_t efl;
-
-    md_t *md;
-
-    size = (size+4095)&~4095;
-
-    if( flags & PG_MAP )
-    {
-        md = find_mapped_md(size);
-
-        if( !md )
-            return NULL;
-
-        ASSERT(md->state == MD_USED);
-        ASSERT(md->parent != NULL);
-
-        md_t *lmd = (md_t*)md->parent;
-
-        ASSERT( lmd != NULL);
-        ASSERT( lmd->parent != NULL);
-
-        addr_t  frame  = (md->base - lmd->base + (addr_t)lmd->parent)|
-                         (flags & 0xFFF);
-        DBG("frame %x\n", frame);
-        ASSERT(frame != 0);
-
-        count_t  tmp = size >> 12;
-        addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
-
-        while(tmp--)
-        {
-            *pte++ = frame;
-            frame+= 4096;
-        };
-    }
-    else
-    {
-        md = find_unmapped_md(size);
-        if( !md )
-            return NULL;
-
-        ASSERT(md->parent != NULL);
-        ASSERT(md->state == MD_USED);
-    }
-
-    return md;
-};
-
-
-void __fastcall md_free(md_t *md)
-{
-
-    if( md )
-    {
-        md_t *lmd;
-
-        DBG("free md: %x base: %x size: %x\n",md, md->base, md->size);
-
-        ASSERT(md->state == MD_USED);
-
-        list_remove((link_t*)md);
-
-        lmd = (md_t*)md->parent;
-
-        ASSERT(lmd != 0);
-
-        if(lmd->parent != 0)
-        {
-            addr_t   mem = md->base;
-            addr_t  *pte = &((addr_t*)page_tabs)[md->base>>12];
-            count_t  tmp  = md->size >> 12;
-
-            while(tmp--)
-            {
-                *pte++ = 0;
-                asm volatile ( "invlpg (%0)" ::"r" (mem) );
-                mem+= 4096;
-            };
-            free_mapped_md( md );
-        }
-        else
-            free_unmapped_md( md );
-    }
-
-    return;
-};
-
-void * __fastcall mem_alloc(size_t size, u32_t flags)
-{
-    eflags_t efl;
-
-    md_t *md;
-
-    DBG("\nmem_alloc: %x bytes\n", size);
-
-    ASSERT(size != 0);
-
-    md = md_alloc(size, flags);
-
-    if( !md )
-        return NULL;
-
-    efl = safe_cli();
-    spinlock_lock(&sheap.lock);
-
-    if( list_empty(&sheap.used) )
-        list_prepend(&md->link, &sheap.used);
-    else
-    {
-        md_t *tmp = (md_t*)sheap.used.next;
-
-        while( &tmp->link != &sheap.used)
-        {
-            if(md->base < tmp->base)
-                break;
-            tmp = (md_t*)tmp->link.next;
-        }
-        list_insert(&md->link, &tmp->link);
-    };
-
-    spinlock_unlock(&sheap.lock);
-    safe_sti(efl);
-
-    DBG("allocate: %x size %x\n\n",md->base, size);
-    return (void*)md->base;
-};
-
-void __fastcall mem_free(void *mem)
-{
-    eflags_t efl;
-
-    md_t *tmp;
-    md_t *md = NULL;
-
-    DBG("mem_free: %x\n",mem);
-
-    ASSERT( mem != 0 );
-    ASSERT( ((addr_t)mem & 0xFFF) == 0 );
-    ASSERT( ! list_empty(&sheap.used));
-
-    efl = safe_cli();
-
-    tmp = (md_t*)sheap.used.next;
-
-    while( &tmp->link != &sheap.used)
-    {
-        if( tmp->base == (addr_t)mem )
-        {
-            md = tmp;
-            break;
-        };
-        tmp = (md_t*)tmp->link.next;
-    }
-
-    if( md )
-    {
-        md_free( md );
-
-    }
-    else
-        DBG("\tERROR: invalid base address: %x\n", mem);
-
-    safe_sti(efl);
-};

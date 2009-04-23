@@ -163,7 +163,7 @@ proc user_free stdcall, base:dword
            test cl, 1
            jz @F
 
-           call @core_free@4
+           call @frame_free@4
            mov eax, esi
            shl eax, 12
            invlpg [eax]
@@ -287,7 +287,7 @@ user_realloc:
         jz      .loop
 
         push edx
-        call    @core_free@4
+        call    @frame_free@4
         pop edx
         mov     eax, edx
         shl     eax, 12

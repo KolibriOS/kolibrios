@@ -122,6 +122,7 @@ public _gdts
 public __hlt
 public _panic_printf
 public _printf
+public _dump
 public _pg_balloc
 public _mem_amount
 public @balloc@4
@@ -215,10 +216,15 @@ extrn _16bit_end
 
 extrn _poweroff
 
-extrn @core_alloc@4
-extrn @core_free@4
+extrn @pf_dump@8
+
+extrn @frame_alloc@4
+extrn @frame_free@4
 
 extrn @find_large_md@4
+
+extrn @heap_fault@8
+
 
 extrn _MemAlloc
 extrn _MemFree
@@ -486,7 +492,7 @@ no_mode_0x12:
            call  rerouteirqs
 
 ; Initialize system V86 machine
-           call    init_sys_v86
+        ;   call    init_sys_v86
 
 ; TIMER SET TO 1/100 S
 
@@ -587,7 +593,7 @@ include 'detect/disks.inc'
 	call boot_log
 	;call setirqreadports
 
-; SET UP OS TASK
+; SETUP OS TASK
 
 	mov  esi,boot_setostask
 	call boot_log
@@ -597,7 +603,7 @@ include 'detect/disks.inc'
 	mov  dword [SLOT_BASE+APPDATA.fpu_handler], eax
 	mov  dword [SLOT_BASE+APPDATA.sse_handler], eax
 
-	; name for OS/IDLE process
+; name for OS/IDLE process
 
 	mov dword [SLOT_BASE+256+APPDATA.app_name],   dword 'OS/I'
 	mov dword [SLOT_BASE+256+APPDATA.app_name+4], dword 'DLE '
@@ -863,14 +869,14 @@ checkidle:
 	jnz  idle_exit
 	call _rdtsc
 	mov  ecx,eax
-      idle_loop:
+idle_loop:
 	hlt
 	cmp  [check_idle_semaphore],0
 	jne  idle_loop_exit
 	mov  eax,[timer_ticks] ;[0xfdf0]
 	cmp  ebx,eax
 	jz   idle_loop
-      idle_loop_exit:
+idle_loop_exit:
 	mov  [idlemem],eax
 	call _rdtsc
 	sub  eax,ecx
@@ -3373,16 +3379,16 @@ redrawscreen:
 
 	 ;mov   ecx,0               ; redraw flags for apps
 	 xor   ecx,ecx
-       newdw2:
+newdw2:
 
 	 inc   ecx
 	 push  ecx
 
 	 mov   eax,ecx
 	 shl   eax,5
-	 add   eax,window_data
+     add   eax, window_data
 
-	 cmp   eax,[esp+4]
+     cmp   eax, [esp+4]
 	 je    not_this_task
 				   ; check if window in redraw area
 	 mov   edi,eax
@@ -3429,7 +3435,7 @@ bgli:
 	 jz    newdw8
 	 test  al,al
 	 jz    .az
-     lea   eax,[edi+draw_data+(0x100000000-OS_BASE)]
+     lea   eax,[edi+draw_data-window_data]
 	 mov   ebx,[dlx]
 	 cmp   ebx,[eax+RECT.left]
 	 jae   @f
@@ -3454,7 +3460,7 @@ bgli:
 .az:
 
 	 mov   eax,edi
-     add   eax, draw_data+(0x100000000-OS_BASE)
+     add   eax, draw_data-window_data
 
 	 mov   ebx,[dlx]	  ; set limits
 	 mov   [eax + RECT.left], ebx
@@ -3465,7 +3471,7 @@ bgli:
 	 mov   ebx,[dlye]
 	 mov   [eax + RECT.bottom], ebx
 
-     sub   eax,draw_data+(0x100000000-OS_BASE)
+     sub   eax,draw_data - window_data
 
 	 cmp   dword [esp],1
 	 jne   nobgrd

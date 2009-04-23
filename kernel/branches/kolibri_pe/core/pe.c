@@ -42,7 +42,6 @@ int __stdcall strncmp(const char *s1, const char *s2, size_t n);
 
 bool link_image(addr_t img_base);
 
-md_t* __fastcall load_image(const char *path);
 
 /*
 void* __fastcall load_pe(const char *path)
@@ -109,12 +108,12 @@ bool validate_pe(void *raw, size_t raw_size, bool is_exec)
     return true;
 }
 
-md_t* __fastcall load_image(const char *path)
+addr_t __fastcall load_image(const char *path)
 {
     PIMAGE_DOS_HEADER     dos;
     PIMAGE_NT_HEADERS32   nt;
 
-    md_t    *img_md;
+ //   md_t    *img_md;
 
     size_t   img_size;
     addr_t   img_base;
@@ -147,16 +146,17 @@ md_t* __fastcall load_image(const char *path)
 
     img_size  =  nt->OptionalHeader.SizeOfImage;
 
-    img_md  = md_alloc(img_size, PG_SW);
+//    img_md  = md_alloc(img_size, PG_SW);
 
+    img_base = mem_alloc(img_size, PG_SW);
 
-    if( !img_md)
+    if( !img_base)
     {
         mem_free(raw);
         return NULL;
     };
 
-    img_base = img_md->base;
+//    img_base = img_md->base;
 
     create_image(img_base, (addr_t)raw, true);
 
@@ -165,7 +165,7 @@ md_t* __fastcall load_image(const char *path)
 //    dos = (PIMAGE_DOS_HEADER)img_base;
 //    nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
-    return img_md;
+    return img_base;
 };
 
 

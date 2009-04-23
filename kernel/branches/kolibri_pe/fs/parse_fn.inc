@@ -85,8 +85,7 @@ endp
 
 proc load_file_parse_table
 
-           xor eac, ecx
-           call @core_alloc@4
+           call _alloc_page
            add eax, OS_BASE
            mov [tmp_file_name_table],eax
            mov edi,eax

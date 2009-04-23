@@ -14,6 +14,8 @@ extern addr_t sys_pdbr;
 
 void init_threads()
 {
+    DBG("%s\n", __FUNCTION__);
+
     thr_slab = slab_cache_create(sizeof(thr_t), 16,
                NULL,NULL,SLAB_CACHE_MAGDEFERRED);
 };
@@ -27,8 +29,10 @@ thr_t* __fastcall create_systhread(addr_t entry_ptr)
     thr_t   *thr;
     addr_t   thr_stack;
 
+    DBG("%s\n", __FUNCTION__);
+
     thr = (thr_t*)slab_alloc(thr_slab,0);
-    thr_stack = PA2KA(core_alloc(1));
+    thr_stack = PA2KA(frame_alloc(2));
 
     thr_cnt++;
 

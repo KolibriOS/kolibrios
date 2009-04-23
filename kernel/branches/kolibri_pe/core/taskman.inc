@@ -222,10 +222,9 @@ proc mnt_exec stdcall file_base:dword, file_size:dword, \
 
            mov   ebx,[slot_base]
            mov   [ebx+APPDATA.dir_table],eax
-           mov   eax,[hdr_mem]
-           mov   [ebx+APPDATA.mem_size],eax
+           mov   ecx,[hdr_mem]
+           mov   [ebx+APPDATA.mem_size],ecx
 
-           mov ecx, [hdr_mem]
            mov edi, [file_size]
          ;  add edi, 4095
          ;  and edi, not 4095
@@ -337,8 +336,8 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
            ;mov   [ebx+APPDATA.mem_size],eax
 
 
-           mov ecx, 1
-           call @core_alloc@4
+           mov ecx, 2
+           call @frame_alloc@4
            lea edi, [eax+OS_BASE]
            mov [pl0_stack], edi
 
@@ -375,8 +374,7 @@ proc pe_app_param stdcall path:dword, raw:dword, ex_pg_dir:dword, ex_stack:dword
            mov ecx, [def_cursor]
            mov [ebx+APPDATA.cursor],ecx
 
-           xor ecx, ecx
-           call @core_alloc@4
+           call _alloc_page
            lea edi, [eax+OS_BASE]         ; FIXME
 
            mov esi,[current_slot]
@@ -542,7 +540,9 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            cld
            rep stosd
 
-           mov ecx, 512
+           mov esi, [img_base]
+
+           mov ecx, 512                             ; FIX only core tabs
            mov esi, _sys_pdbr+(HEAP_BASE shr 20)
            rep movsd
 
@@ -553,7 +553,9 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            mov eax, edi
            call set_cr3
 
-           mov edx, [app_tabs]
+           mov esi, [img_base]
+
+           mov ebx, [app_tabs]
            mov edi, master_tab
 @@:
            call _alloc_page
@@ -562,7 +564,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
            or eax, PG_UW
            stosd
-           dec edx
+           dec ebx
            jnz @B
 
            mov edi, page_tabs
@@ -571,11 +573,9 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
            xor eax, eax
            rep stosd
 
-           mov ecx, [app_pages]
            xor ebx, ebx
 .alloc:
-           xor ecx, ecx
-           call @core_alloc@4
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -615,8 +615,7 @@ align 4
 
            lea ebx, [ecx+0x3FFFFF]
 
-           xor ecx, ecx
-           call @core_alloc@4
+           call _alloc_page
            test eax, eax
            mov [esp], eax
            jz .fail
@@ -627,15 +626,14 @@ align 4
            cld
            rep stosd
 
-           mov ecx, 512
+           mov ecx, 512                              ; FIX only core tabs
            mov esi, _sys_pdbr+(HEAP_BASE shr 20)
            rep movsd
 
            mov esi, [esp]
            shr ebx, 22
 .new_ptab:
-           xor ecx, ecx
-           call @core_alloc@4
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -651,8 +649,7 @@ align 4
            dec ebx
            jnz .new_ptab
 
-           xor ecx, ecx
-           call @core_alloc@4
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -701,7 +698,7 @@ proc destroy_page_table stdcall, pg_tab:dword
            test ecx, 1 shl 9
            jnz .next                      ;skip shared pages
 
-           call @core_free@4
+           call @frame_free@4
 .next:
            add esi, 4
            dec ebx
@@ -759,14 +756,14 @@ proc destroy_app_space stdcall, pg_dir:dword
            stdcall destroy_page_table, eax
 
            mov ecx, [esi]
-           call @core_free@4
+           call @frame_free@4
 .next:
            add esi, 4
            dec edi
            jnz .destroy
 
            mov ecx, [pg_dir]
-           call @core_free@4
+           call @frame_free@4
 .exit:
            dec [pg_data.pg_mutex]
            ret
@@ -1150,8 +1147,8 @@ proc set_app_params stdcall,slot:dword, params:dword,\
              pl0_stack dd ?
            endl
 
-           mov ecx, 1            ;(RING0_STACK_SIZE+512) shr 12
-           call @core_alloc@4
+           mov ecx, 2            ;(RING0_STACK_SIZE+512) shr 12
+           call @frame_alloc@4
            add eax, OS_BASE
            mov [pl0_stack], eax
 
@@ -1196,12 +1193,11 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov [SLOT_BASE+APPDATA.saved_esp0+ebx], eax
 
            call _alloc_page
-           add eax, OS_BASE
+           lea edi, [eax + OS_BASE]
+           mov [ebx+SLOT_BASE+APPDATA.cur_dir], edi
            mov esi,[current_slot]
            mov esi,[esi+APPDATA.cur_dir]
            mov ecx,0x1000/4
-           mov edi,eax
-           mov [ebx+SLOT_BASE+APPDATA.cur_dir],eax
            rep movsd
 
            shr ebx,3
@@ -1302,7 +1298,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
            mov  [SLOT_BASE+ebx*8+APPDATA.debugger_slot],eax
 .no_debug:
            mov  [CURRENT_TASK+ebx+TASKDATA.state], cl
-           DEBUGF 1,"%s",new_process_running
+         ;  DEBUGF 1,"%s",new_process_running
            ret
 endp
 

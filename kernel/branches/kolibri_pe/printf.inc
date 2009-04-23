@@ -5,6 +5,24 @@ BYTE  equ byte
 
 PTR   equ
 
+align 4
+
+_dump:
+
+        mov ecx, DWORD PTR [esp+4]
+@@:
+        mov edx, 0x3FD
+        in al, dx
+        test al, 96
+        je  @B
+
+        mov dl, -8
+        mov eax, ecx
+        out dx, al
+        ret
+
+
+align 4
 _putc:
         mov ecx, DWORD PTR [esp+4]
 .L13:

@@ -191,8 +191,10 @@ HEAP_BASE           equ 0x80000000
 
 HEAP_MIN_SIZE       equ 0x01000000
 
-page_tabs           equ 0xDDC00000
-app_page_tabs       equ 0xDDC00000
+page_tabs           equ 0xDD800000
+app_page_tabs       equ 0xDD800000
+
+shared_tabs         equ 0xDDC00000
 
 heap_tabs           equ (page_tabs+ (HEAP_BASE shr 10))
 kernel_tabs         equ (page_tabs+ (OS_BASE shr 10))

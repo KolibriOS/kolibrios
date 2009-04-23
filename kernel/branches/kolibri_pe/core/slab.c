@@ -33,13 +33,15 @@ static slab_t * slab_space_alloc(slab_cache_t *cache, int flags)
   unsigned int i;
   u32_t p;
 
-  data = (void*)PA2KA(core_alloc(cache->order));
+    DBG("%s order %d\n", __FUNCTION__, cache->order);
+
+    data = (void*)PA2KA(frame_alloc(1 << cache->order));
   if (!data) {
     return NULL;
   }
   slab = (slab_t*)slab_create();
   if (!slab) {
-    core_free(KA2PA(data));
+        frame_free(KA2PA(data));
       return NULL;
   }
 
@@ -74,12 +76,6 @@ static void * slab_obj_create(slab_cache_t *cache, int flags)
   spinlock_lock(&cache->slablock);
 
   if (list_empty(&cache->partial_slabs)) {
-    /* Allow recursion and reclaiming
-     * - this should work, as the slab control structures
-     *   are small and do not need to allocate with anything
-     *   other than frame_alloc when they are allocating,
-     *   that's why we should get recursion at most 1-level deep
-     */
     slab = slab_space_alloc(cache, flags);
     if (!slab)
     {
@@ -211,7 +207,7 @@ _slab_cache_create(slab_cache_t *cache,
   /* Minimum slab order */
   pages = SIZE2FRAMES(cache->size);
   /* We need the 2^order >= pages */
-  if (pages == 1)
+  if (pages <= 1)
     cache->order = 0;
   else
     cache->order = fnzb(pages-1)+1;
@@ -240,6 +236,8 @@ slab_cache_t * slab_cache_create(
 				 int flags)
 {
 	slab_cache_t *cache;
+
+    DBG("%s\n", __FUNCTION__);
 
 	cache = (slab_cache_t*)slab_cache_alloc();
   _slab_cache_create(cache, size, align, constructor, destructor, flags);
@@ -337,22 +335,18 @@ static slab_t *slab_create()
   void *obj;
   u32_t p;
 
+    DBG("%s\n", __FUNCTION__);
+
 //  spinlock_lock(&cache->slablock);
 
   if (list_empty(&slab_cache->partial_slabs)) {
-    /* Allow recursion and reclaiming
-     * - this should work, as the slab control structures
-     *   are small and do not need to allocate with anything
-     *   other than frame_alloc when they are allocating,
-     *   that's why we should get recursion at most 1-level deep
-     */
 //    spinlock_unlock(&cache->slablock);
 //    slab = slab_create();
 
     void *data;
     unsigned int i;
 
-    data = (void*)PA2KA(core_alloc(0));
+    data = (void*)PA2KA(alloc_page());
     if (!data) {
       return NULL;
     }
@@ -400,20 +394,17 @@ static slab_cache_t * slab_cache_alloc()
   void *obj;
   u32_t *p;
 
-  if (list_empty(&slab_cache_cache.partial_slabs)) {
-    /* Allow recursion and reclaiming
-     * - this should work, as the slab control structures
-     *   are small and do not need to allocate with anything
-     *   other than frame_alloc when they are allocating,
-     *   that's why we should get recursion at most 1-level deep
-     */
+    DBG("%s\n", __FUNCTION__);
+
+    if (list_empty(&slab_cache_cache.partial_slabs))
+    {
 //    spinlock_unlock(&cache->slablock);
 //    slab = slab_create();
 
     void *data;
     unsigned int i;
 
-    data = (void*)(PA2KA(core_alloc(0)));
+        data = (void*)(PA2KA(alloc_page()));
     if (!data) {
       return NULL;
     }
@@ -437,7 +428,8 @@ static slab_cache_t * slab_cache_alloc()
 
     atomic_inc(&slab_cache_cache.allocated_slabs);
 //    spinlock_lock(&cache->slablock);
-  } else {
+    }
+    else {
     slab = list_get_instance(slab_cache_cache.partial_slabs.next, slab_t, link);
     list_remove(&slab->link);
   }
@@ -457,6 +449,7 @@ static slab_cache_t * slab_cache_alloc()
 
 void slab_cache_init(void)
 {
+    DBG("%s\n", __FUNCTION__);
 
   _slab_cache_create(&slab_cache_cache, sizeof(slab_cache_t),
                      sizeof(void *), NULL, NULL,

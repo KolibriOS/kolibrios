@@ -28,7 +28,11 @@ unpack:
         popad
         ret     8
 .lzma:
+        pushfd
+        cli
         call    .lzma_unpack
+        popfd
+
 .common:
         pop     eax
         test    al, 0x80

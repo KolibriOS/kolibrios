@@ -212,7 +212,7 @@ proc new_mem_resize stdcall, new_size:dword
            mov ebx, edi
            shl ebx, 12
            invlpg [ebx]
-           call @core_free@4
+           call @frame_free@4
 .next:
            add edi, 1
            cmp edi, esi
@@ -220,6 +220,8 @@ proc new_mem_resize stdcall, new_size:dword
 
 .update_size:
            mov     ebx, [new_size]
+           mov     edx, [current_slot]
+
            call    update_mem_size
 
            xor eax, eax
@@ -422,11 +424,18 @@ proc page_fault_handler
 align 4
 .kernel_heap:
 
+  ;         xchg bx, bx
+
            shr ebx, 22
            mov edx, [master_tab + ebx*4]
 
            test edx, PG_MAP
            jz .check_ptab      ;таблица страниц не создана
+
+           mov ecx, [.err_addr]
+           mov edx, [.err_code]
+
+           call @heap_fault@8
 
            jmp .exit
 
@@ -435,8 +444,7 @@ align 4
            test edx, PG_MAP
            jnz @F
 
-           xor ecx, ecx
-           call @core_alloc@4
+           call _alloc_page
            test eax, eax
            jz .fail
 
@@ -546,7 +554,7 @@ align 4
            popad
            add esp, 4
 
-;           iretd
+           iretd
 
            save_ring3_context     ;debugger support
 
@@ -1094,15 +1102,12 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 
            push ebx
 
-           xor ecx, ecx
-           mov edx, [size]
-           shr edx, 12
-           mov ebx, edx
-           dec edx
-           bsr ecx, edx
-           inc ecx
+           mov ecx, [size]
+           shr ecx, 12
 
-           call @core_alloc@4
+           mov ebx, ecx
+
+           call @frame_alloc@4
            test eax, eax
            jz .mm_fail
 

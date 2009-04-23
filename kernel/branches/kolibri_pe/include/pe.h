@@ -201,7 +201,7 @@ bool validate_pe(void *raw, size_t raw_size, bool is_exec);
 dll_t * find_dll(link_t *list, const char *name);
 
 
-md_t* __fastcall load_image(const char *path);
+addr_t __fastcall load_image(const char *path);
 
 void create_image(addr_t img_base, addr_t raw, bool force_clear) asm ("CreateImage");
 

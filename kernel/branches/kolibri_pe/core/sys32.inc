@@ -638,23 +638,23 @@ term9:
 
            mov ecx,[edi+APPDATA.pl0_stack]
            sub ecx, OS_BASE
-           call @core_free@4
+           call @frame_free@4
 
            mov ecx,[edi+APPDATA.cur_dir]
            sub ecx, OS_BASE
-           call @core_free@4
+           call @frame_free@4
 
            mov ecx, [edi+APPDATA.io_map]
            cmp ecx, (tss._io_map_0-OS_BASE+PG_MAP)
            je @F
 
-           call @core_free@4
+           call @frame_free@4
 @@:
            mov ecx, [edi+APPDATA.io_map+4]
            cmp ecx, (tss._io_map_1-OS_BASE+PG_MAP)
            je @F
 
-           call @core_free@4
+           call @frame_free@4
 @@:
 	   mov eax, 0x20202020
 	   stosd

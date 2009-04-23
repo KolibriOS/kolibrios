@@ -25,9 +25,10 @@ SECTIONS
   .flat . + 0x00400000:
   {
      *(.flat)  *(.data)
+     . = ALIGN(4096);
   }
 
-  .edata ALIGN(32):
+  .edata :
   {
     *(.edata)
     _code_end = .;

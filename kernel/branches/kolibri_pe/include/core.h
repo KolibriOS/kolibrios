@@ -4,7 +4,7 @@
 #define LOAD_BASE   0x00100000
 
 
-#define page_tabs   0xDDC00000
+#define page_tabs       0xDD800000
 
 #define master_tab      (page_tabs+(page_tabs>>10))
 
@@ -18,6 +18,10 @@
 
 #define sel_srv_code    0x31
 #define sel_srv_stack   0x39
+
+
+
+#define __export __attribute__ ((dllexport))
 
 
 void printf (const char *format, ...);
@@ -74,11 +78,10 @@ static inline void safe_sti(eflags_t efl)
 	asm volatile (
     "pushl %0\n\t"
     "popfl\n"
-    : : "r" (efl)
-	);
+    : : "r" (efl));
 }
 
-static inline count_t fnzb(u32_t arg)
+static inline index_t fnzb(u32_t arg)
 {
   count_t n;
     asm volatile (
@@ -88,7 +91,7 @@ static inline count_t fnzb(u32_t arg)
 	return n;
 }
 
-static inline count_t _bsf(u32_t arg)
+static inline index_t _bsf(u32_t arg)
 {
   count_t n;
     asm volatile (
@@ -201,7 +204,7 @@ typedef struct
 }ioctl_t;
 
 
-typedef struct
+typedef struct __attribute__ ((packed))
 {
     u32_t code;
     union
@@ -214,7 +217,7 @@ typedef struct
             u16_t   x;                  /* cursor x        */
             u16_t   y;                  /* cursor y        */
             u32_t   unused;
-        }__attribute__ ((packed));
+        };
 
         struct                          /* realtime io     */
         {
@@ -237,6 +240,7 @@ typedef struct
 }event_t;
 
 
+void __fastcall dump_file(addr_t addr, size_t size);
 
 
 

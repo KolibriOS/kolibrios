@@ -6,7 +6,7 @@ INCLUDE = include/
 
 DEFS = -DUSE_SMP -DCONFIG_DEBUG
 
-CFLAGS = -c -O2 -DCONFIG_DEBUG -I $(INCLUDE) -fomit-frame-pointer -fno-builtin
+CFLAGS = -c -O2 $(DEFS) -I $(INCLUDE) -fomit-frame-pointer -fno-builtin-printf
 LDFLAGS = -shared -s -Map kernel.map --image-base 0x100000 --file-alignment 32 
 
 KERNEL_SRC:=				\
@@ -33,9 +33,9 @@ KERNEL_SRC:=				\
 PE_SRC:=			\
 		init.asm		\
 		mbi.c			\
-		mm.c		\
+		heap.c			\
 		slab.c		\
-		heap.c		\
+		frame.c			\
 		pe.c		\
 		dll.c		\
 		spinlock.c	\
@@ -68,6 +68,9 @@ kernel.mnt: kernel.obj bin/export.obj $(PE_OBJS) Makefile ld.x
 	ld $(LDFLAGS) -T ld.x -o $@ kernel.obj bin/export.obj $(PE_OBJS)
 
 bin/%.obj : core/%.c $(H_SRC) Makefile
+	$(CC) $(CFLAGS) -o $@ $<
+
+bin/%.obj : gui/%.c $(H_SRC) Makefile
 	$(CC) $(CFLAGS) -o $@ $<
 
 bin/%.obj: core/%.asm Makefile

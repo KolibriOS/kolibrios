@@ -214,7 +214,7 @@ core_init:
            call @init_heap@8
 
            call _init_core_dll
-           call _init_threads
+       ;    call _init_threads
 
 ; SAVE & CLEAR 0-0xffff
 
@@ -277,8 +277,8 @@ map_LFB:
            add eax, 0x00400000
            mov [_sys_pdbr+4+(LFB_BASE shr 20)], eax
 if SHADOWFB
-           mov ecx, 11
-           call @core_alloc@4
+           mov ecx, 1 shl 11
+           call @frame_alloc@4
            or eax, PG_LARGE+PG_UW
            mov [_sys_pdbr+(SHADOWFB shr 20)], eax
            add eax, 0x00400000

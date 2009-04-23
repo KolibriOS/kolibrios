@@ -13,17 +13,6 @@ void __fastcall *balloc(u32_t size);
 
 zone_t z_core;
 
-static inline u32_t save_edx(void)
-{
-  u32_t val;
-  asm volatile ("movl %%edx, %0":"=r"(val));
-  return val;
-};
-
-static inline void restore_edx(u32_t val)
-{
-  asm volatile (""::"d" (val) );
-};
 
 static void buddy_system_create(zone_t *z);
 static void  __fastcall buddy_system_free(zone_t *z, link_t *block);
@@ -35,8 +24,6 @@ void __fastcall zone_free(zone_t *zone, pfn_t frame_idx);
 size_t buddy_conf_size(int max_order);
 
 static inline void frame_initialize(frame_t *frame);
-
-void init_mm();
 
 
 static void zone_create(zone_t *z, pfn_t start, count_t count);
@@ -558,8 +545,8 @@ addr_t  __fastcall core_alloc(u32_t order)
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
 
-   DBG("core alloc: %x, size %x   remain  %d\n", v << FRAME_WIDTH,
-        ((1<<order)<<12), z_core.free_count);
+   DBG("core alloc at: 0x%x, size 0x%x   remain  %d\n", v << FRAME_WIDTH,
+        ((1<<order)<<FRAME_WIDTH), z_core.free_count);
 
    return (v << FRAME_WIDTH);
 };
@@ -568,11 +555,11 @@ void __fastcall core_free(addr_t frame)
 {
    eflags_t efl;
 
-   DBG("core free %x", frame);
+   DBG("core free  0x%x", frame);
 
    efl = safe_cli();
      spinlock_lock(&z_core.lock);
-       zone_free(&z_core, frame>>12);
+ //      zone_free(&z_core, frame>>12);
      spinlock_unlock(&z_core.lock);
    safe_sti(efl);
 

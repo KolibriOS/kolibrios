@@ -173,32 +173,32 @@ srv_t* __fastcall load_pe_driver(const char *path)
     PIMAGE_NT_HEADERS32   nt;
 
     drv_entry_t   *drv_entry;
-    md_t          *md;
+    addr_t        *img_base ;
     srv_t         *srv;
 
-    md = load_image(path);
+    img_base = load_image(path);
 
-    if( ! md )
+    if( ! img_base )
         return 0;
 
-    if( link_image( md->base ) )
+    if( link_image( img_base ) )
     {
-        dos = (PIMAGE_DOS_HEADER)md->base;
+        dos = (PIMAGE_DOS_HEADER)img_base;
         nt =  MakePtr( PIMAGE_NT_HEADERS32, dos, dos->e_lfanew);
 
-        drv_entry = MakePtr(drv_entry_t*, md->base,
+        drv_entry = MakePtr(drv_entry_t*, img_base,
                             nt->OptionalHeader.AddressOfEntryPoint);
 
         srv = drv_entry(1);
 
         if(srv != NULL)
-            srv->entry = nt->OptionalHeader.AddressOfEntryPoint + md->base;
+            srv->entry = nt->OptionalHeader.AddressOfEntryPoint + img_base;
 
         return srv;
     }
     else
     {
-        md_free( md );
+        mem_free( img_base );
         return NULL;
     }
 }
@@ -277,9 +277,9 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
           ( raw[1] == 0x30305445) ) )
 
     {
-        DBG("leagacy Kolibri application");
+        DBG("leagacy Kolibri application\n");
         int tmp =  mnt_exec(raw, raw_size, path, cmdline, flags);
-        DBG("  pid %x\n",tmp);
+        DBG("pid %x\n",tmp);
         return tmp;
     }
 
@@ -311,7 +311,7 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
         return -30;
     }
 
-    ex_stack_page  = core_alloc(0);                    /* 2^0 = 1 page   */
+    ex_stack_page  = alloc_page();                   /* 2^0 = 1 page   */
     if( ! ex_stack_page )
     {
         mem_free(raw);
@@ -327,7 +327,7 @@ int sys_exec(char *path, char *cmdline, u32_t flags)
 
     if( !ex_pg_dir )
     {
-        core_free(ex_stack_page);
+        frame_free(ex_stack_page);
         mem_free(raw);
         return -30;                                    /* FIXME          */
     };
