@@ -1013,27 +1013,29 @@ osloop:
 
 checkidle:
         pushad
-        mov  ebx,[timer_ticks]
-        call change_task
-        jmp  idle_loop_entry
-      idle_loop:
-        cmp  ebx,[timer_ticks]
-        jne  idle_exit
-        rdtsc ;call _rdtsc
-        mov  ecx,eax
+        call    change_task
+        jmp     idle_loop_entry
+  idle_loop:
+        cmp     eax,[idlemem]     ; eax == [timer_ticks]
+        jne     idle_exit
+        rdtsc   ;call _rdtsc
+        mov     ecx,eax
         hlt
-        rdtsc ;call _rdtsc
-        sub  eax,ecx
-        add  [idleuse],eax
-      idle_loop_entry:
-        cmp  [check_idle_semaphore],0
-        je   idle_loop
-        dec  [check_idle_semaphore]
-      idle_exit:
+        rdtsc   ;call _rdtsc
+        sub     eax,ecx
+        add     [idleuse],eax
+  idle_loop_entry:
+        mov     eax,[timer_ticks] ; eax =  [timer_ticks]
+        cmp     [check_idle_semaphore],0
+        je      idle_loop
+        dec     [check_idle_semaphore]
+  idle_exit:
+        mov     [idlemem],eax     ; eax == [timer_ticks]
         popad
         ret
 
 uglobal
+  idlemem               dd   0x0
   idleuse               dd   0x0
   idleusesec            dd   0x0
   check_idle_semaphore  dd   0x0
