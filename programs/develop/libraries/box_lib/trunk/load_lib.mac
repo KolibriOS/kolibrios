@@ -1,3 +1,4 @@
+;08.05.2009 - bugfix 
 ;14.04.2009 - a macros for code load library the box_lib.obj from '/sys/lib/' or current dirrectory.
 ; The macros for load any library/libraries:
 ; Copyright (c) 2009, <Lrz>
@@ -38,114 +39,200 @@
 ; If we cannot load library, we must show the error message:
 ; "I'm sorry,the programm cannot found system library box_lib.obj."
 ; "The find was make on 2 ways: /sys/lib/ and current dirrectory."
+;
 ; 
-; ebx,library_name
-; esi,cur_dir_path
-; edi,library_path
 ;---------------------------------------------------------------------
-; Macro test_load_library
+; Macro sys_load_library
 ; A first time we must to check own path in current dirrectory the program, where I belive find a system library.
 ; If I cannot found my library, i must to check second way. Second way is system path a "/sys/lib/".
 ; If we cannot load library, we must show the error message:
 ; "I'm sorry,the programm cannot found system library box_lib.obj."
 ; "The find was make on 2 ways: /sys/lib/ and current dirrectory."
-
-macro load_library library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
-{
-local end_steep
-;---------------------------------------------------------------------  
-; loading Box_Lib library 
-
-        mcall   68,19,system_path   ; load of sys directory
-        test    eax,eax
-        jnz     end_steep 
-
-        mov     ebx,library_name
-        mov     esi,cur_dir_path
-        mov     edi,library_path
-
-        copy_path       ;the macros making way /current pach a program/+ name system library
-        
-        mcall   68,19,library_path ; load of alternative
-        test    eax,eax
-        jnz     end_steep
-
-        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
-
-end_steep:
-
-        import_boxlib myimport, err_message_import, head_f_i  ;import
+;
 ;---------------------------------------------------------------------
-}
-
-
-macro test_load_library library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
-{
-local end_steep
-;---------------------------------------------------------------------  
-; loading Box_Lib library 
-        mov     ebx,library_name
-        mov     esi,cur_dir_path
-        mov     edi,library_path
-
-        copy_path       ;the macros making way /current pach a program/+ name system library
-
-        mcall   68,19,library_path ; load of alternative
-        test    eax,eax
-        jnz     end_steep 
-        
-        mcall   68,19,system_path ; load of sys directory
-        test    eax,eax
-        jnz     end_steep
-
-        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
-
-end_steep:
-
-        import_boxlib myimport, err_message_import, head_f_i  ;import
+; How can I use it?
 ;---------------------------------------------------------------------
-}
+;-Example using single load library
+;-universal load library/librarys
+;load_library  library_name, cur_dir_path, library_path, system_path, \
+;err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+;-if return code =-1 then exit, else normally work
+;        cmp     eax,-1
+;        jz      exit
+;- Well, if you get 
+;
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;DATA данные
+;¬сегда соблюдать последовательность в имени.
+;system_path      db '/sys/lib/'
+;library_name     db 'box_lib.obj',0
+; ≈сли есть желание разъединить, то нужно использовать следующию конструкцию
+;system_path      db '/sys/lib/box_lib.obj',0
+;... люба€ последовательность других команд и определений.
+;library_name     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-macro load_libraries library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
-{
-local end_steep
-;---------------------------------------------------------------------  
-; loading Box_Lib library 
+;err_message_found_lib   db 'Sorry I cannot found library box_lib.obj',0
+;head_f_i:
+;head_f_l        db 'System error',0
+;err_message_import      db 'Error on load import library box_lib.obj',0
 
-        mcall   68,19,system_path   ; load of sys directory
-        test    eax,eax
-        jnz     end_steep 
+;myimport:   
+;
+;edit_box_draw   dd      aEdit_box_draw
+;edit_box_key    dd      aEdit_box_key
+;edit_box_mouse  dd      aEdit_box_mouse
+;version_ed      dd      aVersion_ed
+;
+;check_box_draw  dd      aCheck_box_draw
+;check_box_mouse dd      aCheck_box_mouse
+;version_ch      dd      aVersion_ch
+;
+;option_box_draw  dd      aOption_box_draw
+;option_box_mouse dd      aOption_box_mouse
+;version_op       dd      aVersion_op
 
-        mov     ebx,library_name
-        mov     esi,cur_dir_path
-        mov     edi,library_path
+;                dd      0
+;                dd      0
+;
+;aEdit_box_draw  db 'edit_box',0
+;aEdit_box_key   db 'edit_box_key',0
+;aEdit_box_mouse db 'edit_box_mouse',0
+;aVersion_ed     db 'version_ed',0
 
-        copy_path       ;the macros making way /current pach a program/+ name system library
-        
-        mcall   68,19,library_path ; load of alternative
-        test    eax,eax
-        jnz     end_steep
+;aCheck_box_draw  db 'check_box_draw',0
+;aCheck_box_mouse db 'check_box_mouse',0
+;aVersion_ch      db 'version_ch',0
 
-        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+;aOption_box_draw  db 'option_box_draw',0
+;aOption_box_mouse db 'option_box_mouse',0
+;aVersion_op       db 'version_op',0
 
-end_steep:
-
-        import_boxlib myimport, err_message_import, head_f_i  ;import
 ;---------------------------------------------------------------------
-}
-
-
-
-
-macro copy_path 
+macro @use_library
 {
-local copy_path
-;---------------------------------------------------------------------
-;        mov     ebx,library_name
-;        mov     esi,cur_dir_path
-;        mov     edi,library_path
+show_err_:
+local red_win
+local still
+local button
+local __sc
+local start
+local ex_lp
+local lp
+local correction
+;/equ
+err_message1     equ    dword [esp+8]
+head1            equ    dword [esp+4]
 
-copy_path:
+
+__sc.frame                equ  dword [__sc+0]
+__sc.grab                 equ  dword [__sc+4]
+__sc.grab_button          equ  dword [__sc+8]
+__sc.grab_button_text     equ  dword [__sc+12] 
+__sc.grab_text            equ  dword [__sc+16]
+__sc.work                 equ  dword [__sc+20]
+__sc.work_button          equ  dword [__sc+24]
+__sc.work_button_text     equ  dword [__sc+28]
+__sc.work_text            equ  dword [__sc+32]
+__sc.work_graph           equ  dword [__sc+36]
+
+;local on_x
+;local on_y
+
+;;;;;;;;;;;CALC WIDTH & HIGHT WINDOW & CENTER MONITOR POSITION;;;;;;;;;;
+        mov     eax,48             ;get system color
+        mov     ebx,3
+        mov     ecx,__sc
+        mov     edx,sizeof.system_colors
+        mcall
+;---------------------------------------------------------------------
+;get with text imul on 6 pix
+        xor     eax,eax
+        mov     esi,err_message1
+        mov     ecx,30
+align 4
+lp:     lodsb
+        test    eax,eax
+        jz      ex_lp
+        add     ecx,7
+        jmp     lp
+;---------------------------------------------------------------------
+ex_lp:
+        mcall   48,5    ;get system window
+        sub     eax,ecx
+        sub     bx,90
+
+        shl     eax,15
+        shl     ebx,15
+
+        mov     ax,cx
+
+        mov     bx,90
+
+        mov     dword [on_x],eax
+        mov     dword [on_y],ebx
+
+;        mov     eax,dword [esp+4]
+;        mov     dword [header_xx],eax
+
+;        mov     eax,dword [esp+8]        
+;        mov     dword [message_xx],eax        
+
+        jmp     start
+__sc     system_colors
+on_x    dd      ?
+on_y    dd      ?
+message_xx      dd      ?
+header_xx       dd      ?
+;;;;;;;;;;;DRAW WINDOW;;;;;;;;;;;;;;
+start:
+        mcall   40,0x5         ;set mask on events rewraw window and get id button.
+red_win:
+;draw_window:
+        mcall 12,1
+
+        xor     eax,eax
+        mov     ebx,dword [on_x]
+        mov     ecx,dword [on_y]
+        mov     edx,__sc.work
+        or      edx,0x33000000
+        mov     esi,__sc.grab_text
+        mov     edi,head1
+        mcall
+
+        mov     eax,4
+        mov     ebx,(10*65536+25)
+        mov     ecx,__sc.grab_text
+        or      ecx,0x90000000
+        mov     edx,err_message1
+        mcall
+        mcall 12,2
+align 4
+still:                          ;main loop
+        mcall   10              ;wait event
+        dec  eax
+        jz   red_win
+        sub  eax,2
+        jnz  still   ;go to main loop
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+button:
+        mcall   17      ;get id button
+        test    ah,ah      ;if in ah 0, then go to still
+        jz      still
+        or      dword [esp+40],-1; modify eax in stack (pushad)
+        ret
+
+;---------------------------------------------------------------------
+@library_name     equ    dword [esp+12]
+@cur_dir_path     equ    dword [esp+8]
+@library_path     equ    dword [esp+4]
+
+align 4
+@copy_path:
+        mov     ebx,@library_name
+        mov     esi,@cur_dir_path
+        mov     edi,@library_path
+
         xor     eax,eax
         cld
 .lp1:
@@ -172,36 +259,207 @@ copy_path:
         test    eax,eax
         jnz     .lp3
 ;--------------------------------------------------------------------- 
+	ret
+}
+
+
+
+macro sys_load_library library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+{
+local end_steep
+local exit
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+
+        mcall   68,19,system_path   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep 
+
+        copy_path   library_name, cur_dir_path, library_path    ;the macros making way /current pach a program/+ name system library
+        
+        mcall   68,19,library_path ; load of alternative
+        test    eax,eax
+        jnz     end_steep
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+        jmp     exit
+
+
+align 4
+end_steep:
+
+        import_boxlib myimport, err_message_import, head_f_i  ;import
+exit:
+;---------------------------------------------------------------------
+}
+
+
+macro load_library library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+{
+local end_steep
+local exit
+;---------------------------------------------------------------------  
+; loading Box_Lib library 
+
+        copy_path  library_name, cur_dir_path, library_path     ;the macros making way /current pach a program/+ name system library
+
+        mcall   68,19,library_path ; load of alternative
+        test    eax,eax
+        jnz     end_steep 
+        
+        mcall   68,19,system_path ; load of sys directory
+        test    eax,eax
+        jnz     end_steep
+
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+        jmp     exit
+
+align 4
+end_steep:
+
+        import_boxlib myimport, err_message_import, head_f_i  ;import
+exit:
+;---------------------------------------------------------------------
+}
+macro sys_load_libraries _start,_end
+{
+local lp
+local end_steep
+local next
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+library_name            equ [ebp]
+cur_dir_path            equ [ebp+4]
+library_path            equ [ebp+8]
+system_path             equ [ebp+12]
+err_message_found_lib   equ [ebp+16]   
+head_f_l                equ [ebp+20]
+my_import               equ [ebp+24] 
+err_message_import      equ [ebp+28]
+head_f_i                equ [ebp+32]
+adr_load_lib            equ dword [ebp+36]
+status_lib              equ dword [ebp+40]
+
+;        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+;        int 0x40
+
+        mov     ebp,_start
+        mov     ecx,((_end-_start)/ll_struc_size)
+
+align 4
+lp:     push    ecx
+        mcall   68,19,system_path   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep 
+
+        copy_path  library_name, cur_dir_path, library_path     ;the macros making way /current pach a program/+ name system library
+        
+        mcall   68,19,library_path ; load of alternative
+        test    eax,eax
+        jnz     end_steep
+
+        or      status_lib,0x1          ; status of code - enable error - not found library
+
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+        jmp      next
+
+align 4
+end_steep:
+        mov     adr_load_lib,eax        ;save adr lib in memory
+        import_boxlib my_import, err_message_import, head_f_i  ;import
+
+        test    eax,eax
+        jz      next
+
+        or      status_lib,0x2          ; status of code - enable error - import error
+
+next:
+        pop     ecx
+        add     ebp,ll_struc_size
+        dec     ecx
+        jnz     lp
+}
+
+macro load_libraries _start,_end
+{
+local lp
+local end_steep
+local next
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+library_name            equ [ebp]
+cur_dir_path            equ [ebp+4]
+library_path            equ [ebp+8]
+system_path             equ [ebp+12]
+err_message_found_lib   equ [ebp+16]   
+head_f_l                equ [ebp+20]
+my_import               equ [ebp+24] 
+err_message_import      equ [ebp+28]
+head_f_i                equ [ebp+32]
+adr_load_lib            equ dword [ebp+36]
+status_lib              equ dword [ebp+40]
+
+        mov     ebp,_start
+        mov     ecx,((_end-_start)/ll_struc_size)
+
+align 4
+lp:     push    ecx
+
+        copy_path    library_name, cur_dir_path, library_path   ;the macros making way /current pach a program/+ name system library
+
+        mcall   68,19,library_path  ; load of alternative
+        test    eax,eax
+        jnz     end_steep 
+        
+        mcall   68,19,system_path   ; load of sys directory
+        test    eax,eax
+        jnz     end_steep
+
+        or      status_lib,0x1          ; status of code - enable error - not found library
+
+        show_error_window  err_message_found_lib, head_f_l    ;show error message /create window
+        jmp      next
+
+align 4
+end_steep:
+        mov     adr_load_lib,eax        ;save adr lib in memory
+
+        import_boxlib my_import, err_message_import, head_f_i  ;import
+
+        test    eax,eax
+        jz      next
+
+        or      status_lib,0x2          ; status of code - enable error - import error
+
+next:
+        pop     ecx
+        add     ebp,ll_struc_size
+        dec     ecx
+        jnz     lp
+}
+
+
+macro copy_path lib_name,dir_path,lib_path
+{
+        pushad  ;save all registers
+        push    dword lib_name
+        push    dword dir_path
+        push    dword lib_path
+
+        call    @copy_path
+
+        add     esp,12
+        popad   ;restore all registers
 }
 
 macro show_error_window  err_message, head
-{
-local red_win
-local still
-local button
+{       pushad  ;save all registers
+        push    dword err_message
+        push    dword head
 
-        mcall   40,0x5         ;set mask on events rewraw window and get id button.
-red_win:
-;draw_window:
-        mcall 12, 1
-        mcall 0, <0,300>, <0,100>, 0x33AABBCC, 0x805080D0, head
-        mcall 4, <10,10>, 0x90000000, err_message; _found_lib
-        mcall 12, 2
-align 4
-still:                          ;main loop
-        mcall   10              ;wait event
-        dec  eax
-        jz   red_win
-        
-        sub  eax,2
-        jnz  still   ;go to main loop
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-button:
-        mcall   17      ;get id button
-        test    ah,ah      ;if in ah 0, then go to still
-        jz      still
-        mcall   -1
+        call    show_err_
+
+        add     esp,8
+        popad   ;restore all registers
 }
+
 
 macro import_boxlib myimport, err_message_import, head_f_i
 {
@@ -212,7 +470,10 @@ local import_find_next
 local import_found
 local import_done
 local exit
+local e.exit
+local import_not_found
 ; initialize import
+        
         mov     edx, eax
         mov     esi,myimport
 import_loop:
@@ -223,7 +484,7 @@ import_loop:
 import_find:
         mov     ebx, [ds:edx]
         test    ebx, ebx
-        jz      exit   ;import_not_found
+        jz      import_not_found
         push    eax
 lp:
         mov     cl, [ds:eax]
@@ -244,11 +505,29 @@ import_found:
         mov     [esi-4], eax
         pop     edx
         jmp     import_loop
-exit:
+import_not_found:
         add     esp,4
-
         show_error_window  err_message_import, head_f_i    ;show error message /create window
-
+        jmp     e.exit
 import_done:
+        xor     eax,eax
+e.exit: 
 ;---------------------------------------------------------------------
+}
+ll_struc_size = 44;($-library_name)    ; constant   size of struct
+struc l_libs library_name, cur_dir_path, library_path, system_path, err_message_found_lib, head_f_l, my_import, err_message_import, head_f_i; struct for loading libraries
+{        
+.library_name            dd library_name
+.cur_dir_path            dd cur_dir_path
+.library_path            dd library_path
+.system_path             dd system_path
+.err_message_found_lib   dd err_message_found_lib
+.head_f_l                dd head_f_l
+.my_import               dd my_import
+.err_message_import      dd err_message_import
+.head_f_i                dd head_f_i
+.adr_load_lib            dd 0x0
+.status_lib              dd 0x0          ;status of load library
+;
+
 }

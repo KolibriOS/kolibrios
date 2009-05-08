@@ -75,3 +75,4 @@ op_flag_en=10b
 .ch_text_length: dd op_text_length ;длинна строки с символами
 .flags: dd flags+0   ; флаги        
 }
+

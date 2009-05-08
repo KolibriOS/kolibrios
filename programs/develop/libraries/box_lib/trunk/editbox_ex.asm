@@ -13,10 +13,14 @@ use32                ; транслятор, использующий 32 разрядных команды
 include 'macros.inc'
 include 'editbox_ex.mac'
 include 'load_lib.mac'
+	@use_library	;use load lib macros
 start:
 ;universal load library/librarys
-load_library  library_name, cur_dir_path, library_path, system_path, \
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
 err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+;if return code =-1 then exit, else nornary work
+        cmp     eax,-1
+        jz      exit
         mcall   40,0x27         ;установить маску для ожидаемых событий
 red_win:
     call draw_window            ;первоначально необходимо нарисовать окно
@@ -94,9 +98,16 @@ draw_window:            ;рисование окна приложения
     ret
 ;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 ;DATA данные
-system_path      db '/sys/lib/box_lib.obj',0
+;Всегда соблюдать последовательность в имени.
+system_path      db '/sys/lib/'
 library_name     db 'box_lib.obj',0
-err_message_found_lib   db 'Sorry I cannot found library box_lib.obj',0
+; Если есть желание разъединить, то нужно использовать следующию конструкцию
+;system_path      db '/sys/lib/box_lib.obj',0
+;... любая последовательность других команд и определений.
+;library_name     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
 head_f_i:
 head_f_l        db 'System error',0
 err_message_import      db 'Error on load import library box_lib.obj',0
@@ -152,7 +163,7 @@ option_group1   dd op1  ;указатели, они отображаются по умолчанию, когда выводит
 option_group2   dd op12 ;приложение
 Option_boxs     dd  op1,op2,op3,0
 Option_boxs2    dd  op11,op12,op13,0
-hed db   'BOXs load from lib <Lrz> date 27.09.2007',0
+hed db   'BOXs load from lib <Lrz> date 27.04.2009',0
 hed_end:
 rb  256
 check_text db 'First checkbox'
@@ -166,6 +177,8 @@ op_text:                ; Сопровождающий текст для чек боксов
 .e3:
 ed_buffer       rb 100
 ;-----------------------
+;sc      system_colors
+p_info  process_information
 cur_dir_path    rb 4096
 library_path    rb 4096
 i_end:
