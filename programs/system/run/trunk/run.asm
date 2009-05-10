@@ -6,17 +6,40 @@ window_y=67
 ;window_x=320
 window_x=640
 ;--- другие макросы ---
-include '../../../develop/examples/editbox/trunk/editbox.inc'
+;include '../../../develop/examples/editbox/trunk/editbox.inc'
+include '../../../develop/libraries/box_lib/trunk/load_lib.mac'
+include '../../../develop/libraries/box_lib/trunk/editbox_ex.mac'
 ;include 'editbox.inc'
 include 'txtbut.inc'
 include '../../../macros.inc'
 ;include 'macros.inc'
 include 'run.mac'
 include 'lang.inc'
-        meos_app_start
-        use_edit_box
+use32                
+    org 0x0
+    db 'MENUET01'
+    dd 0x1
+    dd start
+    dd i_end
+    dd mem
+    dd mem
+    dd par
+    dd cur_dir_path
+
+
+;        meos_app_start
+;        use_edit_box
+	@use_library
         use_txt_button
-        code
+;        code
+;load system lib
+align 4
+start:
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+        cmp     eax,-1
+        jz      close
+
         cmp     [par],byte 0
         jne     read_par
         mcall   40,EVM_MOUSE+EVM_BUTTON+EVM_KEY+EVM_REDRAW
@@ -34,13 +57,19 @@ still:                          ;основной обработчик
         jz   key
         dec  eax
         jz   button
-        mouse_edit_box input_fn 
+;        mouse_edit_box input_fn 
+        push    dword input_fn
+        call    [edit_box_mouse]
+
         jmp still    ;если ничего из перечисленного то снова в цикл
 key:
         mcall   2
         cmp     ah,13
         je      run
-        key_edit_box input_fn
+;        key_edit_box input_fn
+        push    dword input_fn
+        call    [edit_box_key]
+
         jmp     still
 button:
         mcall   17
@@ -178,7 +207,10 @@ draw_window:
         pop     cx
         mov     edx,[sc.work_graph]
         mcall   38
-        draw_edit_box input_fn
+;        draw_edit_box input_fn
+        push    dword input_fn
+        call    [edit_box_draw]
+
         draw_txt_button run_but
 
         call    draw_status_text
@@ -207,7 +239,7 @@ ret
 
 run_but txt_button 0,5,15,25,2,0,0,run_but_text,
 input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0,511,fn,ed_focus+ed_always_focus
-mouse_flag: dd 0x0
+;mouse_flag: dd 0x0
 
 if lang eq ru
 hello db 'Введите полный путь к файлу и нажмите Enter',0
@@ -238,6 +270,36 @@ run_but_text db 'RUN',0
 end if
 status dd hello
 
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;DATA данные
+;Всегда соблюдать последовательность в имени.
+system_path      db '/sys/lib/'
+library_name     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
+head_f_i:
+head_f_l        db 'System error',0
+err_message_import      db 'Error on load import library box_lib.obj',0
+
+myimport:   
+
+edit_box_draw   dd      aEdit_box_draw
+edit_box_key    dd      aEdit_box_key
+edit_box_mouse  dd      aEdit_box_mouse
+version_ed      dd      aVersion_ed
+
+                dd      0
+                dd      0
+
+aEdit_box_draw  db 'edit_box',0
+aEdit_box_key   db 'edit_box_key',0
+aEdit_box_mouse db 'edit_box_mouse',0
+aVersion_ed     db 'version_ed',0
+
+
+
+
 file_info:
 .mode dd 7
 .flags dd 0
@@ -254,5 +316,12 @@ procinfo process_information
 run_par rb 256
 par rb 256
 fn rb 512
-meos_app_end
-udata
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+cur_dir_path    rb 4096
+library_path    rb 4096
+i_end:
+rb 1024
+mem:
+;meos_app_end
+;udata
