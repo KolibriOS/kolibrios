@@ -3,7 +3,7 @@
 ;   
 ;   Mario79 2005
 ;   Heavyiron 12.02.2007
-;
+;   <Lrz>     11.05.2009 - для работы нужна системная библиотека box_lib.obj
 ;   Компилировать FASM'ом
 ;
 ;---------------------------------------------------------------------
@@ -23,18 +23,27 @@ version equ '1.2'
   dd     I_END       ; количество памяти
   dd     I_END       ; адрес вершины стэка
   dd     0x0         ; адрес буфера для параметров (не используется)
-  dd     0x0         ; зарезервировано
+  dd cur_dir_path
 
-include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
-use_edit_box
+;include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
+include '../../../develop/libraries/box_lib/trunk/load_lib.mac'
+include '../../../develop/libraries/box_lib/trunk/editbox_ex.mac'
+	@use_library
+
+;use_edit_box
 al equ eax      ; \ decrease kpack'ed size
 purge mov       ; /
 
 ;---------------------------------------------------------------------
 ;---  НАЧАЛО ПРОГРАММЫ  ----------------------------------------------
 ;---------------------------------------------------------------------
-
+align 4
 START:
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+        cmp     eax,-1
+        jz      close
+
    mov eax, 40
    mov ebx, 100111b
    mcall
@@ -56,7 +65,10 @@ still:
     jz   button
 
 mouse:
-        mouse_edit_box editbox
+;        mouse_edit_box editbox
+        push    dword editbox
+        call    [edit_box_mouse]
+
         jmp     still
     
 button:
@@ -65,6 +77,7 @@ button:
 
     cmp  ah,1            ; кнопка с id=1("закрыть")?
     jne  noclose
+close:
     or   eax,-1          ; функция -1: завершить программу
     mcall
 
@@ -96,7 +109,10 @@ doit:
 key:         
     mov  al,2
     mcall
-    key_edit_box editbox
+;    key_edit_box editbox
+        push    dword editbox
+        call    [edit_box_key]
+
     jmp  still
 
 
@@ -170,7 +186,10 @@ draw_window:
    mov edi,title                        ; ЗАГОЛОВОК ОКНА
    mcall
 
-draw_edit_box editbox                   ;рисование edit box
+        push    dword editbox
+        call    [edit_box_draw]
+
+;draw_edit_box editbox                   ;рисование edit box
 
    mov al,13                            ;отрисовка теней кнопок
    mov ebx,194 shl 16 + 60
@@ -307,8 +326,35 @@ error11 db 'Device error',0
 aUnknownError db 'Unknown error',0
 
 end if
+;>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+;DATA данные
+;Всегда соблюдать последовательность в имени.
+system_path      db '/sys/lib/'
+library_name     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-mouse_flag: dd 0x0
+err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
+head_f_i:
+head_f_l        db 'System error',0
+err_message_import      db 'Error on load import library box_lib.obj',0
+align 4
+myimport:   
+
+edit_box_draw   dd      aEdit_box_draw
+edit_box_key    dd      aEdit_box_key
+edit_box_mouse  dd      aEdit_box_mouse
+version_ed      dd      aVersion_ed
+
+                dd      0
+                dd      0
+
+aEdit_box_draw  db 'edit_box',0
+aEdit_box_key   db 'edit_box_key',0
+aEdit_box_mouse db 'edit_box_mouse',0
+aVersion_ed     db 'version_ed',0
+
+
+;mouse_flag: dd 0x0
 
 path1   db '/fd/1/',0
 path2   db '/fd/2/',0
@@ -321,6 +367,8 @@ rb 514
 
 sc     system_colors
 
+cur_dir_path    rb 4096
+library_path    rb 4096
 align 4
 rb 0x100        ; for stack
 I_END:                             ; метка конца программы
