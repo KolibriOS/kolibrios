@@ -2254,8 +2254,9 @@ sys_cachetodiskette:
 
 uglobal
 ;  bgrchanged  dd  0x0
-bgrlock db 0
+align 4
 bgrlockpid dd 0
+bgrlock db 0
 endg
 
 sys_background:
@@ -2267,10 +2268,9 @@ sys_background:
     cmp   edx,0
     je    sbgrr
 @@:
-        mov     al, 1
-        xchg    [bgrlock], al
-        test    al, al
-        jz      @f
+;;Maxis use atomic bts for mutexes  4.4.2009
+        bts     dword [bgrlock], 0
+        jnc     @f
         call    change_task
         jmp     @b
 @@:
@@ -2368,11 +2368,10 @@ draw_background_temp:
 
         cmp     ebx, 6
         jnz     nosb6
+;;Maxis use atomic bts for mutex 4.4.2009
 @@:
-        mov     al, 1
-        xchg    [bgrlock], al
-        test    al, al
-        jz      @f
+        bts     [bgrlock], 0
+        jnc     @f
         call    change_task
         jmp     @b
 @@:
