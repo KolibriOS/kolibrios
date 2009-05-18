@@ -960,29 +960,29 @@ endp
 align 4
 sysfn_meminfo:
 
-        ;   add ebx, new_app_base
-           cmp ebx, OS_BASE
+        ;   add ecx, new_app_base
+           cmp ecx, OS_BASE
            jae .fail
 
            mov eax, [pg_data.pages_count]
-           mov [ebx], eax
+           mov [ecx], eax
            shl eax, 12
-           mov [esp+36], eax
-           mov ecx, [pg_data.pages_free]
-           mov [ebx+4], ecx
-           mov edx, [pg_data.pages_faults]
-           mov [ebx+8], edx
-           mov esi, [heap_size]
-           mov [ebx+12], esi
-           mov edi, [heap_free]
-           mov [ebx+16], edi
+           mov [esp+32], eax
+           mov eax, [pg_data.pages_free]
+           mov [ecx+4], eax
+           mov eax, [pg_data.pages_faults]
+           mov [ecx+8], eax
+           mov eax, [heap_size]
+           mov [ecx+12], eax
+           mov eax, [heap_free]
+           mov [ecx+16], eax
            mov eax, [heap_blocks]
-           mov [ebx+20], eax
-           mov ecx, [free_blocks]
-           mov [ebx+24], ecx
+           mov [ecx+20], eax
+           mov eax, [free_blocks]
+           mov [ecx+24], eax
            ret
 .fail:
-           mov dword [esp+36], -1
+           mov dword [esp+32], -1
            ret
 
 align 4

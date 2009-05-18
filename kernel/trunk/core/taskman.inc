@@ -918,18 +918,15 @@ endp
 
 align 4
 wait_mutex:
+;;Maxis use atomic bts for mutex 4.4.2009
 	   push eax
 	   push ebx
 .do_wait:
-	   cmp dword [ebx],0
-	   je .get_lock
+           bts dword [ebx],0
+           jnc .locked
 	   call change_task
 	   jmp .do_wait
-.get_lock:
-	   mov eax, 1
-	   xchg eax, [ebx]
-	   test eax, eax
-	   jnz .do_wait
+.locked:
 	   pop ebx
 	   pop eax
 	   ret
