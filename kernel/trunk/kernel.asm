@@ -2370,7 +2370,7 @@ draw_background_temp:
         jnz     nosb6
 ;;Maxis use atomic bts for mutex 4.4.2009
 @@:
-        bts     [bgrlock], 0
+        bts     dword [bgrlock], 0
         jnc     @f
         call    change_task
         jmp     @b
