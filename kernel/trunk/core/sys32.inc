@@ -33,7 +33,7 @@ iglobal
   align 4
   sys_int:
     ;exception handlers addresses (for interrupt gate construction)
-        dd      e0,e1,e2,e3,e4,e5,e6,except_7
+        dd      e0,e1,e2,e3,e4,e5,e6,except_7 ; SEE: core/fpu.inc
         dd      e8,e9,e10,e11,e12,e13,page_fault_exc,e15
         dd      e16, e17,e18, e19
         times   12 dd unknown_interrupt ;int_20..int_31
@@ -53,7 +53,7 @@ iglobal
     ;int_0x40 gate trap (for directly copied)
         dw      i40 and 0xFFFF, os_code, 11101111b shl 8, i40 shr 16
 
-  idtreg: ; data for LIDT instruction (must be immediately below sys_int data)
+  idtreg: ; data for LIDT instruction (!!! must be immediately below sys_int data)
         dw      2*($-sys_int-4)-1
         dd      idts ;0x8000B100
         dw      0    ;просто выравнивание
@@ -130,7 +130,7 @@ exc_c:                         ;исключение
         jnz     v86_exc_c
         cmp     bl,14           ; #PF
         jne     @f
-        call    page_fault_handler
+        call    page_fault_handler ; SEE: core/memory.inc
   @@:   mov     esi, [current_slot]
         btr     [esi+APPDATA.except_mask], ebx
         jnc     @f
@@ -146,15 +146,37 @@ exc_c:                         ;исключение
         call    show_error_parameters ;; only ONE using, inline ???
        ;mov     edx, [TASK_BASE]
         mov     [edx + TASKDATA.state], byte 4 ; terminate
-        jmp     change_task     ; stack - here it does not matter at all
+        jmp     change_task     ; stack - here it does not matter at all, SEE: core/shed.inc
 .debug:
 ; we are debugged process, notify debugger and suspend ourself
 ; eax=debugger PID
-        cmp     bl,1            ; #DB
-        je      debug_ex
-        mov     edx, ebx        ; debug_message data=Number_Of_Exception
         mov     ecx,1           ; debug_message code=other_exception
-        jmp     debug_ex.notify ; notify debugger and suspend ourself
+        cmp     bl,1            ; #DB
+        jne     .notify         ; notify debugger and suspend ourself
+        mov     ebx, dr6        ; debug_message data=DR6_image
+        xor     edx, edx
+        mov     dr6, edx
+        mov     edx, dr7
+        mov     cl, not 8
+  .l1:  shl     dl,2
+        jc      @f
+        and     bl, cl
+  @@:   sar     cl,1
+        jc      .l1
+        mov     cl, 3           ; debug_message code=debug_exception
+.notify:
+        push    ebx             ; debug_message data
+        mov     ebx, [TASK_BASE]
+        push    [ebx+TASKDATA.pid] ; PID
+        push    ecx             ; debug_message code ((here: ecx==1/3))
+        mov     cl, 12          ; debug_message size
+        call    debugger_notify ;; only ONE using, inline ??? SEE: core/debug.inc
+        add     esp,12
+        mov     edx, [TASK_BASE]
+        mov     byte [edx+TASKDATA.state], 1 ; suspended
+        call    change_task     ; SEE: core/shed.inc
+        restore_ring3_context
+        iretd
 
 IRetToUserHook:
         xchg    eax, [reg_eip]

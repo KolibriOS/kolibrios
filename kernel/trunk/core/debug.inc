@@ -414,31 +414,3 @@ debugger_notify:
         or      byte [SLOT_BASE+eax+APPDATA.event_mask+1], 1      ; set flag 100h
 .ret:
         ret
-
-debug_ex:
-; we are debugged process, notify debugger and suspend ourself
-; eax=debugger PID
-        mov     edx, dr6 ; debug_message data=DR6_image
-        xor     ebx, ebx
-        mov     dr6, ebx
-        mov     ebx, dr7
-        mov     cl, not 8
-  .l1:  shl     bl,2
-        jc      @f
-        and     dl, cl
-  @@:   sar     cl,1
-        jc      .l1
-        mov     ecx,3    ; debug_message code=debug_exception
-.notify:
-        push    edx      ; debug_message data
-        mov     ebx, [TASK_BASE]
-        push    [ebx+TASKDATA.pid] ; PID
-        push    ecx      ; debug_message code
-        mov     ecx,12   ; debug_message size
-        call    debugger_notify ;; only ONE using, inline ???
-        add     esp,12
-        mov     edx, [TASK_BASE]
-        mov     byte [edx+TASKDATA.state], 1    ; suspended
-        call    change_task
-        restore_ring3_context
-        iretd
