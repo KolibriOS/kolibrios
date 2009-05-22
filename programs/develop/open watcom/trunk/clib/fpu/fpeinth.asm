@@ -60,7 +60,7 @@ xdefp   __FPEHandler_
 defp    __FPEHandler_
 
 public  __FPE2Handler_
-__FPE2Handler_ label byte 
+__FPE2Handler_ label byte
 
         push    EAX                     ; save regs
         push    EBX                     ; ...
@@ -71,6 +71,9 @@ __FPE2Handler_ label byte
         push    EBP                     ; ...
         sub     ESP,ENV_SIZE            ; make room for environment information
         mov     EBP,ESP                 ; point to buffer for 80x87 environment
+  ; Now EXC_NUM is located in [EBP+ENV_SIZE+32]
+  ; but it isn't necessary to testing EXC_NUM,
+  ; because only #MF is unmasked now
         fnstenv [EBP]                   ; get 80x87 environment
         fwait                           ; wait for 80x87
         mov     EDX,ENV_CW[EBP]         ; get control word
@@ -124,6 +127,15 @@ opcode:
           call  GetInf                  ; - process divide by zero
           mov   CL,FPE_ZERODIVIDE       ; - indicate divide by zero
         _endguess                       ; endguess
+   ; More correctly to rise this mask bit - is on end of __FPE_exception_
+   ; but it may not returned at all...
+        push    ECX
+        mov     EAX, 68
+        mov     EBX, 18                 ;
+        mov     ECX, 16                 ; #MF
+        mov     EDX, 1                  ; rise activity
+        int     40h                     ; change state of signal activity
+        pop     ECX
         _guess                          ; guess exception to be handled
           cmp   CL,FPE_OK               ; - check if exception allowed
           _quif e                       ; - quit if exception not allowed
@@ -144,7 +156,8 @@ opcode:
         pop     ECX                     ; ...
         pop     EBX                     ; ...
         pop     EAX                     ; ...
-        ret                             ; return from interrupt handler
+        ret     4                       ; return from interrupt handler
+                                        ; with removing EXC_NUM
 
 endproc __FPEHandler_
 

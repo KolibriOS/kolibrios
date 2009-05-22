@@ -42,6 +42,7 @@ include mdef.inc
         datasegment
         
 Save87  dd      0
+OldMask dd      0
         enddata
  
 
@@ -56,13 +57,17 @@ defp    __Init_FPE_handler
         push    EAX                     ; save registers
         push    EBX                     ; ...
         push    ECX                     ; ...
-        
+        push    EDX                     ; ...
+
         mov     EAX, 68
         mov     EBX, 15
+        mov     EDX, 10000h             ; 1 shl 16 - #MF
         lea     ECX, __FPE2Handler_
-        int     40h                     ; set new #FPE handler 
+        int     40h                     ; set new exception handler
         mov     Save87, EAX             ; save old handler
+        mov     OldMask,EBX             ; save old mask
         
+        pop     EDX                     ; ...
         pop     ECX                     ; ...
         pop     EBX                     ; ...
         pop     EAX                     ; ...
@@ -78,6 +83,7 @@ defp    __Fini_FPE_handler
         _endif                          ; endif
         push    EAX                     ; save registers
         push    EBX                     ; ...
+                                        ; ECX ????
         push    EDX                     ; ...
         sub     ESP,4                   ; allocate space for control word
         fstcw   word ptr [ESP]          ; get control word
@@ -89,10 +95,12 @@ defp    __Fini_FPE_handler
         
         mov     EAX, 68
         mov     EBX, 15
-        mov     ECX, dword ptr Save87
-        int     40h                     ; set new #FPE handler 
-        
+        mov     ECX, dword ptr Save87   ; restore handler
+        mov     EDX, dword ptr OldMask  ; restore mask
+        int     40h                     ; set new ecxeption handler
+
         pop     EDX                     ; ...
+                                        ; ECX ????
         pop     EBX                     ; ...
         pop     EAX                     ; ...
         ret
