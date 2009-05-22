@@ -124,22 +124,20 @@ exc_c:                         ;исключение
         Mov     ds,ax,app_data  ; загрузим правильные значения
         mov     es,ax           ; в сегментные регистры
         cld                     ; и приводим DF к стандарту
+        movzx   ebx,bl
 ; redirect to V86 manager? (EFLAGS & 0x20000) != 0?
         test    byte[reg_eflags+2],2
         jnz     v86_exc_c
         cmp     bl,14           ; #PF
-        jne     .l0
+        jne     @f
         call    page_fault_handler
-  .l0:  mov     esi, [current_slot]
-        mov     eax,[esi+APPDATA.fpu_handler]
-        cmp     bl,16           ; #MF
-        je      .l1
-        cmp     bl,19           ; #XF
-        jne     .l2
-        mov     eax,[esi+APPDATA.sse_handler]
-  .l1:  test    eax, eax
+  @@:   mov     esi, [current_slot]
+        btr     [esi+APPDATA.except_mask], ebx
+        jnc     @f
+        mov     eax,[esi+APPDATA.exc_handler]
+        test    eax, eax
         jnz     IRetToUserHook
-  .l2:  cli
+  @@:   cli
         mov     eax, [esi+APPDATA.debugger_slot]
         test    eax, eax
         jnz     .debug
@@ -154,15 +152,16 @@ exc_c:                         ;исключение
 ; eax=debugger PID
         cmp     bl,1            ; #DB
         je      debug_ex
-        movzx   edx, bl         ; debug_message data=Number_Of_Exception
+        mov     edx, ebx        ; debug_message data=Number_Of_Exception
         mov     ecx,1           ; debug_message code=other_exception
         jmp     debug_ex.notify ; notify debugger and suspend ourself
 
 IRetToUserHook:
         xchg    eax, [reg_eip]
-        sub     dword[reg_esp3], 4
+        sub     dword[reg_esp3], 8
         mov     edi, [reg_esp3]
         stosd
+        mov     [edi], ebx
         restore_ring3_context
 unknown_interrupt:
         iretd
@@ -176,8 +175,7 @@ show_error_parameters:
         cmp     bl, 0x0e
         jbe     .l1
   .l0:  mov     bl, 0x09
-  .l1:  movzx   eax,bl
-        mov     eax,[msg_fault_sel+eax*4 - 0x08*4]
+  .l1:  mov     eax,[msg_fault_sel+ebx*4 - 0x08*4]
         DEBUGF  1, "K : %s\n", eax
         mov     eax, [reg_cs3+4]
         mov     edi, msg_sel_app

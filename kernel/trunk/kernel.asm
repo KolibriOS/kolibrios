@@ -675,8 +675,8 @@ no_lib_load:
 
         xor  eax, eax
         mov  dword [SLOT_BASE+APPDATA.fpu_state], fpu_data
-        mov  dword [SLOT_BASE+APPDATA.fpu_handler], eax
-        mov  dword [SLOT_BASE+APPDATA.sse_handler], eax
+        mov  dword [SLOT_BASE+APPDATA.exc_handler], eax
+        mov  dword [SLOT_BASE+APPDATA.except_mask], eax
 
         ; name for OS/IDLE process
 
@@ -697,8 +697,8 @@ no_lib_load:
         cld
         rep movsd
 
-        mov dword [SLOT_BASE+256+APPDATA.fpu_handler], eax
-        mov dword [SLOT_BASE+256+APPDATA.sse_handler], eax
+        mov dword [SLOT_BASE+256+APPDATA.exc_handler], eax
+        mov dword [SLOT_BASE+256+APPDATA.except_mask], eax
 
         mov ebx, SLOT_BASE+256+APP_OBJ_OFFSET
         mov  dword [SLOT_BASE+256+APPDATA.fd_obj], ebx

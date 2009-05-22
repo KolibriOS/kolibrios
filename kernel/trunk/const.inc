@@ -468,7 +468,7 @@ struc EVENT
    .id          dd ?   ;event uid
    .state       dd ?   ;internal flags
    .code        dd ?
-                rd 6
+                rd 5
    .size     =  $ - .magic
    .codesize =  $ - .code
 }

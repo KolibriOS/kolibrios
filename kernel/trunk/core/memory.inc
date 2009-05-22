@@ -1033,10 +1033,11 @@ f68:
            mov [esp+36], eax
            ret
 .15:
-           mov ecx, [current_slot]
-           mov eax, [ecx+APPDATA.fpu_handler]
-           mov [ecx+APPDATA.fpu_handler], ebx
-           mov [esp+36], eax
+           mov  eax, [current_slot]
+           xchg ebx, [eax+APPDATA.exc_handler]
+           xchg ecx, [eax+APPDATA.except_mask]
+           mov  [esp+36], ebx ; reg_eax+8
+           mov  [esp+24], ecx ; reg_ebx+8
            ret
 .16:
            test ebx, ebx
@@ -1051,11 +1052,12 @@ f68:
            mov [esp+36], eax
            ret
 .18:
-           mov ecx, [current_slot]
-           mov eax, [ecx+APPDATA.sse_handler]
-           mov [ecx+APPDATA.sse_handler], ebx
-           mov [esp+36], eax
-           ret
+           mov  eax, [current_slot]
+           btr  [eax+APPDATA.except_mask],ebx
+           setc byte[esp+36]
+           jecxz @f
+           bts  [eax+APPDATA.except_mask],ebx
+     @@:   ret
 .19:
            cmp ebx, OS_BASE
            jae .fail

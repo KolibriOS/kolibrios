@@ -679,7 +679,7 @@ Returned value:
   * eax = clock rate (modulo 2^32 clock ticks = 4GHz)
 
 ======================================================================
- Function 18, subfunction 6 - save ramdisk to the file on hard drive. 
+ Function 18, subfunction 6 - save ramdisk to the file on hard drive.
 ======================================================================
 Parameters:
   * eax = 18 - function number
@@ -761,7 +761,7 @@ Returned value:
 Remarks:
   * The minimized window from the point of view of function 9
     keeps position and sizes.
-  * Restoring of an application window occurs at its activation by 
+  * Restoring of an application window occurs at its activation by
     subfunction 3.
   * Usually there is no necessity to minimize/restire a window
     obviously: minimization of a window is carried out by the system
@@ -771,7 +771,7 @@ Remarks:
     restore of a window is done by the application '@panel'.
 
 ======================================================================
- Function 18, subfunction 11 - get information on the disk subsystem. 
+ Function 18, subfunction 11 - get information on the disk subsystem.
 ======================================================================
 Parameters:
   * eax = 18 - function number
@@ -1062,7 +1062,7 @@ Returned value (is the same for both subfunctions):
   * eax = 0 - success
   * eax = 1 - base port is not defined
 Remarks:
-  * Previously the base port must be defined by 
+  * Previously the base port must be defined by
     subfunction 1 of function 21.
 
 ======================================================================
@@ -1106,7 +1106,7 @@ Remarks:
     if Alt and Shift are not pressed, but Ctrl is pressed, the normal
     layout is used and then from the code is subtracted 0x60;
     if no control key is pressed, the normal layout is used.
-  * To get layout and country identifier use 
+  * To get layout and country identifier use
     subfunction 2 of function 26.
   * Country identifier is global system variable, which is not used
     by the kernel itself; however the application '@panel' displays
@@ -1160,7 +1160,7 @@ Remarks:
   * Do not change base, when any application works with hard disk.
     If you do not want system bugs.
   * To get HD base use subfunction 7 of function 26.
-  * It is also necessary to define used partition of hard disk by 
+  * It is also necessary to define used partition of hard disk by
     subfunction 8.
 
 ======================================================================
@@ -1182,12 +1182,12 @@ Remarks:
     If you do not want system bugs.
   * To get used partition use subfunction 8 of function 26.
   * There is no correctness checks.
-  * To get the number of partitions of a hard disk use 
+  * To get the number of partitions of a hard disk use
     subfunction 11 of function 18.
   * It is also necessary to define used HD base by subfunction 7.
 
 ======================================================================
- Function 21, subfunction 11 - enable/disable low-level access to HD. 
+ Function 21, subfunction 11 - enable/disable low-level access to HD.
 ======================================================================
 Parameters:
   * eax = 21 - function number
@@ -1201,7 +1201,7 @@ Remarks:
   * To get current status use subfunction 11 of function 26.
 
 ======================================================================
- Function 21, subfunction 12 - enable/disable low-level access to PCI. 
+ Function 21, subfunction 12 - enable/disable low-level access to PCI.
 ======================================================================
 Parameters:
   * eax = 21 - function number
@@ -1268,7 +1268,7 @@ Returned value:
   * ebx = frequency of the vertical scanning (in Hz)
   * ecx = number of current videomode
 Remarks:
-  * Driver must be initialized by call to 
+  * Driver must be initialized by call to
     driver function 1.
   * If only screen sizes are required, it is more expedient to use
     function 14 taking into account that it
@@ -1403,7 +1403,7 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - CD base is not defined
 Remarks:
-  * Previously CD base must be defined by the call to 
+  * Previously CD base must be defined by the call to
     subfunction 3 of function 21.
   * One second includes 75 frames, one minute includes 60 seconds.
   * The function is asynchronous (returns control, when play begins).
@@ -1423,7 +1423,7 @@ Remarks:
   * The format of the table with tracks information is the same as
     for ATAPI-CD command 43h (READ TOC), usual table (subcommand 00h).
     Function returns addresses in MSF.
-  * Previously CD base port must be set by call to 
+  * Previously CD base port must be set by call to
     subfunction 3 of function 21.
   * Function returns information only about no more than 100
     first tracks. In most cases it is enough.
@@ -1438,7 +1438,7 @@ Returned value:
   * eax = 0 - success
   * eax = 1 - CD base is not defined
 Remarks:
-  * Previously CD base port must be defined by call to 
+  * Previously CD base port must be defined by call to
     subfunction 3 of function 21.
 
 ======================================================================
@@ -1513,7 +1513,7 @@ Remarks:
     if Alt and Shift are not pressed, but Ctrl is pressed, the normal
     layout is used and then from the code is subtracted 0x60;
     if no control key is pressed, the normal layout is used.
-  * To set layout and country identifier use 
+  * To set layout and country identifier use
     subfunction 2 of function 21.
   * Country identifier is global system variable, which is not used
     by the kernel itself; however the application '@panel' displays
@@ -1888,7 +1888,7 @@ Remarks:
     changed in future kernel versions.
   * Offset for pixel with coordinates (x,y)
     is calculated as (x+y*xsize)*3.
-  * There is a pair function to set pixel on the background image - 
+  * There is a pair function to set pixel on the background image -
     subfunction 2 of function 15.
 
 ======================================================================
@@ -1901,7 +1901,7 @@ Returned value:
   * eax = 1 - tile
   * eax = 2 - stretch
 Remarks:
-  * There is a pair function to set drawing mode - 
+  * There is a pair function to set drawing mode -
     subfunction 4 of function 15.
 
 ======================================================================
@@ -2193,11 +2193,11 @@ Remarks:
   * Structure of the color table is described in the standard
     include file 'macros.inc' as 'system_colors'; for example,
     it is possible to write:
-    	sc	system_colors		; variable declaration
-    	...				; somewhere one must call
-    					; this function with ecx=sc
-    	mov	ecx, [sc.work_button_text]	; read text color on
-    					; buttin in working area
+        sc      system_colors           ; variable declaration
+        ...                             ; somewhere one must call
+                                        ; this function with ecx=sc
+        mov     ecx, [sc.work_button_text]      ; read text color on
+                                        ; buttin in working area
   * A program itself desides to use or not to use color table.
     For usage program must simply at calls to drawing functions select
     color taken from the table.
@@ -2392,7 +2392,7 @@ Parameters:
 Returned value:
   * eax = -1 - error (there is too many threads)
   * otherwise eax = TID - thread identifier
-    </UL>     
+    </UL>
 
 ======================================================================
 === Function 52, subfunction 0 - get network driver configuration. ===
@@ -2470,7 +2470,7 @@ Remarks:
     performs no checks on correctness.
 
 ======================================================================
- Function 52, subfunction 8 - read data from the network output queue. 
+ Function 52, subfunction 8 - read data from the network output queue.
 ======================================================================
 Parameters:
   * eax = 52 - function number
@@ -2747,7 +2747,7 @@ Returned value:
   * ebx destroyed
 
 ======================================================================
-= Function 53, subfunction 255 - debug information of network driver. 
+= Function 53, subfunction 255 - debug information of network driver.
 ======================================================================
 Parameters:
   * eax = 53 - function number
@@ -2778,7 +2778,7 @@ Possible values for ecx:
   * 6: status of packet driver, 0=inactive, nonzero=active
 
 ======================================================================
- Function 55, subfunction 55 - begin to play data on built-in speaker. 
+ Function 55, subfunction 55 - begin to play data on built-in speaker.
 ======================================================================
 Parameters:
   * eax = 55 - function number
@@ -2923,7 +2923,7 @@ Remarks:
       that he requested 1;
     * if one requests more than 14 blocks or starting block is
       not less than 14, function returns eax=5 (not found) и ebx=-1;
-    * size of ramdisk root folder is 14 blocks, 
+    * size of ramdisk root folder is 14 blocks,
       0x1C00=7168 байт; but function returns ebx=0
       (except of the case of previous item);
     * strangely enough, it is possible to read 14th block (which
@@ -2985,8 +2985,8 @@ Remarks:
   * Block size is 512 bytes; function reads one block.
   * Do not depend on returned value, it can be changed
     in future versions.
-  * Function requires that LBA-access to devices is enabled by 
-    subfunction 11 of function 21. To check this one can use 
+  * Function requires that LBA-access to devices is enabled by
+    subfunction 11 of function 21. To check this one can use
     subfunction 11 of function 26.
   * LBA-read of floppy is not supported.
   * Function reads data on physical hard drive; if for any reason
@@ -3096,11 +3096,11 @@ Remarks:
 The data of the graphics screen (the memory area which displays
 screen contents) are accessible to a program directly, without
 any system calls, through the selector gs:
-	mov	eax, [gs:0]
+        mov     eax, [gs:0]
 places in eax the first dword of the buffer, which contains
 information on color of the left upper point (and, possibly, colors
 of several following).
-	mov	[gs:0], eax
+        mov     [gs:0], eax
 by work in VESA modes with LFB sets color of the left upper point
 (and, possibly, colors of several following).
 To interpret the data of graphics screen program needs to know
@@ -3613,29 +3613,47 @@ Remarks:
     or subfunction 20.
 
 ======================================================================
-======== Function 68, subfunction 14 - wait for driver notify. =======
+===================== Function 68, subfunction 14 ====================
+====== Waiting delivering of signal from another program/driver ======
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 14 - subfunction number
-  * ecx = pointer to the buffer for information (8 bytes)
+  * ecx = pointer to the buffer for information (24 bytes)
 Returned value:
   * buffer pointed to by ecx contains the following information:
-    * +0: dword: constant EV_INTR = 1
-    * +4: dword: driver data
-Remarks:
-  * The current implementation at wait time uses "heavy" operations
-    of task switch.
+    * +0: dword: identifier for underlying data of signal
+    * +4: data of signal (20 bytes), format of which is defining by
+          first dword
 
 ======================================================================
-====== Function 68, subfunction 15 - set FPU exception handler. ======
+====== Function 68, subfunction 15 - set new exceptions handler ======
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 15 - subfunction number
   * ecx = address of the new exception handler
+  * edx = the mask of processing exceptions
 Returned value:
   * eax = address of the old exception handler (0, if it was not set)
+  * ebx = the old mask of exception handler
+Remarks:
+  * Bit number in mask of exceptions is correspond to exception number
+    by CPU-specification (Intel-PC). For example, FPU-exception have
+    number 16 (#MF), and SSE-exception - 19 (#XF)
+  * The current implementation ignore the inquiry for hook of 7
+    exception - system process #NM by one's own.
+  * User handler get exception number in stack parameter. So, correct
+    exit from handler is: RET 4. Return from handler is to the same
+    instruction, that was cause the exception
+  * When control is transfering to user handler, corresponding bit in
+    exception mask is clearing. Rising this exception in consequence
+    - reduce to default-handling. Exactly: terminating the application,
+    or suspending with debug-notify to owner.
+  * After completion of critical operations in user handler, it may be
+    rising corresponding bit in exception mask by using subfunction 18
+    Clearing exceptions flags in FPU and/or XMM modules - is
+    responsibility of user handler too.
 
 ======================================================================
 ============= Function 68, subfunction 16 - load driver. =============
@@ -3676,14 +3694,19 @@ Remarks:
   * Previously one must obtain driver handle by subfunction 16.
 
 ======================================================================
-====== Function 68, subfunction 18 - set SSE exception handler. ======
+==== Function 68, subfunction 18 - change state of signal activity ===
 ======================================================================
 Parameters:
   * eax = 68 - function number
   * ebx = 15 - subfunction number
-  * ecx = address of the new exception handler
+  * ecx = signal number
+  * edx = value of activity (0/1)
 Returned value:
-  * eax = address of the old exception handler (0, if it was not set)
+  * eax = value of old activity for this signal (0/1)
+Remarks:
+  * In current implementation, it is changed only exception mask for
+    user exception handler, wich was previously set by subfunction 15.
+    At that, number of signal correspond to exception number.
 
 ======================================================================
 =============== Function 68, subfunction 19 - load DLL. ==============
@@ -3787,7 +3810,7 @@ Remarks:
     and at arrival of new message the system will wait.
     For synchronization frame all work with the buffer by operations
     lock/unlock
-    	neg	[bufsize]
+        neg     [bufsize]
   * Data in the buffer are considered as array of items with variable
     length - messages. Format of a message is explained in
     general description.

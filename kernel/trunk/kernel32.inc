@@ -122,8 +122,8 @@ struc APPDATA
 
   .fpu_state       dd ?            ;+16
   .ev_count_       dd ? ;unused    ;+20
-  .fpu_handler     dd ?            ;+24
-  .sse_handler     dd ?            ;+28
+  .exc_handler     dd ?            ;+24
+  .except_mask     dd ?            ;+28
   .pl0_stack       dd ? ;unused    ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
