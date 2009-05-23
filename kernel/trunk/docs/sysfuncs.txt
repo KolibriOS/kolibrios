@@ -3739,7 +3739,7 @@ Remarks:
     - reduce to default-handling. Exactly: terminating the application,
     or suspending with debug-notify to owner.
   * After completion of critical operations in user handler, it may be
-    rising corresponding bit in exception mask by using subfunction 18
+    rising corresponding bit in exception mask by using subfunction 25
     Clearing exceptions flags in FPU and/or XMM modules - is
     responsibility of user handler too.
 
@@ -3755,7 +3755,7 @@ Returned value:
   * eax = value of old activity for this signal (0/1)
 Remarks:
   * In current implementation, it is changed only exception mask for
-    user exception handler, wich was previously set by subfunction 15.
+    user exception handler, wich was previously set by subfunction 24.
     At that, number of signal correspond to exception number.
 
 ======================================================================
