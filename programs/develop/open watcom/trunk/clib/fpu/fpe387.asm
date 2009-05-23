@@ -60,7 +60,7 @@ defp    __Init_FPE_handler
         push    EDX                     ; ...
 
         mov     EAX, 68
-        mov     EBX, 15
+        mov     EBX, 24
         mov     EDX, 10000h             ; 1 shl 16 - #MF
         lea     ECX, __FPE2Handler_
         int     40h                     ; set new exception handler
@@ -94,7 +94,7 @@ defp    __Fini_FPE_handler
         add     ESP,4                   ; remove temporary
         
         mov     EAX, 68
-        mov     EBX, 15
+        mov     EBX, 24
         mov     ECX, dword ptr Save87   ; restore handler
         mov     EDX, dword ptr OldMask  ; restore mask
         int     40h                     ; set new ecxeption handler

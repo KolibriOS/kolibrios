@@ -131,7 +131,7 @@ opcode:
    ; but it may not returned at all...
         push    ECX
         mov     EAX, 68
-        mov     EBX, 18                 ;
+        mov     EBX, 25                 ;
         mov     ECX, 16                 ; #MF
         mov     EDX, 1                  ; rise activity
         int     40h                     ; change state of signal activity

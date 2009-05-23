@@ -991,15 +991,17 @@ f68call:
            dd f68.12
            dd f68.13
            dd f68.14
-           dd f68.15
+           dd f68.fail ;moved to f68.24
            dd f68.16
            dd f68.17
-           dd f68.18
+           dd f68.fail ;moved to f68.25
            dd f68.19
            dd f68.20
            dd f68.21
            dd f68.22
            dd f68.23
+           dd f68.24
+           dd f68.25
 
 align 4
 f68:
@@ -1009,7 +1011,7 @@ f68:
            cmp eax, 11
            jb .fail
 
-           cmp eax, 23
+           cmp eax, 25
            ja .fail
 
            jmp dword [f68call+eax*4-11*4]
@@ -1032,7 +1034,7 @@ f68:
            call get_event_ex
            mov [esp+36], eax
            ret
-.15:
+.24:
            mov  eax, [current_slot]
            xchg ebx, [eax+APPDATA.exc_handler]
            xchg ecx, [eax+APPDATA.except_mask]
@@ -1051,7 +1053,7 @@ f68:
            call srv_handlerEx   ;ebx
            mov [esp+36], eax
            ret
-.18:
+.25:
            mov  eax, [current_slot]
            btr  [eax+APPDATA.except_mask],ebx
            setc byte[esp+36]

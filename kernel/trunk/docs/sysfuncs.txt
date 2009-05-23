@@ -3627,33 +3627,10 @@ Returned value:
           first dword
 
 ======================================================================
-====== Function 68, subfunction 15 - set new exceptions handler ======
+====== Function 68, subfunction 15 - set FPU exception handler. ======
 ======================================================================
-Parameters:
-  * eax = 68 - function number
-  * ebx = 15 - subfunction number
-  * ecx = address of the new exception handler
-  * edx = the mask of processing exceptions
-Returned value:
-  * eax = address of the old exception handler (0, if it was not set)
-  * ebx = the old mask of exception handler
-Remarks:
-  * Bit number in mask of exceptions is correspond to exception number
-    by CPU-specification (Intel-PC). For example, FPU-exception have
-    number 16 (#MF), and SSE-exception - 19 (#XF)
-  * The current implementation ignore the inquiry for hook of 7
-    exception - system process #NM by one's own.
-  * User handler get exception number in stack parameter. So, correct
-    exit from handler is: RET 4. Return from handler is to the same
-    instruction, that was cause the exception
-  * When control is transfering to user handler, corresponding bit in
-    exception mask is clearing. Rising this exception in consequence
-    - reduce to default-handling. Exactly: terminating the application,
-    or suspending with debug-notify to owner.
-  * After completion of critical operations in user handler, it may be
-    rising corresponding bit in exception mask by using subfunction 18
-    Clearing exceptions flags in FPU and/or XMM modules - is
-    responsibility of user handler too.
+Deleted (in current implementation only 0 is returned).
+Using subfunctions 24, 25 is true.
 
 ======================================================================
 ============= Function 68, subfunction 16 - load driver. =============
@@ -3694,19 +3671,10 @@ Remarks:
   * Previously one must obtain driver handle by subfunction 16.
 
 ======================================================================
-==== Function 68, subfunction 18 - change state of signal activity ===
+====== Function 68, subfunction 18 - set SSE exception handler. ======
 ======================================================================
-Parameters:
-  * eax = 68 - function number
-  * ebx = 15 - subfunction number
-  * ecx = signal number
-  * edx = value of activity (0/1)
-Returned value:
-  * eax = value of old activity for this signal (0/1)
-Remarks:
-  * In current implementation, it is changed only exception mask for
-    user exception handler, wich was previously set by subfunction 15.
-    At that, number of signal correspond to exception number.
+Deleted (in current implementation only 0 is returned).
+Using subfunctions 24, 25 is true.
 
 ======================================================================
 =============== Function 68, subfunction 19 - load DLL. ==============
@@ -3745,6 +3713,50 @@ Remarks:
   * If ecx=0, the function frees memory block at edx and returns 0.
   * The contents of the block are unchanged up to the shorter of
     the new and old sizes.
+
+======================================================================
+====== Function 68, subfunction 24 - set new exceptions handler ======
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 24 - subfunction number
+  * ecx = address of the new exception handler
+  * edx = the mask of processing exceptions
+Returned value:
+  * eax = address of the old exception handler (0, if it was not set)
+  * ebx = the old mask of exception handler
+Remarks:
+  * Bit number in mask of exceptions is correspond to exception number
+    by CPU-specification (Intel-PC). For example, FPU-exception have
+    number 16 (#MF), and SSE-exception - 19 (#XF)
+  * The current implementation ignore the inquiry for hook of 7
+    exception - system process #NM by one's own.
+  * User handler get exception number in stack parameter. So, correct
+    exit from handler is: RET 4. Return from handler is to the same
+    instruction, that was cause the exception
+  * When control is transfering to user handler, corresponding bit in
+    exception mask is clearing. Rising this exception in consequence
+    - reduce to default-handling. Exactly: terminating the application,
+    or suspending with debug-notify to owner.
+  * After completion of critical operations in user handler, it may be
+    rising corresponding bit in exception mask by using subfunction 18
+    Clearing exceptions flags in FPU and/or XMM modules - is
+    responsibility of user handler too.
+
+======================================================================
+==== Function 68, subfunction 25 - change state of signal activity ===
+======================================================================
+Parameters:
+  * eax = 68 - function number
+  * ebx = 25 - subfunction number
+  * ecx = signal number
+  * edx = value of activity (0/1)
+Returned value:
+  * eax = value of old activity for this signal (0/1)
+Remarks:
+  * In current implementation, it is changed only exception mask for
+    user exception handler, wich was previously set by subfunction 15.
+    At that, number of signal correspond to exception number.
 
 ======================================================================
 ====================== Fucntion 69 - debugging. ======================
