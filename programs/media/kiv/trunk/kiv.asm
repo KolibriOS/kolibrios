@@ -9,8 +9,8 @@ dd 0x01, START, I_END, 0x4000, 0x4000, @PARAMS, 0x0
 FALSE = 0
 TRUE  = 1
 
-include '../../../../../proc32.inc'
-include '../../../../../macros.inc'
+include '../../../proc32.inc'
+include '../../../macros.inc'
 include 'dll.inc'
 
 include '../../../develop/libraries/libs-dev/libio/libio.inc'
@@ -67,17 +67,49 @@ red:
 	call	draw_window
 
 still:
-	mcall	10
+	mov	eax, [image]
+	test	byte [eax + Image.Flags], Image.IsAnimated
+	push	10
+	pop	eax
+	jz	@f
+	mcall	26, 9
+	mov	edx, [cur_frame]
+	mov	ebx, [cur_frame_time]
+	add	ebx, [edx + Image.Delay]
+	sub	ebx, eax
+	cmp	ebx, [edx + Image.Delay]
+	ja	red_update_frame
+	test	ebx, ebx
+	jz	red_update_frame
+	push	23
+	pop	eax
+  @@:
+	mcall
 	dec	eax
+	js	red_update_frame
 	jz	red
 	dec	eax
 	jnz	button
 
-  key:
+key:
 	mcall	2
 	jmp	still
 
-  button:
+red_update_frame:
+	mov	eax, [cur_frame]
+	mov	eax, [eax + Image.Next]
+	test	eax, eax
+	jnz	@f
+	mov	eax, [image]
+  @@:
+	mov	[cur_frame], eax
+	mcall	26, 9
+	mov	[cur_frame_time], eax
+	mcall	9, procinfo, -1
+	call	draw_cur_frame
+	jmp	still
+
+button:
 	mcall	17
 	shr	eax, 8
 
@@ -141,6 +173,7 @@ still:
 	jmp	red
     .restore_old:
 	pop	[image]
+	call	init_frame
 	jmp	still
 
 	; set background
@@ -202,7 +235,10 @@ load_image:
 	or	eax, eax
 	jz	.error
 	cmp	[image], 0
+	pushf
 	mov	[image], eax
+	call	init_frame
+	popf
 	call	update_image_sizes
 	call	free_img_data
 	clc
@@ -335,6 +371,7 @@ prev_image:
 	ret
 .notfound:
 	pop	[image]
+	call	init_frame
 	ret
 
 next_image:
@@ -397,6 +434,7 @@ next_image:
 	ret
 .notfound:
 	pop	[image]
+	call	init_frame
 	ret
 
 load_directory:
@@ -528,6 +566,20 @@ free_directory:
 	and	[directory_ptr], 0
 	ret
 
+init_frame:
+	push	eax
+	mov	eax, [image]
+	mov	[cur_frame], eax
+	test	byte [eax + Image.Flags], Image.IsAnimated
+	jz	@f
+	push	ebx
+	mcall	26, 9
+	pop	ebx
+	mov	[cur_frame_time], eax
+@@:
+	pop	eax
+	ret
+
 draw_window:
 	cmp	[bFirstDraw], 0
 	jz	.posok
@@ -648,44 +700,26 @@ draw_window:
 	add	edx, 25 * 65536
 	mcall	, buttons+rot180btn*20
 
-	mov	ebx, [image]
-	mov	ecx, [procinfo+62]
-	sub	ecx, 4
-	mov	ebp, [ebx + Image.Width]
-	cmp	ecx, ebp
-	jb	@f
-	mov	ecx, ebp
-@@:
-	sub	ebp, ecx
-	mov	edx, [procinfo+66]
-	sub	edx, 34
-	cmp	edx, [ebx + Image.Height]
-	jb	@f
-	mov	edx, [ebx + Image.Height]
-@@:
-	shl	ecx, 16
-	add	ecx, edx
-	__mov	edx, 5, 35
-	mov	esi, 8
-	cmp	[ebx + Image.Type], Image.bpp8
-	jz	.bpp8
-	cmp	[ebx + Image.Type], Image.bpp24
-	jz	.bpp24
-	mov	esi, 32
-	shl	ebp, 2
-	jmp	@f
-.bpp24:
-	mov	esi, 24
-	lea	ebp, [ebp*3]
-.bpp8:
-@@:
-	mov	edi, [ebx + Image.Palette]
-	mov	ebx, [ebx + Image.Data]
-	mcall	65
+	call	draw_cur_frame
 
 	mcall	12, 2
 
 .noredraw:
+	ret
+
+draw_cur_frame:
+	push	0	; ypos
+	push	0	; xpos
+	mov	eax, [procinfo+66]
+	sub	eax, 34
+	push	eax	; max height
+	mov	eax, [procinfo+62]
+	sub	eax, 4
+	push	eax	; max width
+	push	35	; y
+	push	5	; x
+	push	[cur_frame]
+	call	[img.draw]
 	ret
 
 ; void* __stdcall mem.Alloc(unsigned size);
@@ -944,7 +978,8 @@ import	libimg			   , \
 	img.decode  , 'img.decode' , \
 	img.flip    , 'img.flip'   , \
 	img.rotate  , 'img.rotate' , \
-	img.destroy , 'img.destroy'
+	img.destroy , 'img.destroy', \
+	img.draw    , 'img.draw'
 
 import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 
@@ -1023,6 +1058,8 @@ draw_width	dd	?
 draw_height	dd	?
 last_name_component	dd	?
 cur_file_idx	dd	?
+cur_frame_time	dd	?
+cur_frame	dd	?
 
 ctx dd ?
 
