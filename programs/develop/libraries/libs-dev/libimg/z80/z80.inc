@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// libimg.inc //// (c) mike.dld, 2007-2008, (c) diamond, 2009 ////////////////////////////////;;
+;;//// z80.inc //// (c) Nable, 2007-2008 /////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -16,45 +16,8 @@
 ;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
-
-
-struct FormatsTableEntry
-  Is	 dd ?
-  Decode dd ?
-  Encode dd ?
-ends
-
-struct Image
-  Checksum dd ? ; ((Width ROL 16) OR Height) XOR Data[0]
-  Width    dd ?
-  Height   dd ?
-  Next	   dd ?
-  Previous dd ?
-  Type     dd ? ; one of Image.bppN
-  Data	   dd ?
-  Palette  dd ? ; used iff Type eq Image.bpp8
-  Extended dd ?
-  Flags    dd ? ; bitfield
-  Delay    dd ? ; used iff Image.IsAnimated is set in Flags
-ends
-
-; values for Image.Type
-; must be consecutive to allow fast switch on Image.Type in support functions
-Image.bpp8  = 1
-Image.bpp24 = 2
-Image.bpp32 = 3
-Image.bpp15 = 4
-Image.bpp16 = 5
-
-; bits in Image.Flags
-Image.IsAnimated = 1
-
-FLIP_VERTICAL	= 0x01
-FLIP_HORIZONTAL = 0x02
-FLIP_BOTH	= FLIP_VERTICAL or FLIP_HORIZONTAL
-
-ROTATE_90_CW   = 0x01
-ROTATE_180     = 0x02
-ROTATE_270_CW  = 0x03
-ROTATE_90_CCW  = ROTATE_270_CW
-ROTATE_270_CCW = ROTATE_90_CW
+z80.PixColor	equ 000111b
+z80.BgrColor	equ 111000b
+z80.BrightFlag	equ (1 shl 6)
+z80.BlinkFlag	equ (1 shl 7)
+z80.AttrString	equ 32

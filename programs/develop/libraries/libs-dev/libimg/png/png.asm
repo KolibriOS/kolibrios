@@ -515,6 +515,8 @@ align 4
 	mov	[edi+2], al
 	mov	al, [esi+3]
 	mov	[edi+3], al
+	add	esi, 4
+	add	edi, 4
 	sub	ecx, 4
 	jnz	@b
 	sub	edx, 1
@@ -737,8 +739,10 @@ end repeat
 	sub	ebx, ecx
 	jc	.convert_done
 @@:
-	convert_16_to_8
+	mov	ax, [esi]
 	add	esi, 2
+	convert_16_to_8
+	mov	[edi], al
 	add	edi, 1
 	sub	ecx, 2
 	jnz	@b
@@ -821,8 +825,10 @@ end repeat
 	sub	ebx, ecx
 	jc	.convert_done
 @@:
-	convert_16_to_8
+	mov	ax, [esi]
 	add	esi, 4
+	convert_16_to_8
+	mov	[edi], al
 	add	edi, 1
 	sub	ecx, 4
 	jnz	@b

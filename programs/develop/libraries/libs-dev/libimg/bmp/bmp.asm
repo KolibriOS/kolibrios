@@ -102,8 +102,7 @@ endl
 	jnz	.error
 ; convert images with <= 8 bpp to 8bpp, other - to 32 bpp
 .normal:
-	xor	eax, eax
-	inc	eax	; Image.bpp8
+	m2m	eax, Image.bpp8
 	cmp	[ebx + bmp.Header.info.BitCount], 8
 	jbe	@f
 	mov	al, Image.bpp32
@@ -119,8 +118,7 @@ endl
 	pushd	[ebx + bmp.Header.info.Width]
 	jmp	.create
 .old1:
-	xor	eax, eax
-	inc	eax	; Image.bpp8
+	m2m	eax, Image.bpp8
 	cmp	[ebx + bmp.Header.info.OldBitCount], 8
 	jbe	@f
 	mov	al, Image.bpp32

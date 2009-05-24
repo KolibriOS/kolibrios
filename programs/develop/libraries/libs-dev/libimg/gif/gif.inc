@@ -61,7 +61,9 @@ gif.Block.Introducer.ImageDescriptor = 0x2C
 gif.Block.Introducer.EndOfFile	     = 0x3B
 
 struct gif.ImageDescriptor ; GIF87a
-  b	     gif.Block ; Introducer = 2Ch (',')
+; we read Introducer before parsing gif.ImageDescriptor,
+; so it is convenient to not include it in struct
+;  b	     gif.Block ; Introducer = 2Ch (',')
   Left	     dw ?      ; X position of image on the display
   Top	     dw ?      ; Y position of image on the display
   Width      dw ?      ; Width of the image in pixels
@@ -89,8 +91,8 @@ gif.Extension.Label.Comment	    = 0xFE
 gif.Extension.Label.Application     = 0xFF
 
 struct gif.PlainTextExtension ; GIF89a
-  e		   gif.Extension ; Label = 01h
-  BlockSize	   db ? 	 ; Size of Extension Block (always 0Ch)
+;  e		   gif.Extension ; Label = 01h
+;  BlockSize	   db ? 	 ; Size of Extension Block (always 0Ch)
   TextGridLeft	   dw ? 	 ; X position of text grid in pixels
   TextGridTop	   dw ? 	 ; Y position of text grid in pixels
   TextGridWidth    dw ? 	 ; Width of the text grid in pixels
@@ -104,8 +106,10 @@ struct gif.PlainTextExtension ; GIF89a
 ends
 
 struct gif.GraphicsControlExtension ; GIF89a
-  e	     gif.Extension ; Label = F9h
-  BlockSize  db ?	   ; Size of remaining fields (always 04h)
+;  e	     gif.Extension ; Label = F9h
+;  BlockSize  db ?	   ; Size of remaining fields (always 04h)
+; previous fields are not included in this structure for convenience
+; (they are parsed before this)
   Packed     db ?	   ; Method of graphics disposal to use
   DelayTime  dw ?	   ; Hundredths of seconds to wait
   ColorIndex db ?	   ; Transparent Color Index
@@ -130,8 +134,9 @@ ends
 ;;------------------------------------------------------------------------------------------------;;
 
 struct gif.Image
-  gce  gif.GraphicsControlExtension
   info gif.ImageDescriptor
+  gce  gif.GraphicsControlExtension
+;  lsd  gif.LogicalScreenDescriptor ; saved only in first image
 ends
 
 gif.Null equ 0x1000

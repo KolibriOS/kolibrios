@@ -474,8 +474,8 @@ img.decode.jpg:
 ; image type: 8 bpp for grayscale JPEGs, 24 bpp for normal,
 ; 32 bpp for Adobe YCCK
 	push	Image.bpp8
-	pop	eax
-	cmp	edi, 1
+	pop	eax	; Image.bpp8 = 1
+	cmp	edi, eax
 	jz	@f
 	inc	eax	; Image.bpp24 = 2
 	cmp	edi, 3
@@ -1621,9 +1621,9 @@ handle_progressive:
 	stosd		; dd VFactor_i+1 - (height % VFactor_i)
 	pop	ecx
 	xor	eax, eax
-	cmp	ebp, 1
-	cmc
-	rcr	eax, 1
+	test	ebp, ebp
+	setnp	al
+	ror	eax, 1
 	stosd		; dd DCPrediction
 	mov	eax, ebp
 	stosd		; dd ComponentOffset
