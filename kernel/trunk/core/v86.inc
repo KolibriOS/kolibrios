@@ -926,7 +926,7 @@ v86_irq2:
         mov     word [esi-v86_regs.size+v86_regs.cs], cx
         and     byte [esi-v86_regs.size+v86_regs.eflags+1], not 3
         call    update_counters
-        lea     edi, [ebx - SLOT_BASE]
+        lea     edi, [ebx + 0x100000000 - SLOT_BASE]
         shr     edi, 3
         add     edi, TASK_DATA
         call    find_next_task.found
