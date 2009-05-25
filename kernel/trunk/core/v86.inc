@@ -925,12 +925,11 @@ v86_irq2:
         mov     cx, [eax*4+2]
         mov     word [esi-v86_regs.size+v86_regs.cs], cx
         and     byte [esi-v86_regs.size+v86_regs.eflags+1], not 3
-      ; push    ebx
         call    update_counters
-      ; pop     ebx
-      ; sub     ebx, SLOT_BASE
-      ; shr     ebx, 8
-      ; mov     esi, [CURRENT_TASK]
+        lea     edi, [ebx - SLOT_BASE]
+        shr     edi, 3
+        add     edi, TASK_DATA
+        call    find_next_task.found
         call    do_change_task
         popad
         iretd
