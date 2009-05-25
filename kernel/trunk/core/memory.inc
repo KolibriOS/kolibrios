@@ -1054,6 +1054,8 @@ f68:
            mov [esp+36], eax
            ret
 .25:
+           cmp ebx,32
+           jae .fail
            mov  eax, [current_slot]
            btr  [eax+APPDATA.except_mask],ebx
            setc byte[esp+36]
