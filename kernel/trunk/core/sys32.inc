@@ -100,11 +100,12 @@ uglobal
   pf_err_code   dd ?
 endg
 
-page_fault_exc:
-        pop     [pf_err_code]  ;действительно до следующего #PF
+page_fault_exc:                 ; дуракоусточивость: селекторы испорчены...
+        pop     [ss:pf_err_code]; действительно до следующего #PF
         save_ring3_context
         mov     bl,14
-exc_c:                         ;исключение
+
+exc_c:                          ; исключения (все, кроме 7-го - #NM)
 ; Фрэйм стека при исключении/прерывании из 3-го кольца + pushad (т.е., именно здесь)
   reg_ss        equ esp+0x30
   reg_esp3      equ esp+0x2C
