@@ -5458,7 +5458,7 @@ yes_shutdown_param:
            out 0x21, al
            out 0xA1, al
 
-if 1
+if 0
            mov  word [OS_BASE+0x467+0],pr_mode_exit
            mov  word [OS_BASE+0x467+2],0x1000
 
@@ -5471,6 +5471,7 @@ if 1
            out  0x64,al
 
            hlt
+           jmp $-1
 
 else
         cmp     byte [OS_BASE + 0x9030], 2
@@ -5522,6 +5523,72 @@ else
         jmp     no_acpi_power_off
 .fadt_found:
 ; ebx is linear address of FADT
+        mov     edi, [ebx+40] ; physical address of the DSDT
+        lea     eax, [ebp+4000h]
+        stdcall map_page, eax, edi, PG_MAP
+        lea     eax, [ebp+5000h]
+        lea     esi, [edi+0x1000]
+        stdcall map_page, eax, esi, PG_MAP
+        and     esi, 0xFFF
+        sub     edi, esi
+        cmp     dword [esi+ebp+4000h], 'DSDT'
+        jnz     no_acpi_power_off
+        mov     eax, [esi+ebp+4004h] ; DSDT length
+        sub     eax, 36+4
+        jbe     no_acpi_power_off
+        add     esi, 36
+.scan_dsdt:
+        cmp     dword [esi+ebp+4000h], '_S5_'
+        jnz     .scan_dsdt_cont
+        cmp     byte [esi+ebp+4000h+4], 12h ; DefPackage opcode
+        jnz     .scan_dsdt_cont
+        mov     dl, [esi+ebp+4000h+6]
+        cmp     dl, 4 ; _S5_ package must contain 4 bytes
+                      ; ...in theory; in practice, VirtualBox has 2 bytes
+        ja      .scan_dsdt_cont
+        cmp     dl, 1
+        jb      .scan_dsdt_cont
+        lea     esi, [esi+ebp+4000h+7]
+        xor     ecx, ecx
+        cmp     byte [esi], 0 ; 0 means zero byte, 0Ah xx means byte xx
+        jz      @f
+        cmp     byte [esi], 0xA
+        jnz     no_acpi_power_off
+        inc     esi
+        mov     cl, [esi]
+@@:
+        inc     esi
+        cmp     dl, 2
+        jb      @f
+        cmp     byte [esi], 0
+        jz      @f
+        cmp     byte [esi], 0xA
+        jnz     no_acpi_power_off
+        inc     esi
+        mov     ch, [esi]
+@@:
+        jmp     do_acpi_power_off
+.scan_dsdt_cont:
+        inc     esi
+        cmp     esi, 0x1000
+        jb      @f
+        sub     esi, 0x1000
+        add     edi, 0x1000
+        push    eax
+        lea     eax, [ebp+4000h]
+        stdcall map_page, eax, edi, PG_MAP
+        push    PG_MAP
+        lea     eax, [edi+1000h]
+        push    eax
+        lea     eax, [ebp+5000h]
+        push    eax
+        stdcall map_page
+        pop     eax
+@@:
+        dec     eax
+        jnz     .scan_dsdt
+        jmp     no_acpi_power_off
+do_acpi_power_off:
         mov     edx, [ebx+48]
         test    edx, edx
         jz      .nosmi
@@ -5533,17 +5600,20 @@ else
         test    al, 1
         jz      @b
 .nosmi:
+        and     cx, 0x0707
+        shl     cx, 2
+        or      cx, 0x2020
         mov     edx, [ebx+64]
         in      ax, dx
         and     ax, 203h
-        or      ax, 3C00h
+        or      ah, cl
         out     dx, ax
         mov     edx, [ebx+68]
         test    edx, edx
         jz      @f
         in      ax, dx
         and     ax, 203h
-        or      ax, 3C00h
+        or      ah, ch
         out     dx, ax
 @@:
         jmp     $
@@ -5562,6 +5632,7 @@ no_acpi_power_off:
            out  0x64,al
 
            hlt
+           jmp $-1
 
 scan_rsdp:
         add     eax, OS_BASE
