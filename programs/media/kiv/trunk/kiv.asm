@@ -189,12 +189,12 @@ button:
 	cmp	eax, 'bck'
 	jnz	@f
 	call	prev_image
-	jmp	still
+	jmp	red
     @@:
 	cmp	eax, 'fwd'
 	jnz	@f
 	call	next_image
-	jmp	still
+	jmp	red
     @@:
 
 	cmp	eax, 1
@@ -587,7 +587,7 @@ draw_window:
 	mcall	9, procinfo
 
 	cmp	dword [ebx + 66], 0
-	jle	.noredraw
+	jle	.posok
 
 	mov	edx, ecx
 	mov	esi, ecx
@@ -619,7 +619,9 @@ draw_window:
 
 	mcall	9, procinfo, -1
 	mov	[bFirstDraw], 1
-	mov	ebx, [procinfo + 62]
+	cmp	dword [ebx + 66], 0
+	jle	.nodraw
+	mov	ebx, [ebx + 62]
 	inc	ebx
 	mcall	13, , <0, 35>, 0xFFFFFF
 	mov	ecx, [procinfo + 66]
@@ -702,9 +704,9 @@ draw_window:
 
 	call	draw_cur_frame
 
+.nodraw:
 	mcall	12, 2
 
-.noredraw:
 	ret
 
 draw_cur_frame:
