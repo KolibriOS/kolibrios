@@ -201,7 +201,6 @@ macro DEBUGH_N _sign,_num,_hex {
    if ~_hex eq ax
     movzx eax,_hex
    end if
-   shl eax,16
    if (_num eq)
     mov edx,4
    end if
@@ -209,7 +208,6 @@ macro DEBUGH_N _sign,_num,_hex {
    if ~_hex eq al
     movzx eax,_hex
    end if
-   shl eax,24
    if (_num eq)
     mov edx,2
    end if
