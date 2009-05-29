@@ -43,7 +43,6 @@ proc init_mem
            mov [pg_data.mem_amount-OS_BASE], eax
 
            shr eax, 12
-           mov edx, eax
            mov [pg_data.pages_count-OS_BASE], eax
            shr eax, 3
            mov [pg_data.pagemap_size-OS_BASE], eax
@@ -52,15 +51,7 @@ proc init_mem
            and eax, not 4095
            mov [tmp_page_tabs], eax
 
-           cmp edx, (OS_BASE/4096)
-           jbe @F
-           mov edx, (OS_BASE/4096)
-           jmp .set
-@@:
-           cmp edx, (HEAP_MIN_SIZE/4096)
-           jae .set
-           mov edx, (HEAP_MIN_SIZE/4096)
-.set:
+           mov edx, (((sys_pgmap-OS_BASE) + 0xFFFFFF) and not 0xFFFFFF) shr 12
            mov [pg_data.kernel_pages-OS_BASE], edx
            shr edx, 10
            mov [pg_data.kernel_tables-OS_BASE], edx

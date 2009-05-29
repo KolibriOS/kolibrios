@@ -138,8 +138,11 @@ proc init_kernel_heap
            mov [ebx+list_bk], eax
            mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
 
-           mov ecx, [MEM_AMOUNT]
-           sub ecx, (HEAP_BASE - OS_BASE + 4096*MEM_BLOCK_SIZE)
+           mov ecx, [pg_data.kernel_pages]
+           shl ecx, 12
+           neg ecx
+           add ecx, [MEM_AMOUNT]
+           sub ecx, 4096*MEM_BLOCK_SIZE
            mov [heap_size], ecx
            mov [heap_free], ecx
            mov [ebx+block_size], ecx
