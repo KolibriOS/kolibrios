@@ -585,7 +585,8 @@ end if
 .core_tabs:
 .fail:  ;simply return to caller
         mov     esp, ebp
-        mov     bl, 14 ;#PF
+        push    14                ;#PF
+        pop     ebx
         ret
 
 .user_space:
