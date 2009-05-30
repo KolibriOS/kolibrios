@@ -1,4 +1,5 @@
 @echo off
+cls
 
 set languages=en ru ge et
 set drivers=sound sis infinity ensoniq ps2mouse com_mouse uart ati2d vmode
@@ -75,6 +76,7 @@ goto :eof
    cd ..
    move bin\drivers\vmode.obj bin\drivers\vmode.mdr
 
+
 echo *
 echo ##############################################
 echo *
@@ -85,32 +87,16 @@ set /P res=[y/n]?
 
 if "%res%"=="y" (
 
-echo *
-echo Compressing system
+  echo *
+  echo Compressing system
 
-echo *
-REM   for %*.obj in (bin\drivers) do (
-REM     kpack bin\drivers\%*.obj
-REM     if not %errorlevel%==0 goto :Error_FasmFailed
-REM   )
+  echo *
+  for %%a in (bin\drivers\*.obj) do (
+    echo ================== kpack %%a
+    kpack %%a
+    if not %errorlevel%==0 goto :Error_FasmFailed
+  )
 
-
-echo ================== kpack ati2d.obj
-@kpack bin\drivers\ati2d.obj
-echo ================== kpack com_mouse.obj
-@kpack bin\drivers\com_mouse.obj
-echo ================== kpack ensoniq.obj
-@kpack bin\drivers\ensoniq.obj
-echo ================== kpack infinity.obj
-@kpack bin\drivers\infinity.obj
-echo ================== kpack ps2mouse.obj
-@kpack bin\drivers\ps2mouse.obj
-echo ================== kpack sis.obj
-@kpack bin\drivers\sis.obj
-echo ================== kpack sound.obj
-@kpack bin\drivers\sound.obj
-echo ================== kpack uart.obj
-@kpack bin\drivers\uart.obj
 )
 goto :eof
 
@@ -133,11 +119,22 @@ goto :Exit_OK
 
 :Error_FasmFailed
 echo error: fasm execution failed
-erase lang.inc
+erase lang.inc >nul 2>&1
+echo.
+pause
+exit 1
+
+:Error_KpackFailed
+echo   *** NOTICE ***
+echo If you want pack all applications you may 
+echo place "kpack" in accessible directory.
+echo You can download that tool from http://diamondz.land.ru/
+echo.
 pause
 exit 1
 
 :Exit_OK
+echo.
 echo all operations has been done
 pause
 exit 0
