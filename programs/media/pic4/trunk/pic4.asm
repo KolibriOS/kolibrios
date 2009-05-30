@@ -7,8 +7,8 @@
   dd      0x01          ; version
   dd      START         ; program start
   dd      I_END         ; image size
-  dd      0x80000       ; reguired amount of memory
-  dd      0x80000       ; stack pointer
+  dd      mem           ; reguired amount of memory
+  dd      mem           ; stack pointer
   dd      I_Param,0
 
   include 'lang.inc'
@@ -114,8 +114,8 @@ OnBoot:
     mcall
 
     mov  ebx,5
-    mov  ecx,0x40000 ; <<< 0x40000 for blue, 0x40000+1 for red,
-                       ; <<< 0x40000+2 for green background at boot
+    mov  ecx,image + 0 ; <<< +0 for blue, +1 for red,
+                       ; <<< +2 for green background at boot
     mov  edx,0
     mov  esi,256*3*256
     mcall
@@ -129,32 +129,6 @@ OnBoot:
 
     mov  eax,-1
     mcall
-
-
-
-set_picture:
-
-    mov  eax,image+99-3*16
-    mov  ebx,0x40000+255*3+255*3*256
-  newpix:
-    mov  ecx,[eax]
-    mov  [ebx],cx
-    shr  ecx,16
-    mov  [ebx+2],cl
-    add  eax,3
-    sub  ebx,3
-    cmp  ebx,0x40002
-    jge  newpix
-
-    ret
-
-
-load_texture:
-
-    call  gentexture
-    call  set_picture
-
-    ret
 
 
 ; set background
@@ -233,6 +207,7 @@ bg4:
 ; * the closest point in 'ptarray'.           *
 ; *********************************************
 
+load_texture:
 gentexture:
 
   xor ecx,ecx        ; ycounter
@@ -278,7 +253,7 @@ gentexture:
    idiv edi
 
    pop edi
-   mov [image+51+edi],eax
+   mov [image+edi],eax
    add edi,3
 
   add ebx,1              ; bounce x loop
@@ -311,7 +286,7 @@ wrappit:
 draw_image:
 
     mov  eax,7
-    mov  ebx,0x40000
+    mov  ebx,image
     mov  ecx,256*65536+255
     mov  edx,14*65536+40;55
     mcall
@@ -530,85 +505,85 @@ arrays dd ptarray,ptarray2,ptarray3,ptarray4,ptarray5,ptarray6
 
 ptarray:
 
-    dd  150,50
-    dd  120,30
-    dd  44,180
-    dd  50,66
-    dd  27,6
-    dd  95,212
-    dd  128,177
-    dd  201,212
-    dd  172,201
-    dd  250,100
-    dd  24,221
-    dd  11,123
-    dd  248,32
-    dd  34,21
+    dd  105,205
+    dd  135,225
+    dd  211,75
+    dd  205,189
+    dd  228,249
+    dd  160,43
+    dd  127,78
+    dd  54,43
+    dd  83,54
+    dd  5,155
+    dd  231,34
+    dd  244,132
+    dd  7,223
+    dd  221,224
     dd  777     ; <- end of array
 
 ptarray2:
 
-    dd  0,0,50,50,100,100,150,150,200,200,250,250
-    dd  50,150,150,50,200,100,100,200
+    dd  255,255,205,205,155,155,105,105,55,55,5,5
+    dd  205,105,105,205,55,155,155,55
     dd  777
 
 ptarray3:
 
-    dd  55,150,150,55,200,105,105,200
-    dd  30,30,220,220
+    dd  200,105,105,200,55,150,150,55
+    dd  225,225,35,35
     dd  777
 
 ptarray4:
 
-    dd  196,0,196,64,196,128,196,196
-    dd  64,32,64,96,64,150,64,228
+    dd  59,255,59,191,59,127,59,59
+    dd  191,223,191,159,191,105,191,27
     dd  777
 
 ptarray5:
 
-    dd  196,0,196,64,196,128,196,196
-    dd  64,0,64,64,64,128,64,196
+    dd  59,255,59,191,59,127,59,59
+    dd  191,255,191,191,191,127,191,59
     dd  777
 
 ptarray6:
 
-    dd  49,49,128,50,210,50
-    dd  50,128,128,128,210,128
-    dd  50,210,128,210,210,210
+    dd  206,206,127,205,45,205
+    dd  205,127,127,127,45,127
+    dd  205,45,127,45,45,45
 
     dd  777
 
 ptarray7:
 
-    dd  0,0
-    dd  196,196,64,64
-    dd  128,0
-    dd  0,128
-    dd  64,64,196,64
-    dd  196,196,64,196
-    dd  128,128
+    dd  255,255
+    dd  59,59,191,191
+    dd  127,255
+    dd  255,127
+    dd  191,191,59,191
+    dd  59,59,191,59
+    dd  127,127
 
     dd  777
 
 ptarray8:
 
-    dd  0, 128
-    dd  0, 128
-    dd  128, 0
-    dd  0, 128
-    dd  128, 0
-    dd  0, 128
-    dd  128, 0
-    dd  0, 128
-    dd  128, 0
-    dd  128, 128
+    dd  255, 127
+    dd  255, 127
+    dd  127, 255
+    dd  255, 127
+    dd  127, 255
+    dd  255, 127
+    dd  127, 255
+    dd  255, 127
+    dd  127, 255
+    dd  127, 127
 
     dd  777
 
 ptarray9:
 
 
-     dd  0,248,64,128,128,64,196,48,160,160,94,224,240,96,5,5,777
+     dd  255,7,191,127,127,191,59,207,95,95,161,31,15,159,250,250,777
 
 
 I_END:
@@ -617,4 +592,8 @@ sc system_colors
 I_Param:
 
 image:
+        rb      256*256*3 + 4
 
+align 100h
+rb 100h ; it is enough for stack in this program
+mem:
