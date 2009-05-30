@@ -74,6 +74,44 @@ goto :eof
    )
    cd ..
    move bin\drivers\vmode.obj bin\drivers\vmode.mdr
+
+echo *
+echo ##############################################
+echo *
+echo Kpack KolibriOS drivers?
+echo *    
+
+set /P res=[y/n]?
+
+if "%res%"=="y" (
+
+echo *
+echo Compressing system
+
+echo *
+REM   for %*.obj in (bin\drivers) do (
+REM     kpack bin\drivers\%*.obj
+REM     if not %errorlevel%==0 goto :Error_FasmFailed
+REM   )
+
+
+echo ================== kpack ati2d.obj
+@kpack bin\drivers\ati2d.obj
+echo ================== kpack com_mouse.obj
+@kpack bin\drivers\com_mouse.obj
+echo ================== kpack ensoniq.obj
+@kpack bin\drivers\ensoniq.obj
+echo ================== kpack infinity.obj
+@kpack bin\drivers\infinity.obj
+echo ================== kpack ps2mouse.obj
+@kpack bin\drivers\ps2mouse.obj
+echo ================== kpack sis.obj
+@kpack bin\drivers\sis.obj
+echo ================== kpack sound.obj
+@kpack bin\drivers\sound.obj
+echo ================== kpack uart.obj
+@kpack bin\drivers\uart.obj
+)
 goto :eof
 
 
