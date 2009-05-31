@@ -135,7 +135,7 @@ OnBoot:
 
 bg:
 
-    mov  edi,0x40000
+    mov  edi,image
 
     cmp  al,12
     jb   bb1
