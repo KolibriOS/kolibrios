@@ -1,6 +1,5 @@
 @echo off
 cls
-
 set languages=en ru ge et
 set drivers=sound sis infinity ensoniq ps2mouse com_mouse uart ati2d vmode
 set targets=all kernel drivers skins clean
@@ -77,6 +76,10 @@ goto :eof
    move bin\drivers\vmode.obj bin\drivers\vmode.mdr
 
 
+kpack >nul 2>&1
+
+if %errorlevel%==9009 goto :Error_KpackFailed
+
 echo *
 echo ##############################################
 echo *
@@ -94,7 +97,7 @@ if "%res%"=="y" (
   for %%a in (bin\drivers\*.obj) do (
     echo ================== kpack %%a
     kpack %%a
-    if not %errorlevel%==0 goto :Error_FasmFailed
+    if not %errorlevel%==0 goto :Error_KpackFailed
   )
 
 )
@@ -127,9 +130,8 @@ exit 1
 :Error_KpackFailed
 echo   *** NOTICE ***
 echo If you want pack all applications you may 
-echo place "kpack" in accessible directory.
-echo You can download that tool from http://diamondz.land.ru/
-echo.
+echo place "kpack" in accessible directory or system %PATH%.
+echo You can download that tool from http://diamond.kolibrios.org/.
 pause
 exit 1
 
