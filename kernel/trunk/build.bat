@@ -129,14 +129,14 @@ exit 1
 
 :Error_KpackFailed
 echo   *** NOTICE ***
-echo If you want pack all applications you may 
+echo If you want to pack all applications you may 
 echo place "kpack" in accessible directory or system %PATH%.
-echo You can download that tool from http://diamond.kolibrios.org/.
+echo You can get this tool from KolibriOS distribution kit.
 pause
 exit 1
 
 :Exit_OK
 echo.
-echo all operations has been done
+echo all operations have been done
 pause
 exit 0

@@ -116,14 +116,14 @@ proc tcp_tcb_handler stdcall uses ebx
 
 	cmp	[ebx + SOCKET.NextPtr], 0
 	je	.exit
-	DEBUGF	1, "K : sockets:\n"
+	;DEBUGF	1, "K : sockets:\n"
 
   .next_socket:
 	mov	ebx, [ebx + SOCKET.NextPtr]
 	or	ebx, ebx
 	jz	.exit
 
-	DEBUGF	1, "K :   %x-%x: %x-%x-%x-%u\n", [ebx + SOCKET.PID]:2, [ebx + SOCKET.Number]:2, [ebx + SOCKET.LocalPort]:4, [ebx + SOCKET.RemoteIP], [ebx + SOCKET.RemotePort]:4, [ebx + SOCKET.TCBState]
+	;DEBUGF	1, "K :   %x-%x: %x-%x-%x-%u\n", [ebx + SOCKET.PID]:2, [ebx + SOCKET.Number]:2, [ebx + SOCKET.LocalPort]:4, [ebx + SOCKET.RemoteIP], [ebx + SOCKET.RemotePort]:4, [ebx + SOCKET.TCBState]
 
 	cmp	[ebx + SOCKET.TCBTimer], 0
 	jne	.decrement_tcb
