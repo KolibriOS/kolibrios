@@ -1,29 +1,60 @@
+; 01.06.09 - Компоненты беруться из системной библиотеки <Lrz>
 ; Автор программы Евтихов Максим (Maxxxx32)
 ; 24.07.2008 <Lrz> обновлен editbox
 ; 01.02.07 - обновлён editbox
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
-macro draw_status text_ptr
-{
-        mov     [status.text],dword text_ptr
-        call    send_draw_status
-}
 
+title equ 'Screenshooter v 0.91' ; Заголовок окна
+include '../../develop/libraries/box_lib/trunk/load_lib.mac'
+include '../../develop/libraries/box_lib/trunk/editbox_ex.mac'
+;include '../../develop/examples/editbox/trunk/editbox.inc'
+include '../../macros.inc'
+include 'scrshoot.mac'
+include 'txtbut.inc'
+include 'label.inc'
+include 'textwork.inc'
 
-title equ 'Screenshooter v 0.9' ; Заголовок окна
-include 'macros.inc'  ; вставляем макросы
-        meos_header  cmdstr ; вставляем заголовок программы
+;include 'macros.inc'  ; вставляем макросы
+;        meos_header  cmdstr ; вставляем заголовок программы
+use32                
+    org 0x0
+    db 'MENUET01'
+    dd 0x1
+    dd start
+    dd i_end
+    dd i_end
+    dd i_end
+    dd cmdstr
+    dd cur_dir_path
+
+align 4
 include 'scrwin.inc'  ; вставляем код окна прдпросмотра
 include 'scrsavef.inc'; вставляем процедуру сохранения файла
-        use_edit_box                            ; \
+
+        @use_library
         use_txt_button                          ;  |
         use_label                               ;  |-- GUI компоненты и некоторые процедуры
-        use_check_box                           ;  |
         use_text_work                           ; /
 include 'gp.inc'
 include 'srectwin.inc'
 include 'lang.inc'
 ;--- начало программы ---
-        app_start
+align 4
+start:
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+;if return code =-1 then exit, else nornary work
+;        cmp     eax,-1
+        inc     eax
+        test    eax,eax
+        jz      close
+;;;;;;;;;;;;;;;; init memory 68/11
+        mov     eax,68
+        mov     ebx,11
+        mcall
+        test    eax,eax
+        jz      close
+
         ;mov     al,[gs:1280*4*1024]
                     ; устанавливаем ipc буффер
         push    60
@@ -33,7 +64,7 @@ include 'lang.inc'
         inc     ebx
         mov     ecx,app_ipc
         mov     edx,32
-        int     0x40
+        mcall
 
         push    66   ; устанавливаем глобальную горячую клавишу
         pop     eax
@@ -41,7 +72,7 @@ include 'lang.inc'
         mov     ebx,4
         mov     cl,55    ; 55 - PrintScrn
         xor     edx,edx
-        int     0x40
+        mcall
 
         mov     ebx,app
         call    get_slot_n
@@ -75,7 +106,19 @@ key:
         call    shoot
         jmp     still
 @@:
-        key_edit_boxes editboxes,editboxes_end
+;        key_edit_boxes editboxes,editboxes_end
+        push    dword edit1
+        call    [edit_box_key]
+
+        push    dword edit2
+        call    [edit_box_key]
+
+        push    dword edit3
+        call    [edit_box_key]
+
+        push    dword edit4
+        call    [edit_box_key]
+
         jmp     still
 button:
         get_pressed_button
@@ -87,8 +130,33 @@ mouse:
         get_active_window
         cmp     eax,[slot_n]
         jne     still
-        mouse_check_boxes check_boxes,check_boxes_end
-        mouse_edit_boxes editboxes,editboxes_end
+;----------------------------------
+        push    dword edit1
+        call    [edit_box_mouse]
+        push    dword edit2
+        call    [edit_box_mouse]
+        push    dword edit3
+        call    [edit_box_mouse]
+        push    dword edit4
+        call    [edit_box_mouse]
+;----------------------------------
+        push    dword ch1
+        call    [check_box_mouse]
+        push    dword ch2
+        call    [check_box_mouse]
+        push    dword ch3
+        call    [check_box_mouse]
+        push    dword ch4
+        call    [check_box_mouse]
+        push    dword ch5
+        call    [check_box_mouse]
+        push    dword ch6
+        call    [check_box_mouse]
+        push    dword use_rect
+        call    [check_box_mouse]
+;-----------------------------------
+;        mouse_check_boxes check_boxes,check_boxes_end
+;        mouse_edit_boxes editboxes,editboxes_end
         jmp     still
 ipc:
         cmp     word [app_ipc+8],2
@@ -103,7 +171,7 @@ ipc:
 .clear_ipc:
         cld
         xor     eax,eax
-        movr     ecx,32
+        mov     ecx,32
         mov     edi,app_ipc
         rep     stosb
         jmp     still
@@ -113,10 +181,10 @@ p_close:
 
         bt      dword [flags],3
         jnc     @f
-        movr    eax,18
+        mov    eax,18
         mov     ebx,eax
         mov     ecx,[set_rect_window_pid]
-        int     0x40
+        mcall
 @@:
 
 close:
@@ -133,14 +201,14 @@ start_draw_window        ; начало перерисовки
         mov     ecx,100*65536+220
         add     cx,ax
         mov     edx,[sc.work]
-        add     edx,0x34000000;0x33000000
+        or      edx,0x34000000;0x33000000
         xor     esi,esi
         ;xor     edi,edi
         mov     edi,grab_text
         xor     eax,eax
-        int     0x40
+        mcall
 
-        movr     eax,47             ; выводим числа в окно
+        mov     eax,47             ; выводим числа в окно
         mov     bx,4
         shl     ebx,16
         movsx   ecx,word [scr.width] ; ширина экрана
@@ -149,30 +217,58 @@ start_draw_window        ; начало перерисовки
         mov     dx,[label1.top]
         push    dx
         mov     esi,[sc.work_text]
-        int     0x40
+        mcall
         movsx   ecx,word [scr.height]   ; высота экрана
         mov     dx,[label2.top]
-        int     0x40
+        mcall
         mov     bx,2
         shl     ebx,16
         movsx   ecx,word [scr.bitspp]   ; бит на пиксель
         mov     dx,240
         shl     edx,16
         pop     dx
-        int     0x40
+        mcall
         mov     bx,6
         shl     ebx,16
         mov     ecx,[scr.bytesps]       ; байт на строку
         mov     dx,[label2.top]
-        int     0x40
+        mcall
 
         call    draw_number      ; прорисовываем номер снимка
         call    dr_st
 
         draw_labels labels,labels_end            ; метки
-        draw_edit_boxes editboxes,editboxes_end  ; edit_box
+;        draw_edit_boxes editboxes,editboxes_end  ; edit_box
+;------ show check editbox -----------
+        push    dword edit1
+        call    [edit_box_draw]
+        push    dword edit2                                                                                                  
+        call    [edit_box_draw]
+        push    dword edit3
+        call    [edit_box_draw]
+        push    dword edit4
+        call    [edit_box_draw]
+;------ end check all editbox -------
+
         draw_txt_buttons buttons,buttons_end     ; кнопки
-        draw_check_boxes check_boxes,check_boxes_end ; флажки
+;        draw_check_boxes check_boxes,check_boxes_end ; флажки
+;------ check all checkbox ---------
+        push    dword ch1
+        call    [check_box_draw]
+        push    dword ch2
+        call    [check_box_draw]        
+        push    dword ch3
+        call    [check_box_draw]
+        push    dword ch4
+        call    [check_box_draw]
+        push    dword ch5
+        call    [check_box_draw]
+        push    dword ch6
+        call    [check_box_draw]
+        push    dword use_rect
+        call    [check_box_draw]
+;------ end check all checkbox ------
+
 stop_draw_window      ; конец перерисовки
 ret
 
@@ -231,7 +327,12 @@ ret
 
 ;--- получить память для снимка ---
 get_mem_for_shoot:
-        mov     [scr_buf.ptr],dword __app_end
+;clean memory
+        mov     ecx,dword [scr_buf.ptr]
+        mov     ebx,13
+        mov     eax,68
+        mcall
+
         bt      dword [use_rect.flags],1 ; фоткать область экрана
         jc      .use_area
         movzx   ecx, word [scr.width]
@@ -244,12 +345,13 @@ get_mem_for_shoot:
 @@:
         imul    ecx,ebx
         lea     ecx,[ecx*3]
-        add     ecx,__app_end
+;        add     ecx,i_end
+        mov     ebx,12
+        mov     eax,68
+        mcall
+        mov     [scr_buf.ptr],eax
+        add     eax,ecx
         mov     [scr_buf.end_ptr],ecx
-        xor     ebx,ebx
-        inc     ebx
-        mov     eax,64
-        int     0x40
 ret
 
 ;--- содать окно проедпросмотра ---
@@ -260,9 +362,9 @@ pusha
         mov     eax,51
         xor     ebx,ebx
         inc     ebx
-        movr     ecx,scr_window
-        mov     edx,__app_end-1000
-        int     0x40
+        mov     ecx,scr_window
+        mov     edx,i_end_tread-1000
+        mcall
 @@:
 popa
 ret
@@ -280,14 +382,14 @@ draw_number:
         mov     edi,sign_n_input
         call    zstr_to_int
         mov     [sign_n],al
-        movr     eax,13
+        mov     eax,13
         mov     ebx,150*65536+96
         mov     cx,[label9.top]
         shl     ecx,16
         mov     cx,10
         mov     edx,[sc.work]
-        int     0x40
-        movr     eax,47
+        mcall
+        mov     eax,47
         movsx   bx,byte [sign_n]
         shl     ebx,16
         mov     ecx,[cur_number]
@@ -295,20 +397,20 @@ draw_number:
         shl     edx,16
         mov     dx,[label9.top]
         mov     esi,[sc.work_text]
-        int     0x40
+        mcall
 ret
 
 ;--- процедура, запускающая поток автосъемки ---
 start_autoshoot:
         bts     dword [flags],1
         jc      @f
-        movr     eax,51
+        mov     eax,51
         ;mov     ebx,1
         xor     ebx,ebx
         inc     ebx
         mov     ecx,autoshoot
-        mov     edx,__app_end-512
-        int     0x40
+        mov     edx,i_end_tread-512
+        mcall
 @@:
 ret
 
@@ -324,29 +426,29 @@ autoshoot:
 .next:
         bt      dword [flags],1
         jnc     close
-        movr     eax,60
-        movr     ebx,2
+        mov     eax,60
+        mov     ebx,2
         mov     ecx,[app.pid]
         mov     edx,messages.draw_number
         mov     esi,2
-        int     0x40
+        mcall
         call    shoot
         jmp     autoshoot.next
 
 ;--- процедура прорисовки строки состояния ---
 ; (должна вызываться потоком главного окна)
 dr_st:
-        movr     eax,38              ; отрезок
+        mov     eax,38              ; отрезок
         mov     ebx,0*65536+310
         mov     ecx,198*65536+198
         mov     edx,[sc.work_graph]
-        int     0x40
+        mcall
 
-        movr     eax,13              ; полоска
+        mov     eax,13              ; полоска
         mov     bx,310
         mov     ecx,199*65536+15
         mov     edx,[sc.work]
-        int     0x40
+        mcall
 
         mov     edi,status
         call    draw_label
@@ -356,17 +458,17 @@ ret
 ; вход ebx - буффер 1024 байт
 ; выход ecx - номер слота
 get_slot_n:
-        movr     eax,9
+        mov     eax,9
         xor     ecx,ecx
         dec     ecx
-        int     0x40
+        mcall
 
         mov     edx,[ebx+30]
         xor     ecx,ecx
 @@:
-        movr     eax,9
+        mov     eax,9
         inc     ecx
-        int     0x40
+        mcall
         cmp     [ebx+30],edx
         je      @f
         jmp     @b
@@ -388,11 +490,11 @@ save_shoot:
         bt      dword [flags],1
         jc      .running
 
-        movr     eax,51
+        mov     eax,51
         ;mov     ebx,1
         xor     ebx,ebx
         inc     ebx
-        int     0x40
+        mcall
 .running:
 ret
 
@@ -402,12 +504,12 @@ one_shoot_thread:
         activ_window
         bt      dword [ch1.flags],1   ; минимизировать окно ?
         jnc      @f
-        movr     eax,60
-        movr     ebx,2
+        mov     eax,60
+        mov     ebx,2
         mov     ecx,[app.pid]
         mov     edx,messages.min_window
         mov     esi,2
-        int     0x40
+        mcall
 @@:
         call    shoot
         btr     dword [flags],2
@@ -416,12 +518,12 @@ one_shoot_thread:
 ;--- процедура, отправляющая главному окну сообщение о перерисовке
 ; строки состояния ---
 send_draw_status:
-        movr     eax,60
-        movr     ebx,2
+        mov     eax,60
+        mov     ebx,2
         mov     ecx,[app.pid]
         mov     edx,messages.draw_status
         mov     esi,2
-        int     0x40
+        mcall
 ret
 
 ;--- поток, сохраняюий файл ---
@@ -436,34 +538,34 @@ save_shoot_thread:
 show_set_rect_window:
         bts     dword [flags],3
         jc      @f
-        movr     eax,51
+        mov     eax,51
         xor     ebx,ebx
         inc     ebx
         mov     ecx,set_rect_window
         mov     edx,set_rect_window_esp
-        int     0x40
+        mcall
 
         mov     [set_rect_window_pid],eax
 ret
 
 @@:
-        movr    eax,18
+        mov    eax,18
         mov     ebx,eax
         mov     ecx,[set_rect_window_pid]
-        int     0x40
+        mcall
         btr     dword [flags],3
 ret
 
 ;--- получение информации об активном окне ---
 get_active_window_info:
-        movr    eax,18
-        movr    ebx,7
-        int     0x40
+        mov    eax,18
+        mov    ebx,7
+        mcall
 
         mov     ecx,eax
-        movr    eax,9
+        mov     eax,9
         mov     ebx,active_app
-        int     0x40
+        mcall
 ret
 
 ;====================================================================
@@ -493,30 +595,30 @@ status label 5,201,0,no_shoot
 labels_end:
 
 editboxes:
-edit1 edit_box 300,5,35,cl_white,0xaabbcc,0,0,0,1024,ed_buffer.1,ed_focus        ; путь к файлу
-edit2 edit_box 35,75,134,cl_white,0xaabbcc,0,0,0,9,ed_buffer.2,ed_figure_only    ; задержка
-edit3 edit_box 35,165,164,cl_white,0xaabbcc,0,0,0,9,ed_buffer.3,ed_figure_only
+edit1 edit_box 300,5,35,cl_white,0xaabbcc,0,0,0,300,ed_buffer.1,ed_focus,10,10        ; путь к файлу
+edit2 edit_box 35,75,134,cl_white,0xaabbcc,0,0,0,9,ed_buffer.2,ed_figure_only,3,3         ; задержка
+edit3 edit_box 35,165,164,cl_white,0xaabbcc,0,0,0,9,ed_buffer.3,ed_figure_only    ; автонумерация
 edit4 edit_box 16,165,181,cl_white,0xaabbcc,0,0,0,1,sign_n_input,ed_figure_only,1
 editboxes_end:
 
 buttons:
-but1 txt_button 150,5,15,65,2,0,0,but_text.1,one_shoot            ; сделать снимок
+but1 txt_button 150,5,15,65,2,0,0,but_text.1,one_shoot             ; сделать снимок
 but2 txt_button 145,160,15,65,3,0,0,but_text.2,save_shoot          ; сохранить снимок
 but3 txt_button 140,115,12,120,4,0,0,but_text.3,show_scr_window    ; показать снимок
 but4 txt_button 80,205,15,163,5,0,0,but_text.4,apply_number        ; применить номер
-but5 txt_button 150,5,15,85,6,0,0,but_text.5,start_autoshoot     ; начать автосъёмку
-but6 txt_button 145,160,15,85,7,0,0,but_text.6,stop_autoshoot     ; остановить автосъёмку
+but5 txt_button 150,5,15,85,6,0,0,but_text.5,start_autoshoot       ; начать автосъёмку
+but6 txt_button 145,160,15,85,7,0,0,but_text.6,stop_autoshoot      ; остановить автосъёмку
 but7 txt_button 40,205,10,150,8,0,0,but_text.7,show_set_rect_window ; задать область
 buttons_end:
 
 check_boxes:
-ch1 check_box 5,105,cl_white,0,0,ch_text.1,(ch_text.2-ch_text.1)  ; свернуть окно
-ch2 check_box 5,120,cl_white,0,0,ch_text.2,(ch_text.3-ch_text.2)  ; затем сделать активным
-ch3 check_box 145,105,cl_white,0,0,ch_text.3,(ch_text.4-ch_text.3) ; показать снимок
-ch4 check_box 5,135,cl_white,0,0,ch_text.4,(ch_text.5-ch_text.4)  ;
-ch5 check_box 5,150,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5)
-ch6 check_box 5,165,cl_white,0,0,ch_text.6,(ch_text.7-ch_text.6)
-use_rect check_box 145,150,cl_white,0,0,ch_text.7,(ch_text.8-ch_text.7) ; исп. область
+ch1 check_box 5,105,5,11,cl_white,0,0,ch_text.1,(ch_text.2-ch_text.1),ch_flag_en  ; свернуть окно
+ch2 check_box 5,120,5,11,cl_white,0,0,ch_text.2,(ch_text.3-ch_text.2),ch_flag_en  ; затем сделать активным
+ch3 check_box 145,105,5,11,cl_white,0,0,ch_text.3,(ch_text.4-ch_text.3),ch_flag_en ; показать снимок
+ch4 check_box 5,135,5,11,cl_white,0,0,ch_text.4,(ch_text.5-ch_text.4),ch_flag_en   ; задержка
+ch5 check_box 5,150,5,11,cl_white,0,0,ch_text.5,(ch_text.6-ch_text.5)
+ch6 check_box 5,165,5,11,cl_white,0,0,ch_text.6,(ch_text.7-ch_text.6),ch_flag_en
+use_rect check_box 145,150,5,11,cl_white,0,0,ch_text.7,(ch_text.8-ch_text.7) ; исп. область
 ; автонумерация
 check_boxes_end:
 
@@ -610,7 +712,7 @@ disk_filled db 'Disk is full',0
 bad_fat_table db 'FAT table destroyed',0
 ac_den db 'Access denied',0
 device_er db 'Device error',0
-not_shooted db 'Make photo !!!',0
+not_shooted db 'Make a photo !!!',0
 no_file_name db 'Enter file name !!!',0
 invalid_rect db 'Wrong area size',0
 
@@ -620,10 +722,13 @@ sign_n_input:
         db      '2',0
 
 app_ipc ipc_buffer 32
+align 4
 
 mouse_flag: dd 0x0
 structure_of_potock:
 rb 100
+
+align 4
 
 cur_number        dd      ?
 
@@ -656,6 +761,17 @@ sf_buf:
 set_rect_window_pid dd ?
 set_rect_window_slot dd ?
 
+align 4
+
+ed_buffer:
+.1: db '/sys/*.bmp',0
+rb 287
+.2: db '100',0
+ rb 6
+.3:  rb 10
+
+
+align 4
 rect_input_buffer:
 .left rb 6
 .top  rb 6
@@ -664,10 +780,7 @@ rect_input_buffer:
 
 cmdstr rb 257
 
-ed_buffer:
-.1: rb 1025
-.2: rb 10
-.3: rb 10
+align 4
 
 file_name:
         rb      1058
@@ -679,11 +792,17 @@ rect:
 .height dw ?
 .width dw ?
 
-
 sc sys_color_table
 app procinfo        ; информация о главном окне
 active_app procinfo ; информация об активном окне
 set_rect_window_procinfo procinfo  ; информация об окне области
 shoot_esp rb 512                   ; стек потока фотканья
 set_rect_window_esp rb 512         ; стек окна области
-        app_end    ; конец программы
+;        app_end    ; конец программы
+align 4
+cur_dir_path    rb 4096
+library_path    rb 4096
+i_end_tread:
+rb 1024
+align 4
+i_end:
