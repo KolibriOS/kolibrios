@@ -66,18 +66,21 @@ check_box_draw_ch:            ;нарисовать включенный чек бокс
 @@:
         movzx ebx,word ch_left  ;загрузить координату по х
         mov   eax,dword ch_size
-        push  ax
+        mov   bp,ax
         shr   eax,2
-        add   ebx,eax          ;добавить (сторона прямоугольника/3)
+        push  ax
+ 
+        push  ax
+        add   ebx,eax           
         shl   ebx,16            ;сдвинем на 16 разрядов в лево (умножим на 65536)
-        pop   bx
-        shr   bx,1              ;загрузить (сторона прямоугольника/2)
-        mov   bp,bx             ;сохраним регистр bx в регистре указателя базы
+        pop   ax
+        lea   eax,[eax*2]
+        sub   bp,ax             ;сохраним регистр bx в регистре указателя базы
+        mov   bx,bp
 
         movzx ecx,word ch_top ;загрузить координату по у
-        mov   eax,dword ch_size
-        shr   eax,2
-        add   ecx,eax         ;добавить (сторона прямоугольника/4)
+        pop   ax
+        add   cx,ax         
         shl   ecx,16          ;сдвинем на 16 разрядов в лево (умножим на 65536)
         mov   cx,bp           ;загрузим значения регистра указателя базы в cx
         mov   eax,13          ;в eax - значения функции для вывода полосы т.е. по сути прямоугольника, который отображает включенный компонент чек бокс
