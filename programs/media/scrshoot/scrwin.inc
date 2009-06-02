@@ -6,7 +6,7 @@ scr_window:
 .red:
         call    .draw_window
 .still:
-        wait_event .red,close
+        wait_event .red,.close
         jmp     .still
 
 .draw_window:
@@ -37,6 +37,19 @@ scr_window:
 
         stop_draw_window
 ret
+.close:
+        bt      word [ch3.flags],1   ; восстановить окно ?
+        jnc     @f
+
+        mov     eax,60
+        mov     ebx,2
+        mov     ecx,[app.pid]
+        mov     edx,messages.act_window
+        mov     esi,2
+        mcall
+@@:
+        jmp	close
+
 .label label 20,20,0x80000000,$+4
 db 'Это ваш снимок. Выход - любая клавиша.',0
 

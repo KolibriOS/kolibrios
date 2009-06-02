@@ -164,16 +164,21 @@ ipc:
         min_window
         jmp     .clear_ipc
 @@:
-
+        cmp     word [app_ipc+8],3
+        jne     @f
+	mov     ecx,[slot_n]
+        activ_window
+        jmp     .clear_ipc
+@@:
         call    draw_number
         call    dr_st
 
 .clear_ipc:
         cld
         xor     eax,eax
-        mov     ecx,32
+        mov     ecx,32/4
         mov     edi,app_ipc
-        rep     stosb
+        rep     stosd
         jmp     still
 
 p_close:
@@ -314,7 +319,9 @@ shoot:
 
         bt      dword [ch2.flags],1  ; показать окно предпросмотра ?
         jnc     @f
+
         call    show_scr_window
+	ret
 @@:
         bt      word [ch3.flags],1   ; восстановить окно ?
         jnc     @f
@@ -575,7 +582,7 @@ messages:
 .draw_number dw 0
 .draw_status dw 1
 .min_window  dw 2
-
+.act_window  dw 3
 
 grab_text:
         db      title,0
