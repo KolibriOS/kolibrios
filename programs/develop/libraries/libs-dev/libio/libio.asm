@@ -534,17 +534,17 @@ align 16
 
 export					      \
 	libio._.init	, 'lib_init'	    , \
-	0x00030003	, 'version'	    , \
-	file.find_first , 'file.find_first' , \
-	file.find_next	, 'file.find_next'  , \
-	file.find_close , 'file.find_close' , \
-	file.size	, 'file.size'	    , \
-	file.open	, 'file.open'	    , \
-	file.read	, 'file.read'	    , \
-	file.write	, 'file.write'	    , \
-	file.seek	, 'file.seek'	    , \
-	file.tell	, 'file.tell'	    , \
-	file.eof?	, 'file.eof?'	    , \
-	file.seteof	, 'file.seteof'     , \
-	file.truncate	, 'file.truncate'   , \
-	file.close	, 'file.close'
+	0x00040004	, 'version'	    , \
+	file.find_first , 'file_find_first' , \
+	file.find_next	, 'file_find_next'  , \
+	file.find_close , 'file_find_close' , \
+	file.size	, 'file_size'	    , \
+	file.open	, 'file_open'	    , \
+	file.read	, 'file_read'	    , \
+	file.write	, 'file_write'	    , \
+	file.seek	, 'file_seek'	    , \
+	file.tell	, 'file_tell'	    , \
+	file.eof?	, 'file_iseof'	    , \
+	file.seteof	, 'file_seteof'     , \
+	file.truncate	, 'file_truncate'   , \
+	file.close	, 'file_close'

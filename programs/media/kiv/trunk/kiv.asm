@@ -231,7 +231,7 @@ load_image:
 ;	invoke	img.is_img, [img_data], [img_data_len]
 ;	or	eax, eax
 ;	jz	exit
-	invoke	img.decode, [img_data], [img_data_len]
+	invoke	img.decode, [img_data], [img_data_len], 0
 	or	eax, eax
 	jz	.error
 	cmp	[image], 0
@@ -513,6 +513,10 @@ load_directory:
 	jz	.copy
 	cmp	ecx, 'jpe'
 	jz	.copy
+	cmp	ecx, 'ico'
+	jz	.copy
+	cmp	ecx, 'cur'
+	jz	.copy
 	cmp	ecx, 'jpeg'
 	jz	@f
 	cmp	ecx, 'jpeG'
@@ -722,6 +726,41 @@ draw_cur_frame:
 	push	5	; x
 	push	[cur_frame]
 	call	[img.draw]
+	mov	eax, [image]
+	test	[eax + Image.Flags], Image.IsAnimated
+	jnz	.done
+	cmp	[eax + Image.Next], 0
+	jnz	.additional_frames
+.done:
+	ret
+.additional_frames:
+	mov	ebx, [procinfo+62]
+	sub	ebx, 4
+	jbe	.done
+	push	5
+	pop	esi
+.afloop:
+	sub	ebx, [eax + Image.Width]
+	jbe	.done
+	dec	ebx
+	jz	.done
+	add	esi, [eax + Image.Width]
+	mov	eax, [eax + Image.Next]
+	push	eax
+	inc	esi
+	push	0	; ypos
+	push	0	; xpos
+	mov	ecx, [procinfo+66]
+	sub	ecx, 34
+	push	ecx	; max height
+	push	ebx	; max width
+	push	35	; y
+	push	esi	; x
+	push	eax	; image
+	call	[img.draw]
+	pop	eax
+	cmp	[eax + Image.Next], 0
+	jnz	.afloop
 	ret
 
 ; void* __stdcall mem.Alloc(unsigned size);
@@ -961,27 +1000,27 @@ library 			\
 
 import	libio			  , \
 	libio.init , 'lib_init'   , \
-	file.size  , 'file.size'  , \
-	file.open  , 'file.open'  , \
-	file.read  , 'file.read'  , \
-	file.close , 'file.close'
+	file.size  , 'file_size'  , \
+	file.open  , 'file_open'  , \
+	file.read  , 'file_read'  , \
+	file.close , 'file_close'
 
 import	libgfx				, \
 	libgfx.init   , 'lib_init'	, \
-	gfx.open      , 'gfx.open'	, \
-	gfx.close     , 'gfx.close'	, \
-	gfx.pen.color , 'gfx.pen.color' , \
-	gfx.line      , 'gfx.line'
+	gfx.open      , 'gfx_open'	, \
+	gfx.close     , 'gfx_close'	, \
+	gfx.pen.color , 'gfx_pen_color' , \
+	gfx.line      , 'gfx_line'
 
 import	libimg			   , \
 	libimg.init , 'lib_init'   , \
-	img.is_img  , 'img.is_img' , \
-	img.to_rgb2 , 'img.to_rgb2', \
-	img.decode  , 'img.decode' , \
-	img.flip    , 'img.flip'   , \
-	img.rotate  , 'img.rotate' , \
-	img.destroy , 'img.destroy', \
-	img.draw    , 'img.draw'
+	img.is_img  , 'img_is_img' , \
+	img.to_rgb2 , 'img_to_rgb2', \
+	img.decode  , 'img_decode' , \
+	img.flip    , 'img_flip'   , \
+	img.rotate  , 'img_rotate' , \
+	img.destroy , 'img_destroy', \
+	img.draw    , 'img_draw'
 
 import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 

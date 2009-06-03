@@ -49,7 +49,7 @@ img.is.png:
 ;endp
 
 ;;================================================================================================;;
-;;proc img.decode.png _data, _length ;////////////////////////////////////////////////////////////;;
+;;proc img.decode.png _data, _length, _options ;//////////////////////////////////////////////////;;
 img.decode.png:
 	xor	eax, eax	; .image = 0
 	pushad
@@ -76,6 +76,7 @@ virtual at ebp - .localsize
 	rd	1
 .data		dd	?
 .length		dd	?
+.options	dd	?
 end virtual
 	push	0	; .idat_read = 0
 	sub	esp, .localsize-4
@@ -99,7 +100,7 @@ end virtual
 	add	esp, .localsize
 	popad
 	mov	[deflate_loader_mutex], eax
-	ret
+	ret	12
 .deflate_loaded:
 ; release mutex
 	mov	[deflate_loader_mutex], 0
@@ -229,7 +230,7 @@ end virtual
 .eof:
 	add	esp, .localsize
 	popad
-	ret
+	ret	12
 ; PLTE chunk
 .palette:
 	mov	eax, [.image]
@@ -876,4 +877,4 @@ end repeat
 
 img.encode.png:
 	xor	eax, eax
-	ret	8
+	ret	12

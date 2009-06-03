@@ -374,41 +374,41 @@ library \
 	libgfx,'libgfx.obj'
 
 import	libini, \
-	ini.get_str,'ini.get_str',\
-	ini.set_str,'ini.set_str',\
-	ini.get_int,'ini.get_int',\
-	ini.set_int,'ini.set_int',\
-	ini.enum_sections,'ini.enum_sections',\
-	ini.enum_keys,'ini.enum_keys'
+	ini.get_str,'ini_get_str',\
+	ini.set_str,'ini_set_str',\
+	ini.get_int,'ini_get_int',\
+	ini.set_int,'ini_set_int',\
+	ini.enum_sections,'ini_enum_sections',\
+	ini.enum_keys,'ini_enum_keys'
 
 import	libio, \
-\;      file.aux.match_wildcard,'file.aux.match_wildcard',\
-	file.find_first,'file.find_first',\
-	file.find_next,'file.find_next',\
-	file.find_close,'file.find_close',\
-	file.open,'file.open',\
-	file.seek,'file.seek',\
-	file.write,'file.write',\
-	file.truncate,'file.truncate',\
-	file.close,'file.close'
+\;      file.aux.match_wildcard,'file_aux_match_wildcard',\
+	file.find_first,'file_find_first',\
+	file.find_next,'file_find_next',\
+	file.find_close,'file_find_close',\
+	file.open,'file_open',\
+	file.seek,'file_seek',\
+	file.write,'file_write',\
+	file.truncate,'file_truncate',\
+	file.close,'file_close'
 
 import	libgfx, \
-	gfx.open	,'gfx.open',\
-	gfx.close	,'gfx.close',\
-	gfx.pen.color	,'gfx.pen.color',\
-	gfx.brush.color ,'gfx.brush.color',\
-	gfx.pixel	,'gfx.pixel',\
-	gfx.move.to	,'gfx.move.to',\
-	gfx.line.to	,'gfx.line.to',\
-	gfx.line	,'gfx.line',\
-	gfx.polyline	,'gfx.polyline',\
-	gfx.polyline.to ,'gfx.polyline.to',\
-	gfx.fillrect	,'gfx.fillrect',\
-	gfx.fillrect.ex ,'gfx.fillrect.ex',\
-	gfx.framerect	,'gfx.framerect',\
-	gfx.framerect.ex,'gfx.framerect.ex',\
-	gfx.rectangle	,'gfx.rectangle',\
-	gfx.rectangle.ex,'gfx.rectangle.ex'
+	gfx.open	,'gfx_open',\
+	gfx.close	,'gfx_close',\
+	gfx.pen.color	,'gfx_pen_color',\
+	gfx.brush.color ,'gfx_brush.color',\
+	gfx.pixel	,'gfx_pixel',\
+	gfx.move.to	,'gfx_move_to',\
+	gfx.line.to	,'gfx_line_to',\
+	gfx.line	,'gfx_line',\
+	gfx.polyline	,'gfx_polyline',\
+	gfx.polyline.to ,'gfx_polyline_to',\
+	gfx.fillrect	,'gfx_fillrect',\
+	gfx.fillrect.ex ,'gfx_fillrect_ex',\
+	gfx.framerect	,'gfx_framerect',\
+	gfx.framerect.ex,'gfx_framerect_ex',\
+	gfx.rectangle	,'gfx_rectangle',\
+	gfx.rectangle.ex,'gfx_rectangle_ex'
 
 I_END:
 

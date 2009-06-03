@@ -49,6 +49,11 @@ Image.bpp16 = 5
 ; bits in Image.Flags
 Image.IsAnimated = 1
 
+struct ImageDecodeOptions
+  UsedSize        dd ? ; if >=8, the field BackgroundColor is valid, and so on
+  BackgroundColor dd ? ; used for transparent images as background
+ends
+
 FLIP_VERTICAL	= 0x01
 FLIP_HORIZONTAL = 0x02
 FLIP_BOTH	= FLIP_VERTICAL or FLIP_HORIZONTAL

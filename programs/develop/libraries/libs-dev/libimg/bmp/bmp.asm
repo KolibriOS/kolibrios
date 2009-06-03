@@ -57,7 +57,7 @@ img.is.bmp:
 ;endp
 
 ;;================================================================================================;;
-proc img.decode.bmp _data, _length ;//////////////////////////////////////////////////////////////;;
+proc img.decode.bmp _data, _length, _options ;////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Decode data into image if it contains correctly formed raw data in BMP format                  ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -67,71 +67,77 @@ proc img.decode.bmp _data, _length ;////////////////////////////////////////////
 ;< eax = 0 (error) or pointer to image                                                            ;;
 ;;================================================================================================;;
 locals
+  length_rest dd ?
   img dd ?
   bTopDown db ?
+  bIsIco db ?
 endl
+img.decode.bmp.length_rest equ length_rest
+	mov	[bIsIco], 0
+.common: ; common place for BMP and ICO
 
 	push	ebx esi edi
 
-; img.is.bmp has been already called by img.decode
-;	stdcall img.is.bmp, [_data], [_length]
-;	or	eax, eax
-;	jz	.error
-
 	mov	ebx, [_data]
-;       cmp     [ebx + bmp.Header.info.Compression], bmp.BI_RGB
-;       je      @f
-;       mov     eax, [ebx + bmp.Header.file.Size]
-;       cmp     eax, [_length]
-;       jne     .error
-;   @@:
+	cmp	[bIsIco], 0
+	jnz	@f
+	add	ebx, sizeof.bmp.FileHeader
+	sub	[_length], sizeof.bmp.FileHeader
+   @@:
 
-	mov	eax, [ebx + bmp.Header.info.Size]
+	mov	eax, [ebx + bmp.InfoHeader.Size]
 ; sanity check: file length must be greater than size of headers
-	add	eax, sizeof.bmp.FileHeader
 	cmp	[_length], eax
 	jbe	.error
 
 	mov	[bTopDown], 0
 
-	cmp	eax, sizeof.bmp.FileHeader + 12
+	cmp	eax, 12
 	jz	.old1
-	cmp	eax, sizeof.bmp.FileHeader + 40
+	cmp	eax, 40
 	jz	.normal
-	cmp	eax, sizeof.bmp.FileHeader + 56
+	cmp	eax, 56
 	jnz	.error
 ; convert images with <= 8 bpp to 8bpp, other - to 32 bpp
 .normal:
 	m2m	eax, Image.bpp8
-	cmp	[ebx + bmp.Header.info.BitCount], 8
+	cmp	byte [ebx + 14], 8	; bit count
 	jbe	@f
 	mov	al, Image.bpp32
 @@:
 	push	eax
-	mov	eax, [ebx + bmp.Header.info.Height]
+	mov	eax, [ebx + 8]	;[ebx + bmp.InfoHeader.Height]
 	test	eax, eax
 	jns	@f
 	inc	[bTopDown]
 	neg	eax
 @@:
+	cmp	[bIsIco], 0	; for icons Height is two times larger than image height
+	jz	@f
+	shr	eax, 1
+@@:
 	pushd	eax
-	pushd	[ebx + bmp.Header.info.Width]
+	pushd	[ebx + 4]	;[ebx + bmp.InfoHeader.Width]
 	jmp	.create
 .old1:
 	m2m	eax, Image.bpp8
-	cmp	[ebx + bmp.Header.info.OldBitCount], 8
+	cmp	byte [ebx + 10], 8	; bit count
 	jbe	@f
 	mov	al, Image.bpp32
 @@:
 	push	eax
-	movsx	eax, [ebx + bmp.Header.info.OldHeight]
+	movsx	eax, word [ebx + 6]	;[ebx + bmp.InfoHeader.OldHeight]
 	test	eax, eax
 	jns	@f
 	inc	[bTopDown]
 	neg	eax
 @@:
+	cmp	[bIsIco], 0	; for icons Height is two times larger than image height
+	jz	@f
+	shr	eax, 1
+@@:
 	push	eax
-	movzx	eax, [ebx + bmp.Header.info.OldWidth]
+	movzx	eax, word [ebx + 4]	;[ebx + bmp.InfoHeader.OldWidth]
 	push	eax
 .create:
 	call	img.create
@@ -151,9 +157,9 @@ endl
 	xor	eax, eax
 	rep	stosd
 	pop	edi
-	lea	esi, [ebx + sizeof.bmp.FileHeader]
-	pushd	[ebx + bmp.FileHeader.OffBits]
-	mov	ecx, [esi + bmp.InfoHeader.Size]
+	push	edi
+	mov	esi, ebx
+	mov	ecx, [ebx]	;[ebx + bmp.InfoHeader.Size]
 	cmp	ecx, 12
 	jz	.old2
 	rep	movsb
@@ -168,10 +174,28 @@ endl
 	movsd	; Planes+BitCount
 .decode:
 
-	pop	eax
-	mov	esi, [_length]
-	sub	esi, eax
+	pop	edi
+	cmp	[bIsIco], 0
+	jnz	@f
+	mov	edi, [_length]
+	add	edi, sizeof.bmp.FileHeader
+	mov	esi, [ebx - sizeof.bmp.FileHeader + bmp.FileHeader.OffBits]
+	jmp	.offset_calculated
+@@:
+	xor	esi, esi
+	mov	cl, byte [edi + bmp.Image.info.BitCount]
+	cmp	cl, 8
+	ja	@f
+	inc	esi
+	add	cl, 2
+	shl	esi, cl
+@@:
+	add	esi, [edi + bmp.Image.info.Size]
+	mov	edi, [_length]
+.offset_calculated:
+	sub	edi, esi
 	jbe	.error.free
+	add	esi, [_data]
 
 	mov	eax, [edx + Image.Extended]
 	mov	eax, [eax + bmp.Image.info.Compression]
@@ -181,13 +205,13 @@ endl
 	jmp	.decoded
     @@: cmp	eax, bmp.BI_RLE8
 	jne	@f
-	cmp	[ebx + bmp.Header.info.BitCount], 8
+	cmp	word [ebx + 14], 8 ;bmp.InfoHeader.BitCount
 	jnz	.error.free
 	stdcall ._.rle
 	jmp	.decoded
     @@: cmp	eax, bmp.BI_RLE4
 	jne	@f
-	cmp	[ebx + bmp.Header.info.BitCount], 4
+	cmp	word [ebx + 14], 4
 	jnz	.error.free
 	stdcall ._.rle
 	jmp	.decoded
@@ -218,6 +242,11 @@ endl
 	stdcall img.flip, [img], FLIP_VERTICAL
     @@:
 	mov	eax, [img]
+	mov	ecx, [length_rest]	; return length for ICO code
+	cmp	[bIsIco], 0
+	jz	@f
+	mov	[esp + 4], esi	; return pointer to end-of-data for ICO code
+    @@:
 	pop	edi esi ebx
 	ret
 
@@ -228,7 +257,7 @@ endl
 endp
 
 ;;================================================================================================;;
-proc img.encode.bmp _img, _p_length ;/////////////////////////////////////////////////////////////;;
+proc img.encode.bmp _img, _p_length, _options ;///////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Encode image into raw data in BMP format                                                       ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -263,7 +292,6 @@ proc img.decode.bmp._.rgb ;/////////////////////////////////////////////////////
 ;;================================================================================================;;
 	mov	ecx, [edx + Image.Extended]
 	mov	[ecx + bmp.Image.info.AlphaMask], 0
-	mov	edi, [edx + Image.Data]
 
 	movzx	eax, [ecx + bmp.Image.info.BitCount]
 	cmp	eax, 32
@@ -297,10 +325,10 @@ img.decode.bmp._.rgb.24bpp:
 	and	eax, not 3
 	mov	ecx, [edx + Image.Height]
 	imul	eax, ecx
-	cmp	esi, eax
+	sub	edi, eax
 	jb	img.decode.bmp._.rgb.error
-	mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
+	mov	[img.decode.bmp.length_rest], edi
+	mov	edi, [edx + Image.Data]
 
   .next_line:
 	push	ecx edx
@@ -447,19 +475,20 @@ img.decode.bmp._.rgb.prepare_palette:
 	and	eax, not 3
 	mov	ecx, [edx + Image.Height]
 	imul	eax, ecx
-	cmp	esi, eax
+	sub	edi, eax
 	jb	.ret
-	mov	esi, [ebx + bmp.Header.info.Size]
-	add	esi, sizeof.bmp.FileHeader
-	jc	.ret
-	mov	eax, [ebx + bmp.Header.file.OffBits]
-	sub	eax, esi
-	jc	.ret
-	push	edi
+	mov	[img.decode.bmp.length_rest], edi
+	push	esi
+	sub	esi, ebx
+	jc	.ret.pop
+	sub	esi, [ebx + bmp.InfoHeader.Size]
+	jc	.ret.pop
+	mov	eax, esi
 	mov	edi, [edx + Image.Palette]
 	push	ecx
 	mov	ecx, 256
-	cmp	esi, sizeof.bmp.FileHeader + 12
+	mov	esi, [ebx + bmp.InfoHeader.Size]
+	cmp	esi, 12
 	jz	.old
 	shr	eax, 2
 	add	esi, ebx
@@ -470,18 +499,21 @@ img.decode.bmp._.rgb.prepare_palette:
 	rep	movsd
 	jmp	.common
 .old:
+	add	esi, ebx
+@@:
 	movsd
 	dec	esi
 	sub	eax, 3
 	jbe	@f
 	sub	ecx, 1
-	jnz	.old
+	jnz	@b
 @@:
 .common:
 	pop	ecx
-	pop	edi
-	mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
+	mov	edi, [edx + Image.Data]
+	clc
+.ret.pop:
+	pop	esi
 .ret:
 	ret
 endp
@@ -507,15 +539,18 @@ endl
 
 	mov	[abs_mode_addr], .absolute_mode.rle8
 	mov	[enc_mode_addr], .encoded_mode.rle8
-	cmp	[ebx + bmp.Header.info.Compression], bmp.BI_RLE4
+	cmp	[ebx + bmp.InfoHeader.Compression], bmp.BI_RLE4
 	jne	@f
 	mov	[abs_mode_addr], .absolute_mode.rle4
 	mov	[enc_mode_addr], .encoded_mode.rle4
     @@:
 
-	push	esi
+	push	edi
 	xor	eax, eax	; do not check file size in .prepare_palette
+	push	ebp
+	mov	ebp, [ebp]	; set parent stack frame
 	call	img.decode.bmp._.rgb.prepare_palette
+	pop	ebp
 	pop	ecx	; ecx = rest bytes in file
 	jc	.error
 
@@ -712,8 +747,6 @@ locals
   delta   dd ?
 endl
 
-	push	edi
-
 	mov	[delta], 4
 	mov	eax, [edx + Image.Extended]
 	cmp	[eax + bmp.Image.info.BitCount], 32
@@ -725,9 +758,12 @@ endl
 	mov	ecx, [edx + Image.Width]
 	imul	ecx, [edx + Image.Height]
 	imul	ecx, [delta]
-	cmp	esi, ecx
+	sub	edi, ecx
 	jb	.error
+	mov	ecx, [ebp]	; use parent stack frame
+	mov	[ecx + img.decode.bmp.length_rest - ebp], edi	; !
 
+	push	esi
 	mov	esi, eax
 
 	mov	ecx, [esi + bmp.Image.info.RedMask]
@@ -759,8 +795,7 @@ endl
 	mov	[unshift.Alpha], al
 
 	mov	edi, [edx + Image.Data]
-	mov	esi, ebx
-	add	esi, [ebx + bmp.Header.file.OffBits]
+	pop	esi
 
 ;;------------------------------------------------------------------------------------------------;;
 

@@ -15,7 +15,13 @@ proc dll.Load, import_table:dword
 		or	eax,eax
 		jz	.fail
 		stdcall dll.Link,eax,edx
+		push	eax
+		mov	eax, [eax]
+		cmp	dword [eax], 'lib_'
+		pop	eax
+		jnz	@f
 		stdcall dll.Init,[eax+4]
+	    @@:
 		pop	esi
 		add	esi,8
 		jmp	.next_lib

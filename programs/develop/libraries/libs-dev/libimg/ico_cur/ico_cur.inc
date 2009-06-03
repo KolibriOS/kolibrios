@@ -1,5 +1,5 @@
 ;;================================================================================================;;
-;;//// ico.asm //// (c) mike.dld, 2007-2008 //////////////////////////////////////////////////////;;
+;;//// ico.inc //// (c) diamond, 2009 ////////////////////////////////////////////////////////////;;
 ;;================================================================================================;;
 ;;                                                                                                ;;
 ;; This file is part of Common development libraries (Libs-Dev).                                  ;;
@@ -16,10 +16,31 @@
 ;; If not, see <http://www.gnu.org/licenses/>.                                                    ;;
 ;;                                                                                                ;;
 ;;================================================================================================;;
-;;                                                                                                ;;
-;; References:                                                                                    ;;
-;;   1. "Icons in Win32"                                                                          ;;
-;;      by John Hornick, Microsoft Corporation                                                    ;;
-;;      http://msdn2.microsoft.com/en-us/library/ms997538.aspx                                    ;;
-;;                                                                                                ;;
-;;================================================================================================;;
+
+struct ico.FileHeader
+  Reserved   dw ? ; must be 0
+  Type       dw ? ; must be 1
+  Count      dw ?
+ends
+
+struct ico.DirEntry
+  Width       db ?
+  Height      db ?
+  ColorCount  db ?
+              db ? ; reseved
+              dw ? ; reserved
+              dw ? ; reserved
+  ByteSize    dd ?
+  ImageOffset dd ?
+ends
+
+struct cur.DirEntry
+  Width       db ?
+  Height      db ?
+  ColorCount  db ?
+              db ? ; reserved
+  XHotSpot    dw ?
+  YHotSpot    dw ?
+  ByteSize    dd ?
+  ImageOffset dd ?
+ends

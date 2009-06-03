@@ -160,8 +160,8 @@ start:
 ; load libini.obj and kfar.ini
         mov     eax, libini_name
         mov     esi, ini_import
-        push    6
-        pop     ebp     ; we use version 6 of libini
+        push    8
+        pop     ebp     ; we use version 8 of libini
         call    load_dll_and_import
         test    eax, eax
         jnz     .noini
@@ -8343,10 +8343,10 @@ standard_dll_path_size = $ - standard_dll_path
 aStart                  db      'START',0
 aLibInit                db      'lib_init',0
 aVersion                db      'version',0
-aIniGetInt              db      'ini.get_int',0
-aIniGetStr              db      'ini.get_str',0
-aIniSetInt              db      'ini.set_int',0
-aIniEnumKeys            db      'ini.enum_keys',0
+aIniGetInt              db      'ini_get_int',0
+aIniGetStr              db      'ini_get_str',0
+aIniSetInt              db      'ini_set_int',0
+aIniEnumKeys            db      'ini_enum_keys',0
 aPluginLoad             db      'plugin_load',0
 aPluginUnload           db      'plugin_unload',0
 aGetattr                db      'getattr',0

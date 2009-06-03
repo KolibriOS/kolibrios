@@ -453,7 +453,7 @@ library \
 	libini,'libini.obj'
 
 import	libini, \
-	ini.get_str,'ini.get_str'
+	ini.get_str,'ini_get_str'
 
 include_debug_strings
 

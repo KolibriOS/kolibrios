@@ -72,7 +72,7 @@ proc img.is.gif _data, _length ;////////////////////////////////////////////////
 endp
 
 ;;================================================================================================;;
-proc img.decode.gif _data, _length ;//////////////////////////////////////////////////////////////;;
+proc img.decode.gif _data, _length, _options ;////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? Decode data into image if it contains correctly formed raw data in GIF format                  ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -86,6 +86,7 @@ locals
   cur_color_table_size dd ?
   transparent_color  dd ?
   background_color   dd ?
+  options_bgr        dd ?
   prev_palette       dd ?
   aux_palette        dd ?
   img		     dd ?
@@ -110,6 +111,7 @@ img.decode.gif._data equ _data
 img.decode.gif.aux_img_data equ aux_img_data
 img.decode.gif.aux_img_type equ aux_img_type
 img.decode.gif.aux_palette equ aux_palette
+img.decode.gif.options_bgr equ options_bgr
 ; offset of _length parameter for child functions with ebp-based frame
 ; child saved ebp, return address, 3 saved registers, 14 local variables
 img.decode.gif._length_child equ _length + 4 + 4 + 4*3 + 4*14
@@ -130,8 +132,16 @@ img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 	mov	[prev_num_colors], eax
 	lea	eax, [background_color]
 	mov	[prev_palette], eax
-; guard against incorrect gif files, which use Restore-To-Background disposal method, but do not define bgr color
-	mov	dword [eax], 0xFFFFFF
+; value for bgr color in transparent images
+	mov	edx, 0xFFFFFF	; white bgr if no value given
+	mov	ecx, [_options]
+	jecxz	@f
+	cmp	[ecx + ImageDecodeOptions.UsedSize], ImageDecodeOptions.BackgroundColor + 4
+	jb	@f
+	mov	edx, [ecx + ImageDecodeOptions.BackgroundColor]
+@@:
+	mov	[options_bgr], edx
+	mov	dword [eax], edx
 ; guard against incorrect gif files without any color tables
 ; "If no color table is available at
 ; all, the decoder is free to use a system color table or a table of its own. In
@@ -790,22 +800,11 @@ proc img.decode.gif._.superimpose ;/////////////////////////////////////////////
 	jnz	.has_transparency
 	shl	ecx, 2
 	add	ecx, [edx + Image.Palette]
-	mov	dword [background_color], 0xFFFFFF	; white background
-	mov	dword [ecx], 0xFFFFFF
-;	mov	esi, [_data]
-;	test	[esi+gif.Header.lsd.Packed], gif.LSD.Packed.GlobalColorTableFlag
-;	jz	@f
-;	movzx	ecx, [esi+gif.Header.lsd.BackgroundColor]
-;	push	ecx
-;	shl	ecx, 2
-;	add	ecx, [edx + Image.Palette]
-;	mov	dword [ecx], 0xFFFFFF
-;	pop	ecx
-;	lea	ecx, [ecx*3]
-;	add	esi, ecx
-;	mov	byte [esi+sizeof.gif.Header+0], 0xFF
-;	mov	byte [esi+sizeof.gif.Header+1], 0xFF
-;	mov	byte [esi+sizeof.gif.Header+2], 0xFF
+	push	eax
+	mov	eax, [img.decode.gif.options_bgr]
+	mov	dword [background_color], eax
+	mov	dword [ecx], eax
+	pop	eax
 @@:
 	call	img.decode.gif._.is_logical_screen
 	jnz	.has_transparency

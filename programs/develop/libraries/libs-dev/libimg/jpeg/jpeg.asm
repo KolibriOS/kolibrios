@@ -69,7 +69,7 @@ img.decode.jpg:
 .ret:
 	mov	[esp+28], eax
 	popad
-	ret	8
+	ret	12
 .soi_ok:
 	mov	[ebx + jpeg.work.restart_interval], ecx
 	mov	[ebx + jpeg.work.adobe_ycck], cl

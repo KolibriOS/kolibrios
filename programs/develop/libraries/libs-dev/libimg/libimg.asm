@@ -37,6 +37,7 @@ include 'jpeg/jpeg.asm'
 include 'png/png.asm'
 include 'tga/tga.asm'
 include 'z80/z80.asm'
+include 'ico_cur/ico_cur.asm'
 
 ;;================================================================================================;;
 proc lib_init ;///////////////////////////////////////////////////////////////////////////////////;;
@@ -496,7 +497,7 @@ align 16
 endp
 
 ;;================================================================================================;;
-proc img.decode _data, _length ;//////////////////////////////////////////////////////////////////;;
+proc img.decode _data, _length, _options ;////////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? --- TBD ---                                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -510,17 +511,18 @@ proc img.decode _data, _length ;////////////////////////////////////////////////
 	or	eax, eax
 	jnz	@f
 	add	ebx, sizeof.FormatsTableEntry
-	cmp	dword[ebx], 0
+	cmp	dword[ebx], eax ;0
 	jnz	@b
-	jmp	.error
-    @@: stdcall [ebx + FormatsTableEntry.Decode], [_data], [_length]
-
-  .error:
+	pop	ebx
 	ret
+    @@: mov	eax, [ebx + FormatsTableEntry.Decode]
+	pop	ebx
+	leave
+	jmp	eax
 endp
 
 ;;================================================================================================;;
-proc img.encode _img, _p_length ;/////////////////////////////////////////////////////////////////;;
+proc img.encode _img, _p_length, _options ;///////////////////////////////////////////////////////;;
 ;;------------------------------------------------------------------------------------------------;;
 ;? --- TBD ---                                                                                    ;;
 ;;------------------------------------------------------------------------------------------------;;
@@ -1667,8 +1669,8 @@ img._.get_scanline_len: ;///////////////////////////////////////////////////////
 align 4
 img._.formats_table:
   .bmp dd img.is.bmp, img.decode.bmp, img.encode.bmp
-; .ico dd img.is.ico, img.decode.ico, img.encode.ico
-; .cur dd img.is.cur, img.decode.cur, img.encode.cur
+  .ico dd img.is.ico, img.decode.ico_cur, img.encode.ico
+  .cur dd img.is.cur, img.decode.ico_cur, img.encode.cur
   .gif dd img.is.gif, img.decode.gif, img.encode.gif
   .png dd img.is.png, img.decode.png, img.encode.png
   .jpg dd img.is.jpg, img.decode.jpg, img.encode.jpg
@@ -1707,35 +1709,35 @@ align 4
 
 export					      \
 	lib_init	, 'lib_init'	    , \
-	0x00010004	, 'version'	    , \
-	img.is_img	, 'img.is_img'	    , \
-	img.info	, 'img.info'	    , \
-	img.from_file	, 'img.from_file'   , \
-	img.to_file	, 'img.to_file'     , \
-	img.from_rgb	, 'img.from_rgb'    , \
-	img.to_rgb	, 'img.to_rgb'	    , \
-	img.to_rgb2	, 'img.to_rgb2'     , \
-	img.decode	, 'img.decode'	    , \
-	img.encode	, 'img.encode'	    , \
-	img.create	, 'img.create'	    , \
-	img.destroy	, 'img.destroy'     , \
-	img.destroy.layer, 'img.destroy.layer', \
-	img.count	, 'img.count'	    , \
-	img.lock_bits	, 'img.lock_bits'   , \
-	img.unlock_bits , 'img.unlock_bits' , \
-	img.flip	, 'img.flip'	    , \
-	img.flip.layer  , 'img.flip.layer'  , \
-	img.rotate	, 'img.rotate'      , \
-	img.rotate.layer, 'img.rotate.layer', \
-	img.draw        , 'img.draw'
+	0x00050005	, 'version'	    , \
+	img.is_img	, 'img_is_img'	    , \
+	img.info	, 'img_info'	    , \
+	img.from_file	, 'img_from_file'   , \
+	img.to_file	, 'img_to_file'     , \
+	img.from_rgb	, 'img_from_rgb'    , \
+	img.to_rgb	, 'img_to_rgb'	    , \
+	img.to_rgb2	, 'img_to_rgb2'     , \
+	img.decode	, 'img_decode'	    , \
+	img.encode	, 'img_encode'	    , \
+	img.create	, 'img_create'	    , \
+	img.destroy	, 'img_destroy'     , \
+	img.destroy.layer, 'img_destroy_layer', \
+	img.count	, 'img_count'	    , \
+	img.lock_bits	, 'img_lock_bits'   , \
+	img.unlock_bits , 'img_unlock_bits' , \
+	img.flip	, 'img_flip'	    , \
+	img.flip.layer  , 'img_flip_layer'  , \
+	img.rotate	, 'img_rotate'      , \
+	img.rotate.layer, 'img_rotate_layer', \
+	img.draw        , 'img_draw'
 
 ; import from deflate unpacker
 ; is initialized only when PNG loading is requested
 align 4
 @IMPORT:
 
-library kfar_arc, '../File Managers/kfar_arc.obj'
-import	kfar_arc, \
+library archiver, 'archiver.obj'
+import	archiver, \
 	deflate_unpack2, 'deflate_unpack2'
 
 align 4

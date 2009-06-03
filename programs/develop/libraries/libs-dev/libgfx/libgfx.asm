@@ -423,20 +423,20 @@ align 16
 
 export						\
 	lib_init	 , 'lib_init'	      , \
-	0x01000000	 , 'version'	      , \
-	gfx.open	 , 'gfx.open'	      , \
-	gfx.close	 , 'gfx.close'	      , \
-	gfx.pen.color	 , 'gfx.pen.color'    , \
-	gfx.brush.color  , 'gfx.brush.color'  , \
-	gfx.pixel	 , 'gfx.pixel'	      , \
-	gfx.move.to	 , 'gfx.move.to'      , \
-	gfx.line.to	 , 'gfx.line.to'      , \
-	gfx.line	 , 'gfx.line'	      , \
-	gfx.polyline	 , 'gfx.polyline'     , \
-	gfx.polyline.to  , 'gfx.polyline.to'  , \
-	gfx.fillrect	 , 'gfx.fillrect'     , \
-	gfx.fillrect.ex  , 'gfx.fillrect.ex'  , \
-	gfx.framerect	 , 'gfx.framerect'    , \
-	gfx.framerect.ex , 'gfx.framerect.ex' , \
-	gfx.rectangle	 , 'gfx.rectangle'    , \
-	gfx.rectangle.ex , 'gfx.rectangle.ex'
+	0x00020002	 , 'version'	      , \
+	gfx.open	 , 'gfx_open'	      , \
+	gfx.close	 , 'gfx_close'	      , \
+	gfx.pen.color	 , 'gfx_pen_color'    , \
+	gfx.brush.color  , 'gfx_brush_color'  , \
+	gfx.pixel	 , 'gfx_pixel'	      , \
+	gfx.move.to	 , 'gfx_move_to'      , \
+	gfx.line.to	 , 'gfx_line_to'      , \
+	gfx.line	 , 'gfx_line'	      , \
+	gfx.polyline	 , 'gfx_polyline'     , \
+	gfx.polyline.to  , 'gfx_polyline_to'  , \
+	gfx.fillrect	 , 'gfx_fillrect'     , \
+	gfx.fillrect.ex  , 'gfx_fillrect_ex'  , \
+	gfx.framerect	 , 'gfx_framerect'    , \
+	gfx.framerect.ex , 'gfx_framerect_ex' , \
+	gfx.rectangle	 , 'gfx_rectangle'    , \
+	gfx.rectangle.ex , 'gfx_rectangle_ex'

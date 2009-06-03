@@ -674,15 +674,15 @@ library \
 	libio , 'libio.obj'
 
 import	libio			    , \
-	file.size   , 'file.size'   , \
-	file.open   , 'file.open'   , \
-	file.read   , 'file.read'   , \
-	file.write  , 'file.write'  , \
-	file.seek   , 'file.seek'   , \
-	file.eof?   , 'file.eof?'   , \
-	file.seteof , 'file.seteof' , \
-	file.tell   , 'file.tell'   , \
-	file.close  , 'file.close'
+	file.size   , 'file_size'   , \
+	file.open   , 'file_open'   , \
+	file.read   , 'file_read'   , \
+	file.write  , 'file_write'  , \
+	file.seek   , 'file_seek'   , \
+	file.eof?   , 'file_iseof'  , \
+	file.seteof , 'file_seteof' , \
+	file.tell   , 'file_tell'   , \
+	file.close  , 'file_close'
 
 
 ;;================================================================================================;;
@@ -699,12 +699,12 @@ align 16
 
 export						  \
 	libini._.init	  , 'lib_init'		, \
-	0x00040007	  , 'version'		, \
-	ini.enum_sections , 'ini.enum_sections' , \
-	ini.enum_keys	  , 'ini.enum_keys'	, \
-	ini.get_str	  , 'ini.get_str'	, \
-	ini.get_int	  , 'ini.get_int'	, \
-	ini.get_color	  , 'ini.get_color'	, \
-	ini.set_str	  , 'ini.set_str'	, \
-	ini.set_int	  , 'ini.set_int'	, \
-	ini.set_color	  , 'ini.set_color'
+	0x00080008	  , 'version'		, \
+	ini.enum_sections , 'ini_enum_sections' , \
+	ini.enum_keys	  , 'ini_enum_keys'	, \
+	ini.get_str	  , 'ini_get_str'	, \
+	ini.get_int	  , 'ini_get_int'	, \
+	ini.get_color	  , 'ini_get_color'	, \
+	ini.set_str	  , 'ini_set_str'	, \
+	ini.set_int	  , 'ini_set_int'	, \
+	ini.set_color	  , 'ini_set_color'

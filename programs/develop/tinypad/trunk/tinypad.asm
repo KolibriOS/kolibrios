@@ -528,44 +528,44 @@ library \
 	libgfx,'libgfx.obj'
 
 import	libini, \
-	ini.get_str  ,'ini.get_str',\
-	ini.set_str  ,'ini.set_str',\
-	ini.get_int  ,'ini.get_int',\
-	ini.set_int  ,'ini.set_int',\
-	ini.get_color,'ini.get_color',\
-	ini.set_color,'ini.set_color'
+	ini.get_str  ,'ini_get_str',\
+	ini.set_str  ,'ini_set_str',\
+	ini.get_int  ,'ini_get_int',\
+	ini.set_int  ,'ini_set_int',\
+	ini.get_color,'ini_get_color',\
+	ini.set_color,'ini_set_color'
 
 import	libio, \
-	file.find_first,'file.find_first',\
-	file.find_next ,'file.find_next',\
-	file.find_close,'file.find_close',\
-	file.size      ,'file.size',\
-	file.open      ,'file.open',\
-	file.read      ,'file.read',\
-	file.write     ,'file.write',\
-	file.seek      ,'file.seek',\
-	file.tell      ,'file.tell',\
-	file.eof?      ,'file.eof?',\
-	file.truncate  ,'file.truncate',\
-	file.close     ,'file.close'
+	file.find_first,'file_find_first',\
+	file.find_next ,'file_find_next',\
+	file.find_close,'file_find_close',\
+	file.size      ,'file_size',\
+	file.open      ,'file_open',\
+	file.read      ,'file_read',\
+	file.write     ,'file_write',\
+	file.seek      ,'file_seek',\
+	file.tell      ,'file_tell',\
+	file.eof?      ,'file_iseof',\
+	file.truncate  ,'file_truncate',\
+	file.close     ,'file_close'
 
 import	libgfx, \
-	gfx.open	,'gfx.open',\
-	gfx.close	,'gfx.close',\
-	gfx.pen.color	,'gfx.pen.color',\
-	gfx.brush.color ,'gfx.brush.color',\
-	gfx.pixel	,'gfx.pixel',\
-	gfx.move.to	,'gfx.move.to',\
-	gfx.line.to	,'gfx.line.to',\
-	gfx.line	,'gfx.line',\
-	gfx.polyline	,'gfx.polyline',\
-	gfx.polyline.to ,'gfx.polyline.to',\
-	gfx.fillrect	,'gfx.fillrect',\
-	gfx.fillrect.ex ,'gfx.fillrect.ex',\
-	gfx.framerect	,'gfx.framerect',\
-	gfx.framerect.ex,'gfx.framerect.ex',\
-	gfx.rectangle	,'gfx.rectangle',\
-	gfx.rectangle.ex,'gfx.rectangle.ex'
+	gfx.open	,'gfx_open',\
+	gfx.close	,'gfx_close',\
+	gfx.pen.color	,'gfx_pen_color',\
+	gfx.brush.color ,'gfx_brush_color',\
+	gfx.pixel	,'gfx_pixel',\
+	gfx.move.to	,'gfx_move_to',\
+	gfx.line.to	,'gfx_line_to',\
+	gfx.line	,'gfx_line',\
+	gfx.polyline	,'gfx_polyline',\
+	gfx.polyline.to ,'gfx_polyline_to',\
+	gfx.fillrect	,'gfx_fillrect',\
+	gfx.fillrect.ex ,'gfx_fillrect_ex',\
+	gfx.framerect	,'gfx_framerect',\
+	gfx.framerect.ex,'gfx_framerect_ex',\
+	gfx.rectangle	,'gfx_rectangle',\
+	gfx.rectangle.ex,'gfx_rectangle_ex'
 
 TINYPAD_END:	 ; end of file
 
