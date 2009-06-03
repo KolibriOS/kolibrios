@@ -8,7 +8,7 @@ format MS COFF
 public EXPORTS
 
 section '.flat' code readable align 16
-include 'macros.inc'
+include '../../../../macros.inc'
 include 'editbox.mac'   ;макрос который должен облегчить жизнь :) специально для editbox
 include 'checkbox.mac'  ;макрос содержит реализацию checkbox
 include 'optionbox.mac' ;макрос содержит реализацию optionbox

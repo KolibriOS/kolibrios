@@ -40,7 +40,7 @@
         dd      0x0
         dd      path
 
-include 'MACROS.INC'
+include '../../../../../macros.inc'
 include 'load_lib.mac'
 ;---------------------------------------------------------------------
 ;---    Start of program        ----------------------------------------------
