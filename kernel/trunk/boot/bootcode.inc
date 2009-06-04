@@ -815,9 +815,12 @@ end if
         dec     al
         mov     [boot_dev], al
 
+; GET MEMORY MAP
+include 'detect/biosmem.inc'
+
 ; READ DISKETTE TO MEMORY
 
-;        cmp     [boot_dev],0
+        cmp     [boot_dev],0
         jne     no_sys_on_floppy
         mov     si,diskload
         call    print

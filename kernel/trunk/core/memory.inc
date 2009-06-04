@@ -453,7 +453,7 @@ proc new_mem_resize stdcall, new_size:dword
 @@:
            call alloc_page
            test eax, eax
-           jz .exit
+           jz .exit_pop
 
            stdcall map_page_table, edi, eax
 
@@ -491,6 +491,9 @@ proc new_mem_resize stdcall, new_size:dword
            jb  @B
 
            jmp .update_size
+.exit_pop:
+           pop edi
+           pop esi
 .exit:
            xor eax, eax
            inc eax

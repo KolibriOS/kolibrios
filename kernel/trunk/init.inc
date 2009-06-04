@@ -14,6 +14,9 @@ MEM_UC     equ 0               ;uncached memory
 
 align 4
 proc mem_test
+; if we have BIOS with fn E820, skip the test
+           cmp dword [BOOT_VAR-OS_BASE + 0x9100], 0
+           jnz .ret
 
            mov eax, cr0
            and eax, not (CR0_CD+CR0_NW)
@@ -29,27 +32,80 @@ proc mem_test
            cmp dword [edi], 'TEST'
            xchg ebx, dword [edi]
            je @b
-           mov [MEM_AMOUNT-OS_BASE], edi
 
            and eax, not (CR0_CD+CR0_NW)  ;enable caching
            mov cr0, eax
-           mov eax, edi
+           inc dword [BOOT_VAR-OS_BASE + 0x9100]
+           xor eax, eax
+           mov [BOOT_VAR-OS_BASE + 0x9104], eax
+           mov [BOOT_VAR-OS_BASE + 0x9108], eax
+           mov [BOOT_VAR-OS_BASE + 0x910C], edi
+           mov [BOOT_VAR-OS_BASE + 0x9110], eax
+.ret:
            ret
 endp
 
 align 4
 proc init_mem
-           mov eax, [MEM_AMOUNT-OS_BASE]
-           mov [pg_data.mem_amount-OS_BASE], eax
+; calculate maximum allocatable address and number of allocatable pages
+           mov edi, BOOT_VAR-OS_BASE + 0x9104
+           mov ecx, [edi-4]
+           xor esi, esi ; esi will hold total amount of memory
+           xor edx, edx ; edx will hold maximum allocatable address
+.calcmax:
+; round all to pages
+           mov eax, [edi]
+           test eax, 0xFFF
+           jz @f
+           neg eax
+           and eax, 0xFFF
+           add [edi], eax
+           adc dword [edi+4], 0
+           sub [edi+8], eax
+           sbb dword [edi+12], 0
+           jc .unusable
+@@:
+           and dword [edi+8], not 0xFFF
+           jz .unusable
+; ignore memory after 4 Gb
+           cmp dword [edi+4], 0
+           jnz .unusable
+           mov eax, [edi]
+           cmp dword [edi+12], 0
+           jnz .overflow
+           add eax, [edi+8]
+           jnc @f
+.overflow:
+           mov eax, 0xFFFFF000
+@@:
+           cmp edx, eax
+           jae @f
+           mov edx, eax
+@@:
+           sub eax, [edi]
+           mov [edi+8], eax
+           add esi, eax
+           jmp .usable
+.unusable:
+           and dword [edi+8], 0
+.usable:
+           add edi, 20
+           loop .calcmax
+.calculated:
+           mov [MEM_AMOUNT-OS_BASE], esi
+           mov [pg_data.mem_amount-OS_BASE], esi
+           shr esi, 12
+           mov [pg_data.pages_count-OS_BASE], esi
 
-           shr eax, 12
-           mov [pg_data.pages_count-OS_BASE], eax
-           shr eax, 3
-           mov [pg_data.pagemap_size-OS_BASE], eax
+           shr edx, 12
+           add edx, 31
+           and edx, not 31
+           shr edx, 3
+           mov [pg_data.pagemap_size-OS_BASE], edx
 
-           add eax, (sys_pgmap-OS_BASE)+4095
-           and eax, not 4095
-           mov [tmp_page_tabs], eax
+           add edx, (sys_pgmap-OS_BASE)+4095
+           and edx, not 4095
+           mov [tmp_page_tabs], edx
 
            mov edx, (((sys_pgmap-OS_BASE) + 0xFFFFFF) and not 0xFFFFFF) shr 12
            mov [pg_data.kernel_pages-OS_BASE], edx
@@ -121,14 +177,63 @@ endp
 
 align 4
 proc init_page_map
-
+; mark all memory as unavailable
            mov edi, sys_pgmap-OS_BASE
            mov ecx, [pg_data.pagemap_size-OS_BASE]
            shr ecx, 2
-           or eax, -1
+           xor eax, eax
            cld
            rep stosd
 
+; scan through memory map and mark free areas as available
+           mov ebx, BOOT_VAR-OS_BASE + 0x9104
+           mov edx, [ebx-4]
+.scanmap:
+           mov ecx, [ebx+8]
+           shr ecx, 12 ; ecx = number of pages
+           jz .next
+           mov edi, [ebx]
+           shr edi, 12 ; edi = first page
+           mov eax, edi
+           neg eax
+           shr edi, 5
+           add edi, sys_pgmap-OS_BASE
+           and eax, 31
+           jz .startok
+           sub ecx, eax
+           jbe .onedword
+           push ecx
+           mov ecx, eax
+           xor eax, eax
+           inc eax
+           shl eax, cl
+           dec eax
+           or [edi], eax
+           add edi, 4
+           pop ecx
+.startok:
+           push ecx
+           shr ecx, 5
+           or eax, -1
+           rep stosd
+           pop ecx
+           and ecx, 31
+           not eax
+           shl eax, cl
+           or [edi], eax
+           jmp .next
+.onedword:
+           add ecx, eax
+@@:
+           dec eax
+           bts [edi], eax
+           loop @b
+.next:
+           add ebx, 20
+           dec edx
+           jnz .scanmap
+
+; mark kernel memory as allocated (unavailable)
            mov ecx, [tmp_page_tabs]
            mov edx, [pg_data.pages_count-OS_BASE]
            shr ecx, 12
@@ -146,7 +251,7 @@ proc init_page_map
            mov ecx, ebx
            and ecx, 31
            shl eax, cl
-           mov [edi], eax
+           and [edi], eax
            add edi, OS_BASE
            mov [page_start-OS_BASE], edi;
 

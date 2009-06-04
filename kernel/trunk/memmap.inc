@@ -23,6 +23,8 @@
 ;    0x9046 -  word - flags
 ;   0:907F     byte   number of BIOS hard disks
 ;   0:9080     Nbytes BIOS hard disks
+;   0:9100     word   available physical memory map: number of blocks
+;   0:9104            available physical memory map: blocks
 ;
 ;   Runtime:
 ;
