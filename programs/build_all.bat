@@ -58,6 +58,7 @@ echo Building system
 echo *
 fasm system\calendar\trunk\calendar.asm %BIN%\calendar
 fasm system\board\trunk\board.asm %BIN%\develop\board
+fasm system\commouse\trunk\commouse.asm %BIN%\commouse
 fasm system\cpu\trunk\cpu.asm %BIN%\cpu 
 fasm system\cpuid\trunk\cpuid.asm %BIN%\cpuid
 fasm system\desktop\trunk\desktop.asm %BIN%\desktop

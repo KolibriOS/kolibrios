@@ -763,7 +763,7 @@ no_lib_load:
 
         ;call   detect_devices
         stdcall load_driver, szPS2MDriver
-        stdcall load_driver, szCOM_MDriver
+;        stdcall load_driver, szCOM_MDriver
 
         mov   esi,boot_setmouse
         call  boot_log
