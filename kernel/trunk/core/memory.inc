@@ -547,14 +547,15 @@ get_pg_addr:
 
 
 align 4
-; Now it is called from sys32::exc_c (see stack frame there)
+; Now it is called from core/sys32::exc_c (see stack frame there)
 proc page_fault_handler
 
     .err_addr   equ ebp-4
 
+        push    ebx               ;save exception number (#PF)
         mov     ebp, esp
         mov     ebx, cr2
-        push    ebx               ; that is locals: .err_addr = cr2
+        push    ebx               ;that is locals: .err_addr = cr2
         inc     [pg_data.pages_faults]
 
 ;     push eax
@@ -588,8 +589,7 @@ end if
 .core_tabs:
 .fail:  ;simply return to caller
         mov     esp, ebp
-        push    14                ;#PF
-        pop     ebx
+        pop     ebx               ;restore exception number (#PF)
         ret
 
 .user_space:
@@ -623,7 +623,7 @@ end if
        ;cld     ;caller is duty for this
         rep     stosd
 .exit:  ;iret with repeat fault instruction
-        add     esp,8 ; clear in stack: locals(.err_addr) + ret_to_caller
+        add     esp,12 ;clear in stack: locals(.err_addr) + #PF + ret_to_caller
         restore_ring3_context
         iretd
 
