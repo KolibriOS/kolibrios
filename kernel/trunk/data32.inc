@@ -398,7 +398,7 @@ MouseTickCounter      rd 1
 
 img_background        rd 1
 mem_BACKGROUND        rd 1
-wraw_bacground_select rb 1
+static_background_data rd 1
 
 cache_ide0:
 cache_ide0_pointer            rd 1

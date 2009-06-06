@@ -549,9 +549,8 @@ high_code:
         mov   [BgrDrawMode],eax
         mov   [BgrDataWidth],eax
         mov   [BgrDataHeight],eax
-        mov    [mem_BACKGROUND],4095
-        stdcall kernel_alloc, [mem_BACKGROUND]
-        mov [img_background], eax
+        mov    [mem_BACKGROUND], 4
+        mov [img_background], static_background_data
 
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
@@ -2280,7 +2279,11 @@ sys_background:
 
     pushad
 ; return memory for old background
-    stdcall kernel_free, [img_background]
+        mov     eax, [img_background]
+        cmp     eax, static_background_data
+        jz      @f
+        stdcall kernel_free, eax
+@@:
 ; calculate RAW size
     xor  eax,eax
     inc  eax
@@ -2299,9 +2302,18 @@ sys_background:
 ; get memory for new background
     stdcall kernel_alloc, eax
     test eax, eax
-    jz .exit_mem
+    jz .memfailed
     mov [img_background], eax
-.exit_mem:
+    jmp .exit
+.memfailed:
+; revert to static monotone data
+        mov     [img_background], static_background_data
+        xor     eax, eax
+        inc     eax
+        mov     [BgrDataWidth], eax
+        mov     [BgrDataHeight], eax
+        mov     [mem_BACKGROUND], 4
+.exit:
     popad
         mov     [bgrlock], 0
 
@@ -2313,20 +2325,25 @@ nosb1:
     cmp   ebx,2                            ; SET PIXEL
     jnz   nosb2
 
+    mov   eax, [img_background]
+    test  ecx, ecx
+    jz    @f
+    cmp   eax, static_background_data
+    jz    .ret
+@@:
     mov ebx, [mem_BACKGROUND]
     add ebx, 4095
     and ebx, -4096
     sub ebx, 4
     cmp   ecx, ebx
-    ja   @F
+    ja   .ret
 
-    mov   eax,[img_background]
     mov   ebx,[eax+ecx]
     and   ebx,0xFF000000 ;255*256*256*256
     and   edx,0x00FFFFFF ;255*256*256+255*256+255
     add   edx,ebx
     mov   [eax+ecx],edx
-@@:
+.ret:
     ret
 nosb2:
 
@@ -2356,6 +2373,13 @@ draw_background_temp:
 
     cmp   ebx,5                            ; BLOCK MOVE TO BGR
     jnz   nosb5
+    cmp   [img_background], static_background_data
+    jnz   @f
+    test  edx, edx
+    jnz   .fin
+    cmp   esi, 4
+    ja    .fin
+  @@:
   ; bughere
     mov   eax, ecx
     mov   ebx, edx
@@ -2377,6 +2401,8 @@ draw_background_temp:
 @@:
         mov     eax, [CURRENT_TASK]
         mov     [bgrlockpid], eax
+        cmp     [img_background], static_background_data
+        jz      .nomem
         stdcall user_alloc, [mem_BACKGROUND]
         mov     [esp+32], eax
         test    eax, eax
@@ -2477,19 +2503,24 @@ nogb1:
     cmp   eax,2                                  ; PIXEL
     jnz   nogb2
 
+        mov     eax, [img_background]
+        test    ebx, ebx
+        jz      @f
+        cmp     eax, static_background_data
+        jz      .ret
+@@:
     mov ecx, [mem_BACKGROUND]
     add ecx, 4095
     and ecx, -4096
     sub ecx, 4
     cmp ebx, ecx
-    ja  @F
+    ja  .ret
 
-    mov   eax,[img_background]
     mov   eax,[ebx+eax]
 
     and   eax, 0xFFFFFF
     mov   [esp+36],eax
-@@:
+.ret:
     ret
   nogb2:
 
@@ -3640,14 +3671,6 @@ redrawscreen:
          ret
 
 calculatebackground:   ; background
-
-        ; all black
-
-        mov   edi, [img_background]  ;IMG_BACKGROUND                 ; set background to black
-        xor   eax, eax
-        mov   ecx, 1023    ;0x0fff00 / 4
-        cld
-        rep   stosd
 
         mov   edi,display_data              ; set os to use all pixels
         mov   eax,0x01010101
