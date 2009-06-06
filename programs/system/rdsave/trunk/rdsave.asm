@@ -26,8 +26,8 @@ version equ '1.2'
   dd cur_dir_path
 
 ;include '..\..\..\develop\examples\editbox\trunk\editbox.inc'
-include '../../../develop/libraries/box_lib/trunk/load_lib.mac'
-include '../../../develop/libraries/box_lib/trunk/editbox_ex.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
 	@use_library
 
 ;use_edit_box
