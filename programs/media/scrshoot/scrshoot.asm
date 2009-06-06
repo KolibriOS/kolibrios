@@ -5,8 +5,8 @@
 ; 31.01.07 - всё теперь рисуется относительно клиентской области
 
 title equ 'Screenshooter v 0.91' ; Заголовок окна
-include '../../develop/libraries/box_lib/trunk/load_lib.mac'
-include '../../develop/libraries/box_lib/trunk/editbox_ex.mac'
+include '../../develop/libraries/box_lib/load_lib.mac'
+include '../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
 ;include '../../develop/examples/editbox/trunk/editbox.inc'
 include '../../macros.inc'
 include 'scrshoot.mac'
