@@ -7,8 +7,8 @@ window_y=67
 window_x=640
 ;--- другие макросы ---
 ;include '../../../develop/examples/editbox/trunk/editbox.inc'
-include '../../../develop/libraries/box_lib/trunk/load_lib.mac'
-include '../../../develop/libraries/box_lib/trunk/editbox_ex.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
+include '../../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
 ;include 'editbox.inc'
 include 'txtbut.inc'
 include '../../../macros.inc'
