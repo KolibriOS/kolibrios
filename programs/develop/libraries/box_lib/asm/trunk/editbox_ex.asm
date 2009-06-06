@@ -14,7 +14,7 @@ use32                ; транслятор, использующий 32 разрядных команды
 
 include '../../../../../macros.inc'
 include 'editbox_ex.mac'
-include 'load_lib.mac'
+include '../../load_lib.mac'
 	@use_library	;use load lib macros
 start:
 ;universal load library/librarys
