@@ -1,12 +1,19 @@
+//своевременное реагирование на события мыши
+//минимальные размеры окна
+//убрана перерисовка заголовка окна там, где она не нужна
+//убрано "заползание" панели снизу на границы окна
+//исправлен баг из-за которого после действий мышкой удалялась кнопка закрытия окна
+
+//зачем строка 450?
+//если выделить область ячеек и сдвинуть курсор ввода с помощью клавиш, "следы" остануться
+//нельзя перемещаться по буквам в редактируемой строке
 
 #include "func.h"
 #include "parser.h"
 #include "calc.h"
 #include "use_library.h"
-///#include "use_library.h"
-//const char header[] = "Table";
 
-#define TABLE_VERSION "0.95"
+#define TABLE_VERSION "0.96"
 
 // строки, которые выводит программа
 const char *sFileSign = "KolibriTable File\n";
@@ -102,6 +109,7 @@ DWORD sel_end_x = sel_x, sel_end_y = sel_y;
 // флаг
 bool sel_moved = 0;
 bool sel_end_move = 0;
+bool window_drawall = false;
 // сколько ячеек помещается в окне по х и у
 DWORD nx = 0, ny = 0;
 
@@ -583,8 +591,6 @@ void draw_size_grid()
 {
 	//rtlDebugOutString("draw size grid");
 
-	kos_WindowRedrawStatus(1);
-
 	if (size_state == SIZE_X)
 	{
 		int x, x0, i;
@@ -624,8 +630,6 @@ void draw_size_grid()
 		kos_DrawLine(0, y - y0, wi, y - y0, 0, 1);
 	}
 
-
-	kos_WindowRedrawStatus(2);
 }
 
 
@@ -635,8 +639,6 @@ void draw_size_grid()
 #define DINVERT 1
 void draw_drag()
 {
-	kos_WindowRedrawStatus(1);
-
 	// собственно, 4 инверсные линии
 
 	int k0 = min(sel_x, sel_end_x);
@@ -660,8 +662,6 @@ void draw_drag()
 	kos_DrawLine(x0, y0, x1, y0, DCOLOR, DINVERT);
 	kos_DrawLine(x1, y0, x1, y1, DCOLOR, DINVERT);
 	kos_DrawLine(x0, y1, x1, y1, DCOLOR, DINVERT);
-
-	kos_WindowRedrawStatus(2);
 }
 
 void draw_window()
@@ -692,30 +692,32 @@ void draw_window()
 		he = WND_H;
 
 	he -= kos_GetSkinHeight() + MENU_PANEL_HEIGHT; // доступная высота окна
-	wi -= 6 + 4;
+	wi -= 10;
 
+	//Leency{
 	// start redraw
-	kos_WindowRedrawStatus(1);
+	if (window_drawall==true){
+		kos_WindowRedrawStatus(1);
+		kos_DefineAndDrawWindow(10,40,WND_W,WND_H,0x33,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
 
-	kos_DefineAndDrawWindow(10,40,WND_W,WND_H,0x33,0x40FFFFFF,0,0,(Dword)"Table v" TABLE_VERSION);
+		if (he + MENU_PANEL_HEIGHT <= 8) //если окно свёрнуто в заголовок
+		{
+			kos_WindowRedrawStatus(2); 
+			return;
+		}
 
-	if (he + MENU_PANEL_HEIGHT <= 8) 
-	{
-		kos_WindowRedrawStatus(2); 
-		return;
-	}
+		if (he < 100) kos_ChangeWindow( -1, -1, -1, 180 );
+		if (wi < 340) kos_ChangeWindow( -1, -1, 350, -1 );
 
-	if (!sel_moved)
-	{
-		kos_DrawBar(wi-15,he - kos_GetSkinHeight() +7,16,16,0xe4dfe1);
-		kos_DrawBar(0,he - kos_GetSkinHeight() + 23,wi + 1,MENU_PANEL_HEIGHT-4,0xe4dfe1);
-	}
+	}//}Leency
 
 //	edit_box_draw((dword)&ebox);
 	int y = he + kos_GetSkinHeight() - 10;
 
 	if (!sel_moved)
 	{
+		kos_DrawBar(wi-15,he - kos_GetSkinHeight() +7,16,16,0xe4dfe1);
+		kos_DrawBar(0,he - kos_GetSkinHeight() + 23,wi + 1,MENU_PANEL_HEIGHT-5,0xe4dfe1);
 		kos_WriteTextToWindow(3 + 1, y + 3, 0x80 , 0x000000, (char*)sFilename, strlen(sFilename));	
 	}
 
@@ -729,8 +731,6 @@ void draw_window()
 	file_box.top = y - 1;
 	file_box.width = 98;
 		//editbox_h = 18;
-	//kos_DefineButton(62, y + 3, 100, 16, 0x60000000+FILENAME_BUTTON, 0xd0d0d0);
-
 
 	// сохранить
 	kos_DefineButton(20 + 160, y - 5, 60, 20, SAVE_BUTTON, 0xd0d0d0);
@@ -747,7 +747,6 @@ void draw_window()
 	*/
 	panel_y = y;
 
-	draw_grid();
 	//kos_DefineButton(0,0,WND_W,WND_H,0x60000002,0);
 	//if (is_edit) KEdit();
 
@@ -758,8 +757,10 @@ void draw_window()
 		edit_box_draw((DWORD)&file_box);
 	}	
 
+	draw_grid();
 	// end redraw
 	kos_WindowRedrawStatus(2);
+	window_drawall=false;
 	sel_moved = 0;
 }
 
@@ -940,8 +941,8 @@ void process_mouse()
 			if (mouse_x >= col_left[i] &&
 				mouse_x <= col_left[i + 1])
 			{
-				sprintf(debuf, "yyy %U",col_left[i+1]);
-				rtlDebugOutString(debuf);
+				//sprintf(debuf, "yyy %U",col_left[i+1]);
+				//rtlDebugOutString(debuf);
 				kx = i; break;
 			}
 		int ky = -1;
@@ -965,9 +966,9 @@ void process_mouse()
 			}
 		}
 		draw_drag();
-	}
+	}         
 	size_mouse_x = mouse_x;
-	size_mouse_y = mouse_y;
+	size_mouse_y = mouse_y; 
 }
 
 void process_key()
@@ -1450,17 +1451,17 @@ void kos_Main()
 {
 	kos_InitHeap();
 	load_edit_box();
-
 	init();
-	draw_window();
+
 	for (;;)
 	{
-		switch (kos_WaitForEvent(10))	// да, плохо. потом нужно будет просто ловить события мыши.
+		switch (kos_CheckForEvent())
 		{
 		case 0:
 			process_mouse();
 			break;
 		case 1:
+			window_drawall=true;
 			draw_window();
 			break;
 		case 2:

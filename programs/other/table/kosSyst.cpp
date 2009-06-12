@@ -66,7 +66,7 @@ Dword rtlRand( void )
 }
 
 
-void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount )
+/*void * __cdecl memcpy( void *dst, const void *src, size_t bytesCount )
 {
 	__asm{
 		mov edi, dst
@@ -87,7 +87,7 @@ void memset( Byte *dst, Byte filler, Dword count )
 		mov ecx, count
 		rep stosb
 	}
-}
+}*/
 
 
 //
