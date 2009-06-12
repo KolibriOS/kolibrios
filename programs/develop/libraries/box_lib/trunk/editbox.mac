@@ -548,7 +548,8 @@ edit_box_key.sh_st_of:
         jmp     edit_box.draw_cursor_text
 @@:
         and     word ed_flags,ed_shift_off
-edit_ex
+        popad
+        ret     4
 ;проверка состояния shift был ли он нажат раньше?
 edit_box_key.sh_enable:
         test    word ed_flags,ed_shift
@@ -961,7 +962,8 @@ edit_box_key.delete:
         jg      edit_box_key.bac_del
         test    word ed_flags,ed_shift_on
         jne     edit_box_key.del_bac
-edit_ex
+        popad
+        ret     4
 edit_box_key.bac_del:       
         call    edit_box_key.del_char
         jmp     edit_box_key.draw_all
@@ -974,8 +976,9 @@ edit_box_key.backspace:
         jnz     edit_box_key.del_bac
         test    word ed_flags,ed_shift_on
         jne     edit_box_key.bac_del
+        popad
+        ret     4
 
-edit_ex
 edit_box_key.del_bac:
         mov     edx,ed_size
         cmp     edx,ecx ;if ed_pos=ed_size
