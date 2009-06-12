@@ -6,7 +6,7 @@
 ///#include "use_library.h"
 //const char header[] = "Table";
 
-#define TABLE_VERSION "0.94a"
+#define TABLE_VERSION "0.95"
 
 // строки, которые выводит программа
 const char *sFileSign = "KolibriTable File\n";
@@ -122,6 +122,8 @@ edit_box file_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(d
 #define SIZE_DRAG 4
 int size_mouse_x, size_mouse_y, size_id, size_state = 0;
 
+int window_is_dragged = 0; // сейчас перетаскивается окно
+
 // растаскивание ячейки при ее тащении за правый нижний угол, с заполнением ячеек
 int drag_x, drag_y;
 int old_end_x, old_end_y;
@@ -137,19 +139,6 @@ void kos_DrawRegion(Word x, Word y,Word width, Word height, Dword color1, Word i
 	kos_DrawLine(x+width-1,y,x+width-1,y+height-2,color1,invert);
 	kos_DrawLine(x+1,y+height-1,x+width-1,y+height-1,color1,invert);
 }
-
-// edit box
-/*
-void KEdit()
-{
-	int max_char = (editbox_w) / 6;
-	kos_DrawBar(editbox_x,editbox_y,editbox_w-1,editbox_h-3,0xFFFFFF); //белая область
-	if (strlen(edit_text)<max_char) 
-		kos_WriteTextToWindow(editbox_x, editbox_y+editbox_h / 2-5,0x80,0,edit_text,0); //editbox_h/2+ вместо +3
-	else	
-		kos_WriteTextToWindow(editbox_x, editbox_y+editbox_h / 2-5,0x80,0,edit_text+strlen(edit_text)-max_char+1,0); //text 'path'
-}
-*/
 
 void start_edit(int x, int y)
 {
@@ -206,8 +195,6 @@ void stop_edit()
 		//memset((Byte*)edit_text,0, 256);
 		calculate_values();
 	}
-	else
-		return;
 }
 
 void cancel_edit()
@@ -806,10 +793,24 @@ void process_mouse()
 	kos_GetMouseState(mouse_btn, mouse_x, mouse_y);
 	mouse_x -= 5;
 	mouse_y -= kos_GetSkinHeight();
+
 	mouse_btn &= 0x0001;
 
 	ckeys = kos_GetSpecialKeyState();
 	shift = ckeys & 0x3;
+
+	if (mouse_y < 0 && mouse_btn)	// т.к. мышка на заголовке окна
+	{
+		window_is_dragged = 1;
+		return;
+	}
+	if (window_is_dragged)
+	{
+		if (mouse_btn)
+			return;
+		else
+			window_is_dragged = 0;
+	}
 
 	if (!size_state && !mouse_btn)
 		return;
@@ -879,7 +880,7 @@ void process_mouse()
 				if (!shift) 
 				{
 					move_sel(kx, ky);
-					return;
+					//return;
 				}
 				else
 				{
@@ -906,7 +907,7 @@ void process_mouse()
 			fill_cells(sel_x, sel_y, sel_end_x, sel_end_y, old_end_x, old_end_y);
 		}
 
-		sel_moved = (size_state == SIZE_SELECT && sel_x == sel_end_x && sel_y == sel_end_y && was_single_selection);
+		//sel_moved = (size_state == SIZE_SELECT && sel_x == sel_end_x && sel_y == sel_end_y && was_single_selection);
 		size_state = 0;
 		draw_window();		// все сдвинулось - надо обновиться
 		return;
@@ -1239,9 +1240,6 @@ void process_key()
 			//stop_edit();
 			//draw_grid();
 		}
-		else
-		{
-		}
 	}
 	/*
 	if (sel_end_x < sel_x)
@@ -1427,24 +1425,6 @@ void process_button()
 			kos_WriteTextToWindow(320, panel_y,0,0x000000,(char*)er_format,strlen(er_format));
 		break;
 	}
-	/*
-	if (button >= COL_BUTTON && button < ROW_BUTTON)
-	{
-		scroll_x = button - COL_BUTTON;
-		fn_edit = is_edit = 0;
-		draw_window();
-		//sprintf(debuf, "col %U", scroll_x);
-		//rtlDebugOutString(debuf);
-	}
-	else if (button >= ROW_BUTTON && button < COL_HEAD_BUTTON)
-	{
-		scroll_y = button - ROW_BUTTON;
-		fn_edit = is_edit = 0;
-		draw_window();
-		//sprintf(debuf, "row %U", scroll_y);
-		//rtlDebugOutString(debuf);
-	}
-	*/
 	if (button >= COL_HEAD_BUTTON && button < ROW_HEAD_BUTTON)
 	{
 		sel_end_x = sel_x = button - COL_HEAD_BUTTON;
