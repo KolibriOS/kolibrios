@@ -6146,8 +6146,6 @@ vmread_instruction:
 	lods	byte [esi]
 	cmp	al,','
 	jne	invalid_operand
-	call	vmread_check_size
-	mov	[operand_size],0
 	lods	byte [esi]
 	call	get_size_operator
 	cmp	al,10h
@@ -6165,7 +6163,6 @@ vmread_instruction:
 	lods	byte [esi]
 	cmp	al,','
 	jne	invalid_operand
-	mov	[operand_size],0
 	lods	byte [esi]
 	call	get_size_operator
 	cmp	al,10h
@@ -6196,8 +6193,6 @@ vmwrite_instruction:
 	lods	byte [esi]
 	call	convert_register
 	mov	[postbyte_register],al
-	call	vmread_check_size
-	mov	[operand_size],0
 	lods	byte [esi]
 	cmp	al,','
 	jne	invalid_operand
@@ -6216,6 +6211,33 @@ vmwrite_instruction:
 	mov	bl,al
 	mov	[base_code],0Fh
 	jmp	nomem_instruction_ready
+vmx_inv_instruction:
+	mov	[opcode_prefix],66h
+	mov	[extended_code],38h
+	mov	[supplemental_code],al
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[postbyte_register],al
+	call	vmread_check_size
+	mov	[operand_size],0
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,'['
+	jne	invalid_operand
+	call	get_address
+	mov	al,[operand_size]
+	or	al,al
+	jz	vmx_size_ok
+	cmp	al,16
+	jne	invalid_operand_size
+	jmp	vmx_size_ok
 simple_svm_instruction:
 	push	eax
 	mov	[base_code],0Fh

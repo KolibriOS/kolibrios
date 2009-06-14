@@ -1,5 +1,5 @@
 
-; flat assembler  version 1.67
+; flat assembler  version 1.68
 ; Copyright (c) 1999-2009, Tomasz Grysztar.
 ; All rights reserved.
 ;
@@ -33,7 +33,7 @@
 ; cannot simply be copied and put under another distribution licence
 ; (including the GNU Public Licence).
 
-VERSION_STRING equ "1.67.38"
+VERSION_STRING equ "1.68"
 
 VERSION_MAJOR = 1
-VERSION_MINOR = 67
+VERSION_MINOR = 68

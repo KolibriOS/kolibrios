@@ -481,11 +481,11 @@ mz_segment:
 	and	eax,1111b
 	sub	ecx,eax
 	mov	edx,edi
-	xor	al,al
+	xor	eax,eax
 	rep	stos byte [edi]
 	mov	dword [org_origin],edi
-	mov	dword [org_origin+4],0
-	mov	[org_registers],0
+	mov	dword [org_origin+4],eax
+	mov	[org_registers],eax
 	mov	[org_start],edi
 	mov	eax,edx
 	call	undefined_data
@@ -668,14 +668,14 @@ make_stub:
 	mov	eax,40h+default_stub_end-default_stub
 	mov	cx,100h+default_stub_end-default_stub
 	mov	word [edx],'MZ'
-	mov	word [edx+4],1
+	mov	byte [edx+4],1
 	mov	word [edx+2],ax
-	mov	word [edx+8],4
-	mov	word [edx+0Ah],10h
+	mov	byte [edx+8],4
+	mov	byte [edx+0Ah],10h
 	mov	word [edx+0Ch],0FFFFh
 	mov	word [edx+10h],cx
 	mov	word [edx+3Ch],ax
-	mov	word [edx+18h],40h
+	mov	byte [edx+18h],40h
 	lea	edi,[edx+40h]
 	mov	esi,default_stub
 	mov	ecx,default_stub_end-default_stub
@@ -804,7 +804,7 @@ make_stub:
 	mov	[esi+0Ah],ax
       binary_heap_ok:
 	mov	word [esi],'MZ'
-	mov	word [esi+8],4
+	mov	byte [esi+8],4
 	mov	ax,0FFFFh
 	mov	[esi+0Ch],ax
 	dec	ax
@@ -813,7 +813,7 @@ make_stub:
 	mov	[esi+0Eh],ax
 	mov	[esi+16h],ax
 	mov	word [esi+14h],100h
-	mov	word [esi+18h],40h
+	mov	byte [esi+18h],40h
 	mov	eax,[display_buffer]
 	sub	eax,ecx
 	cmp	edi,eax
@@ -977,9 +977,9 @@ format_pe:
 	mov	word [edx],'PE' 	; signature
 	mov	ax,[machine]
 	mov	word [edx+4],ax
-	mov	dword [edx+38h],1000h	; section alignment
-	mov	dword [edx+3Ch],200h	; file alignment
-	mov	word [edx+40h],1	; OS version
+	mov	byte [edx+38h+1],10h	; section alignment
+	mov	byte [edx+3Ch+1],2	; file alignment
+	mov	byte [edx+40h],1	; OS version
 	mov	eax,[subsystem_version]
 	mov	[edx+48h],eax
 	mov	ax,[subsystem]
@@ -993,28 +993,26 @@ format_pe:
 	mov	word [edx+1Ah],VERSION_MAJOR + VERSION_MINOR shl 8
 	test	[format_flags],8
 	jnz	init_peplus_specific
-	mov	dword [edx+14h],0E0h	; size of optional header
+	mov	byte [edx+14h],0E0h	; size of optional header
 	mov	dword [edx+16h],10B010Eh; flags and magic value
 	mov	eax,[image_base]
-	mov	dword [edx+34h],eax
-	mov	dword [edx+60h],1000h	; stack reserve
-	mov	dword [edx+64h],1000h	; stack commit
-	mov	dword [edx+68h],10000h	; heap reserve
-	mov	dword [edx+6Ch],0	; heap commit
-	mov	dword [edx+74h],16	; number of directories
+	mov	[edx+34h],eax
+	mov	byte [edx+60h+1],10h	; stack reserve
+	mov	byte [edx+64h+1],10h	; stack commit
+	mov	byte [edx+68h+2],1	; heap reserve
+	mov	byte [edx+74h],16	; number of directories
 	jmp	pe_header_ok
       init_peplus_specific:
-	mov	dword [edx+14h],0F0h	; size of optional header
+	mov	byte [edx+14h],0F0h	; size of optional header
 	mov	dword [edx+16h],20B002Eh; flags and magic value
 	mov	eax,[image_base]
-	mov	dword [edx+30h],eax
+	mov	[edx+30h],eax
 	mov	eax,[image_base_high]
-	mov	dword [edx+34h],eax
-	mov	dword [edx+60h],1000h	; stack reserve
-	mov	dword [edx+68h],1000h	; stack commit
-	mov	dword [edx+70h],10000h	; heap reserve
-	mov	dword [edx+78h],0	; heap commit
-	mov	dword [edx+84h],16	; number of directories
+	mov	[edx+34h],eax
+	mov	byte [edx+60h+1],10h	; stack reserve
+	mov	byte [edx+68h+1],10h	; stack commit
+	mov	byte [edx+70h+2],1	; heap reserve
+	mov	byte [edx+84h],16	; number of directories
       pe_header_ok:
 	bsf	ecx,[edx+3Ch]
 	imul	ebx,[number_of_sections],28h
@@ -1089,11 +1087,11 @@ format_pe:
 	mov	[org_start],edi
 	bt	[format_flags],8
 	jnc	dll_flag_ok
-	or	dword [edx+16h],2000h
+	or	byte [edx+16h+1],20h
       dll_flag_ok:
 	bt	[format_flags],9
 	jnc	wdm_flag_ok
-	or	word [edx+5Eh],2000h
+	or	byte [edx+5Eh+1],20h
       wdm_flag_ok:
 	jmp	format_defined
 pe_section:
@@ -1234,7 +1232,6 @@ pe_section:
 	mov	eax,[code_start]
 	sub	eax,[stub_size]
 	sub	[ebx+14h],eax
-
 	mov	ecx,[ebx+10h]
 	test	byte [ebx+24h],20h
 	jz	pe_code_sum_ok
@@ -1254,7 +1251,6 @@ pe_section:
 	mov	eax,[ebx+0Ch]
 	mov	[edx+30h],eax
       pe_data_sum_ok:
-
 	mov	eax,[ebx+8]
 	or	eax,eax
 	jz	udata_ok
@@ -1263,7 +1259,6 @@ pe_section:
 	or	byte [ebx+24h],80h
 	add	[edx+24h],ecx
       udata_ok:
-
 	mov	ecx,[edx+38h]
 	dec	ecx
 	add	eax,ecx
@@ -2261,10 +2256,11 @@ format_coff:
       flat_section_flags_ok:
 	mov	dword [ebx+14h],eax
 	mov	[current_section],ebx
-	mov	[number_of_sections],0
+	xor	eax,eax
+	mov	[number_of_sections],eax
 	mov	dword [org_origin],edi
-	mov	dword [org_origin+4],0
-	mov	[org_registers],0
+	mov	dword [org_origin+4],eax
+	mov	[org_registers],eax
 	mov	[org_start],edi
 	mov	[org_symbol],ebx
 	mov	[labels_type],2
@@ -2287,8 +2283,8 @@ coff_section:
 	mov	[ebx],al
 	mov	[ebx+8],edi
 	mov	dword [org_origin],edi
-	mov	dword [org_origin+4],0
-	mov	[org_registers],0
+	mov	dword [org_origin+4],eax
+	mov	[org_registers],eax
 	mov	[org_start],edi
 	mov	[org_symbol],ebx
 	mov	[labels_type],2
@@ -2935,8 +2931,8 @@ elf_section:
 	mov	[ebx],al
 	mov	[ebx+8],edi
 	mov	dword [org_origin],edi
-	mov	dword [org_origin+4],0
-	mov	[org_registers],0
+	mov	dword [org_origin+4],eax
+	mov	[org_registers],eax
 	mov	[org_start],edi
 	mov	[org_symbol],ebx
 	test	[format_flags],8
@@ -3977,7 +3973,7 @@ close_elf_exe:
 
 dump_symbols:
 	mov	ebx,[code_start]
-	mov	dword [ebx],'fas'+27 shl 24
+	mov	dword [ebx],'fas'+1Ah shl 24
 	mov	dword [ebx+4],VERSION_MAJOR + VERSION_MINOR shl 8 + 38h shl 16
 	add	ebx,38h
 	mov	edi,ebx

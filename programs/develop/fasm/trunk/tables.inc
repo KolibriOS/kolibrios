@@ -963,6 +963,8 @@ instructions_5:
  dw loop_instruction_16bit-assembler
  db 'loopz',0E1h
  dw loop_instruction-assembler
+ db 'lzcnt',0BDh
+ dw popcnt_instruction-assembler
  db 'maxpd',5Fh
  dw sse_pd_instruction-assembler
  db 'maxps',5Fh
@@ -1324,6 +1326,8 @@ instructions_6:
  dw sse_pd_instruction-assembler
  db 'hsubps',07Dh
  dw cvtpd2dq_instruction-assembler
+ db 'invept',80h
+ dw vmx_inv_instruction-assembler
  db 'invlpg',0
  dw invlpg_instruction-assembler
  db 'lfence',0E8h
@@ -1615,6 +1619,8 @@ instructions_7:
  dw insertq_instruction-assembler
  db 'invlpga',0DFh
  dw invlpga_instruction-assembler
+ db 'invvpid',81h
+ dw vmx_inv_instruction-assembler
  db 'ldmxcsr',10b
  dw fxsave_instruction-assembler
  db 'loopned',0E0h
