@@ -3106,8 +3106,6 @@ sys_set_window:
 
     call  check_window_position
 
-    call  set_window_clientbox
-
     push  ecx esi edi               ; save for window fullscreen/resize
     ;mov   esi,edi
 
@@ -3156,6 +3154,8 @@ sys_set_window:
     mov   [BTN_COUNT],byte 0           ; empty button buffer
 
   newd:
+    call  set_window_clientbox
+
     mov   [edi+WDATA.fl_redraw],byte 0   ; no redraw
     mov   edx,edi
 
