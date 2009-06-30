@@ -113,8 +113,8 @@ img.decode.gif.aux_img_type equ aux_img_type
 img.decode.gif.aux_palette equ aux_palette
 img.decode.gif.options_bgr equ options_bgr
 ; offset of _length parameter for child functions with ebp-based frame
-; child saved ebp, return address, 3 saved registers, 14 local variables
-img.decode.gif._length_child equ _length + 4 + 4 + 4*3 + 4*14
+; child saved ebp, return address, 3 saved registers, 15 local variables
+img.decode.gif._length_child equ _length + 4 + 4 + 4*3 + 4*15
 img.decode.gif.max_color_child equ ebp + 4 + 4 + 4*3
 img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 
