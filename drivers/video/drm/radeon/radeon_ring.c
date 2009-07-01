@@ -32,6 +32,8 @@
 #include "radeon.h"
 #include "atom.h"
 
+extern void * ring_buffer;
+
 #if 0
 int radeon_debugfs_ib_init(struct radeon_device *rdev);
 
@@ -287,7 +289,6 @@ int radeon_ib_test(struct radeon_device *rdev)
 
 #endif
 
-
 /*
  * Ring.
  */
@@ -360,7 +361,7 @@ int radeon_ring_test(struct radeon_device *rdev)
 	unsigned i;
 	int r;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	r = radeon_scratch_get(rdev, &scratch);
 	if (r) {
@@ -377,14 +378,14 @@ int radeon_ring_test(struct radeon_device *rdev)
 	radeon_ring_write(rdev, PACKET0(scratch, 0));
 	radeon_ring_write(rdev, 0xDEADBEEF);
 	radeon_ring_unlock_commit(rdev);
-	for (i = 0; i < rdev->usec_timeout; i++) {
+    for (i = 0; i < 100000; i++) {
 		tmp = RREG32(scratch);
 		if (tmp == 0xDEADBEEF) {
 			break;
 		}
-		DRM_UDELAY(1);
+        DRM_UDELAY(1);
 	}
-	if (i < rdev->usec_timeout) {
+    if (i < 100000) {
 		DRM_INFO("ring test succeeded in %d usecs\n", i);
 	} else {
 		DRM_ERROR("radeon: ring test failed (sracth(0x%04X)=0x%08X)\n",
@@ -392,15 +393,23 @@ int radeon_ring_test(struct radeon_device *rdev)
 		r = -EINVAL;
 	}
 	radeon_scratch_free(rdev, scratch);
+
+    dbgprintf("done %s\n",__FUNCTION__);
 	return r;
 }
+
+
+int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+             int pages, u32_t *pagelist);
+
+#define page_tabs  0xFDC00000
 
 
 int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
 {
 	int r;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	rdev->cp.ring_size = ring_size;
 
@@ -435,10 +444,27 @@ int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
 	}
 #endif
 
-    rdev->cp.ring     = CreateRingBuffer( ring_size, PG_SW);
-    rdev->cp.gpu_addr = GetPgAddr(rdev->cp.ring);
+    dbgprintf("ring size %x\n", ring_size);
+
+    dbgprintf("ring buffer %x\n", rdev->cp.ring );
+
+    rdev->cp.ring  = ring_buffer; //CreateRingBuffer( ring_size, PG_SW );
+
+    dbgprintf("ring buffer %x\n", rdev->cp.ring );
+
+    rdev->cp.gpu_addr = rdev->mc.gtt_location;
+
+    u32_t *pagelist =  &((u32_t*)page_tabs)[(u32_t)rdev->cp.ring >> 12];
+
+    dbgprintf("pagelist %x\n", pagelist);
+
+    radeon_gart_bind(rdev, 0, ring_size / 4096, pagelist);
+
 	rdev->cp.ptr_mask = (rdev->cp.ring_size / 4) - 1;
 	rdev->cp.ring_free_dw = rdev->cp.ring_size / 4;
+
+    dbgprintf("done %s\n",__FUNCTION__);
+
 	return 0;
 }
 

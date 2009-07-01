@@ -228,7 +228,6 @@ void radeon_invalid_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
     BUG_ON(1);
 }
 
-
 void radeon_register_accessor_init(struct radeon_device *rdev)
 {
 
@@ -251,13 +250,13 @@ void radeon_register_accessor_init(struct radeon_device *rdev)
 //        rdev->pcie_wreg = &rv370_pcie_wreg;
     }
     if (rdev->family >= CHIP_RV515) {
-//        rdev->pcie_rreg = &rv515_pcie_rreg;
-//        rdev->pcie_wreg = &rv515_pcie_wreg;
+        rdev->pcie_rreg = &rv515_pcie_rreg;
+        rdev->pcie_wreg = &rv515_pcie_wreg;
     }
     /* FIXME: not sure here */
     if (rdev->family <= CHIP_R580) {
-//        rdev->pll_rreg = &r100_pll_rreg;
-//        rdev->pll_wreg = &r100_pll_wreg;
+        rdev->pll_rreg = &r100_pll_rreg;
+        rdev->pll_wreg = &r100_pll_wreg;
     }
     if (rdev->family >= CHIP_RV515) {
         rdev->mc_rreg = &rv515_mc_rreg;
@@ -447,7 +446,7 @@ int radeon_atombios_init(struct radeon_device *rdev)
 
 void radeon_atombios_fini(struct radeon_device *rdev)
 {
-	free(rdev->mode_info.atom_context);
+	kfree(rdev->mode_info.atom_context);
 }
 
 int radeon_combios_init(struct radeon_device *rdev)
@@ -463,7 +462,7 @@ void radeon_combios_fini(struct radeon_device *rdev)
 int radeon_modeset_init(struct radeon_device *rdev);
 void radeon_modeset_fini(struct radeon_device *rdev);
 
-
+void *ring_buffer;
 /*
  * Radeon device.
  */
@@ -493,6 +492,8 @@ int radeon_device_init(struct radeon_device *rdev,
  //   mutex_init(&rdev->cp.mutex);
  //   rwlock_init(&rdev->fence_drv.lock);
 
+    ring_buffer = CreateRingBuffer( 1024*1024, PG_SW );
+
     if (radeon_agpmode == -1) {
         rdev->flags &= ~RADEON_IS_AGP;
         if (rdev->family > CHIP_RV515 ||
@@ -521,10 +522,10 @@ int radeon_device_init(struct radeon_device *rdev,
     }
 
     /* Report DMA addressing limitation */
-//    r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(32));
-//    if (r) {
-//        printk(KERN_WARNING "radeon: No suitable DMA available.\n");
-//    }
+    r = pci_set_dma_mask(rdev->pdev, DMA_BIT_MASK(32));
+    if (r) {
+        printk(KERN_WARNING "radeon: No suitable DMA available.\n");
+    }
 
     /* Registers mapping */
     /* TODO: block userspace mapping of io register */
@@ -565,13 +566,10 @@ int radeon_device_init(struct radeon_device *rdev,
             return r;
         }
     }
-
-
     /* Reset gpu before posting otherwise ATOM will enter infinite loop */
     if (radeon_gpu_reset(rdev)) {
         /* FIXME: what do we want to do here ? */
     }
-
     /* check if cards are posted or not */
     if (!radeon_card_posted(rdev) && rdev->bios) {
         DRM_INFO("GPU not posted. posting now...\n");
@@ -605,45 +603,47 @@ int radeon_device_init(struct radeon_device *rdev,
         return r;
     }
 
-#if 0
-
     /* Initialize memory controller (also test AGP) */
     r = radeon_mc_init(rdev);
     if (r) {
         return r;
-    }
+    };
+
+
     /* Fence driver */
-    r = radeon_fence_driver_init(rdev);
-    if (r) {
-        return r;
-    }
-    r = radeon_irq_kms_init(rdev);
-    if (r) {
-        return r;
-    }
+//    r = radeon_fence_driver_init(rdev);
+//    if (r) {
+//        return r;
+//    }
+//    r = radeon_irq_kms_init(rdev);
+//    if (r) {
+//        return r;
+//    }
     /* Memory manager */
-    r = radeon_object_init(rdev);
-    if (r) {
-        return r;
-    }
+//    r = radeon_object_init(rdev);
+//    if (r) {
+//        return r;
+//    }
     /* Initialize GART (initialize after TTM so we can allocate
      * memory through TTM but finalize after TTM) */
     r = radeon_gart_enable(rdev);
-    if (!r) {
-        r = radeon_gem_init(rdev);
-    }
+//    if (!r) {
+//        r = radeon_gem_init(rdev);
+//    }
 
     /* 1M ring buffer */
     if (!r) {
         r = radeon_cp_init(rdev, 1024 * 1024);
     }
-    if (!r) {
-        r = radeon_wb_init(rdev);
-        if (r) {
-            DRM_ERROR("radeon: failled initializing WB (%d).\n", r);
-            return r;
-        }
-    }
+//    if (!r) {
+//        r = radeon_wb_init(rdev);
+//        if (r) {
+//            DRM_ERROR("radeon: failled initializing WB (%d).\n", r);
+//            return r;
+//        }
+//    }
+
+#if 0
     if (!r) {
         r = radeon_ib_pool_init(rdev);
         if (r) {

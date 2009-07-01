@@ -130,6 +130,7 @@ void rv515_mc_fini(struct radeon_device *rdev)
 	radeon_gart_fini(rdev);
 }
 
+#endif
 
 /*
  * Global GPU functions
@@ -139,6 +140,7 @@ void rv515_ring_start(struct radeon_device *rdev)
 	unsigned gb_tile_config;
 	int r;
 
+    dbgprintf("%s\n\r",__FUNCTION__);
 	/* Sub pixel 1/12 so we can have 4K rendering according to doc */
 	gb_tile_config = R300_ENABLE_TILING | R300_TILE_SIZE_16;
 	switch (rdev->num_gb_pipes) {
@@ -228,6 +230,9 @@ void rv515_ring_start(struct radeon_device *rdev)
 	radeon_ring_write(rdev, PACKET0(0x20C8, 0));
 	radeon_ring_write(rdev, 0);
 	radeon_ring_unlock_commit(rdev);
+
+    dbgprintf("done %s\n\r",__FUNCTION__);
+
 }
 
 void rv515_errata(struct radeon_device *rdev)
@@ -251,6 +256,7 @@ int rv515_mc_wait_for_idle(struct radeon_device *rdev)
 	return -1;
 }
 
+#if 0
 void rv515_gpu_init(struct radeon_device *rdev)
 {
 	unsigned pipe_select_current, gb_pipe_select, tmp;
@@ -340,7 +346,6 @@ int rv515_ga_reset(struct radeon_device *rdev)
 	return -1;
 }
 
-
 int rv515_gpu_reset(struct radeon_device *rdev)
 {
 	uint32_t status;
@@ -374,7 +379,6 @@ int rv515_gpu_reset(struct radeon_device *rdev)
 	return 0;
 }
 
-#if 0
 
 /*
  * VRAM info
@@ -409,7 +413,6 @@ void rv515_vram_info(struct radeon_device *rdev)
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
 }
 
-#endif
 
 /*
  * Indirect registers accessor

@@ -193,7 +193,12 @@ struct drm_file;
 
 
 #define DRM_MEMORYBARRIER() __asm__ __volatile__("lock; addl $0,0(%esp)")
+#define mb() __asm__ __volatile__("lock; addl $0,0(%esp)")
 
+#define PAGE_SIZE 4096
+#define PAGE_SHIFT      12
+
+#define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 
 
 #endif  //__TYPES_H__

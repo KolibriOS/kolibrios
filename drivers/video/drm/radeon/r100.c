@@ -30,7 +30,6 @@
 //#include "drm.h"
 #include "radeon_drm.h"
 #include "radeon_microcode.h"
-
 #include "radeon_reg.h"
 #include "radeon.h"
 
@@ -486,7 +485,6 @@ static void r100_cp_load_microcode(struct radeon_device *rdev)
 		}
 	}
 }
-
 
 int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
 {
@@ -1168,7 +1166,6 @@ void r100_gpu_init(struct radeon_device *rdev)
 	r100_hdp_reset(rdev);
 }
 
-
 void r100_hdp_reset(struct radeon_device *rdev)
 {
 	uint32_t tmp;
@@ -1184,7 +1181,6 @@ void r100_hdp_reset(struct radeon_device *rdev)
 	WREG32(RADEON_HOST_PATH_CNTL, tmp);
 	(void)RREG32(RADEON_HOST_PATH_CNTL);
 }
-
 
 int r100_rb2d_reset(struct radeon_device *rdev)
 {
@@ -1307,6 +1303,7 @@ void r100_vram_info(struct radeon_device *rdev)
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
 }
 
+#endif
 
 /*
  * Indirect registers accessor
@@ -1364,8 +1361,6 @@ void r100_pll_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
 	r100_pll_errata_after_data(rdev);
 }
 
-#endif
-
 uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg)
 {
 	if (reg < 0x10000)
@@ -1375,7 +1370,6 @@ uint32_t r100_mm_rreg(struct radeon_device *rdev, uint32_t reg)
 		return readl(((void __iomem *)rdev->rmmio) + RADEON_MM_DATA);
 	}
 }
-
 
 void r100_mm_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
 {

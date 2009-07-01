@@ -26,6 +26,7 @@
 //#include <linux/sched.h>
 
 #include <types.h>
+#include <syscall.h>
 
 #define ATOM_DEBUG
 
@@ -607,10 +608,10 @@ static void atom_op_delay(atom_exec_context *ctx, int *ptr, int arg)
 {
 	uint8_t count = U8((*ptr)++);
 	SDEBUG("   count: %d\n", count);
- //  if (arg == ATOM_UNIT_MICROSEC)
- //      schedule_timeout_uninterruptible(usecs_to_jiffies(count));
- //  else
- //      schedule_timeout_uninterruptible(msecs_to_jiffies(count));
+    if (arg == ATOM_UNIT_MICROSEC)
+       udelay(count);
+    else
+       mdelay(count);
 }
 
 static void atom_op_div(atom_exec_context *ctx, int *ptr, int arg)

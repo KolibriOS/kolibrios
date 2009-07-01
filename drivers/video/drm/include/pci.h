@@ -554,6 +554,10 @@ int enum_pci_devices(void);
 struct pci_device_id*
 find_pci_device(dev_t* pdev, struct pci_device_id *idlist);
 
+#define DMA_BIT_MASK(n) (((n) == 64) ? ~0ULL : ((1ULL<<(n))-1))
+
+int pci_set_dma_mask(struct pci_dev *dev, u64 mask);
+
 
 #define pci_name(x) "radeon"
 

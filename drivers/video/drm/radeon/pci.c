@@ -793,3 +793,15 @@ void *pci_map_rom(struct pci_dev *pdev, size_t *size)
     return rom;
 }
 
+
+int
+pci_set_dma_mask(struct pci_dev *dev, u64 mask)
+{
+//        if (!pci_dma_supported(dev, mask))
+//                return -EIO;
+
+        dev->dma_mask = mask;
+
+        return 0;
+}
+

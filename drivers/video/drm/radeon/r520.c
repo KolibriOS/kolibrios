@@ -47,7 +47,6 @@ int rv515_debugfs_ga_info_init(struct radeon_device *rdev);
 void r520_gpu_init(struct radeon_device *rdev);
 int r520_mc_wait_for_idle(struct radeon_device *rdev);
 
-#if 0
 /*
  * MC
  */
@@ -56,15 +55,17 @@ int r520_mc_init(struct radeon_device *rdev)
 	uint32_t tmp;
 	int r;
 
-	if (r100_debugfs_rbbm_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-	}
-	if (rv515_debugfs_pipes_info_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for pipes !\n");
-	}
-	if (rv515_debugfs_ga_info_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for pipes !\n");
-	}
+    dbgprintf("%s\n",__FUNCTION__);
+
+//   if (r100_debugfs_rbbm_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+//   }
+//   if (rv515_debugfs_pipes_info_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for pipes !\n");
+//   }
+//   if (rv515_debugfs_ga_info_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for pipes !\n");
+//   }
 
 	r520_gpu_init(rdev);
 	rv370_pcie_gart_disable(rdev);
@@ -88,9 +89,9 @@ int r520_mc_init(struct radeon_device *rdev)
 	}
 
 	/* Program GPU memory space */
-	rs600_mc_disable_clients(rdev);
-	if (r520_mc_wait_for_idle(rdev)) {
-		printk(KERN_WARNING "Failed to wait MC idle while "
+    rs600_mc_disable_clients(rdev);
+    if (r520_mc_wait_for_idle(rdev)) {
+       printk(KERN_WARNING "Failed to wait MC idle while "
 		       "programming pipes. Bad things might happen.\n");
 	}
 	/* Write VRAM size in case we are limiting it */
@@ -113,6 +114,9 @@ int r520_mc_init(struct radeon_device *rdev)
 		WREG32_MC(R520_MC_AGP_BASE, 0);
 		WREG32_MC(R520_MC_AGP_BASE_2, 0);
 	}
+
+    dbgprintf("done: %s\n",__FUNCTION__);
+
 	return 0;
 }
 
@@ -123,7 +127,6 @@ void r520_mc_fini(struct radeon_device *rdev)
 	radeon_gart_fini(rdev);
 }
 
-#endif
 
 /*
  * Global GPU functions
@@ -133,7 +136,6 @@ void r520_errata(struct radeon_device *rdev)
 	rdev->pll_errata = 0;
 }
 
-#if 0
 int r520_mc_wait_for_idle(struct radeon_device *rdev)
 {
 	unsigned i;
@@ -153,6 +155,7 @@ int r520_mc_wait_for_idle(struct radeon_device *rdev)
 void r520_gpu_init(struct radeon_device *rdev)
 {
 	unsigned pipe_select_current, gb_pipe_select, tmp;
+    dbgprintf("%s\n\r",__FUNCTION__);
 
 	r100_hdp_reset(rdev);
 	rs600_disable_vga(rdev);
@@ -194,8 +197,6 @@ void r520_gpu_init(struct radeon_device *rdev)
 	}
 }
 
-#endif
-
 
 /*
  * VRAM info
@@ -203,6 +204,7 @@ void r520_gpu_init(struct radeon_device *rdev)
 static void r520_vram_get_type(struct radeon_device *rdev)
 {
 	uint32_t tmp;
+    dbgprintf("%s\n\r",__FUNCTION__);
 
 	rdev->mc.vram_width = 128;
 	rdev->mc.vram_is_ddr = true;
@@ -236,4 +238,552 @@ void r520_vram_info(struct radeon_device *rdev)
 	rdev->mc.aper_base = drm_get_resource_start(rdev->ddev, 0);
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
 }
+
+/*
+ * Global GPU functions
+ */
+void rs600_disable_vga(struct radeon_device *rdev)
+{
+    unsigned tmp;
+    dbgprintf("%s\n\r",__FUNCTION__);
+
+    WREG32(0x330, 0);
+    WREG32(0x338, 0);
+    tmp = RREG32(0x300);
+    tmp &= ~(3 << 16);
+    WREG32(0x300, tmp);
+    WREG32(0x308, (1 << 8));
+    WREG32(0x310, rdev->mc.vram_location);
+    WREG32(0x594, 0);
+}
+
+
+void r420_pipes_init(struct radeon_device *rdev)
+{
+    unsigned tmp;
+    unsigned gb_pipe_select;
+    unsigned num_pipes;
+
+    dbgprintf("%s\n\r",__FUNCTION__);
+
+    /* GA_ENHANCE workaround TCL deadlock issue */
+    WREG32(0x4274, (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3));
+    /* get max number of pipes */
+    gb_pipe_select = RREG32(0x402C);
+    num_pipes = ((gb_pipe_select >> 12) & 3) + 1;
+    rdev->num_gb_pipes = num_pipes;
+    tmp = 0;
+    switch (num_pipes) {
+    default:
+        /* force to 1 pipe */
+        num_pipes = 1;
+    case 1:
+        tmp = (0 << 1);
+        break;
+    case 2:
+        tmp = (3 << 1);
+        break;
+    case 3:
+        tmp = (6 << 1);
+        break;
+    case 4:
+        tmp = (7 << 1);
+        break;
+    }
+    WREG32(0x42C8, (1 << num_pipes) - 1);
+    /* Sub pixel 1/12 so we can have 4K rendering according to doc */
+    tmp |= (1 << 4) | (1 << 0);
+    WREG32(0x4018, tmp);
+    if (r100_gui_wait_for_idle(rdev)) {
+        printk(KERN_WARNING "Failed to wait GUI idle while "
+               "programming pipes. Bad things might happen.\n");
+    }
+
+    tmp = RREG32(0x170C);
+    WREG32(0x170C, tmp | (1 << 31));
+
+    WREG32(R300_RB2D_DSTCACHE_MODE,
+           RREG32(R300_RB2D_DSTCACHE_MODE) |
+           R300_DC_AUTOFLUSH_ENABLE |
+           R300_DC_DC_DISABLE_IGNORE_PE);
+
+    if (r100_gui_wait_for_idle(rdev)) {
+        printk(KERN_WARNING "Failed to wait GUI idle while "
+               "programming pipes. Bad things might happen.\n");
+    }
+    DRM_INFO("radeon: %d pipes initialized.\n", rdev->num_gb_pipes);
+}
+
+void rv370_pcie_gart_disable(struct radeon_device *rdev)
+{
+    uint32_t tmp;
+    dbgprintf("%s\n\r",__FUNCTION__);
+
+    tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
+    tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
+    WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp & ~RADEON_PCIE_TX_GART_EN);
+    if (rdev->gart.table.vram.robj) {
+//        radeon_object_kunmap(rdev->gart.table.vram.robj);
+//        radeon_object_unpin(rdev->gart.table.vram.robj);
+    }
+}
+
+void radeon_gart_table_vram_free(struct radeon_device *rdev)
+{
+    if (rdev->gart.table.vram.robj == NULL) {
+        return;
+    }
+//    radeon_object_kunmap(rdev->gart.table.vram.robj);
+//    radeon_object_unpin(rdev->gart.table.vram.robj);
+//    radeon_object_unref(&rdev->gart.table.vram.robj);
+}
+
+/*
+ * Common gart functions.
+ */
+void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
+            int pages)
+{
+    unsigned t;
+    unsigned p;
+    int i, j;
+    dbgprintf("%s\n\r",__FUNCTION__);
+
+    if (!rdev->gart.ready) {
+        dbgprintf("trying to unbind memory to unitialized GART !\n");
+        return;
+    }
+    t = offset / 4096;
+    p = t / (PAGE_SIZE / 4096);
+    for (i = 0; i < pages; i++, p++) {
+        if (rdev->gart.pages[p]) {
+//            pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
+//                       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
+            rdev->gart.pages[p] = NULL;
+            rdev->gart.pages_addr[p] = 0;
+            for (j = 0; j < (PAGE_SIZE / 4096); j++, t++) {
+                radeon_gart_set_page(rdev, t, 0);
+            }
+        }
+    }
+    mb();
+    radeon_gart_tlb_flush(rdev);
+}
+
+
+
+void radeon_gart_fini(struct radeon_device *rdev)
+{
+    if (rdev->gart.pages && rdev->gart.pages_addr && rdev->gart.ready) {
+        /* unbind pages */
+        radeon_gart_unbind(rdev, 0, rdev->gart.num_cpu_pages);
+    }
+    rdev->gart.ready = false;
+//    kfree(rdev->gart.pages);
+//    kfree(rdev->gart.pages_addr);
+    rdev->gart.pages = NULL;
+    rdev->gart.pages_addr = NULL;
+}
+
+
+
+int radeon_agp_init(struct radeon_device *rdev)
+{
+
+    dbgprintf("%s\n\r",__FUNCTION__);
+
+#if __OS_HAS_AGP
+    struct radeon_agpmode_quirk *p = radeon_agpmode_quirk_list;
+    struct drm_agp_mode mode;
+    struct drm_agp_info info;
+    uint32_t agp_status;
+    int default_mode;
+    bool is_v3;
+    int ret;
+
+    /* Acquire AGP. */
+    if (!rdev->ddev->agp->acquired) {
+        ret = drm_agp_acquire(rdev->ddev);
+        if (ret) {
+            DRM_ERROR("Unable to acquire AGP: %d\n", ret);
+            return ret;
+        }
+    }
+
+    ret = drm_agp_info(rdev->ddev, &info);
+    if (ret) {
+        DRM_ERROR("Unable to get AGP info: %d\n", ret);
+        return ret;
+    }
+    mode.mode = info.mode;
+    agp_status = (RREG32(RADEON_AGP_STATUS) | RADEON_AGPv3_MODE) & mode.mode;
+    is_v3 = !!(agp_status & RADEON_AGPv3_MODE);
+
+    if (is_v3) {
+        default_mode = (agp_status & RADEON_AGPv3_8X_MODE) ? 8 : 4;
+    } else {
+        if (agp_status & RADEON_AGP_4X_MODE) {
+            default_mode = 4;
+        } else if (agp_status & RADEON_AGP_2X_MODE) {
+            default_mode = 2;
+        } else {
+            default_mode = 1;
+        }
+    }
+
+    /* Apply AGPMode Quirks */
+    while (p && p->chip_device != 0) {
+        if (info.id_vendor == p->hostbridge_vendor &&
+            info.id_device == p->hostbridge_device &&
+            rdev->pdev->vendor == p->chip_vendor &&
+            rdev->pdev->device == p->chip_device &&
+            rdev->pdev->subsystem_vendor == p->subsys_vendor &&
+            rdev->pdev->subsystem_device == p->subsys_device) {
+            default_mode = p->default_mode;
+        }
+        ++p;
+    }
+
+    if (radeon_agpmode > 0) {
+        if ((radeon_agpmode < (is_v3 ? 4 : 1)) ||
+            (radeon_agpmode > (is_v3 ? 8 : 4)) ||
+            (radeon_agpmode & (radeon_agpmode - 1))) {
+            DRM_ERROR("Illegal AGP Mode: %d (valid %s), leaving at %d\n",
+                  radeon_agpmode, is_v3 ? "4, 8" : "1, 2, 4",
+                  default_mode);
+            radeon_agpmode = default_mode;
+        } else {
+            DRM_INFO("AGP mode requested: %d\n", radeon_agpmode);
+        }
+    } else {
+        radeon_agpmode = default_mode;
+    }
+
+    mode.mode &= ~RADEON_AGP_MODE_MASK;
+    if (is_v3) {
+        switch (radeon_agpmode) {
+        case 8:
+            mode.mode |= RADEON_AGPv3_8X_MODE;
+            break;
+        case 4:
+        default:
+            mode.mode |= RADEON_AGPv3_4X_MODE;
+            break;
+        }
+    } else {
+        switch (radeon_agpmode) {
+        case 4:
+            mode.mode |= RADEON_AGP_4X_MODE;
+            break;
+        case 2:
+            mode.mode |= RADEON_AGP_2X_MODE;
+            break;
+        case 1:
+        default:
+            mode.mode |= RADEON_AGP_1X_MODE;
+            break;
+        }
+    }
+
+    mode.mode &= ~RADEON_AGP_FW_MODE; /* disable fw */
+    ret = drm_agp_enable(rdev->ddev, mode);
+    if (ret) {
+        DRM_ERROR("Unable to enable AGP (mode = 0x%lx)\n", mode.mode);
+        return ret;
+    }
+
+    rdev->mc.agp_base = rdev->ddev->agp->agp_info.aper_base;
+    rdev->mc.gtt_size = rdev->ddev->agp->agp_info.aper_size << 20;
+
+    /* workaround some hw issues */
+    if (rdev->family < CHIP_R200) {
+        WREG32(RADEON_AGP_CNTL, RREG32(RADEON_AGP_CNTL) | 0x000e0000);
+    }
+    return 0;
+#else
+    return 0;
+#endif
+}
+
+
+void rs600_mc_disable_clients(struct radeon_device *rdev)
+{
+    unsigned tmp;
+    dbgprintf("%s\n",__FUNCTION__);
+
+    if (r100_gui_wait_for_idle(rdev)) {
+        printk(KERN_WARNING "Failed to wait GUI idle while "
+               "programming pipes. Bad things might happen.\n");
+    }
+
+    tmp = RREG32(AVIVO_D1VGA_CONTROL);
+    WREG32(AVIVO_D1VGA_CONTROL, tmp & ~AVIVO_DVGA_CONTROL_MODE_ENABLE);
+    tmp = RREG32(AVIVO_D2VGA_CONTROL);
+    WREG32(AVIVO_D2VGA_CONTROL, tmp & ~AVIVO_DVGA_CONTROL_MODE_ENABLE);
+
+    tmp = RREG32(AVIVO_D1CRTC_CONTROL);
+    WREG32(AVIVO_D1CRTC_CONTROL, tmp & ~AVIVO_CRTC_EN);
+    tmp = RREG32(AVIVO_D2CRTC_CONTROL);
+    WREG32(AVIVO_D2CRTC_CONTROL, tmp & ~AVIVO_CRTC_EN);
+
+    /* make sure all previous write got through */
+    tmp = RREG32(AVIVO_D2CRTC_CONTROL);
+
+    mdelay(1);
+
+    dbgprintf("done\n");
+
+}
+
+int rv370_pcie_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
+{
+    void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
+
+    if (i < 0 || i > rdev->gart.num_gpu_pages) {
+        return -EINVAL;
+    }
+    addr = (((u32_t)addr) >> 8) | ((upper_32_bits(addr) & 0xff) << 4) | 0xC;
+    writel(cpu_to_le32(addr), ((void __iomem *)ptr) + (i * 4));
+    return 0;
+}
+
+
+int radeon_gart_init(struct radeon_device *rdev)
+{
+
+    dbgprintf("%s\n",__FUNCTION__);
+
+    if (rdev->gart.pages) {
+        return 0;
+    }
+    /* We need PAGE_SIZE >= 4096 */
+    if (PAGE_SIZE < 4096) {
+        DRM_ERROR("Page size is smaller than GPU page size!\n");
+        return -EINVAL;
+    }
+    /* Compute table size */
+    rdev->gart.num_cpu_pages = rdev->mc.gtt_size / PAGE_SIZE;
+    rdev->gart.num_gpu_pages = rdev->mc.gtt_size / 4096;
+    DRM_INFO("GART: num cpu pages %u, num gpu pages %u\n",
+         rdev->gart.num_cpu_pages, rdev->gart.num_gpu_pages);
+    /* Allocate pages table */
+    rdev->gart.pages = kzalloc(sizeof(void *) * rdev->gart.num_cpu_pages,
+                   GFP_KERNEL);
+    if (rdev->gart.pages == NULL) {
+//        radeon_gart_fini(rdev);
+        return -ENOMEM;
+    }
+    rdev->gart.pages_addr = kzalloc(sizeof(u32_t) *
+                    rdev->gart.num_cpu_pages, GFP_KERNEL);
+    if (rdev->gart.pages_addr == NULL) {
+//        radeon_gart_fini(rdev);
+        return -ENOMEM;
+    }
+    return 0;
+}
+
+int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
+{
+    uint32_t gpu_addr;
+    int r;
+
+//    if (rdev->gart.table.vram.robj == NULL) {
+//        r = radeon_object_create(rdev, NULL,
+//                     rdev->gart.table_size,
+//                     true,
+//                     RADEON_GEM_DOMAIN_VRAM,
+//                     false, &rdev->gart.table.vram.robj);
+//        if (r) {
+//            return r;
+//        }
+//    }
+//    r = radeon_object_pin(rdev->gart.table.vram.robj,
+//                  RADEON_GEM_DOMAIN_VRAM, &gpu_addr);
+//    if (r) {
+//        radeon_object_unref(&rdev->gart.table.vram.robj);
+//        return r;
+//    }
+//    r = radeon_object_kmap(rdev->gart.table.vram.robj,
+//                   (void **)&rdev->gart.table.vram.ptr);
+//    if (r) {
+//        radeon_object_unpin(rdev->gart.table.vram.robj);
+//        radeon_object_unref(&rdev->gart.table.vram.robj);
+//        DRM_ERROR("radeon: failed to map gart vram table.\n");
+//        return r;
+//    }
+
+    gpu_addr = 0x800000;
+
+    u32_t pci_addr = rdev->mc.aper_base + gpu_addr;
+
+    rdev->gart.table.vram.ptr = (void*)MapIoMem(pci_addr, rdev->gart.table_size, PG_SW);
+
+    rdev->gart.table_addr = gpu_addr;
+
+    dbgprintf("alloc gart vram:\n  gpu_base %x pci_base %x lin_addr %x",
+               gpu_addr, pci_addr, rdev->gart.table.vram.ptr);
+
+    return 0;
+}
+
+void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev);
+
+int rv370_pcie_gart_enable(struct radeon_device *rdev)
+{
+    uint32_t table_addr;
+    uint32_t tmp;
+    int r;
+
+    dbgprintf("%s\n",__FUNCTION__);
+
+    /* Initialize common gart structure */
+    r = radeon_gart_init(rdev);
+    if (r) {
+        return r;
+    }
+ //   r = rv370_debugfs_pcie_gart_info_init(rdev);
+ //   if (r) {
+ //       DRM_ERROR("Failed to register debugfs file for PCIE gart !\n");
+ //   }
+    rdev->gart.table_size = rdev->gart.num_gpu_pages * 4;
+    r = radeon_gart_table_vram_alloc(rdev);
+    if (r) {
+        return r;
+    }
+    /* discard memory request outside of configured range */
+    tmp = RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
+    WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
+    WREG32_PCIE(RADEON_PCIE_TX_GART_START_LO, rdev->mc.gtt_location);
+    tmp = rdev->mc.gtt_location + rdev->mc.gtt_size - 4096;
+    WREG32_PCIE(RADEON_PCIE_TX_GART_END_LO, tmp);
+    WREG32_PCIE(RADEON_PCIE_TX_GART_START_HI, 0);
+    WREG32_PCIE(RADEON_PCIE_TX_GART_END_HI, 0);
+    table_addr = rdev->gart.table_addr;
+    WREG32_PCIE(RADEON_PCIE_TX_GART_BASE, table_addr);
+    /* FIXME: setup default page */
+    WREG32_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_LO, rdev->mc.vram_location);
+    WREG32_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_HI, 0);
+    /* Clear error */
+    WREG32_PCIE(0x18, 0);
+    tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
+    tmp |= RADEON_PCIE_TX_GART_EN;
+    tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
+    WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
+    rv370_pcie_gart_tlb_flush(rdev);
+    DRM_INFO("PCIE GART of %uM enabled (table at 0x%08X).\n",
+         rdev->mc.gtt_size >> 20, table_addr);
+    rdev->gart.ready = true;
+    return 0;
+}
+
+void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev)
+{
+    uint32_t tmp;
+    int i;
+
+    /* Workaround HW bug do flush 2 times */
+    for (i = 0; i < 2; i++) {
+        tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
+        WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp | RADEON_PCIE_TX_GART_INVALIDATE_TLB);
+        (void)RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
+        WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
+        mb();
+    }
+}
+
+int r300_gart_enable(struct radeon_device *rdev)
+{
+#if __OS_HAS_AGP
+    if (rdev->flags & RADEON_IS_AGP) {
+        if (rdev->family > CHIP_RV350) {
+            rv370_pcie_gart_disable(rdev);
+        } else {
+            r100_pci_gart_disable(rdev);
+        }
+        return 0;
+    }
+#endif
+    if (rdev->flags & RADEON_IS_PCIE) {
+        rdev->asic->gart_disable = &rv370_pcie_gart_disable;
+        rdev->asic->gart_tlb_flush = &rv370_pcie_gart_tlb_flush;
+        rdev->asic->gart_set_page = &rv370_pcie_gart_set_page;
+        return rv370_pcie_gart_enable(rdev);
+    }
+ //   return r100_pci_gart_enable(rdev);
+}
+
+
+
+int radeon_fence_driver_init(struct radeon_device *rdev)
+{
+    unsigned long irq_flags;
+    int r;
+
+//    write_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
+    r = radeon_scratch_get(rdev, &rdev->fence_drv.scratch_reg);
+    if (r) {
+        DRM_ERROR("Fence failed to get a scratch register.");
+//        write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
+        return r;
+    }
+    WREG32(rdev->fence_drv.scratch_reg, 0);
+//    atomic_set(&rdev->fence_drv.seq, 0);
+//    INIT_LIST_HEAD(&rdev->fence_drv.created);
+//    INIT_LIST_HEAD(&rdev->fence_drv.emited);
+//    INIT_LIST_HEAD(&rdev->fence_drv.signaled);
+    rdev->fence_drv.count_timeout = 0;
+//    init_waitqueue_head(&rdev->fence_drv.queue);
+//    write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
+//    if (radeon_debugfs_fence_init(rdev)) {
+//        DRM_ERROR("Failed to register debugfs file for fence !\n");
+//    }
+    return 0;
+}
+
+
+int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+             int pages, u32_t *pagelist)
+{
+    unsigned t;
+    unsigned p;
+    uint64_t page_base;
+    int i, j;
+
+    dbgprintf("%s\n\r",__FUNCTION__);
+
+
+    if (!rdev->gart.ready) {
+        DRM_ERROR("trying to bind memory to unitialized GART !\n");
+        return -EINVAL;
+    }
+    t = offset / 4096;
+    p = t / (PAGE_SIZE / 4096);
+
+    for (i = 0; i < pages; i++, p++) {
+        /* we need to support large memory configurations */
+        /* assume that unbind have already been call on the range */
+
+        rdev->gart.pages_addr[p] = pagelist[i] & ~4095;
+
+        //if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
+        //    /* FIXME: failed to map page (return -ENOMEM?) */
+        //    radeon_gart_unbind(rdev, offset, pages);
+        //    return -ENOMEM;
+        //}
+        rdev->gart.pages[p] = pagelist[i];
+        page_base = (uint32_t)rdev->gart.pages_addr[p];
+        for (j = 0; j < (PAGE_SIZE / 4096); j++, t++) {
+            radeon_gart_set_page(rdev, t, page_base);
+            page_base += 4096;
+        }
+    }
+    mb();
+    radeon_gart_tlb_flush(rdev);
+
+    dbgprintf("done %s\n",__FUNCTION__);
+
+    return 0;
+}
+
+
 

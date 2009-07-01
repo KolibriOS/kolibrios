@@ -255,8 +255,8 @@ int radeon_gart_init(struct radeon_device *rdev);
 void radeon_gart_fini(struct radeon_device *rdev);
 void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
 			int pages);
-int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
-		     int pages, struct page **pagelist);
+//int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+//            int pages, struct page **pagelist);
 
 
 /*
@@ -527,7 +527,7 @@ struct radeon_device {
     struct radeon_gart          gart;
 	struct radeon_mode_info		mode_info;
     struct radeon_scratch       scratch;
-//    struct radeon_mman      mman;
+ //   struct radeon_mman      mman;
 	struct radeon_fence_driver	fence_drv;
     struct radeon_cp        cp;
     struct radeon_ib_pool       ib_pool;
@@ -1065,6 +1065,8 @@ struct drm_device {
     int num_crtcs;                  /**< Number of CRTCs on this device */
     void *dev_private;              /**< device private data */
     void *mm_private;
+
+//    struct address_space *dev_mapping;
 
     struct drm_mode_config mode_config; /**< Current mode config */
 
