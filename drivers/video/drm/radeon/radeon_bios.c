@@ -39,7 +39,7 @@ static bool radeon_read_bios(struct radeon_device *rdev)
     size_t    size;
 
 	rdev->bios = NULL;
-	bios = pci_map_rom(rdev->pdev, &size);
+    bios = (uint8_t*)pci_map_rom(rdev->pdev, &size);
 	if (!bios) {
 		return false;
 	}

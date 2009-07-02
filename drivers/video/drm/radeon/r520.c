@@ -155,7 +155,7 @@ int r520_mc_wait_for_idle(struct radeon_device *rdev)
 void r520_gpu_init(struct radeon_device *rdev)
 {
 	unsigned pipe_select_current, gb_pipe_select, tmp;
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	r100_hdp_reset(rdev);
 	rs600_disable_vga(rdev);
@@ -204,7 +204,7 @@ void r520_gpu_init(struct radeon_device *rdev)
 static void r520_vram_get_type(struct radeon_device *rdev)
 {
 	uint32_t tmp;
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	rdev->mc.vram_width = 128;
 	rdev->mc.vram_is_ddr = true;
@@ -245,7 +245,7 @@ void r520_vram_info(struct radeon_device *rdev)
 void rs600_disable_vga(struct radeon_device *rdev)
 {
     unsigned tmp;
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     WREG32(0x330, 0);
     WREG32(0x338, 0);
@@ -264,7 +264,7 @@ void r420_pipes_init(struct radeon_device *rdev)
     unsigned gb_pipe_select;
     unsigned num_pipes;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     /* GA_ENHANCE workaround TCL deadlock issue */
     WREG32(0x4274, (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3));
@@ -314,83 +314,11 @@ void r420_pipes_init(struct radeon_device *rdev)
     DRM_INFO("radeon: %d pipes initialized.\n", rdev->num_gb_pipes);
 }
 
-void rv370_pcie_gart_disable(struct radeon_device *rdev)
-{
-    uint32_t tmp;
-    dbgprintf("%s\n\r",__FUNCTION__);
-
-    tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
-    tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
-    WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp & ~RADEON_PCIE_TX_GART_EN);
-    if (rdev->gart.table.vram.robj) {
-//        radeon_object_kunmap(rdev->gart.table.vram.robj);
-//        radeon_object_unpin(rdev->gart.table.vram.robj);
-    }
-}
-
-void radeon_gart_table_vram_free(struct radeon_device *rdev)
-{
-    if (rdev->gart.table.vram.robj == NULL) {
-        return;
-    }
-//    radeon_object_kunmap(rdev->gart.table.vram.robj);
-//    radeon_object_unpin(rdev->gart.table.vram.robj);
-//    radeon_object_unref(&rdev->gart.table.vram.robj);
-}
-
-/*
- * Common gart functions.
- */
-void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
-            int pages)
-{
-    unsigned t;
-    unsigned p;
-    int i, j;
-    dbgprintf("%s\n\r",__FUNCTION__);
-
-    if (!rdev->gart.ready) {
-        dbgprintf("trying to unbind memory to unitialized GART !\n");
-        return;
-    }
-    t = offset / 4096;
-    p = t / (PAGE_SIZE / 4096);
-    for (i = 0; i < pages; i++, p++) {
-        if (rdev->gart.pages[p]) {
-//            pci_unmap_page(rdev->pdev, rdev->gart.pages_addr[p],
-//                       PAGE_SIZE, PCI_DMA_BIDIRECTIONAL);
-            rdev->gart.pages[p] = NULL;
-            rdev->gart.pages_addr[p] = 0;
-            for (j = 0; j < (PAGE_SIZE / 4096); j++, t++) {
-                radeon_gart_set_page(rdev, t, 0);
-            }
-        }
-    }
-    mb();
-    radeon_gart_tlb_flush(rdev);
-}
-
-
-
-void radeon_gart_fini(struct radeon_device *rdev)
-{
-    if (rdev->gart.pages && rdev->gart.pages_addr && rdev->gart.ready) {
-        /* unbind pages */
-        radeon_gart_unbind(rdev, 0, rdev->gart.num_cpu_pages);
-    }
-    rdev->gart.ready = false;
-//    kfree(rdev->gart.pages);
-//    kfree(rdev->gart.pages_addr);
-    rdev->gart.pages = NULL;
-    rdev->gart.pages_addr = NULL;
-}
-
-
 
 int radeon_agp_init(struct radeon_device *rdev)
 {
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 #if __OS_HAS_AGP
     struct radeon_agpmode_quirk *p = radeon_agpmode_quirk_list;
@@ -535,182 +463,11 @@ void rs600_mc_disable_clients(struct radeon_device *rdev)
 
 }
 
-int rv370_pcie_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
-{
-    void __iomem *ptr = (void *)rdev->gart.table.vram.ptr;
-
-    if (i < 0 || i > rdev->gart.num_gpu_pages) {
-        return -EINVAL;
-    }
-    addr = (((u32_t)addr) >> 8) | ((upper_32_bits(addr) & 0xff) << 4) | 0xC;
-    writel(cpu_to_le32(addr), ((void __iomem *)ptr) + (i * 4));
-    return 0;
-}
 
 
-int radeon_gart_init(struct radeon_device *rdev)
-{
-
-    dbgprintf("%s\n",__FUNCTION__);
-
-    if (rdev->gart.pages) {
-        return 0;
-    }
-    /* We need PAGE_SIZE >= 4096 */
-    if (PAGE_SIZE < 4096) {
-        DRM_ERROR("Page size is smaller than GPU page size!\n");
-        return -EINVAL;
-    }
-    /* Compute table size */
-    rdev->gart.num_cpu_pages = rdev->mc.gtt_size / PAGE_SIZE;
-    rdev->gart.num_gpu_pages = rdev->mc.gtt_size / 4096;
-    DRM_INFO("GART: num cpu pages %u, num gpu pages %u\n",
-         rdev->gart.num_cpu_pages, rdev->gart.num_gpu_pages);
-    /* Allocate pages table */
-    rdev->gart.pages = kzalloc(sizeof(void *) * rdev->gart.num_cpu_pages,
-                   GFP_KERNEL);
-    if (rdev->gart.pages == NULL) {
-//        radeon_gart_fini(rdev);
-        return -ENOMEM;
-    }
-    rdev->gart.pages_addr = kzalloc(sizeof(u32_t) *
-                    rdev->gart.num_cpu_pages, GFP_KERNEL);
-    if (rdev->gart.pages_addr == NULL) {
-//        radeon_gart_fini(rdev);
-        return -ENOMEM;
-    }
-    return 0;
-}
-
-int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
-{
-    uint32_t gpu_addr;
-    int r;
-
-//    if (rdev->gart.table.vram.robj == NULL) {
-//        r = radeon_object_create(rdev, NULL,
-//                     rdev->gart.table_size,
-//                     true,
-//                     RADEON_GEM_DOMAIN_VRAM,
-//                     false, &rdev->gart.table.vram.robj);
-//        if (r) {
-//            return r;
-//        }
-//    }
-//    r = radeon_object_pin(rdev->gart.table.vram.robj,
-//                  RADEON_GEM_DOMAIN_VRAM, &gpu_addr);
-//    if (r) {
-//        radeon_object_unref(&rdev->gart.table.vram.robj);
-//        return r;
-//    }
-//    r = radeon_object_kmap(rdev->gart.table.vram.robj,
-//                   (void **)&rdev->gart.table.vram.ptr);
-//    if (r) {
-//        radeon_object_unpin(rdev->gart.table.vram.robj);
-//        radeon_object_unref(&rdev->gart.table.vram.robj);
-//        DRM_ERROR("radeon: failed to map gart vram table.\n");
-//        return r;
-//    }
-
-    gpu_addr = 0x800000;
-
-    u32_t pci_addr = rdev->mc.aper_base + gpu_addr;
-
-    rdev->gart.table.vram.ptr = (void*)MapIoMem(pci_addr, rdev->gart.table_size, PG_SW);
-
-    rdev->gart.table_addr = gpu_addr;
-
-    dbgprintf("alloc gart vram:\n  gpu_base %x pci_base %x lin_addr %x",
-               gpu_addr, pci_addr, rdev->gart.table.vram.ptr);
-
-    return 0;
-}
 
 void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev);
 
-int rv370_pcie_gart_enable(struct radeon_device *rdev)
-{
-    uint32_t table_addr;
-    uint32_t tmp;
-    int r;
-
-    dbgprintf("%s\n",__FUNCTION__);
-
-    /* Initialize common gart structure */
-    r = radeon_gart_init(rdev);
-    if (r) {
-        return r;
-    }
- //   r = rv370_debugfs_pcie_gart_info_init(rdev);
- //   if (r) {
- //       DRM_ERROR("Failed to register debugfs file for PCIE gart !\n");
- //   }
-    rdev->gart.table_size = rdev->gart.num_gpu_pages * 4;
-    r = radeon_gart_table_vram_alloc(rdev);
-    if (r) {
-        return r;
-    }
-    /* discard memory request outside of configured range */
-    tmp = RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
-    WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
-    WREG32_PCIE(RADEON_PCIE_TX_GART_START_LO, rdev->mc.gtt_location);
-    tmp = rdev->mc.gtt_location + rdev->mc.gtt_size - 4096;
-    WREG32_PCIE(RADEON_PCIE_TX_GART_END_LO, tmp);
-    WREG32_PCIE(RADEON_PCIE_TX_GART_START_HI, 0);
-    WREG32_PCIE(RADEON_PCIE_TX_GART_END_HI, 0);
-    table_addr = rdev->gart.table_addr;
-    WREG32_PCIE(RADEON_PCIE_TX_GART_BASE, table_addr);
-    /* FIXME: setup default page */
-    WREG32_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_LO, rdev->mc.vram_location);
-    WREG32_PCIE(RADEON_PCIE_TX_DISCARD_RD_ADDR_HI, 0);
-    /* Clear error */
-    WREG32_PCIE(0x18, 0);
-    tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
-    tmp |= RADEON_PCIE_TX_GART_EN;
-    tmp |= RADEON_PCIE_TX_GART_UNMAPPED_ACCESS_DISCARD;
-    WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
-    rv370_pcie_gart_tlb_flush(rdev);
-    DRM_INFO("PCIE GART of %uM enabled (table at 0x%08X).\n",
-         rdev->mc.gtt_size >> 20, table_addr);
-    rdev->gart.ready = true;
-    return 0;
-}
-
-void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev)
-{
-    uint32_t tmp;
-    int i;
-
-    /* Workaround HW bug do flush 2 times */
-    for (i = 0; i < 2; i++) {
-        tmp = RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
-        WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp | RADEON_PCIE_TX_GART_INVALIDATE_TLB);
-        (void)RREG32_PCIE(RADEON_PCIE_TX_GART_CNTL);
-        WREG32_PCIE(RADEON_PCIE_TX_GART_CNTL, tmp);
-        mb();
-    }
-}
-
-int r300_gart_enable(struct radeon_device *rdev)
-{
-#if __OS_HAS_AGP
-    if (rdev->flags & RADEON_IS_AGP) {
-        if (rdev->family > CHIP_RV350) {
-            rv370_pcie_gart_disable(rdev);
-        } else {
-            r100_pci_gart_disable(rdev);
-        }
-        return 0;
-    }
-#endif
-    if (rdev->flags & RADEON_IS_PCIE) {
-        rdev->asic->gart_disable = &rv370_pcie_gart_disable;
-        rdev->asic->gart_tlb_flush = &rv370_pcie_gart_tlb_flush;
-        rdev->asic->gart_set_page = &rv370_pcie_gart_set_page;
-        return rv370_pcie_gart_enable(rdev);
-    }
- //   return r100_pci_gart_enable(rdev);
-}
 
 
 
@@ -741,49 +498,7 @@ int radeon_fence_driver_init(struct radeon_device *rdev)
 }
 
 
-int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
-             int pages, u32_t *pagelist)
-{
-    unsigned t;
-    unsigned p;
-    uint64_t page_base;
-    int i, j;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
-
-
-    if (!rdev->gart.ready) {
-        DRM_ERROR("trying to bind memory to unitialized GART !\n");
-        return -EINVAL;
-    }
-    t = offset / 4096;
-    p = t / (PAGE_SIZE / 4096);
-
-    for (i = 0; i < pages; i++, p++) {
-        /* we need to support large memory configurations */
-        /* assume that unbind have already been call on the range */
-
-        rdev->gart.pages_addr[p] = pagelist[i] & ~4095;
-
-        //if (pci_dma_mapping_error(rdev->pdev, rdev->gart.pages_addr[p])) {
-        //    /* FIXME: failed to map page (return -ENOMEM?) */
-        //    radeon_gart_unbind(rdev, offset, pages);
-        //    return -ENOMEM;
-        //}
-        rdev->gart.pages[p] = pagelist[i];
-        page_base = (uint32_t)rdev->gart.pages_addr[p];
-        for (j = 0; j < (PAGE_SIZE / 4096); j++, t++) {
-            radeon_gart_set_page(rdev, t, page_base);
-            page_base += 4096;
-        }
-    }
-    mb();
-    radeon_gart_tlb_flush(rdev);
-
-    dbgprintf("done %s\n",__FUNCTION__);
-
-    return 0;
-}
 
 
 

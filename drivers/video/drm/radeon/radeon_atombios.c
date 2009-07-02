@@ -944,7 +944,7 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
 	struct radeon_device *rdev = dev->dev_private;
 	uint32_t bios_2_scratch, bios_6_scratch;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	if (rdev->family >= CHIP_R600) {
 		bios_2_scratch = RREG32(R600_BIOS_0_SCRATCH);

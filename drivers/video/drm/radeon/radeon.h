@@ -44,10 +44,12 @@
  *	- TESTING, TESTING, TESTING
  */
 
-#include "types.h"
-#include "pci.h"
+#include <types.h>
+#include <list.h>
 
-#include "errno-base.h"
+#include <pci.h>
+
+#include <errno-base.h>
 
 #include "radeon_mode.h"
 #include "radeon_reg.h"
@@ -60,15 +62,14 @@ extern int radeon_gart_size;
 extern int radeon_r4xx_atom;
 
 
-
 /*
  * Copy from radeon_drv.h so we don't have to include both and have conflicting
  * symbol;
  */
-#define RADEON_MAX_USEC_TIMEOUT		100000	/* 100 ms */
-#define RADEON_IB_POOL_SIZE		16
+#define RADEON_MAX_USEC_TIMEOUT         100000  /* 100 ms */
+#define RADEON_IB_POOL_SIZE             16
 #define RADEON_DEBUGFS_MAX_NUM_FILES	32
-#define RADEONFB_CONN_LIMIT		4
+#define RADEONFB_CONN_LIMIT             4
 
 enum radeon_family {
     CHIP_R100,
@@ -169,15 +170,15 @@ struct radeon_fence_driver {
 	unsigned long			count_timeout;
 //	wait_queue_head_t		queue;
 //	rwlock_t			lock;
-//	struct list_head		created;
-//	struct list_head		emited;
-//	struct list_head		signaled;
+	struct list_head		created;
+	struct list_head		emited;
+	struct list_head		signaled;
 };
 
 struct radeon_fence {
 	struct radeon_device		*rdev;
 //	struct kref			kref;
-//	struct list_head		list;
+	struct list_head		list;
 	/* protected by radeon_fence.lock */
 	uint32_t			seq;
 	unsigned long			timeout;
@@ -204,13 +205,12 @@ void radeon_fence_unref(struct radeon_fence **fence);
 struct radeon_object;
 
 struct radeon_object_list {
-//	struct list_head	list;
+	struct list_head	list;
 	struct radeon_object	*robj;
 	uint64_t		gpu_offset;
 	unsigned		rdomain;
 	unsigned		wdomain;
 };
-
 
 
 
@@ -255,8 +255,8 @@ int radeon_gart_init(struct radeon_device *rdev);
 void radeon_gart_fini(struct radeon_device *rdev);
 void radeon_gart_unbind(struct radeon_device *rdev, unsigned offset,
 			int pages);
-//int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
-//            int pages, struct page **pagelist);
+int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
+            int pages, u32_t *pagelist);
 
 
 /*
@@ -309,7 +309,7 @@ void radeon_irq_kms_fini(struct radeon_device *rdev);
  * CP & ring.
  */
 struct radeon_ib {
-//	struct list_head	list;
+	struct list_head	list;
 	unsigned long		idx;
 	uint64_t		gpu_addr;
 	struct radeon_fence	*fence;
@@ -320,10 +320,10 @@ struct radeon_ib {
 struct radeon_ib_pool {
 //	struct mutex		mutex;
 	struct radeon_object	*robj;
-//	struct list_head	scheduled_ibs;
+	struct list_head	scheduled_ibs;
 	struct radeon_ib	ibs[RADEON_IB_POOL_SIZE];
 	bool			ready;
-//	DECLARE_BITMAP(alloc_bm, RADEON_IB_POOL_SIZE);
+	DECLARE_BITMAP(alloc_bm, RADEON_IB_POOL_SIZE);
 };
 
 struct radeon_cp {
@@ -364,7 +364,7 @@ void radeon_ring_fini(struct radeon_device *rdev);
 struct radeon_cs_reloc {
 //	struct drm_gem_object		*gobj;
 	struct radeon_object		*robj;
-//	struct radeon_object_list	lobj;
+	struct radeon_object_list	lobj;
 	uint32_t			handle;
 	uint32_t			flags;
 };
@@ -388,7 +388,7 @@ struct radeon_cs_parser {
 	unsigned		nrelocs;
 	struct radeon_cs_reloc	*relocs;
 	struct radeon_cs_reloc	**relocs_ptr;
-//	struct list_head	validated;
+	struct list_head	validated;
 	/* indices of various chunks */
 	int			chunk_ib_idx;
 	int			chunk_relocs_idx;
@@ -512,24 +512,24 @@ struct radeon_device {
     unsigned long               rmmio_size;
     void                       *rmmio;
 
-    radeon_rreg_t           mm_rreg;
-    radeon_wreg_t           mm_wreg;
-    radeon_rreg_t           mc_rreg;
-    radeon_wreg_t           mc_wreg;
-    radeon_rreg_t           pll_rreg;
-    radeon_wreg_t           pll_wreg;
-    radeon_rreg_t           pcie_rreg;
-    radeon_wreg_t           pcie_wreg;
-    radeon_rreg_t           pciep_rreg;
-    radeon_wreg_t           pciep_wreg;
-	struct radeon_clock             clock;
+    radeon_rreg_t               mm_rreg;
+    radeon_wreg_t               mm_wreg;
+    radeon_rreg_t               mc_rreg;
+    radeon_wreg_t               mc_wreg;
+    radeon_rreg_t               pll_rreg;
+    radeon_wreg_t               pll_wreg;
+    radeon_rreg_t               pcie_rreg;
+    radeon_wreg_t               pcie_wreg;
+    radeon_rreg_t               pciep_rreg;
+    radeon_wreg_t               pciep_wreg;
+    struct radeon_clock         clock;
     struct radeon_mc            mc;
     struct radeon_gart          gart;
 	struct radeon_mode_info		mode_info;
     struct radeon_scratch       scratch;
- //   struct radeon_mman      mman;
+//    struct radeon_mman          mman;
 	struct radeon_fence_driver	fence_drv;
-    struct radeon_cp        cp;
+    struct radeon_cp            cp;
     struct radeon_ib_pool       ib_pool;
 //    struct radeon_irq       irq;
     struct radeon_asic         *asic;

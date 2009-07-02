@@ -3,7 +3,7 @@
 #include <errno-base.h>
 #include <syscall.h>
 
-link_t  devices;
+static LIST_HEAD(devices);
 
 static dev_t* pci_scan_device(u32_t bus, int devfn);
 
@@ -346,7 +346,7 @@ static dev_t* pci_scan_device(u32_t bus, int devfn)
 
     dev = (dev_t*)malloc(sizeof(dev_t));
 
-    link_initialize(&dev->link);
+    INIT_LIST_HEAD(&dev->link);
 
     if(unlikely(dev == NULL))
         return NULL;
@@ -375,7 +375,7 @@ int pci_scan_slot(u32_t bus, int devfn)
         dev = pci_scan_device(bus, devfn);
         if( dev )
         {
-            list_append(&dev->link, &devices);
+            list_add(&dev->link, &devices);
 
             nr++;
 
@@ -420,7 +420,7 @@ int enum_pci_devices()
     u32_t   last_bus;
     u32_t   bus = 0 , devfn = 0;
 
-    list_initialize(&devices);
+  //  list_initialize(&devices);
 
     last_bus = PciApi(1);
 

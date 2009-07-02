@@ -268,6 +268,7 @@ void r100_fence_ring_emit(struct radeon_device *rdev,
 	radeon_ring_write(rdev, RADEON_SW_INT_FIRE);
 }
 
+#endif
 
 /*
  * Writeback
@@ -307,14 +308,16 @@ int r100_wb_init(struct radeon_device *rdev)
 void r100_wb_fini(struct radeon_device *rdev)
 {
 	if (rdev->wb.wb_obj) {
-		radeon_object_kunmap(rdev->wb.wb_obj);
-		radeon_object_unpin(rdev->wb.wb_obj);
-		radeon_object_unref(&rdev->wb.wb_obj);
+//       radeon_object_kunmap(rdev->wb.wb_obj);
+//       radeon_object_unpin(rdev->wb.wb_obj);
+//       radeon_object_unref(&rdev->wb.wb_obj);
 		rdev->wb.wb = NULL;
 		rdev->wb.wb_obj = NULL;
 	}
 }
 
+
+#if 0
 int r100_copy_blit(struct radeon_device *rdev,
 		   uint64_t src_offset,
 		   uint64_t dst_offset,
@@ -415,7 +418,7 @@ static void r100_cp_load_microcode(struct radeon_device *rdev)
 {
 	int i;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	if (r100_gui_wait_for_idle(rdev)) {
 		printk(KERN_WARNING "Failed to wait GUI idle while "
@@ -498,7 +501,7 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
 	uint32_t tmp;
 	int r;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 //   if (r100_debugfs_cp_init(rdev)) {
 //       DRM_ERROR("Failed to register debugfs file for CP !\n");
@@ -624,7 +627,7 @@ int r100_cp_reset(struct radeon_device *rdev)
 	bool reinit_cp;
 	int i;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 
 	reinit_cp = rdev->cp.ready;
@@ -1170,7 +1173,7 @@ void r100_hdp_reset(struct radeon_device *rdev)
 {
 	uint32_t tmp;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	tmp = RREG32(RADEON_HOST_PATH_CNTL) & RADEON_HDP_APER_CNTL;
 	tmp |= (7 << 28);
@@ -1187,7 +1190,7 @@ int r100_rb2d_reset(struct radeon_device *rdev)
 	uint32_t tmp;
 	int i;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	WREG32(RADEON_RBBM_SOFT_RESET, RADEON_SOFT_RESET_E2);
 	(void)RREG32(RADEON_RBBM_SOFT_RESET);

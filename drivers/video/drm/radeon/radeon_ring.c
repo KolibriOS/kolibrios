@@ -32,14 +32,15 @@
 #include "radeon.h"
 #include "atom.h"
 
-extern void * ring_buffer;
 
-#if 0
 int radeon_debugfs_ib_init(struct radeon_device *rdev);
 
 /*
  * IB.
  */
+
+#if 0
+
 int radeon_ib_get(struct radeon_device *rdev, struct radeon_ib **ib)
 {
 	struct radeon_fence *fence;
@@ -97,6 +98,7 @@ out:
 	}
 	return r;
 }
+
 
 void radeon_ib_free(struct radeon_device *rdev, struct radeon_ib **ib)
 {
@@ -170,6 +172,7 @@ int radeon_ib_schedule(struct radeon_device *rdev, struct radeon_ib *ib)
 	mutex_unlock(&rdev->ib_pool.mutex);
 	return 0;
 }
+#endif
 
 int radeon_ib_pool_init(struct radeon_device *rdev)
 {
@@ -210,9 +213,9 @@ int radeon_ib_pool_init(struct radeon_device *rdev)
 	bitmap_zero(rdev->ib_pool.alloc_bm, RADEON_IB_POOL_SIZE);
 	rdev->ib_pool.ready = true;
 	DRM_INFO("radeon: ib pool ready.\n");
-	if (radeon_debugfs_ib_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for IB !\n");
-	}
+//   if (radeon_debugfs_ib_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for IB !\n");
+//   }
 	return r;
 }
 
@@ -221,15 +224,17 @@ void radeon_ib_pool_fini(struct radeon_device *rdev)
 	if (!rdev->ib_pool.ready) {
 		return;
 	}
-	mutex_lock(&rdev->ib_pool.mutex);
+//   mutex_lock(&rdev->ib_pool.mutex);
 	bitmap_zero(rdev->ib_pool.alloc_bm, RADEON_IB_POOL_SIZE);
 	if (rdev->ib_pool.robj) {
-		radeon_object_kunmap(rdev->ib_pool.robj);
-		radeon_object_unref(&rdev->ib_pool.robj);
+//       radeon_object_kunmap(rdev->ib_pool.robj);
+//       radeon_object_unref(&rdev->ib_pool.robj);
 		rdev->ib_pool.robj = NULL;
 	}
-	mutex_unlock(&rdev->ib_pool.mutex);
+//   mutex_unlock(&rdev->ib_pool.mutex);
 }
+
+#if 0
 
 int radeon_ib_test(struct radeon_device *rdev)
 {
@@ -402,7 +407,6 @@ int radeon_ring_test(struct radeon_device *rdev)
 int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
              int pages, u32_t *pagelist);
 
-#define page_tabs  0xFDC00000
 
 
 int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
@@ -413,8 +417,7 @@ int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
 
 	rdev->cp.ring_size = ring_size;
 
-#if 0
-	/* Allocate ring buffer */
+    /* Allocate ring buffer */
 	if (rdev->cp.ring_obj == NULL) {
 		r = radeon_object_create(rdev, NULL, rdev->cp.ring_size,
 					 true,
@@ -442,23 +445,19 @@ int radeon_ring_init(struct radeon_device *rdev, unsigned ring_size)
 			return r;
 		}
 	}
-#endif
 
-    dbgprintf("ring size %x\n", ring_size);
 
-    dbgprintf("ring buffer %x\n", rdev->cp.ring );
-
-    rdev->cp.ring  = ring_buffer; //CreateRingBuffer( ring_size, PG_SW );
+//    rdev->cp.ring  = CreateRingBuffer( ring_size, PG_SW );
 
     dbgprintf("ring buffer %x\n", rdev->cp.ring );
 
-    rdev->cp.gpu_addr = rdev->mc.gtt_location;
+//    rdev->cp.gpu_addr = rdev->mc.gtt_location;
 
-    u32_t *pagelist =  &((u32_t*)page_tabs)[(u32_t)rdev->cp.ring >> 12];
+ //   u32_t *pagelist =  &((u32_t*)page_tabs)[(u32_t)rdev->cp.ring >> 12];
 
-    dbgprintf("pagelist %x\n", pagelist);
+ //   dbgprintf("pagelist %x\n", pagelist);
 
-    radeon_gart_bind(rdev, 0, ring_size / 4096, pagelist);
+ //   radeon_gart_bind(rdev, 0, ring_size / 4096, pagelist);
 
 	rdev->cp.ptr_mask = (rdev->cp.ring_size / 4) - 1;
 	rdev->cp.ring_free_dw = rdev->cp.ring_size / 4;

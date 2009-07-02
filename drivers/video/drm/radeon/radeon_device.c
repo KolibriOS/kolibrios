@@ -46,7 +46,7 @@ int radeon_gart_size = 512; /* default gart size */
  */
 static void radeon_surface_init(struct radeon_device *rdev)
 {
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     /* FIXME: check this out */
     if (rdev->family < CHIP_R600) {
@@ -180,7 +180,7 @@ static bool radeon_card_posted(struct radeon_device *rdev)
 {
 	uint32_t reg;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	/* first check CRTCs */
 	if (ASIC_IS_AVIVO(rdev)) {
@@ -231,7 +231,7 @@ void radeon_invalid_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v)
 void radeon_register_accessor_init(struct radeon_device *rdev)
 {
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     rdev->mm_rreg = &r100_mm_rreg;
     rdev->mm_wreg = &r100_mm_wreg;
@@ -288,7 +288,7 @@ void radeon_register_accessor_init(struct radeon_device *rdev)
 int radeon_asic_init(struct radeon_device *rdev)
 {
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     radeon_register_accessor_init(rdev);
 	switch (rdev->family) {
@@ -360,7 +360,7 @@ int radeon_clocks_init(struct radeon_device *rdev)
 {
 	int r;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     radeon_get_clock_info(rdev->ddev);
     r = radeon_static_clocks_init(rdev->ddev);
@@ -436,7 +436,7 @@ static struct card_info atom_card_info = {
 
 int radeon_atombios_init(struct radeon_device *rdev)
 {
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     atom_card_info.dev = rdev->ddev;
     rdev->mode_info.atom_context = atom_parse(&atom_card_info, rdev->bios);
@@ -462,7 +462,6 @@ void radeon_combios_fini(struct radeon_device *rdev)
 int radeon_modeset_init(struct radeon_device *rdev);
 void radeon_modeset_fini(struct radeon_device *rdev);
 
-void *ring_buffer;
 /*
  * Radeon device.
  */
@@ -473,7 +472,7 @@ int radeon_device_init(struct radeon_device *rdev,
 {
     int r, ret = -1;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     DRM_INFO("radeon: Initializing kernel modesetting.\n");
     rdev->shutdown = false;
@@ -492,7 +491,6 @@ int radeon_device_init(struct radeon_device *rdev,
  //   mutex_init(&rdev->cp.mutex);
  //   rwlock_init(&rdev->fence_drv.lock);
 
-    ring_buffer = CreateRingBuffer( 1024*1024, PG_SW );
 
     if (radeon_agpmode == -1) {
         rdev->flags &= ~RADEON_IS_AGP;
@@ -620,10 +618,10 @@ int radeon_device_init(struct radeon_device *rdev,
 //        return r;
 //    }
     /* Memory manager */
-//    r = radeon_object_init(rdev);
-//    if (r) {
-//        return r;
-//    }
+    r = radeon_object_init(rdev);
+    if (r) {
+        return r;
+    }
     /* Initialize GART (initialize after TTM so we can allocate
      * memory through TTM but finalize after TTM) */
     r = radeon_gart_enable(rdev);
@@ -635,15 +633,14 @@ int radeon_device_init(struct radeon_device *rdev,
     if (!r) {
         r = radeon_cp_init(rdev, 1024 * 1024);
     }
-//    if (!r) {
-//        r = radeon_wb_init(rdev);
-//        if (r) {
-//            DRM_ERROR("radeon: failled initializing WB (%d).\n", r);
-//            return r;
-//        }
-//    }
+    if (!r) {
+        r = radeon_wb_init(rdev);
+        if (r) {
+            DRM_ERROR("radeon: failled initializing WB (%d).\n", r);
+            return r;
+        }
+    }
 
-#if 0
     if (!r) {
         r = radeon_ib_pool_init(rdev);
         if (r) {
@@ -651,6 +648,8 @@ int radeon_device_init(struct radeon_device *rdev,
             return r;
         }
     }
+#if 0
+
     if (!r) {
         r = radeon_ib_test(rdev);
         if (r) {
@@ -694,9 +693,9 @@ u32_t __stdcall drvEntry(int action)
     if(action != 1)
         return 0;
 
-    if(!dbg_open("/rd/1/drivers/atikms.log"))
+    if(!dbg_open("/hd0/2/atikms.log"))
     {
-        printf("Can't open /rd/1/drivers/ati2d.log\nExit\n");
+        printf("Can't open /hd0/2/atikms.log\nExit\n");
         return 0;
     }
 
@@ -793,9 +792,9 @@ int radeon_driver_load_kms(struct drm_device *dev, unsigned long flags)
     struct radeon_device *rdev;
     int r;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
-    rdev = malloc(sizeof(struct radeon_device));
+    rdev = kzalloc(sizeof(struct radeon_device), GFP_KERNEL);
     if (rdev == NULL) {
         return -ENOMEM;
     };
@@ -825,7 +824,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
     struct drm_device *dev;
     int ret;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
     dev = malloc(sizeof(*dev));
     if (!dev)

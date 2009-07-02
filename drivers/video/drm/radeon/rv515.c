@@ -140,7 +140,7 @@ void rv515_ring_start(struct radeon_device *rdev)
 	unsigned gb_tile_config;
 	int r;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 	/* Sub pixel 1/12 so we can have 4K rendering according to doc */
 	gb_tile_config = R300_ENABLE_TILING | R300_TILE_SIZE_16;
 	switch (rdev->num_gb_pipes) {
@@ -231,7 +231,7 @@ void rv515_ring_start(struct radeon_device *rdev)
 	radeon_ring_write(rdev, 0);
 	radeon_ring_unlock_commit(rdev);
 
-    dbgprintf("done %s\n\r",__FUNCTION__);
+    dbgprintf("done %s\n",__FUNCTION__);
 
 }
 
@@ -296,7 +296,7 @@ int rv515_ga_reset(struct radeon_device *rdev)
 	bool reinit_cp;
 	int i;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	reinit_cp = rdev->cp.ready;
 	rdev->cp.ready = false;
@@ -350,7 +350,7 @@ int rv515_gpu_reset(struct radeon_device *rdev)
 {
 	uint32_t status;
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	/* reset order likely matter */
 	status = RREG32(RADEON_RBBM_STATUS);
@@ -569,7 +569,7 @@ static const unsigned r500_reg_safe_bm[159] = {
 
 int rv515_init(struct radeon_device *rdev)
 {
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	rdev->config.r300.reg_safe_bm = r500_reg_safe_bm;
 	rdev->config.r300.reg_safe_bm_size = ARRAY_SIZE(r500_reg_safe_bm);

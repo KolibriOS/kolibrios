@@ -1165,7 +1165,7 @@ struct atom_context *atom_parse(struct card_info *card, void *bios)
 int atom_asic_init(struct atom_context *ctx)
 {
 
-    dbgprintf("%s\n\r",__FUNCTION__);
+    dbgprintf("%s\n",__FUNCTION__);
 
 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
 	uint32_t ps[16];
