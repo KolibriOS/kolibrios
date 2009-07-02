@@ -290,7 +290,7 @@ img.decode.gif.cur_color_table_size_child equ ebp + 4 + 4 + 4*3 + 4
 	test	edx, edx
 	jz	.nofreeprev
 	mov	ebx, [edx + Image.Extended]
-	cmp	[ebx + gif.Image.gce.DelayTime], 0
+	cmp	[edx + Image.Delay], 0
 	jnz	.nofreeprev
 	mov	esi, [prev_palette]
 	cmp	esi, [edx + Image.Palette]
@@ -698,8 +698,6 @@ img.decode.gif._.process_image.output:
 	mov	[img.decode.gif.max_color_child], al
     @@:	stosb
 
-	cmp	edi, [img_end]
-	jz	.done
 	cmp	edi, [row_end]
 	jb	.norowend
 	mov	eax, [width]
@@ -718,6 +716,8 @@ img.decode.gif._.process_image.output:
 	jb	.nextrow
 	mov	edi, [img_start]
 	inc	[pass]
+	cmp	[pass], 4
+	je	.done
 	add	edi, eax
 	cmp	[pass], 3
 	je	@f
@@ -734,6 +734,8 @@ img.decode.gif._.process_image.output:
 	xor	eax, eax
 
   .norowend:
+	cmp	edi, [img_end]
+	jz	.done
 	loop	.loop2
 	pop	edx eax esi
 	retn
