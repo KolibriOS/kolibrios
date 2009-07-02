@@ -168,6 +168,7 @@ get_error_msg:
         pop     eax
         dec     edi
         push    edx ecx
+        push    -'0'
         test    eax, eax
         jns     @f
         mov     byte [edi], '-'
@@ -177,13 +178,15 @@ get_error_msg:
         xor     edx, edx
         mov     ecx, 10
         div     ecx
-        add     edx, '0'
-        mov     byte [edi], dl
-        inc     edi
+        push    edx
         test    eax, eax
         jnz     @b
-        pop     ecx edx
+@@:
+        pop     eax
+        add     al, '0'
         stosb
+        jnz     @b
+        pop     ecx edx
         jmp     .ret
 
 libini_alloc:

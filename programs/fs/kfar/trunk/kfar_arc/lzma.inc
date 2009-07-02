@@ -134,6 +134,7 @@ end virtual
 	jb	.literal
 	mov	edx, edi
 	sub	edx, [ebp+.rep0]
+	jc	.before_buf
 	cmp	edx, [ebp+streamInfo.bufPtr]
 	jb	.before_buf
 @@:
@@ -177,12 +178,14 @@ end virtual
 	lea	ebx, [9 + ebx + ebx]
 	mov	edx, edi
 	sub	edx, [ebp+.rep0]
+	jc	@f
 	cmp	edx, [ebp+streamInfo.bufPtr]
-	jae	@f
+	jae	.copy_byte
+@@:
 	add	edx, [ebp+streamInfo.bufSize]
 	cmp	edx, [ebp+streamInfo.bufPtr]
 	jb	return.err
-@@:
+.copy_byte:
 	mov	al, [edx]
 	stosb
 	mov	[ebp+.previousByte], al
@@ -277,6 +280,7 @@ end virtual
         ja      return.err
 	mov	esi, edi
 	sub	esi, eax
+	jc	.repmovsb0a
         mov     eax, [ebp+streamInfo.bufPtr]
         sub     eax, esi
         ja      .repmovsb0
@@ -299,6 +303,9 @@ end virtual
         mov     [ebp+.continue], .restart_repmovsb
         popad
         ret
+.repmovsb0a:
+        mov     eax, [ebp+streamInfo.bufPtr]
+        sub     eax, esi
 .repmovsb0:
 	mov	edx, [ebp+.dictSize]
 ;	cmp	edx, [ebp+streamInfo.bufSize]

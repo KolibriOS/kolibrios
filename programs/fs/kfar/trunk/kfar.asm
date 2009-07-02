@@ -7,8 +7,8 @@ memsize dd      mem
         dd      stacktop
         dd      0, app_path
 
-version equ '0.64'
-version_dword equ 0*10000h + 64
+version equ '0.65'
+version_dword equ 0*10000h + 65
 
 min_width = 54
 max_width = 255

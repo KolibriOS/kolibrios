@@ -2,8 +2,8 @@
 ; project name:         KFar_Arc - plugin for KFar, which supports various archives
 ; target platform:      KolibriOS
 ; compiler:             FASM 1.67.14
-; version:              0.15
-; last update:          2009-02-01 (Feb 01, 2009)
+; version:              0.16
+; last update:          2009-07-03 (Jul 03, 2009)
 ; minimal KFar version: 0.43
 ; minimal kernel:       no limit
 ;

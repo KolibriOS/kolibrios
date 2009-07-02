@@ -100,9 +100,9 @@ view_file:
         mov     dword [ebp+viewer_data.col+4], eax
         call    viewer_clear_selection
         pop     eax
-        push    eax
         mov     ebx, attrinfo
         mov     [ebx+21], eax
+        mov     [readinfo.name], eax
 .attr_retry:
         mov     edx, [ebp+viewer_data.hPlugin]
         test    edx, edx
@@ -155,7 +155,6 @@ view_file:
         lea     eax, [ebp+viewer_data.buf]
         mov     [readinfo.data], eax
         mov     [ebp+viewer_data.buf_pos], eax
-        pop     dword [readinfo.name]
         mov     eax, [ebp+viewer_data.hPlugin]
         test    eax, eax
         jz      .retry
