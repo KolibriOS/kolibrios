@@ -1062,14 +1062,6 @@ fs_HdRead:
     mov    eax, ERROR_ACCESS_DENIED
     ret
 
-.noaccess_3:
-    add esp,4
-.noaccess_1:
-    add esp,4
-.noaccess_4:
-    add esp,4*5
-    jmp  .noaccess_2
-
 @@:
     call    hd_find_lfn
     jnc    .found
@@ -1133,9 +1125,9 @@ fs_HdRead:
     push    ebx
     mov    ebx, edx
     call    hd_read
+    pop    ebx
     cmp  [hd_error],0
     jne  .noaccess_1
-    pop    ebx
     add    edx, 512
     sub    ecx, 512
     jmp    .skip
@@ -1144,11 +1136,10 @@ fs_HdRead:
     push    eax ebx
     mov    ebx, buffer
     call    hd_read
-    cmp  [hd_error],0
-    jne  .noaccess_3
-
     mov    eax, ebx
     pop    ebx
+    cmp  [hd_error],0
+    jne  .noaccess_3
     add    eax, ebx
     push    ecx
     add    ecx, ebx
@@ -1171,9 +1162,14 @@ fs_HdRead:
     mov    eax, [cluster_tmp]
     call    get_FAT
     cmp   [hd_error],0
-    jne   .noaccess_4
+    jne   .noaccess_1
 
     jmp    .new_cluster
+.noaccess_3:
+        pop     eax
+.noaccess_1:
+        pop     eax
+        push    11
 .done:
         mov     ebx, edx
         pop     eax edx ecx edi
