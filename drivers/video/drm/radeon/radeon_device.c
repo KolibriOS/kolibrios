@@ -26,7 +26,8 @@
  *          Jerome Glisse
  */
 //#include <linux/console.h>
-//#include <drm/drmP.h>
+
+#include <drmP.h>
 //#include <drm/drm_crtc_helper.h>
 #include "radeon_drm.h"
 #include "radeon_reg.h"
@@ -36,9 +37,14 @@
 
 #include <syscall.h>
 
+int radeon_modeset = -1;
 int radeon_dynclks = -1;
-int radeon_agpmode   = -1;
+int radeon_r4xx_atom = 0;
+int radeon_agpmode = 0;
+int radeon_vram_limit = 0;
 int radeon_gart_size = 512; /* default gart size */
+int radeon_benchmarking = 0;
+int radeon_connector_table = 0;
 
 
 /*
@@ -894,5 +900,39 @@ resource_size_t drm_get_resource_start(struct drm_device *dev, unsigned int reso
 resource_size_t drm_get_resource_len(struct drm_device *dev, unsigned int resource)
 {
     return pci_resource_len(dev->pdev, resource);
+}
+
+
+uint32_t __div64_32(uint64_t *n, uint32_t base)
+{
+        uint64_t rem = *n;
+        uint64_t b = base;
+        uint64_t res, d = 1;
+        uint32_t high = rem >> 32;
+
+        /* Reduce the thing a bit first */
+        res = 0;
+        if (high >= base) {
+                high /= base;
+                res = (uint64_t) high << 32;
+                rem -= (uint64_t) (high*base) << 32;
+        }
+
+        while ((int64_t)b > 0 && b < rem) {
+                b = b+b;
+                d = d+d;
+        }
+
+        do {
+                if (rem >= b) {
+                        rem -= b;
+                        res += d;
+                }
+                b >>= 1;
+                d >>= 1;
+        } while (d);
+
+        *n = res;
+        return rem;
 }
 

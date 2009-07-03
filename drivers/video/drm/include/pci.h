@@ -1,6 +1,6 @@
 
 #include <types.h>
-#include <link.h>
+#include <list.h>
 
 #ifndef __PCI_H__
 #define __PCI_H__
@@ -545,8 +545,8 @@ struct pci_device_id
 
 typedef struct
 {
-    link_t         link;
-    struct pci_dev pci_dev;
+    struct list_head    link;
+    struct pci_dev      pci_dev;
 }dev_t;
 
 int enum_pci_devices(void);

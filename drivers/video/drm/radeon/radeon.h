@@ -50,17 +50,18 @@
 #include <pci.h>
 
 #include <errno-base.h>
-
+#include "drm_edid.h"
 #include "radeon_mode.h"
 #include "radeon_reg.h"
 #include "r300.h"
 
 #include <syscall.h>
 
+extern int radeon_modeset;
 extern int radeon_dynclks;
-extern int radeon_gart_size;
 extern int radeon_r4xx_atom;
-
+extern int radeon_gart_size;
+extern int radeon_connector_table;
 
 /*
  * Copy from radeon_drv.h so we don't have to include both and have conflicting
@@ -212,8 +213,23 @@ struct radeon_object_list {
 	unsigned		wdomain;
 };
 
+int radeon_object_init(struct radeon_device *rdev);
+void radeon_object_fini(struct radeon_device *rdev);
+int radeon_object_create(struct radeon_device *rdev,
+			 struct drm_gem_object *gobj,
+			 unsigned long size,
+			 bool kernel,
+			 uint32_t domain,
+			 bool interruptible,
+			 struct radeon_object **robj_ptr);
 
 
+/*
+ * GEM objects.
+ */
+struct radeon_gem {
+	struct list_head	objects;
+};
 
 
 
@@ -1038,40 +1054,6 @@ struct drm_agp_head {
     int cant_use_aperture;
     unsigned long page_mask;
 };
-
-
-
-
-
-/**
- * DRM device structure. This structure represent a complete card that
- * may contain multiple heads.
- */
-struct drm_device {
-
-    int irq_enabled;                /**< True if irq handler is enabled */
-    __volatile__ long context_flag; /**< Context swapping flag */
-    __volatile__ long interrupt_flag; /**< Interruption handler flag */
-    __volatile__ long dma_flag;     /**< DMA dispatch flag */
-    int last_checked;               /**< Last context checked for DMA */
-    int last_context;               /**< Last current context */
-    unsigned long last_switch;      /**< jiffies at last context switch */
-
-    struct drm_agp_head *agp;     /**< AGP data */
-
-    struct pci_dev *pdev;         /**< PCI device structure */
-    int pci_vendor;                 /**< PCI vendor id */
-    int pci_device;                 /** PCI device id */
-    int num_crtcs;                  /**< Number of CRTCs on this device */
-    void *dev_private;              /**< device private data */
-    void *mm_private;
-
-//    struct address_space *dev_mapping;
-
-    struct drm_mode_config mode_config; /**< Current mode config */
-
-};
-
 
 
 #define radeon_errata(rdev) (rdev)->asic->errata((rdev))

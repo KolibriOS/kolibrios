@@ -23,7 +23,7 @@
  * Authors: Dave Airlie
  *          Alex Deucher
  */
-//#include "drmP.h"
+#include "drmP.h"
 #include "radeon_drm.h"
 #include "radeon.h"
 
@@ -336,11 +336,11 @@ bool radeon_get_atom_connector_info_from_object_table(struct drm_device *dev)
 					else
 						linkb = false;
 
-              //     radeon_add_atom_encoder(dev,
-              //                 enc_obj_id,
-              //                 le16_to_cpu
-              //                 (path->
-              //                  usDeviceTag));
+					radeon_add_atom_encoder(dev,
+								enc_obj_id,
+								le16_to_cpu
+								(path->
+								 usDeviceTag));
 
 				}
 			}
@@ -406,18 +406,18 @@ bool radeon_get_atom_connector_info_from_object_table(struct drm_device *dev)
 			else
 				ddc_bus = radeon_lookup_gpio(dev, line_mux);
 
-   //            radeon_add_atom_connector(dev,
-   //                          le16_to_cpu(path->
-   //                                  usConnObjectId),
-   //                          le16_to_cpu(path->
-   //                                  usDeviceTag),
-   //                          connector_type, &ddc_bus,
-   //                          linkb, igp_lane_info);
+			radeon_add_atom_connector(dev,
+						  le16_to_cpu(path->
+							      usConnObjectId),
+						  le16_to_cpu(path->
+							      usDeviceTag),
+						  connector_type, &ddc_bus,
+						  linkb, igp_lane_info);
 
 		}
 	}
 
-//   radeon_link_encoder_connector(dev);
+	radeon_link_encoder_connector(dev);
 
 	return true;
 }
@@ -532,19 +532,19 @@ bool radeon_get_atom_connector_info_from_supported_devices_table(struct
 		bios_connectors[i].valid = true;
 		bios_connectors[i].devices = (1 << i);
 
-     //  if (ASIC_IS_AVIVO(rdev) || radeon_r4xx_atom)
-     //      radeon_add_atom_encoder(dev,
-     //                  radeon_get_encoder_id(dev,
-     //                                (1 << i),
-     //                                dac),
-     //                  (1 << i));
-     //  else
-     //      radeon_add_legacy_encoder(dev,
-     //                    radeon_get_encoder_id(dev,
-     //                              (1 <<
-     //                               i),
-     //                              dac),
-     //                    (1 << i));
+		if (ASIC_IS_AVIVO(rdev) || radeon_r4xx_atom)
+			radeon_add_atom_encoder(dev,
+						radeon_get_encoder_id(dev,
+								      (1 << i),
+								      dac),
+						(1 << i));
+		else
+			radeon_add_legacy_encoder(dev,
+						  radeon_get_encoder_id(dev,
+									(1 <<
+									 i),
+									dac),
+						  (1 << i));
 	}
 
 	/* combine shared connectors */
@@ -584,18 +584,18 @@ bool radeon_get_atom_connector_info_from_supported_devices_table(struct
 	}
 
 	/* add the connectors */
- //  for (i = 0; i < ATOM_MAX_SUPPORTED_DEVICE; i++) {
- //      if (bios_connectors[i].valid)
- //          radeon_add_atom_connector(dev,
- //                        bios_connectors[i].line_mux,
- //                        bios_connectors[i].devices,
- //                        bios_connectors[i].
- //                        connector_type,
- //                        &bios_connectors[i].ddc_bus,
- //                        false, 0);
- //  }
+	for (i = 0; i < ATOM_MAX_SUPPORTED_DEVICE; i++) {
+		if (bios_connectors[i].valid)
+			radeon_add_atom_connector(dev,
+						  bios_connectors[i].line_mux,
+						  bios_connectors[i].devices,
+						  bios_connectors[i].
+						  connector_type,
+						  &bios_connectors[i].ddc_bus,
+						  false, 0);
+	}
 
- //  radeon_link_encoder_connector(dev);
+	radeon_link_encoder_connector(dev);
 
 	return true;
 }

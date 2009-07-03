@@ -25,7 +25,7 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
-//#include "drmP.h"
+#include "drmP.h"
 #include "radeon_drm.h"
 #include "radeon_reg.h"
 #include "radeon.h"

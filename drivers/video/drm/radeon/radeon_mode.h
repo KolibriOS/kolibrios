@@ -32,8 +32,8 @@
 
 #include "drm_mode.h"
 #include "drm_crtc.h"
+#include <drm_edid.h>
 
-//#include <drm_edid.h>
 //#include <linux/i2c.h>
 //#include <linux/i2c-id.h>
 //#include <linux/i2c-algo-bit.h>
@@ -148,8 +148,8 @@ struct radeon_pll {
 
 struct radeon_i2c_chan {
 	struct drm_device *dev;
-//   struct i2c_adapter adapter;
-//   struct i2c_algo_bit_data algo;
+    struct i2c_adapter adapter;
+    struct i2c_algo_bit_data algo;
 	struct radeon_i2c_bus_rec rec;
 };
 
@@ -174,14 +174,14 @@ struct radeon_mode_info {
 };
 
 struct radeon_crtc {
-//   struct drm_crtc base;
+	struct drm_crtc base;
 	int crtc_id;
     u16_t lut_r[256], lut_g[256], lut_b[256];
 	bool enabled;
 	bool can_tile;
 	uint32_t crtc_offset;
 	struct radeon_framebuffer *fbdev_fb;
-//   struct drm_mode_set mode_set;
+	struct drm_mode_set mode_set;
 //   struct drm_gem_object *cursor_bo;
 	uint64_t cursor_addr;
 	int cursor_width;
@@ -272,8 +272,8 @@ struct radeon_connector {
 };
 
 struct radeon_framebuffer {
-//   struct drm_framebuffer base;
-//   struct drm_gem_object *obj;
+   struct drm_framebuffer base;
+   struct drm_gem_object *obj;
 };
 
 extern struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
@@ -283,7 +283,7 @@ extern void radeon_i2c_destroy(struct radeon_i2c_chan *i2c);
 extern bool radeon_ddc_probe(struct radeon_connector *radeon_connector);
 extern int radeon_ddc_get_modes(struct radeon_connector *radeon_connector);
 
-//extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
+extern struct drm_encoder *radeon_best_encoder(struct drm_connector *connector);
 
 extern void radeon_compute_pll(struct radeon_pll *pll,
 			       uint64_t freq,
@@ -302,7 +302,6 @@ struct drm_encoder *radeon_encoder_legacy_tmds_ext_add(struct drm_device *dev, i
 extern void atombios_external_tmds_setup(struct drm_encoder *encoder, int action);
 extern int atombios_get_encoder_mode(struct drm_encoder *encoder);
 
-/*
 extern void radeon_crtc_load_lut(struct drm_crtc *crtc);
 extern int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
                   struct drm_framebuffer *old_fb);
@@ -396,5 +395,5 @@ void radeon_init_disp_bw_avivo(struct drm_device *dev,
 			       struct drm_display_mode *mode2,
 			       uint32_t pixel_bytes2);
 void radeon_init_disp_bandwidth(struct drm_device *dev);
-*/
+
 #endif

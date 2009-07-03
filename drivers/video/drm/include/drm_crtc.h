@@ -113,7 +113,7 @@ enum drm_mode_status {
 
 struct drm_display_mode {
 	/* Header */
-//   struct list_head head;
+	struct list_head head;
 	struct drm_mode_object base;
 
 	char name[DRM_DISPLAY_MODE_LEN];
@@ -246,7 +246,7 @@ struct drm_framebuffer_funcs {
 
 struct drm_framebuffer {
 	struct drm_device *dev;
-//   struct list_head head;
+	struct list_head head;
 	struct drm_mode_object base;
 	const struct drm_framebuffer_funcs *funcs;
 	unsigned int pitch;
@@ -257,32 +257,32 @@ struct drm_framebuffer {
 	int bits_per_pixel;
 	int flags;
 	void *fbdev;
-    u32_t pseudo_palette[17];
-//   struct list_head filp_head;
+	u32 pseudo_palette[17];
+	struct list_head filp_head;
 };
 
 struct drm_property_blob {
 	struct drm_mode_object base;
-//   struct list_head head;
+	struct list_head head;
 	unsigned int length;
 	void *data;
 };
 
 struct drm_property_enum {
 	uint64_t value;
-//   struct list_head head;
+	struct list_head head;
 	char name[DRM_PROP_NAME_LEN];
 };
 
 struct drm_property {
-//   struct list_head head;
+	struct list_head head;
 	struct drm_mode_object base;
 	uint32_t flags;
 	char name[DRM_PROP_NAME_LEN];
 	uint32_t num_values;
 	uint64_t *values;
 
-//   struct list_head enum_blob_list;
+	struct list_head enum_blob_list;
 };
 
 struct drm_crtc;
@@ -348,7 +348,7 @@ struct drm_crtc_funcs {
  */
 struct drm_crtc {
 	struct drm_device *dev;
-//   struct list_head head;
+	struct list_head head;
 
 	struct drm_mode_object base;
 
@@ -415,7 +415,7 @@ struct drm_encoder_funcs {
  */
 struct drm_encoder {
 	struct drm_device *dev;
-//   struct list_head head;
+	struct list_head head;
 
 	struct drm_mode_object base;
 	int encoder_type;
@@ -447,7 +447,7 @@ struct drm_connector {
 	struct drm_device *dev;
 //   struct device kdev;
 	struct device_attribute *attr;
-//   struct list_head head;
+	struct list_head head;
 
 	struct drm_mode_object base;
 
@@ -455,18 +455,18 @@ struct drm_connector {
 	int connector_type_id;
 	bool interlace_allowed;
 	bool doublescan_allowed;
-//   struct list_head modes; /* list of modes on this connector */
+	struct list_head modes; /* list of modes on this connector */
 
 	int initial_x, initial_y;
 	enum drm_connector_status status;
 
 	/* these are modes added by probing with DDC or the BIOS */
-//   struct list_head probed_modes;
+	struct list_head probed_modes;
 
 	struct drm_display_info display_info;
 	const struct drm_connector_funcs *funcs;
 
-//   struct list_head user_modes;
+	struct list_head user_modes;
 	struct drm_property_blob *edid_blob_ptr;
     u32_t property_ids[DRM_CONNECTOR_MAX_PROPERTY];
 	uint64_t property_values[DRM_CONNECTOR_MAX_PROPERTY];
@@ -490,7 +490,7 @@ struct drm_connector {
  * This is used to set modes.
  */
 struct drm_mode_set {
-//   struct list_head head;
+	struct list_head head;
 
 	struct drm_framebuffer *fb;
 	struct drm_crtc *crtc;
@@ -533,22 +533,22 @@ struct drm_mode_group {
 struct drm_mode_config {
 //   struct mutex mutex; /* protects configuration (mode lists etc.) */
 //   struct mutex idr_mutex; /* for IDR management */
-//   struct idr crtc_idr; /* use this idr for all IDs, fb, crtc, connector, modes - just makes life easier */
+    struct idr crtc_idr; /* use this idr for all IDs, fb, crtc, connector, modes - just makes life easier */
 	/* this is limited to one for now */
 	int num_fb;
-//   struct list_head fb_list;
+	struct list_head fb_list;
 	int num_connector;
-//   struct list_head connector_list;
+	struct list_head connector_list;
 	int num_encoder;
-//   struct list_head encoder_list;
+	struct list_head encoder_list;
 
 	int num_crtc;
-//   struct list_head crtc_list;
+	struct list_head crtc_list;
 
-//   struct list_head property_list;
+	struct list_head property_list;
 
 	/* in-kernel framebuffers - hung of filp_head in drm_framebuffer */
-//   struct list_head fb_kernel_list;
+	struct list_head fb_kernel_list;
 
 	int min_width, min_height;
 	int max_width, max_height;
@@ -556,7 +556,7 @@ struct drm_mode_config {
 	resource_size_t fb_base;
 
 	/* pointers to standard properties */
-//   struct list_head property_blob_list;
+	struct list_head property_blob_list;
 	struct drm_property *edid_property;
 	struct drm_property *dpms_property;
 
@@ -586,7 +586,6 @@ struct drm_mode_config {
 #define obj_to_property(x) container_of(x, struct drm_property, base)
 #define obj_to_blob(x) container_of(x, struct drm_property_blob, base)
 
-
 extern void drm_crtc_init(struct drm_device *dev,
 			  struct drm_crtc *crtc,
 			  const struct drm_crtc_funcs *funcs);
@@ -612,8 +611,11 @@ extern char *drm_get_dvi_i_subconnector_name(int val);
 extern char *drm_get_dvi_i_select_name(int val);
 extern char *drm_get_tv_subconnector_name(int val);
 extern char *drm_get_tv_select_name(int val);
-extern void drm_fb_release(struct drm_file *file_priv);
-extern int drm_mode_group_init_legacy_group(struct drm_device *dev, struct drm_mode_group *group);
+
+
+
+//extern void drm_fb_release(struct drm_file *file_priv);
+//extern int drm_mode_group_init_legacy_group(struct drm_device *dev, struct drm_mode_group *group);
 //extern struct edid *drm_get_edid(struct drm_connector *connector,
 //                struct i2c_adapter *adapter);
 //extern int drm_do_probe_ddc_edid(struct i2c_adapter *adapter,
@@ -736,4 +738,6 @@ extern int drm_mode_gamma_get_ioctl(struct drm_device *dev,
 extern int drm_mode_gamma_set_ioctl(struct drm_device *dev,
 				    void *data, struct drm_file *file_priv);
 //extern bool drm_detect_hdmi_monitor(struct edid *edid);
+
+
 #endif /* __DRM_CRTC_H__ */

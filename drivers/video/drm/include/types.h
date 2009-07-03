@@ -38,6 +38,9 @@ typedef unsigned short       u16_t;
 typedef unsigned int         u32_t;
 typedef unsigned long long   u64_t;
 
+typedef signed char          int8_t;
+typedef signed long long     int64_t;
+
 #define  NULL     (void*)0
 
 typedef uint32_t             dma_addr_t;
@@ -55,6 +58,14 @@ typedef uint32_t             resource_size_t;
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
 
+#define BITS_PER_LONG 32
+
+#define DIV_ROUND_UP(n,d) (((n) + (d) - 1) / (d))
+
+#define BITS_TO_LONGS(nr)   DIV_ROUND_UP(nr, BITS_PER_LONG)
+
+#define DECLARE_BITMAP(name,bits) \
+        unsigned long name[BITS_TO_LONGS(bits)]
 
 
 #define KERN_EMERG      "<0>"   /* system is unusable                   */
@@ -115,14 +126,21 @@ int dbgprintf(const char* format, ...);
 
 #define GFP_KERNEL           0
 
+//#include <stdio.h>
+
+int snprintf(char *str, size_t size, const char *format, ...);
+
+
 //#include <string.h>
 
 void*   memcpy(void *s1, const void *s2, size_t n);
 void*   memset(void *s, int c, size_t n);
 size_t  strlen(const char *s);
+char *strncpy (char *dst, const char *src, size_t len);
 
 void *malloc(size_t size);
 
+#define kmalloc(s,f) malloc((s))
 #define kfree free
 
 static inline void *kzalloc(size_t size, u32_t flags)
@@ -200,5 +218,81 @@ struct drm_file;
 
 #define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 
+static inline void bitmap_zero(unsigned long *dst, int nbits)
+{
+        if (nbits <= BITS_PER_LONG)
+                *dst = 0UL;
+        else {
+                int len = BITS_TO_LONGS(nbits) * sizeof(unsigned long);
+                memset(dst, 0, len);
+        }
+}
+
+#define EXPORT_SYMBOL(x)
+
+#define IDR_BITS 5
+#define IDR_FULL 0xfffffffful
+
+struct idr_layer {
+        unsigned long            bitmap; /* A zero bit means "space here" */
+        struct idr_layer        *ary[1<<IDR_BITS];
+        int                      count;  /* When zero, we can release it */
+};
+
+struct idr {
+        struct idr_layer *top;
+        struct idr_layer *id_free;
+        int               layers;
+        int               id_free_cnt;
+//        spinlock_t        lock;
+};
+
+
+#define min(x,y) ({ \
+        typeof(x) _x = (x);     \
+        typeof(y) _y = (y);     \
+        (void) (&_x == &_y);            \
+        _x < _y ? _x : _y; })
+
+#define max(x,y) ({ \
+        typeof(x) _x = (x);     \
+        typeof(y) _y = (y);     \
+        (void) (&_x == &_y);            \
+        _x > _y ? _x : _y; })
+
+
+extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
+
+# define do_div(n,base) ({                             \
+       uint32_t __base = (base);                       \
+       uint32_t __rem;                                 \
+       (void)(((typeof((n)) *)0) == ((uint64_t *)0));  \
+       if (likely(((n) >> 32) == 0)) {                 \
+               __rem = (uint32_t)(n) % __base;         \
+               (n) = (uint32_t)(n) / __base;           \
+       } else                                          \
+               __rem = __div64_32(&(n), __base);       \
+       __rem;                                          \
+})
+
+#define lower_32_bits(n) ((u32)(n))
+
+#define INT_MAX         ((int)(~0U>>1))
+#define INT_MIN         (-INT_MAX - 1)
+#define UINT_MAX        (~0U)
+#define LONG_MAX        ((long)(~0UL>>1))
+#define LONG_MIN        (-LONG_MAX - 1)
+#define ULONG_MAX       (~0UL)
+#define LLONG_MAX       ((long long)(~0ULL>>1))
+#define LLONG_MIN       (-LLONG_MAX - 1)
+#define ULLONG_MAX      (~0ULL)
+
+
+static inline void *kcalloc(size_t n, size_t size, u32_t flags)
+{
+        if (n != 0 && size > ULONG_MAX / n)
+                return NULL;
+        return kmalloc(n * size, 0);
+}
 
 #endif  //__TYPES_H__
