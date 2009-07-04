@@ -479,6 +479,8 @@ static void drm_setup_crtcs(struct drm_device *dev)
 
 	drm_pick_crtcs(dev, crtcs, modes, 0, width, height);
 
+    dbgprintf("done\n");
+
 	i = 0;
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		struct drm_display_mode *mode = modes[i];
@@ -502,6 +504,8 @@ static void drm_setup_crtcs(struct drm_device *dev)
 	kfree(crtcs);
 	kfree(modes);
 	kfree(enabled);
+
+    LEAVE();
 }
 
 /**
@@ -518,7 +522,7 @@ static bool drm_encoder_crtc_ok(struct drm_encoder *encoder,
 	struct drm_crtc *tmp;
 	int crtc_mask = 1;
 
-	WARN(!crtc, "checking null crtc?");
+//   WARN(!crtc, "checking null crtc?");
 
 	dev = crtc->dev;
 
@@ -909,7 +913,7 @@ bool drm_helper_plugged_event(struct drm_device *dev)
 	drm_setup_crtcs(dev);
 
 	/* alert the driver fb layer */
-	dev->mode_config.funcs->fb_changed(dev);
+ //  dev->mode_config.funcs->fb_changed(dev);
 
 	/* FIXME: send hotplug event */
 	return true;
@@ -933,6 +937,8 @@ bool drm_helper_initial_config(struct drm_device *dev)
 	struct drm_connector *connector;
 	int count = 0;
 
+    ENTRY();
+
 	count = drm_helper_probe_connector_modes(dev,
 						 dev->mode_config.max_width,
 						 dev->mode_config.max_height);
@@ -952,7 +958,9 @@ bool drm_helper_initial_config(struct drm_device *dev)
 	drm_setup_crtcs(dev);
 
 	/* alert the driver fb layer */
-	dev->mode_config.funcs->fb_changed(dev);
+ //  dev->mode_config.funcs->fb_changed(dev);
+
+    LEAVE();
 
 	return 0;
 }

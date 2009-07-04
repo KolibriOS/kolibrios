@@ -25,10 +25,10 @@
 #ifndef __DRM_CRTC_H__
 #define __DRM_CRTC_H__
 
-//#include <linux/i2c.h>
+#include <linux/i2c.h>
 //#include <linux/spinlock.h>
 //#include <linux/types.h>
-//#include <linux/idr.h>
+#include <linux/idr.h>
 
 //#include <linux/fb.h>
 
@@ -275,12 +275,12 @@ struct drm_property_enum {
 };
 
 struct drm_property {
-	struct list_head head;
-	struct drm_mode_object base;
-	uint32_t flags;
-	char name[DRM_PROP_NAME_LEN];
-	uint32_t num_values;
-	uint64_t *values;
+    struct      list_head head;
+    struct      drm_mode_object base;
+    uint32_t    flags;
+    char        name[DRM_PROP_NAME_LEN];
+    uint32_t    num_values;
+    uint64_t    *values;
 
 	struct list_head enum_blob_list;
 };

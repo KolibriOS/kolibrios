@@ -37,11 +37,9 @@
 
 #include <syscall.h>
 
-int radeon_modeset = -1;
 int radeon_dynclks = -1;
 int radeon_r4xx_atom = 0;
-int radeon_agpmode = 0;
-int radeon_vram_limit = 0;
+int radeon_agpmode   = -1;
 int radeon_gart_size = 512; /* default gart size */
 int radeon_benchmarking = 0;
 int radeon_connector_table = 0;
@@ -517,7 +515,6 @@ int radeon_device_init(struct radeon_device *rdev,
     if (r) {
         return r;
     }
-//    r = radeon_init(rdev);
 
     r = rdev->asic->init(rdev);
 
@@ -639,14 +636,15 @@ int radeon_device_init(struct radeon_device *rdev,
     if (!r) {
         r = radeon_cp_init(rdev, 1024 * 1024);
     }
-    if (!r) {
-        r = radeon_wb_init(rdev);
-        if (r) {
-            DRM_ERROR("radeon: failled initializing WB (%d).\n", r);
-            return r;
-        }
-    }
+//    if (!r) {
+//        r = radeon_wb_init(rdev);
+//        if (r) {
+//            DRM_ERROR("radeon: failled initializing WB (%d).\n", r);
+//            return r;
+//        }
+//    }
 
+#if 0
     if (!r) {
         r = radeon_ib_pool_init(rdev);
         if (r) {
@@ -654,8 +652,6 @@ int radeon_device_init(struct radeon_device *rdev,
             return r;
         }
     }
-#if 0
-
     if (!r) {
         r = radeon_ib_test(rdev);
         if (r) {
@@ -663,14 +659,16 @@ int radeon_device_init(struct radeon_device *rdev,
             return r;
         }
     }
+#endif
+
     ret = r;
     r = radeon_modeset_init(rdev);
     if (r) {
         return r;
     }
-    if (rdev->fbdev_rfb && rdev->fbdev_rfb->obj) {
-        rdev->fbdev_robj = rdev->fbdev_rfb->obj->driver_private;
-    }
+//    if (rdev->fbdev_rfb && rdev->fbdev_rfb->obj) {
+//        rdev->fbdev_robj = rdev->fbdev_rfb->obj->driver_private;
+//    }
     if (!ret) {
         DRM_INFO("radeon: kernel modesetting successfully initialized.\n");
     }
@@ -678,9 +676,7 @@ int radeon_device_init(struct radeon_device *rdev,
 //        radeon_benchmark(rdev);
 //    }
 
-#endif
-
-    return ret;
+    return -1;
 }
 
 static struct pci_device_id pciidlist[] = {

@@ -222,6 +222,7 @@ again:
 
 	obj->id = new_id;
 	obj->type = obj_type;
+
 	return 0;
 }
 
@@ -361,6 +362,8 @@ EXPORT_SYMBOL(drm_framebuffer_cleanup);
 void drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
 		   const struct drm_crtc_funcs *funcs)
 {
+    ENTRY();
+
 	crtc->dev = dev;
 	crtc->funcs = funcs;
 
@@ -369,7 +372,10 @@ void drm_crtc_init(struct drm_device *dev, struct drm_crtc *crtc,
 
 	list_add_tail(&crtc->head, &dev->mode_config.crtc_list);
 	dev->mode_config.num_crtc++;
+
 //   mutex_unlock(&dev->mode_config.mutex);
+
+    LEAVE();
 }
 EXPORT_SYMBOL(drm_crtc_init);
 
@@ -586,6 +592,7 @@ static int drm_mode_create_standard_connector_properties(struct drm_device *dev)
 	struct drm_property *dpms;
 	int i;
 
+    ENTRY();
 	/*
 	 * Standard properties (apply to all connectors)
 	 */
@@ -601,6 +608,7 @@ static int drm_mode_create_standard_connector_properties(struct drm_device *dev)
 				      drm_dpms_enum_list[i].name);
 	dev->mode_config.dpms_property = dpms;
 
+    LEAVE();
 	return 0;
 }
 
@@ -794,6 +802,8 @@ EXPORT_SYMBOL(drm_mode_create_dithering_property);
  */
 void drm_mode_config_init(struct drm_device *dev)
 {
+    ENTRY();
+
 //   mutex_init(&dev->mode_config.mutex);
 //   mutex_init(&dev->mode_config.idr_mutex);
 	INIT_LIST_HEAD(&dev->mode_config.fb_list);
@@ -803,6 +813,7 @@ void drm_mode_config_init(struct drm_device *dev)
 	INIT_LIST_HEAD(&dev->mode_config.encoder_list);
 	INIT_LIST_HEAD(&dev->mode_config.property_list);
 	INIT_LIST_HEAD(&dev->mode_config.property_blob_list);
+
 	idr_init(&dev->mode_config.crtc_idr);
 
 //   mutex_lock(&dev->mode_config.mutex);
@@ -814,6 +825,9 @@ void drm_mode_config_init(struct drm_device *dev)
 	dev->mode_config.num_connector = 0;
 	dev->mode_config.num_crtc = 0;
 	dev->mode_config.num_encoder = 0;
+
+    LEAVE();
+
 }
 EXPORT_SYMBOL(drm_mode_config_init);
 
@@ -1946,6 +1960,7 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
 	}
 
 	drm_mode_object_get(dev, &property->base, DRM_MODE_OBJECT_PROPERTY);
+
 	property->flags = flags;
 	property->num_values = num_values;
 	INIT_LIST_HEAD(&property->enum_blob_list);
@@ -1953,7 +1968,11 @@ struct drm_property *drm_property_create(struct drm_device *dev, int flags,
 	if (name)
 		strncpy(property->name, name, DRM_PROP_NAME_LEN);
 
+
 	list_add_tail(&property->head, &dev->mode_config.property_list);
+
+    dbgprintf("%s %x name %s\n", __FUNCTION__, property, name);
+
 	return property;
 fail:
 	kfree(property);

@@ -25,7 +25,7 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
-//#include "drmP.h"
+#include "drmP.h"
 #include "radeon_drm.h"
 #include "radeon.h"
 #include "radeon_reg.h"
@@ -80,6 +80,7 @@ int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
     uint32_t gpu_addr;
     int r;
 
+    dbgprintf("%s\n",__FUNCTION__);
 
     if (rdev->gart.table.vram.robj == NULL) {
         r = radeon_object_create(rdev, NULL,

@@ -26,7 +26,7 @@
  *          Jerome Glisse
  */
 //#include <linux/seq_file.h>
-//#include "drmP.h"
+#include "drmP.h"
 #include "radeon_reg.h"
 #include "radeon.h"
 

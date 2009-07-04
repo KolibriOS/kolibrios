@@ -179,6 +179,8 @@ static void radeon_crtc_init(struct drm_device *dev, int index)
 	struct radeon_crtc *radeon_crtc;
 	int i;
 
+    ENTRY();
+
 	radeon_crtc = kzalloc(sizeof(struct radeon_crtc) + (RADEONFB_CONN_LIMIT * sizeof(struct drm_connector *)), GFP_KERNEL);
 	if (radeon_crtc == NULL)
 		return;
@@ -202,6 +204,8 @@ static void radeon_crtc_init(struct drm_device *dev, int index)
 		radeon_atombios_init_crtc(dev, radeon_crtc);
 	else
 		radeon_legacy_init_crtc(dev, radeon_crtc);
+
+    LEAVE();
 }
 
 static const char *encoder_names[34] = {
@@ -318,6 +322,8 @@ bool radeon_setup_enc_conn(struct drm_device *dev)
 	struct drm_connector *drm_connector;
 	bool ret = false;
 
+    ENTRY();
+
 	if (rdev->bios) {
 		if (rdev->is_atom_bios) {
 			if (rdev->family >= CHIP_R600)
@@ -335,6 +341,7 @@ bool radeon_setup_enc_conn(struct drm_device *dev)
 		list_for_each_entry(drm_connector, &dev->mode_config.connector_list, head)
 			radeon_ddc_dump(drm_connector);
 	}
+    LEAVE();
 
 	return ret;
 }
@@ -584,6 +591,8 @@ static const struct drm_framebuffer_funcs radeon_fb_funcs = {
     .create_handle = radeon_user_framebuffer_create_handle,
 };
 
+#endif
+
 struct drm_framebuffer *
 radeon_framebuffer_create(struct drm_device *dev,
 			  struct drm_mode_fb_cmd *mode_cmd,
@@ -595,8 +604,8 @@ radeon_framebuffer_create(struct drm_device *dev,
 	if (radeon_fb == NULL) {
 		return NULL;
 	}
-	drm_framebuffer_init(dev, &radeon_fb->base, &radeon_fb_funcs);
-	drm_helper_mode_fill_fb_struct(&radeon_fb->base, mode_cmd);
+//   drm_framebuffer_init(dev, &radeon_fb->base, &radeon_fb_funcs);
+//   drm_helper_mode_fill_fb_struct(&radeon_fb->base, mode_cmd);
 	radeon_fb->obj = obj;
 	return &radeon_fb->base;
 }
@@ -608,27 +617,32 @@ radeon_user_framebuffer_create(struct drm_device *dev,
 {
 	struct drm_gem_object *obj;
 
-	obj = drm_gem_object_lookup(dev, file_priv, mode_cmd->handle);
+    return NULL;
 
-	return radeon_framebuffer_create(dev, mode_cmd, obj);
+//   obj = drm_gem_object_lookup(dev, file_priv, mode_cmd->handle);
+//
+//   return radeon_framebuffer_create(dev, mode_cmd, obj);
 }
 
+
 static const struct drm_mode_config_funcs radeon_mode_funcs = {
-	.fb_create = radeon_user_framebuffer_create,
-   .fb_changed = radeonfb_probe,
+ //  .fb_create = radeon_user_framebuffer_create,
+ //   .fb_changed = radeonfb_probe,
 };
 
-#endif
 
 int radeon_modeset_init(struct radeon_device *rdev)
 {
+
+    dbgprintf("%s\n",__FUNCTION__);
+
 	int num_crtc = 2, i;
 	int ret;
 
 	drm_mode_config_init(rdev->ddev);
 	rdev->mode_info.mode_config_initialized = true;
 
-//   rdev->ddev->mode_config.funcs = (void *)&radeon_mode_funcs;
+    rdev->ddev->mode_config.funcs = (void *)&radeon_mode_funcs;
 
 	if (ASIC_IS_AVIVO(rdev)) {
 		rdev->ddev->mode_config.max_width = 8192;
@@ -651,6 +665,9 @@ int radeon_modeset_init(struct radeon_device *rdev)
 		return ret;
 	}
 	drm_helper_initial_config(rdev->ddev);
+
+    dbgprintf("done %s\n",__FUNCTION__);
+
 	return 0;
 }
 

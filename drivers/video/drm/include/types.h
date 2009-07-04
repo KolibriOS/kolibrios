@@ -86,9 +86,6 @@ typedef uint32_t             resource_size_t;
 
 #define DRM_INFO(fmt, arg...)  dbgprintf("DRM: "fmt , ##arg)
 
-#define DRM_DEBUG(fmt, arg...)     \
-    printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* " fmt , __func__ , ##arg)
-
 #define DRM_ERROR(fmt, arg...) \
     printk(KERN_ERR "[" DRM_NAME ":%s] *ERROR* " fmt , __func__ , ##arg)
 
@@ -230,24 +227,6 @@ static inline void bitmap_zero(unsigned long *dst, int nbits)
 
 #define EXPORT_SYMBOL(x)
 
-#define IDR_BITS 5
-#define IDR_FULL 0xfffffffful
-
-struct idr_layer {
-        unsigned long            bitmap; /* A zero bit means "space here" */
-        struct idr_layer        *ary[1<<IDR_BITS];
-        int                      count;  /* When zero, we can release it */
-};
-
-struct idr {
-        struct idr_layer *top;
-        struct idr_layer *id_free;
-        int               layers;
-        int               id_free_cnt;
-//        spinlock_t        lock;
-};
-
-
 #define min(x,y) ({ \
         typeof(x) _x = (x);     \
         typeof(y) _y = (y);     \
@@ -292,7 +271,10 @@ static inline void *kcalloc(size_t n, size_t size, u32_t flags)
 {
         if (n != 0 && size > ULONG_MAX / n)
                 return NULL;
-        return kmalloc(n * size, 0);
+        return kzalloc(n * size, 0);
 }
+
+#define ENTRY()   dbgprintf("entry %s\n",__FUNCTION__)
+#define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
 
 #endif  //__TYPES_H__

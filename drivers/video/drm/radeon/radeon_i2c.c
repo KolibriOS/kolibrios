@@ -179,7 +179,7 @@ struct radeon_i2c_chan *radeon_i2c_create(struct drm_device *dev,
 	i2c->algo.timeout = 2;
 	i2c->algo.data = i2c;
 	i2c->rec = *rec;
-	i2c_set_adapdata(&i2c->adapter, i2c);
+//   i2c_set_adapdata(&i2c->adapter, i2c);
 
 	ret = i2c_bit_add_bus(&i2c->adapter);
 	if (ret) {
@@ -199,7 +199,7 @@ void radeon_i2c_destroy(struct radeon_i2c_chan *i2c)
 	if (!i2c)
 		return;
 
-	i2c_del_adapter(&i2c->adapter);
+ //  i2c_del_adapter(&i2c->adapter);
 	kfree(i2c);
 }
 

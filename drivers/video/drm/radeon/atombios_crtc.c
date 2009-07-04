@@ -549,6 +549,9 @@ void radeon_atombios_init_crtc(struct drm_device *dev,
 		radeon_crtc->crtc_offset =
 		    AVIVO_D2CRTC_H_TOTAL - AVIVO_D1CRTC_H_TOTAL;
 	drm_crtc_helper_add(&radeon_crtc->base, &atombios_helper_funcs);
+
+    dbgprintf("done %s\n",__FUNCTION__);
+
 }
 
 void radeon_init_disp_bw_avivo(struct drm_device *dev,

@@ -30,13 +30,11 @@
 #ifndef RADEON_MODE_H
 #define RADEON_MODE_H
 
-#include "drm_mode.h"
-#include "drm_crtc.h"
+#include <drm_crtc.h>
+#include <drm_mode.h>
 #include <drm_edid.h>
-
-//#include <linux/i2c.h>
-//#include <linux/i2c-id.h>
-//#include <linux/i2c-algo-bit.h>
+#include <linux/i2c.h>
+#include <linux/i2c-algo-bit.h>
 
 #define to_radeon_crtc(x) container_of(x, struct radeon_crtc, base)
 #define to_radeon_connector(x) container_of(x, struct radeon_connector, base)

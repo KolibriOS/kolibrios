@@ -67,6 +67,9 @@ extern void drm_ut_debug_printk(unsigned int request_level,
                      __func__, ##args);         \
     } while (0)
 
+#define DRM_DEBUG(fmt, arg...)     \
+    printk("[" DRM_NAME ":%s] " fmt , __func__ , ##arg)
+
 #if 0
 
 /***********************************************************************/

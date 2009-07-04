@@ -25,7 +25,7 @@
  *          Alex Deucher
  *          Jerome Glisse
  */
-//#include "drmP.h"
+#include "drmP.h"
 #include "radeon_reg.h"
 #include "radeon.h"
 
@@ -501,4 +501,4 @@ int radeon_fence_driver_init(struct radeon_device *rdev)
 
 
 
-
+//domodedovo 9-00    16/07/2009

@@ -27,8 +27,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 //#include <linux/kernel.h>
-//#include <linux/i2c.h>
-//#include <linux/i2c-algo-bit.h>
+#include <types.h>
+#include <list.h>
+
+#include <linux/idr.h>
+#include <linux/i2c.h>
+#include <linux/i2c-algo-bit.h>
 #include "drmP.h"
 #include "drm_edid.h"
 

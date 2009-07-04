@@ -447,7 +447,7 @@ bool radeon_get_atom_connector_info_from_supported_devices_table(struct
 	struct bios_connector bios_connectors[ATOM_MAX_SUPPORTED_DEVICE];
 
 	atom_parse_data_header(ctx, index, &size, &frev, &crev, &data_offset);
-
+    ENTRY();
 	supported_devices =
 	    (union atom_supported_devices *)(ctx->bios + data_offset);
 
@@ -596,7 +596,7 @@ bool radeon_get_atom_connector_info_from_supported_devices_table(struct
 	}
 
 	radeon_link_encoder_connector(dev);
-
+    LEAVE();
 	return true;
 }
 

@@ -29,8 +29,8 @@
  *    Thomas Hellstrom <thomas-at-tungstengraphics-dot-com>
  *    Dave Airlie
  */
-//#include <linux/list.h>
-//#include <drm/drmP.h>
+#include <list.h>
+#include <drmP.h>
 
 #include "radeon_drm.h"
 #include "radeon.h"
@@ -358,6 +358,8 @@ static struct drm_mm   mm_vram;
 int radeon_object_init(struct radeon_device *rdev)
 {
     int r = 0;
+
+    dbgprintf("%s\n",__FUNCTION__);
 
     r = drm_mm_init(&mm_vram, 0x800000 >> PAGE_SHIFT,
                ((rdev->mc.aper_size - 0x800000) >> PAGE_SHIFT));
