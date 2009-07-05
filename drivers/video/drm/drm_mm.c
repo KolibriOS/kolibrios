@@ -41,7 +41,7 @@
  * Thomas Hellström <thomas-at-tungstengraphics-dot-com>
  */
 
-//#include "drmP.h"
+#include "drmP.h"
 #include "drm_mm.h"
 //#include <linux/slab.h>
 
@@ -120,7 +120,7 @@ int drm_mm_pre_get(struct drm_mm *mm)
 	spin_unlock(&mm->unused_lock);
 	return 0;
 }
-//EXPORT_SYMBOL(drm_mm_pre_get);
+EXPORT_SYMBOL(drm_mm_pre_get);
 
 static int drm_mm_create_tail_node(struct drm_mm *mm,
 				   unsigned long start,
@@ -215,7 +215,7 @@ struct drm_mm_node *drm_mm_get_block_generic(struct drm_mm_node *node,
 
 	return node;
 }
-//EXPORT_SYMBOL(drm_mm_get_block_generic);
+EXPORT_SYMBOL(drm_mm_get_block_generic);
 
 /*
  * Put a block. Merge with the previous and / or next block if they are free.
@@ -275,7 +275,7 @@ void drm_mm_put_block(struct drm_mm_node *cur)
 	}
 }
 
-//EXPORT_SYMBOL(drm_mm_put_block);
+EXPORT_SYMBOL(drm_mm_put_block);
 
 struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
 				       unsigned long size,
@@ -316,7 +316,7 @@ struct drm_mm_node *drm_mm_search_free(const struct drm_mm *mm,
 
 	return best;
 }
-//EXPORT_SYMBOL(drm_mm_search_free);
+EXPORT_SYMBOL(drm_mm_search_free);
 
 int drm_mm_clean(struct drm_mm * mm)
 {
@@ -324,7 +324,7 @@ int drm_mm_clean(struct drm_mm * mm)
 
 	return (head->next->next == head);
 }
-//EXPORT_SYMBOL(drm_mm_clean);
+EXPORT_SYMBOL(drm_mm_clean);
 
 int drm_mm_init(struct drm_mm * mm, unsigned long start, unsigned long size)
 {
@@ -336,7 +336,7 @@ int drm_mm_init(struct drm_mm * mm, unsigned long start, unsigned long size)
 
 	return drm_mm_create_tail_node(mm, start, size, 0);
 }
-//EXPORT_SYMBOL(drm_mm_init);
+EXPORT_SYMBOL(drm_mm_init);
 
 void drm_mm_takedown(struct drm_mm * mm)
 {
@@ -366,4 +366,4 @@ void drm_mm_takedown(struct drm_mm * mm)
 
 	BUG_ON(mm->num_unused != 0);
 }
-//EXPORT_SYMBOL(drm_mm_takedown);
+EXPORT_SYMBOL(drm_mm_takedown);

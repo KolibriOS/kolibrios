@@ -259,8 +259,6 @@ void *drm_mode_object_find(struct drm_device *dev, uint32_t id, uint32_t type)
 EXPORT_SYMBOL(drm_mode_object_find);
 
 
-#if 0
-
 /**
  * drm_crtc_from_fb - find the CRTC structure associated with an fb
  * @dev: DRM device
@@ -345,8 +343,6 @@ void drm_framebuffer_cleanup(struct drm_framebuffer *fb)
 }
 EXPORT_SYMBOL(drm_framebuffer_cleanup);
 
-
-#endif
 
 /**
  * drm_crtc_init - Initialise a new CRTC object

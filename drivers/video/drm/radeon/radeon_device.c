@@ -28,7 +28,7 @@
 //#include <linux/console.h>
 
 #include <drmP.h>
-//#include <drm/drm_crtc_helper.h>
+#include <drm_crtc_helper.h>
 #include "radeon_drm.h"
 #include "radeon_reg.h"
 #include "radeon.h"
@@ -124,7 +124,7 @@ int radeon_mc_setup(struct radeon_device *rdev)
 	 */
 	/* FGLRX seems to setup like this, VRAM a 0, then GART.
 	 */
-/*
+	/*
 	 * Note: from R6xx the address space is 40bits but here we only
 	 * use 32bits (still have to see a card which would exhaust 4G
 	 * address space).
@@ -283,7 +283,6 @@ void radeon_register_accessor_init(struct radeon_device *rdev)
 //        rdev->pciep_wreg = &r600_pciep_wreg;
     }
 }
-
 
 
 /*
@@ -474,7 +473,7 @@ int radeon_device_init(struct radeon_device *rdev,
                struct pci_dev *pdev,
                uint32_t flags)
 {
-    int r, ret = -1;
+	int r, ret;
 
     dbgprintf("%s\n",__FUNCTION__);
 
@@ -494,7 +493,6 @@ int radeon_device_init(struct radeon_device *rdev,
  //   mutex_init(&rdev->ib_pool.mutex);
  //   mutex_init(&rdev->cp.mutex);
  //   rwlock_init(&rdev->fence_drv.lock);
-
 
     if (radeon_agpmode == -1) {
         rdev->flags &= ~RADEON_IS_AGP;
@@ -580,7 +578,6 @@ int radeon_device_init(struct radeon_device *rdev,
     //        radeon_combios_asic_init(rdev->ddev);
         }
     }
-
     /* Get vram informations */
     radeon_vram_info(rdev);
     /* Device is severly broken if aper size > vram size.
@@ -608,9 +605,7 @@ int radeon_device_init(struct radeon_device *rdev,
     r = radeon_mc_init(rdev);
     if (r) {
         return r;
-    };
-
-
+	}
     /* Fence driver */
 //    r = radeon_fence_driver_init(rdev);
 //    if (r) {
@@ -628,9 +623,9 @@ int radeon_device_init(struct radeon_device *rdev,
     /* Initialize GART (initialize after TTM so we can allocate
      * memory through TTM but finalize after TTM) */
     r = radeon_gart_enable(rdev);
-//    if (!r) {
-//        r = radeon_gem_init(rdev);
-//    }
+    if (!r) {
+        r = radeon_gem_init(rdev);
+    }
 
     /* 1M ring buffer */
     if (!r) {
@@ -672,11 +667,12 @@ int radeon_device_init(struct radeon_device *rdev,
     if (!ret) {
         DRM_INFO("radeon: kernel modesetting successfully initialized.\n");
     }
-//    if (radeon_benchmarking) {
+	if (radeon_benchmarking) {
 //        radeon_benchmark(rdev);
-//    }
+	}
+	return ret;
 
-    return -1;
+//    return -1;
 }
 
 static struct pci_device_id pciidlist[] = {
@@ -872,6 +868,9 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
  //   DRM_INFO("Initialized %s %d.%d.%d %s for %s on minor %d\n",
  //        driver->name, driver->major, driver->minor, driver->patchlevel,
  //        driver->date, pci_name(pdev), dev->primary->index);
+
+      drm_helper_resume_force_mode(dev);
+
 
     return 0;
 

@@ -24,11 +24,6 @@
  *          Alex Deucher
  */
 #include "drmP.h"
-//#include <types.h>
-//#include <list.h>
-//#include <syscall.h>
-
-#include "drm_crtc.h"
 #include "drm_crtc_helper.h"
 #include "radeon_drm.h"
 #include "radeon.h"
@@ -1711,4 +1706,3 @@ radeon_add_atom_encoder(struct drm_device *dev, uint32_t encoder_id, uint32_t su
 		break;
 	}
 }
-

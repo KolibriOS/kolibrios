@@ -24,8 +24,7 @@
  *          Alex Deucher
  */
 #include "drmP.h"
-//#include "drm_edid.h"
-#include "drm_crtc.h"
+#include "drm_edid.h"
 #include "drm_crtc_helper.h"
 #include "radeon_drm.h"
 #include "radeon.h"
@@ -83,6 +82,8 @@ struct drm_encoder *radeon_best_single_encoder(struct drm_connector *connector)
 	int enc_id = connector->encoder_ids[0];
 	struct drm_mode_object *obj;
 	struct drm_encoder *encoder;
+
+    ENTRY();
 
 	/* pick the encoder ids */
 	if (enc_id) {
@@ -323,6 +324,9 @@ struct drm_encoder *radeon_dvi_encoder(struct drm_connector *connector)
 	struct drm_mode_object *obj;
 	struct drm_encoder *encoder;
 	int i;
+
+    ENTRY();
+
 	for (i = 0; i < DRM_CONNECTOR_MAX_ENCODER; i++) {
 		if (connector->encoder_ids[i] == 0)
 			break;
@@ -347,6 +351,9 @@ struct drm_encoder *radeon_dvi_encoder(struct drm_connector *connector)
 
 	/* then check use digitial */
 	/* pick the first one */
+
+    dbgprintf("enc_id = %x\n", enc_id);
+
 	if (enc_id) {
 		obj = drm_mode_object_find(connector->dev, enc_id, DRM_MODE_OBJECT_ENCODER);
 		if (!obj)

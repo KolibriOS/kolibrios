@@ -169,7 +169,7 @@ static const struct drm_crtc_funcs radeon_crtc_funcs = {
 //   .cursor_set = radeon_crtc_cursor_set,
 //   .cursor_move = radeon_crtc_cursor_move,
 	.gamma_set = radeon_crtc_gamma_set,
-//   .set_config = drm_crtc_helper_set_config,
+	.set_config = drm_crtc_helper_set_config,
 	.destroy = radeon_crtc_destroy,
 };
 
@@ -556,7 +556,6 @@ void radeon_compute_pll(struct radeon_pll *pll,
 	*post_div_p = best_post_div;
 }
 
-#if 0
 
 static void radeon_user_framebuffer_destroy(struct drm_framebuffer *fb)
 {
@@ -591,7 +590,6 @@ static const struct drm_framebuffer_funcs radeon_fb_funcs = {
     .create_handle = radeon_user_framebuffer_create_handle,
 };
 
-#endif
 
 struct drm_framebuffer *
 radeon_framebuffer_create(struct drm_device *dev,
@@ -604,8 +602,8 @@ radeon_framebuffer_create(struct drm_device *dev,
 	if (radeon_fb == NULL) {
 		return NULL;
 	}
-//   drm_framebuffer_init(dev, &radeon_fb->base, &radeon_fb_funcs);
-//   drm_helper_mode_fill_fb_struct(&radeon_fb->base, mode_cmd);
+    drm_framebuffer_init(dev, &radeon_fb->base, &radeon_fb_funcs);
+    drm_helper_mode_fill_fb_struct(&radeon_fb->base, mode_cmd);
 	radeon_fb->obj = obj;
 	return &radeon_fb->base;
 }
@@ -627,9 +625,8 @@ radeon_user_framebuffer_create(struct drm_device *dev,
 
 static const struct drm_mode_config_funcs radeon_mode_funcs = {
  //  .fb_create = radeon_user_framebuffer_create,
- //   .fb_changed = radeonfb_probe,
+     .fb_changed = radeonfb_probe,
 };
-
 
 int radeon_modeset_init(struct radeon_device *rdev)
 {

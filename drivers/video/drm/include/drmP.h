@@ -70,6 +70,61 @@ extern void drm_ut_debug_printk(unsigned int request_level,
 #define DRM_DEBUG(fmt, arg...)     \
     printk("[" DRM_NAME ":%s] " fmt , __func__ , ##arg)
 
+
+/**
+ * This structure defines the drm_mm memory object, which will be used by the
+ * DRM for its buffer objects.
+ */
+struct drm_gem_object {
+    /** Reference count of this object */
+//    struct kref refcount;
+
+    /** Handle count of this object. Each handle also holds a reference */
+//    struct kref handlecount;
+
+    /** Related drm device */
+    struct drm_device *dev;
+
+    /** File representing the shmem storage */
+//    struct file *filp;
+
+    /* Mapping info for this object */
+//    struct drm_map_list map_list;
+
+    /**
+     * Size of the object, in bytes.  Immutable over the object's
+     * lifetime.
+     */
+    size_t size;
+
+    /**
+     * Global name for this object, starts at 1. 0 means unnamed.
+     * Access is covered by the object_name_lock in the related drm_device
+     */
+    int name;
+
+    /**
+     * Memory domains. These monitor which caches contain read/write data
+     * related to the object. When transitioning from one set of domains
+     * to another, the driver is called to ensure that caches are suitably
+     * flushed and invalidated
+     */
+    uint32_t read_domains;
+    uint32_t write_domain;
+
+    /**
+     * While validating an exec operation, the
+     * new read/write domain values are computed here.
+     * They will be transferred to the above values
+     * at the point that any cache flushing occurs
+     */
+    uint32_t pending_read_domains;
+    uint32_t pending_write_domain;
+
+    void *driver_private;
+};
+
+
 #if 0
 
 /***********************************************************************/

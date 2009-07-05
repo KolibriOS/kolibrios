@@ -311,7 +311,6 @@ void atombios_crtc_set_pll(struct drm_crtc *crtc, struct drm_display_mode *mode)
 	atom_execute_table(rdev->mode_info.atom_context, index, (uint32_t *)&args);
 }
 
-
 int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 			   struct drm_framebuffer *old_fb)
 {
@@ -324,6 +323,8 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 	uint64_t fb_location;
 	uint32_t fb_format, fb_pitch_pixels;
 
+    ENTRY();
+
 	if (!crtc->fb)
 		return -EINVAL;
 
@@ -332,9 +333,14 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 	obj = radeon_fb->obj;
 	obj_priv = obj->driver_private;
 
-//   if (radeon_gem_object_pin(obj, RADEON_GEM_DOMAIN_VRAM, &fb_location)) {
-//       return -EINVAL;
-//   }
+    //if (radeon_gem_object_pin(obj, RADEON_GEM_DOMAIN_VRAM, &fb_location)) {
+    //   return -EINVAL;
+    //}
+
+    fb_location = rdev->mc.vram_location;
+
+    dbgprintf("fb_location %x\n", fb_location);
+    dbgprintf("bpp %x\n", crtc->fb->bits_per_pixel);
 
 	switch (crtc->fb->bits_per_pixel) {
 	case 15:
@@ -400,9 +406,9 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 		radeon_fb = to_radeon_framebuffer(old_fb);
 //       radeon_gem_object_unpin(radeon_fb->obj);
 	}
+    LEAVE();
 	return 0;
 }
-
 
 int atombios_crtc_mode_set(struct drm_crtc *crtc,
 			   struct drm_display_mode *mode,
@@ -414,6 +420,8 @@ int atombios_crtc_mode_set(struct drm_crtc *crtc,
 	struct radeon_device *rdev = dev->dev_private;
 	struct drm_encoder *encoder;
 	SET_CRTC_TIMING_PARAMETERS_PS_ALLOCATION crtc_timing;
+
+    ENTRY();
 
 	/* TODO color tiling */
 	memset(&crtc_timing, 0, sizeof(crtc_timing));
@@ -511,6 +519,8 @@ int atombios_crtc_mode_set(struct drm_crtc *crtc,
 		radeon_crtc_set_base(crtc, x, y, old_fb);
 		radeon_legacy_atom_set_surface(crtc);
 	}
+    LEAVE();
+
 	return 0;
 }
 

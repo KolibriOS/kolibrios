@@ -282,6 +282,8 @@ static struct drm_display_mode *drm_has_preferred_mode(struct drm_connector *con
 {
 	struct drm_display_mode *mode;
 
+    ENTRY();
+
 	list_for_each_entry(mode, &connector->modes, head) {
 		if (drm_mode_width(mode) > width ||
 		    drm_mode_height(mode) > height)
@@ -312,7 +314,7 @@ static void drm_enable_connectors(struct drm_device *dev, bool *enabled)
 
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		enabled[i] = drm_connector_enabled(connector, true);
-		DRM_DEBUG("connector %d enabled? %s\n", connector->base.id,
+        DRM_DEBUG("connector %d enabled ? %s\n", connector->base.id,
 			  enabled[i] ? "yes" : "no");
 		any_enabled |= enabled[i];
 		i++;
@@ -380,6 +382,8 @@ static int drm_pick_crtcs(struct drm_device *dev,
 		c++;
 	}
 
+    dbgprintf("n= %d\n", n);
+
 	best_crtcs[n] = NULL;
 	best_crtc = NULL;
 	best_score = drm_pick_crtcs(dev, best_crtcs, modes, n+1, width, height);
@@ -391,6 +395,8 @@ static int drm_pick_crtcs(struct drm_device *dev,
 	if (!crtcs)
 		return best_score;
 
+    dbgprintf("crtcs = %x\n", crtcs);
+
 	my_score = 1;
 	if (connector->status == connector_status_connected)
 		my_score++;
@@ -399,6 +405,9 @@ static int drm_pick_crtcs(struct drm_device *dev,
 
 	connector_funcs = connector->helper_private;
 	encoder = connector_funcs->best_encoder(connector);
+
+    dbgprintf("encoder = %x\n", encoder);
+
 	if (!encoder)
 		goto out;
 
@@ -439,6 +448,11 @@ static int drm_pick_crtcs(struct drm_device *dev,
 	}
 out:
 	kfree(crtcs);
+
+    dbgprintf("best_score= %x\n", best_score);
+
+    LEAVE();
+
 	return best_score;
 }
 
@@ -454,8 +468,8 @@ static void drm_setup_crtcs(struct drm_device *dev)
 
 	DRM_DEBUG("\n");
 
-	width = dev->mode_config.max_width;
-	height = dev->mode_config.max_height;
+    width = 1280;  //dev->mode_config.max_width;
+    height = 1024; //dev->mode_config.max_height;
 
 	/* clean out all the encoder/crtc combos */
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
@@ -479,8 +493,6 @@ static void drm_setup_crtcs(struct drm_device *dev)
 
 	drm_pick_crtcs(dev, crtcs, modes, 0, width, height);
 
-    dbgprintf("done\n");
-
 	i = 0;
 	list_for_each_entry(connector, &dev->mode_config.connector_list, head) {
 		struct drm_display_mode *mode = modes[i];
@@ -495,6 +507,8 @@ static void drm_setup_crtcs(struct drm_device *dev)
 			DRM_DEBUG("desired mode %s set on crtc %d\n",
 				  mode->name, crtc->base.id);
 			crtc->desired_mode = mode;
+          //  crtc->mode = *mode;
+            crtc->enabled = true;
 			connector->encoder->crtc = crtc;
 		} else
 			connector->encoder->crtc = NULL;
@@ -589,6 +603,8 @@ bool drm_crtc_helper_set_mode(struct drm_crtc *crtc,
 	struct drm_encoder *encoder;
 	bool ret = true;
 
+    ENTRY();
+
 	adjusted_mode = drm_mode_duplicate(dev, mode);
 
 	crtc->enabled = drm_helper_crtc_in_use(crtc);
@@ -680,7 +696,7 @@ done:
 		crtc->x = saved_x;
 		crtc->y = saved_y;
 	}
-
+    LEAVE();
 	return ret;
 }
 EXPORT_SYMBOL(drm_crtc_helper_set_mode);
@@ -913,7 +929,7 @@ bool drm_helper_plugged_event(struct drm_device *dev)
 	drm_setup_crtcs(dev);
 
 	/* alert the driver fb layer */
- //  dev->mode_config.funcs->fb_changed(dev);
+    dev->mode_config.funcs->fb_changed(dev);
 
 	/* FIXME: send hotplug event */
 	return true;
@@ -957,8 +973,10 @@ bool drm_helper_initial_config(struct drm_device *dev)
 
 	drm_setup_crtcs(dev);
 
-	/* alert the driver fb layer */
- //  dev->mode_config.funcs->fb_changed(dev);
+    radeonfb_create(dev->dev_private, 1280, 1024, 1280, 1024, NULL);
+
+//   /* alert the driver fb layer */
+    dev->mode_config.funcs->fb_changed(dev);
 
     LEAVE();
 
@@ -1082,22 +1100,50 @@ int drm_helper_mode_fill_fb_struct(struct drm_framebuffer *fb,
 }
 EXPORT_SYMBOL(drm_helper_mode_fill_fb_struct);
 
+void sysSetScreen(int width, int height)
+{
+  asm __volatile__
+  (
+    "decl %%eax \n\t"
+    "dec  %%edx \n\t"
+    "call *__imp__SetScreen"
+    :
+    :"a" (width),"d"(height)
+    :"memory","cc"
+  );
+}
+
+
 int drm_helper_resume_force_mode(struct drm_device *dev)
 {
 	struct drm_crtc *crtc;
+    struct drm_framebuffer *fb;
+
 	int ret;
+
+    ENTRY();
 
 	list_for_each_entry(crtc, &dev->mode_config.crtc_list, head) {
 
 		if (!crtc->enabled)
 			continue;
+        dbgprintf("mode %x x %x y %x fb %x\n",
+                   crtc->x, crtc->y, crtc->fb, crtc->mode);
 
-		ret = drm_crtc_helper_set_mode(crtc, &crtc->mode,
+        fb = list_first_entry(&dev->mode_config.fb_kernel_list, struct drm_framebuffer, filp_head);
+
+        crtc->fb = fb;
+
+        ret = drm_crtc_helper_set_mode(crtc, crtc->desired_mode,
 					       crtc->x, crtc->y, crtc->fb);
 
 		if (ret == false)
 			DRM_ERROR("failed to set mode on crtc %p\n", crtc);
+
+        sysSetScreen(1280,1024);
+
 	}
+    LEAVE();
 	return 0;
 }
 EXPORT_SYMBOL(drm_helper_resume_force_mode);

@@ -147,56 +147,6 @@ static inline void *kzalloc(size_t size, u32_t flags)
     return ret;
 }
 
-struct drm_gem_object {
-
-    /** Reference count of this object */
-//    struct kref refcount;
-
-    /** Handle count of this object. Each handle also holds a reference */
-//    struct kref handlecount;
-
-    /** Related drm device */
-//    struct drm_device *dev;
-
-    /** File representing the shmem storage */
-//    struct file *filp;
-
-    /* Mapping info for this object */
-//    struct drm_map_list map_list;
-
-    /**
-     * Size of the object, in bytes.  Immutable over the object's
-     * lifetime.
-     */
-    size_t size;
-
-    /**
-     * Global name for this object, starts at 1. 0 means unnamed.
-     * Access is covered by the object_name_lock in the related drm_device
-     */
-    int name;
-
-    /**
-     * Memory domains. These monitor which caches contain read/write data
-     * related to the object. When transitioning from one set of domains
-     * to another, the driver is called to ensure that caches are suitably
-     * flushed and invalidated
-     */
-    uint32_t read_domains;
-    uint32_t write_domain;
-
-    /**
-     * While validating an exec operation, the
-     * new read/write domain values are computed here.
-     * They will be transferred to the above values
-     * at the point that any cache flushing occurs
-     */
-    uint32_t pending_read_domains;
-    uint32_t pending_write_domain;
-
-    void *driver_private;
-};
-
 struct drm_file;
 
 #define offsetof(TYPE,MEMBER) __builtin_offsetof(TYPE,MEMBER)
@@ -276,5 +226,9 @@ static inline void *kcalloc(size_t n, size_t size, u32_t flags)
 
 #define ENTRY()   dbgprintf("entry %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
+
+#define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
+#define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
+
 
 #endif  //__TYPES_H__

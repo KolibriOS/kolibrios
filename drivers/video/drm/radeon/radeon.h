@@ -110,7 +110,6 @@ enum radeon_family {
     CHIP_RV770,
     CHIP_RV730,
     CHIP_RV710,
-    CHIP_RV740,
     CHIP_LAST,
 };
 
@@ -231,6 +230,16 @@ struct radeon_gem {
 	struct list_head	objects;
 };
 
+int radeon_gem_init(struct radeon_device *rdev);
+void radeon_gem_fini(struct radeon_device *rdev);
+int radeon_gem_object_create(struct radeon_device *rdev, int size,
+			     int alignment, int initial_domain,
+			     bool discardable, bool kernel,
+			     bool interruptible,
+			     struct drm_gem_object **obj);
+int radeon_gem_object_pin(struct drm_gem_object *obj, uint32_t pin_domain,
+			  uint64_t *gpu_addr);
+void radeon_gem_object_unpin(struct drm_gem_object *obj);
 
 
 /*
@@ -519,7 +528,7 @@ struct radeon_device {
     uint16_t                    bios_header_start;
 
 //    struct radeon_object        *stollen_vga_memory;
-//    struct fb_info              *fbdev_info;
+    struct fb_info              *fbdev_info;
     struct radeon_object        *fbdev_robj;
     struct radeon_framebuffer   *fbdev_rfb;
 
@@ -549,7 +558,7 @@ struct radeon_device {
     struct radeon_ib_pool       ib_pool;
 //    struct radeon_irq       irq;
     struct radeon_asic         *asic;
-//    struct radeon_gem       gem;
+    struct radeon_gem       gem;
 //    struct mutex            cs_mutex;
     struct radeon_wb        wb;
     bool                gpu_lockup;
@@ -898,11 +907,6 @@ static inline void __raw_writel(uint32_t b, volatile void __iomem *addr)
     {0x1002, 0x940A, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R600|RADEON_NEW_MEMMAP}, \
     {0x1002, 0x940B, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R600|RADEON_NEW_MEMMAP}, \
     {0x1002, 0x940F, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_R600|RADEON_NEW_MEMMAP}, \
-    {0x1002, 0x94A0, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV740|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-    {0x1002, 0x94A1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV740|RADEON_IS_MOBILITY|RADEON_NEW_MEMMAP}, \
-    {0x1002, 0x94B1, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV740|RADEON_NEW_MEMMAP}, \
-    {0x1002, 0x94B3, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV740|RADEON_NEW_MEMMAP}, \
-    {0x1002, 0x94B5, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV740|RADEON_NEW_MEMMAP}, \
     {0x1002, 0x9440, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
     {0x1002, 0x9441, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \
     {0x1002, 0x9442, PCI_ANY_ID, PCI_ANY_ID, 0, 0, CHIP_RV770|RADEON_NEW_MEMMAP}, \

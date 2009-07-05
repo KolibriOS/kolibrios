@@ -240,7 +240,7 @@ int idr_pre_get(struct idr *idp, u32_t gfp_mask)
 {
    while (idp->id_free_cnt < IDR_FREE_MAX) {
        struct idr_layer *new;
-       new = kzalloc(sizeof(new), gfp_mask);
+       new = kzalloc(sizeof(struct idr_layer), gfp_mask);
        if (new == NULL)
            return (0);
        move_to_free_list(idp, new);
