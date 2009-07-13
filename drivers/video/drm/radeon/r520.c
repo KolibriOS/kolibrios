@@ -239,81 +239,6 @@ void r520_vram_info(struct radeon_device *rdev)
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
 }
 
-/*
- * Global GPU functions
- */
-void rs600_disable_vga(struct radeon_device *rdev)
-{
-    unsigned tmp;
-    dbgprintf("%s\n",__FUNCTION__);
-
-    WREG32(0x330, 0);
-    WREG32(0x338, 0);
-    tmp = RREG32(0x300);
-    tmp &= ~(3 << 16);
-    WREG32(0x300, tmp);
-    WREG32(0x308, (1 << 8));
-    WREG32(0x310, rdev->mc.vram_location);
-    WREG32(0x594, 0);
-}
-
-
-void r420_pipes_init(struct radeon_device *rdev)
-{
-    unsigned tmp;
-    unsigned gb_pipe_select;
-    unsigned num_pipes;
-
-    dbgprintf("%s\n",__FUNCTION__);
-
-    /* GA_ENHANCE workaround TCL deadlock issue */
-    WREG32(0x4274, (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3));
-    /* get max number of pipes */
-    gb_pipe_select = RREG32(0x402C);
-    num_pipes = ((gb_pipe_select >> 12) & 3) + 1;
-    rdev->num_gb_pipes = num_pipes;
-    tmp = 0;
-    switch (num_pipes) {
-    default:
-        /* force to 1 pipe */
-        num_pipes = 1;
-    case 1:
-        tmp = (0 << 1);
-        break;
-    case 2:
-        tmp = (3 << 1);
-        break;
-    case 3:
-        tmp = (6 << 1);
-        break;
-    case 4:
-        tmp = (7 << 1);
-        break;
-    }
-    WREG32(0x42C8, (1 << num_pipes) - 1);
-    /* Sub pixel 1/12 so we can have 4K rendering according to doc */
-    tmp |= (1 << 4) | (1 << 0);
-    WREG32(0x4018, tmp);
-    if (r100_gui_wait_for_idle(rdev)) {
-        printk(KERN_WARNING "Failed to wait GUI idle while "
-               "programming pipes. Bad things might happen.\n");
-    }
-
-    tmp = RREG32(0x170C);
-    WREG32(0x170C, tmp | (1 << 31));
-
-    WREG32(R300_RB2D_DSTCACHE_MODE,
-           RREG32(R300_RB2D_DSTCACHE_MODE) |
-           R300_DC_AUTOFLUSH_ENABLE |
-           R300_DC_DC_DISABLE_IGNORE_PE);
-
-    if (r100_gui_wait_for_idle(rdev)) {
-        printk(KERN_WARNING "Failed to wait GUI idle while "
-               "programming pipes. Bad things might happen.\n");
-    }
-    DRM_INFO("radeon: %d pipes initialized.\n", rdev->num_gb_pipes);
-}
-
 
 int radeon_agp_init(struct radeon_device *rdev)
 {
@@ -431,36 +356,6 @@ int radeon_agp_init(struct radeon_device *rdev)
 #else
     return 0;
 #endif
-}
-
-
-void rs600_mc_disable_clients(struct radeon_device *rdev)
-{
-    unsigned tmp;
-    dbgprintf("%s\n",__FUNCTION__);
-
-    if (r100_gui_wait_for_idle(rdev)) {
-        printk(KERN_WARNING "Failed to wait GUI idle while "
-               "programming pipes. Bad things might happen.\n");
-    }
-
-    tmp = RREG32(AVIVO_D1VGA_CONTROL);
-    WREG32(AVIVO_D1VGA_CONTROL, tmp & ~AVIVO_DVGA_CONTROL_MODE_ENABLE);
-    tmp = RREG32(AVIVO_D2VGA_CONTROL);
-    WREG32(AVIVO_D2VGA_CONTROL, tmp & ~AVIVO_DVGA_CONTROL_MODE_ENABLE);
-
-    tmp = RREG32(AVIVO_D1CRTC_CONTROL);
-    WREG32(AVIVO_D1CRTC_CONTROL, tmp & ~AVIVO_CRTC_EN);
-    tmp = RREG32(AVIVO_D2CRTC_CONTROL);
-    WREG32(AVIVO_D2CRTC_CONTROL, tmp & ~AVIVO_CRTC_EN);
-
-    /* make sure all previous write got through */
-    tmp = RREG32(AVIVO_D2CRTC_CONTROL);
-
-    mdelay(1);
-
-    dbgprintf("done\n");
-
 }
 
 

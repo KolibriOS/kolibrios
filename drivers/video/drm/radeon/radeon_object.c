@@ -769,10 +769,11 @@ int radeon_object_fbdev_mmap(struct radeon_object *robj,
 	return ttm_fbdev_mmap(vma, &robj->tobj);
 }
 
+#endif
+
 unsigned long radeon_object_size(struct radeon_object *robj)
 {
 	return robj->tobj.num_pages << PAGE_SHIFT;
 }
 
 
-#endif

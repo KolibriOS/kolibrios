@@ -60,7 +60,10 @@
 extern int radeon_modeset;
 extern int radeon_dynclks;
 extern int radeon_r4xx_atom;
+extern int radeon_agpmode;
+extern int radeon_vram_limit;
 extern int radeon_gart_size;
+extern int radeon_benchmarking;
 extern int radeon_connector_table;
 
 /*
@@ -614,9 +617,15 @@ static inline void __raw_writel(uint32_t b, volatile void __iomem *addr)
     *(volatile uint32_t __force *) addr = b;
 }
 
+static inline void __raw_writeq(__u64 b, volatile void __iomem *addr)
+{
+        *(volatile __u64 *)addr = b;
+}
+
 #define writeb __raw_writeb
 #define writew __raw_writew
 #define writel __raw_writel
+#define writeq __raw_writeq
 
 //#define writeb(b,addr) *(volatile uint8_t* ) addr = (uint8_t)b
 //#define writew(b,addr) *(volatile uint16_t*) addr = (uint16_t)b
@@ -1201,5 +1210,6 @@ drm_get_resource_start(struct drm_device *dev, unsigned int resource);
 resource_size_t
 drm_get_resource_len(struct drm_device *dev, unsigned int resource);
 
+bool set_mode(struct drm_device *dev, int width, int height);
 
 #endif

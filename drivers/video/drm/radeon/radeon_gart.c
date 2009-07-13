@@ -30,7 +30,6 @@
 #include "radeon.h"
 #include "radeon_reg.h"
 
-#if 0
 /*
  * Common GART table functions.
  */
@@ -38,8 +37,8 @@ int radeon_gart_table_ram_alloc(struct radeon_device *rdev)
 {
 	void *ptr;
 
-	ptr = pci_alloc_consistent(rdev->pdev, rdev->gart.table_size,
-				   &rdev->gart.table_addr);
+//   ptr = pci_alloc_consistent(rdev->pdev, rdev->gart.table_size,
+//                  &rdev->gart.table_addr);
 	if (ptr == NULL) {
 		return -ENOMEM;
 	}
@@ -67,13 +66,12 @@ void radeon_gart_table_ram_free(struct radeon_device *rdev)
 			      rdev->gart.table_size >> PAGE_SHIFT);
 	}
 #endif
-	pci_free_consistent(rdev->pdev, rdev->gart.table_size,
-			    (void *)rdev->gart.table.ram.ptr,
-			    rdev->gart.table_addr);
+//   pci_free_consistent(rdev->pdev, rdev->gart.table_size,
+//               (void *)rdev->gart.table.ram.ptr,
+//               rdev->gart.table_addr);
 	rdev->gart.table.ram.ptr = NULL;
 	rdev->gart.table_addr = 0;
 }
-#endif
 
 int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
 {

@@ -61,19 +61,17 @@ void r100_cp_disable(struct radeon_device *rdev);
 void r100_ring_start(struct radeon_device *rdev);
 int r100_irq_set(struct radeon_device *rdev);
 int r100_irq_process(struct radeon_device *rdev);
-//void r100_fence_ring_emit(struct radeon_device *rdev,
-//             struct radeon_fence *fence);
-//int r100_cs_parse(struct radeon_cs_parser *p);
+void r100_fence_ring_emit(struct radeon_device *rdev,
+			  struct radeon_fence *fence);
+int r100_cs_parse(struct radeon_cs_parser *p);
 void r100_pll_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
 uint32_t r100_pll_rreg(struct radeon_device *rdev, uint32_t reg);
-//int r100_copy_blit(struct radeon_device *rdev,
-//          uint64_t src_offset,
-//          uint64_t dst_offset,
-//          unsigned num_pages,
-//          struct radeon_fence *fence);
+int r100_copy_blit(struct radeon_device *rdev,
+		   uint64_t src_offset,
+		   uint64_t dst_offset,
+		   unsigned num_pages,
+		   struct radeon_fence *fence);
 
-
-#if 0
 
 static struct radeon_asic r100_asic = {
 	.init = &r100_init,
@@ -82,27 +80,27 @@ static struct radeon_asic r100_asic = {
 	.gpu_reset = &r100_gpu_reset,
 	.mc_init = &r100_mc_init,
 	.mc_fini = &r100_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &r100_gart_enable,
 	.gart_disable = &r100_pci_gart_disable,
 	.gart_tlb_flush = &r100_pci_gart_tlb_flush,
 	.gart_set_page = &r100_pci_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
 	.ring_start = &r100_ring_start,
-	.irq_set = &r100_irq_set,
-	.irq_process = &r100_irq_process,
+//   .irq_set = &r100_irq_set,
+//   .irq_process = &r100_irq_process,
  //  .fence_ring_emit = &r100_fence_ring_emit,
  //  .cs_parse = &r100_cs_parse,
  //  .copy_blit = &r100_copy_blit,
  //  .copy_dma = NULL,
  //  .copy = &r100_copy_blit,
-	.set_engine_clock = &radeon_legacy_set_engine_clock,
-	.set_memory_clock = NULL,
-	.set_pcie_lanes = NULL,
-	.set_clock_gating = &radeon_legacy_set_clock_gating,
+//   .set_engine_clock = &radeon_legacy_set_engine_clock,
+//   .set_memory_clock = NULL,
+//   .set_pcie_lanes = NULL,
+//   .set_clock_gating = &radeon_legacy_set_clock_gating,
 };
 
 
@@ -116,9 +114,9 @@ int r300_gpu_reset(struct radeon_device *rdev);
 int r300_mc_init(struct radeon_device *rdev);
 void r300_mc_fini(struct radeon_device *rdev);
 void r300_ring_start(struct radeon_device *rdev);
-//void r300_fence_ring_emit(struct radeon_device *rdev,
-//             struct radeon_fence *fence);
-//int r300_cs_parse(struct radeon_cs_parser *p);
+void r300_fence_ring_emit(struct radeon_device *rdev,
+			  struct radeon_fence *fence);
+int r300_cs_parse(struct radeon_cs_parser *p);
 int r300_gart_enable(struct radeon_device *rdev);
 void rv370_pcie_gart_disable(struct radeon_device *rdev);
 void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev);
@@ -126,11 +124,11 @@ int rv370_pcie_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr);
 uint32_t rv370_pcie_rreg(struct radeon_device *rdev, uint32_t reg);
 void rv370_pcie_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
 void rv370_set_pcie_lanes(struct radeon_device *rdev, int lanes);
-//int r300_copy_dma(struct radeon_device *rdev,
-//         uint64_t src_offset,
-//         uint64_t dst_offset,
-//         unsigned num_pages,
-//         struct radeon_fence *fence);
+int r300_copy_dma(struct radeon_device *rdev,
+		  uint64_t src_offset,
+		  uint64_t dst_offset,
+		  unsigned num_pages,
+		  struct radeon_fence *fence);
 
 
 static struct radeon_asic r300_asic = {
@@ -140,28 +138,29 @@ static struct radeon_asic r300_asic = {
 	.gpu_reset = &r300_gpu_reset,
 	.mc_init = &r300_mc_init,
 	.mc_fini = &r300_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &r300_gart_enable,
 	.gart_disable = &r100_pci_gart_disable,
 	.gart_tlb_flush = &r100_pci_gart_tlb_flush,
 	.gart_set_page = &r100_pci_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
 	.ring_start = &r300_ring_start,
-	.irq_set = &r100_irq_set,
-	.irq_process = &r100_irq_process,
+//   .irq_set = &r100_irq_set,
+//   .irq_process = &r100_irq_process,
  //  .fence_ring_emit = &r300_fence_ring_emit,
  //  .cs_parse = &r300_cs_parse,
  //  .copy_blit = &r100_copy_blit,
  //  .copy_dma = &r300_copy_dma,
  //  .copy = &r100_copy_blit,
-	.set_engine_clock = &radeon_legacy_set_engine_clock,
-	.set_memory_clock = NULL,
-	.set_pcie_lanes = &rv370_set_pcie_lanes,
-	.set_clock_gating = &radeon_legacy_set_clock_gating,
+ //  .set_engine_clock = &radeon_legacy_set_engine_clock,
+ //  .set_memory_clock = NULL,
+//   .set_pcie_lanes = &rv370_set_pcie_lanes,
+//   .set_clock_gating = &radeon_legacy_set_clock_gating,
 };
+
 
 /*
  * r420,r423,rv410
@@ -177,27 +176,27 @@ static struct radeon_asic r420_asic = {
 	.gpu_reset = &r300_gpu_reset,
 	.mc_init = &r420_mc_init,
 	.mc_fini = &r420_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &r300_gart_enable,
 	.gart_disable = &rv370_pcie_gart_disable,
 	.gart_tlb_flush = &rv370_pcie_gart_tlb_flush,
 	.gart_set_page = &rv370_pcie_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
 	.ring_start = &r300_ring_start,
-	.irq_set = &r100_irq_set,
-	.irq_process = &r100_irq_process,
+//   .irq_set = &r100_irq_set,
+//   .irq_process = &r100_irq_process,
 //   .fence_ring_emit = &r300_fence_ring_emit,
 //   .cs_parse = &r300_cs_parse,
 //   .copy_blit = &r100_copy_blit,
 //   .copy_dma = &r300_copy_dma,
 //   .copy = &r100_copy_blit,
-	.set_engine_clock = &radeon_atom_set_engine_clock,
-	.set_memory_clock = &radeon_atom_set_memory_clock,
-	.set_pcie_lanes = &rv370_set_pcie_lanes,
-	.set_clock_gating = &radeon_atom_set_clock_gating,
+//   .set_engine_clock = &radeon_atom_set_engine_clock,
+//   .set_memory_clock = &radeon_atom_set_memory_clock,
+//   .set_pcie_lanes = &rv370_set_pcie_lanes,
+//   .set_clock_gating = &radeon_atom_set_clock_gating,
 };
 
 
@@ -221,27 +220,27 @@ static struct radeon_asic rs400_asic = {
 	.gpu_reset = &r300_gpu_reset,
 	.mc_init = &rs400_mc_init,
 	.mc_fini = &rs400_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &rs400_gart_enable,
 	.gart_disable = &rs400_gart_disable,
 	.gart_tlb_flush = &rs400_gart_tlb_flush,
 	.gart_set_page = &rs400_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
 	.ring_start = &r300_ring_start,
-	.irq_set = &r100_irq_set,
-	.irq_process = &r100_irq_process,
+//   .irq_set = &r100_irq_set,
+//   .irq_process = &r100_irq_process,
 //   .fence_ring_emit = &r300_fence_ring_emit,
 //   .cs_parse = &r300_cs_parse,
 //   .copy_blit = &r100_copy_blit,
 //   .copy_dma = &r300_copy_dma,
 //   .copy = &r100_copy_blit,
-	.set_engine_clock = &radeon_legacy_set_engine_clock,
-	.set_memory_clock = NULL,
-	.set_pcie_lanes = NULL,
-	.set_clock_gating = &radeon_legacy_set_clock_gating,
+//   .set_engine_clock = &radeon_legacy_set_engine_clock,
+//   .set_memory_clock = NULL,
+//   .set_pcie_lanes = NULL,
+//   .set_clock_gating = &radeon_legacy_set_clock_gating,
 };
 
 
@@ -259,6 +258,7 @@ void rs600_gart_tlb_flush(struct radeon_device *rdev);
 int rs600_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr);
 uint32_t rs600_mc_rreg(struct radeon_device *rdev, uint32_t reg);
 void rs600_mc_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
+
 static struct radeon_asic rs600_asic = {
 	.init = &r300_init,
 	.errata = &rs600_errata,
@@ -266,27 +266,27 @@ static struct radeon_asic rs600_asic = {
 	.gpu_reset = &r300_gpu_reset,
 	.mc_init = &rs600_mc_init,
 	.mc_fini = &rs600_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &rs600_gart_enable,
 	.gart_disable = &rs600_gart_disable,
 	.gart_tlb_flush = &rs600_gart_tlb_flush,
 	.gart_set_page = &rs600_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
 	.ring_start = &r300_ring_start,
-	.irq_set = &rs600_irq_set,
-	.irq_process = &r100_irq_process,
+//   .irq_set = &rs600_irq_set,
+//   .irq_process = &r100_irq_process,
 //   .fence_ring_emit = &r300_fence_ring_emit,
 //   .cs_parse = &r300_cs_parse,
 //   .copy_blit = &r100_copy_blit,
 //   .copy_dma = &r300_copy_dma,
 //   .copy = &r100_copy_blit,
-	.set_engine_clock = &radeon_atom_set_engine_clock,
-	.set_memory_clock = &radeon_atom_set_memory_clock,
-	.set_pcie_lanes = NULL,
-	.set_clock_gating = &radeon_atom_set_clock_gating,
+//   .set_engine_clock = &radeon_atom_set_engine_clock,
+//   .set_memory_clock = &radeon_atom_set_memory_clock,
+//   .set_pcie_lanes = NULL,
+//   .set_clock_gating = &radeon_atom_set_clock_gating,
 };
 
 
@@ -306,30 +306,29 @@ static struct radeon_asic rs690_asic = {
 	.gpu_reset = &r300_gpu_reset,
 	.mc_init = &rs690_mc_init,
 	.mc_fini = &rs690_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &rs400_gart_enable,
 	.gart_disable = &rs400_gart_disable,
 	.gart_tlb_flush = &rs400_gart_tlb_flush,
 	.gart_set_page = &rs400_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
 	.ring_start = &r300_ring_start,
-	.irq_set = &rs600_irq_set,
-	.irq_process = &r100_irq_process,
+//   .irq_set = &rs600_irq_set,
+//   .irq_process = &r100_irq_process,
  //  .fence_ring_emit = &r300_fence_ring_emit,
  //  .cs_parse = &r300_cs_parse,
  //  .copy_blit = &r100_copy_blit,
  //  .copy_dma = &r300_copy_dma,
 //   .copy = &r300_copy_dma,
-	.set_engine_clock = &radeon_atom_set_engine_clock,
-	.set_memory_clock = &radeon_atom_set_memory_clock,
-	.set_pcie_lanes = NULL,
-	.set_clock_gating = &radeon_atom_set_clock_gating,
+//   .set_engine_clock = &radeon_atom_set_engine_clock,
+//   .set_memory_clock = &radeon_atom_set_memory_clock,
+//   .set_pcie_lanes = NULL,
+//   .set_clock_gating = &radeon_atom_set_clock_gating,
 };
 
-#endif
 /*
  * rv515
  */
@@ -345,7 +344,7 @@ void rv515_ring_start(struct radeon_device *rdev);
 uint32_t rv515_pcie_rreg(struct radeon_device *rdev, uint32_t reg);
 void rv515_pcie_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
 
-/*
+
 static struct radeon_asic rv515_asic = {
 	.init = &rv515_init,
 	.errata = &rv515_errata,
@@ -353,39 +352,28 @@ static struct radeon_asic rv515_asic = {
 	.gpu_reset = &rv515_gpu_reset,
 	.mc_init = &rv515_mc_init,
 	.mc_fini = &rv515_mc_fini,
-	.wb_init = &r100_wb_init,
-	.wb_fini = &r100_wb_fini,
+//   .wb_init = &r100_wb_init,
+//   .wb_fini = &r100_wb_fini,
 	.gart_enable = &r300_gart_enable,
 	.gart_disable = &rv370_pcie_gart_disable,
 	.gart_tlb_flush = &rv370_pcie_gart_tlb_flush,
 	.gart_set_page = &rv370_pcie_gart_set_page,
 	.cp_init = &r100_cp_init,
-	.cp_fini = &r100_cp_fini,
-	.cp_disable = &r100_cp_disable,
-	.ring_start = &rv515_ring_start,
-	.irq_set = &r100_irq_set,
-	.irq_process = &r100_irq_process,
+//   .cp_fini = &r100_cp_fini,
+//   .cp_disable = &r100_cp_disable,
+    .ring_start = &rv515_ring_start,
+//   .irq_set = &r100_irq_set,
+//   .irq_process = &r100_irq_process,
 //   .fence_ring_emit = &r300_fence_ring_emit,
 //   .cs_parse = &r300_cs_parse,
 //   .copy_blit = &r100_copy_blit,
 //   .copy_dma = &r300_copy_dma,
 //   .copy = &r100_copy_blit,
-	.set_engine_clock = &radeon_atom_set_engine_clock,
-	.set_memory_clock = &radeon_atom_set_memory_clock,
-	.set_pcie_lanes = &rv370_set_pcie_lanes,
-	.set_clock_gating = &radeon_atom_set_clock_gating,
+//   .set_engine_clock = &radeon_atom_set_engine_clock,
+//   .set_memory_clock = &radeon_atom_set_memory_clock,
+//   .set_pcie_lanes = &rv370_set_pcie_lanes,
+//   .set_clock_gating = &radeon_atom_set_clock_gating,
 };
-
-*/
-
-
-int r300_gart_enable(struct radeon_device *rdev);
-void rv370_pcie_gart_disable(struct radeon_device *rdev);
-void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev);
-int rv370_pcie_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr);
-uint32_t rv370_pcie_rreg(struct radeon_device *rdev, uint32_t reg);
-void rv370_pcie_wreg(struct radeon_device *rdev, uint32_t reg, uint32_t v);
-void rv370_set_pcie_lanes(struct radeon_device *rdev, int lanes);
 
 
 /*

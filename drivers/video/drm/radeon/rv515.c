@@ -52,7 +52,6 @@ int rv515_debugfs_ga_info_init(struct radeon_device *rdev);
 void rv515_gpu_init(struct radeon_device *rdev);
 int rv515_mc_wait_for_idle(struct radeon_device *rdev);
 
-#if 0
 /*
  * MC
  */
@@ -61,15 +60,15 @@ int rv515_mc_init(struct radeon_device *rdev)
 	uint32_t tmp;
 	int r;
 
-	if (r100_debugfs_rbbm_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-	}
-	if (rv515_debugfs_pipes_info_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for pipes !\n");
-	}
-	if (rv515_debugfs_ga_info_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for pipes !\n");
-	}
+//   if (r100_debugfs_rbbm_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+//   }
+//   if (rv515_debugfs_pipes_info_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for pipes !\n");
+//   }
+//   if (rv515_debugfs_ga_info_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for pipes !\n");
+//   }
 
 	rv515_gpu_init(rdev);
 	rv370_pcie_gart_disable(rdev);
@@ -130,7 +129,6 @@ void rv515_mc_fini(struct radeon_device *rdev)
 	radeon_gart_fini(rdev);
 }
 
-#endif
 
 /*
  * Global GPU functions
@@ -256,7 +254,6 @@ int rv515_mc_wait_for_idle(struct radeon_device *rdev)
 	return -1;
 }
 
-#if 0
 void rv515_gpu_init(struct radeon_device *rdev)
 {
 	unsigned pipe_select_current, gb_pipe_select, tmp;
@@ -288,7 +285,6 @@ void rv515_gpu_init(struct radeon_device *rdev)
 	}
 }
 
-#endif
 
 int rv515_ga_reset(struct radeon_device *rdev)
 {

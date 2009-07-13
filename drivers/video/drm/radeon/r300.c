@@ -173,10 +173,10 @@ int r300_gart_enable(struct radeon_device *rdev)
 		rdev->asic->gart_set_page = &rv370_pcie_gart_set_page;
 		return rv370_pcie_gart_enable(rdev);
 	}
-//   return r100_pci_gart_enable(rdev);
+    return r100_pci_gart_enable(rdev);
 }
 
-#if 0
+
 /*
  * MC
  */
@@ -184,9 +184,9 @@ int r300_mc_init(struct radeon_device *rdev)
 {
 	int r;
 
-	if (r100_debugfs_rbbm_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-	}
+//   if (r100_debugfs_rbbm_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+//   }
 
 	r300_gpu_init(rdev);
 	r100_pci_gart_disable(rdev);
@@ -264,6 +264,8 @@ void r300_fence_ring_emit(struct radeon_device *rdev,
 }
 
 
+#if 0
+
 /*
  * Global GPU functions
  */
@@ -310,6 +312,8 @@ int r300_copy_dma(struct radeon_device *rdev,
 	radeon_ring_unlock_commit(rdev);
 	return r;
 }
+
+#endif
 
 void r300_ring_start(struct radeon_device *rdev)
 {
@@ -714,6 +718,7 @@ int rv370_debugfs_pcie_gart_info_init(struct radeon_device *rdev)
 }
 
 
+#if 0
 /*
  * CS functions
  */
@@ -968,6 +973,8 @@ static inline void r300_cs_track_clear(struct r300_cs_track *track)
 	}
 }
 
+#endif
+
 static const unsigned r300_reg_safe_bm[159] = {
 	0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF,
 	0xFFFFFFBF, 0xFFFFFFFF, 0xFFFFFFBF, 0xFFFFFFFF,
@@ -1010,6 +1017,8 @@ static const unsigned r300_reg_safe_bm[159] = {
 	0x00000000, 0x00000000, 0x00000000, 0x00000000,
 	0x0003FC01, 0xFFFFFFF8, 0xFE800B19,
 };
+
+#if 0
 
 static int r300_packet0_check(struct radeon_cs_parser *p,
 		struct radeon_cs_packet *pkt,
@@ -1524,6 +1533,8 @@ int r300_cs_parse(struct radeon_cs_parser *p)
 	return 0;
 }
 
+#endif
+
 int r300_init(struct radeon_device *rdev)
 {
 	rdev->config.r300.reg_safe_bm = r300_reg_safe_bm;
@@ -1532,4 +1543,3 @@ int r300_init(struct radeon_device *rdev)
 }
 
 
-#endif

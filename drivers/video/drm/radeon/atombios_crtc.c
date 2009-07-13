@@ -337,7 +337,7 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
     //   return -EINVAL;
     //}
 
-    fb_location = rdev->mc.vram_location;
+    fb_location = 0; //rdev->mc.vram_location;
 
     dbgprintf("fb_location %x\n", fb_location);
     dbgprintf("bpp %x\n", crtc->fb->bits_per_pixel);
@@ -708,3 +708,5 @@ void radeon_init_disp_bw_avivo(struct drm_device *dev,
 #endif
 	WREG32(AVIVO_DC_LB_MEMORY_SPLIT, dc_lb_memory_split);
 }
+
+

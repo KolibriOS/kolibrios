@@ -447,7 +447,7 @@ bool radeon_get_atom_connector_info_from_supported_devices_table(struct
 	struct bios_connector bios_connectors[ATOM_MAX_SUPPORTED_DEVICE];
 
 	atom_parse_data_header(ctx, index, &size, &frev, &crev, &data_offset);
-    ENTRY();
+
 	supported_devices =
 	    (union atom_supported_devices *)(ctx->bios + data_offset);
 
@@ -596,7 +596,7 @@ bool radeon_get_atom_connector_info_from_supported_devices_table(struct
 	}
 
 	radeon_link_encoder_connector(dev);
-    LEAVE();
+
 	return true;
 }
 
@@ -943,8 +943,6 @@ void radeon_atom_initialize_bios_scratch_regs(struct drm_device *dev)
 {
 	struct radeon_device *rdev = dev->dev_private;
 	uint32_t bios_2_scratch, bios_6_scratch;
-
-    dbgprintf("%s\n",__FUNCTION__);
 
 	if (rdev->family >= CHIP_R600) {
 		bios_2_scratch = RREG32(R600_BIOS_0_SCRATCH);

@@ -94,8 +94,8 @@ void radeon_get_clock_info(struct drm_device *dev)
 
 	if (rdev->is_atom_bios)
 		ret = radeon_atom_get_clock_info(dev);
-//   else
-//       ret = radeon_combios_get_clock_info(dev);
+	else
+		ret = radeon_combios_get_clock_info(dev);
 
 	if (ret) {
 		if (p1pll->reference_div < 2)

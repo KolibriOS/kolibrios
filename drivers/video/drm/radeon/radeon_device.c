@@ -250,8 +250,8 @@ void radeon_register_accessor_init(struct radeon_device *rdev)
 
     /* Don't change order as we are overridding accessor. */
     if (rdev->family < CHIP_RV515) {
-//        rdev->pcie_rreg = &rv370_pcie_rreg;
-//        rdev->pcie_wreg = &rv370_pcie_wreg;
+        rdev->pcie_rreg = &rv370_pcie_rreg;
+        rdev->pcie_wreg = &rv370_pcie_wreg;
     }
     if (rdev->family >= CHIP_RV515) {
         rdev->pcie_rreg = &rv515_pcie_rreg;
@@ -267,20 +267,20 @@ void radeon_register_accessor_init(struct radeon_device *rdev)
         rdev->mc_wreg = &rv515_mc_wreg;
     }
     if (rdev->family == CHIP_RS400 || rdev->family == CHIP_RS480) {
-//        rdev->mc_rreg = &rs400_mc_rreg;
-//        rdev->mc_wreg = &rs400_mc_wreg;
+        rdev->mc_rreg = &rs400_mc_rreg;
+        rdev->mc_wreg = &rs400_mc_wreg;
     }
     if (rdev->family == CHIP_RS690 || rdev->family == CHIP_RS740) {
-//        rdev->mc_rreg = &rs690_mc_rreg;
-//        rdev->mc_wreg = &rs690_mc_wreg;
+        rdev->mc_rreg = &rs690_mc_rreg;
+        rdev->mc_wreg = &rs690_mc_wreg;
     }
     if (rdev->family == CHIP_RS600) {
-//        rdev->mc_rreg = &rs600_mc_rreg;
-//        rdev->mc_wreg = &rs600_mc_wreg;
+        rdev->mc_rreg = &rs600_mc_rreg;
+        rdev->mc_wreg = &rs600_mc_wreg;
     }
     if (rdev->family >= CHIP_R600) {
-//        rdev->pciep_rreg = &r600_pciep_rreg;
-//        rdev->pciep_wreg = &r600_pciep_wreg;
+        rdev->pciep_rreg = &r600_pciep_rreg;
+        rdev->pciep_wreg = &r600_pciep_wreg;
     }
 }
 
@@ -304,32 +304,32 @@ int radeon_asic_init(struct radeon_device *rdev)
 	case CHIP_RV250:
 	case CHIP_RS300:
 	case CHIP_RV280:
-//       rdev->asic = &r100_asic;
+        rdev->asic = &r100_asic;
 		break;
 	case CHIP_R300:
 	case CHIP_R350:
 	case CHIP_RV350:
 	case CHIP_RV380:
-//       rdev->asic = &r300_asic;
+        rdev->asic = &r300_asic;
 		break;
 	case CHIP_R420:
 	case CHIP_R423:
 	case CHIP_RV410:
-//       rdev->asic = &r420_asic;
+        rdev->asic = &r420_asic;
 		break;
 	case CHIP_RS400:
 	case CHIP_RS480:
-//       rdev->asic = &rs400_asic;
+       rdev->asic = &rs400_asic;
 		break;
 	case CHIP_RS600:
-//       rdev->asic = &rs600_asic;
+       rdev->asic = &rs600_asic;
 		break;
 	case CHIP_RS690:
 	case CHIP_RS740:
-//       rdev->asic = &rs690_asic;
+        rdev->asic = &rs690_asic;
 		break;
 	case CHIP_RV515:
-//       rdev->asic = &rv515_asic;
+        rdev->asic = &rv515_asic;
 		break;
 	case CHIP_R520:
 	case CHIP_RV530:
@@ -454,7 +454,7 @@ void radeon_atombios_fini(struct radeon_device *rdev)
 
 int radeon_combios_init(struct radeon_device *rdev)
 {
-//	radeon_combios_initialize_bios_scratch_regs(rdev->ddev);
+	radeon_combios_initialize_bios_scratch_regs(rdev->ddev);
 	return 0;
 }
 
@@ -869,8 +869,7 @@ int drm_get_dev(struct pci_dev *pdev, const struct pci_device_id *ent)
  //        driver->name, driver->major, driver->minor, driver->patchlevel,
  //        driver->date, pci_name(pdev), dev->primary->index);
 
-      drm_helper_resume_force_mode(dev);
-
+      set_mode(dev, 1024, 768);
 
     return 0;
 
@@ -930,4 +929,6 @@ uint32_t __div64_32(uint64_t *n, uint32_t base)
         *n = res;
         return rem;
 }
+
+
 

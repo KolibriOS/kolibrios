@@ -46,7 +46,6 @@ void r100_gpu_wait_for_vsync(struct radeon_device *rdev);
 void r100_gpu_wait_for_vsync2(struct radeon_device *rdev);
 int r100_debugfs_mc_info_init(struct radeon_device *rdev);
 
-#if 0
 /*
  * PCI GART
  */
@@ -105,6 +104,7 @@ void r100_pci_gart_disable(struct radeon_device *rdev)
 	WREG32(RADEON_AIC_HI_ADDR, 0);
 }
 
+
 int r100_pci_gart_set_page(struct radeon_device *rdev, int i, uint64_t addr)
 {
 	if (i < 0 || i > rdev->gart.num_gpu_pages) {
@@ -132,10 +132,10 @@ void r100_mc_disable_clients(struct radeon_device *rdev)
 	uint32_t ov0_scale_cntl, crtc_ext_cntl, crtc_gen_cntl, crtc2_gen_cntl;
 
 	/* FIXME: is this function correct for rs100,rs200,rs300 ? */
-//   if (r100_gui_wait_for_idle(rdev)) {
-//       printk(KERN_WARNING "Failed to wait GUI idle while "
-//              "programming pipes. Bad things might happen.\n");
-//   }
+	if (r100_gui_wait_for_idle(rdev)) {
+		printk(KERN_WARNING "Failed to wait GUI idle while "
+		       "programming pipes. Bad things might happen.\n");
+	}
 
 	/* stop display and memory access */
 	ov0_scale_cntl = RREG32(RADEON_OV0_SCALE_CNTL);
@@ -168,10 +168,10 @@ void r100_mc_setup(struct radeon_device *rdev)
 	uint32_t tmp;
 	int r;
 
-	r = r100_debugfs_mc_info_init(rdev);
-	if (r) {
-		DRM_ERROR("Failed to register debugfs file for R100 MC !\n");
-	}
+//   r = r100_debugfs_mc_info_init(rdev);
+//   if (r) {
+//       DRM_ERROR("Failed to register debugfs file for R100 MC !\n");
+//   }
 	/* Write VRAM size in case we are limiting it */
 	WREG32(RADEON_CONFIG_MEMSIZE, rdev->mc.vram_size);
 	tmp = rdev->mc.vram_location + rdev->mc.vram_size - 1;
@@ -206,9 +206,9 @@ int r100_mc_init(struct radeon_device *rdev)
 {
 	int r;
 
-	if (r100_debugfs_rbbm_init(rdev)) {
-		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-	}
+//   if (r100_debugfs_rbbm_init(rdev)) {
+//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+//   }
 
 	r100_gpu_init(rdev);
 	/* Disable gart which also disable out of gart access */
@@ -245,10 +245,9 @@ int r100_mc_init(struct radeon_device *rdev)
 void r100_mc_fini(struct radeon_device *rdev)
 {
 	r100_pci_gart_disable(rdev);
-	radeon_gart_table_ram_free(rdev);
-	radeon_gart_fini(rdev);
+//   radeon_gart_table_ram_free(rdev);
+//   radeon_gart_fini(rdev);
 }
-
 
 /*
  * Fence emission
@@ -268,8 +267,7 @@ void r100_fence_ring_emit(struct radeon_device *rdev,
 	radeon_ring_write(rdev, RADEON_SW_INT_FIRE);
 }
 
-#endif
-
+#if 0
 /*
  * Writeback
  */
@@ -317,7 +315,6 @@ void r100_wb_fini(struct radeon_device *rdev)
 }
 
 
-#if 0
 int r100_copy_blit(struct radeon_device *rdev,
 		   uint64_t src_offset,
 		   uint64_t dst_offset,
@@ -391,6 +388,7 @@ int r100_copy_blit(struct radeon_device *rdev,
 	return r;
 }
 
+#endif
 
 /*
  * CP
@@ -412,13 +410,9 @@ void r100_ring_start(struct radeon_device *rdev)
 	radeon_ring_unlock_commit(rdev);
 }
 
-#endif
-
 static void r100_cp_load_microcode(struct radeon_device *rdev)
 {
 	int i;
-
-    dbgprintf("%s\n",__FUNCTION__);
 
 	if (r100_gui_wait_for_idle(rdev)) {
 		printk(KERN_WARNING "Failed to wait GUI idle while "
@@ -596,7 +590,6 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
 	return 0;
 }
 
-#if 0
 
 void r100_cp_fini(struct radeon_device *rdev)
 {
@@ -619,7 +612,6 @@ void r100_cp_disable(struct radeon_device *rdev)
 	}
 }
 
-#endif
 
 int r100_cp_reset(struct radeon_device *rdev)
 {
@@ -1047,6 +1039,7 @@ int r100_cs_parse(struct radeon_cs_parser *p)
 	return 0;
 }
 
+#endif
 
 /*
  * Global GPU functions
@@ -1066,7 +1059,6 @@ void r100_errata(struct radeon_device *rdev)
 	}
 }
 
-#endif
 
 
 /* Wait for vertical sync on primary CRTC */
@@ -1212,8 +1204,6 @@ int r100_rb2d_reset(struct radeon_device *rdev)
 	return -1;
 }
 
-#if 0
-
 int r100_gpu_reset(struct radeon_device *rdev)
 {
 	uint32_t status;
@@ -1305,8 +1295,6 @@ void r100_vram_info(struct radeon_device *rdev)
 	rdev->mc.aper_base = drm_get_resource_start(rdev->ddev, 0);
 	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
 }
-
-#endif
 
 /*
  * Indirect registers accessor

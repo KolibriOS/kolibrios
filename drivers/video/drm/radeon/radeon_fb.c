@@ -1173,3 +1173,101 @@ struct fb_info *framebuffer_alloc(size_t size)
 #undef BYTES_PER_LONG
 }
 
+static char *manufacturer_name(unsigned char *x)
+{
+    static char name[4];
+
+    name[0] = ((x[0] & 0x7C) >> 2) + '@';
+    name[1] = ((x[0] & 0x03) << 3) + ((x[1] & 0xE0) >> 5) + '@';
+    name[2] = (x[1] & 0x1F) + '@';
+    name[3] = 0;
+
+    return name;
+}
+
+
+bool set_mode(struct drm_device *dev, int width, int height)
+{
+    struct drm_connector *connector;
+
+    bool   ret;
+
+    ENTRY();
+
+    list_for_each_entry(connector, &dev->mode_config.connector_list, head)
+    {
+        struct drm_display_mode *mode;
+
+        struct drm_encoder  *encoder;
+        struct drm_crtc     *crtc;
+
+        if( connector->status != connector_status_connected)
+            continue;
+
+        encoder = connector->encoder;
+        if( encoder == NULL)
+            continue;
+
+        crtc = encoder->crtc;
+
+        if(crtc == NULL)
+            continue;
+
+        list_for_each_entry(mode, &connector->modes, head)
+        {
+            char *con_name, *enc_name;
+
+            struct drm_framebuffer *fb;
+
+            if (drm_mode_width(mode) == width &&
+                drm_mode_height(mode) == height)
+            {
+                char con_edid[128];
+
+                fb = list_first_entry(&dev->mode_config.fb_kernel_list,
+                                      struct drm_framebuffer, filp_head);
+
+                memcpy(con_edid, connector->edid_blob_ptr->data, 128);
+
+                dbgprintf("Manufacturer: %s Model %x Serial Number %u\n",
+                manufacturer_name(con_edid + 0x08),
+                (unsigned short)(con_edid[0x0A] + (con_edid[0x0B] << 8)),
+                (unsigned int)(con_edid[0x0C] + (con_edid[0x0D] << 8)
+                    + (con_edid[0x0E] << 16) + (con_edid[0x0F] << 24)));
+
+
+                con_name = drm_get_connector_name(connector);
+                enc_name = drm_get_encoder_name(encoder);
+
+                dbgprintf("set mode %d %d connector %s encoder %s\n",
+                           width, height, con_name, enc_name);
+
+                fb->width = width;
+                fb->height = height;
+                fb->pitch = radeon_align_pitch(dev->dev_private, width, 32)
+                            * ((32 + 1) / 8);
+
+                crtc->fb = fb;
+
+                ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
+
+                sysSetScreen(width,height);
+
+                if (ret == true)
+                {
+                }
+                else
+                {
+                    DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
+                               width, height, crtc);
+                };
+
+                return ret;
+            };
+        }
+    };
+
+    return false;
+};
+
+
