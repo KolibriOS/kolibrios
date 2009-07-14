@@ -57,15 +57,15 @@ int r520_mc_init(struct radeon_device *rdev)
 
     dbgprintf("%s\n",__FUNCTION__);
 
-//   if (r100_debugfs_rbbm_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-//   }
-//   if (rv515_debugfs_pipes_info_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for pipes !\n");
-//   }
-//   if (rv515_debugfs_ga_info_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for pipes !\n");
-//   }
+   if (r100_debugfs_rbbm_init(rdev)) {
+       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+   }
+   if (rv515_debugfs_pipes_info_init(rdev)) {
+       DRM_ERROR("Failed to register debugfs file for pipes !\n");
+   }
+   if (rv515_debugfs_ga_info_init(rdev)) {
+       DRM_ERROR("Failed to register debugfs file for pipes !\n");
+   }
 
 	r520_gpu_init(rdev);
 	rv370_pcie_gart_disable(rdev);
@@ -393,7 +393,3 @@ int radeon_fence_driver_init(struct radeon_device *rdev)
 }
 
 
-
-
-
-//domodedovo 9-00    16/07/2009

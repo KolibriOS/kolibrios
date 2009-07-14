@@ -212,9 +212,9 @@ int radeon_ib_pool_init(struct radeon_device *rdev)
 	bitmap_zero(rdev->ib_pool.alloc_bm, RADEON_IB_POOL_SIZE);
 	rdev->ib_pool.ready = true;
 	DRM_INFO("radeon: ib pool ready.\n");
-//   if (radeon_debugfs_ib_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for IB !\n");
-//   }
+	if (radeon_debugfs_ib_init(rdev)) {
+		DRM_ERROR("Failed to register debugfs file for IB !\n");
+	}
 	return r;
 }
 

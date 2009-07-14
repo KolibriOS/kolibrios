@@ -225,11 +225,12 @@ static inline void *kcalloc(size_t n, size_t size, u32_t flags)
         return kzalloc(n * size, 0);
 }
 
-#define ENTRY()   dbgprintf("entry %s\n",__FUNCTION__)
+#define ENTRY()   dbgprintf("enter %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
 
 #define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 
+#define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
 
 #endif  //__TYPES_H__

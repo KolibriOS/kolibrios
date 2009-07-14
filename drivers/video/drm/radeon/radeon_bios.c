@@ -58,7 +58,6 @@ static bool radeon_read_bios(struct radeon_device *rdev)
 	return true;
 }
 
-#if 0
 
 static bool r700_read_disabled_bios(struct radeon_device *rdev)
 {
@@ -354,8 +353,6 @@ static bool radeon_read_disabled_bios(struct radeon_device *rdev)
 }
 
 
-#endif
-
 bool radeon_get_bios(struct radeon_device *rdev)
 {
 	bool r;
@@ -364,9 +361,9 @@ bool radeon_get_bios(struct radeon_device *rdev)
     dbgprintf("%s\n\r",__FUNCTION__);
 
 	r = radeon_read_bios(rdev);
-//   if (r == false) {
-//       r = radeon_read_disabled_bios(rdev);
-//   }
+	if (r == false) {
+		r = radeon_read_disabled_bios(rdev);
+	}
 	if (r == false || rdev->bios == NULL) {
 		DRM_ERROR("Unable to locate a BIOS ROM\n");
 		rdev->bios = NULL;

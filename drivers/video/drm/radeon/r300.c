@@ -95,10 +95,10 @@ int rv370_pcie_gart_enable(struct radeon_device *rdev)
 	if (r) {
 		return r;
 	}
-//   r = rv370_debugfs_pcie_gart_info_init(rdev);
-//   if (r) {
-//       DRM_ERROR("Failed to register debugfs file for PCIE gart !\n");
-//   }
+	r = rv370_debugfs_pcie_gart_info_init(rdev);
+	if (r) {
+		DRM_ERROR("Failed to register debugfs file for PCIE gart !\n");
+	}
 	rdev->gart.table_size = rdev->gart.num_gpu_pages * 4;
 	r = radeon_gart_table_vram_alloc(rdev);
 	if (r) {
@@ -184,9 +184,9 @@ int r300_mc_init(struct radeon_device *rdev)
 {
 	int r;
 
-//   if (r100_debugfs_rbbm_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-//   }
+	if (r100_debugfs_rbbm_init(rdev)) {
+		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+	}
 
 	r300_gpu_init(rdev);
 	r100_pci_gart_disable(rdev);

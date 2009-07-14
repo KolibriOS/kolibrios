@@ -351,9 +351,6 @@ struct drm_encoder *radeon_dvi_encoder(struct drm_connector *connector)
 
 	/* then check use digitial */
 	/* pick the first one */
-
-    dbgprintf("enc_id = %x\n", enc_id);
-
 	if (enc_id) {
 		obj = drm_mode_object_find(connector->dev, enc_id, DRM_MODE_OBJECT_ENCODER);
 		if (!obj)

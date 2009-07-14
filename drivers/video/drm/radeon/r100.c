@@ -168,10 +168,10 @@ void r100_mc_setup(struct radeon_device *rdev)
 	uint32_t tmp;
 	int r;
 
-//   r = r100_debugfs_mc_info_init(rdev);
-//   if (r) {
-//       DRM_ERROR("Failed to register debugfs file for R100 MC !\n");
-//   }
+	r = r100_debugfs_mc_info_init(rdev);
+	if (r) {
+		DRM_ERROR("Failed to register debugfs file for R100 MC !\n");
+	}
 	/* Write VRAM size in case we are limiting it */
 	WREG32(RADEON_CONFIG_MEMSIZE, rdev->mc.vram_size);
 	tmp = rdev->mc.vram_location + rdev->mc.vram_size - 1;
@@ -206,9 +206,9 @@ int r100_mc_init(struct radeon_device *rdev)
 {
 	int r;
 
-//   if (r100_debugfs_rbbm_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-//   }
+	if (r100_debugfs_rbbm_init(rdev)) {
+		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+	}
 
 	r100_gpu_init(rdev);
 	/* Disable gart which also disable out of gart access */
@@ -495,11 +495,9 @@ int r100_cp_init(struct radeon_device *rdev, unsigned ring_size)
 	uint32_t tmp;
 	int r;
 
-    dbgprintf("%s\n",__FUNCTION__);
-
-//   if (r100_debugfs_cp_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for CP !\n");
-//   }
+	if (r100_debugfs_cp_init(rdev)) {
+		DRM_ERROR("Failed to register debugfs file for CP !\n");
+	}
 	/* Reset CP */
 	tmp = RREG32(RADEON_CP_CSQ_STAT);
 	if ((tmp & (1 << 31))) {
@@ -1377,3 +1375,173 @@ int r100_init(struct radeon_device *rdev)
 	return 0;
 }
 
+/*
+ * Debugfs info
+ */
+#if defined(CONFIG_DEBUG_FS)
+static int r100_debugfs_rbbm_info(struct seq_file *m, void *data)
+{
+	struct drm_info_node *node = (struct drm_info_node *) m->private;
+	struct drm_device *dev = node->minor->dev;
+	struct radeon_device *rdev = dev->dev_private;
+	uint32_t reg, value;
+	unsigned i;
+
+	seq_printf(m, "RBBM_STATUS 0x%08x\n", RREG32(RADEON_RBBM_STATUS));
+	seq_printf(m, "RBBM_CMDFIFO_STAT 0x%08x\n", RREG32(0xE7C));
+	seq_printf(m, "CP_STAT 0x%08x\n", RREG32(RADEON_CP_STAT));
+	for (i = 0; i < 64; i++) {
+		WREG32(RADEON_RBBM_CMDFIFO_ADDR, i | 0x100);
+		reg = (RREG32(RADEON_RBBM_CMDFIFO_DATA) - 1) >> 2;
+		WREG32(RADEON_RBBM_CMDFIFO_ADDR, i);
+		value = RREG32(RADEON_RBBM_CMDFIFO_DATA);
+		seq_printf(m, "[0x%03X] 0x%04X=0x%08X\n", i, reg, value);
+	}
+	return 0;
+}
+
+static int r100_debugfs_cp_ring_info(struct seq_file *m, void *data)
+{
+	struct drm_info_node *node = (struct drm_info_node *) m->private;
+	struct drm_device *dev = node->minor->dev;
+	struct radeon_device *rdev = dev->dev_private;
+	uint32_t rdp, wdp;
+	unsigned count, i, j;
+
+	radeon_ring_free_size(rdev);
+	rdp = RREG32(RADEON_CP_RB_RPTR);
+	wdp = RREG32(RADEON_CP_RB_WPTR);
+	count = (rdp + rdev->cp.ring_size - wdp) & rdev->cp.ptr_mask;
+	seq_printf(m, "CP_STAT 0x%08x\n", RREG32(RADEON_CP_STAT));
+	seq_printf(m, "CP_RB_WPTR 0x%08x\n", wdp);
+	seq_printf(m, "CP_RB_RPTR 0x%08x\n", rdp);
+	seq_printf(m, "%u free dwords in ring\n", rdev->cp.ring_free_dw);
+	seq_printf(m, "%u dwords in ring\n", count);
+	for (j = 0; j <= count; j++) {
+		i = (rdp + j) & rdev->cp.ptr_mask;
+		seq_printf(m, "r[%04d]=0x%08x\n", i, rdev->cp.ring[i]);
+	}
+	return 0;
+}
+
+
+static int r100_debugfs_cp_csq_fifo(struct seq_file *m, void *data)
+{
+	struct drm_info_node *node = (struct drm_info_node *) m->private;
+	struct drm_device *dev = node->minor->dev;
+	struct radeon_device *rdev = dev->dev_private;
+	uint32_t csq_stat, csq2_stat, tmp;
+	unsigned r_rptr, r_wptr, ib1_rptr, ib1_wptr, ib2_rptr, ib2_wptr;
+	unsigned i;
+
+	seq_printf(m, "CP_STAT 0x%08x\n", RREG32(RADEON_CP_STAT));
+	seq_printf(m, "CP_CSQ_MODE 0x%08x\n", RREG32(RADEON_CP_CSQ_MODE));
+	csq_stat = RREG32(RADEON_CP_CSQ_STAT);
+	csq2_stat = RREG32(RADEON_CP_CSQ2_STAT);
+	r_rptr = (csq_stat >> 0) & 0x3ff;
+	r_wptr = (csq_stat >> 10) & 0x3ff;
+	ib1_rptr = (csq_stat >> 20) & 0x3ff;
+	ib1_wptr = (csq2_stat >> 0) & 0x3ff;
+	ib2_rptr = (csq2_stat >> 10) & 0x3ff;
+	ib2_wptr = (csq2_stat >> 20) & 0x3ff;
+	seq_printf(m, "CP_CSQ_STAT 0x%08x\n", csq_stat);
+	seq_printf(m, "CP_CSQ2_STAT 0x%08x\n", csq2_stat);
+	seq_printf(m, "Ring rptr %u\n", r_rptr);
+	seq_printf(m, "Ring wptr %u\n", r_wptr);
+	seq_printf(m, "Indirect1 rptr %u\n", ib1_rptr);
+	seq_printf(m, "Indirect1 wptr %u\n", ib1_wptr);
+	seq_printf(m, "Indirect2 rptr %u\n", ib2_rptr);
+	seq_printf(m, "Indirect2 wptr %u\n", ib2_wptr);
+	/* FIXME: 0, 128, 640 depends on fifo setup see cp_init_kms
+	 * 128 = indirect1_start * 8 & 640 = indirect2_start * 8 */
+	seq_printf(m, "Ring fifo:\n");
+	for (i = 0; i < 256; i++) {
+		WREG32(RADEON_CP_CSQ_ADDR, i << 2);
+		tmp = RREG32(RADEON_CP_CSQ_DATA);
+		seq_printf(m, "rfifo[%04d]=0x%08X\n", i, tmp);
+	}
+	seq_printf(m, "Indirect1 fifo:\n");
+	for (i = 256; i <= 512; i++) {
+		WREG32(RADEON_CP_CSQ_ADDR, i << 2);
+		tmp = RREG32(RADEON_CP_CSQ_DATA);
+		seq_printf(m, "ib1fifo[%04d]=0x%08X\n", i, tmp);
+	}
+	seq_printf(m, "Indirect2 fifo:\n");
+	for (i = 640; i < ib1_wptr; i++) {
+		WREG32(RADEON_CP_CSQ_ADDR, i << 2);
+		tmp = RREG32(RADEON_CP_CSQ_DATA);
+		seq_printf(m, "ib2fifo[%04d]=0x%08X\n", i, tmp);
+	}
+	return 0;
+}
+
+static int r100_debugfs_mc_info(struct seq_file *m, void *data)
+{
+	struct drm_info_node *node = (struct drm_info_node *) m->private;
+	struct drm_device *dev = node->minor->dev;
+	struct radeon_device *rdev = dev->dev_private;
+	uint32_t tmp;
+
+	tmp = RREG32(RADEON_CONFIG_MEMSIZE);
+	seq_printf(m, "CONFIG_MEMSIZE 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_MC_FB_LOCATION);
+	seq_printf(m, "MC_FB_LOCATION 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_BUS_CNTL);
+	seq_printf(m, "BUS_CNTL 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_MC_AGP_LOCATION);
+	seq_printf(m, "MC_AGP_LOCATION 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_AGP_BASE);
+	seq_printf(m, "AGP_BASE 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_HOST_PATH_CNTL);
+	seq_printf(m, "HOST_PATH_CNTL 0x%08x\n", tmp);
+	tmp = RREG32(0x01D0);
+	seq_printf(m, "AIC_CTRL 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_AIC_LO_ADDR);
+	seq_printf(m, "AIC_LO_ADDR 0x%08x\n", tmp);
+	tmp = RREG32(RADEON_AIC_HI_ADDR);
+	seq_printf(m, "AIC_HI_ADDR 0x%08x\n", tmp);
+	tmp = RREG32(0x01E4);
+	seq_printf(m, "AIC_TLB_ADDR 0x%08x\n", tmp);
+	return 0;
+}
+
+static struct drm_info_list r100_debugfs_rbbm_list[] = {
+	{"r100_rbbm_info", r100_debugfs_rbbm_info, 0, NULL},
+};
+
+static struct drm_info_list r100_debugfs_cp_list[] = {
+	{"r100_cp_ring_info", r100_debugfs_cp_ring_info, 0, NULL},
+	{"r100_cp_csq_fifo", r100_debugfs_cp_csq_fifo, 0, NULL},
+};
+
+static struct drm_info_list r100_debugfs_mc_info_list[] = {
+	{"r100_mc_info", r100_debugfs_mc_info, 0, NULL},
+};
+#endif
+
+int r100_debugfs_rbbm_init(struct radeon_device *rdev)
+{
+#if defined(CONFIG_DEBUG_FS)
+	return radeon_debugfs_add_files(rdev, r100_debugfs_rbbm_list, 1);
+#else
+	return 0;
+#endif
+}
+
+int r100_debugfs_cp_init(struct radeon_device *rdev)
+{
+#if defined(CONFIG_DEBUG_FS)
+	return radeon_debugfs_add_files(rdev, r100_debugfs_cp_list, 2);
+#else
+	return 0;
+#endif
+}
+
+int r100_debugfs_mc_info_init(struct radeon_device *rdev)
+{
+#if defined(CONFIG_DEBUG_FS)
+	return radeon_debugfs_add_files(rdev, r100_debugfs_mc_info_list, 1);
+#else
+	return 0;
+#endif
+}

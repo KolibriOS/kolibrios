@@ -58,8 +58,13 @@ NAME_SRC=							\
 			radeon_ring.c				\
 			r100.c					\
 			r300.c					\
+			r420.c					\
 			rv515.c					\
 			r520.c					\
+			r600.c					\
+			rs400.c					\
+			rs600.c					\
+			rs690.c					\
 			radeon_fb.c
 
 

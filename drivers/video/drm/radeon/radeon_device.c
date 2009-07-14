@@ -575,7 +575,7 @@ int radeon_device_init(struct radeon_device *rdev,
         if (rdev->is_atom_bios) {
             atom_asic_init(rdev->mode_info.atom_context);
         } else {
-    //        radeon_combios_asic_init(rdev->ddev);
+			radeon_combios_asic_init(rdev->ddev);
         }
     }
     /* Get vram informations */

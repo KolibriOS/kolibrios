@@ -56,9 +56,9 @@ int rs690_mc_init(struct radeon_device *rdev)
 	uint32_t tmp;
 	int r;
 
-//   if (r100_debugfs_rbbm_init(rdev)) {
-//       DRM_ERROR("Failed to register debugfs file for RBBM !\n");
-//   }
+	if (r100_debugfs_rbbm_init(rdev)) {
+		DRM_ERROR("Failed to register debugfs file for RBBM !\n");
+	}
 
 	rs690_gpu_init(rdev);
 	rs400_gart_disable(rdev);
