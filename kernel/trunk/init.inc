@@ -108,6 +108,7 @@ proc init_mem
            mov [tmp_page_tabs], edx
 
            mov edx, esi
+           and edx, -1024
            cmp edx, (OS_BASE/4096)
            jbe @F
            mov edx, (OS_BASE/4096)
