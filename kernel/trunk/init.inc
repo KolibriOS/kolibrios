@@ -107,7 +107,16 @@ proc init_mem
            and edx, not 4095
            mov [tmp_page_tabs], edx
 
-           mov edx, (((sys_pgmap-OS_BASE) + 0xFFFFFF) and not 0xFFFFFF) shr 12
+           mov edx, esi
+           cmp edx, (OS_BASE/4096)
+           jbe @F
+           mov edx, (OS_BASE/4096)
+           jmp .set
+@@:
+           cmp edx, (HEAP_BASE+HEAP_MIN_SIZE)/4096
+           jae .set
+           mov edx, (HEAP_BASE+HEAP_MIN_SIZE)/4096
+.set:
            mov [pg_data.kernel_pages-OS_BASE], edx
            shr edx, 10
            mov [pg_data.kernel_tables-OS_BASE], edx

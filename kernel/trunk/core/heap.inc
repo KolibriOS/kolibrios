@@ -91,7 +91,7 @@ macro remove_from_used op
 align 4
 proc init_kernel_heap
 
-           mov ecx, 64/4
+           mov ecx, 64
            mov edi, mem_block_list
            xor eax, eax
            cld
@@ -140,9 +140,7 @@ proc init_kernel_heap
 
            mov ecx, [pg_data.kernel_pages]
            shl ecx, 12
-           neg ecx
-           add ecx, [MEM_AMOUNT]
-           sub ecx, 4096*MEM_BLOCK_SIZE
+           sub ecx, HEAP_BASE+4096*MEM_BLOCK_SIZE
            mov [heap_size], ecx
            mov [heap_free], ecx
            mov [ebx+block_size], ecx
@@ -155,7 +153,7 @@ proc init_kernel_heap
            mov byte [mem_block_map], 0xFC
            and [heap_mutex], 0
            mov [heap_blocks], 4095
-           mov [free_blocks], 4095
+           mov [free_blocks], 4094
            ret
 endp
 
