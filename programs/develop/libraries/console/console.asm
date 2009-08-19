@@ -1689,6 +1689,7 @@ con.button:
 con.thread_exit:
         or      byte [con_flags+1], 2
         and     [con.console_tid], 0
+        and     [con.entered_char], 0
         or      eax, -1
         int     0x40
 con.key:
