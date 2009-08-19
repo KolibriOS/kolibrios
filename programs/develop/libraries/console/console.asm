@@ -81,6 +81,7 @@ con_init:
         xor     eax, eax
         rep     stosb
         pop     edi
+        and     byte [con_flags+1], not 2
 ; create console thread
         push    51
         pop     eax
@@ -119,6 +120,7 @@ con_get_flags:
 ; dword __stdcall con_set_flags(dword flags);
 con_set_flags:
         mov     eax, [esp+4]
+        and     ah, not 2
         xchg    eax, [con_flags]
         ret     4
 
@@ -1178,8 +1180,11 @@ con_set_title:
 
 ; int __stdcall con_kbhit(void);
 con_kbhit:
+        test    byte [con_flags+1], 2
+        jnz     @f
         mov     eax, [con.input_start]
         cmp     eax, [con.input_end]
+@@:
         setnz   al
         movzx   eax, al
         ret
@@ -1189,6 +1194,8 @@ con.force_entered_char:
         jnz     .ret
         mov     [con.thread_op], 4
         call    con.wake
+        test    byte [con_flags+1], 2
+        jnz     .ret
 ; wait for response
         push    ebx
         push    5
@@ -1206,6 +1213,8 @@ con.force_entered_char:
 ; int __stdcall con_getch(void);
 con_getch:
         call    con.force_entered_char
+        test    byte [con_flags+1], 2
+        jnz     con_getch_closed
         movzx   eax, byte [con.entered_char]
         sar     [con.entered_char], 8
         mov     byte [con.entered_char+1], 0xFF
@@ -1215,22 +1224,29 @@ con_getch:
 @@:
         ret
 
+con_getch_closed:
+        or      eax, -1
+        ret
+
 ; int __stdcall con_getch2(void);
 con_getch2:
         call    con.force_entered_char
+        test    byte [con_flags+1], 2
+        jnz     con_getch_closed
         mov     eax, 0xFFFF
         xchg    ax, [con.entered_char]
         ret
 
-; void __stdcall con_gets(char* str, int n);
+; char* __stdcall con_gets(char* str, int n);
 con_gets:
         pop     eax
         push    0
         push    eax
-; void __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
+; char* __stdcall con_gets2(con_gets2_callback callback, char* str, int n);
 con_gets2:
+        mov     eax, [esp+8]            ; str
         pushad
-        mov     esi, [esp+20h+8]        ; str
+        mov     esi, eax                ; str
         mov     ebx, [esp+20h+12]       ; n
         sub     ebx, 1
         jle     .ret
@@ -1239,6 +1255,8 @@ con_gets2:
         call    con.get_data_ptr
 .loop:
         call    con_getch2
+        cmp     eax, -1
+        jz      .closed
         test    al, al
         jz      .extended
         cmp     al, 8
@@ -1534,6 +1552,8 @@ con_gets2:
 @@:
         dec     esi
         jmp     .update_screen_and_loop
+.closed:
+        and     dword [esp+1Ch], 0
 .ret:
         popad
         ret     12
@@ -1605,6 +1625,7 @@ con.wake:
         push    2
         pop     ebx
         mov     ecx, [con.console_tid]
+        jecxz   .ret
         mov     edx, con.thread_op
         push    1
         pop     esi
@@ -1666,6 +1687,8 @@ con.msg_loop:
 con.button:
 ; we have only one button, close
 con.thread_exit:
+        or      byte [con_flags+1], 2
+        and     [con.console_tid], 0
         or      eax, -1
         int     0x40
 con.key:
@@ -2249,7 +2272,7 @@ con.vscroll_pt      dd    -1
 align 16
 EXPORTS:
         dd      szStart,                START
-        dd      szVersion,              0x00020005
+        dd      szVersion,              0x00020006
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
         dd      szcon_printf,           con_printf
