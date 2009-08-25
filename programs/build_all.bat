@@ -51,7 +51,7 @@ echo Enter CPU_type ("p5" for interrupt, "p6" for SYSENTER, "k6" for SYSCALL)
 call :input_value res %__CPU_type%
 echo __CPU_type fix %res% > config.inc
 
-for %%i in (%BIN% %BIN%\demos %BIN%\develop %BIN%\games %BIN%\network %BIN%\3d %BIN%\fonts) do if not exist %%i mkdir %%i
+for %%i in (%BIN% %BIN%\demos %BIN%\develop %BIN%\lib %BIN%\games %BIN%\network %BIN%\3d %BIN%\fonts) do if not exist %%i mkdir %%i
 
 echo *
 echo Building system
@@ -95,6 +95,16 @@ fasm develop\mtdbg\mtdbg.asm %BIN%\develop\mtdbg
 rem fasm develop\param\trunk\param.asm param
 fasm develop\scancode\trunk\scancode.asm %BIN%\develop\scancode
 fasm develop\tinypad\trunk\tinypad.asm %BIN%\tinypad
+
+echo *
+echo Building systems libraries
+echo *
+fasm develop\libraries\box_lib\trunk\box_lib.asm %BIN%\lib\box_lib.obj
+fasm develop\libraries\console\console.asm %BIN%\lib\console.obj
+fasm develop\libraries\libs-dev\libsgfx\libsgfx.asm %BIN%\lib\libsgfx.obj
+fasm develop\libraries\libs-dev\libimg\libimg.asm %BIN%\lib\libimg.obj
+fasm develop\libraries\libs-dev\libini\libini.asm %BIN%\lib\libini.obj
+fasm develop\libraries\libs-dev\libio\libio.asm %BIN%\lib\libio.obj
 
 echo *
 echo Building fs
@@ -272,6 +282,18 @@ kpack %BIN%\demos\heed
 kpack %BIN%\develop\keyascii
 kpack %BIN%\develop\mtdbg
 kpack %BIN%\develop\scancode
+
+echo *
+echo Compressing libraries
+echo *
+
+kpack %BIN%\lib\box_lib.obj
+kpack %BIN%\lib\console.obj
+kpack %BIN%\lib\libsgfx.obj
+kpack %BIN%\lib\libimg.obj
+kpack %BIN%\lib\libini.obj
+kpack %BIN%\lib\libio.obj
+
 
 echo *
 echo Compressing fs
