@@ -101,7 +101,7 @@ echo Building systems libraries
 echo *
 fasm develop\libraries\box_lib\trunk\box_lib.asm %BIN%\lib\box_lib.obj
 fasm develop\libraries\console\console.asm %BIN%\lib\console.obj
-fasm develop\libraries\libs-dev\libsgfx\libsgfx.asm %BIN%\lib\libsgfx.obj
+fasm develop\libraries\libs-dev\libgfx\libgfx.asm %BIN%\lib\libgfx.obj
 fasm develop\libraries\libs-dev\libimg\libimg.asm %BIN%\lib\libimg.obj
 fasm develop\libraries\libs-dev\libini\libini.asm %BIN%\lib\libini.obj
 fasm develop\libraries\libs-dev\libio\libio.asm %BIN%\lib\libio.obj
