@@ -28,8 +28,6 @@ CODE
   redraw:                                ; redraw event handler
    call    draw_window            ; at first create and draw the window
 
-    mcall   9, procinfo, -1
-
   wait_event:                      ; main cycle
     mov     eax, 10
     mcall
@@ -89,8 +87,6 @@ end if
 ; <--- uninitialised data --->
 UDATA
 sc   system_colors
-
-procinfo    rb  1024
 
 MEOS_APP_END
 ; <--- end of MenuetOS application --->
