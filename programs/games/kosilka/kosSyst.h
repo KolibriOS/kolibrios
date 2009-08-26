@@ -99,7 +99,7 @@ union sProcessInfo
 };
 
 //
-extern char *kosExePath;
+extern char kosExePath[];
 
 //
 void crtStartUp();
@@ -128,7 +128,7 @@ void sprintf( char *Str, char* Format, ... );
 //
 Dword rtlInterlockedExchange( Dword *target, Dword value );
 // функция -1 завершения процесса
-void kos_ExitApp();
+void __declspec(noreturn) kos_ExitApp();
 // функция 0
 void kos_DefineAndDrawWindow(
 	Word x, Word y,
@@ -142,7 +142,8 @@ void kos_PutPixel( Dword x, Dword y, Dword colour );
 // функция 2 получить код нажатой клавиши
 bool kos_GetKey( Byte &keyCode );
 // функция 3 получить время
-Dword kos_GetSystemClock();
+Dword __cdecl kos_GetSystemClock();
+#if 0
 // функция 4
 void kos_WriteTextToWindow(
 	Word x, Word y,
@@ -151,26 +152,31 @@ void kos_WriteTextToWindow(
 	char *textPtr,
 	Dword textLen
 	);
+#else
+void kos_WriteTextToWindow_internal(Dword pos, Dword font, const char* textPtr, Dword textLen);
+#define kos_WriteTextToWindow(x, y, fontType, textColour, textPtr, textLen) \
+	kos_WriteTextToWindow_internal(((x)<<16)|(y), ((fontType)<<24)|(textColour), textPtr, textLen)
+#endif
 // функция 7 нарисовать изображение
 void kos_PutImage( RGB * imagePtr, Word sizeX, Word sizeY, Word x, Word y );
 // функция 8 определить кнопку
 void kos_DefineButton( Word x, Word y, Word sizeX, Word sizeY, Dword buttonID, Dword colour );
 // функция 5 пауза, в сотых долях секунды
-void kos_Pause( Dword value );
+void __cdecl kos_Pause( Dword value );
 // функция 9 - информация о процессе
 Dword kos_ProcessInfo( sProcessInfo *targetPtr, Dword processID = PROCESS_ID_SELF );
 // функция 10
-Dword kos_WaitForEvent();
+Dword __cdecl kos_WaitForEvent();
 // функция 11
 Dword kos_CheckForEvent();
 // функция 12
-void kos_WindowRedrawStatus( Dword status );
+void __cdecl kos_WindowRedrawStatus( Dword status );
 // функция 13 нарисовать полосу
 void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour );
 // функция 17
 bool kos_GetButtonID( Dword &buttonID );
 // функция 23
-Dword kos_WaitForEvent( Dword timeOut );
+Dword __cdecl kos_WaitForEvent( Dword timeOut );
 //
 enum eNumberBase
 {
@@ -195,9 +201,9 @@ void kos_DisplayNumberToWindow(
 // функция 48.4 получить высоту скина
 Dword kos_GetSkinWidth();
 // функция 58 доступ к файловой системе
-Dword kos_FileSystemAccess( kosFileInfo *fileInfo );
+Dword __fastcall kos_FileSystemAccess( kosFileInfo *fileInfo );
 // функция 63
-void kos_DebugOutChar( char ccc );
+void __fastcall kos_DebugOutChar( char ccc );
 //
 void rtlDebugOutString( char *str );
 // функция 64 изменить параметры окна, параметр == -1 не меняется

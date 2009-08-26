@@ -1,13 +1,41 @@
 #include "kosSyst.h"
 #include <stdarg.h>
 
-#define atexitBufferSize	32
+char stack[16384];
+char kosExePath[257];
 
+struct __MENUET_header_t
+{
+	char signature[8];
+	unsigned version;
+	void* entry;
+	unsigned init_size;
+	unsigned memsize;
+	void* stackptr;
+	void* command_line_ptr;
+	void* app_path_ptr;
+};
+__MENUET_header_t __MENUET_header =
+{
+	{'M','E','N','U','E','T','0','1'},
+	1,
+	&crtStartUp,
+	-1,
+	-1,
+	stack + sizeof(stack),
+	NULL,
+	&kosExePath
+};
+
+#if 0
+#define atexitBufferSize	32
+#endif
 
 char pureCallMessage[] = "PURE function call!";
 
-char *kosExePath = NULL;
+//char *kosExePath = NULL;
 
+#if 0
 //
 void (__cdecl *atExitList[atexitBufferSize])();
 int atExitFnNum = 0;
@@ -26,7 +54,7 @@ int __cdecl atexit( void (__cdecl *func )( void ))
 		return 1;
 	}
 }
-
+#endif
 
 //
 Dword RandomSeed = 1;
@@ -341,8 +369,9 @@ void sprintf( char *Str, char* Format, ... )
 
 
 // функция -1 завершения процесса
-void kos_ExitApp()
+void __declspec(noreturn) kos_ExitApp()
 {
+#if 0
 	int i;
 
 	//
@@ -352,6 +381,7 @@ void kos_ExitApp()
 		atExitList[i]();
 	}
 	//
+#endif
 	__asm{
 		mov eax, -1
 		int 0x40
@@ -433,9 +463,8 @@ getkeyii:
 	return ( result & 0xFF ) == 0;
 }
 
-
 // функция 3 получить время
-Dword kos_GetSystemClock()
+Dword __cdecl kos_GetSystemClock()
 {
 //	Dword result;
 
@@ -449,7 +478,7 @@ Dword kos_GetSystemClock()
 //	return result;
 }
 
-
+#if 0
 // функция 4
 void kos_WriteTextToWindow(
 	Word x,
@@ -475,10 +504,29 @@ void kos_WriteTextToWindow(
 		int 0x40
 	}
 }
+#else
+// функция 4
+void kos_WriteTextToWindow_internal(
+	Dword pos,
+	Dword font,
+	const char *textPtr,
+	Dword textLen
+	)
+{
+	__asm{
+		mov eax, 4
+		mov ebx, pos
+		mov ecx, font
+		mov edx, textPtr
+		mov esi, textLen
+		int 0x40
+	}
+}
+#endif
 
 
 // функция 5 пауза, в сотых долях секунды
-void kos_Pause( Dword value )
+void __cdecl kos_Pause( Dword value )
 {
 	//
 	__asm{
@@ -548,7 +596,7 @@ Dword kos_ProcessInfo( sProcessInfo *targetPtr, Dword processID )
 
 
 // функция 10
-Dword kos_WaitForEvent()
+Dword __cdecl kos_WaitForEvent()
 {
 //	Dword result;
 
@@ -578,7 +626,7 @@ Dword kos_CheckForEvent()
 
 
 // функция 12
-void kos_WindowRedrawStatus( Dword status )
+void __cdecl kos_WindowRedrawStatus( Dword status )
 {
 	__asm{
 		mov eax, 12
@@ -606,7 +654,6 @@ void kos_DrawBar( Word x, Word y, Word sizeX, Word sizeY, Dword colour )
 	}
 }
 
-
 // функция 17
 bool kos_GetButtonID( Dword &buttonID )
 {
@@ -626,7 +673,7 @@ bool kos_GetButtonID( Dword &buttonID )
 
 
 // функция 23
-Dword kos_WaitForEvent( Dword timeOut )
+Dword __cdecl kos_WaitForEvent( Dword timeOut )
 {
 //	Dword result;
 
@@ -724,14 +771,14 @@ Dword kos_GetSkinWidth()
 
 
 // функция 70 доступ к файловой системе
-Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
+Dword __fastcall kos_FileSystemAccess( kosFileInfo *fileInfo )
 {
 //	Dword result;
 
 	//
 	__asm{
 		mov eax, 70
-		mov ebx, fileInfo
+		mov ebx, ecx //fileInfo
 		int 0x40
 //		mov result, eax
 	}
@@ -741,13 +788,13 @@ Dword kos_FileSystemAccess( kosFileInfo *fileInfo )
 
 
 // функция 63 вывод символя в окно отладки
-void kos_DebugOutChar( char ccc )
+void __fastcall kos_DebugOutChar( char ccc )
 {
 	//
 	__asm{
 		mov eax, 63
 		mov ebx, 1
-		mov cl, ccc
+		//mov cl, ccc
 		int 0x40
 	}
 }
@@ -827,27 +874,13 @@ int __cdecl _purecall()
 // заодно инициализация генератора случайных чисел
 //#pragma section(".CRT$XCA",long,read,write)
 //#pragma section(".CRT$XCZ",long,read,write)
-#pragma data_seg(".CRT$XCA")
-#pragma data_seg(".CRT$XCZ")
-typedef void (__cdecl *_PVFV)(void);
-__declspec(allocate(".CRT$XCA"))  _PVFV __xc_a[1] = { NULL };
-__declspec(allocate(".CRT$XCZ"))  _PVFV __xc_z[1] = { NULL };
-//
-#pragma comment(linker, "/merge:.CRT=.rdata")
-//
 void crtStartUp()
 {
-	// вызываем инициализаторы по списку, NULL'ы игнорируем
-	for ( _PVFV *pbegin = __xc_a; pbegin < __xc_z; pbegin++ )
-	{
-		//
-		if ( *pbegin != NULL )
-			(**pbegin)();
-	}
+	__MENUET_header.app_path_ptr;
 	// инициализируем генератор случайных чисел
 	rtlSrand( kos_GetSystemClock() );
 	// путь к файлу процесса
-	kosExePath = *((char **)0x20);
+	//kosExePath = *((char **)0x20);
 	// вызов главной функции приложения
 	kos_Main();
 	// выход

@@ -1,5 +1,3 @@
-cl /c /O2 /nologo kosilka.cpp kosFile.cpp kosSyst.cpp mcsmemm.cpp
-link /nologo /entry:crtStartUp /subsystem:native /base:0 /fixed /align:16 /nodefaultlib kosilka.obj kosFile.obj kosSyst.obj mcsmemm.obj
-pe2kos kosilka.exe kosilka
-del kosilka.exe
-pause
+cl /c /O2 /Ox /Os /GL /Gr /Oi /nologo /GS- /GR- kosilka.cpp kosFile.cpp kosSyst.cpp mcsmemm.cpp
+link /section:.bss,E /nologo /ltcg /map /entry:crtStartUp /subsystem:native /base:0 /fixed:no /nodefaultlib /merge:.data=.text /merge:.rdata=.text kosilka.obj kosFile.obj kosSyst.obj mcsmemm.obj
+fasm doexe2.asm kosilka

@@ -25,7 +25,7 @@ START:
 	or	eax, eax
 	jnz	exit
 
-	invoke	sort.START, 1
+;	invoke	sort.START, 1
 
 	mov	ecx, 1	; for 15.4: 1 = tile
 	cmp	word [@PARAMS], '\T'
@@ -540,20 +540,20 @@ load_directory:
 	mov	[eax+4], ebx
 	test	ebx, ebx
 	jz	free_directory
-	push	0	; sort mode
-	push	ebx
-	add	eax, 32
-	push	eax
-	call	[SortDir]
+;	push	0	; sort mode
+;	push	ebx
+;	add	eax, 32
+;	push	eax
+;	call	[SortDir]
 	xor	eax, eax
 	mov	edi, [directory_ptr]
 	add	edi, 32 + 40
 .scan:
 	mov	esi, [last_name_component]
 	inc	esi
-	push	edi
-	invoke	strcmpi
-	pop	edi
+;	push	edi
+;	invoke	strcmpi
+;	pop	edi
 	jz	.found
 	inc	eax
 	add	edi, 304
@@ -995,8 +995,8 @@ align 4
 library 			\
 	libio  , 'libio.obj'  , \
 	libgfx , 'libgfx.obj' , \
-	libimg , 'libimg.obj' , \
-	sort   , 'sort.obj'
+	libimg , 'libimg.obj' ;, \
+;	sort   , 'sort.obj'
 
 import	libio			  , \
 	libio.init , 'lib_init'   , \
@@ -1022,7 +1022,7 @@ import	libimg			   , \
 	img.destroy , 'img_destroy', \
 	img.draw    , 'img_draw'
 
-import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
+;import  sort, sort.START, 'START', SortDir, 'SortDir', strcmpi, 'strcmpi'
 
 bFirstDraw	db	0
 ;-----------------------------------------------------------------------------

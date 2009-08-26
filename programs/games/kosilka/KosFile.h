@@ -12,15 +12,15 @@ class CKosFile
 {
 public:
 	CKosFile(char *fileName);
-	virtual ~CKosFile(void);
-	virtual int	Read(Byte *targetPtr, int readCount);
-	virtual int Write(Byte *sourcePtr, int writeCount);
-	virtual int Seek(int seekFrom, int seekStep);
+	~CKosFile(void);
+	int	Read(Byte *targetPtr, int readCount);
+	int Write(Byte *sourcePtr, int writeCount);
+	int Seek(int seekFrom, int seekStep);
 protected:
 	int filePointer;
 	int bufferPointer;
 	bool validBuffer;
 	kosFileInfo fileInfo;
-	virtual void ValidateBuffer(void);
-	virtual void UpdateBuffer(void);
+	void ValidateBuffer(void);
+	void UpdateBuffer(void);
 };
