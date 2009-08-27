@@ -1225,7 +1225,7 @@ con_getch:
         ret
 
 con_getch_closed:
-        or      eax, -1
+        xor     eax, eax
         ret
 
 ; int __stdcall con_getch2(void);
@@ -1255,8 +1255,6 @@ con_gets2:
         call    con.get_data_ptr
 .loop:
         call    con_getch2
-        cmp     eax, -1
-        jz      .closed
         test    al, al
         jz      .extended
         cmp     al, 8
@@ -1413,6 +1411,8 @@ con_gets2:
         mov     al, 0
         mov     ah, 0xF
 .extended:
+        test    ah, ah
+        jz      .closed
         xchg    al, ah
         cmp     al, 0x4B
         jz      .left
@@ -2273,7 +2273,7 @@ con.vscroll_pt      dd    -1
 align 16
 EXPORTS:
         dd      szStart,                START
-        dd      szVersion,              0x00020006
+        dd      szVersion,              0x00020007
         dd      szcon_init,             con_init
         dd      szcon_write_asciiz,     con_write_asciiz
         dd      szcon_printf,           con_printf

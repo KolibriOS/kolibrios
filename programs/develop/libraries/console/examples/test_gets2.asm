@@ -41,7 +41,7 @@ start:
 ; for (;;)
 ; {
 ;   con_write_asciiz("Enter string (empty for exit): ");
-;   con_gets2(mycallback,s,256);
+;   if (!con_gets2(mycallback,s,256)) break;
 ;   if (s[0] == '\n') break;
 ;   con_write_asciiz("You entered: ");
 ;   con_write_asciiz(s);
@@ -53,6 +53,8 @@ mainloop:
         push    s
         push    mycallback
         call    [con_gets2]
+        test    eax, eax
+        jz      done
         cmp     [s], 10
         jz      done
         push    str2

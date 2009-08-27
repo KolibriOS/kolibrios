@@ -68,6 +68,8 @@ mainloop:
         jmp     mainloop
 extended:
         call    [con_getch]
+        test    eax, eax
+        jz      done
         push    eax
         push    eax
         push    string_extended
