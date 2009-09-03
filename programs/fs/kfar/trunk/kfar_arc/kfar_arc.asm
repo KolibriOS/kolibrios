@@ -2,14 +2,14 @@
 ; project name:         KFar_Arc - plugin for KFar, which supports various archives
 ; target platform:      KolibriOS
 ; compiler:             FASM 1.67.14
-; version:              0.16
-; last update:          2009-07-03 (Jul 03, 2009)
+; version:              0.17
+; last update:          2009-09-03 (Sep 03, 2009)
 ; minimal KFar version: 0.43
 ; minimal kernel:       no limit
 ;
 ; author:               Diamond
 ; email:                diamondz@land.ru
-; web:                  http://diamondz.land.ru
+; web:                  http://diamond.kolibrios.org
 ;
 
 ; standard start of Kolibri dynamic library
@@ -871,6 +871,13 @@ endg
 ; !!! in this case .fullname is not null-terminated !!!
         mov     ecx, [edx+file_common.fullname]
         mov     [eax+file_common.fullname], ecx
+        push    edi eax
+        lea     edi, [eax+file_common.parent]
+        xor     eax, eax
+        push    7
+        pop     ecx
+        rep     stosd
+        pop     eax edi
         pop     ecx
         pop     esi
 ; ecx = parent item, eax = current item
@@ -878,7 +885,6 @@ endg
         inc     dword [ecx+16]  ; new item in parent folder
         push    ecx
 ; add new item to end of L2-list
-        and     [eax+file_common.next], 0
         cmp     [eax+file_common.bIsDirectory], 0
         jnz     @f
         add     ecx, 8
@@ -901,7 +907,6 @@ endg
 @@:
         pop     ecx
 ; set parent link
-        and     [eax+file_common.parent], 0
         cmp     ecx, edi
         jz      @f
         sub     ecx, file_common.subfolders
