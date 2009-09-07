@@ -225,6 +225,8 @@ align 16
 	push	ebx
 	mov	ebx, [esi + Image.Palette]
 	mov	esi, [esi + Image.Data]
+	sub	ecx, 1
+	jz	.bpp8.last
 @@:
 	movzx	eax, byte [esi]
 	add	esi, 1
@@ -233,6 +235,12 @@ align 16
 	add	edi, 3
 	sub	ecx, 1
 	jnz	@b
+.bpp8.last:
+	movzx	eax, byte [esi]
+	mov	eax, [ebx + eax*4]
+	mov	[edi], ax
+	shr	eax, 16
+	mov	[edi+2], al
 	pop	ebx
 	ret
 
@@ -1709,7 +1717,7 @@ align 4
 
 export					      \
 	lib_init	, 'lib_init'	    , \
-	0x00050005	, 'version'	    , \
+	0x00050006	, 'version'	    , \
 	img.is_img	, 'img_is_img'	    , \
 	img.info	, 'img_info'	    , \
 	img.from_file	, 'img_from_file'   , \
