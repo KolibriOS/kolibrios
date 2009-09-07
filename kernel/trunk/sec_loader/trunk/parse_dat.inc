@@ -12,7 +12,7 @@
 ;       names of its contributors may be used to endorse or promote products
 ;       derived from this software without specific prior written permission.
 ;
-; THIS SOFTWARE IS PROVIDED BY Alexey Teplov aka <Lrz> ''AS IS'' AND ANY
+; THIS SOFTWARE IS PROVIDED BY Alexey Teplov nickname <Lrz> ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 ; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
@@ -29,11 +29,11 @@ parse_loader      db '[loader]'
 parse_loader_e:
 parse_l_timeout   db 'timeout'
 parse_l_timeout_e:
-parse_l_default	  db 'default'
+parse_l_default   db 'default'
 parse_l_default_e:
-parse_name	  db 'ame'
+parse_name        db 'ame'
 parse_name_e:
-parse_descript	  db 'descript'
+parse_descript    db 'descript'
 parse_descript_e:
 
 parse_LoaderModule db 'LoaderModule'
@@ -42,15 +42,15 @@ parse_RamdiskSize db 'RamdiskSize'
 parse_RamdiskSize_e:  
 parse_RamdiskFS   db 'RamdiskFS'
 parse_RamdiskFS_e:
-parse_RamdiskSector	db 'RamdiskSector'
+parse_RamdiskSector     db 'RamdiskSector'
 parse_RamdiskSector_e:
-parse_RamdiskCluster	db 'RamdiskCluster'
+parse_RamdiskCluster    db 'RamdiskCluster'
 parse_RamdiskCluster_e:
-parse_RFS_FAT	  db 'FAT'
+parse_RFS_FAT     db 'FAT'
 parse_RFS_FAT_e:
-parse_RFS_KRFS	  db 'KRFS'
+parse_RFS_KRFS    db 'KRFS'
 parse_RFS_KRFS_e:
-parse_Loader_Image	db 'LoaderImage'
+parse_Loader_Image      db 'LoaderImage'
 parse_Loader_Image_e:
-parse_RamdiskFile	db 'RamdiskFile'
+parse_RamdiskFile       db 'RamdiskFile'
 parse_RamdiskFile_e:

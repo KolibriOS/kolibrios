@@ -31,14 +31,14 @@
 ;======================================================================
 
 
-version      db 'Secondary Loader v 0.009',0
+version      db 'Secondary Loader v 0.010',0
 version_end:
 
 select_section db 'Select section:'
 select_section_end:
 section_description db 'Section description:'
 section_description_end:
-soft_mes	db 'Soft (c) 2008'
+soft_mes        db 'Soft (c) 2008-2009'
 soft_mes_end:
 
 badprocessor db      '>Fatal - CPU 586+ required.',0
@@ -58,7 +58,7 @@ load_ini     db      '>Ini file loaded successfully',0
 parse_ini_end db     '>End parsing ini file',0
 point_to_default_sec_not_found db '>Point to default section is not found in ini file',0
 incorect_section_define db ">Incorect section define not found ']'",0
-default_section_name	db '"Section unname"'
+default_section_name    db '"Section unname"'
 
 start_msg db      "Press any key to change default section, press [Enter] to continue booting"
 start_msg_e:

@@ -13,4 +13,8 @@ echo ==============================
 echo ** building firs loader for fat32 **
 @fasm -m 65535 fat32/bootsect.asm fat32/bootsect.bin
 @fasm -m 65535 fat32/kordldr.f1x.asm fat32/kordldr.f1x
+echo ==============================
+echo ** make a image of fdd **
+@fasm -m 65535 floppy.asc kord.img
+
 @pause

@@ -12,7 +12,7 @@
 ;       names of its contributors may be used to endorse or promote products
 ;       derived from this software without specific prior written permission.
 ;
-; THIS SOFTWARE IS PROVIDED BY Alexey Teplov aka <Lrz> ''AS IS'' AND ANY
+; THIS SOFTWARE IS PROVIDED BY Alexey Teplov nickname <Lrz> ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 ; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
@@ -36,47 +36,47 @@ macro  use_parse
 parse_start:
 ;es:di as 2000:0000 new segment
 ;установим указатель на загруженный блок
-	enter	256,0	;set 16 byte for current task in stack
+        enter   256,0   ;set 16 byte for current task in stack
 ;we are is not use bp because bp is pointer on array 16 byte
-	mov	word [save_bp_from_timer],bp	;save point to own data array
-	mov	save_cx,cx	;it's placed size of ini file
+        mov     word [save_bp_from_timer],bp    ;save point to own data array
+        mov     save_cx,cx      ;it's placed size of ini file
         les     di,dword [file_data]
 ;обнулим все переменные выделенные из стека
 ;init flag
-	xor	ax,ax
-	mov	status_flag,ax
+        xor     ax,ax
+        mov     status_flag,ax
 ;set data size
-        mov	info_real_mode_size,ini_data_ +0x1000    ;изменим значение занятости памяти
+        mov     info_real_mode_size,ini_data_ +0x1000    ;изменим значение занятости памяти
 
 ;поиск начала блока.
 ;///////////check [loader]
         cld
 
-	mov	ret_on_ch,.start     ;set return 
-	mov	al,byte [es:di]
-	push	word .first_ret
-	cmp	al,' '
-	jz	.first_sp_1
-	jmp	get_firs_sym.not_space
+        mov     ret_on_ch,.start     ;set return 
+        mov     al,byte [es:di]
+        push    word .first_ret
+        cmp     al,' '
+        jz      .first_sp_1
+        jmp     get_firs_sym.not_space
 .first_sp_1:
-        jmp	get_firs_sym.first_sp
+        jmp     get_firs_sym.first_sp
 
 .start:
-	call	get_firs_sym	;get first symbol on new line
+        call    get_firs_sym    ;get first symbol on new line
 .first_ret:                     ;первый возврат
-;        jcxz	.end_file	;.end_loader     ;found or not found parametrs in section  exit in section
-	test	cx,cx
-	jz	error.not_loader
-        cmp	al,'['
-        jz	.parse_loader
-	jmp	.start
+;        jcxz   .end_file       ;.end_loader     ;found or not found parametrs in section  exit in section
+        test    cx,cx
+        jz      error.not_loader
+        cmp     al,'['
+        jz      .parse_loader
+        jmp     .start
 ;////// проверка на наличее секции loader
 use_parse_loader
 ;pause
 if DEBUG
-        xor	ax,ax
+        xor     ax,ax
         int     16h
-end if	
+end if  
 ;////// вывод графического экрана, выбор, секции под дефолту
 use_any_sec
 ;парсинг выбраной или дефолтной секции т.е. разбор параметров выполнение сценария
