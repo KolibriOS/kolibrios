@@ -3720,7 +3720,9 @@ delay_ms:     ; delay in 1/1000 sec
 
 set_app_param:
         mov     edi, [TASK_BASE]
+        mov     eax, [edi + TASKDATA.event_mask]
         mov     [edi + TASKDATA.event_mask], ebx
+        mov     [esp+32], eax
         ret
 
 

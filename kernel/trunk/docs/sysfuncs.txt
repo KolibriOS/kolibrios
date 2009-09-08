@@ -1914,7 +1914,7 @@ Parameters:
   * ebx = mask: bit i corresponds to event i+1 (see list of events)
     (set bit permits notice on event)
 Returned value:
-  * function does not return value
+  * eax = previous value of mask
 Remarks:
   * Default mask (7=111b) enables nofices about redraw,
     keys and buttons. This is enough for many applications.
