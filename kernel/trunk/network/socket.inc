@@ -66,6 +66,17 @@ SOCKET_ACTIVE  = 1
 SOCK_STREAM = 1
 SOCK_DGRAM  = 2
 
+; pointer to bitmap of free ports (1=free, 0=used)
+uglobal
+align 4
+network_free_ports	dd	?
+endg
+
+iglobal
+align 4
+network_free_hint	dd	1024/8
+endg
+
 ;; Allocate memory for socket data and put new socket into the list
 ; Newly created socket is initialized with calling PID and number and
 ; put into beginning of list (which is a fastest way).
@@ -153,6 +164,13 @@ proc net_socket_free stdcall uses ebx ecx edx, sockAddr:DWORD
 	;jne     .next_socket
 
 	; okay, we found the correct one
+	; mark local port as unused
+	movzx	ebx, [eax + SOCKET.LocalPort]
+	push	eax
+	mov	eax, [network_free_ports]
+	xchg	bl, bh
+lock	bts	[eax], ebx
+	pop	eax
 	; remove it from the list first, changing pointers
 	mov	ebx, [eax + SOCKET.NextPtr]
 	mov	eax, [eax + SOCKET.PrevPtr]
@@ -253,27 +271,103 @@ endp
 ; @return 1 (port is free) or 0 (port is in use) in EAX
 ;;
 proc is_localport_unused stdcall
-	xchg	bl, bh
-
-	; assume the return value is 'free'
-	xor	eax, eax
-	inc	al
-
-	mov	edx, net_sockets
-
-  .next_socket:
-	mov	edx, [edx + SOCKET.NextPtr]
-	or	edx, edx
-	jz	.exit
-	cmp	[edx + SOCKET.LocalPort], bx
-	jne	.next_socket
-
-	; return 'in use'
-	dec	al
-
-  .exit:
+	movzx	ebx, bx
+	mov	eax, [network_free_ports]
+	bt	[eax], ebx
+	setc	al
+	movzx	eax, al
 	ret
 endp
+
+;======================================
+set_local_port:
+;--------------------------------------
+;? Set local port in socket structure.
+;--------------------------------------
+;> eax -> struct SOCKET
+;> bx = local port, or 0 if the kernel must select it itself
+;--------------------------------------
+;< CF set on error / cleared on success
+;< [eax+SOCKET.LocalPort] filled on success
+;======================================
+; 0. Prepare: save registers, make eax point to ports table, expand port to ebx.
+	push	eax ecx
+	mov	eax, [network_free_ports]
+	movzx	ebx, bx
+; 1. Test, whether the kernel should choose port itself. If no, proceed to 5.
+	test	ebx, ebx
+	jnz	.given
+; 2. Yes, it should. Set ecx = limit of table, eax = start value
+	lea	ecx, [eax+0x10000/8]
+	add	eax, [network_free_hint]
+; 3. First scan loop: from free hint to end of table.
+.scan1:
+; 3a. For each dword, find bit set to 1
+	bsf	ebx, [eax]
+	jz	.next1
+; 3b. If such bit has been found, atomically test again and clear it.
+lock	btr	[eax], ebx
+; 3c. If the bit was still set (usual case), we have found and reserved one port.
+; Proceed to 6.
+	jc	.found
+; 3d. Otherwise, someone has reserved it between bsf and btr, so retry search.
+	jmp	.scan1
+.next1:
+; 3e. All bits are cleared, so advance to next dword.
+	add	eax, 4
+; 3f. Check limit and continue loop.
+	cmp	eax, ecx
+	jb	.scan1
+; 4. Second scan loop: from port 1024 (start of non-system ports) to free hint.
+	mov	eax, [network_free_ports]
+	mov	ecx, eax
+	add	ecx, [network_free_hint]
+	add	eax, 1024/8
+; 4a. Test whether there is something to scan.
+	cmp	eax, ecx
+	jae	.fail
+; 4b. Enter the loop, the process is same as for 3.
+.scan2:
+	bsf	ebx, [eax]
+	jz	.next2
+lock	btr	[eax], ebx
+	jc	.found
+	jmp	.scan2
+.next2:
+	add	eax, 4
+	cmp	eax, ecx
+	jb	.scan2
+; 4c. None found. Fail.
+.fail:
+	pop	ecx eax
+	stc
+	ret
+; 5. No, the kernel should reserve selected port.
+.given:
+; 5a. Atomically test old value and clear bit.
+lock	btr	[eax], ebx
+; 5b. If the bit was set, reservation is successful. Proceed to 8.
+	jc	.set
+; 5c. Otherwise, fail.
+	jmp	.fail
+.found:
+; 6. We have found the bit set to 1, convert the position to port number.
+	sub	eax, [network_free_ports]
+	lea	ebx, [ebx+eax*8]
+; 7. Update free hint.
+	add	eax, 4
+	cmp	eax, 65536/8
+	jb	@f
+	mov	eax, 1024/8
+@@:
+	mov	[network_free_hint], eax
+.set:
+; 8. Restore eax, set SOCKET.LocalPort and return.
+	pop	ecx eax
+	xchg	bl, bh	; Intel -> network byte order
+	mov	[eax + SOCKET.LocalPort], bx
+	clc
+	ret
 
 ;; [53.0] Open DGRAM socket (connectionless, unreliable)
 ;
@@ -291,8 +385,8 @@ proc socket_open stdcall
 
 	push	eax
 
-	xchg	bh, bl
-	mov	[eax + SOCKET.LocalPort], bx
+	call	set_local_port
+	jc	.error.free
 	xchg	ch, cl
 	mov	[eax + SOCKET.RemotePort], cx
 	mov	ebx, [stack_ip]
@@ -302,6 +396,9 @@ proc socket_open stdcall
 	;pop     eax      ; Get the socket number back, so we can return it
 	stdcall net_socket_addr_to_num
 	ret
+
+  .error.free:
+	stdcall	net_socket_free;, eax
 
   .error:
 	DEBUGF	1, "K : socket_open (fail)\n"
@@ -357,8 +454,8 @@ local sockAddr dd ?
 	; TODO - check this works!
 	;mov     [eax + SOCKET.wndsizeTimer], 0     ; Reset the window timer.
 
-	xchg	bh, bl
-	mov	[eax + SOCKET.LocalPort], bx
+	call	set_local_port
+	jc	.error.free
 	xchg	ch, cl
 	mov	[eax + SOCKET.RemotePort], cx
 	mov	[eax + SOCKET.OrigRemotePort], cx
@@ -410,6 +507,9 @@ local sockAddr dd ?
 	; Get the socket number back, so we can return it
 	stdcall net_socket_addr_to_num, [sockAddr]
 	ret
+
+  .error.free:
+	stdcall	net_socket_free, eax
 
   .error:
 	DEBUGF	1, "K : socket_open_tcp (fail)\n"

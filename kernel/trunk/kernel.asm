@@ -554,6 +554,13 @@ high_code:
 
         mov     [SLOT_BASE + 256 + APPDATA.dir_table], sys_pgdir - OS_BASE
 
+        stdcall kernel_alloc, 0x10000/8
+        mov     edi, eax
+        mov     [network_free_ports], eax
+        or      eax, -1
+        mov     ecx, 0x10000/32
+        rep     stosd
+
 ; REDIRECT ALL IRQ'S TO INT'S 0x20-0x2f
 
         call  rerouteirqs

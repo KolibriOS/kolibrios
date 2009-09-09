@@ -2564,7 +2564,8 @@ Returned value:
 Parameters:
   * eax = 53 - function number
   * ebx = 0 - subfunction number
-  * ecx = local port (only low word is taken into account)
+  * ecx = local port (only low word is taken into account),
+    ecx = 0 - let the system choose a port
   * edx = remote port (only low word is taken into account)
   * esi = remote IP
 Returned value:
@@ -2637,7 +2638,8 @@ Remarks:
 Parameters:
   * eax = 53 - function number
   * ebx = 5 - subfunction number
-  * ecx = local port (only low word is taken into account)
+  * ecx = local port (only low word is taken into account),
+    ecx = 0 - let the system choose a port
   * edx = remote port (only low word is taken into account)
   * esi = remote IP
   * edi = open mode: SOCKET_PASSIVE=0 or SOCKET_ACTIVE=1
