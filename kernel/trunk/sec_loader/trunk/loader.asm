@@ -275,7 +275,7 @@ fat12_buffer:
 .BS_VolLab              db      'RAM DISK FS'   ;11 символов
 .BS_FilSysType          db      'FAT12   '      ;8 символов
 ;62 байта структура fat12.
-
+db (512-($-fat12_buffer))dup(0x90)
 
 
 
@@ -301,10 +301,13 @@ struc FAT_32_entry ;Byte Directory Entry Structure
 ;;;
 ;timer
 shot_name_fat   rb      11      ;временный буфер для fat12, в нем храняться имена файлов приведенные к правилам FAT /* вдальнейшем перенести в стэк
+
 if DEBUG
                 rb      1       ;нужен для отладки и вывода имени файла после преобразования
-dest_name_fat   rb      12
+dest_name_fat   db      24 dup('_');12
+db	0x0
 end if
+
 value_timeout   rw      1       ;value to timeout
 old_timer       rd      1       ;старое значение вектора таймера
 start_timer     rd      1       ;значение таймера

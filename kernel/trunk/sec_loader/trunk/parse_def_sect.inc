@@ -1088,8 +1088,7 @@ local   .error
 ;мы ее модифицируем до такого состояния       dw,dw,db'@menu',0 конечно сохранив те значения которые мы заменяем
 ;сохранили певые 2 word
 
-;//проверка наличия такого же имени в рут дир
-
+;
 @@:     mov     al,byte [es:di]
         cmp     al,','          ; т.е. ищем разделитель 
         jz      .found_end_str
@@ -1134,6 +1133,21 @@ check_name_file
         mov     word [es:di-2],16       ;кол-во блоков по 4 кб =64 кб т.е. больше не читаем 
 
         mov     di,point_to_dest_file_name
+
+if DEBUG
+        pushad
+;	mov	ax,di
+        mov     cx,0x0a
+        mov     di,name_of_seg_get_64
+        mov     dword[ds:di],'    '
+        mov     word[ds:di+4],'  '
+        call    decode
+;Show size
+        mov     si,name_of_seg_get_64
+        call    printplain
+
+        popad
+end if  
 
         push    word [es:di]
         push    cx
@@ -1184,7 +1198,7 @@ check_name_file
         
 
 if DEBUG
-        pusha
+        pushad
         mov     cx,0x0a
         mov     di,RamdiskFile_msg
         mov     dword[ds:di],'    '
@@ -1193,7 +1207,7 @@ if DEBUG
         mov     si,RamdiskFile_msg
         call    printplain
 
-        popa
+        popad
 end if  
 
 
@@ -1274,8 +1288,8 @@ move_up_fat_and_root_d
 
 }
 
-macro use_BPB_RAM
-;данный макрос закидывает BPB структуру, пока только фат12 за 1 мб
+macro use_BPB_RAM ;закинуть самые первые 512 байт за 1-й мб
+;данный макрос закидывает BPB структуру т.е. первые 512 байт, пока только фат12 за 1 мб
 {
         mov     ax,fat12_buffer
         mov     si,table_15_87
@@ -1283,7 +1297,7 @@ macro use_BPB_RAM
         push    es
         push    ds
         pop     es
-        mov     cx,31   ;фат12 укладывается в 62 байта 62/2=31
+        mov     cx,256   ;бут сектор  укладывается в 512 байт 512/2=256
         mov     ah, 0x87
         int     0x15
         pop     es
@@ -1315,11 +1329,34 @@ macro first_create_fat_table
 
         mov     di,info_real_mode_size
         add     di,0x1000
+
+if DEBUG
+        pushad
+
+        mov     ax,info_real_mode_size
+        add     ax,0x1000
+;	mov	ax,ds
+	mov	cx,0xa
+	       
+        mov     di,first_entry_in_fat
+        mov     dword [di],'    '
+        mov     word  [di+4],'  '
+        call    decode                                                                    
+;Show size
+        mov     si,first_entry_in_fat
+        call    printplain
+
+        xor     ax,ax
+        int     0x16
+      
+        popad
+end if
+
+
         push    di   ;  push    word info_real_mode_size+0x1000   ;cледующий сегмент за загруженным участком
         
         xor     di,di
         mov     point_to_free_root,di   ;значение смещения =0 в корневой фат таблице описания 
-
 
         pop     ds   ; загружен следующий сегмент т.е. пустой сегмент
 
@@ -1327,8 +1364,6 @@ macro first_create_fat_table
         or      ax,-1
         inc     di
         mov     word [di],ax
-
-
 
         pop     ds
         mov     point_next_fat_str,3
@@ -1371,6 +1406,26 @@ local   .eof_file
         shl     di,9 ;imul 512
         add     di,point_to_free_root   ;смещение в уже записанных 32-х структурах.
 ;необходимо внести значение в рут дир т.е. 32 байта
+if DEBUG        
+        pushad
+;       mov     ax,point_default
+;        mov     ax,
+        mov     cx,0x0a
+        mov     di,show_db2
+        mov     dword[ds:di],'    '
+       mov     word [ds:di+4],'  '
+        call    decode                                                                    
+;Show size
+        mov     si,show_db2
+        call    printplain
+;
+;       xor     ax,ax
+;       int     0x16
+        popad
+end if  
+
+
+
 ;gs:di - указатель для внесения инфорации в рут область фат таблицы инормации о файле.
         mov     si,shot_name_fat
         mov     cx,11
@@ -1412,7 +1467,7 @@ local   .eof_file
 
         push    di
 ;DIR_FstClusLO                  Младшее слово номера первого кластера.
-;       mov     ax,point_next_fat_str   ;загрузим указатель на элемент фат таблицы т.е. это номер фат записи
+ ;       mov     ax,point_next_fat_str   ;загрузим указатель на элемент фат таблицы т.е. это номер фат записи
 ;FATOffset = N + (N / 2) т.е. это уже у нас смещение мы знаем что -начинается все с 3-го элемента записи фат
         mov     bx,ax
         shr     bx,1
@@ -1488,8 +1543,11 @@ if DEBUG
         shl     di,9 ;imul 512
         add     di,point_to_free_root   ;смещение в уже записанных 32-х структурах.
 
+	push	di
+
         mov     si,dest_name_fat
         mov     cx,11
+
 ;запишем в структуру имя
 @@:     mov     al,byte [es:di]
         inc     di
@@ -1497,8 +1555,12 @@ if DEBUG
         inc     si
         loop    @b
         
-        xor     ax,ax
-        mov     byte [si],al
+        mov	di,si
+	inc 	di
+	pop	ax
+	mov	cx,0xa
+	call	decode
+
         mov     si,dest_name_fat
         call    printplain
         popad
@@ -1593,9 +1655,10 @@ macro check_name_file
 {
 local   .no_equal
 local   .exit
+local 	.loop_size_root_dir
 ;вычислим длинну строчки имени назначения, которую будем сравнивать с уже записанными данными.
 ;преобразуем в аналог фат записи сточку с именем назначения
-        convertion_file_name
+        convertion_file_name	; преобразовали имя по нужным правилам
         test    ax,ax
         jnz     .exit
 
@@ -1605,47 +1668,60 @@ local   .exit
         mov     di,firstDataSect
         sub     di,size_root_dir
 ;теперь в ax размер в секторах начала рут дир
-
-
         shl     di,9 ;imul 512
-
-
-
-
-;di= Это смещение от начала буфера до рут директории.
+;di= Это смещение от начала буфера до рут директории. в пределах 64 кб.
 ;загрузим значение - т.е. кол-во элементов, которые мы можем просматривать.
         mov     dx,root_dir_entry_count
-;        mov     si,point_to_dest_file_name
+        mov     si,point_to_dest_file_name
         
         mov     ax,info_real_mode_size
         add     ax,0x1000
 
 
         mov     gs,ax
+.loop_size_root_dir:
+
+if DEBUG        
+;        pushad
+;	push	di
+;        mov	eax,dword[gs:di]
+;        mov	si,(check_root_fat_+14)
+;        mov     dword [ds:si],'____'
+;	mov     dword [ds:si+4],'____'
+;        mov	dword[ds:si],eax
+;        mov	eax,dword[gs:di+4]
+;        mov	dword[ds:si+4],eax
+;
+;
+;	xor	eax,eax
+;        mov     ax,gs;point_next_fat_str
+;        mov     cx,0x0a
+;        mov     di,check_root_fat_
+;        mov     dword [di],'    '
+;        mov     word  [di+4],'  '
+;        call    decode
+;	xor	eax,eax
+;	pop	ax
+;	mov	di,(check_root_fat_+7)
+;        mov     dword [di],'    '
+;        mov     word  [di+4],'  '
+;        call    decode
+
+;Show size
+;        mov     si,check_root_fat_
+;        call    printplain
+
+;	xor	ax,ax
+;	int	0x16
+;        popad
+end if  
+
+	xor	bx,bx
         mov     cx,11   ;size of name in struct FAT
 
 @@:     
-        mov     al,byte [ds:si+bx]
+        mov     al,byte [es:si+bx]
         mov     ah,byte [gs:di+bx]      ;gs:di - point to name in fat struct
-
-if DEBUG
-        pushad
-
-        
-        mov     cx,11
-;input cx=size al=char будет выведен символ сколько раз указано в cx
-@@:
-        mov     al,byte [gs:di]
-        inc     di
-        call    putchar
-        loop    @b
-
-        xor     ax,ax
-        int     0x16
-
-        
-        popad
-end if
         inc     bx
 
         cmp     ah,al
@@ -1654,6 +1730,7 @@ end if
 ;       dec     cx
 ;       jnz     @b
         loop    @b
+
 ;.succesfuly:
 ;печально, такое имя уже имеется :(
         or      ax,-1
@@ -1661,11 +1738,9 @@ end if
 
 
 .no_equal:
-        mov     cx,11;save_cx_check_name
-        xor     bx,bx
         add     di,32           ;fat struct =32 byte
         dec     dx
-        jnz     @b
+        jnz     .loop_size_root_dir
 
 ;.exit_check_name:
         and     ax,0
@@ -1673,17 +1748,14 @@ end if
 .exit:
 
 if DEBUG        
-        pusha
-;       movzx   eax,ax;point_next_fat_str
-        mov     cx,0x0a
-        mov     di,check_name_fat_msg
-        mov     dword [di],'    '
-        mov     word  [di+4],'  '
-        call    decode                                                                    
+        pushad
 ;Show size
-        mov     si,check_name_fat_msg
-        call    printplain
-        popa
+        mov     si,check_name_fat_msg_n
+	test	ax,ax
+	jz	@f
+        mov     si,check_name_fat_msg_y
+@@:     call    printplain
+        popad
 end if  
 
 }
@@ -1809,19 +1881,18 @@ local   .st5
 @@:
 
 if DEBUG        
-        pusha
-;       mov     ax,point_next_fat_str
-        mov     cx,0x0a
-        mov     di,convertion_file_name_msg
-        call    decode                                                                    
-;Show size
-        mov     si,convertion_file_name_msg
-        call    printplain
+        pushad
+	
+        mov     si,convertion_file_name_msg_y
+	test	ax,ax
+	jz	@f
+        mov     si,convertion_file_name_msg_n
+@@:     call    printplain
 
         mov     si,shot_name_fat
         mov     byte [si+12],0
         call    printplain
-        popa
+        popad
 
 end if  
 }
@@ -1855,15 +1926,18 @@ local   .correct_on_byte
 ;       shl     eax,9   ;умножим на 512
         
 if DEBUG
-        pusha
-;       mov     eax,ebx;point_next_fat_str
+        pushad
+	xor	eax,eax
+        mov     ax,info_real_mode_size
         mov     cx,0x0a
-        mov     di,show_db1
+        mov     di,seg_where_get_data
+        mov     dword [di],'    '
+        mov     word  [di+4],'  '
         call    decode                                                                    
 ;Show size
-        mov     si,show_db1
+        mov     si,seg_where_get_data
         call    printplain
-        popa
+        popad
 
 end if
 

@@ -12,6 +12,8 @@
 ;;                                                                     ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+include "lang.inc"
+
 macro _setcursor row,column
 {
         mov     dx, row*256 + column

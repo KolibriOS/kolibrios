@@ -87,7 +87,7 @@ size_root_dir		equ	word	[bp-80] ;кол-во элементов в секторах по 512 байт корнево
 firstDataSect		equ	word	[bp-82] ;первый сектор данных в сеторах от 0
 DataClasters		equ	word	[bp-84] ;размер массива доступной для записи данных в кластерах.
 point_to_free_root	equ	word	[bp-86]	;указатель на следующий пустую запись в рут дир
-point_to_dest_file_name equ	word	[bp-88]	;указывает на начало имени файла назначения.
+point_to_dest_file_name equ	word	[bp-88]	;указывает на начало имени файла назначения. в формате es:point_to_dest_file_name, где es =0x2000
 data_offset		equ	word	[bp-90] ;смещение в кластерах для записанных данных т.е перекинутых за 1-й мб
 first_input		equ	word	[bp-92]	;поле для флагов в преобразовании имени.
 save_di_RAMDISK		equ	word	[bp-94]	;сохраним di -указателя при обработке секции

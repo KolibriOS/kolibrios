@@ -57,11 +57,17 @@ BPB_msg         db '       -in byte, why we get data from move BPB struct',0
 firstDataSect_msg  db '       -first data sector, offset to data in sectors',0
 size_root_dir_msg  db '       -size root dir in sectrors',0
 DataClasters_msg   db '       -size data in Clasters',0
-check_name_fat_msg db '       -if -1 name is present, else 0 then not present name',0
-convertion_file_name_msg db '       -if -1, then destination name of file is bad',0
-start_making_FAT12_msg db '>>>>>> Begin making fat12 FS on RAMDISK <<<<<<<',0
+first_entry_in_fat db '       -data segment in FIRST entry FAT',0
+check_root_fat_    db '      :     _______________',0
+check_name_fat_msg_y db 'Name is present that is BAD',0
+check_name_fat_msg_n db 'Name is not present that is GOOD',0
+name_of_seg_get_64 db '       -name of seg where we get 64 Kb of data',0
+convertion_file_name_msg_y db 'Destination name of file is GOOD',0
+convertion_file_name_msg_n db 'Destination name of file is BAD',0
+start_making_FAT12_msg db '>>>>>> Begin make a RAMDISK and FS after 1 Mb <<<<<<<',0
 make_fat12_RFS_msg db '-Make FAT12 Ram FS',0
 get_type_FS_msg    db '-End make RamDisk',0
+seg_where_get_data db '      - Segment where we get data for move up file',0
 return_code_af_move     db '    -return code after 0x87 int 0x15, move block',0
 return_code_af_fat_m    db '    -return code after 0x87 int 0x15, move fat struc',0
 
