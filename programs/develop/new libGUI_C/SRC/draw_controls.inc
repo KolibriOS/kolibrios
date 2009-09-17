@@ -1,5 +1,5 @@
 /*
-	function for draw controls
+	functions for draw controls
 */
 
 //---------------------------------------------------------------------------------
@@ -1219,30 +1219,35 @@ void	DrawImage(int x,int y,int sizex,int sizey,char bits_per_pixel,char *img)
 			switch(screen.bits_per_pixel)
 			{
 				case 32:
-				{
-					if (bits_per_pixel==32)
-					{//convert 32 bit image to 24 bit image
-						j=sizex*sizey;
-						ptr_src=img;
-						ptr_screen=malloc(j*3);
-						ptr_screen2=ptr_screen;
-						for(i=0;i<j;i++)
-						{
-							*(char*)ptr_screen=*(char*)ptr_src;
-							*((char*)ptr_screen+1)=*((char*)ptr_src+1);
-							*((char*)ptr_screen+2)=*((char*)ptr_src+2);
-
-							ptr_src+=4;
-							ptr_screen+=3;
-						}
-						gui_ksys_put_image_window(ptr_screen2,x,y,countx,county);
-						free(ptr_screen2);
-					}
-					break;
-				}
 				case 24:
 				{
-					gui_ksys_put_image_window(img,x,y,countx,county);
+					switch(bits_per_pixel)
+					{//check bits per pixel in picture
+						case 32:
+						{//convert 32 bit image to 24 bit image
+							j=sizex*sizey;
+							ptr_src=img;
+							ptr_screen=malloc(j*3);
+							ptr_screen2=ptr_screen;
+							for(i=0;i<j;i++)
+							{
+								*(char*)ptr_screen=*(char*)ptr_src;
+								*((char*)ptr_screen+1)=*((char*)ptr_src+1);
+								*((char*)ptr_screen+2)=*((char*)ptr_src+2);
+
+								ptr_src+=4;
+								ptr_screen+=3;
+							}
+							gui_ksys_put_image_window(ptr_screen2,x,y,countx,county);
+							free(ptr_screen2);
+							break;
+						}
+						case 24:
+						{
+							gui_ksys_put_image_window(img,x,y,countx,county);
+							break;
+						}
+					}
 					break;
 				}
 				default: break;
@@ -1258,42 +1263,38 @@ void	DrawImage(int x,int y,int sizex,int sizey,char bits_per_pixel,char *img)
 					switch(bits_per_pixel)
 					{
 						case 32://display 32 bit image in 24 bit mode
-						{
-							pitch_screen=screen.size_x*3;
-							pitch_src=countx << 2;
-							ptr_screen=screen.buffer+pitch_screen*y+x*3;
+						{//convert and draw 32 bit image in 24 bit buffer
+							ptr_screen=screen.buffer+(screen.size_x*y+x)*3;
+							add_screen=(screen.size_x-countx)*3;
 							ptr_src=img;
-							add_screen=pitch_screen-pitch_src;
 							//copy line of byte with size x
 							for(i=0;i<county;i++)
 							{
-								for(j=0;j<pitch_src;j++)
+								for(j=0;j<countx;j++)
 								{
 									*(char*)ptr_screen=*(char*)ptr_src;
-									ptr_src++;
-									ptr_screen++;
+									*((char*)ptr_screen+1)=*((char*)ptr_src+1);
+									*((char*)ptr_screen+2)=*((char*)ptr_src+2);
+		
+									ptr_src+=4;
+									ptr_screen+=3;
 								}
 								ptr_screen+=add_screen;
 							}
 							break;
 						}
-						case 24://display 24 bit image in 24 bit mode
-						{
-							pitch_screen=screen.size_x*3;
-							pitch_src=countx*3;
-							ptr_screen=screen.buffer+pitch_screen*y+x*3;
-							ptr_src=img;
-							add_screen=pitch_screen-pitch_src;
+						case 24:
+						{//display 24 bit image in 24 bit buffer
+							ptr_screen=screen.buffer+(screen.size_x*y+x)*3;
+							add_screen=screen.size_x*3;
+							add_src=countx*3;
+
 							//copy line of byte with size x
 							for(i=0;i<county;i++)
 							{
-								for(j=0;j<pitch_src;j++)
-								{
-									*(char*)ptr_screen=*(char*)ptr_src;
-									ptr_src++;
-									ptr_screen++;
-								}
+								memmove(ptr_screen,img,add_src);
 								ptr_screen+=add_screen;
+								img+=add_src;
 							}
 							break;
 						}
@@ -1305,28 +1306,41 @@ void	DrawImage(int x,int y,int sizex,int sizey,char bits_per_pixel,char *img)
 				{	//check source image resolution
 					switch(bits_per_pixel)
 					{
-						case 32://display 32 bit image in 32 bit mode
-						{
-							pitch_screen=screen.size_x << 2;
-							pitch_src=countx << 2;
-							ptr_screen=screen.buffer+pitch_screen*y+x*4;
-							ptr_src=img;
-							add_screen=pitch_screen-pitch_src;
+						case 32:
+						{//display 32 bit image in 32 bit mode
+							ptr_screen=screen.buffer+(screen.size_x*y+x)*4;
+							add_screen=screen.size_x*4;
+							add_src=countx*4;
+
 							//copy line of byte with size x
 							for(i=0;i<county;i++)
 							{
-								for(j=0;j<pitch_src;j++)
-								{
-									*(char*)ptr_screen=*(char*)ptr_src;
-									ptr_src++;
-									ptr_screen++;
-								}
+								memmove(ptr_screen,img,add_src);
 								ptr_screen+=add_screen;
+								img+=add_src;
 							}
+
 							break;
 						}
 						case 24://display 24 bit image in 32 bit mode
 						{
+							ptr_screen=screen.buffer+(screen.size_x*y+x)*4;
+							add_screen=(screen.size_x-countx)*4;
+							ptr_src=img;
+							//copy line of byte with size x
+							for(i=0;i<county;i++)
+							{
+								for(j=0;j<countx;j++)
+								{
+									*(char*)ptr_screen=*(char*)ptr_src;
+									*((char*)ptr_screen+1)=*((char*)ptr_src+1);
+									*((char*)ptr_screen+2)=*((char*)ptr_src+2);
+		
+									ptr_src+=3;
+									ptr_screen+=4;
+								}
+								ptr_screen+=add_screen;
+							}
 							break;
 						}
 						default: break;
@@ -1401,32 +1415,28 @@ void	DrawImageFinit(finition_t *fin,int x,int y,int sizex,int sizey,char bits_pe
 	county=y2-y1+1;
 
 	//cut finited rectangle from image and move them into buffer
+
+	bytes_per_pixel=bits_per_pixel >> 3;
+	buf=malloc(countx*county*bytes_per_pixel);
+	ptr_dest=buf;
+
+	pitch_src=sizex*bytes_per_pixel;
+	ptr_src=img+pitch_src*(y1-y)+(x1-x)*bytes_per_pixel;
+	add_src=sizex*bytes_per_pixel;
+	countline=countx*bytes_per_pixel;
+
 	switch(bits_per_pixel)
 	{
 		case 32:
 		case 24:
 		case 16:
 		case 8:
-		{	//allocate buffer
-			bytes_per_pixel=bits_per_pixel >> 3;
-			buf=malloc(countx*county*bytes_per_pixel);
-			ptr_dest=buf;
-
-			pitch_src=sizex*bytes_per_pixel;
-			ptr_src=img+pitch_src*(y1-y)+(x1-x)*bytes_per_pixel;
-			add_src=(sizex-countx)*bytes_per_pixel;
-			countline=countx*bytes_per_pixel;
-			//copy line of byte with size x
+		{
 			for(i=0;i<county;i++)
 			{
-				for(j=0;j<countline;j++)
-				{
-					*(char*)ptr_dest=*(char*)ptr_src;
-					ptr_dest++;
-					ptr_src++;
-				}
-
+				memmove(ptr_dest,ptr_src,countline);
 				ptr_src+=add_src;
+				ptr_dest+=countline;
 			}
 			break;
 		}

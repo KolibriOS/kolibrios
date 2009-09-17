@@ -173,8 +173,8 @@ void	MonofontDraw(finition_t *fin,int fx,int fy,
 	unsigned int		i,j,k,step,len;
 	int		x,y,size_x,save_size_x,save_size_y;
 	unsigned char	*p,*buf,*save_buf;
-	unsigned char	c,draw_output;
-
+	unsigned char	c;
+	DWORD		draw_output;
 
 	step=font->sizex*font->sizey;
 	len=strlen(s);

@@ -34,8 +34,9 @@ void LibGUImain(parent_t *WindowParent)
 	{
 		//check for timers
 		if ((WindowParent->timer_bk!=(DWORD*)NULL) || 
-			(WindowParent->number_timers_for_controls!=0))	{event=gui_ksys_check_event();}
-									else	{event=gui_ksys_wait_event();}
+			(WindowParent->number_timers_for_controls!=0)) {event=gui_ksys_wait_event_with_timeout(1);}
+			else	{event=gui_ksys_wait_event();}
+
 		//get and chack system events
 		switch(event)
 		{

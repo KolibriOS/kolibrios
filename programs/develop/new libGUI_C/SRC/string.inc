@@ -6,15 +6,30 @@ static void *memmove(void *dst,const void *src,size_t length)
 {
 	void *value;
 
-	__asm__ __volatile__(
-	"movl %%edi,%%eax\n\t"
-	"cld\n\t"
-	"rep\n\t"
-	"movsb"
-	:"=D"(value)
-	:"c"(length),"S"(src),"D"(dst)
-	:"eax");
+	if (length & 3)
+	{//length not aligned in 4 bytes use reb movsb
+		__asm__ __volatile__(
+		"movl %%edi,%%eax\n\t"
+		"cld\n\t"
+		"rep\n\t"
+		"movsb"
+		:"=D"(value)
+		:"c"(length),"S"(src),"D"(dst)
+		:"eax");
+	}
+	else
+	{//length aligned in 4 bytes use rep movsd
+		length=length >> 2;//length=length/4
+		__asm__ __volatile__(
+		"movl %%edi,%%eax\n\t"
+		"cld\n\t"
+		"rep\n\t"
+		"movsd"
+		:"=D"(value)
+		:"c"(length),"S"(src),"D"(dst)
+		:"eax");
 
+	}
 	return(value);
 }
 

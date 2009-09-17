@@ -2,7 +2,6 @@
 		control ProgressBar
 */
 
-
 void ProgressBarDrawProgress(struct ControlProgressBar *ProgressBar)
 {
 	int	x;
@@ -72,11 +71,12 @@ void ProgressBarDrawProgress(struct ControlProgressBar *ProgressBar)
 
 void DrawProgressBar(struct ControlProgressBar *ProgressBar)
 {
-	int	x;
-	int	y;
-	int	sizex;
-	int	sizey;
-	struct FINITION *fin;
+	int		x,y,sizex,sizey;
+	char		c;
+	char		*save_buf,*buf;
+	int		save_size_x,save_size_y;
+	DWORD		draw_output,flags;
+	finition_t	*fin;
 
 	x=ProgressBar->ctrl_x;
 	y=ProgressBar->ctrl_y;
@@ -84,10 +84,51 @@ void DrawProgressBar(struct ControlProgressBar *ProgressBar)
 	sizey=ProgressBar->ctrl_sizey;
 	fin=(struct FINITION*)ProgressBar->finition;
 
-	Draw(fin,TOOL_RECTANGLE,x,y,sizex,sizey,COLOR_ABSOLUTE_DARK);
-	Draw(fin,TOOL_GRADIENT_UP_FILLED_RECTANGLE,x+1,y+1,sizex-2,sizey-2,COLOR_MIDDLE_LIGHT,COLOR_LIGHT);
+	//alocate a buffer for draw text
+	c=screen.bits_per_pixel >> 3;
+	buf=malloc(sizex*sizey*c);
+
+	//save current screen parameters
+	save_buf=screen.buffer;
+	save_size_x=screen.size_x;
+	save_size_y=screen.size_y;
+	draw_output=screen.draw_output;
+
+	//load parameters of local buffer
+	screen.buffer=buf;
+	screen.size_x=sizex;
+	screen.size_y=sizey;
+	screen.draw_output=DRAW_OUTPUT_BUFFER;
+
+	//move control
+	SetControlNewPosition(ProgressBar,0,0);
+	//save finition parameters
+	flags=fin->flags;
+	fin->flags &=FINITION_OFF;
+
+	//draw progress bar in buffer
+	Draw(fin,TOOL_RECTANGLE,0,0,sizex,sizey,COLOR_ABSOLUTE_DARK);
 	ProgressBarDrawProgress(ProgressBar);
-	
+
+	//restore last position of control
+	SetControlNewPosition(ProgressBar,x,y);
+	//restore finition
+	fin->flags=flags;
+
+	//restore screen parameters
+	screen.buffer=save_buf;
+	screen.size_x=save_size_x;
+	screen.size_y=save_size_y;
+	screen.draw_output=draw_output;
+
+	//move rendered objects from local buffer to screen
+	if (fin->flags & FINITION_ON)
+		DrawImageFinit(fin,x,y,sizex,sizey,screen.bits_per_pixel,buf);
+	else
+		DrawImage(x,y,sizex,sizey,screen.bits_per_pixel,buf);
+
+	//free local buffer
+	free(buf);
 }
 
 void SetProgressBarPulse(struct ControlProgressBar *ProgressBar,int time_tick)
@@ -100,7 +141,7 @@ void SetProgressBarPulse(struct ControlProgressBar *ProgressBar,int time_tick)
 	{
 		main_parent->number_timers_for_controls++;
 
-		ProgressBar->timer=(DWORD*)SetTimerCallbackForControl(time_tick,&ProgressBarDrawProgress,ProgressBar);
+		ProgressBar->timer=(DWORD*)SetTimerCallbackForControl(time_tick,&DrawProgressBar,ProgressBar);
 		timer=(struct TIMER*)ProgressBar->timer;
 		timer->flags=timer->flags | FLAG_TIMER_ON;
 	}
@@ -148,6 +189,7 @@ void ProgressBarProc(struct ControlProgressBar *ProgressBar,struct MESSAGE *mess
 		{
 			ProgressBar->ctrl_x=ProgressBar->ctrl_x+message->arg1;
 			ProgressBar->ctrl_y=ProgressBar->ctrl_y+message->arg2;
+			SendMessage((struct HEADER*)ProgressBar,message);
 			break;
 		}
 		case MESSAGE_CALL_TIMER_EVENT:
@@ -157,25 +199,26 @@ void ProgressBarProc(struct ControlProgressBar *ProgressBar,struct MESSAGE *mess
 				timer=(struct TIMER*)ProgressBar->timer;
 				if (timer->flags & FLAG_TIMER_ON)	Timer(timer);
 			}
+			SendMessage((struct HEADER*)ProgressBar,message);
 			break;
 		}
 		case MESSAGE_DESTROY_CONTROL:
 		{
 			if (ProgressBar->timer!=(DWORD*)NULL)	free(ProgressBar->timer);
 			free(ProgressBar->finition);
+			SendMessage((struct HEADER*)ProgressBar,message);
 			break;
 		}
 		case MESSAGE_SET_MAIN_PARENT:
 		{
 			SendMessage((struct HEADER*)ProgressBar,message);
 			ProgressBar->main_parent=(DWORD*)message->arg1;
+			SendMessage((struct HEADER*)ProgressBar,message);
 			break;
 		}
 
 		default: break;
 	}
-	//send message to child controls(if there is)
-	SendMessage((struct HEADER*)ProgressBar,message);
 }
 
 //---------------------------------------------------------------------------------

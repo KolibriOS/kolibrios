@@ -103,8 +103,112 @@ void ScrolledWindowPackControls(void *parent,void *Control)
 
 }
 ////////////////////////////////////////////////////////////////////////////////
-//				Draw full Scroll Bar
+//				Draw full Scrolled Window
 ////////////////////////////////////////////////////////////////////////////////
+void	ScrollWin_FuncCallback_HVScroll(struct HEADER* control,void *data)
+{
+	struct	ControlScrollBar		*Hscrollbar,*Vscrollbar;
+	struct	ControlScrolledWindow 		*ScrolledWindow;
+	struct	HEADER				*seek_control,*exchange_control;
+	struct	MESSAGE				local_message;
+	struct	FINITION			*fin;
+	int					i,new_x,new_y,x,y,sizex,sizey;
+	char					c;
+	char					*save_buf,*buf;
+	int					save_size_x,save_size_y;
+	DWORD					draw_output;
+
+	ScrolledWindow=(gui_scrolled_window_t*)data;
+	Hscrollbar=(gui_scroll_bar_t*)ScrolledWindow->horizontal_scroll;
+	Vscrollbar=(gui_scroll_bar_t*)ScrolledWindow->vertical_scroll;
+	ScrolledWindow->virtual_x=(ScrolledWindow->virtual_sizex-ScrolledWindow->scroll_arrea_sizex)*Hscrollbar->ruller_pos;
+	ScrolledWindow->virtual_y=(ScrolledWindow->virtual_sizey-ScrolledWindow->scroll_arrea_sizey)*Vscrollbar->ruller_pos;
+
+	x=ScrolledWindow->ctrl_x+1;
+	y=ScrolledWindow->ctrl_y+1;
+	sizex=ScrolledWindow->scroll_arrea_sizex;
+	sizey=ScrolledWindow->scroll_arrea_sizey;
+
+	//alocate a buffer for draw text
+	c=screen.bits_per_pixel >> 3;
+	i=sizex*sizey*c;
+	buf=malloc(i);
+
+	//save current screen parameters
+	save_buf=screen.buffer;
+	save_size_x=screen.size_x;
+	save_size_y=screen.size_y;
+	draw_output=screen.draw_output;
+
+	//load parameters of local buffer
+	screen.buffer=buf;
+	screen.size_x=sizex;
+	screen.size_y=sizey;
+	screen.draw_output=DRAW_OUTPUT_BUFFER;
+
+	//fill buffer by background color
+	FillArrea(buf,i,screen.bits_per_pixel,COLOR_LIGHT);
+
+	local_message.type=MESSAGE_FULL_REDRAW_ALL_WITH_FINITION;
+	local_message.arg1=0;
+	local_message.arg2=0;
+	local_message.arg3=sizex;
+	local_message.arg4=sizey;
+
+	seek_control=(struct HEADER*)Vscrollbar->ctrl_fd;
+	//move controls in new position
+	for(i=0;i<ScrolledWindow->number_virtual_controls;i++)
+	{
+		new_x=ScrolledWindow->virtual_controls_x[i]-ScrolledWindow->virtual_x;
+		new_y=ScrolledWindow->virtual_controls_y[i]-ScrolledWindow->virtual_y;
+
+		SetControlNewPosition(seek_control,new_x,new_y);
+
+		if (CheckCrossRectangles(x,y,sizex,sizey,new_x,new_y,
+					seek_control->ctrl_sizex,
+					seek_control->ctrl_sizey)==TRUE)
+		{
+			seek_control->flags=seek_control->flags | FLAG_SHOW_CONTROL;
+			seek_control->flags=seek_control->flags & FLAG_MOUSE_BLOCKED_OFF;
+
+			//move control 
+			SetControlNewPosition(seek_control,new_x-x,new_y-y);
+			//call draw control in buffer
+			ControlProc=(void (*)(void *Control,struct MESSAGE *message))seek_control->ctrl_proc;
+			ControlProc(seek_control,&local_message);
+			//restore last position of control
+			SetControlNewPosition(seek_control,new_x,new_y);
+			//restore coordinates of last finition of control
+			fin=(finition_t*)seek_control->finition;
+			fin->x=x;
+			fin->y=y;
+		}
+		else
+		{
+			seek_control->flags=seek_control->flags & FLAG_HIDE_CONTROL;
+			seek_control->flags=seek_control->flags | FLAG_MOUSE_BLOCKED_ON;
+		}
+
+		exchange_control=(struct HEADER*)seek_control->ctrl_fd;
+		seek_control=exchange_control;
+	}
+	//restore screen parameters
+	screen.buffer=save_buf;
+	screen.size_x=save_size_x;
+	screen.size_y=save_size_y;
+	screen.draw_output=draw_output;
+
+	//move rendered objects from local buffer to screen
+	fin=(finition_t*)ScrolledWindow->finition;
+	if (fin->flags & FINITION_ON)
+		DrawImageFinit(fin,x,y,sizex,sizey,screen.bits_per_pixel,buf);
+	else
+		DrawImage(x,y,sizex,sizey,screen.bits_per_pixel,buf);
+
+	//free local buffer
+	free(buf);
+}
+
 void DrawScrolledWindow(struct ControlScrolledWindow *ScrolledWindow)
 {
 	int			x,y,sizex,sizey;
@@ -116,138 +220,16 @@ void DrawScrolledWindow(struct ControlScrolledWindow *ScrolledWindow)
 	sizey=ScrolledWindow->ctrl_sizey;
 	fin=(struct FINITION*)ScrolledWindow->finition;
 
-	Draw(fin,TOOL_FILLED_RECTANGLE,x+1,y+1,ScrolledWindow->scroll_arrea_sizex,
-		ScrolledWindow->scroll_arrea_sizey,COLOR_LIGHT);
-
 	if ((ScrolledWindow->scw_flags & FLAG_SCROLL_WIN_HORIZONTAL_SCROLL_ON) ||
 		(ScrolledWindow->scw_flags & FLAG_SCROLL_WIN_VERTICAL_SCROLL_ON))
 	{
 		Draw(fin,TOOL_RECTANGLE,x,y,ScrolledWindow->scroll_arrea_sizex+2,
-		ScrolledWindow->scroll_arrea_sizey+2,0xff0000);
+		ScrolledWindow->scroll_arrea_sizey+2,COLOR_ABSOLUTE_DARK);
 	}
 	else
 		Draw(fin,TOOL_RECTANGLE,x,y,sizex,sizey,COLOR_ABSOLUTE_DARK);
-}
 
-void	ScrollWin_FuncCallback_HScroll(struct HEADER* control,void *data)
-{
-	struct	ControlScrollBar		*Hscrollbar,*Vscrollbar;
-	struct	ControlScrolledWindow 	*ScrolledWindow;
-	struct	HEADER				*seek_control,*exchange_control;
-	struct	FINITION			*fin;
-	struct	MESSAGE			local_message;
-	int					i,new_x,new_y,x,y,sizex,sizey;
-
-	Hscrollbar=(struct ControlScrollBar*)control;
-	ScrolledWindow=(struct ControlScrolledWindow*)data;
-
-	ScrolledWindow->virtual_x=(ScrolledWindow->virtual_sizex-ScrolledWindow->scroll_arrea_sizex)*Hscrollbar->ruller_pos;
-
-	x=ScrolledWindow->ctrl_x+1;
-	y=ScrolledWindow->ctrl_y+1;
-	sizex=ScrolledWindow->scroll_arrea_sizex;
-	sizey=ScrolledWindow->scroll_arrea_sizey;
-
-	local_message.type=MESSAGE_FULL_REDRAW_ALL_WITH_FINITION;
-	local_message.arg1=x;
-	local_message.arg2=y;
-	local_message.arg3=sizex;
-	local_message.arg4=sizey;
-
-	fin=(finition_t*)ScrolledWindow->finition;
-	Draw(fin,TOOL_FILLED_RECTANGLE,x,y,sizex,sizey,COLOR_LIGHT);
-
-	Vscrollbar=(struct	ControlScrollBar*)ScrolledWindow->vertical_scroll;
-	seek_control=(struct HEADER*)Vscrollbar->ctrl_fd;
-	//move controls in new position
-	for(i=0;i<ScrolledWindow->number_virtual_controls;i++)
-	{
-		new_x=ScrolledWindow->virtual_controls_x[i]-ScrolledWindow->virtual_x;
-		new_y=ScrolledWindow->virtual_controls_y[i]-ScrolledWindow->virtual_y;
-
-		SetControlNewPosition(seek_control,new_x,new_y);
-
-		if (CheckCrossRectangles(local_message.arg1,local_message.arg2,local_message.arg3,local_message.arg4,
-			seek_control->ctrl_x,seek_control->ctrl_y,seek_control->ctrl_sizex,seek_control->ctrl_sizey)==TRUE)
-		{
-			seek_control->flags=seek_control->flags | FLAG_SHOW_CONTROL;
-			seek_control->flags=seek_control->flags & FLAG_MOUSE_BLOCKED_OFF;
-		}
-		else
-		{
-			seek_control->flags=seek_control->flags & FLAG_HIDE_CONTROL;
-			seek_control->flags=seek_control->flags | FLAG_MOUSE_BLOCKED_ON;
-		}
-		
-		if (seek_control->flags & FLAG_SHOW_CONTROL)
-		{
-			ControlProc=(void (*)(void *Control,struct MESSAGE *message))seek_control->ctrl_proc;
-			ControlProc(seek_control,&local_message);
-		}
-
-		exchange_control=(struct HEADER*)seek_control->ctrl_fd;
-		seek_control=exchange_control;
-	}
-}
-
-void	ScrollWin_FuncCallback_VScroll(struct HEADER* control,void *data)
-{
-	struct	ControlScrollBar		*Hscrollbar,*Vscrollbar;
-	struct	ControlScrolledWindow 	*ScrolledWindow;
-	struct	HEADER				*seek_control,*exchange_control;
-	struct	MESSAGE			local_message;
-	struct	FINITION			*fin;
-	int					i,new_x,new_y,x,y,sizex,sizey;
-
-	Vscrollbar=(struct ControlScrollBar*)control;
-	ScrolledWindow=(struct ControlScrolledWindow*)data;
-
-	ScrolledWindow->virtual_y=(ScrolledWindow->virtual_sizey-ScrolledWindow->scroll_arrea_sizey)*Vscrollbar->ruller_pos;
-
-	x=ScrolledWindow->ctrl_x+1;
-	y=ScrolledWindow->ctrl_y+1;
-	sizex=ScrolledWindow->scroll_arrea_sizex;
-	sizey=ScrolledWindow->scroll_arrea_sizey;
-
-	local_message.type=MESSAGE_FULL_REDRAW_ALL_WITH_FINITION;
-	local_message.arg1=x;
-	local_message.arg2=y;
-	local_message.arg3=sizex;
-	local_message.arg4=sizey;
-
-	fin=(finition_t*)ScrolledWindow->finition;
-	Draw(fin,TOOL_FILLED_RECTANGLE,x,y,sizex,sizey,COLOR_LIGHT);
-
-	seek_control=(struct HEADER*)Vscrollbar->ctrl_fd;
-	//move controls in new position
-	for(i=0;i<ScrolledWindow->number_virtual_controls;i++)
-	{
-		new_x=ScrolledWindow->virtual_controls_x[i]-ScrolledWindow->virtual_x;
-		new_y=ScrolledWindow->virtual_controls_y[i]-ScrolledWindow->virtual_y;
-
-		SetControlNewPosition(seek_control,new_x,new_y);
-
-		if (CheckCrossRectangles(local_message.arg1,local_message.arg2,local_message.arg3,local_message.arg4,
-			seek_control->ctrl_x,seek_control->ctrl_y,seek_control->ctrl_sizex,seek_control->ctrl_sizey)==TRUE)
-		{
-			seek_control->flags=seek_control->flags | FLAG_SHOW_CONTROL;
-			seek_control->flags=seek_control->flags & FLAG_MOUSE_BLOCKED_OFF;
-		}
-		else
-		{
-			seek_control->flags=seek_control->flags & FLAG_HIDE_CONTROL;
-			seek_control->flags=seek_control->flags | FLAG_MOUSE_BLOCKED_ON;
-		}
-
-		if (seek_control->flags & FLAG_SHOW_CONTROL)
-		{
-			ControlProc=(void (*)(void *Control,struct MESSAGE *message))seek_control->ctrl_proc;
-			ControlProc(seek_control,&local_message);
-		}
-
-		exchange_control=(struct HEADER*)seek_control->ctrl_fd;
-		seek_control=exchange_control;
-	}
+	ScrollWin_FuncCallback_HVScroll(NULL,ScrolledWindow);
 }
 
 void	ScrlWinCheckActivatedForKeysControl(struct ControlScrolledWindow *ScrolledWindow)
@@ -326,46 +308,7 @@ void	ScrlWinCheckActivatedForKeysControl(struct ControlScrolledWindow *ScrolledW
 		Vscrollbar->ruller_pos=Vscrollbar->ruller_pos/((float)(ScrolledWindow->virtual_sizey-ScrolledWindow->scroll_arrea_sizey));
 		SpecialRedrawControl(Vscrollbar);
 	}
-
-	local_message.type=MESSAGE_FULL_REDRAW_ALL_WITH_FINITION;
-	local_message.arg1=x;
-	local_message.arg2=y;
-	local_message.arg3=sizex;
-	local_message.arg4=sizey;
-
-	fin=(finition_t*)ScrolledWindow->finition;
-	Draw(fin,TOOL_FILLED_RECTANGLE,x,y,sizex,sizey,COLOR_LIGHT);
-
-	seek_control=(struct HEADER*)Vscrollbar->ctrl_fd;
-	//move controls in new position
-	for(i=0;i<ScrolledWindow->number_virtual_controls;i++)
-	{
-		sx=ScrolledWindow->virtual_controls_x[i]-ScrolledWindow->virtual_x;
-		sy=ScrolledWindow->virtual_controls_y[i]-ScrolledWindow->virtual_y;
-
-		SetControlNewPosition(seek_control,sx,sy);
-
-		if (CheckCrossRectangles(x,y,sizex,sizey,seek_control->ctrl_x,seek_control->ctrl_y,
-						seek_control->ctrl_sizex,seek_control->ctrl_sizey)==TRUE)
-		{
-			seek_control->flags=seek_control->flags | FLAG_SHOW_CONTROL;
-			seek_control->flags=seek_control->flags & FLAG_MOUSE_BLOCKED_OFF;
-		}
-		else
-		{
-			seek_control->flags=seek_control->flags & FLAG_HIDE_CONTROL;
-			seek_control->flags=seek_control->flags | FLAG_MOUSE_BLOCKED_ON;
-		}
-
-		if (seek_control->flags & FLAG_SHOW_CONTROL)
-		{
-			ControlProc=(void (*)(void *Control,struct MESSAGE *message))seek_control->ctrl_proc;
-			ControlProc(seek_control,&local_message);
-		}
-
-		exchange_control=(struct HEADER*)seek_control->ctrl_fd;
-		seek_control=exchange_control;
-	}
+	ScrollWin_FuncCallback_HVScroll(NULL,ScrolledWindow);
 }
 
 //---------------------------------------------------------------------------------
@@ -375,8 +318,8 @@ void ScrolledWindowProc(struct ControlScrolledWindow *ScrolledWindow,struct MESS
 {
 	int				i,x,y,sizex,sizey;
 	struct	HEADER			*seek_control,*exchange_control;
-	struct ControlScrollBar	*Hscrollbar,*Vscrollbar;
-	struct	MESSAGE		local_message;
+	struct ControlScrollBar		*Hscrollbar,*Vscrollbar;
+	struct	MESSAGE			local_message;
 	struct	FINITION		*fin;
 	struct TIMER			*timer;
 
@@ -393,35 +336,13 @@ void ScrolledWindowProc(struct ControlScrolledWindow *ScrolledWindow,struct MESS
 			if (ScrolledWindow->flags & FLAG_SHOW_CONTROL)
 			{
 				DrawScrolledWindow(ScrolledWindow);
-
-				//send message to scroll bars
-				Hscrollbar=(struct ControlScrollBar*)ScrolledWindow->horizontal_scroll;
-				Vscrollbar=(struct ControlScrollBar*)ScrolledWindow->vertical_scroll;
-
-				ControlProc=(void (*)(void *Control,struct MESSAGE *message))Hscrollbar->ctrl_proc;
-				ControlProc((struct HEADER*)Hscrollbar,message);
-
-				ControlProc=(void (*)(void *Control,struct MESSAGE *message))Vscrollbar->ctrl_proc;
-				ControlProc((struct HEADER*)Vscrollbar,message);
-
-				//send message finit redraw only to  some child controls of ScrolledWondow
-				local_message.type=MESSAGE_FULL_REDRAW_ALL_WITH_FINITION;
-				local_message.arg1=ScrolledWindow->ctrl_x+1;
-				local_message.arg2=ScrolledWindow->ctrl_y+1;
-				local_message.arg3=ScrolledWindow->scroll_arrea_sizex;
-				local_message.arg4=ScrolledWindow->scroll_arrea_sizey;
-
-				seek_control=(struct HEADER *)Vscrollbar->ctrl_fd;
-				while(seek_control!=(struct HEADER*)NULL)
-				{
-					if (seek_control->flags & FLAG_SHOW_CONTROL)
-					{
-						ControlProc=(void (*)(void *Control,struct MESSAGE *message))seek_control->ctrl_proc;
-						ControlProc(seek_control,&local_message);
-					}
-					exchange_control=(struct HEADER*)seek_control->ctrl_fd;
-					seek_control=exchange_control;
-				}
+				Hscrollbar=(gui_scroll_bar_t*)ScrolledWindow->horizontal_scroll;
+				Vscrollbar=(gui_scroll_bar_t*)ScrolledWindow->vertical_scroll;
+				//draw scroll bars
+				ControlProc=(void (*)(void *Control,gui_message_t *message))Hscrollbar->ctrl_proc;
+				ControlProc(Hscrollbar,message);
+				ControlProc=(void (*)(void *Control,gui_message_t *message))Vscrollbar->ctrl_proc;
+				ControlProc(Vscrollbar,message);
 			}
 			break;
 		}
@@ -590,8 +511,8 @@ void* CreateScrolledWindow(struct ScrolledWindowData *info_for_control)
 	HorizontalScrollBar=CreateHorizontalScrollBar(&HorizontalScrollData);
 	VerticalScrollBar=CreateVerticalScrollBar(&VerticalScrollData);
 
-	SetCallbackFunction(HorizontalScrollBar,SCROLLBAR_CHANGED_EVENT,&ScrollWin_FuncCallback_HScroll,ScrolledWindow);
-	SetCallbackFunction(VerticalScrollBar,SCROLLBAR_CHANGED_EVENT,&ScrollWin_FuncCallback_VScroll,ScrolledWindow);
+	SetCallbackFunction(HorizontalScrollBar,SCROLLBAR_CHANGED_EVENT,&ScrollWin_FuncCallback_HVScroll,ScrolledWindow);
+	SetCallbackFunction(VerticalScrollBar,SCROLLBAR_CHANGED_EVENT,&ScrollWin_FuncCallback_HVScroll,ScrolledWindow);
 
 	PackControls(ScrolledWindow,HorizontalScrollBar);
 	PackControls(ScrolledWindow,VerticalScrollBar);

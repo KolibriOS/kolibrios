@@ -276,6 +276,9 @@ void ButtonProc(struct ControlButton *button,struct MESSAGE *message)
 				{
 					if (message->arg3==MOUSE_LEFT_BUTTON_DOWN)
 					{
+						if ((button->btn_flags & FLAG_PRESSED_BUTTON_ON)==FALSE)
+							{if (button->flags & FLAG_SHOW_CONTROL) 
+								DrawPressedButton(button);}
 						button->btn_flags=button->btn_flags | FLAG_PRESSED_BUTTON_ON;
 					}
 				}
@@ -291,7 +294,6 @@ void ButtonProc(struct ControlButton *button,struct MESSAGE *message)
 						(DWORD*)ControlCheckCallbackEvent(button,(DWORD)BUTTON_PRESSED_EVENT);
 						main_parent->number_callbacks++;
 					}
-					if (button->flags & FLAG_SHOW_CONTROL) DrawPressedButton(button);
 				}
 			}
 			break;
@@ -399,7 +401,7 @@ void* CreateButtonWithText(gui_button_data_t *info,char *txt)
 	memmove(txtdata.text,txt,len);
 	text=CreateText(&txtdata);
 
-	if (text->ctrl_sizex>Button->ctrl_sizex) Button->ctrl_sizex=text->ctrl_sizex+6;
+	if (text->ctrl_sizex>Button->ctrl_sizex) Button->ctrl_sizex=text->ctrl_sizex+10;
  	if (text->ctrl_sizey>Button->ctrl_sizey) Button->ctrl_sizey=text->ctrl_sizey+6;
 	
 	text->ctrl_x=(Button->ctrl_sizex/2)-(text->ctrl_sizex/2);

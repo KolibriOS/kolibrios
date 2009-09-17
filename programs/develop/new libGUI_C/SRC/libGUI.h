@@ -2,7 +2,7 @@
        service  structures of libGUI
 */
 
-DWORD	ID;
+static DWORD	ID;
 
 //screen's parameters
 #define	BYTES_PER_PIXEL					4
@@ -111,12 +111,12 @@ DWORD	ID;
 #define	DRAW_OUTPUT_SCREEN					0
 #define	DRAW_OUTPUT_BUFFER					1
 
-static struct	
+
+static struct	SCREEN
 {
-	char	*buffer;
-	char	bits_per_pixel;
-	char	bytes_per_pixel;
-	char	draw_output;
+	DWORD	bits_per_pixel;
+	DWORD	bytes_per_pixel;
+	DWORD	draw_output;
 	int	x;
 	int	y;
 	int	size_x;
@@ -124,6 +124,7 @@ static struct
 	int	skin_height;
 	int	display_size_x;
 	int	display_size_y;	
+	char	*buffer;
 }screen;
 
 ////////////////////////////////////////////////////////////////

@@ -1326,12 +1326,13 @@ void	SetControlNewPosition(void *Control,int new_x,int new_y)
 	int		old_y;
 
 	control=(struct HEADER*)Control;
+	/*
 	main_parent=(parent_t*)control->main_parent;
 	if (control->parent==(DWORD*)main_parent)
 	{//check position of child control of main parent
 		if (new_x+control->ctrl_sizex-1>screen.size_x) return;
 		if (new_y+control->ctrl_sizey-1>screen.size_y) return;
-	}
+	}*/
 
 	message.type=(DWORD)MESSAGE_CHANGE_POSITION_EVENT;
 	message.arg1=(DWORD)(new_x-control->ctrl_x);

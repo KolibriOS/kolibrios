@@ -313,7 +313,7 @@ extern inline int  gui_ksys_check_event(void)
 }
 
 //------------------------------------------------------------------------------------------
-//		wait event
+//		wait event while not timeout
 //------------------------------------------------------------------------------------------
 extern inline int  gui_ksys_wait_event_with_timeout(DWORD timeout)
 {
