@@ -65,7 +65,6 @@ debug_com_base equ 0x3f8  ; 0x3f8 is com1, 0x2f8 is com2, 0x3e8 is com3, 0x2e8 i
 
 include "proc32.inc"
 include "kglobals.inc"
-include "lang.inc"
 lang fix en
 
 include "const.inc"

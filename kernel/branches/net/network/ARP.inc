@@ -259,7 +259,7 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx, Opcode:DWORD,Index:DWOR
     loopnz  @b
 ;    jz      .replace       ; found, replace existing entry, ptr to it is in eax
 
-;  .add_to_end:
+  .add_to_end:
 ;
 ;    DEBUGF 1,"5\n"
 ;    ;else add to end
