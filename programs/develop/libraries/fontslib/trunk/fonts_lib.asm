@@ -89,7 +89,6 @@ pushad
         mov     dword [save_ecx],ecx
         add     ebp, 32 ;смещаемся до БДВК
         mov     dword [save_ebp],ebp
-;        mov     dword [save_point_nt],ebp
         cld     ;установка флага направления
 align 4 
 .start_loop:
@@ -97,21 +96,10 @@ align 4
         lea     edi,[ebp+0x28] ;в edi указатель на начало имени.
         xor     eax,eax
         mov     ecx,263
-align 4
-.again: mov     al,byte[edi]
-        test    al,al
-        jz      .next_a     
-        dec     ecx
-        inc     edi
-        jnz     .again
-        jmp     @f
-;        repe    scasb   ;найдем конец строки
-;        jnz     @f      
-;;;; имя присутствует, проверим являтся ли имя файла с расширением fnt ) 
-;        sub     edi,6   ;.ksf,0
+        repne    scasb   ;найдем конец строки
 ;;;;;;;;;;;;;;;;;;;;;;;
 .next_a:
-        sub     edi,4   ;.ksf,0
+        sub     edi,5   ;.ksf,0
         mov     esi,dword name_font
         mov     ecx,name_font_e-name_font
         repe    cmpsb
@@ -164,18 +152,6 @@ align 4
 ; в начало буфера
 
         mov     dword [save_point_nt],ebp
-;        mov     esi, ebp
-;        mov     ecx,304/4
-
-
-
-;align 4
-;.transfer:
-;        lodsd
-;        stosd
-;        loop .transfer
-;        add     dword [save_point_nt],304       ;указатель на следующий блок
-;;; сделали тарнсфер перемещение данных
         pop     ecx
         mov     dword [esp+28],0
         popad
@@ -202,15 +178,12 @@ get_font:
 ; поиск в массиве шрифта при совпадении уcловий загрузка шрифта
 ; esp+4 = dd width font shl 16 +hight font
 ; esp+0 = dd back
-pop     eax
-        pop     dword [font_x_y]
-push    eax
-;       pop     eax
-;       mov     dword [font_x_y],eax
+;pop     eax
+;        pop     dword [font_x_y]
+;push    eax
 pushad
-
-
-
+        mov     eax,dword [esp+32+4]
+        mov     dword [font_x_y],eax
         xor     eax,eax
         mov     dword [number_function],eax
         mov     dword [index_start_block],eax   ;позиция в файле для чтения данных
@@ -223,10 +196,6 @@ pushad
         mov     dword [offset_to_string],edi
 
 
-;        mov     ecx,dword [save_ecx]            ; кол-во итераций т.е. проходов
-align 4
-;.start_check:
-;        push    ecx
         mov     eax,70
         mov     ebx,dword struct_f_info
         mcall
@@ -235,36 +204,11 @@ align 4
         mov     eax,dword [file_buffer]
         mov     ebx,dword [type_fnt]
         cmp     eax,ebx
-;        jnz     @f
-
-
-;        xor     eax,eax
-;        mov     dword [number_function],eax
-;        add     eax,8
-;        mov     dword [read_block],eax
-;        mov     dword [buffer_read_d],file_buffer
-;        mov     ebx,dword struct_f_info
-;        mov     eax,70
-;align 4
-;.start_check:
-;загрузим заголовок файла и узнаем его размер глифа.
-;        lea     edi, [ebp+0x28] ;в edi указатель на начало имени.
-;        mov     dword [offset_to_string],edi
-;get in buffer info above own file
-;        mcall
-;;;;;;;;;;;;;;;; проверим формат заголовка
-;        mov     ecx,dword [file_buffer.type_fnt]
-;        mov     edx,dword [type_fnt]
-;        cmp     ecx,edx
-;        jnz     @f
 
         mov     ecx,dword [file_buffer.font_size]
         mov     edx,dword [font_x_y]
         cmp     ecx,edx
-;        jnz     @f      ;упс неудача вышла
-;шрифт совпал т.е. это наш,нужный нам шрифт, мы его должны загрузить в ОЗУ
 
-;        mov     ebp,dword [save_point_nt]
         mov     ecx, 4096;dword [ebp+32]     ;размер файла до 4294967296 байт т.е. 4 Гб
 
         mov     dword [read_block],ecx
@@ -292,22 +236,14 @@ align 4
         mov     dword [esp+28],0
 ;        pop     ecx
 popad
-ret
-
-
-
+ret 4
 
 ;here error file system
 align 4
 @@:
-;        pop     ecx
-;        add     ebp,304
-;        dec     ecx
- ;       jnz      .start_check
-
         or      dword [esp+28],-1       ;вернем ошибку 
         popad
-        ret
+        ret 4
 
 
 ; поиск вывод сторочки по символьно сфорированного шрифтом текста
@@ -324,39 +260,16 @@ pushad
         mov     ecx,dword [font_x_y]  ;размер глифа x shl 16 +y
         mov     edi,dword [esp+8+32]     ;указатель на палитру из цвета и фона 
         xor     ebp,ebp         ;см 65 функцию )) 
-
-        ;;;;;;;;;;;;;;;;;;;;;
-;        pushad
-;        mov     ebp, dword [esp+4+32+32]
-;         mov     ebp, dword [save_point_nt]
-;        lea     edi, [ebp+0x28] ;в edi указатель на начало имени.       
-;        sub     edi,4   ;.ksf,0
-;        mov eax,4
-;        mov ebx,dword [show_dir]
-;        add     dword [show_dir],10
-;        mov ecx,0x80000000;DDBBCC
-;        mov edx,ebp;[ebp+0x28];eax;edi
-;        xor     esi,esi 
-      ;mov esi,8
-;        mcall
-;        popad
-;;;;;;;;;;;;;;;;;;;;;;;;
-
         cld
 align 4
 @@:     ;pushad
         xor     eax,eax
         lodsb
         test    al,al
-        jz      .exit
-;        movzx   eax,al
+        jz      .return
         shl     eax,4         ;умножаем на 16 т.к. это высота глифа
-;        imul    eax,16
 
         mov     ebx,dword [font_array_data]    ; тут распологаются глифы символов
-;        add     eax,ebx
-;        mov     ebx,dword [ebx+8] ; смещение
-;        add     eax,ebx
         add     ebx,eax
         push    esi
         mov     esi,1
@@ -365,11 +278,6 @@ align 4
         pop     esi
         add     edx,8 shl 16    ;следующий символ ширина символа = 8 точкам
         jmp     @b
-align 4
-.exit:  ;popad
-
-;        add     edx,16
-;        loop    .next      
 
 align 4
 .return: 
@@ -393,7 +301,6 @@ align 4
         mov     esi,1
         mov     eax,65
         mcall
-
 popad
 ret 4
 
@@ -506,8 +413,6 @@ font_array_point  dd 0x0
 font_array_data   dd 0x0        ; реальные данные т.е. матрица шрифта
 save_ebp          dd 0x0
 save_point_nt     dd 0x0
-;name_of_file     db 263 dup(0x0)
-;name_of_file      db '/sys/FONTS/font01.ksf',0
 name_fulder       db '/sys/FONTS',0
 name_fuld_end=     ($-name_fulder) -1
 name_font         db '.ksf'
