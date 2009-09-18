@@ -401,7 +401,7 @@ IPv4_Handler:
 
 	DEBUGF	1,"IP_Handler - unknown protocol:%u\n",al
 
-	jmp	.dump
+	ret
 
 
   .destroy_slot_pop:
@@ -572,6 +572,7 @@ IPv4_create_Packet:
   .exit:
 	add	esp, 16
   .exit_:
+	DEBUGF 1,"Create IPv4 Packet - failed\n"
 	or	edi, -1
 	ret
 

@@ -277,7 +277,7 @@ ICMP_Handler:	;TODO: works only on pure ethernet right now !
 	DEBUGF	1,"ICMP_Handler - dumping\n"
 
 	call	kernel_free
-	add	esp, 4 ; pop (balance stack)
+	add	esp, 8 ; pop (balance stack)
 
 	ret
 
@@ -332,8 +332,7 @@ ICMP_Handler_fragments:   ; works only on pure ethernet right now !
 	DEBUGF	1,"ICMP_Handler_fragments - end\n"
 
 	call	kernel_free
-	add	esp, 4 ; pop (balance stack)
-
+	add	esp, 8 ; pop (balance stack)
 	ret
 
 ;-----------------------------------------------------------------
@@ -366,10 +365,10 @@ ICMP_create_Packet:
 
 	call	IPv4_create_Packet
 
-	DEBUGF 1,"full icmp packet size: %u\n", ebx
-
 	cmp	edi, -1
 	je	.exit
+
+	DEBUGF 1,"full icmp packet size: %u\n", ebx
 
 	pop	eax
 	mov	word [edi + ICMP_Packet.Type], ax	; Write both type and code bytes at once
@@ -401,7 +400,8 @@ ICMP_create_Packet:
 	ret						; Send the packet (create_packet routine outputs pointer to routine to send packet in eax)
 
   .exit:
-	add	esp, 8
+	DEBUGF 1,"Creating ICMP Packet failed\n"
+	add	esp, 3*4
 	ret
 
 
