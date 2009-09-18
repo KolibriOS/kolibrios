@@ -1016,7 +1016,7 @@ osloop:
 ;                      MAIN OS LOOP END                              ;
 ;                                                                    ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+align 4
 checkidle:
         pushad
         call    change_task
