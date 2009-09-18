@@ -393,13 +393,16 @@ IPv4_Handler:
 ;        cmp     al , PROTOCOL_TCP
 ;        je      TCP_Handler
 
-;        cmp     al , PROTOCOL_UDP
-;        je      UDP_Handler
+	cmp	al , PROTOCOL_UDP
+	je	UDP_Handler
 
 	cmp	al , IP_PROTO_ICMP
 	je	ICMP_Handler_fragments
 
 	DEBUGF	1,"IP_Handler - unknown protocol:%u\n",al
+
+	call	kernel_free
+	add	esp, 8						; pop (balance stack)
 
 	ret
 
@@ -407,7 +410,7 @@ IPv4_Handler:
   .destroy_slot_pop:
 	add	esp, 4
   .destroy_slot:
-	DEBUGF	1,"Destroy fragment slot! MUaHaHAhAHA!\n"
+	DEBUGF	1,"Destroy fragment slot!\n"
 	; TODO!
 	jmp	.dump
 

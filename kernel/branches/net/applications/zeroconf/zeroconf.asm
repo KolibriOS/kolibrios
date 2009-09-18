@@ -49,9 +49,9 @@ AF_INET4	equ 1337  ;;;;;
 
 
 
-include '../../../proc32.inc'
-include '../../../macros.inc'
-include 'debug-fdo.inc'
+include '../proc32.inc'
+include '../macros.inc'
+include '../debug-fdo.inc'
 include 'dhcp.inc'
 include 'dll.inc'
 
