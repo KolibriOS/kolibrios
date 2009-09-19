@@ -85,7 +85,10 @@ button:
         mcall   17      ;получить идентификатор нажатой клавиши
         test ah,ah      ;если в ah 0, то перейти на обработчик событий still
         jz  still
-exit:   mcall   -1
+exit:   
+        call    [free_fulder_info]
+        call    [free_font]
+        mcall   -1
 key:
         mcall   2       ;загрузим значение 2 в регистор eax и получим код нажатой клавиши
 
@@ -111,7 +114,7 @@ draw_window:            ;рисование окна приложения
         mcall   12,1
         xor  eax,eax             ;обнулить eax
         mov  ebx,50*65536+680    ;[координата по оси x]*65536 + [размер по оси x]
-        mov  ecx,30*65536+500    ;[координата по оси y]*65536 + [размер по оси y]
+        mov  ecx,30*65536+200    ;[координата по оси y]*65536 + [размер по оси y]
         mov  edx,[sc.work]       ; color of work area RRGGBB,8->color gl
         or   edx,0x34000000
         mov  edi,hed

@@ -24,8 +24,6 @@
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ;*****************************************************************************
 
-;Fonts library
-;  
 ;;;;;;;;;;;;;;;;;;
 
 format MS COFF
@@ -98,15 +96,17 @@ align 4
         mov     ecx,263
         repne    scasb   ;найдем конец строки
 ;;;;;;;;;;;;;;;;;;;;;;;
-.next_a:
         sub     edi,5   ;.ksf,0
-        mov     esi,dword name_font
-        mov     ecx,name_font_e-name_font
-        repe    cmpsb
+        lea     esi,[name_font]
+        mov     eax,dword[edi]
+        or      eax,0x20202000  ; сделаем расширение строчными буквами.
+        cmp     eax,dword[esi]
         jnz     @f
+
 ;;;;;;;; ура это наш файл т.е. наш шрифт мы нашли нужный файлик ))
 ;теперь нужно точно убедиться что это наш и только наш файлик 
 ;загрузим заголовок файла и узнаем его размер глифа.
+
         call    alloc_mem       ; выделим озу своих переменных
 ; сейчас нам нужно сформировать имя файла с полным путем        
         mov     eax,dword [alloc_memory_point]
@@ -153,10 +153,8 @@ align 4
 
         mov     dword [save_point_nt],ebp
         pop     ecx
-        mov     dword [esp+28],0
-        popad
-        ret
-
+        xor     eax,eax
+        jmp     .exit
 
 align 4
 @@:     pop     ecx
@@ -164,7 +162,7 @@ align 4
         dec     ecx
         jnz     .start_loop
 ;        loop    .start_loop
-;        xor     eax,eax
+        or     eax,-1
 ;;;;;;;; прошлись - все интересущющие шрифты переместили в начало блока.
 
 align 4
@@ -224,7 +222,7 @@ pushad
         mov     eax,70
         mcall
         test    eax,eax
-        jnz     @f 
+        jnz     .exit 
 
         lea     eax,[buffer_read_d]
         mov     eax,dword [eax]
@@ -233,15 +231,15 @@ pushad
 ;        add     eax,dword [eax+8]
 ;        add     eax,dword [buffer_read_d]
         mov     dword [font_array_data],eax
-        mov     dword [esp+28],0
-;        pop     ecx
-popad
-ret 4
+        xor     eax,eax
+        jmp     .ok
 
 ;here error file system
 align 4
-@@:
-        or      dword [esp+28],-1       ;вернем ошибку 
+.exit:
+        or      eax,-1
+align 4
+.ok:    mov     dword [esp+28],eax       ;вернем ошибку 
         popad
         ret 4
 
@@ -318,10 +316,10 @@ pushad
         mov     ebx,13
         mcall
         test    eax,eax
-        jnz     @f
-        or      dword [esp+28],-1       ;вернем ошибку 
-align 4
-@@:
+;        jnz     @f
+        mov      dword [esp+28],eax       ;вернем ошибку 
+;align 4
+;@@:
 popad
         ret
 align 4
@@ -333,10 +331,10 @@ pushad
         mov     ebx,13
         mcall
         test    eax,eax
-        jnz     @f
-        or      dword [esp+28],-1       ;вернем ошибку 
-align 4
-@@:
+;        jnz     @f
+        mov      dword [esp+28],eax       ;вернем ошибку 
+;align 4
+;@@:
 popad
         ret
 
@@ -415,10 +413,8 @@ save_ebp          dd 0x0
 save_point_nt     dd 0x0
 name_fulder       db '/sys/FONTS',0
 name_fuld_end=     ($-name_fulder) -1
-name_font         db '.ksf'
-name_font_e:
+name_font         db '.ksf',0
 type_fnt          db 'kf01'
-type_fnt_e:
 
 
 
