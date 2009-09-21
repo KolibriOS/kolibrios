@@ -44,7 +44,8 @@ DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
 
 
 
-AF_INET4	equ 1337  ;;;;;
+AF_INET4	equ 2  ;;;;;
+IP_PROTO_UDP	equ 17
 
 
 
@@ -135,7 +136,7 @@ START:					    ; start of execution
 
 ;    eth.set_network_drv 0x00000383
 
-    DEBUGF  1,"Zero-config service:\n"
+    DEBUGF  1,">Zero-config service:\n"
 
 ;    eth.status eax                          ; Read the Stack status
 ;    test    eax,eax                         ; if eax is zero, no driver was found
@@ -156,11 +157,11 @@ START:					    ; start of execution
 ;   @@:
 ;    eth.read_mac MAC
 
-    mcall 73, 10
+    mcall 75, 1337 shl 16 + 4
     mov   word[MAC], bx
     mov   dword[MAC+2], eax
 
-    DEBUGF  1,"MAC: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
+    DEBUGF  1,"->MAC: %x-%x-%x-%x-%x-%x\n",[MAC]:2,[MAC+1]:2,[MAC+2]:2,[MAC+3]:2,[MAC+4]:2,[MAC+5]:2
 
     cld
     mov     edi, path	   ; Calculate the length of zero-terminated string
@@ -173,7 +174,7 @@ START:					    ; start of execution
     movsd
     movsb
 
-    DEBUGF  1,"path to ini: %s\n", path
+    DEBUGF  1,"->path to ini: %s\n", path
 
     mcall 68,11
 
@@ -215,27 +216,26 @@ START:					    ; start of execution
 
 skip_ini:
 
-    DEBUGF  1,"Skip ini\n"
+    DEBUGF  1,"->Skip ini\n"
 
-    mcall 74, 0, AF_INET4, 1, 0        ; open socket (parameters: domain, type, protocol)
+    mcall 74, 0, AF_INET4, IP_PROTO_UDP, 0	; open socket (parameters: domain, type, reserved)
     cmp   eax, -1
     je	  error
     mov   [socketNum], eax
 
-    DEBUGF  1,"socket %x opened\n", eax
+    DEBUGF  1,"->socket %x opened\n", eax
 
     mcall 74, 2, [socketNum], sockaddr1, 18	; bind socket to local port 68
     cmp   eax, -1
     je	  error
 
-    DEBUGF  1,"Socket Bound to local port 68\n"
-
+    DEBUGF  1,"->Socket Bound to local port 68\n"
 
     mcall 74, 4, [socketNum], sockaddr2, 18	; connect to 255.255.255.255 on port 67
     cmp   eax, -1
     je	  error
 
-    DEBUGF  1,"Connected to 255.255.255.255 on port 67\n"
+    DEBUGF  1,"->Connected to 255.255.255.255 on port 67\n"
 
     mov     byte [dhcpMsgType], 0x01	    ; DHCP discover
     mov     dword [dhcpLease], esi	    ; esi is still -1 (-1 = forever)
@@ -246,7 +246,7 @@ skip_ini:
 
 buildRequest:				    ; Creates a DHCP request packet.
 
-    DEBUGF  1,"Building request\n"
+    DEBUGF  1,"->Building request\n"
 
     stdcall mem.Alloc, BUFFER
     mov     [dhcpMsg], eax
@@ -315,10 +315,10 @@ read_data:				    ; we have data - this will be the response
 
     mcall 74, 7, [socketNum], [dhcpMsg], BUFFER   ; read data from socket
 
-    DEBUGF  1,"%u bytes received\n", eax
+    DEBUGF  1,"->%d bytes received\n", eax
 
     push eax
-    mcall 74, 10, [socketNum]			  ; close the socket
+    mcall 74, 1, [socketNum]			 ; close the socket
     pop  eax
 
     cmp eax, -1
@@ -377,7 +377,7 @@ parseResponse:
     mov     edx, [dhcpMsg]
 
     pusha
-    mcall 73, 3, [edx+16]
+    mcall 75, 3, [edx+16]
     mov     eax,[edx]
     mov     [dhcpClientIP],eax
     DEBUGF  1,"Client: %u.%u.%u.%u\n",[edx+16]:1,[edx+17]:1,[edx+18]:1,[edx+19]:1
@@ -431,7 +431,7 @@ pr001:
     jne     @f
 
     pusha
-    mcall 73, 5, [edx]
+    mcall 75, 7, [edx]
     DEBUGF  1,"Subnet: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
@@ -442,7 +442,7 @@ pr001:
     jne     @f
 
     pusha
-    mcall 73, 9, [edx]
+    mcall 75, 9, [edx]
     DEBUGF  1,"Gateway: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
@@ -454,7 +454,7 @@ pr001:
     jne     next_option
 
     pusha
-    mcall 73, 7, [edx]
+    mcall 75, 5, [edx]
     DEBUGF  1,"DNS: %u.%u.%u.%u\n",[edx]:1,[edx+1]:1,[edx+2]:1,[edx+3]:1
     popa
 
