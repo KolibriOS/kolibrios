@@ -125,6 +125,14 @@ ICMP_init:
 	ret
 
 
+
+
+
+							 
+												    
+													     
+
+
 ;--------------------------------
 ;
 ; ICMP_Handler:
@@ -150,6 +158,11 @@ ICMP_Handler:	;TODO: works only on pure ethernet right now !
 
 	mov	byte [edx + ICMP_Packet.Type], ICMP_ECHOREPLY		    ; Change Packet type to reply
 	mov	word [edx + ICMP_Packet.Checksum], 0			    ; Set checksum to 0, needed to calculate new checksum
+
+	call	ETH_struc2dev
+	cmp	edi,-1
+	je	.dump
+	inc	[ICMP_PACKETS_RX+4*edi]
 
 ; exchange dest and source address in IP header
 ; exchange dest and source MAC in ETH header
@@ -197,7 +210,11 @@ ICMP_Handler:	;TODO: works only on pure ethernet right now !
 	xchg	al, ah							    ; Convert to intel byte order
 	mov	word [edx + ICMP_Packet.Checksum], ax
 
-	jmp	ETH_Sender
+	jmp	ETH_Sender						    ; Send the reply
+
+
+
+
 
        .check_sockets:
 	; TODO: validate the header & checksum. Discard buffer if error
@@ -221,6 +238,11 @@ ICMP_Handler:	;TODO: works only on pure ethernet right now !
 
 	cmp	ecx, SOCKETBUFFSIZE - SOCKETHEADERSIZE; TODO: fix this problem !
 	jg	.dump
+
+	call	IPv4_dest_to_dev
+	cmp	edi,-1
+	je	.dump
+	inc	[ICMP_PACKETS_RX+4*edi]
 
 	DEBUGF 1,"Found valid ICMP packet for socket %x\n", esi
 

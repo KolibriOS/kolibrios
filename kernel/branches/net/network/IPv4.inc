@@ -149,7 +149,8 @@ IPv4_Handler:
 	jmp	.dump
 
   .ip_ok:
-
+	call	ETH_struc2dev					; TODO: make this work on other protocols too!
+	inc	[IP_PACKETS_RX+4*edi]
 	DEBUGF	1,"IP_Handler - packet from %u.%u.%u.%u\n",\
 	[edx + IPv4_Packet.SourceAddress]:1,[edx + IPv4_Packet.SourceAddress + 1]:1,[edx + IPv4_Packet.SourceAddress + 2]:1,[edx + IPv4_Packet.SourceAddress + 3]:1
 
@@ -390,10 +391,10 @@ IPv4_Handler:
 	mov	al , [edx + IPv4_Packet.Protocol]
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
-;        cmp     al , PROTOCOL_TCP
+;        cmp     al , IP_PROTO_TCP
 ;        je      TCP_Handler
 
-	cmp	al , PROTOCOL_UDP
+	cmp	al , IP_PROTO_UDP
 	je	UDP_Handler
 
 	cmp	al , IP_PROTO_ICMP
@@ -535,6 +536,7 @@ IPv4_create_Packet:
   .send:
 	push	ecx eax ebx dx di
 	call	IPv4_dest_to_dev
+	inc	[IP_PACKETS_TX+4*edi]
 	mov	edi, [ETH_DRV_LIST + 4*edi]
 	lea	eax, [edi + ETH_DEVICE.mac]
 	mov	ebx, temp_dstmac
@@ -581,7 +583,7 @@ IPv4_create_Packet:
 
 
 uglobal
-	temp_dstmac dp ?
+	temp_dstmac dp ?    ; TODO: place this in stack instead!
 endg
 
 

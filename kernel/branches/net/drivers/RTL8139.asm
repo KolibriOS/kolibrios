@@ -701,6 +701,12 @@ reset:
 	mov	[ebx+device.rx_data_offset], eax
 	mov	[ebx+device.curr_tx_desc], al
 
+; clear packet/byte counters
+
+	lea	edi, [ebx+device.bytes_tx] ; TODO: check if destroying edi, ecx doesnt harm anything
+	mov	ecx, 6
+	rep	stosd
+
 ; clear missing packet counter
 
 	add	edx, REG_MPC - REG_9346CR
@@ -818,8 +824,8 @@ transmit:
 	inc	[ebx+device.packets_tx] 	 ;
 	mov	eax, [esp+4]			 ; Get packet size in eax
 
-	add	dword [ebx + device.bytes_tx], eax
-	adc	dword [ebx + device.bytes_tx + 4], 0
+	add	dword [ebx + device.bytes_tx + 4], eax
+	adc	dword [ebx + device.bytes_tx], 0
 
 ;        or      eax, (ERTXTH shl BIT_ERTXTH)     ; Set descriptor size and the early tx treshold into the correct Transmission status register (TSD0, TSD1, TSD2 or TSD3)
 	out	dx , eax			 ;
@@ -900,8 +906,8 @@ int_handler:
 	jz	.reset_rx
 						    ; packet is ok, copy it
 	movzx	ecx, word [eax+2]		    ; packet length
-	add	dword [ebx + device.bytes_rx], ecx  ; Update stats
-	adc	dword [ebx + device.bytes_rx + 4], 0
+	add	dword [ebx + device.bytes_rx + 4], ecx	; Update stats
+	adc	dword [ebx + device.bytes_rx], 0
 	inc	dword [ebx + device.packets_rx]     ;
 	sub	ecx, 4				    ; don't copy CRC
 	DEBUGF	1,"Received %u bytes\n", ecx

@@ -1,23 +1,21 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;  STACK.INC                                                   ;;
-;;                                                              ;;
-;;  TCP/IP stack for Menuet OS                                  ;;
-;;                                                              ;;
-;;  Copyright 2002 Mike Hibbett, mikeh@oceanfree.net            ;;
-;;                                                              ;;
-;;  See file COPYING for details                                ;;
-;;                                                              ;;
-;; Version 0.7                                                  ;;
-;;      Added a timer per socket to allow delays when rx window ;;
-;;      gets below 1KB                                          ;;
-;;                                                              ;;
-;;10.01.2007 Bugfix for checksum function from Paolo Franchetti ;;
-;;                                                              ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  STACK.INC                                                      ;;
+;;                                                                 ;;
+;;  BASIC TCP/IP stack for KolibriOS                               ;;
+;;                                                                 ;;
+;;    Written by hidnplayr@kolibrios.org                           ;;
+;;                                                                 ;;
+;;     based on the work of Mike Hibbett, mikeh@oceanfree.net      ;;
+;;     but also Paolo Franchetti                                   ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 $Revision: 983 $
 
@@ -192,7 +190,7 @@ endp
 
 ;----------------------------------------------------------------
 ;
-;
+;  System function to work with network devices (73)
 ;
 ;----------------------------------------------------------------
 
@@ -242,21 +240,19 @@ sys_network:
 
 ;----------------------------------------------------------------
 ;
-;
+;  System Function To work with Protocols  (75)
 ;
 ;----------------------------------------------------------------
 
 align 4
 sys_protocols:
-
 	cmp	bh, MAX_NET_DEVICES		; Check if device number exists
 	jge	.doesnt_exist
 
 	mov	esi, ebx
 	and	esi, 0x0000ff00
 	shr	esi, 6
-
-	cmp	dword [esi + ETH_DRV_LIST], 0	; check if driver is running TODO: check otehr lists too
+	cmp	dword [esi + ETH_DRV_LIST], 0	; check if driver is running TODO: check other lists too
 	je	.doesnt_exist
 
 	push	.return 			; return address (we will be using jumps instead of calls)
@@ -273,21 +269,21 @@ sys_protocols:
 	cmp	ax , IP_PROTO_UDP
 	je	UDP_API
 
-;        cmp     ax , IP_PROTO_TCP
+	cmp	ax , IP_PROTO_TCP
 ;        je      TCP_API
 
-	cmp	ax, ETHER_ARP
+	cmp	ax , ETHER_ARP
 	je	ARP_API
 
-	cmp	ax, 1337
+	cmp	ax , 1337
 	je	ETH_API
 
-	add	esp,4				; if we reached here, no function was called, so we need to balance stack
+	add	esp, 4				 ; if we reached here, no function was called, so we need to balance stack
 
   .doesnt_exist:
-	DEBUGF	1,"sys_protocols: invalid device specified!\n"
+	DEBUGF	1,"sys_protocols: protocol %u doesnt exist on device %u!\n",ax, bh
 	mov	eax, -1
 
   .return:
-	mov	[esp+32], eax
+	mov	[esp+28+4], eax
 	ret

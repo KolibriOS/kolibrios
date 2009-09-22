@@ -531,6 +531,8 @@ proc arp_request stdcall uses ebx esi edi,\
     xor     edx, edx
     shl     edx, 2
 
+    inc     [ARP_PACKETS_TX+edx]
+
     push    dword .returnaddr
     push    dword 60
     push    ebx
@@ -598,7 +600,8 @@ ARP_Handler:
 	jne	.exit
 
 	call	ETH_struc2dev
-	DEBUGF	1,"Packet came from device: %u\n", edi
+	DEBUGF	1,"ARP Packet came from device: %u\n", edi
+	inc	[ARP_PACKETS_RX+4*edi]
 	cmp	edi, -1
 	jz	.exit
 

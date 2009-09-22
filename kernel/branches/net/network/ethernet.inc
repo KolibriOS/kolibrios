@@ -449,32 +449,32 @@ ETH_API:
 	dec	bl
 	jz	.out_queue	; 7
 
-
 .error:
 	mov	eax, -1
 	ret
 
 .packets_tx:
 	add	eax, ETH_DRV_LIST
-	mov	eax, [eax]
-	mov	eax, [eax + ETH_DEVICE.packets_tx]
+	mov	eax, dword [eax]
+	mov	eax, dword [eax + ETH_DEVICE.packets_tx]
+
 	ret
 
 .packets_rx:
 	add	eax, ETH_DRV_LIST
-	mov	eax, [eax]
-	mov	eax, [eax + ETH_DEVICE.packets_rx]
+	mov	eax, dword [eax]
+	mov	eax, dword [eax + ETH_DEVICE.packets_rx]
 	ret
 
 .bytes_tx:
 	add	eax, ETH_DRV_LIST
-	mov	eax, [eax]
+	mov	eax, dword [eax]
 	mov	eax, dword [eax + ETH_DEVICE.bytes_tx + 4]
 	ret
 
 .bytes_rx:
 	add	eax, ETH_DRV_LIST
-	mov	eax, [eax]
+	mov	eax, dword [eax]
 	mov	eax, dword [eax + ETH_DEVICE.bytes_rx + 4]
 	ret
 
@@ -486,7 +486,7 @@ ETH_API:
 ;        pop     eax
 	movzx	ebx, word [eax + ETH_DEVICE.mac]
 	mov	eax, dword [eax + ETH_DEVICE.mac + 2]
-	mov	[esp+20+4], ebx 	; TODO: fix this ugly code
+	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
 	ret
 
 .write_mac:
