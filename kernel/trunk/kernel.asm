@@ -238,8 +238,8 @@ B32:
            mov   edi,0x2F0000
            mov   ecx,0x10000 / 4
            rep   movsd
-           xor edi, edi
-           mov   ecx,0x10000 / 4
+           mov   edi,0x1000
+           mov   ecx,0xf000 / 4
            rep   stosd
 
            call test_cpu

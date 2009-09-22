@@ -30,7 +30,10 @@
 ;
 ; 0x00000000 -> 0x7FFFFFFF  application 2Gb
 
-; 0x80000000 -> 1FFF   window_data   - 256 entries
+; 0x80000000 -> 0FFF  physical page zero - do not write
+;                     (used by int 13h in some configurations)
+;
+; 0x80001000 -> 2FFF   window_data   - 256 entries
 ;
 ;         0000 dword  x start
 ;         0004 dword  y start
@@ -40,8 +43,6 @@
 ;         0014 dword  color of grab bar
 ;         0018 dword  color of frames
 ;         001C dword  window flags, +30 = window drawn, +31 redraw flag
-;
-;   2000  ->   2FFF   free
 ;
 ;   3000  ->   4FFF   task list      - 256 entries
 ;

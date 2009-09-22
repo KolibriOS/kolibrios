@@ -186,7 +186,7 @@ TSS_SIZE  equ (128+8192)
 
 OS_BASE             equ 0x80000000
 
-window_data         equ OS_BASE
+window_data         equ (OS_BASE+0x0001000)
 
 CURRENT_TASK        equ (OS_BASE+0x0003000)
 TASK_COUNT          equ (OS_BASE+0x0003004)
@@ -331,7 +331,7 @@ LFB_BASE            equ 0xFE000000
 
 new_app_base        equ 0;
 
-twdw                equ 0x3000   ;(CURRENT_TASK-window_data)
+twdw                equ 0x2000   ;(CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
 RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
