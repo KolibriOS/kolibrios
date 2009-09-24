@@ -74,16 +74,15 @@ ETH_init:
 	mov	ecx, (1+MAX_ETH_DEVICES)
 	rep	stosd
 
-	mov	dword [ETH_IN_QUEUE], eax
+	mov	dword [ETH_IN_QUEUE], ETH_QUEUE_SIZE
 	mov	dword [ETH_IN_QUEUE+4], ETH_IN_QUEUE + queue.data
 	mov	dword [ETH_IN_QUEUE+8], ETH_IN_QUEUE + queue.data
 
-	mov	dword [ETH_OUT_QUEUE], eax
+	mov	dword [ETH_OUT_QUEUE], ETH_QUEUE_SIZE
 	mov	dword [ETH_OUT_QUEUE+4], ETH_OUT_QUEUE + queue.data
 	mov	dword [ETH_OUT_QUEUE+8], ETH_OUT_QUEUE + queue.data
 
 	ret
-
 
 
 ;---------------------------------------------------------
@@ -102,8 +101,16 @@ align 4
 ETH_Add_Device:
 
 	DEBUGF	1,"ETH_Add_Device: %x\n", ebx
-	cmp	[ETH_RUNNING], MAX_ETH_DEVICES
+
+	mov	eax, [ETH_RUNNING]
+	cmp	eax, MAX_ETH_DEVICES
 	jge	.error
+
+	test	eax, eax
+	jnz	.notfirst
+	mov	dword [ETH_IN_QUEUE], eax
+	mov	dword [ETH_OUT_QUEUE], eax
+      .notfirst:
 
 	mov	eax, ebx
 	mov	ecx, MAX_ETH_DEVICES	  ; We need to check whole list because a device may be removed without re-organizing list
@@ -142,6 +149,7 @@ ETH_Add_Device:
 ;        stosw                             ;
 
 	inc	[ETH_RUNNING]		  ; Indicate that one more ethernet device is up and running
+
 ;        pop     eax                       ; Output device num in eax
 	DEBUGF	1,"- succes: %u\n",eax
 	ret
@@ -184,6 +192,12 @@ ETH_Remove_Device:
 	mov	dword [edi-4], eax
 
 	dec	[ETH_RUNNING]
+	jnz	.notlast
+
+	mov	dword [ETH_IN_QUEUE], ETH_QUEUE_SIZE
+	mov	dword [ETH_OUT_QUEUE], ETH_QUEUE_SIZE
+
+       .notlast:
 
 	ret
 
@@ -470,13 +484,18 @@ ETH_API:
 	add	eax, ETH_DRV_LIST
 	mov	eax, dword [eax]
 	mov	eax, dword [eax + ETH_DEVICE.bytes_tx + 4]
+	mov	eax, dword [eax + ETH_DEVICE.bytes_tx]
+	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
 	ret
 
 .bytes_rx:
 	add	eax, ETH_DRV_LIST
 	mov	eax, dword [eax]
-	mov	eax, dword [eax + ETH_DEVICE.bytes_rx + 4]
+	mov	ebx, dword [eax + ETH_DEVICE.bytes_rx + 4]
+	mov	eax, dword [eax + ETH_DEVICE.bytes_rx]
+	mov	[esp+20+4], ebx 			; TODO: fix this ugly code
 	ret
+
 
 .read_mac:
 	add	eax, ETH_DRV_LIST

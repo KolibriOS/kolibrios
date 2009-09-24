@@ -158,6 +158,10 @@ START:					    ; start of execution
 ;    eth.read_mac MAC
 
     mcall 75, 1337 shl 16 + 4
+
+    cmp     eax, -1
+    je	    close
+
     mov   word[MAC], bx
     mov   dword[MAC+2], eax
 
