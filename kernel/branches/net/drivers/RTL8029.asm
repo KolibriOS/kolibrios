@@ -149,7 +149,7 @@ public version
 	ISR_RDC 		  equ 0x40	  ;  Remote DMA complete
 	ISR_RST 		  equ 0x80	  ;  reset
 
-	IRQ_MASK		  equ ISR_PRX + ISR_PTX + ISR_TXE
+	IRQ_MASK		  equ ISR_PRX ; + ISR_PTX + ISR_TXE
 
 	RSTAT_PRX		  equ 0x01	  ;  successful recv
 	RSTAT_CRC		  equ 0x02	  ;  CRC error
@@ -459,7 +459,7 @@ probe:
 
 	DEBUGF	2,"Trying 16-bit mode\n"
 
-	or	[ebp + device.flags], FLAG_16BIT
+	or	[ebp + device.flags], FLAG_16BIT or FLAG_PIO
 	mov	[ebp + device.memsize], MEM_32768
 	mov	[ebp + device.tx_start], 64
 	add	[ebp + device.rx_start], TXBUF_SIZE + 64
@@ -707,6 +707,7 @@ nsr_002:
 	call	read_mac
 
 ; clear interupt status
+	set_io	0
 	set_io	P0_ISR
 	mov	al, 0xff
 	out	dx, al

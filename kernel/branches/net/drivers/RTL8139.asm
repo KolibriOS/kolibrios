@@ -1192,24 +1192,14 @@ read_mac:
 	DEBUGF	1,"Reading MAC: "
 
 	mov	edx, [ebx + device.io_addr]
-
-	mov	ecx, 2
-       @@:
-	lea	eax, [EE_93C46_REG_ETH_ID+ecx]
-	push	ecx
-	call	read_eeprom
-	pop	ecx
-	push	ax
-	dec	cl
-	jns	@r
-
-	DEBUGF	1,"%x-%x-%x-%x-%x-%x\n",[esp+0]:2,[esp+1]:2,[esp+2]:2,[esp+3]:2,[esp+4]:2,[esp+5]:2
-
 	lea	edi, [ebx + device.mac]
-	pop	eax
+	in	eax, edx
 	stosd
-	pop	ax
+	add	dx, 4
+	in	ax, dx
 	stosw
+
+	DEBUGF	1,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
 
 	ret
 

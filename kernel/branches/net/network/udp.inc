@@ -219,9 +219,9 @@ UDP_create_Packet:
 	cmp	edi, -1
 	je	.exit
 
-	sub	ecx , UDP_Packet.Data
 	mov	byte[edi + UDP_Packet.Length], ch
 	mov	byte[edi + UDP_Packet.Length+1], cl
+	sub	ecx , UDP_Packet.Data
 
 	pop	esi
 	push	edi
