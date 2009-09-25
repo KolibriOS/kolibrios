@@ -1,16 +1,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
-;; ne2000 driver for KolibriOS                                     ;;
+;; RTL8029/ne2000 driver for KolibriOS                             ;;
 ;;                                                                 ;;
 ;;    Written by hidnplayr@kolibrios.org                           ;;
+;;     with help from CleverMouse                                  ;;
 ;;                                                                 ;;
 ;;          GNU GENERAL PUBLIC LICENSE                             ;;
 ;;             Version 2, June 1991                                ;;
 ;;                                                                 ;;
-;; current status (september 2009) - INCOMPLETE                    ;;
+;; current status (september 2009) - UNSTABLE                      ;;
+;;                                                                 ;;
+;; based on RTL8029.asm driver for menuetos                        ;;
+;; and realtek8029.asm for SolarOS by Eugen Brasoveanu             ;;
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -298,7 +302,7 @@ proc service_proc ;stdcall, ioctl:dword
 
 	mov	edx, PCI_BASE_ADDRESS_0        ; find the base io address
   .sb_reg_check:
-  ;
+
 	movzx	eax, byte [ebx+device.pci_bus] ;
 	movzx	ecx, byte [ebx+device.pci_dev] ;
 					       ;
@@ -415,6 +419,7 @@ create_new_struct:
 	mov	dword [ebx+device.get_MAC], read_mac
 	mov	dword [ebx+device.set_MAC], write_mac
 	mov	dword [ebx+device.unload], unload
+	mov	dword [ebx+device.name], my_service
 
 	ret
 
@@ -585,10 +590,9 @@ ep_check_have_vendor:
 	mov	eax, [ebp + device.bmem]
 	mov	[ebp + device.rmem], eax
 
-	;-- hack
+	;-- hack (read mac from eeprom ant write it to hardware's register)
 	mov	ebx, ebp
 	call	read_mac
-
 
 	push	.hack
 	sub	esp, 6
@@ -596,7 +600,6 @@ ep_check_have_vendor:
 	lea	esi, [ebp + device.mac]
 	movsd
 	movsw
-
 	jmp	write_mac
        .hack:
 	;--- hack
@@ -613,8 +616,7 @@ ep_check_have_vendor:
 reset:
 	mov	ebp, ebx	;---
 
-
-	DEBUGF	2,"Resetting rtl8029\n"
+	DEBUGF	2,"Resetting device\n"
 
 ; attach int handler
 	movzx	eax, [ebp+device.irq_line]
@@ -734,6 +736,12 @@ nsr_002:
 	mov	al, 0		; no loopback
 	out	dx, al
 
+; clear packet/byte counters
+
+	lea	edi, [ebp+device.bytes_tx]
+	mov	ecx, 6
+	rep	stosd
+
 
 ; Indicate that we have successfully reset the card
 	DEBUGF	2,"Done!\n"
@@ -792,6 +800,12 @@ transmit:
 	out	dx, al
 
 	DEBUGF	2," - Packet Sent!\n"
+
+	inc	[ebp+device.packets_tx] 	 ;
+	mov	eax, [esp+4]			 ; Get packet size in eax
+
+	add	dword [ebp + device.bytes_tx], eax
+	adc	dword [ebp + device.bytes_tx + 4], 0
 .finish:
 	mov	ebx, ebp
 
@@ -818,13 +832,13 @@ int_handler:
 .nextdevice:
 	mov	ebp, dword [esi]
 
-	set_io	0		; We chould check ISR instead..
+	set_io	0
 	set_io	P0_ISR
 	in	al, dx
 
 	DEBUGF	2,"isr %x ",eax:2
 
-	test	al, ISR_PRX
+	test	al, ISR_PRX    ; packet received ok ?
 	jnz	.rx
 
 	add	esi, 4
@@ -832,11 +846,18 @@ int_handler:
 	loop	.nextdevice
 	ret
 
-; looks like we've found it!
+
+
+; looks like we've found a device wich received a packet..
 .rx:
+	stdcall KernelAlloc, ETH_FRAME_LEN  ; size doesnt really matter as packet size is smaller then kernel's page size
+	test	eax, eax
+	jz	.fail_2
 
+;--------------------------------------
+; allocate memory for temp variables in stack
 
-	sub	esp, 14+8			  ; allocate memory for temp variables in stack
+	sub	esp, 14+8
 
 	eth_type	equ esp
 	pkthdr		equ esp + 2
@@ -844,10 +865,13 @@ int_handler:
 	eth_rx_data_ptr equ esp + 8
 	eth_tmp_len	equ esp + 12
 
+; These will be used by eth_receiver when the packet gets there
+
 	pointer 	equ esp + 14
 	size		equ esp + 18
 
-	stdcall KernelAlloc, ETH_FRAME_LEN
+;-------------------------------------
+
 	mov	[pointer], eax
 	mov	[eth_rx_data_ptr], eax
 
@@ -910,10 +934,14 @@ int_handler:
 	add	word[pktoff] , 4
 
 	xor	eax, eax
-	mov	ax, [pkthdr + 2]
-	sub	ax, 4
+	mov	ax , [pkthdr + 2]
+	sub	ax , 4
 
 	DEBUGF	2,"Received %u bytes\n",eax
+
+	add	dword [ebp + device.bytes_rx], eax  ; Update stats
+	adc	dword [ebp + device.bytes_rx + 4], 0
+	inc	dword [ebp + device.packets_rx]     ;
 
 	mov	[eth_tmp_len], ax
 	mov	dword[size], eax
@@ -921,34 +949,38 @@ int_handler:
 	cmp	ax, ETH_ZLEN
 	jb	.fail
 
-	cmp	ax, ETH_FRAME_LEN
+	cmp	ax , ETH_FRAME_LEN
 	ja	.fail
 
-	mov	al, [pkthdr]
-	test	al, RSTAT_PRX
+	mov	al , [pkthdr]
+	test	al , RSTAT_PRX
 	jz	.fail
 
    ; Right, we can now get the data
 
-	mov	bh, [ebp + device.memsize]
-	sub	bx, [pktoff]
+	xor	ebx, ebx
+	mov	bh , [ebp + device.memsize]
+	sub	bx , [pktoff]
 
 	cmp	[eth_tmp_len], bx
 	jbe	.nsp_005
 
-	mov	al, [ebp + device.flags]
-	test	al, FLAG_PIO
+	DEBUGF	2,"tadaa!\n"
+
+	mov	al , [ebp + device.flags]
+	test	al , FLAG_PIO
 	jz	.nsp_006
 
-	push	bx
-	mov	cx, bx
-	mov	bx, [pktoff]
-	mov	edi, [eth_rx_data_ptr]
+	push	ebx
+	mov	cx , bx
+	mov	bx , [pktoff+4]
+	mov	edi, [eth_rx_data_ptr+4]
 	call	eth_pio_read
-	pop	bx
+	pop	ebx
 	jmp	.nsp_007
 
 .nsp_006:
+	DEBUGF	2,"PIO mode not supported by HW!\n"
    ; Not implemented, as we are using PIO mode on this card
 
 .nsp_007:
@@ -975,6 +1007,7 @@ int_handler:
 	jmp	.nsp_009
 
 .nsp_008:
+	DEBUGF	2,"PIO mode not supported by HW!\n"
    ; Not implemented, as we are using PIO mode on this card
 
 .nsp_009:
@@ -990,13 +1023,15 @@ int_handler:
 	dec	al
 	out	dx, al
 
+	mov	ebx, ebp
 	add	esp, 14
 
 	mov	ebx, ebp
-	jmp	EthReceiver	;;;
+	jmp	EthReceiver	; send it to the kernel
 
 .fail:
 	add	esp, 14+8
+.fail_2:
 	DEBUGF	2,"done\n"
 ret
 
@@ -1011,7 +1046,7 @@ ret
 ;;;;;;;;;;;;;;;;;;;;;;;
 
 align 4
-write_mac:	; in: mac on stack
+write_mac:	; in: mac on stack (6 bytes)
 
 	mov	ebp, ebx	;---
 
@@ -1062,9 +1097,6 @@ read_mac:
 ;        inc     dx
 ;        loopw   .loop
 ;
-;        lea     edi, [ebp + device.mac]
-;        DEBUGF  1,"%x-%x-%x-%x-%x-%x\n",[edi+0]:2,[edi+1]:2,[edi+2]:2,[edi+3]:2,[edi+4]:2,[edi+5]:2
-;
 ;        set_io  0
 ;        mov     al, CMD_PS0; + CMD_RD2 + CMD_STA  ; set page back to 0
 ;        out     dx, al
@@ -1087,6 +1119,7 @@ read_mac:
   .8bit:
 	loop	.loop
 
+	DEBUGF	1,"%x-%x-%x-%x-%x-%x\n",[edi-6]:2,[edi-5]:2,[edi-4]:2,[edi-3]:2,[edi-2]:2,[edi-1]:2
 
 	mov	ebx, ebp	;---
 
@@ -1261,24 +1294,21 @@ align 4
 
 ne2000_DEV	dd 0
 version 	dd (5 shl 16) or (API_VERSION and 0xFFFF)
-my_service	db 'ne2000',0  ;max 16 chars include zero
-devicename	db 'Realtek 8029',0
-		db 'Realtek 8019',0
-		db 'Realtek 8019AS',0
-		db 'ne2000',0
-		db 'DP8390',0
+my_service	db 'RTL8029/ne2000',0  ;max 16 chars include zero
+
+device_1	db 'Realtek 8029',0
+device_2	db 'Realtek 8019',0
+device_3	db 'Realtek 8019AS',0
+device_4	db 'ne2000',0
+device_5	db 'DP8390',0
 
 test_data	db 'NE*000 memory',0
-;test_buffer     db '             ',0
 
 include_debug_strings
 
-section '.data' data readable writable align 16
+section '.data' data readable writable align 16  ;place all uninitialized data place here
 
-;place all uninitialized data place here
-
-ne2000_LIST:
-rd MAX_ne2000
+ne2000_LIST	rd MAX_ne2000
 
 
 

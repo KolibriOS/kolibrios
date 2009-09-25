@@ -362,7 +362,7 @@ proc service_proc stdcall, ioctl:dword
 	mov	dword [ebx+device.get_MAC], read_mac
 	mov	dword [ebx+device.set_MAC], write_mac
 	mov	dword [ebx+device.unload], unload
-	mov	dword [ebx+device.name], devicename
+	mov	dword [ebx+device.name], my_service
 
 ; save the pci bus and device numbers
 
@@ -554,6 +554,13 @@ probe:
 	xor	cl , cl ; default RTL8139
   .chip_ver_found:
 	mov	[ebx+device.hw_ver_id], cl
+
+	shl	ecx, 2
+	add	ecx, name_crosslist
+	mov	ecx, [ecx]
+	mov	dword [ebx+device.name], ecx
+
+	DEBUGF	1,"Chip version: %s\n",ecx
 
 ; wake up the chip
 
@@ -1290,7 +1297,24 @@ align 4 					; Place all initialised data here
 RTL8139_DEV   dd 0
 version       dd (5 shl 16) or (API_VERSION and 0xFFFF)
 my_service    db 'RTL8139',0			; max 16 chars include zero
-devicename    db 'Realtek 8139',0
+
+device_1      db 'Realtek 8139',0
+device_2      db 'Realtek 8139A',0
+device_3      db 'Realtek 8139B',0
+device_4      db 'Realtek 8139C',0
+device_5      db 'Realtek 8100',0
+device_6      db 'Realtek 8139D',0
+device_7      db 'Realtek 8139CP',0
+device_8      db 'Realtek 8101',0
+
+name_crosslist dd device_1
+	       dd device_2
+	       dd device_3
+	       dd device_4
+	       dd device_5
+	       dd device_6
+	       dd device_7
+	       dd device_8
 
 hw_ver_array  db VER_RTL8139			; This array is used by the probe routine to find out wich version of the RTL8139 we are working with
 	      db VER_RTL8139A
