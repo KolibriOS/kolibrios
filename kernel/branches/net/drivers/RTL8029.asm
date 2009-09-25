@@ -193,7 +193,7 @@ macro set_io addr {
 	if	addr = 0
 		mov	dx, [ebp + device.io_addr]
 	else
-		add	dx, addr - LAST_IO
+		add	edx, addr - LAST_IO
 	end if
 
 	LAST_IO = addr
@@ -234,10 +234,11 @@ endp
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 align 4
-proc service_proc stdcall, ioctl:dword
+proc service_proc ;stdcall, ioctl:dword
+	push	ebp
 
-	mov	edx, [ioctl]
-	mov	eax, [ebx+IOCTL.io_code]
+	mov	edx, [esp+8];[ioctl]
+	mov	eax, [edx+IOCTL.io_code]
 
 ;------------------------------------------------------
 		       ;---------------
@@ -250,7 +251,8 @@ proc service_proc stdcall, ioctl:dword
 	mov	[eax], dword API_VERSION
 
 	xor	eax, eax
-	ret
+	pop	ebp
+	ret	4
 
 ;------------------------------------------------------
   @@:		       ;---------
@@ -374,7 +376,11 @@ proc service_proc stdcall, ioctl:dword
 	mov	[ne2000_LIST+4*eax], ebx
 	inc	[ne2000_DEV]
 
-	jmp	EthRegDev				     ; Register the device to kernel (ebx points to device struct)
+	call	EthRegDev				     ; Register the device to kernel (ebx points to device struct)
+	cmp	eax, -1
+	jz	.err
+	pop	ebp
+	ret	4
 
   .err:
 	stdcall KernelFree, ebx
@@ -385,7 +391,8 @@ proc service_proc stdcall, ioctl:dword
   @@:
 .fail:
 	or	eax, -1
-	ret
+	pop	ebp
+	ret	4
 
 ;------------------------------------------------------
 endp
@@ -462,7 +469,7 @@ probe:
 	or	[ebp + device.flags], FLAG_16BIT or FLAG_PIO
 	mov	[ebp + device.memsize], MEM_32768
 	mov	[ebp + device.tx_start], 64
-	add	[ebp + device.rx_start], TXBUF_SIZE + 64
+	mov	[ebp + device.rx_start], TXBUF_SIZE + 64
 
 	set_io	0
 	set_io	P0_DCR

@@ -1193,9 +1193,9 @@ read_mac:
 
 	mov	edx, [ebx + device.io_addr]
 	lea	edi, [ebx + device.mac]
-	in	eax, edx
+	in	eax, dx
 	stosd
-	add	dx, 4
+	add	edx, 4
 	in	ax, dx
 	stosw
 
