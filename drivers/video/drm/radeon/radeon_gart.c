@@ -75,10 +75,9 @@ void radeon_gart_table_ram_free(struct radeon_device *rdev)
 
 int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
 {
-    uint32_t gpu_addr;
     int r;
 
-    dbgprintf("%s\n",__FUNCTION__);
+    ENTER();
 
     if (rdev->gart.table.vram.robj == NULL) {
         r = radeon_object_create(rdev, NULL,
@@ -90,6 +89,14 @@ int radeon_gart_table_vram_alloc(struct radeon_device *rdev)
             return r;
         }
     }
+	return 0;
+}
+
+int radeon_gart_table_vram_pin(struct radeon_device *rdev)
+{
+	uint64_t gpu_addr;
+	int r;
+
     r = radeon_object_pin(rdev->gart.table.vram.robj,
                   RADEON_GEM_DOMAIN_VRAM, &gpu_addr);
     if (r) {
@@ -175,7 +182,8 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
     uint64_t page_base;
     int i, j;
 
-    dbgprintf("%s  ",__FUNCTION__);
+    ENTER();
+
     dbgprintf("offset %x pages %x list %x\n",
                offset, pages, pagelist);
 
@@ -207,7 +215,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
     mb();
     radeon_gart_tlb_flush(rdev);
 
-    dbgprintf("done %s\n",__FUNCTION__);
+    LEAVE();
 
     return 0;
 }
@@ -215,7 +223,7 @@ int radeon_gart_bind(struct radeon_device *rdev, unsigned offset,
 int radeon_gart_init(struct radeon_device *rdev)
 {
 
-    dbgprintf("%s\n",__FUNCTION__);
+    ENTER();
 
     if (rdev->gart.pages) {
         return 0;

@@ -31,8 +31,6 @@
 
 /* r520,rv530,rv560,rv570,r580 depends on : */
 void r100_hdp_reset(struct radeon_device *rdev);
-int rv370_pcie_gart_enable(struct radeon_device *rdev);
-void rv370_pcie_gart_disable(struct radeon_device *rdev);
 void r420_pipes_init(struct radeon_device *rdev);
 void rs600_mc_disable_clients(struct radeon_device *rdev);
 void rs600_disable_vga(struct radeon_device *rdev);
@@ -47,6 +45,7 @@ int rv515_debugfs_ga_info_init(struct radeon_device *rdev);
 void r520_gpu_init(struct radeon_device *rdev);
 int r520_mc_wait_for_idle(struct radeon_device *rdev);
 
+
 /*
  * MC
  */
@@ -55,7 +54,7 @@ int r520_mc_init(struct radeon_device *rdev)
 	uint32_t tmp;
 	int r;
 
-    dbgprintf("%s\n",__FUNCTION__);
+       ENTER();
 
    if (r100_debugfs_rbbm_init(rdev)) {
        DRM_ERROR("Failed to register debugfs file for RBBM !\n");
@@ -73,16 +72,6 @@ int r520_mc_init(struct radeon_device *rdev)
 	/* Setup GPU memory space */
 	rdev->mc.vram_location = 0xFFFFFFFFUL;
 	rdev->mc.gtt_location = 0xFFFFFFFFUL;
-	if (rdev->flags & RADEON_IS_AGP) {
-		r = radeon_agp_init(rdev);
-		if (r) {
-			printk(KERN_WARNING "[drm] Disabling AGP\n");
-			rdev->flags &= ~RADEON_IS_AGP;
-			rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
-		} else {
-			rdev->mc.gtt_location = rdev->mc.agp_base;
-		}
-	}
 	r = radeon_mc_setup(rdev);
 	if (r) {
 		return r;
@@ -95,8 +84,8 @@ int r520_mc_init(struct radeon_device *rdev)
 		       "programming pipes. Bad things might happen.\n");
 	}
 	/* Write VRAM size in case we are limiting it */
-	WREG32(RADEON_CONFIG_MEMSIZE, rdev->mc.vram_size);
-	tmp = rdev->mc.vram_location + rdev->mc.vram_size - 1;
+	WREG32(RADEON_CONFIG_MEMSIZE, rdev->mc.real_vram_size);
+	tmp = rdev->mc.vram_location + rdev->mc.mc_vram_size - 1;
 	tmp = REG_SET(R520_MC_FB_TOP, tmp >> 16);
 	tmp |= REG_SET(R520_MC_FB_START, rdev->mc.vram_location >> 16);
 	WREG32_MC(R520_MC_FB_LOCATION, tmp);
@@ -115,16 +104,13 @@ int r520_mc_init(struct radeon_device *rdev)
 		WREG32_MC(R520_MC_AGP_BASE_2, 0);
 	}
 
-    dbgprintf("done: %s\n",__FUNCTION__);
+    LEAVE();
 
 	return 0;
 }
 
 void r520_mc_fini(struct radeon_device *rdev)
 {
-	rv370_pcie_gart_disable(rdev);
-	radeon_gart_table_vram_free(rdev);
-	radeon_gart_fini(rdev);
 }
 
 
@@ -155,7 +141,7 @@ int r520_mc_wait_for_idle(struct radeon_device *rdev)
 void r520_gpu_init(struct radeon_device *rdev)
 {
 	unsigned pipe_select_current, gb_pipe_select, tmp;
-    dbgprintf("%s\n",__FUNCTION__);
+    ENTER();
 
 	r100_hdp_reset(rdev);
 	rs600_disable_vga(rdev);
@@ -181,7 +167,6 @@ void r520_gpu_init(struct radeon_device *rdev)
 	 */
 	/* workaround for RV530 */
 	if (rdev->family == CHIP_RV530) {
-		WREG32(0x4124, 1);
 		WREG32(0x4128, 0xFF);
 	}
 	r420_pipes_init(rdev);
@@ -204,7 +189,7 @@ void r520_gpu_init(struct radeon_device *rdev)
 static void r520_vram_get_type(struct radeon_device *rdev)
 {
 	uint32_t tmp;
-    dbgprintf("%s\n",__FUNCTION__);
+    ENTER();
 
 	rdev->mc.vram_width = 128;
 	rdev->mc.vram_is_ddr = true;
@@ -232,164 +217,20 @@ static void r520_vram_get_type(struct radeon_device *rdev)
 
 void r520_vram_info(struct radeon_device *rdev)
 {
+	fixed20_12 a;
+
 	r520_vram_get_type(rdev);
-	rdev->mc.vram_size = RREG32(RADEON_CONFIG_MEMSIZE);
 
-	rdev->mc.aper_base = drm_get_resource_start(rdev->ddev, 0);
-	rdev->mc.aper_size = drm_get_resource_len(rdev->ddev, 0);
+	r100_vram_init_sizes(rdev);
+	/* FIXME: we should enforce default clock in case GPU is not in
+	 * default setup
+	 */
+	a.full = rfixed_const(100);
+	rdev->pm.sclk.full = rfixed_const(rdev->clock.default_sclk);
+	rdev->pm.sclk.full = rfixed_div(rdev->pm.sclk, a);
 }
 
-
-int radeon_agp_init(struct radeon_device *rdev)
+void r520_bandwidth_update(struct radeon_device *rdev)
 {
-
-    dbgprintf("%s\n",__FUNCTION__);
-
-#if __OS_HAS_AGP
-    struct radeon_agpmode_quirk *p = radeon_agpmode_quirk_list;
-    struct drm_agp_mode mode;
-    struct drm_agp_info info;
-    uint32_t agp_status;
-    int default_mode;
-    bool is_v3;
-    int ret;
-
-    /* Acquire AGP. */
-    if (!rdev->ddev->agp->acquired) {
-        ret = drm_agp_acquire(rdev->ddev);
-        if (ret) {
-            DRM_ERROR("Unable to acquire AGP: %d\n", ret);
-            return ret;
-        }
-    }
-
-    ret = drm_agp_info(rdev->ddev, &info);
-    if (ret) {
-        DRM_ERROR("Unable to get AGP info: %d\n", ret);
-        return ret;
-    }
-    mode.mode = info.mode;
-    agp_status = (RREG32(RADEON_AGP_STATUS) | RADEON_AGPv3_MODE) & mode.mode;
-    is_v3 = !!(agp_status & RADEON_AGPv3_MODE);
-
-    if (is_v3) {
-        default_mode = (agp_status & RADEON_AGPv3_8X_MODE) ? 8 : 4;
-    } else {
-        if (agp_status & RADEON_AGP_4X_MODE) {
-            default_mode = 4;
-        } else if (agp_status & RADEON_AGP_2X_MODE) {
-            default_mode = 2;
-        } else {
-            default_mode = 1;
-        }
-    }
-
-    /* Apply AGPMode Quirks */
-    while (p && p->chip_device != 0) {
-        if (info.id_vendor == p->hostbridge_vendor &&
-            info.id_device == p->hostbridge_device &&
-            rdev->pdev->vendor == p->chip_vendor &&
-            rdev->pdev->device == p->chip_device &&
-            rdev->pdev->subsystem_vendor == p->subsys_vendor &&
-            rdev->pdev->subsystem_device == p->subsys_device) {
-            default_mode = p->default_mode;
-        }
-        ++p;
-    }
-
-    if (radeon_agpmode > 0) {
-        if ((radeon_agpmode < (is_v3 ? 4 : 1)) ||
-            (radeon_agpmode > (is_v3 ? 8 : 4)) ||
-            (radeon_agpmode & (radeon_agpmode - 1))) {
-            DRM_ERROR("Illegal AGP Mode: %d (valid %s), leaving at %d\n",
-                  radeon_agpmode, is_v3 ? "4, 8" : "1, 2, 4",
-                  default_mode);
-            radeon_agpmode = default_mode;
-        } else {
-            DRM_INFO("AGP mode requested: %d\n", radeon_agpmode);
-        }
-    } else {
-        radeon_agpmode = default_mode;
-    }
-
-    mode.mode &= ~RADEON_AGP_MODE_MASK;
-    if (is_v3) {
-        switch (radeon_agpmode) {
-        case 8:
-            mode.mode |= RADEON_AGPv3_8X_MODE;
-            break;
-        case 4:
-        default:
-            mode.mode |= RADEON_AGPv3_4X_MODE;
-            break;
-        }
-    } else {
-        switch (radeon_agpmode) {
-        case 4:
-            mode.mode |= RADEON_AGP_4X_MODE;
-            break;
-        case 2:
-            mode.mode |= RADEON_AGP_2X_MODE;
-            break;
-        case 1:
-        default:
-            mode.mode |= RADEON_AGP_1X_MODE;
-            break;
-        }
-    }
-
-    mode.mode &= ~RADEON_AGP_FW_MODE; /* disable fw */
-    ret = drm_agp_enable(rdev->ddev, mode);
-    if (ret) {
-        DRM_ERROR("Unable to enable AGP (mode = 0x%lx)\n", mode.mode);
-        return ret;
-    }
-
-    rdev->mc.agp_base = rdev->ddev->agp->agp_info.aper_base;
-    rdev->mc.gtt_size = rdev->ddev->agp->agp_info.aper_size << 20;
-
-    /* workaround some hw issues */
-    if (rdev->family < CHIP_R200) {
-        WREG32(RADEON_AGP_CNTL, RREG32(RADEON_AGP_CNTL) | 0x000e0000);
-    }
-    return 0;
-#else
-    return 0;
-#endif
+	rv515_bandwidth_avivo_update(rdev);
 }
-
-
-
-
-void rv370_pcie_gart_tlb_flush(struct radeon_device *rdev);
-
-
-
-
-int radeon_fence_driver_init(struct radeon_device *rdev)
-{
-    unsigned long irq_flags;
-    int r;
-
-//    write_lock_irqsave(&rdev->fence_drv.lock, irq_flags);
-    r = radeon_scratch_get(rdev, &rdev->fence_drv.scratch_reg);
-    if (r) {
-        DRM_ERROR("Fence failed to get a scratch register.");
-//        write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
-        return r;
-    }
-    WREG32(rdev->fence_drv.scratch_reg, 0);
-//    atomic_set(&rdev->fence_drv.seq, 0);
-//    INIT_LIST_HEAD(&rdev->fence_drv.created);
-//    INIT_LIST_HEAD(&rdev->fence_drv.emited);
-//    INIT_LIST_HEAD(&rdev->fence_drv.signaled);
-    rdev->fence_drv.count_timeout = 0;
-//    init_waitqueue_head(&rdev->fence_drv.queue);
-//    write_unlock_irqrestore(&rdev->fence_drv.lock, irq_flags);
-//    if (radeon_debugfs_fence_init(rdev)) {
-//        DRM_ERROR("Failed to register debugfs file for fence !\n");
-//    }
-    return 0;
-}
-
-

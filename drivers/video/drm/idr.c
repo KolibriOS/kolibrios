@@ -27,6 +27,10 @@
  */
 
 #include <linux/idr.h>
+#include <stdlib.h>
+#include "drm.h"
+#include "drmP.h"
+#include "drm_crtc.h"
 
 #define ADDR "=m" (*(volatile long *) addr)
 
@@ -244,8 +248,8 @@ int idr_pre_get(struct idr *idp, u32_t gfp_mask)
        if (new == NULL)
            return (0);
        move_to_free_list(idp, new);
-    }
-	return 1;
+   }
+   return 1;
 }
 EXPORT_SYMBOL(idr_pre_get);
 
@@ -418,16 +422,18 @@ static int idr_get_new_above_int(struct idr *idp, void *ptr, int starting_id)
 int idr_get_new_above(struct idr *idp, void *ptr, int starting_id, int *id)
 {
 	int rv;
-
-	rv = idr_get_new_above_int(idp, ptr, starting_id);
+    rv = idr_get_new_above_int(idp, ptr, starting_id);
 	/*
 	 * This is a cheap hack until the IDR code can be fixed to
 	 * return proper error values.
 	 */
 	if (rv < 0)
-		return _idr_rc_to_errno(rv);
+    {
+        dbgprintf("fail\n");
+        return _idr_rc_to_errno(rv);
+    };
 	*id = rv;
-	return 0;
+    return 0;
 }
 EXPORT_SYMBOL(idr_get_new_above);
 

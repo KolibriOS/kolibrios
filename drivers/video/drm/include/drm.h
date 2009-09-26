@@ -36,7 +36,7 @@
 #ifndef _DRM_H_
 #define _DRM_H_
 
-#include <types.h>
+#include <linux/types.h>
 #include <errno-base.h>
 
 //#include <asm/ioctl.h>     /* For _IO* macros */
@@ -740,5 +740,8 @@ typedef struct drm_agp_info drm_agp_info_t;
 typedef struct drm_scatter_gather drm_scatter_gather_t;
 typedef struct drm_set_version drm_set_version_t;
 #endif
+
+#define mutex_lock(x)
+#define mutex_unlock(x)
 
 #endif

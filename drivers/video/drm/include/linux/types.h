@@ -2,11 +2,19 @@
 #ifndef __TYPES_H__
 #define __TYPES_H__
 
+# define __iomem
+# define __force
+# define __user
+
+# define WARN(condition, format...)
 
 typedef int                  bool;
 
 #define false                0
 #define true                 1
+
+typedef int                  ssize_t;
+typedef long long            loff_t;
 
 typedef unsigned int         size_t;
 typedef unsigned int         count_t;
@@ -39,6 +47,7 @@ typedef unsigned int         u32_t;
 typedef unsigned long long   u64_t;
 
 typedef signed char          int8_t;
+typedef signed int           int32_t;
 typedef signed long long     int64_t;
 
 #define  NULL     (void*)0
@@ -46,7 +55,6 @@ typedef signed long long     int64_t;
 typedef uint32_t             dma_addr_t;
 typedef uint32_t             resource_size_t;
 
-#define __user
 
 #define cpu_to_le16(v16) (v16)
 #define cpu_to_le32(v32) (v32)
@@ -161,8 +169,10 @@ struct drm_file;
 #define DRM_MEMORYBARRIER() __asm__ __volatile__("lock; addl $0,0(%esp)")
 #define mb() __asm__ __volatile__("lock; addl $0,0(%esp)")
 
-#define PAGE_SIZE 4096
+
 #define PAGE_SHIFT      12
+#define PAGE_SIZE       (1UL << PAGE_SHIFT)
+#define PAGE_MASK       (~(PAGE_SIZE-1))
 
 #define upper_32_bits(n) ((u32)(((n) >> 16) >> 16))
 
@@ -225,12 +235,13 @@ static inline void *kcalloc(size_t n, size_t size, u32_t flags)
         return kzalloc(n * size, 0);
 }
 
-#define ENTRY()   dbgprintf("enter %s\n",__FUNCTION__)
+#define ENTER()   dbgprintf("enter %s\n",__FUNCTION__)
 #define LEAVE()   dbgprintf("leave %s\n",__FUNCTION__)
 
 #define ALIGN(x,a)              __ALIGN_MASK(x,(typeof(x))(a)-1)
 #define __ALIGN_MASK(x,mask)    (((x)+(mask))&~(mask))
 
 #define PCI_DEVICE_ID_ATI_RADEON_QY 0x5159
+
 
 #endif  //__TYPES_H__

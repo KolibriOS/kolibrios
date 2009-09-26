@@ -4,7 +4,6 @@ FASM = e:/fasm/fasm.exe
 CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf 
 LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0 --file-alignment 512 --section-alignment 4096
 
-
 DRM_TOPDIR   = $(CURDIR)/..
 DRM_INCLUDES = $(DRM_TOPDIR)/include
 
@@ -14,16 +13,16 @@ LIBS:=    -ldrv -lcore
 
 NAME:=	  atikms
 
-INCLUDES = -I $(DRM_INCLUDES) -I $(DRM_INCLUDES)/ttm 
+INCLUDES = -I $(DRM_INCLUDES) -I $(DRM_INCLUDES)/linux -I $(DRM_INCLUDES)/drm
 
-HFILES:=     		$(DRM_INCLUDES)/types.h		\
-			$(DRM_INCLUDES)/list.h		\
+HFILES:=     		$(DRM_INCLUDES)/linux/types.h		\
+			$(DRM_INCLUDES)/linux/list.h		\
 			$(DRM_INCLUDES)/pci.h		\
 			$(DRM_INCLUDES)/drm.h			\
-			$(DRM_INCLUDES)/drmP.h			\
+			$(DRM_INCLUDES)/drm/drmP.h		\
 			$(DRM_INCLUDES)/drm_edid.h		\
-			$(DRM_INCLUDES)/drm_crtc.h		\
-			$(DRM_INCLUDES)/drm_mode.h		\
+			$(DRM_INCLUDES)/drm/drm_crtc.h		\
+			$(DRM_INCLUDES)/drm/drm_mode.h		\
 			$(DRM_INCLUDES)/drm_mm.h		\
 			atom.h					\
 			radeon.h				\
@@ -36,6 +35,7 @@ NAME_SRC=							\
 			$(DRM_TOPDIR)/drm_modes.c		\
 			$(DRM_TOPDIR)/drm_crtc.c		\
 			$(DRM_TOPDIR)/drm_crtc_helper.c		\
+			$(DRM_TOPDIR)/drm_fb_helper.c		\
 			$(DRM_TOPDIR)/i2c/i2c-core.c		\
 			$(DRM_TOPDIR)/i2c/i2c-algo-bit.c	\
 			$(DRM_TOPDIR)/idr.c			\
@@ -52,11 +52,14 @@ NAME_SRC=							\
 			radeon_combios.c			\
 			radeon_legacy_crtc.c			\
 			radeon_legacy_encoders.c		\
+			radeon_legacy_tv.c			\
 			radeon_display.c			\
+			radeon_cursor.c				\
 			radeon_object.c				\
 			radeon_gart.c				\
 			radeon_ring.c				\
 			r100.c					\
+			r200.c					\
 			r300.c					\
 			r420.c					\
 			rv515.c					\
@@ -71,8 +74,8 @@ NAME_SRC=							\
 SRC_DEP:=    
 
 
-NAME_OBJS =  $(patsubst %.s, %.obj, $(patsubst %.asm, %.obj,\
-            $(patsubst %.c, %.obj, $(NAME_SRC))))
+NAME_OBJS =  $(patsubst %.s, %.o, $(patsubst %.asm, %.o,\
+            $(patsubst %.c, %.o, $(NAME_SRC))))
 
 
 
@@ -82,5 +85,5 @@ $(NAME).dll: $(NAME_OBJS) $(SRC_DEP) $(HFILES) atikms.lds Makefile
 	ld -L$(LIBPATH) $(LDFLAGS) -T atikms.lds -o $@ $(NAME_OBJS) vsprintf.obj icompute.obj $(LIBS)  
 
 
-%.obj : %.c $(HFILES) Makefile
+%.o : %.c $(HFILES) Makefile
 	$(CC) $(CFLAGS) $(DEFINES) $(INCLUDES) -o $@ -c $<

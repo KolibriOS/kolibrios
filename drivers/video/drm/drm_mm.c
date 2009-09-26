@@ -44,6 +44,7 @@
 #include "drmP.h"
 #include "drm_mm.h"
 //#include <linux/slab.h>
+#include <linux/seq_file.h>
 
 #define MM_UNUSED_TARGET 4
 

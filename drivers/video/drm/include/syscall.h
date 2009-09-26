@@ -21,7 +21,7 @@ typedef int (__stdcall *srv_proc_t)(ioctl_t *);
 #define ERR_PARAM   -1
 
 
-u32_t __stdcall drvEntry(int)__asm__("_drvEntry");
+u32_t drvEntry(int, char *)__asm__("_drvEntry");
 
 ///////////////////////////////////////////////////////////////////////////////
 

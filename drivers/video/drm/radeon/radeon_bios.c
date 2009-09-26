@@ -35,7 +35,7 @@
  */
 static bool radeon_read_bios(struct radeon_device *rdev)
 {
-    uint8_t  *bios;
+	uint8_t __iomem *bios;
     size_t    size;
 
 	rdev->bios = NULL;
@@ -48,7 +48,7 @@ static bool radeon_read_bios(struct radeon_device *rdev)
 //       pci_unmap_rom(rdev->pdev, bios);
 		return false;
 	}
-    rdev->bios = malloc(size);
+	rdev->bios = kmalloc(size, GFP_KERNEL);
 	if (rdev->bios == NULL) {
 //       pci_unmap_rom(rdev->pdev, bios);
 		return false;
@@ -57,7 +57,6 @@ static bool radeon_read_bios(struct radeon_device *rdev)
 //   pci_unmap_rom(rdev->pdev, bios);
 	return true;
 }
-
 
 static bool r700_read_disabled_bios(struct radeon_device *rdev)
 {
@@ -352,13 +351,10 @@ static bool radeon_read_disabled_bios(struct radeon_device *rdev)
 		return legacy_read_disabled_bios(rdev);
 }
 
-
 bool radeon_get_bios(struct radeon_device *rdev)
 {
 	bool r;
 	uint16_t tmp;
-
-    dbgprintf("%s\n\r",__FUNCTION__);
 
 	r = radeon_read_bios(rdev);
 	if (r == false) {
@@ -385,7 +381,7 @@ bool radeon_get_bios(struct radeon_device *rdev)
 		rdev->is_atom_bios = false;
 	}
 
-    dbgprintf("%sBIOS detected\n", rdev->is_atom_bios ? "ATOM" : "COM");
+	DRM_DEBUG("%sBIOS detected\n", rdev->is_atom_bios ? "ATOM" : "COM");
 	return true;
 free_bios:
 	kfree(rdev->bios);

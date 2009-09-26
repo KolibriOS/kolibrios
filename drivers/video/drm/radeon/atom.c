@@ -22,11 +22,8 @@
  * Author: Stanislaw Skowronek
  */
 
-//#include <linux/module.h>
-//#include <linux/sched.h>
-
-#include <types.h>
-#include <syscall.h>
+#include <linux/module.h>
+#include <linux/sched.h>
 
 #define ATOM_DEBUG
 
@@ -1164,9 +1161,6 @@ struct atom_context *atom_parse(struct card_info *card, void *bios)
 
 int atom_asic_init(struct atom_context *ctx)
 {
-
-    dbgprintf("%s\n",__FUNCTION__);
-
 	int hwi = CU16(ctx->data_table + ATOM_DATA_FWI_PTR);
 	uint32_t ps[16];
 	memset(ps, 0, 64);
