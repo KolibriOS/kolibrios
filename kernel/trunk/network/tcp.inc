@@ -692,6 +692,36 @@ proc tcpStateMachine stdcall, sockAddr:DWORD
 	ret
 endp
 
+;***************************************************************************
+;   Function
+;      signal_network_event
+;
+;   Description
+;       Signals about network event to socket owner
+;       This is a kernel function, called from TCP handler 
+;
+;          Socket/TCB address in ebx
+;***************************************************************************
+proc signal_network_event
+	push	ecx esi eax
+	mov	eax, [ebx + SOCKET.PID]
+	mov	ecx, 1
+	mov	esi, TASK_DATA + TASKDATA.pid
+
+  .next_pid:
+	cmp	[esi], eax
+	je	.found_pid
+	inc	ecx
+	add	esi, 0x20
+	cmp	ecx, [TASK_COUNT]
+	jbe	.next_pid
+
+  .found_pid:
+	shl	ecx, 8
+	or	[ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK ; stack event
+	pop	eax esi ecx
+	ret
+endp
 
 proc stateTCB_LISTEN stdcall, sockAddr:DWORD
 	; In this case, we are expecting a SYN packet
@@ -723,6 +753,7 @@ proc stateTCB_LISTEN stdcall, sockAddr:DWORD
 	cmp	ax, NO_BUFFER
 	je	.exit
 
+	push	ebx
 	push	eax
 	mov	bl, TH_SYN + TH_ACK
 	xor	ecx, ecx
@@ -741,8 +772,10 @@ proc stateTCB_LISTEN stdcall, sockAddr:DWORD
 	pop	ebx
 	call	queue
 
+	pop	ebx
 	mov	esi, [sockAddr]
 	mov	[esi + SOCKET.TCBState], TCB_SYN_RECEIVED
+	call	signal_network_event
 
 	; increment SND.NXT in socket
 	add	esi, SOCKET.SND_NXT
@@ -774,6 +807,7 @@ proc stateTCB_SYN_SENT stdcall, sockAddr:DWORD
 	push	TH_ACK
 
   .send:
+	call	signal_network_event
 	; Store the recv.nxt field
 	mov	eax, [edx + 20 + TCP_PACKET.SequenceNumber]
 
@@ -825,7 +859,7 @@ proc stateTCB_SYN_RECEIVED stdcall, sockAddr:DWORD
 	pop	[ebx + SOCKET.RemoteIP] [ebx + SOCKET.RemotePort]
 
 	mov	[ebx + SOCKET.TCBState], TCB_LISTEN
-	jmp	.exit
+	jmp	.signal
 
   .check_ack:
 	; Look at control flags - expecting an ACK
@@ -833,6 +867,8 @@ proc stateTCB_SYN_RECEIVED stdcall, sockAddr:DWORD
 	jz	.exit
 
 	mov	[ebx + SOCKET.TCBState], TCB_ESTABLISHED
+  .signal:
+	call	signal_network_event
 
   .exit:
 	ret
@@ -842,6 +878,15 @@ endp
 proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	; Here we are expecting data, or a request to close
 	; OR both...
+
+	; Ignore all packets with sequnce number other than next expected
+
+	; recv.nxt is in dword [edx+24], in inet format
+	; recv seq is in [sktAddr]+56, in inet format
+	; just do a comparision
+	mov	eax, [ebx + SOCKET.RCV_NXT]
+	cmp	eax, [edx + 20 + TCP_PACKET.SequenceNumber]
+	jne	.exit
 
 	; Did we receive a FIN or RST?
 	test	[edx + 20 + TCP_PACKET.Flags], TH_FIN
@@ -878,6 +923,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
     @@: ; Send an ACK to that fin, and enter closewait state
 
 	mov	[ebx + SOCKET.TCBState], TCB_CLOSE_WAIT
+	call	signal_network_event
 	lea	esi, [ebx + SOCKET.RCV_NXT]
 	mov	eax, [esi]		; save original
 	call	inc_inet_esi
@@ -900,21 +946,6 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	mov	[ebx + SOCKET.wndsizeTimer], 1
 
     @@: ; OK, here is the deal
-	; My recv.nct field holds the seq of the expected next rec byte
-	; if the recevied sequence number is not equal to this, do not
-	; increment the recv.nxt field, do not copy data - just send a
-	; repeat ack.
-
-	; recv.nxt is in dword [edx+24], in inet format
-	; recv seq is in [sktAddr]+56, in inet format
-	; just do a comparision
-	mov	ecx, [ebx + SOCKET.RCV_NXT]
-	cmp	[ebx + SOCKET.TCBState], TCB_CLOSE_WAIT
-	jne	@f
-	mov	ecx, eax
-
-    @@: cmp	ecx, [edx + 20 + TCP_PACKET.SequenceNumber]
-	jne	.ack
 
 
 	; Read the data bytes, store in socket buffer
@@ -935,7 +966,7 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	pop	ebx
 
 	push	ecx
-	push	[ebx + SOCKET.PID]	; get socket owner PID
+	push	ebx
 	mov	eax, [ebx + SOCKET.rxDataCount]
 	add	eax, ecx
 	cmp	eax, SOCKETBUFFSIZE - SOCKETHEADERSIZE
@@ -955,21 +986,8 @@ proc stateTCB_ESTABLISHED stdcall, sockAddr:DWORD
 	mov	[ebx + SOCKET.lock], 0	; release mutex
 
 	; flag an event to the application
-	pop	eax
-	mov	ecx, 1
-	mov	esi, TASK_DATA + TASKDATA.pid
-
-  .next_pid:
-	cmp	[esi], eax
-	je	.found_pid
-	inc	ecx
-	add	esi, 0x20
-	cmp	ecx, [TASK_COUNT]
-	jbe	.next_pid
-
-  .found_pid:
-	shl	ecx, 8
-	or	[ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK ; stack event
+	pop	ebx
+	call	signal_network_event
 
 	pop	ecx
 
