@@ -110,7 +110,7 @@ sys_socket:
 	dec	bl
 	jz	socket_recv	; 7
 
-error:
+.error:
 	mov	dword [esp+32],-1
 
 	ret
