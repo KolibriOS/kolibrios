@@ -100,7 +100,7 @@ ETH_init:
 align 4
 ETH_Add_Device:
 
-	DEBUGF	1,"ETH_Add_Device: %x\n", ebx
+	DEBUGF	1,"ETH_Add_Device: %x ", ebx
 
 	mov	eax, [ETH_RUNNING]
 	cmp	eax, MAX_ETH_DEVICES
@@ -134,23 +134,8 @@ ETH_Add_Device:
 	mov	eax, edi		  ; edx = 4*device num
 	shr	eax, 2
 
-;        shr     eax, 1                    ; edx = 2*device num
-;        add     edi, eax                  ; edi = 6*device_num                   Meanwhile, calculate MAC offset in edi
-;        shr     eax, 1                    ; edx = device num
-;        add     edi, MAC_LIST             ; edi = MAC_LIST+6*device_num
-;        push    eax
-
-;        push    edi
-;        call    [ebx+ETH_DEVICE.get_MAC]  ; Get MAC address from driver
-;        pop     edi
-;
-;        stosd                             ; Write MAC address to the MAC list
-;        mov     ax, bx                    ;
-;        stosw                             ;
-
 	inc	[ETH_RUNNING]		  ; Indicate that one more ethernet device is up and running
 
-;        pop     eax                       ; Output device num in eax
 	DEBUGF	1,"- succes: %u\n",eax
 	ret
 

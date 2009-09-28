@@ -567,6 +567,99 @@ endp
 
 
 
+;---------------------------------------------------------------------------
+;
+; ARP_decrease_entry_ttls
+;
+; IN: /
+; OUT: /
+;
+;---------------------------------------------------------------------------
+
+align 4
+ARP_decrease_entry_ttls:
+
+	mov	ecx, [NumARP]
+	test	ecx, ecx
+	jz	.exit
+
+	mov	ebx, ARPTable
+
+.timer_loop:
+
+	movsx	esi, word [ebx + ARP_ENTRY.TTL]
+	cmp	esi, 0xFFFFFFFF
+	je	.timer_loop_end  ;if TTL==0xFFFF then it's static entry
+
+	test	esi, esi
+	jnz	.timer_loop_end_with_dec  ;if TTL!=0
+
+	; Ok, TTL is 0
+	;if Status==AWAITING_RESPONSE and TTL==0
+	;then we have to change it to ARP_RESPONSE_TIMEOUT
+	cmp	word [ebx + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
+	jne	@f
+
+	mov	word [ebx + ARP_ENTRY.Status], ARP_RESPONSE_TIMEOUT
+	mov	word [ebx + ARP_ENTRY.TTL], word 0x000A   ;10 sec
+	jmp	.timer_loop_end
+
+  @@:
+	;if TTL==0 and Status==VALID_MAPPING, we have to delete it
+	;if TTL==0 and Status==RESPONSE_TIMEOUT, delete too
+	mov	esi, dword[NumARP]
+	sub	esi, ecx	  ;esi=index of entry, will be deleted
+
+	call	ARP_del_entry
+
+	jmp	.timer_loop_end
+
+
+.timer_loop_end_with_dec:
+
+	dec	word [ebx + ARP_ENTRY.TTL]  ;decrease TTL
+
+.timer_loop_end:
+
+	add	ebx, ARP_ENTRY.size
+	loop	.timer_loop
+
+.exit:
+
+	ret
+
+
+;---------------------------------------------------------------------------
+;
+; ARP_del_entry
+;
+; IN: entry # in esi
+; OUT: /
+;
+;---------------------------------------------------------------------------
+
+align 4
+ARP_del_entry:
+
+	imul	esi, ARP_ENTRY.size
+
+	mov	ecx, (ARP_TABLE_SIZE - 1) * ARP_ENTRY.size
+	sub	ecx, esi
+
+	lea	edi, [ebx + esi]	    ;edi=ptr to entry that should be deleted
+	lea	esi, [edi + ARP_ENTRY.size] ;esi=ptr to next entry
+
+	shr	ecx,1	   ;ecx/2 => ARP_ENTRY_SIZE MUST BE EVEN NUMBER!
+	cld
+	rep	movsw
+
+	dec	dword[NumARP] ;decrease arp-entries counter
+	ret
+
+
+
+
+
 ;-----------------------------------------------------
 ;
 ; ARP_Handler:

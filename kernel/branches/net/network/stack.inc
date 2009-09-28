@@ -19,18 +19,6 @@
 
 $Revision: 983 $
 
-
-;*******************************************************************
-;   Interface
-;      The interfaces defined in ETHERNET.INC plus:
-;      stack_init
-;      stack_handler
-;      app_stack_handler
-;      app_socket_handler
-;      checksum
-;
-;*******************************************************************
-
 uglobal
 	last_1sTick	db ?
 	last_1hsTick	dd ?
@@ -38,9 +26,11 @@ endg
 
 MAX_NET_DEVICES equ 16
 
-; TCP opening modes
-SOCKET_PASSIVE	equ 0
-SOCKET_ACTIVE	equ 1
+MIN_EPHEMERAL_PORT equ 49152
+MAX_EPHEMERAL_PORT equ 61000
+
+ETHER		equ 1337
+ETHER_ARP	equ 0x0608
 
 ;AF_UNSPEC       equ 0
 ;AF_UNIX         equ 1
@@ -60,17 +50,18 @@ IP_PROTO_ICMP	equ 1
 IP_PROTO_TCP	equ 6
 IP_PROTO_UDP	equ 17
 
-MIN_EPHEMERAL_PORT equ 49152
-MAX_EPHEMERAL_PORT equ 61000
+; TCP opening modes
+SOCKET_PASSIVE	equ 0
+SOCKET_ACTIVE	equ 1
 
 include "queue.inc"
-include "ARP.inc"
-include "IPv4.inc"
+include "arp.inc"
+include "ipv4.inc"
 include "ethernet.inc"
 include "socket.inc"
-;include "TCP.inc"
-include "UDP.inc"
-include "ICMP.inc"
+;include "tcp.inc"
+include "udp.inc"
+include "icmp.inc"
 
 ;-----------------------------------------------
 ;
@@ -125,7 +116,7 @@ stack_handler:
     ; Test for 10ms tick, call tcp timer
     mov     eax, [timer_ticks]
     cmp     eax, [last_1hsTick]
-    je	    .sec_tick
+    je	    .exit
 
     mov     [last_1hsTick], eax
 ;    call    tcp_tx_handler
@@ -141,7 +132,7 @@ stack_handler:
 
     mov     [last_1sTick], al
 
-    stdcall arp_table_manager, ARP_TABLE_TIMER, 0, 0
+;    call    ARP_decrease_entry_ttls
     call    IPv4_decrease_fragment_ttls
 ;    call    tcp_tcb_handler
 
@@ -275,7 +266,7 @@ sys_protocols:
 	cmp	ax , ETHER_ARP
 	je	ARP_API
 
-	cmp	ax , 1337
+	cmp	ax , ETHER
 	je	ETH_API
 
 	add	esp, 4				 ; if we reached here, no function was called, so we need to balance stack

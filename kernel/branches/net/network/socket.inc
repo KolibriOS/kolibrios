@@ -110,7 +110,7 @@ sys_socket:
 	dec	bl
 	jz	socket_recv	; 7
 
-.error:
+s_error:
 	mov	dword [esp+32],-1
 
 	ret
@@ -135,7 +135,7 @@ socket_open:
 
 	call	net_socket_alloc
 	or	eax, eax
-	jz	error
+	jz	s_error
 
 	mov	[eax + SOCKET.Domain], ecx
 	mov	[eax + SOCKET.Type], edx
@@ -168,20 +168,20 @@ socket_bind:
 
 	stdcall net_socket_num_to_addr, ecx
 	cmp	eax, -1
-	jz	error
+	jz	s_error
 
 	cmp	esi, 2
-	jl	error
+	jl	s_error
 
 	cmp	word [edx], AF_INET4
 	je	.af_inet4
 
-	jmp	error
+	jmp	s_error
 
   .af_inet4:
 
 	cmp	esi, 6
-	jl	error
+	jl	s_error
 
 	mov	bx, word [edx + 2]
 	DEBUGF	1,"local port: %u ",bx
@@ -209,13 +209,13 @@ socket_bind:
 	jne	.next_udp_socket
 
 	cmp	word [edx + 2], 0
-	jne	error
+	jne	s_error
 
 	cmp	bx, MAX_EPHEMERAL_PORT
 	jle	.find_port_loop
 
 	mov	[last_UDP_port], MIN_EPHEMERAL_PORT
-	jmp	error
+	jmp	s_error
 
   .udp_port_ok:
 	mov	word [eax + SOCKET.LocalPort], bx
@@ -251,20 +251,20 @@ socket_connect:
 
 	stdcall net_socket_num_to_addr, ecx
 	cmp	eax, -1
-	jz	error
+	jz	s_error
 
 	cmp	esi, 2
-	jl	error
+	jl	s_error
 
 	cmp	word [edx], AF_INET4
 	je	.af_inet4
 
-	jmp	error
+	jmp	s_error
 
   .af_inet4:
 
 	cmp	esi, 8
-	jl	error
+	jl	s_error
 
 	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
 	je	.udp
@@ -275,7 +275,7 @@ socket_connect:
 ;        cmp     [eax + SOCKET.Type], IP_PROTO_TCP
 ;        je      .tcp
 
-	jmp	error
+	jmp	s_error
 
   .udp:
 
@@ -399,7 +399,7 @@ socket_listen:
 
 	stdcall net_socket_num_to_addr, ecx
 	cmp	eax, -1
-	jz	error
+	jz	s_error
 
 	cmp	edx, MAX_backlog
 	jl	.ok
@@ -437,15 +437,15 @@ socket_accept:
 
 	stdcall net_socket_num_to_addr, ecx
 	or	eax, eax
-	jz	error
+	jz	s_error
 	mov	esi, eax
 
 	cmp	[esi + SOCKET.backlog], 0
-	jz	error
+	jz	s_error
 
 	call	net_socket_alloc
 	or	eax, eax
-	jz	error
+	jz	s_error
 	mov	edi, eax
 
 	dec	[esi + SOCKET.backlog]
@@ -483,7 +483,7 @@ socket_close:
 
 	stdcall net_socket_num_to_addr, ecx
 	or	eax, eax
-	jz	error
+	jz	s_error
 
 
 	cmp	[eax + SOCKET.Type], IP_PROTO_UDP
@@ -495,7 +495,7 @@ socket_close:
 ;        cmp     [eax + SOCKET.Type], IP_PROTO_TCP
 ;        je      .tcp
 
-	jmp	error
+	jmp	s_error
 
   .udp:
 
@@ -633,7 +633,7 @@ socket_recv:
 
 	stdcall net_socket_num_to_addr, ecx		   ; get real socket address
 	or	eax, eax
-	jz	error
+	jz	s_error
 
 	DEBUGF 1,"real socket address:%x\n", eax
 
@@ -713,7 +713,7 @@ socket_send:
 
 	stdcall net_socket_num_to_addr, ecx		   ; get real socket address
 	or	eax, eax
-	jz	error
+	jz	s_error
 
 	DEBUGF	1,"Socket type:%u\n", [eax + SOCKET.Type]:4
 
@@ -726,7 +726,7 @@ socket_send:
 ;        cmp     [eax + SOCKET.Type], IP_PROTO_TCP
 ;        je      .tcp
 
-	jmp	error
+	jmp	s_error
 
   .udp:
 

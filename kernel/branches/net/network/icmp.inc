@@ -103,6 +103,8 @@ uglobal
 	ICMP_PACKETS_RX 	rd  MAX_IP
 endg
 
+
+
 ;-----------------------------------------------------------------
 ;
 ; ICMP_init
@@ -123,12 +125,6 @@ ICMP_init:
 	rep	stosd
 
 	ret
-
-
-
-
-
-							 
 												    
 													     
 
@@ -153,7 +149,7 @@ align 4
 ICMP_Handler:	;TODO: works only on pure ethernet right now !
 
 	DEBUGF	1,"ICMP_Handler - start\n"
-	cmp	byte [edx + ICMP_Packet.Type], ICMP_ECHO		    ; Is this an echo request? discard if not
+	cmp	byte [edx + ICMP_Packet.Type], ICMP_ECHO		    ; Is this an echo request?
 	jne	.check_sockets
 
 	mov	byte [edx + ICMP_Packet.Type], ICMP_ECHOREPLY		    ; Change Packet type to reply
@@ -163,6 +159,7 @@ ICMP_Handler:	;TODO: works only on pure ethernet right now !
 	cmp	edi,-1
 	je	.dump
 	inc	[ICMP_PACKETS_RX+4*edi]
+	inc	[ICMP_PACKETS_TX+4*edi]
 
 ; exchange dest and source address in IP header
 ; exchange dest and source MAC in ETH header
