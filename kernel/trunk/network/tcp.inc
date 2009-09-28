@@ -42,7 +42,7 @@ TH_URG	= 0x20
 TWOMSL		    equ     10	    ; # of secs to wait before closing socket
 
 TCP_RETRIES	    equ 	5		; Number of times to resend a packet
-TCP_TIMEOUT	    equ 	10		; resend if not replied to in x hs
+TCP_TIMEOUT	    equ 	20		; resend if not replied to in x hs
 
 ;*******************************************************************
 ;   Interface
@@ -228,9 +228,8 @@ proc tcp_tx_handler stdcall
 	mov	edi, eax
 	pop	ecx
 	; Now get buffer location, and copy buffer across. argh! more copying,,
-	mov	esi, resendBuffer
-    @@: add	esi, IPBUFFSIZE
-	loop	@b
+	imul	esi, ecx, IPBUFFSIZE
+	add	esi, resendBuffer
 
 	; we have resend buffer location in esi
 	mov	ecx, IPBUFFSIZE
