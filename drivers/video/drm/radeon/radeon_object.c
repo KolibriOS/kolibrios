@@ -50,7 +50,7 @@ int radeon_object_init(struct radeon_device *rdev)
 {
     int r = 0;
 
-    dbgprintf("%s\n",__FUNCTION__);
+    ENTER();
 
     r = drm_mm_init(&mm_vram, 0x800000 >> PAGE_SHIFT,
                ((rdev->mc.aper_size - 0x800000) >> PAGE_SHIFT));
@@ -101,8 +101,6 @@ int radeon_object_create(struct radeon_device *rdev,
     uint32_t flags;
     int r;
 
-    dbgprintf("%s\n",__FUNCTION__);
-
     if (kernel) {
         type = ttm_bo_type_kernel;
     } else {
@@ -121,8 +119,6 @@ int radeon_object_create(struct radeon_device *rdev,
 
     robj->flags = flags;
 
-    dbgprintf("robj flags %x\n", robj->flags);
-
     if( flags & TTM_PL_FLAG_VRAM)
     {
         size_t num_pages;
@@ -132,7 +128,7 @@ int radeon_object_create(struct radeon_device *rdev,
         num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
         if (num_pages == 0) {
-            printk("Illegal buffer object size.\n");
+            dbgprintf("Illegal buffer object size.\n");
             return -EINVAL;
         }
 retry_pre_get:
@@ -170,7 +166,7 @@ retry_pre_get:
         num_pages = (size + PAGE_SIZE - 1) >> PAGE_SHIFT;
 
         if (num_pages == 0) {
-            printk("Illegal buffer object size.\n");
+            dbgprintf("Illegal buffer object size.\n");
             return -EINVAL;
         }
 retry_pre_get1:
@@ -222,8 +218,6 @@ int radeon_object_pin(struct radeon_object *robj, uint32_t domain,
     uint32_t flags;
     uint32_t tmp;
     int r = 0;
-
-    dbgprintf("%s\n",__FUNCTION__);
 
 //    flags = radeon_object_flags_from_domain(domain);
 //   spin_lock(&robj->tobj.lock);
@@ -280,16 +274,12 @@ int radeon_object_pin(struct radeon_object *robj, uint32_t domain,
         DRM_ERROR("radeon: failed to pin object.\n");
     }
 
-    dbgprintf("done %s\n",__FUNCTION__);
-
     return r;
 }
 
 int radeon_object_kmap(struct radeon_object *robj, void **ptr)
 {
     int r = 0;
-
-    dbgprintf("%s\n",__FUNCTION__);
 
 //   spin_lock(&robj->tobj.lock);
     if (robj->kptr) {
@@ -319,11 +309,24 @@ int radeon_object_kmap(struct radeon_object *robj, void **ptr)
         *ptr = robj->kptr;
     }
 
-    dbgprintf("done %s\n",__FUNCTION__);
-
     return 0;
 }
 
+void radeon_object_kunmap(struct radeon_object *robj)
+{
+//   spin_lock(&robj->tobj.lock);
+    if (robj->kptr == NULL) {
+//       spin_unlock(&robj->tobj.lock);
+        return;
+    }
+
+    if (robj->flags & TTM_PL_FLAG_VRAM)
+    {
+        FreeKernelSpace(robj->kptr);
+        robj->kptr = NULL;
+    }
+//   spin_unlock(&robj->tobj.lock);
+}
 
 #if 0
 

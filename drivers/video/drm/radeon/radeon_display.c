@@ -759,6 +759,8 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 	struct radeon_encoder *radeon_encoder;
 	bool first = true;
 
+    ENTER();
+
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {
 		radeon_encoder = to_radeon_encoder(encoder);
 		if (encoder->crtc != crtc)
@@ -783,6 +785,11 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 		}
 	}
 	if (radeon_crtc->rmx_type != RMX_OFF) {
+
+        dbgprintf("\nset scaler panel_xres %d panel_yres %d\n",
+                  radeon_crtc->native_mode.panel_xres,
+                  radeon_crtc->native_mode.panel_yres);
+
 		fixed20_12 a, b;
 		a.full = rfixed_const(crtc->mode.vdisplay);
 		b.full = rfixed_const(radeon_crtc->native_mode.panel_xres);
@@ -794,5 +801,8 @@ bool radeon_crtc_scaling_mode_fixup(struct drm_crtc *crtc,
 		radeon_crtc->vsc.full = rfixed_const(1);
 		radeon_crtc->hsc.full = rfixed_const(1);
 	}
+
+    LEAVE();
+
 	return true;
 }

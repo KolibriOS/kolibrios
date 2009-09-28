@@ -207,7 +207,6 @@ int radeon_fence_wait(struct radeon_fence *fence, bool intr)
 	bool expired = false;
 	int r;
 
-
 	if (fence == NULL) {
 		WARN(1, "Querying an invalid fence : %p !\n", fence);
 		return 0;
@@ -230,6 +229,7 @@ retry:
 	if (time_after(fence->timeout, cur_jiffies)) {
 		timeout = fence->timeout - cur_jiffies;
 	}
+
 	if (intr) {
 		r = wait_event_interruptible_timeout(rdev->fence_drv.queue,
 				radeon_fence_signaled(fence), timeout);

@@ -213,6 +213,7 @@ void radeon_rmx_mode_fixup(struct drm_encoder *encoder,
 	}
 }
 
+
 static bool radeon_atom_mode_fixup(struct drm_encoder *encoder,
 				   struct drm_display_mode *mode,
 				   struct drm_display_mode *adjusted_mode)

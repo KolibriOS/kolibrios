@@ -444,7 +444,7 @@ bool set_mode(struct drm_device *dev, int width, int height)
 {
     struct drm_connector *connector;
 
-    bool   ret;
+    bool ret = false;
 
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
@@ -465,6 +465,29 @@ bool set_mode(struct drm_device *dev, int width, int height)
         if(crtc == NULL)
             continue;
 
+
+        list_for_each_entry(mode, &connector->modes, head)
+        {
+            if (mode->type & DRM_MODE_TYPE_PREFERRED);
+                break;
+        };
+
+/*
+        struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
+        struct radeon_native_mode *native_mode = &radeon_encoder->native_mode;
+
+        native_mode->panel_xres = mode->hdisplay;
+        native_mode->panel_yres = mode->vdisplay;
+
+        native_mode->hblank = mode->htotal - mode->hdisplay;
+        native_mode->hoverplus = mode->hsync_start - mode->hdisplay;
+        native_mode->hsync_width = mode->hsync_end - mode->hsync_start;
+        native_mode->vblank = mode->vtotal - mode->vdisplay;
+        native_mode->voverplus = mode->vsync_start - mode->vdisplay;
+        native_mode->vsync_width = mode->vsync_end - mode->vsync_start;
+        native_mode->dotclock = mode->clock;
+        native_mode->flags = mode->flags;
+*/
         list_for_each_entry(mode, &connector->modes, head)
         {
             char *con_name, *enc_name;
@@ -502,24 +525,22 @@ bool set_mode(struct drm_device *dev, int width, int height)
 
                 ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
 
-                sysSetScreen(width, height, fb->pitch);
+                sysSetScreen(fb->width, fb->height, fb->pitch);
 
                 if (ret == true)
                 {
-                    dbgprintf("new mode %d %d pitch %d\n", width, height, fb->pitch);
+                    dbgprintf("new mode %d %d pitch %d\n",fb->width, fb->height, fb->pitch);
                 }
                 else
                 {
                     DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
-                               width, height, crtc);
+                               fb->width, fb->height, crtc);
                 };
-
-                return ret;
             };
         }
     };
 
-    return false;
+    return ret;
 };
 
 

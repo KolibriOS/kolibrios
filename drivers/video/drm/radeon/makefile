@@ -5,7 +5,7 @@ CFLAGS = -c -O2 -fomit-frame-pointer -fno-builtin-printf
 LDFLAGS = -nostdlib -shared -s -Map atikms.map --image-base 0 --file-alignment 512 --section-alignment 4096
 
 DRM_TOPDIR   = $(CURDIR)/..
-DRM_INCLUDES = $(DRM_TOPDIR)/include
+DRM_INCLUDES = $(DRM_TOPDIR)/includes
 
 LIBPATH:= .
 
@@ -13,7 +13,7 @@ LIBS:=    -ldrv -lcore
 
 NAME:=	  atikms
 
-INCLUDES = -I $(DRM_INCLUDES) -I $(DRM_INCLUDES)/linux -I $(DRM_INCLUDES)/drm
+INCLUDES = -I$(DRM_INCLUDES) -I$(DRM_INCLUDES)/linux -I$(DRM_INCLUDES)/drm
 
 HFILES:=     		$(DRM_INCLUDES)/linux/types.h		\
 			$(DRM_INCLUDES)/linux/list.h		\
@@ -23,7 +23,7 @@ HFILES:=     		$(DRM_INCLUDES)/linux/types.h		\
 			$(DRM_INCLUDES)/drm_edid.h		\
 			$(DRM_INCLUDES)/drm/drm_crtc.h		\
 			$(DRM_INCLUDES)/drm/drm_mode.h		\
-			$(DRM_INCLUDES)/drm_mm.h		\
+			$(DRM_INCLUDES)/drm/drm_mm.h		\
 			atom.h					\
 			radeon.h				\
 			radeon_asic.h
@@ -68,7 +68,8 @@ NAME_SRC=							\
 			rs400.c					\
 			rs600.c					\
 			rs690.c					\
-			radeon_fb.c
+			radeon_fb.c				\
+			rdisplay.c
 
 
 SRC_DEP:=    

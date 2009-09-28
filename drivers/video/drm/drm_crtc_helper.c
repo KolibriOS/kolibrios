@@ -429,8 +429,8 @@ static void drm_setup_crtcs(struct drm_device *dev)
 
 	DRM_DEBUG_KMS("\n");
 
-    width = 1280;  //dev->mode_config.max_width;
-    height = 1024; //dev->mode_config.max_height;
+	width = dev->mode_config.max_width;
+	height = dev->mode_config.max_height;
 
 	/* clean out all the encoder/crtc combos */
 	list_for_each_entry(encoder, &dev->mode_config.encoder_list, head) {

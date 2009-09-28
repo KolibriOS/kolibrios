@@ -478,10 +478,6 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 	if (!crtc->fb)
 		return -EINVAL;
 
-    dbgprintf("x = %d y = %d width = %d height = %d\n",
-               x, y, crtc->fb->width, crtc->fb->height);
-    dbgprintf("hdisplay = %d\n", crtc->mode.hdisplay);
-
 	radeon_fb = to_radeon_framebuffer(crtc->fb);
 
 	obj = radeon_fb->obj;
@@ -493,8 +489,6 @@ int atombios_crtc_set_base(struct drm_crtc *crtc, int x, int y,
 
     fb_location = 0; //rdev->mc.vram_location;
 
-    dbgprintf("fb_location %x\n", fb_location);
-    dbgprintf("bpp %d\n", crtc->fb->bits_per_pixel);
 
 	switch (crtc->fb->bits_per_pixel) {
 	case 8:
