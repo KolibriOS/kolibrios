@@ -55,8 +55,8 @@ SOCKET_PASSIVE	equ 0
 SOCKET_ACTIVE	equ 1
 
 include "queue.inc"
-include "arp.inc"
-include "ipv4.inc"
+include "ARP.inc"
+include "IPv4.inc"
 include "ethernet.inc"
 include "socket.inc"
 ;include "tcp.inc"
@@ -132,7 +132,7 @@ stack_handler:
 
     mov     [last_1sTick], al
 
-;    call    ARP_decrease_entry_ttls
+    call    ARP_decrease_entry_ttls
     call    IPv4_decrease_fragment_ttls
 ;    call    tcp_tcb_handler
 

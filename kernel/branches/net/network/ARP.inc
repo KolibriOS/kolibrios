@@ -111,11 +111,7 @@ ARP_init:
 ;***************************************************************************
 ;Opcode's constants
 ARP_TABLE_ADD		      equ  1
-ARP_TABLE_DEL		      equ  2
-ARP_TABLE_GET		      equ  3
-ARP_TABLE_GET_ENTRIES_NUMBER  equ  4
 ARP_TABLE_IP_TO_MAC	      equ  5
-ARP_TABLE_TIMER 	      equ  6
 
 ;Index's constants
 EXTRA_IS_ARP_PACKET_PTR  equ  0   ;if Extra contain pointer to ARP_Packet
@@ -129,75 +125,17 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx, Opcode:DWORD,Index:DWOR
 
     mov     eax, dword[Opcode]
 
-    cmp     eax, ARP_TABLE_TIMER
-    je	    .timer
 
     DEBUGF 1,"ARP table manager opcode:%u numARP:%u\n",eax,ecx
 
     cmp     eax, ARP_TABLE_ADD
     je	    .add
-    cmp     eax, ARP_TABLE_DEL
-    je	    .del
-    cmp     eax, ARP_TABLE_GET
-    je	    .get
+
     cmp     eax, ARP_TABLE_IP_TO_MAC
     je	    .ip_to_mac
-    cmp     eax, ARP_TABLE_GET_ENTRIES_NUMBER
-    je	    .get_entries_number
+
     jmp     .exit     ;if unknown opcode
 
-
-;;BEGIN TIMER
-;;Description: it must be callback every second. It is responsible for removing expired routes.
-;;IN:   Operation: ARP_TABLE_TIMER
-;;      Index: must be zero
-;;      Extra: must be zero
-;;OUT:
-;;  EAX=not defined
-;;
-.timer:
-    test    ecx, ecx
-    jz	    .exit    ;if NumARP=0 nothing to do
-;    sub     ecx, ARP_TABLE_ENTRIES  ;ecx=dynamic entries number
-;    jz      .exit    ;if NumARP=number of static entries then exit
-
-;    add     ebx, ARP_TABLE_ENTRIES*ARP_ENTRY_SIZE  ;ebx=dynamic entries base
-
-  .timer_loop:
-    movsx   esi, word [ebx + ARP_ENTRY.TTL]
-    cmp     esi, 0xFFFFFFFF
-    je	    .timer_loop_end  ;if TTL==0xFFFF then it's static entry
-
-    test    esi, esi
-    jnz     .timer_loop_end_with_dec  ;if TTL!=0
-
-    ; Ok, TTL is 0
-    ;if Status==AWAITING_RESPONSE and TTL==0
-    ;then we have to change it to ARP_RESPONSE_TIMEOUT
-    cmp     word [ebx + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
-    jne     @f
-
-    mov     word [ebx + ARP_ENTRY.Status], ARP_RESPONSE_TIMEOUT
-    mov     word [ebx + ARP_ENTRY.TTL], word 0x000A   ;10 sec
-    jmp     .timer_loop_end
-
-  @@:
-    ;if TTL==0 and Status==VALID_MAPPING, we have to delete it
-    ;if TTL==0 and Status==RESPONSE_TIMEOUT, delete too
-    mov     esi, dword[NumARP]
-    sub     esi, ecx	      ;esi=index of entry, will be deleted
-    stdcall arp_table_manager,ARP_TABLE_DEL,esi,0 ;opcode,index,extra
-    jmp     .timer_loop_end
-
-
-  .timer_loop_end_with_dec:
-    dec     word [ebx + ARP_ENTRY.TTL]	;decrease TTL
-  .timer_loop_end:
-    add     ebx, ARP_ENTRY.size
-    loop    .timer_loop
-
-    jmp     .exit
-;;END TIMER
 
 ;;BEGIN ADD
 ;;Description: it adds an entry in the table. If ARP-table already
@@ -294,49 +232,7 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx, Opcode:DWORD,Index:DWOR
     jmp     .exit
 ;;END ADD
 
-;;BEGIN DEL
-;;Description: it deletes an entry in the table.
-;;IN:   Operation: ARP_TABLE_DEL
-;;      Index: index of entry, that should be deleted
-;;      Extra: must be zero
-;;OUT:
-;;  EAX=not defined
-;;
-.del:
-    mov     esi, [Index]
-    imul    esi, ARP_ENTRY.size
 
-    mov     ecx, (ARP_TABLE_SIZE - 1) * ARP_ENTRY.size
-    sub     ecx, esi
-
-    lea     edi, [ebx + esi]		;edi=ptr to entry that should be deleted
-    lea     esi, [edi + ARP_ENTRY.size] ;esi=ptr to next entry
-
-    shr     ecx,1      ;ecx/2 => ARP_ENTRY_SIZE MUST BE EVEN NUMBER!
-    cld
-    rep     movsw
-
-    dec     dword[NumARP] ;decrease arp-entries counter
-    jmp     .exit
-;;END DEL
-
-;;BEGIN GET
-;;Description: it reads an entry of table into buffer.
-;;IN:   Operation: ARP_TABLE_GET
-;;      Index: index of entry, that should be read
-;;      Extra: pointer to buffer for reading(size must be equal to ARP_ENTRY_SIZE)
-;;OUT:
-;;  EAX=not defined
-;;
-.get:
-    mov     esi, [Index]
-    imul    esi, ARP_ENTRY.size  ;esi=ptr to required ARP_ENTRY
-    mov     edi, [Extra]	  ;edi=buffer for reading
-    mov     ecx, ARP_ENTRY.size/2 ; must be even number!!!
-    cld
-    rep     movsw
-    jmp     .exit
-;;END GET
 
 ;;BEGIN IP_TO_MAC
 ;;Description: it gets an IP from Index, scans each entry in the table and writes
@@ -428,18 +324,6 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx, Opcode:DWORD,Index:DWOR
     jmp     .exit
 
 ;;END IP_TO_MAC
-
-;;BEGIN GET_ENTRIES_NUMBER
-;;Description: returns an ARP-entries number in the ARPTable
-;;IN:   Operation: ARP_TABLE_GET_ENTRIES_NUMBER
-;;      Index: must be zero
-;;      Extra: must be zero
-;;OUT:
-;;  EAX=ARP-entries number in the ARPTable
-  .get_entries_number:
-    mov     eax, dword[NumARP]
-    jmp     .exit
-;;END GET_ENTRIES_NUMBER
 
 .exit:
     ret

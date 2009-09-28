@@ -965,7 +965,7 @@ int_handler:
 	cmp	[eth_tmp_len], bx
 	jbe	.nsp_005
 
-	DEBUGF	2,"tadaa!\n"
+	DEBUGF	2,"WRAP!\n"
 
 	mov	al , [ebp + device.flags]
 	test	al , FLAG_PIO
@@ -989,10 +989,7 @@ int_handler:
 	mov	[pktoff], ax
 
 	add	[eth_rx_data_ptr], ebx
-
-	mov	ax, [eth_tmp_len]
-	sub	ax, bx
-	mov	[eth_tmp_len], ax
+	sub	[eth_tmp_len], bx
 
 .nsp_005:
 	test	[ebp + device.flags], FLAG_PIO
