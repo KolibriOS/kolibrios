@@ -1,15 +1,16 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                   ;;
-;;    IRC CLIENT for MenuetOS                        ;;
+;;    IRC CLIENT for KolibriOS                       ;;
 ;;                                                   ;;
 ;;    License: GPL / See file COPYING for details    ;;
 ;;    Copyright 2004 (c) Ville Turjanmaa             ;;
+;;    Copyright 2009 (c) CleverMouse                 ;;
 ;;                                                   ;;
-;;    Compile with FASM for Menuet                   ;;
+;;    Compile with FASM for Kolibri                  ;;
 ;;                                                   ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-version equ '0.51'
+version equ '0.6'
 
 
 ;__DEBUG__ equ 1
@@ -22,34 +23,72 @@ use32
 		db	'MENUET01'		; 8 byte id
 		dd	0x01			; required os
 		dd	START			; program start
-		dd	I_END			; program image size
+		dd	initialized_size	; program image size
 		dd	0x100000		; required amount of memory
 		dd	0x100000
 		dd	0,0
 
-include "..\..\..\macros.inc"
+include "../../../macros.inc"
+include "../../../proc32.inc"
+include "../../../develop/libraries/network/network.inc"
+include "dll.inc"
 ;include "fdo.inc"
 include "eth.inc"
 ;include "lang.inc"
 
-irc_server_name db      'kolibrios.org',0                 ; default server name
+; connection statuses
+STATUS_DISCONNECTED = 0 ; disconnected
+STATUS_RESOLVING    = 1 ; resolving server name
+STATUS_CONNECTING   = 2 ; connecting to server
+STATUS_CONNECTED    = 3 ; connected
+; where to display status
+STATUS_X = 25 + 22*6
+STATUS_Y = 183 + 7*12
+
+; supported encodings
+CP866 = 0
+CP1251 = 1
+UTF8 = 2
+; where to display encoding
+ENCODING_X = 25 + 15*6
+ENCODING_Y = 183 + 3*12
+
+def_server_name db      'kolibrios.org',0                 ; default server name
 
 user_nick	dd	12				  ; length
 		db	'kolibri_user           '	  ; string
+user_nick_max = $ - user_nick - 4
 
 user_real_name	dd	14				  ; length
 		db	'KolibriOS User         '	  ; string
+user_real_name_max = $ - user_real_name - 4
 
 
 START:				; start of execution
 
+    stdcall dll.Load, @IMPORT
+    test eax,eax
+    jnz  exit
+
     mov  eax,40
-    mov  ebx,10000111b
+    mov  ebx,11000111b
     mcall
+    mcall 60, 1, ipcbuf, ipcbuf.size
+    mcall 9, 0xe0000, -1
+    mov  eax,[ebx+process_information.PID]
+    mov  [main_PID],eax
+
+	mov	esi, def_server_name
+	mov	edi, irc_server_name
+@@:
+	lodsb
+	stosb
+	test	al, al
+	jnz	@b
 
     mov  edi,I_END
     mov  ecx,60*120
-    mov  eax,32
+    mov  al,32
     cld
     rep  stosb
 
@@ -65,23 +104,19 @@ redraw: 			; redraw
 
 still:
 
-    inc  [cursor_on_off]
-
-    mov  eax,5
-    mov  ebx,1
+    mov  eax,10                 ; wait here for event
     mcall
 
-    mov  eax,11 		; wait here for event
-    mcall
-
-    call print_status
-
-    cmp  eax,1			; redraw
+    dec  eax                    ; redraw
     je	 redraw
-    cmp  eax,2			; key
+    dec  eax			; key
     je	 main_window_key
-    cmp  eax,3			; button
+    dec  eax			; button
     je	 button
+    cmp  al,4
+    jz   ipc
+
+    call process_network_event
 
     cmp  [I_END+120*60],byte 1
     jne  no_main_update
@@ -90,16 +125,7 @@ still:
     call draw_channel_text
   no_main_update:
 
-    call read_incoming_data
-
-    call send_data_to_server
-
-    test [cursor_on_off],0x3f
-    jnz  nopri
-    inc  [blink]
-    call blink_cursor
     call print_channel_list
-  nopri:
 
     jmp  still
 
@@ -110,151 +136,46 @@ button: 			; button
 
     cmp  ah,1			; close program
     jne  noclose
+exit:
     or   eax,-1
     mcall
   noclose:
+    cmp  ah,21
+    jne  no_change_encoding
+    cmp  byte[edx-1],0
+    jnz  still
+    mov  eax,[encoding]
+    inc  eax
+    mov  edx,msgbox_struct
+    mov  byte[edx],al
+    mov  byte[edx-1],1 ; msgbox is running
+    push mb_stack
+    push edx
+    call [mb_create]
+    push msgbox_func_array
+    call [mb_setfunctions]
+    jmp  still
+  no_change_encoding:
 
     call socket_commands
 
     jmp  still
 
-
-print_status:
-
-    pusha
-
-    mov  eax,53
-    mov  ebx,6
-    mov  ecx,[socket]
-    mcall
-
-    mov  [status],eax
-
-    cmp  [old_status],eax
-    je	 nopr
-
-    mov  [old_status],eax
-
-    push eax
-
-    mov  eax,13
-    mov  ebx,450*65536+30
-    mov  ecx,231*65536+10
-    mov  edx,0xffffff
-    mcall
-
-    pop  ecx
-    mov  eax,47
-    mov  ebx,2*65536
-    mov  edx,450*65536+231
-    mov  esi,0x000000
-    mcall
-
-  nopr:
-
-    popa
-
-    ret
-
-status dd 0
-old_status dd 0
-
-
-socket_commands:
-
-    cmp  ah,22	     ; open socket
-    jnz  tst3
-    mov  eax,3
-    mcall
-    mov  ecx,eax
-
-pusha
-    mov     eax,irc_server_name
-    resolve irc_server_name,dword[irc_server_ip]
-    ;DEBUGF 1,'%u.%u.%u.%u\n',1[irc_server_ip],1[irc_server_ip+1],1[irc_server_ip+2],1[irc_server_ip+3]
-popa
-
-    mov  eax,53
-    mov  ebx,5
-    mov  edx,6667
-    mov  esi,dword [irc_server_ip]
-    mov  edi,1
-    mcall
-    mov  [socket], eax
-    ret
-  tst3:
-
-
-    cmp  ah,23	      ; write userinfo
-    jnz  tst4
-
-    mov  eax,53  ; user
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,string0l-string0
-    mov  esi,string0
-    mcall
-
-    mov  eax,53  ;
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,[user_real_name]
-    mov  esi,user_real_name+4
-    mcall
-
-    mov  eax,53  ;
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,2
-    mov  esi,line_feed
-    mcall
-
-
-    mov  eax,5
-    mov  ebx,10
-    mcall
-
-    mov  eax,53  ; nick
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,string1l-string1
-    mov  esi,string1
-    mcall
-
-    mov  eax,53  ;
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,[user_nick]
-    mov  esi,user_nick+4
-    mcall
-
-    mov  eax,53  ;
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,2
-    mov  esi,line_feed
-    mcall
-
-
-    ret
-
-  line_feed:  db  13,10
-
-  tst4:
-
-
-    cmp  ah,24	   ; close socket
-    jnz  no_24
-    mov  eax,53
-    mov  ebx,8
-    mov  ecx,[socket]
-    mcall
-    ret
-  no_24:
-
-
-    ret
-
+ipc:
+    mov  edx,msgbox_struct
+    cmp  byte[edx-1],0
+    jz   @f
+    mov  byte[edx-1],0
+    mov  al,[edx]
+    dec  eax
+    mov  byte[encoding],al
+    call update_encoding
+    jmp  ipc_done
+@@:
+    call process_command
+ipc_done:
+    mov  dword [ipcbuf+4], 8
+    jmp  still
 
 main_window_key:
 
@@ -286,17 +207,201 @@ main_window_key:
   no_character2:
 
     cmp  eax,13
-    jne  no_send
+    jne  no_send2
     cmp  [xpos],0
     je	 no_send2
     cmp  [send_string],byte '/'   ; server command
     jne  no_send2
-    mov  [send_to_server],1
+    call process_command
     jmp  still
   no_send2:
 
     jmp  still
 
+
+socket_commands:
+
+    cmp  ah,22	     ; connect
+    jnz  tst3
+
+; ignore if status is not "disconnected"
+	cmp	[status], STATUS_DISCONNECTED
+	jnz	.nothing
+
+; start name resolving
+	inc	[status]	; was STATUS_DISCONNECTED, now STATUS_RESOLVING
+	push	gai_reqdata
+	push	ip_list
+	push	0
+	push	0
+	push	irc_server_name
+	call	[getaddrinfo_start]
+	test	eax, eax
+	jns	getaddrinfo_done
+	call	update_status
+.nothing:
+	ret
+
+  tst3:
+
+
+    cmp  ah,23	      ; write userinfo
+    jnz  tst4
+
+; ignore if status is not "connected"
+	cmp	[status], STATUS_CONNECTED
+	jnz	.nothing
+
+; create packet in packetbuf
+	mov	edi, packetbuf
+	mov	edx, edi
+	mov	esi, string0
+	mov	ecx, string0l-string0
+	rep	movsb
+	mov	esi, user_real_name+4
+	mov	ecx, [esi-4]
+	rep	movsb
+	mov	al, 13
+	stosb
+	mov	al, 10
+	stosb
+	mov	esi, string1
+	mov	ecx, string1l-string1
+	rep	movsb
+	mov	esi, user_nick+4
+	mov	ecx, [esi-4]
+	rep	movsb
+	mov	al, 13
+	stosb
+	mov	al, 10
+	stosb
+; send packet
+	xchg	edx, edi
+	sub	edx, edi
+	mov	esi, edi
+	mcall	53, 7, [socket]
+    .nothing:
+	ret
+
+  tst4:
+
+
+    cmp  ah,24	   ; close socket
+    jz   disconnect
+  no_24:
+
+
+    ret
+
+getaddrinfo_done:
+; The address resolving is done.
+; If eax is zero, address is resolved, otherwise there was some problems.
+	test	eax, eax
+	jz	.good
+.disconnect:
+; Change status to "disconnected" and return.
+	and	[status], 0
+	call	update_status
+	ret
+.good:
+; We got a list of IP addresses. Try to connect to first of them.
+	mov	eax, [ip_list]
+	mov	esi, [eax + addrinfo.ai_addr]
+	mov	esi, [esi + sockaddr_in.sin_addr]
+	push	eax
+	call	[freeaddrinfo]
+	mcall	53, 5, 0, 6667, , 1
+	cmp	eax, -1
+	jz	.disconnect
+; Socket has been opened. Save handle and change status to "connecting".
+	mov	[socket], eax
+	inc	[status]	; was STATUS_RESOLVING, now STATUS_CONNECTING
+	call	update_status
+	ret
+
+process_network_event:
+; values for status: 0, 1, 2, 3
+	mov	eax, [status]
+	dec	eax
+; 0 = STATUS_DISCONNECTED - do nothing
+; (ignore network events if we are disconnected from network)
+	js	.nothing
+; 1 = STATUS_RESOLVING
+	jz	.resolving
+; 2 = STATUS_CONNECTING
+	dec	eax
+	jz	.connecting
+; 3 = STATUS_CONNECTED
+	jmp	.connected
+.resolving:
+; We are inside address resolving. Let the network library work.
+	push	ip_list
+	push	gai_reqdata
+	call	[getaddrinfo_process]
+; Negative returned value means that the resolving is not yet finished,
+; and we continue the loop without status change.
+; Zero and positive values are handled by getaddrinfo_done.
+	test	eax, eax
+	jns	getaddrinfo_done
+.nothing:
+	ret
+.connecting:
+; We are connecting to the server, and socket status has changed.
+	mcall	53, 6, [socket]
+; Possible values for status: SYN_SENT=2, SYN_RECEIVED=3, ESTABLISHED=4, CLOSE_WAIT=7
+; First two mean that we are still connecting, and we must continue wait loop
+; without status change.
+; Last means that server has immediately closed the connection,
+; and status becomes "disconnected".
+	cmp	eax, 4
+	jb	.nothing
+	jz	.established
+	and	[status], 0
+	call	update_status
+; close socket
+	mcall	53, 8
+	ret
+.established:
+; The connection has been established, change status from "connecting" to "connected".
+	inc	[status]
+	call	update_status
+; Fall through to .connected, because some data can be already in buffer.
+.connected:
+	call	read_incoming_data
+; Handle closing socket by the server.
+	mcall	53, 6, [socket]
+	cmp	eax, 4
+	jnz	disconnect
+	ret
+
+disconnect:
+; Release all allocated resources.
+; Exact actions depend on current status.
+	mov	eax, [status]
+	dec	eax
+; 0 = STATUS_DISCONNECTED - do nothing
+	js	.nothing
+; 1 = STATUS_RESOLVING
+	jz	.resolving
+; 2 = STATUS_CONNECTING, 3 = STATUS_CONNECTED
+; In both cases we should close the socket.
+	mcall	53, 8, [socket]
+	jmp	.disconnected
+.resolving:
+; Let the network library handle abort of resolving process.
+	push	gai_reqdata
+	call	[getaddrinfo_abort]
+.disconnected:
+; In all cases, set status to "disconnected".
+	and	[status], 0
+	call	update_status
+.nothing:
+	ret
+
+msgbox_notify:
+	inc	byte [msgbox_running]
+	mcall	60,2,[main_PID],0,1
+	ret
 
 print_channel_list:
 
@@ -431,28 +536,47 @@ print_user_list:
 
 start_user_list_at dd 0x0
 
+recode_to_cp866:
+	rep	movsb
+	ret
 
 recode_to_cp1251:
-	push	esi edx
+	xor	eax, eax
+	jecxz	.nothing
   .loop:
 	lodsb
 	cmp	al,0x80
 	jb	@f
-	and	eax,0x7F
-	mov	al,[cp866_table+eax]
-    @@: mov	[esi-1],al
-	dec	edx
-	jnz	.loop
-	pop	edx esi
+	mov	al,[cp866_table-0x80+eax]
+    @@: stosb
+	loop	.loop
+  .nothing:
 	ret
 
+recode_to_utf8:
+	jecxz	.nothing
+  .loop:
+	lodsb
+	cmp	al, 0x80
+	jb	.single_byte
+	and	eax, 0x7F
+	mov	ax, [utf8_table+eax*2]
+	stosw
+	loop	.loop
+	ret
+  .single_byte:
+	stosb
+	loop	.loop
+  .nothing:
+	ret
 
-send_data_to_server:
+recode:
+	mov	eax, [encoding]
+	jmp	[recode_proc+eax*4]
+
+process_command:
 
     pusha
-
-    cmp  [send_to_server],1
-    jne  sdts_ret
 
     mov  eax,[xpos]
     mov  [send_string+eax+0],byte 13
@@ -468,6 +592,10 @@ send_data_to_server:
 
     cmp  [send_string],byte '/'   ; server command
     je	 server_command
+
+; Ignore data commands when not connected.
+	cmp	[status], STATUS_CONNECTED
+	jnz	sdts_ret
 
     mov  bl,13
     call print_character
@@ -510,27 +638,26 @@ send_data_to_server:
     mov  [edi],word ' :'
 
     mov   esi, send_string_header
-    mov   edx,10
+    mov   ecx,10
     movzx ebx,byte [eax+31]
-    add   edx,ebx
+    add   ecx,ebx
 
-    mov  eax, 53      ; write channel
-    mov  ebx, 7
-    mov  ecx, [socket]
-    mcall
+    mov   edi, packetbuf
+    rep   movsb
 
     mov  esi,send_string
-    mov  edx,[xpos]
-    inc  edx
+    mov  ecx,[xpos]
+    inc  ecx
 
-	call	recode_to_cp1251
+	call	recode
 
-    mov  eax, 53      ; write message
-    mov  ebx, 7
-    mov  ecx, [socket]
-    mcall
+	mov	esi, packetbuf
+	mov	edx, edi
+	sub	edx, esi
+	mcall	53, 7, [socket]
 
-    jmp  send_done
+	mov	[xpos], 0
+    jmp  sdts_ret
 
   server_command:
 
@@ -539,6 +666,10 @@ send_data_to_server:
 
     mov  ecx,[xpos]
     sub  ecx,7
+    cmp  ecx,user_nick_max
+    jb   @f
+    mov  ecx,user_nick_max
+  @@:
     mov  [user_nick],ecx
 
     mov  esi,send_string+7
@@ -548,7 +679,7 @@ send_data_to_server:
 
     pusha
     mov  edi,text+70*1+15
-    mov  eax,32
+    mov  al,32
     mov  ecx,15
     cld
     rep  stosb
@@ -556,14 +687,12 @@ send_data_to_server:
 
     mov  esi,user_nick+4
     mov  edi,text+70*1+15
-    mov  ecx,[user_nick]
+    mov  ecx,[esi-4]
     cld
     rep  movsb
 
-    call draw_window
-
     mov  [xpos],0
-    mov  [send_to_server],0
+    call draw_window
 
     popa
     ret
@@ -575,6 +704,10 @@ send_data_to_server:
 
     mov  ecx,[xpos]
     sub  ecx,7
+    cmp  ecx,user_real_name_max
+    jb   @f
+    mov  ecx,user_real_name_max
+  @@:
     mov  [user_real_name],ecx
 
     mov  esi,send_string+7
@@ -584,7 +717,7 @@ send_data_to_server:
 
     pusha
     mov  edi,text+70*0+15
-    mov  eax,32
+    mov  al,32
     mov  ecx,15
     cld
     rep  stosb
@@ -592,15 +725,11 @@ send_data_to_server:
 
     mov  esi,user_real_name+4
     mov  edi,text+70*0+15
-    mov  ecx,[xpos]
-    sub  ecx,7
-    cld
+    mov  ecx,[esi-4]
     rep  movsb
 
-    call draw_window
-
     mov  [xpos],0
-    mov  [send_to_server],0
+    call draw_window
 
     popa
     ret
@@ -610,41 +739,40 @@ send_data_to_server:
     cmp  [send_string+1],dword 'aser'
     jne  no_set_server
 
-pusha
-    mov     eax,send_string
-    add     eax,[xpos]
-    mov     dword[eax],0
-    resolve send_string+7,dword[irc_server_ip]
-    ;DEBUGF 1,'%u.%u.%u.%u\n',1[irc_server_ip],1[irc_server_ip+1],1[irc_server_ip+2],1[irc_server_ip+3]
-popa
-
     mov  ecx,[xpos]
     sub  ecx,7
 
+    mov  esi,send_string+7
+    mov  edi,irc_server_name
+    rep  movsb
+    mov  al,0
+    stosb
+
     pusha
     mov  edi,text+70*2+15
-    mov  eax,32
+    mov  al,32
     mov  ecx,15
     cld
     rep  stosb
     popa
 
+    mov  ecx,[xpos]
+    sub  ecx,7
     mov  esi,send_string+7
     mov  edi,text+70*2+15
-    cld
     rep  movsb
 
-    call draw_window
-
     mov  [xpos],0
-    mov  [send_to_server],0
+    call draw_window
 
     popa
     ret
 
    no_set_server:
 
-
+; All other commands require a connection to the server.
+	cmp	[status], STATUS_CONNECTED
+	jnz	sdts_ret
 
 
     cmp  [send_string+1],dword 'quer'
@@ -675,7 +803,7 @@ popa
     push edi
     push eax
     mov  [edi+120*60+8],byte 1 ; query window
-    mov  eax,32
+    mov  al,32
     mov  ecx,120*60
     cld
     rep  stosb
@@ -683,11 +811,10 @@ popa
     pop  edi
 
     ; eax has the free position
-    mov  [thread_screen],edi
+;    mov  [thread_screen],edi
     call create_channel_window
 
     mov  [xpos],0
-    mov  [send_to_server],0
 
     popa
     ret
@@ -696,8 +823,13 @@ popa
 
 
     mov  esi, send_string+1
-    mov  edx, [xpos]
-    add  edx,1
+    mov  ecx, [xpos]
+    inc  ecx
+    mov  edi, packetbuf
+    call recode
+    mov  esi, packetbuf
+    mov  edx, edi
+    sub  edx, esi
 
     mov  eax, 53      ; write server command
     mov  ebx, 7
@@ -707,7 +839,6 @@ popa
   send_done:
 
     mov  [xpos],0
-    mov  [send_to_server],0
 
     cmp  [send_string+1],dword 'quit'
     jne  no_quit_server
@@ -724,6 +855,7 @@ popa
     mov  edi,I_END
   newclose:
     mov  [edi+120*60+4],byte  1
+    call notify_channel_thread
     add  edi,120*80
     loop newclose
 
@@ -737,50 +869,162 @@ popa
     popa
     ret
 
+get_next_byte:
+; Load next byte from the packet, translating to cp866 if necessary
+; At input esi = pointer to data, edx = limit of data
+; Output is either (translated) byte in al with CF set or CF cleared.
+	mov	eax, [encoding]
+	jmp	[get_byte_table+eax*4]
 
+get_byte_cp866:
+	cmp	esi, edx
+	jae	.nothing
+	lodsb
+.nothing:
+	ret
+
+get_byte_cp1251:
+	cmp	esi, edx
+	jae	.nothing
+	lodsb
+	cmp	al, 0x80
+	jb	@f
+	and	eax, 0x7F
+	mov	al, [cp1251_table+eax]
+@@:
+	stc
+.nothing:
+	ret
+
+get_byte_utf8:
+; UTF8 decoding is slightly complicated.
+; One character can occupy one or more bytes.
+; The boundary in packets theoretically can be anywhere in data,
+; so this procedure keeps internal state between calls and handles
+; one byte at a time, looping until character is read or packet is over.
+; Globally, there are two distinct tasks: decode byte sequence to unicode char
+; and convert this unicode char to our base encoding (that is cp866).
+; 1. Check that there are data.
+	cmp	esi, edx
+	jae	.nothing
+; 2. Load byte.
+	lodsb
+	movzx	ecx, al
+; 3. Bytes in an UTF8 sequence can be of any of three types.
+; If most significant bit is cleared, sequence is one byte and usual ASCII char.
+; First byte of a sequence must be 11xxxxxx, other bytes are 10yyyyyy.
+	and	al, 0xC0
+	jns	.single_byte
+	jp	.first_byte
+; 4. This byte is not first in UTF8 sequence.
+; 4a. Check that the sequence was started. If no, it is invalid byte
+; and we simply ignore it.
+	cmp	[utf8_bytes_rest], 0
+	jz	get_byte_utf8
+; 4b. Otherwise, it is really next byte and it gives some more bits of char.
+	mov	eax, [utf8_char]
+	shl	eax, 6
+	lea	eax, [eax+ecx-0x80]
+; 4c. Decrement number of bytes rest in the sequence.
+; If it goes to zero, character is read, so return it.
+	dec	[utf8_bytes_rest]
+	jz	.got_char
+	mov	[utf8_char], eax
+	jmp	get_byte_utf8
+; 5. If the byte is first in UTF8 sequence, calculate the number of leading 1s
+; - it equals total number of bytes in the sequence; some other bits rest for
+; leading bits in the character.
+.first_byte:
+	mov	eax, -1
+@@:
+	inc	eax
+	add	cl, cl
+	js	@b
+	mov	[utf8_bytes_rest], eax
+	xchg	eax, ecx
+	inc	ecx
+	shr	al, cl
+	mov	[utf8_char], eax
+	jmp	get_byte_utf8
+; 6. If the byte is ASCII char, it is the character.
+.single_byte:
+	xchg	eax, ecx
+.got_char:
+; We got the character, now abandon a possible sequence in progress.
+	and	[utf8_bytes_rest], 0
+; Now second task. The unicode character is in eax, and now we shall convert it
+; to cp866.
+	cmp	eax, 0x80
+	jb	.done
+; 0x410-0x43F -> 0x80-0xAF, 0x440-0x44F -> 0xE0-0xEF, 0x401 -> 0xF0, 0x451 -> 0xF1
+	cmp	eax, 0x401
+	jz	.YO
+	cmp	eax, 0x451
+	jz	.yo
+	cmp	eax, 0x410
+	jb	.unrecognized
+	cmp	eax, 0x440
+	jb	.part1
+	cmp	eax, 0x450
+	jae	.unrecognized
+	sub	al, (0x40-0xE0) and 0xFF
+	ret
+.part1:
+	sub	al, 0x10-0x80
+.nothing:
+.done:
+	ret
+.unrecognized:
+	mov	al, '?'
+	stc
+	ret
+.YO:
+	mov	al, 0xF0
+	stc
+	ret
+.yo:
+	mov	al, 0xF1
+	stc
+	ret
 
 read_incoming_data:
-
-    pusha
-
-  read_new_byte:
-
-    call read_incoming_byte
-    cmp  ecx,-1
-    je	 no_data_in_buffer
-
-    cmp  bl,10
-    jne  no_start_command
-    mov  [cmd],1
-  no_start_command:
-
-    cmp  bl,13
-    jne  no_end_command
-    mov  eax,[cmd]
-    mov  [eax+command-2],byte 0
-    call analyze_command
-    mov  edi,command
-    mov  ecx,250
-    mov  eax,0
-    cld
-    rep  stosb
-    mov  [cmd],0
-  no_end_command:
-
-    mov  eax,[cmd]
-    cmp  eax,512
-    jge  still
-
-    mov  [eax+command-2],bl
-    inc  [cmd]
-
-    jmp  read_new_byte
-
-  no_data_in_buffer:
-
-    popa
-
-    ret
+	pusha
+.packetloop:
+.nextpacket:
+	mcall	53, 11, [socket], packetbuf, 1024
+	test	eax, eax
+	jz	.nothing
+	mov	esi, edx	; esi = pointer to data
+	add	edx, eax	; edx = limit of data
+.byteloop:
+	call	get_next_byte
+	jnc	.nextpacket
+	cmp	al, 10
+	jne	.no_start_command
+	mov	[cmd], 1
+.no_start_command:
+	cmp	al, 13
+	jne	.no_end_command
+	mov	ebx, [cmd]
+	mov	byte [ebx+command-2], 0
+	call	analyze_command
+	mov	edi, command
+	mov	ecx, 250
+	xor	eax, eax
+	rep	stosb
+	mov	[cmd], eax
+	mov	al, 13
+.no_end_command:
+	mov	ebx, [cmd]
+	cmp	ebx, 512
+	jge	@f
+	mov	[ebx+command-2], al
+	inc	[cmd]
+@@:
+	jmp	.byteloop
+.nothing:
+	popa
+	ret
 
 
 create_channel_name:
@@ -823,20 +1067,20 @@ create_channel_window:
 
     mov  [cursor_on_off],0
 
-    mov  [thread_nro],eax
+;    mov  [thread_nro],eax
 
+    mov  edx,[thread_stack]
+    sub  edx,8
+    mov  [edx],eax
+    mov  [edx+4],edi
     mov  eax,51
     mov  ebx,1
     mov  ecx,channel_thread
-    mov  edx,[thread_stack]
     mcall
-
-    mov  eax,5
-    mov  ebx,10
-    mcall
+    mov  [edi+120*60+12], eax
 
     add  [thread_stack],0x4000
-    add  [thread_screen],120*80
+;    add  [thread_screen],120*80
 
     popa
 
@@ -862,11 +1106,10 @@ print_entry:
 
     popa
 
-    ret
+; Fall through to draw_cursor.
+;    ret
 
-blink dd 0x0
-
-blink_cursor:
+draw_cursor:
 
     pusha
 
@@ -875,16 +1118,14 @@ blink_cursor:
     mov  ecx,-1
     mcall
 
-    mov  edx,[blink]
-    and  edx,1
-    sub  edx,1
-    and  edx,0xffffff
-;    mov  edx,0
-
     cmp  ax,word [0xe0000+4]
-    jne  no_blink
+    setnz dl
+    movzx edx,dl
+    neg edx
+    and edx,0xffffff
+;    jne  no_blink
 
-    call print_entry
+;    call print_entry
 
     mov  ebx,[xpos]
     imul ebx,6
@@ -900,13 +1141,13 @@ blink_cursor:
 
     ret
 
-  no_blink:
-
-    mov  eax,13
-    mov  ebx,8*65536+6*60
-    mov  ecx,151*65536+13
-    mov  edx,0xffffff
-    mcall
+;  no_blink:
+;
+;    mov  eax,13
+;    mov  ebx,8*65536+6*60
+;    mov  ecx,151*65536+13
+;    mov  edx,0xffffff
+;    mcall
 
     popa
 
@@ -1016,30 +1257,30 @@ analyze_command:
     imul ecx,11
     mov  [pos],ecx
 
-    mov  bl,13
+;    mov  bl,13
 ;  call print_character
-    mov  bl,10
+;    mov  bl,10
 ;  call print_character
 
-    mov  ecx,[cmd]
-    sub  ecx,2
-    mov  esi,command+0
-  newcmdc:
-    mov  bl,[esi]
+;    mov  ecx,[cmd]
+;    sub  ecx,2
+;    mov  esi,command+0
+;  newcmdc:
+;    mov  bl,[esi]
 ;  call print_character
-    inc  esi
-    loop newcmdc
+;    inc  esi
+;    loop newcmdc
 
     mov   edx,I_END
 ;  call  draw_channel_text
 
-    cmp  [cmd],20
-    jge  cmd_len_ok
-
-    mov  [cmd],0
-
-    popa
-    ret
+;    cmp  [cmd],20
+;    jge  cmd_len_ok
+;
+;    mov  [cmd],0
+;
+;    popa
+;    ret
 
 
   cmd_len_ok:
@@ -1065,22 +1306,12 @@ analyze_command:
     mov  ebx,7
     mov  ecx,[socket]
     mov  edx,[cmd]
-    sub  edx,2
-    and  edx,255
     mov  esi,command
-    mcall
-
-    mov  eax,53
-    mov  ebx,7
-    mov  ecx,[socket]
-    mov  edx,2
-    mov  esi,linef
+    mov  word [esi+edx-2], 0x0a0d
     mcall
 
     popa
     ret
-
-  linef  db  13,10
 
   no_ping_responce:
 
@@ -1150,6 +1381,7 @@ analyze_command:
     add  eax,8
     mov  dl,0
     call print_text
+    call notify_channel_thread
     popa
     ret
 
@@ -1169,6 +1401,7 @@ analyze_command:
 
     mov  dl,0
     call print_text
+    call notify_channel_thread
 
     popa
     ret
@@ -1190,8 +1423,9 @@ analyze_command:
     add  eax,5
     call set_channel
 
-    mov  eax,[text_start]
-    mov  [eax+120*60+4],byte 1
+    mov  edi,[text_start]
+    mov  [edi+120*60+4],byte 1
+    call notify_channel_thread
 
     popa
     ret
@@ -1216,6 +1450,7 @@ analyze_command:
     add  eax,5
     mov  dl,' '
     call print_text
+    call notify_channel_thread
 
     popa
     ret
@@ -1268,7 +1503,7 @@ analyze_command:
     push edi
     push eax
     mov  [edi+120*60+8],byte 0 ; channel window
-    mov  eax,32
+    mov  al,32
     mov  ecx,120*60
     cld
     rep  stosb
@@ -1276,7 +1511,7 @@ analyze_command:
     pop  edi
 
     ; eax has the free position
-    mov  [thread_screen],edi
+;    mov  [thread_screen],edi
     call create_channel_window
 
   no_new_window:
@@ -1301,6 +1536,7 @@ analyze_command:
     add  eax,6
     mov  dl,0
     call print_text
+    call notify_channel_thread
 
     popa
     ret
@@ -1329,6 +1565,7 @@ analyze_command:
     add  eax,6
     mov  dl,0
     call print_text
+    call notify_channel_thread
 
     add  [text_start],120*80
     cmp  [text_start],I_END+120*80*20
@@ -1365,6 +1602,7 @@ analyze_command:
     add  eax,5
     mov  dl,0
     call print_text
+    call notify_channel_thread
 
 ;    add  [text_start],120*80
 ;    cmp  [text_start],I_END+120*80*20
@@ -1395,6 +1633,7 @@ analyze_command:
     mov  eax,has_quit_irc
     mov  dl,0
     call print_text
+    call notify_channel_thread
 
     add  [text_start],120*80
     cmp  [text_start],I_END+120*80*20
@@ -1432,6 +1671,7 @@ analyze_command:
     add  eax,5
     mov  dl,0
     call print_text
+    call notify_channel_thread
 
 ;    add  [text_start],120*80
 ;    cmp  [text_start],I_END+120*80*20
@@ -1465,7 +1705,7 @@ analyze_command:
     add  edi,120*70
     mov  [edi-8],dword 0
     mov  [edi-4],dword 0
-    mov  eax,32
+    mov  al,32
     mov  ecx,1200
     cld
     rep  stosb
@@ -1501,6 +1741,7 @@ analyze_command:
     mov  ebx,[text_start]
     add  ebx,120*70
     mov  [ebx-4],eax
+    call notify_channel_thread
 
     popa
     ret
@@ -1645,6 +1886,21 @@ cp1251_table:
 
 ;    0   1   2   3   4   5   6   7     8   9   A   B   C   D   E   F
 
+utf8_table:
+	times 80h dw 0x98C3	; default placeholder
+; 0x80-0xAF -> 0x90D0-0xBFD0
+repeat 0x30
+store byte 0xD0 at utf8_table+2*(%-1)
+store byte 0x90+%-1 at utf8_table+2*%-1
+end repeat
+; 0xE0-0xEF -> 0x80D1-0x8FD1
+repeat 0x10
+store byte 0xD1 at utf8_table+2*(0xE0-0x80+%-1)
+store byte 0x80+%-1 at utf8_table+2*(0xE0-0x80+%)-1
+end repeat
+; 0xF0 -> 0x81D0, 0xF1 -> 0x91D1
+store dword 0x91D181D0 at utf8_table+2*(0xF0-0x80)
+
 cp866_table:
   db $C0,$C1,$C2,$C3,$C4,$C5,$C6,$C7 , $C8,$C9,$CA,$CB,$CC,$CD,$CE,$CF ; 8
   db $D0,$D1,$D2,$D3,$D4,$D5,$D6,$D7 , $D8,$D9,$DA,$DB,$DC,$DD,$DE,$DF ; 9
@@ -1746,6 +2002,13 @@ print_character:
     popa
     ret
 
+notify_channel_thread:
+	pusha
+	mov	eax, [text_start]
+	mov	ecx, [eax+120*60+12]
+	mcall	60, 2, , 0, 1
+	popa
+	ret
 
 
 draw_data:
@@ -1760,36 +2023,6 @@ draw_data:
     ret
 
 
-read_incoming_byte:
-
-    mov  eax, 53
-    mov  ebx, 2
-    mov  ecx, [socket]
-    mcall
-
-    mov  ecx,-1
-
-    cmp  eax,0
-    je	 no_more_data
-
-    mov  eax, 53
-    mov  ebx, 3
-    mov  ecx, [socket]
-    mcall
-
-	cmp	bl,0x80
-	jb	@f
-	and	ebx,0x7F
-	mov	bl,[cp1251_table+ebx]
-    @@:
-
-    mov  ecx,0
-
-  no_more_data:
-
-    ret
-
-
 
 draw_window:
 
@@ -1799,33 +2032,40 @@ draw_window:
     mov  ebx,1
     mcall
 
-    mov  [old_status],300
-
     xor  eax,eax		   ; draw window
     mov  ebx,5*65536+499
-    mov  ecx,5*65536+345
+    mov  ecx,5*65536+381
     mov  edx,[wcolor]
     add  edx,0x14ffffff
     mov  edi,title
     mcall
 
-    mov  eax,8			   ; button: open socket
-    mov  ebx,43*65536+22
-    mov  ecx,229*65536+10
-    mov  edx,22
+    mov  eax,8                     ; button: change encoding
+    mov  ebx,(ENCODING_X-2)*65536+38
+    mov  ecx,(ENCODING_Y-2)*65536+12
+    mov  edx,21
     mov  esi,[main_button]
+    mcall
+
+;    mov  eax,8			   ; button: open socket
+    mov  ebx,43*65536+22
+    mov  ecx,241*65536+10
+;    mov  edx,22
+    inc  edx
     mcall
 
     ;mov  eax,8			   ; button: send userinfo
     mov  ebx,180*65536+22
-    mov  ecx,229*65536+10
-    mov  edx,23
+    mov  ecx,241*65536+10
+;    mov  edx,23
+    inc  edx
     mcall
 
     ;mov  eax,8			   ; button: close socket
     mov  ebx,317*65536+22
-    mov  ecx,229*65536+10
-    mov  edx,24
+    mov  ecx,241*65536+10
+;    mov  edx,24
+    inc  edx
     mcall
 
     mov  eax,38 		   ; line
@@ -1862,6 +2102,8 @@ draw_window:
     mov  edx,I_END		  ; text from server
     call draw_channel_text
 
+    call print_entry
+
     mov  eax,12
     mov  ebx,2
     mcall
@@ -1869,6 +2111,40 @@ draw_window:
     popa
 
     ret
+
+update_status:
+	pusha
+	mov	esi, [status]
+	mov	edi, text + 7*70 + 22
+	mov	ecx, status_text_len
+	push	ecx
+	imul	esi, ecx
+	add	esi, status_text
+	mov	edx, edi
+	rep	movsb
+	pop	esi
+	mcall	4, STATUS_X*65536+STATUS_Y, 0x40000000, , , 0xFFFFFF
+	popa
+	ret
+
+update_encoding:
+	pusha
+	mov	edx, 21
+	mcall	8	; delete button
+	mov	esi, [main_button]
+	mcall	, <(ENCODING_X-2),38>, <(ENCODING_Y-2),12>	; recreate it
+	mov	esi, [encoding]
+	mov	edi, text + 3*70 + 15
+	mov	ecx, encoding_text_len
+	push	ecx
+	imul	esi, ecx
+	add	esi, encoding_text
+	mov	edx, edi
+	rep	movsb
+	pop	esi
+	mcall	4, ENCODING_X*65536+ENCODING_Y, 0
+	popa
+	ret
 
 main_line    dd 0x000000
 main_button  dd 0x6565cc
@@ -1879,8 +2155,11 @@ text:
 db '   Real name : KolibriOS User  - change with eg /areal Jill User      '
 db '   Nick      : kolibri_user    - change with eg /anick Jill           '
 db '   Server    : kolibrios.org   - change with eg /aserv irc.by         '
+db '   Encoding  : UTF-8                                                  '
 db '                                                                      '
-db '        1) Open socket         2) Send userinfo       Close socket    '
+db '        1) Connect             2) Send userinfo       3) Disconnect   '
+db '                                                                      '
+db '   Connection status: disconnected                                    '
 db '                                                                      '
 db '   Commands after established connection:                             '
 db '                                                                      '
@@ -1890,8 +2169,18 @@ db '   /query Nickname            - eg /query Mary                        '
 db '   /quit                      - Quit server and Close socket          '
 db 'x' ; <- END MARKER, DONT DELETE
 
+status_text:
+db	'disconnected            '
+db      'resolving server name...'
+db	'connecting...           '
+db	'connected               '
+status_text_len = 24
 
-
+encoding_text:
+db	'CP866 '
+db	'CP1251'
+db	'UTF-8 '
+encoding_text_len = 6
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;
@@ -1903,23 +2192,42 @@ db 'x' ; <- END MARKER, DONT DELETE
 
 channel_thread:
 
-    mov   ebp,[thread_nro]
+;    mov   ebp,[thread_nro]
+    pop   ebp
+    pop   edx
+
     mov   eax,ebp
     shl   eax,14
     add   eax,0x80000
     mov   esp,eax
 
-    mov   edi,ebp	 ; clear thread memory
-    imul  edi,120*80
-    add   edi,I_END
-    mov   ecx,120*80
-    mov   eax,32
-    cld
+;    mov   edi,ebp	 ; clear thread memory
+;    imul  edi,120*80
+;    add   edi,I_END
+;    mov   ecx,120*80
+;    mov   al,32
+;    cld
 ;    rep   stosb
 
-    mov   edx,[thread_screen]
+; Create IPC buffer in the stack.
+	push	eax
+	push	eax
+	push	eax
+	push	8
+	push	0
+	mov	ecx, esp
+	push	edx
+	mcall	60, 1, , 20
+	pop	edx
+	mcall	40, 1100111b
 
+;    mov   edx,[thread_screen]
+
+  thread_redraw:
     call  thread_draw_window
+    call  draw_channel_text
+    call  print_user_list
+    call  print_entry
 
   w_t:
 
@@ -1937,24 +2245,18 @@ channel_thread:
     mcall
   no_channel_leave:
 
+    mcall 10
+    dec   eax
+    jz    thread_redraw
+    dec   eax
+    jz    thread_key
+    dec   eax
+    jz    thread_end
+    cmp   al,4
+    jz    thread_ipc
     call  check_mouse
-
-    mov   eax,23
-    mov   ebx,1
-    mcall
-
-    cmp   eax,1
-    jne   no_draw_window
-    call  thread_draw_window
-    call  draw_channel_text
-    call  print_user_list
-  no_draw_window:
-
-    cmp   eax,2
-    je	  thread_key
-
-    cmp   eax,3
-    jne   no_end
+    jmp   w_t
+  thread_end:
     mov   eax,17
     mcall
     mov   eax,ebp
@@ -1981,6 +2283,8 @@ channel_thread:
     call  draw_channel_text
     jmp   w_t
    nocl:   db  13,10,'To exit channel, use PART or QUIT command.',0
+  thread_ipc:
+    mov   byte [esp+4], 8 ; erase message from IPC buffer
    no_end:
 
     cmp   [edx+120*60],byte 1
@@ -1989,10 +2293,6 @@ channel_thread:
     call  draw_channel_text
   no_update:
 
-    test [cursor_on_off],0x3f
-    jnz   nopri2
-
-    call  blink_cursor
     call  print_user_list
 
   nopri2:
@@ -2095,13 +2395,15 @@ thread_key:
     cmp  [xpos],0
     je	 no_send
     mov  dword [send_to_channel],ebp
-    mov  [send_to_server],1
+    pusha
+    mcall 60,2,[main_PID],0,1
   wait_for_sending:
     mov  eax,5
     mov  ebx,1
     mcall
-    cmp  [send_to_server],1
-    je	 wait_for_sending
+    cmp  dword [ipcbuf+4],8
+    jne	 wait_for_sending
+    popa
     call draw_channel_text
     call print_entry
     jmp  w_t
@@ -2265,8 +2567,8 @@ cursor_on_off  dd  0x0
 max_windows    dd  20
 
 thread_stack   dd  0x9fff0
-thread_nro     dd 1
-thread_screen  dd I_END+120*80*1
+;thread_nro     dd 1
+;thread_screen  dd I_END+120*80*1
 
 action_header_blue  db	10,'*** ',0
 action_header_red   db	10,'*** ',0
@@ -2330,12 +2632,54 @@ wcolor	    dd	0x000000
 labelc	    db	'AIRC - WINDOW X: #xxx                 '
 title	    db	'IRC client ',version,0
 
-;include_debug_strings  ; ALWAYS present in data section
+ipcbuf:
+	dd	0
+	dd	8
+	dd	?
+	dd	?
+	db	?
+.size = $
 
-irc_server_ip db ?  ; bufer for server_IP
+align 4
+@IMPORT:
 
-dnsMsg:  rb 512     ; buffer used by DNS client
+library network, 'network.obj', msgbox, 'msgbox.obj'
+import  network, \
+	getaddrinfo_start,	'getaddrinfo_start',	\
+	getaddrinfo_process,	'getaddrinfo_process',	\
+	getaddrinfo_abort,	'getaddrinfo_abort',	\
+	freeaddrinfo,		'freeaddrinfo'
+import	msgbox, mb_create, 'mb_create', mb_setfunctions, 'mb_setfunctions'
 
+msgbox_running	db	?	; must be the byte before msgbox_struct
+				; look to the handler of button 21
+msgbox_struct:
+.default:
+	dw	?	; default button, will be filled with current encoding
+	db	'Encoding',0
+	db	'Select encoding for all messages:',0
+	db	'CP866',0
+	db	'CP1251',0
+	db	'UTF-8',0
+	db	0
+
+align 4
+status		dd	STATUS_DISCONNECTED
+encoding	dd	UTF8
+recode_proc	dd	recode_to_cp866, recode_to_cp1251, recode_to_utf8
+get_byte_table	dd	get_byte_cp866, get_byte_cp1251, get_byte_utf8
+msgbox_func_array:
+times 3		dd	msgbox_notify
+initialized_size:
+
+main_PID	dd	?	; identifier of main thread
+utf8_bytes_rest	dd	?	; bytes rest in current UTF8 sequence
+utf8_char	dd	?	; first bits of current UTF8 character
+gai_reqdata	rb	32	; buffer for getaddrinfo_start/process
+ip_list		dd	?	; will be filled as pointer to addrinfo list
+irc_server_name	rb	256	; buffer for irc_server_name
+packetbuf	rb	1024	; buffer for packets to server
+mb_stack	rb	1024	; stack for messagebox thread
 
 ;;
 ;;   Channel data at I_END
@@ -2348,6 +2692,7 @@ dnsMsg:  rb 512     ; buffer used by DNS client
 ;;  120*60      ,  1        text is updated
 ;;  120*60+4    ,  1        close yourself
 ;;  120*60+8    ,  1        0 = channel window  :  1 = private chat
+;;  120*60+12    , 4        identifier of the thread
 ;;  120*61      ,  256      channel name
 ;;  120*61+254  ,  254      channel entry text from user
 ;;  120*61+255  ,  1        length of entry text
