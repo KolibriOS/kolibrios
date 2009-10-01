@@ -104,15 +104,15 @@ parser:
 	stos	word [edi]
 	mov	al,dl
 	stos	byte [edi]
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	je	parse_block
-	cmp	bx,repeat_directive-assembler
+	cmp	bx,repeat_directive-instruction_handler
 	je	parse_block
-	cmp	bx,while_directive-assembler
+	cmp	bx,while_directive-instruction_handler
 	je	parse_block
-	cmp	bx,end_directive-assembler
+	cmp	bx,end_directive-instruction_handler
 	je	parse_end_directive
-	cmp	bx,else_directive-assembler
+	cmp	bx,else_directive-instruction_handler
 	je	parse_else
       common_parse:
 	call	parse_line_contents
@@ -159,9 +159,9 @@ parser:
 	shl	eax,16
 	push	eax
 	inc	[blocks_stack]
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	je	parse_if
-	cmp	bx,while_directive-assembler
+	cmp	bx,while_directive-instruction_handler
 	je	parse_while
 	call	parse_line_contents
 	jmp	parse_next_line
@@ -188,11 +188,11 @@ parser:
 	lods	byte [esi]
 	or	al,al
 	jnz	extra_characters_on_line
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	je	close_parsing_block
-	cmp	bx,repeat_directive-assembler
+	cmp	bx,repeat_directive-instruction_handler
 	je	close_parsing_block
-	cmp	bx,while_directive-assembler
+	cmp	bx,while_directive-instruction_handler
 	je	close_parsing_block
 	jmp	parse_next_line
       close_parsing_block:
@@ -202,7 +202,7 @@ parser:
 	jne	unexpected_instruction
 	dec	[blocks_stack]
 	pop	eax edx
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	jne	parse_next_line
 	test	al,1100b
 	jz	parse_next_line
@@ -251,7 +251,7 @@ parser:
       parse_else:
 	cmp	[blocks_stack],0
 	je	unexpected_instruction
-	cmp	word [esp+2],if_directive-assembler
+	cmp	word [esp+2],if_directive-instruction_handler
 	jne	unexpected_instruction
 	lods	byte [esi]
 	or	al,al
@@ -264,7 +264,7 @@ parser:
 	call	get_instruction
 	jc	extra_characters_on_line
 	pop	edi
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	jne	extra_characters_on_line
 	test	byte [esp],100b
 	jnz	skip_true_condition_else
@@ -311,15 +311,15 @@ parser:
 	lea	esi,[esi+ecx+1]
 	jmp	skip_parsing_line
       skip_parsing_instruction:
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	je	skip_parsing_block
-	cmp	bx,repeat_directive-assembler
+	cmp	bx,repeat_directive-instruction_handler
 	je	skip_parsing_block
-	cmp	bx,while_directive-assembler
+	cmp	bx,while_directive-instruction_handler
 	je	skip_parsing_block
-	cmp	bx,end_directive-assembler
+	cmp	bx,end_directive-instruction_handler
 	je	skip_parsing_end_directive
-	cmp	bx,else_directive-assembler
+	cmp	bx,else_directive-instruction_handler
 	je	skip_parsing_else
       skip_parsing_contents:
 	lods	byte [esi]
@@ -369,11 +369,11 @@ parser:
 	lods	byte [esi]
 	or	al,al
 	jnz	extra_characters_on_line
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	je	close_skip_parsing_block
-	cmp	bx,repeat_directive-assembler
+	cmp	bx,repeat_directive-instruction_handler
 	je	close_skip_parsing_block
-	cmp	bx,while_directive-assembler
+	cmp	bx,while_directive-instruction_handler
 	je	close_skip_parsing_block
 	jmp	skip_parsing
       close_skip_parsing_block:
@@ -385,7 +385,7 @@ parser:
 	pop	eax edx
 	test	al,1
 	jz	skip_parsing
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	jne	parse_next_line
 	test	al,10000b
 	jz	parse_next_line
@@ -394,15 +394,15 @@ parser:
 	mov	eax,[current_line]
 	stos	dword [edi]
 	inc	[parsed_lines]
-	mov	eax,1 + (end_directive-assembler) shl 8
+	mov	eax,1 + (end_directive-instruction_handler) shl 8
 	stos	dword [edi]
-	mov	eax,1 + (if_directive-assembler) shl 8
+	mov	eax,1 + (if_directive-instruction_handler) shl 8
 	stos	dword [edi]
 	jmp	parse_next_line
       skip_parsing_else:
 	cmp	[blocks_stack],0
 	je	unexpected_instruction
-	cmp	word [esp+2],if_directive-assembler
+	cmp	word [esp+2],if_directive-instruction_handler
 	jne	unexpected_instruction
 	lods	byte [esi]
 	or	al,al
@@ -415,7 +415,7 @@ parser:
 	call	get_instruction
 	jc	extra_characters_on_line
 	pop	edi
-	cmp	bx,if_directive-assembler
+	cmp	bx,if_directive-instruction_handler
 	jne	extra_characters_on_line
 	mov	al,[esp]
 	test	al,1
@@ -432,7 +432,7 @@ parser:
 	stos	dword [edi]
 	inc	[parsed_lines]
       parse_else_if:
-	mov	eax,1 + (if_directive-assembler) shl 8
+	mov	eax,1 + (if_directive-instruction_handler) shl 8
 	stos	dword [edi]
 	jmp	parse_if
       skip_parsing_pure_else:
@@ -451,21 +451,21 @@ parser:
 parse_line_contents:
 	mov	[parenthesis_stack],0
       parse_instruction_arguments:
-	cmp	bx,prefix_instruction-assembler
+	cmp	bx,prefix_instruction-instruction_handler
 	je	allow_embedded_instruction
-	cmp	bx,times_directive-assembler
+	cmp	bx,times_directive-instruction_handler
 	je	parse_times_directive
-	cmp	bx,end_directive-assembler
+	cmp	bx,end_directive-instruction_handler
 	je	allow_embedded_instruction
-	cmp	bx,label_directive-assembler
+	cmp	bx,label_directive-instruction_handler
 	je	parse_label_directive
-	cmp	bx,segment_directive-assembler
+	cmp	bx,segment_directive-instruction_handler
 	je	parse_label_directive
-	cmp	bx,load_directive-assembler
+	cmp	bx,load_directive-instruction_handler
 	je	parse_load_directive
-	cmp	bx,extrn_directive-assembler
+	cmp	bx,extrn_directive-instruction_handler
 	je	parse_extrn_directive
-	cmp	bx,public_directive-assembler
+	cmp	bx,public_directive-instruction_handler
 	je	parse_public_directive
       parse_argument:
 	lea	eax,[edi+100h]

@@ -2,57 +2,6 @@
 Visit http://flatassembler.net/ for more information.
 
 
-version 1.69.06 (Sep 29, 2009)
-
-[-] The prefix 67h for "jecxz" and "loopd" instructions in 64-bit mode wasn't
-    correctly generated - fixed.
-
-[-] It's no longer possible to define two special segments of the same type
-    in ELF executables.
-
-
-version 1.69.05 (Sep 14, 2009)
-
-[+] Allowed to specify branding value (use 3 for Linux) after the
-    "format ELF executable" setting.
-
-[+] Added "intepreter", "dynamic" and "note" keywords for creation of
-    special segments in ELF executables.
-
-
-version 1.69.04 (Sep 7, 2009)
-
-[-] Fixed a bug with REX prefix generation with address of type "rX+rsp".
-
-
-version 1.69.03 (Aug 03, 2009)
-
-[+] Allowed simplified syntax for "monitor", "mwait", "blendvps", "blendvpd" and
-    "pblendvb" instructions.
-
-
-version 1.69.02 (Jul 04, 2009)
-
-[-] Minor bugfixes.
-
-
-version 1.69.01 (Jul 01, 2009)
-
-[+] Added "movbe" instruction.
-
-[-] "extractps" no longer generates the double 66h prefix.
-
-
-version 1.69.00 (Jun 23, 2009)
-
-[+] Extended the syntax of "rept" directive to allow numerical expressions
-    to be calculated by preprocessor in its arguments.
-
-[-] The code of assembler (but not data) has been made position-independent, and
-    this allowed to use code segmentation in DOS unREAL mode, so the code is
-    no longer limited to 64 kilobytes.
-
-
 version 1.68 (Jun 13, 2009)
 
 [+] Added SSSE3 (Supplemental SSE3), SSE4.1, SSE4.2 and SSE4a instructions.
@@ -114,11 +63,11 @@ version 1.66 (May 7, 2006)
     that "define" doesn't process symbolic constants in the value before
     assigning it. For example:
 
-        a equ 1
-        a equ a+a
+	a equ 1
+	a equ a+a
 
-        define b 1
-        define b b+b
+	define b 1
+	define b b+b
 
     defines the "a" constant with value "1+1", but the "b" is defined with
     value "b+b". This directive may be useful in some advanced
@@ -130,9 +79,9 @@ version 1.66 (May 7, 2006)
     evaluated by the parser and if they are enough to determine the condition,
     the whole block is processed accordingly. Thus this block:
 
-        if eax eq EAX | 0/0
-                nop
-        end if
+	if eax eq EAX | 0/0
+		nop
+	end if
 
     is parsed into just "nop" instruction, since parser is able to determine
     that the condition is true, even though one of the logical values makes no
@@ -142,9 +91,9 @@ version 1.66 (May 7, 2006)
 [-] Also the assembler is now calculating only as many logical values as it
     needs to determine the condition. So this block:
 
-        if defined alpha & alpha
+	if defined alpha & alpha
 
-        end if
+	end if
 
     will not cause error when "alpha" is not defined, as it would with previous
     versions. This is because after checking that "defined alpha" is false

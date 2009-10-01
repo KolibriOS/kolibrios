@@ -76,8 +76,18 @@ convert_expression:
 
 convert_number:
 	lea	eax,[edi-10h]
-	cmp	eax,[labels_list]
+	mov	edx,[memory_end]
+	cmp	[source_start],0
+	je	check_memory_for_number
+	mov	edx,[labels_list]
+      check_memory_for_number:
+	cmp	eax,edx
 	jae	out_of_memory
+	mov	eax,esp
+	sub	eax,100h
+	jc	stack_overflow
+	cmp	eax,[stack_limit]
+	jb	stack_overflow
 	cmp	byte [esi],'('
 	je	expression_value
 	inc	edi
@@ -111,11 +121,6 @@ convert_number:
 	scas	word [edi]
 	ret
       expression_value:
-	mov	eax,esp
-	sub	eax,100h
-	jc	stack_overflow
-	cmp	eax,[stack_limit]
-	jb	stack_overflow
 	inc	esi
 	push	[current_offset]
 	call	convert_expression
@@ -125,6 +130,8 @@ convert_number:
 	jne	invalid_expression
 	ret
       symbol_value:
+	cmp	[source_start],0
+	je	preprocessor_value
 	push	edi
 	mov	edi,address_registers
 	call	get_operator
@@ -152,6 +159,23 @@ convert_number:
 	pop	edi
 	mov	byte [edi-1],10h
 	stos	byte [edi]
+	ret
+      preprocessor_value:
+	dec	edi
+	lods	byte [esi]
+	cmp	al,1Ah
+	jne	invalid_value
+	lods	byte [esi]
+	mov	cl,al
+	mov	ch,10b
+	call	get_preprocessor_symbol
+	jc	invalid_value
+	push	esi
+	mov	esi,[edx+8]
+	push	[current_offset]
+	call	convert_expression
+	pop	[current_offset]
+	pop	esi
 	ret
 
 get_number:
@@ -1043,7 +1067,12 @@ calculate_expression:
 	jmp	calculation_loop
       timestamp_label:
 	call	make_timestamp
-	jmp	make_dword_label_value
+      make_qword_label_value:
+	stos	dword [edi]
+	mov	eax,edx
+	stos	dword [edi]
+	add	edi,0Ch
+	jmp	calculation_loop
       predefined_label:
 	or	eax,eax
 	jz	current_offset_label

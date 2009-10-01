@@ -44,8 +44,8 @@ simple_instruction_64bit:
 simple_extended_instruction_64bit:
 	cmp	[code_type],64
 	jne	illegal_instruction
-	mov	al,48h
-	stos	byte [edi]
+	mov	byte [edi],48h
+	inc	edi
 simple_extended_instruction:
 	mov	ah,al
 	mov	al,0Fh
@@ -472,8 +472,8 @@ mov_instruction:
 	mov	[base_code],0A2h
       store_mov_address32:
 	call	store_instruction_code
-	push	instruction_assembled
-	jmp	store_address_32bit_value
+	call	store_address_32bit_value
+	jmp	instruction_assembled
       mov_mem_address16_al:
 	call	store_segment_prefix_if_necessary
 	call	address_16bit_prefix
@@ -492,8 +492,8 @@ mov_instruction:
 	mov	[base_code],0A2h
       store_mov_address64:
 	call	store_instruction_code
-	push	instruction_assembled
-	jmp	store_address_64bit_value
+	call	store_address_64bit_value
+	jmp	instruction_assembled
       mov_mem_ax:
 	test	ch,22h
 	jnz	mov_mem_address16_ax
@@ -3284,6 +3284,7 @@ loop_instruction:
 	cmp	[code_type],64
 	jne	invalid_operand_size
 	call	get_address_qword_value
+	call	loop_counter_size
 	call	calculate_jump_offset
 	mov	ecx,edx
 	cdq
@@ -4893,6 +4894,7 @@ sse_instruction:
 	cmp	[immediate_size],-1
 	jne	sse_ok
 	call	take_additional_xmm0
+	mov	[immediate_size],0
       sse_ok:
 	jmp	instruction_ready
       sse_xmmreg_xmmreg:
@@ -4913,12 +4915,13 @@ sse_instruction:
 	cmp	[immediate_size],-1
 	jne	sse_nomem_ok
 	call	take_additional_xmm0
+	mov	[immediate_size],0
       sse_nomem_ok:
 	jmp	nomem_instruction_ready
       take_additional_xmm0:
-	lods	byte [esi]
-	cmp	al,','
-	jne	invalid_operand
+	cmp	byte [esi],','
+	jne	additional_xmm0_ok
+	inc	esi
 	lods	byte [esi]
 	cmp	al,10h
 	jne	invalid_operand
@@ -4928,6 +4931,7 @@ sse_instruction:
 	jne	invalid_operand_size
 	test	al,al
 	jnz	invalid_operand
+      additional_xmm0_ok:
 	ret
 
 ps_dq_instruction:
@@ -5483,12 +5487,11 @@ extractps_instruction:
 	mov	[postbyte_register],al
 	pop	ebx
 	mov	al,bh
-	cmp	al,8
-	je	extractps_store
 	cmp	al,4
+	je	mmx_nomem_imm8
+	cmp	al,8
 	jne	invalid_operand_size
-      extractps_store:
-	call	operand_autodetect
+	call	operand_64bit
 	jmp	mmx_nomem_imm8
 insertps_instruction:
 	mov	[opcode_prefix],66h
@@ -5874,6 +5877,10 @@ movnti_instruction:
 	jmp	instruction_ready
 monitor_instruction:
 	mov	[postbyte_register],al
+	cmp	byte [esi],0
+	je	monitor_instruction_store
+	cmp	byte [esi],0Fh
+	je	monitor_instruction_store
 	lods	byte [esi]
 	call	get_size_operator
 	cmp	al,10h
@@ -6074,6 +6081,7 @@ crc32_instruction:
 	cmp	al,','
 	jne	invalid_operand
 	mov	[operand_size],0
+	call	operand_64bit
 	lods	byte [esi]
 	call	get_size_operator
 	cmp	al,10h
@@ -6105,6 +6113,57 @@ crc32_instruction:
 popcnt_instruction:
 	mov	[opcode_prefix],0F3h
 	jmp	bs_instruction
+movbe_instruction:
+	mov	[supplemental_code],al
+	mov	[extended_code],38h
+	mov	[base_code],0Fh
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,'['
+	je	movbe_mem
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[postbyte_register],al
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	call	get_size_operator
+;       cmp     al,10h
+;       je      movbe_reg_reg
+	cmp	al,'['
+	jne	invalid_argument
+	call	get_address
+	mov	al,[operand_size]
+	call	operand_autodetect
+	jmp	instruction_ready
+;      movbe_reg_reg:
+;       lods    byte [esi]
+;       call    convert_register
+;       mov     bl,al
+;       mov     al,ah
+;       call    operand_autodetect
+;       jmp     nomem_instruction_ready
+      movbe_mem:
+	inc	[supplemental_code]
+	call	get_address
+	push	edx ebx ecx
+	lods	byte [esi]
+	cmp	al,','
+	jne	invalid_operand
+	lods	byte [esi]
+	call	get_size_operator
+	cmp	al,10h
+	jne	invalid_operand
+	lods	byte [esi]
+	call	convert_register
+	mov	[postbyte_register],al
+	pop	ecx ebx edx
+	mov	al,[operand_size]
+	call	operand_autodetect
+	jmp	instruction_ready
 
 simple_vmx_instruction:
 	mov	ah,al
@@ -6705,15 +6764,6 @@ store_instruction:
 	cmp	[code_type],64
 	jne	invalid_address_size
       address_prefix_ok:
-	test	bh,1000b
-	jz	base_code_ok
-	or	[rex_prefix],41h
-      base_code_ok:
-	test	bl,1000b
-	jz	index_code_ok
-	or	[rex_prefix],42h
-      index_code_ok:
-	call	store_instruction_code
 	cmp	bl,44h
 	je	swap_base_with_index
 	cmp	bl,84h
@@ -6727,6 +6777,15 @@ store_instruction:
 	cmp	bl,84h
 	je	invalid_address
       base_register_ok:
+	test	bh,1000b
+	jz	base_code_ok
+	or	[rex_prefix],41h
+      base_code_ok:
+	test	bl,1000b
+	jz	index_code_ok
+	or	[rex_prefix],42h
+      index_code_ok:
+	call	store_instruction_code
 	or	cl,cl
 	jz	only_base_register
       base_and_index:

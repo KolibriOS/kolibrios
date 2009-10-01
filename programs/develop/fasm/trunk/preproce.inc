@@ -37,6 +37,7 @@ preprocessor:
 	mov	eax,[additional_memory_end]
 	mov	[labels_list],eax
 	xor	eax,eax
+	mov	[source_start],eax
 	mov	[display_buffer],eax
 	mov	[hash_tree],eax
 	mov	[macro_status],al
@@ -375,11 +376,13 @@ get_directive:
 	ret
       directive_ok:
 	lea	esi,[edx+ebp]
+	call	directive_handler
+      directive_handler:
+	pop	ecx
 	movzx	eax,word [ebx]
-	add	eax,preprocessor
+	add	eax,ecx
 	clc
 	ret
-
 
 preprocess_line:
 	mov	eax,esp
@@ -756,24 +759,20 @@ add_preprocessor_symbol:
 define_fix_constant:
 	add	edx,5
 	add	esi,2
-	push	edx esi
-	mov	esi,edx
-	call	skip_parameters
-	xchg	esi,[esp]
+	push	edx
 	mov	ch,11b
 	jmp	define_preprocessor_constant
 define_equ_constant:
 	add	esi,3
 	push	esi
 	call	process_equ_constants
-	push	esi
 	mov	esi,[struc_name]
 	mov	ch,10b
       define_preprocessor_constant:
 	mov	byte [esi-2],3Bh
 	mov	cl,[esi-1]
 	call	add_preprocessor_symbol
-	pop	esi ebx
+	pop	ebx
 	mov	ecx,edi
 	dec	ecx
 	sub	ecx,ebx
@@ -790,34 +789,11 @@ define_symbolic_constant:
 	call	add_preprocessor_symbol
 	movzx	eax,byte [esi-1]
 	add	esi,eax
-	push	esi edx
-	call	skip_parameters
-	pop	edx ebx
-	lea	ecx,[esi-1]
-	sub	ecx,ebx
-	mov	[edx+8],ebx
+	lea	ecx,[edi-1]
+	sub	ecx,esi
+	mov	[edx+8],esi
 	mov	[edx+12],ecx
 	jmp	line_preprocessed
-      skip_parameters:
-	lods	byte [esi]
-	or	al,al
-	jz	parameters_skipped
-	cmp	al,'{'
-	je	parameters_skipped
-	cmp	al,22h
-	je	skip_quoted_parameter
-	cmp	al,1Ah
-	jne	skip_parameters
-	lods	byte [esi]
-	movzx	eax,al
-	add	esi,eax
-	jmp	skip_parameters
-      skip_quoted_parameter:
-	lods	dword [esi]
-	add	esi,eax
-	jmp	skip_parameters
-      parameters_skipped:
-	ret
 
 define_struc:
 	mov	ch,1
@@ -959,8 +935,25 @@ define_instant_macro:
 	mov	[instant_macro_start],esi
 	cmp	[base_code],10h
 	je	prepare_match
-	call	skip_parameters
-      instant_macro_parameters_skipped:
+      skip_parameters:
+	lods	byte [esi]
+	or	al,al
+	jz	parameters_skipped
+	cmp	al,'{'
+	je	parameters_skipped
+	cmp	al,22h
+	je	skip_quoted_parameter
+	cmp	al,1Ah
+	jne	skip_parameters
+	lods	byte [esi]
+	movzx	eax,al
+	add	esi,eax
+	jmp	skip_parameters
+      skip_quoted_parameter:
+	lods	dword [esi]
+	add	esi,eax
+	jmp	skip_parameters
+      parameters_skipped:
 	dec	esi
 	mov	[parameters_end],esi
 	lods	byte [esi]
@@ -973,7 +966,7 @@ prepare_match:
 	call	skip_pattern
 	mov	[value_type],80h+10b
 	call	process_symbolic_constants
-	jmp	instant_macro_parameters_skipped
+	jmp	parameters_skipped
       skip_pattern:
 	lods	byte [esi]
 	or	al,al
@@ -1522,15 +1515,9 @@ use_instant_macro:
 	jae	do_match
 	cmp	[base_code],0
 	jne	do_irp
-	call	get_number
-	jc	invalid_value
-	or	ebp,ebp
-	jnz	invalid_value
-	cmp	dword [edi+4],0
-	jne	value_out_of_range
-	mov	eax,[edi]
-	cmp	eax,80000000h
-	jae	value_out_of_range
+	call	precalculate_value
+	cmp	eax,0
+	jl	value_out_of_range
 	push	[free_additional_memory]
 	push	[macro_symbols]
 	mov	[macro_symbols],0
@@ -1558,16 +1545,10 @@ use_instant_macro:
 	cmp	al,':'
 	jne	rept_counter_added
 	push	edx
-	call	get_number
-	jc	invalid_value
-	or	ebp,ebp
-	jnz	invalid_value
-	cmp	dword [edi+4],0
-	jne	value_out_of_range
-	mov	eax,[edi]
+	call	precalculate_value
 	mov	edx,eax
 	add	edx,[counter_limit]
-	jc	value_out_of_range
+	jo	value_out_of_range
 	pop	edx
 	mov	dword [edx+8],eax
 	lods	byte [esi]
@@ -1606,6 +1587,21 @@ use_instant_macro:
 	mov	ecx,edx
 	call	move_data
 	jmp	initial_preprocessing_ok
+      precalculate_value:
+	push	edi
+	call	convert_expression
+	mov	al,')'
+	stosb
+	push	esi
+	mov	esi,[esp+4]
+	call	calculate_expression
+	mov	eax,[edi]
+	mov	ecx,[edi+4]
+	pop	esi edi
+	cdq
+	cmp	edx,ecx
+	jne	value_out_of_range
+	ret
 do_irp:
 	cmp	byte [esi],1Ah
 	jne	invalid_macro_arguments
@@ -1977,10 +1973,10 @@ process_macro:
       replace_macro_symbol:
 	pop	edi eax
 	mov	ecx,[edx+8]
-	and	ecx,not 80000000h
 	mov	edx,[edx+12]
 	or	edx,edx
 	jz	replace_macro_counter
+	and	ecx,not 80000000h
 	xchg	esi,edx
 	call	move_data
 	mov	esi,edx
@@ -2057,6 +2053,12 @@ process_macro:
 	inc	edi
 	jmp	multiple_macro_counter_values
       store_number_symbol:
+	cmp	ecx,0
+	jge	numer_symbol_sign_ok
+	neg	ecx
+	mov	al,'-'
+	stos	byte [edi]
+      numer_symbol_sign_ok:
 	mov	ax,1Ah
 	stos	word [edi]
 	push	edi

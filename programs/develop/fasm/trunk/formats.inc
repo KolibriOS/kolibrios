@@ -133,7 +133,7 @@ formatter:
 	mov	[edi],ecx
 	or	dword [edi+4],-1
 	sub	edi,ecx
-	cmp	edi,[esp]
+	cmp	edi,[current_offset]
 	jbe	out_of_memory
 	mov	[display_buffer],edi
 	mov	esi,[memory_end]
@@ -1301,7 +1301,7 @@ data_directive:
 	or	ecx,ecx
 	jnz	data_already_defined
 	call	allocate_structure_data
-	mov	word [ebx],data_directive-assembler
+	mov	word [ebx],data_directive-instruction_handler
 	mov	[ebx+2],al
 	mov	edx,[current_line]
 	mov	[ebx+4],edx
@@ -3591,6 +3591,18 @@ elf_formatter:
 format_elf_exe:
 	add	esi,2
 	or	[format_flags],1
+	cmp	byte [esi],'('
+	jne	elf_exe_brand_ok
+	inc	esi
+	cmp	byte [esi],'.'
+	je	invalid_value
+	push	edx
+	call	get_byte_value
+	cmp	[value_type],0
+	jne	invalid_use_of_symbol
+	pop	edx
+	mov	[edx+7],al
+      elf_exe_brand_ok:
 	mov	[image_base],8048000h
 	cmp	byte [esi],80h
 	jne	elf_exe_base_ok
@@ -3643,6 +3655,18 @@ format_elf_exe:
       format_elf64_exe:
 	add	esi,2
 	or	[format_flags],1
+	cmp	byte [esi],'('
+	jne	elf64_exe_brand_ok
+	inc	esi
+	cmp	byte [esi],'.'
+	je	invalid_value
+	push	edx
+	call	get_byte_value
+	cmp	[value_type],0
+	jne	invalid_use_of_symbol
+	pop	edx
+	mov	[edx+7],al
+      elf64_exe_brand_ok:
 	mov	[image_base],400000h
 	mov	[image_base_high],0
 	cmp	byte [esi],80h
@@ -3748,6 +3772,8 @@ elf_segment:
 	mov	byte [ebx],1
 	mov	word [ebx+1Ch],1000h
       elf_segment_flags:
+	cmp	byte [esi],1Eh
+	je	elf_segment_type
 	cmp	byte [esi],19h
 	jne	elf_segment_flags_ok
 	lods	word [esi]
@@ -3765,6 +3791,25 @@ elf_segment:
 	test	[ebx+18h],ah
 	jnz	setting_already_specified
 	or	[ebx+18h],ah
+	jmp	elf_segment_flags
+      elf_segment_type:
+	cmp	byte [ebx],1
+	jne	setting_already_specified
+	lods	word [esi]
+	mov	ecx,[number_of_sections]
+	jecxz	elf_segment_type_ok
+	mov	edx,[code_start]
+	add	edx,34h
+      scan_elf_segment_types:
+	cmp	edx,[symbols_stream]
+	jae	elf_segment_type_ok
+	cmp	[edx],ah
+	je	data_already_defined
+	add	edx,20h
+	loop	scan_elf_segment_types
+      elf_segment_type_ok:
+	mov	[ebx],ah
+	mov	word [ebx+1Ch],1
 	jmp	elf_segment_flags
       elf_segment_flags_ok:
 	mov	eax,edi
@@ -3824,8 +3869,11 @@ elf_segment:
 	sub	eax,edx
 	mov	[ebx+10h],eax
 	mov	eax,[ebx+8]
+	cmp	byte [ebx],1
+	jne	elf_segment_position_ok
 	add	eax,[ebx+14h]
 	add	eax,0FFFh
+      elf_segment_position_ok:
 	and	eax,not 0FFFh
 	ret
       elf64_segment:
@@ -3850,6 +3898,8 @@ elf_segment:
 	mov	byte [ebx],1
 	mov	word [ebx+30h],1000h
       elf64_segment_flags:
+	cmp	byte [esi],1Eh
+	je	elf64_segment_type
 	cmp	byte [esi],19h
 	jne	elf64_segment_flags_ok
 	lods	word [esi]
@@ -3867,6 +3917,25 @@ elf_segment:
 	test	[ebx+4],ah
 	jnz	setting_already_specified
 	or	[ebx+4],ah
+	jmp	elf64_segment_flags
+      elf64_segment_type:
+	cmp	byte [ebx],1
+	jne	setting_already_specified
+	lods	word [esi]
+	mov	ecx,[number_of_sections]
+	jecxz	elf64_segment_type_ok
+	mov	edx,[code_start]
+	add	edx,40h
+      scan_elf64_segment_types:
+	cmp	edx,[symbols_stream]
+	jae	elf64_segment_type_ok
+	cmp	[edx],ah
+	je	data_already_defined
+	add	edx,38h
+	loop	scan_elf64_segment_types
+      elf64_segment_type_ok:
+	mov	[ebx],ah
+	mov	word [ebx+30h],1
 	jmp	elf64_segment_flags
       elf64_segment_flags_ok:
 	mov	ecx,edi
@@ -3929,17 +3998,16 @@ elf_segment:
 	mov	[ebx+20h],eax
 	mov	eax,[ebx+10h]
 	mov	edx,[ebx+10h+4]
+	cmp	byte [ebx],1
+	jne	elf64_segment_position_ok
 	add	eax,[ebx+28h]
 	adc	edx,0
-	sub	eax,1
-	sbb	edx,0
-	shrd	eax,edx,12
-	shr	edx,12
-	add	eax,1
+	add	eax,0FFFh
 	adc	edx,0
-	shld	edx,eax,12
-	shl	eax,12
+      elf64_segment_position_ok:
+	and	eax,not 0FFFh
 	ret
+
 close_elf_exe:
 	test	[format_flags],8
 	jnz	close_elf64_exe
@@ -4149,8 +4217,26 @@ dump_symbols:
 	sub	[esi+12],eax
       prepare_next_preprocessed_line:
 	add	esi,16
-	call	skip_foreign_line
+      skip_preprocessed_line:
+	lods	byte [esi]
+	cmp	al,1Ah
+	je	skip_preprocessed_symbol
+	cmp	al,3Bh
+	je	skip_preprocessed_symbol
+	cmp	al,22h
+	je	skip_preprocessed_string
+	or	al,al
+	jnz	skip_preprocessed_line
 	jmp	prepare_preprocessed_source
+      skip_preprocessed_string:
+	lods	dword [esi]
+	add	esi,eax
+	jmp	skip_preprocessed_line
+      skip_preprocessed_symbol:
+	lods	byte [esi]
+	movzx	eax,al
+	add	esi,eax
+	jmp	skip_preprocessed_line
       preprocessed_source_ok:
 	mov	esi,[labels_list]
 	mov	ebp,edi

@@ -115,7 +115,12 @@ assembler:
 	or	eax,eax
 	jz	assemble_ok
 	mov	[current_line],eax
-	jmp	near [error]
+	call	error_handler
+      error_handler:
+	mov	eax,[error]
+	sub	eax,error_handler
+	add	[esp],eax
+	ret
       next_pass:
 	inc	[current_pass]
 	mov	ax,[current_pass]
@@ -359,11 +364,13 @@ assemble_line:
 	mov	dword [operand_size],0
 	mov	[opcode_prefix],0
 	mov	[immediate_size],0
+	call	instruction_handler
+      instruction_handler:
 	movzx	ebx,word [esi]
 	mov	al,[esi+2]
-	add	ebx,assembler
 	add	esi,3
-	jmp	near ebx
+	add	[esp],ebx
+	ret
       instruction_assembled:
 	mov	al,[esi]
 	cmp	al,0Fh
@@ -894,7 +901,7 @@ virtual_directive:
 	mov	byte [org_registers+2],ch
 	mov	byte [org_registers+3],cl
 	call	allocate_structure_data
-	mov	word [ebx],virtual_directive-assembler
+	mov	word [ebx],virtual_directive-instruction_handler
 	not	eax
 	not	edx
 	add	eax,1
@@ -993,7 +1000,7 @@ repeat_directive:
 	je	zero_repeat
 	jl	negative_repeat
 	call	allocate_structure_data
-	mov	word [ebx],repeat_directive-assembler
+	mov	word [ebx],repeat_directive-instruction_handler
 	xchg	eax,[counter_limit]
 	mov	[ebx+10h],eax
 	mov	eax,1
@@ -1038,14 +1045,14 @@ repeat_directive:
 	jmp	instruction_assembled
       find_end_repeat:
 	call	find_structure_end
-	cmp	ax,repeat_directive-assembler
+	cmp	ax,repeat_directive-instruction_handler
 	jne	unexpected_instruction
 	ret
 while_directive:
 	cmp	[prefixed_instruction],0
 	jne	unexpected_instruction
 	call	allocate_structure_data
-	mov	word [ebx],while_directive-assembler
+	mov	word [ebx],while_directive-instruction_handler
 	mov	eax,1
 	xchg	eax,[counter]
 	mov	[ebx+10h],eax
@@ -1085,7 +1092,7 @@ while_directive:
 	jmp	do_while
       find_end_while:
 	call	find_structure_end
-	cmp	ax,while_directive-assembler
+	cmp	ax,while_directive-instruction_handler
 	jne	unexpected_instruction
 	ret
 if_directive:
@@ -1105,7 +1112,7 @@ if_directive:
 	mov	al,[esi]
 	cmp	al,1
 	jne	else_true
-	cmp	word [esi+1],if_directive-assembler
+	cmp	word [esi+1],if_directive-instruction_handler
 	jne	else_true
 	add	esi,4
 	jmp	if_directive
@@ -1113,7 +1120,7 @@ if_directive:
 	xor	al,al
       make_if_structure:
 	call	allocate_structure_data
-	mov	word [ebx],if_directive-assembler
+	mov	word [ebx],if_directive-instruction_handler
 	mov	byte [ebx+2],al
 	mov	eax,[current_line]
 	mov	[ebx+4],eax
@@ -1128,7 +1135,7 @@ if_directive:
       else_directive:
 	cmp	[prefixed_instruction],0
 	jne	unexpected_instruction
-	mov	ax,if_directive-assembler
+	mov	ax,if_directive-instruction_handler
 	call	find_structure_data
 	jc	unexpected_instruction
 	cmp	byte [ebx+2],0
@@ -1137,7 +1144,7 @@ if_directive:
 	mov	al,[esi]
 	cmp	al,1
 	jne	skip_else
-	cmp	word [esi+1],if_directive-assembler
+	cmp	word [esi+1],if_directive-instruction_handler
 	jne	skip_else
 	add	esi,4
 	call	find_else
@@ -1161,9 +1168,9 @@ if_directive:
 	jmp	instruction_assembled
       find_else:
 	call	find_structure_end
-	cmp	ax,else_directive-assembler
+	cmp	ax,else_directive-instruction_handler
 	je	else_found
-	cmp	ax,if_directive-assembler
+	cmp	ax,if_directive-instruction_handler
 	jne	unexpected_instruction
 	stc
 	ret
@@ -1172,7 +1179,7 @@ if_directive:
 	ret
       find_end_if:
 	call	find_structure_end
-	cmp	ax,if_directive-assembler
+	cmp	ax,if_directive-instruction_handler
 	jne	unexpected_instruction
 	ret
       find_structure_end:
@@ -1195,28 +1202,28 @@ if_directive:
 	cmp	byte [esi],1
 	jne	find_end_directive
 	mov	ax,[esi+1]
-	cmp	ax,prefix_instruction-assembler
+	cmp	ax,prefix_instruction-instruction_handler
 	je	find_end_directive
 	add	esi,4
-	cmp	ax,repeat_directive-assembler
+	cmp	ax,repeat_directive-instruction_handler
 	je	skip_repeat
-	cmp	ax,while_directive-assembler
+	cmp	ax,while_directive-instruction_handler
 	je	skip_while
-	cmp	ax,if_directive-assembler
+	cmp	ax,if_directive-instruction_handler
 	je	skip_if
-	cmp	ax,else_directive-assembler
+	cmp	ax,else_directive-instruction_handler
 	je	structure_end
-	cmp	ax,end_directive-assembler
+	cmp	ax,end_directive-instruction_handler
 	jne	find_end_directive
 	cmp	byte [esi],1
 	jne	find_end_directive
 	mov	ax,[esi+1]
 	add	esi,4
-	cmp	ax,repeat_directive-assembler
+	cmp	ax,repeat_directive-instruction_handler
 	je	structure_end
-	cmp	ax,while_directive-assembler
+	cmp	ax,while_directive-instruction_handler
 	je	structure_end
-	cmp	ax,if_directive-assembler
+	cmp	ax,if_directive-instruction_handler
 	jne	find_end_directive
       structure_end:
 	pop	[error_line]
@@ -1239,7 +1246,7 @@ if_directive:
 	jc	if_block_skipped
 	cmp	byte [esi],1
 	jne	skip_after_else
-	cmp	word [esi+1],if_directive-assembler
+	cmp	word [esi+1],if_directive-instruction_handler
 	jne	skip_after_else
 	add	esi,4
 	jmp	skip_if_block
@@ -1253,15 +1260,15 @@ end_directive:
 	jne	invalid_argument
 	lods	word [esi]
 	inc	esi
-	cmp	ax,virtual_directive-assembler
+	cmp	ax,virtual_directive-instruction_handler
 	je	end_virtual
-	cmp	ax,repeat_directive-assembler
+	cmp	ax,repeat_directive-instruction_handler
 	je	end_repeat
-	cmp	ax,while_directive-assembler
+	cmp	ax,while_directive-instruction_handler
 	je	end_while
-	cmp	ax,if_directive-assembler
+	cmp	ax,if_directive-instruction_handler
 	je	end_if
-	cmp	ax,data_directive-assembler
+	cmp	ax,data_directive-instruction_handler
 	je	end_data
 	jmp	invalid_argument
 break_directive:
@@ -1275,11 +1282,11 @@ break_directive:
 	cmp	ebx,[additional_memory_end]
 	je	unexpected_instruction
 	mov	ax,[ebx]
-	cmp	ax,repeat_directive-assembler
+	cmp	ax,repeat_directive-instruction_handler
 	je	break_repeat
-	cmp	ax,while_directive-assembler
+	cmp	ax,while_directive-instruction_handler
 	je	break_while
-	cmp	ax,if_directive-assembler
+	cmp	ax,if_directive-instruction_handler
 	je	break_if
 	add	ebx,20h
 	jmp	find_breakable_structure
@@ -1688,6 +1695,7 @@ data_file:
 	pop	ebx
 	mov	edx,eax
 	sub	[esp],edx
+	jc	value_out_of_range
       position_ok:
 	cmp	byte [esi],','
 	jne	size_ok
@@ -1700,6 +1708,8 @@ data_file:
 	push	ebx edx
 	call	get_dword_value
 	pop	edx ebx
+	cmp	eax,[esp]
+	ja	value_out_of_range
 	mov	[esp],eax
       size_ok:
 	xor	al,al
