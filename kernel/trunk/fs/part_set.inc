@@ -388,7 +388,7 @@ boot_read_ok:
     mov   [SECTORS_PER_CLUSTER],eax
 
     movzx ecx,word [ebx+0xb]    ; bytes per sector
-    cmp   eax,0x200
+    cmp   ecx,0x200
     jnz   problem_fat_dec_count
     mov   [BYTES_PER_SECTOR],ecx
 
