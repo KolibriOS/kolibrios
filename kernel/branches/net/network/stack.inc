@@ -119,7 +119,7 @@ stack_handler:
     je	    .exit
 
     mov     [last_1hsTick], eax
-    call    tcp_tx_handler
+;    call    tcp_tx_handler
 
   .sec_tick:
 
@@ -134,7 +134,7 @@ stack_handler:
 
     call    ARP_decrease_entry_ttls
     call    IPv4_decrease_fragment_ttls
-    call    tcp_tcb_handler
+;    call    tcp_tcb_handler
 
   .exit:
     ret
