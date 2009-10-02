@@ -1,5 +1,5 @@
 ;
-; Netstat for KolibriOS v0.1
+; Netstat for KolibriOS v0.1  (still alpha version)
 ;
 ; hidnplayr@gmail.com
 ;
@@ -11,10 +11,10 @@ use32
     db	   'MENUET01'	     ; 8 byte id
     dd	   0x01 	     ; header version
     dd	   START	     ; start of code
-    dd	   I_END	     ; size of image
-    dd	   IM_END	     ; memory for app
-    dd	   IM_END	     ; esp
-    dd	   I_PARAM , 0x0	 ; I_Param , I_Icon
+    dd	   IM_END	     ; size of image
+    dd	   (I_END+0x100)     ; memory for app
+    dd	   (I_END+0x100)     ; esp
+    dd	   I_PARAM , 0x0     ; I_Param , I_Icon
 
 __DEBUG__ equ 1
 __DEBUG_LEVEL__ equ 1
@@ -79,8 +79,6 @@ START:				       ; start of execution
     mov     edx, str_queue_out
     mcall
 
-    push    end_of_draw
-
     mov     ebx,1337 shl 16 + 4
     mov     bh, [device]
     mcall   75
@@ -88,7 +86,8 @@ START:				       ; start of execution
     push    bx
 
     mov     edx, 135 shl 16 + 75 + 4*18
-    jmp     draw_mac
+    call    draw_mac
+    jmp     end_of_draw
 
  @@:
 
@@ -201,18 +200,21 @@ START:				       ; start of execution
     mov     ebx, 1337 shl 16 + 0
     mov     bh, [device]
    @@:
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
     cmp     bl, 3
     jle     @r
 
-
-    inc     bl
-    inc     bl
+    inc     bl	 ;5
+    inc     bl	 ;6
 
    @@:
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
     cmp     bl, 7
@@ -251,10 +253,14 @@ START:				       ; start of execution
 
     mov     ebx, 0 shl 16
     mov     bh, [device]
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
 
@@ -279,13 +285,19 @@ START:				       ; start of execution
 
     mov     ebx, 0x0608 shl 16 + 0
     mov     bh, [device]
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
 
@@ -312,10 +324,14 @@ not_103:
 
     mov     ebx, 1 shl 16 + 0
     mov     bh, [device]
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
 
@@ -339,10 +355,14 @@ not_104:
 
     mov     ebx, 17 shl 16 + 0
     mov     bh, [device]
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
 
@@ -366,10 +386,14 @@ not_105:
 
     mov     ebx, 6 shl 16 + 0
     mov     bh, [device]
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
+    push    ebx
     mcall   75
+    pop     ebx
     push    eax
     inc     bl
 
@@ -414,33 +438,34 @@ draw_mac:
 	mov	esi, 0x40000000
 	mov	edi, 0x00bcbcbc
 
-	mov	cl, [esp]
-	mcall
-
-	mov	cl, [esp+1]
-	add	edx, 15 shl 16
-	mcall
-
-	mov	cl, [esp+2]
-	add	edx, 15 shl 16
-	mcall
-
-	mov	cl, [esp+3]
-	add	edx, 15 shl 16
-	mcall
-
 	mov	cl, [esp+4]
+	mcall
+
+	mov	cl, [esp+4+1]
 	add	edx, 15 shl 16
 	mcall
 
-	mov	cl, [esp+5]
+	mov	cl, [esp+4+2]
 	add	edx, 15 shl 16
 	mcall
 
-	add	esp, 6
+	mov	cl, [esp+4+3]
+	add	edx, 15 shl 16
+	mcall
+
+	mov	cl, [esp+4+4]
+	add	edx, 15 shl 16
+	mcall
+
+	mov	cl, [esp+4+5]
+	add	edx, 15 shl 16
+	mcall
+
+	mov	eax, [esp]
+	add	esp, 6+4
 	sub	edx, 5*15 shl 16
 
-	ret
+	jmp	eax
 
 
 draw_ip:
@@ -475,7 +500,7 @@ draw_ip:
 
 ; DATA AREA
 
-I_END:
+IM_END:
 
 name	db 'Netstat',0
 mode	db 101
@@ -499,6 +524,6 @@ include_debug_strings	 ; ALWAYS present in data section
 
 I_PARAM rb 1024
 
-IM_END:
+I_END:
 
 

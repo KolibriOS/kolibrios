@@ -119,7 +119,7 @@ stack_handler:
     je	    .exit
 
     mov     [last_1hsTick], eax
-;    call    tcp_tx_handler
+    call    tcp_tx_handler
 
   .sec_tick:
 
@@ -134,7 +134,7 @@ stack_handler:
 
     call    ARP_decrease_entry_ttls
     call    IPv4_decrease_fragment_ttls
-;    call    tcp_tcb_handler
+    call    tcp_tcb_handler
 
   .exit:
     ret
@@ -201,7 +201,8 @@ sys_network:
 	test	bl, bl			; 0 = Get device type (ethernet/token ring/...)
 	jnz	@f
 
-	;TODO: write code here
+	xor	eax, eax
+	jmp	.return
 
 
   @@:
@@ -215,18 +216,36 @@ sys_network:
 	mov	ecx, 64 ; max length
 	repnz	movsb
 
-	ret
-
-	; TODO: create function wich outputs number of active network devices
+	xor	eax, eax
+	jmp	.return
 
   @@:
+
+	dec	bl			; 2 = Reset the device
+	jnz	@f
+
+	mov	esi, [esi + ETH_DRV_LIST]
+	call	[esi + ETH_DEVICE.reset]
+	jmp	.return
+
+  @@:
+
+	dec	bl			; 3 = Stop driver for this device
+	jnz	@f
+
+	mov	esi, [esi + ETH_DRV_LIST]
+	call	[esi + ETH_DEVICE.unload]
+	jmp	.return
+
+  @@:
+
   .doesnt_exist:
 	DEBUGF	1,"sys_network: invalid device/function specified!\n"
 	mov	eax, -1
 
+  .return:
+	mov	[esp+28+4], eax
 	ret
-
-
 
 
 ;----------------------------------------------------------------

@@ -44,11 +44,15 @@ button: 				; button
 	cmp	ah, 4
 	je	hook
 
+	cmp	ah, 5
+	je	reset
+
+	cmp	ah, 6
+	je	unload
+
 	jmp	still
        @@:
 	shr	eax, 16
-	mov	dword[MAC],0
-	mov	word [MAC+4],0
 	mov	word [selected], ax
 
 	call	load_drv
@@ -97,19 +101,25 @@ hook:
 
 	mov	byte[drivernumber], al
 
-printhdwaddr:
+reset:
+	movzx	ebx, byte[drivernumber]
+	mcall	73,,2
 
-	call	draw_window
+	ret
 
-	jmp	still
+unload:
+	movzx	ebx, byte[drivernumber]
+	mcall	73,,3
+
+	ret
 
 draw_window:
 	mcall	12, 1			; start of draw
 	mcall	0, dword [Form], dword [Form + 4], 0x13ffffff, 0x805080d0, title
 
-	mcall	73, 0
-	mov	ecx, eax
-	mcall	47, 1 shl 18, , 50 shl 16 + 10, 0x00000000
+;        mcall   73, 1,
+;        mov     ecx, eax
+;        mcall   47, 1 shl 18, , 50 shl 16 + 10, 0x00000000
 
 	call	Get_PCI_Info		; get pci version and last bus, scan for and draw each pci device
 
@@ -118,47 +128,20 @@ draw_window:
 
 	mcall	4, 20 shl 16 + 100, 1 shl 31 + 0x00000000 , caption
 
-	mcall	8, 122 shl 16 + 100, 50 shl 16 + 18, 0x00000004, 0x00007f00
-	mcall	,, 70 shl 16 + 18, 0x00000005, 0x007f0000
+	mov	ax , [selected]
+	test	ax, ax
+	jz	.done
 
-	mcall	4, 137 shl 16 + 57, 1 shl 31 + 0x00ffffff , btn_start
-	mcall	, 140 shl 16 + 77, , btn_stop
+	mcall	8, 18 shl 16 + 100, 35 shl 16 + 18, 4, 0x00007f00
+	mcall	,, 55 shl 16 + 18, 5, 0x0000007f
+	mcall	,, 75 shl 16 + 18, 6, 0x007f0000
 
-	mcall	, 240 shl 16 + 77, 1 shl 31 + 0x00000000 , lbl_hdw_addr
-	mcall	, 312 shl 16 + 57, , lbl_type
-	add	ebx, 38 shl 16
-	cmp	byte [type],type_ethernet
-	jne	@f
-	mcall	, , 1 shl 31 + 0x00000000, lbl_ethernet
+	mcall	4, 33 shl 16 + 42, 1 shl 31 + 0x00ffffff , btn_start
+	mcall	, 33 shl 16 + 62, , btn_reset
+	mcall	, 36 shl 16 + 82, , btn_stop
 
-	mcall	8,345 shl 16 + 17, 73 shl 16 + 14, 0x00000006, 0x00aaaa00
-	mcall	,365 shl 16 + 17, , 0x00000007
-	mcall	,385 shl 16 + 17, , 0x00000008
-	mcall	,405 shl 16 + 17, , 0x00000009
-	mcall	,425 shl 16 + 17, , 0x0000000a
-	mcall	,445 shl 16 + 17, , 0x0000000b
-	movzx	ecx,byte[MAC]
-	mcall	47, 1 shl 17 + 1 shl 8,,349 shl 16 + 77, 0x000022cc
-	movzx	ecx,byte[MAC+1]
-	add	edx, 20 shl 16
-	mcall
-	movzx	ecx,byte[MAC+2]
-	add	edx, 20 shl 16
-	mcall
-	movzx	ecx,byte[MAC+3]
-	add	edx, 20 shl 16
-	mcall
-	movzx	ecx,byte[MAC+4]
-	add	edx, 20 shl 16
-	mcall
-	movzx	ecx,byte[MAC+5]
-	add	edx, 20 shl 16
-	mcall
+;        mcall   , 140 shl 16 + 62, 1 shl 31 + 0x00000000 , devicename
 
-	jmp	.done
-
-       @@:
-	mcall	4, , 1 shl 31 + 0x00ff0000, lbl_unknown
 	jmp	.done
 
 .nonefound :
@@ -411,15 +394,20 @@ Form:	dw 800 ; window width (no more, special for 800x600)
 title	db 'Network Driver Control Center', 0
 
 caption db 'Vendor Device Bus  Dev  Rev  IRQ   Company                                         Description         DRIVER',0
-lbl_1 db 'Hardware control',0
+;lbl_1 db 'Hardware control',0
 nonefound db 'No compatible devices were found!',0
-btn_start db 'Start driver',0
-btn_stop db 'Stop driver',0
-lbl_hdw_addr db 'hardware address:',0
-lbl_type db 'type:',0
+btn_start db 'Start device',0
+btn_reset db 'Reset device',0
+btn_stop db 'Stop device',0
+;lbl_hdw_addr db 'hardware address:',0
+;lbl_type db 'type:',0
 lbl_none db 'none',0
-lbl_unknown db 'unknown',0
-lbl_ethernet db 'ethernet',0
+;lbl_unknown db 'unknown',0
+;lbl_ethernet db 'ethernet',0
+
+devicename     db 'test'
+rb 64
+		db 0
 
 
 IOCTL:

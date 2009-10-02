@@ -12,9 +12,9 @@ use32
 	       dd     0x01		    ; header version
 	       dd     START		    ; start of code
 	       dd     IM_END		    ; size of image
-	       dd     I_END		    ; memory for app
-	       dd     I_END		    ; esp
-	       dd     0x0 , path	     ; I_Param , I_Icon
+	       dd     (I_END+0x100)	    ; memory for app
+	       dd     (I_END+0x100)	    ; esp
+	       dd     0x0 , path	    ; I_Param , I_Icon
 
 ; CONFIGURATION
 
