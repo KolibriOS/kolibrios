@@ -21,7 +21,7 @@ RENDER equ FREE
 
 BGIFONT_PATH equ '/sys/fonts/'
 FONT_NAME equ 'LITT'
-TOP =35
+TOP =55
 MODE equ RTF
 INVALHEX equ 0
 RTF_COLORLESS equ 1
@@ -309,13 +309,6 @@ draw_window:
                                    ; 1 - начинаем рисовать
 
     mcall 0, <10,WINW>, <100,WINH>, WIN_COLOR,0x805080D0, 0x005080D0
-    mcall 9,procinfo,-1
-    mov   eax,[procinfo.box.left]
-    cmp   eax,1
-    ja      .temp12345
-    ret
-  .temp12345:
-
     mcall 4, <8,8>, 0x10DDEEFF, title, titlesize-title
     mov  esi,ecx
     mcall 47,0x30000,isymImplemented,<114,8>
@@ -341,41 +334,63 @@ draw_window:
     and  [line_count],0
     mov  [HClick],-100
   .nochg:
-    sub  ebx,60
-    shl  ebx,16
-    mov  bx,12
-    mov  ecx,5 shl 16+12
-    mov  esi,0xb810e7
-    mov  edx,2
- BTN_SPACE equ 14 shl 16
-    mcall 8             ;2
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall 8,,,,0x459a    ;3
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall ,,,,0x107a30  ;4
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall ,,,,0xcc0000  ;5
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall ,,,,0x575f8c  ;6
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall ,,,,0x575f8c  ;7
-  if RENDER eq FREE
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall ,,,,0x6a73d0  ;8
-    sub  ebx,BTN_SPACE
-    inc  edx
-    mcall ,,,,0xd048c8  ;9
-  end if
-    shr  ecx,16
-    mov  bx,cx
-    add  ebx,3 shl 16+3
-    mcall 4,,0x10ddeeff,btn_text,btn_end-btn_text
+
+
+mcall 13,<5,dword[prcinfo+42]>,<21,21>,0x8000459a
+
+mcall 8,7*65536+39,23*65536+16,5,0x459a           ;load
+mcall 8,46*65536+57,23*65536+16,4,0x459a ;align
+mcall 8,103*65536+44,23*65536+16,3,0x459a   ;color
+mcall 8,147*65536+37,23*65536+16,2,0x459a        ;help
+
+mcall 8,184*65536+44,23*65536+16,7,0x459a ;prev
+mcall 8,229*65536+46,23*65536+16,6,0x459a      ;next
+
+if RENDER eq FREE
+mcall 8,276*65536+44,23*65536+16,9,0x459a ;zoom+
+mcall 8,320*65536+44,23*65536+16,8,0x459a ;zoom-
+end if
+
+
+
+
+;    sub  ebx,60
+;    shl  ebx,16
+;    mov  bx,12
+;    mov  ecx,5 shl 16+12
+;    mov  esi,0xb810e7
+;    mov  edx,2
+; BTN_SPACE equ 14 shl 16
+;    mcall 8             ;2
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall 8,,,,0x459a    ;3
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall ,,,,0x107a30  ;4
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall ,,,,0xcc0000  ;5
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall ,,,,0x575f8c  ;6
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall ,,,,0x575f8c  ;7
+;  if RENDER eq FREE
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall ,,,,0x6a73d0  ;8
+;    sub  ebx,BTN_SPACE
+;    inc  edx
+;    mcall ,,,,0xd048c8  ;9
+;  end if
+;text
+;    shr  ecx,16
+;    mov  bx,cx
+;    add  ebx,3 shl 16+3
+    mcall 4,10*65536+27,0x10ddeeff,btn_text,btn_end-btn_text
+
     sub  dword[prcinfo+42],LMARGIN
     sub  dword[prcinfo+46],CHARH
  if GUTTER eq 1
@@ -393,14 +408,14 @@ draw_window:
  end if
     mov  ebx,dword[prcinfo+42]
     shl  ebx,16
-    add  ebx,7 shl 16+7
+    add  ebx,2 shl 16+13
     mov  ecx,dword[prcinfo+46]
-    add  ecx,25 shl 16-25
+    add  ecx,40 shl 16-35
     mov  edx,20+1 shl 29
     mcall 8
     mov  ecx,[HClick]
     shl  ecx,16
-    add  ecx,6-3 shl 16
+    add  ecx,6-3 shl 16 + 7
     mcall 13,,,0xe26830
  if MODE eq RTF
     test [mode],RTF_OPENING
@@ -480,13 +495,13 @@ end if
 ;  Вы можете задать язык в MACROS.INC (lang fix язык)
 
 title:
-  db 'RTF READER v1.    (     ):'
+  db 'RTF Reader v1.    (     ):'
 titlesize:
 btn_text:
-  if RENDER eq FREE
-    db '+ - '
-  end if
-    db '< > L A C H'
+    db 'Load Aligment Color Help     <      >'
+if RENDER eq FREE
+    db '    Zoom+ Zoom- '
+  end if 
 btn_end:
 
 attrinfo:
@@ -522,7 +537,7 @@ fileinfo:
 ;  db '/HD/1/RTF/texts/RELATION.RTF',0
 ;  db '/HD/1/RTF/texts/PLANETS.RTF',0
 ;  db '/HD/1/RTF/texts/LOTRRUS.RTF',0
-  db '/HD/1/RTF/texts/RULEBOOK.RTF',0
+;  db '/HD/1/RTF/texts/RULEBOOK.RTF',0
 ;  db '/HD/1/RTF/texts/RULEBK2.RTF',0
 ;  db '/HD/1/RTF/texts/GLEB.RTF',0
 ;  db '/HD/1/RTF/texts/DWG13_14.RTF',0
