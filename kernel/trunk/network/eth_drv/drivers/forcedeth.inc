@@ -925,19 +925,26 @@ forcedeth_probe:
 	mov	edi, eax
 	mov	eax, dword [edi+NvRegMacAddrA]
 	mov	dword [forcedeth_orig_mac0], eax
-	mov	eax, dword [edi+NvRegMacAddrB]
-	mov	dword [forcedeth_orig_mac1], eax
+	mov	edx, dword [edi+NvRegMacAddrB]
+	mov	dword [forcedeth_orig_mac1], edx
 
 	; save MAC-address to global variable node_addr
-	mov	ecx, MAC_ADDR_LEN
-	xor	ebx, ebx
-	mov	edx, forcedeth_orig_mac0
-	add	edx, (MAC_ADDR_LEN-1)
-@@:	mov	al, byte [edx]
-	mov	byte [node_addr+ebx], al
-	inc	ebx
-	dec	edx
-	loop	@b
+	mov	dword [node_addr], eax
+	mov	word [node_addr+4], dx
+
+	; reverse if desired
+	cmp	word [forcedeth_device_id], 0x03E5
+	jae	.no_reverse_mac
+	mov	al, byte [node_addr]
+	xchg	al, byte [node_addr+5]
+	mov	byte [node_addr], al
+	mov	al, byte [node_addr+1]
+	xchg	al, byte [node_addr+4]
+	mov	byte [node_addr+4], al
+	mov	al, byte [node_addr+2]
+	xchg	al, byte [node_addr+3]
+	mov	byte [node_addr+3], al
+.no_reverse_mac:
 
 ;	DEBUGF 1," K : FORCEDETH: orig_mac0= 0x%x\n", [forcedeth_orig_mac0]:8
 ;	DEBUGF 1," K : FORCEDETH: orig_mac1= 0x%x\n", [forcedeth_orig_mac1]:8
@@ -1015,16 +1022,18 @@ forcedeth_probe:
 	jmp	.end_switch
 
 .next_0x0268:
+;	cmp	word [forcedeth_device_id], 0x0268
+;	je	@f
+;	cmp	word [forcedeth_device_id], 0x0269
+;	je	@f
+;	cmp	word [forcedeth_device_id], 0x0372
+;	je	@f
+;	cmp	word [forcedeth_device_id], 0x0373
+;	je	@f
+;	jmp	.default_switch
+;@@:
 	cmp	word [forcedeth_device_id], 0x0268
-	je	@f
-	cmp	word [forcedeth_device_id], 0x0269
-	je	@f
-	cmp	word [forcedeth_device_id], 0x0372
-	je	@f
-	cmp	word [forcedeth_device_id], 0x0373
-	je	@f
-	jmp	.default_switch
-@@:
+	jb	.default_switch
 	; pci_read_config_byte(pci, PCI_REVISION_ID, &revision_id);
 	mov	al, 0	; byte
 	mov	bh, [pci_dev]
