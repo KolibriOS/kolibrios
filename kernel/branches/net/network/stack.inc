@@ -110,7 +110,7 @@ stack_handler:
     cmp     [ETH_RUNNING], 0
     je	    .exit
 
-    call    ETH_Handler 		; handle all queued ethernet packets
+    call    ETH_handler 		; handle all queued ethernet packets
     call    ETH_send_queued
 
     ; Test for 10ms tick, call tcp timer
@@ -188,6 +188,13 @@ endp
 align 4
 sys_network:
 
+	cmp	ebx, -1
+	jne	@f
+
+	mov	eax, [ETH_RUNNING]
+	jmp	.return
+
+   @@:
 	cmp	bh, MAX_NET_DEVICES		 ; Check if device number exists
 	jge	.doesnt_exist
 
@@ -200,7 +207,7 @@ sys_network:
 
 	test	bl, bl			; 0 = Get device type (ethernet/token ring/...)
 	jnz	@f
-
+					 ; todo
 	xor	eax, eax
 	jmp	.return
 

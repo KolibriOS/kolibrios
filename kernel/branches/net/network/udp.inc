@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  UDP.INC                                                        ;;
@@ -73,7 +73,7 @@ UDP_init:
 ;
 ;-----------------------------------------------------------------
 
-UDP_Handler:
+UDP_handler:
 
 	DEBUGF 1,"UDP_Handler\n"
 	; TODO: First validate the header & checksum. Discard buffer if error
@@ -109,7 +109,6 @@ UDP_Handler:
 
     @@:
 	DEBUGF 1,"Found valid UDP packet for socket %x\n", esi
-
 
 ;        sub     ecx, UDP_Packet.Data                    ; get # of bytes in ecx
 ;        mov     eax, ecx
@@ -199,12 +198,12 @@ UDP_Handler:
 ; IN: eax = dest ip
 ;     ebx = source ip
 ;     ecx = data length
-;     edx = remote port shl 16 + local port
+;     edx = remote port shl 16 + local port (both in INET order)
 ;     esi = data offset
 ;
 ;-----------------------------------------------------------------
 
-UDP_create_Packet:
+UDP_create_packet:
 
 	DEBUGF 1,"Create UDP Packet\n"
 
@@ -215,13 +214,13 @@ UDP_create_Packet:
 
 ;       dx  = fragment id
 
-	call	IPv4_create_Packet				; TODO: figure out a way to choose between IPv4 and IPv6
+	call	IPv4_create_packet				; TODO: figure out a way to choose between IPv4 and IPv6
 	cmp	edi, -1
 	je	.exit
 
+	sub	ecx , UDP_Packet.Data
 	mov	byte[edi + UDP_Packet.Length], ch
 	mov	byte[edi + UDP_Packet.Length+1], cl
-	sub	ecx , UDP_Packet.Data
 
 	pop	esi
 	push	edi
@@ -235,8 +234,8 @@ UDP_create_Packet:
 	pop	edi
 
 	pop	ecx
-	bswap	ecx						; convert little endian - big endian
-	rol	ecx, 16 					;
+;        bswap   ecx                                             ; convert little endian - big endian
+;        rol     ecx, 16                                         ;
 	mov	dword [edi + UDP_Packet.SourcePort], ecx	; notice: we write both port's at once
 
 

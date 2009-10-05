@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ETHERNET.INC                                                   ;;
@@ -44,6 +44,12 @@ struct	ETH_DEVICE
 	.mac		dp ?
 ends			      ; the rest of the device struct depends on the type of device
 
+
+align 4
+iglobal
+
+	ETH_BROADCAST	dp  0xffffffffffff
+endg
 
 align 4
 uglobal
@@ -230,7 +236,7 @@ ETH_Receiver:
 ;-------------------------------------------------------------
 
 align 4
-ETH_Handler:
+ETH_handler:
 
 	get_from_queue ETH_IN_QUEUE, ETH_QUEUE_SIZE, .gohome
 
@@ -243,10 +249,10 @@ ETH_Handler:
 	mov	ax , [eax + ETH_FRAME.Type]
 
 	cmp	ax, ETHER_IPv4
-	je	IPv4_Handler
+	je	IPv4_handler
 
 	cmp	ax, ETHER_ARP
-	je	ARP_Handler
+	je	ARP_handler
 
 	DEBUGF	1,"Unknown ethernet packet type %x\n", ax
 
@@ -377,26 +383,22 @@ ETH_create_Packet:
 	pop	ecx
 	pop	edx
 
-	DEBUGF 1,"1"
 	mov	edi, eax
 	pop	esi
 	movsd
 	movsw
-	DEBUGF 1,"2"
 	pop	esi
 	movsd
 	movsw
-	DEBUGF 1,"3"
 	pop	ax
 	stosw
-	DEBUGF 1,"4"
 
 	lea	eax, [edi - ETH_FRAME.Data]  ; Set eax to buffer start
 	mov	ebx, ecx		     ; Set ebx to complete buffer size
 	pop	ecx
 	mov	esi, ETH_Sender
 
-	xor	edx, edx ;;;; TODO: Fixme
+	xor	edx, edx			;;;; TODO: Fixme
 	mov	edx, [ETH_DRV_LIST + edx]
 
 	DEBUGF 1,"done: %x size:%u device:%x\n", eax, ebx, edx

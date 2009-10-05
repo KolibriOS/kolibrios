@@ -1,22 +1,21 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                                                              ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved. ;;
-;; Distributed under terms of the GNU General Public License    ;;
-;;                                                              ;;
-;;  ARP.INC                                                     ;;
-;;                                                              ;;
-;;  Address Resolution Protocol                                 ;;
-;;                                                              ;;
-;;  This file contains the following:                           ;;
-;;   arp_table_manager - Manages an ARPTable                    ;;
-;;   arp_request - Sends an ARP request on the ethernet         ;;
-;;   arp_handler - Called when an ARP packet is received        ;;
-;;                                                              ;;
-;;  Changes history:                                            ;;
-;;   22.09.2003 - [Mike Hibbett] : mikeh@oceanfree.net          ;;
-;;   11.11.2006 - [Johnny_B] and [smb]                          ;;
-;;                                                              ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                                                                 ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
+;; Distributed under terms of the GNU General Public License       ;;
+;;                                                                 ;;
+;;  ARP.INC                                                        ;;
+;;                                                                 ;;
+;;  Part of the tcp/ip network stack for KolibriOS                 ;;
+;;                                                                 ;;
+;;  Based on the work of [Johnny_B] and [smb]                      ;;
+;;                                                                 ;;
+;;    Written by hidnplayr@kolibrios.org                           ;;
+;;                                                                 ;;
+;;          GNU GENERAL PUBLIC LICENSE                             ;;
+;;             Version 2, June 1991                                ;;
+;;                                                                 ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 
 $Revision: 983 $
 
@@ -25,6 +24,9 @@ ARP_NO_ENTRY		equ  0
 ARP_VALID_MAPPING	equ  1
 ARP_AWAITING_RESPONSE	equ  2
 ARP_RESPONSE_TIMEOUT	equ  3
+
+ARP_REQUEST_TTL 	= 20 ; in seconds
+ARP_ENTRY_TTL		= 30 ; in seconds
 
 ETHER_ARP		equ  0x0608
 
@@ -79,7 +81,18 @@ endg
 
 
 
+;-----------------------------------------------------------------
+;
+; ARP_init
+;
+;  This function resets all ARP variables
+;
+;  IN:  /
+;  OUT: /
+;
+;-----------------------------------------------------------------
 
+align 4
 ARP_init:
 
 	xor	eax, eax
@@ -93,175 +106,23 @@ ARP_init:
 	ret
 
 
-
-
-;***************************************************************************
-;   Function
-;      arp_table_manager  [by Johnny_B]
+;-----------------------------------------------------------------
 ;
-;   Description
-;     Does a most required operations with ARP-table
-;  IN:
-;   Operation: see Opcode's constants below
-;       Index: Index of entry in the ARP-table
-;       Extra: Extra parameter for some Opcodes
-;  OUT:
-;   EAX = Returned value depends on opcodes, more detailed see below
+; ARP_IP_to_MAC
 ;
-;***************************************************************************
-;Opcode's constants
-ARP_TABLE_ADD		      equ  1
-ARP_TABLE_IP_TO_MAC	      equ  5
-
-;Index's constants
-EXTRA_IS_ARP_PACKET_PTR  equ  0   ;if Extra contain pointer to ARP_Packet
-EXTRA_IS_ARP_ENTRY_PTR	 equ  -1  ;if Extra contain pointer to ARP_ENTRY
+;  This function resets all ARP variables
+;
+;  IN: eax = IPv4 address
+;  OUT: eax = -1 on error, else eax = first two bytes of mac
+;                   ( high 16 bits are zero)
+;       ebx = last four bytes of mac                                  ; TODO: special eax value for 'request send'
+;
+;-----------------------------------------------------------------
 
 align 4
-proc arp_table_manager stdcall uses ebx esi edi ecx edx, Opcode:DWORD,Index:DWORD,Extra:DWORD
+ARP_IP_to_MAC:
 
-    mov     ebx, ARPTable  ;ARPTable base
-    mov     ecx, dword[NumARP]	       ;ARP-entries counter
-
-    mov     eax, dword[Opcode]
-
-
-    DEBUGF 1,"ARP table manager opcode:%u numARP:%u\n",eax,ecx
-
-    cmp     eax, ARP_TABLE_ADD
-    je	    .add
-
-    cmp     eax, ARP_TABLE_IP_TO_MAC
-    je	    .ip_to_mac
-
-    jmp     .exit     ;if unknown opcode
-
-
-;;BEGIN ADD
-;;Description: it adds an entry in the table. If ARP-table already
-;;             contains same IP, it will be updated.
-;;IN:   Operation: ARP_TABLE_ADD
-;;      Index: specifies what contains Extra-parameter
-;;      Extra: if Index==EXTRA_IS_ARP_Packet_PTR,
-;;             then Extra contains pointer to ARP_Packet,
-;;             otherwise Extra contains pointer to ARP_ENTRY
-;;OUT:
-;;  EAX=index of entry, that has been added
-;;
-.add:
-
-    DEBUGF 1,"1"
-
-    sub     esp, ARP_ENTRY.size   ;Allocate ARP_ENTRY_SIZE byte in stack
-
-    mov     esi, [Extra]   ;pointer
-    mov     edi, [Index]   ;opcode
-
-    cmp     edi, EXTRA_IS_ARP_PACKET_PTR
-    je	    .ARP_Packet_to_entry ;if Extra contain ptr to ARP_Packet and we have to form arp-entry
-				 ;else it contain ptr to arp-entry
-
-    DEBUGF 1,"2"
-
-    cld
-	  ; esi already has been loaded
-    mov     edi, esp	  ;ebx + eax=ARPTable_base + ARP-entry_base(where we will add)
-    mov     ecx,ARP_ENTRY.size/2  ;ARP_ENTRY_SIZE must be even number!!!
-    rep     movsw    ;copy
-    jmp     .search
-
-  .ARP_Packet_to_entry:
-
-    DEBUGF 1,"3"
-    mov     edx, dword[esi + ARP_Packet.SenderIP] ;esi=base of ARP_Packet
-    mov     [esp + ARP_ENTRY.IP], edx
-
-    cld
-    lea     esi, [esi + ARP_Packet.SenderMAC]
-    lea     edi, [esp + ARP_ENTRY.MAC]
-    movsd
-    movsw
-    mov     word[esp + ARP_ENTRY.Status], ARP_VALID_MAPPING  ; specify the type - a valid entry
-    mov     word[esp + ARP_ENTRY.TTL], 0x0E10	 ; = 1 hour
-
-  .search:
-
-    DEBUGF 1,"4"
-    mov     edx, dword[esp + ARP_ENTRY.IP]  ;edx=IP-address, which we'll search
-    mov     ecx, dword[NumARP]		    ;ecx=ARP-entries counter
-    jecxz   .add_to_end 		    ;if ARP-entries number == 0
-    imul    eax, ecx, ARP_ENTRY.size	    ;eax=current table size(in bytes)
-  @@:
-    sub     eax, ARP_ENTRY.size
-    cmp     dword[ebx + eax + ARP_ENTRY.IP], edx
-    loopnz  @b
-;    jz      .replace       ; found, replace existing entry, ptr to it is in eax
-
-  .add_to_end:
-;
-;    DEBUGF 1,"5\n"
-;    ;else add to end
-;    or      eax,-1    ;set eax=0xFFFFFFFF if adding is impossible
-;    mov     ecx, dword[NumARP]
-;    cmp     ecx, ARP_TABLE_SIZE
-;    je      .add_exit   ;if arp-entries number is equal to arp-table maxsize
-
-;    imul    eax, dword[NumARP], ARP_ENTRY.size ;eax=ptr to end of ARPTable
-;    inc     dword [NumARP]    ;increase ARP-entries counter
-
-;  .replace:
-    DEBUGF 1,"Updating ARP entry: %x-%x-%x-%x-%x-%x = %u.%u.%u.%u to slot:%u\n",\
-    [esp + ARP_ENTRY.MAC]:2,[esp + ARP_ENTRY.MAC+1]:2,[esp + ARP_ENTRY.MAC+2]:2,[esp + ARP_ENTRY.MAC+3]:2,[esp + ARP_ENTRY.MAC+4]:2,[esp + ARP_ENTRY.MAC+5]:2,\
-    [esp + ARP_ENTRY.IP]:1,[esp + ARP_ENTRY.IP+1]:1,[esp + ARP_ENTRY.IP+2]:1,[esp + ARP_ENTRY.IP+3]:1,eax
-
-    cld
-    mov     esi, esp		  ;esp=base of ARP-entry, that will be added
-    lea     edi, [ebx + eax]	  ;ebx + eax=ARPTable_base + ARP-entry_base(where we will add)
-    mov     ecx,ARP_ENTRY.size/2  ;ARP_ENTRY_SIZE must be even number!!!
-    rep     movsw
-
-    mov     ecx, ARP_ENTRY.size
-    xor     edx, edx  ;"div" takes operand from EDX:EAX
-    div     ecx       ;eax=index of entry, which has been added
-
-
-
-.add_exit:
-
-    add     esp, ARP_ENTRY.size   ;free stack
-    jmp     .exit
-;;END ADD
-
-
-
-;;BEGIN IP_TO_MAC
-;;Description: it gets an IP from Index, scans each entry in the table and writes
-;;             MAC, that relates to specified IP, into buffer specified in Extra.
-;;             And if it cannot find an IP-address in the table, it does an ARP-request of that.
-;;IN:   Operation: ARP_TABLE_IP_TO_MAC
-;;      Index: IP that should be transformed into MAC
-;;      Extra: pointer to buffer where will be written the MAC-address.
-;;OUT:
-;;  EAX=ARP table entry status code.
-;;      If EAX==ARP_NO_ENTRY, IP isn't found in the table and we have sent the request.
-;;      If EAX==ARP_AWAITING_RESPONSE, we wait the response from remote system.
-;;      If EAX==ARP_RESPONSE_TIMEOUT, remote system not responds too long.
-;;      If EAX==ARP_VALID_MAPPING, all is ok, we've got a true MAC.
-;;
-;;  If MAC will equal to a zero, in the buffer. It means, that IP-address was not yet
-;;  resolved, or that doesn't exist. I recommend you, to do at most 3-5 calls of this
-;;  function with 1sec delay. sure, only if it not return a valid MAC after a first call.
-;;  
-.ip_to_mac:
-
-    DEBUGF 1,"Trying to find MAC for %u.%u.%u.%u\n",[Index]:1,[Index+1]:1,[Index+2]:1,[Index+3]:1
-
-    xor     eax, eax
-    mov     edi, dword[Extra]
-    cld
-    stosd
-    stosw
-
+	DEBUGF 1,"ARP_IP_to_MAC\n"
 
     ; first, check destination IP to see if it is on 'this' network.
     ; The test is:
@@ -270,184 +131,130 @@ proc arp_table_manager stdcall uses ebx esi edi ecx edx, Opcode:DWORD,Index:DWOR
     ; else
     ;  destination is remote, so pass to gateway
 
+	xor	edx, edx ; TODO: find device num in edx
 
-;;; TODO: get device number ! (in edx)
-    xor     edx, edx
+	mov	ebx, [IP_LIST+edx]
+	and	ebx, [SUBNET_LIST+edx]
+	mov	ecx, eax
+	and	ecx, [SUBNET_LIST+edx]
+	cmp	ecx, ebx
+	je	.local
 
-    mov     eax, [Index]       ;eax=required IP
-    mov     esi, eax
-    and     esi, [SUBNET_LIST+edx]
-    mov     ecx, [IP_LIST+edx]
-    and     ecx, [SUBNET_LIST+edx]
-    cmp     esi, ecx
-    je	    @f	      ;if we and target IP are located in the same network
-    mov     eax, [GATEWAY_LIST+edx]
-    mov     [Index], eax
-    DEBUGF 1,"IP is not on subnet, using %u.%u.%u.%u instead\n",[Index]:1,[Index+1]:1,[Index+2]:1,[Index+3]:1
-  @@:
+	mov	eax, [GATEWAY_LIST+edx]
+	DEBUGF 1,"requested IP is not on subnet, using gateway\n"
 
-    cmp     dword[NumARP], 0
-    je	    .ip_to_mac_send_request ;if ARP-table not contain an entries, we have to request IP.
-				    ;EAX will be containing a zero, it's equal to ARP_NO_ENTRY
+  .local:
+   ; try to find it on the list
+	mov	ecx, [NumARP]
+	jz	.not_in_list
+	mov	esi, ARPTable + ARP_ENTRY.IP
+  .scan_loop:
+	scasd
+	jz	.found_it
+	add	esi, ARP_ENTRY.size - 4
+	loop	.scan_loop
+  .not_in_list:
 
-    mov     ecx, dword[NumARP]
-    imul    esi, ecx, ARP_ENTRY.size  ;esi=current ARP-table size
+	DEBUGF 1,"IP not found on list, preparing for ARP request\n"
 
-  @@:
-    sub     esi, ARP_ENTRY.size
-    cmp     [ebx + esi + ARP_ENTRY.IP], eax	    ; ebx=ARPTable base
-    loopnz  @b			     ; Return back if non match
-    jnz     .ip_to_mac_send_request  ; and request IP->MAC if none found in the table
+   ; if not, reserve an entry in list and send an ARP request packet
 
-    ; Return the entry status in eax
-    movzx   eax, word[ebx + esi + ARP_ENTRY.Status]
+	push	eax
 
-    DEBUGF 1,"MAC found:  %x-%x-%x-%x-%x-%x status:%x in slot:%u\n",\
-    [ebx + esi + ARP_ENTRY.MAC]:2,[ebx + esi + ARP_ENTRY.MAC+1]:2,[ebx + esi + ARP_ENTRY.MAC+2]:2,[ebx + esi + ARP_ENTRY.MAC+3]:2,[ebx + esi + ARP_ENTRY.MAC+4]:2,[ebx + esi + ARP_ENTRY.MAC+5]:2, ax, esi
+	push	word ARP_REQUEST_TTL
+	push	word ARP_AWAITING_RESPONSE
+	push	dword 0
+	push	word 0
+	push	eax
+	call	ARP_add_entry
 
-    ; esi holds index
-    cld
-    lea     esi, [ebx + esi + ARP_ENTRY.MAC]
-    mov     edi, [Extra]   ;edi=ptr to buffer for write MAC
-    movsd
-    movsw
-    jmp     .exit
+	cmp	eax, -1
+	je	.full
 
-  .ip_to_mac_send_request:
-;;; TODO: get device number ! (in edx)
-    xor     edx, edx
-    mov     edx, [ETH_DRV_LIST + 4*edx]
-    lea     ecx, [edx + ETH_DEVICE.mac]
+	pop	eax
+	call	ARP_create_request
 
-    stdcall arp_request,[Index],[IP_LIST+edx],ecx  ;TargetIP,SenderIP_ptr,SenderMAC_ptr
-    mov     eax, ARP_NO_ENTRY
-    jmp     .exit
+	ret
 
-;;END IP_TO_MAC
+  .found_it:
+	DEBUGF 1,"Found MAC! (%u-%u-%u-%u-%u-%u)\n",[esi+0]:2,[esi+1]:2,[esi+2]:2,[esi+3]:2,[esi+4]:2,[esi+5]:2
+	movzx  eax, word [esi]
+	mov    ebx, [esi+2]
 
-.exit:
-    ret
-endp
+	ret
+
+  .full:
+	add	esp, 4
+	mov	eax, -1
+	ret
 
 
-;***************************************************************************
-;   Function
-;      arp_request  [by Johnny_B]
+;---------------------------------------------------------------------------
 ;
-;   Description
-;      Sends an ARP request on the ethernet
-;   IN:
-;     TargetIP      : requested IP address
-;     SenderIP_ptr  : POINTER to sender's IP address(our system's address)
-;     SenderMAC_ptr : POINTER to sender's MAC address(our system's address)
-;   OUT:
-;     EAX=0 (if all is ok), otherwise EAX is not defined
+; ARP_create_packet
 ;
-;      EBX,ESI,EDI will be saved
+; IN:  ip in eax
 ;
-;***************************************************************************
-proc arp_request stdcall uses ebx esi edi,\
-    TargetIP:DWORD, SenderIP_ptr:DWORD, SenderMAC_ptr:DWORD
-
-    DEBUGF 1,"Create ARP request\n"
+; OUT: /
+;
+;---------------------------------------------------------------------------
 
 
-    stdcall kernel_alloc, 60  ; minimum eth packet size
-    test    eax, eax
-    jz	    .exit
+align 4
+ARP_create_request:
 
-    mov     ebx, eax
+	DEBUGF 1,"Create ARP Packet\n"
 
-    mov     word [ebx + ETH_FRAME.Data + ARP_Packet.HardwareType], 0x0100 ;Ethernet
-    mov     word [ebx + ETH_FRAME.Data + ARP_Packet.ProtocolType], 0x0008 ;IP
-    mov     byte [ebx + ETH_FRAME.Data + ARP_Packet.HardwareSize], 0x06   ;MAC-addr length
-    mov     byte [ebx + ETH_FRAME.Data + ARP_Packet.ProtocolSize], 0x04   ;IP-addr length
-    mov     word [ebx + ETH_FRAME.Data + ARP_Packet.Opcode], 0x0100	  ;Request
+	call	IPv4_dest_to_dev
 
-    DEBUGF 1,"1"
+	push	eax						; DestIP
+	mov	eax, [IP_LIST+4*edi]				; senderIP
+	push	eax
 
-    cld
-    mov     esi, [SenderMAC_ptr]
-    lea     edi, [ebx + ETH_FRAME.Data + ARP_Packet.SenderMAC]	     ;Our MAC-addr
-    movsd
-    movsw
+	mov	edi, [ETH_DRV_LIST + 4*edi]
+	lea	eax, [edi + ETH_DEVICE.mac]
+	mov	ebx, ETH_BROADCAST
+	mov	ecx, 60 ; minimum packet size
+	mov	edx, edi ;;;
+	mov	di , ETHER_ARP
+	call	ETH_create_Packet
+	cmp	edi, -1
+	je	.exit
 
-    DEBUGF 1,"2"
+	mov	word [edi + ARP_Packet.HardwareType], 0x0100 ;Ethernet
+	mov	word [edi + ARP_Packet.ProtocolType], 0x0008 ;IP
+	mov	byte [edi + ARP_Packet.HardwareSize], 6   ;MAC-addr length
+	mov	byte [edi + ARP_Packet.ProtocolSize], 4   ;IP-addr length
+	mov	word [edi + ARP_Packet.Opcode], ARP_REQ_OPCODE	    ;Request
 
-    mov     esi, [SenderIP_ptr]
-    mov     [ebx + ETH_FRAME.Data + ARP_Packet.SenderIP], esi	     ;Our IP-addr
-;    movsd
+	add	edi, ARP_Packet.SenderMAC			; sendermac
+	lea	esi, [edx + ETH_DEVICE.mac]			;
+	movsw							;
+	movsd							;
 
-    DEBUGF 1,"3"
+	pop	eax
+	stosd							;
 
-    lea     edi, [ebx + ETH_FRAME.Data + ARP_Packet.TargetMAC]	     ; Required MAC-addr
-    xor     eax, eax
-    stosd
-    stosw
+	xor	eax, eax					; destmac
+	movsw							;
+	movsw							;
 
-    DEBUGF 1,"4"
+	pop	eax
+	movsd							;
 
-    lea     edi, [ebx + ETH_FRAME.DstMAC]
-    stosd
-    stosw
+	DEBUGF 1,"ARP Packet for device %x created successfully\n", edx
 
-    DEBUGF 1,"5"
+	call	esi
 
-    mov     esi, [TargetIP]
-    mov     dword [ebx + ETH_FRAME.Data + ARP_Packet.TargetIP], esi   ;Required IP-addr(we get it as function parameter)
+	inc	[ARP_PACKETS_TX+4*edi]
 
+	ret
 
-    DEBUGF 1,"6"
-
-    mov     esi, [SenderMAC_ptr]
-    lea     edi, [ebx + ETH_FRAME.SrcMAC]
-    movsd
-    movsw
-
-    DEBUGF 1,"7"
-
-    mov     ax , ETHER_ARP
-    stosw
-
-    DEBUGF 1,"8"
-
-;;; TODO: get device number in edx !!
-    xor     edx, edx
-    shl     edx, 2
-
-    inc     [ARP_PACKETS_TX+edx]
-
-    push    dword .returnaddr
-    push    dword 60
-    push    ebx
-    mov     ebx, [ETH_DRV_LIST + edx]
-    jmp     [ebx + ETH_DEVICE.transmit]
-.returnaddr:
-
-    ; Add an entry in the ARP table, awaiting response
-    sub     esp, ARP_ENTRY.size    ;allocate memory for ARP-entry
-
-    mov     esi, dword[TargetIP]
-    mov     dword[esp + ARP_ENTRY.IP],esi
-
-    lea     edi, [esp + ARP_ENTRY.MAC]
-    xor     eax, eax
-    stosd
-    stosw
-
-    mov     word[esp + ARP_ENTRY.Status], ARP_AWAITING_RESPONSE
-    mov     word[esp + ARP_ENTRY.TTL], 10  ; 10 seconds
-
-    stdcall arp_table_manager,ARP_TABLE_ADD,EXTRA_IS_ARP_ENTRY_PTR,esp
-    add     esp, ARP_ENTRY.size ; free memory
-
-.exit:
-
-    DEBUGF 1,"ARP request - end\n"
-    ret
-endp
-
-
+  .exit:
+	add	esp, 8
+	DEBUGF 1,"Create ARP Packet - failed\n"
+	mov	eax, -1
+	ret
 
 
 
@@ -512,6 +319,81 @@ ARP_decrease_entry_ttls:
 
 	ret
 
+;---------------------------------------------------------------------------
+;
+; ARP_add_entry (or update)
+;
+; IN: arp entry in stack: esp     .IP
+;                         esp+4   .MAC
+;                         esp+10  .Status
+;                         esp+12  .TTL
+;                         esp+14
+;
+; OUT: eax = entry #, -1 on error
+;
+;---------------------------------------------------------------------------
+
+; TODO: use a mutex
+
+align 4
+ARP_add_entry:
+
+	mov	ecx, [NumARP]
+	test	ecx, ecx
+	jz	.add
+
+	mov	eax, dword[esp + ARP_ENTRY.MAC]
+	mov	bx , word[esp + ARP_ENTRY.MAC + 4]
+	mov	esi, ARPTable
+
+.loop:
+	cmp	dword [esi + ARP_ENTRY.MAC], eax
+	jne	.maybe_next
+	cmp	word [esi + ARP_ENTRY.MAC + 4], bx
+	jne	.maybe_next
+
+	cmp	dword[esi + ARP_ENTRY.TTL], 0xFFFF ; static entry
+	jne	.notstatic
+	cmp	dword[esp + ARP_ENTRY.TTL], 0xFFFF
+	jne	.exit
+.notstatic:
+
+	mov	ebx, [NumARP]
+	xchg	ebx, ecx
+	sub	ecx, ebx
+	jmp	.add
+
+.maybe_next:
+	add	esi, ARP_ENTRY.size
+	loop	.loop
+
+	mov	ecx, [NumARP]
+	cmp	ecx, ARP_TABLE_SIZE
+	jge	.full
+
+.add:
+
+	push	ecx
+	imul	ecx, ARP_ENTRY.size
+	lea	edi, [ecx + ARPTable]
+	lea	esi, [esp + 4]
+	mov	ecx, ARP_ENTRY.size/2
+	repz	movsw
+
+	inc	[NumARP]
+	pop	eax
+
+.exit:
+
+	add	esp, 14
+	ret
+
+.full:
+
+	mov	eax, -1
+	jmp	.exit
+
+
 
 ;---------------------------------------------------------------------------
 ;
@@ -537,9 +419,8 @@ ARP_del_entry:
 	cld
 	rep	movsw
 
-	dec	dword[NumARP] ;decrease arp-entries counter
+	dec	[NumARP] ;decrease arp-entries counter
 	ret
-
 
 
 
@@ -557,22 +438,53 @@ ARP_del_entry:
 ;  OUT: /
 ;
 ;-----------------------------------------------------
+
 align 4
-ARP_Handler:
+ARP_handler:
 
 	DEBUGF	1,"ARP_Handler - start\n"
 	cmp	ecx, 28
 	jl	.exit
 
-; Is this a REQUEST?
-; Is this a request for My Host IP
-; Yes - So construct a response message.
-; Send this message to the ethernet card for transmission
+	cmp	word [edx + ARP_Packet.Opcode], ARP_REP_OPCODE	; Is this a reply packet?
+	jne	.maybe_request
 
-;        push    ebx edx
-	stdcall arp_table_manager, ARP_TABLE_ADD, EXTRA_IS_ARP_PACKET_PTR, edx
-;        pop     edx ebx
+	mov	ecx, [NumARP]
+	test	ecx, ecx
+	jz	.exit
 
+	mov	eax, [esp]
+	mov	eax, [eax + ARP_Packet.SenderIP]
+	mov	esi, ARPTable+ARP_ENTRY.IP
+
+  .loop:
+	scasd
+	jz	.gotit
+	add	esi, ARP_ENTRY.size-4
+	loop	.loop
+
+	jmp	.exit
+
+  .gotit:
+	cmp	[esi-4+ARP_ENTRY.Status], 0x0300   ;if it is a static entry, dont touch it
+	je	.exit
+
+	mov	[esi-4+ARP_ENTRY.Status], ARP_VALID_MAPPING
+	mov	[esi+ARP_ENTRY.TTL-4], ARP_ENTRY_TTL
+
+	mov	ebx, [esp]
+	mov	eax, dword [ebx + ARP_Packet.SenderMAC]
+	mov	dword [esi+ARP_ENTRY.MAC-4], eax
+	mov	ax , word [ebx + ARP_Packet.SenderMAC + 4]
+	mov	word [esi+ARP_ENTRY.MAC-4+4], ax
+
+	jmp	.exit
+
+
+;------
+
+
+  .maybe_request:
 	cmp	word [edx + ARP_Packet.Opcode], ARP_REQ_OPCODE	; Is this a request packet?
 	jne	.exit
 
@@ -591,10 +503,8 @@ ARP_Handler:
 	push	eax
 	push	edi
 
-;        DEBUGF  1,"ETH_ARP_Handler - request for %u.%u.%u.%u\n",[edi+0]:1,[edi+1]:1,[edi+2]:1,[edi+3]:1
-
 ; OK, it is a request for one of our MAC addresses. Build the frame and send it
-; We can reuse the buffer.
+; We can reuse the buffer.  (faster then using ARP_create_packet)
 
 	cld
 	lea	esi, [edx + ARP_Packet.SenderMAC]
@@ -623,12 +533,12 @@ ARP_Handler:
 	lea	esi, [edx + ARP_Packet.SenderMAC]
 	movsd
 	movsw
-	mov	ax , ETHER_ARP
-	stosw
+;        mov     ax , ETHER_ARP
+;        stosw
 
 	jmp	ETH_Sender					; And send it!
 
-       .exit:
+     .exit:
 	call	kernel_free
 	add	esp, 4						; pop (balance stack)
 
@@ -672,7 +582,6 @@ ARP_API:
 	jz	.remove 	; 5
 	dec	bl
 
-
 .error:
 	mov	eax, -1
 	ret
@@ -697,9 +606,11 @@ ARP_API:
 
 .write:
 	; TODO: write code
+	; call    ARP_write_entry
 	ret
 
 .remove:
-	; TODO: write code
+	mov	esi, eax
+	call	ARP_del_entry
 	ret
 

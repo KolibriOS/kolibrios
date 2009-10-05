@@ -42,11 +42,8 @@ RATE_LIMIT_INTERVAL equ 60		    ; seconds (delay between successive attempts)
 DEFEND_INTERVAL     equ 10		    ; seconds (min. wait between defensive ARPs)
 
 
-
-
 AF_INET4	equ 2  ;;;;;
 IP_PROTO_UDP	equ 17
-
 
 
 
@@ -197,22 +194,22 @@ START:					    ; start of execution
     invoke ini.get_str, path, str_ipconfig, str_ip, inibuf, 16, 0
     mov    edx, inibuf
     call   Ip2dword
-    mcall  73, 3, edx
+    mcall  75, 3, edx
 
     invoke ini.get_str, path, str_ipconfig, str_gateway, inibuf, 16, 0
     mov    edx, inibuf
     call   Ip2dword
-    mcall  73, 9, edx
+    mcall  75, 9, edx
 
     invoke ini.get_str, path, str_ipconfig, str_dns, inibuf, 16, 0
     mov    edx, inibuf
     call   Ip2dword
-    mcall  73, 7, edx
+    mcall  75, 7, edx
 
     invoke ini.get_str, path, str_ipconfig, str_subnet, inibuf, 16, 0
     mov    edx, inibuf
     call   Ip2dword
-    mcall  73, 5, edx
+    mcall  75, 5, edx
 
 
     mcall  -1
@@ -478,11 +475,11 @@ link_local:
     call random
     mov  ecx,0xfea9			    ; IP 169.254.0.0 link local net, see RFC3927
     mov  cx,ax
-    mcall 73, 3, ecx			      ; mask is 255.255.0.0
+    mcall 75, 3, ecx			      ; mask is 255.255.0.0
     DEBUGF 1,"Link Local IP assinged: 169.254.%u.%u\n",[generator+2]:1,[generator+3]:1
-    mcall 73, 5, 0xffff
-    mcall 73, 9, 0x0
-    mcall 73, 7, 0x0
+    mcall 75, 5, 0xffff
+    mcall 75, 9, 0x0
+    mcall 75, 7, 0x0
 
     mcall 5, PROBE_WAIT*100
 
@@ -559,7 +556,7 @@ library \
 	libini,'libini.obj'
 
 import	libini, \
-	ini.get_str,'ini.get_str'
+	ini.get_str,'ini_get_str'
 
 include_debug_strings
 
@@ -575,7 +572,7 @@ str_type db 'type',0
 sockaddr1:
 
 	dw AF_INET4
-	dw 68		; local port
+	dw 68 shl 8	; local port
 	dd 0		; local IP
 
 	rb 10
@@ -584,7 +581,7 @@ sockaddr1:
 sockaddr2:
 
 	dw AF_INET4
-	dw 67		; destination port
+	dw 67 shl 8	; destination port
 	dd -1		; destination IP
 
 	rb 10

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  SOCKET.INC                                                     ;;
@@ -24,24 +24,25 @@ struct	 SOCKET
 	 .PID			dd ? ; application process id
 	 .Domain		dd ? ; INET/UNIX/..
 	 .Type			dd ? ; RAW/UDP/TCP/...
+	 .Protocol		dd ? ; ICMP/IPv4/ARP/
 	 .LocalIP		dd ? ; local IP address
 	 .RemoteIP		dd ? ; remote IP address
 	 .LocalPort		dw ? ; local port
 	 .RemotePort		dw ? ; remote port
-;         .OrigRemoteIP          dd ? ; original remote IP address (used to reset to LISTEN state)
-;         .OrigRemotePort        dw ? ; original remote port (used to reset to LISTEN state)
+	 .OrigRemoteIP		dd ? ; original remote IP address (used to reset to LISTEN state)
+	 .OrigRemotePort	dw ? ; original remote port (used to reset to LISTEN state)
 	 .rxDataCount		dd ? ; rx data count
-;         .TCBState              dd ? ; TCB state
-;         .TCBTimer              dd ? ; TCB timer (seconds)
-;         .ISS                   dd ? ; initial send sequence
-;         .IRS                   dd ? ; initial receive sequence
-;         .SND_UNA               dd ? ; sequence number of unack'ed sent Packets
-;         .SND_NXT               dd ? ; bext send sequence number to use
-;         .SND_WND               dd ? ; send window
-;         .RCV_NXT               dd ? ; next receive sequence number to use
-;         .RCV_WND               dd ? ; receive window
-;         .SEG_LEN               dd ? ; segment length
-;         .SEG_WND               dd ? ; segment window
+	 .TCBState		dd ? ; TCB state
+	 .TCBTimer		dd ? ; TCB timer (seconds)
+	 .ISS			dd ? ; initial send sequence
+	 .IRS			dd ? ; initial receive sequence
+	 .SND_UNA		dd ? ; sequence number of unack'ed sent Packets
+	 .SND_NXT		dd ? ; bext send sequence number to use
+	 .SND_WND		dd ? ; send window
+	 .RCV_NXT		dd ? ; next receive sequence number to use
+	 .RCV_WND		dd ? ; receive window
+	 .SEG_LEN		dd ? ; segment length
+	 .SEG_WND		dd ? ; segment window
 	 .wndsizeTimer		dd ? ; window size timer
 	 .lock			dd ? ; lock mutex
 	 .backlog		dw ? ; Backlog
@@ -125,7 +126,7 @@ s_error:
 ;
 ;  IN:  domain in ecx
 ;       type in edx
-;       set esi to zero, it is reserved for future use
+;       protocol in esi
 ;  OUT: eax is socket num, -1 on error
 ;
 ;-----------------------------------------------
@@ -139,6 +140,7 @@ socket_open:
 
 	mov	[eax + SOCKET.Domain], ecx
 	mov	[eax + SOCKET.Type], edx
+	mov	[eax + SOCKET.Protocol], esi
 
 	stdcall net_socket_addr_to_num, eax
 	DEBUGF	1,", socketnumber: %u\n", eax
@@ -153,7 +155,6 @@ socket_open:
 ;-----------------------------------------------
 ;
 ; SOCKET_bind
-;
 ;
 ;  IN:  socket number in ecx
 ;       pointer to sockaddr struct in edx
@@ -184,6 +185,7 @@ socket_bind:
 	jl	s_error
 
 	mov	bx, word [edx + 2]
+	rol	bx,8			;;;
 	DEBUGF	1,"local port: %u ",bx
 	test	bx, bx
 	jnz	.check_only
@@ -280,6 +282,7 @@ socket_connect:
   .udp:
 
 	mov	bx , word [edx + 2]
+	rol	bx, 8
 	mov	word [eax + SOCKET.RemotePort], bx
 
 	DEBUGF	1,"remote port: %u ",bx
@@ -735,12 +738,13 @@ socket_send:
 	mov	ecx, esi
 	mov	esi, edx
 	mov	edx, dword [eax + SOCKET.LocalPort] ; load local port and remote port at once
-
 	DEBUGF	1,"local port: %u, remote port:%u\n",[eax + SOCKET.LocalPort]:2, [eax + SOCKET.RemotePort]:2
+	bswap	edx	 ;;;
+	rol	edx, 16  ;;;
 	mov	ebx, [eax + SOCKET.LocalIP]
 	mov	eax, [eax + SOCKET.RemoteIP]
 
-	call	UDP_create_Packet
+	call	UDP_create_packet
 
 	mov	[esp+32], eax
 	ret
@@ -765,7 +769,7 @@ socket_send:
 	add	esi, ICMP_Packet.Data
 	mov	ebx, [eax + SOCKET.LocalIP]
 	mov	eax, [eax + SOCKET.RemoteIP]
-	call	ICMP_create_Packet
+	call	ICMP_create_packet
 
 	mov	[esp+32], eax
 	ret

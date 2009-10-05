@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  ICMP.INC                                                       ;;
@@ -146,7 +146,7 @@ ICMP_init:
 ;--------------------------------
 
 align 4
-ICMP_Handler:	;TODO: works only on pure ethernet right now !
+ICMP_handler:	;TODO: works only on pure ethernet right now !
 
 	DEBUGF	1,"ICMP_Handler - start\n"
 	cmp	byte [edx + ICMP_Packet.Type], ICMP_ECHO		    ; Is this an echo request?
@@ -318,7 +318,7 @@ ICMP_Handler:	;TODO: works only on pure ethernet right now !
 ;--------------------------------
 
 align 4
-ICMP_Handler_fragments:   ; works only on pure ethernet right now !
+ICMP_handler_fragments:   ; works only on pure ethernet right now !
 
 	DEBUGF	1,"ICMP_Handler_fragments - start\n"
 
@@ -345,7 +345,7 @@ ICMP_Handler_fragments:   ; works only on pure ethernet right now !
 	shl	edx, 16
 	mov	dx , ICMP_ECHOREPLY shl 8 + 0				    ; Type + Code
 
-	call	ICMP_create_Packet
+	call	ICMP_create_packet
 
        .dump:
 	DEBUGF	1,"ICMP_Handler_fragments - end\n"
@@ -372,7 +372,7 @@ ICMP_Handler_fragments:   ; works only on pure ethernet right now !
 ;-----------------------------------------------------------------
 
 align 4
-ICMP_create_Packet:
+ICMP_create_packet:
 
 	DEBUGF 1,"Create ICMP Packet\n"
 
@@ -382,7 +382,7 @@ ICMP_create_Packet:
 	mov	di , IP_PROTO_ICMP
 	shr	edx, 16
 
-	call	IPv4_create_Packet
+	call	IPv4_create_packet
 
 	cmp	edi, -1
 	je	.exit

@@ -1,6 +1,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                                                                 ;;
-;; Copyright (C) KolibriOS team 2004-2008. All rights reserved.    ;;
+;; Copyright (C) KolibriOS team 2004-2009. All rights reserved.    ;;
 ;; Distributed under terms of the GNU General Public License       ;;
 ;;                                                                 ;;
 ;;  IP.INC                                                         ;;
@@ -85,7 +85,9 @@ IPv4_init:
 
 	or	eax, -1
 	mov	edi, BROADCAST
-	mov	ecx, 1+4*MAX_IP
+	stosd
+	xor	eax, eax
+	mov	ecx, 4*MAX_IP
 	rep	stosd
 
 	xor	eax, eax
@@ -116,7 +118,7 @@ IPv4_init:
 ;-----------------------------------------------------------------
 
 align 4
-IPv4_Handler:
+IPv4_handler:
 
 	DEBUGF	1,"IP_Handler - start\n"
 	mov	cx , [edx + IPv4_Packet.HeaderChecksum]
@@ -186,13 +188,13 @@ IPv4_Handler:
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
 	cmp	al , IP_PROTO_TCP
-;        je      TCP_Handler
+;        je      TCP_handler
 
 	cmp	al , IP_PROTO_UDP
-	je	UDP_Handler
+	je	UDP_handler
 
 	cmp	al , IP_PROTO_ICMP
-	je	ICMP_Handler
+	je	ICMP_handler
 
 	DEBUGF	1,"IP_Handler - unknown protocol:%u\n",al
 
@@ -391,14 +393,14 @@ IPv4_Handler:
 	mov	al , [edx + IPv4_Packet.Protocol]
 	pop	edx						; Offset to data (tcp/udp/icmp/.. Packet)
 
-;        cmp     al , IP_PROTO_TCP
-;        je      TCP_Handler
+	cmp	al , IP_PROTO_TCP
+;        je      TCP_handler
 
 	cmp	al , IP_PROTO_UDP
-	je	UDP_Handler
+	je	UDP_handler
 
 	cmp	al , IP_PROTO_ICMP
-	je	ICMP_Handler_fragments
+	je	ICMP_handler_fragments
 
 	DEBUGF	1,"IP_Handler - unknown protocol:%u\n",al
 
@@ -505,7 +507,7 @@ IPv4_decrease_fragment_ttls:
 ;;; TODO: create fragmented packets
 
 align 4
-IPv4_create_Packet:
+IPv4_create_packet:
 
 	DEBUGF 1,"Create IPv4 Packet\n"
 
@@ -515,11 +517,10 @@ IPv4_create_Packet:
 	cmp	eax, -1
 	je	.broadcast		  ; If it is broadcast, just send
 
-	push	eax
-	stdcall arp_table_manager, ARP_TABLE_IP_TO_MAC, eax, temp_dstmac	;opcode,IP,MAC_ptr - Get the MAC address.
-	cmp	eax, ARP_NO_ENTRY
-	pop	eax
-	jne	.send
+	call	ARP_IP_to_MAC
+
+	cmp	eax, -1
+	jne	.found
 
 	DEBUGF 1,"Create IPv4 Packet - ARP entry not found!\n"
 
@@ -528,9 +529,15 @@ IPv4_create_Packet:
 
 	ret
 
+  .found:
+	push	ax
+	push	ebx
+
+	jmp	.send
+
   .broadcast:
-	mov	dword [temp_dstmac], -1
-	mov	word [temp_dstmac+4], -1
+	push	word -1
+	push	dword -1
 
 
   .send:
@@ -539,9 +546,10 @@ IPv4_create_Packet:
 	inc	[IP_PACKETS_TX+4*edi]
 	mov	edi, [ETH_DRV_LIST + 4*edi]
 	lea	eax, [edi + ETH_DEVICE.mac]
-	mov	ebx, temp_dstmac
+	lea	ebx, [esp+16]
 	mov	ecx, [esp+12]
 	add	ecx, IPv4_Packet.DataOrOptional
+	mov	edx, edi ;;;
 	mov	di , ETHER_IPv4
 	call	ETH_create_Packet		   ; TODO: figure out a way to make this work with other protocols too
 	cmp	edi, -1
@@ -572,19 +580,17 @@ IPv4_create_Packet:
 
 	DEBUGF 1,"IPv4 Packet for device %x created successfully\n", edx
 
+	add	esp, 6
+
 	ret
 
   .exit:
-	add	esp, 16
+	add	esp, 16+6
   .exit_:
 	DEBUGF 1,"Create IPv4 Packet - failed\n"
 	or	edi, -1
 	ret
 
-
-uglobal
-	temp_dstmac dp ?    ; TODO: place this in stack instead!
-endg
 
 
 ;---------------------------------------------------------------------------

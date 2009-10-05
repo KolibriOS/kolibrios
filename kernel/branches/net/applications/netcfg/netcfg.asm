@@ -38,8 +38,8 @@ button: 				; button
 	jne	@f
 	mcall	-1			; close this program
        @@:
-	cmp	eax,0x0000fe00
-	jg	@f
+	cmp	eax,0x0000ff00
+	jg	load_drv
 
 	cmp	ah, 4
 	je	hook
@@ -51,25 +51,17 @@ button: 				; button
 	je	unload
 
 	jmp	still
-       @@:
+
+
+load_drv:
 	shr	eax, 16
 	mov	word [selected], ax
 
-	call	load_drv
-	call	draw_window
-
-	jmp still
-
-load_drv:
-;        mov     ax , [selected]
-	test	ax , ax
-	jz	still
-
 	mov	bl , 6			; get a dword
-	mov	bh , ah     ; bus
-	mov	ch , al     ; dev
+	mov	bh , ah 		; bus
+	mov	ch , al 		; dev
 	mov	cl , 0			; offset to device/vendor id
-	mcall 62		      ; get ID's
+	mcall	62			; get ID's
 
 	mov	word [PCI_Vendor], ax
 	shr	eax, 16
@@ -77,11 +69,19 @@ load_drv:
 	call	get_drv_ptr
 
 	mov	ecx, eax
-	mcall 68, 16
+	mcall	68, 16
 
 	mov	[IOCTL.handle], eax
 
-	ret
+	call	draw_window
+
+	cmp	[IOCTL.handle], 0
+	jne	still
+
+	mcall	4, 20 shl 16 + 30, 1 shl 31 + 0x00ff0000 , load_error
+
+	jmp	still
+
 
 hook:
 	mov	ax , [selected]
@@ -97,29 +97,27 @@ hook:
 	mov	[IOCTL.out_size], 0
 	mov	[IOCTL.output], 0
 
-	mcall 68, 17, IOCTL
+	mcall	68, 17, IOCTL
 
 	mov	byte[drivernumber], al
+
+	jmp	still
 
 reset:
 	movzx	ebx, byte[drivernumber]
 	mcall	73,,2
 
-	ret
+	jmp	still
 
 unload:
 	movzx	ebx, byte[drivernumber]
 	mcall	73,,3
 
-	ret
+	jmp	still
 
 draw_window:
 	mcall	12, 1			; start of draw
 	mcall	0, dword [Form], dword [Form + 4], 0x13ffffff, 0x805080d0, title
-
-;        mcall   73, 1,
-;        mov     ecx, eax
-;        mcall   47, 1 shl 18, , 50 shl 16 + 10, 0x00000000
 
 	call	Get_PCI_Info		; get pci version and last bus, scan for and draw each pci device
 
@@ -128,8 +126,9 @@ draw_window:
 
 	mcall	4, 20 shl 16 + 100, 1 shl 31 + 0x00000000 , caption
 
-	mov	ax , [selected]
-	test	ax, ax
+	cmp	[selected], 0
+	jz	.done
+	cmp	[IOCTL.handle] ,0
 	jz	.done
 
 	mcall	8, 18 shl 16 + 100, 35 shl 16 + 18, 4, 0x00007f00
@@ -144,7 +143,7 @@ draw_window:
 
 	jmp	.done
 
-.nonefound :
+.nonefound:
 	mcall	4, 20 shl 16 + 30, 1 shl 31 + 0x00ff0000 , nonefound
 .done:
 	mcall	12, 2			; end of draw
@@ -379,8 +378,8 @@ get_drv_ptr:
        driverfound:
 	ret
 
-include 'VENDORS.INC'
-include 'DRIVERS.INC'
+include 'vendors.inc'
+include 'drivers.inc'
 ;------------------------------------------------------------------
 ; DATA AREA
 DATA
@@ -404,6 +403,7 @@ btn_stop db 'Stop device',0
 lbl_none db 'none',0
 ;lbl_unknown db 'unknown',0
 ;lbl_ethernet db 'ethernet',0
+load_error db 'Could not load driver!',0
 
 devicename     db 'test'
 rb 64
