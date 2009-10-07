@@ -1,7 +1,13 @@
-;Libray from Editbox
-; SEE YOU File FAQ.txt and HISTORY. Good Like!
-;Last Change 13/02/2009
-;;;;;;;;;;;;;;;;;;
+;*****************************************************************************
+; Box_Lib - library of graphical components
+;
+; Authors:
+; Alexey Teplov aka <Lrz>
+; Marat Zakiyanov aka Mario79, aka Mario
+; Evtikhov Maxim aka Maxxxx32
+; Eugene Grechnikov aka Diamond
+; hidnplayr
+;*****************************************************************************
 
 format MS COFF
 
@@ -9,40 +15,41 @@ public EXPORTS
 
 section '.flat' code readable align 16
 include '../../../../macros.inc'
-include 'editbox.mac'   ;макрос который должен облегчить жизнь :) специально для editbox
-include 'checkbox.mac'  ;макрос содержит реализацию checkbox
-include 'optionbox.mac' ;макрос содержит реализацию optionbox
-include 'scrollbar.mac' ;макрос содержит реализацию scrollbar
-include 'd_button.mac' ;макрос содержит реализацию dinamic button
-include 'menubar.mac' ;макрос содержит реализацию menubar
+include 'editbox.mac'   ;macro which should make life easier :) specially for editbox
+include 'checkbox.mac'	;macro implements checkbox
+include 'optionbox.mac' ;macro implements optionbox
+include 'scrollbar.mac' ;macro implements scrollbar
+include 'd_button.mac' ;macro implements dinamic_button
+include 'menubar.mac' ;macro implements menubar
+include 'filebrowser.mac' ;macro implements filebrowser
 ;----------------------------------------------------
 ;EditBox
 ;----------------------------------------------------
 align 4
-use_editbox_draw        ;макрос расскрывает функцию отображения бокса.
+use_editbox_draw        ;macro reveals the function of the display.
 align 4
-use_editbox_key         ;макрос расскрывает функцию обработки клавишь.
+use_editbox_key         ;macro reveals processing function of the keypad.
 align 4
-use_editbox_mouse       ;макрос расскрывает функцию обработки мыши.
+use_editbox_mouse       ;macro reveals processing function of the mouse.
 
 ;----------------------------------------------------
 ;CheckBox
 ;----------------------------------------------------
 align 4
-use_checkbox_draw       ;макрос расскрывает функцию отображения бокса.
+use_checkbox_draw       ;macro reveals the function of the display.
 align 4
-use_checkbox_mouse      ;макрос расскрывает функцию обработки мыши.
+use_checkbox_mouse      ;macro reveals processing function of the mouse.
 
 
 ;--------------------------------------------------
 ;radiobutton Group
 ;--------------------------------------------------
 align 4
-use_optionbox_driver    ;макросы которые управляют работой бокса )
+use_optionbox_driver    ;macro that control the operating modes
 align 4
-use_optionbox_draw      ;макрос расскрывает функцию отображения бокса.
+use_optionbox_draw      ;macro reveals the function of the display.
 align 4
-use_optionbox_mouse     ;макрос расскрывает функцию обработки мыши.
+use_optionbox_mouse     ;macro reveals processing function of the mouse.
 
 ;--------------------------------------------------
 ;scrollbar Group
@@ -66,7 +73,11 @@ use_dinamic_button
 align 4
 use_menu_bar
 
-
+;--------------------------------------------------
+;filebrowser Group
+;--------------------------------------------------
+align 4
+use_file_browser
 ;--------------------------------------------------
 init:
 ret
@@ -110,7 +121,13 @@ EXPORTS:
 
         dd      sz_Menu_bar_draw,       menu_bar.draw
         dd      sz_Menu_bar_mouse,      menu_bar.mouse
-        dd      szVersion_menu_bar,     0x00010001
+        dd      sz_Menu_bar_activate,   menu_bar.activate
+        dd      szVersion_menu_bar,     0x00010002
+
+        dd      sz_FileBrowser_draw,    fb_draw_panel
+        dd      sz_FileBrowser_mouse,   fb_mouse
+        dd      sz_FileBrowser_key,     fb_key
+        dd      szVersion_FileBrowser,  0x00010001
         dd      0,0
 
 
@@ -142,5 +159,10 @@ szVersion_dbutton               db 'version_dbutton',0
 
 sz_Menu_bar_draw                db 'menu_bar_draw',0
 sz_Menu_bar_mouse               db 'menu_bar_mouse',0
+sz_Menu_bar_activate            db 'menu_bar_activate',0
 szVersion_menu_bar              db 'version_menu_bar',0
 
+sz_FileBrowser_draw             db 'FileBrowser_draw',0
+sz_FileBrowser_mouse            db 'FileBrowser_mouse',0
+sz_FileBrowser_key              db 'FileBrowser_key',0
+szVersion_FileBrowser           db 'version_FileBrowser',0

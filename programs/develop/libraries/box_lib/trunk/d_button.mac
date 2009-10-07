@@ -1,6 +1,6 @@
 ;**************************************************************
 ; Dinamic Button Macro for Kolibri OS
-; Copyright (c) 2009, Mario79
+; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -14,7 +14,7 @@
 ;       names of its contributors may be used to endorse or promote products
 ;       derived from this software without specific prior written permission.
 ;
-; THIS SOFTWARE IS PROVIDED BY Mario79 ''AS IS'' AND ANY
+; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 ; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
@@ -67,10 +67,10 @@ dinamic_button_exit
 	cmp    db_select,dword 2
 	je     .click_2
 	mov    ebx,db_passive_raw
-	jmp    .draw_2 ;@f
+	jmp    .draw_2 
 .active_1:
 	mov    ebx,db_active_raw
-	jmp   .draw_2  ;@f
+	jmp   .draw_2 
 .click_2:
 	mov    ebx,db_click_raw
 @@:

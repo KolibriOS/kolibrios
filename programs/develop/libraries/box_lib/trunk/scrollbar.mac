@@ -1,6 +1,6 @@
 ;**************************************************************
 ; ScrollBar Macro for Kolibri OS
-; Copyright (c) 2009, Mario79
+; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
@@ -14,7 +14,7 @@
 ;	   names of its contributors may be used to endorse or promote products
 ;	   derived from this software without specific prior written permission.
 ;
-; THIS SOFTWARE IS PROVIDED BY Mario79 ''AS IS'' AND ANY
+; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 ; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
@@ -294,7 +294,6 @@ scroll_bar_vertical:
 .draw:
 	pusha
 	mov   edi,dword [esp+36]
-;	mov   sb_all_redraw,dword 1
 	mov   sb_delta,word 0
 	call  .draw_1
 	mov   sb_all_redraw,dword 0
@@ -309,7 +308,7 @@ scroll_bar_exit
 	sub   eax,edx
 	mov   sb_work_size,eax
 ;*********************************
-	mov   eax,sb_work_size   ;sb_max_area
+	mov   eax,sb_work_size
 	mov   ebx,sb_max_area
 	cmp   ebx,sb_cur_area
 	ja	@f
@@ -494,7 +493,7 @@ draw_down_arrow_vertical
 	pop   ecx
 	
 	ror   ecx,16
-	add   ecx,sb_btn_high  ;14 shl 16
+	add   ecx,sb_btn_high
 	rol   ecx,16
 	
 	mov   edx,sb_line_col
@@ -536,7 +535,7 @@ draw_down_arrow_vertical
 	
 @@:
 	cmp   sb_m_keys,dword 0
-	jne	 @f   ;.continue_2
+	jne	 @f
 	mov   eax,sb_m_pos
 	mov   sb_m_pos_2,eax
 	jmp   .correct_1	;.exit_sb	
@@ -607,7 +606,7 @@ draw_down_arrow_vertical
 	push  eax
 	mov   ax,sb_m_pos
 	cmp   ax,sb_m_pos_2
-	je	.correct  ;.exit_sb	
+	je	.correct	
 	
 	shl   eax,16
 	shr   eax,16
@@ -675,10 +674,8 @@ draw_down_arrow_vertical
 	
 	mov   eax,sb_ar_offset
 	cmp   sb_position,eax  ;dword 0
-;	je	.exit_sb
 	jbe   @f
 	
-;	dec   dword sb_position
 	sub   sb_position,eax
 	jmp   .all_sb
 @@:
@@ -699,7 +696,6 @@ draw_down_arrow_vertical
 	
 @@:
 	mov   ebx,sb_btn_high   ;16  ;15
-;	inc   ebx
 	add   bx,sb_start_y
 	sub   cx,bx
 	sub   ax,bx
@@ -712,7 +708,6 @@ draw_down_arrow_vertical
 	
 @@:
 	mov   edx,eax
-;	sub   edx,sb_btn_high
 	push  ebx
 	shr   ebx,1 
 	sub   edx,ebx
@@ -734,8 +729,7 @@ draw_down_arrow_vertical
 	jbe   .continue
 	
 	mov   sb_position2,edx
-;	jmp   .continue_1
-	
+
 .continue:   
 	mov   eax,sb_position2
 	sub   ecx,ebx
@@ -750,7 +744,7 @@ draw_down_arrow_vertical
 	xor   eax,eax
 	inc   eax
 	mov   sb_position2,eax
-	jmp   .all_sb   ;.store_position
+	jmp   .all_sb
 @@:
 	sub   eax,sb_cur_area
 	inc   eax
@@ -796,10 +790,8 @@ draw_down_arrow_vertical
 	sub   eax,ebx
 	cmp   sb_position,eax
 	pop   eax
-;	jae   .exit_sb
 	jae   @f
 	
-;	inc   dword sb_position
 	add   sb_position,ebx
 	jmp   .all_sb
 @@:
@@ -826,7 +818,6 @@ scroll_bar_horizontal:
 .draw:
 	pusha
 	mov   edi,dword [esp+36]
-;	mov   sb_all_redraw,dword 1
 	mov   sb_delta,word 0
 	call  .draw_1
 	mov   sb_all_redraw,dword 0
@@ -1066,7 +1057,7 @@ draw_down_arrow_horizontal
 	
 @@:
 	cmp   sb_m_keys,dword 0
-	jne	 @f   ;.continue_2
+	jne	 @f
 	mov   eax,sb_m_pos
 	mov   sb_m_pos_2,eax
 	jmp   .correct_1	;.exit_sb
@@ -1140,7 +1131,7 @@ draw_down_arrow_horizontal
 	shr   eax,16
 	shr   ebx,16
 	cmp   eax,ebx
-	je	.correct  ;.exit_sb	
+	je	.correct	
 	
 ;	shl   eax,16
 ;	shr   eax,16
@@ -1208,10 +1199,8 @@ draw_down_arrow_horizontal
 	
 	mov   eax,sb_ar_offset
 	cmp   sb_position,eax  ;dword 0
-;	je	.exit_sb
 	jbe   @f
 	
-;	dec   dword sb_position
 	sub   sb_position,eax
 	jmp   .all_sb
 @@:
@@ -1232,7 +1221,6 @@ draw_down_arrow_horizontal
 	
 @@:
 	mov   ebx,sb_btn_high   ;16  ;15
-;	inc   ebx
 	add   bx,sb_start_x	;y
 	sub   cx,bx
 	sub   ax,bx
@@ -1245,7 +1233,7 @@ draw_down_arrow_horizontal
 	
 @@:
 	mov   edx,eax
-;	sub   edx,sb_btn_high
+
 	push  ebx
 	shr   ebx,1 
 	sub   edx,ebx
@@ -1267,8 +1255,7 @@ draw_down_arrow_horizontal
 	jbe   .continue
 	
 	mov   sb_position2,edx
-;	jmp   .continue_1
-	
+
 .continue:   
 	mov   eax,sb_position2
 	sub   ecx,ebx
@@ -1283,7 +1270,7 @@ draw_down_arrow_horizontal
 	xor   eax,eax
 	inc   eax
 	mov   sb_position2,eax
-	jmp   .all_sb   ;.store_position
+	jmp   .all_sb
 @@:
 	sub   eax,sb_cur_area
 	inc   eax
@@ -1329,10 +1316,8 @@ draw_down_arrow_horizontal
 	sub   eax,ebx
 	cmp   sb_position,eax
 	pop   eax
-;	jae   .exit_sb
 	jae   @f
 	
-;	inc   dword sb_position
 	add   sb_position,ebx
 	jmp   .all_sb
 @@:
