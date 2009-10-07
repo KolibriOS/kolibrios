@@ -22,7 +22,7 @@ sb_dma_num	equ 5 ;default values for SB16, may be overrided by autodetect
 
 small_buffer	equ 32768
 full_buffer	equ 65536
-sb_buffer_size	equ full_buffer
+sb_buffer_size	equ small_buffer  ; FIX ring buffer overlapped events issue;  full_buffer
 
 __supported_buffer_sizes fix <small_buffer, full_buffer>
 

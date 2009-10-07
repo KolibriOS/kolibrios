@@ -1,5 +1,5 @@
 @echo off
-
+cls
 set languages=en ru ge et
 set drivers=sound sis infinity ensoniq ps2mouse com_mouse uart ati2d vmode
 set targets=all kernel drivers skins clean
@@ -74,6 +74,33 @@ goto :eof
    )
    cd ..
    move bin\drivers\vmode.obj bin\drivers\vmode.mdr
+
+
+kpack >nul 2>&1
+
+if %errorlevel%==9009 goto :Error_KpackFailed
+
+echo *
+echo ##############################################
+echo *
+echo Kpack KolibriOS drivers?
+echo *    
+
+set /P res=[y/n]?
+
+if "%res%"=="y" (
+
+  echo *
+  echo Compressing system
+
+  echo *
+  for %%a in (bin\drivers\*.obj) do (
+    echo ================== kpack %%a
+    kpack %%a
+    if not %errorlevel%==0 goto :Error_KpackFailed
+  )
+
+)
 goto :eof
 
 
@@ -95,11 +122,21 @@ goto :Exit_OK
 
 :Error_FasmFailed
 echo error: fasm execution failed
-erase lang.inc
+erase lang.inc >nul 2>&1
+echo.
+pause
+exit 1
+
+:Error_KpackFailed
+echo   *** NOTICE ***
+echo If you want to pack all applications you may 
+echo place "kpack" in accessible directory or system %PATH%.
+echo You can get this tool from KolibriOS distribution kit.
 pause
 exit 1
 
 :Exit_OK
-echo all operations has been done
+echo.
+echo all operations have been done
 pause
 exit 0

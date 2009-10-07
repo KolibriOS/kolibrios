@@ -383,9 +383,13 @@ boot_read_ok:
     mov   [FAT_START],eax       ; fat_start = partition_start + reserved
 
     movzx eax,byte [ebx+0xd]    ; sectors per cluster
+    test  eax,eax
+    jz    problem_fat_dec_count
     mov   [SECTORS_PER_CLUSTER],eax
 
     movzx ecx,word [ebx+0xb]    ; bytes per sector
+    cmp   ecx,0x200
+    jnz   problem_fat_dec_count
     mov   [BYTES_PER_SECTOR],ecx
 
     movzx eax,word [ebx+0x11]   ; count of rootdir entries (=0 fat32)

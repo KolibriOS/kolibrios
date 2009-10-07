@@ -98,3 +98,9 @@ if ~ f eq
 end if
 }
 ; \end{diamond}[29.09.2006]
+
+macro Mov op1,op2,op3 ; op1 = op2 = op3
+ {
+        mov   op2,op3
+        mov   op1,op2
+ }

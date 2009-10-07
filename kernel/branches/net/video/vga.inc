@@ -113,7 +113,7 @@ palette320x200:
        loop  palnew
 
        ret
-
+align 4
 uglobal
   novesachecksum dd 0x0
   EGA_counter    db  0
@@ -123,7 +123,7 @@ uglobal
   temp:
      .cx dd 0
 endg
-
+align 4
 checkVga_N13:
 
         cmp    [SCR_MODE],dword 0x13

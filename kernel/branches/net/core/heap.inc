@@ -91,11 +91,11 @@ macro remove_from_used op
 align 4
 proc init_kernel_heap
 
-	   mov ecx, 64/4
-	   mov edi, mem_block_list
-	   xor eax, eax
-	   cld
-	   rep stosd
+           mov ecx, 64
+           mov edi, mem_block_list
+           xor eax, eax
+           cld
+           rep stosd
 
 	   mov ecx, 512/4
 	   mov edi, mem_block_map
@@ -138,22 +138,23 @@ proc init_kernel_heap
 	   mov [ebx+list_bk], eax
 	   mov [ebx+block_base], HEAP_BASE+4096*MEM_BLOCK_SIZE
 
-	   mov ecx, [MEM_AMOUNT]
-	   sub ecx, (HEAP_BASE - OS_BASE + 4096*MEM_BLOCK_SIZE)
-	   mov [heap_size], ecx
-	   mov [heap_free], ecx
-	   mov [ebx+block_size], ecx
-	   mov [ebx+block_flags], FREE_BLOCK
+           mov ecx, [pg_data.kernel_pages]
+           shl ecx, 12
+           sub ecx, HEAP_BASE+4096*MEM_BLOCK_SIZE
+           mov [heap_size], ecx
+           mov [heap_free], ecx
+           mov [ebx+block_size], ecx
+           mov [ebx+block_flags], FREE_BLOCK
 
 	   mov [mem_block_mask], eax
 	   mov [mem_block_mask+4],0x80000000
 
-	   mov [mem_block_list+63*4], ebx
-	   mov byte [mem_block_map], 0xFC
-	   and [heap_mutex], 0
-	   mov [heap_blocks], 4095
-	   mov [free_blocks], 4095
-	   ret
+           mov [mem_block_list+63*4], ebx
+           mov byte [mem_block_map], 0xFC
+           and [heap_mutex], 0
+           mov [heap_blocks], 4095
+           mov [free_blocks], 4094
+           ret
 endp
 
 ; param

@@ -453,7 +453,7 @@ proc new_mem_resize stdcall, new_size:dword
 @@:
            call alloc_page
            test eax, eax
-           jz .exit
+           jz .exit_pop
 
            stdcall map_page_table, edi, eax
 
@@ -491,6 +491,9 @@ proc new_mem_resize stdcall, new_size:dword
            jb  @B
 
            jmp .update_size
+.exit_pop:
+           pop edi
+           pop esi
 .exit:
            xor eax, eax
            inc eax
@@ -544,24 +547,16 @@ get_pg_addr:
 
 
 align 4
+; Now it is called from core/sys32::exc_c (see stack frame there)
 proc page_fault_handler
 
-        test    byte [esp+12+2], 2
-        jnz     v86_page_fault
+    .err_addr   equ ebp-4
 
-        .err_code equ ebp+32
-        .err_addr equ ebp-4
-
-           pushad
-           mov ebp, esp
-           mov eax, cr2
-           push eax
-
-           mov ax, app_data
-           mov ds, ax
-           mov es, ax
-
-           inc [pg_data.pages_faults]
+        push    ebx               ;save exception number (#PF)
+        mov     ebp, esp
+        mov     ebx, cr2
+        push    ebx               ;that is locals: .err_addr = cr2
+        inc     [pg_data.pages_faults]
 
 ;     push eax
 ;     push edx
@@ -571,129 +566,115 @@ proc page_fault_handler
 ;     pop edx
 ;     pop eax
 
-           mov ebx, [.err_addr]
-           mov eax, [.err_code]
+        mov     eax, [pf_err_code]
 
-           cmp ebx, OS_BASE
-           jb .user_space      ;страница в памяти приложения ;
+        cmp     ebx, OS_BASE      ;ebx == .err_addr
+        jb      .user_space       ;страница в памяти приложения ;
 
-           cmp ebx, page_tabs
-           jb .kernel_space    ;страница в памяти ядра
+        cmp     ebx, page_tabs
+        jb      .kernel_space     ;страница в памяти ядра
 
-           cmp ebx, kernel_tabs
-           jb .alloc;.app_tabs ;таблицы страниц приложения ;
-                               ;просто создадим одну
+        cmp     ebx, kernel_tabs
+        jb      .alloc;.app_tabs  ;таблицы страниц приложения ;
+                                  ;просто создадим одну
+if 0 ;пока это просто лишнее
+        cmp     ebx, LFB_BASE
+        jb      .core_tabs        ;таблицы страниц ядра
+                                  ;Ошибка
+  .lfb:
+                                  ;область LFB
+                                  ;Ошибка
+        jmp     .fail
+end if
+.core_tabs:
+.fail:  ;simply return to caller
+        mov     esp, ebp
+        pop     ebx               ;restore exception number (#PF)
+        ret
 
-           cmp ebx, LFB_BASE
-           jb .core_tabs       ;таблицы страниц ядра
-                               ;Ошибка
-.lfb:
-                               ;область LFB
-                               ;Ошибка
-           jmp .fail
-
-align 4
 .user_space:
-           test eax, PG_MAP
-           jnz .err_access     ;Страница присутствует
-                               ;Ошибка доступа ?
+        test    eax, PG_MAP
+        jnz     .err_access       ;Страница присутствует
+                                  ;Ошибка доступа ?
 
-           shr ebx, 12
-           mov ecx, ebx
-           shr ecx, 10
-           mov edx, [master_tab+ecx*4]
-           test edx, PG_MAP
-           jz .fail            ;таблица страниц не создана
-                               ;неверный адрес в программе
+        shr     ebx, 12
+        mov     ecx, ebx
+        shr     ecx, 10
+        mov     edx, [master_tab+ecx*4]
+        test    edx, PG_MAP
+        jz      .fail             ;таблица страниц не создана
+                                  ;неверный адрес в программе
 
-           mov eax, [page_tabs+ebx*4]
-           test eax, 2
-           jz .fail            ;адрес не зарезервирован для ;
-                               ;использования. Ошибка
+        mov     eax, [page_tabs+ebx*4]
+        test    eax, 2
+        jz      .fail             ;адрес не зарезервирован для ;
+                                  ;использования. Ошибка
 .alloc:
-           call alloc_page
-           test eax, eax
-           jz .fail
+        call    alloc_page
+        test    eax, eax
+        jz      .fail
 
-           stdcall map_page,[ebp-4],eax,dword PG_UW
+        stdcall map_page,[.err_addr],eax,dword PG_UW
 
-           mov edi, [ebp-4]
-           and edi, 0xFFFFF000
-           mov ecx, 1024
-           xor eax, eax
-           cld
-           rep stosd
-.exit:
-           mov esp, ebp
-           popad
-           add esp, 4
-           iretd
+        mov     edi, [.err_addr]
+        and     edi, 0xFFFFF000
+        mov     ecx, 1024
+        xor     eax, eax
+       ;cld     ;caller is duty for this
+        rep     stosd
+.exit:  ;iret with repeat fault instruction
+        add     esp,12 ;clear in stack: locals(.err_addr) + #PF + ret_to_caller
+        restore_ring3_context
+        iretd
 
-.err_access:
+.err_access  =  .fail
 ;никогда не происходит
-           jmp .fail
+       ;jmp     .fail
 
 .kernel_space:
-           test eax, PG_MAP
-           jz .fail        ;страница не присутствует
+        test    eax, PG_MAP
+        jz      .fail   ;страница не присутствует
 
-           test eax, 4     ;U/S
-           jnz .fail       ;приложение обратилось к памяти
-                           ;ядра
-           test eax, 8
-           jnz .fail       ;установлен зарезервированный бит
-                           ;в таблицах страниц. добавлено в P4/Xeon
+        test    eax,12  ;U/S (+below)
+        jnz     .fail   ;приложение обратилось к памяти
+                        ;ядра
+       ;test    eax, 8
+       ;jnz     .fail   ;установлен зарезервированный бит
+                        ;в таблицах страниц. добавлено в P4/Xeon
 
 ;попытка записи в защищённую страницу ядра
 
-           cmp ebx, tss._io_map_0
-           jb .fail
+        cmp     ebx, tss._io_map_0
+        jb      .fail
 
-           cmp ebx, tss._io_map_0+8192
-           jae .fail
+        cmp     ebx, tss._io_map_0+8192
+        jae     .fail
 
 ; io permission map
 ; copy-on-write protection
 
-           call alloc_page
-           test eax, eax
-           jz .fail
+        call    alloc_page
+        test    eax, eax
+        jz      .fail
 
-           push eax
-           stdcall map_page,[ebp-4],eax,dword PG_SW
-           pop eax
-           mov edi, [.err_addr]
-           and edi, -4096
-           lea esi, [edi+(not tss._io_map_0)+1]; -tss._io_map_0
+        push    eax
+        stdcall map_page,[.err_addr],eax,dword PG_SW
+        pop     eax
+        mov     edi, [.err_addr]
+        and     edi, -4096
+        lea     esi, [edi+(not tss._io_map_0)+1]; -tss._io_map_0
 
-           mov ebx, esi
-           shr ebx, 12
-           mov edx, [current_slot]
-           or eax, PG_SW
-           mov [edx+APPDATA.io_map+ebx*4], eax
+        mov     ebx, esi
+        shr     ebx, 12
+        mov     edx, [current_slot]
+        or      eax, PG_SW
+        mov     [edx+APPDATA.io_map+ebx*4], eax
 
-           add esi, [default_io_map]
-           mov ecx, 4096/4
-           cld
-           rep movsd
-           jmp .exit
-
-
-;не обрабатываем. Ошибка
-
-.core_tabs:
-.fail:
-           mov esp, ebp
-           popad
-           add esp, 4
-
-;           iretd
-
-           save_ring3_context     ;debugger support
-
-           mov bl, 14
-           jmp exc_c
-           iretd
+        add     esi, [default_io_map]
+        mov     ecx, 4096/4
+       ;cld     ;caller is duty for this
+        rep     movsd
+        jmp     .exit
 endp
 
 align 4
@@ -983,29 +964,29 @@ endp
 align 4
 sysfn_meminfo:
 
-        ;   add ebx, new_app_base
-           cmp ebx, OS_BASE
+        ;   add ecx, new_app_base
+           cmp ecx, OS_BASE
            jae .fail
 
            mov eax, [pg_data.pages_count]
-           mov [ebx], eax
+           mov [ecx], eax
            shl eax, 12
-           mov [esp+36], eax
-           mov ecx, [pg_data.pages_free]
-           mov [ebx+4], ecx
-           mov edx, [pg_data.pages_faults]
-           mov [ebx+8], edx
-           mov esi, [heap_size]
-           mov [ebx+12], esi
-           mov edi, [heap_free]
-           mov [ebx+16], edi
+           mov [esp+32], eax
+           mov eax, [pg_data.pages_free]
+           mov [ecx+4], eax
+           mov eax, [pg_data.pages_faults]
+           mov [ecx+8], eax
+           mov eax, [heap_size]
+           mov [ecx+12], eax
+           mov eax, [heap_free]
+           mov [ecx+16], eax
            mov eax, [heap_blocks]
-           mov [ebx+20], eax
-           mov ecx, [free_blocks]
-           mov [ebx+24], ecx
+           mov [ecx+20], eax
+           mov eax, [free_blocks]
+           mov [ecx+24], eax
            ret
 .fail:
-           mov dword [esp+36], -1
+           mov dword [esp+32], -1
            ret
 
 align 4
@@ -1014,15 +995,17 @@ f68call:
            dd f68.12
            dd f68.13
            dd f68.14
-           dd f68.15
+           dd f68.fail ;moved to f68.24
            dd f68.16
            dd f68.17
-           dd f68.18
+           dd f68.fail ;moved to f68.25
            dd f68.19
            dd f68.20
            dd f68.21
            dd f68.22
            dd f68.23
+           dd f68.24
+           dd f68.25
 
 align 4
 f68:
@@ -1032,7 +1015,7 @@ f68:
            cmp eax, 11
            jb .fail
 
-           cmp eax, 23
+           cmp eax, 25
            ja .fail
 
            jmp dword [f68call+eax*4-11*4]
@@ -1051,14 +1034,16 @@ f68:
 .14:
            cmp ebx, OS_BASE
            jae .fail
-           stdcall get_event_ex, ebx, ecx
+           mov edi,ebx
+           call get_event_ex
            mov [esp+36], eax
            ret
-.15:
-           mov ecx, [current_slot]
-           mov eax, [ecx+APPDATA.fpu_handler]
-           mov [ecx+APPDATA.fpu_handler], ebx
-           mov [esp+36], eax
+.24:
+           mov  eax, [current_slot]
+           xchg ebx, [eax+APPDATA.exc_handler]
+           xchg ecx, [eax+APPDATA.except_mask]
+           mov  [esp+36], ebx ; reg_eax+8
+           mov  [esp+24], ecx ; reg_ebx+8
            ret
 .16:
            test ebx, ebx
@@ -1072,12 +1057,15 @@ f68:
            call srv_handlerEx   ;ebx
            mov [esp+36], eax
            ret
-.18:
-           mov ecx, [current_slot]
-           mov eax, [ecx+APPDATA.sse_handler]
-           mov [ecx+APPDATA.sse_handler], ebx
-           mov [esp+36], eax
-           ret
+.25:
+           cmp ebx,32
+           jae .fail
+           mov  eax, [current_slot]
+           btr  [eax+APPDATA.except_mask],ebx
+           setc byte[esp+36]
+           jecxz @f
+           bts  [eax+APPDATA.except_mask],ebx
+     @@:   ret
 .19:
            cmp ebx, OS_BASE
            jae .fail
@@ -1318,6 +1306,3 @@ proc create_ring_buffer stdcall, size:dword, flags:dword
 .fail:
            ret
 endp
-
-
-

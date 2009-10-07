@@ -70,15 +70,26 @@ $Revision: 750 $
     jz  .endbd
     mov esi,BiosDiskCaches
 .loopbd:
-    cmp byte [BiosDisksData+ecx*4+2],-1
-    jnz .contbd
+    push ecx
+    movsx ecx,byte [BiosDisksData+ecx*4+2]
+    inc ecx
+    jz  .getbd
+    add ecx,ecx
+    movzx eax,byte [DRIVE_DATA+1]
+    shl eax,cl
+    and ah,3
+    cmp ah,1
+    jz  .contbd
+    pop ecx
+    mov byte [BiosDisksData+ecx*4+2], -1
+    push ecx
+.getbd:
     mov eax,[cache_ide0_size]
     mov [esi+cache_ide0_size-cache_ide0],eax
-    push ecx
     mov  cl,1
     call get_cache_ide
-    pop  ecx
 .contbd:
+    pop  ecx
     add  esi,cache_ide1-cache_ide0
     inc  ecx
     cmp  ecx,[NumBiosDisks]

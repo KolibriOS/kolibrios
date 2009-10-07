@@ -95,11 +95,11 @@ CAPS_SVM       equ    73 ;secure virual machine
 CAPS_ALTMOVCR8 equ    74 ;
 
 ; CPU MSR names
-MSR_SYSENTER_CS		equ	0x174
-MSR_SYSENTER_ESP	equ	0x175
-MSR_SYSENTER_EIP	equ	0x176
-MSR_AMD_EFER		equ	0xC0000080	; Extended Feature Enable Register
-MSR_AMD_STAR		equ	0xC0000081	; SYSCALL/SYSRET Target Address Register
+MSR_SYSENTER_CS         equ     0x174
+MSR_SYSENTER_ESP        equ     0x175
+MSR_SYSENTER_EIP        equ     0x176
+MSR_AMD_EFER            equ     0xC0000080      ; Extended Feature Enable Register
+MSR_AMD_STAR            equ     0xC0000081      ; SYSCALL/SYSRET Target Address Register
 
 CR0_PE         equ    0x00000001   ;protected mode
 CR0_MP         equ    0x00000002   ;monitor fpu
@@ -186,7 +186,7 @@ TSS_SIZE  equ (128+8192)
 
 OS_BASE             equ 0x80000000
 
-window_data         equ OS_BASE
+window_data         equ (OS_BASE+0x0001000)
 
 CURRENT_TASK        equ (OS_BASE+0x0003000)
 TASK_COUNT          equ (OS_BASE+0x0003004)
@@ -331,7 +331,7 @@ LFB_BASE            equ 0xFE000000
 
 new_app_base        equ 0;
 
-twdw                equ 0x3000   ;(CURRENT_TASK-window_data)
+twdw                equ 0x2000   ;(CURRENT_TASK-window_data)
 
 std_application_base_address   equ new_app_base
 RING0_STACK_SIZE    equ (0x2000 - 512)    ;512 байт для контекста FPU
@@ -469,8 +469,9 @@ struc EVENT
    .state       dd ?   ;internal flags
    .code        dd ?
                 rd 5
+   .size     =  $ - .magic
+   .codesize =  $ - .code
 }
-EVENT_SIZE  equ 52
 
 virtual at 0
   EVENT EVENT
@@ -687,4 +688,3 @@ end virtual
 virtual at 0
   CSYM COFF_SYM
 end virtual
-

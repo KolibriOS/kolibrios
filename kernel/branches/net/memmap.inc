@@ -23,12 +23,17 @@
 ;    0x9046 -  word - flags
 ;   0:907F     byte   number of BIOS hard disks
 ;   0:9080     Nbytes BIOS hard disks
+;   0:9100     word   available physical memory map: number of blocks
+;   0:9104            available physical memory map: blocks
 ;
 ;   Runtime:
 ;
 ; 0x00000000 -> 0x7FFFFFFF  application 2Gb
 
-; 0x80000000 -> 1FFF   window_data   - 256 entries
+; 0x80000000 -> 0FFF  physical page zero - do not write
+;                     (used by int 13h in some configurations)
+;
+; 0x80001000 -> 2FFF   window_data   - 256 entries
 ;
 ;         0000 dword  x start
 ;         0004 dword  y start
@@ -38,8 +43,6 @@
 ;         0014 dword  color of grab bar
 ;         0018 dword  color of frames
 ;         001C dword  window flags, +30 = window drawn, +31 redraw flag
-;
-;   2000  ->   2FFF   free
 ;
 ;   3000  ->   4FFF   task list      - 256 entries
 ;
@@ -70,9 +73,9 @@
 ;
 ;   A400  ->   B0FF   free
 
-;   B100  ->   B2FF   IDT
+;   B100  ->   B307   IDT for int_0x00..int_0x40
 
-;   B300  ->   BFFF   free
+;   B308  ->   BFFF   free
 
 ;   C000  ->   C3FF   window stack C000 no of windows - all in words
 ;   C402  ->   C7FF   window position in stack

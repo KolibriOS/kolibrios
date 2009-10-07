@@ -104,7 +104,7 @@ _rs db 186,'                   ³  ????x????@??  SVGA VESA      ³ ³',13,10,0
 _bt db 186,'                   ÀÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÁÄÙ',13,10,0
 
 remark1 db      "Default values were selected to match most of configurations, but not all.",0
-remark2 db      "If you have LCD-monitor, disable VRR in the item [c] - you do not need it.",0
+remark2 db      "If you have CRT-monitor, enable VRR in the item [c].",0
 remark3 db      "If the system does not boot, try to disable the item [b].",0
 remarks dw      remark1, remark2, remark3
 num_remarks = 3

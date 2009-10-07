@@ -282,6 +282,7 @@ save_timer_fdd_motor:
 ;*****************************************
 ;*  ÏÐÎÂÅÐÊÀ ÇÀÄÅÐÆÊÈ ÂÛÊËÞ×ÅÍÈß ÌÎÒÎÐÀ  *
 ;*****************************************
+align 4
 check_fdd_motor_status:
         cmp     [fdd_motor_status],0
         je      end_check_fdd_motor_status_1

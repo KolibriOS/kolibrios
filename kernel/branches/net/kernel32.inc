@@ -74,7 +74,7 @@ WSTATE_MAXIMIZED = 00000001b
 WSTATE_MINIMIZED = 00000010b
 WSTATE_ROLLEDUP  = 00000100b
 
-WSTATE_REDRAW	 = 00000001b
+WSTATE_REDRAW    = 00000001b
 WSTATE_WNDDRAWN  = 00000010b
 
 WSTYLE_HASCAPTION     = 00010000b
@@ -83,13 +83,13 @@ WSTYLE_CLIENTRELATIVE = 00100000b
 struc TASKDATA
 {
   .event_mask  dd ?
-  .pid	       dd ?
-	       dw ?
+  .pid         dd ?
+               dw ?
   .state       db ?
                db ?
-	       dw ?
+               dw ?
   .wnd_number  db ?
-	       db ?
+               db ?
   .mem_start   dd ?
   .counter_sum dd ?
   .counter_add dd ?
@@ -101,14 +101,14 @@ end virtual
 
 ; structures definition
 struc WDATA {
-  .box		   BOX
-  .cl_workarea	   dd ?
-  .cl_titlebar	   dd ?
-  .cl_frames	   dd ?
-  .reserved	   db ?
-  .fl_wstate	   db ?
-  .fl_wdrawn	   db ?
-  .fl_redraw	   db ?
+  .box             BOX
+  .cl_workarea     dd ?
+  .cl_titlebar     dd ?
+  .cl_frames       dd ?
+  .reserved        db ?
+  .fl_wstate       db ?
+  .fl_wdrawn       db ?
+  .fl_redraw       db ?
 }
 virtual at 0
  WDATA WDATA
@@ -117,13 +117,13 @@ label WDATA.fl_wstyle byte at 0x13
 
 struc APPDATA
 {
-  .app_name	   db 11  dup(?)
-		   db 5   dup(?)
+  .app_name        db 11  dup(?)
+                   db 5   dup(?)
 
   .fpu_state       dd ?            ;+16
-  .ev_count        dd ?            ;+20
-  .fpu_handler     dd ?            ;+24
-  .sse_handler     dd ?            ;+28
+  .ev_count_       dd ? ;unused    ;+20
+  .exc_handler     dd ?            ;+24
+  .except_mask     dd ?            ;+28
   .pl0_stack       dd ? ;unused    ;+32
   .heap_base       dd ?            ;+36
   .heap_top        dd ?            ;+40
@@ -138,22 +138,24 @@ struc APPDATA
   .cur_dir         dd ?            ;+80
   .wait_timeout    dd ?            ;+84
   .saved_esp0      dd ?            ;+88
-
-                   db 36 dup(?)    ;+92
+  .wait_begin      dd ?            ;+92   +++
+  .wait_test       dd ?            ;+96   +++
+  .wait_param      dd ?            ;+100  +++
+                   db 24 dup(?)    ;+104
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132
                    dd ?            ;+136
   .mem_size        dd ?            ;+140
-  .saved_box	   BOX
-  .ipc_start	   dd ?
-  .ipc_size	   dd ?
-  .event_mask	   dd ?
+  .saved_box       BOX
+  .ipc_start       dd ?
+  .ipc_size        dd ?
+  .event_mask      dd ?
   .debugger_slot   dd ?
-		   dd ?
+                   dd ?
   .keyboard_mode   db ?
-		   db 3   dup(?)
-  .dir_table	   dd ?
+                   db 3   dup(?)
+  .dir_table       dd ?
   .dbg_event_mem   dd ?
   .dbg_regs:
   .dbg_regs.dr0    dd ?
@@ -161,7 +163,7 @@ struc APPDATA
   .dbg_regs.dr2    dd ?
   .dbg_regs.dr3    dd ?
   .dbg_regs.dr7    dd ?
-  .wnd_caption	   dd ?
+  .wnd_caption     dd ?
   .wnd_clientbox   BOX
 }
 virtual at 0
