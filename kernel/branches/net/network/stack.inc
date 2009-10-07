@@ -50,6 +50,11 @@ IP_PROTO_ICMP	equ 1
 IP_PROTO_TCP	equ 6
 IP_PROTO_UDP	equ 17
 
+; Socket types
+SOCK_STREAM	= 1
+SOCK_DGRAM	= 2
+SOCK_RAW	= 3
+
 ; TCP opening modes
 SOCKET_PASSIVE	equ 0
 SOCKET_ACTIVE	equ 1

@@ -2,9 +2,9 @@ format MS COFF
 
 public @EXPORT as 'EXPORTS'
 
-include '../../../struct.inc'
-include '../../../proc32.inc'
-include '../../../macros.inc'
+include '../struct.inc'
+include '../proc32.inc'
+include '../macros.inc'
 purge section,mov,add,sub
 
 include 'network.inc'
@@ -28,12 +28,12 @@ lib_init: ;//////////////////////////////////////////////////////////////////;;
 	mov	[mem.realloc], ecx
 	mov	[dll.load], edx
 	mov	[DNSrequestID], 1
-	stdcall	edx, @IMPORT
+	stdcall edx, @IMPORT
 	ret	4
 
 ;;===========================================================================;;
 ;; in_addr_t __stdcall inet_addr(__in const char* hostname);                 ;;
-inet_addr:                                                                   ;;
+inet_addr:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Convert the string from standard IPv4 dotted notation to integer IP addr. ;;
 ;;---------------------------------------------------------------------------;;
@@ -124,7 +124,7 @@ inet_addr:                                                                   ;;
 
 ;;===========================================================================;;
 ;; Internal auxiliary function for IP parsing.                                        ;;
-.get_number:                                                                 ;;
+.get_number:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Converts string to number.                                                ;;
 ;;---------------------------------------------------------------------------;;
@@ -155,7 +155,7 @@ inet_addr:                                                                   ;;
 ; 3. Loop while digits are encountered.
 .convert:
 ; 4. Convert digit from text representation to binary value.
-	or	al, 20h	; '0'-'9' -> '0'-'9', 'A'-'F' -> 'a'-'f'
+	or	al, 20h ; '0'-'9' -> '0'-'9', 'A'-'F' -> 'a'-'f'
 	sub	al, '0'
 	cmp	al, 9
 	jbe	.digit
@@ -189,7 +189,7 @@ inet_addr:                                                                   ;;
 
 ;;===========================================================================;;
 ;; char* __stdcall inet_ntoa(struct in_addr in);                             ;;
-inet_ntoa:                                                                   ;;
+inet_ntoa:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Convert the Internet host address to standard IPv4 dotted notation.       ;;
 ;;---------------------------------------------------------------------------;;
@@ -263,7 +263,7 @@ struct __gai_reqdata
 	reqid		dw	?	; DNS request ID
 	socktype	db	?	; SOCK_* or 0 for any
 			db	?
-	service		dd	?
+	service 	dd	?
 	flags		dd	?
 	reserved	rb	16
 ends
@@ -273,7 +273,7 @@ ends
 ;;                           __in const char* servname,                      ;;
 ;;                           __in const struct addrinfo* hints,              ;;
 ;;                           __out struct addrinfo **res);                   ;;
-getaddrinfo:                                                                 ;;
+getaddrinfo:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Get a list of IP addresses and port numbers for given host and service    ;;
 ;;---------------------------------------------------------------------------;;
@@ -352,7 +352,7 @@ getaddrinfo:                                                                 ;;
 ;;                                 __in const struct addrinfo* hints,        ;;
 ;;                                 __out struct addrinfo **res,              ;;
 ;;                                 __out struct __gai_reqdata* reqdata);     ;;
-getaddrinfo_start:                                                           ;;
+getaddrinfo_start:							     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Initiator for getaddrinfo, sends DNS request                              ;;
 ;;---------------------------------------------------------------------------;;
@@ -429,8 +429,8 @@ end virtual
 	jnz	.ret
 @@:
 ; 1e. Valid combinations for ai_socktype/ai_protocol: 0/0 for any or
-;	SOCK_STREAM/IPPROTO_TCP, SOCK_DGRAM/IPPROTO_UDP
-;	(raw sockets are not yet supported by the kernel)
+;       SOCK_STREAM/IPPROTO_TCP, SOCK_DGRAM/IPPROTO_UDP
+;       (raw sockets are not yet supported by the kernel)
 	xor	edx, edx	; assume 0=any if no hints
 	jecxz	.socket_type_ok
 	mov	edx, [ecx+addrinfo.ai_socktype]
@@ -513,8 +513,8 @@ end virtual
 ; 3. Process host name.
 	mov	esi, [.hostname]
 ; 3a. If hostname is not given,
-;	use localhost for active sockets and INADDR_ANY for passive sockets.
-	mov	eax, 0x0100007F	; 127.0.0.1 in network byte order
+;       use localhost for active sockets and INADDR_ANY for passive sockets.
+	mov	eax, 0x0100007F ; 127.0.0.1 in network byte order
 	test	byte [ebx+__gai_reqdata.flags], AI_PASSIVE
 	jz	@f
 	xor	eax, eax
@@ -613,8 +613,8 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	stosw
 	mov	[ebx+__gai_reqdata.reqid], ax
 ; 6c. Packed field: QR=0 (query), Opcode=0000 (standard query),
-;	AA=0 (ignored in requests), TC=0 (no truncation),
-;	RD=1 (recursion desired)
+;       AA=0 (ignored in requests), TC=0 (no truncation),
+;       RD=1 (recursion desired)
 	mov	al, 00000001b
 	stosb
 ; 6d. Packed field: ignored in requests
@@ -641,7 +641,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	jz	.endname
 	cmp	esi, ebx	; limit exceeded?
 	jae	.wrongname
-	cmp	al, '.'	; end of label?
+	cmp	al, '.' ; end of label?
 	jz	.labelend
 	stosb	; put next character
 	inc	ecx	; increment label length
@@ -660,7 +660,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	mov	eax, ecx
 	neg	eax
 	mov	byte [edi+eax-1], cl
-	cmp	byte [esi-1], 0	; that was last label in the name?
+	cmp	byte [esi-1], 0 ; that was last label in the name?
 	jnz	.nameloop
 ; write terminating zero if not yet
 	mov	al, 0
@@ -669,8 +669,8 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	stosb
 @@:
 ; 6h. Write request data:
-;	query type = A (host address) = 1,
-;	query class = IN (internet IPv4 address) = 1
+;       query type = A (host address) = 1,
+;       query class = IN (internet IPv4 address) = 1
 ; Note that network byte order is big-endian.
 	mov	eax, 0x01000100
 	stosd
@@ -679,7 +679,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	mcall	73, -1
 	xchg	eax, edx
 ; Loop for all initialized network cards, scanning for initialized DNS address.
-	mov	ebx, 0x00000004	; protocol IP=0, device number=0, function=get DNS address
+	mov	ebx, 0x00000004 ; protocol IP=0, device number=0, function=get DNS address
 .get_dns_loop:
 	mcall	75
 	cmp	eax, -1
@@ -699,7 +699,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 ; 8. Open UDP socket to DNS server, port 53.
 ; 8a. Create new socket.
 	mcall	74, 0, AF_INET, IPPROTO_UDP
-	cmp	eax, -1	; error?
+	cmp	eax, -1 ; error?
 	jz	.ret.dnserr
 	xchg	ecx, eax	; put socket handle to ecx
 ; 8b. Create sockaddr structure on the stack.
@@ -739,7 +739,7 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 ;;===========================================================================;;
 ;; int __stdcall getaddrinfo_process(__in struct __gai_reqdata* reqdata,     ;;
 ;;                                   __out struct addrinfo** res);           ;;
-getaddrinfo_process:                                                         ;;
+getaddrinfo_process:							     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Processes network events from DNS reply                                   ;;
 ;;---------------------------------------------------------------------------;;
@@ -826,9 +826,9 @@ end virtual
 	lodsd		; get type and class
 	cmp	esi, ecx
 	ja	.ret.no_recovery
-	cmp	eax, 0x01000500	; type=5, class=1?
+	cmp	eax, 0x01000500 ; type=5, class=1?
 	jz	.got_cname
-	cmp	eax, 0x01000100	; type=1, class=1?
+	cmp	eax, 0x01000100 ; type=1, class=1?
 	jnz	.answers_loop.next
 .got_addr:
 ; 10d. Process record A, host address.
@@ -845,7 +845,7 @@ end virtual
 	mov	esi, [.res_list_tail]	; pointer to result
 	test	esi, esi
 	jz	.no_result	; do not save if .res is NULL
-	mov	ebx, [.reqdata]	; request data
+	mov	ebx, [.reqdata] ; request data
 	call	getaddrinfo._.generate_data
 	mov	[.res_list_tail], esi
 	pop	esi ecx ebx
@@ -950,7 +950,7 @@ end virtual
 
 ;;===========================================================================;;
 ;; Internal auxiliary function for skipping names in DNS packet.             ;;
-.skip_name:                                                                  ;;
+.skip_name:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Skips name in DNS packet.                                                 ;;
 ;;---------------------------------------------------------------------------;;
@@ -976,7 +976,7 @@ end virtual
 
 ;;===========================================================================;;
 ;; Internal auxiliary function for calculating length of name in DNS packet. ;;
-.get_name_length:                                                            ;;
+.get_name_length:							     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Calculate length of name (including terminating zero) in DNS packet.      ;;
 ;;---------------------------------------------------------------------------;;
@@ -1021,7 +1021,7 @@ end virtual
 
 ;;===========================================================================;;
 ;; Internal auxiliary function for decoding DNS name.                        ;;
-.decode_name:                                                                ;;
+.decode_name:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Decode name in DNS packet.                                                ;;
 ;;---------------------------------------------------------------------------;;
@@ -1052,7 +1052,7 @@ end virtual
 
 ;;===========================================================================;;
 ;; Internal auxiliary function for allocating memory for getaddrinfo.        ;;
-getaddrinfo._.memalloc:                                                      ;;
+getaddrinfo._.memalloc: 						     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Memory allocation.                                                        ;;
 ;;---------------------------------------------------------------------------;;
@@ -1096,7 +1096,7 @@ getaddrinfo._.memalloc:                                                      ;;
 
 ;;===========================================================================;;
 ;; Internal auxiliary function for freeing memory for freeaddrinfo.          ;;
-getaddrinfo._.memfree:                                                       ;;
+getaddrinfo._.memfree:							     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Free memory.                                                              ;;
 ;;---------------------------------------------------------------------------;;
@@ -1117,7 +1117,7 @@ getaddrinfo._.memfree:                                                       ;;
 	ret
 
 ;;===========================================================================;;
-getaddrinfo._.generate_data:                                                 ;;
+getaddrinfo._.generate_data:						     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Generate item(s) of getaddrinfo result list by one IP address.            ;;
 ;;---------------------------------------------------------------------------;;
@@ -1135,7 +1135,7 @@ getaddrinfo._.generate_data:                                                 ;;
 	jnz	.has_service
 	call	.append_item
 ; 1a. If neither protocol nor socktype were specified,
-;	leave zeroes in socktype and protocol.
+;       leave zeroes in socktype and protocol.
 	mov	cl, [ebx+__gai_reqdata.socktype]
 	test	cl, cl
 	jz	.no_socktype
@@ -1228,7 +1228,7 @@ getaddrinfo._.generate_data:                                                 ;;
 
 ;;===========================================================================;;
 ;; void __stdcall getaddrinfo_abort(__in struct __gai_reqdata* reqdata);      ;;
-getaddrinfo_abort:                                                           ;;
+getaddrinfo_abort:							     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Abort process started by getaddrinfo_start, free all resources.           ;;
 ;;---------------------------------------------------------------------------;;
@@ -1246,7 +1246,7 @@ getaddrinfo_abort:                                                           ;;
 
 ;;===========================================================================;;
 ;; void __stdcall freeaddrinfo(__in struct addrinfo* ai);                    ;;
-freeaddrinfo:                                                                ;;
+freeaddrinfo:								     ;;
 ;;---------------------------------------------------------------------------;;
 ;? Free one or more addrinfo structures returned by getaddrinfo.             ;;
 ;;---------------------------------------------------------------------------;;
@@ -1266,7 +1266,7 @@ freeaddrinfo:                                                                ;;
 	call	getaddrinfo._.memfree
 .no_canon_name:
 ; 2b. Remember next item
-;	(after freeing the field ai_next can became unavailable).
+;       (after freeing the field ai_next can became unavailable).
 	pushd	[edx+addrinfo.ai_next]
 ; 2c. Free item itself.
 	xchg	eax, edx
@@ -1294,9 +1294,9 @@ export	\
 	0x00010001		, 'version'		, \
 	inet_addr		, 'inet_addr'		, \
 	inet_ntoa		, 'inet_ntoa'		, \
-	getaddrinfo		, 'getaddrinfo'		, \
+	getaddrinfo		, 'getaddrinfo' 	, \
 	getaddrinfo_start	, 'getaddrinfo_start'	, \
-	getaddrinfo_process	, 'getaddrinfo_process'	, \
+	getaddrinfo_process	, 'getaddrinfo_process' , \
 	getaddrinfo_abort	, 'getaddrinfo_abort'	, \
 	freeaddrinfo		, 'freeaddrinfo'
 
@@ -1304,7 +1304,7 @@ export	\
 align 4
 @IMPORT:
 
-library	libini, 'libini.obj'
+library libini, 'libini.obj'
 import	libini, \
 	ini.get_str, 'ini_get_str',	\
 	ini.get_int, 'ini_get_int'

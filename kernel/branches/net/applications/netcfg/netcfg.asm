@@ -1,4 +1,4 @@
-include 'macros.inc'
+include '../macros.inc'
 MEOS_APP_START
 
 type_ethernet equ 1

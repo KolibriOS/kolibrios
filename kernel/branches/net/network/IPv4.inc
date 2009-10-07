@@ -85,9 +85,7 @@ IPv4_init:
 
 	or	eax, -1
 	mov	edi, BROADCAST
-	stosd
-	xor	eax, eax
-	mov	ecx, 4*MAX_IP
+	mov	ecx, 4*MAX_IP+1
 	rep	stosd
 
 	xor	eax, eax

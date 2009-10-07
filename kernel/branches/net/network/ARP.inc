@@ -601,16 +601,30 @@ ARP_API:
 	ret
 
 .read:
-	; TODO: write code
+	cmp	ecx, [NumARP]
+	jge	.error
+	; edi = pointer to buffer
+	; ecx = # entry
+	imul	ecx, ARP_ENTRY.size
+	add	ecx, ARPTable
+	mov	esi, ecx
+	mov	ecx, ARP_ENTRY.size/2
+	rep	movsw
+
+	xor	eax, eax
 	ret
 
 .write:
-	; TODO: write code
-	; call    ARP_write_entry
-	ret
+	; esi = pointer to buffer
+	sub	esp, ARP_ENTRY.size
+	mov	edi, esp
+	mov	ecx, ARP_ENTRY.size/2
+	rep	movsw
+	jmp	ARP_add_entry	     ;out: eax = entry number, -1 on error
 
 .remove:
-	mov	esi, eax
+	; ecx = # entry
+	mov	esi, ecx
 	call	ARP_del_entry
 	ret
 
