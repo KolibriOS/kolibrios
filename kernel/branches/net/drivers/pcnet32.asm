@@ -75,11 +75,17 @@ struc ETH_DEVICE {
       .pci_bus		db ?
       .pci_dev		db ?
 
+	; The following fields up to .tx_ring_phys inclusive form
+	; initialization block for hardware; do not modify
+	align 4	; initialization block must be dword-aligned
       .private:
       .mode_		dw ?
       .tlen_rlen	dw ?
+      .phys_addr	dp ?
       .reserved 	dw ?
       .filter		dq ?
+      .rx_ring_phys	dd ?
+      .tx_ring_phys	dd ?
       .rx_ring		dd ?
       .tx_ring		dd ?
       .cur_rx		db ?
@@ -116,7 +122,8 @@ struc buf_head {
 	.base		dd ?
 	.length 	dw ?
 	.status 	dw ?
-	.misc		dd ?
+	.msg_length	dw ?
+	.misc		dw ?
 	.reserved	dd ?
 
 	.size:
@@ -191,12 +198,12 @@ end virtual
 
 	PCNET_DMA_MASK		      equ 0xffffffff
 
-	PCNET_LOG_TX_BUFFERS	      equ 1
+	PCNET_LOG_TX_BUFFERS	      equ 2
 	PCNET_LOG_RX_BUFFERS	      equ 2
 
 	PCNET_TX_RING_SIZE	      equ 4
 	PCNET_TX_RING_MOD_MASK	      equ (PCNET_TX_RING_SIZE-1)
-	PCNET_TX_RING_LEN_BITS	      equ 0
+	PCNET_TX_RING_LEN_BITS	      equ (PCNET_LOG_TX_BUFFERS shl 12)
 
 	PCNET_RX_RING_SIZE	      equ 4
 	PCNET_RX_RING_MOD_MASK	      equ (PCNET_RX_RING_SIZE-1)
@@ -603,6 +610,8 @@ proc service_proc stdcall, ioctl:dword
 	test	eax, eax
 	jz	.err
 	mov	dword [ebx + device.rx_ring], eax
+	call	GetPgAddr
+	mov	dword [ebx + device.rx_ring_phys], eax
 
 ; Allocate the TX ring
 
@@ -610,6 +619,8 @@ proc service_proc stdcall, ioctl:dword
 	test	eax, eax
 	jz	.err
 	mov	dword [ebx + device.tx_ring], eax
+	call	GetPgAddr
+	mov	dword [ebx + device.tx_ring_phys], eax
 
 ; fill in some of the structure variables
 
@@ -630,23 +641,25 @@ proc service_proc stdcall, ioctl:dword
 
 	mov	edi, [ebx + device.tx_ring]
 	mov	ecx, PCNET_TX_RING_SIZE
+	mov	eax, [ebx + device.tx_buffer]
+	call	GetPgAddr
   .tx_init:
-	mov	[edi + buf_head.base], 0
-	mov	[edi + buf_head.status], 0
+	mov	[edi + buf_head.base], eax
+	add	eax, PCNET_PKT_BUF_SZ
 	add	edi, buf_head.size
 	loop	.tx_init
 
 	mov	[ebx + device.tlen_rlen],(PCNET_TX_RING_LEN_BITS or PCNET_RX_RING_LEN_BITS)
 
 ; Ok, the eth_device structure is ready, let's probe the device
-
-	call	probe							; this function will output in eax
-	test	eax, eax
-	jnz	.err							; If an error occured, exit
-
+; Because initialization fires IRQ, IRQ handler must be aware of this device
 	mov	eax, [PCNET_DEV]					; Add the device structure to our device list
 	mov	[PCNET_LIST+4*eax], ebx 				; (IRQ handler uses this list to find device)
 	inc	[PCNET_DEV]						;
+
+	call	probe							; this function will output in eax
+	test	eax, eax
+	jnz	.destroy							; If an error occured, exit
 
 	call	EthRegDev
 	cmp	eax, -1
@@ -670,6 +683,7 @@ proc service_proc stdcall, ioctl:dword
   .destroy:
 	; todo: reset device into virgin state
 
+	dec	[PCNET_DEV]
   .err:
 	DEBUGF	1,"Error, removing all data !\n"
 	stdcall KernelFree, dword [ebx+device.rx_buffer]
@@ -941,7 +955,8 @@ if 0
 ; ------------------------------------------------
 end if
 
-	stdcall Sleep, 1
+;	mov	esi, 1
+;	call	Sleep
 
 
 reset:
@@ -1053,6 +1068,12 @@ reset:
 	mov	dword [ebx + device.filter], -1
 	mov	dword [ebx + device.filter+4], -1
 
+	call	read_mac
+
+	lea	esi, [ebx + device.mac]
+	lea	edi, [ebx + device.phys_addr]
+	movsd
+	movsw
 
 	lea	eax, [ebx + device.private]
 	mov	ecx, eax
@@ -1102,8 +1123,6 @@ reset:
 	xor	ecx, ecx
 	call	[ebx + device.access_read_csr]
 
-	call	read_mac
-
 	xor	ecx, ecx
 	mov	eax, PCNET_CSR_INTEN or PCNET_CSR_START
 	call	[ebx + device.access_write_csr]
@@ -1140,30 +1159,31 @@ transmit:
 	jl	.finish 			; packet is too short
 
 ; check descriptor
-	DEBUGF	1,"Checking descriptor, "
 	movzx	eax, [ebx + device.cur_tx]
-	mov	edx, buf_head.size ;;PCNET_PKT_BUF_SZ
-	mul	dx
-	mov	edi, [ebx + device.tx_buffer]
-	add	edi, eax
-
-	mov	edx, [ebx + device.io_addr]
-
+	imul	edi, eax, PCNET_PKT_BUF_SZ
+	shl	eax, 4
+	add	edi, [ebx + device.tx_buffer]
+	add	eax, [ebx + device.tx_ring]
+	test	byte [eax + buf_head.status + 1], 80h
+	jnz	.nospace
+; descriptor is free, copy data
+	mov	esi, [esp]
 	mov	ecx, [esp+4]
-	neg	cx					;;;;
-	mov	[edi + buf_head.length], cx
-	mov	[edi + buf_head.misc], 0
-
-	mov	eax, [esp]
-	mov	ecx, eax
-	and	ecx, 0xfff
-	call	GetPgAddr
-	add	eax, ecx
-	mov	[edi + buf_head.base], eax
-	mov	[edi + buf_head.status], 0x8300
+	mov	edx, ecx
+	shr	ecx, 2
+	and	edx, 3
+	rep	movsd
+	mov	ecx, edx
+	rep	movsb
+; set length
+	mov	ecx, [esp+4]
+	neg	ecx
+	mov	[eax + buf_head.length], cx
+; put to transfer queue
+	mov	[eax + buf_head.status], 0x8300
 
 ; trigger an immediate send
-	mov	ecx, 0	 ; CSR0
+	xor	ecx, ecx	 ; CSR0
 	call	[ebx + device.access_read_csr]
 	or	eax, PCNET_CSR_TX
 	call	[ebx + device.access_write_csr]
@@ -1180,7 +1200,11 @@ transmit:
 
 	ret
 
-
+.nospace:
+	DEBUGF	1, 'ERROR: no free transmit descriptors\n'
+; todo: maybe somehow notify the kernel about the error?
+	add	esp, 4+4
+	ret
 
 
 
@@ -1193,7 +1217,7 @@ transmit:
 align 4
 int_handler:
 
-	DEBUGF	1,"IRQ %x ",eax:2		    ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+;	DEBUGF	1,"IRQ %x ",eax:2		    ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
 ; find pointer of device wich made IRQ occur
 
@@ -1206,12 +1230,12 @@ int_handler:
 	mov	edx, [ebx + device.io_addr]	; get IRQ reason
 
 	push	ecx
-	mov	ecx, 0 ; CSR0
+	xor	ecx, ecx ; CSR0
 	call	[ebx + device.access_read_csr]
 	pop	ecx
 
-	test	ax , ax
-	jnz	.got_it
+	test	al , al
+	js	.got_it
 
 	add	esi, 4
 	loop	.nextdevice
@@ -1219,8 +1243,16 @@ int_handler:
 	ret					    ; If no device was found, abort (The irq was probably for a device, not registered to this driver
 
   .got_it:
-
 ;-------------------------------------------------------
+; Possible reasons:
+; initialization done - ignore
+; transmit done - ignore
+; packet received - handle
+; Clear ALL IRQ reasons.
+; N.B. One who wants to handle more than one reason must be ready
+; to two or more reasons in one IRQ.
+	xor	ecx, ecx
+	call	[ebx + device.access_write_csr]
 ; Received packet ok?
 
 	test	ax, PCNET_CSR_RINT
@@ -1241,17 +1273,18 @@ int_handler:
 	test	cx , PCNET_RXSTAT_OWN		; If this bit is set, the controller OWN's the packet, if not, we do
 	jnz	.abort
 
-	cmp	cx , PCNET_RXSTAT_ENP
+	test	cx , PCNET_RXSTAT_ENP
 	jz	.abort
 
-	cmp	cx , PCNET_RXSTAT_STP
+	test	cx , PCNET_RXSTAT_STP
 	jz	.abort
 
-	movzx	ecx, [ebx + buf_head.length]	; get packet length in ecx
-	and	ecx, 0xfff			;
+	movzx	ecx, [edi + buf_head.msg_length]	; get packet length in ecx
 	sub	ecx, 4				;
 
+	push	ecx
 	stdcall KernelAlloc, ecx		; Allocate a buffer to put packet into
+	pop	ecx
 	test	eax, eax			; Test if we allocated succesfully
 	jz	.abort				;
 
@@ -1267,8 +1300,8 @@ int_handler:
 	and	ecx, 3
 	rep	movsb
 
-	mov	word [eax + buf_head.length], PCNET_PKT_BUF_SZ_NEG
-	or	word [eax + buf_head.status], PCNET_RXSTAT_OWN	    ; Set OWN bit back to 1 (controller may write to tx-buffer again now)
+;	mov	word [eax + buf_head.length], PCNET_PKT_BUF_SZ_NEG
+	mov	word [eax + buf_head.status], PCNET_RXSTAT_OWN	    ; Set OWN bit back to 1 (controller may write to tx-buffer again now)
 
 	inc	[ebx + device.cur_rx]		; update descriptor
 	and	[ebx + device.cur_rx], 3	;
@@ -1472,7 +1505,7 @@ wio_reset:
 dwio_read_csr:
 
 	add	edx, PCNET_DWIO_RAP
-	mov	ecx, eax
+	mov	eax, ecx
 	out	dx , eax
 	add	edx, PCNET_DWIO_RDP - PCNET_DWIO_RAP
 	in	eax, dx
@@ -1502,7 +1535,7 @@ dwio_write_csr:
 dwio_read_bcr:
 
 	add	edx, PCNET_DWIO_RAP
-	mov	ecx, eax
+	mov	eax, ecx
 	out	dx , eax
 	add	edx, PCNET_DWIO_BDP - PCNET_DWIO_RAP
 	in	eax, dx
