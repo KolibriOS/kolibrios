@@ -1596,14 +1596,16 @@ adjust_pci_device:
 	;*******Get current setting************************
 	movzx	 edx, byte [ebx + device.pci_dev]
 	movzx	 ecx, byte [ebx + device.pci_bus]
-	stdcall  PciRead16, edx ,ecx ,0x04
+	push	ecx edx
+	stdcall  PciRead16, ecx ,edx ,0x04
+	pop	edx ecx
 ;        ;******see if its already set as bus master********
 ;        and      ax,5
 ;        cmp      ax,5
 ;        je       .Latency
 	;******Make card a bus master*******
-	or	 ax , 5
-	stdcall  PciWrite16, edx ,ecx ,0x04, eax
+	or	 al, 5
+	stdcall  PciWrite16, ecx ,edx ,0x04, eax
 	;******Check latency setting***********
   .Latency:
    ;*******Get current latency setting************************
