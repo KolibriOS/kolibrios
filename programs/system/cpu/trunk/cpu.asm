@@ -20,35 +20,41 @@ STACK_SIZE=1024
 include 'lang.inc'
 include '..\..\..\macros.inc'
 display_processes=32            ; number of processes to show
+align 4
 START:                          ; start of execution
 ; calculate window position
 ; at the center of the screen
     call calculate_window_pos
     
 ;main loop when process name isn't edited.    
+align 4
 red:    
-    mov  ebp,1
+	xor	ebp,ebp
+	inc	ebp
+;    mov  ebp,1
     call draw_window            ; redraw all window
+align 4
 still:
     mov  eax,23                 ; wait here for event
-    mov  ebx,100                ; 1 sec.
-    int  0x40
+    mov  ebx,200                ; 2 sec.
+    mcall
 
-    cmp  eax,1                  ; redraw request ?
-    je   red
-    cmp  eax,2                  ; key in buffer ?
-    je   key
-    cmp  eax,3                  ; button in buffer ?
-    je   button
+    dec  eax                  ; redraw request ?
+    jz   red
+    dec  eax                  ; key in buffer ?
+    jz   key
+    dec  eax                  ; button in buffer ?
+    jz   button
+align 4
 still_end:    
     xor  ebp,ebp                ; draw new state of processes
     call draw_window
     jmp  still
 
-
+align 4
   key:                          ; key
     mov  eax,2                  
-    int  0x40
+    mcall
     cmp  ah,184                 ; PageUp
     je   pgdn
     cmp  ah,183
@@ -56,11 +62,11 @@ still_end:
     cmp  ah,27
     je   close                  ; Esc
     jmp  still_end
-
+align 4
   button:                       
 ; get button id  
     mov  eax,17                 
-    int  0x40
+    mcall
     shr  eax,8                  
 
 ;id in [10,50] corresponds to terminate buttons.
@@ -81,54 +87,57 @@ still_end:
 ;terminate application    
     mov  eax,18
     mov  ebx,2
-    int  0x40
+    mcall
     jmp  still_end 
+align 4
   noterm:
 
 ;special buttons
-    cmp  eax,51
-    jz   pgdn
-    cmp  eax,52
-    jz   pgup
-    cmp  eax,53
-    jz   read_string
-    cmp  eax,54
-    jz   program_start
-    cmp  eax,55
-    jz   reboot
-    cmp  eax,1
+    dec  eax
     jz   close
+
+    sub  eax,50
+    jz   pgdn
+    dec  eax
+    jz   pgup
+    dec  eax
+    jz   read_string
+    dec  eax
+    jz   program_start
+    dec  eax
+    jz   reboot
     jmp  still_end
     
 ;buttons handlers    
+align 4
   pgdn:
     sub  [list_start],display_processes
 ;    cmp  [list_start],0
     jge  still_end  
     mov  [list_start],0
     jmp  still_end  
-
+align 4
   pgup:
     mov  eax,[list_add]  ;maximal displayed process slot
     mov  [list_start],eax
     jmp  still_end  
-    
+align 4    
   program_start:    
     mov  eax,70
     mov  ebx,file_start
-    int  0x40
+    mcall
     jmp  still_end
-    
+align 4    
   reboot:    
     mov  eax,70
     mov  ebx,sys_reboot
-    int  0x40
+    mcall
 ;close program if we going to reboot
-
+align 4
   close:
     or   eax,-1                 ; close this program
-    int  0x40
-
+    mcall
+align 4
 draw_next_process:
 ;input:
 ;  edi - current slot
@@ -144,7 +153,8 @@ draw_next_process:
     mov   eax,8
     mov   edx,[index]
     add   edx,(1 shl 31)+11
-    int   0x40
+    mcall
+align 4
 .nodelete:
 ;create terminate process button
     mov   eax,8
@@ -159,8 +169,9 @@ draw_next_process:
     test  dword [index],1
     jz    .change_color_button
     mov   esi,0x8899aa
+align 4
 .change_color_button:
-    int   0x40
+    mcall
     
 ;draw background for proccess information
     mov   eax,13
@@ -171,8 +182,9 @@ draw_next_process:
     test  dword [index],1
     jz    .change_color_info
     mov   edx,0xddffdd
+align 4
 .change_color_info:
-    int   0x40
+    mcall
     
 ;nothing else should be done
 ;if there is no process for this button    
@@ -187,6 +199,7 @@ draw_next_process:
     mov   ebx,process_info_buffer
     
 ;find process loop
+align 4
 .find_loop:
     cmp   ecx,256
     jge   .no_processes
@@ -194,7 +207,7 @@ draw_next_process:
 ;load process information in buffer
     mov   eax,9
 ;    mov   ebx,process_info_buffer
-    int   0x40
+    mcall
     
 ;if current slot greater than maximal slot,
 ;there is no more proccesses.    
@@ -207,11 +220,11 @@ draw_next_process:
     
     inc   ecx
     jmp   .find_loop
-    
+align 4    
 .no_processes:
     mov   edi,-1
     ret
-    
+align 4    
 .process_found:
     mov  edi,ecx
     mov  [list_add],ecx
@@ -220,7 +233,7 @@ draw_next_process:
 ;for percent calculating
     mov  eax,18
     mov  ebx,5
-    int  0x40
+    mcall
     
     xor  edx,edx
     mov  ebx,100
@@ -231,7 +244,7 @@ draw_next_process:
     mov  ebx,eax
     mov  eax,[process_info_buffer+process_information.cpu_usage]
 ;    cdq
-   xor edx,edx ; for CPU more 2 GHz - mike.dld 
+    xor edx,edx ; for CPU more 2 GHz - mike.dld 
  
     div  ebx
     mov  [cpu_percent],eax
@@ -245,11 +258,13 @@ draw_next_process:
     jg   .no_black
     mov  [tcolor],eax
     jmp  .color_set
+align 4
 .no_black:   
     cmp  eax,80
     ja   .no_green
     mov  dword [tcolor],0x107a30
     jmp  .color_set
+align 4
 .no_green:
     mov  dword [tcolor],0xac0000
 .color_set:
@@ -262,7 +277,7 @@ draw_next_process:
     mov  edx,[curposy]
     add  edx,20*65536+1
     mov  esi,[tcolor]
-    int  0x40
+    mcall
     
 ;show process name
     mov  eax,4
@@ -271,7 +286,7 @@ draw_next_process:
     mov  ecx,[tcolor]
     mov  edx,process_info_buffer.process_name
     mov  esi,11
-    int  0x40
+    mcall
     
 ;show pid
     mov  eax,47
@@ -280,49 +295,49 @@ draw_next_process:
     mov  edx,[curposy]
     add  edx,130*65536+1
     mov  esi,[tcolor]
-    int  0x40
+    mcall
     
 ;show cpu usage
     mov  ecx,[process_info_buffer.cpu_usage]
     add  edx,60*65536
-    int  0x40
+    mcall
     
 ;show cpu percent
     mov  ebx,3*65536+0*256
     mov  ecx,[cpu_percent]
     add  edx,60*65536
-    int  0x40
+    mcall
     
 ;show memory start - obsolete
     mov  ebx,8*65536+1*256
     mov  ecx,[process_info_buffer.memory_start]
     add  edx,30*65536
-    int  0x40
+    mcall
     
 ;show memory usage
     mov  ecx,[process_info_buffer.used_memory]
     inc  ecx
     add  edx,60*65536
-    int  0x40
+    mcall
     
 ;show window stack and value
     mov  ecx,dword [process_info_buffer.window_stack_position]
     add  edx,60*65536
-    int  0x40
+    mcall
     
 ;show window xy size
     mov  ecx,[process_info_buffer.box.left]
     shl  ecx,16
     add  ecx,[process_info_buffer.box.top]
     add  edx,60*65536
-    int  0x40    
-            
+    mcall    
+align 4            
 .ret:
 ;build index->slot map for terminating processes.
     mov  eax,[index]
     mov  [tasklist+4*eax],edi        
     ret
-
+align 4
 read_string:
 
 ;clean string
@@ -338,17 +353,19 @@ read_string:
     jmp  still1
 
 ;read string main loop
+align 4
   f11:
 ;full update  
     push edi
     mov  ebp,1
     call draw_window
     pop  edi
+align 4
   still1:  
 ;wait for message  
     mov  eax,23
     mov  ebx,100
-    int  0x40
+    mcall
     cmp  eax,1
     je   f11
 ;if no message - update process information    
@@ -359,13 +376,13 @@ read_string:
     call draw_window
     pop  edi
     jmp  still1
-    
+align 4    
 .message_received:
     cmp  eax,2
     jne  read_done          ;buttons message
 ;read char    
     mov  eax,2
-    int  0x40
+    mcall
     shr  eax,8
     
 ;if enter pressed, exit read string loop    
@@ -383,7 +400,7 @@ read_string:
     mov  [edi],byte 32
     call print_text
     jmp  still1
-    
+align 4    
   nobsl:
 ;write new symbol  
     mov  [edi],al
@@ -398,6 +415,7 @@ read_string:
     jnz  still1
 
 ;exiting from read string loop
+align 4
   read_done:
 ;terminate string for file functions
     mov  [edi],byte 0
@@ -405,7 +423,7 @@ read_string:
     call print_text
     jmp  still
 
-
+align 4
 print_text:
 ;display start_application string
 
@@ -416,7 +434,7 @@ print_text:
     mov  ebx,64*65536+62*6
     mov  ecx,400*65536+12
     mov  edx,0xffffcc  ;0xeeeeee
-    int  0x40
+    mcall
     
 ;display text    
     mov  eax,4                  
@@ -424,20 +442,21 @@ print_text:
     mov  ebx,70*65536+402       ;text center-aligned
     xor  ecx,ecx                ;black text
     mov  esi,60                 ;60 symbols
-    int  0x40
+    mcall
 
     popad
     ret
 
 window_x_size=524
 window_y_size=430
+align 4
 calculate_window_pos:
 ;set window size and position for 0 function
 ;to [winxpos] and [winypos] variables
 
 ;get screen size
     mov  eax,14
-    int  0x40
+    mcall
     mov  ebx,eax
     
 ;calculate (x_screen-window_x_size)/2    
@@ -463,7 +482,7 @@ calculate_window_pos:
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
 
-
+align 4
 draw_window:
 ;ebp=1 - redraw all
 ;ebp=0 - redraw only process information
@@ -472,8 +491,10 @@ draw_window:
     jz   .show_process_info
     
     mov  eax,12                    ; function 12:tell os about windowdraw
-    mov  ebx,1                     ; 1, start of draw
-    int  0x40                      
+;    mov  ebx,1                     ; 1, start of draw
+    xor	 ebx,ebx
+    inc  ebx
+    mcall                      
 
                                    ; DRAW WINDOW
     xor  eax,eax                   ; function 0 : define and draw window
@@ -481,7 +502,7 @@ draw_window:
     mov  ecx,[winypos]             ; [y start] *65536 + [y size]
     mov  edx,0x14ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
     mov  edi,title                ; WINDOW CAPTION;
-    int  0x40
+    mcall
 
                                    
     mov  eax,4                     ; function 4 : write text to window
@@ -489,14 +510,14 @@ draw_window:
     xor  ecx,ecx
     mov  edx,text
     mov  esi,text_len
-    mov  eax,4
-    int  0x40
-
+    mcall
+align 4
 .show_process_info:
     mov  edi,[list_start]
     mov  [list_add],edi
     mov  dword [index],0
     mov  dword [curposy],54
+align 4
 .loop_draw:
     call draw_next_process
     inc  dword [index]
@@ -513,30 +534,30 @@ draw_window:
     mov  ebx,30*65536+96
     mov  ecx,380*65536+10
     mov  edx,51
-    int  0x40
+    mcall
                                     
 ; next page button
     mov  ebx,130*65536+96
     inc  edx
-    int  0x40
+    mcall
                               
 ; ">" (text enter) button
     mov  ebx,30*65536+20
     add  ecx,20 shl 16
     inc  edx
-    int  0x40
+    mcall
                                     
 ; run button
     mov  ebx,456*65536+50
     inc  edx
-    int  0x40
+    mcall
 
 ; reboot button    
     sub  ebx,120*65536              
     add  ebx,60
     sub  ecx,20 shl 16
     inc  edx
-    int  0x40
+    mcall
     
 ;"PREV PAGE", "NEXT PAGE" and "REBOOT" labels
     mov  eax,4
@@ -544,7 +565,7 @@ draw_window:
     xor  ecx,ecx
     mov  edx,tbts
     mov  esi,tbte-tbts
-    int  0x40
+    mcall
 
 ;">" labels
     mov  eax,4
@@ -552,7 +573,7 @@ draw_window:
     xor  ecx,ecx
     mov  edx,tbts_2
     mov  esi,1
-    int  0x40
+    mcall
 
 ;"RUN" labels
     mov  eax,4
@@ -560,15 +581,15 @@ draw_window:
     xor  ecx,ecx
     mov  edx,tbts_3
     mov  esi,tbte_2-tbts_3
-    int  0x40
+    mcall
 
 ;print application name in text box
     call print_text
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
-    int  0x40
-    
+    mcall
+align 4    
 .end_redraw:
     ret
 
