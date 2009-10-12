@@ -35,27 +35,12 @@ START:				       ; start of execution
 
     mcall   4, 25 shl 16 + 31, 0x80000000, title
 
-;;    call    draw_stats
-
     mcall   12, 2
-
-    jmp     draw_stats
-
-  mainloop:
-
-    mcall   23,50		   ; wait for event with timeout    (0,5 s)
-
-    cmp     eax, 1
-    je	    redraw
-    cmp     eax, 2
-    je	    key
-    cmp     eax, 3
-    je	    button
-
 
   draw_stats:
 
 	mov	edx, 50 shl 16 + 50
+	mov	[last],0
 
     .loop:
 	mcall	75, 0x06080003, [last],,,ARP_ENTRY
@@ -129,6 +114,19 @@ START:				       ; start of execution
 	inc	[last]
 
 	jmp	.loop
+
+  mainloop:
+
+    mcall   23,50		   ; wait for event with timeout    (0,5 s)
+
+    cmp     eax, 1
+    je	    redraw
+    cmp     eax, 2
+    je	    key
+    cmp     eax, 3
+    je	    button
+
+    jmp     draw_stats
 
 
   key:

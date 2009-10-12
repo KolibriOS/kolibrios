@@ -5,7 +5,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 750 $
+$Revision$
 
 
 ; void __stdcall unpack(void* packed_data, void* unpacked_data); 

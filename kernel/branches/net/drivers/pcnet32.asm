@@ -10,7 +10,7 @@
 ;;                                                                  ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;$Revision$
+$Revision$
 
 format MS COFF
 
@@ -77,7 +77,7 @@ struc ETH_DEVICE {
 
 	; The following fields up to .tx_ring_phys inclusive form
 	; initialization block for hardware; do not modify
-	align 4	; initialization block must be dword-aligned
+	align 4 ; initialization block must be dword-aligned
       .private:
       .mode_		dw ?
       .tlen_rlen	dw ?
@@ -955,8 +955,8 @@ if 0
 ; ------------------------------------------------
 end if
 
-;	mov	esi, 1
-;	call	Sleep
+;       mov     esi, 1
+;       call    Sleep
 
 
 reset:
@@ -1217,7 +1217,7 @@ transmit:
 align 4
 int_handler:
 
-;	DEBUGF	1,"IRQ %x ",eax:2		    ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
+;       DEBUGF  1,"IRQ %x ",eax:2                   ; no, you cant replace 'eax:2' with 'al', this must be a bug in FDO
 
 ; find pointer of device wich made IRQ occur
 
@@ -1300,7 +1300,7 @@ int_handler:
 	and	ecx, 3
 	rep	movsb
 
-;	mov	word [eax + buf_head.length], PCNET_PKT_BUF_SZ_NEG
+;       mov     word [eax + buf_head.length], PCNET_PKT_BUF_SZ_NEG
 	mov	word [eax + buf_head.status], PCNET_RXSTAT_OWN	    ; Set OWN bit back to 1 (controller may write to tx-buffer again now)
 
 	inc	[ebx + device.cur_rx]		; update descriptor

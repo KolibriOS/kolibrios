@@ -6,7 +6,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 994 $
+$Revision$
 
 
 get_titlebar_height: ; edi = window draw_data pointer

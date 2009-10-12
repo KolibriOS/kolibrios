@@ -9,7 +9,7 @@
 ;; LFN support by diamond                                       ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 1021 $
+$Revision$
 
 
 ; calculate fat chain

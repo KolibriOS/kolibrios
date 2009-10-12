@@ -17,7 +17,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-$Revision: 593 $
+$Revision$
 
 ; ICMP types & codes
 
@@ -214,7 +214,7 @@ ICMP_handler:	;TODO: works only on pure ethernet right now !
 
 
        .check_sockets:
-	; TODO: validate the header & checksum. Discard buffer if error
+	; TODO: validate the header & checksum.
 
 	; Look for an open ICMP socket
 
@@ -387,7 +387,7 @@ ICMP_create_packet:
 	cmp	edi, -1
 	je	.exit
 
-	DEBUGF 1,"full icmp packet size: %u\n", ebx
+	DEBUGF 1,"full icmp packet size: %u\n", edx
 
 	pop	eax
 	mov	word [edi + ICMP_Packet.Type], ax	; Write both type and code bytes at once
@@ -411,8 +411,7 @@ ICMP_create_packet:
 	and	cx , 3
 	rep	movsb
 
-	sub	edi, ebx  ;; TODO: find a better way to remember start of packet
-	xchg	ebx, edx
+	sub	edi, edx  ;; TODO: find a better way to remember start of packet
 	mov	ecx, [ebx + ETH_DEVICE.transmit]
 	push	edx edi ecx
 	DEBUGF 1,"Sending ICMP Packet\n"

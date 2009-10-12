@@ -16,7 +16,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 922 $
+$Revision$
 
 ; IP underlying protocols numbers
 
@@ -507,10 +507,12 @@ IPv4_decrease_fragment_ttls:
 align 4
 IPv4_create_packet:
 
-	DEBUGF 1,"Create IPv4 Packet\n"
+	DEBUGF 1,"Create IPv4 Packet (size=%u)\n", ecx
 
-	cmp	ecx, 1514
+	cmp	ecx, 1480
 	jg	.exit_
+
+	push	ecx eax ebx dx di
 
 	cmp	eax, -1
 	je	.broadcast		  ; If it is broadcast, just send
@@ -518,18 +520,10 @@ IPv4_create_packet:
 	call	ARP_IP_to_MAC
 
 	cmp	eax, -1
-	jne	.found
+	je	.not_found
 
-	DEBUGF 1,"Create IPv4 Packet - ARP entry not found!\n"
-
-	; TODO: QUEUE!
-	or	edi, -1
-
-	ret
-
-  .found:
-	push	ax
 	push	ebx
+	push	ax
 
 	jmp	.send
 
@@ -537,19 +531,17 @@ IPv4_create_packet:
 	push	word -1
 	push	dword -1
 
-
   .send:
-	push	ecx eax ebx dx di
 	call	IPv4_dest_to_dev
 	inc	[IP_PACKETS_TX+4*edi]
-	mov	edi, [ETH_DRV_LIST + 4*edi]
-	lea	eax, [edi + ETH_DEVICE.mac]
-	lea	ebx, [esp+16]
-	mov	ecx, [esp+12]
+	mov	edx, [ETH_DRV_LIST + 4*edi]
+	lea	eax, [edx + ETH_DEVICE.mac]
+	mov	ebx, esp
+	mov	ecx, [esp+18]	 ;; 18 or  22 ??
 	add	ecx, IPv4_Packet.DataOrOptional
-	mov	edx, edi ;;;
 	mov	di , ETHER_IPv4
 	call	ETH_create_Packet		   ; TODO: figure out a way to make this work with other protocols too
+	add	esp, 6
 	cmp	edi, -1
 	je	.exit
 
@@ -578,16 +570,19 @@ IPv4_create_packet:
 
 	DEBUGF 1,"IPv4 Packet for device %x created successfully\n", edx
 
-	add	esp, 6
-
 	ret
 
+
+  .not_found:
+	DEBUGF 1,"Create IPv4 Packet - ARP entry not found!\n"
+	; TODO: QUEUE!
   .exit:
-	add	esp, 16+6
+	add	esp, 16
   .exit_:
 	DEBUGF 1,"Create IPv4 Packet - failed\n"
 	or	edi, -1
 	ret
+
 
 
 

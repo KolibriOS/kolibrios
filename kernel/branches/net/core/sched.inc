@@ -5,7 +5,7 @@
 ;; Distributed under terms of the GNU General Public License    ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 907 $
+$Revision$
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

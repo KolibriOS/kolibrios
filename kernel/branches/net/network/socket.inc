@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 1019 $
+$Revision$
 
 align 4
 struct	 SOCKET
@@ -27,8 +27,8 @@ struct	 SOCKET
 	 .Protocol		dd ? ; ICMP/IPv4/ARP/
 	 .LocalIP		dd ? ; local IP address
 	 .RemoteIP		dd ? ; remote IP address
-	 .LocalPort		dw ? ; local port
-	 .RemotePort		dw ? ; remote port
+	 .LocalPort		dw ? ; local port       (In INET byte order)
+	 .RemotePort		dw ? ; remote port      (IN INET byte order
 	 .OrigRemoteIP		dd ? ; original remote IP address (used to reset to LISTEN state)
 	 .OrigRemotePort	dw ? ; original remote port (used to reset to LISTEN state)
 	 .rxDataCount		dd ? ; rx data count
@@ -130,6 +130,7 @@ s_error:
 ;  OUT: eax is socket num, -1 on error
 ;
 ;-----------------------------------------------
+align 4
 socket_open:
 
 	DEBUGF	1,"socket_open: domain: %u, type: %u",ecx, edx
@@ -162,7 +163,7 @@ socket_open:
 ;  OUT: 0 on success
 ;
 ;-----------------------------------------------
-
+align 4
 socket_bind:
 
 	DEBUGF	1,"Socket_bind: socknum: %u sockaddr: %x, length: %u, ",ecx,edx,esi
@@ -175,51 +176,32 @@ socket_bind:
 	jl	s_error
 
 	cmp	word [edx], AF_INET4
-	je	.af_inet4
-
-	jmp	s_error
+	jne	s_error
 
   .af_inet4:
 
 	cmp	esi, 6
 	jl	s_error
 
+	mov	ecx, [eax + SOCKET.Type]
 	mov	bx, word [edx + 2]
-	rol	bx,8			;;;
-	DEBUGF	1,"local port: %u ",bx
+	DEBUGF	1,"local port: %x ",bx
 	test	bx, bx
-	jnz	.check_only
+	jz	.find_free
 
-	mov	bx , [last_UDP_port]
+	call	socket_check_port
+	test	bx, bx
+	je	s_error
+	jmp	.got_port
 
-  .find_port_loop:
-	inc	bx
-	inc	[last_UDP_port]
+  .find_free:
 
-  .check_only:
-	mov	esi, net_sockets
+	call	socket_find_port
+	test	bx, bx
+	je	s_error
 
-  .next_udp_socket:
-	mov	esi, [esi + SOCKET.NextPtr]
-	or	esi, esi
-	jz	.udp_port_ok
-
-	cmp	[esi + SOCKET.Type], IP_PROTO_UDP
-	jne	.next_udp_socket
-
-	cmp	[esi + SOCKET.LocalPort], bx
-	jne	.next_udp_socket
-
-	cmp	word [edx + 2], 0
-	jne	s_error
-
-	cmp	bx, MAX_EPHEMERAL_PORT
-	jle	.find_port_loop
-
-	mov	[last_UDP_port], MIN_EPHEMERAL_PORT
-	jmp	s_error
-
-  .udp_port_ok:
+  .got_port:
+	DEBUGF	1,"using port: %x ",bx
 	mov	word [eax + SOCKET.LocalPort], bx
 
 	mov	ebx, dword [edx + 4]
@@ -246,7 +228,6 @@ socket_bind:
 ;
 ;-----------------------------------------------
 align 4
-
 socket_connect:
 
 	DEBUGF	1,"Socket_connect: socknum: %u sockaddr: %x, length: %u,",ecx,edx,esi
@@ -274,22 +255,19 @@ socket_connect:
 	cmp	[eax + SOCKET.Type], IP_PROTO_ICMP
 	je	.icmp
 
-;        cmp     [eax + SOCKET.Type], IP_PROTO_TCP
-;        je      .tcp
+	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	je	.tcp
 
 	jmp	s_error
 
   .udp:
 
 	mov	bx , word [edx + 2]
-	rol	bx, 8
 	mov	word [eax + SOCKET.RemotePort], bx
-
-	DEBUGF	1,"remote port: %u ",bx
+	DEBUGF	1,"remote port: %x ",bx
 
 	mov	ebx, dword [edx + 4]
 	mov	dword [eax + SOCKET.RemoteIP], ebx
-
 	DEBUGF	1,"remote ip: %u.%u.%u.%u\n",[edx+4]:1,[edx+5]:1,[edx+6]:1,[edx+7]:1
 
 	mov	dword [esp+32],0
@@ -395,7 +373,7 @@ socket_connect:
 ;  OUT: eax is socket num, -1 on error
 ;
 ;-----------------------------------------------
-
+align 4
 socket_listen:
 
 	DEBUGF	1,"Socket_listen: socknum: %u backlog: %u\n",ecx,edx
@@ -432,8 +410,7 @@ socket_listen:
 ;  OUT: eax is socket num, -1 on error
 ;
 ;-----------------------------------------------
-
-
+align 4
 socket_accept:
 
 	DEBUGF	1,"Socket_accept: socknum: %u sockaddr: %x, length: %u\n",ecx,edx,esi
@@ -479,7 +456,7 @@ socket_accept:
 ;  OUT: eax is socket num, -1 on error
 ;
 ;-----------------------------------------------
-
+align 4
 socket_close:
 
 	DEBUGF	1,"Socket_close: socknum: %u\n",ecx
@@ -495,8 +472,8 @@ socket_close:
 	cmp	[eax + SOCKET.Type], IP_PROTO_ICMP
 	je	.icmp
 
-;        cmp     [eax + SOCKET.Type], IP_PROTO_TCP
-;        je      .tcp
+	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	je	.tcp
 
 	jmp	s_error
 
@@ -629,7 +606,7 @@ end if
 ;  OUT: eax is number of bytes copied, -1 on error
 ;
 ;-----------------------------------------------
-
+align 4
 socket_recv:
 
 	DEBUGF	1,"Socket_receive: socknum: %u sockaddr: %x, length: %u, flags: %x\n",ecx,edx,esi,edi
@@ -703,13 +680,13 @@ socket_recv:
 ;
 ;
 ;  IN:  socket number in ecx
-;       addr in edx
-;       addrlen in esi
+;       pointer to data in edx
+;       datalength in esi
 ;       flags in edi
 ;  OUT: -1 on error
 ;
 ;-----------------------------------------------
-
+align 4
 socket_send:
 
 	DEBUGF	1,"Socket_send: socknum: %u sockaddr: %x, length: %u, flags: %x, ",ecx,edx,esi,edi
@@ -717,6 +694,13 @@ socket_send:
 	stdcall net_socket_num_to_addr, ecx		   ; get real socket address
 	or	eax, eax
 	jz	s_error
+
+	cmp	word [eax + SOCKET.Domain], AF_INET4
+	je	.af_inet4
+
+	jmp	s_error
+
+  .af_inet4:
 
 	DEBUGF	1,"Socket type:%u\n", [eax + SOCKET.Type]:4
 
@@ -726,21 +710,30 @@ socket_send:
 	cmp	[eax + SOCKET.Type], IP_PROTO_ICMP
 	je	.icmp
 
-;        cmp     [eax + SOCKET.Type], IP_PROTO_TCP
-;        je      .tcp
+	cmp	[eax + SOCKET.Type], IP_PROTO_TCP
+	je	.tcp
 
 	jmp	s_error
 
   .udp:
 
-	DEBUGF	1,"type: UDP\n"
+	DEBUGF	1,"type: UDP, "
+
+	cmp	[eax + SOCKET.LocalPort],0
+	jne	.port_ok
+
+	mov	ecx, [eax + SOCKET.Type]
+	call	socket_find_port
+	test	bx, bx
+	je	s_error
+	mov	[eax + SOCKET.LocalPort], bx
+
+  .port_ok:
 
 	mov	ecx, esi
 	mov	esi, edx
 	mov	edx, dword [eax + SOCKET.LocalPort] ; load local port and remote port at once
-	DEBUGF	1,"local port: %u, remote port:%u\n",[eax + SOCKET.LocalPort]:2, [eax + SOCKET.RemotePort]:2
-	bswap	edx	 ;;;
-	rol	edx, 16  ;;;
+	DEBUGF	1,"local port: %x, remote port: %x\n",[eax + SOCKET.LocalPort]:2, [eax + SOCKET.RemotePort]:2
 	mov	ebx, [eax + SOCKET.LocalIP]
 	mov	eax, [eax + SOCKET.RemoteIP]
 
@@ -780,6 +773,173 @@ socket_send:
 
 
 
+
+;-----------------------------------------------
+;
+; SOCKET_find_free_port (local port)
+;
+; works with INET byte order
+;
+;  IN:  type in ecx (TCP/UDP)
+;  OUT: bx = 0 on error, portnumber otherwise
+;
+;-----------------------------------------------
+align 4
+socket_find_port:
+
+	DEBUGF	1,"Socket_find_free_port, type: %u ",eax
+
+	cmp	ecx, IP_PROTO_UDP
+	je	.udp
+
+	cmp	ecx, IP_PROTO_TCP
+	je	.tcp
+
+  .udp:
+	mov	bx, [last_UDP_port]
+	je	.continue
+
+  .tcp:
+	mov	bx, [last_TCP_port]
+
+
+  .continue:
+	inc	bx
+
+  .check_only:
+	mov	esi, net_sockets
+
+  .next_socket:
+	mov	esi, [esi + SOCKET.NextPtr]
+	or	esi, esi
+	jz	.port_ok
+
+	cmp	[esi + SOCKET.Type], ecx
+	jne	.next_socket
+
+	rol	bx, 8
+	cmp	[esi + SOCKET.LocalPort], bx
+	rol	bx, 8				; this doesnt change the zero flag, does it ?
+	jne	.next_socket
+
+	cmp	bx, MAX_EPHEMERAL_PORT
+	jle	.continue
+
+	; todo: WRAP!
+;        mov     [last_UDP_port], MIN_EPHEMERAL_PORT
+  .exit:
+	xor	ebx, ebx
+
+  .port_ok:
+	rol	bx, 8
+	ret
+
+;-----------------------------------------------
+;
+; SOCKET_check_port (local port)
+;
+; works with INET byte order
+;
+;  IN:  type in ecx (TCP/UDP)
+;       port to check in bx
+;  OUT: bx = 0 on error, unchanged otherwise
+;
+;-----------------------------------------------
+align 4
+socket_check_port:
+	mov	esi, net_sockets
+
+  .next_socket:
+	mov	esi, [esi + SOCKET.NextPtr]
+	or	esi, esi
+	jz	.port_ok
+
+	cmp	[esi + SOCKET.Type], ecx
+	jne	.next_socket
+
+	cmp	[esi + SOCKET.LocalPort], bx
+	jne	.next_socket
+
+	xor	ebx, ebx
+
+  .port_ok:
+	ret
+
+
+
+;-----------------------------------------------
+;
+; SOCKET_internal_receiver
+;
+; Checks if any socket wants the received data
+; If so, update the socket
+;
+;  IN:  eax = socket number
+;       ecx = number of bytes
+;       esi = pointer to beginning of data
+;       dx = Remote port (in INET byte order)
+;       edi = IP address of sender
+;
+;  OUT: xxx
+;
+;-----------------------------------------------
+align 4
+socket_internal_receiver:
+
+	DEBUGF 1,"internal socket receiver\n"
+
+	lea	ebx, [eax + SOCKET.lock]
+	call	wait_mutex
+
+	mov	[eax + SOCKET.RemotePort], dx		; update remote port number
+	mov	[eax + SOCKET.RemoteIP], edi
+
+	mov	edx, [eax + SOCKET.rxDataCount] 	; get # of bytes already in buffer
+	DEBUGF 1,"bytes already in socket: %u ", edx
+
+	lea	edi, [ecx + edx]			; check for buffer overflow
+	cmp	edi, SOCKETBUFFSIZE - SOCKETHEADERSIZE	;
+	jg	.dump					;
+
+	lea	edi, [eax + SOCKET.rxData + edx]
+	add	[eax + SOCKET.rxDataCount], ecx 	; increment the count of bytes in buffer
+	DEBUGF 1,"adding %u bytes\n", ecx
+
+	; copy the data across
+	push	cx
+	shr	ecx, 2
+	rep	movsd
+	pop	cx
+	and	cx, 3
+	rep	movsb
+
+	DEBUGF 1,"socket updated\n"
+
+	mov	[eax + SOCKET.lock], 0
+
+	; flag an event to the application
+	mov	edx, [eax + SOCKET.PID] 		; get socket owner PID
+	mov	ecx, 1
+	mov	esi, TASK_DATA + TASKDATA.pid
+
+       .next_pid:
+	cmp	[esi], edx
+	je	.found_pid
+	inc	ecx
+	add	esi, 0x20
+	cmp	ecx, [TASK_COUNT]
+	jbe	.next_pid
+	ret
+
+       .found_pid:
+	shl	ecx, 8
+	or	[ecx + SLOT_BASE + APPDATA.event_mask], EVENT_NETWORK ; stack event
+	mov	[check_idle_semaphore], 200
+	ret
+
+       .dump:
+	mov	[eax + SOCKET.lock], 0
+	ret
 
 
 

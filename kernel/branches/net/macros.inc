@@ -9,7 +9,7 @@ macro $Revision a {
   \}
 }
 
-$Revision: 750 $
+$Revision$
 
 
 ; structure definition helper

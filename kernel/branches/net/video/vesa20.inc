@@ -17,7 +17,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 983 $
+$Revision$
 
 
 ; If you're planning to write your own video driver I suggest

@@ -14,7 +14,7 @@
 ;;                                                                 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 983 $
+$Revision$
 
 MAX_ETH_DEVICES 	equ MAX_NET_DEVICES
 ETH_QUEUE_SIZE		equ 16
@@ -352,11 +352,11 @@ ETH_struc2dev:
 ;     device number in edx
 ;     protocol in di
 ;
-; OUT: edi is -1 on error, pointer to buffer otherwise                    ;; TODO: XCHG EDX AND EBX output parameters
+; OUT: edi is -1 on error, pointer to buffer otherwise
 ;      eax points to buffer start
-;      ebx is size of complete buffer
+;      ebx is pointer to device structure
 ;      ecx is unchanged (packet size of embedded data)
-;      edx is pointer to device structure
+;      edx is size of complete buffer
 ;      esi points to procedure wich needs to be called to send packet
 ;
 ;---------------------------------------------------------------------------
@@ -364,11 +364,9 @@ ETH_struc2dev:
 align 4
 ETH_create_Packet:
 
-	DEBUGF 1,"Creating Ethernet Packet:\n"
+	DEBUGF 1,"Creating Ethernet Packet (size=%u): \n", ecx
 
-	cmp	ecx, 60-ETH_FRAME.Data
-	jl	.exit
-	cmp	ecx, 1514-ETH_FRAME.Data
+	cmp	ecx, 1500
 	jg	.exit
 
 	push	ecx di eax ebx edx
@@ -394,22 +392,31 @@ ETH_create_Packet:
 	stosw
 
 	lea	eax, [edi - ETH_FRAME.Data]  ; Set eax to buffer start
-	mov	ebx, ecx		     ; Set ebx to complete buffer size
+	mov	edx, ecx		     ; Set ebx to complete buffer size
 	pop	ecx
 	mov	esi, ETH_Sender
 
-	xor	edx, edx			;;;; TODO: Fixme
-	mov	edx, [ETH_DRV_LIST + edx]
+	xor	ebx, ebx			;;;; TODO: Fixme
+	mov	ebx, [ETH_DRV_LIST + ebx]
 
-	DEBUGF 1,"done: %x size:%u device:%x\n", eax, ebx, edx
+	cmp	edx, 46 + ETH_FRAME.Data    ; If data size is less then 46, add padding bytes
+	jg	.continue
+	mov	edx, 46 + ETH_FRAME.Data
+       .continue:
+
+	DEBUGF 1,"done: %x size:%u device:%x\n", eax, edx, ebx
 	ret
 
   .pop_exit:
+	DEBUGF 1,"Out of ram space!!\n"
 	add	esp, 18
-  .exit:
-	or	edi, -1
+	or	edi,-1
 	ret
 
+  .exit:
+	DEBUGF 1,"Packet too large!\n"
+	or	edi, -1
+	ret
 
 
 

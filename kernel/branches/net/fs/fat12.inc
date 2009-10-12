@@ -8,7 +8,7 @@
 ;;                                                              ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-$Revision: 593 $
+$Revision$
 
 
 n_sector    dd 0  ; temporary save for sector value
