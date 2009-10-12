@@ -117,15 +117,15 @@ align 4
     jz   close
 
     sub  eax,50
-    jz   pgdn
+    jz   pgdn     ;51
     dec  eax
-    jz   pgup
-    dec  eax
-;    jz   read_string
+    jz   pgup     ;52
 ;    dec  eax
-    jz   program_start
+;    jz   read_string
     dec  eax
-    jz   reboot
+    jz   program_start  ;53
+    dec  eax
+    jz   reboot         ;54
     jmp  still_end
     
 ;buttons handlers    
@@ -561,7 +561,7 @@ align 4
     mov  edx,51
     mcall
                                     
-; next page button
+; next page button  52
     mov  ebx,(130-offset_x)*65536+96
     inc  edx
     mcall
@@ -572,7 +572,7 @@ align 4
 ;    inc  edx
 ;    mcall
                                     
-; run button
+; run button 53
     mov  ebx,(456-offset_x)*65536+50
     inc  edx
     mcall
@@ -664,8 +664,6 @@ edit1 edit_box 350,(64-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,s
 
 list_start  dd 0
 
-file_start: dd 7
-            dd 0,0,0,0
 sys_reboot:
             dd 7
             dd 0
@@ -717,6 +715,8 @@ tbte_2:
 title  db   'Processes - Ctrl/Alt/Del',0
 
 end if
+file_start: dd 7
+            dd 0,0,0,0
 start_application: db '/sys/LAUNCHER',0
 start_application_e=$-start_application-1
 ;                   times 60 db 0
