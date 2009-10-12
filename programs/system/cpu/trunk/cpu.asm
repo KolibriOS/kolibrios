@@ -21,9 +21,9 @@ offset_x=5
   dd     0x0 , 0x0               ; I_Param , I_Icon
 
 include 'lang.inc'
-include '..\..\..\macros.inc'
-include '..\..\..\develop\libraries\box_lib\asm\trunk\editbox_ex.mac'
-include '..\..\..\develop\libraries\box_lib\load_lib.mac'
+include '../../../macros.inc'
+include '../../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
+include '../../../develop/libraries/box_lib/load_lib.mac'
 display_processes=32            ; number of processes to show
 @use_library	;use load lib macros
 align 4
