@@ -116,7 +116,6 @@ local __sc
 local lp
 local lp1
 local correction
-;local end_tr
 local exit_
 ;/equ
 err_message1     equ    dword [esp+8]
@@ -265,18 +264,21 @@ rb      0x50
 end_tr:
 
 ;---------------------------------------------------------------------
-@library_name     equ    dword [esp+12]
-@cur_dir_path     equ    dword [esp+8]
-@library_path     equ    dword [esp+4]
+
+@library_name     equ    dword [esp+16]
+@cur_dir_path     equ    dword [esp+12]
+@library_path     equ    dword [esp+8]
+@point_dir_name   equ    dword [esp+4]
 
 align 4
 @copy_path:
-        mov     ebx,@library_name
+;        mov     ebx,@library_name
         mov     esi,@cur_dir_path
         mov     edi,@library_path
 
         xor     eax,eax
         cld
+align 4
 .lp1:
         lodsb
         stosb
@@ -285,28 +287,45 @@ align 4
         mov     esi,edi
 
         std
+align 4
 .lp2:
         lodsb
         cmp     al,'/'
         jnz     .lp2
         mov     edi,esi
-        mov     esi,ebx
+
         add     edi,2
-
-
         cld
+;	mov     esi,@library_name
+
+	mov	esi,@point_dir_name
+	test	esi,esi
+	jz      .str_lp4
+
+align 4
 .lp3:
         lodsb
         stosb
         test    eax,eax
         jnz     .lp3
+
+
+	dec 	edi
+.str_lp4:
+	mov     esi,@library_name
+align 4
+.lp4:
+        lodsb
+        stosb
+        test    eax,eax
+        jnz     .lp4
 ;--------------------------------------------------------------------- 
         ret
 }
 
 
 
-macro sys_load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__
+macro sys_load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__,point_dir_name__
 {
 local end_steep
 local exit
@@ -317,7 +336,11 @@ local exit
         test    eax,eax
         jnz     end_steep 
 
-        copy_path   library_name__, cur_dir_path__, library_path__    ;the macros making way /current pach a program/+ name system library
+if point_dir_name__ eq
+  copy_path   library_name__, cur_dir_path__, library_path__,0x0
+else
+  copy_path   library_name__, cur_dir_path__, library_path__,point_dir_name__    ;the macros making way /current pach a program/+ name system library
+end if 
         
         mcall   68,19,library_path__ ; load of alternative
         test    eax,eax
@@ -342,14 +365,18 @@ exit:
 }
 
 
-macro load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__
+macro load_library library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, myimport, err_message_import__, head_f_i__,point_dir_name__
 {
 local end_steep
 local exit
 ;---------------------------------------------------------------------  
 ; loading Box_Lib library 
 
-        copy_path  library_name__, cur_dir_path__, library_path__     ;the macros making way /current pach a program/+ name system library
+if point_dir_name__ eq
+  copy_path   library_name__, cur_dir_path__, library_path__,0x0
+else
+  copy_path   library_name__, cur_dir_path__, library_path__,point_dir_name__    ;the macros making way /current pach a program/+ name system library
+end if 
 
         mcall   68,19,library_path__ ; load of alternative
         test    eax,eax
@@ -390,11 +417,12 @@ library_path__            equ [ebp+8]
 system_path__             equ [ebp+12]
 err_message_found_lib__   equ [ebp+16]   
 head_f_l__                equ [ebp+20]
-my_import               equ [ebp+24] 
+my_import                 equ [ebp+24] 
 err_message_import__      equ [ebp+28]
 head_f_i__                equ [ebp+32]
-adr_load_lib            equ dword [ebp+36]
-status_lib              equ dword [ebp+40]
+point_dir_name__          equ [ebp+36]
+adr_load_lib              equ dword [ebp+40]
+status_lib                equ dword [ebp+44]
 
         mov     ebp,_start
         mov     ecx,((_end-_start)/ll_struc_size)
@@ -405,7 +433,7 @@ lp:     push    ecx
         test    eax,eax
         jnz     end_steep 
 
-        copy_path  library_name__, cur_dir_path__, library_path__     ;the macros making way /current pach a program/+ name system library
+        copy_path  library_name__, cur_dir_path__, library_path__,point_dir_name__     ;the macros making way /current pach a program/+ name system library
         
         mcall   68,19,library_path__ ; load of alternative
         test    eax,eax
@@ -413,7 +441,7 @@ lp:     push    ecx
 
         or      status_lib,0x1          ; status of code - enable error - not found library
 
-        show_error_window  err_message_found_lib__, head_f_l__    ;show error message /create window
+        show_error_window  err_message_found_lib__, head_f_l__,    ;show error message /create window
         jmp      next
 
 align 4
@@ -467,11 +495,12 @@ library_path__            equ [ebp+8]
 system_path__             equ [ebp+12]
 err_message_found_lib__   equ [ebp+16]   
 head_f_l__                equ [ebp+20]
-my_import               equ [ebp+24] 
+my_import                 equ [ebp+24] 
 err_message_import__      equ [ebp+28]
 head_f_i__                equ [ebp+32]
-adr_load_lib            equ dword [ebp+36]
-status_lib              equ dword [ebp+40]
+point_dir_name__          equ [ebp+36]
+adr_load_lib              equ dword [ebp+40]
+status_lib                equ dword [ebp+44]
 
         mov     ebp,_start
         mov     ecx,((_end-_start)/ll_struc_size)
@@ -479,7 +508,7 @@ status_lib              equ dword [ebp+40]
 align 4
 lp:     push    ecx
 
-        copy_path    library_name__, cur_dir_path__, library_path__   ;the macros making way /current pach a program/+ name system library
+        copy_path    library_name__, cur_dir_path__, library_path__,point_dir_name__   ;the macros making way /current pach a program/+ name system library
 
         mcall   68,19,library_path__  ; load of alternative
         test    eax,eax
@@ -534,16 +563,16 @@ exit_lp2:
 }
 
 
-macro copy_path lib_name,dir_path,lib_path
+macro copy_path lib_name,dir_path,lib_path,point_dir_name
 {
         pushad  ;save all registers
         push    dword lib_name
         push    dword dir_path
         push    dword lib_path
-
+        push	dword point_dir_name
         call    @copy_path
 
-        add     esp,12
+        add     esp,16
         popad   ;restore all registers
 }
 
@@ -613,21 +642,25 @@ import_done:
 e.exit: 
 ;---------------------------------------------------------------------
 }
-ll_struc_size = 44;($-library_name__)    ; constant   size of struct
-struc l_libs library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, my_import, err_message_import__, head_f_i__; struct for loading libraries
+ll_struc_size = 48;($-library_name__)    ; constant   size of struct
+struc l_libs library_name__, cur_dir_path__, library_path__, system_path__, err_message_found_lib__, head_f_l__, my_import, err_message_import__, head_f_i__,point_dir_name; struct for loading libraries
 {        
 .library_name__           dd library_name__        ; имя загружаемой библиотеки
 .cur_dir_path__           dd cur_dir_path__        ; указатель на буфер в котором содержиться путь от куда была запущена программа
                         
 .library_path__           dd library_path__        ; указатель на буфер в котором будет софоримирован путь к библиотеки, если нужно вычислить путь до либы с места запуска программы, обычно нужно, в случаях, если либа расположена в той же папке
-.complete_path          dd system_path__         ; путь который четко содержит путь
+.complete_path            dd system_path__         ; путь который четко содержит путь
 
 .err_message_found_lib__  dd err_message_found_lib__
 .head_f_l__               dd head_f_l__
-.my_import              dd my_import
+.my_import                dd my_import
 .err_message_import__     dd err_message_import__
 .head_f_i__               dd head_f_i__
-
+if point_dir_name eq
+.point_dir_name__	dd 0x0
+else
+.point_dir_name__	dd point_dir_name	   ; имя вложенной дирректории в кторой храняться подгружаемые модули.
+end if 
 .adr_load_lib           dd 0x0
 .status_lib             dd 0x0          ;status of load library
 ;
