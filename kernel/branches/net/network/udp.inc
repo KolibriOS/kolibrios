@@ -95,6 +95,8 @@ UDP_handler:
 	cmp	[eax + SOCKET.LocalPort], bx
 	jne	.next_socket
 
+	DEBUGF 1,"found socket with matching domain, type and localport\n"
+
 	; For dhcp, we must allow any remote server to respond.
 	; I will accept the first incoming response to be the one
 	; I bind to, if the socket is opened with a destination IP address of
@@ -103,15 +105,17 @@ UDP_handler:
 	je	.ok1
 
 	mov	ebx, [esp]
-	mov	ebx, [ebx + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet
-	cmp	[eax + SOCKET.RemoteIP], eax
+	mov	ebx, [ebx + ETH_FRAME.Data + IPv4_Packet.SourceAddress] ; get the Source address from the IP Packet   FIXME
+	cmp	[eax + SOCKET.RemoteIP], ebx
 	jne	.try_more					      ; Quit if the source IP is not valid, check for more sockets with this IP/PORT combination
 
+
+	DEBUGF 1,"Remote Ip matches\n"
   .ok1:
 
 	mov	bx, [edx + UDP_Packet.SourcePort]		      ; Remote port must be 0, or equal to sourceport of packet
 
-	cmp	[eax + SOCKET.RemotePort],0
+	cmp	[eax + SOCKET.RemotePort], 0
 	je	.ok2
 
 	cmp	[eax + SOCKET.RemotePort], bx

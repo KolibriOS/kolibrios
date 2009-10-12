@@ -675,40 +675,23 @@ lock	xadd	[DNSrequestID], eax	; atomically increment ID, get old value
 	mov	eax, 0x01000100
 	stosd
 ; 7. Get DNS server address.
-; Get number of running cards.
-	mcall	73, -1
-	xchg	eax, edx
-; Loop for all initialized network cards, scanning for initialized DNS address.
-	mov	ebx, 0x00000004 ; protocol IP=0, device number=0, function=get DNS address
-.get_dns_loop:
-	mcall	75
+	mcall	75, 0x00000004 ; protocol IP=0, device number=0, function=get DNS address
 	cmp	eax, -1
-	jz	.get_dns_next
-	test	ecx, ecx
-	jnz	.got_dns
-	dec	edx
-	jz	.get_dns_done
-.get_dns_next:
-	inc	bh
-	jnz	.get_dns_loop
-; all possible devices were checked, none found - return error
-.get_dns_done:
-	jmp	.ret.dnserr
-.got_dns:
-	mov	esi, ecx	; put server address to esi
+	je	.ret.dnserr
+	mov	esi, eax	; put server address to esi
 ; 8. Open UDP socket to DNS server, port 53.
 ; 8a. Create new socket.
 	mcall	74, 0, AF_INET, IPPROTO_UDP
 	cmp	eax, -1 ; error?
 	jz	.ret.dnserr
-	xchg	ecx, eax	; put socket handle to ecx
+	mov	ecx, eax	; put socket handle to ecx
 ; 8b. Create sockaddr structure on the stack.
 	push	0
 	push	0	; sin_zero
 	push	esi	; sin_addr
 	push	AF_INET + (53 shl 24)
 			; sin_family and sin_port in network byte order
-; 8c. Call the system.
+; 8c. Connect.
 	mcall	74, 4, , esp, sizeof.sockaddr_in
 ; 8d. Restore the stack, undo 8b.
 	add	esp, esi
@@ -778,7 +761,7 @@ end virtual
 ; 2. Read UDP datagram.
 	mov	ecx, [edi+__gai_reqdata.socket]
 	push	edi
-	mcall	74, 6, , , 512, 0
+	mcall	74, 7, , , 512, 0
 	pop	edi
 ; 3. Ignore events for other sockets (return if no data read)
 	test	eax, eax

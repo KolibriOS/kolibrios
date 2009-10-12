@@ -722,9 +722,11 @@ socket_send:
 	cmp	[eax + SOCKET.LocalPort],0
 	jne	.port_ok
 
+	push	esi
 	mov	ecx, [eax + SOCKET.Type]
 	call	socket_find_port
 	test	bx, bx
+	pop	esi
 	je	s_error
 	mov	[eax + SOCKET.LocalPort], bx
 
@@ -733,7 +735,7 @@ socket_send:
 	mov	ecx, esi
 	mov	esi, edx
 	mov	edx, dword [eax + SOCKET.LocalPort] ; load local port and remote port at once
-	DEBUGF	1,"local port: %x, remote port: %x\n",[eax + SOCKET.LocalPort]:2, [eax + SOCKET.RemotePort]:2
+	DEBUGF	1,"local port: %x, remote port: %x\n",[eax + SOCKET.LocalPort]:4, [eax + SOCKET.RemotePort]:4
 	mov	ebx, [eax + SOCKET.LocalIP]
 	mov	eax, [eax + SOCKET.RemoteIP]
 
@@ -787,7 +789,7 @@ socket_send:
 align 4
 socket_find_port:
 
-	DEBUGF	1,"Socket_find_free_port, type: %u ",eax
+	DEBUGF	1,"Socket_find_free_port\n"
 
 	cmp	ecx, IP_PROTO_UDP
 	je	.udp

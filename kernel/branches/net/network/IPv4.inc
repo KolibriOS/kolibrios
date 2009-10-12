@@ -512,6 +512,16 @@ IPv4_create_packet:
 	cmp	ecx, 1480
 	jg	.exit_
 
+	cmp	ebx, ebx	      ; if dest ip = 0
+	jnz	.ip_ok		      ; and local ip is valid
+				      ; use local ip instead
+	cmp	[IP_LIST],0xffffffff  ;
+	je	.ip_ok		      ; TODO: find solution to send broadcast
+				      ; on device other then device 0
+	mov	ebx, [IP_LIST]	      ;
+				      ;
+  .ip_ok:			      ;
+
 	push	ecx eax ebx dx di
 
 	cmp	eax, -1
