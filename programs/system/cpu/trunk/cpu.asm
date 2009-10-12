@@ -3,12 +3,15 @@
 ;
 ;   VTurjanmaa
 ;   additions by M.Lisovin lisovin@26.ru
+;   integrated with load_lib.obj by <Lrz>
 ;   Compile with FASM for Menuet
 ;
 
   use32
   org    0x0
 STACK_SIZE=1024
+offset_y=22
+offset_x=5
   db     'MENUET01'              ; 8 byte id
   dd     0x01                    ; header version
   dd     START                   ; start of code
@@ -19,9 +22,17 @@ STACK_SIZE=1024
 
 include 'lang.inc'
 include '..\..\..\macros.inc'
+include '..\..\..\develop\libraries\box_lib\asm\trunk\editbox_ex.mac'
+include '..\..\..\develop\libraries\box_lib\load_lib.mac'
 display_processes=32            ; number of processes to show
+@use_library	;use load lib macros
 align 4
 START:                          ; start of execution
+
+sys_load_library  library_name, cur_dir_path, library_path, system_path, \
+err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
+        inc     eax
+        jz      close
 ; calculate window position
 ; at the center of the screen
     call calculate_window_pos
@@ -36,7 +47,7 @@ red:
 align 4
 still:
     mov  eax,23                 ; wait here for event
-    mov  ebx,200                ; 2 sec.
+    mov  ebx,100                ; 2 sec.
     mcall
 
     dec  eax                  ; redraw request ?
@@ -45,6 +56,10 @@ still:
     jz   key
     dec  eax                  ; button in buffer ?
     jz   button
+
+        push    dword edit1
+        call    [edit_box_mouse]
+
 align 4
 still_end:    
     xor  ebp,ebp                ; draw new state of processes
@@ -55,12 +70,17 @@ align 4
   key:                          ; key
     mov  eax,2                  
     mcall
+
     cmp  ah,184                 ; PageUp
     je   pgdn
     cmp  ah,183
     je   pgup                   ; PageDown
     cmp  ah,27
     je   close                  ; Esc
+
+        push    dword edit1
+        call    [edit_box_key]
+
     jmp  still_end
 align 4
   button:                       
@@ -101,8 +121,8 @@ align 4
     dec  eax
     jz   pgup
     dec  eax
-    jz   read_string
-    dec  eax
+;    jz   read_string
+;    dec  eax
     jz   program_start
     dec  eax
     jz   reboot
@@ -158,7 +178,7 @@ align 4
 .nodelete:
 ;create terminate process button
     mov   eax,8
-    mov   ebx,15*65536+100
+    mov   ebx,(15-offset_x)*65536+100-offset_y
     mov   ecx,[curposy]
     shl   ecx,16
     mov   cx,10
@@ -175,7 +195,7 @@ align 4
     
 ;draw background for proccess information
     mov   eax,13
-    mov   ebx,115*65536+395
+    mov   ebx,(115-offset_x)*65536+395
     ;ecx was already set
     mov   edx,0x88ff88
 ;contrast
@@ -222,7 +242,7 @@ align 4
     jmp   .find_loop
 align 4    
 .no_processes:
-    mov   edi,-1
+    or   edi,-1
     ret
 align 4    
 .process_found:
@@ -275,14 +295,14 @@ align 4
 ;ecx haven't changed since .process_found    
 ;    mov  ecx,edi
     mov  edx,[curposy]
-    add  edx,20*65536+1
+    add  edx,(20-offset_x)*65536+1
     mov  esi,[tcolor]
     mcall
     
 ;show process name
     mov  eax,4
     mov  ebx,[curposy]
-    add  ebx,50*65536+1
+    add  ebx,(50-offset_x)*65536+1
     mov  ecx,[tcolor]
     mov  edx,process_info_buffer.process_name
     mov  esi,11
@@ -293,7 +313,7 @@ align 4
     mov  ebx,8*65536+1*256
     mov  ecx,[process_info_buffer.PID]
     mov  edx,[curposy]
-    add  edx,130*65536+1
+    add  edx,(130-offset_x)*65536+1
     mov  esi,[tcolor]
     mcall
     
@@ -338,114 +358,115 @@ align 4
     mov  [tasklist+4*eax],edi        
     ret
 align 4
-read_string:
-
+;read_string:
 ;clean string
-    mov  edi,start_application
-    xor  eax,eax
-    mov  ecx,60
-    cld
-    rep  stosb
-    call print_text
+;    mov  edi,start_application
+;    xor  eax,eax
+;    mov  ecx,60
+;    cld
+;    rep  stosb
+;    call print_text
 
-    mov  edi,start_application
+;    mov  edi,start_application
 ;edi now contains pointer to last symbol       
-    jmp  still1
+;    jmp  still1
 
 ;read string main loop
 align 4
   f11:
 ;full update  
     push edi
-    mov  ebp,1
+	xor	ebp,ebp
+	inc	ebp
+;    mov  ebp,1
     call draw_window
     pop  edi
-align 4
-  still1:  
+;align 4
+;  still1:  
 ;wait for message  
-    mov  eax,23
-    mov  ebx,100
-    mcall
-    cmp  eax,1
-    je   f11
+;    mov  eax,23
+;    mov  ebx,100
+;    mcall
+;    cmp  eax,1
+;    je   f11
 ;if no message - update process information    
-    cmp  eax,0
-    jnz  .message_received
-    push edi                ;edi should be saved since draw_window
-    xor  ebp,ebp            ;corrupt registers
-    call draw_window
-    pop  edi
-    jmp  still1
-align 4    
-.message_received:
-    cmp  eax,2
-    jne  read_done          ;buttons message
+;    cmp  eax,0
+;    jnz  .message_received
+;    push edi                ;edi should be saved since draw_window
+;    xor  ebp,ebp            ;corrupt registers
+;    call draw_window
+;    pop  edi
+;    jmp  still1
+;align 4    
+;.message_received:
+;    cmp  eax,2
+;    jne  read_done          ;buttons message
 ;read char    
-    mov  eax,2
-    mcall
-    shr  eax,8
+;    mov  eax,2
+;    mcall
+;    shr  eax,8
     
 ;if enter pressed, exit read string loop    
-    cmp  eax,13
-    je   read_done
+;    cmp  eax,13
+;    je   read_done
 ;if backslash pressed?    
-    cmp  eax,8
-    jnz  nobsl
+;    cmp  eax,8
+;    jnz  nobsl
 ;decrease pointer to last symbol    
-    cmp  edi,start_application
-    jz   still1
-    dec  edi
+;    cmp  edi,start_application
+;    jz   still1
+;    dec  edi
 ;fill last symbol with space because
 ;print_text show all symbols    
-    mov  [edi],byte 32
-    call print_text
-    jmp  still1
-align 4    
-  nobsl:
+;    mov  [edi],byte 32
+;    call print_text
+;    jmp  still1
+;align 4    
+;  nobsl:
 ;write new symbol  
-    mov  [edi],al
+;    mov  [edi],al
 ;display new text
-    call print_text
+;    call print_text
 ;increment pointer to last symbol
-    inc  edi
+;    inc  edi
 ;compare with end of string    
-    mov  esi,start_application
-    add  esi,60
-    cmp  esi,edi
-    jnz  still1
+;    mov  esi,start_application
+;    add  esi,60
+;    cmp  esi,edi
+;    jnz  still1
 
 ;exiting from read string loop
-align 4
-  read_done:
+;align 4
+;  read_done:
 ;terminate string for file functions
-    mov  [edi],byte 0
+;    mov  [edi],byte 0
 
-    call print_text
-    jmp  still
+;    call print_text
+;    jmp  still
 
-align 4
-print_text:
+;align 4
+;print_text:
 ;display start_application string
 
-    pushad
+;    pushad
     
 ;display text background
-    mov  eax,13
-    mov  ebx,64*65536+62*6
-    mov  ecx,400*65536+12
-    mov  edx,0xffffcc  ;0xeeeeee
-    mcall
+;    mov  eax,13
+;    mov  ebx,64*65536+62*6
+;    mov  ecx,400*65536+12
+;    mov  edx,0xffffcc  ;0xeeeeee
+;    mcall
     
 ;display text    
-    mov  eax,4                  
-    mov  edx,start_application  ;from start_application string
-    mov  ebx,70*65536+402       ;text center-aligned
-    xor  ecx,ecx                ;black text
-    mov  esi,60                 ;60 symbols
-    mcall
+;    mov  eax,4                  
+;    mov  edx,start_application  ;from start_application string
+;    mov  ebx,70*65536+402       ;text center-aligned
+;    xor  ecx,ecx                ;black text
+;    mov  esi,60                 ;60 symbols
+;    mcall
 
-    popad
-    ret
+;    popad
+;    ret
 
 window_x_size=524
 window_y_size=430
@@ -500,23 +521,27 @@ draw_window:
     xor  eax,eax                   ; function 0 : define and draw window
     mov  ebx,[winxpos]             ; [x start] *65536 + [x size]
     mov  ecx,[winypos]             ; [y start] *65536 + [y size]
-    mov  edx,0x14ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
+    mov  edx,0x34ddffdd  ;ffffff   ; color of work area RRGGBB,8->color
     mov  edi,title                ; WINDOW CAPTION;
     mcall
 
                                    
-    mov  eax,4                     ; function 4 : write text to window
-    mov  ebx,22*65536+35           ; draw info text with function 4
+    add  eax,4                     ; function 4 : write text to window
+    mov  ebx,(22-offset_x)*65536+35-offset_y           ; draw info text with function 4
     xor  ecx,ecx
     mov  edx,text
     mov  esi,text_len
     mcall
+
+        push    dword edit1
+        call    [edit_box_draw]
+
 align 4
 .show_process_info:
     mov  edi,[list_start]
     mov  [list_add],edi
     mov  dword [index],0
-    mov  dword [curposy],54
+    mov  dword [curposy],54-offset_y
 align 4
 .loop_draw:
     call draw_next_process
@@ -531,24 +556,24 @@ align 4
     mov  esi,0xaabbcc
                                     
 ; previous page button
-    mov  ebx,30*65536+96
-    mov  ecx,380*65536+10
+    mov  ebx,(30-offset_x)*65536+96
+    mov  ecx,(380-offset_y)*65536+10
     mov  edx,51
     mcall
                                     
 ; next page button
-    mov  ebx,130*65536+96
+    mov  ebx,(130-offset_x)*65536+96
     inc  edx
     mcall
                               
 ; ">" (text enter) button
-    mov  ebx,30*65536+20
+;    mov  ebx,30*65536+20
     add  ecx,20 shl 16
-    inc  edx
-    mcall
+;    inc  edx
+;    mcall
                                     
 ; run button
-    mov  ebx,456*65536+50
+    mov  ebx,(456-offset_x)*65536+50
     inc  edx
     mcall
 
@@ -561,30 +586,30 @@ align 4
     
 ;"PREV PAGE", "NEXT PAGE" and "REBOOT" labels
     mov  eax,4
-    mov  ebx,50*65536+382
+    mov  ebx,(50-offset_x)*65536+382-offset_y
     xor  ecx,ecx
     mov  edx,tbts
     mov  esi,tbte-tbts
     mcall
 
 ;">" labels
-    mov  eax,4
-    mov  ebx,40*65536+402
-    xor  ecx,ecx
-    mov  edx,tbts_2
-    mov  esi,1
-    mcall
+;    mov  eax,4
+;    mov  ebx,40*65536+402
+;    xor  ecx,ecx
+;    mov  edx,tbts_2
+;    mov  esi,1
+;    mcall
 
 ;"RUN" labels
-    mov  eax,4
-    mov  ebx,475*65536+402
+;    mov  eax,4
+    mov  ebx,(475-offset_x)*65536+402-offset_y
     xor  ecx,ecx
     mov  edx,tbts_3
     mov  esi,tbte_2-tbts_3
     mcall
 
 ;print application name in text box
-    call print_text
+;    call print_text
 
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
@@ -595,14 +620,52 @@ align 4
 
 
 ; DATA AREA
+system_path      db '/sys/lib/'
+library_name     db 'box_lib.obj',0
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+err_message_found_lib   db 'Sorry I cannot load library box_lib.obj',0
+head_f_i:
+head_f_l        db 'System error',0
+err_message_import      db 'Error on load import library box_lib.obj',0
+
+myimport:   
+
+edit_box_draw   dd      aEdit_box_draw
+edit_box_key    dd      aEdit_box_key
+edit_box_mouse  dd      aEdit_box_mouse
+;version_ed      dd      aVersion_ed
+
+;check_box_draw  dd      aCheck_box_draw
+;check_box_mouse dd      aCheck_box_mouse
+;version_ch      dd      aVersion_ch
+
+;option_box_draw  dd      aOption_box_draw
+;option_box_mouse dd      aOption_box_mouse
+;version_op       dd      aVersion_op
+
+                dd      0
+                dd      0
+
+aEdit_box_draw  db 'edit_box',0
+aEdit_box_key   db 'edit_box_key',0
+aEdit_box_mouse db 'edit_box_mouse',0
+;aVersion_ed     db 'version_ed',0
+
+;aCheck_box_draw  db 'check_box_draw',0
+;aCheck_box_mouse db 'check_box_mouse',0
+;aVersion_ch      db 'version_ch',0
+
+;aOption_box_draw  db 'option_box_draw',0
+;aOption_box_mouse db 'option_box_mouse',0
+;aVersion_op       db 'version_op',0
+
+edit1 edit_box 350,(64-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,ed_focus,start_application_e,start_application_e
+
 list_start  dd 0
 
 file_start: dd 7
             dd 0,0,0,0
-
-start_application: db '/sys/LAUNCHER',0
-                   times 60 db 32
-
 sys_reboot:
             dd 7
             dd 0
@@ -613,13 +676,13 @@ sys_reboot:
 
 if lang eq de
 text:
-  db ' NAME/BEENDEN       PID     CPU-LAST   % '
+  db 'NAME/BEENDEN        PID     CPU-LAST   % '
   db 'SPEICHER START/NUTZUNG  W-STACK  W-SIZE'
 text_len = $-text
 
 tbts:   db  'SEITE ZURUECK       SEITE VOR                      REBOOT SYSTEM'
 tbte:
-tbts_2  db  '>'
+;tbts_2  db  '>'
 tbts_3  db  'START'
 tbte_2:
 
@@ -627,13 +690,13 @@ title  db   'Prozesse  - Ctrl/Alt/Del',0
 
 else if lang eq et
 text:
-  db ' NIMI/LÕPETA        PID    CPU-KASUTUS %   '
+  db 'NIMI/LÕPETA         PID    CPU-KASUTUS %   '
   db 'MÄLU ALGUS/KASUTUS  W-PUHVER  W-SUURUS'
 text_len = $-text
 
 tbts:	db  'EELMINE LEHT   JÄRGMINE LEHT                     REBOODI SÜSTEEM'
 tbte:
-tbts_2	db  '>'
+;tbts_2	db  '>'
 tbts_3	db  'START'
 tbte_2:
 
@@ -641,22 +704,26 @@ title  db   'Protsessid - Ctrl/Alt/Del',0
 
 else
 text:
-  db ' NAME/TERMINATE     PID     CPU-USAGE  %   '
+  db 'NAME/TERMINATE      PID     CPU-USAGE  %   '
   db 'MEMORY START/USAGE  W-STACK   W-SIZE'
 text_len = $-text
 
 tbts:   db  'PREV PAGE       NEXT PAGE                         REBOOT SYSTEM'
 tbte:
-tbts_2  db  '>'
+;tbts_2  db  '>'
 tbts_3  db  'RUN'
 tbte_2:
 
 title  db   'Processes - Ctrl/Alt/Del',0
 
 end if
-
+start_application: db '/sys/LAUNCHER',0
+start_application_e=$-start_application-1
+;                   times 60 db 0
+rb	60
+start_application_c=$-start_application-1
+align 4
 I_END:
-
 winxpos  rd 1
 winypos  rd 1
 
@@ -667,4 +734,7 @@ curposy     rd 1
 index       rd 1
 tasklist    rd display_processes
 process_info_buffer process_information
+cur_dir_path    rb 1024
+library_path    rb 1024
+align 4
 U_END:
