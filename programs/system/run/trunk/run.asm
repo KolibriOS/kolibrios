@@ -238,7 +238,7 @@ draw_status_text:
 ret
 
 run_but txt_button 0,5,15,25,2,0,0,run_but_text,
-input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0,511,fn,ed_focus+ed_always_focus
+input_fn edit_box 0,5,5,0xffffff,0x6a9480,0,0xaaaaaa,0,511,fn,mouse_dd,ed_focus+ed_always_focus
 ;mouse_flag: dd 0x0
 
 if lang eq ru
@@ -316,7 +316,7 @@ procinfo process_information
 run_par rb 256
 par rb 256
 fn rb 512
-
+mouse_dd	rd 1
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 cur_dir_path    rb 4096
 library_path    rb 4096

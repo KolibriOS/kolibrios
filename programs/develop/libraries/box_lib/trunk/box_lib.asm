@@ -25,68 +25,69 @@ include 'filebrowser.mac' ;macro implements filebrowser
 ;----------------------------------------------------
 ;EditBox
 ;----------------------------------------------------
-align 4
+align 16
 use_editbox_draw        ;macro reveals the function of the display.
-align 4
+align 16
 use_editbox_key         ;macro reveals processing function of the keypad.
-align 4
+align 16
 use_editbox_mouse       ;macro reveals processing function of the mouse.
 
 ;----------------------------------------------------
 ;CheckBox
 ;----------------------------------------------------
-align 4
+align 16
 use_checkbox_draw       ;macro reveals the function of the display.
-align 4
+align 16
 use_checkbox_mouse      ;macro reveals processing function of the mouse.
 
 
 ;--------------------------------------------------
 ;radiobutton Group
 ;--------------------------------------------------
-align 4
+align 16
 use_optionbox_driver    ;macro that control the operating modes
-align 4
+align 16
 use_optionbox_draw      ;macro reveals the function of the display.
-align 4
+align 16
 use_optionbox_mouse     ;macro reveals processing function of the mouse.
 
 ;--------------------------------------------------
 ;scrollbar Group
 ;--------------------------------------------------
-align 4
+align 16
 use_scroll_bar
-align 4
+align 16
 use_scroll_bar_vertical
-align 4
+align 16
 use_scroll_bar_horizontal
 
 ;--------------------------------------------------
 ;dinamic button Group
 ;--------------------------------------------------
-align 4
+align 16
 use_dinamic_button
 
 ;--------------------------------------------------
 ;menubar Group
 ;--------------------------------------------------
-align 4
+align 16
 use_menu_bar
 
 ;--------------------------------------------------
 ;filebrowser Group
 ;--------------------------------------------------
-align 4
+align 16
 use_file_browser
 ;--------------------------------------------------
+;align 16
 init:
 ret
 
 ;;;;;;;;;;;
 ;;Data
 ;;;;;;;;;;;
-align 4
-mouse_flag dd 0x0
+;align 16
+;mouse_flag dd 0x0
 
 
 align 16

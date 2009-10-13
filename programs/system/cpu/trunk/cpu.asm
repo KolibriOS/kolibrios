@@ -658,7 +658,7 @@ aEdit_box_mouse db 'edit_box_mouse',0
 ;aOption_box_mouse db 'option_box_mouse',0
 ;aVersion_op       db 'version_op',0
 
-edit1 edit_box 350,(64-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,ed_focus,start_application_e,start_application_e
+edit1 edit_box 350,(64-offset_x),(398-offset_y),0xffffff,0x6f9480,0,0xAABBCC,0,start_application_c,start_application,mouse_dd,ed_focus,start_application_e,start_application_e
 
 list_start  dd 0
 
@@ -724,7 +724,7 @@ start_application_c=$-start_application-1
 I_END:
 winxpos  rd 1
 winypos  rd 1
-
+mouse_dd	rd 1
 cpu_percent rd 1
 tcolor      rd 1
 list_add    rd 1

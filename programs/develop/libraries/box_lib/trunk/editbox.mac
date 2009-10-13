@@ -1,6 +1,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Basic macros for use editbox                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+macro init_editbox
+{
+pushad
+	mcall
+
+popad
+}
+
+
 macro use_editbox_draw
 {
 edit_box:
@@ -14,14 +23,15 @@ ed_blur_border_color    equ [edi+24]    ;цвет не активного компонента
 ed_text_color   equ [edi+28]            ;цвет текста
 ed_max          equ [edi+32]                    ;кол-во символов которые можно максимально ввести
 ed_text         equ [edi+36]                    ;указатель на буфер
-ed_flags        equ [edi+40]            ;флаги
-ed_size equ [edi+44]                    ;кол-во символов
-ed_pos  equ [edi+48]                    ;позиция курсора
-ed_offset       equ [edi+52]            ;смещение
-cl_curs_x       equ [edi+56]            ;предыдущее координата курсора по х
-cl_curs_y       equ [edi+60]            ;предыдущее координата курсора по у
-ed_shift_pos    equ [edi+64]            ;положение курсора
-ed_shift_pos_old equ [edi+68]           ;старое положение курсора
+ed_mouse_variable 	equ [edi+40]	; указатель на переменную для бокса/группы 
+ed_flags        equ [edi+44]            ;флаги
+ed_size equ [edi+48]                    ;кол-во символов
+ed_pos  equ [edi+52]                    ;позиция курсора
+ed_offset       equ [edi+56]            ;смещение
+cl_curs_x       equ [edi+60]            ;предыдущее координата курсора по х
+cl_curs_y       equ [edi+64]            ;предыдущее координата курсора по у
+ed_shift_pos    equ [edi+68]            ;положение курсора
+ed_shift_pos_old equ [edi+72]           ;старое положение курсора
 
 ed_figure_only= 1000000000000000b   ;одни символы
 ed_always_focus= 100000000000000b
@@ -62,7 +72,7 @@ ed_height=14 ; высота
 ;--- рисуем курсор ---
         ;--- может его не надо рисовать ----
         test    word ed_flags,ed_focus
-        je     @f
+        jz     	@f
         call    .draw_cursor
 @@:
         call    .draw_text
@@ -138,14 +148,18 @@ pushad
         test    eax,1
         jnz     edit_box_mouse.mouse_left_button
         and     word ed_flags,ed_mouse_on_off
-        xor     ebx,ebx
-        mov     dword [mouse_flag],ebx
+	mov	ebx,dword ed_mouse_variable
+	push	0
+	pop	dword [ebx]
+;        mov     dword [ebx],ebx
         jmp     edit_box.editbox_exit
 .mouse_left_button:
 ;----------------------------------------------------------
 ;--- блокировка от фокусировки в других боксах при попадании на них курсора
 ;----------------------------------------------------------
-        mov     eax,dword [mouse_flag]
+        mov     eax,dword ed_mouse_variable
+	push	dword [eax]
+	pop	eax
         test    eax,eax
         jz      @f
         cmp     eax,edi
@@ -435,7 +449,8 @@ edit_box_key.sh_cl_:
         push    ebx  ;большее
         jmp     edit_box_key.sh_n1
                      ;если иначе
-edit_box_key.sh_n:  push    ebx  
+edit_box_key.sh_n:
+	push    ebx  
         push    eax
 edit_box_key.sh_n1: 
         call    edit_box.check_offset
@@ -920,7 +935,8 @@ popa
         stosb
         ;--------
         loop    @b
-edit_box_key.In_k:  cld
+edit_box_key.In_k:  
+	cld
         pop eax
         mov al,ah
         stosb
@@ -1015,7 +1031,8 @@ edit_box_key.draw_all2:
         ret
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша left ---
-edit_box_key.left:  mov     ebx,ed_pos
+edit_box_key.left:  
+	mov     ebx,ed_pos
         test    ebx,ebx
         jz      edit_box_key.sh_st_of
         or      word ed_flags,ed_left_fl
@@ -1025,7 +1042,8 @@ edit_box_key.left:  mov     ebx,ed_pos
         jmp     edit_box.draw_cursor_text
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;--- нажата клавиша right ---
-edit_box_key.right: mov     ebx,ed_pos
+edit_box_key.right: 
+	mov     ebx,ed_pos
         cmp     ebx,ed_size
         je      edit_box_key.sh_st_of
         and     word ed_flags,ed_right_fl
@@ -1218,7 +1236,16 @@ edit_box_mouse._mshift:
         mov     dword ed_shift_pos,eax
         or      word  ed_flags,ed_mouse_on
         mov     dword ed_pos,eax
-        mov     dword [mouse_flag],edi          ;установим идентификатор
+
+;        mov     dword [mouse_flag],edi          ;установим идентификатор
+
+       	mov	ebx,dword ed_mouse_variable
+	push	edi
+	pop	dword [ebx]
+
+
+
+
         bts     word ed_flags,1                 ;установка фокуса
         jmp     edit_box_mouse.m_sh
 @@:             
@@ -1229,7 +1256,8 @@ edit_box_mouse._mshift:
         mov     ebx,dword ed_shift_pos
         call    edit_box_key.sh_cl_
         or      word ed_flags,ed_mous_adn_b     ;установим бит что мы выделили +shift_on +
-edit_box_mouse.m_sh:  call    edit_box.draw_text
+edit_box_mouse.m_sh:  
+	call    edit_box.draw_text
         call    edit_box.draw_cursor
 ;----------------------------------------------------------
 ;--- процедура установки фокуса ---------------------------
@@ -1350,9 +1378,9 @@ ed_mouse_on_off=1111111011111111b
 ed_height=24 ; высота
 }
 
-ed_struc_size=72
+ed_struc_size=76
 struc  edit_box width,left,top,color,shift_color,focus_border_color,\
-       blur_border_color,text_color,max,text,flags,size,pos
+       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
 {
 .width dd width
 .left dd left
@@ -1364,6 +1392,7 @@ struc  edit_box width,left,top,color,shift_color,focus_border_color,\
 .text_color dd text_color
 .max dd max
 .text dd text
+.mouse_variable dd mouse_variable
 .flags dd flags+0
 .size dd size+0
 .pos dd pos+0

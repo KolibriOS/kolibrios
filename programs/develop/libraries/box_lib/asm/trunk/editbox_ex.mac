@@ -1,6 +1,6 @@
-ed_struc_size=72
+ed_struc_size=76
 struc  edit_box width,left,top,color,shift_color,focus_border_color,\
-       blur_border_color,text_color,max,text,flags,size,pos
+       blur_border_color,text_color,max,text,mouse_variable,flags,size,pos
 {
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;Bit mask from editbox 
@@ -37,6 +37,7 @@ ed_height=14 ; высота
 .text_color dd text_color
 .max dd max
 .text dd text
+.mouse_variable dd mouse_variable
 .flags dd flags+0
 .size dd size+0
 .pos dd pos+0

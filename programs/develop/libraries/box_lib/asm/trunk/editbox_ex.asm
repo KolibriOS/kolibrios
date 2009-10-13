@@ -151,8 +151,8 @@ aVersion_op       db 'version_op',0
 check1 check_box 10,45,6,12,0x80AABBCC,0,0,check_text,14,ch_flag_en
 check2 check_box 10,60,6,12,0x80AABBCC,0,0,check_text2,15
 
-edit1 edit_box 350,3,5,0xffffff,0x6f9480,0,0xAABBCC,0,308,hed,ed_focus,hed_end-hed-1,hed_end-hed-1
-edit2 edit_box 350,3,25,0xffffff,0x6a9480,0,0,0,99,ed_buffer,ed_figure_only
+edit1 edit_box 350,3,5,0xffffff,0x6f9480,0,0xAABBCC,0,308,hed,mouse_dd,ed_focus,hed_end-hed-1,hed_end-hed-1
+edit2 edit_box 350,3,25,0xffffff,0x6a9480,0,0,0,99,ed_buffer,mouse_dd,ed_figure_only
 
 op1 option_box option_group1,10,90,6,12,0xffffff,0,0,op_text.1,op_text.e1-op_text.1
 op2 option_box option_group1,10,105,6,12,0xFFFFFF,0,0,op_text.2,op_text.e2-op_text.2
@@ -180,6 +180,8 @@ op_text:                ; Сопровождающий текст для чек боксов
 ed_buffer       rb 100
 ;-----------------------
 ;sc      system_colors
+
+mouse_dd	rd 1
 p_info  process_information
 cur_dir_path    rb 4096
 library_path    rb 4096

@@ -602,10 +602,10 @@ status label 5,201,0,no_shoot
 labels_end:
 
 editboxes:
-edit1 edit_box 300,5,35,cl_white,0xaabbcc,0,0,0,300,ed_buffer.1,ed_focus,10,10        ; путь к файлу
-edit2 edit_box 35,75,134,cl_white,0xaabbcc,0,0,0,9,ed_buffer.2,ed_figure_only,3,3         ; задержка
-edit3 edit_box 35,165,164,cl_white,0xaabbcc,0,0,0,9,ed_buffer.3,ed_figure_only    ; автонумерация
-edit4 edit_box 16,165,181,cl_white,0xaabbcc,0,0,0,1,sign_n_input,ed_figure_only,1
+edit1 edit_box 300,5,35,cl_white,0xaabbcc,0,0,0,300,ed_buffer.1,mouse_dd,ed_focus,10,10        ; путь к файлу
+edit2 edit_box 35,75,134,cl_white,0xaabbcc,0,0,0,9,ed_buffer.2,mouse_dd,ed_figure_only,3,3         ; задержка
+edit3 edit_box 35,165,164,cl_white,0xaabbcc,0,0,0,9,ed_buffer.3,mouse_dd,ed_figure_only    ; автонумерация
+edit4 edit_box 16,165,181,cl_white,0xaabbcc,0,0,0,1,sign_n_input,mouse_dd,ed_figure_only,1
 editboxes_end:
 
 buttons:
@@ -806,6 +806,7 @@ set_rect_window_procinfo procinfo  ; информация об окне области
 shoot_esp rb 512                   ; стек потока фотканья
 set_rect_window_esp rb 512         ; стек окна области
 ;        app_end    ; конец программы
+mouse_dd	rd 1
 align 4
 cur_dir_path    rb 4096
 library_path    rb 4096

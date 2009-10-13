@@ -281,7 +281,7 @@ draw_window:
 title db appname,version,0
 
 editbox:
-edit1 edit_box 170,10,113,0xffffff,0xaabbcc,0,0,0,512,path4,ed_focus,26,26
+edit1 edit_box 170,10,113,0xffffff,0xaabbcc,0,0,0,512,path4,mouse_dd,ed_focus,26,26
 editbox_end:
 
 if lang eq ru
@@ -366,7 +366,7 @@ path4   db '/hd0/1/kolibri/kolibri.img',0  ;для резервного сохранения
 rb 514
 
 sc     system_colors
-
+mouse_dd	rd 1
 cur_dir_path    rb 4096
 library_path    rb 4096
 align 4

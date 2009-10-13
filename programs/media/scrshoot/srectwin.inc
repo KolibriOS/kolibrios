@@ -264,15 +264,15 @@ aVersion_op       db 'version_op',0
 
 rect_input:
 .left   edit_box 35,95,5,cl_white,0,0,0,5,rect_input_buffer.left,\
-ed_figure_only+ed_focus
+mouse_dd1,ed_figure_only+ed_focus
 .top    edit_box 35,95,25,cl_white,0,0,0,5,rect_input_buffer.top,\
-ed_figure_only
+mouse_dd1,ed_figure_only
 .width  edit_box 35,95,45,cl_white,0,0,0,5,rect_input_buffer.width,\
-ed_figure_only
+mouse_dd1,ed_figure_only
 .height edit_box 35,95,65,cl_white,0,0,0,5,rect_input_buffer.height,\
-ed_figure_only
+mouse_dd1,ed_figure_only
 rect_input_end:
-
+mouse_dd1	rd 1
 rect_input_labels:
 .left label 10,10,0,rect_input_labels_text.left
 .top label 10,30,0,rect_input_labels_text.top
