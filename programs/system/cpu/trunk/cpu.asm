@@ -26,7 +26,6 @@ include '../../../develop/libraries/box_lib/asm/trunk/editbox_ex.mac'
 include '../../../develop/libraries/box_lib/load_lib.mac'
 display_processes=32            ; number of processes to show
 @use_library	;use load lib macros
-align 4
 START:                          ; start of execution
 
 sys_load_library  library_name, cur_dir_path, library_path, system_path, \
@@ -38,13 +37,12 @@ err_message_found_lib, head_f_l, myimport, err_message_import, head_f_i
     call calculate_window_pos
     
 ;main loop when process name isn't edited.    
-align 4
 red:    
 	xor	ebp,ebp
 	inc	ebp
 ;    mov  ebp,1
     call draw_window            ; redraw all window
-align 4
+align 16
 still:
     mov  eax,23                 ; wait here for event
     mov  ebx,100                ; 2 sec.
@@ -60,13 +58,13 @@ still:
         push    dword edit1
         call    [edit_box_mouse]
 
-align 4
+
 still_end:    
     xor  ebp,ebp                ; draw new state of processes
     call draw_window
     jmp  still
 
-align 4
+
   key:                          ; key
     mov  eax,2                  
     mcall
@@ -82,7 +80,7 @@ align 4
         call    [edit_box_key]
 
     jmp  still_end
-align 4
+
   button:                       
 ; get button id  
     mov  eax,17                 
@@ -109,7 +107,7 @@ align 4
     mov  ebx,2
     mcall
     jmp  still_end 
-align 4
+
   noterm:
 
 ;special buttons
@@ -129,35 +127,35 @@ align 4
     jmp  still_end
     
 ;buttons handlers    
-align 4
+
   pgdn:
     sub  [list_start],display_processes
 ;    cmp  [list_start],0
     jge  still_end  
     mov  [list_start],0
     jmp  still_end  
-align 4
+
   pgup:
     mov  eax,[list_add]  ;maximal displayed process slot
     mov  [list_start],eax
     jmp  still_end  
-align 4    
+    
   program_start:    
     mov  eax,70
     mov  ebx,file_start
     mcall
     jmp  still_end
-align 4    
+    
   reboot:    
     mov  eax,70
     mov  ebx,sys_reboot
     mcall
 ;close program if we going to reboot
-align 4
+
   close:
     or   eax,-1                 ; close this program
     mcall
-align 4
+
 draw_next_process:
 ;input:
 ;  edi - current slot
@@ -174,7 +172,7 @@ draw_next_process:
     mov   edx,[index]
     add   edx,(1 shl 31)+11
     mcall
-align 4
+
 .nodelete:
 ;create terminate process button
     mov   eax,8
@@ -189,7 +187,7 @@ align 4
     test  dword [index],1
     jz    .change_color_button
     mov   esi,0x8899aa
-align 4
+
 .change_color_button:
     mcall
     
@@ -202,7 +200,7 @@ align 4
     test  dword [index],1
     jz    .change_color_info
     mov   edx,0xddffdd
-align 4
+
 .change_color_info:
     mcall
     
@@ -219,7 +217,7 @@ align 4
     mov   ebx,process_info_buffer
     
 ;find process loop
-align 4
+
 .find_loop:
     cmp   ecx,256
     jge   .no_processes
@@ -240,11 +238,11 @@ align 4
     
     inc   ecx
     jmp   .find_loop
-align 4    
+    
 .no_processes:
     or   edi,-1
     ret
-align 4    
+    
 .process_found:
     mov  edi,ecx
     mov  [list_add],ecx
@@ -278,13 +276,13 @@ align 4
     jg   .no_black
     mov  [tcolor],eax
     jmp  .color_set
-align 4
+
 .no_black:   
     cmp  eax,80
     ja   .no_green
     mov  dword [tcolor],0x107a30
     jmp  .color_set
-align 4
+
 .no_green:
     mov  dword [tcolor],0xac0000
 .color_set:
@@ -351,13 +349,13 @@ align 4
     add  ecx,[process_info_buffer.box.top]
     add  edx,60*65536
     mcall    
-align 4            
+            
 .ret:
 ;build index->slot map for terminating processes.
     mov  eax,[index]
     mov  [tasklist+4*eax],edi        
     ret
-align 4
+
 ;read_string:
 ;clean string
 ;    mov  edi,start_application
@@ -372,7 +370,7 @@ align 4
 ;    jmp  still1
 
 ;read string main loop
-align 4
+
   f11:
 ;full update  
     push edi
@@ -381,7 +379,7 @@ align 4
 ;    mov  ebp,1
     call draw_window
     pop  edi
-;align 4
+;
 ;  still1:  
 ;wait for message  
 ;    mov  eax,23
@@ -397,7 +395,7 @@ align 4
 ;    call draw_window
 ;    pop  edi
 ;    jmp  still1
-;align 4    
+;    
 ;.message_received:
 ;    cmp  eax,2
 ;    jne  read_done          ;buttons message
@@ -421,7 +419,7 @@ align 4
 ;    mov  [edi],byte 32
 ;    call print_text
 ;    jmp  still1
-;align 4    
+;    
 ;  nobsl:
 ;write new symbol  
 ;    mov  [edi],al
@@ -436,7 +434,7 @@ align 4
 ;    jnz  still1
 
 ;exiting from read string loop
-;align 4
+;
 ;  read_done:
 ;terminate string for file functions
 ;    mov  [edi],byte 0
@@ -444,7 +442,7 @@ align 4
 ;    call print_text
 ;    jmp  still
 
-;align 4
+;
 ;print_text:
 ;display start_application string
 
@@ -470,7 +468,7 @@ align 4
 
 window_x_size=524
 window_y_size=430
-align 4
+
 calculate_window_pos:
 ;set window size and position for 0 function
 ;to [winxpos] and [winypos] variables
@@ -503,7 +501,7 @@ calculate_window_pos:
 ;   *******  WINDOW DEFINITIONS AND DRAW ********
 ;   *********************************************
 
-align 4
+align 16
 draw_window:
 ;ebp=1 - redraw all
 ;ebp=0 - redraw only process information
@@ -536,13 +534,13 @@ draw_window:
         push    dword edit1
         call    [edit_box_draw]
 
-align 4
+align 16
 .show_process_info:
     mov  edi,[list_start]
     mov  [list_add],edi
     mov  dword [index],0
     mov  dword [curposy],54-offset_y
-align 4
+
 .loop_draw:
     call draw_next_process
     inc  dword [index]
@@ -614,7 +612,7 @@ align 4
     mov  eax,12                    ; function 12:tell os about windowdraw
     mov  ebx,2                     ; 2, end of draw
     mcall
-align 4    
+    
 .end_redraw:
     ret
 
@@ -722,7 +720,7 @@ start_application_e=$-start_application-1
 ;                   times 60 db 0
 rb	60
 start_application_c=$-start_application-1
-align 4
+
 I_END:
 winxpos  rd 1
 winypos  rd 1
@@ -736,5 +734,5 @@ tasklist    rd display_processes
 process_info_buffer process_information
 cur_dir_path    rb 1024
 library_path    rb 1024
-align 4
+
 U_END:
