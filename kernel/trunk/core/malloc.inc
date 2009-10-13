@@ -20,7 +20,7 @@ $Revision$
 ;  esi= nb
 ;  ebx= idx
 ;
-align 4
+align 16 
 malloc:
            push esi
 
@@ -69,7 +69,6 @@ malloc:
            jne @F
 
            btr [mst.smallmap], ebx
-align 4
 @@:
 
 ; B->fd = F;
@@ -92,12 +91,10 @@ align 4
 
            pop edi
            pop ebp
-align 4
 .done:
            pop esi
            mov [mst.mutex], 0
            ret
-align 4
 .split:
            lea ebx, [edx+8]               ;ebx=mem
 
@@ -139,7 +136,6 @@ align 4
            mov eax, ebx
            pop esi
            ret
-align 4
 .small:
 
 ; if (ms.treemap != 0 && (mem = malloc_small(nb)) != 0)
@@ -156,7 +152,6 @@ align 4
            pop esi
            and [mst.mutex], 0
            ret
-align 4
 .large:
 
 ; if (ms.treemap != 0 && (mem = malloc_large(nb)) != 0)
@@ -167,7 +162,6 @@ align 4
            call malloc_large  ;esi= nb
            test eax, eax
            jne .done
-align 4
 .from_top:
 
 ; if (nb < ms.topsize)
@@ -197,7 +191,6 @@ align 4
            pop esi
            and [mst.mutex], 0
            ret
-align 4
 .fail:
            xor eax, eax
            pop esi
@@ -207,7 +200,6 @@ align 4
 ; param
 ;  eax= mem
 
-align 4
 free:
            push edi
            mov edi, eax
@@ -258,16 +250,13 @@ free:
            cmp eax, edx
            jne @F
            and [mst.smallmap], ecx
-align 4
 @@:
            mov [eax+12], edx           ;F->bk = B;
            mov [edx+8], eax            ;B->fd = F
            jmp .next
-align 4
 .unlink_large:
            mov edx, edi
            call unlink_large_chunk
-align 4
 .next:
 
 ; if(next->head & PINUSE_BIT)
@@ -298,15 +287,12 @@ align 4
            or eax, 1
            mov [mst.top], edi
            mov [edi+4], eax
-align 4
 .fail2:
            and [mst.mutex], 0
            pop esi
-align 4
 .fail:
            pop edi
            ret
-align 4
 @@:
 
 ; nsize = next->head & ~INUSE_BITS;
@@ -329,7 +315,6 @@ align 4
            mov ecx, eax
            shr ecx, 3
            btr [mst.smallmap], ecx
-align 4
 @@:
            mov [edx+12], ebx           ;F->bk = B
 
@@ -351,7 +336,6 @@ align 4
            mov ecx, edi
            pop edi
            jmp insert_chunk
-align 4
 .unl_large:
 
 ; unlink_large_chunk((tchunkptr)next);
@@ -375,7 +359,6 @@ align 4
            mov ecx, edi
            pop edi
            jmp insert_chunk
-align 4
 .fix_next:
 
 ; (p+psize)->prev_foot = psize;
@@ -403,7 +386,6 @@ align 4
 ;  ecx = chunk
 ;  eax = size
 
-align 4
 insert_chunk:
 
            cmp eax, 256
@@ -429,7 +411,6 @@ insert_chunk:
            pop esi
            and [mst.mutex], 0
            ret
-align 4
 .large:
            mov ebx, eax
            call insert_large_chunk
@@ -437,13 +418,11 @@ align 4
            and [mst.mutex], 0
            ret
 
-align 4
 
 ; param
 ;  esi= chunk
 ;  ebx= size
 
-align 4
 insert_large_chunk:
 
 ; I = compute_tree_index(S);
@@ -478,7 +457,6 @@ insert_large_chunk:
 ; *H = X;
            mov dword [edx], esi
            jmp .done
-align 4
 .tree:
 
 ; T = *H;
@@ -497,7 +475,6 @@ align 4
            shl eax, cl     ;eax= K
 
            jmp .loop
-align 4
 .not_eq_size:
 
 ; C = &(T->child[(K >> 31) & 1]);
@@ -514,7 +491,6 @@ align 4
 
 ; T = *C;
            mov edx, edi
-align 4
 .loop:
 
 ; for (;;)
@@ -540,12 +516,10 @@ align 4
            mov [esi+8], eax
            mov [esi+12], edx
            ret
-align 4
 .insert_child:
 
 ; *C = X;
            mov [ecx], esi
-align 4
 .done:
 
 ; X->parent = T;
@@ -560,7 +534,6 @@ align 4
 ; param
 ;  edx= chunk
 
-align 4
 unlink_large_chunk:
 
            mov eax, [edx+12]
@@ -573,7 +546,6 @@ unlink_large_chunk:
            mov [ecx+12], eax          ;F->bk = R;
            mov [eax+8], ecx           ;R->fd = F
            jmp .parent
-align 4
 @@:
            mov eax, [edx+20]
            test eax, eax
@@ -585,7 +557,6 @@ align 4
            test eax, eax
            lea esi, [edx+16]
            je .l2
-align 4
 .loop:
            cmp dword [eax+20], 0
            lea ecx, [eax+20]
@@ -594,18 +565,14 @@ align 4
            cmp dword [eax+16], 0
            lea ecx, [eax+16]
            je .l1
-align 4
 @@:
            mov eax, [ecx]
            mov esi, ecx
            jmp .loop
-align 4
 .l1:
            mov dword [esi], 0
-align 4
 .l2:
            pop esi
-align 4
 .parent:
            test edi, edi
            je .done
@@ -623,21 +590,21 @@ align 4
            btr [mst.treemap], ecx
            pop edi
            ret
-align 4
+ 
 .l3:
            cmp [edi+16], edx
            jne @F
 
            mov [edi+16], eax
            jmp .l4
-align 4
+ 
 @@:
            mov [edi+20], eax
-align 4
+ 
 .l4:
            test eax, eax
            je .done
-align 4
+ 
 .l5:
            mov [eax+24], edi
            mov ecx, [edx+16]
@@ -646,7 +613,7 @@ align 4
 
            mov [eax+16], ecx
            mov [ecx+24], eax
-align 4
+ 
 .l6:
            mov edx, [edx+20]
            test edx, edx
@@ -654,7 +621,7 @@ align 4
 
            mov [eax+20], edx
            mov [edx+24], eax
-align 4
+ 
 .done:
            pop edi
            ret
@@ -662,7 +629,6 @@ align 4
 ; param
 ;  esi= nb
 
-align 4
 malloc_small:
            push ebp
            mov ebp, esi
@@ -677,10 +643,10 @@ malloc_small:
            mov edi, [ecx+4]
            and edi, -4
            sub edi, esi
-align 4
+ 
 .loop:
            mov ebx, ecx
-align 4
+ 
 .loop_1:
 
 ; while ((t = leftmost_child(t)) != 0)
@@ -690,10 +656,10 @@ align 4
            jz @F
            mov ecx, eax
            jmp .l1
-align 4
+ 
 @@:
            mov ecx, [ecx+20]
-align 4
+ 
 .l1:
            test ecx, ecx
            jz .unlink
@@ -744,7 +710,7 @@ align 4
 
            lea eax, [ebx+8]
            ret
-align 4
+ 
 .split:
 
 ; v->head = nb|PINUSE_BIT|CINUSE_BIT;
@@ -777,7 +743,7 @@ align 4
            pop ebp
            lea eax, [ebx+8]
            ret
-align 4
+ 
 .large:
            lea eax, [ebx+8]
            push eax
@@ -792,7 +758,6 @@ align 4
 ; param
 ;  esi= nb
 
-align 4
 malloc_large:
 .idx equ esp+4
 .rst equ esp
@@ -831,20 +796,20 @@ malloc_large:
            jne @F
            xor ecx, ecx
            jmp .l1
-align 4
+ 
 @@:
            mov edx, ecx
            shr edx, 1
            mov ecx, 37
            sub ecx, edx
-align 4
+ 
 .l1:
            mov edx, ebx
            shl edx, cl
 
 ; rst = 0;
            mov [.rst], ebp
-align 4
+ 
 .loop:
 
 ; trem = (t->head & ~INUSE_BITS) - nb;
@@ -864,7 +829,7 @@ align 4
            mov ebp, eax
            mov edi, ecx
            je .l2
-align 4
+ 
 @@:
 
 ; rt = t->child[1];
@@ -886,7 +851,7 @@ align 4
 
 ; rst = rt;
            mov [.rst], ecx
-align 4
+ 
 @@:
 ; if (t == 0)
 
@@ -897,11 +862,11 @@ align 4
 
            add edx, edx
            jmp .loop
-align 4
+ 
 @@:
 ; t = rst;
            mov eax, [.rst]
-align 4
+ 
 .l2:
 ; if (t == 0 && v == 0)
 
@@ -910,7 +875,7 @@ align 4
            test ebp, ebp
            jne .l7
            mov ecx, [.idx]
-align 4
+ 
 .l3:
 
 ; leftbits = (-1<<idx) & ms.treemap;
@@ -924,13 +889,13 @@ align 4
            bsf eax, edx
 ; t = ms.treebins[i];
            mov eax, [mst.treebins+eax*4]
-align 4
+ 
 @@:
 
 ; while (t != 0)
            test eax, eax
            jz .l5
-align 4
+ 
 .l4:
 
 ; trem = (t->head & ~INUSE_BITS) - nb;
@@ -948,7 +913,7 @@ align 4
            mov edi, ecx
 ; v = t;
            mov ebp, eax
-align 4
+ 
 @@:
 
 ; t = leftmost_child(t);
@@ -958,24 +923,24 @@ align 4
            je @F
            mov eax, ecx
            jmp .l6
-align 4
+ 
 @@:
            mov eax, [eax+20]
-align 4
+ 
 .l6:
 
 ; while (t != 0)
 
            test eax, eax
            jne .l4
-align 4
+ 
 .l5:
 
 ; if (v != 0)
 
            test ebp, ebp
            jz .done
-align 4
+ 
 .l7:
 
 ; r = chunk_plus_offset((mchunkptr)v, nb);
@@ -1006,7 +971,7 @@ align 4
            pop edi
            pop ebp
            ret
-align 4
+ 
 .large:
 
 ; v->head = nb|PINUSE_BIT|CINUSE_BIT;
@@ -1031,7 +996,7 @@ align 4
            pop edi
            pop ebp
            ret
-align 4
+ 
 .done:
            add esp, 8
            pop edi
@@ -1039,7 +1004,6 @@ align 4
            xor eax, eax
            ret
 
-align 4
 init_malloc:
 
            stdcall kernel_alloc, 0x40000
@@ -1048,7 +1012,7 @@ init_malloc:
            mov [mst.topsize], 128*1024
            mov dword [eax+4], (128*1024) or 1
            mov eax, mst.smallbins
-align 4
+ 
 @@:
            mov [eax+8], eax
            mov [eax+12], eax
@@ -1057,7 +1021,4 @@ align 4
            jb @B
 
            ret
-
-
-
 
