@@ -3666,7 +3666,11 @@ Parameters:
     * +16 = +0x10: dword: pointer to output data
     * +20 = +0x14: dword: size of output data
 Returned value:
-  * eax = determined by driver
+  * eax =  error code
+      0  - successful call
+     -1  - any error.
+     -2, -3, -4, etc. reserved for kernel error codes
+      1, 2, 3, etc    driver specific error codes
 Remarks:
   * Function codes and the structure of input/output data
     are defined by driver.

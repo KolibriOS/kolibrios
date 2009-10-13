@@ -1218,10 +1218,10 @@ proc shmem_open stdcall name:dword, size:dword, access:dword
            and eax, SHM_OPEN_MASK
            mov [action], eax
 
-           mov eax, [name]
-           test eax, eax
+           mov ebx, [name]
+           test ebx, ebx
            mov edx, E_PARAM
-           jz .exit
+           jz .fail
 
            mov esi, [shmem_list.fd]
 align 4
@@ -1230,7 +1230,7 @@ align 4
            je .not_found
 
            lea edx, [esi+SMEM.name] ; link , base, size
-           stdcall strncmp, edx, eax, 32
+           stdcall strncmp, edx, ebx, 32
            test eax, eax
            je .found
 
@@ -1242,20 +1242,20 @@ align 4
 
            cmp eax, SHM_OPEN
            mov edx, E_NOTFOUND
-           je .exit
+           je .fail
 
            cmp eax, SHM_CREATE
            mov edx, E_PARAM
            je .create_shm
 
            cmp eax, SHM_OPEN_ALWAYS
-           jne .exit
+           jne .fail
 
 .create_shm:
 
            mov ecx, [size]
            test ecx, ecx
-           jz .exit
+           jz .fail
 
            add ecx, 4095
            and ecx, -4096
@@ -1266,7 +1266,7 @@ align 4
            test eax, eax
            mov esi, eax
            mov edx, E_NOMEM
-           jz .exit
+           jz .fail
 
            stdcall kernel_alloc, [size]
            test eax, eax
@@ -1309,7 +1309,7 @@ align 4
            je .create_map
 
            cmp eax, SHM_OPEN_ALWAYS
-           jne .exit
+           jne .fail
 
 .create_map:
 
@@ -1318,7 +1318,7 @@ align 4
            cmp eax, [esi+SMEM.access]
            mov [access], eax
            mov edx, E_ACCESS
-           ja .exit
+           ja .fail
 
            mov ebx, [CURRENT_TASK]
            shl ebx, 5
@@ -1329,12 +1329,14 @@ align 4
            test eax, eax
            mov edi, eax
            mov edx, E_NOMEM
-           jz .exit
+           jz .fail
+
+           inc [esi+SMEM.refcount]
 
            mov [edi+SMAP.magic], 'SMAP'
            mov [edi+SMAP.destroy], destroy_smap
+           mov [edi+SMAP.parent], esi
            mov [edi+SMAP.base], 0
-           mov [edi+SMAP.parent], 0
 
            stdcall user_alloc, [esi+SMEM.size]
            test eax, eax
@@ -1342,9 +1344,7 @@ align 4
            mov edx, E_NOMEM
            jz .cleanup2
 
-           lock inc [esi+SMEM.refcount]
            mov [edi+SMAP.base], eax
-           mov [edi+SMAP.parent], esi
 
            mov ecx, [esi+SMEM.size]
            mov [size], ecx
@@ -1371,10 +1371,10 @@ align 4
            xor edx, edx
 
            cmp [owner_access], 0
-           jne .exit
-
-           mov edx, [size]
+           jne .fail
 .exit:
+           mov edx, [size]
+.fail:
            mov eax, [mapped]
 
            popfd
@@ -1382,13 +1382,14 @@ align 4
            pop esi
            pop ebx
            ret
-
 .cleanup:
+           mov [size], edx
            mov eax, esi
            call free
            jmp .exit
 
 .cleanup2:
+           mov [size], edx
            mov eax, edi
            call destroy_smap
            jmp .exit
