@@ -412,7 +412,6 @@ fb_draw_folder_data:
 	mov	ax,fb_start_y
 	add	ax,fb_size_y
 	mov	cx,bx
-	dec	cx
 	rol	ecx,16
 	mov	cx,ax
 	mov	eax,ecx
@@ -1113,7 +1112,7 @@ fb_key:
 	add	ax,fb_line_size_y
 	add	ax,fb_line_size_y
 	cmp	ax,word fb_size_y
-	jae	@f
+	ja	@f
 .add_1:
 	call	fb_mouse.store_old_cursor_line
 	mov	ax,fb_start_draw_cursor_line
