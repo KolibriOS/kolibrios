@@ -25,7 +25,9 @@ ed_max          equ [edi+32]                    ;кол-во символов которые можно м
 ed_text         equ [edi+36]                    ;указатель на буфер
 ed_mouse_variable 	equ [edi+40]	; указатель на переменную для бокса/группы 
 ed_flags        equ [edi+44]            ;флаги
+bp_flags	equ [ebp+44]		;в некоторых процедурах edi используется, взамен указатель храниться в ebp
 ed_size equ [edi+48]                    ;кол-во символов
+bp_size equ [ebp+48]			;кол-во симвполов, для адресации испльзуется ebpб edi занят
 ed_pos  equ [edi+52]                    ;позиция курсора
 ed_offset       equ [edi+56]            ;смещение
 cl_curs_x       equ [edi+60]            ;предыдущее координата курсора по х
@@ -396,7 +398,8 @@ pushad
         add     ebx,8
         jmp     edit_box.chk_d
 
-edit_box.sub_8: cmp     ecx,0
+edit_box.sub_8:
+	cmp     ecx,0
         je      edit_box.sub_min
         cmp     ebx,8
         jbe     edit_box.sub_min
@@ -631,7 +634,8 @@ edit_box_key.sh_home_end:
         call    edit_box_key.sh_cl_
         or      word ed_flags,ed_shift_bac ;установка флага, выделенной области
         jmp     edit_box_key.sh_e_end
-edit_box_key.sh_exit_:      call    edit_box.check_offset
+edit_box_key.sh_exit_:      
+	call    edit_box.check_offset
         ret
 ;функция внесения 0 по адресу ed_size+1
 edit_box_key.enable_null:
@@ -917,7 +921,7 @@ macro are_key_cur_end
         cmp     ecx,ebx         ;Если у нас позиция курсора = текущему размеру напечатанных символов т.е. курсор стоит в конце
         je      edit_box_key.In_k
 
-        test    word [ebp+40],ed_insert ;IF insert is enable  т.к. edi изменен адресуем через ebp
+        test    dword bp_flags,ed_insert ;IF insert is enable  т.к. edi изменен адресуем через ebp
         jne     edit_box_key.ins_v
 ;clear
 pusha
@@ -959,7 +963,8 @@ edit_box_key.insert: test   word ed_flags,ed_insert ;not    word ed_insert
         or      word ed_flags,ed_insert
         jmp     edit_box.editbox_exit
 edit_box_key.ins_v:
-        dec     dword [ebp+42];ed_size    ;processing is insert
+;        dec     dword [ebp+48];ed_size    ;processing is insert
+	dec	dword bp_size
         sub     esi,ecx
         add     esi,ebx
         mov     edi,esi
