@@ -11,8 +11,8 @@
 
 //char edit_path[256] = "You can edit me!"; //содержимое EditBox'a
 char way_of_ini[250] = "/sys/lib/box_lib.obj",NULL; //содержимое EditBox'a
-
-edit_box edit1= {250,14,35,0xffffff,0x6f9480,0,0xAABBCC,0,248,#way_of_ini,2,20,20};
+dword mouse_dd;
+edit_box edit1= {250,14,35,0xffffff,0x6f9480,0,0xAABBCC,0,248,#way_of_ini,#mouse_dd,2,20,20};
 
 //ed_width        equ [edi]               ;ширина компонента
 //ed_left         equ [edi+4]             ;положение по оси х
