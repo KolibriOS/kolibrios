@@ -1,20 +1,20 @@
-;
+;*****************************************************************************
 ; Example for Box_lib: scrollbar, menubar, dinamic_button
-; Copyright (c) 2009, Mario79
+; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
 ; All rights reserved.
 ;
 ; Redistribution and use in source and binary forms, with or without
 ; modification, are permitted provided that the following conditions are met:
-;       * Redistributions of source code must retain the above copyright
-;       notice, this list of conditions and the following disclaimer.
-;       * Redistributions in binary form must reproduce the above copyright
-;       notice, this list of conditions and the following disclaimer in the
-;       documentation and/or other materials provided with the distribution.
-;       * Neither the name of the <organization> nor the
-;       names of its contributors may be used to endorse or promote products
-;       derived from this software without specific prior written permission.
+;	 * Redistributions of source code must retain the above copyright
+;	   notice, this list of conditions and the following disclaimer.
+;	 * Redistributions in binary form must reproduce the above copyright
+;	   notice, this list of conditions and the following disclaimer in the
+;	   documentation and/or other materials provided with the distribution.
+;	 * Neither the name of the <organization> nor the
+;	   names of its contributors may be used to endorse or promote products
+;	   derived from this software without specific prior written permission.
 ;
-; THIS SOFTWARE IS PROVIDED BY Mario79 ''AS IS'' AND ANY
+; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
 ; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 ; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 ; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
@@ -24,7 +24,7 @@
 ; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 ; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 ; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-;*****************************************************************************
+;******************************************************************************
 ; import_boxlib procedure written by <Lrz>
 ;---------------------------------------------------------------------
 
@@ -42,6 +42,11 @@
 
 include '../../../../../macros.inc'
 include '../../load_lib.mac'
+;include 'macros.inc'
+;include 'load_lib.mac'
+	@use_library
+include 'opendial.mac'
+	use_OpenDialog
 ;---------------------------------------------------------------------
 ;---    Start of program        ----------------------------------------------
 ;---------------------------------------------------------------------
@@ -50,69 +55,25 @@ START:
         mcall 66, 1, 1
         mcall 40, 0x27
 ;---------------------------------------------------------------------  
-; Procinfo area for function 9 in MenuBar 
-        mcall   68,12,1024
-        mov     [menu_data_1.procinfo],eax
-        mov     [menu_data_2.procinfo],eax
-;---------------------------------------------------------------------  
-; loading Box_Lib library 
+
 load_libraries l_libs_start,end_l_libs
-;sys_load_library  boxlib_name, path, file_name, system_dir, \
-;er_message_found_lib, ihead_f_l, myimport, er_message_import, ihead_f_i
-;        test    eax,eax
-;        jnz  button.exit
 
-;----------------------------------old
-;        mov     ebx,boxlib_name
-;        mov     esi,path
-;        mov     edi,file_name
-;        call    copy_path
-;
-;        mcall 68,19,file_name ; load of alternative
-;        test    eax,eax
-;        jnz @f 
-;        
-;        mcall 68,19,system_dir ; load of sys directory
-;        test    eax,eax
-;        jz      button.exit
-;@@:
-;        call    import_boxlib
-;---------------------------------------------------------------------
-; Load and convert BMP file for DinamicButton
-; This procedures use cnv_bmp.obj and this module used only for
-; demonstration of use DinamicButton
+	test  eax,eax
+	jnz    button.exit
 
-;        mov     ebx,plugin_BMP_name
-;        mov     esi,path
-;        mov     edi,file_name
-	copy_path   plugin_BMP_name,path,file_name
-;
-        mcall 68,19,file_name
-        test    eax,eax
-        jz  button.exit
-        
-        mov     eax,[eax+4]
-        mov     [plugin],eax
+; unpack deflate
+	mov   eax,[unpack_DeflateUnpack2]
+	mov  [deflate_unpack],eax
 
+;OpenDialog initialisation
+init_OpenDialog	OpenDialog_data
 
-;проверка на сколько удачно загузилась наша либа
-        mov     ebp,library01
-        cmp     dword [ebp+ll_struc_size-4],0
-        jnz     button.exit
-;
-;        mov     ebp,library02
-;        cmp     dword [ebp+ll_struc_size-4],0x2
-;        jnz     button.exit
-;        mov     eax,dword [ebp+36]
-;        mov     eax,[eax+4]
-;        mov     [plugin],eax
-        
- 
 
 ;        mov     ebx,icons_file_name
 ;        mov     esi,path
 ;        mov     edi,file_name
-        copy_path    icons_file_name,path,file_name
+
+        copy_path    icons_file_name,path,library_path,0
         
         mcall 70, fileinfo
 
@@ -135,7 +96,7 @@ load_libraries l_libs_start,end_l_libs
         xor     eax,eax
         mov     [return_code],eax
         mov     eax,image_file
-        call    [plugin]
+	call	[cnv_png_import.Start]
         
         mov     ecx,[image_file]
         mcall 68, 13,
@@ -296,7 +257,10 @@ mouse:
 ;---------------------------------------------------------------------
 analyse_out_menu_1:
 ; analyse result of Menu 1
-        cmp [menu_data_1.cursor_out],dword 3
+	mov	eax,[menu_data_1.cursor_out]
+	cmp	eax,dword 1
+	je	OpenDialog_start
+        cmp	eax,dword 3
         je      button.exit     
         jmp     still
         
@@ -309,6 +273,44 @@ analyse_out_menu_2:
         about:
         mcall 51,1,thread3,thread
         jmp     still
+;---------------------------------------------------------------------
+OpenDialog_start:
+;	mov	ebx,open_dialog_name
+;	mov	esi,path
+;	mov	edi,library_path
+;	call	copy_file_path
+	call	get_filter_data
+
+	copy_path	open_dialog_name,path,library_path,0
+
+
+start_OpenDialog	OpenDialog_data
+
+	cmp	[OpenDialog_data.status],2 ; OpenDialog does not start
+	je	still  ; 	some kind of alternative, instead OpenDialog
+	cmp	[OpenDialog_data.status],1
+	jne	still ; OpenDialog user say cancel
+;	copy path
+	call	draw_window
+	jmp	still ; OpenDialog user selected the target file
+	; [OpenDialog_data.openfile_pach] pointer of area the target file
+;---------------------------------------------------------------------
+get_filter_data:
+	mov	edi,[OpenDialog_data.com_area]
+	test	edi,edi
+	jnz	@f
+	add	esp,4
+	jmp	still
+@@:
+	add	edi,4096+4
+	mov	esi,Filter
+	mov	ecx,[esi]
+	inc	ecx
+	cld
+	rep	movsb
+	mov	edi,[OpenDialog_data.com_area]
+	mov	[edi+4096],dword 1
+	ret
 ;---------------------------------------------------------------------
 draw_window:
         mcall 12, 1
@@ -328,6 +330,11 @@ draw_window:
 ; draw for Dinamic Button 2
         push    dword dinamic_button_data_2
         call    [dinamic_button_draw]
+;---------------------------------------------
+	mcall	13,<170,200>,<25,15>,0xffffb0
+	mov	bx,28
+	add	ebx,2 shl 16
+	mcall	4,,0xC0000000,openfile_pach,,0xffffb0
 ;---------------------------------------------
 ; set all_redraw flag for draw all ScrollBar
 ; In some cases it is necessity to draw only the area
@@ -365,19 +372,35 @@ draw_cube:
         mov     bx,30
         mcall 13, , , 0x0
         ret
-
+;---------------------------------------------------------------------
 include 'data.inc'
 include 'w_about.inc'
+;---------------------------------------------------------------------
 IM_END:
         rb 1024
 thread:
+;---------------------------------------------------------------------
         rb 1024
 stacktop:
+;---------------------------------------------------------------------
 path:
-        rb      4096
-file_name:
         rb 4096
+;---------------------------------------------------------------------
+openfile_pach:
+        rb 4096
+;---------------------------------------------------------------------
+file_name:
+library_path:
+        rb 4096
+;---------------------------------------------------------------------
+plugin_pach:
+        rb 4096
+;---------------------------------------------------------------------
 file_info:
         rb 40
+;---------------------------------------------------------------------
+procinfo:
+        rb 1024
+;---------------------------------------------------------------------
 I_END:
 

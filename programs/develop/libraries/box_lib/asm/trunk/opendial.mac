@@ -1,0 +1,170 @@
+;*****************************************************************************
+; Macro for use Open Dialog - for Kolibri OS
+; Copyright (c) 2009, Marat Zakiyanov aka Mario79, aka Mario
+; All rights reserved.
+;
+; Redistribution and use in source and binary forms, with or without
+; modification, are permitted provided that the following conditions are met:
+;	 * Redistributions of source code must retain the above copyright
+;	   notice, this list of conditions and the following disclaimer.
+;	 * Redistributions in binary form must reproduce the above copyright
+;	   notice, this list of conditions and the following disclaimer in the
+;	   documentation and/or other materials provided with the distribution.
+;	 * Neither the name of the <organization> nor the
+;	   names of its contributors may be used to endorse or promote products
+;	   derived from this software without specific prior written permission.
+;
+; THIS SOFTWARE IS PROVIDED BY Marat Zakiyanov ''AS IS'' AND ANY
+; EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+; WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+; DISCLAIMED. IN NO EVENT SHALL <copyright holder> BE LIABLE FOR ANY
+; DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+; (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+; ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+; (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+; SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+;*****************************************************************************
+;*****************************************************************************
+macro OpenDialog_exit
+{
+popa         
+ret
+}
+;*****************************************************************************
+macro	use_OpenDialog
+{
+OpenDialog:
+od_type			equ dword [ebp]
+od_procinfo		equ dword [ebp+4]
+od_com_area_name	equ dword [ebp+8]
+od_com_area		equ dword [ebp+12]
+od_opendir_pach		equ dword [ebp+16]
+od_dir_default_pach	equ dword [ebp+20]
+od_start_path		equ dword [ebp+24]
+od_draw_window		equ dword [ebp+28]
+od_status		equ dword [ebp+32]
+od_openfile_pach	equ dword [ebp+36]
+;*****************************************************************************
+.init:
+	pusha
+	mcall	9, od_procinfo, -1
+	mov	ebx,[ebx+30]
+	mov	edi,od_com_area_name
+	add	edi,7
+;	mov	edi,communication_area_name+7
+	std
+	mov	ecx,4
+@@:
+	mov	al,bl
+	and	al,1111b
+	add	al,0x30
+	stosb
+	mov	al,bl
+	shr	al,4
+	and	al,1111b
+	add	al,0x30
+	stosb
+	shr	ebx,8
+	dec	ecx
+	jnz	@r
+	cld
+	
+	mcall	68,22,od_com_area_name,8192,0x09
+	mov	od_com_area,eax
+OpenDialog_exit
+;*****************************************************************************
+;*****************************************************************************
+.start:
+	pusha
+	mov	eax,od_com_area
+	test	eax,eax
+	jz	.1
+	mov	[eax],dword 2 ; folder for open
+	mov	edi,eax
+	add	edi,4
+
+	mov	esi,od_opendir_pach
+	xor	eax,eax
+	mov	al,[esi]
+	test	eax,eax
+	jnz	@f
+	mov	esi,od_dir_default_pach ;communication_area_default_pach
+@@:
+	call	.copy
+
+	mov	eax,od_com_area_name
+	mov	[start_open_dialog.parameter],eax
+
+	mov	eax,od_start_path
+	mov	[start_open_dialog.name],eax
+
+	mcall	70, start_open_dialog
+	shr	eax,31
+	test	eax,eax
+	jnz	.1
+	jmp	.still
+.red:
+	pusha
+	call	od_draw_window
+	popa
+.still:
+	mcall	23, 50
+	cmp	eax,1
+	je	.red
+	mov	eax,od_com_area
+	mov	ebx,[eax]
+	test	ebx,ebx
+	jz	.still
+	cmp	ebx,3
+	je	.2 ;still
+	cmp	ebx,1
+	jne	.still
+
+	mov	esi,od_com_area
+	add	esi,4
+	mov	edi,od_openfile_pach ;string
+	call	.copy
+	mov	od_status,1
+	jmp	.3  ;kopen_1
+.2:
+	mov	od_status,0
+	jmp	.3 ; still
+.1:
+	mov	od_status,2 ; thread1
+.3:
+OpenDialog_exit
+;----------------------------------------------
+.copy:
+	xor	eax,eax
+	cld
+@@:
+	lodsb
+	stosb
+	test	eax,eax
+	jnz	@b
+	ret
+;----------------------------------------------
+align 4
+start_open_dialog:
+.subfunction	dd 7
+.flags		dd 0
+.parameter	dd 0 ;od_com_area_name
+.reserved1	dd 0
+.reserved2	dd 0
+		db 0
+.name:		dd 0 ;od_start_path
+}
+;*****************************************************************************
+macro	init_OpenDialog od_ptr
+{
+	mov	ebp,od_ptr
+	call	OpenDialog.init
+}
+;*****************************************************************************
+macro	start_OpenDialog od_ptr
+{
+	mov	ebp,od_ptr
+	call	OpenDialog.start
+}
+;*****************************************************************************
