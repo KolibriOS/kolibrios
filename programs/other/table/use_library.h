@@ -34,7 +34,7 @@ dword dummy = 0;
 
 struct edit_box{
 dword width, left, top, color, shift_color, focus_border_color, blur_border_color,
-text_color, max, text, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
+text_color, max, text, mouse_variable, flags, size, pos, offset, cl_curs_x, cl_curs_y, shift, shift_old;
 };
 
 void load_edit_box()

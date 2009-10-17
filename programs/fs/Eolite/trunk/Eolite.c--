@@ -37,12 +37,12 @@ byte path[256]="/rd/1/",
 byte PathHistory[2560];
 
 dword file_mas[6898];
-int j, i;
+int j, i, mouse_dd;
 
 dword stak[100]=0; //окно About 
 
-edit_box edit1= {250,247,13,0xffffff,videlenie,0xD3DDEB,0xffffff,0,248,#edit_path,64,6,6};
-edit_box edit2= {250,213,80,0xFFFFCC,videlenie,0xFFFFCC,0xffffff,0,248,#file_name,64,6,6};
+edit_box edit1= {250,247,13,0xffffff,videlenie,0xD3DDEB,0xffffff,0,248,#edit_path,#mouse_dd,64,6,6};
+edit_box edit2= {250,213,80,0xFFFFCC,videlenie,0xFFFFCC,0xffffff,0,248,#file_name,#mouse_dd,64,6,6};
 
 proc_info Form;
 dword buf, off; //для текста и буфера

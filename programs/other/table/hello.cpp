@@ -74,10 +74,11 @@ int win_x, win_y;
 // нижн€€ панель с кнопками и полем ввода
 #define MENU_PANEL_HEIGHT 40
 Dword panel_y = 0;
-
+Dword mouse_dd;
 // дл€ пол€ ввода
+
 char edit_text[256] = "";
-edit_box cell_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&edit_text,0};
+edit_box cell_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&edit_text,(dword)&mouse_dd,0};
 
 // €чейки - их параметры и текст
 DWORD def_col_width = 80, def_row_height = 16;
@@ -121,7 +122,7 @@ DWORD nx = 0, ny = 0;
 // редактирование имени файла
 bool fn_edit = 0;
 char fname[256];
-edit_box file_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&fname,0};
+edit_box file_box = {0,9*8-5,WND_H - 16-32,0xffffff,0x6a9480,0,0x808080,0,255,(dword)&fname,(dword)&mouse_dd,0};
 
 // изменение размеров
 #define SIZE_X 1 // состо€ние
