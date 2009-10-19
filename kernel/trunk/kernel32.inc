@@ -141,7 +141,8 @@ struc APPDATA
   .wait_begin      dd ?            ;+92   +++
   .wait_test       dd ?            ;+96   +++
   .wait_param      dd ?            ;+100  +++
-                   db 24 dup(?)    ;+104
+  .tls_base        dd ?            ;+104
+                   db 20 dup(?)    ;+108
 
   .wnd_shape       dd ?            ;+128
   .wnd_shape_scale dd ?            ;+132

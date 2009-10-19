@@ -113,6 +113,7 @@ proc fs_execute
        popad
        mov eax, -ERROR_FILE_NOT_FOUND
        ret
+
 .namecopied:
 
        mov [cmdline], ebx
@@ -201,6 +202,14 @@ proc fs_execute
        mov   eax,[hdr_mem]
        mov   [ebx+APPDATA.mem_size],eax
 
+       xor edx, edx
+       cmp word [6], '02'
+       jne @f
+
+       not edx
+@@:
+       mov   [ebx+APPDATA.tls_base],edx
+
 if GREEDY_KERNEL
 else
        mov ecx, [hdr_mem]
@@ -211,7 +220,7 @@ else
        jna @F
 
        xor eax, eax
-           cld
+       cld
        rep stosb
 @@:
 end if
@@ -262,26 +271,28 @@ test_app_header:
        jne  .check_01_header
 
        mov  ecx,[APP_HEADER_00.start]
-       mov  [ebx+0x08], ecx            ;app_eip
+       mov  [ebx+0x08], ecx                 ;app_eip
        mov  edx,[APP_HEADER_00.mem_size]
-       mov  [ebx+0x10], edx            ;app_mem
+       mov  [ebx+0x10], edx                 ;app_mem
        shr  edx,1
        sub  edx,0x10
-       mov  [ebx+0x0C], edx            ;app_esp
+       mov  [ebx+0x0C], edx                 ;app_esp
        mov  ecx,[APP_HEADER_00.i_param]
-       mov  [ebx], ecx             ;app_cmdline
-       mov  [ebx+4], dword 0           ;app_path
+       mov  [ebx], ecx                      ;app_cmdline
+       mov  [ebx+4], dword 0                ;app_path
        mov  edx, [APP_HEADER_00.i_end]
        mov  [ebx+0x14], edx
        ret
 
  .check_01_header:
 
-       cmp  [eax+6],word '01'
-       jne  .fail
-
+       cmp [eax+6], word '01'
+       je @f
+       cmp [eax+6], word '02'
+       jne .fail
+@@:
        mov  ecx,[APP_HEADER_01.start]
-       mov  [ebx+0x08], ecx            ;app_eip
+       mov  [ebx+0x08], ecx                 ;app_eip
        mov  edx,[APP_HEADER_01.mem_size]
 
 ; \begin{diamond}[20.08.2006]
@@ -291,13 +302,13 @@ test_app_header:
        jb   .fail
 ; \end{diamond}[20.08.2006]
 
-       mov  [ebx+0x10], edx            ;app_mem
+       mov  [ebx+0x10], edx                 ;app_mem
        mov  ecx,[APP_HEADER_01.stack_top]
-       mov  [ebx+0x0C], ecx            ;app_esp
+       mov  [ebx+0x0C], ecx                 ;app_esp
        mov  edx,[APP_HEADER_01.i_param]
-       mov  [ebx], edx             ;app_cmdline
+       mov  [ebx], edx                      ;app_cmdline
        mov  ecx,[APP_HEADER_01.i_icon]
-       mov  [ebx+4], ecx               ;app_path
+       mov  [ebx+4], ecx                    ;app_path
        mov  edx, [APP_HEADER_01.i_end]
        mov  [ebx+0x14], edx
        ret
@@ -451,7 +462,7 @@ proc create_app_space stdcall, app_size:dword,img_base:dword,img_size:dword
 
 if GREEDY_KERNEL
        mov eax, 0x02
-           rep stosd
+       rep stosd
 else
 
 .alloc:
@@ -572,7 +583,7 @@ endp
 align 4
 get_pid:
        mov eax, [TASK_BASE]
-           mov eax, [eax+TASKDATA.pid]
+       mov eax, [eax+TASKDATA.pid]
        ret
 
 pid_to_slot:
@@ -736,7 +747,7 @@ proc read_process_memory
        mov eax, [slot]
        shl  eax,8
        mov ebx, [offset]
-     ;      add ebx, new_app_base
+
        push ecx
        stdcall map_memEx, [proc_mem_map],\
                   [SLOT_BASE+eax+0xB8],\
@@ -895,17 +906,29 @@ proc new_sys_threads
        mov [edx+APPDATA.mem_size], eax
 
        mov ecx,[ebx+APPDATA.dir_table]
-       mov [edx+APPDATA.dir_table],ecx  ;copy page directory
+       mov [edx+APPDATA.dir_table],ecx      ;copy page directory
+
+       mov eax, [ebx+APPDATA.tls_base]
+       test eax, eax
+       jz @F
+
+       push edx
+       stdcall user_alloc, 4096
+       pop edx
+       test eax, eax
+       jz .failed
+@@:
+       mov [edx+APPDATA.tls_base], eax
 
        lea eax, [app_cmdline]
        stdcall set_app_params ,[slot],eax,dword 0,\
                      dword 0,dword 0
 
        ;mov    esi,new_process_running
-       ;call   sys_msg_board_str     ;output information about succefull startup
+       ;call   sys_msg_board_str            ;output information about succefull startup
 
-       mov    [application_table_status],0 ;unlock application_table_status mutex
-       mov    eax,[process_number]  ;set result
+       mov    [application_table_status],0  ;unlock application_table_status mutex
+       mov    eax,[process_number]          ;set result
        ret
 .failed:
        mov    [application_table_status],0
@@ -930,6 +953,24 @@ wait_mutex:
        pop ebx
        pop eax
        ret
+
+align 4
+tls_app_entry:
+
+        call init_heap
+        stdcall user_alloc, 4096
+
+        mov edx, [current_slot]
+        mov [edx+APPDATA.tls_base], eax
+        mov [tls_data_l+2],ax
+        shr eax,16
+        mov [tls_data_l+4],al
+        mov [tls_data_l+7],ah
+        mov dx, app_tls
+        mov fs, dx
+        popad
+        iretd
+
 
 EFL_IF      equ 0x0200
 EFL_IOPL1   equ 0x1000
@@ -1037,6 +1078,11 @@ proc set_app_params stdcall,slot:dword, params:dword,\
        shl    ebx,5
        lea    ecx,[draw_data+ebx]  ;ecx - pointer to draw data
 
+       mov edx, irq0.return
+       cmp [ebx*8+SLOT_BASE+APPDATA.tls_base], -1
+       jne @F
+       mov edx, tls_app_entry
+@@:
 ; set window state to 'normal' (non-minimized/maximized/rolled-up) state
        mov     [ebx+window_data+WDATA.fl_wstate], WSTATE_NORMAL
        mov     [ebx+window_data+WDATA.fl_redraw], 1
@@ -1063,7 +1109,7 @@ proc set_app_params stdcall,slot:dword, params:dword,\
        lea ecx, [ebx+REG_EIP]
        xor eax, eax
 
-       mov [ebx+REG_RET], dword irq0.return
+       mov [ebx+REG_RET], edx
        mov [ebx+REG_EDI], eax
        mov [ebx+REG_ESI], eax
        mov [ebx+REG_EBP], eax

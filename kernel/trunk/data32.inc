@@ -202,14 +202,14 @@ app_code_l:
         dw 0
         db 0
         db cpl3
-        dw G32+D32+(new_app_base shr 16)+0xF;
+        dw G32+D32+0xF;
 
 app_data_l:
         dw 0xFFFF
         dw 0
         db 0
         db drw3
-        dw G32+D32+(new_app_base shr 16)+0xF;
+        dw G32+D32+0xF;
 
 ; ------------- PCI BIOS ------------------
 
@@ -260,6 +260,14 @@ tss0_l:
         db     (tss shr 16) and 0xFF
         db     10001001b
         dw     (tss shr 16) and 0xFF00
+
+tls_data_l:
+        dw 0x0FFF
+        dw 0
+        db 0
+        db drw3
+        dw D32
+
 endofcode:
 gdte:
 

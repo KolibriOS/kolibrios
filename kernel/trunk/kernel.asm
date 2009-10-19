@@ -79,6 +79,7 @@ graph_data     equ  (3+graph_data_l-gdts)
 tss0           equ  (tss0_l-gdts)
 app_code       equ  (3+app_code_l-gdts)
 app_data       equ  (3+app_data_l-gdts)
+app_tls        equ  (3+tls_data_l-gdts)
 pci_code_sel   equ  (pci_code_32-gdts)
 pci_data_sel   equ  (pci_data_32-gdts)
 
@@ -281,15 +282,16 @@ org OS_BASE+$
 
 align 4
 high_code:
-           mov ax,os_stack
-           mov bx,app_data
-           mov ss,ax
-           add  esp, OS_BASE
+           mov ax, os_stack
+           mov bx, app_data
+           mov cx, app_tls
+           mov ss, ax
+           add esp, OS_BASE
 
-           mov ds,bx
-           mov es,bx
-           mov fs,bx
-           mov gs,bx
+           mov ds, bx
+           mov es, bx
+           mov fs, cx
+           mov gs, bx
 
            bt [cpu_caps], CAPS_PGE
            jnc @F
@@ -711,6 +713,7 @@ no_lib_load:
         mov  dword [SLOT_BASE+256+APPDATA.bk_obj], ebx
 
         mov  dword [SLOT_BASE+256+APPDATA.cur_dir], sysdir_path
+        mov dword [SLOT_BASE+256+APPDATA.tls_base], eax
 
         ; task list
         mov  [CURRENT_TASK],dword 1
@@ -1906,6 +1909,14 @@ detect_devices:
 
 
 sys_end:
+
+     mov ecx, [current_slot]
+     mov eax, [ecx+APPDATA.tls_base]
+     test eax, eax
+     jz @F
+
+     stdcall user_free, eax
+@@:
 
      mov   eax,[TASK_BASE]
      mov   [eax+TASKDATA.state], 3  ; terminate this program

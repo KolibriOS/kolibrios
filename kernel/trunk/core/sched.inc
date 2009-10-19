@@ -162,21 +162,36 @@ do_change_task:
 ;scratched: eax,ecx,esi
         mov     esi,ebx
         xchg    esi,[current_slot]
-      ; set new stack after saving old
+; set new stack after saving old
         mov     [esi+APPDATA.saved_esp], esp
         mov     esp, [ebx+APPDATA.saved_esp]
-      ; set new thread io-map
+; set new thread io-map
         Mov     dword [page_tabs+((tss._io_map_0 and -4096) shr 10)],eax,[ebx+APPDATA.io_map]
         Mov     dword [page_tabs+((tss._io_map_1 and -4096) shr 10)],eax,[ebx+APPDATA.io_map+4]
-      ; set new thread memory-map
+; set new thread memory-map
         mov     ecx, APPDATA.dir_table
         mov     eax, [ebx+ecx]      ;offset>0x7F
         cmp     eax, [esi+ecx]      ;offset>0x7F
         je      @f
         mov     cr3, eax
-  @@: ; set tss.esp0
+@@:
+; set tss.esp0
+
         Mov     [tss._esp0],eax,[ebx+APPDATA.saved_esp0]
-      ; set gs selector unconditionally
+
+        mov edx, [ebx+APPDATA.tls_base]
+        cmp edx, [esi+APPDATA.tls_base]
+        je @f
+
+        mov     [tls_data_l+2],dx
+        shr     edx,16
+        mov     [tls_data_l+4],dl
+        mov     [tls_data_l+7],dh
+
+        mov dx, app_tls
+        mov fs, dx
+@:
+; set gs selector unconditionally
         Mov     gs,ax,graph_data
       ; set CR0.TS
         cmp     bh, byte[fpu_owner] ;bh == incoming task (new)
