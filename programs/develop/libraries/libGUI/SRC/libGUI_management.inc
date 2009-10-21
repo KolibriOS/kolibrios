@@ -1574,14 +1574,14 @@ char	InitLibGUI()
 	//set scan codes input mode for keyboard
 	gui_ksys_set_keyboard_input_mode(1);
 //------------------------------------------------------------------------------------
-	FontsMeneger.fnt_fd=(DWORD*)NULL;
-	FontsMeneger.fnt_bk=(DWORD*)NULL;
-	FontsMeneger.number_fonts=0;
+	FontsManager.fnt_fd=(DWORD*)NULL;
+	FontsManager.fnt_bk=(DWORD*)NULL;
+	FontsManager.number_fonts=0;
 	//load default fonts
 	font=LoadFont("CHAR.MT");
 
 	if (font==NULL) return (TRUE);
-		else	FontsMeneger.default_font=(DWORD*)font;
+		else	FontsManager.default_font=(DWORD*)font;
 
 	font->flags=font->flags | FONT_FLAG_DEFAULT_FONT_ON;
 
@@ -1634,7 +1634,7 @@ void	QuitLibGUI(parent_t *window)
 #endif
 	//destroy fonts cash
 
-	seek_font=(font_t*)FontsMeneger.fnt_bk;
+	seek_font=(font_t*)FontsManager.fnt_bk;
 	while(seek_font!=(font_t*)NULL)
 	{
 		exchange_font=(font_t*)seek_font->fnt_fd;

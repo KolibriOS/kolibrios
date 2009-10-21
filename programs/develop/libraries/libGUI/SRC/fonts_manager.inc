@@ -1,5 +1,5 @@
 /*
-	menegement of fonts
+	management of fonts
  */
 
 //---------------------------------------------------------------------------------
@@ -14,22 +14,22 @@ void DestroyFont(font_t *font)
 
 	if (font==(font_t*)NULL) return;
 
-	if (FontsMeneger.fnt_bk==FontsMeneger.fnt_fd)
+	if (FontsManager.fnt_bk==FontsManager.fnt_fd)
 	{
 		//parent have got alone font
-		if (FontsMeneger.fnt_bk==(DWORD*)font)
+		if (FontsManager.fnt_bk==(DWORD*)font)
 		{
 #ifdef	DEBUG
 			printf("\ndestroyed font %d font name=%s",(int)font,(char*)font->fnt_name);
 #endif
 			free(font);
-			FontsMeneger.fnt_bk=(DWORD*)NULL;
-			FontsMeneger.fnt_fd=(DWORD*)NULL;
+			FontsManager.fnt_bk=(DWORD*)NULL;
+			FontsManager.fnt_fd=(DWORD*)NULL;
 		}
 		return;
 	}
 
-	seek_font=(font_t*)FontsMeneger.fnt_bk;
+	seek_font=(font_t*)FontsManager.fnt_bk;
 	while(seek_font!=(font_t*)NULL)
 	{
 		if (seek_font==font)
@@ -47,12 +47,12 @@ void DestroyFont(font_t *font)
 			{
 				if (last_font==(font_t*)NULL)
 				{//deliting font is first font of Parend
-					FontsMeneger.fnt_bk=(DWORD*)next_font;
+					FontsManager.fnt_bk=(DWORD*)next_font;
 					next_font->fnt_bk=(DWORD*)NULL;
 					if (next_font->fnt_fd==(DWORD*)NULL)
 					{
-						FontsMeneger.fnt_fd=(DWORD*)next_font;
-						FontsMeneger.fnt_bk=(DWORD*)next_font;
+						FontsManager.fnt_fd=(DWORD*)next_font;
+						FontsManager.fnt_bk=(DWORD*)next_font;
 					}
 				}
 
@@ -60,7 +60,7 @@ void DestroyFont(font_t *font)
 				{
 					//there isn't next fonts
 					last_font->fnt_fd=(DWORD*)NULL;
-					FontsMeneger.fnt_fd=(DWORD*)last_font;
+					FontsManager.fnt_fd=(DWORD*)last_font;
 				}
 			}
 #ifdef	DEBUG
@@ -81,17 +81,17 @@ void	*CreateFont(void)
 
 	font=malloc(sizeof(struct FONT));
 
-	if (FontsMeneger.fnt_bk==(DWORD*)NULL)
+	if (FontsManager.fnt_bk==(DWORD*)NULL)
 	{//not yet fonts
-		FontsMeneger.fnt_bk=(DWORD*)font;
-		FontsMeneger.fnt_fd=(DWORD*)font;
+		FontsManager.fnt_bk=(DWORD*)font;
+		FontsManager.fnt_fd=(DWORD*)font;
 		font->fnt_bk=(DWORD*)NULL;
 		font->fnt_fd=(DWORD*)NULL;
 	}
 	else
 	{
-		backward_font=(font_t*)FontsMeneger.fnt_fd;
-		FontsMeneger.fnt_fd=(DWORD*)font;
+		backward_font=(font_t*)FontsManager.fnt_fd;
+		FontsManager.fnt_fd=(DWORD*)font;
 		backward_font->fnt_fd=(DWORD*)font;
 		font->fnt_bk=(DWORD*)backward_font;
 		font->fnt_fd=(DWORD*)NULL;
@@ -360,13 +360,13 @@ font_t	*LoadFont(char *fullfontname)
 		return(NULL);
 	}
 
-	FontsMeneger.number_fonts++;
+	FontsManager.number_fonts++;
 	return(font);
 }
 
 void	FreeFont(font_t *font)
 {
-	if (font==(font_t*)FontsMeneger.default_font)	return;
+	if (font==(font_t*)FontsManager.default_font)	return;
 
 	free(font->font);
 	DestroyFont(font);

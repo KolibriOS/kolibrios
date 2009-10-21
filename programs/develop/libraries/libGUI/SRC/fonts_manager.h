@@ -1,5 +1,5 @@
 /*
-	font meneger header structure
+	font manager header structure
  */
 
 #define	FONT_FLAG_DEFAULT_FONT_ON					0x1
@@ -33,7 +33,7 @@ static struct
 	DWORD	*fnt_bk;
 	DWORD	*default_font;
     	DWORD	number_fonts;
-}FontsMeneger;
+}FontsManager;
 #pragma pack(pop)
 
 #pragma pack(push,1)
