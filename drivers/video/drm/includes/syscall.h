@@ -164,30 +164,26 @@ extern inline void usleep(u32_t delay)
 {
      if( !delay )
         delay++;
-     delay*= 128;
+     delay*= 256;
 
      while(delay--)
-     {
         __asm__ __volatile__(
         "xorl %%eax, %%eax \n\t"
         "cpuid \n\t"
-        "xorl %%eax, %%eax"
-        :::"ebx","ecx","edx");
+        :::"eax","ebx","ecx","edx");
      };
-};
 
 static inline void udelay(u32_t delay)
 {
     if(!delay) delay++;
-    delay*= 128;
+    delay*= 256;
 
     while(delay--)
     {
         __asm__ __volatile__(
         "xorl %%eax, %%eax \n\t"
-        "cpuid \n\t"
-        "xorl %%eax, %%eax"
-        :::"ebx","ecx","edx" );
+        "cpuid"
+        :::"eax","ebx","ecx","edx" );
     }
 }
 

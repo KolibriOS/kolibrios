@@ -45,7 +45,7 @@ int radeon_agpmode   = -1;
 int radeon_gart_size = 512; /* default gart size */
 int radeon_benchmarking = 0;
 int radeon_connector_table = 0;
-int radeon_tv = 1;
+int radeon_tv = 0;
 
 
 /*

@@ -532,6 +532,7 @@ bool set_mode(struct drm_device *dev, int width, int height)
                 fb->pitch = radeon_align_pitch(dev->dev_private, width, 32, false) * ((32 + 1) / 8);
 
                 crtc->fb = fb;
+                crtc->enabled = true;
 
                 ret = drm_crtc_helper_set_mode(crtc, mode, 0, 0, fb);
 
