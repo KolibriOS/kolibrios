@@ -42,7 +42,7 @@
 #include <drm_mm.h>
 #include "radeon_object.h"
 
-struct fb_info *framebuffer_alloc(size_t size);
+struct fb_info *framebuffer_alloc(size_t size, void *dev);
 
 struct radeon_fb_device {
     struct drm_fb_helper        helper;
@@ -60,6 +60,7 @@ static struct fb_ops radeonfb_ops = {
 //	.fb_imageblit = cfb_imageblit,
 //	.fb_pan_display = drm_fb_helper_pan_display,
 	.fb_blank = drm_fb_helper_blank,
+	.fb_setcmap = drm_fb_helper_setcmap,
 };
 
 /**
@@ -128,11 +129,13 @@ static int radeon_align_pitch(struct radeon_device *rdev, int width, int bpp, bo
 
 static struct drm_fb_helper_funcs radeon_fb_helper_funcs = {
 	.gamma_set = radeon_crtc_fb_gamma_set,
+	.gamma_get = radeon_crtc_fb_gamma_get,
 };
 
 int radeonfb_create(struct drm_device *dev,
 		    uint32_t fb_width, uint32_t fb_height,
 		    uint32_t surface_width, uint32_t surface_height,
+		    uint32_t surface_depth, uint32_t surface_bpp,
 		    struct drm_framebuffer **fb_p)
 {
 	struct radeon_device *rdev = dev->dev_private;
@@ -143,20 +146,26 @@ int radeonfb_create(struct drm_device *dev,
 	struct drm_mode_fb_cmd mode_cmd;
 	struct drm_gem_object *gobj = NULL;
 	struct radeon_object *robj = NULL;
-//   struct device *device = &rdev->pdev->dev;
+    void   *device = NULL; //&rdev->pdev->dev;
 	int size, aligned_size, ret;
 	u64 fb_gpuaddr;
 	void *fbptr = NULL;
 	unsigned long tmp;
 	bool fb_tiled = false; /* useful for testing */
 	u32 tiling_flags = 0;
+	int crtc_count;
 
     mode_cmd.width  = surface_width;
 	mode_cmd.height = surface_height;
+
+	/* avivo can't scanout real 24bpp */
+	if ((surface_bpp == 24) && ASIC_IS_AVIVO(rdev))
+		surface_bpp = 32;
+
 	mode_cmd.bpp = 32;
 	/* need to align pitch with crtc limits */
 	mode_cmd.pitch = radeon_align_pitch(rdev, mode_cmd.width, mode_cmd.bpp, fb_tiled) * ((mode_cmd.bpp + 1) / 8);
-	mode_cmd.depth = 24;
+	mode_cmd.depth = surface_depth;
 
 	size = mode_cmd.pitch * mode_cmd.height;
 	aligned_size = ALIGN(size, PAGE_SIZE);
@@ -165,7 +174,6 @@ int radeonfb_create(struct drm_device *dev,
 			RADEON_GEM_DOMAIN_VRAM,
             false, 0,
 			false, &gobj);
-
 	if (ret) {
 		printk(KERN_ERR "failed to allocate framebuffer (%d %d)\n",
 		       surface_width, surface_height);
@@ -195,7 +203,7 @@ int radeonfb_create(struct drm_device *dev,
 	rdev->fbdev_rfb = rfb;
 	rdev->fbdev_robj = robj;
 
-	info = framebuffer_alloc(sizeof(struct radeon_fb_device));
+	info = framebuffer_alloc(sizeof(struct radeon_fb_device), device);
 	if (info == NULL) {
 		ret = -ENOMEM;
 		goto out_unref;
@@ -205,7 +213,11 @@ int radeonfb_create(struct drm_device *dev,
 	rfbdev = info->par;
 	rfbdev->helper.funcs = &radeon_fb_helper_funcs;
 	rfbdev->helper.dev = dev;
-	ret = drm_fb_helper_init_crtc_count(&rfbdev->helper, 2,
+	if (rdev->flags & RADEON_SINGLE_CRTC)
+		crtc_count = 1;
+	else
+		crtc_count = 2;
+	ret = drm_fb_helper_init_crtc_count(&rfbdev->helper, crtc_count,
 					    RADEONFB_CONN_LIMIT);
 	if (ret)
 		goto out_unref;
@@ -220,7 +232,7 @@ int radeonfb_create(struct drm_device *dev,
 
 	strcpy(info->fix.id, "radeondrmfb");
 
-	drm_fb_helper_fill_fix(info, fb->pitch);
+	drm_fb_helper_fill_fix(info, fb->pitch, fb->depth);
 
 	info->flags = FBINFO_DEFAULT;
 	info->fbops = &radeonfb_ops;
@@ -281,11 +293,8 @@ out:
 
 int radeonfb_probe(struct drm_device *dev)
 {
-	int ret;
-	ret = drm_fb_helper_single_fb_probe(dev, &radeonfb_create);
-	return ret;
+	return drm_fb_helper_single_fb_probe(dev, 32, &radeonfb_create);
 }
-EXPORT_SYMBOL(radeonfb_probe);
 
 int radeonfb_remove(struct drm_device *dev, struct drm_framebuffer *fb)
 {
@@ -401,7 +410,7 @@ int radeon_gem_fb_object_create(struct radeon_device *rdev, int size,
 }
 
 
-struct fb_info *framebuffer_alloc(size_t size)
+struct fb_info *framebuffer_alloc(size_t size, void *dev)
 {
 #define BYTES_PER_LONG (BITS_PER_LONG/8)
 #define PADDING (BYTES_PER_LONG - (sizeof(struct fb_info) % BYTES_PER_LONG))
@@ -446,6 +455,8 @@ bool set_mode(struct drm_device *dev, int width, int height)
 
     bool ret = false;
 
+    ENTER();
+
     list_for_each_entry(connector, &dev->mode_config.connector_list, head)
     {
         struct drm_display_mode *mode;
@@ -465,14 +476,13 @@ bool set_mode(struct drm_device *dev, int width, int height)
         if(crtc == NULL)
             continue;
 
-
+/*
         list_for_each_entry(mode, &connector->modes, head)
         {
             if (mode->type & DRM_MODE_TYPE_PREFERRED);
                 break;
         };
 
-/*
         struct radeon_encoder *radeon_encoder = to_radeon_encoder(encoder);
         struct radeon_native_mode *native_mode = &radeon_encoder->native_mode;
 
@@ -536,10 +546,14 @@ bool set_mode(struct drm_device *dev, int width, int height)
                     DRM_ERROR("failed to set mode %d_%d on crtc %p\n",
                                fb->width, fb->height, crtc);
                 };
+
+                LEAVE();
+
+                return ret;
             };
         }
     };
-
+    LEAVE();
     return ret;
 };
 

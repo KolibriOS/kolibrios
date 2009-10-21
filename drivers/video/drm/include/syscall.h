@@ -42,6 +42,8 @@ u32_t drvEntry(int, char *)__asm__("_drvEntry");
 #define PG_NOCACHE  0x018
 
 void*  STDCALL AllocKernelSpace(size_t size)__asm__("AllocKernelSpace");
+void   STDCALL FreeKernelSpace(void *mem)__asm__("FreeKernelSpace");
+addr_t STDCALL MapIoMem(addr_t base, size_t size, u32_t flags)__asm__("MapIoMem");
 void*  STDCALL KernelAlloc(size_t size)__asm__("KernelAlloc");
 void*  STDCALL KernelFree(void *mem)__asm__("KernelFree");
 void*  STDCALL UserAlloc(size_t size)__asm__("UserAlloc");
@@ -55,11 +57,6 @@ u32_t STDCALL RegService(char *name, srv_proc_t proc)__asm__("RegService");
 
 int   STDCALL AttachIntHandler(int irq, void *handler, u32_t access) __asm__("AttachIntHandler");
 
-
-//void *CreateObject(u32 pid, size_t size);
-//void *DestroyObject(void *obj);
-
-addr_t STDCALL MapIoMem(addr_t base, size_t size, u32_t flags)__asm__("MapIoMem");
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -167,26 +164,30 @@ extern inline void usleep(u32_t delay)
 {
      if( !delay )
         delay++;
-     delay*=1000;
+     delay*= 128;
 
      while(delay--)
-     __asm__ __volatile__ (
-     "xorl %%eax, %%eax \n\t"
-     "cpuid \n\t"
-        :::"eax","ebx","ecx","edx");
+     {
+        __asm__ __volatile__(
+        "xorl %%eax, %%eax \n\t"
+        "cpuid \n\t"
+        "xorl %%eax, %%eax"
+        :::"ebx","ecx","edx");
+     };
 };
 
 static inline void udelay(u32_t delay)
 {
     if(!delay) delay++;
-    delay*=500;
+    delay*= 128;
 
     while(delay--)
     {
         __asm__ __volatile__(
         "xorl %%eax, %%eax \n\t"
-        "cpuid"
-        :::"eax","ebx","ecx","edx" );
+        "cpuid \n\t"
+        "xorl %%eax, %%eax"
+        :::"ebx","ecx","edx" );
     }
 }
 
@@ -204,7 +205,7 @@ static inline void mdelay(u32_t time)
 };
 
 
-extern inline u32_t __PciApi(int cmd)
+static inline u32_t __PciApi(int cmd)
 {
      u32_t retval;
 
@@ -216,7 +217,7 @@ extern inline u32_t __PciApi(int cmd)
      return retval;
 };
 
-extern inline void* __CreateObject(u32_t pid, size_t size)
+static inline void* __CreateObject(u32_t pid, size_t size)
 {
      void *retval;
 
@@ -228,7 +229,7 @@ extern inline void* __CreateObject(u32_t pid, size_t size)
      return retval;
 }
 
-extern inline void *__DestroyObject(void *obj)
+static inline void *__DestroyObject(void *obj)
 {
      __asm__ __volatile__ (
      "call *__imp__DestroyObject"
@@ -256,7 +257,7 @@ u32 __RegService(char *name, srv_proc_t proc)
 };
 */
 
-extern inline u32_t safe_cli(void)
+static inline u32_t safe_cli(void)
 {
      u32_t ifl;
      __asm__ __volatile__ (
@@ -267,7 +268,7 @@ extern inline u32_t safe_cli(void)
     return ifl;
 }
 
-extern inline void safe_sti(u32_t ifl)
+static inline void safe_sti(u32_t ifl)
 {
      __asm__ __volatile__ (
      "pushl %0\n\t"
@@ -276,7 +277,7 @@ extern inline void safe_sti(u32_t ifl)
 	);
 }
 
-extern inline void __clear (void * dst, unsigned len)
+static inline void __clear (void * dst, unsigned len)
 {
      u32_t tmp;
      __asm__ __volatile__ (
@@ -288,25 +289,25 @@ extern inline void __clear (void * dst, unsigned len)
      __asm__ __volatile__ ("":::"ecx","edi");
 };
 
-extern inline void out8(const u16_t port, const u8_t val)
+static inline void out8(const u16_t port, const u8_t val)
 {
     __asm__ __volatile__
     ("outb  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-extern inline void out16(const u16_t port, const u16_t val)
+static inline void out16(const u16_t port, const u16_t val)
 {
     __asm__ __volatile__
     ("outw  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-extern inline void out32(const u16_t port, const u32_t val)
+static inline void out32(const u16_t port, const u32_t val)
 {
     __asm__ __volatile__
     ("outl  %1, %0\n" : : "dN"(port), "a"(val));
 }
 
-extern inline u8_t in8(const u16_t port)
+static inline u8_t in8(const u16_t port)
 {
     u8_t tmp;
     __asm__ __volatile__
@@ -314,7 +315,7 @@ extern inline u8_t in8(const u16_t port)
     return tmp;
 };
 
-extern inline u16_t in16(const u16_t port)
+static inline u16_t in16(const u16_t port)
 {
     u16_t tmp;
     __asm__ __volatile__
@@ -322,7 +323,7 @@ extern inline u16_t in16(const u16_t port)
     return tmp;
 };
 
-extern inline u32_t in32(const u16_t port)
+static inline u32_t in32(const u16_t port)
 {
     u32_t tmp;
     __asm__ __volatile__
@@ -330,7 +331,7 @@ extern inline u32_t in32(const u16_t port)
     return tmp;
 };
 
-extern inline void delay(int time)
+static inline void delay(int time)
 {
      __asm__ __volatile__ (
      "call *__imp__Delay"
@@ -340,7 +341,7 @@ extern inline void delay(int time)
 
 }
 
-extern inline void change_task()
+static inline void change_task()
 {
      __asm__ __volatile__ (
      "call *__imp__ChangeTask");

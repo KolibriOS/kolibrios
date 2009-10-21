@@ -39,6 +39,16 @@ int r420_mc_init(struct radeon_device *rdev)
 	/* Setup GPU memory space */
 	rdev->mc.vram_location = 0xFFFFFFFFUL;
 	rdev->mc.gtt_location = 0xFFFFFFFFUL;
+	if (rdev->flags & RADEON_IS_AGP) {
+		r = radeon_agp_init(rdev);
+		if (r) {
+			printk(KERN_WARNING "[drm] Disabling AGP\n");
+			rdev->flags &= ~RADEON_IS_AGP;
+			rdev->mc.gtt_size = radeon_gart_size * 1024 * 1024;
+		} else {
+			rdev->mc.gtt_location = rdev->mc.agp_base;
+		}
+	}
 	r = radeon_mc_setup(rdev);
 	if (r) {
 		return r;
@@ -145,6 +155,9 @@ static void r420_debugfs(struct radeon_device *rdev)
 static void r420_clock_resume(struct radeon_device *rdev)
 {
 	u32 sclk_cntl;
+
+	if (radeon_dynclks != -1 && radeon_dynclks)
+		radeon_atom_set_clock_gating(rdev, 1);
 	sclk_cntl = RREG32_PLL(R_00000D_SCLK_CNTL);
 	sclk_cntl |= S_00000D_FORCE_CP(1) | S_00000D_FORCE_VIP(1);
 	if (rdev->family == CHIP_R420)
@@ -157,6 +170,8 @@ static int r420_startup(struct radeon_device *rdev)
 	int r;
 
 	r300_mc_program(rdev);
+	/* Resume clock */
+	r420_clock_resume(rdev);
 	/* Initialize GART (initialize after TTM so we can allocate
 	 * memory through TTM but finalize after TTM) */
 	if (rdev->flags & RADEON_IS_PCIE) {
@@ -174,11 +189,11 @@ static int r420_startup(struct radeon_device *rdev)
 //	rdev->irq.sw_int = true;
 //	r100_irq_set(rdev);
 	/* 1M ring buffer */
-	r = r100_cp_init(rdev, 1024 * 1024);
-	if (r) {
-		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
-		return r;
-	}
+//	r = r100_cp_init(rdev, 1024 * 1024);
+//	if (r) {
+//		dev_err(rdev->dev, "failled initializing CP (%d).\n", r);
+//		return r;
+//	}
 //	r = r100_wb_init(rdev);
 //	if (r) {
 //		dev_err(rdev->dev, "failled initializing WB (%d).\n", r);
@@ -218,46 +233,12 @@ int r420_resume(struct radeon_device *rdev)
 	return r420_startup(rdev);
 }
 
-int r420_suspend(struct radeon_device *rdev)
-{
-	r100_cp_disable(rdev);
-//	r100_wb_disable(rdev);
-//	r100_irq_disable(rdev);
-	if (rdev->flags & RADEON_IS_PCIE)
-		rv370_pcie_gart_disable(rdev);
-	if (rdev->flags & RADEON_IS_PCI)
-		r100_pci_gart_disable(rdev);
-	return 0;
-}
 
-void r420_fini(struct radeon_device *rdev)
-{
-	r100_cp_fini(rdev);
-//	r100_wb_fini(rdev);
-//	r100_ib_fini(rdev);
-	radeon_gem_fini(rdev);
-	if (rdev->flags & RADEON_IS_PCIE)
-		rv370_pcie_gart_fini(rdev);
-	if (rdev->flags & RADEON_IS_PCI)
-		r100_pci_gart_fini(rdev);
-//	radeon_agp_fini(rdev);
-//	radeon_irq_kms_fini(rdev);
-//	radeon_fence_driver_fini(rdev);
-//   radeon_object_fini(rdev);
-	if (rdev->is_atom_bios) {
-		radeon_atombios_fini(rdev);
-	} else {
-		radeon_combios_fini(rdev);
-	}
-	kfree(rdev->bios);
-	rdev->bios = NULL;
-}
 
 int r420_init(struct radeon_device *rdev)
 {
 	int r;
 
-	rdev->new_init_path = true;
 	/* Initialize scratch registers */
 	radeon_scratch_init(rdev);
 	/* Initialize surface registers */
@@ -335,7 +316,7 @@ int r420_init(struct radeon_device *rdev)
 	if (r) {
 		/* Somethings want wront with the accel init stop accel */
 		dev_err(rdev->dev, "Disabling GPU acceleration\n");
-		r420_suspend(rdev);
+//       r420_suspend(rdev);
 //		r100_cp_fini(rdev);
 //		r100_wb_fini(rdev);
 //		r100_ib_fini(rdev);

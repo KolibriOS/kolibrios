@@ -745,7 +745,6 @@ struct radeon_encoder_tv_dac *radeon_combios_get_tv_dac_info(struct
 			tv_dac->ntsc_tvdac_adj = (bg << 16) | (dac << 20);
 			found = 1;
 		}
-
 		tv_dac->tv_std = radeon_combios_get_tv_info(encoder);
 	}
 	if (!found) {
@@ -775,6 +774,7 @@ struct radeon_encoder_tv_dac *radeon_combios_get_tv_dac_info(struct
 			DRM_INFO("No TV DAC info found in BIOS\n");
 		}
 	}
+
 out:
 	if (!found) /* fallback to defaults */
 		radeon_legacy_get_tv_dac_info_from_table(rdev, tv_dac);

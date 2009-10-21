@@ -35,6 +35,7 @@ typedef signed short        __s16;
 typedef signed int          __s32;
 typedef signed long long    __s64;
 
+typedef __u32 __be32;
 
 typedef unsigned char        uint8_t;
 typedef unsigned short       uint16_t;
@@ -200,20 +201,22 @@ static inline void bitmap_zero(unsigned long *dst, int nbits)
         (void) (&_x == &_y);            \
         _x > _y ? _x : _y; })
 
-
-extern uint32_t __div64_32(uint64_t *dividend, uint32_t divisor);
-
-# define do_div(n,base) ({                             \
-       uint32_t __base = (base);                       \
-       uint32_t __rem;                                 \
-       (void)(((typeof((n)) *)0) == ((uint64_t *)0));  \
-       if (likely(((n) >> 32) == 0)) {                 \
-               __rem = (uint32_t)(n) % __base;         \
-               (n) = (uint32_t)(n) / __base;           \
-       } else                                          \
-               __rem = __div64_32(&(n), __base);       \
-       __rem;                                          \
+#define do_div(n, base)                     \
+({                              \
+    unsigned long __upper, __low, __high, __mod, __base;    \
+    __base = (base);                    \
+    asm("":"=a" (__low), "=d" (__high) : "A" (n));      \
+    __upper = __high;                   \
+    if (__high) {                       \
+        __upper = __high % (__base);            \
+        __high = __high / (__base);         \
+    }                           \
+    asm("divl %2":"=a" (__low), "=d" (__mod)        \
+        : "rm" (__base), "0" (__low), "1" (__upper));   \
+    asm("":"=A" (n) : "a" (__low), "d" (__high));       \
+    __mod;                          \
 })
+
 
 #define lower_32_bits(n) ((u32)(n))
 

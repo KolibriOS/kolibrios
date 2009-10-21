@@ -18,9 +18,9 @@ INCLUDES = -I$(DRM_INCLUDES) -I$(DRM_INCLUDES)/linux -I$(DRM_INCLUDES)/drm
 HFILES:=     		$(DRM_INCLUDES)/linux/types.h		\
 			$(DRM_INCLUDES)/linux/list.h		\
 			$(DRM_INCLUDES)/pci.h		\
-			$(DRM_INCLUDES)/drm.h			\
+			$(DRM_INCLUDES)/drm/drm.h			\
 			$(DRM_INCLUDES)/drm/drmP.h		\
-			$(DRM_INCLUDES)/drm_edid.h		\
+			$(DRM_INCLUDES)/drm/drm_edid.h		\
 			$(DRM_INCLUDES)/drm/drm_crtc.h		\
 			$(DRM_INCLUDES)/drm/drm_mode.h		\
 			$(DRM_INCLUDES)/drm/drm_mm.h		\
@@ -45,6 +45,7 @@ NAME_SRC=							\
 			radeon_i2c.c				\
 			atom.c					\
 			radeon_atombios.c			\
+			radeon_agp.c				\
 			atombios_crtc.c				\
 			radeon_encoders.c			\
 			radeon_connectors.c			\
@@ -54,7 +55,6 @@ NAME_SRC=							\
 			radeon_legacy_encoders.c		\
 			radeon_legacy_tv.c			\
 			radeon_display.c			\
-			radeon_cursor.c				\
 			radeon_object.c				\
 			radeon_gart.c				\
 			radeon_ring.c				\
@@ -64,7 +64,6 @@ NAME_SRC=							\
 			r420.c					\
 			rv515.c					\
 			r520.c					\
-			r600.c					\
 			rs400.c					\
 			rs600.c					\
 			rs690.c					\

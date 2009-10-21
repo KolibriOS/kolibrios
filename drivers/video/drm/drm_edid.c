@@ -26,10 +26,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-//#include <linux/kernel.h>
-#include <types.h>
-#include <list.h>
-
+#include <linux/kernel.h>
 #include <linux/i2c.h>
 #include <linux/i2c-algo-bit.h>
 #include "drmP.h"
@@ -112,7 +109,9 @@ static struct edid_quirk {
 
 
 /* Valid EDID header has these bytes */
-static u8 edid_header[] = { 0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00 };
+static const u8 edid_header[] = {
+	0x00, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x00
+};
 
 /**
  * edid_is_valid - sanity check EDID data
@@ -503,18 +502,33 @@ static struct drm_display_mode *drm_find_dmt(struct drm_device *dev,
 	}
 	return mode;
 }
+
+/*
+ * 0 is reserved.  The spec says 0x01 fill for unused timings.  Some old
+ * monitors fill with ascii space (0x20) instead.
+ */
+static int
+bad_std_timing(u8 a, u8 b)
+{
+	return (a == 0x00 && b == 0x00) ||
+	       (a == 0x01 && b == 0x01) ||
+	       (a == 0x20 && b == 0x20);
+}
+
 /**
  * drm_mode_std - convert standard mode info (width, height, refresh) into mode
  * @t: standard timing params
+ * @timing_level: standard timing level
  *
  * Take the standard timing params (in this case width, aspect, and refresh)
- * and convert them into a real mode using CVT.
+ * and convert them into a real mode using CVT/GTF/DMT.
  *
  * Punts for now, but should eventually use the FB layer's CVT based mode
  * generation code.
  */
 struct drm_display_mode *drm_mode_std(struct drm_device *dev,
 				      struct std_timing *t,
+				      int revision,
 				      int timing_level)
 {
 	struct drm_display_mode *mode;
@@ -525,15 +539,20 @@ struct drm_display_mode *drm_mode_std(struct drm_device *dev,
 	unsigned vfreq = (t->vfreq_aspect & EDID_TIMING_VFREQ_MASK)
 		>> EDID_TIMING_VFREQ_SHIFT;
 
+	if (bad_std_timing(t->hsize, t->vfreq_aspect))
+		return NULL;
+
 	/* According to the EDID spec, the hdisplay = hsize * 8 + 248 */
 	hsize = t->hsize * 8 + 248;
 	/* vrefresh_rate = vfreq + 60 */
 	vrefresh_rate = vfreq + 60;
 	/* the vdisplay is calculated based on the aspect ratio */
-
-	if (aspect_ratio == 0)
+	if (aspect_ratio == 0) {
+		if (revision < 3)
+			vsize = hsize;
+		else
 		vsize = (hsize * 10) / 16;
-	else if (aspect_ratio == 1)
+	} else if (aspect_ratio == 1)
 		vsize = (hsize * 3) / 4;
 	else if (aspect_ratio == 2)
 		vsize = (hsize * 4) / 5;
@@ -541,7 +560,8 @@ struct drm_display_mode *drm_mode_std(struct drm_device *dev,
 		vsize = (hsize * 9) / 16;
 	/* HDTV hack */
 	if (hsize == 1360 && vsize == 765 && vrefresh_rate == 60) {
-		mode = drm_cvt_mode(dev, hsize, vsize, vrefresh_rate, 0, 0);
+		mode = drm_cvt_mode(dev, hsize, vsize, vrefresh_rate, 0, 0,
+				    false);
 		mode->hdisplay = 1366;
 		mode->vsync_start = mode->vsync_start - 1;
 		mode->vsync_end = mode->vsync_end - 1;
@@ -560,7 +580,8 @@ struct drm_display_mode *drm_mode_std(struct drm_device *dev,
 		mode = drm_gtf_mode(dev, hsize, vsize, vrefresh_rate, 0, 0);
 		break;
 	case LEVEL_CVT:
-		mode = drm_cvt_mode(dev, hsize, vsize, vrefresh_rate, 0, 0);
+		mode = drm_cvt_mode(dev, hsize, vsize, vrefresh_rate, 0, 0,
+				    false);
 		break;
 	}
 	return mode;
@@ -782,7 +803,7 @@ static int add_standard_modes(struct drm_connector *connector, struct edid *edid
 			continue;
 
 		newmode = drm_mode_std(dev, &edid->standard_timings[i],
-					timing_level);
+				       edid->revision, timing_level);
 		if (newmode) {
 			drm_mode_probed_add(connector, newmode);
 			modes++;
@@ -832,13 +853,13 @@ static int add_detailed_info(struct drm_connector *connector,
 		case EDID_DETAIL_MONITOR_CPDATA:
 			break;
 		case EDID_DETAIL_STD_MODES:
-			/* Five modes per detailed section */
-			for (j = 0; j < 5; i++) {
+				for (j = 0; j < 6; i++) {
 				struct std_timing *std;
 				struct drm_display_mode *newmode;
 
 				std = &data->data.timings[j];
 					newmode = drm_mode_std(dev, std,
+							       edid->revision,
 							       timing_level);
 				if (newmode) {
 					drm_mode_probed_add(connector, newmode);
@@ -967,7 +988,9 @@ static int add_detailed_info_eedid(struct drm_connector *connector,
 				struct drm_display_mode *newmode;
 
 				std = &data->data.timings[j];
-				newmode = drm_mode_std(dev, std, timing_level);
+				newmode = drm_mode_std(dev, std,
+						       edid->revision,
+						       timing_level);
 				if (newmode) {
 					drm_mode_probed_add(connector, newmode);
 					modes++;
@@ -1014,7 +1037,6 @@ int drm_do_probe_ddc_edid(struct i2c_adapter *adapter,
 	if (i2c_transfer(adapter, msgs, 2) == 2)
 		return 0;
 
-//   dev_info(&adapter->dev, "unable to read EDID block.\n");
 	return -1;
 }
 EXPORT_SYMBOL(drm_do_probe_ddc_edid);
