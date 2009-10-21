@@ -3,12 +3,17 @@
 	(c) andrew_programmer 2009
  */
 
+/*
+ * vkos (21.10.2009):
+ * Replaced "meneger" (& others so) with "manager"
+ */
+
 //service libGUI types of data,functions and constants
 #include "types.h"
 #include "libGUI.h"
 #include "kolibri_system.h"
 #include "draw_controls.h"
-#include "fonts_meneger.h"
+#include "fonts_manager.h"
 #include "keys.h"
 
 //controls
@@ -25,14 +30,15 @@
 #include "string.h"
 #include "stdlib.h"
 
+//code parts
 #include "stdio.inc"
 #include "string.inc"
 #include "malloc.inc"
 #include "stdlib.inc"
 #include "kolibri_system.inc"
 #include "draw_controls.inc"
-#include "fonts_meneger.inc"
-#include "libGUI_menegement.inc"
+#include "fonts_manager.inc"
+#include "libGUI_management.inc"
 #include "parent_window.inc"
 #include "main_libGUI.inc"
 #include "control_text.inc"
