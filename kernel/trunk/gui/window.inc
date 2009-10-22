@@ -499,7 +499,7 @@ display_settings:
 
 repos_windows:
 	mov	ecx,[TASK_COUNT]
-	mov	edi, OS_BASE+0x20*2
+	mov	edi, window_data+0x20*2
 	call    force_redraw_background
 	dec	ecx
 	jge    @f
